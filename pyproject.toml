@@ -8,13 +8,17 @@ version = "0.1.0"
 description = "AI Town Simulation inspired by RimWorld"
 requires-python = ">=3.10"
 dependencies = [
-    "anthropic>=0.39.0",
-    "openai>=1.0.0",
     "pyyaml>=6.0",
     "aiohttp>=3.9.0",
     "jinja2>=3.1.0",
     "python-dotenv>=1.0.0",
 ]
+
+[project.optional-dependencies]
+anthropic = ["anthropic>=0.39.0"]
+openai = ["openai>=1.0.0"]
+gemini = ["google-genai>=1.0.0"]
+all = ["anthropic>=0.39.0", "openai>=1.0.0", "google-genai>=1.0.0"]
 
 [project.scripts]
 rimtown = "rimtown.main:entry"
