@@ -1,0 +1,19 @@
+# RimTown Configuration
+
+town:
+  name: "RimTown"
+  description: "A small frontier settlement where every resident is an AI agent living their own life."
+
+simulation:
+  tick_interval_seconds: 2.0   # Real-time seconds per tick
+  minutes_per_tick: 15         # In-game minutes per tick
+  start_hour: 6                # Simulation starts at 6 AM
+  start_season: "spring"
+  start_day: 1
+
+settings:
+  enable_llm_conversations: true
+  enable_gossip: true
+  enable_romance: true
+  max_conversations_per_tick: 2
+  event_chance_per_day: 0.25
