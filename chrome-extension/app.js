@@ -1,7 +1,120 @@
-// RimTown Chrome Extension - Frontend App
+// RimTown - Frontend App
+
+// === Account Manager ===
+class AccountManager {
+    constructor() {
+        this.currentUser = null;
+        this._loadSession();
+    }
+    _loadSession() {
+        try {
+            const session = localStorage.getItem('rimtown_session');
+            if (session) {
+                const data = JSON.parse(session);
+                const users = this._getUsers();
+                if (users[data.username]) { this.currentUser = data.username; }
+            }
+        } catch(e) {}
+    }
+    _getUsers() {
+        try { return JSON.parse(localStorage.getItem('rimtown_users') || '{}'); } catch(e) { return {}; }
+    }
+    _saveUsers(users) {
+        localStorage.setItem('rimtown_users', JSON.stringify(users));
+    }
+    isLoggedIn() { return !!this.currentUser; }
+    getUsername() { return this.currentUser; }
+    register(username, password) {
+        if (!username || !password) return { ok:false, error:'帳號和密碼不能為空' };
+        if (username.length < 2) return { ok:false, error:'帳號至少需要2個字元' };
+        if (password.length < 4) return { ok:false, error:'密碼至少需要4個字元' };
+        const users = this._getUsers();
+        if (users[username]) return { ok:false, error:'此帳號已存在' };
+        // Simple hash (not cryptographically secure, but sufficient for local storage)
+        users[username] = { passwordHash: this._simpleHash(password), createdAt: new Date().toISOString() };
+        this._saveUsers(users);
+        this.currentUser = username;
+        localStorage.setItem('rimtown_session', JSON.stringify({ username }));
+        return { ok:true };
+    }
+    login(username, password) {
+        const users = this._getUsers();
+        if (!users[username]) return { ok:false, error:'帳號不存在' };
+        if (users[username].passwordHash !== this._simpleHash(password)) return { ok:false, error:'密碼錯誤' };
+        this.currentUser = username;
+        localStorage.setItem('rimtown_session', JSON.stringify({ username }));
+        return { ok:true };
+    }
+    logout() {
+        this.currentUser = null;
+        localStorage.removeItem('rimtown_session');
+    }
+    _simpleHash(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) { hash = ((hash << 5) - hash) + str.charCodeAt(i); hash |= 0; }
+        return 'h_' + Math.abs(hash).toString(36);
+    }
+    // User-scoped storage prefix
+    storagePrefix() { return this.currentUser ? `rimtown_u_${this.currentUser}_` : 'rimtown_'; }
+
+    // --- Multi-Town Management ---
+    getTownList() {
+        try {
+            return JSON.parse(localStorage.getItem(this.storagePrefix() + 'town_list') || '[]');
+        } catch(e) { return []; }
+    }
+    _saveTownList(list) {
+        localStorage.setItem(this.storagePrefix() + 'town_list', JSON.stringify(list));
+    }
+    saveTown(townId, name, saveData) {
+        const list = this.getTownList();
+        const existing = list.find(t => t.id === townId);
+        const clock = saveData.clock || {};
+        const meta = {
+            id: townId,
+            name: name,
+            savedAt: new Date().toISOString(),
+            season: clock.season || '春季',
+            year: clock.year || 1,
+            day: clock.day || 1,
+            population: Object.keys(saveData.agents || {}).length,
+        };
+        if (existing) Object.assign(existing, meta);
+        else list.push(meta);
+        this._saveTownList(list);
+        localStorage.setItem(this.storagePrefix() + 'town_' + townId, JSON.stringify(saveData));
+    }
+    loadTown(townId) {
+        try {
+            const json = localStorage.getItem(this.storagePrefix() + 'town_' + townId);
+            return json ? JSON.parse(json) : null;
+        } catch(e) { return null; }
+    }
+    deleteTown(townId) {
+        const list = this.getTownList().filter(t => t.id !== townId);
+        this._saveTownList(list);
+        localStorage.removeItem(this.storagePrefix() + 'town_' + townId);
+        localStorage.removeItem(this.storagePrefix() + 'town_' + townId + '_archives');
+    }
+    renameTown(townId, newName) {
+        const list = this.getTownList();
+        const town = list.find(t => t.id === townId);
+        if (town) { town.name = newName; this._saveTownList(list); }
+    }
+    // Chat archives scoped per town
+    getTownArchives(townId) {
+        try {
+            return JSON.parse(localStorage.getItem(this.storagePrefix() + 'town_' + townId + '_archives') || '[]');
+        } catch(e) { return []; }
+    }
+    saveTownArchives(townId, archives) {
+        localStorage.setItem(this.storagePrefix() + 'town_' + townId + '_archives', JSON.stringify(archives));
+    }
+}
 
 class RimTownApp {
     constructor() {
+        this.account = new AccountManager();
         this.world = new World();
         this.state = null;
         this.selectedAgent = null;
@@ -19,15 +132,37 @@ class RimTownApp {
         this.llmClient = null;
         this.tileMap = null;
         this._mapGenerated = false;
-        this._viewingArchive = null; // current archive being viewed
+        this._viewingArchive = null;
+        this.currentTownId = null;
         this.init();
     }
 
     async init() {
+        // Show login screen if not logged in
+        if (!this.account.isLoggedIn()) {
+            this._showLoginScreen();
+            return;
+        }
+        this._hideLoginScreen();
+        this._updateUserDisplay();
         await this.loadSettings();
-        const loaded = await this.tryLoadGame();
+        // Try to load last active town
+        const lastTownId = localStorage.getItem(this.account.storagePrefix() + 'last_town');
+        let loaded = false;
+        if (lastTownId) {
+            loaded = this._loadTownById(lastTownId);
+        }
         if (!loaded) {
-            this.world.reset();
+            // Try legacy save
+            const legacyLoaded = await this.tryLoadGame();
+            if (legacyLoaded) {
+                this.currentTownId = 'town_' + Date.now();
+                this._saveCurrentTown('邊境鎮');
+            } else {
+                this.world.reset();
+                this.currentTownId = 'town_' + Date.now();
+                this._saveCurrentTown('邊境鎮');
+            }
         }
         if (this.llmClient) {
             this.world.conversationEngine = new ConversationEngine(this.llmClient);
@@ -37,10 +172,172 @@ class RimTownApp {
         this.setupTabListeners();
         this.setupControlListeners();
         this.setupSettingsListeners();
+        this.setupEventDelegation();
         this.startSimulation();
         this.setupAutoSave();
         this.render();
         this._startRenderLoop();
+    }
+
+    // === Login / Account UI ===
+    _showLoginScreen() {
+        const modal = document.getElementById('login-modal');
+        if (modal) modal.classList.remove('hidden');
+        // Hide main game UI
+        document.querySelector('.header')?.classList.add('hidden');
+        document.querySelector('.main-layout')?.classList.add('hidden');
+    }
+    _hideLoginScreen() {
+        const modal = document.getElementById('login-modal');
+        if (modal) modal.classList.add('hidden');
+        document.querySelector('.header')?.classList.remove('hidden');
+        document.querySelector('.main-layout')?.classList.remove('hidden');
+    }
+    _updateUserDisplay() {
+        const el = document.getElementById('user-display');
+        if (el && this.account.isLoggedIn()) {
+            el.innerHTML = `<span class="user-name">${this.account.getUsername()}</span>
+                <button class="btn-towns" data-action="show-towns">城鎮列表</button>
+                <button class="btn-logout" data-action="logout">登出</button>`;
+        }
+    }
+    doLogin() {
+        const u = document.getElementById('login-username')?.value?.trim();
+        const p = document.getElementById('login-password')?.value;
+        const errEl = document.getElementById('login-error');
+        const result = this.account.login(u, p);
+        if (result.ok) {
+            this.init();
+        } else {
+            if (errEl) errEl.textContent = result.error;
+        }
+    }
+    doRegister() {
+        const u = document.getElementById('login-username')?.value?.trim();
+        const p = document.getElementById('login-password')?.value;
+        const errEl = document.getElementById('login-error');
+        const result = this.account.register(u, p);
+        if (result.ok) {
+            this.init();
+        } else {
+            if (errEl) errEl.textContent = result.error;
+        }
+    }
+    doLogout() {
+        if (!confirm('確定要登出嗎？（遊戲會自動儲存）')) return;
+        this.saveGame();
+        if (this.simInterval) clearInterval(this.simInterval);
+        this.account.logout();
+        this.currentTownId = null;
+        this._showLoginScreen();
+    }
+
+    // === Town Management ===
+    _loadTownById(townId) {
+        const saveData = this.account.loadTown(townId);
+        if (!saveData) return false;
+        const loaded = this.world.loadSave(saveData);
+        if (loaded) {
+            this.currentTownId = townId;
+            localStorage.setItem(this.account.storagePrefix() + 'last_town', townId);
+        }
+        return loaded;
+    }
+    _saveCurrentTown(name) {
+        if (!this.currentTownId) this.currentTownId = 'town_' + Date.now();
+        const saveData = this.world.serialize();
+        const list = this.account.getTownList();
+        const existing = list.find(t => t.id === this.currentTownId);
+        this.account.saveTown(this.currentTownId, existing?.name || name || '邊境鎮', saveData);
+        localStorage.setItem(this.account.storagePrefix() + 'last_town', this.currentTownId);
+    }
+    showTownManager() {
+        this.world.paused = true;
+        const modal = document.getElementById('town-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        this._renderTownList();
+    }
+    _renderTownList() {
+        const container = document.getElementById('town-list-content');
+        if (!container) return;
+        const towns = this.account.getTownList();
+        let html = '';
+        if (!towns.length) {
+            html = '<p class="muted-text">尚無城鎮存檔。</p>';
+        } else {
+            towns.forEach(t => {
+                const isActive = t.id === this.currentTownId;
+                const date = new Date(t.savedAt).toLocaleString();
+                html += `<div class="town-item ${isActive?'active':''}">
+                    <div class="town-info" data-action="switch-town" data-val="${t.id}">
+                        <div class="town-name">${t.name} ${isActive?'<span class="current-badge">目前</span>':''}</div>
+                        <div class="town-meta">${t.season} 第${t.year}年 第${t.day}天 | 人口${t.population} | ${date}</div>
+                    </div>
+                    <div class="town-actions">
+                        <button data-action="rename-town" data-val="${t.id}" title="重新命名">✏️</button>
+                        ${!isActive?`<button data-action="delete-town" data-val="${t.id}" title="刪除" class="btn-danger">🗑️</button>`:''}
+                    </div>
+                </div>`;
+            });
+        }
+        html += `<div style="margin-top:12px;display:flex;gap:8px">
+            <button class="btn-accent" data-action="create-town">新建城鎮</button>
+            <button data-action="close-town-modal">關閉</button>
+        </div>`;
+        container.innerHTML = html;
+    }
+    async switchTown(townId) {
+        if (townId === this.currentTownId) {
+            document.getElementById('town-modal')?.classList.add('hidden');
+            this.world.paused = false;
+            return;
+        }
+        // Save current town first
+        this._saveCurrentTown();
+        // Load new town
+        if (this._loadTownById(townId)) {
+            if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+            this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
+            this.state = this.world.getState();
+            this._generateTileMapLayout();
+            this.tileMap.agentPositions = {};
+            this.render();
+        }
+        document.getElementById('town-modal')?.classList.add('hidden');
+        this.world.paused = false;
+    }
+    createNewTown() {
+        const name = prompt('為新城鎮命名：', '邊境鎮 ' + (this.account.getTownList().length + 1));
+        if (!name) return;
+        // Save current town first
+        if (this.currentTownId) this._saveCurrentTown();
+        // Create new town
+        this.world.reset();
+        if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+        this.currentTownId = 'town_' + Date.now();
+        this._saveCurrentTown(name);
+        this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
+        this.state = this.world.getState();
+        this._generateTileMapLayout();
+        this.tileMap.agentPositions = {};
+        this.render();
+        this._renderTownList();
+    }
+    renameTownPrompt(townId) {
+        const towns = this.account.getTownList();
+        const town = towns.find(t => t.id === townId);
+        if (!town) return;
+        const newName = prompt('新名稱：', town.name);
+        if (newName && newName.trim()) {
+            this.account.renameTown(townId, newName.trim());
+            this._renderTownList();
+        }
+    }
+    deleteTownConfirm(townId) {
+        if (!confirm('確定要刪除這個城鎮？所有存檔和聊天記錄都會消失。')) return;
+        this.account.deleteTown(townId);
+        this._renderTownList();
     }
 
     setupTileMap() {
@@ -72,14 +369,24 @@ class RimTownApp {
 
     async loadSettings() {
         try {
-            if (typeof chrome !== 'undefined' && chrome.storage) {
+            const prefix = this.account.storagePrefix();
+            // Try user-scoped settings first, fall back to legacy
+            const provider = localStorage.getItem(prefix + 'llm_provider') || localStorage.getItem('llm_provider');
+            const apiKey = localStorage.getItem(prefix + 'llm_api_key') || localStorage.getItem('llm_api_key');
+            const speed = localStorage.getItem(prefix + 'sim_speed') || localStorage.getItem('sim_speed');
+            if (speed) this.simSpeed = parseInt(speed);
+            if (provider && provider !== 'none' && apiKey) {
+                this.llmClient = new LLMClient(provider, apiKey);
+            }
+            // Also try chrome.storage as fallback
+            if (!provider && typeof chrome !== 'undefined' && chrome.storage) {
                 const data = await chrome.storage.local.get(['llm_provider','llm_api_key','sim_speed']);
                 if (data.sim_speed) this.simSpeed = parseInt(data.sim_speed);
                 if (data.llm_provider && data.llm_provider !== 'none' && data.llm_api_key) {
                     this.llmClient = new LLMClient(data.llm_provider, data.llm_api_key);
                 }
             }
-        } catch(e) { console.log('No chrome.storage, using defaults'); }
+        } catch(e) { console.log('Settings load error:', e); }
     }
 
     async saveSettings(provider, apiKey, speed) {
@@ -92,11 +399,15 @@ class RimTownApp {
             this.world.conversationEngine = new ConversationEngine();
         }
         this.restartSimulation();
+        const prefix = this.account.storagePrefix();
+        localStorage.setItem(prefix + 'llm_provider', provider);
+        localStorage.setItem(prefix + 'llm_api_key', apiKey);
+        localStorage.setItem(prefix + 'sim_speed', speed);
         try {
             if (typeof chrome !== 'undefined' && chrome.storage) {
                 await chrome.storage.local.set({ llm_provider: provider, llm_api_key: apiKey, sim_speed: speed });
             }
-        } catch(e) { console.log('Could not save to chrome.storage'); }
+        } catch(e) {}
     }
 
     startSimulation() {
@@ -124,6 +435,55 @@ class RimTownApp {
         });
     }
 
+    // Global event delegation - handles all dynamic clicks via data-action attributes
+    setupEventDelegation() {
+        document.body.addEventListener('click', (e) => {
+            const el = e.target.closest('[data-action]');
+            if (!el) return;
+            const action = el.dataset.action;
+            const val = el.dataset.val || '';
+            e.stopPropagation();
+            switch(action) {
+                // Account
+                case 'show-towns': this.showTownManager(); break;
+                case 'logout': this.doLogout(); break;
+                case 'login': this.doLogin(); break;
+                case 'register': this.doRegister(); break;
+                // Town management
+                case 'switch-town': this.switchTown(val); break;
+                case 'rename-town': this.renameTownPrompt(val); break;
+                case 'delete-town': this.deleteTownConfirm(val); break;
+                case 'create-town': this.createNewTown(); break;
+                case 'close-town-modal': document.getElementById('town-modal')?.classList.add('hidden'); this.world.paused = false; break;
+                // Chat
+                case 'start-chat': this.startChatWith(val); break;
+                case 'send-chat': this._sendFromInput(); break;
+                case 'show-archives': this.showChatArchives(); break;
+                case 'manual-archive': this.manualArchiveChat(); break;
+                case 'back-to-chat': this.activeTab = 'chat'; this.renderSidebar(); break;
+                case 'view-archive': this.viewArchive(parseInt(val)); break;
+                case 'export-archive': this.exportArchivedChat(parseInt(val)); break;
+                case 'delete-archive': this.deleteArchivedChat(parseInt(val)); break;
+                case 'back-to-archives': this._viewingArchive = null; this.activeTab = 'chat-archives'; this.renderSidebar(); break;
+                case 'filter-archive-npc': this._archiveNpcFilter = val || null; this.renderSidebar(); break;
+                // Agent
+                case 'select-agent': this.selectAgent(val); break;
+                // NPC conversation expand
+                case 'toggle-convo': el.classList.toggle('expanded'); break;
+                // Economy
+                case 'trade': { const [idx, amount] = val.split(','); this.executeTrade(parseInt(idx), parseInt(amount)); } break;
+                case 'build': this.startBuilding(val); break;
+                case 'research': this.startResearch(val); break;
+                default: console.log('Unknown action:', action, val);
+            }
+        });
+        // Handle Enter key in chat input via delegation
+        document.body.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.id === 'chat-input') { this._sendFromInput(); }
+            if (e.key === 'Enter' && (e.target.id === 'login-password' || e.target.id === 'login-username')) { this.doLogin(); }
+        });
+    }
+
     setupControlListeners() {
         document.getElementById('btn-pause').addEventListener('click', () => {
             this.world.paused = true; this.render();
@@ -132,16 +492,33 @@ class RimTownApp {
             this.world.paused = false; this.render();
         });
         document.getElementById('btn-new-game').addEventListener('click', async () => {
-            if (confirm('產生新的隨機小鎮？所有進度將重置。\n（聊天記錄會自動存檔）')) {
+            if (this.account.isLoggedIn()) {
+                // Save current town and create new one
+                const name = prompt('為新城鎮命名：', '邊境鎮 ' + (this.account.getTownList().length + 1));
+                if (!name) return;
                 await this.archiveChatHistory();
+                this._saveCurrentTown();
                 this.world.reset();
                 if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                this.currentTownId = 'town_' + Date.now();
+                this._saveCurrentTown(name);
                 this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
                 this.state = this.world.getState();
                 this._generateTileMapLayout();
                 this.tileMap.agentPositions = {};
-                this.deleteSave();
                 this.render();
+            } else {
+                if (confirm('產生新的隨機小鎮？所有進度將重置。\n（聊天記錄會自動存檔）')) {
+                    await this.archiveChatHistory();
+                    this.world.reset();
+                    if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                    this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
+                    this.state = this.world.getState();
+                    this._generateTileMapLayout();
+                    this.tileMap.agentPositions = {};
+                    this.deleteSave();
+                    this.render();
+                }
             }
         });
         document.getElementById('btn-save').addEventListener('click', async () => {
@@ -156,8 +533,15 @@ class RimTownApp {
     setupSettingsListeners() {
         document.getElementById('btn-settings').addEventListener('click', () => {
             document.getElementById('settings-modal').classList.remove('hidden');
-            // Load current values
-            if (typeof chrome !== 'undefined' && chrome.storage) {
+            // Load current values from user-scoped or legacy storage
+            const prefix = this.account.storagePrefix();
+            const provider = localStorage.getItem(prefix + 'llm_provider');
+            const apiKey = localStorage.getItem(prefix + 'llm_api_key');
+            const speed = localStorage.getItem(prefix + 'sim_speed');
+            if (provider) document.getElementById('llm-provider').value = provider;
+            if (apiKey) document.getElementById('llm-api-key').value = apiKey;
+            if (speed) document.getElementById('sim-speed').value = speed;
+            if (!provider && typeof chrome !== 'undefined' && chrome.storage) {
                 chrome.storage.local.get(['llm_provider','llm_api_key','sim_speed'], data => {
                     if (data.llm_provider) document.getElementById('llm-provider').value = data.llm_provider;
                     if (data.llm_api_key) document.getElementById('llm-api-key').value = data.llm_api_key;
@@ -180,6 +564,10 @@ class RimTownApp {
     // --- Save / Load ---
     async saveGame() {
         try {
+            if (this.account.isLoggedIn() && this.currentTownId) {
+                this._saveCurrentTown();
+            }
+            // Legacy fallback
             const saveData = this.world.serialize();
             const json = JSON.stringify(saveData);
             if (typeof chrome !== 'undefined' && chrome.storage) {
@@ -225,6 +613,9 @@ class RimTownApp {
         // Also save when tab is closing
         window.addEventListener('beforeunload', () => {
             try {
+                if (this.account.isLoggedIn() && this.currentTownId) {
+                    this._saveCurrentTown();
+                }
                 const json = JSON.stringify(this.world.serialize());
                 if (typeof chrome !== 'undefined' && chrome.storage) {
                     chrome.storage.local.set({ rimtown_save: json });
@@ -272,20 +663,32 @@ class RimTownApp {
         input.click();
     }
 
-    // --- Chat Archive (per-session persistent storage) ---
+    // --- Chat Archive (per-town persistent storage) ---
     async _getStorage(key) {
-        if (typeof chrome !== 'undefined' && chrome.storage) {
-            const data = await chrome.storage.local.get([key]);
-            return data[key] || null;
-        }
-        return localStorage.getItem(key) ? JSON.parse(localStorage.getItem(key)) : null;
+        // User-scoped storage
+        const scopedKey = this.account.storagePrefix() + key;
+        try {
+            const val = localStorage.getItem(scopedKey);
+            if (val) return JSON.parse(val);
+        } catch(e) {}
+        // Fallback to legacy key
+        try {
+            if (typeof chrome !== 'undefined' && chrome.storage) {
+                const data = await chrome.storage.local.get([key]);
+                return data[key] || null;
+            }
+            const val = localStorage.getItem(key);
+            return val ? JSON.parse(val) : null;
+        } catch(e) { return null; }
     }
     async _setStorage(key, value) {
-        if (typeof chrome !== 'undefined' && chrome.storage) {
-            await chrome.storage.local.set({ [key]: value });
-        } else {
-            localStorage.setItem(key, JSON.stringify(value));
-        }
+        const scopedKey = this.account.storagePrefix() + key;
+        localStorage.setItem(scopedKey, JSON.stringify(value));
+        try {
+            if (typeof chrome !== 'undefined' && chrome.storage) {
+                await chrome.storage.local.set({ [key]: value });
+            }
+        } catch(e) {}
     }
 
     async archiveChatHistory() {
@@ -296,27 +699,44 @@ class RimTownApp {
         const archive = {
             id: Date.now(),
             savedAt: new Date().toISOString(),
-            gameClock: `${clock.season || 'Spring'} Y${clock.year || 1} D${clock.day || 1}`,
+            gameClock: `${clock.season || '春季'} 第${clock.year || 1}年 第${clock.day || 1}天`,
+            townId: this.currentTownId,
             playerName: player.name,
             messageCount: player.chatHistory.length,
             npcNames: [...new Set(player.chatHistory.map(m => m.speaker === player.name ? m.target : m.speaker))],
             messages: [...player.chatHistory]
         };
 
+        // Save to town-specific archives if logged in
+        if (this.account.isLoggedIn() && this.currentTownId) {
+            const archives = this.account.getTownArchives(this.currentTownId);
+            archives.push(archive);
+            while (archives.length > 30) archives.shift();
+            this.account.saveTownArchives(this.currentTownId, archives);
+        }
+        // Also save to generic key for legacy
         const archives = (await this._getStorage('rimtown_chat_archives')) || [];
         archives.push(archive);
-        // Keep max 20 archives
         while (archives.length > 20) archives.shift();
         await this._setStorage('rimtown_chat_archives', archives);
         return archive;
     }
 
     async getChatArchives() {
+        // Prefer town-specific archives
+        if (this.account.isLoggedIn() && this.currentTownId) {
+            const townArchives = this.account.getTownArchives(this.currentTownId);
+            if (townArchives.length) return townArchives;
+        }
         return (await this._getStorage('rimtown_chat_archives')) || [];
     }
 
     async deleteChatArchive(archiveId) {
-        const archives = await this.getChatArchives();
+        if (this.account.isLoggedIn() && this.currentTownId) {
+            const archives = this.account.getTownArchives(this.currentTownId).filter(a => a.id !== archiveId);
+            this.account.saveTownArchives(this.currentTownId, archives);
+        }
+        const archives = (await this._getStorage('rimtown_chat_archives')) || [];
         const filtered = archives.filter(a => a.id !== archiveId);
         await this._setStorage('rimtown_chat_archives', filtered);
     }
@@ -464,7 +884,7 @@ class RimTownApp {
         if (nearbyNpcs.length) {
             nearbyHtml += '<div class="nearby-label">附近：</div><div class="nearby-list">';
             nearbyNpcs.forEach(npc => {
-                nearbyHtml += `<button class="nearby-btn ${this.chatTarget===npc.id?'active':''}" onclick="app.startChatWith('${npc.id}')">
+                nearbyHtml += `<button class="nearby-btn ${this.chatTarget===npc.id?'active':''}" data-action="start-chat" data-val="${npc.id}">
                     <span class="mood-indicator mood-${npc.mood_description}"></span>${npc.name}
                     <span class="nearby-job">${npc.job?.title||''}</span></button>`;
             });
@@ -484,7 +904,7 @@ class RimTownApp {
             pastContacts.forEach(name => {
                 const id = nameToId[name];
                 const msgCount = chatHistory.filter(c => c.speaker === name || c.target === name).length;
-                nearbyHtml += `<button class="nearby-btn history-btn ${this.chatTarget===id?'active':''}" onclick="app.startChatWith('${id}')">
+                nearbyHtml += `<button class="nearby-btn history-btn ${this.chatTarget===id?'active':''}" data-action="start-chat" data-val="${id}">
                     ${name} <span class="nearby-job">${msgCount}則</span></button>`;
             });
             nearbyHtml += '</div>';
@@ -514,16 +934,16 @@ class RimTownApp {
             if (isNearby) {
                 inputHtml = `<div class="chat-input-area">
                     <input type="text" id="chat-input" class="chat-input" placeholder="輸入訊息..."
-                        onkeydown="if(event.key==='Enter') app._sendFromInput()" ${this.chatSending?'disabled':''}>
-                    <button class="chat-send-btn" onclick="app._sendFromInput()" ${this.chatSending?'disabled':''}>${this.chatSending?'...':'送出'}</button></div>`;
+                        ${this.chatSending?'disabled':''}>
+                    <button class="chat-send-btn" data-action="send-chat" ${this.chatSending?'disabled':''}>${this.chatSending?'...':'送出'}</button></div>`;
             } else {
                 inputHtml = `<div class="chat-input-area"><p class="muted-text" style="padding:8px">📜 查看與${ta?.name||'對方'}的過去對話。前往他們的位置即可聊天。</p></div>`;
             }
         }
         // Archive actions bar
         let archiveBar = `<div class="chat-archive-bar">
-            <button class="btn-archive-view" onclick="app.showChatArchives()">歷史對話</button>
-            <button class="btn-archive-save" onclick="app.manualArchiveChat()">立即存檔</button>
+            <button class="btn-archive-view" data-action="show-archives">歷史對話</button>
+            <button class="btn-archive-save" data-action="manual-archive">立即存檔</button>
         </div>`;
 
         container.innerHTML = nearbyHtml + messagesHtml + inputHtml + archiveBar;
@@ -541,7 +961,7 @@ class RimTownApp {
     async renderChatArchiveList(container) {
         const archives = await this.getChatArchives();
         let html = `<div class="archive-header">
-            <button class="btn-back" onclick="app.activeTab='chat'; app.renderSidebar();">&larr; 返回聊天</button>
+            <button class="btn-back" data-action="back-to-chat">&larr; 返回聊天</button>
             <h3>聊天存檔</h3>
         </div>`;
         if (!archives.length) {
@@ -551,14 +971,14 @@ class RimTownApp {
             [...archives].reverse().forEach(a => {
                 const date = new Date(a.savedAt).toLocaleDateString();
                 html += `<div class="archive-item">
-                    <div class="archive-info" onclick="app.viewArchive(${a.id})">
+                    <div class="archive-info" data-action="view-archive" data-val="${a.id}">
                         <div class="archive-title">${a.gameClock} - ${a.playerName}</div>
                         <div class="archive-meta">${date} | ${a.messageCount}則訊息 | ${a.npcNames.length}位NPC</div>
                         <div class="archive-npcs">${a.npcNames.slice(0, 5).join(', ')}${a.npcNames.length > 5 ? '...' : ''}</div>
                     </div>
                     <div class="archive-actions">
-                        <button onclick="app.exportArchivedChat(${a.id})" title="匯出">匯出</button>
-                        <button onclick="app.deleteArchivedChat(${a.id})" title="刪除" class="btn-danger">刪除</button>
+                        <button data-action="export-archive" data-val="${a.id}" title="匯出">匯出</button>
+                        <button data-action="delete-archive" data-val="${a.id}" title="刪除" class="btn-danger">刪除</button>
                     </div>
                 </div>`;
             });
@@ -582,16 +1002,16 @@ class RimTownApp {
         if (!archive) { this._viewingArchive = null; this.renderChat(container); return; }
 
         let html = `<div class="archive-header">
-            <button class="btn-back" onclick="app._viewingArchive=null; app.activeTab='chat-archives'; app.renderSidebar();">&larr; 返回列表</button>
+            <button class="btn-back" data-action="back-to-archives">&larr; 返回列表</button>
             <h3>${archive.gameClock}</h3>
             <div class="archive-meta">${archive.playerName} | ${archive.messageCount}則訊息</div>
         </div>`;
 
         // NPC filter buttons
         html += '<div class="nearby-list" style="padding:4px 8px">';
-        html += `<button class="nearby-btn ${!this._archiveNpcFilter?'active':''}" onclick="app._archiveNpcFilter=null; app.renderSidebar();">All</button>`;
+        html += `<button class="nearby-btn ${!this._archiveNpcFilter?'active':''}" data-action="filter-archive-npc" data-val="">All</button>`;
         archive.npcNames.forEach(name => {
-            html += `<button class="nearby-btn history-btn ${this._archiveNpcFilter===name?'active':''}" onclick="app._archiveNpcFilter='${name.replace(/'/g,"\\'")}'; app.renderSidebar();">${name}</button>`;
+            html += `<button class="nearby-btn history-btn ${this._archiveNpcFilter===name?'active':''}" data-action="filter-archive-npc" data-val="${name}">${name}</button>`;
         });
         html += '</div>';
 
@@ -615,7 +1035,7 @@ class RimTownApp {
         html += '</div>';
 
         html += `<div class="chat-archive-bar">
-            <button class="btn-archive-save" onclick="app.exportArchivedChat(${archive.id})">匯出此對話記錄</button>
+            <button class="btn-archive-save" data-action="export-archive" data-val="${archive.id}">匯出此對話記錄</button>
         </div>`;
 
         container.innerHTML = html;
@@ -683,13 +1103,13 @@ class RimTownApp {
             const isSelected = this.selectedAgent === aid;
             const player = this.state.agents['player'];
             const sameLoc = player && player.current_location === agent.current_location;
-            html += `<div class="resident-card ${isSelected?'selected':''}" onclick="app.selectAgent('${aid}')">
+            html += `<div class="resident-card ${isSelected?'selected':''}" data-action="select-agent" data-val="${aid}">
                 <div class="resident-header">
                     <span class="resident-name"><span class="mood-indicator mood-${agent.mood_description}"></span>${agent.name}${sameLoc?'<span class="nearby-badge">附近</span>':''}</span>
                     <span class="resident-job">${agent.job?.title||'無業'}</span></div>
                 <div class="resident-status"><span>${agent.activity_label||agent.activity} @ ${agent.current_location.replace(/_/g,' ')}</span><span>${agent.mood_label||agent.mood_description} (${agent.mood})</span></div>
                 ${agent.current_thought?`<div style="font-size:0.7rem;color:#aaa;margin-top:4px;font-style:italic">「${agent.current_thought}」</div>`:''}
-                ${sameLoc?`<button class="chat-with-btn" onclick="event.stopPropagation();app.startChatWith('${aid}')">對話</button>`:''}</div>`;
+                ${sameLoc?`<button class="chat-with-btn" data-action="start-chat" data-val="${aid}">對話</button>`:''}</div>`;
         }
         container.innerHTML = html;
     }
@@ -706,7 +1126,7 @@ class RimTownApp {
         };
         const player = this.state.agents['player'];
         const sameLoc = player && player.current_location === agent.current_location && this.selectedAgent !== 'player';
-        const chatBtn = sameLoc ? `<button class="chat-with-btn" onclick="app.startChatWith('${this.selectedAgent}')">與${agent.name}對話</button>` : '';
+        const chatBtn = sameLoc ? `<button class="chat-with-btn" data-action="start-chat" data-val="${this.selectedAgent}">與${agent.name}對話</button>` : '';
         container.innerHTML = `<div class="detail-panel visible">
             <div class="detail-section"><h3>${agent.name}（${agent.age}歲）</h3>
                 <p style="font-size:0.8rem;color:var(--text-secondary)">${agent.job?.title||'無業'} | ${agent.mood_label||agent.mood_description}</p>
@@ -739,7 +1159,7 @@ class RimTownApp {
         if (npcConvos.length) {
             html += '<div class="npc-convo-section"><h4 style="padding:6px 10px;color:var(--accent);font-size:0.75rem;border-bottom:1px solid var(--border)">村民對話</h4>';
             npcConvos.slice(0, 8).forEach(c => {
-                html += `<div class="npc-convo-entry" onclick="this.classList.toggle('expanded')">
+                html += `<div class="npc-convo-entry" data-action="toggle-convo">
                     <div class="npc-convo-header"><span class="log-time">${c.time}</span><strong>${c.agentA}</strong> &amp; <strong>${c.agentB}</strong>
                     <span style="font-size:0.6rem;color:var(--text-muted);margin-left:4px">@ ${(c.location||'').replace(/_/g,' ')}</span></div>
                     <div class="npc-convo-summary">${c.summary}</div>
@@ -871,8 +1291,8 @@ class RimTownApp {
                     <span>${icon} ${resLabel}</span>
                     <span>×${Math.round(offer.amount)}</span>
                     <span>${offer.price}/個</span>
-                    <button class="trade-btn" onclick="app.executeTrade(${idx}, Math.min(5, ${offer.amount}))">${action}5</button>
-                    <button class="trade-btn" onclick="app.executeTrade(${idx}, ${offer.amount})">全${action}</button></div>`;
+                    <button class="trade-btn" data-action="trade" data-val="${idx},${Math.min(5, offer.amount)}">${action}5</button>
+                    <button class="trade-btn" data-action="trade" data-val="${idx},${offer.amount}">全${action}</button></div>`;
             });
             html += '</div></div>';
         } else {
@@ -904,7 +1324,7 @@ class RimTownApp {
                     <div class="build-name">${p.name}</div>
                     <div class="build-desc">${p.description}</div>
                     <div class="build-cost">${costStr}</div>
-                    <button class="build-btn" ${p.can_afford ? '' : 'disabled'} onclick="app.startBuilding('${p.key}')">建造</button></div>`;
+                    <button class="build-btn" ${p.can_afford ? '' : 'disabled'} data-action="build" data-val="${p.key}">建造</button></div>`;
             });
             html += '</div>';
         }
@@ -929,7 +1349,7 @@ class RimTownApp {
                 html += `<div class="research-option ${isCurrent ? 'active' : ''}">
                     <div class="build-name">${p.name}</div>
                     <div class="build-desc">${p.description}（消耗：${p.cost}）</div>
-                    <button class="build-btn" onclick="app.startResearch('${p.key}')" ${isCurrent?'disabled':''}>研究</button></div>`;
+                    <button class="build-btn" data-action="research" data-val="${p.key}" ${isCurrent?'disabled':''}>研究</button></div>`;
             });
             html += '</div>';
         }

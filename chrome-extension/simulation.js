@@ -1103,7 +1103,7 @@ class LLMClient {
             deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: this.model || 'deepseek-chat' },
             groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: this.model || 'llama-3.3-70b-versatile' },
             together: { url: 'https://api.together.xyz/v1/chat/completions', model: this.model || 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo' },
-            minimax: { url: 'https://api.minimax.chat/v1/text/chatcompletion_v2', model: this.model || 'MiniMax-Text-01' },
+            minimax: { url: 'https://api.minimaxi.com/v1/text/chatcompletion_v2', model: this.model || 'MiniMax-Text-01' },
         };
         const cfg = endpoints[this.provider];
         if (!cfg) throw new Error(`Unknown provider: ${this.provider}`);

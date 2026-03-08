@@ -10,7 +10,8 @@
     "https://generativelanguage.googleapis.com/*",
     "https://api.deepseek.com/*",
     "https://api.groq.com/*",
-    "https://api.together.xyz/*"
+    "https://api.together.xyz/*",
+    "https://api.minimaxi.com/*"
   ],
   "chrome_url_overrides": {
     "newtab": "index.html"
