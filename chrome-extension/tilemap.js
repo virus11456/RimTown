@@ -69,7 +69,7 @@ const TILE_COLORS = {
 
 // Building templates: [name, width, height, 2D array of tile IDs, doorX, doorY]
 // Each building has walls on perimeter, floor inside, and furniture
-const TILE_TILE_BUILDING_TEMPLATES = {
+const TILE_BUILDING_TEMPLATES = {
     tavern: {
         w:10, h:8, doorX:5, doorY:7,
         tiles: [
