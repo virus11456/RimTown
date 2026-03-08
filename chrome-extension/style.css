@@ -1,0 +1,880 @@
+/* RimTown - AI Town Simulation Styles */
+
+:root {
+    --bg-primary: #1a1a2e;
+    --bg-secondary: #16213e;
+    --bg-card: #0f3460;
+    --accent: #e94560;
+    --accent-light: #ff6b6b;
+    --text-primary: #eee;
+    --text-secondary: #aaa;
+    --text-muted: #666;
+    --border: #333;
+    --positive: #4ade80;
+    --negative: #f87171;
+    --warning: #fbbf24;
+    --info: #60a5fa;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    overflow: hidden;
+    height: 100vh;
+}
+
+/* Header */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 20px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    height: 48px;
+}
+
+.header h1 {
+    font-size: 1.2rem;
+    color: var(--accent);
+    letter-spacing: 2px;
+}
+
+.header-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 0.85rem;
+}
+
+.clock-display {
+    color: var(--warning);
+    font-family: monospace;
+    font-size: 0.9rem;
+}
+
+.controls {
+    display: flex;
+    gap: 8px;
+}
+
+.controls button {
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.controls button:hover {
+    background: var(--accent);
+}
+
+.controls button.active {
+    background: var(--accent);
+}
+
+/* Main Layout */
+.main-layout {
+    display: flex;
+    height: calc(100vh - 48px);
+}
+
+/* Town Map */
+.map-panel {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #0d1117;
+}
+
+.town-map {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.location {
+    position: absolute;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+    text-align: center;
+    min-width: 80px;
+}
+
+.location:hover {
+    transform: scale(1.1);
+    z-index: 10;
+    border-color: var(--accent);
+}
+
+.location.cat-work {
+    background: rgba(59, 130, 246, 0.3);
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+.location.cat-social {
+    background: rgba(168, 85, 247, 0.3);
+    border-color: rgba(168, 85, 247, 0.4);
+}
+
+.location.cat-residential {
+    background: rgba(34, 197, 94, 0.3);
+    border-color: rgba(34, 197, 94, 0.4);
+}
+
+.location.cat-nature {
+    background: rgba(16, 185, 129, 0.3);
+    border-color: rgba(16, 185, 129, 0.4);
+}
+
+.location-name {
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+.location-count {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+/* Agent dots on the map */
+.agent-dot {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.5s ease;
+    z-index: 5;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.agent-dot:hover {
+    transform: scale(1.8);
+    z-index: 20;
+}
+
+.agent-dot .tooltip {
+    display: none;
+    position: absolute;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-secondary);
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    font-size: 0.7rem;
+    border: 1px solid var(--border);
+    pointer-events: none;
+}
+
+.agent-dot:hover .tooltip {
+    display: block;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 360px;
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.sidebar-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+}
+
+.sidebar-tabs button {
+    flex: 1;
+    padding: 8px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.8rem;
+    border-bottom: 2px solid transparent;
+}
+
+.sidebar-tabs button.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+/* Resident List */
+.resident-card {
+    background: var(--bg-card);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.resident-card:hover {
+    border-color: var(--accent);
+}
+
+.resident-card.selected {
+    border-color: var(--accent);
+    background: rgba(233, 69, 96, 0.1);
+}
+
+.resident-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.resident-name {
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.resident-job {
+    font-size: 0.7rem;
+    color: var(--info);
+}
+
+.resident-status {
+    display: flex;
+    gap: 8px;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+.mood-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+}
+
+.mood-ecstatic, .mood-happy { background: var(--positive); }
+.mood-content { background: var(--warning); }
+.mood-unhappy, .mood-stressed { background: #f97316; }
+.mood-miserable { background: var(--negative); }
+
+/* Needs Bars */
+.needs-bar {
+    display: flex;
+    align-items: center;
+    margin: 3px 0;
+    font-size: 0.65rem;
+}
+
+.needs-bar label {
+    width: 70px;
+    color: var(--text-secondary);
+}
+
+.needs-bar .bar {
+    flex: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.needs-bar .bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.bar-fill.high { background: var(--positive); }
+.bar-fill.medium { background: var(--warning); }
+.bar-fill.low { background: var(--negative); }
+
+/* Agent Detail Panel */
+.detail-panel {
+    display: none;
+}
+
+.detail-panel.visible {
+    display: block;
+}
+
+.detail-section {
+    margin-bottom: 12px;
+}
+
+.detail-section h3 {
+    font-size: 0.8rem;
+    color: var(--accent);
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 4px;
+}
+
+.trait-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba(233, 69, 96, 0.2);
+    border-radius: 10px;
+    font-size: 0.7rem;
+    margin: 2px;
+    color: var(--accent-light);
+}
+
+.relationship-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.memory-item {
+    padding: 4px 0;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.memory-time {
+    color: var(--text-muted);
+    font-size: 0.65rem;
+}
+
+/* Message Log */
+.log-panel {
+    display: none;
+}
+
+.log-panel.visible {
+    display: block;
+}
+
+.log-entry {
+    padding: 4px 0;
+    font-size: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.log-entry .log-time {
+    color: var(--text-muted);
+    font-size: 0.65rem;
+    margin-right: 6px;
+}
+
+.log-entry.type-conversation { border-left: 2px solid var(--info); padding-left: 6px; }
+.log-entry.type-gossip { border-left: 2px solid var(--warning); padding-left: 6px; }
+.log-entry.type-event { border-left: 2px solid var(--accent); padding-left: 6px; }
+
+/* Events Panel */
+.event-card {
+    background: rgba(233, 69, 96, 0.1);
+    border: 1px solid rgba(233, 69, 96, 0.3);
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+}
+
+.event-card.severity-minor { border-color: var(--info); background: rgba(96, 165, 250, 0.1); }
+.event-card.severity-moderate { border-color: var(--warning); background: rgba(251, 191, 36, 0.1); }
+.event-card.severity-major { border-color: var(--negative); background: rgba(248, 113, 113, 0.1); }
+
+.event-type-badge {
+    display: inline-block;
+    font-size: 0.6rem;
+    padding: 1px 6px;
+    border-radius: 8px;
+    margin-left: 6px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+.event-type-badge.type-raid { background: var(--negative); color: #fff; }
+.event-type-badge.type-chain { background: var(--warning); color: #000; }
+.event-type-badge.type-departure { background: var(--info); color: #fff; }
+.event-type-badge.type-arrival { background: var(--positive); color: #000; }
+.event-type-badge.type-random { background: var(--text-muted); color: #fff; }
+
+.travelling-section {
+    background: rgba(96, 165, 250, 0.1);
+    border: 1px solid rgba(96, 165, 250, 0.3);
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 8px;
+    font-size: 0.8rem;
+}
+.travelling-section h4 {
+    color: var(--info);
+    font-size: 0.75rem;
+    margin-bottom: 4px;
+}
+.travelling-item {
+    padding: 3px 0;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.chain-section {
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 8px;
+    font-size: 0.8rem;
+}
+.chain-section h4 {
+    color: var(--warning);
+    font-size: 0.75rem;
+    margin-bottom: 4px;
+}
+
+.resident-card.travelling {
+    opacity: 0.5;
+    border-left: 3px solid var(--info);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* Thought bubble */
+.thought-bubble {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 0.6rem;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 15;
+}
+
+.thought-bubble.visible {
+    opacity: 1;
+}
+
+/* ===== Player & Chat Styles ===== */
+
+/* Player dot on map */
+.player-dot {
+    z-index: 8 !important;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+    animation: player-pulse 2s ease-in-out infinite;
+}
+
+@keyframes player-pulse {
+    0%, 100% { box-shadow: 0 0 6px rgba(255, 255, 255, 0.4); }
+    50% { box-shadow: 0 0 14px rgba(255, 255, 255, 0.8); }
+}
+
+/* Highlight location where player is */
+.location.player-here {
+    border-color: #fff !important;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+/* Nearby badge on resident cards */
+.nearby-badge {
+    display: inline-block;
+    background: var(--positive);
+    color: #000;
+    font-size: 0.55rem;
+    padding: 1px 6px;
+    border-radius: 8px;
+    margin-left: 6px;
+    font-weight: bold;
+    vertical-align: middle;
+}
+
+/* Chat-with button on cards */
+.chat-with-btn {
+    margin-top: 6px;
+    padding: 4px 12px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+.chat-with-btn:hover {
+    background: var(--accent-light);
+}
+
+/* Chat panel */
+.chat-location {
+    padding: 8px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+}
+
+.chat-nearby {
+    padding: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.nearby-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+
+.nearby-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.nearby-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    border-radius: 16px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.2s;
+}
+.nearby-btn:hover {
+    border-color: var(--accent);
+}
+.nearby-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+.nearby-job {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+}
+.nearby-btn.active .nearby-job {
+    color: rgba(255,255,255,0.7);
+}
+
+/* Chat messages */
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    min-height: 200px;
+    max-height: calc(100vh - 320px);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.chat-hint {
+    text-align: center;
+    padding: 20px;
+}
+
+.chat-bubble {
+    max-width: 85%;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    word-wrap: break-word;
+}
+
+.chat-player {
+    align-self: flex-end;
+    background: var(--accent);
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+.chat-npc {
+    align-self: flex-start;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border-bottom-left-radius: 4px;
+}
+
+.chat-system {
+    align-self: center;
+    background: rgba(251, 191, 36, 0.15);
+    color: var(--warning);
+    font-size: 0.75rem;
+    text-align: center;
+}
+
+.chat-speaker {
+    font-size: 0.65rem;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 2px;
+}
+.chat-player .chat-speaker {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.chat-time {
+    font-size: 0.55rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: 2px;
+    text-align: right;
+}
+
+/* Chat input area */
+.chat-input-area {
+    display: flex;
+    gap: 6px;
+    padding: 8px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-secondary);
+}
+
+.chat-input {
+    flex: 1;
+    padding: 8px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    outline: none;
+}
+.chat-input:focus {
+    border-color: var(--accent);
+}
+.chat-input::placeholder {
+    color: var(--text-muted);
+}
+
+.chat-send-btn {
+    padding: 8px 16px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: bold;
+    min-width: 60px;
+}
+.chat-send-btn:hover {
+    background: var(--accent-light);
+}
+.chat-send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.muted-text {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+/* ===== Skills Display ===== */
+.skills-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.skill-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    padding: 2px 0;
+}
+
+.skill-name {
+    width: 80px;
+    color: var(--text-secondary);
+    text-transform: capitalize;
+}
+
+.skill-passion {
+    width: 30px;
+    text-align: center;
+    font-size: 0.6rem;
+}
+
+.passion-burning .skill-passion { color: #f59e0b; }
+.passion-major .skill-passion { color: #f97316; }
+.passion-minor .skill-passion { color: #60a5fa; }
+.passion-incapable .skill-name { color: var(--text-muted); text-decoration: line-through; }
+.passion-incapable .skill-passion { color: var(--negative); }
+
+.skill-bar {
+    flex: 1;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.skill-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--info);
+    transition: width 0.5s ease;
+}
+
+.passion-burning .skill-bar-fill { background: #f59e0b; }
+.passion-major .skill-bar-fill { background: #f97316; }
+.passion-minor .skill-bar-fill { background: #60a5fa; }
+
+.skill-level {
+    width: 18px;
+    text-align: right;
+    font-weight: bold;
+    font-size: 0.7rem;
+}
+
+.passion-incapable .skill-level { color: var(--text-muted); }
+
+/* Skill up log entries */
+.log-entry.type-skill_up { border-left: 2px solid #f59e0b; padding-left: 6px; }
+
+/* Player chat log entries */
+.log-entry.type-player_chat { border-left: 2px solid var(--positive); padding-left: 6px; }
+.log-entry.type-player_move { border-left: 2px solid #fff; padding-left: 6px; }
+
+/* New game / terrain */
+.btn-new-game {
+    background: var(--bg-card) !important;
+    border-color: var(--warning) !important;
+    color: var(--warning) !important;
+}
+.btn-new-game:hover {
+    background: var(--warning) !important;
+    color: #000 !important;
+}
+
+.terrain-display {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-family: monospace;
+}
+
+/* ===== Settings Modal ===== */
+.modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+.modal.hidden { display: none; }
+.modal-content {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    width: 360px;
+    max-width: 90vw;
+}
+.modal-content h2 {
+    color: var(--accent);
+    margin-bottom: 16px;
+    font-size: 1.1rem;
+}
+.setting-group {
+    margin-bottom: 12px;
+}
+.setting-group label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+.setting-group select,
+.setting-group input {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    outline: none;
+}
+.setting-group select:focus,
+.setting-group input:focus {
+    border-color: var(--accent);
+}
+.modal-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    justify-content: flex-end;
+}
+.modal-buttons button {
+    padding: 8px 20px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+.modal-buttons button:hover { background: var(--accent); }
+.btn-accent {
+    background: var(--accent) !important;
+    border-color: var(--accent) !important;
+}
+.btn-settings {
+    background: var(--bg-card) !important;
+    border-color: var(--text-muted) !important;
+    color: var(--text-secondary) !important;
+}
+.btn-settings:hover {
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+}
+
+/* Raid/departure log entry styles */
+.log-entry.type-raid { border-left: 2px solid var(--negative); padding-left: 6px; }
+.log-entry.type-departure { border-left: 2px solid var(--info); padding-left: 6px; }
+.log-entry.type-arrival { border-left: 2px solid var(--positive); padding-left: 6px; }
+.log-entry.type-immigration { border-left: 2px solid var(--positive); padding-left: 6px; }
+.log-entry.type-chain_event { border-left: 2px solid var(--warning); padding-left: 6px; }

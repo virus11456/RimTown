@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RimTown - AI Town Simulation</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Settings</h2>
+            <div class="setting-group">
+                <label>LLM Provider</label>
+                <select id="llm-provider">
+                    <option value="none">None (Mock Conversations)</option>
+                    <option value="anthropic">Anthropic (Claude)</option>
+                    <option value="openai">OpenAI (GPT)</option>
+                    <option value="gemini">Google (Gemini)</option>
+                    <option value="deepseek">DeepSeek</option>
+                    <option value="groq">Groq</option>
+                    <option value="together">Together AI</option>
+                </select>
+            </div>
+            <div class="setting-group" id="api-key-group">
+                <label>API Key</label>
+                <input type="password" id="llm-api-key" placeholder="Enter your API key...">
+            </div>
+            <div class="setting-group">
+                <label>Simulation Speed</label>
+                <select id="sim-speed">
+                    <option value="3000">Slow (3s)</option>
+                    <option value="2000" selected>Normal (2s)</option>
+                    <option value="1000">Fast (1s)</option>
+                    <option value="500">Very Fast (0.5s)</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button id="settings-save" class="btn-accent">Save</button>
+                <button id="settings-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+        <h1>RIMTOWN</h1>
+        <div class="header-info">
+            <span id="population-count">Population: --</span>
+            <span id="clock-display" class="clock-display">Loading...</span>
+            <span id="terrain-display" class="terrain-display"></span>
+            <div class="controls">
+                <button id="btn-new-game" class="btn-new-game">New Map</button>
+                <button id="btn-pause">Pause</button>
+                <button id="btn-resume" class="active">Play</button>
+                <button id="btn-settings" class="btn-settings">Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="main-layout">
+        <!-- Town Map -->
+        <div class="map-panel">
+            <div class="town-map" id="town-map">
+                <!-- Locations and agents rendered dynamically -->
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-tabs">
+                <button data-tab="residents" class="active">Residents</button>
+                <button data-tab="chat">Chat</button>
+                <button data-tab="detail">Detail</button>
+                <button data-tab="log">Log</button>
+                <button data-tab="events">Events</button>
+            </div>
+            <div class="sidebar-content" id="sidebar-content">
+                <!-- Content rendered dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <script src="simulation.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
