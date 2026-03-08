@@ -13,7 +13,7 @@ from rimtown.core.world import World
 from rimtown.llm.client import create_llm_client
 from rimtown.social.conversation import ConversationEngine
 from rimtown.social.gossip import GossipNetwork
-from rimtown.town.map import create_default_town
+from rimtown.town.map import create_default_town, generate_random_town
 from rimtown.web.server import WebServer
 
 load_dotenv()
@@ -49,9 +49,18 @@ async def main():
     town_config = load_town_config()
     tick_interval = town_config.get("simulation", {}).get("tick_interval_seconds", 2.0)
 
-    # Create world
+    # Create world with map
     world = World()
-    world.town_map = create_default_town()
+    map_mode = os.getenv("MAP_MODE", town_config.get("settings", {}).get("map_mode", "random"))
+    map_seed = os.getenv("MAP_SEED", "")
+
+    if map_mode == "fixed":
+        world.town_map = create_default_town()
+        logger.info("Using fixed default town map")
+    else:
+        seed = int(map_seed) if map_seed.isdigit() else None
+        world.town_map = generate_random_town(seed)
+        logger.info(f"Generated random town map (seed: {world.town_map.seed}, terrain: {world.town_map.terrain})")
 
     # Setup LLM client and engines
     llm_client = create_llm_client()

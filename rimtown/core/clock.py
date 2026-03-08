@@ -80,6 +80,13 @@ class GameClock:
     def short_time(self) -> str:
         return f"{self.hour:02d}:{self.minute:02d}"
 
+    def reset(self):
+        self.day = 1
+        self.hour = 6
+        self.minute = 0
+        self.season = Season.SPRING
+        self.year = 1
+
     def to_dict(self) -> dict:
         return {
             "day": self.day,

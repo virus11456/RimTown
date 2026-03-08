@@ -659,3 +659,20 @@ body {
 /* Player chat log entries */
 .log-entry.type-player_chat { border-left: 2px solid var(--positive); padding-left: 6px; }
 .log-entry.type-player_move { border-left: 2px solid #fff; padding-left: 6px; }
+
+/* New game / terrain */
+.btn-new-game {
+    background: var(--bg-card) !important;
+    border-color: var(--warning) !important;
+    color: var(--warning) !important;
+}
+.btn-new-game:hover {
+    background: var(--warning) !important;
+    color: #000 !important;
+}
+
+.terrain-display {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-family: monospace;
+}

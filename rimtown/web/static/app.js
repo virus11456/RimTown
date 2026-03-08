@@ -80,6 +80,31 @@ class RimTownApp {
                 this.ws.send(JSON.stringify({ action: 'resume' }));
             }
         });
+        document.getElementById('btn-new-game').addEventListener('click', () => {
+            if (confirm('Generate a new random town? All progress will be reset.')) {
+                this.newGame();
+            }
+        });
+    }
+
+    async newGame(seed) {
+        try {
+            const body = seed !== undefined ? JSON.stringify({ seed }) : '{}';
+            const res = await fetch('/api/new_game', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body,
+            });
+            const data = await res.json();
+            if (data.ok) {
+                this.chatTarget = null;
+                this.selectedAgent = null;
+                this.agentColors = {};
+                await this.fetchState();
+            }
+        } catch (e) {
+            console.error('New game error:', e);
+        }
     }
 
     assignAgentColor(agentId) {
@@ -177,6 +202,14 @@ class RimTownApp {
 
         const agentCount = Object.keys(this.state.agents).length;
         document.getElementById('population-count').textContent = `Population: ${agentCount}`;
+
+        // Show terrain info
+        const terrain = this.state.locations?.terrain || '';
+        const seed = this.state.locations?.seed ?? '';
+        const terrainEl = document.getElementById('terrain-display');
+        if (terrainEl && terrain) {
+            terrainEl.textContent = `${terrain} #${seed}`;
+        }
     }
 
     renderMap() {

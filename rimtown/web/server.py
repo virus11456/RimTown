@@ -37,6 +37,7 @@ class WebServer:
         self.app.router.add_post("/api/player/move", self._handle_player_move)
         self.app.router.add_post("/api/player/chat", self._handle_player_chat)
         self.app.router.add_get("/api/player/nearby", self._handle_player_nearby)
+        self.app.router.add_post("/api/new_game", self._handle_new_game)
         self.app.router.add_static("/static", STATIC_DIR)
 
     async def _handle_index(self, request: web.Request) -> web.Response:
@@ -135,6 +136,52 @@ class WebServer:
         return web.json_response({
             "location": player.current_location,
             "agents": nearby,
+        })
+
+    async def _handle_new_game(self, request: web.Request) -> web.Response:
+        """Regenerate the town with a new random map."""
+        from rimtown.town.map import generate_random_town
+        from rimtown.config.loader import load_residents
+        from rimtown.agents.player import PlayerAgent
+
+        data = await request.json() if request.content_length else {}
+        seed = data.get("seed")  # Optional seed
+        if seed is not None:
+            seed = int(seed)
+
+        # Generate new map
+        self.world.town_map = generate_random_town(seed)
+
+        # Reset all agents to starting locations
+        self.world.agents.clear()
+        self.world.message_log.clear()
+        self.world.tick_count = 0
+        self.world.clock.reset()
+
+        # Reload residents
+        residents = load_residents()
+        for agent in residents:
+            # Assign home to a random residential location
+            res_locs = list(self.world.town_map.get_locations_by_category("residential"))
+            if res_locs:
+                import random
+                home = random.choice(res_locs).location_id
+                agent.home_location = home
+                agent.current_location = home
+            self.world.add_agent(agent)
+
+        # Recreate player
+        player = PlayerAgent(name="Traveler")
+        self.world.add_agent(player)
+
+        self.world.log_message("event", f"New game started! Terrain: {self.world.town_map.terrain}, Seed: {self.world.town_map.seed}")
+
+        logger.info(f"New game: seed={self.world.town_map.seed}, terrain={self.world.town_map.terrain}")
+        return web.json_response({
+            "ok": True,
+            "seed": self.world.town_map.seed,
+            "terrain": self.world.town_map.terrain,
+            "location_count": len(self.world.town_map.locations),
         })
 
     def _get_nearby_agents(self, player) -> list[dict]:
