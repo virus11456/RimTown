@@ -1683,6 +1683,185 @@ class World {
             this.addAgent(agent);
         });
     }
+
+    // --- Save / Load ---
+    serialize() {
+        const serializeAgent = (a) => ({
+            id:a.agentId, name:a.name, age:a.age, isPlayer:a.isPlayer,
+            jobKey: a.job?.key || null,
+            homeLocation: a.homeLocation, currentLocation: a.currentLocation,
+            mood: a.mood, activity: a.activity, currentThought: a.currentThought,
+            personality: { traits:a.personality.traits, background:a.personality.background, values:a.personality.values },
+            needs: { hunger:a.needs.hunger, rest:a.needs.rest, social:a.needs.social, comfort:a.needs.comfort, recreation:a.needs.recreation, beauty:a.needs.beauty },
+            skills: Object.fromEntries(Object.entries(a.skills.skills).map(([k,s])=>[k,{xp:s.xp,passion:s.passion}])),
+            relationships: Object.fromEntries(Object.entries(a.relationships.relationships).map(([k,r])=>[k,{
+                targetId:r.targetId, targetName:r.targetName, affinity:r.affinity, trust:r.trust,
+                romanticInterest:r.romanticInterest, interactionCount:r.interactionCount,
+                lastInteractionTick:r.lastInteractionTick, sharedMemories:r.sharedMemories.slice(-10)
+            }])),
+            memory: a.memory.entries.slice(-50).map(m=>({tick:m.tick,timeStr:m.timeStr,category:m.category,content:m.content,importance:m.importance,relatedAgents:m.relatedAgents})),
+            chatHistory: a.isPlayer ? (a.chatHistory||[]).slice(-50) : undefined,
+            _lastInteractionTick: a._lastInteractionTick,
+        });
+        return {
+            version: 2,
+            savedAt: new Date().toISOString(),
+            clock: { day:this.clock.day, hour:this.clock.hour, minute:this.clock.minute, season:this.clock.season, year:this.clock.year },
+            tickCount: this.tickCount,
+            paused: this.paused,
+            messageLog: this.messageLog.slice(-100),
+            townMap: this.townMap ? { seed:this.townMap.seed, terrain:this.townMap.terrain, width:this.townMap.width, height:this.townMap.height,
+                locations: Object.fromEntries(Object.entries(this.townMap.locations).map(([k,v])=>[k,{id:v.id,name:v.name,description:v.description,x:v.x,y:v.y,category:v.category,capacity:v.capacity}])) } : null,
+            agents: Object.fromEntries(Object.entries(this.agents).map(([k,a])=>[k,serializeAgent(a)])),
+            gossip: this.gossipNetwork.activeGossip.slice(-15),
+            events: {
+                eventLog: this.events.eventLog.slice(-20),
+                activeEffects: {...this.events.activeEffects},
+                conversationTopics: [...this.events.conversationTopics],
+                _activeChains: this.events._activeChains.map(c=>({...c})),
+                _travellingAgents: this.events._travellingAgents.map(t=>({agentData:{...t.agentData},returnTick:t.returnTick,reason:t.reason})),
+                _daysSinceRaid: this.events._daysSinceRaid,
+                _daysSinceChain: this.events._daysSinceChain,
+                _daysSinceDeparture: this.events._daysSinceDeparture,
+                _usedImmigrantNames: [...this.events._usedImmigrantNames],
+            },
+            stockpile: { resources:{...this.stockpile.resources}, history:this.stockpile.history.slice(-50) },
+            buildings: { projects:this.buildings.projects.map(p=>({...p})), completed:this.buildings.completed.map(p=>({...p})), activeEffects:{...this.buildings.activeEffects}, _counter:this.buildings._counter },
+            trade: { merchant:this.trade.merchant?{...this.trade.merchant,offers:this.trade.merchant.offers.map(o=>({...o}))}:null, _daysSince:this.trade._daysSince, tradeHistory:this.trade.tradeHistory.slice(-10) },
+            research: { projects:Object.fromEntries(Object.entries(this.research.projects).map(([k,p])=>[k,{...p}])), current:this.research.current },
+            workOrders: { orders:this.workOrders.orders.map(o=>({...o})), _counter:this.workOrders._counter },
+            news: { bulletins:this.news.bulletins.map(b=>({...b})), activeModifiers:{...this.news.activeModifiers}, _lastPublishDay:this.news._lastPublishDay },
+        };
+    }
+
+    loadSave(data) {
+        if (!data || !data.version) return false;
+        try {
+            // Clock
+            this.clock.day=data.clock.day; this.clock.hour=data.clock.hour; this.clock.minute=data.clock.minute;
+            this.clock.season=data.clock.season; this.clock.year=data.clock.year;
+            this.tickCount = data.tickCount;
+            this.paused = data.paused || false;
+            this.messageLog = data.messageLog || [];
+
+            // Town map
+            if (data.townMap) {
+                this.townMap = new TownMap(data.townMap.seed);
+                this.townMap.terrain = data.townMap.terrain;
+                this.townMap.width = data.townMap.width; this.townMap.height = data.townMap.height;
+                for (const [k,v] of Object.entries(data.townMap.locations)) this.townMap.addLocation(v);
+            }
+
+            // Agents
+            this.agents = {};
+            for (const [id, ad] of Object.entries(data.agents)) {
+                const personality = new Personality(ad.personality.traits, ad.personality.background, ad.personality.values);
+                const job = ad.jobKey ? new Job(ad.jobKey) : null;
+                let agent;
+                if (ad.isPlayer) {
+                    agent = new PlayerAgent(ad.name, ad.age);
+                    agent.chatHistory = ad.chatHistory || [];
+                } else {
+                    agent = new Agent(id, ad.name, ad.age, personality, job, ad.homeLocation);
+                }
+                agent.currentLocation = ad.currentLocation;
+                agent.mood = ad.mood; agent.activity = ad.activity;
+                agent.currentThought = ad.currentThought || '';
+                agent._lastInteractionTick = ad._lastInteractionTick || 0;
+                // Needs
+                if (ad.needs) { Object.assign(agent.needs, ad.needs); }
+                // Skills
+                if (ad.skills) {
+                    for (const [sk,sv] of Object.entries(ad.skills)) {
+                        const s = agent.skills.get(sk);
+                        if (s) { s.xp = sv.xp; s.passion = sv.passion; }
+                    }
+                }
+                // Relationships
+                if (ad.relationships) {
+                    for (const [rk,rv] of Object.entries(ad.relationships)) {
+                        const rel = agent.relationships.getOrCreate(rv.targetId, rv.targetName);
+                        rel.affinity = rv.affinity; rel.trust = rv.trust;
+                        rel.romanticInterest = rv.romanticInterest;
+                        rel.interactionCount = rv.interactionCount;
+                        rel.lastInteractionTick = rv.lastInteractionTick;
+                        rel.sharedMemories = rv.sharedMemories || [];
+                    }
+                }
+                // Memory
+                if (ad.memory) {
+                    ad.memory.forEach(m => agent.memory.add(m.tick, m.timeStr, m.category, m.content, m.importance, m.relatedAgents));
+                }
+                this.agents[id] = agent;
+            }
+
+            // Gossip
+            this.gossipNetwork = new GossipNetwork();
+            this.gossipNetwork.activeGossip = data.gossip || [];
+
+            // Events
+            this.events = new EventSystem();
+            if (data.events) {
+                this.events.eventLog = data.events.eventLog || [];
+                this.events.activeEffects = data.events.activeEffects || {};
+                this.events.conversationTopics = data.events.conversationTopics || [];
+                this.events._activeChains = data.events._activeChains || [];
+                this.events._travellingAgents = data.events._travellingAgents || [];
+                this.events._daysSinceRaid = data.events._daysSinceRaid ?? 5;
+                this.events._daysSinceChain = data.events._daysSinceChain ?? 5;
+                this.events._daysSinceDeparture = data.events._daysSinceDeparture ?? 3;
+                this.events._usedImmigrantNames = new Set(data.events._usedImmigrantNames || []);
+            }
+
+            // Stockpile
+            this.stockpile = new Stockpile();
+            if (data.stockpile) { this.stockpile.resources = {...data.stockpile.resources}; this.stockpile.history = data.stockpile.history || []; }
+
+            // Buildings
+            this.buildings = new BuildingManager();
+            if (data.buildings) {
+                this.buildings.projects = data.buildings.projects || [];
+                this.buildings.completed = data.buildings.completed || [];
+                this.buildings.activeEffects = data.buildings.activeEffects || {};
+                this.buildings._counter = data.buildings._counter || 0;
+            }
+
+            // Trade
+            this.trade = new TradeManager();
+            if (data.trade) {
+                this.trade.merchant = data.trade.merchant;
+                this.trade._daysSince = data.trade._daysSince || 0;
+                this.trade.tradeHistory = data.trade.tradeHistory || [];
+            }
+
+            // Research
+            this.research = new ResearchManager();
+            if (data.research) {
+                for (const [k,p] of Object.entries(data.research.projects)) {
+                    if (this.research.projects[k]) Object.assign(this.research.projects[k], p);
+                }
+                this.research.current = data.research.current;
+            }
+
+            // Work orders
+            this.workOrders = new WorkOrderManager();
+            if (data.workOrders) { this.workOrders.orders = data.workOrders.orders || []; this.workOrders._counter = data.workOrders._counter || 0; }
+
+            // News
+            this.news = new NewsSystem();
+            if (data.news) {
+                this.news.bulletins = data.news.bulletins || [];
+                this.news.activeModifiers = data.news.activeModifiers || {};
+                this.news._lastPublishDay = data.news._lastPublishDay || 0;
+            }
+
+            this.logMessage('system', 'Game loaded successfully!');
+            return true;
+        } catch(e) {
+            console.error('Failed to load save:', e);
+            return false;
+        }
+    }
 }
 
 // --- Utility Functions ---

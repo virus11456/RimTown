@@ -22,7 +22,10 @@ class RimTownApp {
 
     async init() {
         await this.loadSettings();
-        this.world.reset();
+        const loaded = await this.tryLoadGame();
+        if (!loaded) {
+            this.world.reset();
+        }
         if (this.llmClient) {
             this.world.conversationEngine = new ConversationEngine(this.llmClient);
         }
@@ -31,6 +34,7 @@ class RimTownApp {
         this.setupControlListeners();
         this.setupSettingsListeners();
         this.startSimulation();
+        this.setupAutoSave();
         this.render();
     }
 
@@ -101,9 +105,17 @@ class RimTownApp {
                 if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
                 this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
                 this.state = this.world.getState();
+                this.deleteSave();
                 this.render();
             }
         });
+        document.getElementById('btn-save').addEventListener('click', async () => {
+            await this.saveGame();
+            this.state = this.world.getState();
+            this.renderSidebar();
+        });
+        document.getElementById('btn-export').addEventListener('click', () => this.exportSave());
+        document.getElementById('btn-import').addEventListener('click', () => this.importSave());
     }
 
     setupSettingsListeners() {
@@ -128,6 +140,99 @@ class RimTownApp {
         document.getElementById('settings-cancel').addEventListener('click', () => {
             document.getElementById('settings-modal').classList.add('hidden');
         });
+    }
+
+    // --- Save / Load ---
+    async saveGame() {
+        try {
+            const saveData = this.world.serialize();
+            const json = JSON.stringify(saveData);
+            if (typeof chrome !== 'undefined' && chrome.storage) {
+                await chrome.storage.local.set({ rimtown_save: json });
+            } else {
+                localStorage.setItem('rimtown_save', json);
+            }
+            this.world.logMessage('system', 'Game saved.');
+            return true;
+        } catch(e) { console.error('Save failed:', e); return false; }
+    }
+
+    async tryLoadGame() {
+        try {
+            let json = null;
+            if (typeof chrome !== 'undefined' && chrome.storage) {
+                const data = await chrome.storage.local.get(['rimtown_save']);
+                json = data.rimtown_save;
+            } else {
+                json = localStorage.getItem('rimtown_save');
+            }
+            if (!json) return false;
+            const saveData = JSON.parse(json);
+            return this.world.loadSave(saveData);
+        } catch(e) { console.error('Load failed:', e); return false; }
+    }
+
+    async deleteSave() {
+        try {
+            if (typeof chrome !== 'undefined' && chrome.storage) {
+                await chrome.storage.local.remove('rimtown_save');
+            } else {
+                localStorage.removeItem('rimtown_save');
+            }
+        } catch(e) {}
+    }
+
+    setupAutoSave() {
+        // Auto-save every 60 seconds
+        this._autoSaveInterval = setInterval(() => {
+            if (!this.world.paused) this.saveGame();
+        }, 60000);
+        // Also save when tab is closing
+        window.addEventListener('beforeunload', () => {
+            try {
+                const json = JSON.stringify(this.world.serialize());
+                if (typeof chrome !== 'undefined' && chrome.storage) {
+                    chrome.storage.local.set({ rimtown_save: json });
+                } else {
+                    localStorage.setItem('rimtown_save', json);
+                }
+            } catch(e) {}
+        });
+    }
+
+    async exportSave() {
+        const saveData = this.world.serialize();
+        const json = JSON.stringify(saveData, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `rimtown_save_${saveData.clock.season}_Y${saveData.clock.year}D${saveData.clock.day}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    importSave() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+                const text = await file.text();
+                const saveData = JSON.parse(text);
+                if (this.world.loadSave(saveData)) {
+                    if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                    this.state = this.world.getState();
+                    this.render();
+                    await this.saveGame();
+                } else {
+                    alert('Failed to load save file.');
+                }
+            } catch(err) { alert('Invalid save file: ' + err.message); }
+        };
+        input.click();
     }
 
     assignAgentColor(agentId) {

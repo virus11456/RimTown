@@ -16,12 +16,12 @@
     "newtab": "index.html"
   },
   "icons": {
-    "16": "icons/icon16.svg",
-    "48": "icons/icon48.svg",
-    "128": "icons/icon128.svg"
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   },
   "action": {
-    "default_icon": "icons/icon48.svg",
+    "default_icon": "icons/icon48.png",
     "default_title": "RimTown"
   }
 }
