@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RimTown - AI Town Simulation</title>
+    <title>邊境鎮 - AI 小鎮模擬</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <!-- Settings Modal -->
     <div id="settings-modal" class="modal hidden">
         <div class="modal-content">
-            <h2>Settings</h2>
+            <h2>設定</h2>
             <div class="setting-group">
-                <label>LLM Provider</label>
+                <label>AI 語言模型</label>
                 <select id="llm-provider">
-                    <option value="none">None (Mock Conversations)</option>
+                    <option value="none">無（模擬對話）</option>
                     <option value="anthropic">Anthropic (Claude)</option>
                     <option value="openai">OpenAI (GPT)</option>
                     <option value="gemini">Google (Gemini)</option>
@@ -24,40 +24,40 @@
                 </select>
             </div>
             <div class="setting-group" id="api-key-group">
-                <label>API Key</label>
-                <input type="password" id="llm-api-key" placeholder="Enter your API key...">
+                <label>API 金鑰</label>
+                <input type="password" id="llm-api-key" placeholder="輸入你的 API 金鑰...">
             </div>
             <div class="setting-group">
-                <label>Simulation Speed</label>
+                <label>模擬速度</label>
                 <select id="sim-speed">
-                    <option value="3000">Slow (3s)</option>
-                    <option value="2000" selected>Normal (2s)</option>
-                    <option value="1000">Fast (1s)</option>
-                    <option value="500">Very Fast (0.5s)</option>
+                    <option value="3000">慢速（3秒）</option>
+                    <option value="2000" selected>正常（2秒）</option>
+                    <option value="1000">快速（1秒）</option>
+                    <option value="500">極快（0.5秒）</option>
                 </select>
             </div>
             <div class="modal-buttons">
-                <button id="settings-save" class="btn-accent">Save</button>
-                <button id="settings-cancel">Cancel</button>
+                <button id="settings-save" class="btn-accent">儲存</button>
+                <button id="settings-cancel">取消</button>
             </div>
         </div>
     </div>
 
     <!-- Header -->
     <div class="header">
-        <h1>RIMTOWN</h1>
+        <h1>邊境鎮</h1>
         <div class="header-info">
-            <span id="population-count">Population: --</span>
-            <span id="clock-display" class="clock-display">Loading...</span>
+            <span id="population-count">人口：--</span>
+            <span id="clock-display" class="clock-display">載入中...</span>
             <span id="terrain-display" class="terrain-display"></span>
             <div class="controls">
-                <button id="btn-new-game" class="btn-new-game">New Map</button>
-                <button id="btn-save" class="btn-save">Save</button>
-                <button id="btn-export" class="btn-export" title="Export save to file">Export</button>
-                <button id="btn-import" class="btn-import" title="Import save from file">Import</button>
-                <button id="btn-pause">Pause</button>
-                <button id="btn-resume" class="active">Play</button>
-                <button id="btn-settings" class="btn-settings">Settings</button>
+                <button id="btn-new-game" class="btn-new-game">新地圖</button>
+                <button id="btn-save" class="btn-save">儲存</button>
+                <button id="btn-export" class="btn-export" title="匯出存檔">匯出</button>
+                <button id="btn-import" class="btn-import" title="匯入存檔">匯入</button>
+                <button id="btn-pause">暫停</button>
+                <button id="btn-resume" class="active">播放</button>
+                <button id="btn-settings" class="btn-settings">設定</button>
             </div>
         </div>
     </div>
@@ -73,12 +73,12 @@
         <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-tabs">
-                <button data-tab="residents" class="active">Residents</button>
-                <button data-tab="chat">Chat</button>
-                <button data-tab="detail">Detail</button>
-                <button data-tab="economy">Economy</button>
-                <button data-tab="log">Log</button>
-                <button data-tab="events">Events</button>
+                <button data-tab="residents" class="active">居民</button>
+                <button data-tab="chat">聊天</button>
+                <button data-tab="detail">詳情</button>
+                <button data-tab="economy">經濟</button>
+                <button data-tab="log">日誌</button>
+                <button data-tab="events">事件</button>
             </div>
             <div class="sidebar-content" id="sidebar-content">
                 <!-- Content rendered dynamically -->

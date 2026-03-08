@@ -132,7 +132,7 @@ class RimTownApp {
             this.world.paused = false; this.render();
         });
         document.getElementById('btn-new-game').addEventListener('click', async () => {
-            if (confirm('Generate a new random town? All progress will be reset.\n(Chat history will be archived automatically)')) {
+            if (confirm('產生新的隨機小鎮？所有進度將重置。\n（聊天記錄會自動存檔）')) {
                 await this.archiveChatHistory();
                 this.world.reset();
                 if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
@@ -187,7 +187,7 @@ class RimTownApp {
             } else {
                 localStorage.setItem('rimtown_save', json);
             }
-            this.world.logMessage('system', 'Game saved.');
+            this.world.logMessage('system', '遊戲已儲存。');
             return true;
         } catch(e) { console.error('Save failed:', e); return false; }
     }
@@ -265,9 +265,9 @@ class RimTownApp {
                     this.render();
                     await this.saveGame();
                 } else {
-                    alert('Failed to load save file.');
+                    alert('讀取存檔失敗。');
                 }
-            } catch(err) { alert('Invalid save file: ' + err.message); }
+            } catch(err) { alert('無效的存檔：' + err.message); }
         };
         input.click();
     }
@@ -323,12 +323,12 @@ class RimTownApp {
 
     exportChatLog(archive) {
         const lines = [];
-        lines.push(`=== RimTown Chat Log ===`);
-        lines.push(`Session: ${archive.gameClock}`);
-        lines.push(`Player: ${archive.playerName}`);
-        lines.push(`Saved: ${archive.savedAt}`);
-        lines.push(`NPCs: ${archive.npcNames.join(', ')}`);
-        lines.push(`Messages: ${archive.messageCount}`);
+        lines.push(`=== 邊境鎮聊天記錄 ===`);
+        lines.push(`遊戲進度：${archive.gameClock}`);
+        lines.push(`玩家：${archive.playerName}`);
+        lines.push(`存檔時間：${archive.savedAt}`);
+        lines.push(`NPC：${archive.npcNames.join('、')}`);
+        lines.push(`訊息數：${archive.messageCount}`);
         lines.push('');
         archive.messages.forEach(m => {
             lines.push(`[${m.time || '??:??'}] ${m.speaker} → ${m.target}: ${m.text}`);
@@ -460,9 +460,9 @@ class RimTownApp {
             if (id !== 'player') nameToId[a.name] = id;
         }
 
-        let nearbyHtml = `<div class="chat-location">You are at: <strong>${playerLoc.replace(/_/g,' ')}</strong></div><div class="chat-nearby">`;
+        let nearbyHtml = `<div class="chat-location">你在：<strong>${playerLoc.replace(/_/g,' ')}</strong></div><div class="chat-nearby">`;
         if (nearbyNpcs.length) {
-            nearbyHtml += '<div class="nearby-label">Nearby:</div><div class="nearby-list">';
+            nearbyHtml += '<div class="nearby-label">附近：</div><div class="nearby-list">';
             nearbyNpcs.forEach(npc => {
                 nearbyHtml += `<button class="nearby-btn ${this.chatTarget===npc.id?'active':''}" onclick="app.startChatWith('${npc.id}')">
                     <span class="mood-indicator mood-${npc.mood_description}"></span>${npc.name}
@@ -470,7 +470,7 @@ class RimTownApp {
             });
             nearbyHtml += '</div>';
         } else {
-            nearbyHtml += '<p class="muted-text">No one nearby.</p>';
+            nearbyHtml += '<p class="muted-text">附近沒有人。</p>';
         }
 
         // Show past chat contacts not currently nearby
@@ -480,12 +480,12 @@ class RimTownApp {
             return id && !nearbyIds.has(id);
         });
         if (pastContacts.length) {
-            nearbyHtml += '<div class="nearby-label" style="margin-top:6px">Chat History:</div><div class="nearby-list">';
+            nearbyHtml += '<div class="nearby-label" style="margin-top:6px">聊天記錄：</div><div class="nearby-list">';
             pastContacts.forEach(name => {
                 const id = nameToId[name];
                 const msgCount = chatHistory.filter(c => c.speaker === name || c.target === name).length;
                 nearbyHtml += `<button class="nearby-btn history-btn ${this.chatTarget===id?'active':''}" onclick="app.startChatWith('${id}')">
-                    ${name} <span class="nearby-job">${msgCount} msgs</span></button>`;
+                    ${name} <span class="nearby-job">${msgCount}則</span></button>`;
             });
             nearbyHtml += '</div>';
         }
@@ -496,7 +496,7 @@ class RimTownApp {
             const targetAgent = this.state.agents[this.chatTarget];
             const targetName = targetAgent?.name || this.chatTarget;
             const filtered = chatHistory.filter(c => c.target === targetName || c.speaker === targetName);
-            if (!filtered.length) messagesHtml += `<p class="muted-text chat-hint">Start a conversation with ${targetName}...</p>`;
+            if (!filtered.length) messagesHtml += `<p class="muted-text chat-hint">開始與${targetName}對話...</p>`;
             filtered.forEach(msg => {
                 const isP = msg.speaker === player.name;
                 messagesHtml += `<div class="chat-bubble ${isP?'chat-player':'chat-npc'}">
@@ -504,7 +504,7 @@ class RimTownApp {
                     <div class="chat-text">${this._escapeHtml(msg.text)}</div>
                     <div class="chat-time">${msg.time||''}</div></div>`;
             });
-        } else messagesHtml += '<p class="muted-text chat-hint">Select someone to view conversation.</p>';
+        } else messagesHtml += '<p class="muted-text chat-hint">選擇一個人來查看對話。</p>';
         messagesHtml += '</div>';
 
         let inputHtml = '';
@@ -513,17 +513,17 @@ class RimTownApp {
             const isNearby = ta && ta.current_location === playerLoc;
             if (isNearby) {
                 inputHtml = `<div class="chat-input-area">
-                    <input type="text" id="chat-input" class="chat-input" placeholder="Type a message..."
+                    <input type="text" id="chat-input" class="chat-input" placeholder="輸入訊息..."
                         onkeydown="if(event.key==='Enter') app._sendFromInput()" ${this.chatSending?'disabled':''}>
-                    <button class="chat-send-btn" onclick="app._sendFromInput()" ${this.chatSending?'disabled':''}>${this.chatSending?'...':'Send'}</button></div>`;
+                    <button class="chat-send-btn" onclick="app._sendFromInput()" ${this.chatSending?'disabled':''}>${this.chatSending?'...':'送出'}</button></div>`;
             } else {
-                inputHtml = `<div class="chat-input-area"><p class="muted-text" style="padding:8px">📜 Viewing past conversations with ${ta?.name||'them'}. Move to their location to chat.</p></div>`;
+                inputHtml = `<div class="chat-input-area"><p class="muted-text" style="padding:8px">📜 查看與${ta?.name||'對方'}的過去對話。前往他們的位置即可聊天。</p></div>`;
             }
         }
         // Archive actions bar
         let archiveBar = `<div class="chat-archive-bar">
-            <button class="btn-archive-view" onclick="app.showChatArchives()">Past Sessions</button>
-            <button class="btn-archive-save" onclick="app.manualArchiveChat()">Archive Now</button>
+            <button class="btn-archive-view" onclick="app.showChatArchives()">歷史對話</button>
+            <button class="btn-archive-save" onclick="app.manualArchiveChat()">立即存檔</button>
         </div>`;
 
         container.innerHTML = nearbyHtml + messagesHtml + inputHtml + archiveBar;
@@ -541,11 +541,11 @@ class RimTownApp {
     async renderChatArchiveList(container) {
         const archives = await this.getChatArchives();
         let html = `<div class="archive-header">
-            <button class="btn-back" onclick="app.activeTab='chat'; app.renderSidebar();">&larr; Back to Chat</button>
-            <h3>Chat Archives</h3>
+            <button class="btn-back" onclick="app.activeTab='chat'; app.renderSidebar();">&larr; 返回聊天</button>
+            <h3>聊天存檔</h3>
         </div>`;
         if (!archives.length) {
-            html += '<p class="muted-text" style="padding:12px">No archived sessions yet. Chat history is archived automatically when you start a new game.</p>';
+            html += '<p class="muted-text" style="padding:12px">尚無存檔。開始新遊戲時聊天記錄會自動存檔。</p>';
         } else {
             html += '<div class="archive-list">';
             [...archives].reverse().forEach(a => {
@@ -553,12 +553,12 @@ class RimTownApp {
                 html += `<div class="archive-item">
                     <div class="archive-info" onclick="app.viewArchive(${a.id})">
                         <div class="archive-title">${a.gameClock} - ${a.playerName}</div>
-                        <div class="archive-meta">${date} | ${a.messageCount} messages | ${a.npcNames.length} NPCs</div>
+                        <div class="archive-meta">${date} | ${a.messageCount}則訊息 | ${a.npcNames.length}位NPC</div>
                         <div class="archive-npcs">${a.npcNames.slice(0, 5).join(', ')}${a.npcNames.length > 5 ? '...' : ''}</div>
                     </div>
                     <div class="archive-actions">
-                        <button onclick="app.exportArchivedChat(${a.id})" title="Export">Export</button>
-                        <button onclick="app.deleteArchivedChat(${a.id})" title="Delete" class="btn-danger">Del</button>
+                        <button onclick="app.exportArchivedChat(${a.id})" title="匯出">匯出</button>
+                        <button onclick="app.deleteArchivedChat(${a.id})" title="刪除" class="btn-danger">刪除</button>
                     </div>
                 </div>`;
             });
@@ -582,9 +582,9 @@ class RimTownApp {
         if (!archive) { this._viewingArchive = null; this.renderChat(container); return; }
 
         let html = `<div class="archive-header">
-            <button class="btn-back" onclick="app._viewingArchive=null; app.activeTab='chat-archives'; app.renderSidebar();">&larr; Back to Archives</button>
+            <button class="btn-back" onclick="app._viewingArchive=null; app.activeTab='chat-archives'; app.renderSidebar();">&larr; 返回列表</button>
             <h3>${archive.gameClock}</h3>
-            <div class="archive-meta">${archive.playerName} | ${archive.messageCount} msgs</div>
+            <div class="archive-meta">${archive.playerName} | ${archive.messageCount}則訊息</div>
         </div>`;
 
         // NPC filter buttons
@@ -603,7 +603,7 @@ class RimTownApp {
 
         html += '<div class="chat-messages" id="chat-messages">';
         if (!messages.length) {
-            html += '<p class="muted-text chat-hint">No messages found.</p>';
+            html += '<p class="muted-text chat-hint">找不到訊息。</p>';
         }
         messages.forEach(msg => {
             const isP = msg.speaker === archive.playerName;
@@ -615,7 +615,7 @@ class RimTownApp {
         html += '</div>';
 
         html += `<div class="chat-archive-bar">
-            <button class="btn-archive-save" onclick="app.exportArchivedChat(${archive.id})">Export This Log</button>
+            <button class="btn-archive-save" onclick="app.exportArchivedChat(${archive.id})">匯出此對話記錄</button>
         </div>`;
 
         container.innerHTML = html;
@@ -625,9 +625,9 @@ class RimTownApp {
     async manualArchiveChat() {
         const result = await this.archiveChatHistory();
         if (result) {
-            this.world.logMessage('system', `Chat archived (${result.messageCount} messages).`);
+            this.world.logMessage('system', `聊天已存檔（${result.messageCount}則訊息）。`);
         } else {
-            this.world.logMessage('system', 'No chat messages to archive.');
+            this.world.logMessage('system', '沒有聊天訊息可存檔。');
         }
         this.state = this.world.getState();
         this.renderSidebar();
@@ -640,7 +640,7 @@ class RimTownApp {
     }
 
     async deleteArchivedChat(archiveId) {
-        if (!confirm('Delete this archived chat session?')) return;
+        if (!confirm('確定刪除此聊天存檔？')) return;
         await this.deleteChatArchive(archiveId);
         this.renderSidebar();
     }
@@ -657,8 +657,8 @@ class RimTownApp {
     _escapeHtml(str) { const div=document.createElement('div'); div.textContent=str; return div.innerHTML; }
 
     _renderSkills(skillsData) {
-        if (!skillsData?.skills) return '<p class="muted-text">No skills data</p>';
-        const passionOrder = {burning:0,major:1,minor:2,none:3,incapable:4};
+        if (!skillsData?.skills) return '<p class="muted-text">沒有技能資料</p>';
+        const passionOrder = {'狂熱':0,'大':1,'微':2,'無':3,'無能':4};
         const sorted = Object.entries(skillsData.skills).sort(([,a],[,b]) => {
             const pa=passionOrder[a.passion]??3, pb=passionOrder[b.passion]??3;
             if(pa!==pb) return pa-pb; return b.level-a.level;
@@ -666,7 +666,7 @@ class RimTownApp {
         let html = '<div class="skills-grid">';
         for (const [name, s] of sorted) {
             const barPct = s.incapable ? 0 : Math.max(0, Math.min(100, (s.level/20)*100 + s.progress*(100/20)));
-            const passionLabel = {burning:'&#9733;&#9733;&#9733;',major:'&#9733;&#9733;',minor:'&#9733;',none:'',incapable:'&#10007;'}[s.passion]||'';
+            const passionLabel = {'狂熱':'&#9733;&#9733;&#9733;','大':'&#9733;&#9733;','微':'&#9733;','無':'','無能':'&#10007;'}[s.passion]||'';
             html += `<div class="skill-row passion-${s.passion}"><span class="skill-name">${name}</span>
                 <span class="skill-passion">${passionLabel}</span>
                 <div class="skill-bar"><div class="skill-bar-fill" style="width:${barPct}%"></div></div>
@@ -685,42 +685,43 @@ class RimTownApp {
             const sameLoc = player && player.current_location === agent.current_location;
             html += `<div class="resident-card ${isSelected?'selected':''}" onclick="app.selectAgent('${aid}')">
                 <div class="resident-header">
-                    <span class="resident-name"><span class="mood-indicator mood-${agent.mood_description}"></span>${agent.name}${sameLoc?'<span class="nearby-badge">Nearby</span>':''}</span>
-                    <span class="resident-job">${agent.job?.title||'Unemployed'}</span></div>
-                <div class="resident-status"><span>${agent.activity} @ ${agent.current_location.replace(/_/g,' ')}</span><span>${agent.mood_description} (${agent.mood})</span></div>
-                ${agent.current_thought?`<div style="font-size:0.7rem;color:#aaa;margin-top:4px;font-style:italic">"${agent.current_thought}"</div>`:''}
-                ${sameLoc?`<button class="chat-with-btn" onclick="event.stopPropagation();app.startChatWith('${aid}')">Chat</button>`:''}</div>`;
+                    <span class="resident-name"><span class="mood-indicator mood-${agent.mood_description}"></span>${agent.name}${sameLoc?'<span class="nearby-badge">附近</span>':''}</span>
+                    <span class="resident-job">${agent.job?.title||'無業'}</span></div>
+                <div class="resident-status"><span>${agent.activity_label||agent.activity} @ ${agent.current_location.replace(/_/g,' ')}</span><span>${agent.mood_label||agent.mood_description} (${agent.mood})</span></div>
+                ${agent.current_thought?`<div style="font-size:0.7rem;color:#aaa;margin-top:4px;font-style:italic">「${agent.current_thought}」</div>`:''}
+                ${sameLoc?`<button class="chat-with-btn" onclick="event.stopPropagation();app.startChatWith('${aid}')">對話</button>`:''}</div>`;
         }
         container.innerHTML = html;
     }
 
     renderAgentDetail(container) {
-        if (!this.selectedAgent || !this.state) { container.innerHTML = '<p class="muted-text" style="padding:20px">Select a resident to view details</p>'; return; }
+        if (!this.selectedAgent || !this.state) { container.innerHTML = '<p class="muted-text" style="padding:20px">選擇一位居民查看詳情</p>'; return; }
         const agent = this.state.agents[this.selectedAgent]; if (!agent) return;
         const needs = agent.needs || {}, personality = agent.personality || {};
         const relationships = agent.relationships || [], memories = agent.recent_memories || [];
+        const TRAIT_LABELS = {kind:'善良',abrasive:'刻薄',shy:'害羞',charismatic:'魅力',gossip:'八卦',hardworking:'勤勞',lazy:'懶惰',perfectionist:'完美主義',creative:'有創意',optimist:'樂觀',pessimist:'悲觀',neurotic:'神經質',stoic:'沉穩',romantic:'浪漫',jealous:'嫉妒',night_owl:'夜貓子',early_bird:'早起鳥',glutton:'貪吃',ascetic:'苦行',curious:'好奇'};
         const makeBar = (label, value) => {
             const cls = value > 60 ? 'high' : value > 30 ? 'medium' : 'low';
             return `<div class="needs-bar"><label>${label}</label><div class="bar"><div class="bar-fill ${cls}" style="width:${value}%"></div></div><span style="width:30px;text-align:right;font-size:0.6rem">${Math.round(value)}</span></div>`;
         };
         const player = this.state.agents['player'];
         const sameLoc = player && player.current_location === agent.current_location && this.selectedAgent !== 'player';
-        const chatBtn = sameLoc ? `<button class="chat-with-btn" onclick="app.startChatWith('${this.selectedAgent}')">Chat with ${agent.name}</button>` : '';
+        const chatBtn = sameLoc ? `<button class="chat-with-btn" onclick="app.startChatWith('${this.selectedAgent}')">與${agent.name}對話</button>` : '';
         container.innerHTML = `<div class="detail-panel visible">
-            <div class="detail-section"><h3>${agent.name} (Age ${agent.age})</h3>
-                <p style="font-size:0.8rem;color:var(--text-secondary)">${agent.job?.title||'Unemployed'} | ${agent.mood_description}</p>
+            <div class="detail-section"><h3>${agent.name}（${agent.age}歲）</h3>
+                <p style="font-size:0.8rem;color:var(--text-secondary)">${agent.job?.title||'無業'} | ${agent.mood_label||agent.mood_description}</p>
                 <p style="font-size:0.75rem;margin-top:6px">${personality.background||''}</p>${chatBtn}</div>
-            <div class="detail-section"><h3>Personality</h3>
-                ${(personality.traits||[]).map(t=>`<span class="trait-tag">${t}</span>`).join('')}
-                <div style="margin-top:4px;font-size:0.7rem;color:var(--text-secondary)">Values: ${(personality.values||[]).join(', ')}</div></div>
-            <div class="detail-section"><h3>Needs</h3>${makeBar('Hunger',needs.hunger||0)}${makeBar('Rest',needs.rest||0)}${makeBar('Social',needs.social||0)}${makeBar('Comfort',needs.comfort||0)}${makeBar('Recreation',needs.recreation||0)}</div>
-            <div class="detail-section"><h3>Skills (Total: ${agent.skills?.total_level||0})</h3>${this._renderSkills(agent.skills)}</div>
-            <div class="detail-section"><h3>Relationships (${relationships.length})</h3>
-                ${relationships.length===0?'<p style="font-size:0.7rem;color:var(--text-muted)">No relationships yet</p>':
+            <div class="detail-section"><h3>性格</h3>
+                ${(personality.traits||[]).map(t=>`<span class="trait-tag">${TRAIT_LABELS[t]||t}</span>`).join('')}
+                <div style="margin-top:4px;font-size:0.7rem;color:var(--text-secondary)">價值觀：${(personality.values||[]).join('、')}</div></div>
+            <div class="detail-section"><h3>需求</h3>${makeBar('飢餓',needs.hunger||0)}${makeBar('休息',needs.rest||0)}${makeBar('社交',needs.social||0)}${makeBar('舒適',needs.comfort||0)}${makeBar('娛樂',needs.recreation||0)}</div>
+            <div class="detail-section"><h3>技能（總計：${agent.skills?.total_level||0}）</h3>${this._renderSkills(agent.skills)}</div>
+            <div class="detail-section"><h3>人際關係（${relationships.length}）</h3>
+                ${relationships.length===0?'<p style="font-size:0.7rem;color:var(--text-muted)">尚無人際關係</p>':
                 relationships.map(r=>`<div class="relationship-item"><span>${r.target_name}</span>
-                    <span style="color:${r.affinity>0?'var(--positive)':r.affinity<0?'var(--negative)':'var(--text-muted)'}">${r.type} (${r.affinity>0?'+':''}${r.affinity})${r.romantic_interest>0?' &#10084;'+r.romantic_interest:''}</span></div>`).join('')}</div>
-            <div class="detail-section"><h3>Recent Memories</h3>
-                ${memories.length===0?'<p style="font-size:0.7rem;color:var(--text-muted)">No memories yet</p>':
+                    <span style="color:${r.affinity>0?'var(--positive)':r.affinity<0?'var(--negative)':'var(--text-muted)'}">${r.type}（${r.affinity>0?'+':''}${r.affinity}）${r.romantic_interest>0?' &#10084;'+r.romantic_interest:''}</span></div>`).join('')}</div>
+            <div class="detail-section"><h3>近期記憶</h3>
+                ${memories.length===0?'<p style="font-size:0.7rem;color:var(--text-muted)">尚無記憶</p>':
                 memories.slice(-10).reverse().map(m=>`<div class="memory-item"><span class="memory-time">${m.time}</span>${m.content}</div>`).join('')}</div></div>`;
     }
 
@@ -732,7 +733,7 @@ class RimTownApp {
             html += `<div class="log-entry type-${msg.type}"><span class="log-time">${msg.time}</span>
                 ${msg.agent?`<strong>${msg.agent}</strong>`:''} ${msg.content} ${msg.target?` &rarr; ${msg.target}`:''}</div>`;
         });
-        container.innerHTML = html || '<p class="muted-text" style="padding:20px">No messages yet...</p>';
+        container.innerHTML = html || '<p class="muted-text" style="padding:20px">尚無訊息...</p>';
     }
 
     renderEvents(container) {
@@ -743,7 +744,8 @@ class RimTownApp {
         const news = this.state.news || {};
         const bulletins = news.bulletins || [];
         if (bulletins.length) {
-            html += '<div class="news-section"><h4>📰 News Bulletins</h4><div class="news-ticker">';
+            html += '<div class="news-section"><h4>📰 新聞公告</h4><div class="news-ticker">';
+            const CATEGORY_LABELS = {security:'安全',trade:'貿易',weather:'天氣',social:'社會',health:'健康',discovery:'發現',nature:'自然',political:'政治'};
             bulletins.forEach(b => {
                 const severityIcon = {good:'🟢',info:'🔵',warning:'🟡',danger:'🔴'}[b.severity] || '⚪';
                 const categoryIcon = {security:'🛡️',trade:'📦',weather:'🌤️',social:'👥',health:'🏥',discovery:'🔍',nature:'🌿',political:'⚔️'}[b.category] || '📋';
@@ -753,8 +755,8 @@ class RimTownApp {
                 html += `<div class="news-bulletin severity-${b.severity}">
                     <div class="news-header">
                         <span class="news-severity">${severityIcon}</span>
-                        <span class="news-category">${categoryIcon} ${b.category}</span>
-                        <span class="news-duration">${b.days_remaining}d left</span>
+                        <span class="news-category">${categoryIcon} ${CATEGORY_LABELS[b.category]||b.category}</span>
+                        <span class="news-duration">剩餘${b.days_remaining}天</span>
                     </div>
                     <div class="news-headline">${b.headline}</div>
                     <div class="news-headline-en">${b.headline_en}</div>
@@ -767,7 +769,7 @@ class RimTownApp {
             const mods = news.active_modifiers || {};
             const modEntries = Object.entries(mods).filter(([k]) => k !== 'mood_modifier');
             if (modEntries.length) {
-                html += '<div class="news-effects"><span class="news-effects-label">Active Effects:</span> ';
+                html += '<div class="news-effects"><span class="news-effects-label">生效中：</span> ';
                 modEntries.forEach(([key, val]) => {
                     const label = key.replace(/_/g,' ');
                     const cls = (typeof val === 'number' && val > 0) ? 'effect-positive' : (typeof val === 'number' && val < 0) ? 'effect-negative' : 'effect-neutral';
@@ -781,13 +783,13 @@ class RimTownApp {
 
         const chains = this.state.active_chains || [];
         if (chains.length) {
-            html += '<div class="chain-section"><h4>Active Event Chains</h4>';
-            chains.forEach(c => { html += `<div>${c.current_event} (Stage ${c.stage}/${c.total_stages})</div>`; });
+            html += '<div class="chain-section"><h4>進行中的事件鏈</h4>';
+            chains.forEach(c => { html += `<div>${c.current_event}（階段 ${c.stage}/${c.total_stages}）</div>`; });
             html += '</div>';
         }
         const travelling = this.state.travelling_agents || [];
         if (travelling.length) {
-            html += '<div class="travelling-section"><h4>Residents Travelling</h4>';
+            html += '<div class="travelling-section"><h4>外出中的居民</h4>';
             travelling.forEach(t => { html += `<div class="travelling-item">${t.name} — ${t.reason}</div>`; });
             html += '</div>';
         }
@@ -800,7 +802,7 @@ class RimTownApp {
                 <div style="font-size:0.75rem;color:var(--text-secondary)">${evt.time}</div>
                 <div style="margin-top:4px">${evt.description}</div></div>`;
         });
-        container.innerHTML = html || '<p class="muted-text" style="padding:20px">No events yet. Events happen randomly each day.</p>';
+        container.innerHTML = html || '<p class="muted-text" style="padding:20px">尚無事件。事件每天會隨機發生。</p>';
     }
 
     // --- Economy Tab ---
@@ -814,12 +816,12 @@ class RimTownApp {
 
         // Resource icons
         const icons = {food:'🌾',wood:'🪵',stone:'🪨',metal:'⚙️',cloth:'🧵',herbs:'🌿',silver:'💰',meals:'🍲',tools:'🔧',clothing:'👕',medicine:'💊',furniture:'🪑',research_points:'📚'};
-        const labels = {food:'Food',wood:'Wood',stone:'Stone',metal:'Metal',cloth:'Cloth',herbs:'Herbs',silver:'Silver',meals:'Meals',tools:'Tools',clothing:'Clothing',medicine:'Medicine',furniture:'Furniture',research_points:'Research'};
+        const labels = {food:'食物',wood:'木材',stone:'石材',metal:'金屬',cloth:'布料',herbs:'草藥',silver:'銀幣',meals:'餐食',tools:'工具',clothing:'衣物',medicine:'藥品',furniture:'家具',research_points:'研究'};
 
         let html = '<div class="economy-panel">';
 
         // Resources
-        html += '<div class="econ-section"><h3>Resources</h3><div class="resource-grid">';
+        html += '<div class="econ-section"><h3>資源</h3><div class="resource-grid">';
         for (const [r, amount] of Object.entries(res)) {
             const icon = icons[r] || '📦';
             const label = labels[r] || r;
@@ -829,30 +831,31 @@ class RimTownApp {
         html += '</div></div>';
 
         // Trade
-        html += '<div class="econ-section"><h3>Trade</h3>';
+        html += '<div class="econ-section"><h3>交易</h3>';
         if (trade.merchant) {
             html += `<div class="merchant-card"><div class="merchant-name">${trade.merchant.name}</div>
-                <div class="merchant-info">Specialty: ${trade.merchant.specialty} | Leaves in ${trade.merchant.daysRemaining} day(s)</div>
+                <div class="merchant-info">專長：${trade.merchant.specialty} | ${trade.merchant.daysRemaining}天後離開</div>
                 <div class="trade-offers">`;
             trade.merchant.offers.forEach((offer, idx) => {
                 const icon = icons[offer.resource] || '📦';
-                const action = offer.isBuying ? 'Sell' : 'Buy';
+                const resLabel = labels[offer.resource] || offer.resource;
+                const action = offer.isBuying ? '賣出' : '買入';
                 const actionCls = offer.isBuying ? 'trade-sell' : 'trade-buy';
                 html += `<div class="trade-offer ${actionCls}">
-                    <span>${icon} ${offer.resource}</span>
+                    <span>${icon} ${resLabel}</span>
                     <span>×${Math.round(offer.amount)}</span>
-                    <span>${offer.price}/ea</span>
-                    <button class="trade-btn" onclick="app.executeTrade(${idx}, Math.min(5, ${offer.amount}))">${action} 5</button>
-                    <button class="trade-btn" onclick="app.executeTrade(${idx}, ${offer.amount})">${action} All</button></div>`;
+                    <span>${offer.price}/個</span>
+                    <button class="trade-btn" onclick="app.executeTrade(${idx}, Math.min(5, ${offer.amount}))">${action}5</button>
+                    <button class="trade-btn" onclick="app.executeTrade(${idx}, ${offer.amount})">全${action}</button></div>`;
             });
             html += '</div></div>';
         } else {
-            html += `<p class="muted-text">No merchant in town. One may arrive soon.</p>`;
+            html += `<p class="muted-text">鎮上沒有商人，可能很快就會來一位。</p>`;
         }
         html += '</div>';
 
         // Buildings
-        html += '<div class="econ-section"><h3>Buildings</h3>';
+        html += '<div class="econ-section"><h3>建築</h3>';
         if (buildings.in_progress?.length) {
             html += '<div class="building-progress">';
             buildings.in_progress.forEach(p => {
@@ -864,50 +867,49 @@ class RimTownApp {
             html += '</div>';
         }
         if (buildings.completed?.length) {
-            html += `<div class="completed-buildings">Completed: ${buildings.completed.map(p => p.name).join(', ')}</div>`;
+            html += `<div class="completed-buildings">已完成：${buildings.completed.map(p => p.name).join('、')}</div>`;
         }
-        // Available projects
         const available = this.world.buildings.getAvailable(this.world);
         if (available.length) {
-            html += '<div class="available-buildings"><div class="build-label">Build:</div>';
+            html += '<div class="available-buildings"><div class="build-label">建造：</div>';
             available.forEach(p => {
                 const costStr = Object.entries(p.costs).map(([r,a]) => `${icons[r]||''}${a}`).join(' ');
                 html += `<div class="build-option ${p.can_afford ? '' : 'cant-afford'}">
                     <div class="build-name">${p.name}</div>
                     <div class="build-desc">${p.description}</div>
                     <div class="build-cost">${costStr}</div>
-                    <button class="build-btn" ${p.can_afford ? '' : 'disabled'} onclick="app.startBuilding('${p.key}')">Build</button></div>`;
+                    <button class="build-btn" ${p.can_afford ? '' : 'disabled'} onclick="app.startBuilding('${p.key}')">建造</button></div>`;
             });
             html += '</div>';
         }
         html += '</div>';
 
         // Research
-        html += '<div class="econ-section"><h3>Research</h3>';
+        html += '<div class="econ-section"><h3>研究</h3>';
         const projects = research.projects || {};
         const currentKey = research.current_research;
         if (currentKey && projects[currentKey]) {
             const cur = projects[currentKey];
             const pct = Math.round((cur.progress / cur.cost) * 100);
-            html += `<div class="research-current">Researching: <strong>${cur.name}</strong>
+            html += `<div class="research-current">研究中：<strong>${cur.name}</strong>
                 <div class="progress-bar"><div class="progress-fill research-fill" style="width:${pct}%"></div></div>
                 <span class="progress-text">${pct}%</span></div>`;
         }
         const availableResearch = Object.values(projects).filter(p => p.status === 'available');
         if (availableResearch.length) {
-            html += '<div class="research-available"><div class="build-label">Available:</div>';
+            html += '<div class="research-available"><div class="build-label">可研究：</div>';
             availableResearch.forEach(p => {
                 const isCurrent = p.key === currentKey;
                 html += `<div class="research-option ${isCurrent ? 'active' : ''}">
                     <div class="build-name">${p.name}</div>
-                    <div class="build-desc">${p.description} (Cost: ${p.cost})</div>
-                    <button class="build-btn" onclick="app.startResearch('${p.key}')" ${isCurrent?'disabled':''}>Research</button></div>`;
+                    <div class="build-desc">${p.description}（消耗：${p.cost}）</div>
+                    <button class="build-btn" onclick="app.startResearch('${p.key}')" ${isCurrent?'disabled':''}>研究</button></div>`;
             });
             html += '</div>';
         }
         const completedResearch = Object.values(projects).filter(p => p.status === 'complete');
         if (completedResearch.length) {
-            html += `<div class="completed-buildings">Completed: ${completedResearch.map(p => p.name).join(', ')}</div>`;
+            html += `<div class="completed-buildings">已完成：${completedResearch.map(p => p.name).join('、')}</div>`;
         }
         html += '</div></div>';
 

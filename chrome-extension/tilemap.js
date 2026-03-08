@@ -963,9 +963,9 @@ class PixelTileMap {
 
     // Update agent positions (smooth interpolation)
     updateAgents(agents, locations) {
+        const WALK_SPEED = 1.2; // pixels per frame — constant walking speed
         for (const [aid, agent] of Object.entries(agents)) {
             const locCenter = this.getLocationCenter(agent.current_location);
-            const zone = this.buildingZones[agent.current_location] || this.natureZones[agent.current_location];
             // Add offset within zone so agents don't overlap
             const existing = Object.values(this.agentPositions).filter(p => {
                 const dx = Math.abs(p.targetX - locCenter.x);
@@ -980,15 +980,30 @@ class PixelTileMap {
             const targetY = locCenter.y + spreadY;
 
             if (!this.agentPositions[aid]) {
-                this.agentPositions[aid] = { x: targetX, y: targetY, targetX, targetY, job: agent.job || 'default' };
+                this.agentPositions[aid] = { x: targetX, y: targetY, targetX, targetY, job: agent.job || 'default', walking: false, walkStep: 0 };
             } else {
                 this.agentPositions[aid].targetX = targetX;
                 this.agentPositions[aid].targetY = targetY;
                 this.agentPositions[aid].job = agent.job || 'default';
-                // Interpolate
-                const speed = 0.08;
-                this.agentPositions[aid].x += (targetX - this.agentPositions[aid].x) * speed;
-                this.agentPositions[aid].y += (targetY - this.agentPositions[aid].y) * speed;
+                // Constant-speed walking
+                const dx = targetX - this.agentPositions[aid].x;
+                const dy = targetY - this.agentPositions[aid].y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > 1) {
+                    // Walk toward target at constant speed
+                    const step = Math.min(WALK_SPEED, dist);
+                    this.agentPositions[aid].x += (dx / dist) * step;
+                    this.agentPositions[aid].y += (dy / dist) * step;
+                    this.agentPositions[aid].walking = true;
+                    this.agentPositions[aid].walkStep = (this.agentPositions[aid].walkStep || 0) + 1;
+                    // Face direction: 1 = right, -1 = left
+                    this.agentPositions[aid].facing = dx > 0 ? 1 : dx < 0 ? -1 : (this.agentPositions[aid].facing || 1);
+                } else {
+                    this.agentPositions[aid].x = targetX;
+                    this.agentPositions[aid].y = targetY;
+                    this.agentPositions[aid].walking = false;
+                    this.agentPositions[aid].walkStep = 0;
+                }
             }
         }
         // Remove agents that no longer exist
@@ -998,18 +1013,20 @@ class PixelTileMap {
     }
 
     // Draw agent sprite
-    _drawAgent(ctx, x, y, jobKey, isPlayer, isSelected, name) {
+    _drawAgent(ctx, x, y, jobKey, isPlayer, isSelected, name, walking, walkStep) {
         const colors = JOB_COLORS[jobKey] || JOB_COLORS.default;
         if (isPlayer) {
             colors.body = JOB_COLORS.player.body;
             colors.hair = JOB_COLORS.player.hair;
         }
         const sx = Math.floor(x - 5);
-        const sy = Math.floor(y - 12);
+        // Walking bob: slight vertical bounce when walking
+        const bob = walking ? Math.sin((walkStep || 0) * 0.4) * 1 : 0;
+        const sy = Math.floor(y - 12 + bob);
 
         // Shadow
         ctx.fillStyle = 'rgba(0,0,0,0.2)';
-        ctx.fillRect(sx, sy + 13, 10, 3);
+        ctx.fillRect(sx, Math.floor(y) + 1, 10, 3);
 
         // Body
         ctx.fillStyle = colors.body;
@@ -1032,10 +1049,24 @@ class PixelTileMap {
         ctx.fillRect(sx + 3, sy + 2, 1, 1);
         ctx.fillRect(sx + 6, sy + 2, 1, 1);
 
-        // Legs
+        // Legs — animate when walking
         ctx.fillStyle = '#555';
-        ctx.fillRect(sx + 2, sy + 13, 3, 2);
-        ctx.fillRect(sx + 5, sy + 13, 3, 2);
+        if (walking) {
+            const legPhase = Math.floor((walkStep || 0) / 6) % 2;
+            if (legPhase === 0) {
+                // Left leg forward, right leg back
+                ctx.fillRect(sx + 1, sy + 13, 3, 2);
+                ctx.fillRect(sx + 6, sy + 13, 3, 2);
+            } else {
+                // Right leg forward, left leg back
+                ctx.fillRect(sx + 3, sy + 13, 3, 2);
+                ctx.fillRect(sx + 4, sy + 13, 3, 2);
+            }
+        } else {
+            // Standing still — legs together
+            ctx.fillRect(sx + 2, sy + 13, 3, 2);
+            ctx.fillRect(sx + 5, sy + 13, 3, 2);
+        }
 
         // Selection indicator
         if (isSelected) {
@@ -1131,7 +1162,7 @@ class PixelTileMap {
             if (!agent) continue;
             const isPlayer = aid === 'player';
             const isSelected = aid === selectedAgent;
-            this._drawAgent(ctx, pos.x, pos.y, pos.job, isPlayer, isSelected, agent.name || 'You');
+            this._drawAgent(ctx, pos.x, pos.y, pos.job, isPlayer, isSelected, agent.name || 'You', pos.walking, pos.walkStep);
         }
 
         // Draw thought bubbles for some agents
