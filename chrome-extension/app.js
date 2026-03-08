@@ -718,8 +718,12 @@ class RimTownApp {
             <div class="detail-section"><h3>技能（總計：${agent.skills?.total_level||0}）</h3>${this._renderSkills(agent.skills)}</div>
             <div class="detail-section"><h3>人際關係（${relationships.length}）</h3>
                 ${relationships.length===0?'<p style="font-size:0.7rem;color:var(--text-muted)">尚無人際關係</p>':
-                relationships.map(r=>`<div class="relationship-item"><span>${r.target_name}</span>
-                    <span style="color:${r.affinity>0?'var(--positive)':r.affinity<0?'var(--negative)':'var(--text-muted)'}">${r.type}（${r.affinity>0?'+':''}${r.affinity}）${r.romantic_interest>0?' &#10084;'+r.romantic_interest:''}</span></div>`).join('')}</div>
+                relationships.map(r=>{
+                    const statusBadge = r.status_label ? `<span class="rel-status-badge rel-${r.status||''}">${r.status_label}</span>` : '';
+                    const cheatingBadge = r.is_cheating ? '<span class="rel-status-badge rel-cheating">秘密關係</span>' : '';
+                    return `<div class="relationship-item"><span>${r.target_name} ${statusBadge}${cheatingBadge}</span>
+                    <span style="color:${r.affinity>0?'var(--positive)':r.affinity<0?'var(--negative)':'var(--text-muted)'}">${r.type}（${r.affinity>0?'+':''}${r.affinity}）${r.romantic_interest>0?' &#10084;'+r.romantic_interest:''}</span></div>`;
+                }).join('')}</div>
             <div class="detail-section"><h3>近期記憶</h3>
                 ${memories.length===0?'<p style="font-size:0.7rem;color:var(--text-muted)">尚無記憶</p>':
                 memories.slice(-10).reverse().map(m=>`<div class="memory-item"><span class="memory-time">${m.time}</span>${m.content}</div>`).join('')}</div></div>`;
@@ -729,10 +733,32 @@ class RimTownApp {
         if (!this.state) return;
         const messages = (this.state.recent_messages || []).slice().reverse();
         let html = '';
+
+        // Show recent NPC conversations at the top
+        const npcConvos = (this.state.npc_conversations || []).slice().reverse();
+        if (npcConvos.length) {
+            html += '<div class="npc-convo-section"><h4 style="padding:6px 10px;color:var(--accent);font-size:0.75rem;border-bottom:1px solid var(--border)">村民對話</h4>';
+            npcConvos.slice(0, 8).forEach(c => {
+                html += `<div class="npc-convo-entry" onclick="this.classList.toggle('expanded')">
+                    <div class="npc-convo-header"><span class="log-time">${c.time}</span><strong>${c.agentA}</strong> &amp; <strong>${c.agentB}</strong>
+                    <span style="font-size:0.6rem;color:var(--text-muted);margin-left:4px">@ ${(c.location||'').replace(/_/g,' ')}</span></div>
+                    <div class="npc-convo-summary">${c.summary}</div>
+                    <div class="npc-convo-dialogue">`;
+                (c.dialogue || []).forEach(d => {
+                    html += `<div class="npc-convo-line"><span class="npc-convo-speaker">${d.speaker}:</span> ${this._escapeHtml(d.text)}</div>`;
+                });
+                html += '</div></div>';
+            });
+            html += '</div>';
+        }
+
+        // Standard log messages
+        html += '<div class="log-messages-section">';
         messages.forEach(msg => {
             html += `<div class="log-entry type-${msg.type}"><span class="log-time">${msg.time}</span>
                 ${msg.agent?`<strong>${msg.agent}</strong>`:''} ${msg.content} ${msg.target?` &rarr; ${msg.target}`:''}</div>`;
         });
+        html += '</div>';
         container.innerHTML = html || '<p class="muted-text" style="padding:20px">尚無訊息...</p>';
     }
 

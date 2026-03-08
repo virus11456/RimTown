@@ -109,22 +109,33 @@ class Memory {
 
 // --- Relationships ---
 const REL_TYPES = { STRANGER:'陌生人', ACQUAINTANCE:'認識', FRIEND:'朋友',
-    CLOSE_FRIEND:'摯友', RIVAL:'對手', ENEMY:'敵人', CRUSH:'暗戀', PARTNER:'伴侶' };
+    CLOSE_FRIEND:'摯友', RIVAL:'對手', ENEMY:'敵人', CRUSH:'暗戀',
+    DATING:'交往中', MARRIED:'已婚', EX:'前任' };
 
 class Relationship {
     constructor(targetId, targetName) {
         this.targetId = targetId; this.targetName = targetName;
         this.affinity = 0; this.trust = 0; this.romanticInterest = 0;
         this.interactionCount = 0; this.lastInteractionTick = 0; this.sharedMemories = [];
+        // Formal relationship status: null, 'dating', 'married', 'ex'
+        this.status = null;
+        this.statusSince = 0; // tick when status changed
+        this.isCheating = false; // currently cheating with this person
     }
     get type() {
-        if (this.romanticInterest > 60 && this.affinity > 50) return REL_TYPES.PARTNER;
+        if (this.status === 'married') return REL_TYPES.MARRIED;
+        if (this.status === 'dating') return REL_TYPES.DATING;
+        if (this.status === 'ex') return REL_TYPES.EX;
         if (this.romanticInterest > 30) return REL_TYPES.CRUSH;
         if (this.affinity > 60) return REL_TYPES.CLOSE_FRIEND;
         if (this.affinity > 20) return REL_TYPES.FRIEND;
         if (this.affinity > -20) return this.interactionCount > 0 ? REL_TYPES.ACQUAINTANCE : REL_TYPES.STRANGER;
         if (this.affinity > -60) return REL_TYPES.RIVAL;
         return REL_TYPES.ENEMY;
+    }
+    get statusLabel() {
+        const m = { dating:'交往中', married:'已婚', ex:'前任' };
+        return this.status ? m[this.status] || '' : '';
     }
     modifyAffinity(d) { this.affinity = Math.max(-100, Math.min(100, this.affinity + d)); }
     modifyTrust(d) { this.trust = Math.max(-100, Math.min(100, this.trust + d)); }
@@ -137,7 +148,8 @@ class Relationship {
     toDict() {
         return { target_id:this.targetId, target_name:this.targetName, type:this.type,
                  affinity:this.affinity, trust:this.trust, romantic_interest:this.romanticInterest,
-                 interaction_count:this.interactionCount };
+                 interaction_count:this.interactionCount, status:this.status, status_label:this.statusLabel,
+                 is_cheating:this.isCheating };
     }
 }
 
@@ -153,6 +165,8 @@ class RelationshipManager {
         const friends = this.getFriends();
         return friends.length ? friends.reduce((a,b) => a.affinity > b.affinity ? a : b) : null;
     }
+    getPartner() { return Object.values(this.relationships).find(r => r.status === 'dating' || r.status === 'married') || null; }
+    getSpouse() { return Object.values(this.relationships).find(r => r.status === 'married') || null; }
     toDict() { return Object.values(this.relationships).map(r => r.toDict()); }
 }
 
@@ -494,13 +508,22 @@ class GossipNetwork {
     createGossip(source, about, world) {
         const rel = source.relationships.getOrCreate(about.agentId, about.name);
         const templates = [];
-        if (rel.romanticInterest > 20) templates.push(`I think ${about.name} is quite attractive, don't you think?`);
-        if (rel.affinity < -10) templates.push(`Between you and me, ${about.name} has been acting strange lately.`);
-        if (about.mood < -20) templates.push(`Have you noticed ${about.name} seems really down lately?`);
-        if (about.mood > 50) templates.push(`${about.name} has been in such a great mood recently!`);
+        if (rel.romanticInterest > 20) templates.push(`你不覺得${about.name}挺有魅力的嗎？`);
+        if (rel.affinity < -10) templates.push(`說真的，${about.name}最近行為很奇怪。`);
+        if (about.mood < -20) templates.push(`你有注意到${about.name}最近看起來很低落嗎？`);
+        if (about.mood > 50) templates.push(`${about.name}最近心情超好的！`);
         const ri = about.relationships.getRomanticInterests();
-        if (ri.length) templates.push(`I heard ${about.name} might have feelings for ${pickRandom(ri).targetName}!`);
-        if (!templates.length) templates.push(`Did you hear what ${about.name} was up to yesterday?`);
+        if (ri.length) templates.push(`聽說${about.name}好像對${pickRandom(ri).targetName}有意思！`);
+        const partner = about.relationships.getPartner();
+        if (partner) {
+            if (partner.status === 'dating') templates.push(`${about.name}和${partner.targetName}在交往呢，你知道嗎？`);
+            if (partner.status === 'married') templates.push(`${about.name}和${partner.targetName}的婚姻生活不知道怎麼樣？`);
+            if (partner.isCheating) templates.push(`我好像看到${about.name}背著${partner.targetName}跟別人在一起⋯⋯`);
+        }
+        const aboutPartner = about.relationships.getPartner();
+        const cheatingRels = Object.values(about.relationships.relationships).filter(r => r.isCheating);
+        if (cheatingRels.length) templates.push(`你聽說了嗎？${about.name}好像在劈腿⋯⋯`);
+        if (!templates.length) templates.push(`你聽說${about.name}昨天在做什麼嗎？`);
         const content = pickRandom(templates);
         const gossip = { about:about.name, content, source:source.name, spreadCount:0, tickCreated:world.tickCount, isTrue:Math.random()>0.2 };
         this.activeGossip.push(gossip);
@@ -515,15 +538,52 @@ class GossipNetwork {
         const gossip = pickRandom(eligible);
         gossip.spreadCount++;
         listener.memory.add(world.tickCount, world.clock.timeStr, 'social',
-            `${speaker.name} told me: "${gossip.content}"`, 4, [speaker.name, gossip.about]);
+            `${speaker.name}告訴我：「${gossip.content}」`, 4, [speaker.name, gossip.about]);
         world.logMessage('gossip', `${speaker.name}向${listener.name}八卦了${gossip.about}的事`, speaker.name, listener.name);
         return gossip;
     }
 }
 
-// --- Conversation Engine (Mock + LLM) ---
+// --- Conversation Engine (Personality-Driven + LLM) ---
 class ConversationEngine {
-    constructor(llmClient = null) { this.llm = llmClient; }
+    constructor(llmClient = null) { this.llm = llmClient; this.npcConversationLog = []; }
+
+    _buildCharacterProfile(agent) {
+        const traitLabels = agent.personality.traits.map(t => TRAIT_POOL[t]?.label || t);
+        const partner = agent.relationships.getPartner();
+        let statusStr = '單身';
+        if (partner) {
+            if (partner.status === 'married') statusStr = `已與${partner.targetName}結婚`;
+            else if (partner.status === 'dating') statusStr = `正在與${partner.targetName}交往`;
+        }
+        const needsStr = [];
+        if (agent.needs.hunger < 30) needsStr.push('肚子很餓');
+        if (agent.needs.rest < 30) needsStr.push('很疲倦');
+        if (agent.needs.social < 30) needsStr.push('渴望社交');
+        if (agent.needs.recreation < 20) needsStr.push('需要娛樂');
+        return {
+            name: agent.name, age: agent.age,
+            job: agent.job?.title || '無業',
+            traits: traitLabels.join('、'),
+            background: agent.personality.background || '普通居民',
+            values: agent.personality.values.join('、'),
+            mood: agent.moodLabel,
+            status: statusStr,
+            needs: needsStr.join('、') || '狀態良好',
+            thought: agent.currentThought || '',
+            bestSkill: agent.skills.bestSkill,
+        };
+    }
+
+    _buildRelContext(rel, otherName) {
+        let s = `與${otherName}的關係：${rel.type}（好感度${rel.affinity}`;
+        if (rel.romanticInterest > 0) s += `，浪漫${rel.romanticInterest}`;
+        s += `，互動${rel.interactionCount}次）`;
+        if (rel.status) s += `【${rel.statusLabel}】`;
+        if (rel.isCheating) s += '【秘密關係】';
+        if (rel.sharedMemories.length) s += `\n共同回憶：${rel.sharedMemories.slice(-3).join('；')}`;
+        return s;
+    }
 
     async generateConversation(agentA, agentB, world) {
         const relA = agentA.relationships.getOrCreate(agentB.agentId, agentB.name);
@@ -538,40 +598,57 @@ class ConversationEngine {
     }
 
     async _llmConversation(agentA, agentB, world, relA, relB) {
-        const gossip = world.events.getGossipTopics();
-        const gossipStr = gossip.slice(-3).join(', ') || 'nothing special happening';
-        const memA = agentA.memory.getAboutAgent(agentB.name, 3);
-        const memB = agentB.memory.getAboutAgent(agentA.name, 3);
+        const gossip = world.events.getGossipTopics ? world.events.getGossipTopics() : [];
+        const gossipStr = gossip.slice(-3).join('、') || '沒有特別的事';
+        const memA = agentA.memory.getAboutAgent(agentB.name, 5);
+        const memB = agentB.memory.getAboutAgent(agentA.name, 5);
+        const pA = this._buildCharacterProfile(agentA);
+        const pB = this._buildCharacterProfile(agentB);
 
-        const prompt = `You are simulating a conversation between two residents of a small town called RimTown.
+        const prompt = `你正在模擬一個名為「邊境鎮」的小鎮中，兩位居民之間的真實對話。
+請根據每個人的性格特質、心情、關係和背景，生成自然、有深度的對話。
+每個角色說話的方式應該反映他們的個性（例如害羞的人說話少且猶豫，魅力型的人自信健談，刻薄的人言辭犀利）。
 
-TIME: ${world.clock.timeStr}
-LOCATION: ${agentA.currentLocation}
+時間：${world.clock.timeStr}
+地點：${agentA.currentLocation.replace(/_/g,' ')}
 
-=== PERSON A: ${agentA.name} ===
-Job: ${agentA.job?.title || 'Unemployed'}
-Personality: ${agentA.personality.describe()}
-Background: ${agentA.personality.background}
-Current mood: ${agentA.moodDescription}
-Relationship with ${agentB.name}: ${relA.type} (affinity: ${relA.affinity}, romantic: ${relA.romanticInterest})
-Recent memories about ${agentB.name}: ${memA.length ? memA.map(m=>m.content).join('\n') : 'None'}
+=== ${pA.name}（${pA.age}歲）===
+職業：${pA.job}
+性格特質：${pA.traits}
+背景：${pA.background}
+價值觀：${pA.values}
+心情：${pA.mood}
+身體狀態：${pA.needs}
+感情狀態：${pA.status}
+${pA.thought ? `心裡想著：${pA.thought}` : ''}
+${this._buildRelContext(relA, agentB.name)}
+${memA.length ? `關於${agentB.name}的記憶：\n${memA.map(m=>'- '+m.content).join('\n')}` : ''}
 
-=== PERSON B: ${agentB.name} ===
-Job: ${agentB.job?.title || 'Unemployed'}
-Personality: ${agentB.personality.describe()}
-Background: ${agentB.personality.background}
-Current mood: ${agentB.moodDescription}
-Relationship with ${agentA.name}: ${relB.type} (affinity: ${relB.affinity}, romantic: ${relB.romanticInterest})
-Recent memories about ${agentA.name}: ${memB.length ? memB.map(m=>m.content).join('\n') : 'None'}
+=== ${pB.name}（${pB.age}歲）===
+職業：${pB.job}
+性格特質：${pB.traits}
+背景：${pB.background}
+價值觀：${pB.values}
+心情：${pB.mood}
+身體狀態：${pB.needs}
+感情狀態：${pB.status}
+${pB.thought ? `心裡想著：${pB.thought}` : ''}
+${this._buildRelContext(relB, agentA.name)}
+${memB.length ? `關於${agentA.name}的記憶：\n${memB.map(m=>'- '+m.content).join('\n')}` : ''}
 
-TOWN GOSSIP/TOPICS: ${gossipStr}
+小鎮近況／八卦：${gossipStr}
 
-Generate a natural, brief conversation (3-6 exchanges total). After the conversation, on a new line write EFFECTS: followed by JSON:
-{"affinity_change_a": number, "affinity_change_b": number, "romantic_change_a": number, "romantic_change_b": number, "summary": "one sentence"}
+請生成一段自然的繁體中文對話（4-8句對話）。對話要：
+- 反映每個人的性格（害羞的人用詞保守，樂觀的人說話正面，刻薄的人帶刺）
+- 根據關係深淺調整語氣（陌生人較客套，好友較親暱，戀人有曖昧或親密感）
+- 包含具體的話題（工作、天氣、小鎮八卦、個人煩惱、感情等）
+- 如果兩人在交往或結婚，對話要像真正的情侶/夫妻
+- 如果有矛盾或負面關係，對話要帶有緊張感
 
-Format each line as "NAME: dialogue".`;
+每行格式："名字: 對話內容"
+最後一行寫 EFFECTS: {"affinity_change_a": 數字, "affinity_change_b": 數字, "romantic_change_a": 數字, "romantic_change_b": 數字, "summary": "一句話總結"}`;
 
-        const response = await this.llm.generate(prompt, 600);
+        const response = await this.llm.generate(prompt, 800);
         return this._parseConversation(response, agentA, agentB, world, relA, relB);
     }
 
@@ -603,28 +680,268 @@ Format each line as "NAME: dialogue".`;
         agentA.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `與${agentB.name}交談：${summary}`, Math.min(8,4+Math.abs(affA)), [agentB.name]);
         agentB.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `與${agentA.name}交談：${summary}`, Math.min(8,4+Math.abs(affB)), [agentA.name]);
         world.logMessage('conversation', summary, agentA.name, agentB.name);
+        // Store NPC conversation for sidebar viewing
+        if (dialogue.length) {
+            this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue, summary, agentA:agentA.name, agentB:agentB.name });
+            if (this.npcConversationLog.length > 50) this.npcConversationLog = this.npcConversationLog.slice(-30);
+        }
         return { dialogue, summary, effects:{affinity_a:affA,affinity_b:affB,romantic_a:romA,romantic_b:romB} };
     }
 
     _fallbackConversation(agentA, agentB, world, relA, relB) {
-        const greetings = ['嘿','你好啊','哈囉','好久不見','嗨'];
-        const topics = [
-            `${agentB.job?.title || '今天'}還順利嗎？`, '今天天氣不錯吧？',
-            '最近有聽到什麼消息嗎？', '最近好忙啊。', '這小鎮真不錯，對吧？'
-        ];
-        const dialogue = [
-            {speaker:agentA.name, text:`${pickRandom(greetings)}，${agentB.name}！`},
-            {speaker:agentB.name, text:`${pickRandom(greetings)}！${pickRandom(topics)}`},
-            {speaker:agentA.name, text:'說的也是，保重啊！'},
-        ];
-        const summary = `${agentA.name}和${agentB.name}簡短聊了一下。`;
-        const aff = randInt(0,3);
-        relA.modifyAffinity(aff); relA.recordInteraction(world.tickCount, summary);
-        relB.modifyAffinity(aff); relB.recordInteraction(world.tickCount, summary);
-        agentA.memory.add(world.tickCount, world.clock.timeStr, 'conversation', summary, 3, [agentB.name]);
-        agentB.memory.add(world.tickCount, world.clock.timeStr, 'conversation', summary, 3, [agentA.name]);
+        const dialogue = this._generatePersonalityDialogue(agentA, agentB, world, relA, relB);
+        const affA = dialogue._affA ?? randInt(-1,4);
+        const affB = dialogue._affB ?? randInt(-1,4);
+        const romA = dialogue._romA ?? 0;
+        const romB = dialogue._romB ?? 0;
+        const summary = dialogue._summary || `${agentA.name}和${agentB.name}聊了天。`;
+        relA.modifyAffinity(affA); relA.modifyRomantic(romA); relA.recordInteraction(world.tickCount, summary);
+        relB.modifyAffinity(affB); relB.modifyRomantic(romB); relB.recordInteraction(world.tickCount, summary);
+        agentA.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `與${agentB.name}交談：${summary}`, Math.min(6,3+Math.abs(affA)), [agentB.name]);
+        agentB.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `與${agentA.name}交談：${summary}`, Math.min(6,3+Math.abs(affB)), [agentA.name]);
         world.logMessage('conversation', summary, agentA.name, agentB.name);
-        return { dialogue, summary, effects:{affinity_a:aff,affinity_b:aff} };
+        const lines = dialogue.lines;
+        if (lines.length) {
+            this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue:lines, summary, agentA:agentA.name, agentB:agentB.name });
+            if (this.npcConversationLog.length > 50) this.npcConversationLog = this.npcConversationLog.slice(-30);
+        }
+        return { dialogue:lines, summary, effects:{affinity_a:affA,affinity_b:affB,romantic_a:romA,romantic_b:romB} };
+    }
+
+    _generatePersonalityDialogue(agentA, agentB, world, relA, relB) {
+        const tA = agentA.personality.traits;
+        const tB = agentB.personality.traits;
+        const jobA = agentA.job?.title || '無業';
+        const jobB = agentB.job?.title || '無業';
+        const loc = agentA.currentLocation.replace(/_/g,' ');
+        const timeOfDay = world.clock.timeOfDay;
+        const season = world.clock.season;
+        const lines = [];
+        let affA = 0, affB = 0, romA = 0, romB = 0;
+        let summary = '';
+
+        // --- Determine conversation topic based on context ---
+        const topicRoll = Math.random();
+        const isCouple = relA.status === 'dating' || relA.status === 'married';
+        const isCrush = relA.romanticInterest > 30 || relB.romanticInterest > 30;
+        const isRival = relA.affinity < -20 || relB.affinity < -20;
+        const isCloseFriend = relA.affinity > 50 && relB.affinity > 50;
+        const isStranger = relA.interactionCount < 3;
+
+        // Greeting styles based on personality
+        const greetA = this._personalityGreeting(agentA, agentB, relA);
+        const greetB = this._personalityGreeting(agentB, agentA, relB);
+
+        if (isCouple) {
+            // --- Couple conversation ---
+            const coupleTopics = [
+                () => {
+                    lines.push({speaker:agentA.name, text:`${agentB.name}，今天${jobB}忙嗎？我好擔心你。`});
+                    lines.push({speaker:agentB.name, text:tB.includes('stoic')?'還行吧，不用擔心。':tB.includes('romantic')?`有你關心就什麼都值得了。`:'今天還好啦，就是有點累。'});
+                    lines.push({speaker:agentA.name, text:tA.includes('kind')?'晚上我幫你做飯吧。':tA.includes('lazy')?'那等一下一起去酒館吃飯？':'辛苦了，早點休息。'});
+                    if (Math.random() < 0.5) lines.push({speaker:agentB.name, text:relA.status==='married'?'嗯，有你真好。':'好啊，這就是我喜歡你的地方。'});
+                    affA = randInt(2,5); affB = randInt(2,5); romA = randInt(1,3); romB = randInt(1,3);
+                    summary = `${agentA.name}和${agentB.name}甜蜜地聊了日常。`;
+                },
+                () => {
+                    const jealousA = tA.includes('jealous');
+                    const jealousB = tB.includes('jealous');
+                    if (jealousA || jealousB) {
+                        const jealousOne = jealousA ? agentA : agentB;
+                        const other = jealousA ? agentB : agentA;
+                        lines.push({speaker:jealousOne.name, text:`你今天是不是跟${pickRandom(['別人','誰'])}待了很久？`});
+                        lines.push({speaker:other.name, text:'就是在工作啊，你想太多了。'});
+                        lines.push({speaker:jealousOne.name, text:'...我只是在乎你。'});
+                        lines.push({speaker:other.name, text:other.personality.traits.includes('kind')?'我知道，我也在乎你。':other.personality.traits.includes('abrasive')?'拜託不要每次都這樣。':'好了好了，別胡思亂想。'});
+                        affA = randInt(-2,1); affB = randInt(-2,1); romA = 0; romB = 0;
+                        summary = `${jealousOne.name}因為嫉妒跟${other.name}起了小爭執。`;
+                    } else {
+                        lines.push({speaker:agentA.name, text:`${season}到了，要不要一起去${pickRandom(['河邊散步','看星星','逛市集'])}？`});
+                        lines.push({speaker:agentB.name, text:tB.includes('shy')?'好...好啊。':`好啊！聽起來很棒！`});
+                        affA = randInt(2,4); affB = randInt(2,4); romA = randInt(1,2); romB = randInt(1,2);
+                        summary = `${agentA.name}邀請${agentB.name}一起出去。`;
+                    }
+                },
+            ];
+            pickRandom(coupleTopics)();
+        } else if (isRival) {
+            // --- Hostile conversation ---
+            const hostileTemplates = [
+                () => {
+                    lines.push({speaker:agentA.name, text:tA.includes('abrasive')?`又碰到你了，${agentB.name}。`:`...${agentB.name}。`});
+                    lines.push({speaker:agentB.name, text:tB.includes('abrasive')?'我也不想看到你。':'嗯。'});
+                    if (Math.random() < 0.6) {
+                        lines.push({speaker:agentA.name, text:tA.includes('kind')?'算了，我們能不能別這樣？':'希望你別擋我的路。'});
+                        lines.push({speaker:agentB.name, text:tB.includes('stoic')?'隨你。':tB.includes('pessimist')?'反正也沒差。':'你自己小心吧。'});
+                    }
+                    affA = randInt(-3,-1); affB = randInt(-3,-1);
+                    summary = `${agentA.name}和${agentB.name}冷冷地交談，氣氛很僵。`;
+                },
+                () => {
+                    const topic = pickRandom(['工作方式','對鎮上的事看法','之前的事']);
+                    lines.push({speaker:agentA.name, text:`${agentB.name}，關於${topic}，你真的覺得你是對的嗎？`});
+                    lines.push({speaker:agentB.name, text:tB.includes('charismatic')?'我不想吵架，但我有我的理由。':'那你覺得呢？我不在乎你怎麼想。'});
+                    lines.push({speaker:agentA.name, text:tA.includes('stoic')?'好吧。':tA.includes('neurotic')?'你——算了！':'我們遲早要把話說清楚。'});
+                    affA = randInt(-4,-1); affB = randInt(-4,-1);
+                    summary = `${agentA.name}和${agentB.name}因為${topic}產生了爭執。`;
+                },
+            ];
+            pickRandom(hostileTemplates)();
+        } else if (isCrush) {
+            // --- Crush / flirty conversation ---
+            const crushA = relA.romanticInterest > 30;
+            const crushB = relB.romanticInterest > 30;
+            lines.push({speaker:agentA.name, text: crushA ? (tA.includes('shy')?`啊，${agentB.name}...你、你也在這裡啊。`:`嘿！${agentB.name}！真巧在這遇到你。`) : greetA});
+            lines.push({speaker:agentB.name, text: crushB ? (tB.includes('shy')?'嗯...對啊。你今天看起來...不錯。':`哈哈，是啊！你今天看起來很有精神呢。`) : greetB});
+            if (crushA && crushB) {
+                lines.push({speaker:agentA.name, text:tA.includes('romantic')?`不知道為什麼，每次見到你心情就特別好。`:`欸，你等一下有空嗎？我們可以...聊聊天什麼的。`});
+                lines.push({speaker:agentB.name, text:tB.includes('romantic')?'我也是呢...':'好啊，我正好有空。'});
+                romA = randInt(2,5); romB = randInt(2,5);
+                summary = `${agentA.name}和${agentB.name}之間的互動充滿了曖昧的氣息。`;
+            } else {
+                const crusher = crushA ? agentA : agentB;
+                const crushee = crushA ? agentB : agentA;
+                lines.push({speaker:crusher.name, text:crusher.personality.traits.includes('shy')?`那個...${crushee.name}，你等一下要做什麼？`:`${crushee.name}，最近過得怎麼樣？`});
+                lines.push({speaker:crushee.name, text:crushee.personality.traits.includes('kind')?'挺好的啊，謝謝關心！':'還行吧，就那樣。'});
+                romA = crushA ? randInt(1,3) : 0;
+                romB = crushB ? randInt(1,3) : 0;
+                summary = `${crusher.name}試著接近${crushee.name}。`;
+            }
+            affA = randInt(1,4); affB = randInt(1,4);
+        } else if (isCloseFriend) {
+            // --- Close friend conversation ---
+            const friendTopics = [
+                () => {
+                    lines.push({speaker:agentA.name, text:`${agentB.name}！正好找你，最近${pickRandom(['有個事想跟你聊','想聽聽你的想法','有個煩惱'])}。`});
+                    const worry = agentA.needs.hunger<30 ? '最近食物好像有點不夠' : agentA.mood<30 ? '我最近狀態不太好' : `我在想要不要學點新${agentA.skills.bestSkill.category}的技術`;
+                    lines.push({speaker:agentA.name, text:`${worry}。`});
+                    lines.push({speaker:agentB.name, text:tB.includes('kind')?`我懂，你不用擔心，我會幫你的。`:tB.includes('pessimist')?`說真的，我也覺得有點麻煩...`:`嗯，我覺得你可以試試看，反正也沒什麼損失。`});
+                    lines.push({speaker:agentA.name, text:`謝謝你，跟你聊天總是讓我覺得好多了。`});
+                    affA = randInt(3,6); affB = randInt(2,5);
+                    summary = `${agentA.name}向摯友${agentB.name}傾訴了心事。`;
+                },
+                () => {
+                    lines.push({speaker:agentA.name, text:`欸！${agentB.name}，你有聽說嗎？`});
+                    const gossipTopics = world.gossipNetwork?.activeGossip || [];
+                    if (gossipTopics.length) {
+                        const g = pickRandom(gossipTopics);
+                        lines.push({speaker:agentA.name, text:g.content});
+                        lines.push({speaker:agentB.name, text:tB.includes('gossip')?'真的假的！快跟我說更多！':'哦？這倒是第一次聽說。'});
+                    } else {
+                        lines.push({speaker:agentA.name, text:`聽說鎮上最近要${pickRandom(['來新人','辦活動','修建築'])}。`});
+                        lines.push({speaker:agentB.name, text:'是嗎？希望是好事。'});
+                    }
+                    lines.push({speaker:agentA.name, text:tA.includes('gossip')?'這種事我最喜歡了！':'就隨便聊聊啦。'});
+                    affA = randInt(2,4); affB = randInt(2,4);
+                    summary = `${agentA.name}和${agentB.name}分享了鎮上的消息。`;
+                },
+            ];
+            pickRandom(friendTopics)();
+        } else if (isStranger) {
+            // --- First meetings / strangers ---
+            lines.push({speaker:agentA.name, text:tA.includes('charismatic')?`嗨！我是${agentA.name}，你是新來的嗎？`:tA.includes('shy')?`你好...`:greetA});
+            lines.push({speaker:agentB.name, text:tB.includes('shy')?`你好...我是${agentB.name}。`:tB.includes('charismatic')?`哈囉！我叫${agentB.name}，很高興認識你！`:`嗯，你好。我是${agentB.name}。`});
+            if (Math.random() < 0.7) {
+                lines.push({speaker:agentA.name, text:`你在${loc}${pickRandom(['做什麼','工作嗎','也是來逛的'])}？`});
+                lines.push({speaker:agentB.name, text:agentB.job?`我是${jobB}，在這邊${pickRandom(['工作','上班','做事'])}。你呢？`:'我就到處看看，這鎮子挺有意思的。'});
+            }
+            affA = randInt(1,4); affB = randInt(1,4);
+            summary = `${agentA.name}和${agentB.name}初次交談，互相認識了。`;
+        } else {
+            // --- Normal acquaintance/friend conversation with personality flavor ---
+            const normalTopics = [
+                // Work talk
+                () => {
+                    lines.push({speaker:agentA.name, text:greetA});
+                    lines.push({speaker:agentB.name, text:greetB});
+                    if (agentA.job && agentB.job) {
+                        lines.push({speaker:agentA.name, text:tA.includes('hardworking')?`今天工作量不少，不過${jobA}的工作我挺喜歡的。`:tA.includes('lazy')?`唉，又要上班了...你呢？`:`${jobA}的工作最近還好，你那邊${jobB}呢？`});
+                        lines.push({speaker:agentB.name, text:tB.includes('perfectionist')?`馬馬虎虎吧，總覺得還可以做得更好。`:tB.includes('optimist')?`很好啊！每天都在進步的感覺。`:`就那樣吧，混口飯吃。`});
+                    } else {
+                        lines.push({speaker:agentA.name, text:`最近${loc}挺熱鬧的。`});
+                        lines.push({speaker:agentB.name, text:'是啊，' + pickRandom(['人越來越多了。','希望日子越來越好。','也是好事。'])});
+                    }
+                    affA = randInt(1,3); affB = randInt(1,3);
+                    summary = `${agentA.name}和${agentB.name}聊了聊工作和日常。`;
+                },
+                // Weather/Season talk
+                () => {
+                    const weatherComments = {
+                        '春季': ['春天的花開得真美。','天氣終於暖了。','播種的季節到了。'],
+                        '夏季': ['好熱啊，快受不了了。','夏天的夜晚很舒服。','河邊涼快多了。'],
+                        '秋季': ['秋天的收穫應該不錯。','落葉好漂亮。','天漸漸涼了。'],
+                        '冬季': ['冬天好冷啊。','希望今年冬天不要太難熬。','圍著火爐取暖真舒服。'],
+                    };
+                    lines.push({speaker:agentA.name, text:greetA});
+                    lines.push({speaker:agentB.name, text:pickRandom(weatherComments[season] || ['天氣不錯。'])});
+                    lines.push({speaker:agentA.name, text:tA.includes('optimist')?'是啊，每個季節都有它的美好。':tA.includes('pessimist')?'但願別出什麼問題。':'嗯，也是。'});
+                    affA = randInt(0,2); affB = randInt(0,2);
+                    summary = `${agentA.name}和${agentB.name}閒聊了${season}的天氣。`;
+                },
+                // Mood-driven talk
+                () => {
+                    if (agentA.mood < 20) {
+                        lines.push({speaker:agentA.name, text:tA.includes('stoic')?'......':'唉...'});
+                        lines.push({speaker:agentB.name, text:tB.includes('kind')?`${agentA.name}，你看起來不太好，怎麼了？`:tB.includes('abrasive')?'你那個臉色是怎樣？':'你還好嗎？'});
+                        lines.push({speaker:agentA.name, text:tA.includes('shy')?'...沒什麼，就是有點累。':'最近事情不太順利。'});
+                        lines.push({speaker:agentB.name, text:tB.includes('kind')?'有什麼需要幫忙的隨時說。':'希望你能好起來。'});
+                        affA = randInt(2,5); affB = randInt(1,3);
+                        summary = `${agentB.name}關心了看起來不太好的${agentA.name}。`;
+                    } else if (agentA.mood > 70) {
+                        lines.push({speaker:agentA.name, text:`${agentB.name}！今天心情超好的！`});
+                        lines.push({speaker:agentB.name, text:tB.includes('pessimist')?'是嗎...希望能持續下去。':'什麼好事？快說來聽聽！'});
+                        lines.push({speaker:agentA.name, text:tA.includes('creative')?'就覺得今天特別有靈感！':tA.includes('hardworking')?'工作進展得很順利！':'就是覺得日子過得不錯。'});
+                        affA = randInt(1,3); affB = randInt(1,3);
+                        summary = `${agentA.name}心情很好，和${agentB.name}分享了快樂。`;
+                    } else {
+                        lines.push({speaker:agentA.name, text:greetA});
+                        lines.push({speaker:agentB.name, text:greetB});
+                        const randomChat = pickRandom([
+                            `你覺得鎮上還缺什麼？`, `最近有學到什麼新東西嗎？`,
+                            `你下班後通常都做什麼？`, `你來邊境鎮多久了？`,
+                        ]);
+                        lines.push({speaker:agentA.name, text:randomChat});
+                        lines.push({speaker:agentB.name, text:tB.includes('creative')?'我最近在想一些有趣的點子。':tB.includes('hardworking')?'大多時候都在忙工作吧。':'就隨便過過日子。'});
+                        affA = randInt(0,3); affB = randInt(0,3);
+                        summary = `${agentA.name}和${agentB.name}隨意聊了天。`;
+                    }
+                },
+                // Need-driven talk
+                () => {
+                    lines.push({speaker:agentA.name, text:greetA});
+                    if (agentA.needs.hunger < 25) {
+                        lines.push({speaker:agentA.name, text:'肚子好餓...最近吃得不太夠。'});
+                        lines.push({speaker:agentB.name, text:tB.includes('kind')?'走，我請你去酒館吃點東西。':'鎮上的食物確實要省著點用。'});
+                    } else if (agentA.needs.rest < 25) {
+                        lines.push({speaker:agentA.name, text:'最近都沒怎麼睡好...'});
+                        lines.push({speaker:agentB.name, text:tB.includes('kind')?'要不要早點回去休息？':'我也是，最近事情太多了。'});
+                    } else if (agentA.needs.social < 25) {
+                        lines.push({speaker:agentA.name, text:'好久沒跟人好好聊天了。'});
+                        lines.push({speaker:agentB.name, text:tB.includes('charismatic')?'那就跟我多聊聊嘛！':'...我也是。'});
+                    } else {
+                        lines.push({speaker:agentA.name, text:`你有沒有什麼推薦的${pickRandom(['消遣','活動','放鬆方式'])}？`});
+                        lines.push({speaker:agentB.name, text:tB.includes('creative')?'我喜歡畫畫或寫東西。':tB.includes('night_owl')?'晚上去看星星不錯。':'去河邊走走吧。'});
+                    }
+                    affA = randInt(1,3); affB = randInt(1,3);
+                    summary = `${agentA.name}和${agentB.name}聊了聊彼此的近況。`;
+                },
+            ];
+            pickRandom(normalTopics)();
+        }
+
+        return { lines, _affA:affA, _affB:affB, _romA:romA, _romB:romB, _summary:summary };
+    }
+
+    _personalityGreeting(agent, other, rel) {
+        const t = agent.personality.traits;
+        const name = other.name;
+        if (rel.status === 'dating' || rel.status === 'married') return pickRandom([`親愛的${name}。`,`${name}~`,`嘿，${name}。`]);
+        if (t.includes('charismatic')) return pickRandom([`嘿！${name}！`,`哈囉${name}，真高興見到你！`,`${name}！好久不見！`]);
+        if (t.includes('shy')) return pickRandom([`啊...${name}...你好。`,`嗯...你好。`,`...嗨。`]);
+        if (t.includes('abrasive')) return pickRandom([`喔，${name}啊。`,`怎麼又是你。`,`${name}。`]);
+        if (t.includes('optimist')) return pickRandom([`${name}！今天也是美好的一天！`,`嗨${name}，你看起來很有精神！`]);
+        if (t.includes('pessimist')) return pickRandom([`${name}...唉。`,`嗯...${name}。`]);
+        return pickRandom([`嘿，${name}。`,`你好啊，${name}。`,`哈囉，${name}！`,`${name}，好久不見。`]);
     }
 
     async generatePlayerReply(player, npc, playerMessage, world) {
@@ -636,28 +953,41 @@ Format each line as "NAME: dialogue".`;
                 const recentChat = player.chatHistory.filter(c => c.target === npc.name || c.speaker === npc.name)
                     .slice(-10).map(c => `${c.speaker}: ${c.text}`).join('\n');
                 const memNpc = npc.memory.getAboutAgent(player.name, 5);
-                const prompt = `You are ${npc.name}, a resident of RimTown. A visitor named ${player.name} is talking to you.
+                const pN = this._buildCharacterProfile(npc);
+                const prompt = `你是${npc.name}，邊境鎮的一位居民。一位名叫${player.name}的旅人正在跟你說話。
+請完全以${npc.name}的身份和性格來回應。
 
-TIME: ${world.clock.timeStr}
-LOCATION: ${npc.currentLocation}
+時間：${world.clock.timeStr}
+地點：${npc.currentLocation.replace(/_/g,' ')}
 
-=== YOUR CHARACTER: ${npc.name} ===
-Age: ${npc.age}, Job: ${npc.job?.title||'無業'}
-Personality: ${npc.personality.describe()}
-Background: ${npc.personality.background}
-Mood: ${npc.moodLabel}
-Relationship with ${player.name}: ${relNpc.type} (affinity: ${relNpc.affinity})
-Memories about ${player.name}: ${memNpc.length ? memNpc.map(m=>m.content).join('\n') : "你還不太認識他們。"}
+=== 你的角色：${pN.name}（${pN.age}歲）===
+職業：${pN.job}
+性格特質：${pN.traits}
+背景：${pN.background}
+價值觀：${pN.values}
+心情：${pN.mood}
+身體狀態：${pN.needs}
+感情狀態：${pN.status}
+${pN.thought ? `心裡在想：${pN.thought}` : ''}
+${this._buildRelContext(relNpc, player.name)}
+${memNpc.length ? `你對${player.name}的記憶：\n${memNpc.map(m=>'- '+m.content).join('\n')}` : `你還不太認識${player.name}。`}
 
-RECENT CONVERSATION:
-${recentChat || '(Start of conversation)'}
+最近的對話：
+${recentChat || '（對話剛開始）'}
 
 ${player.name}: ${playerMessage}
 
-Reply as ${npc.name} with 1-3 sentences. Stay in character. Respond in the same language.
-After your reply, write EFFECTS: {"affinity_change": number, "romantic_change": number, "summary": "one sentence"}`;
+請以${npc.name}的身份回覆1-3句話。要求：
+- 用繁體中文回覆
+- 反映你的性格特質（${pN.traits}）
+- 根據心情（${pN.mood}）調整語氣
+- 如果好感度高就親切，低就冷淡
+- 回覆要自然，像真人對話
+- 如果對方聊到你在意的價值觀（${pN.values}），反應更強烈
 
-                const response = await this.llm.generate(prompt, 300);
+回覆後另起一行寫 EFFECTS: {"affinity_change": 數字(-3到5), "romantic_change": 數字(0到3), "summary": "一句話總結"}`;
+
+                const response = await this.llm.generate(prompt, 400);
                 return this._parsePlayerReply(response, player, npc, world, playerMessage, relPlayer, relNpc);
             } catch(e) { console.error('LLM player reply failed:', e); }
         }
@@ -685,10 +1015,10 @@ After your reply, write EFFECTS: {"affinity_change": number, "romantic_change": 
         const npcReply = replyLines.join(' ').trim() || '...';
         const affChange = effects.affinity_change ?? randInt(0,2);
         const romChange = effects.romantic_change ?? 0;
-        const summary = effects.summary || `${npc.name} replied to ${player.name}.`;
+        const summary = effects.summary || `${npc.name}回應了${player.name}。`;
         relNpc.modifyAffinity(affChange); relNpc.modifyRomantic(romChange); relNpc.recordInteraction(world.tickCount, summary);
         relPlayer.modifyAffinity(Math.max(0, affChange-1)); relPlayer.recordInteraction(world.tickCount, summary);
-        npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${player.name} said: "${playerMessage}" - ${summary}`, 5, [player.name]);
+        npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${player.name}說：「${playerMessage}」— ${summary}`, 5, [player.name]);
         player.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `與${npc.name}交談：${summary}`, 4, [npc.name]);
         player.chatHistory.push({speaker:player.name, target:npc.name, text:playerMessage, time:world.clock.timeStr});
         player.chatHistory.push({speaker:npc.name, target:player.name, text:npcReply, time:world.clock.timeStr});
@@ -697,22 +1027,68 @@ After your reply, write EFFECTS: {"affinity_change": number, "romantic_change": 
     }
 
     _fallbackPlayerReply(player, npc, world, playerMessage, relPlayer, relNpc) {
-        const pools = {
-            high: ['見到你真高興！','我剛好在想你呢！','當然！隨時歡迎聊天。'],
-            medium: ['喔，你好！什麼風把你吹來了？','嗯，我有空。','今天還不錯，你呢？'],
-            low: ['嗯？有什麼事？','我有點忙...','...'],
-        };
-        const pool = relNpc.affinity > 30 ? pools.high : relNpc.affinity > -10 ? pools.medium : pools.low;
-        const npcReply = pickRandom(pool);
-        const aff = randInt(0,2);
-        relNpc.modifyAffinity(aff); relNpc.recordInteraction(world.tickCount, `與${player.name}聊天`);
-        relPlayer.modifyAffinity(aff); relPlayer.recordInteraction(world.tickCount, `與${npc.name}聊天`);
-        npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${player.name}和我說了話。`, 4, [player.name]);
+        const t = npc.personality.traits;
+        const aff = relNpc.affinity;
+        const isCouple = relNpc.status === 'dating' || relNpc.status === 'married';
+        let npcReply;
+
+        if (isCouple) {
+            npcReply = pickRandom([
+                `嗯，我一直在等你來找我呢。`,
+                `有你在身邊就很開心了。`,
+                `你今天看起來不錯呢。`,
+                `你找我有事嗎？不管怎樣我都很高興。`,
+            ]);
+        } else if (aff > 50) {
+            // Close friend - warm and personal
+            const highPool = t.includes('charismatic') ?
+                [`${player.name}！太好了你來了！有好多事想跟你說。`,`每次跟你聊天都讓我心情大好。`,`哈哈，我剛好也想找你呢！`] :
+                t.includes('shy') ?
+                [`啊...${player.name}...很高興看到你。`,`你、你來了啊...我今天其實有話想說。`,`...嗯，是你啊，太好了。`] :
+                [`見到你真高興！我剛好在想你呢。`,`太好了你來了！最近好嗎？`,`嘿！坐下來聊聊吧，我有空。`];
+            npcReply = pickRandom(highPool);
+        } else if (aff > 20) {
+            // Friend
+            const friendPool = t.includes('kind') ?
+                [`你好啊，今天過得還好嗎？`,`嗨！有什麼需要幫忙的嗎？`,`很高興見到你，坐坐吧。`] :
+                t.includes('lazy') ?
+                [`喔...你好。我正在偷懶呢。`,`嗯？喔是你啊。我正想歇一會兒。`] :
+                [`嗨！最近都好嗎？`,`你好，好久不見。`,`哈囉，正好碰到你了。`];
+            npcReply = pickRandom(friendPool);
+        } else if (aff > -10) {
+            // Neutral
+            const neutralPool = t.includes('abrasive') ?
+                [`嗯？什麼事？`,`你找我有事嗎？`,`...說吧。`] :
+                t.includes('optimist') ?
+                [`你好呀！有什麼事嗎？`,`嗨！今天天氣不錯吧？`,`哈囉，你看起來有話要說？`] :
+                [`嗯，你好。`,`什麼風把你吹來的？`,`喔，你好。有事嗎？`];
+            npcReply = pickRandom(neutralPool);
+        } else {
+            // Hostile
+            const lowPool = t.includes('stoic') ?
+                [`...有事？`,`嗯。`,`說完就走吧。`] :
+                t.includes('abrasive') ?
+                [`又來了。你到底要什麼？`,`我沒空跟你聊。`,`拜託你別煩我。`] :
+                t.includes('neurotic') ?
+                [`你為什麼總是出現在這裡...`,`拜託...不要了。`,`...我不想跟你說話。`] :
+                [`嗯？有什麼事？`,`我有點忙...`,`...`];
+            npcReply = pickRandom(lowPool);
+        }
+
+        // Add context-sensitive follow-up
+        if (npc.needs.hunger < 20 && Math.random() < 0.3) npcReply += ' ...不過我好餓，先去吃點東西。';
+        if (npc.needs.rest < 20 && Math.random() < 0.3) npcReply += ' ...不過我累得不行了。';
+
+        const affChange = isCouple ? randInt(1,3) : aff > 20 ? randInt(0,3) : aff > -10 ? randInt(0,2) : randInt(-1,1);
+        const romChange = isCouple ? randInt(0,1) : 0;
+        relNpc.modifyAffinity(affChange); relNpc.recordInteraction(world.tickCount, `與${player.name}聊天`);
+        relPlayer.modifyAffinity(Math.max(0,affChange-1)); relPlayer.recordInteraction(world.tickCount, `與${npc.name}聊天`);
+        npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${player.name}來找我說話了。`, 4, [player.name]);
         player.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `和${npc.name}聊了天。`, 3, [npc.name]);
         player.chatHistory.push({speaker:player.name, target:npc.name, text:playerMessage, time:world.clock.timeStr});
         player.chatHistory.push({speaker:npc.name, target:player.name, text:npcReply, time:world.clock.timeStr});
         world.logMessage('player_chat', `${player.name}和${npc.name}聊天了`, player.name, npc.name);
-        return { npc_name:npc.name, npc_reply:npcReply, player_message:playerMessage, effects:{affinity_change:aff,romantic_change:0}, summary:`${player.name}和${npc.name}聊了天。` };
+        return { npc_name:npc.name, npc_reply:npcReply, player_message:playerMessage, effects:{affinity_change:affChange,romantic_change:romChange}, summary:`${player.name}和${npc.name}聊了天。` };
     }
 }
 
@@ -727,6 +1103,7 @@ class LLMClient {
             deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: this.model || 'deepseek-chat' },
             groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: this.model || 'llama-3.3-70b-versatile' },
             together: { url: 'https://api.together.xyz/v1/chat/completions', model: this.model || 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo' },
+            minimax: { url: 'https://api.minimax.chat/v1/text/chatcompletion_v2', model: this.model || 'MiniMax-Text-01' },
         };
         const cfg = endpoints[this.provider];
         if (!cfg) throw new Error(`Unknown provider: ${this.provider}`);
@@ -747,7 +1124,7 @@ class LLMClient {
             const data = await res.json();
             return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
         } else {
-            // OpenAI-compatible (openai, deepseek, groq, together)
+            // OpenAI-compatible (openai, deepseek, groq, together, minimax)
             const res = await fetch(cfg.url, {
                 method:'POST',
                 headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${this.apiKey}` },
@@ -1625,6 +2002,8 @@ class World {
                     Object.values(this.agents).forEach(a => { a.mood = Math.max(-100, Math.min(100, a.mood + event.effects.mood_all)); });
                 }
             }
+            // Relationship progression (dating, marriage, breakup, etc.)
+            this._processRelationships();
             // Daily news (before economy/events so modifiers apply)
             this.news.dailyUpdate(this);
             // Daily economy
@@ -1652,6 +2031,7 @@ class World {
             research: this.research.toDict(),
             work_orders: this.workOrders.toDict(),
             news: this.news.toDict(),
+            npc_conversations: this.conversationEngine.npcConversationLog.slice(-20),
         };
     }
     reset(seed = null) {
@@ -1669,20 +2049,161 @@ class World {
         const player = new PlayerAgent();
         this.addAgent(player);
     }
+    _processRelationships() {
+        const npcs = Object.values(this.agents).filter(a => !a.isPlayer);
+        for (const agent of npcs) {
+            for (const rel of Object.values(agent.relationships.relationships)) {
+                const other = this.agents[rel.targetId];
+                if (!other || other.isPlayer) continue;
+                const otherRel = other.relationships.getOrCreate(agent.agentId, agent.name);
+
+                // --- Start Dating ---
+                if (!rel.status && !otherRel.status) {
+                    // Both must have high romantic interest and affinity, and neither currently in a relationship
+                    const agentHasPartner = agent.relationships.getPartner();
+                    const otherHasPartner = other.relationships.getPartner();
+                    if (!agentHasPartner && !otherHasPartner &&
+                        rel.romanticInterest > 50 && otherRel.romanticInterest > 40 &&
+                        rel.affinity > 30 && otherRel.affinity > 30 && Math.random() < 0.15) {
+                        rel.status = 'dating'; rel.statusSince = this.tickCount;
+                        otherRel.status = 'dating'; otherRel.statusSince = this.tickCount;
+                        this.logMessage('relationship', `${agent.name}和${other.name}開始交往了！`, agent.name, other.name);
+                        agent.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `我和${other.name}開始交往了！`, 9, [other.name]);
+                        other.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `我和${agent.name}開始交往了！`, 9, [agent.name]);
+                        agent.mood = Math.min(100, agent.mood + 20);
+                        other.mood = Math.min(100, other.mood + 20);
+                        this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}和${other.name}在一起了！`, source:'鎮民', spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+                    }
+                }
+
+                // --- Proposal / Marriage (from dating) ---
+                if (rel.status === 'dating' && otherRel.status === 'dating') {
+                    const datingDuration = this.tickCount - rel.statusSince;
+                    // Need to have been dating for a while, high affinity and romantic
+                    if (datingDuration > 200 && rel.affinity > 60 && rel.romanticInterest > 70 &&
+                        otherRel.affinity > 50 && otherRel.romanticInterest > 60 && Math.random() < 0.08) {
+                        rel.status = 'married'; rel.statusSince = this.tickCount;
+                        otherRel.status = 'married'; otherRel.statusSince = this.tickCount;
+                        this.logMessage('relationship', `${agent.name}和${other.name}結婚了！全鎮舉辦了盛大的婚禮！`, agent.name, other.name);
+                        agent.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `我和${other.name}結婚了！這是我人生中最幸福的一天。`, 10, [other.name]);
+                        other.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `我和${agent.name}結婚了！太開心了。`, 10, [agent.name]);
+                        // Wedding boosts mood for everyone
+                        Object.values(this.agents).forEach(a => {
+                            a.mood = Math.min(100, a.mood + 8);
+                            if (a.agentId !== agent.agentId && a.agentId !== other.agentId) {
+                                a.memory.add(this.tickCount, this.clock.timeStr, 'social', `參加了${agent.name}和${other.name}的婚禮！`, 6, [agent.name, other.name]);
+                            }
+                        });
+                        this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}和${other.name}結婚了！婚禮好浪漫！`, source:'鎮民', spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+                    }
+                }
+
+                // --- Cheating ---
+                if ((rel.status === 'dating' || rel.status === 'married') && !rel.isCheating) {
+                    // Check if agent has high romantic interest in someone else
+                    for (const otherRel2 of Object.values(agent.relationships.relationships)) {
+                        if (otherRel2.targetId === rel.targetId) continue;
+                        const third = this.agents[otherRel2.targetId];
+                        if (!third || third.isPlayer) continue;
+                        const thirdRel = third.relationships.getOrCreate(agent.agentId, agent.name);
+                        // Both need romantic interest, and agent has low affinity with partner or is neurotic/romantic
+                        const isVulnerable = rel.affinity < 20 || agent.personality.traits.includes('romantic') || agent.personality.traits.includes('neurotic');
+                        if (isVulnerable && otherRel2.romanticInterest > 50 && thirdRel.romanticInterest > 40 &&
+                            otherRel2.affinity > 30 && Math.random() < 0.03) {
+                            otherRel2.isCheating = true;
+                            thirdRel.isCheating = true;
+                            this.logMessage('relationship', `${agent.name}背著${other.name}和${third.name}有了秘密關係⋯⋯`, agent.name, third.name);
+                            agent.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `我背著${other.name}和${third.name}在一起了⋯⋯我知道這不對。`, 9, [other.name, third.name]);
+                            third.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `我和${agent.name}開始了秘密關係。`, 8, [agent.name]);
+                            this.gossipNetwork.activeGossip.push({ about:agent.name, content:`有人看到${agent.name}和${third.name}偷偷在一起⋯⋯`, source:'鎮民', spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+                            break; // Only one affair at a time
+                        }
+                    }
+                }
+
+                // --- Discovery of cheating leads to breakup/divorce ---
+                if ((rel.status === 'dating' || rel.status === 'married') && !rel.isCheating) {
+                    // Check if partner is cheating
+                    const partnerCheating = Object.values(other.relationships.relationships).find(r => r.isCheating && r.targetId !== agent.agentId);
+                    if (partnerCheating && Math.random() < 0.1) {
+                        // Discovered!
+                        const thirdParty = this.agents[partnerCheating.targetId];
+                        const thirdName = thirdParty?.name || '某人';
+                        const wasMariage = rel.status === 'married';
+                        rel.status = 'ex'; rel.statusSince = this.tickCount;
+                        otherRel.status = 'ex'; otherRel.statusSince = this.tickCount;
+                        rel.modifyAffinity(-40); rel.modifyTrust(-50);
+                        otherRel.modifyAffinity(-20);
+                        // End the affair too
+                        partnerCheating.isCheating = false; partnerCheating.status = null;
+                        if (thirdParty) {
+                            const thirdBack = thirdParty.relationships.getOrCreate(other.agentId, other.name);
+                            thirdBack.isCheating = false; thirdBack.status = null;
+                        }
+                        const action = wasMariage ? '離婚' : '分手';
+                        this.logMessage('relationship', `${agent.name}發現${other.name}劈腿${thirdName}，兩人${action}了！`, agent.name, other.name);
+                        agent.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `發現${other.name}背著我和${thirdName}在一起。我們${action}了。`, 10, [other.name, thirdName]);
+                        other.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${agent.name}發現了我的事情。我們${action}了。`, 10, [agent.name]);
+                        agent.mood = Math.max(-100, agent.mood - 30);
+                        other.mood = Math.max(-100, other.mood - 15);
+                        this.gossipNetwork.activeGossip.push({ about:other.name, content:`${other.name}劈腿被${agent.name}發現了！兩人${action}了！`, source:'鎮民', spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+                    }
+                }
+
+                // --- Natural breakup (dating, low affinity) ---
+                if (rel.status === 'dating' && otherRel.status === 'dating') {
+                    const duration = this.tickCount - rel.statusSince;
+                    if (duration > 100 && (rel.affinity < -10 || otherRel.affinity < -10 || (rel.romanticInterest < 15 && otherRel.romanticInterest < 15)) && Math.random() < 0.1) {
+                        rel.status = 'ex'; rel.statusSince = this.tickCount;
+                        otherRel.status = 'ex'; otherRel.statusSince = this.tickCount;
+                        rel.modifyAffinity(-10); otherRel.modifyAffinity(-10);
+                        this.logMessage('relationship', `${agent.name}和${other.name}分手了。`, agent.name, other.name);
+                        agent.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `我和${other.name}分手了。`, 8, [other.name]);
+                        other.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `我和${agent.name}分手了。`, 8, [agent.name]);
+                        agent.mood = Math.max(-100, agent.mood - 15);
+                        other.mood = Math.max(-100, other.mood - 15);
+                        this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}和${other.name}分手了⋯⋯`, source:'鎮民', spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+                    }
+                }
+
+                // --- Divorce (married, very low affinity for a long time) ---
+                if (rel.status === 'married' && otherRel.status === 'married') {
+                    const duration = this.tickCount - rel.statusSince;
+                    if (duration > 300 && rel.affinity < -30 && otherRel.affinity < -20 && Math.random() < 0.05) {
+                        rel.status = 'ex'; rel.statusSince = this.tickCount;
+                        otherRel.status = 'ex'; otherRel.statusSince = this.tickCount;
+                        rel.modifyAffinity(-15); otherRel.modifyAffinity(-15);
+                        this.logMessage('relationship', `${agent.name}和${other.name}離婚了。`, agent.name, other.name);
+                        agent.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `我和${other.name}離婚了。`, 10, [other.name]);
+                        other.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `我和${agent.name}離婚了。`, 10, [agent.name]);
+                        agent.mood = Math.max(-100, agent.mood - 25);
+                        other.mood = Math.max(-100, other.mood - 25);
+                        Object.values(this.agents).forEach(a => {
+                            if (a.agentId !== agent.agentId && a.agentId !== other.agentId) {
+                                a.mood = Math.max(-100, a.mood - 3);
+                            }
+                        });
+                        this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}和${other.name}離婚了⋯⋯好可惜。`, source:'鎮民', spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+                    }
+                }
+            }
+        }
+    }
+
     _loadDefaultResidents() {
         const residents = [
-            {id:'chen_wei',name:'陳偉 (Chen Wei)',age:45,job:'mayor',home:'residential_north',traits:['charismatic','hardworking','optimist'],values:['community','peace'],background:'A former military officer who settled in RimTown 20 years ago. He cares deeply about the community.'},
-            {id:'lin_mei',name:'林美 (Lin Mei)',age:32,job:'doctor',home:'residential_north',traits:['kind','perfectionist','night_owl'],values:['knowledge','family'],background:'A talented doctor who left a prestigious hospital to provide medical care to the rural town.'},
-            {id:'zhang_hao',name:'張豪 (Zhang Hao)',age:28,job:'blacksmith',home:'residential_south',traits:['hardworking','shy','stoic'],values:['art','freedom'],background:'A quiet but skilled craftsman who expresses himself through metalwork. Has a secret passion for poetry.'},
-            {id:'wang_li',name:'王麗 (Wang Li)',age:38,job:'cook',home:'residential_south',traits:['gossip','kind','glutton'],values:['community','family'],background:'The heart and soul of the tavern. She knows everyone\'s business.'},
-            {id:'liu_jun',name:'劉俊 (Liu Jun)',age:22,job:'farmer',home:'residential_east',traits:['early_bird','romantic','creative'],values:['nature','adventure'],background:'A young farmer with big dreams. He writes love letters that he never sends.'},
-            {id:'zhao_xia',name:'趙霞 (Zhao Xia)',age:35,job:'trader',home:'residential_east',traits:['charismatic','creative','pessimist'],values:['wealth','adventure'],background:'A savvy merchant with connections to the outside world.'},
-            {id:'yang_feng',name:'楊鋒 (Yang Feng)',age:40,job:'guard',home:'residential_north',traits:['stoic','hardworking','jealous'],values:['power','family'],background:'A former mercenary who found peace guarding RimTown.'},
-            {id:'sun_yu',name:'孫雨 (Sun Yu)',age:26,job:'researcher',home:'residential_east',traits:['creative','neurotic','night_owl'],values:['knowledge','freedom'],background:'A brilliant but anxious young scholar studying ancient ruins near the town.'},
-            {id:'wu_da',name:'吳達 (Wu Da)',age:50,job:'miner',home:'residential_south',traits:['hardworking','pessimist','abrasive'],values:['wealth','freedom'],background:'A grizzled miner who\'s been digging since he was 16. Rough but reliable.'},
-            {id:'huang_li',name:'黃莉 (Huang Li)',age:29,job:'priest',home:'residential_north',traits:['kind','optimist','romantic'],values:['peace','community','art'],background:'A gentle soul who tends the chapel. She has a beautiful singing voice.'},
-            {id:'ma_qiang',name:'馬強 (Ma Qiang)',age:33,job:'carpenter',home:'residential_south',traits:['lazy','charismatic','gossip'],values:['freedom','adventure'],background:'A charming slacker who\'d rather tell stories than swing a hammer.'},
-            {id:'xu_ying',name:'許瑩 (Xu Ying)',age:20,job:'tailor',home:'residential_east',traits:['shy','perfectionist','early_bird'],values:['art','family'],background:'The youngest adult in town. A talented seamstress too timid to accept compliments.'},
+            {id:'chen_wei',name:'陳偉',age:45,job:'mayor',home:'residential_north',traits:['charismatic','hardworking','optimist'],values:['社群','和平'],background:'曾是軍官，二十年前定居邊境鎮。他深愛這個社區，把全鎮的安危視為自己的責任。'},
+            {id:'lin_mei',name:'林美',age:32,job:'doctor',home:'residential_north',traits:['kind','perfectionist','night_owl'],values:['知識','家庭'],background:'才華洋溢的醫生，離開城裡的大醫院來到邊境鎮行醫。經常工作到深夜。'},
+            {id:'zhang_hao',name:'張豪',age:28,job:'blacksmith',home:'residential_south',traits:['hardworking','shy','stoic'],values:['藝術','自由'],background:'沉默寡言但技藝精湛的鐵匠，用金屬表達自己的情感。私下喜歡寫詩。'},
+            {id:'wang_li',name:'王麗',age:38,job:'cook',home:'residential_south',traits:['gossip','kind','glutton'],values:['社群','家庭'],background:'酒館的靈魂人物，認識鎮上每一個人，也知道所有人的八卦。煮的菜讓人回味無窮。'},
+            {id:'liu_jun',name:'劉俊',age:22,job:'farmer',home:'residential_east',traits:['early_bird','romantic','creative'],values:['自然','冒險'],background:'有著遠大夢想的年輕農夫。偷偷寫情書但從未寄出，心中暗戀著某人。'},
+            {id:'zhao_xia',name:'趙霞',age:35,job:'trader',home:'residential_east',traits:['charismatic','creative','pessimist'],values:['財富','冒險'],background:'精明的女商人，與外面的世界有廣泛的聯繫。表面開朗但內心悲觀。'},
+            {id:'yang_feng',name:'楊鋒',age:40,job:'guard',home:'residential_north',traits:['stoic','hardworking','jealous'],values:['權力','家庭'],background:'前傭兵，在邊境鎮找到了平靜。但嫉妒心很重，尤其在感情方面。'},
+            {id:'sun_yu',name:'孫雨',age:26,job:'researcher',home:'residential_east',traits:['creative','neurotic','night_owl'],values:['知識','自由'],background:'聰明但容易焦慮的年輕學者，正在研究小鎮附近的古代遺跡。'},
+            {id:'wu_da',name:'吳達',age:50,job:'miner',home:'residential_south',traits:['hardworking','pessimist','abrasive'],values:['財富','自由'],background:'從十六歲就開始挖礦的老礦工。說話粗魯但非常可靠。'},
+            {id:'huang_li',name:'黃莉',age:29,job:'priest',home:'residential_north',traits:['kind','optimist','romantic'],values:['和平','社群','藝術'],background:'溫柔的牧師，照顧禮拜堂和居民的心靈。有一副動人的歌喉，經常在教堂唱歌。'},
+            {id:'ma_qiang',name:'馬強',age:33,job:'carpenter',home:'residential_south',traits:['lazy','charismatic','gossip'],values:['自由','冒險'],background:'迷人的懶鬼，比起幹活更喜歡講故事。但只要認真起來手藝一流。'},
+            {id:'xu_ying',name:'許瑩',age:20,job:'tailor',home:'residential_east',traits:['shy','perfectionist','early_bird'],values:['藝術','家庭'],background:'鎮上最年輕的居民。天賦異稟的裁縫師，但太害羞不敢接受別人的誇獎。'},
         ];
         residents.forEach(r => {
             const personality = new Personality(r.traits, r.background, r.values);
@@ -1705,7 +2226,8 @@ class World {
             relationships: Object.fromEntries(Object.entries(a.relationships.relationships).map(([k,r])=>[k,{
                 targetId:r.targetId, targetName:r.targetName, affinity:r.affinity, trust:r.trust,
                 romanticInterest:r.romanticInterest, interactionCount:r.interactionCount,
-                lastInteractionTick:r.lastInteractionTick, sharedMemories:r.sharedMemories.slice(-10)
+                lastInteractionTick:r.lastInteractionTick, sharedMemories:r.sharedMemories.slice(-10),
+                status:r.status, statusSince:r.statusSince, isCheating:r.isCheating
             }])),
             memory: a.memory.entries.slice(-50).map(m=>({tick:m.tick,timeStr:m.timeStr,category:m.category,content:m.content,importance:m.importance,relatedAgents:m.relatedAgents})),
             chatHistory: a.isPlayer ? (a.chatHistory||[]).slice(-500) : undefined,
@@ -1794,6 +2316,9 @@ class World {
                         rel.interactionCount = rv.interactionCount;
                         rel.lastInteractionTick = rv.lastInteractionTick;
                         rel.sharedMemories = rv.sharedMemories || [];
+                        rel.status = rv.status || null;
+                        rel.statusSince = rv.statusSince || 0;
+                        rel.isCheating = rv.isCheating || false;
                     }
                 }
                 // Memory

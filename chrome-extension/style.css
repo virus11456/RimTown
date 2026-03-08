@@ -1053,3 +1053,26 @@ body {
 .btn-save { border-color: var(--positive); color: var(--positive); }
 .btn-save:hover { background: var(--positive); color: var(--bg-primary); }
 .btn-export:hover, .btn-import:hover { border-color: var(--info); color: var(--info); }
+
+/* ===== Relationship Status Badges ===== */
+.rel-status-badge {
+    display: inline-block; font-size: 0.55rem; padding: 1px 5px; border-radius: 8px;
+    margin-left: 4px; vertical-align: middle; font-weight: bold;
+}
+.rel-status-badge.rel-dating { background: #e91e8c33; color: #f472b6; border: 1px solid #f472b644; }
+.rel-status-badge.rel-married { background: #fbbf2433; color: #fbbf24; border: 1px solid #fbbf2444; }
+.rel-status-badge.rel-ex { background: #6b728033; color: #9ca3af; border: 1px solid #6b728044; }
+.rel-status-badge.rel-cheating { background: #dc262633; color: #f87171; border: 1px solid #dc262644; }
+.log-entry.type-relationship { border-left: 2px solid #f472b6; padding-left: 6px; }
+
+/* ===== NPC Conversation Display ===== */
+.npc-convo-section { border-bottom: 2px solid var(--border); margin-bottom: 8px; }
+.npc-convo-entry { padding: 6px 10px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
+.npc-convo-entry:hover { background: rgba(255,255,255,0.03); }
+.npc-convo-header { font-size: 0.72rem; margin-bottom: 2px; }
+.npc-convo-summary { font-size: 0.68rem; color: var(--text-secondary); }
+.npc-convo-dialogue { display: none; margin-top: 6px; padding: 6px 8px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+.npc-convo-entry.expanded .npc-convo-dialogue { display: block; }
+.npc-convo-entry.expanded .npc-convo-summary { color: var(--accent); }
+.npc-convo-line { font-size: 0.68rem; color: var(--text-primary); margin: 3px 0; line-height: 1.4; }
+.npc-convo-speaker { color: var(--accent-light); font-weight: bold; }
