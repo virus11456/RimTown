@@ -476,7 +476,7 @@ class PlayerAgent extends Agent {
         world.logMessage('player_move', `You moved to ${locationId}`, this.name);
         return true;
     }
-    toDict() { const d = super.toDict(); d.is_player = true; d.chat_history = this.chatHistory.slice(-50); return d; }
+    toDict() { const d = super.toDict(); d.is_player = true; d.chat_history = this.chatHistory.slice(-500); return d; }
 }
 
 // --- Gossip Network ---
@@ -1700,7 +1700,7 @@ class World {
                 lastInteractionTick:r.lastInteractionTick, sharedMemories:r.sharedMemories.slice(-10)
             }])),
             memory: a.memory.entries.slice(-50).map(m=>({tick:m.tick,timeStr:m.timeStr,category:m.category,content:m.content,importance:m.importance,relatedAgents:m.relatedAgents})),
-            chatHistory: a.isPlayer ? (a.chatHistory||[]).slice(-50) : undefined,
+            chatHistory: a.isPlayer ? (a.chatHistory||[]).slice(-500) : undefined,
             _lastInteractionTick: a._lastInteractionTick,
         });
         return {

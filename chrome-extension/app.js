@@ -371,18 +371,50 @@ class RimTownApp {
         const nearbyNpcs = Object.entries(this.state.agents)
             .filter(([id, a]) => id !== 'player' && a.current_location === playerLoc)
             .map(([id, a]) => ({ id, ...a }));
+
+        // Build set of all NPCs player has chatted with (for history)
+        const chattedNames = new Set();
+        chatHistory.forEach(c => {
+            if (c.speaker !== player.name) chattedNames.add(c.speaker);
+            if (c.target !== player.name) chattedNames.add(c.target);
+        });
+        // Map names to agent IDs for past contacts
+        const nameToId = {};
+        for (const [id, a] of Object.entries(this.state.agents)) {
+            if (id !== 'player') nameToId[a.name] = id;
+        }
+
         let nearbyHtml = `<div class="chat-location">You are at: <strong>${playerLoc.replace(/_/g,' ')}</strong></div><div class="chat-nearby">`;
-        if (!nearbyNpcs.length) nearbyHtml += '<p class="muted-text">No one else is here. Move to another location.</p>';
-        else {
-            nearbyHtml += '<div class="nearby-label">Talk to:</div><div class="nearby-list">';
+        if (nearbyNpcs.length) {
+            nearbyHtml += '<div class="nearby-label">Nearby:</div><div class="nearby-list">';
             nearbyNpcs.forEach(npc => {
                 nearbyHtml += `<button class="nearby-btn ${this.chatTarget===npc.id?'active':''}" onclick="app.startChatWith('${npc.id}')">
                     <span class="mood-indicator mood-${npc.mood_description}"></span>${npc.name}
                     <span class="nearby-job">${npc.job?.title||''}</span></button>`;
             });
             nearbyHtml += '</div>';
+        } else {
+            nearbyHtml += '<p class="muted-text">No one nearby.</p>';
+        }
+
+        // Show past chat contacts not currently nearby
+        const nearbyIds = new Set(nearbyNpcs.map(n => n.id));
+        const pastContacts = [...chattedNames].filter(name => {
+            const id = nameToId[name];
+            return id && !nearbyIds.has(id);
+        });
+        if (pastContacts.length) {
+            nearbyHtml += '<div class="nearby-label" style="margin-top:6px">Chat History:</div><div class="nearby-list">';
+            pastContacts.forEach(name => {
+                const id = nameToId[name];
+                const msgCount = chatHistory.filter(c => c.speaker === name || c.target === name).length;
+                nearbyHtml += `<button class="nearby-btn history-btn ${this.chatTarget===id?'active':''}" onclick="app.startChatWith('${id}')">
+                    ${name} <span class="nearby-job">${msgCount} msgs</span></button>`;
+            });
+            nearbyHtml += '</div>';
         }
         nearbyHtml += '</div>';
+
         let messagesHtml = '<div class="chat-messages" id="chat-messages">';
         if (this.chatTarget) {
             const targetAgent = this.state.agents[this.chatTarget];
@@ -396,8 +428,9 @@ class RimTownApp {
                     <div class="chat-text">${this._escapeHtml(msg.text)}</div>
                     <div class="chat-time">${msg.time||''}</div></div>`;
             });
-        } else messagesHtml += '<p class="muted-text chat-hint">Select someone nearby to start chatting.</p>';
+        } else messagesHtml += '<p class="muted-text chat-hint">Select someone to view conversation.</p>';
         messagesHtml += '</div>';
+
         let inputHtml = '';
         if (this.chatTarget) {
             const ta = this.state.agents[this.chatTarget];
@@ -407,7 +440,9 @@ class RimTownApp {
                     <input type="text" id="chat-input" class="chat-input" placeholder="Type a message..."
                         onkeydown="if(event.key==='Enter') app._sendFromInput()" ${this.chatSending?'disabled':''}>
                     <button class="chat-send-btn" onclick="app._sendFromInput()" ${this.chatSending?'disabled':''}>${this.chatSending?'...':'Send'}</button></div>`;
-            } else inputHtml = `<div class="chat-input-area"><p class="muted-text" style="padding:8px">${ta?.name||'They'} left this area.</p></div>`;
+            } else {
+                inputHtml = `<div class="chat-input-area"><p class="muted-text" style="padding:8px">📜 Viewing past conversations with ${ta?.name||'them'}. Move to their location to chat.</p></div>`;
+            }
         }
         container.innerHTML = nearbyHtml + messagesHtml + inputHtml;
         this._scrollChatToBottom();

@@ -601,6 +601,13 @@ body {
 .nearby-btn.active .nearby-job {
     color: rgba(255,255,255,0.7);
 }
+.nearby-btn.history-btn {
+    border-style: dashed;
+    opacity: 0.75;
+}
+.nearby-btn.history-btn:hover {
+    opacity: 1;
+}
 
 /* Chat messages */
 .chat-messages {
