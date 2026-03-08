@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from rimtown.agents.memory import Memory
 from rimtown.agents.needs import Needs
 from rimtown.agents.personality import Personality
+from rimtown.agents.skills import SkillSet, generate_random_skills, JOB_SKILL_MAP, ACTIVITY_SKILL_MAP
 from rimtown.jobs.job import Job
 from rimtown.social.relationships import RelationshipManager
 
@@ -41,6 +42,7 @@ class Agent:
         personality: Personality | None = None,
         job: Job | None = None,
         home_location: str = "residential_north",
+        skills: SkillSet | None = None,
     ):
         self.agent_id = agent_id
         self.name = name
@@ -57,6 +59,24 @@ class Agent:
         self.needs = Needs()
         self.memory = Memory()
         self.relationships = RelationshipManager()
+
+        # Skills - generate based on job/age/traits if not provided
+        if skills:
+            self.skills = skills
+        else:
+            job_key = None
+            if self.job:
+                # Reverse lookup job key from title
+                from rimtown.jobs.job import JOB_DEFINITIONS
+                for k, v in JOB_DEFINITIONS.items():
+                    if v["title"] == self.job.title:
+                        job_key = k
+                        break
+            self.skills = generate_random_skills(
+                job_key=job_key,
+                age=self.age,
+                trait_list=self.personality.traits,
+            )
 
         # Interaction cooldown (prevent constant chatting)
         self._last_interaction_tick: int = 0
@@ -101,6 +121,9 @@ class Agent:
         need_mood = self.needs.mood_contribution
         self.mood = max(-100, min(100, 50 + self.personality.mood_base + int(need_mood)))
 
+        # Gain skill XP from current activity
+        self._gain_skill_xp(world)
+
         # Move to appropriate location
         self._decide_location(hour)
         if self.target_location and self.target_location != self.current_location:
@@ -114,6 +137,46 @@ class Agent:
         # Generate internal thought occasionally
         if random.random() < 0.1:
             self._generate_thought(world)
+
+    def _gain_skill_xp(self, world: World):
+        """Gain skill XP based on current activity."""
+        activity_name = self.activity.value
+        xp_amount = random.randint(3, 8)
+
+        # Working gives XP in job-related skills
+        if self.activity == Activity.WORKING and self.job:
+            from rimtown.jobs.job import JOB_DEFINITIONS
+            job_key = None
+            for k, v in JOB_DEFINITIONS.items():
+                if v["title"] == self.job.title:
+                    job_key = k
+                    break
+            if job_key and job_key in JOB_SKILL_MAP:
+                mapping = JOB_SKILL_MAP[job_key]
+                for skill_name in mapping.get("primary", []):
+                    leveled = self.skills.add_xp(skill_name, xp_amount * 2)
+                    if leveled:
+                        lvl = self.skills.get(skill_name).level
+                        world.log_message(
+                            "skill_up",
+                            f"{self.name}'s {skill_name} reached level {lvl}!",
+                            self.name,
+                        )
+                        self.current_thought = f"I'm getting better at {skill_name}!"
+                for skill_name in mapping.get("secondary", []):
+                    self.skills.add_xp(skill_name, xp_amount)
+
+        # Other activities give smaller passive XP
+        elif activity_name in ACTIVITY_SKILL_MAP:
+            for skill_name in ACTIVITY_SKILL_MAP[activity_name]:
+                leveled = self.skills.add_xp(skill_name, xp_amount)
+                if leveled:
+                    lvl = self.skills.get(skill_name).level
+                    world.log_message(
+                        "skill_up",
+                        f"{self.name}'s {skill_name} reached level {lvl}!",
+                        self.name,
+                    )
 
     def _decide_activity(self, hour: int):
         """Decide what to do based on time and needs."""
@@ -287,6 +350,15 @@ class Agent:
             r = random.choice(romantic)
             thoughts.append(f"I keep thinking about {r.target_name}...")
 
+        # Think about skills
+        best = self.skills.best_skill
+        if best.level > 0:
+            thoughts.append(f"I've been improving at {best.category.value}...")
+        passions = self.skills.passions
+        if passions:
+            p = random.choice(passions)
+            thoughts.append(f"I really enjoy practicing {p.category.value}.")
+
         if thoughts:
             self.current_thought = random.choice(thoughts)
 
@@ -303,6 +375,7 @@ class Agent:
             "current_location": self.current_location,
             "current_thought": self.current_thought,
             "needs": self.needs.to_dict(),
+            "skills": self.skills.to_dict(),
             "relationships": self.relationships.to_dict(),
             "recent_memories": self.memory.to_dict(),
         }

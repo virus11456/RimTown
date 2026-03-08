@@ -656,6 +656,70 @@ body {
     font-size: 0.8rem;
 }
 
+/* ===== Skills Display ===== */
+.skills-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.skill-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    padding: 2px 0;
+}
+
+.skill-name {
+    width: 80px;
+    color: var(--text-secondary);
+    text-transform: capitalize;
+}
+
+.skill-passion {
+    width: 30px;
+    text-align: center;
+    font-size: 0.6rem;
+}
+
+.passion-burning .skill-passion { color: #f59e0b; }
+.passion-major .skill-passion { color: #f97316; }
+.passion-minor .skill-passion { color: #60a5fa; }
+.passion-incapable .skill-name { color: var(--text-muted); text-decoration: line-through; }
+.passion-incapable .skill-passion { color: var(--negative); }
+
+.skill-bar {
+    flex: 1;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.skill-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--info);
+    transition: width 0.5s ease;
+}
+
+.passion-burning .skill-bar-fill { background: #f59e0b; }
+.passion-major .skill-bar-fill { background: #f97316; }
+.passion-minor .skill-bar-fill { background: #60a5fa; }
+
+.skill-level {
+    width: 18px;
+    text-align: right;
+    font-weight: bold;
+    font-size: 0.7rem;
+}
+
+.passion-incapable .skill-level { color: var(--text-muted); }
+
+/* Skill up log entries */
+.log-entry.type-skill_up { border-left: 2px solid #f59e0b; padding-left: 6px; }
+
 /* Player chat log entries */
 .log-entry.type-player_chat { border-left: 2px solid var(--positive); padding-left: 6px; }
 .log-entry.type-player_move { border-left: 2px solid #fff; padding-left: 6px; }

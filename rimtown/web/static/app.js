@@ -483,6 +483,40 @@ class RimTownApp {
         return div.innerHTML;
     }
 
+    _renderSkills(skillsData) {
+        if (!skillsData || !skillsData.skills) return '<p class="muted-text">No skills data</p>';
+        const skills = skillsData.skills;
+
+        // Sort: passions first, then by level desc
+        const passionOrder = { burning: 0, major: 1, minor: 2, none: 3, incapable: 4 };
+        const sorted = Object.entries(skills).sort(([, a], [, b]) => {
+            const pa = passionOrder[a.passion] ?? 3;
+            const pb = passionOrder[b.passion] ?? 3;
+            if (pa !== pb) return pa - pb;
+            return b.level - a.level;
+        });
+
+        let html = '<div class="skills-grid">';
+        for (const [name, s] of sorted) {
+            const passionCls = `passion-${s.passion}`;
+            const barPct = s.incapable ? 0 : Math.max(0, Math.min(100, (s.level / 20) * 100 + s.progress * (100 / 20)));
+            const passionLabel = { burning: '&#9733;&#9733;&#9733;', major: '&#9733;&#9733;', minor: '&#9733;', none: '', incapable: '&#10007;' }[s.passion] || '';
+
+            html += `
+                <div class="skill-row ${passionCls}">
+                    <span class="skill-name">${name}</span>
+                    <span class="skill-passion">${passionLabel}</span>
+                    <div class="skill-bar">
+                        <div class="skill-bar-fill" style="width:${barPct}%"></div>
+                    </div>
+                    <span class="skill-level">${s.incapable ? '-' : s.level}</span>
+                </div>
+            `;
+        }
+        html += '</div>';
+        return html;
+    }
+
     // --- Other Tabs ---
 
     renderResidentsList(container) {
@@ -577,6 +611,11 @@ class RimTownApp {
                     ${makeBar('Social', needs.social || 0)}
                     ${makeBar('Comfort', needs.comfort || 0)}
                     ${makeBar('Recreation', needs.recreation || 0)}
+                </div>
+
+                <div class="detail-section">
+                    <h3>Skills (Total: ${agent.skills?.total_level || 0})</h3>
+                    ${this._renderSkills(agent.skills)}
                 </div>
 
                 <div class="detail-section">
