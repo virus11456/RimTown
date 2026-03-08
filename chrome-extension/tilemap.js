@@ -69,7 +69,7 @@ const TILE_COLORS = {
 
 // Building templates: [name, width, height, 2D array of tile IDs, doorX, doorY]
 // Each building has walls on perimeter, floor inside, and furniture
-const BUILDING_TEMPLATES = {
+const TILE_TILE_BUILDING_TEMPLATES = {
     tavern: {
         w:10, h:8, doorX:5, doorY:7,
         tiles: [
@@ -669,7 +669,7 @@ class PixelTileMap {
 
     _placeBuilding(locId, x, y, name) {
         const templateKey = LOCATION_BUILDING[locId] || 'house';
-        const tmpl = BUILDING_TEMPLATES[templateKey] || BUILDING_TEMPLATES.house;
+        const tmpl = TILE_BUILDING_TEMPLATES[templateKey] || TILE_BUILDING_TEMPLATES.house;
         const w = tmpl.w, h = tmpl.h;
 
         // Place roof row above building
@@ -695,7 +695,7 @@ class PixelTileMap {
 
     _placeHouseCluster(locId, x, y, name) {
         // Place 2-3 small houses
-        const house = BUILDING_TEMPLATES.house;
+        const house = TILE_BUILDING_TEMPLATES.house;
         const positions = [
             { dx: 0, dy: 0 },
             { dx: house.w + 1, dy: 0 },
@@ -720,7 +720,7 @@ class PixelTileMap {
     }
 
     _placeFarm(locId, x, y, name) {
-        const barn = BUILDING_TEMPLATES.farm_building;
+        const barn = TILE_BUILDING_TEMPLATES.farm_building;
         // Place barn
         for (let rx = 0; rx < barn.w; rx++) this.grid[y][x + rx] = T.ROOF2;
         for (let ty = 0; ty < barn.h; ty++) {
