@@ -433,6 +433,14 @@ class Agent {
         if (rom.length) thoughts.push(`I keep thinking about ${pickRandom(rom).targetName}...`);
         const best = this.skills.bestSkill;
         if (best.level > 0) thoughts.push(`I've been improving at ${best.category}...`);
+        // Economy thoughts
+        if (world.stockpile) {
+            if (world.stockpile.get('food') < 30) thoughts.push("We're running low on food...");
+            if (world.stockpile.get('silver') > 300) thoughts.push("The town's treasury is doing well!");
+            if (world.stockpile.get('meals') < 10) thoughts.push("We need the cook to prepare more meals.");
+        }
+        if (world.buildings?.projects?.length) { const p=world.buildings.projects[0]; thoughts.push(`The ${p.name} is ${Math.round(p.workDone/p.workRequired*100)}% done!`); }
+        if (world.trade?.merchant) thoughts.push(`I should check what ${world.trade.merchant.name} is selling.`);
         if (thoughts.length) this.currentThought = pickRandom(thoughts);
     }
     toDict() {
@@ -947,12 +955,21 @@ class EventSystem {
         this.eventLog.push([world.clock.timeStr, event]);
         this._applyEffects(event, world);
         const guards = Object.values(world.agents).filter(a => a.job?.title==='Guard' && !a.isPlayer);
-        const defense = guards.length * 2 + randInt(1,3);
+        const buildingDefense = world.buildings ? (world.buildings.getEffect('defense_bonus',0)||0) : 0;
+        const defense = guards.length * 2 + randInt(1,3) + buildingDefense;
         if (defense >= rd.threat_level) {
             world.logMessage('raid', `The town successfully defended against the ${rd.attacker}!`);
             guards.forEach(g => { g.mood = Math.min(100, g.mood+10); g.memory.add(world.tickCount, world.clock.timeStr,'raid',`Helped defend against ${rd.attacker}!`,8); });
         } else {
             world.logMessage('raid', `The ${rd.attacker} overwhelmed our defenses!`);
+            // Raiders steal resources
+            if (world.stockpile) {
+                const stolenFood = Math.min(world.stockpile.get('food'), randInt(10,30));
+                const stolenSilver = Math.min(world.stockpile.get('silver'), randInt(5,20));
+                if(stolenFood>0) world.stockpile.consume('food',stolenFood,world.tickCount,`stolen by ${rd.attacker}`);
+                if(stolenSilver>0) world.stockpile.consume('silver',stolenSilver,world.tickCount,`stolen by ${rd.attacker}`);
+                world.logMessage('raid',`The ${rd.attacker} stole ${stolenFood} food and ${stolenSilver} silver!`);
+            }
             const npcs = Object.values(world.agents).filter(a => !a.isPlayer && a.job?.title !== 'Guard');
             if (npcs.length && Math.random() < 0.4) {
                 const fleeing = pickRandom(npcs);
@@ -1087,6 +1104,253 @@ class EventSystem {
     }
 }
 
+// --- Economy: Stockpile ---
+const DEFAULT_STOCKPILE = { food:200, wood:100, stone:80, metal:30, cloth:40, herbs:20, silver:150, meals:50, tools:10, clothing:15, medicine:5, furniture:5, research_points:0 };
+
+class Stockpile {
+    constructor() { this.resources = {...DEFAULT_STOCKPILE}; this.history = []; }
+    get(r) { return this.resources[r] || 0; }
+    add(r, amount, tick=0, reason='', source='') {
+        this.resources[r] = (this.resources[r]||0) + amount;
+        this.history.push({tick,resource:r,amount,reason,source});
+        if (this.history.length > 500) this.history = this.history.slice(-300);
+    }
+    consume(r, amount, tick=0, reason='', source='') {
+        if ((this.resources[r]||0) < amount) return false;
+        this.resources[r] -= amount;
+        this.history.push({tick,resource:r,amount:-amount,reason,source});
+        if (this.history.length > 500) this.history = this.history.slice(-300);
+        return true;
+    }
+    has(r, amount) { return (this.resources[r]||0) >= amount; }
+    canAfford(costs) { return Object.entries(costs).every(([r,a]) => this.has(r,a)); }
+    pay(costs, tick=0, reason='', source='') {
+        if (!this.canAfford(costs)) return false;
+        Object.entries(costs).forEach(([r,a]) => this.consume(r,a,tick,reason,source));
+        return true;
+    }
+    toDict() { return { resources:{...this.resources}, recent_changes:this.history.slice(-10) }; }
+}
+
+// --- Economy: Production ---
+const JOB_PRODUCTION = {
+    farmer: {inputs:{},outputs:{food:12},skill:'plants'},
+    miner: {inputs:{tools:0.1},outputs:{stone:6,metal:3},skill:'mining'},
+    cook: {inputs:{food:8},outputs:{meals:12},skill:'cooking'},
+    blacksmith: {inputs:{metal:3,wood:1},outputs:{tools:3},skill:'crafting'},
+    carpenter: {inputs:{wood:4},outputs:{furniture:2},skill:'construction'},
+    tailor: {inputs:{cloth:3},outputs:{clothing:2},skill:'crafting'},
+    doctor: {inputs:{herbs:2},outputs:{medicine:2},skill:'medicine'},
+    researcher: {inputs:{},outputs:{research_points:5},skill:'intellectual'},
+    trader: {inputs:{},outputs:{silver:8},skill:'social'},
+    guard: {inputs:{},outputs:{},skill:'shooting'},
+    priest: {inputs:{},outputs:{},skill:'social'},
+    mayor: {inputs:{},outputs:{silver:3},skill:'social'},
+};
+const SEASON_FARM_MOD = {spring:1.2,summer:1.5,autumn:0.8,winter:0.2};
+const NATURE_GATHERING = {forest:{wood:3},river:{food:2},meadow:{herbs:1,cloth:0.5},cave:{stone:2,metal:1},lake:{food:1.5}};
+
+function processDailyProduction(world) {
+    const sp = world.stockpile;
+    Object.values(world.agents).forEach(agent => {
+        if (agent.isPlayer || !agent.job) return;
+        const recipe = JOB_PRODUCTION[agent.job.key]; if (!recipe) return;
+        const skill = agent.skills.get(recipe.skill);
+        let eff = 0.5 + ((skill?skill.level:0)/20)*2.0;
+        if (agent.job.key === 'farmer') eff *= SEASON_FARM_MOD[world.clock.season] || 1;
+        eff *= 1 + (agent.mood - 50)/500;
+        eff *= 0.9 + Math.random()*0.2;
+        let canProduce = true;
+        for (const [r,a] of Object.entries(recipe.inputs)) { if (!sp.has(r,a)) { canProduce=false; break; } }
+        if (!canProduce) { world.logMessage('economy',`${agent.name} couldn't work - not enough materials!`,agent.name); agent.mood=Math.max(-100,agent.mood-3); return; }
+        for (const [r,a] of Object.entries(recipe.inputs)) sp.consume(r,a,world.tickCount,`${agent.name}'s production`,agent.name);
+        for (const [r,a] of Object.entries(recipe.outputs)) sp.add(r,Math.round(a*eff*10)/10,world.tickCount,`${agent.name} (${agent.job.title})`,agent.name);
+        if (agent.job.key === 'priest') Object.values(world.agents).forEach(o => { if(o.agentId!==agent.agentId) o.mood=Math.min(100,o.mood+1); });
+    });
+    const npcCount = Object.values(world.agents).filter(a => !a.isPlayer).length;
+    if (!sp.consume('meals',1.5*npcCount,world.tickCount,'daily consumption')) {
+        const deficit = 1.5*npcCount - sp.get('meals');
+        if (sp.consume('food',deficit*2,world.tickCount,'emergency food')) world.logMessage('economy','Not enough meals! Residents eating raw food.');
+        else { world.logMessage('economy','FOOD SHORTAGE! Residents are going hungry!'); Object.values(world.agents).forEach(a => { a.mood=Math.max(-100,a.mood-10); a.needs.hunger=Math.max(0,a.needs.hunger-20); }); }
+    }
+    if (world.townMap) { for (const [locId,gather] of Object.entries(NATURE_GATHERING)) { if (world.townMap.locations[locId]) { for (const [r,a] of Object.entries(gather)) sp.add(r,a*0.5,world.tickCount,`natural (${locId})`); } } }
+    sp.consume('tools',npcCount*0.05,world.tickCount,'tool wear');
+    sp.consume('clothing',npcCount*0.03,world.tickCount,'clothing wear');
+    if (world.clock.season === 'winter' && !sp.consume('wood',npcCount*0.3,world.tickCount,'winter heating')) {
+        world.logMessage('economy','Not enough wood for heating!');
+        Object.values(world.agents).forEach(a => { a.mood=Math.max(-100,a.mood-8); a.needs.comfort=Math.max(0,a.needs.comfort-15); });
+    }
+}
+
+// --- Economy: Buildings ---
+const BUILDING_TEMPLATES = {
+    watchtower:{name:'Watchtower',description:'Improves defense and raid warning',costs:{wood:40,stone:30},work:20,effects:{defense_bonus:3}},
+    granary:{name:'Granary',description:'Increases food storage, reduces spoilage',costs:{wood:30,stone:20},work:15,effects:{food_capacity:500}},
+    marketplace:{name:'Marketplace',description:'Better trade and more merchants',costs:{wood:25,stone:15,silver:50},work:18,effects:{trade_bonus:0.2,merchant_frequency:1.5}},
+    well_upgrade:{name:'Deep Well',description:'Better water supply',costs:{stone:25,tools:3},work:12,effects:{drought_resistance:0.5}},
+    training_ground:{name:'Training Ground',description:'Guards train faster',costs:{wood:20,stone:10,tools:2},work:10,effects:{defense_bonus:2}},
+    brewery:{name:'Brewery',description:'Produces ale, boosts recreation',costs:{wood:15,metal:5,silver:30},work:14,effects:{recreation_bonus:10}},
+    garden:{name:'Herb Garden',description:'Produces herbs for medicine',costs:{wood:10,silver:15},work:8,effects:{herbs_production:2}},
+    school:{name:'School',description:'Increases all skill XP gain',costs:{wood:30,stone:20,silver:40},work:22,effects:{xp_bonus:1.2}},
+    farm_irrigation:{name:'Farm Irrigation',description:'Better crop yield',costs:{stone:15,wood:10,tools:2},work:12,effects:{farm_bonus:1.3}},
+    forge_bellows:{name:'Forge Bellows',description:'Faster metalwork',costs:{metal:10,stone:5},work:10,effects:{smithing_bonus:1.3}},
+    clinic_upgrade:{name:'Medical Ward',description:'Better healing',costs:{wood:15,cloth:10,silver:25},work:14,effects:{healing_bonus:1.5}},
+    town_walls:{name:'Town Walls',description:'Massive defense boost',costs:{stone:80,wood:30,tools:5},work:40,effects:{defense_bonus:8}},
+};
+
+class BuildingManager {
+    constructor() { this.projects=[]; this.completed=[]; this.activeEffects={}; this._counter=0; }
+    getAvailable(world) {
+        const done=new Set(this.completed.map(p=>p.name)), prog=new Set(this.projects.map(p=>p.name));
+        return Object.entries(BUILDING_TEMPLATES).filter(([,t])=>!done.has(t.name)&&!prog.has(t.name)).map(([key,t])=>({key,...t,can_afford:world.stockpile.canAfford(t.costs)}));
+    }
+    startProject(key, world) {
+        const t=BUILDING_TEMPLATES[key]; if(!t) return null;
+        const names=new Set([...this.completed,...this.projects].map(p=>p.name));
+        if(names.has(t.name)) return null;
+        if(!world.stockpile.pay(t.costs,world.tickCount,`Building: ${t.name}`)) return null;
+        this._counter++;
+        const p={id:`build_${this._counter}`,name:t.name,description:t.description,costs:t.costs,workRequired:t.work,workDone:0,effects:t.effects||{},status:'building'};
+        this.projects.push(p); world.logMessage('building',`Construction started: ${t.name}!`); return p;
+    }
+    dailyConstruction(world) {
+        const done=[];
+        this.projects.forEach(p => {
+            if(p.status!=='building') return;
+            Object.values(world.agents).forEach(a => {
+                if(a.isPlayer||!a.job) return;
+                if(['Carpenter','Miner','Blacksmith'].includes(a.job.title)) { const sk=a.skills.get('construction'); p.workDone+=1+Math.floor((sk?sk.level:0)/5); }
+            });
+            if(p.workDone>=p.workRequired) { p.status='complete'; done.push(p); }
+        });
+        done.forEach(p => {
+            this.projects=this.projects.filter(x=>x!==p); this.completed.push(p);
+            Object.entries(p.effects).forEach(([k,v])=>{ this.activeEffects[k]=(this.activeEffects[k]||0)+(typeof v==='number'?v:0); if(typeof v!=='number') this.activeEffects[k]=v; });
+            world.logMessage('building',`Construction complete: ${p.name}!`);
+            Object.values(world.agents).forEach(a=>{ a.mood=Math.min(100,a.mood+5); });
+        });
+    }
+    getEffect(key, def=0) { return this.activeEffects[key]??def; }
+    toDict() { return {in_progress:this.projects,completed:this.completed,active_effects:{...this.activeEffects},completed_count:this.completed.length}; }
+}
+
+// --- Economy: Trade ---
+const BASE_PRICES = {food:1,wood:1.5,stone:2,metal:4,cloth:3,herbs:3.5,meals:2.5,tools:8,clothing:6,medicine:10,furniture:7};
+const MERCHANT_TYPES = [
+    {names:['張商人 (Zhang the Trader)','老趙商隊 (Old Zhao\'s Caravan)'],specialty:'general',sells:['food','cloth','tools','wood'],buys:['meals','furniture','clothing']},
+    {names:['礦商老李 (Li the Ore Dealer)'],specialty:'metals',sells:['metal','tools','stone'],buys:['food','meals']},
+    {names:['藥師小雪 (Xue the Herbalist)'],specialty:'medicine',sells:['herbs','medicine'],buys:['food','cloth']},
+    {names:['絲綢商人 (The Silk Trader)'],specialty:'textiles',sells:['cloth','clothing'],buys:['food','wood','stone']},
+    {names:['異國商隊 (Exotic Caravan)'],specialty:'exotic',sells:['herbs','cloth','metal'],buys:['meals','clothing','furniture','tools']},
+];
+
+class TradeManager {
+    constructor() { this.merchant=null; this._daysSince=0; this.tradeHistory=[]; }
+    dailyUpdate(world) {
+        this._daysSince++;
+        if (this.merchant) { this.merchant.daysRemaining--; if(this.merchant.daysRemaining<=0){ world.logMessage('trade',`Merchant ${this.merchant.name} has departed.`); this.merchant=null; } return; }
+        const freq=world.buildings.getEffect('merchant_frequency',1);
+        const chance=Math.min(0.6, 0.15*freq+(this._daysSince-3)*0.05);
+        if(Math.random()<chance) this._spawnMerchant(world);
+    }
+    _spawnMerchant(world) {
+        this._daysSince=0;
+        const mt=pickRandom(MERCHANT_TYPES);
+        const tradeBonus=world.buildings.getEffect('trade_bonus',0);
+        const offers=[];
+        mt.sells.forEach(r=>{ const bp=BASE_PRICES[r]||5; offers.push({resource:r,amount:randInt(10,30),price:Math.round(bp*(1.2+Math.random()*0.6)*(1-tradeBonus)*10)/10,isBuying:false}); });
+        mt.buys.forEach(r=>{ const bp=BASE_PRICES[r]||5; offers.push({resource:r,amount:randInt(15,40),price:Math.round(bp*(0.5+Math.random()*0.3)*(1+tradeBonus)*10)/10,isBuying:true}); });
+        this.merchant={name:pickRandom(mt.names),specialty:mt.specialty,offers,daysRemaining:randInt(2,4)};
+        world.logMessage('trade',`Merchant ${this.merchant.name} has arrived! Specializes in ${mt.specialty}.`);
+    }
+    executeTrade(offerIdx, qty, world) {
+        if(!this.merchant) return {error:'No merchant'};
+        const offer=this.merchant.offers[offerIdx]; if(!offer) return {error:'Invalid offer'};
+        qty=Math.min(qty,offer.amount); if(qty<=0) return {error:'Invalid quantity'};
+        const total=qty*offer.price;
+        if(offer.isBuying) {
+            if(!world.stockpile.has(offer.resource,qty)) return {error:`Not enough ${offer.resource}`};
+            world.stockpile.consume(offer.resource,qty,world.tickCount,`Sold to ${this.merchant.name}`);
+            world.stockpile.add('silver',total,world.tickCount,`Trade with ${this.merchant.name}`);
+        } else {
+            if(!world.stockpile.has('silver',total)) return {error:'Not enough silver'};
+            world.stockpile.consume('silver',total,world.tickCount,`Bought from ${this.merchant.name}`);
+            world.stockpile.add(offer.resource,qty,world.tickCount,`Trade with ${this.merchant.name}`);
+        }
+        offer.amount-=qty;
+        this.merchant.offers=this.merchant.offers.filter(o=>o.amount>0.5);
+        world.logMessage('trade',`${offer.isBuying?'Sold':'Bought'} ${qty} ${offer.resource} for ${Math.round(total)} silver.`);
+        return {ok:true};
+    }
+    toDict() { return {merchant:this.merchant,days_since_merchant:this._daysSince}; }
+}
+
+// --- Economy: Research ---
+const RESEARCH_TREE = {
+    agriculture:{name:'Advanced Agriculture',description:'Better farming (+30% food)',cost:50,prerequisites:[],effects:{farm_bonus:1.3},unlocks:['farm_irrigation','garden']},
+    metallurgy:{name:'Metallurgy',description:'Better metal smelting',cost:60,prerequisites:[],effects:{smithing_bonus:1.2},unlocks:['forge_bellows']},
+    medicine_research:{name:'Herbal Medicine',description:'Better healing herbs',cost:55,prerequisites:[],effects:{healing_bonus:1.3},unlocks:['clinic_upgrade','garden']},
+    fortification:{name:'Fortification',description:'Defensive structures',cost:70,prerequisites:[],effects:{defense_bonus:2},unlocks:['watchtower','training_ground','town_walls']},
+    commerce:{name:'Commerce',description:'Better trade practices',cost:45,prerequisites:[],effects:{trade_bonus:0.15},unlocks:['marketplace']},
+    architecture:{name:'Architecture',description:'Advanced building',cost:65,prerequisites:['metallurgy'],effects:{build_speed:1.3},unlocks:['school','town_walls']},
+    brewing:{name:'Brewing',description:'Art of fermentation',cost:35,prerequisites:['agriculture'],effects:{recreation_bonus:5},unlocks:['brewery']},
+    logistics:{name:'Logistics',description:'Better storage',cost:50,prerequisites:['commerce'],effects:{storage_bonus:1.5},unlocks:['granary']},
+    education:{name:'Education',description:'Formal education (+15% XP)',cost:80,prerequisites:['architecture'],effects:{xp_bonus:1.15},unlocks:['school']},
+    masonry:{name:'Masonry',description:'Advanced stonework',cost:55,prerequisites:['fortification'],effects:{stone_efficiency:1.3},unlocks:['town_walls','well_upgrade']},
+};
+
+class ResearchManager {
+    constructor() {
+        this.projects={}; this.current=null;
+        for(const [key,d] of Object.entries(RESEARCH_TREE)) {
+            this.projects[key]={key,name:d.name,description:d.description,cost:d.cost,progress:0,prerequisites:d.prerequisites||[],effects:d.effects||{},unlocks:d.unlocks||[],
+                status:d.prerequisites.length===0?'available':'locked'};
+        }
+    }
+    getAvailable() { return Object.values(this.projects).filter(p=>p.status==='available'); }
+    startResearch(key) {
+        const p=this.projects[key]; if(!p||p.status!=='available') return false;
+        if(this.current&&this.projects[this.current]?.status==='researching') this.projects[this.current].status='available';
+        p.status='researching'; this.current=key; return true;
+    }
+    dailyUpdate(world) {
+        if(!this.current) { const av=this.getAvailable(); if(av.length) this.startResearch(av[0].key); return; }
+        let pts=0;
+        Object.values(world.agents).forEach(a=>{ if(!a.isPlayer&&a.job?.title==='Researcher'){ const sk=a.skills.get('intellectual'); pts+=3+(sk?sk.level:0)*0.5; } });
+        const rp=world.stockpile.get('research_points'), bonus=Math.min(rp,5);
+        if(bonus>0) world.stockpile.consume('research_points',bonus,world.tickCount,'research');
+        if(pts+bonus<=0) return;
+        const p=this.projects[this.current]; if(!p||p.status!=='researching') return;
+        p.progress+=pts+bonus;
+        if(p.progress>=p.cost) {
+            p.status='complete'; this.current=null;
+            Object.entries(p.effects).forEach(([k,v])=>{ world.buildings.activeEffects[k]=(world.buildings.activeEffects[k]||0)+(typeof v==='number'?v:0); });
+            for(const op of Object.values(this.projects)) {
+                if(op.status==='locked'&&op.prerequisites.every(pre=>this.projects[pre]?.status==='complete')) op.status='available';
+            }
+            world.logMessage('research',`Research complete: ${p.name}!`);
+            Object.values(world.agents).forEach(a=>{ a.mood=Math.min(100,a.mood+3); });
+        }
+    }
+    toDict() { return {current_research:this.current,projects:{...this.projects}}; }
+}
+
+// --- Economy: Work Orders ---
+class WorkOrderManager {
+    constructor() { this.orders=[]; this._counter=0; }
+    createOrder(type,resource,amount,priority='normal',tick=0) {
+        this._counter++;
+        const o={id:`order_${this._counter}`,title:`${type}: ${amount} ${resource}`,type,resource,amount,current:0,priority,status:'queued',created:tick};
+        this.orders.push(o); return o;
+    }
+    cancelOrder(id) { this.orders=this.orders.filter(o=>o.id!==id); }
+    updateProgress(resource, amount) {
+        this.orders.forEach(o=>{ if(o.status==='complete') return; if(o.resource===resource){ o.current+=amount; if(o.status==='queued') o.status='in_progress'; if(o.current>=o.amount) o.status='complete'; } });
+    }
+    cleanup() { const active=this.orders.filter(o=>o.status!=='complete'); const done=this.orders.filter(o=>o.status==='complete').slice(-10); this.orders=[...active,...done]; }
+    toDict() { return {active:this.orders.filter(o=>o.status!=='complete'),all_orders:this.orders.slice(-20)}; }
+}
+
 // --- World ---
 class World {
     constructor() {
@@ -1099,6 +1363,12 @@ class World {
         this.messageLog = [];
         this.gossipNetwork = new GossipNetwork();
         this.conversationEngine = new ConversationEngine();
+        // Economy
+        this.stockpile = new Stockpile();
+        this.buildings = new BuildingManager();
+        this.trade = new TradeManager();
+        this.research = new ResearchManager();
+        this.workOrders = new WorkOrderManager();
     }
     addAgent(agent) { this.agents[agent.agentId] = agent; }
     removeAgent(id) { delete this.agents[id]; }
@@ -1121,6 +1391,13 @@ class World {
                     Object.values(this.agents).forEach(a => { a.mood = Math.max(-100, Math.min(100, a.mood + event.effects.mood_all)); });
                 }
             }
+            // Daily economy
+            processDailyProduction(this);
+            this.stockpile.history.filter(h=>h.amount>0).slice(-50).forEach(h=>this.workOrders.updateProgress(h.resource,h.amount));
+            this.buildings.dailyConstruction(this);
+            this.trade.dailyUpdate(this);
+            this.research.dailyUpdate(this);
+            this.workOrders.cleanup();
         }
         Object.values(this.agents).forEach(agent => agent.update(this));
     }
@@ -1133,12 +1410,22 @@ class World {
             recent_messages: this.messageLog.slice(-30),
             travelling_agents: this.events.getTravellingAgents(),
             active_chains: this.events.getActiveChains(),
+            stockpile: this.stockpile.toDict(),
+            buildings: this.buildings.toDict(),
+            trade: this.trade.toDict(),
+            research: this.research.toDict(),
+            work_orders: this.workOrders.toDict(),
         };
     }
     reset(seed = null) {
         this.clock.reset(); this.events = new EventSystem();
         this.agents = {}; this.tickCount = 0; this.paused = false; this.messageLog = [];
         this.gossipNetwork = new GossipNetwork();
+        this.stockpile = new Stockpile();
+        this.buildings = new BuildingManager();
+        this.trade = new TradeManager();
+        this.research = new ResearchManager();
+        this.workOrders = new WorkOrderManager();
         this.townMap = generateRandomTown(seed);
         this._loadDefaultResidents();
         const player = new PlayerAgent();

@@ -275,6 +275,7 @@ class RimTownApp {
             case 'residents': this.renderResidentsList(content); break;
             case 'chat': this.renderChat(content); break;
             case 'detail': this.renderAgentDetail(content); break;
+            case 'economy': this.renderEconomy(content); break;
             case 'log': this.renderLog(content); break;
             case 'events': this.renderEvents(content); break;
         }
@@ -447,6 +448,136 @@ class RimTownApp {
                 <div style="margin-top:4px">${evt.description}</div></div>`;
         });
         container.innerHTML = html || '<p class="muted-text" style="padding:20px">No events yet. Events happen randomly each day.</p>';
+    }
+
+    // --- Economy Tab ---
+    renderEconomy(container) {
+        if (!this.state) return;
+        const sp = this.state.stockpile || {};
+        const res = sp.resources || {};
+        const buildings = this.state.buildings || {};
+        const trade = this.state.trade || {};
+        const research = this.state.research || {};
+
+        // Resource icons
+        const icons = {food:'🌾',wood:'🪵',stone:'🪨',metal:'⚙️',cloth:'🧵',herbs:'🌿',silver:'💰',meals:'🍲',tools:'🔧',clothing:'👕',medicine:'💊',furniture:'🪑',research_points:'📚'};
+        const labels = {food:'Food',wood:'Wood',stone:'Stone',metal:'Metal',cloth:'Cloth',herbs:'Herbs',silver:'Silver',meals:'Meals',tools:'Tools',clothing:'Clothing',medicine:'Medicine',furniture:'Furniture',research_points:'Research'};
+
+        let html = '<div class="economy-panel">';
+
+        // Resources
+        html += '<div class="econ-section"><h3>Resources</h3><div class="resource-grid">';
+        for (const [r, amount] of Object.entries(res)) {
+            const icon = icons[r] || '📦';
+            const label = labels[r] || r;
+            const cls = amount < 10 ? 'res-low' : amount > 100 ? 'res-high' : '';
+            html += `<div class="resource-item ${cls}"><span class="res-icon">${icon}</span><span class="res-label">${label}</span><span class="res-amount">${Math.round(amount)}</span></div>`;
+        }
+        html += '</div></div>';
+
+        // Trade
+        html += '<div class="econ-section"><h3>Trade</h3>';
+        if (trade.merchant) {
+            html += `<div class="merchant-card"><div class="merchant-name">${trade.merchant.name}</div>
+                <div class="merchant-info">Specialty: ${trade.merchant.specialty} | Leaves in ${trade.merchant.daysRemaining} day(s)</div>
+                <div class="trade-offers">`;
+            trade.merchant.offers.forEach((offer, idx) => {
+                const icon = icons[offer.resource] || '📦';
+                const action = offer.isBuying ? 'Sell' : 'Buy';
+                const actionCls = offer.isBuying ? 'trade-sell' : 'trade-buy';
+                html += `<div class="trade-offer ${actionCls}">
+                    <span>${icon} ${offer.resource}</span>
+                    <span>×${Math.round(offer.amount)}</span>
+                    <span>${offer.price}/ea</span>
+                    <button class="trade-btn" onclick="app.executeTrade(${idx}, Math.min(5, ${offer.amount}))">${action} 5</button>
+                    <button class="trade-btn" onclick="app.executeTrade(${idx}, ${offer.amount})">${action} All</button></div>`;
+            });
+            html += '</div></div>';
+        } else {
+            html += `<p class="muted-text">No merchant in town. One may arrive soon.</p>`;
+        }
+        html += '</div>';
+
+        // Buildings
+        html += '<div class="econ-section"><h3>Buildings</h3>';
+        if (buildings.in_progress?.length) {
+            html += '<div class="building-progress">';
+            buildings.in_progress.forEach(p => {
+                const pct = Math.round((p.workDone / p.workRequired) * 100);
+                html += `<div class="building-item"><span>${p.name}</span>
+                    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+                    <span class="progress-text">${pct}%</span></div>`;
+            });
+            html += '</div>';
+        }
+        if (buildings.completed?.length) {
+            html += `<div class="completed-buildings">Completed: ${buildings.completed.map(p => p.name).join(', ')}</div>`;
+        }
+        // Available projects
+        const available = this.world.buildings.getAvailable(this.world);
+        if (available.length) {
+            html += '<div class="available-buildings"><div class="build-label">Build:</div>';
+            available.forEach(p => {
+                const costStr = Object.entries(p.costs).map(([r,a]) => `${icons[r]||''}${a}`).join(' ');
+                html += `<div class="build-option ${p.can_afford ? '' : 'cant-afford'}">
+                    <div class="build-name">${p.name}</div>
+                    <div class="build-desc">${p.description}</div>
+                    <div class="build-cost">${costStr}</div>
+                    <button class="build-btn" ${p.can_afford ? '' : 'disabled'} onclick="app.startBuilding('${p.key}')">Build</button></div>`;
+            });
+            html += '</div>';
+        }
+        html += '</div>';
+
+        // Research
+        html += '<div class="econ-section"><h3>Research</h3>';
+        const projects = research.projects || {};
+        const currentKey = research.current_research;
+        if (currentKey && projects[currentKey]) {
+            const cur = projects[currentKey];
+            const pct = Math.round((cur.progress / cur.cost) * 100);
+            html += `<div class="research-current">Researching: <strong>${cur.name}</strong>
+                <div class="progress-bar"><div class="progress-fill research-fill" style="width:${pct}%"></div></div>
+                <span class="progress-text">${pct}%</span></div>`;
+        }
+        const availableResearch = Object.values(projects).filter(p => p.status === 'available');
+        if (availableResearch.length) {
+            html += '<div class="research-available"><div class="build-label">Available:</div>';
+            availableResearch.forEach(p => {
+                const isCurrent = p.key === currentKey;
+                html += `<div class="research-option ${isCurrent ? 'active' : ''}">
+                    <div class="build-name">${p.name}</div>
+                    <div class="build-desc">${p.description} (Cost: ${p.cost})</div>
+                    <button class="build-btn" onclick="app.startResearch('${p.key}')" ${isCurrent?'disabled':''}>Research</button></div>`;
+            });
+            html += '</div>';
+        }
+        const completedResearch = Object.values(projects).filter(p => p.status === 'complete');
+        if (completedResearch.length) {
+            html += `<div class="completed-buildings">Completed: ${completedResearch.map(p => p.name).join(', ')}</div>`;
+        }
+        html += '</div></div>';
+
+        container.innerHTML = html;
+    }
+
+    executeTrade(offerIdx, qty) {
+        const result = this.world.trade.executeTrade(offerIdx, qty, this.world);
+        if (result.error) console.warn('Trade failed:', result.error);
+        this.state = this.world.getState();
+        this.renderSidebar();
+    }
+
+    startBuilding(key) {
+        this.world.buildings.startProject(key, this.world);
+        this.state = this.world.getState();
+        this.renderSidebar();
+    }
+
+    startResearch(key) {
+        this.world.research.startResearch(key);
+        this.state = this.world.getState();
+        this.renderSidebar();
     }
 
     selectAgent(agentId) {

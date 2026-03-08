@@ -878,3 +878,53 @@ body {
 .log-entry.type-arrival { border-left: 2px solid var(--positive); padding-left: 6px; }
 .log-entry.type-immigration { border-left: 2px solid var(--positive); padding-left: 6px; }
 .log-entry.type-chain_event { border-left: 2px solid var(--warning); padding-left: 6px; }
+.log-entry.type-economy { border-left: 2px solid var(--warning); padding-left: 6px; }
+.log-entry.type-building { border-left: 2px solid #a78bfa; padding-left: 6px; }
+.log-entry.type-trade { border-left: 2px solid #fbbf24; padding-left: 6px; }
+.log-entry.type-research { border-left: 2px solid #60a5fa; padding-left: 6px; }
+
+/* Economy Tab */
+.economy-panel { padding: 8px; }
+.econ-section { margin-bottom: 12px; }
+.econ-section h3 { font-size: 0.85rem; margin-bottom: 6px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 3px; }
+
+.resource-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.resource-item { display: flex; flex-direction: column; align-items: center; padding: 4px; background: var(--bg-secondary); border-radius: 4px; font-size: 0.7rem; }
+.resource-item.res-low { background: rgba(248,113,113,0.15); }
+.resource-item.res-high { background: rgba(74,222,128,0.1); }
+.res-icon { font-size: 1rem; }
+.res-label { color: var(--text-secondary); font-size: 0.6rem; }
+.res-amount { font-weight: bold; font-size: 0.8rem; }
+
+.merchant-card { background: var(--bg-secondary); border-radius: 6px; padding: 8px; border: 1px solid var(--warning); }
+.merchant-name { font-weight: bold; color: var(--warning); }
+.merchant-info { font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 6px; }
+.trade-offers { display: flex; flex-direction: column; gap: 4px; }
+.trade-offer { display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: 3px 6px; background: var(--bg-primary); border-radius: 3px; font-size: 0.7rem; }
+.trade-offer.trade-sell { border-left: 2px solid var(--positive); }
+.trade-offer.trade-buy { border-left: 2px solid var(--info); }
+.trade-btn { padding: 2px 6px; font-size: 0.6rem; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 3px; cursor: pointer; }
+.trade-btn:hover { background: var(--accent); border-color: var(--accent); }
+
+.building-progress { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; }
+.building-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; }
+.progress-bar { flex: 1; height: 8px; background: var(--bg-primary); border-radius: 4px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s; }
+.research-fill { background: var(--info); }
+.progress-text { font-size: 0.65rem; color: var(--text-secondary); min-width: 30px; text-align: right; }
+
+.completed-buildings { font-size: 0.7rem; color: var(--positive); margin: 4px 0; padding: 4px; background: rgba(74,222,128,0.1); border-radius: 3px; }
+
+.build-label { font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 4px; }
+.available-buildings, .research-available { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.build-option, .research-option { background: var(--bg-secondary); border-radius: 4px; padding: 6px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.build-option.cant-afford { opacity: 0.5; }
+.build-name { font-weight: bold; font-size: 0.75rem; flex: 1; min-width: 80px; }
+.build-desc { font-size: 0.65rem; color: var(--text-secondary); width: 100%; }
+.build-cost { font-size: 0.65rem; color: var(--warning); }
+.build-btn { padding: 2px 8px; font-size: 0.65rem; background: var(--accent); color: white; border: none; border-radius: 3px; cursor: pointer; }
+.build-btn:hover { background: var(--accent-light); }
+.build-btn:disabled { background: var(--text-muted); cursor: not-allowed; }
+
+.research-current { padding: 6px; background: var(--bg-secondary); border-radius: 4px; border-left: 3px solid var(--info); margin-bottom: 6px; font-size: 0.75rem; }
+.research-option.active { border: 1px solid var(--info); }
