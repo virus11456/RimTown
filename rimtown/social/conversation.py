@@ -155,6 +155,211 @@ Format each line as "NAME: dialogue"."""
             },
         }
 
+    async def generate_player_reply(self, player: Agent, npc: Agent, player_message: str,
+                                     world: World) -> dict:
+        """Generate an NPC reply to a player message using LLM."""
+        rel_npc = npc.relationships.get_or_create(player.agent_id, player.name)
+        rel_player = player.relationships.get_or_create(npc.agent_id, npc.name)
+
+        # Gather recent chat history for context
+        recent_chat = ""
+        if hasattr(player, "chat_history"):
+            recent_lines = [
+                c for c in player.chat_history[-10:]
+                if c.get("target") == npc.name or c.get("speaker") == npc.name
+            ]
+            recent_chat = "\n".join(
+                f"{c['speaker']}: {c['text']}" for c in recent_lines
+            )
+
+        memories_npc = npc.memory.get_about_agent(player.name, n=5)
+
+        prompt = f"""You are {npc.name}, a resident of a small town called RimTown. A visitor named {player.name} is talking to you. Reply in character as {npc.name}.
+
+TIME: {world.clock.time_str}
+LOCATION: {npc.current_location}
+
+=== YOUR CHARACTER: {npc.name} ===
+Age: {npc.age}
+Job: {npc.job.title if npc.job else 'Unemployed'}
+Personality: {npc.personality.describe()}
+Background: {npc.personality.background}
+Current mood: {npc.mood_description} (mood: {npc.mood})
+Current activity: {npc.activity.value}
+Your relationship with {player.name}: {rel_npc.relationship_type.value} (affinity: {rel_npc.affinity}, romantic interest: {rel_npc.romantic_interest})
+Your memories about {player.name}: {chr(10).join(m.content for m in memories_npc) if memories_npc else "You don't know them well yet."}
+
+=== {player.name} (the visitor) ===
+Background: {player.personality.background}
+Traits: {', '.join(player.personality.traits)}
+
+=== RECENT CONVERSATION ===
+{recent_chat if recent_chat else '(This is the start of the conversation)'}
+
+{player.name}: {player_message}
+
+Reply as {npc.name} with 1-3 sentences. Stay in character. Be natural. Respond in the same language {player.name} used.
+After your reply, on a new line write EFFECTS: followed by a JSON object with:
+- affinity_change: how your feeling toward {player.name} changed (-5 to 5)
+- romantic_change: romantic interest change (0 to 3, only if applicable)
+- summary: one sentence describing this exchange
+
+Reply ONLY with {npc.name}'s dialogue and the EFFECTS line. Do not include the name prefix."""
+
+        try:
+            response = await self.llm.generate(prompt, max_tokens=300)
+            return self._parse_player_reply(response, player, npc, world, player_message,
+                                            rel_player, rel_npc)
+        except Exception as e:
+            logger.error(f"Player conversation failed: {e}")
+            return self._fallback_player_reply(player, npc, world, player_message,
+                                               rel_player, rel_npc)
+
+    def _parse_player_reply(self, response: str, player: Agent, npc: Agent,
+                            world: World, player_message: str,
+                            rel_player, rel_npc) -> dict:
+        """Parse LLM reply for player conversation."""
+        import json as json_mod
+
+        lines = response.strip().split("\n")
+        reply_lines = []
+        effects = {}
+
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            if stripped.startswith("EFFECTS:"):
+                try:
+                    remaining = "\n".join(lines[lines.index(line):])
+                    json_start = remaining.find("{")
+                    json_end = remaining.rfind("}") + 1
+                    if json_start >= 0 and json_end > json_start:
+                        effects = json_mod.loads(remaining[json_start:json_end])
+                except (json_mod.JSONDecodeError, ValueError):
+                    pass
+                break
+            else:
+                # Remove name prefix if LLM added it
+                text = stripped
+                if text.startswith(f"{npc.name}:"):
+                    text = text[len(npc.name) + 1:].strip()
+                reply_lines.append(text)
+
+        npc_reply = " ".join(reply_lines).strip() or "..."
+        affinity_change = effects.get("affinity_change", random.randint(0, 2))
+        romantic_change = effects.get("romantic_change", 0)
+        summary = effects.get("summary", f"{npc.name} replied to {player.name}.")
+
+        # Apply effects
+        rel_npc.modify_affinity(affinity_change)
+        rel_npc.modify_romantic(romantic_change)
+        rel_npc.record_interaction(world.tick_count, summary)
+
+        rel_player.modify_affinity(max(0, affinity_change - 1))
+        rel_player.record_interaction(world.tick_count, summary)
+
+        # Store memories
+        npc.memory.add(
+            world.tick_count, world.clock.time_str, "conversation",
+            f"{player.name} said: \"{player_message}\" - {summary}",
+            importance=5, related_agents=[player.name],
+        )
+        player.memory.add(
+            world.tick_count, world.clock.time_str, "conversation",
+            f"Talked with {npc.name}: {summary}",
+            importance=4, related_agents=[npc.name],
+        )
+
+        # Update player chat history
+        if hasattr(player, "chat_history"):
+            player.chat_history.append({
+                "speaker": player.name, "target": npc.name,
+                "text": player_message, "time": world.clock.time_str,
+            })
+            player.chat_history.append({
+                "speaker": npc.name, "target": player.name,
+                "text": npc_reply, "time": world.clock.time_str,
+            })
+
+        world.log_message("player_chat", f"{player.name} → {npc.name}: {summary}",
+                          player.name, npc.name)
+
+        return {
+            "npc_name": npc.name,
+            "npc_reply": npc_reply,
+            "player_message": player_message,
+            "effects": {
+                "affinity_change": affinity_change,
+                "romantic_change": romantic_change,
+            },
+            "summary": summary,
+        }
+
+    def _fallback_player_reply(self, player: Agent, npc: Agent, world: World,
+                                player_message: str, rel_player, rel_npc) -> dict:
+        """Simple fallback reply when LLM is unavailable."""
+        replies_by_affinity = {
+            "high": [
+                f"It's always great to see you, {player.name}!",
+                "I was just thinking about you! What's on your mind?",
+                "Of course! I'm happy to chat with you anytime.",
+            ],
+            "medium": [
+                "Oh, hello! What brings you here?",
+                "Sure, I have a moment. What's up?",
+                "Not a bad day, all things considered. How about you?",
+            ],
+            "low": [
+                "Hmm? What do you want?",
+                "I'm a bit busy right now...",
+                "...",
+            ],
+        }
+
+        if rel_npc.affinity > 30:
+            pool = replies_by_affinity["high"]
+        elif rel_npc.affinity > -10:
+            pool = replies_by_affinity["medium"]
+        else:
+            pool = replies_by_affinity["low"]
+
+        npc_reply = random.choice(pool)
+        affinity_change = random.randint(0, 2)
+
+        rel_npc.modify_affinity(affinity_change)
+        rel_npc.record_interaction(world.tick_count, f"Chatted with {player.name}")
+        rel_player.modify_affinity(affinity_change)
+        rel_player.record_interaction(world.tick_count, f"Chatted with {npc.name}")
+
+        npc.memory.add(world.tick_count, world.clock.time_str, "conversation",
+                       f"{player.name} talked to me.", importance=4,
+                       related_agents=[player.name])
+        player.memory.add(world.tick_count, world.clock.time_str, "conversation",
+                          f"Talked with {npc.name}.", importance=3,
+                          related_agents=[npc.name])
+
+        if hasattr(player, "chat_history"):
+            player.chat_history.append({
+                "speaker": player.name, "target": npc.name,
+                "text": player_message, "time": world.clock.time_str,
+            })
+            player.chat_history.append({
+                "speaker": npc.name, "target": player.name,
+                "text": npc_reply, "time": world.clock.time_str,
+            })
+
+        world.log_message("player_chat", f"{player.name} chatted with {npc.name}",
+                          player.name, npc.name)
+
+        return {
+            "npc_name": npc.name,
+            "npc_reply": npc_reply,
+            "player_message": player_message,
+            "effects": {"affinity_change": affinity_change, "romantic_change": 0},
+            "summary": f"{player.name} chatted with {npc.name}.",
+        }
+
     def _fallback_conversation(self, agent_a: Agent, agent_b: Agent, world: World,
                                 rel_a, rel_b) -> dict:
         """Generate a simple fallback conversation without LLM."""

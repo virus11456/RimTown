@@ -64,6 +64,12 @@ async def main():
         world.add_agent(agent)
     logger.info(f"Loaded {len(residents)} residents")
 
+    # Create player agent
+    from rimtown.agents.player import PlayerAgent
+    player = PlayerAgent(name="Traveler")
+    world.add_agent(player)
+    logger.info("Player agent created - you start at the tavern")
+
     # Start web server
     web_server = WebServer(world)
     world._web_server = web_server

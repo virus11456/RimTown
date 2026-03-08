@@ -33,6 +33,10 @@ class WebServer:
         self.app.router.add_post("/api/pause", self._handle_pause)
         self.app.router.add_post("/api/resume", self._handle_resume)
         self.app.router.add_get("/api/agent/{agent_id}", self._handle_agent_detail)
+        # Player endpoints
+        self.app.router.add_post("/api/player/move", self._handle_player_move)
+        self.app.router.add_post("/api/player/chat", self._handle_player_chat)
+        self.app.router.add_get("/api/player/nearby", self._handle_player_nearby)
         self.app.router.add_static("/static", STATIC_DIR)
 
     async def _handle_index(self, request: web.Request) -> web.Response:
@@ -57,6 +61,98 @@ class WebServer:
         if not agent:
             return web.json_response({"error": "Agent not found"}, status=404)
         return web.json_response(agent.to_dict())
+
+    # --- Player endpoints ---
+
+    async def _handle_player_move(self, request: web.Request) -> web.Response:
+        """Move the player to a new location."""
+        data = await request.json()
+        location_id = data.get("location")
+        if not location_id:
+            return web.json_response({"error": "Missing 'location' field"}, status=400)
+
+        player = self.world.get_agent("player")
+        if not player:
+            return web.json_response({"error": "No player in this world"}, status=404)
+
+        success = player.move_to(location_id, self.world)
+        if not success:
+            return web.json_response({"error": f"Unknown location: {location_id}"}, status=400)
+
+        # Return agents at the new location
+        nearby = self._get_nearby_agents(player)
+        return web.json_response({
+            "ok": True,
+            "location": location_id,
+            "nearby_agents": nearby,
+        })
+
+    async def _handle_player_chat(self, request: web.Request) -> web.Response:
+        """Player sends a message to an NPC."""
+        data = await request.json()
+        target_id = data.get("target_id")
+        message = data.get("message", "").strip()
+
+        if not target_id or not message:
+            return web.json_response({"error": "Missing 'target_id' or 'message'"}, status=400)
+
+        player = self.world.get_agent("player")
+        if not player:
+            return web.json_response({"error": "No player in this world"}, status=404)
+
+        npc = self.world.get_agent(target_id)
+        if not npc:
+            return web.json_response({"error": f"Agent '{target_id}' not found"}, status=404)
+
+        # Check if NPC is at the same location
+        if npc.current_location != player.current_location:
+            return web.json_response({
+                "error": f"{npc.name} is not here. They are at {npc.current_location}."
+            }, status=400)
+
+        # Generate reply using conversation engine
+        conv_engine = getattr(self.world, "_conversation_engine", None)
+        if conv_engine:
+            result = await conv_engine.generate_player_reply(player, npc, message, self.world)
+        else:
+            result = {
+                "npc_name": npc.name,
+                "npc_reply": "...",
+                "player_message": message,
+                "effects": {"affinity_change": 0, "romantic_change": 0},
+                "summary": "",
+            }
+
+        return web.json_response(result)
+
+    async def _handle_player_nearby(self, request: web.Request) -> web.Response:
+        """Get list of agents near the player."""
+        player = self.world.get_agent("player")
+        if not player:
+            return web.json_response({"error": "No player in this world"}, status=404)
+
+        nearby = self._get_nearby_agents(player)
+        return web.json_response({
+            "location": player.current_location,
+            "agents": nearby,
+        })
+
+    def _get_nearby_agents(self, player) -> list[dict]:
+        """Get agents at the player's current location."""
+        agents = self.world.get_agents_at_location(player.current_location)
+        return [
+            {
+                "id": a.agent_id,
+                "name": a.name,
+                "activity": a.activity.value,
+                "mood": a.mood_description,
+                "job": a.job.title if a.job else "Unemployed",
+            }
+            for a in agents
+            if a.agent_id != "player"
+        ]
+
+    # --- WebSocket ---
 
     async def _handle_websocket(self, request: web.Request) -> web.WebSocketResponse:
         ws = web.WebSocketResponse()
