@@ -69,12 +69,12 @@ class World:
         self.tick_count += 1
         time_events = self.clock.tick()
 
-        # Check for daily random events
+        # Check for daily events (raids, chains, departures, arrivals, random)
         if "new_day" in time_events:
-            event = self.events.check_random_event(self)
+            event = self.events.daily_update(self)
             if event:
                 self.log_message("event", f"[{event.severity.upper()}] {event.name}: {event.description}")
-                logger.info(f"Event: {event.name}")
+                logger.info(f"Event: {event.name} (type={event.event_type})")
 
                 # Apply mood effects
                 if "mood_all" in event.effects:
@@ -112,8 +112,11 @@ class World:
             },
             "locations": self.town_map.to_dict() if self.town_map else {},
             "recent_events": [
-                {"time": t, "name": e.name, "description": e.description, "severity": e.severity}
+                {"time": t, "name": e.name, "description": e.description,
+                 "severity": e.severity, "event_type": e.event_type}
                 for t, e in self.events.get_recent_events()
             ],
             "recent_messages": self.message_log[-30:],
+            "travelling_agents": self.events.get_travelling_agents(),
+            "active_chains": self.events.get_active_chains(),
         }

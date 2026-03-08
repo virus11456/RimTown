@@ -201,7 +201,9 @@ class RimTownApp {
         }
 
         const agentCount = Object.keys(this.state.agents).length;
-        document.getElementById('population-count').textContent = `Population: ${agentCount}`;
+        const travelCount = (this.state.travelling_agents || []).length;
+        const travelText = travelCount > 0 ? ` (+${travelCount} travelling)` : '';
+        document.getElementById('population-count').textContent = `Population: ${agentCount}${travelText}`;
 
         // Show terrain info
         const terrain = this.state.locations?.terrain || '';
@@ -669,13 +671,38 @@ class RimTownApp {
 
     renderEvents(container) {
         if (!this.state) return;
-        const events = (this.state.recent_events || []).slice().reverse();
 
         let html = '';
+
+        // Active event chains
+        const chains = this.state.active_chains || [];
+        if (chains.length > 0) {
+            html += '<div class="chain-section"><h4>Active Event Chains</h4>';
+            for (const c of chains) {
+                html += `<div>${c.current_event} (Stage ${c.stage}/${c.total_stages})</div>`;
+            }
+            html += '</div>';
+        }
+
+        // Travelling agents
+        const travelling = this.state.travelling_agents || [];
+        if (travelling.length > 0) {
+            html += '<div class="travelling-section"><h4>Residents Travelling</h4>';
+            for (const t of travelling) {
+                html += `<div class="travelling-item">${t.name} — ${t.reason}</div>`;
+            }
+            html += '</div>';
+        }
+
+        // Event log
+        const events = (this.state.recent_events || []).slice().reverse();
         for (const evt of events) {
+            const typeBadge = evt.event_type && evt.event_type !== 'random'
+                ? `<span class="event-type-badge type-${evt.event_type}">${evt.event_type}</span>`
+                : '';
             html += `
                 <div class="event-card severity-${evt.severity}">
-                    <div style="font-weight:bold">${evt.name}</div>
+                    <div style="font-weight:bold">${evt.name}${typeBadge}</div>
                     <div style="font-size:0.75rem; color:var(--text-secondary)">${evt.time}</div>
                     <div style="margin-top:4px">${evt.description}</div>
                 </div>
