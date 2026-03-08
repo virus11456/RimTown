@@ -17,6 +17,8 @@ class RimTownApp {
         this.simInterval = null;
         this.simSpeed = 2000;
         this.llmClient = null;
+        this.tileMap = null;
+        this._mapGenerated = false;
         this.init();
     }
 
@@ -30,12 +32,41 @@ class RimTownApp {
             this.world.conversationEngine = new ConversationEngine(this.llmClient);
         }
         this.state = this.world.getState();
+        this.setupTileMap();
         this.setupTabListeners();
         this.setupControlListeners();
         this.setupSettingsListeners();
         this.startSimulation();
         this.setupAutoSave();
         this.render();
+        this._startRenderLoop();
+    }
+
+    setupTileMap() {
+        const canvas = document.getElementById('town-map-canvas');
+        this.tileMap = new PixelTileMap(canvas);
+        this.tileMap.onClick = (locId) => this.playerMoveTo(locId);
+        this.tileMap.onAgentClick = (agentId) => this.onAgentClick(agentId);
+        this._generateTileMapLayout();
+    }
+
+    _generateTileMapLayout() {
+        const locations = this.state.locations?.locations || {};
+        this.tileMap.generateLayout(locations);
+        this._mapGenerated = true;
+    }
+
+    _startRenderLoop() {
+        const loop = () => {
+            if (this.tileMap && this._mapGenerated) {
+                const agents = this.state?.agents || {};
+                const player = agents['player'];
+                this.tileMap.updateAgents(agents, this.state.locations?.locations || {});
+                this.tileMap.render(agents, this.selectedAgent, player?.current_location);
+            }
+            requestAnimationFrame(loop);
+        };
+        requestAnimationFrame(loop);
     }
 
     async loadSettings() {
@@ -105,6 +136,8 @@ class RimTownApp {
                 if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
                 this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
                 this.state = this.world.getState();
+                this._generateTileMapLayout();
+                this.tileMap.agentPositions = {};
                 this.deleteSave();
                 this.render();
             }
@@ -225,6 +258,8 @@ class RimTownApp {
                 if (this.world.loadSave(saveData)) {
                     if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
                     this.state = this.world.getState();
+                    this._generateTileMapLayout();
+                    this.tileMap.agentPositions = {};
                     this.render();
                     await this.saveGame();
                 } else {
@@ -304,66 +339,8 @@ class RimTownApp {
     }
 
     renderMap() {
-        const mapEl = document.getElementById('town-map');
-        const locations = this.state.locations?.locations || {};
-        const agents = this.state.agents || {};
-        const player = agents['player'];
-        const playerLoc = player?.current_location;
-        const locationCounts = {};
-        for (const [, agent] of Object.entries(agents)) {
-            const loc = agent.current_location;
-            locationCounts[loc] = (locationCounts[loc] || 0) + 1;
-        }
-        let locHtml = '';
-        const mapWidth = mapEl.clientWidth || 800;
-        const mapHeight = mapEl.clientHeight || 600;
-        for (const [lid, loc] of Object.entries(locations)) {
-            const count = locationCounts[lid] || 0;
-            const x = (loc.x / 800) * mapWidth;
-            const y = (loc.y / 600) * mapHeight;
-            const isPlayerHere = lid === playerLoc;
-            locHtml += `
-                <div class="location cat-${loc.category} ${isPlayerHere ? 'player-here' : ''}"
-                     style="left:${x}px;top:${y}px;transform:translate(-50%,-50%)"
-                     data-location="${lid}" onclick="app.playerMoveTo('${lid}')">
-                    <div class="location-name">${loc.name}</div>
-                    <div class="location-count">${count} people ${isPlayerHere ? '(You)' : ''}</div>
-                </div>`;
-        }
-        let agentHtml = '';
-        const agentsByLocation = {};
-        for (const [aid, agent] of Object.entries(agents)) {
-            const loc = agent.current_location;
-            if (!agentsByLocation[loc]) agentsByLocation[loc] = [];
-            agentsByLocation[loc].push({ id: aid, ...agent });
-        }
-        for (const [lid, locAgents] of Object.entries(agentsByLocation)) {
-            const loc = locations[lid]; if (!loc) continue;
-            const baseX = (loc.x / 800) * mapWidth;
-            const baseY = (loc.y / 600) * mapHeight;
-            locAgents.forEach((agent, i) => {
-                const angle = (i / locAgents.length) * Math.PI * 2;
-                const radius = 20 + (locAgents.length > 4 ? 10 : 0);
-                const ax = baseX + Math.cos(angle) * radius;
-                const ay = baseY + Math.sin(angle) * radius + 20;
-                const isPlayer = agent.id === 'player';
-                const color = this.assignAgentColor(agent.id);
-                const isSelected = this.selectedAgent === agent.id;
-                const dotSize = isPlayer ? 16 : 12;
-                const border = isPlayer ? '3px solid #fff' : isSelected ? '3px solid white' : `2px solid ${color}`;
-                const clickAction = isPlayer ? '' : `onclick="app.onAgentClick('${agent.id}')"`;
-                agentHtml += `
-                    <div class="agent-dot ${isPlayer ? 'player-dot' : ''}"
-                         style="left:${ax}px;top:${ay}px;background:${color};border:${border};width:${dotSize}px;height:${dotSize}px"
-                         ${clickAction} data-agent="${agent.id}">
-                        <div class="tooltip">${isPlayer ? 'You' : agent.name} - ${agent.activity}</div>
-                    </div>`;
-                if (!isPlayer && agent.current_thought && Math.random() > 0.5) {
-                    agentHtml += `<div class="thought-bubble visible" style="left:${ax-30}px;top:${ay-20}px">${agent.current_thought}</div>`;
-                }
-            });
-        }
-        mapEl.innerHTML = locHtml + agentHtml;
+        // Map rendering is now handled by the canvas animation loop (_startRenderLoop)
+        // This method is kept as a no-op for compatibility
     }
 
     onAgentClick(agentId) {
