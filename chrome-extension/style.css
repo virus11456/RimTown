@@ -928,3 +928,29 @@ body {
 
 .research-current { padding: 6px; background: var(--bg-secondary); border-radius: 4px; border-left: 3px solid var(--info); margin-bottom: 6px; font-size: 0.75rem; }
 .research-option.active { border: 1px solid var(--info); }
+
+/* News Bulletins */
+.news-section { margin-bottom: 12px; }
+.news-section h4 { color: var(--warning); font-size: 0.85rem; margin-bottom: 6px; border-bottom: 1px solid var(--border); padding-bottom: 3px; }
+.news-ticker { display: flex; flex-direction: column; gap: 6px; }
+.news-bulletin { background: var(--bg-secondary); border-radius: 6px; padding: 8px; font-size: 0.75rem; position: relative; overflow: hidden; }
+.news-bulletin::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+.news-bulletin.severity-good::before { background: var(--positive); }
+.news-bulletin.severity-info::before { background: var(--info); }
+.news-bulletin.severity-warning::before { background: var(--warning); }
+.news-bulletin.severity-danger::before { background: var(--negative); }
+.news-header { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+.news-severity { font-size: 0.7rem; }
+.news-category { font-size: 0.6rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+.news-duration { font-size: 0.6rem; color: var(--text-muted); margin-left: auto; background: var(--bg-primary); padding: 1px 5px; border-radius: 3px; }
+.news-headline { font-weight: bold; font-size: 0.8rem; color: var(--text-primary); margin-bottom: 2px; }
+.news-headline-en { font-size: 0.65rem; color: var(--text-secondary); font-style: italic; margin-bottom: 3px; }
+.news-flavor { font-size: 0.7rem; color: var(--text-secondary); line-height: 1.3; }
+.news-time { font-size: 0.6rem; color: var(--text-muted); margin-top: 3px; }
+.news-effects { font-size: 0.7rem; padding: 6px 8px; background: var(--bg-secondary); border-radius: 4px; margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.news-effects-label { font-weight: bold; color: var(--text-secondary); font-size: 0.65rem; }
+.news-effect { padding: 1px 5px; border-radius: 3px; font-size: 0.6rem; }
+.news-effect.effect-positive { background: rgba(74,222,128,0.15); color: var(--positive); }
+.news-effect.effect-negative { background: rgba(248,113,113,0.15); color: var(--negative); }
+.news-effect.effect-neutral { background: rgba(96,165,250,0.15); color: var(--info); }
+.log-entry.type-news { border-left: 2px solid var(--warning); padding-left: 6px; font-weight: bold; }

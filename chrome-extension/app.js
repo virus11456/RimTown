@@ -426,6 +426,47 @@ class RimTownApp {
     renderEvents(container) {
         if (!this.state) return;
         let html = '';
+
+        // --- News Bulletins ---
+        const news = this.state.news || {};
+        const bulletins = news.bulletins || [];
+        if (bulletins.length) {
+            html += '<div class="news-section"><h4>📰 News Bulletins</h4><div class="news-ticker">';
+            bulletins.forEach(b => {
+                const severityIcon = {good:'🟢',info:'🔵',warning:'🟡',danger:'🔴'}[b.severity] || '⚪';
+                const categoryIcon = {security:'🛡️',trade:'📦',weather:'🌤️',social:'👥',health:'🏥',discovery:'🔍',nature:'🌿',political:'⚔️'}[b.category] || '📋';
+                const modKeys = Object.entries(news.active_modifiers || {}).filter(([k]) => {
+                    return b.days_remaining > 0;
+                });
+                html += `<div class="news-bulletin severity-${b.severity}">
+                    <div class="news-header">
+                        <span class="news-severity">${severityIcon}</span>
+                        <span class="news-category">${categoryIcon} ${b.category}</span>
+                        <span class="news-duration">${b.days_remaining}d left</span>
+                    </div>
+                    <div class="news-headline">${b.headline}</div>
+                    <div class="news-headline-en">${b.headline_en}</div>
+                    <div class="news-flavor">${b.flavor}</div>
+                    <div class="news-time">${b.published_time}</div>
+                </div>`;
+            });
+            html += '</div>';
+            // Active modifier effects summary
+            const mods = news.active_modifiers || {};
+            const modEntries = Object.entries(mods).filter(([k]) => k !== 'mood_modifier');
+            if (modEntries.length) {
+                html += '<div class="news-effects"><span class="news-effects-label">Active Effects:</span> ';
+                modEntries.forEach(([key, val]) => {
+                    const label = key.replace(/_/g,' ');
+                    const cls = (typeof val === 'number' && val > 0) ? 'effect-positive' : (typeof val === 'number' && val < 0) ? 'effect-negative' : 'effect-neutral';
+                    const display = typeof val === 'number' ? (val > 0 ? '+' : '') + Math.round(val*100) + '%' : (val ? 'Yes' : 'No');
+                    html += `<span class="news-effect ${cls}">${label}: ${display}</span> `;
+                });
+                html += '</div>';
+            }
+            html += '</div>';
+        }
+
         const chains = this.state.active_chains || [];
         if (chains.length) {
             html += '<div class="chain-section"><h4>Active Event Chains</h4>';

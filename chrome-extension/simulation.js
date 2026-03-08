@@ -441,6 +441,11 @@ class Agent {
         }
         if (world.buildings?.projects?.length) { const p=world.buildings.projects[0]; thoughts.push(`The ${p.name} is ${Math.round(p.workDone/p.workRequired*100)}% done!`); }
         if (world.trade?.merchant) thoughts.push(`I should check what ${world.trade.merchant.name} is selling.`);
+        if (world.news?.bulletins?.length) {
+            const latest = world.news.bulletins[world.news.bulletins.length-1];
+            if (latest.severity === 'danger') thoughts.push(`The news about "${latest.headline}" is worrying...`);
+            else if (latest.severity === 'good') thoughts.push(`Good news: ${latest.headline}!`);
+        }
         if (thoughts.length) this.currentThought = pickRandom(thoughts);
     }
     toDict() {
@@ -931,17 +936,49 @@ class EventSystem {
     }
     _rollDailyEvent(world) {
         const roll = Math.random();
-        if (roll < 0.10 && this._daysSinceRaid >= 5) return this._triggerRaid(world);
-        if (roll < 0.18 && this._daysSinceChain >= 7 && !this._activeChains.length) return this._startEventChain(world);
-        if (roll < 0.38) return this._triggerRandomEvent(world);
+        // News modifiers affect event probabilities
+        const nm = world.news ? world.news : {getModifier:(k,d)=>d};
+        const raidChance = Math.max(0, Math.min(0.5, 0.10 + nm.getModifier('raid_chance', 0)));
+        const chainChance = Math.max(0, Math.min(0.4, 0.08 + nm.getModifier('chain_chance', 0)));
+        const festivalBoost = nm.getModifier('festival_chance', 0);
+        const departureBoost = nm.getModifier('departure_chance', 0);
+
+        if (roll < raidChance && this._daysSinceRaid >= 5) return this._triggerRaid(world);
+        if (roll < raidChance + chainChance && this._daysSinceChain >= 7 && !this._activeChains.length) return this._startEventChain(world);
+        if (roll < 0.38 + festivalBoost) return this._triggerRandomEvent(world);
         const npcCount = Object.values(world.agents).filter(a => !a.isPlayer).length;
-        if (roll < 0.43 && this._daysSinceDeparture >= 4 && npcCount > this.TARGET_POPULATION) this._triggerDeparture(world);
+        if (roll < 0.43 + departureBoost && this._daysSinceDeparture >= 4 && npcCount > this.TARGET_POPULATION) this._triggerDeparture(world);
         return null;
     }
     _triggerRandomEvent(world) {
         const season = world.clock.season;
-        const eligible = EVENT_POOL.filter(e => !e.seasons || e.seasons.includes(season));
+        let eligible = EVENT_POOL.filter(e => !e.seasons || e.seasons.includes(season));
         if (!eligible.length) return null;
+        // News can boost festival/specific events
+        const nm = world.news ? world.news : {getModifier:(k,d)=>d};
+        const festivalBoost = nm.getModifier('festival_chance', 0);
+        if (festivalBoost > 0.2) {
+            const festival = eligible.find(e => e.name === 'Festival Day');
+            if (festival && Math.random() < festivalBoost) {
+                const event = {name:festival.name,description:festival.description,severity:festival.severity,effects:festival.effects||{},event_type:'random'};
+                this.eventLog.push([world.clock.timeStr, event]);
+                this._applyEffects(event, world);
+                return event;
+            }
+        }
+        // Drought/storm boost from news
+        const droughtChance = nm.getModifier('drought_chance', 0);
+        if (droughtChance > 0 && Math.random() < droughtChance && !this._activeChains.length) {
+            return this._startEventChain(world, 'drought_famine_riot');
+        }
+        const stormChance = nm.getModifier('storm_chance', 0);
+        if (stormChance > 0 && Math.random() < stormChance && !this._activeChains.length) {
+            return this._startEventChain(world, 'storm_damage_rebuild');
+        }
+        const plagueChance = nm.getModifier('plague_chance', 0);
+        if (plagueChance > 0 && Math.random() < plagueChance && !this._activeChains.length) {
+            return this._startEventChain(world, 'plague_quarantine_recovery');
+        }
         const ed = pickRandom(eligible);
         const event = {name:ed.name,description:ed.description,severity:ed.severity,effects:ed.effects||{},event_type:'random'};
         this.eventLog.push([world.clock.timeStr, event]);
@@ -978,13 +1015,18 @@ class EventSystem {
         }
         return event;
     }
-    _startEventChain(world) {
-        const season = world.clock.season;
-        const eligible = Object.entries(EVENT_CHAINS).filter(([,stages]) => {
-            const first = stages[0]; return !first.seasons || first.seasons.includes(season);
-        });
-        if (!eligible.length) return null;
-        const [chainId, stages] = pickRandom(eligible);
+    _startEventChain(world, forceChainId = null) {
+        let chainId, stages;
+        if (forceChainId && EVENT_CHAINS[forceChainId]) {
+            chainId = forceChainId; stages = EVENT_CHAINS[forceChainId];
+        } else {
+            const season = world.clock.season;
+            const eligible = Object.entries(EVENT_CHAINS).filter(([,s]) => {
+                const first = s[0]; return !first.seasons || first.seasons.includes(season);
+            });
+            if (!eligible.length) return null;
+            [chainId, stages] = pickRandom(eligible);
+        }
         this._daysSinceChain = 0;
         this._activeChains.push({chainId, stage:0, daysUntilNext: stages[0].duration_days||2});
         const first = stages[0];
@@ -1058,8 +1100,11 @@ class EventSystem {
     _managePopulation(world) {
         const npcCount = Object.values(world.agents).filter(a => !a.isPlayer).length;
         const total = npcCount + this._travellingAgents.length;
+        const immigrationBoost = world.news ? world.news.getModifier('immigration_chance', 0) : 0;
         if (total < this.TARGET_POPULATION) {
             for (let i = 0; i < this.TARGET_POPULATION - total; i++) this._spawnImmigrant(world);
+        } else if (immigrationBoost > 0 && Math.random() < immigrationBoost && total < this.TARGET_POPULATION + 3) {
+            this._spawnImmigrant(world);
         }
     }
     _spawnImmigrant(world) {
@@ -1157,7 +1202,8 @@ function processDailyProduction(world) {
         const recipe = JOB_PRODUCTION[agent.job.key]; if (!recipe) return;
         const skill = agent.skills.get(recipe.skill);
         let eff = 0.5 + ((skill?skill.level:0)/20)*2.0;
-        if (agent.job.key === 'farmer') eff *= SEASON_FARM_MOD[world.clock.season] || 1;
+        if (agent.job.key === 'farmer') { eff *= SEASON_FARM_MOD[world.clock.season] || 1; eff *= 1 + (world.news?world.news.getModifier('farm_bonus',0):0); }
+        if (agent.job.key === 'miner') eff *= 1 + (world.news?world.news.getModifier('mining_bonus',0):0);
         eff *= 1 + (agent.mood - 50)/500;
         eff *= 0.9 + Math.random()*0.2;
         let canProduce = true;
@@ -1250,16 +1296,19 @@ class TradeManager {
         this._daysSince++;
         if (this.merchant) { this.merchant.daysRemaining--; if(this.merchant.daysRemaining<=0){ world.logMessage('trade',`Merchant ${this.merchant.name} has departed.`); this.merchant=null; } return; }
         const freq=world.buildings.getEffect('merchant_frequency',1);
-        const chance=Math.min(0.6, 0.15*freq+(this._daysSince-3)*0.05);
+        const newsBoost=world.news?world.news.getModifier('merchant_chance',0):0;
+        const chance=Math.min(0.6, 0.15*freq+(this._daysSince-3)*0.05+newsBoost);
         if(Math.random()<chance) this._spawnMerchant(world);
     }
     _spawnMerchant(world) {
         this._daysSince=0;
         const mt=pickRandom(MERCHANT_TYPES);
         const tradeBonus=world.buildings.getEffect('trade_bonus',0);
+        const sellBonus=world.news?world.news.getModifier('sell_bonus',0):0;
+        const buyBonus=world.news?world.news.getModifier('buy_bonus',0):0;
         const offers=[];
-        mt.sells.forEach(r=>{ const bp=BASE_PRICES[r]||5; offers.push({resource:r,amount:randInt(10,30),price:Math.round(bp*(1.2+Math.random()*0.6)*(1-tradeBonus)*10)/10,isBuying:false}); });
-        mt.buys.forEach(r=>{ const bp=BASE_PRICES[r]||5; offers.push({resource:r,amount:randInt(15,40),price:Math.round(bp*(0.5+Math.random()*0.3)*(1+tradeBonus)*10)/10,isBuying:true}); });
+        mt.sells.forEach(r=>{ const bp=BASE_PRICES[r]||5; offers.push({resource:r,amount:randInt(10,30),price:Math.round(bp*(1.2+Math.random()*0.6)*(1-tradeBonus-buyBonus)*10)/10,isBuying:false}); });
+        mt.buys.forEach(r=>{ const bp=BASE_PRICES[r]||5; offers.push({resource:r,amount:randInt(15,40),price:Math.round(bp*(0.5+Math.random()*0.3)*(1+tradeBonus+sellBonus)*10)/10,isBuying:true}); });
         this.merchant={name:pickRandom(mt.names),specialty:mt.specialty,offers,daysRemaining:randInt(2,4)};
         world.logMessage('trade',`Merchant ${this.merchant.name} has arrived! Specializes in ${mt.specialty}.`);
     }
@@ -1317,6 +1366,7 @@ class ResearchManager {
         if(!this.current) { const av=this.getAvailable(); if(av.length) this.startResearch(av[0].key); return; }
         let pts=0;
         Object.values(world.agents).forEach(a=>{ if(!a.isPlayer&&a.job?.title==='Researcher'){ const sk=a.skills.get('intellectual'); pts+=3+(sk?sk.level:0)*0.5; } });
+        pts *= 1 + (world.news?world.news.getModifier('research_bonus',0):0);
         const rp=world.stockpile.get('research_points'), bonus=Math.min(rp,5);
         if(bonus>0) world.stockpile.consume('research_points',bonus,world.tickCount,'research');
         if(pts+bonus<=0) return;
@@ -1351,6 +1401,181 @@ class WorkOrderManager {
     toDict() { return {active:this.orders.filter(o=>o.status!=='complete'),all_orders:this.orders.slice(-20)}; }
 }
 
+// --- News System ---
+const NEWS_TEMPLATES = [
+    // Security/Raid related
+    {headline:'邊境偵察報告：發現可疑蹤跡',headline_en:'Border scouts report suspicious tracks',category:'security',
+     conditions:w=>true, weight:3, severity:'warning',
+     modifiers:{raid_chance:0.15}, duration:3, flavor:['Scouts found campfire remains near the northern pass.','Unknown footprints spotted along the trade route.']},
+    {headline:'山賊集團在鄰近地區活動',headline_en:'Bandit group active in nearby regions',category:'security',
+     conditions:w=>w.clock.day>5, weight:2, severity:'danger',
+     modifiers:{raid_chance:0.25,raid_severity:1}, duration:4, flavor:['Refugees from a neighboring village warn of organized bandits.','Merchants report being ambushed on the main road.']},
+    {headline:'附近村莊遭受襲擊',headline_en:'Nearby village attacked',category:'security',
+     conditions:w=>true, weight:1, severity:'danger',
+     modifiers:{raid_chance:0.30,chain_chance:0.1,mood_modifier:-5}, duration:3, flavor:['Survivors are fleeing toward RimTown for safety.']},
+    {headline:'邊境巡邏隊回報一切平靜',headline_en:'Border patrols report all clear',category:'security',
+     conditions:w=>true, weight:4, severity:'good',
+     modifiers:{raid_chance:-0.05}, duration:2, flavor:['The surrounding area seems peaceful for now.','No signs of hostile activity detected.']},
+
+    // Trade/Economy related
+    {headline:'商路暢通，大型商隊正在途中',headline_en:'Trade routes clear, large caravan en route',category:'trade',
+     conditions:w=>!w.trade?.merchant, weight:3, severity:'good',
+     modifiers:{merchant_chance:0.3,trade_bonus:0.1}, duration:3, flavor:['Several merchants are heading our way with exotic goods.','The main trade road has been repaired.']},
+    {headline:'貿易路線遭到封鎖',headline_en:'Trade routes blocked',category:'trade',
+     conditions:w=>true, weight:2, severity:'warning',
+     modifiers:{merchant_chance:-0.15,supply_shortage:true}, duration:4, flavor:['Landslides have blocked the mountain pass.','Bridge collapse on the main trade road.']},
+    {headline:'鄰國需求大增，物價上漲',headline_en:'Neighboring demand surges, prices rising',category:'trade',
+     conditions:w=>true, weight:2, severity:'info',
+     modifiers:{sell_bonus:0.2}, duration:3, flavor:['Regional demand for crafted goods has spiked.','A large construction project in the capital needs materials.']},
+    {headline:'市場供過於求，物價下跌',headline_en:'Market oversupply, prices falling',category:'trade',
+     conditions:w=>true, weight:2, severity:'info',
+     modifiers:{buy_bonus:0.15,sell_bonus:-0.1}, duration:3, flavor:['Too many goods flooding the regional market.']},
+
+    // Weather/Nature related
+    {headline:'農夫預測：近日天氣適宜耕作',headline_en:'Farmers predict: good weather for crops',category:'weather',
+     conditions:w=>['spring','summer'].includes(w.clock.season), weight:3, severity:'good',
+     modifiers:{farm_bonus:0.2,mood_modifier:3}, duration:2, flavor:['Clear skies and gentle rain expected.','Perfect conditions for planting.']},
+    {headline:'異常天象：暴風雨可能來襲',headline_en:'Unusual signs: storms may approach',category:'weather',
+     conditions:w=>['autumn','winter'].includes(w.clock.season), weight:3, severity:'warning',
+     modifiers:{storm_chance:0.2,farm_bonus:-0.15,mood_modifier:-3}, duration:3, flavor:['Dark clouds gathering on the horizon.','Animals are behaving strangely.']},
+    {headline:'乾旱警報：水源開始減少',headline_en:'Drought warning: water sources declining',category:'weather',
+     conditions:w=>w.clock.season==='summer', weight:2, severity:'danger',
+     modifiers:{drought_chance:0.25,farm_bonus:-0.3,mood_modifier:-5}, duration:4, flavor:['The river level is dropping fast.','Wells are running lower than usual.']},
+    {headline:'豐沛雨水帶來好收成的希望',headline_en:'Abundant rain brings hope for harvest',category:'weather',
+     conditions:w=>['spring','summer'].includes(w.clock.season), weight:3, severity:'good',
+     modifiers:{farm_bonus:0.3}, duration:2, flavor:['The rain has been just right this season.']},
+
+    // Social/Political
+    {headline:'居民對鎮長的支持度創新高',headline_en:'Mayor approval rating hits new high',category:'social',
+     conditions:w=>{ const mayor=Object.values(w.agents).find(a=>a.job?.title==='Mayor'); return mayor&&mayor.mood>40; }, weight:2, severity:'good',
+     modifiers:{mood_modifier:5,immigration_chance:0.1}, duration:2, flavor:['The town council has been working well together.']},
+    {headline:'不滿情緒蔓延，居民要求改善',headline_en:'Discontent spreading, residents demand change',category:'social',
+     conditions:w=>{ const avg=Object.values(w.agents).filter(a=>!a.isPlayer).reduce((s,a)=>s+a.mood,0)/(Object.values(w.agents).length||1); return avg<30; }, weight:3, severity:'warning',
+     modifiers:{mood_modifier:-5,departure_chance:0.15,chain_chance:0.1}, duration:3, flavor:['Several residents have been complaining loudly.','Tensions are running high at the tavern.']},
+    {headline:'有人目擊鄰近地區的疫病',headline_en:'Plague spotted in neighboring area',category:'health',
+     conditions:w=>true, weight:1, severity:'danger',
+     modifiers:{plague_chance:0.2,mood_modifier:-8,merchant_chance:-0.1}, duration:4, flavor:['Travelers report illness spreading in the eastern settlements.']},
+    {headline:'學者發現了古代遺跡的新線索',headline_en:'Scholar discovers clues to ancient ruins',category:'discovery',
+     conditions:w=>Object.values(w.agents).some(a=>a.job?.title==='Researcher'), weight:2, severity:'good',
+     modifiers:{research_bonus:0.3,mood_modifier:3}, duration:3, flavor:['Ancient texts suggest treasures hidden nearby.','A breakthrough in deciphering old manuscripts.']},
+    {headline:'野生動物出沒增加',headline_en:'Wild animal sightings increasing',category:'nature',
+     conditions:w=>true, weight:3, severity:'info',
+     modifiers:{animal_raid_chance:0.1,gathering_bonus:0.15}, duration:2, flavor:['More deer and rabbits spotted near the forest.','Hunters report abundant game.']},
+    {headline:'遠方傳來戰爭的消息',headline_en:'News of war from distant lands',category:'political',
+     conditions:w=>w.clock.year>=1&&w.clock.day>10, weight:1, severity:'warning',
+     modifiers:{raid_chance:0.1,merchant_chance:0.1,immigration_chance:0.15,mood_modifier:-3}, duration:5, flavor:['Refugees may seek shelter here.','War drives both danger and opportunity.']},
+    {headline:'節慶將至，居民期待歡慶',headline_en:'Festival approaching, residents look forward',category:'social',
+     conditions:w=>w.clock.day>=12&&w.clock.day<=14, weight:4, severity:'good',
+     modifiers:{mood_modifier:8,festival_chance:0.4}, duration:2, flavor:['Preparations are underway for the seasonal festival.','Everyone is excited about the upcoming celebration.']},
+    {headline:'礦坑發現新的礦脈',headline_en:'New ore vein discovered in quarry',category:'discovery',
+     conditions:w=>w.townMap?.locations?.['quarry'], weight:2, severity:'good',
+     modifiers:{mining_bonus:0.25}, duration:3, flavor:['Miners are excited about the rich deposits.','The new vein contains high-quality metal ore.']},
+    {headline:'城鎮名聲遠播，吸引新居民',headline_en:'Town reputation grows, attracting settlers',category:'social',
+     conditions:w=>Object.values(w.agents).filter(a=>!a.isPlayer).length<=10, weight:2, severity:'good',
+     modifiers:{immigration_chance:0.25,mood_modifier:3}, duration:3, flavor:['Word of RimTown\'s prosperity is spreading.']},
+];
+
+class NewsSystem {
+    constructor() {
+        this.bulletins = []; // {headline, headline_en, category, severity, flavor, modifiers, expiresDay, publishedDay, publishedTime}
+        this.activeModifiers = {}; // aggregated from all active bulletins
+        this._lastPublishDay = 0;
+    }
+
+    dailyUpdate(world) {
+        // Expire old bulletins
+        const currentDay = world.clock.year * 60 + ((['spring','summer','autumn','winter'].indexOf(world.clock.season)) * 15) + world.clock.day;
+        this.bulletins = this.bulletins.filter(b => b.expiresDay > currentDay);
+
+        // Publish 1-2 new bulletins per day
+        const numNews = Math.random() < 0.3 ? 2 : 1;
+        for (let i = 0; i < numNews; i++) {
+            const bulletin = this._generateBulletin(world, currentDay);
+            if (bulletin) {
+                this.bulletins.push(bulletin);
+                world.logMessage('news', `📰 ${bulletin.headline}`, '', '');
+                // News also becomes gossip topic
+                world.events.conversationTopics.push(bulletin.headline);
+                if (world.events.conversationTopics.length > 8) world.events.conversationTopics = world.events.conversationTopics.slice(-8);
+                // Mood effects from news
+                if (bulletin.modifiers.mood_modifier) {
+                    Object.values(world.agents).forEach(a => {
+                        if (!a.isPlayer) a.mood = Math.max(-100, Math.min(100, a.mood + Math.round(bulletin.modifiers.mood_modifier * 0.5)));
+                    });
+                }
+            }
+        }
+
+        // Rebuild active modifiers
+        this._rebuildModifiers(currentDay);
+        this._lastPublishDay = currentDay;
+    }
+
+    _generateBulletin(world, currentDay) {
+        // Filter by conditions
+        const eligible = NEWS_TEMPLATES.filter(t => {
+            try { return t.conditions(world); } catch(e) { return true; }
+        });
+        if (!eligible.length) return null;
+
+        // Weighted random selection
+        const weights = eligible.map(t => t.weight);
+        const template = weightedChoice(eligible, weights);
+
+        const bulletin = {
+            headline: template.headline,
+            headline_en: template.headline_en,
+            category: template.category,
+            severity: template.severity,
+            flavor: pickRandom(template.flavor),
+            modifiers: {...template.modifiers},
+            publishedDay: currentDay,
+            publishedTime: world.clock.timeStr,
+            expiresDay: currentDay + template.duration,
+            daysRemaining: template.duration,
+        };
+        return bulletin;
+    }
+
+    _rebuildModifiers(currentDay) {
+        this.activeModifiers = {};
+        this.bulletins.forEach(b => {
+            if (b.expiresDay <= currentDay) return;
+            b.daysRemaining = b.expiresDay - currentDay;
+            for (const [key, val] of Object.entries(b.modifiers)) {
+                if (typeof val === 'number') {
+                    this.activeModifiers[key] = (this.activeModifiers[key] || 0) + val;
+                } else if (typeof val === 'boolean' && val) {
+                    this.activeModifiers[key] = true;
+                }
+            }
+        });
+    }
+
+    getModifier(key, defaultVal = 0) {
+        return this.activeModifiers[key] ?? defaultVal;
+    }
+
+    getActiveBulletins() {
+        return this.bulletins.slice().reverse();
+    }
+
+    toDict() {
+        return {
+            bulletins: this.bulletins.map(b => ({
+                headline: b.headline,
+                headline_en: b.headline_en,
+                category: b.category,
+                severity: b.severity,
+                flavor: b.flavor,
+                published_time: b.publishedTime,
+                days_remaining: b.daysRemaining,
+            })),
+            active_modifiers: {...this.activeModifiers},
+        };
+    }
+}
+
 // --- World ---
 class World {
     constructor() {
@@ -1369,6 +1594,7 @@ class World {
         this.trade = new TradeManager();
         this.research = new ResearchManager();
         this.workOrders = new WorkOrderManager();
+        this.news = new NewsSystem();
     }
     addAgent(agent) { this.agents[agent.agentId] = agent; }
     removeAgent(id) { delete this.agents[id]; }
@@ -1391,6 +1617,8 @@ class World {
                     Object.values(this.agents).forEach(a => { a.mood = Math.max(-100, Math.min(100, a.mood + event.effects.mood_all)); });
                 }
             }
+            // Daily news (before economy/events so modifiers apply)
+            this.news.dailyUpdate(this);
             // Daily economy
             processDailyProduction(this);
             this.stockpile.history.filter(h=>h.amount>0).slice(-50).forEach(h=>this.workOrders.updateProgress(h.resource,h.amount));
@@ -1415,6 +1643,7 @@ class World {
             trade: this.trade.toDict(),
             research: this.research.toDict(),
             work_orders: this.workOrders.toDict(),
+            news: this.news.toDict(),
         };
     }
     reset(seed = null) {
@@ -1426,6 +1655,7 @@ class World {
         this.trade = new TradeManager();
         this.research = new ResearchManager();
         this.workOrders = new WorkOrderManager();
+        this.news = new NewsSystem();
         this.townMap = generateRandomTown(seed);
         this._loadDefaultResidents();
         const player = new PlayerAgent();
