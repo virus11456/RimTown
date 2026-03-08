@@ -138,6 +138,11 @@ class RimTownApp {
     }
 
     async init() {
+        // Always set up event delegation first so login/register buttons work
+        if (!this._delegationReady) {
+            this.setupEventDelegation();
+            this._delegationReady = true;
+        }
         // Show login screen if not logged in
         if (!this.account.isLoggedIn()) {
             this._showLoginScreen();
@@ -172,7 +177,6 @@ class RimTownApp {
         this.setupTabListeners();
         this.setupControlListeners();
         this.setupSettingsListeners();
-        this.setupEventDelegation();
         this.startSimulation();
         this.setupAutoSave();
         this.render();
