@@ -7,6 +7,28 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal hidden">
+        <div class="modal-content login-content">
+            <h2>🏘️ 邊境鎮</h2>
+            <p class="login-subtitle">AI 小鎮模擬 — 登入以儲存你的城鎮</p>
+            <div class="setting-group">
+                <label>帳號</label>
+                <input type="text" id="login-username" placeholder="輸入帳號..." autocomplete="username">
+            </div>
+            <div class="setting-group">
+                <label>密碼</label>
+                <input type="password" id="login-password" placeholder="輸入密碼..." autocomplete="current-password">
+            </div>
+            <div id="login-error" class="login-error"></div>
+            <div class="modal-buttons">
+                <button class="btn-accent" data-action="login">登入</button>
+                <button data-action="register">註冊新帳號</button>
+            </div>
+            <p class="login-note">帳號資料儲存在本機瀏覽器中</p>
+        </div>
+    </div>
+
     <!-- Town Manager Modal -->
     <div id="town-modal" class="modal hidden">
         <div class="modal-content town-content">
@@ -58,11 +80,11 @@
     <div class="header">
         <h1>邊境鎮</h1>
         <div class="header-info">
+            <span id="user-display" class="user-display"></span>
             <span id="population-count">人口：--</span>
             <span id="clock-display" class="clock-display">載入中...</span>
             <span id="terrain-display" class="terrain-display"></span>
             <div class="controls">
-                <button class="btn-towns" data-action="show-towns">城鎮列表</button>
                 <button id="btn-new-game" class="btn-new-game">新地圖</button>
                 <button id="btn-save" class="btn-save">儲存</button>
                 <button id="btn-export" class="btn-export" title="匯出存檔">匯出</button>
