@@ -8,6 +8,11 @@ from typing import TYPE_CHECKING
 
 from rimtown.core.clock import GameClock
 from rimtown.core.events import EventSystem
+from rimtown.economy.stockpile import Stockpile
+from rimtown.economy.buildings import BuildingManager
+from rimtown.economy.trade import TradeManager
+from rimtown.economy.research import ResearchManager
+from rimtown.economy.work_orders import WorkOrderManager
 
 if TYPE_CHECKING:
     from rimtown.agents.agent import Agent
@@ -28,6 +33,13 @@ class World:
         self.paused: bool = False
         self.message_log: list[dict] = []
         self._subscribers: list = []
+
+        # Economy systems
+        self.stockpile = Stockpile()
+        self.buildings = BuildingManager()
+        self.trade = TradeManager()
+        self.research = ResearchManager()
+        self.work_orders = WorkOrderManager()
 
     def add_agent(self, agent: Agent):
         self.agents[agent.agent_id] = agent
@@ -81,12 +93,39 @@ class World:
                     for agent in self.agents.values():
                         agent.mood = max(-100, min(100, agent.mood + event.effects["mood_all"]))
 
+            # Daily economy updates
+            self._daily_economy_update()
+
         # Update each agent
         for agent in list(self.agents.values()):
             await agent.update(self)
 
         # Notify subscribers (websocket clients)
         await self._notify_subscribers()
+
+    def _daily_economy_update(self):
+        """Run all daily economy processing."""
+        from rimtown.economy.production import process_daily_production
+
+        # Production and consumption
+        process_daily_production(self)
+
+        # Track production in work orders
+        for change in self.stockpile.history[-50:]:
+            if change.amount > 0:
+                self.work_orders.update_progress(change.resource, change.amount)
+
+        # Building construction
+        self.buildings.process_daily_construction(self)
+
+        # Trade (merchant arrival/departure)
+        self.trade.daily_update(self)
+
+        # Research
+        self.research.daily_update(self)
+
+        # Work order cleanup
+        self.work_orders.cleanup()
 
     async def _notify_subscribers(self):
         for callback in self._subscribers:
@@ -119,4 +158,10 @@ class World:
             "recent_messages": self.message_log[-30:],
             "travelling_agents": self.events.get_travelling_agents(),
             "active_chains": self.events.get_active_chains(),
+            # Economy state
+            "stockpile": self.stockpile.to_dict(),
+            "buildings": self.buildings.to_dict(),
+            "trade": self.trade.to_dict(),
+            "research": self.research.to_dict(),
+            "work_orders": self.work_orders.to_dict(),
         }

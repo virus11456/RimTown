@@ -361,7 +361,12 @@ class EventSystem:
         guards = [a for a in world.agents.values()
                   if a.job and a.job.title == "Guard" and not getattr(a, 'is_player', False)]
 
-        defense_power = len(guards) * 2 + random.randint(1, 3)
+        # Building defense bonus
+        building_defense = 0
+        if hasattr(world, 'buildings'):
+            building_defense = world.buildings.get_effect("defense_bonus", 0) or 0
+
+        defense_power = len(guards) * 2 + random.randint(1, 3) + building_defense
 
         if defense_power >= threat:
             # Successful defense
@@ -378,6 +383,16 @@ class EventSystem:
             # Raid causes damage - one random NPC gets scared and leaves temporarily
             result_msg = f"The {attacker} overwhelmed our defenses!"
             world.log_message("raid", result_msg)
+
+            # Raiders steal resources
+            if hasattr(world, 'stockpile'):
+                stolen_food = min(world.stockpile.get("food"), random.randint(10, 30))
+                stolen_silver = min(world.stockpile.get("silver"), random.randint(5, 20))
+                if stolen_food > 0:
+                    world.stockpile.consume("food", stolen_food, world.tick_count, f"stolen by {attacker}")
+                if stolen_silver > 0:
+                    world.stockpile.consume("silver", stolen_silver, world.tick_count, f"stolen by {attacker}")
+                world.log_message("raid", f"The {attacker} stole {stolen_food:.0f} food and {stolen_silver:.0f} silver!")
 
             # Someone might flee temporarily
             npcs = [a for a in world.agents.values()
@@ -682,6 +697,13 @@ class EventSystem:
 
         if "mood_all" in event.effects:
             self.active_effects["mood_modifier"] = event.effects["mood_all"]
+
+        # Economy effects
+        if hasattr(world, 'stockpile'):
+            if "food_bonus" in event.effects:
+                world.stockpile.add("food", event.effects["food_bonus"],
+                                    world.tick_count, event.name)
+                world.log_message("economy", f"Gained {event.effects['food_bonus']} food from {event.name}!")
 
     def get_recent_events(self, n: int = 10) -> list[tuple[str, GameEvent]]:
         return self.event_log[-n:]

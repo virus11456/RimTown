@@ -359,6 +359,20 @@ class Agent:
             p = random.choice(passions)
             thoughts.append(f"I really enjoy practicing {p.category.value}.")
 
+        # Think about economy
+        if hasattr(world, 'stockpile'):
+            if world.stockpile.get("food") < 30:
+                thoughts.append("We're running low on food... I'm worried.")
+            if world.stockpile.get("silver") > 300:
+                thoughts.append("The town's treasury is doing well!")
+            if world.stockpile.get("meals") < 10:
+                thoughts.append("We need the cook to prepare more meals.")
+        if hasattr(world, 'buildings') and world.buildings.projects:
+            project = world.buildings.projects[0]
+            thoughts.append(f"The {project.name} is {project.progress:.0%} done!")
+        if hasattr(world, 'trade') and world.trade.current_merchant:
+            thoughts.append(f"I should check out what {world.trade.current_merchant.name} is selling.")
+
         if thoughts:
             self.current_thought = random.choice(thoughts)
 

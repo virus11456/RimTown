@@ -38,6 +38,15 @@ class WebServer:
         self.app.router.add_post("/api/player/chat", self._handle_player_chat)
         self.app.router.add_get("/api/player/nearby", self._handle_player_nearby)
         self.app.router.add_post("/api/new_game", self._handle_new_game)
+        # Economy endpoints
+        self.app.router.add_get("/api/economy", self._handle_economy)
+        self.app.router.add_post("/api/trade", self._handle_trade)
+        self.app.router.add_get("/api/buildings/available", self._handle_buildings_available)
+        self.app.router.add_post("/api/buildings/start", self._handle_building_start)
+        self.app.router.add_get("/api/research", self._handle_research_state)
+        self.app.router.add_post("/api/research/start", self._handle_research_start)
+        self.app.router.add_post("/api/work_orders", self._handle_create_work_order)
+        self.app.router.add_delete("/api/work_orders/{order_id}", self._handle_cancel_work_order)
         self.app.router.add_static("/static", STATIC_DIR)
 
     async def _handle_index(self, request: web.Request) -> web.Response:
@@ -152,11 +161,23 @@ class WebServer:
         # Generate new map
         self.world.town_map = generate_random_town(seed)
 
-        # Reset all agents to starting locations
+        # Reset all agents and economy
         self.world.agents.clear()
         self.world.message_log.clear()
         self.world.tick_count = 0
         self.world.clock.reset()
+
+        # Reset economy systems
+        from rimtown.economy.stockpile import Stockpile
+        from rimtown.economy.buildings import BuildingManager
+        from rimtown.economy.trade import TradeManager
+        from rimtown.economy.research import ResearchManager
+        from rimtown.economy.work_orders import WorkOrderManager
+        self.world.stockpile = Stockpile()
+        self.world.buildings = BuildingManager()
+        self.world.trade = TradeManager()
+        self.world.research = ResearchManager()
+        self.world.work_orders = WorkOrderManager()
 
         # Reload residents
         residents = load_residents()
@@ -198,6 +219,82 @@ class WebServer:
             for a in agents
             if a.agent_id != "player"
         ]
+
+    # --- Economy endpoints ---
+
+    async def _handle_economy(self, request: web.Request) -> web.Response:
+        """Get full economy state."""
+        return web.json_response({
+            "stockpile": self.world.stockpile.to_dict(),
+            "buildings": self.world.buildings.to_dict(),
+            "trade": self.world.trade.to_dict(),
+            "research": self.world.research.to_dict(),
+            "work_orders": self.world.work_orders.to_dict(),
+        })
+
+    async def _handle_trade(self, request: web.Request) -> web.Response:
+        """Execute a trade with the current merchant."""
+        data = await request.json()
+        offer_index = data.get("offer_index")
+        quantity = data.get("quantity", 0)
+        if offer_index is None:
+            return web.json_response({"error": "Missing 'offer_index'"}, status=400)
+        result = self.world.trade.execute_trade(int(offer_index), float(quantity), self.world)
+        if "error" in result:
+            return web.json_response(result, status=400)
+        return web.json_response(result)
+
+    async def _handle_buildings_available(self, request: web.Request) -> web.Response:
+        """Get available building projects."""
+        available = self.world.buildings.get_available_projects(self.world)
+        return web.json_response({"projects": available})
+
+    async def _handle_building_start(self, request: web.Request) -> web.Response:
+        """Start a building project."""
+        data = await request.json()
+        project_key = data.get("project_key")
+        if not project_key:
+            return web.json_response({"error": "Missing 'project_key'"}, status=400)
+        project = self.world.buildings.start_project(project_key, self.world)
+        if not project:
+            return web.json_response({"error": "Cannot start project (already built, in progress, or can't afford)"}, status=400)
+        return web.json_response({"ok": True, "project": project.to_dict()})
+
+    async def _handle_research_state(self, request: web.Request) -> web.Response:
+        """Get research tree state."""
+        return web.json_response(self.world.research.to_dict())
+
+    async def _handle_research_start(self, request: web.Request) -> web.Response:
+        """Start researching a topic."""
+        data = await request.json()
+        key = data.get("key")
+        if not key:
+            return web.json_response({"error": "Missing 'key'"}, status=400)
+        success = self.world.research.start_research(key)
+        if not success:
+            return web.json_response({"error": "Cannot research (not available or invalid key)"}, status=400)
+        return web.json_response({"ok": True, "researching": key})
+
+    async def _handle_create_work_order(self, request: web.Request) -> web.Response:
+        """Create a new work order."""
+        data = await request.json()
+        order_type = data.get("type", "produce")
+        resource = data.get("resource")
+        amount = data.get("amount", 0)
+        priority = data.get("priority", "normal")
+        if not resource or amount <= 0:
+            return web.json_response({"error": "Missing 'resource' or invalid 'amount'"}, status=400)
+        order = self.world.work_orders.create_order(
+            order_type, resource, float(amount), priority, self.world.tick_count)
+        return web.json_response({"ok": True, "order": order.to_dict()})
+
+    async def _handle_cancel_work_order(self, request: web.Request) -> web.Response:
+        """Cancel a work order."""
+        order_id = request.match_info["order_id"]
+        success = self.world.work_orders.cancel_order(order_id)
+        if not success:
+            return web.json_response({"error": "Order not found or already completed"}, status=404)
+        return web.json_response({"ok": True})
 
     # --- WebSocket ---
 
