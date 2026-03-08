@@ -19,6 +19,7 @@ class RimTownApp {
         this.llmClient = null;
         this.tileMap = null;
         this._mapGenerated = false;
+        this._viewingArchive = null; // current archive being viewed
         this.init();
     }
 
@@ -130,8 +131,9 @@ class RimTownApp {
         document.getElementById('btn-resume').addEventListener('click', () => {
             this.world.paused = false; this.render();
         });
-        document.getElementById('btn-new-game').addEventListener('click', () => {
-            if (confirm('Generate a new random town? All progress will be reset.')) {
+        document.getElementById('btn-new-game').addEventListener('click', async () => {
+            if (confirm('Generate a new random town? All progress will be reset.\n(Chat history will be archived automatically)')) {
+                await this.archiveChatHistory();
                 this.world.reset();
                 if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
                 this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
@@ -270,6 +272,76 @@ class RimTownApp {
         input.click();
     }
 
+    // --- Chat Archive (per-session persistent storage) ---
+    async _getStorage(key) {
+        if (typeof chrome !== 'undefined' && chrome.storage) {
+            const data = await chrome.storage.local.get([key]);
+            return data[key] || null;
+        }
+        return localStorage.getItem(key) ? JSON.parse(localStorage.getItem(key)) : null;
+    }
+    async _setStorage(key, value) {
+        if (typeof chrome !== 'undefined' && chrome.storage) {
+            await chrome.storage.local.set({ [key]: value });
+        } else {
+            localStorage.setItem(key, JSON.stringify(value));
+        }
+    }
+
+    async archiveChatHistory() {
+        const player = this.world.agents?.get?.('player') || this.world.agents?.['player'];
+        if (!player || !player.chatHistory || !player.chatHistory.length) return;
+
+        const clock = this.world.clock;
+        const archive = {
+            id: Date.now(),
+            savedAt: new Date().toISOString(),
+            gameClock: `${clock.season || 'Spring'} Y${clock.year || 1} D${clock.day || 1}`,
+            playerName: player.name,
+            messageCount: player.chatHistory.length,
+            npcNames: [...new Set(player.chatHistory.map(m => m.speaker === player.name ? m.target : m.speaker))],
+            messages: [...player.chatHistory]
+        };
+
+        const archives = (await this._getStorage('rimtown_chat_archives')) || [];
+        archives.push(archive);
+        // Keep max 20 archives
+        while (archives.length > 20) archives.shift();
+        await this._setStorage('rimtown_chat_archives', archives);
+        return archive;
+    }
+
+    async getChatArchives() {
+        return (await this._getStorage('rimtown_chat_archives')) || [];
+    }
+
+    async deleteChatArchive(archiveId) {
+        const archives = await this.getChatArchives();
+        const filtered = archives.filter(a => a.id !== archiveId);
+        await this._setStorage('rimtown_chat_archives', filtered);
+    }
+
+    exportChatLog(archive) {
+        const lines = [];
+        lines.push(`=== RimTown Chat Log ===`);
+        lines.push(`Session: ${archive.gameClock}`);
+        lines.push(`Player: ${archive.playerName}`);
+        lines.push(`Saved: ${archive.savedAt}`);
+        lines.push(`NPCs: ${archive.npcNames.join(', ')}`);
+        lines.push(`Messages: ${archive.messageCount}`);
+        lines.push('');
+        archive.messages.forEach(m => {
+            lines.push(`[${m.time || '??:??'}] ${m.speaker} → ${m.target}: ${m.text}`);
+        });
+        const blob = new Blob([lines.join('\n')], { type: 'text/plain; charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `rimtown_chat_${archive.gameClock.replace(/\s+/g,'_')}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
     assignAgentColor(agentId) {
         if (agentId === 'player') return '#ffffff';
         if (!this.agentColors[agentId]) {
@@ -355,7 +427,11 @@ class RimTownApp {
         const content = document.getElementById('sidebar-content');
         switch (this.activeTab) {
             case 'residents': this.renderResidentsList(content); break;
-            case 'chat': this.renderChat(content); break;
+            case 'chat':
+                if (this._viewingArchive) this.renderChatArchiveView(content);
+                else this.renderChat(content);
+                break;
+            case 'chat-archives': this.renderChatArchiveList(content); break;
             case 'detail': this.renderAgentDetail(content); break;
             case 'economy': this.renderEconomy(content); break;
             case 'log': this.renderLog(content); break;
@@ -444,10 +520,129 @@ class RimTownApp {
                 inputHtml = `<div class="chat-input-area"><p class="muted-text" style="padding:8px">📜 Viewing past conversations with ${ta?.name||'them'}. Move to their location to chat.</p></div>`;
             }
         }
-        container.innerHTML = nearbyHtml + messagesHtml + inputHtml;
+        // Archive actions bar
+        let archiveBar = `<div class="chat-archive-bar">
+            <button class="btn-archive-view" onclick="app.showChatArchives()">Past Sessions</button>
+            <button class="btn-archive-save" onclick="app.manualArchiveChat()">Archive Now</button>
+        </div>`;
+
+        container.innerHTML = nearbyHtml + messagesHtml + inputHtml + archiveBar;
         this._scrollChatToBottom();
         const input = document.getElementById('chat-input');
         if (input && !this.chatSending) input.focus();
+    }
+
+    async showChatArchives() {
+        this.activeTab = 'chat-archives';
+        this._viewingArchive = null;
+        this.renderSidebar();
+    }
+
+    async renderChatArchiveList(container) {
+        const archives = await this.getChatArchives();
+        let html = `<div class="archive-header">
+            <button class="btn-back" onclick="app.activeTab='chat'; app.renderSidebar();">&larr; Back to Chat</button>
+            <h3>Chat Archives</h3>
+        </div>`;
+        if (!archives.length) {
+            html += '<p class="muted-text" style="padding:12px">No archived sessions yet. Chat history is archived automatically when you start a new game.</p>';
+        } else {
+            html += '<div class="archive-list">';
+            [...archives].reverse().forEach(a => {
+                const date = new Date(a.savedAt).toLocaleDateString();
+                html += `<div class="archive-item">
+                    <div class="archive-info" onclick="app.viewArchive(${a.id})">
+                        <div class="archive-title">${a.gameClock} - ${a.playerName}</div>
+                        <div class="archive-meta">${date} | ${a.messageCount} messages | ${a.npcNames.length} NPCs</div>
+                        <div class="archive-npcs">${a.npcNames.slice(0, 5).join(', ')}${a.npcNames.length > 5 ? '...' : ''}</div>
+                    </div>
+                    <div class="archive-actions">
+                        <button onclick="app.exportArchivedChat(${a.id})" title="Export">Export</button>
+                        <button onclick="app.deleteArchivedChat(${a.id})" title="Delete" class="btn-danger">Del</button>
+                    </div>
+                </div>`;
+            });
+            html += '</div>';
+        }
+        container.innerHTML = html;
+    }
+
+    async viewArchive(archiveId) {
+        const archives = await this.getChatArchives();
+        this._viewingArchive = archives.find(a => a.id === archiveId) || null;
+        if (this._viewingArchive) {
+            this.activeTab = 'chat';
+            this._archiveNpcFilter = null;
+            this.renderSidebar();
+        }
+    }
+
+    renderChatArchiveView(container) {
+        const archive = this._viewingArchive;
+        if (!archive) { this._viewingArchive = null; this.renderChat(container); return; }
+
+        let html = `<div class="archive-header">
+            <button class="btn-back" onclick="app._viewingArchive=null; app.activeTab='chat-archives'; app.renderSidebar();">&larr; Back to Archives</button>
+            <h3>${archive.gameClock}</h3>
+            <div class="archive-meta">${archive.playerName} | ${archive.messageCount} msgs</div>
+        </div>`;
+
+        // NPC filter buttons
+        html += '<div class="nearby-list" style="padding:4px 8px">';
+        html += `<button class="nearby-btn ${!this._archiveNpcFilter?'active':''}" onclick="app._archiveNpcFilter=null; app.renderSidebar();">All</button>`;
+        archive.npcNames.forEach(name => {
+            html += `<button class="nearby-btn history-btn ${this._archiveNpcFilter===name?'active':''}" onclick="app._archiveNpcFilter='${name.replace(/'/g,"\\'")}'; app.renderSidebar();">${name}</button>`;
+        });
+        html += '</div>';
+
+        // Messages
+        let messages = archive.messages;
+        if (this._archiveNpcFilter) {
+            messages = messages.filter(m => m.speaker === this._archiveNpcFilter || m.target === this._archiveNpcFilter);
+        }
+
+        html += '<div class="chat-messages" id="chat-messages">';
+        if (!messages.length) {
+            html += '<p class="muted-text chat-hint">No messages found.</p>';
+        }
+        messages.forEach(msg => {
+            const isP = msg.speaker === archive.playerName;
+            html += `<div class="chat-bubble ${isP?'chat-player':'chat-npc'}">
+                <div class="chat-speaker">${msg.speaker}</div>
+                <div class="chat-text">${this._escapeHtml(msg.text)}</div>
+                <div class="chat-time">${msg.time||''}</div></div>`;
+        });
+        html += '</div>';
+
+        html += `<div class="chat-archive-bar">
+            <button class="btn-archive-save" onclick="app.exportArchivedChat(${archive.id})">Export This Log</button>
+        </div>`;
+
+        container.innerHTML = html;
+        this._scrollChatToBottom();
+    }
+
+    async manualArchiveChat() {
+        const result = await this.archiveChatHistory();
+        if (result) {
+            this.world.logMessage('system', `Chat archived (${result.messageCount} messages).`);
+        } else {
+            this.world.logMessage('system', 'No chat messages to archive.');
+        }
+        this.state = this.world.getState();
+        this.renderSidebar();
+    }
+
+    async exportArchivedChat(archiveId) {
+        const archives = await this.getChatArchives();
+        const archive = archives.find(a => a.id === archiveId);
+        if (archive) this.exportChatLog(archive);
+    }
+
+    async deleteArchivedChat(archiveId) {
+        if (!confirm('Delete this archived chat session?')) return;
+        await this.deleteChatArchive(archiveId);
+        this.renderSidebar();
     }
 
     _sendFromInput() {

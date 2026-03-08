@@ -719,6 +719,80 @@ body {
     cursor: not-allowed;
 }
 
+/* Chat Archive */
+.chat-archive-bar {
+    display: flex;
+    gap: 6px;
+    padding: 6px 10px;
+    border-top: 1px solid var(--border);
+}
+.btn-archive-view, .btn-archive-save {
+    flex: 1;
+    padding: 5px 8px;
+    font-size: 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-archive-view:hover, .btn-archive-save:hover {
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+.archive-header {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+}
+.archive-header h3 {
+    margin: 4px 0 2px;
+    font-size: 0.85rem;
+}
+.archive-header .archive-meta {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+}
+.btn-back {
+    padding: 3px 8px;
+    font-size: 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+.btn-back:hover { color: var(--accent); border-color: var(--accent); }
+.archive-list {
+    overflow-y: auto;
+    max-height: calc(100vh - 200px);
+}
+.archive-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.archive-item:hover { background: rgba(255,255,255,0.03); }
+.archive-info { flex: 1; }
+.archive-title { font-size: 0.8rem; font-weight: 600; }
+.archive-meta { font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; }
+.archive-npcs { font-size: 0.65rem; color: var(--text-secondary); margin-top: 2px; }
+.archive-actions { display: flex; gap: 4px; }
+.archive-actions button {
+    padding: 3px 8px;
+    font-size: 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+.archive-actions button:hover { border-color: var(--accent); }
+.archive-actions .btn-danger:hover { border-color: var(--negative); color: var(--negative); }
+
 .muted-text {
     color: var(--text-muted);
     font-size: 0.8rem;
