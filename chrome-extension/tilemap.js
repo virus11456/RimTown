@@ -19,33 +19,34 @@ const T = {
 };
 
 // Color palette for each tile [primary, secondary, highlight, accent]
+// Vibrant lush style inspired by RPG pixel art tilemaps
 const TILE_COLORS = {
-    [T.GRASS]:    ['#4a8c3f','#3f7a35','#56a348','#2d6628'],
-    [T.GRASS2]:   ['#55a044','#469038','#60b050','#3d7a35'],
-    [T.GRASS3]:   ['#3d7a35','#2d6628','#4a8c3f','#1f5520'],
-    [T.DIRT]:     ['#c4a56e','#a88b55','#d4b580','#9a7e4a'],
-    [T.STONE_PATH]:['#9e9e9e','#828282','#bababa','#707070'],
+    [T.GRASS]:    ['#5cad42','#4c9838','#6ec050','#3a8028'],
+    [T.GRASS2]:   ['#68b84e','#58a540','#7acc5a','#489235'],
+    [T.GRASS3]:   ['#489238','#38802a','#58a545','#286820'],
+    [T.DIRT]:     ['#b08850','#956e3a','#c8a068','#7a5828'],
+    [T.STONE_PATH]:['#8a7a68','#6e6050','#a09080','#585048'],
     [T.WALL_TOP]: ['#6b5a3e','#574a32','#7d6a4a','#4a3d28'],
     [T.WALL_FRONT]:['#8b7355','#7a644a','#9e8462','#6b5640'],
     [T.FLOOR]:    ['#d4b896','#c4a882','#e0c8a8','#b49a72'],
     [T.FLOOR2]:   ['#c9ad87','#b89d78','#d8bc96','#a88d68'],
     [T.DOOR]:     ['#a0784c','#8b6840','#b8885a','#704830'],
-    [T.WATER]:    ['#3d88c8','#3070b0','#50a0e0','#2858a0'],
-    [T.WATER2]:   ['#3070b0','#2860a0','#3880c0','#204890'],
+    [T.WATER]:    ['#38a8e0','#2890c8','#58c0f0','#2078b0'],
+    [T.WATER2]:   ['#2890c8','#1878b0','#38a0d8','#106898'],
     [T.TREE_TRUNK]:['#6b4226','#5a3720','#7a4d2c','#4a2e18'],
-    [T.TREE_TOP]: ['#2d6b1e','#1e5514','#3a8828','#184410'],
-    [T.TREE_TOP2]:['#3a8a2a','#2d7520','#48a035','#206518'],
+    [T.TREE_TOP]: ['#1e6828','#105018','#2c8838','#0a3810'],
+    [T.TREE_TOP2]:['#2c8838','#1e6828','#3ca848','#105018'],
     [T.ROOF]:     ['#b44040','#983434','#cc4c4c','#802828'],
     [T.ROOF2]:    ['#a03030','#882828','#b83838','#701e1e'],
     [T.FENCE_H]:  ['#8b6e4e','#7a6040','#a07e5a','#6a5235'],
     [T.FENCE_V]:  ['#8b6e4e','#7a6040','#a07e5a','#6a5235'],
-    [T.CROP1]:    ['#7cb342','#6a9a38','#8ec050','#5a8830'],
-    [T.CROP2]:    ['#8bc34a','#78b040','#9cd058','#68a035'],
-    [T.CROP3]:    ['#9ccc65','#88ba58','#b0da78','#78a848'],
-    [T.FLOWER1]:  ['#e91e63','#c2185b','#f06292','#ad1457'],
-    [T.FLOWER2]:  ['#ffeb3b','#fbc02d','#fff176','#f9a825'],
-    [T.BUSH]:     ['#2e7d32','#1b5e20','#43a047','#0d4710'],
-    [T.ROCK]:     ['#78909c','#607d8b','#90a4ae','#4e6d7a'],
+    [T.CROP1]:    ['#78b040','#60982e','#90c858','#4a8020'],
+    [T.CROP2]:    ['#88c048','#70a838','#a0d060','#589830'],
+    [T.CROP3]:    ['#98d058','#80b848','#b0e070','#68a038'],
+    [T.FLOWER1]:  ['#e84080','#c83068','#f06098','#a82050'],
+    [T.FLOWER2]:  ['#f0a030','#d88820','#f8b848','#c07018'],
+    [T.BUSH]:     ['#1e6828','#105018','#2c8838','#083010'],
+    [T.ROCK]:     ['#909898','#707878','#b0b8b8','#585e60'],
     [T.BARREL]:   ['#795548','#5d4037','#8d6e63','#4e342e'],
     [T.CRATE]:    ['#a1887f','#8d6e63','#bcaaa4','#6d4c41'],
     [T.TABLE]:    ['#8d6e63','#795548','#a1887f','#5d4037'],
@@ -57,7 +58,7 @@ const TILE_COLORS = {
     [T.BOOKSHELF]:['#5d4037','#4e342e','#6d4c41','#3e2723'],
     [T.WELL]:     ['#78909c','#5a7080','#90a4ae','#455a64'],
     [T.ALTAR]:    ['#ffe082','#ffc940','#ffecb3','#ffb300'],
-    [T.SAND]:     ['#ffe0b2','#ffc880','#ffeccc','#ddb070'],
+    [T.SAND]:     ['#e8d0a0','#d0b880','#f0e0b8','#c0a068'],
     [T.BRIDGE]:   ['#8d6e63','#6d5040','#a08070','#5d4037'],
     [T.STALL]:    ['#a1887f','#8d6e63','#bcaaa4','#6d4c41'],
     [T.WEAPON_RACK]:['#546e7a','#3e5460','#6a8490','#b0bec5'],
@@ -311,426 +312,553 @@ class PixelTileMap {
 
     _drawTile(ctx, type, colors) {
         const [c1, c2, c3, c4] = colors;
+        const S = TILE; // 16
         ctx.fillStyle = c1;
-        ctx.fillRect(0, 0, TILE, TILE);
+        ctx.fillRect(0, 0, S, S);
 
         switch(type) {
-            case T.GRASS: case T.GRASS2: case T.GRASS3:
-                // Dithered grass with varied blade patterns
+            case T.GRASS: case T.GRASS2: case T.GRASS3: {
+                // Lush grass with visible blade strokes (RPG style)
+                // Base with subtle variation patches
                 ctx.fillStyle = c2;
-                ctx.fillRect(1,2,1,2); ctx.fillRect(5,1,1,3); ctx.fillRect(9,3,1,2); ctx.fillRect(13,1,1,2);
-                ctx.fillRect(3,8,1,2); ctx.fillRect(7,7,1,3); ctx.fillRect(11,9,1,2); ctx.fillRect(14,6,1,2);
-                ctx.fillStyle = c3;
-                ctx.fillRect(2,5,1,2); ctx.fillRect(6,4,1,2); ctx.fillRect(10,6,1,2);
-                ctx.fillRect(0,10,1,2); ctx.fillRect(4,12,1,2); ctx.fillRect(8,11,1,2); ctx.fillRect(12,13,1,2);
+                ctx.fillRect(0,0,8,8); ctx.fillRect(8,8,8,8);
+                ctx.fillStyle = c1;
+                ctx.fillRect(2,1,5,6); ctx.fillRect(9,9,6,5);
+                // Tall grass blades (vertical strokes, the key visual!)
+                ctx.fillStyle = c3; // bright blade color
+                ctx.fillRect(1,0,1,4); ctx.fillRect(3,1,1,5); ctx.fillRect(5,0,1,4);
+                ctx.fillRect(7,2,1,4); ctx.fillRect(9,0,1,5); ctx.fillRect(11,1,1,4);
+                ctx.fillRect(13,0,1,3); ctx.fillRect(15,2,1,4);
+                // Second row of blades
+                ctx.fillRect(0,7,1,4); ctx.fillRect(2,8,1,5); ctx.fillRect(4,7,1,4);
+                ctx.fillRect(6,9,1,4); ctx.fillRect(8,7,1,5); ctx.fillRect(10,8,1,4);
+                ctx.fillRect(12,9,1,3); ctx.fillRect(14,7,1,5);
+                // Dark blade bases
                 ctx.fillStyle = c4;
-                ctx.fillRect(3,14,1,1); ctx.fillRect(9,0,1,1); ctx.fillRect(15,10,1,1);
-                // Tiny wildflower accents
-                if (type === T.GRASS2) { ctx.fillStyle='#ffeb3b'; ctx.fillRect(4,3,1,1); ctx.fillRect(12,10,1,1); }
-                if (type === T.GRASS3) { ctx.fillStyle='#e0e0e0'; ctx.fillRect(7,5,1,1); } // small pebble
-                break;
-
-            case T.DIRT:
-                // Textured dirt with pebbles and tracks
-                ctx.fillStyle = c2;
-                ctx.fillRect(1,2,2,1); ctx.fillRect(6,5,3,1); ctx.fillRect(10,1,2,1); ctx.fillRect(3,9,2,1);
-                ctx.fillRect(8,11,3,1); ctx.fillRect(13,7,2,1); ctx.fillRect(0,14,2,1);
+                ctx.fillRect(1,4,1,2); ctx.fillRect(3,5,1,2); ctx.fillRect(5,4,1,2);
+                ctx.fillRect(9,5,1,2); ctx.fillRect(11,4,1,2);
+                ctx.fillRect(0,11,1,2); ctx.fillRect(2,12,1,2); ctx.fillRect(4,11,1,2);
+                ctx.fillRect(8,12,1,2); ctx.fillRect(10,11,1,2); ctx.fillRect(14,12,1,2);
+                // Bright tips
                 ctx.fillStyle = c3;
-                ctx.fillRect(4,4,1,1); ctx.fillRect(9,8,1,1); ctx.fillRect(14,12,1,1); ctx.fillRect(2,12,1,1);
-                ctx.fillStyle = c4; // darker cracks
-                ctx.fillRect(7,3,1,1); ctx.fillRect(12,9,1,1); ctx.fillRect(1,7,1,1);
+                ctx.fillRect(1,0,1,1); ctx.fillRect(5,0,1,1); ctx.fillRect(9,0,1,1); ctx.fillRect(13,0,1,1);
+                ctx.fillRect(0,7,1,1); ctx.fillRect(4,7,1,1); ctx.fillRect(8,7,1,1);
+                // Tiny flower accents
+                if (type === T.GRASS2) {
+                    ctx.fillStyle='#f0a030'; ctx.fillRect(6,3,2,2); ctx.fillRect(12,11,2,2);
+                    ctx.fillStyle='#fff'; ctx.fillRect(6,3,1,1); ctx.fillRect(12,11,1,1);
+                }
+                if (type === T.GRASS3) {
+                    // Darker grass has small mushroom/pebble
+                    ctx.fillStyle='#b0a890'; ctx.fillRect(7,5,2,1);
+                    ctx.fillStyle='#c0b8a0'; ctx.fillRect(7,4,2,1);
+                }
                 break;
+            }
 
-            case T.STONE_PATH:
-                // Cobblestone pattern with mortar lines
-                ctx.fillStyle = c2; ctx.fillRect(0,0,7,7); ctx.fillRect(8,8,8,8);
-                ctx.fillStyle = c4; ctx.fillRect(7,0,1,TILE); ctx.fillRect(0,7,TILE,1); // mortar
-                ctx.fillStyle = c3; // highlights
-                ctx.fillRect(1,1,2,2); ctx.fillRect(4,3,2,2); ctx.fillRect(9,9,2,2); ctx.fillRect(12,11,2,2);
-                ctx.fillStyle = c4; // worn spots
-                ctx.fillRect(3,5,1,1); ctx.fillRect(10,13,1,1);
+            case T.DIRT: {
+                // Rich brown dirt path with grass edge tufts
+                ctx.fillStyle = c2; // darker patches
+                ctx.fillRect(0,2,4,3); ctx.fillRect(5,0,6,2); ctx.fillRect(10,4,5,3);
+                ctx.fillRect(1,8,5,3); ctx.fillRect(7,10,6,3); ctx.fillRect(0,13,4,3);
+                ctx.fillStyle = c3; // lighter worn patches
+                ctx.fillRect(3,4,3,2); ctx.fillRect(8,2,3,2); ctx.fillRect(12,8,3,2);
+                ctx.fillRect(2,11,3,2); ctx.fillRect(7,6,4,2);
+                // Pebbles
+                ctx.fillStyle = c4;
+                ctx.fillRect(4,3,2,1); ctx.fillRect(9,7,1,1); ctx.fillRect(13,12,2,1);
+                ctx.fillRect(1,6,1,1); ctx.fillRect(11,1,1,1);
+                // Grass tufts on edges
+                ctx.fillStyle = '#5cad42';
+                ctx.fillRect(0,0,1,3); ctx.fillRect(15,0,1,2); ctx.fillRect(0,14,1,2); ctx.fillRect(15,13,1,3);
+                ctx.fillStyle = '#489238';
+                ctx.fillRect(1,0,1,2); ctx.fillRect(14,0,1,1); ctx.fillRect(1,15,1,1); ctx.fillRect(14,14,1,2);
                 break;
+            }
+
+            case T.STONE_PATH: {
+                // Cobblestones with mortar (brown-gray stones like reference)
+                ctx.fillStyle = c4; ctx.fillRect(0,0,S,S); // mortar base
+                // Individual stones
+                ctx.fillStyle = c1; ctx.fillRect(0,0,6,6); ctx.fillRect(7,0,5,4); ctx.fillRect(13,0,3,5);
+                ctx.fillRect(0,7,4,5); ctx.fillRect(5,5,6,5); ctx.fillRect(12,6,4,4);
+                ctx.fillRect(0,13,5,3); ctx.fillRect(6,11,5,5); ctx.fillRect(12,11,4,5);
+                // Stone highlights
+                ctx.fillStyle = c3;
+                ctx.fillRect(1,1,3,2); ctx.fillRect(8,1,2,1); ctx.fillRect(14,1,1,2);
+                ctx.fillRect(1,8,2,2); ctx.fillRect(6,6,3,1); ctx.fillRect(13,7,2,1);
+                ctx.fillRect(1,14,2,1); ctx.fillRect(7,12,2,1); ctx.fillRect(13,12,2,1);
+                // Stone shadows
+                ctx.fillStyle = c2;
+                ctx.fillRect(4,4,2,2); ctx.fillRect(10,3,2,1); ctx.fillRect(3,10,1,2);
+                ctx.fillRect(9,9,2,2); ctx.fillRect(4,15,1,1); ctx.fillRect(10,15,1,1);
+                break;
+            }
 
             case T.WALL_TOP:
-                // Detailed brick wall top with shadow
-                ctx.fillStyle = c2; ctx.fillRect(0,TILE-2,TILE,2); // shadow
-                ctx.fillStyle = c4; ctx.fillRect(0,0,TILE,1); // top edge
+                ctx.fillStyle = c2; ctx.fillRect(0,S-2,S,2);
+                ctx.fillStyle = c4; ctx.fillRect(0,0,S,1);
                 ctx.fillStyle = c1;
-                for (let x = 0; x < TILE; x += 4) ctx.fillRect(x, 2, 3, 4);
-                for (let x = 2; x < TILE; x += 4) ctx.fillRect(x, 8, 3, 4);
-                ctx.fillStyle = c3; // brick highlights
-                ctx.fillRect(0,2,1,1); ctx.fillRect(4,2,1,1); ctx.fillRect(2,8,1,1); ctx.fillRect(6,8,1,1);
-                ctx.fillStyle = c4; ctx.fillRect(0,6,TILE,1); ctx.fillRect(0,12,TILE,1); // mortar lines
+                for (let x = 0; x < S; x += 4) ctx.fillRect(x, 2, 3, 4);
+                for (let x = 2; x < S; x += 4) ctx.fillRect(x, 8, 3, 4);
+                ctx.fillStyle = c3;
+                ctx.fillRect(0,2,1,1); ctx.fillRect(4,2,1,1); ctx.fillRect(8,2,1,1); ctx.fillRect(12,2,1,1);
+                ctx.fillRect(2,8,1,1); ctx.fillRect(6,8,1,1); ctx.fillRect(10,8,1,1); ctx.fillRect(14,8,1,1);
+                ctx.fillStyle = c4; ctx.fillRect(0,6,S,1); ctx.fillRect(0,12,S,1);
                 break;
 
             case T.WALL_FRONT:
-                // Textured wall with brick pattern and shadow
                 ctx.fillStyle = c2;
-                for (let x = 0; x < TILE; x += 4) ctx.fillRect(x, 0, 3, 7);
-                for (let x = 2; x < TILE; x += 4) ctx.fillRect(x, 8, 3, 8);
-                ctx.fillStyle = c4; ctx.fillRect(0, 7, TILE, 1); // mortar line
-                ctx.fillStyle = c3; // brick highlights
-                for (let x = 0; x < TILE; x += 4) ctx.fillRect(x, 1, 1, 1);
-                for (let x = 2; x < TILE; x += 4) ctx.fillRect(x, 9, 1, 1);
+                for (let x = 0; x < S; x += 4) ctx.fillRect(x, 0, 3, 7);
+                for (let x = 2; x < S; x += 4) ctx.fillRect(x, 8, 3, 8);
+                ctx.fillStyle = c4; ctx.fillRect(0, 7, S, 1);
+                ctx.fillStyle = c3;
+                for (let x = 0; x < S; x += 4) ctx.fillRect(x, 1, 1, 1);
+                for (let x = 2; x < S; x += 4) ctx.fillRect(x, 9, 1, 1);
                 break;
 
             case T.FLOOR: case T.FLOOR2:
-                // Wooden floorboards
-                ctx.fillStyle = c2; ctx.fillRect(0,0,TILE,1); ctx.fillRect(0,0,1,TILE);
-                ctx.fillStyle = c3; // plank grain
+                ctx.fillStyle = c2; ctx.fillRect(0,0,S,1); ctx.fillRect(0,0,1,S);
+                ctx.fillStyle = c3;
                 ctx.fillRect(3,2,1,5); ctx.fillRect(8,1,1,6); ctx.fillRect(13,3,1,4);
                 ctx.fillRect(5,9,1,5); ctx.fillRect(10,8,1,6); ctx.fillRect(2,10,1,4);
-                ctx.fillStyle = c4; ctx.fillRect(0,8,TILE,1); // plank seam
-                ctx.fillRect(7,0,1,8); ctx.fillRect(3,8,1,8); ctx.fillRect(12,8,1,8); // vertical seams
+                ctx.fillStyle = c4; ctx.fillRect(0,8,S,1);
+                ctx.fillRect(7,0,1,8); ctx.fillRect(3,8,1,8); ctx.fillRect(12,8,1,8);
                 break;
 
             case T.DOOR:
-                // Ornate wooden door with frame and panels
-                ctx.fillStyle = c4; ctx.fillRect(1,0,14,TILE); // frame
-                ctx.fillStyle = c1; ctx.fillRect(3,1,10,14); // door body
-                ctx.fillStyle = c2; // panels
-                ctx.fillRect(4,2,8,5); ctx.fillRect(4,9,8,4);
-                ctx.fillStyle = c3; // panel borders
-                ctx.fillRect(4,2,8,1); ctx.fillRect(4,9,8,1);
-                ctx.fillStyle = '#d4aa70'; ctx.fillRect(10,7,2,2); // handle
-                ctx.fillStyle = '#b8943e'; ctx.fillRect(10,7,1,1); // handle highlight
+                ctx.fillStyle = c4; ctx.fillRect(1,0,14,S);
+                ctx.fillStyle = c1; ctx.fillRect(3,1,10,14);
+                ctx.fillStyle = c2; ctx.fillRect(4,2,8,5); ctx.fillRect(4,9,8,4);
+                ctx.fillStyle = c3; ctx.fillRect(4,2,8,1); ctx.fillRect(4,9,8,1);
+                ctx.fillStyle = '#d4aa70'; ctx.fillRect(10,7,2,2);
+                ctx.fillStyle = '#b8943e'; ctx.fillRect(10,7,1,1);
                 break;
 
-            case T.WATER: case T.WATER2:
-                // Deeper water with wave patterns
-                ctx.fillStyle = c2; ctx.fillRect(0,3,TILE,5); ctx.fillRect(3,8,TILE,5);
-                ctx.fillStyle = c4; ctx.fillRect(0,12,TILE,4); // deep shadow
-                ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.2;
-                ctx.fillRect(1,2,5,1); ctx.fillRect(8,6,6,1); ctx.fillRect(2,10,4,1);
-                ctx.globalAlpha = 0.1;
-                ctx.fillRect(6,4,3,1); ctx.fillRect(11,8,4,1);
+            case T.WATER: case T.WATER2: {
+                // Bright vivid water with shimmer
+                ctx.fillStyle = c2;
+                ctx.fillRect(0,3,S,5); ctx.fillRect(2,9,S,4);
+                ctx.fillStyle = c4;
+                ctx.fillRect(0,13,S,3);
+                // Wave crests (bright highlights)
+                ctx.fillStyle = c3;
+                ctx.fillRect(1,2,4,1); ctx.fillRect(7,1,5,1); ctx.fillRect(12,3,3,1);
+                ctx.fillRect(0,8,3,1); ctx.fillRect(5,7,4,1); ctx.fillRect(10,9,4,1);
+                // White sparkle highlights
+                ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.35;
+                ctx.fillRect(2,1,3,1); ctx.fillRect(9,0,2,1); ctx.fillRect(4,6,2,1); ctx.fillRect(11,8,3,1);
+                ctx.globalAlpha = 0.18;
+                ctx.fillRect(0,4,2,1); ctx.fillRect(6,3,3,1); ctx.fillRect(13,5,2,1);
+                ctx.fillRect(1,10,2,1); ctx.fillRect(8,11,3,1);
                 ctx.globalAlpha = 1;
                 break;
+            }
 
-            case T.TREE_TRUNK:
-                // Detailed trunk with bark texture and roots
-                ctx.fillStyle = '#4a8c3f'; ctx.fillRect(0,0,TILE,TILE);
-                ctx.fillStyle = c1; ctx.fillRect(5,0,6,TILE); // trunk
-                ctx.fillStyle = c2; ctx.fillRect(7,0,2,TILE); // light bark
-                ctx.fillStyle = c4; ctx.fillRect(5,0,1,TILE); ctx.fillRect(10,0,1,TILE); // dark bark edges
-                // bark texture
-                ctx.fillStyle = c4; ctx.fillRect(6,3,1,2); ctx.fillRect(8,7,1,2); ctx.fillRect(6,11,1,2);
-                // roots
-                ctx.fillStyle = c1; ctx.fillRect(3,13,3,2); ctx.fillRect(10,14,3,2);
-                ctx.fillStyle = c2; ctx.fillRect(4,14,1,1); ctx.fillRect(11,14,1,1);
+            case T.TREE_TRUNK: {
+                // Thick trunk on grass with visible bark and roots
+                const gc = '#5cad42';
+                ctx.fillStyle = gc; ctx.fillRect(0,0,S,S);
+                // Grass blades around trunk
+                ctx.fillStyle = '#68b84e';
+                ctx.fillRect(0,1,1,3); ctx.fillRect(2,0,1,2); ctx.fillRect(13,1,1,3); ctx.fillRect(15,0,1,2);
+                ctx.fillRect(0,9,1,3); ctx.fillRect(2,10,1,2); ctx.fillRect(13,8,1,4); ctx.fillRect(15,10,1,2);
+                // Trunk
+                ctx.fillStyle = c1; ctx.fillRect(4,0,8,S);
+                ctx.fillStyle = c3; ctx.fillRect(6,0,3,S); // bark highlight
+                ctx.fillStyle = c4; ctx.fillRect(4,0,1,S); ctx.fillRect(11,0,1,S); // dark edges
+                // Bark texture
+                ctx.fillStyle = c4;
+                ctx.fillRect(5,2,1,2); ctx.fillRect(8,5,1,3); ctx.fillRect(5,8,1,2);
+                ctx.fillRect(9,10,1,2); ctx.fillRect(6,13,1,2);
+                ctx.fillStyle = c2;
+                ctx.fillRect(7,1,1,2); ctx.fillRect(10,4,1,2); ctx.fillRect(7,9,1,2);
+                // Roots spreading out
+                ctx.fillStyle = c1;
+                ctx.fillRect(2,13,3,2); ctx.fillRect(11,14,3,2);
+                ctx.fillRect(1,14,2,2); ctx.fillRect(13,13,2,2);
+                ctx.fillStyle = c2;
+                ctx.fillRect(3,14,1,1); ctx.fillRect(12,14,1,1);
                 break;
+            }
 
-            case T.TREE_TOP: case T.TREE_TOP2:
-                // Lush canopy with depth and highlights
-                ctx.fillStyle = c1; ctx.fillRect(1,2,14,12); // main foliage
-                ctx.fillStyle = c3; ctx.fillRect(2,8,12,6); // shadow layer
-                ctx.fillStyle = c2; ctx.fillRect(3,1,10,5); // top highlight
-                // Leafy edge detail
-                ctx.fillStyle = c1; ctx.fillRect(0,4,2,8); ctx.fillRect(14,4,2,8);
-                ctx.fillRect(2,1,2,2); ctx.fillRect(12,1,2,2);
-                // Light dapples
-                ctx.fillStyle = c2; ctx.fillRect(4,3,2,1); ctx.fillRect(8,4,2,1); ctx.fillRect(6,6,2,1);
-                ctx.fillRect(10,5,1,1); ctx.fillRect(3,7,1,1);
-                // Deep shadow
-                ctx.fillStyle = c4; ctx.fillRect(3,11,2,1); ctx.fillRect(7,12,3,1); ctx.fillRect(11,10,2,1);
+            case T.TREE_TOP: case T.TREE_TOP2: {
+                // Dense lush canopy with light dapples
+                // Outer canopy shadow
+                ctx.fillStyle = c4;
+                ctx.fillRect(0,3,S,12); ctx.fillRect(1,1,14,2);
+                // Main foliage body
+                ctx.fillStyle = c1;
+                ctx.fillRect(1,2,14,12); ctx.fillRect(2,1,12,1); ctx.fillRect(0,5,1,6); ctx.fillRect(15,5,1,6);
+                // Inner darker foliage
+                ctx.fillStyle = c2;
+                ctx.fillRect(2,8,12,6); ctx.fillRect(1,10,2,4); ctx.fillRect(13,10,2,4);
+                // Top highlight layer
+                ctx.fillStyle = c3;
+                ctx.fillRect(3,1,10,4); ctx.fillRect(5,0,6,2);
+                // Scattered light dapples (like sunlight through leaves)
+                ctx.fillStyle = c3;
+                ctx.fillRect(4,3,2,1); ctx.fillRect(8,2,2,1); ctx.fillRect(12,4,1,1);
+                ctx.fillRect(2,5,1,1); ctx.fillRect(6,6,2,1); ctx.fillRect(10,5,2,1);
+                ctx.fillRect(3,8,1,1); ctx.fillRect(7,9,2,1); ctx.fillRect(11,7,1,1);
+                ctx.fillRect(5,11,1,1); ctx.fillRect(9,10,1,1); ctx.fillRect(13,8,1,1);
+                // Deep shadow accents
+                ctx.fillStyle = c4;
+                ctx.fillRect(3,12,2,2); ctx.fillRect(8,13,3,1); ctx.fillRect(12,11,2,2);
+                ctx.fillRect(1,8,1,3); ctx.fillRect(14,9,1,2);
                 break;
+            }
 
             case T.ROOF: case T.ROOF2:
-                // Detailed shingled roof with ridge line
-                ctx.fillStyle = c1; ctx.fillRect(0,0,TILE,TILE);
-                ctx.fillStyle = c2; // shingle rows
-                for (let x = 0; x < TILE; x += 4) { ctx.fillRect(x, 1, 3, 3); ctx.fillRect(x, 5, 3, 1); }
-                for (let x = 2; x < TILE; x += 4) { ctx.fillRect(x, 8, 3, 3); ctx.fillRect(x, 12, 3, 1); }
-                ctx.fillStyle = c3; ctx.fillRect(0,7,TILE,1); // ridge shadow
-                ctx.fillStyle = c4; // shingle shadow
-                for (let x = 0; x < TILE; x += 4) ctx.fillRect(x, 4, 3, 1);
-                for (let x = 2; x < TILE; x += 4) ctx.fillRect(x, 11, 3, 1);
+                ctx.fillStyle = c1; ctx.fillRect(0,0,S,S);
+                ctx.fillStyle = c2;
+                for (let x = 0; x < S; x += 4) { ctx.fillRect(x, 1, 3, 3); ctx.fillRect(x, 5, 3, 1); }
+                for (let x = 2; x < S; x += 4) { ctx.fillRect(x, 8, 3, 3); ctx.fillRect(x, 12, 3, 1); }
+                ctx.fillStyle = c3; ctx.fillRect(0,7,S,1);
+                ctx.fillStyle = c4;
+                for (let x = 0; x < S; x += 4) ctx.fillRect(x, 4, 3, 1);
+                for (let x = 2; x < S; x += 4) ctx.fillRect(x, 11, 3, 1);
                 break;
 
-            case T.FENCE_H:
-                ctx.fillStyle = '#4a8c3f'; ctx.fillRect(0,0,TILE,TILE);
-                ctx.fillStyle = c1; ctx.fillRect(0,5,TILE,2); ctx.fillRect(0,10,TILE,2);
+            case T.FENCE_H: {
+                // Wooden fence on lush grass
+                const gc2 = '#5cad42';
+                ctx.fillStyle = gc2; ctx.fillRect(0,0,S,S);
+                ctx.fillStyle = '#68b84e';
+                ctx.fillRect(1,1,1,3); ctx.fillRect(5,0,1,2); ctx.fillRect(9,2,1,3);
+                ctx.fillRect(1,9,1,2); ctx.fillRect(6,12,1,3); ctx.fillRect(11,10,1,2);
+                ctx.fillStyle = c1; ctx.fillRect(0,5,S,2); ctx.fillRect(0,10,S,2);
                 ctx.fillStyle = c2; ctx.fillRect(2,3,2,12); ctx.fillRect(12,3,2,12);
-                ctx.fillStyle = c3; ctx.fillRect(3,4,1,10); ctx.fillRect(13,4,1,10); // highlight
-                ctx.fillStyle = c4; ctx.fillRect(0,6,TILE,1); ctx.fillRect(0,11,TILE,1); // shadow
+                ctx.fillStyle = c3; ctx.fillRect(3,4,1,10); ctx.fillRect(13,4,1,10);
+                ctx.fillStyle = c4; ctx.fillRect(0,6,S,1); ctx.fillRect(0,11,S,1);
                 break;
+            }
 
-            case T.FENCE_V:
-                ctx.fillStyle = '#4a8c3f'; ctx.fillRect(0,0,TILE,TILE);
-                ctx.fillStyle = c1; ctx.fillRect(5,0,2,TILE); ctx.fillRect(10,0,2,TILE);
+            case T.FENCE_V: {
+                const gc3 = '#5cad42';
+                ctx.fillStyle = gc3; ctx.fillRect(0,0,S,S);
+                ctx.fillStyle = '#68b84e';
+                ctx.fillRect(1,1,1,3); ctx.fillRect(13,2,1,3); ctx.fillRect(2,10,1,3); ctx.fillRect(14,9,1,3);
+                ctx.fillStyle = c1; ctx.fillRect(5,0,2,S); ctx.fillRect(10,0,2,S);
                 ctx.fillStyle = c2; ctx.fillRect(3,2,12,2); ctx.fillRect(3,12,12,2);
-                ctx.fillStyle = c3; ctx.fillRect(6,0,1,TILE); ctx.fillRect(11,0,1,TILE); // highlight
+                ctx.fillStyle = c3; ctx.fillRect(6,0,1,S); ctx.fillRect(11,0,1,S);
                 break;
+            }
 
-            case T.CROP1: case T.CROP2: case T.CROP3:
-                // Rich farmland with detailed crops
-                ctx.fillStyle = '#7a5e3e'; ctx.fillRect(0,0,TILE,TILE); // soil
-                ctx.fillStyle = '#6b5030'; // furrows
-                ctx.fillRect(0,4,TILE,1); ctx.fillRect(0,9,TILE,1); ctx.fillRect(0,14,TILE,1);
-                ctx.fillStyle = c1; // stems
-                for (let x = 2; x < TILE; x += 4) { ctx.fillRect(x, 1, 1, 3); ctx.fillRect(x, 6, 1, 3); ctx.fillRect(x, 11, 1, 3); }
-                ctx.fillStyle = c2; // leaf tops
-                for (let x = 1; x < TILE; x += 4) { ctx.fillRect(x, 0, 3, 2); ctx.fillRect(x, 5, 3, 2); ctx.fillRect(x, 10, 3, 2); }
-                ctx.fillStyle = c3; // highlights
-                ctx.fillRect(2,0,1,1); ctx.fillRect(6,5,1,1); ctx.fillRect(10,10,1,1);
-                break;
-
-            case T.FLOWER1: case T.FLOWER2:
-                // Pretty flowers with multiple blooms
-                ctx.fillStyle = '#4a8c3f'; ctx.fillRect(0,0,TILE,TILE);
-                ctx.fillStyle = '#3d7a35'; // stems
-                ctx.fillRect(3,5,1,7); ctx.fillRect(8,4,1,8); ctx.fillRect(13,6,1,6);
-                // leaves
-                ctx.fillStyle = '#2e7d32'; ctx.fillRect(2,8,2,1); ctx.fillRect(7,7,2,1); ctx.fillRect(12,9,2,1);
-                // flowers
+            case T.CROP1: case T.CROP2: case T.CROP3: {
+                // Rich tilled soil with lush crop rows
+                ctx.fillStyle = '#7a5830'; ctx.fillRect(0,0,S,S);
+                ctx.fillStyle = '#6b4820'; // furrows
+                ctx.fillRect(0,4,S,1); ctx.fillRect(0,9,S,1); ctx.fillRect(0,14,S,1);
+                ctx.fillStyle = '#8a6838'; // lighter soil
+                ctx.fillRect(2,1,3,2); ctx.fillRect(8,6,3,2); ctx.fillRect(1,11,3,2);
+                // Stems
                 ctx.fillStyle = c1;
-                ctx.fillRect(2,2,3,3); ctx.fillRect(7,1,3,3); ctx.fillRect(12,3,3,3);
-                ctx.fillStyle = c3; // center/stamen
-                ctx.fillRect(3,3,1,1); ctx.fillRect(8,2,1,1); ctx.fillRect(13,4,1,1);
-                // small buds
-                ctx.fillStyle = c2; ctx.fillRect(5,6,2,2); ctx.fillRect(10,8,2,2);
+                for (let x = 1; x < S; x += 3) { ctx.fillRect(x, 1, 1, 3); ctx.fillRect(x, 6, 1, 3); ctx.fillRect(x, 11, 1, 3); }
+                // Leaves / tops
+                ctx.fillStyle = c2;
+                for (let x = 0; x < S; x += 3) { ctx.fillRect(x, 0, 3, 2); ctx.fillRect(x, 5, 3, 2); ctx.fillRect(x, 10, 3, 2); }
+                // Bright highlights
+                ctx.fillStyle = c3;
+                ctx.fillRect(1,0,1,1); ctx.fillRect(4,5,1,1); ctx.fillRect(7,0,1,1); ctx.fillRect(10,5,1,1); ctx.fillRect(13,10,1,1);
                 break;
+            }
 
-            case T.BUSH:
-                // Rounded bush with depth
-                ctx.fillStyle = '#4a8c3f'; ctx.fillRect(0,0,TILE,TILE);
-                ctx.fillStyle = c4; ctx.fillRect(3,5,10,9); // shadow base
-                ctx.fillStyle = c1; ctx.fillRect(2,4,12,9); // main body
-                ctx.fillStyle = c3; ctx.fillRect(4,2,8,5); // top
-                ctx.fillStyle = c2; ctx.fillRect(5,3,4,2); // highlight
-                // berry accents
-                ctx.fillStyle = '#e53935'; ctx.fillRect(4,6,1,1); ctx.fillRect(9,5,1,1); ctx.fillRect(7,8,1,1);
+            case T.FLOWER1: case T.FLOWER2: {
+                // Colorful flower clusters on grass (like reference image)
+                const gc4 = '#5cad42';
+                ctx.fillStyle = gc4; ctx.fillRect(0,0,S,S);
+                // Grass blades underneath
+                ctx.fillStyle = '#68b84e';
+                ctx.fillRect(0,1,1,3); ctx.fillRect(4,0,1,2); ctx.fillRect(8,2,1,3);
+                ctx.fillRect(12,0,1,3); ctx.fillRect(2,8,1,3); ctx.fillRect(6,9,1,2);
+                ctx.fillRect(10,8,1,3); ctx.fillRect(14,10,1,2);
+                // Stems
+                ctx.fillStyle = '#388030';
+                ctx.fillRect(2,4,1,7); ctx.fillRect(6,3,1,8); ctx.fillRect(10,5,1,6);
+                ctx.fillRect(14,4,1,6); ctx.fillRect(4,7,1,5);
+                // Leaves
+                ctx.fillStyle = '#48902a';
+                ctx.fillRect(1,7,2,1); ctx.fillRect(5,6,2,1); ctx.fillRect(9,8,2,1);
+                ctx.fillRect(3,10,2,1); ctx.fillRect(13,7,2,1);
+                // Flower petals (multiple colors like reference)
+                ctx.fillStyle = c1; // main color
+                ctx.fillRect(1,1,3,3); ctx.fillRect(5,1,3,3); ctx.fillRect(9,2,3,3);
+                ctx.fillRect(13,1,3,3); ctx.fillRect(3,6,3,2);
+                // White accent petals
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(1,1,1,1); ctx.fillRect(5,1,1,1); ctx.fillRect(9,2,1,1); ctx.fillRect(13,1,1,1);
+                // Second flower color (complement)
+                const fc2 = type === T.FLOWER1 ? '#fff' : '#e84080';
+                ctx.fillStyle = fc2;
+                ctx.fillRect(0,8,2,2); ctx.fillRect(7,9,3,2); ctx.fillRect(12,8,2,2);
+                // Stamen dots
+                ctx.fillStyle = '#f0c030';
+                ctx.fillRect(2,2,1,1); ctx.fillRect(6,2,1,1); ctx.fillRect(10,3,1,1);
+                ctx.fillRect(14,2,1,1); ctx.fillRect(4,7,1,1);
                 break;
+            }
 
-            case T.ROCK:
-                // Realistic rock with cracks and moss
-                ctx.fillStyle = '#4a8c3f'; ctx.fillRect(0,0,TILE,TILE);
-                ctx.fillStyle = c4; ctx.fillRect(2,6,12,9); // shadow
-                ctx.fillStyle = c1; ctx.fillRect(3,4,10,9); // main rock
-                ctx.fillStyle = c2; ctx.fillRect(5,3,6,3); // top face
-                ctx.fillStyle = c3; ctx.fillRect(4,7,8,4); // side face
-                // cracks
-                ctx.fillStyle = c4; ctx.fillRect(6,5,1,3); ctx.fillRect(8,6,1,2);
-                // moss
-                ctx.fillStyle = '#4a8c3f'; ctx.fillRect(3,11,2,1); ctx.fillRect(10,12,2,1);
+            case T.BUSH: {
+                // Large round bush with volume (like reference)
+                const gc5 = '#5cad42';
+                ctx.fillStyle = gc5; ctx.fillRect(0,0,S,S);
+                // Grass peeking
+                ctx.fillStyle = '#68b84e';
+                ctx.fillRect(0,1,1,2); ctx.fillRect(15,0,1,3); ctx.fillRect(0,13,1,3); ctx.fillRect(15,14,1,2);
+                // Bush shadow
+                ctx.fillStyle = c4; ctx.fillRect(2,6,13,10);
+                // Bush body
+                ctx.fillStyle = c1; ctx.fillRect(1,4,14,10);
+                ctx.fillRect(3,2,10,3); ctx.fillRect(0,6,1,6); ctx.fillRect(15,6,1,6);
+                // Inner dark foliage
+                ctx.fillStyle = c2;
+                ctx.fillRect(2,8,12,6); ctx.fillRect(1,10,1,4);
+                // Top highlight
+                ctx.fillStyle = c3;
+                ctx.fillRect(4,2,8,3); ctx.fillRect(5,1,6,2);
+                // Light dapples
+                ctx.fillStyle = c3;
+                ctx.fillRect(3,5,2,1); ctx.fillRect(7,4,2,1); ctx.fillRect(11,3,2,1);
+                ctx.fillRect(4,7,1,1); ctx.fillRect(9,6,1,1);
+                // Small flower accents on bush
+                ctx.fillStyle = '#e84080'; ctx.fillRect(5,5,1,1); ctx.fillRect(10,4,1,1);
+                ctx.fillStyle = '#f0a030'; ctx.fillRect(3,7,1,1); ctx.fillRect(11,6,1,1);
+                ctx.fillStyle = '#fff'; ctx.fillRect(7,3,1,1); ctx.fillRect(12,5,1,1);
                 break;
+            }
+
+            case T.ROCK: {
+                // Gray stones on grass (like reference cobbles)
+                const gc6 = '#5cad42';
+                ctx.fillStyle = gc6; ctx.fillRect(0,0,S,S);
+                ctx.fillStyle = '#68b84e';
+                ctx.fillRect(1,0,1,3); ctx.fillRect(14,1,1,2); ctx.fillRect(0,12,1,3); ctx.fillRect(15,11,1,3);
+                // Rock shadow
+                ctx.fillStyle = c4; ctx.fillRect(2,6,12,10);
+                // Main rock body
+                ctx.fillStyle = c1; ctx.fillRect(3,4,10,9);
+                // Top face (lighter)
+                ctx.fillStyle = c3; ctx.fillRect(4,3,8,4);
+                // Side face
+                ctx.fillStyle = c2; ctx.fillRect(3,7,10,5);
+                // Highlights
+                ctx.fillStyle = c3;
+                ctx.fillRect(5,3,3,1); ctx.fillRect(4,4,2,1);
+                // Cracks
+                ctx.fillStyle = c4;
+                ctx.fillRect(6,5,1,3); ctx.fillRect(8,6,1,2); ctx.fillRect(5,9,1,2);
+                // Moss on rock
+                ctx.fillStyle = '#5cad42';
+                ctx.fillRect(3,11,2,1); ctx.fillRect(10,12,2,1);
+                ctx.fillStyle = '#489238';
+                ctx.fillRect(4,12,1,1); ctx.fillRect(11,11,1,1);
+                break;
+            }
 
             case T.BARREL:
-                // Wooden barrel with metal bands and shading
                 ctx.fillStyle = c1; ctx.fillRect(3,2,10,12);
-                ctx.fillStyle = c3; ctx.fillRect(4,3,2,10); // light stave
-                ctx.fillStyle = c4; ctx.fillRect(10,3,2,10); // dark stave
-                ctx.fillStyle = c2; ctx.fillRect(4,1,8,2); ctx.fillRect(4,13,8,2); // lids
-                ctx.fillStyle = '#6e6e6e'; ctx.fillRect(3,4,10,1); ctx.fillRect(3,10,10,1); // metal bands
-                ctx.fillStyle = '#888'; ctx.fillRect(4,4,1,1); ctx.fillRect(4,10,1,1); // band highlight
+                ctx.fillStyle = c3; ctx.fillRect(4,3,2,10);
+                ctx.fillStyle = c4; ctx.fillRect(10,3,2,10);
+                ctx.fillStyle = c2; ctx.fillRect(4,1,8,2); ctx.fillRect(4,13,8,2);
+                ctx.fillStyle = '#6e6e6e'; ctx.fillRect(3,4,10,1); ctx.fillRect(3,10,10,1);
+                ctx.fillStyle = '#888'; ctx.fillRect(4,4,1,1); ctx.fillRect(4,10,1,1);
                 break;
 
             case T.CRATE:
-                // Wooden crate with nails and grain
                 ctx.fillStyle = c1; ctx.fillRect(2,2,12,12);
-                ctx.fillStyle = c4; ctx.fillRect(2,2,12,1); ctx.fillRect(2,13,12,1); // top/bottom
-                ctx.fillStyle = c4; ctx.fillRect(2,2,1,12); ctx.fillRect(13,2,1,12); // sides
-                ctx.fillStyle = c2; ctx.fillRect(3,3,10,10); // inner face
-                ctx.fillStyle = c3; ctx.fillRect(7,3,1,10); ctx.fillRect(3,7,10,1); // cross braces
-                ctx.fillStyle = '#888'; ctx.fillRect(3,3,1,1); ctx.fillRect(12,3,1,1); // nails
+                ctx.fillStyle = c4; ctx.fillRect(2,2,12,1); ctx.fillRect(2,13,12,1);
+                ctx.fillStyle = c4; ctx.fillRect(2,2,1,12); ctx.fillRect(13,2,1,12);
+                ctx.fillStyle = c2; ctx.fillRect(3,3,10,10);
+                ctx.fillStyle = c3; ctx.fillRect(7,3,1,10); ctx.fillRect(3,7,10,1);
+                ctx.fillStyle = '#888'; ctx.fillRect(3,3,1,1); ctx.fillRect(12,3,1,1);
                 ctx.fillRect(3,12,1,1); ctx.fillRect(12,12,1,1);
                 break;
 
             case T.TABLE:
-                // Wooden table with shadow
-                ctx.fillStyle = c4; ctx.fillRect(3,5,11,9); // shadow
-                ctx.fillStyle = c1; ctx.fillRect(2,3,12,8); // tabletop
-                ctx.fillStyle = c3; ctx.fillRect(2,3,12,1); // top edge highlight
-                ctx.fillStyle = c2; ctx.fillRect(3,4,10,1); // surface grain
-                ctx.fillStyle = c4; // legs
-                ctx.fillRect(3,11,2,3); ctx.fillRect(11,11,2,3);
+                ctx.fillStyle = c4; ctx.fillRect(3,5,11,9);
+                ctx.fillStyle = c1; ctx.fillRect(2,3,12,8);
+                ctx.fillStyle = c3; ctx.fillRect(2,3,12,1);
+                ctx.fillStyle = c2; ctx.fillRect(3,4,10,1);
+                ctx.fillStyle = c4; ctx.fillRect(3,11,2,3); ctx.fillRect(11,11,2,3);
                 break;
 
             case T.CHAIR:
-                // Chair with backrest and seat
-                ctx.fillStyle = c1; ctx.fillRect(4,1,8,4); // backrest
-                ctx.fillStyle = c3; ctx.fillRect(4,1,8,1); // top edge
-                ctx.fillStyle = c2; ctx.fillRect(4,5,8,5); // seat
-                ctx.fillStyle = c4; // legs
-                ctx.fillRect(4,10,2,4); ctx.fillRect(10,10,2,4);
-                ctx.fillStyle = c3; ctx.fillRect(5,6,6,1); // seat highlight
+                ctx.fillStyle = c1; ctx.fillRect(4,1,8,4);
+                ctx.fillStyle = c3; ctx.fillRect(4,1,8,1);
+                ctx.fillStyle = c2; ctx.fillRect(4,5,8,5);
+                ctx.fillStyle = c4; ctx.fillRect(4,10,2,4); ctx.fillRect(10,10,2,4);
+                ctx.fillStyle = c3; ctx.fillRect(5,6,6,1);
                 break;
 
             case T.BED:
-                // Cozy bed with pillow and patterned blanket
-                ctx.fillStyle = c4; ctx.fillRect(2,2,12,13); // frame
-                ctx.fillStyle = c1; ctx.fillRect(3,3,10,11); // mattress
-                ctx.fillStyle = '#5c6bc0'; ctx.fillRect(3,5,10,9); // blanket
-                ctx.fillStyle = '#7986cb'; ctx.fillRect(4,6,8,3); // blanket fold
-                ctx.fillStyle = '#fff'; ctx.fillRect(4,2,8,3); // pillow
-                ctx.fillStyle = '#e8e8e8'; ctx.fillRect(5,3,6,1); // pillow shadow
-                ctx.fillStyle = '#3f51b5'; ctx.fillRect(5,8,2,1); ctx.fillRect(9,10,2,1); // blanket pattern
+                ctx.fillStyle = c4; ctx.fillRect(2,2,12,13);
+                ctx.fillStyle = c1; ctx.fillRect(3,3,10,11);
+                ctx.fillStyle = '#5c6bc0'; ctx.fillRect(3,5,10,9);
+                ctx.fillStyle = '#7986cb'; ctx.fillRect(4,6,8,3);
+                ctx.fillStyle = '#fff'; ctx.fillRect(4,2,8,3);
+                ctx.fillStyle = '#e8e8e8'; ctx.fillRect(5,3,6,1);
+                ctx.fillStyle = '#3f51b5'; ctx.fillRect(5,8,2,1); ctx.fillRect(9,10,2,1);
                 break;
 
             case T.ANVIL:
-                // Detailed anvil on stand
-                ctx.fillStyle = c4; ctx.fillRect(4,10,8,4); // base
-                ctx.fillStyle = c1; ctx.fillRect(3,6,10,5); // body
-                ctx.fillStyle = c2; ctx.fillRect(2,4,12,3); // horn face
-                ctx.fillStyle = c3; ctx.fillRect(4,2,8,3); // top face (highlight)
-                ctx.fillStyle = c4; ctx.fillRect(1,5,3,2); // horn tip
-                ctx.fillStyle = '#888'; ctx.fillRect(5,3,6,1); // edge shine
+                ctx.fillStyle = c4; ctx.fillRect(4,10,8,4);
+                ctx.fillStyle = c1; ctx.fillRect(3,6,10,5);
+                ctx.fillStyle = c2; ctx.fillRect(2,4,12,3);
+                ctx.fillStyle = c3; ctx.fillRect(4,2,8,3);
+                ctx.fillStyle = c4; ctx.fillRect(1,5,3,2);
+                ctx.fillStyle = '#888'; ctx.fillRect(5,3,6,1);
                 break;
 
             case T.FURNACE:
-                // Glowing furnace with fire
-                ctx.fillStyle = '#455a64'; ctx.fillRect(2,1,12,14); // stone body
-                ctx.fillStyle = '#37474f'; ctx.fillRect(2,1,12,2); // top
-                ctx.fillStyle = c1; ctx.fillRect(4,7,8,6); // fire chamber
-                ctx.fillStyle = c2; ctx.fillRect(5,5,6,3); // top glow
-                ctx.fillStyle = '#ff9800'; ctx.fillRect(5,8,6,4); // fire
-                ctx.fillStyle = '#ffeb3b'; ctx.fillRect(6,9,4,2); // flame core
+                ctx.fillStyle = '#455a64'; ctx.fillRect(2,1,12,14);
+                ctx.fillStyle = '#37474f'; ctx.fillRect(2,1,12,2);
+                ctx.fillStyle = c1; ctx.fillRect(4,7,8,6);
+                ctx.fillStyle = c2; ctx.fillRect(5,5,6,3);
+                ctx.fillStyle = '#ff9800'; ctx.fillRect(5,8,6,4);
+                ctx.fillStyle = '#ffeb3b'; ctx.fillRect(6,9,4,2);
                 ctx.fillStyle = '#fff'; ctx.globalAlpha=0.3; ctx.fillRect(7,10,2,1); ctx.globalAlpha=1;
                 break;
 
             case T.COUNTER:
-                // Shop counter with items
-                ctx.fillStyle = c4; ctx.fillRect(0,5,TILE,9); // shadow
-                ctx.fillStyle = c1; ctx.fillRect(0,3,TILE,8); // counter body
-                ctx.fillStyle = c3; ctx.fillRect(0,3,TILE,1); // top edge
-                ctx.fillStyle = c2; ctx.fillRect(1,4,14,1); // surface
-                ctx.fillStyle = c4; ctx.fillRect(0,11,TILE,1); // bottom edge
+                ctx.fillStyle = c4; ctx.fillRect(0,5,S,9);
+                ctx.fillStyle = c1; ctx.fillRect(0,3,S,8);
+                ctx.fillStyle = c3; ctx.fillRect(0,3,S,1);
+                ctx.fillStyle = c2; ctx.fillRect(1,4,14,1);
+                ctx.fillStyle = c4; ctx.fillRect(0,11,S,1);
                 break;
 
             case T.BOOKSHELF:
-                // Colorful bookshelf with varied books
-                ctx.fillStyle = c1; ctx.fillRect(1,0,14,TILE); // frame
-                ctx.fillStyle = c4; ctx.fillRect(1,0,14,1); ctx.fillRect(1,7,14,1); // shelves
-                ctx.fillStyle = '#c62828'; ctx.fillRect(2,1,2,6); // red book
-                ctx.fillStyle = '#1565c0'; ctx.fillRect(4,1,3,6); // blue book
-                ctx.fillStyle = '#2e7d32'; ctx.fillRect(7,2,2,5); // green book (shorter)
-                ctx.fillStyle = '#f9a825'; ctx.fillRect(9,1,2,6); // gold book
-                ctx.fillStyle = '#6a1b9a'; ctx.fillRect(11,1,3,6); // purple book
-                ctx.fillStyle = '#e65100'; ctx.fillRect(2,8,3,6); // orange book
-                ctx.fillStyle = '#00838f'; ctx.fillRect(5,9,2,5); // teal book
-                ctx.fillStyle = '#ad1457'; ctx.fillRect(7,8,3,6); // crimson book
-                ctx.fillStyle = '#33691e'; ctx.fillRect(10,8,2,6); // olive book
-                ctx.fillStyle = '#4527a0'; ctx.fillRect(12,9,2,5); // indigo book
+                ctx.fillStyle = c1; ctx.fillRect(1,0,14,S);
+                ctx.fillStyle = c4; ctx.fillRect(1,0,14,1); ctx.fillRect(1,7,14,1);
+                ctx.fillStyle = '#c62828'; ctx.fillRect(2,1,2,6);
+                ctx.fillStyle = '#1565c0'; ctx.fillRect(4,1,3,6);
+                ctx.fillStyle = '#2e7d32'; ctx.fillRect(7,2,2,5);
+                ctx.fillStyle = '#f9a825'; ctx.fillRect(9,1,2,6);
+                ctx.fillStyle = '#6a1b9a'; ctx.fillRect(11,1,3,6);
+                ctx.fillStyle = '#e65100'; ctx.fillRect(2,8,3,6);
+                ctx.fillStyle = '#00838f'; ctx.fillRect(5,9,2,5);
+                ctx.fillStyle = '#ad1457'; ctx.fillRect(7,8,3,6);
+                ctx.fillStyle = '#33691e'; ctx.fillRect(10,8,2,6);
+                ctx.fillStyle = '#4527a0'; ctx.fillRect(12,9,2,5);
                 break;
 
-            case T.WELL:
-                // Detailed well with bucket
-                ctx.fillStyle = '#4a8c3f'; ctx.fillRect(0,0,TILE,TILE);
-                ctx.fillStyle = c4; ctx.fillRect(3,3,10,10); // well rim shadow
-                ctx.fillStyle = c1; ctx.fillRect(3,3,10,10); // stone rim
-                ctx.fillStyle = '#3070b0'; ctx.fillRect(5,5,6,6); // water
-                ctx.fillStyle = '#50a0e0'; ctx.fillRect(6,6,3,2); // water highlight
-                ctx.fillStyle = c2; // rim stones
+            case T.WELL: {
+                const gc7 = '#5cad42';
+                ctx.fillStyle = gc7; ctx.fillRect(0,0,S,S);
+                ctx.fillStyle = '#68b84e';
+                ctx.fillRect(1,0,1,3); ctx.fillRect(14,1,1,2); ctx.fillRect(0,13,1,3); ctx.fillRect(15,13,1,3);
+                ctx.fillStyle = c4; ctx.fillRect(3,3,10,10);
+                ctx.fillStyle = c1; ctx.fillRect(3,3,10,10);
+                ctx.fillStyle = '#2890c8'; ctx.fillRect(5,5,6,6);
+                ctx.fillStyle = '#58c0f0'; ctx.fillRect(6,6,3,2);
+                ctx.fillStyle = c2;
                 ctx.fillRect(3,3,10,2); ctx.fillRect(3,11,10,2);
                 ctx.fillRect(3,3,2,10); ctx.fillRect(11,3,2,10);
-                ctx.fillStyle = c3; ctx.fillRect(4,4,1,1); ctx.fillRect(11,4,1,1); // stone highlights
+                ctx.fillStyle = c3; ctx.fillRect(4,4,1,1); ctx.fillRect(11,4,1,1);
                 break;
+            }
 
             case T.ALTAR:
-                // Ornate altar with candles
-                ctx.fillStyle = c4; ctx.fillRect(4,6,8,9); // shadow
-                ctx.fillStyle = c1; ctx.fillRect(3,4,10,9); // altar body
-                ctx.fillStyle = c2; ctx.fillRect(4,2,8,3); // top surface
-                ctx.fillStyle = '#fff'; ctx.fillRect(6,3,4,1); // holy symbol
-                ctx.fillStyle = '#fff'; ctx.fillRect(7,2,2,2); // cross
-                // candles
+                ctx.fillStyle = c4; ctx.fillRect(4,6,8,9);
+                ctx.fillStyle = c1; ctx.fillRect(3,4,10,9);
+                ctx.fillStyle = c2; ctx.fillRect(4,2,8,3);
+                ctx.fillStyle = '#fff'; ctx.fillRect(6,3,4,1);
+                ctx.fillStyle = '#fff'; ctx.fillRect(7,2,2,2);
                 ctx.fillStyle = '#fff8e1'; ctx.fillRect(4,1,1,3); ctx.fillRect(11,1,1,3);
-                ctx.fillStyle = '#ff9800'; ctx.fillRect(4,0,1,1); ctx.fillRect(11,0,1,1); // flames
+                ctx.fillStyle = '#ff9800'; ctx.fillRect(4,0,1,1); ctx.fillRect(11,0,1,1);
                 break;
 
-            case T.SAND:
-                // Textured sand with shells and ripples
-                ctx.fillStyle = c2; ctx.fillRect(2,3,3,1); ctx.fillRect(9,7,2,1); ctx.fillRect(4,11,3,1);
-                ctx.fillStyle = c3; ctx.fillRect(6,2,2,1); ctx.fillRect(12,5,2,1); ctx.fillRect(1,9,2,1);
-                ctx.fillStyle = c4; ctx.fillRect(8,4,1,1); ctx.fillRect(3,8,1,1); ctx.fillRect(13,11,1,1); // pebbles
-                ctx.fillStyle = '#ffe8cc'; ctx.fillRect(10,10,1,1); // shell
+            case T.SAND: {
+                // Sandy shore with grass transition
+                ctx.fillStyle = c2;
+                ctx.fillRect(2,3,3,1); ctx.fillRect(8,6,3,1); ctx.fillRect(4,11,3,1);
+                ctx.fillRect(12,2,3,1); ctx.fillRect(0,8,2,1);
+                ctx.fillStyle = c3;
+                ctx.fillRect(6,1,2,1); ctx.fillRect(11,5,2,1); ctx.fillRect(1,9,2,1); ctx.fillRect(9,13,2,1);
+                ctx.fillStyle = c4;
+                ctx.fillRect(5,4,1,1); ctx.fillRect(10,8,1,1); ctx.fillRect(3,12,1,1);
+                // Grass tufts
+                ctx.fillStyle = '#5cad42';
+                ctx.fillRect(0,0,1,2); ctx.fillRect(15,0,1,1);
+                ctx.fillStyle = '#68b84e';
+                ctx.fillRect(1,0,1,1); ctx.fillRect(14,0,1,1);
                 break;
+            }
 
             case T.BRIDGE:
-                // Wooden bridge with planks and railings
-                ctx.fillStyle = c1; ctx.fillRect(0,0,TILE,TILE); // deck
-                ctx.fillStyle = c4; // plank gaps
-                ctx.fillRect(0,3,TILE,1); ctx.fillRect(0,7,TILE,1); ctx.fillRect(0,11,TILE,1);
-                ctx.fillStyle = c2; // railings
-                ctx.fillRect(0,0,TILE,2); ctx.fillRect(0,14,TILE,2);
-                ctx.fillStyle = c3; // railing posts
-                ctx.fillRect(2,0,2,TILE); ctx.fillRect(12,0,2,TILE);
-                ctx.fillStyle = c4; ctx.fillRect(3,1,1,14); ctx.fillRect(13,1,1,14); // post shadow
+                ctx.fillStyle = c1; ctx.fillRect(0,0,S,S);
+                ctx.fillStyle = c4;
+                ctx.fillRect(0,3,S,1); ctx.fillRect(0,7,S,1); ctx.fillRect(0,11,S,1);
+                ctx.fillStyle = c2;
+                ctx.fillRect(0,0,S,2); ctx.fillRect(0,14,S,2);
+                ctx.fillStyle = c3;
+                ctx.fillRect(2,0,2,S); ctx.fillRect(12,0,2,S);
+                ctx.fillStyle = c4; ctx.fillRect(3,1,1,14); ctx.fillRect(13,1,1,14);
                 break;
 
             case T.STALL:
-                // Market stall with striped canopy
-                ctx.fillStyle = c1; ctx.fillRect(1,6,14,8); // counter
-                ctx.fillStyle = '#e65100'; ctx.fillRect(0,1,8,5); // canopy left
-                ctx.fillStyle = '#ff8f00'; ctx.fillRect(8,1,8,5); // canopy right stripe
-                ctx.fillStyle = '#e65100'; ctx.fillRect(0,0,TILE,1); // top edge
-                ctx.fillStyle = c2; ctx.fillRect(2,7,12,5); // counter surface
-                ctx.fillStyle = '#8bc34a'; ctx.fillRect(3,8,3,2); // goods
+                ctx.fillStyle = c1; ctx.fillRect(1,6,14,8);
+                ctx.fillStyle = '#e65100'; ctx.fillRect(0,1,8,5);
+                ctx.fillStyle = '#ff8f00'; ctx.fillRect(8,1,8,5);
+                ctx.fillStyle = '#e65100'; ctx.fillRect(0,0,S,1);
+                ctx.fillStyle = c2; ctx.fillRect(2,7,12,5);
+                ctx.fillStyle = '#8bc34a'; ctx.fillRect(3,8,3,2);
                 ctx.fillStyle = '#ff5722'; ctx.fillRect(7,8,3,2);
                 ctx.fillStyle = '#ffeb3b'; ctx.fillRect(11,8,3,2);
                 break;
 
             case T.WEAPON_RACK:
-                // Weapon rack with swords and shield
-                ctx.fillStyle = c1; ctx.fillRect(2,0,12,TILE); // rack
-                ctx.fillStyle = c2; ctx.fillRect(2,0,1,TILE); ctx.fillRect(13,0,1,TILE); // edges
-                ctx.fillStyle = '#b0bec5'; // swords
+                ctx.fillStyle = c1; ctx.fillRect(2,0,12,S);
+                ctx.fillStyle = c2; ctx.fillRect(2,0,1,S); ctx.fillRect(13,0,1,S);
+                ctx.fillStyle = '#b0bec5';
                 ctx.fillRect(4,2,1,10); ctx.fillRect(7,1,1,11); ctx.fillRect(10,2,1,10);
-                ctx.fillStyle = '#8d6e63'; // handles
+                ctx.fillStyle = '#8d6e63';
                 ctx.fillRect(4,12,1,3); ctx.fillRect(7,12,1,3); ctx.fillRect(10,12,1,3);
-                ctx.fillStyle = c4; ctx.fillRect(5,4,1,1); ctx.fillRect(8,3,1,1); // crossguards
-                ctx.fillStyle = '#d4aa70'; ctx.fillRect(5,4,1,1); ctx.fillRect(11,4,1,1); // gold detail
+                ctx.fillStyle = '#d4aa70'; ctx.fillRect(5,4,1,1); ctx.fillRect(11,4,1,1);
                 break;
 
             case T.WINDOW:
-                // Window with curtain and light reflection
-                ctx.fillStyle = '#574a32'; ctx.fillRect(0,0,TILE,TILE); // wall frame
-                ctx.fillStyle = c1; ctx.fillRect(2,2,12,12); // glass
-                ctx.fillStyle = c2; // panes
+                ctx.fillStyle = '#574a32'; ctx.fillRect(0,0,S,S);
+                ctx.fillStyle = c1; ctx.fillRect(2,2,12,12);
+                ctx.fillStyle = c2;
                 ctx.fillRect(3,3,4,4); ctx.fillRect(9,3,4,4);
                 ctx.fillRect(3,9,4,4); ctx.fillRect(9,9,4,4);
-                ctx.fillStyle = '#574a32'; // muntins
+                ctx.fillStyle = '#574a32';
                 ctx.fillRect(7,2,2,12); ctx.fillRect(2,7,12,2);
-                ctx.fillStyle = c3; // light reflection
+                ctx.fillStyle = c3;
                 ctx.fillRect(3,3,2,1); ctx.fillRect(9,3,2,1);
                 ctx.fillStyle = '#fff'; ctx.globalAlpha=0.15; ctx.fillRect(3,3,1,2); ctx.fillRect(9,3,1,2); ctx.globalAlpha=1;
                 break;
 
             case T.DARK_FLOOR:
-                // Cave/mine floor with cracks
-                ctx.fillStyle = c1; ctx.fillRect(0,0,TILE,TILE);
-                ctx.fillStyle = c2; ctx.fillRect(0,0,TILE,1); ctx.fillRect(0,0,1,TILE);
-                ctx.fillStyle = c4; // cracks
+                ctx.fillStyle = c1; ctx.fillRect(0,0,S,S);
+                ctx.fillStyle = c2; ctx.fillRect(0,0,S,1); ctx.fillRect(0,0,1,S);
+                ctx.fillStyle = c4;
                 ctx.fillRect(4,3,1,3); ctx.fillRect(5,5,2,1); ctx.fillRect(9,8,1,4); ctx.fillRect(10,11,3,1);
-                ctx.fillStyle = c3; ctx.fillRect(2,10,1,1); ctx.fillRect(12,5,1,1); // pebbles
+                ctx.fillStyle = c3; ctx.fillRect(2,10,1,1); ctx.fillRect(12,5,1,1);
                 break;
 
             case T.RUG:
-                // Ornate rug with tassels and pattern
-                ctx.fillStyle = '#d4b896'; ctx.fillRect(0,0,TILE,TILE); // floor
-                ctx.fillStyle = c1; ctx.fillRect(2,2,12,12); // rug body
-                ctx.fillStyle = c2; ctx.fillRect(3,3,10,10); // inner border
-                ctx.fillStyle = c4; ctx.fillRect(5,5,6,6); // center pattern
-                ctx.fillStyle = c1; ctx.fillRect(6,6,4,4); // inner diamond
-                ctx.fillStyle = '#ffb300'; ctx.fillRect(7,7,2,2); // gold center
-                // tassels
+                ctx.fillStyle = '#d4b896'; ctx.fillRect(0,0,S,S);
+                ctx.fillStyle = c1; ctx.fillRect(2,2,12,12);
+                ctx.fillStyle = c2; ctx.fillRect(3,3,10,10);
+                ctx.fillStyle = c4; ctx.fillRect(5,5,6,6);
+                ctx.fillStyle = c1; ctx.fillRect(6,6,4,4);
+                ctx.fillStyle = '#ffb300'; ctx.fillRect(7,7,2,2);
                 ctx.fillStyle = c1; ctx.fillRect(3,14,2,1); ctx.fillRect(7,14,2,1); ctx.fillRect(11,14,2,1);
                 break;
 
             case T.CAULDRON:
-                // Bubbling cauldron with steam
-                ctx.fillStyle = c4; ctx.fillRect(4,5,8,10); // shadow
-                ctx.fillStyle = c1; ctx.fillRect(3,4,10,9); // body
-                ctx.fillStyle = c2; ctx.fillRect(4,3,8,2); // rim
-                ctx.fillStyle = '#388e3c'; ctx.fillRect(5,6,6,5); // liquid
-                ctx.fillStyle = '#66bb6a'; ctx.fillRect(6,7,4,3); // highlight
-                // bubbles
+                ctx.fillStyle = c4; ctx.fillRect(4,5,8,10);
+                ctx.fillStyle = c1; ctx.fillRect(3,4,10,9);
+                ctx.fillStyle = c2; ctx.fillRect(4,3,8,2);
+                ctx.fillStyle = '#388e3c'; ctx.fillRect(5,6,6,5);
+                ctx.fillStyle = '#66bb6a'; ctx.fillRect(6,7,4,3);
                 ctx.fillStyle = '#81c784'; ctx.fillRect(6,6,1,1); ctx.fillRect(9,8,1,1);
-                // steam
                 ctx.fillStyle='#fff'; ctx.globalAlpha=0.2;
                 ctx.fillRect(6,1,1,2); ctx.fillRect(9,0,1,3);
                 ctx.globalAlpha=1;
-                // legs
                 ctx.fillStyle = '#333'; ctx.fillRect(4,13,2,2); ctx.fillRect(10,13,2,2);
                 break;
         }
@@ -738,7 +866,13 @@ class PixelTileMap {
 
     // Generate the town layout based on world locations
     generateLayout(locations) {
-        this.grid = Array.from({length: this.rows}, () => Array(this.cols).fill(T.GRASS));
+        // Fill with varied grass types for natural look
+        this.grid = Array.from({length: this.rows}, (_, y) =>
+            Array.from({length: this.cols}, (_, x) => {
+                const n = (x * 7 + y * 13 + x * y * 3) % 10;
+                return n < 5 ? T.GRASS : n < 8 ? T.GRASS2 : T.GRASS3;
+            })
+        );
         this.buildingZones = {};
         this.natureZones = {};
         this.labelPositions = {};
@@ -994,20 +1128,27 @@ class PixelTileMap {
     }
 
     _placeForest(locId, x, y, name) {
-        for (let dy = 0; dy < 5; dy++) {
-            for (let dx = 0; dx < 6; dx++) {
-                if (y+dy < this.rows && x+dx < this.cols) {
-                    const isTree = (dx + dy) % 2 === 0;
-                    this.grid[y+dy][x+dx] = isTree ? T.TREE_TOP : T.TREE_TOP2;
-                }
+        const W = 7, H = 6;
+        for (let dy = 0; dy < H; dy++) {
+            for (let dx = 0; dx < W; dx++) {
+                if (y+dy >= this.rows || x+dx >= this.cols) continue;
+                const r = (dx * 7 + dy * 5) % 8;
+                if (r < 3) this.grid[y+dy][x+dx] = T.TREE_TOP;
+                else if (r < 5) this.grid[y+dy][x+dx] = T.TREE_TOP2;
+                else if (r === 5) this.grid[y+dy][x+dx] = T.BUSH;
+                else this.grid[y+dy][x+dx] = T.GRASS3;
             }
         }
-        // Small clearing
-        if (y+2 < this.rows && x+3 < this.cols) this.grid[y+2][x+2] = T.GRASS;
-        if (y+2 < this.rows && x+3 < this.cols) this.grid[y+2][x+3] = T.GRASS2;
+        // Tree trunks along bottom edge
+        for (let dx = 1; dx < W-1; dx += 2) {
+            if (y+H-1 < this.rows && x+dx < this.cols) this.grid[y+H-1][x+dx] = T.TREE_TRUNK;
+        }
+        // Small clearing with flowers
+        if (y+2 < this.rows && x+3 < this.cols) { this.grid[y+2][x+3] = T.GRASS2; this.grid[y+2][x+2] = T.FLOWER2; }
+        if (y+3 < this.rows && x+4 < this.cols) this.grid[y+3][x+4] = T.FLOWER1;
 
-        this.natureZones[locId] = { x, y, w: 6, h: 5 };
-        this.labelPositions[locId] = { x: (x + 3) * TILE, y: y * TILE - 4, name };
+        this.natureZones[locId] = { x, y, w: W, h: H };
+        this.labelPositions[locId] = { x: (x + W/2) * TILE, y: y * TILE - 4, name };
     }
 
     _placeRiver(locId, x, y, name) {
@@ -1057,58 +1198,77 @@ class PixelTileMap {
     }
 
     _placeLake(locId, x, y, name) {
-        for (let dy = 0; dy < 5; dy++) {
-            for (let dx = 0; dx < 7; dx++) {
-                if (y+dy < this.rows && x+dx < this.cols) {
-                    // Oval shape
-                    const cx2 = 3, cy2 = 2;
-                    const dist = ((dx-cx2)*(dx-cx2))/9 + ((dy-cy2)*(dy-cy2))/4;
-                    if (dist < 1.2) {
-                        this.grid[y+dy][x+dx] = (dx+dy) % 2 === 0 ? T.WATER : T.WATER2;
-                    } else if (dist < 1.8) {
-                        this.grid[y+dy][x+dx] = T.SAND;
-                    }
+        const W = 8, H = 6;
+        for (let dy = 0; dy < H; dy++) {
+            for (let dx = 0; dx < W; dx++) {
+                if (y+dy >= this.rows || x+dx >= this.cols) continue;
+                const cx2 = 3.5, cy2 = 2.5;
+                const dist = ((dx-cx2)*(dx-cx2))/12 + ((dy-cy2)*(dy-cy2))/5;
+                if (dist < 0.8) {
+                    this.grid[y+dy][x+dx] = (dx+dy) % 2 === 0 ? T.WATER : T.WATER2;
+                } else if (dist < 1.3) {
+                    this.grid[y+dy][x+dx] = T.SAND;
+                } else if (dist < 1.8) {
+                    // Grass border with flowers
+                    const r = (dx*3+dy*5) % 4;
+                    this.grid[y+dy][x+dx] = r === 0 ? T.FLOWER2 : r === 1 ? T.FLOWER1 : T.GRASS2;
                 }
             }
         }
-        // Lily pads (flowers on water edge)
-        this.natureZones[locId] = { x, y, w: 7, h: 5 };
-        this.labelPositions[locId] = { x: (x + 3.5) * TILE, y: y * TILE - 4, name };
+        // Rocks on shore
+        if (y+1 < this.rows && x < this.cols) this.grid[y+1][x] = T.ROCK;
+        if (y+H-1 < this.rows && x+W-1 < this.cols) this.grid[y+H-1][x+W-1] = T.ROCK;
+        // Bush on edge
+        if (y < this.rows && x+W-1 < this.cols) this.grid[y][x+W-1] = T.BUSH;
+
+        this.natureZones[locId] = { x, y, w: W, h: H };
+        this.labelPositions[locId] = { x: (x + W/2) * TILE, y: y * TILE - 4, name };
     }
 
     _placeMeadow(locId, x, y, name) {
-        for (let dy = 0; dy < 4; dy++) {
-            for (let dx = 0; dx < 6; dx++) {
-                if (y+dy < this.rows && x+dx < this.cols) {
-                    const r = (dx * 3 + dy * 7) % 5;
-                    if (r === 0) this.grid[y+dy][x+dx] = T.FLOWER1;
-                    else if (r === 1) this.grid[y+dy][x+dx] = T.FLOWER2;
-                    else this.grid[y+dy][x+dx] = T.GRASS2;
-                }
+        const W = 7, H = 5;
+        for (let dy = 0; dy < H; dy++) {
+            for (let dx = 0; dx < W; dx++) {
+                if (y+dy >= this.rows || x+dx >= this.cols) continue;
+                const r = (dx * 3 + dy * 7 + dx * dy) % 8;
+                if (r === 0 || r === 3) this.grid[y+dy][x+dx] = T.FLOWER1;
+                else if (r === 1 || r === 5) this.grid[y+dy][x+dx] = T.FLOWER2;
+                else if (r === 6) this.grid[y+dy][x+dx] = T.BUSH;
+                else this.grid[y+dy][x+dx] = T.GRASS2;
             }
         }
-        this.natureZones[locId] = { x, y, w: 6, h: 4 };
-        this.labelPositions[locId] = { x: (x + 3) * TILE, y: y * TILE - 4, name };
+        // Rocks accent
+        if (y+2 < this.rows && x+1 < this.cols) this.grid[y+2][x+1] = T.ROCK;
+        // Stone path through meadow
+        if (y+H-1 < this.rows && x+3 < this.cols) this.grid[y+H-1][x+3] = T.STONE_PATH;
+        this.natureZones[locId] = { x, y, w: W, h: H };
+        this.labelPositions[locId] = { x: (x + W/2) * TILE, y: y * TILE - 4, name };
     }
 
     _placeNatureArea(locId, x, y, name) {
-        // Generic park/nature area
-        for (let dy = 0; dy < 5; dy++) {
-            for (let dx = 0; dx < 6; dx++) {
-                if (y+dy < this.rows && x+dx < this.cols) {
-                    const r = (dx * 5 + dy * 3) % 7;
-                    if (r === 0) this.grid[y+dy][x+dx] = T.TREE_TOP;
-                    else if (r === 1) this.grid[y+dy][x+dx] = T.FLOWER1;
-                    else if (r === 2) this.grid[y+dy][x+dx] = T.BUSH;
-                    else this.grid[y+dy][x+dx] = T.GRASS2;
-                }
+        const W = 7, H = 6;
+        for (let dy = 0; dy < H; dy++) {
+            for (let dx = 0; dx < W; dx++) {
+                if (y+dy >= this.rows || x+dx >= this.cols) continue;
+                const r = (dx * 5 + dy * 3 + dx * dy * 2) % 10;
+                if (r < 2) this.grid[y+dy][x+dx] = T.TREE_TOP;
+                else if (r === 2) this.grid[y+dy][x+dx] = T.TREE_TOP2;
+                else if (r === 3) this.grid[y+dy][x+dx] = T.FLOWER1;
+                else if (r === 4) this.grid[y+dy][x+dx] = T.FLOWER2;
+                else if (r === 5) this.grid[y+dy][x+dx] = T.BUSH;
+                else if (r === 6) this.grid[y+dy][x+dx] = T.ROCK;
+                else this.grid[y+dy][x+dx] = T.GRASS2;
             }
         }
-        // Bench
-        if (y+2 < this.rows && x+3 < this.cols) this.grid[y+2][x+3] = T.CHAIR;
+        // Stone path and bench in center
+        if (y+3 < this.rows && x+3 < this.cols) {
+            this.grid[y+3][x+3] = T.STONE_PATH;
+            this.grid[y+3][x+2] = T.CHAIR;
+            this.grid[y+3][x+4] = T.CHAIR;
+        }
 
-        this.natureZones[locId] = { x, y, w: 6, h: 5 };
-        this.labelPositions[locId] = { x: (x + 3) * TILE, y: y * TILE - 4, name };
+        this.natureZones[locId] = { x, y, w: W, h: H };
+        this.labelPositions[locId] = { x: (x + W/2) * TILE, y: y * TILE - 4, name };
     }
 
     _connectToRoad(doorX, doorY) {
