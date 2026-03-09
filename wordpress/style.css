@@ -168,15 +168,17 @@ body.rimtown-page .wp-block-post-title {
 }
 
 /* Main Layout */
-.main-layout {
-    display: flex;
+.rimtown-container .main-layout {
+    display: flex !important;
+    flex-direction: row !important;
     flex: 1;
     min-height: 0;
 }
 
 /* Town Map */
-.map-panel {
-    flex: 1;
+.rimtown-container .map-panel {
+    flex: 1 1 0%;
+    min-width: 0;
     position: relative;
     overflow: hidden;
     background: #1a1a2e;
@@ -289,8 +291,9 @@ body.rimtown-page .wp-block-post-title {
 }
 
 /* Sidebar */
-.sidebar {
+.rimtown-container .sidebar {
     width: 360px;
+    flex: 0 0 360px;
     background: var(--bg-secondary);
     border-left: 1px solid var(--border);
     display: flex;
@@ -1364,8 +1367,9 @@ body.rimtown-page .wp-block-post-title {
 
 /* ===== Responsive: Tablet (≤1024px) ===== */
 @media (max-width: 1024px) {
-    .sidebar {
+    .rimtown-container .sidebar {
         width: 300px;
+        flex: 0 0 300px;
     }
     .header h1 {
         font-size: 0.95rem;
