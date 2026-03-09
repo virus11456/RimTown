@@ -256,46 +256,56 @@ class PixelTileMap {
         // Viewport / camera
         this.camX = 0;
         this.camY = 0;
-        this.zoom = 1;
-        this.minZoom = 1; // will be computed on resize
+        this.zoom = 0; // will be set on first resize
+        this.minZoom = 1;
         this.maxZoom = 4;
-        this._resizeCanvas();
-        this.ctx.imageSmoothingEnabled = false;
+        this._dpr = window.devicePixelRatio || 1;
+        this._viewW = 0;
+        this._viewH = 0;
+        this._needsResize = true;
         // Observe container resize
-        this._resizeObserver = new ResizeObserver(() => this._resizeCanvas());
+        this._resizeObserver = new ResizeObserver(() => { this._needsResize = true; });
         this._resizeObserver.observe(this.canvas.parentElement);
         // --- Interaction: click, pan, pinch-to-zoom ---
         this._setupInteraction();
     }
 
-    _resizeCanvas() {
-        const parent = this.canvas.parentElement;
-        if (!parent) return;
+    // Called at the start of every render frame
+    _checkResize() {
+        const rect = this.canvas.getBoundingClientRect();
+        const w = rect.width;
+        const h = rect.height;
+        if (w < 1 || h < 1) return;
         const dpr = window.devicePixelRatio || 1;
-        const w = parent.clientWidth;
-        const h = parent.clientHeight;
-        this.canvas.width = Math.floor(w * dpr);
-        this.canvas.height = Math.floor(h * dpr);
-        this.canvas.style.width = w + 'px';
-        this.canvas.style.height = h + 'px';
+        const needsUpdate = this._needsResize || Math.abs(this._viewW - w) > 1 || Math.abs(this._viewH - h) > 1 || dpr !== this._dpr;
+        if (!needsUpdate) return;
+        this._needsResize = false;
+        this._dpr = dpr;
+        this._viewW = w;
+        this._viewH = h;
+        // Set canvas buffer to match display at native resolution
+        this.canvas.width = Math.round(w * dpr);
+        this.canvas.height = Math.round(h * dpr);
         this.ctx = this.canvas.getContext('2d');
         this.ctx.imageSmoothingEnabled = false;
-        this._dpr = dpr;
-        // Compute minimum zoom so map covers the viewport
-        this.minZoom = Math.max(w / this.mapWidth, h / this.mapHeight);
+        // Compute minimum zoom so map covers the viewport (no empty borders)
+        const newMinZoom = Math.max(w / this.mapWidth, h / this.mapHeight);
+        this.minZoom = newMinZoom;
+        // On first init or if zoom is below minimum, set to fit
         if (this.zoom < this.minZoom) this.zoom = this.minZoom;
         this._clampCamera();
     }
 
     _clampCamera() {
-        // Ensure we don't pan beyond map edges
-        const vw = this.canvas.width / this._dpr / this.zoom;
-        const vh = this.canvas.height / this._dpr / this.zoom;
+        if (!this._viewW) return;
+        // Viewport size in map coordinates
+        const vw = this._viewW / this.zoom;
+        const vh = this._viewH / this.zoom;
         this.camX = Math.max(0, Math.min(this.camX, this.mapWidth - vw));
         this.camY = Math.max(0, Math.min(this.camY, this.mapHeight - vh));
     }
 
-    // Convert screen coords to map coords
+    // Convert screen (client) coords to map coords
     _screenToMap(sx, sy) {
         const rect = this.canvas.getBoundingClientRect();
         const x = (sx - rect.left) / this.zoom + this.camX;
@@ -2052,14 +2062,18 @@ class PixelTileMap {
 
     // Main render
     render(agents, selectedAgent, playerLoc, completedBuildings) {
+        // Check if canvas needs resizing (handles window resize, DPR changes)
+        this._checkResize();
         const ctx = this.ctx;
+        if (!ctx) return;
         this.animFrame++;
 
         // Clear entire canvas and apply camera transform
+        const dpr = this._dpr;
+        const scale = this.zoom * dpr;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        const dpr = this._dpr || 1;
-        ctx.setTransform(this.zoom * dpr, 0, 0, this.zoom * dpr, -this.camX * this.zoom * dpr, -this.camY * this.zoom * dpr);
+        ctx.setTransform(scale, 0, 0, scale, -this.camX * scale, -this.camY * scale);
 
         // Draw tile grid
         for (let y = 0; y < this.rows; y++) {
