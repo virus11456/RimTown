@@ -16,13 +16,15 @@
     --info: #60a5fa;
 }
 
-* {
+.rimtown-container *,
+.rimtown-container *::before,
+.rimtown-container *::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-body {
+.rimtown-container {
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
@@ -30,6 +32,30 @@ body {
     height: 100vh;
     display: flex;
     flex-direction: column;
+    position: relative;
+    line-height: 1.5;
+    font-size: 14px;
+}
+
+/* WordPress full-width page support */
+body.rimtown-page .site-content,
+body.rimtown-page .entry-content,
+body.rimtown-page .post-content,
+body.rimtown-page main,
+body.rimtown-page article {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+body.rimtown-page #page,
+body.rimtown-page .site {
+    overflow: hidden;
+}
+body.rimtown-page header.site-header,
+body.rimtown-page .site-footer,
+body.rimtown-page footer,
+body.rimtown-page .wp-block-post-title {
+    display: none;
 }
 
 /* Header */
@@ -524,20 +550,20 @@ body {
 }
 
 /* Scrollbar */
-::-webkit-scrollbar {
+.rimtown-container ::-webkit-scrollbar {
     width: 6px;
 }
 
-::-webkit-scrollbar-track {
+.rimtown-container ::-webkit-scrollbar-track {
     background: var(--bg-primary);
 }
 
-::-webkit-scrollbar-thumb {
+.rimtown-container ::-webkit-scrollbar-thumb {
     background: var(--border);
     border-radius: 3px;
 }
 
-::-webkit-scrollbar-thumb:hover {
+.rimtown-container ::-webkit-scrollbar-thumb:hover {
     background: var(--text-muted);
 }
 
@@ -943,14 +969,14 @@ body {
 }
 
 /* ===== Settings Modal ===== */
-.modal {
+.rimtown-container .modal {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0, 0, 0, 0.7);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 100;
+    z-index: 100000;
 }
 .modal.hidden { display: none; }
 .modal-content {

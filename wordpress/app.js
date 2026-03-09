@@ -1,4 +1,4 @@
-// RimTown - Frontend App (Chrome Extension)
+// RimTown - Frontend App (WordPress Plugin)
 
 class RimTownApp {
     constructor() {
@@ -315,7 +315,8 @@ class RimTownApp {
 
     // Global event delegation - handles all dynamic clicks via data-action attributes
     setupEventDelegation() {
-        document.body.addEventListener('click', (e) => {
+        const container = document.getElementById('rimtown-app') || document.body;
+        container.addEventListener('click', (e) => {
             const el = e.target.closest('[data-action]');
             if (!el) return;
             const action = el.dataset.action;
@@ -352,10 +353,12 @@ class RimTownApp {
             }
         });
         // Handle Enter key in chat input via delegation
-        document.body.addEventListener('keydown', (e) => {
+        document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.target.id === 'chat-input') { this._sendFromInput(); return; }
             // Don't handle movement keys when typing in input fields
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            // Only handle keys when game container is visible
+            if (!document.getElementById('rimtown-app')) return;
             this._handleMovementKey(e);
         });
     }
@@ -1364,6 +1367,16 @@ class RimTownApp {
     }
 }
 
-// Initialize
-const app = new RimTownApp();
-window.addEventListener('resize', () => { if (app.state) app.renderMap(); });
+// Initialize — only when the game container exists (WordPress shortcode loaded)
+(function() {
+    const init = () => {
+        if (!document.getElementById('rimtown-app') && !document.getElementById('town-map-canvas')) return;
+        const app = new RimTownApp();
+        window.addEventListener('resize', () => { if (app.state) app.renderMap(); });
+    };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
