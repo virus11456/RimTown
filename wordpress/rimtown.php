@@ -135,6 +135,410 @@ function rimtown_shortcode($atts) {
 add_shortcode('rimtown', 'rimtown_shortcode');
 
 /**
+ * Landing page shortcode [rimtown_landing]
+ * A cinematic intro/homepage for the RimTown game.
+ */
+function rimtown_landing_shortcode($atts) {
+    $atts = shortcode_atts(array(
+        'game_url' => '/rimtown/',
+    ), $atts, 'rimtown_landing');
+
+    $game_url = esc_url($atts['game_url']);
+
+    ob_start();
+    ?>
+    <div class="rt-landing">
+
+        <!-- Pixel art canvas background (animated) -->
+        <canvas id="rt-landing-bg" class="rt-landing-bg"></canvas>
+
+        <!-- Hero Section -->
+        <section class="rt-hero">
+            <div class="rt-hero-content">
+                <div class="rt-logo-group">
+                    <div class="rt-pixel-icon">
+                        <canvas id="rt-logo-canvas" width="64" height="64"></canvas>
+                    </div>
+                    <h1 class="rt-title">
+                        <span class="rt-title-zh">邊境鎮</span>
+                        <span class="rt-title-en">RimTown</span>
+                    </h1>
+                </div>
+                <p class="rt-tagline">AI 驅動的像素風小鎮模擬 — 每個居民都有自己的靈魂</p>
+                <div class="rt-hero-buttons">
+                    <a href="<?php echo $game_url; ?>" class="rt-btn rt-btn-primary">
+                        <span class="rt-btn-icon">&#9654;</span> 開始遊玩
+                    </a>
+                    <a href="#rt-features" class="rt-btn rt-btn-secondary">了解更多</a>
+                </div>
+                <div class="rt-hero-badges">
+                    <span class="rt-badge">免費遊玩</span>
+                    <span class="rt-badge">無需下載</span>
+                    <span class="rt-badge">支援手機</span>
+                </div>
+            </div>
+            <div class="rt-scroll-hint">
+                <span>&#9660;</span>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="rt-features" class="rt-section rt-features">
+            <h2 class="rt-section-title">遊戲特色</h2>
+            <div class="rt-features-grid">
+                <div class="rt-feature-card">
+                    <div class="rt-feature-pixel">&#x1F9E0;</div>
+                    <h3>AI 驅動的居民</h3>
+                    <p>每位居民擁有獨特的性格、記憶與情感。他們會自主社交、爭吵、戀愛、結婚，甚至劈腿被發現而分手。所有對話都由 AI 即時生成。</p>
+                </div>
+                <div class="rt-feature-card">
+                    <div class="rt-feature-pixel">&#x1F3D8;</div>
+                    <h3>經營你的小鎮</h3>
+                    <p>管理資源、建造設施、發展經濟與貿易。從一個小村落開始，打造繁榮的邊境城鎮。每個決策都會影響居民的生活。</p>
+                </div>
+                <div class="rt-feature-card">
+                    <div class="rt-feature-pixel">&#x1F5F3;</div>
+                    <h3>鎮長選舉</h3>
+                    <p>居民會根據關係、價值觀和候選人魅力投票選舉鎮長。當選者的政策會實際影響鎮上的經濟、文化與安全。</p>
+                </div>
+                <div class="rt-feature-card">
+                    <div class="rt-feature-pixel">&#x1F4AC;</div>
+                    <h3>與居民對話</h3>
+                    <p>直接和任何居民聊天。問他們對鄰居的看法、最近的八卦、或是人生煩惱。每個人的回答都基於他們真實的記憶與感受。</p>
+                </div>
+                <div class="rt-feature-card">
+                    <div class="rt-feature-pixel">&#x2764;</div>
+                    <h3>複雜的人際關係</h3>
+                    <p>友情、暗戀、交往、結婚、外遇、離婚⋯⋯居民之間的感情由性格相容度、互動頻率和事件自然發展，產生真實的人間戲劇。</p>
+                </div>
+                <div class="rt-feature-card">
+                    <div class="rt-feature-pixel">&#x1F30D;</div>
+                    <h3>動態世界事件</h3>
+                    <p>季節變化、隨機事件、商隊來訪、盜賊襲擊⋯⋯世界不會靜止。每一天都可能發生改變小鎮命運的事件。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works Section -->
+        <section class="rt-section rt-how">
+            <h2 class="rt-section-title">如何運作</h2>
+            <div class="rt-steps">
+                <div class="rt-step">
+                    <div class="rt-step-number">1</div>
+                    <div class="rt-step-content">
+                        <h3>開啟遊戲</h3>
+                        <p>直接在瀏覽器中遊玩，不需要下載任何東西。支援電腦、平板和手機。</p>
+                    </div>
+                </div>
+                <div class="rt-step">
+                    <div class="rt-step-number">2</div>
+                    <div class="rt-step-content">
+                        <h3>觀察與互動</h3>
+                        <p>看著居民自主生活、工作和社交。點擊任何居民查看詳細資訊，或直接和他們聊天。</p>
+                    </div>
+                </div>
+                <div class="rt-step">
+                    <div class="rt-step-number">3</div>
+                    <div class="rt-step-content">
+                        <h3>經營與發展</h3>
+                        <p>管理資源、建造新設施、研究新科技，讓你的小鎮從邊境村落成長為繁華城鎮。</p>
+                    </div>
+                </div>
+                <div class="rt-step">
+                    <div class="rt-step-number">4</div>
+                    <div class="rt-step-content">
+                        <h3>連接 AI（選用）</h3>
+                        <p>設定你的 AI API 金鑰（Claude、GPT、Gemini 等），解鎖更豐富、更有深度的居民對話。不設定也能完整遊玩。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- AI Providers Section -->
+        <section class="rt-section rt-ai-section">
+            <h2 class="rt-section-title">支援的 AI 模型</h2>
+            <p class="rt-section-subtitle">連接你喜歡的 AI 服務，讓居民對話更生動</p>
+            <div class="rt-ai-grid">
+                <div class="rt-ai-card">
+                    <div class="rt-ai-name">Anthropic</div>
+                    <div class="rt-ai-model">Claude</div>
+                </div>
+                <div class="rt-ai-card">
+                    <div class="rt-ai-name">OpenAI</div>
+                    <div class="rt-ai-model">GPT</div>
+                </div>
+                <div class="rt-ai-card">
+                    <div class="rt-ai-name">Google</div>
+                    <div class="rt-ai-model">Gemini</div>
+                </div>
+                <div class="rt-ai-card">
+                    <div class="rt-ai-name">DeepSeek</div>
+                    <div class="rt-ai-model">DeepSeek</div>
+                </div>
+                <div class="rt-ai-card">
+                    <div class="rt-ai-name">Groq</div>
+                    <div class="rt-ai-model">Groq</div>
+                </div>
+                <div class="rt-ai-card">
+                    <div class="rt-ai-name">Together AI</div>
+                    <div class="rt-ai-model">Together</div>
+                </div>
+                <div class="rt-ai-card">
+                    <div class="rt-ai-name">MiniMax</div>
+                    <div class="rt-ai-model">海螺AI</div>
+                </div>
+            </div>
+            <p class="rt-ai-note">* 不設定 AI 也能遊玩！內建模擬對話系統可產生豐富的互動內容。</p>
+        </section>
+
+        <!-- Screenshots / Preview Section -->
+        <section class="rt-section rt-preview">
+            <h2 class="rt-section-title">遊戲畫面</h2>
+            <div class="rt-preview-grid">
+                <div class="rt-preview-card">
+                    <div class="rt-preview-mock rt-mock-map">
+                        <canvas id="rt-preview-map" width="320" height="200"></canvas>
+                    </div>
+                    <p>像素風格的即時地圖</p>
+                </div>
+                <div class="rt-preview-card">
+                    <div class="rt-preview-mock rt-mock-chat">
+                        <div class="rt-mock-msg rt-mock-npc">
+                            <strong>林美</strong>
+                            <span>最近診所來的病人越來越多了，我都快忙不過來了。</span>
+                        </div>
+                        <div class="rt-mock-msg rt-mock-player">
+                            <span>辛苦了！需要什麼幫助嗎？</span>
+                        </div>
+                        <div class="rt-mock-msg rt-mock-npc">
+                            <strong>林美</strong>
+                            <span>如果能多蓋一間藥房就好了⋯⋯對了，你有聽說陳偉和王麗的事嗎？</span>
+                        </div>
+                    </div>
+                    <p>和居民即時對話</p>
+                </div>
+                <div class="rt-preview-card">
+                    <div class="rt-preview-mock rt-mock-relations">
+                        <div class="rt-mock-rel">
+                            <span class="rt-rel-names">陳偉 &amp; 王麗</span>
+                            <span class="rt-rel-status rt-rel-dating">交往中</span>
+                        </div>
+                        <div class="rt-mock-rel">
+                            <span class="rt-rel-names">張豪 &amp; 劉俊</span>
+                            <span class="rt-rel-status rt-rel-friend">好友</span>
+                        </div>
+                        <div class="rt-mock-rel">
+                            <span class="rt-rel-names">趙霞 &amp; 楊鋒</span>
+                            <span class="rt-rel-status rt-rel-rival">敵對</span>
+                        </div>
+                    </div>
+                    <p>複雜的人際關係網</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="rt-section rt-cta">
+            <div class="rt-cta-content">
+                <h2>準備好了嗎？</h2>
+                <p>你的邊境小鎮正在等你。居民們已經準備好迎接新的鎮長了。</p>
+                <a href="<?php echo $game_url; ?>" class="rt-btn rt-btn-primary rt-btn-lg">
+                    <span class="rt-btn-icon">&#9654;</span> 立即開始
+                </a>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="rt-footer">
+            <div class="rt-footer-content">
+                <div class="rt-footer-brand">
+                    <span class="rt-footer-logo">邊境鎮</span>
+                    <span class="rt-footer-ver">v<?php echo RIMTOWN_VERSION; ?></span>
+                </div>
+                <div class="rt-footer-links">
+                    <a href="https://github.com/virus11456/RimTown" target="_blank" rel="noopener">GitHub</a>
+                    <span class="rt-footer-sep">|</span>
+                    <span>MIT License</span>
+                    <span class="rt-footer-sep">|</span>
+                    <span>Made with AI</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+    (function() {
+        // === Animated pixel background ===
+        const canvas = document.getElementById('rt-landing-bg');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let w, h, cols, rows;
+        const S = 16;
+        const grassColors = ['#3a7d2c','#4a8c3a','#5a9a4a','#3d8030','#4d9040'];
+        const darkGrass = ['#2a5d1c','#356828','#2e6020','#385e2a'];
+        let grid = [];
+        let frame = 0;
+
+        function resize() {
+            w = canvas.parentElement.clientWidth;
+            h = canvas.parentElement.clientHeight;
+            canvas.width = w;
+            canvas.height = h;
+            cols = Math.ceil(w / S) + 1;
+            rows = Math.ceil(h / S) + 1;
+            grid = [];
+            for (let y = 0; y < rows; y++) {
+                grid[y] = [];
+                for (let x = 0; x < cols; x++) {
+                    grid[y][x] = Math.random();
+                }
+            }
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        function draw() {
+            frame++;
+            ctx.clearRect(0, 0, w, h);
+            // Draw grass tiles
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const r = grid[y][x];
+                    ctx.fillStyle = grassColors[Math.floor(r * grassColors.length)];
+                    ctx.fillRect(x * S, y * S, S, S);
+                    // Blade detail
+                    ctx.fillStyle = darkGrass[Math.floor(r * darkGrass.length)];
+                    ctx.fillRect(x * S + (r * 8 | 0), y * S + 2, 1, 4);
+                    ctx.fillRect(x * S + (r * 12 | 0), y * S + 6, 1, 3);
+                }
+            }
+            // Subtle animated light sweep
+            const sweep = (Math.sin(frame * 0.005) * 0.5 + 0.5) * w;
+            const grad = ctx.createRadialGradient(sweep, h * 0.3, 0, sweep, h * 0.3, w * 0.6);
+            grad.addColorStop(0, 'rgba(255,255,200,0.03)');
+            grad.addColorStop(1, 'rgba(255,255,200,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, w, h);
+            // Dark overlay to not distract from content
+            ctx.fillStyle = 'rgba(10,10,30,0.75)';
+            ctx.fillRect(0, 0, w, h);
+            requestAnimationFrame(draw);
+        }
+        draw();
+
+        // === Pixel art logo ===
+        const logoCanvas = document.getElementById('rt-logo-canvas');
+        if (logoCanvas) {
+            const lc = logoCanvas.getContext('2d');
+            lc.imageSmoothingEnabled = false;
+            // Draw a simple house icon
+            const px = (x, y, c) => { lc.fillStyle = c; lc.fillRect(x * 4, y * 4, 4, 4); };
+            // Roof
+            for (let i = 0; i < 7; i++) { px(5 + i, 2 + Math.abs(i - 3), '#b71c1c'); }
+            for (let i = 0; i < 5; i++) { px(6 + i, 3 + Math.abs(i - 2), '#c62828'); }
+            // Walls
+            for (let y = 6; y < 12; y++) for (let x = 4; x < 12; x++) px(x, y, '#8d6e63');
+            for (let y = 7; y < 11; y++) for (let x = 5; x < 11; x++) px(x, y, '#a1887f');
+            // Door
+            px(7, 9, '#4e342e'); px(8, 9, '#4e342e'); px(7, 10, '#4e342e'); px(8, 10, '#4e342e'); px(7, 11, '#4e342e'); px(8, 11, '#4e342e');
+            // Window
+            px(5, 8, '#64b5f6'); px(6, 8, '#64b5f6'); px(10, 8, '#64b5f6'); px(10, 9, '#64b5f6');
+            // Chimney
+            px(10, 2, '#795548'); px(10, 3, '#795548'); px(10, 1, '#9e9e9e');
+            // Ground
+            for (let x = 2; x < 14; x++) px(x, 12, '#4caf50');
+            for (let x = 1; x < 15; x++) px(x, 13, '#388e3c');
+            // Tree
+            px(2, 8, '#2e7d32'); px(2, 9, '#388e3c'); px(1, 9, '#2e7d32'); px(3, 9, '#2e7d32');
+            px(2, 10, '#4e342e'); px(2, 11, '#4e342e');
+            // Person
+            px(13, 9, '#ffcc80'); // head
+            px(13, 10, '#e94560'); px(13, 11, '#1565c0'); // body + legs
+        }
+
+        // === Preview map mini canvas ===
+        const mapCanvas = document.getElementById('rt-preview-map');
+        if (mapCanvas) {
+            const mc = mapCanvas.getContext('2d');
+            mc.imageSmoothingEnabled = false;
+            const S2 = 8;
+            const cols2 = 40, rows2 = 25;
+            for (let y = 0; y < rows2; y++) {
+                for (let x = 0; x < cols2; x++) {
+                    const r = Math.random();
+                    if (x > 15 && x < 25 && y > 8 && y < 17) {
+                        // Buildings area
+                        if (r < 0.3) mc.fillStyle = '#8d6e63';
+                        else if (r < 0.5) mc.fillStyle = '#b71c1c';
+                        else mc.fillStyle = '#a1887f';
+                    } else if ((x === 15 || x === 25) && y > 5 && y < 20) {
+                        mc.fillStyle = '#9e9e9e'; // path
+                    } else if (y === 12 && x > 5 && x < 35) {
+                        mc.fillStyle = '#9e9e9e'; // path
+                    } else if (x > 30 && y < 8) {
+                        mc.fillStyle = r < 0.5 ? '#1565c0' : '#1976d2'; // water
+                    } else if (x < 6 && y > 15) {
+                        mc.fillStyle = r < 0.5 ? '#2e7d32' : '#1b5e20'; // forest
+                    } else {
+                        mc.fillStyle = grassColors[Math.floor(r * grassColors.length)];
+                    }
+                    mc.fillRect(x * S2, y * S2, S2, S2);
+                }
+            }
+            // Little agent dots
+            const dots = [[18,10,'#ffcc80'],[20,12,'#e94560'],[22,14,'#64b5f6'],[24,11,'#ffd54f'],[17,15,'#ce93d8']];
+            dots.forEach(([x,y,c]) => {
+                mc.fillStyle = c;
+                mc.fillRect(x*S2+2, y*S2+1, 4, 6);
+                mc.fillStyle = '#ffcc80';
+                mc.fillRect(x*S2+2, y*S2-1, 4, 3);
+            });
+        }
+
+        // === Smooth scroll for anchor links ===
+        document.querySelectorAll('.rt-landing a[href^="#"]').forEach(a => {
+            a.addEventListener('click', e => {
+                e.preventDefault();
+                const target = document.querySelector(a.getAttribute('href'));
+                if (target) target.scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+
+        // === Scroll-triggered animations ===
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('rt-visible');
+                }
+            });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.rt-feature-card, .rt-step, .rt-ai-card, .rt-preview-card').forEach(el => {
+            observer.observe(el);
+        });
+    })();
+    </script>
+    <?php
+    return ob_get_clean();
+}
+add_shortcode('rimtown_landing', 'rimtown_landing_shortcode');
+
+/**
+ * Enqueue landing page styles when shortcode is used
+ */
+function rimtown_landing_assets() {
+    global $post;
+    if ($post && has_shortcode($post->post_content, 'rimtown_landing')) {
+        wp_enqueue_style(
+            'rimtown-landing-style',
+            RIMTOWN_URL . 'landing.css',
+            array(),
+            RIMTOWN_VERSION
+        );
+    }
+}
+add_action('wp_enqueue_scripts', 'rimtown_landing_assets');
+
+/**
  * Enqueue scripts and styles
  */
 function rimtown_enqueue_assets() {
