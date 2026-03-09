@@ -250,38 +250,184 @@ class PixelTileMap {
     }
 
     _setupCanvas() {
-        this.canvas.width = this.cols * TILE;
-        this.canvas.height = this.rows * TILE;
+        // Internal map size
+        this.mapWidth = this.cols * TILE;
+        this.mapHeight = this.rows * TILE;
+        // Viewport / camera
+        this.camX = 0;
+        this.camY = 0;
+        this.zoom = 1;
+        this.minZoom = 1; // will be computed on resize
+        this.maxZoom = 4;
+        this._resizeCanvas();
         this.ctx.imageSmoothingEnabled = false;
-        // Handle clicks
-        this.canvas.addEventListener('click', (e) => {
-            if (!this.onClick) return;
-            const rect = this.canvas.getBoundingClientRect();
-            const scaleX = this.canvas.width / rect.width;
-            const scaleY = this.canvas.height / rect.height;
-            const px = (e.clientX - rect.left) * scaleX;
-            const py = (e.clientY - rect.top) * scaleY;
-            // Check if an agent was clicked first
-            // Find closest agent within click range (generous hitbox for chibi sprites)
-            let closestAgent = null;
-            let closestDist = Infinity;
-            for (const [aid, pos] of Object.entries(this.agentPositions)) {
-                if (aid === 'player') continue;
-                const dx = Math.abs(px - pos.x);
-                const dy = Math.abs(py - (pos.y - 8)); // center hitbox on chibi body
-                if (dx < 16 && dy < 16) {
-                    const dist = dx * dx + dy * dy;
-                    if (dist < closestDist) {
-                        closestDist = dist;
-                        closestAgent = aid;
+        // Observe container resize
+        this._resizeObserver = new ResizeObserver(() => this._resizeCanvas());
+        this._resizeObserver.observe(this.canvas.parentElement);
+        // --- Interaction: click, pan, pinch-to-zoom ---
+        this._setupInteraction();
+    }
+
+    _resizeCanvas() {
+        const parent = this.canvas.parentElement;
+        if (!parent) return;
+        const dpr = window.devicePixelRatio || 1;
+        const w = parent.clientWidth;
+        const h = parent.clientHeight;
+        this.canvas.width = Math.floor(w * dpr);
+        this.canvas.height = Math.floor(h * dpr);
+        this.canvas.style.width = w + 'px';
+        this.canvas.style.height = h + 'px';
+        this.ctx = this.canvas.getContext('2d');
+        this.ctx.imageSmoothingEnabled = false;
+        this._dpr = dpr;
+        // Compute minimum zoom so map covers the viewport
+        this.minZoom = Math.max(w / this.mapWidth, h / this.mapHeight);
+        if (this.zoom < this.minZoom) this.zoom = this.minZoom;
+        this._clampCamera();
+    }
+
+    _clampCamera() {
+        // Ensure we don't pan beyond map edges
+        const vw = this.canvas.width / this._dpr / this.zoom;
+        const vh = this.canvas.height / this._dpr / this.zoom;
+        this.camX = Math.max(0, Math.min(this.camX, this.mapWidth - vw));
+        this.camY = Math.max(0, Math.min(this.camY, this.mapHeight - vh));
+    }
+
+    // Convert screen coords to map coords
+    _screenToMap(sx, sy) {
+        const rect = this.canvas.getBoundingClientRect();
+        const x = (sx - rect.left) / this.zoom + this.camX;
+        const y = (sy - rect.top) / this.zoom + this.camY;
+        return { x, y };
+    }
+
+    _setupInteraction() {
+        let pointers = new Map(); // active pointers for multitouch
+        let lastPinchDist = 0;
+        let lastPinchCenter = null;
+        let isPanning = false;
+        let panStartX = 0, panStartY = 0, camStartX = 0, camStartY = 0;
+        let tapStart = 0;
+        let tapPos = null;
+        const TAP_THRESHOLD = 10; // px
+        const TAP_TIME = 300; // ms
+
+        // --- Pointer events for unified mouse+touch ---
+        this.canvas.addEventListener('pointerdown', (e) => {
+            pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (pointers.size === 1) {
+                isPanning = true;
+                panStartX = e.clientX; panStartY = e.clientY;
+                camStartX = this.camX; camStartY = this.camY;
+                tapStart = Date.now();
+                tapPos = { x: e.clientX, y: e.clientY };
+            }
+            if (pointers.size === 2) {
+                isPanning = false;
+                const pts = [...pointers.values()];
+                lastPinchDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+                lastPinchCenter = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+        this.canvas.addEventListener('pointermove', (e) => {
+            if (!pointers.has(e.pointerId)) return;
+            pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+            if (pointers.size === 1 && isPanning) {
+                const dx = (e.clientX - panStartX) / this.zoom;
+                const dy = (e.clientY - panStartY) / this.zoom;
+                this.camX = camStartX - dx;
+                this.camY = camStartY - dy;
+                this._clampCamera();
+            }
+
+            if (pointers.size === 2) {
+                const pts = [...pointers.values()];
+                const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+                const center = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+
+                if (lastPinchDist > 0) {
+                    const scale = dist / lastPinchDist;
+                    const oldZoom = this.zoom;
+                    this.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.zoom * scale));
+                    // Zoom toward pinch center
+                    const rect = this.canvas.getBoundingClientRect();
+                    const cx = (center.x - rect.left) / oldZoom + this.camX;
+                    const cy = (center.y - rect.top) / oldZoom + this.camY;
+                    this.camX = cx - (center.x - rect.left) / this.zoom;
+                    this.camY = cy - (center.y - rect.top) / this.zoom;
+                    this._clampCamera();
+                }
+                lastPinchDist = dist;
+                lastPinchCenter = center;
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+        const pointerEnd = (e) => {
+            pointers.delete(e.pointerId);
+            if (pointers.size < 2) { lastPinchDist = 0; lastPinchCenter = null; }
+            if (pointers.size === 0) {
+                // Check if this was a tap (short, small movement)
+                if (isPanning && tapPos && Date.now() - tapStart < TAP_TIME) {
+                    const dx = Math.abs(e.clientX - tapPos.x);
+                    const dy = Math.abs(e.clientY - tapPos.y);
+                    if (dx < TAP_THRESHOLD && dy < TAP_THRESHOLD) {
+                        this._handleTap(e.clientX, e.clientY);
                     }
                 }
+                isPanning = false;
+                tapPos = null;
             }
-            if (closestAgent) {
-                if (this.onAgentClick) this.onAgentClick(closestAgent);
-                return;
+        };
+        this.canvas.addEventListener('pointerup', pointerEnd);
+        this.canvas.addEventListener('pointercancel', pointerEnd);
+
+        // Mouse wheel zoom (desktop)
+        this.canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const rect = this.canvas.getBoundingClientRect();
+            const oldZoom = this.zoom;
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            this.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.zoom * delta));
+            // Zoom toward cursor
+            const cx = (e.clientX - rect.left) / oldZoom + this.camX;
+            const cy = (e.clientY - rect.top) / oldZoom + this.camY;
+            this.camX = cx - (e.clientX - rect.left) / this.zoom;
+            this.camY = cy - (e.clientY - rect.top) / this.zoom;
+            this._clampCamera();
+        }, { passive: false });
+    }
+
+    _handleTap(clientX, clientY) {
+        const { x: px, y: py } = this._screenToMap(clientX, clientY);
+        // Check if an agent was tapped
+        let closestAgent = null;
+        let closestDist = Infinity;
+        // Scale hit area with zoom — easier to tap when zoomed out
+        const hitSize = Math.max(16, 24 / this.zoom);
+        for (const [aid, pos] of Object.entries(this.agentPositions)) {
+            if (aid === 'player') continue;
+            const dx = Math.abs(px - pos.x);
+            const dy = Math.abs(py - (pos.y - 8));
+            if (dx < hitSize && dy < hitSize) {
+                const dist = dx * dx + dy * dy;
+                if (dist < closestDist) {
+                    closestDist = dist;
+                    closestAgent = aid;
+                }
             }
-            // Check which location zone was clicked
+        }
+        if (closestAgent) {
+            if (this.onAgentClick) this.onAgentClick(closestAgent);
+            return;
+        }
+        // Check location zones
+        if (this.onClick) {
             for (const [locId, zone] of Object.entries(this.buildingZones)) {
                 if (px >= zone.x * TILE && px < (zone.x + zone.w) * TILE &&
                     py >= zone.y * TILE && py < (zone.y + zone.h) * TILE) {
@@ -296,7 +442,7 @@ class PixelTileMap {
                     return;
                 }
             }
-        });
+        }
     }
 
     _buildTileCache() {
@@ -1909,6 +2055,12 @@ class PixelTileMap {
         const ctx = this.ctx;
         this.animFrame++;
 
+        // Clear entire canvas and apply camera transform
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        const dpr = this._dpr || 1;
+        ctx.setTransform(this.zoom * dpr, 0, 0, this.zoom * dpr, -this.camX * this.zoom * dpr, -this.camY * this.zoom * dpr);
+
         // Draw tile grid
         for (let y = 0; y < this.rows; y++) {
             for (let x = 0; x < this.cols; x++) {
@@ -2115,11 +2267,15 @@ class PixelTileMap {
             nightAmount = (h - 19) / 3; // dusk fade in
         }
 
+        // Use map dimensions for overlay (camera transform handles positioning)
+        const ow = this.mapWidth;
+        const oh = this.mapHeight;
+
         // Sunset warm tint (very subtle, no fog)
         if (h >= 17 && h < 19.5) {
             const t = (h < 18.5) ? (h - 17) / 1.5 : 1 - (h - 18.5);
             ctx.fillStyle = `rgba(255, 140, 50, ${(t * 0.06).toFixed(3)})`;
-            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            ctx.fillRect(0, 0, ow, oh);
         }
 
         if (nightAmount <= 0) return;
@@ -2127,7 +2283,7 @@ class PixelTileMap {
         // Very light blue tint instead of heavy fog — just enough to shift palette
         const tintAlpha = nightAmount * 0.15;
         ctx.fillStyle = `rgba(15, 20, 60, ${tintAlpha.toFixed(3)})`;
-        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        ctx.fillRect(0, 0, ow, oh);
 
         // Stars at night
         if (nightAmount > 0.3) {
@@ -2248,8 +2404,8 @@ class PixelTileMap {
         const seed = 42;
         const count = 40;
         for (let i = 0; i < count; i++) {
-            const sx = ((seed * (i + 1) * 73) % this.canvas.width);
-            const sy = ((seed * (i + 1) * 37 + i * 91) % (this.canvas.height * 0.6));
+            const sx = ((seed * (i + 1) * 73) % this.mapWidth);
+            const sy = ((seed * (i + 1) * 37 + i * 91) % (this.mapHeight * 0.6));
             const twinkle = 0.5 + 0.5 * Math.sin(this.animFrame * 0.02 + i * 2.1);
             const size = (i % 5 === 0) ? 2 : 1;
             ctx.fillStyle = `rgba(255, 255, 240, ${(alpha * twinkle * 0.9).toFixed(2)})`;

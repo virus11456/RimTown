@@ -16,13 +16,15 @@
     --info: #60a5fa;
 }
 
-* {
+.rimtown-container *,
+.rimtown-container *::before,
+.rimtown-container *::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-body {
+.rimtown-container {
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
@@ -30,6 +32,30 @@ body {
     height: 100vh;
     display: flex;
     flex-direction: column;
+    position: relative;
+    line-height: 1.5;
+    font-size: 14px;
+}
+
+/* WordPress full-width page support */
+body.rimtown-page .site-content,
+body.rimtown-page .entry-content,
+body.rimtown-page .post-content,
+body.rimtown-page main,
+body.rimtown-page article {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+body.rimtown-page #page,
+body.rimtown-page .site {
+    overflow: hidden;
+}
+body.rimtown-page header.site-header,
+body.rimtown-page .site-footer,
+body.rimtown-page footer,
+body.rimtown-page .wp-block-post-title {
+    display: none;
 }
 
 /* Header */
@@ -153,15 +179,15 @@ body {
     flex: 1;
     position: relative;
     overflow: hidden;
-    background: #2d5a1e;
+    background: #1a1a2e;
 }
 
 #town-map-canvas {
-    width: 100%;
-    height: 100%;
+    display: block;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
     cursor: pointer;
+    transform-origin: 0 0;
 }
 
 .town-map {
@@ -524,20 +550,20 @@ body {
 }
 
 /* Scrollbar */
-::-webkit-scrollbar {
+.rimtown-container ::-webkit-scrollbar {
     width: 6px;
 }
 
-::-webkit-scrollbar-track {
+.rimtown-container ::-webkit-scrollbar-track {
     background: var(--bg-primary);
 }
 
-::-webkit-scrollbar-thumb {
+.rimtown-container ::-webkit-scrollbar-thumb {
     background: var(--border);
     border-radius: 3px;
 }
 
-::-webkit-scrollbar-thumb:hover {
+.rimtown-container ::-webkit-scrollbar-thumb:hover {
     background: var(--text-muted);
 }
 
@@ -943,14 +969,14 @@ body {
 }
 
 /* ===== Settings Modal ===== */
-.modal {
+.rimtown-container .modal {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0, 0, 0, 0.7);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 100;
+    z-index: 100000;
 }
 .modal.hidden { display: none; }
 .modal-content {
@@ -1168,3 +1194,399 @@ body {
 .town-actions { display: flex; gap: 4px; }
 .town-actions button { background: transparent; border: 1px solid var(--border); color: var(--text-secondary);
     padding: 2px 6px; font-size: 0.7rem; border-radius: 3px; cursor: pointer; }
+
+/* ===== Election System ===== */
+.election-section {
+    background: rgba(233, 69, 96, 0.08);
+    border: 1px solid rgba(233, 69, 96, 0.3);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+.election-section h4 {
+    color: var(--accent);
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+}
+.election-info {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+.election-candidate {
+    background: var(--bg-card);
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    border: 1px solid transparent;
+}
+.election-candidate:hover {
+    border-color: var(--accent);
+}
+.election-winner-card {
+    border-color: var(--warning) !important;
+    background: rgba(251, 191, 36, 0.1);
+}
+.candidate-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.candidate-name {
+    font-weight: bold;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+.candidate-policy {
+    font-size: 0.7rem;
+    color: var(--info);
+    background: rgba(96, 165, 250, 0.15);
+    padding: 1px 6px;
+    border-radius: 8px;
+}
+.candidate-votes {
+    font-size: 0.7rem;
+    color: var(--warning);
+    margin-left: auto;
+    font-weight: bold;
+}
+.candidate-speech {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    font-style: italic;
+    line-height: 1.3;
+}
+.election-bar {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+.election-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+.election-bar-fill.winner {
+    background: var(--warning);
+}
+.election-total {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-align: right;
+    margin-top: 4px;
+}
+.election-winner {
+    text-align: center;
+    padding: 8px;
+    margin-bottom: 8px;
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: 6px;
+}
+.winner-name {
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--warning);
+}
+.winner-policy {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+.election-history-brief {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+.log-entry.type-election { border-left: 2px solid var(--warning); padding-left: 6px; }
+
+/* ===== Mobile Sidebar Toggle ===== */
+.mobile-sidebar-toggle {
+    display: none;
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    border: 2px solid rgba(255,255,255,0.3);
+    font-size: 1.2rem;
+    cursor: pointer;
+    z-index: 99999;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+}
+.mobile-sidebar-toggle:hover {
+    transform: scale(1.1);
+}
+.mobile-sidebar-toggle:active {
+    transform: scale(0.95);
+}
+
+/* ===== Mobile Back to Map Button ===== */
+.mobile-back-to-map {
+    display: none;
+    padding: 6px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    cursor: pointer;
+    border-radius: 0;
+    width: 100%;
+    text-align: center;
+}
+.mobile-back-to-map:hover {
+    background: var(--accent);
+    color: #fff;
+}
+
+/* ===== Responsive: Tablet (≤1024px) ===== */
+@media (max-width: 1024px) {
+    .sidebar {
+        width: 300px;
+    }
+    .header h1 {
+        font-size: 0.95rem;
+    }
+    .controls button {
+        padding: 3px 8px;
+        font-size: 0.75rem;
+    }
+}
+
+/* ===== Responsive: Mobile (≤768px) ===== */
+@media (max-width: 768px) {
+    /* Force container to viewport, prevent page scroll */
+    .rimtown-container {
+        height: 100vh;
+        height: 100dvh;
+        max-height: 100vh;
+        max-height: 100dvh;
+        overflow: hidden !important;
+    }
+    /* Prevent WordPress wrappers from scrolling */
+    body.rimtown-page {
+        overflow: hidden !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+    }
+
+    /* Header: single compact row */
+    .header {
+        padding: 2px 6px;
+        min-height: auto;
+        flex-wrap: nowrap;
+        gap: 4px;
+        flex-shrink: 0;
+    }
+    .header h1 {
+        font-size: 0.8rem;
+        letter-spacing: 0;
+        white-space: nowrap;
+    }
+    .header-info {
+        gap: 4px;
+        font-size: 0.7rem;
+        width: auto;
+        flex: 1;
+        justify-content: flex-end;
+        flex-wrap: nowrap;
+        overflow: hidden;
+    }
+    /* Hide info text on mobile to keep header single-row */
+    #population-count,
+    .clock-display,
+    .terrain-display {
+        display: none;
+    }
+    .controls {
+        gap: 2px;
+        flex-wrap: nowrap;
+    }
+    .controls button {
+        padding: 3px 6px;
+        font-size: 0.7rem;
+        white-space: nowrap;
+    }
+    /* Hide less important header buttons on mobile */
+    .btn-export, .btn-import, .btn-towns, .btn-new-game {
+        display: none;
+    }
+    .speed-controls {
+        display: none;
+    }
+    .llm-status {
+        display: none;
+    }
+
+    /* Main layout: stack vertically */
+    .main-layout {
+        flex-direction: column;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Map: fill remaining space, constrain canvas */
+    .map-panel {
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+    }
+    #town-map-canvas {
+        display: block;
+        touch-action: none; /* allow JS to handle pinch/pan */
+    }
+
+    /* Sidebar: overlay from bottom */
+    .sidebar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        height: 60%;
+        max-height: 60vh;
+        border-left: none;
+        border-top: 2px solid var(--accent);
+        transform: translateY(100%);
+        transition: transform 0.3s ease;
+        z-index: 50;
+    }
+    .sidebar.mobile-open {
+        transform: translateY(0);
+    }
+
+    /* Show toggle button */
+    .mobile-sidebar-toggle {
+        display: flex;
+    }
+    .sidebar.mobile-open ~ .mobile-sidebar-toggle {
+        display: none;
+    }
+
+    /* Show back-to-map button when sidebar open */
+    .mobile-back-to-map {
+        display: none;
+    }
+    .sidebar.mobile-open .mobile-back-to-map {
+        display: block;
+    }
+
+    /* Sidebar tabs: scrollable on mobile */
+    .sidebar-tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        flex-wrap: nowrap;
+    }
+    .sidebar-tabs button {
+        padding: 6px 6px;
+        font-size: 0.7rem;
+        white-space: nowrap;
+        min-width: 0;
+    }
+
+    /* Sidebar content */
+    .sidebar-content {
+        padding: 6px;
+    }
+
+    /* Chat messages */
+    .chat-messages {
+        max-height: calc(60vh - 200px);
+        min-height: 120px;
+    }
+
+    /* Chat input bigger touch targets */
+    .chat-input {
+        padding: 10px 14px;
+        font-size: 16px; /* prevents iOS zoom */
+    }
+    .chat-send-btn {
+        padding: 10px 18px;
+        font-size: 0.85rem;
+    }
+
+    /* Modals */
+    .modal-content {
+        width: 95vw;
+        padding: 16px;
+        max-height: 85vh;
+        overflow-y: auto;
+    }
+
+    /* Resource grid: 2 columns */
+    .resource-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Archive list */
+    .archive-list {
+        max-height: calc(60vh - 160px);
+    }
+    .archive-item {
+        flex-wrap: wrap;
+    }
+    .archive-actions {
+        width: 100%;
+        margin-top: 4px;
+    }
+}
+
+/* ===== Responsive: Small Phone (≤480px) ===== */
+@media (max-width: 480px) {
+    .header h1 {
+        font-size: 0.7rem;
+    }
+    .controls button {
+        padding: 2px 5px;
+        font-size: 0.65rem;
+    }
+    /* Hide save button on very small screens */
+    .btn-save {
+        display: none;
+    }
+
+    .sidebar {
+        height: 70%;
+        max-height: 70vh;
+    }
+
+    /* Nearby buttons: smaller */
+    .nearby-btn {
+        padding: 3px 8px;
+        font-size: 0.7rem;
+    }
+
+    /* Resident cards: tighter */
+    .resident-card {
+        padding: 6px 8px;
+        margin-bottom: 4px;
+    }
+
+    /* Town manager modal */
+    .town-content {
+        max-width: 100%;
+    }
+    .town-item {
+        flex-wrap: wrap;
+    }
+    .town-actions {
+        width: 100%;
+        margin-top: 4px;
+    }
+}
