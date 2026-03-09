@@ -222,6 +222,7 @@ class RimTownApp {
         this.setupTileMap();
         this.setupTabListeners();
         this.setupMobileSidebar();
+        this.setupMobileHeader();
         this.setupControlListeners();
         this.setupSettingsListeners();
         this.setupAuthListeners();
@@ -1120,25 +1121,103 @@ class RimTownApp {
 
     setupMobileSidebar() {
         const sidebar = document.getElementById('rimtown-sidebar');
-        const toggleBtn = document.getElementById('mobile-sidebar-toggle');
-        const backBtn = document.getElementById('mobile-back-to-map');
-        if (!sidebar || !toggleBtn) return;
+        if (!sidebar) return;
 
-        toggleBtn.addEventListener('click', () => {
-            sidebar.classList.add('mobile-open');
-        });
-        if (backBtn) {
-            backBtn.addEventListener('click', () => {
-                sidebar.classList.remove('mobile-open');
+        // Drag handle: toggle expanded/collapsed
+        const dragHandle = document.getElementById('mobile-drag-handle');
+        if (dragHandle) {
+            dragHandle.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.toggle('mobile-expanded');
+                }
+            });
+            // Touch drag support
+            let startY = 0;
+            let startFlex = 0;
+            dragHandle.addEventListener('touchstart', (e) => {
+                if (window.innerWidth > 768) return;
+                startY = e.touches[0].clientY;
+                startFlex = sidebar.classList.contains('mobile-expanded') ? 3 : 1;
+                e.preventDefault();
+            }, { passive: false });
+            dragHandle.addEventListener('touchend', (e) => {
+                if (window.innerWidth > 768) return;
+                const endY = e.changedTouches[0].clientY;
+                const diff = startY - endY;
+                // Swipe up = expand, swipe down = collapse
+                if (diff > 30) {
+                    sidebar.classList.add('mobile-expanded');
+                } else if (diff < -30) {
+                    sidebar.classList.remove('mobile-expanded');
+                }
+            });
+        }
+    }
+
+    setupMobileHeader() {
+        if (window.innerWidth > 768) return;
+
+        // Pause/play toggle
+        const mobilePauseBtn = document.getElementById('mobile-btn-pause');
+        if (mobilePauseBtn) {
+            mobilePauseBtn.addEventListener('click', () => {
+                this.world.paused = !this.world.paused;
+                mobilePauseBtn.textContent = this.world.paused ? '▶' : '⏸';
+                mobilePauseBtn.classList.toggle('paused', this.world.paused);
+                this.render();
             });
         }
 
-        // Also open sidebar when clicking a tab on mobile (in case sidebar is closed)
-        document.querySelectorAll('.rt-sidebar-tabs button').forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (window.innerWidth <= 768) {
-                    sidebar.classList.add('mobile-open');
+        // Menu dropdown toggle
+        const menuBtn = document.getElementById('mobile-btn-menu');
+        const menuDropdown = document.getElementById('mobile-menu-dropdown');
+        if (menuBtn && menuDropdown) {
+            menuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                menuDropdown.classList.toggle('hidden');
+            });
+            // Close menu when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!menuDropdown.contains(e.target) && e.target !== menuBtn) {
+                    menuDropdown.classList.add('hidden');
                 }
+            });
+        }
+
+        // Wire mobile menu buttons to existing functionality
+        // Close menu when any data-action button inside is clicked
+        menuDropdown?.querySelectorAll('[data-action]').forEach(btn => {
+            btn.addEventListener('click', () => menuDropdown?.classList.add('hidden'));
+        });
+        document.getElementById('mobile-new-game')?.addEventListener('click', () => {
+            menuDropdown?.classList.add('hidden');
+            document.getElementById('btn-new-game')?.click();
+        });
+        document.getElementById('mobile-save')?.addEventListener('click', () => {
+            menuDropdown?.classList.add('hidden');
+            document.getElementById('btn-save')?.click();
+        });
+        document.getElementById('mobile-btn-settings')?.addEventListener('click', () => {
+            menuDropdown?.classList.add('hidden');
+            document.getElementById('btn-settings')?.click();
+        });
+        document.getElementById('mobile-btn-account')?.addEventListener('click', () => {
+            menuDropdown?.classList.add('hidden');
+            document.getElementById('btn-account')?.click();
+        });
+
+        // Speed controls in mobile menu
+        menuDropdown?.querySelectorAll('.btn-speed').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const speed = btn.dataset.speed;
+                // Sync with desktop speed buttons
+                document.querySelectorAll('.controls .btn-speed').forEach(b => {
+                    if (b.dataset.speed === speed) b.click();
+                });
+                // Update mobile speed button styles
+                menuDropdown.querySelectorAll('.btn-speed').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
             });
         });
     }
@@ -1604,7 +1683,7 @@ class RimTownApp {
         document.querySelectorAll('.rt-sidebar-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === 'chat'));
         // Auto-open sidebar on mobile
         const sidebar = document.getElementById('rimtown-sidebar');
-        if (sidebar && window.innerWidth <= 768) sidebar.classList.add('mobile-open');
+        if (sidebar && window.innerWidth <= 768) sidebar.classList.add('mobile-expanded');
         this.renderSidebar();
         this.render();
     }
@@ -1632,6 +1711,27 @@ class RimTownApp {
         const seed = this.state.locations?.seed ?? '';
         const terrainEl = document.getElementById('terrain-display');
         if (terrainEl && terrain) terrainEl.textContent = `${terrain} #${seed}`;
+
+        // Update mobile header clock
+        const mobileClock = document.getElementById('mobile-clock');
+        if (mobileClock) {
+            const h = String(clock.hour || 0).padStart(2, '0');
+            const m = String(clock.minute || 0).padStart(2, '0');
+            mobileClock.textContent = `Y${clock.year} ${clock.season} D${clock.day} ${h}:${m} | ${agentCount}人`;
+        }
+        // Update mobile pause button state
+        const mobilePauseBtn = document.getElementById('mobile-btn-pause');
+        if (mobilePauseBtn) {
+            mobilePauseBtn.textContent = this.state.paused ? '▶' : '⏸';
+            mobilePauseBtn.classList.toggle('paused', this.state.paused);
+        }
+        // Sync mobile LLM status
+        const mobileLlm = document.getElementById('mobile-llm-status');
+        const desktopLlm = document.getElementById('llm-status');
+        if (mobileLlm && desktopLlm) {
+            mobileLlm.textContent = desktopLlm.textContent;
+            mobileLlm.className = desktopLlm.className;
+        }
     }
 
     renderMap() {
@@ -2329,7 +2429,7 @@ class RimTownApp {
         document.querySelectorAll('.rt-sidebar-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === 'detail'));
         // Auto-open sidebar on mobile
         const sidebar = document.getElementById('rimtown-sidebar');
-        if (sidebar && window.innerWidth <= 768) sidebar.classList.add('mobile-open');
+        if (sidebar && window.innerWidth <= 768) sidebar.classList.add('mobile-expanded');
         this.render();
     }
 }

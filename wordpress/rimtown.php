@@ -518,6 +518,37 @@ function rimtown_shortcode($atts) {
             </div>
         </div>
 
+        <!-- Mobile Compact Header (only visible on mobile) -->
+        <div class="mobile-header">
+            <div class="mobile-header-row">
+                <span class="mobile-title">邊境鎮</span>
+                <span id="mobile-clock" class="mobile-clock">載入中...</span>
+                <div class="mobile-header-actions">
+                    <button id="mobile-btn-pause" class="mobile-ctrl-btn" title="暫停/播放">⏸</button>
+                    <button id="mobile-btn-menu" class="mobile-ctrl-btn" title="選單">⋯</button>
+                </div>
+            </div>
+            <div id="mobile-menu-dropdown" class="mobile-menu-dropdown hidden">
+                <button data-action="show-towns">城鎮列表</button>
+                <button id="mobile-new-game">新地圖</button>
+                <button id="mobile-save">儲存</button>
+                <button id="mobile-btn-settings">設定</button>
+                <button id="mobile-btn-account">帳號</button>
+                <div class="mobile-menu-speed">
+                    <span>速度</span>
+                    <div class="speed-controls">
+                        <button class="btn-speed active" data-speed="1">1x</button>
+                        <button class="btn-speed" data-speed="1.5">1.5</button>
+                        <button class="btn-speed" data-speed="2">2x</button>
+                        <button class="btn-speed" data-speed="3">3x</button>
+                    </div>
+                </div>
+                <div class="mobile-menu-ai">
+                    <span id="mobile-llm-status" class="llm-status" title="AI 狀態">AI:--</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Main Layout -->
         <div class="main-layout">
             <div class="map-panel">
@@ -526,6 +557,7 @@ function rimtown_shortcode($atts) {
             </div>
             <div class="rt-sidebar" id="rimtown-sidebar">
                 <button class="mobile-back-to-map" id="mobile-back-to-map">&#9650; 返回地圖</button>
+                <div class="mobile-drag-handle" id="mobile-drag-handle"></div>
                 <div class="rt-sidebar-tabs">
                     <button data-tab="residents" class="active">居民</button>
                     <button data-tab="chat">聊天</button>
