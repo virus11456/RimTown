@@ -260,12 +260,24 @@ class PixelTileMap {
             const px = (e.clientX - rect.left) * scaleX;
             const py = (e.clientY - rect.top) * scaleY;
             // Check if an agent was clicked first
+            // Find closest agent within click range (generous hitbox)
+            let closestAgent = null;
+            let closestDist = Infinity;
             for (const [aid, pos] of Object.entries(this.agentPositions)) {
                 if (aid === 'player') continue;
-                if (Math.abs(px - pos.x) < 8 && Math.abs(py - pos.y) < 10) {
-                    if (this.onAgentClick) this.onAgentClick(aid);
-                    return;
+                const dx = Math.abs(px - pos.x);
+                const dy = Math.abs(py - (pos.y - 4)); // center hitbox on sprite body
+                if (dx < 14 && dy < 14) {
+                    const dist = dx * dx + dy * dy;
+                    if (dist < closestDist) {
+                        closestDist = dist;
+                        closestAgent = aid;
+                    }
                 }
+            }
+            if (closestAgent) {
+                if (this.onAgentClick) this.onAgentClick(closestAgent);
+                return;
             }
             // Check which location zone was clicked
             for (const [locId, zone] of Object.entries(this.buildingZones)) {
@@ -1296,7 +1308,7 @@ class PixelTileMap {
 
     // Update agent positions (smooth interpolation)
     updateAgents(agents, locations) {
-        const WALK_SPEED = 1.2; // pixels per frame — constant walking speed
+        const WALK_SPEED = 0.6; // pixels per frame — slower for easier clicking
         for (const [aid, agent] of Object.entries(agents)) {
             const locCenter = this.getLocationCenter(agent.current_location);
             // Add offset within zone so agents don't overlap

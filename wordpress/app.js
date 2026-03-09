@@ -374,6 +374,10 @@ class RimTownApp {
 
     async saveSettings(provider, apiKey, speed) {
         this.simSpeed = parseInt(speed);
+        this.baseSimSpeed = this.simSpeed;
+        document.querySelectorAll('.btn-speed').forEach(b => b.classList.remove('active'));
+        const btn1x = document.querySelector('.btn-speed[data-speed="1"]');
+        if (btn1x) btn1x.classList.add('active');
         if (provider && provider !== 'none' && apiKey) {
             this.llmClient = new LLMClient(provider, apiKey);
             this.world.conversationEngine = new ConversationEngine(this.llmClient);
@@ -475,6 +479,17 @@ class RimTownApp {
         });
         document.getElementById('btn-resume').addEventListener('click', () => {
             this.world.paused = false; this.render();
+        });
+        // Speed control buttons
+        this.baseSimSpeed = this.simSpeed;
+        document.querySelectorAll('.btn-speed').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const multiplier = parseFloat(btn.dataset.speed);
+                document.querySelectorAll('.btn-speed').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.simSpeed = Math.round(this.baseSimSpeed / multiplier);
+                this.restartSimulation();
+            });
         });
         document.getElementById('btn-new-game').addEventListener('click', async () => {
             const name = prompt('為新城鎮命名：', '邊境鎮 ' + (this.account.getTownList().length + 1));
