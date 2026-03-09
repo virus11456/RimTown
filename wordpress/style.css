@@ -1194,3 +1194,268 @@ body.rimtown-page .wp-block-post-title {
 .town-actions { display: flex; gap: 4px; }
 .town-actions button { background: transparent; border: 1px solid var(--border); color: var(--text-secondary);
     padding: 2px 6px; font-size: 0.7rem; border-radius: 3px; cursor: pointer; }
+
+/* ===== Mobile Sidebar Toggle ===== */
+.mobile-sidebar-toggle {
+    display: none;
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    border: 2px solid rgba(255,255,255,0.3);
+    font-size: 1.2rem;
+    cursor: pointer;
+    z-index: 99999;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+}
+.mobile-sidebar-toggle:hover {
+    transform: scale(1.1);
+}
+.mobile-sidebar-toggle:active {
+    transform: scale(0.95);
+}
+
+/* ===== Mobile Back to Map Button ===== */
+.mobile-back-to-map {
+    display: none;
+    padding: 6px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    cursor: pointer;
+    border-radius: 0;
+    width: 100%;
+    text-align: center;
+}
+.mobile-back-to-map:hover {
+    background: var(--accent);
+    color: #fff;
+}
+
+/* ===== Responsive: Tablet (≤1024px) ===== */
+@media (max-width: 1024px) {
+    .sidebar {
+        width: 300px;
+    }
+    .header h1 {
+        font-size: 0.95rem;
+    }
+    .controls button {
+        padding: 3px 8px;
+        font-size: 0.75rem;
+    }
+}
+
+/* ===== Responsive: Mobile (≤768px) ===== */
+@media (max-width: 768px) {
+    .rimtown-container {
+        height: 100vh;
+        height: 100dvh;
+    }
+
+    /* Header: compact layout */
+    .header {
+        padding: 4px 8px;
+        min-height: 36px;
+        flex-wrap: wrap;
+        gap: 2px;
+    }
+    .header h1 {
+        font-size: 0.85rem;
+        letter-spacing: 1px;
+    }
+    .header-info {
+        gap: 6px;
+        font-size: 0.7rem;
+        width: 100%;
+        justify-content: flex-start;
+    }
+    #population-count {
+        display: none;
+    }
+    .controls {
+        gap: 2px;
+    }
+    .controls button {
+        padding: 3px 6px;
+        font-size: 0.7rem;
+    }
+    /* Hide less important header buttons on mobile */
+    .btn-export, .btn-import {
+        display: none;
+    }
+    .speed-controls .btn-speed {
+        padding: 2px 5px;
+        font-size: 0.65rem;
+    }
+
+    /* Main layout: stack vertically */
+    .main-layout {
+        flex-direction: column;
+        position: relative;
+    }
+
+    /* Map takes full space */
+    .map-panel {
+        flex: 1;
+        min-height: 0;
+    }
+
+    /* Sidebar: overlay from bottom */
+    .sidebar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        height: 60%;
+        max-height: 60vh;
+        border-left: none;
+        border-top: 2px solid var(--accent);
+        transform: translateY(100%);
+        transition: transform 0.3s ease;
+        z-index: 50;
+    }
+    .sidebar.mobile-open {
+        transform: translateY(0);
+    }
+
+    /* Show toggle button */
+    .mobile-sidebar-toggle {
+        display: flex;
+    }
+    .sidebar.mobile-open ~ .mobile-sidebar-toggle {
+        display: none;
+    }
+
+    /* Show back-to-map button when sidebar open */
+    .mobile-back-to-map {
+        display: none;
+    }
+    .sidebar.mobile-open .mobile-back-to-map {
+        display: block;
+    }
+
+    /* Sidebar tabs: scrollable on mobile */
+    .sidebar-tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        flex-wrap: nowrap;
+    }
+    .sidebar-tabs button {
+        padding: 6px 6px;
+        font-size: 0.7rem;
+        white-space: nowrap;
+        min-width: 0;
+    }
+
+    /* Sidebar content */
+    .sidebar-content {
+        padding: 6px;
+    }
+
+    /* Chat messages */
+    .chat-messages {
+        max-height: calc(60vh - 200px);
+        min-height: 120px;
+    }
+
+    /* Chat input bigger touch targets */
+    .chat-input {
+        padding: 10px 14px;
+        font-size: 16px; /* prevents iOS zoom */
+    }
+    .chat-send-btn {
+        padding: 10px 18px;
+        font-size: 0.85rem;
+    }
+
+    /* Modals */
+    .modal-content {
+        width: 95vw;
+        padding: 16px;
+        max-height: 85vh;
+        overflow-y: auto;
+    }
+
+    /* Resource grid: 2 columns */
+    .resource-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Archive list */
+    .archive-list {
+        max-height: calc(60vh - 160px);
+    }
+    .archive-item {
+        flex-wrap: wrap;
+    }
+    .archive-actions {
+        width: 100%;
+        margin-top: 4px;
+    }
+}
+
+/* ===== Responsive: Small Phone (≤480px) ===== */
+@media (max-width: 480px) {
+    .header {
+        padding: 3px 6px;
+    }
+    .header h1 {
+        font-size: 0.75rem;
+    }
+    .clock-display {
+        font-size: 0.7rem;
+    }
+    .terrain-display {
+        display: none;
+    }
+    /* Collapse speed controls */
+    .speed-controls {
+        display: none;
+    }
+    .controls button {
+        padding: 3px 5px;
+        font-size: 0.65rem;
+    }
+    .btn-save {
+        display: none;
+    }
+
+    .sidebar {
+        height: 70%;
+        max-height: 70vh;
+    }
+
+    /* Nearby buttons: smaller */
+    .nearby-btn {
+        padding: 3px 8px;
+        font-size: 0.7rem;
+    }
+
+    /* Resident cards: tighter */
+    .resident-card {
+        padding: 6px 8px;
+        margin-bottom: 4px;
+    }
+
+    /* Town manager modal */
+    .town-content {
+        max-width: 100%;
+    }
+    .town-item {
+        flex-wrap: wrap;
+    }
+    .town-actions {
+        width: 100%;
+        margin-top: 4px;
+    }
+}

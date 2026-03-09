@@ -54,6 +54,7 @@ class RimTownApp {
         this.state = this.world.getState();
         this.setupTileMap();
         this.setupTabListeners();
+        this.setupMobileSidebar();
         this.setupControlListeners();
         this.setupSettingsListeners();
         this.startSimulation();
@@ -309,6 +310,31 @@ class RimTownApp {
                 document.querySelectorAll('.sidebar-tabs button').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 this.renderSidebar();
+            });
+        });
+    }
+
+    setupMobileSidebar() {
+        const sidebar = document.getElementById('rimtown-sidebar');
+        const toggleBtn = document.getElementById('mobile-sidebar-toggle');
+        const backBtn = document.getElementById('mobile-back-to-map');
+        if (!sidebar || !toggleBtn) return;
+
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.add('mobile-open');
+        });
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                sidebar.classList.remove('mobile-open');
+            });
+        }
+
+        // Also open sidebar when clicking a tab on mobile (in case sidebar is closed)
+        document.querySelectorAll('.sidebar-tabs button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.add('mobile-open');
+                }
             });
         });
     }
@@ -735,6 +761,9 @@ class RimTownApp {
         this.selectedAgent = agentId;
         this.activeTab = 'chat';
         document.querySelectorAll('.sidebar-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === 'chat'));
+        // Auto-open sidebar on mobile
+        const sidebar = document.getElementById('rimtown-sidebar');
+        if (sidebar && window.innerWidth <= 768) sidebar.classList.add('mobile-open');
         this.renderSidebar();
         this.render();
     }
@@ -1363,6 +1392,9 @@ class RimTownApp {
         this.selectedAgent = agentId;
         this.activeTab = 'detail';
         document.querySelectorAll('.sidebar-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === 'detail'));
+        // Auto-open sidebar on mobile
+        const sidebar = document.getElementById('rimtown-sidebar');
+        if (sidebar && window.innerWidth <= 768) sidebar.classList.add('mobile-open');
         this.render();
     }
 }
