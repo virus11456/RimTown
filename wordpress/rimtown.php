@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '2.3.5');
+define('RIMTOWN_VERSION', '2.3.6');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1077,6 +1077,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '2.3.6',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                'Groq 預設模型從 Llama 3.3 70B 改為 Qwen3-32B（中文對話品質大幅提升）',
+                '新增自動 Groq 備援機制：主 AI 遇到 429 rate limit 或錯誤時，自動切換到備用 Groq',
+                '設定頁面新增「備用 Groq API Key」欄位（選填，免費申請於 console.groq.com）',
+                '只填備用 Groq Key 不設主 AI 時，直接使用 Groq 作為主要 AI',
+                '主 AI 冷卻機制：首次失敗冷卻 60 秒，重複失敗逐步延長至最多 5 分鐘',
+                '主 AI 恢復正常後自動切回，無需手動操作',
+            ),
+        ),
         array(
             'version' => '2.3.5',
             'date'    => '2026-03-09',
