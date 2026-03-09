@@ -266,8 +266,16 @@ class PixelTileMap {
         // Observe container resize
         this._resizeObserver = new ResizeObserver(() => { this._needsResize = true; });
         this._resizeObserver.observe(this.canvas.parentElement);
-        // Fallback: also listen to window resize (catches cases ResizeObserver misses)
+        // Fallback: also listen to window resize and orientation change
         window.addEventListener('resize', () => { this._needsResize = true; });
+        window.addEventListener('orientationchange', () => {
+            this._needsResize = true;
+            // Orientation change on mobile needs a delayed re-check
+            setTimeout(() => { this._needsResize = true; }, 300);
+        });
+        // Delayed init: mobile browsers may need time to settle layout
+        setTimeout(() => { this._needsResize = true; }, 100);
+        setTimeout(() => { this._needsResize = true; }, 500);
         // --- Interaction: click, pan, pinch-to-zoom ---
         this._setupInteraction();
     }

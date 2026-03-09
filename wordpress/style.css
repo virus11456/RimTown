@@ -1441,17 +1441,8 @@ body.rimtown-page .wp-block-post-title {
         display: none;
     }
 
-    /* Main layout: stack vertically */
-    .main-layout {
-        flex-direction: column;
-        position: relative;
-    }
-
-    /* Map takes full space */
-    .map-panel {
-        flex: 1;
-        min-height: 0;
-    }
+    /* Mobile: layout handled by inline styles in rimtown_head_styles (PHP).
+       Here we only style non-critical properties. */
     #town-map-canvas {
         touch-action: none;
     }
