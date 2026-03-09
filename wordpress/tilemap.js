@@ -202,22 +202,23 @@ const LOCATION_BUILDING = {
     residential_east: 'house',
 };
 
-// Agent sprite colors by job
+// Agent sprite colors by job — chibi style palette
+// {body, bodyDk, accent, hair, hairDk, hairLt, pants, boots, skin}
 const JOB_COLORS = {
-    mayor:     { body:'#e94560', hair:'#333' },
-    doctor:    { body:'#ffffff', hair:'#5a3a1a' },
-    blacksmith:{ body:'#78909c', hair:'#222' },
-    cook:      { body:'#ff9800', hair:'#4a2a0a' },
-    farmer:    { body:'#8bc34a', hair:'#6b4226' },
-    trader:    { body:'#9c27b0', hair:'#333' },
-    guard:     { body:'#455a64', hair:'#222' },
-    researcher:{ body:'#2196f3', hair:'#4a3a2a' },
-    miner:     { body:'#795548', hair:'#333' },
-    priest:    { body:'#ffe082', hair:'#5a3a1a' },
-    carpenter: { body:'#a1887f', hair:'#4a2a0a' },
-    tailor:    { body:'#f48fb1', hair:'#333' },
-    player:    { body:'#00e5ff', hair:'#fff' },
-    default:   { body:'#90a4ae', hair:'#555' },
+    mayor:     { body:'#c83040', bodyDk:'#a02030', accent:'#ffd700', hair:'#4a3530', hairDk:'#352520', hairLt:'#6a5550', pants:'#b89060', boots:'#6b4226', skin:'#fce4c8' },
+    doctor:    { body:'#e8e8f0', bodyDk:'#c8c8d8', accent:'#e53935', hair:'#5a3a1a', hairDk:'#3a2510', hairLt:'#7a5a3a', pants:'#ddd', boots:'#a88a8a', skin:'#fce4c8' },
+    blacksmith:{ body:'#607080', bodyDk:'#485868', accent:'#a08060', hair:'#222', hairDk:'#111', hairLt:'#444', pants:'#555', boots:'#4a3020', skin:'#f0d8b8' },
+    cook:      { body:'#e88030', bodyDk:'#c06820', accent:'#fff', hair:'#4a2a0a', hairDk:'#301808', hairLt:'#6a4a2a', pants:'#f0e0c0', boots:'#8b6e4e', skin:'#fce4c8' },
+    farmer:    { body:'#6a9a40', bodyDk:'#508030', accent:'#d4b896', hair:'#6b4226', hairDk:'#4a2e18', hairLt:'#8b6246', pants:'#8b7355', boots:'#6b4226', skin:'#f0d8b8' },
+    trader:    { body:'#8030a0', bodyDk:'#602080', accent:'#ffd54f', hair:'#1a1a2a', hairDk:'#0a0a18', hairLt:'#3a3a5a', pants:'#555', boots:'#4a3a2a', skin:'#fce4c8' },
+    guard:     { body:'#3a5060', bodyDk:'#283848', accent:'#90a4ae', hair:'#222', hairDk:'#111', hairLt:'#444', pants:'#3a4a58', boots:'#2a2a2a', skin:'#f0d8b8' },
+    researcher:{ body:'#2868b8', bodyDk:'#1848a0', accent:'#90caf9', hair:'#4a3a2a', hairDk:'#302818', hairLt:'#6a5a4a', pants:'#556080', boots:'#4a4050', skin:'#fce4c8' },
+    miner:     { body:'#6a5040', bodyDk:'#504030', accent:'#ffd54f', hair:'#333', hairDk:'#1a1a1a', hairLt:'#555', pants:'#5a4a3a', boots:'#3a2a1a', skin:'#f0d8b8' },
+    priest:    { body:'#f0e070', bodyDk:'#d0c050', accent:'#fff', hair:'#5a3a1a', hairDk:'#3a2510', hairLt:'#7a5a3a', pants:'#e0d0a0', boots:'#a08858', skin:'#fce4c8' },
+    carpenter: { body:'#907060', bodyDk:'#706050', accent:'#c09070', hair:'#4a2a0a', hairDk:'#301808', hairLt:'#6a4a2a', pants:'#686058', boots:'#4a3828', skin:'#f0d8b8' },
+    tailor:    { body:'#d06080', bodyDk:'#b04868', accent:'#ffb6c1', hair:'#1a1a2a', hairDk:'#0a0a18', hairLt:'#3a3a5a', pants:'#c0a0a0', boots:'#8a6a6a', skin:'#fce4c8' },
+    player:    { body:'#00b8d0', bodyDk:'#0098b0', accent:'#b0f0ff', hair:'#e0e8f0', hairDk:'#b0b8c0', hairLt:'#fff', pants:'#4a7080', boots:'#3a5060', skin:'#fce4c8' },
+    default:   { body:'#8090a0', bodyDk:'#607080', accent:'#b0c0d0', hair:'#555', hairDk:'#333', hairLt:'#777', pants:'#686868', boots:'#484848', skin:'#f0d8b8' },
 };
 
 class PixelTileMap {
@@ -260,14 +261,14 @@ class PixelTileMap {
             const px = (e.clientX - rect.left) * scaleX;
             const py = (e.clientY - rect.top) * scaleY;
             // Check if an agent was clicked first
-            // Find closest agent within click range (generous hitbox)
+            // Find closest agent within click range (generous hitbox for chibi sprites)
             let closestAgent = null;
             let closestDist = Infinity;
             for (const [aid, pos] of Object.entries(this.agentPositions)) {
                 if (aid === 'player') continue;
                 const dx = Math.abs(px - pos.x);
-                const dy = Math.abs(py - (pos.y - 4)); // center hitbox on sprite body
-                if (dx < 14 && dy < 14) {
+                const dy = Math.abs(py - (pos.y - 8)); // center hitbox on chibi body
+                if (dx < 16 && dy < 16) {
                     const dist = dx * dx + dy * dy;
                     if (dist < closestDist) {
                         closestDist = dist;
@@ -1357,221 +1358,327 @@ class PixelTileMap {
         }
     }
 
-    // Draw agent sprite
+    // Draw chibi-style agent sprite (inspired by JRPG pixel art)
+    // Sprite dimensions: ~16w x 24h, big head, large eyes, short body
     _drawAgent(ctx, x, y, jobKey, isPlayer, isSelected, name, walking, walkStep) {
-        const colors = JOB_COLORS[jobKey] || JOB_COLORS.default;
-        if (isPlayer) {
-            colors.body = JOB_COLORS.player.body;
-            colors.hair = JOB_COLORS.player.hair;
-        }
-        const sx = Math.floor(x - 5);
-        const bob = walking ? Math.sin((walkStep || 0) * 0.4) * 1.2 : 0;
-        const sy = Math.floor(y - 13 + bob);
+        const c = isPlayer ? JOB_COLORS.player : (JOB_COLORS[jobKey] || JOB_COLORS.default);
+        const sx = Math.floor(x - 8);  // center 16px wide sprite
+        const bob = walking ? Math.sin((walkStep || 0) * 0.35) * 1.5 : 0;
+        const sy = Math.floor(y - 20 + bob);  // taller sprite offset
         const ws = walkStep || 0;
-        const legPhase = Math.floor(ws / 6) % 2;
+        const lp = Math.floor(ws / 6) % 2; // leg phase
 
-        // Shadow (elliptical)
-        ctx.fillStyle = 'rgba(0,0,0,0.18)';
-        ctx.fillRect(sx - 1, Math.floor(y) + 2, 12, 2);
-        ctx.fillStyle = 'rgba(0,0,0,0.08)';
-        ctx.fillRect(sx, Math.floor(y) + 1, 10, 1);
-
-        // Shoes
-        ctx.fillStyle = '#3e2723';
-        if (walking) {
-            if (legPhase === 0) {
-                ctx.fillRect(sx + 1, sy + 14, 3, 2); ctx.fillRect(sx + 6, sy + 14, 3, 2);
-            } else {
-                ctx.fillRect(sx + 3, sy + 14, 3, 2); ctx.fillRect(sx + 4, sy + 14, 3, 2);
-            }
-        } else {
-            ctx.fillRect(sx + 2, sy + 14, 3, 2); ctx.fillRect(sx + 5, sy + 14, 3, 2);
-        }
-
-        // Legs (pants)
-        ctx.fillStyle = '#455a64';
-        if (walking) {
-            if (legPhase === 0) {
-                ctx.fillRect(sx + 2, sy + 12, 3, 2); ctx.fillRect(sx + 6, sy + 12, 3, 2);
-            } else {
-                ctx.fillRect(sx + 3, sy + 12, 3, 2); ctx.fillRect(sx + 4, sy + 12, 3, 2);
-            }
-        } else {
-            ctx.fillRect(sx + 2, sy + 12, 3, 2); ctx.fillRect(sx + 5, sy + 12, 3, 2);
-        }
-
-        // Body (torso)
-        ctx.fillStyle = colors.body;
-        ctx.fillRect(sx + 1, sy + 5, 8, 7);
-        // Body shading
-        ctx.fillStyle = 'rgba(255,255,255,0.15)';
-        ctx.fillRect(sx + 2, sy + 5, 3, 7);
+        // === Shadow ===
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.fillRect(sx + 2, Math.floor(y) + 2, 12, 3);
         ctx.fillStyle = 'rgba(0,0,0,0.1)';
-        ctx.fillRect(sx + 7, sy + 5, 2, 7);
-        // Collar/neckline
-        ctx.fillStyle = 'rgba(255,255,255,0.2)';
-        ctx.fillRect(sx + 3, sy + 5, 4, 1);
+        ctx.fillRect(sx + 1, Math.floor(y) + 3, 14, 1);
 
-        // Arms (animate slightly when walking)
-        ctx.fillStyle = colors.body;
+        // === Boots ===
+        ctx.fillStyle = c.boots;
         if (walking) {
-            const armSwing = legPhase === 0 ? 1 : -1;
-            ctx.fillRect(sx - 1, sy + 6 + armSwing, 2, 5);
-            ctx.fillRect(sx + 9, sy + 6 - armSwing, 2, 5);
-            // Hands
-            ctx.fillStyle = '#ffd5b4';
-            ctx.fillRect(sx - 1, sy + 10 + armSwing, 2, 2);
-            ctx.fillRect(sx + 9, sy + 10 - armSwing, 2, 2);
+            if (lp === 0) {
+                ctx.fillRect(sx + 3, sy + 21, 4, 3); ctx.fillRect(sx + 10, sy + 21, 4, 3);
+            } else {
+                ctx.fillRect(sx + 5, sy + 21, 4, 3); ctx.fillRect(sx + 8, sy + 21, 4, 3);
+            }
         } else {
-            ctx.fillRect(sx - 1, sy + 6, 2, 5);
-            ctx.fillRect(sx + 9, sy + 6, 2, 5);
-            ctx.fillStyle = '#ffd5b4';
-            ctx.fillRect(sx - 1, sy + 10, 2, 2);
-            ctx.fillRect(sx + 9, sy + 10, 2, 2);
+            ctx.fillRect(sx + 3, sy + 21, 4, 3); ctx.fillRect(sx + 9, sy + 21, 4, 3);
+        }
+        // Boot highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.12)';
+        if (walking) {
+            if (lp === 0) { ctx.fillRect(sx + 3, sy + 21, 2, 1); ctx.fillRect(sx + 10, sy + 21, 2, 1); }
+            else { ctx.fillRect(sx + 5, sy + 21, 2, 1); ctx.fillRect(sx + 8, sy + 21, 2, 1); }
+        } else {
+            ctx.fillRect(sx + 3, sy + 21, 2, 1); ctx.fillRect(sx + 9, sy + 21, 2, 1);
         }
 
-        // Head
-        ctx.fillStyle = '#ffd5b4';
-        ctx.fillRect(sx + 2, sy, 6, 5);
-        // Face shadow
-        ctx.fillStyle = '#eec4a0';
-        ctx.fillRect(sx + 6, sy + 1, 2, 3);
+        // === Pants / Legs ===
+        ctx.fillStyle = c.pants;
+        if (walking) {
+            if (lp === 0) {
+                ctx.fillRect(sx + 3, sy + 18, 4, 3); ctx.fillRect(sx + 10, sy + 18, 4, 3);
+            } else {
+                ctx.fillRect(sx + 5, sy + 18, 4, 3); ctx.fillRect(sx + 8, sy + 18, 4, 3);
+            }
+        } else {
+            ctx.fillRect(sx + 3, sy + 18, 4, 3); ctx.fillRect(sx + 9, sy + 18, 4, 3);
+        }
 
-        // Hair
-        ctx.fillStyle = colors.hair;
-        ctx.fillRect(sx + 2, sy - 1, 6, 2); // top
-        ctx.fillRect(sx + 1, sy - 1, 1, 4); // left side
-        ctx.fillRect(sx + 8, sy - 1, 1, 4); // right side
-        // Hair highlight
-        ctx.fillStyle = 'rgba(255,255,255,0.15)';
-        ctx.fillRect(sx + 3, sy - 1, 2, 1);
+        // === Body / Torso ===
+        ctx.fillStyle = c.body;
+        ctx.fillRect(sx + 2, sy + 12, 12, 7);
+        // Body shadow (right side)
+        ctx.fillStyle = c.bodyDk;
+        ctx.fillRect(sx + 10, sy + 12, 4, 7);
+        // Body highlight (left side)
+        ctx.fillStyle = 'rgba(255,255,255,0.12)';
+        ctx.fillRect(sx + 3, sy + 13, 3, 5);
+        // Collar / neckline
+        ctx.fillStyle = c.skin || '#fce4c8';
+        ctx.fillRect(sx + 5, sy + 12, 6, 1);
 
-        // Eyes
-        ctx.fillStyle = '#333';
-        ctx.fillRect(sx + 3, sy + 2, 1, 1);
-        ctx.fillRect(sx + 6, sy + 2, 1, 1);
+        // === Arms ===
+        const armSwing = walking ? (lp === 0 ? 1 : -1) : 0;
+        // Left arm
+        ctx.fillStyle = c.body;
+        ctx.fillRect(sx, sy + 13 + armSwing, 3, 6);
+        ctx.fillStyle = c.bodyDk;
+        ctx.fillRect(sx, sy + 13 + armSwing, 1, 6);
+        // Left hand
+        ctx.fillStyle = c.skin;
+        ctx.fillRect(sx, sy + 18 + armSwing, 3, 2);
+        // Right arm
+        ctx.fillStyle = c.bodyDk;
+        ctx.fillRect(sx + 13, sy + 13 - armSwing, 3, 6);
+        ctx.fillStyle = c.body;
+        ctx.fillRect(sx + 14, sy + 13 - armSwing, 2, 6);
+        // Right hand
+        ctx.fillStyle = c.skin;
+        ctx.fillRect(sx + 13, sy + 18 - armSwing, 3, 2);
+
+        // === Accent belt/sash ===
+        ctx.fillStyle = c.accent;
+        ctx.fillRect(sx + 2, sy + 17, 12, 1);
+
+        // === Head (big chibi head!) ===
+        // Head outline / shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.08)';
+        ctx.fillRect(sx + 2, sy + 2, 12, 11);
+        // Head skin
+        ctx.fillStyle = c.skin;
+        ctx.fillRect(sx + 3, sy + 2, 10, 10);
+        // Cheek blush
+        ctx.fillStyle = 'rgba(230,120,120,0.2)';
+        ctx.fillRect(sx + 3, sy + 8, 2, 2);
+        ctx.fillRect(sx + 11, sy + 8, 2, 2);
+        // Face shadow (right)
+        ctx.fillStyle = 'rgba(0,0,0,0.06)';
+        ctx.fillRect(sx + 10, sy + 3, 3, 8);
+
+        // === Hair ===
+        this._drawChibiHair(ctx, sx, sy, c, jobKey, isPlayer);
+
+        // === Eyes (large anime-style) ===
         // Eye whites
         ctx.fillStyle = '#fff';
-        ctx.fillRect(sx + 3, sy + 2, 1, 1);
-        ctx.fillStyle = '#333';
-        ctx.fillRect(sx + 3, sy + 2, 1, 1); // pupil on white
+        ctx.fillRect(sx + 4, sy + 5, 3, 3);
+        ctx.fillRect(sx + 9, sy + 5, 3, 3);
+        // Iris
+        ctx.fillStyle = '#2a2a3a';
+        ctx.fillRect(sx + 5, sy + 5, 2, 3);
+        ctx.fillRect(sx + 10, sy + 5, 2, 3);
+        // Pupil
+        ctx.fillStyle = '#111';
+        ctx.fillRect(sx + 5, sy + 6, 2, 2);
+        ctx.fillRect(sx + 10, sy + 6, 2, 2);
+        // Eye highlight (the anime sparkle!)
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(sx + 5, sy + 5, 1, 1);
+        ctx.fillRect(sx + 10, sy + 5, 1, 1);
+        // Lower eye highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillRect(sx + 6, sy + 7, 1, 1);
+        ctx.fillRect(sx + 11, sy + 7, 1, 1);
 
-        // Mouth hint
-        ctx.fillStyle = '#d4a48c';
-        ctx.fillRect(sx + 4, sy + 3, 2, 1);
+        // === Nose hint ===
+        ctx.fillStyle = 'rgba(0,0,0,0.08)';
+        ctx.fillRect(sx + 8, sy + 8, 1, 1);
 
-        // Job accessory
-        this._drawJobAccessory(ctx, sx, sy, jobKey, isPlayer, walking, ws);
+        // === Mouth ===
+        ctx.fillStyle = '#c08070';
+        ctx.fillRect(sx + 7, sy + 9, 2, 1);
 
-        // Selection indicator
+        // === Job-specific accessory ===
+        this._drawJobAccessory(ctx, sx, sy, jobKey, isPlayer);
+
+        // === Selection indicator ===
         if (isSelected) {
             ctx.strokeStyle = '#fff';
             ctx.lineWidth = 1;
             ctx.setLineDash([2, 2]);
-            ctx.strokeRect(sx - 3, sy - 4, 16, 22);
+            ctx.strokeRect(sx - 1, sy - 2, 18, 28);
             ctx.setLineDash([]);
         }
+
+        // === Player arrow ===
         if (isPlayer) {
-            // Animated bouncing arrow
-            const arrowBob = Math.sin(this.animFrame * 0.08) * 1.5;
-            const ay = sy - 7 + arrowBob;
+            const arrowBob = Math.sin(this.animFrame * 0.08) * 2;
+            const ay = sy - 6 + arrowBob;
             ctx.fillStyle = '#00e5ff';
-            ctx.fillRect(sx + 3, ay, 4, 2);
-            ctx.fillRect(sx + 4, ay - 2, 2, 2);
-            // Arrow glow
-            ctx.fillStyle = 'rgba(0,229,255,0.3)';
-            ctx.fillRect(sx + 2, ay + 2, 6, 1);
+            ctx.fillRect(sx + 5, ay, 6, 2);
+            ctx.fillRect(sx + 6, ay - 2, 4, 2);
+            ctx.fillRect(sx + 7, ay - 4, 2, 2);
+            ctx.fillStyle = 'rgba(0,229,255,0.35)';
+            ctx.fillRect(sx + 4, ay + 2, 8, 1);
         }
 
-        // Name label
+        // === Name label ===
         if (isSelected || isPlayer) {
             ctx.font = '8px monospace';
             ctx.textAlign = 'center';
             const nameShort = name.split('(')[0].trim();
             const tw = ctx.measureText(nameShort).width;
-            const lx = sx + 5 - tw/2 - 3;
-            const ly = sy - 16;
-            // Background with rounded look
-            ctx.fillStyle = isPlayer ? 'rgba(0,229,255,0.85)' : 'rgba(0,0,0,0.75)';
+            const lx = sx + 8 - tw / 2 - 3;
+            const ly = sy - 12;
+            ctx.fillStyle = isPlayer ? 'rgba(0,229,255,0.88)' : 'rgba(0,0,0,0.78)';
             ctx.fillRect(lx, ly, tw + 6, 11);
             ctx.fillStyle = isPlayer ? '#003' : '#fff';
-            ctx.fillText(nameShort, sx + 5, sy - 7);
+            ctx.fillText(nameShort, sx + 8, sy - 3);
         }
     }
 
-    _drawJobAccessory(ctx, sx, sy, jobKey, isPlayer, walking, ws) {
-        if (isPlayer) return; // Player has the arrow indicator
+    // Draw chibi hair with layers (top, sides, back, bangs)
+    _drawChibiHair(ctx, sx, sy, c, jobKey, isPlayer) {
+        const h = c.hair, hd = c.hairDk, hl = c.hairLt;
+        // Base hair (back layer / volume)
+        ctx.fillStyle = hd;
+        ctx.fillRect(sx + 2, sy - 1, 12, 5);
+        // Main hair body
+        ctx.fillStyle = h;
+        ctx.fillRect(sx + 3, sy - 2, 10, 5);
+        // Hair top poof
+        ctx.fillStyle = h;
+        ctx.fillRect(sx + 4, sy - 3, 8, 3);
+        // Hair highlight
+        ctx.fillStyle = hl;
+        ctx.fillRect(sx + 5, sy - 2, 4, 2);
+        // Hair sides
+        ctx.fillStyle = hd;
+        ctx.fillRect(sx + 2, sy, 2, 8);   // left side hair
+        ctx.fillRect(sx + 12, sy, 2, 8);   // right side hair
+        // Side hair inner highlight
+        ctx.fillStyle = h;
+        ctx.fillRect(sx + 3, sy + 1, 1, 6);
+        ctx.fillRect(sx + 12, sy + 1, 1, 6);
+        // Bangs (front hair over forehead)
+        ctx.fillStyle = h;
+        ctx.fillRect(sx + 4, sy + 1, 8, 3);
+        // Bang highlight
+        ctx.fillStyle = hl;
+        ctx.fillRect(sx + 5, sy + 1, 3, 1);
+        // Bang gap / parting (show skin)
+        ctx.fillStyle = c.skin;
+        ctx.fillRect(sx + 7, sy + 2, 2, 2);
+
+        // Job-specific hair details
         switch (jobKey) {
-            case 'doctor':
-                // Red cross on body
-                ctx.fillStyle = '#e53935';
-                ctx.fillRect(sx + 4, sy + 7, 2, 1);
-                ctx.fillRect(sx + 4, sy + 6, 1, 3);
-                break;
-            case 'guard':
-                // Helmet visor
-                ctx.fillStyle = '#78909c';
-                ctx.fillRect(sx + 2, sy - 1, 6, 1);
-                break;
             case 'cook':
                 // Chef hat
                 ctx.fillStyle = '#fff';
-                ctx.fillRect(sx + 3, sy - 3, 4, 2);
-                ctx.fillRect(sx + 2, sy - 2, 6, 1);
+                ctx.fillRect(sx + 4, sy - 6, 8, 4);
+                ctx.fillRect(sx + 3, sy - 3, 10, 2);
+                ctx.fillStyle = '#eee';
+                ctx.fillRect(sx + 5, sy - 5, 6, 2);
                 break;
-            case 'blacksmith':
-                // Apron
-                ctx.fillStyle = '#5d4037';
-                ctx.fillRect(sx + 2, sy + 8, 6, 4);
+            case 'farmer':
+                // Straw hat
+                ctx.fillStyle = '#d4aa70';
+                ctx.fillRect(sx + 1, sy - 3, 14, 3);
+                ctx.fillStyle = '#c09050';
+                ctx.fillRect(sx + 3, sy - 5, 10, 3);
+                ctx.fillStyle = '#b08040';
+                ctx.fillRect(sx + 3, sy - 3, 10, 1);
+                break;
+            case 'guard':
+                // Metal helmet
+                ctx.fillStyle = '#607080';
+                ctx.fillRect(sx + 3, sy - 3, 10, 5);
+                ctx.fillStyle = '#708090';
+                ctx.fillRect(sx + 4, sy - 4, 8, 3);
+                ctx.fillStyle = '#90a0b0';
+                ctx.fillRect(sx + 5, sy - 3, 4, 1);
+                // Visor slit
+                ctx.fillStyle = '#333';
+                ctx.fillRect(sx + 4, sy + 1, 8, 1);
+                break;
+            case 'miner':
+                // Hard hat with headlamp
+                ctx.fillStyle = '#d0a020';
+                ctx.fillRect(sx + 3, sy - 3, 10, 4);
+                ctx.fillStyle = '#e0b830';
+                ctx.fillRect(sx + 4, sy - 4, 8, 3);
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(sx + 6, sy - 2, 2, 2); // headlamp
+                ctx.fillStyle = '#ffeb3b';
+                ctx.fillRect(sx + 6, sy - 2, 1, 1); // lamp glow
+                break;
+            case 'tailor':
+                // Hair ribbon/headband
+                ctx.fillStyle = '#e91e63';
+                ctx.fillRect(sx + 4, sy, 8, 1);
+                ctx.fillStyle = '#f06292';
+                ctx.fillRect(sx + 10, sy - 1, 3, 3); // bow
+                break;
+            case 'mayor':
+                // Small crown/circlet
+                ctx.fillStyle = '#ffd700';
+                ctx.fillRect(sx + 4, sy - 3, 8, 2);
+                ctx.fillStyle = '#ffeb3b';
+                ctx.fillRect(sx + 5, sy - 4, 2, 1);
+                ctx.fillRect(sx + 9, sy - 4, 2, 1);
+                ctx.fillStyle = '#e53935'; // jewel
+                ctx.fillRect(sx + 7, sy - 4, 2, 1);
                 break;
             case 'priest':
-                // Holy collar
-                ctx.fillStyle = '#fff';
-                ctx.fillRect(sx + 3, sy + 4, 4, 1);
+                // Holy hood/cowl
+                ctx.fillStyle = '#f0e8d0';
+                ctx.fillRect(sx + 2, sy - 1, 12, 3);
+                ctx.fillRect(sx + 2, sy + 1, 3, 6);
+                ctx.fillRect(sx + 11, sy + 1, 3, 6);
+                ctx.fillStyle = '#e0d8c0';
+                ctx.fillRect(sx + 3, sy - 2, 10, 2);
+                break;
+        }
+    }
+
+    _drawJobAccessory(ctx, sx, sy, jobKey, isPlayer) {
+        if (isPlayer) return;
+        switch (jobKey) {
+            case 'doctor':
+                // Red cross on chest
+                ctx.fillStyle = '#e53935';
+                ctx.fillRect(sx + 6, sy + 13, 4, 1);
+                ctx.fillRect(sx + 7, sy + 12, 2, 3);
+                break;
+            case 'blacksmith':
+                // Leather apron
+                ctx.fillStyle = '#5d4037';
+                ctx.fillRect(sx + 3, sy + 15, 10, 4);
+                ctx.fillStyle = '#795548';
+                ctx.fillRect(sx + 4, sy + 15, 8, 1);
                 break;
             case 'researcher':
                 // Glasses
                 ctx.fillStyle = '#90caf9';
-                ctx.fillRect(sx + 2, sy + 2, 2, 1);
-                ctx.fillRect(sx + 6, sy + 2, 2, 1);
-                break;
-            case 'mayor':
-                // Sash
-                ctx.fillStyle = '#ffd700';
-                ctx.fillRect(sx + 2, sy + 5, 1, 6);
-                ctx.fillRect(sx + 3, sy + 6, 1, 5);
-                break;
-            case 'farmer':
-                // Straw hat
-                ctx.fillStyle = '#deb887';
-                ctx.fillRect(sx + 1, sy - 2, 8, 1);
-                ctx.fillStyle = '#c8a265';
-                ctx.fillRect(sx + 2, sy - 3, 6, 2);
-                break;
-            case 'miner':
-                // Headlamp
-                ctx.fillStyle = '#ffd700';
-                ctx.fillRect(sx + 4, sy - 1, 2, 1);
-                break;
-            case 'tailor':
-                // Measuring tape around neck
-                ctx.fillStyle = '#ffeb3b';
-                ctx.fillRect(sx + 1, sy + 4, 1, 3);
-                ctx.fillRect(sx + 8, sy + 4, 1, 3);
+                ctx.fillRect(sx + 4, sy + 5, 3, 2);
+                ctx.fillRect(sx + 9, sy + 5, 3, 2);
+                ctx.fillStyle = '#607890';
+                ctx.fillRect(sx + 7, sy + 5, 2, 1); // bridge
                 break;
             case 'trader':
-                // Money pouch
+                // Money pouch on belt
                 ctx.fillStyle = '#8d6e63';
-                ctx.fillRect(sx + 7, sy + 9, 3, 2);
+                ctx.fillRect(sx + 11, sy + 16, 3, 3);
                 ctx.fillStyle = '#ffd700';
-                ctx.fillRect(sx + 8, sy + 9, 1, 1);
+                ctx.fillRect(sx + 12, sy + 17, 1, 1);
                 break;
             case 'carpenter':
-                // Tool belt
+                // Tool belt with hammer
                 ctx.fillStyle = '#5d4037';
-                ctx.fillRect(sx + 1, sy + 10, 8, 1);
+                ctx.fillRect(sx + 2, sy + 17, 12, 1);
                 ctx.fillStyle = '#90a4ae';
-                ctx.fillRect(sx + 2, sy + 10, 1, 2); // hammer
+                ctx.fillRect(sx + 3, sy + 16, 1, 3);
+                ctx.fillStyle = '#795548';
+                ctx.fillRect(sx + 3, sy + 15, 2, 1);
+                break;
+            case 'cook':
+                // Spoon in hand
+                ctx.fillStyle = '#b0bec5';
+                ctx.fillRect(sx + 14, sy + 15, 1, 5);
+                ctx.fillStyle = '#cfd8dc';
+                ctx.fillRect(sx + 13, sy + 14, 3, 2);
                 break;
         }
     }
