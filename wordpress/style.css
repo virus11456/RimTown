@@ -28,11 +28,11 @@
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
-    overflow: hidden !important;
-    height: 100vh !important;
-    display: flex !important;
-    flex-direction: column !important;
-    position: relative !important;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
     line-height: 1.5;
     font-size: 14px;
 }
@@ -167,29 +167,22 @@ body.rimtown-page .wp-block-post-title {
     border-color: var(--negative);
 }
 
-/* Main Layout — use absolute positioning to be immune to theme overrides */
-.rimtown-container .main-layout {
-    position: relative !important;
-    flex: 1 !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
+/* Main Layout */
+.main-layout {
+    display: flex;
+    flex: 1;
+    min-height: 0;
 }
 
-/* Town Map — absolute position, leave 360px for sidebar */
-.rimtown-container .map-panel {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 360px !important;
-    bottom: 0 !important;
-    overflow: hidden !important;
-    background: #1a1a2e !important;
+/* Town Map */
+.map-panel {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #2d5a1e;
 }
 
 #town-map-canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
     height: 100%;
     image-rendering: pixelated;
@@ -292,13 +285,9 @@ body.rimtown-page .wp-block-post-title {
     display: block;
 }
 
-/* Sidebar — absolute position on right */
-.rimtown-container .rt-sidebar {
-    position: absolute !important;
-    top: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 360px !important;
+/* Sidebar */
+.rt-sidebar {
+    width: 360px;
     background: var(--bg-secondary);
     border-left: 1px solid var(--border);
     display: flex;
@@ -1372,11 +1361,8 @@ body.rimtown-page .wp-block-post-title {
 
 /* ===== Responsive: Tablet (≤1024px) ===== */
 @media (max-width: 1024px) {
-    .rimtown-container .rt-sidebar {
-        width: 300px !important;
-    }
-    .rimtown-container .map-panel {
-        right: 300px !important;
+    .rt-sidebar {
+        width: 300px;
     }
     .header h1 {
         font-size: 0.95rem;
@@ -1389,7 +1375,6 @@ body.rimtown-page .wp-block-post-title {
 
 /* ===== Responsive: Mobile (≤768px) ===== */
 @media (max-width: 768px) {
-    /* Force container to viewport, prevent page scroll */
     .rimtown-container {
         height: 100vh;
         height: 100dvh;
@@ -1397,7 +1382,6 @@ body.rimtown-page .wp-block-post-title {
         max-height: 100dvh;
         overflow: hidden !important;
     }
-    /* Prevent WordPress wrappers from scrolling */
     body.rimtown-page {
         overflow: hidden !important;
         height: 100vh !important;
@@ -1426,7 +1410,6 @@ body.rimtown-page .wp-block-post-title {
         flex-wrap: nowrap;
         overflow: hidden;
     }
-    /* Hide info text on mobile to keep header single-row */
     #population-count,
     .clock-display,
     .terrain-display {
@@ -1441,7 +1424,6 @@ body.rimtown-page .wp-block-post-title {
         font-size: 0.7rem;
         white-space: nowrap;
     }
-    /* Hide less important header buttons on mobile */
     .btn-export, .btn-import, .btn-towns, .btn-new-game {
         display: none;
     }
@@ -1452,23 +1434,19 @@ body.rimtown-page .wp-block-post-title {
         display: none;
     }
 
-    /* Main layout on mobile */
-    .rimtown-container .main-layout {
-        position: relative !important;
-        overflow: hidden !important;
+    /* Main layout: stack vertically */
+    .main-layout {
+        flex-direction: column;
+        position: relative;
     }
 
-    /* Map: fill everything on mobile */
-    .rimtown-container .map-panel {
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        bottom: 0 !important;
-        overflow: hidden !important;
+    /* Map takes full space */
+    .map-panel {
+        flex: 1;
+        min-height: 0;
     }
     #town-map-canvas {
-        touch-action: none; /* allow JS to handle pinch/pan */
+        touch-action: none;
     }
 
     /* Sidebar: overlay from bottom */
@@ -1575,7 +1553,6 @@ body.rimtown-page .wp-block-post-title {
         padding: 2px 5px;
         font-size: 0.65rem;
     }
-    /* Hide save button on very small screens */
     .btn-save {
         display: none;
     }

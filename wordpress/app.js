@@ -1210,11 +1210,9 @@ class RimTownApp {
                 html += `<h4>📢 鎮長選舉 — 競選期間</h4>`;
                 html += `<div class="election-info">剩餘 ${election.campaignDaysLeft} 天競選期</div>`;
                 election.candidates.forEach(c => {
-                    const agent = this.state.agents?.[c.agentId];
-                    const moodBar = agent ? `<span class="election-mood">${agent.mood > 20 ? '😊' : agent.mood > -20 ? '😐' : '😟'}</span>` : '';
                     html += `<div class="election-candidate" data-action="select-agent" data-val="${c.agentId}">
                         <div class="candidate-header">
-                            <span class="candidate-name">${c.name}</span> ${moodBar}
+                            <span class="candidate-name">${c.name}</span>
                             <span class="candidate-policy">${c.policyIcon} ${c.policyLabel}</span>
                         </div>
                         <div class="candidate-speech">"${c.speech}"</div>
