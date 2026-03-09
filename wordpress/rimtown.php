@@ -183,6 +183,32 @@ function rimtown_body_class($classes) {
 add_filter('body_class', 'rimtown_body_class');
 
 /**
+ * Inject critical inline CSS for mobile viewport lock (runs before theme CSS)
+ */
+function rimtown_head_styles() {
+    global $post;
+    if (!$post || !has_shortcode($post->post_content, 'rimtown')) return;
+    echo '<style>
+        html.rimtown-active, html.rimtown-active body {
+            overflow: hidden !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        html.rimtown-active body > *:not(.rimtown-container):not(script):not(style):not(link) {
+            display: none !important;
+        }
+        html.rimtown-active .rimtown-container {
+            position: fixed !important;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 99990;
+        }
+    </style>';
+    echo '<script>document.documentElement.classList.add("rimtown-active");</script>';
+}
+add_action('wp_head', 'rimtown_head_styles', 1);
+
+/**
  * Optional: Add admin menu page for instructions
  */
 function rimtown_admin_menu() {

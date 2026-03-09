@@ -1256,57 +1256,87 @@ body.rimtown-page .wp-block-post-title {
 
 /* ===== Responsive: Mobile (≤768px) ===== */
 @media (max-width: 768px) {
+    /* Force container to viewport, prevent page scroll */
     .rimtown-container {
         height: 100vh;
         height: 100dvh;
+        max-height: 100vh;
+        max-height: 100dvh;
+        overflow: hidden !important;
+    }
+    /* Prevent WordPress wrappers from scrolling */
+    body.rimtown-page {
+        overflow: hidden !important;
+        height: 100vh !important;
+        height: 100dvh !important;
     }
 
-    /* Header: compact layout */
+    /* Header: single compact row */
     .header {
-        padding: 4px 8px;
-        min-height: 36px;
-        flex-wrap: wrap;
-        gap: 2px;
+        padding: 2px 6px;
+        min-height: auto;
+        flex-wrap: nowrap;
+        gap: 4px;
+        flex-shrink: 0;
     }
     .header h1 {
-        font-size: 0.85rem;
-        letter-spacing: 1px;
+        font-size: 0.8rem;
+        letter-spacing: 0;
+        white-space: nowrap;
     }
     .header-info {
-        gap: 6px;
+        gap: 4px;
         font-size: 0.7rem;
-        width: 100%;
-        justify-content: flex-start;
+        width: auto;
+        flex: 1;
+        justify-content: flex-end;
+        flex-wrap: nowrap;
+        overflow: hidden;
     }
-    #population-count {
+    /* Hide info text on mobile to keep header single-row */
+    #population-count,
+    .clock-display,
+    .terrain-display {
         display: none;
     }
     .controls {
         gap: 2px;
+        flex-wrap: nowrap;
     }
     .controls button {
         padding: 3px 6px;
         font-size: 0.7rem;
+        white-space: nowrap;
     }
     /* Hide less important header buttons on mobile */
-    .btn-export, .btn-import {
+    .btn-export, .btn-import, .btn-towns, .btn-new-game {
         display: none;
     }
-    .speed-controls .btn-speed {
-        padding: 2px 5px;
-        font-size: 0.65rem;
+    .speed-controls {
+        display: none;
+    }
+    .llm-status {
+        display: none;
     }
 
     /* Main layout: stack vertically */
     .main-layout {
         flex-direction: column;
         position: relative;
+        overflow: hidden;
     }
 
-    /* Map takes full space */
+    /* Map: fill remaining space, constrain canvas */
     .map-panel {
         flex: 1;
         min-height: 0;
+        overflow: hidden;
+    }
+    #town-map-canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
     }
 
     /* Sidebar: overlay from bottom */
@@ -1406,26 +1436,14 @@ body.rimtown-page .wp-block-post-title {
 
 /* ===== Responsive: Small Phone (≤480px) ===== */
 @media (max-width: 480px) {
-    .header {
-        padding: 3px 6px;
-    }
     .header h1 {
-        font-size: 0.75rem;
-    }
-    .clock-display {
         font-size: 0.7rem;
     }
-    .terrain-display {
-        display: none;
-    }
-    /* Collapse speed controls */
-    .speed-controls {
-        display: none;
-    }
     .controls button {
-        padding: 3px 5px;
+        padding: 2px 5px;
         font-size: 0.65rem;
     }
+    /* Hide save button on very small screens */
     .btn-save {
         display: none;
     }
