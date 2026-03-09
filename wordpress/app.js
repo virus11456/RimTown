@@ -257,6 +257,7 @@ class RimTownApp {
                 const isLogin = tab.dataset.authTab === 'login';
                 document.getElementById('auth-login-form')?.classList.toggle('hidden', !isLogin);
                 document.getElementById('auth-register-form')?.classList.toggle('hidden', isLogin);
+                document.getElementById('auth-reset-form')?.classList.add('hidden');
             });
         });
 
@@ -272,6 +273,24 @@ class RimTownApp {
         // Register
         document.getElementById('auth-reg-btn')?.addEventListener('click', () => this._doRegister());
         document.getElementById('auth-reg-pass2')?.addEventListener('keydown', e => { if (e.key === 'Enter') this._doRegister(); });
+
+        // Forgot password
+        document.getElementById('auth-forgot-link')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('auth-login-form')?.classList.add('hidden');
+            document.getElementById('auth-register-form')?.classList.add('hidden');
+            document.getElementById('auth-reset-form')?.classList.remove('hidden');
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+        });
+        document.getElementById('auth-reset-back')?.addEventListener('click', () => {
+            document.getElementById('auth-reset-form')?.classList.add('hidden');
+            document.getElementById('auth-login-form')?.classList.remove('hidden');
+            document.querySelectorAll('.auth-tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.authTab === 'login');
+            });
+        });
+        document.getElementById('auth-reset-btn')?.addEventListener('click', () => this._doResetPassword());
+        document.getElementById('auth-reset-pass2')?.addEventListener('keydown', e => { if (e.key === 'Enter') this._doResetPassword(); });
     }
 
     async _doLogin() {
@@ -304,11 +323,65 @@ class RimTownApp {
             await this.auth.register(user, pass, email);
             document.getElementById('auth-modal')?.classList.add('hidden');
             this._updateAccountButton();
-            this.world.logMessage('system', `註冊成功！歡迎，${this.auth.username}！`);
-            // Auto-upload current town
+            // New user gets a fresh world — clear all old local data
+            const oldTowns = this._getTownList();
+            oldTowns.forEach(t => {
+                localStorage.removeItem('rimtown_town_' + t.id);
+                localStorage.removeItem('rimtown_town_' + t.id + '_archives');
+            });
+            localStorage.removeItem('rimtown_town_list');
+            localStorage.removeItem('rimtown_last_town');
+            localStorage.removeItem('rimtown_achievements');
+            localStorage.removeItem('rimtown_raid_count');
+            this.world.reset();
+            if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+            this.currentTownId = 'town_' + Date.now();
+            this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
+            this.state = this.world.getState();
+            this._generateTileMapLayout();
+            if (this.tileMap) this.tileMap.agentPositions = {};
+            this._saveCurrentTown(`${user}的邊境鎮`);
+            this.render();
+            this._renderTownList();
+            this.world.logMessage('system', `註冊成功！歡迎，${this.auth.username}！你的全新城鎮已建立。`);
             this._syncToCloud();
         } catch (e) {
             if (errEl) errEl.textContent = e.message || '註冊失敗';
+        }
+    }
+
+    async _doResetPassword() {
+        const user = document.getElementById('auth-reset-user')?.value?.trim();
+        const email = document.getElementById('auth-reset-email')?.value?.trim();
+        const pass = document.getElementById('auth-reset-pass')?.value;
+        const pass2 = document.getElementById('auth-reset-pass2')?.value;
+        const errEl = document.getElementById('auth-reset-error');
+        const successEl = document.getElementById('auth-reset-success');
+        if (errEl) errEl.textContent = '';
+        if (successEl) successEl.textContent = '';
+        if (!user) { if (errEl) errEl.textContent = '請輸入使用者名稱'; return; }
+        if (!email) { if (errEl) errEl.textContent = '請輸入註冊時的電子郵件'; return; }
+        if (!pass || pass.length < 6) { if (errEl) errEl.textContent = '新密碼至少6個字元'; return; }
+        if (pass !== pass2) { if (errEl) errEl.textContent = '兩次密碼不一致'; return; }
+        try {
+            if (errEl) errEl.textContent = '重設中...';
+            const resp = await fetch(`${this.auth.apiBase}/reset-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': this.auth.nonce },
+                body: JSON.stringify({ username: user, email, new_password: pass }),
+            });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.message || '重設失敗');
+            if (errEl) errEl.textContent = '';
+            if (successEl) successEl.textContent = '密碼已重設！請用新密碼登入';
+            setTimeout(() => {
+                document.getElementById('auth-reset-form')?.classList.add('hidden');
+                document.getElementById('auth-login-form')?.classList.remove('hidden');
+                document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.authTab === 'login'));
+                if (successEl) successEl.textContent = '';
+            }, 2000);
+        } catch (e) {
+            if (errEl) errEl.textContent = e.message || '重設失敗';
         }
     }
 

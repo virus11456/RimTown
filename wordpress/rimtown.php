@@ -94,6 +94,11 @@ function rimtown_register_api() {
         'callback' => 'rimtown_api_logout',
         'permission_callback' => '__return_true',
     ));
+    register_rest_route($ns, '/reset-password', array(
+        'methods' => 'POST',
+        'callback' => 'rimtown_api_reset_password',
+        'permission_callback' => '__return_true',
+    ));
     register_rest_route($ns, '/me', array(
         'methods' => 'GET',
         'callback' => 'rimtown_api_me',
@@ -185,6 +190,37 @@ function rimtown_api_login($request) {
     return rest_ensure_response(array(
         'success' => true,
         'user' => array('id' => $user->ID, 'username' => $user->user_login),
+    ));
+}
+
+function rimtown_api_reset_password($request) {
+    $username = sanitize_user($request->get_param('username'));
+    $email = sanitize_email($request->get_param('email'));
+    $new_password = $request->get_param('new_password');
+
+    if (empty($username)) {
+        return new WP_Error('missing_username', '請輸入使用者名稱', array('status' => 400));
+    }
+    if (empty($email)) {
+        return new WP_Error('missing_email', '請輸入註冊時的電子郵件', array('status' => 400));
+    }
+    if (empty($new_password) || strlen($new_password) < 6) {
+        return new WP_Error('bad_password', '新密碼至少6個字元', array('status' => 400));
+    }
+
+    $user = get_user_by('login', $username);
+    if (!$user) {
+        return new WP_Error('not_found', '找不到此使用者', array('status' => 404));
+    }
+    if (strtolower($user->user_email) !== strtolower($email)) {
+        return new WP_Error('email_mismatch', '電子郵件不符合', array('status' => 403));
+    }
+
+    wp_set_password($new_password, $user->ID);
+
+    return rest_ensure_response(array(
+        'success' => true,
+        'message' => '密碼已重設，請用新密碼登入',
     ));
 }
 
@@ -427,6 +463,7 @@ function rimtown_shortcode($atts) {
                     <div class="setting-group"><label>密碼</label><input type="password" id="auth-login-pass" placeholder="輸入密碼..." autocomplete="current-password"></div>
                     <div id="auth-login-error" class="auth-error"></div>
                     <div class="modal-buttons"><button id="auth-login-btn" class="btn-accent">登入</button><button class="auth-close-btn">取消</button></div>
+                    <div style="text-align:center;margin-top:8px"><a href="#" id="auth-forgot-link" style="font-size:0.72rem;color:var(--accent-light)">忘記密碼？</a></div>
                 </div>
                 <div id="auth-register-form" class="auth-form hidden">
                     <div class="setting-group"><label>使用者名稱</label><input type="text" id="auth-reg-user" placeholder="至少3個字元..." autocomplete="username"></div>
@@ -435,6 +472,17 @@ function rimtown_shortcode($atts) {
                     <div class="setting-group"><label>確認密碼</label><input type="password" id="auth-reg-pass2" placeholder="再次輸入密碼..." autocomplete="new-password"></div>
                     <div id="auth-reg-error" class="auth-error"></div>
                     <div class="modal-buttons"><button id="auth-reg-btn" class="btn-accent">註冊</button><button class="auth-close-btn">取消</button></div>
+                </div>
+                <div id="auth-reset-form" class="auth-form hidden">
+                    <h3 style="font-size:0.8rem;color:var(--text-primary);margin-bottom:8px">重設密碼</h3>
+                    <p style="font-size:0.68rem;color:var(--text-muted);margin-bottom:10px">輸入您的帳號和註冊時的電子郵件來重設密碼</p>
+                    <div class="setting-group"><label>使用者名稱</label><input type="text" id="auth-reset-user" placeholder="輸入帳號..." autocomplete="username"></div>
+                    <div class="setting-group"><label>電子郵件</label><input type="email" id="auth-reset-email" placeholder="註冊時的信箱..." autocomplete="email"></div>
+                    <div class="setting-group"><label>新密碼</label><input type="password" id="auth-reset-pass" placeholder="至少6個字元..." autocomplete="new-password"></div>
+                    <div class="setting-group"><label>確認新密碼</label><input type="password" id="auth-reset-pass2" placeholder="再次輸入新密碼..." autocomplete="new-password"></div>
+                    <div id="auth-reset-error" class="auth-error"></div>
+                    <div id="auth-reset-success" class="auth-error" style="color:var(--accent)"></div>
+                    <div class="modal-buttons"><button id="auth-reset-btn" class="btn-accent">重設密碼</button><button id="auth-reset-back" class="auth-close-btn">返回登入</button></div>
                 </div>
             </div>
         </div>
