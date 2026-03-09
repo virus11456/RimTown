@@ -1967,7 +1967,7 @@ class RimTownApp {
                     <div class="npc-convo-header"><span class="log-time">${c.time}</span><strong>${c.agentA}</strong> &amp; <strong>${c.agentB}</strong>
                     <span style="font-size:0.6rem;color:var(--text-muted);margin-left:4px">@ ${(c.location||'').replace(/_/g,' ')}</span></div>
                     <div class="npc-convo-summary">${c.summary}</div>
-                    <div class="npc-convo-dialogue">`;
+                    <div class="npc-convo-dialogue" style="display:block">`;
                 (c.dialogue || []).forEach(d => {
                     html += `<div class="npc-convo-line"><span class="npc-convo-speaker">${d.speaker}:</span> ${this._escapeHtml(d.text)}</div>`;
                 });
