@@ -1570,7 +1570,7 @@ class LLMClient {
             openai: { url: 'https://api.openai.com/v1/chat/completions', model: this.model || 'gpt-4o-mini' },
             gemini: { url: `https://generativelanguage.googleapis.com/v1beta/models/${this.model||'gemini-2.5-flash'}:generateContent?key=${this.apiKey}` },
             deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: this.model || 'deepseek-chat' },
-            groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: this.model || 'llama-3.3-70b-versatile' },
+            groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: this.model || 'qwen/qwen3-32b' },
             together: { url: 'https://api.together.xyz/v1/chat/completions', model: this.model || 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo' },
             minimax: { url: 'https://api.minimaxi.com/v1/text/chatcompletion_v2', model: this.model || 'MiniMax-M2.5' },
         };
