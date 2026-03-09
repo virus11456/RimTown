@@ -1664,19 +1664,22 @@ class LLMClient {
         // Rate limiting
         this._requestTimestamps = [];
         this._maxRequestsPerMinute = 20;
-        this._rateLimitedUntil = 0; // Timestamp: don't send any requests until this time
+        this._rateLimitedUntil = 0;
+        // Fallback
+        this.fallbackGroqKey = null;
+        this._fallbackActive = false;
+        this._primaryFailCount = 0;
+        this._primaryCooldownUntil = 0;
     }
+
+    setFallbackGroqKey(key) { this.fallbackGroqKey = key; }
 
     _canMakeRequest(isPlayerChat = false) {
         const now = Date.now();
-        // If we got a 429 recently, block all requests until cooldown expires
         if (now < this._rateLimitedUntil) {
-            // Only player chat can break through after half the cooldown
             if (!isPlayerChat || now < this._rateLimitedUntil - 30000) return false;
         }
-        // Clean old timestamps
         this._requestTimestamps = this._requestTimestamps.filter(t => now - t < 60000);
-        // Player chat: use full limit. NPC: use half limit to reserve capacity
         const limit = isPlayerChat ? this._maxRequestsPerMinute : Math.floor(this._maxRequestsPerMinute / 2);
         return this._requestTimestamps.length < limit;
     }
@@ -1684,13 +1687,23 @@ class LLMClient {
     _recordRequest() { this._requestTimestamps.push(Date.now()); }
 
     _handleRateLimit() {
-        // On 429: stop ALL requests for 60 seconds
         this._rateLimitedUntil = Date.now() + 60000;
         console.warn('[RimTown LLM] 429 received — pausing all requests for 60 seconds');
     }
 
     async generate(prompt, maxTokens = 500, temperature = 0.9, isPlayerChat = false) {
+        // If primary is in cooldown and fallback available, go straight to fallback
+        if (this._primaryCooldownUntil > Date.now() && this.fallbackGroqKey && this.provider !== 'groq') {
+            console.log('[RimTown LLM] Primary in cooldown — using Groq fallback');
+            return this._generateWithGroqFallback(prompt, maxTokens, temperature);
+        }
+
         if (!this._canMakeRequest(isPlayerChat)) {
+            // Rate limited locally — try fallback instead of returning empty
+            if (this.fallbackGroqKey && this.provider !== 'groq') {
+                console.log('[RimTown LLM] Local rate limit — using Groq fallback');
+                return this._generateWithGroqFallback(prompt, maxTokens, temperature);
+            }
             const waitSec = Math.max(0, Math.ceil((this._rateLimitedUntil - Date.now()) / 1000));
             console.log(`[RimTown LLM] Rate limited — skipping (isPlayerChat: ${isPlayerChat}, cooldown: ${waitSec}s)`);
             return '';
@@ -1698,30 +1711,67 @@ class LLMClient {
         this._recordRequest();
 
         console.log('[RimTown LLM] generate called | provider:', this.provider, '| model:', this.model, '| maxTokens:', maxTokens, '| priority:', isPlayerChat ? 'PLAYER' : 'npc');
+        const result = await this._callProvider(this.provider, this.apiKey, this.model, prompt, maxTokens, temperature);
+
+        // If primary failed and we have fallback, try Groq
+        if (result === '__RATE_LIMITED__' || result === '__ERROR__') {
+            this._handleRateLimit();
+            if (this.fallbackGroqKey && this.provider !== 'groq') {
+                console.log(`[RimTown LLM] Primary ${this.provider} failed (${result}) — switching to Groq fallback`);
+                this._primaryFailCount++;
+                const cooldownMs = Math.min(60000 * this._primaryFailCount, 300000);
+                this._primaryCooldownUntil = Date.now() + cooldownMs;
+                console.log(`[RimTown LLM] Primary cooldown: ${cooldownMs/1000}s (fail #${this._primaryFailCount})`);
+                return this._generateWithGroqFallback(prompt, maxTokens, temperature);
+            }
+            return '';
+        }
+
+        // Primary succeeded — reset fail count
+        if (result && this._primaryFailCount > 0) {
+            this._primaryFailCount = 0;
+            this._primaryCooldownUntil = 0;
+            if (this._fallbackActive) {
+                this._fallbackActive = false;
+                console.log('[RimTown LLM] Primary recovered — back to', this.provider);
+            }
+        }
+        return result;
+    }
+
+    async _generateWithGroqFallback(prompt, maxTokens, temperature) {
+        this._fallbackActive = true;
+        const result = await this._callProvider('groq', this.fallbackGroqKey, 'qwen/qwen3-32b', prompt, maxTokens, temperature);
+        if (result === '__RATE_LIMITED__' || result === '__ERROR__') return '';
+        return result;
+    }
+
+    async _callProvider(provider, apiKey, model, prompt, maxTokens, temperature) {
         const endpoints = {
-            anthropic: { url: 'https://api.anthropic.com/v1/messages', model: this.model || 'claude-haiku-4-5-20251001' },
-            openai: { url: 'https://api.openai.com/v1/chat/completions', model: this.model || 'gpt-4o-mini' },
-            gemini: { url: `https://generativelanguage.googleapis.com/v1beta/models/${this.model||'gemini-2.5-flash'}:generateContent?key=${this.apiKey}` },
-            deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: this.model || 'deepseek-chat' },
-            groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: this.model || 'qwen/qwen3-32b' },
-            together: { url: 'https://api.together.xyz/v1/chat/completions', model: this.model || 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo' },
-            minimax: { url: 'https://api.minimaxi.com/v1/text/chatcompletion_v2', model: this.model || 'MiniMax-M2.5' },
+            anthropic: { url: 'https://api.anthropic.com/v1/messages', model: model || 'claude-haiku-4-5-20251001' },
+            openai: { url: 'https://api.openai.com/v1/chat/completions', model: model || 'gpt-4o-mini' },
+            gemini: { url: `https://generativelanguage.googleapis.com/v1beta/models/${model||'gemini-2.5-flash'}:generateContent?key=${apiKey}` },
+            deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: model || 'deepseek-chat' },
+            groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: model || 'qwen/qwen3-32b' },
+            together: { url: 'https://api.together.xyz/v1/chat/completions', model: model || 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo' },
+            minimax: { url: 'https://api.minimaxi.com/v1/text/chatcompletion_v2', model: model || 'MiniMax-M2.5' },
         };
-        const cfg = endpoints[this.provider];
-        if (!cfg) throw new Error(`Unknown provider: ${this.provider}`);
+        const cfg = endpoints[provider];
+        if (!cfg) return '__ERROR__';
 
         try {
-            if (this.provider === 'anthropic') {
+            if (provider === 'anthropic') {
                 const res = await fetch(cfg.url, {
                     method:'POST',
-                    headers:{ 'Content-Type':'application/json', 'x-api-key':this.apiKey, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+                    headers:{ 'Content-Type':'application/json', 'x-api-key':apiKey, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
                     body: JSON.stringify({ model:cfg.model, max_tokens:maxTokens, temperature, messages:[{role:'user',content:prompt}] }),
                 });
-                if (res.status === 429) { this._handleRateLimit(); return ''; }
+                if (res.status === 429) return '__RATE_LIMITED__';
+                if (!res.ok) return '__ERROR__';
                 const data = await res.json();
                 console.log('[RimTown LLM] Anthropic response:', res.status, data.content ? 'OK' : 'EMPTY', data.error?.message || '');
                 return data.content?.[0]?.text || '';
-            } else if (this.provider === 'gemini') {
+            } else if (provider === 'gemini') {
                 const res = await fetch(cfg.url, {
                     method:'POST', headers:{'Content-Type':'application/json'},
                     body: JSON.stringify({
@@ -1729,41 +1779,25 @@ class LLMClient {
                         generationConfig:{maxOutputTokens:maxTokens, temperature},
                     }),
                 });
-                if (res.status === 429) {
-                    this._handleRateLimit();
-                    // For player chat only: wait and retry once
-                    if (isPlayerChat) {
-                        console.log('[RimTown LLM] Player chat 429 — waiting 8s for retry...');
-                        await new Promise(r => setTimeout(r, 8000));
-                        const res2 = await fetch(cfg.url, {
-                            method:'POST', headers:{'Content-Type':'application/json'},
-                            body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:maxTokens, temperature} }),
-                        });
-                        if (res2.status === 429) return '';
-                        const data2 = await res2.json();
-                        const parts2 = data2.candidates?.[0]?.content?.parts || [];
-                        return parts2.filter(p => !p.thought).map(p => p.text).join('') || parts2[0]?.text || '';
-                    }
-                    return '';
-                }
+                if (res.status === 429) return '__RATE_LIMITED__';
+                if (!res.ok) return '__ERROR__';
                 const data = await res.json();
                 console.log('[RimTown LLM] Gemini response:', res.status, data.candidates ? 'OK' : 'EMPTY', data.error?.message || '');
-                // Gemini 2.5 Flash may return thinking parts — skip them and get the actual text
                 const parts = data.candidates?.[0]?.content?.parts || [];
                 const textPart = parts.filter(p => !p.thought).map(p => p.text).join('');
                 return textPart || parts[0]?.text || '';
-            } else if (this.provider === 'minimax') {
-                // MiniMax uses max_completion_tokens (not max_tokens) and base_resp for errors
+            } else if (provider === 'minimax') {
                 const res = await fetch(cfg.url, {
                     method:'POST',
-                    headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${this.apiKey}` },
+                    headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
                     body: JSON.stringify({ model:cfg.model, max_completion_tokens:maxTokens, temperature, messages:[{role:'user',content:prompt}] }),
                 });
-                if (res.status === 429) { this._handleRateLimit(); return ''; }
+                if (res.status === 429) return '__RATE_LIMITED__';
+                if (!res.ok) return '__ERROR__';
                 const data = await res.json();
                 if (data.base_resp && data.base_resp.status_code !== 0) {
                     console.error('[RimTown LLM] MiniMax API error:', data.base_resp.status_code, data.base_resp.status_msg);
-                    return '';
+                    return '__ERROR__';
                 }
                 const content = data.choices?.[0]?.message?.content || '';
                 console.log('[RimTown LLM] MiniMax response:', res.status, '| content length:', content.length);
@@ -1772,19 +1806,20 @@ class LLMClient {
                 // OpenAI-compatible (openai, deepseek, groq, together)
                 const res = await fetch(cfg.url, {
                     method:'POST',
-                    headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${this.apiKey}` },
+                    headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
                     body: JSON.stringify({ model:cfg.model, max_tokens:maxTokens, temperature, messages:[{role:'user',content:prompt}] }),
                 });
-                if (res.status === 429) { this._handleRateLimit(); return ''; }
+                if (res.status === 429) return '__RATE_LIMITED__';
+                if (!res.ok) return '__ERROR__';
                 const data = await res.json();
                 const content = data.choices?.[0]?.message?.content || '';
                 console.log('[RimTown LLM] Response:', res.status, '| content length:', content.length, '| error:', data.error?.message || 'none');
-                if (data.error) console.error('[RimTown LLM] API error:', data.error);
+                if (data.error) { console.error('[RimTown LLM] API error:', data.error); return '__ERROR__'; }
                 return content;
             }
         } catch (err) {
             console.error('[RimTown LLM] Network/fetch error:', err.message);
-            return '';
+            return '__ERROR__';
         }
     }
 }

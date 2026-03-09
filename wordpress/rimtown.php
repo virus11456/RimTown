@@ -439,6 +439,10 @@ function rimtown_shortcode($atts) {
                     <input type="password" id="llm-api-key" placeholder="輸入你的 API 金鑰...">
                 </div>
                 <div class="setting-group">
+                    <label>備用 Groq API Key <span style="font-size:11px;color:var(--text-secondary)">（主 AI 超限時自動切換）</span></label>
+                    <input type="password" id="fallback-groq-key" placeholder="gsk_... （選填，免費申請於 console.groq.com）">
+                </div>
+                <div class="setting-group">
                     <label>模擬速度</label>
                     <select id="sim-speed">
                         <option value="3000">慢速（3秒）</option>

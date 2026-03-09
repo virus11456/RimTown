@@ -230,20 +230,37 @@ class RimTownApp {
             let provider = localStorage.getItem('llm_provider');
             let apiKey = localStorage.getItem('llm_api_key');
             const speed = localStorage.getItem('sim_speed');
-            console.log('[RimTown] loadSettings: provider=', provider, 'hasKey=', !!apiKey, 'speed=', speed);
+            const fallbackGroqKey = localStorage.getItem('fallback_groq_key');
+            console.log('[RimTown] loadSettings: provider=', provider, 'hasKey=', !!apiKey, 'speed=', speed, 'hasFallback=', !!fallbackGroqKey);
             if (speed) this.simSpeed = parseInt(speed);
             if (provider && provider !== 'none' && apiKey) {
                 this.llmClient = new LLMClient(provider, apiKey);
                 console.log('[RimTown] LLM client created from localStorage:', provider);
             }
+            // No primary AI but has fallback Groq key → use Groq as primary
+            if (!this.llmClient && fallbackGroqKey) {
+                this.llmClient = new LLMClient('groq', fallbackGroqKey);
+                console.log('[RimTown] No primary AI — using fallback Groq as primary');
+            }
+            // Set fallback key on client
+            if (this.llmClient && fallbackGroqKey) {
+                this.llmClient.setFallbackGroqKey(fallbackGroqKey);
+            }
             // Also try chrome.storage if localStorage didn't have it
             if (!this.llmClient && typeof chrome !== 'undefined' && chrome.storage) {
                 try {
-                    const data = await chrome.storage.local.get(['llm_provider','llm_api_key','sim_speed']);
+                    const data = await chrome.storage.local.get(['llm_provider','llm_api_key','sim_speed','fallback_groq_key']);
                     if (data.sim_speed && !speed) this.simSpeed = parseInt(data.sim_speed);
                     if (data.llm_provider && data.llm_provider !== 'none' && data.llm_api_key) {
                         this.llmClient = new LLMClient(data.llm_provider, data.llm_api_key);
                         console.log('[RimTown] LLM client created from chrome.storage:', data.llm_provider);
+                    }
+                    if (!this.llmClient && data.fallback_groq_key) {
+                        this.llmClient = new LLMClient('groq', data.fallback_groq_key);
+                        console.log('[RimTown] No primary AI — using fallback Groq from chrome.storage');
+                    }
+                    if (this.llmClient && (data.fallback_groq_key || fallbackGroqKey)) {
+                        this.llmClient.setFallbackGroqKey(data.fallback_groq_key || fallbackGroqKey);
                     }
                 } catch(e2) { console.log('[RimTown] chrome.storage read error:', e2); }
             }
@@ -257,21 +274,32 @@ class RimTownApp {
         document.querySelectorAll('.btn-speed').forEach(b => b.classList.remove('active'));
         const btn1x = document.querySelector('.btn-speed[data-speed="1"]');
         if (btn1x) btn1x.classList.add('active');
+        const fallbackGroqKey = document.getElementById('fallback-groq-key')?.value?.trim() || '';
         if (provider && provider !== 'none' && apiKey) {
             this.llmClient = new LLMClient(provider, apiKey);
+            this.world.conversationEngine = new ConversationEngine(this.llmClient);
+        } else if (fallbackGroqKey) {
+            // No primary AI selected but has fallback → use Groq as primary
+            this.llmClient = new LLMClient('groq', fallbackGroqKey);
             this.world.conversationEngine = new ConversationEngine(this.llmClient);
         } else {
             this.llmClient = null;
             this.world.conversationEngine = new ConversationEngine();
+        }
+        // Attach fallback key
+        if (this.llmClient && fallbackGroqKey) {
+            this.llmClient.setFallbackGroqKey(fallbackGroqKey);
         }
         this.restartSimulation();
         this._updateLLMStatus();
         localStorage.setItem('llm_provider', provider);
         localStorage.setItem('llm_api_key', apiKey);
         localStorage.setItem('sim_speed', speed);
+        if (fallbackGroqKey) localStorage.setItem('fallback_groq_key', fallbackGroqKey);
+        else localStorage.removeItem('fallback_groq_key');
         try {
             if (typeof chrome !== 'undefined' && chrome.storage) {
-                await chrome.storage.local.set({ llm_provider: provider, llm_api_key: apiKey, sim_speed: speed });
+                await chrome.storage.local.set({ llm_provider: provider, llm_api_key: apiKey, sim_speed: speed, fallback_groq_key: fallbackGroqKey });
             }
         } catch(e) {}
     }
@@ -280,9 +308,11 @@ class RimTownApp {
         const el = document.getElementById('llm-status');
         if (!el) return;
         if (this.llmClient && this.world.conversationEngine?.llm) {
-            el.textContent = 'AI:' + this.llmClient.provider;
+            const hasFallback = !!this.llmClient.fallbackGroqKey;
+            const providerLabel = this.llmClient.provider + (hasFallback ? '+備用' : '');
+            el.textContent = 'AI:' + providerLabel;
             el.className = 'llm-status connected';
-            el.title = 'AI 已連接：' + this.llmClient.provider;
+            el.title = 'AI 已連接：' + this.llmClient.provider + (hasFallback ? '（備用：Groq）' : '');
         } else {
             el.textContent = 'AI:未連接';
             el.className = 'llm-status disconnected';
@@ -447,14 +477,17 @@ class RimTownApp {
             const provider = localStorage.getItem('llm_provider');
             const apiKey = localStorage.getItem('llm_api_key');
             const speed = localStorage.getItem('sim_speed');
+            const fallbackKey = localStorage.getItem('fallback_groq_key');
             if (provider) document.getElementById('llm-provider').value = provider;
             if (apiKey) document.getElementById('llm-api-key').value = apiKey;
             if (speed) document.getElementById('sim-speed').value = speed;
+            if (fallbackKey) document.getElementById('fallback-groq-key').value = fallbackKey;
             if (!provider && typeof chrome !== 'undefined' && chrome.storage) {
-                chrome.storage.local.get(['llm_provider','llm_api_key','sim_speed'], data => {
+                chrome.storage.local.get(['llm_provider','llm_api_key','sim_speed','fallback_groq_key'], data => {
                     if (data.llm_provider) document.getElementById('llm-provider').value = data.llm_provider;
                     if (data.llm_api_key) document.getElementById('llm-api-key').value = data.llm_api_key;
                     if (data.sim_speed) document.getElementById('sim-speed').value = data.sim_speed;
+                    if (data.fallback_groq_key) document.getElementById('fallback-groq-key').value = data.fallback_groq_key;
                 });
             }
         });
