@@ -1552,7 +1552,7 @@ ${player.name}: ${playerMessage}
 class LLMClient {
     constructor(provider, apiKey, model) { this.provider = provider; this.apiKey = apiKey; this.model = model; }
     async generate(prompt, maxTokens = 500, temperature = 0.9) {
-        console.log('[RimTown LLM] generate called | provider:', this.provider, '| maxTokens:', maxTokens);
+        console.log('[RimTown LLM] generate called | provider:', this.provider, '| model:', this.model, '| maxTokens:', maxTokens);
         const endpoints = {
             anthropic: { url: 'https://api.anthropic.com/v1/messages', model: this.model || 'claude-haiku-4-5-20251001' },
             openai: { url: 'https://api.openai.com/v1/chat/completions', model: this.model || 'gpt-4o-mini' },
@@ -1560,37 +1560,77 @@ class LLMClient {
             deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: this.model || 'deepseek-chat' },
             groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: this.model || 'llama-3.3-70b-versatile' },
             together: { url: 'https://api.together.xyz/v1/chat/completions', model: this.model || 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo' },
-            minimax: { url: 'https://api.minimaxi.com/v1/text/chatcompletion_v2', model: this.model || 'MiniMax-Text-01' },
+            minimax: { url: 'https://api.minimaxi.com/v1/text/chatcompletion_v2', model: this.model || 'MiniMax-M2.5' },
         };
         const cfg = endpoints[this.provider];
         if (!cfg) throw new Error(`Unknown provider: ${this.provider}`);
 
-        if (this.provider === 'anthropic') {
-            const res = await fetch(cfg.url, {
-                method:'POST',
-                headers:{ 'Content-Type':'application/json', 'x-api-key':this.apiKey, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
-                body: JSON.stringify({ model:cfg.model, max_tokens:maxTokens, temperature, messages:[{role:'user',content:prompt}] }),
-            });
-            const data = await res.json();
-            return data.content?.[0]?.text || '';
-        } else if (this.provider === 'gemini') {
-            const res = await fetch(cfg.url, {
-                method:'POST', headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:maxTokens, temperature} }),
-            });
-            const data = await res.json();
-            return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        } else {
-            // OpenAI-compatible (openai, deepseek, groq, together, minimax)
-            const res = await fetch(cfg.url, {
-                method:'POST',
-                headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${this.apiKey}` },
-                body: JSON.stringify({ model:cfg.model, max_tokens:maxTokens, temperature, messages:[{role:'user',content:prompt}] }),
-            });
-            const data = await res.json();
-            console.log('[RimTown LLM] Response status:', res.status, '| has choices:', !!data.choices, '| error:', data.error?.message || 'none');
-            if (data.error) console.error('[RimTown LLM] API error:', data.error);
-            return data.choices?.[0]?.message?.content || '';
+        try {
+            if (this.provider === 'anthropic') {
+                const res = await fetch(cfg.url, {
+                    method:'POST',
+                    headers:{ 'Content-Type':'application/json', 'x-api-key':this.apiKey, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+                    body: JSON.stringify({ model:cfg.model, max_tokens:maxTokens, temperature, messages:[{role:'user',content:prompt}] }),
+                });
+                const data = await res.json();
+                console.log('[RimTown LLM] Anthropic response:', res.status, data.content ? 'OK' : 'EMPTY', data.error?.message || '');
+                return data.content?.[0]?.text || '';
+            } else if (this.provider === 'gemini') {
+                const res = await fetch(cfg.url, {
+                    method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:maxTokens, temperature} }),
+                });
+                const data = await res.json();
+                console.log('[RimTown LLM] Gemini response:', res.status, data.candidates ? 'OK' : 'EMPTY', data.error?.message || '');
+                return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            } else if (this.provider === 'minimax') {
+                // MiniMax uses max_completion_tokens (not max_tokens)
+                const body = {
+                    model: cfg.model,
+                    max_completion_tokens: maxTokens,
+                    temperature,
+                    messages: [{role:'user', content:prompt}],
+                };
+                console.log('[RimTown LLM] MiniMax request:', cfg.url, '| model:', cfg.model);
+                const res = await fetch(cfg.url, {
+                    method:'POST',
+                    headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${this.apiKey}` },
+                    body: JSON.stringify(body),
+                });
+                const data = await res.json();
+                // MiniMax returns errors in base_resp even with HTTP 200
+                if (data.base_resp && data.base_resp.status_code !== 0) {
+                    console.error('[RimTown LLM] MiniMax API error:', data.base_resp.status_code, data.base_resp.status_msg);
+                    return '';
+                }
+                const content = data.choices?.[0]?.message?.content || '';
+                console.log('[RimTown LLM] MiniMax response:', res.status,
+                    '| has choices:', !!data.choices,
+                    '| content length:', content.length,
+                    '| base_resp:', JSON.stringify(data.base_resp || {}));
+                if (!content && data.choices) {
+                    console.warn('[RimTown LLM] MiniMax choices present but empty content:', JSON.stringify(data.choices));
+                }
+                if (!content && !data.choices) {
+                    console.warn('[RimTown LLM] MiniMax full response (no choices):', JSON.stringify(data).substring(0, 500));
+                }
+                return content;
+            } else {
+                // OpenAI-compatible (openai, deepseek, groq, together)
+                const res = await fetch(cfg.url, {
+                    method:'POST',
+                    headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${this.apiKey}` },
+                    body: JSON.stringify({ model:cfg.model, max_tokens:maxTokens, temperature, messages:[{role:'user',content:prompt}] }),
+                });
+                const data = await res.json();
+                const content = data.choices?.[0]?.message?.content || '';
+                console.log('[RimTown LLM] Response:', res.status, '| has choices:', !!data.choices, '| content length:', content.length, '| error:', data.error?.message || 'none');
+                if (data.error) console.error('[RimTown LLM] API error:', data.error);
+                return content;
+            }
+        } catch (err) {
+            console.error('[RimTown LLM] Network/fetch error:', err.message);
+            return '';
         }
     }
 }
