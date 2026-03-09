@@ -40,6 +40,13 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## Changelog
 
+### v2.3.5 (2026-03-09)
+
+**統一 AI 速率限制為 20 次/分鐘**
+
+- 所有 AI provider 統一速率限制為 20 次/分鐘（原先為 12 次/分鐘）
+- 移除 MiniMax 特殊限制（NPC 冷卻、token 上限回歸與其他 provider 一致）
+
 ### v2.3.4 (2026-03-09)
 
 **MiniMax 省額度模式（40 prompts/5hrs 方案適用）**

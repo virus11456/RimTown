@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '2.3.4');
+define('RIMTOWN_VERSION', '2.3.5');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1073,6 +1073,14 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '2.3.5',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '統一所有 AI provider 速率限制為 20 次/分鐘',
+                '移除 MiniMax 特殊限制（NPC 冷卻、token 上限）',
+            ),
+        ),
         array(
             'version' => '2.3.4',
             'date'    => '2026-03-09',
