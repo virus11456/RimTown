@@ -263,19 +263,23 @@ class PixelTileMap {
         this._viewW = 0;
         this._viewH = 0;
         this._needsResize = true;
-        // Observe container resize
+        // Observe container resize (multiple fallbacks for reliability)
         this._resizeObserver = new ResizeObserver(() => { this._needsResize = true; });
         this._resizeObserver.observe(this.canvas.parentElement);
+        window.addEventListener('resize', () => { this._needsResize = true; });
         // --- Interaction: click, pan, pinch-to-zoom ---
         this._setupInteraction();
     }
 
     // Called at the start of every render frame
     _checkResize() {
-        const rect = this.canvas.getBoundingClientRect();
+        // Measure PARENT container, not canvas — canvas size can feedback-loop
+        const parent = this.canvas.parentElement;
+        if (!parent) return;
+        const rect = parent.getBoundingClientRect();
         const w = rect.width;
         const h = rect.height;
-        if (w < 1 || h < 1) return;
+        if (w < 1 || h < 1) { this._needsResize = true; return; }
         const dpr = window.devicePixelRatio || 1;
         const needsUpdate = this._needsResize || Math.abs(this._viewW - w) > 1 || Math.abs(this._viewH - h) > 1 || dpr !== this._dpr;
         if (!needsUpdate) return;
