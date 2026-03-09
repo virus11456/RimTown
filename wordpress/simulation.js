@@ -1770,7 +1770,11 @@ class LLMClient {
 
     _stripThinkTags(text) {
         if (!text) return text;
-        return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+        // Remove paired <think>...</think> blocks
+        text = text.replace(/<think>[\s\S]*?<\/think>/gi, '');
+        // Remove unclosed <think> tag (model didn't close it or got cut off)
+        text = text.replace(/<think>[\s\S]*/gi, '');
+        return text.trim();
     }
 
     async _generateWithGroqFallback(prompt, maxTokens, temperature) {
