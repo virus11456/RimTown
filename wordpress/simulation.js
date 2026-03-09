@@ -1278,11 +1278,15 @@ ${player.name}: ${playerMessage}
     }
 
     _parsePlayerReply(response, player, npc, world, playerMessage, relPlayer, relNpc) {
+        if (!response || !response.trim()) {
+            // LLM returned empty → use fallback
+            return this._fallbackPlayerReply(player, npc, world, playerMessage, relPlayer, relNpc);
+        }
         const lines = response.trim().split('\n');
         const replyLines = []; let effects = {};
         for (const line of lines) {
             const s = line.trim(); if (!s) continue;
-            if (s.startsWith('EFFECTS:')) {
+            if (s.startsWith('EFFECTS:') || s.startsWith('effects:')) {
                 try {
                     const rest = lines.slice(lines.indexOf(line)).join('\n');
                     const js=rest.indexOf('{'), je=rest.lastIndexOf('}')+1;
@@ -1291,11 +1295,29 @@ ${player.name}: ${playerMessage}
                 break;
             } else {
                 let text = s;
-                if (text.startsWith(`${npc.name}:`)) text = text.slice(npc.name.length+1).trim();
-                replyLines.push(text);
+                // Strip various prefixes: "Name:", "**Name:**", "Name：", etc.
+                const prefixPatterns = [
+                    new RegExp(`^\\*{0,2}${npc.name}\\*{0,2}[：:]\\s*`),
+                    /^\*{0,2}[\w\u4e00-\u9fff]+\*{0,2}[：:]\s*/,
+                ];
+                for (const pat of prefixPatterns) {
+                    if (pat.test(text)) { text = text.replace(pat, '').trim(); break; }
+                }
+                // Skip lines that look like stage directions or system text
+                if (text.startsWith('(') && text.endsWith(')')) continue;
+                if (text.startsWith('（') && text.endsWith('）')) {
+                    // Keep emotional descriptions in parentheses
+                    replyLines.push(text);
+                    continue;
+                }
+                if (text) replyLines.push(text);
             }
         }
-        const npcReply = replyLines.join(' ').trim() || '...';
+        const npcReply = replyLines.join(' ').trim();
+        if (!npcReply) {
+            // Parsing yielded nothing → use fallback
+            return this._fallbackPlayerReply(player, npc, world, playerMessage, relPlayer, relNpc);
+        }
         const affChange = effects.affinity_change ?? randInt(0,2);
         const romChange = effects.romantic_change ?? 0;
         const summary = effects.summary || `${npc.name}回應了${player.name}。`;
