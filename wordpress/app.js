@@ -214,11 +214,11 @@ class RimTownApp {
         if (!loaded) {
             const legacyLoaded = await this.tryLoadGame();
             if (legacyLoaded) {
-                this.currentTownId = 'town_' + Date.now();
+                this.currentTownId = this._generateTownId('邊境鎮');
                 this._saveCurrentTown('邊境鎮');
             } else {
                 this.world.reset();
-                this.currentTownId = 'town_' + Date.now();
+                this.currentTownId = this._generateTownId('邊境鎮');
                 this._saveCurrentTown('邊境鎮');
             }
         }
@@ -240,6 +240,10 @@ class RimTownApp {
         this.setupAuthListeners();
         this._updateAccountButton();
         this._loadAchievementsFromCloud();
+        // Auto-sync from cloud on startup if already logged in
+        if (this.auth.loggedIn) {
+            this._syncFromCloud();
+        }
         this.startSimulation();
         this.setupAutoSave();
         this.render();
@@ -348,12 +352,13 @@ class RimTownApp {
             localStorage.removeItem('rimtown_raid_count');
             this.world.reset();
             if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
-            this.currentTownId = 'town_' + Date.now();
+            const townName = `${user}的邊境鎮`;
+            this.currentTownId = this._generateTownId(townName);
             this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
             this.state = this.world.getState();
             this._generateTileMapLayout();
             if (this.tileMap) this.tileMap.agentPositions = {};
-            this._saveCurrentTown(`${user}的邊境鎮`);
+            this._saveCurrentTown(townName);
             this.render();
             this._renderTownList();
             this.world.logMessage('system', `註冊成功！歡迎，${this.auth.username}！你的全新城鎮已建立。`);
@@ -463,9 +468,33 @@ class RimTownApp {
                 await this._syncToCloud();
                 return;
             }
-            // Show cloud save list in town modal
             this._cloudSaves = saves;
-            this.world.logMessage('system', `雲端有 ${saves.length} 個城鎮存檔。`);
+
+            // Find the cloud save matching current town_id, or the most recent one
+            let cloudMatch = saves.find(s => s.town_id === this.currentTownId);
+            if (!cloudMatch) cloudMatch = saves[0]; // saves are sorted by updated_at DESC
+
+            // Compare timestamps: load from cloud if it's newer than local
+            const localTown = this._getTownList().find(t => t.id === this.currentTownId);
+            const localTime = localTown?.savedAt ? new Date(localTown.savedAt).getTime() : 0;
+            const cloudTime = cloudMatch.updated_at ? new Date(cloudMatch.updated_at).getTime() : 0;
+
+            if (cloudTime > localTime) {
+                // Cloud is newer — auto-load it
+                const saveData = await this.auth.cloudLoad(cloudMatch.town_id);
+                if (this.world.loadSave(saveData)) {
+                    if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                    this.currentTownId = cloudMatch.town_id;
+                    this._saveCurrentTown(cloudMatch.town_name);
+                    this.state = this.world.getState();
+                    this._generateTileMapLayout();
+                    this.tileMap.agentPositions = {};
+                    this.render();
+                    this.world.logMessage('system', `已從雲端同步最新存檔（${cloudMatch.town_name}）。`);
+                }
+            } else {
+                this.world.logMessage('system', `雲端有 ${saves.length} 個城鎮存檔（本地已是最新）。`);
+            }
         } catch (e) {
             console.error('[RimTown] Cloud load error:', e);
         }
@@ -980,13 +1009,36 @@ class RimTownApp {
         document.getElementById('town-modal')?.classList.add('hidden');
         this.world.paused = false;
     }
+    _generateTownId(name) {
+        // Generate stable town_id based on user_id + town name for cross-device sync
+        if (this.auth.loggedIn && this.auth.userId) {
+            // Simple hash from the name
+            let hash = 0;
+            const str = name || '';
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                hash |= 0;
+            }
+            let baseId = 'town_u' + this.auth.userId + '_' + Math.abs(hash).toString(36);
+            // If this ID already exists locally (same-name town), add suffix
+            const existing = this._getTownList();
+            let id = baseId;
+            let suffix = 2;
+            while (existing.some(t => t.id === id)) {
+                id = baseId + '_' + suffix;
+                suffix++;
+            }
+            return id;
+        }
+        return 'town_' + Date.now();
+    }
     createNewTown() {
         const name = prompt('為新城鎮命名：', '邊境鎮 ' + (this._getTownList().length + 1));
         if (!name) return;
         if (this.currentTownId) this._saveCurrentTown();
         this.world.reset();
         if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
-        this.currentTownId = 'town_' + Date.now();
+        this.currentTownId = this._generateTownId(name);
         this._saveCurrentTown(name);
         this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
         this.state = this.world.getState();
@@ -1456,11 +1508,32 @@ class RimTownApp {
                 if (this.currentTownId) {
                     this._saveCurrentTown();
                 }
-                const json = JSON.stringify(this.world.serialize());
+                const saveData = this.world.serialize();
+                const json = JSON.stringify(saveData);
                 if (typeof chrome !== 'undefined' && chrome.storage) {
                     chrome.storage.local.set({ rimtown_save: json });
                 } else {
                     localStorage.setItem('rimtown_save', json);
+                }
+                // Sync to cloud on tab close using fetch keepalive
+                if (this.auth.loggedIn && this.auth._restUrl) {
+                    const clock = saveData.clock || {};
+                    const payload = JSON.stringify({
+                        town_id: this.currentTownId,
+                        town_name: this._getCurrentTownName(),
+                        save_data: json,
+                        season: clock.season || '',
+                        year: clock.year || 1,
+                        day: clock.day || 1,
+                        population: Object.keys(saveData.agents || {}).length,
+                    });
+                    fetch(this.auth._restUrl + 'save', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': this.auth._nonce },
+                        credentials: 'same-origin',
+                        body: payload,
+                        keepalive: true,
+                    }).catch(() => {});
                 }
             } catch(e) {}
         });
