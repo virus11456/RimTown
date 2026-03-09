@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '2.2.0');
+define('RIMTOWN_VERSION', '2.3.1');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1070,6 +1070,27 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '2.3.1',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '修復 Chrome Extension 版缺少 MiniMax provider 的問題',
+                '新增 MiniMax API 端點與專屬請求處理',
+                '移除 chrome-extension/app.js 中誤將 minimax 標記為 deprecated 的清除邏輯',
+            ),
+        ),
+        array(
+            'version' => '2.3.0',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '恢復 MiniMax（中國版）LLM provider：端點 api.minimaxi.com，模型 MiniMax-M2.5',
+                'AI 設定強制單一綁定：切換 provider 時自動清空 API Key，防止誤綁多個',
+                '儲存時驗證：選了 AI 供應商就必須填入 API Key',
+                'Fallback 對話模板全面重寫：所有對話更長、更有戲劇張力',
+                '新增豐富細節池：季節美食、場景描寫、禮物清單、鎮上傳聞',
+                '所有對話摘要改為小說風格，包含地點/季節/情感描寫',
+            ),
+        ),
         array(
             'version' => '2.2.0',
             'date'    => '2026-03-09',
