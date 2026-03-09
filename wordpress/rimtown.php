@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 2.1.0
+ * Version: 2.2.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -1070,6 +1070,21 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '2.2.0',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '派系/社交圈系統：NPC 自動組成小團體（工作夥伴、酒友、八卦圈等），含凝聚力、競爭、結盟與內部戲劇',
+                '季節節慶系統：春季慶典、仲夏篝火、豐收祭、冬至節，含特殊任務、裝飾與全鎮慶祝活動',
+                'NPC 生死/老化系統：NPC 每季老化，可因老年/疾病/意外死亡，已婚夫妻可生育子女',
+                '墓園系統：死亡 NPC 安葬於墓園，附墓誌銘紀念',
+                '探索/地圖擴展：城鎮外 6 個可發現區域（森林、遺跡、礦坑、山脈、洞穴、沼澤）',
+                '探險隊派遣機制：選派居民出征探索，帶回資源與發現',
+                '事件頁籤新增派系、節慶、墓園、探索 UI 面板',
+                '地圖渲染：探索標記、墓碑、節慶裝飾',
+                '新增 8 個成就（派系、節慶、生死、探索相關）',
+            ),
+        ),
         array(
             'version' => '2.1.0',
             'date'    => '2026-03-09',

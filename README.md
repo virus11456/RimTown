@@ -12,7 +12,11 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 - **Election System**: Mayor elections with campaigns, voting, and policy effects
 - **Economy**: Resources, buildings, research tech tree, trading
 - **Account System**: Register/login, cloud saves, multi-device sync
-- **Achievement System**: 30+ achievements across social, romance, economy, survival categories
+- **Faction System**: NPCs form social circles (work buddies, drinking pals, gossip circles) with alliances and rivalries
+- **Seasonal Festivals**: Spring Festival, Midsummer Bonfire, Harvest Festival, Winter Solstice with quests and decorations
+- **NPC Lifecycle**: Aging, death (old age/disease/accidents), birth, graveyard with epitaphs
+- **Exploration**: 6 discoverable zones outside town (forest, ruins, mine, mountain, cave, swamp) with expeditions
+- **Achievement System**: 38+ achievements across social, romance, economy, survival, faction, exploration categories
 - **NPC Conversation Visualization**: Speech bubbles on map when NPCs talk to each other
 - **Player Interaction**: Choose jobs, vote in elections, flirt, propose, and marry NPCs
 - **Multi-LLM Support**: Claude, GPT, Gemini, DeepSeek, Groq, Together AI (or play without AI)
@@ -35,6 +39,32 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v2.2.0 (2026-03-09)
+
+**派系系統 / 季節節慶 / NPC 生死老化 / 探索系統**
+
+- 派系/社交圈系統：NPC 自動組成小團體（工作夥伴、酒友、八卦圈等），含凝聚力、競爭、結盟與內部戲劇
+- 季節節慶系統：春季慶典、仲夏篝火、豐收祭、冬至節，含特殊任務、裝飾與全鎮慶祝活動
+- NPC 生死/老化系統：NPC 每季老化，可因老年/疾病/意外死亡，已婚夫妻可生育子女
+- 墓園系統：死亡 NPC 安葬於墓園，附墓誌銘紀念
+- 探索/地圖擴展：城鎮外 6 個可發現區域（森林、遺跡、礦坑、山脈、洞穴、沼澤）
+- 探險隊派遣機制：選派居民出征探索，帶回資源與發現
+- 事件頁籤新增派系、節慶、墓園、探索 UI 面板
+- 地圖渲染：探索標記、墓碑、節慶裝飾
+- 新增 8 個成就（派系、節慶、生死、探索相關）
+
+### v2.1.0 (2026-03-09)
+
+**忘記密碼 / 手機版大改版**
+
+- 忘記密碼功能：透過帳號+電子郵件驗證重設密碼
+- 新註冊用戶自動獲得全新村莊，不帶任何舊資料或對話
+- 手機版排版大改版：地圖佔 75%、功能區佔 25%
+- 手機版新頂部欄：標題+時間+人口合併為一行，控制按鈕收進下拉選單
+- 功能面板改為底部常駐（標籤頁永遠可見），上滑展開、下滑收合
+- 新增拖拽手柄，支援觸控滑動展開/收合功能面板
+- 桌面版完全不受影響
 
 ### v2.0.0 (2026-03-09)
 
