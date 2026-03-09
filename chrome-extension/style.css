@@ -28,6 +28,8 @@ body {
     color: var(--text-primary);
     overflow: hidden;
     height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Header */
@@ -35,14 +37,16 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 20px;
+    padding: 6px 16px;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border);
-    height: 48px;
+    min-height: 42px;
+    flex-wrap: wrap;
+    gap: 4px;
 }
 
 .header h1 {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     color: var(--accent);
     letter-spacing: 2px;
 }
@@ -50,19 +54,22 @@ body {
 .header-info {
     display: flex;
     align-items: center;
-    gap: 20px;
-    font-size: 0.85rem;
+    gap: 12px;
+    font-size: 0.8rem;
+    flex-wrap: wrap;
 }
 
 .clock-display {
     color: var(--warning);
     font-family: monospace;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 .controls {
     display: flex;
-    gap: 8px;
+    gap: 4px;
+    align-items: center;
+    flex-wrap: wrap;
 }
 
 .controls button {
@@ -84,16 +91,17 @@ body {
 }
 
 .speed-controls {
-    display: flex;
-    gap: 2px;
-    background: var(--bg-main);
+    display: inline-flex;
+    gap: 1px;
+    background: var(--bg-primary);
     border-radius: 4px;
     padding: 2px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--accent);
+    margin-left: 2px;
 }
 
 .speed-controls .btn-speed {
-    padding: 2px 8px;
+    padding: 3px 8px;
     border: none;
     background: transparent;
     color: var(--text-secondary);
@@ -102,22 +110,42 @@ body {
     font-size: 0.75rem;
     font-weight: bold;
     transition: all 0.15s;
+    white-space: nowrap;
 }
 
 .speed-controls .btn-speed:hover {
-    background: rgba(0,229,255,0.15);
+    background: rgba(233,69,96,0.25);
     color: var(--text-primary);
 }
 
 .speed-controls .btn-speed.active {
     background: var(--accent);
-    color: #000;
+    color: #fff;
+}
+
+.llm-status {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+.llm-status.connected {
+    color: var(--positive);
+    border-color: var(--positive);
+}
+.llm-status.disconnected {
+    color: var(--negative);
+    border-color: var(--negative);
 }
 
 /* Main Layout */
 .main-layout {
     display: flex;
-    height: calc(100vh - 48px);
+    flex: 1;
+    min-height: 0;
 }
 
 /* Town Map */

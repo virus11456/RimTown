@@ -46,7 +46,11 @@ class RimTownApp {
         }
         if (this.llmClient) {
             this.world.conversationEngine = new ConversationEngine(this.llmClient);
+            console.log('[RimTown] ConversationEngine initialized with LLM:', this.llmClient.provider);
+        } else {
+            console.log('[RimTown] WARNING: No LLM client — conversations will use fallback templates');
         }
+        this._updateLLMStatus();
         this.state = this.world.getState();
         this.setupTileMap();
         this.setupTabListeners();
@@ -224,18 +228,24 @@ class RimTownApp {
             const provider = localStorage.getItem('llm_provider');
             const apiKey = localStorage.getItem('llm_api_key');
             const speed = localStorage.getItem('sim_speed');
+            console.log('[RimTown] loadSettings: provider=', provider, 'hasKey=', !!apiKey, 'speed=', speed);
             if (speed) this.simSpeed = parseInt(speed);
             if (provider && provider !== 'none' && apiKey) {
                 this.llmClient = new LLMClient(provider, apiKey);
+                console.log('[RimTown] LLM client created from localStorage:', provider);
             }
-            if (!provider && typeof chrome !== 'undefined' && chrome.storage) {
-                const data = await chrome.storage.local.get(['llm_provider','llm_api_key','sim_speed']);
-                if (data.sim_speed) this.simSpeed = parseInt(data.sim_speed);
-                if (data.llm_provider && data.llm_provider !== 'none' && data.llm_api_key) {
-                    this.llmClient = new LLMClient(data.llm_provider, data.llm_api_key);
-                }
+            // Also try chrome.storage if localStorage didn't have it
+            if (!this.llmClient && typeof chrome !== 'undefined' && chrome.storage) {
+                try {
+                    const data = await chrome.storage.local.get(['llm_provider','llm_api_key','sim_speed']);
+                    if (data.sim_speed && !speed) this.simSpeed = parseInt(data.sim_speed);
+                    if (data.llm_provider && data.llm_provider !== 'none' && data.llm_api_key) {
+                        this.llmClient = new LLMClient(data.llm_provider, data.llm_api_key);
+                        console.log('[RimTown] LLM client created from chrome.storage:', data.llm_provider);
+                    }
+                } catch(e2) { console.log('[RimTown] chrome.storage read error:', e2); }
             }
-        } catch(e) { console.log('Settings load error:', e); }
+        } catch(e) { console.log('[RimTown] Settings load error:', e); }
     }
 
     async saveSettings(provider, apiKey, speed) {
@@ -253,6 +263,7 @@ class RimTownApp {
             this.world.conversationEngine = new ConversationEngine();
         }
         this.restartSimulation();
+        this._updateLLMStatus();
         localStorage.setItem('llm_provider', provider);
         localStorage.setItem('llm_api_key', apiKey);
         localStorage.setItem('sim_speed', speed);
@@ -261,6 +272,20 @@ class RimTownApp {
                 await chrome.storage.local.set({ llm_provider: provider, llm_api_key: apiKey, sim_speed: speed });
             }
         } catch(e) {}
+    }
+
+    _updateLLMStatus() {
+        const el = document.getElementById('llm-status');
+        if (!el) return;
+        if (this.llmClient && this.world.conversationEngine?.llm) {
+            el.textContent = 'AI:' + this.llmClient.provider;
+            el.className = 'llm-status connected';
+            el.title = 'AI 已連接：' + this.llmClient.provider;
+        } else {
+            el.textContent = 'AI:未連接';
+            el.className = 'llm-status disconnected';
+            el.title = '請在設定中配置 AI 提供商和 API Key';
+        }
     }
 
     startSimulation() {
@@ -344,13 +369,22 @@ class RimTownApp {
         });
         // Speed control buttons
         this.baseSimSpeed = this.simSpeed;
-        document.querySelectorAll('.btn-speed').forEach(btn => {
-            btn.addEventListener('click', () => {
+        const speedBtns = document.querySelectorAll('.btn-speed');
+        console.log('[RimTown] Speed buttons found:', speedBtns.length, '| baseSimSpeed:', this.baseSimSpeed);
+        speedBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 const multiplier = parseFloat(btn.dataset.speed);
+                console.log('[RimTown] Speed button clicked:', multiplier, 'x | baseSpeed:', this.baseSimSpeed, '| newSpeed:', Math.round(this.baseSimSpeed / multiplier));
                 document.querySelectorAll('.btn-speed').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 this.simSpeed = Math.round(this.baseSimSpeed / multiplier);
-                this.restartSimulation();
+                if (this.simInterval) clearInterval(this.simInterval);
+                this.simInterval = setInterval(() => {
+                    this.world.tick();
+                    this.state = this.world.getState();
+                    this.render();
+                }, this.simSpeed);
             });
         });
         document.getElementById('btn-new-game').addEventListener('click', async () => {

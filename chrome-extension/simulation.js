@@ -1237,6 +1237,7 @@ ${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
         const relPlayer = player.relationships.getOrCreate(npc.agentId, npc.name);
 
         if (this.llm) {
+            console.log('[RimTown] Using LLM for player chat with', npc.name, '| provider:', this.llm.provider);
             try {
                 const recentChat = player.chatHistory.filter(c => c.target === npc.name || c.speaker === npc.name)
                     .slice(-10).map(c => `${c.speaker}: ${c.text}`).join('\n');
@@ -1269,8 +1270,11 @@ ${player.name}: ${playerMessage}
 最後另起一行：EFFECTS: {"affinity_change": 數字(-3到5), "romantic_change": 數字(0到3), "summary": "一句話總結"}`;
 
                 const response = await this.llm.generate(prompt, 400);
+                console.log('[RimTown] LLM response length:', response?.length, 'preview:', response?.slice(0, 80));
                 return this._parsePlayerReply(response, player, npc, world, playerMessage, relPlayer, relNpc);
-            } catch(e) { console.error('LLM player reply failed:', e); }
+            } catch(e) { console.error('[RimTown] LLM player reply failed:', e); }
+        } else {
+            console.log('[RimTown] No LLM client — using fallback for player chat');
         }
         return this._fallbackPlayerReply(player, npc, world, playerMessage, relPlayer, relNpc);
     }
@@ -1548,6 +1552,7 @@ ${player.name}: ${playerMessage}
 class LLMClient {
     constructor(provider, apiKey, model) { this.provider = provider; this.apiKey = apiKey; this.model = model; }
     async generate(prompt, maxTokens = 500, temperature = 0.9) {
+        console.log('[RimTown LLM] generate called | provider:', this.provider, '| maxTokens:', maxTokens);
         const endpoints = {
             anthropic: { url: 'https://api.anthropic.com/v1/messages', model: this.model || 'claude-haiku-4-5-20251001' },
             openai: { url: 'https://api.openai.com/v1/chat/completions', model: this.model || 'gpt-4o-mini' },
@@ -1583,6 +1588,8 @@ class LLMClient {
                 body: JSON.stringify({ model:cfg.model, max_tokens:maxTokens, temperature, messages:[{role:'user',content:prompt}] }),
             });
             const data = await res.json();
+            console.log('[RimTown LLM] Response status:', res.status, '| has choices:', !!data.choices, '| error:', data.error?.message || 'none');
+            if (data.error) console.error('[RimTown LLM] API error:', data.error);
             return data.choices?.[0]?.message?.content || '';
         }
     }
