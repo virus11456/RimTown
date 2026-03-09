@@ -19,7 +19,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 - **Achievement System**: 38+ achievements across social, romance, economy, survival, faction, exploration categories
 - **NPC Conversation Visualization**: Speech bubbles on map when NPCs talk to each other
 - **Player Interaction**: Choose jobs, vote in elections, flirt, propose, and marry NPCs
-- **Multi-LLM Support**: Claude, GPT, Gemini, DeepSeek, Groq, Together AI, MiniMax (or play without AI)
+- **Multi-LLM Support**: Claude, GPT, Gemini, DeepSeek, Groq, Together AI, MiniMax (or play without AI) with automatic Groq fallback on rate limit
 - **Pixel Art Map**: Animated tilemap with day/night cycle, campfires, particles
 
 ## WordPress Plugin Install
@@ -39,6 +39,18 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v2.3.6 (2026-03-09)
+
+**Groq 自動備援 / 模型升級**
+
+- Groq 預設模型從 Llama 3.3 70B 改為 Qwen3-32B（中文對話品質大幅提升）
+- 新增自動 Groq 備援機制：主 AI 遇到 429 rate limit 或錯誤時，自動切換到備用 Groq
+- 設定頁面新增「備用 Groq API Key」欄位（選填，免費申請於 console.groq.com）
+- 只填備用 Groq Key 不設主 AI 時，直接使用 Groq 作為主要 AI
+- 主 AI 冷卻機制：首次失敗冷卻 60 秒，重複失敗逐步延長至最多 5 分鐘
+- 主 AI 恢復正常後自動切回，無需手動操作
+- 狀態列顯示「AI:gemini+備用」表示已啟用備援
 
 ### v2.3.5 (2026-03-09)
 
