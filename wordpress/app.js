@@ -1101,7 +1101,7 @@ class RimTownApp {
                 // Agent
                 case 'select-agent': this.selectAgent(val); break;
                 // NPC conversation expand
-                case 'toggle-convo': el.classList.toggle('expanded'); break;
+                case 'toggle-convo': el.classList.toggle('collapsed'); break;
                 // Economy
                 case 'trade': { const [idx, amount] = val.split(','); this.executeTrade(parseInt(idx), parseInt(amount)); this._unlockAchievement('first_trade'); this._tradeCount++; } break;
                 case 'build': this.startBuilding(val); break;

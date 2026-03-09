@@ -1159,9 +1159,9 @@ body.rimtown-page .wp-block-post-title {
 .npc-convo-entry:hover { background: rgba(255,255,255,0.03); }
 .npc-convo-header { font-size: 0.72rem; margin-bottom: 2px; }
 .npc-convo-summary { font-size: 0.68rem; color: var(--text-secondary); }
-.npc-convo-dialogue { display: none; margin-top: 6px; padding: 6px 8px; background: rgba(0,0,0,0.2); border-radius: 4px; }
-.npc-convo-entry.expanded .npc-convo-dialogue { display: block; }
-.npc-convo-entry.expanded .npc-convo-summary { color: var(--accent); }
+.npc-convo-dialogue { display: block; margin-top: 6px; padding: 6px 8px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+.npc-convo-entry.collapsed .npc-convo-dialogue { display: none; }
+.npc-convo-entry.collapsed .npc-convo-summary { color: var(--text-muted); }
 .npc-convo-line { font-size: 0.68rem; color: var(--text-primary); margin: 3px 0; line-height: 1.4; }
 .npc-convo-speaker { color: var(--accent-light); font-weight: bold; }
 
