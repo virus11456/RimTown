@@ -114,9 +114,9 @@ function rimtown_shortcode($atts) {
                 <canvas id="town-map-canvas"></canvas>
                 <div class="town-map" id="town-map" style="display:none"></div>
             </div>
-            <div class="sidebar" id="rimtown-sidebar">
+            <div class="rt-sidebar" id="rimtown-sidebar">
                 <button class="mobile-back-to-map" id="mobile-back-to-map">&#9650; 返回地圖</button>
-                <div class="sidebar-tabs">
+                <div class="rt-sidebar-tabs">
                     <button data-tab="residents" class="active">居民</button>
                     <button data-tab="chat">聊天</button>
                     <button data-tab="detail">詳情</button>
@@ -124,7 +124,7 @@ function rimtown_shortcode($atts) {
                     <button data-tab="log">日誌</button>
                     <button data-tab="events">事件</button>
                 </div>
-                <div class="sidebar-content" id="sidebar-content"></div>
+                <div class="rt-sidebar-content" id="sidebar-content"></div>
             </div>
             <button class="mobile-sidebar-toggle" id="mobile-sidebar-toggle" title="顯示側欄">&#9776;</button>
         </div>

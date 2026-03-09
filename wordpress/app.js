@@ -305,10 +305,10 @@ class RimTownApp {
     }
 
     setupTabListeners() {
-        document.querySelectorAll('.sidebar-tabs button').forEach(btn => {
+        document.querySelectorAll('.rt-sidebar-tabs button').forEach(btn => {
             btn.addEventListener('click', () => {
                 this.activeTab = btn.dataset.tab;
-                document.querySelectorAll('.sidebar-tabs button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.rt-sidebar-tabs button').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 this.renderSidebar();
             });
@@ -331,7 +331,7 @@ class RimTownApp {
         }
 
         // Also open sidebar when clicking a tab on mobile (in case sidebar is closed)
-        document.querySelectorAll('.sidebar-tabs button').forEach(btn => {
+        document.querySelectorAll('.rt-sidebar-tabs button').forEach(btn => {
             btn.addEventListener('click', () => {
                 if (window.innerWidth <= 768) {
                     sidebar.classList.add('mobile-open');
@@ -761,7 +761,7 @@ class RimTownApp {
         this.chatTarget = agentId;
         this.selectedAgent = agentId;
         this.activeTab = 'chat';
-        document.querySelectorAll('.sidebar-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === 'chat'));
+        document.querySelectorAll('.rt-sidebar-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === 'chat'));
         // Auto-open sidebar on mobile
         const sidebar = document.getElementById('rimtown-sidebar');
         if (sidebar && window.innerWidth <= 768) sidebar.classList.add('mobile-open');
@@ -1457,7 +1457,7 @@ class RimTownApp {
     selectAgent(agentId) {
         this.selectedAgent = agentId;
         this.activeTab = 'detail';
-        document.querySelectorAll('.sidebar-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === 'detail'));
+        document.querySelectorAll('.rt-sidebar-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === 'detail'));
         // Auto-open sidebar on mobile
         const sidebar = document.getElementById('rimtown-sidebar');
         if (sidebar && window.innerWidth <= 768) sidebar.classList.add('mobile-open');
