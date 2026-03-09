@@ -195,13 +195,11 @@ function rimtown_head_styles() {
             margin: 0 !important;
             padding: 0 !important;
         }
-        html.rimtown-active body > *:not(.rimtown-container):not(script):not(style):not(link) {
-            display: none !important;
-        }
         html.rimtown-active .rimtown-container {
             position: fixed !important;
             top: 0; left: 0; right: 0; bottom: 0;
             z-index: 99990;
+            background: #1a1a2e;
         }
     </style>';
     echo '<script>document.documentElement.classList.add("rimtown-active");</script>';
