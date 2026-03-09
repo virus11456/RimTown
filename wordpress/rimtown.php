@@ -1078,6 +1078,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
 function rimtown_get_changelog() {
     return array(
         array(
+            'version' => '2.3.8',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '修復 NPC 移動抖動：新增位置停留機制，NPC 抵達後停留 3-12 ticks 再移動',
+                '修復雲端存檔載入：換裝置或清除快取後，優先載入雲端存檔而非重置',
+                '雲端同步間隔從 5 分鐘縮短為 2 分鐘',
+                '修復 faction_drama（派系風雲）成就缺少觸發條件的問題',
+            ),
+        ),
+        array(
             'version' => '2.3.7',
             'date'    => '2026-03-09',
             'changes' => array(
