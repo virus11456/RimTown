@@ -1254,6 +1254,73 @@ body.rimtown-page .wp-block-post-title {
     }
 }
 
+/* ===== Faction / Social Circle Styles ===== */
+.faction-section, .explore-section, .lifecycle-section, .festival-section, .quest-section {
+    padding: 8px; border-top: 1px solid var(--border); margin-top: 8px;
+}
+.faction-section h4, .explore-section h4, .lifecycle-section h4, .festival-section h4, .quest-section h4 {
+    font-size: 0.8rem; color: var(--accent); margin-bottom: 6px;
+}
+.faction-card {
+    background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 8px; margin-bottom: 6px;
+}
+.faction-header { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; flex-wrap: wrap; }
+.faction-cohesion { font-size: 0.65rem; color: var(--text-secondary); margin-left: auto; }
+.cohesion-high { color: var(--positive); }
+.cohesion-low { color: var(--negative); }
+.faction-members { font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px; }
+.faction-relations { font-size: 0.65rem; margin-top: 3px; }
+.faction-rival { color: var(--negative); margin-right: 6px; }
+.faction-ally { color: var(--positive); }
+.faction-mini { font-size: 0.75rem; padding: 3px 0; }
+
+/* Festival & Quest */
+.quest-progress {
+    position: relative; background: var(--bg-tertiary); border-radius: 4px;
+    height: 18px; margin: 6px 8px; overflow: hidden;
+}
+.quest-bar { height: 100%; background: var(--accent); transition: width 0.3s; }
+.quest-progress span {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    font-size: 0.65rem; line-height: 18px; color: #fff; text-shadow: 0 0 2px #000;
+}
+
+/* Exploration */
+.explore-zone {
+    background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 8px; margin-bottom: 6px;
+}
+.zone-header { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; flex-wrap: wrap; }
+.zone-diff { font-size: 0.6rem; margin-left: auto; }
+.zone-desc { font-size: 0.7rem; color: var(--text-secondary); margin: 2px 0; }
+.zone-stats { font-size: 0.65rem; color: var(--text-muted); }
+.zone-send { margin-top: 4px; display: flex; gap: 4px; align-items: flex-end; }
+.explore-select {
+    flex: 1; background: var(--bg-secondary); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: 4px; font-size: 0.7rem; padding: 2px;
+}
+.explore-btn {
+    background: var(--accent); color: #fff; border: none; border-radius: 4px;
+    padding: 4px 8px; font-size: 0.7rem; cursor: pointer;
+}
+.explore-btn:hover { opacity: 0.85; }
+.zone-busy { font-size: 0.7rem; color: var(--text-muted); font-style: italic; margin-top: 4px; }
+.expedition-active { margin-bottom: 8px; font-size: 0.75rem; }
+.expedition-item { padding: 3px 0; color: var(--text-secondary); }
+
+/* Lifecycle / Graveyard */
+.birth-item { font-size: 0.75rem; padding: 3px 0; }
+.birth-time { font-size: 0.6rem; color: var(--text-muted); margin-left: 6px; }
+.grave-item {
+    background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 8px; margin-bottom: 4px;
+}
+.grave-name { font-weight: bold; font-size: 0.8rem; }
+.grave-info { font-size: 0.7rem; color: var(--text-secondary); }
+.grave-epitaph { font-size: 0.7rem; font-style: italic; color: var(--text-muted); margin-top: 2px; }
+.grave-time { font-size: 0.6rem; color: var(--text-muted); }
+
 /* ===== Mobile-only elements (hidden on desktop) ===== */
 .mobile-header {
     display: none !important;

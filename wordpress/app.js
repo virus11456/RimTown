@@ -47,6 +47,18 @@ const ACHIEVEMENTS = {
     gossip_50: { name: '偷聽大師', desc: '聽到50則村民對話', icon: '🕵️', category: 'special' },
     all_seasons: { name: '四季輪轉', desc: '經歷春夏秋冬', icon: '🌸', category: 'special' },
     multi_town: { name: '開拓者', desc: '擁有3個以上城鎮', icon: '🗺️', category: 'special' },
+    // Factions
+    first_faction: { name: '結黨', desc: '加入第一個社交圈', icon: '👥', category: 'social' },
+    faction_drama: { name: '戲劇性', desc: '見證派系衝突', icon: '🎭', category: 'social' },
+    // Festivals
+    first_festival: { name: '節慶參與', desc: '經歷第一個節日', icon: '🎉', category: 'special' },
+    all_festivals: { name: '四季慶典', desc: '經歷所有四個節日', icon: '🎊', category: 'special' },
+    // Life cycle
+    first_birth: { name: '新生命', desc: '城鎮迎來第一個新生兒', icon: '👶', category: 'town' },
+    first_death: { name: '永別', desc: '失去第一位居民', icon: '⚰️', category: 'town' },
+    // Exploration
+    first_explore: { name: '探險家', desc: '發現第一個探索區域', icon: '🗺️', category: 'survival' },
+    expedition_success: { name: '凱旋歸來', desc: '完成第一次成功探險', icon: '🏆', category: 'survival' },
 };
 
 // =====================================================
@@ -615,6 +627,20 @@ class RimTownApp {
             if (totalRaids >= 10) this._unlockAchievement('repel_10');
             this._raidCount = currentRaids;
         }
+
+        // New system achievements
+        const factionList = Object.values(this.state.factions?.factions || {});
+        if (factionList.length >= 1) this._unlockAchievement('first_faction');
+        if ((this.state.lifecycle?.graveyard || []).length >= 1) this._unlockAchievement('first_death');
+        if ((this.state.lifecycle?.births || []).length >= 1) this._unlockAchievement('first_birth');
+        const festLog = this.state.festivals?.festivalLog || [];
+        if (festLog.length >= 1) this._unlockAchievement('first_festival');
+        const festSeasons = new Set(festLog.map(f => f.season));
+        if (festSeasons.size >= 4) this._unlockAchievement('all_festivals');
+        const discoveredZones = Object.keys(this.state.exploration?.discoveredZones || {});
+        if (discoveredZones.length >= 1) this._unlockAchievement('first_explore');
+        const successExpeditions = (this.state.exploration?.expeditionLog || []).filter(e => e.success);
+        if (successExpeditions.length >= 1) this._unlockAchievement('expedition_success');
     }
 
     // Hook conversation engine to push speech bubbles to tilemap
@@ -1014,6 +1040,9 @@ class RimTownApp {
                     this.tileMap.timeHour = this.state.clock.hour ?? 12;
                     this.tileMap.timeMinute = this.state.clock.minute ?? 0;
                 }
+                this.tileMap.explorationData = this.state.exploration || {};
+                this.tileMap.graveyardData = (this.state.lifecycle || {}).graveyard || [];
+                this.tileMap.festivalData = this.state.festivals || {};
                 this.tileMap.render(agents, this.selectedAgent, player?.current_location, this.world?.buildings?.completed || []);
             }
             requestAnimationFrame(loop);
@@ -1258,6 +1287,7 @@ class RimTownApp {
                 case 'trade': { const [idx, amount] = val.split(','); this.executeTrade(parseInt(idx), parseInt(amount)); this._unlockAchievement('first_trade'); this._tradeCount++; } break;
                 case 'build': this.startBuilding(val); break;
                 case 'research': this.startResearch(val); break;
+                case 'send-expedition': this.sendExpedition(val); break;
                 // Auth & Cloud
                 case 'cloud-sync-up': document.getElementById('account-menu-popup')?.remove(); this._syncToCloud(); break;
                 case 'cloud-sync-down': document.getElementById('account-menu-popup')?.remove(); this._showCloudSaves(); break;
@@ -2121,6 +2151,7 @@ class RimTownApp {
                     return `<div class="relationship-item${r.status?' rel-has-status':''}"><span>${r.target_name} ${badge}${crushIcon}</span>
                     <span style="color:${r.affinity>0?'var(--positive)':r.affinity<0?'var(--negative)':'var(--text-muted)'}">${r.type}（${r.affinity>0?'+':''}${r.affinity}）${romHeart}</span></div>`;
                 }).join('')}</div>
+            ${this._renderAgentFactions(this.selectedAgent)}
             <div class="detail-section"><h3>近期記憶</h3>
                 ${memories.length===0?'<p style="font-size:0.7rem;color:var(--text-muted)">尚無記憶</p>':
                 memories.slice(-10).reverse().map(m=>`<div class="memory-item"><span class="memory-time">${m.time}</span>${m.content}</div>`).join('')}</div></div>`;
@@ -2290,7 +2321,126 @@ class RimTownApp {
                 <div style="font-size:0.75rem;color:var(--text-secondary)">${evt.time}</div>
                 <div style="margin-top:4px">${evt.description}</div></div>`;
         });
+        // === Festivals ===
+        const festivals = this.state.festivals || {};
+        if (festivals.activeFestival) {
+            const f = festivals.activeFestival;
+            html += `<div class="festival-section"><h4>${f.icon} ${f.name}進行中！</h4>
+                <div style="padding:4px 8px;color:var(--text-secondary)">${f.description}</div></div>`;
+        }
+        if (festivals.activeQuest) {
+            const q = festivals.activeQuest;
+            const pct = Math.round((q.progress / q.goal) * 100);
+            html += `<div class="quest-section"><h4>🎯 節日任務：${q.name}</h4>
+                <div style="padding:4px 8px">${q.desc}</div>
+                <div class="quest-progress"><div class="quest-bar" style="width:${pct}%"></div><span>${pct}%</span></div></div>`;
+        }
+
+        // === Factions ===
+        const factionData = this.state.factions || {};
+        const factionList = Object.values(factionData.factions || {});
+        if (factionList.length) {
+            html += '<div class="faction-section"><h4>👥 派系 / 社交圈</h4>';
+            factionList.forEach(f => {
+                const memberNames = f.members.map(id => {
+                    const a = this.state.agents[id];
+                    return a ? a.name : '?';
+                }).join('、');
+                const cohesionCls = f.cohesion > 70 ? 'cohesion-high' : f.cohesion < 30 ? 'cohesion-low' : '';
+                let relHtml = '';
+                if (f.rivalFactionId) {
+                    const rival = factionList.find(x => x.id === f.rivalFactionId);
+                    if (rival) relHtml += `<span class="faction-rival">⚔️ 敵對：${rival.name}</span> `;
+                }
+                if (f.allyFactionId) {
+                    const ally = factionList.find(x => x.id === f.allyFactionId);
+                    if (ally) relHtml += `<span class="faction-ally">🤝 結盟：${ally.name}</span>`;
+                }
+                html += `<div class="faction-card">
+                    <div class="faction-header">${f.icon} <strong>${f.name}</strong>
+                        <span class="faction-cohesion ${cohesionCls}">團結度：${Math.round(f.cohesion)}</span></div>
+                    <div class="faction-members">${memberNames}</div>
+                    ${relHtml ? '<div class="faction-relations">' + relHtml + '</div>' : ''}</div>`;
+            });
+            html += '</div>';
+        }
+
+        // === Exploration ===
+        const exploreData = this.state.exploration || {};
+        const discovered = Object.entries(exploreData.discoveredZones || {});
+        const expeditions = exploreData.activeExpeditions || [];
+        if (discovered.length || expeditions.length) {
+            html += '<div class="explore-section"><h4>🗺️ 探索區域</h4>';
+            if (expeditions.length) {
+                html += '<div class="expedition-active"><strong>進行中的探險：</strong>';
+                expeditions.forEach(e => {
+                    const ticksLeft = Math.max(0, e.returnTick - (this.state.tick || 0));
+                    const daysLeft = Math.ceil(ticksLeft / 96);
+                    html += `<div class="expedition-item">${e.zoneIcon} ${e.zoneName} — ${e.agentNames.join('、')} (${daysLeft}天後返回)</div>`;
+                });
+                html += '</div>';
+            }
+            discovered.forEach(([zoneId, info]) => {
+                const zoneDef = this._getExplorationZone(zoneId);
+                if (!zoneDef) return;
+                const canSend = !expeditions.some(e => e.zoneId === zoneId);
+                const availableNpcs = Object.entries(this.state.agents)
+                    .filter(([id, a]) => !a.is_player && a.activity_label !== '探險中' && id !== 'player')
+                    .slice(0, 8);
+                html += `<div class="explore-zone">
+                    <div class="zone-header">${zoneDef.icon} <strong>${zoneDef.name}</strong>
+                        <span class="zone-diff">難度：${'⭐'.repeat(zoneDef.difficulty)}</span></div>
+                    <div class="zone-desc">${zoneDef.description}</div>
+                    <div class="zone-stats">已探索 ${info.timesExplored} 次</div>
+                    ${canSend ? `<div class="zone-send">
+                        <select class="explore-select" id="explore-select-${zoneId}" multiple size="3">
+                            ${availableNpcs.map(([id, a]) => `<option value="${id}">${a.name} (${a.job?.title||'無'})</option>`).join('')}
+                        </select>
+                        <button class="explore-btn" data-action="send-expedition" data-val="${zoneId}">派遣探險</button>
+                    </div>` : '<div class="zone-busy">探險進行中...</div>'}
+                </div>`;
+            });
+            html += '</div>';
+        }
+
+        // === Graveyard ===
+        const lifecycle = this.state.lifecycle || {};
+        const graveyard = lifecycle.graveyard || [];
+        const births = lifecycle.births || [];
+        if (graveyard.length || births.length) {
+            html += '<div class="lifecycle-section">';
+            if (births.length) {
+                html += '<h4>🎒 近期出生</h4>';
+                births.slice(-5).reverse().forEach(b => {
+                    html += `<div class="birth-item">${b.name} — ${b.parentNames.join('與')}的孩子 <span class="birth-time">${b.birthTime}</span></div>`;
+                });
+            }
+            if (graveyard.length) {
+                html += '<h4>⚰️ 墓園</h4>';
+                graveyard.slice(-10).reverse().forEach(g => {
+                    html += `<div class="grave-item">
+                        <div class="grave-name">${g.name}（${g.age}歲）</div>
+                        <div class="grave-info">${g.job} — ${g.deathCause}</div>
+                        <div class="grave-epitaph">${g.epitaph}</div>
+                        <div class="grave-time">${g.deathTime}</div></div>`;
+                });
+            }
+            html += '</div>';
+        }
+
         container.innerHTML = html || '<p class="muted-text" style="padding:20px">尚無事件。事件每天會隨機發生。</p>';
+    }
+
+    _getExplorationZone(id) {
+        const zones = {
+            deep_forest: { icon:'🌲', name:'幽深森林', difficulty:2, description:'城鎮外的茂密森林，傳說中有稀有草藥和野生動物。' },
+            ancient_ruins: { icon:'🏛️', name:'古代遺跡', difficulty:4, description:'神秘的古代建築遺址，可能藏有珍貴的知識和寶物。' },
+            abandoned_mine: { icon:'⛏️', name:'廢棄礦坑', difficulty:3, description:'一座被廢棄的老礦坑，據說深處仍有豐富的礦脈。' },
+            mountain_pass: { icon:'⛰️', name:'山間隘口', difficulty:5, description:'通往外界的危險山路，但可能找到貿易路線和珍稀資源。' },
+            riverside_cave: { icon:'🕳️', name:'河畔洞窟', difficulty:2, description:'河邊的一個神秘洞穴，經常有奇怪的回音。' },
+            cursed_swamp: { icon:'🌿', name:'詛咒沼澤', difficulty:4, description:'傳說被詛咒的沼澤地，危險但也可能有珍貴的材料。' },
+        };
+        return zones[id] || null;
     }
 
     // --- Economy Tab ---
@@ -2419,6 +2569,32 @@ class RimTownApp {
 
     startResearch(key) {
         this.world.research.startResearch(key);
+        this.state = this.world.getState();
+        this.renderSidebar();
+    }
+
+    _renderAgentFactions(agentId) {
+        const factionData = this.state?.factions || {};
+        const factions = Object.values(factionData.factions || {}).filter(f => f.members.includes(agentId));
+        if (!factions.length) return '';
+        let html = '<div class="detail-section"><h3>社交圈</h3>';
+        factions.forEach(f => {
+            const others = f.members.filter(id => id !== agentId).map(id => {
+                const a = this.state.agents[id]; return a ? a.name : '?';
+            }).join('、');
+            html += `<div class="faction-mini">${f.icon} <strong>${f.name}</strong> <span style="font-size:0.7rem;color:var(--text-secondary)">同伴：${others}</span></div>`;
+        });
+        html += '</div>';
+        return html;
+    }
+
+    sendExpedition(zoneId) {
+        const selectEl = document.getElementById(`explore-select-${zoneId}`);
+        if (!selectEl) return;
+        const selectedIds = Array.from(selectEl.selectedOptions).map(o => o.value);
+        if (selectedIds.length === 0) { alert('請選擇至少一名居民！'); return; }
+        const result = this.world.exploration.sendExpedition(this.world, zoneId, selectedIds);
+        if (!result) { alert('無法派遣探險隊。'); return; }
         this.state = this.world.getState();
         this.renderSidebar();
     }

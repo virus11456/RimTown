@@ -363,7 +363,7 @@ class Agent {
         return map[this.moodDescription] || this.moodDescription;
     }
     get activityLabel() {
-        const map = { sleeping:'睡覺', eating:'進食', working:'工作', socializing:'社交', wandering:'閒逛', recreation:'娛樂', idle:'閒置', stargazing:'看星星', night_mischief:'搞事', night_stroll:'夜間散步' };
+        const map = { sleeping:'睡覺', eating:'進食', working:'工作', socializing:'社交', wandering:'閒逛', recreation:'娛樂', idle:'閒置', stargazing:'看星星', night_mischief:'搞事', night_stroll:'夜間散步', exploring:'探險中' };
         return map[this.activity] || this.activity;
     }
     get genderLabel() {
@@ -2793,6 +2793,864 @@ class NewsSystem {
     }
 }
 
+// --- Faction / Social Circle System ---
+const FACTION_TYPES = {
+    work_buddies:  { name:'工作夥伴', icon:'🔨', maxSize:5, formCondition:'sameJob' },
+    drinking_pals: { name:'酒友', icon:'🍺', maxSize:6, formCondition:'tavernRegulars' },
+    gossip_circle: { name:'八卦圈', icon:'🗣️', maxSize:5, formCondition:'gossipTraits' },
+    scholars:      { name:'學者聯盟', icon:'📚', maxSize:4, formCondition:'intellectual' },
+    romantics:     { name:'戀愛同盟', icon:'💕', maxSize:4, formCondition:'romanticTraits' },
+    troublemakers: { name:'搗蛋鬼', icon:'😈', maxSize:4, formCondition:'abrasiveTraits' },
+    elders_council:{ name:'長者議會', icon:'🧓', maxSize:5, formCondition:'olderAgents' },
+    night_owls:    { name:'夜貓族', icon:'🦉', maxSize:5, formCondition:'nightOwlTraits' },
+};
+
+class Faction {
+    constructor(id, type, founderName) {
+        this.id = id;
+        this.type = type; // key from FACTION_TYPES
+        this.name = FACTION_TYPES[type]?.name || type;
+        this.icon = FACTION_TYPES[type]?.icon || '👥';
+        this.members = []; // agentId[]
+        this.founderName = founderName;
+        this.formedTick = 0;
+        this.cohesion = 50; // 0-100, how united the group is
+        this.rivalFactionId = null; // rival faction
+        this.allyFactionId = null;  // allied faction
+    }
+    addMember(agentId) {
+        if (!this.members.includes(agentId)) this.members.push(agentId);
+    }
+    removeMember(agentId) {
+        this.members = this.members.filter(id => id !== agentId);
+    }
+    hasMember(agentId) { return this.members.includes(agentId); }
+    get size() { return this.members.length; }
+}
+
+class FactionSystem {
+    constructor() {
+        this.factions = {}; // id -> Faction
+        this._counter = 0;
+        this._daysSinceCheck = 0;
+    }
+
+    dailyUpdate(world) {
+        this._daysSinceCheck++;
+        if (this._daysSinceCheck < 3) return; // check every 3 days
+        this._daysSinceCheck = 0;
+
+        this._tryFormFactions(world);
+        this._updateCohesion(world);
+        this._tryFactionEvents(world);
+        this._cleanupDeadFactions(world);
+    }
+
+    _tryFormFactions(world) {
+        const npcs = Object.values(world.agents).filter(a => !a.isPlayer);
+        const existingTypes = Object.values(this.factions).map(f => f.type);
+
+        for (const [type, def] of Object.entries(FACTION_TYPES)) {
+            if (existingTypes.filter(t => t === type).length >= 2) continue; // max 2 of same type
+
+            let candidates = [];
+            switch (def.formCondition) {
+                case 'sameJob': {
+                    const jobGroups = {};
+                    npcs.forEach(a => { if (a.job) { (jobGroups[a.job.key] = jobGroups[a.job.key] || []).push(a); } });
+                    for (const group of Object.values(jobGroups)) {
+                        if (group.length >= 2) { candidates = group.slice(0, def.maxSize); break; }
+                    }
+                    break;
+                }
+                case 'tavernRegulars': {
+                    candidates = npcs.filter(a => {
+                        const socialCount = a.memory.entries.filter(m => m.content.includes('酒') || m.content.includes('tavern')).length;
+                        return socialCount > 0 || a.personality.traits.includes('glutton') || a.personality.traits.includes('charismatic');
+                    }).slice(0, def.maxSize);
+                    break;
+                }
+                case 'gossipTraits':
+                    candidates = npcs.filter(a => a.personality.traits.includes('gossip') || a.personality.traits.includes('charismatic')).slice(0, def.maxSize);
+                    break;
+                case 'intellectual':
+                    candidates = npcs.filter(a => a.personality.values.includes('知識') || a.job?.category === 'intellectual').slice(0, def.maxSize);
+                    break;
+                case 'romanticTraits':
+                    candidates = npcs.filter(a => a.personality.traits.includes('romantic') || a.personality.traits.includes('kind')).slice(0, def.maxSize);
+                    break;
+                case 'abrasiveTraits':
+                    candidates = npcs.filter(a => a.personality.traits.includes('abrasive') || a.personality.traits.includes('lazy')).slice(0, def.maxSize);
+                    break;
+                case 'olderAgents':
+                    candidates = npcs.filter(a => a.age >= 40).slice(0, def.maxSize);
+                    break;
+                case 'nightOwlTraits':
+                    candidates = npcs.filter(a => a.personality.traits.includes('night_owl')).slice(0, def.maxSize);
+                    break;
+            }
+
+            if (candidates.length >= 2 && Math.random() < 0.3) {
+                // Check members not already in too many factions
+                const filtered = candidates.filter(a => {
+                    const factionCount = Object.values(this.factions).filter(f => f.hasMember(a.agentId)).length;
+                    return factionCount < 2; // max 2 factions per NPC
+                });
+                if (filtered.length >= 2) {
+                    const faction = new Faction(`faction_${++this._counter}`, type, filtered[0].name);
+                    faction.formedTick = world.tickCount;
+                    filtered.forEach(a => faction.addMember(a.agentId));
+                    this.factions[faction.id] = faction;
+                    const memberNames = filtered.map(a => a.name).join('、');
+                    world.logMessage('faction', `${faction.icon} ${memberNames}組成了「${faction.name}」！`, filtered[0].name);
+                    filtered.forEach(a => {
+                        a.memory.add(world.tickCount, world.clock.timeStr, 'social', `我加入了「${faction.name}」，成員有${memberNames}。`, 6, filtered.map(x => x.name));
+                        // Boost mutual affinity
+                        filtered.forEach(b => {
+                            if (a.agentId !== b.agentId) {
+                                const rel = a.relationships.getOrCreate(b.agentId, b.name);
+                                rel.modifyAffinity(randInt(3, 8));
+                                rel.modifyTrust(randInt(2, 5));
+                            }
+                        });
+                    });
+                }
+            }
+        }
+    }
+
+    _updateCohesion(world) {
+        for (const faction of Object.values(this.factions)) {
+            // Cohesion based on average mutual affinity
+            let totalAffinity = 0, pairCount = 0;
+            for (let i = 0; i < faction.members.length; i++) {
+                for (let j = i + 1; j < faction.members.length; j++) {
+                    const a = world.agents[faction.members[i]];
+                    const b = world.agents[faction.members[j]];
+                    if (a && b) {
+                        const rel = a.relationships.getOrCreate(b.agentId, b.name);
+                        totalAffinity += rel.affinity;
+                        pairCount++;
+                    }
+                }
+            }
+            if (pairCount > 0) {
+                const avgAff = totalAffinity / pairCount;
+                faction.cohesion = Math.max(0, Math.min(100, 50 + avgAff));
+            }
+
+            // Members with very low affinity to others may leave
+            for (const memberId of [...faction.members]) {
+                const agent = world.agents[memberId];
+                if (!agent) { faction.removeMember(memberId); continue; }
+                const otherMembers = faction.members.filter(id => id !== memberId);
+                const avgAff = otherMembers.reduce((sum, otherId) => {
+                    const other = world.agents[otherId];
+                    if (!other) return sum;
+                    return sum + agent.relationships.getOrCreate(otherId, other.name).affinity;
+                }, 0) / Math.max(1, otherMembers.length);
+                if (avgAff < -30 && Math.random() < 0.2) {
+                    faction.removeMember(memberId);
+                    world.logMessage('faction', `${agent.name}退出了「${faction.name}」。`, agent.name);
+                    agent.memory.add(world.tickCount, world.clock.timeStr, 'social', `我退出了「${faction.name}」，我受不了他們了。`, 5, []);
+                }
+            }
+        }
+    }
+
+    _tryFactionEvents(world) {
+        const factionList = Object.values(this.factions).filter(f => f.size >= 2);
+        if (factionList.length < 2 || Math.random() > 0.15) return;
+
+        // Pick two factions for interaction
+        const [fA, fB] = shuffle(factionList).slice(0, 2);
+        const roll = Math.random();
+
+        if (roll < 0.4) {
+            // Conflict between factions
+            if (fA.rivalFactionId === fB.id || Math.random() < 0.3) {
+                fA.rivalFactionId = fB.id;
+                fB.rivalFactionId = fA.id;
+                const eventDesc = pickRandom([
+                    `「${fA.name}」和「${fB.name}」在鎮上爆發了爭執！`,
+                    `「${fA.name}」的成員公開批評「${fB.name}」。`,
+                    `「${fA.name}」和「${fB.name}」因為意見不合發生衝突。`,
+                ]);
+                world.logMessage('faction', eventDesc);
+                world.events.conversationTopics.push(eventDesc);
+                // Damage cross-faction relationships
+                fA.members.forEach(aId => {
+                    fB.members.forEach(bId => {
+                        const a = world.agents[aId], b = world.agents[bId];
+                        if (a && b) {
+                            a.relationships.getOrCreate(bId, b.name).modifyAffinity(randInt(-5, -2));
+                            b.relationships.getOrCreate(aId, a.name).modifyAffinity(randInt(-5, -2));
+                        }
+                    });
+                });
+                fA.members.forEach(aId => { const a = world.agents[aId]; if (a) a.mood = Math.max(-100, a.mood - 5); });
+                fB.members.forEach(bId => { const b = world.agents[bId]; if (b) b.mood = Math.max(-100, b.mood - 5); });
+            }
+        } else if (roll < 0.7) {
+            // Cooperation between factions
+            fA.allyFactionId = fB.id;
+            fB.allyFactionId = fA.id;
+            if (fA.rivalFactionId === fB.id) { fA.rivalFactionId = null; fB.rivalFactionId = null; }
+            const eventDesc = pickRandom([
+                `「${fA.name}」和「${fB.name}」決定攜手合作！`,
+                `「${fA.name}」邀請「${fB.name}」一起舉辦活動。`,
+                `「${fA.name}」和「${fB.name}」化敵為友，達成共識。`,
+            ]);
+            world.logMessage('faction', eventDesc);
+            // Boost cross-faction relationships
+            fA.members.forEach(aId => {
+                fB.members.forEach(bId => {
+                    const a = world.agents[aId], b = world.agents[bId];
+                    if (a && b) {
+                        a.relationships.getOrCreate(bId, b.name).modifyAffinity(randInt(2, 5));
+                        b.relationships.getOrCreate(aId, a.name).modifyAffinity(randInt(2, 5));
+                    }
+                });
+            });
+            fA.members.forEach(aId => { const a = world.agents[aId]; if (a) a.mood = Math.min(100, a.mood + 3); });
+            fB.members.forEach(bId => { const b = world.agents[bId]; if (b) b.mood = Math.min(100, b.mood + 3); });
+        } else {
+            // Internal faction drama
+            const faction = pickRandom([fA, fB]);
+            if (faction.size >= 3 && Math.random() < 0.4) {
+                const members = faction.members.map(id => world.agents[id]).filter(Boolean);
+                const [instigator, target] = shuffle(members).slice(0, 2);
+                const drama = pickRandom([
+                    `${instigator.name}在「${faction.name}」聚會中公開指責${target.name}！`,
+                    `${instigator.name}和${target.name}在「${faction.name}」內鬧不愉快。`,
+                    `「${faction.name}」內部出現分裂，${instigator.name}帶頭反對${target.name}。`,
+                ]);
+                world.logMessage('faction', drama, instigator.name, target.name);
+                instigator.relationships.getOrCreate(target.agentId, target.name).modifyAffinity(randInt(-8, -3));
+                target.relationships.getOrCreate(instigator.agentId, instigator.name).modifyAffinity(randInt(-6, -2));
+                faction.cohesion = Math.max(0, faction.cohesion - 10);
+                world.gossipNetwork.activeGossip.push({
+                    about: instigator.name, content: drama, source: '鎮民',
+                    spreadCount: 0, tickCreated: world.tickCount, isTrue: true
+                });
+            }
+        }
+    }
+
+    _cleanupDeadFactions(world) {
+        for (const [id, faction] of Object.entries(this.factions)) {
+            // Remove members no longer in the world
+            faction.members = faction.members.filter(mId => world.agents[mId]);
+            if (faction.size < 2) {
+                if (faction.size === 1) {
+                    const lastAgent = world.agents[faction.members[0]];
+                    if (lastAgent) {
+                        world.logMessage('faction', `「${faction.name}」因人數不足而解散。`, lastAgent.name);
+                    }
+                }
+                delete this.factions[id];
+            }
+        }
+    }
+
+    getAgentFactions(agentId) {
+        return Object.values(this.factions).filter(f => f.hasMember(agentId));
+    }
+
+    toDict() {
+        return {
+            factions: Object.fromEntries(Object.entries(this.factions).map(([k, f]) => [k, {
+                id: f.id, type: f.type, name: f.name, icon: f.icon,
+                members: [...f.members], founderName: f.founderName,
+                formedTick: f.formedTick, cohesion: f.cohesion,
+                rivalFactionId: f.rivalFactionId, allyFactionId: f.allyFactionId,
+            }])),
+            _counter: this._counter,
+            _daysSinceCheck: this._daysSinceCheck,
+        };
+    }
+}
+
+// --- Seasonal Festival System ---
+const FESTIVALS = {
+    '春季': {
+        day: 8, name: '春祭', icon: '🌸',
+        description: '慶祝新生與播種的季節！全城一起祈禱豐收。',
+        effects: { mood_all: 15, social_boost: 20, conversation_topic: '春祭慶典' },
+        activities: ['舞龍舞獅', '花車遊行', '種下許願樹', '分享春餅'],
+        questName: '採集春花', questDesc: '在城外採集100朵春花裝飾廣場。',
+    },
+    '夏季': {
+        day: 10, name: '豐收前夜祭', icon: '🔥',
+        description: '仲夏夜的篝火慶典，居民圍著篝火講故事。',
+        effects: { mood_all: 12, social_boost: 15, conversation_topic: '仲夏篝火' },
+        activities: ['篝火晚會', '說故事比賽', '夜間市集', '放煙火'],
+        questName: '收集木材', questDesc: '收集足夠的木材來搭建巨型篝火。',
+    },
+    '秋季': {
+        day: 12, name: '秋收節', icon: '🍂',
+        description: '感謝大地豐收！全城分享收成的喜悅。',
+        effects: { mood_all: 18, food_bonus: 50, conversation_topic: '秋收慶典' },
+        activities: ['豐收宴席', '農產品比賽', '秋收舞會', '感恩祭祀'],
+        questName: '豐收祭品', questDesc: '準備最好的農產品作為祭品。',
+    },
+    '冬季': {
+        day: 7, name: '冬至慶典', icon: '❄️',
+        description: '最長的夜晚，居民們互相取暖、交換禮物。',
+        effects: { mood_all: 20, social_boost: 25, conversation_topic: '冬至禮物' },
+        activities: ['交換禮物', '熱湯分享', '冬至詩會', '雪地遊戲'],
+        questName: '準備禮物', questDesc: '為每位居民準備一份特別的禮物。',
+    },
+};
+
+class FestivalSystem {
+    constructor() {
+        this.activeFestival = null; // current festival or null
+        this.festivalLog = [];     // past festivals
+        this.activeQuest = null;   // {name, desc, progress, goal, rewards, deadline}
+        this._lastFestivalSeason = null;
+    }
+
+    dailyUpdate(world) {
+        const season = world.clock.season;
+        const day = world.clock.day;
+        const festival = FESTIVALS[season];
+        if (!festival) return;
+
+        // Festival announcement (1 day before)
+        if (day === festival.day - 1 && this._lastFestivalSeason !== season) {
+            world.logMessage('festival', `${festival.icon} 明天就是${festival.name}了！全城都在準備中。`);
+            world.events.conversationTopics.push(`即將到來的${festival.name}`);
+            // Start quest
+            this.activeQuest = {
+                name: festival.questName, desc: festival.questDesc,
+                progress: 0, goal: 100, season: season,
+                rewards: { mood: 10, resources: { food: 30, silver: 20 } },
+            };
+        }
+
+        // Festival day!
+        if (day === festival.day && this._lastFestivalSeason !== season) {
+            this._lastFestivalSeason = season;
+            this.activeFestival = {
+                ...festival, season, startTick: world.tickCount,
+                endTick: world.tickCount + 96 * 2, // lasts 2 days
+            };
+
+            // Apply effects
+            Object.values(world.agents).forEach(a => {
+                a.mood = Math.min(100, a.mood + festival.effects.mood_all);
+                if (festival.effects.social_boost) {
+                    a.needs.social = Math.min(100, a.needs.social + festival.effects.social_boost);
+                }
+                const activity = pickRandom(festival.activities);
+                a.memory.add(world.tickCount, world.clock.timeStr, 'social',
+                    `參加了${festival.name}！${activity}真有趣。`, 7, []);
+            });
+
+            // Food bonus
+            if (festival.effects.food_bonus) {
+                world.stockpile.add('food', festival.effects.food_bonus);
+                world.stockpile.add('meals', Math.floor(festival.effects.food_bonus / 2));
+            }
+
+            world.logMessage('festival', `${festival.icon} ${festival.name}開始了！${festival.description}`);
+            world.events.conversationTopics.push(festival.effects.conversation_topic);
+
+            // Boost relationships during festival
+            const agents = Object.values(world.agents);
+            for (let i = 0; i < agents.length; i++) {
+                for (let j = i + 1; j < agents.length; j++) {
+                    if (Math.random() < 0.3) {
+                        const relA = agents[i].relationships.getOrCreate(agents[j].agentId, agents[j].name);
+                        const relB = agents[j].relationships.getOrCreate(agents[i].agentId, agents[i].name);
+                        relA.modifyAffinity(randInt(1, 4));
+                        relB.modifyAffinity(randInt(1, 4));
+                    }
+                }
+            }
+
+            this.festivalLog.push({ name: festival.name, season, year: world.clock.year, tick: world.tickCount });
+
+            // Special festival dialogue templates
+            world.gossipNetwork.activeGossip.push({
+                about: '全鎮', content: `${festival.name}好熱鬧！${pickRandom(festival.activities)}太棒了！`,
+                source: '鎮民', spreadCount: 0, tickCreated: world.tickCount, isTrue: true
+            });
+        }
+
+        // End festival
+        if (this.activeFestival && world.tickCount > this.activeFestival.endTick) {
+            world.logMessage('festival', `${this.activeFestival.icon} ${this.activeFestival.name}結束了，大家帶著美好的回憶回到日常。`);
+            this.activeFestival = null;
+        }
+
+        // Auto-progress quest (NPC contributions)
+        if (this.activeQuest && this.activeQuest.season === season) {
+            const workers = Object.values(world.agents).filter(a => !a.isPlayer && a.activity === 'working');
+            this.activeQuest.progress = Math.min(this.activeQuest.goal,
+                this.activeQuest.progress + workers.length * randInt(2, 5));
+            if (this.activeQuest.progress >= this.activeQuest.goal) {
+                world.logMessage('festival', `🎉 節日任務「${this.activeQuest.name}」完成！獲得獎勵！`);
+                if (this.activeQuest.rewards.resources) {
+                    for (const [r, amt] of Object.entries(this.activeQuest.rewards.resources)) {
+                        world.stockpile.add(r, amt);
+                    }
+                }
+                Object.values(world.agents).forEach(a => {
+                    a.mood = Math.min(100, a.mood + (this.activeQuest.rewards.mood || 5));
+                });
+                this.activeQuest = null;
+            }
+        }
+        // Clear quest if season changed
+        if (this.activeQuest && this.activeQuest.season !== season) {
+            this.activeQuest = null;
+        }
+    }
+
+    toDict() {
+        return {
+            activeFestival: this.activeFestival ? { ...this.activeFestival } : null,
+            festivalLog: this.festivalLog.slice(-20),
+            activeQuest: this.activeQuest ? { ...this.activeQuest } : null,
+            _lastFestivalSeason: this._lastFestivalSeason,
+        };
+    }
+}
+
+// --- NPC Death / Birth / Aging System ---
+const DEATH_CAUSES = [
+    '年老體衰', '突發疾病', '意外事故', '在探險中犧牲', '神秘失蹤後被發現',
+];
+const BABY_NAMES_MALE = ['小龍','天明','子軒','浩宇','嘉禾','承恩','宏志','瑞陽','文博','志遠','新宇','國棟'];
+const BABY_NAMES_FEMALE = ['小鳳','曉月','詩涵','雨桐','美琪','欣怡','佳穎','思琪','夢瑤','婉清','紫萱','若蘭'];
+
+class LifecycleSystem {
+    constructor() {
+        this.graveyard = [];   // { name, age, deathCause, deathTick, deathTime, epitaph, job }
+        this.births = [];       // { name, parentNames, birthTick, birthTime }
+        this._daysSinceCheck = 0;
+    }
+
+    dailyUpdate(world) {
+        this._daysSinceCheck++;
+        if (this._daysSinceCheck < 2) return;
+        this._daysSinceCheck = 0;
+
+        this._processAging(world);
+        this._checkDeaths(world);
+        this._checkBirths(world);
+    }
+
+    _processAging(world) {
+        // Age NPCs once per season (approx every 15 game-days = every ~7 checks)
+        if (world.clock.day !== 1) return;
+        Object.values(world.agents).forEach(a => {
+            if (!a.isPlayer) {
+                a.age += 1; // 1 year per season for accelerated time
+                // Aging effects
+                if (a.age >= 60) {
+                    a.needs.rest = Math.max(0, a.needs.rest - 3); // elders tire faster
+                }
+                if (a.age >= 70) {
+                    a.needs.comfort = Math.max(0, a.needs.comfort - 2);
+                }
+            }
+        });
+    }
+
+    _checkDeaths(world) {
+        const npcs = Object.values(world.agents).filter(a => !a.isPlayer);
+        for (const npc of npcs) {
+            let deathChance = 0;
+
+            // Age-based mortality
+            if (npc.age >= 80) deathChance = 0.08;
+            else if (npc.age >= 70) deathChance = 0.03;
+            else if (npc.age >= 60) deathChance = 0.01;
+
+            // Mood modifier: very miserable people are more susceptible
+            if (npc.mood < -50) deathChance += 0.01;
+
+            // Disease event modifier
+            if (world.events.activeEffects.disease) deathChance += 0.02;
+
+            // Random accident (very rare)
+            deathChance += 0.001;
+
+            if (deathChance > 0 && Math.random() < deathChance) {
+                this._killNpc(world, npc);
+            }
+        }
+    }
+
+    _killNpc(world, npc) {
+        let cause;
+        if (npc.age >= 70) cause = '年老體衰';
+        else if (world.events.activeEffects.disease) cause = '突發疾病';
+        else cause = pickRandom(DEATH_CAUSES.slice(1));
+
+        const epitaph = this._generateEpitaph(npc);
+
+        // Record in graveyard
+        this.graveyard.push({
+            name: npc.name, age: npc.age, gender: npc.gender,
+            deathCause: cause, deathTick: world.tickCount,
+            deathTime: world.clock.timeStr, epitaph: epitaph,
+            job: npc.job?.title || '無', traits: npc.personality.traits.slice(0, 3),
+        });
+
+        // Notify the world
+        world.logMessage('death', `⚰️ ${npc.name}（${npc.age}歲）因${cause}離世了。${epitaph}`, npc.name);
+
+        // Grief for related NPCs
+        Object.values(world.agents).forEach(a => {
+            if (a.agentId === npc.agentId) return;
+            const rel = a.relationships.relationships[npc.agentId];
+            if (rel) {
+                let grief = -5;
+                if (rel.status === 'married' || rel.status === 'dating') grief = -30;
+                else if (rel.affinity > 50) grief = -20;
+                else if (rel.affinity > 20) grief = -10;
+                a.mood = Math.max(-100, a.mood + grief);
+                a.memory.add(world.tickCount, world.clock.timeStr, 'social',
+                    `${npc.name}去世了...我很難過。`, 9, [npc.name]);
+                // Clear relationship status
+                if (rel.status === 'married' || rel.status === 'dating') {
+                    rel.status = 'ex'; rel.statusSince = world.tickCount;
+                }
+            }
+        });
+
+        // Town-wide mood hit
+        Object.values(world.agents).forEach(a => {
+            if (a.agentId !== npc.agentId && !a.isPlayer) {
+                a.mood = Math.max(-100, a.mood - 3);
+            }
+        });
+
+        world.gossipNetwork.activeGossip.push({
+            about: npc.name, content: `${npc.name}去世了...願他安息。`,
+            source: '鎮民', spreadCount: 0, tickCreated: world.tickCount, isTrue: true
+        });
+
+        // Remove from factions
+        if (world.factions) {
+            for (const faction of Object.values(world.factions.factions)) {
+                faction.removeMember(npc.agentId);
+            }
+        }
+
+        // Remove the agent
+        world.removeAgent(npc.agentId);
+
+        // Job vacancy - may need immigration
+        world.events.TARGET_POPULATION = Math.max(world.events.TARGET_POPULATION,
+            Object.values(world.agents).filter(a => !a.isPlayer).length + 1);
+    }
+
+    _checkBirths(world) {
+        // Check for married couples
+        const npcs = Object.values(world.agents).filter(a => !a.isPlayer);
+        for (const npc of npcs) {
+            if (npc.age < 20 || npc.age > 45) continue;
+            const partner = npc.relationships.getPartner();
+            if (!partner || partner.status !== 'married') continue;
+            const otherAgent = world.agents[partner.targetId];
+            if (!otherAgent || otherAgent.isPlayer) continue;
+
+            // Only check once per couple (by comparing IDs)
+            if (npc.agentId > partner.targetId) continue;
+
+            // Birth probability based on age and relationship quality
+            const avgAge = (npc.age + otherAgent.age) / 2;
+            let birthChance = 0.02;
+            if (avgAge > 35) birthChance = 0.01;
+            if (avgAge > 40) birthChance = 0.005;
+            if (partner.affinity > 60) birthChance *= 1.5;
+
+            // Limit total population
+            const currentPop = Object.values(world.agents).filter(a => !a.isPlayer).length;
+            if (currentPop >= 20) continue;
+
+            if (Math.random() < birthChance) {
+                this._birthChild(world, npc, otherAgent);
+            }
+        }
+    }
+
+    _birthChild(world, parentA, parentB) {
+        const gender = Math.random() < 0.5 ? 'male' : 'female';
+        const namePool = gender === 'male' ? BABY_NAMES_MALE : BABY_NAMES_FEMALE;
+        const usedNames = new Set(Object.values(world.agents).map(a => a.name));
+        const graveyardNames = new Set(this.graveyard.map(g => g.name));
+        const availableNames = namePool.filter(n => !usedNames.has(n) && !graveyardNames.has(n));
+        const name = availableNames.length > 0 ? pickRandom(availableNames) :
+            `${parentA.name.charAt(0)}${pickRandom(namePool).slice(-1)}`;
+
+        // Inherit traits from parents
+        const allTraits = [...parentA.personality.traits, ...parentB.personality.traits];
+        const inheritedTraits = shuffle(allTraits).slice(0, 2);
+        // Add one random new trait
+        const POSSIBLE_TRAITS = ['kind','shy','charismatic','gossip','hardworking','lazy','perfectionist','creative','optimist','pessimist','neurotic','stoic','romantic','night_owl','early_bird'];
+        const newTrait = pickRandom(POSSIBLE_TRAITS.filter(t => !inheritedTraits.includes(t)));
+        inheritedTraits.push(newTrait);
+
+        const values = shuffle([...parentA.personality.values, ...parentB.personality.values]).slice(0, 2);
+        const background = `${parentA.name}和${parentB.name}的孩子。在邊境鎮出生長大。`;
+
+        const personality = new Personality(inheritedTraits, background, values);
+        const childAge = 16; // Start as young adult
+        const agent = new Agent(`child_${world.tickCount}`, name, childAge, personality, null,
+            parentA.homeLocation, gender);
+
+        world.addAgent(agent);
+
+        this.births.push({
+            name, parentNames: [parentA.name, parentB.name],
+            birthTick: world.tickCount, birthTime: world.clock.timeStr,
+        });
+
+        // Parents get mood boost
+        parentA.mood = Math.min(100, parentA.mood + 25);
+        parentB.mood = Math.min(100, parentB.mood + 25);
+        parentA.memory.add(world.tickCount, world.clock.timeStr, 'relationship',
+            `我們的孩子${name}出生了！`, 10, [parentB.name, name]);
+        parentB.memory.add(world.tickCount, world.clock.timeStr, 'relationship',
+            `我們的孩子${name}出生了！`, 10, [parentA.name, name]);
+
+        // Set up parent-child relationships
+        const relA = agent.relationships.getOrCreate(parentA.agentId, parentA.name);
+        relA.modifyAffinity(50); relA.modifyTrust(40);
+        const relB = agent.relationships.getOrCreate(parentB.agentId, parentB.name);
+        relB.modifyAffinity(50); relB.modifyTrust(40);
+        parentA.relationships.getOrCreate(agent.agentId, name).modifyAffinity(60);
+        parentB.relationships.getOrCreate(agent.agentId, name).modifyAffinity(60);
+
+        // Town celebration
+        Object.values(world.agents).forEach(a => {
+            if (a.agentId !== agent.agentId) {
+                a.mood = Math.min(100, a.mood + 5);
+            }
+        });
+
+        world.logMessage('birth', `🎒 ${parentA.name}和${parentB.name}的孩子${name}出生了！全鎮慶祝！`, name);
+        world.gossipNetwork.activeGossip.push({
+            about: name, content: `${parentA.name}和${parentB.name}生了個${gender==='male'?'男':'女'}孩，取名${name}！`,
+            source: '鎮民', spreadCount: 0, tickCreated: world.tickCount, isTrue: true
+        });
+    }
+
+    _generateEpitaph(npc) {
+        const lines = [];
+        if (npc.job) lines.push(`曾任${npc.job.title}`);
+        if (npc.personality.traits.includes('kind')) lines.push('以善良著稱');
+        else if (npc.personality.traits.includes('hardworking')) lines.push('勤勞一生');
+        else if (npc.personality.traits.includes('creative')) lines.push('才華洋溢');
+        else if (npc.personality.traits.includes('charismatic')) lines.push('深受愛戴');
+        else lines.push('將被永遠懷念');
+        return lines.join('，') + '。';
+    }
+
+    toDict() {
+        return {
+            graveyard: this.graveyard.slice(-50),
+            births: this.births.slice(-30),
+            _daysSinceCheck: this._daysSinceCheck,
+        };
+    }
+}
+
+// --- Exploration / Map Expansion System ---
+const EXPLORATION_ZONES = [
+    { id:'deep_forest', name:'幽深森林', icon:'🌲', difficulty:2, distance:3,
+      description:'城鎮外的茂密森林，傳說中有稀有草藥和野生動物。',
+      rewards: { resources:{ wood:30, herbs:20 }, xpSkill:'種植', xpAmount:50 },
+      events: ['發現了一片珍貴的草藥田！','遭遇了一群野狼，但成功擊退！','找到了一個隱藏的獵人小屋。','迷路了一陣子，但最終找到了回家的路。'] },
+    { id:'ancient_ruins', name:'古代遺跡', icon:'🏛️', difficulty:4, distance:5,
+      description:'神秘的古代建築遺址，可能藏有珍貴的知識和寶物。',
+      rewards: { resources:{ silver:40, research_points:30 }, xpSkill:'智識', xpAmount:80 },
+      events: ['發現了古代文字記錄！','觸發了一個古老的陷阱！','找到了珍貴的古代文物。','遺跡深處傳來神秘的聲音...'] },
+    { id:'abandoned_mine', name:'廢棄礦坑', icon:'⛏️', difficulty:3, distance:4,
+      description:'一座被廢棄的老礦坑，據說深處仍有豐富的礦脈。',
+      rewards: { resources:{ stone:25, metal:20 }, xpSkill:'採礦', xpAmount:60 },
+      events: ['發現了一條新的礦脈！','礦坑塌方，但安全逃出！','找到了前礦工留下的工具。','在礦坑深處看到了奇異的光芒。'] },
+    { id:'mountain_pass', name:'山間隘口', icon:'⛰️', difficulty:5, distance:6,
+      description: '通往外界的危險山路，但可能找到貿易路線和珍稀資源。',
+      rewards: { resources:{ silver:30, cloth:15, tools:10 }, xpSkill:'近戰', xpAmount:70 },
+      events: ['在山頂看到了壯麗的風景！','遭遇山賊，經過一番苦戰取勝。','發現了一條通往鄰鎮的捷徑。','暴風雪來襲，艱難地撐了過去。'] },
+    { id:'riverside_cave', name:'河畔洞窟', icon:'🕳️', difficulty:2, distance:2,
+      description:'河邊的一個神秘洞穴，經常有奇怪的回音。',
+      rewards: { resources:{ herbs:15, stone:10 }, xpSkill:'建造', xpAmount:40 },
+      events: ['在洞窟裡發現了古老的壁畫！','找到了地下泉水，可能對鎮上的供水有幫助。','洞窟深處有蝙蝠群棲息。','發現了被水沖來的寶箱殘骸。'] },
+    { id:'cursed_swamp', name:'詛咒沼澤', icon:'🌿', difficulty:4, distance:4,
+      description:'傳說被詛咒的沼澤地，危險但也可能有珍貴的材料。',
+      rewards: { resources:{ herbs:30, medicine:10 }, xpSkill:'醫療', xpAmount:60 },
+      events: ['找到了極為罕見的藥用植物！','陷入了沼澤泥潭，差點走不出來。','遇到了一位隱居的老藥師。','在沼澤中心發現了一塊奇怪的石頭。'] },
+];
+
+class ExplorationSystem {
+    constructor() {
+        this.discoveredZones = {};  // zoneId -> { discovered:bool, timesExplored:int, lastExploredTick }
+        this.activeExpeditions = []; // { zoneId, agentIds[], departureTick, returnTick, status }
+        this.expeditionLog = [];     // completed expedition results
+        this._counter = 0;
+    }
+
+    dailyUpdate(world) {
+        this._checkReturningExpeditions(world);
+        this._autoDiscoverZones(world);
+    }
+
+    _autoDiscoverZones(world) {
+        // Gradually discover zones based on town development
+        const npcCount = Object.values(world.agents).filter(a => !a.isPlayer).length;
+        const dayCount = world.clock.year * 60 + (['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15 + world.clock.day;
+
+        for (const zone of EXPLORATION_ZONES) {
+            if (this.discoveredZones[zone.id]) continue;
+            let discoverChance = 0;
+            // Guards and researchers discover zones
+            const explorers = Object.values(world.agents).filter(a =>
+                a.job && (a.job.key === 'guard' || a.job.key === 'researcher'));
+            if (explorers.length > 0) discoverChance = 0.02 * explorers.length;
+            // Time-based discovery
+            if (dayCount > 20) discoverChance += 0.01;
+            if (dayCount > 40) discoverChance += 0.02;
+            // Difficulty check
+            discoverChance /= zone.difficulty;
+
+            if (Math.random() < discoverChance) {
+                this.discoveredZones[zone.id] = { discovered: true, timesExplored: 0, lastExploredTick: 0 };
+                world.logMessage('exploration', `🗺️ 發現了新的探索區域：${zone.icon} ${zone.name}！${zone.description}`);
+                world.events.conversationTopics.push(`新發現的${zone.name}`);
+            }
+        }
+    }
+
+    canSendExpedition(zoneId) {
+        if (!this.discoveredZones[zoneId]) return false;
+        // Check if not already exploring this zone
+        return !this.activeExpeditions.some(e => e.zoneId === zoneId);
+    }
+
+    sendExpedition(world, zoneId, agentIds) {
+        const zone = EXPLORATION_ZONES.find(z => z.id === zoneId);
+        if (!zone || !this.canSendExpedition(zoneId)) return null;
+
+        const agents = agentIds.map(id => world.agents[id]).filter(Boolean);
+        if (agents.length === 0) return null;
+
+        const returnTick = world.tickCount + 96 * zone.distance; // distance in days
+
+        const expedition = {
+            id: `exp_${++this._counter}`,
+            zoneId, zoneName: zone.name, zoneIcon: zone.icon,
+            agentIds: agents.map(a => a.agentId),
+            agentNames: agents.map(a => a.name),
+            departureTick: world.tickCount,
+            returnTick: returnTick,
+            status: 'travelling',
+        };
+
+        this.activeExpeditions.push(expedition);
+
+        // Remove agents from town temporarily
+        agents.forEach(a => {
+            a.currentLocation = 'exploration';
+            a.activity = 'exploring';
+            a.memory.add(world.tickCount, world.clock.timeStr, 'discovery',
+                `出發前往${zone.name}探險！`, 7, agents.map(x => x.name));
+        });
+
+        const names = agents.map(a => a.name).join('、');
+        world.logMessage('exploration', `${zone.icon} ${names}出發前往${zone.name}探險了！預計${zone.distance}天後返回。`);
+
+        return expedition;
+    }
+
+    _checkReturningExpeditions(world) {
+        const returning = this.activeExpeditions.filter(e => world.tickCount >= e.returnTick);
+
+        for (const expedition of returning) {
+            const zone = EXPLORATION_ZONES.find(z => z.id === expedition.zoneId);
+            if (!zone) continue;
+
+            const agents = expedition.agentIds.map(id => world.agents[id]).filter(Boolean);
+            const teamSkill = agents.reduce((sum, a) => {
+                const relevantSkill = a.skills.get(zone.rewards.xpSkill);
+                return sum + (relevantSkill?.level || 1);
+            }, 0) / Math.max(1, agents.length);
+
+            // Success chance based on team skill vs difficulty
+            const successChance = Math.min(0.95, 0.4 + (teamSkill / zone.difficulty) * 0.15);
+            const isSuccess = Math.random() < successChance;
+
+            const event = pickRandom(zone.events);
+            let resultMsg = '';
+
+            if (isSuccess) {
+                // Give rewards
+                const multiplier = 0.5 + teamSkill * 0.1;
+                for (const [resource, amount] of Object.entries(zone.rewards.resources)) {
+                    const gained = Math.floor(amount * multiplier);
+                    world.stockpile.add(resource, gained);
+                }
+                // XP for participants
+                agents.forEach(a => {
+                    a.skills.addXp(zone.rewards.xpSkill, zone.rewards.xpAmount);
+                    a.mood = Math.min(100, a.mood + 10);
+                    a.currentLocation = a.homeLocation;
+                    a.activity = 'idle';
+                    a.memory.add(world.tickCount, world.clock.timeStr, 'discovery',
+                        `從${zone.name}探險歸來！${event}`, 8, agents.map(x => x.name));
+                });
+
+                resultMsg = `${zone.icon} 探險隊從${zone.name}凱旋歸來！${event}`;
+                this.discoveredZones[zone.id].timesExplored++;
+            } else {
+                // Failed expedition - agents return wounded
+                agents.forEach(a => {
+                    a.mood = Math.max(-100, a.mood - 15);
+                    a.needs.rest = Math.max(0, a.needs.rest - 30);
+                    a.needs.hunger = Math.max(0, a.needs.hunger - 20);
+                    a.currentLocation = a.homeLocation;
+                    a.activity = 'idle';
+                    a.memory.add(world.tickCount, world.clock.timeStr, 'discovery',
+                        `從${zone.name}探險失敗返回...${event}`, 7, agents.map(x => x.name));
+                });
+                // Some resources still found
+                for (const [resource, amount] of Object.entries(zone.rewards.resources)) {
+                    world.stockpile.add(resource, Math.floor(amount * 0.2));
+                }
+                resultMsg = `${zone.icon} 探險隊從${zone.name}狼狽歸來...${event}`;
+            }
+
+            this.discoveredZones[zone.id].lastExploredTick = world.tickCount;
+            expedition.status = isSuccess ? 'success' : 'failed';
+            expedition.result = event;
+
+            world.logMessage('exploration', resultMsg, agents.map(a => a.name).join('、'));
+            this.expeditionLog.push({
+                ...expedition, completedTick: world.tickCount,
+                success: isSuccess, event: event,
+            });
+        }
+
+        this.activeExpeditions = this.activeExpeditions.filter(e => world.tickCount < e.returnTick);
+    }
+
+    toDict() {
+        return {
+            discoveredZones: { ...this.discoveredZones },
+            activeExpeditions: this.activeExpeditions.map(e => ({ ...e })),
+            expeditionLog: this.expeditionLog.slice(-20),
+            _counter: this._counter,
+        };
+    }
+}
+
 // --- World ---
 class World {
     constructor() {
@@ -2813,6 +3671,11 @@ class World {
         this.research = new ResearchManager();
         this.workOrders = new WorkOrderManager();
         this.news = new NewsSystem();
+        // New systems
+        this.factions = new FactionSystem();
+        this.festivals = new FestivalSystem();
+        this.lifecycle = new LifecycleSystem();
+        this.exploration = new ExplorationSystem();
     }
     addAgent(agent) { this.agents[agent.agentId] = agent; }
     removeAgent(id) { delete this.agents[id]; }
@@ -2851,8 +3714,16 @@ class World {
             if (electionEvent) {
                 this.logMessage('event', `[${electionEvent.severity.toUpperCase()}] ${electionEvent.name}: ${electionEvent.description}`);
             }
+            // New systems daily updates
+            this.factions.dailyUpdate(this);
+            this.festivals.dailyUpdate(this);
+            this.lifecycle.dailyUpdate(this);
+            this.exploration.dailyUpdate(this);
         }
-        Object.values(this.agents).forEach(agent => agent.update(this));
+        Object.values(this.agents).forEach(agent => {
+            if (agent.currentLocation === 'exploration') return; // Skip agents on expedition
+            agent.update(this);
+        });
     }
     getState() {
         return {
@@ -2871,6 +3742,10 @@ class World {
             news: this.news.toDict(),
             npc_conversations: this.conversationEngine.npcConversationLog.slice(-20),
             election: this.election.toDict(),
+            factions: this.factions.toDict(),
+            festivals: this.festivals.toDict(),
+            lifecycle: this.lifecycle.toDict(),
+            exploration: this.exploration.toDict(),
         };
     }
     reset(seed = null) {
@@ -2883,6 +3758,10 @@ class World {
         this.research = new ResearchManager();
         this.workOrders = new WorkOrderManager();
         this.news = new NewsSystem();
+        this.factions = new FactionSystem();
+        this.festivals = new FestivalSystem();
+        this.lifecycle = new LifecycleSystem();
+        this.exploration = new ExplorationSystem();
         this.townMap = generateRandomTown(seed);
         this._loadDefaultResidents();
         const player = new PlayerAgent();
@@ -3120,6 +3999,10 @@ class World {
             workOrders: { orders:this.workOrders.orders.map(o=>({...o})), _counter:this.workOrders._counter },
             news: { bulletins:this.news.bulletins.map(b=>({...b})), activeModifiers:{...this.news.activeModifiers}, _lastPublishDay:this.news._lastPublishDay },
             election: this.election.toDict(),
+            factions: this.factions.toDict(),
+            festivals: this.festivals.toDict(),
+            lifecycle: this.lifecycle.toDict(),
+            exploration: this.exploration.toDict(),
         };
     }
 
@@ -3251,6 +4134,51 @@ class World {
             // Election
             this.election = new ElectionSystem();
             if (data.election) this.election.loadFrom(data.election);
+
+            // Factions
+            this.factions = new FactionSystem();
+            if (data.factions) {
+                this.factions._counter = data.factions._counter || 0;
+                this.factions._daysSinceCheck = data.factions._daysSinceCheck || 0;
+                if (data.factions.factions) {
+                    for (const [id, fd] of Object.entries(data.factions.factions)) {
+                        const f = new Faction(fd.id, fd.type, fd.founderName);
+                        f.name = fd.name; f.icon = fd.icon;
+                        f.members = fd.members || [];
+                        f.formedTick = fd.formedTick || 0;
+                        f.cohesion = fd.cohesion ?? 50;
+                        f.rivalFactionId = fd.rivalFactionId || null;
+                        f.allyFactionId = fd.allyFactionId || null;
+                        this.factions.factions[id] = f;
+                    }
+                }
+            }
+
+            // Festivals
+            this.festivals = new FestivalSystem();
+            if (data.festivals) {
+                this.festivals.activeFestival = data.festivals.activeFestival || null;
+                this.festivals.festivalLog = data.festivals.festivalLog || [];
+                this.festivals.activeQuest = data.festivals.activeQuest || null;
+                this.festivals._lastFestivalSeason = data.festivals._lastFestivalSeason || null;
+            }
+
+            // Lifecycle
+            this.lifecycle = new LifecycleSystem();
+            if (data.lifecycle) {
+                this.lifecycle.graveyard = data.lifecycle.graveyard || [];
+                this.lifecycle.births = data.lifecycle.births || [];
+                this.lifecycle._daysSinceCheck = data.lifecycle._daysSinceCheck || 0;
+            }
+
+            // Exploration
+            this.exploration = new ExplorationSystem();
+            if (data.exploration) {
+                this.exploration.discoveredZones = data.exploration.discoveredZones || {};
+                this.exploration.activeExpeditions = data.exploration.activeExpeditions || [];
+                this.exploration.expeditionLog = data.exploration.expeditionLog || [];
+                this.exploration._counter = data.exploration._counter || 0;
+            }
 
             this.logMessage('system', '遊戲讀取成功！');
             return true;

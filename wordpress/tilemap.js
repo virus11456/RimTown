@@ -2258,6 +2258,15 @@ class PixelTileMap {
             ctx.fillText(thought, pos.x, by + 9);
         }
 
+        // === Exploration Zone Markers on Map Edges ===
+        this._drawExplorationMarkers(ctx);
+
+        // === Graveyard Markers ===
+        this._drawGraveyardMarkers(ctx);
+
+        // === Festival Decorations ===
+        this._drawFestivalDecorations(ctx);
+
         // === Ambient Particles ===
         this._updateAndDrawParticles(ctx);
 
@@ -2345,6 +2354,160 @@ class PixelTileMap {
 
         // Keep particle count reasonable
         if (this._particles.length > 200) this._particles = this._particles.slice(-150);
+    }
+
+    _drawExplorationMarkers(ctx) {
+        const data = this.explorationData;
+        if (!data || !data.discoveredZones) return;
+        const zones = Object.keys(data.discoveredZones);
+        if (!zones.length) return;
+
+        const TILE = 16;
+        const icons = { deep_forest:'🌲', ancient_ruins:'🏛', abandoned_mine:'⛏', mountain_pass:'⛰', riverside_cave:'🕳', cursed_swamp:'🌿' };
+        const names = { deep_forest:'幽深森林', ancient_ruins:'古代遺跡', abandoned_mine:'廢棄礦坑', mountain_pass:'山間隘口', riverside_cave:'河畔洞窟', cursed_swamp:'詛咒沼澤' };
+
+        // Place markers at map edges
+        const edgePositions = [
+            { x: 2 * TILE, y: 2 * TILE },
+            { x: (this.cols - 4) * TILE, y: 2 * TILE },
+            { x: 2 * TILE, y: (this.rows - 3) * TILE },
+            { x: (this.cols - 4) * TILE, y: (this.rows - 3) * TILE },
+            { x: Math.floor(this.cols / 2) * TILE, y: 1 * TILE },
+            { x: Math.floor(this.cols / 2) * TILE, y: (this.rows - 2) * TILE },
+        ];
+
+        ctx.font = '8px monospace';
+        ctx.textAlign = 'center';
+        zones.forEach((zoneId, i) => {
+            if (i >= edgePositions.length) return;
+            const pos = edgePositions[i];
+            const name = names[zoneId] || zoneId;
+            const active = (data.activeExpeditions || []).some(e => e.zoneId === zoneId);
+
+            // Arrow indicator pointing outward
+            ctx.fillStyle = active ? 'rgba(255,200,50,0.85)' : 'rgba(180,220,255,0.75)';
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = active ? '#ffa500' : '#88aadd';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Zone icon
+            ctx.fillStyle = '#333';
+            ctx.fillText(icons[zoneId] || '?', pos.x, pos.y + 3);
+
+            // Label
+            const tw = ctx.measureText(name).width;
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(pos.x - tw/2 - 3, pos.y + 6, tw + 6, 11);
+            ctx.fillStyle = active ? '#ffd700' : '#aaddff';
+            ctx.fillText(name, pos.x, pos.y + 14);
+        });
+    }
+
+    _drawGraveyardMarkers(ctx) {
+        const graves = this.graveyardData;
+        if (!graves || !graves.length) return;
+
+        // Draw graveyard near chapel or at edge of residential area
+        const chapelZone = this.buildingZones['chapel'] || this.natureZones['chapel'];
+        const TILE = 16;
+        let baseX, baseY;
+        if (chapelZone) {
+            baseX = (chapelZone.x + chapelZone.w) * TILE + TILE;
+            baseY = chapelZone.y * TILE;
+        } else {
+            // Fallback position
+            baseX = (this.cols - 8) * TILE;
+            baseY = (this.rows - 8) * TILE;
+        }
+
+        // Draw gravestones (max 10 visible)
+        const visibleGraves = graves.slice(-10);
+        ctx.font = '6px monospace';
+        ctx.textAlign = 'center';
+        visibleGraves.forEach((g, i) => {
+            const row = Math.floor(i / 5);
+            const col = i % 5;
+            const gx = baseX + col * 14;
+            const gy = baseY + row * 18;
+
+            // Gravestone shape
+            ctx.fillStyle = '#667788';
+            ctx.fillRect(gx - 4, gy - 8, 8, 10);
+            ctx.beginPath();
+            ctx.arc(gx, gy - 8, 4, Math.PI, 0);
+            ctx.fill();
+
+            // Cross
+            ctx.fillStyle = '#aabbcc';
+            ctx.fillRect(gx - 0.5, gy - 7, 1, 5);
+            ctx.fillRect(gx - 2, gy - 5, 4, 1);
+
+            // Name tooltip on hover (just draw small text)
+            ctx.fillStyle = '#aaa';
+            ctx.fillText(g.name.slice(-1), gx, gy + 6);
+        });
+
+        // Graveyard label
+        if (visibleGraves.length > 0) {
+            const labelX = baseX + 25;
+            const labelY = baseY - 14;
+            ctx.font = 'bold 7px monospace';
+            const text = '墓園';
+            const tw = ctx.measureText(text).width;
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(labelX - tw/2 - 3, labelY - 7, tw + 6, 11);
+            ctx.fillStyle = '#999';
+            ctx.fillText(text, labelX, labelY);
+        }
+    }
+
+    _drawFestivalDecorations(ctx) {
+        const data = this.festivalData;
+        if (!data || !data.activeFestival) return;
+
+        const TILE = 16;
+        const festival = data.activeFestival;
+        const pulse = Math.sin(this.animFrame * 0.08) * 0.3 + 0.7;
+
+        // Draw festival banner at town square
+        const squareZone = this.buildingZones['town_square'] || this.natureZones['town_square'];
+        if (squareZone) {
+            const cx = (squareZone.x + squareZone.w / 2) * TILE;
+            const cy = squareZone.y * TILE - 8;
+
+            // Banner
+            ctx.fillStyle = `rgba(255,200,50,${0.6 * pulse})`;
+            ctx.fillRect(cx - 30, cy - 4, 60, 12);
+            ctx.strokeStyle = `rgba(255,150,0,${0.8 * pulse})`;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(cx - 30, cy - 4, 60, 12);
+
+            ctx.font = 'bold 8px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#8B4513';
+            ctx.fillText(`${festival.icon} ${festival.name}`, cx, cy + 5);
+        }
+
+        // Sparkle particles during festival
+        if (this.animFrame % 8 === 0) {
+            const colors = ['#FFD700', '#FF69B4', '#00CED1', '#FF6347', '#98FB98'];
+            for (let i = 0; i < 3; i++) {
+                this._particles.push({
+                    x: Math.random() * this.cols * TILE,
+                    y: Math.random() * this.rows * TILE,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: -Math.random() * 0.3 - 0.1,
+                    life: 60 + Math.random() * 60,
+                    maxLife: 120,
+                    size: 2 + Math.random() * 2,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    type: 'festival',
+                });
+            }
+        }
     }
 
     _renderDayNightOverlay(ctx) {
