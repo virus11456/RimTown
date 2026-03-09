@@ -40,6 +40,16 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## Changelog
 
+### v2.3.7 (2026-03-09)
+
+**修復 LLM 回覆顯示 think 標籤 / 強制繁體中文**
+
+- 修復 DeepSeek、Qwen 等模型回覆包含 `<think>...</think>` 推理標籤直接顯示在聊天中的問題
+- 新增 `_stripThinkTags()` 統一在 LLM 回傳結果時過濾推理標籤
+- 強化所有 AI prompt 的繁體中文（台灣用語）要求，避免模型回覆簡體中文
+- 修正插件 header 版本號與 `RIMTOWN_VERSION` 不一致（2.2.0 → 2.3.7）
+- 以上修正同步套用至 WordPress 與 Chrome Extension 版本
+
 ### v2.3.6 (2026-03-09)
 
 **Groq 自動備援 / 模型升級**

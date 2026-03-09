@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 2.3.6
+ * Version: 2.3.7
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '2.3.6');
+define('RIMTOWN_VERSION', '2.3.7');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1077,6 +1077,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '2.3.7',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '修復 DeepSeek、Qwen 等模型回覆包含 <think> 推理標籤直接顯示在聊天中的問題',
+                '新增 _stripThinkTags() 統一過濾 LLM 回傳的推理標籤',
+                '強化所有 AI prompt 的繁體中文（台灣用語）要求，避免模型回覆簡體中文',
+                '修正插件 header 版本號與 RIMTOWN_VERSION 不一致',
+            ),
+        ),
         array(
             'version' => '2.3.6',
             'date'    => '2026-03-09',
