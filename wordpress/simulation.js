@@ -840,7 +840,8 @@ ${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
 - 情侶："你怎麼又沒穿外套？天都涼了...過來，把這個披上。"
 
 格式：每行「名字: 對話內容」
-最後一行：EFFECTS: {"affinity_change_a": 數字(-3到5), "affinity_change_b": 數字(-3到5), "romantic_change_a": 數字(0到3), "romantic_change_b": 數字(0到3), "summary": "用一句生動的話總結發生了什麼"}`;
+最後一行：EFFECTS: {"affinity_change_a": 數字(-3到5), "affinity_change_b": 數字(-3到5), "romantic_change_a": 數字(0到5), "romantic_change_b": 數字(0到5), "summary": "用一句生動的話總結發生了什麼"}
+提示：romantic_change 代表心動程度的變化。如果兩人聊得開心、有曖昧、互相關心，romantic 應該 > 0（通常1-3）。只有完全無感或尷尬才給0。`;
 
         const response = await this.llm.generate(prompt, 800);
         return this._parseConversation(response, agentA, agentB, world, relA, relB);
@@ -866,8 +867,9 @@ ${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
         }
         const affA = effects.affinity_change_a ?? randInt(-2,5);
         const affB = effects.affinity_change_b ?? randInt(-2,5);
-        const romA = effects.romantic_change_a ?? 0;
-        const romB = effects.romantic_change_b ?? 0;
+        // Default romantic growth: positive conversations should build romantic interest
+        const romA = effects.romantic_change_a ?? (affA > 0 ? randInt(0,2) : 0);
+        const romB = effects.romantic_change_b ?? (affB > 0 ? randInt(0,2) : 0);
         const summary = effects.summary || `${agentA.name}和${agentB.name}聊了天。`;
         relA.modifyAffinity(affA); relA.modifyRomantic(romA); relA.recordInteraction(world.tickCount, summary);
         relB.modifyAffinity(affB); relB.modifyRomantic(romB); relB.recordInteraction(world.tickCount, summary);
@@ -1162,10 +1164,13 @@ ${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
             const tA = agentA.personality.traits;
             const tB = agentB.personality.traits;
             const hasRomanticTrait = tA.includes('romantic') || tB.includes('romantic');
-            const sparkChance = hasRomanticTrait ? 0.35 : 0.15;
+            const hasChemistry = (tA.includes('shy') && tB.includes('charismatic')) ||
+                                 (tB.includes('shy') && tA.includes('charismatic')) ||
+                                 (tA.includes('creative') && tB.includes('creative'));
+            const sparkChance = hasRomanticTrait ? 0.5 : hasChemistry ? 0.4 : 0.25;
             if (Math.random() < sparkChance) {
-                const spark = randInt(1, hasRomanticTrait ? 4 : 2);
-                romA += spark; romB += spark;
+                const spark = randInt(1, hasRomanticTrait ? 5 : hasChemistry ? 4 : 3);
+                romA += spark; romB += Math.max(1, spark - randInt(0,1));
             }
         }
 
@@ -1533,14 +1538,66 @@ ${player.name}: ${playerMessage}
             affChange = randInt(0,1);
             summary = `${player.name}和${npc.name}道別了。`;
         } else {
-            // Generic response based on relationship level - try to engage with what was said
-            if (isCouple) npcReply = pickRandom([`嗯嗯，我在聽。你繼續說。`,`你說的我都聽進去了。`,`是嗎？跟我說更多。`]);
-            else if (aff > 50) npcReply = pickRandom([`嗯嗯！然後呢？`,`哈哈，你說的我懂。`,`是嗎？有意思！跟我說更多。`,`我也有同感！`]);
-            else if (aff > 20) npcReply = pickRandom([`嗯，你說的有道理。`,`原來如此，我沒想過這件事。`,`哈，你還挺有想法的嘛。`,`是喔？有趣。`]);
-            else if (aff > -10) npcReply = pickRandom([`嗯...是嗎。`,`哦，我知道了。`,`你這人還挺愛聊的。`,shy?'嗯嗯...':abrasive?'所以呢？':'好吧。']);
-            else npcReply = pickRandom([`...隨便你怎麼說吧。`,`嗯哼。`,`我不太感興趣。`,`你說完了嗎？`]);
-            affChange = aff > 0 ? randInt(0,2) : randInt(-1,1);
-            summary = `${player.name}和${npc.name}聊了天。`;
+            // Detect if player is asking a question
+            const isQuestion = /[？?]/.test(msg) || /嗎$|呢$|吧$/.test(msg.trim()) || /^(誰|什麼|哪|為什麼|怎麼|有沒有|是不是|知不知|你知道|你覺得|你認為|你有|可以|能不能|會不會|要不要)/.test(msg);
+            const isAboutSomeone = /誰|某人|有人|大家|他們|別人|其他人/.test(msg);
+            const isAboutOpinion = /覺得|認為|看法|意見|怎麼看|怎麼想/.test(msg);
+            const isAboutKnowledge = /知道|聽說|有沒有|是不是|真的|假的/.test(msg);
+
+            if (isQuestion && isAboutSomeone) {
+                // Question about other people
+                const gossip_s = world.gossipNetwork?.activeGossip || [];
+                if (gossip && gossip_s.length) {
+                    const g = pickRandom(gossip_s);
+                    npcReply = pickRandom([`嗯...我聽說${g.content}`,`你問這個啊？我倒是有聽到一些...${g.content}`,`${shy?'呃...我不太確定，但...':'我跟你說喔，'}${g.content}`]);
+                } else {
+                    npcReply = pickRandom([
+                        `${shy?'嗯...我不太清楚...':'這個嘛...'}我平常不太注意別人的事。`,
+                        `${abrasive?'我怎麼會知道這種事。':'我沒聽說過耶。'}你要不要去問問別人？`,
+                        `${gossip?'欸我有聽到一點風聲，但不確定是不是真的...':'這個我真的不知道。'}`,
+                        `${charismatic?'哈哈，你還挺八卦的嘛！':'嗯...'}我對這些不太了解欸。`,
+                    ]);
+                }
+                affChange = randInt(0,2);
+                summary = `${player.name}問了${npc.name}關於其他人的事。`;
+            } else if (isQuestion && isAboutOpinion) {
+                // Asking for NPC's opinion
+                npcReply = pickRandom([
+                    `${shy?'呃...我的想法嗎...':'嗯，讓我想想。'}我覺得${pickRandom(['每個人有每個人的想法吧','很難說，要看情況','這種事沒有標準答案'])}。`,
+                    `${abrasive?'你問我？':'好問題。'}${pessimist?'反正不管怎樣結果都差不多。':optimist?'我覺得往好的方面想就對了！':'這要看怎麼看吧。'}`,
+                    `${charismatic?'哦？你想聽我的看法？':'嗯...'}${pickRandom(['我個人是覺得還好啦。','說真的，我也沒什麼特別的想法。','這個嘛...要我說的話...算了，我也不太確定。'])}`,
+                ]);
+                affChange = randInt(0,3);
+                summary = `${player.name}詢問了${npc.name}的看法。`;
+            } else if (isQuestion && isAboutKnowledge) {
+                // Asking if NPC knows something
+                npcReply = pickRandom([
+                    `${shy?'呃...':'嗯，'}${pickRandom(['我不太確定耶...','這個我沒聽過。','好像有聽說過，但記不太清了。'])}`,
+                    `${gossip?'欸你這麼一說我好像有印象...不過我也不確定是不是真的。':'這個嘛...我真的不知道欸。'}`,
+                    `${abrasive?'你覺得我什麼都知道嗎？':'哈，'}你可以去問問鎮上其他人，搞不好他們知道。`,
+                    `${charismatic?'有趣的問題！':'嗯...'}${pickRandom(['讓我想想...不，我真的不知道。','我也想知道呢。','你去圖書館查查看？'])}`,
+                ]);
+                affChange = randInt(0,2);
+                summary = `${player.name}問了${npc.name}一些事。`;
+            } else if (isQuestion) {
+                // Generic question
+                npcReply = pickRandom([
+                    `${shy?'嗯...這個嘛...':''}${pickRandom(['我想想喔...','好問題...','你突然這樣問我...'])}${pickRandom(['我也不太確定。','可能吧？','要看情況。','我沒想過這個問題欸。'])}`,
+                    `${abrasive?'這種事你自己不知道嗎？':charismatic?'哈哈，你真的很好奇欸！':'嗯...'}${pickRandom(['說實話我不太清楚。','我回去想想再告訴你。','你為什麼會想問這個？'])}`,
+                    `${optimist?'嗯，我覺得答案應該是正面的！':pessimist?'我不確定，但大概不會太好吧...':'我沒有什麼特別的想法欸。'}`,
+                ]);
+                affChange = randInt(0,2);
+                summary = `${player.name}問了${npc.name}一個問題。`;
+            } else {
+                // Statement / generic chat — respond based on relationship
+                if (isCouple) npcReply = pickRandom([`嗯嗯，我在聽。你繼續說。`,`你說的我都聽進去了。`,`是嗎？跟我說更多。`]);
+                else if (aff > 50) npcReply = pickRandom([`嗯嗯！然後呢？`,`哈哈，你說的我懂。`,`是嗎？有意思！跟我說更多。`,`我也有同感！`]);
+                else if (aff > 20) npcReply = pickRandom([`嗯，你說的有道理。`,`原來如此，我沒想過這件事。`,`哈，你還挺有想法的嘛。`,`是喔？有趣。`]);
+                else if (aff > -10) npcReply = pickRandom([`嗯...是嗎。`,`哦，我知道了。`,`你這人還挺愛聊的。`,shy?'嗯嗯...':abrasive?'所以呢？':'好吧。']);
+                else npcReply = pickRandom([`...隨便你怎麼說吧。`,`嗯哼。`,`我不太感興趣。`,`你說完了嗎？`]);
+                affChange = aff > 0 ? randInt(0,2) : randInt(-1,1);
+            }
+            summary = summary || `${player.name}和${npc.name}聊了天。`;
         }
 
         // Add context-sensitive follow-up based on NPC state (natural phrasing)
@@ -2761,20 +2818,22 @@ class World {
                 const otherRel = other.relationships.getOrCreate(agent.agentId, agent.name);
 
                 // --- Natural romantic attraction growth ---
-                if (!rel.status && rel.affinity > 10 && rel.interactionCount > 2) {
+                if (!rel.status && rel.affinity > 5 && rel.interactionCount > 1) {
                     const tA = agent.personality.traits;
                     const tB = other.personality.traits;
-                    let compat = 0;
+                    let compat = 1; // Base compatibility — everyone has some chance
                     if (tA.includes('romantic') || tB.includes('romantic')) compat += 3;
                     if (tA.includes('shy') && tB.includes('kind')) compat += 2;
                     if (tA.includes('kind') && tB.includes('shy')) compat += 2;
-                    if (tA.includes('charismatic') || tB.includes('charismatic')) compat += 1;
+                    if (tA.includes('charismatic') || tB.includes('charismatic')) compat += 2;
                     if (tA.includes('creative') && tB.includes('creative')) compat += 2;
+                    if (tA.includes('hardworking') && tB.includes('hardworking')) compat += 1;
                     if (tA.includes('abrasive') && tB.includes('abrasive')) compat -= 2;
-                    const affinityBonus = Math.floor(rel.affinity / 25);
+                    const affinityBonus = Math.floor(rel.affinity / 15);
                     const growth = Math.max(0, affinityBonus + compat);
-                    if (growth > 0 && Math.random() < 0.3) {
-                        rel.modifyRomantic(randInt(1, Math.min(growth, 5)));
+                    // Higher chance to grow, especially with high affinity
+                    if (growth > 0 && Math.random() < 0.5) {
+                        rel.modifyRomantic(randInt(1, Math.min(growth, 6)));
                     }
                 }
 
@@ -2783,8 +2842,8 @@ class World {
                     const agentHasPartner = agent.relationships.getPartner();
                     const otherHasPartner = other.relationships.getPartner();
                     if (!agentHasPartner && !otherHasPartner &&
-                        rel.romanticInterest > 35 && otherRel.romanticInterest > 25 &&
-                        rel.affinity > 20 && otherRel.affinity > 20 && Math.random() < 0.25) {
+                        rel.romanticInterest > 25 && otherRel.romanticInterest > 18 &&
+                        rel.affinity > 15 && otherRel.affinity > 10 && Math.random() < 0.3) {
                         rel.status = 'dating'; rel.statusSince = this.tickCount;
                         otherRel.status = 'dating'; otherRel.statusSince = this.tickCount;
                         this.logMessage('relationship', `${agent.name}和${other.name}開始交往了！`, agent.name, other.name);
@@ -2800,8 +2859,8 @@ class World {
                 if (rel.status === 'dating' && otherRel.status === 'dating') {
                     const datingDuration = this.tickCount - rel.statusSince;
                     // Need to have been dating for a while, high affinity and romantic
-                    if (datingDuration > 150 && rel.affinity > 50 && rel.romanticInterest > 60 &&
-                        otherRel.affinity > 40 && otherRel.romanticInterest > 50 && Math.random() < 0.12) {
+                    if (datingDuration > 100 && rel.affinity > 40 && rel.romanticInterest > 50 &&
+                        otherRel.affinity > 35 && otherRel.romanticInterest > 40 && Math.random() < 0.15) {
                         rel.status = 'married'; rel.statusSince = this.tickCount;
                         otherRel.status = 'married'; otherRel.statusSince = this.tickCount;
                         this.logMessage('relationship', `${agent.name}和${other.name}結婚了！全鎮舉辦了盛大的婚禮！`, agent.name, other.name);
