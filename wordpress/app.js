@@ -1,5 +1,158 @@
-// RimTown - Frontend App (WordPress Plugin)
+// RimTown - Frontend App (WordPress Plugin) v2.0
 const ELECTION_POLICIES_LABELS = {economy:'經濟發展',welfare:'社會福利',defense:'軍事防禦',culture:'文化教育',nature:'自然保育',freedom:'個人自由'};
+
+// =====================================================
+// Achievement Definitions
+// =====================================================
+const ACHIEVEMENTS = {
+    // Getting started
+    first_chat: { name: '初次對話', desc: '第一次與居民聊天', icon: '💬', category: 'social' },
+    chat_10: { name: '話癆', desc: '與居民聊天10次', icon: '🗣️', category: 'social' },
+    chat_50: { name: '社交達人', desc: '與居民聊天50次', icon: '🎙️', category: 'social' },
+    chat_all_npcs: { name: '全民好友', desc: '與每位居民都聊過天', icon: '🤝', category: 'social' },
+    // Romance
+    first_crush: { name: '心動', desc: '有人對你產生好感', icon: '💗', category: 'romance' },
+    first_dating: { name: '初戀', desc: '開始與某人交往', icon: '💕', category: 'romance' },
+    first_marriage: { name: '白頭偕老', desc: '與某人結婚', icon: '💍', category: 'romance' },
+    heartbreaker: { name: '渣男/渣女', desc: '與3個以上的人交往過', icon: '💔', category: 'romance' },
+    // Economy
+    first_trade: { name: '商人初體驗', desc: '完成第一筆交易', icon: '💰', category: 'economy' },
+    rich: { name: '富甲一方', desc: '銀幣超過500', icon: '🤑', category: 'economy' },
+    builder: { name: '建設者', desc: '建造第一棟建築', icon: '🏗️', category: 'economy' },
+    master_builder: { name: '建築大師', desc: '建造5棟建築', icon: '🏰', category: 'economy' },
+    all_buildings: { name: '鎮之完善', desc: '建造所有建築', icon: '🌆', category: 'economy' },
+    first_research: { name: '學者', desc: '完成第一項研究', icon: '📚', category: 'economy' },
+    all_research: { name: '科技先驅', desc: '完成所有研究', icon: '🔬', category: 'economy' },
+    // Survival
+    survive_7: { name: '一週生存', desc: '存活7天', icon: '📅', category: 'survival' },
+    survive_30: { name: '月生存者', desc: '存活30天', icon: '🗓️', category: 'survival' },
+    survive_100: { name: '百日英雄', desc: '存活100天', icon: '🏆', category: 'survival' },
+    survive_year: { name: '週年慶', desc: '存活一整年', icon: '🎉', category: 'survival' },
+    repel_raid: { name: '防衛者', desc: '擊退第一次入侵', icon: '⚔️', category: 'survival' },
+    repel_10: { name: '鐵壁防線', desc: '擊退10次入侵', icon: '🛡️', category: 'survival' },
+    // Population
+    pop_15: { name: '小鎮風光', desc: '人口達到15', icon: '🏘️', category: 'town' },
+    pop_20: { name: '繁榮市鎮', desc: '人口達到20', icon: '🌇', category: 'town' },
+    pop_25: { name: '邊境都市', desc: '人口達到25', icon: '🌃', category: 'town' },
+    first_election: { name: '民主初體驗', desc: '參與第一次選舉', icon: '🗳️', category: 'town' },
+    elected_mayor: { name: '當選鎮長', desc: '玩家當選鎮長', icon: '👑', category: 'town' },
+    // Player interaction
+    got_job: { name: '打工仔', desc: '選擇一份工作', icon: '💼', category: 'player' },
+    job_master: { name: '職業達人', desc: '做過3種不同工作', icon: '🎯', category: 'player' },
+    voted: { name: '公民責任', desc: '在選舉中投票', icon: '✅', category: 'player' },
+    proposed: { name: '求婚', desc: '向某人求婚', icon: '💎', category: 'player' },
+    // Special
+    night_owl: { name: '夜貓子', desc: '在深夜（0-4點）仍在活動', icon: '🦉', category: 'special' },
+    gossip_heard: { name: '八卦通', desc: '聽到10則村民對話', icon: '👂', category: 'special' },
+    gossip_50: { name: '偷聽大師', desc: '聽到50則村民對話', icon: '🕵️', category: 'special' },
+    all_seasons: { name: '四季輪轉', desc: '經歷春夏秋冬', icon: '🌸', category: 'special' },
+    multi_town: { name: '開拓者', desc: '擁有3個以上城鎮', icon: '🗺️', category: 'special' },
+};
+
+// =====================================================
+// Cloud Auth Client
+// =====================================================
+class RimTownAuth {
+    constructor() {
+        this.loggedIn = false;
+        this.username = '';
+        this.userId = 0;
+        this._restUrl = '';
+        this._nonce = '';
+        this._initFromWP();
+    }
+
+    _initFromWP() {
+        if (typeof rimtownAuth !== 'undefined') {
+            this._restUrl = rimtownAuth.restUrl;
+            this._nonce = rimtownAuth.nonce;
+            this.loggedIn = !!rimtownAuth.loggedIn;
+            this.username = rimtownAuth.username || '';
+            this.userId = rimtownAuth.userId || 0;
+        }
+    }
+
+    async _fetch(endpoint, method = 'GET', body = null) {
+        const opts = {
+            method,
+            headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': this._nonce },
+            credentials: 'same-origin',
+        };
+        if (body) opts.body = JSON.stringify(body);
+        const res = await fetch(this._restUrl + endpoint, opts);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || data.code || 'API error');
+        return data;
+    }
+
+    async register(username, password, email) {
+        const data = await this._fetch('register', 'POST', { username, password, email });
+        this.loggedIn = true;
+        this.username = data.user.username;
+        this.userId = data.user.id;
+        return data;
+    }
+
+    async login(username, password) {
+        const data = await this._fetch('login', 'POST', { username, password });
+        this.loggedIn = true;
+        this.username = data.user.username;
+        this.userId = data.user.id;
+        return data;
+    }
+
+    async logout() {
+        await this._fetch('logout', 'POST');
+        this.loggedIn = false;
+        this.username = '';
+        this.userId = 0;
+    }
+
+    async checkLogin() {
+        const data = await this._fetch('me');
+        this.loggedIn = data.logged_in;
+        this.username = data.user?.username || '';
+        this.userId = data.user?.id || 0;
+        return data;
+    }
+
+    // Cloud save operations
+    async listSaves() {
+        const data = await this._fetch('saves');
+        return data.saves || [];
+    }
+
+    async cloudSave(townId, townName, saveData, meta) {
+        return this._fetch('save', 'POST', {
+            town_id: townId,
+            town_name: townName,
+            save_data: typeof saveData === 'string' ? saveData : JSON.stringify(saveData),
+            season: meta.season || '',
+            year: meta.year || 1,
+            day: meta.day || 1,
+            population: meta.population || 0,
+        });
+    }
+
+    async cloudLoad(townId) {
+        const data = await this._fetch('save/' + townId);
+        return typeof data.save_data === 'string' ? JSON.parse(data.save_data) : data.save_data;
+    }
+
+    async cloudDelete(townId) {
+        return this._fetch('save/' + townId, 'DELETE');
+    }
+
+    // Achievements
+    async getAchievements() {
+        const data = await this._fetch('achievements');
+        return data.achievements || [];
+    }
+
+    async unlockAchievement(key, townId) {
+        return this._fetch('achievements', 'POST', { key, town_id: townId });
+    }
+}
 
 class RimTownApp {
     constructor() {
@@ -22,6 +175,18 @@ class RimTownApp {
         this._mapGenerated = false;
         this._viewingArchive = null;
         this.currentTownId = null;
+        // v2.0 — Auth + Achievements
+        this.auth = new RimTownAuth();
+        this._unlockedAchievements = new Set();
+        this._achievementQueue = []; // Toast queue
+        this._chatCount = 0;
+        this._chattedNpcs = new Set();
+        this._raidCount = 0;
+        this._seasonsVisited = new Set();
+        this._npcConvosSeen = 0;
+        this._playerJobHistory = new Set();
+        this._tradeCount = 0;
+        this._datingHistory = new Set();
         this.init();
     }
 
@@ -51,6 +216,7 @@ class RimTownApp {
         } else {
             console.log('[RimTown] WARNING: No LLM client — conversations will use fallback templates');
         }
+        this._hookConversationBubbles();
         this._updateLLMStatus();
         this.state = this.world.getState();
         this.setupTileMap();
@@ -58,10 +224,566 @@ class RimTownApp {
         this.setupMobileSidebar();
         this.setupControlListeners();
         this.setupSettingsListeners();
+        this.setupAuthListeners();
+        this._updateAccountButton();
+        this._loadAchievementsFromCloud();
         this.startSimulation();
         this.setupAutoSave();
         this.render();
         this._startRenderLoop();
+        this._startAchievementChecker();
+    }
+
+    // =====================================================
+    // AUTH SYSTEM
+    // =====================================================
+    setupAuthListeners() {
+        const accountBtn = document.getElementById('btn-account');
+        if (accountBtn) {
+            accountBtn.addEventListener('click', () => {
+                if (this.auth.loggedIn) {
+                    this._showAccountMenu();
+                } else {
+                    document.getElementById('auth-modal')?.classList.remove('hidden');
+                }
+            });
+        }
+
+        // Auth tab switching
+        document.querySelectorAll('.auth-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                const isLogin = tab.dataset.authTab === 'login';
+                document.getElementById('auth-login-form')?.classList.toggle('hidden', !isLogin);
+                document.getElementById('auth-register-form')?.classList.toggle('hidden', isLogin);
+            });
+        });
+
+        // Close buttons
+        document.querySelectorAll('.auth-close-btn').forEach(btn => {
+            btn.addEventListener('click', () => document.getElementById('auth-modal')?.classList.add('hidden'));
+        });
+
+        // Login
+        document.getElementById('auth-login-btn')?.addEventListener('click', () => this._doLogin());
+        document.getElementById('auth-login-pass')?.addEventListener('keydown', e => { if (e.key === 'Enter') this._doLogin(); });
+
+        // Register
+        document.getElementById('auth-reg-btn')?.addEventListener('click', () => this._doRegister());
+        document.getElementById('auth-reg-pass2')?.addEventListener('keydown', e => { if (e.key === 'Enter') this._doRegister(); });
+    }
+
+    async _doLogin() {
+        const user = document.getElementById('auth-login-user')?.value?.trim();
+        const pass = document.getElementById('auth-login-pass')?.value;
+        const errEl = document.getElementById('auth-login-error');
+        if (!user || !pass) { if (errEl) errEl.textContent = '請輸入帳號和密碼'; return; }
+        try {
+            if (errEl) errEl.textContent = '登入中...';
+            await this.auth.login(user, pass);
+            document.getElementById('auth-modal')?.classList.add('hidden');
+            this._updateAccountButton();
+            this.world.logMessage('system', `歡迎回來，${this.auth.username}！`);
+            this._syncFromCloud();
+        } catch (e) {
+            if (errEl) errEl.textContent = e.message || '登入失敗';
+        }
+    }
+
+    async _doRegister() {
+        const user = document.getElementById('auth-reg-user')?.value?.trim();
+        const email = document.getElementById('auth-reg-email')?.value?.trim();
+        const pass = document.getElementById('auth-reg-pass')?.value;
+        const pass2 = document.getElementById('auth-reg-pass2')?.value;
+        const errEl = document.getElementById('auth-reg-error');
+        if (!user || !pass) { if (errEl) errEl.textContent = '請填寫帳號和密碼'; return; }
+        if (pass !== pass2) { if (errEl) errEl.textContent = '兩次密碼不一致'; return; }
+        try {
+            if (errEl) errEl.textContent = '註冊中...';
+            await this.auth.register(user, pass, email);
+            document.getElementById('auth-modal')?.classList.add('hidden');
+            this._updateAccountButton();
+            this.world.logMessage('system', `註冊成功！歡迎，${this.auth.username}！`);
+            // Auto-upload current town
+            this._syncToCloud();
+        } catch (e) {
+            if (errEl) errEl.textContent = e.message || '註冊失敗';
+        }
+    }
+
+    _showAccountMenu() {
+        const existing = document.getElementById('account-menu-popup');
+        if (existing) { existing.remove(); return; }
+
+        const popup = document.createElement('div');
+        popup.id = 'account-menu-popup';
+        popup.className = 'account-menu-popup';
+        popup.innerHTML = `
+            <div class="account-menu-header">${this.auth.username}</div>
+            <button data-action="cloud-sync-up">上傳存檔到雲端</button>
+            <button data-action="cloud-sync-down">從雲端下載存檔</button>
+            <button data-action="show-achievements">成就</button>
+            <button data-action="auth-logout" class="btn-danger-text">登出</button>
+        `;
+        document.getElementById('rimtown-app')?.appendChild(popup);
+
+        // Auto close on click outside
+        setTimeout(() => {
+            const handler = (e) => {
+                if (!popup.contains(e.target) && e.target.id !== 'btn-account') {
+                    popup.remove();
+                    document.removeEventListener('click', handler);
+                }
+            };
+            document.addEventListener('click', handler);
+        }, 10);
+    }
+
+    _updateAccountButton() {
+        const btn = document.getElementById('btn-account');
+        if (!btn) return;
+        if (this.auth.loggedIn) {
+            btn.textContent = this.auth.username;
+            btn.className = 'btn-account logged-in';
+        } else {
+            btn.textContent = '帳號';
+            btn.className = 'btn-account';
+        }
+    }
+
+    async _syncToCloud() {
+        if (!this.auth.loggedIn) return;
+        try {
+            this._saveCurrentTown();
+            const saveData = this.world.serialize();
+            const clock = saveData.clock || {};
+            await this.auth.cloudSave(this.currentTownId, this._getCurrentTownName(), saveData, {
+                season: clock.season, year: clock.year, day: clock.day,
+                population: Object.keys(saveData.agents || {}).length,
+            });
+            this.world.logMessage('system', '已同步至雲端。');
+        } catch (e) {
+            console.error('[RimTown] Cloud sync error:', e);
+        }
+    }
+
+    async _syncFromCloud() {
+        if (!this.auth.loggedIn) return;
+        try {
+            const saves = await this.auth.listSaves();
+            if (saves.length === 0) {
+                // No cloud data — upload current local data
+                await this._syncToCloud();
+                return;
+            }
+            // Show cloud save list in town modal
+            this._cloudSaves = saves;
+            this.world.logMessage('system', `雲端有 ${saves.length} 個城鎮存檔。`);
+        } catch (e) {
+            console.error('[RimTown] Cloud load error:', e);
+        }
+    }
+
+    _getCurrentTownName() {
+        const list = this._getTownList();
+        const town = list.find(t => t.id === this.currentTownId);
+        return town?.name || '邊境鎮';
+    }
+
+    // =====================================================
+    // ACHIEVEMENT SYSTEM
+    // =====================================================
+    async _loadAchievementsFromCloud() {
+        // Load from localStorage first
+        try {
+            const local = JSON.parse(localStorage.getItem('rimtown_achievements') || '[]');
+            local.forEach(k => this._unlockedAchievements.add(k));
+        } catch (e) {}
+
+        // Load from cloud if logged in
+        if (this.auth.loggedIn) {
+            try {
+                const cloudAch = await this.auth.getAchievements();
+                cloudAch.forEach(a => this._unlockedAchievements.add(a.achievement_key));
+            } catch (e) {}
+        }
+    }
+
+    _unlockAchievement(key) {
+        if (this._unlockedAchievements.has(key)) return;
+        const def = ACHIEVEMENTS[key];
+        if (!def) return;
+        this._unlockedAchievements.add(key);
+
+        // Save locally
+        localStorage.setItem('rimtown_achievements', JSON.stringify([...this._unlockedAchievements]));
+
+        // Save to cloud
+        if (this.auth.loggedIn) {
+            this.auth.unlockAchievement(key, this.currentTownId).catch(() => {});
+        }
+
+        // Show toast
+        this._showAchievementToast(def);
+        this.world.logMessage('system', `成就解鎖：${def.icon} ${def.name}`);
+    }
+
+    _showAchievementToast(def) {
+        const toast = document.getElementById('achievement-toast');
+        if (!toast) return;
+        toast.innerHTML = `<div class="ach-toast-icon">${def.icon}</div><div class="ach-toast-info"><div class="ach-toast-title">成就解鎖！</div><div class="ach-toast-name">${def.name}</div><div class="ach-toast-desc">${def.desc}</div></div>`;
+        toast.classList.remove('hidden');
+        toast.classList.add('show');
+        setTimeout(() => { toast.classList.remove('show'); toast.classList.add('hidden'); }, 4000);
+    }
+
+    _startAchievementChecker() {
+        // Check achievements every 5 seconds
+        setInterval(() => this._checkAchievements(), 5000);
+    }
+
+    _checkAchievements() {
+        if (!this.state) return;
+        const agents = this.state.agents || {};
+        const player = agents['player'];
+        if (!player) return;
+        const clock = this.state.clock || {};
+        const chatHistory = player.chat_history || [];
+        const totalDays = ((clock.year || 1) - 1) * 60 + (clock.day || 1);
+
+        // Chat achievements
+        if (chatHistory.length >= 2) this._unlockAchievement('first_chat');
+        if (chatHistory.length >= 20) this._unlockAchievement('chat_10');
+        if (chatHistory.length >= 100) this._unlockAchievement('chat_50');
+
+        // Track chatted NPCs
+        const chattedNpcs = new Set();
+        chatHistory.forEach(m => {
+            if (m.speaker !== player.name) chattedNpcs.add(m.speaker);
+            if (m.target !== player.name) chattedNpcs.add(m.target);
+        });
+        const totalNpcs = Object.keys(agents).filter(id => id !== 'player').length;
+        if (chattedNpcs.size >= totalNpcs && totalNpcs >= 5) this._unlockAchievement('chat_all_npcs');
+
+        // Survival
+        if (totalDays >= 7) this._unlockAchievement('survive_7');
+        if (totalDays >= 30) this._unlockAchievement('survive_30');
+        if (totalDays >= 100) this._unlockAchievement('survive_100');
+        if ((clock.year || 1) >= 2) this._unlockAchievement('survive_year');
+
+        // Population
+        const pop = Object.keys(agents).length;
+        if (pop >= 15) this._unlockAchievement('pop_15');
+        if (pop >= 20) this._unlockAchievement('pop_20');
+        if (pop >= 25) this._unlockAchievement('pop_25');
+
+        // Economy
+        const res = this.state.stockpile?.resources || {};
+        if ((res.silver || 0) >= 500) this._unlockAchievement('rich');
+        const completedBuildings = this.state.buildings?.completed || [];
+        if (completedBuildings.length >= 1) this._unlockAchievement('builder');
+        if (completedBuildings.length >= 5) this._unlockAchievement('master_builder');
+        const availBuildings = this.world.buildings?.getAvailable?.(this.world) || [];
+        if (completedBuildings.length > 0 && availBuildings.length === 0) this._unlockAchievement('all_buildings');
+        const researchProjects = this.state.research?.projects || {};
+        const completedResearch = Object.values(researchProjects).filter(p => p.status === 'complete');
+        if (completedResearch.length >= 1) this._unlockAchievement('first_research');
+        const allResearch = Object.values(researchProjects);
+        if (allResearch.length > 0 && completedResearch.length === allResearch.length) this._unlockAchievement('all_research');
+
+        // Seasons
+        if (clock.season) this._seasonsVisited.add(clock.season);
+        if (this._seasonsVisited.size >= 4) this._unlockAchievement('all_seasons');
+
+        // Night owl
+        if (clock.hour !== undefined && (clock.hour >= 0 && clock.hour < 4)) this._unlockAchievement('night_owl');
+
+        // Election
+        const election = this.state.election;
+        if (election?.electionHistory?.length >= 1) this._unlockAchievement('first_election');
+
+        // Multi-town
+        if (this._getTownList().length >= 3) this._unlockAchievement('multi_town');
+
+        // NPC conversations seen (from log)
+        const npcConvos = this.state.npc_conversations || [];
+        this._npcConvosSeen = Math.max(this._npcConvosSeen, npcConvos.length);
+        if (this._npcConvosSeen >= 10) this._unlockAchievement('gossip_heard');
+        if (this._npcConvosSeen >= 50) this._unlockAchievement('gossip_50');
+
+        // Player relationships
+        const playerRels = player.relationships || [];
+        playerRels.forEach(r => {
+            if (r.romantic_interest > 30) this._unlockAchievement('first_crush');
+            if (r.status === 'dating') { this._unlockAchievement('first_dating'); this._datingHistory.add(r.target_name); }
+            if (r.status === 'married') this._unlockAchievement('first_marriage');
+        });
+        if (this._datingHistory.size >= 3) this._unlockAchievement('heartbreaker');
+
+        // Player job
+        if (player.job?.title && player.job.title !== '無業') {
+            this._unlockAchievement('got_job');
+            this._playerJobHistory.add(player.job.title);
+        }
+        if (this._playerJobHistory.size >= 3) this._unlockAchievement('job_master');
+
+        // Raid repel
+        const raidEvents = (this.state.recent_events || []).filter(e => e.event_type === 'raid');
+        if (raidEvents.length >= 1) this._unlockAchievement('repel_raid');
+        // Track cumulative raids across sessions
+        const raidCount = parseInt(localStorage.getItem('rimtown_raid_count') || '0');
+        const currentRaids = raidEvents.length;
+        if (currentRaids > this._raidCount) {
+            const newRaids = currentRaids - this._raidCount;
+            const totalRaids = raidCount + newRaids;
+            localStorage.setItem('rimtown_raid_count', totalRaids.toString());
+            if (totalRaids >= 10) this._unlockAchievement('repel_10');
+            this._raidCount = currentRaids;
+        }
+    }
+
+    // Hook conversation engine to push speech bubbles to tilemap
+    _hookConversationBubbles() {
+        // Set up a periodic check since ConversationEngine may be re-created
+        setInterval(() => {
+            if (this.world.conversationEngine && !this.world.conversationEngine._bubbleHooked) {
+                this.world.conversationEngine._bubbleHooked = true;
+                this.world.conversationEngine.onConversation = (aId, bId, aName, bName, textA, textB) => {
+                    if (this.tileMap) {
+                        this.tileMap.addConversationBubble(aId, bId, aName, bName, textA, textB);
+                    }
+                };
+            }
+        }, 2000);
+    }
+
+    // === Auth Actions ===
+    async _doLogout() {
+        try {
+            await this.auth.logout();
+            this._updateAccountButton();
+            this.world.logMessage('system', '已登出。');
+        } catch(e) { console.error(e); }
+    }
+
+    async _showCloudSaves() {
+        if (!this.auth.loggedIn) return;
+        try {
+            const saves = await this.auth.listSaves();
+            if (!saves.length) {
+                alert('雲端沒有存檔。請先上傳存檔。');
+                return;
+            }
+            // Show in town modal
+            const modal = document.getElementById('town-modal');
+            const container = document.getElementById('town-list-content');
+            if (!modal || !container) return;
+            modal.classList.remove('hidden');
+            let html = '<h3 style="margin-bottom:8px">雲端存檔</h3>';
+            saves.forEach(s => {
+                const date = new Date(s.updated_at).toLocaleString();
+                html += `<div class="town-item">
+                    <div class="town-info" data-action="load-cloud-save" data-val="${s.town_id}">
+                        <div class="town-name">☁️ ${s.town_name}</div>
+                        <div class="town-meta">${s.season} 第${s.year}年 第${s.day}天 | 人口${s.population} | ${date}</div>
+                    </div>
+                    <div class="town-actions">
+                        <button data-action="delete-cloud-save" data-val="${s.town_id}" class="btn-danger" title="刪除雲端存檔">🗑️</button>
+                    </div>
+                </div>`;
+            });
+            html += '<div style="margin-top:12px"><button data-action="close-town-modal">關閉</button></div>';
+            container.innerHTML = html;
+        } catch(e) { alert('載入雲端存檔失敗：' + e.message); }
+    }
+
+    async _loadCloudSave(townId) {
+        try {
+            const saveData = await this.auth.cloudLoad(townId);
+            if (this.world.loadSave(saveData)) {
+                if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                this.currentTownId = townId;
+                this._saveCurrentTown();
+                this.state = this.world.getState();
+                this._generateTileMapLayout();
+                this.tileMap.agentPositions = {};
+                this.render();
+                this.world.logMessage('system', '已從雲端載入存檔。');
+            }
+            document.getElementById('town-modal')?.classList.add('hidden');
+            this.world.paused = false;
+        } catch(e) { alert('載入失敗：' + e.message); }
+    }
+
+    async _deleteCloudSave(townId) {
+        if (!confirm('確定刪除雲端存檔？')) return;
+        try {
+            await this.auth.cloudDelete(townId);
+            this._showCloudSaves(); // Refresh list
+        } catch(e) { alert('刪除失敗：' + e.message); }
+    }
+
+    // === Achievements Tab ===
+    _showAchievementsTab() {
+        this.activeTab = 'achievements';
+        document.querySelectorAll('.rt-sidebar-tabs button').forEach(b => b.classList.remove('active'));
+        this.renderSidebar();
+    }
+
+    renderAchievements(container) {
+        const categories = { social: '社交', romance: '愛情', economy: '經濟', survival: '生存', town: '城鎮', player: '玩家', special: '特殊' };
+        let html = '<div class="achievements-panel"><h3>成就 <span class="ach-count">' +
+            this._unlockedAchievements.size + '/' + Object.keys(ACHIEVEMENTS).length + '</span></h3>';
+
+        for (const [catKey, catName] of Object.entries(categories)) {
+            const achs = Object.entries(ACHIEVEMENTS).filter(([,a]) => a.category === catKey);
+            if (!achs.length) continue;
+            html += `<div class="ach-category"><h4>${catName}</h4><div class="ach-grid">`;
+            achs.forEach(([key, def]) => {
+                const unlocked = this._unlockedAchievements.has(key);
+                html += `<div class="ach-card ${unlocked ? 'unlocked' : 'locked'}">
+                    <span class="ach-icon">${unlocked ? def.icon : '🔒'}</span>
+                    <div class="ach-info"><div class="ach-name">${unlocked ? def.name : '???'}</div>
+                    <div class="ach-desc">${unlocked ? def.desc : '尚未解鎖'}</div></div></div>`;
+            });
+            html += '</div></div>';
+        }
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    // === Player Deep Interaction ===
+    _renderPlayerJobPanel(player) {
+        const currentJob = player.job?.title || '無業';
+        // Get jobs from JOB_DEFINITIONS (global from simulation.js), excluding mayor
+        let JOBS;
+        if (typeof JOB_DEFINITIONS !== 'undefined') {
+            JOBS = {};
+            for (const [k, v] of Object.entries(JOB_DEFINITIONS)) {
+                if (k !== 'mayor') JOBS[k] = v.title;
+            }
+        } else {
+            JOBS = { farmer:'農夫', miner:'礦工', cook:'廚師', blacksmith:'鐵匠', doctor:'醫生', researcher:'研究員', trader:'商人', guard:'守衛', carpenter:'木匠', tailor:'裁縫', priest:'牧師' };
+        }
+        let html = '<div class="detail-section"><h3>你的工作</h3>';
+        html += `<p style="font-size:0.8rem;margin-bottom:8px">目前職業：<strong>${currentJob}</strong></p>`;
+        if (player.job?.key && player.job.key !== 'none') {
+            html += `<button class="btn-quit-job" data-action="player-quit-job">辭職</button>`;
+        }
+        html += '<div class="job-grid">';
+        for (const [key, title] of Object.entries(JOBS)) {
+            const isActive = player.job?.key === key;
+            html += `<button class="job-btn ${isActive ? 'active' : ''}" data-action="player-choose-job" data-val="${key}" ${isActive ? 'disabled' : ''}>${title}</button>`;
+        }
+        html += '</div></div>';
+        return html;
+    }
+
+    _playerChooseJob(jobKey) {
+        const player = this.world.agents['player'];
+        if (!player) return;
+        // Use the Job class from simulation.js (available globally)
+        try {
+            player.job = new Job(jobKey);
+            this.world.logMessage('player_action', `你選擇了${player.job.title}的工作。`, player.name);
+        } catch(e) {
+            // Fallback if Job class not available
+            player.job = { key: jobKey, title: jobKey, workplace: jobKey, workHours: [8,17] };
+            this.world.logMessage('player_action', `你選擇了${jobKey}的工作。`, player.name);
+        }
+        this._unlockAchievement('got_job');
+        this.state = this.world.getState();
+        this.renderSidebar();
+    }
+
+    _playerQuitJob() {
+        const player = this.world.agents['player'];
+        if (!player) return;
+        const oldJob = player.job?.title || '無業';
+        player.job = null;
+        this.world.logMessage('player_action', `你辭去了${oldJob}的工作。`, player.name);
+        this.state = this.world.getState();
+        this.renderSidebar();
+    }
+
+    _playerVote(candidateId) {
+        const election = this.world.election;
+        if (!election || !election.active || election.phase !== 'voting') return;
+        const candidate = election.candidates?.find(c => c.agentId === candidateId);
+        if (!candidate) return;
+        // Check if player already voted
+        if (election._playerVoted) {
+            this.world.logMessage('system', '你已經投過票了。');
+            return;
+        }
+        candidate.votes = (candidate.votes || 0) + 1;
+        election._playerVoted = true;
+        this._unlockAchievement('voted');
+        this.world.logMessage('player_action', `你投票給了 ${candidate.name}。`, 'player');
+        this.state = this.world.getState();
+        this.renderSidebar();
+    }
+
+    _playerFlirt(targetId) {
+        const player = this.world.agents['player'];
+        const npc = this.world.agents[targetId];
+        if (!player || !npc) return;
+        if (player.currentLocation !== npc.currentLocation) {
+            this.world.logMessage('system', '你需要在對方身邊才能調情。');
+            return;
+        }
+        // Increase romantic interest based on charisma
+        const rel = player.relationships?.get?.(targetId) || player.getRelationship?.(targetId);
+        if (rel) {
+            const boost = 5 + Math.floor(Math.random() * 10);
+            rel.modifyRomantic(boost);
+            rel.modifyAffinity(2);
+            const npcRel = npc.relationships?.get?.('player') || npc.getRelationship?.('player');
+            if (npcRel) {
+                // NPC may or may not reciprocate
+                const npcBoost = Math.floor(Math.random() * 8) + (npc.personality?.traits?.includes('romantic') ? 5 : 0);
+                npcRel.modifyRomantic(npcBoost);
+                npcRel.modifyAffinity(1);
+            }
+            this.world.logMessage('player_action', `你對${npc.name}調情。`, player.name, npc.name);
+            player.memory?.add?.(this.world.tickCount, this.world.clock.timeStr, 'social', `對${npc.name}調情`, 3, [npc.name]);
+        }
+        this.state = this.world.getState();
+        this.renderSidebar();
+    }
+
+    _playerPropose(targetId) {
+        const player = this.world.agents['player'];
+        const npc = this.world.agents[targetId];
+        if (!player || !npc) return;
+        const rel = player.relationships?.get?.(targetId) || player.getRelationship?.(targetId);
+        const npcRel = npc.relationships?.get?.('player') || npc.getRelationship?.('player');
+        if (!rel || !npcRel) {
+            this.world.logMessage('system', '你跟這個人不夠熟。');
+            return;
+        }
+        this._unlockAchievement('proposed');
+        // Check if NPC accepts (based on affinity and romantic interest)
+        const accept = npcRel.affinity > 30 && npcRel.romantic > 20 && Math.random() < 0.7;
+        if (accept) {
+            // Start dating or upgrade to marriage
+            if (rel.status === 'dating') {
+                rel.status = 'married';
+                if (npcRel) npcRel.status = 'married';
+                this.world.logMessage('event', `${player.name}與${npc.name}結婚了！`, player.name, npc.name);
+                this._unlockAchievement('first_marriage');
+            } else {
+                rel.status = 'dating';
+                if (npcRel) npcRel.status = 'dating';
+                this.world.logMessage('event', `${player.name}與${npc.name}開始交往！`, player.name, npc.name);
+                this._unlockAchievement('first_dating');
+            }
+        } else {
+            this.world.logMessage('event', `${npc.name}拒絕了你的告白。`, player.name, npc.name);
+        }
+        this.state = this.world.getState();
+        this.renderSidebar();
     }
 
     // === Town Management ===
@@ -381,9 +1103,22 @@ class RimTownApp {
                 // NPC conversation expand
                 case 'toggle-convo': el.classList.toggle('expanded'); break;
                 // Economy
-                case 'trade': { const [idx, amount] = val.split(','); this.executeTrade(parseInt(idx), parseInt(amount)); } break;
+                case 'trade': { const [idx, amount] = val.split(','); this.executeTrade(parseInt(idx), parseInt(amount)); this._unlockAchievement('first_trade'); this._tradeCount++; } break;
                 case 'build': this.startBuilding(val); break;
                 case 'research': this.startResearch(val); break;
+                // Auth & Cloud
+                case 'cloud-sync-up': document.getElementById('account-menu-popup')?.remove(); this._syncToCloud(); break;
+                case 'cloud-sync-down': document.getElementById('account-menu-popup')?.remove(); this._showCloudSaves(); break;
+                case 'show-achievements': document.getElementById('account-menu-popup')?.remove(); this._showAchievementsTab(); break;
+                case 'auth-logout': document.getElementById('account-menu-popup')?.remove(); this._doLogout(); break;
+                case 'load-cloud-save': this._loadCloudSave(val); break;
+                case 'delete-cloud-save': this._deleteCloudSave(val); break;
+                // Player interaction
+                case 'player-choose-job': this._playerChooseJob(val); break;
+                case 'player-quit-job': this._playerQuitJob(); break;
+                case 'player-vote': this._playerVote(val); break;
+                case 'player-propose': this._playerPropose(val); break;
+                case 'player-flirt': this._playerFlirt(val); break;
                 default: console.log('Unknown action:', action, val);
             }
         });
@@ -522,9 +1257,16 @@ class RimTownApp {
     }
 
     setupAutoSave() {
-        // Auto-save every 60 seconds
+        // Auto-save every 60 seconds (local + cloud)
         this._autoSaveInterval = setInterval(() => {
-            if (!this.world.paused) this.saveGame();
+            if (!this.world.paused) {
+                this.saveGame();
+                // Cloud sync every 5 minutes
+                if (this.auth.loggedIn && Date.now() - (this._lastCloudSync || 0) > 300000) {
+                    this._lastCloudSync = Date.now();
+                    this._syncToCloud();
+                }
+            }
         }, 60000);
         // Also save when tab is closing
         window.addEventListener('beforeunload', () => {
@@ -833,6 +1575,7 @@ class RimTownApp {
             case 'economy': this.renderEconomy(content); break;
             case 'log': this.renderLog(content); break;
             case 'events': this.renderEvents(content); break;
+            case 'achievements': this.renderAchievements(content); break;
         }
     }
 
@@ -1075,6 +1818,16 @@ class RimTownApp {
     renderResidentsList(container) {
         if (!this.state) return;
         let html = '';
+        // Player card at top
+        const playerAgent = this.state.agents['player'];
+        if (playerAgent) {
+            const isSelected = this.selectedAgent === 'player';
+            html += `<div class="resident-card player-card ${isSelected?'selected':''}" data-action="select-agent" data-val="player">
+                <div class="resident-header">
+                    <span class="resident-name"><span class="mood-indicator mood-${playerAgent.mood_description}"></span>⭐ ${playerAgent.name}（你）</span>
+                    <span class="resident-job">${playerAgent.job?.title||'無業'}</span></div>
+                <div class="resident-status"><span>@ ${(playerAgent.current_location||'').replace(/_/g,' ')}</span><span>${playerAgent.mood_label||playerAgent.mood_description} (${playerAgent.mood})</span></div></div>`;
+        }
         for (const [aid, agent] of Object.entries(this.state.agents)) {
             if (aid === 'player') continue;
             const isSelected = this.selectedAgent === aid;
@@ -1104,7 +1857,24 @@ class RimTownApp {
         };
         const player = this.state.agents['player'];
         const sameLoc = player && player.current_location === agent.current_location && this.selectedAgent !== 'player';
-        const chatBtn = sameLoc ? `<button class="chat-with-btn" data-action="start-chat" data-val="${this.selectedAgent}">與${agent.name}對話</button>` : '';
+        let interactionBtns = '';
+        if (sameLoc) {
+            interactionBtns += `<button class="chat-with-btn" data-action="start-chat" data-val="${this.selectedAgent}">對話</button>`;
+            // Flirt / Propose buttons
+            const playerRel = player.relationships?.find(r => r.target_id === this.selectedAgent || r.target_name === agent.name);
+            if (playerRel) {
+                interactionBtns += ` <button class="btn-flirt" data-action="player-flirt" data-val="${this.selectedAgent}">調情</button>`;
+                if (playerRel.romantic_interest > 30 && !playerRel.status) {
+                    interactionBtns += ` <button class="btn-propose" data-action="player-propose" data-val="${this.selectedAgent}">告白</button>`;
+                }
+                if (playerRel.status === 'dating') {
+                    interactionBtns += ` <button class="btn-propose" data-action="player-propose" data-val="${this.selectedAgent}">求婚</button>`;
+                }
+            } else {
+                interactionBtns += ` <button class="btn-flirt" data-action="player-flirt" data-val="${this.selectedAgent}">調情</button>`;
+            }
+        }
+        const chatBtn = interactionBtns;
         // Build relationship status summary
         const partner = relationships.find(r => r.status === 'dating' || r.status === 'married');
         const exes = relationships.filter(r => r.status === 'ex');
@@ -1145,6 +1915,7 @@ class RimTownApp {
                 <div style="margin-top:4px;font-size:0.7rem;color:var(--text-secondary)">價值觀：${(personality.values||[]).join('、')}</div></div>
             <div class="detail-section"><h3>感情狀態</h3>
                 <p style="font-size:0.8rem">${loveStatus}</p></div>
+            ${this.selectedAgent === 'player' ? this._renderPlayerJobPanel(agent) : ''}
             <div class="detail-section"><h3>需求</h3>${makeBar('飢餓',needs.hunger||0)}${makeBar('休息',needs.rest||0)}${makeBar('社交',needs.social||0)}${makeBar('舒適',needs.comfort||0)}${makeBar('娛樂',needs.recreation||0)}</div>
             <div class="detail-section"><h3>技能（總計：${agent.skills?.total_level||0}）</h3>${this._renderSkills(agent.skills)}</div>
             <div class="detail-section"><h3>人際關係（${relationships.length}）</h3>
@@ -1221,6 +1992,7 @@ class RimTownApp {
             } else if (election.phase === 'voting') {
                 html += `<h4>🗳️ 鎮長選舉 — 投票進行中</h4>`;
                 html += `<div class="election-info">剩餘 ${election.votingDaysLeft} 天投票</div>`;
+                const playerVoted = this.world.election?._playerVoted;
                 const totalVotes = election.candidates.reduce((s, c) => s + c.votes, 0);
                 election.candidates.forEach(c => {
                     const pct = totalVotes > 0 ? Math.round(c.votes / totalVotes * 100) : 0;
@@ -1231,9 +2003,10 @@ class RimTownApp {
                             <span class="candidate-votes">${c.votes} 票（${pct}%）</span>
                         </div>
                         <div class="election-bar"><div class="election-bar-fill" style="width:${pct}%"></div></div>
+                        ${!playerVoted ? `<button class="btn-vote" data-action="player-vote" data-val="${c.agentId}">投票給${c.name}</button>` : ''}
                     </div>`;
                 });
-                html += `<div class="election-total">已投票：${totalVotes} 人</div>`;
+                html += `<div class="election-total">已投票：${totalVotes} 人${playerVoted ? ' (你已投票)' : ''}</div>`;
             } else if (election.phase === 'results') {
                 const winner = election.candidates[0];
                 const totalVotes = election.candidates.reduce((s, c) => s + c.votes, 0);

@@ -13,9 +13,344 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '1.5.0');
+define('RIMTOWN_VERSION', '2.0.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
+
+// =====================================================
+// DATABASE SETUP — Custom tables for cloud saves
+// =====================================================
+function rimtown_activate() {
+    global $wpdb;
+    $charset = $wpdb->get_charset_collate();
+    $table = $wpdb->prefix . 'rimtown_saves';
+
+    $sql = "CREATE TABLE $table (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        user_id BIGINT UNSIGNED NOT NULL,
+        town_id VARCHAR(64) NOT NULL,
+        town_name VARCHAR(128) NOT NULL DEFAULT '',
+        season VARCHAR(16) NOT NULL DEFAULT '',
+        year INT NOT NULL DEFAULT 1,
+        day INT NOT NULL DEFAULT 1,
+        population INT NOT NULL DEFAULT 0,
+        save_data LONGTEXT NOT NULL,
+        achievements TEXT DEFAULT NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY user_town (user_id, town_id),
+        KEY user_id (user_id)
+    ) $charset;";
+
+    require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+    dbDelta($sql);
+
+    // Achievements table
+    $ach_table = $wpdb->prefix . 'rimtown_achievements';
+    $sql2 = "CREATE TABLE $ach_table (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        user_id BIGINT UNSIGNED NOT NULL,
+        achievement_key VARCHAR(64) NOT NULL,
+        unlocked_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        town_id VARCHAR(64) DEFAULT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY user_ach (user_id, achievement_key),
+        KEY user_id (user_id)
+    ) $charset;";
+    dbDelta($sql2);
+
+    update_option('rimtown_db_version', '2.0');
+}
+register_activation_hook(__FILE__, 'rimtown_activate');
+
+// Ensure tables exist on plugin load (handles upgrades)
+function rimtown_check_db() {
+    if (get_option('rimtown_db_version') !== '2.0') {
+        rimtown_activate();
+    }
+}
+add_action('plugins_loaded', 'rimtown_check_db');
+
+// =====================================================
+// REST API — Account, Cloud Saves, Achievements
+// =====================================================
+function rimtown_register_api() {
+    $ns = 'rimtown/v1';
+
+    // --- Auth endpoints ---
+    register_rest_route($ns, '/register', array(
+        'methods' => 'POST',
+        'callback' => 'rimtown_api_register',
+        'permission_callback' => '__return_true',
+    ));
+    register_rest_route($ns, '/login', array(
+        'methods' => 'POST',
+        'callback' => 'rimtown_api_login',
+        'permission_callback' => '__return_true',
+    ));
+    register_rest_route($ns, '/logout', array(
+        'methods' => 'POST',
+        'callback' => 'rimtown_api_logout',
+        'permission_callback' => '__return_true',
+    ));
+    register_rest_route($ns, '/me', array(
+        'methods' => 'GET',
+        'callback' => 'rimtown_api_me',
+        'permission_callback' => '__return_true',
+    ));
+
+    // --- Cloud save endpoints ---
+    register_rest_route($ns, '/saves', array(
+        'methods' => 'GET',
+        'callback' => 'rimtown_api_list_saves',
+        'permission_callback' => 'is_user_logged_in',
+    ));
+    register_rest_route($ns, '/save', array(
+        'methods' => 'POST',
+        'callback' => 'rimtown_api_save',
+        'permission_callback' => 'is_user_logged_in',
+    ));
+    register_rest_route($ns, '/save/(?P<town_id>[a-zA-Z0-9_]+)', array(
+        'methods' => 'GET',
+        'callback' => 'rimtown_api_load_save',
+        'permission_callback' => 'is_user_logged_in',
+    ));
+    register_rest_route($ns, '/save/(?P<town_id>[a-zA-Z0-9_]+)', array(
+        'methods' => 'DELETE',
+        'callback' => 'rimtown_api_delete_save',
+        'permission_callback' => 'is_user_logged_in',
+    ));
+
+    // --- Achievements ---
+    register_rest_route($ns, '/achievements', array(
+        'methods' => 'GET',
+        'callback' => 'rimtown_api_get_achievements',
+        'permission_callback' => 'is_user_logged_in',
+    ));
+    register_rest_route($ns, '/achievements', array(
+        'methods' => 'POST',
+        'callback' => 'rimtown_api_unlock_achievement',
+        'permission_callback' => 'is_user_logged_in',
+    ));
+}
+add_action('rest_api_init', 'rimtown_register_api');
+
+// Allow registration even if WP settings disable it
+function rimtown_api_register($request) {
+    $username = sanitize_user($request->get_param('username'));
+    $password = $request->get_param('password');
+    $email = sanitize_email($request->get_param('email'));
+
+    if (empty($username) || strlen($username) < 3) {
+        return new WP_Error('bad_username', '使用者名稱至少3個字元', array('status' => 400));
+    }
+    if (empty($password) || strlen($password) < 6) {
+        return new WP_Error('bad_password', '密碼至少6個字元', array('status' => 400));
+    }
+    if (username_exists($username)) {
+        return new WP_Error('username_exists', '此使用者名稱已被使用', array('status' => 409));
+    }
+    if (!empty($email) && email_exists($email)) {
+        return new WP_Error('email_exists', '此電子郵件已被使用', array('status' => 409));
+    }
+
+    $user_id = wp_create_user($username, $password, $email ?: $username . '@rimtown.local');
+    if (is_wp_error($user_id)) {
+        return new WP_Error('register_failed', $user_id->get_error_message(), array('status' => 500));
+    }
+
+    // Auto-login after registration
+    wp_set_current_user($user_id);
+    wp_set_auth_cookie($user_id, true);
+
+    return rest_ensure_response(array(
+        'success' => true,
+        'user' => array('id' => $user_id, 'username' => $username),
+    ));
+}
+
+function rimtown_api_login($request) {
+    $username = sanitize_user($request->get_param('username'));
+    $password = $request->get_param('password');
+
+    $user = wp_authenticate($username, $password);
+    if (is_wp_error($user)) {
+        return new WP_Error('login_failed', '使用者名稱或密碼錯誤', array('status' => 401));
+    }
+
+    wp_set_current_user($user->ID);
+    wp_set_auth_cookie($user->ID, true);
+
+    return rest_ensure_response(array(
+        'success' => true,
+        'user' => array('id' => $user->ID, 'username' => $user->user_login),
+    ));
+}
+
+function rimtown_api_logout($request) {
+    wp_logout();
+    return rest_ensure_response(array('success' => true));
+}
+
+function rimtown_api_me($request) {
+    if (!is_user_logged_in()) {
+        return rest_ensure_response(array('logged_in' => false));
+    }
+    $user = wp_get_current_user();
+    return rest_ensure_response(array(
+        'logged_in' => true,
+        'user' => array('id' => $user->ID, 'username' => $user->user_login),
+    ));
+}
+
+// --- Cloud Save CRUD ---
+function rimtown_api_list_saves($request) {
+    global $wpdb;
+    $table = $wpdb->prefix . 'rimtown_saves';
+    $user_id = get_current_user_id();
+
+    $rows = $wpdb->get_results($wpdb->prepare(
+        "SELECT town_id, town_name, season, year, day, population, updated_at FROM $table WHERE user_id = %d ORDER BY updated_at DESC",
+        $user_id
+    ));
+
+    return rest_ensure_response(array('saves' => $rows));
+}
+
+function rimtown_api_save($request) {
+    global $wpdb;
+    $table = $wpdb->prefix . 'rimtown_saves';
+    $user_id = get_current_user_id();
+
+    $town_id = sanitize_text_field($request->get_param('town_id'));
+    $town_name = sanitize_text_field($request->get_param('town_name'));
+    $save_data = $request->get_param('save_data'); // JSON string
+    $season = sanitize_text_field($request->get_param('season'));
+    $year = intval($request->get_param('year'));
+    $day = intval($request->get_param('day'));
+    $population = intval($request->get_param('population'));
+
+    if (empty($town_id) || empty($save_data)) {
+        return new WP_Error('missing_data', '缺少必要資料', array('status' => 400));
+    }
+
+    // Check save size (max 5MB per town)
+    if (strlen($save_data) > 5 * 1024 * 1024) {
+        return new WP_Error('too_large', '存檔大小超過限制', array('status' => 413));
+    }
+
+    // Count user's saves (max 20 towns per user)
+    $count = $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM $table WHERE user_id = %d",
+        $user_id
+    ));
+    $existing = $wpdb->get_var($wpdb->prepare(
+        "SELECT id FROM $table WHERE user_id = %d AND town_id = %s",
+        $user_id, $town_id
+    ));
+    if (!$existing && $count >= 20) {
+        return new WP_Error('too_many_saves', '每個帳號最多20個城鎮', array('status' => 400));
+    }
+
+    if ($existing) {
+        $wpdb->update($table, array(
+            'town_name' => $town_name,
+            'save_data' => $save_data,
+            'season' => $season,
+            'year' => $year,
+            'day' => $day,
+            'population' => $population,
+        ), array('user_id' => $user_id, 'town_id' => $town_id));
+    } else {
+        $wpdb->insert($table, array(
+            'user_id' => $user_id,
+            'town_id' => $town_id,
+            'town_name' => $town_name,
+            'save_data' => $save_data,
+            'season' => $season,
+            'year' => $year,
+            'day' => $day,
+            'population' => $population,
+        ));
+    }
+
+    return rest_ensure_response(array('success' => true, 'town_id' => $town_id));
+}
+
+function rimtown_api_load_save($request) {
+    global $wpdb;
+    $table = $wpdb->prefix . 'rimtown_saves';
+    $user_id = get_current_user_id();
+    $town_id = sanitize_text_field($request->get_param('town_id'));
+
+    $row = $wpdb->get_row($wpdb->prepare(
+        "SELECT save_data FROM $table WHERE user_id = %d AND town_id = %s",
+        $user_id, $town_id
+    ));
+
+    if (!$row) {
+        return new WP_Error('not_found', '找不到此存檔', array('status' => 404));
+    }
+
+    return rest_ensure_response(array('save_data' => $row->save_data));
+}
+
+function rimtown_api_delete_save($request) {
+    global $wpdb;
+    $table = $wpdb->prefix . 'rimtown_saves';
+    $user_id = get_current_user_id();
+    $town_id = sanitize_text_field($request->get_param('town_id'));
+
+    $wpdb->delete($table, array('user_id' => $user_id, 'town_id' => $town_id));
+    return rest_ensure_response(array('success' => true));
+}
+
+// --- Achievements ---
+function rimtown_api_get_achievements($request) {
+    global $wpdb;
+    $table = $wpdb->prefix . 'rimtown_achievements';
+    $user_id = get_current_user_id();
+
+    $rows = $wpdb->get_results($wpdb->prepare(
+        "SELECT achievement_key, unlocked_at, town_id FROM $table WHERE user_id = %d",
+        $user_id
+    ));
+
+    return rest_ensure_response(array('achievements' => $rows));
+}
+
+function rimtown_api_unlock_achievement($request) {
+    global $wpdb;
+    $table = $wpdb->prefix . 'rimtown_achievements';
+    $user_id = get_current_user_id();
+    $key = sanitize_text_field($request->get_param('key'));
+    $town_id = sanitize_text_field($request->get_param('town_id'));
+
+    if (empty($key)) {
+        return new WP_Error('missing_key', '缺少成就代碼', array('status' => 400));
+    }
+
+    // Insert ignore — don't error on duplicate
+    $wpdb->query($wpdb->prepare(
+        "INSERT IGNORE INTO $table (user_id, achievement_key, town_id) VALUES (%d, %s, %s)",
+        $user_id, $key, $town_id
+    ));
+
+    return rest_ensure_response(array('success' => true, 'key' => $key));
+}
+
+// Pass nonce and login state to frontend
+function rimtown_localize_script() {
+    $user = wp_get_current_user();
+    wp_localize_script('rimtown-app', 'rimtownAuth', array(
+        'restUrl' => esc_url_raw(rest_url('rimtown/v1/')),
+        'nonce' => wp_create_nonce('wp_rest'),
+        'loggedIn' => is_user_logged_in(),
+        'username' => is_user_logged_in() ? $user->user_login : '',
+        'userId' => is_user_logged_in() ? $user->ID : 0,
+    ));
+}
 
 /**
  * Register shortcode [rimtown]
@@ -80,6 +415,33 @@ function rimtown_shortcode($atts) {
             </div>
         </div>
 
+        <!-- Auth Modal -->
+        <div id="auth-modal" class="modal hidden">
+            <div class="modal-content auth-content">
+                <div class="auth-tabs">
+                    <button class="auth-tab active" data-auth-tab="login">登入</button>
+                    <button class="auth-tab" data-auth-tab="register">註冊</button>
+                </div>
+                <div id="auth-login-form" class="auth-form">
+                    <div class="setting-group"><label>使用者名稱</label><input type="text" id="auth-login-user" placeholder="輸入帳號..." autocomplete="username"></div>
+                    <div class="setting-group"><label>密碼</label><input type="password" id="auth-login-pass" placeholder="輸入密碼..." autocomplete="current-password"></div>
+                    <div id="auth-login-error" class="auth-error"></div>
+                    <div class="modal-buttons"><button id="auth-login-btn" class="btn-accent">登入</button><button class="auth-close-btn">取消</button></div>
+                </div>
+                <div id="auth-register-form" class="auth-form hidden">
+                    <div class="setting-group"><label>使用者名稱</label><input type="text" id="auth-reg-user" placeholder="至少3個字元..." autocomplete="username"></div>
+                    <div class="setting-group"><label>電子郵件（選填）</label><input type="email" id="auth-reg-email" placeholder="your@email.com" autocomplete="email"></div>
+                    <div class="setting-group"><label>密碼</label><input type="password" id="auth-reg-pass" placeholder="至少6個字元..." autocomplete="new-password"></div>
+                    <div class="setting-group"><label>確認密碼</label><input type="password" id="auth-reg-pass2" placeholder="再次輸入密碼..." autocomplete="new-password"></div>
+                    <div id="auth-reg-error" class="auth-error"></div>
+                    <div class="modal-buttons"><button id="auth-reg-btn" class="btn-accent">註冊</button><button class="auth-close-btn">取消</button></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Achievement Toast -->
+        <div id="achievement-toast" class="achievement-toast hidden"></div>
+
         <!-- Header -->
         <div class="header">
             <h1>邊境鎮</h1>
@@ -103,6 +465,7 @@ function rimtown_shortcode($atts) {
                     </div>
                     <span id="llm-status" class="llm-status" title="AI 狀態">AI:--</span>
                     <button id="btn-settings" class="btn-settings">設定</button>
+                    <button id="btn-account" class="btn-account" title="帳號">帳號</button>
                 </div>
             </div>
         </div>
@@ -567,6 +930,9 @@ function rimtown_enqueue_assets() {
         RIMTOWN_VERSION,
         true
     );
+
+    // Pass auth data to frontend
+    rimtown_localize_script();
 }
 
 /**
@@ -624,6 +990,17 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '2.0.0',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '帳號系統：使用者註冊/登入，雲端存檔自動同步',
+                '成就系統：30+ 成就里程碑，遊戲內通知',
+                'NPC 對話可視化：地圖對話氣泡 + 偷聽日誌',
+                '玩家深度互動：選擇職業、工作、投票、戀愛求婚',
+                '雲端存檔：多裝置同步，最多20個城鎮',
+            ),
+        ),
         array(
             'version' => '1.5.0',
             'date'    => '2026-03-09',

@@ -740,6 +740,7 @@ class ConversationEngine {
         this.npcConversationLog = [];
         this._lastNpcLlmTick = 0;
         this._npcLlmCooldownTicks = 8; // Minimum ticks between NPC LLM calls (~6 NPC convos/min with LLM)
+        this.onConversation = null; // Callback: (agentAId, agentBId, agentAName, agentBName, textA, textB) => {}
     }
 
     _buildCharacterProfile(agent) {
@@ -890,8 +891,14 @@ ${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
         world.logMessage('conversation', summary, agentA.name, agentB.name);
         // Store NPC conversation for sidebar viewing
         if (dialogue.length) {
-            this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue, summary, agentA:agentA.name, agentB:agentB.name });
+            this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.id, agentBId:agentB.id });
             if (this.npcConversationLog.length > 50) this.npcConversationLog = this.npcConversationLog.slice(-30);
+            // Notify UI for map speech bubbles
+            if (this.onConversation) {
+                const textA = dialogue[0]?.text || summary;
+                const textB = dialogue[1]?.text || '';
+                this.onConversation(agentA.id, agentB.id, agentA.name, agentB.name, textA, textB);
+            }
         }
         return { dialogue, summary, effects:{affinity_a:affA,affinity_b:affB,romantic_a:romA,romantic_b:romB} };
     }
@@ -910,8 +917,13 @@ ${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
         world.logMessage('conversation', summary, agentA.name, agentB.name);
         const lines = dialogue.lines;
         if (lines.length) {
-            this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue:lines, summary, agentA:agentA.name, agentB:agentB.name });
+            this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue:lines, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.id, agentBId:agentB.id });
             if (this.npcConversationLog.length > 50) this.npcConversationLog = this.npcConversationLog.slice(-30);
+            if (this.onConversation) {
+                const textA = lines[0]?.text || summary;
+                const textB = lines[1]?.text || '';
+                this.onConversation(agentA.id, agentB.id, agentA.name, agentB.name, textA, textB);
+            }
         }
         return { dialogue:lines, summary, effects:{affinity_a:affA,affinity_b:affB,romantic_a:romA,romantic_b:romB} };
     }

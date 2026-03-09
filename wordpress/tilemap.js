@@ -1628,6 +1628,20 @@ class PixelTileMap {
     }
 
     // Update agent positions (smooth interpolation)
+    // Add a speech bubble for NPC conversation on the map
+    addConversationBubble(agentAId, agentBId, agentAName, agentBName, textA, textB) {
+        if (!this._activeConvoBubbles) this._activeConvoBubbles = [];
+        // Limit to 4 active bubbles max
+        while (this._activeConvoBubbles.length >= 4) this._activeConvoBubbles.shift();
+        this._activeConvoBubbles.push({
+            expiry: Date.now() + 8000, // Show for 8 seconds
+            bubbles: [
+                { agentId: agentAId, speaker: agentAName, text: textA || '...' },
+                { agentId: agentBId, speaker: agentBName, text: textB || '...' },
+            ]
+        });
+    }
+
     updateAgents(agents, locations, chatTarget) {
         const WALK_SPEED = 0.6; // pixels per frame — slower for easier clicking
         for (const [aid, agent] of Object.entries(agents)) {
@@ -2150,11 +2164,67 @@ class PixelTileMap {
             this._drawAgent(ctx, pos.x, pos.y, pos.job, isPlayer, isSelected, agent.name || 'You', pos.walking, pos.walkStep, pos.gender);
         }
 
-        // Draw thought bubbles for some agents
+        // Draw NPC conversation speech bubbles (higher priority than thoughts)
         ctx.font = '7px monospace';
+        const now = Date.now();
+        const activeConvos = this._activeConvoBubbles || [];
+        const shownBubbleAgents = new Set();
+        for (const convo of activeConvos) {
+            if (now > convo.expiry) continue;
+            const fadeAlpha = Math.min(1, (convo.expiry - now) / 2000); // Fade in last 2s
+            for (const bubble of convo.bubbles) {
+                const pos = this.agentPositions[bubble.agentId];
+                if (!pos) continue;
+                shownBubbleAgents.add(bubble.agentId);
+                const text = bubble.text.substring(0, 24);
+                const tw = ctx.measureText(text).width;
+                const bx = pos.x - tw/2 - 4;
+                const by = pos.y - 30;
+                // Speech bubble with colored tint
+                ctx.fillStyle = `rgba(255,255,220,${0.95 * fadeAlpha})`;
+                ctx.beginPath();
+                const r = 3;
+                ctx.moveTo(bx + r, by);
+                ctx.lineTo(bx + tw + 8 - r, by);
+                ctx.arcTo(bx + tw + 8, by, bx + tw + 8, by + r, r);
+                ctx.lineTo(bx + tw + 8, by + 13 - r);
+                ctx.arcTo(bx + tw + 8, by + 13, bx + tw + 8 - r, by + 13, r);
+                ctx.lineTo(bx + r, by + 13);
+                ctx.arcTo(bx, by + 13, bx, by + 13 - r, r);
+                ctx.lineTo(bx, by + r);
+                ctx.arcTo(bx, by, bx + r, by, r);
+                ctx.fill();
+                // Tail
+                ctx.beginPath();
+                ctx.moveTo(pos.x - 3, by + 13);
+                ctx.lineTo(pos.x, by + 18);
+                ctx.lineTo(pos.x + 3, by + 13);
+                ctx.fill();
+                // Border
+                ctx.strokeStyle = `rgba(200,180,100,${0.6 * fadeAlpha})`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                // Text
+                ctx.fillStyle = `rgba(50,50,50,${fadeAlpha})`;
+                ctx.textAlign = 'center';
+                ctx.fillText(text, pos.x, by + 10);
+                // Speaker name above
+                ctx.font = 'bold 6px monospace';
+                ctx.fillStyle = `rgba(100,80,30,${0.7 * fadeAlpha})`;
+                ctx.fillText(bubble.speaker, pos.x, by - 2);
+                ctx.font = '7px monospace';
+            }
+        }
+        // Clean expired bubbles
+        if (this._activeConvoBubbles) {
+            this._activeConvoBubbles = this._activeConvoBubbles.filter(c => now < c.expiry);
+        }
+
+        // Draw thought bubbles for agents NOT currently showing speech bubbles
         for (const [aid, pos] of sortedAgents) {
             const agent = agents[aid];
             if (!agent || aid === 'player' || !agent.current_thought) continue;
+            if (shownBubbleAgents.has(aid)) continue; // Skip if showing speech
             // Show thoughts less frequently
             if ((this.animFrame + aid.charCodeAt(0)) % 120 < 80) continue;
 
