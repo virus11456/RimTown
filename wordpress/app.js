@@ -1,4 +1,5 @@
 // RimTown - Frontend App (WordPress Plugin)
+const ELECTION_POLICIES_LABELS = {economy:'經濟發展',welfare:'社會福利',defense:'軍事防禦',culture:'文化教育',nature:'自然保育',freedom:'個人自由'};
 
 class RimTownApp {
     constructor() {
@@ -1192,6 +1193,71 @@ class RimTownApp {
     renderEvents(container) {
         if (!this.state) return;
         let html = '';
+
+        // --- Election ---
+        const election = this.state.election;
+        if (election && election.active) {
+            html += '<div class="election-section">';
+            if (election.phase === 'campaign') {
+                html += `<h4>📢 鎮長選舉 — 競選期間</h4>`;
+                html += `<div class="election-info">剩餘 ${election.campaignDaysLeft} 天競選期</div>`;
+                election.candidates.forEach(c => {
+                    const agent = this.state.agents?.[c.agentId];
+                    const moodBar = agent ? `<span class="election-mood">${agent.mood > 20 ? '😊' : agent.mood > -20 ? '😐' : '😟'}</span>` : '';
+                    html += `<div class="election-candidate" data-action="select-agent" data-val="${c.agentId}">
+                        <div class="candidate-header">
+                            <span class="candidate-name">${c.name}</span> ${moodBar}
+                            <span class="candidate-policy">${c.policyIcon} ${c.policyLabel}</span>
+                        </div>
+                        <div class="candidate-speech">"${c.speech}"</div>
+                    </div>`;
+                });
+            } else if (election.phase === 'voting') {
+                html += `<h4>🗳️ 鎮長選舉 — 投票進行中</h4>`;
+                html += `<div class="election-info">剩餘 ${election.votingDaysLeft} 天投票</div>`;
+                const totalVotes = election.candidates.reduce((s, c) => s + c.votes, 0);
+                election.candidates.forEach(c => {
+                    const pct = totalVotes > 0 ? Math.round(c.votes / totalVotes * 100) : 0;
+                    html += `<div class="election-candidate">
+                        <div class="candidate-header">
+                            <span class="candidate-name">${c.name}</span>
+                            <span class="candidate-policy">${c.policyIcon} ${c.policyLabel}</span>
+                            <span class="candidate-votes">${c.votes} 票（${pct}%）</span>
+                        </div>
+                        <div class="election-bar"><div class="election-bar-fill" style="width:${pct}%"></div></div>
+                    </div>`;
+                });
+                html += `<div class="election-total">已投票：${totalVotes} 人</div>`;
+            } else if (election.phase === 'results') {
+                const winner = election.candidates[0];
+                const totalVotes = election.candidates.reduce((s, c) => s + c.votes, 0);
+                html += `<h4>🏆 選舉結果</h4>`;
+                if (winner) {
+                    html += `<div class="election-winner">
+                        <div class="winner-name">${winner.name} 當選鎮長！</div>
+                        <div class="winner-policy">施政方針：${winner.policyIcon} ${winner.policyLabel}</div>
+                    </div>`;
+                }
+                election.candidates.forEach(c => {
+                    const pct = totalVotes > 0 ? Math.round(c.votes / totalVotes * 100) : 0;
+                    const isWinner = c === election.candidates[0];
+                    html += `<div class="election-candidate ${isWinner ? 'election-winner-card' : ''}">
+                        <span class="candidate-name">${isWinner ? '👑 ' : ''}${c.name}</span>
+                        <span class="candidate-policy">${c.policyIcon}</span>
+                        <span class="candidate-votes">${c.votes} 票（${pct}%）</span>
+                        <div class="election-bar"><div class="election-bar-fill ${isWinner ? 'winner' : ''}" style="width:${pct}%"></div></div>
+                    </div>`;
+                });
+            }
+            html += '</div>';
+        }
+        // Election history
+        if (election?.electionHistory?.length && !election.active) {
+            const last = election.electionHistory[election.electionHistory.length - 1];
+            html += `<div class="election-history-brief">
+                <span>上次選舉：${last.winner.name} 當選（${last.winner.policyIcon || ''}${ELECTION_POLICIES_LABELS[last.winner.policy] || last.winner.policy}，${last.winner.votes}/${last.totalVotes} 票）</span>
+            </div>`;
+        }
 
         // --- News Bulletins ---
         const news = this.state.news || {};

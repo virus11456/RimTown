@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 1.2.0
+ * Version: 1.3.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '1.2.0');
+define('RIMTOWN_VERSION', '1.3.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -227,6 +227,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '1.3.0',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '新增鎮長選舉系統：居民根據個性、價值觀、關係投票',
+                '選舉流程：競選期（3天）→ 投票期（2天）→ 結果公告（3天）',
+                '6 種政策主張：經濟發展、社會福利、軍事防禦、文化教育、自然保育、個人自由',
+                '候選人根據個性與價值觀自動選擇政策',
+                '投票依據：關係親密度(40%)、價值觀契合(30%)、魅力能力(20%)、隨機(10%)',
+                '當選鎮長的政策會產生 30 天持續效果（透過新聞系統）',
+                '選舉 UI：即時票數、進度條、結果展示（事件頁籤）',
+                '選舉歷史記錄，可在存檔中保存/載入',
+                '修正 MiniMax API：模型更新為 M2.5、參數修正為 max_completion_tokens',
+                '更新 Gemini 預設模型為 gemini-2.5-flash',
+            ),
+        ),
         array(
             'version' => '1.2.0',
             'date'    => '2026-03-09',
