@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '2.3.3');
+define('RIMTOWN_VERSION', '2.3.4');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1073,6 +1073,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '2.3.4',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                'MiniMax 省額度模式：API 每分鐘限 2 次（其他 provider 保持 12 次）',
+                'MiniMax NPC 自動對話冷卻提升至 150 ticks（約每 5 分鐘 1 次），優先保留額度給玩家對話',
+                'MiniMax NPC 對話 token 上限降至 400（其他 provider 保持 800）',
+            ),
+        ),
         array(
             'version' => '2.3.3',
             'date'    => '2026-03-09',

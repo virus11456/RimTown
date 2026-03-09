@@ -739,7 +739,8 @@ class ConversationEngine {
         this.llm = llmClient;
         this.npcConversationLog = [];
         this._lastNpcLlmTick = 0;
-        this._npcLlmCooldownTicks = 8; // Minimum ticks between NPC LLM calls (~6 NPC convos/min with LLM)
+        // MiniMax quota is very limited (40/5hrs) — only ~1 NPC AI call per 5 min, save quota for player
+        this._npcLlmCooldownTicks = (llmClient?.provider === 'minimax') ? 150 : 8;
         this.onConversation = null; // Callback: (agentAId, agentBId, agentAName, agentBName, textA, textB) => {}
     }
 
@@ -856,7 +857,9 @@ ${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
 最後一行：EFFECTS: {"affinity_change_a": 數字(-3到5), "affinity_change_b": 數字(-3到5), "romantic_change_a": 數字(0到5), "romantic_change_b": 數字(0到5), "summary": "用一句生動的話總結發生了什麼"}
 提示：romantic_change 代表心動程度的變化。如果兩人聊得開心、有曖昧、互相關心，romantic 應該 > 0（通常1-3）。只有完全無感或尷尬才給0。`;
 
-        const response = await this.llm.generate(prompt, 800);
+        // MiniMax has very limited quota — use fewer tokens for NPC conversations
+        const npcTokens = (this.llm.provider === 'minimax') ? 400 : 800;
+        const response = await this.llm.generate(prompt, npcTokens);
         return this._parseConversation(response, agentA, agentB, world, relA, relB);
     }
 
@@ -1661,9 +1664,10 @@ ${player.name}: ${playerMessage}
 class LLMClient {
     constructor(provider, apiKey, model) {
         this.provider = provider; this.apiKey = apiKey; this.model = model;
-        // Rate limiting
+        // Rate limiting — provider-aware
         this._requestTimestamps = [];
-        this._maxRequestsPerMinute = 12; // Safe limit (Gemini free = 20/min, leave big margin)
+        // MiniMax Coding Plan Starter: 40 prompts/5hrs ≈ 8/hr → be conservative
+        this._maxRequestsPerMinute = (provider === 'minimax') ? 2 : 12;
         this._rateLimitedUntil = 0; // Timestamp: don't send any requests until this time
     }
 

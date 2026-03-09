@@ -40,6 +40,14 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## Changelog
 
+### v2.3.4 (2026-03-09)
+
+**MiniMax 省額度模式（40 prompts/5hrs 方案適用）**
+
+- MiniMax API 每分鐘限制 2 次請求（Gemini 等其他 provider 保持 12 次/分鐘不變）
+- MiniMax NPC 自動 AI 對話冷卻提升至 150 ticks（約每 5 分鐘 1 次），優先把額度留給玩家對話
+- MiniMax NPC 對話 output token 上限降至 400（其他 provider 保持 800）
+
 ### v2.3.3 (2026-03-09)
 
 **修復登入後雲端存檔 403 錯誤**
