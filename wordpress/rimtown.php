@@ -58,7 +58,6 @@ function rimtown_shortcode($atts) {
                         <option value="deepseek">DeepSeek</option>
                         <option value="groq">Groq</option>
                         <option value="together">Together AI</option>
-                        <option value="minimax">MiniMax (海螺AI)</option>
                     </select>
                 </div>
                 <div class="setting-group" id="api-key-group">
@@ -282,10 +281,6 @@ function rimtown_landing_shortcode($atts) {
                 <div class="rt-ai-card">
                     <div class="rt-ai-name">Together AI</div>
                     <div class="rt-ai-model">Together</div>
-                </div>
-                <div class="rt-ai-card">
-                    <div class="rt-ai-name">MiniMax</div>
-                    <div class="rt-ai-model">海螺AI</div>
                 </div>
             </div>
             <p class="rt-ai-note">* 不設定 AI 也能遊玩！內建模擬對話系統可產生豐富的互動內容。</p>
