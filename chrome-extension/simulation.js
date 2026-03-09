@@ -1572,6 +1572,7 @@ class LLMClient {
             deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: this.model || 'deepseek-chat' },
             groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: this.model || 'llama-3.3-70b-versatile' },
             together: { url: 'https://api.together.xyz/v1/chat/completions', model: this.model || 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo' },
+            minimax: { url: 'https://api.minimaxi.com/v1/text/chatcompletion_v2', model: this.model || 'MiniMax-M2.5' },
         };
         const cfg = endpoints[this.provider];
         if (!cfg) throw new Error(`Unknown provider: ${this.provider}`);
@@ -1594,6 +1595,22 @@ class LLMClient {
                 const data = await res.json();
                 console.log('[RimTown LLM] Gemini response:', res.status, data.candidates ? 'OK' : 'EMPTY', data.error?.message || '');
                 return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            } else if (this.provider === 'minimax') {
+                // MiniMax uses max_completion_tokens (not max_tokens) and base_resp for errors
+                const res = await fetch(cfg.url, {
+                    method:'POST',
+                    headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${this.apiKey}` },
+                    body: JSON.stringify({ model:cfg.model, max_completion_tokens:maxTokens, temperature, messages:[{role:'user',content:prompt}] }),
+                });
+                if (res.status === 429) { this._handleRateLimit(); return ''; }
+                const data = await res.json();
+                if (data.base_resp && data.base_resp.status_code !== 0) {
+                    console.error('[RimTown LLM] MiniMax API error:', data.base_resp.status_code, data.base_resp.status_msg);
+                    return '';
+                }
+                const content = data.choices?.[0]?.message?.content || '';
+                console.log('[RimTown LLM] MiniMax response:', res.status, '| content length:', content.length);
+                return content;
             } else {
                 // OpenAI-compatible (openai, deepseek, groq, together)
                 const res = await fetch(cfg.url, {

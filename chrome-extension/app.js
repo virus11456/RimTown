@@ -231,14 +231,6 @@ class RimTownApp {
             let apiKey = localStorage.getItem('llm_api_key');
             const speed = localStorage.getItem('sim_speed');
             console.log('[RimTown] loadSettings: provider=', provider, 'hasKey=', !!apiKey, 'speed=', speed);
-            // MiniMax support removed — clear saved credentials
-            if (provider === 'minimax') {
-                localStorage.removeItem('llm_provider');
-                localStorage.removeItem('llm_api_key');
-                provider = null;
-                apiKey = null;
-                console.log('[RimTown] Cleared deprecated minimax provider');
-            }
             if (speed) this.simSpeed = parseInt(speed);
             if (provider && provider !== 'none' && apiKey) {
                 this.llmClient = new LLMClient(provider, apiKey);

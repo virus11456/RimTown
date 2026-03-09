@@ -40,6 +40,14 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## Changelog
 
+### v2.3.1 (2026-03-09)
+
+**Chrome Extension 版恢復 MiniMax 支援**
+
+- 修復 Chrome Extension 版缺少 MiniMax provider 的問題
+- 新增 MiniMax API 端點與專屬請求處理（max_completion_tokens、base_resp 錯誤處理）
+- 移除 chrome-extension/app.js 中誤將 minimax 標記為 deprecated 的清除邏輯
+
 ### v2.3.0 (2026-03-09)
 
 **MiniMax 恢復 / AI 單一綁定 / Fallback 對話大改版**
