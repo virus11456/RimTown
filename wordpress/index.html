@@ -22,7 +22,7 @@
         <div class="modal-content">
             <h2>設定</h2>
             <div class="setting-group">
-                <label>AI 語言模型</label>
+                <label>AI 語言模型 <span style="font-size:11px;color:#e94560;">（同時只能綁定一個）</span></label>
                 <select id="llm-provider">
                     <option value="none">無（模擬對話）</option>
                     <option value="anthropic">Anthropic (Claude)</option>
@@ -31,6 +31,7 @@
                     <option value="deepseek">DeepSeek</option>
                     <option value="groq">Groq</option>
                     <option value="together">Together AI</option>
+                    <option value="minimax">MiniMax (中國版)</option>
                 </select>
             </div>
             <div class="setting-group" id="api-key-group">

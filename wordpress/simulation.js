@@ -940,253 +940,269 @@ ${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
         let affA = 0, affB = 0, romA = 0, romB = 0;
         let summary = '';
 
-        // --- Determine conversation topic based on context ---
-        const topicRoll = Math.random();
+        // --- Rich detail pools for vivid dialogue ---
+        const foods = { '春季':['野菜煎餅','花瓣蜜茶','春筍燉肉','桂花糕','薺菜餛飩'], '夏季':['冰鎮酸梅湯','西瓜','涼拌黃瓜','綠豆湯','荷葉飯'], '秋季':['烤地瓜','桂花釀','栗子燒雞','蘋果派','南瓜濃湯'], '冬季':['薑母茶','熱騰騰的羊肉鍋','烤紅薯','熱奶酒','麻辣火鍋'] };
+        const scenery = { '春季':['櫻花飄落的小徑','河邊盛開的野花','清晨帶著露水的草地'], '夏季':['星空下的河流','螢火蟲飛舞的夜晚','午後蟬鳴的樹蔭下'], '秋季':['金黃落葉鋪滿的石板路','楓紅染遍山頭的景色','豐收後堆滿穀物的倉庫'], '冬季':['白雪覆蓋的屋頂','壁爐旁搖曳的火光','冬夜裡遠處傳來的狼嚎'] };
+        const gifts = ['一束剛採的野花','自己做的手工餅乾','一瓶私藏的好酒','昨天釣到的魚做成的魚乾','一條手織的圍巾','用漂亮石頭做的小飾品'];
+        const rumors = [`聽說${pickRandom(['雜貨店','酒館','鎮公所'])}昨晚有人看到奇怪的光`,`據說最近森林裡出現了${pickRandom(['罕見的白鹿','神秘的遺跡','一群外來的旅人'])}`,`有人說${pickRandom(['河邊','山洞','舊礦坑'])}藏著寶藏`,`聽說隔壁的商隊帶來了${pickRandom(['稀有香料','遠方的書信','神秘的藥草'])}`];
+        const food = pickRandom(foods[season] || foods['春季']);
+        const scene = pickRandom(scenery[season] || scenery['春季']);
+
         const isCouple = relA.status === 'dating' || relA.status === 'married';
         const isCrush = relA.romanticInterest > 30 || relB.romanticInterest > 30;
         const isRival = relA.affinity < -20 || relB.affinity < -20;
         const isCloseFriend = relA.affinity > 50 && relB.affinity > 50;
         const isStranger = relA.interactionCount < 3;
 
-        // Greeting styles based on personality
         const greetA = this._personalityGreeting(agentA, agentB, relA);
         const greetB = this._personalityGreeting(agentB, agentA, relB);
 
         if (isCouple) {
-            // --- Couple conversation ---
             const coupleTopics = [
                 () => {
-                    lines.push({speaker:agentA.name, text:`${agentB.name}，今天${jobB}忙嗎？我好擔心你。`});
-                    lines.push({speaker:agentB.name, text:tB.includes('stoic')?'還行吧，不用擔心。':tB.includes('romantic')?`有你關心就什麼都值得了。`:'今天還好啦，就是有點累。'});
-                    lines.push({speaker:agentA.name, text:tA.includes('kind')?'晚上我幫你做飯吧。':tA.includes('lazy')?'那等一下一起去酒館吃飯？':'辛苦了，早點休息。'});
-                    if (Math.random() < 0.5) lines.push({speaker:agentB.name, text:relA.status==='married'?'嗯，有你真好。':'好啊，這就是我喜歡你的地方。'});
-                    affA = randInt(2,5); affB = randInt(2,5); romA = randInt(1,3); romB = randInt(1,3);
-                    summary = `${agentA.name}和${agentB.name}甜蜜地聊了日常。`;
+                    lines.push({speaker:agentA.name, text:`你今天做的${food}真的太好吃了，我到現在嘴裡還有那個味道！`});
+                    lines.push({speaker:agentB.name, text:tB.includes('shy')?`真...真的嗎？其實我怕做得不夠好，特地多加了點${pickRandom(['蜂蜜','香料','秘方'])}...`:`那當然！這可是我花了一整個下午的心血，為了某個人。`});
+                    lines.push({speaker:agentA.name, text:`下次讓我也給你做一頓，雖然我的手藝可能會讓你後悔...`});
+                    lines.push({speaker:agentB.name, text:tB.includes('romantic')?`你做什麼我都喜歡，因為是你做的。`:`哈哈，那我先準備好腸胃藥！`});
+                    lines.push({speaker:agentA.name, text:`你！過分！...不過我真的很幸福。`});
+                    affA = randInt(3,6); affB = randInt(3,6); romA = randInt(2,4); romB = randInt(2,4);
+                    summary = `${loc}裡，${agentA.name}讚美了${agentB.name}親手做的${food}，兩人甜蜜地打鬧著，笑聲讓路過的人都忍不住微笑。`;
                 },
                 () => {
                     const jealousA = tA.includes('jealous');
                     const jealousB = tB.includes('jealous');
                     if (jealousA || jealousB) {
-                        const jealousOne = jealousA ? agentA : agentB;
-                        const other = jealousA ? agentB : agentA;
-                        lines.push({speaker:jealousOne.name, text:`你今天是不是跟${pickRandom(['別人','誰'])}待了很久？`});
-                        lines.push({speaker:other.name, text:'就是在工作啊，你想太多了。'});
-                        lines.push({speaker:jealousOne.name, text:'...我只是在乎你。'});
-                        lines.push({speaker:other.name, text:other.personality.traits.includes('kind')?'我知道，我也在乎你。':other.personality.traits.includes('abrasive')?'拜託不要每次都這樣。':'好了好了，別胡思亂想。'});
-                        affA = randInt(-2,1); affB = randInt(-2,1); romA = 0; romB = 0;
-                        summary = `${jealousOne.name}因為嫉妒跟${other.name}起了小爭執。`;
+                        const j = jealousA ? agentA : agentB;
+                        const o = jealousA ? agentB : agentA;
+                        lines.push({speaker:j.name, text:`我剛剛看到你跟那個人聊了好久，你們在說什麼悄悄話？`});
+                        lines.push({speaker:o.name, text:`就是在討論${pickRandom(['工作的事','鎮上活動','建材價格'])}啊，你又胡思亂想了。`});
+                        lines.push({speaker:j.name, text:`...你笑得那麼開心，我在旁邊看著心裡很不是滋味。`});
+                        lines.push({speaker:o.name, text:o.personality.traits.includes('kind')?`傻瓜，我心裡只有你一個人啊。來，把手給我。`:`你能不能信任我一點？每次都這樣我也很累的。`});
+                        lines.push({speaker:j.name, text:`...對不起。我就是太害怕失去你了。`});
+                        affA = randInt(-1,2); affB = randInt(-1,2); romA = randInt(0,1); romB = randInt(0,1);
+                        summary = `${j.name}因為看到${o.name}和別人說笑而醋意大發，兩人經歷了一場小風波，最終在${loc}和好。`;
                     } else {
-                        lines.push({speaker:agentA.name, text:`${season}到了，要不要一起去${pickRandom(['河邊散步','看星星','逛市集'])}？`});
-                        lines.push({speaker:agentB.name, text:tB.includes('shy')?'好...好啊。':`好啊！聽起來很棒！`});
-                        affA = randInt(2,4); affB = randInt(2,4); romA = randInt(1,2); romB = randInt(1,2);
-                        summary = `${agentA.name}邀請${agentB.name}一起出去。`;
+                        lines.push({speaker:agentA.name, text:`${season}的夜晚真美...你看那邊，${scene}。要不要一起去走走？`});
+                        lines.push({speaker:agentB.name, text:tB.includes('shy')?`好...牽著我的手好嗎？`:`走啊！我還想帶你去看一個秘密地點，保證你沒去過！`});
+                        lines.push({speaker:agentA.name, text:`和你在一起的時候，覺得這個小鎮是全世界最美的地方。`});
+                        lines.push({speaker:agentB.name, text:`笨蛋...突然說這種話，我都不知道該怎麼回了。`});
+                        affA = randInt(3,5); affB = randInt(3,5); romA = randInt(2,4); romB = randInt(2,4);
+                        summary = `${season}的${loc}裡，${agentA.name}和${agentB.name}手牽手散步，分享著${scene}的浪漫景色，氣氛溫馨而甜蜜。`;
                     }
+                },
+                () => {
+                    const gift = pickRandom(gifts);
+                    lines.push({speaker:agentA.name, text:`${agentB.name}，閉上眼睛，我有東西要給你！`});
+                    lines.push({speaker:agentB.name, text:`又在搞什麼鬼？...好啦好啦，閉上了。`});
+                    lines.push({speaker:agentA.name, text:`好了，睜開！噹噹——${gift}！看到的時候就想到你了。`});
+                    lines.push({speaker:agentB.name, text:tB.includes('stoic')?`......謝謝。我會好好珍藏的。`:`天啊！這也太可愛了吧！你怎麼知道我一直想要這個？！`});
+                    affA = randInt(3,6); affB = randInt(4,7); romA = randInt(2,3); romB = randInt(2,4);
+                    summary = `${agentA.name}在${loc}送了${agentB.name}${gift}作為驚喜，${agentB.name}${tB.includes('stoic')?'雖然表面平靜但眼眶微紅':'感動得差點飛撲上去'}，兩人的感情更加深厚了。`;
                 },
             ];
             pickRandom(coupleTopics)();
         } else if (isRival) {
-            // --- Hostile conversation ---
             const hostileTemplates = [
                 () => {
-                    lines.push({speaker:agentA.name, text:tA.includes('abrasive')?`又碰到你了，${agentB.name}。`:`...${agentB.name}。`});
-                    lines.push({speaker:agentB.name, text:tB.includes('abrasive')?'我也不想看到你。':'嗯。'});
-                    if (Math.random() < 0.6) {
-                        lines.push({speaker:agentA.name, text:tA.includes('kind')?'算了，我們能不能別這樣？':'希望你別擋我的路。'});
-                        lines.push({speaker:agentB.name, text:tB.includes('stoic')?'隨你。':tB.includes('pessimist')?'反正也沒差。':'你自己小心吧。'});
-                    }
-                    affA = randInt(-3,-1); affB = randInt(-3,-1);
-                    summary = `${agentA.name}和${agentB.name}冷冷地交談，氣氛很僵。`;
-                },
-                () => {
-                    const topic = pickRandom(['工作方式','對鎮上的事看法','之前的事']);
-                    lines.push({speaker:agentA.name, text:`${agentB.name}，關於${topic}，你真的覺得你是對的嗎？`});
-                    lines.push({speaker:agentB.name, text:tB.includes('charismatic')?'我不想吵架，但我有我的理由。':'那你覺得呢？我不在乎你怎麼想。'});
-                    lines.push({speaker:agentA.name, text:tA.includes('stoic')?'好吧。':tA.includes('neurotic')?'你——算了！':'我們遲早要把話說清楚。'});
-                    affA = randInt(-4,-1); affB = randInt(-4,-1);
-                    summary = `${agentA.name}和${agentB.name}因為${topic}產生了爭執。`;
-                },
-                // Insult / mockery
-                () => {
-                    const insults = [
-                        `你那個${jobB}做得實在不怎麼樣，全鎮都知道。`,
-                        `像你這種人，難怪沒人想跟你說話。`,
-                        `你最近是不是又搞砸了什麼？看你那副臉色。`,
-                        `拜託，你的水平就只有這樣了吧？`,
-                    ];
-                    lines.push({speaker:agentA.name, text:pickRandom(insults)});
-                    lines.push({speaker:agentB.name, text:tB.includes('stoic')?'......你說完了嗎。':tB.includes('abrasive')?`你有什麼資格說我？照照鏡子吧！`:tB.includes('kind')?'你這樣說話很傷人...':'你！'});
-                    if (tB.includes('abrasive') || Math.random()<0.4) {
-                        lines.push({speaker:agentB.name, text:pickRandom([`至少我不像你一樣${tA.includes('lazy')?'整天偷懶':'虛偽'}！`,`你以為你很了不起嗎？`,`有本事別躲在背後說。`])});
-                        lines.push({speaker:agentA.name, text:pickRandom(['哼。','你等著。','遲早讓你看看。'])});
-                    }
-                    affA = randInt(-6,-3); affB = randInt(-6,-3);
-                    summary = `${agentA.name}狠狠地羞辱了${agentB.name}，兩人關係更加惡化。`;
-                },
-                // Public argument
-                () => {
-                    lines.push({speaker:agentA.name, text:`${agentB.name}！你上次做的事我還沒忘！`});
-                    lines.push({speaker:agentB.name, text:'什麼事？你自己心裡有數吧。'});
-                    lines.push({speaker:agentA.name, text:tA.includes('neurotic')?'你每次都這樣！推卸責任！':'別裝了，大家都看在眼裡。'});
-                    lines.push({speaker:agentB.name, text:tB.includes('charismatic')?'好了好了，別在這裡吵，大家都看著呢。':'那又怎樣？要吵就吵！'});
+                    lines.push({speaker:agentA.name, text:`哦？${agentB.name}也在${loc}啊，我還以為你早就被鎮上的人趕走了呢。`});
+                    lines.push({speaker:agentB.name, text:tB.includes('abrasive')?`你少在那邊冷嘲熱諷，有本事當面說清楚！`:`......你講話可以再難聽一點，我都習慣了。`});
+                    lines.push({speaker:agentA.name, text:`別裝可憐了，你做過什麼你自己心裡清楚。上次${pickRandom(['倉庫的事','選舉那件事','你在背後說的那些話'])}，全鎮都知道。`});
+                    lines.push({speaker:agentB.name, text:tB.includes('stoic')?`信不信由你。我問心無愧。`:`你！——好，你記住今天說的話。遲早你會後悔的。`});
                     affA = randInt(-5,-2); affB = randInt(-5,-2);
-                    summary = `${agentA.name}和${agentB.name}在${loc}大吵了一架，引起眾人注意。`;
+                    summary = `${agentA.name}和${agentB.name}在${loc}正面交鋒，針鋒相對的言語讓空氣彷彿凝結，周圍的居民紛紛側目。`;
+                },
+                () => {
+                    lines.push({speaker:agentA.name, text:`聽說你最近又在到處說我${pickRandom(['壞話','是非','不是'])}？有種當面說啊。`});
+                    lines.push({speaker:agentB.name, text:`我說的都是事實。你那個${jobA}做成什麼樣子，大家有目共睹。`});
+                    lines.push({speaker:agentA.name, text:tA.includes('neurotic')?`你——！我在這個鎮上付出了多少你知道嗎！？`:`笑話。等你做到我一半再來批評吧。`});
+                    lines.push({speaker:agentB.name, text:tB.includes('charismatic')?`好了，我不想在這種地方吵。但你最好反省一下自己。`:`哼，走著瞧。`});
+                    lines.push({speaker:agentA.name, text:`你才該好好反省！`});
+                    affA = randInt(-6,-3); affB = randInt(-6,-3);
+                    summary = `${agentA.name}當面質問${agentB.name}散播流言蜚語的事，兩人在${loc}爆發了激烈口角，怒氣沖天，場面一度失控。`;
+                },
+                () => {
+                    lines.push({speaker:agentA.name, text:`${agentB.name}，我們需要談談。不是為了吵架，是為了把話說開。`});
+                    lines.push({speaker:agentB.name, text:tB.includes('kind')?`......好吧。我也不想一直這樣下去。`:`你覺得有什麼好談的？`});
+                    lines.push({speaker:agentA.name, text:`我知道我們之間有很多誤會，但至少在鎮上要做到基本的尊重，你說呢？`});
+                    lines.push({speaker:agentB.name, text:tB.includes('stoic')?`......我會考慮的。`:`尊重是互相的。你先做到再來要求我。`});
+                    affA = randInt(-2,1); affB = randInt(-2,1);
+                    summary = `${agentA.name}在${loc}試圖與${agentB.name}和解，但雙方仍帶著心結，氣氛雖有緩和卻依然充滿張力。`;
                 },
             ];
             pickRandom(hostileTemplates)();
         } else if (isCrush) {
-            // --- Crush / flirty conversation ---
             const crushA = relA.romanticInterest > 30;
             const crushB = relB.romanticInterest > 30;
-            lines.push({speaker:agentA.name, text: crushA ? (tA.includes('shy')?`啊，${agentB.name}...你、你也在這裡啊。`:`嘿！${agentB.name}！真巧在這遇到你。`) : greetA});
-            lines.push({speaker:agentB.name, text: crushB ? (tB.includes('shy')?'嗯...對啊。你今天看起來...不錯。':`哈哈，是啊！你今天看起來很有精神呢。`) : greetB});
-            if (crushA && crushB) {
-                lines.push({speaker:agentA.name, text:tA.includes('romantic')?`不知道為什麼，每次見到你心情就特別好。`:`欸，你等一下有空嗎？我們可以...聊聊天什麼的。`});
-                lines.push({speaker:agentB.name, text:tB.includes('romantic')?'我也是呢...':'好啊，我正好有空。'});
-                romA = randInt(2,5); romB = randInt(2,5);
-                summary = `${agentA.name}和${agentB.name}之間的互動充滿了曖昧的氣息。`;
-            } else {
-                const crusher = crushA ? agentA : agentB;
-                const crushee = crushA ? agentB : agentA;
-                lines.push({speaker:crusher.name, text:crusher.personality.traits.includes('shy')?`那個...${crushee.name}，你等一下要做什麼？`:`${crushee.name}，最近過得怎麼樣？`});
-                lines.push({speaker:crushee.name, text:crushee.personality.traits.includes('kind')?'挺好的啊，謝謝關心！':'還行吧，就那樣。'});
-                romA = crushA ? randInt(1,3) : 0;
-                romB = crushB ? randInt(1,3) : 0;
-                summary = `${crusher.name}試著接近${crushee.name}。`;
-            }
-            affA = randInt(1,4); affB = randInt(1,4);
-        } else if (isCloseFriend) {
-            // --- Close friend conversation ---
-            const friendTopics = [
+            const crushTopics = [
                 () => {
-                    lines.push({speaker:agentA.name, text:`${agentB.name}！正好找你，最近${pickRandom(['有個事想跟你聊','想聽聽你的想法','有個煩惱'])}。`});
-                    const worry = agentA.needs.hunger<30 ? '最近食物好像有點不夠' : agentA.mood<30 ? '我最近狀態不太好' : `我在想要不要學點新${agentA.skills.bestSkill.category}的技術`;
-                    lines.push({speaker:agentA.name, text:`${worry}。`});
-                    lines.push({speaker:agentB.name, text:tB.includes('kind')?`我懂，你不用擔心，我會幫你的。`:tB.includes('pessimist')?`說真的，我也覺得有點麻煩...`:`嗯，我覺得你可以試試看，反正也沒什麼損失。`});
-                    lines.push({speaker:agentA.name, text:`謝謝你，跟你聊天總是讓我覺得好多了。`});
-                    affA = randInt(3,6); affB = randInt(2,5);
-                    summary = `${agentA.name}向摯友${agentB.name}傾訴了心事。`;
+                    lines.push({speaker:agentA.name, text: crushA ? `${agentB.name}！你、你頭上有片落葉——我幫你拿掉！` : greetA});
+                    lines.push({speaker:agentB.name, text: crushB ? `啊，謝...謝謝...（心跳好快）你的手好溫暖。` : `哦，謝謝你啊。`});
+                    lines.push({speaker:agentA.name, text: crushA ? `抱歉！我是不是太靠近了...不，我只是...你今天${pickRandom(['聞起來好香','看起來好好看','笑容好好看'])}。` : `不客氣！${season}嘛，到處都是落葉。`});
+                    if (crushB) lines.push({speaker:agentB.name, text:tB.includes('shy')?`你...你也是...（聲音越來越小）`:`哈哈，被你這麼一說我都不好意思了！那改天一起去喝杯${food}好嗎？`});
+                    romA = crushA ? randInt(3,6) : randInt(0,2); romB = crushB ? randInt(3,6) : randInt(0,2);
+                    affA = randInt(2,5); affB = randInt(2,5);
+                    const who = (crushA && crushB) ? '兩人' : (crushA ? agentA.name : agentB.name);
+                    summary = `${agentA.name}幫${agentB.name}拿掉頭上的落葉時兩人靠得很近，${who}的臉頰微微泛紅，${loc}的空氣中瀰漫著微妙的心動氣息。`;
                 },
                 () => {
-                    lines.push({speaker:agentA.name, text:`欸！${agentB.name}，你有聽說嗎？`});
-                    const gossipTopics = world.gossipNetwork?.activeGossip || [];
-                    if (gossipTopics.length) {
-                        const g = pickRandom(gossipTopics);
-                        lines.push({speaker:agentA.name, text:g.content});
-                        lines.push({speaker:agentB.name, text:tB.includes('gossip')?'真的假的！快跟我說更多！':'哦？這倒是第一次聽說。'});
-                    } else {
-                        lines.push({speaker:agentA.name, text:`聽說鎮上最近要${pickRandom(['來新人','辦活動','修建築'])}。`});
-                        lines.push({speaker:agentB.name, text:'是嗎？希望是好事。'});
-                    }
-                    lines.push({speaker:agentA.name, text:tA.includes('gossip')?'這種事我最喜歡了！':'就隨便聊聊啦。'});
-                    affA = randInt(2,4); affB = randInt(2,4);
-                    summary = `${agentA.name}和${agentB.name}分享了鎮上的消息。`;
+                    lines.push({speaker:agentA.name, text:`${agentB.name}，你知道嗎？我昨晚看到了${scene}，第一個想到的人就是你。`});
+                    lines.push({speaker:agentB.name, text: crushB ? `真的嗎...其實我也常常想著——啊不，我是說，那一定很美！` : `哦？聽起來很美呢。`});
+                    lines.push({speaker:agentA.name, text:`下次一定要帶你去看。跟你在一起的時候，什麼風景都會更美。`});
+                    lines.push({speaker:agentB.name, text: crushB ? `...好。一定要說到做到哦。` : tB.includes('kind')?`你真會說話！好啊，到時候再說。`:`嗯...好啊。`});
+                    romA = crushA ? randInt(2,5) : randInt(1,2); romB = crushB ? randInt(2,5) : randInt(1,2);
+                    affA = randInt(2,5); affB = randInt(2,4);
+                    summary = `${agentA.name}在${loc}和${agentB.name}分享了${scene}的美景，話語間暗藏著告白的勇氣，${agentB.name}${crushB?'也悄悄地紅了耳朵':'禮貌地微笑回應'}。`;
+                },
+            ];
+            pickRandom(crushTopics)();
+        } else if (isCloseFriend) {
+            const friendTopics = [
+                () => {
+                    const rumor = pickRandom(rumors);
+                    lines.push({speaker:agentA.name, text:`${agentB.name}！你一定不相信我剛聽到什麼——${rumor}！`});
+                    lines.push({speaker:agentB.name, text:tB.includes('gossip')?`什麼！？快跟我說清楚！細節呢！？`:`真的假的？你確定不是誰在胡說八道？`});
+                    lines.push({speaker:agentA.name, text:`千真萬確！好幾個人都這麼說。要不要找個時間一起去${pickRandom(['看看','調查','確認'])}？`});
+                    lines.push({speaker:agentB.name, text:tB.includes('kind')?`嗯...小心為上，但如果是真的就太刺激了！`:`走啊！怕什麼！帶上${food}我們來場冒險！`});
+                    affA = randInt(3,5); affB = randInt(3,5);
+                    summary = `${agentA.name}興沖沖地在${loc}和摯友${agentB.name}分享了一個驚天八卦，兩人越聊越起勁，甚至約好了一起去探個究竟，氣氛既神秘又興奮。`;
+                },
+                () => {
+                    lines.push({speaker:agentA.name, text:`唉...${agentB.name}，你能不能幫我出出主意？最近${pickRandom([`${jobA}的工作壓力大到快喘不過氣`,`跟隔壁的鄰居鬧了點不愉快`,`一直在做同一個奇怪的夢`])}...`});
+                    lines.push({speaker:agentB.name, text:tB.includes('kind')?`怎麼了？慢慢說，我聽著呢。先喝口${food}暖暖。`:`又怎麼了？你最近也太多煩惱了吧——不過說吧，反正你也憋不住。`});
+                    lines.push({speaker:agentA.name, text:`你真的是全鎮最了解我的人...每次跟你聊完心裡就踏實多了。`});
+                    lines.push({speaker:agentB.name, text:`別肉麻了！不過...有你當朋友我也很慶幸啦。來，我請你吃${pickRandom(['剛烤好的麵包','酒館的招牌菜','剛摘的水果'])}。`});
+                    affA = randInt(3,6); affB = randInt(3,5);
+                    summary = `${agentA.name}在${loc}向摯友${agentB.name}傾訴了最近的煩惱，${agentB.name}耐心傾聽並貼心地準備了${food}，兩人之間的友誼更加堅定了。`;
+                },
+                () => {
+                    lines.push({speaker:agentA.name, text:`${agentB.name}，還記得我們剛來邊境鎮那天嗎？什麼都沒有，就兩個人站在空蕩蕩的廣場上。`});
+                    lines.push({speaker:agentB.name, text:`記得啊！那時候你還摔了一跤，臉都栽進泥巴裡哈哈哈哈！`});
+                    lines.push({speaker:agentA.name, text:`你就記這個！？那你還不是迷路了三次才找到酒館！`});
+                    lines.push({speaker:agentB.name, text:`好了好了，我們扯平。不過認真的...能跟你一起在這裡打拼，我覺得這輩子值了。`});
+                    lines.push({speaker:agentA.name, text:`...你今天不準再說催淚的話了，我眼眶已經紅了。`});
+                    affA = randInt(4,7); affB = randInt(4,7);
+                    summary = `${agentA.name}和${agentB.name}在${loc}回憶起初來邊境鎮的趣事，笑淚交織之間，深厚的友情讓旁人都為之動容。`;
                 },
             ];
             pickRandom(friendTopics)();
         } else if (isStranger) {
-            // --- First meetings / strangers ---
-            lines.push({speaker:agentA.name, text:tA.includes('charismatic')?`嗨！我是${agentA.name}，你是新來的嗎？`:tA.includes('shy')?`你好...`:greetA});
-            lines.push({speaker:agentB.name, text:tB.includes('shy')?`你好...我是${agentB.name}。`:tB.includes('charismatic')?`哈囉！我叫${agentB.name}，很高興認識你！`:`嗯，你好。我是${agentB.name}。`});
-            if (Math.random() < 0.7) {
-                lines.push({speaker:agentA.name, text:`你在${loc}${pickRandom(['做什麼','工作嗎','也是來逛的'])}？`});
-                lines.push({speaker:agentB.name, text:agentB.job?`我是${jobB}，在這邊${pickRandom(['工作','上班','做事'])}。你呢？`:'我就到處看看，這鎮子挺有意思的。'});
-            }
-            affA = randInt(1,4); affB = randInt(1,4);
-            summary = `${agentA.name}和${agentB.name}初次交談，互相認識了。`;
+            const strangerTopics = [
+                () => {
+                    lines.push({speaker:agentA.name, text:tA.includes('charismatic')?`嘿！你是新面孔吧？我是${agentA.name}，在這邊做${jobA}的。歡迎來到邊境鎮！`:`你好...我好像沒見過你？`});
+                    lines.push({speaker:agentB.name, text:tB.includes('shy')?`嗯...我是${agentB.name}...你好。這裡的${food}看起來好好吃...`:`哈囉！我叫${agentB.name}！剛到這邊不久，請多指教！這裡比我想像中熱鬧多了。`});
+                    lines.push({speaker:agentA.name, text:`${loc}是鎮上最${pickRandom(['熱鬧','有意思','舒服'])}的地方！對了，如果你想吃好料的，推薦你去試試酒館的${food}，絕對不會後悔。`});
+                    lines.push({speaker:agentB.name, text:`真的嗎！那我一定要去試試。謝謝你，${agentA.name}！`});
+                    affA = randInt(2,5); affB = randInt(2,5);
+                    summary = `${agentA.name}在${loc}熱情地招呼了新來的${agentB.name}，推薦了鎮上的美食${food}，給${agentB.name}留下了溫暖的第一印象。`;
+                },
+                () => {
+                    lines.push({speaker:agentA.name, text:`${agentB.name}對吧？我聽說你是做${jobB}的——正好，我一直想認識做這行的人！`});
+                    lines.push({speaker:agentB.name, text:`你認識我？啊，果然小鎮消息傳得快...對，我是${jobB}。你是${agentA.name}？`});
+                    lines.push({speaker:agentA.name, text:`哈哈，邊境鎮就是這樣，新人來的消息半天就全鎮都知道了。改天聊聊${pickRandom(['工作心得','鎮上的事','生活經驗'])}吧？`});
+                    lines.push({speaker:agentB.name, text:`好啊！期待跟你多認識。`});
+                    affA = randInt(2,4); affB = randInt(2,4);
+                    summary = `${agentA.name}和${agentB.name}在${loc}初次交談，兩人相談甚歡，約好了改天再深入聊聊，邊境鎮又多了一段新的緣分。`;
+                },
+            ];
+            pickRandom(strangerTopics)();
         } else {
-            // --- Normal acquaintance/friend conversation with personality flavor ---
+            // --- Normal acquaintance conversation — vivid and story-driven ---
             const normalTopics = [
-                // Work talk
+                // Sharing discoveries
                 () => {
-                    lines.push({speaker:agentA.name, text:greetA});
-                    lines.push({speaker:agentB.name, text:greetB});
-                    if (agentA.job && agentB.job) {
-                        lines.push({speaker:agentA.name, text:tA.includes('hardworking')?`今天工作量不少，不過${jobA}的工作我挺喜歡的。`:tA.includes('lazy')?`唉，又要上班了...你呢？`:`${jobA}的工作最近還好，你那邊${jobB}呢？`});
-                        lines.push({speaker:agentB.name, text:tB.includes('perfectionist')?`馬馬虎虎吧，總覺得還可以做得更好。`:tB.includes('optimist')?`很好啊！每天都在進步的感覺。`:`就那樣吧，混口飯吃。`});
-                    } else {
-                        lines.push({speaker:agentA.name, text:`最近${loc}挺熱鬧的。`});
-                        lines.push({speaker:agentB.name, text:'是啊，' + pickRandom(['人越來越多了。','希望日子越來越好。','也是好事。'])});
-                    }
-                    affA = randInt(1,3); affB = randInt(1,3);
-                    summary = `${agentA.name}和${agentB.name}聊了聊工作和日常。`;
+                    const discovery = pickRandom([
+                        `你知道嗎？我昨天在河邊發現了一種從沒見過的${pickRandom(['發光的石頭','藍色的蘑菇','奇怪的腳印'])}`,
+                        `我昨晚在${pickRandom(['圖書館','禮拜堂','山丘上'])}看到了${pickRandom(['神秘的光','一隻從沒見過的鳥','天上有兩個月亮'])}`,
+                        `今天早上我去${pickRandom(['井邊打水','田裡幹活','林子裡散步'])}的時候，聽到了${pickRandom(['很美的歌聲','奇怪的低語','遠方傳來的鐘聲'])}`,
+                    ]);
+                    lines.push({speaker:agentA.name, text:`${agentB.name}！${discovery}！`});
+                    lines.push({speaker:agentB.name, text:tB.includes('creative')?`什麼！？太神奇了！你帶我去看好不好！`:`真的假的？該不會是你看花眼了吧？`});
+                    lines.push({speaker:agentA.name, text:`我騙你幹嘛！千真萬確，下次遇到我馬上叫你！`});
+                    lines.push({speaker:agentB.name, text:tB.includes('pessimist')?`好吧好吧...不過要是什麼危險的東西你可要負責。`:`一言為定！記得帶上${food}，探險可不能餓肚子！`});
+                    affA = randInt(2,4); affB = randInt(2,4);
+                    summary = `${agentA.name}興奮地和${agentB.name}分享了一個神奇的發現，兩人在${loc}聊得眉飛色舞，約好下次一起去探索。`;
                 },
-                // Weather/Season talk
+                // Season + food + life detail
                 () => {
-                    const weatherComments = {
-                        '春季': ['春天的花開得真美。','天氣終於暖了。','播種的季節到了。'],
-                        '夏季': ['好熱啊，快受不了了。','夏天的夜晚很舒服。','河邊涼快多了。'],
-                        '秋季': ['秋天的收穫應該不錯。','落葉好漂亮。','天漸漸涼了。'],
-                        '冬季': ['冬天好冷啊。','希望今年冬天不要太難熬。','圍著火爐取暖真舒服。'],
-                    };
-                    lines.push({speaker:agentA.name, text:greetA});
-                    lines.push({speaker:agentB.name, text:pickRandom(weatherComments[season] || ['天氣不錯。'])});
-                    lines.push({speaker:agentA.name, text:tA.includes('optimist')?'是啊，每個季節都有它的美好。':tA.includes('pessimist')?'但願別出什麼問題。':'嗯，也是。'});
-                    affA = randInt(0,2); affB = randInt(0,2);
-                    summary = `${agentA.name}和${agentB.name}閒聊了${season}的天氣。`;
+                    lines.push({speaker:agentA.name, text:`${season}最棒的就是${food}了！我剛從酒館帶了一份，要不要嚐嚐？`});
+                    lines.push({speaker:agentB.name, text:tB.includes('kind')?`哇！好香！你也太貼心了吧——等等，你該不會有什麼事要拜託我？`:`還行吧，不過我比較想吃${pickRandom(foods[season]||foods['春季'])}。`});
+                    lines.push({speaker:agentA.name, text:`被你看穿了！其實是想問你${pickRandom(['鎮上最近有什麼新鮮事','知不知道哪裡可以買到好木材','有沒有認識會修屋頂的人'])}。`});
+                    lines.push({speaker:agentB.name, text:tB.includes('charismatic')?`哈哈！先吃東西再說正事！來來來，坐下聊。`:`嗯...讓我想想，我好像聽說過一些消息。`});
+                    affA = randInt(2,4); affB = randInt(2,4);
+                    summary = `${agentA.name}帶了${food}到${loc}和${agentB.name}邊吃邊聊，${season}的暖意讓兩人的對話格外愜意。`;
                 },
-                // Mood-driven talk
+                // Work + dramatic story
+                () => {
+                    const workStory = pickRandom([
+                        {a:`你不知道！今天${jobA}的時候差點出大事——${pickRandom(['一塊巨石突然滾下來','工具斷了差點傷到人','發現了一條密道'])}！`, sum:`分享了工作中驚險的一幕`},
+                        {a:`告訴你一個祕密，${pickRandom(['倉庫裡藏了一批沒人知道的好東西','鎮公所的地下室好像有奇怪的聲音','雜貨店老闆其實以前是個冒險家'])}！`, sum:`悄悄透露了鎮上的一個祕密`},
+                        {a:`我今天在${pickRandom(['工作的時候','路上','吃飯的時候'])}碰到一件超搞笑的事——${pickRandom(['有人把一桶水潑在鎮長身上','一隻雞追著守衛跑了三圈','有個旅人居然帶了一頭熊進酒館'])}！`, sum:`分享了一件讓人笑到肚子痛的趣事`},
+                    ]);
+                    lines.push({speaker:agentA.name, text:`${agentB.name}！${workStory.a}`});
+                    lines.push({speaker:agentB.name, text:tB.includes('gossip')?`不會吧！？然後呢然後呢！？快說！`:`哈哈哈你認真的嗎！？這也太誇張了！`});
+                    lines.push({speaker:agentA.name, text:`我發誓是真的！當場所有人都傻眼了！`});
+                    lines.push({speaker:agentB.name, text:`這件事我要跟全鎮的人說！太精彩了！`});
+                    affA = randInt(2,5); affB = randInt(2,5);
+                    summary = `${agentA.name}在${loc}向${agentB.name}${workStory.sum}，兩人笑得前仰後合，${loc}裡充滿了歡樂的氣氛。`;
+                },
+                // Gift giving
+                () => {
+                    const gift = pickRandom(gifts);
+                    lines.push({speaker:agentA.name, text:`對了${agentB.name}，這個給你——${gift}，上次你幫了我大忙，一直想謝謝你。`});
+                    lines.push({speaker:agentB.name, text:tB.includes('shy')?`欸...這也太...我只是舉手之勞啊，你不用這麼客氣的...`:`你也太有心了吧！我只是做了該做的事而已！不過...我超喜歡的，謝謝！`});
+                    lines.push({speaker:agentA.name, text:`喜歡就好！以後有什麼需要幫忙的儘管開口。`});
+                    lines.push({speaker:agentB.name, text:`一定！你也是！...今天真的心情變好了。`});
+                    affA = randInt(3,5); affB = randInt(4,6);
+                    summary = `${agentA.name}在${loc}送了${agentB.name}${gift}作為感謝，${agentB.name}感動之餘兩人的友誼又更進了一步，${season}的空氣裡充滿了溫暖。`;
+                },
+                // Rumors and gossip
+                () => {
+                    const rumor = pickRandom(rumors);
+                    lines.push({speaker:agentA.name, text:`嘿${agentB.name}，你有聽說嗎？${rumor}。`});
+                    lines.push({speaker:agentB.name, text:tB.includes('gossip')?`真的！？我的天，這也太刺激了！你從哪裡聽來的？`:`嗯？聽起來不太靠譜...不過如果是真的就有意思了。`});
+                    lines.push({speaker:agentA.name, text:`好幾個人都這麼說呢！而且昨天夜裡好像真的有人看到${pickRandom(['可疑的影子','奇怪的燈火','一群穿斗篷的人'])}。`});
+                    lines.push({speaker:agentB.name, text:tB.includes('kind')?`嗯...希望不是什麼壞事。不過有你一起我就安心多了。`:`哼，我倒要看看到底是怎麼回事。明天一起去打聽！`});
+                    affA = randInt(2,4); affB = randInt(2,4);
+                    summary = `${agentA.name}和${agentB.name}在${loc}低聲討論著鎮上的神秘傳聞，越聊越覺得事情不簡單，兩人的表情既好奇又緊張。`;
+                },
+                // Mood-driven dramatic scene
                 () => {
                     if (agentA.mood < 20) {
-                        lines.push({speaker:agentA.name, text:tA.includes('stoic')?'......':'唉...'});
-                        lines.push({speaker:agentB.name, text:tB.includes('kind')?`${agentA.name}，你看起來不太好，怎麼了？`:tB.includes('abrasive')?'你那個臉色是怎樣？':'你還好嗎？'});
-                        lines.push({speaker:agentA.name, text:tA.includes('shy')?'...沒什麼，就是有點累。':'最近事情不太順利。'});
-                        lines.push({speaker:agentB.name, text:tB.includes('kind')?'有什麼需要幫忙的隨時說。':'希望你能好起來。'});
-                        affA = randInt(2,5); affB = randInt(1,3);
-                        summary = `${agentB.name}關心了看起來不太好的${agentA.name}。`;
+                        lines.push({speaker:agentB.name, text:`${agentA.name}...你怎麼一個人坐在${loc}發呆？你的眼眶是不是紅紅的...`});
+                        lines.push({speaker:agentA.name, text:tA.includes('stoic')?`...我沒事。只是在想一些事情。`:`...最近什麼事都不順利，我有時候在想，我來邊境鎮到底對不對。`});
+                        lines.push({speaker:agentB.name, text:tB.includes('kind')?`你聽我說——你是這個鎮上不可或缺的人。我們都需要你。來，先喝口${food}暖暖身子。`:`你少來了，沒有你誰來做${jobA}？鎮上離了你可不行。`});
+                        lines.push({speaker:agentA.name, text:`......謝謝你，${agentB.name}。有你在真好。`});
+                        affA = randInt(3,6); affB = randInt(2,4);
+                        summary = `${agentB.name}在${loc}發現了獨自落寞的${agentA.name}，溫柔地遞上一杯${food}，用真摯的話語驅散了陰霾，${agentA.name}眼眶泛紅地笑了。`;
                     } else if (agentA.mood > 70) {
-                        lines.push({speaker:agentA.name, text:`${agentB.name}！今天心情超好的！`});
-                        lines.push({speaker:agentB.name, text:tB.includes('pessimist')?'是嗎...希望能持續下去。':'什麼好事？快說來聽聽！'});
-                        lines.push({speaker:agentA.name, text:tA.includes('creative')?'就覺得今天特別有靈感！':tA.includes('hardworking')?'工作進展得很順利！':'就是覺得日子過得不錯。'});
-                        affA = randInt(1,3); affB = randInt(1,3);
-                        summary = `${agentA.name}心情很好，和${agentB.name}分享了快樂。`;
+                        lines.push({speaker:agentA.name, text:`${agentB.name}！你猜怎麼著！今天是我這輩子最好的一天——${pickRandom(['工作順利到不可思議','發現了一個超棒的地方','有人跟我說了一句讓我開心到飛起來的話'])}！`});
+                        lines.push({speaker:agentB.name, text:tB.includes('pessimist')?`你也太浮誇了...不過看你這麼開心我也忍不住笑了。`:`太好了！快跟我說！今天我請你喝${food}慶祝！`});
+                        lines.push({speaker:agentA.name, text:`我現在覺得什麼困難都打不倒我！連${season}的天氣都特別配合！`});
+                        lines.push({speaker:agentB.name, text:`哈哈哈，你也太誇張了！不過...你開心我也開心，畢竟你笑起來真的很有感染力。`});
+                        affA = randInt(2,5); affB = randInt(2,5);
+                        summary = `心情大好的${agentA.name}在${loc}拉著${agentB.name}分享喜悅，開懷大笑的聲音感染了整個${loc}，連路過的人都忍不住嘴角上揚。`;
                     } else {
-                        lines.push({speaker:agentA.name, text:greetA});
-                        lines.push({speaker:agentB.name, text:greetB});
-                        const randomChat = pickRandom([
-                            `你覺得鎮上還缺什麼？`, `最近有學到什麼新東西嗎？`,
-                            `你下班後通常都做什麼？`, `你來邊境鎮多久了？`,
-                        ]);
-                        lines.push({speaker:agentA.name, text:randomChat});
-                        lines.push({speaker:agentB.name, text:tB.includes('creative')?'我最近在想一些有趣的點子。':tB.includes('hardworking')?'大多時候都在忙工作吧。':'就隨便過過日子。'});
-                        affA = randInt(0,3); affB = randInt(0,3);
-                        summary = `${agentA.name}和${agentB.name}隨意聊了天。`;
+                        lines.push({speaker:agentA.name, text:`${agentB.name}，你有沒有想過...如果當初沒來邊境鎮，現在會在哪裡？`});
+                        lines.push({speaker:agentB.name, text:tB.includes('creative')?`我有時候會想呢。也許在某個大城市裡迷失方向吧...但這裡有${scene}，有你們這些朋友，我不後悔。`:`想那麼多幹嘛？現在過得不錯就好了。走，去弄點${food}來吃。`});
+                        lines.push({speaker:agentA.name, text:`說得也是。有時候覺得命運把我們送到這裡，一定有它的道理。`});
+                        lines.push({speaker:agentB.name, text:`少在那邊感慨了！${food}可不等人，走走走！`});
+                        affA = randInt(2,4); affB = randInt(2,4);
+                        summary = `${agentA.name}和${agentB.name}在${loc}感慨起命運的安排，聊起了${scene}的美好，最後被${food}的香氣拉回了現實，氣氛輕鬆溫馨。`;
                     }
-                },
-                // Need-driven talk
-                () => {
-                    lines.push({speaker:agentA.name, text:greetA});
-                    if (agentA.needs.hunger < 25) {
-                        lines.push({speaker:agentA.name, text:'肚子好餓...最近吃得不太夠。'});
-                        lines.push({speaker:agentB.name, text:tB.includes('kind')?'走，我請你去酒館吃點東西。':'鎮上的食物確實要省著點用。'});
-                    } else if (agentA.needs.rest < 25) {
-                        lines.push({speaker:agentA.name, text:'最近都沒怎麼睡好...'});
-                        lines.push({speaker:agentB.name, text:tB.includes('kind')?'要不要早點回去休息？':'我也是，最近事情太多了。'});
-                    } else if (agentA.needs.social < 25) {
-                        lines.push({speaker:agentA.name, text:'好久沒跟人好好聊天了。'});
-                        lines.push({speaker:agentB.name, text:tB.includes('charismatic')?'那就跟我多聊聊嘛！':'...我也是。'});
-                    } else {
-                        lines.push({speaker:agentA.name, text:`你有沒有什麼推薦的${pickRandom(['消遣','活動','放鬆方式'])}？`});
-                        lines.push({speaker:agentB.name, text:tB.includes('creative')?'我喜歡畫畫或寫東西。':tB.includes('night_owl')?'晚上去看星星不錯。':'去河邊走走吧。'});
-                    }
-                    affA = randInt(1,3); affB = randInt(1,3);
-                    summary = `${agentA.name}和${agentB.name}聊了聊彼此的近況。`;
                 },
             ];
             pickRandom(normalTopics)();
 
-            // Random chance of friction even in normal conversations
-            if (Math.random() < 0.15) {
+            if (Math.random() < 0.12) {
                 this._addConflictEscalation(lines, agentA, agentB, world, tA, tB);
                 affA = Math.min(affA, randInt(-4, -1));
                 affB = Math.min(affB, randInt(-4, -1));
-                summary += '但氣氛變得有些尷尬。';
+                summary += '但後來氣氛突然變得微妙，兩人不歡而散。';
             }
         }
 
-        // Romantic sparks can happen in any positive conversation between single agents
+        // Romantic sparks
         if (!isCouple && !isRival && affA > 0 && affB > 0) {
-            const tA = agentA.personality.traits;
-            const tB = agentB.personality.traits;
             const hasRomanticTrait = tA.includes('romantic') || tB.includes('romantic');
             const hasChemistry = (tA.includes('shy') && tB.includes('charismatic')) ||
                                  (tB.includes('shy') && tA.includes('charismatic')) ||
@@ -1689,6 +1705,7 @@ class LLMClient {
             deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: this.model || 'deepseek-chat' },
             groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: this.model || 'llama-3.3-70b-versatile' },
             together: { url: 'https://api.together.xyz/v1/chat/completions', model: this.model || 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo' },
+            minimax: { url: 'https://api.minimaxi.com/v1/text/chatcompletion_v2', model: this.model || 'MiniMax-M2.5' },
         };
         const cfg = endpoints[this.provider];
         if (!cfg) throw new Error(`Unknown provider: ${this.provider}`);
@@ -1735,6 +1752,22 @@ class LLMClient {
                 const parts = data.candidates?.[0]?.content?.parts || [];
                 const textPart = parts.filter(p => !p.thought).map(p => p.text).join('');
                 return textPart || parts[0]?.text || '';
+            } else if (this.provider === 'minimax') {
+                // MiniMax uses max_completion_tokens (not max_tokens) and base_resp for errors
+                const res = await fetch(cfg.url, {
+                    method:'POST',
+                    headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${this.apiKey}` },
+                    body: JSON.stringify({ model:cfg.model, max_completion_tokens:maxTokens, temperature, messages:[{role:'user',content:prompt}] }),
+                });
+                if (res.status === 429) { this._handleRateLimit(); return ''; }
+                const data = await res.json();
+                if (data.base_resp && data.base_resp.status_code !== 0) {
+                    console.error('[RimTown LLM] MiniMax API error:', data.base_resp.status_code, data.base_resp.status_msg);
+                    return '';
+                }
+                const content = data.choices?.[0]?.message?.content || '';
+                console.log('[RimTown LLM] MiniMax response:', res.status, '| content length:', content.length);
+                return content;
             } else {
                 // OpenAI-compatible (openai, deepseek, groq, together)
                 const res = await fetch(cfg.url, {

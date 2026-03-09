@@ -1108,14 +1108,6 @@ class RimTownApp {
             let apiKey = localStorage.getItem('llm_api_key');
             const speed = localStorage.getItem('sim_speed');
             console.log('[RimTown] loadSettings: provider=', provider, 'hasKey=', !!apiKey, 'speed=', speed);
-            // MiniMax support removed — clear saved credentials
-            if (provider === 'minimax') {
-                localStorage.removeItem('llm_provider');
-                localStorage.removeItem('llm_api_key');
-                provider = null;
-                apiKey = null;
-                console.log('[RimTown] Cleared deprecated minimax provider');
-            }
             if (speed) this.simSpeed = parseInt(speed);
             if (provider && provider !== 'none' && apiKey) {
                 this.llmClient = new LLMClient(provider, apiKey);
@@ -1435,10 +1427,25 @@ class RimTownApp {
                 });
             }
         });
+        // When switching provider, clear the API key input to enforce one-AI-at-a-time
+        document.getElementById('llm-provider').addEventListener('change', () => {
+            const provEl = document.getElementById('llm-provider');
+            const keyEl = document.getElementById('llm-api-key');
+            const savedProvider = localStorage.getItem('llm_provider');
+            // If user switched to a different provider, clear the key field
+            if (provEl.value !== savedProvider) {
+                keyEl.value = '';
+                keyEl.placeholder = provEl.value === 'none' ? '不需要 API 金鑰' : '請輸入新的 API 金鑰...';
+            }
+        });
         document.getElementById('settings-save').addEventListener('click', () => {
             const provider = document.getElementById('llm-provider').value;
             const apiKey = document.getElementById('llm-api-key').value;
             const speed = document.getElementById('sim-speed').value;
+            if (provider !== 'none' && !apiKey) {
+                alert('請輸入 API 金鑰，或選擇「無（模擬對話）」。');
+                return;
+            }
             this.saveSettings(provider, apiKey, speed);
             document.getElementById('settings-modal').classList.add('hidden');
         });
