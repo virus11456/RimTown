@@ -599,34 +599,6 @@ function rimtown_head_styles() {
             top: 0; left: 0; right: 0; bottom: 0;
             z-index: 99990;
             background: #1a1a2e;
-            display: flex !important;
-            flex-direction: column !important;
-        }
-        html.rimtown-active .rimtown-container .main-layout {
-            flex: 1 1 0% !important;
-            display: flex !important;
-            min-height: 0 !important;
-            overflow: hidden !important;
-        }
-        html.rimtown-active .rimtown-container .map-panel {
-            flex: 1 1 0% !important;
-            position: relative !important;
-            overflow: hidden !important;
-            min-width: 0 !important;
-            min-height: 0 !important;
-        }
-        html.rimtown-active .rimtown-container #town-map-canvas {
-            position: absolute !important;
-            top: 0 !important; left: 0 !important;
-            width: 100% !important; height: 100% !important;
-        }
-        @media (max-width: 768px) {
-            html.rimtown-active .rimtown-container .main-layout {
-                flex-direction: column !important;
-            }
-            html.rimtown-active .rimtown-container .rt-sidebar {
-                flex: none !important;
-            }
         }
     </style>';
     echo '<script>document.documentElement.classList.add("rimtown-active");</script>';

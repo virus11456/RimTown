@@ -266,32 +266,16 @@ class PixelTileMap {
         // Observe container resize
         this._resizeObserver = new ResizeObserver(() => { this._needsResize = true; });
         this._resizeObserver.observe(this.canvas.parentElement);
-        // Fallback: also listen to window resize and orientation change
-        window.addEventListener('resize', () => { this._needsResize = true; });
-        window.addEventListener('orientationchange', () => {
-            this._needsResize = true;
-            // Orientation change on mobile needs a delayed re-check
-            setTimeout(() => { this._needsResize = true; }, 300);
-        });
-        // Delayed init: mobile browsers may need time to settle layout
-        setTimeout(() => { this._needsResize = true; }, 100);
-        setTimeout(() => { this._needsResize = true; }, 500);
         // --- Interaction: click, pan, pinch-to-zoom ---
         this._setupInteraction();
     }
 
     // Called at the start of every render frame
     _checkResize() {
-        const parent = this.canvas.parentElement;
-        if (!parent) return;
-        const rect = parent.getBoundingClientRect();
+        const rect = this.canvas.getBoundingClientRect();
         const w = rect.width;
         const h = rect.height;
-        if (w < 1 || h < 1) {
-            // Container collapsed — keep flag so we retry next frame
-            this._needsResize = true;
-            return;
-        }
+        if (w < 1 || h < 1) return;
         const dpr = window.devicePixelRatio || 1;
         const needsUpdate = this._needsResize || Math.abs(this._viewW - w) > 1 || Math.abs(this._viewH - h) > 1 || dpr !== this._dpr;
         if (!needsUpdate) return;
