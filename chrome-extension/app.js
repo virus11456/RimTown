@@ -1,4 +1,5 @@
-// RimTown - Frontend App (Chrome Extension)
+// RimTown - Frontend App (WordPress Plugin)
+const ELECTION_POLICIES_LABELS = {economy:'經濟發展',welfare:'社會福利',defense:'軍事防禦',culture:'文化教育',nature:'自然保育',freedom:'個人自由'};
 
 class RimTownApp {
     constructor() {
@@ -54,6 +55,7 @@ class RimTownApp {
         this.state = this.world.getState();
         this.setupTileMap();
         this.setupTabListeners();
+        this.setupMobileSidebar();
         this.setupControlListeners();
         this.setupSettingsListeners();
         this.startSimulation();
@@ -210,7 +212,7 @@ class RimTownApp {
             if (this.tileMap && this._mapGenerated) {
                 const agents = this.state?.agents || {};
                 const player = agents['player'];
-                this.tileMap.updateAgents(agents, this.state.locations?.locations || {});
+                this.tileMap.updateAgents(agents, this.state.locations?.locations || {}, this.chatTarget);
                 // Pass time to tilemap for day/night cycle
                 if (this.state.clock) {
                     this.tileMap.timeHour = this.state.clock.hour ?? 12;
@@ -313,9 +315,35 @@ class RimTownApp {
         });
     }
 
+    setupMobileSidebar() {
+        const sidebar = document.getElementById('rimtown-sidebar');
+        const toggleBtn = document.getElementById('mobile-sidebar-toggle');
+        const backBtn = document.getElementById('mobile-back-to-map');
+        if (!sidebar || !toggleBtn) return;
+
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.add('mobile-open');
+        });
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                sidebar.classList.remove('mobile-open');
+            });
+        }
+
+        // Also open sidebar when clicking a tab on mobile (in case sidebar is closed)
+        document.querySelectorAll('.sidebar-tabs button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.add('mobile-open');
+                }
+            });
+        });
+    }
+
     // Global event delegation - handles all dynamic clicks via data-action attributes
     setupEventDelegation() {
-        document.body.addEventListener('click', (e) => {
+        const container = document.getElementById('rimtown-app') || document.body;
+        container.addEventListener('click', (e) => {
             const el = e.target.closest('[data-action]');
             if (!el) return;
             const action = el.dataset.action;
@@ -352,10 +380,12 @@ class RimTownApp {
             }
         });
         // Handle Enter key in chat input via delegation
-        document.body.addEventListener('keydown', (e) => {
+        document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.target.id === 'chat-input') { this._sendFromInput(); return; }
             // Don't handle movement keys when typing in input fields
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            // Only handle keys when game container is visible
+            if (!document.getElementById('rimtown-app')) return;
             this._handleMovementKey(e);
         });
     }
@@ -732,6 +762,9 @@ class RimTownApp {
         this.selectedAgent = agentId;
         this.activeTab = 'chat';
         document.querySelectorAll('.sidebar-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === 'chat'));
+        // Auto-open sidebar on mobile
+        const sidebar = document.getElementById('rimtown-sidebar');
+        if (sidebar && window.innerWidth <= 768) sidebar.classList.add('mobile-open');
         this.renderSidebar();
         this.render();
     }
@@ -1161,6 +1194,71 @@ class RimTownApp {
         if (!this.state) return;
         let html = '';
 
+        // --- Election ---
+        const election = this.state.election;
+        if (election && election.active) {
+            html += '<div class="election-section">';
+            if (election.phase === 'campaign') {
+                html += `<h4>📢 鎮長選舉 — 競選期間</h4>`;
+                html += `<div class="election-info">剩餘 ${election.campaignDaysLeft} 天競選期</div>`;
+                election.candidates.forEach(c => {
+                    const agent = this.state.agents?.[c.agentId];
+                    const moodBar = agent ? `<span class="election-mood">${agent.mood > 20 ? '😊' : agent.mood > -20 ? '😐' : '😟'}</span>` : '';
+                    html += `<div class="election-candidate" data-action="select-agent" data-val="${c.agentId}">
+                        <div class="candidate-header">
+                            <span class="candidate-name">${c.name}</span> ${moodBar}
+                            <span class="candidate-policy">${c.policyIcon} ${c.policyLabel}</span>
+                        </div>
+                        <div class="candidate-speech">"${c.speech}"</div>
+                    </div>`;
+                });
+            } else if (election.phase === 'voting') {
+                html += `<h4>🗳️ 鎮長選舉 — 投票進行中</h4>`;
+                html += `<div class="election-info">剩餘 ${election.votingDaysLeft} 天投票</div>`;
+                const totalVotes = election.candidates.reduce((s, c) => s + c.votes, 0);
+                election.candidates.forEach(c => {
+                    const pct = totalVotes > 0 ? Math.round(c.votes / totalVotes * 100) : 0;
+                    html += `<div class="election-candidate">
+                        <div class="candidate-header">
+                            <span class="candidate-name">${c.name}</span>
+                            <span class="candidate-policy">${c.policyIcon} ${c.policyLabel}</span>
+                            <span class="candidate-votes">${c.votes} 票（${pct}%）</span>
+                        </div>
+                        <div class="election-bar"><div class="election-bar-fill" style="width:${pct}%"></div></div>
+                    </div>`;
+                });
+                html += `<div class="election-total">已投票：${totalVotes} 人</div>`;
+            } else if (election.phase === 'results') {
+                const winner = election.candidates[0];
+                const totalVotes = election.candidates.reduce((s, c) => s + c.votes, 0);
+                html += `<h4>🏆 選舉結果</h4>`;
+                if (winner) {
+                    html += `<div class="election-winner">
+                        <div class="winner-name">${winner.name} 當選鎮長！</div>
+                        <div class="winner-policy">施政方針：${winner.policyIcon} ${winner.policyLabel}</div>
+                    </div>`;
+                }
+                election.candidates.forEach(c => {
+                    const pct = totalVotes > 0 ? Math.round(c.votes / totalVotes * 100) : 0;
+                    const isWinner = c === election.candidates[0];
+                    html += `<div class="election-candidate ${isWinner ? 'election-winner-card' : ''}">
+                        <span class="candidate-name">${isWinner ? '👑 ' : ''}${c.name}</span>
+                        <span class="candidate-policy">${c.policyIcon}</span>
+                        <span class="candidate-votes">${c.votes} 票（${pct}%）</span>
+                        <div class="election-bar"><div class="election-bar-fill ${isWinner ? 'winner' : ''}" style="width:${pct}%"></div></div>
+                    </div>`;
+                });
+            }
+            html += '</div>';
+        }
+        // Election history
+        if (election?.electionHistory?.length && !election.active) {
+            const last = election.electionHistory[election.electionHistory.length - 1];
+            html += `<div class="election-history-brief">
+                <span>上次選舉：${last.winner.name} 當選（${last.winner.policyIcon || ''}${ELECTION_POLICIES_LABELS[last.winner.policy] || last.winner.policy}，${last.winner.votes}/${last.totalVotes} 票）</span>
+            </div>`;
+        }
+
         // --- News Bulletins ---
         const news = this.state.news || {};
         const bulletins = news.bulletins || [];
@@ -1360,10 +1458,23 @@ class RimTownApp {
         this.selectedAgent = agentId;
         this.activeTab = 'detail';
         document.querySelectorAll('.sidebar-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === 'detail'));
+        // Auto-open sidebar on mobile
+        const sidebar = document.getElementById('rimtown-sidebar');
+        if (sidebar && window.innerWidth <= 768) sidebar.classList.add('mobile-open');
         this.render();
     }
 }
 
-// Initialize
-const app = new RimTownApp();
-window.addEventListener('resize', () => { if (app.state) app.renderMap(); });
+// Initialize — only when the game container exists (WordPress shortcode loaded)
+(function() {
+    const init = () => {
+        if (!document.getElementById('rimtown-app') && !document.getElementById('town-map-canvas')) return;
+        const app = new RimTownApp();
+        window.addEventListener('resize', () => { if (app.state) app.renderMap(); });
+    };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();

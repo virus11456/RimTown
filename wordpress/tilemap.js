@@ -1468,7 +1468,7 @@ class PixelTileMap {
     }
 
     // Update agent positions (smooth interpolation)
-    updateAgents(agents, locations) {
+    updateAgents(agents, locations, chatTarget) {
         const WALK_SPEED = 0.6; // pixels per frame — slower for easier clicking
         for (const [aid, agent] of Object.entries(agents)) {
             const locCenter = this.getLocationCenter(agent.current_location);
@@ -1497,11 +1497,22 @@ class PixelTileMap {
                 this.agentPositions[aid].targetY = targetY;
                 this.agentPositions[aid].job = jobKey;
                 this.agentPositions[aid].gender = gender;
+                // Freeze agents involved in player chat
+                const isChatting = chatTarget && (aid === chatTarget || aid === 'player');
                 // Constant-speed walking
                 const dx = targetX - this.agentPositions[aid].x;
                 const dy = targetY - this.agentPositions[aid].y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist > 1) {
+                if (isChatting) {
+                    // Stop walking and face each other
+                    this.agentPositions[aid].walking = false;
+                    this.agentPositions[aid].walkStep = 0;
+                    if (chatTarget && aid === 'player' && this.agentPositions[chatTarget]) {
+                        this.agentPositions[aid].facing = this.agentPositions[chatTarget].x > this.agentPositions[aid].x ? 1 : -1;
+                    } else if (chatTarget && aid === chatTarget && this.agentPositions['player']) {
+                        this.agentPositions[aid].facing = this.agentPositions['player'].x > this.agentPositions[aid].x ? 1 : -1;
+                    }
+                } else if (dist > 1) {
                     // Walk toward target at constant speed
                     const step = Math.min(WALK_SPEED, dist);
                     this.agentPositions[aid].x += (dx / dist) * step;

@@ -212,7 +212,7 @@ class RimTownApp {
             if (this.tileMap && this._mapGenerated) {
                 const agents = this.state?.agents || {};
                 const player = agents['player'];
-                this.tileMap.updateAgents(agents, this.state.locations?.locations || {});
+                this.tileMap.updateAgents(agents, this.state.locations?.locations || {}, this.chatTarget);
                 // Pass time to tilemap for day/night cycle
                 if (this.state.clock) {
                     this.tileMap.timeHour = this.state.clock.hour ?? 12;
