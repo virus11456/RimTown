@@ -352,6 +352,8 @@ class Agent {
         this.skills = generateRandomSkills(job?.key, age, this.personality.traits);
         this._lastInteractionTick = 0; this._interactionCooldown = 6;
         this.currentThought = ''; this.isPlayer = false;
+        this._locationStayTicks = 0; // how many ticks to stay at current location
+        this._locationStayRemaining = 0; // countdown
     }
     get moodDescription() {
         if (this.mood >= 80) return 'ecstatic'; if (this.mood >= 60) return 'happy';
@@ -386,19 +388,45 @@ class Agent {
         return Math.random() < 0.5 ? 'male' : 'female';
     }
     update(world) {
+        const prevActivity = this.activity;
         this._decideActivity(world.clock.hour);
         this.needs.tickDecay(this.activity==='sleeping', this.activity==='eating', this.activity==='socializing', this.activity==='recreation');
         this.mood = Math.max(-100, Math.min(100, 50 + this.personality.moodBase + Math.floor(this.needs.moodContribution)));
         this._gainSkillXp(world);
-        this._decideLocation(world.clock.hour);
-        if (this.targetLocation && this.targetLocation !== this.currentLocation) {
-            this.currentLocation = this.targetLocation; this.targetLocation = null;
+        // Only re-pick location if activity changed or stay duration expired
+        const activityChanged = this.activity !== prevActivity;
+        if (activityChanged) {
+            this._locationStayRemaining = 0; // force re-pick on activity change
+        }
+        if (this._locationStayRemaining > 0) {
+            this._locationStayRemaining--;
+        } else {
+            this._decideLocation(world.clock.hour);
+            if (this.targetLocation && this.targetLocation !== this.currentLocation) {
+                this.currentLocation = this.targetLocation; this.targetLocation = null;
+            }
+            // Set stay duration based on activity
+            this._locationStayRemaining = this._getStayDuration();
         }
         if (this.activity === 'socializing') this._trySocialInteraction(world);
         if (this.activity === 'stargazing') this._doStargazing(world);
         if (this.activity === 'night_mischief') this._doNightMischief(world);
         if (this.activity === 'night_stroll') { this.needs.recreation = Math.min(100, this.needs.recreation + 1); this.needs.comfort = Math.min(100, this.needs.comfort + 0.5); }
         if (Math.random() < 0.1) this._generateThought(world);
+    }
+    _getStayDuration() {
+        // Return how many ticks to stay at current location before moving again
+        switch (this.activity) {
+            case 'sleeping': return 8 + randInt(0, 4);   // stay in bed a long time
+            case 'working': return 6 + randInt(0, 4);    // stay at workplace
+            case 'eating': return 3 + randInt(0, 2);     // eat for a while
+            case 'socializing': return 4 + randInt(0, 3); // stay to chat
+            case 'recreation': return 4 + randInt(0, 3);
+            case 'stargazing': return 5 + randInt(0, 3);
+            case 'night_stroll': return 2 + randInt(0, 2); // strolling moves more
+            case 'wandering': return 3 + randInt(0, 2);
+            default: return 3;
+        }
     }
     _gainSkillXp(world) {
         const xp = randInt(3,8);
@@ -4043,6 +4071,7 @@ class World {
             memory: a.memory.entries.slice(-50).map(m=>({tick:m.tick,timeStr:m.timeStr,category:m.category,content:m.content,importance:m.importance,relatedAgents:m.relatedAgents})),
             chatHistory: a.isPlayer ? (a.chatHistory||[]).slice(-500) : undefined,
             _lastInteractionTick: a._lastInteractionTick,
+            _locationStayRemaining: a._locationStayRemaining || 0,
         });
         return {
             version: 2,
@@ -4115,6 +4144,7 @@ class World {
                 agent.mood = ad.mood; agent.activity = ad.activity;
                 agent.currentThought = ad.currentThought || '';
                 agent._lastInteractionTick = ad._lastInteractionTick || 0;
+                agent._locationStayRemaining = ad._locationStayRemaining || 0;
                 // Needs
                 if (ad.needs) { Object.assign(agent.needs, ad.needs); }
                 // Skills

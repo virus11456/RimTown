@@ -219,9 +219,29 @@ class RimTownApp {
                 this.currentTownId = this._generateTownId('邊境鎮');
                 this._saveCurrentTown('邊境鎮');
             } else {
-                this.world.reset();
-                this.currentTownId = this._generateTownId('邊境鎮');
-                this._saveCurrentTown('邊境鎮');
+                // No local data — try cloud first before resetting
+                if (this.auth.loggedIn) {
+                    try {
+                        const saves = await this.auth.listSaves();
+                        if (saves.length > 0) {
+                            const cloudMatch = saves[0];
+                            const saveData = await this.auth.cloudLoad(cloudMatch.town_id);
+                            if (saveData && this.world.loadSave(saveData)) {
+                                this.currentTownId = cloudMatch.town_id;
+                                this._saveCurrentTown(cloudMatch.town_name || '邊境鎮');
+                                loaded = true;
+                                console.log('[RimTown] Loaded from cloud on init:', cloudMatch.town_name);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('[RimTown] Cloud load on init failed:', e);
+                    }
+                }
+                if (!loaded) {
+                    this.world.reset();
+                    this.currentTownId = this._generateTownId('邊境鎮');
+                    this._saveCurrentTown('邊境鎮');
+                }
             }
         }
         if (this.llmClient) {
@@ -476,13 +496,16 @@ class RimTownApp {
             let cloudMatch = saves.find(s => s.town_id === this.currentTownId);
             if (!cloudMatch) cloudMatch = saves[0]; // saves are sorted by updated_at DESC
 
+            // Detect if local is a fresh/empty town (just reset, no real progress)
+            const localIsFresh = this.world.tickCount <= 1;
+
             // Compare timestamps: load from cloud if it's newer than local
             const localTown = this._getTownList().find(t => t.id === this.currentTownId);
             const localTime = localTown?.savedAt ? new Date(localTown.savedAt).getTime() : 0;
             const cloudTime = cloudMatch.updated_at ? new Date(cloudMatch.updated_at).getTime() : 0;
 
-            if (cloudTime > localTime) {
-                // Cloud is newer — auto-load it
+            if (cloudTime > localTime || localIsFresh) {
+                // Cloud is newer or local is a fresh reset — load from cloud
                 const saveData = await this.auth.cloudLoad(cloudMatch.town_id);
                 if (this.world.loadSave(saveData)) {
                     if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
@@ -662,6 +685,9 @@ class RimTownApp {
         // New system achievements
         const factionList = Object.values(this.state.factions?.factions || {});
         if (factionList.length >= 1) this._unlockAchievement('first_faction');
+        // Check for faction drama (rivalry or internal conflict events)
+        const hasDrama = factionList.some(f => f.rivalFactionId || f.cohesion < 30);
+        if (hasDrama) this._unlockAchievement('faction_drama');
         if ((this.state.lifecycle?.graveyard || []).length >= 1) this._unlockAchievement('first_death');
         if ((this.state.lifecycle?.births || []).length >= 1) this._unlockAchievement('first_birth');
         const festLog = this.state.festivals?.festivalLog || [];
@@ -1538,8 +1564,8 @@ class RimTownApp {
         this._autoSaveInterval = setInterval(() => {
             if (!this.world.paused) {
                 this.saveGame();
-                // Cloud sync every 5 minutes
-                if (this.auth.loggedIn && Date.now() - (this._lastCloudSync || 0) > 300000) {
+                // Cloud sync every 2 minutes
+                if (this.auth.loggedIn && Date.now() - (this._lastCloudSync || 0) > 120000) {
                     this._lastCloudSync = Date.now();
                     this._syncToCloud();
                 }
