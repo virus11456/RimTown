@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '1.1.0');
+define('RIMTOWN_VERSION', '1.2.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -196,11 +196,65 @@ function rimtown_admin_menu() {
 }
 add_action('admin_menu', 'rimtown_admin_menu');
 
+/**
+ * Changelog data — 每次更新在此新增版本記錄
+ */
+function rimtown_get_changelog() {
+    return array(
+        array(
+            'version' => '1.2.0',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '新增 RWD 響應式設計，支援手機、平板、桌面三種佈局',
+                '手機版：側欄改為從底部滑出的覆蓋層，搭配浮動按鈕開關',
+                '手機版：點擊居民或開始聊天時自動開啟側欄',
+                '手機版：隱藏次要按鈕（匯出/匯入），節省畫面空間',
+                '手機版：Chat 輸入框使用 16px 字型，防止 iOS 自動縮放',
+                '小螢幕手機（≤480px）：隱藏速度控制與儲存按鈕',
+                '平板（≤1024px）：側欄縮窄至 300px',
+                '新增版本更新日誌系統，後台可查看完整更新記錄',
+            ),
+        ),
+        array(
+            'version' => '1.1.0',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '建立 WordPress 插件架構（rimtown.php）',
+                '支援 [rimtown] 短碼嵌入任意頁面',
+                '支援 [rimtown height="800px"] 自訂高度參數',
+                'CSS 隔離：所有樣式限定在 .rimtown-container 內，不影響主題',
+                '事件委派隔離：點擊事件綁定遊戲容器，不干擾 WordPress',
+                '自動全寬：遊戲頁面隱藏 WordPress header/footer',
+                'Modal z-index 設為 100000，確保在 WordPress admin bar 之上',
+                '新增 WordPress 後台設定頁面（使用說明）',
+                'wp_enqueue_script/style 正確載入資源，支援快取清除',
+            ),
+        ),
+        array(
+            'version' => '1.0.0',
+            'date'    => '2026-03-08',
+            'changes' => array(
+                '初始版本：AI 小鎮模擬核心功能',
+                'Tilemap 地圖渲染引擎',
+                '居民 AI 自主行為系統',
+                '玩家聊天系統（支援多 LLM 供應商）',
+                '經濟系統：資源、建築、研究、貿易',
+                '事件系統：突襲、連鎖事件、移民',
+                '聊天記錄存檔功能',
+                '多城鎮管理',
+                '匯出/匯入存檔',
+            ),
+        ),
+    );
+}
+
 function rimtown_settings_page() {
+    $changelog = rimtown_get_changelog();
     ?>
     <div class="wrap">
-        <h1>RimTown - AI Town Simulation</h1>
-        <div class="card" style="max-width:600px;padding:20px;">
+        <h1>RimTown - AI Town Simulation <small style="color:#999;">v<?php echo RIMTOWN_VERSION; ?></small></h1>
+
+        <div class="card" style="max-width:700px;padding:20px;margin-bottom:20px;">
             <h2>使用方式</h2>
             <ol>
                 <li>建立一個新的 WordPress 頁面</li>
@@ -217,6 +271,28 @@ function rimtown_settings_page() {
                 <li>在遊戲內點擊「設定」按鈕配置 AI 語言模型</li>
                 <li>遊戲資料儲存在瀏覽器的 localStorage 中</li>
             </ul>
+        </div>
+
+        <div class="card" style="max-width:700px;padding:20px;">
+            <h2>版本更新日誌</h2>
+            <?php foreach ($changelog as $release) : ?>
+                <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #ddd;">
+                    <h3 style="margin:0 0 4px;">
+                        v<?php echo esc_html($release['version']); ?>
+                        <span style="color:#999;font-size:13px;font-weight:normal;margin-left:8px;">
+                            <?php echo esc_html($release['date']); ?>
+                        </span>
+                        <?php if ($release['version'] === RIMTOWN_VERSION) : ?>
+                            <span style="background:#e94560;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:8px;">目前版本</span>
+                        <?php endif; ?>
+                    </h3>
+                    <ul style="margin:8px 0 0 16px;">
+                        <?php foreach ($release['changes'] as $change) : ?>
+                            <li style="margin-bottom:3px;"><?php echo esc_html($change); ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php endforeach; ?>
         </div>
     </div>
     <?php
