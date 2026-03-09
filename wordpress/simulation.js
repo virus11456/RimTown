@@ -350,7 +350,7 @@ class Agent {
         this.mood = 50 + this.personality.moodBase; this.activity = 'idle';
         this.needs = new Needs(); this.memory = new Memory(); this.relationships = new RelationshipManager();
         this.skills = generateRandomSkills(job?.key, age, this.personality.traits);
-        this._lastInteractionTick = 0; this._interactionCooldown = 4;
+        this._lastInteractionTick = 0; this._interactionCooldown = 6;
         this.currentThought = ''; this.isPlayer = false;
     }
     get moodDescription() {
@@ -735,7 +735,12 @@ class GossipNetwork {
 
 // --- Conversation Engine (Personality-Driven + LLM) ---
 class ConversationEngine {
-    constructor(llmClient = null) { this.llm = llmClient; this.npcConversationLog = []; }
+    constructor(llmClient = null) {
+        this.llm = llmClient;
+        this.npcConversationLog = [];
+        this._lastNpcLlmTick = 0;
+        this._npcLlmCooldownTicks = 3; // Minimum ticks between NPC LLM calls (throttle)
+    }
 
     _buildCharacterProfile(agent) {
         const traitLabels = agent.personality.traits.map(t => TRAIT_POOL[t]?.label || t);
@@ -779,9 +784,16 @@ class ConversationEngine {
         const relB = agentB.relationships.getOrCreate(agentA.agentId, agentA.name);
 
         if (this.llm) {
-            try {
-                return await this._llmConversation(agentA, agentB, world, relA, relB);
-            } catch(e) { console.error('LLM conversation failed:', e); }
+            // Throttle NPC LLM calls to avoid burning through API quota
+            const ticksSinceLast = world.tickCount - this._lastNpcLlmTick;
+            if (ticksSinceLast >= this._npcLlmCooldownTicks && this.llm._canMakeRequest(false)) {
+                try {
+                    this._lastNpcLlmTick = world.tickCount;
+                    return await this._llmConversation(agentA, agentB, world, relA, relB);
+                } catch(e) { console.error('LLM conversation failed:', e); }
+            } else {
+                console.log('[RimTown] NPC conversation throttled, using fallback (ticks since last:', ticksSinceLast, ')');
+            }
         }
         return this._fallbackConversation(agentA, agentB, world, relA, relB);
     }
@@ -1286,7 +1298,7 @@ ${player.name}: ${playerMessage}
 直接寫${npc.name}會說的話（不需要加名字前綴）。
 最後另起一行：EFFECTS: {"affinity_change": 數字(-3到5), "romantic_change": 數字(0到3), "summary": "一句話總結"}`;
 
-                const response = await this.llm.generate(prompt, 400);
+                const response = await this.llm.generate(prompt, 400, 0.9, true);
                 console.log('[RimTown] LLM response length:', response?.length, 'preview:', response?.slice(0, 80));
                 return this._parsePlayerReply(response, player, npc, world, playerMessage, relPlayer, relNpc);
             } catch(e) { console.error('[RimTown] LLM player reply failed:', e); }
@@ -1619,8 +1631,36 @@ ${player.name}: ${playerMessage}
 
 // --- LLM Client ---
 class LLMClient {
-    constructor(provider, apiKey, model) { this.provider = provider; this.apiKey = apiKey; this.model = model; }
-    async generate(prompt, maxTokens = 500, temperature = 0.9) {
+    constructor(provider, apiKey, model) {
+        this.provider = provider; this.apiKey = apiKey; this.model = model;
+        // Rate limiting: track request timestamps
+        this._requestTimestamps = [];
+        this._maxRequestsPerMinute = 15; // Conservative limit (Gemini free = 20/min)
+        this._playerChatPending = false; // Flag to reserve capacity for player chat
+    }
+
+    // Check if we can make a request without exceeding rate limit
+    _canMakeRequest(isPlayerChat = false) {
+        const now = Date.now();
+        // Clean old timestamps (older than 60 seconds)
+        this._requestTimestamps = this._requestTimestamps.filter(t => now - t < 60000);
+        // Player chat always gets priority — reserve 5 slots for player
+        const limit = isPlayerChat ? this._maxRequestsPerMinute : Math.max(1, this._maxRequestsPerMinute - 5);
+        return this._requestTimestamps.length < limit;
+    }
+
+    _recordRequest() {
+        this._requestTimestamps.push(Date.now());
+    }
+
+    async generate(prompt, maxTokens = 500, temperature = 0.9, isPlayerChat = false) {
+        // Rate limit check
+        if (!this._canMakeRequest(isPlayerChat)) {
+            console.log('[RimTown LLM] Rate limited — skipping request (isPlayerChat:', isPlayerChat, ')');
+            return '';
+        }
+        this._recordRequest();
+
         console.log('[RimTown LLM] generate called | provider:', this.provider, '| model:', this.model, '| maxTokens:', maxTokens);
         const endpoints = {
             anthropic: { url: 'https://api.anthropic.com/v1/messages', model: this.model || 'claude-haiku-4-5-20251001' },
@@ -1644,19 +1684,28 @@ class LLMClient {
                 console.log('[RimTown LLM] Anthropic response:', res.status, data.content ? 'OK' : 'EMPTY', data.error?.message || '');
                 return data.content?.[0]?.text || '';
             } else if (this.provider === 'gemini') {
-                const res = await fetch(cfg.url, {
-                    method:'POST', headers:{'Content-Type':'application/json'},
-                    body: JSON.stringify({
-                        contents:[{parts:[{text:prompt}]}],
-                        generationConfig:{maxOutputTokens:maxTokens, temperature},
-                    }),
+                const body = JSON.stringify({
+                    contents:[{parts:[{text:prompt}]}],
+                    generationConfig:{maxOutputTokens:maxTokens, temperature},
                 });
-                const data = await res.json();
-                console.log('[RimTown LLM] Gemini response:', res.status, data.candidates ? 'OK' : 'EMPTY', data.error?.message || '');
-                // Gemini 2.5 Flash may return thinking parts — skip them and get the actual text
-                const parts = data.candidates?.[0]?.content?.parts || [];
-                const textPart = parts.filter(p => !p.thought).map(p => p.text).join('');
-                return textPart || parts[0]?.text || '';
+                // Retry up to 2 times on 429 with exponential backoff
+                for (let attempt = 0; attempt < 3; attempt++) {
+                    const res = await fetch(cfg.url, { method:'POST', headers:{'Content-Type':'application/json'}, body });
+                    if (res.status === 429 && attempt < 2) {
+                        const wait = (attempt + 1) * 5000; // 5s, 10s
+                        console.log(`[RimTown LLM] Gemini 429 rate limited, retrying in ${wait/1000}s (attempt ${attempt+1})`);
+                        await new Promise(r => setTimeout(r, wait));
+                        continue;
+                    }
+                    const data = await res.json();
+                    console.log('[RimTown LLM] Gemini response:', res.status, data.candidates ? 'OK' : 'EMPTY', data.error?.message || '');
+                    if (res.status === 429) { console.warn('[RimTown LLM] Gemini rate limit exhausted after retries'); return ''; }
+                    // Gemini 2.5 Flash may return thinking parts — skip them and get the actual text
+                    const parts = data.candidates?.[0]?.content?.parts || [];
+                    const textPart = parts.filter(p => !p.thought).map(p => p.text).join('');
+                    return textPart || parts[0]?.text || '';
+                }
+                return '';
             } else {
                 // OpenAI-compatible (openai, deepseek, groq, together)
                 const res = await fetch(cfg.url, {
