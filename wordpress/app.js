@@ -462,8 +462,10 @@ class RimTownApp {
         });
         // Handle Enter key in chat input via delegation
         document.body.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.target.id === 'chat-input') { this._sendFromInput(); }
-            if (e.key === 'Enter' && (e.target.id === 'login-password' || e.target.id === 'login-username')) { this.doLogin(); }
+            if (e.key === 'Enter' && e.target.id === 'chat-input') { this._sendFromInput(); return; }
+            if (e.key === 'Enter' && (e.target.id === 'login-password' || e.target.id === 'login-username')) { this.doLogin(); return; }
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            this._handleMovementKey(e);
         });
     }
 
@@ -708,6 +710,66 @@ class RimTownApp {
         }
     }
 
+    _handleMovementKey(e) {
+        if (!this.tileMap || !this.world) return;
+        const key = e.key.toLowerCase();
+        const dirMap = { w:'up', arrowup:'up', s:'down', arrowdown:'down', a:'left', arrowleft:'left', d:'right', arrowright:'right' };
+        const dir = dirMap[key];
+        if (dir) {
+            e.preventDefault();
+            const target = this._getAdjacentLocation(dir);
+            if (target) this.playerMoveTo(target);
+            return;
+        }
+        if (key === 'e') {
+            e.preventDefault();
+            const player = this.state?.agents?.['player'];
+            if (!player) return;
+            const npcsHere = Object.entries(this.state.agents)
+                .filter(([id, a]) => id !== 'player' && a.current_location === player.current_location)
+                .map(([id]) => id);
+            if (npcsHere.length) {
+                const nextIdx = this.chatTarget ? (npcsHere.indexOf(this.chatTarget) + 1) % npcsHere.length : 0;
+                this.startChatWith(npcsHere[nextIdx]);
+            }
+            return;
+        }
+    }
+
+    _getAdjacentLocation(direction) {
+        if (!this.tileMap) return null;
+        const player = this.world.agents['player'];
+        if (!player) return null;
+        const currentLoc = player.currentLocation;
+        const allZones = { ...this.tileMap.buildingZones, ...this.tileMap.natureZones };
+        const currentZone = allZones[currentLoc];
+        if (!currentZone) return null;
+        const cx = currentZone.x + currentZone.w / 2;
+        const cy = currentZone.y + currentZone.h / 2;
+        let best = null, bestScore = Infinity;
+        for (const [locId, zone] of Object.entries(allZones)) {
+            if (locId === currentLoc) continue;
+            const tx = zone.x + zone.w / 2;
+            const ty = zone.y + zone.h / 2;
+            const dx = tx - cx, dy = ty - cy;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            let valid = false;
+            switch (direction) {
+                case 'up': valid = dy < -1 && Math.abs(dx) < dist * 0.9; break;
+                case 'down': valid = dy > 1 && Math.abs(dx) < dist * 0.9; break;
+                case 'left': valid = dx < -1 && Math.abs(dy) < dist * 0.9; break;
+                case 'right': valid = dx > 1 && Math.abs(dy) < dist * 0.9; break;
+            }
+            if (!valid) continue;
+            const alignment = direction === 'up' || direction === 'down'
+                ? Math.abs(dx) / (Math.abs(dy) + 1)
+                : Math.abs(dy) / (Math.abs(dx) + 1);
+            const score = dist * (1 + alignment * 0.5);
+            if (score < bestScore) { bestScore = score; best = locId; }
+        }
+        return best;
+    }
+
     async playerSendMessage(targetId, message) {
         if (this.chatSending || !message.trim()) return;
         this.chatSending = true;
@@ -727,10 +789,18 @@ class RimTownApp {
     }
 
     startChatWith(agentId) {
+        const npc = this.world?.agents?.[agentId];
+        const player = this.world?.agents?.['player'];
+        if (npc && player && player.currentLocation !== npc.currentLocation) {
+            player.moveTo(npc.currentLocation, this.world);
+            this.state = this.world.getState();
+        }
         this.chatTarget = agentId;
+        this.selectedAgent = agentId;
         this.activeTab = 'chat';
         document.querySelectorAll('.sidebar-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === 'chat'));
         this.renderSidebar();
+        this.render();
     }
 
     // --- Render ---
@@ -767,8 +837,12 @@ class RimTownApp {
         const player = this.state?.agents?.['player'];
         const target = this.state?.agents?.[agentId];
         if (!player || !target) return;
-        if (player.current_location === target.current_location) this.startChatWith(agentId);
-        else this.selectAgent(agentId);
+        if (player.current_location === target.current_location) {
+            this.startChatWith(agentId);
+        } else {
+            this.playerMoveTo(target.current_location);
+            this.startChatWith(agentId);
+        }
     }
 
     renderSidebar() {
@@ -1031,13 +1105,14 @@ class RimTownApp {
             const isSelected = this.selectedAgent === aid;
             const player = this.state.agents['player'];
             const sameLoc = player && player.current_location === agent.current_location;
+            const genderIcon = agent.gender_label === '男' ? '♂' : agent.gender_label === '女' ? '♀' : '';
             html += `<div class="resident-card ${isSelected?'selected':''}" data-action="select-agent" data-val="${aid}">
                 <div class="resident-header">
-                    <span class="resident-name"><span class="mood-indicator mood-${agent.mood_description}"></span>${agent.name}${sameLoc?'<span class="nearby-badge">附近</span>':''}</span>
+                    <span class="resident-name"><span class="mood-indicator mood-${agent.mood_description}"></span>${genderIcon} ${agent.name}${sameLoc?'<span class="nearby-badge">附近</span>':''}</span>
                     <span class="resident-job">${agent.job?.title||'無業'}</span></div>
                 <div class="resident-status"><span>${agent.activity_label||agent.activity} @ ${agent.current_location.replace(/_/g,' ')}</span><span>${agent.mood_label||agent.mood_description} (${agent.mood})</span></div>
                 ${agent.current_thought?`<div style="font-size:0.7rem;color:#aaa;margin-top:4px;font-style:italic">「${agent.current_thought}」</div>`:''}
-                ${sameLoc?`<button class="chat-with-btn" data-action="start-chat" data-val="${aid}">對話</button>`:''}</div>`;
+                <button class="chat-with-btn" data-action="start-chat" data-val="${aid}">${sameLoc?'對話':'前往對話'}</button></div>`;
         }
         container.innerHTML = html;
     }
@@ -1086,7 +1161,7 @@ class RimTownApp {
         });
 
         container.innerHTML = `<div class="detail-panel visible">
-            <div class="detail-section"><h3>${agent.name}（${agent.age}歲）</h3>
+            <div class="detail-section"><h3>${agent.name}（${agent.gender_label === '男' ? '♂' : agent.gender_label === '女' ? '♀' : ''}${agent.gender_label} · ${agent.age}歲）</h3>
                 <p style="font-size:0.8rem;color:var(--text-secondary)">${agent.job?.title||'無業'} | ${agent.mood_label||agent.mood_description}</p>
                 <p style="font-size:0.75rem;margin-top:6px">${personality.background||''}</p>${chatBtn}</div>
             <div class="detail-section"><h3>性格</h3>

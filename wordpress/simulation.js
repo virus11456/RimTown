@@ -341,8 +341,9 @@ class Job {
 const ACTIVITIES = ['sleeping','eating','working','socializing','wandering','recreation','idle'];
 
 class Agent {
-    constructor(agentId, name, age = 25, personality = null, job = null, homeLocation = 'residential_north') {
+    constructor(agentId, name, age = 25, personality = null, job = null, homeLocation = 'residential_north', gender = null) {
         this.agentId = agentId; this.name = name; this.age = age;
+        this.gender = gender || Agent.guessGender(name);
         this.personality = personality || Personality.random();
         this.job = job; this.homeLocation = homeLocation;
         this.currentLocation = homeLocation; this.targetLocation = null;
@@ -364,6 +365,25 @@ class Agent {
     get activityLabel() {
         const map = { sleeping:'睡覺', eating:'進食', working:'工作', socializing:'社交', wandering:'閒逛', recreation:'娛樂', idle:'閒置', stargazing:'看星星', night_mischief:'搞事', night_stroll:'夜間散步' };
         return map[this.activity] || this.activity;
+    }
+    get genderLabel() {
+        return this.gender === 'male' ? '男' : this.gender === 'female' ? '女' : '不明';
+    }
+    static guessGender(name) {
+        // Common Chinese female name characters
+        const femaleChars = '美麗芳雪瑜琳雅瑩霞莉蘭嵐雨秀娟敏慧婷芸玲珍嬌櫻蕊翠彩鳳';
+        // Common Chinese male name characters
+        const maleChars = '偉豪俊強峰達傑明浩磊剛毅堅志勇武鋒威龍彪';
+        const lastChar = name.charAt(name.length - 1);
+        if (femaleChars.includes(lastChar)) return 'female';
+        if (maleChars.includes(lastChar)) return 'male';
+        // Check second-to-last if two-char given name
+        if (name.length >= 2) {
+            const secondChar = name.charAt(name.length - 2);
+            if (femaleChars.includes(secondChar)) return 'female';
+            if (maleChars.includes(secondChar)) return 'male';
+        }
+        return Math.random() < 0.5 ? 'male' : 'female';
     }
     update(world) {
         this._decideActivity(world.clock.hour);
@@ -641,7 +661,7 @@ class Agent {
     }
     toDict() {
         return {
-            id:this.agentId, name:this.name, age:this.age,
+            id:this.agentId, name:this.name, age:this.age, gender:this.gender, gender_label:this.genderLabel,
             job: this.job?.toDict() || null, personality: this.personality.toDict(),
             mood:this.mood, mood_description:this.moodDescription, mood_label:this.moodLabel,
             activity:this.activity, activity_label:this.activityLabel,
@@ -954,6 +974,32 @@ ${memB.length ? `關於${agentA.name}的記憶：\n${memB.map(m=>'- '+m.content)
                     affA = randInt(-4,-1); affB = randInt(-4,-1);
                     summary = `${agentA.name}和${agentB.name}因為${topic}產生了爭執。`;
                 },
+                // Insult / mockery
+                () => {
+                    const insults = [
+                        `你那個${jobB}做得實在不怎麼樣，全鎮都知道。`,
+                        `像你這種人，難怪沒人想跟你說話。`,
+                        `你最近是不是又搞砸了什麼？看你那副臉色。`,
+                        `拜託，你的水平就只有這樣了吧？`,
+                    ];
+                    lines.push({speaker:agentA.name, text:pickRandom(insults)});
+                    lines.push({speaker:agentB.name, text:tB.includes('stoic')?'......你說完了嗎。':tB.includes('abrasive')?`你有什麼資格說我？照照鏡子吧！`:tB.includes('kind')?'你這樣說話很傷人...':'你！'});
+                    if (tB.includes('abrasive') || Math.random()<0.4) {
+                        lines.push({speaker:agentB.name, text:pickRandom([`至少我不像你一樣${tA.includes('lazy')?'整天偷懶':'虛偽'}！`,`你以為你很了不起嗎？`,`有本事別躲在背後說。`])});
+                        lines.push({speaker:agentA.name, text:pickRandom(['哼。','你等著。','遲早讓你看看。'])});
+                    }
+                    affA = randInt(-6,-3); affB = randInt(-6,-3);
+                    summary = `${agentA.name}狠狠地羞辱了${agentB.name}，兩人關係更加惡化。`;
+                },
+                // Public argument
+                () => {
+                    lines.push({speaker:agentA.name, text:`${agentB.name}！你上次做的事我還沒忘！`});
+                    lines.push({speaker:agentB.name, text:'什麼事？你自己心裡有數吧。'});
+                    lines.push({speaker:agentA.name, text:tA.includes('neurotic')?'你每次都這樣！推卸責任！':'別裝了，大家都看在眼裡。'});
+                    lines.push({speaker:agentB.name, text:tB.includes('charismatic')?'好了好了，別在這裡吵，大家都看著呢。':'那又怎樣？要吵就吵！'});
+                    affA = randInt(-5,-2); affB = randInt(-5,-2);
+                    summary = `${agentA.name}和${agentB.name}在${loc}大吵了一架，引起眾人注意。`;
+                },
             ];
             pickRandom(hostileTemplates)();
         } else if (isCrush) {
@@ -1096,6 +1142,14 @@ ${memB.length ? `關於${agentA.name}的記憶：\n${memB.map(m=>'- '+m.content)
                 },
             ];
             pickRandom(normalTopics)();
+
+            // Random chance of friction even in normal conversations
+            if (Math.random() < 0.15) {
+                this._addConflictEscalation(lines, agentA, agentB, world, tA, tB);
+                affA = Math.min(affA, randInt(-4, -1));
+                affB = Math.min(affB, randInt(-4, -1));
+                summary += '但氣氛變得有些尷尬。';
+            }
         }
 
         return { lines, _affA:affA, _affB:affB, _romA:romA, _romB:romB, _summary:summary };
@@ -1111,6 +1165,66 @@ ${memB.length ? `關於${agentA.name}的記憶：\n${memB.map(m=>'- '+m.content)
         if (t.includes('optimist')) return pickRandom([`${name}！今天也是美好的一天！`,`嗨${name}，你看起來很有精神！`]);
         if (t.includes('pessimist')) return pickRandom([`${name}...唉。`,`嗯...${name}。`]);
         return pickRandom([`嘿，${name}。`,`你好啊，${name}。`,`哈囉，${name}！`,`${name}，好久不見。`]);
+    }
+
+    _addConflictEscalation(lines, agentA, agentB, world, tA, tB) {
+        const conflictTypes = [
+            // Bad joke that offends
+            () => {
+                const jokes = [
+                    `哈哈，你知道嗎，你做的${agentB.job?.title||'事'}讓我想到一個笑話——`,
+                    `說真的，你那個表情也太好笑了吧？`,
+                    `你是不是又${pickRandom(['偷懶','搞砸','遲到'])}了？我開玩笑的啦。`,
+                ];
+                lines.push({speaker:agentA.name, text:pickRandom(jokes)});
+                lines.push({speaker:agentB.name, text:tB.includes('stoic')?'......這一點都不好笑。':tB.includes('neurotic')?'你這什麼意思！？':'呵，你覺得很幽默嗎？'});
+                lines.push({speaker:agentA.name, text:tA.includes('kind')?'抱歉抱歉，我不是那個意思...':'開不起玩笑啊？'});
+            },
+            // Value clash
+            () => {
+                const vA = agentA.personality.values[0] || '自由';
+                const vB = agentB.personality.values[0] || '秩序';
+                if (vA !== vB) {
+                    lines.push({speaker:agentA.name, text:`我覺得${vA}才是最重要的，你不覺得嗎？`});
+                    lines.push({speaker:agentB.name, text:`我倒覺得${vB}比較重要。你那種想法太天真了。`});
+                    lines.push({speaker:agentA.name, text:tA.includes('stoic')?'看法不同而已。':'哼，你不懂。'});
+                } else {
+                    lines.push({speaker:agentA.name, text:`${agentB.name}，你最近做的那件事，我覺得不太好。`});
+                    lines.push({speaker:agentB.name, text:'你管太多了吧？'});
+                }
+            },
+            // Passive-aggressive remark
+            () => {
+                const remarks = [
+                    `嗯...${agentB.name}你最近是不是胖了？`,
+                    `有些人啊，就是不知道自己幾斤幾兩。`,
+                    `哦對了，上次的事你還記得吧？算了，不提了。`,
+                    `我不是在說你啦，不過有人最近做事真的很馬虎。`,
+                ];
+                lines.push({speaker:agentA.name, text:pickRandom(remarks)});
+                lines.push({speaker:agentB.name, text:tB.includes('abrasive')?'你在暗示什麼？有話直說！':tB.includes('shy')?'......':tB.includes('neurotic')?'你是不是在說我！？':'...你今天怎麼了？'});
+            },
+            // Gossip about the other behind their back gets revealed
+            () => {
+                lines.push({speaker:agentB.name, text:`${agentA.name}，我聽說你跟別人說我${pickRandom(['壞話','是非','閒話'])}？`});
+                lines.push({speaker:agentA.name, text:tA.includes('gossip')?'啊...那個...不是你想的那樣。':tA.includes('abrasive')?'我說的都是事實。':'什麼？我沒有啊！'});
+                lines.push({speaker:agentB.name, text:tB.includes('kind')?'我希望以後別這樣了。':'我會記住的。'});
+            },
+            // Annoying behavior
+            () => {
+                const annoyances = [
+                    {act:`一直不停地說話`, resp:'你能不能安靜一會兒...'},
+                    {act:`吃東西的聲音超大`, resp:'拜託，能不能注意一下？'},
+                    {act:`不請自來地給建議`, resp:'我沒有問你的意見。'},
+                    {act:`打斷${agentB.name}說話`, resp:'你能讓我把話說完嗎！？'},
+                ];
+                const a = pickRandom(annoyances);
+                lines.push({speaker:agentA.name, text:tA.includes('charismatic')?`對了對了，我跟你說——`:`嗯，我覺得你應該——`});
+                lines.push({speaker:agentB.name, text:a.resp});
+                lines.push({speaker:agentA.name, text:tA.includes('kind')?'...對不起。':'切，好心沒好報。'});
+            },
+        ];
+        pickRandom(conflictTypes)();
     }
 
     async generatePlayerReply(player, npc, playerMessage, world) {
@@ -1199,65 +1313,214 @@ ${player.name}: ${playerMessage}
         const t = npc.personality.traits;
         const aff = relNpc.affinity;
         const isCouple = relNpc.status === 'dating' || relNpc.status === 'married';
-        let npcReply;
+        const msg = playerMessage.toLowerCase();
+        const jobTitle = npc.job?.title || '居民';
+        const jobKey = npc.job?.key || '';
+        const loc = npc.currentLocation.replace(/_/g,' ');
+        const season = world.clock.season;
+        const timeOfDay = world.clock.timeOfDay;
+        const isNight = timeOfDay === 'night' || timeOfDay === 'evening';
 
-        if (isCouple) {
+        let npcReply = '';
+        let affChange = 0;
+        let romChange = 0;
+        let summary = '';
+
+        // Detect message intent via keyword matching
+        const isGreeting = /你好|嗨|哈囉|hello|hi|早安|晚安|嘿/.test(msg);
+        const isAskName = /名字|你叫|你是誰|認識/.test(msg);
+        const isAskJob = /工作|職業|做什麼|你在幹|忙什麼/.test(msg);
+        const isAskMood = /心情|怎麼了|還好嗎|你好嗎|開心|難過|不好/.test(msg);
+        const isAskLove = /喜歡|愛|暗戀|對象|交往|結婚|單身|感情/.test(msg);
+        const isFlirt = /好看|漂亮|帥|可愛|迷人|約會|陪我/.test(msg);
+        const isAskTown = /鎮上|小鎮|這裡|消息|八卦|新聞|最近/.test(msg);
+        const isAskFood = /吃|餓|食物|餐|飯|料理|好吃/.test(msg);
+        const isCompliment = /厲害|佩服|好棒|真強|了不起|手藝|技術/.test(msg);
+        const isInsult = /笨|蠢|醜|差|爛|廢|討厭|滾/.test(msg);
+        const isFarewell = /再見|掰|拜|走了|先走|告辭/.test(msg);
+        const isAskHelp = /幫忙|幫我|拜託|求你|需要/.test(msg);
+        const isAskStory = /故事|過去|以前|經歷|怎麼來|家鄉/.test(msg);
+        const isAskWeather = /天氣|天空|冷|熱|下雨|季節|星星/.test(msg);
+
+        // Personality-flavored response builder
+        const shy = t.includes('shy');
+        const kind = t.includes('kind');
+        const abrasive = t.includes('abrasive');
+        const charismatic = t.includes('charismatic');
+        const gossip = t.includes('gossip');
+        const romantic = t.includes('romantic');
+        const pessimist = t.includes('pessimist');
+        const optimist = t.includes('optimist');
+        const lazy = t.includes('lazy');
+
+        if (isInsult) {
+            // Player is being mean
+            if (abrasive) npcReply = pickRandom([`你說什麼！？你自己才是吧！`,`哼，你也好不到哪去。`,`你這嘴巴欠教訓。`]);
+            else if (shy) npcReply = pickRandom([`...你、你怎麼能這樣說...`,`......`,`我做錯什麼了嗎...`]);
+            else if (kind) npcReply = pickRandom([`這樣說話很傷人的...`,`你是不是心情不好？不然怎麼會這樣。`,`我...不知道你為什麼要這樣。`]);
+            else npcReply = pickRandom([`你這話說得太過分了。`,`......我沒必要跟你計較。`,`你認真的嗎？`]);
+            affChange = randInt(-6,-3);
+            summary = `${player.name}言語冒犯了${npc.name}。`;
+        } else if (isFlirt) {
+            if (isCouple) {
+                npcReply = pickRandom([`你啊...每次都這樣，不過我就是吃這套。`,`哈哈，老夫老妻了還這麼會講。`,`你真的很會撩人，我都不好意思了。`]);
+                affChange = randInt(2,4); romChange = randInt(1,3);
+            } else if (romantic && aff > 10) {
+                npcReply = shy ? pickRandom([`你、你在說什麼啦...（臉紅）`,`別、別突然這樣講...`,`...謝謝...（小聲）`])
+                    : pickRandom([`哈哈，你還挺會說話的嘛。`,`嗯？你是在跟我告白嗎？`,`你這話讓人心跳加速呢。`]);
+                affChange = randInt(1,4); romChange = randInt(2,5);
+            } else if (aff < -10) {
+                npcReply = pickRandom([`...你在開什麼玩笑。`,`拜託，省省吧。`,`你是不是搞錯了什麼？`]);
+                affChange = randInt(-2,0);
+            } else {
+                npcReply = shy ? '...什麼？（不知所措）' : pickRandom([`哈？你認真的嗎？`,`嗯...謝謝？`,`你還挺有趣的。`]);
+                affChange = randInt(0,2); romChange = randInt(0,2);
+            }
+            summary = `${player.name}對${npc.name}說了甜言蜜語。`;
+        } else if (isGreeting) {
+            if (isCouple) npcReply = pickRandom([`嗨親愛的，我一直在等你呢。`,`你來了！好想你。`,`嘿~今天怎麼這麼晚來找我？`]);
+            else if (aff > 50) npcReply = charismatic ? `${player.name}！太好了你來了！`
+                : shy ? `啊...${player.name}...你好。（微笑）`
+                : `嘿！好久不見，最近好嗎？`;
+            else if (aff > 10) npcReply = pickRandom([`你好啊！有什麼事嗎？`,`嗨！今天${loc}挺熱鬧的。`,`哈囉，正好遇到你了。`]);
+            else if (aff > -10) npcReply = abrasive ? '嗯？怎麼了。' : pickRandom([`嗯，你好。`,`哦，是你啊。`,`哈囉。`]);
+            else npcReply = pickRandom([`...有事嗎？`,`你又來了。`,`嗯。`]);
+            affChange = aff > -10 ? randInt(0,2) : randInt(-1,0);
+            summary = `${player.name}和${npc.name}打了招呼。`;
+        } else if (isAskName) {
             npcReply = pickRandom([
-                `嗯，我一直在等你來找我呢。`,
-                `有你在身邊就很開心了。`,
-                `你今天看起來不錯呢。`,
-                `你找我有事嗎？不管怎樣我都很高興。`,
+                `我叫${npc.name}，${npc.age}歲，在鎮上當${jobTitle}。`,
+                `${npc.name}啊，怎麼？你忘了我嗎？`,
+                shy ? `我...我叫${npc.name}...` : `我是${npc.name}，認識一下！`,
             ]);
-        } else if (aff > 50) {
-            // Close friend - warm and personal
-            const highPool = t.includes('charismatic') ?
-                [`${player.name}！太好了你來了！有好多事想跟你說。`,`每次跟你聊天都讓我心情大好。`,`哈哈，我剛好也想找你呢！`] :
-                t.includes('shy') ?
-                [`啊...${player.name}...很高興看到你。`,`你、你來了啊...我今天其實有話想說。`,`...嗯，是你啊，太好了。`] :
-                [`見到你真高興！我剛好在想你呢。`,`太好了你來了！最近好嗎？`,`嘿！坐下來聊聊吧，我有空。`];
-            npcReply = pickRandom(highPool);
-        } else if (aff > 20) {
-            // Friend
-            const friendPool = t.includes('kind') ?
-                [`你好啊，今天過得還好嗎？`,`嗨！有什麼需要幫忙的嗎？`,`很高興見到你，坐坐吧。`] :
-                t.includes('lazy') ?
-                [`喔...你好。我正在偷懶呢。`,`嗯？喔是你啊。我正想歇一會兒。`] :
-                [`嗨！最近都好嗎？`,`你好，好久不見。`,`哈囉，正好碰到你了。`];
-            npcReply = pickRandom(friendPool);
-        } else if (aff > -10) {
-            // Neutral
-            const neutralPool = t.includes('abrasive') ?
-                [`嗯？什麼事？`,`你找我有事嗎？`,`...說吧。`] :
-                t.includes('optimist') ?
-                [`你好呀！有什麼事嗎？`,`嗨！今天天氣不錯吧？`,`哈囉，你看起來有話要說？`] :
-                [`嗯，你好。`,`什麼風把你吹來的？`,`喔，你好。有事嗎？`];
-            npcReply = pickRandom(neutralPool);
+            affChange = randInt(0,2);
+            summary = `${npc.name}自我介紹了。`;
+        } else if (isAskJob) {
+            const jobReplies = {
+                farmer: [`我是農夫啊，每天日出就到田裡去了。${season}是${pickRandom(['播種','收穫','準備','整地'])}的季節。`,`種田很辛苦，但看到作物長大就很有成就感。`],
+                miner: [`挖礦啊，每天鑽到山裡去。最近挖到了一些不錯的${pickRandom(['鐵礦','石頭','稀有礦石'])}。`,`礦坑裡又暗又悶，但能找到好東西的時候特別開心。`],
+                cook: [`我在酒館煮飯！最近在研究新${pickRandom(['菜色','食譜','料理'])}。`,`煮飯給大家吃是我的樂趣，你要不要嚐嚐？`],
+                blacksmith: [`我是鐵匠，每天跟鐵和火打交道。${shy?'...比跟人打交道容易多了。':'最近在打造一把新的工具。'}`,`敲打金屬的感覺很療癒，每一件作品都是獨一無二的。`],
+                doctor: [`我是醫生，${lazy?'...雖然有時候很懶得看診。':'負責照顧鎮上所有人的健康。'}有什麼不舒服嗎？`,`行醫是一份責任很重的工作，但能治好人的時候很開心。`],
+                researcher: [`我在圖書館做研究，最近在研究${pickRandom(['古代遺跡','草藥學','天文現象','歷史文獻'])}。`,`學問的世界無窮無盡，每天都有新發現。`],
+                trader: [`我做買賣的，跟外面的商隊有聯繫。${charismatic?'要買什麼跟我說，我給你打折！':'最近市場不太穩定。'}`,`當商人最重要的是眼光和人脈。`],
+                guard: [`我是守衛，負責鎮上的安全。${pessimist?'這年頭什麼事都可能發生。':'還好最近挺太平的。'}`,`守衛的工作就是讓大家能安心過日子。`],
+                carpenter: [`我是木匠，蓋房子修東西。${lazy?'...雖然有時候偷懶。':'最近在趕工，忙得很。'}`,`木工的手藝越老越精，每塊木頭都有它的個性。`],
+                tailor: [`我是裁縫，做衣服的。${shy?'...你要訂做什麼嗎？':'最近在設計新款式呢！'}`,`一針一線都是心血，我對品質很要求的。`],
+                priest: [`我在禮拜堂服務，照顧大家的心靈。${kind?'如果有煩惱，可以來找我聊聊。':'也會幫忙主持各種儀式。'}`,`能為鎮民帶來平靜和希望，就是我最大的滿足。`],
+                mayor: [`我是鎮長，管理鎮上大小事務。${optimist?'我對這個鎮的未來很有信心！':'責任很重，但這是我的使命。'}`,`治理一個鎮子不容易，但看到大家過得好就值了。`],
+            };
+            const pool = jobReplies[jobKey] || [`我在鎮上當${jobTitle}，還過得去吧。`,`${jobTitle}的工作有好有壞，但至少有事做。`];
+            npcReply = pickRandom(pool);
+            affChange = randInt(0,2);
+            summary = `${npc.name}聊了自己的工作。`;
+        } else if (isAskMood) {
+            if (npc.mood > 60) npcReply = pickRandom([`我很好啊！${optimist?'今天特別開心！':'最近一切都挺順利的。'}`,`心情不錯！有什麼好事就是會開心嘛。`,`挺好的，謝謝你關心。`]);
+            else if (npc.mood > 30) npcReply = pickRandom([`還行吧，普普通通。`,`馬馬虎虎，${pessimist?'不過總覺得少了什麼。':'就是平常的日子。'}`,`沒什麼特別的，過一天算一天。`]);
+            else npcReply = pickRandom([
+                `唉...說實話不太好。${kind?'不過沒關係，撐得住。':'別問了。'}`,
+                `最近有點${pickRandom(['煩','累','低落','壓力大'])}...${shy?'...':'你真的想聽嗎？'}`,
+                pessimist ? '一如既往地糟。' : '有點不順，但會過去的。',
+            ]);
+            affChange = randInt(1,3);
+            summary = `${npc.name}分享了自己的心情。`;
+        } else if (isAskLove) {
+            if (isCouple) {
+                const partnerName = relNpc.status === 'married' ? '老公/老婆' : '對象';
+                npcReply = pickRandom([`我跟${player.name}在一起啊，你忘了嗎？`,`哈哈，感情的事...有你就夠了。`,`你是在試探我嗎？我只有你啊。`]);
+                romChange = randInt(1,3);
+            } else if (relNpc.romanticInterest > 30) {
+                npcReply = shy ? `感、感情的事...我不太想說...（臉紅）` :
+                    pickRandom([`嗯...其實有一個在意的人啦...不告訴你是誰。`,`你為什麼突然問這個？難道你...？`,`哈，秘密。`]);
+                romChange = randInt(0,2);
+            } else {
+                npcReply = romantic ? pickRandom([`還沒遇到對的人呢...不過我相信緣分。`,`我是很期待愛情的，只是...唉。`])
+                    : pickRandom([`這種事順其自然吧。`,`目前沒什麼想法，工作比較重要。`,abrasive?'關你什麼事。':'哈哈，你怎麼突然問這個？']);
+            }
+            affChange = randInt(0,2);
+            summary = `${player.name}問了${npc.name}感情的事。`;
+        } else if (isAskStory) {
+            npcReply = pickRandom([
+                `我的故事啊...${npc.personality.background}`,
+                `以前的事嗎？${shy?'...有點不好意思說。':'坐下來，我慢慢跟你講。'} ${npc.personality.background}`,
+                `你想知道我的過去？好吧...${npc.personality.background.slice(0,50)}`,
+            ]);
+            affChange = randInt(1,4);
+            summary = `${npc.name}分享了自己的故事。`;
+        } else if (isAskTown) {
+            const gossipTopics = world.events?.conversationTopics || [];
+            const gossip_s = world.gossipNetwork?.activeGossip || [];
+            if (gossip && gossip_s.length) {
+                const g = pickRandom(gossip_s);
+                npcReply = `你想知道最近的八卦？${g.content} 這可是獨家消息喔！`;
+            } else if (gossipTopics.length) {
+                npcReply = `最近鎮上在聊${pickRandom(gossipTopics)}的事，你聽說了嗎？`;
+            } else {
+                npcReply = pickRandom([
+                    `鎮上最近${optimist?'挺太平的，大家都過得不錯。':'也沒什麼特別的事。'}`,
+                    `${season}嘛，${pickRandom(['農忙的季節','大家都挺忙的','日子就這樣過'])}。`,
+                    pessimist ? '最近總覺得要出什麼事...' : `邊境鎮就是這樣，每天都有小故事。`,
+                ]);
+            }
+            affChange = randInt(0,3);
+            summary = `${npc.name}跟${player.name}聊了鎮上的近況。`;
+        } else if (isAskFood) {
+            if (jobKey === 'cook') npcReply = pickRandom([`你來對人了！我最近做了${pickRandom(['燉肉','烤魚','蔬菜湯','肉包子'])}，要不要嚐嚐？`,`吃的是我的專業！等著，我去給你弄點好吃的。`]);
+            else if (npc.needs.hunger < 30) npcReply = `別說了，我自己都快餓死了...一起去酒館吧？`;
+            else npcReply = pickRandom([`酒館的飯菜不錯，推薦你去試試。`,`王麗煮的菜最好吃了，你應該去嚐嚐。`,`肚子餓了嗎？吃飽了心情才會好。`]);
+            affChange = randInt(0,2);
+            summary = `${player.name}和${npc.name}聊了吃的。`;
+        } else if (isAskWeather) {
+            const weatherMap = {'春季':'春天暖洋洋的','夏季':'夏天好熱','秋季':'秋天涼爽','冬季':'冬天好冷'};
+            if (isNight) npcReply = pickRandom([`今晚的${pickRandom(['星空','月色','夜風'])}真不錯。`,`夜裡出來${pickRandom(['看星星','散步','吹風'])}？我也覺得很舒服。`,t.includes('night_owl')?'夜晚最棒了，安安靜靜的。':'這麼晚了，小心著涼。']);
+            else npcReply = pickRandom([`${weatherMap[season]||'天氣還好'}，${optimist?'不過我很享受！':'希望別變天。'}`,`${season}到了，${pickRandom(['時間過得真快','又是新的季節','風景挺美的'])}。`]);
+            affChange = randInt(0,2);
+            summary = `${player.name}和${npc.name}聊了天氣。`;
+        } else if (isCompliment) {
+            if (shy) npcReply = pickRandom([`啊...謝、謝謝你...（臉紅）`,`不、不會啦...你過獎了。`,`...真的嗎？（開心但不好意思）`]);
+            else if (abrasive) npcReply = pickRandom([`哼，不用奉承我。`,`...你有什麼目的？`,`嗯，我知道。`]);
+            else npcReply = pickRandom([`哈哈，謝謝！你這麼說我很開心。`,`你真會說話！`,`被你這樣誇，有點不好意思呢。`]);
+            affChange = randInt(2,5);
+            if (romantic) romChange = randInt(0,2);
+            summary = `${player.name}讚美了${npc.name}。`;
+        } else if (isAskHelp) {
+            if (kind) npcReply = pickRandom([`需要幫忙嗎？儘管說！`,`我能做的一定幫！你說吧。`,`別客氣，鄰居互相幫忙是應該的。`]);
+            else if (lazy) npcReply = pickRandom([`嗯...看是什麼事吧。我今天有點懶...`,`幫忙可以，但別太累的。`]);
+            else if (abrasive) npcReply = pickRandom([`看什麼事吧。`,`我不是慈善機構。`,`你自己不能解決嗎？`]);
+            else npcReply = pickRandom([`什麼事？看我能不能幫上忙。`,`好吧，你說說看。`,`我盡量吧。`]);
+            affChange = kind ? randInt(1,3) : randInt(-1,2);
+            summary = `${player.name}向${npc.name}求助。`;
+        } else if (isFarewell) {
+            if (isCouple) npcReply = pickRandom([`這麼快就走？路上小心。想你。`,`嗯...早點回來。`,`下次再來找我。`]);
+            else if (aff > 30) npcReply = pickRandom([`再見！下次再聊！`,`掰掰，保重啊！`,`好的，有空再來找我！`]);
+            else npcReply = pickRandom([`嗯，再見。`,`好的。`,abrasive?'終於要走了。':'拜拜。']);
+            affChange = randInt(0,1);
+            summary = `${player.name}和${npc.name}道別了。`;
         } else {
-            // Hostile
-            const lowPool = t.includes('stoic') ?
-                [`...有事？`,`嗯。`,`說完就走吧。`] :
-                t.includes('abrasive') ?
-                [`又來了。你到底要什麼？`,`我沒空跟你聊。`,`拜託你別煩我。`] :
-                t.includes('neurotic') ?
-                [`你為什麼總是出現在這裡...`,`拜託...不要了。`,`...我不想跟你說話。`] :
-                [`嗯？有什麼事？`,`我有點忙...`,`...`];
-            npcReply = pickRandom(lowPool);
+            // Generic response based on relationship level - try to engage with what was said
+            if (isCouple) npcReply = pickRandom([`嗯嗯，我在聽。你繼續說。`,`你說的我都聽進去了。`,`是嗎？跟我說更多。`]);
+            else if (aff > 50) npcReply = pickRandom([`嗯嗯！然後呢？`,`哈哈，你說的我懂。`,`是嗎？有意思！跟我說更多。`,`我也有同感！`]);
+            else if (aff > 20) npcReply = pickRandom([`嗯，你說的有道理。`,`原來如此，我沒想過這件事。`,`哈，你還挺有想法的嘛。`,`是喔？有趣。`]);
+            else if (aff > -10) npcReply = pickRandom([`嗯...是嗎。`,`哦，我知道了。`,`你這人還挺愛聊的。`,shy?'嗯嗯...':abrasive?'所以呢？':'好吧。']);
+            else npcReply = pickRandom([`...隨便你怎麼說吧。`,`嗯哼。`,`我不太感興趣。`,`你說完了嗎？`]);
+            affChange = aff > 0 ? randInt(0,2) : randInt(-1,1);
+            summary = `${player.name}和${npc.name}聊了天。`;
         }
 
-        // Add context-sensitive follow-up
-        if (npc.needs.hunger < 20 && Math.random() < 0.3) npcReply += ' ...不過我好餓，先去吃點東西。';
-        if (npc.needs.rest < 20 && Math.random() < 0.3) npcReply += ' ...不過我累得不行了。';
+        // Add context-sensitive follow-up based on NPC state
+        if (npc.needs.hunger < 20 && Math.random() < 0.3) npcReply += ' ...不過我好餓，得先去吃點東西。';
+        if (npc.needs.rest < 20 && Math.random() < 0.3) npcReply += ' ...不過我好累，快撐不住了。';
+        if (isNight && !t.includes('night_owl') && Math.random() < 0.2) npcReply += ' ...這麼晚了，我想回去睡覺了。';
+        if (npc.activity === 'stargazing' && Math.random() < 0.3) npcReply += ' 你看，那顆星星好亮。';
 
-        const affChange = isCouple ? randInt(1,3) : aff > 20 ? randInt(0,3) : aff > -10 ? randInt(0,2) : randInt(-1,1);
-        const romChange = isCouple ? randInt(0,1) : 0;
-        relNpc.modifyAffinity(affChange); relNpc.recordInteraction(world.tickCount, `與${player.name}聊天`);
-        relPlayer.modifyAffinity(Math.max(0,affChange-1)); relPlayer.recordInteraction(world.tickCount, `與${npc.name}聊天`);
-        npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${player.name}來找我說話了。`, 4, [player.name]);
-        player.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `和${npc.name}聊了天。`, 3, [npc.name]);
+        relNpc.modifyAffinity(affChange); relNpc.modifyRomantic(romChange); relNpc.recordInteraction(world.tickCount, summary);
+        relPlayer.modifyAffinity(Math.max(-3,affChange-1)); relPlayer.recordInteraction(world.tickCount, summary);
+        npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${player.name}說：「${playerMessage.slice(0,30)}」— ${summary}`, 4+Math.abs(affChange), [player.name]);
+        player.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `與${npc.name}：${summary}`, 3+Math.abs(affChange), [npc.name]);
         player.chatHistory.push({speaker:player.name, target:npc.name, text:playerMessage, time:world.clock.timeStr});
         player.chatHistory.push({speaker:npc.name, target:player.name, text:npcReply, time:world.clock.timeStr});
-        world.logMessage('player_chat', `${player.name}和${npc.name}聊天了`, player.name, npc.name);
-        return { npc_name:npc.name, npc_reply:npcReply, player_message:playerMessage, effects:{affinity_change:affChange,romantic_change:romChange}, summary:`${player.name}和${npc.name}聊了天。` };
+        world.logMessage('player_chat', summary, player.name, npc.name);
+        return { npc_name:npc.name, npc_reply:npcReply, player_message:playerMessage, effects:{affinity_change:affChange,romantic_change:romChange}, summary };
     }
 }
 
@@ -1464,18 +1727,18 @@ const DEPARTURE_REASONS = [
     '前往首都尋求發展','出門旅行增廣見聞',
 ];
 const IMMIGRANT_POOL = [
-    {name:'周明',age:27,traits:['hardworking','optimist'],job:'farmer',background:'來自鄰村的開朗年輕農夫。'},
-    {name:'李雪',age:31,traits:['kind','perfectionist'],job:'tailor',background:'聽說邊境鎮需要她的手藝的熟練裁縫。'},
-    {name:'鄭強',age:35,traits:['stoic','hardworking'],job:'miner',background:'來自本地區的資深礦工。'},
-    {name:'何芳',age:24,traits:['charismatic','romantic'],job:'cook',background:'懷抱遠大夢想的熱情廚師。'},
-    {name:'蔡文',age:42,traits:['creative','neurotic'],job:'researcher',background:'被古代遺跡吸引而來的古怪學者。'},
-    {name:'呂嵐',age:29,traits:['shy','early_bird'],job:'carpenter',background:'讓手藝說話的沉靜木匠。'},
-    {name:'丁傑',age:38,traits:['abrasive','hardworking'],job:'blacksmith',background:'言語粗獷但手藝精湛的鐵匠。'},
-    {name:'蕭瑜',age:23,traits:['optimist','gossip'],job:'trader',background:'善於議價的年輕商人。'},
-    {name:'唐琳',age:33,traits:['kind','night_owl'],job:'doctor',background:'四處行醫的慈悲醫者。'},
-    {name:'曹峰',age:44,traits:['stoic','pessimist'],job:'guard',background:'尋求平靜生活的資深戰士。'},
-    {name:'邱雅',age:21,traits:['creative','shy'],job:'tailor',background:'擁有刺繡天賦的年輕工匠。'},
-    {name:'范浩',age:36,traits:['lazy','charismatic'],job:'priest',background:'悠哉的精神導師。'},
+    {name:'周明',age:27,gender:'male',traits:['hardworking','optimist'],job:'farmer',background:'來自鄰村的開朗年輕農夫。'},
+    {name:'李雪',age:31,gender:'female',traits:['kind','perfectionist'],job:'tailor',background:'聽說邊境鎮需要她的手藝的熟練裁縫。'},
+    {name:'鄭強',age:35,gender:'male',traits:['stoic','hardworking'],job:'miner',background:'來自本地區的資深礦工。'},
+    {name:'何芳',age:24,gender:'female',traits:['charismatic','romantic'],job:'cook',background:'懷抱遠大夢想的熱情廚師。'},
+    {name:'蔡文',age:42,gender:'male',traits:['creative','neurotic'],job:'researcher',background:'被古代遺跡吸引而來的古怪學者。'},
+    {name:'呂嵐',age:29,gender:'female',traits:['shy','early_bird'],job:'carpenter',background:'讓手藝說話的沉靜木匠。'},
+    {name:'丁傑',age:38,gender:'male',traits:['abrasive','hardworking'],job:'blacksmith',background:'言語粗獷但手藝精湛的鐵匠。'},
+    {name:'蕭瑜',age:23,gender:'female',traits:['optimist','gossip'],job:'trader',background:'善於議價的年輕商人。'},
+    {name:'唐琳',age:33,gender:'female',traits:['kind','night_owl'],job:'doctor',background:'四處行醫的慈悲醫者。'},
+    {name:'曹峰',age:44,gender:'male',traits:['stoic','pessimist'],job:'guard',background:'尋求平靜生活的資深戰士。'},
+    {name:'邱雅',age:21,gender:'female',traits:['creative','shy'],job:'tailor',background:'擁有刺繡天賦的年輕工匠。'},
+    {name:'范浩',age:36,gender:'male',traits:['lazy','charismatic'],job:'priest',background:'悠哉的精神導師。'},
 ];
 
 class EventSystem {
@@ -1676,7 +1939,7 @@ class EventSystem {
         personality.values = shuffle(['家庭','自由','知識','財富','權力','藝術','自然','社群','冒險','和平']).slice(0, 1+Math.floor(Math.random()*3));
         const job = new Job(imm.job);
         const home = pickRandom(['residential_north','residential_south','residential_east']);
-        const agent = new Agent(id, imm.name, imm.age, personality, job, home);
+        const agent = new Agent(id, imm.name, imm.age, personality, job, home, imm.gender);
         world.agents[agent.agentId] = agent;
         world.logMessage('immigration', `新居民到來：${agent.name}，${job.title}！`, agent.name);
         const event = {name:'新居民',description:`${agent.name}以${job.title}身分到來！`,severity:'minor',effects:{mood_all:5,conversation_topic:`新居民${agent.name}`},event_type:'arrival'};
@@ -2366,23 +2629,23 @@ class World {
 
     _loadDefaultResidents() {
         const residents = [
-            {id:'chen_wei',name:'陳偉',age:45,job:'mayor',home:'residential_north',traits:['charismatic','hardworking','optimist'],values:['社群','和平'],background:'曾是軍官，二十年前定居邊境鎮。他深愛這個社區，把全鎮的安危視為自己的責任。'},
-            {id:'lin_mei',name:'林美',age:32,job:'doctor',home:'residential_north',traits:['kind','perfectionist','night_owl'],values:['知識','家庭'],background:'才華洋溢的醫生，離開城裡的大醫院來到邊境鎮行醫。經常工作到深夜。'},
-            {id:'zhang_hao',name:'張豪',age:28,job:'blacksmith',home:'residential_south',traits:['hardworking','shy','stoic'],values:['藝術','自由'],background:'沉默寡言但技藝精湛的鐵匠，用金屬表達自己的情感。私下喜歡寫詩。'},
-            {id:'wang_li',name:'王麗',age:38,job:'cook',home:'residential_south',traits:['gossip','kind','glutton'],values:['社群','家庭'],background:'酒館的靈魂人物，認識鎮上每一個人，也知道所有人的八卦。煮的菜讓人回味無窮。'},
-            {id:'liu_jun',name:'劉俊',age:22,job:'farmer',home:'residential_east',traits:['early_bird','romantic','creative'],values:['自然','冒險'],background:'有著遠大夢想的年輕農夫。偷偷寫情書但從未寄出，心中暗戀著某人。'},
-            {id:'zhao_xia',name:'趙霞',age:35,job:'trader',home:'residential_east',traits:['charismatic','creative','pessimist'],values:['財富','冒險'],background:'精明的女商人，與外面的世界有廣泛的聯繫。表面開朗但內心悲觀。'},
-            {id:'yang_feng',name:'楊鋒',age:40,job:'guard',home:'residential_north',traits:['stoic','hardworking','jealous'],values:['權力','家庭'],background:'前傭兵，在邊境鎮找到了平靜。但嫉妒心很重，尤其在感情方面。'},
-            {id:'sun_yu',name:'孫雨',age:26,job:'researcher',home:'residential_east',traits:['creative','neurotic','night_owl'],values:['知識','自由'],background:'聰明但容易焦慮的年輕學者，正在研究小鎮附近的古代遺跡。'},
-            {id:'wu_da',name:'吳達',age:50,job:'miner',home:'residential_south',traits:['hardworking','pessimist','abrasive'],values:['財富','自由'],background:'從十六歲就開始挖礦的老礦工。說話粗魯但非常可靠。'},
-            {id:'huang_li',name:'黃莉',age:29,job:'priest',home:'residential_north',traits:['kind','optimist','romantic'],values:['和平','社群','藝術'],background:'溫柔的牧師，照顧禮拜堂和居民的心靈。有一副動人的歌喉，經常在教堂唱歌。'},
-            {id:'ma_qiang',name:'馬強',age:33,job:'carpenter',home:'residential_south',traits:['lazy','charismatic','gossip'],values:['自由','冒險'],background:'迷人的懶鬼，比起幹活更喜歡講故事。但只要認真起來手藝一流。'},
-            {id:'xu_ying',name:'許瑩',age:20,job:'tailor',home:'residential_east',traits:['shy','perfectionist','early_bird'],values:['藝術','家庭'],background:'鎮上最年輕的居民。天賦異稟的裁縫師，但太害羞不敢接受別人的誇獎。'},
+            {id:'chen_wei',name:'陳偉',age:45,gender:'male',job:'mayor',home:'residential_north',traits:['charismatic','hardworking','optimist'],values:['社群','和平'],background:'曾是軍官，二十年前定居邊境鎮。他深愛這個社區，把全鎮的安危視為自己的責任。'},
+            {id:'lin_mei',name:'林美',age:32,gender:'female',job:'doctor',home:'residential_north',traits:['kind','perfectionist','night_owl'],values:['知識','家庭'],background:'才華洋溢的醫生，離開城裡的大醫院來到邊境鎮行醫。經常工作到深夜。'},
+            {id:'zhang_hao',name:'張豪',age:28,gender:'male',job:'blacksmith',home:'residential_south',traits:['hardworking','shy','stoic'],values:['藝術','自由'],background:'沉默寡言但技藝精湛的鐵匠，用金屬表達自己的情感。私下喜歡寫詩。'},
+            {id:'wang_li',name:'王麗',age:38,gender:'female',job:'cook',home:'residential_south',traits:['gossip','kind','glutton'],values:['社群','家庭'],background:'酒館的靈魂人物，認識鎮上每一個人，也知道所有人的八卦。煮的菜讓人回味無窮。'},
+            {id:'liu_jun',name:'劉俊',age:22,gender:'male',job:'farmer',home:'residential_east',traits:['early_bird','romantic','creative'],values:['自然','冒險'],background:'有著遠大夢想的年輕農夫。偷偷寫情書但從未寄出，心中暗戀著某人。'},
+            {id:'zhao_xia',name:'趙霞',age:35,gender:'female',job:'trader',home:'residential_east',traits:['charismatic','creative','pessimist'],values:['財富','冒險'],background:'精明的女商人，與外面的世界有廣泛的聯繫。表面開朗但內心悲觀。'},
+            {id:'yang_feng',name:'楊鋒',age:40,gender:'male',job:'guard',home:'residential_north',traits:['stoic','hardworking','jealous'],values:['權力','家庭'],background:'前傭兵，在邊境鎮找到了平靜。但嫉妒心很重，尤其在感情方面。'},
+            {id:'sun_yu',name:'孫雨',age:26,gender:'female',job:'researcher',home:'residential_east',traits:['creative','neurotic','night_owl'],values:['知識','自由'],background:'聰明但容易焦慮的年輕學者，正在研究小鎮附近的古代遺跡。'},
+            {id:'wu_da',name:'吳達',age:50,gender:'male',job:'miner',home:'residential_south',traits:['hardworking','pessimist','abrasive'],values:['財富','自由'],background:'從十六歲就開始挖礦的老礦工。說話粗魯但非常可靠。'},
+            {id:'huang_li',name:'黃莉',age:29,gender:'female',job:'priest',home:'residential_north',traits:['kind','optimist','romantic'],values:['和平','社群','藝術'],background:'溫柔的牧師，照顧禮拜堂和居民的心靈。有一副動人的歌喉，經常在教堂唱歌。'},
+            {id:'ma_qiang',name:'馬強',age:33,gender:'male',job:'carpenter',home:'residential_south',traits:['lazy','charismatic','gossip'],values:['自由','冒險'],background:'迷人的懶鬼，比起幹活更喜歡講故事。但只要認真起來手藝一流。'},
+            {id:'xu_ying',name:'許瑩',age:20,gender:'female',job:'tailor',home:'residential_east',traits:['shy','perfectionist','early_bird'],values:['藝術','家庭'],background:'鎮上最年輕的居民。天賦異稟的裁縫師，但太害羞不敢接受別人的誇獎。'},
         ];
         residents.forEach(r => {
             const personality = new Personality(r.traits, r.background, r.values);
             const job = r.job ? new Job(r.job) : null;
-            const agent = new Agent(r.id, r.name, r.age, personality, job, r.home);
+            const agent = new Agent(r.id, r.name, r.age, personality, job, r.home, r.gender);
             this.addAgent(agent);
         });
     }
@@ -2390,7 +2653,7 @@ class World {
     // --- Save / Load ---
     serialize() {
         const serializeAgent = (a) => ({
-            id:a.agentId, name:a.name, age:a.age, isPlayer:a.isPlayer,
+            id:a.agentId, name:a.name, age:a.age, gender:a.gender, isPlayer:a.isPlayer,
             jobKey: a.job?.key || null,
             homeLocation: a.homeLocation, currentLocation: a.currentLocation,
             mood: a.mood, activity: a.activity, currentThought: a.currentThought,
@@ -2469,6 +2732,7 @@ class World {
                     agent = new Agent(id, ad.name, ad.age, personality, job, ad.homeLocation);
                 }
                 agent.currentLocation = ad.currentLocation;
+                if (ad.gender) agent.gender = ad.gender;
                 agent.mood = ad.mood; agent.activity = ad.activity;
                 agent.currentThought = ad.currentThought || '';
                 agent._lastInteractionTick = ad._lastInteractionTick || 0;
