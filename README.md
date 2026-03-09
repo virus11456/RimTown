@@ -40,6 +40,13 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## Changelog
 
+### v2.3.2 (2026-03-09)
+
+**修復 MiniMax 選項未在設定下拉選單顯示**
+
+- 修復 wordpress/rimtown.php 和 chrome-extension/rimtown.php 的設定 Modal HTML 缺少 MiniMax `<option>`
+- 實際渲染的設定面板來自 PHP 而非 index.html，之前只修了 index.html 導致選項未出現
+
 ### v2.3.1 (2026-03-09)
 
 **Chrome Extension 版恢復 MiniMax 支援**

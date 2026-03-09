@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '2.3.1');
+define('RIMTOWN_VERSION', '2.3.2');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -429,6 +429,7 @@ function rimtown_shortcode($atts) {
                         <option value="deepseek">DeepSeek</option>
                         <option value="groq">Groq</option>
                         <option value="together">Together AI</option>
+                        <option value="minimax">MiniMax (海螺AI)</option>
                     </select>
                 </div>
                 <div class="setting-group" id="api-key-group">
@@ -1070,6 +1071,13 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '2.3.2',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '修復設定面板下拉選單缺少 MiniMax 選項（rimtown.php HTML）',
+            ),
+        ),
         array(
             'version' => '2.3.1',
             'date'    => '2026-03-09',

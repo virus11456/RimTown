@@ -58,6 +58,7 @@ function rimtown_shortcode($atts) {
                         <option value="deepseek">DeepSeek</option>
                         <option value="groq">Groq</option>
                         <option value="together">Together AI</option>
+                        <option value="minimax">MiniMax (海螺AI)</option>
                     </select>
                 </div>
                 <div class="setting-group" id="api-key-group">
