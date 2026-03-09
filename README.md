@@ -40,6 +40,16 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## Changelog
 
+### v2.3.8 (2026-03-09)
+
+**修復 NPC 移動抖動 / 雲端存檔持久化 / 派系成就**
+
+- 新增 NPC 位置停留機制：NPC 抵達目的地後會停留 3-12 ticks 再移動，解決不斷抖動的問題，也讓社交互動/對話能正常進行
+- 修復雲端存檔載入：換裝置或清除快取後，優先嘗試載入雲端存檔而非直接重置，避免覆蓋雲端進度
+- 雲端同步間隔從 5 分鐘縮短為 2 分鐘
+- 修復 `faction_drama`（派系風雲）成就缺少觸發條件的問題
+- 以上修正同步套用至 WordPress 與 Chrome Extension 版本
+
 ### v2.3.7 (2026-03-09)
 
 **修復 LLM 回覆顯示 think 標籤 / 強制繁體中文**
