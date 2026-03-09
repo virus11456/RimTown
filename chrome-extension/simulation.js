@@ -811,6 +811,7 @@ class ConversationEngine {
 這是兩位小鎮居民偶然碰面的場景。請寫出生動、自然、有溫度的對話——就像真實的鄰居閒聊一樣。
 
 【重要規則】
+- 必須使用繁體中文（台灣用語），不可使用簡體中文
 - 絕對不要讓角色報告自己的狀態（不要說「我好餓」「我好累」「我心情不好」這種話）
 - 對話要像真人——談論具體的事、講故事、開玩笑、分享感受、抱怨、八卦
 - 每個人的說話風格要明顯不同（用詞、語氣、句子長短都要有差異）
@@ -1271,7 +1272,7 @@ ${recentChat || '（剛開始聊）'}
 ${player.name}: ${playerMessage}
 
 【回覆規則】
-- 用繁體中文，1-3句話
+- 必須使用繁體中文（台灣用語），不可使用簡體中文。1-3句話
 - 像真人說話，不要文縐縐的。可以用語助詞（啊、啦、嘛、欸、喔、哈）
 - 根據你的性格回應：${pN.traits.includes('害羞') ? '你會說話結巴、簡短' : pN.traits.includes('健談') ? '你很愛聊天，會主動延伸話題' : pN.traits.includes('刻薄') ? '你說話帶刺但可能是關心的方式' : '用你自己的方式說話'}
 - 不要直接說「我很累」「我心情不好」這種報告式的話。如果你累了，可能會打哈欠或說「唉今天腰都快斷了」
@@ -1605,14 +1606,19 @@ class LLMClient {
                 console.log('[RimTown LLM] Primary recovered — back to', this.provider);
             }
         }
-        return result;
+        return this._stripThinkTags(result);
+    }
+
+    _stripThinkTags(text) {
+        if (!text) return text;
+        return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
     }
 
     async _generateWithGroqFallback(prompt, maxTokens, temperature) {
         this._fallbackActive = true;
         const result = await this._callProvider('groq', this.fallbackGroqKey, 'qwen/qwen3-32b', prompt, maxTokens, temperature);
         if (result === '__RATE_LIMITED__' || result === '__ERROR__') return '';
-        return result;
+        return this._stripThinkTags(result);
     }
 
     async _callProvider(provider, apiKey, model, prompt, maxTokens, temperature) {
