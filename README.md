@@ -19,7 +19,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 - **Achievement System**: 38+ achievements across social, romance, economy, survival, faction, exploration categories
 - **NPC Conversation Visualization**: Speech bubbles on map when NPCs talk to each other
 - **Player Interaction**: Choose jobs, vote in elections, flirt, propose, and marry NPCs
-- **Multi-LLM Support**: Claude, GPT, Gemini, DeepSeek, Groq, Together AI (or play without AI)
+- **Multi-LLM Support**: Claude, GPT, Gemini, DeepSeek, Groq, Together AI, MiniMax (or play without AI)
 - **Pixel Art Map**: Animated tilemap with day/night cycle, campfires, particles
 
 ## WordPress Plugin Install
@@ -39,6 +39,23 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v2.3.0 (2026-03-09)
+
+**MiniMax 恢復 / AI 單一綁定 / Fallback 對話大改版**
+
+- 恢復 MiniMax（中國版）LLM provider：端點 api.minimaxi.com，模型 MiniMax-M2.5
+- AI 設定強制單一綁定：切換 provider 時自動清空 API Key，防止誤綁多個
+- 儲存時驗證：選了 AI 供應商就必須填入 API Key
+- Fallback 對話模板全面重寫：所有對話更長、更有戲劇張力
+- 新增豐富細節池：季節美食、場景描寫、禮物清單、鎮上傳聞
+- 情侶對話：美食讚美打鬧、醋意風波、禮物驚喜、浪漫散步
+- 敵對對話：針鋒相對的正面交鋒、流言質問、試圖和解
+- 曖昧對話：落葉場景心動、星空邀約告白
+- 摯友對話：分享八卦冒險、傾訴煩惱、回憶往事笑淚交織
+- 陌生人對話：熱情推薦美食、小鎮消息初印象
+- 一般對話：神秘發現分享、工作驚險趣事、送禮感謝、傳聞討論
+- 所有對話摘要改為小說風格，包含地點/季節/情感描寫
 
 ### v2.2.0 (2026-03-09)
 
