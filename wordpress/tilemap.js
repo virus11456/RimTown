@@ -964,6 +964,158 @@ class PixelTileMap {
         };
     }
 
+    // Draw completed buildings as pixel art decorations near related locations
+    _drawCompletedBuildings(ctx, completedBuildings) {
+        // Map building keys to nearby locations and pixel art draw functions
+        const BUILDING_PLACEMENTS = {
+            watchtower:      { near: 'guardpost',        offsetX: -2, offsetY: -2 },
+            granary:         { near: 'farm',             offsetX: 8,  offsetY: -1 },
+            marketplace:     { near: 'town_square',      offsetX: 9,  offsetY: -1 },
+            well_upgrade:    { near: 'well',             offsetX: 0,  offsetY: -1 },
+            training_ground: { near: 'guardpost',        offsetX: 7,  offsetY: 0 },
+            brewery:         { near: 'tavern',           offsetX: -3, offsetY: -1 },
+            garden:          { near: 'clinic',           offsetX: -3, offsetY: -1 },
+            school:          { near: 'library',          offsetX: -3, offsetY: 0 },
+            farm_irrigation: { near: 'farm',             offsetX: -2, offsetY: 5 },
+            forge_bellows:   { near: 'workshop',         offsetX: -3, offsetY: -1 },
+            clinic_upgrade:  { near: 'clinic',           offsetX: 6,  offsetY: -1 },
+            town_walls:      { near: 'town_square',      offsetX: -5, offsetY: -3 },
+        };
+
+        for (const building of completedBuildings) {
+            const placement = BUILDING_PLACEMENTS[building.key];
+            if (!placement) continue;
+            const zone = this.buildingZones[placement.near] || this.natureZones[placement.near];
+            if (!zone) continue;
+
+            const bx = (zone.x + placement.offsetX) * TILE;
+            const by = (zone.y + placement.offsetY) * TILE;
+
+            this._drawBuildingIcon(ctx, building.key, bx, by);
+
+            // Small label
+            ctx.font = '7px monospace';
+            ctx.textAlign = 'center';
+            const label = building.name;
+            const tw = ctx.measureText(label).width;
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(bx + 8 - tw/2 - 2, by - 4, tw + 4, 9);
+            ctx.fillStyle = '#ffd700';
+            ctx.fillText(label, bx + 8, by + 3);
+        }
+    }
+
+    _drawBuildingIcon(ctx, key, x, y) {
+        const T = TILE;
+        switch (key) {
+            case 'watchtower': // Tall tower
+                ctx.fillStyle = '#8B7355'; ctx.fillRect(x+4, y+4, 8, 16);  // Tower body
+                ctx.fillStyle = '#A0522D'; ctx.fillRect(x+2, y+4, 12, 3);  // Top platform
+                ctx.fillStyle = '#654321'; ctx.fillRect(x+6, y+1, 4, 3);   // Lookout
+                ctx.fillStyle = '#FFD700'; ctx.fillRect(x+7, y+2, 2, 1);   // Window
+                ctx.fillStyle = '#555'; ctx.fillRect(x+6, y+17, 4, 3);     // Door
+                break;
+            case 'granary': // Barn/silo
+                ctx.fillStyle = '#B8860B'; ctx.fillRect(x+2, y+6, 12, 10); // Body
+                ctx.fillStyle = '#DAA520'; ctx.fillRect(x+1, y+4, 14, 3);  // Roof
+                ctx.fillStyle = '#8B6914'; ctx.fillRect(x+4, y+5, 2, 2);   // Peak
+                ctx.fillStyle = '#654321'; ctx.fillRect(x+6, y+12, 4, 4);  // Door
+                ctx.fillStyle = '#FFD700'; ctx.fillRect(x+3, y+8, 2, 2);   // Grain window
+                ctx.fillStyle = '#FFD700'; ctx.fillRect(x+11, y+8, 2, 2);
+                break;
+            case 'marketplace': // Market stall
+                ctx.fillStyle = '#CD853F'; ctx.fillRect(x+1, y+8, 14, 8);  // Counter
+                ctx.fillStyle = '#FF6347'; ctx.fillRect(x+0, y+4, 16, 4);  // Canopy
+                ctx.fillStyle = '#FFD700'; ctx.fillRect(x+4, y+5, 2, 2);   // Stripe
+                ctx.fillStyle = '#FFD700'; ctx.fillRect(x+10, y+5, 2, 2);
+                ctx.fillStyle = '#8FBC8F'; ctx.fillRect(x+2, y+9, 3, 2);   // Goods
+                ctx.fillStyle = '#DEB887'; ctx.fillRect(x+6, y+9, 3, 2);
+                ctx.fillStyle = '#F4A460'; ctx.fillRect(x+10, y+9, 3, 2);
+                break;
+            case 'well_upgrade': // Improved well
+                ctx.fillStyle = '#708090'; ctx.fillRect(x+3, y+8, 10, 6);  // Well stone
+                ctx.fillStyle = '#A9A9A9'; ctx.fillRect(x+2, y+6, 12, 3);  // Rim
+                ctx.fillStyle = '#4682B4'; ctx.fillRect(x+5, y+9, 6, 3);   // Water
+                ctx.fillStyle = '#8B4513'; ctx.fillRect(x+3, y+3, 2, 5);   // Post
+                ctx.fillStyle = '#8B4513'; ctx.fillRect(x+11, y+3, 2, 5);
+                ctx.fillStyle = '#8B4513'; ctx.fillRect(x+3, y+3, 10, 2);  // Crossbar
+                break;
+            case 'training_ground': // Training area
+                ctx.fillStyle = '#DEB887'; ctx.fillRect(x+1, y+8, 14, 8);  // Sand ground
+                ctx.fillStyle = '#8B4513'; ctx.fillRect(x+2, y+6, 2, 8);   // Post
+                ctx.fillStyle = '#8B4513'; ctx.fillRect(x+12, y+6, 2, 8);  // Post
+                ctx.fillStyle = '#CD853F'; ctx.fillRect(x+2, y+6, 12, 2);  // Crossbar
+                ctx.fillStyle = '#C0C0C0'; ctx.fillRect(x+6, y+10, 1, 4);  // Sword
+                ctx.fillStyle = '#C0C0C0'; ctx.fillRect(x+9, y+10, 1, 4);  // Sword
+                break;
+            case 'brewery': // Barrel house
+                ctx.fillStyle = '#8B4513'; ctx.fillRect(x+2, y+6, 12, 10); // Building
+                ctx.fillStyle = '#A0522D'; ctx.fillRect(x+1, y+4, 14, 3);  // Roof
+                ctx.fillStyle = '#D2691E'; ctx.fillRect(x+3, y+8, 4, 3);   // Barrel 1
+                ctx.fillStyle = '#D2691E'; ctx.fillRect(x+9, y+8, 4, 3);   // Barrel 2
+                ctx.fillStyle = '#DAA520'; ctx.fillRect(x+4, y+9, 2, 1);   // Tap
+                ctx.fillStyle = '#DAA520'; ctx.fillRect(x+10, y+9, 2, 1);
+                break;
+            case 'garden': // Herb garden
+                ctx.fillStyle = '#654321'; ctx.fillRect(x+1, y+6, 14, 10); // Soil
+                ctx.fillStyle = '#228B22'; ctx.fillRect(x+2, y+7, 3, 3);   // Herb 1
+                ctx.fillStyle = '#32CD32'; ctx.fillRect(x+6, y+7, 3, 3);   // Herb 2
+                ctx.fillStyle = '#006400'; ctx.fillRect(x+10, y+7, 3, 3);  // Herb 3
+                ctx.fillStyle = '#90EE90'; ctx.fillRect(x+2, y+11, 3, 3);  // Herb 4
+                ctx.fillStyle = '#7CFC00'; ctx.fillRect(x+6, y+11, 3, 3);  // Herb 5
+                ctx.fillStyle = '#228B22'; ctx.fillRect(x+10, y+11, 3, 3); // Herb 6
+                ctx.fillStyle = '#8B4513'; ctx.fillRect(x+0, y+5, 16, 2);  // Fence top
+                break;
+            case 'school': // School building
+                ctx.fillStyle = '#B22222'; ctx.fillRect(x+2, y+6, 12, 10); // Body
+                ctx.fillStyle = '#8B0000'; ctx.fillRect(x+1, y+4, 14, 3);  // Roof
+                ctx.fillStyle = '#FFD700'; ctx.fillRect(x+6, y+12, 4, 4);  // Door
+                ctx.fillStyle = '#87CEEB'; ctx.fillRect(x+3, y+8, 3, 3);   // Window
+                ctx.fillStyle = '#87CEEB'; ctx.fillRect(x+10, y+8, 3, 3);  // Window
+                ctx.fillStyle = '#FFD700'; ctx.fillRect(x+7, y+3, 2, 2);   // Bell
+                break;
+            case 'farm_irrigation': // Water channels
+                ctx.fillStyle = '#4682B4'; ctx.fillRect(x+1, y+10, 14, 2); // Main channel
+                ctx.fillStyle = '#4682B4'; ctx.fillRect(x+3, y+8, 2, 6);   // Branch 1
+                ctx.fillStyle = '#4682B4'; ctx.fillRect(x+7, y+8, 2, 6);   // Branch 2
+                ctx.fillStyle = '#4682B4'; ctx.fillRect(x+11, y+8, 2, 6);  // Branch 3
+                ctx.fillStyle = '#8B4513'; ctx.fillRect(x+0, y+9, 2, 4);   // Gate
+                break;
+            case 'forge_bellows': // Bellows machine
+                ctx.fillStyle = '#696969'; ctx.fillRect(x+3, y+8, 10, 8);  // Body
+                ctx.fillStyle = '#A9A9A9'; ctx.fillRect(x+2, y+6, 12, 3);  // Top
+                ctx.fillStyle = '#FF4500'; ctx.fillRect(x+5, y+10, 6, 4);  // Fire
+                ctx.fillStyle = '#FFD700'; ctx.fillRect(x+6, y+11, 4, 2);  // Glow
+                ctx.fillStyle = '#8B4513'; ctx.fillRect(x+1, y+10, 3, 4);  // Bellows
+                break;
+            case 'clinic_upgrade': // Medical wing
+                ctx.fillStyle = '#F5F5F5'; ctx.fillRect(x+2, y+6, 12, 10); // White building
+                ctx.fillStyle = '#DCDCDC'; ctx.fillRect(x+1, y+4, 14, 3);  // Roof
+                ctx.fillStyle = '#FF0000'; ctx.fillRect(x+6, y+7, 4, 1);   // Red cross H
+                ctx.fillStyle = '#FF0000'; ctx.fillRect(x+7, y+6, 2, 3);   // Red cross V
+                ctx.fillStyle = '#87CEEB'; ctx.fillRect(x+3, y+9, 3, 3);   // Window
+                ctx.fillStyle = '#87CEEB'; ctx.fillRect(x+10, y+9, 3, 3);  // Window
+                ctx.fillStyle = '#654321'; ctx.fillRect(x+6, y+12, 4, 4);  // Door
+                break;
+            case 'town_walls': // Wall segments
+                ctx.fillStyle = '#808080'; ctx.fillRect(x+0, y+6, 3, 14);  // Left wall
+                ctx.fillStyle = '#808080'; ctx.fillRect(x+13, y+6, 3, 14); // Right wall
+                ctx.fillStyle = '#808080'; ctx.fillRect(x+0, y+6, 16, 3);  // Top wall
+                ctx.fillStyle = '#A9A9A9'; ctx.fillRect(x+1, y+6, 2, 2);   // Battlement
+                ctx.fillStyle = '#A9A9A9'; ctx.fillRect(x+5, y+6, 2, 2);
+                ctx.fillStyle = '#A9A9A9'; ctx.fillRect(x+9, y+6, 2, 2);
+                ctx.fillStyle = '#A9A9A9'; ctx.fillRect(x+13, y+6, 2, 2);
+                ctx.fillStyle = '#696969'; ctx.fillRect(x+6, y+9, 4, 6);   // Gate
+                ctx.fillStyle = '#8B4513'; ctx.fillRect(x+7, y+10, 2, 5);  // Gate door
+                break;
+            default: // Generic small structure
+                ctx.fillStyle = '#A0522D'; ctx.fillRect(x+3, y+8, 10, 8);
+                ctx.fillStyle = '#8B4513'; ctx.fillRect(x+2, y+6, 12, 3);
+                ctx.fillStyle = '#654321'; ctx.fillRect(x+6, y+12, 4, 4);
+                break;
+        }
+    }
+
     // Update agent positions (smooth interpolation)
     updateAgents(agents, locations) {
         const WALK_SPEED = 1.2; // pixels per frame — constant walking speed
@@ -1098,7 +1250,7 @@ class PixelTileMap {
     }
 
     // Main render
-    render(agents, selectedAgent, playerLoc) {
+    render(agents, selectedAgent, playerLoc, completedBuildings) {
         const ctx = this.ctx;
         this.animFrame++;
 
@@ -1124,6 +1276,11 @@ class PixelTileMap {
                     ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
                 }
             }
+        }
+
+        // Draw completed buildings on the map
+        if (completedBuildings && completedBuildings.length) {
+            this._drawCompletedBuildings(ctx, completedBuildings);
         }
 
         // Highlight player's current location zone

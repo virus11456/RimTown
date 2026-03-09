@@ -345,7 +345,7 @@ class RimTownApp {
                     this.tileMap.timeHour = this.state.clock.hour ?? 12;
                     this.tileMap.timeMinute = this.state.clock.minute ?? 0;
                 }
-                this.tileMap.render(agents, this.selectedAgent, player?.current_location);
+                this.tileMap.render(agents, this.selectedAgent, player?.current_location, this.world?.buildings?.completed || []);
             }
             requestAnimationFrame(loop);
         };
