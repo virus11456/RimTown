@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 1.3.0
+ * Version: 1.4.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '1.3.0');
+define('RIMTOWN_VERSION', '1.4.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -629,6 +629,23 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '1.4.0',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '夜晚效果重新設計：移除濃霧覆蓋，改用篝火、火把和極淡藍色調',
+                '篝火系統：廣場、酒館、守衛站、水井處有動態火焰動畫',
+                '建築旁自動放置閃爍火把，提供溫暖光暈',
+                '感情系統強化：新增自然浪漫吸引力（基於性格相容度）',
+                '降低交往/求婚門檻，增加每次對話的浪漫火花機率',
+                '地圖全螢幕顯示：Canvas 自動填滿容器，無邊框',
+                '新增雙指縮放（pinch-to-zoom）和拖曳平移',
+                '桌面支援滾輪縮放和拖曳平移',
+                '最小縮放自動計算，最大放大 4 倍',
+                '新增 [rimtown_landing] 首頁短碼：動畫像素背景、特色介紹、AI 模型展示',
+                '提供獨立 landing.html 單檔首頁，無需 WordPress',
+            ),
+        ),
         array(
             'version' => '1.3.0',
             'date'    => '2026-03-09',
