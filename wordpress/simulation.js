@@ -1589,11 +1589,17 @@ class LLMClient {
             } else if (this.provider === 'gemini') {
                 const res = await fetch(cfg.url, {
                     method:'POST', headers:{'Content-Type':'application/json'},
-                    body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:maxTokens, temperature} }),
+                    body: JSON.stringify({
+                        contents:[{parts:[{text:prompt}]}],
+                        generationConfig:{maxOutputTokens:maxTokens, temperature},
+                    }),
                 });
                 const data = await res.json();
                 console.log('[RimTown LLM] Gemini response:', res.status, data.candidates ? 'OK' : 'EMPTY', data.error?.message || '');
-                return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                // Gemini 2.5 Flash may return thinking parts — skip them and get the actual text
+                const parts = data.candidates?.[0]?.content?.parts || [];
+                const textPart = parts.filter(p => !p.thought).map(p => p.text).join('');
+                return textPart || parts[0]?.text || '';
             } else {
                 // OpenAI-compatible (openai, deepseek, groq, together)
                 const res = await fetch(cfg.url, {
