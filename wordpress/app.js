@@ -99,6 +99,7 @@ class RimTownAuth {
 
     async register(username, password, email) {
         const data = await this._fetch('register', 'POST', { username, password, email });
+        if (data.nonce) this._nonce = data.nonce;
         this.loggedIn = true;
         this.username = data.user.username;
         this.userId = data.user.id;
@@ -107,6 +108,7 @@ class RimTownAuth {
 
     async login(username, password) {
         const data = await this._fetch('login', 'POST', { username, password });
+        if (data.nonce) this._nonce = data.nonce;
         this.loggedIn = true;
         this.username = data.user.username;
         this.userId = data.user.id;

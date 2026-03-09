@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '2.3.2');
+define('RIMTOWN_VERSION', '2.3.3');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -172,6 +172,7 @@ function rimtown_api_register($request) {
     return rest_ensure_response(array(
         'success' => true,
         'user' => array('id' => $user_id, 'username' => $username),
+        'nonce' => wp_create_nonce('wp_rest'),
     ));
 }
 
@@ -190,6 +191,7 @@ function rimtown_api_login($request) {
     return rest_ensure_response(array(
         'success' => true,
         'user' => array('id' => $user->ID, 'username' => $user->user_login),
+        'nonce' => wp_create_nonce('wp_rest'),
     ));
 }
 
@@ -1071,6 +1073,14 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '2.3.3',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '修復登入後雲端存檔/成就 403 錯誤（Cookie 驗證失敗）',
+                '登入/註冊 API 回傳新 nonce，前端自動更新認證令牌',
+            ),
+        ),
         array(
             'version' => '2.3.2',
             'date'    => '2026-03-09',

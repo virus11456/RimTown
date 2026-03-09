@@ -40,6 +40,13 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## Changelog
 
+### v2.3.3 (2026-03-09)
+
+**修復登入後雲端存檔 403 錯誤**
+
+- 修復 AJAX 登入/註冊後 WordPress REST API nonce 過期導致 403 Forbidden（Cookie 驗證失敗）
+- PHP 登入/註冊 API 回傳新 nonce，前端自動更新認證令牌
+
 ### v2.3.2 (2026-03-09)
 
 **修復 MiniMax 選項未在設定下拉選單顯示**
