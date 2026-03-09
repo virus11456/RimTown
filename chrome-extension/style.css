@@ -1063,7 +1063,10 @@ body {
 .rel-status-badge.rel-married { background: #fbbf2433; color: #fbbf24; border: 1px solid #fbbf2444; }
 .rel-status-badge.rel-ex { background: #6b728033; color: #9ca3af; border: 1px solid #6b728044; }
 .rel-status-badge.rel-cheating { background: #dc262633; color: #f87171; border: 1px solid #dc262644; }
+.relationship-item.rel-has-status { background: rgba(255,255,255,0.03); padding: 4px 6px; border-radius: 4px; margin-bottom: 2px; border-left: 2px solid #f472b6; }
 .log-entry.type-relationship { border-left: 2px solid #f472b6; padding-left: 6px; }
+.log-entry.type-mischief { border-left: 2px solid #fbbf24; padding-left: 6px; }
+.log-entry.type-discovery { border-left: 2px solid #a78bfa; padding-left: 6px; }
 
 /* ===== NPC Conversation Display ===== */
 .npc-convo-section { border-bottom: 2px solid var(--border); margin-bottom: 8px; }

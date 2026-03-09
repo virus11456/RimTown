@@ -145,6 +145,10 @@ class Relationship {
         this.sharedMemories.push(summary);
         if (this.sharedMemories.length > 20) this.sharedMemories = this.sharedMemories.slice(-15);
     }
+    addSharedMemory(text) {
+        this.sharedMemories.push(text);
+        if (this.sharedMemories.length > 20) this.sharedMemories = this.sharedMemories.slice(-15);
+    }
     toDict() {
         return { target_id:this.targetId, target_name:this.targetName, type:this.type,
                  affinity:this.affinity, trust:this.trust, romantic_interest:this.romanticInterest,
@@ -269,7 +273,7 @@ const JOB_SKILL_MAP = {
     carpenter:{primary:['建造'],secondary:['工藝','種植']}, tailor:{primary:['工藝'],secondary:['藝術','社交']},
     priest:{primary:['社交'],secondary:['藝術','智識']}, mayor:{primary:['社交'],secondary:['智識','藝術']},
 };
-const ACTIVITY_SKILL_MAP = { socializing:['社交'], eating:[], sleeping:[], recreation:['藝術'], wandering:['動物','種植'] };
+const ACTIVITY_SKILL_MAP = { socializing:['社交'], eating:[], sleeping:[], recreation:['藝術'], wandering:['動物','種植'], stargazing:['智識'], night_mischief:['社交'], night_stroll:['動物'] };
 
 function generateRandomSkills(jobKey, age = 25, traitList = []) {
     const skills = new SkillSet();
@@ -358,7 +362,7 @@ class Agent {
         return map[this.moodDescription] || this.moodDescription;
     }
     get activityLabel() {
-        const map = { sleeping:'睡覺', eating:'進食', working:'工作', socializing:'社交', wandering:'閒逛', recreation:'娛樂', idle:'閒置' };
+        const map = { sleeping:'睡覺', eating:'進食', working:'工作', socializing:'社交', wandering:'閒逛', recreation:'娛樂', idle:'閒置', stargazing:'看星星', night_mischief:'搞事', night_stroll:'夜間散步' };
         return map[this.activity] || this.activity;
     }
     update(world) {
@@ -371,6 +375,9 @@ class Agent {
             this.currentLocation = this.targetLocation; this.targetLocation = null;
         }
         if (this.activity === 'socializing') this._trySocialInteraction(world);
+        if (this.activity === 'stargazing') this._doStargazing(world);
+        if (this.activity === 'night_mischief') this._doNightMischief(world);
+        if (this.activity === 'night_stroll') { this.needs.recreation = Math.min(100, this.needs.recreation + 1); this.needs.comfort = Math.min(100, this.needs.comfort + 0.5); }
         if (Math.random() < 0.1) this._generateThought(world);
     }
     _gainSkillXp(world) {
@@ -394,11 +401,32 @@ class Agent {
     _decideActivity(hour) {
         const isNightOwl = this.personality.traits.includes('night_owl');
         const isEarlyBird = this.personality.traits.includes('early_bird');
-        const sleepStart = isNightOwl ? 23 : (isEarlyBird ? 20 : 22);
-        const sleepEnd = isNightOwl ? 8 : (isEarlyBird ? 5 : 6);
-        if (hour >= sleepStart || hour < sleepEnd) { if (this.needs.rest < 90) { this.activity='sleeping'; return; } }
+        const isNight = hour >= 21 || hour < 5;
+        const isLateNight = hour >= 23 || hour < 4;
+        const sleepStart = isNightOwl ? 2 : (isEarlyBird ? 20 : 22);
+        const sleepEnd = isNightOwl ? 9 : (isEarlyBird ? 5 : 6);
+
+        // Critical needs always override
         if (this.needs.hunger < 15) { this.activity='eating'; return; }
         if (this.needs.rest < 10) { this.activity='sleeping'; return; }
+
+        // Sleep schedule
+        const inSleepWindow = sleepStart > sleepEnd
+            ? (hour >= sleepStart || hour < sleepEnd)
+            : (hour >= sleepStart && hour < sleepEnd);
+        if (inSleepWindow && this.needs.rest < 90) { this.activity='sleeping'; return; }
+
+        // Night owl special behaviors when others sleep
+        if (isNight && isNightOwl && this.needs.rest >= 30) {
+            return this._decideNightOwlActivity(hour);
+        }
+
+        // Regular people awake at night (can't sleep, rest is high)
+        if (isNight && !inSleepWindow && this.needs.rest >= 80) {
+            return this._decideNightActivity(hour);
+        }
+
+        // Daytime: work hours
         if (this.job) {
             const [ws,we] = this.job.workHours;
             if (ws <= hour && hour < we) {
@@ -406,6 +434,7 @@ class Agent {
                 this.activity='working'; return;
             }
         }
+        // Evening / free time
         const urgent = this.needs.mostUrgent;
         if (urgent==='hunger') { this.activity='eating'; return; }
         if (urgent==='social') { this.activity='socializing'; return; }
@@ -415,13 +444,67 @@ class Agent {
         if (this.personality.socialModifier > 0) weights[0] += 2;
         this.activity = weightedChoice(choices, weights);
     }
+    _decideNightOwlActivity(hour) {
+        const traits = this.personality.traits;
+        const isLateNight = hour >= 23 || hour < 4;
+        const choices = [];
+        const weights = [];
+
+        // Night owls love stargazing
+        choices.push('stargazing'); weights.push(4);
+        // Socializing at tavern
+        choices.push('socializing'); weights.push(3);
+        // Night stroll
+        choices.push('night_stroll'); weights.push(2);
+        // Recreation (reading by candlelight etc)
+        choices.push('recreation'); weights.push(2);
+
+        // Mischief for abrasive/gossip personalities
+        if (traits.includes('abrasive') || traits.includes('gossip')) {
+            choices.push('night_mischief'); weights.push(3);
+        }
+        // Creative types get inspired at night
+        if (traits.includes('creative')) {
+            choices.push('recreation'); weights.push(3);
+        }
+        // Romantic types might seek partners
+        if (traits.includes('romantic')) {
+            const partner = this.relationships.getPartner();
+            if (partner) { choices.push('socializing'); weights.push(4); }
+            else { choices.push('night_stroll'); weights.push(2); }
+        }
+
+        this.activity = weightedChoice(choices, weights);
+    }
+    _decideNightActivity(hour) {
+        // Regular people who happen to be awake at night
+        const choices = ['stargazing', 'night_stroll', 'socializing', 'recreation'];
+        const weights = [2, 2, 1, 2];
+        // Low mood → night stroll to think
+        if (this.mood < 30) { weights[1] += 3; }
+        // High social need → tavern
+        if (this.needs.social < 40) { weights[2] += 3; }
+        this.activity = weightedChoice(choices, weights);
+    }
     _decideLocation(hour) {
+        const isNight = hour >= 21 || hour < 5;
         if (this.activity==='sleeping') this.targetLocation = this.homeLocation;
-        else if (this.activity==='eating') this.targetLocation = 'tavern';
+        else if (this.activity==='eating') this.targetLocation = isNight ? pickRandom(['tavern','tavern','home']) : 'tavern';
         else if (this.activity==='working' && this.job) this.targetLocation = this.job.workplace;
-        else if (this.activity==='socializing') this.targetLocation = pickRandom(['tavern','town_square','park','well','chapel']);
-        else if (this.activity==='recreation') this.targetLocation = pickRandom(['park','library','forest','river','tavern']);
+        else if (this.activity==='socializing') {
+            if (isNight) this.targetLocation = pickRandom(['tavern','tavern','town_square','park']);
+            else this.targetLocation = pickRandom(['tavern','town_square','park','well','chapel']);
+        }
+        else if (this.activity==='recreation') {
+            if (isNight) this.targetLocation = pickRandom(['tavern','library']);
+            else this.targetLocation = pickRandom(['park','library','forest','river','tavern']);
+        }
+        else if (this.activity==='stargazing') this.targetLocation = pickRandom(['hill','meadow','park','forest','river','lake']);
+        else if (this.activity==='night_stroll') this.targetLocation = pickRandom(['park','river','forest','town_square','hill','meadow','lake']);
+        else if (this.activity==='night_mischief') this.targetLocation = pickRandom(['town_square','general_store','tavern','farm']);
         else if (this.activity==='wandering') this.targetLocation = pickRandom(['town_square','park','forest','river','well','general_store','chapel']);
+        // Fallback: home for invalid locations
+        if (this.activity==='eating' && this.targetLocation === 'home') this.targetLocation = this.homeLocation;
     }
     _trySocialInteraction(world) {
         if (world.tickCount - this._lastInteractionTick < this._interactionCooldown) return;
@@ -442,13 +525,99 @@ class Agent {
         // Conversation
         world.conversationEngine.generateConversation(this, target, world);
     }
+    _doStargazing(world) {
+        this.needs.recreation = Math.min(100, this.needs.recreation + 2);
+        this.needs.comfort = Math.min(100, this.needs.comfort + 1);
+        this.mood = Math.min(100, this.mood + 0.5);
+        // Chance to bond with someone also stargazing
+        if (Math.random() < 0.15) {
+            const others = world.getAgentsAtLocation(this.currentLocation).filter(a => a.agentId !== this.agentId && a.activity === 'stargazing');
+            if (others.length) {
+                const companion = pickRandom(others);
+                const rel = this.relationships.getOrCreate(companion.agentId, companion.name);
+                rel.modifyAffinity(randInt(2, 5));
+                rel.modifyRomantic(randInt(0, 3));
+                rel.addSharedMemory(`一起在${this.currentLocation.replace(/_/g,' ')}看星星`);
+                const otherRel = companion.relationships.getOrCreate(this.agentId, this.name);
+                otherRel.modifyAffinity(randInt(2, 5));
+                otherRel.modifyRomantic(randInt(0, 3));
+                otherRel.addSharedMemory(`一起在${this.currentLocation.replace(/_/g,' ')}看星星`);
+                world.logMessage('social', `${this.name}和${companion.name}一起看星星，感情升溫了。`, this.name, companion.name);
+                this.memory.add(world.tickCount, world.clock.timeStr, 'social', `和${companion.name}一起看星星，很浪漫。`, 7, [companion.name]);
+                companion.memory.add(world.tickCount, world.clock.timeStr, 'social', `和${this.name}一起看星星，很浪漫。`, 7, [this.name]);
+            }
+        }
+        // Rare special discovery while stargazing
+        if (Math.random() < 0.02) {
+            const discoveries = [
+                { text: '看到了一顆流星劃過天際！', mood: 10, topic: '流星' },
+                { text: '發現了一個從未見過的星座圖案。', mood: 5, topic: '神秘星座' },
+                { text: '看到了罕見的月暈現象！', mood: 8, topic: '月暈奇觀' },
+                { text: '在星光下發現了一株發光的植物！', mood: 12, topic: '夜光植物' },
+            ];
+            const disc = pickRandom(discoveries);
+            this.mood = Math.min(100, this.mood + disc.mood);
+            this.currentThought = disc.text;
+            world.logMessage('discovery', `${this.name}${disc.text}`, this.name);
+            this.memory.add(world.tickCount, world.clock.timeStr, 'discovery', disc.text, 8, []);
+            if (disc.topic) world.events.conversationTopics.push(disc.topic);
+        }
+    }
+    _doNightMischief(world) {
+        if (Math.random() > 0.08) return; // Low chance per tick
+        const mischiefTypes = [
+            { text: '偷偷在鎮公所牆上塗鴉', target: 'town_hall', mood_self: 5, mood_others: -2, severity: 'minor' },
+            { text: '把別人晾的衣服藏起來', target: null, mood_self: 3, mood_others: -3, severity: 'minor' },
+            { text: '偷吃了酒館儲藏室的食物', target: 'tavern', mood_self: 8, mood_others: -2, severity: 'moderate' },
+            { text: '在水井裡放了無害的染料', target: 'well', mood_self: 5, mood_others: -5, severity: 'moderate' },
+            { text: '偷偷移動了路標的方向', target: null, mood_self: 3, mood_others: -2, severity: 'minor' },
+            { text: '在廣場放了一堆假蜘蛛', target: 'town_square', mood_self: 8, mood_others: -4, severity: 'minor' },
+        ];
+        const mischief = pickRandom(mischiefTypes);
+        this.mood = Math.min(100, this.mood + mischief.mood_self);
+        world.logMessage('mischief', `${this.name}趁著夜色${mischief.text}！`, this.name);
+        this.memory.add(world.tickCount, world.clock.timeStr, 'mischief', `我趁夜裡${mischief.text}`, 6, []);
+        this.currentThought = '嘿嘿...成功了。';
+        world.events.conversationTopics.push(`有人在夜裡${mischief.text}`);
+        // Chance to get caught by guards or night owls
+        const awakeAgents = Object.values(world.agents).filter(a => a.agentId !== this.agentId && a.activity !== 'sleeping' && !a.isPlayer);
+        if (awakeAgents.length && Math.random() < 0.3) {
+            const witness = pickRandom(awakeAgents);
+            const rel = witness.relationships.getOrCreate(this.agentId, this.name);
+            rel.modifyAffinity(-5);
+            world.logMessage('mischief', `${witness.name}撞見了${this.name}的惡作劇！`, witness.name, this.name);
+            witness.memory.add(world.tickCount, world.clock.timeStr, 'witness', `撞見${this.name}在${mischief.text}`, 7, [this.name]);
+            this.mood -= 5;
+            this.currentThought = `糟糕，被${witness.name}看到了...`;
+        }
+    }
     _generateThought(world) {
         const thoughts = [];
+        const hour = world.clock.hour;
+        const isNight = hour >= 21 || hour < 5;
         if (this.mood > 60) { thoughts.push('邊境鎮的生活還不錯。', '今天感覺很好！'); }
         else if (this.mood < 20) { thoughts.push('事情可以更好的...', '我感覺不太好。'); }
         if (this.needs.hunger < 30) thoughts.push('肚子好餓...');
         if (this.needs.rest < 30) thoughts.push('好想睡覺...');
         if (this.needs.social < 30) thoughts.push('應該找人聊聊天...');
+        // Night-specific thoughts
+        if (this.activity === 'stargazing') {
+            thoughts.push('今晚的星空真美...', '那顆星星特別亮。', '仰望星空讓人感覺渺小...', '流星！快許願！');
+            if (world.clock.season === '冬季') thoughts.push('冬天的星空格外清晰。');
+        }
+        if (this.activity === 'night_stroll') {
+            thoughts.push('夜裡的鎮上好安靜...', '月光下散步真舒服。', '夜風吹來很涼爽。');
+            if (this.mood < 30) thoughts.push('睡不著...出來走走吧。', '夜裡比較容易想事情...');
+        }
+        if (this.activity === 'night_mischief') {
+            thoughts.push('嘿嘿，趁大家都睡了...', '沒人看到的話...', '夜裡做點小惡作劇。');
+        }
+        if (isNight && this.personality.traits.includes('night_owl')) {
+            thoughts.push('夜晚才是我的主場。', '安靜的夜晚最適合思考。');
+        }
+        if (isNight && !this.personality.traits.includes('night_owl') && this.activity !== 'sleeping') {
+            thoughts.push('這麼晚了還沒睡...', '明天會很累吧。');
+        }
         const bf = this.relationships.getBestFriend();
         if (bf) thoughts.push(`該去找${bf.targetName}敘敘舊了。`);
         const rom = this.relationships.getRomanticInterests();
@@ -1282,7 +1451,12 @@ const EVENT_POOL = [
     {name:'美麗極光',description:'壯麗的極光照亮夜空。',severity:'minor',effects:{mood_all:10},seasons:['冬季']},
     {name:'熱浪',description:'酷熱讓戶外工作難以忍受。',severity:'moderate',effects:{mood_all:-8},seasons:['夏季']},
     {name:'幸運發現',description:'有人發現了珍貴的材料！',severity:'minor',effects:{mood_all:8,conversation_topic:'幸運的發現'}},
-    {name:'觀星之夜',description:'今晚的星空特別清澈。',severity:'minor',effects:{mood_all:5,conversation_topic:'美麗的星空'}},
+    {name:'觀星之夜',description:'今晚的星空特別清澈，許多居民出門看星星。',severity:'minor',effects:{mood_all:8,conversation_topic:'美麗的星空'},night_event:true},
+    {name:'月蝕',description:'罕見的月蝕！月亮變成了血紅色。',severity:'minor',effects:{mood_all:-3,conversation_topic:'血色月蝕'},night_event:true},
+    {name:'螢火蟲之夜',description:'成千上萬的螢火蟲在鎮上飛舞！',severity:'minor',effects:{mood_all:12,conversation_topic:'螢火蟲奇觀'},seasons:['夏季','春季'],night_event:true},
+    {name:'夜間竊盜',description:'有人趁夜偷走了倉庫的物資。',severity:'moderate',effects:{mood_all:-8,conversation_topic:'神秘竊賊'},night_event:true},
+    {name:'極光出現',description:'天空中出現了壯麗的極光！',severity:'minor',effects:{mood_all:15,conversation_topic:'不可思議的極光'},seasons:['冬季','秋季'],night_event:true},
+    {name:'夜半歌聲',description:'深夜從森林傳來神秘的歌聲。',severity:'minor',effects:{mood_all:-2,conversation_topic:'森林裡的歌聲'},night_event:true},
 ];
 const DEPARTURE_REASONS = [
     '決定出發去進行貿易遠征','離開去城裡探望家人','踏上朝聖之旅',

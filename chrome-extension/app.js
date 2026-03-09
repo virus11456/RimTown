@@ -207,6 +207,11 @@ class RimTownApp {
                 const agents = this.state?.agents || {};
                 const player = agents['player'];
                 this.tileMap.updateAgents(agents, this.state.locations?.locations || {});
+                // Pass time to tilemap for day/night cycle
+                if (this.state.clock) {
+                    this.tileMap.timeHour = this.state.clock.hour ?? 12;
+                    this.tileMap.timeMinute = this.state.clock.minute ?? 0;
+                }
                 this.tileMap.render(agents, this.selectedAgent, player?.current_location);
             }
             requestAnimationFrame(loop);
@@ -912,6 +917,37 @@ class RimTownApp {
         const player = this.state.agents['player'];
         const sameLoc = player && player.current_location === agent.current_location && this.selectedAgent !== 'player';
         const chatBtn = sameLoc ? `<button class="chat-with-btn" data-action="start-chat" data-val="${this.selectedAgent}">與${agent.name}對話</button>` : '';
+        // Build relationship status summary
+        const partner = relationships.find(r => r.status === 'dating' || r.status === 'married');
+        const exes = relationships.filter(r => r.status === 'ex');
+        const cheating = relationships.filter(r => r.is_cheating);
+        const crushes = relationships.filter(r => r.romantic_interest > 30 && !r.status);
+        let loveStatus = '單身';
+        if (partner) {
+            loveStatus = partner.status === 'married'
+                ? `已與<b>${partner.target_name}</b>結婚`
+                : `正在與<b>${partner.target_name}</b>交往`;
+        }
+        if (cheating.length) {
+            loveStatus += ` <span style="color:var(--negative)">（同時與${cheating.map(c=>c.target_name).join('、')}有秘密關係）</span>`;
+        }
+        if (crushes.length && !partner) {
+            loveStatus += `，暗戀${crushes.map(c=>`<b>${c.target_name}</b>`).join('、')}`;
+        }
+        if (exes.length) {
+            loveStatus += `（前任：${exes.map(e=>e.target_name).join('、')}）`;
+        }
+
+        // Sort relationships: partners first, then by affinity
+        const sortedRels = [...relationships].sort((a, b) => {
+            const statusOrder = { married: 0, dating: 1, ex: 2 };
+            const sa = statusOrder[a.status] ?? 99;
+            const sb = statusOrder[b.status] ?? 99;
+            if (sa !== sb) return sa - sb;
+            if (a.is_cheating !== b.is_cheating) return a.is_cheating ? -1 : 1;
+            return b.affinity - a.affinity;
+        });
+
         container.innerHTML = `<div class="detail-panel visible">
             <div class="detail-section"><h3>${agent.name}（${agent.age}歲）</h3>
                 <p style="font-size:0.8rem;color:var(--text-secondary)">${agent.job?.title||'無業'} | ${agent.mood_label||agent.mood_description}</p>
@@ -919,15 +955,22 @@ class RimTownApp {
             <div class="detail-section"><h3>性格</h3>
                 ${(personality.traits||[]).map(t=>`<span class="trait-tag">${TRAIT_LABELS[t]||t}</span>`).join('')}
                 <div style="margin-top:4px;font-size:0.7rem;color:var(--text-secondary)">價值觀：${(personality.values||[]).join('、')}</div></div>
+            <div class="detail-section"><h3>感情狀態</h3>
+                <p style="font-size:0.8rem">${loveStatus}</p></div>
             <div class="detail-section"><h3>需求</h3>${makeBar('飢餓',needs.hunger||0)}${makeBar('休息',needs.rest||0)}${makeBar('社交',needs.social||0)}${makeBar('舒適',needs.comfort||0)}${makeBar('娛樂',needs.recreation||0)}</div>
             <div class="detail-section"><h3>技能（總計：${agent.skills?.total_level||0}）</h3>${this._renderSkills(agent.skills)}</div>
             <div class="detail-section"><h3>人際關係（${relationships.length}）</h3>
-                ${relationships.length===0?'<p style="font-size:0.7rem;color:var(--text-muted)">尚無人際關係</p>':
-                relationships.map(r=>{
-                    const statusBadge = r.status_label ? `<span class="rel-status-badge rel-${r.status||''}">${r.status_label}</span>` : '';
-                    const cheatingBadge = r.is_cheating ? '<span class="rel-status-badge rel-cheating">秘密關係</span>' : '';
-                    return `<div class="relationship-item"><span>${r.target_name} ${statusBadge}${cheatingBadge}</span>
-                    <span style="color:${r.affinity>0?'var(--positive)':r.affinity<0?'var(--negative)':'var(--text-muted)'}">${r.type}（${r.affinity>0?'+':''}${r.affinity}）${r.romantic_interest>0?' &#10084;'+r.romantic_interest:''}</span></div>`;
+                ${sortedRels.length===0?'<p style="font-size:0.7rem;color:var(--text-muted)">尚無人際關係</p>':
+                sortedRels.map(r=>{
+                    let badge = '';
+                    if (r.status === 'married') badge = '<span class="rel-status-badge rel-married">💍 已婚</span>';
+                    else if (r.status === 'dating') badge = '<span class="rel-status-badge rel-dating">💕 交往中</span>';
+                    else if (r.status === 'ex') badge = '<span class="rel-status-badge rel-ex">💔 前任</span>';
+                    if (r.is_cheating) badge += ' <span class="rel-status-badge rel-cheating">🤫 秘密關係</span>';
+                    const romHeart = r.romantic_interest > 0 ? ` <span style="color:#f472b6">&#10084;${r.romantic_interest}</span>` : '';
+                    const crushIcon = r.romantic_interest > 30 && !r.status ? ' <span style="color:#f472b6;font-size:0.65rem">暗戀</span>' : '';
+                    return `<div class="relationship-item${r.status?' rel-has-status':''}"><span>${r.target_name} ${badge}${crushIcon}</span>
+                    <span style="color:${r.affinity>0?'var(--positive)':r.affinity<0?'var(--negative)':'var(--text-muted)'}">${r.type}（${r.affinity>0?'+':''}${r.affinity}）${romHeart}</span></div>`;
                 }).join('')}</div>
             <div class="detail-section"><h3>近期記憶</h3>
                 ${memories.length===0?'<p style="font-size:0.7rem;color:var(--text-muted)">尚無記憶</p>':

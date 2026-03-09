@@ -237,6 +237,9 @@ class PixelTileMap {
         this._lastWaterTick = 0;
         this.onClick = null;
         this.onAgentClick = null;
+        // Day/night cycle
+        this.timeHour = 12;
+        this.timeMinute = 0;
         this._setupCanvas();
         this._buildTileCache();
     }
@@ -1190,6 +1193,99 @@ class PixelTileMap {
             ctx.fillStyle = '#333';
             ctx.textAlign = 'center';
             ctx.fillText(thought, pos.x, by + 9);
+        }
+
+        // === Day/Night Cycle Overlay ===
+        this._renderDayNightOverlay(ctx);
+    }
+
+    _renderDayNightOverlay(ctx) {
+        const h = this.timeHour + this.timeMinute / 60;
+        // Calculate darkness & tint based on hour
+        // 0=midnight, 6=dawn, 12=noon, 18=dusk, 24=midnight
+        let darkness = 0;
+        let tintR = 0, tintG = 0, tintB = 0;
+
+        if (h >= 22 || h < 4) {
+            // Deep night: dark blue overlay
+            darkness = 0.55;
+            tintR = 10; tintG = 15; tintB = 50;
+        } else if (h >= 4 && h < 5.5) {
+            // Pre-dawn: transitioning from night to dawn
+            const t = (h - 4) / 1.5;
+            darkness = 0.55 - t * 0.35;
+            tintR = 10 + t * 50; tintG = 15 + t * 20; tintB = 50 - t * 20;
+        } else if (h >= 5.5 && h < 7) {
+            // Dawn: warm golden light
+            const t = (h - 5.5) / 1.5;
+            darkness = 0.2 - t * 0.2;
+            tintR = 60 - t * 60; tintG = 35 - t * 35; tintB = 30 - t * 30;
+        } else if (h >= 7 && h < 17) {
+            // Daytime: no overlay
+            darkness = 0;
+        } else if (h >= 17 && h < 19) {
+            // Sunset: warm orange tint
+            const t = (h - 17) / 2;
+            darkness = t * 0.15;
+            tintR = t * 70; tintG = t * 30; tintB = 0;
+        } else if (h >= 19 && h < 20.5) {
+            // Dusk: transitioning to blue
+            const t = (h - 19) / 1.5;
+            darkness = 0.15 + t * 0.2;
+            tintR = 70 - t * 50; tintG = 30 - t * 10; tintB = t * 30;
+        } else if (h >= 20.5 && h < 22) {
+            // Late dusk to night
+            const t = (h - 20.5) / 1.5;
+            darkness = 0.35 + t * 0.2;
+            tintR = 20 - t * 10; tintG = 20 - t * 5; tintB = 30 + t * 20;
+        }
+
+        if (darkness <= 0) return;
+
+        // Main darkness layer
+        ctx.fillStyle = `rgba(${Math.round(tintR)}, ${Math.round(tintG)}, ${Math.round(tintB)}, ${darkness.toFixed(3)})`;
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Stars at night (h >= 21 or h < 5)
+        if (h >= 21 || h < 5) {
+            const starAlpha = (h >= 22 || h < 4) ? 0.8 : (h >= 21 ? (h - 21) * 0.8 : (5 - h) * 0.8);
+            this._renderStars(ctx, starAlpha);
+        }
+
+        // Window lights at night - warm glow from buildings
+        if (h >= 20 || h < 6) {
+            this._renderWindowLights(ctx, h);
+        }
+    }
+
+    _renderStars(ctx, alpha) {
+        // Use deterministic positions based on grid so stars don't flicker
+        const seed = 42;
+        const count = 40;
+        for (let i = 0; i < count; i++) {
+            const sx = ((seed * (i + 1) * 73) % this.canvas.width);
+            const sy = ((seed * (i + 1) * 37 + i * 91) % (this.canvas.height * 0.6));
+            const twinkle = 0.5 + 0.5 * Math.sin(this.animFrame * 0.02 + i * 2.1);
+            const size = (i % 5 === 0) ? 2 : 1;
+            ctx.fillStyle = `rgba(255, 255, 240, ${(alpha * twinkle * 0.9).toFixed(2)})`;
+            ctx.fillRect(Math.floor(sx), Math.floor(sy), size, size);
+        }
+    }
+
+    _renderWindowLights(ctx, hour) {
+        const lightAlpha = (hour >= 22 || hour < 4) ? 0.7 : (hour >= 20 ? (hour - 20) * 0.35 : (6 - hour) * 0.35);
+        // Draw warm glow on building zones
+        for (const [locId, zone] of Object.entries(this.buildingZones)) {
+            // Some buildings have lights off late at night
+            if ((hour >= 1 && hour < 5) && !['tavern','guardpost','clinic'].includes(locId)) continue;
+            const cx = (zone.x + zone.w / 2) * TILE;
+            const cy = (zone.y + zone.h / 2) * TILE;
+            const radius = Math.max(zone.w, zone.h) * TILE * 0.6;
+            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+            grad.addColorStop(0, `rgba(255, 200, 80, ${(lightAlpha * 0.3).toFixed(2)})`);
+            grad.addColorStop(1, 'rgba(255, 200, 80, 0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
         }
     }
 }
