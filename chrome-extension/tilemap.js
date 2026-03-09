@@ -1485,12 +1485,18 @@ class PixelTileMap {
             const targetX = locCenter.x + spreadX;
             const targetY = locCenter.y + spreadY;
 
+            // Extract job key string from agent data
+            const jobKey = (agent.job && agent.job.key) ? agent.job.key : (typeof agent.job === 'string' ? agent.job : 'default');
+
+            const gender = agent.gender || 'male';
+
             if (!this.agentPositions[aid]) {
-                this.agentPositions[aid] = { x: targetX, y: targetY, targetX, targetY, job: agent.job || 'default', walking: false, walkStep: 0 };
+                this.agentPositions[aid] = { x: targetX, y: targetY, targetX, targetY, job: jobKey, gender, walking: false, walkStep: 0 };
             } else {
                 this.agentPositions[aid].targetX = targetX;
                 this.agentPositions[aid].targetY = targetY;
-                this.agentPositions[aid].job = agent.job || 'default';
+                this.agentPositions[aid].job = jobKey;
+                this.agentPositions[aid].gender = gender;
                 // Constant-speed walking
                 const dx = targetX - this.agentPositions[aid].x;
                 const dy = targetY - this.agentPositions[aid].y;
@@ -1520,8 +1526,9 @@ class PixelTileMap {
 
     // Draw chibi-style agent sprite (inspired by JRPG pixel art)
     // Sprite dimensions: ~16w x 24h, big head, large eyes, short body
-    _drawAgent(ctx, x, y, jobKey, isPlayer, isSelected, name, walking, walkStep) {
+    _drawAgent(ctx, x, y, jobKey, isPlayer, isSelected, name, walking, walkStep, gender) {
         const c = isPlayer ? JOB_COLORS.player : (JOB_COLORS[jobKey] || JOB_COLORS.default);
+        const isFemale = gender === 'female';
         const sx = Math.floor(x - 8);  // center 16px wide sprite
         const bob = walking ? Math.sin((walkStep || 0) * 0.35) * 1.5 : 0;
         const sy = Math.floor(y - 20 + bob);  // taller sprite offset
@@ -1618,7 +1625,7 @@ class PixelTileMap {
         ctx.fillRect(sx + 10, sy + 3, 3, 8);
 
         // === Hair ===
-        this._drawChibiHair(ctx, sx, sy, c, jobKey, isPlayer);
+        this._drawChibiHair(ctx, sx, sy, c, jobKey, isPlayer, isFemale);
 
         // === Eyes (large anime-style) ===
         // Eye whites
@@ -1690,37 +1697,80 @@ class PixelTileMap {
     }
 
     // Draw chibi hair with layers (top, sides, back, bangs)
-    _drawChibiHair(ctx, sx, sy, c, jobKey, isPlayer) {
+    _drawChibiHair(ctx, sx, sy, c, jobKey, isPlayer, isFemale) {
         const h = c.hair, hd = c.hairDk, hl = c.hairLt;
-        // Base hair (back layer / volume)
-        ctx.fillStyle = hd;
-        ctx.fillRect(sx + 2, sy - 1, 12, 5);
-        // Main hair body
-        ctx.fillStyle = h;
-        ctx.fillRect(sx + 3, sy - 2, 10, 5);
-        // Hair top poof
-        ctx.fillStyle = h;
-        ctx.fillRect(sx + 4, sy - 3, 8, 3);
-        // Hair highlight
-        ctx.fillStyle = hl;
-        ctx.fillRect(sx + 5, sy - 2, 4, 2);
-        // Hair sides
-        ctx.fillStyle = hd;
-        ctx.fillRect(sx + 2, sy, 2, 8);   // left side hair
-        ctx.fillRect(sx + 12, sy, 2, 8);   // right side hair
-        // Side hair inner highlight
-        ctx.fillStyle = h;
-        ctx.fillRect(sx + 3, sy + 1, 1, 6);
-        ctx.fillRect(sx + 12, sy + 1, 1, 6);
-        // Bangs (front hair over forehead)
-        ctx.fillStyle = h;
-        ctx.fillRect(sx + 4, sy + 1, 8, 3);
-        // Bang highlight
-        ctx.fillStyle = hl;
-        ctx.fillRect(sx + 5, sy + 1, 3, 1);
-        // Bang gap / parting (show skin)
-        ctx.fillStyle = c.skin;
-        ctx.fillRect(sx + 7, sy + 2, 2, 2);
+
+        if (isFemale) {
+            // === Female hair: longer, flowing sides ===
+            // Back hair (long, extends below head)
+            ctx.fillStyle = hd;
+            ctx.fillRect(sx + 1, sy - 1, 14, 5);
+            ctx.fillRect(sx + 1, sy + 4, 3, 10);  // left long hair
+            ctx.fillRect(sx + 12, sy + 4, 3, 10);  // right long hair
+            // Main hair body
+            ctx.fillStyle = h;
+            ctx.fillRect(sx + 3, sy - 2, 10, 5);
+            // Hair top volume (rounder, fuller)
+            ctx.fillRect(sx + 4, sy - 3, 8, 3);
+            ctx.fillRect(sx + 5, sy - 4, 6, 2);
+            // Hair highlight
+            ctx.fillStyle = hl;
+            ctx.fillRect(sx + 5, sy - 3, 4, 2);
+            ctx.fillRect(sx + 6, sy - 4, 3, 1);
+            // Side hair flowing down (longer for female)
+            ctx.fillStyle = h;
+            ctx.fillRect(sx + 2, sy, 2, 12);
+            ctx.fillRect(sx + 12, sy, 2, 12);
+            ctx.fillStyle = hl;
+            ctx.fillRect(sx + 3, sy + 1, 1, 8);
+            ctx.fillRect(sx + 12, sy + 1, 1, 8);
+            // Hair tips
+            ctx.fillStyle = hd;
+            ctx.fillRect(sx + 1, sy + 13, 2, 1);
+            ctx.fillRect(sx + 13, sy + 13, 2, 1);
+            // Bangs (softer, side-swept)
+            ctx.fillStyle = h;
+            ctx.fillRect(sx + 4, sy + 1, 8, 2);
+            ctx.fillStyle = hl;
+            ctx.fillRect(sx + 4, sy + 1, 4, 1);
+            // Side parting
+            ctx.fillStyle = c.skin;
+            ctx.fillRect(sx + 8, sy + 2, 2, 2);
+        } else {
+            // === Male hair: shorter, spiky ===
+            // Base hair back
+            ctx.fillStyle = hd;
+            ctx.fillRect(sx + 2, sy - 1, 12, 5);
+            // Main hair
+            ctx.fillStyle = h;
+            ctx.fillRect(sx + 3, sy - 2, 10, 5);
+            // Spiky top
+            ctx.fillRect(sx + 4, sy - 3, 8, 3);
+            // Spiky tips
+            ctx.fillStyle = h;
+            ctx.fillRect(sx + 3, sy - 4, 2, 2);
+            ctx.fillRect(sx + 6, sy - 4, 3, 2);
+            ctx.fillRect(sx + 11, sy - 4, 2, 2);
+            // Highlight
+            ctx.fillStyle = hl;
+            ctx.fillRect(sx + 5, sy - 2, 4, 2);
+            ctx.fillRect(sx + 4, sy - 3, 2, 1);
+            // Short sides
+            ctx.fillStyle = hd;
+            ctx.fillRect(sx + 2, sy, 2, 5);
+            ctx.fillRect(sx + 12, sy, 2, 5);
+            ctx.fillStyle = h;
+            ctx.fillRect(sx + 3, sy + 1, 1, 3);
+            ctx.fillRect(sx + 12, sy + 1, 1, 3);
+            // Bangs (shorter, messier)
+            ctx.fillStyle = h;
+            ctx.fillRect(sx + 4, sy + 1, 8, 3);
+            ctx.fillStyle = hl;
+            ctx.fillRect(sx + 5, sy + 1, 3, 1);
+            // Parting
+            ctx.fillStyle = c.skin;
+            ctx.fillRect(sx + 7, sy + 2, 2, 2);
+        }
 
         // Job-specific hair details
         switch (jobKey) {
@@ -1916,7 +1966,7 @@ class PixelTileMap {
             if (!agent) continue;
             const isPlayer = aid === 'player';
             const isSelected = aid === selectedAgent;
-            this._drawAgent(ctx, pos.x, pos.y, pos.job, isPlayer, isSelected, agent.name || 'You', pos.walking, pos.walkStep);
+            this._drawAgent(ctx, pos.x, pos.y, pos.job, isPlayer, isSelected, agent.name || 'You', pos.walking, pos.walkStep, pos.gender);
         }
 
         // Draw thought bubbles for some agents

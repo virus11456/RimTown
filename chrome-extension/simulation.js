@@ -334,7 +334,7 @@ class Job {
         this.key = key; this.title = d.title; this.category = d.category; this.description = d.description;
         this.workplace = d.workplace; this.workHours = d.work_hours || [8,17]; this.skillLevel = 1;
     }
-    toDict() { return { title:this.title, category:this.category, description:this.description, workplace:this.workplace, work_hours:this.workHours, skill_level:this.skillLevel }; }
+    toDict() { return { key:this.key, title:this.title, category:this.category, description:this.description, workplace:this.workplace, work_hours:this.workHours, skill_level:this.skillLevel }; }
 }
 
 // --- Agent ---
@@ -794,48 +794,53 @@ class ConversationEngine {
         const pA = this._buildCharacterProfile(agentA);
         const pB = this._buildCharacterProfile(agentB);
 
-        const prompt = `你正在模擬一個名為「邊境鎮」的小鎮中，兩位居民之間的真實對話。
-請根據每個人的性格特質、心情、關係和背景，生成自然、有深度的對話。
-每個角色說話的方式應該反映他們的個性（例如害羞的人說話少且猶豫，魅力型的人自信健談，刻薄的人言辭犀利）。
+        // Pick a random conversation scenario to add variety
+        const scenarios = [
+            '兩人剛好在路上遇到，隨意閒聊起來',
+            '一個人正在忙，另一個人過來搭話',
+            '兩人一起吃東西或喝茶時的聊天',
+            '一個人看到另一個人心情不好，主動關心',
+            '分享一個有趣的發現或八卦',
+            '討論最近發生的事情或計劃',
+            '回憶過去的某件事',
+            '為了一件小事開玩笑或互相吐槽',
+        ];
+        const scenario = pickRandom(scenarios);
 
+        const prompt = `你是一位才華橫溢的小說家，正在為奇幻小鎮「邊境鎮」寫角色對話劇本。
+這是兩位小鎮居民偶然碰面的場景。請寫出生動、自然、有溫度的對話——就像真實的鄰居閒聊一樣。
+
+【重要規則】
+- 絕對不要讓角色報告自己的狀態（不要說「我好餓」「我好累」「我心情不好」這種話）
+- 對話要像真人——談論具體的事、講故事、開玩笑、分享感受、抱怨、八卦
+- 每個人的說話風格要明顯不同（用詞、語氣、句子長短都要有差異）
+- 加入生活細節：提到具體的食物、地點、天氣感受、小鎮裡的人和事
+- 可以有幽默、諷刺、調侃、撒嬌、關心、爭吵等豐富的情感表達
+
+場景：${scenario}
 時間：${world.clock.timeStr}
 地點：${agentA.currentLocation.replace(/_/g,' ')}
 
-=== ${pA.name}（${pA.age}歲）===
-職業：${pA.job}
-性格特質：${pA.traits}
-背景：${pA.background}
-價值觀：${pA.values}
-心情：${pA.mood}
-身體狀態：${pA.needs}
-感情狀態：${pA.status}
-${pA.thought ? `心裡想著：${pA.thought}` : ''}
+【${pA.name}】${pA.age}歲${pA.job}，性格${pA.traits}，${pA.status}
+${pA.thought ? `最近在想：${pA.thought}` : ''}${pA.needs !== '狀態良好' ? `（有點${pA.needs}）` : ''}
 ${this._buildRelContext(relA, agentB.name)}
-${memA.length ? `關於${agentB.name}的記憶：\n${memA.map(m=>'- '+m.content).join('\n')}` : ''}
+${memA.length ? `記得：${memA.slice(-3).map(m=>m.content).join('；')}` : ''}
 
-=== ${pB.name}（${pB.age}歲）===
-職業：${pB.job}
-性格特質：${pB.traits}
-背景：${pB.background}
-價值觀：${pB.values}
-心情：${pB.mood}
-身體狀態：${pB.needs}
-感情狀態：${pB.status}
-${pB.thought ? `心裡想著：${pB.thought}` : ''}
+【${pB.name}】${pB.age}歲${pB.job}，性格${pB.traits}，${pB.status}
+${pB.thought ? `最近在想：${pB.thought}` : ''}${pB.needs !== '狀態良好' ? `（有點${pB.needs}）` : ''}
 ${this._buildRelContext(relB, agentA.name)}
-${memB.length ? `關於${agentA.name}的記憶：\n${memB.map(m=>'- '+m.content).join('\n')}` : ''}
+${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
 
-小鎮近況／八卦：${gossipStr}
+小鎮近況：${gossipStr}
 
-請生成一段自然的繁體中文對話（4-8句對話）。對話要：
-- 反映每個人的性格（害羞的人用詞保守，樂觀的人說話正面，刻薄的人帶刺）
-- 根據關係深淺調整語氣（陌生人較客套，好友較親暱，戀人有曖昧或親密感）
-- 包含具體的話題（工作、天氣、小鎮八卦、個人煩惱、感情等）
-- 如果兩人在交往或結婚，對話要像真正的情侶/夫妻
-- 如果有矛盾或負面關係，對話要帶有緊張感
+請寫4-6句自然對話。範例風格：
+- 好友："欸你昨天有看到老王在河邊釣到一條超大的魚嗎？笑死我了他差點掉下去！"
+- 害羞的人："嗯...那個...你今天做的麵包聞起來好香..."
+- 毒舌的人："又在偷懶？你那個田再不管，雜草都要比你高了。"
+- 情侶："你怎麼又沒穿外套？天都涼了...過來，把這個披上。"
 
-每行格式："名字: 對話內容"
-最後一行寫 EFFECTS: {"affinity_change_a": 數字, "affinity_change_b": 數字, "romantic_change_a": 數字, "romantic_change_b": 數字, "summary": "一句話總結"}`;
+格式：每行「名字: 對話內容」
+最後一行：EFFECTS: {"affinity_change_a": 數字(-3到5), "affinity_change_b": 數字(-3到5), "romantic_change_a": 數字(0到3), "romantic_change_b": 數字(0到3), "summary": "用一句生動的話總結發生了什麼"}`;
 
         const response = await this.llm.generate(prompt, 800);
         return this._parseConversation(response, agentA, agentB, world, relA, relB);
@@ -1237,38 +1242,31 @@ ${memB.length ? `關於${agentA.name}的記憶：\n${memB.map(m=>'- '+m.content)
                     .slice(-10).map(c => `${c.speaker}: ${c.text}`).join('\n');
                 const memNpc = npc.memory.getAboutAgent(player.name, 5);
                 const pN = this._buildCharacterProfile(npc);
-                const prompt = `你是${npc.name}，邊境鎮的一位居民。一位名叫${player.name}的旅人正在跟你說話。
-請完全以${npc.name}的身份和性格來回應。
+                const prompt = `你正在扮演「${npc.name}」——邊境鎮的一位真實居民。有個叫${player.name}的人正在跟你說話。
+你要完全入戲，像真人一樣自然地回應。
 
-時間：${world.clock.timeStr}
-地點：${npc.currentLocation.replace(/_/g,' ')}
-
-=== 你的角色：${pN.name}（${pN.age}歲）===
-職業：${pN.job}
-性格特質：${pN.traits}
-背景：${pN.background}
-價值觀：${pN.values}
-心情：${pN.mood}
-身體狀態：${pN.needs}
-感情狀態：${pN.status}
-${pN.thought ? `心裡在想：${pN.thought}` : ''}
+【你是誰】
+${pN.name}，${pN.age}歲，${pN.job}。
+性格：${pN.traits}。背景：${pN.background}。
+在意的事：${pN.values}。感情狀態：${pN.status}。
+${pN.thought ? `你最近在想：${pN.thought}` : ''}
 ${this._buildRelContext(relNpc, player.name)}
-${memNpc.length ? `你對${player.name}的記憶：\n${memNpc.map(m=>'- '+m.content).join('\n')}` : `你還不太認識${player.name}。`}
+${memNpc.length ? `你記得關於${player.name}的事：${memNpc.map(m=>m.content).join('；')}` : `你跟${player.name}還不太熟。`}
 
-最近的對話：
-${recentChat || '（對話剛開始）'}
-
+【對話記錄】
+${recentChat || '（剛開始聊）'}
 ${player.name}: ${playerMessage}
 
-請以${npc.name}的身份回覆1-3句話。要求：
-- 用繁體中文回覆
-- 反映你的性格特質（${pN.traits}）
-- 根據心情（${pN.mood}）調整語氣
-- 如果好感度高就親切，低就冷淡
-- 回覆要自然，像真人對話
-- 如果對方聊到你在意的價值觀（${pN.values}），反應更強烈
+【回覆規則】
+- 用繁體中文，1-3句話
+- 像真人說話，不要文縐縐的。可以用語助詞（啊、啦、嘛、欸、喔、哈）
+- 根據你的性格回應：${pN.traits.includes('害羞') ? '你會說話結巴、簡短' : pN.traits.includes('健談') ? '你很愛聊天，會主動延伸話題' : pN.traits.includes('刻薄') ? '你說話帶刺但可能是關心的方式' : '用你自己的方式說話'}
+- 不要直接說「我很累」「我心情不好」這種報告式的話。如果你累了，可能會打哈欠或說「唉今天腰都快斷了」
+- 對話要有來有往——回應對方說的話，也可以反問或岔開新話題
+- 如果聊到你在意的事（${pN.values}），你會特別有感觸
 
-回覆後另起一行寫 EFFECTS: {"affinity_change": 數字(-3到5), "romantic_change": 數字(0到3), "summary": "一句話總結"}`;
+直接寫${npc.name}會說的話（不需要加名字前綴）。
+最後另起一行：EFFECTS: {"affinity_change": 數字(-3到5), "romantic_change": 數字(0到3), "summary": "一句話總結"}`;
 
                 const response = await this.llm.generate(prompt, 400);
                 return this._parsePlayerReply(response, player, npc, world, playerMessage, relPlayer, relNpc);
@@ -1529,11 +1527,11 @@ ${player.name}: ${playerMessage}
             summary = `${player.name}和${npc.name}聊了天。`;
         }
 
-        // Add context-sensitive follow-up based on NPC state
-        if (npc.needs.hunger < 20 && Math.random() < 0.3) npcReply += ' ...不過我好餓，得先去吃點東西。';
-        if (npc.needs.rest < 20 && Math.random() < 0.3) npcReply += ' ...不過我好累，快撐不住了。';
-        if (isNight && !t.includes('night_owl') && Math.random() < 0.2) npcReply += ' ...這麼晚了，我想回去睡覺了。';
-        if (npc.activity === 'stargazing' && Math.random() < 0.3) npcReply += ' 你看，那顆星星好亮。';
+        // Add context-sensitive follow-up based on NPC state (natural phrasing)
+        if (npc.needs.hunger < 20 && Math.random() < 0.3) npcReply += pickRandom([' ...（肚子咕嚕叫）啊，不好意思。',' 話說酒館現在有什麼吃的嗎？我都沒吃午飯。',' 哎，跟你聊著聊著都忘了吃飯了。']);
+        if (npc.needs.rest < 20 && Math.random() < 0.3) npcReply += pickRandom([' （打了個哈欠）抱歉...昨晚沒睡好。',' 唉，今天腰都快斷了，幹了一整天活。',' 不好意思，我眼皮有點撐不住了...']);
+        if (isNight && !t.includes('night_owl') && Math.random() < 0.2) npcReply += pickRandom([' 好了，夜深了，明天再聊吧。',' 啊，都這個時間了？我得回去了。']);
+        if (npc.activity === 'stargazing' && Math.random() < 0.3) npcReply += pickRandom([' 欸你看！那邊那顆星特別亮！',' 今晚的星空真美，你不覺得嗎？']);
 
         relNpc.modifyAffinity(affChange); relNpc.modifyRomantic(romChange); relNpc.recordInteraction(world.tickCount, summary);
         relPlayer.modifyAffinity(Math.max(-3,affChange-1)); relPlayer.recordInteraction(world.tickCount, summary);
@@ -1549,7 +1547,7 @@ ${player.name}: ${playerMessage}
 // --- LLM Client ---
 class LLMClient {
     constructor(provider, apiKey, model) { this.provider = provider; this.apiKey = apiKey; this.model = model; }
-    async generate(prompt, maxTokens = 500) {
+    async generate(prompt, maxTokens = 500, temperature = 0.9) {
         const endpoints = {
             anthropic: { url: 'https://api.anthropic.com/v1/messages', model: this.model || 'claude-haiku-4-5-20251001' },
             openai: { url: 'https://api.openai.com/v1/chat/completions', model: this.model || 'gpt-4o-mini' },
@@ -1566,14 +1564,14 @@ class LLMClient {
             const res = await fetch(cfg.url, {
                 method:'POST',
                 headers:{ 'Content-Type':'application/json', 'x-api-key':this.apiKey, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
-                body: JSON.stringify({ model:cfg.model, max_tokens:maxTokens, messages:[{role:'user',content:prompt}] }),
+                body: JSON.stringify({ model:cfg.model, max_tokens:maxTokens, temperature, messages:[{role:'user',content:prompt}] }),
             });
             const data = await res.json();
             return data.content?.[0]?.text || '';
         } else if (this.provider === 'gemini') {
             const res = await fetch(cfg.url, {
                 method:'POST', headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:maxTokens} }),
+                body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:maxTokens, temperature} }),
             });
             const data = await res.json();
             return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -1582,7 +1580,7 @@ class LLMClient {
             const res = await fetch(cfg.url, {
                 method:'POST',
                 headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${this.apiKey}` },
-                body: JSON.stringify({ model:cfg.model, max_tokens:maxTokens, messages:[{role:'user',content:prompt}] }),
+                body: JSON.stringify({ model:cfg.model, max_tokens:maxTokens, temperature, messages:[{role:'user',content:prompt}] }),
             });
             const data = await res.json();
             return data.choices?.[0]?.message?.content || '';
