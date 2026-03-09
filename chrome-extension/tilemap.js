@@ -2098,61 +2098,149 @@ class PixelTileMap {
 
     _renderDayNightOverlay(ctx) {
         const h = this.timeHour + this.timeMinute / 60;
-        // Calculate darkness & tint based on hour
-        // 0=midnight, 6=dawn, 12=noon, 18=dusk, 24=midnight
-        let darkness = 0;
-        let tintR = 0, tintG = 0, tintB = 0;
+        // Calculate night intensity (0 = day, 1 = deep night)
+        let nightAmount = 0;
 
         if (h >= 22 || h < 4) {
-            // Deep night: dark blue overlay
-            darkness = 0.55;
-            tintR = 10; tintG = 15; tintB = 50;
-        } else if (h >= 4 && h < 5.5) {
-            // Pre-dawn: transitioning from night to dawn
-            const t = (h - 4) / 1.5;
-            darkness = 0.55 - t * 0.35;
-            tintR = 10 + t * 50; tintG = 15 + t * 20; tintB = 50 - t * 20;
-        } else if (h >= 5.5 && h < 7) {
-            // Dawn: warm golden light
-            const t = (h - 5.5) / 1.5;
-            darkness = 0.2 - t * 0.2;
-            tintR = 60 - t * 60; tintG = 35 - t * 35; tintB = 30 - t * 30;
+            nightAmount = 1;
+        } else if (h >= 4 && h < 6) {
+            nightAmount = 1 - (h - 4) / 2; // dawn fade out
+        } else if (h >= 6 && h < 7) {
+            nightAmount = 0; // morning
         } else if (h >= 7 && h < 17) {
-            // Daytime: no overlay
-            darkness = 0;
+            nightAmount = 0; // daytime
         } else if (h >= 17 && h < 19) {
-            // Sunset: warm orange tint
-            const t = (h - 17) / 2;
-            darkness = t * 0.15;
-            tintR = t * 70; tintG = t * 30; tintB = 0;
-        } else if (h >= 19 && h < 20.5) {
-            // Dusk: transitioning to blue
-            const t = (h - 19) / 1.5;
-            darkness = 0.15 + t * 0.2;
-            tintR = 70 - t * 50; tintG = 30 - t * 10; tintB = t * 30;
-        } else if (h >= 20.5 && h < 22) {
-            // Late dusk to night
-            const t = (h - 20.5) / 1.5;
-            darkness = 0.35 + t * 0.2;
-            tintR = 20 - t * 10; tintG = 20 - t * 5; tintB = 30 + t * 20;
+            nightAmount = 0; // sunset glow only, no overlay
+        } else if (h >= 19 && h < 22) {
+            nightAmount = (h - 19) / 3; // dusk fade in
         }
 
-        if (darkness <= 0) return;
+        // Sunset warm tint (very subtle, no fog)
+        if (h >= 17 && h < 19.5) {
+            const t = (h < 18.5) ? (h - 17) / 1.5 : 1 - (h - 18.5);
+            ctx.fillStyle = `rgba(255, 140, 50, ${(t * 0.06).toFixed(3)})`;
+            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        }
 
-        // Main darkness layer
-        ctx.fillStyle = `rgba(${Math.round(tintR)}, ${Math.round(tintG)}, ${Math.round(tintB)}, ${darkness.toFixed(3)})`;
+        if (nightAmount <= 0) return;
+
+        // Very light blue tint instead of heavy fog — just enough to shift palette
+        const tintAlpha = nightAmount * 0.15;
+        ctx.fillStyle = `rgba(15, 20, 60, ${tintAlpha.toFixed(3)})`;
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Stars at night (h >= 21 or h < 5)
-        if (h >= 21 || h < 5) {
-            const starAlpha = (h >= 22 || h < 4) ? 0.8 : (h >= 21 ? (h - 21) * 0.8 : (5 - h) * 0.8);
-            this._renderStars(ctx, starAlpha);
+        // Stars at night
+        if (nightAmount > 0.3) {
+            this._renderStars(ctx, nightAmount * 0.9);
         }
 
-        // Window lights at night - warm glow from buildings
-        if (h >= 20 || h < 6) {
+        // Campfires & torches — the main night indicators
+        this._renderCampfires(ctx, nightAmount);
+
+        // Window lights at night
+        if (nightAmount > 0.2) {
             this._renderWindowLights(ctx, h);
         }
+    }
+
+    // Animated campfires at key locations + torches near buildings
+    _renderCampfires(ctx, nightAmount) {
+        const alpha = nightAmount;
+        const frame = this.animFrame;
+
+        // Campfire locations: town_square, tavern, guardpost, well
+        const campfireLocIds = ['town_square', 'tavern', 'guardpost', 'well'];
+        const torchLocIds = Object.keys(this.buildingZones).filter(id => !campfireLocIds.includes(id));
+
+        // Draw campfires
+        for (const locId of campfireLocIds) {
+            const zone = this.buildingZones[locId] || this.natureZones[locId];
+            if (!zone) continue;
+            const cx = (zone.x + zone.w / 2) * TILE;
+            const cy = (zone.y + zone.h - 1) * TILE;
+            this._drawCampfire(ctx, cx, cy, alpha, frame, locId);
+        }
+
+        // Draw small torches near other buildings
+        for (const locId of torchLocIds) {
+            const zone = this.buildingZones[locId];
+            if (!zone) continue;
+            // Some buildings dark late at night
+            const h = this.timeHour;
+            if ((h >= 1 && h < 5) && !['tavern','guardpost','clinic'].includes(locId)) continue;
+            const tx = zone.x * TILE + 2;
+            const ty = (zone.y + zone.h / 2) * TILE;
+            this._drawTorch(ctx, tx, ty, alpha, frame, locId);
+        }
+    }
+
+    _drawCampfire(ctx, cx, cy, alpha, frame, seed) {
+        // Warm ground glow
+        const glowRadius = 40 + Math.sin(frame * 0.08) * 5;
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowRadius);
+        grad.addColorStop(0, `rgba(255, 160, 50, ${(alpha * 0.25).toFixed(3)})`);
+        grad.addColorStop(0.5, `rgba(255, 100, 20, ${(alpha * 0.10).toFixed(3)})`);
+        grad.addColorStop(1, 'rgba(255, 80, 0, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(cx - glowRadius, cy - glowRadius, glowRadius * 2, glowRadius * 2);
+
+        // Fire base (logs)
+        ctx.fillStyle = `rgba(80, 40, 10, ${alpha.toFixed(2)})`;
+        ctx.fillRect(cx - 4, cy + 1, 8, 2);
+        ctx.fillRect(cx - 3, cy, 2, 3);
+        ctx.fillRect(cx + 1, cy, 2, 3);
+
+        // Animated flames — 3 flame tongues with different phases
+        const seedHash = seed.length * 7;
+        for (let i = 0; i < 3; i++) {
+            const phase = frame * 0.15 + i * 2.1 + seedHash;
+            const flicker = Math.sin(phase) * 0.4 + 0.6;
+            const sway = Math.sin(phase * 0.7) * 2;
+            const h = 4 + flicker * 4;
+            const fx = cx - 2 + i * 2 + sway;
+            const fy = cy - h;
+
+            // Outer flame (orange-red)
+            ctx.fillStyle = `rgba(255, ${Math.floor(80 + flicker * 60)}, 0, ${(alpha * 0.9).toFixed(2)})`;
+            ctx.fillRect(fx - 1, fy + 1, 3, Math.floor(h - 1));
+
+            // Inner flame (yellow-white)
+            ctx.fillStyle = `rgba(255, 240, ${Math.floor(100 + flicker * 100)}, ${(alpha * 0.95).toFixed(2)})`;
+            ctx.fillRect(fx, fy + Math.floor(h * 0.3), 1, Math.floor(h * 0.5));
+        }
+
+        // Occasional sparks
+        if ((frame + seedHash) % 20 < 2) {
+            const sx = cx + (Math.sin(frame * 0.3 + seedHash) * 6);
+            const sy = cy - 8 - (frame % 10);
+            ctx.fillStyle = `rgba(255, 200, 50, ${(alpha * 0.7).toFixed(2)})`;
+            ctx.fillRect(sx, sy, 1, 1);
+        }
+    }
+
+    _drawTorch(ctx, tx, ty, alpha, frame, seed) {
+        const seedHash = seed.length * 13;
+        const phase = frame * 0.12 + seedHash;
+        const flicker = Math.sin(phase) * 0.3 + 0.7;
+
+        // Torch stick
+        ctx.fillStyle = `rgba(100, 60, 20, ${alpha.toFixed(2)})`;
+        ctx.fillRect(tx, ty - 2, 1, 5);
+
+        // Small flame
+        const fh = 2 + flicker * 2;
+        ctx.fillStyle = `rgba(255, ${Math.floor(120 + flicker * 60)}, 20, ${(alpha * 0.9).toFixed(2)})`;
+        ctx.fillRect(tx - 1, ty - 2 - fh, 3, Math.floor(fh));
+        ctx.fillStyle = `rgba(255, 240, 100, ${(alpha * 0.8).toFixed(2)})`;
+        ctx.fillRect(tx, ty - 2 - fh + 1, 1, Math.max(1, Math.floor(fh * 0.5)));
+
+        // Small warm glow
+        const gr = 18 + flicker * 4;
+        const grad = ctx.createRadialGradient(tx, ty - 3, 0, tx, ty - 3, gr);
+        grad.addColorStop(0, `rgba(255, 150, 50, ${(alpha * 0.12).toFixed(3)})`);
+        grad.addColorStop(1, 'rgba(255, 120, 30, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(tx - gr, ty - 3 - gr, gr * 2, gr * 2);
     }
 
     _renderStars(ctx, alpha) {
