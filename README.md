@@ -1,61 +1,60 @@
-# RimTown - AI Town Simulation
+# RimTown - AI Town Simulation 邊境鎮
 
-A RimWorld-inspired AI town simulation where every resident is an autonomous AI agent with unique personality, background, job, relationships, and daily life.
+A RimWorld-inspired AI town simulation where every resident is an autonomous AI agent with unique personality, background, job, relationships, and daily life. Available as a WordPress plugin.
 
 ## Features
 
-- **Autonomous AI Agents**: Each resident has personality traits, memories, moods, and psychological needs
+- **Autonomous AI Agents**: 25+ residents with unique personality, memory, moods, and psychological needs
 - **Social Simulation**: Agents chat, gossip, form friendships, rivalries, and romantic relationships
-- **Job System**: RimWorld-inspired jobs including farming, mining, cooking, crafting, doctoring, research, and more
-- **Dynamic Events**: Random events, seasons, and emergencies that affect the town
-- **Memory & Relationships**: Agents remember interactions and form opinions about each other
-- **Web Visualization**: Real-time browser-based town visualization
+- **Job System**: 12 RimWorld-inspired jobs — farming, mining, cooking, crafting, doctoring, research, trading, and more
+- **Dynamic Events**: Random events, seasons, raids, event chains, and merchant caravans
+- **Memory & Relationships**: Agents remember interactions, form opinions, date, marry, cheat, and divorce
+- **Election System**: Mayor elections with campaigns, voting, and policy effects
+- **Economy**: Resources, buildings, research tech tree, trading
+- **Account System**: Register/login, cloud saves, multi-device sync
+- **Achievement System**: 30+ achievements across social, romance, economy, survival categories
+- **NPC Conversation Visualization**: Speech bubbles on map when NPCs talk to each other
+- **Player Interaction**: Choose jobs, vote in elections, flirt, propose, and marry NPCs
+- **Multi-LLM Support**: Claude, GPT, Gemini, DeepSeek, Groq, Together AI (or play without AI)
+- **Pixel Art Map**: Animated tilemap with day/night cycle, campfires, particles
 
-## Quick Start
+## WordPress Plugin Install
 
-```bash
-# Install dependencies
-pip install -r requirements.txt
+1. Download `rimtown-v2.0.zip` from Releases
+2. WordPress Admin → Plugins → Add New → Upload Plugin
+3. Activate the plugin
+4. Create a page with shortcode `[rimtown]`
+5. (Optional) Enable user registration: Settings → General → "Anyone can register"
 
-# Run the simulation
-python -m rimtown.main
+## Shortcodes
 
-# Open browser at http://localhost:8000
-```
-
-## Architecture
-
-```
-rimtown/
-├── core/           # Simulation engine (world, time, events)
-├── agents/         # AI agent system (personality, memory, behavior)
-├── social/         # Social interactions (chat, gossip, relationships)
-├── jobs/           # Job and economy system
-├── town/           # Town map and locations
-├── llm/            # LLM integration for agent conversations
-├── web/            # Web visualization frontend
-└── config/         # Town and agent configurations
-```
-
-## Configuration
-
-Set your LLM API key in `.env`:
-
-```
-ANTHROPIC_API_KEY=your-key-here
-# or
-OPENAI_API_KEY=your-key-here
-```
-
-Customize your town in `config/town.yaml` and residents in `config/residents.yaml`.
+- `[rimtown]` — Main game (default 100vh height)
+- `[rimtown height="800px"]` — Custom height
+- `[rimtown_landing]` — Landing page with intro animation
 
 ---
 
 ## Changelog
 
-### v1.4.0 (2026-03-09)
+### v2.0.0 (2026-03-09)
 
-**篝火之夜 / 全螢幕地圖 / 首頁**
+**帳號系統 / 成就 / NPC 對話可視化 / 玩家互動**
+
+- 帳號系統：使用者註冊/登入，雲端存檔自動同步（每 5 分鐘）
+- 雲端存檔：每帳號最多 20 個城鎮，5MB/城鎮
+- 成就系統：30+ 成就里程碑，遊戲內動畫 Toast 通知
+- 成就類別：社交、愛情、經濟、生存、城鎮、玩家、特殊
+- NPC 對話可視化：NPC 聊天時地圖顯示圓角語音氣泡（8 秒淡出）
+- 玩家深度互動：選擇 11 種職業、辭職、換工作
+- 戀愛系統：調情、告白、求婚、結婚
+- 選舉投票：玩家可在投票期直接投票
+- 居民列表顯示玩家卡片（可查看自己的詳情和技能）
+- 地圖移動改善：點擊空白處自動移向最近地點，WASD 方向判定更寬容
+- Gemini API 速率限制優化：429 時暫停 60 秒，NPC 不重試
+
+### v1.5.0 (2026-03-09)
+
+**篝火之夜 / 全螢幕地圖 / 首頁 / 速率限制**
 
 - 夜晚效果重新設計：移除濃霧覆蓋，改用篝火、火把和極淡藍色調
 - 篝火系統：廣場、酒館、守衛站、水井處有動態火焰動畫

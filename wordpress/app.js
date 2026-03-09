@@ -1447,6 +1447,7 @@ class RimTownApp {
         const cy = currentZone.y + currentZone.h / 2;
 
         // Find the best location in the given direction
+        // Very forgiving: allow up to 120 degrees cone in the direction
         let best = null;
         let bestScore = Infinity;
 
@@ -1457,28 +1458,44 @@ class RimTownApp {
             const dx = tx - cx;
             const dy = ty - cy;
             const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 0.5) continue;
 
-            // Check if the location is roughly in the right direction
+            // Check direction with wide cone (120 degrees = cos(60) = 0.5)
             let valid = false;
             switch (direction) {
-                case 'up': valid = dy < -1 && Math.abs(dx) < dist * 0.9; break;
-                case 'down': valid = dy > 1 && Math.abs(dx) < dist * 0.9; break;
-                case 'left': valid = dx < -1 && Math.abs(dy) < dist * 0.9; break;
-                case 'right': valid = dx > 1 && Math.abs(dy) < dist * 0.9; break;
+                case 'up': valid = dy < 0 && -dy / dist > 0.3; break;    // At least 30% upward
+                case 'down': valid = dy > 0 && dy / dist > 0.3; break;
+                case 'left': valid = dx < 0 && -dx / dist > 0.3; break;
+                case 'right': valid = dx > 0 && dx / dist > 0.3; break;
             }
             if (!valid) continue;
 
-            // Score: prefer closer locations and more aligned ones
+            // Score: distance with slight alignment bonus (prefer more aligned)
             const alignment = direction === 'up' || direction === 'down'
-                ? Math.abs(dx) / (Math.abs(dy) + 1)
-                : Math.abs(dy) / (Math.abs(dx) + 1);
-            const score = dist * (1 + alignment * 0.5);
+                ? Math.abs(dx) / (Math.abs(dy) + 0.1)
+                : Math.abs(dy) / (Math.abs(dx) + 0.1);
+            const score = dist * (1 + alignment * 0.3);
 
             if (score < bestScore) {
                 bestScore = score;
                 best = locId;
             }
         }
+
+        // If no location found in direction, try wrapping around (find ANY closest unused direction)
+        if (!best) {
+            let fallbackBest = null, fallbackDist = Infinity;
+            for (const [locId, zone] of Object.entries(allZones)) {
+                if (locId === currentLoc) continue;
+                const tx = zone.x + zone.w / 2;
+                const ty = zone.y + zone.h / 2;
+                const dist = Math.sqrt((tx-cx)**2 + (ty-cy)**2);
+                if (dist < fallbackDist) { fallbackDist = dist; fallbackBest = locId; }
+            }
+            // Only use fallback if the nearest location is reasonably close
+            if (fallbackBest && fallbackDist < 20) best = fallbackBest;
+        }
+
         return best;
     }
 

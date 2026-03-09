@@ -440,8 +440,9 @@ class PixelTileMap {
             if (this.onAgentClick) this.onAgentClick(closestAgent);
             return;
         }
-        // Check location zones
+        // Check location zones — first try exact zone hit, then find nearest
         if (this.onClick) {
+            // Exact zone click
             for (const [locId, zone] of Object.entries(this.buildingZones)) {
                 if (px >= zone.x * TILE && px < (zone.x + zone.w) * TILE &&
                     py >= zone.y * TILE && py < (zone.y + zone.h) * TILE) {
@@ -456,6 +457,16 @@ class PixelTileMap {
                     return;
                 }
             }
+            // Clicked on empty space — find nearest location and move there
+            let bestLoc = null, bestDist = Infinity;
+            const allZones = { ...this.buildingZones, ...this.natureZones };
+            for (const [locId, zone] of Object.entries(allZones)) {
+                const cx = (zone.x + zone.w / 2) * TILE;
+                const cy = (zone.y + zone.h / 2) * TILE;
+                const dist = (px - cx) ** 2 + (py - cy) ** 2;
+                if (dist < bestDist) { bestDist = dist; bestLoc = locId; }
+            }
+            if (bestLoc) this.onClick(bestLoc);
         }
     }
 
