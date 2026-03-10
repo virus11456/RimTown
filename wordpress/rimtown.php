@@ -571,6 +571,10 @@ function rimtown_shortcode($atts) {
                     <button data-tab="chat">聊天</button>
                     <button data-tab="detail">詳情</button>
                     <button data-tab="economy">經濟</button>
+                    <button data-tab="industry">產業</button>
+                    <button data-tab="farm">農場</button>
+                    <button data-tab="factory">工廠</button>
+                    <button data-tab="newspaper">日報</button>
                     <button data-tab="log">日誌</button>
                     <button data-tab="events">事件</button>
                 </div>

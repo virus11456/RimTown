@@ -202,6 +202,7 @@ class NPCEventSystem {
 
     // Check if cheating discovery should cause fight (called from _processRelationships)
     handleCheatingDiscovery(world, cheater, partner, thirdParty) {
+        if (!cheater || !partner) return;
         partner.mood = Math.max(-100, partner.mood - 40);
         cheater.mood = Math.max(-100, cheater.mood - 20);
 
@@ -214,7 +215,7 @@ class NPCEventSystem {
 
         // Everyone's reaction
         for (const npc of Object.values(world.agents)) {
-            if (npc.agentId === cheater.agentId) continue;
+            if (npc.agentId === cheater.agentId || npc.isPlayer) continue;
             const relToCheater = npc.relationships?.getOrCreate(cheater.agentId, cheater.name);
             if (relToCheater) {
                 relToCheater.modifyAffinity(-8);
@@ -231,15 +232,16 @@ class NPCEventSystem {
             world.farm.moodPenalty = { agentId: partner.agentId, days: 7, penalty: -0.3 };
         }
 
+        const thirdPartyName = thirdParty?.name || '某人';
         world.gossipNetwork?.activeGossip?.push({
             about: cheater.name,
-            content: `${cheater.name}劈腿被${partner.name}抓到了！對象是${thirdParty.name}！`,
+            content: `${cheater.name}劈腿被${partner.name}抓到了！對象是${thirdPartyName}！`,
             source: '鎮民', spreadCount: 0, tickCreated: world.tickCount, isTrue: true,
         });
 
         if (world.dailyNews) {
             world.dailyNews.collectEvent('drama', `轟動全鎮！${cheater.name}的秘密關係被揭穿了！`, 10,
-                [cheater.name, partner.name, thirdParty.name]);
+                [cheater.name, partner.name, thirdPartyName]);
         }
     }
 
