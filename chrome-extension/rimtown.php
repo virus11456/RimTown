@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 1.4.0
+ * Version: 2.4.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '1.4.0');
+define('RIMTOWN_VERSION', '2.4.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -626,7 +626,146 @@ add_action('admin_menu', 'rimtown_admin_menu');
 function rimtown_get_changelog() {
     return array(
         array(
-            'version' => '1.4.0',
+            'version' => '2.4.0',
+            'date'    => '2026-03-10',
+            'changes' => array(
+                '修復 AI 回覆顯示分析文字：過濾 LLM 推理/思考過程，只顯示對話內容',
+                '修復打字時聊天框失焦問題：輸入中不再重繪側邊欄',
+                '改善附近 NPC 聊天：自動切換到同地點的 NPC，不再卡在遠方對象',
+                '地圖點擊移動改善：點擊任何地方都會移動到最近的地點，並顯示移動指示圈',
+                'NPC 工作行為改善：上班時間待在工作場所或附近，下班後回家或社交場所',
+                'NPC 停留時間增加：工作 12-20 ticks、社交 6-10 ticks，減少頻繁走動',
+                '新增好友約會系統：好感度高的 NPC 會互相邀約去特定地點（甚至翹班）',
+                '地圖擴大為 80x60（原 64x48），建築物重新佈局，空間更寬敞',
+                '住宅區升級：每個住宅區有 4 棟房屋（原 2 棟），NPC 的家更明顯',
+            ),
+        ),
+        array(
+            'version' => '2.3.8',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '修復 NPC 移動抖動：新增位置停留機制，NPC 抵達後停留 3-12 ticks 再移動',
+                '修復雲端存檔載入：換裝置或清除快取後，優先載入雲端存檔而非重置',
+                '雲端同步間隔從 5 分鐘縮短為 2 分鐘',
+                '修復 faction_drama（派系風雲）成就缺少觸發條件的問題',
+            ),
+        ),
+        array(
+            'version' => '2.3.7',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '修復 DeepSeek、Qwen 等模型回覆包含 <think> 推理標籤直接顯示在聊天中的問題',
+                '新增 _stripThinkTags() 統一過濾 LLM 回傳的推理標籤',
+                '強化所有 AI prompt 的繁體中文（台灣用語）要求，避免模型回覆簡體中文',
+                '修正插件 header 版本號與 RIMTOWN_VERSION 不一致',
+            ),
+        ),
+        array(
+            'version' => '2.3.6',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                'Groq 預設模型從 Llama 3.3 70B 改為 Qwen3-32B（中文對話品質大幅提升）',
+                '新增自動 Groq 備援機制：主 AI 遇到 429 rate limit 或錯誤時，自動切換到備用 Groq',
+                '設定頁面新增「備用 Groq API Key」欄位（選填，免費申請於 console.groq.com）',
+                '只填備用 Groq Key 不設主 AI 時，直接使用 Groq 作為主要 AI',
+                '主 AI 冷卻機制：首次失敗冷卻 60 秒，重複失敗逐步延長至最多 5 分鐘',
+                '主 AI 恢復正常後自動切回，無需手動操作',
+            ),
+        ),
+        array(
+            'version' => '2.3.5',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '統一所有 AI provider 速率限制為 20 次/分鐘',
+                '移除 MiniMax 特殊限制（NPC 冷卻、token 上限）',
+            ),
+        ),
+        array(
+            'version' => '2.3.4',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                'MiniMax 省額度模式：API 每分鐘限 2 次（其他 provider 保持 12 次）',
+                'MiniMax NPC 自動對話冷卻提升至 150 ticks（約每 5 分鐘 1 次），優先保留額度給玩家對話',
+                'MiniMax NPC 對話 token 上限降至 400（其他 provider 保持 800）',
+            ),
+        ),
+        array(
+            'version' => '2.3.3',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '修復登入後雲端存檔/成就 403 錯誤（Cookie 驗證失敗）',
+                '登入/註冊 API 回傳新 nonce，前端自動更新認證令牌',
+            ),
+        ),
+        array(
+            'version' => '2.3.2',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '修復設定面板下拉選單缺少 MiniMax 選項（rimtown.php HTML）',
+            ),
+        ),
+        array(
+            'version' => '2.3.1',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '修復 Chrome Extension 版缺少 MiniMax provider 的問題',
+                '新增 MiniMax API 端點與專屬請求處理',
+                '移除 chrome-extension/app.js 中誤將 minimax 標記為 deprecated 的清除邏輯',
+            ),
+        ),
+        array(
+            'version' => '2.3.0',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '恢復 MiniMax（中國版）LLM provider：端點 api.minimaxi.com，模型 MiniMax-M2.5',
+                'AI 設定強制單一綁定：切換 provider 時自動清空 API Key，防止誤綁多個',
+                '儲存時驗證：選了 AI 供應商就必須填入 API Key',
+                'Fallback 對話模板全面重寫：所有對話更長、更有戲劇張力',
+                '新增豐富細節池：季節美食、場景描寫、禮物清單、鎮上傳聞',
+                '所有對話摘要改為小說風格，包含地點/季節/情感描寫',
+            ),
+        ),
+        array(
+            'version' => '2.2.0',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '派系/社交圈系統：NPC 自動組成小團體（工作夥伴、酒友、八卦圈等），含凝聚力、競爭、結盟與內部戲劇',
+                '季節節慶系統：春季慶典、仲夏篝火、豐收祭、冬至節，含特殊任務、裝飾與全鎮慶祝活動',
+                'NPC 生死/老化系統：NPC 每季老化，可因老年/疾病/意外死亡，已婚夫妻可生育子女',
+                '墓園系統：死亡 NPC 安葬於墓園，附墓誌銘紀念',
+                '探索/地圖擴展：城鎮外 6 個可發現區域（森林、遺跡、礦坑、山脈、洞穴、沼澤）',
+                '探險隊派遣機制：選派居民出征探索，帶回資源與發現',
+                '事件頁籤新增派系、節慶、墓園、探索 UI 面板',
+                '地圖渲染：探索標記、墓碑、節慶裝飾',
+                '新增 8 個成就（派系、節慶、生死、探索相關）',
+            ),
+        ),
+        array(
+            'version' => '2.1.0',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '忘記密碼功能：透過帳號+電子郵件驗證重設密碼',
+                '新註冊用戶自動獲得全新村莊，不帶任何舊資料或對話',
+                '手機版排版大改版：地圖佔 75%、功能區佔 25%',
+                '手機版新頂部欄：標題+時間+人口合併為一行，控制按鈕收進下拉選單',
+                '功能面板改為底部常駐（標籤頁永遠可見），上滑展開、下滑收合',
+                '新增拖拽手柄，支援觸控滑動展開/收合功能面板',
+                '桌面版完全不受影響',
+            ),
+        ),
+        array(
+            'version' => '2.0.0',
+            'date'    => '2026-03-09',
+            'changes' => array(
+                '帳號系統：使用者註冊/登入，雲端存檔自動同步',
+                '成就系統：30+ 成就里程碑，遊戲內通知',
+                'NPC 對話可視化：地圖對話氣泡 + 偷聽日誌',
+                '玩家深度互動：選擇職業、工作、投票、戀愛求婚',
+                '雲端存檔：多裝置同步，最多20個城鎮',
+            ),
+        ),
+        array(
+            'version' => '1.5.0',
             'date'    => '2026-03-09',
             'changes' => array(
                 '夜晚效果重新設計：移除濃霧覆蓋，改用篝火、火把和極淡藍色調',

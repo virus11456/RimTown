@@ -226,8 +226,8 @@ class PixelTileMap {
     constructor(canvas) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
-        this.cols = 64;
-        this.rows = 48;
+        this.cols = 80;
+        this.rows = 60;
         this.grid = null;
         this.tileCache = {};
         this.agentPositions = {}; // {agentId: {x, y, targetX, targetY}}
@@ -263,19 +263,23 @@ class PixelTileMap {
         this._viewW = 0;
         this._viewH = 0;
         this._needsResize = true;
-        // Observe container resize
+        // Observe container resize (multiple fallbacks for reliability)
         this._resizeObserver = new ResizeObserver(() => { this._needsResize = true; });
         this._resizeObserver.observe(this.canvas.parentElement);
+        window.addEventListener('resize', () => { this._needsResize = true; });
         // --- Interaction: click, pan, pinch-to-zoom ---
         this._setupInteraction();
     }
 
     // Called at the start of every render frame
     _checkResize() {
-        const rect = this.canvas.getBoundingClientRect();
+        // Measure PARENT container, not canvas — canvas size can feedback-loop
+        const parent = this.canvas.parentElement;
+        if (!parent) return;
+        const rect = parent.getBoundingClientRect();
         const w = rect.width;
         const h = rect.height;
-        if (w < 1 || h < 1) return;
+        if (w < 1 || h < 1) { this._needsResize = true; return; }
         const dpr = window.devicePixelRatio || 1;
         const needsUpdate = this._needsResize || Math.abs(this._viewW - w) > 1 || Math.abs(this._viewH - h) > 1 || dpr !== this._dpr;
         if (!needsUpdate) return;
@@ -436,11 +440,13 @@ class PixelTileMap {
             if (this.onAgentClick) this.onAgentClick(closestAgent);
             return;
         }
-        // Check location zones
+        // Check location zones — first try exact zone hit, then find nearest
         if (this.onClick) {
+            // Exact zone click
             for (const [locId, zone] of Object.entries(this.buildingZones)) {
                 if (px >= zone.x * TILE && px < (zone.x + zone.w) * TILE &&
                     py >= zone.y * TILE && py < (zone.y + zone.h) * TILE) {
+                    this._moveIndicator = { x: (zone.x + zone.w / 2) * TILE, y: (zone.y + zone.h / 2) * TILE, expiry: Date.now() + 1500 };
                     this.onClick(locId);
                     return;
                 }
@@ -448,9 +454,31 @@ class PixelTileMap {
             for (const [locId, zone] of Object.entries(this.natureZones)) {
                 if (px >= zone.x * TILE && px < (zone.x + zone.w) * TILE &&
                     py >= zone.y * TILE && py < (zone.y + zone.h) * TILE) {
+                    this._moveIndicator = { x: (zone.x + zone.w / 2) * TILE, y: (zone.y + zone.h / 2) * TILE, expiry: Date.now() + 1500 };
                     this.onClick(locId);
                     return;
                 }
+            }
+            // Clicked on empty space — find nearest location and move there
+            let bestLoc = null, bestDist = Infinity;
+            const allZones = { ...this.buildingZones, ...this.natureZones };
+            for (const [locId, zone] of Object.entries(allZones)) {
+                const cx = (zone.x + zone.w / 2) * TILE;
+                const cy = (zone.y + zone.h / 2) * TILE;
+                const dist = (px - cx) ** 2 + (py - cy) ** 2;
+                if (dist < bestDist) { bestDist = dist; bestLoc = locId; }
+            }
+            if (bestLoc) {
+                // Show move indicator at the target zone
+                const zone = allZones[bestLoc];
+                if (zone) {
+                    this._moveIndicator = {
+                        x: (zone.x + zone.w / 2) * TILE,
+                        y: (zone.y + zone.h / 2) * TILE,
+                        expiry: Date.now() + 1500,
+                    };
+                }
+                this.onClick(bestLoc);
             }
         }
     }
@@ -1059,39 +1087,39 @@ class PixelTileMap {
         // Define fixed positions for building zones on the grid
         const FIXED_POSITIONS = {
             // Social - center area
-            town_square:  { x:26, y:20, type:'square' },
-            tavern:       { x:15, y:18, type:'building' },
-            chapel:       { x:40, y:10, type:'building' },
-            park:         { x:5,  y:18, type:'nature' },
-            well:         { x:30, y:26, type:'well' },
+            town_square:  { x:32, y:24, type:'square' },
+            tavern:       { x:18, y:22, type:'building' },
+            chapel:       { x:50, y:14, type:'building' },
+            park:         { x:6,  y:22, type:'nature' },
+            well:         { x:36, y:32, type:'well' },
 
             // Work - spread around
-            town_hall:    { x:25, y:8,  type:'building' },
-            farm:         { x:5,  y:32, type:'farm' },
-            quarry:       { x:50, y:33, type:'mine' },
-            workshop:     { x:40, y:22, type:'building' },
-            general_store:{ x:15, y:10, type:'building' },
-            clinic:       { x:38, y:32, type:'building' },
-            library:      { x:50, y:10, type:'building' },
-            guardpost:    { x:5,  y:8,  type:'building' },
+            town_hall:    { x:30, y:10, type:'building' },
+            farm:         { x:6,  y:40, type:'farm' },
+            quarry:       { x:62, y:42, type:'mine' },
+            workshop:     { x:50, y:28, type:'building' },
+            general_store:{ x:18, y:12, type:'building' },
+            clinic:       { x:48, y:38, type:'building' },
+            library:      { x:62, y:14, type:'building' },
+            guardpost:    { x:6,  y:10, type:'building' },
 
-            // Residential
-            residential_north:{ x:24, y:3,  type:'house_cluster' },
-            residential_south:{ x:14, y:35, type:'house_cluster' },
-            residential_east: { x:50, y:22, type:'house_cluster' },
+            // Residential - larger clusters with 4 houses each
+            residential_north:{ x:28, y:3,  type:'house_cluster' },
+            residential_south:{ x:16, y:44, type:'house_cluster' },
+            residential_east: { x:62, y:26, type:'house_cluster' },
 
             // Nature
-            forest:  { x:3,  y:26, type:'forest' },
-            river:   { x:33, y:38, type:'river' },
-            hill:    { x:56, y:5,  type:'hill' },
-            cave:    { x:56, y:40, type:'cave' },
-            lake:    { x:45, y:40, type:'lake' },
-            meadow:  { x:8,  y:42, type:'meadow' },
+            forest:  { x:4,  y:32, type:'forest' },
+            river:   { x:40, y:48, type:'river' },
+            hill:    { x:70, y:5,  type:'hill' },
+            cave:    { x:70, y:50, type:'cave' },
+            lake:    { x:55, y:50, type:'lake' },
+            meadow:  { x:10, y:52, type:'meadow' },
         };
 
         // Draw roads first - main horizontal and vertical roads
-        const roadY1 = 16, roadY2 = 30;
-        const roadX1 = 22, roadX2 = 38;
+        const roadY1 = 20, roadY2 = 38;
+        const roadX1 = 26, roadX2 = 46;
 
         // Horizontal roads
         for (let x = 3; x < this.cols - 2; x++) {
@@ -1109,8 +1137,8 @@ class PixelTileMap {
         }
 
         // Stone path for town square area
-        for (let y = 18; y < 26; y++) {
-            for (let x = 24; x < 34; x++) {
+        for (let y = 22; y < 30; y++) {
+            for (let x = 30; x < 40; x++) {
                 this.grid[y][x] = T.STONE_PATH;
             }
         }
@@ -1178,14 +1206,19 @@ class PixelTileMap {
     }
 
     _placeHouseCluster(locId, x, y, name) {
-        // Place 2-3 small houses
+        // Place 4 houses in a 2x2 grid with a small path between them
         const house = TILE_BUILDING_TEMPLATES.house;
+        const gapX = 1; // gap between houses horizontally
+        const gapY = 2; // gap between house rows (for path)
         const positions = [
             { dx: 0, dy: 0 },
-            { dx: house.w + 1, dy: 0 },
+            { dx: house.w + gapX, dy: 0 },
+            { dx: 0, dy: house.h + gapY + 1 },
+            { dx: house.w + gapX, dy: house.h + gapY + 1 },
         ];
         for (const p of positions) {
             const hx = x + p.dx, hy = y + p.dy;
+            if (hx + house.w >= this.cols || hy + house.h + 1 >= this.rows) continue;
             for (let rx = 0; rx < house.w; rx++) {
                 if (hy < this.rows) this.grid[hy][hx + rx] = T.ROOF;
             }
@@ -1198,8 +1231,18 @@ class PixelTileMap {
             }
             this._connectToRoad(hx + house.doorX, hy + house.h + 1);
         }
-        const totalW = house.w * 2 + 1;
-        this.buildingZones[locId] = { x, y, w: totalW, h: house.h + 1 };
+        // Draw small path between the two rows of houses
+        const pathY = y + house.h + 1;
+        for (let px = 0; px < house.w * 2 + gapX; px++) {
+            for (let py = 0; py < gapY; py++) {
+                if (pathY + py < this.rows && x + px < this.cols) {
+                    this.grid[pathY + py][x + px] = T.STONE_PATH;
+                }
+            }
+        }
+        const totalW = house.w * 2 + gapX;
+        const totalH = (house.h + 1) * 2 + gapY;
+        this.buildingZones[locId] = { x, y, w: totalW, h: totalH };
         this.labelPositions[locId] = { x: (x + totalW/2) * TILE, y: y * TILE - 4, name };
     }
 
@@ -1624,6 +1667,20 @@ class PixelTileMap {
     }
 
     // Update agent positions (smooth interpolation)
+    // Add a speech bubble for NPC conversation on the map
+    addConversationBubble(agentAId, agentBId, agentAName, agentBName, textA, textB) {
+        if (!this._activeConvoBubbles) this._activeConvoBubbles = [];
+        // Limit to 4 active bubbles max
+        while (this._activeConvoBubbles.length >= 4) this._activeConvoBubbles.shift();
+        this._activeConvoBubbles.push({
+            expiry: Date.now() + 8000, // Show for 8 seconds
+            bubbles: [
+                { agentId: agentAId, speaker: agentAName, text: textA || '...' },
+                { agentId: agentBId, speaker: agentBName, text: textB || '...' },
+            ]
+        });
+    }
+
     updateAgents(agents, locations, chatTarget) {
         const WALK_SPEED = 0.6; // pixels per frame — slower for easier clicking
         for (const [aid, agent] of Object.entries(agents)) {
@@ -2136,6 +2193,23 @@ class PixelTileMap {
             ctx.fillText(lbl.name, lbl.x, lbl.y);
         }
 
+        // Draw move indicator (pulsing circle at click destination)
+        if (this._moveIndicator && Date.now() < this._moveIndicator.expiry) {
+            const mi = this._moveIndicator;
+            const elapsed = 1 - (mi.expiry - Date.now()) / 1500;
+            const radius = 6 + elapsed * 8;
+            const alpha = Math.max(0, 0.6 - elapsed * 0.6);
+            ctx.beginPath();
+            ctx.arc(mi.x, mi.y, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(0, 229, 255, ${alpha})`;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(mi.x, mi.y, 3, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(0, 229, 255, ${alpha + 0.2})`;
+            ctx.fill();
+        }
+
         // Draw agents
         const sortedAgents = Object.entries(this.agentPositions).sort((a, b) => a[1].y - b[1].y);
         for (const [aid, pos] of sortedAgents) {
@@ -2146,11 +2220,67 @@ class PixelTileMap {
             this._drawAgent(ctx, pos.x, pos.y, pos.job, isPlayer, isSelected, agent.name || 'You', pos.walking, pos.walkStep, pos.gender);
         }
 
-        // Draw thought bubbles for some agents
+        // Draw NPC conversation speech bubbles (higher priority than thoughts)
         ctx.font = '7px monospace';
+        const now = Date.now();
+        const activeConvos = this._activeConvoBubbles || [];
+        const shownBubbleAgents = new Set();
+        for (const convo of activeConvos) {
+            if (now > convo.expiry) continue;
+            const fadeAlpha = Math.min(1, (convo.expiry - now) / 2000); // Fade in last 2s
+            for (const bubble of convo.bubbles) {
+                const pos = this.agentPositions[bubble.agentId];
+                if (!pos) continue;
+                shownBubbleAgents.add(bubble.agentId);
+                const text = bubble.text.substring(0, 24);
+                const tw = ctx.measureText(text).width;
+                const bx = pos.x - tw/2 - 4;
+                const by = pos.y - 30;
+                // Speech bubble with colored tint
+                ctx.fillStyle = `rgba(255,255,220,${0.95 * fadeAlpha})`;
+                ctx.beginPath();
+                const r = 3;
+                ctx.moveTo(bx + r, by);
+                ctx.lineTo(bx + tw + 8 - r, by);
+                ctx.arcTo(bx + tw + 8, by, bx + tw + 8, by + r, r);
+                ctx.lineTo(bx + tw + 8, by + 13 - r);
+                ctx.arcTo(bx + tw + 8, by + 13, bx + tw + 8 - r, by + 13, r);
+                ctx.lineTo(bx + r, by + 13);
+                ctx.arcTo(bx, by + 13, bx, by + 13 - r, r);
+                ctx.lineTo(bx, by + r);
+                ctx.arcTo(bx, by, bx + r, by, r);
+                ctx.fill();
+                // Tail
+                ctx.beginPath();
+                ctx.moveTo(pos.x - 3, by + 13);
+                ctx.lineTo(pos.x, by + 18);
+                ctx.lineTo(pos.x + 3, by + 13);
+                ctx.fill();
+                // Border
+                ctx.strokeStyle = `rgba(200,180,100,${0.6 * fadeAlpha})`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                // Text
+                ctx.fillStyle = `rgba(50,50,50,${fadeAlpha})`;
+                ctx.textAlign = 'center';
+                ctx.fillText(text, pos.x, by + 10);
+                // Speaker name above
+                ctx.font = 'bold 6px monospace';
+                ctx.fillStyle = `rgba(100,80,30,${0.7 * fadeAlpha})`;
+                ctx.fillText(bubble.speaker, pos.x, by - 2);
+                ctx.font = '7px monospace';
+            }
+        }
+        // Clean expired bubbles
+        if (this._activeConvoBubbles) {
+            this._activeConvoBubbles = this._activeConvoBubbles.filter(c => now < c.expiry);
+        }
+
+        // Draw thought bubbles for agents NOT currently showing speech bubbles
         for (const [aid, pos] of sortedAgents) {
             const agent = agents[aid];
             if (!agent || aid === 'player' || !agent.current_thought) continue;
+            if (shownBubbleAgents.has(aid)) continue; // Skip if showing speech
             // Show thoughts less frequently
             if ((this.animFrame + aid.charCodeAt(0)) % 120 < 80) continue;
 
@@ -2172,6 +2302,15 @@ class PixelTileMap {
             ctx.textAlign = 'center';
             ctx.fillText(thought, pos.x, by + 9);
         }
+
+        // === Exploration Zone Markers on Map Edges ===
+        this._drawExplorationMarkers(ctx);
+
+        // === Graveyard Markers ===
+        this._drawGraveyardMarkers(ctx);
+
+        // === Festival Decorations ===
+        this._drawFestivalDecorations(ctx);
 
         // === Ambient Particles ===
         this._updateAndDrawParticles(ctx);
@@ -2260,6 +2399,160 @@ class PixelTileMap {
 
         // Keep particle count reasonable
         if (this._particles.length > 200) this._particles = this._particles.slice(-150);
+    }
+
+    _drawExplorationMarkers(ctx) {
+        const data = this.explorationData;
+        if (!data || !data.discoveredZones) return;
+        const zones = Object.keys(data.discoveredZones);
+        if (!zones.length) return;
+
+        const TILE = 16;
+        const icons = { deep_forest:'🌲', ancient_ruins:'🏛', abandoned_mine:'⛏', mountain_pass:'⛰', riverside_cave:'🕳', cursed_swamp:'🌿' };
+        const names = { deep_forest:'幽深森林', ancient_ruins:'古代遺跡', abandoned_mine:'廢棄礦坑', mountain_pass:'山間隘口', riverside_cave:'河畔洞窟', cursed_swamp:'詛咒沼澤' };
+
+        // Place markers at map edges
+        const edgePositions = [
+            { x: 2 * TILE, y: 2 * TILE },
+            { x: (this.cols - 4) * TILE, y: 2 * TILE },
+            { x: 2 * TILE, y: (this.rows - 3) * TILE },
+            { x: (this.cols - 4) * TILE, y: (this.rows - 3) * TILE },
+            { x: Math.floor(this.cols / 2) * TILE, y: 1 * TILE },
+            { x: Math.floor(this.cols / 2) * TILE, y: (this.rows - 2) * TILE },
+        ];
+
+        ctx.font = '8px monospace';
+        ctx.textAlign = 'center';
+        zones.forEach((zoneId, i) => {
+            if (i >= edgePositions.length) return;
+            const pos = edgePositions[i];
+            const name = names[zoneId] || zoneId;
+            const active = (data.activeExpeditions || []).some(e => e.zoneId === zoneId);
+
+            // Arrow indicator pointing outward
+            ctx.fillStyle = active ? 'rgba(255,200,50,0.85)' : 'rgba(180,220,255,0.75)';
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = active ? '#ffa500' : '#88aadd';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Zone icon
+            ctx.fillStyle = '#333';
+            ctx.fillText(icons[zoneId] || '?', pos.x, pos.y + 3);
+
+            // Label
+            const tw = ctx.measureText(name).width;
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(pos.x - tw/2 - 3, pos.y + 6, tw + 6, 11);
+            ctx.fillStyle = active ? '#ffd700' : '#aaddff';
+            ctx.fillText(name, pos.x, pos.y + 14);
+        });
+    }
+
+    _drawGraveyardMarkers(ctx) {
+        const graves = this.graveyardData;
+        if (!graves || !graves.length) return;
+
+        // Draw graveyard near chapel or at edge of residential area
+        const chapelZone = this.buildingZones['chapel'] || this.natureZones['chapel'];
+        const TILE = 16;
+        let baseX, baseY;
+        if (chapelZone) {
+            baseX = (chapelZone.x + chapelZone.w) * TILE + TILE;
+            baseY = chapelZone.y * TILE;
+        } else {
+            // Fallback position
+            baseX = (this.cols - 8) * TILE;
+            baseY = (this.rows - 8) * TILE;
+        }
+
+        // Draw gravestones (max 10 visible)
+        const visibleGraves = graves.slice(-10);
+        ctx.font = '6px monospace';
+        ctx.textAlign = 'center';
+        visibleGraves.forEach((g, i) => {
+            const row = Math.floor(i / 5);
+            const col = i % 5;
+            const gx = baseX + col * 14;
+            const gy = baseY + row * 18;
+
+            // Gravestone shape
+            ctx.fillStyle = '#667788';
+            ctx.fillRect(gx - 4, gy - 8, 8, 10);
+            ctx.beginPath();
+            ctx.arc(gx, gy - 8, 4, Math.PI, 0);
+            ctx.fill();
+
+            // Cross
+            ctx.fillStyle = '#aabbcc';
+            ctx.fillRect(gx - 0.5, gy - 7, 1, 5);
+            ctx.fillRect(gx - 2, gy - 5, 4, 1);
+
+            // Name tooltip on hover (just draw small text)
+            ctx.fillStyle = '#aaa';
+            ctx.fillText(g.name.slice(-1), gx, gy + 6);
+        });
+
+        // Graveyard label
+        if (visibleGraves.length > 0) {
+            const labelX = baseX + 25;
+            const labelY = baseY - 14;
+            ctx.font = 'bold 7px monospace';
+            const text = '墓園';
+            const tw = ctx.measureText(text).width;
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(labelX - tw/2 - 3, labelY - 7, tw + 6, 11);
+            ctx.fillStyle = '#999';
+            ctx.fillText(text, labelX, labelY);
+        }
+    }
+
+    _drawFestivalDecorations(ctx) {
+        const data = this.festivalData;
+        if (!data || !data.activeFestival) return;
+
+        const TILE = 16;
+        const festival = data.activeFestival;
+        const pulse = Math.sin(this.animFrame * 0.08) * 0.3 + 0.7;
+
+        // Draw festival banner at town square
+        const squareZone = this.buildingZones['town_square'] || this.natureZones['town_square'];
+        if (squareZone) {
+            const cx = (squareZone.x + squareZone.w / 2) * TILE;
+            const cy = squareZone.y * TILE - 8;
+
+            // Banner
+            ctx.fillStyle = `rgba(255,200,50,${0.6 * pulse})`;
+            ctx.fillRect(cx - 30, cy - 4, 60, 12);
+            ctx.strokeStyle = `rgba(255,150,0,${0.8 * pulse})`;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(cx - 30, cy - 4, 60, 12);
+
+            ctx.font = 'bold 8px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#8B4513';
+            ctx.fillText(`${festival.icon} ${festival.name}`, cx, cy + 5);
+        }
+
+        // Sparkle particles during festival
+        if (this.animFrame % 8 === 0) {
+            const colors = ['#FFD700', '#FF69B4', '#00CED1', '#FF6347', '#98FB98'];
+            for (let i = 0; i < 3; i++) {
+                this._particles.push({
+                    x: Math.random() * this.cols * TILE,
+                    y: Math.random() * this.rows * TILE,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: -Math.random() * 0.3 - 0.1,
+                    life: 60 + Math.random() * 60,
+                    maxLife: 120,
+                    size: 2 + Math.random() * 2,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    type: 'festival',
+                });
+            }
+        }
     }
 
     _renderDayNightOverlay(ctx) {
