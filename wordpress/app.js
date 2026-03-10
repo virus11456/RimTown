@@ -1865,6 +1865,12 @@ class RimTownApp {
         if (!this.state) return;
         this.renderClock();
         this.renderMap();
+        // Skip sidebar re-render when user is actively typing in chat input
+        // to prevent losing focus and clearing their text
+        const chatInput = document.getElementById('chat-input');
+        if (chatInput && document.activeElement === chatInput && chatInput.value.length > 0) {
+            return; // preserve input focus and text
+        }
         this.renderSidebar();
     }
 
@@ -1949,6 +1955,20 @@ class RimTownApp {
         const nearbyNpcs = Object.entries(this.state.agents)
             .filter(([id, a]) => id !== 'player' && a.current_location === playerLoc)
             .map(([id, a]) => ({ id, ...a }));
+
+        // Auto-switch chat target: if current target is not nearby and there are nearby NPCs,
+        // auto-select the first nearby NPC so the player can chat immediately
+        if (this.chatTarget) {
+            const targetNearby = nearbyNpcs.some(n => n.id === this.chatTarget);
+            if (!targetNearby && nearbyNpcs.length > 0) {
+                this.chatTarget = nearbyNpcs[0].id;
+                this.selectedAgent = nearbyNpcs[0].id;
+            }
+        } else if (nearbyNpcs.length > 0) {
+            // No chat target set but there are nearby NPCs — auto-select
+            this.chatTarget = nearbyNpcs[0].id;
+            this.selectedAgent = nearbyNpcs[0].id;
+        }
 
         // Build set of all NPCs player has chatted with (for history)
         const chattedNames = new Set();

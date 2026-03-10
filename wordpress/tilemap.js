@@ -446,6 +446,7 @@ class PixelTileMap {
             for (const [locId, zone] of Object.entries(this.buildingZones)) {
                 if (px >= zone.x * TILE && px < (zone.x + zone.w) * TILE &&
                     py >= zone.y * TILE && py < (zone.y + zone.h) * TILE) {
+                    this._moveIndicator = { x: (zone.x + zone.w / 2) * TILE, y: (zone.y + zone.h / 2) * TILE, expiry: Date.now() + 1500 };
                     this.onClick(locId);
                     return;
                 }
@@ -453,6 +454,7 @@ class PixelTileMap {
             for (const [locId, zone] of Object.entries(this.natureZones)) {
                 if (px >= zone.x * TILE && px < (zone.x + zone.w) * TILE &&
                     py >= zone.y * TILE && py < (zone.y + zone.h) * TILE) {
+                    this._moveIndicator = { x: (zone.x + zone.w / 2) * TILE, y: (zone.y + zone.h / 2) * TILE, expiry: Date.now() + 1500 };
                     this.onClick(locId);
                     return;
                 }
@@ -466,7 +468,18 @@ class PixelTileMap {
                 const dist = (px - cx) ** 2 + (py - cy) ** 2;
                 if (dist < bestDist) { bestDist = dist; bestLoc = locId; }
             }
-            if (bestLoc) this.onClick(bestLoc);
+            if (bestLoc) {
+                // Show move indicator at the target zone
+                const zone = allZones[bestLoc];
+                if (zone) {
+                    this._moveIndicator = {
+                        x: (zone.x + zone.w / 2) * TILE,
+                        y: (zone.y + zone.h / 2) * TILE,
+                        expiry: Date.now() + 1500,
+                    };
+                }
+                this.onClick(bestLoc);
+            }
         }
     }
 
@@ -2163,6 +2176,23 @@ class PixelTileMap {
             // Text
             ctx.fillStyle = isPlayerHere ? '#000' : '#fff';
             ctx.fillText(lbl.name, lbl.x, lbl.y);
+        }
+
+        // Draw move indicator (pulsing circle at click destination)
+        if (this._moveIndicator && Date.now() < this._moveIndicator.expiry) {
+            const mi = this._moveIndicator;
+            const elapsed = 1 - (mi.expiry - Date.now()) / 1500;
+            const radius = 6 + elapsed * 8;
+            const alpha = Math.max(0, 0.6 - elapsed * 0.6);
+            ctx.beginPath();
+            ctx.arc(mi.x, mi.y, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(0, 229, 255, ${alpha})`;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(mi.x, mi.y, 3, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(0, 229, 255, ${alpha + 0.2})`;
+            ctx.fill();
         }
 
         // Draw agents

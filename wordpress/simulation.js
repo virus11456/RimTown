@@ -417,15 +417,15 @@ class Agent {
     _getStayDuration() {
         // Return how many ticks to stay at current location before moving again
         switch (this.activity) {
-            case 'sleeping': return 8 + randInt(0, 4);   // stay in bed a long time
-            case 'working': return 6 + randInt(0, 4);    // stay at workplace
-            case 'eating': return 3 + randInt(0, 2);     // eat for a while
-            case 'socializing': return 4 + randInt(0, 3); // stay to chat
-            case 'recreation': return 4 + randInt(0, 3);
-            case 'stargazing': return 5 + randInt(0, 3);
-            case 'night_stroll': return 2 + randInt(0, 2); // strolling moves more
-            case 'wandering': return 3 + randInt(0, 2);
-            default: return 3;
+            case 'sleeping': return 8 + randInt(0, 4);    // stay in bed a long time
+            case 'working': return 12 + randInt(0, 8);    // stay at workplace for a long time
+            case 'eating': return 4 + randInt(0, 3);      // eat for a while
+            case 'socializing': return 6 + randInt(0, 4); // stay to chat
+            case 'recreation': return 5 + randInt(0, 4);
+            case 'stargazing': return 6 + randInt(0, 4);
+            case 'night_stroll': return 3 + randInt(0, 3); // strolling moves more
+            case 'wandering': return 5 + randInt(0, 3);
+            default: return 4;
         }
     }
     _gainSkillXp(world) {
@@ -536,21 +536,56 @@ class Agent {
     }
     _decideLocation(hour) {
         const isNight = hour >= 21 || hour < 5;
+        const isWorkHours = this.job && (() => { const [ws,we] = this.job.workHours; return ws <= hour && hour < we; })();
+        const workplace = this.job?.workplace;
+
         if (this.activity==='sleeping') this.targetLocation = this.homeLocation;
-        else if (this.activity==='eating') this.targetLocation = isNight ? pickRandom(['tavern','tavern','home']) : 'tavern';
+        else if (this.activity==='eating') {
+            // During work hours, eat near workplace or at tavern; at night, eat at home or tavern
+            if (isWorkHours && workplace) this.targetLocation = pickRandom([workplace, 'tavern', 'tavern']);
+            else if (isNight) this.targetLocation = pickRandom(['tavern', 'tavern', 'home']);
+            else this.targetLocation = 'tavern';
+        }
         else if (this.activity==='working' && this.job) this.targetLocation = this.job.workplace;
         else if (this.activity==='socializing') {
-            if (isNight) this.targetLocation = pickRandom(['tavern','tavern','town_square','park']);
-            else this.targetLocation = pickRandom(['tavern','town_square','park','well','chapel']);
+            if (isWorkHours && workplace) {
+                // During work hours, socialize at workplace or very nearby (break room chat)
+                this.targetLocation = pickRandom([workplace, workplace, 'tavern', 'town_square']);
+            } else if (isNight) this.targetLocation = pickRandom(['tavern','tavern','town_square','park']);
+            else {
+                // After work: prefer home area, tavern, town square
+                const homeArea = this.homeLocation;
+                this.targetLocation = pickRandom(['tavern','town_square','park','well','chapel', homeArea]);
+            }
         }
         else if (this.activity==='recreation') {
             if (isNight) this.targetLocation = pickRandom(['tavern','library']);
-            else this.targetLocation = pickRandom(['park','library','forest','river','tavern']);
+            else this.targetLocation = pickRandom(['park','library','tavern']);
         }
-        else if (this.activity==='stargazing') this.targetLocation = pickRandom(['hill','meadow','park','forest','river','lake']);
-        else if (this.activity==='night_stroll') this.targetLocation = pickRandom(['park','river','forest','town_square','hill','meadow','lake']);
-        else if (this.activity==='night_mischief') this.targetLocation = pickRandom(['town_square','general_store','tavern','farm']);
-        else if (this.activity==='wandering') this.targetLocation = pickRandom(['town_square','park','forest','river','well','general_store','chapel']);
+        else if (this.activity==='stargazing') this.targetLocation = pickRandom(['park','hill','meadow']);
+        else if (this.activity==='night_stroll') this.targetLocation = pickRandom(['park','town_square','hill','meadow']);
+        else if (this.activity==='night_mischief') this.targetLocation = pickRandom(['town_square','general_store','tavern']);
+        else if (this.activity==='wandering') {
+            // During work hours, wander near workplace; otherwise near home
+            if (isWorkHours && workplace) this.targetLocation = pickRandom([workplace, 'town_square', 'well']);
+            else {
+                const homeArea = this.homeLocation;
+                this.targetLocation = pickRandom(['town_square','park','well', homeArea, homeArea]);
+            }
+        }
+
+        // Handle social hangouts / adventure invitations
+        if (this._pendingHangout) {
+            const hangout = this._pendingHangout;
+            if (hangout.tick <= 0) {
+                this.targetLocation = hangout.location;
+                this.activity = hangout.activity || 'socializing';
+                this._pendingHangout = null;
+            } else {
+                hangout.tick--;
+            }
+        }
+
         // Fallback: home for invalid locations
         if (this.activity==='eating' && this.targetLocation === 'home') this.targetLocation = this.homeLocation;
     }
@@ -569,6 +604,21 @@ class Agent {
 
         // Gossip
         if (Math.random() < 0.3) world.gossipNetwork.spreadGossip(this, target, world);
+
+        // Hangout invitation: good friends may invite each other to go somewhere together
+        const rel = this.relationships.getOrCreate(target.agentId, target.name);
+        if (rel.affinity >= 30 && Math.random() < 0.12 && !this._pendingHangout && !target._pendingHangout) {
+            const hangoutSpots = ['tavern','park','town_square','chapel','forest','library'];
+            const spot = pickRandom(hangoutSpots);
+            const hangoutActivity = rel.romanticInterest > 20 ? 'recreation' : 'socializing';
+            const delay = randInt(2, 5);
+            this._pendingHangout = { location: spot, activity: hangoutActivity, tick: delay, withAgent: target.name };
+            target._pendingHangout = { location: spot, activity: hangoutActivity, tick: delay, withAgent: this.name };
+            const desc = `${this.name}約了${target.name}一起去${spot.replace(/_/g,' ')}`;
+            world.logMessage('social', desc, this.name, target.name);
+            this.memory.add(world.tickCount, world.clock.timeStr, 'social', desc, 5, [target.name]);
+            target.memory.add(world.tickCount, world.clock.timeStr, 'social', desc, 5, [this.name]);
+        }
 
         // Conversation
         world.conversationEngine.generateConversation(this, target, world);
@@ -1352,8 +1402,12 @@ ${player.name}: ${playerMessage}
 - 對話要有來有往——回應對方說的話，也可以反問或岔開新話題
 - 如果聊到你在意的事（${pN.values}），你會特別有感觸
 
-直接寫${npc.name}會說的話（不需要加名字前綴）。
-最後另起一行：EFFECTS: {"affinity_change": 數字(-3到5), "romantic_change": 數字(0到3), "summary": "一句話總結"}`;
+【輸出格式】嚴格遵守！
+- 第一行開始就直接寫${npc.name}的對話內容，不要加任何分析、思考過程、或前言
+- 不要寫「讓我分析」「根據設定」「需要考慮」等分析文字
+- 不要加名字前綴
+- 最後另起一行寫：EFFECTS: {"affinity_change": 數字(-3到5), "romantic_change": 數字(0到3), "summary": "一句話總結"}
+- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西`;
 
                 const response = await this.llm.generate(prompt, 400, 0.9, true);
                 console.log('[RimTown] LLM response length:', response?.length, 'preview:', response?.slice(0, 80));
@@ -1370,16 +1424,28 @@ ${player.name}: ${playerMessage}
             // LLM returned empty → use fallback
             return this._fallbackPlayerReply(player, npc, world, playerMessage, relPlayer, relNpc);
         }
-        const lines = response.trim().split('\n');
+        // Strip any reasoning/analysis blocks the LLM may have emitted
+        let cleaned = response.trim();
+        // Remove markdown-style thinking blocks
+        cleaned = cleaned.replace(/```(?:thinking|analysis|reasoning)[\s\S]*?```/gi, '');
+        // Remove lines that look like LLM internal analysis (common patterns)
+        cleaned = cleaned.replace(/^[\s\S]*?(?=\n[^需要根据首先接下来分析让我])/m, (match) => {
+            // Only strip if it looks like extended reasoning (>100 chars before first dialogue line)
+            return match.length > 100 && /(?:需要|根据|分析|首先|接下来|让我|用户|角色|设定|背景|规则)/.test(match) ? '' : match;
+        });
+
+        const lines = cleaned.trim().split('\n');
         const replyLines = []; let effects = {};
+        let foundEffects = false;
         for (const line of lines) {
             const s = line.trim(); if (!s) continue;
-            if (s.startsWith('EFFECTS:') || s.startsWith('effects:')) {
+            if (s.startsWith('EFFECTS:') || s.startsWith('effects:') || s.startsWith('Effects:')) {
                 try {
                     const rest = lines.slice(lines.indexOf(line)).join('\n');
                     const js=rest.indexOf('{'), je=rest.lastIndexOf('}')+1;
                     if(js>=0&&je>js) effects=JSON.parse(rest.slice(js,je));
                 } catch(e){}
+                foundEffects = true;
                 break;
             } else {
                 let text = s;
@@ -1398,6 +1464,10 @@ ${player.name}: ${playerMessage}
                     replyLines.push(text);
                     continue;
                 }
+                // Skip lines that look like LLM reasoning/analysis (not actual dialogue)
+                if (/^(?:需要|根据|根據|首先|接下来|接下來|让我|讓我|分析|用户|用戶|角色|设定|設定|背景|规则|規則|考虑|考慮|这个|這個|所以|因此|综上|綜上|最后|最後按照|输出|輸出)/.test(text)) continue;
+                // Skip lines with meta-commentary markers
+                if (/(?:affinity_change|romantic_change|summary|好感度变化|好感度變化)/.test(text) && !foundEffects) continue;
                 if (text) replyLines.push(text);
             }
         }
