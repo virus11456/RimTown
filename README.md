@@ -30,7 +30,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v2.0.zip` from Releases
+1. Download `rimtown-v3.0.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -45,6 +45,28 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v3.0.1 (2026-03-10)
+
+**Bug 修復：40+ 項代碼審查修復 / WordPress 側邊欄補齊 / NPC 事件防護**
+
+- 修復全面代碼審查發現的 40+ 個 bug（simulation / app / tilemap / processing / daily-news）
+- 修正 JOB_PRODUCTION 技能鍵從英文改為中文，修復技能完全不影響生產效率的嚴重 bug
+- 修正 Researcher/Mayor 職稱比對從英文改為中文（研究員/鎮長）
+- 修正 toTimeString() 改為 timeStr，修復選舉系統崩潰
+- 修正 agentA.id 改為 agentA.agentId，修復對話記錄 ID 為 undefined
+- 修正選舉 fallbackJobs 中不存在的職業、plain object 改為 new Job() 實例
+- 修正 Festival Day 改為「慶典日」，修復慶典事件永遠不觸發
+- 修正選舉日計算 120→60（配合每年 60 天）
+- 修正 PlayerAgent 無效特質、loadSave 恢復 personality 和 job
+- 修正密碼重設使用不存在的 apiBase/nonce 變數
+- 修正多處 DOM getElementById null 防護
+- 修正 tilemap 道路座標與 generateLayout 一致
+- 修正工廠訂單清理邏輯與生產消耗先驗證再消耗
+- 修正 daily-news LLM 引用名稱
+- 新增 WordPress shortcode 缺少的 4 個側邊欄標籤（產業、農場、工廠、日報）
+- 新增 npc-events handleCheatingDiscovery null 防護，避免第三方已離鎮時崩潰
+- 以上修正同步套用至 WordPress 與 Chrome Extension 版本
 
 ### v3.0.0 (2026-03-10)
 
