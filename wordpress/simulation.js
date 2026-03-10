@@ -866,6 +866,10 @@ class ConversationEngine {
 
     _buildEconomicContext(world) {
         const parts = [];
+        // Prosperity
+        if (world.prosperity) {
+            parts.push(`繁榮度：${world.prosperity.prosperity}（${world.prosperity.level}）`);
+        }
         // Town level & industries
         if (world.industry) {
             parts.push(`城鎮等級：${world.industry.townLevelName || '荒村'}`);
@@ -3988,6 +3992,7 @@ class World {
         this.dailyNews = new DailyNewsEngine();
         this.npcEvents = new NPCEventSystem();
         this.questSystem = typeof QuestSystem !== 'undefined' ? new QuestSystem() : null;
+        this.prosperity = typeof ProsperityEngine !== 'undefined' ? new ProsperityEngine() : null;
     }
     addAgent(agent) { this.agents[agent.agentId] = agent; }
     removeAgent(id) { delete this.agents[id]; }
@@ -4038,6 +4043,7 @@ class World {
             this.farm.dailyUpdate(this);
             this.processing.dailyUpdate(this);
             this.npcEvents.dailyUpdate(this);
+            if (this.prosperity) this.prosperity.dailyUpdate(this);
             if (this.questSystem) this.questSystem.checkProgress(this);
             // AI Daily News (async, fire-and-forget)
             this.dailyNews.generateNewspaper(this).catch(e => console.warn('[DailyNews] Error:', e));
@@ -4074,6 +4080,7 @@ class World {
             dailyNews: this.dailyNews.toDict(),
             npcEvents: this.npcEvents.toDict(),
             questSystem: this.questSystem ? this.questSystem.toDict() : null,
+            prosperity: this.prosperity ? this.prosperity.toDict() : null,
         };
     }
     reset(seed = null) {
@@ -4096,6 +4103,7 @@ class World {
         this.dailyNews = new DailyNewsEngine();
         this.npcEvents = new NPCEventSystem();
         this.questSystem = typeof QuestSystem !== 'undefined' ? new QuestSystem() : null;
+        this.prosperity = typeof ProsperityEngine !== 'undefined' ? new ProsperityEngine() : null;
         this.conversationEngine = new ConversationEngine(this.conversationEngine?.llm);
         this.townMap = generateRandomTown(seed);
         this._loadDefaultResidents();
@@ -4355,6 +4363,7 @@ class World {
             dailyNews: this.dailyNews.serialize(),
             npcEvents: this.npcEvents.serialize(),
             questSystem: this.questSystem ? this.questSystem.serialize() : null,
+            prosperity: this.prosperity ? this.prosperity.serialize() : null,
         };
     }
 
@@ -4548,6 +4557,7 @@ class World {
             this.npcEvents = new NPCEventSystem();
             if (data.npcEvents) this.npcEvents.loadFrom(data.npcEvents);
             if (this.questSystem && data.questSystem) this.questSystem.loadFrom(data.questSystem);
+            if (this.prosperity && data.prosperity) this.prosperity.loadFrom(data.prosperity);
 
             this.logMessage('system', '遊戲讀取成功！');
             return true;

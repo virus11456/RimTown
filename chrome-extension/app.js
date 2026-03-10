@@ -2739,6 +2739,30 @@ class RimTownApp {
         if (!this._economySubTab) this._economySubTab = 'resources';
 
         let html = '<div class="economy-panel">';
+
+        // Prosperity summary
+        const prosp = this.state.prosperity;
+        if (prosp) {
+            const pColor = prosp.prosperity >= 80 ? '#ffd700' : prosp.prosperity >= 60 ? 'var(--positive)' : prosp.prosperity >= 40 ? 'var(--accent)' : prosp.prosperity >= 20 ? 'var(--text-secondary)' : 'var(--negative)';
+            html += `<div class="econ-section" style="padding:8px 12px">`;
+            html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">`;
+            html += `<span style="font-weight:bold;font-size:0.85rem">🏛️ 繁榮度</span>`;
+            html += `<span style="color:${pColor};font-weight:bold">${prosp.prosperity} — ${prosp.level}</span>`;
+            html += `</div>`;
+            html += `<div class="progress-bar" style="height:8px;margin-bottom:6px"><div class="progress-fill" style="width:${prosp.prosperity}%;background:${pColor}"></div></div>`;
+            const dimLabels = { economy:'💰經濟', buildings:'🏗️建設', population:'👥人口', happiness:'😊幸福', culture:'🎭文化', defense:'🛡️防禦', beauty:'🌺美觀' };
+            html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;font-size:0.7rem">`;
+            for (const [key, dim] of Object.entries(prosp.dimensions || {})) {
+                const label = dimLabels[key] || key;
+                html += `<div style="display:flex;align-items:center;gap:4px">`;
+                html += `<span style="width:52px;flex-shrink:0">${label}</span>`;
+                html += `<div class="progress-bar" style="height:4px;flex:1"><div class="progress-fill" style="width:${dim.value}%;background:var(--accent)"></div></div>`;
+                html += `<span style="width:20px;text-align:right;color:var(--text-muted)">${dim.value}</span>`;
+                html += `</div>`;
+            }
+            html += `</div></div>`;
+        }
+
         // Sub-tab navigation
         html += '<div class="sub-tab-bar">';
         const subTabs = [
