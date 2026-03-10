@@ -1060,6 +1060,7 @@ body.rimtown-page .wp-block-post-title {
     border-color: var(--accent) !important;
     color: var(--accent) !important;
 }
+.version-display { font-size: 0.65rem; color: rgba(255,255,255,0.4); padding: 2px 6px; user-select: none; }
 
 /* Raid/departure log entry styles */
 .log-entry.type-raid { border-left: 2px solid var(--negative); padding-left: 6px; }

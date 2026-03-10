@@ -44,6 +44,10 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 **地圖擴大 / NPC 行為改善 / 點擊移動 / 好友約會系統**
 
+- 修復聊天輸入框搶焦點：每次 game tick 不再重設焦點，解決 WASD 移動被中斷的問題
+- 修復登入時 Cookie/nonce 驗證失敗：公開 API 端點不再發送 nonce header
+- 新增遊戲標題列版本號顯示：右上角顯示目前遊戲版本
+- 修復存檔按鈕：按下後同步至雲端並即時更新城鎮列表 UI
 - 修復 AI 回覆顯示分析文字：過濾 LLM 推理/思考過程，只顯示對話內容
 - 修復打字時聊天框失焦問題：輸入中不再重繪側邊欄
 - 改善附近 NPC 聊天：自動切換到同地點的 NPC，不再卡在遠方對象
