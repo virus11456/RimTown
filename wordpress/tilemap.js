@@ -226,8 +226,8 @@ class PixelTileMap {
     constructor(canvas) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
-        this.cols = 64;
-        this.rows = 48;
+        this.cols = 80;
+        this.rows = 60;
         this.grid = null;
         this.tileCache = {};
         this.agentPositions = {}; // {agentId: {x, y, targetX, targetY}}
@@ -1087,39 +1087,39 @@ class PixelTileMap {
         // Define fixed positions for building zones on the grid
         const FIXED_POSITIONS = {
             // Social - center area
-            town_square:  { x:26, y:20, type:'square' },
-            tavern:       { x:15, y:18, type:'building' },
-            chapel:       { x:40, y:10, type:'building' },
-            park:         { x:5,  y:18, type:'nature' },
-            well:         { x:30, y:26, type:'well' },
+            town_square:  { x:32, y:24, type:'square' },
+            tavern:       { x:18, y:22, type:'building' },
+            chapel:       { x:50, y:14, type:'building' },
+            park:         { x:6,  y:22, type:'nature' },
+            well:         { x:36, y:32, type:'well' },
 
             // Work - spread around
-            town_hall:    { x:25, y:8,  type:'building' },
-            farm:         { x:5,  y:32, type:'farm' },
-            quarry:       { x:50, y:33, type:'mine' },
-            workshop:     { x:40, y:22, type:'building' },
-            general_store:{ x:15, y:10, type:'building' },
-            clinic:       { x:38, y:32, type:'building' },
-            library:      { x:50, y:10, type:'building' },
-            guardpost:    { x:5,  y:8,  type:'building' },
+            town_hall:    { x:30, y:10, type:'building' },
+            farm:         { x:6,  y:40, type:'farm' },
+            quarry:       { x:62, y:42, type:'mine' },
+            workshop:     { x:50, y:28, type:'building' },
+            general_store:{ x:18, y:12, type:'building' },
+            clinic:       { x:48, y:38, type:'building' },
+            library:      { x:62, y:14, type:'building' },
+            guardpost:    { x:6,  y:10, type:'building' },
 
-            // Residential
-            residential_north:{ x:24, y:3,  type:'house_cluster' },
-            residential_south:{ x:14, y:35, type:'house_cluster' },
-            residential_east: { x:50, y:22, type:'house_cluster' },
+            // Residential - larger clusters with 4 houses each
+            residential_north:{ x:28, y:3,  type:'house_cluster' },
+            residential_south:{ x:16, y:44, type:'house_cluster' },
+            residential_east: { x:62, y:26, type:'house_cluster' },
 
             // Nature
-            forest:  { x:3,  y:26, type:'forest' },
-            river:   { x:33, y:38, type:'river' },
-            hill:    { x:56, y:5,  type:'hill' },
-            cave:    { x:56, y:40, type:'cave' },
-            lake:    { x:45, y:40, type:'lake' },
-            meadow:  { x:8,  y:42, type:'meadow' },
+            forest:  { x:4,  y:32, type:'forest' },
+            river:   { x:40, y:48, type:'river' },
+            hill:    { x:70, y:5,  type:'hill' },
+            cave:    { x:70, y:50, type:'cave' },
+            lake:    { x:55, y:50, type:'lake' },
+            meadow:  { x:10, y:52, type:'meadow' },
         };
 
         // Draw roads first - main horizontal and vertical roads
-        const roadY1 = 16, roadY2 = 30;
-        const roadX1 = 22, roadX2 = 38;
+        const roadY1 = 20, roadY2 = 38;
+        const roadX1 = 26, roadX2 = 46;
 
         // Horizontal roads
         for (let x = 3; x < this.cols - 2; x++) {
@@ -1137,8 +1137,8 @@ class PixelTileMap {
         }
 
         // Stone path for town square area
-        for (let y = 18; y < 26; y++) {
-            for (let x = 24; x < 34; x++) {
+        for (let y = 22; y < 30; y++) {
+            for (let x = 30; x < 40; x++) {
                 this.grid[y][x] = T.STONE_PATH;
             }
         }
@@ -1206,14 +1206,19 @@ class PixelTileMap {
     }
 
     _placeHouseCluster(locId, x, y, name) {
-        // Place 2-3 small houses
+        // Place 4 houses in a 2x2 grid with a small path between them
         const house = TILE_BUILDING_TEMPLATES.house;
+        const gapX = 1; // gap between houses horizontally
+        const gapY = 2; // gap between house rows (for path)
         const positions = [
             { dx: 0, dy: 0 },
-            { dx: house.w + 1, dy: 0 },
+            { dx: house.w + gapX, dy: 0 },
+            { dx: 0, dy: house.h + gapY + 1 },
+            { dx: house.w + gapX, dy: house.h + gapY + 1 },
         ];
         for (const p of positions) {
             const hx = x + p.dx, hy = y + p.dy;
+            if (hx + house.w >= this.cols || hy + house.h + 1 >= this.rows) continue;
             for (let rx = 0; rx < house.w; rx++) {
                 if (hy < this.rows) this.grid[hy][hx + rx] = T.ROOF;
             }
@@ -1226,8 +1231,18 @@ class PixelTileMap {
             }
             this._connectToRoad(hx + house.doorX, hy + house.h + 1);
         }
-        const totalW = house.w * 2 + 1;
-        this.buildingZones[locId] = { x, y, w: totalW, h: house.h + 1 };
+        // Draw small path between the two rows of houses
+        const pathY = y + house.h + 1;
+        for (let px = 0; px < house.w * 2 + gapX; px++) {
+            for (let py = 0; py < gapY; py++) {
+                if (pathY + py < this.rows && x + px < this.cols) {
+                    this.grid[pathY + py][x + px] = T.STONE_PATH;
+                }
+            }
+        }
+        const totalW = house.w * 2 + gapX;
+        const totalH = (house.h + 1) * 2 + gapY;
+        this.buildingZones[locId] = { x, y, w: totalW, h: totalH };
         this.labelPositions[locId] = { x: (x + totalW/2) * TILE, y: y * TILE - 4, name };
     }
 

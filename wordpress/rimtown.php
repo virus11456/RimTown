@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 2.3.8
+ * Version: 2.4.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '2.3.8');
+define('RIMTOWN_VERSION', '2.4.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1077,6 +1077,21 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '2.4.0',
+            'date'    => '2026-03-10',
+            'changes' => array(
+                '修復 AI 回覆顯示分析文字：過濾 LLM 推理/思考過程，只顯示對話內容',
+                '修復打字時聊天框失焦問題：輸入中不再重繪側邊欄',
+                '改善附近 NPC 聊天：自動切換到同地點的 NPC，不再卡在遠方對象',
+                '地圖點擊移動改善：點擊任何地方都會移動到最近的地點，並顯示移動指示圈',
+                'NPC 工作行為改善：上班時間待在工作場所或附近，下班後回家或社交場所',
+                'NPC 停留時間增加：工作 12-20 ticks、社交 6-10 ticks，減少頻繁走動',
+                '新增好友約會系統：好感度高的 NPC 會互相邀約去特定地點（甚至翹班）',
+                '地圖擴大為 80x60（原 64x48），建築物重新佈局，空間更寬敞',
+                '住宅區升級：每個住宅區有 4 棟房屋（原 2 棟），NPC 的家更明顯',
+            ),
+        ),
         array(
             'version' => '2.3.8',
             'date'    => '2026-03-09',
