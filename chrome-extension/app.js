@@ -1852,6 +1852,7 @@ class RimTownApp {
         this.chatTarget = agentId;
         this.selectedAgent = agentId;
         this.activeTab = 'chat';
+        this._focusChatInput = true;
         document.querySelectorAll('.rt-sidebar-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === 'chat'));
         // Auto-open sidebar on mobile
         const sidebar = document.getElementById('rimtown-sidebar');
@@ -2051,7 +2052,10 @@ class RimTownApp {
         container.innerHTML = nearbyHtml + messagesHtml + inputHtml + archiveBar;
         this._scrollChatToBottom();
         const input = document.getElementById('chat-input');
-        if (input && !this.chatSending) input.focus();
+        if (input && !this.chatSending && this._focusChatInput) {
+            input.focus();
+            this._focusChatInput = false;
+        }
     }
 
     async showChatArchives() {
