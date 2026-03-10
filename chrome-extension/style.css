@@ -1054,9 +1054,12 @@ body.rimtown-page .wp-block-post-title {
 .modal.hidden { display: none; }
 .hidden { display: none !important; }
 
-/* Mobile header: hidden on desktop, shown only at 768px */
+/* Mobile-only elements: hidden on desktop, shown only at ≤768px */
 .mobile-header {
-    display: none;
+    display: none !important;
+}
+.mobile-drag-handle {
+    display: none !important;
 }
 .modal-content {
     background: var(--bg-secondary);
@@ -1468,7 +1471,7 @@ body.rimtown-page .wp-block-post-title {
 
 /* ===== Mobile Sidebar Toggle ===== */
 .mobile-sidebar-toggle {
-    display: none;
+    display: none !important;
     position: fixed;
     bottom: 16px;
     right: 16px;
@@ -1495,7 +1498,7 @@ body.rimtown-page .wp-block-post-title {
 
 /* ===== Mobile Back to Map Button ===== */
 .mobile-back-to-map {
-    display: none;
+    display: none !important;
     padding: 6px 12px;
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -1560,7 +1563,7 @@ body.rimtown-page .wp-block-post-title {
         display: none !important;
     }
     .mobile-header {
-        display: block;
+        display: block !important;
         background: var(--bg-secondary);
         border-bottom: 1px solid var(--border);
         flex-shrink: 0;
@@ -1706,18 +1709,18 @@ body.rimtown-page .wp-block-post-title {
 
     /* Show toggle button */
     .mobile-sidebar-toggle {
-        display: flex;
+        display: flex !important;
     }
     .rt-sidebar.mobile-open ~ .mobile-sidebar-toggle {
-        display: none;
+        display: none !important;
     }
 
     /* Show back-to-map button when sidebar open */
     .mobile-back-to-map {
-        display: none;
+        display: none !important;
     }
     .rt-sidebar.mobile-open .mobile-back-to-map {
-        display: block;
+        display: block !important;
     }
 
     /* Sidebar tabs: 5-column grid on mobile, icon-only with small labels */
