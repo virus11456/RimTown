@@ -84,7 +84,7 @@ class DailyNewsEngine {
 
         // Get previous newspaper summary for continuity
         const prevPaper = this.newspapers.length > 0 ? this.newspapers[this.newspapers.length - 1] : null;
-        const prevRef = prevPaper ? `上一期日報（記者：${prevPaper.reporter}）的摘要：${prevPaper.content.substring(0, 100)}...` : '';
+        const prevRef = prevPaper ? `上一期日報（記者：${prevPaper.reporter}）的摘要：${(prevPaper.content || '').substring(0, 100)}...` : '';
 
         const prompt = `你是「${reporter.name}」，${bg}
 你的性格特徵：${traits}

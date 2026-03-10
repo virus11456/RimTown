@@ -24,10 +24,10 @@ class NPCEventSystem {
     _processHospitalized(world) {
         for (const agent of Object.values(world.agents)) {
             if (!agent.status || agent.status !== 'hospitalized') continue;
-            agent._hospitalDays = (agent._hospitalDays || 0) + 1;
+            agent._hospitalDays = (agent._hospitalDays || 0) + 2;
 
             // Consume medicine
-            const hasMedicine = world.stockpile.consume('medicine', 1, world.tickCount, `${agent.name}住院治療`);
+            const hasMedicine = world.stockpile?.consume('medicine', 1, world.tickCount, `${agent.name}住院治療`) ?? false;
             const hasDoctor = Object.values(world.agents).some(a => a.job?.key === 'doctor' && a.status !== 'hospitalized');
 
             // Recovery
@@ -38,8 +38,8 @@ class NPCEventSystem {
             if (agent._hospitalDays >= recoveryDays) {
                 agent.status = 'normal';
                 agent._hospitalDays = 0;
-                agent.mood = Math.min(100, agent.mood + 10);
-                world.logMessage('incident', `${agent.name}出院了！`);
+                agent.moodModifier = (agent.moodModifier || 0) + 10;
+                world.logMessage?.('incident', `${agent.name}出院了！`);
                 if (world.dailyNews) {
                     world.dailyNews.collectEvent('lifecycle', `${agent.name}康復出院了！`, 5, [agent.name]);
                 }
@@ -49,7 +49,7 @@ class NPCEventSystem {
                     if (other.agentId === agent.agentId) continue;
                     const rel = other.relationships?.relationships?.[agent.agentId];
                     if (rel && rel.affinity > 30) {
-                        other.mood = Math.max(-100, other.mood - 2);
+                        other.moodModifier = (other.moodModifier || 0) - 2;
                     }
                 }
             }
@@ -59,20 +59,20 @@ class NPCEventSystem {
     _processMissing(world) {
         for (const agent of Object.values(world.agents)) {
             if (!agent.status || agent.status !== 'missing') continue;
-            agent._missingDays = (agent._missingDays || 0) + 1;
+            agent._missingDays = (agent._missingDays || 0) + 2;
 
             // Partner/family mood crash
             for (const other of Object.values(world.agents)) {
                 if (other.agentId === agent.agentId) continue;
                 const rel = other.relationships?.relationships?.[agent.agentId];
                 if (rel && (rel.status === 'dating' || rel.status === 'married')) {
-                    other.mood = Math.max(-100, other.mood - 8);
+                    other.moodModifier = (other.moodModifier || 0) - 8;
                 }
             }
 
             // 5 days: permanent departure
             if (agent._missingDays >= 5) {
-                world.logMessage('incident', `${agent.name}已經失蹤太久了...大家只能祈禱平安。`);
+                world.logMessage?.('incident', `${agent.name}已經失蹤太久了...大家只能祈禱平安。`);
                 world.removeAgent(agent.agentId);
                 if (world.dailyNews) {
                     world.dailyNews.collectEvent('lifecycle', `${agent.name}再也沒有回來...全鎮默哀。`, 10, [agent.name]);
@@ -97,13 +97,13 @@ class NPCEventSystem {
                 // FIGHT!
                 other.status = 'hospitalized';
                 other._hospitalDays = 0;
-                other.mood = Math.max(-100, other.mood - 30);
-                agent.mood = Math.max(-100, agent.mood - 10);
+                other.moodModifier = (other.moodModifier || 0) - 30;
+                agent.moodModifier = (agent.moodModifier || 0) - 10;
 
                 // Remove from factory work
                 if (world.processing) world.processing.removeWorker(other.agentId);
 
-                world.logMessage('incident', `⚠️ ${agent.name}和${other.name}大打出手！${other.name}被送進診所！`);
+                world.logMessage?.('incident', `⚠️ ${agent.name}和${other.name}大打出手！${other.name}被送進診所！`);
 
                 // Others' reaction
                 for (const npc of npcs) {
@@ -154,7 +154,7 @@ class NPCEventSystem {
             const target = growingPlots[Math.floor(Math.random() * growingPlots.length)];
             target.state = 'withered';
 
-            world.logMessage('incident', `⚠️ 有人的農田被破壞了！好像是深夜發生的事...`);
+            world.logMessage?.('incident', `⚠️ 有人的農田被破壞了！好像是深夜發生的事...`);
 
             // Gossip (anonymous)
             world.gossipNetwork?.activeGossip?.push({
@@ -189,9 +189,9 @@ class NPCEventSystem {
                 if (world.processing) {
                     for (const factory of Object.values(world.processing.builtFactories)) {
                         if (factory.workers.includes(agent.agentId) && factory.workers.includes(rel.targetId)) {
-                            agent.mood = Math.min(100, agent.mood + 3);
-                            other.mood = Math.min(100, other.mood + 3);
-                            world.logMessage('social', `${agent.name}和${other.name}配合得越來越默契了！`);
+                            agent.moodModifier = (agent.moodModifier || 0) + 3;
+                            other.moodModifier = (other.moodModifier || 0) + 3;
+                            world.logMessage?.('social', `${agent.name}和${other.name}配合得越來越默契了！`);
                             return;
                         }
                     }
@@ -203,14 +203,14 @@ class NPCEventSystem {
     // Check if cheating discovery should cause fight (called from _processRelationships)
     handleCheatingDiscovery(world, cheater, partner, thirdParty) {
         if (!cheater || !partner) return;
-        partner.mood = Math.max(-100, partner.mood - 40);
-        cheater.mood = Math.max(-100, cheater.mood - 20);
+        partner.moodModifier = (partner.moodModifier || 0) - 40;
+        cheater.moodModifier = (cheater.moodModifier || 0) - 20;
 
         if (partner.personality?.traits?.includes('abrasive') || Math.random() < 0.3) {
             cheater.status = 'hospitalized';
             cheater._hospitalDays = 0;
             if (world.processing) world.processing.removeWorker(cheater.agentId);
-            world.logMessage('drama', `${partner.name}發現${cheater.name}劈腿，當街痛打了一頓！`);
+            world.logMessage?.('drama', `${partner.name}發現${cheater.name}劈腿，當街痛打了一頓！`);
         }
 
         // Everyone's reaction

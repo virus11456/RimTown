@@ -463,7 +463,7 @@ class RimTownApp {
         popup.id = 'account-menu-popup';
         popup.className = 'account-menu-popup';
         popup.innerHTML = `
-            <div class="account-menu-header">${this.auth.username}</div>
+            <div class="account-menu-header">${this._escapeHtml(this.auth.username)}</div>
             <button data-action="cloud-sync-up">上傳存檔到雲端</button>
             <button data-action="cloud-sync-down">從雲端下載存檔</button>
             <button data-action="show-achievements">成就</button>
@@ -667,7 +667,7 @@ class RimTownApp {
         if (this._seasonsVisited.size >= 4) this._unlockAchievement('all_seasons');
 
         // Night owl
-        if (clock.hour !== undefined && (clock.hour >= 0 && clock.hour < 4)) this._unlockAchievement('night_owl');
+        if (clock.hour !== undefined && clock.hour >= 0 && clock.hour < 4 && this.world?.tickCount > 0) this._unlockAchievement('night_owl');
 
         // Election
         const election = this.state.election;
@@ -1142,7 +1142,7 @@ class RimTownApp {
         this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
         this.state = this.world.getState();
         this._generateTileMapLayout();
-        this.tileMap.agentPositions = {};
+        if (this.tileMap) this.tileMap.agentPositions = {};
         this.render();
         this._renderTownList();
     }
@@ -1476,6 +1476,9 @@ class RimTownApp {
                 case 'player-vote': this._playerVote(val); break;
                 case 'player-propose': this._playerPropose(val); break;
                 case 'player-flirt': this._playerFlirt(val); break;
+                // Industry sub-tabs
+                case 'industry-subtab': this._industrySubTab = val; this.renderSidebar(); break;
+                case 'economy-subtab': this._economySubTab = val; this.renderSidebar(); break;
                 // Industry
                 case 'choose-industry': this._chooseIndustry(val); break;
                 case 'upgrade-industry': this._upgradeIndustry(val); break;
@@ -1567,7 +1570,7 @@ class RimTownApp {
 
     setupSettingsListeners() {
         document.getElementById('btn-settings')?.addEventListener('click', () => {
-            document.getElementById('settings-modal').classList.remove('hidden');
+            document.getElementById('settings-modal')?.classList.remove('hidden');
             const provider = localStorage.getItem('llm_provider');
             const apiKey = localStorage.getItem('llm_api_key');
             const speed = localStorage.getItem('sim_speed');
@@ -1606,10 +1609,10 @@ class RimTownApp {
                 return;
             }
             this.saveSettings(provider, apiKey, speed);
-            document.getElementById('settings-modal').classList.add('hidden');
+            document.getElementById('settings-modal')?.classList.add('hidden');
         });
         document.getElementById('settings-cancel')?.addEventListener('click', () => {
-            document.getElementById('settings-modal').classList.add('hidden');
+            document.getElementById('settings-modal')?.classList.add('hidden');
         });
     }
 
@@ -1722,7 +1725,8 @@ class RimTownApp {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `rimtown_save_${saveData.clock.season}_Y${saveData.clock.year}D${saveData.clock.day}.json`;
+        const ck = saveData.clock || {};
+        a.download = `rimtown_save_${ck.season || 'unknown'}_Y${ck.year || 1}D${ck.day || 1}.json`;
         a.click();
         URL.revokeObjectURL(url);
     }
@@ -1741,7 +1745,7 @@ class RimTownApp {
                     if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
                     this.state = this.world.getState();
                     this._generateTileMapLayout();
-                    this.tileMap.agentPositions = {};
+                    if (this.tileMap) this.tileMap.agentPositions = {};
                     this.render();
                     await this.saveGame();
                 } else {
@@ -1951,6 +1955,7 @@ class RimTownApp {
         }
         try {
             await this.world.conversationEngine.generatePlayerReply(player, npc, message.trim(), this.world);
+            if (this.world.questSystem) this.world.questSystem.onChat();
             this.state = this.world.getState();
             if (this.activeTab === 'chat') { this.renderSidebar(); this._scrollChatToBottom(); }
         } catch(e) { console.error('Chat error:', e); }
@@ -2063,10 +2068,11 @@ class RimTownApp {
             case 'log': this.renderLog(content); break;
             case 'events': this.renderEvents(content); break;
             case 'achievements': this.renderAchievements(content); break;
-            case 'industry': this.renderIndustry(content); break;
-            case 'farm': this.renderFarm(content); break;
+            case 'industry': this.renderIndustryAndFarm(content); break;
+            case 'farm': this.renderIndustryAndFarm(content); break;
             case 'factory': this.renderFactory(content); break;
             case 'newspaper': this.renderNewspaper(content); break;
+            case 'quest': this.renderQuest(content); break;
         }
     }
 
@@ -2555,9 +2561,6 @@ class RimTownApp {
             bulletins.forEach(b => {
                 const severityIcon = {good:'🟢',info:'🔵',warning:'🟡',danger:'🔴'}[b.severity] || '⚪';
                 const categoryIcon = {security:'🛡️',trade:'📦',weather:'🌤️',social:'👥',health:'🏥',discovery:'🔍',nature:'🌿',political:'⚔️'}[b.category] || '📋';
-                const modKeys = Object.entries(news.active_modifiers || {}).filter(([k]) => {
-                    return b.days_remaining > 0;
-                });
                 html += `<div class="news-bulletin severity-${b.severity}">
                     <div class="news-header">
                         <span class="news-severity">${severityIcon}</span>
@@ -2730,120 +2733,212 @@ class RimTownApp {
         return zones[id] || null;
     }
 
-    // --- Economy Tab ---
+    // --- Economy Tab (with factory sub-tab) ---
     renderEconomy(container) {
         if (!this.state) return;
+        if (!this._economySubTab) this._economySubTab = 'resources';
+
+        let html = '<div class="economy-panel">';
+        // Sub-tab navigation
+        html += '<div class="sub-tab-bar">';
+        const subTabs = [
+            { key:'resources', label:'資源', icon:'📦' },
+            { key:'building', label:'建築', icon:'🏗️' },
+            { key:'factory', label:'工廠', icon:'🏭' },
+        ];
+        subTabs.forEach(t => {
+            const active = this._economySubTab === t.key ? ' class="active"' : '';
+            html += `<button${active} data-action="economy-subtab" data-val="${t.key}">${t.icon} ${t.label}</button>`;
+        });
+        html += '</div>';
+
         const sp = this.state.stockpile || {};
         const res = sp.resources || {};
-        const buildings = this.state.buildings || {};
-        const trade = this.state.trade || {};
-        const research = this.state.research || {};
-
-        // Resource icons
         const icons = {food:'🌾',wood:'🪵',stone:'🪨',metal:'⚙️',cloth:'🧵',herbs:'🌿',silver:'💰',meals:'🍲',tools:'🔧',clothing:'👕',medicine:'💊',furniture:'🪑',research_points:'📚'};
         const labels = {food:'食物',wood:'木材',stone:'石材',metal:'金屬',cloth:'布料',herbs:'草藥',silver:'銀幣',meals:'餐食',tools:'工具',clothing:'衣物',medicine:'藥品',furniture:'家具',research_points:'研究'};
 
-        let html = '<div class="economy-panel">';
-
-        // Resources
-        html += '<div class="econ-section"><h3>資源</h3><div class="resource-grid">';
-        for (const [r, amount] of Object.entries(res)) {
-            const icon = icons[r] || '📦';
-            const label = labels[r] || r;
-            const cls = amount < 10 ? 'res-low' : amount > 100 ? 'res-high' : '';
-            html += `<div class="resource-item ${cls}"><span class="res-icon">${icon}</span><span class="res-label">${label}</span><span class="res-amount">${Math.round(amount)}</span></div>`;
-        }
-        html += '</div></div>';
-
-        // Trade
-        html += '<div class="econ-section"><h3>交易</h3>';
-        if (trade.merchant) {
-            html += `<div class="merchant-card"><div class="merchant-name">${trade.merchant.name}</div>
-                <div class="merchant-info">專長：${trade.merchant.specialty} | ${trade.merchant.daysRemaining}天後離開</div>
-                <div class="trade-offers">`;
-            trade.merchant.offers.forEach((offer, idx) => {
-                const icon = icons[offer.resource] || '📦';
-                const resLabel = labels[offer.resource] || offer.resource;
-                const action = offer.isBuying ? '賣出' : '買入';
-                const actionCls = offer.isBuying ? 'trade-sell' : 'trade-buy';
-                html += `<div class="trade-offer ${actionCls}">
-                    <span>${icon} ${resLabel}</span>
-                    <span>×${Math.round(offer.amount)}</span>
-                    <span>${offer.price}/個</span>
-                    <button class="trade-btn" data-action="trade" data-val="${idx},${Math.min(5, offer.amount)}">${action}5</button>
-                    <button class="trade-btn" data-action="trade" data-val="${idx},${offer.amount}">全${action}</button></div>`;
-            });
+        if (this._economySubTab === 'resources') {
+            // Resources
+            html += '<div class="econ-section"><h3>資源</h3><div class="resource-grid">';
+            for (const [r, amount] of Object.entries(res)) {
+                const icon = icons[r] || '📦';
+                const label = labels[r] || r;
+                const cls = amount < 10 ? 'res-low' : amount > 100 ? 'res-high' : '';
+                html += `<div class="resource-item ${cls}"><span class="res-icon">${icon}</span><span class="res-label">${label}</span><span class="res-amount">${Math.round(amount)}</span></div>`;
+            }
             html += '</div></div>';
-        } else {
-            html += `<p class="muted-text">鎮上沒有商人，可能很快就會來一位。</p>`;
-        }
-        html += '</div>';
-
-        // Buildings
-        html += '<div class="econ-section"><h3>建築</h3>';
-        if (buildings.in_progress?.length) {
-            html += '<div class="building-progress">';
-            buildings.in_progress.forEach(p => {
-                const pct = Math.round((p.workDone / p.workRequired) * 100);
-                html += `<div class="building-item"><span>${p.name}</span>
-                    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+            // Trade
+            const trade = this.state.trade || {};
+            html += '<div class="econ-section"><h3>交易</h3>';
+            if (trade.merchant) {
+                html += `<div class="merchant-card"><div class="merchant-name">${trade.merchant.name}</div>
+                    <div class="merchant-info">專長：${trade.merchant.specialty} | ${trade.merchant.daysRemaining}天後離開</div>
+                    <div class="trade-offers">`;
+                trade.merchant.offers.forEach((offer, idx) => {
+                    const icon = icons[offer.resource] || '📦';
+                    const resLabel = labels[offer.resource] || offer.resource;
+                    const action = offer.isBuying ? '賣出' : '買入';
+                    const actionCls = offer.isBuying ? 'trade-sell' : 'trade-buy';
+                    html += `<div class="trade-offer ${actionCls}">
+                        <span>${icon} ${resLabel}</span>
+                        <span>×${Math.round(offer.amount)}</span>
+                        <span>${offer.price}/個</span>
+                        <button class="trade-btn" data-action="trade" data-val="${idx},${Math.min(5, offer.amount)}">${action}5</button>
+                        <button class="trade-btn" data-action="trade" data-val="${idx},${offer.amount}">全${action}</button></div>`;
+                });
+                html += '</div></div>';
+            } else {
+                html += `<p class="muted-text">鎮上沒有商人，可能很快就會來一位。</p>`;
+            }
+            html += '</div>';
+            // Research
+            const research = this.state.research || {};
+            html += '<div class="econ-section"><h3>研究</h3>';
+            const projects = research.projects || {};
+            const currentKey = research.current_research;
+            if (currentKey && projects[currentKey]) {
+                const cur = projects[currentKey];
+                const pct = Math.round((cur.progress / cur.cost) * 100);
+                html += `<div class="research-current">研究中：<strong>${cur.name}</strong>
+                    <div class="progress-bar"><div class="progress-fill research-fill" style="width:${pct}%"></div></div>
                     <span class="progress-text">${pct}%</span></div>`;
-            });
+            }
+            const availableResearch = Object.values(projects).filter(p => p.status === 'available');
+            if (availableResearch.length) {
+                html += '<div class="research-available"><div class="build-label">可研究：</div>';
+                availableResearch.forEach(p => {
+                    const isCurrent = p.key === currentKey;
+                    html += `<div class="research-option ${isCurrent ? 'active' : ''}">
+                        <div class="build-name">${p.name}</div>
+                        <div class="build-desc">${p.description}（消耗：${p.cost}）</div>
+                        <button class="build-btn" data-action="research" data-val="${p.key}" ${isCurrent?'disabled':''}>研究</button></div>`;
+                });
+                html += '</div>';
+            }
+            const completedResearch = Object.values(projects).filter(p => p.status === 'complete');
+            if (completedResearch.length) {
+                html += `<div class="completed-buildings">已完成：${completedResearch.map(p => p.name).join('、')}</div>`;
+            }
             html += '</div>';
-        }
-        if (buildings.completed?.length) {
-            html += `<div class="completed-buildings">已完成：${buildings.completed.map(p => p.name).join('、')}</div>`;
-        }
-        const available = this.world.buildings.getAvailable(this.world);
-        if (available.length) {
-            html += '<div class="available-buildings"><div class="build-label">建造：</div>';
-            available.forEach(p => {
-                const costStr = Object.entries(p.costs).map(([r,a]) => `${icons[r]||''}${a}`).join(' ');
-                html += `<div class="build-option ${p.can_afford ? '' : 'cant-afford'}">
-                    <div class="build-name">${p.name}</div>
-                    <div class="build-desc">${p.description}</div>
-                    <div class="build-cost">${costStr}</div>
-                    <button class="build-btn" ${p.can_afford ? '' : 'disabled'} data-action="build" data-val="${p.key}">建造</button></div>`;
-            });
+        } else if (this._economySubTab === 'building') {
+            // Buildings
+            const buildings = this.state.buildings || {};
+            html += '<div class="econ-section"><h3>建築</h3>';
+            if (buildings.in_progress?.length) {
+                html += '<div class="building-progress">';
+                buildings.in_progress.forEach(p => {
+                    const pct = Math.round((p.workDone / p.workRequired) * 100);
+                    html += `<div class="building-item"><span>${p.name}</span>
+                        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+                        <span class="progress-text">${pct}%</span></div>`;
+                });
+                html += '</div>';
+            }
+            if (buildings.completed?.length) {
+                html += `<div class="completed-buildings">已完成：${buildings.completed.map(p => p.name).join('、')}</div>`;
+            }
+            const available = this.world.buildings.getAvailable(this.world);
+            if (available.length) {
+                html += '<div class="available-buildings"><div class="build-label">建造：</div>';
+                available.forEach(p => {
+                    const costStr = Object.entries(p.costs).map(([r,a]) => `${icons[r]||''}${a}`).join(' ');
+                    html += `<div class="build-option ${p.can_afford ? '' : 'cant-afford'}">
+                        <div class="build-name">${p.name}</div>
+                        <div class="build-desc">${p.description}</div>
+                        <div class="build-cost">${costStr}</div>
+                        <button class="build-btn" ${p.can_afford ? '' : 'disabled'} data-action="build" data-val="${p.key}">建造</button></div>`;
+                });
+                html += '</div>';
+            }
             html += '</div>';
+        } else if (this._economySubTab === 'factory') {
+            // Factory (merged from old factory tab)
+            const proc = this.state.processing || {};
+            const factories = proc.builtFactories || {};
+            html += '<div class="econ-section"><h3>🏭 工廠加工</h3></div>';
+            for (const [key, factory] of Object.entries(factories)) {
+                const def = typeof FACTORIES !== 'undefined' ? FACTORIES[key] : null;
+                if (!def) continue;
+                html += `<div class="econ-section"><h3>${def.icon} ${def.name}`;
+                if (factory.status === 'building') html += ` (建造中 ${Math.round(factory.buildProgress / factory.buildRequired * 100)}%)`;
+                html += '</h3>';
+                if (factory.status === 'active') {
+                    html += '<div style="margin:4px 0"><strong>配方：</strong>';
+                    def.recipes.forEach(r => {
+                        const active = factory.recipe === r.id ? ' style="background:var(--accent-gold);color:#000"' : '';
+                        html += `<button class="trade-btn" style="margin:2px;font-size:0.7rem"${active} data-action="set-recipe" data-val="${key},${r.id}">${r.label}</button>`;
+                    });
+                    html += '</div>';
+                    html += `<div style="margin:4px 0;font-size:0.8rem"><strong>工人：</strong>${factory.workers.length}/${def.workerSlots}`;
+                    factory.workers.forEach(wId => {
+                        const a = this.state.agents[wId];
+                        html += ` <span style="color:var(--accent-gold)">${a?.name || wId}</span>`;
+                    });
+                    if (factory.workers.length < def.workerSlots) {
+                        const avail = Object.entries(this.state.agents).filter(([id, a]) =>
+                            id !== 'player' && !factory.workers.includes(id) && (!a.status_text || a.status_text === 'normal')
+                        );
+                        if (avail.length > 0) {
+                            html += '<br>';
+                            avail.slice(0, 5).forEach(([id, a]) => {
+                                html += `<button class="trade-btn" style="margin:2px;font-size:0.65rem" data-action="assign-worker" data-val="${key},${id}">+${a.name}</button>`;
+                            });
+                        }
+                    }
+                    html += '</div>';
+                    if (factory.recipe) {
+                        const recipe = def.recipes.find(r => r.id === factory.recipe);
+                        if (recipe) {
+                            const pct = Math.round(factory.productionProgress / recipe.time * 100);
+                            html += `<div style="font-size:0.75rem;margin:4px 0">生產進度：${pct}%</div>`;
+                        }
+                    }
+                    const wh = factory.warehouse || {};
+                    if (Object.keys(wh).length > 0) {
+                        html += '<div style="margin:4px 0;font-size:0.8rem"><strong>倉庫：</strong>';
+                        for (const [r, amt] of Object.entries(wh)) {
+                            html += `<span style="margin-right:8px">${r}: ${amt}`;
+                            html += ` <button class="trade-btn" style="font-size:0.6rem;padding:1px 4px" data-action="collect-product" data-val="${key},${r},${amt}">收</button>`;
+                            html += ` <button class="trade-btn" style="font-size:0.6rem;padding:1px 4px" data-action="sell-product" data-val="${key},${r},${amt}">賣</button></span>`;
+                        }
+                        html += '</div>';
+                    }
+                }
+                html += '</div>';
+            }
+            // Available to build
+            const availFac = this.world.processing.getAvailableFactories(this.world);
+            if (availFac.length > 0) {
+                html += '<div class="econ-section"><h3>可建造工廠</h3>';
+                availFac.forEach(f => {
+                    const costStr = Object.entries(f.cost).map(([r,a]) => `${r}:${a}`).join(' ');
+                    const canBuild = f.canAfford ? '' : ' disabled';
+                    html += `<div class="build-card"><div><strong>${f.icon} ${f.name}</strong>
+                        <br><span style="font-size:0.7rem">${costStr} | 建造天數：${f.buildDays}</span></div>
+                        <button class="trade-btn"${canBuild} data-action="build-factory" data-val="${f.key}">建造</button></div>`;
+                });
+                html += '</div>';
+            }
+            // Active orders
+            const orders = (proc.orders || []).filter(o => o.status === 'active');
+            if (orders.length > 0) {
+                html += '<div class="econ-section"><h3>📋 訂單</h3>';
+                orders.forEach(o => {
+                    html += `<div class="build-card"><div><strong>${o.description}</strong>
+                        <br><span style="font-size:0.7rem">獎勵：${o.reward}銀幣 | 剩餘${o.daysLeft}天</span></div>
+                        <button class="trade-btn" data-action="fulfill-order" data-val="${o.id}">完成</button></div>`;
+                });
+                html += '</div>';
+            }
         }
         html += '</div>';
-
-        // Research
-        html += '<div class="econ-section"><h3>研究</h3>';
-        const projects = research.projects || {};
-        const currentKey = research.current_research;
-        if (currentKey && projects[currentKey]) {
-            const cur = projects[currentKey];
-            const pct = Math.round((cur.progress / cur.cost) * 100);
-            html += `<div class="research-current">研究中：<strong>${cur.name}</strong>
-                <div class="progress-bar"><div class="progress-fill research-fill" style="width:${pct}%"></div></div>
-                <span class="progress-text">${pct}%</span></div>`;
-        }
-        const availableResearch = Object.values(projects).filter(p => p.status === 'available');
-        if (availableResearch.length) {
-            html += '<div class="research-available"><div class="build-label">可研究：</div>';
-            availableResearch.forEach(p => {
-                const isCurrent = p.key === currentKey;
-                html += `<div class="research-option ${isCurrent ? 'active' : ''}">
-                    <div class="build-name">${p.name}</div>
-                    <div class="build-desc">${p.description}（消耗：${p.cost}）</div>
-                    <button class="build-btn" data-action="research" data-val="${p.key}" ${isCurrent?'disabled':''}>研究</button></div>`;
-            });
-            html += '</div>';
-        }
-        const completedResearch = Object.values(projects).filter(p => p.status === 'complete');
-        if (completedResearch.length) {
-            html += `<div class="completed-buildings">已完成：${completedResearch.map(p => p.name).join('、')}</div>`;
-        }
-        html += '</div></div>';
-
         container.innerHTML = html;
     }
 
     executeTrade(offerIdx, qty) {
         const result = this.world.trade.executeTrade(offerIdx, qty, this.world);
         if (result.error) console.warn('Trade failed:', result.error);
+        else if (this.world.questSystem) this.world.questSystem.onTrade();
         this.state = this.world.getState();
         this.renderSidebar();
     }
@@ -2899,6 +2994,143 @@ class RimTownApp {
     // ============================================================
     // Industry Tab
     // ============================================================
+    // ============================================================
+    // Merged Industry + Farm Tab (產業總覽)
+    // ============================================================
+    renderIndustryAndFarm(container) {
+        if (!this.state) return;
+        const ind = this.state.industry || {};
+        const farm = this.state.farm || {};
+        const plots = farm.plots || [];
+        // Sub-tab state
+        if (!this._industrySubTab) this._industrySubTab = 'overview';
+        let html = '<div class="economy-panel">';
+        // Sub-tab navigation
+        html += '<div class="sub-tab-bar">';
+        const subTabs = [
+            { key:'overview', label:'總覽', icon:'🏘️' },
+            { key:'farm', label:'農場', icon:'🌾' },
+        ];
+        subTabs.forEach(t => {
+            const active = this._industrySubTab === t.key ? ' class="active"' : '';
+            html += `<button${active} data-action="industry-subtab" data-val="${t.key}">${t.icon} ${t.label}</button>`;
+        });
+        html += '</div>';
+        if (this._industrySubTab === 'overview') {
+            // Town level
+            html += `<div class="econ-section"><h3>🏘️ 小鎮等級：${ind.townLevelName || '荒村'} (Lv${ind.townLevel || 1})</h3>`;
+            html += `<div style="font-size:0.8rem;color:var(--text-secondary)">產業上限：${ind.maxIndustries || 1} | 已開啟：${Object.keys(ind.industries || {}).length}</div></div>`;
+            // Needs initial industry choice
+            if (ind.needsIndustryChoice) {
+                html += '<div class="econ-section"><h3>選擇你的第一個產業</h3>';
+                const available = this.world.industry.getAvailableIndustries(this.world);
+                available.forEach(i => {
+                    html += `<div class="build-card"><div><strong>${i.icon} ${i.name}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
+                        <button class="trade-btn" data-action="choose-industry" data-val="${i.key}">選擇</button></div>`;
+                });
+                html += '</div>';
+            }
+            // Active industries
+            if (ind.industries && Object.keys(ind.industries).length > 0) {
+                html += '<div class="econ-section"><h3>產業列表</h3>';
+                for (const [key, data] of Object.entries(ind.industries)) {
+                    const def = typeof INDUSTRIES !== 'undefined' ? INDUSTRIES[key] : null;
+                    const lvDef = def?.levels?.find(l => l.lv === data.level);
+                    const nextLv = def?.levels?.find(l => l.lv === data.level + 1);
+                    html += `<div class="build-card"><div><strong>${def?.icon || '?'} ${def?.name || key} Lv${data.level}</strong>`;
+                    if (lvDef) html += `<br><span style="font-size:0.75rem">${lvDef.bonus || lvDef.name}</span>`;
+                    html += `<br><span style="font-size:0.75rem;color:var(--text-secondary)">工人：${Array.isArray(data.workers) ? data.workers.length : data.workers}/${lvDef?.workers || '?'}</span>`;
+                    if (data.dailyOutput && Object.keys(data.dailyOutput).length) {
+                        const outputStr = Object.entries(data.dailyOutput).map(([r,a]) => `${r}:${Math.round(a*10)/10}`).join(' ');
+                        html += `<br><span style="font-size:0.7rem;color:var(--accent-gold)">📦 ${outputStr}</span>`;
+                    }
+                    html += '</div>';
+                    if (nextLv) {
+                        const costStr = Object.entries(nextLv.cost).map(([r,a]) => `${r}:${a}`).join(' ');
+                        html += `<div><button class="trade-btn" data-action="upgrade-industry" data-val="${key}">升級 Lv${nextLv.lv}</button>
+                            <div style="font-size:0.65rem;color:var(--text-secondary)">${costStr}</div></div>`;
+                    }
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+            // Pending unlock
+            if (ind._pendingUnlock) {
+                html += '<div class="econ-section"><h3>可開啟新產業！</h3>';
+                const available = this.world.industry.getAvailableIndustries(this.world);
+                available.forEach(i => {
+                    html += `<div class="build-card"><div><strong>${i.icon} ${i.name}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
+                        <button class="trade-btn" data-action="choose-industry" data-val="${i.key}">開啟</button></div>`;
+                });
+                html += '</div>';
+            }
+            // Synergies
+            if (ind.activeSynergies && ind.activeSynergies.length > 0) {
+                html += '<div class="econ-section"><h3>產業加成</h3>';
+                ind.activeSynergies.forEach(s => {
+                    html += `<div style="font-size:0.8rem;margin:4px 0">${s.icon} ${s.name}</div>`;
+                });
+                html += '</div>';
+            }
+        } else if (this._industrySubTab === 'farm') {
+            // Farm sub-tab content
+            const stateIcons = { empty:'🟫', tilled:'🟤', growing:'🌱', ready:'✅', withered:'🥀' };
+            const stateLabels = { empty:'空地', tilled:'已翻土', growing:'生長中', ready:'可收穫', withered:'枯萎' };
+            html += `<div class="econ-section"><h3>🌾 農場（${plots.length}/${farm.maxPlots || 0} 塊田）</h3></div>`;
+            if (plots.length === 0) {
+                html += '<div class="econ-section"><p class="muted-text">需要先開啟農業產業才能使用農場。</p></div>';
+            }
+            for (const plot of plots) {
+                const crop = plot.crop ? (typeof CROPS !== 'undefined' ? CROPS[plot.crop] : null) : null;
+                html += `<div class="build-card"><div>`;
+                html += `<strong>${stateIcons[plot.state] || '?'} 田地 #${plot.id}</strong> — ${stateLabels[plot.state] || plot.state}`;
+                if (crop && plot.state === 'growing') {
+                    html += `<br><span style="font-size:0.75rem">${crop.icon} ${crop.name} | 進度：${Math.round(plot.growthProgress)}% | 水分：${Math.round(plot.waterLevel)}%</span>`;
+                    if (plot.fertilized) html += ' 🧪';
+                } else if (crop && plot.state === 'ready') {
+                    html += `<br><span style="font-size:0.75rem">${crop.icon} ${crop.name} — 可收穫！</span>`;
+                }
+                html += '</div><div>';
+                if (plot.state === 'empty') {
+                    html += `<button class="trade-btn" data-action="till-plot" data-val="${plot.id}">翻土</button>`;
+                } else if (plot.state === 'tilled') {
+                    const farmInd = this.world.industry?.industries?.farming;
+                    const farmLevel = farmInd?.level || 1;
+                    const crops = this.world.farm.getAvailableCrops(farmLevel);
+                    const seasonCrops = crops.filter(c => c.seasons.includes(this.world.clock.season));
+                    if (seasonCrops.length > 0) {
+                        html += '<div style="font-size:0.7rem">';
+                        seasonCrops.forEach(c => {
+                            html += `<button class="trade-btn" style="margin:2px;font-size:0.65rem" data-action="plant-crop" data-val="${plot.id},${c.key}">${c.icon}${c.name}</button>`;
+                        });
+                        html += '</div>';
+                    } else {
+                        html += '<span style="font-size:0.7rem;color:var(--text-secondary)">本季無可種作物</span>';
+                    }
+                } else if (plot.state === 'growing') {
+                    html += `<button class="trade-btn" style="margin:2px;font-size:0.7rem" data-action="water-plot" data-val="${plot.id}">💧澆水</button>`;
+                    if (!plot.fertilized) html += `<button class="trade-btn" style="margin:2px;font-size:0.7rem" data-action="fertilize-plot" data-val="${plot.id}">🧪施肥</button>`;
+                } else if (plot.state === 'ready') {
+                    html += `<button class="trade-btn" data-action="harvest-plot" data-val="${plot.id}">🌾收穫</button>`;
+                } else if (plot.state === 'withered') {
+                    html += `<button class="trade-btn" data-action="clear-withered" data-val="${plot.id}">清除</button>`;
+                }
+                html += '</div></div>';
+            }
+            // Recent harvests
+            const log = farm.harvestLog || [];
+            if (log.length > 0) {
+                html += '<div class="econ-section"><h3>收穫紀錄</h3>';
+                log.slice(-5).reverse().forEach(h => {
+                    html += `<div style="font-size:0.75rem;margin:2px 0">${h.cropName} x${h.amount}（${h.quality}）— ${h.season} 第${h.day}天</div>`;
+                });
+                html += '</div>';
+            }
+        }
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
     renderIndustry(container) {
         if (!this.state) return;
         const ind = this.state.industry || {};
@@ -3072,6 +3304,7 @@ class RimTownApp {
     _harvestPlot(plotId) {
         const r = this.world.farm.harvestPlot(plotId, this.world);
         if (!r.ok) { alert(r.error || '無法收穫'); return; }
+        if (this.world.questSystem) this.world.questSystem.onHarvest();
         this.state = this.world.getState(); this.renderSidebar();
     }
     _clearWithered(plotId) {
@@ -3251,6 +3484,94 @@ class RimTownApp {
     _viewNewspaper(id) {
         this._expandedNewspaper = this._expandedNewspaper === id ? null : id;
         this.renderSidebar();
+    }
+
+    // ============================================================
+    // Quest Tab (主線任務)
+    // ============================================================
+    renderQuest(container) {
+        if (!this.state) return;
+        // Trigger quest check on view
+        if (this.world.questSystem) this.world.questSystem.checkProgress(this.world);
+        this.state = this.world.getState();
+        const qs = this.state.questSystem;
+        if (!qs) {
+            container.innerHTML = '<div class="economy-panel"><p class="muted-text">任務系統尚未載入。</p></div>';
+            return;
+        }
+
+        const chapterNames = typeof CHAPTER_NAMES !== 'undefined' ? CHAPTER_NAMES : {};
+        let html = '<div class="economy-panel">';
+        html += `<div class="econ-section"><h3>⚔️ 主線任務</h3>`;
+        html += `<div style="font-size:0.75rem;color:var(--text-secondary)">進度：${qs.completedCount}/${qs.totalCount} 完成</div></div>`;
+
+        // Progress bar for overall
+        const overallPct = Math.round((qs.completedCount / qs.totalCount) * 100);
+        html += `<div class="econ-section"><div class="progress-bar" style="height:10px;margin-bottom:8px"><div class="progress-fill" style="width:${overallPct}%;background:var(--accent)"></div></div></div>`;
+
+        // Group quests by chapter
+        const chapters = {};
+        for (const [qId, qData] of Object.entries(qs.quests)) {
+            const ch = qData.chapter || 1;
+            if (!chapters[ch]) chapters[ch] = [];
+            chapters[ch].push({ id: qId, ...qData });
+        }
+
+        for (const [chNum, quests] of Object.entries(chapters)) {
+            const chName = chapterNames[chNum] || `第${chNum}章`;
+            const allCompleted = quests.every(q => q.status === 'completed');
+            const hasActive = quests.some(q => q.status === 'active');
+
+            html += `<div class="econ-section">`;
+            html += `<h3 style="color:${allCompleted ? 'var(--positive)' : hasActive ? 'var(--accent)' : 'var(--text-muted)'}">${allCompleted ? '✅' : hasActive ? '📖' : '🔒'} ${chName}</h3>`;
+
+            for (const quest of quests) {
+                if (quest.status === 'locked') {
+                    html += `<div class="quest-card quest-locked"><div class="quest-title">🔒 ???</div><div class="quest-desc">完成前置任務後解鎖</div></div>`;
+                    continue;
+                }
+
+                const isActive = quest.status === 'active';
+                const isComplete = quest.status === 'completed';
+                const cardClass = isComplete ? 'quest-completed' : isActive ? 'quest-active' : '';
+
+                html += `<div class="quest-card ${cardClass}">`;
+                html += `<div class="quest-title">${isComplete ? '✅' : '⚔️'} ${quest.title}</div>`;
+                html += `<div class="quest-desc">${quest.description}</div>`;
+
+                // Objectives
+                if (quest.objectives) {
+                    html += '<div class="quest-objectives">';
+                    for (const obj of quest.objectives) {
+                        const pct = Math.min(100, Math.round((obj.progress / obj.target) * 100));
+                        const done = obj.completed;
+                        html += `<div class="quest-objective ${done ? 'done' : ''}">`;
+                        html += `<span>${done ? '☑' : '☐'} ${obj.label}</span>`;
+                        html += `<span class="quest-obj-progress">${obj.progress}/${obj.target}</span>`;
+                        html += `<div class="progress-bar" style="height:4px;margin-top:2px"><div class="progress-fill" style="width:${pct}%;background:${done ? 'var(--positive)' : 'var(--accent)'}"></div></div>`;
+                        html += '</div>';
+                    }
+                    html += '</div>';
+                }
+
+                // Rewards
+                if (isActive && quest.rewards) {
+                    const rewardStr = Object.entries(quest.rewards).map(([r, a]) => `${r}: ${a}`).join(', ');
+                    html += `<div class="quest-rewards">獎勵：${rewardStr}</div>`;
+                }
+
+                // Completion message
+                if (isComplete && quest.onComplete) {
+                    html += `<div class="quest-complete-msg">${quest.onComplete}</div>`;
+                }
+
+                html += '</div>';
+            }
+            html += '</div>';
+        }
+
+        html += '</div>';
+        container.innerHTML = html;
     }
 
     _escapeHtml(str) {

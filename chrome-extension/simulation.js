@@ -354,6 +354,7 @@ class Agent {
         this.currentThought = ''; this.isPlayer = false;
         this._locationStayTicks = 0; // how many ticks to stay at current location
         this._locationStayRemaining = 0; // countdown
+        this.moodModifier = 0; // accumulated mood changes from events, decays over time
     }
     get moodDescription() {
         if (this.mood >= 80) return 'ecstatic'; if (this.mood >= 60) return 'happy';
@@ -391,7 +392,10 @@ class Agent {
         const prevActivity = this.activity;
         this._decideActivity(world.clock.hour);
         this.needs.tickDecay(this.activity==='sleeping', this.activity==='eating', this.activity==='socializing', this.activity==='recreation');
-        this.mood = Math.max(-100, Math.min(100, 50 + this.personality.moodBase + Math.floor(this.needs.moodContribution)));
+        // Decay moodModifier toward 0
+        if (this.moodModifier > 0) this.moodModifier = Math.max(0, this.moodModifier - 0.5);
+        else if (this.moodModifier < 0) this.moodModifier = Math.min(0, this.moodModifier + 0.5);
+        this.mood = Math.max(-100, Math.min(100, 50 + this.personality.moodBase + Math.floor(this.needs.moodContribution) + this.moodModifier));
         this._gainSkillXp(world);
         // Only re-pick location if activity changed or stay duration expired
         const activityChanged = this.activity !== prevActivity;
@@ -626,7 +630,7 @@ class Agent {
     _doStargazing(world) {
         this.needs.recreation = Math.min(100, this.needs.recreation + 2);
         this.needs.comfort = Math.min(100, this.needs.comfort + 1);
-        this.mood = Math.min(100, this.mood + 0.5);
+        this.moodModifier = (this.moodModifier || 0) + 0.5;
         // Chance to bond with someone also stargazing
         if (Math.random() < 0.15) {
             const others = world.getAgentsAtLocation(this.currentLocation).filter(a => a.agentId !== this.agentId && a.activity === 'stargazing');
@@ -654,7 +658,7 @@ class Agent {
                 { text: '在星光下發現了一株發光的植物！', mood: 12, topic: '夜光植物' },
             ];
             const disc = pickRandom(discoveries);
-            this.mood = Math.min(100, this.mood + disc.mood);
+            this.moodModifier = (this.moodModifier || 0) + disc.mood;
             this.currentThought = disc.text;
             world.logMessage('discovery', `${this.name}${disc.text}`, this.name);
             this.memory.add(world.tickCount, world.clock.timeStr, 'discovery', disc.text, 8, []);
@@ -672,7 +676,7 @@ class Agent {
             { text: '在廣場放了一堆假蜘蛛', target: 'town_square', mood_self: 8, mood_others: -4, severity: 'minor' },
         ];
         const mischief = pickRandom(mischiefTypes);
-        this.mood = Math.min(100, this.mood + mischief.mood_self);
+        this.moodModifier = (this.moodModifier || 0) + mischief.mood_self;
         world.logMessage('mischief', `${this.name}趁著夜色${mischief.text}！`, this.name);
         this.memory.add(world.tickCount, world.clock.timeStr, 'mischief', `我趁夜裡${mischief.text}`, 6, []);
         this.currentThought = '嘿嘿...成功了。';
@@ -685,7 +689,7 @@ class Agent {
             rel.modifyAffinity(-5);
             world.logMessage('mischief', `${witness.name}撞見了${this.name}的惡作劇！`, witness.name, this.name);
             witness.memory.add(world.tickCount, world.clock.timeStr, 'witness', `撞見${this.name}在${mischief.text}`, 7, [this.name]);
-            this.mood -= 5;
+            this.moodModifier = (this.moodModifier || 0) - 5;
             this.currentThought = `糟糕，被${witness.name}看到了...`;
         }
     }
@@ -741,7 +745,7 @@ class Agent {
         return {
             id:this.agentId, name:this.name, age:this.age, gender:this.gender, gender_label:this.genderLabel,
             job: this.job?.toDict() || null, personality: this.personality.toDict(),
-            mood:this.mood, mood_description:this.moodDescription, mood_label:this.moodLabel,
+            mood:this.mood, moodModifier:this.moodModifier, mood_description:this.moodDescription, mood_label:this.moodLabel,
             activity:this.activity, activity_label:this.activityLabel,
             current_location:this.currentLocation, current_thought:this.currentThought,
             needs:this.needs.toDict(), skills:this.skills.toDict(),
@@ -758,7 +762,9 @@ class PlayerAgent extends Agent {
     }
     update(world) {
         this.needs.tickDecay(this.activity==='sleeping', this.activity==='eating', this.activity==='socializing', this.activity==='recreation');
-        this.mood = Math.max(-100, Math.min(100, 50 + this.personality.moodBase + Math.floor(this.needs.moodContribution)));
+        if (this.moodModifier > 0) this.moodModifier = Math.max(0, this.moodModifier - 0.5);
+        else if (this.moodModifier < 0) this.moodModifier = Math.min(0, this.moodModifier + 0.5);
+        this.mood = Math.max(-100, Math.min(100, 50 + this.personality.moodBase + Math.floor(this.needs.moodContribution) + (this.moodModifier || 0)));
     }
     moveTo(locationId, world) {
         if (world.townMap && !world.townMap.locations[locationId]) return false;
@@ -2225,7 +2231,7 @@ class EventSystem {
         if (defense >= rd.threat_level) {
             world.logMessage('raid', `小鎮成功抵禦了${rd.attacker}！`);
             if (world.questSystem) world.questSystem.onRaidSurvived();
-            guards.forEach(g => { g.mood = Math.min(100, g.mood+10); g.memory.add(world.tickCount, world.clock.timeStr,'raid',`協助抵禦了${rd.attacker}！`,8); });
+            guards.forEach(g => { g.moodModifier = (g.moodModifier || 0) + 10; g.memory.add(world.tickCount, world.clock.timeStr,'raid',`協助抵禦了${rd.attacker}！`,8); });
         } else {
             world.logMessage('raid', `${rd.attacker}突破了我們的防線！`);
             if (world.stockpile) {
@@ -2294,7 +2300,9 @@ class EventSystem {
     _sendAgentTravelling(world, agent, reason, travelDays) {
         const data = { agentId:agent.agentId, name:agent.name, age:agent.age, jobKey:agent.job?.key,
             traits:agent.personality.traits, values:agent.personality.values, background:agent.personality.background,
-            homeLocation:agent.homeLocation };
+            homeLocation:agent.homeLocation, gender:agent.gender,
+            skills:agent.skills.toDict(), relationships:agent.relationships.toDict(),
+            memories:agent.memory.toDict(), mood:agent.mood, moodModifier:agent.moodModifier||0 };
         this._travellingAgents.push({agentData:data, returnTick:world.tickCount+(travelDays*96), reason});
         world.logMessage('departure', `${agent.name}${reason}。過幾天就會回來。`, agent.name);
         const event = {name:'居民出行',description:`${agent.name}${reason}。`,severity:'minor',effects:{conversation_topic:`${agent.name}離開了小鎮`},event_type:'departure'};
@@ -2317,6 +2325,28 @@ class EventSystem {
         const personality = new Personality(d.traits, d.background || '', d.values || []);
         const job = d.jobKey ? new Job(d.jobKey) : null;
         const agent = new Agent(d.agentId, d.name, d.age, personality, job, d.homeLocation || 'residential_north');
+        if (d.gender) agent.gender = d.gender;
+        agent.mood = d.mood ?? agent.mood;
+        agent.moodModifier = d.moodModifier || 0;
+        // Restore skills
+        if (d.skills) {
+            for (const [sk,sv] of Object.entries(d.skills)) {
+                const s = agent.skills.get(sk);
+                if (s && sv) { s.xp = sv.xp; s.passion = sv.passion; }
+            }
+        }
+        // Restore relationships
+        if (d.relationships) {
+            for (const [rid,rd] of Object.entries(d.relationships)) {
+                const r = agent.relationships.getOrCreate(rid, rd.name || rid);
+                Object.assign(r, { affinity:rd.affinity||0, trust:rd.trust||0, romanticInterest:rd.romanticInterest||0,
+                    interactionCount:rd.interactionCount||0, status:rd.status||null, statusSince:rd.statusSince||0 });
+            }
+        }
+        // Restore memories
+        if (d.memories && Array.isArray(d.memories)) {
+            d.memories.forEach(m => agent.memory.add(m.tick, m.time, m.category, m.text, m.importance, m.relatedAgents||[]));
+        }
         world.agents[agent.agentId] = agent;
         world.logMessage('arrival', `${agent.name}旅行歸來了！`, agent.name);
         const event = {name:'居民歸來',description:`${agent.name}帶著故事回來了！`,severity:'minor',effects:{mood_all:3,conversation_topic:`${agent.name}的旅行故事`},event_type:'arrival'};
@@ -2531,11 +2561,11 @@ class ElectionSystem {
             const fallbackJobs = ['farmer','guard','trader','researcher'];
             const newJobKey = fallbackJobs[Math.floor(Math.random() * fallbackJobs.length)];
             oldMayor.job = JOB_DEFINITIONS[newJobKey] ? new Job(newJobKey) : null;
-            oldMayor.memory?.add(world.tickCount, world.clock.timeStr, 'election', `我在選舉中落敗，不再擔任鎮長`, 9, [winner.agentId]);
+            oldMayor.memory?.add(world.tickCount, world.clock.timeStr, 'election', `我在選舉中落敗，不再擔任鎮長`, 9, [winner.name]);
         }
         if (newMayorAgent) {
             newMayorAgent.job = new Job('mayor');
-            newMayorAgent.mood = Math.min(100, newMayorAgent.mood + 20);
+            newMayorAgent.moodModifier = (newMayorAgent.moodModifier || 0) + 20;
             newMayorAgent.memory?.add(world.tickCount, world.clock.timeStr, 'election', `我贏得了鎮長選舉！得到 ${winner.votes} 票`, 10, []);
         }
         const resultMsg = this.candidates.map(c => `${c.name}（${c.policyIcon}${c.policyLabel}）：${c.votes} 票`).join('、');
@@ -2549,8 +2579,8 @@ class ElectionSystem {
         Object.values(world.agents).forEach(a => {
             if (a.isPlayer) return;
             const votedFor = this.votes[a.agentId];
-            if (votedFor === winner.agentId) a.mood = Math.min(100, a.mood + 8);
-            else if (votedFor) a.mood = Math.max(-100, a.mood - 3);
+            if (votedFor === winner.agentId) a.moodModifier = (a.moodModifier || 0) + 8;
+            else if (votedFor) a.moodModifier = (a.moodModifier || 0) - 3;
         });
         this.phase = 'results'; this.resultsDaysLeft = 3;
         return { name: '鎮長選舉', description: `${winner.name} 以 ${winner.votes}/${totalVotes} 票當選新鎮長`, severity: 'major', event_type: 'election', effects: {} };
@@ -2663,23 +2693,28 @@ function processDailyProduction(world) {
         eff *= 0.9 + Math.random()*0.2;
         let canProduce = true;
         for (const [r,a] of Object.entries(recipe.inputs)) { if (!sp.has(r,a)) { canProduce=false; break; } }
-        if (!canProduce) { world.logMessage('economy',`${agent.name}無法工作——材料不足！`,agent.name); agent.mood=Math.max(-100,agent.mood-3); return; }
+        if (!canProduce) { world.logMessage('economy',`${agent.name}無法工作——材料不足！`,agent.name); agent.moodModifier=(agent.moodModifier||0)-3; return; }
         for (const [r,a] of Object.entries(recipe.inputs)) sp.consume(r,a,world.tickCount,`${agent.name}的生產`,agent.name);
         for (const [r,a] of Object.entries(recipe.outputs)) sp.add(r,Math.round(a*eff*10)/10,world.tickCount,`${agent.name}（${agent.job.title}）`,agent.name);
-        if (agent.job.key === 'priest') Object.values(world.agents).forEach(o => { if(o.agentId!==agent.agentId) o.mood=Math.min(100,o.mood+1); });
+        if (agent.job.key === 'priest') Object.values(world.agents).forEach(o => { if(o.agentId!==agent.agentId) o.moodModifier=(o.moodModifier||0)+1; });
     });
     const npcCount = Object.values(world.agents).filter(a => !a.isPlayer).length;
-    if (!sp.consume('meals',1.5*npcCount,world.tickCount,'daily consumption')) {
-        const deficit = 1.5*npcCount - sp.get('meals');
+    const mealsNeeded = 1.5*npcCount;
+    const mealsAvailable = sp.get('meals');
+    if (mealsAvailable >= mealsNeeded) {
+        sp.consume('meals',mealsNeeded,world.tickCount,'daily consumption');
+    } else {
+        if (mealsAvailable > 0) sp.consume('meals',mealsAvailable,world.tickCount,'daily consumption');
+        const deficit = mealsNeeded - mealsAvailable;
         if (sp.consume('food',deficit*2,world.tickCount,'緊急食物')) world.logMessage('economy','餐食不夠！居民正在吃生食。');
-        else { world.logMessage('economy','糧食短缺！居民正在挨餓！'); Object.values(world.agents).forEach(a => { a.mood=Math.max(-100,a.mood-10); a.needs.hunger=Math.max(0,a.needs.hunger-20); }); }
+        else { world.logMessage('economy','糧食短缺！居民正在挨餓！'); Object.values(world.agents).forEach(a => { a.moodModifier=(a.moodModifier||0)-10; a.needs.hunger=Math.max(0,a.needs.hunger-20); }); }
     }
     if (world.townMap) { for (const [locId,gather] of Object.entries(NATURE_GATHERING)) { if (world.townMap.locations[locId]) { for (const [r,a] of Object.entries(gather)) sp.add(r,a*0.5,world.tickCount,`natural (${locId})`); } } }
     sp.consume('tools',npcCount*0.05,world.tickCount,'tool wear');
     sp.consume('clothing',npcCount*0.03,world.tickCount,'clothing wear');
     if (world.clock.season === '冬季' && !sp.consume('wood',npcCount*0.3,world.tickCount,'冬季取暖')) {
         world.logMessage('economy','木材不夠取暖！');
-        Object.values(world.agents).forEach(a => { a.mood=Math.max(-100,a.mood-8); a.needs.comfort=Math.max(0,a.needs.comfort-15); });
+        Object.values(world.agents).forEach(a => { a.moodModifier=(a.moodModifier||0)-8; a.needs.comfort=Math.max(0,a.needs.comfort-15); });
     }
 }
 
@@ -2729,7 +2764,7 @@ class BuildingManager {
             Object.entries(p.effects).forEach(([k,v])=>{ this.activeEffects[k]=(this.activeEffects[k]||0)+(typeof v==='number'?v:0); if(typeof v!=='number') this.activeEffects[k]=v; });
             world.logMessage('building',`建造完成：${p.name}！`);
             if (world.dailyNews) world.dailyNews.collectEvent('building', `${p.name}建造完成了！`, 6);
-            Object.values(world.agents).forEach(a=>{ a.mood=Math.min(100,a.mood+5); });
+            Object.values(world.agents).forEach(a=>{ a.moodModifier=(a.moodModifier||0)+5; });
         });
     }
     getEffect(key, def=0) { return this.activeEffects[key]??def; }
@@ -2839,7 +2874,7 @@ class ResearchManager {
                 if(op.status==='locked'&&op.prerequisites.every(pre=>this.projects[pre]?.status==='complete')) op.status='available';
             }
             world.logMessage('research',`研究完成：${p.name}！`);
-            Object.values(world.agents).forEach(a=>{ a.mood=Math.min(100,a.mood+3); });
+            Object.values(world.agents).forEach(a=>{ a.moodModifier=(a.moodModifier||0)+3; });
         }
     }
     toDict() { return {current_research:this.current,projects:{...this.projects}}; }
@@ -2960,7 +2995,7 @@ class NewsSystem {
                 // Mood effects from news
                 if (bulletin.modifiers.mood_modifier) {
                     Object.values(world.agents).forEach(a => {
-                        if (!a.isPlayer) a.mood = Math.max(-100, Math.min(100, a.mood + Math.round(bulletin.modifiers.mood_modifier * 0.5)));
+                        if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) + Math.round(bulletin.modifiers.mood_modifier * 0.5);
                     });
                 }
             }
@@ -3231,8 +3266,8 @@ class FactionSystem {
                         }
                     });
                 });
-                fA.members.forEach(aId => { const a = world.agents[aId]; if (a) a.mood = Math.max(-100, a.mood - 5); });
-                fB.members.forEach(bId => { const b = world.agents[bId]; if (b) b.mood = Math.max(-100, b.mood - 5); });
+                fA.members.forEach(aId => { const a = world.agents[aId]; if (a) a.moodModifier = (a.moodModifier || 0) - 5; });
+                fB.members.forEach(bId => { const b = world.agents[bId]; if (b) b.moodModifier = (b.moodModifier || 0) - 5; });
             }
         } else if (roll < 0.7) {
             // Cooperation between factions
@@ -3255,8 +3290,8 @@ class FactionSystem {
                     }
                 });
             });
-            fA.members.forEach(aId => { const a = world.agents[aId]; if (a) a.mood = Math.min(100, a.mood + 3); });
-            fB.members.forEach(bId => { const b = world.agents[bId]; if (b) b.mood = Math.min(100, b.mood + 3); });
+            fA.members.forEach(aId => { const a = world.agents[aId]; if (a) a.moodModifier = (a.moodModifier || 0) + 3; });
+            fB.members.forEach(bId => { const b = world.agents[bId]; if (b) b.moodModifier = (b.moodModifier || 0) + 3; });
         } else {
             // Internal faction drama
             const faction = pickRandom([fA, fB]);
@@ -3382,7 +3417,7 @@ class FestivalSystem {
 
             // Apply effects
             Object.values(world.agents).forEach(a => {
-                a.mood = Math.min(100, a.mood + festival.effects.mood_all);
+                a.moodModifier = (a.moodModifier || 0) + festival.effects.mood_all;
                 if (festival.effects.social_boost) {
                     a.needs.social = Math.min(100, a.needs.social + festival.effects.social_boost);
                 }
@@ -3441,7 +3476,7 @@ class FestivalSystem {
                     }
                 }
                 Object.values(world.agents).forEach(a => {
-                    a.mood = Math.min(100, a.mood + (this.activeQuest.rewards.mood || 5));
+                    a.moodModifier = (a.moodModifier || 0) + (this.activeQuest.rewards.mood || 5);
                 });
                 this.activeQuest = null;
             }
@@ -3556,7 +3591,7 @@ class LifecycleSystem {
                 if (rel.status === 'married' || rel.status === 'dating') grief = -30;
                 else if (rel.affinity > 50) grief = -20;
                 else if (rel.affinity > 20) grief = -10;
-                a.mood = Math.max(-100, a.mood + grief);
+                a.moodModifier = (a.moodModifier || 0) + grief;
                 a.memory.add(world.tickCount, world.clock.timeStr, 'social',
                     `${npc.name}去世了...我很難過。`, 9, [npc.name]);
                 // Clear relationship status
@@ -3569,7 +3604,7 @@ class LifecycleSystem {
         // Town-wide mood hit
         Object.values(world.agents).forEach(a => {
             if (a.agentId !== npc.agentId && !a.isPlayer) {
-                a.mood = Math.max(-100, a.mood - 3);
+                a.moodModifier = (a.moodModifier || 0) - 3;
             }
         });
 
@@ -3660,8 +3695,8 @@ class LifecycleSystem {
         });
 
         // Parents get mood boost
-        parentA.mood = Math.min(100, parentA.mood + 25);
-        parentB.mood = Math.min(100, parentB.mood + 25);
+        parentA.moodModifier = (parentA.moodModifier || 0) + 25;
+        parentB.moodModifier = (parentB.moodModifier || 0) + 25;
         parentA.memory.add(world.tickCount, world.clock.timeStr, 'relationship',
             `我們的孩子${name}出生了！`, 10, [parentB.name, name]);
         parentB.memory.add(world.tickCount, world.clock.timeStr, 'relationship',
@@ -3678,7 +3713,7 @@ class LifecycleSystem {
         // Town celebration
         Object.values(world.agents).forEach(a => {
             if (a.agentId !== agent.agentId) {
-                a.mood = Math.min(100, a.mood + 5);
+                a.moodModifier = (a.moodModifier || 0) + 5;
             }
         });
 
@@ -3849,7 +3884,7 @@ class ExplorationSystem {
                 // XP for participants
                 agents.forEach(a => {
                     a.skills.addXp(zone.rewards.xpSkill, zone.rewards.xpAmount);
-                    a.mood = Math.min(100, a.mood + 10);
+                    a.moodModifier = (a.moodModifier || 0) + 10;
                     a.currentLocation = a.homeLocation;
                     a.activity = 'idle';
                     a.memory.add(world.tickCount, world.clock.timeStr, 'discovery',
@@ -3861,7 +3896,7 @@ class ExplorationSystem {
             } else {
                 // Failed expedition - agents return wounded
                 agents.forEach(a => {
-                    a.mood = Math.max(-100, a.mood - 15);
+                    a.moodModifier = (a.moodModifier || 0) - 15;
                     a.needs.rest = Math.max(0, a.needs.rest - 30);
                     a.needs.hunger = Math.max(0, a.needs.hunger - 20);
                     a.currentLocation = a.homeLocation;
@@ -3952,7 +3987,7 @@ class World {
             if (event) {
                 this.logMessage('event', `[${event.severity.toUpperCase()}] ${event.name}: ${event.description}`);
                 if (event.effects.mood_all != null) {
-                    Object.values(this.agents).forEach(a => { a.mood = Math.max(-100, Math.min(100, a.mood + event.effects.mood_all)); });
+                    Object.values(this.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + event.effects.mood_all; });
                 }
                 if (this.dailyNews) this.dailyNews.collectEvent('event', `${event.name}：${event.description}`, event.severity === 'critical' ? 10 : event.severity === 'major' ? 8 : 5);
             }
@@ -4053,6 +4088,8 @@ class World {
             for (const rel of Object.values(agent.relationships.relationships)) {
                 const other = this.agents[rel.targetId];
                 if (!other || other.isPlayer) continue;
+                // Only process each pair once (avoid duplicate events)
+                if (agent.agentId > rel.targetId) continue;
                 const otherRel = other.relationships.getOrCreate(agent.agentId, agent.name);
 
                 // --- Natural romantic attraction growth ---
@@ -4087,8 +4124,8 @@ class World {
                         this.logMessage('relationship', `${agent.name}和${other.name}開始交往了！`, agent.name, other.name);
                         agent.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `我和${other.name}開始交往了！`, 9, [other.name]);
                         other.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `我和${agent.name}開始交往了！`, 9, [agent.name]);
-                        agent.mood = Math.min(100, agent.mood + 20);
-                        other.mood = Math.min(100, other.mood + 20);
+                        agent.moodModifier = (agent.moodModifier || 0) + 20;
+                        other.moodModifier = (other.moodModifier || 0) + 20;
                         this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}和${other.name}在一起了！`, source:'鎮民', spreadCount:0, tickCreated:this.tickCount, isTrue:true });
                         if (this.dailyNews) this.dailyNews.collectEvent('relationship', `${agent.name}和${other.name}開始交往了！`, 7, [agent.name, other.name]);
                     }
@@ -4107,7 +4144,7 @@ class World {
                         other.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `我和${agent.name}結婚了！太開心了。`, 10, [agent.name]);
                         // Wedding boosts mood for everyone
                         Object.values(this.agents).forEach(a => {
-                            a.mood = Math.min(100, a.mood + 8);
+                            a.moodModifier = (a.moodModifier || 0) + 8;
                             if (a.agentId !== agent.agentId && a.agentId !== other.agentId) {
                                 a.memory.add(this.tickCount, this.clock.timeStr, 'social', `參加了${agent.name}和${other.name}的婚禮！`, 6, [agent.name, other.name]);
                             }
@@ -4164,8 +4201,8 @@ class World {
                         this.logMessage('relationship', `${agent.name}發現${other.name}劈腿${thirdName}，兩人${action}了！`, agent.name, other.name);
                         agent.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `發現${other.name}背著我和${thirdName}在一起。我們${action}了。`, 10, [other.name, thirdName]);
                         other.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${agent.name}發現了我的事情。我們${action}了。`, 10, [agent.name]);
-                        agent.mood = Math.max(-100, agent.mood - 30);
-                        other.mood = Math.max(-100, other.mood - 15);
+                        agent.moodModifier = (agent.moodModifier || 0) - 30;
+                        other.moodModifier = (other.moodModifier || 0) - 15;
                         this.gossipNetwork.activeGossip.push({ about:other.name, content:`${other.name}劈腿被${agent.name}發現了！兩人${action}了！`, source:'鎮民', spreadCount:0, tickCreated:this.tickCount, isTrue:true });
                         if (this.dailyNews) this.dailyNews.collectEvent('drama', `${other.name}劈腿被${agent.name}發現！兩人${action}了！`, 10, [agent.name, other.name, thirdName]);
                         // Trigger NPC event chain for cheating discovery
@@ -4183,8 +4220,8 @@ class World {
                         this.logMessage('relationship', `${agent.name}和${other.name}分手了。`, agent.name, other.name);
                         agent.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `我和${other.name}分手了。`, 8, [other.name]);
                         other.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `我和${agent.name}分手了。`, 8, [agent.name]);
-                        agent.mood = Math.max(-100, agent.mood - 15);
-                        other.mood = Math.max(-100, other.mood - 15);
+                        agent.moodModifier = (agent.moodModifier || 0) - 15;
+                        other.moodModifier = (other.moodModifier || 0) - 15;
                         this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}和${other.name}分手了⋯⋯`, source:'鎮民', spreadCount:0, tickCreated:this.tickCount, isTrue:true });
                         if (this.dailyNews) this.dailyNews.collectEvent('relationship', `${agent.name}和${other.name}分手了⋯⋯`, 6, [agent.name, other.name]);
                     }
@@ -4200,11 +4237,11 @@ class World {
                         this.logMessage('relationship', `${agent.name}和${other.name}離婚了。`, agent.name, other.name);
                         agent.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `我和${other.name}離婚了。`, 10, [other.name]);
                         other.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `我和${agent.name}離婚了。`, 10, [agent.name]);
-                        agent.mood = Math.max(-100, agent.mood - 25);
-                        other.mood = Math.max(-100, other.mood - 25);
+                        agent.moodModifier = (agent.moodModifier || 0) - 25;
+                        other.moodModifier = (other.moodModifier || 0) - 25;
                         Object.values(this.agents).forEach(a => {
                             if (a.agentId !== agent.agentId && a.agentId !== other.agentId) {
-                                a.mood = Math.max(-100, a.mood - 3);
+                                a.moodModifier = (a.moodModifier || 0) - 3;
                             }
                         });
                         this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}和${other.name}離婚了⋯⋯好可惜。`, source:'鎮民', spreadCount:0, tickCreated:this.tickCount, isTrue:true });
@@ -4336,6 +4373,7 @@ class World {
                 agent.currentLocation = ad.currentLocation;
                 if (ad.gender) agent.gender = ad.gender;
                 agent.mood = ad.mood; agent.activity = ad.activity;
+                agent.moodModifier = ad.moodModifier || 0;
                 agent.currentThought = ad.currentThought || '';
                 agent._lastInteractionTick = ad._lastInteractionTick || 0;
                 agent._locationStayRemaining = ad._locationStayRemaining || 0;
@@ -4520,7 +4558,7 @@ function weightedChoice(items, weights) {
 
 // Seeded random for reproducible map generation
 class SeededRandom {
-    constructor(seed) { this.seed = seed ?? Math.floor(Math.random() * 2147483647); }
+    constructor(seed) { this.seed = seed || Math.floor(Math.random() * 2147483647); }
     _next() { this.seed = (this.seed * 16807) % 2147483647; return this.seed; }
     nextFloat() { return (this._next() - 1) / 2147483646; }
     nextInt(min, max) { return Math.floor(this.nextFloat() * (max - min + 1)) + min; }

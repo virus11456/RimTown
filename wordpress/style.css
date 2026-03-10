@@ -28,11 +28,11 @@
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
-    overflow: hidden;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    position: relative;
+    overflow: hidden !important;
+    height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    position: relative !important;
     line-height: 1.5;
     font-size: 14px;
 }
@@ -167,27 +167,38 @@ body.rimtown-page .wp-block-post-title {
     border-color: var(--negative);
 }
 
-/* Main Layout */
-.main-layout {
-    display: flex;
-    flex: 1;
-    min-height: 0;
+/* Main Layout — use absolute positioning to be immune to theme overrides */
+.rimtown-container .main-layout {
+    position: relative !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
 }
 
-/* Town Map */
-.map-panel {
-    flex: 1;
-    position: relative;
-    overflow: hidden;
-    background: #2d5a1e;
+/* Town Map — absolute position, leave 360px for sidebar */
+.rimtown-container .map-panel {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 360px !important;
+    bottom: 0 !important;
+    overflow: hidden !important;
+    background: #1a1a2e !important;
 }
 
 #town-map-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
-    cursor: pointer;
+    cursor: grab;
+    touch-action: none;
+}
+#town-map-canvas:active {
+    cursor: grabbing;
 }
 
 .town-map {
@@ -281,9 +292,13 @@ body.rimtown-page .wp-block-post-title {
     display: block;
 }
 
-/* Sidebar */
-.rt-sidebar {
-    width: 360px;
+/* Sidebar — absolute position on right */
+.rimtown-container .rt-sidebar {
+    position: absolute !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 360px !important;
     background: var(--bg-secondary);
     border-left: 1px solid var(--border);
     display: flex;
@@ -291,25 +306,83 @@ body.rimtown-page .wp-block-post-title {
     overflow: hidden;
 }
 
+/* Sidebar Tabs — grid layout */
 .rt-sidebar-tabs {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
     border-bottom: 1px solid var(--border);
+    background: var(--bg-primary);
+    flex-shrink: 0;
+}
+
+/* Sub-tab bar inside panels */
+.sub-tab-bar {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin: -10px -10px 10px -10px;
+    padding: 0;
+    background: var(--bg-primary);
+}
+.sub-tab-bar button {
+    flex: 1;
+    padding: 8px 6px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.15s;
+}
+.sub-tab-bar button:hover {
+    background: rgba(233, 69, 96, 0.1);
+    color: var(--text-primary);
+}
+.sub-tab-bar button.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    background: rgba(233, 69, 96, 0.08);
 }
 
 .rt-sidebar-tabs button {
-    flex: 1;
-    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px 4px;
     background: none;
     border: none;
+    border-bottom: 2px solid transparent;
     color: var(--text-secondary);
     cursor: pointer;
-    font-size: 0.8rem;
-    border-bottom: 2px solid transparent;
+    font-size: 0.7rem;
+    transition: all 0.15s ease;
+    position: relative;
+}
+
+.rt-sidebar-tabs button:hover {
+    background: rgba(233, 69, 96, 0.1);
+    color: var(--text-primary);
 }
 
 .rt-sidebar-tabs button.active {
     color: var(--accent);
     border-bottom-color: var(--accent);
+    background: rgba(233, 69, 96, 0.08);
+}
+
+.rt-sidebar-tabs .tab-icon {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.rt-sidebar-tabs .tab-label {
+    font-size: 0.65rem;
+    line-height: 1;
+    white-space: nowrap;
 }
 
 .rt-sidebar-content {
@@ -1045,6 +1118,7 @@ body.rimtown-page .wp-block-post-title {
     border-color: var(--accent) !important;
     color: var(--accent) !important;
 }
+.version-display { font-size: 0.65rem; color: rgba(255,255,255,0.4); padding: 2px 6px; user-select: none; }
 
 /* Raid/departure log entry styles */
 .log-entry.type-raid { border-left: 2px solid var(--negative); padding-left: 6px; }
@@ -1159,9 +1233,9 @@ body.rimtown-page .wp-block-post-title {
 .npc-convo-entry:hover { background: rgba(255,255,255,0.03); }
 .npc-convo-header { font-size: 0.72rem; margin-bottom: 2px; }
 .npc-convo-summary { font-size: 0.68rem; color: var(--text-secondary); }
-.npc-convo-dialogue { display: block; margin-top: 6px; padding: 6px 8px; background: rgba(0,0,0,0.2); border-radius: 4px; }
-.npc-convo-entry.collapsed .npc-convo-dialogue { display: none; }
-.npc-convo-entry.collapsed .npc-convo-summary { color: var(--text-muted); }
+.npc-convo-dialogue { display: none; margin-top: 6px; padding: 6px 8px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+.npc-convo-entry.expanded .npc-convo-dialogue { display: block; }
+.npc-convo-entry.expanded .npc-convo-summary { color: var(--accent); }
 .npc-convo-line { font-size: 0.68rem; color: var(--text-primary); margin: 3px 0; line-height: 1.4; }
 .npc-convo-speaker { color: var(--accent-light); font-weight: bold; }
 
@@ -1194,6 +1268,197 @@ body.rimtown-page .wp-block-post-title {
 .town-actions { display: flex; gap: 4px; }
 .town-actions button { background: transparent; border: 1px solid var(--border); color: var(--text-secondary);
     padding: 2px 6px; font-size: 0.7rem; border-radius: 3px; cursor: pointer; }
+
+/* ===== Election System ===== */
+.election-section {
+    background: rgba(233, 69, 96, 0.08);
+    border: 1px solid rgba(233, 69, 96, 0.3);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+.election-section h4 {
+    color: var(--accent);
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+}
+.election-info {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+.election-candidate {
+    background: var(--bg-card);
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    border: 1px solid transparent;
+}
+.election-candidate:hover {
+    border-color: var(--accent);
+}
+.election-winner-card {
+    border-color: var(--warning) !important;
+    background: rgba(251, 191, 36, 0.1);
+}
+.candidate-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.candidate-name {
+    font-weight: bold;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+.candidate-policy {
+    font-size: 0.7rem;
+    color: var(--info);
+    background: rgba(96, 165, 250, 0.15);
+    padding: 1px 6px;
+    border-radius: 8px;
+}
+.candidate-votes {
+    font-size: 0.7rem;
+    color: var(--warning);
+    margin-left: auto;
+    font-weight: bold;
+}
+.candidate-speech {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    font-style: italic;
+    line-height: 1.3;
+}
+.election-bar {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+.election-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+.election-bar-fill.winner {
+    background: var(--warning);
+}
+.election-total {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-align: right;
+    margin-top: 4px;
+}
+.election-winner {
+    text-align: center;
+    padding: 8px;
+    margin-bottom: 8px;
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: 6px;
+}
+.winner-name {
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--warning);
+}
+.winner-policy {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+.election-history-brief {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+.log-entry.type-election { border-left: 2px solid var(--warning); padding-left: 6px; }
+
+/* ===== Quest System ===== */
+.quest-card {
+    background: var(--bg-card);
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 8px;
+    border-left: 3px solid var(--border);
+    transition: all 0.2s;
+}
+.quest-card.quest-active {
+    border-left-color: var(--accent);
+    background: rgba(233, 69, 96, 0.08);
+}
+.quest-card.quest-completed {
+    border-left-color: var(--positive);
+    opacity: 0.75;
+}
+.quest-card.quest-locked {
+    opacity: 0.4;
+    border-left-color: var(--text-muted);
+}
+.quest-title {
+    font-weight: bold;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+}
+.quest-desc {
+    font-size: 0.73rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin-bottom: 6px;
+}
+.quest-objectives {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+.quest-objective {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+}
+.quest-objective.done {
+    color: var(--positive);
+}
+.quest-objective.done span:first-child {
+    text-decoration: line-through;
+    text-decoration-color: var(--positive);
+}
+.quest-obj-progress {
+    margin-left: auto;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    font-family: monospace;
+}
+.quest-rewards {
+    font-size: 0.7rem;
+    color: var(--warning);
+    padding: 3px 6px;
+    background: rgba(251, 191, 36, 0.1);
+    border-radius: 4px;
+    margin-top: 4px;
+}
+.quest-complete-msg {
+    font-size: 0.7rem;
+    color: var(--positive);
+    font-style: italic;
+    margin-top: 4px;
+}
+.log-entry.type-quest { border-left: 2px solid var(--accent); padding-left: 6px; font-weight: bold; }
 
 /* ===== Mobile Sidebar Toggle ===== */
 .mobile-sidebar-toggle {
@@ -1242,8 +1507,11 @@ body.rimtown-page .wp-block-post-title {
 
 /* ===== Responsive: Tablet (≤1024px) ===== */
 @media (max-width: 1024px) {
-    .rt-sidebar {
-        width: 300px;
+    .rimtown-container .rt-sidebar {
+        width: 300px !important;
+    }
+    .rimtown-container .map-panel {
+        right: 300px !important;
     }
     .header h1 {
         font-size: 0.95rem;
@@ -1252,330 +1520,171 @@ body.rimtown-page .wp-block-post-title {
         padding: 3px 8px;
         font-size: 0.75rem;
     }
-}
-
-/* ===== Faction / Social Circle Styles ===== */
-.faction-section, .explore-section, .lifecycle-section, .festival-section, .quest-section {
-    padding: 8px; border-top: 1px solid var(--border); margin-top: 8px;
-}
-.faction-section h4, .explore-section h4, .lifecycle-section h4, .festival-section h4, .quest-section h4 {
-    font-size: 0.8rem; color: var(--accent); margin-bottom: 6px;
-}
-.faction-card {
-    background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px;
-    padding: 6px 8px; margin-bottom: 6px;
-}
-.faction-header { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; flex-wrap: wrap; }
-.faction-cohesion { font-size: 0.65rem; color: var(--text-secondary); margin-left: auto; }
-.cohesion-high { color: var(--positive); }
-.cohesion-low { color: var(--negative); }
-.faction-members { font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px; }
-.faction-relations { font-size: 0.65rem; margin-top: 3px; }
-.faction-rival { color: var(--negative); margin-right: 6px; }
-.faction-ally { color: var(--positive); }
-.faction-mini { font-size: 0.75rem; padding: 3px 0; }
-
-/* Festival & Quest */
-.quest-progress {
-    position: relative; background: var(--bg-tertiary); border-radius: 4px;
-    height: 18px; margin: 6px 8px; overflow: hidden;
-}
-.quest-bar { height: 100%; background: var(--accent); transition: width 0.3s; }
-.quest-progress span {
-    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-    font-size: 0.65rem; line-height: 18px; color: #fff; text-shadow: 0 0 2px #000;
-}
-
-/* Exploration */
-.explore-zone {
-    background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px;
-    padding: 6px 8px; margin-bottom: 6px;
-}
-.zone-header { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; flex-wrap: wrap; }
-.zone-diff { font-size: 0.6rem; margin-left: auto; }
-.zone-desc { font-size: 0.7rem; color: var(--text-secondary); margin: 2px 0; }
-.zone-stats { font-size: 0.65rem; color: var(--text-muted); }
-.zone-send { margin-top: 4px; display: flex; gap: 4px; align-items: flex-end; }
-.explore-select {
-    flex: 1; background: var(--bg-secondary); color: var(--text-primary);
-    border: 1px solid var(--border); border-radius: 4px; font-size: 0.7rem; padding: 2px;
-}
-.explore-btn {
-    background: var(--accent); color: #fff; border: none; border-radius: 4px;
-    padding: 4px 8px; font-size: 0.7rem; cursor: pointer;
-}
-.explore-btn:hover { opacity: 0.85; }
-.zone-busy { font-size: 0.7rem; color: var(--text-muted); font-style: italic; margin-top: 4px; }
-.expedition-active { margin-bottom: 8px; font-size: 0.75rem; }
-.expedition-item { padding: 3px 0; color: var(--text-secondary); }
-
-/* Lifecycle / Graveyard */
-.birth-item { font-size: 0.75rem; padding: 3px 0; }
-.birth-time { font-size: 0.6rem; color: var(--text-muted); margin-left: 6px; }
-.grave-item {
-    background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px;
-    padding: 6px 8px; margin-bottom: 4px;
-}
-.grave-name { font-weight: bold; font-size: 0.8rem; }
-.grave-info { font-size: 0.7rem; color: var(--text-secondary); }
-.grave-epitaph { font-size: 0.7rem; font-style: italic; color: var(--text-muted); margin-top: 2px; }
-.grave-time { font-size: 0.6rem; color: var(--text-muted); }
-
-/* ===== Mobile-only elements (hidden on desktop) ===== */
-.mobile-header {
-    display: none !important;
-}
-.mobile-drag-handle {
-    display: none !important;
-}
-.mobile-menu-dropdown {
-    display: none !important;
+    /* Tablet: smaller tab icons and labels */
+    .rt-sidebar-tabs button {
+        padding: 5px 2px;
+    }
+    .rt-sidebar-tabs .tab-icon {
+        font-size: 0.9rem;
+    }
+    .rt-sidebar-tabs .tab-label {
+        font-size: 0.6rem;
+    }
 }
 
 /* ===== Responsive: Mobile (≤768px) ===== */
 @media (max-width: 768px) {
+    /* Force container to viewport, prevent page scroll */
     .rimtown-container {
         height: 100vh;
         height: 100dvh;
+        max-height: 100vh;
+        max-height: 100dvh;
+        overflow: hidden !important;
+    }
+    /* Prevent WordPress wrappers from scrolling */
+    body.rimtown-page {
+        overflow: hidden !important;
+        height: 100vh !important;
+        height: 100dvh !important;
     }
 
-    /* Hide desktop header, show mobile header */
+    /* Header: single compact row */
     .header {
-        display: none !important;
-    }
-    .mobile-header {
-        display: block !important;
-        background: var(--bg-secondary);
-        border-bottom: 1px solid var(--border);
-        position: relative;
-        z-index: 60;
-    }
-    .mobile-header-row {
-        display: flex;
-        align-items: center;
-        padding: 4px 10px;
-        gap: 8px;
-        min-height: 32px;
-    }
-    .mobile-title {
-        font-size: 0.82rem;
-        font-weight: bold;
-        color: var(--accent);
-        letter-spacing: 1px;
-        flex-shrink: 0;
-    }
-    .mobile-clock {
-        flex: 1;
-        color: var(--warning);
-        font-family: monospace;
-        font-size: 0.72rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .mobile-header-actions {
-        display: flex;
-        gap: 4px;
-        flex-shrink: 0;
-    }
-    .mobile-ctrl-btn {
-        width: 28px;
-        height: 28px;
-        border: 1px solid var(--border);
-        background: var(--bg-card);
-        color: var(--text-primary);
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 0.8rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-    }
-    .mobile-ctrl-btn:active {
-        background: var(--accent);
-    }
-    .mobile-ctrl-btn.paused {
-        background: var(--accent);
-        color: #fff;
-    }
-
-    /* Mobile dropdown menu */
-    .mobile-menu-dropdown {
-        position: absolute;
-        top: 100%;
-        right: 0;
-        left: 0;
-        background: var(--bg-secondary);
-        border-bottom: 1px solid var(--border);
-        padding: 6px;
-        display: flex !important;
-        flex-wrap: wrap;
-        gap: 4px;
-        align-items: center;
-        z-index: 61;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    }
-    .mobile-menu-dropdown.hidden {
-        display: none !important;
-    }
-    .mobile-menu-dropdown > button {
-        padding: 5px 10px;
-        border: 1px solid var(--border);
-        background: var(--bg-card);
-        color: var(--text-primary);
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 0.68rem;
-        white-space: nowrap;
-    }
-    .mobile-menu-dropdown > button:active {
-        background: var(--accent);
-    }
-    .mobile-menu-speed {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
-    .mobile-menu-speed > span {
-        font-size: 0.65rem;
-        color: var(--text-muted);
-    }
-    .mobile-menu-speed .speed-controls {
-        display: inline-flex;
-        gap: 1px;
-        background: var(--bg-primary);
-        border-radius: 4px;
-        padding: 2px;
-        border: 1px solid var(--accent);
-    }
-    .mobile-menu-speed .btn-speed {
-        padding: 3px 6px;
-        border: none;
-        background: transparent;
-        color: var(--text-secondary);
-        border-radius: 3px;
-        cursor: pointer;
-        font-size: 0.65rem;
-        font-weight: bold;
-    }
-    .mobile-menu-speed .btn-speed.active {
-        background: var(--accent);
-        color: #fff;
-    }
-    .mobile-menu-ai {
-        margin-left: auto;
-    }
-
-    /* Main layout: stack vertically */
-    .main-layout {
-        flex-direction: column;
-        position: relative;
-    }
-
-    /* Map takes ~75% of remaining space */
-    .map-panel {
-        flex: 3;
-        min-height: 0;
-    }
-
-    /* Sidebar: docked at bottom, 25% default, expandable */
-    .rt-sidebar {
-        position: relative;
-        bottom: auto;
-        left: auto;
-        right: auto;
-        width: 100%;
-        flex: 1;
-        max-height: none;
-        height: auto;
-        border-left: none;
-        border-top: 2px solid var(--accent);
-        transform: none;
-        transition: flex 0.3s ease;
-        z-index: 50;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-
-    /* When expanded (via drag or tap), sidebar takes more space */
-    .rt-sidebar.mobile-expanded {
-        flex: 3;
-    }
-
-    /* Drag handle for mobile */
-    .mobile-drag-handle {
-        display: block !important;
-        width: 100%;
-        height: 16px;
-        cursor: grab;
-        position: relative;
-        flex-shrink: 0;
-        background: var(--bg-secondary);
-    }
-    .mobile-drag-handle::after {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 36px;
-        height: 4px;
-        background: var(--text-muted);
-        border-radius: 2px;
-    }
-
-    /* Hide old toggle/back buttons — replaced by new interaction */
-    .mobile-sidebar-toggle {
-        display: none !important;
-    }
-    .mobile-back-to-map {
-        display: none !important;
-    }
-
-    /* Sidebar tabs: compact, always visible */
-    .rt-sidebar-tabs {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        padding: 2px 6px;
+        min-height: auto;
         flex-wrap: nowrap;
+        gap: 4px;
         flex-shrink: 0;
-        scrollbar-width: none;
     }
-    .rt-sidebar-tabs::-webkit-scrollbar {
+    .header h1 {
+        font-size: 0.8rem;
+        letter-spacing: 0;
+        white-space: nowrap;
+    }
+    .header-info {
+        gap: 4px;
+        font-size: 0.7rem;
+        width: auto;
+        flex: 1;
+        justify-content: flex-end;
+        flex-wrap: nowrap;
+        overflow: hidden;
+    }
+    /* Hide info text on mobile to keep header single-row */
+    #population-count,
+    .clock-display,
+    .terrain-display {
         display: none;
     }
-    .rt-sidebar-tabs button {
-        padding: 5px 8px;
-        font-size: 0.68rem;
+    .controls {
+        gap: 2px;
+        flex-wrap: nowrap;
+    }
+    .controls button {
+        padding: 3px 6px;
+        font-size: 0.7rem;
         white-space: nowrap;
-        min-width: 0;
+    }
+    /* Hide less important header buttons on mobile */
+    .btn-export, .btn-import, .btn-towns, .btn-new-game {
+        display: none;
+    }
+    .speed-controls {
+        display: none;
+    }
+    .llm-status {
+        display: none;
     }
 
-    /* Sidebar content: scrollable within remaining space */
+    /* Main layout on mobile */
+    .rimtown-container .main-layout {
+        position: relative !important;
+        overflow: hidden !important;
+    }
+
+    /* Map: fill everything on mobile */
+    .rimtown-container .map-panel {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        overflow: hidden !important;
+    }
+    #town-map-canvas {
+        touch-action: none; /* allow JS to handle pinch/pan */
+    }
+
+    /* Sidebar: overlay from bottom */
+    .rt-sidebar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        height: 60%;
+        max-height: 60vh;
+        border-left: none;
+        border-top: 2px solid var(--accent);
+        transform: translateY(100%);
+        transition: transform 0.3s ease;
+        z-index: 50;
+    }
+    .rt-sidebar.mobile-open {
+        transform: translateY(0);
+    }
+
+    /* Show toggle button */
+    .mobile-sidebar-toggle {
+        display: flex;
+    }
+    .rt-sidebar.mobile-open ~ .mobile-sidebar-toggle {
+        display: none;
+    }
+
+    /* Show back-to-map button when sidebar open */
+    .mobile-back-to-map {
+        display: none;
+    }
+    .rt-sidebar.mobile-open .mobile-back-to-map {
+        display: block;
+    }
+
+    /* Sidebar tabs: 5-column grid on mobile, icon-only with small labels */
+    .rt-sidebar-tabs {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0;
+    }
+    .rt-sidebar-tabs button {
+        padding: 4px 2px;
+    }
+    .rt-sidebar-tabs .tab-icon {
+        font-size: 0.85rem;
+    }
+    .rt-sidebar-tabs .tab-label {
+        font-size: 0.55rem;
+    }
+
+    /* Sidebar content */
     .rt-sidebar-content {
-        padding: 4px 6px;
-        flex: 1;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        min-height: 0;
+        padding: 6px;
     }
 
     /* Chat messages */
     .chat-messages {
-        max-height: none;
-        min-height: 60px;
-        flex: 1;
+        max-height: calc(60vh - 200px);
+        min-height: 120px;
     }
 
     /* Chat input bigger touch targets */
     .chat-input {
-        padding: 8px 12px;
+        padding: 10px 14px;
         font-size: 16px; /* prevents iOS zoom */
     }
     .chat-send-btn {
-        padding: 8px 14px;
-        font-size: 0.8rem;
+        padding: 10px 18px;
+        font-size: 0.85rem;
     }
 
     /* Modals */
@@ -1593,7 +1702,7 @@ body.rimtown-page .wp-block-post-title {
 
     /* Archive list */
     .archive-list {
-        max-height: 40vh;
+        max-height: calc(60vh - 160px);
     }
     .archive-item {
         flex-wrap: wrap;
@@ -1602,36 +1711,36 @@ body.rimtown-page .wp-block-post-title {
         width: 100%;
         margin-top: 4px;
     }
-
-    /* Resident cards: more compact on mobile */
-    .resident-card {
-        padding: 6px 8px;
-        margin-bottom: 3px;
-    }
 }
 
 /* ===== Responsive: Small Phone (≤480px) ===== */
 @media (max-width: 480px) {
-    .mobile-header-row {
-        padding: 3px 8px;
-        min-height: 28px;
-    }
-    .mobile-title {
-        font-size: 0.72rem;
-    }
-    .mobile-clock {
-        font-size: 0.65rem;
-    }
-    .mobile-ctrl-btn {
-        width: 26px;
-        height: 26px;
+    .header h1 {
         font-size: 0.7rem;
     }
+    .controls button {
+        padding: 2px 5px;
+        font-size: 0.65rem;
+    }
+    /* Hide save button on very small screens */
+    .btn-save {
+        display: none;
+    }
 
-    /* Tabs even smaller */
+    .rt-sidebar {
+        height: 70%;
+        max-height: 70vh;
+    }
+
+    /* Small phone: icon-only tabs, hide labels */
+    .rt-sidebar-tabs .tab-label {
+        display: none;
+    }
     .rt-sidebar-tabs button {
-        padding: 4px 6px;
-        font-size: 0.62rem;
+        padding: 6px 2px;
+    }
+    .rt-sidebar-tabs .tab-icon {
+        font-size: 1.1rem;
     }
 
     /* Nearby buttons: smaller */
@@ -1642,8 +1751,8 @@ body.rimtown-page .wp-block-post-title {
 
     /* Resident cards: tighter */
     .resident-card {
-        padding: 5px 6px;
-        margin-bottom: 2px;
+        padding: 6px 8px;
+        margin-bottom: 4px;
     }
 
     /* Town manager modal */
@@ -1658,99 +1767,3 @@ body.rimtown-page .wp-block-post-title {
         margin-top: 4px;
     }
 }
-
-/* ===== Election System ===== */
-.election-section { background: rgba(233,69,96,0.08); border: 1px solid rgba(233,69,96,0.3); border-radius: 8px; padding: 10px; margin-bottom: 10px; }
-.election-section h4 { color: var(--accent); font-size: 0.85rem; margin-bottom: 8px; }
-.election-info { font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 6px; }
-.election-candidate { background: var(--bg-card); border-radius: 6px; padding: 8px; margin-bottom: 6px; cursor: pointer; transition: border-color 0.2s; border: 1px solid transparent; }
-.election-candidate:hover { border-color: var(--accent); }
-.election-winner-card { border-color: var(--warning) !important; background: rgba(251,191,36,0.1); }
-.candidate-header { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.candidate-name { font-weight: bold; font-size: 0.8rem; color: var(--text-primary); }
-.candidate-policy { font-size: 0.7rem; color: var(--info); background: rgba(96,165,250,0.15); padding: 1px 6px; border-radius: 8px; }
-.candidate-votes { font-size: 0.7rem; color: var(--warning); margin-left: auto; font-weight: bold; }
-.candidate-speech { font-size: 0.7rem; color: var(--text-secondary); margin-top: 4px; font-style: italic; line-height: 1.3; }
-.election-bar { height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; margin-top: 4px; }
-.election-bar-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.5s ease; }
-.election-bar-fill.winner { background: var(--warning); }
-.election-total { font-size: 0.7rem; color: var(--text-muted); text-align: right; margin-top: 4px; }
-.election-winner { text-align: center; padding: 8px; margin-bottom: 8px; background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); border-radius: 6px; }
-.winner-name { font-size: 1rem; font-weight: bold; color: var(--warning); }
-.winner-policy { font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px; }
-.election-history-brief { font-size: 0.7rem; color: var(--text-muted); padding: 4px 8px; background: rgba(255,255,255,0.03); border-radius: 4px; margin-bottom: 8px; }
-.log-entry.type-election { border-left: 2px solid var(--warning); padding-left: 6px; }
-
-/* =====================================================
-   v2.0 — Auth, Achievements, Player Interaction
-   ===================================================== */
-
-/* Account button */
-.btn-account { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: var(--text-primary); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; transition: all 0.2s; }
-.btn-account:hover { background: rgba(255,255,255,0.15); }
-.btn-account.logged-in { background: rgba(74,222,128,0.15); border-color: rgba(74,222,128,0.4); color: #4ade80; }
-.version-display { font-size: 0.65rem; color: rgba(255,255,255,0.4); padding: 2px 6px; user-select: none; }
-
-/* Account menu popup */
-.account-menu-popup { position: fixed; top: 42px; right: 10px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px 0; z-index: 100010; box-shadow: 0 8px 24px rgba(0,0,0,0.5); min-width: 180px; }
-.account-menu-header { padding: 8px 16px; font-weight: bold; color: var(--accent); border-bottom: 1px solid var(--border); margin-bottom: 4px; font-size: 0.8rem; }
-.account-menu-popup button { display: block; width: 100%; padding: 8px 16px; background: none; border: none; color: var(--text-primary); text-align: left; cursor: pointer; font-size: 0.75rem; }
-.account-menu-popup button:hover { background: rgba(255,255,255,0.05); }
-.btn-danger-text { color: var(--negative) !important; }
-
-/* Auth modal */
-.auth-content { max-width: 360px; }
-.auth-tabs { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 2px solid var(--border); }
-.auth-tab { flex: 1; padding: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
-.auth-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-.auth-tab:hover { color: var(--text-primary); }
-.auth-form.hidden { display: none; }
-.auth-error { color: var(--negative); font-size: 0.75rem; min-height: 20px; padding: 4px 0; }
-
-/* Achievement Toast */
-.achievement-toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-20px); background: linear-gradient(135deg, rgba(30,30,60,0.98), rgba(50,40,80,0.98)); border: 2px solid rgba(251,191,36,0.6); border-radius: 12px; padding: 12px 20px; z-index: 100020; display: flex; align-items: center; gap: 12px; box-shadow: 0 8px 32px rgba(251,191,36,0.2); opacity: 0; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); pointer-events: none; }
-.achievement-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.achievement-toast.hidden { display: none; }
-.ach-toast-icon { font-size: 2rem; }
-.ach-toast-title { font-size: 0.65rem; color: var(--warning); text-transform: uppercase; letter-spacing: 1px; }
-.ach-toast-name { font-size: 0.9rem; font-weight: bold; color: #fff; }
-.ach-toast-desc { font-size: 0.7rem; color: var(--text-muted); }
-
-/* Achievements Panel */
-.achievements-panel { padding: 8px; }
-.achievements-panel h3 { margin-bottom: 12px; }
-.ach-count { font-size: 0.7rem; color: var(--text-muted); font-weight: normal; }
-.ach-category { margin-bottom: 12px; }
-.ach-category h4 { font-size: 0.75rem; color: var(--accent); margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
-.ach-grid { display: flex; flex-direction: column; gap: 4px; }
-.ach-card { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
-.ach-card.unlocked { background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.2); }
-.ach-card.locked { opacity: 0.5; }
-.ach-icon { font-size: 1.2rem; flex-shrink: 0; }
-.ach-name { font-size: 0.75rem; font-weight: bold; }
-.ach-desc { font-size: 0.65rem; color: var(--text-muted); }
-
-/* Player Interaction Buttons */
-.btn-flirt { background: rgba(244,114,182,0.2); color: #f472b6; border: 1px solid rgba(244,114,182,0.4); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; }
-.btn-flirt:hover { background: rgba(244,114,182,0.3); }
-.btn-propose { background: rgba(251,191,36,0.2); color: var(--warning); border: 1px solid rgba(251,191,36,0.4); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; }
-.btn-propose:hover { background: rgba(251,191,36,0.3); }
-.btn-vote { background: rgba(96,165,250,0.2); color: #60a5fa; border: 1px solid rgba(96,165,250,0.3); padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.65rem; margin-top: 4px; }
-.btn-vote:hover { background: rgba(96,165,250,0.3); }
-
-/* Player Job Panel */
-.job-grid { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
-.job-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; transition: all 0.2s; }
-.job-btn:hover { background: rgba(255,255,255,0.12); }
-.job-btn.active { background: rgba(74,222,128,0.15); border-color: rgba(74,222,128,0.4); color: #4ade80; cursor: default; }
-.btn-quit-job { background: rgba(233,69,96,0.15); color: var(--negative); border: 1px solid rgba(233,69,96,0.3); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; margin-bottom: 8px; }
-.btn-quit-job:hover { background: rgba(233,69,96,0.25); }
-
-/* Cloud save items */
-.town-item .town-name { display: flex; align-items: center; gap: 4px; }
-
-/* Log type for player actions */
-.log-entry.type-player_action { border-left: 2px solid #4ade80; padding-left: 6px; }
-
-/* Player card in residents list */
-.resident-card.player-card { background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.2); margin-bottom: 4px; }

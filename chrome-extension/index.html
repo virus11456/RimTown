@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div id="rimtown-app" class="rimtown-container">
     <!-- Town Manager Modal -->
     <div id="town-modal" class="modal hidden">
         <div class="modal-content town-content">
@@ -95,8 +96,8 @@
         </div>
 
         <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="sidebar-tabs rt-sidebar-tabs">
+        <div class="rt-sidebar">
+            <div class="rt-sidebar-tabs">
                 <button data-tab="residents" class="active"><span class="tab-icon">👥</span><span class="tab-label">居民</span></button>
                 <button data-tab="chat"><span class="tab-icon">💬</span><span class="tab-label">聊天</span></button>
                 <button data-tab="detail"><span class="tab-icon">📋</span><span class="tab-label">詳情</span></button>
@@ -107,10 +108,12 @@
                 <button data-tab="newspaper"><span class="tab-icon">🗞️</span><span class="tab-label">日報</span></button>
                 <button data-tab="log"><span class="tab-icon">📝</span><span class="tab-label">日誌</span></button>
             </div>
-            <div class="sidebar-content" id="sidebar-content">
+            <div class="rt-sidebar-content" id="sidebar-content">
                 <!-- Content rendered dynamically -->
             </div>
         </div>
+    </div>
+
     </div>
 
     <script src="quest-system.js"></script>

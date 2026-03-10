@@ -463,7 +463,7 @@ class RimTownApp {
         popup.id = 'account-menu-popup';
         popup.className = 'account-menu-popup';
         popup.innerHTML = `
-            <div class="account-menu-header">${this.auth.username}</div>
+            <div class="account-menu-header">${this._escapeHtml(this.auth.username)}</div>
             <button data-action="cloud-sync-up">上傳存檔到雲端</button>
             <button data-action="cloud-sync-down">從雲端下載存檔</button>
             <button data-action="show-achievements">成就</button>
@@ -667,7 +667,7 @@ class RimTownApp {
         if (this._seasonsVisited.size >= 4) this._unlockAchievement('all_seasons');
 
         // Night owl
-        if (clock.hour !== undefined && (clock.hour >= 0 && clock.hour < 4)) this._unlockAchievement('night_owl');
+        if (clock.hour !== undefined && clock.hour >= 0 && clock.hour < 4 && this.world?.tickCount > 0) this._unlockAchievement('night_owl');
 
         // Election
         const election = this.state.election;
@@ -1142,7 +1142,7 @@ class RimTownApp {
         this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
         this.state = this.world.getState();
         this._generateTileMapLayout();
-        this.tileMap.agentPositions = {};
+        if (this.tileMap) this.tileMap.agentPositions = {};
         this.render();
         this._renderTownList();
     }
@@ -1570,7 +1570,7 @@ class RimTownApp {
 
     setupSettingsListeners() {
         document.getElementById('btn-settings')?.addEventListener('click', () => {
-            document.getElementById('settings-modal').classList.remove('hidden');
+            document.getElementById('settings-modal')?.classList.remove('hidden');
             const provider = localStorage.getItem('llm_provider');
             const apiKey = localStorage.getItem('llm_api_key');
             const speed = localStorage.getItem('sim_speed');
@@ -1609,10 +1609,10 @@ class RimTownApp {
                 return;
             }
             this.saveSettings(provider, apiKey, speed);
-            document.getElementById('settings-modal').classList.add('hidden');
+            document.getElementById('settings-modal')?.classList.add('hidden');
         });
         document.getElementById('settings-cancel')?.addEventListener('click', () => {
-            document.getElementById('settings-modal').classList.add('hidden');
+            document.getElementById('settings-modal')?.classList.add('hidden');
         });
     }
 
@@ -1725,7 +1725,8 @@ class RimTownApp {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `rimtown_save_${saveData.clock.season}_Y${saveData.clock.year}D${saveData.clock.day}.json`;
+        const ck = saveData.clock || {};
+        a.download = `rimtown_save_${ck.season || 'unknown'}_Y${ck.year || 1}D${ck.day || 1}.json`;
         a.click();
         URL.revokeObjectURL(url);
     }
@@ -1744,7 +1745,7 @@ class RimTownApp {
                     if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
                     this.state = this.world.getState();
                     this._generateTileMapLayout();
-                    this.tileMap.agentPositions = {};
+                    if (this.tileMap) this.tileMap.agentPositions = {};
                     this.render();
                     await this.saveGame();
                 } else {
@@ -2560,9 +2561,6 @@ class RimTownApp {
             bulletins.forEach(b => {
                 const severityIcon = {good:'🟢',info:'🔵',warning:'🟡',danger:'🔴'}[b.severity] || '⚪';
                 const categoryIcon = {security:'🛡️',trade:'📦',weather:'🌤️',social:'👥',health:'🏥',discovery:'🔍',nature:'🌿',political:'⚔️'}[b.category] || '📋';
-                const modKeys = Object.entries(news.active_modifiers || {}).filter(([k]) => {
-                    return b.days_remaining > 0;
-                });
                 html += `<div class="news-bulletin severity-${b.severity}">
                     <div class="news-header">
                         <span class="news-severity">${severityIcon}</span>

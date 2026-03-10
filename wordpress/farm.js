@@ -146,7 +146,7 @@ class FarmSystem {
 
         const entry = {
             crop: plot.crop, cropName: crop.name, amount, quality,
-            sellValue: Math.round(crop.sellPrice * mult * amount),
+            sellValue: Math.round(crop.sellPrice * amount),
             day: world.clock.day, season: world.clock.season, year: world.clock.year,
         };
         this.harvestLog.push(entry);

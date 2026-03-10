@@ -205,7 +205,7 @@ class ProcessingSystem {
             let efficiency = workerCount / def.workerSlots;
             factory.workers.forEach(wId => {
                 const agent = world.agents[wId];
-                if (!agent) return;
+                if (!agent || (agent.status && agent.status !== 'normal')) return;
                 if (agent.job?.key === def.preferredJob) efficiency += 0.1;
                 if (agent.mood > 50) efficiency += 0.05;
             });
@@ -234,7 +234,7 @@ class ProcessingSystem {
                 for (const [r, a] of Object.entries(recipe.output)) {
                     factory.warehouse[r] = (factory.warehouse[r] || 0) + a;
                 }
-                factory.productionProgress = 0;
+                factory.productionProgress -= recipe.time;
 
                 const outputStr = Object.entries(recipe.output).map(([r, a]) => `${a} ${r}`).join(', ');
                 this.recentOutput.push({ factory: key, recipe: recipe.id, output: recipe.output, day: world.clock.day });

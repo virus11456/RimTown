@@ -3117,7 +3117,7 @@ class PixelTileMap {
     }
 
     _renderWindowLights(ctx, hour) {
-        const lightAlpha = (hour >= 22 || hour < 4) ? 0.7 : (hour >= 20 ? (hour - 20) * 0.35 : (6 - hour) * 0.35);
+        const lightAlpha = (hour >= 22 || hour < 4) ? 0.7 : (hour >= 20 ? (hour - 20) * 0.35 : hour >= 19 ? (hour - 19) * 0.7 : (6 - hour) * 0.35);
         // Draw warm glow on building zones
         for (const [locId, zone] of Object.entries(this.buildingZones)) {
             // Some buildings have lights off late at night
