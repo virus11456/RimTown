@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 3.0.1
+ * Version: 3.0.2
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '3.0.1');
+define('RIMTOWN_VERSION', '3.0.2');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -71,6 +71,23 @@ function rimtown_check_db() {
     }
 }
 add_action('plugins_loaded', 'rimtown_check_db');
+
+// =====================================================
+// RATE LIMITING — Protect auth endpoints from brute force
+// =====================================================
+function rimtown_rate_limit_check($action, $max_attempts = 5, $window_seconds = 300) {
+    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $transient_key = 'rimtown_rl_' . md5($action . '_' . $ip);
+    $attempts = get_transient($transient_key);
+    if ($attempts === false) {
+        $attempts = 0;
+    }
+    if ($attempts >= $max_attempts) {
+        return new WP_Error('rate_limited', '請求過於頻繁，請稍後再試', array('status' => 429));
+    }
+    set_transient($transient_key, $attempts + 1, $window_seconds);
+    return true;
+}
 
 // =====================================================
 // REST API — Account, Cloud Saves, Achievements
@@ -143,6 +160,9 @@ add_action('rest_api_init', 'rimtown_register_api');
 
 // Allow registration even if WP settings disable it
 function rimtown_api_register($request) {
+    $rate_check = rimtown_rate_limit_check('register', 5, 300);
+    if (is_wp_error($rate_check)) return $rate_check;
+
     $username = sanitize_user($request->get_param('username'));
     $password = $request->get_param('password');
     $email = sanitize_email($request->get_param('email'));
@@ -177,6 +197,9 @@ function rimtown_api_register($request) {
 }
 
 function rimtown_api_login($request) {
+    $rate_check = rimtown_rate_limit_check('login', 5, 300);
+    if (is_wp_error($rate_check)) return $rate_check;
+
     $username = sanitize_user($request->get_param('username'));
     $password = $request->get_param('password');
 
@@ -196,6 +219,9 @@ function rimtown_api_login($request) {
 }
 
 function rimtown_api_reset_password($request) {
+    $rate_check = rimtown_rate_limit_check('reset_password', 3, 600);
+    if (is_wp_error($rate_check)) return $rate_check;
+
     $username = sanitize_user($request->get_param('username'));
     $email = sanitize_email($request->get_param('email'));
     $new_password = $request->get_param('new_password');
@@ -1123,6 +1149,14 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '3.0.2',
+            'date'    => '2026-03-10',
+            'changes' => array(
+                '資安強化：Gemini API 金鑰從 URL 參數移至 x-goog-api-key header，防止金鑰洩漏至瀏覽器歷史和 referrer',
+                '資安強化：認證端點新增伺服器端速率限制（登入 5次/5分鐘、註冊 5次/5分鐘、重設密碼 3次/10分鐘），防止暴力破解攻擊',
+            ),
+        ),
         array(
             'version' => '2.4.1',
             'date'    => '2026-03-10',

@@ -1899,7 +1899,7 @@ class LLMClient {
         const endpoints = {
             anthropic: { url: 'https://api.anthropic.com/v1/messages', model: model || 'claude-haiku-4-5-20251001' },
             openai: { url: 'https://api.openai.com/v1/chat/completions', model: model || 'gpt-4o-mini' },
-            gemini: { url: `https://generativelanguage.googleapis.com/v1beta/models/${model||'gemini-2.5-flash'}:generateContent?key=${apiKey}` },
+            gemini: { url: `https://generativelanguage.googleapis.com/v1beta/models/${model||'gemini-2.5-flash'}:generateContent` },
             deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: model || 'deepseek-chat' },
             groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: model || 'qwen/qwen3-32b' },
             together: { url: 'https://api.together.xyz/v1/chat/completions', model: model || 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo' },
@@ -1922,7 +1922,7 @@ class LLMClient {
                 return data.content?.[0]?.text || '';
             } else if (provider === 'gemini') {
                 const res = await fetch(cfg.url, {
-                    method:'POST', headers:{'Content-Type':'application/json'},
+                    method:'POST', headers:{'Content-Type':'application/json', 'x-goog-api-key':apiKey},
                     body: JSON.stringify({
                         contents:[{parts:[{text:prompt}]}],
                         generationConfig:{maxOutputTokens:maxTokens, temperature},
