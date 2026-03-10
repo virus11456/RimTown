@@ -273,8 +273,8 @@ function rimtown_api_save($request) {
         return new WP_Error('missing_data', '缺少必要資料', array('status' => 400));
     }
 
-    // Check save size (max 5MB per town)
-    if (strlen($save_data) > 5 * 1024 * 1024) {
+    // Check save size (max 50MB per town)
+    if (strlen($save_data) > 50 * 1024 * 1024) {
         return new WP_Error('too_large', '存檔大小超過限制', array('status' => 413));
     }
 

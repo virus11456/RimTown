@@ -91,7 +91,7 @@ class MemoryEntry {
 }
 
 class Memory {
-    constructor(capacity = 100) { this.entries = []; this.capacity = capacity; }
+    constructor(capacity = 10000) { this.entries = []; this.capacity = capacity; }
     add(tick, timeStr, category, content, importance = 5, relatedAgents = []) {
         this.entries.push(new MemoryEntry(tick, timeStr, category, content, importance, relatedAgents));
         if (this.entries.length > this.capacity) this.entries = this.entries.slice(-this.capacity);
@@ -104,7 +104,7 @@ class Memory {
         if (!recent.length) return '沒有近期記憶。';
         return recent.map(m => `- [${m.timeStr}] ${m.content}`).join('\n');
     }
-    toDict() { return this.entries.slice(-20).map(e => e.toDict()); }
+    toDict() { return this.entries.slice(-10000).map(e => e.toDict()); }
 }
 
 // --- Relationships ---
@@ -143,11 +143,11 @@ class Relationship {
     recordInteraction(tick, summary) {
         this.interactionCount++; this.lastInteractionTick = tick;
         this.sharedMemories.push(summary);
-        if (this.sharedMemories.length > 20) this.sharedMemories = this.sharedMemories.slice(-15);
+        if (this.sharedMemories.length > 10000) this.sharedMemories = this.sharedMemories.slice(-10000);
     }
     addSharedMemory(text) {
         this.sharedMemories.push(text);
-        if (this.sharedMemories.length > 20) this.sharedMemories = this.sharedMemories.slice(-15);
+        if (this.sharedMemories.length > 10000) this.sharedMemories = this.sharedMemories.slice(-10000);
     }
     toDict() {
         return { target_id:this.targetId, target_name:this.targetName, type:this.type,
@@ -766,7 +766,7 @@ class PlayerAgent extends Agent {
         world.logMessage('player_move', `你移動到了${locationId.replace(/_/g,' ')}`, this.name);
         return true;
     }
-    toDict() { const d = super.toDict(); d.is_player = true; d.chat_history = this.chatHistory.slice(-500); return d; }
+    toDict() { const d = super.toDict(); d.is_player = true; d.chat_history = this.chatHistory.slice(-10000); return d; }
 }
 
 // --- Gossip Network ---
@@ -794,7 +794,7 @@ class GossipNetwork {
         const content = pickRandom(templates);
         const gossip = { about:about.name, content, source:source.name, spreadCount:0, tickCreated:world.tickCount, isTrue:Math.random()>0.2 };
         this.activeGossip.push(gossip);
-        if (this.activeGossip.length > 30) this.activeGossip = this.activeGossip.slice(-20);
+        if (this.activeGossip.length > 10000) this.activeGossip = this.activeGossip.slice(-10000);
         return gossip;
     }
     spreadGossip(speaker, listener, world) {
@@ -971,7 +971,7 @@ ${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
         // Store NPC conversation for sidebar viewing
         if (dialogue.length) {
             this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.id, agentBId:agentB.id });
-            if (this.npcConversationLog.length > 50) this.npcConversationLog = this.npcConversationLog.slice(-30);
+            if (this.npcConversationLog.length > 10000) this.npcConversationLog = this.npcConversationLog.slice(-10000);
             // Notify UI for map speech bubbles
             if (this.onConversation) {
                 const textA = dialogue[0]?.text || summary;
@@ -997,7 +997,7 @@ ${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
         const lines = dialogue.lines;
         if (lines.length) {
             this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue:lines, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.id, agentBId:agentB.id });
-            if (this.npcConversationLog.length > 50) this.npcConversationLog = this.npcConversationLog.slice(-30);
+            if (this.npcConversationLog.length > 10000) this.npcConversationLog = this.npcConversationLog.slice(-10000);
             if (this.onConversation) {
                 const textA = lines[0]?.text || summary;
                 const textB = lines[1]?.text || '';
@@ -2551,13 +2551,13 @@ class Stockpile {
     add(r, amount, tick=0, reason='', source='') {
         this.resources[r] = (this.resources[r]||0) + amount;
         this.history.push({tick,resource:r,amount,reason,source});
-        if (this.history.length > 500) this.history = this.history.slice(-300);
+        if (this.history.length > 10000) this.history = this.history.slice(-10000);
     }
     consume(r, amount, tick=0, reason='', source='') {
         if ((this.resources[r]||0) < amount) return false;
         this.resources[r] -= amount;
         this.history.push({tick,resource:r,amount:-amount,reason,source});
-        if (this.history.length > 500) this.history = this.history.slice(-300);
+        if (this.history.length > 10000) this.history = this.history.slice(-10000);
         return true;
     }
     has(r, amount) { return (this.resources[r]||0) >= amount; }
@@ -3388,7 +3388,7 @@ class FestivalSystem {
     toDict() {
         return {
             activeFestival: this.activeFestival ? { ...this.activeFestival } : null,
-            festivalLog: this.festivalLog.slice(-20),
+            festivalLog: this.festivalLog.slice(-10000),
             activeQuest: this.activeQuest ? { ...this.activeQuest } : null,
             _lastFestivalSeason: this._lastFestivalSeason,
         };
@@ -3631,8 +3631,8 @@ class LifecycleSystem {
 
     toDict() {
         return {
-            graveyard: this.graveyard.slice(-50),
-            births: this.births.slice(-30),
+            graveyard: this.graveyard.slice(-10000),
+            births: this.births.slice(-10000),
             _daysSinceCheck: this._daysSinceCheck,
         };
     }
@@ -3821,7 +3821,7 @@ class ExplorationSystem {
         return {
             discoveredZones: { ...this.discoveredZones },
             activeExpeditions: this.activeExpeditions.map(e => ({ ...e })),
-            expeditionLog: this.expeditionLog.slice(-20),
+            expeditionLog: this.expeditionLog.slice(-10000),
             _counter: this._counter,
         };
     }
@@ -3860,7 +3860,7 @@ class World {
     getAgentsAtLocation(locId) { return Object.values(this.agents).filter(a => a.currentLocation === locId); }
     logMessage(type, content, agentName = '', targetName = '') {
         this.messageLog.push({ time:this.clock.timeStr, tick:this.tickCount, type, content, agent:agentName, target:targetName });
-        if (this.messageLog.length > 500) this.messageLog = this.messageLog.slice(-300);
+        if (this.messageLog.length > 10000) this.messageLog = this.messageLog.slice(-10000);
     }
     tick() {
         if (this.paused) return;
@@ -3907,7 +3907,7 @@ class World {
             agents: Object.fromEntries(Object.entries(this.agents).map(([id,a]) => [id, a.toDict()])),
             locations: this.townMap?.toDict() || {},
             recent_events: this.events.getRecentEvents().map(([t,e]) => ({time:t, name:e.name, description:e.description, severity:e.severity, event_type:e.event_type})),
-            recent_messages: this.messageLog.slice(-30),
+            recent_messages: this.messageLog.slice(-10000),
             travelling_agents: this.events.getTravellingAgents(),
             active_chains: this.events.getActiveChains(),
             stockpile: this.stockpile.toDict(),
@@ -3916,7 +3916,7 @@ class World {
             research: this.research.toDict(),
             work_orders: this.workOrders.toDict(),
             news: this.news.toDict(),
-            npc_conversations: this.conversationEngine.npcConversationLog.slice(-20),
+            npc_conversations: this.conversationEngine.npcConversationLog.slice(-10000),
             election: this.election.toDict(),
             factions: this.factions.toDict(),
             festivals: this.festivals.toDict(),
@@ -4139,11 +4139,11 @@ class World {
             relationships: Object.fromEntries(Object.entries(a.relationships.relationships).map(([k,r])=>[k,{
                 targetId:r.targetId, targetName:r.targetName, affinity:r.affinity, trust:r.trust,
                 romanticInterest:r.romanticInterest, interactionCount:r.interactionCount,
-                lastInteractionTick:r.lastInteractionTick, sharedMemories:r.sharedMemories.slice(-10),
+                lastInteractionTick:r.lastInteractionTick, sharedMemories:r.sharedMemories.slice(-10000),
                 status:r.status, statusSince:r.statusSince, isCheating:r.isCheating
             }])),
-            memory: a.memory.entries.slice(-50).map(m=>({tick:m.tick,timeStr:m.timeStr,category:m.category,content:m.content,importance:m.importance,relatedAgents:m.relatedAgents})),
-            chatHistory: a.isPlayer ? (a.chatHistory||[]).slice(-500) : undefined,
+            memory: a.memory.entries.slice(-10000).map(m=>({tick:m.tick,timeStr:m.timeStr,category:m.category,content:m.content,importance:m.importance,relatedAgents:m.relatedAgents})),
+            chatHistory: a.isPlayer ? (a.chatHistory||[]).slice(-10000) : undefined,
             _lastInteractionTick: a._lastInteractionTick,
             _locationStayRemaining: a._locationStayRemaining || 0,
         });
@@ -4153,13 +4153,13 @@ class World {
             clock: { day:this.clock.day, hour:this.clock.hour, minute:this.clock.minute, season:this.clock.season, year:this.clock.year },
             tickCount: this.tickCount,
             paused: this.paused,
-            messageLog: this.messageLog.slice(-100),
+            messageLog: this.messageLog.slice(-10000),
             townMap: this.townMap ? { seed:this.townMap.seed, terrain:this.townMap.terrain, width:this.townMap.width, height:this.townMap.height,
                 locations: Object.fromEntries(Object.entries(this.townMap.locations).map(([k,v])=>[k,{id:v.id,name:v.name,description:v.description,x:v.x,y:v.y,category:v.category,capacity:v.capacity}])) } : null,
             agents: Object.fromEntries(Object.entries(this.agents).map(([k,a])=>[k,serializeAgent(a)])),
-            gossip: this.gossipNetwork.activeGossip.slice(-15),
+            gossip: this.gossipNetwork.activeGossip.slice(-10000),
             events: {
-                eventLog: this.events.eventLog.slice(-20),
+                eventLog: this.events.eventLog.slice(-10000),
                 activeEffects: {...this.events.activeEffects},
                 conversationTopics: [...this.events.conversationTopics],
                 _activeChains: this.events._activeChains.map(c=>({...c})),
@@ -4169,7 +4169,7 @@ class World {
                 _daysSinceDeparture: this.events._daysSinceDeparture,
                 _usedImmigrantNames: [...this.events._usedImmigrantNames],
             },
-            stockpile: { resources:{...this.stockpile.resources}, history:this.stockpile.history.slice(-50) },
+            stockpile: { resources:{...this.stockpile.resources}, history:this.stockpile.history.slice(-10000) },
             buildings: { projects:this.buildings.projects.map(p=>({...p})), completed:this.buildings.completed.map(p=>({...p})), activeEffects:{...this.buildings.activeEffects}, _counter:this.buildings._counter },
             trade: { merchant:this.trade.merchant?{...this.trade.merchant,offers:this.trade.merchant.offers.map(o=>({...o}))}:null, _daysSince:this.trade._daysSince, tradeHistory:this.trade.tradeHistory.slice(-10) },
             research: { projects:Object.fromEntries(Object.entries(this.research.projects).map(([k,p])=>[k,{...p}])), current:this.research.current },
