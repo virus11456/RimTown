@@ -1763,6 +1763,159 @@ body.rimtown-page .wp-block-post-title {
 }
 .log-entry.type-quest { border-left: 2px solid var(--accent); padding-left: 6px; font-weight: bold; }
 
+/* ===== Job Panel ===== */
+.job-current-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, rgba(233,69,96,0.12), rgba(233,69,96,0.04));
+    border: 1px solid rgba(233,69,96,0.3);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+}
+.job-current-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+.job-current-name {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: var(--accent);
+}
+.btn-quit-job {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(239,68,68,0.12);
+    color: #ef4444;
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: all 0.2s;
+}
+.btn-quit-job:hover {
+    background: rgba(239,68,68,0.25);
+    border-color: rgba(239,68,68,0.5);
+}
+.job-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+}
+.job-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-primary);
+    font-size: 0.7rem;
+}
+.job-btn:hover:not(:disabled) {
+    background: rgba(233,69,96,0.1);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+}
+.job-btn.active {
+    background: rgba(233,69,96,0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 8px rgba(233,69,96,0.2);
+}
+.job-btn:disabled {
+    cursor: default;
+    opacity: 0.8;
+}
+.job-btn-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+.job-btn-title {
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+/* ===== Newspaper Cards ===== */
+.news-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.news-card:hover {
+    border-color: rgba(233,69,96,0.4);
+    background: rgba(255,255,255,0.03);
+}
+.news-card.news-latest {
+    border-color: var(--accent);
+    background: rgba(233,69,96,0.06);
+}
+.news-card.news-expanded {
+    border-color: var(--accent);
+}
+.news-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.news-card-issue {
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: var(--accent);
+    min-width: 32px;
+}
+.news-card-meta {
+    flex: 1;
+    min-width: 0;
+}
+.news-card-date {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+.news-card-reporter {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    margin-top: 1px;
+}
+.news-card-toggle {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+.news-card-preview {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px dashed rgba(255,255,255,0.06);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.news-card-content {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    white-space: pre-wrap;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
 /* ===== Achievement Toast ===== */
 .achievement-toast {
     position: fixed;

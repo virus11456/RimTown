@@ -886,6 +886,7 @@ class RimTownApp {
         const currentJob = player.job?.title || '無業';
         // Get jobs from JOB_DEFINITIONS (global from simulation.js), excluding mayor
         let JOBS;
+        const JOB_ICONS = { farmer:'🌾', miner:'⛏️', cook:'🍳', blacksmith:'🔨', doctor:'💊', researcher:'🔬', trader:'💰', guard:'⚔️', carpenter:'🪵', tailor:'🧵', priest:'⛪' };
         if (typeof JOB_DEFINITIONS !== 'undefined') {
             JOBS = {};
             for (const [k, v] of Object.entries(JOB_DEFINITIONS)) {
@@ -895,14 +896,15 @@ class RimTownApp {
             JOBS = { farmer:'農夫', miner:'礦工', cook:'廚師', blacksmith:'鐵匠', doctor:'醫生', researcher:'研究員', trader:'商人', guard:'守衛', carpenter:'木匠', tailor:'裁縫', priest:'牧師' };
         }
         let html = '<div class="detail-section"><h3>你的工作</h3>';
-        html += `<p style="font-size:0.8rem;margin-bottom:8px">目前職業：<strong>${currentJob}</strong></p>`;
+        html += `<div class="job-current-badge"><span class="job-current-label">目前職業</span><span class="job-current-name">${currentJob}</span></div>`;
         if (player.job?.key && player.job.key !== 'none') {
-            html += `<button class="btn-quit-job" data-action="player-quit-job">辭職</button>`;
+            html += `<button class="btn-quit-job" data-action="player-quit-job">✋ 辭職</button>`;
         }
         html += '<div class="job-grid">';
         for (const [key, title] of Object.entries(JOBS)) {
             const isActive = player.job?.key === key;
-            html += `<button class="job-btn ${isActive ? 'active' : ''}" data-action="player-choose-job" data-val="${key}" ${isActive ? 'disabled' : ''}>${title}</button>`;
+            const icon = JOB_ICONS[key] || '💼';
+            html += `<button class="job-btn ${isActive ? 'active' : ''}" data-action="player-choose-job" data-val="${key}" ${isActive ? 'disabled' : ''}><span class="job-btn-icon">${icon}</span><span class="job-btn-title">${title}</span></button>`;
         }
         html += '</div></div>';
         return html;
@@ -3665,13 +3667,30 @@ class RimTownApp {
 
         // Show latest first
         const display = papers.slice().reverse().slice(0, 20);
-        for (const paper of display) {
+        for (let i = 0; i < display.length; i++) {
+            const paper = display[i];
             const isExpanded = this._expandedNewspaper === paper.id;
-            html += `<div class="build-card" style="flex-direction:column;cursor:pointer" data-action="view-newspaper" data-val="${paper.id}">`;
-            html += `<div><strong>#${paper.id}</strong> — 第${paper.year}年 ${paper.season} 第${paper.day}天`;
-            html += ` <span style="font-size:0.7rem;color:var(--text-secondary)">記者：${paper.reporter}（${paper.reporterJob}）</span></div>`;
+            const isLatest = i === 0;
+
+            html += `<div class="news-card ${isExpanded ? 'news-expanded' : ''} ${isLatest ? 'news-latest' : ''}" data-action="view-newspaper" data-val="${paper.id}">`;
+            html += `<div class="news-card-header">`;
+            html += `<div class="news-card-issue">#${paper.id}</div>`;
+            html += `<div class="news-card-meta">`;
+            html += `<div class="news-card-date">第${paper.year}年 ${paper.season} 第${paper.day}天</div>`;
+            html += `<div class="news-card-reporter">✍️ ${paper.reporter}（${paper.reporterJob}）</div>`;
+            html += `</div>`;
+            html += `<div class="news-card-toggle">${isExpanded ? '▲' : '▼'}</div>`;
+            html += `</div>`;
+
+            // Show headline preview when collapsed
+            if (!isExpanded && paper.content) {
+                const firstLine = paper.content.split('\n').find(l => l.trim().length > 0) || '';
+                const preview = firstLine.length > 40 ? firstLine.substring(0, 40) + '…' : firstLine;
+                html += `<div class="news-card-preview">${this._escapeHtml(preview)}</div>`;
+            }
+
             if (isExpanded) {
-                html += `<div style="margin-top:8px;white-space:pre-wrap;font-size:0.8rem;line-height:1.5;border-top:1px solid var(--border-color);padding-top:8px">${this._escapeHtml(paper.content)}</div>`;
+                html += `<div class="news-card-content">${this._escapeHtml(paper.content)}</div>`;
             }
             html += '</div>';
         }

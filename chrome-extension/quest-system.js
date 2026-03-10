@@ -893,6 +893,10 @@ class QuestSystem {
             }
         }
 
+        // Ensure ch1_settle is always at least 'active' — this is the starting quest
+        if (this.quests['ch1_settle'] && this.quests['ch1_settle'].status === 'locked') {
+            this.quests['ch1_settle'].status = 'active';
+        }
         // If ch1_settle is completed but ch1_survive doesn't exist as active, activate it
         if (this.quests['ch1_settle']?.status === 'completed' && this.quests['ch1_survive']?.status === 'locked') {
             this.quests['ch1_survive'].status = 'active';
