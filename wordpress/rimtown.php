@@ -556,6 +556,7 @@ function rimtown_shortcode($atts) {
         <div class="mobile-header">
             <div class="mobile-header-row">
                 <span class="mobile-title">邊境鎮</span>
+                <span id="mobile-population" class="mobile-population">--人</span>
                 <span id="mobile-clock" class="mobile-clock">載入中...</span>
                 <div class="mobile-header-actions">
                     <button id="mobile-btn-pause" class="mobile-ctrl-btn" title="暫停/播放">⏸</button>
@@ -593,16 +594,16 @@ function rimtown_shortcode($atts) {
                 <button class="mobile-back-to-map" id="mobile-back-to-map">&#9650; 返回地圖</button>
                 <div class="mobile-drag-handle" id="mobile-drag-handle"></div>
                 <div class="rt-sidebar-tabs">
-                    <button data-tab="residents" class="active">居民</button>
-                    <button data-tab="chat">聊天</button>
-                    <button data-tab="detail">詳情</button>
-                    <button data-tab="economy">經濟</button>
-                    <button data-tab="industry">產業</button>
-                    <button data-tab="farm">農場</button>
-                    <button data-tab="factory">工廠</button>
-                    <button data-tab="newspaper">日報</button>
-                    <button data-tab="log">日誌</button>
-                    <button data-tab="events">事件</button>
+                    <button data-tab="residents" class="active"><span class="tab-icon">&#x1F465;</span><span class="tab-label">居民</span></button>
+                    <button data-tab="chat"><span class="tab-icon">&#x1F4AC;</span><span class="tab-label">聊天</span></button>
+                    <button data-tab="detail"><span class="tab-icon">&#x1F4CB;</span><span class="tab-label">詳情</span></button>
+                    <button data-tab="economy"><span class="tab-icon">&#x1F4B0;</span><span class="tab-label">經濟</span></button>
+                    <button data-tab="industry"><span class="tab-icon">&#x1F3ED;</span><span class="tab-label">產業</span></button>
+                    <button data-tab="quest"><span class="tab-icon">&#x2694;&#xFE0F;</span><span class="tab-label">任務</span></button>
+                    <button data-tab="achievements"><span class="tab-icon">&#x1F3C6;</span><span class="tab-label">成就</span></button>
+                    <button data-tab="events"><span class="tab-icon">&#x1F4F0;</span><span class="tab-label">事件</span></button>
+                    <button data-tab="newspaper"><span class="tab-icon">&#x1F5DE;&#xFE0F;</span><span class="tab-label">日報</span></button>
+                    <button data-tab="log"><span class="tab-icon">&#x1F4DD;</span><span class="tab-label">日誌</span></button>
                 </div>
                 <div class="rt-sidebar-content" id="sidebar-content"></div>
             </div>

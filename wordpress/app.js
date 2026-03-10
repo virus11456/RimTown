@@ -2044,13 +2044,15 @@ class RimTownApp {
         const terrainEl = document.getElementById('terrain-display');
         if (terrainEl && terrain) terrainEl.textContent = `${terrain} #${seed}`;
 
-        // Update mobile header clock
+        // Update mobile header clock & population
         const mobileClock = document.getElementById('mobile-clock');
         if (mobileClock) {
             const h = String(clock.hour || 0).padStart(2, '0');
             const m = String(clock.minute || 0).padStart(2, '0');
-            mobileClock.textContent = `Y${clock.year} ${clock.season} D${clock.day} ${h}:${m} | ${agentCount}人`;
+            mobileClock.textContent = `Y${clock.year} ${clock.season} D${clock.day} ${h}:${m}`;
         }
+        const mobilePop = document.getElementById('mobile-population');
+        if (mobilePop) mobilePop.textContent = `${agentCount}人`;
         // Update mobile pause button state
         const mobilePauseBtn = document.getElementById('mobile-btn-pause');
         if (mobilePauseBtn) {

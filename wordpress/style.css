@@ -1070,6 +1070,9 @@ body.rimtown-page .wp-block-post-title {
 .mobile-header {
     display: none !important;
 }
+.mobile-population {
+    display: none;
+}
 .mobile-drag-handle {
     display: none !important;
 }
@@ -2191,6 +2194,105 @@ body.rimtown-page .wp-block-post-title {
         width: 100%;
         margin-top: 4px;
     }
+
+    /* Mobile population display */
+    .mobile-population {
+        display: inline !important;
+        font-size: 0.7rem;
+        color: var(--accent-light);
+        font-weight: bold;
+        white-space: nowrap;
+    }
+
+    /* Increase touch targets for mobile buttons */
+    .mobile-ctrl-btn {
+        min-width: 40px;
+        min-height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .mobile-menu-dropdown button {
+        min-height: 36px;
+        padding: 6px 12px;
+        font-size: 0.75rem;
+    }
+
+    /* Sidebar tabs: better touch targets with 5-column grid */
+    .rt-sidebar-tabs {
+        grid-template-columns: repeat(5, 1fr);
+    }
+    .rt-sidebar-tabs button {
+        min-height: 40px;
+        padding: 6px 2px;
+    }
+
+    /* Festival / Quest / Faction sections responsive */
+    .festival-section,
+    .quest-section {
+        padding: 8px;
+        margin-bottom: 8px;
+    }
+    .faction-card {
+        padding: 8px;
+        margin-bottom: 6px;
+    }
+    .faction-header {
+        font-size: 0.75rem;
+    }
+    .faction-members {
+        font-size: 0.68rem;
+    }
+
+    /* Quest cards responsive */
+    .quest-card {
+        padding: 8px;
+        margin-bottom: 6px;
+    }
+    .quest-title {
+        font-size: 0.78rem;
+    }
+    .quest-desc {
+        font-size: 0.68rem;
+    }
+    .quest-objectives {
+        font-size: 0.68rem;
+    }
+
+    /* Achievement cards responsive */
+    .achievement-card {
+        padding: 8px;
+        margin-bottom: 6px;
+    }
+    .achievement-filters {
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-bottom: 8px;
+    }
+    .achievement-filters button {
+        padding: 4px 8px;
+        font-size: 0.65rem;
+        min-height: 30px;
+    }
+
+    /* Prosperity dashboard responsive */
+    .prosperity-dashboard {
+        padding: 8px;
+    }
+    .prosperity-bar-label {
+        font-size: 0.65rem;
+    }
+
+    /* Safe area insets for iPhone notch & home indicator */
+    .mobile-header {
+        padding-top: env(safe-area-inset-top, 0);
+    }
+    .mobile-sidebar-toggle {
+        bottom: calc(16px + env(safe-area-inset-bottom, 0));
+    }
+    .rt-sidebar {
+        padding-bottom: env(safe-area-inset-bottom, 0);
+    }
 }
 
 /* ===== Responsive: Small Phone (≤480px) ===== */
@@ -2218,6 +2320,7 @@ body.rimtown-page .wp-block-post-title {
     }
     .rt-sidebar-tabs button {
         padding: 6px 2px;
+        min-height: 38px;
     }
     .rt-sidebar-tabs .tab-icon {
         font-size: 1.1rem;
@@ -2245,5 +2348,15 @@ body.rimtown-page .wp-block-post-title {
     .town-actions {
         width: 100%;
         margin-top: 4px;
+    }
+
+    /* Mobile population: slightly smaller */
+    .mobile-population {
+        font-size: 0.65rem;
+    }
+
+    /* Safe area for small phones */
+    .rt-sidebar {
+        padding-bottom: env(safe-area-inset-bottom, 0);
     }
 }
