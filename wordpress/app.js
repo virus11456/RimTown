@@ -1410,6 +1410,25 @@ class RimTownApp {
                 case 'player-vote': this._playerVote(val); break;
                 case 'player-propose': this._playerPropose(val); break;
                 case 'player-flirt': this._playerFlirt(val); break;
+                // Industry
+                case 'choose-industry': this._chooseIndustry(val); break;
+                case 'upgrade-industry': this._upgradeIndustry(val); break;
+                // Farm
+                case 'till-plot': this._tillPlot(parseInt(val)); break;
+                case 'plant-crop': { const [plotId, cropKey] = val.split(','); this._plantCrop(parseInt(plotId), cropKey); } break;
+                case 'water-plot': this._waterPlot(parseInt(val)); break;
+                case 'fertilize-plot': this._fertilizePlot(parseInt(val)); break;
+                case 'harvest-plot': this._harvestPlot(parseInt(val)); break;
+                case 'clear-withered': this._clearWithered(parseInt(val)); break;
+                // Factory
+                case 'build-factory': this._buildFactory(val); break;
+                case 'set-recipe': { const [fKey, rId] = val.split(','); this._setRecipe(fKey, rId); } break;
+                case 'assign-worker': { const [fKey, aId] = val.split(','); this._assignWorker(fKey, aId); } break;
+                case 'collect-product': { const [fKey, res, amt] = val.split(','); this._collectProduct(fKey, res, parseInt(amt)); } break;
+                case 'sell-product': { const [fKey, res, amt] = val.split(','); this._sellProduct(fKey, res, parseInt(amt)); } break;
+                case 'fulfill-order': this._fulfillOrder(val); break;
+                // Newspaper
+                case 'view-newspaper': this._viewNewspaper(parseInt(val)); break;
                 default: console.log('Unknown action:', action, val);
             }
         });
@@ -1976,6 +1995,10 @@ class RimTownApp {
             case 'log': this.renderLog(content); break;
             case 'events': this.renderEvents(content); break;
             case 'achievements': this.renderAchievements(content); break;
+            case 'industry': this.renderIndustry(content); break;
+            case 'farm': this.renderFarm(content); break;
+            case 'factory': this.renderFactory(content); break;
+            case 'newspaper': this.renderNewspaper(content); break;
         }
     }
 
@@ -2804,6 +2827,364 @@ class RimTownApp {
         const sidebar = document.getElementById('rimtown-sidebar');
         if (sidebar && window.innerWidth <= 768) sidebar.classList.add('mobile-expanded');
         this.render();
+    }
+
+    // ============================================================
+    // Industry Tab
+    // ============================================================
+    renderIndustry(container) {
+        if (!this.state) return;
+        const ind = this.state.industry || {};
+        let html = '<div class="economy-panel">';
+        html += `<div class="econ-section"><h3>🏘️ 小鎮等級：${ind.townLevelName || '荒村'} (Lv${ind.townLevel || 1})</h3>`;
+        html += `<div style="font-size:0.8rem;color:var(--text-secondary)">產業上限：${ind.maxIndustries || 1} | 已開啟：${Object.keys(ind.industries || {}).length}</div></div>`;
+
+        // Needs initial industry choice
+        if (ind.needsIndustryChoice) {
+            html += '<div class="econ-section"><h3>選擇你的第一個產業</h3>';
+            const available = this.world.industry.getAvailableIndustries(this.world);
+            available.forEach(i => {
+                html += `<div class="build-card"><div><strong>${i.icon} ${i.name}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
+                    <button class="trade-btn" data-action="choose-industry" data-val="${i.key}">選擇</button></div>`;
+            });
+            html += '</div>';
+        }
+
+        // Active industries
+        if (ind.industries && Object.keys(ind.industries).length > 0) {
+            html += '<div class="econ-section"><h3>產業列表</h3>';
+            for (const [key, data] of Object.entries(ind.industries)) {
+                const def = typeof INDUSTRIES !== 'undefined' ? INDUSTRIES[key] : null;
+                const lvDef = def?.levels?.find(l => l.lv === data.level);
+                const nextLv = def?.levels?.find(l => l.lv === data.level + 1);
+                html += `<div class="build-card"><div><strong>${def?.icon || '?'} ${def?.name || key} Lv${data.level}</strong>`;
+                if (lvDef) html += `<br><span style="font-size:0.75rem">${lvDef.desc}</span>`;
+                html += `<br><span style="font-size:0.75rem;color:var(--text-secondary)">工人：${data.workers}/${lvDef?.workers || '?'}</span>`;
+                html += '</div>';
+                if (nextLv) {
+                    const costStr = Object.entries(nextLv.cost).map(([r,a]) => `${r}:${a}`).join(' ');
+                    html += `<div><button class="trade-btn" data-action="upgrade-industry" data-val="${key}">升級 Lv${nextLv.lv}</button>
+                        <div style="font-size:0.65rem;color:var(--text-secondary)">${costStr}</div></div>`;
+                }
+                html += '</div>';
+            }
+            html += '</div>';
+        }
+
+        // Pending unlock
+        if (ind._pendingUnlock) {
+            html += '<div class="econ-section"><h3>可開啟新產業！</h3>';
+            const available = this.world.industry.getAvailableIndustries(this.world);
+            available.forEach(i => {
+                html += `<div class="build-card"><div><strong>${i.icon} ${i.name}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
+                    <button class="trade-btn" data-action="choose-industry" data-val="${i.key}">開啟</button></div>`;
+            });
+            html += '</div>';
+        }
+
+        // Synergies
+        if (ind.activeSynergies && ind.activeSynergies.length > 0) {
+            html += '<div class="econ-section"><h3>產業加成</h3>';
+            ind.activeSynergies.forEach(s => {
+                html += `<div style="font-size:0.8rem;margin:4px 0">✨ ${s.name}：${s.desc}</div>`;
+            });
+            html += '</div>';
+        }
+
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    _chooseIndustry(key) {
+        const result = this.world.industry.chooseIndustry(key, this.world);
+        if (!result.ok) { alert(result.error); return; }
+        this.state = this.world.getState();
+        this.renderSidebar();
+    }
+    _upgradeIndustry(key) {
+        const result = this.world.industry.upgradeIndustry(key, this.world);
+        if (!result.ok) { alert(result.error); return; }
+        this.state = this.world.getState();
+        this.renderSidebar();
+    }
+
+    // ============================================================
+    // Farm Tab
+    // ============================================================
+    renderFarm(container) {
+        if (!this.state) return;
+        const farm = this.state.farm || {};
+        const plots = farm.plots || [];
+        const stateIcons = { empty:'🟫', tilled:'🟤', growing:'🌱', ready:'✅', withered:'🥀' };
+        const stateLabels = { empty:'空地', tilled:'已翻土', growing:'生長中', ready:'可收穫', withered:'枯萎' };
+
+        let html = '<div class="economy-panel">';
+        html += `<div class="econ-section"><h3>🌾 農場（${plots.length}/${farm.maxPlots || 0} 塊田）</h3></div>`;
+
+        if (plots.length === 0) {
+            html += '<div class="econ-section"><p class="muted-text">需要先開啟農業產業才能使用農場。</p></div>';
+        }
+
+        // Plots
+        for (const plot of plots) {
+            const crop = plot.crop ? (typeof CROPS !== 'undefined' ? CROPS[plot.crop] : null) : null;
+            html += `<div class="build-card"><div>`;
+            html += `<strong>${stateIcons[plot.state] || '?'} 田地 #${plot.id}</strong> — ${stateLabels[plot.state] || plot.state}`;
+            if (crop && plot.state === 'growing') {
+                html += `<br><span style="font-size:0.75rem">${crop.icon} ${crop.name} | 進度：${Math.round(plot.growthProgress)}% | 水分：${Math.round(plot.waterLevel)}%</span>`;
+                if (plot.fertilized) html += ' 🧪';
+            } else if (crop && plot.state === 'ready') {
+                html += `<br><span style="font-size:0.75rem">${crop.icon} ${crop.name} — 可收穫！</span>`;
+            }
+            html += '</div><div>';
+            if (plot.state === 'empty') {
+                html += `<button class="trade-btn" data-action="till-plot" data-val="${plot.id}">翻土</button>`;
+            } else if (plot.state === 'tilled') {
+                // Show crop selection
+                const farmInd = this.world.industry?.industries?.farming;
+                const farmLevel = farmInd?.level || 1;
+                const crops = this.world.farm.getAvailableCrops(farmLevel);
+                const seasonCrops = crops.filter(c => c.seasons.includes(this.world.clock.season));
+                if (seasonCrops.length > 0) {
+                    html += '<div style="font-size:0.7rem">';
+                    seasonCrops.forEach(c => {
+                        html += `<button class="trade-btn" style="margin:2px;font-size:0.65rem" data-action="plant-crop" data-val="${plot.id},${c.key}">${c.icon}${c.name}</button>`;
+                    });
+                    html += '</div>';
+                } else {
+                    html += '<span style="font-size:0.7rem;color:var(--text-secondary)">本季無可種作物</span>';
+                }
+            } else if (plot.state === 'growing') {
+                html += `<button class="trade-btn" style="margin:2px;font-size:0.7rem" data-action="water-plot" data-val="${plot.id}">💧澆水</button>`;
+                if (!plot.fertilized) html += `<button class="trade-btn" style="margin:2px;font-size:0.7rem" data-action="fertilize-plot" data-val="${plot.id}">🧪施肥</button>`;
+            } else if (plot.state === 'ready') {
+                html += `<button class="trade-btn" data-action="harvest-plot" data-val="${plot.id}">🌾收穫</button>`;
+            } else if (plot.state === 'withered') {
+                html += `<button class="trade-btn" data-action="clear-withered" data-val="${plot.id}">清除</button>`;
+            }
+            html += '</div></div>';
+        }
+
+        // Recent harvests
+        const log = farm.harvestLog || [];
+        if (log.length > 0) {
+            html += '<div class="econ-section"><h3>收穫紀錄</h3>';
+            log.slice(-5).reverse().forEach(h => {
+                html += `<div style="font-size:0.75rem;margin:2px 0">${h.cropName} x${h.amount}（${h.quality}）— ${h.season} 第${h.day}天</div>`;
+            });
+            html += '</div>';
+        }
+
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    _tillPlot(plotId) {
+        const r = this.world.farm.tillPlot(plotId);
+        if (!r.ok) { alert(r.error || '無法翻土'); return; }
+        this.state = this.world.getState(); this.renderSidebar();
+    }
+    _plantCrop(plotId, cropKey) {
+        const r = this.world.farm.plantCrop(plotId, cropKey, this.world);
+        if (!r.ok) { alert(r.error || '無法種植'); return; }
+        this.state = this.world.getState(); this.renderSidebar();
+    }
+    _waterPlot(plotId) {
+        this.world.farm.waterPlot(plotId);
+        this.state = this.world.getState(); this.renderSidebar();
+    }
+    _fertilizePlot(plotId) {
+        const r = this.world.farm.fertilizePlot(plotId, this.world);
+        if (!r.ok) { alert(r.error || '無法施肥'); return; }
+        this.state = this.world.getState(); this.renderSidebar();
+    }
+    _harvestPlot(plotId) {
+        const r = this.world.farm.harvestPlot(plotId, this.world);
+        if (!r.ok) { alert(r.error || '無法收穫'); return; }
+        this.state = this.world.getState(); this.renderSidebar();
+    }
+    _clearWithered(plotId) {
+        this.world.farm.clearWithered(plotId);
+        this.state = this.world.getState(); this.renderSidebar();
+    }
+
+    // ============================================================
+    // Factory Tab
+    // ============================================================
+    renderFactory(container) {
+        if (!this.state) return;
+        const proc = this.state.processing || {};
+        const factories = proc.builtFactories || {};
+
+        let html = '<div class="economy-panel">';
+        html += '<div class="econ-section"><h3>🏭 工廠加工</h3></div>';
+
+        // Built factories
+        for (const [key, factory] of Object.entries(factories)) {
+            const def = typeof FACTORIES !== 'undefined' ? FACTORIES[key] : null;
+            if (!def) continue;
+            html += `<div class="econ-section"><h3>${def.icon} ${def.name}`;
+            if (factory.status === 'building') {
+                html += ` (建造中 ${Math.round(factory.buildProgress / factory.buildRequired * 100)}%)`;
+            }
+            html += '</h3>';
+
+            if (factory.status === 'active') {
+                // Recipe selection
+                html += '<div style="margin:4px 0"><strong>配方：</strong>';
+                def.recipes.forEach(r => {
+                    const active = factory.recipe === r.id ? ' style="background:var(--accent-gold);color:#000"' : '';
+                    html += `<button class="trade-btn" style="margin:2px;font-size:0.7rem"${active} data-action="set-recipe" data-val="${key},${r.id}">${r.label}</button>`;
+                });
+                html += '</div>';
+
+                // Workers
+                html += `<div style="margin:4px 0;font-size:0.8rem"><strong>工人：</strong>${factory.workers.length}/${def.workerSlots}`;
+                factory.workers.forEach(wId => {
+                    const a = this.state.agents[wId];
+                    html += ` <span style="color:var(--accent-gold)">${a?.name || wId}</span>`;
+                });
+                if (factory.workers.length < def.workerSlots) {
+                    // Show assignable NPCs
+                    const available = Object.entries(this.state.agents).filter(([id, a]) =>
+                        id !== 'player' && !factory.workers.includes(id) &&
+                        (!a.status_text || a.status_text === 'normal')
+                    );
+                    if (available.length > 0) {
+                        html += '<br>';
+                        available.slice(0, 5).forEach(([id, a]) => {
+                            html += `<button class="trade-btn" style="margin:2px;font-size:0.65rem" data-action="assign-worker" data-val="${key},${id}">+${a.name}</button>`;
+                        });
+                    }
+                }
+                html += '</div>';
+
+                // Production progress
+                if (factory.recipe) {
+                    const recipe = def.recipes.find(r => r.id === factory.recipe);
+                    if (recipe) {
+                        const pct = Math.round(factory.productionProgress / recipe.time * 100);
+                        html += `<div style="font-size:0.75rem;margin:4px 0">生產進度：${pct}%</div>`;
+                    }
+                }
+
+                // Warehouse
+                const wh = factory.warehouse || {};
+                if (Object.keys(wh).length > 0) {
+                    html += '<div style="margin:4px 0;font-size:0.8rem"><strong>倉庫：</strong>';
+                    for (const [res, amt] of Object.entries(wh)) {
+                        html += `<span style="margin-right:8px">${res}: ${amt}`;
+                        html += ` <button class="trade-btn" style="font-size:0.6rem;padding:1px 4px" data-action="collect-product" data-val="${key},${res},${amt}">收</button>`;
+                        html += ` <button class="trade-btn" style="font-size:0.6rem;padding:1px 4px" data-action="sell-product" data-val="${key},${res},${amt}">賣</button>`;
+                        html += '</span>';
+                    }
+                    html += '</div>';
+                }
+            }
+            html += '</div>';
+        }
+
+        // Available to build
+        const available = this.world.processing.getAvailableFactories(this.world);
+        if (available.length > 0) {
+            html += '<div class="econ-section"><h3>可建造工廠</h3>';
+            available.forEach(f => {
+                const costStr = Object.entries(f.cost).map(([r,a]) => `${r}:${a}`).join(' ');
+                const canBuild = f.canAfford ? '' : ' disabled';
+                html += `<div class="build-card"><div><strong>${f.icon} ${f.name}</strong>
+                    <br><span style="font-size:0.7rem">${costStr} | 建造天數：${f.buildDays}</span></div>
+                    <button class="trade-btn"${canBuild} data-action="build-factory" data-val="${f.key}">建造</button></div>`;
+            });
+            html += '</div>';
+        }
+
+        // Active orders
+        const orders = (proc.orders || []).filter(o => o.status === 'active');
+        if (orders.length > 0) {
+            html += '<div class="econ-section"><h3>📋 訂單</h3>';
+            orders.forEach(o => {
+                html += `<div class="build-card"><div><strong>${o.description}</strong>
+                    <br><span style="font-size:0.7rem">獎勵：${o.reward}銀幣 | 剩餘${o.daysLeft}天</span></div>
+                    <button class="trade-btn" data-action="fulfill-order" data-val="${o.id}">完成</button></div>`;
+            });
+            html += '</div>';
+        }
+
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    _buildFactory(key) {
+        const r = this.world.processing.buildFactory(key, this.world);
+        if (!r.ok) { alert(r.error || '無法建造'); return; }
+        this.state = this.world.getState(); this.renderSidebar();
+    }
+    _setRecipe(factoryKey, recipeId) {
+        this.world.processing.setRecipe(factoryKey, recipeId);
+        this.state = this.world.getState(); this.renderSidebar();
+    }
+    _assignWorker(factoryKey, agentId) {
+        this.world.processing.assignWorker(factoryKey, agentId);
+        this.state = this.world.getState(); this.renderSidebar();
+    }
+    _collectProduct(factoryKey, resource, amount) {
+        this.world.processing.collectProduct(factoryKey, resource, amount, this.world);
+        this.state = this.world.getState(); this.renderSidebar();
+    }
+    _sellProduct(factoryKey, resource, amount) {
+        this.world.processing.sellProduct(factoryKey, resource, amount, this.world);
+        this.state = this.world.getState(); this.renderSidebar();
+    }
+    _fulfillOrder(orderId) {
+        const r = this.world.processing.fulfillOrder(orderId, this.world);
+        if (!r.ok) { alert(r.error || '無法完成訂單'); return; }
+        this.state = this.world.getState(); this.renderSidebar();
+    }
+
+    // ============================================================
+    // Newspaper Tab
+    // ============================================================
+    renderNewspaper(container) {
+        if (!this.state) return;
+        const news = this.state.dailyNews || {};
+        const papers = news.newspapers || [];
+
+        let html = '<div class="economy-panel">';
+        html += `<div class="econ-section"><h3>📰 AI 日報（共 ${papers.length} 期）</h3></div>`;
+
+        if (papers.length === 0) {
+            html += '<div class="econ-section"><p class="muted-text">還沒有日報。每天結束時會自動發佈。</p></div>';
+        }
+
+        // Show latest first
+        const display = papers.slice().reverse().slice(0, 20);
+        for (const paper of display) {
+            const isExpanded = this._expandedNewspaper === paper.id;
+            html += `<div class="build-card" style="flex-direction:column;cursor:pointer" data-action="view-newspaper" data-val="${paper.id}">`;
+            html += `<div><strong>#${paper.id}</strong> — 第${paper.year}年 ${paper.season} 第${paper.day}天`;
+            html += ` <span style="font-size:0.7rem;color:var(--text-secondary)">記者：${paper.reporter}（${paper.reporterJob}）</span></div>`;
+            if (isExpanded) {
+                html += `<div style="margin-top:8px;white-space:pre-wrap;font-size:0.8rem;line-height:1.5;border-top:1px solid var(--border-color);padding-top:8px">${this._escapeHtml(paper.content)}</div>`;
+            }
+            html += '</div>';
+        }
+
+        if (papers.length > 20) {
+            html += `<div class="econ-section"><p class="muted-text">顯示最近 20 期（共 ${papers.length} 期）</p></div>`;
+        }
+
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    _viewNewspaper(id) {
+        this._expandedNewspaper = this._expandedNewspaper === id ? null : id;
+        this.renderSidebar();
+    }
+
+    _escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 }
 
