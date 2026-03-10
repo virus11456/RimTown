@@ -126,7 +126,7 @@ class Relationship {
         if (this.status === 'married') return REL_TYPES.MARRIED;
         if (this.status === 'dating') return REL_TYPES.DATING;
         if (this.status === 'ex') return REL_TYPES.EX;
-        if (this.romanticInterest > 30) return REL_TYPES.CRUSH;
+        if (this.romanticInterest > 50) return REL_TYPES.CRUSH;
         if (this.affinity > 60) return REL_TYPES.CLOSE_FRIEND;
         if (this.affinity > 20) return REL_TYPES.FRIEND;
         if (this.affinity > -20) return this.interactionCount > 0 ? REL_TYPES.ACQUAINTANCE : REL_TYPES.STRANGER;
@@ -164,7 +164,7 @@ class RelationshipManager {
         return this.relationships[targetId];
     }
     getFriends() { return Object.values(this.relationships).filter(r => r.affinity > 20); }
-    getRomanticInterests() { return Object.values(this.relationships).filter(r => r.romanticInterest > 20); }
+    getRomanticInterests() { return Object.values(this.relationships).filter(r => r.romanticInterest > 40); }
     getBestFriend() {
         const friends = this.getFriends();
         return friends.length ? friends.reduce((a,b) => a.affinity > b.affinity ? a : b) : null;
@@ -610,7 +610,7 @@ class Agent {
         if (rel.affinity >= 30 && Math.random() < 0.12 && !this._pendingHangout && !target._pendingHangout) {
             const hangoutSpots = ['tavern','park','town_square','chapel','forest','library'];
             const spot = pickRandom(hangoutSpots);
-            const hangoutActivity = rel.romanticInterest > 20 ? 'recreation' : 'socializing';
+            const hangoutActivity = rel.romanticInterest > 40 ? 'recreation' : 'socializing';
             const delay = randInt(2, 5);
             this._pendingHangout = { location: spot, activity: hangoutActivity, tick: delay, withAgent: target.name };
             target._pendingHangout = { location: spot, activity: hangoutActivity, tick: delay, withAgent: this.name };
@@ -775,7 +775,7 @@ class GossipNetwork {
     createGossip(source, about, world) {
         const rel = source.relationships.getOrCreate(about.agentId, about.name);
         const templates = [];
-        if (rel.romanticInterest > 20) templates.push(`你不覺得${about.name}挺有魅力的嗎？`);
+        if (rel.romanticInterest > 40) templates.push(`你不覺得${about.name}挺有魅力的嗎？`);
         if (rel.affinity < -10) templates.push(`說真的，${about.name}最近行為很奇怪。`);
         if (about.mood < -20) templates.push(`你有注意到${about.name}最近看起來很低落嗎？`);
         if (about.mood > 50) templates.push(`${about.name}最近心情超好的！`);
@@ -933,7 +933,7 @@ ${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
 
 格式：每行「名字: 對話內容」
 最後一行：EFFECTS: {"affinity_change_a": 數字(-3到5), "affinity_change_b": 數字(-3到5), "romantic_change_a": 數字(0到5), "romantic_change_b": 數字(0到5), "summary": "用一句生動的話總結發生了什麼"}
-提示：romantic_change 代表心動程度的變化。如果兩人聊得開心、有曖昧、互相關心，romantic 應該 > 0（通常1-3）。只有完全無感或尷尬才給0。`;
+提示：romantic_change 代表心動程度的變化。只有明確的曖昧、調情、深層情感連結才給 1-2。普通友好聊天應該給 0。大部分對話 romantic_change 應該是 0。`;
 
         const response = await this.llm.generate(prompt, 800);
         return this._parseConversation(response, agentA, agentB, world, relA, relB);
@@ -959,9 +959,9 @@ ${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
         }
         const affA = effects.affinity_change_a ?? randInt(-2,5);
         const affB = effects.affinity_change_b ?? randInt(-2,5);
-        // Default romantic growth: positive conversations should build romantic interest
-        const romA = effects.romantic_change_a ?? (affA > 0 ? randInt(0,2) : 0);
-        const romB = effects.romantic_change_b ?? (affB > 0 ? randInt(0,2) : 0);
+        // Default romantic growth: only grow on strongly positive conversations
+        const romA = effects.romantic_change_a ?? (affA >= 3 ? randInt(0,1) : 0);
+        const romB = effects.romantic_change_b ?? (affB >= 3 ? randInt(0,1) : 0);
         const summary = effects.summary || `${agentA.name}和${agentB.name}聊了天。`;
         relA.modifyAffinity(affA); relA.modifyRomantic(romA); relA.recordInteraction(world.tickCount, summary);
         relB.modifyAffinity(affB); relB.modifyRomantic(romB); relB.recordInteraction(world.tickCount, summary);
@@ -1028,7 +1028,7 @@ ${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
         const scene = pickRandom(scenery[season] || scenery['春季']);
 
         const isCouple = relA.status === 'dating' || relA.status === 'married';
-        const isCrush = relA.romanticInterest > 30 || relB.romanticInterest > 30;
+        const isCrush = relA.romanticInterest > 50 || relB.romanticInterest > 50;
         const isRival = relA.affinity < -20 || relB.affinity < -20;
         const isCloseFriend = relA.affinity > 50 && relB.affinity > 50;
         const isStranger = relA.interactionCount < 3;
@@ -1110,8 +1110,8 @@ ${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
             ];
             pickRandom(hostileTemplates)();
         } else if (isCrush) {
-            const crushA = relA.romanticInterest > 30;
-            const crushB = relB.romanticInterest > 30;
+            const crushA = relA.romanticInterest > 50;
+            const crushB = relB.romanticInterest > 50;
             const crushTopics = [
                 () => {
                     lines.push({speaker:agentA.name, text: crushA ? `${agentB.name}！你、你頭上有片落葉——我幫你拿掉！` : greetA});
@@ -1280,16 +1280,16 @@ ${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
             }
         }
 
-        // Romantic sparks
-        if (!isCouple && !isRival && affA > 0 && affB > 0) {
+        // Romantic sparks — only when affinity is already decent
+        if (!isCouple && !isRival && affA >= 3 && affB >= 3 && relA.affinity > 20 && relB.affinity > 20) {
             const hasRomanticTrait = tA.includes('romantic') || tB.includes('romantic');
             const hasChemistry = (tA.includes('shy') && tB.includes('charismatic')) ||
                                  (tB.includes('shy') && tA.includes('charismatic')) ||
                                  (tA.includes('creative') && tB.includes('creative'));
-            const sparkChance = hasRomanticTrait ? 0.5 : hasChemistry ? 0.4 : 0.25;
+            const sparkChance = hasRomanticTrait ? 0.3 : hasChemistry ? 0.2 : 0.1;
             if (Math.random() < sparkChance) {
-                const spark = randInt(1, hasRomanticTrait ? 5 : hasChemistry ? 4 : 3);
-                romA += spark; romB += Math.max(1, spark - randInt(0,1));
+                const spark = randInt(1, hasRomanticTrait ? 3 : hasChemistry ? 2 : 2);
+                romA += spark; romB += Math.max(0, spark - randInt(0,1));
             }
         }
 
@@ -1609,7 +1609,7 @@ ${player.name}: ${playerMessage}
                 const partnerName = relNpc.status === 'married' ? '老公/老婆' : '對象';
                 npcReply = pickRandom([`我跟${player.name}在一起啊，你忘了嗎？`,`哈哈，感情的事...有你就夠了。`,`你是在試探我嗎？我只有你啊。`]);
                 romChange = randInt(1,3);
-            } else if (relNpc.romanticInterest > 30) {
+            } else if (relNpc.romanticInterest > 50) {
                 npcReply = shy ? `感、感情的事...我不太想說...（臉紅）` :
                     pickRandom([`嗯...其實有一個在意的人啦...不告訴你是誰。`,`你為什麼突然問這個？難道你...？`,`哈，秘密。`]);
                 romChange = randInt(0,2);
@@ -3952,22 +3952,22 @@ class World {
                 const otherRel = other.relationships.getOrCreate(agent.agentId, agent.name);
 
                 // --- Natural romantic attraction growth ---
-                if (!rel.status && rel.affinity > 5 && rel.interactionCount > 1) {
+                // Requires decent affinity and multiple interactions before romance develops
+                if (!rel.status && rel.affinity > 25 && rel.interactionCount > 5) {
                     const tA = agent.personality.traits;
                     const tB = other.personality.traits;
-                    let compat = 1; // Base compatibility — everyone has some chance
-                    if (tA.includes('romantic') || tB.includes('romantic')) compat += 3;
-                    if (tA.includes('shy') && tB.includes('kind')) compat += 2;
-                    if (tA.includes('kind') && tB.includes('shy')) compat += 2;
-                    if (tA.includes('charismatic') || tB.includes('charismatic')) compat += 2;
-                    if (tA.includes('creative') && tB.includes('creative')) compat += 2;
-                    if (tA.includes('hardworking') && tB.includes('hardworking')) compat += 1;
+                    let compat = 0; // Base compatibility — need traits for romance
+                    if (tA.includes('romantic') || tB.includes('romantic')) compat += 2;
+                    if (tA.includes('shy') && tB.includes('kind')) compat += 1;
+                    if (tA.includes('kind') && tB.includes('shy')) compat += 1;
+                    if (tA.includes('charismatic') || tB.includes('charismatic')) compat += 1;
+                    if (tA.includes('creative') && tB.includes('creative')) compat += 1;
                     if (tA.includes('abrasive') && tB.includes('abrasive')) compat -= 2;
-                    const affinityBonus = Math.floor(rel.affinity / 15);
+                    const affinityBonus = Math.floor(rel.affinity / 25);
                     const growth = Math.max(0, affinityBonus + compat);
-                    // Higher chance to grow, especially with high affinity
-                    if (growth > 0 && Math.random() < 0.5) {
-                        rel.modifyRomantic(randInt(1, Math.min(growth, 6)));
+                    // Lower chance, requires real compatibility
+                    if (growth > 0 && Math.random() < 0.25) {
+                        rel.modifyRomantic(randInt(1, Math.min(growth, 3)));
                     }
                 }
 
@@ -3976,8 +3976,8 @@ class World {
                     const agentHasPartner = agent.relationships.getPartner();
                     const otherHasPartner = other.relationships.getPartner();
                     if (!agentHasPartner && !otherHasPartner &&
-                        rel.romanticInterest > 25 && otherRel.romanticInterest > 18 &&
-                        rel.affinity > 15 && otherRel.affinity > 10 && Math.random() < 0.3) {
+                        rel.romanticInterest > 50 && otherRel.romanticInterest > 35 &&
+                        rel.affinity > 30 && otherRel.affinity > 20 && Math.random() < 0.2) {
                         rel.status = 'dating'; rel.statusSince = this.tickCount;
                         otherRel.status = 'dating'; otherRel.statusSince = this.tickCount;
                         this.logMessage('relationship', `${agent.name}和${other.name}開始交往了！`, agent.name, other.name);
