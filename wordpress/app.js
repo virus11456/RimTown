@@ -1463,6 +1463,11 @@ class RimTownApp {
             await this.saveGame();
             this.state = this.world.getState();
             this.renderSidebar();
+            this._renderTownList();
+            // Sync to cloud if logged in
+            if (this.auth.loggedIn) {
+                this._syncToCloud();
+            }
         });
         document.getElementById('btn-export').addEventListener('click', () => this.exportSave());
         document.getElementById('btn-import').addEventListener('click', () => this.importSave());
