@@ -30,7 +30,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v3.0.3.zip` from Releases
+1. Download `rimtown-v3.1.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -45,6 +45,55 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v3.1.0 (2026-03-10)
+
+**大改版：多路線劇情 / 繁榮度系統 / NPC 個人故事線 / 自訂 NPC / 多結局系統**
+
+**Phase G — 主線任務升級為多路線系統**
+- 每個任務支援多條完成路線（搜集/社交/建設），任選其一即可過關
+- 5 章劇情重寫：12 個任務，每個有 2-4 條路線
+- 新增聲望 (reputation) 系統和劇情旗標 (storyFlags)
+- 第三章危機系統：隨機觸發蝗災/盜匪圍城/瘟疫
+- NPC 對話 prompt 注入任務狀態和好感度門檻提示
+- 任務 UI 升級：多路線進度顯示、危機橫幅、聲望顯示
+- 向後兼容舊存檔（自動遷移舊任務結構）
+
+**Phase H — 繁榮度系統 (ProsperityEngine)**
+- 7 維度加權繁榮度計算（經濟/建設/人口/幸福/文化/防禦/美觀）
+- 繁榮等級：荒涼→起步→發展中→繁榮→傳奇
+- 繁榮度效果：影響目標人口（移民速率）、交易價格、心情、商人頻率
+- 經濟面板頂部顯示繁榮度儀表板（7 維度進度條）
+- NPC 對話 prompt 注入繁榮度狀態
+
+**Phase I — NPC 個人故事線 (NPCQuestSystem)**
+- 12 個 NPC 各有 2-3 條個人故事任務，透過好感度觸發
+- 多路線完成、結果分支、連鎖觸發系統
+- NPC 與產業深度綁定（好感度 → 產業加成）
+- LLM prompt 注入個人心願，NPC 對話自然提及故事線
+- 任務 tab 顯示 NPC 個人故事進度與產業加成
+
+**Phase J — 自訂 NPC + 多結局系統**
+- CustomNPCSystem：創建自訂 NPC（名字/性別/年齡/特質/職業/背景）
+- 最多 3 位自訂居民，需 50 銀幣 + 30 食物
+- 特質衝突檢查、名字重複檢查，創建後 AI 自動接管行為
+- MultiEndingSystem：四種結局（繁榮/和平/傳奇/個人）
+- 第五章完成時自動觸發結局判定，含統計數據與鎮史回顧
+- 居民列表底部新增「創建新居民」按鈕
+
+**玩家體驗改善**
+- 玩家幸福感自動管理：夜間自動睡眠、低需求自動進食/社交/娛樂
+- 場所被動恢復（酒館恢復飢餓、住宅恢復休息等）
+- 無業時在居民列表直接顯示職業選擇按鈕（醒目黃色提示框）
+- 場所英文名統一改中文（town_hall→鎮公所、clinic→診所、workshop→工坊等）
+
+**Bug 修復**
+- 修復 NPC 故事線 getIndustryBindingContext 中未定義的 world 參數引用
+- 修復季節索引 -1 導致總天數計算錯誤
+- 修復自訂 NPC 資源扣除非原子操作（失敗時未回滾）
+- 修復夜間睡眠保護條件（rest < 95 才持續睡覺）
+- 移除多處 dead code 和未使用變數
+- 以上修正同步套用至 WordPress 與 Chrome Extension 版本
 
 ### v3.0.3 (2026-03-10)
 
