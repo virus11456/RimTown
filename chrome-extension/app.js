@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v3.1.0
-const RIMTOWN_APP_VERSION = '3.1.0';
+// RimTown - Frontend App (WordPress Plugin) v3.1.1
+const RIMTOWN_APP_VERSION = '3.1.1';
 const ELECTION_POLICIES_LABELS = {economy:'經濟發展',welfare:'社會福利',defense:'軍事防禦',culture:'文化教育',nature:'自然保育',freedom:'個人自由'};
 
 // =====================================================
@@ -1168,6 +1168,15 @@ class RimTownApp {
 
     setupTileMap() {
         const canvas = document.getElementById('town-map-canvas');
+        const mapPanel = document.querySelector('.map-panel');
+        const mainLayout = document.querySelector('.main-layout');
+        console.log('[RimTown] setupTileMap: canvas=', !!canvas,
+            'mapPanel=', mapPanel ? `${mapPanel.offsetWidth}x${mapPanel.offsetHeight}` : 'null',
+            'mainLayout=', mainLayout ? `${mainLayout.offsetWidth}x${mainLayout.offsetHeight}` : 'null');
+        if (mapPanel) {
+            const rect = mapPanel.getBoundingClientRect();
+            console.log('[RimTown] mapPanel rect:', JSON.stringify({top:rect.top,left:rect.left,width:rect.width,height:rect.height}));
+        }
         this.tileMap = new PixelTileMap(canvas);
         this.tileMap.onClick = (locId) => this.playerMoveTo(locId);
         this.tileMap.onAgentClick = (agentId) => this.onAgentClick(agentId);
@@ -1176,13 +1185,23 @@ class RimTownApp {
 
     _generateTileMapLayout() {
         const locations = this.state.locations?.locations || {};
+        console.log('[RimTown] _generateTileMapLayout: locationCount=', Object.keys(locations).length);
         this.tileMap.generateLayout(locations);
         this._mapGenerated = true;
     }
 
     _startRenderLoop() {
+        let _renderLogCount = 0;
         const loop = () => {
             if (this.tileMap && this._mapGenerated) {
+                if (_renderLogCount < 3) {
+                    const parent = this.tileMap.canvas?.parentElement;
+                    const rect = parent?.getBoundingClientRect();
+                    console.log('[RimTown] renderLoop frame', _renderLogCount, ': parent=', rect ? `${rect.width}x${rect.height}` : 'null',
+                        'canvas=', `${this.tileMap.canvas?.width}x${this.tileMap.canvas?.height}`,
+                        'grid=', !!this.tileMap.grid);
+                    _renderLogCount++;
+                }
                 const agents = this.state?.agents || {};
                 const player = agents['player'];
                 this.tileMap.updateAgents(agents, this.state.locations?.locations || {}, this.chatTarget);
