@@ -306,25 +306,53 @@ body.rimtown-page .wp-block-post-title {
     overflow: hidden;
 }
 
+/* Sidebar Tabs — 2-row grid layout */
 .rt-sidebar-tabs {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
     border-bottom: 1px solid var(--border);
+    background: var(--bg-primary);
+    flex-shrink: 0;
 }
 
 .rt-sidebar-tabs button {
-    flex: 1;
-    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px 4px;
     background: none;
     border: none;
+    border-bottom: 2px solid transparent;
     color: var(--text-secondary);
     cursor: pointer;
-    font-size: 0.8rem;
-    border-bottom: 2px solid transparent;
+    font-size: 0.7rem;
+    transition: all 0.15s ease;
+    position: relative;
+}
+
+.rt-sidebar-tabs button:hover {
+    background: rgba(233, 69, 96, 0.1);
+    color: var(--text-primary);
 }
 
 .rt-sidebar-tabs button.active {
     color: var(--accent);
     border-bottom-color: var(--accent);
+    background: rgba(233, 69, 96, 0.08);
+}
+
+.rt-sidebar-tabs .tab-icon {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.rt-sidebar-tabs .tab-label {
+    font-size: 0.65rem;
+    line-height: 1;
+    white-space: nowrap;
 }
 
 .rt-sidebar-content {
@@ -1386,6 +1414,16 @@ body.rimtown-page .wp-block-post-title {
         padding: 3px 8px;
         font-size: 0.75rem;
     }
+    /* Tablet: smaller tab icons and labels */
+    .rt-sidebar-tabs button {
+        padding: 5px 2px;
+    }
+    .rt-sidebar-tabs .tab-icon {
+        font-size: 0.9rem;
+    }
+    .rt-sidebar-tabs .tab-label {
+        font-size: 0.6rem;
+    }
 }
 
 /* ===== Responsive: Mobile (≤768px) ===== */
@@ -1507,17 +1545,19 @@ body.rimtown-page .wp-block-post-title {
         display: block;
     }
 
-    /* Sidebar tabs: scrollable on mobile */
+    /* Sidebar tabs: 5-column grid on mobile, icon-only with small labels */
     .rt-sidebar-tabs {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        flex-wrap: nowrap;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0;
     }
     .rt-sidebar-tabs button {
-        padding: 6px 6px;
-        font-size: 0.7rem;
-        white-space: nowrap;
-        min-width: 0;
+        padding: 4px 2px;
+    }
+    .rt-sidebar-tabs .tab-icon {
+        font-size: 0.85rem;
+    }
+    .rt-sidebar-tabs .tab-label {
+        font-size: 0.55rem;
     }
 
     /* Sidebar content */
@@ -1584,6 +1624,17 @@ body.rimtown-page .wp-block-post-title {
     .rt-sidebar {
         height: 70%;
         max-height: 70vh;
+    }
+
+    /* Small phone: icon-only tabs, hide labels */
+    .rt-sidebar-tabs .tab-label {
+        display: none;
+    }
+    .rt-sidebar-tabs button {
+        padding: 6px 2px;
+    }
+    .rt-sidebar-tabs .tab-icon {
+        font-size: 1.1rem;
     }
 
     /* Nearby buttons: smaller */

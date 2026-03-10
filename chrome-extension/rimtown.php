@@ -118,12 +118,16 @@ function rimtown_shortcode($atts) {
             <div class="rt-sidebar" id="rimtown-sidebar">
                 <button class="mobile-back-to-map" id="mobile-back-to-map">&#9650; 返回地圖</button>
                 <div class="rt-sidebar-tabs">
-                    <button data-tab="residents" class="active">居民</button>
-                    <button data-tab="chat">聊天</button>
-                    <button data-tab="detail">詳情</button>
-                    <button data-tab="economy">經濟</button>
-                    <button data-tab="log">日誌</button>
-                    <button data-tab="events">事件</button>
+                    <button data-tab="residents" class="active"><span class="tab-icon">👥</span><span class="tab-label">居民</span></button>
+                    <button data-tab="chat"><span class="tab-icon">💬</span><span class="tab-label">聊天</span></button>
+                    <button data-tab="detail"><span class="tab-icon">📋</span><span class="tab-label">詳情</span></button>
+                    <button data-tab="economy"><span class="tab-icon">💰</span><span class="tab-label">經濟</span></button>
+                    <button data-tab="events"><span class="tab-icon">📰</span><span class="tab-label">事件</span></button>
+                    <button data-tab="industry"><span class="tab-icon">🏭</span><span class="tab-label">產業</span></button>
+                    <button data-tab="farm"><span class="tab-icon">🌾</span><span class="tab-label">農場</span></button>
+                    <button data-tab="factory"><span class="tab-icon">⚙️</span><span class="tab-label">工廠</span></button>
+                    <button data-tab="newspaper"><span class="tab-icon">📰</span><span class="tab-label">日報</span></button>
+                    <button data-tab="log"><span class="tab-icon">📝</span><span class="tab-label">日誌</span></button>
                 </div>
                 <div class="rt-sidebar-content" id="sidebar-content"></div>
             </div>
