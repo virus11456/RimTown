@@ -86,9 +86,12 @@ class RimTownAuth {
     }
 
     async _fetch(endpoint, method = 'GET', body = null) {
+        const isPublic = ['login', 'register', 'reset-password', 'me'].includes(endpoint);
+        const headers = { 'Content-Type': 'application/json' };
+        if (!isPublic && this._nonce) headers['X-WP-Nonce'] = this._nonce;
         const opts = {
             method,
-            headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': this._nonce },
+            headers,
             credentials: 'same-origin',
         };
         if (body) opts.body = JSON.stringify(body);
