@@ -23,9 +23,9 @@
 | 3 | 工廠加工 (ProcessingSystem) | `processing.js` | ✅ 已實裝 |
 | 4 | NPC 關係連鎖事件 (NPCEventSystem) | `npc-events.js` | ✅ 已實裝 |
 | 5 | AI 城鎮日報 (DailyNewsEngine) | `daily-news.js` | ✅ 已實裝 |
-| 6 | 主線任務 (QuestSystem) | `quest-system.js` | ⚠️ 簡化版（缺多路線） |
-| 7 | 繁榮度系統 (ProsperityEngine) | `prosperity.js`（待建） | ❌ 未實裝 |
-| 8 | NPC 個人故事線 (NPCQuestSystem) | `npc-quests.js`（待建） | ❌ 未實裝 |
+| 6 | 主線任務 (QuestSystem) | `quest-system.js` | ✅ 已實裝（多路線版） |
+| 7 | 繁榮度系統 (ProsperityEngine) | `prosperity.js` | ✅ 已實裝 |
+| 8 | NPC 個人故事線 (NPCQuestSystem) | `npc-quests.js` | ✅ 已實裝 |
 | 9 | 自訂 NPC (CustomNPCSystem) | `custom-npc.js`（待建） | ❌ 未實裝 |
 | 10 | 多結局系統 | 整合於 quest-system.js | ❌ 未實裝 |
 | 11 | 城鎮間外交 / Multiplayer | — | ➖ 暫不做 |
@@ -428,7 +428,7 @@ class ProsperityEngine {
 
 ---
 
-## 八、NPC 個人故事線 (NPCQuestSystem) ❌ 未實裝
+## 八、NPC 個人故事線 (NPCQuestSystem) ✅ 已實裝
 
 ### 概念
 
@@ -721,8 +721,8 @@ wordpress/
 ├── daily-news.js      (現有) ✅ DailyNewsEngine
 ├── npc-events.js      (現有) ✅ NPCEventSystem
 ├── quest-system.js    (現有) ⚠️ QuestSystem → 需升級為多路線
-├── prosperity.js      (待建) ❌ ProsperityEngine
-├── npc-quests.js      (待建) ❌ NPC 個人故事線
+├── prosperity.js      ✅ ProsperityEngine
+├── npc-quests.js      ✅ NPC 個人故事線
 └── custom-npc.js      (待建) ❌ CustomNPCSystem
 
 chrome-extension/      (同步上述所有檔案)

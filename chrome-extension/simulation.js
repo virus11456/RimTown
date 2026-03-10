@@ -914,6 +914,18 @@ class ConversationEngine {
             const hintText = hints.map(h => `關於「${h.questTitle}」，你可以自然地提到：${h.hint}`).join('\n');
             parts.push(`【你可以給的提示（只在話題相關時自然帶出，不要硬塞）】\n${hintText}`);
         }
+        // NPC personal quest hints (個人故事線)
+        if (world.npcQuests) {
+            const personalHints = world.npcQuests.getPersonalQuestHints(npc.agentId, affinity);
+            if (personalHints.length > 0) {
+                const personalText = personalHints.map(h => {
+                    if (h.type === 'active') return `你的心願：${h.hint}`;
+                    if (h.type === 'tease') return `（如果話題相關）${h.hint}`;
+                    return `你聽說：${h.hint}`;
+                }).join('\n');
+                parts.push(`【個人心願】\n${personalText}`);
+            }
+        }
         if (parts.length === 0) return '';
         return '\n【任務相關】\n' + parts.join('\n') + '\n';
     }
@@ -3993,6 +4005,7 @@ class World {
         this.npcEvents = new NPCEventSystem();
         this.questSystem = typeof QuestSystem !== 'undefined' ? new QuestSystem() : null;
         this.prosperity = typeof ProsperityEngine !== 'undefined' ? new ProsperityEngine() : null;
+        this.npcQuests = typeof NPCQuestSystem !== 'undefined' ? new NPCQuestSystem() : null;
     }
     addAgent(agent) { this.agents[agent.agentId] = agent; }
     removeAgent(id) { delete this.agents[id]; }
@@ -4044,6 +4057,7 @@ class World {
             this.processing.dailyUpdate(this);
             this.npcEvents.dailyUpdate(this);
             if (this.prosperity) this.prosperity.dailyUpdate(this);
+            if (this.npcQuests) this.npcQuests.dailyUpdate(this);
             if (this.questSystem) this.questSystem.checkProgress(this);
             // AI Daily News (async, fire-and-forget)
             this.dailyNews.generateNewspaper(this).catch(e => console.warn('[DailyNews] Error:', e));
@@ -4081,6 +4095,7 @@ class World {
             npcEvents: this.npcEvents.toDict(),
             questSystem: this.questSystem ? this.questSystem.toDict() : null,
             prosperity: this.prosperity ? this.prosperity.toDict() : null,
+            npcQuests: this.npcQuests ? this.npcQuests.toDict() : null,
         };
     }
     reset(seed = null) {
@@ -4104,6 +4119,7 @@ class World {
         this.npcEvents = new NPCEventSystem();
         this.questSystem = typeof QuestSystem !== 'undefined' ? new QuestSystem() : null;
         this.prosperity = typeof ProsperityEngine !== 'undefined' ? new ProsperityEngine() : null;
+        this.npcQuests = typeof NPCQuestSystem !== 'undefined' ? new NPCQuestSystem() : null;
         this.conversationEngine = new ConversationEngine(this.conversationEngine?.llm);
         this.townMap = generateRandomTown(seed);
         this._loadDefaultResidents();
@@ -4364,6 +4380,7 @@ class World {
             npcEvents: this.npcEvents.serialize(),
             questSystem: this.questSystem ? this.questSystem.serialize() : null,
             prosperity: this.prosperity ? this.prosperity.serialize() : null,
+            npcQuests: this.npcQuests ? this.npcQuests.serialize() : null,
         };
     }
 
@@ -4558,6 +4575,7 @@ class World {
             if (data.npcEvents) this.npcEvents.loadFrom(data.npcEvents);
             if (this.questSystem && data.questSystem) this.questSystem.loadFrom(data.questSystem);
             if (this.prosperity && data.prosperity) this.prosperity.loadFrom(data.prosperity);
+            if (this.npcQuests && data.npcQuests) this.npcQuests.loadFrom(data.npcQuests);
 
             this.logMessage('system', '遊戲讀取成功！');
             return true;

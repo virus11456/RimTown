@@ -2750,6 +2750,7 @@ class RimTownApp {
             html += `<span style="color:${pColor};font-weight:bold">${prosp.prosperity} — ${prosp.level}</span>`;
             html += `</div>`;
             html += `<div class="progress-bar" style="height:8px;margin-bottom:6px"><div class="progress-fill" style="width:${prosp.prosperity}%;background:${pColor}"></div></div>`;
+            // Dimension bars
             const dimLabels = { economy:'💰經濟', buildings:'🏗️建設', population:'👥人口', happiness:'😊幸福', culture:'🎭文化', defense:'🛡️防禦', beauty:'🌺美觀' };
             html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;font-size:0.7rem">`;
             for (const [key, dim] of Object.entries(prosp.dimensions || {})) {
@@ -3589,8 +3590,10 @@ class RimTownApp {
                     html += '<div class="quest-routes" style="margin-top:6px">';
                     html += '<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:4px">選擇任一路線完成即可：</div>';
                     for (const route of quest.routes) {
+                        // Calculate route overall progress
                         const condCount = route.conditions.length;
                         const condDone = route.conditions.filter(c => c.completed).length;
+                        const routePct = condCount > 0 ? Math.round((condDone / condCount) * 100) : 0;
                         const routeComplete = condDone === condCount;
 
                         html += `<div class="quest-route" style="margin:6px 0;padding:6px 8px;border-radius:6px;background:${routeComplete ? 'rgba(80,200,120,0.1)' : 'rgba(255,255,255,0.03)'};border:1px solid ${routeComplete ? 'var(--positive)' : 'rgba(255,255,255,0.08)'}">`;
@@ -3651,6 +3654,92 @@ class RimTownApp {
                 html += '</div>';
             }
             html += '</div>';
+        }
+
+        // ============================================================
+        // NPC 個人故事線
+        // ============================================================
+        const nq = this.state.npcQuests;
+        if (nq) {
+            html += `<div class="econ-section"><h3>💫 NPC 個人故事</h3>`;
+            html += `<div style="font-size:0.75rem;color:var(--text-secondary)">進行中：${nq.activeCount} | 已完成：${nq.completedCount}/${nq.totalDefinedCount}</div>`;
+            html += `</div>`;
+
+            // Active personal quests
+            if (nq.active && nq.active.length > 0) {
+                for (const quest of nq.active) {
+                    html += `<div class="quest-card quest-active">`;
+                    html += `<div class="quest-title">${quest.icon || '💫'} ${quest.title}</div>`;
+
+                    // Show NPC name
+                    const npcName = quest.npcId ? (this.state.agents?.[quest.npcId]?.name || quest.npcId) : '';
+                    if (npcName) html += `<div style="font-size:0.7rem;color:var(--accent);margin-bottom:2px">來自：${npcName}</div>`;
+
+                    html += `<div class="quest-desc">${quest.description}</div>`;
+
+                    // Routes
+                    if (quest.routes) {
+                        html += '<div class="quest-routes" style="margin-top:6px">';
+                        for (const route of quest.routes) {
+                            const condCount = route.conditions.length;
+                            const condDone = route.conditions.filter(c => c.completed).length;
+                            const routeComplete = condDone === condCount;
+
+                            html += `<div class="quest-route" style="margin:6px 0;padding:6px 8px;border-radius:6px;background:${routeComplete ? 'rgba(80,200,120,0.1)' : 'rgba(255,255,255,0.03)'};border:1px solid ${routeComplete ? 'var(--positive)' : 'rgba(255,255,255,0.08)'}">`;
+                            html += `<div style="font-weight:bold;font-size:0.8rem;margin-bottom:3px">${route.icon || '📋'} ${route.label}</div>`;
+
+                            for (const cond of route.conditions) {
+                                const pct = cond.target > 0 ? Math.min(100, Math.round((cond.progress / cond.target) * 100)) : 0;
+                                html += `<div class="quest-objective ${cond.completed ? 'done' : ''}" style="margin:2px 0">`;
+                                html += `<span style="font-size:0.75rem">${cond.completed ? '☑' : '☐'} ${cond.label}</span>`;
+                                if (cond.target > 1) html += `<span class="quest-obj-progress" style="font-size:0.7rem">${cond.progress}/${cond.target}</span>`;
+                                html += `<div class="progress-bar" style="height:3px;margin-top:2px"><div class="progress-fill" style="width:${pct}%;background:${cond.completed ? 'var(--positive)' : 'var(--accent)'}"></div></div>`;
+                                html += '</div>';
+                            }
+                            html += '</div>';
+                        }
+                        html += '</div>';
+                    }
+
+                    // Rewards
+                    if (quest.rewards) {
+                        const rewardStr = Object.entries(quest.rewards)
+                            .map(([r, a]) => `${rewardLabels[r] || r} ${a}`)
+                            .join('  ');
+                        html += `<div class="quest-rewards" style="margin-top:4px;font-size:0.75rem">獎勵：${rewardStr}</div>`;
+                    }
+                    html += '</div>';
+                }
+            } else {
+                html += `<div class="econ-section"><p class="muted-text" style="font-size:0.8rem">提升與 NPC 的好感度來觸發個人故事線。</p></div>`;
+            }
+
+            // Completed personal quests
+            if (nq.completed && nq.completed.length > 0) {
+                html += `<div class="econ-section"><h3 style="color:var(--positive)">✅ 已完成的個人故事</h3>`;
+                for (const quest of nq.completed) {
+                    const npcName = quest.npcId ? (this.state.agents?.[quest.npcId]?.name || quest.npcId) : '';
+                    const route = quest.routes?.find(r => r.id === quest.completedRoute);
+                    html += `<div class="quest-card quest-completed">`;
+                    html += `<div class="quest-title">✅ ${quest.icon || '💫'} ${quest.title}</div>`;
+                    if (npcName) html += `<div style="font-size:0.7rem;color:var(--text-muted)">來自：${npcName}</div>`;
+                    if (route) html += `<div style="font-size:0.7rem;color:var(--positive);margin-top:2px">✓ 以「${route.icon || ''} ${route.label}」完成</div>`;
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+
+            // Industry bonuses from NPC affinity
+            const bonusEntries = Object.entries(nq.industryBonuses || {}).filter(([,v]) => v > 0);
+            if (bonusEntries.length > 0) {
+                const indLabels = { woodcutting: '🪓 伐木', mining: '⛏️ 採礦', farming: '🌾 農業', smithing: '⚒️ 鍛造', trade: '💰 貿易' };
+                html += `<div class="econ-section"><h3>📈 NPC 產業加成</h3>`;
+                for (const [ind, bonus] of bonusEntries) {
+                    const pct = Math.round(bonus * 100);
+                    html += `<div style="font-size:0.8rem;margin:2px 0">${indLabels[ind] || ind}：+${pct}%</div>`;
+                }
+                html += '</div>';
+            }
         }
 
         html += '</div>';
