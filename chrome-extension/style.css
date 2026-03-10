@@ -306,7 +306,7 @@ body.rimtown-page .wp-block-post-title {
     overflow: hidden;
 }
 
-/* Sidebar Tabs — 2-row grid layout */
+/* Sidebar Tabs — grid layout */
 .rt-sidebar-tabs {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -314,6 +314,36 @@ body.rimtown-page .wp-block-post-title {
     border-bottom: 1px solid var(--border);
     background: var(--bg-primary);
     flex-shrink: 0;
+}
+
+/* Sub-tab bar inside panels */
+.sub-tab-bar {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin: -10px -10px 10px -10px;
+    padding: 0;
+    background: var(--bg-primary);
+}
+.sub-tab-bar button {
+    flex: 1;
+    padding: 8px 6px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.15s;
+}
+.sub-tab-bar button:hover {
+    background: rgba(233, 69, 96, 0.1);
+    color: var(--text-primary);
+}
+.sub-tab-bar button.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    background: rgba(233, 69, 96, 0.08);
 }
 
 .rt-sidebar-tabs button {
@@ -1353,6 +1383,82 @@ body.rimtown-page .wp-block-post-title {
     margin-bottom: 8px;
 }
 .log-entry.type-election { border-left: 2px solid var(--warning); padding-left: 6px; }
+
+/* ===== Quest System ===== */
+.quest-card {
+    background: var(--bg-card);
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 8px;
+    border-left: 3px solid var(--border);
+    transition: all 0.2s;
+}
+.quest-card.quest-active {
+    border-left-color: var(--accent);
+    background: rgba(233, 69, 96, 0.08);
+}
+.quest-card.quest-completed {
+    border-left-color: var(--positive);
+    opacity: 0.75;
+}
+.quest-card.quest-locked {
+    opacity: 0.4;
+    border-left-color: var(--text-muted);
+}
+.quest-title {
+    font-weight: bold;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+}
+.quest-desc {
+    font-size: 0.73rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin-bottom: 6px;
+}
+.quest-objectives {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+.quest-objective {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+}
+.quest-objective.done {
+    color: var(--positive);
+}
+.quest-objective.done span:first-child {
+    text-decoration: line-through;
+    text-decoration-color: var(--positive);
+}
+.quest-obj-progress {
+    margin-left: auto;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    font-family: monospace;
+}
+.quest-rewards {
+    font-size: 0.7rem;
+    color: var(--warning);
+    padding: 3px 6px;
+    background: rgba(251, 191, 36, 0.1);
+    border-radius: 4px;
+    margin-top: 4px;
+}
+.quest-complete-msg {
+    font-size: 0.7rem;
+    color: var(--positive);
+    font-style: italic;
+    margin-top: 4px;
+}
+.log-entry.type-quest { border-left: 2px solid var(--accent); padding-left: 6px; font-weight: bold; }
 
 /* ===== Mobile Sidebar Toggle ===== */
 .mobile-sidebar-toggle {

@@ -1675,67 +1675,193 @@ class PixelTileMap {
         const plots = farmData.plots || [];
         if (plots.length === 0) return;
 
+        // Crop-specific colors for different growth stages
+        const CROP_COLORS = {
+            wheat:        { sprout:'#7ec850', mid:'#5cad42', mature:'#e8c840', ready:'#daa520' },
+            potato:       { sprout:'#6aaa38', mid:'#4c9838', mature:'#8b7355', ready:'#c49a50' },
+            rice:         { sprout:'#90d070', mid:'#70b050', mature:'#b8d860', ready:'#d4c840' },
+            corn:         { sprout:'#6ec050', mid:'#4c9838', mature:'#c8a830', ready:'#dab030' },
+            cotton:       { sprout:'#70b860', mid:'#60a850', mature:'#e0d8d0', ready:'#f0e8e0' },
+            flowers:      { sprout:'#70b860', mid:'#e090b0', mature:'#f080a0', ready:'#ff70a0' },
+            herbs:        { sprout:'#60b848', mid:'#48a038', mature:'#389830', ready:'#308828' },
+            mushroom:     { sprout:'#b8a080', mid:'#a08868', mature:'#c0a878', ready:'#d8c090' },
+            sugarcane:    { sprout:'#70b860', mid:'#58a048', mature:'#90c870', ready:'#a0d880' },
+            tea:          { sprout:'#60a048', mid:'#488838', mature:'#407830', ready:'#386828' },
+            grapes:       { sprout:'#70b860', mid:'#6880b0', mature:'#8060a0', ready:'#704898' },
+            golden_wheat: { sprout:'#a0c050', mid:'#c0b040', mature:'#e8d040', ready:'#ffd700' },
+            dragon_fruit: { sprout:'#c06880', mid:'#d05070', mature:'#e83860', ready:'#ff2050' },
+        };
+        const DEFAULT_COLORS = { sprout:'#7ec850', mid:'#5cad42', mature:'#8bc34a', ready:'#ffd700' };
+
         const startX = (farmZone.x - 3) * TILE;
         const startY = (farmZone.y + farmZone.h + 1) * TILE;
-        const plotSize = 12;
+        const plotSize = 14;
+        const gap = 2;
         const cols = 4;
+        const frame = this.animFrame || 0;
 
         for (let i = 0; i < plots.length; i++) {
             const plot = plots[i];
             const col = i % cols;
             const row = Math.floor(i / cols);
-            const px = startX + col * (plotSize + 2);
-            const py = startY + row * (plotSize + 2);
+            const px = startX + col * (plotSize + gap);
+            const py = startY + row * (plotSize + gap);
+            const cropColors = CROP_COLORS[plot.crop] || DEFAULT_COLORS;
 
-            // Background soil
-            ctx.fillStyle = plot.state === 'empty' ? '#8B7355' :
-                            plot.state === 'tilled' ? '#6B4226' :
-                            plot.state === 'withered' ? '#5a3a2a' : '#5a3a20';
-            ctx.fillRect(px, py, plotSize, plotSize);
-
-            // Crop visual
-            if (plot.state === 'growing') {
-                const progress = plot.growthProgress || 0;
-                const h = Math.max(2, Math.round(progress / 100 * 8));
-                ctx.fillStyle = '#4caf50';
-                ctx.fillRect(px + 2, py + plotSize - h, 3, h);
-                ctx.fillRect(px + 7, py + plotSize - h, 3, h);
-                // Water indicator
-                if (plot.waterLevel < 40) {
-                    ctx.fillStyle = 'rgba(255,100,100,0.6)';
-                    ctx.fillRect(px, py, 2, 2);
+            // Soil texture with furrow lines
+            if (plot.state === 'empty') {
+                ctx.fillStyle = '#8B7355';
+                ctx.fillRect(px, py, plotSize, plotSize);
+                // Subtle soil texture
+                ctx.fillStyle = 'rgba(100,80,55,0.4)';
+                for (let ly = 2; ly < plotSize; ly += 3) {
+                    ctx.fillRect(px + 1, py + ly, plotSize - 2, 1);
                 }
-            } else if (plot.state === 'ready') {
-                // Mature crop - golden
-                ctx.fillStyle = '#ffd700';
-                ctx.fillRect(px + 1, py + 2, 4, 8);
-                ctx.fillRect(px + 7, py + 2, 4, 8);
-                // Pulse effect
-                if (this.animFrame % 40 < 20) {
-                    ctx.fillStyle = 'rgba(255,215,0,0.3)';
-                    ctx.fillRect(px - 1, py - 1, plotSize + 2, plotSize + 2);
+            } else if (plot.state === 'tilled') {
+                ctx.fillStyle = '#5a3a20';
+                ctx.fillRect(px, py, plotSize, plotSize);
+                // Tilled furrow lines
+                ctx.fillStyle = '#4a2a15';
+                for (let ly = 1; ly < plotSize; ly += 3) {
+                    ctx.fillRect(px, py + ly, plotSize, 1);
                 }
-            } else if (plot.state === 'withered') {
-                ctx.fillStyle = '#8B4513';
-                ctx.fillRect(px + 3, py + 4, 2, 6);
-                ctx.fillRect(px + 8, py + 5, 2, 5);
+                // Moisture sheen
+                ctx.fillStyle = 'rgba(100,140,180,0.15)';
+                ctx.fillRect(px, py, plotSize, plotSize);
+            } else {
+                // Dark soil base for growing/ready
+                ctx.fillStyle = '#4a2a15';
+                ctx.fillRect(px, py, plotSize, plotSize);
+                // Subtle furrows
+                ctx.fillStyle = '#3a1a10';
+                for (let ly = 2; ly < plotSize; ly += 3) {
+                    ctx.fillRect(px, py + ly, plotSize, 1);
+                }
             }
 
-            // Border
-            ctx.strokeStyle = plot.state === 'ready' ? '#ffd700' : 'rgba(139,115,85,0.5)';
+            // === Crop growth visualization ===
+            if (plot.state === 'growing') {
+                const progress = plot.growthProgress || 0;
+                const stage = progress < 25 ? 'sprout' : progress < 60 ? 'mid' : 'mature';
+                const color = cropColors[stage];
+
+                if (progress < 25) {
+                    // Sprout stage: tiny green dots
+                    ctx.fillStyle = color;
+                    ctx.fillRect(px + 3, py + plotSize - 3, 2, 2);
+                    ctx.fillRect(px + 9, py + plotSize - 3, 2, 2);
+                    // Soil mound
+                    ctx.fillStyle = '#6B4226';
+                    ctx.fillRect(px + 2, py + plotSize - 1, 4, 1);
+                    ctx.fillRect(px + 8, py + plotSize - 1, 4, 1);
+                } else if (progress < 60) {
+                    // Mid growth: small plants with leaves
+                    const h = Math.round(4 + (progress - 25) / 35 * 4);
+                    ctx.fillStyle = '#3a6828'; // stem
+                    ctx.fillRect(px + 3, py + plotSize - h, 1, h);
+                    ctx.fillRect(px + 10, py + plotSize - h, 1, h);
+                    // Leaves
+                    ctx.fillStyle = color;
+                    ctx.fillRect(px + 1, py + plotSize - h + 1, 3, 2);
+                    ctx.fillRect(px + 4, py + plotSize - h + 2, 2, 2);
+                    ctx.fillRect(px + 8, py + plotSize - h + 1, 3, 2);
+                    ctx.fillRect(px + 11, py + plotSize - h + 2, 2, 2);
+                } else {
+                    // Near-mature: full plants with detail
+                    const h = Math.round(8 + (progress - 60) / 40 * 3);
+                    // Stems
+                    ctx.fillStyle = '#3a6828';
+                    ctx.fillRect(px + 3, py + plotSize - h, 1, h);
+                    ctx.fillRect(px + 7, py + plotSize - h, 1, h);
+                    ctx.fillRect(px + 10, py + plotSize - h, 1, h);
+                    // Foliage
+                    ctx.fillStyle = color;
+                    ctx.fillRect(px + 1, py + plotSize - h, 5, 3);
+                    ctx.fillRect(px + 2, py + plotSize - h + 3, 3, 2);
+                    ctx.fillRect(px + 8, py + plotSize - h, 5, 3);
+                    ctx.fillRect(px + 9, py + plotSize - h + 3, 3, 2);
+                    // Highlight
+                    ctx.fillStyle = 'rgba(255,255,200,0.2)';
+                    ctx.fillRect(px + 2, py + plotSize - h, 2, 1);
+                    ctx.fillRect(px + 9, py + plotSize - h, 2, 1);
+                }
+
+                // Water level indicator bar at bottom
+                const waterPct = (plot.waterLevel || 0) / 100;
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.fillRect(px, py + plotSize - 1, plotSize, 1);
+                ctx.fillStyle = waterPct > 0.6 ? 'rgba(60,140,220,0.7)' : waterPct > 0.3 ? 'rgba(220,180,60,0.7)' : 'rgba(220,60,60,0.7)';
+                ctx.fillRect(px, py + plotSize - 1, Math.round(plotSize * waterPct), 1);
+
+                // Fertilized sparkle
+                if (plot.fertilized && frame % 30 < 15) {
+                    ctx.fillStyle = 'rgba(180,255,100,0.5)';
+                    ctx.fillRect(px + (frame % 7) * 2, py + 1, 1, 1);
+                }
+
+            } else if (plot.state === 'ready') {
+                // Mature crop: full golden/colored display with sway animation
+                const color = cropColors.ready;
+                const sway = Math.sin(frame * 0.05 + i * 1.5) * 0.5;
+
+                // Full plant body
+                ctx.fillStyle = '#3a6828';
+                ctx.fillRect(px + 3, py + 3, 1, plotSize - 4);
+                ctx.fillRect(px + 7, py + 3, 1, plotSize - 4);
+                ctx.fillRect(px + 10, py + 4, 1, plotSize - 5);
+
+                // Crop heads / fruits
+                ctx.fillStyle = color;
+                ctx.fillRect(px + 1, py + 1 + Math.round(sway), 5, 4);
+                ctx.fillRect(px + 8, py + 2 + Math.round(sway), 5, 3);
+                ctx.fillRect(px + 5, py + 3 + Math.round(sway), 3, 3);
+
+                // Highlight shimmer
+                ctx.fillStyle = 'rgba(255,255,200,0.35)';
+                ctx.fillRect(px + 2, py + 1 + Math.round(sway), 2, 1);
+                ctx.fillRect(px + 9, py + 2 + Math.round(sway), 2, 1);
+
+                // Pulsing ready glow
+                const glowAlpha = 0.1 + 0.08 * Math.sin(frame * 0.08 + i);
+                ctx.fillStyle = `rgba(255,215,0,${glowAlpha})`;
+                ctx.fillRect(px - 1, py - 1, plotSize + 2, plotSize + 2);
+
+            } else if (plot.state === 'withered') {
+                // Dead/withered: brown stalks, drooping
+                ctx.fillStyle = '#7a5c38';
+                ctx.fillRect(px + 3, py + 5, 1, 7);
+                ctx.fillRect(px + 9, py + 6, 1, 6);
+                // Drooping top
+                ctx.fillStyle = '#5a4028';
+                ctx.fillRect(px + 4, py + 5, 2, 1);
+                ctx.fillRect(px + 10, py + 6, 2, 1);
+                // Dry leaves on ground
+                ctx.fillStyle = '#8B6914';
+                ctx.fillRect(px + 1, py + plotSize - 2, 3, 1);
+                ctx.fillRect(px + 7, py + plotSize - 2, 2, 1);
+            }
+
+            // Plot border
+            ctx.strokeStyle = plot.state === 'ready' ? 'rgba(255,215,0,0.6)' :
+                              plot.state === 'growing' ? 'rgba(100,180,60,0.3)' :
+                              'rgba(139,115,85,0.3)';
             ctx.lineWidth = 0.5;
             ctx.strokeRect(px, py, plotSize, plotSize);
         }
 
-        // Farm label
+        // Farm info label
+        const totalPlots = plots.length;
+        const readyCount = plots.filter(p => p.state === 'ready').length;
+        const growingCount = plots.filter(p => p.state === 'growing').length;
         ctx.font = '6px monospace';
         ctx.textAlign = 'center';
-        ctx.fillStyle = 'rgba(0,0,0,0.7)';
-        const labelX = startX + (cols * (plotSize + 2)) / 2;
+        const labelX = startX + (cols * (plotSize + gap)) / 2;
         const labelY = startY - 3;
-        ctx.fillRect(labelX - 12, labelY - 5, 24, 7);
-        ctx.fillStyle = '#90ee90';
-        ctx.fillText('🌾農場', labelX, labelY);
+        ctx.fillStyle = 'rgba(0,0,0,0.75)';
+        ctx.fillRect(labelX - 20, labelY - 5, 40, 8);
+        ctx.fillStyle = readyCount > 0 ? '#ffd700' : growingCount > 0 ? '#90ee90' : '#b0b0b0';
+        const statusText = readyCount > 0 ? `農場 ${readyCount}塊可收` : growingCount > 0 ? `農場 ${growingCount}塊生長中` : `農場 ${totalPlots}塊`;
+        ctx.fillText(statusText, labelX, labelY);
     }
 
     // Draw factory building icons
@@ -1884,9 +2010,15 @@ class PixelTileMap {
 
             const gender = agent.gender || 'male';
 
+            // Track current activity for action animations
+            const activity = agent.current_activity || agent.activity || '';
+            const atFarm = agent.current_location === 'farm';
+
             if (!this.agentPositions[aid]) {
-                this.agentPositions[aid] = { x: targetX, y: targetY, targetX, targetY, job: jobKey, gender, walking: false, walkStep: 0 };
+                this.agentPositions[aid] = { x: targetX, y: targetY, targetX, targetY, job: jobKey, gender, walking: false, walkStep: 0, activity, atFarm };
             } else {
+                this.agentPositions[aid].activity = activity;
+                this.agentPositions[aid].atFarm = atFarm;
                 this.agentPositions[aid].targetX = targetX;
                 this.agentPositions[aid].targetY = targetY;
                 this.agentPositions[aid].job = jobKey;
@@ -2298,6 +2430,67 @@ class PixelTileMap {
         }
     }
 
+    // Draw farming action animation (hoeing, watering, harvesting) for NPC at farm
+    _drawFarmAction(ctx, x, y, frame, agentId) {
+        const sx = Math.floor(x - 8);
+        const sy = Math.floor(y - 20);
+        const phase = Math.floor(frame / 20) % 4;
+        // Use agent id hash to offset animation phase so they look different
+        const offset = (agentId.charCodeAt(0) || 0) % 4;
+        const action = (phase + offset) % 4;
+
+        if (action === 0 || action === 1) {
+            // Hoeing / tilling animation: arm swings down
+            const swingY = action === 0 ? 0 : 3;
+            // Tool (hoe) - brown stick with metal tip
+            ctx.fillStyle = '#8B6914';
+            ctx.fillRect(sx + 14, sy + 12 + swingY, 2, 10);
+            ctx.fillStyle = '#888';
+            ctx.fillRect(sx + 13, sy + 21 + swingY, 4, 2);
+            // Dirt particles when hitting
+            if (action === 1) {
+                ctx.fillStyle = 'rgba(139,115,85,0.7)';
+                const pf = (frame % 10);
+                ctx.fillRect(sx + 12 - pf, sy + 23 - pf * 0.5, 2, 2);
+                ctx.fillRect(sx + 18 + pf * 0.5, sy + 22 - pf * 0.3, 2, 1);
+            }
+        } else if (action === 2) {
+            // Watering animation: pouring water
+            ctx.fillStyle = '#6080a0';
+            ctx.fillRect(sx + 14, sy + 12, 4, 5); // watering can body
+            ctx.fillRect(sx + 18, sy + 14, 3, 1); // spout
+            // Water drops
+            const dropFrame = frame % 12;
+            ctx.fillStyle = 'rgba(60,140,220,0.7)';
+            ctx.fillRect(sx + 19, sy + 16 + dropFrame * 0.5, 1, 2);
+            if (dropFrame > 3) ctx.fillRect(sx + 20, sy + 15 + (dropFrame - 3) * 0.5, 1, 2);
+        } else {
+            // Harvesting animation: picking crops
+            const pickY = Math.sin(frame * 0.15) * 2;
+            // Basket
+            ctx.fillStyle = '#b8944c';
+            ctx.fillRect(sx - 4, sy + 16, 8, 6);
+            ctx.fillStyle = '#9a7838';
+            ctx.fillRect(sx - 4, sy + 16, 8, 1);
+            // Crops in basket
+            ctx.fillStyle = '#daa520';
+            ctx.fillRect(sx - 3, sy + 14, 3, 2);
+            ctx.fillRect(sx + 1, sy + 15, 2, 1);
+            // Hand reaching down
+            ctx.fillStyle = '#fce4c8';
+            ctx.fillRect(sx + 14, sy + 14 + pickY, 3, 3);
+        }
+
+        // Small action label
+        const actionLabels = ['翻土', '翻土', '澆水', '收穫'];
+        ctx.font = '5px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(x - 10, sy - 2, 20, 6);
+        ctx.fillStyle = '#90ee90';
+        ctx.fillText(actionLabels[action], x, sy + 3);
+    }
+
     // Main render
     render(agents, selectedAgent, playerLoc, completedBuildings, extraData) {
         // Check if canvas needs resizing (handles window resize, DPR changes)
@@ -2412,6 +2605,10 @@ class PixelTileMap {
             const isPlayer = aid === 'player';
             const isSelected = aid === selectedAgent;
             this._drawAgent(ctx, pos.x, pos.y, pos.job, isPlayer, isSelected, agent.name || 'You', pos.walking, pos.walkStep, pos.gender);
+            // Action animation overlay for farming NPCs
+            if (!pos.walking && pos.atFarm && (pos.job === 'farmer' || pos.activity === 'working') && !isPlayer) {
+                this._drawFarmAction(ctx, pos.x, pos.y, this.animFrame, aid);
+            }
         }
 
         // Draw NPC conversation speech bubbles (higher priority than thoughts)

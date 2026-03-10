@@ -2224,6 +2224,7 @@ class EventSystem {
         const defense = guards.length * 2 + randInt(1,3) + buildingDefense;
         if (defense >= rd.threat_level) {
             world.logMessage('raid', `小鎮成功抵禦了${rd.attacker}！`);
+            if (world.questSystem) world.questSystem.onRaidSurvived();
             guards.forEach(g => { g.mood = Math.min(100, g.mood+10); g.memory.add(world.tickCount, world.clock.timeStr,'raid',`協助抵禦了${rd.attacker}！`,8); });
         } else {
             world.logMessage('raid', `${rd.attacker}突破了我們的防線！`);
@@ -2540,6 +2541,7 @@ class ElectionSystem {
         const resultMsg = this.candidates.map(c => `${c.name}（${c.policyIcon}${c.policyLabel}）：${c.votes} 票`).join('、');
         world.logMessage('event', `🏆 選舉結果：${winner.name} 當選新鎮長！主張：${winner.policyIcon}${winner.policyLabel}`);
         world.logMessage('event', `📊 得票：${resultMsg}（共 ${totalVotes} 票）`);
+        if (world.questSystem) world.questSystem.onElection();
         this._applyPolicyEffects(winner.policy, world);
         const day = world.clock.day + (world.clock.year - 1) * 60;
         this.lastElectionDay = day;
@@ -3930,6 +3932,7 @@ class World {
         this.processing = new ProcessingSystem();
         this.dailyNews = new DailyNewsEngine();
         this.npcEvents = new NPCEventSystem();
+        this.questSystem = typeof QuestSystem !== 'undefined' ? new QuestSystem() : null;
     }
     addAgent(agent) { this.agents[agent.agentId] = agent; }
     removeAgent(id) { delete this.agents[id]; }
@@ -3980,6 +3983,7 @@ class World {
             this.farm.dailyUpdate(this);
             this.processing.dailyUpdate(this);
             this.npcEvents.dailyUpdate(this);
+            if (this.questSystem) this.questSystem.checkProgress(this);
             // AI Daily News (async, fire-and-forget)
             this.dailyNews.generateNewspaper(this).catch(e => console.warn('[DailyNews] Error:', e));
         }
@@ -4014,6 +4018,7 @@ class World {
             processing: this.processing.toDict(),
             dailyNews: this.dailyNews.toDict(),
             npcEvents: this.npcEvents.toDict(),
+            questSystem: this.questSystem ? this.questSystem.toDict() : null,
         };
     }
     reset(seed = null) {
@@ -4035,6 +4040,7 @@ class World {
         this.processing = new ProcessingSystem();
         this.dailyNews = new DailyNewsEngine();
         this.npcEvents = new NPCEventSystem();
+        this.questSystem = typeof QuestSystem !== 'undefined' ? new QuestSystem() : null;
         this.conversationEngine = new ConversationEngine(this.conversationEngine?.llm);
         this.townMap = generateRandomTown(seed);
         this._loadDefaultResidents();
@@ -4291,6 +4297,7 @@ class World {
             processing: this.processing.serialize(),
             dailyNews: this.dailyNews.serialize(),
             npcEvents: this.npcEvents.serialize(),
+            questSystem: this.questSystem ? this.questSystem.serialize() : null,
         };
     }
 
@@ -4482,6 +4489,7 @@ class World {
             if (data.dailyNews) this.dailyNews.loadFrom(data.dailyNews);
             this.npcEvents = new NPCEventSystem();
             if (data.npcEvents) this.npcEvents.loadFrom(data.npcEvents);
+            if (this.questSystem && data.questSystem) this.questSystem.loadFrom(data.questSystem);
 
             this.logMessage('system', '遊戲讀取成功！');
             return true;

@@ -122,11 +122,10 @@ function rimtown_shortcode($atts) {
                     <button data-tab="chat"><span class="tab-icon">💬</span><span class="tab-label">聊天</span></button>
                     <button data-tab="detail"><span class="tab-icon">📋</span><span class="tab-label">詳情</span></button>
                     <button data-tab="economy"><span class="tab-icon">💰</span><span class="tab-label">經濟</span></button>
-                    <button data-tab="events"><span class="tab-icon">📰</span><span class="tab-label">事件</span></button>
                     <button data-tab="industry"><span class="tab-icon">🏭</span><span class="tab-label">產業</span></button>
-                    <button data-tab="farm"><span class="tab-icon">🌾</span><span class="tab-label">農場</span></button>
-                    <button data-tab="factory"><span class="tab-icon">⚙️</span><span class="tab-label">工廠</span></button>
-                    <button data-tab="newspaper"><span class="tab-icon">📰</span><span class="tab-label">日報</span></button>
+                    <button data-tab="quest"><span class="tab-icon">⚔️</span><span class="tab-label">任務</span></button>
+                    <button data-tab="events"><span class="tab-icon">📰</span><span class="tab-label">事件</span></button>
+                    <button data-tab="newspaper"><span class="tab-icon">🗞️</span><span class="tab-label">日報</span></button>
                     <button data-tab="log"><span class="tab-icon">📝</span><span class="tab-label">日誌</span></button>
                 </div>
                 <div class="rt-sidebar-content" id="sidebar-content"></div>
@@ -550,10 +549,19 @@ function rimtown_enqueue_assets() {
         RIMTOWN_VERSION
     );
 
+    // Quest system must load before simulation
+    wp_enqueue_script(
+        'rimtown-quest',
+        RIMTOWN_URL . 'quest-system.js',
+        array(),
+        RIMTOWN_VERSION,
+        true
+    );
+
     wp_enqueue_script(
         'rimtown-simulation',
         RIMTOWN_URL . 'simulation.js',
-        array(),
+        array('rimtown-quest'),
         RIMTOWN_VERSION,
         true
     );
