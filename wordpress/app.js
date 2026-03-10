@@ -1541,7 +1541,22 @@ class RimTownApp {
             } else {
                 localStorage.setItem('rimtown_save', json);
             }
-            this.world.logMessage('system', '遊戲已儲存。');
+            // Auto sync to cloud when logged in
+            if (this.auth?.loggedIn) {
+                try {
+                    const clock = saveData.clock || {};
+                    await this.auth.cloudSave(this.currentTownId, this._getCurrentTownName(), saveData, {
+                        season: clock.season, year: clock.year, day: clock.day,
+                        population: Object.keys(saveData.agents || {}).length,
+                    });
+                    this.world.logMessage('system', '遊戲已儲存並同步至雲端。');
+                } catch (e) {
+                    console.error('[RimTown] Cloud sync error:', e);
+                    this.world.logMessage('system', '遊戲已儲存（雲端同步失敗）。');
+                }
+            } else {
+                this.world.logMessage('system', '遊戲已儲存。');
+            }
             return true;
         } catch(e) { console.error('Save failed:', e); return false; }
     }
@@ -1572,15 +1587,10 @@ class RimTownApp {
     }
 
     setupAutoSave() {
-        // Auto-save every 60 seconds (local + cloud)
+        // Auto-save every 60 seconds (saveGame already handles cloud sync when logged in)
         this._autoSaveInterval = setInterval(() => {
             if (!this.world.paused) {
                 this.saveGame();
-                // Cloud sync every 2 minutes
-                if (this.auth.loggedIn && Date.now() - (this._lastCloudSync || 0) > 120000) {
-                    this._lastCloudSync = Date.now();
-                    this._syncToCloud();
-                }
             }
         }, 60000);
         // Also save when tab is closing
