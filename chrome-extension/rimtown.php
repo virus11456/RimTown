@@ -639,11 +639,47 @@ add_action('admin_menu', 'rimtown_admin_menu');
 function rimtown_get_changelog() {
     return array(
         array(
-            'version' => '2.4.2',
+            'version' => '3.0.2',
             'date'    => '2026-03-10',
             'changes' => array(
                 '資安強化：Gemini API 金鑰從 URL 參數移至 x-goog-api-key header，防止金鑰洩漏至瀏覽器歷史和 referrer',
-                '資安強化：WordPress 認證端點新增伺服器端速率限制（登入/註冊/重設密碼），防止暴力破解攻擊',
+                '資安強化：認證端點新增伺服器端速率限制（登入 5次/5分鐘、註冊 5次/5分鐘、重設密碼 3次/10分鐘），防止暴力破解攻擊',
+            ),
+        ),
+        array(
+            'version' => '3.0.1',
+            'date'    => '2026-03-10',
+            'changes' => array(
+                '修復全面代碼審查發現的 40+ 個 bug（simulation / app / tilemap / processing / daily-news）',
+                '修正 JOB_PRODUCTION 技能鍵從英文改為中文，修復技能完全不影響生產效率的嚴重 bug',
+                '修正 Researcher/Mayor 職稱比對從英文改為中文（研究員/鎮長）',
+                '修正 toTimeString() 改為 timeStr，修復選舉系統崩潰',
+                '修正 agentA.id 改為 agentA.agentId，修復對話記錄 ID 為 undefined',
+                '修正選舉 fallbackJobs 中不存在的職業、plain object 改為 new Job() 實例',
+                '修正 Festival Day 改為「慶典日」，修復慶典事件永遠不觸發',
+                '修正選舉日計算 120→60（配合每年 60 天）',
+                '修正 PlayerAgent 無效特質、loadSave 恢復 personality 和 job',
+                '修正密碼重設使用不存在的 apiBase/nonce 變數',
+                '修正多處 DOM getElementById null 防護',
+                '修正 tilemap 道路座標與 generateLayout 一致',
+                '修正工廠訂單清理邏輯與生產消耗先驗證再消耗',
+                '修正 daily-news LLM 引用名稱',
+                '新增 WordPress shortcode 缺少的 4 個側邊欄標籤（產業、農場、工廠、日報）',
+                '新增 npc-events handleCheatingDiscovery null 防護，避免第三方已離鎮時崩潰',
+            ),
+        ),
+        array(
+            'version' => '3.0.0',
+            'date'    => '2026-03-10',
+            'changes' => array(
+                '四大產業系統：開局四選一（伐木/採石/農業/礦業），Lv1-Lv5 獨立升級，產業協同加成',
+                '城鎮等級系統：荒村→小村→村莊→小鎮→城鎮→大城鎮→城市，升級解鎖產業槽位',
+                '農場種植系統：翻土→播種→生長→收穫，13 種作物，季節限制，品質系統',
+                '工廠加工系統：7 座工廠可建造，配方系統，NPC 員工分配，訂單系統',
+                'NPC 關係連鎖事件：打架住院、農田破壞、劈腿被抓，影響產業效率',
+                'AI 日報系統：每天自動生成 AI 城鎮報紙，隨機 NPC 記者風格',
+                '30+ 種新資源類型，15+ 新成就',
+                '地圖渲染農場田地、工廠建築、產業徽章',
             ),
         ),
         array(
