@@ -1304,6 +1304,11 @@ class RimTownApp {
             this.world.tick();
             this.state = this.world.getState();
             this.render();
+            // Check for ending trigger
+            if (this.world.multiEnding?.endingTriggered && !this._endingShown) {
+                this._endingShown = true;
+                this._showEndingOverlay();
+            }
         }, this.simSpeed);
     }
 
@@ -1498,6 +1503,12 @@ class RimTownApp {
                 case 'fulfill-order': this._fulfillOrder(val); break;
                 // Newspaper
                 case 'view-newspaper': this._viewNewspaper(parseInt(val)); break;
+                // Custom NPC
+                case 'show-custom-npc': this._showCustomNPCModal(); break;
+                case 'create-custom-npc': this._createCustomNPC(); break;
+                case 'close-custom-npc': document.getElementById('custom-npc-modal')?.remove(); break;
+                // Ending
+                case 'close-ending': document.getElementById('ending-overlay')?.remove(); break;
                 default: console.log('Unknown action:', action, val);
             }
         });
@@ -2328,6 +2339,124 @@ class RimTownApp {
         return html + '</div>';
     }
 
+    // ============================================================
+    // Custom NPC Creation Modal
+    // ============================================================
+    _showCustomNPCModal() {
+        if (!this.world.customNPC) return;
+
+        // Remove existing modal if any
+        document.getElementById('custom-npc-modal')?.remove();
+
+        const traits = typeof CUSTOM_NPC_TRAITS !== 'undefined' ? CUSTOM_NPC_TRAITS : [];
+        const jobs = typeof CUSTOM_NPC_JOBS !== 'undefined' ? CUSTOM_NPC_JOBS : [];
+        const values = typeof CUSTOM_NPC_VALUES !== 'undefined' ? CUSTOM_NPC_VALUES : [];
+
+        let html = `<div id="custom-npc-modal" class="modal" style="display:flex;align-items:center;justify-content:center;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999">`;
+        html += `<div class="modal-content" style="max-width:450px;width:90%;max-height:85vh;overflow-y:auto;padding:24px">`;
+        html += `<h2>👤 創建新居民</h2>`;
+
+        // Name
+        html += `<div class="setting-group"><label>名字</label>`;
+        html += `<input type="text" id="custom-npc-name" maxlength="10" placeholder="輸入名字（最多10字）" style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:inherit"></div>`;
+
+        // Gender
+        html += `<div class="setting-group"><label>性別</label>`;
+        html += `<div style="display:flex;gap:12px">`;
+        html += `<label style="cursor:pointer"><input type="radio" name="custom-npc-gender" value="male" checked> ♂ 男</label>`;
+        html += `<label style="cursor:pointer"><input type="radio" name="custom-npc-gender" value="female"> ♀ 女</label>`;
+        html += `</div></div>`;
+
+        // Age
+        html += `<div class="setting-group"><label>年齡 <span id="custom-npc-age-display" style="color:var(--accent)">25</span></label>`;
+        html += `<input type="range" id="custom-npc-age" min="16" max="60" value="25" style="width:100%" oninput="document.getElementById('custom-npc-age-display').textContent=this.value"></div>`;
+
+        // Traits (checkboxes, max 3)
+        html += `<div class="setting-group"><label>性格特質（選 1-3 個）</label>`;
+        html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">`;
+        for (const t of traits) {
+            html += `<label style="cursor:pointer;font-size:0.8rem;padding:4px"><input type="checkbox" class="custom-npc-trait" value="${t.key}"> ${t.icon} ${t.label}</label>`;
+        }
+        html += `</div></div>`;
+
+        // Job
+        html += `<div class="setting-group"><label>職業偏好</label>`;
+        html += `<select id="custom-npc-job" style="width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:inherit">`;
+        for (const j of jobs) {
+            html += `<option value="${j.key}">${j.icon} ${j.label}</option>`;
+        }
+        html += `</select></div>`;
+
+        // Values
+        html += `<div class="setting-group"><label>在意的事（選 1-3 個）</label>`;
+        html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">`;
+        for (const v of values) {
+            html += `<label style="cursor:pointer;font-size:0.8rem;padding:4px"><input type="checkbox" class="custom-npc-value" value="${v}"> ${v}</label>`;
+        }
+        html += `</div></div>`;
+
+        // Background
+        html += `<div class="setting-group"><label>背景故事（選填，最多 200 字）</label>`;
+        html += `<textarea id="custom-npc-background" maxlength="200" rows="3" placeholder="從遠方來的旅人，帶著一段不願提起的過去..." style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:inherit;resize:vertical"></textarea></div>`;
+
+        // Error display
+        html += `<div id="custom-npc-error" style="color:var(--negative);font-size:0.8rem;min-height:20px;margin-bottom:8px"></div>`;
+
+        // Buttons
+        html += `<div class="modal-buttons">`;
+        html += `<button class="btn-accent" data-action="create-custom-npc">創建</button>`;
+        html += `<button data-action="close-custom-npc">取消</button>`;
+        html += `</div>`;
+
+        html += `</div></div>`;
+
+        document.body.insertAdjacentHTML('beforeend', html);
+    }
+
+    _createCustomNPC() {
+        if (!this.world.customNPC) return;
+
+        const name = document.getElementById('custom-npc-name')?.value?.trim();
+        const gender = document.querySelector('input[name="custom-npc-gender"]:checked')?.value || 'male';
+        const age = parseInt(document.getElementById('custom-npc-age')?.value || '25');
+        const job = document.getElementById('custom-npc-job')?.value || 'farmer';
+        const background = document.getElementById('custom-npc-background')?.value?.trim() || '';
+
+        const traits = Array.from(document.querySelectorAll('.custom-npc-trait:checked')).map(cb => cb.value);
+        const values = Array.from(document.querySelectorAll('.custom-npc-value:checked')).map(cb => cb.value);
+
+        const config = { name, gender, age, job, traits, values, background };
+        const result = this.world.customNPC.createCustomNPC(config, this.world);
+
+        if (!result.success) {
+            const errorEl = document.getElementById('custom-npc-error');
+            if (errorEl) errorEl.textContent = result.error;
+            return;
+        }
+
+        // Success — close modal and refresh
+        document.getElementById('custom-npc-modal')?.remove();
+        this.state = this.world.getState();
+        this.renderSidebar();
+    }
+
+    // ============================================================
+    // Ending overlay
+    // ============================================================
+    _showEndingOverlay() {
+        if (!this.world.multiEnding?.endingData) return;
+        document.getElementById('ending-overlay')?.remove();
+
+        let html = this.world.multiEnding.renderEndingHTML();
+        // Replace the close button to use data-action
+        html = html.replace('id="ending-close-btn"', 'id="ending-close-btn" data-action="close-ending"');
+
+        const wrapper = document.createElement('div');
+        wrapper.id = 'ending-overlay';
+        wrapper.innerHTML = html;
+        document.body.appendChild(wrapper);
+    }
+
     renderResidentsList(container) {
         if (!this.state) return;
         let html = '';
@@ -2355,6 +2484,24 @@ class RimTownApp {
                 ${agent.current_thought?`<div style="font-size:0.7rem;color:#aaa;margin-top:4px;font-style:italic">「${agent.current_thought}」</div>`:''}
                 <button class="chat-with-btn" data-action="start-chat" data-val="${aid}">${sameLoc?'對話':'前往對話'}</button></div>`;
         }
+
+        // Custom NPC creation button
+        if (this.world.customNPC) {
+            const remaining = this.world.customNPC.getRemainingSlots();
+            const canCreate = this.world.customNPC.canCreate(this.world);
+            const cost = this.world.customNPC.creationCost;
+            html += `<div style="margin-top:12px;padding:10px;border-top:1px solid rgba(255,255,255,0.1)">`;
+            if (remaining > 0) {
+                html += `<button class="btn-accent" data-action="show-custom-npc" style="width:100%;padding:8px;font-size:0.85rem"${!canCreate ? ' disabled style="opacity:0.5;width:100%;padding:8px;font-size:0.85rem"' : ''}>`;
+                html += `👤 創建新居民 (剩餘 ${remaining} 位)`;
+                html += `</button>`;
+                html += `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;text-align:center">需要 ${cost.silver} 銀幣 + ${cost.food} 食物</div>`;
+            } else {
+                html += `<div style="font-size:0.8rem;color:var(--text-muted);text-align:center">已達自訂居民上限 (${this.world.customNPC.maxCustomNPCs}/${this.world.customNPC.maxCustomNPCs})</div>`;
+            }
+            html += `</div>`;
+        }
+
         container.innerHTML = html;
     }
 

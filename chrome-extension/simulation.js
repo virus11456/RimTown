@@ -4006,6 +4006,8 @@ class World {
         this.questSystem = typeof QuestSystem !== 'undefined' ? new QuestSystem() : null;
         this.prosperity = typeof ProsperityEngine !== 'undefined' ? new ProsperityEngine() : null;
         this.npcQuests = typeof NPCQuestSystem !== 'undefined' ? new NPCQuestSystem() : null;
+        this.customNPC = typeof CustomNPCSystem !== 'undefined' ? new CustomNPCSystem() : null;
+        this.multiEnding = typeof MultiEndingSystem !== 'undefined' ? new MultiEndingSystem() : null;
     }
     addAgent(agent) { this.agents[agent.agentId] = agent; }
     removeAgent(id) { delete this.agents[id]; }
@@ -4096,6 +4098,8 @@ class World {
             questSystem: this.questSystem ? this.questSystem.toDict() : null,
             prosperity: this.prosperity ? this.prosperity.toDict() : null,
             npcQuests: this.npcQuests ? this.npcQuests.toDict() : null,
+            customNPC: this.customNPC ? this.customNPC.toDict() : null,
+            multiEnding: this.multiEnding ? this.multiEnding.toDict() : null,
         };
     }
     reset(seed = null) {
@@ -4120,6 +4124,8 @@ class World {
         this.questSystem = typeof QuestSystem !== 'undefined' ? new QuestSystem() : null;
         this.prosperity = typeof ProsperityEngine !== 'undefined' ? new ProsperityEngine() : null;
         this.npcQuests = typeof NPCQuestSystem !== 'undefined' ? new NPCQuestSystem() : null;
+        this.customNPC = typeof CustomNPCSystem !== 'undefined' ? new CustomNPCSystem() : null;
+        this.multiEnding = typeof MultiEndingSystem !== 'undefined' ? new MultiEndingSystem() : null;
         this.conversationEngine = new ConversationEngine(this.conversationEngine?.llm);
         this.townMap = generateRandomTown(seed);
         this._loadDefaultResidents();
@@ -4381,6 +4387,8 @@ class World {
             questSystem: this.questSystem ? this.questSystem.serialize() : null,
             prosperity: this.prosperity ? this.prosperity.serialize() : null,
             npcQuests: this.npcQuests ? this.npcQuests.serialize() : null,
+            customNPC: this.customNPC ? this.customNPC.serialize() : null,
+            multiEnding: this.multiEnding ? this.multiEnding.serialize() : null,
         };
     }
 
@@ -4576,6 +4584,8 @@ class World {
             if (this.questSystem && data.questSystem) this.questSystem.loadFrom(data.questSystem);
             if (this.prosperity && data.prosperity) this.prosperity.loadFrom(data.prosperity);
             if (this.npcQuests && data.npcQuests) this.npcQuests.loadFrom(data.npcQuests);
+            if (this.customNPC && data.customNPC) this.customNPC.loadFrom(data.customNPC);
+            if (this.multiEnding && data.multiEnding) this.multiEnding.loadFrom(data.multiEnding);
 
             this.logMessage('system', '遊戲讀取成功！');
             return true;

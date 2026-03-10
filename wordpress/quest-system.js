@@ -626,6 +626,12 @@ class QuestSystem {
             world.dailyNews.collectEvent?.('quest', `主線任務「${questDef.title}」${routeMsg}完成！${questDef.onComplete}`, 8);
         }
 
+        // Multi-ending trigger (when finale quest completes)
+        if (questDef.isFinale && world.multiEnding) {
+            const endingRouteId = completedRoute?.id || 'prosper';
+            world.multiEnding.checkEnding(world, endingRouteId);
+        }
+
         // Unlock next quests (supports array or string)
         const unlocks = questDef.unlocks;
         if (unlocks) {

@@ -26,8 +26,8 @@
 | 6 | 主線任務 (QuestSystem) | `quest-system.js` | ✅ 已實裝（多路線版） |
 | 7 | 繁榮度系統 (ProsperityEngine) | `prosperity.js` | ✅ 已實裝 |
 | 8 | NPC 個人故事線 (NPCQuestSystem) | `npc-quests.js` | ✅ 已實裝 |
-| 9 | 自訂 NPC (CustomNPCSystem) | `custom-npc.js`（待建） | ❌ 未實裝 |
-| 10 | 多結局系統 | 整合於 quest-system.js | ❌ 未實裝 |
+| 9 | 自訂 NPC (CustomNPCSystem) | `custom-npc.js` | ✅ 已實裝 |
+| 10 | 多結局系統 | `custom-npc.js` + quest-system.js | ✅ 已實裝 |
 | 11 | 城鎮間外交 / Multiplayer | — | ➖ 暫不做 |
 
 ---
@@ -530,7 +530,7 @@ const NPC_PERSONAL_QUESTS = {
 
 ---
 
-## 九、自訂 NPC 系統 (CustomNPCSystem) ❌ 未實裝
+## 九、自訂 NPC 系統 (CustomNPCSystem) ✅ 已實裝
 
 > 不含分享連結/邀請等連線功能
 
@@ -584,7 +584,7 @@ class CustomNPCSystem {
 
 ---
 
-## 十、多結局系統 ❌ 未實裝
+## 十、多結局系統 ✅ 已實裝
 
 ### 結局類型
 
@@ -723,7 +723,7 @@ wordpress/
 ├── quest-system.js    (現有) ⚠️ QuestSystem → 需升級為多路線
 ├── prosperity.js      ✅ ProsperityEngine
 ├── npc-quests.js      ✅ NPC 個人故事線
-└── custom-npc.js      (待建) ❌ CustomNPCSystem
+└── custom-npc.js      ✅ CustomNPCSystem + MultiEndingSystem
 
 chrome-extension/      (同步上述所有檔案)
 ```

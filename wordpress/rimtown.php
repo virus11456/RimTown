@@ -1075,6 +1075,14 @@ function rimtown_enqueue_assets() {
     );
 
     wp_enqueue_script(
+        'rimtown-custom-npc',
+        RIMTOWN_URL . 'custom-npc.js',
+        array(),
+        RIMTOWN_VERSION,
+        true
+    );
+
+    wp_enqueue_script(
         'rimtown-prosperity',
         RIMTOWN_URL . 'prosperity.js',
         array(),
@@ -1085,7 +1093,7 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-simulation',
         RIMTOWN_URL . 'simulation.js',
-        array('rimtown-industry', 'rimtown-farm', 'rimtown-processing', 'rimtown-daily-news', 'rimtown-npc-events', 'rimtown-npc-quests', 'rimtown-prosperity'),
+        array('rimtown-industry', 'rimtown-farm', 'rimtown-processing', 'rimtown-daily-news', 'rimtown-npc-events', 'rimtown-npc-quests', 'rimtown-custom-npc', 'rimtown-prosperity'),
         RIMTOWN_VERSION,
         true
     );
