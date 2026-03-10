@@ -175,6 +175,10 @@ body.rimtown-page .wp-block-post-title {
     overflow: hidden !important;
     display: block !important;
     visibility: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    align-self: stretch !important;
 }
 
 /* Town Map — absolute position, leave 360px for sidebar */
