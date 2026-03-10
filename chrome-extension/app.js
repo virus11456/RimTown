@@ -3501,11 +3501,24 @@ class RimTownApp {
         }
 
         const chapterNames = typeof CHAPTER_NAMES !== 'undefined' ? CHAPTER_NAMES : {};
+        const rewardLabels = { silver: '💰', food: '🍖', wood: '🪵', stone: '🪨', metal: '⛓️', reputation: '⭐' };
         let html = '<div class="economy-panel">';
-        html += `<div class="econ-section"><h3>⚔️ 主線任務</h3>`;
-        html += `<div style="font-size:0.75rem;color:var(--text-secondary)">進度：${qs.completedCount}/${qs.totalCount} 完成</div></div>`;
 
-        // Progress bar for overall
+        // Header with reputation
+        html += `<div class="econ-section"><h3>⚔️ 主線任務</h3>`;
+        html += `<div style="font-size:0.75rem;color:var(--text-secondary)">進度：${qs.completedCount}/${qs.totalCount} 完成`;
+        if (qs.reputation) html += ` | ⭐ 聲望：${qs.reputation}`;
+        html += `</div></div>`;
+
+        // Crisis banner
+        if (qs.activeCrisis) {
+            const crisisLabels = { locust: '🦗 蝗災', bandit: '⚔️ 盜匪圍城', plague: '🏥 瘟疫' };
+            html += `<div class="econ-section" style="background:rgba(255,80,80,0.1);border-left:3px solid var(--negative);padding:8px 12px">`;
+            html += `<div style="font-weight:bold;color:var(--negative)">⚠️ 當前危機：${crisisLabels[qs.activeCrisis] || qs.activeCrisis}</div>`;
+            html += `</div>`;
+        }
+
+        // Overall progress bar
         const overallPct = Math.round((qs.completedCount / qs.totalCount) * 100);
         html += `<div class="econ-section"><div class="progress-bar" style="height:10px;margin-bottom:8px"><div class="progress-fill" style="width:${overallPct}%;background:var(--accent)"></div></div></div>`;
 
@@ -3536,11 +3549,55 @@ class RimTownApp {
                 const cardClass = isComplete ? 'quest-completed' : isActive ? 'quest-active' : '';
 
                 html += `<div class="quest-card ${cardClass}">`;
-                html += `<div class="quest-title">${isComplete ? '✅' : '⚔️'} ${quest.title}</div>`;
+                html += `<div class="quest-title">${isComplete ? '✅' : quest.isCrisis ? '⚠️' : quest.isFinale ? '🏆' : '⚔️'} ${quest.title}</div>`;
                 html += `<div class="quest-desc">${quest.description}</div>`;
 
-                // Objectives
-                if (quest.objectives) {
+                // Completed route badge
+                if (isComplete && quest.completedRoute && quest.routes) {
+                    const route = quest.routes.find(r => r.id === quest.completedRoute);
+                    if (route) {
+                        html += `<div style="margin:4px 0;font-size:0.75rem;color:var(--positive)">✓ 以「${route.icon || ''} ${route.label}」完成</div>`;
+                    }
+                }
+
+                // Multi-route display
+                if (quest.routes && isActive) {
+                    html += '<div class="quest-routes" style="margin-top:6px">';
+                    html += '<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:4px">選擇任一路線完成即可：</div>';
+                    for (const route of quest.routes) {
+                        const condCount = route.conditions.length;
+                        const condDone = route.conditions.filter(c => c.completed).length;
+                        const routeComplete = condDone === condCount;
+
+                        html += `<div class="quest-route" style="margin:6px 0;padding:6px 8px;border-radius:6px;background:${routeComplete ? 'rgba(80,200,120,0.1)' : 'rgba(255,255,255,0.03)'};border:1px solid ${routeComplete ? 'var(--positive)' : 'rgba(255,255,255,0.08)'}">`;
+                        html += `<div style="font-weight:bold;font-size:0.8rem;margin-bottom:3px">${route.icon || '📋'} ${route.label}</div>`;
+                        html += `<div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:4px">${route.description}</div>`;
+
+                        for (const cond of route.conditions) {
+                            const pct = Math.min(100, Math.round((cond.progress / cond.target) * 100));
+                            html += `<div class="quest-objective ${cond.completed ? 'done' : ''}" style="margin:2px 0">`;
+                            html += `<span style="font-size:0.75rem">${cond.completed ? '☑' : '☐'} ${cond.label}</span>`;
+                            html += `<span class="quest-obj-progress" style="font-size:0.7rem">${cond.progress}/${cond.target}</span>`;
+                            html += `<div class="progress-bar" style="height:3px;margin-top:2px"><div class="progress-fill" style="width:${pct}%;background:${cond.completed ? 'var(--positive)' : 'var(--accent)'}"></div></div>`;
+                            html += '</div>';
+                        }
+                        html += '</div>';
+                    }
+                    html += '</div>';
+                }
+
+                // Multi-route display for completed quests (collapsed)
+                if (quest.routes && isComplete) {
+                    const completedRoute = quest.routes.find(r => r.id === quest.completedRoute);
+                    if (completedRoute) {
+                        html += `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">`;
+                        html += `其他路線：${quest.routes.filter(r => r.id !== quest.completedRoute).map(r => `${r.icon || ''} ${r.label}`).join('、') || '無'}`;
+                        html += `</div>`;
+                    }
+                }
+
+                // Legacy objectives (for ch1_settle)
+                if (quest.objectives && !quest.routes) {
                     html += '<div class="quest-objectives">';
                     for (const obj of quest.objectives) {
                         const pct = Math.min(100, Math.round((obj.progress / obj.target) * 100));
@@ -3556,8 +3613,10 @@ class RimTownApp {
 
                 // Rewards
                 if (isActive && quest.rewards) {
-                    const rewardStr = Object.entries(quest.rewards).map(([r, a]) => `${r}: ${a}`).join(', ');
-                    html += `<div class="quest-rewards">獎勵：${rewardStr}</div>`;
+                    const rewardStr = Object.entries(quest.rewards)
+                        .map(([r, a]) => `${rewardLabels[r] || r} ${a}`)
+                        .join('  ');
+                    html += `<div class="quest-rewards" style="margin-top:4px;font-size:0.75rem">獎勵：${rewardStr}</div>`;
                 }
 
                 // Completion message

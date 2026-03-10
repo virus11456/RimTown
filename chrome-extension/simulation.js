@@ -894,6 +894,26 @@ class ConversationEngine {
         return parts.length ? parts.join('。') : '';
     }
 
+    _buildQuestContext(world, npc, relToPlayer) {
+        if (!world.questSystem) return '';
+        const parts = [];
+        // Active quest context
+        const questCtx = world.questSystem.getActiveQuestContext();
+        if (questCtx) parts.push(questCtx);
+        // Crisis context
+        const crisisCtx = world.questSystem.getCrisisContext();
+        if (crisisCtx) parts.push(`【危機】${crisisCtx}`);
+        // NPC-specific quest hints (only if affinity is high enough)
+        const affinity = relToPlayer?.affinity || 0;
+        const hints = world.questSystem.getQuestHintsForNPC(npc.agentId, affinity);
+        if (hints.length > 0) {
+            const hintText = hints.map(h => `關於「${h.questTitle}」，你可以自然地提到：${h.hint}`).join('\n');
+            parts.push(`【你可以給的提示（只在話題相關時自然帶出，不要硬塞）】\n${hintText}`);
+        }
+        if (parts.length === 0) return '';
+        return '\n【任務相關】\n' + parts.join('\n') + '\n';
+    }
+
     async generateConversation(agentA, agentB, world) {
         const relA = agentA.relationships.getOrCreate(agentB.agentId, agentB.name);
         const relB = agentB.relationships.getOrCreate(agentA.agentId, agentA.name);
@@ -1436,7 +1456,7 @@ ${memNpc.length ? `你記得關於${player.name}的事：${memNpc.map(m=>m.conte
 
 【小鎮經濟】
 ${this._buildEconomicContext(world)}
-
+${this._buildQuestContext(world, npc, relNpc)}
 【對話記錄】
 ${recentChat || '（剛開始聊）'}
 ${player.name}: ${playerMessage}
