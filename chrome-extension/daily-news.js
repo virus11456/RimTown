@@ -14,7 +14,7 @@ class DailyNewsEngine {
     collectEvent(category, content, importance, agents = []) {
         this.todayEvents.push({
             category, content, importance, agents,
-            time: typeof world !== 'undefined' ? world?.clock?.shortTime : '',
+            time: '',
         });
     }
 
@@ -42,7 +42,7 @@ class DailyNewsEngine {
 
         // Try LLM generation
         let content = null;
-        if (world.conversationEngine?.llmClient) {
+        if (world.conversationEngine?.llm) {
             try {
                 content = await this._generateWithLLM(reporter, events, world);
             } catch (e) {
@@ -108,7 +108,7 @@ ${prevRef}
 
 風格：像小鎮黑板報，親切、生活化、帶有你的個人色彩。用繁體中文。`;
 
-        const response = await world.conversationEngine.llmClient.chat([
+        const response = await world.conversationEngine.llm.chat([
             { role: 'user', content: prompt }
         ], { max_tokens: 800 });
 

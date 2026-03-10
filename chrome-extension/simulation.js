@@ -304,10 +304,10 @@ function generateRandomSkills(jobKey, age = 25, traitList = []) {
     if (jobKey && JOB_SKILL_MAP[jobKey]) {
         const map = JOB_SKILL_MAP[jobKey];
         (map.primary||[]).forEach(n => {
-            const s = skills.get(n); if (!s.isIncapable) { s.xp += randInt(200,600); if(s.passion==='none') s.passion='minor'; }
+            const s = skills.get(n); if (!s.isIncapable) { s.xp += randInt(200,600); if(s.passion==='無') s.passion='微'; }
         });
         (map.secondary||[]).forEach(n => { const s = skills.get(n); if (!s.isIncapable) s.xp += randInt(50,250); });
-        (map.primary||[]).forEach(n => { if(skills.get(n).isIncapable) skills.get(n).passion='minor'; });
+        (map.primary||[]).forEach(n => { if(skills.get(n).isIncapable) skills.get(n).passion='微'; });
     }
     return skills;
 }
@@ -753,7 +753,7 @@ class Agent {
 // --- PlayerAgent ---
 class PlayerAgent extends Agent {
     constructor(name = '旅人', age = 25) {
-        super('player', name, age, new Personality(['curious','kind'], '最近抵達邊境鎮的神秘旅人。', ['冒險','友情']), null, 'tavern');
+        super('player', name, age, new Personality(['creative','kind'], '最近抵達邊境鎮的神秘旅人。', ['冒險','友情']), null, 'tavern');
         this.isPlayer = true; this.chatHistory = [];
     }
     update(world) {
@@ -844,7 +844,7 @@ class ConversationEngine {
             status: statusStr,
             needs: needsStr.join('、') || '狀態良好',
             thought: agent.currentThought || '',
-            bestSkill: agent.skills.bestSkill,
+            bestSkill: agent.skills.bestSkill.category,
         };
     }
 
@@ -1005,13 +1005,13 @@ ${this._buildEconomicContext(world)}
         }
         // Store NPC conversation for sidebar viewing
         if (dialogue.length) {
-            this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.id, agentBId:agentB.id });
+            this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.agentId, agentBId:agentB.agentId });
             if (this.npcConversationLog.length > 10000) this.npcConversationLog = this.npcConversationLog.slice(-10000);
             // Notify UI for map speech bubbles
             if (this.onConversation) {
                 const textA = dialogue[0]?.text || summary;
                 const textB = dialogue[1]?.text || '';
-                this.onConversation(agentA.id, agentB.id, agentA.name, agentB.name, textA, textB);
+                this.onConversation(agentA.agentId, agentB.agentId, agentA.name, agentB.name, textA, textB);
             }
         }
         return { dialogue, summary, effects:{affinity_a:affA,affinity_b:affB,romantic_a:romA,romantic_b:romB} };
@@ -1034,12 +1034,12 @@ ${this._buildEconomicContext(world)}
         }
         const lines = dialogue.lines;
         if (lines.length) {
-            this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue:lines, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.id, agentBId:agentB.id });
+            this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue:lines, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.agentId, agentBId:agentB.agentId });
             if (this.npcConversationLog.length > 10000) this.npcConversationLog = this.npcConversationLog.slice(-10000);
             if (this.onConversation) {
                 const textA = lines[0]?.text || summary;
                 const textB = lines[1]?.text || '';
-                this.onConversation(agentA.id, agentB.id, agentA.name, agentB.name, textA, textB);
+                this.onConversation(agentA.agentId, agentB.agentId, agentA.name, agentB.name, textA, textB);
             }
         }
         return { dialogue:lines, summary, effects:{affinity_a:affA,affinity_b:affB,romantic_a:romA,romantic_b:romB} };
@@ -2186,7 +2186,7 @@ class EventSystem {
         const nm = world.news ? world.news : {getModifier:(k,d)=>d};
         const festivalBoost = nm.getModifier('festival_chance', 0);
         if (festivalBoost > 0.2) {
-            const festival = eligible.find(e => e.name === 'Festival Day');
+            const festival = eligible.find(e => e.name === '慶典日');
             if (festival && Math.random() < festivalBoost) {
                 const event = {name:festival.name,description:festival.description,severity:festival.severity,effects:festival.effects||{},event_type:'random'};
                 this.eventLog.push([world.clock.timeStr, event]);
@@ -2368,7 +2368,7 @@ class EventSystem {
         this.eventLog.slice(-3).forEach(([,e]) => topics.push(e.description));
         return topics;
     }
-    getTravellingAgents() { return this._travellingAgents.map(t => ({name:t.agentData.name,reason:t.reason,return_tick:t.returnTick})); }
+    getTravellingAgents() { return this._travellingAgents.map(t => ({agentId:t.agentData.agentId,name:t.agentData.name,reason:t.reason,return_tick:t.returnTick})); }
     getActiveChains() {
         return this._activeChains.map(c => {
             const stages = EVENT_CHAINS[c.chainId]; const cur = stages[c.stage];
@@ -2403,7 +2403,7 @@ class ElectionSystem {
     }
 
     dailyUpdate(world) {
-        const day = world.clock.day + (world.clock.year - 1) * 120;
+        const day = world.clock.day + (world.clock.year - 1) * 60;
         if (this.phase === 'campaign') {
             this.campaignDaysLeft--;
             if (this.campaignDaysLeft <= 0) this._startVoting(world);
@@ -2429,9 +2429,9 @@ class ElectionSystem {
     triggerElection(world) { if (this.active) return; this._startElection(world); }
 
     _startElection(world) {
-        this.active = true; this.phase = 'campaign'; this.campaignDaysLeft = 3; this.votingDaysLeft = 0; this.votes = {};
         const eligible = Object.values(world.agents).filter(a => !a.isPlayer && a.agentId !== 'player' && !world.events.getTravellingAgents().some(t => t.agentId === a.agentId));
         if (eligible.length < 2) return;
+        this.active = true; this.phase = 'campaign'; this.campaignDaysLeft = 3; this.votingDaysLeft = 0; this.votes = {};
         const scored = eligible.map(a => {
             let score = (a.skills?.skills?.社交?.level || 0) * 2;
             score += (a.personality.socialModifier || 0) * 3;
@@ -2451,7 +2451,7 @@ class ElectionSystem {
         world.logMessage('event', `📋 競選期間為 ${this.campaignDaysLeft} 天，之後進行投票`);
         this.candidates.forEach(c => {
             const agent = world.agents[c.agentId];
-            if (agent?.memory) agent.memory.add(world.tickCount, world.clock.toTimeString(), 'election', `我宣布參選鎮長，主張${c.policyLabel}`, 8, []);
+            if (agent?.memory) agent.memory.add(world.tickCount, world.clock.timeStr, 'election', `我宣布參選鎮長，主張${c.policyLabel}`, 8, []);
         });
     }
 
@@ -2527,21 +2527,21 @@ class ElectionSystem {
         const oldMayor = Object.values(world.agents).find(a => a.job?.key === 'mayor' && a.agentId !== winner.agentId);
         const newMayorAgent = world.agents[winner.agentId];
         if (oldMayor && oldMayor.agentId !== winner.agentId) {
-            const fallbackJobs = ['farmer','guard','merchant','scholar'];
+            const fallbackJobs = ['farmer','guard','trader','researcher'];
             const newJobKey = fallbackJobs[Math.floor(Math.random() * fallbackJobs.length)];
-            oldMayor.job = JOB_DEFINITIONS[newJobKey] ? { key: newJobKey, ...JOB_DEFINITIONS[newJobKey] } : null;
-            oldMayor.memory?.add(world.tickCount, world.clock.toTimeString(), 'election', `我在選舉中落敗，不再擔任鎮長`, 9, [winner.agentId]);
+            oldMayor.job = JOB_DEFINITIONS[newJobKey] ? new Job(newJobKey) : null;
+            oldMayor.memory?.add(world.tickCount, world.clock.timeStr, 'election', `我在選舉中落敗，不再擔任鎮長`, 9, [winner.agentId]);
         }
         if (newMayorAgent) {
-            newMayorAgent.job = { key: 'mayor', ...JOB_DEFINITIONS.mayor };
+            newMayorAgent.job = new Job('mayor');
             newMayorAgent.mood = Math.min(100, newMayorAgent.mood + 20);
-            newMayorAgent.memory?.add(world.tickCount, world.clock.toTimeString(), 'election', `我贏得了鎮長選舉！得到 ${winner.votes} 票`, 10, []);
+            newMayorAgent.memory?.add(world.tickCount, world.clock.timeStr, 'election', `我贏得了鎮長選舉！得到 ${winner.votes} 票`, 10, []);
         }
         const resultMsg = this.candidates.map(c => `${c.name}（${c.policyIcon}${c.policyLabel}）：${c.votes} 票`).join('、');
         world.logMessage('event', `🏆 選舉結果：${winner.name} 當選新鎮長！主張：${winner.policyIcon}${winner.policyLabel}`);
         world.logMessage('event', `📊 得票：${resultMsg}（共 ${totalVotes} 票）`);
         this._applyPolicyEffects(winner.policy, world);
-        const day = world.clock.day + (world.clock.year - 1) * 120;
+        const day = world.clock.day + (world.clock.year - 1) * 60;
         this.lastElectionDay = day;
         this.electionHistory.push({ day, year: world.clock.year, season: world.clock.season, winner: { agentId: winner.agentId, name: winner.name, policy: winner.policy, votes: winner.votes }, candidates: this.candidates.map(c => ({ agentId: c.agentId, name: c.name, policy: c.policy, votes: c.votes })), totalVotes });
         Object.values(world.agents).forEach(a => {
@@ -2566,7 +2566,7 @@ class ElectionSystem {
         const effect = effects[policyId];
         if (effect && world.news) {
             world.news.bulletins.push({ id: 'election_policy_' + Date.now(), headline: effect.headline, headline_en: '', category: '政治', severity: effect.severity, flavor: `${this.candidates[0]?.name || '新鎮長'}的施政方針開始影響小鎮`, modifiers: effect.modifiers, publishedDay: world.clock.day, expiresDay: world.clock.day + 30, daysRemaining: 30 });
-            world.news._rebuildModifiers();
+            world.news._rebuildModifiers(world.clock.day + (world.clock.year - 1) * 60);
         }
     }
 
@@ -2621,18 +2621,18 @@ class Stockpile {
 
 // --- Economy: Production ---
 const JOB_PRODUCTION = {
-    farmer: {inputs:{},outputs:{food:12},skill:'plants'},
-    miner: {inputs:{tools:0.1},outputs:{stone:6,metal:3},skill:'mining'},
-    cook: {inputs:{food:8},outputs:{meals:12},skill:'cooking'},
-    blacksmith: {inputs:{metal:3,wood:1},outputs:{tools:3},skill:'crafting'},
-    carpenter: {inputs:{wood:4},outputs:{furniture:2},skill:'construction'},
-    tailor: {inputs:{cloth:3},outputs:{clothing:2},skill:'crafting'},
-    doctor: {inputs:{herbs:2},outputs:{medicine:2},skill:'medicine'},
-    researcher: {inputs:{},outputs:{research_points:5},skill:'intellectual'},
-    trader: {inputs:{},outputs:{silver:8},skill:'social'},
-    guard: {inputs:{},outputs:{},skill:'shooting'},
-    priest: {inputs:{},outputs:{},skill:'social'},
-    mayor: {inputs:{},outputs:{silver:3},skill:'social'},
+    farmer: {inputs:{},outputs:{food:12},skill:'種植'},
+    miner: {inputs:{tools:0.1},outputs:{stone:6,metal:3},skill:'採礦'},
+    cook: {inputs:{food:8},outputs:{meals:12},skill:'烹飪'},
+    blacksmith: {inputs:{metal:3,wood:1},outputs:{tools:3},skill:'工藝'},
+    carpenter: {inputs:{wood:4},outputs:{furniture:2},skill:'建造'},
+    tailor: {inputs:{cloth:3},outputs:{clothing:2},skill:'工藝'},
+    doctor: {inputs:{herbs:2},outputs:{medicine:2},skill:'醫療'},
+    researcher: {inputs:{},outputs:{research_points:5},skill:'智識'},
+    trader: {inputs:{},outputs:{silver:8},skill:'社交'},
+    guard: {inputs:{},outputs:{},skill:'射擊'},
+    priest: {inputs:{},outputs:{},skill:'社交'},
+    mayor: {inputs:{},outputs:{silver:3},skill:'社交'},
 };
 const SEASON_FARM_MOD = {'春季':1.2,'夏季':1.5,'秋季':0.8,'冬季':0.2};
 const NATURE_GATHERING = {forest:{wood:3},river:{food:2},meadow:{herbs:1,cloth:0.5},cave:{stone:2,metal:1},lake:{food:1.5}};
@@ -2823,7 +2823,7 @@ class ResearchManager {
     dailyUpdate(world) {
         if(!this.current) { const av=this.getAvailable(); if(av.length) this.startResearch(av[0].key); return; }
         let pts=0;
-        Object.values(world.agents).forEach(a=>{ if(!a.isPlayer&&a.job?.title==='Researcher'){ const sk=a.skills.get('intellectual'); pts+=3+(sk?sk.level:0)*0.5; } });
+        Object.values(world.agents).forEach(a=>{ if(!a.isPlayer&&a.job?.title==='研究員'){ const sk=a.skills.get('智識'); pts+=3+(sk?sk.level:0)*0.5; } });
         pts *= 1 + (world.news?world.news.getModifier('research_bonus',0):0);
         const rp=world.stockpile.get('research_points'), bonus=Math.min(rp,5);
         if(bonus>0) world.stockpile.consume('research_points',bonus,world.tickCount,'research');
@@ -2905,7 +2905,7 @@ const NEWS_TEMPLATES = [
 
     // Social/Political
     {headline:'居民對鎮長的支持度創新高',headline_en:'Mayor approval rating hits new high',category:'social',
-     conditions:w=>{ const mayor=Object.values(w.agents).find(a=>a.job?.title==='Mayor'); return mayor&&mayor.mood>40; }, weight:2, severity:'good',
+     conditions:w=>{ const mayor=Object.values(w.agents).find(a=>a.job?.title==='鎮長'); return mayor&&mayor.mood>40; }, weight:2, severity:'good',
      modifiers:{mood_modifier:5,immigration_chance:0.1}, duration:2, flavor:['鎮議會合作良好。']},
     {headline:'不滿情緒蔓延，居民要求改善',headline_en:'Discontent spreading, residents demand change',category:'social',
      conditions:w=>{ const avg=Object.values(w.agents).filter(a=>!a.isPlayer).reduce((s,a)=>s+a.mood,0)/(Object.values(w.agents).length||1); return avg<30; }, weight:3, severity:'warning',
@@ -4035,6 +4035,7 @@ class World {
         this.processing = new ProcessingSystem();
         this.dailyNews = new DailyNewsEngine();
         this.npcEvents = new NPCEventSystem();
+        this.conversationEngine = new ConversationEngine(this.conversationEngine?.llm);
         this.townMap = generateRandomTown(seed);
         this._loadDefaultResidents();
         const player = new PlayerAgent();
@@ -4319,6 +4320,8 @@ class World {
                 let agent;
                 if (ad.isPlayer) {
                     agent = new PlayerAgent(ad.name, ad.age);
+                    agent.personality = personality;
+                    if (job) agent.job = job;
                     agent.chatHistory = ad.chatHistory || [];
                 } else {
                     agent = new Agent(id, ad.name, ad.age, personality, job, ad.homeLocation);

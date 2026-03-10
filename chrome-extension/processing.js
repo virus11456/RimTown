@@ -219,12 +219,16 @@ class ProcessingSystem {
 
             factory.productionProgress += efficiency;
             if (factory.productionProgress >= recipe.time) {
-                // Consume inputs
-                let hasInputs = true;
+                // Verify all inputs are available before consuming any
+                let hasAllInputs = true;
                 for (const [r, a] of Object.entries(recipe.input)) {
-                    if (!world.stockpile.consume(r, a, world.tickCount, `${def.name}生產`)) { hasInputs = false; break; }
+                    if (!world.stockpile.has(r, a)) { hasAllInputs = false; break; }
                 }
-                if (!hasInputs) continue;
+                if (!hasAllInputs) continue;
+                // Consume inputs
+                for (const [r, a] of Object.entries(recipe.input)) {
+                    world.stockpile.consume(r, a, world.tickCount, `${def.name}生產`);
+                }
 
                 // Produce outputs to warehouse
                 for (const [r, a] of Object.entries(recipe.output)) {
@@ -315,7 +319,9 @@ class ProcessingSystem {
             }
         }
         // Clean old orders
-        this.orders = this.orders.filter(o => o.status === 'active' || this.orders.indexOf(o) > this.orders.length - 20);
+        const active = this.orders.filter(o => o.status === 'active');
+        const done = this.orders.filter(o => o.status !== 'active').slice(-20);
+        this.orders = [...active, ...done];
     }
 
     toDict() {

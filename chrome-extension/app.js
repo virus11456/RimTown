@@ -435,9 +435,9 @@ class RimTownApp {
         if (pass !== pass2) { if (errEl) errEl.textContent = '兩次密碼不一致'; return; }
         try {
             if (errEl) errEl.textContent = '重設中...';
-            const resp = await fetch(`${this.auth.apiBase}/reset-password`, {
+            const resp = await fetch(`${this.auth._restUrl}/reset-password`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': this.auth.nonce },
+                headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': this.auth._nonce },
                 body: JSON.stringify({ username: user, email, new_password: pass }),
             });
             const data = await resp.json();
@@ -543,7 +543,7 @@ class RimTownApp {
                     this._saveCurrentTown(cloudMatch.town_name);
                     this.state = this.world.getState();
                     this._generateTileMapLayout();
-                    this.tileMap.agentPositions = {};
+                    if (this.tileMap) this.tileMap.agentPositions = {};
                     this.render();
                     this.world.logMessage('system', `已從雲端同步最新存檔（${cloudMatch.town_name}）。`);
                 }
@@ -835,7 +835,7 @@ class RimTownApp {
                 this._saveCurrentTown();
                 this.state = this.world.getState();
                 this._generateTileMapLayout();
-                this.tileMap.agentPositions = {};
+                if (this.tileMap) this.tileMap.agentPositions = {};
                 this.render();
                 this.world.logMessage('system', '已從雲端載入存檔。');
             }
@@ -1102,7 +1102,7 @@ class RimTownApp {
             this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
             this.state = this.world.getState();
             this._generateTileMapLayout();
-            this.tileMap.agentPositions = {};
+            if (this.tileMap) this.tileMap.agentPositions = {};
             this.render();
         }
         document.getElementById('town-modal')?.classList.add('hidden');
@@ -1510,10 +1510,10 @@ class RimTownApp {
     }
 
     setupControlListeners() {
-        document.getElementById('btn-pause').addEventListener('click', () => {
+        document.getElementById('btn-pause')?.addEventListener('click', () => {
             this.world.paused = true; this.render();
         });
-        document.getElementById('btn-resume').addEventListener('click', () => {
+        document.getElementById('btn-resume')?.addEventListener('click', () => {
             this.world.paused = false; this.render();
         });
         // Speed control buttons
@@ -1536,22 +1536,22 @@ class RimTownApp {
                 }, this.simSpeed);
             });
         });
-        document.getElementById('btn-new-game').addEventListener('click', async () => {
+        document.getElementById('btn-new-game')?.addEventListener('click', async () => {
             const name = prompt('為新城鎮命名：', '邊境鎮 ' + (this._getTownList().length + 1));
             if (!name) return;
             await this.archiveChatHistory();
             this._saveCurrentTown();
             this.world.reset();
             if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
-            this.currentTownId = 'town_' + Date.now();
+            this.currentTownId = this._generateTownId(name);
             this._saveCurrentTown(name);
             this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
             this.state = this.world.getState();
             this._generateTileMapLayout();
-            this.tileMap.agentPositions = {};
+            if (this.tileMap) this.tileMap.agentPositions = {};
             this.render();
         });
-        document.getElementById('btn-save').addEventListener('click', async () => {
+        document.getElementById('btn-save')?.addEventListener('click', async () => {
             await this.saveGame();
             this.state = this.world.getState();
             this.renderSidebar();
@@ -1561,12 +1561,12 @@ class RimTownApp {
                 this._syncToCloud();
             }
         });
-        document.getElementById('btn-export').addEventListener('click', () => this.exportSave());
-        document.getElementById('btn-import').addEventListener('click', () => this.importSave());
+        document.getElementById('btn-export')?.addEventListener('click', () => this.exportSave());
+        document.getElementById('btn-import')?.addEventListener('click', () => this.importSave());
     }
 
     setupSettingsListeners() {
-        document.getElementById('btn-settings').addEventListener('click', () => {
+        document.getElementById('btn-settings')?.addEventListener('click', () => {
             document.getElementById('settings-modal').classList.remove('hidden');
             const provider = localStorage.getItem('llm_provider');
             const apiKey = localStorage.getItem('llm_api_key');
@@ -1586,7 +1586,7 @@ class RimTownApp {
             }
         });
         // When switching provider, clear the API key input to enforce one-AI-at-a-time
-        document.getElementById('llm-provider').addEventListener('change', () => {
+        document.getElementById('llm-provider')?.addEventListener('change', () => {
             const provEl = document.getElementById('llm-provider');
             const keyEl = document.getElementById('llm-api-key');
             const savedProvider = localStorage.getItem('llm_provider');
@@ -1596,7 +1596,7 @@ class RimTownApp {
                 keyEl.placeholder = provEl.value === 'none' ? '不需要 API 金鑰' : '請輸入新的 API 金鑰...';
             }
         });
-        document.getElementById('settings-save').addEventListener('click', () => {
+        document.getElementById('settings-save')?.addEventListener('click', () => {
             const provider = document.getElementById('llm-provider').value;
             const apiKey = document.getElementById('llm-api-key').value;
             const speed = document.getElementById('sim-speed').value;
@@ -1608,7 +1608,7 @@ class RimTownApp {
             this.saveSettings(provider, apiKey, speed);
             document.getElementById('settings-modal').classList.add('hidden');
         });
-        document.getElementById('settings-cancel').addEventListener('click', () => {
+        document.getElementById('settings-cancel')?.addEventListener('click', () => {
             document.getElementById('settings-modal').classList.add('hidden');
         });
     }
@@ -1993,15 +1993,17 @@ class RimTownApp {
 
     renderClock() {
         const clock = this.state.clock;
-        document.getElementById('clock-display').textContent = clock.time_str;
+        const clockEl = document.getElementById('clock-display');
+        if (clockEl) clockEl.textContent = clock.time_str;
         const pauseBtn = document.getElementById('btn-pause');
         const resumeBtn = document.getElementById('btn-resume');
-        if (this.state.paused) { pauseBtn.classList.add('active'); resumeBtn.classList.remove('active'); }
-        else { pauseBtn.classList.remove('active'); resumeBtn.classList.add('active'); }
+        if (this.state.paused) { pauseBtn?.classList.add('active'); resumeBtn?.classList.remove('active'); }
+        else { pauseBtn?.classList.remove('active'); resumeBtn?.classList.add('active'); }
         const agentCount = Object.keys(this.state.agents).length;
         const travelCount = (this.state.travelling_agents || []).length;
         const travelText = travelCount > 0 ? ` (+${travelCount} travelling)` : '';
-        document.getElementById('population-count').textContent = `Population: ${agentCount}${travelText}`;
+        const popEl = document.getElementById('population-count');
+        if (popEl) popEl.textContent = `Population: ${agentCount}${travelText}`;
         const terrain = this.state.locations?.terrain || '';
         const seed = this.state.locations?.seed ?? '';
         const terrainEl = document.getElementById('terrain-display');
@@ -2300,7 +2302,6 @@ class RimTownApp {
     }
     _scrollChatToBottom() { requestAnimationFrame(() => { const el = document.getElementById('chat-messages'); if(el) el.scrollTop=el.scrollHeight; }); }
     _appendChatBubble(type, text) { const el = document.getElementById('chat-messages'); if(!el) return; const div=document.createElement('div'); div.className=`chat-bubble chat-${type}`; div.innerHTML=`<div class="chat-text">${this._escapeHtml(text)}</div>`; el.appendChild(div); el.scrollTop=el.scrollHeight; }
-    _escapeHtml(str) { const div=document.createElement('div'); div.textContent=str; return div.innerHTML; }
 
     _renderSkills(skillsData) {
         if (!skillsData?.skills) return '<p class="muted-text">沒有技能資料</p>';

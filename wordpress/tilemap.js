@@ -1474,7 +1474,7 @@ class PixelTileMap {
 
     _connectToRoad(doorX, doorY) {
         // Draw a short dirt path from doorway toward nearest road
-        const roadY1 = 16, roadY2 = 30, roadX1 = 22, roadX2 = 38;
+        const roadY1 = 20, roadY2 = 38, roadX1 = 26, roadX2 = 46;
         // Find closest road
         let targetY = doorY, targetX = doorX;
         const distToHRoad1 = Math.abs(doorY - roadY1);
@@ -2303,7 +2303,7 @@ class PixelTileMap {
         // Check if canvas needs resizing (handles window resize, DPR changes)
         this._checkResize();
         const ctx = this.ctx;
-        if (!ctx) return;
+        if (!ctx || !this.grid) return;
         this.animFrame++;
 
         // Clear entire canvas and apply camera transform
@@ -2588,6 +2588,11 @@ class PixelTileMap {
                 p.vx += Math.sin(this.animFrame * 0.05 + p.phase) * 0.02; // flutter
                 ctx.fillStyle = `rgba(139,119,42,${alpha * 0.6})`;
                 ctx.fillRect(p.x, p.y, 2, 1);
+            } else if (p.type === 'festival') {
+                ctx.fillStyle = p.color || '#FFD700';
+                ctx.globalAlpha = alpha;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+                ctx.globalAlpha = 1;
             }
         }
 
