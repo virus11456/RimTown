@@ -30,7 +30,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v3.0.2.zip` from Releases
+1. Download `rimtown-v3.0.3.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -45,6 +45,31 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v3.0.3 (2026-03-10)
+
+**UI 重構 / 主線任務 / 農場視覺 / 20+ Bug 修復 / 版本同步**
+
+- 側邊欄標籤重新設計：擠壓的單行文字標籤改為 5×2 圖示+文字 grid 佈局，RWD 支援桌面/平板/手機/小螢幕
+- 標籤整合：產業+農場合併為一頁（子標籤切換）、工廠整合至經濟頁，總標籤從 10 減至 9
+- 主線任務系統：14 個任務、5 章節線性推進、13 種目標類型（聊天/資源/產業/人口/農收/貿易等），完整 UI 含進度條、目標追蹤、獎勵顯示
+- 農場地圖視覺強化：13 種作物專屬色盤、4 階段生長視覺、土壤紋理、水分指示條、肥料閃光、枯萎效果
+- 農場動畫：成熟作物搖擺+發光脈衝、NPC 農作動畫（鋤地/翻土/澆水/採收）含工具精靈圖與粒子特效
+- 修復 mood 直接修改被每 tick 重算覆蓋的問題（新增 moodModifier 機制）
+- 修復情侶關係事件重複處理（每對只處理一次）
+- 修復餐食消耗不完整（部分存量不被消耗）
+- 修復旅行者歸來丟失技能/記憶/關係
+- 修復選舉記憶存 agentId 而非 name
+- 修復 SeededRandom(0) 產生退化序列
+- 修復農場 sellValue 重複套用品質乘數
+- 修復工廠進度重置丟棄小數部分、不可用工人仍獲得效率加成
+- 修復住院/失蹤天數計算（2天週期但只計1天）
+- 修復 19:00-20:00 窗燈亮度為負值
+- 修復 XSS 漏洞（username 未轉義）
+- 修復 night_owl 成就在遊戲開始時立即解鎖
+- 修復 Chrome Extension manifest.json 版本號未同步（2.4.2→3.0.3）
+- 補齊 Chrome Extension changelog 缺少的 v3.0.0/v3.0.1/v3.0.2 記錄
+- 以上修正同步套用至 WordPress 與 Chrome Extension 版本
 
 ### v3.0.2 (2026-03-10)
 

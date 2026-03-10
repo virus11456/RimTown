@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 3.0.2
+ * Version: 3.0.3
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '3.0.2');
+define('RIMTOWN_VERSION', '3.0.3');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1149,6 +1149,32 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '3.0.3',
+            'date'    => '2026-03-10',
+            'changes' => array(
+                '側邊欄標籤重新設計：擠壓的單行文字標籤改為 5×2 圖示+文字 grid 佈局',
+                '標籤整合：產業+農場合併為一頁（子標籤切換）、工廠整合至經濟頁，總標籤從 10 減至 9',
+                '主線任務系統：14 個任務、5 章節線性推進、13 種目標類型、完整 UI 含進度條與獎勵',
+                '農場地圖視覺強化：13 種作物專屬色盤、4 階段生長視覺、土壤紋理、水分指示條',
+                '農場動畫：成熟作物搖擺+發光脈衝、NPC 農作動畫（鋤地/翻土/澆水/採收）含工具精靈圖與粒子特效',
+                '修復 mood 直接修改被每 tick 重算覆蓋（新增 moodModifier 機制）',
+                '修復情侶關係事件重複處理（每對只處理一次）',
+                '修復餐食消耗不完整（部分存量不被消耗）',
+                '修復旅行者歸來丟失技能/記憶/關係',
+                '修復選舉記憶存 agentId 而非 name',
+                '修復 SeededRandom(0) 產生退化序列',
+                '修復農場 sellValue 重複套用品質乘數',
+                '修復工廠進度重置丟棄小數部分、不可用工人仍獲得效率加成',
+                '修復住院/失蹤天數計算（2天週期但只計1天）',
+                '修復 19:00-20:00 窗燈亮度為負值',
+                '修復 XSS 漏洞（username 未轉義）',
+                '修復 night_owl 成就在遊戲開始時立即解鎖',
+                '修復 Chrome Extension manifest.json 版本號未同步（2.4.2→3.0.3）',
+                '補齊 Chrome Extension changelog 缺少的 v3.0.0/v3.0.1/v3.0.2 記錄',
+                '以上修正同步套用至 WordPress 與 Chrome Extension 版本',
+            ),
+        ),
         array(
             'version' => '3.0.2',
             'date'    => '2026-03-10',
