@@ -40,6 +40,14 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## Changelog
 
+### v2.4.1 (2026-03-10)
+
+**Bug 修復 / Chrome Extension 版本顯示 / Changelog 更新**
+
+- 更新 v2.4.0 changelog：補齊聊天焦點、登入驗證、存檔同步、版本顯示等 4 項修復記錄
+- Chrome Extension 新增遊戲標題列版本號顯示（與 WordPress 版一致）
+- 以上修正同步套用至 WordPress 與 Chrome Extension 版本
+
 ### v2.4.0 (2026-03-10)
 
 **地圖擴大 / NPC 行為改善 / 點擊移動 / 好友約會系統**
