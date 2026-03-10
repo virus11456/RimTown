@@ -57,15 +57,24 @@ class CustomNPCSystem {
     // 創建自訂 NPC
     // ============================================================
     createCustomNPC(config, world) {
+        // Trim name early to avoid inconsistency
+        if (config.name) config.name = config.name.trim();
+
         // Validate
         const error = this._validate(config, world);
         if (error) return { success: false, error };
 
-        // Deduct resources
+        // Deduct resources (pre-validated, consume atomically)
+        const consumed = [];
         for (const [res, amount] of Object.entries(this.creationCost)) {
             if (!world.stockpile?.consume(res, amount, world.tickCount, `招募新居民：${config.name}`)) {
+                // Rollback already consumed resources
+                for (const [rRes, rAmt] of consumed) {
+                    world.stockpile?.add(rRes, rAmt, world.tickCount, `退還：招募取消`);
+                }
                 return { success: false, error: `資源不足：需要 ${amount} ${res}` };
             }
+            consumed.push([res, amount]);
         }
 
         // Create agent using simulation.js classes (they're global)
@@ -243,7 +252,6 @@ class MultiEndingSystem {
         this.endingTriggered = null;    // Which ending was triggered
         this.endingData = null;         // Ending details
         this.townHistory = [];          // Collected town history events
-        this.isShowingEnding = false;
     }
 
     // ============================================================
@@ -298,7 +306,7 @@ class MultiEndingSystem {
         const spouse = playerRels.find(r => r.status === 'married');
 
         return {
-            totalDays: (world.clock.year - 1) * 60 + ((['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15) + world.clock.day,
+            totalDays: (world.clock.year - 1) * 60 + (Math.max(0, ['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15) + world.clock.day,
             year: world.clock.year,
             season: world.clock.season,
             population: agents.length,
@@ -435,7 +443,7 @@ class MultiEndingSystem {
         }
 
         // Close button
-        html += `<button id="ending-close-btn" style="padding:12px 32px;font-size:16px;background:${t.color};color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:bold">繼續遊玩</button>`;
+        html += `<button id="ending-close-btn" data-action="close-ending" style="padding:12px 32px;font-size:16px;background:${t.color};color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:bold">繼續遊玩</button>`;
         html += '</div></div>';
 
         return html;

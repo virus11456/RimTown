@@ -651,6 +651,7 @@ class NPCQuestSystem {
         this.industryBonuses = {};  // { industryKey: totalBonus }
         this.chainUnlocks = [];     // quest IDs unlocked by chain triggers
         this._lastCheckDay = -1;
+        this._lastCheckYear = -1;
     }
 
     // ============================================================
@@ -691,13 +692,10 @@ class NPCQuestSystem {
                     if (currentChapter < quest.trigger.chapter) continue;
                 }
 
-                // Check flag trigger
+                // Check flag trigger (e.g. requireFlag: 'liu_xu_dating')
                 if (quest.trigger.requireFlag) {
                     if (!this.storyFlags[quest.trigger.requireFlag]) continue;
                 }
-
-                // Check chain unlock
-                if (quest.trigger.requireFlag && !this.storyFlags[quest.trigger.requireFlag]) continue;
 
                 // Trigger the quest!
                 this.quests[quest.id] = {
@@ -923,7 +921,6 @@ class NPCQuestSystem {
             const affinity = rel?.affinity || 0;
 
             // Find highest unlocked tier
-            let totalBonus = this.industryBonuses[binding.industry] || 0;
             for (const tier of binding.tiers) {
                 if (affinity >= tier.affinity && tier.bonus) {
                     // Only add tier bonus if not already counted from quest outcomes
@@ -1011,7 +1008,7 @@ class NPCQuestSystem {
         if (unlockedTiers.length === 0) return '';
 
         const latest = unlockedTiers[unlockedTiers.length - 1];
-        return `你因為和${world?.agents?.player?.name || '玩家'}的關係好，${latest.desc}。`;
+        return `你因為和玩家的關係好，${latest.desc}。`;
     }
 
     // ============================================================

@@ -2447,9 +2447,7 @@ class RimTownApp {
         if (!this.world.multiEnding?.endingData) return;
         document.getElementById('ending-overlay')?.remove();
 
-        let html = this.world.multiEnding.renderEndingHTML();
-        // Replace the close button to use data-action
-        html = html.replace('id="ending-close-btn"', 'id="ending-close-btn" data-action="close-ending"');
+        const html = this.world.multiEnding.renderEndingHTML();
 
         const wrapper = document.createElement('div');
         wrapper.id = 'ending-overlay';

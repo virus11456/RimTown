@@ -758,7 +758,7 @@ class Agent {
 class PlayerAgent extends Agent {
     constructor(name = '旅人', age = 25) {
         super('player', name, age, new Personality(['creative','kind'], '最近抵達邊境鎮的神秘旅人。', ['冒險','友情']), null, 'tavern');
-        this.isPlayer = true; this.chatHistory = [];
+        this.isPlayer = true; this.chatHistory = []; this._recentChatTick = 0;
     }
     update(world) {
         // Auto-manage player activity based on needs and context
@@ -779,8 +779,10 @@ class PlayerAgent extends Agent {
     }
     _autoManageActivity(world) {
         const hour = world.clock.hour;
-        // Night: auto-sleep if rest is low
-        if ((hour >= 22 || hour < 6) && this.needs.rest < 80) {
+        const isNight = hour >= 22 || hour < 6;
+        // Night: auto-sleep (only critical hunger can interrupt)
+        if (isNight && this.needs.rest < 95) {
+            if (this.needs.hunger < 10) { this.activity = 'eating'; return; }
             this.activity = 'sleeping';
             return;
         }
