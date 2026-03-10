@@ -1,4 +1,5 @@
 // RimTown - Frontend App (WordPress Plugin) v2.4.0
+const RIMTOWN_APP_VERSION = '2.4.0';
 const ELECTION_POLICIES_LABELS = {economy:'經濟發展',welfare:'社會福利',defense:'軍事防禦',culture:'文化教育',nature:'自然保育',freedom:'個人自由'};
 
 // =====================================================
@@ -270,6 +271,9 @@ class RimTownApp {
         this.setupAutoSave();
         this.render();
         this._startRenderLoop();
+        // Show version in header
+        const verEl = document.getElementById('version-display');
+        if (verEl && !verEl.textContent) verEl.textContent = 'v' + RIMTOWN_APP_VERSION;
         this._startAchievementChecker();
     }
 

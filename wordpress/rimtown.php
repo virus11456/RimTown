@@ -521,6 +521,7 @@ function rimtown_shortcode($atts) {
                     <span id="llm-status" class="llm-status" title="AI 狀態">AI:--</span>
                     <button id="btn-settings" class="btn-settings">設定</button>
                     <button id="btn-account" class="btn-account" title="帳號">帳號</button>
+                    <span id="version-display" class="version-display">v<?php echo RIMTOWN_VERSION; ?></span>
                 </div>
             </div>
         </div>
