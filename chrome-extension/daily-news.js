@@ -86,13 +86,38 @@ class DailyNewsEngine {
         const prevPaper = this.newspapers.length > 0 ? this.newspapers[this.newspapers.length - 1] : null;
         const prevRef = prevPaper ? `上一期日報（記者：${prevPaper.reporter}）的摘要：${(prevPaper.content || '').substring(0, 100)}...` : '';
 
+        // Build richer NPC interaction context
+        const agentList = Object.values(world.agents).filter(a => !a.isPlayer);
+        const relationshipSnippets = [];
+        for (const agent of agentList.slice(0, 6)) {
+            if (agent.relationships) {
+                const rels = Object.entries(agent.relationships).slice(0, 2);
+                for (const [targetId, rel] of rels) {
+                    const target = world.agents[targetId];
+                    if (target && rel.affinity !== undefined) {
+                        const status = rel.status || (rel.affinity > 60 ? '好友' : rel.affinity < -20 ? '不合' : '普通');
+                        relationshipSnippets.push(`${agent.name}與${target.name}：${status}（好感度${rel.affinity}）`);
+                    }
+                }
+            }
+        }
+        const relContext = relationshipSnippets.length ? `\n居民關係動態：\n${relationshipSnippets.slice(0, 5).join('\n')}` : '';
+
+        // Get recent NPC conversations for richer material
+        const recentConvos = world.conversationEngine?.npcConversationLog?.slice(-5) || [];
+        const convoContext = recentConvos.length
+            ? `\n最近的居民對話精華：\n${recentConvos.map(c => `- ${c.agentA}對${c.agentB}說了什麼，結果：${c.summary}`).join('\n')}`
+            : '';
+
         const prompt = `你是「${reporter.name}」，${bg}
 你的性格特徵：${traits}
 你的職業：${reporter.job?.title || '居民'}
-你正在為邊境鎮寫今天的日報。
+你正在為邊境鎮寫今天的日報——這可不是普通的報紙，而是小鎮裡人人愛看的八卦報！
 
 今天發生的事：
 ${events.map(e => `- [${e.category}] ${e.content}`).join('\n')}
+${relContext}
+${convoContext}
 
 目前季節：${world.clock.season} 第${world.clock.day}天（第${world.clock.year}年）
 小鎮等級：${townLevel}
@@ -101,12 +126,20 @@ ${events.map(e => `- [${e.category}] ${e.content}`).join('\n')}
 鎮上八卦：${gossip}
 ${prevRef}
 
-請用你的視角寫一篇簡短有趣的日報（200-400字），包含：
-1. 一個吸引人的頭條標題
-2. 2-3 則新聞（用你的個性來評論）
-3. 一段「記者碎碎念」（你個人的心情或觀察）
+請用你的視角寫一篇精彩的日報（300-500字），包含：
+1. 【頭條】一個吸引人的頭條標題（要有畫面感，像小說章節名）
+2. 本日新聞：2-3 則新聞報導，每則要：
+   - 描述具體場景和細節（誰在哪裡做了什麼，當時的氛圍如何）
+   - 加入你作為記者的個人觀察和評論（可以八卦、吐槽、感動、爆料）
+   - 如果涉及居民互動，要寫出他們的表情、語氣、小動作
+3. 【${reporter.name}碎碎念】你個人的心情或觀察（要有溫度，像在跟讀者聊天）
 
-風格：像小鎮黑板報，親切、生活化、帶有你的個人色彩。用繁體中文。`;
+寫作風格要求：
+- 像小鎮八卦報，生動、有畫面感、充滿人情味
+- 用具體細節取代抽象描述（不要「心情不錯」，要「嘴角藏不住笑意」）
+- 善用比喻、誇張、擬人等修辭讓文字更有趣
+- 記者個性要鮮明——根據你的性格特徵來決定報導角度（毒舌就吐槽、浪漫就寫愛情、嚴肅就分析局勢）
+- 必須使用繁體中文（台灣用語）`;
 
         const response = await world.conversationEngine.llm.chat([
             { role: 'user', content: prompt }

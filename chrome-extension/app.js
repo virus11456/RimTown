@@ -2099,8 +2099,6 @@ class RimTownApp {
             case 'events': this.renderEvents(content); break;
             case 'achievements': this.renderAchievements(content); break;
             case 'industry': this.renderIndustryAndFarm(content); break;
-            case 'farm': this.renderIndustryAndFarm(content); break;
-            case 'factory': this.renderFactory(content); break;
             case 'newspaper': this.renderNewspaper(content); break;
             case 'quest': this.renderQuest(content); break;
         }
