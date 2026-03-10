@@ -16,11 +16,17 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 - **Seasonal Festivals**: Spring Festival, Midsummer Bonfire, Harvest Festival, Winter Solstice with quests and decorations
 - **NPC Lifecycle**: Aging, death (old age/disease/accidents), birth, graveyard with epitaphs
 - **Exploration**: 6 discoverable zones outside town (forest, ruins, mine, mountain, cave, swamp) with expeditions
-- **Achievement System**: 38+ achievements across social, romance, economy, survival, faction, exploration categories
+- **Achievement System**: 50+ achievements across social, romance, economy, survival, faction, exploration, industry categories
 - **NPC Conversation Visualization**: Speech bubbles on map when NPCs talk to each other
 - **Player Interaction**: Choose jobs, vote in elections, flirt, propose, and marry NPCs
 - **Multi-LLM Support**: Claude, GPT, Gemini, DeepSeek, Groq, Together AI, MiniMax (or play without AI) with automatic Groq fallback on rate limit
 - **Pixel Art Map**: Animated tilemap with day/night cycle, campfires, particles
+- **Four Industries System**: Lumber, Quarry, Farming, Mining — choose your starting industry and unlock more as your town grows (v3)
+- **Farm & Crop System**: Plant crops, manage plots, seasonal planting, quality system, NPC farmer bonuses (v3)
+- **Factory Processing**: Build factories (bakery, textile mill, brewery, etc.), assign workers, craft goods, fulfill orders (v3)
+- **AI Daily Newspaper**: LLM-generated town newspaper with NPC reporter personality, gossip, and event coverage (v3)
+- **NPC Relationship Events**: Fights, hospitalizations, sabotage, cheating scandals with town-wide consequences (v3)
+- **Town Level System**: 7 town levels from hamlet to city, unlocking industry slots as you grow (v3)
 
 ## WordPress Plugin Install
 
@@ -39,6 +45,70 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v3.0.0 (2026-03-10)
+
+**大改版：四大產業 / 農場種植 / 工廠加工 / AI 日報 / NPC 事件連鎖**
+
+**四大產業系統 (IndustrySystem)**
+- 開局四選一起始產業：伐木業🪓、採石業⛏️、農業🌾、礦業⚒️
+- 每個產業 Lv1-Lv5 獨立升級路線，消耗資源升級，解鎖更高產出
+- 城鎮等級系統（荒村→小村→村莊→小鎮→城鎮→大城鎮→城市），由人口與建築數決定
+- 城鎮升級自動解鎖新產業槽位（最多同時四大產業全開）
+- 產業協同加成：農林複合、營建雙雄、工業基礎、地下霸主等 10 種組合效果
+- 產業 NPC 工人自動計算效率，匹配職業的 NPC 效率更高
+- 地圖上顯示產業等級徽章
+
+**農場種植系統 (FarmSystem)**
+- 完整農田管理：翻土→播種→生長→收穫→清除枯萎
+- 13 種作物，依農業等級解鎖（Lv1 小麥/馬鈴薯 → Lv5 金色小麥/火龍果）
+- 季節限制：不同作物只能在特定季節種植，非當季自動枯萎
+- 品質系統：普通/優良/極品三級，受灌溉、施肥、輪作、NPC 農夫好感影響
+- 灌溉系統：農業 Lv3 後自動灌溉 +30% 生長速度
+- 施肥系統：消耗草藥製作肥料，加速 20% 生長
+- 收穫超過 3 天未採收自動枯萎
+- 農場 UI 頁籤：田地格子、作物選擇、收穫紀錄
+
+**工廠加工系統 (ProcessingSystem)**
+- 7 座工廠可建造：麵包坊、紡織廠、釀酒廠、草藥工坊、茶坊、製糖廠、家具工坊
+- 建造需消耗資源＋等待天數，建築工匠 NPC 可加速建造
+- 配方系統：每座工廠 2 種配方可切換（如小麥→麵包 或 小麥+糖→糕點）
+- NPC 員工分配：拖曳分配，對應職業效率 100%，其他 60%
+- 工廠倉庫：成品暫存，可收取至 stockpile 或直接販賣
+- 訂單系統：隨機生成限時高價訂單，完成獲得額外獎勵
+- 市集自動販賣：建了市集後每日自動售出少量成品
+- 30+ 種新資源類型：木板、硬木、磚塊、大理石、鋼、金、麵包、啤酒、葡萄酒、香水等
+- 工廠 UI 頁籤：建造、配方選擇、工人管理、倉庫操作、訂單列表
+
+**NPC 關係連鎖事件 (NPCEventSystem)**
+- 打架住院事件：仇恨值高的 NPC 可能動手打人，受害者住院 3-7 天
+- 住院期間消耗藥品，有醫生加速康復，無醫無藥延長住院
+- 好友探病機制：好友 NPC 心情連帶下降
+- 農田破壞事件：心情極差的神經質 NPC 可能深夜破壞農田
+- 劈腿被抓事件：發現劈腿→可能當街毆打→全鎮八卦→派系選邊站
+- 好友合作加成：高好感 NPC 在同一工廠工作效率 +20%
+- 事件結果影響產業效率（如農夫心碎→農場產量 -30% 一週）
+- 所有事件自動收集為 AI 日報素材
+
+**AI 日報系統 (DailyNewsEngine)**
+- 每天遊戲結束自動生成一篇 AI 城鎮報紙
+- 隨機選擇 NPC 當記者，帶有個人風格和偏見
+- 素材自動收集：對話、經濟、事件、關係、建築、探索、生命週期等
+- LLM 生成時注入記者性格、職業、鎮況、八卦等完整上下文
+- 無 LLM 時使用模板生成保底日報
+- 日報永久保存，可回顧歷史
+- 日報 UI 頁籤：展開/收合、歷史瀏覽、記者資訊
+
+**打磨與平衡**
+- 地圖上渲染農場田地格子（顯示生長狀態、成熟閃爍）
+- 地圖上渲染工廠建築（建造進度條、煙囪、窗戶燈光）
+- 地圖上渲染產業等級徽章
+- NPC 對話注入經濟上下文：產業、農場、工廠狀態影響對話內容
+- 產業系統與舊生產系統平衡：已有產業的 NPC 減少 70% 舊式產出，避免疊加
+- 15+ 新成就：創業家、產業帝國、初次收穫、極品農產、工廠主、訂單達人、暴力事件、八點檔、讀報人、日報收藏家、城鎮等級等
+- 修復產業選擇 UI 返回值格式
+- 修復產業面板工人數顯示
+- 修復產業協同加成顯示
 
 ### v2.4.1 (2026-03-10)
 

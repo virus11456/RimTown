@@ -1,5 +1,5 @@
 // RimTown - Frontend App (WordPress Plugin) v2.4.1
-const RIMTOWN_APP_VERSION = '2.4.1';
+const RIMTOWN_APP_VERSION = '3.0.0';
 const ELECTION_POLICIES_LABELS = {economy:'經濟發展',welfare:'社會福利',defense:'軍事防禦',culture:'文化教育',nature:'自然保育',freedom:'個人自由'};
 
 // =====================================================
@@ -60,6 +60,29 @@ const ACHIEVEMENTS = {
     // Exploration
     first_explore: { name: '探險家', desc: '發現第一個探索區域', icon: '🗺️', category: 'survival' },
     expedition_success: { name: '凱旋歸來', desc: '完成第一次成功探險', icon: '🏆', category: 'survival' },
+    // Industry (v3)
+    first_industry: { name: '創業家', desc: '開啟第一個產業', icon: '🏭', category: 'economy' },
+    industry_lv3: { name: '產業升級', desc: '任一產業升到 Lv3', icon: '⚒️', category: 'economy' },
+    industry_lv5: { name: '產業帝國', desc: '任一產業升到 Lv5', icon: '👑', category: 'economy' },
+    two_industries: { name: '雙線發展', desc: '同時擁有兩個產業', icon: '🔀', category: 'economy' },
+    four_industries: { name: '完全體', desc: '解鎖全部四大產業', icon: '🌟', category: 'economy' },
+    // Farm (v3)
+    first_harvest: { name: '初次收穫', desc: '第一次收穫農作物', icon: '🌾', category: 'economy' },
+    harvest_100: { name: '豐收之王', desc: '累計收穫 100 單位作物', icon: '🌽', category: 'economy' },
+    excellent_crop: { name: '極品農產', desc: '收穫極品品質作物', icon: '✨', category: 'economy' },
+    // Factory (v3)
+    first_factory: { name: '工廠主', desc: '建造第一座工廠', icon: '🏭', category: 'economy' },
+    factory_order: { name: '訂單達人', desc: '完成第一筆工廠訂單', icon: '📋', category: 'economy' },
+    // Relationships (v3)
+    npc_fight: { name: '暴力事件', desc: '目擊 NPC 打架住院', icon: '🤕', category: 'social' },
+    npc_cheating: { name: '八點檔', desc: '目擊劈腿被抓事件', icon: '😱', category: 'social' },
+    // Daily News (v3)
+    read_newspaper: { name: '讀報人', desc: '閱讀第一篇 AI 日報', icon: '📰', category: 'special' },
+    newspaper_10: { name: '日報收藏家', desc: '累計 10 篇日報', icon: '📚', category: 'special' },
+    // Town level (v3)
+    town_lv3: { name: '村莊崛起', desc: '城鎮升級到村莊', icon: '🏘️', category: 'town' },
+    town_lv5: { name: '城鎮繁榮', desc: '城鎮升級到城鎮', icon: '🏙️', category: 'town' },
+    town_lv7: { name: '大都市', desc: '城鎮升級到城市', icon: '🌆', category: 'town' },
 };
 
 // =====================================================
@@ -705,6 +728,47 @@ class RimTownApp {
         if (discoveredZones.length >= 1) this._unlockAchievement('first_explore');
         const successExpeditions = (this.state.exploration?.expeditionLog || []).filter(e => e.success);
         if (successExpeditions.length >= 1) this._unlockAchievement('expedition_success');
+
+        // v3 Industry achievements
+        const ind = this.state.industry || {};
+        const indKeys = Object.keys(ind.industries || {});
+        if (indKeys.length >= 1) this._unlockAchievement('first_industry');
+        if (indKeys.length >= 2) this._unlockAchievement('two_industries');
+        if (indKeys.length >= 4) this._unlockAchievement('four_industries');
+        for (const data of Object.values(ind.industries || {})) {
+            if (data.level >= 3) this._unlockAchievement('industry_lv3');
+            if (data.level >= 5) this._unlockAchievement('industry_lv5');
+        }
+        // Town level
+        if ((ind.townLevel || 1) >= 3) this._unlockAchievement('town_lv3');
+        if ((ind.townLevel || 1) >= 5) this._unlockAchievement('town_lv5');
+        if ((ind.townLevel || 1) >= 7) this._unlockAchievement('town_lv7');
+
+        // v3 Farm achievements
+        const farm = this.state.farm || {};
+        const totalHarvested = farm.totalHarvested || {};
+        const harvestTotal = Object.values(totalHarvested).reduce((s, v) => s + v, 0);
+        if (harvestTotal >= 1) this._unlockAchievement('first_harvest');
+        if (harvestTotal >= 100) this._unlockAchievement('harvest_100');
+        const harvestLog = farm.harvestLog || [];
+        if (harvestLog.some(h => h.quality === 'excellent')) this._unlockAchievement('excellent_crop');
+
+        // v3 Factory achievements
+        const proc = this.state.processing || {};
+        if (Object.keys(proc.builtFactories || {}).length >= 1) this._unlockAchievement('first_factory');
+        const completedOrders = (proc.orders || []).filter(o => o.status === 'completed');
+        if (completedOrders.length >= 1) this._unlockAchievement('factory_order');
+
+        // v3 Daily news achievements
+        const newsData = this.state.dailyNews || {};
+        if ((newsData.newspapers || []).length >= 1) this._unlockAchievement('read_newspaper');
+        if ((newsData.newspapers || []).length >= 10) this._unlockAchievement('newspaper_10');
+
+        // v3 NPC event achievements
+        const npcEvt = this.state.npcEvents || {};
+        const incidents = npcEvt.recentIncidents || [];
+        if (incidents.some(i => i.type === 'fight')) this._unlockAchievement('npc_fight');
+        if (incidents.some(i => i.type === 'cheating_discovered')) this._unlockAchievement('npc_cheating');
     }
 
     // Hook conversation engine to push speech bubbles to tilemap
@@ -1130,7 +1194,9 @@ class RimTownApp {
                 this.tileMap.explorationData = this.state.exploration || {};
                 this.tileMap.graveyardData = (this.state.lifecycle || {}).graveyard || [];
                 this.tileMap.festivalData = this.state.festivals || {};
-                this.tileMap.render(agents, this.selectedAgent, player?.current_location, this.world?.buildings?.completed || []);
+                this.tileMap.render(agents, this.selectedAgent, player?.current_location, this.world?.buildings?.completed || [], {
+                    farm: this.state?.farm, processing: this.state?.processing, industry: this.state?.industry,
+                });
             }
             requestAnimationFrame(loop);
         };
@@ -2858,8 +2924,12 @@ class RimTownApp {
                 const lvDef = def?.levels?.find(l => l.lv === data.level);
                 const nextLv = def?.levels?.find(l => l.lv === data.level + 1);
                 html += `<div class="build-card"><div><strong>${def?.icon || '?'} ${def?.name || key} Lv${data.level}</strong>`;
-                if (lvDef) html += `<br><span style="font-size:0.75rem">${lvDef.desc}</span>`;
-                html += `<br><span style="font-size:0.75rem;color:var(--text-secondary)">工人：${data.workers}/${lvDef?.workers || '?'}</span>`;
+                if (lvDef) html += `<br><span style="font-size:0.75rem">${lvDef.bonus || lvDef.name}</span>`;
+                html += `<br><span style="font-size:0.75rem;color:var(--text-secondary)">工人：${Array.isArray(data.workers) ? data.workers.length : data.workers}/${lvDef?.workers || '?'}</span>`;
+                if (data.dailyOutput && Object.keys(data.dailyOutput).length) {
+                    const outputStr = Object.entries(data.dailyOutput).map(([r,a]) => `${r}:${Math.round(a*10)/10}`).join(' ');
+                    html += `<br><span style="font-size:0.7rem;color:var(--accent-gold)">📦 ${outputStr}</span>`;
+                }
                 html += '</div>';
                 if (nextLv) {
                     const costStr = Object.entries(nextLv.cost).map(([r,a]) => `${r}:${a}`).join(' ');
@@ -2886,7 +2956,7 @@ class RimTownApp {
         if (ind.activeSynergies && ind.activeSynergies.length > 0) {
             html += '<div class="econ-section"><h3>產業加成</h3>';
             ind.activeSynergies.forEach(s => {
-                html += `<div style="font-size:0.8rem;margin:4px 0">✨ ${s.name}：${s.desc}</div>`;
+                html += `<div style="font-size:0.8rem;margin:4px 0">${s.icon} ${s.name}</div>`;
             });
             html += '</div>';
         }

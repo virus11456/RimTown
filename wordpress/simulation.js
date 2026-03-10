@@ -858,6 +858,36 @@ class ConversationEngine {
         return s;
     }
 
+    _buildEconomicContext(world) {
+        const parts = [];
+        // Town level & industries
+        if (world.industry) {
+            parts.push(`城鎮等級：${world.industry.townLevelName || '荒村'}`);
+            const indNames = Object.keys(world.industry.industries).map(k => {
+                const def = typeof INDUSTRIES !== 'undefined' ? INDUSTRIES[k] : null;
+                const ind = world.industry.industries[k];
+                return def ? `${def.icon}${def.name}Lv${ind.level}` : k;
+            });
+            if (indNames.length) parts.push(`產業：${indNames.join('、')}`);
+        }
+        // Farm highlights
+        if (world.farm && world.farm.plots.length > 0) {
+            const growing = world.farm.plots.filter(p => p.state === 'growing').length;
+            const ready = world.farm.plots.filter(p => p.state === 'ready').length;
+            if (growing || ready) parts.push(`農場：${growing}塊生長中${ready ? '、'+ready+'塊可收穫' : ''}`);
+            const lastHarvest = world.farm.harvestLog.slice(-1)[0];
+            if (lastHarvest) parts.push(`最近收穫：${lastHarvest.cropName}×${lastHarvest.amount}`);
+        }
+        // Factory highlights
+        if (world.processing) {
+            const active = Object.entries(world.processing.builtFactories)
+                .filter(([, f]) => f.status === 'active')
+                .map(([k]) => { const d = typeof FACTORIES !== 'undefined' ? FACTORIES[k] : null; return d ? `${d.icon}${d.name}` : k; });
+            if (active.length) parts.push(`工廠：${active.join('、')}`);
+        }
+        return parts.length ? parts.join('。') : '';
+    }
+
     async generateConversation(agentA, agentB, world) {
         const relA = agentA.relationships.getOrCreate(agentB.agentId, agentB.name);
         const relB = agentB.relationships.getOrCreate(agentA.agentId, agentA.name);
@@ -924,6 +954,7 @@ ${this._buildRelContext(relB, agentA.name)}
 ${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
 
 小鎮近況：${gossipStr}
+${this._buildEconomicContext(world)}
 
 請寫4-6句自然對話。範例風格：
 - 好友："欸你昨天有看到老王在河邊釣到一條超大的魚嗎？笑死我了他差點掉下去！"
@@ -968,6 +999,10 @@ ${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
         agentA.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `與${agentB.name}交談：${summary}`, Math.min(8,4+Math.abs(affA)), [agentB.name]);
         agentB.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `與${agentA.name}交談：${summary}`, Math.min(8,4+Math.abs(affB)), [agentA.name]);
         world.logMessage('conversation', summary, agentA.name, agentB.name);
+        // Collect notable conversations for daily news
+        if (world.dailyNews && (Math.abs(affA) >= 4 || Math.abs(affB) >= 4 || romA >= 2 || romB >= 2)) {
+            world.dailyNews.collectEvent('social', summary, 4, [agentA.name, agentB.name]);
+        }
         // Store NPC conversation for sidebar viewing
         if (dialogue.length) {
             this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.id, agentBId:agentB.id });
@@ -994,6 +1029,9 @@ ${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
         agentA.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `與${agentB.name}交談：${summary}`, Math.min(6,3+Math.abs(affA)), [agentB.name]);
         agentB.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `與${agentA.name}交談：${summary}`, Math.min(6,3+Math.abs(affB)), [agentA.name]);
         world.logMessage('conversation', summary, agentA.name, agentB.name);
+        if (world.dailyNews && (Math.abs(affA) >= 4 || Math.abs(affB) >= 4)) {
+            world.dailyNews.collectEvent('social', summary, 4, [agentA.name, agentB.name]);
+        }
         const lines = dialogue.lines;
         if (lines.length) {
             this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue:lines, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.id, agentBId:agentB.id });
@@ -1389,6 +1427,9 @@ ${pN.name}，${pN.age}歲，${pN.job}。
 ${pN.thought ? `你最近在想：${pN.thought}` : ''}
 ${this._buildRelContext(relNpc, player.name)}
 ${memNpc.length ? `你記得關於${player.name}的事：${memNpc.map(m=>m.content).join('；')}` : `你跟${player.name}還不太熟。`}
+
+【小鎮經濟】
+${this._buildEconomicContext(world)}
 
 【對話記錄】
 ${recentChat || '（剛開始聊）'}
@@ -2598,11 +2639,22 @@ const NATURE_GATHERING = {forest:{wood:3},river:{food:2},meadow:{herbs:1,cloth:0
 
 function processDailyProduction(world) {
     const sp = world.stockpile;
+    // Check which NPC jobs are covered by the industry system to avoid double production
+    const industryJobs = {};
+    if (world.industry) {
+        for (const [key] of Object.entries(world.industry.industries)) {
+            const def = typeof INDUSTRIES !== 'undefined' ? INDUSTRIES[key] : null;
+            if (def) industryJobs[def.npcJob] = true;
+        }
+    }
     Object.values(world.agents).forEach(agent => {
         if (agent.isPlayer || !agent.job) return;
         const recipe = JOB_PRODUCTION[agent.job.key]; if (!recipe) return;
+        // If this job's production is handled by industry system, reduce to 30% (NPC still does ancillary work)
+        const isIndustryHandled = industryJobs[agent.job.key];
         const skill = agent.skills.get(recipe.skill);
         let eff = 0.5 + ((skill?skill.level:0)/20)*2.0;
+        if (isIndustryHandled) eff *= 0.3;
         if (agent.job.key === 'farmer') { eff *= SEASON_FARM_MOD[world.clock.season] || 1; eff *= 1 + (world.news?world.news.getModifier('farm_bonus',0):0); }
         if (agent.job.key === 'miner') eff *= 1 + (world.news?world.news.getModifier('mining_bonus',0):0);
         eff *= 1 + (agent.mood - 50)/500;

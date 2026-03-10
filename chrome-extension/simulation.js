@@ -858,6 +858,36 @@ class ConversationEngine {
         return s;
     }
 
+    _buildEconomicContext(world) {
+        const parts = [];
+        // Town level & industries
+        if (world.industry) {
+            parts.push(`城鎮等級：${world.industry.townLevelName || '荒村'}`);
+            const indNames = Object.keys(world.industry.industries).map(k => {
+                const def = typeof INDUSTRIES !== 'undefined' ? INDUSTRIES[k] : null;
+                const ind = world.industry.industries[k];
+                return def ? `${def.icon}${def.name}Lv${ind.level}` : k;
+            });
+            if (indNames.length) parts.push(`產業：${indNames.join('、')}`);
+        }
+        // Farm highlights
+        if (world.farm && world.farm.plots.length > 0) {
+            const growing = world.farm.plots.filter(p => p.state === 'growing').length;
+            const ready = world.farm.plots.filter(p => p.state === 'ready').length;
+            if (growing || ready) parts.push(`農場：${growing}塊生長中${ready ? '、'+ready+'塊可收穫' : ''}`);
+            const lastHarvest = world.farm.harvestLog.slice(-1)[0];
+            if (lastHarvest) parts.push(`最近收穫：${lastHarvest.cropName}×${lastHarvest.amount}`);
+        }
+        // Factory highlights
+        if (world.processing) {
+            const active = Object.entries(world.processing.builtFactories)
+                .filter(([, f]) => f.status === 'active')
+                .map(([k]) => { const d = typeof FACTORIES !== 'undefined' ? FACTORIES[k] : null; return d ? `${d.icon}${d.name}` : k; });
+            if (active.length) parts.push(`工廠：${active.join('、')}`);
+        }
+        return parts.length ? parts.join('。') : '';
+    }
+
     async generateConversation(agentA, agentB, world) {
         const relA = agentA.relationships.getOrCreate(agentB.agentId, agentB.name);
         const relB = agentB.relationships.getOrCreate(agentA.agentId, agentA.name);
@@ -924,6 +954,7 @@ ${this._buildRelContext(relB, agentA.name)}
 ${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
 
 小鎮近況：${gossipStr}
+${this._buildEconomicContext(world)}
 
 請寫4-6句自然對話。範例風格：
 - 好友："欸你昨天有看到老王在河邊釣到一條超大的魚嗎？笑死我了他差點掉下去！"
@@ -968,6 +999,10 @@ ${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
         agentA.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `與${agentB.name}交談：${summary}`, Math.min(8,4+Math.abs(affA)), [agentB.name]);
         agentB.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `與${agentA.name}交談：${summary}`, Math.min(8,4+Math.abs(affB)), [agentA.name]);
         world.logMessage('conversation', summary, agentA.name, agentB.name);
+        // Collect notable conversations for daily news
+        if (world.dailyNews && (Math.abs(affA) >= 4 || Math.abs(affB) >= 4 || romA >= 2 || romB >= 2)) {
+            world.dailyNews.collectEvent('social', summary, 4, [agentA.name, agentB.name]);
+        }
         // Store NPC conversation for sidebar viewing
         if (dialogue.length) {
             this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.id, agentBId:agentB.id });
@@ -994,6 +1029,9 @@ ${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
         agentA.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `與${agentB.name}交談：${summary}`, Math.min(6,3+Math.abs(affA)), [agentB.name]);
         agentB.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `與${agentA.name}交談：${summary}`, Math.min(6,3+Math.abs(affB)), [agentA.name]);
         world.logMessage('conversation', summary, agentA.name, agentB.name);
+        if (world.dailyNews && (Math.abs(affA) >= 4 || Math.abs(affB) >= 4)) {
+            world.dailyNews.collectEvent('social', summary, 4, [agentA.name, agentB.name]);
+        }
         const lines = dialogue.lines;
         if (lines.length) {
             this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue:lines, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.id, agentBId:agentB.id });
@@ -1389,6 +1427,9 @@ ${pN.name}，${pN.age}歲，${pN.job}。
 ${pN.thought ? `你最近在想：${pN.thought}` : ''}
 ${this._buildRelContext(relNpc, player.name)}
 ${memNpc.length ? `你記得關於${player.name}的事：${memNpc.map(m=>m.content).join('；')}` : `你跟${player.name}還不太熟。`}
+
+【小鎮經濟】
+${this._buildEconomicContext(world)}
 
 【對話記錄】
 ${recentChat || '（剛開始聊）'}
@@ -2312,6 +2353,7 @@ class EventSystem {
         Object.values(world.agents).forEach(o => {
             if(o.agentId!==agent.agentId) o.memory.add(world.tickCount,world.clock.timeStr,'immigration',`新居民${agent.name}到來了！`,5,[agent.name]);
         });
+        if (world.dailyNews) world.dailyNews.collectEvent('lifecycle', `新居民${agent.name}以${job.title}身分來到鎮上！`, 6, [agent.name]);
     }
     _applyEffects(event, world) {
         if (event.effects.conversation_topic) {
@@ -2543,7 +2585,14 @@ class ElectionSystem {
 }
 
 // --- Economy: Stockpile ---
-const DEFAULT_STOCKPILE = { food:200, wood:100, stone:80, metal:30, cloth:40, herbs:20, silver:150, meals:50, tools:10, clothing:15, medicine:5, furniture:5, research_points:0 };
+const DEFAULT_STOCKPILE = { food:200, wood:100, stone:80, metal:30, cloth:40, herbs:20, silver:150, meals:50, tools:10, clothing:15, medicine:5, furniture:5, research_points:0,
+    // New resources (industry + processing)
+    plank:0, hardwood:0, brick:0, marble:0, steel:0, gold:0,
+    // Crop resources
+    wheat:0, rice:0, corn:0, potato:0, cotton:0, flowers:0, mushroom:0, sugarcane:0, tea:0, grapes:0, golden_wheat:0, dragon_fruit:0,
+    // Processed goods
+    bread:0, pastry:0, beer:0, wine:0, perfume:0, fine_tea:0, herbal_tea:0, sugar:0, jam:0, luxury_furniture:0,
+};
 
 class Stockpile {
     constructor() { this.resources = {...DEFAULT_STOCKPILE}; this.history = []; }
@@ -2590,11 +2639,22 @@ const NATURE_GATHERING = {forest:{wood:3},river:{food:2},meadow:{herbs:1,cloth:0
 
 function processDailyProduction(world) {
     const sp = world.stockpile;
+    // Check which NPC jobs are covered by the industry system to avoid double production
+    const industryJobs = {};
+    if (world.industry) {
+        for (const [key] of Object.entries(world.industry.industries)) {
+            const def = typeof INDUSTRIES !== 'undefined' ? INDUSTRIES[key] : null;
+            if (def) industryJobs[def.npcJob] = true;
+        }
+    }
     Object.values(world.agents).forEach(agent => {
         if (agent.isPlayer || !agent.job) return;
         const recipe = JOB_PRODUCTION[agent.job.key]; if (!recipe) return;
+        // If this job's production is handled by industry system, reduce to 30% (NPC still does ancillary work)
+        const isIndustryHandled = industryJobs[agent.job.key];
         const skill = agent.skills.get(recipe.skill);
         let eff = 0.5 + ((skill?skill.level:0)/20)*2.0;
+        if (isIndustryHandled) eff *= 0.3;
         if (agent.job.key === 'farmer') { eff *= SEASON_FARM_MOD[world.clock.season] || 1; eff *= 1 + (world.news?world.news.getModifier('farm_bonus',0):0); }
         if (agent.job.key === 'miner') eff *= 1 + (world.news?world.news.getModifier('mining_bonus',0):0);
         eff *= 1 + (agent.mood - 50)/500;
@@ -2666,6 +2726,7 @@ class BuildingManager {
             this.projects=this.projects.filter(x=>x!==p); this.completed.push(p);
             Object.entries(p.effects).forEach(([k,v])=>{ this.activeEffects[k]=(this.activeEffects[k]||0)+(typeof v==='number'?v:0); if(typeof v!=='number') this.activeEffects[k]=v; });
             world.logMessage('building',`建造完成：${p.name}！`);
+            if (world.dailyNews) world.dailyNews.collectEvent('building', `${p.name}建造完成了！`, 6);
             Object.values(world.agents).forEach(a=>{ a.mood=Math.min(100,a.mood+5); });
         });
     }
@@ -2674,7 +2735,11 @@ class BuildingManager {
 }
 
 // --- Economy: Trade ---
-const BASE_PRICES = {food:1,wood:1.5,stone:2,metal:4,cloth:3,herbs:3.5,meals:2.5,tools:8,clothing:6,medicine:10,furniture:7};
+const BASE_PRICES = {food:1,wood:1.5,stone:2,metal:4,cloth:3,herbs:3.5,meals:2.5,tools:8,clothing:6,medicine:10,furniture:7,
+    plank:3,hardwood:5,brick:5,marble:8,steel:10,gold:15,
+    wheat:2,rice:3,corn:2,potato:1,cotton:4,flowers:3,mushroom:4,sugarcane:3,tea:8,grapes:6,golden_wheat:15,dragon_fruit:20,
+    bread:4,pastry:8,beer:5,wine:15,perfume:20,fine_tea:18,herbal_tea:10,sugar:5,jam:10,luxury_furniture:25,
+};
 const MERCHANT_TYPES = [
     {names:['張商人 (Zhang the Trader)','老趙商隊 (Old Zhao\'s Caravan)'],specialty:'general',sells:['food','cloth','tools','wood'],buys:['meals','furniture','clothing']},
     {names:['礦商老李 (Li the Ore Dealer)'],specialty:'metals',sells:['metal','tools','stone'],buys:['food','meals']},
@@ -3510,6 +3575,7 @@ class LifecycleSystem {
             about: npc.name, content: `${npc.name}去世了...願他安息。`,
             source: '鎮民', spreadCount: 0, tickCreated: world.tickCount, isTrue: true
         });
+        if (world.dailyNews) world.dailyNews.collectEvent('lifecycle', `${npc.name}（${npc.age}歲）因${cause}離世了。${epitaph}`, 10, [npc.name]);
 
         // Remove from factions
         if (world.factions) {
@@ -3517,6 +3583,9 @@ class LifecycleSystem {
                 faction.removeMember(npc.agentId);
             }
         }
+
+        // Remove from factories
+        if (world.processing) world.processing.removeWorker(npc.agentId);
 
         // Remove the agent
         world.removeAgent(npc.agentId);
@@ -3616,6 +3685,7 @@ class LifecycleSystem {
             about: name, content: `${parentA.name}和${parentB.name}生了個${gender==='male'?'男':'女'}孩，取名${name}！`,
             source: '鎮民', spreadCount: 0, tickCreated: world.tickCount, isTrue: true
         });
+        if (world.dailyNews) world.dailyNews.collectEvent('lifecycle', `${parentA.name}和${parentB.name}的孩子${name}出生了！`, 9, [parentA.name, parentB.name, name]);
     }
 
     _generateEpitaph(npc) {
@@ -3701,6 +3771,7 @@ class ExplorationSystem {
                 this.discoveredZones[zone.id] = { discovered: true, timesExplored: 0, lastExploredTick: 0 };
                 world.logMessage('exploration', `🗺️ 發現了新的探索區域：${zone.icon} ${zone.name}！${zone.description}`);
                 world.events.conversationTopics.push(`新發現的${zone.name}`);
+                if (world.dailyNews) world.dailyNews.collectEvent('exploration', `發現了新的探索區域：${zone.name}！`, 7);
             }
         }
     }
@@ -3808,6 +3879,7 @@ class ExplorationSystem {
             expedition.result = event;
 
             world.logMessage('exploration', resultMsg, agents.map(a => a.name).join('、'));
+            if (world.dailyNews) world.dailyNews.collectEvent('exploration', resultMsg, isSuccess ? 7 : 5, agents.map(a => a.name));
             this.expeditionLog.push({
                 ...expedition, completedTick: world.tickCount,
                 success: isSuccess, event: event,
@@ -3852,6 +3924,12 @@ class World {
         this.festivals = new FestivalSystem();
         this.lifecycle = new LifecycleSystem();
         this.exploration = new ExplorationSystem();
+        // v3 systems
+        this.industry = new IndustryManager();
+        this.farm = new FarmSystem();
+        this.processing = new ProcessingSystem();
+        this.dailyNews = new DailyNewsEngine();
+        this.npcEvents = new NPCEventSystem();
     }
     addAgent(agent) { this.agents[agent.agentId] = agent; }
     removeAgent(id) { delete this.agents[id]; }
@@ -3873,6 +3951,7 @@ class World {
                 if (event.effects.mood_all != null) {
                     Object.values(this.agents).forEach(a => { a.mood = Math.max(-100, Math.min(100, a.mood + event.effects.mood_all)); });
                 }
+                if (this.dailyNews) this.dailyNews.collectEvent('event', `${event.name}：${event.description}`, event.severity === 'critical' ? 10 : event.severity === 'major' ? 8 : 5);
             }
             // Relationship progression (dating, marriage, breakup, etc.)
             this._processRelationships();
@@ -3889,12 +3968,20 @@ class World {
             const electionEvent = this.election.dailyUpdate(this);
             if (electionEvent) {
                 this.logMessage('event', `[${electionEvent.severity.toUpperCase()}] ${electionEvent.name}: ${electionEvent.description}`);
+                if (this.dailyNews) this.dailyNews.collectEvent('politics', `${electionEvent.name}：${electionEvent.description}`, 8);
             }
             // New systems daily updates
             this.factions.dailyUpdate(this);
             this.festivals.dailyUpdate(this);
             this.lifecycle.dailyUpdate(this);
             this.exploration.dailyUpdate(this);
+            // v3 systems daily updates
+            this.industry.dailyUpdate(this);
+            this.farm.dailyUpdate(this);
+            this.processing.dailyUpdate(this);
+            this.npcEvents.dailyUpdate(this);
+            // AI Daily News (async, fire-and-forget)
+            this.dailyNews.generateNewspaper(this).catch(e => console.warn('[DailyNews] Error:', e));
         }
         Object.values(this.agents).forEach(agent => {
             if (agent.currentLocation === 'exploration') return; // Skip agents on expedition
@@ -3922,6 +4009,11 @@ class World {
             festivals: this.festivals.toDict(),
             lifecycle: this.lifecycle.toDict(),
             exploration: this.exploration.toDict(),
+            industry: this.industry.toDict(),
+            farm: this.farm.toDict(),
+            processing: this.processing.toDict(),
+            dailyNews: this.dailyNews.toDict(),
+            npcEvents: this.npcEvents.toDict(),
         };
     }
     reset(seed = null) {
@@ -3938,6 +4030,11 @@ class World {
         this.festivals = new FestivalSystem();
         this.lifecycle = new LifecycleSystem();
         this.exploration = new ExplorationSystem();
+        this.industry = new IndustryManager();
+        this.farm = new FarmSystem();
+        this.processing = new ProcessingSystem();
+        this.dailyNews = new DailyNewsEngine();
+        this.npcEvents = new NPCEventSystem();
         this.townMap = generateRandomTown(seed);
         this._loadDefaultResidents();
         const player = new PlayerAgent();
@@ -3986,6 +4083,7 @@ class World {
                         agent.mood = Math.min(100, agent.mood + 20);
                         other.mood = Math.min(100, other.mood + 20);
                         this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}和${other.name}在一起了！`, source:'鎮民', spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+                        if (this.dailyNews) this.dailyNews.collectEvent('relationship', `${agent.name}和${other.name}開始交往了！`, 7, [agent.name, other.name]);
                     }
                 }
 
@@ -4008,6 +4106,7 @@ class World {
                             }
                         });
                         this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}和${other.name}結婚了！婚禮好浪漫！`, source:'鎮民', spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+                        if (this.dailyNews) this.dailyNews.collectEvent('relationship', `${agent.name}和${other.name}結婚了！全鎮舉辦了盛大的婚禮！`, 10, [agent.name, other.name]);
                     }
                 }
 
@@ -4029,6 +4128,7 @@ class World {
                             agent.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `我背著${other.name}和${third.name}在一起了⋯⋯我知道這不對。`, 9, [other.name, third.name]);
                             third.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `我和${agent.name}開始了秘密關係。`, 8, [agent.name]);
                             this.gossipNetwork.activeGossip.push({ about:agent.name, content:`有人看到${agent.name}和${third.name}偷偷在一起⋯⋯`, source:'鎮民', spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+                            if (this.dailyNews) this.dailyNews.collectEvent('drama', `有人看到${agent.name}和${third.name}偷偷在一起⋯⋯`, 8, [agent.name, third.name]);
                             break; // Only one affair at a time
                         }
                     }
@@ -4060,6 +4160,9 @@ class World {
                         agent.mood = Math.max(-100, agent.mood - 30);
                         other.mood = Math.max(-100, other.mood - 15);
                         this.gossipNetwork.activeGossip.push({ about:other.name, content:`${other.name}劈腿被${agent.name}發現了！兩人${action}了！`, source:'鎮民', spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+                        if (this.dailyNews) this.dailyNews.collectEvent('drama', `${other.name}劈腿被${agent.name}發現！兩人${action}了！`, 10, [agent.name, other.name, thirdName]);
+                        // Trigger NPC event chain for cheating discovery
+                        if (this.npcEvents && thirdParty) this.npcEvents.handleCheatingDiscovery(this, other, agent, thirdParty);
                     }
                 }
 
@@ -4076,6 +4179,7 @@ class World {
                         agent.mood = Math.max(-100, agent.mood - 15);
                         other.mood = Math.max(-100, other.mood - 15);
                         this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}和${other.name}分手了⋯⋯`, source:'鎮民', spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+                        if (this.dailyNews) this.dailyNews.collectEvent('relationship', `${agent.name}和${other.name}分手了⋯⋯`, 6, [agent.name, other.name]);
                     }
                 }
 
@@ -4097,6 +4201,7 @@ class World {
                             }
                         });
                         this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}和${other.name}離婚了⋯⋯好可惜。`, source:'鎮民', spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+                        if (this.dailyNews) this.dailyNews.collectEvent('drama', `${agent.name}和${other.name}離婚了⋯⋯全鎮不勝唏噓。`, 9, [agent.name, other.name]);
                     }
                 }
             }
@@ -4180,6 +4285,11 @@ class World {
             festivals: this.festivals.toDict(),
             lifecycle: this.lifecycle.toDict(),
             exploration: this.exploration.toDict(),
+            industry: this.industry.serialize(),
+            farm: this.farm.serialize(),
+            processing: this.processing.serialize(),
+            dailyNews: this.dailyNews.serialize(),
+            npcEvents: this.npcEvents.serialize(),
         };
     }
 
@@ -4357,6 +4467,18 @@ class World {
                 this.exploration.expeditionLog = data.exploration.expeditionLog || [];
                 this.exploration._counter = data.exploration._counter || 0;
             }
+
+            // v3 systems
+            this.industry = new IndustryManager();
+            if (data.industry) this.industry.loadFrom(data.industry);
+            this.farm = new FarmSystem();
+            if (data.farm) this.farm.loadFrom(data.farm);
+            this.processing = new ProcessingSystem();
+            if (data.processing) this.processing.loadFrom(data.processing);
+            this.dailyNews = new DailyNewsEngine();
+            if (data.dailyNews) this.dailyNews.loadFrom(data.dailyNews);
+            this.npcEvents = new NPCEventSystem();
+            if (data.npcEvents) this.npcEvents.loadFrom(data.npcEvents);
 
             this.logMessage('system', '遊戲讀取成功！');
             return true;

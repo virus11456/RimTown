@@ -1668,6 +1668,184 @@ class PixelTileMap {
         }
     }
 
+    // Draw farm plot overlays near the farm building
+    _drawFarmOverlay(ctx, farmData) {
+        const farmZone = this.buildingZones['farm'] || this.natureZones['farm'];
+        if (!farmZone) return;
+        const plots = farmData.plots || [];
+        if (plots.length === 0) return;
+
+        const startX = (farmZone.x - 3) * TILE;
+        const startY = (farmZone.y + farmZone.h + 1) * TILE;
+        const plotSize = 12;
+        const cols = 4;
+
+        for (let i = 0; i < plots.length; i++) {
+            const plot = plots[i];
+            const col = i % cols;
+            const row = Math.floor(i / cols);
+            const px = startX + col * (plotSize + 2);
+            const py = startY + row * (plotSize + 2);
+
+            // Background soil
+            ctx.fillStyle = plot.state === 'empty' ? '#8B7355' :
+                            plot.state === 'tilled' ? '#6B4226' :
+                            plot.state === 'withered' ? '#5a3a2a' : '#5a3a20';
+            ctx.fillRect(px, py, plotSize, plotSize);
+
+            // Crop visual
+            if (plot.state === 'growing') {
+                const progress = plot.growthProgress || 0;
+                const h = Math.max(2, Math.round(progress / 100 * 8));
+                ctx.fillStyle = '#4caf50';
+                ctx.fillRect(px + 2, py + plotSize - h, 3, h);
+                ctx.fillRect(px + 7, py + plotSize - h, 3, h);
+                // Water indicator
+                if (plot.waterLevel < 40) {
+                    ctx.fillStyle = 'rgba(255,100,100,0.6)';
+                    ctx.fillRect(px, py, 2, 2);
+                }
+            } else if (plot.state === 'ready') {
+                // Mature crop - golden
+                ctx.fillStyle = '#ffd700';
+                ctx.fillRect(px + 1, py + 2, 4, 8);
+                ctx.fillRect(px + 7, py + 2, 4, 8);
+                // Pulse effect
+                if (this.animFrame % 40 < 20) {
+                    ctx.fillStyle = 'rgba(255,215,0,0.3)';
+                    ctx.fillRect(px - 1, py - 1, plotSize + 2, plotSize + 2);
+                }
+            } else if (plot.state === 'withered') {
+                ctx.fillStyle = '#8B4513';
+                ctx.fillRect(px + 3, py + 4, 2, 6);
+                ctx.fillRect(px + 8, py + 5, 2, 5);
+            }
+
+            // Border
+            ctx.strokeStyle = plot.state === 'ready' ? '#ffd700' : 'rgba(139,115,85,0.5)';
+            ctx.lineWidth = 0.5;
+            ctx.strokeRect(px, py, plotSize, plotSize);
+        }
+
+        // Farm label
+        ctx.font = '6px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        const labelX = startX + (cols * (plotSize + 2)) / 2;
+        const labelY = startY - 3;
+        ctx.fillRect(labelX - 12, labelY - 5, 24, 7);
+        ctx.fillStyle = '#90ee90';
+        ctx.fillText('🌾農場', labelX, labelY);
+    }
+
+    // Draw factory building icons
+    _drawFactoryOverlay(ctx, processingData) {
+        const factories = processingData.builtFactories || {};
+        const keys = Object.keys(factories);
+        if (keys.length === 0) return;
+
+        // Place factories near workshop
+        const baseZone = this.buildingZones['workshop'] || this.buildingZones['town_square'];
+        if (!baseZone) return;
+
+        let offsetIdx = 0;
+        const placements = [
+            { dx: -4, dy: -3 }, { dx: -4, dy: 1 }, { dx: 9, dy: -3 }, { dx: 9, dy: 1 },
+            { dx: -4, dy: 5 }, { dx: 9, dy: 5 }, { dx: -4, dy: -7 },
+        ];
+
+        for (const key of keys) {
+            const factory = factories[key];
+            const def = typeof FACTORIES !== 'undefined' ? FACTORIES[key] : null;
+            if (!def) continue;
+            const p = placements[offsetIdx % placements.length];
+            const fx = (baseZone.x + p.dx) * TILE;
+            const fy = (baseZone.y + p.dy) * TILE;
+
+            // Building body
+            if (factory.status === 'building') {
+                ctx.fillStyle = 'rgba(160,120,80,0.6)';
+                ctx.fillRect(fx, fy, 24, 18);
+                ctx.strokeStyle = '#aaa';
+                ctx.setLineDash([2, 2]);
+                ctx.strokeRect(fx, fy, 24, 18);
+                ctx.setLineDash([]);
+                // Progress bar
+                const pct = factory.buildProgress / factory.buildRequired;
+                ctx.fillStyle = '#333';
+                ctx.fillRect(fx + 2, fy + 14, 20, 3);
+                ctx.fillStyle = '#4caf50';
+                ctx.fillRect(fx + 2, fy + 14, Math.round(20 * pct), 3);
+            } else {
+                // Active factory
+                ctx.fillStyle = '#7a6040';
+                ctx.fillRect(fx, fy + 4, 24, 14);
+                ctx.fillStyle = '#a07050';
+                ctx.fillRect(fx - 1, fy + 2, 26, 4); // Roof
+                // Chimney
+                ctx.fillStyle = '#666';
+                ctx.fillRect(fx + 18, fy - 2, 4, 6);
+                // Door
+                ctx.fillStyle = '#4a3020';
+                ctx.fillRect(fx + 9, fy + 12, 6, 6);
+                // Window
+                ctx.fillStyle = factory.recipe ? '#ffeb3b' : '#555';
+                ctx.fillRect(fx + 3, fy + 7, 4, 4);
+            }
+
+            // Label
+            ctx.font = '6px monospace';
+            ctx.textAlign = 'center';
+            const lx = fx + 12;
+            const ly = fy - 2;
+            const label = `${def.icon}${def.name}`;
+            const tw = ctx.measureText(label).width;
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(lx - tw / 2 - 2, ly - 5, tw + 4, 7);
+            ctx.fillStyle = factory.status === 'active' ? '#ffd700' : '#aaa';
+            ctx.fillText(label, lx, ly);
+
+            offsetIdx++;
+        }
+    }
+
+    // Draw industry level badges
+    _drawIndustryBadges(ctx, industryData) {
+        const INDUSTRY_LOCATIONS = {
+            lumber: 'workshop',
+            quarry: 'workshop',
+            farming: 'farm',
+            mining: 'workshop',
+        };
+        const industries = industryData.industries || {};
+        let badgeIdx = 0;
+        for (const [key, ind] of Object.entries(industries)) {
+            const locKey = INDUSTRY_LOCATIONS[key] || 'town_square';
+            const zone = this.buildingZones[locKey] || this.natureZones[locKey];
+            if (!zone) continue;
+            const def = typeof INDUSTRIES !== 'undefined' ? INDUSTRIES[key] : null;
+            if (!def) continue;
+
+            const bx = zone.x * TILE - 2 + badgeIdx * 28;
+            const by = (zone.y - 1) * TILE - 4;
+
+            // Badge background
+            ctx.fillStyle = 'rgba(0,0,0,0.75)';
+            ctx.fillRect(bx, by, 26, 10);
+            ctx.strokeStyle = ind.level >= 4 ? '#ffd700' : ind.level >= 2 ? '#4fc3f7' : '#888';
+            ctx.lineWidth = 0.5;
+            ctx.strokeRect(bx, by, 26, 10);
+
+            // Text
+            ctx.font = '6px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#fff';
+            ctx.fillText(`${def.icon}Lv${ind.level}`, bx + 2, by + 7);
+
+            badgeIdx++;
+        }
+    }
+
     // Update agent positions (smooth interpolation)
     // Add a speech bubble for NPC conversation on the map
     addConversationBubble(agentAId, agentBId, agentAName, agentBName, textA, textB) {
@@ -2121,7 +2299,7 @@ class PixelTileMap {
     }
 
     // Main render
-    render(agents, selectedAgent, playerLoc, completedBuildings) {
+    render(agents, selectedAgent, playerLoc, completedBuildings, extraData) {
         // Check if canvas needs resizing (handles window resize, DPR changes)
         this._checkResize();
         const ctx = this.ctx;
@@ -2162,6 +2340,19 @@ class PixelTileMap {
         // Draw completed buildings on the map
         if (completedBuildings && completedBuildings.length) {
             this._drawCompletedBuildings(ctx, completedBuildings);
+        }
+
+        // Draw farm plots overlay near farm location
+        if (extraData?.farm?.plots?.length > 0) {
+            this._drawFarmOverlay(ctx, extraData.farm);
+        }
+        // Draw factory icons near workshop/tavern
+        if (extraData?.processing?.builtFactories) {
+            this._drawFactoryOverlay(ctx, extraData.processing);
+        }
+        // Draw industry level badges on relevant buildings
+        if (extraData?.industry?.industries) {
+            this._drawIndustryBadges(ctx, extraData.industry);
         }
 
         // Highlight player's current location zone

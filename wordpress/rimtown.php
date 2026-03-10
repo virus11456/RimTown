@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 2.4.1
+ * Version: 3.0.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '2.4.1');
+define('RIMTOWN_VERSION', '3.0.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -995,10 +995,51 @@ function rimtown_enqueue_assets() {
         RIMTOWN_VERSION
     );
 
+    // v3 system modules (must load before simulation.js)
+    wp_enqueue_script(
+        'rimtown-industry',
+        RIMTOWN_URL . 'industry.js',
+        array(),
+        RIMTOWN_VERSION,
+        true
+    );
+
+    wp_enqueue_script(
+        'rimtown-farm',
+        RIMTOWN_URL . 'farm.js',
+        array(),
+        RIMTOWN_VERSION,
+        true
+    );
+
+    wp_enqueue_script(
+        'rimtown-processing',
+        RIMTOWN_URL . 'processing.js',
+        array(),
+        RIMTOWN_VERSION,
+        true
+    );
+
+    wp_enqueue_script(
+        'rimtown-daily-news',
+        RIMTOWN_URL . 'daily-news.js',
+        array(),
+        RIMTOWN_VERSION,
+        true
+    );
+
+    wp_enqueue_script(
+        'rimtown-npc-events',
+        RIMTOWN_URL . 'npc-events.js',
+        array(),
+        RIMTOWN_VERSION,
+        true
+    );
+
     wp_enqueue_script(
         'rimtown-simulation',
         RIMTOWN_URL . 'simulation.js',
-        array(),
+        array('rimtown-industry', 'rimtown-farm', 'rimtown-processing', 'rimtown-daily-news', 'rimtown-npc-events'),
         RIMTOWN_VERSION,
         true
     );
