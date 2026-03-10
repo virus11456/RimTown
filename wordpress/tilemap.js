@@ -239,6 +239,7 @@ class PixelTileMap {
         this._lastWaterTick = 0;
         this.onClick = null;
         this.onAgentClick = null;
+        this.chatTarget = null; // currently active chat target agent ID
         // Ambient particles
         this._particles = [];
         this._particleTimer = 0;
@@ -422,8 +423,9 @@ class PixelTileMap {
         // Check if an agent was tapped
         let closestAgent = null;
         let closestDist = Infinity;
-        // Scale hit area with zoom — easier to tap when zoomed out
-        const hitSize = Math.max(16, 24 / this.zoom);
+        // When already chatting, use smaller hit area so location clicks are easier
+        const baseHitSize = Math.max(16, 24 / this.zoom);
+        const hitSize = this.chatTarget ? Math.min(baseHitSize, 12) : baseHitSize;
         for (const [aid, pos] of Object.entries(this.agentPositions)) {
             if (aid === 'player') continue;
             const dx = Math.abs(px - pos.x);
@@ -1682,6 +1684,7 @@ class PixelTileMap {
     }
 
     updateAgents(agents, locations, chatTarget) {
+        this.chatTarget = chatTarget || null;
         const WALK_SPEED = 0.6; // pixels per frame — slower for easier clicking
         for (const [aid, agent] of Object.entries(agents)) {
             const locCenter = this.getLocationCenter(agent.current_location);

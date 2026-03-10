@@ -1736,6 +1736,15 @@ class RimTownApp {
     playerMoveTo(locationId) {
         const player = this.world.agents['player'];
         if (player && player.moveTo(locationId, this.world)) {
+            // Clear chat target when moving to a different location
+            if (this.chatTarget && player.currentLocation !== this.state?.agents?.[this.chatTarget]?.current_location) {
+                this.chatTarget = null;
+                this.selectedAgent = null;
+                if (this.activeTab === 'chat') {
+                    this.activeTab = 'residents';
+                    document.querySelectorAll('.rt-sidebar-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === 'residents'));
+                }
+            }
             this.state = this.world.getState();
             this.render();
         }
