@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 3.0.3
+ * Version: 3.1.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '3.0.3');
+define('RIMTOWN_VERSION', '3.1.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -549,7 +549,71 @@ function rimtown_enqueue_assets() {
         RIMTOWN_VERSION
     );
 
-    // Quest system must load before simulation
+    // v3 system modules (must load before simulation.js)
+    wp_enqueue_script(
+        'rimtown-industry',
+        RIMTOWN_URL . 'industry.js',
+        array(),
+        RIMTOWN_VERSION,
+        true
+    );
+
+    wp_enqueue_script(
+        'rimtown-farm',
+        RIMTOWN_URL . 'farm.js',
+        array(),
+        RIMTOWN_VERSION,
+        true
+    );
+
+    wp_enqueue_script(
+        'rimtown-processing',
+        RIMTOWN_URL . 'processing.js',
+        array(),
+        RIMTOWN_VERSION,
+        true
+    );
+
+    wp_enqueue_script(
+        'rimtown-daily-news',
+        RIMTOWN_URL . 'daily-news.js',
+        array(),
+        RIMTOWN_VERSION,
+        true
+    );
+
+    wp_enqueue_script(
+        'rimtown-npc-events',
+        RIMTOWN_URL . 'npc-events.js',
+        array(),
+        RIMTOWN_VERSION,
+        true
+    );
+
+    wp_enqueue_script(
+        'rimtown-npc-quests',
+        RIMTOWN_URL . 'npc-quests.js',
+        array(),
+        RIMTOWN_VERSION,
+        true
+    );
+
+    wp_enqueue_script(
+        'rimtown-custom-npc',
+        RIMTOWN_URL . 'custom-npc.js',
+        array(),
+        RIMTOWN_VERSION,
+        true
+    );
+
+    wp_enqueue_script(
+        'rimtown-prosperity',
+        RIMTOWN_URL . 'prosperity.js',
+        array(),
+        RIMTOWN_VERSION,
+        true
+    );
+
     wp_enqueue_script(
         'rimtown-quest',
         RIMTOWN_URL . 'quest-system.js',
@@ -561,7 +625,7 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-simulation',
         RIMTOWN_URL . 'simulation.js',
-        array('rimtown-quest'),
+        array('rimtown-industry', 'rimtown-farm', 'rimtown-processing', 'rimtown-daily-news', 'rimtown-npc-events', 'rimtown-npc-quests', 'rimtown-custom-npc', 'rimtown-prosperity', 'rimtown-quest'),
         RIMTOWN_VERSION,
         true
     );
@@ -638,6 +702,21 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '3.1.0',
+            'date'    => '2026-03-10',
+            'changes' => array(
+                '多路線劇情系統：NPC 對話與事件可分支為不同故事線',
+                '繁榮度系統（ProsperityEngine）：城鎮整體發展指標',
+                'NPC 個人故事線（NPCQuestSystem）：每位 NPC 專屬任務鏈，透過好感度解鎖',
+                '自訂 NPC 系統（CustomNPCSystem）：玩家可自行建立新 NPC',
+                '多結局系統（MultiEndingSystem）：根據玩家選擇達成不同結局',
+                '修復 .hidden CSS 類別僅作用於 modal 的問題',
+                '修復手機版 header 在桌面版也顯示的 CSS 問題',
+                '版號同步：WordPress / Chrome Extension / app.js 統一為 3.1.0',
+                '補齊所有 v3 模組在 Chrome Extension 的 enqueue 載入',
+            ),
+        ),
         array(
             'version' => '3.0.3',
             'date'    => '2026-03-10',

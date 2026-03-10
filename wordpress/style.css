@@ -1052,6 +1052,12 @@ body.rimtown-page .wp-block-post-title {
     z-index: 100000;
 }
 .modal.hidden { display: none; }
+.hidden { display: none !important; }
+
+/* Mobile header: hidden on desktop, shown only at 768px */
+.mobile-header {
+    display: none;
+}
 .modal-content {
     background: var(--bg-secondary);
     border: 1px solid var(--border);
@@ -1549,13 +1555,76 @@ body.rimtown-page .wp-block-post-title {
         height: 100dvh !important;
     }
 
-    /* Header: single compact row */
+    /* Desktop header hidden on mobile, show mobile header */
     .header {
-        padding: 2px 6px;
-        min-height: auto;
-        flex-wrap: nowrap;
-        gap: 4px;
+        display: none !important;
+    }
+    .mobile-header {
+        display: block;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border);
         flex-shrink: 0;
+    }
+    .mobile-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 4px 10px;
+        min-height: 36px;
+    }
+    .mobile-title {
+        font-size: 0.9rem;
+        font-weight: bold;
+        color: var(--accent);
+    }
+    .mobile-clock {
+        font-size: 0.75rem;
+        color: var(--warning);
+        font-family: monospace;
+    }
+    .mobile-header-actions {
+        display: flex;
+        gap: 4px;
+    }
+    .mobile-ctrl-btn {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        cursor: pointer;
+    }
+    .mobile-menu-dropdown {
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border);
+        padding: 6px 10px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        align-items: center;
+    }
+    .mobile-menu-dropdown.hidden {
+        display: none !important;
+    }
+    .mobile-menu-dropdown button {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        cursor: pointer;
+    }
+    .mobile-menu-speed {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+    }
+    .mobile-menu-ai {
+        font-size: 0.7rem;
     }
     .header h1 {
         font-size: 0.8rem;
