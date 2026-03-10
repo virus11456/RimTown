@@ -2122,7 +2122,7 @@ class RimTownApp {
             if (id !== 'player') nameToId[a.name] = id;
         }
 
-        let nearbyHtml = `<div class="chat-location">你在：<strong>${playerLoc.replace(/_/g,' ')}</strong></div><div class="chat-nearby">`;
+        let nearbyHtml = `<div class="chat-location">你在：<strong>${this._locationLabel(playerLoc)}</strong></div><div class="chat-nearby">`;
         if (nearbyNpcs.length) {
             nearbyHtml += '<div class="nearby-label">附近：</div><div class="nearby-list">';
             nearbyNpcs.forEach(npc => {
@@ -2464,11 +2464,24 @@ class RimTownApp {
         const playerAgent = this.state.agents['player'];
         if (playerAgent) {
             const isSelected = this.selectedAgent === 'player';
+            const playerJobTitle = playerAgent.job?.title || '無業';
+            const playerIsJobless = !playerAgent.job?.key;
             html += `<div class="resident-card player-card ${isSelected?'selected':''}" data-action="select-agent" data-val="player">
                 <div class="resident-header">
                     <span class="resident-name"><span class="mood-indicator mood-${playerAgent.mood_description}"></span>⭐ ${playerAgent.name}（你）</span>
-                    <span class="resident-job">${playerAgent.job?.title||'無業'}</span></div>
-                <div class="resident-status"><span>@ ${(playerAgent.current_location||'').replace(/_/g,' ')}</span><span>${playerAgent.mood_label||playerAgent.mood_description} (${playerAgent.mood})</span></div></div>`;
+                    <span class="resident-job">${playerJobTitle}</span></div>
+                <div class="resident-status"><span>@ ${this._locationLabel(playerAgent.current_location)}</span><span>${playerAgent.mood_label||playerAgent.mood_description} (${playerAgent.mood})</span></div>`;
+            if (playerIsJobless) {
+                html += `<div style="margin-top:6px;padding:6px 8px;background:rgba(255,200,50,0.1);border:1px solid rgba(255,200,50,0.3);border-radius:6px;font-size:0.75rem;color:#ffc832">💡 你目前無業！點擊下方職業按鈕選擇工作：</div>`;
+                html += `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">`;
+                const jobDefs = typeof JOB_DEFINITIONS !== 'undefined' ? JOB_DEFINITIONS : {};
+                for (const [k, v] of Object.entries(jobDefs)) {
+                    if (k === 'mayor') continue;
+                    html += `<button class="job-btn" data-action="player-choose-job" data-val="${k}" style="font-size:0.7rem;padding:3px 8px">${v.title}</button>`;
+                }
+                html += `</div>`;
+            }
+            html += `</div>`;
         }
         for (const [aid, agent] of Object.entries(this.state.agents)) {
             if (aid === 'player') continue;
@@ -2480,7 +2493,7 @@ class RimTownApp {
                 <div class="resident-header">
                     <span class="resident-name"><span class="mood-indicator mood-${agent.mood_description}"></span>${genderIcon} ${agent.name}${sameLoc?'<span class="nearby-badge">附近</span>':''}</span>
                     <span class="resident-job">${agent.job?.title||'無業'}</span></div>
-                <div class="resident-status"><span>${agent.activity_label||agent.activity} @ ${agent.current_location.replace(/_/g,' ')}</span><span>${agent.mood_label||agent.mood_description} (${agent.mood})</span></div>
+                <div class="resident-status"><span>${agent.activity_label||agent.activity} @ ${this._locationLabel(agent.current_location)}</span><span>${agent.mood_label||agent.mood_description} (${agent.mood})</span></div>
                 ${agent.current_thought?`<div style="font-size:0.7rem;color:#aaa;margin-top:4px;font-style:italic">「${agent.current_thought}」</div>`:''}
                 <button class="chat-with-btn" data-action="start-chat" data-val="${aid}">${sameLoc?'對話':'前往對話'}</button></div>`;
         }
@@ -2609,7 +2622,7 @@ class RimTownApp {
             npcConvos.slice(0, 8).forEach(c => {
                 html += `<div class="npc-convo-entry" data-action="toggle-convo">
                     <div class="npc-convo-header"><span class="log-time">${c.time}</span><strong>${c.agentA}</strong> &amp; <strong>${c.agentB}</strong>
-                    <span style="font-size:0.6rem;color:var(--text-muted);margin-left:4px">@ ${(c.location||'').replace(/_/g,' ')}</span></div>
+                    <span style="font-size:0.6rem;color:var(--text-muted);margin-left:4px">@ ${this._locationLabel(c.location)}</span></div>
                     <div class="npc-convo-summary">${c.summary}</div>
                     <div class="npc-convo-dialogue" style="display:block">`;
                 (c.dialogue || []).forEach(d => {
@@ -2727,9 +2740,10 @@ class RimTownApp {
             if (modEntries.length) {
                 html += '<div class="news-effects"><span class="news-effects-label">生效中：</span> ';
                 modEntries.forEach(([key, val]) => {
-                    const label = key.replace(/_/g,' ');
+                    const effectLabels = {food_production:'食物產量',mine_output:'礦產產出',trade_prices:'交易價格',construction_speed:'建設速度',mood_bonus:'心情加成',crop_growth:'作物生長',merchant_frequency:'商人頻率'};
+                    const label = effectLabels[key] || key.replace(/_/g,' ');
                     const cls = (typeof val === 'number' && val > 0) ? 'effect-positive' : (typeof val === 'number' && val < 0) ? 'effect-negative' : 'effect-neutral';
-                    const display = typeof val === 'number' ? (val > 0 ? '+' : '') + Math.round(val*100) + '%' : (val ? 'Yes' : 'No');
+                    const display = typeof val === 'number' ? (val > 0 ? '+' : '') + Math.round(val*100) + '%' : (val ? '是' : '否');
                     html += `<span class="news-effect ${cls}">${label}: ${display}</span> `;
                 });
                 html += '</div>';
@@ -3891,6 +3905,22 @@ class RimTownApp {
 
         html += '</div>';
         container.innerHTML = html;
+    }
+
+    _locationLabel(locId) {
+        if (!locId) return '';
+        const labels = {
+            town_hall: '鎮公所', clinic: '診所', workshop: '工坊',
+            farm: '農場', tavern: '酒館', guardpost: '哨站',
+            chapel: '教堂', library: '圖書館', general_store: '雜貨店',
+            quarry: '礦場', town_square: '廣場', park: '公園',
+            well: '水井', residential_north: '北區住宅',
+            residential_south: '南區住宅', residential_east: '東區住宅',
+            exploration: '探險中',
+        };
+        // Try the town map for custom location names
+        if (this.state?.locations?.[locId]?.name) return this.state.locations[locId].name;
+        return labels[locId] || locId.replace(/_/g, ' ');
     }
 
     _escapeHtml(str) {

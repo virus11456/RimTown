@@ -761,15 +761,53 @@ class PlayerAgent extends Agent {
         this.isPlayer = true; this.chatHistory = [];
     }
     update(world) {
+        // Auto-manage player activity based on needs and context
+        this._autoManageActivity(world);
         this.needs.tickDecay(this.activity==='sleeping', this.activity==='eating', this.activity==='socializing', this.activity==='recreation');
+        // Passive recovery: location-based need bonuses
+        if (this.currentLocation === 'tavern') this.needs.hunger = Math.min(100, this.needs.hunger + 0.5);
+        if (['residential_north','residential_south','residential_east'].includes(this.currentLocation)) this.needs.rest = Math.min(100, this.needs.rest + 0.3);
+        if (['town_square','tavern','park','chapel'].includes(this.currentLocation)) this.needs.social = Math.min(100, this.needs.social + 0.2);
+        if (['park','chapel','library'].includes(this.currentLocation)) this.needs.recreation = Math.min(100, this.needs.recreation + 0.2);
+        // Chatting with NPCs recovers social
+        if (this._recentChatTick && world.tickCount - this._recentChatTick < 8) {
+            this.needs.social = Math.min(100, this.needs.social + 1.5);
+        }
         if (this.moodModifier > 0) this.moodModifier = Math.max(0, this.moodModifier - 0.5);
         else if (this.moodModifier < 0) this.moodModifier = Math.min(0, this.moodModifier + 0.5);
         this.mood = Math.max(-100, Math.min(100, 50 + this.personality.moodBase + Math.floor(this.needs.moodContribution) + (this.moodModifier || 0)));
     }
+    _autoManageActivity(world) {
+        const hour = world.clock.hour;
+        // Night: auto-sleep if rest is low
+        if ((hour >= 22 || hour < 6) && this.needs.rest < 80) {
+            this.activity = 'sleeping';
+            return;
+        }
+        // Critical needs auto-recovery
+        if (this.needs.hunger < 20) { this.activity = 'eating'; return; }
+        if (this.needs.rest < 15) { this.activity = 'sleeping'; return; }
+        if (this.needs.social < 20) { this.activity = 'socializing'; return; }
+        if (this.needs.recreation < 15) { this.activity = 'recreation'; return; }
+        // Working during work hours if player has a job
+        if (this.job) {
+            const [ws, we] = this.job.workHours;
+            if (ws <= hour && hour < we) {
+                if (this.needs.hunger < 30 && Math.random() < 0.3) { this.activity = 'eating'; return; }
+                this.activity = 'working';
+                return;
+            }
+        }
+        // Default: keep current activity or wander
+        if (this.activity === 'sleeping' && hour >= 6 && hour < 22) {
+            this.activity = 'wandering';
+        }
+    }
     moveTo(locationId, world) {
         if (world.townMap && !world.townMap.locations[locationId]) return false;
         this.currentLocation = locationId; this.activity = 'wandering';
-        world.logMessage('player_move', `你移動到了${locationId.replace(/_/g,' ')}`, this.name);
+        const locLabels = {town_hall:'鎮公所',clinic:'診所',workshop:'工坊',farm:'農場',tavern:'酒館',guardpost:'哨站',chapel:'教堂',library:'圖書館',general_store:'雜貨店',quarry:'礦場',town_square:'廣場',park:'公園',well:'水井',residential_north:'北區住宅',residential_south:'南區住宅',residential_east:'東區住宅'};
+        world.logMessage('player_move', `你移動到了${locLabels[locationId] || locationId.replace(/_/g,' ')}`, this.name);
         return true;
     }
     toDict() { const d = super.toDict(); d.is_player = true; d.chat_history = this.chatHistory.slice(-10000); return d; }
@@ -1568,6 +1606,7 @@ ${player.name}: ${playerMessage}
         player.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `與${npc.name}交談：${summary}`, 4, [npc.name]);
         player.chatHistory.push({speaker:player.name, target:npc.name, text:playerMessage, time:world.clock.timeStr});
         player.chatHistory.push({speaker:npc.name, target:player.name, text:npcReply, time:world.clock.timeStr});
+        player._recentChatTick = world.tickCount; // Mark for social need recovery
         world.logMessage('player_chat', `${player.name} → ${npc.name}: ${summary}`, player.name, npc.name);
         return { npc_name:npc.name, npc_reply:npcReply, player_message:playerMessage, effects:{affinity_change:affChange,romantic_change:romChange}, summary };
     }
@@ -1834,6 +1873,7 @@ ${player.name}: ${playerMessage}
         player.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `與${npc.name}：${summary}`, 3+Math.abs(affChange), [npc.name]);
         player.chatHistory.push({speaker:player.name, target:npc.name, text:playerMessage, time:world.clock.timeStr});
         player.chatHistory.push({speaker:npc.name, target:player.name, text:npcReply, time:world.clock.timeStr});
+        player._recentChatTick = world.tickCount; // Mark for social need recovery
         world.logMessage('player_chat', summary, player.name, npc.name);
         return { npc_name:npc.name, npc_reply:npcReply, player_message:playerMessage, effects:{affinity_change:affChange,romantic_change:romChange}, summary };
     }
