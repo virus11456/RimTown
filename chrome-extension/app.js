@@ -1577,8 +1577,25 @@ class RimTownApp {
                 case 'settings-logout': this._doLogout(); this.renderSidebar(); break;
                 case 'settings-sync-cloud': this._syncToCloud(); break;
                 case 'settings-save-game': this.saveGame(); break;
-                case 'settings-export': document.getElementById('btn-export')?.click(); break;
-                case 'settings-import': document.getElementById('btn-import')?.click(); break;
+                case 'settings-export': this.exportSave(); break;
+                case 'settings-import': this.importSave(); break;
+                case 'settings-toggle-pause': this.world.paused = !this.world.paused; this.renderSidebar(); break;
+                case 'settings-new-map': {
+                    const name = prompt('為新城鎮命名：', '邊境鎮 ' + (this._getTownList().length + 1));
+                    if (!name) break;
+                    this.archiveChatHistory();
+                    this._saveCurrentTown();
+                    this.world.reset();
+                    if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                    this.currentTownId = this._generateTownId(name);
+                    this._saveCurrentTown(name);
+                    this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
+                    this.state = this.world.getState();
+                    this._generateTileMapLayout();
+                    if (this.tileMap) this.tileMap.agentPositions = {};
+                    this.render();
+                    break;
+                }
                 default: console.log('Unknown action:', action, val);
             }
         });
@@ -2688,8 +2705,20 @@ class RimTownApp {
         const fallbackKey = localStorage.getItem('fallback_groq_key') || '';
         const loggedIn = this.auth.loggedIn;
         const username = this.auth.username;
+        const paused = this.world?.paused;
 
         let html = '';
+
+        // --- Game Control Section ---
+        html += '<div class="econ-section"><h3>🎮 遊戲控制</h3>';
+        html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+            <button class="trade-btn ${paused ? '' : 'btn-accent'}" data-action="settings-toggle-pause">${paused ? '▶️ 繼續' : '⏸ 暫停'}</button>
+        </div>`;
+        html += `<div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="trade-btn" data-action="show-towns">📋 城鎮列表</button>
+            <button class="trade-btn" data-action="settings-new-map">🗺️ 新地圖</button>
+        </div>`;
+        html += '</div>';
 
         // --- Account Section ---
         html += '<div class="econ-section"><h3>👤 帳號</h3>';
@@ -2737,9 +2766,8 @@ class RimTownApp {
         html += '</div>';
 
         // --- Game Settings Section ---
-        html += '<div class="econ-section"><h3>🎮 遊戲設定</h3>';
+        html += '<div class="econ-section"><h3>⚡ 模擬速度</h3>';
         html += `<div class="setting-group" style="margin-bottom:8px">
-            <label style="font-size:0.72rem;color:var(--text-secondary)">模擬速度</label>
             <select id="settings-tab-speed" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
                 <option value="3000"${speed==='3000'?' selected':''}>慢速（3秒）</option>
                 <option value="2000"${speed==='2000'?' selected':''}>正常（2秒）</option>

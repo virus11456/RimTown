@@ -523,32 +523,13 @@ function rimtown_shortcode($atts) {
         <!-- Achievement Toast -->
         <div id="achievement-toast" class="achievement-toast hidden"></div>
 
-        <!-- Header -->
+        <!-- Header (desktop only — compact info bar) -->
         <div class="header">
             <h1>邊境鎮</h1>
             <div class="header-info">
                 <span id="population-count">人口：--</span>
                 <span id="clock-display" class="clock-display">載入中...</span>
                 <span id="terrain-display" class="terrain-display"></span>
-                <div class="controls">
-                    <button class="btn-towns" data-action="show-towns">城鎮列表</button>
-                    <button id="btn-new-game" class="btn-new-game">新地圖</button>
-                    <button id="btn-save" class="btn-save">儲存</button>
-                    <button id="btn-export" class="btn-export" title="匯出存檔">匯出</button>
-                    <button id="btn-import" class="btn-import" title="匯入存檔">匯入</button>
-                    <button id="btn-pause">暫停</button>
-                    <button id="btn-resume" class="active">播放</button>
-                    <div class="speed-controls">
-                        <button class="btn-speed active" data-speed="1">1x</button>
-                        <button class="btn-speed" data-speed="1.5">1.5x</button>
-                        <button class="btn-speed" data-speed="2">2x</button>
-                        <button class="btn-speed" data-speed="3">3x</button>
-                    </div>
-                    <span id="llm-status" class="llm-status" title="AI 狀態">AI:--</span>
-                    <button id="btn-settings" class="btn-settings">設定</button>
-                    <button id="btn-account" class="btn-account" title="帳號">帳號</button>
-                    <span id="version-display" class="version-display">v<?php echo RIMTOWN_VERSION; ?></span>
-                </div>
             </div>
         </div>
 
@@ -558,29 +539,6 @@ function rimtown_shortcode($atts) {
                 <span class="mobile-title">邊境鎮</span>
                 <span id="mobile-population" class="mobile-population">--人</span>
                 <span id="mobile-clock" class="mobile-clock">載入中...</span>
-                <div class="mobile-header-actions">
-                    <button id="mobile-btn-pause" class="mobile-ctrl-btn" title="暫停/播放">⏸</button>
-                    <button id="mobile-btn-menu" class="mobile-ctrl-btn" title="選單">⋯</button>
-                </div>
-            </div>
-            <div id="mobile-menu-dropdown" class="mobile-menu-dropdown hidden">
-                <button data-action="show-towns">城鎮列表</button>
-                <button id="mobile-new-game">新地圖</button>
-                <button id="mobile-save">儲存</button>
-                <button id="mobile-btn-settings">設定</button>
-                <button id="mobile-btn-account">帳號</button>
-                <div class="mobile-menu-speed">
-                    <span>速度</span>
-                    <div class="speed-controls">
-                        <button class="btn-speed active" data-speed="1">1x</button>
-                        <button class="btn-speed" data-speed="1.5">1.5</button>
-                        <button class="btn-speed" data-speed="2">2x</button>
-                        <button class="btn-speed" data-speed="3">3x</button>
-                    </div>
-                </div>
-                <div class="mobile-menu-ai">
-                    <span id="mobile-llm-status" class="llm-status" title="AI 狀態">AI:--</span>
-                </div>
             </div>
         </div>
 
