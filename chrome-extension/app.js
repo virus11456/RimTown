@@ -2237,6 +2237,12 @@ class RimTownApp {
         const popEl = document.getElementById('population-count');
         if (popEl) popEl.textContent = `人口：${agentCount}${travelText}`;
 
+        // Update town-info-bar in residents tab (real-time)
+        const infoClockEl = document.querySelector('.town-info-clock');
+        if (infoClockEl) infoClockEl.textContent = clock.time_str;
+        const infoPopEl = document.querySelector('.town-info-pop');
+        if (infoPopEl) infoPopEl.textContent = `👤 ${agentCount}${travelText}`;
+
         // Update mobile header clock & population
         const mobileClock = document.getElementById('mobile-clock');
         if (mobileClock) {
@@ -2670,6 +2676,17 @@ class RimTownApp {
     renderResidentsList(container) {
         if (!this.state) return;
         let html = '';
+        // Town info bar (moved from header)
+        const clock = this.state.clock || {};
+        const popCount = Object.keys(this.state.agents || {}).length;
+        const travelCount = (this.state.travelling_agents || []).length;
+        const travelText = travelCount > 0 ? `（+${travelCount} 外出）` : '';
+        const townName = this._getCurrentTownName() || '邊境鎮';
+        html += `<div class="town-info-bar">
+            <span class="town-info-name">${townName}</span>
+            <span class="town-info-pop">👤 ${popCount}${travelText}</span>
+            <span class="town-info-clock">${clock.time_str || ''}</span>
+        </div>`;
         // Player card at top
         const playerAgent = this.state.agents['player'];
         if (playerAgent) {

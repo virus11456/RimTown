@@ -60,16 +60,23 @@ body.rimtown-page .wp-block-post-title {
 
 /* Header */
 .header {
+    display: none;
+}
+.town-info-bar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 6px 16px;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border);
-    min-height: 42px;
+    gap: 10px;
+    padding: 6px 10px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-size: 0.78rem;
     flex-wrap: wrap;
-    gap: 4px;
 }
+.town-info-name { color: var(--accent); font-weight: bold; letter-spacing: 1px; }
+.town-info-pop { color: var(--text-secondary); }
+.town-info-clock { color: var(--warning); font-family: monospace; margin-left: auto; }
 
 .header h1 {
     font-size: 1.1rem;
