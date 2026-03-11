@@ -3224,8 +3224,9 @@ class RimTownApp {
         if (prosp) {
             const pColor = prosp.prosperity >= 80 ? '#ffd700' : prosp.prosperity >= 60 ? 'var(--positive)' : prosp.prosperity >= 40 ? 'var(--accent)' : prosp.prosperity >= 20 ? 'var(--text-secondary)' : 'var(--negative)';
             html += `<div class="econ-section" style="padding:8px 12px">`;
+            const popCount = Object.keys(this.state.agents || {}).length;
             html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">`;
-            html += `<span style="font-weight:bold;font-size:0.85rem">🏛️ 繁榮度</span>`;
+            html += `<span style="font-weight:bold;font-size:0.85rem">🏛️ 繁榮度 <span style="font-weight:normal;font-size:0.75rem;color:var(--text-muted)">👤 ${popCount} 人</span></span>`;
             html += `<span style="color:${pColor};font-weight:bold">${prosp.prosperity} — ${prosp.level}</span>`;
             html += `</div>`;
             html += `<div class="progress-bar" style="height:8px;margin-bottom:6px"><div class="progress-fill" style="width:${prosp.prosperity}%;background:${pColor}"></div></div>`;
