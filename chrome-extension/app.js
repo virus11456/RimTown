@@ -3,86 +3,115 @@ const RIMTOWN_APP_VERSION = '3.2.0';
 const ELECTION_POLICIES_LABELS = {economy:'經濟發展',welfare:'社會福利',defense:'軍事防禦',culture:'文化教育',nature:'自然保育',freedom:'個人自由'};
 
 // =====================================================
-// Achievement Definitions
+// Achievement Definitions (99 achievements)
 // =====================================================
 const ACHIEVEMENTS = {
-    // Getting started
+    // === Social (13) ===
     first_chat: { name: '初次對話', desc: '第一次與居民聊天', icon: '💬', category: 'social' },
     chat_10: { name: '話癆', desc: '與居民聊天10次', icon: '🗣️', category: 'social' },
     chat_50: { name: '社交達人', desc: '與居民聊天50次', icon: '🎙️', category: 'social' },
+    chat_100: { name: '聊天之王', desc: '與居民聊天100次', icon: '👄', category: 'social' },
     chat_all_npcs: { name: '全民好友', desc: '與每位居民都聊過天', icon: '🤝', category: 'social' },
-    // Romance
+    high_affinity: { name: '知己', desc: '與任一居民好感度達到80', icon: '🫂', category: 'social' },
+    enemy_made: { name: '結怨', desc: '與任一居民好感度低於-50', icon: '😤', category: 'social' },
+    first_faction: { name: '結黨', desc: '加入第一個社交圈', icon: '👥', category: 'social' },
+    faction_3: { name: '社交蝴蝶', desc: '城鎮出現3個以上派系', icon: '🦋', category: 'social' },
+    faction_drama: { name: '戲劇性', desc: '見證派系衝突', icon: '🎭', category: 'social' },
+    npc_fight: { name: '暴力事件', desc: '目擊 NPC 打架住院', icon: '🤕', category: 'social' },
+    npc_cheating: { name: '八點檔', desc: '目擊劈腿被抓事件', icon: '😱', category: 'social' },
+    npc_breakup: { name: '分手見證人', desc: '目擊一對情侶分手', icon: '💢', category: 'social' },
+    // === Romance (10) ===
     first_crush: { name: '心動', desc: '有人對你產生好感', icon: '💗', category: 'romance' },
     first_dating: { name: '初戀', desc: '開始與某人交往', icon: '💕', category: 'romance' },
     first_marriage: { name: '白頭偕老', desc: '與某人結婚', icon: '💍', category: 'romance' },
     heartbreaker: { name: '渣男/渣女', desc: '與3個以上的人交往過', icon: '💔', category: 'romance' },
-    // Economy
+    npc_wedding: { name: '婚禮祝福', desc: '見證一對NPC結婚', icon: '💒', category: 'romance' },
+    npc_couple_5: { name: '月老', desc: '城鎮中同時有5對情侶', icon: '🏹', category: 'romance' },
+    rejected: { name: '心碎', desc: '求婚被拒絕', icon: '😢', category: 'romance' },
+    flirt_master: { name: '調情高手', desc: '成功調情5次', icon: '😘', category: 'romance' },
+    golden_couple: { name: '模範夫妻', desc: '結婚後好感度維持90以上', icon: '👫', category: 'romance' },
+    // === Economy (24) ===
     first_trade: { name: '商人初體驗', desc: '完成第一筆交易', icon: '💰', category: 'economy' },
+    trade_50: { name: '交易老手', desc: '完成50筆交易', icon: '💳', category: 'economy' },
     rich: { name: '富甲一方', desc: '銀幣超過500', icon: '🤑', category: 'economy' },
+    ultra_rich: { name: '富可敵國', desc: '銀幣超過2000', icon: '💎', category: 'economy' },
     builder: { name: '建設者', desc: '建造第一棟建築', icon: '🏗️', category: 'economy' },
     master_builder: { name: '建築大師', desc: '建造5棟建築', icon: '🏰', category: 'economy' },
     all_buildings: { name: '鎮之完善', desc: '建造所有建築', icon: '🌆', category: 'economy' },
     first_research: { name: '學者', desc: '完成第一項研究', icon: '📚', category: 'economy' },
+    research_5: { name: '博學多才', desc: '完成5項研究', icon: '🎓', category: 'economy' },
     all_research: { name: '科技先驅', desc: '完成所有研究', icon: '🔬', category: 'economy' },
-    // Survival
-    survive_7: { name: '一週生存', desc: '存活7天', icon: '📅', category: 'survival' },
-    survive_30: { name: '月生存者', desc: '存活30天', icon: '🗓️', category: 'survival' },
-    survive_100: { name: '百日英雄', desc: '存活100天', icon: '🏆', category: 'survival' },
-    survive_year: { name: '週年慶', desc: '存活一整年', icon: '🎉', category: 'survival' },
-    repel_raid: { name: '防衛者', desc: '擊退第一次入侵', icon: '⚔️', category: 'survival' },
-    repel_10: { name: '鐵壁防線', desc: '擊退10次入侵', icon: '🛡️', category: 'survival' },
-    // Population
-    pop_15: { name: '小鎮風光', desc: '人口達到15', icon: '🏘️', category: 'town' },
-    pop_20: { name: '繁榮市鎮', desc: '人口達到20', icon: '🌇', category: 'town' },
-    pop_25: { name: '邊境都市', desc: '人口達到25', icon: '🌃', category: 'town' },
-    first_election: { name: '民主初體驗', desc: '參與第一次選舉', icon: '🗳️', category: 'town' },
-    elected_mayor: { name: '當選鎮長', desc: '玩家當選鎮長', icon: '👑', category: 'town' },
-    // Player interaction
-    got_job: { name: '打工仔', desc: '選擇一份工作', icon: '💼', category: 'player' },
-    job_master: { name: '職業達人', desc: '做過3種不同工作', icon: '🎯', category: 'player' },
-    voted: { name: '公民責任', desc: '在選舉中投票', icon: '✅', category: 'player' },
-    proposed: { name: '求婚', desc: '向某人求婚', icon: '💎', category: 'player' },
-    // Special
-    night_owl: { name: '夜貓子', desc: '在深夜（0-4點）仍在活動', icon: '🦉', category: 'special' },
-    gossip_heard: { name: '八卦通', desc: '聽到10則村民對話', icon: '👂', category: 'special' },
-    gossip_50: { name: '偷聽大師', desc: '聽到50則村民對話', icon: '🕵️', category: 'special' },
-    all_seasons: { name: '四季輪轉', desc: '經歷春夏秋冬', icon: '🌸', category: 'special' },
-    multi_town: { name: '開拓者', desc: '擁有3個以上城鎮', icon: '🗺️', category: 'special' },
-    // Factions
-    first_faction: { name: '結黨', desc: '加入第一個社交圈', icon: '👥', category: 'social' },
-    faction_drama: { name: '戲劇性', desc: '見證派系衝突', icon: '🎭', category: 'social' },
-    // Festivals
-    first_festival: { name: '節慶參與', desc: '經歷第一個節日', icon: '🎉', category: 'special' },
-    all_festivals: { name: '四季慶典', desc: '經歷所有四個節日', icon: '🎊', category: 'special' },
-    // Life cycle
-    first_birth: { name: '新生命', desc: '城鎮迎來第一個新生兒', icon: '👶', category: 'town' },
-    first_death: { name: '永別', desc: '失去第一位居民', icon: '⚰️', category: 'town' },
-    // Exploration
-    first_explore: { name: '探險家', desc: '發現第一個探索區域', icon: '🗺️', category: 'survival' },
-    expedition_success: { name: '凱旋歸來', desc: '完成第一次成功探險', icon: '🏆', category: 'survival' },
-    // Industry (v3)
     first_industry: { name: '創業家', desc: '開啟第一個產業', icon: '🏭', category: 'economy' },
     industry_lv3: { name: '產業升級', desc: '任一產業升到 Lv3', icon: '⚒️', category: 'economy' },
     industry_lv5: { name: '產業帝國', desc: '任一產業升到 Lv5', icon: '👑', category: 'economy' },
     two_industries: { name: '雙線發展', desc: '同時擁有兩個產業', icon: '🔀', category: 'economy' },
     four_industries: { name: '完全體', desc: '解鎖全部四大產業', icon: '🌟', category: 'economy' },
-    // Farm (v3)
     first_harvest: { name: '初次收穫', desc: '第一次收穫農作物', icon: '🌾', category: 'economy' },
     harvest_100: { name: '豐收之王', desc: '累計收穫 100 單位作物', icon: '🌽', category: 'economy' },
+    harvest_500: { name: '農業大亨', desc: '累計收穫 500 單位作物', icon: '🚜', category: 'economy' },
     excellent_crop: { name: '極品農產', desc: '收穫極品品質作物', icon: '✨', category: 'economy' },
-    // Factory (v3)
     first_factory: { name: '工廠主', desc: '建造第一座工廠', icon: '🏭', category: 'economy' },
     factory_order: { name: '訂單達人', desc: '完成第一筆工廠訂單', icon: '📋', category: 'economy' },
-    // Relationships (v3)
-    npc_fight: { name: '暴力事件', desc: '目擊 NPC 打架住院', icon: '🤕', category: 'social' },
-    npc_cheating: { name: '八點檔', desc: '目擊劈腿被抓事件', icon: '😱', category: 'social' },
-    // Daily News (v3)
-    read_newspaper: { name: '讀報人', desc: '閱讀第一篇 AI 日報', icon: '📰', category: 'special' },
-    newspaper_10: { name: '日報收藏家', desc: '累計 10 篇日報', icon: '📚', category: 'special' },
-    // Town level (v3)
+    factory_order_10: { name: '量產專家', desc: '完成10筆工廠訂單', icon: '📦', category: 'economy' },
+    resource_hoarder: { name: '囤積狂', desc: '任一資源超過200單位', icon: '🏪', category: 'economy' },
+    // === Survival (12) ===
+    survive_7: { name: '一週生存', desc: '存活7天', icon: '📅', category: 'survival' },
+    survive_30: { name: '月生存者', desc: '存活30天', icon: '🗓️', category: 'survival' },
+    survive_100: { name: '百日英雄', desc: '存活100天', icon: '🏆', category: 'survival' },
+    survive_year: { name: '週年慶', desc: '存活一整年', icon: '🎉', category: 'survival' },
+    survive_3years: { name: '老居民', desc: '存活三年', icon: '🧓', category: 'survival' },
+    repel_raid: { name: '防衛者', desc: '擊退第一次入侵', icon: '⚔️', category: 'survival' },
+    repel_5: { name: '常勝將軍', desc: '擊退5次入侵', icon: '🎖️', category: 'survival' },
+    repel_10: { name: '鐵壁防線', desc: '擊退10次入侵', icon: '🛡️', category: 'survival' },
+    first_explore: { name: '探險家', desc: '發現第一個探索區域', icon: '🗺️', category: 'survival' },
+    explore_all: { name: '全境探索', desc: '發現所有探索區域', icon: '🧭', category: 'survival' },
+    expedition_success: { name: '凱旋歸來', desc: '完成第一次成功探險', icon: '🏆', category: 'survival' },
+    // === Town (14) ===
+    pop_15: { name: '小鎮風光', desc: '人口達到15', icon: '🏘️', category: 'town' },
+    pop_20: { name: '繁榮市鎮', desc: '人口達到20', icon: '🌇', category: 'town' },
+    pop_25: { name: '邊境都市', desc: '人口達到25', icon: '🌃', category: 'town' },
+    pop_30: { name: '人口爆發', desc: '人口達到30', icon: '🏙️', category: 'town' },
+    pop_40: { name: '大都會', desc: '人口達到40', icon: '🌐', category: 'town' },
+    first_election: { name: '民主初體驗', desc: '參與第一次選舉', icon: '🗳️', category: 'town' },
+    elected_mayor: { name: '當選鎮長', desc: '玩家當選鎮長', icon: '👑', category: 'town' },
+    election_3: { name: '政壇老手', desc: '經歷3次選舉', icon: '🏛️', category: 'town' },
+    first_birth: { name: '新生命', desc: '城鎮迎來第一個新生兒', icon: '👶', category: 'town' },
+    births_5: { name: '嬰兒潮', desc: '累計5個新生兒出生', icon: '🍼', category: 'town' },
+    first_death: { name: '永別', desc: '失去第一位居民', icon: '⚰️', category: 'town' },
     town_lv3: { name: '村莊崛起', desc: '城鎮升級到村莊', icon: '🏘️', category: 'town' },
     town_lv5: { name: '城鎮繁榮', desc: '城鎮升級到城鎮', icon: '🏙️', category: 'town' },
     town_lv7: { name: '大都市', desc: '城鎮升級到城市', icon: '🌆', category: 'town' },
+    // === Player (12) ===
+    got_job: { name: '打工仔', desc: '選擇一份工作', icon: '💼', category: 'player' },
+    job_master: { name: '職業達人', desc: '做過3種不同工作', icon: '🎯', category: 'player' },
+    job_all: { name: '全職通', desc: '做過所有種類的工作', icon: '🏅', category: 'player' },
+    voted: { name: '公民責任', desc: '在選舉中投票', icon: '✅', category: 'player' },
+    proposed: { name: '求婚', desc: '向某人求婚', icon: '💎', category: 'player' },
+    player_farmer: { name: '自耕農', desc: '親手種植並收穫一次作物', icon: '🧑‍🌾', category: 'player' },
+    player_trader: { name: '商賈', desc: '累計交易額達到1000銀幣', icon: '🪙', category: 'player' },
+    player_explorer: { name: '冒險王', desc: '完成3次成功探險', icon: '⛰️', category: 'player' },
+    speed_runner: { name: '速通玩家', desc: '在30天內建造5棟建築', icon: '⚡', category: 'player' },
+    pacifist: { name: '和平主義者', desc: '存活30天且零衝突事件', icon: '☮️', category: 'player' },
+    save_collector: { name: '存檔狂', desc: '儲存遊戲10次以上', icon: '💾', category: 'player' },
+    multi_town: { name: '開拓者', desc: '擁有3個以上城鎮', icon: '🗺️', category: 'player' },
+    // === Special (14) ===
+    night_owl: { name: '夜貓子', desc: '在深夜（0-4點）仍在活動', icon: '🦉', category: 'special' },
+    early_bird: { name: '早起的鳥', desc: '在清晨（5-6點）開始活動', icon: '🐓', category: 'special' },
+    gossip_heard: { name: '八卦通', desc: '聽到10則村民對話', icon: '👂', category: 'special' },
+    gossip_50: { name: '偷聽大師', desc: '聽到50則村民對話', icon: '🕵️', category: 'special' },
+    gossip_200: { name: '情報局長', desc: '聽到200則村民對話', icon: '📡', category: 'special' },
+    all_seasons: { name: '四季輪轉', desc: '經歷春夏秋冬', icon: '🌸', category: 'special' },
+    first_festival: { name: '節慶參與', desc: '經歷第一個節日', icon: '🎪', category: 'special' },
+    all_festivals: { name: '四季慶典', desc: '經歷所有四個節日', icon: '🎊', category: 'special' },
+    festival_5: { name: '慶典常客', desc: '累計經歷5次節慶', icon: '🥳', category: 'special' },
+    read_newspaper: { name: '讀報人', desc: '閱讀第一篇 AI 日報', icon: '📰', category: 'special' },
+    newspaper_10: { name: '日報收藏家', desc: '累計 10 篇日報', icon: '📚', category: 'special' },
+    newspaper_30: { name: '媒體狂熱', desc: '累計 30 篇日報', icon: '🗞️', category: 'special' },
+    cloud_sync: { name: '雲端玩家', desc: '首次使用雲端同步', icon: '☁️', category: 'special' },
+    prosperity_max: { name: '傳奇小鎮', desc: '繁榮度達到「傳奇」等級', icon: '⭐', category: 'special' },
+    achievement_25: { name: '成就獵人', desc: '解鎖25個成就', icon: '🏅', category: 'special' },
+    achievement_50: { name: '成就大師', desc: '解鎖50個成就', icon: '🥇', category: 'special' },
+    achievement_99: { name: '完美主義者', desc: '解鎖全部99個成就', icon: '💯', category: 'special' },
 };
 
 // =====================================================
@@ -227,6 +256,7 @@ class RimTownApp {
         this._npcConvosSeen = 0;
         this._playerJobHistory = new Set();
         this._tradeCount = 0;
+        this._flirtCount = 0;
         this._datingHistory = new Set();
         this.init();
     }
@@ -500,6 +530,7 @@ class RimTownApp {
 
     async _syncToCloud() {
         if (!this.auth.loggedIn) return;
+        this._unlockAchievement('cloud_sync');
         try {
             this._saveCurrentTown();
             const saveData = this.world.serialize();
@@ -629,6 +660,7 @@ class RimTownApp {
         if (chatHistory.length >= 2) this._unlockAchievement('first_chat');
         if (chatHistory.length >= 20) this._unlockAchievement('chat_10');
         if (chatHistory.length >= 100) this._unlockAchievement('chat_50');
+        if (chatHistory.length >= 200) this._unlockAchievement('chat_100');
 
         // Track chatted NPCs
         const chattedNpcs = new Set();
@@ -644,12 +676,15 @@ class RimTownApp {
         if (totalDays >= 30) this._unlockAchievement('survive_30');
         if (totalDays >= 100) this._unlockAchievement('survive_100');
         if ((clock.year || 1) >= 2) this._unlockAchievement('survive_year');
+        if ((clock.year || 1) >= 4) this._unlockAchievement('survive_3years');
 
         // Population
         const pop = Object.keys(agents).length;
         if (pop >= 15) this._unlockAchievement('pop_15');
         if (pop >= 20) this._unlockAchievement('pop_20');
         if (pop >= 25) this._unlockAchievement('pop_25');
+        if (pop >= 30) this._unlockAchievement('pop_30');
+        if (pop >= 40) this._unlockAchievement('pop_40');
 
         // Economy
         const res = this.state.stockpile?.resources || {};
@@ -662,19 +697,25 @@ class RimTownApp {
         const researchProjects = this.state.research?.projects || {};
         const completedResearch = Object.values(researchProjects).filter(p => p.status === 'complete');
         if (completedResearch.length >= 1) this._unlockAchievement('first_research');
+        if (completedResearch.length >= 5) this._unlockAchievement('research_5');
         const allResearch = Object.values(researchProjects);
         if (allResearch.length > 0 && completedResearch.length === allResearch.length) this._unlockAchievement('all_research');
+        if ((res.silver || 0) >= 2000) this._unlockAchievement('ultra_rich');
+        // Resource hoarder
+        for (const amt of Object.values(res)) { if (amt >= 200) { this._unlockAchievement('resource_hoarder'); break; } }
 
         // Seasons
         if (clock.season) this._seasonsVisited.add(clock.season);
         if (this._seasonsVisited.size >= 4) this._unlockAchievement('all_seasons');
 
-        // Night owl
+        // Night owl / Early bird
         if (clock.hour !== undefined && clock.hour >= 0 && clock.hour < 4 && this.world?.tickCount > 0) this._unlockAchievement('night_owl');
+        if (clock.hour !== undefined && clock.hour >= 5 && clock.hour <= 6 && this.world?.tickCount > 0) this._unlockAchievement('early_bird');
 
         // Election
         const election = this.state.election;
         if (election?.electionHistory?.length >= 1) this._unlockAchievement('first_election');
+        if (election?.electionHistory?.length >= 3) this._unlockAchievement('election_3');
 
         // Multi-town
         if (this._getTownList().length >= 3) this._unlockAchievement('multi_town');
@@ -684,6 +725,7 @@ class RimTownApp {
         this._npcConvosSeen = Math.max(this._npcConvosSeen, npcConvos.length);
         if (this._npcConvosSeen >= 10) this._unlockAchievement('gossip_heard');
         if (this._npcConvosSeen >= 50) this._unlockAchievement('gossip_50');
+        if (this._npcConvosSeen >= 200) this._unlockAchievement('gossip_200');
 
         // Player relationships
         const playerRels = player.relationships || [];
@@ -691,8 +733,26 @@ class RimTownApp {
             if (r.romantic_interest > 30) this._unlockAchievement('first_crush');
             if (r.status === 'dating') { this._unlockAchievement('first_dating'); this._datingHistory.add(r.target_name); }
             if (r.status === 'married') this._unlockAchievement('first_marriage');
+            if (r.affinity >= 80) this._unlockAchievement('high_affinity');
+            if (r.affinity <= -50) this._unlockAchievement('enemy_made');
+            if (r.status === 'married' && r.affinity >= 90) this._unlockAchievement('golden_couple');
         });
         if (this._datingHistory.size >= 3) this._unlockAchievement('heartbreaker');
+        // NPC romance tracking
+        const allNpcs = Object.values(agents).filter(a => !a.is_player);
+        let npcCouples = 0;
+        let hasNpcWedding = false;
+        let hasNpcBreakup = false;
+        allNpcs.forEach(npc => {
+            (npc.relationships || []).forEach(r => {
+                if (r.status === 'dating' || r.status === 'married') npcCouples++;
+                if (r.status === 'married') hasNpcWedding = true;
+                if (r.status === 'ex') hasNpcBreakup = true;
+            });
+        });
+        if (hasNpcWedding) this._unlockAchievement('npc_wedding');
+        if (hasNpcBreakup) this._unlockAchievement('npc_breakup');
+        if (npcCouples / 2 >= 5) this._unlockAchievement('npc_couple_5');
 
         // Player job
         if (player.job?.title && player.job.title !== '無業') {
@@ -711,6 +771,7 @@ class RimTownApp {
             const newRaids = currentRaids - this._raidCount;
             const totalRaids = raidCount + newRaids;
             localStorage.setItem('rimtown_raid_count', totalRaids.toString());
+            if (totalRaids >= 5) this._unlockAchievement('repel_5');
             if (totalRaids >= 10) this._unlockAchievement('repel_10');
             this._raidCount = currentRaids;
         }
@@ -718,17 +779,22 @@ class RimTownApp {
         // New system achievements
         const factionList = Object.values(this.state.factions?.factions || {});
         if (factionList.length >= 1) this._unlockAchievement('first_faction');
+        if (factionList.length >= 3) this._unlockAchievement('faction_3');
         // Check for faction drama (rivalry or internal conflict events)
         const hasDrama = factionList.some(f => f.rivalFactionId || f.cohesion < 30);
         if (hasDrama) this._unlockAchievement('faction_drama');
         if ((this.state.lifecycle?.graveyard || []).length >= 1) this._unlockAchievement('first_death');
         if ((this.state.lifecycle?.births || []).length >= 1) this._unlockAchievement('first_birth');
+        if ((this.state.lifecycle?.births || []).length >= 5) this._unlockAchievement('births_5');
         const festLog = this.state.festivals?.festivalLog || [];
         if (festLog.length >= 1) this._unlockAchievement('first_festival');
         const festSeasons = new Set(festLog.map(f => f.season));
         if (festSeasons.size >= 4) this._unlockAchievement('all_festivals');
+        if (festLog.length >= 5) this._unlockAchievement('festival_5');
         const discoveredZones = Object.keys(this.state.exploration?.discoveredZones || {});
         if (discoveredZones.length >= 1) this._unlockAchievement('first_explore');
+        const totalExploreZones = Object.keys(this.world.exploration?.zones || {}).length;
+        if (totalExploreZones > 0 && discoveredZones.length >= totalExploreZones) this._unlockAchievement('explore_all');
         const successExpeditions = (this.state.exploration?.expeditionLog || []).filter(e => e.success);
         if (successExpeditions.length >= 1) this._unlockAchievement('expedition_success');
 
@@ -752,7 +818,9 @@ class RimTownApp {
         const totalHarvested = farm.totalHarvested || {};
         const harvestTotal = Object.values(totalHarvested).reduce((s, v) => s + v, 0);
         if (harvestTotal >= 1) this._unlockAchievement('first_harvest');
+        if (harvestTotal >= 1) this._unlockAchievement('player_farmer');
         if (harvestTotal >= 100) this._unlockAchievement('harvest_100');
+        if (harvestTotal >= 500) this._unlockAchievement('harvest_500');
         const harvestLog = farm.harvestLog || [];
         if (harvestLog.some(h => h.quality === 'excellent')) this._unlockAchievement('excellent_crop');
 
@@ -761,17 +829,46 @@ class RimTownApp {
         if (Object.keys(proc.builtFactories || {}).length >= 1) this._unlockAchievement('first_factory');
         const completedOrders = (proc.orders || []).filter(o => o.status === 'completed');
         if (completedOrders.length >= 1) this._unlockAchievement('factory_order');
+        if (completedOrders.length >= 10) this._unlockAchievement('factory_order_10');
 
         // v3 Daily news achievements
         const newsData = this.state.dailyNews || {};
         if ((newsData.newspapers || []).length >= 1) this._unlockAchievement('read_newspaper');
         if ((newsData.newspapers || []).length >= 10) this._unlockAchievement('newspaper_10');
+        if ((newsData.newspapers || []).length >= 30) this._unlockAchievement('newspaper_30');
 
         // v3 NPC event achievements
         const npcEvt = this.state.npcEvents || {};
         const incidents = npcEvt.recentIncidents || [];
         if (incidents.some(i => i.type === 'fight')) this._unlockAchievement('npc_fight');
         if (incidents.some(i => i.type === 'cheating_discovered')) this._unlockAchievement('npc_cheating');
+
+        // v3.2 new achievement checks
+        // Trade count
+        if ((this._tradeCount || 0) >= 50) this._unlockAchievement('trade_50');
+        if ((this._tradeCount || 0) >= 1000) this._unlockAchievement('player_trader');
+        // Job all (12 default job types)
+        const JOB_TYPES = ['mayor','doctor','blacksmith','cook','farmer','trader','guard','researcher','miner','priest','carpenter','tailor'];
+        if (this._playerJobHistory.size >= JOB_TYPES.length) this._unlockAchievement('job_all');
+        // Flirt count
+        if ((this._flirtCount || 0) >= 5) this._unlockAchievement('flirt_master');
+        // Player explorer
+        if (successExpeditions.length >= 3) this._unlockAchievement('player_explorer');
+        // Speed runner (5 buildings within 30 days)
+        if (totalDays <= 30 && completedBuildings.length >= 5) this._unlockAchievement('speed_runner');
+        // Pacifist (30 days, no fights)
+        if (totalDays >= 30 && !incidents.some(i => i.type === 'fight') && raidEvents.length === 0) this._unlockAchievement('pacifist');
+        // Save collector
+        const saveCount = parseInt(localStorage.getItem('rimtown_save_count') || '0');
+        if (saveCount >= 10) this._unlockAchievement('save_collector');
+        // Prosperity max
+        const prosData = this.state.prosperity || {};
+        if (prosData.level === '傳奇' || prosData.level === 'legendary') this._unlockAchievement('prosperity_max');
+        // Achievement meta-achievements
+        const unlockedCount = Object.keys(this._achievements || {}).length;
+        if (unlockedCount >= 25) this._unlockAchievement('achievement_25');
+        if (unlockedCount >= 50) this._unlockAchievement('achievement_50');
+        if (unlockedCount >= 96) this._unlockAchievement('achievement_99'); // 96 + the 3 meta = 99
     }
 
     // Hook conversation engine to push speech bubbles to tilemap
@@ -979,6 +1076,7 @@ class RimTownApp {
                 npcRel.modifyRomantic(npcBoost);
                 npcRel.modifyAffinity(1);
             }
+            this._flirtCount = (this._flirtCount || 0) + 1;
             this.world.logMessage('player_action', `你對${npc.name}調情。`, player.name, npc.name);
             player.memory?.add?.(this.world.tickCount, this.world.clock.timeStr, 'social', `對${npc.name}調情`, 3, [npc.name]);
         }
@@ -1014,6 +1112,7 @@ class RimTownApp {
             }
         } else {
             this.world.logMessage('event', `${npc.name}拒絕了你的告白。`, player.name, npc.name);
+            this._unlockAchievement('rejected');
         }
         this.state = this.world.getState();
         this.renderSidebar();
@@ -1745,6 +1844,8 @@ class RimTownApp {
     // --- Save / Load ---
     async saveGame() {
         try {
+            const sc = parseInt(localStorage.getItem('rimtown_save_count') || '0') + 1;
+            localStorage.setItem('rimtown_save_count', sc.toString());
             if (this.currentTownId) {
                 this._saveCurrentTown();
             }
