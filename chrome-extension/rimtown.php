@@ -127,6 +127,7 @@ function rimtown_shortcode($atts) {
                     <button data-tab="events"><span class="tab-icon">📰</span><span class="tab-label">事件</span></button>
                     <button data-tab="newspaper"><span class="tab-icon">🗞️</span><span class="tab-label">日報</span></button>
                     <button data-tab="log"><span class="tab-icon">📝</span><span class="tab-label">日誌</span></button>
+                    <button data-tab="settings"><span class="tab-icon">⚙️</span><span class="tab-label">設定</span></button>
                 </div>
                 <div class="rt-sidebar-content" id="sidebar-content"></div>
             </div>

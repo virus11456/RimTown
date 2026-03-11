@@ -1303,6 +1303,24 @@ class RimTownApp {
         } catch(e) {}
     }
 
+    _saveSettingsFromTab() {
+        const provider = document.getElementById('settings-tab-provider')?.value || 'none';
+        const apiKey = document.getElementById('settings-tab-apikey')?.value || '';
+        const speed = document.getElementById('settings-tab-speed')?.value || '2000';
+        const fallbackKey = document.getElementById('settings-tab-groq')?.value?.trim() || '';
+        if (provider !== 'none' && !apiKey && !fallbackKey) {
+            alert('請輸入 API 金鑰，或填寫備用 Groq Key，或選擇「無（模擬對話）」。');
+            return;
+        }
+        // Store fallback key so saveSettings can read it
+        const fallbackEl = document.getElementById('fallback-groq-key');
+        if (fallbackEl) fallbackEl.value = fallbackKey;
+        localStorage.setItem('fallback_groq_key', fallbackKey || '');
+        this.saveSettings(provider, apiKey, speed);
+        this.world.logMessage('system', '設定已儲存');
+        this.renderSidebar();
+    }
+
     _updateLLMStatus() {
         const el = document.getElementById('llm-status');
         if (!el) return;
@@ -1545,6 +1563,21 @@ class RimTownApp {
                 case 'close-custom-npc': document.getElementById('custom-npc-modal')?.remove(); break;
                 // Ending
                 case 'close-ending': document.getElementById('ending-overlay')?.remove(); break;
+                // Settings tab actions
+                case 'settings-save-all': this._saveSettingsFromTab(); break;
+                case 'settings-login': document.getElementById('auth-modal')?.classList.remove('hidden'); break;
+                case 'settings-register': {
+                    document.getElementById('auth-modal')?.classList.remove('hidden');
+                    document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.authTab === 'register'));
+                    document.getElementById('auth-login-form')?.classList.add('hidden');
+                    document.getElementById('auth-register-form')?.classList.remove('hidden');
+                    break;
+                }
+                case 'settings-logout': this._doLogout(); this.renderSidebar(); break;
+                case 'settings-sync-cloud': this._syncToCloud(); break;
+                case 'settings-save-game': this.saveGame(); break;
+                case 'settings-export': document.getElementById('btn-export')?.click(); break;
+                case 'settings-import': document.getElementById('btn-import')?.click(); break;
                 default: console.log('Unknown action:', action, val);
             }
         });
@@ -2120,6 +2153,7 @@ class RimTownApp {
             case 'industry': this.renderIndustryAndFarm(content); break;
             case 'newspaper': this.renderNewspaper(content); break;
             case 'quest': this.renderQuest(content); break;
+            case 'settings': this.renderSettings(content); break;
         }
     }
 
@@ -2644,6 +2678,95 @@ class RimTownApp {
                 memories.slice(-10).reverse().map(m=>`<div class="memory-item"><span class="memory-time">${m.time}</span>${m.content}</div>`).join('')}</div></div>`;
     }
 
+    // =====================================================
+    // SETTINGS TAB (consolidated AI + Account + Game settings)
+    // =====================================================
+    renderSettings(container) {
+        const provider = localStorage.getItem('llm_provider') || 'none';
+        const apiKey = localStorage.getItem('llm_api_key') || '';
+        const speed = localStorage.getItem('sim_speed') || '2000';
+        const fallbackKey = localStorage.getItem('fallback_groq_key') || '';
+        const loggedIn = this.auth.loggedIn;
+        const username = this.auth.username;
+
+        let html = '';
+
+        // --- Account Section ---
+        html += '<div class="econ-section"><h3>👤 帳號</h3>';
+        if (loggedIn) {
+            html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                <span style="color:var(--positive)">● 已登入</span>
+                <strong>${this._escapeHtml(username)}</strong>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button class="trade-btn" data-action="settings-sync-cloud">雲端同步</button>
+                <button class="trade-btn" data-action="settings-logout" style="background:var(--negative);color:#fff">登出</button>
+            </div>`;
+        } else {
+            html += `<p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:8px">登入後可使用雲端存檔同步功能</p>
+            <div style="display:flex;gap:6px">
+                <button class="trade-btn btn-accent" data-action="settings-login">登入</button>
+                <button class="trade-btn" data-action="settings-register">註冊</button>
+            </div>`;
+        }
+        html += '</div>';
+
+        // --- AI Settings Section ---
+        html += '<div class="econ-section"><h3>🤖 AI 語言模型</h3>';
+        html += `<div class="setting-group" style="margin-bottom:8px">
+            <label style="font-size:0.72rem;color:var(--text-secondary)">AI 供應商</label>
+            <select id="settings-tab-provider" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
+                <option value="none"${provider==='none'?' selected':''}>無（模擬對話）</option>
+                <option value="anthropic"${provider==='anthropic'?' selected':''}>Anthropic (Claude)</option>
+                <option value="openai"${provider==='openai'?' selected':''}>OpenAI (GPT)</option>
+                <option value="gemini"${provider==='gemini'?' selected':''}>Google (Gemini)</option>
+                <option value="deepseek"${provider==='deepseek'?' selected':''}>DeepSeek</option>
+                <option value="groq"${provider==='groq'?' selected':''}>Groq</option>
+                <option value="together"${provider==='together'?' selected':''}>Together AI</option>
+                <option value="minimax"${provider==='minimax'?' selected':''}>MiniMax (海螺AI)</option>
+            </select>
+        </div>
+        <div class="setting-group" style="margin-bottom:8px">
+            <label style="font-size:0.72rem;color:var(--text-secondary)">API 金鑰</label>
+            <input type="password" id="settings-tab-apikey" value="${this._escapeHtml(apiKey)}" placeholder="輸入你的 API 金鑰..." style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem;box-sizing:border-box">
+        </div>
+        <div class="setting-group" style="margin-bottom:8px">
+            <label style="font-size:0.72rem;color:var(--text-secondary)">備用 Groq API Key <span style="font-size:0.65rem">（主 AI 超限時自動切換）</span></label>
+            <input type="password" id="settings-tab-groq" value="${this._escapeHtml(fallbackKey)}" placeholder="gsk_...（選填）" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem;box-sizing:border-box">
+        </div>`;
+        html += '</div>';
+
+        // --- Game Settings Section ---
+        html += '<div class="econ-section"><h3>🎮 遊戲設定</h3>';
+        html += `<div class="setting-group" style="margin-bottom:8px">
+            <label style="font-size:0.72rem;color:var(--text-secondary)">模擬速度</label>
+            <select id="settings-tab-speed" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
+                <option value="3000"${speed==='3000'?' selected':''}>慢速（3秒）</option>
+                <option value="2000"${speed==='2000'?' selected':''}>正常（2秒）</option>
+                <option value="1000"${speed==='1000'?' selected':''}>快速（1秒）</option>
+                <option value="500"${speed==='500'?' selected':''}>極快（0.5秒）</option>
+            </select>
+        </div>`;
+        html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+            <button class="trade-btn btn-accent" data-action="settings-save-all">儲存設定</button>
+        </div>`;
+        html += '</div>';
+
+        // --- Save/Export Section ---
+        html += '<div class="econ-section"><h3>💾 存檔管理</h3>';
+        html += `<div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="trade-btn" data-action="settings-save-game">儲存遊戲</button>
+            <button class="trade-btn" data-action="settings-export">匯出存檔</button>
+            <button class="trade-btn" data-action="settings-import">匯入存檔</button>
+        </div>`;
+        html += '</div>';
+
+        // --- Version ---
+        html += `<div style="text-align:center;padding:10px;font-size:0.65rem;color:var(--text-muted)">v${typeof RIMTOWN_APP_VERSION!=='undefined'?RIMTOWN_APP_VERSION:'?'}</div>`;
+
+        container.innerHTML = html;
+    }
+
     renderLog(container) {
         if (!this.state) return;
         const messages = (this.state.recent_messages || []).slice().reverse();
@@ -2964,7 +3087,7 @@ class RimTownApp {
         const subTabs = [
             { key:'resources', label:'資源', icon:'📦' },
             { key:'building', label:'建築', icon:'🏗️' },
-            { key:'factory', label:'工廠', icon:'🏭' },
+            { key:'factory', label:'工廠', icon:'🔧' },
         ];
         subTabs.forEach(t => {
             const active = this._economySubTab === t.key ? ' class="active"' : '';
