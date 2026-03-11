@@ -1341,6 +1341,19 @@ class RimTownApp {
     setupTabListeners() {
         document.querySelectorAll('.rt-sidebar-tabs button').forEach(btn => {
             btn.addEventListener('click', () => {
+                const sidebar = document.getElementById('rimtown-sidebar');
+                const isMobile = window.innerWidth <= 768;
+
+                if (isMobile) {
+                    // On mobile: tap active tab again → collapse; tap different tab → expand
+                    if (btn.dataset.tab === this.activeTab && sidebar && !sidebar.classList.contains('mobile-collapsed')) {
+                        sidebar.classList.add('mobile-collapsed');
+                        return;
+                    }
+                    // Expand if collapsed
+                    if (sidebar) sidebar.classList.remove('mobile-collapsed');
+                }
+
                 this.activeTab = btn.dataset.tab;
                 document.querySelectorAll('.rt-sidebar-tabs button').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
@@ -1353,32 +1366,34 @@ class RimTownApp {
         const sidebar = document.getElementById('rimtown-sidebar');
         if (!sidebar) return;
 
+        // Start collapsed on mobile (only tab bar visible)
+        if (window.innerWidth <= 768) {
+            sidebar.classList.add('mobile-collapsed');
+        }
+
         // Drag handle: toggle expanded/collapsed
         const dragHandle = document.getElementById('mobile-drag-handle');
         if (dragHandle) {
             dragHandle.addEventListener('click', () => {
                 if (window.innerWidth <= 768) {
-                    sidebar.classList.toggle('mobile-expanded');
+                    sidebar.classList.toggle('mobile-collapsed');
                 }
             });
-            // Touch drag support
+            // Touch drag support: swipe up = expand, swipe down = collapse
             let startY = 0;
-            let startFlex = 0;
             dragHandle.addEventListener('touchstart', (e) => {
                 if (window.innerWidth > 768) return;
                 startY = e.touches[0].clientY;
-                startFlex = sidebar.classList.contains('mobile-expanded') ? 3 : 1;
                 e.preventDefault();
             }, { passive: false });
             dragHandle.addEventListener('touchend', (e) => {
                 if (window.innerWidth > 768) return;
                 const endY = e.changedTouches[0].clientY;
                 const diff = startY - endY;
-                // Swipe up = expand, swipe down = collapse
                 if (diff > 30) {
-                    sidebar.classList.add('mobile-expanded');
+                    sidebar.classList.remove('mobile-collapsed');
                 } else if (diff < -30) {
-                    sidebar.classList.remove('mobile-expanded');
+                    sidebar.classList.add('mobile-collapsed');
                 }
             });
         }
@@ -2009,7 +2024,7 @@ class RimTownApp {
         document.querySelectorAll('.rt-sidebar-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === 'chat'));
         // Auto-open sidebar on mobile
         const sidebar = document.getElementById('rimtown-sidebar');
-        if (sidebar && window.innerWidth <= 768) sidebar.classList.add('mobile-expanded');
+        if (sidebar && window.innerWidth <= 768) sidebar.classList.remove('mobile-collapsed');
         this.renderSidebar();
         this.render();
     }
@@ -3192,7 +3207,7 @@ class RimTownApp {
         document.querySelectorAll('.rt-sidebar-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === 'detail'));
         // Auto-open sidebar on mobile
         const sidebar = document.getElementById('rimtown-sidebar');
-        if (sidebar && window.innerWidth <= 768) sidebar.classList.add('mobile-expanded');
+        if (sidebar && window.innerWidth <= 768) sidebar.classList.remove('mobile-collapsed');
         this.render();
     }
 

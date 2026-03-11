@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 3.1.5
+ * Version: 3.1.6
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '3.1.5');
+define('RIMTOWN_VERSION', '3.1.6');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -607,7 +607,7 @@ function rimtown_shortcode($atts) {
                 </div>
                 <div class="rt-sidebar-content" id="sidebar-content"></div>
             </div>
-            <button class="mobile-sidebar-toggle" id="mobile-sidebar-toggle" title="顯示側欄">&#9776;</button>
+            <!-- mobile-sidebar-toggle removed: was non-functional -->
         </div>
     </div>
     <?php
@@ -1182,6 +1182,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '3.1.6',
+            'date'    => '2026-03-11',
+            'changes' => array(
+                '手機版 UI 大改版：移除無功能的漢堡 FAB 按鈕',
+                '手機版底部面板重新設計：10 個 tab 改為單行水平滾動（原本 5×2 grid 佔太多空間）',
+                '新增 Bottom Sheet 收合機制：預設只顯示 tab bar，點擊展開內容，再點同一 tab 收合',
+                '手機版地圖可視範圍大幅提升（底部面板收合時幾乎全螢幕）',
+                '支援拖拽手柄上滑展開/下滑收合',
+                '版號同步：WordPress / Chrome Extension / manifest.json 統一為 3.1.6',
+            ),
+        ),
         array(
             'version' => '3.1.5',
             'date'    => '2026-03-10',
