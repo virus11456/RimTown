@@ -2913,23 +2913,25 @@ class PixelTileMap {
         const festival = data.activeFestival;
         const pulse = Math.sin(this.animFrame * 0.08) * 0.3 + 0.7;
 
-        // Draw festival banner at town square
+        // Draw festival banner at town square (above the location label)
         const squareZone = this.buildingZones['town_square'] || this.natureZones['town_square'];
         if (squareZone) {
             const cx = (squareZone.x + squareZone.w / 2) * TILE;
-            const cy = squareZone.y * TILE - 8;
+            const cy = squareZone.y * TILE - 24;
 
             // Banner
             ctx.fillStyle = `rgba(255,200,50,${0.6 * pulse})`;
-            ctx.fillRect(cx - 30, cy - 4, 60, 12);
-            ctx.strokeStyle = `rgba(255,150,0,${0.8 * pulse})`;
-            ctx.lineWidth = 1;
-            ctx.strokeRect(cx - 30, cy - 4, 60, 12);
-
+            const bannerText = `${festival.icon} ${festival.name}`;
             ctx.font = 'bold 8px monospace';
             ctx.textAlign = 'center';
+            const bw = ctx.measureText(bannerText).width + 12;
+            ctx.fillRect(cx - bw/2, cy - 4, bw, 12);
+            ctx.strokeStyle = `rgba(255,150,0,${0.8 * pulse})`;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(cx - bw/2, cy - 4, bw, 12);
+
             ctx.fillStyle = '#8B4513';
-            ctx.fillText(`${festival.icon} ${festival.name}`, cx, cy + 5);
+            ctx.fillText(bannerText, cx, cy + 5);
         }
 
         // Sparkle particles during festival

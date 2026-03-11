@@ -295,6 +295,9 @@ class RimTownApp {
         }
         this.startSimulation();
         this.setupAutoSave();
+        // Update header town name from saved metadata
+        const currentMeta = this._getTownList().find(t => t.id === this.currentTownId);
+        this._updateHeaderTownName(currentMeta?.name);
         this.render();
         this._startRenderLoop();
         // Show version in header
@@ -1105,6 +1108,8 @@ class RimTownApp {
             this.state = this.world.getState();
             this._generateTileMapLayout();
             if (this.tileMap) this.tileMap.agentPositions = {};
+            const townMeta = this._getTownList().find(t => t.id === townId);
+            this._updateHeaderTownName(townMeta?.name);
             this.render();
         }
         document.getElementById('town-modal')?.classList.add('hidden');
@@ -1145,8 +1150,12 @@ class RimTownApp {
         this.state = this.world.getState();
         this._generateTileMapLayout();
         if (this.tileMap) this.tileMap.agentPositions = {};
+        // Close modal and unpause
+        document.getElementById('town-modal')?.classList.add('hidden');
+        this.world.paused = false;
+        this._updateHeaderTownName(name);
+        this.world.logMessage('system', `🏘️ 新城鎮「${name}」已建立！`);
         this.render();
-        this._renderTownList();
     }
     renameTownPrompt(townId) {
         const towns = this._getTownList();
@@ -1183,6 +1192,11 @@ class RimTownApp {
         this.tileMap.onClick = (locId) => this.playerMoveTo(locId);
         this.tileMap.onAgentClick = (agentId) => this.onAgentClick(agentId);
         this._generateTileMapLayout();
+    }
+
+    _updateHeaderTownName(name) {
+        const h1 = document.querySelector('#rimtown-app .header h1');
+        if (h1) h1.textContent = name || '邊境鎮';
     }
 
     _generateTileMapLayout() {
@@ -1605,6 +1619,8 @@ class RimTownApp {
                     this.state = this.world.getState();
                     this._generateTileMapLayout();
                     if (this.tileMap) this.tileMap.agentPositions = {};
+                    this._updateHeaderTownName(name);
+                    this.world.logMessage('system', `🏘️ 新城鎮「${name}」已建立！`);
                     this.render();
                     break;
                 }
