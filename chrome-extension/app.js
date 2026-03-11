@@ -1580,6 +1580,18 @@ class RimTownApp {
                 case 'settings-export': this.exportSave(); break;
                 case 'settings-import': this.importSave(); break;
                 case 'settings-toggle-pause': this.world.paused = !this.world.paused; this.renderSidebar(); break;
+                case 'settings-speed-mult': {
+                    const mult = parseFloat(val) || 1;
+                    this._speedMultiplier = mult;
+                    if (!this.baseSimSpeed) this.baseSimSpeed = this.simSpeed;
+                    this.simSpeed = Math.round(this.baseSimSpeed / mult);
+                    if (this.simInterval) clearInterval(this.simInterval);
+                    this.simInterval = setInterval(() => {
+                        this.world.tick(); this.state = this.world.getState(); this.render();
+                    }, this.simSpeed);
+                    this.renderSidebar();
+                    break;
+                }
                 case 'settings-new-map': {
                     const name = prompt('為新城鎮命名：', '邊境鎮 ' + (this._getTownList().length + 1));
                     if (!name) break;
@@ -2104,13 +2116,9 @@ class RimTownApp {
         else { pauseBtn?.classList.remove('active'); resumeBtn?.classList.add('active'); }
         const agentCount = Object.keys(this.state.agents).length;
         const travelCount = (this.state.travelling_agents || []).length;
-        const travelText = travelCount > 0 ? ` (+${travelCount} travelling)` : '';
+        const travelText = travelCount > 0 ? `（+${travelCount} 外出）` : '';
         const popEl = document.getElementById('population-count');
-        if (popEl) popEl.textContent = `Population: ${agentCount}${travelText}`;
-        const terrain = this.state.locations?.terrain || '';
-        const seed = this.state.locations?.seed ?? '';
-        const terrainEl = document.getElementById('terrain-display');
-        if (terrainEl && terrain) terrainEl.textContent = `${terrain} #${seed}`;
+        if (popEl) popEl.textContent = `人口：${agentCount}${travelText}`;
 
         // Update mobile header clock & population
         const mobileClock = document.getElementById('mobile-clock');
@@ -2710,9 +2718,13 @@ class RimTownApp {
         let html = '';
 
         // --- Game Control Section ---
+        const currentMultiplier = this._speedMultiplier || 1;
         html += '<div class="econ-section"><h3>🎮 遊戲控制</h3>';
-        html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        html += `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
             <button class="trade-btn ${paused ? '' : 'btn-accent'}" data-action="settings-toggle-pause">${paused ? '▶️ 繼續' : '⏸ 暫停'}</button>
+            <div class="speed-controls" style="margin-left:4px">
+                ${[1, 1.5, 2, 3].map(s => `<button class="btn-speed${currentMultiplier===s?' active':''}" data-action="settings-speed-mult" data-val="${s}">${s}x</button>`).join('')}
+            </div>
         </div>`;
         html += `<div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="trade-btn" data-action="show-towns">📋 城鎮列表</button>
@@ -2741,7 +2753,10 @@ class RimTownApp {
         html += '</div>';
 
         // --- AI Settings Section ---
+        const aiConnected = !!(this.llmClient && this.world?.conversationEngine?.llm);
+        const aiLabel = aiConnected ? 'AI:' + this.llmClient.provider + (this.llmClient.fallbackGroqKey ? '+備用' : '') : 'AI:未連接';
         html += '<div class="econ-section"><h3>🤖 AI 語言模型</h3>';
+        html += `<div style="margin-bottom:8px"><span class="llm-status ${aiConnected ? 'connected' : 'disconnected'}">${aiLabel}</span></div>`;
         html += `<div class="setting-group" style="margin-bottom:8px">
             <label style="font-size:0.72rem;color:var(--text-secondary)">AI 供應商</label>
             <select id="settings-tab-provider" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">

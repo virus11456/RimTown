@@ -529,7 +529,6 @@ function rimtown_shortcode($atts) {
             <div class="header-info">
                 <span id="population-count">人口：--</span>
                 <span id="clock-display" class="clock-display">載入中...</span>
-                <span id="terrain-display" class="terrain-display"></span>
             </div>
         </div>
 
