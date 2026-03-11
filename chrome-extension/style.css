@@ -2181,10 +2181,7 @@ body.rimtown-page .wp-block-post-title {
         display: none !important;
     }
     .mobile-header {
-        display: block !important;
-        background: var(--bg-secondary);
-        border-bottom: 1px solid var(--border);
-        flex-shrink: 0;
+        display: none !important;
     }
     .mobile-header-row {
         display: flex;
