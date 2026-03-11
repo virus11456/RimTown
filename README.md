@@ -30,7 +30,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v3.2.0.zip` from Releases
+1. Download `rimtown-v3.2.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -45,6 +45,16 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v3.2.1 (2026-03-11)
+
+**99 成就系統 + 新城鎮修復 + 節慶標籤修復**
+- 成就從 57 個擴展到 99 個，涵蓋 7 大分類：社交(13)、戀愛(10)、經濟(24)、生存(12)、城鎮(14)、玩家(12)、特殊(14)
+- 新增成就自動解鎖觸發器（每5秒檢查一次）
+- 修復新建城鎮按鈕：modal 自動關閉 + 取消暫停 + 顯示確認訊息
+- Header 城鎮名稱改為動態顯示（不再寫死「邊境鎮」）
+- 修復節慶橫幅與城鎮廣場標籤重疊問題
+- 以上修正同步套用至 WordPress 與 Chrome Extension 版本
 
 ### v3.2.0 (2026-03-11)
 
