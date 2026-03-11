@@ -2284,7 +2284,7 @@ body.rimtown-page .wp-block-post-title {
     }
 
     /* ===== Bottom Sheet Sidebar ===== */
-    .rt-sidebar {
+    .rimtown-container .rt-sidebar {
         position: absolute !important;
         bottom: 0 !important;
         left: 0 !important;
@@ -2301,6 +2301,7 @@ body.rimtown-page .wp-block-post-title {
         background: var(--bg-primary) !important;
         transition: max-height 0.3s ease;
         padding-bottom: env(safe-area-inset-bottom, 0);
+        overflow: hidden !important;
     }
 
     /* Collapsed state: only show tab bar */
@@ -2353,6 +2354,8 @@ body.rimtown-page .wp-block-post-title {
         gap: 0;
         flex-shrink: 0;
         border-bottom: 1px solid var(--border);
+        max-width: 100%;
+        width: 100%;
     }
     .rt-sidebar-tabs::-webkit-scrollbar {
         display: none;
