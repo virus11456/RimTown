@@ -125,8 +125,7 @@ function rimtown_shortcode($atts) {
                     <button data-tab="industry"><span class="tab-icon">🏭</span><span class="tab-label">產業</span></button>
                     <button data-tab="quest"><span class="tab-icon">⚔️</span><span class="tab-label">任務</span></button>
                     <button data-tab="events"><span class="tab-icon">📰</span><span class="tab-label">事件</span></button>
-                    <button data-tab="newspaper"><span class="tab-icon">🗞️</span><span class="tab-label">日報</span></button>
-                    <button data-tab="log"><span class="tab-icon">📝</span><span class="tab-label">日誌</span></button>
+                    <button data-tab="records"><span class="tab-icon">📝</span><span class="tab-label">紀錄</span></button>
                     <button data-tab="settings"><span class="tab-icon">⚙️</span><span class="tab-label">設定</span></button>
                 </div>
                 <div class="rt-sidebar-content" id="sidebar-content"></div>

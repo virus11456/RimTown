@@ -1538,6 +1538,7 @@ class RimTownApp {
                 // Industry sub-tabs
                 case 'industry-subtab': this._industrySubTab = val; this.renderSidebar(); break;
                 case 'economy-subtab': this._economySubTab = val; this.renderSidebar(); break;
+                case 'records-subtab': this._recordsSubTab = val; this.renderSidebar(); break;
                 // Industry
                 case 'choose-industry': this._chooseIndustry(val); break;
                 case 'upgrade-industry': this._upgradeIndustry(val); break;
@@ -2147,11 +2148,10 @@ class RimTownApp {
             case 'chat-archives': this.renderChatArchiveList(content); break;
             case 'detail': this.renderAgentDetail(content); break;
             case 'economy': this.renderEconomy(content); break;
-            case 'log': this.renderLog(content); break;
+            case 'records': this.renderRecords(content); break;
             case 'events': this.renderEvents(content); break;
             case 'achievements': this.renderAchievements(content); break;
             case 'industry': this.renderIndustryAndFarm(content); break;
-            case 'newspaper': this.renderNewspaper(content); break;
             case 'quest': this.renderQuest(content); break;
             case 'settings': this.renderSettings(content); break;
         }
@@ -3786,6 +3786,29 @@ class RimTownApp {
         const r = this.world.processing.fulfillOrder(orderId, this.world);
         if (!r.ok) { alert(r.error || '無法完成訂單'); return; }
         this.state = this.world.getState(); this.renderSidebar();
+    }
+
+    // ============================================================
+    // Records Tab (日報 + 日誌)
+    // ============================================================
+    renderRecords(container) {
+        if (!this._recordsSubTab) this._recordsSubTab = 'newspaper';
+        let html = '<div class="economy-panel">';
+        html += '<div class="sub-tab-bar">';
+        const subTabs = [
+            { key:'newspaper', label:'日報', icon:'🗞️' },
+            { key:'log', label:'日誌', icon:'📋' },
+        ];
+        subTabs.forEach(t => {
+            const active = this._recordsSubTab === t.key ? ' class="active"' : '';
+            html += `<button${active} data-action="records-subtab" data-val="${t.key}">${t.icon} ${t.label}</button>`;
+        });
+        html += '</div></div>';
+        container.innerHTML = html;
+        const panel = document.createElement('div');
+        container.appendChild(panel);
+        if (this._recordsSubTab === 'newspaper') this.renderNewspaper(panel);
+        else this.renderLog(panel);
     }
 
     // ============================================================
