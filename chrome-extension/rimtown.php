@@ -109,17 +109,17 @@ function rimtown_shortcode($atts) {
                     <button data-tab="records" class="mobile-hidden"><span class="tab-icon">📝</span><span class="tab-label">紀錄</span></button>
                     <button data-tab="achievements" class="mobile-hidden"><span class="tab-icon">🏆</span><span class="tab-label">成就</span></button>
                     <button data-tab="settings" class="mobile-hidden"><span class="tab-icon">⚙️</span><span class="tab-label">設定</span></button>
-                    <button class="mobile-more-btn" id="mobile-more-btn" style="display:none"><span class="tab-icon">⋯</span><span class="tab-label">更多</span></button>
-                    <div class="rt-more-menu" id="rt-more-menu">
-                        <button data-tab="detail"><span class="tab-icon">📋</span><span class="tab-label">詳情</span></button>
-                        <button data-tab="industry"><span class="tab-icon">🏭</span><span class="tab-label">產業</span></button>
-                        <button data-tab="events"><span class="tab-icon">📰</span><span class="tab-label">事件</span></button>
-                        <button data-tab="records"><span class="tab-icon">📝</span><span class="tab-label">紀錄</span></button>
-                        <button data-tab="achievements"><span class="tab-icon">🏆</span><span class="tab-label">成就</span></button>
-                        <button data-tab="settings"><span class="tab-icon">⚙️</span><span class="tab-label">設定</span></button>
-                    </div>
-                    <div class="rt-more-menu-overlay" id="rt-more-menu-overlay"></div>
+                    <button class="mobile-more-btn" id="mobile-more-btn"><span class="tab-icon">⋯</span><span class="tab-label">更多</span></button>
                 </div>
+                <div class="rt-more-menu" id="rt-more-menu">
+                    <button data-tab="detail"><span class="tab-icon">📋</span><span class="tab-label">詳情</span></button>
+                    <button data-tab="industry"><span class="tab-icon">🏭</span><span class="tab-label">產業</span></button>
+                    <button data-tab="events"><span class="tab-icon">📰</span><span class="tab-label">事件</span></button>
+                    <button data-tab="records"><span class="tab-icon">📝</span><span class="tab-label">紀錄</span></button>
+                    <button data-tab="achievements"><span class="tab-icon">🏆</span><span class="tab-label">成就</span></button>
+                    <button data-tab="settings"><span class="tab-icon">⚙️</span><span class="tab-label">設定</span></button>
+                </div>
+                <div class="rt-more-menu-overlay" id="rt-more-menu-overlay"></div>
                 <div class="rt-sidebar-content" id="sidebar-content"></div>
             </div>
             <!-- mobile-sidebar-toggle removed: was non-functional -->

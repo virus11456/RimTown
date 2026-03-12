@@ -2400,69 +2400,70 @@ body.rimtown-page .wp-block-post-title {
         display: block;
     }
 
-    /* "More" menu button */
+    /* "More" menu button — visible on mobile */
     .rt-sidebar-tabs .mobile-more-btn {
         display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
 
-    /* More menu overlay */
-    .rt-more-menu-overlay {
+    /* More menu overlay — covers screen to catch close taps */
+    .rt-sidebar .rt-more-menu-overlay {
         display: none;
         position: fixed;
         top: 0; left: 0; right: 0; bottom: 0;
         z-index: 99;
     }
-    .rt-more-menu-overlay.active {
+    .rt-sidebar .rt-more-menu-overlay.active {
         display: block;
     }
 
-    /* More menu popup */
-    .rt-more-menu {
+    /* More menu popup — positioned above tab bar */
+    .rt-sidebar .rt-more-menu {
         display: none;
         position: absolute;
-        bottom: 100%;
+        bottom: 44px;
         right: 0;
+        left: 0;
         background: var(--bg-secondary);
-        border: 1px solid var(--border);
-        border-radius: 8px 8px 0 0;
+        border-top: 1px solid var(--border);
         box-shadow: 0 -4px 16px rgba(0,0,0,0.3);
         z-index: 100;
         padding: 8px 0;
-        min-width: 200px;
     }
-    .rt-more-menu.active {
-        display: block;
+    .rt-sidebar .rt-more-menu.active {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0;
     }
-    .rt-more-menu button {
+    .rt-sidebar .rt-more-menu button {
         display: flex;
-        flex-direction: row;
+        flex-direction: column;
         align-items: center;
-        gap: 10px;
-        width: 100%;
-        padding: 10px 16px;
+        justify-content: center;
+        gap: 4px;
+        padding: 12px 8px;
         background: none;
         border: none;
         color: var(--text-primary);
         font-size: 0.9rem;
         cursor: pointer;
-        text-align: left;
     }
-    .rt-more-menu button:hover,
-    .rt-more-menu button:active {
+    .rt-sidebar .rt-more-menu button:hover,
+    .rt-sidebar .rt-more-menu button:active {
         background: rgba(233, 69, 96, 0.1);
     }
-    .rt-more-menu button.active {
+    .rt-sidebar .rt-more-menu button.active {
         color: var(--accent);
         background: rgba(233, 69, 96, 0.08);
     }
-    .rt-more-menu button .tab-icon {
-        font-size: 1.2rem;
-        width: 24px;
-        text-align: center;
+    .rt-sidebar .rt-more-menu button .tab-icon {
+        font-size: 1.3rem;
     }
-    .rt-more-menu button .tab-label {
-        font-size: 0.85rem;
-        display: inline;
+    .rt-sidebar .rt-more-menu button .tab-label {
+        font-size: 0.7rem;
+        display: block;
     }
 
     /* Sidebar content: scrollable area when expanded */
