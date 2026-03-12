@@ -955,7 +955,7 @@ class RimTownApp {
     // === Achievements Tab ===
     _showAchievementsTab() {
         this.activeTab = 'achievements';
-        document.querySelectorAll('.rt-sidebar-tabs button').forEach(b => b.classList.remove('active'));
+        if (this._updateTabHighlight) this._updateTabHighlight('achievements');
         this.renderSidebar();
     }
 
@@ -1470,27 +1470,81 @@ class RimTownApp {
     }
 
     setupTabListeners() {
-        document.querySelectorAll('.rt-sidebar-tabs button').forEach(btn => {
+        const moreMenu = document.getElementById('rt-more-menu');
+        const moreBtn = document.getElementById('mobile-more-btn');
+        const moreOverlay = document.getElementById('rt-more-menu-overlay');
+        const secondaryTabs = ['detail', 'industry', 'events', 'records', 'achievements', 'settings'];
+
+        const closeMoreMenu = () => {
+            if (moreMenu) moreMenu.classList.remove('active');
+            if (moreOverlay) moreOverlay.classList.remove('active');
+        };
+
+        const updateTabHighlight = (tabName) => {
+            document.querySelectorAll('.rt-sidebar-tabs > button[data-tab]').forEach(b => b.classList.remove('active'));
+            const mainBtn = document.querySelector(`.rt-sidebar-tabs > button[data-tab="${tabName}"]`);
+            if (mainBtn && !mainBtn.classList.contains('mobile-hidden')) {
+                mainBtn.classList.add('active');
+                if (moreBtn) moreBtn.classList.remove('active');
+            } else if (moreBtn && window.innerWidth <= 768) {
+                moreBtn.classList.add('active');
+            }
+            // Highlight item in more menu
+            if (moreMenu) {
+                moreMenu.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
+            }
+        };
+
+        // Main tab bar buttons (including hidden ones for desktop)
+        document.querySelectorAll('.rt-sidebar-tabs > button[data-tab]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const sidebar = document.getElementById('rimtown-sidebar');
                 const isMobile = window.innerWidth <= 768;
 
                 if (isMobile) {
-                    // On mobile: tap active tab again → collapse; tap different tab → expand
                     if (btn.dataset.tab === this.activeTab && sidebar && !sidebar.classList.contains('mobile-collapsed')) {
                         sidebar.classList.add('mobile-collapsed');
                         return;
                     }
-                    // Expand if collapsed
                     if (sidebar) sidebar.classList.remove('mobile-collapsed');
                 }
 
                 this.activeTab = btn.dataset.tab;
-                document.querySelectorAll('.rt-sidebar-tabs button').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
+                updateTabHighlight(btn.dataset.tab);
                 this.renderSidebar();
             });
         });
+
+        // "More" button
+        if (moreBtn) {
+            moreBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (moreMenu) moreMenu.classList.toggle('active');
+                if (moreOverlay) moreOverlay.classList.toggle('active');
+            });
+        }
+
+        // More menu items
+        if (moreMenu) {
+            moreMenu.querySelectorAll('button[data-tab]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const sidebar = document.getElementById('rimtown-sidebar');
+                    closeMoreMenu();
+                    if (sidebar) sidebar.classList.remove('mobile-collapsed');
+                    this.activeTab = btn.dataset.tab;
+                    updateTabHighlight(btn.dataset.tab);
+                    this.renderSidebar();
+                });
+            });
+        }
+
+        // Close more menu on overlay tap
+        if (moreOverlay) {
+            moreOverlay.addEventListener('click', closeMoreMenu);
+        }
+
+        // Store helper for external use (selectAgent, startChat etc.)
+        this._updateTabHighlight = updateTabHighlight;
     }
 
     setupMobileSidebar() {
@@ -2067,7 +2121,7 @@ class RimTownApp {
                 this.selectedAgent = null;
                 if (this.activeTab === 'chat') {
                     this.activeTab = 'residents';
-                    document.querySelectorAll('.rt-sidebar-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === 'residents'));
+                    if (this._updateTabHighlight) this._updateTabHighlight('residents');
                 }
             }
             this.state = this.world.getState();
@@ -2202,7 +2256,7 @@ class RimTownApp {
         this.selectedAgent = agentId;
         this.activeTab = 'chat';
         this._focusChatInput = true;
-        document.querySelectorAll('.rt-sidebar-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === 'chat'));
+        if (this._updateTabHighlight) this._updateTabHighlight('chat');
         // Auto-open sidebar on mobile
         const sidebar = document.getElementById('rimtown-sidebar');
         if (sidebar && window.innerWidth <= 768) sidebar.classList.remove('mobile-collapsed');
@@ -3506,7 +3560,7 @@ class RimTownApp {
     selectAgent(agentId) {
         this.selectedAgent = agentId;
         this.activeTab = 'detail';
-        document.querySelectorAll('.rt-sidebar-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === 'detail'));
+        if (this._updateTabHighlight) this._updateTabHighlight('detail');
         // Auto-open sidebar on mobile
         const sidebar = document.getElementById('rimtown-sidebar');
         if (sidebar && window.innerWidth <= 768) sidebar.classList.remove('mobile-collapsed');

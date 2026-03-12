@@ -76,7 +76,8 @@ body.rimtown-page .wp-block-post-title {
 }
 .town-info-name { color: var(--accent); font-weight: bold; letter-spacing: 1px; }
 .town-info-pop { color: var(--text-secondary); }
-.town-info-clock { color: var(--warning); font-family: monospace; margin-left: auto; }
+.town-info-clock { color: var(--warning); font-family: monospace; margin-left: auto;
+}
 
 .header h1 {
     font-size: 1.1rem;
@@ -333,6 +334,18 @@ body.rimtown-page .wp-block-post-title {
     border-bottom: 1px solid var(--border);
     background: var(--bg-primary);
     flex-shrink: 0;
+    position: relative;
+}
+
+/* Desktop: hide mobile-only elements */
+.rt-sidebar-tabs .mobile-more-btn {
+    display: none;
+}
+.rt-more-menu-overlay {
+    display: none;
+}
+.rt-more-menu {
+    display: none;
 }
 
 /* Sub-tab bar inside panels */
@@ -2346,28 +2359,26 @@ body.rimtown-page .wp-block-post-title {
         margin: 0 auto;
     }
 
-    /* Tab bar: single row, horizontally scrollable */
+    /* Tab bar: fixed 5 tabs, no scroll */
     .rt-sidebar-tabs {
         display: flex !important;
         grid-template-columns: none !important;
         flex-direction: row !important;
-        overflow-x: auto !important;
-        overflow-y: hidden !important;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
+        overflow: hidden !important;
         gap: 0;
         flex-shrink: 0;
         border-bottom: 1px solid var(--border);
         max-width: 100%;
         width: 100%;
     }
-    .rt-sidebar-tabs::-webkit-scrollbar {
-        display: none;
+    /* Hide overflow tabs on mobile (shown via "more" menu) */
+    .rt-sidebar-tabs button.mobile-hidden {
+        display: none !important;
     }
     .rt-sidebar-tabs button {
-        flex: 0 0 auto;
-        min-width: 48px;
-        padding: 6px 10px;
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 6px 4px;
         min-height: 42px;
         display: flex;
         flex-direction: column;
@@ -2387,6 +2398,71 @@ body.rimtown-page .wp-block-post-title {
     .rt-sidebar-tabs .tab-label {
         font-size: 0.55rem;
         display: block;
+    }
+
+    /* "More" menu button */
+    .rt-sidebar-tabs .mobile-more-btn {
+        display: flex !important;
+    }
+
+    /* More menu overlay */
+    .rt-more-menu-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 99;
+    }
+    .rt-more-menu-overlay.active {
+        display: block;
+    }
+
+    /* More menu popup */
+    .rt-more-menu {
+        display: none;
+        position: absolute;
+        bottom: 100%;
+        right: 0;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 8px 8px 0 0;
+        box-shadow: 0 -4px 16px rgba(0,0,0,0.3);
+        z-index: 100;
+        padding: 8px 0;
+        min-width: 200px;
+    }
+    .rt-more-menu.active {
+        display: block;
+    }
+    .rt-more-menu button {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 10px 16px;
+        background: none;
+        border: none;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        cursor: pointer;
+        text-align: left;
+    }
+    .rt-more-menu button:hover,
+    .rt-more-menu button:active {
+        background: rgba(233, 69, 96, 0.1);
+    }
+    .rt-more-menu button.active {
+        color: var(--accent);
+        background: rgba(233, 69, 96, 0.08);
+    }
+    .rt-more-menu button .tab-icon {
+        font-size: 1.2rem;
+        width: 24px;
+        text-align: center;
+    }
+    .rt-more-menu button .tab-label {
+        font-size: 0.85rem;
+        display: inline;
     }
 
     /* Sidebar content: scrollable area when expanded */
@@ -2552,17 +2628,13 @@ body.rimtown-page .wp-block-post-title {
         display: none;
     }
 
-    /* Small phone: icon-only tabs, hide labels */
-    .rt-sidebar-tabs .tab-label {
-        display: none;
-    }
+    /* Small phone: slightly smaller tab bar */
     .rt-sidebar-tabs button {
-        min-width: 40px;
-        padding: 6px 6px;
+        padding: 5px 2px;
         min-height: 38px;
     }
-    .rt-sidebar-tabs .tab-icon {
-        font-size: 1.1rem;
+    .rt-sidebar-tabs .tab-label {
+        font-size: 0.5rem;
     }
     .rt-sidebar.mobile-collapsed {
         max-height: 40px !important;
