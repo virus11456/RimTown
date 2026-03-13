@@ -313,6 +313,7 @@ class RimTownApp {
         this.setupTileMap();
         this.setupTabListeners();
         this.setupMobileSidebar();
+        this.setupMobileInputFix();
         this.setupMobileHeader();
         this.setupControlListeners();
         this.setupSettingsListeners();
@@ -1582,6 +1583,28 @@ class RimTownApp {
                 }
             });
         }
+    }
+
+    setupMobileInputFix() {
+        if (window.innerWidth > 768) return;
+        const sidebar = document.querySelector('.rt-sidebar');
+        if (!sidebar) return;
+
+        // When an input/select inside sidebar gains focus, scroll it into view
+        // and expand sidebar so the virtual keyboard doesn't hide the field
+        sidebar.addEventListener('focusin', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') {
+                sidebar.classList.add('keyboard-open');
+                setTimeout(() => {
+                    e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+            }
+        });
+        sidebar.addEventListener('focusout', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') {
+                sidebar.classList.remove('keyboard-open');
+            }
+        });
     }
 
     setupMobileHeader() {

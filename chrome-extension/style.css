@@ -2480,6 +2480,17 @@ body.rimtown-page .wp-block-post-title {
         min-height: 100px;
     }
 
+    /* Settings inputs: prevent iOS auto-zoom on focus */
+    .setting-group input,
+    .setting-group select {
+        font-size: 16px !important; /* prevents iOS zoom */
+    }
+
+    /* When virtual keyboard is open, expand sidebar so input stays visible */
+    .rt-sidebar.keyboard-open {
+        max-height: 70vh !important;
+    }
+
     /* Chat input bigger touch targets */
     .chat-input {
         padding: 10px 14px;
