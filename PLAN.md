@@ -25,7 +25,147 @@
 
 ## 實作步驟
 
-### Step 0: NPC 隨機生成系統
+### Step 0A: 100 條性格特徵系統
+**檔案**: `wordpress/simulation.js` (TRAIT_POOL, ~line 178)
+
+將現有 19 條特徵擴充至 100 條（約 50 正向 / 50 負向），每個村民隨機抓 7 條。
+
+**保留現有 19 條**（被程式碼直接引用，不能改名）：
+kind, abrasive, shy, charismatic, gossip, hardworking, lazy, perfectionist, creative, optimist, pessimist, neurotic, stoic, romantic, jealous, night_owl, early_bird, glutton, ascetic
+
+**新增 81 條**，依類別分組：
+
+#### 社交類（+12 條）
+| Key | 正/負 | Label | 效果 | 描述 |
+|-----|--------|-------|------|------|
+| empathetic | + | 共感 | social:2 | 能深刻感受他人情緒 |
+| diplomatic | + | 圓滑 | social:2 | 善於化解衝突與協調 |
+| generous | + | 慷慨 | social:1 | 樂於分享自己所有的一切 |
+| loyal | + | 忠誠 | social:1 | 對朋友和承諾極為忠實 |
+| hospitable | + | 好客 | social:2 | 熱情款待每一位訪客 |
+| humorous | + | 幽默 | social:2 | 總能讓周圍的人開懷大笑 |
+| cold | - | 冷漠 | social:-2 | 對他人的感受毫不在意 |
+| manipulative | - | 操控 | social:-1 | 善於利用他人達到目的 |
+| antisocial | - | 孤僻 | social:-3 | 極度排斥社交活動 |
+| arrogant | - | 傲慢 | social:-2 | 認為自己比所有人都優秀 |
+| sarcastic | - | 嘲諷 | social:-1 | 說話總帶著尖銳的諷刺 |
+| clingy | - | 黏人 | social:1, romance:1 | 極度依賴他人的陪伴 |
+
+#### 工作類（+12 條）
+| Key | 正/負 | Label | 效果 | 描述 |
+|-----|--------|-------|------|------|
+| resourceful | + | 足智多謀 | work:2 | 總能找到解決問題的方法 |
+| methodical | + | 有條理 | work:1 | 做事井井有條 |
+| ambitious | + | 野心勃勃 | work:2 | 渴望成就更大的事業 |
+| disciplined | + | 自律 | work:2 | 嚴格遵守自己制定的規矩 |
+| meticulous | + | 一絲不苟 | work:1 | 注重每一個細節 |
+| efficient | + | 高效 | work:2 | 用最少的時間完成最多的事 |
+| procrastinator | - | 拖延 | work:-2 | 總是把事情拖到最後一刻 |
+| careless | - | 粗心 | work:-1 | 經常忽略重要的細節 |
+| stubborn | - | 固執 | work:-1 | 一旦決定就不願改變 |
+| distracted | - | 分心 | work:-1 | 很難長時間專注於一件事 |
+| impatient | - | 急躁 | work:-1 | 缺乏等待的耐心 |
+| reckless | - | 魯莽 | work:-2 | 不考慮後果就行動 |
+
+#### 情緒類（+12 條）
+| Key | 正/負 | Label | 效果 | 描述 |
+|-----|--------|-------|------|------|
+| cheerful | + | 開朗 | mood_base:8 | 天生就帶著笑容 |
+| resilient | + | 堅韌 | mood_sensitivity:0.5 | 能從任何打擊中恢復 |
+| carefree | + | 無憂無慮 | mood_base:5 | 從不為小事煩惱 |
+| serene | + | 平靜 | mood_sensitivity:0.6 | 內心始終保持寧靜 |
+| grateful | + | 感恩 | mood_base:5 | 珍惜生活中的每一份美好 |
+| enthusiastic | + | 熱情 | mood_base:5 | 對生活充滿激情與活力 |
+| melancholic | - | 憂鬱 | mood_base:-8 | 心中總有一抹揮之不去的哀愁 |
+| anxious | - | 焦慮 | mood_sensitivity:1.5 | 對未來充滿不安 |
+| irritable | - | 易怒 | mood_sensitivity:1.8 | 一點小事就能引爆怒火 |
+| moody | - | 喜怒無常 | mood_sensitivity:2.0 | 情緒變化毫無預兆 |
+| bitter | - | 怨恨 | mood_base:-8 | 對過去的傷痛念念不忘 |
+| dramatic | - | 戲劇化 | mood_sensitivity:1.5 | 把每件事都放大十倍 |
+
+#### 戀愛類（+8 條）
+| Key | 正/負 | Label | 效果 | 描述 |
+|-----|--------|-------|------|------|
+| flirtatious | + | 風騷 | romance:3 | 天生的調情高手 |
+| devoted | + | 專情 | romance:1 | 一旦愛上就全心全意 |
+| affectionate | + | 深情 | romance:2 | 善於表達愛意 |
+| charming | + | 迷人 | romance:2, social:1 | 舉手投足都散發魅力 |
+| commitment_phobic | - | 恐婚 | romance:-2 | 害怕穩定的感情關係 |
+| possessive | - | 佔有慾強 | romance:-1 | 把伴侶視為自己的所有物 |
+| prudish | - | 保守 | romance:-2 | 對感情表達極為拘謹 |
+| fickle | - | 花心 | romance:2 | 容易對新對象產生興趣 |
+
+#### 生活習慣類（+12 條）
+| Key | 正/負 | Label | 效果 | 描述 |
+|-----|--------|-------|------|------|
+| athletic | + | 健壯 | comfort:1 | 體格強健，精力充沛 |
+| adventurous | + | 愛冒險 | - | 渴望探索未知的領域 |
+| neat | + | 愛整潔 | comfort:1 | 保持環境一塵不染 |
+| tough | + | 堅強 | comfort:1 | 能忍受惡劣的環境 |
+| energetic | + | 精力旺盛 | comfort:1 | 似乎永遠不知疲倦 |
+| outdoorsy | + | 熱愛戶外 | - | 在大自然中如魚得水 |
+| frail | - | 體弱 | comfort:-1 | 身體孱弱，容易生病 |
+| homebody | - | 宅 | social:-1 | 能不出門就不出門 |
+| messy | - | 邋遢 | comfort:-1 | 周圍總是一片混亂 |
+| sleepyhead | - | 嗜睡 | schedule:'late' | 怎麼睡都睡不夠 |
+| picky_eater | - | 挑食 | food:-0.5 | 對食物極為挑剔 |
+| heavy_drinker | - | 好酒 | food:1.5 | 嗜酒如命 |
+
+#### 性格/智識類（+14 條）
+| Key | 正/負 | Label | 效果 | 描述 |
+|-----|--------|-------|------|------|
+| curious | + | 好奇 | work:1 | 對一切都充滿求知慾 |
+| observant | + | 敏銳 | - | 總能注意到別人忽略的細節 |
+| analytical | + | 善分析 | work:1 | 擅長拆解複雜問題 |
+| philosophical | + | 哲思 | - | 喜歡思考人生的意義 |
+| witty | + | 機智 | social:1 | 反應敏捷，妙語如珠 |
+| wise | + | 睿智 | - | 擁有超越年齡的智慧 |
+| scholarly | + | 好學 | work:1 | 沉迷於書本和知識 |
+| forgetful | - | 健忘 | work:-1 | 經常忘記重要的事情 |
+| dreamy | - | 愛幻想 | work:-1 | 總是沉浸在自己的世界裡 |
+| naive | - | 天真 | social:-1 | 容易被人欺騙 |
+| cunning | - | 狡猾 | social:-1 | 心機深沉，難以信任 |
+| superstitious | - | 迷信 | - | 對各種禁忌深信不疑 |
+| scatterbrained | - | 迷糊 | work:-1 | 思緒混亂，丟三落四 |
+| pedantic | - | 學究 | social:-1 | 過度執著於細枝末節 |
+
+#### 道德/價值觀類（+11 條）
+| Key | 正/負 | Label | 效果 | 描述 |
+|-----|--------|-------|------|------|
+| honorable | + | 正直 | social:1 | 堅守道德原則不動搖 |
+| selfless | + | 無私 | social:2 | 總是把別人的需要放在自己前面 |
+| just | + | 公正 | social:1 | 對每個人都一視同仁 |
+| honest | + | 誠實 | social:1 | 從不說謊，即使真話傷人 |
+| merciful | + | 仁慈 | social:1 | 對犯錯的人總是寬大處理 |
+| pious | + | 虔誠 | - | 對信仰無比忠誠 |
+| devious | - | 奸詐 | social:-2 | 為達目的不擇手段 |
+| greedy | - | 貪婪 | social:-1 | 對財富有無窮的渴望 |
+| deceitful | - | 虛偽 | social:-1 | 表面一套背後一套 |
+| cruel | - | 殘忍 | social:-3 | 從他人的痛苦中獲得快感 |
+| hedonistic | - | 享樂主義 | comfort:1, work:-1 | 只追求感官上的享受 |
+
+**互斥對更新**（在現有基礎上擴充）：
+```javascript
+const INCOMPATIBLE = [
+    ['optimist','pessimist'], ['hardworking','lazy'], ['shy','charismatic'],
+    ['night_owl','early_bird'], ['kind','cruel'], ['honest','deceitful'],
+    ['generous','greedy'], ['brave','cowardly'], ['neat','messy'],
+    ['selfless','greedy'], ['cheerful','melancholic'], ['resilient','neurotic'],
+    ['disciplined','procrastinator'], ['stoic','dramatic'], ['serene','anxious'],
+    ['devoted','fickle'], ['athletic','frail'], ['energetic','sleepyhead'],
+    ['methodical','scatterbrained'], ['observant','forgetful'],
+    ['diplomatic','abrasive'], ['loyal','manipulative'], ['merciful','cruel'],
+    ['honorable','devious'], ['empathetic','cold'], ['ambitious','lazy'],
+    ['efficient','procrastinator'], ['carefree','anxious'],
+    ['affectionate','prudish'], ['adventurous','homebody'],
+];
+```
+
+**Personality.random() 更新**：
+- 從 100 條中隨機抽取 **7 條**（取代現有的 3 條）
+- 檢查互斥對，確保不會同時抽到矛盾的特徵
+
+### Step 0B: NPC 隨機生成系統
 **檔案**: `wordpress/simulation.js` (`_loadDefaultResidents` 方法, ~line 4347)
 
 取代現有的 12 個寫死居民，改為隨機生成：
@@ -43,8 +183,8 @@ const NPC_GIVEN_FEMALE = ['美','霞','雨','莉','瑩','琪','涵','欣','婷',
    - 名字：從姓+名池隨機組合，不重複
    - 性別：隨機（約各半）
    - 年齡：18-55 隨機
-   - 個性：使用現有 `Personality.random()`
-   - 職業：從 11 個非 mayor 職業中隨機分配（每種最多 1-2 人，確保職業多樣性）
+   - 個性：使用更新後的 `Personality.random(7)`（抽 7 條）
+   - 職業：從 11 個非 mayor 職業中隨機分配（確保職業多樣性）
    - 住所：從 3 個住宅區隨機分配
 3. 背景故事：根據職業+個性生成簡短模板背景
 
@@ -178,3 +318,5 @@ _processAging(world) {
 - 存檔相容性：舊存檔載入時要能處理缺少 `lifeStage` 的情況
 - NPC 隨機生成後，需確保選舉系統仍能正常找到鎮長
 - 隨機名字不能重複，也不能和玩家名字衝突
+- 特徵從 19→100 條，現有程式碼直接引用的 19 個 trait key 不能改名
+- 7 條特徵需確保互斥檢查正常運作，避免矛盾組合
