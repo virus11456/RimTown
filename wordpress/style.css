@@ -1073,205 +1073,58 @@ body.rimtown-page .wp-block-post-title {
     font-family: monospace;
 }
 
-/* ===== Settings Modal ===== */
-/* =====================================================
-   LOGIN SCREEN — Full-screen overlay with blurred village
-   ===================================================== */
-.login-screen {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    z-index: 200000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: opacity 0.6s ease;
-}
-.login-screen.fade-out {
-    opacity: 0;
-    pointer-events: none;
-}
-.login-screen-backdrop {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    background: rgba(10, 10, 30, 0.55);
-}
-.login-card {
-    position: relative;
-    z-index: 1;
-    background: rgba(22, 33, 62, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 16px;
-    padding: 36px 32px 28px;
-    width: 380px;
-    max-width: 90vw;
-    box-shadow: 0 8px 48px rgba(0, 0, 0, 0.6), 0 0 80px rgba(233, 69, 96, 0.08);
-}
-.login-logo {
-    text-align: center;
-    margin-bottom: 28px;
-}
-.login-logo-icon {
-    font-size: 2.8rem;
-    display: block;
-    margin-bottom: 8px;
-}
-.login-title {
-    font-size: 1.6rem;
-    color: var(--text-primary);
-    margin: 0 0 4px;
-    font-weight: 700;
-    letter-spacing: 2px;
-}
-.login-subtitle {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    margin: 0;
-    letter-spacing: 1px;
-}
-.login-form-section.hidden { display: none; }
-.login-field {
-    margin-bottom: 14px;
-}
-.login-field label {
-    display: block;
-    font-size: 0.78rem;
-    color: var(--text-secondary);
-    margin-bottom: 5px;
-    font-weight: 500;
-}
-.login-field input {
-    width: 100%;
-    padding: 10px 14px;
-    background: rgba(15, 52, 96, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: var(--text-primary);
-    border-radius: 8px;
-    font-size: 0.85rem;
-    outline: none;
-    transition: border-color 0.2s;
-    box-sizing: border-box;
-}
-.login-field input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgba(233, 69, 96, 0.15);
-}
-.login-field input::placeholder {
-    color: var(--text-muted);
-}
-.login-error {
-    color: var(--negative);
-    font-size: 0.72rem;
-    min-height: 18px;
-    margin-bottom: 4px;
-}
-.login-success {
-    color: var(--positive);
-    font-size: 0.72rem;
-    min-height: 18px;
-    margin-bottom: 4px;
-}
-.login-btn-primary {
-    width: 100%;
-    padding: 12px;
-    background: var(--accent);
-    border: none;
-    color: #fff;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s, transform 0.1s;
-    letter-spacing: 1px;
-}
-.login-btn-primary:hover {
-    background: var(--accent-light);
-    transform: translateY(-1px);
-}
-.login-btn-primary:active {
-    transform: translateY(0);
-}
-.login-links {
-    text-align: center;
-    margin-top: 14px;
-    font-size: 0.75rem;
-}
-.login-links a {
-    color: var(--accent-light);
-    text-decoration: none;
-    cursor: pointer;
-}
-.login-links a:hover {
-    text-decoration: underline;
-}
-.login-link-sep {
-    color: var(--text-muted);
-    margin: 0 8px;
-}
-.login-guest-divider {
-    text-align: center;
-    margin: 16px 0;
-    position: relative;
-}
-.login-guest-divider::before,
-.login-guest-divider::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    width: 40%;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.1);
-}
-.login-guest-divider::before { left: 0; }
-.login-guest-divider::after { right: 0; }
-.login-guest-divider span {
-    color: var(--text-muted);
-    font-size: 0.72rem;
-    padding: 0 12px;
-    background: transparent;
-}
-.login-btn-guest {
-    width: 100%;
-    padding: 10px;
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: var(--text-secondary);
-    border-radius: 8px;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-.login-btn-guest:hover {
-    border-color: rgba(255, 255, 255, 0.4);
-    color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.05);
-}
-.login-form-heading {
-    font-size: 0.85rem;
-    color: var(--text-primary);
-    margin: 0 0 6px;
-    font-weight: 600;
-}
-.login-form-desc {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    margin: 0 0 14px;
-}
-
-/* Mobile login screen */
-@media (max-width: 768px) {
-    .login-card {
-        padding: 28px 24px 24px;
-        width: 92vw;
-    }
-    .login-logo-icon { font-size: 2.2rem; }
-    .login-title { font-size: 1.3rem; }
-}
-
 /* =====================================================
    TUTORIAL OVERLAY — New player intro & guide
    ===================================================== */
+/* Quest Guidance Banner */
+.quest-guidance {
+    position: fixed;
+    top: 44px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 150000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, rgba(20,30,50,0.95), rgba(30,45,70,0.95));
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 8px 16px;
+    max-width: 500px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 10px rgba(0,229,255,0.15);
+    animation: guidanceSlideIn 0.5s ease;
+    backdrop-filter: blur(8px);
+}
+.quest-guidance.hidden { display: none !important; }
+.quest-guidance-icon { font-size: 1.3rem; flex-shrink: 0; }
+.quest-guidance-text { flex: 1; min-width: 0; }
+.quest-guidance-title {
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: var(--accent-light, #80dfff);
+    margin-bottom: 2px;
+}
+.quest-guidance-hint {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+.quest-guidance-dismiss {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 2px 4px;
+    flex-shrink: 0;
+    opacity: 0.6;
+}
+.quest-guidance-dismiss:hover { opacity: 1; color: var(--text-primary); }
+@keyframes guidanceSlideIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
 .tutorial-overlay {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -1282,10 +1135,7 @@ body.rimtown-page .wp-block-post-title {
     transition: opacity 0.5s ease;
 }
 .tutorial-overlay.hidden { display: none !important; }
-.tutorial-overlay.fade-out {
-    opacity: 0;
-    pointer-events: none;
-}
+.tutorial-overlay.fade-out { opacity: 0; pointer-events: none; }
 .tutorial-backdrop {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -1294,142 +1144,42 @@ body.rimtown-page .wp-block-post-title {
     background: rgba(10, 10, 30, 0.65);
 }
 .tutorial-card {
-    position: relative;
-    z-index: 1;
+    position: relative; z-index: 1;
     background: rgba(22, 33, 62, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 16px;
     padding: 32px 28px 20px;
-    width: 440px;
-    max-width: 92vw;
-    max-height: 80vh;
-    overflow-y: auto;
+    width: 440px; max-width: 92vw; max-height: 80vh; overflow-y: auto;
     box-shadow: 0 8px 48px rgba(0, 0, 0, 0.5);
 }
 .tutorial-step.hidden { display: none; }
-.tutorial-story-icon {
-    text-align: center;
-    font-size: 3rem;
-    margin-bottom: 8px;
-}
-.tutorial-story-title {
-    text-align: center;
-    font-size: 1.5rem;
-    color: var(--text-primary);
-    margin: 0 0 4px;
-    font-weight: 700;
-    letter-spacing: 2px;
-}
-.tutorial-story-subtitle {
-    text-align: center;
-    font-size: 0.72rem;
-    color: var(--text-muted);
-    margin: 0 0 20px;
-    letter-spacing: 1px;
-}
-.tutorial-story-text p {
-    font-size: 0.82rem;
-    color: var(--text-secondary);
-    line-height: 1.7;
-    margin: 0 0 10px;
-}
-.tutorial-step-icon {
-    text-align: center;
-    font-size: 2.2rem;
-    margin-bottom: 6px;
-}
-.tutorial-step h3 {
-    text-align: center;
-    font-size: 1.1rem;
-    color: var(--accent-light);
-    margin: 0 0 14px;
-    font-weight: 600;
-}
-.tutorial-step-text p {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    line-height: 1.6;
-    margin: 0 0 8px;
-}
-.tutorial-step-text ul {
-    list-style: none;
-    padding: 0;
-    margin: 8px 0;
-}
-.tutorial-step-text li {
-    font-size: 0.78rem;
-    color: var(--text-secondary);
-    padding: 4px 0 4px 4px;
-    line-height: 1.5;
-}
-.tutorial-nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 20px;
-    gap: 12px;
-}
-.tutorial-dots {
-    display: flex;
-    gap: 6px;
-    justify-content: center;
-    flex: 1;
-}
-.tutorial-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--border);
-    transition: background 0.2s;
-}
-.tutorial-dot.active {
-    background: var(--accent);
-}
-.tutorial-btn {
-    padding: 8px 18px;
-    border: 1px solid var(--border);
-    background: var(--bg-card);
-    color: var(--text-primary);
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    white-space: nowrap;
-    transition: all 0.2s;
-}
-.tutorial-btn:hover {
-    border-color: var(--accent);
-}
-.tutorial-btn-primary {
-    background: var(--accent);
-    border-color: var(--accent);
-    font-weight: 600;
-}
-.tutorial-btn-primary:hover {
-    background: var(--accent-light);
-}
+.tutorial-story-icon { text-align: center; font-size: 3rem; margin-bottom: 8px; }
+.tutorial-story-title { text-align: center; font-size: 1.5rem; color: var(--text-primary); margin: 0 0 4px; font-weight: 700; letter-spacing: 2px; }
+.tutorial-story-subtitle { text-align: center; font-size: 0.72rem; color: var(--text-muted); margin: 0 0 20px; letter-spacing: 1px; }
+.tutorial-story-text p { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.7; margin: 0 0 10px; }
+.tutorial-step-icon { text-align: center; font-size: 2.2rem; margin-bottom: 6px; }
+.tutorial-step h3 { text-align: center; font-size: 1.1rem; color: var(--accent-light); margin: 0 0 14px; font-weight: 600; }
+.tutorial-step-text p { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; margin: 0 0 8px; }
+.tutorial-step-text ul { list-style: none; padding: 0; margin: 8px 0; }
+.tutorial-step-text li { font-size: 0.78rem; color: var(--text-secondary); padding: 4px 0 4px 4px; line-height: 1.5; }
+.tutorial-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; gap: 12px; }
+.tutorial-dots { display: flex; gap: 6px; justify-content: center; flex: 1; }
+.tutorial-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background 0.2s; }
+.tutorial-dot.active { background: var(--accent); }
+.tutorial-btn { padding: 8px 18px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); border-radius: 8px; cursor: pointer; font-size: 0.8rem; white-space: nowrap; transition: all 0.2s; }
+.tutorial-btn:hover { border-color: var(--accent); }
+.tutorial-btn-primary { background: var(--accent); border-color: var(--accent); font-weight: 600; }
+.tutorial-btn-primary:hover { background: var(--accent-light); }
 .tutorial-btn.hidden { display: none; }
-.tutorial-skip {
-    display: block;
-    margin: 14px auto 0;
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    font-size: 0.7rem;
-    cursor: pointer;
-    padding: 4px 8px;
-}
-.tutorial-skip:hover {
-    color: var(--text-secondary);
-}
+.tutorial-skip { display: block; margin: 14px auto 0; background: none; border: none; color: var(--text-muted); font-size: 0.7rem; cursor: pointer; padding: 4px 8px; }
+.tutorial-skip:hover { color: var(--text-secondary); }
 @media (max-width: 768px) {
-    .tutorial-card {
-        padding: 24px 20px 16px;
-        width: 94vw;
-    }
+    .tutorial-card { padding: 24px 20px 16px; width: 94vw; }
     .tutorial-story-title { font-size: 1.3rem; }
     .tutorial-story-text p { font-size: 0.78rem; }
 }
 
+/* ===== Settings Modal ===== */
 .rimtown-container .modal {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;

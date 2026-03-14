@@ -1,5 +1,5 @@
 // RimTown - Frontend App (WordPress Plugin) v3.4.0
-const RIMTOWN_APP_VERSION = '3.4.0';
+const RIMTOWN_APP_VERSION = '3.5.0';
 const ELECTION_POLICIES_LABELS = {economy:'經濟發展',welfare:'社會福利',defense:'軍事防禦',culture:'文化教育',nature:'自然保育',freedom:'個人自由'};
 
 // =====================================================
@@ -340,6 +340,10 @@ class RimTownApp {
         const verEl = document.getElementById('version-display');
         if (verEl && !verEl.textContent) verEl.textContent = 'v' + RIMTOWN_APP_VERSION;
         this._startAchievementChecker();
+        // Show quest guidance for returning players (tutorial already done)
+        if (localStorage.getItem('rimtown_tutorial_done')) {
+            setTimeout(() => this._updateQuestGuidance(), 2000);
+        }
     }
 
     // =====================================================
@@ -545,6 +549,79 @@ class RimTownApp {
         localStorage.setItem('rimtown_tutorial_done', '1');
         overlay.classList.add('fade-out');
         setTimeout(() => overlay.remove(), 500);
+        // Show quest guidance after tutorial
+        setTimeout(() => this._updateQuestGuidance(), 1000);
+    }
+
+    // === Quest Guidance System (post-tutorial contextual hints) ===
+    _updateQuestGuidance() {
+        const el = document.getElementById('quest-guidance');
+        if (!el) return;
+        // Don't show if user explicitly dismissed all guidance
+        if (localStorage.getItem('rimtown_guidance_off')) { el.classList.add('hidden'); return; }
+
+        const qs = this.world?.questSystem;
+        if (!qs) return;
+        qs.init();
+
+        // Find current active quest
+        const activeQuest = (typeof MAIN_QUESTS !== 'undefined' ? MAIN_QUESTS : []).find(q => qs.quests[q.id]?.status === 'active');
+        if (!activeQuest) { el.classList.add('hidden'); return; }
+
+        const questState = qs.quests[activeQuest.id];
+        let icon = '📋';
+        let title = activeQuest.title;
+        let hint = '';
+
+        // Generate contextual hint based on quest and game state
+        const chatCount = qs.chatCount || 0;
+        const player = this.world?.agents?.['player'];
+
+        if (activeQuest.id === 'ch1_settle') {
+            icon = '👋';
+            const talked = Math.min(chatCount, 3);
+            if (talked === 0) {
+                hint = '點擊右側「聊天」頁籤，選一位居民打個招呼吧！';
+            } else if (talked < 3) {
+                hint = `已和 ${talked}/3 位居民交談。繼續點擊居民聊天吧！`;
+            } else {
+                hint = '快完成了！任務即將自動結算。';
+            }
+        } else if (activeQuest.id === 'ch1_survive') {
+            icon = '❄️';
+            hint = '有多種方式過冬：囤物資、交朋友或蓋建築。點「任務」頁籤查看詳情。';
+        } else if (activeQuest.id === 'ch1_industry') {
+            icon = '🏭';
+            hint = '試試在「產業」頁籤開啟第一個產業，或和更多居民交流提升人脈。';
+        } else if (activeQuest.chapter === 2) {
+            icon = '🌱';
+            hint = '小鎮開始成長了！查看「任務」頁籤了解當前目標。';
+        } else if (activeQuest.chapter === 3) {
+            icon = '⚔️';
+            hint = '危機即將到來，做好準備！查看「任務」頁籤了解詳情。';
+        } else {
+            hint = activeQuest.description;
+        }
+
+        el.querySelector('.quest-guidance-icon').textContent = icon;
+        el.querySelector('.quest-guidance-title').textContent = `目前目標：${title}`;
+        el.querySelector('.quest-guidance-hint').textContent = hint;
+        el.classList.remove('hidden');
+
+        // Wire up dismiss
+        const dismissBtn = el.querySelector('.quest-guidance-dismiss');
+        if (dismissBtn && !dismissBtn._wired) {
+            dismissBtn._wired = true;
+            dismissBtn.addEventListener('click', () => {
+                el.classList.add('hidden');
+                // Will re-show on next quest change, not permanently off
+                this._guidanceDismissedQuestId = activeQuest.id;
+            });
+        }
+        // Don't re-show if user dismissed this specific quest's guidance
+        if (this._guidanceDismissedQuestId === activeQuest.id) {
+            el.classList.add('hidden');
+        }
     }
 
     _showAccountMenu() {
@@ -1369,7 +1446,10 @@ class RimTownApp {
 
     _startRenderLoop() {
         let _renderLogCount = 0;
+        let _guidanceFrameCount = 0;
         const loop = () => {
+            // Update quest guidance banner every ~300 frames (~5 seconds)
+            if (++_guidanceFrameCount % 300 === 0) this._updateQuestGuidance();
             if (this.tileMap && this._mapGenerated) {
                 if (_renderLogCount < 3) {
                     const parent = this.tileMap.canvas?.parentElement;

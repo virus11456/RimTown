@@ -696,6 +696,16 @@ function rimtown_shortcode($atts) {
         <!-- Achievement Toast -->
         <div id="achievement-toast" class="achievement-toast hidden"></div>
 
+        <!-- Quest Guidance Banner (post-tutorial) -->
+        <div id="quest-guidance" class="quest-guidance hidden">
+            <div class="quest-guidance-icon">📋</div>
+            <div class="quest-guidance-text">
+                <div class="quest-guidance-title"></div>
+                <div class="quest-guidance-hint"></div>
+            </div>
+            <button class="quest-guidance-dismiss" title="關閉提示">✕</button>
+        </div>
+
         <!-- Header (desktop only — compact info bar) -->
         <div class="header">
             <h1>邊境鎮</h1>

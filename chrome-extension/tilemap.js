@@ -1989,7 +1989,7 @@ class PixelTileMap {
 
     updateAgents(agents, locations, chatTarget) {
         this.chatTarget = chatTarget || null;
-        const WALK_SPEED = 0.6; // pixels per frame — slower for easier clicking
+        const WALK_SPEED = 0.3; // pixels per frame — slow leisurely pace
         for (const [aid, agent] of Object.entries(agents)) {
             const locCenter = this.getLocationCenter(agent.current_location);
             // Add offset within zone so agents don't overlap
@@ -2611,17 +2611,45 @@ class PixelTileMap {
             }
         }
 
-        // Draw NPC conversation speech bubbles (higher priority than thoughts)
+        // Draw zzz above sleeping NPCs
+        for (const [aid, pos] of sortedAgents) {
+            const agent = agents[aid];
+            if (!agent || aid === 'player') continue;
+            if (agent.activity !== 'sleeping') continue;
+            // Animated zzz: three z's floating upward at different phases
+            const phase = (this.animFrame + aid.charCodeAt(0) * 7) % 90;
+            ctx.font = 'bold 7px monospace';
+            ctx.textAlign = 'center';
+            for (let i = 0; i < 3; i++) {
+                const t = ((phase + i * 30) % 90) / 90; // 0-1 cycle
+                const zx = pos.x + 6 + i * 3;
+                const zy = pos.y - 20 - t * 12;
+                const alpha = t < 0.8 ? 0.7 : 0.7 - (t - 0.8) * 3.5; // fade out at end
+                if (alpha <= 0) continue;
+                ctx.fillStyle = `rgba(150,180,255,${alpha})`;
+                ctx.font = `bold ${6 + i * 1.5}px monospace`;
+                ctx.fillText('z', zx, zy);
+            }
+        }
+
+        // Draw NPC conversation speech bubbles (only near player)
         ctx.font = '7px monospace';
         const now = Date.now();
         const activeConvos = this._activeConvoBubbles || [];
         const shownBubbleAgents = new Set();
+        const playerPos = this.agentPositions['player'];
+        const BUBBLE_RANGE = TILE * 8; // Only show bubbles within 8 tiles of player
         for (const convo of activeConvos) {
             if (now > convo.expiry) continue;
             const fadeAlpha = Math.min(1, (convo.expiry - now) / 2000); // Fade in last 2s
             for (const bubble of convo.bubbles) {
                 const pos = this.agentPositions[bubble.agentId];
                 if (!pos) continue;
+                // Skip bubbles far from player
+                if (playerPos) {
+                    const pdx = pos.x - playerPos.x, pdy = pos.y - playerPos.y;
+                    if (Math.sqrt(pdx*pdx + pdy*pdy) > BUBBLE_RANGE) continue;
+                }
                 shownBubbleAgents.add(bubble.agentId);
                 const text = bubble.text.substring(0, 24);
                 const tw = ctx.measureText(text).width;
@@ -2668,10 +2696,19 @@ class PixelTileMap {
         }
 
         // Draw thought bubbles for agents NOT currently showing speech bubbles
+        // Only show dialogue/emotional thoughts near the player (skip status updates)
+        const STATUS_PATTERNS = /技能進步|已完成\d|進步了|開啟|建造|產業|工廠/;
         for (const [aid, pos] of sortedAgents) {
             const agent = agents[aid];
             if (!agent || aid === 'player' || !agent.current_thought) continue;
             if (shownBubbleAgents.has(aid)) continue; // Skip if showing speech
+            // Skip status-like thoughts (skill progress, building progress, etc.)
+            if (STATUS_PATTERNS.test(agent.current_thought)) continue;
+            // Only show thought bubbles near the player
+            if (playerPos) {
+                const pdx = pos.x - playerPos.x, pdy = pos.y - playerPos.y;
+                if (Math.sqrt(pdx*pdx + pdy*pdy) > BUBBLE_RANGE) continue;
+            }
             // Show thoughts less frequently
             if ((this.animFrame + aid.charCodeAt(0)) % 120 < 80) continue;
 

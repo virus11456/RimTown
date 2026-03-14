@@ -1076,6 +1076,55 @@ body.rimtown-page .wp-block-post-title {
 /* =====================================================
    TUTORIAL OVERLAY — New player intro & guide
    ===================================================== */
+/* Quest Guidance Banner */
+.quest-guidance {
+    position: fixed;
+    top: 44px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 150000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, rgba(20,30,50,0.95), rgba(30,45,70,0.95));
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 8px 16px;
+    max-width: 500px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 10px rgba(0,229,255,0.15);
+    animation: guidanceSlideIn 0.5s ease;
+    backdrop-filter: blur(8px);
+}
+.quest-guidance.hidden { display: none !important; }
+.quest-guidance-icon { font-size: 1.3rem; flex-shrink: 0; }
+.quest-guidance-text { flex: 1; min-width: 0; }
+.quest-guidance-title {
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: var(--accent-light, #80dfff);
+    margin-bottom: 2px;
+}
+.quest-guidance-hint {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+.quest-guidance-dismiss {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 2px 4px;
+    flex-shrink: 0;
+    opacity: 0.6;
+}
+.quest-guidance-dismiss:hover { opacity: 1; color: var(--text-primary); }
+@keyframes guidanceSlideIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
 .tutorial-overlay {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
