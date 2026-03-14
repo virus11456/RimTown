@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v3.3.1
-const RIMTOWN_APP_VERSION = '3.3.1';
+// RimTown - Frontend App (WordPress Plugin) v3.3.2
+const RIMTOWN_APP_VERSION = '3.3.2';
 const ELECTION_POLICIES_LABELS = {economy:'經濟發展',welfare:'社會福利',defense:'軍事防禦',culture:'文化教育',nature:'自然保育',freedom:'個人自由'};
 
 // =====================================================
@@ -2987,7 +2987,7 @@ class RimTownApp {
                     else if (r.status === 'ex') badge = '<span class="rel-status-badge rel-ex">💔 前任</span>';
                     if (r.is_cheating) badge += ' <span class="rel-status-badge rel-cheating">🤫 秘密關係</span>';
                     const romHeart = r.romantic_interest > 0 ? ` <span style="color:#f472b6">&#10084;${r.romantic_interest}</span>` : '';
-                    const crushIcon = r.romantic_interest > 30 && !r.status ? ' <span style="color:#f472b6;font-size:0.65rem">暗戀</span>' : '';
+                    const crushIcon = r.romantic_interest > 30 && !r.status ? ' <span style="color:#f472b6;font-size:0.75rem">暗戀</span>' : '';
                     return `<div class="relationship-item${r.status?' rel-has-status':''}"><span>${r.target_name} ${badge}${crushIcon}</span>
                     <span style="color:${r.affinity>0?'var(--positive)':r.affinity<0?'var(--negative)':'var(--text-muted)'}">${r.type}（${r.affinity>0?'+':''}${r.affinity}）${romHeart}</span></div>`;
                 }).join('')}</div>
@@ -3052,7 +3052,7 @@ class RimTownApp {
         html += '<div class="econ-section"><h3>🤖 AI 語言模型</h3>';
         html += `<div style="margin-bottom:8px"><span class="llm-status ${aiConnected ? 'connected' : 'disconnected'}">${aiLabel}</span></div>`;
         html += `<div class="setting-group" style="margin-bottom:8px">
-            <label style="font-size:0.72rem;color:var(--text-secondary)">AI 供應商</label>
+            <label style="font-size:0.82rem;color:var(--text-secondary)">AI 供應商</label>
             <select id="settings-tab-provider" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
                 <option value="none"${provider==='none'?' selected':''}>無（模擬對話）</option>
                 <option value="anthropic"${provider==='anthropic'?' selected':''}>Anthropic (Claude)</option>
@@ -3065,11 +3065,11 @@ class RimTownApp {
             </select>
         </div>
         <div class="setting-group" style="margin-bottom:8px">
-            <label style="font-size:0.72rem;color:var(--text-secondary)">API 金鑰</label>
+            <label style="font-size:0.82rem;color:var(--text-secondary)">API 金鑰</label>
             <input type="password" id="settings-tab-apikey" value="${this._escapeHtml(apiKey)}" placeholder="輸入你的 API 金鑰..." style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem;box-sizing:border-box">
         </div>
         <div class="setting-group" style="margin-bottom:8px">
-            <label style="font-size:0.72rem;color:var(--text-secondary)">備用 Groq API Key <span style="font-size:0.65rem">（主 AI 超限時自動切換）</span></label>
+            <label style="font-size:0.82rem;color:var(--text-secondary)">備用 Groq API Key <span style="font-size:0.75rem">（主 AI 超限時自動切換）</span></label>
             <input type="password" id="settings-tab-groq" value="${this._escapeHtml(fallbackKey)}" placeholder="gsk_...（選填）" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem;box-sizing:border-box">
         </div>`;
         html += '</div>';
@@ -3099,7 +3099,7 @@ class RimTownApp {
         html += '</div>';
 
         // --- Version ---
-        html += `<div style="text-align:center;padding:10px;font-size:0.65rem;color:var(--text-muted)">v${typeof RIMTOWN_APP_VERSION!=='undefined'?RIMTOWN_APP_VERSION:'?'}</div>`;
+        html += `<div style="text-align:center;padding:10px;font-size:0.75rem;color:var(--text-muted)">v${typeof RIMTOWN_APP_VERSION!=='undefined'?RIMTOWN_APP_VERSION:'?'}</div>`;
 
         container.innerHTML = html;
     }
@@ -3607,7 +3607,7 @@ class RimTownApp {
                         if (avail.length > 0) {
                             html += '<br>';
                             avail.slice(0, 5).forEach(([id, a]) => {
-                                html += `<button class="trade-btn" style="margin:2px;font-size:0.65rem" data-action="assign-worker" data-val="${key},${id}">+${a.name}</button>`;
+                                html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="assign-worker" data-val="${key},${id}">+${a.name}</button>`;
                             });
                         }
                     }
@@ -3774,7 +3774,7 @@ class RimTownApp {
                     if (nextLv) {
                         const costStr = Object.entries(nextLv.cost).map(([r,a]) => `${r}:${a}`).join(' ');
                         html += `<div><button class="trade-btn" data-action="upgrade-industry" data-val="${key}">升級 Lv${nextLv.lv}</button>
-                            <div style="font-size:0.65rem;color:var(--text-secondary)">${costStr}</div></div>`;
+                            <div style="font-size:0.75rem;color:var(--text-secondary)">${costStr}</div></div>`;
                     }
                     html += '</div>';
                 }
@@ -3827,7 +3827,7 @@ class RimTownApp {
                     if (seasonCrops.length > 0) {
                         html += '<div style="font-size:0.7rem">';
                         seasonCrops.forEach(c => {
-                            html += `<button class="trade-btn" style="margin:2px;font-size:0.65rem" data-action="plant-crop" data-val="${plot.id},${c.key}">${c.icon}${c.name}</button>`;
+                            html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="plant-crop" data-val="${plot.id},${c.key}">${c.icon}${c.name}</button>`;
                         });
                         html += '</div>';
                     } else {
@@ -3893,7 +3893,7 @@ class RimTownApp {
                 if (nextLv) {
                     const costStr = Object.entries(nextLv.cost).map(([r,a]) => `${r}:${a}`).join(' ');
                     html += `<div><button class="trade-btn" data-action="upgrade-industry" data-val="${key}">升級 Lv${nextLv.lv}</button>
-                        <div style="font-size:0.65rem;color:var(--text-secondary)">${costStr}</div></div>`;
+                        <div style="font-size:0.75rem;color:var(--text-secondary)">${costStr}</div></div>`;
                 }
                 html += '</div>';
             }
@@ -3977,7 +3977,7 @@ class RimTownApp {
                 if (seasonCrops.length > 0) {
                     html += '<div style="font-size:0.7rem">';
                     seasonCrops.forEach(c => {
-                        html += `<button class="trade-btn" style="margin:2px;font-size:0.65rem" data-action="plant-crop" data-val="${plot.id},${c.key}">${c.icon}${c.name}</button>`;
+                        html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="plant-crop" data-val="${plot.id},${c.key}">${c.icon}${c.name}</button>`;
                     });
                     html += '</div>';
                 } else {
@@ -4083,7 +4083,7 @@ class RimTownApp {
                     if (available.length > 0) {
                         html += '<br>';
                         available.slice(0, 5).forEach(([id, a]) => {
-                            html += `<button class="trade-btn" style="margin:2px;font-size:0.65rem" data-action="assign-worker" data-val="${key},${id}">+${a.name}</button>`;
+                            html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="assign-worker" data-val="${key},${id}">+${a.name}</button>`;
                         });
                     }
                 }

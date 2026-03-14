@@ -452,18 +452,18 @@ body.rimtown-page .wp-block-post-title {
 
 .resident-name {
     font-weight: bold;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
 }
 
 .resident-job {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     color: var(--info);
 }
 
 .resident-status {
     display: flex;
     gap: 8px;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     color: var(--text-secondary);
 }
 
@@ -1178,15 +1178,15 @@ body.rimtown-page .wp-block-post-title {
 /* Economy Tab */
 .economy-panel { padding: 8px; }
 .econ-section { margin-bottom: 12px; }
-.econ-section h3 { font-size: 0.85rem; margin-bottom: 6px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 3px; }
+.econ-section h3 { font-size: 0.9rem; margin-bottom: 6px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 3px; }
 
 .resource-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
 .resource-item { display: flex; flex-direction: column; align-items: center; padding: 4px; background: var(--bg-secondary); border-radius: 4px; font-size: 0.7rem; }
 .resource-item.res-low { background: rgba(248,113,113,0.15); }
 .resource-item.res-high { background: rgba(74,222,128,0.1); }
 .res-icon { font-size: 1rem; }
-.res-label { color: var(--text-secondary); font-size: 0.6rem; }
-.res-amount { font-weight: bold; font-size: 0.8rem; }
+.res-label { color: var(--text-secondary); font-size: 0.65rem; }
+.res-amount { font-weight: bold; font-size: 0.85rem; }
 
 .merchant-card { background: var(--bg-secondary); border-radius: 6px; padding: 8px; border: 1px solid var(--warning); }
 .merchant-name { font-weight: bold; color: var(--warning); }
@@ -1195,7 +1195,7 @@ body.rimtown-page .wp-block-post-title {
 .trade-offer { display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: 3px 6px; background: var(--bg-primary); border-radius: 3px; font-size: 0.7rem; }
 .trade-offer.trade-sell { border-left: 2px solid var(--positive); }
 .trade-offer.trade-buy { border-left: 2px solid var(--info); }
-.trade-btn { padding: 2px 6px; font-size: 0.6rem; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 3px; cursor: pointer; }
+.trade-btn { padding: 4px 10px; font-size: 0.7rem; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; }
 .trade-btn:hover { background: var(--accent); border-color: var(--accent); }
 
 .building-progress { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; }
@@ -2588,8 +2588,132 @@ body.rimtown-page .wp-block-post-title {
 
     /* Resident cards: tighter */
     .resident-card {
-        padding: 6px 8px;
-        margin-bottom: 4px;
+        padding: 8px 10px;
+        margin-bottom: 6px;
+    }
+
+    /* ── Mobile: enlarge sidebar content text & buttons ── */
+    .econ-section h3 {
+        font-size: 1.05rem;
+        padding-bottom: 5px;
+        margin-bottom: 8px;
+    }
+    .trade-btn {
+        padding: 8px 14px;
+        font-size: 0.85rem;
+        border-radius: 6px;
+        min-height: 36px;
+    }
+    .btn-speed {
+        font-size: 0.8rem !important;
+        padding: 6px 10px !important;
+    }
+    .setting-group label {
+        font-size: 0.88rem !important;
+    }
+    .resident-name {
+        font-size: 1.05rem;
+    }
+    .resident-job {
+        font-size: 0.85rem;
+    }
+    .resident-status {
+        font-size: 0.82rem;
+    }
+    .needs-bar {
+        font-size: 0.78rem;
+    }
+    .needs-bar label {
+        width: 80px;
+    }
+    .needs-bar .bar {
+        height: 8px;
+    }
+    .resource-item {
+        font-size: 0.82rem;
+        padding: 6px;
+    }
+    .res-icon {
+        font-size: 1.2rem;
+    }
+    .res-label {
+        font-size: 0.72rem;
+    }
+    .res-amount {
+        font-size: 0.92rem;
+    }
+    .building-item {
+        font-size: 0.85rem;
+    }
+    .build-name {
+        font-size: 0.88rem;
+    }
+    .build-desc {
+        font-size: 0.78rem;
+    }
+    .build-cost {
+        font-size: 0.78rem;
+    }
+    .build-btn {
+        padding: 4px 12px;
+        font-size: 0.78rem;
+    }
+    .research-current {
+        font-size: 0.85rem;
+    }
+    .progress-text {
+        font-size: 0.78rem;
+    }
+    .news-section h4 {
+        font-size: 0.95rem;
+    }
+    .news-bulletin {
+        font-size: 0.85rem;
+    }
+    .merchant-info {
+        font-size: 0.82rem;
+    }
+    .trade-offer {
+        font-size: 0.82rem;
+    }
+    .completed-buildings {
+        font-size: 0.82rem;
+    }
+    .sub-tab-bar button {
+        font-size: 0.85rem;
+        padding: 10px 6px;
+    }
+    .log-entry {
+        font-size: 0.82rem;
+    }
+    .chat-message {
+        font-size: 0.85rem;
+    }
+    .version-display {
+        font-size: 0.75rem;
+    }
+    .faction-header {
+        font-size: 0.85rem;
+    }
+    .faction-members {
+        font-size: 0.78rem;
+    }
+    .quest-title {
+        font-size: 0.88rem;
+    }
+    .quest-desc {
+        font-size: 0.78rem;
+    }
+    .quest-objectives {
+        font-size: 0.78rem;
+    }
+    .achievement-filters button {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+        min-height: 34px;
+    }
+    .prosperity-bar-label {
+        font-size: 0.78rem;
     }
 }
 
@@ -2668,5 +2792,51 @@ body.rimtown-page .wp-block-post-title {
     }
     .rt-sidebar-tabs .tab-label {
         font-size: 0.65rem;
+    }
+
+    /* iPad: enlarge sidebar content */
+    .econ-section h3 {
+        font-size: 0.95rem;
+    }
+    .trade-btn {
+        padding: 5px 12px;
+        font-size: 0.78rem;
+    }
+    .resident-name {
+        font-size: 1rem;
+    }
+    .resident-job {
+        font-size: 0.8rem;
+    }
+    .resident-status {
+        font-size: 0.78rem;
+    }
+    .needs-bar {
+        font-size: 0.72rem;
+    }
+    .sub-tab-bar button {
+        font-size: 0.8rem;
+        padding: 9px 6px;
+    }
+    .resource-item {
+        font-size: 0.78rem;
+    }
+    .res-icon {
+        font-size: 1.1rem;
+    }
+    .res-label {
+        font-size: 0.68rem;
+    }
+    .res-amount {
+        font-size: 0.88rem;
+    }
+    .building-item {
+        font-size: 0.82rem;
+    }
+    .news-bulletin {
+        font-size: 0.82rem;
+    }
+    .setting-group label {
+        font-size: 0.85rem;
     }
 }
