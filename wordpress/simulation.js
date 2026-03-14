@@ -3733,9 +3733,16 @@ class LifecycleSystem {
             if (avgAge > 40) birthChance = 0.005;
             if (partner.affinity > 60) birthChance *= 1.5;
 
-            // Limit total population
-            const currentPop = Object.values(world.agents).filter(a => !a.isPlayer).length;
-            if (currentPop >= 20) continue;
+            // Population limits
+            if (involvesPlayer) {
+                // Player-NPC couples: max 3 children, no population cap
+                const playerChildCount = (this.playerChildren || []).length;
+                if (playerChildCount >= 3) continue;
+            } else {
+                // NPC-NPC couples: limited by total population
+                const currentPop = Object.values(world.agents).filter(a => !a.isPlayer).length;
+                if (currentPop >= 20) continue;
+            }
 
             if (Math.random() < birthChance) {
                 this._birthChild(world, agent, otherAgent, involvesPlayer);
