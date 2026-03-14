@@ -217,6 +217,22 @@ class Personality {
         const vals = shuffle(allValues).slice(0, 1 + Math.floor(Math.random() * 3));
         return new Personality(traits, '', vals);
     }
+    // Personality compatibility: returns multiplier 0.2 ~ 1.6 for relationship growth
+    static compatibility(traitsA, traitsB) {
+        let score = 0;
+        // Synergy pairs: shared worldview or complementary traits
+        const SYNERGY = [['kind','kind'],['creative','creative'],['optimist','optimist'],['kind','shy'],['charismatic','shy'],['hardworking','hardworking'],['romantic','romantic'],['stoic','neurotic']];
+        // Clash pairs: personality friction
+        const CLASH = [['abrasive','shy'],['abrasive','kind'],['pessimist','optimist'],['lazy','hardworking'],['lazy','perfectionist'],['jealous','charismatic'],['neurotic','neurotic'],['gossip','stoic']];
+        for (const [a, b] of SYNERGY) {
+            if ((traitsA.includes(a) && traitsB.includes(b)) || (traitsA.includes(b) && traitsB.includes(a))) score++;
+        }
+        for (const [a, b] of CLASH) {
+            if ((traitsA.includes(a) && traitsB.includes(b)) || (traitsA.includes(b) && traitsB.includes(a))) score--;
+        }
+        // Clamp to 0.2 ~ 1.6
+        return Math.max(0.2, Math.min(1.6, 1.0 + score * 0.3));
+    }
     get socialModifier() { return this.traits.reduce((s,t) => s + (TRAIT_POOL[t]?.social || 0), 0); }
     get workModifier() { return this.traits.reduce((s,t) => s + (TRAIT_POOL[t]?.work || 0), 0); }
     get moodBase() { return this.traits.reduce((s,t) => s + (TRAIT_POOL[t]?.mood_base || 0), 0); }
@@ -636,13 +652,14 @@ class Agent {
             const others = world.getAgentsAtLocation(this.currentLocation).filter(a => a.agentId !== this.agentId && a.activity === 'stargazing');
             if (others.length) {
                 const companion = pickRandom(others);
+                const starCompat = Personality.compatibility(this.personality.traits, companion.personality.traits);
                 const rel = this.relationships.getOrCreate(companion.agentId, companion.name);
-                rel.modifyAffinity(randInt(2, 5));
-                rel.modifyRomantic(randInt(0, 3));
+                rel.modifyAffinity(Math.round(randInt(1, 4) * starCompat));
+                rel.modifyRomantic(Math.round(randInt(0, 2) * starCompat));
                 rel.addSharedMemory(`一起在${this.currentLocation.replace(/_/g,' ')}看星星`);
                 const otherRel = companion.relationships.getOrCreate(this.agentId, this.name);
-                otherRel.modifyAffinity(randInt(2, 5));
-                otherRel.modifyRomantic(randInt(0, 3));
+                otherRel.modifyAffinity(Math.round(randInt(1, 4) * starCompat));
+                otherRel.modifyRomantic(Math.round(randInt(0, 2) * starCompat));
                 otherRel.addSharedMemory(`一起在${this.currentLocation.replace(/_/g,' ')}看星星`);
                 world.logMessage('social', `${this.name}和${companion.name}一起看星星，感情升溫了。`, this.name, companion.name);
                 this.memory.add(world.tickCount, world.clock.timeStr, 'social', `和${companion.name}一起看星星，很浪漫。`, 7, [companion.name]);
@@ -1070,8 +1087,12 @@ ${this._buildEconomicContext(world)}
                 if (speaker && text) dialogue.push({speaker: speaker.replace(/\*/g,'').trim(), text});
             }
         }
-        const affA = effects.affinity_change_a ?? randInt(-2,5);
-        const affB = effects.affinity_change_b ?? randInt(-2,5);
+        // Apply personality compatibility multiplier to affinity gains
+        const compat = Personality.compatibility(agentA.personality.traits, agentB.personality.traits);
+        let affA = effects.affinity_change_a ?? randInt(-2,5);
+        let affB = effects.affinity_change_b ?? randInt(-2,5);
+        if (affA > 0) affA = Math.round(affA * compat);
+        if (affB > 0) affB = Math.round(affB * compat);
         // Default romantic growth: only grow on strongly positive conversations
         const romA = effects.romantic_change_a ?? (affA >= 3 ? randInt(0,1) : 0);
         const romB = effects.romantic_change_b ?? (affB >= 3 ? randInt(0,1) : 0);
@@ -1101,8 +1122,11 @@ ${this._buildEconomicContext(world)}
 
     _fallbackConversation(agentA, agentB, world, relA, relB) {
         const dialogue = this._generatePersonalityDialogue(agentA, agentB, world, relA, relB);
-        const affA = dialogue._affA ?? randInt(-1,4);
-        const affB = dialogue._affB ?? randInt(-1,4);
+        const compatFb = Personality.compatibility(agentA.personality.traits, agentB.personality.traits);
+        let affA = dialogue._affA ?? randInt(-1,4);
+        let affB = dialogue._affB ?? randInt(-1,4);
+        if (affA > 0) affA = Math.round(affA * compatFb);
+        if (affB > 0) affB = Math.round(affB * compatFb);
         const romA = dialogue._romA ?? 0;
         const romB = dialogue._romB ?? 0;
         const summary = dialogue._summary || `${agentA.name}和${agentB.name}聊了天。`;
@@ -3261,12 +3285,13 @@ class FactionSystem {
                     world.logMessage('faction', `${faction.icon} ${memberNames}組成了「${faction.name}」！`, filtered[0].name);
                     filtered.forEach(a => {
                         a.memory.add(world.tickCount, world.clock.timeStr, 'social', `我加入了「${faction.name}」，成員有${memberNames}。`, 6, filtered.map(x => x.name));
-                        // Boost mutual affinity
+                        // Boost mutual affinity (scaled by personality compatibility)
                         filtered.forEach(b => {
                             if (a.agentId !== b.agentId) {
+                                const factionCompat = Personality.compatibility(a.personality.traits, b.personality.traits);
                                 const rel = a.relationships.getOrCreate(b.agentId, b.name);
-                                rel.modifyAffinity(randInt(3, 8));
-                                rel.modifyTrust(randInt(2, 5));
+                                rel.modifyAffinity(Math.round(randInt(2, 5) * factionCompat));
+                                rel.modifyTrust(Math.round(randInt(1, 3) * factionCompat));
                             }
                         });
                     });
@@ -4419,6 +4444,16 @@ class World {
                 // Only process each pair once (avoid duplicate events)
                 if (agent.agentId > rel.targetId) continue;
                 const otherRel = other.relationships.getOrCreate(agent.agentId, agent.name);
+
+                // --- Relationship decay: affinity drifts toward 0 without interaction ---
+                const ticksSinceLast = this.tickCount - (rel.lastInteractionTick || 0);
+                if (ticksSinceLast > 50) {
+                    // Married/dating couples decay slower
+                    const isCouple = rel.status === 'married' || rel.status === 'dating';
+                    const decayRate = isCouple ? 0.3 : 0.8;
+                    if (rel.affinity > 5) { rel.modifyAffinity(-decayRate); otherRel.modifyAffinity(-decayRate); }
+                    if (rel.romanticInterest > 5 && !isCouple) { rel.modifyRomantic(-0.5); otherRel.modifyRomantic(-0.5); }
+                }
 
                 // --- Natural romantic attraction growth ---
                 // Requires decent affinity and multiple interactions before romance develops
