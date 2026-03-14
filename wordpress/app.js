@@ -1486,7 +1486,7 @@ class RimTownApp {
             ],
             chat: [
                 { key: 'chat', label: '聊天', icon: '💬' },
-                { key: 'records', label: '紀錄', icon: '📝' },
+                { key: 'records', label: '日誌', icon: '📋' },
             ],
             quest: [
                 { key: 'quest', label: '任務', icon: '⚔️' },
@@ -3245,6 +3245,41 @@ class RimTownApp {
             html += '</div>';
         }
 
+        // --- AI 日報 ---
+        const dailyNews = this.state.dailyNews || {};
+        const papers = dailyNews.newspapers || [];
+        if (papers.length > 0) {
+            html += '<div class="news-section"><h4>🗞️ AI 日報</h4>';
+            const display = papers.slice().reverse().slice(0, 10);
+            for (let i = 0; i < display.length; i++) {
+                const paper = display[i];
+                const isExpanded = this._expandedNewspaper === paper.id;
+                const isLatest = i === 0;
+                html += `<div class="news-card ${isExpanded ? 'news-expanded' : ''} ${isLatest ? 'news-latest' : ''}" data-action="view-newspaper" data-val="${paper.id}">`;
+                html += `<div class="news-card-header">`;
+                html += `<div class="news-card-issue">#${paper.id}</div>`;
+                html += `<div class="news-card-meta">`;
+                html += `<div class="news-card-date">第${paper.year}年 ${paper.season} 第${paper.day}天</div>`;
+                html += `<div class="news-card-reporter">✍️ ${paper.reporter}（${paper.reporterJob}）</div>`;
+                html += `</div>`;
+                html += `<div class="news-card-toggle">${isExpanded ? '▲' : '▼'}</div>`;
+                html += `</div>`;
+                if (!isExpanded && paper.content) {
+                    const firstLine = paper.content.split('\n').find(l => l.trim().length > 0) || '';
+                    const preview = firstLine.length > 40 ? firstLine.substring(0, 40) + '…' : firstLine;
+                    html += `<div class="news-card-preview">${this._escapeHtml(preview)}</div>`;
+                }
+                if (isExpanded) {
+                    html += `<div class="news-card-content">${this._escapeHtml(paper.content)}</div>`;
+                }
+                html += '</div>';
+            }
+            if (papers.length > 10) {
+                html += `<p class="muted-text" style="text-align:center;padding:4px 0;font-size:0.7rem">顯示最近 10 期（共 ${papers.length} 期）</p>`;
+            }
+            html += '</div>';
+        }
+
         const chains = this.state.active_chains || [];
         if (chains.length) {
             html += '<div class="chain-section"><h4>進行中的事件鏈</h4>';
@@ -4140,23 +4175,7 @@ class RimTownApp {
     // Records Tab (日報 + 日誌)
     // ============================================================
     renderRecords(container) {
-        if (!this._recordsSubTab) this._recordsSubTab = 'newspaper';
-        let html = '<div class="economy-panel">';
-        html += '<div class="sub-tab-bar">';
-        const subTabs = [
-            { key:'newspaper', label:'日報', icon:'🗞️' },
-            { key:'log', label:'日誌', icon:'📋' },
-        ];
-        subTabs.forEach(t => {
-            const active = this._recordsSubTab === t.key ? ' class="active"' : '';
-            html += `<button${active} data-action="records-subtab" data-val="${t.key}">${t.icon} ${t.label}</button>`;
-        });
-        html += '</div></div>';
-        container.innerHTML = html;
-        const panel = document.createElement('div');
-        container.appendChild(panel);
-        if (this._recordsSubTab === 'newspaper') this.renderNewspaper(panel);
-        else this.renderLog(panel);
+        this.renderLog(container);
     }
 
     // ============================================================
