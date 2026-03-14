@@ -2296,11 +2296,11 @@ class RimTownApp {
         if (!this.state) return;
         this.renderClock();
         this.renderMap();
-        // Skip sidebar re-render when user is actively typing in chat input
-        // to prevent losing focus and clearing their text
-        const chatInput = document.getElementById('chat-input');
-        if (chatInput && document.activeElement === chatInput && chatInput.value.length > 0) {
-            return; // preserve input focus and text
+        // Skip sidebar re-render when user is actively focused on any input/textarea/select
+        // to prevent losing focus (especially on mobile where keyboard would dismiss)
+        const ae = document.activeElement;
+        if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT')) {
+            return; // preserve input focus
         }
         this.renderSidebar();
     }
