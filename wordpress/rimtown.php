@@ -1140,6 +1140,59 @@ add_action('admin_menu', 'rimtown_admin_menu');
 function rimtown_get_changelog() {
     return array(
         array(
+            'version' => '3.3.1',
+            'date'    => '2026-03-14',
+            'changes' => array(
+                '全域加上 overflow-x: hidden，防止手機版/iPad 左右滑動偏移',
+                '手機版 tab icon 從 1rem 放大到 1.35rem，小螢幕 1.2rem，iPad 1.1rem',
+                'tab bar 高度提升（手機 42→48px、小螢幕 38→44px）改善觸控體驗',
+                'sidebar content 加上 overflow-x: hidden + max-width 防止內容溢出',
+                'sub-tab-bar 手機版取消負邊距避免水平溢出',
+                '新增 iPad Portrait (769-1024px) 專用媒體查詢',
+                '版號同步：所有檔案統一為 3.3.1',
+            ),
+        ),
+        array(
+            'version' => '3.3.0',
+            'date'    => '2026-03-14',
+            'changes' => array(
+                'AI 日報從「紀錄」sub-tab 移入「事件」tab，與新聞公告、鎮長選舉等重要資訊整合',
+                '「紀錄」tab 簡化為「日誌」，專門顯示 NPC 對話紀錄',
+                'AI 日報 LLM prompt 大幅增強，新增天氣、資源、選舉、NPC 活動等上下文',
+                '日報結構改為四段式：頭條標題 → 頭條報導 → 鎮務簡報 → 街頭巷尾 → 手記',
+                'max_tokens 800→1200，產出更豐富的 NPC 視角日報內容',
+                '經濟面板資源列表只顯示已取得的項目（amount > 0）',
+                '為 30 種進階物品加上專屬 emoji icon 與中文標籤（木板、磚塊、農作物、加工品等）',
+                '修正手機版點擊 API Key 輸入框時鍵盤會跳掉無法輸入的問題',
+                '版號同步：所有檔案統一為 3.3.0',
+            ),
+        ),
+        array(
+            'version' => '3.2.9',
+            'date'    => '2026-03-14',
+            'changes' => array(
+                '冬季農業產量乘數 0.2→0.4，避免每年冬季必然缺糧崩潰',
+                'NPC 老化速度減半：每 2 季老 1 歲（原本每季 1 歲），延長 NPC 壽命一倍',
+                '結婚門檻提高：交往時間 100→300 ticks、好感 40/35→50/45、浪漫 50/40→55/45、機率 15%→10%',
+                '產業系統對 NPC 職業的壓制從 70%（×0.3）降為 50%（×0.5），NPC 職業仍有存在感',
+                '觀星活動的浪漫值增長新增前提條件：好感度必須 >20 才會產生浪漫',
+                '版號同步：所有檔案統一為 3.2.9',
+            ),
+        ),
+        array(
+            'version' => '3.2.8',
+            'date'    => '2026-03-14',
+            'changes' => array(
+                '玩家-NPC 夫妻生育不受 20 人口上限限制，改為最多 3 個孩子',
+                'NPC-NPC 夫妻仍維持原本的人口上限',
+                '新增 Personality.compatibility() 靜態方法，根據特質組合計算 0.2x ~ 1.6x 倍率',
+                '8 組增益配對 + 8 組衝突配對，套用至所有好感成長管道',
+                '超過 50 ticks 未互動，好感每日 -0.8（情侶 -0.3），浪漫值每日 -0.5',
+                '修復 _checkBirths 中 npc.age 應為 agent.age 的未定義變數 bug',
+                '版號同步：所有檔案統一為 3.2.8',
+            ),
+        ),
+        array(
             'version' => '3.2.7',
             'date'    => '2026-03-14',
             'changes' => array(
