@@ -623,7 +623,11 @@ class RimTownApp {
         const screen = document.getElementById('login-screen');
         if (!screen) return;
         screen.classList.add('fade-out');
-        setTimeout(() => screen.remove(), 600);
+        setTimeout(() => {
+            screen.remove();
+            // Trigger tutorial after login screen is gone
+            this.setupTutorial();
+        }, 600);
     }
 
     // =====================================================
@@ -635,6 +639,9 @@ class RimTownApp {
 
         // Check if tutorial already completed
         if (localStorage.getItem('rimtown_tutorial_done')) return;
+
+        // Don't show tutorial if not logged in (login screen is showing)
+        if (document.getElementById('login-screen')) return;
 
         // Show tutorial
         overlay.classList.remove('hidden');
