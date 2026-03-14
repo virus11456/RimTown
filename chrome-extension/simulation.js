@@ -3727,7 +3727,7 @@ class LifecycleSystem {
             const involvesPlayer = agent.isPlayer || otherAgent.isPlayer;
 
             // Birth probability based on age and relationship quality
-            const avgAge = (npc.age + otherAgent.age) / 2;
+            const avgAge = (agent.age + otherAgent.age) / 2;
             let birthChance = 0.02;
             if (avgAge > 35) birthChance = 0.01;
             if (avgAge > 40) birthChance = 0.005;

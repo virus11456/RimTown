@@ -15,6 +15,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 - **Faction System**: NPCs form social circles (work buddies, drinking pals, gossip circles) with alliances and rivalries
 - **Seasonal Festivals**: Spring Festival, Midsummer Bonfire, Harvest Festival, Winter Solstice with quests and decorations
 - **NPC Lifecycle**: Aging, death (old age/disease/accidents), birth, graveyard with epitaphs
+- **Legacy / New Game+ System**: Player can have children, start a new generation inheriting resources, buildings, industries, and NPC memories
 - **Exploration**: 6 discoverable zones outside town (forest, ruins, mine, mountain, cave, swamp) with expeditions
 - **Achievement System**: 50+ achievements across social, romance, economy, survival, faction, exploration, industry categories
 - **NPC Conversation Visualization**: Speech bubbles on map when NPCs talk to each other
@@ -48,10 +49,22 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ### v3.2.7 (2026-03-14)
 
-**繼承/二周目系統**
-- 新增繼承/二周目系統：玩家可生子，結局後以下一代重新開始
-- 玩家婚後可觸發生育事件，孩子繼承父母特質
-- 結局畫面新增「開始新一代」按鈕，繼承部分資源與關係
+**玩家生育系統**
+- 玩家與 NPC 結婚後可觸發生育事件（`_checkBirths` 支援玩家-NPC 夫妻）
+- 孩子繼承父母特質（2 個）+ 1 個隨機新特質
+- 孩子標記為 `_isPlayerChild`，用於繼承人選擇
+
+**LegacySystem 繼承引擎**
+- 收集繼承（collectLegacy）：50% 銀幣、30% 食物、已建建築（含效果）、已開發產業（清除工人）、60% 繁榮度、已完成研究、農地解鎖狀態、NPC 對玩家的好感/記憶
+- 套用繼承（applyLegacy）：繼承人為玩家最年長孩子（無子嗣則新旅人帶遺產）、繼承 30% 技能經驗、NPC 好感轉移 50%、信任轉移 30%、NPC 新增「上一代的孩子來了」回憶、世代計數器 +1
+
+**UI**
+- 結局畫面新增「開始二周目」按鈕（含確認對話框）
+- 城鎮資訊列顯示「第 N 代」金色標籤（第 2 代起顯示）
+- 3 個新成就：為人父母（👶 生下第一個孩子）、二周目（🔄 開始第二代）、三代傳承（👑 進入第三代）
+
+**Bug 修復**
+- 修復 `_checkBirths` 中 `npc.age` 應為 `agent.age` 的未定義變數 bug（會導致生育系統完全無法運作）
 - 版號同步：所有檔案統一為 3.2.7
 
 ### v3.2.6 (2026-03-14)
