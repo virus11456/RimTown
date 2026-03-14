@@ -3435,13 +3435,23 @@ class RimTownApp {
 
         const sp = this.state.stockpile || {};
         const res = sp.resources || {};
-        const icons = {food:'🌾',wood:'🪵',stone:'🪨',metal:'⚙️',cloth:'🧵',herbs:'🌿',silver:'💰',meals:'🍲',tools:'🔧',clothing:'👕',medicine:'💊',furniture:'🪑',research_points:'📚'};
-        const labels = {food:'食物',wood:'木材',stone:'石材',metal:'金屬',cloth:'布料',herbs:'草藥',silver:'銀幣',meals:'餐食',tools:'工具',clothing:'衣物',medicine:'藥品',furniture:'家具',research_points:'研究'};
+        const icons = {food:'🌾',wood:'🪵',stone:'🪨',metal:'⚙️',cloth:'🧵',herbs:'🌿',silver:'💰',meals:'🍲',tools:'🔧',clothing:'👕',medicine:'💊',furniture:'🪑',research_points:'📚',
+            plank:'🪵',hardwood:'🪓',brick:'🧱',marble:'🏛️',steel:'⚔️',gold:'🥇',
+            wheat:'🌾',rice:'🍚',corn:'🌽',potato:'🥔',cotton:'🧶',flowers:'🌸',mushroom:'🍄',sugarcane:'🎋',tea:'🍵',grapes:'🍇',golden_wheat:'✨',dragon_fruit:'🐉',
+            bread:'🍞',pastry:'🧁',beer:'🍺',wine:'🍷',perfume:'🌹',fine_tea:'🫖',herbal_tea:'🍃',sugar:'🍬',jam:'🫙',luxury_furniture:'🛋️'};
+        const labels = {food:'食物',wood:'木材',stone:'石材',metal:'金屬',cloth:'布料',herbs:'草藥',silver:'銀幣',meals:'餐食',tools:'工具',clothing:'衣物',medicine:'藥品',furniture:'家具',research_points:'研究',
+            plank:'木板',hardwood:'硬木',brick:'磚塊',marble:'大理石',steel:'鋼鐵',gold:'黃金',
+            wheat:'小麥',rice:'稻米',corn:'玉米',potato:'馬鈴薯',cotton:'棉花',flowers:'花卉',mushroom:'蘑菇',sugarcane:'甘蔗',tea:'茶葉',grapes:'葡萄',golden_wheat:'金色小麥',dragon_fruit:'火龍果',
+            bread:'麵包',pastry:'糕點',beer:'啤酒',wine:'葡萄酒',perfume:'香水',fine_tea:'精品茶',herbal_tea:'草本茶',sugar:'砂糖',jam:'果醬',luxury_furniture:'高級家具'};
 
         if (this._economySubTab === 'resources') {
             // Resources
             html += '<div class="econ-section"><h3>資源</h3><div class="resource-grid">';
-            for (const [r, amount] of Object.entries(res)) {
+            const resEntries = Object.entries(res).filter(([, amount]) => Math.round(amount) > 0);
+            if (resEntries.length === 0) {
+                html += '<p class="muted-text" style="grid-column:1/-1;text-align:center;padding:12px 0">目前沒有任何資源</p>';
+            }
+            for (const [r, amount] of resEntries) {
                 const icon = icons[r] || '📦';
                 const label = labels[r] || r;
                 const cls = amount < 10 ? 'res-low' : amount > 100 ? 'res-high' : '';
