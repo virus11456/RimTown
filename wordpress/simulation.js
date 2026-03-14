@@ -3711,17 +3711,20 @@ class LifecycleSystem {
     }
 
     _checkBirths(world) {
-        // Check for married couples
-        const npcs = Object.values(world.agents).filter(a => !a.isPlayer);
-        for (const npc of npcs) {
-            if (npc.age < 20 || npc.age > 45) continue;
-            const partner = npc.relationships.getPartner();
+        // Check for married couples (including player-NPC couples)
+        const allAgents = Object.values(world.agents);
+        for (const agent of allAgents) {
+            if (agent.age < 20 || agent.age > 45) continue;
+            const partner = agent.relationships.getPartner();
             if (!partner || partner.status !== 'married') continue;
             const otherAgent = world.agents[partner.targetId];
-            if (!otherAgent || otherAgent.isPlayer) continue;
+            if (!otherAgent) continue;
 
             // Only check once per couple (by comparing IDs)
-            if (npc.agentId > partner.targetId) continue;
+            if (agent.agentId > partner.targetId) continue;
+
+            // Player-NPC couples: mark child as player's child
+            const involvesPlayer = agent.isPlayer || otherAgent.isPlayer;
 
             // Birth probability based on age and relationship quality
             const avgAge = (npc.age + otherAgent.age) / 2;
@@ -3735,12 +3738,12 @@ class LifecycleSystem {
             if (currentPop >= 20) continue;
 
             if (Math.random() < birthChance) {
-                this._birthChild(world, npc, otherAgent);
+                this._birthChild(world, agent, otherAgent, involvesPlayer);
             }
         }
     }
 
-    _birthChild(world, parentA, parentB) {
+    _birthChild(world, parentA, parentB, isPlayerChild = false) {
         const gender = Math.random() < 0.5 ? 'male' : 'female';
         const namePool = gender === 'male' ? BABY_NAMES_MALE : BABY_NAMES_FEMALE;
         const usedNames = new Set(Object.values(world.agents).map(a => a.name));
@@ -3788,6 +3791,15 @@ class LifecycleSystem {
         parentA.relationships.getOrCreate(agent.agentId, name).modifyAffinity(60);
         parentB.relationships.getOrCreate(agent.agentId, name).modifyAffinity(60);
 
+        // Track player's children for inheritance
+        if (isPlayerChild) {
+            agent._isPlayerChild = true;
+            agent._parentNames = [parentA.name, parentB.name];
+            if (!this.playerChildren) this.playerChildren = [];
+            this.playerChildren.push({ agentId: agent.agentId, name, parentNames: [parentA.name, parentB.name], birthTick: world.tickCount });
+            world.logMessage('system', `🎉 你的孩子${name}出生了！將來可以繼承你的一切。`);
+        }
+
         // Town celebration
         Object.values(world.agents).forEach(a => {
             if (a.agentId !== agent.agentId) {
@@ -3818,6 +3830,7 @@ class LifecycleSystem {
         return {
             graveyard: this.graveyard.slice(-10000),
             births: this.births.slice(-10000),
+            playerChildren: this.playerChildren || [],
             _daysSinceCheck: this._daysSinceCheck,
         };
     }
@@ -4014,6 +4027,213 @@ class ExplorationSystem {
     }
 }
 
+// --- Legacy / New Game+ System ---
+class LegacySystem {
+    // Collects inheritance data from the current world and applies it to a new one
+    static collectLegacy(world) {
+        const player = world.agents?.player;
+        const npcs = Object.values(world.agents || {}).filter(a => !a.isPlayer);
+
+        // Find player's children
+        const playerChildren = npcs.filter(a => a._isPlayerChild);
+
+        // Determine heir: oldest player child, or null
+        let heir = null;
+        if (playerChildren.length > 0) {
+            heir = playerChildren.reduce((oldest, c) => c.age > oldest.age ? c : oldest, playerChildren[0]);
+        }
+
+        // Collect NPC memories about the player (for "remembering the previous generation")
+        const npcMemories = {};
+        for (const npc of npcs) {
+            const relToPlayer = npc.relationships?.relationships?.player;
+            if (relToPlayer && relToPlayer.affinity !== 0) {
+                npcMemories[npc.agentId] = {
+                    name: npc.name,
+                    affinity: relToPlayer.affinity,
+                    trust: relToPlayer.trust,
+                    status: relToPlayer.status,
+                    memories: npc.memory?.entries
+                        ?.filter(m => m.relatedAgents?.includes(player?.name))
+                        ?.slice(-5)
+                        ?.map(m => m.content) || [],
+                };
+            }
+        }
+
+        // Collect ending stats
+        const stats = world.multiEnding?._collectStats?.(world) || {};
+
+        return {
+            version: 1,
+            generation: (world._legacyGeneration || 1),
+            previousPlayerName: player?.name || '旅人',
+            heir: heir ? {
+                agentId: heir.agentId,
+                name: heir.name,
+                age: heir.age,
+                gender: heir.gender,
+                traits: heir.personality.traits,
+                values: heir.personality.values,
+                background: heir.personality.background,
+                parentNames: heir._parentNames || [],
+                skills: Object.fromEntries(Object.entries(heir.skills.skills).map(([k,s]) => [k, { xp: Math.floor(s.xp * 0.3), passion: s.passion }])),
+            } : null,
+            // 中度繼承: 50% silver
+            silver: Math.floor((world.stockpile?.get('silver') || 0) * 0.5),
+            food: Math.floor((world.stockpile?.get('food') || 0) * 0.3),
+            // Keep completed buildings
+            buildings: (world.buildings?.completed || []).map(b => ({ ...b })),
+            // Keep industries (keys and levels)
+            industries: world.industry ? JSON.parse(JSON.stringify(world.industry.industries || {})) : {},
+            industryMeta: {
+                townLevel: world.industry?.townLevel || 1,
+                townLevelName: world.industry?.townLevelName || '荒村',
+                maxIndustries: world.industry?.maxIndustries || 1,
+                firstChoice: world.industry?.firstChoice || null,
+            },
+            // Prosperity (carry over partially)
+            prosperity: Math.floor((world.prosperity?.prosperity || 0) * 0.6),
+            // NPC memories of previous generation
+            npcMemories,
+            // Town history
+            endingType: world.multiEnding?.endingTriggered || null,
+            stats,
+            // Farm data (partial)
+            farms: world.farm ? JSON.parse(JSON.stringify(world.farm.farms || {})) : {},
+            // Research progress (keep completed)
+            research: world.research ? Object.fromEntries(
+                Object.entries(world.research.projects)
+                    .filter(([, p]) => p.completed)
+                    .map(([k, p]) => [k, { ...p }])
+            ) : {},
+        };
+    }
+
+    static applyLegacy(world, legacy) {
+        if (!legacy || legacy.version !== 1) return;
+
+        world._legacyGeneration = (legacy.generation || 1) + 1;
+
+        // --- Heir becomes new player ---
+        if (legacy.heir) {
+            const player = world.agents?.player;
+            if (player) {
+                player.name = legacy.heir.name;
+                player.age = legacy.heir.age || 18;
+                player.gender = legacy.heir.gender || 'male';
+                player.personality = new Personality(
+                    legacy.heir.traits || ['creative', 'kind'],
+                    `${legacy.previousPlayerName}的孩子。繼承了家業，在邊境鎮長大。第${world._legacyGeneration}代。`,
+                    legacy.heir.values || ['冒險', '友情']
+                );
+                // Inherit some skills (30%)
+                if (legacy.heir.skills) {
+                    for (const [sk, sv] of Object.entries(legacy.heir.skills)) {
+                        const s = player.skills.get(sk);
+                        if (s) { s.xp = sv.xp; s.passion = sv.passion; }
+                    }
+                }
+            }
+        } else {
+            // No heir: new traveler with legacy background
+            const player = world.agents?.player;
+            if (player) {
+                player.personality = new Personality(
+                    ['creative', 'kind'],
+                    `收到了${legacy.previousPlayerName}的遺產，來到邊境鎮開始新生活。第${world._legacyGeneration}代。`,
+                    ['冒險', '友情']
+                );
+            }
+        }
+
+        // --- Silver & food ---
+        if (legacy.silver > 0) world.stockpile.add('silver', legacy.silver);
+        if (legacy.food > 0) world.stockpile.add('food', legacy.food);
+
+        // --- Buildings ---
+        if (legacy.buildings?.length && world.buildings) {
+            world.buildings.completed = legacy.buildings;
+            // Re-apply building effects
+            for (const b of legacy.buildings) {
+                if (b.effects) {
+                    for (const [k, v] of Object.entries(b.effects)) {
+                        world.buildings.activeEffects[k] = (world.buildings.activeEffects[k] || 0) + v;
+                    }
+                }
+            }
+        }
+
+        // --- Industries ---
+        if (legacy.industries && Object.keys(legacy.industries).length > 0 && world.industry) {
+            world.industry.industries = legacy.industries;
+            // Clear workers from inherited industries (they're from last gen)
+            for (const ind of Object.values(world.industry.industries)) {
+                ind.workers = [];
+            }
+            world.industry.townLevel = legacy.industryMeta?.townLevel || 1;
+            world.industry.townLevelName = legacy.industryMeta?.townLevelName || '荒村';
+            world.industry.maxIndustries = legacy.industryMeta?.maxIndustries || 1;
+            world.industry.firstChoice = legacy.industryMeta?.firstChoice || null;
+            world.industry.needsIndustryChoice = false;
+            world.industry._updateSynergies?.();
+        }
+
+        // --- Prosperity ---
+        if (legacy.prosperity > 0 && world.prosperity) {
+            world.prosperity.prosperity = legacy.prosperity;
+            world.prosperity._updateLevel?.();
+        }
+
+        // --- Research (keep completed) ---
+        if (legacy.research && world.research) {
+            for (const [k, p] of Object.entries(legacy.research)) {
+                if (world.research.projects[k]) {
+                    Object.assign(world.research.projects[k], p);
+                }
+            }
+        }
+
+        // --- Farm plots (keep planted) ---
+        if (legacy.farms && Object.keys(legacy.farms).length > 0 && world.farm) {
+            for (const [k, f] of Object.entries(legacy.farms)) {
+                if (world.farm.farms[k]) {
+                    world.farm.farms[k].unlocked = f.unlocked;
+                    // Don't carry over crop state, just the unlocked status
+                }
+            }
+        }
+
+        // --- NPC memories of previous generation ---
+        // NPCs that survived from last gen will remember the previous player
+        if (legacy.npcMemories) {
+            for (const npc of Object.values(world.agents).filter(a => !a.isPlayer)) {
+                const prevMemory = legacy.npcMemories[npc.agentId];
+                if (prevMemory) {
+                    // Transfer affinity as "memory of the parent" -> goodwill toward child
+                    const rel = npc.relationships.getOrCreate('player', world.agents.player?.name || '旅人');
+                    const inheritedAffinity = Math.floor(prevMemory.affinity * 0.5);
+                    const inheritedTrust = Math.floor(prevMemory.trust * 0.3);
+                    rel.modifyAffinity(inheritedAffinity);
+                    rel.modifyTrust(inheritedTrust);
+                    // Add a memory about the previous generation
+                    npc.memory.add(0, '第1年 春季 第1天 6:00',  'legacy',
+                        `${legacy.previousPlayerName}的${legacy.heir ? '孩子' : '繼承人'}來到了鎮上。想起了和${legacy.previousPlayerName}的日子。`,
+                        8, [world.agents.player?.name || '旅人', legacy.previousPlayerName]);
+                }
+            }
+        }
+
+        // --- Log the inheritance ---
+        const heirName = legacy.heir?.name || '新旅人';
+        world.logMessage('system', `📜 第${world._legacyGeneration}代開始！${heirName}繼承了${legacy.previousPlayerName}的遺產。`);
+        world.logMessage('system', `💰 繼承銀幣 ${legacy.silver}，已建建築 ${legacy.buildings?.length || 0} 棟，產業 ${Object.keys(legacy.industries || {}).length} 個。`);
+        if (legacy.endingType) {
+            world.logMessage('system', `📖 上一代結局：${legacy.endingType}。鎮民們仍然記得${legacy.previousPlayerName}的故事。`);
+        }
+    }
+}
+
 // --- World ---
 class World {
     constructor() {
@@ -4173,6 +4393,15 @@ class World {
         this._loadDefaultResidents();
         const player = new PlayerAgent();
         this.addAgent(player);
+    }
+    startNewGamePlus() {
+        // Collect legacy from current world state
+        const legacy = LegacySystem.collectLegacy(this);
+        // Reset the world
+        this.reset();
+        // Apply legacy data to the fresh world
+        LegacySystem.applyLegacy(this, legacy);
+        return legacy;
     }
     _processRelationships() {
         const npcs = Object.values(this.agents).filter(a => !a.isPlayer);
@@ -4371,6 +4600,7 @@ class World {
     serialize() {
         const serializeAgent = (a) => ({
             id:a.agentId, name:a.name, age:a.age, gender:a.gender, isPlayer:a.isPlayer,
+            _isPlayerChild: a._isPlayerChild || false, _parentNames: a._parentNames || null,
             jobKey: a.job?.key || null,
             homeLocation: a.homeLocation, currentLocation: a.currentLocation,
             mood: a.mood, activity: a.activity, currentThought: a.currentThought,
@@ -4390,6 +4620,7 @@ class World {
         });
         return {
             version: 2,
+            _legacyGeneration: this._legacyGeneration || 1,
             savedAt: new Date().toISOString(),
             clock: { day:this.clock.day, hour:this.clock.hour, minute:this.clock.minute, season:this.clock.season, year:this.clock.year },
             tickCount: this.tickCount,
@@ -4441,6 +4672,7 @@ class World {
             this.clock.day=data.clock.day; this.clock.hour=data.clock.hour; this.clock.minute=data.clock.minute;
             this.clock.season=data.clock.season; this.clock.year=data.clock.year;
             this.tickCount = data.tickCount;
+            this._legacyGeneration = data._legacyGeneration || 1;
             this.paused = data.paused || false;
             this.messageLog = data.messageLog || [];
 
@@ -4468,6 +4700,7 @@ class World {
                 }
                 agent.currentLocation = ad.currentLocation;
                 if (ad.gender) agent.gender = ad.gender;
+                if (ad._isPlayerChild) { agent._isPlayerChild = true; agent._parentNames = ad._parentNames; }
                 agent.mood = ad.mood; agent.activity = ad.activity;
                 agent.moodModifier = ad.moodModifier || 0;
                 agent.currentThought = ad.currentThought || '';
@@ -4600,6 +4833,7 @@ class World {
             if (data.lifecycle) {
                 this.lifecycle.graveyard = data.lifecycle.graveyard || [];
                 this.lifecycle.births = data.lifecycle.births || [];
+                this.lifecycle.playerChildren = data.lifecycle.playerChildren || [];
                 this.lifecycle._daysSinceCheck = data.lifecycle._daysSinceCheck || 0;
             }
 

@@ -112,6 +112,10 @@ const ACHIEVEMENTS = {
     achievement_25: { name: '成就獵人', desc: '解鎖25個成就', icon: '🏅', category: 'special' },
     achievement_50: { name: '成就大師', desc: '解鎖50個成就', icon: '🥇', category: 'special' },
     achievement_99: { name: '完美主義者', desc: '解鎖全部99個成就', icon: '💯', category: 'special' },
+    // === Legacy (3) ===
+    first_child: { name: '為人父母', desc: '生下第一個孩子', icon: '👶', category: 'legacy' },
+    new_game_plus: { name: '二周目', desc: '開始第二代的旅程', icon: '🔄', category: 'legacy' },
+    generation_3: { name: '三代傳承', desc: '進入第三代', icon: '👑', category: 'legacy' },
 };
 
 // =====================================================
@@ -787,6 +791,9 @@ class RimTownApp {
         if ((this.state.lifecycle?.graveyard || []).length >= 1) this._unlockAchievement('first_death');
         if ((this.state.lifecycle?.births || []).length >= 1) this._unlockAchievement('first_birth');
         if ((this.state.lifecycle?.births || []).length >= 5) this._unlockAchievement('births_5');
+        if ((this.state.lifecycle?.playerChildren || []).length >= 1) this._unlockAchievement('first_child');
+        if ((this.world._legacyGeneration || 1) >= 2) this._unlockAchievement('new_game_plus');
+        if ((this.world._legacyGeneration || 1) >= 3) this._unlockAchievement('generation_3');
         const festLog = this.state.festivals?.festivalLog || [];
         if (festLog.length >= 1) this._unlockAchievement('first_festival');
         const festSeasons = new Set(festLog.map(f => f.season));
@@ -1750,6 +1757,7 @@ class RimTownApp {
                 case 'close-custom-npc': document.getElementById('custom-npc-modal')?.remove(); break;
                 // Ending
                 case 'close-ending': document.getElementById('ending-overlay')?.remove(); break;
+                case 'start-newgame-plus': this._startNewGamePlus(); break;
                 // Settings tab actions
                 case 'settings-save-all': this._saveSettingsFromTab(); break;
                 case 'settings-login': document.getElementById('auth-modal')?.classList.remove('hidden'); break;
@@ -2769,6 +2777,60 @@ class RimTownApp {
         document.body.appendChild(wrapper);
     }
 
+    _startNewGamePlus() {
+        // Confirm
+        if (!confirm('確定要開始二周目嗎？\n\n將繼承：50% 銀幣、已建建築、已開發產業、部分繁榮度\n鎮民會記得上一代的故事。\n\n當前遊戲進度將被覆蓋。')) return;
+
+        // Remove ending overlay
+        document.getElementById('ending-overlay')?.remove();
+        this._endingShown = false;
+
+        // Pause simulation during transition
+        if (this.simInterval) clearInterval(this.simInterval);
+
+        // Start new game plus
+        const legacy = this.world.startNewGamePlus();
+
+        // Re-init conversation engine
+        if (this.llmClient) {
+            this.world.conversationEngine = new ConversationEngine(this.llmClient);
+        }
+
+        // Reset app state
+        this.chatTarget = null;
+        this.selectedAgent = null;
+        this.agentColors = {};
+        this.state = this.world.getState();
+
+        // Regenerate tile map
+        this._generateTileMapLayout();
+        if (this.tileMap) this.tileMap.agentPositions = {};
+
+        // Save
+        this._saveCurrentTown();
+
+        // Restart simulation
+        this.startSimulation();
+
+        // Update UI
+        this.render();
+
+        // Show transition message
+        const gen = this.world._legacyGeneration || 2;
+        const heirName = legacy.heir?.name || '新旅人';
+        const msg = legacy.heir
+            ? `第${gen}代開始！${heirName}繼承了${legacy.previousPlayerName}的一切，踏上了新的旅程。`
+            : `第${gen}代開始！一位新的旅人帶著${legacy.previousPlayerName}的遺產來到了邊境鎮。`;
+
+        setTimeout(() => {
+            this.world.logMessage('system', `🌅 ═══════════════════════════`);
+            this.world.logMessage('system', `🔄 ${msg}`);
+            this.world.logMessage('system', `🌅 ═══════════════════════════`);
+            this.state = this.world.getState();
+            this.render();
+        }, 500);
+    }
+
     renderResidentsList(container) {
         if (!this.state) return;
         let html = '';
@@ -2778,8 +2840,10 @@ class RimTownApp {
         const travelCount = (this.state.travelling_agents || []).length;
         const travelText = travelCount > 0 ? `（+${travelCount} 外出）` : '';
         const townName = this._getCurrentTownName() || '邊境鎮';
+        const gen = this.world._legacyGeneration || 1;
+        const genText = gen > 1 ? ` <span style="font-size:10px;color:#f0c040;margin-left:4px">第${gen}代</span>` : '';
         html += `<div class="town-info-bar">
-            <span class="town-info-name">${townName}</span>
+            <span class="town-info-name">${townName}${genText}</span>
             <span class="town-info-pop">👤 ${popCount}${travelText}</span>
             <span class="town-info-clock">${clock.time_str || ''}</span>
         </div>`;

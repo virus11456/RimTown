@@ -442,8 +442,15 @@ class MultiEndingSystem {
             html += '</div>';
         }
 
-        // Close button
-        html += `<button id="ending-close-btn" data-action="close-ending" style="padding:12px 32px;font-size:16px;background:${t.color};color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:bold">繼續遊玩</button>`;
+        // Buttons: continue playing + new game plus
+        html += `<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">`;
+        html += `<button data-action="close-ending" style="padding:12px 32px;font-size:16px;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:8px;cursor:pointer;font-weight:bold">繼續遊玩</button>`;
+        html += `<button data-action="start-newgame-plus" style="padding:12px 32px;font-size:16px;background:${t.color};color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:bold">🔄 開始二周目</button>`;
+        html += `</div>`;
+
+        // New game plus info
+        html += `<p style="font-size:12px;color:#888;margin-top:12px">二周目將繼承：50% 銀幣、已建建築、已開發產業、部分繁榮度<br>鎮民會記得上一代的故事</p>`;
+
         html += '</div></div>';
 
         return html;
