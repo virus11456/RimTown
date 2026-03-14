@@ -30,7 +30,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v3.2.6.zip` from Releases
+1. Download `rimtown-v3.2.7.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -45,6 +45,14 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v3.2.7 (2026-03-14)
+
+**繼承/二周目系統**
+- 新增繼承/二周目系統：玩家可生子，結局後以下一代重新開始
+- 玩家婚後可觸發生育事件，孩子繼承父母特質
+- 結局畫面新增「開始新一代」按鈕，繼承部分資源與關係
+- 版號同步：所有檔案統一為 3.2.7
 
 ### v3.2.6 (2026-03-14)
 
