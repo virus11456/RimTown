@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 3.3.5
+ * Version: 3.4.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '3.3.5');
+define('RIMTOWN_VERSION', '3.4.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -605,6 +605,91 @@ function rimtown_shortcode($atts) {
                     <div id="auth-reset-success" class="auth-error" style="color:var(--accent)"></div>
                     <div class="modal-buttons"><button id="auth-reset-btn" class="btn-accent">重設密碼</button><button id="auth-reset-back" class="auth-close-btn">返回登入</button></div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Tutorial / Story Intro Overlay -->
+        <div id="tutorial-overlay" class="tutorial-overlay hidden">
+            <div class="tutorial-backdrop"></div>
+            <div class="tutorial-card">
+                <!-- Step 0: Story Intro -->
+                <div class="tutorial-step" data-step="0">
+                    <div class="tutorial-story-icon">🏘️</div>
+                    <h2 class="tutorial-story-title">邊境鎮</h2>
+                    <p class="tutorial-story-subtitle">RimTown — AI Town Simulation</p>
+                    <div class="tutorial-story-text">
+                        <p>在帝國邊疆的荒野之中，一群拓荒者建立了一座小小的聚落。</p>
+                        <p>他們來自不同的背景 —— 有農夫、鐵匠、醫生、商人，甚至是流亡的學者。每個人都帶著自己的故事、個性和夢想來到這裡。</p>
+                        <p>作為這座 <strong>邊境鎮</strong> 的管理者，你需要引導居民們建設家園、發展經濟、抵禦外敵，並見證他們之間的愛恨情仇。</p>
+                        <p style="color:var(--accent-light);margin-top:12px;font-style:italic">「每位居民都是獨立的 AI，擁有自己的思想和意志。你的選擇，將塑造這座鎮的命運。」</p>
+                    </div>
+                </div>
+                <!-- Step 1: Map -->
+                <div class="tutorial-step hidden" data-step="1">
+                    <div class="tutorial-step-icon">🗺️</div>
+                    <h3>地圖與村莊</h3>
+                    <div class="tutorial-step-text">
+                        <p>左側的 <strong>像素地圖</strong> 是你的村莊。你可以看到：</p>
+                        <ul>
+                            <li>🏠 各種建築 —— 酒館、農場、鐵匠鋪、診所等</li>
+                            <li>👤 移動中的居民 —— 他們會自主上班、社交、吃飯、睡覺</li>
+                            <li>🌙 日夜交替 —— 白天工作，傍晚社交，深夜休息</li>
+                            <li>💬 對話氣泡 —— 居民之間正在進行的交談</li>
+                        </ul>
+                        <p>點擊地圖上的地點可以移動你的角色。</p>
+                    </div>
+                </div>
+                <!-- Step 2: Residents & Chat -->
+                <div class="tutorial-step hidden" data-step="2">
+                    <div class="tutorial-step-icon">👥</div>
+                    <h3>居民與聊天</h3>
+                    <div class="tutorial-step-text">
+                        <p>右側面板的 <strong>居民</strong> 頁籤顯示所有村民。點擊任一居民可以查看他的詳細資訊。</p>
+                        <p>切換到 <strong>聊天</strong> 頁籤，選擇一位居民就可以和他對話！他們會根據自己的個性、心情和對你的好感度來回應。</p>
+                        <ul>
+                            <li>💕 好感度高的居民會更友善</li>
+                            <li>💼 你可以選擇自己的職業</li>
+                            <li>💒 你甚至可以和居民約會、求婚！</li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- Step 3: Economy & Industry -->
+                <div class="tutorial-step hidden" data-step="3">
+                    <div class="tutorial-step-icon">💰</div>
+                    <h3>經濟與產業</h3>
+                    <div class="tutorial-step-text">
+                        <p><strong>經濟</strong> 頁籤可以查看資源、建築、科技樹和貿易。</p>
+                        <p><strong>產業</strong> 頁籤管理農場種植、工廠加工和產業發展。</p>
+                        <ul>
+                            <li>🌾 種植作物、收穫農產品</li>
+                            <li>🏭 建造工廠加工原料</li>
+                            <li>📈 隨著人口增長，城鎮等級提升</li>
+                            <li>⚔️ 完成任務獲得獎勵</li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- Step 4: Events & Tips -->
+                <div class="tutorial-step hidden" data-step="4">
+                    <div class="tutorial-step-icon">📰</div>
+                    <h3>事件與探索</h3>
+                    <div class="tutorial-step-text">
+                        <p>遊戲中會發生各種 <strong>隨機事件</strong>：</p>
+                        <ul>
+                            <li>🗳️ 鎮長選舉 —— 投票選出你支持的候選人</li>
+                            <li>⚔️ 盜匪襲擊 —— 守衛和居民會奮力防禦</li>
+                            <li>🎪 季節慶典 —— 春祭、仲夏篝火、豐收節、冬至</li>
+                            <li>🗺️ 探索系統 —— 派遣探險隊探索鎮外區域</li>
+                            <li>🗞️ AI 日報 —— 村莊記者會報導鎮上的大小事</li>
+                        </ul>
+                        <p style="color:var(--text-muted);font-size:0.72rem;margin-top:10px">提示：在設定中配置 AI 語言模型（如 Groq 免費），可以讓居民對話更加生動！</p>
+                    </div>
+                </div>
+                <div class="tutorial-nav">
+                    <button id="tutorial-prev" class="tutorial-btn hidden">上一步</button>
+                    <div class="tutorial-dots" id="tutorial-dots"></div>
+                    <button id="tutorial-next" class="tutorial-btn tutorial-btn-primary">開始旅程</button>
+                </div>
+                <button id="tutorial-skip" class="tutorial-skip">跳過引導</button>
             </div>
         </div>
 
@@ -1227,6 +1312,17 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '3.4.0',
+            'date'    => '2026-03-14',
+            'changes' => array(
+                '新增 5 步驟新手教學引導（劇情故事 → 地圖 → 居民聊天 → 經濟產業 → 事件探索）',
+                'NPC 日程改版：工作時間留在工作地點，下班後社交，睡覺時待在家不聊天',
+                '夜晚視覺加強：tint 15%→35%、新增月亮、星星 40→80 顆、營火/火把/窗燈光圈加大',
+                '新增夜間暗角 vignette 效果',
+                '版號同步：所有檔案統一為 3.4.0',
+            ),
+        ),
         array(
             'version' => '3.3.5',
             'date'    => '2026-03-14',

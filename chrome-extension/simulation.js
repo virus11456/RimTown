@@ -494,7 +494,7 @@ class Agent {
             return this._decideNightActivity(hour);
         }
 
-        // Daytime: work hours
+        // Daytime: work hours — employed NPCs MUST work, no socializing off-site
         if (this.job) {
             const [ws,we] = this.job.workHours;
             if (ws <= hour && hour < we) {
@@ -502,7 +502,7 @@ class Agent {
                 this.activity='working'; return;
             }
         }
-        // Evening / free time
+        // Free time (before/after work, weekends, unemployed)
         const urgent = this.needs.mostUrgent;
         if (urgent==='hunger') { this.activity='eating'; return; }
         if (urgent==='social') { this.activity='socializing'; return; }
@@ -569,11 +569,11 @@ class Agent {
         else if (this.activity==='working' && this.job) this.targetLocation = this.job.workplace;
         else if (this.activity==='socializing') {
             if (isWorkHours && workplace) {
-                // During work hours, socialize at workplace or very nearby (break room chat)
-                this.targetLocation = pickRandom([workplace, workplace, 'tavern', 'town_square']);
+                // During work hours, socialize ONLY at workplace (break room chat) — no leaving work
+                this.targetLocation = workplace;
             } else if (isNight) this.targetLocation = pickRandom(['tavern','tavern','town_square','park']);
             else {
-                // After work: prefer home area, tavern, town square
+                // Before/after work: prefer home area, tavern, town square
                 const homeArea = this.homeLocation;
                 this.targetLocation = pickRandom(['tavern','town_square','park','well','chapel', homeArea]);
             }
@@ -586,8 +586,8 @@ class Agent {
         else if (this.activity==='night_stroll') this.targetLocation = pickRandom(['park','town_square','hill','meadow']);
         else if (this.activity==='night_mischief') this.targetLocation = pickRandom(['town_square','general_store','tavern']);
         else if (this.activity==='wandering') {
-            // During work hours, wander near workplace; otherwise near home
-            if (isWorkHours && workplace) this.targetLocation = pickRandom([workplace, 'town_square', 'well']);
+            // Employed during work hours: stay near workplace
+            if (isWorkHours && workplace) this.targetLocation = workplace;
             else {
                 const homeArea = this.homeLocation;
                 this.targetLocation = pickRandom(['town_square','park','well', homeArea, homeArea]);
@@ -611,6 +611,8 @@ class Agent {
     }
     _trySocialInteraction(world) {
         if (world.tickCount - this._lastInteractionTick < this._interactionCooldown) return;
+        // Sleeping NPCs never initiate conversations
+        if (this.activity === 'sleeping') return;
         const others = world.getAgentsAtLocation(this.currentLocation).filter(a => a.agentId !== this.agentId && a.activity !== 'sleeping');
         if (!others.length) return;
         const weights = others.map(o => {

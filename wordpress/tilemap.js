@@ -2985,22 +2985,37 @@ class PixelTileMap {
 
         if (nightAmount <= 0) return;
 
-        // Very light blue tint instead of heavy fog — just enough to shift palette
-        const tintAlpha = nightAmount * 0.15;
-        ctx.fillStyle = `rgba(15, 20, 60, ${tintAlpha.toFixed(3)})`;
+        // Night blue tint — strong enough to feel dark but still readable
+        const tintAlpha = nightAmount * 0.35;
+        ctx.fillStyle = `rgba(8, 12, 40, ${tintAlpha.toFixed(3)})`;
         ctx.fillRect(0, 0, ow, oh);
 
+        // Second pass: subtle purple/indigo layer for depth
+        const tintAlpha2 = nightAmount * 0.08;
+        ctx.fillStyle = `rgba(30, 15, 60, ${tintAlpha2.toFixed(3)})`;
+        ctx.fillRect(0, 0, ow, oh);
+
+        // Moon at night (only when nightAmount > 0.4)
+        if (nightAmount > 0.4) {
+            this._renderMoon(ctx, h, nightAmount);
+        }
+
         // Stars at night
-        if (nightAmount > 0.3) {
-            this._renderStars(ctx, nightAmount * 0.9);
+        if (nightAmount > 0.2) {
+            this._renderStars(ctx, nightAmount);
         }
 
         // Campfires & torches — the main night indicators
         this._renderCampfires(ctx, nightAmount);
 
         // Window lights at night
-        if (nightAmount > 0.2) {
+        if (nightAmount > 0.15) {
             this._renderWindowLights(ctx, h);
+        }
+
+        // Vignette effect at night — darker edges
+        if (nightAmount > 0.3) {
+            this._renderNightVignette(ctx, ow, oh, nightAmount);
         }
     }
 
@@ -3036,11 +3051,11 @@ class PixelTileMap {
     }
 
     _drawCampfire(ctx, cx, cy, alpha, frame, seed) {
-        // Warm ground glow
-        const glowRadius = 40 + Math.sin(frame * 0.08) * 5;
+        // Warm ground glow — larger radius for contrast against dark night
+        const glowRadius = 55 + Math.sin(frame * 0.08) * 6;
         const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowRadius);
-        grad.addColorStop(0, `rgba(255, 160, 50, ${(alpha * 0.25).toFixed(3)})`);
-        grad.addColorStop(0.5, `rgba(255, 100, 20, ${(alpha * 0.10).toFixed(3)})`);
+        grad.addColorStop(0, `rgba(255, 160, 50, ${(alpha * 0.35).toFixed(3)})`);
+        grad.addColorStop(0.4, `rgba(255, 100, 20, ${(alpha * 0.15).toFixed(3)})`);
         grad.addColorStop(1, 'rgba(255, 80, 0, 0)');
         ctx.fillStyle = grad;
         ctx.fillRect(cx - glowRadius, cy - glowRadius, glowRadius * 2, glowRadius * 2);
@@ -3095,41 +3110,106 @@ class PixelTileMap {
         ctx.fillStyle = `rgba(255, 240, 100, ${(alpha * 0.8).toFixed(2)})`;
         ctx.fillRect(tx, ty - 2 - fh + 1, 1, Math.max(1, Math.floor(fh * 0.5)));
 
-        // Small warm glow
-        const gr = 18 + flicker * 4;
+        // Warm glow — bigger and brighter
+        const gr = 26 + flicker * 5;
         const grad = ctx.createRadialGradient(tx, ty - 3, 0, tx, ty - 3, gr);
-        grad.addColorStop(0, `rgba(255, 150, 50, ${(alpha * 0.12).toFixed(3)})`);
+        grad.addColorStop(0, `rgba(255, 150, 50, ${(alpha * 0.2).toFixed(3)})`);
+        grad.addColorStop(0.5, `rgba(255, 120, 30, ${(alpha * 0.06).toFixed(3)})`);
         grad.addColorStop(1, 'rgba(255, 120, 30, 0)');
         ctx.fillStyle = grad;
         ctx.fillRect(tx - gr, ty - 3 - gr, gr * 2, gr * 2);
     }
 
     _renderStars(ctx, alpha) {
-        // Use deterministic positions based on grid so stars don't flicker
         const seed = 42;
-        const count = 40;
+        const count = 80; // More stars for denser sky
         for (let i = 0; i < count; i++) {
-            const sx = ((seed * (i + 1) * 73) % this.mapWidth);
-            const sy = ((seed * (i + 1) * 37 + i * 91) % (this.mapHeight * 0.6));
-            const twinkle = 0.5 + 0.5 * Math.sin(this.animFrame * 0.02 + i * 2.1);
-            const size = (i % 5 === 0) ? 2 : 1;
-            ctx.fillStyle = `rgba(255, 255, 240, ${(alpha * twinkle * 0.9).toFixed(2)})`;
+            const sx = ((seed * (i + 1) * 73 + i * 17) % this.mapWidth);
+            const sy = ((seed * (i + 1) * 37 + i * 91) % (this.mapHeight * 0.55));
+            const twinkle = 0.4 + 0.6 * Math.sin(this.animFrame * 0.025 + i * 2.1);
+            const isBright = (i % 7 === 0);
+            const size = isBright ? 2 : 1;
+            const brightness = isBright ? 1.0 : 0.85;
+            ctx.fillStyle = `rgba(255, 255, 240, ${(alpha * twinkle * brightness).toFixed(2)})`;
             ctx.fillRect(Math.floor(sx), Math.floor(sy), size, size);
+            // Bright stars get a subtle glow halo
+            if (isBright && alpha > 0.5) {
+                ctx.fillStyle = `rgba(200, 220, 255, ${(alpha * twinkle * 0.15).toFixed(2)})`;
+                ctx.fillRect(Math.floor(sx) - 1, Math.floor(sy) - 1, 4, 4);
+            }
         }
     }
 
+    _renderMoon(ctx, hour, nightAmount) {
+        // Moon position moves across the sky from east to west
+        const moonProgress = (hour >= 19) ? (hour - 19) / 12 : (hour + 5) / 12;
+        const mx = this.mapWidth * 0.15 + moonProgress * this.mapWidth * 0.7;
+        const arc = Math.sin(moonProgress * Math.PI);
+        const my = this.mapHeight * 0.06 + (1 - arc) * this.mapHeight * 0.1;
+        const moonAlpha = nightAmount * 0.9;
+
+        // Moon glow (large soft halo)
+        const glowR = 28;
+        const grad = ctx.createRadialGradient(mx, my, 0, mx, my, glowR);
+        grad.addColorStop(0, `rgba(200, 220, 255, ${(moonAlpha * 0.2).toFixed(3)})`);
+        grad.addColorStop(0.4, `rgba(150, 180, 230, ${(moonAlpha * 0.08).toFixed(3)})`);
+        grad.addColorStop(1, 'rgba(150, 180, 230, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(mx - glowR, my - glowR, glowR * 2, glowR * 2);
+
+        // Moon body (crescent effect)
+        ctx.fillStyle = `rgba(240, 245, 255, ${(moonAlpha * 0.95).toFixed(2)})`;
+        ctx.beginPath();
+        ctx.arc(mx, my, 6, 0, Math.PI * 2);
+        ctx.fill();
+        // Shadow for crescent shape
+        ctx.fillStyle = `rgba(8, 12, 40, ${(moonAlpha * 0.85).toFixed(2)})`;
+        ctx.beginPath();
+        ctx.arc(mx + 3, my - 1, 5, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    _renderNightVignette(ctx, w, h, nightAmount) {
+        const vigAlpha = nightAmount * 0.25;
+        // Top edge
+        const gradT = ctx.createLinearGradient(0, 0, 0, h * 0.2);
+        gradT.addColorStop(0, `rgba(0, 0, 15, ${vigAlpha.toFixed(3)})`);
+        gradT.addColorStop(1, 'rgba(0, 0, 15, 0)');
+        ctx.fillStyle = gradT;
+        ctx.fillRect(0, 0, w, h * 0.2);
+        // Bottom edge
+        const gradB = ctx.createLinearGradient(0, h * 0.85, 0, h);
+        gradB.addColorStop(0, 'rgba(0, 0, 15, 0)');
+        gradB.addColorStop(1, `rgba(0, 0, 15, ${vigAlpha.toFixed(3)})`);
+        ctx.fillStyle = gradB;
+        ctx.fillRect(0, h * 0.85, w, h * 0.15);
+        // Left edge
+        const gradL = ctx.createLinearGradient(0, 0, w * 0.12, 0);
+        gradL.addColorStop(0, `rgba(0, 0, 15, ${(vigAlpha * 0.6).toFixed(3)})`);
+        gradL.addColorStop(1, 'rgba(0, 0, 15, 0)');
+        ctx.fillStyle = gradL;
+        ctx.fillRect(0, 0, w * 0.12, h);
+        // Right edge
+        const gradR = ctx.createLinearGradient(w * 0.88, 0, w, 0);
+        gradR.addColorStop(0, 'rgba(0, 0, 15, 0)');
+        gradR.addColorStop(1, `rgba(0, 0, 15, ${(vigAlpha * 0.6).toFixed(3)})`);
+        ctx.fillStyle = gradR;
+        ctx.fillRect(w * 0.88, 0, w * 0.12, h);
+    }
+
     _renderWindowLights(ctx, hour) {
-        const lightAlpha = (hour >= 22 || hour < 4) ? 0.7 : (hour >= 20 ? (hour - 20) * 0.35 : hour >= 19 ? (hour - 19) * 0.7 : (6 - hour) * 0.35);
+        const lightAlpha = (hour >= 22 || hour < 4) ? 0.8 : (hour >= 20 ? (hour - 20) * 0.4 : hour >= 19 ? (hour - 19) * 0.8 : (6 - hour) * 0.4);
         // Draw warm glow on building zones
         for (const [locId, zone] of Object.entries(this.buildingZones)) {
             // Some buildings have lights off late at night
             if ((hour >= 1 && hour < 5) && !['tavern','guardpost','clinic'].includes(locId)) continue;
             const cx = (zone.x + zone.w / 2) * TILE;
             const cy = (zone.y + zone.h / 2) * TILE;
-            const radius = Math.max(zone.w, zone.h) * TILE * 0.6;
+            const radius = Math.max(zone.w, zone.h) * TILE * 0.7;
             const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-            grad.addColorStop(0, `rgba(255, 200, 80, ${(lightAlpha * 0.3).toFixed(2)})`);
-            grad.addColorStop(1, 'rgba(255, 200, 80, 0)');
+            grad.addColorStop(0, `rgba(255, 200, 80, ${(lightAlpha * 0.4).toFixed(2)})`);
+            grad.addColorStop(0.6, `rgba(255, 180, 60, ${(lightAlpha * 0.12).toFixed(2)})`);
+            grad.addColorStop(1, 'rgba(255, 180, 60, 0)');
             ctx.fillStyle = grad;
             ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
         }

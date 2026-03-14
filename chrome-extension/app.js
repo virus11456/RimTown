@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v3.3.5
-const RIMTOWN_APP_VERSION = '3.3.5';
+// RimTown - Frontend App (WordPress Plugin) v3.4.0
+const RIMTOWN_APP_VERSION = '3.4.0';
 const ELECTION_POLICIES_LABELS = {economy:'經濟發展',welfare:'社會福利',defense:'軍事防禦',culture:'文化教育',nature:'自然保育',freedom:'個人自由'};
 
 // =====================================================
@@ -322,6 +322,7 @@ class RimTownApp {
         this.setupControlListeners();
         this.setupSettingsListeners();
         this.setupAuthListeners();
+        this.setupTutorial();
         this._updateAccountButton();
         this._loadAchievementsFromCloud();
         // Auto-sync from cloud on startup if already logged in
@@ -491,6 +492,59 @@ class RimTownApp {
         } catch (e) {
             if (errEl) errEl.textContent = e.message || '重設失敗';
         }
+    }
+
+    // =====================================================
+    // TUTORIAL — New player intro & story guide
+    // =====================================================
+    setupTutorial() {
+        const overlay = document.getElementById('tutorial-overlay');
+        if (!overlay) return;
+        if (localStorage.getItem('rimtown_tutorial_done')) return;
+        overlay.classList.remove('hidden');
+        this._tutorialStep = 0;
+        const totalSteps = 5;
+        const dotsEl = document.getElementById('tutorial-dots');
+        if (dotsEl) {
+            dotsEl.innerHTML = '';
+            for (let i = 0; i < totalSteps; i++) {
+                const dot = document.createElement('span');
+                dot.className = 'tutorial-dot' + (i === 0 ? ' active' : '');
+                dotsEl.appendChild(dot);
+            }
+        }
+        const showStep = (step) => {
+            this._tutorialStep = step;
+            overlay.querySelectorAll('.tutorial-step').forEach(s => {
+                s.classList.toggle('hidden', parseInt(s.dataset.step) !== step);
+            });
+            dotsEl?.querySelectorAll('.tutorial-dot').forEach((d, i) => {
+                d.classList.toggle('active', i === step);
+            });
+            const prevBtn = document.getElementById('tutorial-prev');
+            const nextBtn = document.getElementById('tutorial-next');
+            if (prevBtn) prevBtn.classList.toggle('hidden', step === 0);
+            if (nextBtn) {
+                nextBtn.textContent = step === 0 ? '開始旅程' : (step === totalSteps - 1 ? '進入遊戲' : '下一步');
+            }
+        };
+        document.getElementById('tutorial-next')?.addEventListener('click', () => {
+            if (this._tutorialStep < totalSteps - 1) showStep(this._tutorialStep + 1);
+            else this._dismissTutorial();
+        });
+        document.getElementById('tutorial-prev')?.addEventListener('click', () => {
+            if (this._tutorialStep > 0) showStep(this._tutorialStep - 1);
+        });
+        document.getElementById('tutorial-skip')?.addEventListener('click', () => this._dismissTutorial());
+        showStep(0);
+    }
+
+    _dismissTutorial() {
+        const overlay = document.getElementById('tutorial-overlay');
+        if (!overlay) return;
+        localStorage.setItem('rimtown_tutorial_done', '1');
+        overlay.classList.add('fade-out');
+        setTimeout(() => overlay.remove(), 500);
     }
 
     _showAccountMenu() {

@@ -31,7 +31,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v3.3.5.zip` from Releases
+1. Download `rimtown-v3.4.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -46,6 +46,23 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v3.4.0 (2026-03-14)
+
+**新手引導 / NPC 日程系統 / 夜間視覺加強**
+- 新增 5 步驟新手教學引導：劇情故事介紹 → 地圖操作 → 居民聊天 → 經濟產業 → 事件探索
+- 首次進入遊戲自動觸發教學，完成後不再顯示（localStorage 記錄）
+- NPC 日程系統改版：工作時間必須留在工作地點，不可離開崗位去聊天
+- 下班後到睡前為社交時間，可自由到酒館、廣場等地聊天
+- 睡覺時間 NPC 待在家中，不會發起或參與對話
+- 夜晚視覺大幅加強：藍色 tint 從 15% 提升到 35%，加入紫色深度層
+- 新增月亮渲染（新月造型，東升西落動畫軌跡）
+- 星星從 40 顆增加到 80 顆，亮星加光暈效果
+- 營火光圈從 40px 擴大到 55px，亮度提升
+- 火把光圈從 18px 擴大到 26px，增加中層漸層
+- 窗燈光圈半徑和亮度提升，更早出現（nightAmount > 0.15）
+- 新增夜間暗角（vignette）效果，畫面邊緣自然暗化
+- 以上修正同步套用至 WordPress 與 Chrome Extension 版本
 
 ### v3.3.5 (2026-03-14)
 
