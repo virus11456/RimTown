@@ -1272,15 +1272,57 @@ body.rimtown-page .wp-block-post-title {
 .log-entry.type-discovery { border-left: 2px solid #a78bfa; padding-left: 6px; }
 
 /* ===== NPC Conversation Display ===== */
-.npc-convo-section { border-bottom: 2px solid var(--border); margin-bottom: 8px; }
-.npc-convo-entry { padding: 6px 10px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
-.npc-convo-entry:hover { background: rgba(255,255,255,0.03); }
-.npc-convo-header { font-size: 0.72rem; margin-bottom: 2px; }
-.npc-convo-summary { font-size: 0.68rem; color: var(--text-secondary); }
-.npc-convo-dialogue { display: none; margin-top: 6px; padding: 6px 8px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+.npc-convo-section { margin-bottom: 8px; }
+.npc-convo-entry {
+    padding: 8px 10px;
+    margin: 6px 4px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.npc-convo-entry:hover { background: rgba(255,255,255,0.05); border-color: var(--accent); }
+.npc-convo-header {
+    font-size: 0.78rem;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+.npc-convo-toggle {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    margin-right: 2px;
+    transition: transform 0.2s;
+    display: inline-block;
+}
+.npc-convo-entry.expanded .npc-convo-toggle { transform: rotate(90deg); }
+.npc-convo-summary {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-top: 2px;
+}
+.npc-convo-entry.expanded .npc-convo-summary { color: var(--accent-light); }
+.npc-convo-dialogue {
+    display: none;
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.25);
+    border-radius: 6px;
+    border-left: 2px solid var(--accent);
+}
 .npc-convo-entry.expanded .npc-convo-dialogue { display: block; }
-.npc-convo-entry.expanded .npc-convo-summary { color: var(--accent); }
-.npc-convo-line { font-size: 0.68rem; color: var(--text-primary); margin: 3px 0; line-height: 1.4; }
+.npc-convo-line {
+    font-size: 0.72rem;
+    color: var(--text-primary);
+    margin: 6px 0;
+    line-height: 1.5;
+    padding-left: 4px;
+}
+.npc-convo-line + .npc-convo-line { border-top: 1px solid rgba(255,255,255,0.04); padding-top: 6px; }
 .npc-convo-speaker { color: var(--accent-light); font-weight: bold; }
 
 /* ===== Login Modal ===== */

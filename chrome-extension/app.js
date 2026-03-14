@@ -1703,7 +1703,7 @@ class RimTownApp {
                 // Agent
                 case 'select-agent': this.selectAgent(val); break;
                 // NPC conversation expand
-                case 'toggle-convo': el.classList.toggle('collapsed'); break;
+                case 'toggle-convo': el.classList.toggle('expanded'); break;
                 // Economy
                 case 'trade': { const [idx, amount] = val.split(','); this.executeTrade(parseInt(idx), parseInt(amount)); this._unlockAchievement('first_trade'); this._tradeCount++; } break;
                 case 'build': this.startBuilding(val); break;
@@ -3112,13 +3112,13 @@ class RimTownApp {
         // Show recent NPC conversations at the top
         const npcConvos = (this.state.npc_conversations || []).slice().reverse();
         if (npcConvos.length) {
-            html += '<div class="npc-convo-section"><h4 style="padding:6px 10px;color:var(--accent);font-size:0.75rem;border-bottom:1px solid var(--border)">村民對話</h4>';
+            html += '<div class="npc-convo-section"><h4 style="padding:8px 10px;color:var(--accent);font-size:0.8rem;margin:0">村民對話</h4>';
             npcConvos.slice(0, 8).forEach(c => {
                 html += `<div class="npc-convo-entry" data-action="toggle-convo">
-                    <div class="npc-convo-header"><span class="log-time">${c.time}</span><strong>${c.agentA}</strong> &amp; <strong>${c.agentB}</strong>
-                    <span style="font-size:0.6rem;color:var(--text-muted);margin-left:4px">@ ${this._locationLabel(c.location)}</span></div>
+                    <div class="npc-convo-header"><span class="npc-convo-toggle">▶</span><span class="log-time">${c.time}</span><strong>${c.agentA}</strong> &amp; <strong>${c.agentB}</strong>
+                    <span style="font-size:0.65rem;color:var(--text-muted);margin-left:4px">@ ${this._locationLabel(c.location)}</span></div>
                     <div class="npc-convo-summary">${c.summary}</div>
-                    <div class="npc-convo-dialogue" style="display:block">`;
+                    <div class="npc-convo-dialogue">`;
                 (c.dialogue || []).forEach(d => {
                     html += `<div class="npc-convo-line"><span class="npc-convo-speaker">${d.speaker}:</span> ${this._escapeHtml(d.text)}</div>`;
                 });
