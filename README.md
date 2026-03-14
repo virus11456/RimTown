@@ -31,7 +31,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v3.2.9.zip` from Releases
+1. Download `rimtown-v3.3.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -46,6 +46,19 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v3.3.0 (2026-03-14)
+
+**AI 日報系統重構 & UI 整合 & Bug 修正**
+- AI 日報從「紀錄」sub-tab 移入「事件」tab，與新聞公告、鎮長選舉等重要資訊整合
+- 「紀錄」tab 簡化為「日誌」，專門顯示 NPC 對話紀錄
+- AI 日報 LLM prompt 大幅增強，新增天氣、資源、選舉、NPC 活動等上下文
+- 日報結構改為四段式：📰 頭條標題 → 🔥 頭條報導 → 📋 鎮務簡報 → 💬 街頭巷尾 → ✍️ 手記
+- max_tokens 800→1200，產出更豐富的 NPC 視角日報內容
+- 經濟面板資源列表只顯示已取得的項目（amount > 0）
+- 為 30 種進階物品加上專屬 emoji icon 與中文標籤（木板、磚塊、農作物、加工品等）
+- 修正手機版點擊 API Key 輸入框時鍵盤會跳掉無法輸入的問題
+- 版號同步：所有檔案統一為 3.3.0
 
 ### v3.2.9 (2026-03-14)
 
