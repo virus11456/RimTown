@@ -31,7 +31,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v3.2.7.zip` from Releases
+1. Download `rimtown-v3.2.8.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -47,7 +47,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## Changelog
 
-### v3.2.7 (2026-03-14)
+### v3.2.8 (2026-03-14)
 
 **玩家生育系統**
 - 玩家與 NPC 結婚後可觸發生育事件（`_checkBirths` 支援玩家-NPC 夫妻）
@@ -81,7 +81,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 **Bug 修復**
 - 修復 `_checkBirths` 中 `npc.age` 應為 `agent.age` 的未定義變數 bug（會導致生育系統完全無法運作）
-- 版號同步：所有檔案統一為 3.2.7
+- 版號同步：所有檔案統一為 3.2.8
 
 ### v3.2.6 (2026-03-14)
 
