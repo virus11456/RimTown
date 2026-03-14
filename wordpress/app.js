@@ -2864,7 +2864,7 @@ class RimTownApp {
                 const jobDefs = typeof JOB_DEFINITIONS !== 'undefined' ? JOB_DEFINITIONS : {};
                 for (const [k, v] of Object.entries(jobDefs)) {
                     if (k === 'mayor') continue;
-                    html += `<button class="job-btn" data-action="player-choose-job" data-val="${k}" style="font-size:0.7rem;padding:3px 8px">${v.title}</button>`;
+                    html += `<button class="job-btn" data-action="player-choose-job" data-val="${k}" style="font-size:0.7rem;padding:5px 10px;border:1px solid rgba(255,255,255,0.3)">${v.title}</button>`;
                 }
                 html += `</div>`;
             }
