@@ -1594,6 +1594,22 @@ body.rimtown-page .wp-block-post-title {
 .election-bar-fill.winner {
     background: var(--warning);
 }
+.btn-vote {
+    width: 100%;
+    padding: 4px 8px;
+    margin-top: 6px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #fff;
+    background: var(--accent);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+}
+.btn-vote:hover {
+    opacity: 0.85;
+}
 .election-total {
     font-size: 0.7rem;
     color: var(--text-muted);
