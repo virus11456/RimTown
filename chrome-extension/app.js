@@ -603,6 +603,13 @@ class RimTownApp {
             hint = activeQuest.description;
         }
 
+        // If there are active side quests, mention them
+        const activeSides = (typeof SIDE_QUESTS !== 'undefined' ? SIDE_QUESTS : [])
+            .filter(sq => qs.sideQuests?.[sq.id]?.status === 'active');
+        if (activeSides.length > 0) {
+            hint += ` | 📖 支線：${activeSides[0].title}`;
+        }
+
         el.querySelector('.quest-guidance-icon').textContent = icon;
         el.querySelector('.quest-guidance-title').textContent = `目前目標：${title}`;
         el.querySelector('.quest-guidance-hint').textContent = hint;
@@ -781,6 +788,26 @@ class RimTownApp {
     _startAchievementChecker() {
         // Check achievements every 5 seconds
         setInterval(() => this._checkAchievements(), 5000);
+        // Check story events every 3 seconds
+        setInterval(() => this._checkStoryEventDisplay(), 3000);
+    }
+
+    _checkStoryEventDisplay() {
+        if (!this.world?.questSystem) return;
+        const event = this.world.questSystem.getPendingStoryEvent();
+        if (!event) return;
+        this._showStoryEventToast(event);
+    }
+
+    _showStoryEventToast(event) {
+        // Reuse achievement toast element with different styling
+        const toast = document.getElementById('achievement-toast');
+        if (!toast) return;
+        toast.innerHTML = `<div class="ach-toast-icon" style="font-size:2rem">${event.icon}</div><div class="ach-toast-info"><div class="ach-toast-title" style="color:var(--accent-light, #80dfff)">【${event.title}】</div><div class="ach-toast-desc" style="font-size:0.78rem;line-height:1.5;max-width:300px">${event.text}</div></div>`;
+        toast.classList.remove('hidden');
+        toast.classList.add('show');
+        // Story events stay longer (8 seconds) since they have more text
+        setTimeout(() => { toast.classList.remove('show'); toast.classList.add('hidden'); }, 8000);
     }
 
     _checkAchievements() {
@@ -4513,6 +4540,73 @@ class RimTownApp {
                 html += '</div>';
             }
             html += '</div>';
+        }
+
+        // ============================================================
+        // 每日目標
+        // ============================================================
+        if (qs.dailyObjective) {
+            html += `<div class="econ-section">`;
+            html += `<h3>⭐ 每日目標</h3>`;
+            html += `<div class="quest-card quest-active" style="border-left:3px solid var(--accent)">`;
+            html += `<div class="quest-title">${qs.dailyObjective.icon || '📋'} ${qs.dailyObjective.text}</div>`;
+            if (qs.dailyObjective.reward) {
+                const rewardStr = Object.entries(qs.dailyObjective.reward)
+                    .map(([r, a]) => `${rewardLabels[r] || r} ${a}`)
+                    .join('  ');
+                html += `<div class="quest-rewards" style="margin-top:2px;font-size:0.72rem">獎勵：${rewardStr}</div>`;
+            }
+            html += `</div></div>`;
+        }
+
+        // ============================================================
+        // 支線任務
+        // ============================================================
+        const sideQuests = qs.sideQuests || {};
+        const activeSides = Object.values(sideQuests).filter(q => q.status === 'active');
+        const completedSides = Object.values(sideQuests).filter(q => q.status === 'completed');
+        if (activeSides.length > 0 || completedSides.length > 0) {
+            html += `<div class="econ-section"><h3>📖 支線任務</h3>`;
+            html += `<div style="font-size:0.75rem;color:var(--text-secondary)">進行中：${activeSides.length} | 已完成：${completedSides.length}</div>`;
+            html += `</div>`;
+
+            for (const quest of activeSides) {
+                html += `<div class="quest-card quest-active" style="border-left:3px solid #e88d3f">`;
+                html += `<div class="quest-title">📖 ${quest.title}</div>`;
+                html += `<div class="quest-desc">${quest.description}</div>`;
+                if (quest.story) {
+                    html += `<div style="font-size:0.72rem;color:var(--text-secondary);font-style:italic;margin:4px 0;padding:4px 8px;border-left:2px solid rgba(232,141,63,0.4);background:rgba(232,141,63,0.05)">${quest.story}</div>`;
+                }
+                if (quest.objectives) {
+                    html += '<div class="quest-objectives">';
+                    for (const obj of quest.objectives) {
+                        const pct = Math.min(100, Math.round((obj.progress / obj.target) * 100));
+                        const done = obj.completed;
+                        html += `<div class="quest-objective ${done ? 'done' : ''}">`;
+                        html += `<span style="font-size:0.75rem">${done ? '☑' : '☐'} ${obj.label}</span>`;
+                        html += `<span class="quest-obj-progress" style="font-size:0.7rem">${obj.progress}/${obj.target}</span>`;
+                        html += `<div class="progress-bar" style="height:3px;margin-top:2px"><div class="progress-fill" style="width:${pct}%;background:${done ? 'var(--positive)' : '#e88d3f'}"></div></div>`;
+                        html += '</div>';
+                    }
+                    html += '</div>';
+                }
+                if (quest.rewards) {
+                    const rewardStr = Object.entries(quest.rewards)
+                        .map(([r, a]) => `${rewardLabels[r] || r} ${a}`)
+                        .join('  ');
+                    html += `<div class="quest-rewards" style="margin-top:4px;font-size:0.75rem">獎勵：${rewardStr}</div>`;
+                }
+                html += '</div>';
+            }
+
+            for (const quest of completedSides) {
+                html += `<div class="quest-card quest-completed">`;
+                html += `<div class="quest-title">✅ ${quest.title}</div>`;
+                if (quest.onComplete) {
+                    html += `<div class="quest-complete-msg">${quest.onComplete}</div>`;
+                }
+                html += '</div>';
+            }
         }
 
         // ============================================================

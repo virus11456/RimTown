@@ -423,9 +423,312 @@ const MAIN_QUESTS = [
     },
 ];
 
+// ============================================================
+// 支線任務定義 — NPC 角色故事驅動
+// ============================================================
+// trigger: 觸發條件（主線進度/好感度/時間/季節）
+// story: 故事文字，增加劇情帶入感
+// ============================================================
+
+const SIDE_QUESTS = [
+    // ── 第一章支線 ──
+    {
+        id: 'side_wang_recipe',
+        chapter: 1,
+        title: '王麗的私房菜',
+        type: 'side',
+        trigger: { mainQuest: 'ch1_settle', npcAffinity: { wang_li: 10 } },
+        story: '「嘿，新來的！你看起來瘦巴巴的。來，嚐嚐我的拿手菜。不過我缺一些食材...幫我找找？」王麗笑著遞給你一張紙條。',
+        description: '幫王麗收集食材，品嚐她的私房菜。',
+        objectives: [
+            { id: 'gather_food', type: 'resource', resource: 'food', target: 30, label: '收集 30 份食材' },
+            { id: 'talk_wang', type: 'npc_affinity', npcId: 'wang_li', target: 20, label: '和王麗好感度達 20' },
+        ],
+        rewards: { silver: 15, reputation: 3 },
+        onComplete: '王麗端出一桌好菜，整個酒館都飄著香氣。「怎麼樣？好吃吧？以後你就是我的常客了！」你感覺到了家的溫暖。',
+        npcHints: {
+            wang_li: { minAffinity: 5, hint: '我最近在研究一道新菜，需要一些特別的食材。你能幫忙嗎？' },
+        },
+    },
+    {
+        id: 'side_zhang_masterwork',
+        chapter: 1,
+        title: '鐵匠的心事',
+        type: 'side',
+        trigger: { mainQuest: 'ch1_survive', npcAffinity: { zhang_hao: 15 } },
+        story: '你偶然發現張豪在工坊後面偷偷寫著什麼。他一看到你，慌忙把紙藏起來。「沒...沒什麼。」他的臉紅了。你注意到紙上寫的是一首詩。',
+        description: '了解張豪的內心世界，幫助他找到表達自己的方式。',
+        objectives: [
+            { id: 'talk_zhang', type: 'npc_affinity', npcId: 'zhang_hao', target: 30, label: '和張豪好感度達 30' },
+            { id: 'get_metal', type: 'resource', resource: 'metal', target: 20, label: '收集 20 金屬' },
+        ],
+        rewards: { silver: 25, reputation: 5 },
+        onComplete: '張豪終於鼓起勇氣，把他的詩刻在了一件精美的鐵器上。「謝謝你...你是第一個知道我會寫詩的人。」他遞給你一把特製的工具作為謝禮。',
+        npcHints: {
+            zhang_hao: { minAffinity: 10, hint: '...你不會覺得一個鐵匠寫詩很奇怪吧？' },
+        },
+    },
+    {
+        id: 'side_liu_letter',
+        chapter: 1,
+        title: '未寄出的情書',
+        type: 'side',
+        trigger: { mainQuest: 'ch1_survive', npcAffinity: { liu_jun: 15 } },
+        story: '劉俊在田邊嘆氣，手裡攥著一封信。「你...你覺得一個農夫配得上她嗎？」他小聲問你。你看到信封上寫著許瑩的名字。',
+        description: '幫助劉俊鼓起勇氣，送出他的情書。',
+        objectives: [
+            { id: 'talk_liu', type: 'npc_affinity', npcId: 'liu_jun', target: 25, label: '和劉俊好感度達 25' },
+            { id: 'talk_xu', type: 'npc_affinity', npcId: 'xu_ying', target: 15, label: '和許瑩好感度達 15' },
+        ],
+        rewards: { silver: 10, reputation: 5 },
+        onComplete: '在你的鼓勵下，劉俊終於把信交給了許瑩。許瑩讀完後，臉紅得像夕陽一樣。「笨蛋...你早該說的。」她小聲說。劉俊傻傻地笑了。',
+        npcHints: {
+            liu_jun: { minAffinity: 10, hint: '我...我有一封信想交給某個人。但我怕被拒絕。' },
+            xu_ying: { minAffinity: 5, hint: '最近劉俊好像一直在看我...是我想多了嗎？' },
+        },
+    },
+
+    // ── 第二章支線 ──
+    {
+        id: 'side_sun_ruins',
+        chapter: 2,
+        title: '古代遺跡之謎',
+        type: 'side',
+        trigger: { mainQuest: 'ch2_economy' },
+        story: '孫雨興奮地跑來找你：「我在鎮外發現了古代遺跡的入口！裡面可能藏著這片土地的秘密。但我一個人不敢進去...你願意陪我嗎？」',
+        description: '和孫雨一起探索古代遺跡，揭開邊境鎮的歷史。',
+        objectives: [
+            { id: 'sun_friend', type: 'npc_affinity', npcId: 'sun_yu', target: 35, label: '和孫雨好感度達 35' },
+            { id: 'gather_silver', type: 'resource', resource: 'silver', target: 80, label: '準備 80 銀幣的探險經費' },
+        ],
+        rewards: { silver: 60, reputation: 8 },
+        onComplete: '你和孫雨在遺跡中發現了一面石碑，上面記載著邊境鎮數百年前曾是一個繁華的驛站。「原來這裡曾經這麼輝煌...」孫雨的眼睛閃著光，「也許我們能讓它重現往日的榮光。」',
+        npcHints: {
+            sun_yu: { minAffinity: 20, hint: '鎮外的那些石頭不是普通的石頭，那是古代建築的遺跡！我需要幫手。' },
+        },
+    },
+    {
+        id: 'side_wu_past',
+        chapter: 2,
+        title: '老礦工的秘密',
+        type: 'side',
+        trigger: { mainQuest: 'ch2_farm', npcAffinity: { wu_da: 20 } },
+        story: '一天晚上，吳達在酒館裡喝得醉醺醺的，突然說：「你知道嗎...我年輕的時候，差點把整個礦坑炸了。」他的眼中閃過一絲愧疚。',
+        description: '聆聽吳達的過去，幫助他放下心中的包袱。',
+        objectives: [
+            { id: 'wu_friend', type: 'npc_affinity', npcId: 'wu_da', target: 40, label: '和吳達好感度達 40' },
+            { id: 'mine_stone', type: 'resource', resource: 'stone', target: 60, label: '開採 60 石料（證明你理解他的工作）' },
+        ],
+        rewards: { silver: 40, reputation: 8 },
+        onComplete: '吳達終於說出了全部的故事——年輕時因為疏忽導致礦坑事故，兩個同伴受傷。他來邊境鎮就是為了贖罪。「謝謝你聽我說這些...我覺得輕鬆多了。」老礦工第一次露出了笑容。',
+        npcHints: {
+            wu_da: { minAffinity: 15, hint: '...算了，你不會想聽一個老頭子的嘮叨。' },
+        },
+    },
+    {
+        id: 'side_huang_festival',
+        chapter: 2,
+        title: '黃莉的歌聲',
+        type: 'side',
+        trigger: { mainQuest: 'ch2_community' },
+        story: '「你有沒有聽過邊境鎮的古老歌謠？」黃莉在教堂門口問你。「聽說以前每年豐收節，全鎮的人都會一起唱。要不要幫我恢復這個傳統？」',
+        description: '幫助黃莉組織一場音樂會，凝聚鎮民的心。',
+        objectives: [
+            { id: 'huang_friend', type: 'npc_affinity', npcId: 'huang_li', target: 30, label: '和黃莉好感度達 30' },
+            { id: 'pop_check', type: 'population', target: 13, label: '鎮上至少有 13 位居民' },
+            { id: 'avg_aff', type: 'avg_affinity', target: 15, label: '全鎮平均好感度至少 15' },
+        ],
+        rewards: { silver: 30, reputation: 10 },
+        onComplete: '在黃莉的帶領下，整個小鎮的人聚在廣場上，一起唱著古老的豐收歌。有人笑，有人哭。這一刻，所有人都感受到了歸屬感。你看到陳偉偷偷擦了擦眼角。',
+        npcHints: {
+            huang_li: { minAffinity: 15, hint: '我在整理教堂時找到了一本很舊的歌譜。想不想聽我唱幾首？' },
+        },
+    },
+
+    // ── 第三章支線 ──
+    {
+        id: 'side_yang_past',
+        chapter: 3,
+        title: '楊鋒的戰爭記憶',
+        type: 'side',
+        trigger: { mainQuest: 'ch3_crisis', npcAffinity: { yang_feng: 25 } },
+        story: '危機當前，楊鋒比任何人都緊張。你發現他半夜一個人在城牆上，盯著遠方。「我以前打過仗，」他低聲說，「我知道戰爭是什麼樣子。我不想讓這裡的人經歷那些...」',
+        description: '了解楊鋒的過去，幫助他面對內心的恐懼。',
+        objectives: [
+            { id: 'yang_deep', type: 'npc_affinity', npcId: 'yang_feng', target: 50, label: '和楊鋒好感度達 50' },
+            { id: 'chen_talk', type: 'npc_affinity', npcId: 'chen_wei', target: 30, label: '和陳偉好感度達 30（兩個老兵互相理解）' },
+        ],
+        rewards: { silver: 50, reputation: 10 },
+        onComplete: '你把陳偉帶到楊鋒身邊。兩個曾經的軍人，第一次坦誠地聊起了戰爭的記憶。「我們不是為了打仗才來這裡的，」陳偉拍拍楊鋒的肩膀，「我們是為了保護要保護的人。」楊鋒的眼眶紅了，但背脊挺得更直了。',
+        npcHints: {
+            yang_feng: { minAffinity: 20, hint: '你有沒有失去過重要的人？...算了，當我沒問。' },
+        },
+    },
+    {
+        id: 'side_zhao_network',
+        chapter: 3,
+        title: '趙霞的人脈',
+        type: 'side',
+        trigger: { mainQuest: 'ch3_crisis', npcAffinity: { zhao_xia: 20 } },
+        story: '趙霞緊皺著眉頭在翻她的帳本。「外面的局勢比我想的嚴峻...不過我還有幾張底牌。」她抬頭看你，「要不要跟我一起跑一趟商路？」',
+        description: '和趙霞一起拓展商業網絡，為小鎮爭取外援。',
+        objectives: [
+            { id: 'zhao_friend', type: 'npc_affinity', npcId: 'zhao_xia', target: 45, label: '和趙霞好感度達 45' },
+            { id: 'trade_5', type: 'trade_count', target: 5, label: '完成 5 次交易' },
+        ],
+        rewards: { silver: 80, reputation: 8 },
+        onComplete: '趙霞成功聯繫上了遠方的商會。「以後不管發生什麼事，我們都有退路了。」她少見地露出安心的表情。然後她轉頭對你說：「你知道嗎？你是我第一個信任的合夥人。」',
+        npcHints: {
+            zhao_xia: { minAffinity: 15, hint: '做生意最重要的是人脈。我可以帶你認識幾個有用的人。' },
+        },
+    },
+
+    // ── 第四章支線 ──
+    {
+        id: 'side_ma_redemption',
+        chapter: 4,
+        title: '浪子回頭',
+        type: 'side',
+        trigger: { mainQuest: 'ch4_expansion', npcAffinity: { ma_qiang: 25 } },
+        story: '馬強最近變得不太一樣。他不再整天吹牛，而是認真地待在工坊裡。「我想替鎮上蓋一座真正的地標，」他說，「證明我不只是個嘴砲。」',
+        description: '支持馬強的改變，幫他建造一座地標建築。',
+        objectives: [
+            { id: 'ma_friend', type: 'npc_affinity', npcId: 'ma_qiang', target: 40, label: '和馬強好感度達 40' },
+            { id: 'build_many', type: 'building_count', target: 10, label: '鎮上建築達 10 座' },
+            { id: 'wood_supply', type: 'resource', resource: 'wood', target: 100, label: '準備 100 木材' },
+        ],
+        rewards: { silver: 60, reputation: 12 },
+        onComplete: '馬強花了整整三天三夜，建造出一座精美的鐘塔。全鎮的人都來圍觀。「我這輩子第一次把一件事做到最好。」他看著自己的作品，眼角有些濕潤。王麗遞給他一碗熱湯：「吃吧，大藝術家。」',
+        npcHints: {
+            ma_qiang: { minAffinity: 20, hint: '你信不信，我其實是個天才木匠？...好啦，至少我想成為一個。' },
+        },
+    },
+    {
+        id: 'side_xu_dream',
+        chapter: 4,
+        title: '許瑩的夢想',
+        type: 'side',
+        trigger: { mainQuest: 'ch4_bonds', npcAffinity: { xu_ying: 30 } },
+        story: '你在許瑩的工坊裡看到一件華麗的禮服——但只完成了一半。「這是...我夢想中的作品。」她小聲說，「但我怕做不好，會被大家笑。」',
+        description: '鼓勵許瑩完成她的夢想之作。',
+        objectives: [
+            { id: 'xu_deep', type: 'npc_affinity', npcId: 'xu_ying', target: 50, label: '和許瑩好感度達 50' },
+            { id: 'cloth_supply', type: 'resource', resource: 'cloth', target: 40, label: '收集 40 布料' },
+        ],
+        rewards: { silver: 35, reputation: 8 },
+        onComplete: '在你的支持下，許瑩完成了她的傑作。當她怯怯地把禮服展示給大家時，全場安靜了三秒——然後爆發出熱烈的掌聲。許瑩哭了，但這次是開心的眼淚。「謝謝你相信我...」',
+        npcHints: {
+            xu_ying: { minAffinity: 25, hint: '我有一件很重要的作品...但我還沒有勇氣完成它。' },
+        },
+    },
+
+    // ── 第五章支線 ──
+    {
+        id: 'side_chen_retirement',
+        chapter: 5,
+        title: '老鎮長的心願',
+        type: 'side',
+        trigger: { mainQuest: 'ch5_legacy', npcAffinity: { chen_wei: 40 } },
+        story: '陳偉找到你，罕見地露出疲憊的表情。「我老了...這個鎮已經不需要我這樣的人了。」他望著窗外，「但在我交出這個位置之前，我想做最後一件事——寫一部邊境鎮的歷史。你願意幫我嗎？」',
+        description: '幫助陳偉完成邊境鎮的歷史紀錄，讓後人銘記。',
+        objectives: [
+            { id: 'chen_deep', type: 'npc_affinity', npcId: 'chen_wei', target: 60, label: '和陳偉好感度達 60' },
+            { id: 'high_rep', type: 'reputation', target: 60, label: '聲望達到 60' },
+            { id: 'many_friends', type: 'friends_count', target: 6, label: '至少和 6 位居民成為朋友' },
+        ],
+        rewards: { silver: 100, reputation: 20 },
+        onComplete: '陳偉在最後一頁寫道：「...在這位旅人到來之後，邊境鎮真正活了過來。」他合上書，遞給你。「這本書是鎮上所有人的故事，但你是最重要的那一章。」你翻開扉頁，看到每一位居民都簽上了自己的名字。',
+        npcHints: {
+            chen_wei: { minAffinity: 35, hint: '你知道嗎？我來這裡已經二十年了。有時候我會想...這一切值不值得。' },
+        },
+    },
+];
 
 // ============================================================
-// QuestSystem Class — 多路線引擎
+// 每日小目標 — 保持遊戲節奏的短期目標
+// ============================================================
+// 根據遊戲進度動態生成，每次完成一個就自動換下一個
+// ============================================================
+
+const DAILY_OBJECTIVES = [
+    // 早期目標（第一章）
+    { id: 'daily_chat_1', chapter: 1, text: '和一位居民聊聊天', icon: '💬', condition: { type: 'chat_count', target: 1 }, reward: { silver: 5 } },
+    { id: 'daily_food_20', chapter: 1, text: '儲備 20 份食物', icon: '🍖', condition: { type: 'resource', resource: 'food', target: 20 }, reward: { silver: 5 } },
+    { id: 'daily_wood_15', chapter: 1, text: '收集 15 份木材', icon: '🪵', condition: { type: 'resource', resource: 'wood', target: 15 }, reward: { silver: 5 } },
+    { id: 'daily_friend_1', chapter: 1, text: '讓一位居民對你好感超過 10', icon: '😊', condition: { type: 'max_affinity', target: 10 }, reward: { silver: 8 } },
+    // 中期目標（第二、三章）
+    { id: 'daily_harvest', chapter: 2, text: '完成一次收穫', icon: '🌾', condition: { type: 'harvest_count', target: 1 }, reward: { silver: 10 } },
+    { id: 'daily_trade', chapter: 2, text: '完成一次交易', icon: '💰', condition: { type: 'trade_count', target: 1 }, reward: { silver: 10 } },
+    { id: 'daily_build', chapter: 2, text: '建造一座建築', icon: '🏗️', condition: { type: 'building_count', target: 1 }, reward: { silver: 10 } },
+    { id: 'daily_chat_5', chapter: 2, text: '累計聊天達 5 次', icon: '💬', condition: { type: 'chat_count', target: 5 }, reward: { silver: 8 } },
+    { id: 'daily_silver_50', chapter: 2, text: '累積 50 銀幣', icon: '💰', condition: { type: 'resource', resource: 'silver', target: 50 }, reward: { reputation: 3 } },
+    // 後期目標（第四、五章）
+    { id: 'daily_industry', chapter: 4, text: '開啟一個新產業', icon: '🏭', condition: { type: 'industry_count', target: 1 }, reward: { silver: 15 } },
+    { id: 'daily_friend_3', chapter: 4, text: '擁有至少 3 位朋友', icon: '🤝', condition: { type: 'friends_count', target: 3 }, reward: { silver: 12 } },
+    { id: 'daily_pop_15', chapter: 4, text: '人口達到 15 人', icon: '👥', condition: { type: 'population', target: 15 }, reward: { silver: 15 } },
+    { id: 'daily_aff_25', chapter: 4, text: '全鎮平均好感度達 25', icon: '❤️', condition: { type: 'avg_affinity', target: 25 }, reward: { reputation: 5 } },
+];
+
+// ============================================================
+// 故事事件 — 在特定條件觸發的劇情對話
+// ============================================================
+// 增加遊戲的故事沉浸感，不是任務但會自動觸發
+// ============================================================
+
+const STORY_EVENTS = [
+    {
+        id: 'story_first_night',
+        trigger: { tickCount: 96 },  // 第一天結束
+        title: '第一個夜晚',
+        text: '夜幕降臨，你獨自坐在酒館門口。遠處傳來蟲鳴和偶爾的犬吠。王麗端了一碗熱湯出來：「喝吧，新來的。邊境鎮的夜晚很冷的。」你喝了一口，暖意從胃裡蔓延到全身。也許...這裡不算太糟。',
+        icon: '🌙',
+    },
+    {
+        id: 'story_first_friend',
+        trigger: { max_affinity: 20 },
+        title: '第一個朋友',
+        text: '你發現有人開始主動跟你打招呼了——不再是禮貌性的點頭，而是真心的微笑。在這個偏遠的邊境小鎮，你交到了第一個朋友。原來被人接納的感覺，是這麼的好。',
+        icon: '🤝',
+    },
+    {
+        id: 'story_first_harvest',
+        trigger: { harvestCount: 1 },
+        title: '第一次豐收',
+        text: '看著田裡金黃的麥穗隨風搖曳，你第一次理解了劉俊對土地的熱愛。「這就是我留在這裡的原因，」他站在你身邊，驕傲地說，「你種下的每一顆種子，都是對未來的承諾。」',
+        icon: '🌾',
+    },
+    {
+        id: 'story_population_15',
+        trigger: { population: 15 },
+        title: '小鎮漸成',
+        text: '站在高處眺望，你發現小鎮不知不覺已經有了規模。新來的住戶正在搬家，孩子們在街上奔跑，商人們在廣場上討價還價。陳偉走到你身邊：「你看，這就是我們一起建造的。」他的語氣中帶著自豪。',
+        icon: '🏘️',
+    },
+    {
+        id: 'story_crisis_begin',
+        trigger: { storyFlag: 'ch3_crisis' },
+        title: '風雨欲來',
+        text: '天邊烏雲密佈，鎮上的氣氛變得凝重。你看到楊鋒在磨刀，吳達在加固礦道，林美在準備草藥。每個人都在用自己的方式做準備。陳偉拍了拍你的肩膀：「不管發生什麼，我們一起面對。」',
+        icon: '⛈️',
+    },
+    {
+        id: 'story_rebuild_hope',
+        trigger: { storyFlag: 'ch3_rebuild' },
+        title: '廢墟中的希望',
+        text: '危機過後，小鎮滿目瘡痍。但你看到黃莉在廢墟中唱歌，馬強已經在丈量重建的尺寸，王麗架起臨時的鍋灶煮飯。「沒什麼好怕的，」趙霞理了理頭髮，「重建也是一種商機嘛。」你笑了。這些人，才是邊境鎮真正的寶藏。',
+        icon: '🌅',
+    },
+    {
+        id: 'story_deep_bond',
+        trigger: { max_affinity: 60 },
+        title: '你是我們的一份子',
+        text: '今天有人叫你「我們的人」而不是「那個旅人」。你在酒館裡坐著，四周是熟悉的面孔和笑聲。不知道從什麼時候開始，這裡不再是暫時的落腳處——這裡已經是你的家了。',
+        icon: '🏠',
+    },
+];
+
+// ============================================================
+// QuestSystem Class — 多路線引擎（含支線 + 每日目標 + 故事事件）
 // ============================================================
 
 class QuestSystem {
@@ -441,6 +744,13 @@ class QuestSystem {
         this.storyFlags = {};       // 劇情旗標
         this.activeCrisis = null;   // 第三章危機類型
         this._initialized = false;
+        // Side quest & daily objective tracking
+        this.sideQuests = {};       // { sideQuestId: { status, objectives } }
+        this.sideCompletedOrder = [];
+        this.dailyObjective = null; // { id, startValue, completed }
+        this.dailyCompletedIds = []; // Prevent repeats
+        this.triggeredStoryEvents = []; // Story event IDs already shown
+        this._pendingStoryEvent = null; // Event waiting to be displayed
     }
 
     init() {
@@ -471,6 +781,17 @@ class QuestSystem {
                 }
             }
             this.quests[q.id] = state;
+        }
+        // Initialize side quests (all start as 'locked')
+        for (const sq of SIDE_QUESTS) {
+            if (this.sideQuests[sq.id]) continue;
+            const state = { status: 'locked', objectives: {} };
+            if (sq.objectives) {
+                for (const obj of sq.objectives) {
+                    state.objectives[obj.id] = { progress: 0, completed: false };
+                }
+            }
+            this.sideQuests[sq.id] = state;
         }
     }
 
@@ -529,6 +850,190 @@ class QuestSystem {
                 }
             }
         }
+
+        // Check side quests
+        this._checkSideQuests(world);
+
+        // Check daily objectives
+        this._checkDailyObjective(world);
+
+        // Check story events
+        this._checkStoryEvents(world);
+    }
+
+    // ============================================================
+    // Side quest management
+    // ============================================================
+    _checkSideQuests(world) {
+        for (const sqDef of SIDE_QUESTS) {
+            const sq = this.sideQuests[sqDef.id];
+            if (!sq) continue;
+
+            // Check if locked side quest should be activated
+            if (sq.status === 'locked') {
+                if (this._checkSideQuestTrigger(sqDef, world)) {
+                    sq.status = 'active';
+                    world.logMessage?.('quest', `📜 支線任務解鎖：「${sqDef.title}」`);
+                    if (sqDef.story) {
+                        world.logMessage?.('quest', `📖 ${sqDef.story}`);
+                    }
+                }
+                continue;
+            }
+
+            // Check active side quest progress
+            if (sq.status === 'active' && sqDef.objectives) {
+                let allDone = true;
+                for (const objDef of sqDef.objectives) {
+                    const obj = sq.objectives[objDef.id];
+                    if (!obj) { allDone = false; continue; }
+                    if (obj.completed) continue;
+                    const current = this._evaluateCondition(objDef, world);
+                    obj.progress = Math.min(current, objDef.target);
+                    if (obj.progress >= objDef.target) {
+                        obj.completed = true;
+                    } else {
+                        allDone = false;
+                    }
+                }
+                if (allDone) {
+                    this._completeSideQuest(sqDef, world);
+                }
+            }
+        }
+    }
+
+    _checkSideQuestTrigger(sqDef, world) {
+        const trigger = sqDef.trigger;
+        if (!trigger) return false;
+        // Must have main quest completed or active
+        if (trigger.mainQuest) {
+            const mq = this.quests[trigger.mainQuest];
+            if (!mq || (mq.status !== 'active' && mq.status !== 'completed')) return false;
+        }
+        // NPC affinity gates
+        if (trigger.npcAffinity) {
+            const player = world.agents?.player;
+            for (const [npcId, minAff] of Object.entries(trigger.npcAffinity)) {
+                const rel = player?.relationships?.relationships?.[npcId];
+                if (!rel || (rel.affinity || 0) < minAff) return false;
+            }
+        }
+        return true;
+    }
+
+    _completeSideQuest(sqDef, world) {
+        const sq = this.sideQuests[sqDef.id];
+        sq.status = 'completed';
+        this.sideCompletedOrder.push(sqDef.id);
+        // Give rewards
+        if (sqDef.rewards) {
+            for (const [res, amount] of Object.entries(sqDef.rewards)) {
+                if (res === 'reputation') {
+                    this.reputation += amount;
+                } else {
+                    world.stockpile?.add?.(res, amount, world.tickCount, `支線獎勵：${sqDef.title}`);
+                }
+            }
+        }
+        world.logMessage?.('quest', `✨ 支線任務完成：「${sqDef.title}」！`);
+        if (sqDef.onComplete) {
+            world.logMessage?.('quest', `📖 ${sqDef.onComplete}`);
+        }
+        if (world.dailyNews) {
+            world.dailyNews.collectEvent?.('quest', `支線任務「${sqDef.title}」完成！`, 6);
+        }
+    }
+
+    // ============================================================
+    // Daily objective management
+    // ============================================================
+    _checkDailyObjective(world) {
+        const chapter = this.getCurrentChapter();
+
+        // Assign a new daily objective if none active
+        if (!this.dailyObjective || this.dailyObjective.completed) {
+            this._assignDailyObjective(world, chapter);
+            return;
+        }
+
+        // Check current daily objective progress
+        const objDef = DAILY_OBJECTIVES.find(d => d.id === this.dailyObjective.id);
+        if (!objDef) return;
+
+        const current = this._evaluateCondition(objDef.condition, world);
+        const gained = current - (this.dailyObjective.startValue || 0);
+        if (gained >= objDef.condition.target) {
+            this.dailyObjective.completed = true;
+            this.dailyCompletedIds.push(objDef.id);
+            // Give reward
+            if (objDef.reward) {
+                for (const [res, amount] of Object.entries(objDef.reward)) {
+                    if (res === 'reputation') {
+                        this.reputation += amount;
+                    } else {
+                        world.stockpile?.add?.(res, amount, world.tickCount, `每日目標獎勵`);
+                    }
+                }
+            }
+            world.logMessage?.('quest', `⭐ 每日目標完成：${objDef.icon} ${objDef.text}！`);
+        }
+    }
+
+    _assignDailyObjective(world, chapter) {
+        // Find objectives matching current chapter (or earlier)
+        const candidates = DAILY_OBJECTIVES.filter(d =>
+            d.chapter <= chapter && !this.dailyCompletedIds.includes(d.id)
+        );
+        if (candidates.length === 0) {
+            // Reset completed list to allow repeating
+            this.dailyCompletedIds = [];
+            return;
+        }
+        const pick = candidates[Math.floor(Math.random() * candidates.length)];
+        const startValue = this._evaluateCondition(pick.condition, world);
+        this.dailyObjective = { id: pick.id, startValue, completed: false };
+    }
+
+    // ============================================================
+    // Story event management
+    // ============================================================
+    _checkStoryEvents(world) {
+        for (const event of STORY_EVENTS) {
+            if (this.triggeredStoryEvents.includes(event.id)) continue;
+            if (this._checkStoryEventTrigger(event, world)) {
+                this.triggeredStoryEvents.push(event.id);
+                this._pendingStoryEvent = event;
+                world.logMessage?.('event', `${event.icon} 【${event.title}】${event.text}`);
+                break; // Only one story event per tick
+            }
+        }
+    }
+
+    _checkStoryEventTrigger(event, world) {
+        const trigger = event.trigger;
+        if (!trigger) return false;
+        if (trigger.tickCount && world.tickCount >= trigger.tickCount) return true;
+        if (trigger.population) {
+            const pop = Object.keys(world.agents || {}).length;
+            if (pop >= trigger.population) return true;
+        }
+        if (trigger.max_affinity) {
+            const player = world.agents?.player;
+            if (player?.relationships?.relationships) {
+                const max = Math.max(0, ...Object.values(player.relationships.relationships).map(r => r.affinity || 0));
+                if (max >= trigger.max_affinity) return true;
+            }
+        }
+        if (trigger.harvestCount && this.harvestCount >= trigger.harvestCount) return true;
+        if (trigger.storyFlag && this.storyFlags[trigger.storyFlag]) return true;
+        return false;
+    }
+
+    getPendingStoryEvent() {
+        const event = this._pendingStoryEvent;
+        this._pendingStoryEvent = null;
+        return event;
     }
 
     // ============================================================
@@ -677,6 +1182,19 @@ class QuestSystem {
                 });
             }
         }
+        // Also check side quest hints
+        for (const sqDef of SIDE_QUESTS) {
+            const sq = this.sideQuests[sqDef.id];
+            if (!sq || sq.status !== 'active') continue;
+            if (!sqDef.npcHints || !sqDef.npcHints[npcId]) continue;
+            const hintDef = sqDef.npcHints[npcId];
+            if (playerAffinity >= (hintDef.minAffinity || 0)) {
+                hints.push({
+                    questTitle: `[支線] ${sqDef.title}`,
+                    hint: hintDef.hint,
+                });
+            }
+        }
         return hints;
     }
 
@@ -795,6 +1313,43 @@ class QuestSystem {
 
             result.quests[questDef.id] = qData;
         }
+
+        // Side quests
+        result.sideQuests = {};
+        for (const sqDef of SIDE_QUESTS) {
+            const sq = this.sideQuests[sqDef.id];
+            if (!sq || sq.status === 'locked') continue; // Only show active/completed
+            result.sideQuests[sqDef.id] = {
+                id: sqDef.id,
+                chapter: sqDef.chapter,
+                title: sqDef.title,
+                description: sqDef.description,
+                story: sqDef.story,
+                status: sq.status,
+                rewards: sqDef.rewards,
+                onComplete: sqDef.onComplete,
+                objectives: (sqDef.objectives || []).map(objDef => ({
+                    ...objDef,
+                    progress: sq.objectives?.[objDef.id]?.progress || 0,
+                    completed: sq.objectives?.[objDef.id]?.completed || false,
+                })),
+            };
+        }
+        result.sideQuestCount = Object.keys(result.sideQuests).length;
+        result.sideCompletedCount = this.sideCompletedOrder.length;
+
+        // Daily objective
+        if (this.dailyObjective && !this.dailyObjective.completed) {
+            const objDef = DAILY_OBJECTIVES.find(d => d.id === this.dailyObjective.id);
+            if (objDef) {
+                result.dailyObjective = {
+                    text: objDef.text,
+                    icon: objDef.icon,
+                    reward: objDef.reward,
+                };
+            }
+        }
+
         return result;
     }
 
@@ -813,6 +1368,12 @@ class QuestSystem {
             reputation: this.reputation,
             storyFlags: { ...this.storyFlags },
             activeCrisis: this.activeCrisis,
+            // Side quests & daily objectives
+            sideQuests: JSON.parse(JSON.stringify(this.sideQuests)),
+            sideCompletedOrder: [...this.sideCompletedOrder],
+            dailyObjective: this.dailyObjective ? { ...this.dailyObjective } : null,
+            dailyCompletedIds: [...this.dailyCompletedIds],
+            triggeredStoryEvents: [...this.triggeredStoryEvents],
         };
     }
 
@@ -828,6 +1389,12 @@ class QuestSystem {
         this.reputation = data.reputation || 0;
         this.storyFlags = data.storyFlags || {};
         this.activeCrisis = data.activeCrisis || null;
+        // Side quests & daily objectives
+        this.sideQuests = data.sideQuests || {};
+        this.sideCompletedOrder = data.sideCompletedOrder || [];
+        this.dailyObjective = data.dailyObjective || null;
+        this.dailyCompletedIds = data.dailyCompletedIds || [];
+        this.triggeredStoryEvents = data.triggeredStoryEvents || [];
         this._initialized = Object.keys(this.quests).length > 0;
 
         // Migrate: if old save has quests but no routes, reinitialize new quests
