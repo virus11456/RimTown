@@ -31,7 +31,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v3.3.2.zip` from Releases
+1. Download `rimtown-v3.3.3.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -46,6 +46,17 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v3.3.3 (2026-03-14)
+
+**村民對話面板改版 — 預設收合 + 卡片式排版**
+- 村民對話預設收合，只顯示時間+人名+摘要，點擊展開完整對話
+- 加入 ▶ 展開指示符，展開時旋轉 90° 提供視覺回饋
+- 每組對話改為卡片式排版（圓角邊框+背景色），群組間有間距不再黏在一起
+- 展開後的對話區加左側 accent 色邊線，與摘要明確區隔
+- 對話行間距加大（margin 3→6px, line-height 1.4→1.5），每行加分隔線
+- 修正 toggle handler: collapsed → expanded class（原本展開/收合邏輯不一致）
+- 版號同步：所有檔案統一為 3.3.3
 
 ### v3.3.2 (2026-03-14)
 
