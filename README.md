@@ -31,7 +31,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v3.2.8.zip` from Releases
+1. Download `rimtown-v3.2.9.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -46,6 +46,16 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v3.2.9 (2026-03-14)
+
+**數據平衡性全面調整**
+- 冬季農業產量乘數 0.2→0.4，避免每年冬季必然缺糧崩潰
+- NPC 老化速度減半：每 2 季老 1 歲（原本每季 1 歲），延長 NPC 壽命一倍
+- 結婚門檻提高：交往時間 100→300 ticks、好感 40/35→50/45、浪漫 50/40→55/45、機率 15%→10%
+- 產業系統對 NPC 職業的壓制從 70%（×0.3）降為 50%（×0.5），NPC 職業仍有存在感
+- 觀星活動的浪漫值增長新增前提條件：好感度必須 >20 才會產生浪漫
+- 版號同步：所有檔案統一為 3.2.9
 
 ### v3.2.8 (2026-03-14)
 

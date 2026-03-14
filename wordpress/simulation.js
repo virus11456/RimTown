@@ -655,11 +655,12 @@ class Agent {
                 const starCompat = Personality.compatibility(this.personality.traits, companion.personality.traits);
                 const rel = this.relationships.getOrCreate(companion.agentId, companion.name);
                 rel.modifyAffinity(Math.round(randInt(1, 4) * starCompat));
-                rel.modifyRomantic(Math.round(randInt(0, 2) * starCompat));
+                // Romantic growth only if already have some affinity
+                if (rel.affinity > 20) rel.modifyRomantic(Math.round(randInt(0, 2) * starCompat));
                 rel.addSharedMemory(`一起在${this.currentLocation.replace(/_/g,' ')}看星星`);
                 const otherRel = companion.relationships.getOrCreate(this.agentId, this.name);
                 otherRel.modifyAffinity(Math.round(randInt(1, 4) * starCompat));
-                otherRel.modifyRomantic(Math.round(randInt(0, 2) * starCompat));
+                if (otherRel.affinity > 20) otherRel.modifyRomantic(Math.round(randInt(0, 2) * starCompat));
                 otherRel.addSharedMemory(`一起在${this.currentLocation.replace(/_/g,' ')}看星星`);
                 world.logMessage('social', `${this.name}和${companion.name}一起看星星，感情升溫了。`, this.name, companion.name);
                 this.memory.add(world.tickCount, world.clock.timeStr, 'social', `和${companion.name}一起看星星，很浪漫。`, 7, [companion.name]);
@@ -2768,7 +2769,7 @@ const JOB_PRODUCTION = {
     priest: {inputs:{},outputs:{},skill:'社交'},
     mayor: {inputs:{},outputs:{silver:3},skill:'社交'},
 };
-const SEASON_FARM_MOD = {'春季':1.2,'夏季':1.5,'秋季':0.8,'冬季':0.2};
+const SEASON_FARM_MOD = {'春季':1.2,'夏季':1.5,'秋季':0.8,'冬季':0.4};
 const NATURE_GATHERING = {forest:{wood:3},river:{food:2},meadow:{herbs:1,cloth:0.5},cave:{stone:2,metal:1},lake:{food:1.5}};
 
 function processDailyProduction(world) {
@@ -2788,7 +2789,7 @@ function processDailyProduction(world) {
         const isIndustryHandled = industryJobs[agent.job.key];
         const skill = agent.skills.get(recipe.skill);
         let eff = 0.5 + ((skill?skill.level:0)/20)*2.0;
-        if (isIndustryHandled) eff *= 0.3;
+        if (isIndustryHandled) eff *= 0.5;
         if (agent.job.key === 'farmer') { eff *= SEASON_FARM_MOD[world.clock.season] || 1; eff *= 1 + (world.news?world.news.getModifier('farm_bonus',0):0); }
         if (agent.job.key === 'miner') eff *= 1 + (world.news?world.news.getModifier('mining_bonus',0):0);
         eff *= 1 + (agent.mood - 50)/500;
@@ -3625,11 +3626,14 @@ class LifecycleSystem {
     }
 
     _processAging(world) {
-        // Age NPCs once per season (approx every 15 game-days = every ~7 checks)
+        // Age NPCs once every 2 seasons (approx every 30 game-days)
         if (world.clock.day !== 1) return;
+        if (!this._agingToggle) this._agingToggle = false;
+        this._agingToggle = !this._agingToggle;
+        if (!this._agingToggle) return; // Skip every other season
         Object.values(world.agents).forEach(a => {
             if (!a.isPlayer) {
-                a.age += 1; // 1 year per season for accelerated time
+                a.age += 1; // 1 year per 2 seasons for balanced lifespan
                 // Aging effects
                 if (a.age >= 60) {
                     a.needs.rest = Math.max(0, a.needs.rest - 3); // elders tire faster
@@ -4498,8 +4502,8 @@ class World {
                 if (rel.status === 'dating' && otherRel.status === 'dating') {
                     const datingDuration = this.tickCount - rel.statusSince;
                     // Need to have been dating for a while, high affinity and romantic
-                    if (datingDuration > 100 && rel.affinity > 40 && rel.romanticInterest > 50 &&
-                        otherRel.affinity > 35 && otherRel.romanticInterest > 40 && Math.random() < 0.15) {
+                    if (datingDuration > 300 && rel.affinity > 50 && rel.romanticInterest > 55 &&
+                        otherRel.affinity > 45 && otherRel.romanticInterest > 45 && Math.random() < 0.10) {
                         rel.status = 'married'; rel.statusSince = this.tickCount;
                         otherRel.status = 'married'; otherRel.statusSince = this.tickCount;
                         this.logMessage('relationship', `${agent.name}和${other.name}結婚了！全鎮舉辦了盛大的婚禮！`, agent.name, other.name);
