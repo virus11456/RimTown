@@ -435,6 +435,94 @@ function rimtown_shortcode($atts) {
     ob_start();
     ?>
     <div id="rimtown-app" class="rimtown-container" style="height:<?php echo $height; ?>">
+        <!-- Login Screen Overlay -->
+        <?php if (!is_user_logged_in()): ?>
+        <div id="login-screen" class="login-screen">
+            <div class="login-screen-backdrop"></div>
+            <div class="login-card">
+                <div class="login-logo">
+                    <span class="login-logo-icon">🏘️</span>
+                    <h1 class="login-title">邊境鎮</h1>
+                    <p class="login-subtitle">RimTown — AI Town Simulation</p>
+                </div>
+
+                <!-- Login Form -->
+                <div id="login-form-login" class="login-form-section">
+                    <div class="login-field">
+                        <label>帳號</label>
+                        <input type="text" id="login-user" placeholder="輸入帳號..." autocomplete="username">
+                    </div>
+                    <div class="login-field">
+                        <label>密碼</label>
+                        <input type="password" id="login-pass" placeholder="輸入密碼..." autocomplete="current-password">
+                    </div>
+                    <div id="login-error" class="login-error"></div>
+                    <button id="login-submit-btn" class="login-btn-primary">登入</button>
+                    <div class="login-links">
+                        <a href="#" id="login-to-forgot">忘記密碼？</a>
+                        <span class="login-link-sep">|</span>
+                        <a href="#" id="login-to-register">註冊帳號</a>
+                    </div>
+                    <div class="login-guest-divider"><span>或</span></div>
+                    <button id="login-guest-btn" class="login-btn-guest">以訪客身份進入</button>
+                </div>
+
+                <!-- Register Form -->
+                <div id="login-form-register" class="login-form-section hidden">
+                    <div class="login-field">
+                        <label>帳號</label>
+                        <input type="text" id="login-reg-user" placeholder="至少3個字元..." autocomplete="username">
+                    </div>
+                    <div class="login-field">
+                        <label>電子郵件（選填）</label>
+                        <input type="email" id="login-reg-email" placeholder="your@email.com" autocomplete="email">
+                    </div>
+                    <div class="login-field">
+                        <label>密碼</label>
+                        <input type="password" id="login-reg-pass" placeholder="至少6個字元..." autocomplete="new-password">
+                    </div>
+                    <div class="login-field">
+                        <label>確認密碼</label>
+                        <input type="password" id="login-reg-pass2" placeholder="再次輸入密碼..." autocomplete="new-password">
+                    </div>
+                    <div id="login-reg-error" class="login-error"></div>
+                    <button id="login-reg-btn" class="login-btn-primary">註冊</button>
+                    <div class="login-links">
+                        <a href="#" id="login-reg-to-login">已有帳號？登入</a>
+                    </div>
+                </div>
+
+                <!-- Forgot Password Form -->
+                <div id="login-form-forgot" class="login-form-section hidden">
+                    <h3 class="login-form-heading">重設密碼</h3>
+                    <p class="login-form-desc">輸入帳號和註冊時的電子郵件來重設密碼</p>
+                    <div class="login-field">
+                        <label>帳號</label>
+                        <input type="text" id="login-reset-user" placeholder="輸入帳號..." autocomplete="username">
+                    </div>
+                    <div class="login-field">
+                        <label>電子郵件</label>
+                        <input type="email" id="login-reset-email" placeholder="註冊時的信箱..." autocomplete="email">
+                    </div>
+                    <div class="login-field">
+                        <label>新密碼</label>
+                        <input type="password" id="login-reset-pass" placeholder="至少6個字元..." autocomplete="new-password">
+                    </div>
+                    <div class="login-field">
+                        <label>確認新密碼</label>
+                        <input type="password" id="login-reset-pass2" placeholder="再次輸入新密碼..." autocomplete="new-password">
+                    </div>
+                    <div id="login-reset-error" class="login-error"></div>
+                    <div id="login-reset-success" class="login-success"></div>
+                    <button id="login-reset-btn" class="login-btn-primary">重設密碼</button>
+                    <div class="login-links">
+                        <a href="#" id="login-reset-to-login">返回登入</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- Town Manager Modal -->
         <div id="town-modal" class="modal hidden">
             <div class="modal-content town-content">

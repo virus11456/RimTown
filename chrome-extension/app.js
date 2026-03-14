@@ -3114,7 +3114,7 @@ class RimTownApp {
         if (npcConvos.length) {
             html += '<div class="npc-convo-section"><h4 style="padding:8px 10px;color:var(--accent);font-size:0.8rem;margin:0">村民對話</h4>';
             npcConvos.slice(0, 8).forEach(c => {
-                html += `<div class="npc-convo-entry" data-action="toggle-convo">
+                html += `<div class="npc-convo-entry expanded" data-action="toggle-convo">
                     <div class="npc-convo-header"><span class="npc-convo-toggle">▶</span><span class="log-time">${c.time}</span><strong>${c.agentA}</strong> &amp; <strong>${c.agentB}</strong>
                     <span style="font-size:0.65rem;color:var(--text-muted);margin-left:4px">@ ${this._locationLabel(c.location)}</span></div>
                     <div class="npc-convo-summary">${c.summary}</div>

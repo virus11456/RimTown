@@ -322,6 +322,7 @@ class RimTownApp {
         this.setupControlListeners();
         this.setupSettingsListeners();
         this.setupAuthListeners();
+        this.setupLoginScreen();
         this._updateAccountButton();
         this._loadAchievementsFromCloud();
         // Auto-sync from cloud on startup if already logged in
@@ -491,6 +492,133 @@ class RimTownApp {
         } catch (e) {
             if (errEl) errEl.textContent = e.message || '重設失敗';
         }
+    }
+
+    // =====================================================
+    // LOGIN SCREEN — Full-screen login overlay
+    // =====================================================
+    setupLoginScreen() {
+        const screen = document.getElementById('login-screen');
+        if (!screen) return; // Already logged in or no login screen
+
+        const showForm = (formId) => {
+            ['login-form-login', 'login-form-register', 'login-form-forgot'].forEach(id => {
+                document.getElementById(id)?.classList.toggle('hidden', id !== formId);
+            });
+        };
+
+        // Navigation links
+        document.getElementById('login-to-register')?.addEventListener('click', e => { e.preventDefault(); showForm('login-form-register'); });
+        document.getElementById('login-to-forgot')?.addEventListener('click', e => { e.preventDefault(); showForm('login-form-forgot'); });
+        document.getElementById('login-reg-to-login')?.addEventListener('click', e => { e.preventDefault(); showForm('login-form-login'); });
+        document.getElementById('login-reset-to-login')?.addEventListener('click', e => { e.preventDefault(); showForm('login-form-login'); });
+
+        // Guest button — skip login
+        document.getElementById('login-guest-btn')?.addEventListener('click', () => this._dismissLoginScreen());
+
+        // Login
+        const doScreenLogin = async () => {
+            const user = document.getElementById('login-user')?.value?.trim();
+            const pass = document.getElementById('login-pass')?.value;
+            const errEl = document.getElementById('login-error');
+            if (!user || !pass) { if (errEl) errEl.textContent = '請輸入帳號和密碼'; return; }
+            try {
+                if (errEl) errEl.textContent = '登入中...';
+                await this.auth.login(user, pass);
+                this._updateAccountButton();
+                this.world.logMessage('system', `歡迎回來，${this.auth.username}！`);
+                this._syncFromCloud();
+                this._dismissLoginScreen();
+            } catch (e) {
+                if (errEl) errEl.textContent = e.message || '登入失敗';
+            }
+        };
+        document.getElementById('login-submit-btn')?.addEventListener('click', doScreenLogin);
+        document.getElementById('login-pass')?.addEventListener('keydown', e => { if (e.key === 'Enter') doScreenLogin(); });
+
+        // Register
+        const doScreenRegister = async () => {
+            const user = document.getElementById('login-reg-user')?.value?.trim();
+            const email = document.getElementById('login-reg-email')?.value?.trim();
+            const pass = document.getElementById('login-reg-pass')?.value;
+            const pass2 = document.getElementById('login-reg-pass2')?.value;
+            const errEl = document.getElementById('login-reg-error');
+            if (!user || !pass) { if (errEl) errEl.textContent = '請填寫帳號和密碼'; return; }
+            if (pass !== pass2) { if (errEl) errEl.textContent = '兩次密碼不一致'; return; }
+            try {
+                if (errEl) errEl.textContent = '註冊中...';
+                await this.auth.register(user, pass, email);
+                this._updateAccountButton();
+                // New user gets a fresh world
+                const oldTowns = this._getTownList();
+                oldTowns.forEach(t => {
+                    localStorage.removeItem('rimtown_town_' + t.id);
+                    localStorage.removeItem('rimtown_town_' + t.id + '_archives');
+                });
+                localStorage.removeItem('rimtown_town_list');
+                localStorage.removeItem('rimtown_last_town');
+                localStorage.removeItem('rimtown_achievements');
+                localStorage.removeItem('rimtown_raid_count');
+                this.world.reset();
+                if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                const townName = `${user}的邊境鎮`;
+                this.currentTownId = this._generateTownId(townName);
+                this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
+                this.state = this.world.getState();
+                this._generateTileMapLayout();
+                if (this.tileMap) this.tileMap.agentPositions = {};
+                this._saveCurrentTown(townName);
+                this.render();
+                this._renderTownList();
+                this.world.logMessage('system', `註冊成功！歡迎，${this.auth.username}！你的全新城鎮已建立。`);
+                this._syncToCloud();
+                this._dismissLoginScreen();
+            } catch (e) {
+                if (errEl) errEl.textContent = e.message || '註冊失敗';
+            }
+        };
+        document.getElementById('login-reg-btn')?.addEventListener('click', doScreenRegister);
+        document.getElementById('login-reg-pass2')?.addEventListener('keydown', e => { if (e.key === 'Enter') doScreenRegister(); });
+
+        // Reset password
+        const doScreenReset = async () => {
+            const user = document.getElementById('login-reset-user')?.value?.trim();
+            const email = document.getElementById('login-reset-email')?.value?.trim();
+            const pass = document.getElementById('login-reset-pass')?.value;
+            const pass2 = document.getElementById('login-reset-pass2')?.value;
+            const errEl = document.getElementById('login-reset-error');
+            const successEl = document.getElementById('login-reset-success');
+            if (errEl) errEl.textContent = '';
+            if (successEl) successEl.textContent = '';
+            if (!user) { if (errEl) errEl.textContent = '請輸入使用者名稱'; return; }
+            if (!email) { if (errEl) errEl.textContent = '請輸入註冊時的電子郵件'; return; }
+            if (!pass || pass.length < 6) { if (errEl) errEl.textContent = '新密碼至少6個字元'; return; }
+            if (pass !== pass2) { if (errEl) errEl.textContent = '兩次密碼不一致'; return; }
+            try {
+                if (errEl) errEl.textContent = '重設中...';
+                const resp = await fetch(`${this.auth._restUrl}/reset-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': this.auth._nonce },
+                    body: JSON.stringify({ username: user, email, new_password: pass }),
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.message || '重設失敗');
+                if (errEl) errEl.textContent = '';
+                if (successEl) successEl.textContent = '密碼已重設！請用新密碼登入';
+                setTimeout(() => { showForm('login-form-login'); if (successEl) successEl.textContent = ''; }, 2000);
+            } catch (e) {
+                if (errEl) errEl.textContent = e.message || '重設失敗';
+            }
+        };
+        document.getElementById('login-reset-btn')?.addEventListener('click', doScreenReset);
+        document.getElementById('login-reset-pass2')?.addEventListener('keydown', e => { if (e.key === 'Enter') doScreenReset(); });
+    }
+
+    _dismissLoginScreen() {
+        const screen = document.getElementById('login-screen');
+        if (!screen) return;
+        screen.classList.add('fade-out');
+        setTimeout(() => screen.remove(), 600);
     }
 
     _showAccountMenu() {
@@ -3114,7 +3242,7 @@ class RimTownApp {
         if (npcConvos.length) {
             html += '<div class="npc-convo-section"><h4 style="padding:8px 10px;color:var(--accent);font-size:0.8rem;margin:0">村民對話</h4>';
             npcConvos.slice(0, 8).forEach(c => {
-                html += `<div class="npc-convo-entry" data-action="toggle-convo">
+                html += `<div class="npc-convo-entry expanded" data-action="toggle-convo">
                     <div class="npc-convo-header"><span class="npc-convo-toggle">▶</span><span class="log-time">${c.time}</span><strong>${c.agentA}</strong> &amp; <strong>${c.agentB}</strong>
                     <span style="font-size:0.65rem;color:var(--text-muted);margin-left:4px">@ ${this._locationLabel(c.location)}</span></div>
                     <div class="npc-convo-summary">${c.summary}</div>
