@@ -268,6 +268,19 @@ class RimTownApp {
     async init() {
         this.setupEventDelegation();
         await this.loadSettings();
+        // Verify login state with server (fixes mobile cache showing login screen)
+        if (!this.auth.loggedIn && this.auth._restUrl) {
+            try {
+                const me = await this.auth.checkLogin();
+                if (me.logged_in) {
+                    this._dismissLoginScreen();
+                    this._updateAccountButton();
+                    console.log('[RimTown] Session restored from cookie:', this.auth.username);
+                }
+            } catch (e) {
+                console.warn('[RimTown] checkLogin failed:', e);
+            }
+        }
         // Try to load saved game
         const lastTownId = localStorage.getItem('rimtown_last_town');
         let loaded = false;

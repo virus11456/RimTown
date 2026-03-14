@@ -426,6 +426,12 @@ function rimtown_shortcode($atts) {
         'height' => '100vh',
     ), $atts, 'rimtown');
 
+    // Prevent mobile browsers from caching page with stale auth state
+    if (!headers_sent()) {
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+    }
+
     // Enqueue assets only when shortcode is used
     rimtown_enqueue_assets();
 
