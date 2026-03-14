@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 3.2.5
+ * Version: 3.2.6
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '3.2.5');
+define('RIMTOWN_VERSION', '3.2.6');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -108,18 +108,8 @@ function rimtown_shortcode($atts) {
                     <button data-tab="events" class="mobile-hidden"><span class="tab-icon">📰</span><span class="tab-label">事件</span></button>
                     <button data-tab="records" class="mobile-hidden"><span class="tab-icon">📝</span><span class="tab-label">紀錄</span></button>
                     <button data-tab="achievements" class="mobile-hidden"><span class="tab-icon">🏆</span><span class="tab-label">成就</span></button>
-                    <button data-tab="settings" class="mobile-hidden"><span class="tab-icon">⚙️</span><span class="tab-label">設定</span></button>
-                    <button class="mobile-more-btn" id="mobile-more-btn"><span class="tab-icon">⋯</span><span class="tab-label">更多</span></button>
-                </div>
-                <div class="rt-more-menu" id="rt-more-menu">
-                    <button data-tab="detail"><span class="tab-icon">📋</span><span class="tab-label">詳情</span></button>
-                    <button data-tab="industry"><span class="tab-icon">🏭</span><span class="tab-label">產業</span></button>
-                    <button data-tab="events"><span class="tab-icon">📰</span><span class="tab-label">事件</span></button>
-                    <button data-tab="records"><span class="tab-icon">📝</span><span class="tab-label">紀錄</span></button>
-                    <button data-tab="achievements"><span class="tab-icon">🏆</span><span class="tab-label">成就</span></button>
                     <button data-tab="settings"><span class="tab-icon">⚙️</span><span class="tab-label">設定</span></button>
                 </div>
-                <div class="rt-more-menu-overlay" id="rt-more-menu-overlay"></div>
                 <div class="rt-sidebar-content" id="sidebar-content"></div>
             </div>
             <!-- mobile-sidebar-toggle removed: was non-functional -->
@@ -694,6 +684,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '3.2.6',
+            'date'    => '2026-03-14',
+            'changes' => array(
+                '手機版移除「更多」彈出選單，改為各 Tab 內建群組 sub-tab',
+                '居民+詳情、聊天+紀錄、任務+事件+成就、經濟+產業',
+                '設定升級為第 5 個固定 Tab',
+                '版號同步：所有檔案統一為 3.2.6',
+            ),
+        ),
         array(
             'version' => '3.2.5',
             'date'    => '2026-03-12',

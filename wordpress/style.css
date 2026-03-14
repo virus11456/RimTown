@@ -338,13 +338,7 @@ body.rimtown-page .wp-block-post-title {
 }
 
 /* Desktop: hide mobile-only elements */
-.rt-sidebar-tabs .mobile-more-btn {
-    display: none;
-}
-.rt-more-menu-overlay {
-    display: none;
-}
-.rt-more-menu {
+.mobile-group-tabs {
     display: none;
 }
 
@@ -2371,7 +2365,7 @@ body.rimtown-page .wp-block-post-title {
         max-width: 100%;
         width: 100%;
     }
-    /* Hide overflow tabs on mobile (shown via "more" menu) */
+    /* Hide overflow tabs on mobile (accessed via mobile group sub-tabs) */
     .rt-sidebar-tabs button.mobile-hidden {
         display: none !important;
     }
@@ -2400,70 +2394,13 @@ body.rimtown-page .wp-block-post-title {
         display: block;
     }
 
-    /* "More" menu button — visible on mobile */
-    .rt-sidebar-tabs .mobile-more-btn {
+    /* Mobile group sub-tab bar — visible on mobile */
+    .mobile-group-tabs {
         display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }
-
-    /* More menu overlay — covers screen to catch close taps */
-    .rt-sidebar .rt-more-menu-overlay {
-        display: none;
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        z-index: 99;
-    }
-    .rt-sidebar .rt-more-menu-overlay.active {
-        display: block;
-    }
-
-    /* More menu popup — positioned above tab bar */
-    .rt-sidebar .rt-more-menu {
-        display: none;
-        position: absolute;
-        bottom: 44px;
-        right: 0;
-        left: 0;
+        position: sticky;
+        top: 0;
+        z-index: 10;
         background: var(--bg-secondary);
-        border-top: 1px solid var(--border);
-        box-shadow: 0 -4px 16px rgba(0,0,0,0.3);
-        z-index: 100;
-        padding: 8px 0;
-    }
-    .rt-sidebar .rt-more-menu.active {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0;
-    }
-    .rt-sidebar .rt-more-menu button {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 4px;
-        padding: 12px 8px;
-        background: none;
-        border: none;
-        color: var(--text-primary);
-        font-size: 0.9rem;
-        cursor: pointer;
-    }
-    .rt-sidebar .rt-more-menu button:hover,
-    .rt-sidebar .rt-more-menu button:active {
-        background: rgba(233, 69, 96, 0.1);
-    }
-    .rt-sidebar .rt-more-menu button.active {
-        color: var(--accent);
-        background: rgba(233, 69, 96, 0.08);
-    }
-    .rt-sidebar .rt-more-menu button .tab-icon {
-        font-size: 1.3rem;
-    }
-    .rt-sidebar .rt-more-menu button .tab-label {
-        font-size: 0.7rem;
-        display: block;
     }
 
     /* Sidebar content: scrollable area when expanded */

@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v3.2.5
-const RIMTOWN_APP_VERSION = '3.2.5';
+// RimTown - Frontend App (WordPress Plugin) v3.2.6
+const RIMTOWN_APP_VERSION = '3.2.6';
 const ELECTION_POLICIES_LABELS = {economy:'經濟發展',welfare:'社會福利',defense:'軍事防禦',culture:'文化教育',nature:'自然保育',freedom:'個人自由'};
 
 // =====================================================
@@ -1471,29 +1471,41 @@ class RimTownApp {
     }
 
     setupTabListeners() {
-        const moreMenu = document.getElementById('rt-more-menu');
-        const moreBtn = document.getElementById('mobile-more-btn');
-        const moreOverlay = document.getElementById('rt-more-menu-overlay');
-        const secondaryTabs = ['detail', 'industry', 'events', 'records', 'achievements', 'settings'];
-
-        const closeMoreMenu = () => {
-            if (moreMenu) moreMenu.classList.remove('active');
-            if (moreOverlay) moreOverlay.classList.remove('active');
+        // Mobile tab groups: main tab -> [sub-tabs]
+        this._mobileTabGroups = {
+            residents: [
+                { key: 'residents', label: '居民', icon: '👥' },
+                { key: 'detail', label: '詳情', icon: '📋' },
+            ],
+            chat: [
+                { key: 'chat', label: '聊天', icon: '💬' },
+                { key: 'records', label: '紀錄', icon: '📝' },
+            ],
+            quest: [
+                { key: 'quest', label: '任務', icon: '⚔️' },
+                { key: 'events', label: '事件', icon: '📰' },
+                { key: 'achievements', label: '成就', icon: '🏆' },
+            ],
+            economy: [
+                { key: 'economy', label: '經濟', icon: '💰' },
+                { key: 'industry', label: '產業', icon: '🏭' },
+            ],
         };
+        // Reverse lookup: sub-tab -> parent main tab
+        this._mobileSubToMain = {};
+        for (const [main, subs] of Object.entries(this._mobileTabGroups)) {
+            for (const sub of subs) {
+                this._mobileSubToMain[sub.key] = main;
+            }
+        }
 
         const updateTabHighlight = (tabName) => {
             document.querySelectorAll('.rt-sidebar-tabs > button[data-tab]').forEach(b => b.classList.remove('active'));
-            const mainBtn = document.querySelector(`.rt-sidebar-tabs > button[data-tab="${tabName}"]`);
-            if (mainBtn && !mainBtn.classList.contains('mobile-hidden')) {
-                mainBtn.classList.add('active');
-                if (moreBtn) moreBtn.classList.remove('active');
-            } else if (moreBtn && window.innerWidth <= 768) {
-                moreBtn.classList.add('active');
-            }
-            // Highlight item in more menu
-            if (moreMenu) {
-                moreMenu.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
-            }
+            // On mobile, highlight the parent main tab
+            const isMobile = window.innerWidth <= 768;
+            const highlightTab = isMobile ? (this._mobileSubToMain[tabName] || tabName) : tabName;
+            const mainBtn = document.querySelector(`.rt-sidebar-tabs > button[data-tab="${highlightTab}"]`);
+            if (mainBtn) mainBtn.classList.add('active');
         };
 
         // Main tab bar buttons (including hidden ones for desktop)
@@ -1502,47 +1514,25 @@ class RimTownApp {
                 const sidebar = document.getElementById('rimtown-sidebar');
                 const isMobile = window.innerWidth <= 768;
 
+                // On mobile, clicking a main tab resets to the first sub-tab of the group
+                const targetTab = isMobile && this._mobileTabGroups[btn.dataset.tab]
+                    ? this._mobileTabGroups[btn.dataset.tab][0].key
+                    : btn.dataset.tab;
+
                 if (isMobile) {
-                    if (btn.dataset.tab === this.activeTab && sidebar && !sidebar.classList.contains('mobile-collapsed')) {
+                    const currentMain = this._mobileSubToMain[this.activeTab] || this.activeTab;
+                    if (currentMain === btn.dataset.tab && sidebar && !sidebar.classList.contains('mobile-collapsed')) {
                         sidebar.classList.add('mobile-collapsed');
                         return;
                     }
                     if (sidebar) sidebar.classList.remove('mobile-collapsed');
                 }
 
-                this.activeTab = btn.dataset.tab;
-                updateTabHighlight(btn.dataset.tab);
+                this.activeTab = targetTab;
+                updateTabHighlight(targetTab);
                 this.renderSidebar();
             });
         });
-
-        // "More" button
-        if (moreBtn) {
-            moreBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (moreMenu) moreMenu.classList.toggle('active');
-                if (moreOverlay) moreOverlay.classList.toggle('active');
-            });
-        }
-
-        // More menu items
-        if (moreMenu) {
-            moreMenu.querySelectorAll('button[data-tab]').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const sidebar = document.getElementById('rimtown-sidebar');
-                    closeMoreMenu();
-                    if (sidebar) sidebar.classList.remove('mobile-collapsed');
-                    this.activeTab = btn.dataset.tab;
-                    updateTabHighlight(btn.dataset.tab);
-                    this.renderSidebar();
-                });
-            });
-        }
-
-        // Close more menu on overlay tap
-        if (moreOverlay) {
-            moreOverlay.addEventListener('click', closeMoreMenu);
-        }
 
         // Store helper for external use (selectAgent, startChat etc.)
         this._updateTabHighlight = updateTabHighlight;
@@ -1725,6 +1715,12 @@ class RimTownApp {
                 case 'player-vote': this._playerVote(val); break;
                 case 'player-propose': this._playerPropose(val); break;
                 case 'player-flirt': this._playerFlirt(val); break;
+                // Mobile group sub-tab switching
+                case 'mobile-group-tab':
+                    this.activeTab = val;
+                    if (this._updateTabHighlight) this._updateTabHighlight(val);
+                    this.renderSidebar();
+                    break;
                 // Industry sub-tabs
                 case 'industry-subtab': this._industrySubTab = val; this.renderSidebar(); break;
                 case 'economy-subtab': this._economySubTab = val; this.renderSidebar(); break;
@@ -2365,6 +2361,28 @@ class RimTownApp {
 
     renderSidebar() {
         const content = document.getElementById('sidebar-content');
+
+        // Mobile sub-tab bar
+        const isMobile = window.innerWidth <= 768;
+        const mainTab = this._mobileSubToMain?.[this.activeTab] || this.activeTab;
+        const group = isMobile && this._mobileTabGroups?.[mainTab];
+        if (group && group.length > 1) {
+            let subBar = '<div class="sub-tab-bar mobile-group-tabs">';
+            group.forEach(t => {
+                const active = this.activeTab === t.key ? ' class="active"' : '';
+                subBar += `<button${active} data-action="mobile-group-tab" data-val="${t.key}">${t.icon} ${t.label}</button>`;
+            });
+            subBar += '</div>';
+            content.innerHTML = subBar;
+            const subContent = document.createElement('div');
+            content.appendChild(subContent);
+            this._renderTabContent(subContent);
+        } else {
+            this._renderTabContent(content);
+        }
+    }
+
+    _renderTabContent(content) {
         switch (this.activeTab) {
             case 'residents': this.renderResidentsList(content); break;
             case 'chat':
