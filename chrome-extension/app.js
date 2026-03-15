@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v3.6.8
-const RIMTOWN_APP_VERSION = '3.6.8';
+// RimTown - Frontend App (WordPress Plugin) v3.6.9
+const RIMTOWN_APP_VERSION = '3.6.9';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -269,36 +269,40 @@ class RimTownApp {
         this.setupEventDelegation();
         await this.loadSettings();
         // Try to load saved game
-        const lastTownId = localStorage.getItem('rimtown_last_town');
         let loaded = false;
-        if (lastTownId) {
-            loaded = this._loadTownById(lastTownId);
-        }
-        if (!loaded) {
-            const legacyLoaded = await this.tryLoadGame();
-            if (legacyLoaded) {
-                this.currentTownId = this._generateTownId(t('邊境鎮'));
-                this._saveCurrentTown(t('邊境鎮'));
-            } else {
-                // No local data — try cloud first before resetting
-                if (this.auth.loggedIn) {
-                    try {
-                        const saves = await this.auth.listSaves();
-                        if (saves.length > 0) {
-                            const cloudMatch = saves[0];
-                            const saveData = await this.auth.cloudLoad(cloudMatch.town_id);
-                            if (saveData && this.world.loadSave(saveData)) {
-                                this.currentTownId = cloudMatch.town_id;
-                                this._saveCurrentTown(cloudMatch.town_name || t('邊境鎮'));
-                                loaded = true;
-                                console.log('[RimTown] Loaded from cloud on init:', cloudMatch.town_name);
-                            }
-                        }
-                    } catch (e) {
-                        console.error('[RimTown] Cloud load on init failed:', e);
+        if (this.auth.loggedIn) {
+            // When logged in, only load from cloud — skip local saves
+            try {
+                const saves = await this.auth.listSaves();
+                if (saves.length > 0) {
+                    const cloudMatch = saves[0];
+                    const saveData = await this.auth.cloudLoad(cloudMatch.town_id);
+                    if (saveData && this.world.loadSave(saveData)) {
+                        this.currentTownId = cloudMatch.town_id;
+                        this._cloudSaves = saves;
+                        loaded = true;
+                        console.log('[RimTown] Loaded from cloud on init:', cloudMatch.town_name);
                     }
                 }
-                if (!loaded) {
+            } catch (e) {
+                console.error('[RimTown] Cloud load on init failed:', e);
+            }
+            if (!loaded) {
+                this.world.reset();
+                this.currentTownId = this._generateTownId(t('邊境鎮'));
+            }
+        } else {
+            // Not logged in — use local saves
+            const lastTownId = localStorage.getItem('rimtown_last_town');
+            if (lastTownId) {
+                loaded = this._loadTownById(lastTownId);
+            }
+            if (!loaded) {
+                const legacyLoaded = await this.tryLoadGame();
+                if (legacyLoaded) {
+                    this.currentTownId = this._generateTownId(t('邊境鎮'));
+                    this._saveCurrentTown(t('邊境鎮'));
+                } else {
                     this.world.reset();
                     this.currentTownId = this._generateTownId(t('邊境鎮'));
                     this._saveCurrentTown(t('邊境鎮'));
@@ -325,10 +329,7 @@ class RimTownApp {
         this.setupTutorial();
         this._updateAccountButton();
         this._loadAchievementsFromCloud();
-        // Auto-sync from cloud on startup if already logged in
-        if (this.auth.loggedIn) {
-            this._syncFromCloud();
-        }
+        // Cloud data is already loaded in init() when logged in, no need to sync again
         this.startSimulation();
         this.setupAutoSave();
         // Update header town name from saved metadata
@@ -344,6 +345,16 @@ class RimTownApp {
         if (localStorage.getItem('rimtown_tutorial_done')) {
             setTimeout(() => this._updateQuestGuidance(), 2000);
         }
+        // Auto-show login modal if not logged in
+        if (!this.auth.loggedIn) {
+            const authModal = document.getElementById('auth-modal');
+            if (authModal) {
+                authModal.classList.remove('hidden');
+                // Hide close button so user must login/register
+                const closeBtn = authModal.querySelector('.auth-close-btn');
+                if (closeBtn) closeBtn.style.display = 'none';
+            }
+        }
     }
 
     // =====================================================
@@ -356,7 +367,13 @@ class RimTownApp {
                 if (this.auth.loggedIn) {
                     this._showAccountMenu();
                 } else {
-                    document.getElementById('auth-modal')?.classList.remove('hidden');
+                    const authModal = document.getElementById('auth-modal');
+                    if (authModal) {
+                        authModal.classList.remove('hidden');
+                        // Show close button when manually opened
+                        const closeBtn = authModal.querySelector('.auth-close-btn');
+                        if (closeBtn) closeBtn.style.display = '';
+                    }
                 }
             });
         }
@@ -417,6 +434,10 @@ class RimTownApp {
             this._updateAccountButton();
             this.world.logMessage('system', `${t('歡迎回來，')}${this.auth.username}！`);
             this._syncFromCloud();
+            // Show tutorial for new players after login
+            if (!localStorage.getItem('rimtown_tutorial_done')) {
+                this.setupTutorial();
+            }
         } catch (e) {
             if (errEl) errEl.textContent = e.message || t('登入失敗');
         }
@@ -512,6 +533,10 @@ class RimTownApp {
             this._renderTownList();
             this.world.logMessage('system', `${t('註冊成功！歡迎，')}${this.auth.username}${t('！你的全新城鎮已建立。')}`);
             this._syncToCloud();
+            // Show tutorial for new players after registration
+            if (!localStorage.getItem('rimtown_tutorial_done')) {
+                this.setupTutorial();
+            }
         } catch (e) {
             if (errEl) errEl.textContent = e.message || t('註冊失敗');
         }
@@ -559,6 +584,8 @@ class RimTownApp {
         const overlay = document.getElementById('tutorial-overlay');
         if (!overlay) return;
         if (localStorage.getItem('rimtown_tutorial_done')) return;
+        // Don't show tutorial when login screen is active
+        if (!this.auth.loggedIn) return;
         overlay.classList.remove('hidden');
         this._tutorialStep = 0;
         const totalSteps = 5;
@@ -729,7 +756,6 @@ class RimTownApp {
         if (!this.auth.loggedIn) return;
         this._unlockAchievement('cloud_sync');
         try {
-            this._saveCurrentTown();
             const saveData = this.world.serialize();
             const clock = saveData.clock || {};
             await this.auth.cloudSave(this.currentTownId, this._getCurrentTownName(), saveData, {
@@ -748,7 +774,7 @@ class RimTownApp {
         try {
             const saves = await this.auth.listSaves();
             if (saves.length === 0) {
-                // No cloud data — upload current local data
+                // No cloud data — upload current game state to cloud
                 await this._syncToCloud();
                 return;
             }
@@ -758,29 +784,16 @@ class RimTownApp {
             let cloudMatch = saves.find(s => s.town_id === this.currentTownId);
             if (!cloudMatch) cloudMatch = saves[0]; // saves are sorted by updated_at DESC
 
-            // Detect if local is a fresh/empty town (just reset, no real progress)
-            const localIsFresh = this.world.tickCount <= 1;
-
-            // Compare timestamps: load from cloud if it's newer than local
-            const localTown = this._getTownList().find(t => t.id === this.currentTownId);
-            const localTime = localTown?.savedAt ? new Date(localTown.savedAt).getTime() : 0;
-            const cloudTime = cloudMatch.updated_at ? new Date(cloudMatch.updated_at).getTime() : 0;
-
-            if (cloudTime > localTime || localIsFresh) {
-                // Cloud is newer or local is a fresh reset — load from cloud
-                const saveData = await this.auth.cloudLoad(cloudMatch.town_id);
-                if (this.world.loadSave(saveData)) {
-                    if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
-                    this.currentTownId = cloudMatch.town_id;
-                    this._saveCurrentTown(cloudMatch.town_name);
-                    this.state = this.world.getState();
-                    this._generateTileMapLayout();
-                    if (this.tileMap) this.tileMap.agentPositions = {};
-                    this.render();
-                    this.world.logMessage('system', `${t('已從雲端同步最新存檔（')}${cloudMatch.town_name}）。`);
-                }
-            } else {
-                this.world.logMessage('system', `${t('雲端有 ')}${saves.length}${t(' 個城鎮存檔（本地已是最新）。')}`);
+            // Always load from cloud when logged in
+            const saveData = await this.auth.cloudLoad(cloudMatch.town_id);
+            if (this.world.loadSave(saveData)) {
+                if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                this.currentTownId = cloudMatch.town_id;
+                this.state = this.world.getState();
+                this._generateTileMapLayout();
+                if (this.tileMap) this.tileMap.agentPositions = {};
+                this.render();
+                this.world.logMessage('system', `${t('已從雲端同步最新存檔（')}${cloudMatch.town_name}）。`);
             }
         } catch (e) {
             console.error('[RimTown] Cloud load error:', e);
@@ -788,6 +801,10 @@ class RimTownApp {
     }
 
     _getCurrentTownName() {
+        if (this.auth.loggedIn && this._cloudSaves) {
+            const cloud = this._cloudSaves.find(s => s.town_id === this.currentTownId);
+            if (cloud) return cloud.town_name || t('邊境鎮');
+        }
         const list = this._getTownList();
         const town = list.find(t => t.id === this.currentTownId);
         return town?.name || t('邊境鎮');
@@ -1142,7 +1159,7 @@ class RimTownApp {
                     </div>
                 </div>`;
             });
-            html += t('<div style="margin-top:12px"><button data-action="close-town-modal">關閉</button></div>');
+            html += `<div class="town-modal-actions"><button class="town-btn town-btn-secondary" data-action="close-town-modal">${t('關閉')}</button></div>`;
             container.innerHTML = html;
         } catch(e) { this._gameAlert(t('載入雲端存檔失敗：') + e.message, '❌'); }
     }
@@ -1390,6 +1407,11 @@ class RimTownApp {
     _renderTownList() {
         const container = document.getElementById('town-list-content');
         if (!container) return;
+        // When logged in, show cloud saves; otherwise show local saves
+        if (this.auth.loggedIn) {
+            this._renderCloudTownList(container);
+            return;
+        }
         const towns = this._getTownList();
         let html = '';
         if (!towns.length) {
@@ -1410,11 +1432,46 @@ class RimTownApp {
                 </div>`;
             });
         }
-        html += `<div style="margin-top:12px;display:flex;gap:8px">
-            <button class="btn-accent" data-action="create-town">${t('新建城鎮')}</button>
-            <button data-action="close-town-modal">${t('關閉')}</button>
+        html += `<div class="town-modal-actions">
+            <button class="town-btn town-btn-primary" data-action="create-town">${t('新建城鎮')}</button>
+            <button class="town-btn town-btn-secondary" data-action="close-town-modal">${t('關閉')}</button>
         </div>`;
         container.innerHTML = html;
+    }
+    async _renderCloudTownList(container) {
+        container.innerHTML = `<p class="muted-text">${t('載入雲端存檔...')}</p>`;
+        try {
+            const saves = await this.auth.listSaves();
+            this._cloudSaves = saves;
+            let html = '';
+            if (!saves.length) {
+                html = t('<p class="muted-text">雲端尚無城鎮存檔。</p>');
+            } else {
+                saves.forEach(_tw => {
+                    const isActive = _tw.town_id === this.currentTownId;
+                    const date = _tw.updated_at ? new Date(_tw.updated_at).toLocaleString() : '';
+                    html += `<div class="town-item ${isActive?'active':''}">
+                        <div class="town-info" data-action="switch-town" data-val="${_tw.town_id}">
+                            <div class="town-name">${_tw.town_name} ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
+                            <div class="town-meta">${_tw.season||''}${t(' 第')}${_tw.year||1}${t('年 第')}${_tw.day||1}${t('天 | 人口')}${_tw.population||0} | ${date}</div>
+                        </div>
+                        <div class="town-actions">
+                            <button data-action="rename-town" data-val="${_tw.town_id}" title="${t('重新命名')}">✏️</button>
+                            ${!isActive?`<button data-action="delete-town" data-val="${_tw.town_id}" title="${t('刪除')}" class="btn-danger">🗑️</button>`:''}
+                        </div>
+                    </div>`;
+                });
+            }
+            html += `<div class="town-modal-actions">
+                <button class="town-btn town-btn-primary" data-action="create-town">${t('新建城鎮')}</button>
+                <button class="town-btn town-btn-secondary" data-action="close-town-modal">${t('關閉')}</button>
+            </div>`;
+            container.innerHTML = html;
+        } catch (e) {
+            console.error('[RimTown] Cloud town list error:', e);
+            container.innerHTML = `<p class="muted-text">${t('載入雲端存檔失敗。')}</p>
+                <div class="town-modal-actions"><button class="town-btn town-btn-secondary" data-action="close-town-modal">${t('關閉')}</button></div>`;
+        }
     }
     async switchTown(townId) {
         if (townId === this.currentTownId) {
@@ -1422,16 +1479,39 @@ class RimTownApp {
             this.world.paused = false;
             return;
         }
-        this._saveCurrentTown();
-        if (this._loadTownById(townId)) {
-            if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
-            this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
-            this.state = this.world.getState();
-            this._generateTileMapLayout();
-            if (this.tileMap) this.tileMap.agentPositions = {};
-            const townMeta = this._getTownList().find(t => t.id === townId);
-            this._updateHeaderTownName(townMeta?.name);
-            this.render();
+        if (this.auth.loggedIn) {
+            // When logged in, save current to cloud then load target from cloud
+            await this.saveGame();
+            try {
+                const saveData = await this.auth.cloudLoad(townId);
+                if (saveData && this.world.loadSave(saveData)) {
+                    if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                    this.currentTownId = townId;
+                    this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
+                    this.state = this.world.getState();
+                    this._generateTileMapLayout();
+                    if (this.tileMap) this.tileMap.agentPositions = {};
+                    const cloudMeta = this._cloudSaves?.find(s => s.town_id === townId);
+                    this._updateHeaderTownName(cloudMeta?.town_name);
+                    this.render();
+                }
+            } catch (e) {
+                console.error('[RimTown] Cloud switch town error:', e);
+                this.world.logMessage('system', t('切換城鎮失敗。'));
+            }
+        } else {
+            // Not logged in — use local saves
+            this._saveCurrentTown();
+            if (this._loadTownById(townId)) {
+                if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
+                this.state = this.world.getState();
+                this._generateTileMapLayout();
+                if (this.tileMap) this.tileMap.agentPositions = {};
+                const townMeta = this._getTownList().find(t => t.id === townId);
+                this._updateHeaderTownName(townMeta?.name);
+                this.render();
+            }
         }
         document.getElementById('town-modal')?.classList.add('hidden');
         this.world.paused = false;
@@ -1459,14 +1539,27 @@ class RimTownApp {
         }
         return 'town_' + Date.now();
     }
-    createNewTown() {
-        const name = prompt(t('為新城鎮命名：'), t('邊境鎮 ') + (this._getTownList().length + 1));
+    async createNewTown() {
+        const defaultSuffix = this.auth.loggedIn
+            ? ((this._cloudSaves?.length || 0) + 1)
+            : (this._getTownList().length + 1);
+        const name = prompt(t('為新城鎮命名：'), t('邊境鎮 ') + defaultSuffix);
         if (!name) return;
-        if (this.currentTownId) this._saveCurrentTown();
+        if (this.auth.loggedIn) {
+            // When logged in, save current town to cloud before creating new one
+            if (this.currentTownId) await this.saveGame();
+        } else {
+            if (this.currentTownId) this._saveCurrentTown();
+        }
         this.world.reset();
         if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
         this.currentTownId = this._generateTownId(name);
-        this._saveCurrentTown(name);
+        if (this.auth.loggedIn) {
+            // Save new town to cloud immediately
+            await this.saveGame();
+        } else {
+            this._saveCurrentTown(name);
+        }
         this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
         this.state = this.world.getState();
         this._generateTileMapLayout();
@@ -1478,23 +1571,67 @@ class RimTownApp {
         this.world.logMessage('system', `${t('🏘️ 新城鎮「')}${name}${t('」已建立！')}`);
         this.render();
     }
-    renameTownPrompt(townId) {
-        const towns = this._getTownList();
-        const town = towns.find(t => t.id === townId);
-        if (!town) return;
-        const newName = prompt(t('新名稱：'), town.name);
+    async renameTownPrompt(townId) {
+        let currentName = t('邊境鎮');
+        if (this.auth.loggedIn && this._cloudSaves) {
+            const cloud = this._cloudSaves.find(s => s.town_id === townId);
+            if (cloud) currentName = cloud.town_name;
+        } else {
+            const towns = this._getTownList();
+            const town = towns.find(t => t.id === townId);
+            if (town) currentName = town.name;
+        }
+        const newName = prompt(t('新名稱：'), currentName);
         if (newName && newName.trim()) {
-            town.name = newName.trim();
-            this._saveTownList(towns);
+            if (this.auth.loggedIn) {
+                // When logged in, re-save to cloud with new name
+                try {
+                    const saveData = await this.auth.cloudLoad(townId);
+                    if (saveData) {
+                        const clock = saveData.clock || {};
+                        await this.auth.cloudSave(townId, newName.trim(), saveData, {
+                            season: clock.season, year: clock.year, day: clock.day,
+                            population: Object.keys(saveData.agents || {}).length,
+                        });
+                        // Update local cache
+                        if (this._cloudSaves) {
+                            const cs = this._cloudSaves.find(s => s.town_id === townId);
+                            if (cs) cs.town_name = newName.trim();
+                        }
+                    }
+                } catch (e) {
+                    console.error('[RimTown] Cloud rename error:', e);
+                }
+            } else {
+                const towns = this._getTownList();
+                const town = towns.find(t => t.id === townId);
+                if (town) {
+                    town.name = newName.trim();
+                    this._saveTownList(towns);
+                }
+            }
+            if (townId === this.currentTownId) {
+                this._updateHeaderTownName(newName.trim());
+            }
             this._renderTownList();
         }
     }
     async deleteTownConfirm(townId) {
         if (!await this._gameConfirm(t('確定要刪除這個城鎮？所有存檔和聊天記錄都會消失。'), '🗑️')) return;
-        const list = this._getTownList().filter(t => t.id !== townId);
-        this._saveTownList(list);
-        localStorage.removeItem('rimtown_town_' + townId);
-        localStorage.removeItem('rimtown_town_' + townId + '_archives');
+        if (this.auth.loggedIn) {
+            // When logged in, delete from cloud
+            try {
+                await this.auth.cloudDelete(townId);
+            } catch (e) {
+                console.error('[RimTown] Cloud delete error:', e);
+            }
+        } else {
+            // Not logged in — delete from local storage
+            const list = this._getTownList().filter(t => t.id !== townId);
+            this._saveTownList(list);
+            localStorage.removeItem('rimtown_town_' + townId);
+            localStorage.removeItem('rimtown_town_' + townId + '_archives');
+        }
         this._renderTownList();
     }
 
@@ -2157,30 +2294,31 @@ class RimTownApp {
             // Track save count for achievement
             const sc = parseInt(localStorage.getItem('rimtown_save_count') || '0') + 1;
             localStorage.setItem('rimtown_save_count', sc.toString());
-            if (this.currentTownId) {
-                this._saveCurrentTown();
-            }
             const saveData = this.world.serialize();
-            const json = JSON.stringify(saveData);
-            if (typeof chrome !== 'undefined' && chrome.storage) {
-                await chrome.storage.local.set({ rimtown_save: json });
-            } else {
-                localStorage.setItem('rimtown_save', json);
-            }
-            // Auto sync to cloud when logged in
             if (this.auth?.loggedIn) {
+                // When logged in, only save to cloud — skip local storage
                 try {
                     const clock = saveData.clock || {};
                     await this.auth.cloudSave(this.currentTownId, this._getCurrentTownName(), saveData, {
                         season: clock.season, year: clock.year, day: clock.day,
                         population: Object.keys(saveData.agents || {}).length,
                     });
-                    this.world.logMessage('system', t('遊戲已儲存並同步至雲端。'));
+                    this.world.logMessage('system', t('遊戲已儲存至雲端。'));
                 } catch (e) {
-                    console.error('[RimTown] Cloud sync error:', e);
-                    this.world.logMessage('system', t('遊戲已儲存（雲端同步失敗）。'));
+                    console.error('[RimTown] Cloud save error:', e);
+                    this.world.logMessage('system', t('雲端儲存失敗。'));
                 }
             } else {
+                // Not logged in — save locally
+                if (this.currentTownId) {
+                    this._saveCurrentTown();
+                }
+                const json = JSON.stringify(saveData);
+                if (typeof chrome !== 'undefined' && chrome.storage) {
+                    await chrome.storage.local.set({ rimtown_save: json });
+                } else {
+                    localStorage.setItem('rimtown_save', json);
+                }
                 this.world.logMessage('system', t('遊戲已儲存。'));
             }
             return true;
@@ -2226,18 +2364,10 @@ class RimTownApp {
         // Also save when tab is closing
         window.addEventListener('beforeunload', () => {
             try {
-                if (this.currentTownId) {
-                    this._saveCurrentTown();
-                }
                 const saveData = this.world.serialize();
                 const json = JSON.stringify(saveData);
-                if (typeof chrome !== 'undefined' && chrome.storage) {
-                    chrome.storage.local.set({ rimtown_save: json });
-                } else {
-                    localStorage.setItem('rimtown_save', json);
-                }
-                // Sync to cloud on tab close using fetch keepalive
                 if (this.auth.loggedIn && this.auth._restUrl) {
+                    // When logged in, only sync to cloud — skip local storage
                     const clock = saveData.clock || {};
                     const payload = JSON.stringify({
                         town_id: this.currentTownId,
@@ -2255,6 +2385,16 @@ class RimTownApp {
                         body: payload,
                         keepalive: true,
                     }).catch(() => {});
+                } else {
+                    // Not logged in — save locally
+                    if (this.currentTownId) {
+                        this._saveCurrentTown();
+                    }
+                    if (typeof chrome !== 'undefined' && chrome.storage) {
+                        chrome.storage.local.set({ rimtown_save: json });
+                    } else {
+                        localStorage.setItem('rimtown_save', json);
+                    }
                 }
             } catch(e) {}
         });
@@ -3304,8 +3444,7 @@ class RimTownApp {
         const currentMultiplier = this._speedMultiplier || 1;
         html += t('<div class="econ-section"><h3>🎮 遊戲控制</h3>');
         html += `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
-            <button class="trade-btn ${paused ? '' : 'btn-accent'}" data-action="settings-toggle-pause">${paused ? t('▶️ 繼續') : t('⏸ 暫停')}</button>
-            <div class="speed-controls" style="margin-left:4px">
+            <div class="speed-controls">
                 ${[1, 1.5, 2, 3].map(s => `<button class="btn-speed${currentMultiplier===s?' active':''}" data-action="settings-speed-mult" data-val="${s}">${s}x</button>`).join('')}
             </div>
         </div>`;

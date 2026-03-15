@@ -1209,11 +1209,25 @@ class PixelTileMap {
             }
         }
 
+        // Clear doorstep area (2 tiles wide in front of door for easier entry)
+        const doorTileX = x + tmpl.doorX;
+        const doorTileY = y + h + 1; // tile row just below door
+        for (let dy = 0; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+                const cx = doorTileX + dx, cy = doorTileY + dy;
+                if (cx >= 0 && cx < this.cols && cy >= 0 && cy < this.rows) {
+                    const t = this.grid[cy][cx];
+                    if (t === T.GRASS || t === T.GRASS2 || t === T.GRASS3) {
+                        this.grid[cy][cx] = T.DIRT;
+                    }
+                }
+            }
+        }
         // Connect to nearest road with dirt path
-        this._connectToRoad(x + tmpl.doorX, y + h + 1);
+        this._connectToRoad(doorTileX, doorTileY);
 
-        const doorPxX = (x + tmpl.doorX + 0.5) * TILE;
-        const doorPxY = (y + h + 1.5) * TILE; // just below the door tile
+        const doorPxX = (doorTileX + 0.5) * TILE;
+        const doorPxY = (doorTileY + 0.5) * TILE; // on the doorstep tile
         this.buildingZones[locId] = { x, y, w, h: h + 1, doorPixelX: doorPxX, doorPixelY: doorPxY };
         this.labelPositions[locId] = { x: (x + w/2) * TILE, y: y * TILE - 4, name };
     }
@@ -1245,11 +1259,25 @@ class PixelTileMap {
                     }
                 }
             }
-            this._connectToRoad(hx + house.doorX, hy + house.h + 1);
+            // Clear doorstep area for easier entry
+            const doorTX = hx + house.doorX;
+            const doorTY = hy + house.h + 1;
+            for (let ddy = 0; ddy <= 1; ddy++) {
+                for (let ddx = -1; ddx <= 1; ddx++) {
+                    const cx = doorTX + ddx, cy = doorTY + ddy;
+                    if (cx >= 0 && cx < this.cols && cy >= 0 && cy < this.rows) {
+                        const tt = this.grid[cy][cx];
+                        if (tt === T.GRASS || tt === T.GRASS2 || tt === T.GRASS3) {
+                            this.grid[cy][cx] = T.DIRT;
+                        }
+                    }
+                }
+            }
+            this._connectToRoad(doorTX, doorTY);
             // Register each house as a sub-zone with door position
             const subId = `${locId}_${houseIdx}`;
-            const doorPxX = (hx + house.doorX + 0.5) * TILE;
-            const doorPxY = (hy + house.h + 1.5) * TILE;
+            const doorPxX = (doorTX + 0.5) * TILE;
+            const doorPxY = (doorTY + 0.5) * TILE;
             const interiorX = (hx + house.w / 2) * TILE;
             const interiorY = (hy + house.h / 2 + 1) * TILE;
             this._houseSubZones[subId] = {
@@ -2117,6 +2145,146 @@ class PixelTileMap {
         return { x: targetX, y: targetY };
     }
 
+    // Check if a tile coordinate is walkable (tile-based, not pixel-based)
+    _isTileWalkable(tx, ty) {
+        if (!this.grid) return true;
+        if (tx < 0 || tx >= this.cols || ty < 0 || ty >= this.rows) return false;
+        const tile = this.grid[ty][tx];
+        return tile !== T.WALL_TOP && tile !== T.WALL_FRONT && tile !== T.WINDOW
+            && tile !== T.ROOF && tile !== T.ROOF2
+            && tile !== T.FENCE_H && tile !== T.FENCE_V;
+    }
+
+    // A* pathfinding on tile grid — returns array of {x, y} pixel waypoints
+    _findPath(startPx, startPy, endPx, endPy) {
+        if (!this.grid) return null;
+        const sx = Math.floor(startPx / TILE);
+        const sy = Math.floor(startPy / TILE);
+        let ex = Math.floor(endPx / TILE);
+        let ey = Math.floor(endPy / TILE);
+
+        // Clamp to grid bounds
+        const clamp = (v, max) => Math.max(0, Math.min(max - 1, v));
+        const sxc = clamp(sx, this.cols), syc = clamp(sy, this.rows);
+        const exc = clamp(ex, this.cols), eyc = clamp(ey, this.rows);
+
+        // If start == end, no path needed
+        if (sxc === exc && syc === eyc) return null;
+
+        // If end tile is not walkable, find nearest walkable tile
+        if (!this._isTileWalkable(exc, eyc)) {
+            let found = false;
+            for (let r = 1; r <= 8; r++) {
+                for (let dy = -r; dy <= r; dy++) {
+                    for (let dx = -r; dx <= r; dx++) {
+                        if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+                        if (this._isTileWalkable(exc + dx, eyc + dy)) {
+                            ex = exc + dx; ey = eyc + dy; found = true; break;
+                        }
+                    }
+                    if (found) break;
+                }
+                if (found) break;
+            }
+            if (!found) return null;
+        }
+
+        // A* with 8-directional movement
+        const key = (x, y) => x + y * this.cols;
+        const open = []; // min-heap by f
+        const gScore = new Map();
+        const parent = new Map();
+        const closed = new Set();
+
+        const h = (x, y) => Math.abs(x - ex) + Math.abs(y - ey); // Manhattan
+        const startKey = key(sxc, syc);
+        gScore.set(startKey, 0);
+        open.push({ x: sxc, y: syc, f: h(sxc, syc) });
+
+        const dirs = [
+            { dx: 0, dy: -1, cost: 1 }, { dx: 0, dy: 1, cost: 1 },
+            { dx: -1, dy: 0, cost: 1 }, { dx: 1, dy: 0, cost: 1 },
+            { dx: -1, dy: -1, cost: 1.41 }, { dx: 1, dy: -1, cost: 1.41 },
+            { dx: -1, dy: 1, cost: 1.41 }, { dx: 1, dy: 1, cost: 1.41 },
+        ];
+
+        let iterations = 0;
+        const MAX_ITER = 2000; // prevent lag on large maps
+
+        while (open.length > 0 && iterations < MAX_ITER) {
+            iterations++;
+            // Find lowest f in open (simple linear scan — adequate for small grids)
+            let bestIdx = 0;
+            for (let i = 1; i < open.length; i++) {
+                if (open[i].f < open[bestIdx].f) bestIdx = i;
+            }
+            const cur = open[bestIdx];
+            open.splice(bestIdx, 1);
+
+            const ck = key(cur.x, cur.y);
+            if (closed.has(ck)) continue;
+            closed.add(ck);
+
+            // Reached goal
+            if (cur.x === ex && cur.y === ey) {
+                // Reconstruct path as pixel waypoints
+                const path = [];
+                let k = ck;
+                while (k !== undefined) {
+                    const py = Math.floor(k / this.cols);
+                    const px = k - py * this.cols;
+                    path.unshift({ x: (px + 0.5) * TILE, y: (py + 0.5) * TILE });
+                    k = parent.get(k);
+                }
+                // Simplify: remove collinear waypoints
+                return this._simplifyPath(path);
+            }
+
+            const curG = gScore.get(ck) || 0;
+
+            for (const d of dirs) {
+                const nx = cur.x + d.dx, ny = cur.y + d.dy;
+                if (nx < 0 || nx >= this.cols || ny < 0 || ny >= this.rows) continue;
+                const nk = key(nx, ny);
+                if (closed.has(nk)) continue;
+                if (!this._isTileWalkable(nx, ny)) continue;
+
+                // For diagonal, both adjacent cardinal tiles must be walkable (no corner cutting)
+                if (d.dx !== 0 && d.dy !== 0) {
+                    if (!this._isTileWalkable(cur.x + d.dx, cur.y) || !this._isTileWalkable(cur.x, cur.y + d.dy)) continue;
+                }
+
+                const ng = curG + d.cost;
+                if (!gScore.has(nk) || ng < gScore.get(nk)) {
+                    gScore.set(nk, ng);
+                    parent.set(nk, ck);
+                    open.push({ x: nx, y: ny, f: ng + h(nx, ny) });
+                }
+            }
+        }
+
+        return null; // no path found
+    }
+
+    // Remove collinear waypoints to reduce path complexity
+    _simplifyPath(path) {
+        if (path.length <= 2) return path;
+        const result = [path[0]];
+        for (let i = 1; i < path.length - 1; i++) {
+            const prev = result[result.length - 1];
+            const cur = path[i];
+            const next = path[i + 1];
+            const dx1 = cur.x - prev.x, dy1 = cur.y - prev.y;
+            const dx2 = next.x - cur.x, dy2 = next.y - cur.y;
+            // Keep if direction changes
+            if (Math.sign(dx1) !== Math.sign(dx2) || Math.sign(dy1) !== Math.sign(dy2)) {
+                result.push(cur);
+            }
+        }
+        result.push(path[path.length - 1]);
+        return result;
+    }
+
     updateAgents(agents, locations, chatTarget) {
         this.chatTarget = chatTarget || null;
         const WALK_SPEED = 0.3; // pixels per frame — slow leisurely pace
@@ -2226,21 +2394,41 @@ class PixelTileMap {
                         pos.targetX = targetX;
                         pos.targetY = targetY;
                     }
+                    // Compute A* path for the new movement
+                    pos._pathWaypoints = this._findPath(pos.x, pos.y, pos.targetX, pos.targetY);
+                    pos._pathIdx = 0;
                 } else if (!pos.doorPhase) {
-                    pos.targetX = targetX;
-                    pos.targetY = targetY;
+                    // Only recompute path if target actually changed
+                    if (Math.abs(targetX - pos.targetX) > 1 || Math.abs(targetY - pos.targetY) > 1) {
+                        pos.targetX = targetX;
+                        pos.targetY = targetY;
+                        pos._pathWaypoints = this._findPath(pos.x, pos.y, targetX, targetY);
+                        pos._pathIdx = 0;
+                    }
                 }
 
                 // If NPC is currently stuck inside a wall, teleport them out
                 if (!this._isWalkableTile(pos.x, pos.y)) {
                     const escape = this._findWalkableTarget(pos.x, pos.y);
                     pos.x = escape.x; pos.y = escape.y;
+                    pos._pathWaypoints = null; // recalc path
                 }
                 // Freeze agents involved in player chat
                 const isChatting = chatTarget && (aid === chatTarget || aid === 'player');
+
+                // Determine current movement target (A* waypoint or direct target)
+                let moveToX = pos.targetX, moveToY = pos.targetY;
+                if (pos._pathWaypoints && pos._pathWaypoints.length > 0) {
+                    const wpIdx = pos._pathIdx || 0;
+                    if (wpIdx < pos._pathWaypoints.length) {
+                        moveToX = pos._pathWaypoints[wpIdx].x;
+                        moveToY = pos._pathWaypoints[wpIdx].y;
+                    }
+                }
+
                 // Constant-speed walking
-                const dx = pos.targetX - pos.x;
-                const dy = pos.targetY - pos.y;
+                const dx = moveToX - pos.x;
+                const dy = moveToY - pos.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 if (isChatting) {
                     // Stop walking and face each other
@@ -2252,14 +2440,14 @@ class PixelTileMap {
                         pos.facing = this.agentPositions['player'].x > pos.x ? 1 : -1;
                     }
                 } else if (dist > 1) {
-                    // Walk toward target at constant speed
+                    // Walk toward current waypoint at constant speed
                     const step = Math.min(WALK_SPEED, dist);
                     let newX = pos.x + (dx / dist) * step;
                     let newY = pos.y + (dy / dist) * step;
-                    // Wall collision avoidance: if next position is a wall, try sliding along axes
+                    // Wall collision avoidance fallback (shouldn't happen with A* but just in case)
                     if (!this._isWalkableTile(newX, newY)) {
-                        const moveX = (dx / dist) * step; // X component only
-                        const moveY = (dy / dist) * step; // Y component only
+                        const moveX = (dx / dist) * step;
+                        const moveY = (dy / dist) * step;
                         if (this._isWalkableTile(pos.x + moveX, pos.y)) {
                             newX = pos.x + moveX; newY = pos.y;
                         } else if (this._isWalkableTile(pos.x, pos.y + moveY)) {
@@ -2269,6 +2457,7 @@ class PixelTileMap {
                             const escape = this._findWalkableTarget(pos.targetX, pos.targetY);
                             pos.x = escape.x; pos.y = escape.y;
                             pos.walking = false; pos.walkStep = 0;
+                            pos._pathWaypoints = null;
                             continue;
                         }
                     }
@@ -2279,16 +2468,27 @@ class PixelTileMap {
                     // Face direction: 1 = right, -1 = left
                     pos.facing = dx > 0 ? 1 : dx < 0 ? -1 : (pos.facing || 1);
                 } else {
-                    pos.x = pos.targetX;
-                    pos.y = pos.targetY;
+                    // Reached current waypoint
+                    pos.x = moveToX;
+                    pos.y = moveToY;
+
+                    // Advance to next A* waypoint if available
+                    if (pos._pathWaypoints && pos._pathIdx < pos._pathWaypoints.length - 1) {
+                        pos._pathIdx++;
+                        // Continue walking to next waypoint
+                        pos.walking = true;
+                    }
                     // Handle door waypoint progression
-                    if (pos.doorPhase === 'exiting' && pos.destDoor) {
+                    else if (pos.doorPhase === 'exiting' && pos.destDoor) {
                         // Reached exit door → now walk to destination door
                         pos.doorPhase = 'approaching';
                         pos.doorWaypoint = pos.destDoor;
                         pos.targetX = pos.destDoor.x;
                         pos.targetY = pos.destDoor.y;
                         pos.destDoor = null;
+                        // Compute new path for outdoor segment
+                        pos._pathWaypoints = this._findPath(pos.x, pos.y, pos.targetX, pos.targetY);
+                        pos._pathIdx = 0;
                     } else if (pos.doorPhase === 'approaching' && pos.finalTarget) {
                         // Reached destination door → now walk inside to final position
                         pos.doorPhase = 'entering';
@@ -2296,14 +2496,17 @@ class PixelTileMap {
                         pos.targetY = pos.finalTarget.y;
                         pos.finalTarget = null;
                         pos.doorWaypoint = null;
+                        pos._pathWaypoints = null; // short indoor path, no A* needed
                     } else if (pos.doorPhase === 'entering') {
                         // Arrived at final position inside building
                         pos.doorPhase = null;
                         pos.walking = false;
                         pos.walkStep = 0;
+                        pos._pathWaypoints = null;
                     } else {
                         pos.walking = false;
                         pos.walkStep = 0;
+                        pos._pathWaypoints = null;
                     }
                 }
             }

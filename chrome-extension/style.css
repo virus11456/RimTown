@@ -1190,6 +1190,11 @@ body.rimtown-page .wp-block-post-title {
     justify-content: center;
     z-index: 100000;
 }
+.rimtown-container #auth-modal {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
 .modal.hidden { display: none; }
 .hidden { display: none !important; }
 
@@ -1520,6 +1525,27 @@ body.rimtown-page .wp-block-post-title {
 .town-actions { display: flex; gap: 4px; }
 .town-actions button { background: transparent; border: 1px solid var(--border); color: var(--text-secondary);
     padding: 2px 6px; font-size: 0.7rem; border-radius: 3px; cursor: pointer; }
+.town-modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+.town-btn {
+    flex: 1; padding: 10px 16px; border: none; border-radius: 8px;
+    font-size: 0.85rem; font-weight: 600; cursor: pointer;
+    transition: all 0.2s ease; text-align: center;
+}
+.town-btn-primary {
+    background: var(--accent); color: #fff;
+    box-shadow: 0 2px 8px rgba(233, 69, 96, 0.3);
+}
+.town-btn-primary:hover {
+    background: #d43d5e; transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(233, 69, 96, 0.4);
+}
+.town-btn-secondary {
+    background: var(--bg-card); color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+.town-btn-secondary:hover {
+    background: var(--border); color: var(--text-primary);
+}
 
 /* ===== Election System ===== */
 .election-section {

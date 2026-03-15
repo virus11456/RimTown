@@ -449,6 +449,8 @@ class Agent {
             case 'mourning': return 6 + randInt(0, 4);     // mourning at graveyard
             case 'night_stroll': return 3 + randInt(0, 3); // strolling moves more
             case 'wandering': return 5 + randInt(0, 3);
+            case 'heading_home': return 20;                // keep heading home until bedtime
+            case 'commuting': return 20;                   // keep heading to work until start
             default: return 4;
         }
     }
@@ -481,6 +483,26 @@ class Agent {
         // Critical needs always override
         if (this.needs.hunger < 15) { this.activity='eating'; return; }
         if (this.needs.rest < 10) { this.activity='sleeping'; return; }
+
+        // Pre-sleep: head home 1 hour before bedtime (walk home while still awake)
+        const preSleepHour = (sleepStart - 1 + 24) % 24;
+        const inPreSleep = sleepStart > sleepEnd
+            ? (hour === preSleepHour)
+            : (hour === preSleepHour);
+        if (inPreSleep && this.needs.rest < 90 && this.currentLocation !== this.homeLocation) {
+            this.activity = 'heading_home';
+            return;
+        }
+
+        // Pre-work: head to workplace 1 hour before work starts
+        if (this.job) {
+            const [ws] = this.job.workHours;
+            const preWorkHour = (ws - 1 + 24) % 24;
+            if (hour === preWorkHour && this.activity !== 'sleeping' && this.currentLocation !== this.job.workplace) {
+                this.activity = 'commuting';
+                return;
+            }
+        }
 
         // Sleep schedule
         const inSleepWindow = sleepStart > sleepEnd
@@ -575,7 +597,9 @@ class Agent {
         const isWorkHours = this.job && (() => { const [ws,we] = this.job.workHours; return ws <= hour && hour < we; })();
         const workplace = this.job?.workplace;
 
-        if (this.activity==='sleeping') this.targetLocation = this.homeLocation;
+        if (this.activity==='heading_home') this.targetLocation = this.homeLocation;
+        else if (this.activity==='commuting' && this.job) this.targetLocation = this.job.workplace;
+        else if (this.activity==='sleeping') this.targetLocation = this.homeLocation;
         else if (this.activity==='eating') {
             // During work hours, eat near workplace or at tavern; at night, eat at home or tavern
             if (isWorkHours && workplace) this.targetLocation = pickRandom([workplace, 'tavern', 'tavern']);

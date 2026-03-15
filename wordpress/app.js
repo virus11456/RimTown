@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v3.6.8
-const RIMTOWN_APP_VERSION = '3.6.8';
+// RimTown - Frontend App (WordPress Plugin) v3.6.9
+const RIMTOWN_APP_VERSION = '3.6.9';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1159,7 +1159,7 @@ class RimTownApp {
                     </div>
                 </div>`;
             });
-            html += t('<div style="margin-top:12px"><button data-action="close-town-modal">關閉</button></div>');
+            html += `<div class="town-modal-actions"><button class="town-btn town-btn-secondary" data-action="close-town-modal">${t('關閉')}</button></div>`;
             container.innerHTML = html;
         } catch(e) { this._gameAlert(t('載入雲端存檔失敗：') + e.message, '❌'); }
     }
@@ -1432,9 +1432,9 @@ class RimTownApp {
                 </div>`;
             });
         }
-        html += `<div style="margin-top:12px;display:flex;gap:8px">
-            <button class="btn-accent" data-action="create-town">${t('新建城鎮')}</button>
-            <button data-action="close-town-modal">${t('關閉')}</button>
+        html += `<div class="town-modal-actions">
+            <button class="town-btn town-btn-primary" data-action="create-town">${t('新建城鎮')}</button>
+            <button class="town-btn town-btn-secondary" data-action="close-town-modal">${t('關閉')}</button>
         </div>`;
         container.innerHTML = html;
     }
@@ -1462,15 +1462,15 @@ class RimTownApp {
                     </div>`;
                 });
             }
-            html += `<div style="margin-top:12px;display:flex;gap:8px">
-                <button class="btn-accent" data-action="create-town">${t('新建城鎮')}</button>
-                <button data-action="close-town-modal">${t('關閉')}</button>
+            html += `<div class="town-modal-actions">
+                <button class="town-btn town-btn-primary" data-action="create-town">${t('新建城鎮')}</button>
+                <button class="town-btn town-btn-secondary" data-action="close-town-modal">${t('關閉')}</button>
             </div>`;
             container.innerHTML = html;
         } catch (e) {
             console.error('[RimTown] Cloud town list error:', e);
             container.innerHTML = `<p class="muted-text">${t('載入雲端存檔失敗。')}</p>
-                <div style="margin-top:12px"><button data-action="close-town-modal">${t('關閉')}</button></div>`;
+                <div class="town-modal-actions"><button class="town-btn town-btn-secondary" data-action="close-town-modal">${t('關閉')}</button></div>`;
         }
     }
     async switchTown(townId) {
@@ -3444,8 +3444,7 @@ class RimTownApp {
         const currentMultiplier = this._speedMultiplier || 1;
         html += t('<div class="econ-section"><h3>🎮 遊戲控制</h3>');
         html += `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
-            <button class="trade-btn ${paused ? '' : 'btn-accent'}" data-action="settings-toggle-pause">${paused ? t('▶️ 繼續') : t('⏸ 暫停')}</button>
-            <div class="speed-controls" style="margin-left:4px">
+            <div class="speed-controls">
                 ${[1, 1.5, 2, 3].map(s => `<button class="btn-speed${currentMultiplier===s?' active':''}" data-action="settings-speed-mult" data-val="${s}">${s}x</button>`).join('')}
             </div>
         </div>`;
