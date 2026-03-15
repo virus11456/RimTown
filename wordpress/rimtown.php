@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 3.6.1
+ * Version: 3.6.2
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '3.6.1');
+define('RIMTOWN_VERSION', '3.6.2');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1328,6 +1328,17 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '3.6.2',
+            'date'    => '2026-03-15',
+            'changes' => array(
+                '修復手機版多處 RWD 跑版問題',
+                '教學卡片：改用 calc(100vw - 32px) 限制寬度，防止文字溢出螢幕',
+                '任務引導橫幅：使用 min(500px, calc(100vw - 32px)) 避免超出手機螢幕',
+                '底部導覽列：加入 max-width: 100vw 防止水平溢出',
+                '版號同步：所有檔案統一為 3.6.2',
+            ),
+        ),
         array(
             'version' => '3.6.1',
             'date'    => '2026-03-14',
