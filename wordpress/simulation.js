@@ -1394,26 +1394,26 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                 // Mood-driven dramatic scene
                 () => {
                     if (agentA.mood < 20) {
-                        lines.push({speaker:agentB.name, text:`${agentA.name}...你怎麼一個人坐在${loc}發呆？你的眼眶是不是紅紅的...`});
-                        lines.push({speaker:agentA.name, text:tA.includes('stoic')?`...我沒事。只是在想一些事情。`:`...最近什麼事都不順利，我有時候在想，我來邊境鎮到底對不對。`});
-                        lines.push({speaker:agentB.name, text:tB.includes('kind')?`你聽我說——你是這個鎮上不可或缺的人。我們都需要你。來，先喝口${food}暖暖身子。`:`你少來了，沒有你誰來做${jobA}？鎮上離了你可不行。`});
-                        lines.push({speaker:agentA.name, text:`......謝謝你，${agentB.name}。有你在真好。`});
+                        lines.push({speaker:agentB.name, text:`${agentA.name}...${t('你怎麼一個人坐在')}${loc}${t('發呆？你的眼眶是不是紅紅的...')}`});
+                        lines.push({speaker:agentA.name, text:tA.includes('stoic')?t('...我沒事。只是在想一些事情。'):t('...最近什麼事都不順利，我有時候在想，我來邊境鎮到底對不對。')});
+                        lines.push({speaker:agentB.name, text:tB.includes('kind')?`${t('你聽我說——你是這個鎮上不可或缺的人。我們都需要你。來，先喝口')}${food}${t('暖暖身子。')}`:`${t('你少來了，沒有你誰來做')}${jobA}${t('？鎮上離了你可不行。')}`});
+                        lines.push({speaker:agentA.name, text:`${t('......謝謝你，')}${agentB.name}${t('。有你在真好。')}`});
                         affA = randInt(3,6); affB = randInt(2,4);
-                        summary = `${agentB.name}在${loc}發現了獨自落寞的${agentA.name}，溫柔地遞上一杯${food}，用真摯的話語驅散了陰霾，${agentA.name}眼眶泛紅地笑了。`;
+                        summary = `${agentB.name}${t('在')}${loc}${t('發現了獨自落寞的')}${agentA.name}${t('，溫柔地遞上一杯')}${food}${t('，用真摯的話語驅散了陰霾，')}${agentA.name}${t('眼眶泛紅地笑了。')}`;
                     } else if (agentA.mood > 70) {
-                        lines.push({speaker:agentA.name, text:`${agentB.name}！你猜怎麼著！今天是我這輩子最好的一天——${pickRandom(['工作順利到不可思議','發現了一個超棒的地方','有人跟我說了一句讓我開心到飛起來的話'])}！`});
-                        lines.push({speaker:agentB.name, text:tB.includes('pessimist')?`你也太浮誇了...不過看你這麼開心我也忍不住笑了。`:`太好了！快跟我說！今天我請你喝${food}慶祝！`});
-                        lines.push({speaker:agentA.name, text:`我現在覺得什麼困難都打不倒我！連${season}的天氣都特別配合！`});
-                        lines.push({speaker:agentB.name, text:`哈哈哈，你也太誇張了！不過...你開心我也開心，畢竟你笑起來真的很有感染力。`});
+                        lines.push({speaker:agentA.name, text:`${agentB.name}${t('！你猜怎麼著！今天是我這輩子最好的一天——')}${pickRandom([t('工作順利到不可思議'),t('發現了一個超棒的地方'),t('有人跟我說了一句讓我開心到飛起來的話')])}${t('！')}`});
+                        lines.push({speaker:agentB.name, text:tB.includes('pessimist')?t('你也太浮誇了...不過看你這麼開心我也忍不住笑了。'):`${t('太好了！快跟我說！今天我請你喝')}${food}${t('慶祝！')}`});
+                        lines.push({speaker:agentA.name, text:`${t('我現在覺得什麼困難都打不倒我！連')}${t(season)}${t('的天氣都特別配合！')}`});
+                        lines.push({speaker:agentB.name, text:t('哈哈哈，你也太誇張了！不過...你開心我也開心，畢竟你笑起來真的很有感染力。')});
                         affA = randInt(2,5); affB = randInt(2,5);
-                        summary = `心情大好的${agentA.name}在${loc}拉著${agentB.name}分享喜悅，開懷大笑的聲音感染了整個${loc}，連路過的人都忍不住嘴角上揚。`;
+                        summary = `${t('心情大好的')}${agentA.name}${t('在')}${loc}${t('拉著')}${agentB.name}${t('分享喜悅，開懷大笑的聲音感染了整個')}${loc}${t('，連路過的人都忍不住嘴角上揚。')}`;
                     } else {
-                        lines.push({speaker:agentA.name, text:`${agentB.name}，你有沒有想過...如果當初沒來邊境鎮，現在會在哪裡？`});
-                        lines.push({speaker:agentB.name, text:tB.includes('creative')?`我有時候會想呢。也許在某個大城市裡迷失方向吧...但這裡有${scene}，有你們這些朋友，我不後悔。`:`想那麼多幹嘛？現在過得不錯就好了。走，去弄點${food}來吃。`});
-                        lines.push({speaker:agentA.name, text:`說得也是。有時候覺得命運把我們送到這裡，一定有它的道理。`});
-                        lines.push({speaker:agentB.name, text:`少在那邊感慨了！${food}可不等人，走走走！`});
+                        lines.push({speaker:agentA.name, text:`${agentB.name}${t('，你有沒有想過...如果當初沒來邊境鎮，現在會在哪裡？')}`});
+                        lines.push({speaker:agentB.name, text:tB.includes('creative')?`${t('我有時候會想呢。也許在某個大城市裡迷失方向吧...但這裡有')}${scene}${t('，有你們這些朋友，我不後悔。')}`:`${t('想那麼多幹嘛？現在過得不錯就好了。走，去弄點')}${food}${t('來吃。')}`});
+                        lines.push({speaker:agentA.name, text:t('說得也是。有時候覺得命運把我們送到這裡，一定有它的道理。')});
+                        lines.push({speaker:agentB.name, text:`${t('少在那邊感慨了！')}${food}${t('可不等人，走走走！')}`});
                         affA = randInt(2,4); affB = randInt(2,4);
-                        summary = `${agentA.name}和${agentB.name}在${loc}感慨起命運的安排，聊起了${scene}的美好，最後被${food}的香氣拉回了現實，氣氛輕鬆溫馨。`;
+                        summary = `${agentA.name}${t('和')}${agentB.name}${t('在')}${loc}${t('感慨起命運的安排，聊起了')}${scene}${t('的美好，最後被')}${food}${t('的香氣拉回了現實，氣氛輕鬆溫馨。')}`;
                     }
                 },
             ];
@@ -1423,7 +1423,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                 this._addConflictEscalation(lines, agentA, agentB, world, tA, tB);
                 affA = Math.min(affA, randInt(-4, -1));
                 affB = Math.min(affB, randInt(-4, -1));
-                summary += '但後來氣氛突然變得微妙，兩人不歡而散。';
+                summary += t('但後來氣氛突然變得微妙，兩人不歡而散。');
             }
         }
 
@@ -1444,15 +1444,15 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
     }
 
     _personalityGreeting(agent, other, rel) {
-        const t = agent.personality.traits;
+        const tr = agent.personality.traits;
         const name = other.name;
-        if (rel.status === 'dating' || rel.status === 'married') return pickRandom([`親愛的${name}。`,`${name}~`,`嘿，${name}。`]);
-        if (t.includes('charismatic')) return pickRandom([`嘿！${name}！`,`哈囉${name}，真高興見到你！`,`${name}！好久不見！`]);
-        if (t.includes('shy')) return pickRandom([`啊...${name}...你好。`,`嗯...你好。`,`...嗨。`]);
-        if (t.includes('abrasive')) return pickRandom([`喔，${name}啊。`,`怎麼又是你。`,`${name}。`]);
-        if (t.includes('optimist')) return pickRandom([`${name}！今天也是美好的一天！`,`嗨${name}，你看起來很有精神！`]);
-        if (t.includes('pessimist')) return pickRandom([`${name}...唉。`,`嗯...${name}。`]);
-        return pickRandom([`嘿，${name}。`,`你好啊，${name}。`,`哈囉，${name}！`,`${name}，好久不見。`]);
+        if (rel.status === 'dating' || rel.status === 'married') return pickRandom([`${t('親愛的')}${name}${t('。')}`,`${name}~`,`${t('嘿，')}${name}${t('。')}`]);
+        if (tr.includes('charismatic')) return pickRandom([`${t('嘿！')}${name}${t('！')}`,`${t('哈囉')}${name}${t('，真高興見到你！')}`,`${name}${t('！好久不見！')}`]);
+        if (tr.includes('shy')) return pickRandom([`${t('啊...')}${name}...${t('你好。')}`,t('嗯...你好。'),t('...嗨。')]);
+        if (tr.includes('abrasive')) return pickRandom([`${t('喔，')}${name}${t('啊。')}`,t('怎麼又是你。'),`${name}${t('。')}`]);
+        if (tr.includes('optimist')) return pickRandom([`${name}${t('！今天也是美好的一天！')}`,`${t('嗨')}${name}${t('，你看起來很有精神！')}`]);
+        if (tr.includes('pessimist')) return pickRandom([`${name}...${t('唉。')}`,`${t('嗯...')}${name}${t('。')}`]);
+        return pickRandom([`${t('嘿，')}${name}${t('。')}`,`${t('你好啊，')}${name}${t('。')}`,`${t('哈囉，')}${name}${t('！')}`,`${name}${t('，好久不見。')}`]);
     }
 
     _addConflictEscalation(lines, agentA, agentB, world, tA, tB) {
@@ -1460,56 +1460,56 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
             // Bad joke that offends
             () => {
                 const jokes = [
-                    `哈哈，你知道嗎，你做的${agentB.job?.title||'事'}讓我想到一個笑話——`,
-                    `說真的，你那個表情也太好笑了吧？`,
-                    `你是不是又${pickRandom(['偷懶','搞砸','遲到'])}了？我開玩笑的啦。`,
+                    `${t('哈哈，你知道嗎，你做的')}${agentB.job?.title||t('事')}${t('讓我想到一個笑話——')}`,
+                    t('說真的，你那個表情也太好笑了吧？'),
+                    `${t('你是不是又')}${pickRandom([t('偷懶'),t('搞砸'),t('遲到')])}${t('了？我開玩笑的啦。')}`,
                 ];
                 lines.push({speaker:agentA.name, text:pickRandom(jokes)});
-                lines.push({speaker:agentB.name, text:tB.includes('stoic')?'......這一點都不好笑。':tB.includes('neurotic')?'你這什麼意思！？':'呵，你覺得很幽默嗎？'});
-                lines.push({speaker:agentA.name, text:tA.includes('kind')?'抱歉抱歉，我不是那個意思...':'開不起玩笑啊？'});
+                lines.push({speaker:agentB.name, text:tB.includes('stoic')?t('......這一點都不好笑。'):tB.includes('neurotic')?t('你這什麼意思！？'):t('呵，你覺得很幽默嗎？')});
+                lines.push({speaker:agentA.name, text:tA.includes('kind')?t('抱歉抱歉，我不是那個意思...'):t('開不起玩笑啊？')});
             },
             // Value clash
             () => {
                 const vA = agentA.personality.values[0] || '自由';
                 const vB = agentB.personality.values[0] || '秩序';
                 if (vA !== vB) {
-                    lines.push({speaker:agentA.name, text:`我覺得${vA}才是最重要的，你不覺得嗎？`});
-                    lines.push({speaker:agentB.name, text:`我倒覺得${vB}比較重要。你那種想法太天真了。`});
-                    lines.push({speaker:agentA.name, text:tA.includes('stoic')?'看法不同而已。':'哼，你不懂。'});
+                    lines.push({speaker:agentA.name, text:`${t('我覺得')}${vA}${t('才是最重要的，你不覺得嗎？')}`});
+                    lines.push({speaker:agentB.name, text:`${t('我倒覺得')}${vB}${t('比較重要。你那種想法太天真了。')}`});
+                    lines.push({speaker:agentA.name, text:tA.includes('stoic')?t('看法不同而已。'):t('哼，你不懂。')});
                 } else {
-                    lines.push({speaker:agentA.name, text:`${agentB.name}，你最近做的那件事，我覺得不太好。`});
-                    lines.push({speaker:agentB.name, text:'你管太多了吧？'});
+                    lines.push({speaker:agentA.name, text:`${agentB.name}${t('，你最近做的那件事，我覺得不太好。')}`});
+                    lines.push({speaker:agentB.name, text:t('你管太多了吧？')});
                 }
             },
             // Passive-aggressive remark
             () => {
                 const remarks = [
-                    `嗯...${agentB.name}你最近是不是胖了？`,
-                    `有些人啊，就是不知道自己幾斤幾兩。`,
-                    `哦對了，上次的事你還記得吧？算了，不提了。`,
-                    `我不是在說你啦，不過有人最近做事真的很馬虎。`,
+                    `${t('嗯...')}${agentB.name}${t('你最近是不是胖了？')}`,
+                    t('有些人啊，就是不知道自己幾斤幾兩。'),
+                    t('哦對了，上次的事你還記得吧？算了，不提了。'),
+                    t('我不是在說你啦，不過有人最近做事真的很馬虎。'),
                 ];
                 lines.push({speaker:agentA.name, text:pickRandom(remarks)});
-                lines.push({speaker:agentB.name, text:tB.includes('abrasive')?'你在暗示什麼？有話直說！':tB.includes('shy')?'......':tB.includes('neurotic')?'你是不是在說我！？':'...你今天怎麼了？'});
+                lines.push({speaker:agentB.name, text:tB.includes('abrasive')?t('你在暗示什麼？有話直說！'):tB.includes('shy')?'......':tB.includes('neurotic')?t('你是不是在說我！？'):t('...你今天怎麼了？')});
             },
             // Gossip about the other behind their back gets revealed
             () => {
-                lines.push({speaker:agentB.name, text:`${agentA.name}，我聽說你跟別人說我${pickRandom(['壞話','是非','閒話'])}？`});
-                lines.push({speaker:agentA.name, text:tA.includes('gossip')?'啊...那個...不是你想的那樣。':tA.includes('abrasive')?'我說的都是事實。':'什麼？我沒有啊！'});
-                lines.push({speaker:agentB.name, text:tB.includes('kind')?'我希望以後別這樣了。':'我會記住的。'});
+                lines.push({speaker:agentB.name, text:`${agentA.name}${t('，我聽說你跟別人說我')}${pickRandom([t('壞話'),t('是非'),t('閒話')])}${t('？')}`});
+                lines.push({speaker:agentA.name, text:tA.includes('gossip')?t('啊...那個...不是你想的那樣。'):tA.includes('abrasive')?t('我說的都是事實。'):t('什麼？我沒有啊！')});
+                lines.push({speaker:agentB.name, text:tB.includes('kind')?t('我希望以後別這樣了。'):t('我會記住的。')});
             },
             // Annoying behavior
             () => {
                 const annoyances = [
-                    {act:`一直不停地說話`, resp:'你能不能安靜一會兒...'},
-                    {act:`吃東西的聲音超大`, resp:'拜託，能不能注意一下？'},
-                    {act:`不請自來地給建議`, resp:'我沒有問你的意見。'},
-                    {act:`打斷${agentB.name}說話`, resp:'你能讓我把話說完嗎！？'},
+                    {act:t('一直不停地說話'), resp:t('你能不能安靜一會兒...')},
+                    {act:t('吃東西的聲音超大'), resp:t('拜託，能不能注意一下？')},
+                    {act:t('不請自來地給建議'), resp:t('我沒有問你的意見。')},
+                    {act:`${t('打斷')}${agentB.name}${t('說話')}`, resp:t('你能讓我把話說完嗎！？')},
                 ];
                 const a = pickRandom(annoyances);
-                lines.push({speaker:agentA.name, text:tA.includes('charismatic')?`對了對了，我跟你說——`:`嗯，我覺得你應該——`});
+                lines.push({speaker:agentA.name, text:tA.includes('charismatic')?t('對了對了，我跟你說——'):t('嗯，我覺得你應該——')});
                 lines.push({speaker:agentB.name, text:a.resp});
-                lines.push({speaker:agentA.name, text:tA.includes('kind')?'...對不起。':'切，好心沒好報。'});
+                lines.push({speaker:agentA.name, text:tA.includes('kind')?t('...對不起。'):t('切，好心沒好報。')});
             },
         ];
         pickRandom(conflictTypes)();
@@ -1526,38 +1526,38 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     .slice(-10).map(c => `${c.speaker}: ${c.text}`).join('\n');
                 const memNpc = npc.memory.getAboutAgent(player.name, 5);
                 const pN = this._buildCharacterProfile(npc);
-                const prompt = `你正在扮演「${npc.name}」——邊境鎮的一位真實居民。有個叫${player.name}的人正在跟你說話。
-你要完全入戲，像真人一樣自然地回應。
+                const prompt = `${t('你正在扮演「')}${npc.name}${t('」——邊境鎮的一位真實居民。有個叫')}${player.name}${t('的人正在跟你說話。')}
+${t('你要完全入戲，像真人一樣自然地回應。')}
 
-【你是誰】
-${pN.name}，${pN.age}歲，${pN.job}。
-性格：${pN.traits}。背景：${pN.background}。
-在意的事：${pN.values}。感情狀態：${pN.status}。
-${pN.thought ? `你最近在想：${pN.thought}` : ''}
+${t('【你是誰】')}
+${pN.name}${t('，')}${pN.age}${t('歲，')}${pN.job}${t('。')}
+${t('性格：')}${pN.traits}${t('。背景：')}${pN.background}${t('。')}
+${t('在意的事：')}${pN.values}${t('。感情狀態：')}${pN.status}${t('。')}
+${pN.thought ? `${t('你最近在想：')}${pN.thought}` : ''}
 ${this._buildRelContext(relNpc, player.name)}
-${memNpc.length ? `你記得關於${player.name}的事：${memNpc.map(m=>m.content).join('；')}` : `你跟${player.name}還不太熟。`}
+${memNpc.length ? `${t('你記得關於')}${player.name}${t('的事：')}${memNpc.map(m=>m.content).join(t('；'))}` : `${t('你跟')}${player.name}${t('還不太熟。')}`}
 
-【小鎮經濟】
+${t('【小鎮經濟】')}
 ${this._buildEconomicContext(world)}
 ${this._buildQuestContext(world, npc, relNpc)}
-【對話記錄】
-${recentChat || '（剛開始聊）'}
+${t('【對話記錄】')}
+${recentChat || t('（剛開始聊）')}
 ${player.name}: ${playerMessage}
 
-【回覆規則】
-- 必須使用繁體中文（台灣用語），不可使用簡體中文。1-3句話
-- 像真人說話，不要文縐縐的。可以用語助詞（啊、啦、嘛、欸、喔、哈）
-- 根據你的性格回應：${pN.traits.includes('害羞') ? '你會說話結巴、簡短' : pN.traits.includes('健談') ? '你很愛聊天，會主動延伸話題' : pN.traits.includes('刻薄') ? '你說話帶刺但可能是關心的方式' : '用你自己的方式說話'}
-- 不要直接說「我很累」「我心情不好」這種報告式的話。如果你累了，可能會打哈欠或說「唉今天腰都快斷了」
-- 對話要有來有往——回應對方說的話，也可以反問或岔開新話題
-- 如果聊到你在意的事（${pN.values}），你會特別有感觸
+${t('【回覆規則】')}
+${t('- 必須使用繁體中文（台灣用語），不可使用簡體中文。1-3句話')}
+${t('- 像真人說話，不要文縐縐的。可以用語助詞（啊、啦、嘛、欸、喔、哈）')}
+${t('- 根據你的性格回應：')}${pN.traits.includes(t('害羞')) ? t('你會說話結巴、簡短') : pN.traits.includes(t('健談')) ? t('你很愛聊天，會主動延伸話題') : pN.traits.includes(t('刻薄')) ? t('你說話帶刺但可能是關心的方式') : t('用你自己的方式說話')}
+${t('- 不要直接說「我很累」「我心情不好」這種報告式的話。如果你累了，可能會打哈欠或說「唉今天腰都快斷了」')}
+${t('- 對話要有來有往——回應對方說的話，也可以反問或岔開新話題')}
+${t('- 如果聊到你在意的事（')}${pN.values}${t('），你會特別有感觸')}
 
-【輸出格式】嚴格遵守！
-- 第一行開始就直接寫${npc.name}的對話內容，不要加任何分析、思考過程、或前言
-- 不要寫「讓我分析」「根據設定」「需要考慮」等分析文字
-- 不要加名字前綴
-- 最後另起一行寫：EFFECTS: {"affinity_change": 數字(-3到5), "romantic_change": 數字(0到3), "summary": "一句話總結"}
-- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西`;
+${t('【輸出格式】嚴格遵守！')}
+${t('- 第一行開始就直接寫')}${npc.name}${t('的對話內容，不要加任何分析、思考過程、或前言')}
+${t('- 不要寫「讓我分析」「根據設定」「需要考慮」等分析文字')}
+${t('- 不要加名字前綴')}
+${t('- 最後另起一行寫：')}EFFECTS: {"affinity_change": ${t('數字')}(-3${t('到')}5), "romantic_change": ${t('數字')}(0${t('到')}3), "summary": "${t('一句話總結')}"}
+${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西')}`;
 
                 const response = await this.llm.generate(prompt, 400, 0.9, true);
                 console.log('[RimTown] LLM response length:', response?.length, 'preview:', response?.slice(0, 80));
@@ -1628,11 +1628,11 @@ ${player.name}: ${playerMessage}
         }
         const affChange = effects.affinity_change ?? randInt(0,2);
         const romChange = effects.romantic_change ?? 0;
-        const summary = effects.summary || `${npc.name}回應了${player.name}。`;
+        const summary = effects.summary || `${npc.name}${t('回應了')}${player.name}${t('。')}`;
         relNpc.modifyAffinity(affChange); relNpc.modifyRomantic(romChange); relNpc.recordInteraction(world.tickCount, summary);
         relPlayer.modifyAffinity(Math.max(0, affChange-1)); relPlayer.recordInteraction(world.tickCount, summary);
-        npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${player.name}說：「${playerMessage}」— ${summary}`, 5, [player.name]);
-        player.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `與${npc.name}交談：${summary}`, 4, [npc.name]);
+        npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${player.name}${t('說：「')}${playerMessage}${t('」— ')}${summary}`, 5, [player.name]);
+        player.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('與')}${npc.name}${t('交談：')}${summary}`, 4, [npc.name]);
         player.chatHistory.push({speaker:player.name, target:npc.name, text:playerMessage, time:world.clock.timeStr});
         player.chatHistory.push({speaker:npc.name, target:player.name, text:npcReply, time:world.clock.timeStr});
         player._recentChatTick = world.tickCount; // Mark for social need recovery
@@ -1641,11 +1641,11 @@ ${player.name}: ${playerMessage}
     }
 
     _fallbackPlayerReply(player, npc, world, playerMessage, relPlayer, relNpc) {
-        const t = npc.personality.traits;
+        const tr = npc.personality.traits;
         const aff = relNpc.affinity;
         const isCouple = relNpc.status === 'dating' || relNpc.status === 'married';
         const msg = playerMessage.toLowerCase();
-        const jobTitle = npc.job?.title || '居民';
+        const jobTitle = npc.job?.title || t('居民');
         const jobKey = npc.job?.key || '';
         const loc = npc.currentLocation.replace(/_/g,' ');
         const season = world.clock.season;
@@ -1674,24 +1674,24 @@ ${player.name}: ${playerMessage}
         const isAskWeather = /天氣|天空|冷|熱|下雨|季節|星星/.test(msg);
 
         // Personality-flavored response builder
-        const shy = t.includes('shy');
-        const kind = t.includes('kind');
-        const abrasive = t.includes('abrasive');
-        const charismatic = t.includes('charismatic');
-        const gossip = t.includes('gossip');
-        const romantic = t.includes('romantic');
-        const pessimist = t.includes('pessimist');
-        const optimist = t.includes('optimist');
-        const lazy = t.includes('lazy');
+        const shy = tr.includes('shy');
+        const kind = tr.includes('kind');
+        const abrasive = tr.includes('abrasive');
+        const charismatic = tr.includes('charismatic');
+        const gossip = tr.includes('gossip');
+        const romantic = tr.includes('romantic');
+        const pessimist = tr.includes('pessimist');
+        const optimist = tr.includes('optimist');
+        const lazy = tr.includes('lazy');
 
         if (isInsult) {
             // Player is being mean
-            if (abrasive) npcReply = pickRandom([`你說什麼！？你自己才是吧！`,`哼，你也好不到哪去。`,`你這嘴巴欠教訓。`]);
-            else if (shy) npcReply = pickRandom([`...你、你怎麼能這樣說...`,`......`,`我做錯什麼了嗎...`]);
-            else if (kind) npcReply = pickRandom([`這樣說話很傷人的...`,`你是不是心情不好？不然怎麼會這樣。`,`我...不知道你為什麼要這樣。`]);
-            else npcReply = pickRandom([`你這話說得太過分了。`,`......我沒必要跟你計較。`,`你認真的嗎？`]);
+            if (abrasive) npcReply = pickRandom([t('你說什麼！？你自己才是吧！'),t('哼，你也好不到哪去。'),t('你這嘴巴欠教訓。')]);
+            else if (shy) npcReply = pickRandom([t('...你、你怎麼能這樣說...'),'......',t('我做錯什麼了嗎...')]);
+            else if (kind) npcReply = pickRandom([t('這樣說話很傷人的...'),t('你是不是心情不好？不然怎麼會這樣。'),t('我...不知道你為什麼要這樣。')]);
+            else npcReply = pickRandom([t('你這話說得太過分了。'),t('......我沒必要跟你計較。'),t('你認真的嗎？')]);
             affChange = randInt(-6,-3);
-            summary = `${player.name}言語冒犯了${npc.name}。`;
+            summary = `${player.name}${t('言語冒犯了')}${npc.name}${t('。')}`;
         } else if (isFlirt) {
             if (isCouple) {
                 npcReply = pickRandom([`你啊...每次都這樣，不過我就是吃這套。`,`哈哈，老夫老妻了還這麼會講。`,`你真的很會撩人，我都不好意思了。`]);
