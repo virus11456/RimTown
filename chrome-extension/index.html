@@ -205,6 +205,15 @@
         </div>
     </div>
 
+    <!-- Game Dialog (replaces browser alert/confirm) -->
+    <div id="game-dialog" class="modal hidden">
+        <div class="modal-content game-dialog-content">
+            <div class="game-dialog-icon" id="game-dialog-icon">⚠️</div>
+            <div class="game-dialog-msg" id="game-dialog-msg"></div>
+            <div class="game-dialog-buttons" id="game-dialog-buttons"></div>
+        </div>
+    </div>
+
     <!-- Achievement Toast -->
     <div id="achievement-toast" class="achievement-toast hidden"></div>
 
@@ -229,8 +238,6 @@
                 <button class="btn-towns" data-action="show-towns" data-i18n="城鎮列表">城鎮列表</button>
                 <button id="btn-new-game" class="btn-new-game" data-i18n="新地圖">新地圖</button>
                 <button id="btn-save" class="btn-save" data-i18n="儲存">儲存</button>
-                <button id="btn-export" class="btn-export" data-i18n="匯出" data-i18n-title="匯出存檔" title="匯出存檔">匯出</button>
-                <button id="btn-import" class="btn-import" data-i18n="匯入" data-i18n-title="匯入存檔" title="匯入存檔">匯入</button>
                 <button id="btn-pause" data-i18n="暫停">暫停</button>
                 <button id="btn-resume" class="active" data-i18n="播放">播放</button>
                 <div class="speed-controls">

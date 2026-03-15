@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v3.6.5
-const RIMTOWN_APP_VERSION = '3.6.5';
+// RimTown - Frontend App (WordPress Plugin) v3.6.6
+const RIMTOWN_APP_VERSION = '3.6.6';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -438,6 +438,42 @@ class RimTownApp {
                 window.dispatchEvent(new Event('resize'));
             }, 100);
         }
+    }
+
+    // Custom game-style alert (replaces browser alert)
+    _gameAlert(msg, icon = '⚠️') {
+        return new Promise(resolve => {
+            const dlg = document.getElementById('game-dialog');
+            document.getElementById('game-dialog-icon').textContent = icon;
+            document.getElementById('game-dialog-msg').textContent = msg;
+            const btns = document.getElementById('game-dialog-buttons');
+            btns.innerHTML = `<button class="game-dialog-ok">${t('確定')}</button>`;
+            btns.querySelector('.game-dialog-ok').addEventListener('click', () => {
+                dlg.classList.add('hidden');
+                resolve();
+            });
+            dlg.classList.remove('hidden');
+        });
+    }
+
+    // Custom game-style confirm (replaces browser confirm)
+    _gameConfirm(msg, icon = '❓') {
+        return new Promise(resolve => {
+            const dlg = document.getElementById('game-dialog');
+            document.getElementById('game-dialog-icon').textContent = icon;
+            document.getElementById('game-dialog-msg').textContent = msg;
+            const btns = document.getElementById('game-dialog-buttons');
+            btns.innerHTML = `<button class="game-dialog-cancel">${t('取消')}</button><button class="game-dialog-ok">${t('確定')}</button>`;
+            btns.querySelector('.game-dialog-cancel').addEventListener('click', () => {
+                dlg.classList.add('hidden');
+                resolve(false);
+            });
+            btns.querySelector('.game-dialog-ok').addEventListener('click', () => {
+                dlg.classList.add('hidden');
+                resolve(true);
+            });
+            dlg.classList.remove('hidden');
+        });
     }
 
     async _doRegister() {
@@ -1084,7 +1120,7 @@ class RimTownApp {
         try {
             const saves = await this.auth.listSaves();
             if (!saves.length) {
-                alert(t('雲端沒有存檔。請先上傳存檔。'));
+                this._gameAlert(t('雲端沒有存檔。請先上傳存檔。'), '☁️');
                 return;
             }
             // Show in town modal
@@ -1107,7 +1143,7 @@ class RimTownApp {
             });
             html += t('<div style="margin-top:12px"><button data-action="close-town-modal">關閉</button></div>');
             container.innerHTML = html;
-        } catch(e) { alert(t('載入雲端存檔失敗：') + e.message); }
+        } catch(e) { this._gameAlert(t('載入雲端存檔失敗：') + e.message, '❌'); }
     }
 
     async _loadCloudSave(townId) {
@@ -1125,15 +1161,15 @@ class RimTownApp {
             }
             document.getElementById('town-modal')?.classList.add('hidden');
             this.world.paused = false;
-        } catch(e) { alert(t('載入失敗：') + e.message); }
+        } catch(e) { this._gameAlert(t('載入失敗：') + e.message, '❌'); }
     }
 
     async _deleteCloudSave(townId) {
-        if (!confirm(t('確定刪除雲端存檔？'))) return;
+        if (!await this._gameConfirm(t('確定刪除雲端存檔？'), '🗑️')) return;
         try {
             await this.auth.cloudDelete(townId);
             this._showCloudSaves(); // Refresh list
-        } catch(e) { alert(t('刪除失敗：') + e.message); }
+        } catch(e) { this._gameAlert(t('刪除失敗：') + e.message, '❌'); }
     }
 
     // === Achievements Tab ===
@@ -1451,8 +1487,8 @@ class RimTownApp {
             this._renderTownList();
         }
     }
-    deleteTownConfirm(townId) {
-        if (!confirm(t('確定要刪除這個城鎮？所有存檔和聊天記錄都會消失。'))) return;
+    async deleteTownConfirm(townId) {
+        if (!await this._gameConfirm(t('確定要刪除這個城鎮？所有存檔和聊天記錄都會消失。'), '🗑️')) return;
         const list = this._getTownList().filter(t => t.id !== townId);
         this._saveTownList(list);
         localStorage.removeItem('rimtown_town_' + townId);
@@ -1609,7 +1645,7 @@ class RimTownApp {
         const speed = document.getElementById('settings-tab-speed')?.value || '2000';
         const fallbackKey = document.getElementById('settings-tab-groq')?.value?.trim() || '';
         if (provider !== 'none' && !apiKey && !fallbackKey) {
-            alert(t('請輸入 API 金鑰，或填寫備用 Groq Key，或選擇「無（模擬對話）」。'));
+            this._gameAlert(t('請輸入 API 金鑰，或填寫備用 Groq Key，或選擇「無（模擬對話）」。'), '🔑');
             return;
         }
         // Store fallback key so saveSettings can read it
@@ -2054,8 +2090,7 @@ class RimTownApp {
                 this._syncToCloud();
             }
         });
-        document.getElementById('btn-export')?.addEventListener('click', () => this.exportSave());
-        document.getElementById('btn-import')?.addEventListener('click', () => this.importSave());
+        // Export/import buttons removed — save auto-syncs to cloud when logged in
     }
 
     setupSettingsListeners() {
@@ -2249,9 +2284,9 @@ class RimTownApp {
                     this.render();
                     await this.saveGame();
                 } else {
-                    alert(t('讀取存檔失敗。'));
+                    this._gameAlert(t('讀取存檔失敗。'), '❌');
                 }
-            } catch(err) { alert(t('無效的存檔：') + err.message); }
+            } catch(err) { this._gameAlert(t('無效的存檔：') + err.message, '❌'); }
         };
         input.click();
     }
@@ -2834,7 +2869,7 @@ class RimTownApp {
     }
 
     async deleteArchivedChat(archiveId) {
-        if (!confirm(t('確定刪除此聊天存檔？'))) return;
+        if (!await this._gameConfirm(t('確定刪除此聊天存檔？'), '🗑️')) return;
         await this.deleteChatArchive(archiveId);
         this.renderSidebar();
     }
@@ -2984,9 +3019,9 @@ class RimTownApp {
         document.body.appendChild(wrapper);
     }
 
-    _startNewGamePlus() {
+    async _startNewGamePlus() {
         // Confirm
-        if (!confirm(t('確定要開始二周目嗎？\n\n將繼承：50% 銀幣、已建建築、已開發產業、部分繁榮度\n鎮民會記得上一代的故事。\n\n當前遊戲進度將被覆蓋。'))) return;
+        if (!await this._gameConfirm(t('確定要開始二周目嗎？\n\n將繼承：50% 銀幣、已建建築、已開發產業、部分繁榮度\n鎮民會記得上一代的故事。\n\n當前遊戲進度將被覆蓋。'), '🔄')) return;
 
         // Remove ending overlay
         document.getElementById('ending-overlay')?.remove();
@@ -3271,21 +3306,25 @@ class RimTownApp {
         </div>`;
         html += '</div>';
 
-        // --- Account Section ---
-        html += t('<div class="econ-section"><h3>👤 帳號</h3>');
+        // --- Account & Save Section (merged) ---
+        html += t('<div class="econ-section"><h3>💾 帳號與存檔</h3>');
         if (loggedIn) {
             html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
                 <span style="color:var(--positive)">● ${t('已登入')}</span>
                 <strong>${this._escapeHtml(username)}</strong>
             </div>
+            <p style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${t('存檔會自動同步至雲端，在任何裝置登入即可讀取。')}</p>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
-                <button class="trade-btn" data-action="settings-sync-cloud">${t('雲端同步')}</button>
+                <button class="trade-btn btn-accent" data-action="settings-save-game">${t('儲存遊戲')}</button>
                 <button class="trade-btn" data-action="settings-logout" style="background:var(--negative);color:#fff">${t('登出')}</button>
             </div>`;
         } else {
-            html += `<p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:8px">${t('登入後可使用雲端存檔同步功能')}</p>
+            html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+                <button class="trade-btn btn-accent" data-action="settings-save-game">${t('儲存遊戲')}</button>
+            </div>
+            <p style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${t('登入後存檔會自動同步至雲端，在任何裝置都能讀取。')}</p>
             <div style="display:flex;gap:6px">
-                <button class="trade-btn btn-accent" data-action="settings-login">${t('登入')}</button>
+                <button class="trade-btn" data-action="settings-login">${t('登入')}</button>
                 <button class="trade-btn" data-action="settings-register">${t('註冊')}</button>
             </div>`;
         }
@@ -3334,14 +3373,7 @@ class RimTownApp {
         </div>`;
         html += '</div>';
 
-        // --- Save/Export Section ---
-        html += t('<div class="econ-section"><h3>💾 存檔管理</h3>');
-        html += `<div style="display:flex;gap:6px;flex-wrap:wrap">
-            <button class="trade-btn" data-action="settings-save-game">${t('儲存遊戲')}</button>
-            <button class="trade-btn" data-action="settings-export">${t('匯出存檔')}</button>
-            <button class="trade-btn" data-action="settings-import">${t('匯入存檔')}</button>
-        </div>`;
-        html += '</div>';
+        // (Save section merged into Account section above)
 
         // --- Version ---
         html += `<div style="text-align:center;padding:10px;font-size:0.75rem;color:var(--text-muted)">v${typeof RIMTOWN_APP_VERSION!=='undefined'?RIMTOWN_APP_VERSION:'?'}</div>`;
@@ -3945,9 +3977,9 @@ class RimTownApp {
         const selectEl = document.getElementById(`explore-select-${zoneId}`);
         if (!selectEl) return;
         const selectedIds = Array.from(selectEl.selectedOptions).map(o => o.value);
-        if (selectedIds.length === 0) { alert(t('請選擇至少一名居民！')); return; }
+        if (selectedIds.length === 0) { this._gameAlert(t('請選擇至少一名居民！'), '👥'); return; }
         const result = this.world.exploration.sendExpedition(this.world, zoneId, selectedIds);
-        if (!result) { alert(t('無法派遣探險隊。')); return; }
+        if (!result) { this._gameAlert(t('無法派遣探險隊。'), '❌'); return; }
         this.state = this.world.getState();
         this.renderSidebar();
     }
@@ -4171,13 +4203,13 @@ class RimTownApp {
 
     _chooseIndustry(key) {
         const result = this.world.industry.chooseIndustry(key, this.world);
-        if (!result.ok) { alert(result.error); return; }
+        if (!result.ok) { this._gameAlert(result.error, '⚠️'); return; }
         this.state = this.world.getState();
         this.renderSidebar();
     }
     _upgradeIndustry(key) {
         const result = this.world.industry.upgradeIndustry(key, this.world);
-        if (!result.ok) { alert(result.error); return; }
+        if (!result.ok) { this._gameAlert(result.error, '⚠️'); return; }
         this.state = this.world.getState();
         this.renderSidebar();
     }
@@ -4255,12 +4287,12 @@ class RimTownApp {
 
     _tillPlot(plotId) {
         const r = this.world.farm.tillPlot(plotId);
-        if (!r.ok) { alert(r.error || t('無法翻土')); return; }
+        if (!r.ok) { this._gameAlert(r.error || t('無法翻土'), '⚠️'); return; }
         this.state = this.world.getState(); this.renderSidebar();
     }
     _plantCrop(plotId, cropKey) {
         const r = this.world.farm.plantCrop(plotId, cropKey, this.world);
-        if (!r.ok) { alert(r.error || t('無法種植')); return; }
+        if (!r.ok) { this._gameAlert(r.error || t('無法種植'), '⚠️'); return; }
         this.state = this.world.getState(); this.renderSidebar();
     }
     _waterPlot(plotId) {
@@ -4269,12 +4301,12 @@ class RimTownApp {
     }
     _fertilizePlot(plotId) {
         const r = this.world.farm.fertilizePlot(plotId, this.world);
-        if (!r.ok) { alert(r.error || t('無法施肥')); return; }
+        if (!r.ok) { this._gameAlert(r.error || t('無法施肥'), '⚠️'); return; }
         this.state = this.world.getState(); this.renderSidebar();
     }
     _harvestPlot(plotId) {
         const r = this.world.farm.harvestPlot(plotId, this.world);
-        if (!r.ok) { alert(r.error || t('無法收穫')); return; }
+        if (!r.ok) { this._gameAlert(r.error || t('無法收穫'), '⚠️'); return; }
         if (this.world.questSystem) this.world.questSystem.onHarvest();
         this.state = this.world.getState(); this.renderSidebar();
     }
@@ -4391,7 +4423,7 @@ class RimTownApp {
 
     _buildFactory(key) {
         const r = this.world.processing.buildFactory(key, this.world);
-        if (!r.ok) { alert(r.error || t('無法建造')); return; }
+        if (!r.ok) { this._gameAlert(r.error || t('無法建造'), '⚠️'); return; }
         this.state = this.world.getState(); this.renderSidebar();
     }
     _setRecipe(factoryKey, recipeId) {
@@ -4412,7 +4444,7 @@ class RimTownApp {
     }
     _fulfillOrder(orderId) {
         const r = this.world.processing.fulfillOrder(orderId, this.world);
-        if (!r.ok) { alert(r.error || t('無法完成訂單')); return; }
+        if (!r.ok) { this._gameAlert(r.error || t('無法完成訂單'), '⚠️'); return; }
         this.state = this.world.getState(); this.renderSidebar();
     }
 

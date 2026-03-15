@@ -2094,15 +2094,17 @@ class PixelTileMap {
         const ty = Math.floor(py / TILE);
         if (tx < 0 || tx >= this.cols || ty < 0 || ty >= this.rows) return false;
         const tile = this.grid[ty][tx];
-        // Wall tiles and solid furniture are not walkable
-        return tile !== T.WALL_TOP && tile !== T.WALL_FRONT && tile !== T.WINDOW;
+        // Wall, roof, window, and fence tiles are not walkable
+        return tile !== T.WALL_TOP && tile !== T.WALL_FRONT && tile !== T.WINDOW
+            && tile !== T.ROOF && tile !== T.ROOF2
+            && tile !== T.FENCE_H && tile !== T.FENCE_V;
     }
 
     // Find the nearest walkable position to target, avoiding walls
     _findWalkableTarget(targetX, targetY) {
         if (this._isWalkableTile(targetX, targetY)) return { x: targetX, y: targetY };
         // Search in expanding ring for nearest walkable tile
-        for (let r = 1; r <= 5; r++) {
+        for (let r = 1; r <= 10; r++) {
             for (let dy = -r; dy <= r; dy++) {
                 for (let dx = -r; dx <= r; dx++) {
                     if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
@@ -2229,6 +2231,11 @@ class PixelTileMap {
                     pos.targetY = targetY;
                 }
 
+                // If NPC is currently stuck inside a wall, teleport them out
+                if (!this._isWalkableTile(pos.x, pos.y)) {
+                    const escape = this._findWalkableTarget(pos.x, pos.y);
+                    pos.x = escape.x; pos.y = escape.y;
+                }
                 // Freeze agents involved in player chat
                 const isChatting = chatTarget && (aid === chatTarget || aid === 'player');
                 // Constant-speed walking
@@ -2251,16 +2258,16 @@ class PixelTileMap {
                     let newY = pos.y + (dy / dist) * step;
                     // Wall collision avoidance: if next position is a wall, try sliding along axes
                     if (!this._isWalkableTile(newX, newY)) {
-                        const tryX = pos.x + (dx / dist) * step;
-                        const tryY = pos.y + (dy / dist) * step;
-                        if (this._isWalkableTile(tryX, pos.y)) {
-                            newX = tryX; newY = pos.y;
-                        } else if (this._isWalkableTile(pos.x, tryY)) {
-                            newX = pos.x; newY = tryY;
+                        const moveX = (dx / dist) * step; // X component only
+                        const moveY = (dy / dist) * step; // Y component only
+                        if (this._isWalkableTile(pos.x + moveX, pos.y)) {
+                            newX = pos.x + moveX; newY = pos.y;
+                        } else if (this._isWalkableTile(pos.x, pos.y + moveY)) {
+                            newX = pos.x; newY = pos.y + moveY;
                         } else {
-                            // Completely blocked — skip to target to avoid stuck
-                            newX = pos.x; newY = pos.y;
-                            pos.x = pos.targetX; pos.y = pos.targetY;
+                            // Completely blocked — teleport to walkable target
+                            const escape = this._findWalkableTarget(pos.targetX, pos.targetY);
+                            pos.x = escape.x; pos.y = escape.y;
                             pos.walking = false; pos.walkStep = 0;
                             continue;
                         }

@@ -1256,6 +1256,61 @@ body.rimtown-page .wp-block-post-title {
     font-size: 0.8rem;
 }
 .modal-buttons button:hover { background: var(--accent); }
+
+/* Game Dialog (custom alert/confirm) */
+.game-dialog-content {
+    text-align: center;
+    padding: 28px 24px 20px;
+    max-width: 320px;
+    animation: gameDialogIn 0.2s ease-out;
+}
+@keyframes gameDialogIn {
+    from { transform: scale(0.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+.game-dialog-icon {
+    font-size: 2.2rem;
+    margin-bottom: 12px;
+}
+.game-dialog-msg {
+    font-size: 0.88rem;
+    color: var(--text-primary);
+    line-height: 1.5;
+    margin-bottom: 20px;
+    white-space: pre-line;
+}
+.game-dialog-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+.game-dialog-buttons button {
+    flex: 1;
+    padding: 10px 16px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background 0.15s, transform 0.1s;
+}
+.game-dialog-buttons button:active {
+    transform: scale(0.96);
+}
+.game-dialog-buttons .game-dialog-ok {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+.game-dialog-buttons .game-dialog-ok:hover {
+    filter: brightness(1.15);
+}
+.game-dialog-buttons .game-dialog-cancel:hover {
+    background: var(--bg-secondary);
+}
+
 .btn-accent {
     background: var(--accent) !important;
     border-color: var(--accent) !important;
