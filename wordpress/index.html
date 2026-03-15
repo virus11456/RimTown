@@ -167,6 +167,44 @@
         </div>
     </div>
 
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal hidden">
+        <div class="modal-content login-content">
+            <button class="auth-close-btn" style="position:absolute;top:8px;right:12px;background:none;border:none;color:var(--text-secondary);font-size:1.2rem;cursor:pointer">✕</button>
+            <h2>👤 <span data-i18n="帳號">帳號</span></h2>
+            <div style="display:flex;gap:0;margin-bottom:12px">
+                <button class="auth-tab active" data-auth-tab="login" style="flex:1;padding:6px;background:var(--bg-secondary);border:1px solid var(--border);border-bottom:2px solid var(--accent);color:var(--text-primary);cursor:pointer;font-size:0.8rem" data-i18n="登入">登入</button>
+                <button class="auth-tab" data-auth-tab="register" style="flex:1;padding:6px;background:var(--bg-secondary);border:1px solid var(--border);border-bottom:2px solid transparent;color:var(--text-secondary);cursor:pointer;font-size:0.8rem" data-i18n="註冊">註冊</button>
+            </div>
+            <div id="auth-login-form">
+                <input type="text" id="auth-login-user" data-i18n-placeholder="帳號" placeholder="帳號" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                <input type="password" id="auth-login-pass" data-i18n-placeholder="密碼" placeholder="密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                <div id="auth-login-error" class="login-error"></div>
+                <button id="auth-login-btn" class="btn-accent" style="width:100%;padding:8px;border:none;border-radius:4px;cursor:pointer;font-size:0.85rem;margin-top:4px" data-i18n="登入">登入</button>
+                <div style="margin-top:8px"><a href="#" id="auth-forgot-link" style="color:var(--text-secondary);font-size:0.75rem" data-i18n="忘記密碼？">忘記密碼？</a></div>
+            </div>
+            <div id="auth-register-form" class="hidden">
+                <input type="text" id="auth-reg-user" data-i18n-placeholder="帳號" placeholder="帳號" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                <input type="email" id="auth-reg-email" placeholder="Email" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                <input type="password" id="auth-reg-pass" data-i18n-placeholder="密碼" placeholder="密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                <input type="password" id="auth-reg-pass2" data-i18n-placeholder="確認密碼" placeholder="確認密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                <div id="auth-reg-error" class="login-error"></div>
+                <button id="auth-reg-btn" class="btn-accent" style="width:100%;padding:8px;border:none;border-radius:4px;cursor:pointer;font-size:0.85rem;margin-top:4px" data-i18n="註冊">註冊</button>
+            </div>
+            <div id="auth-reset-form" class="hidden">
+                <p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:8px" data-i18n="輸入帳號和 Email 來重設密碼">輸入帳號和 Email 來重設密碼</p>
+                <input type="text" id="auth-reset-user" data-i18n-placeholder="帳號" placeholder="帳號" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                <input type="email" id="auth-reset-email" placeholder="Email" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                <input type="password" id="auth-reset-pass" data-i18n-placeholder="新密碼" placeholder="新密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                <input type="password" id="auth-reset-pass2" data-i18n-placeholder="確認新密碼" placeholder="確認新密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                <div id="auth-reset-error" class="login-error"></div>
+                <div id="auth-reset-success" style="color:var(--positive);font-size:0.75rem;min-height:18px"></div>
+                <button id="auth-reset-btn" class="btn-accent" style="width:100%;padding:8px;border:none;border-radius:4px;cursor:pointer;font-size:0.85rem;margin-top:4px" data-i18n="重設密碼">重設密碼</button>
+                <div style="margin-top:8px"><a href="#" id="auth-reset-back" style="color:var(--text-secondary);font-size:0.75rem" data-i18n="← 返回登入">← 返回登入</a></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Achievement Toast -->
     <div id="achievement-toast" class="achievement-toast hidden"></div>
 

@@ -460,19 +460,22 @@ class PixelTileMap {
                 }
             }
             if (hitLocId) {
-                this._moveIndicator = { x: (hitZone.x + hitZone.w / 2) * TILE, y: (hitZone.y + hitZone.h / 2) * TILE, expiry: Date.now() + 1500 };
+                this._moveIndicator = { x: px, y: py, expiry: Date.now() + 1500 };
+                this._playerClickTarget = { x: px, y: py };
                 this.onClick(hitLocId);
                 return;
             }
             for (const [locId, zone] of Object.entries(this.natureZones)) {
                 if (px >= zone.x * TILE && px < (zone.x + zone.w) * TILE &&
                     py >= zone.y * TILE && py < (zone.y + zone.h) * TILE) {
-                    this._moveIndicator = { x: (zone.x + zone.w / 2) * TILE, y: (zone.y + zone.h / 2) * TILE, expiry: Date.now() + 1500 };
+                    this._moveIndicator = { x: px, y: py, expiry: Date.now() + 1500 };
+                    this._playerClickTarget = { x: px, y: py };
                     this.onClick(locId);
                     return;
                 }
             }
-            // Clicked on empty space — find nearest location and move there
+            // Clicked on empty space — find nearest location and move player there
+            // Also set a custom walk target so the player walks to the exact pixel clicked
             let bestLoc = null, bestDist = Infinity;
             const allZones = { ...this.buildingZones, ...this.natureZones };
             for (const [locId, zone] of Object.entries(allZones)) {
@@ -482,15 +485,10 @@ class PixelTileMap {
                 if (dist < bestDist) { bestDist = dist; bestLoc = locId; }
             }
             if (bestLoc) {
-                // Show move indicator at the target zone
-                const zone = allZones[bestLoc];
-                if (zone) {
-                    this._moveIndicator = {
-                        x: (zone.x + zone.w / 2) * TILE,
-                        y: (zone.y + zone.h / 2) * TILE,
-                        expiry: Date.now() + 1500,
-                    };
-                }
+                // Show move indicator at the exact click position
+                this._moveIndicator = { x: px, y: py, expiry: Date.now() + 1500 };
+                // Set custom walk target for player to walk to exact click position
+                this._playerClickTarget = { x: px, y: py };
                 this.onClick(bestLoc);
             }
         }
@@ -2089,6 +2087,34 @@ class PixelTileMap {
         return null;
     }
 
+    // Check if a pixel position is walkable (not a wall or solid obstacle)
+    _isWalkableTile(px, py) {
+        if (!this.grid) return true;
+        const tx = Math.floor(px / TILE);
+        const ty = Math.floor(py / TILE);
+        if (tx < 0 || tx >= this.cols || ty < 0 || ty >= this.rows) return false;
+        const tile = this.grid[ty][tx];
+        // Wall tiles and solid furniture are not walkable
+        return tile !== T.WALL_TOP && tile !== T.WALL_FRONT && tile !== T.WINDOW;
+    }
+
+    // Find the nearest walkable position to target, avoiding walls
+    _findWalkableTarget(targetX, targetY) {
+        if (this._isWalkableTile(targetX, targetY)) return { x: targetX, y: targetY };
+        // Search in expanding ring for nearest walkable tile
+        for (let r = 1; r <= 5; r++) {
+            for (let dy = -r; dy <= r; dy++) {
+                for (let dx = -r; dx <= r; dx++) {
+                    if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+                    const nx = targetX + dx * TILE;
+                    const ny = targetY + dy * TILE;
+                    if (this._isWalkableTile(nx, ny)) return { x: nx, y: ny };
+                }
+            }
+        }
+        return { x: targetX, y: targetY };
+    }
+
     updateAgents(agents, locations, chatTarget) {
         this.chatTarget = chatTarget || null;
         const WALK_SPEED = 0.3; // pixels per frame — slow leisurely pace
@@ -2125,6 +2151,17 @@ class PixelTileMap {
                 targetX = locCenter.x + spreadX;
                 targetY = locCenter.y + spreadY;
             }
+            // Player click target: override position to exact click location
+            if (aid === 'player' && this._playerClickTarget) {
+                const ct = this._findWalkableTarget(this._playerClickTarget.x, this._playerClickTarget.y);
+                targetX = ct.x;
+                targetY = ct.y;
+                this._playerClickTarget = null;
+            }
+            // Ensure target is not inside a wall
+            const walkable = this._findWalkableTarget(targetX, targetY);
+            targetX = walkable.x;
+            targetY = walkable.y;
 
             // Extract job key string from agent data
             const jobKey = (agent.job && agent.job.key) ? agent.job.key : (typeof agent.job === 'string' ? agent.job : 'default');
@@ -2210,8 +2247,26 @@ class PixelTileMap {
                 } else if (dist > 1) {
                     // Walk toward target at constant speed
                     const step = Math.min(WALK_SPEED, dist);
-                    pos.x += (dx / dist) * step;
-                    pos.y += (dy / dist) * step;
+                    let newX = pos.x + (dx / dist) * step;
+                    let newY = pos.y + (dy / dist) * step;
+                    // Wall collision avoidance: if next position is a wall, try sliding along axes
+                    if (!this._isWalkableTile(newX, newY)) {
+                        const tryX = pos.x + (dx / dist) * step;
+                        const tryY = pos.y + (dy / dist) * step;
+                        if (this._isWalkableTile(tryX, pos.y)) {
+                            newX = tryX; newY = pos.y;
+                        } else if (this._isWalkableTile(pos.x, tryY)) {
+                            newX = pos.x; newY = tryY;
+                        } else {
+                            // Completely blocked — skip to target to avoid stuck
+                            newX = pos.x; newY = pos.y;
+                            pos.x = pos.targetX; pos.y = pos.targetY;
+                            pos.walking = false; pos.walkStep = 0;
+                            continue;
+                        }
+                    }
+                    pos.x = newX;
+                    pos.y = newY;
                     pos.walking = true;
                     pos.walkStep = (pos.walkStep || 0) + 1;
                     // Face direction: 1 = right, -1 = left

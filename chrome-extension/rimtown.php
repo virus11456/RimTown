@@ -114,6 +114,43 @@ function rimtown_shortcode($atts) {
             </div>
             <!-- mobile-sidebar-toggle removed: was non-functional -->
         </div>
+        <!-- Auth Modal -->
+        <div id="auth-modal" class="modal hidden">
+            <div class="modal-content login-content">
+                <button class="auth-close-btn" style="position:absolute;top:8px;right:12px;background:none;border:none;color:var(--text-secondary);font-size:1.2rem;cursor:pointer">✕</button>
+                <h2>👤 帳號</h2>
+                <div style="display:flex;gap:0;margin-bottom:12px">
+                    <button class="auth-tab active" data-auth-tab="login" style="flex:1;padding:6px;background:var(--bg-secondary);border:1px solid var(--border);border-bottom:2px solid var(--accent);color:var(--text-primary);cursor:pointer;font-size:0.8rem">登入</button>
+                    <button class="auth-tab" data-auth-tab="register" style="flex:1;padding:6px;background:var(--bg-secondary);border:1px solid var(--border);border-bottom:2px solid transparent;color:var(--text-secondary);cursor:pointer;font-size:0.8rem">註冊</button>
+                </div>
+                <div id="auth-login-form">
+                    <input type="text" id="auth-login-user" placeholder="帳號" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                    <input type="password" id="auth-login-pass" placeholder="密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                    <div id="auth-login-error" class="login-error"></div>
+                    <button id="auth-login-btn" class="btn-accent" style="width:100%;padding:8px;border:none;border-radius:4px;cursor:pointer;font-size:0.85rem;margin-top:4px">登入</button>
+                    <div style="margin-top:8px"><a href="#" id="auth-forgot-link" style="color:var(--text-secondary);font-size:0.75rem">忘記密碼？</a></div>
+                </div>
+                <div id="auth-register-form" class="hidden">
+                    <input type="text" id="auth-reg-user" placeholder="帳號" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                    <input type="email" id="auth-reg-email" placeholder="Email（選填）" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                    <input type="password" id="auth-reg-pass" placeholder="密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                    <input type="password" id="auth-reg-pass2" placeholder="確認密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                    <div id="auth-reg-error" class="login-error"></div>
+                    <button id="auth-reg-btn" class="btn-accent" style="width:100%;padding:8px;border:none;border-radius:4px;cursor:pointer;font-size:0.85rem;margin-top:4px">註冊</button>
+                </div>
+                <div id="auth-reset-form" class="hidden">
+                    <p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:8px">輸入帳號和 Email 來重設密碼</p>
+                    <input type="text" id="auth-reset-user" placeholder="帳號" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                    <input type="email" id="auth-reset-email" placeholder="Email" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                    <input type="password" id="auth-reset-pass" placeholder="新密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                    <input type="password" id="auth-reset-pass2" placeholder="確認新密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                    <div id="auth-reset-error" class="login-error"></div>
+                    <div id="auth-reset-success" style="color:var(--positive);font-size:0.75rem;min-height:18px"></div>
+                    <button id="auth-reset-btn" class="btn-accent" style="width:100%;padding:8px;border:none;border-radius:4px;cursor:pointer;font-size:0.85rem;margin-top:4px">重設密碼</button>
+                    <div style="margin-top:8px"><a href="#" id="auth-reset-back" style="color:var(--text-secondary);font-size:0.75rem">← 返回登入</a></div>
+                </div>
+            </div>
+        </div>
     </div>
     <?php
     return ob_get_clean();
@@ -636,6 +673,15 @@ function rimtown_enqueue_assets() {
         RIMTOWN_VERSION,
         true
     );
+
+    // Inject auth data for the frontend
+    wp_localize_script('rimtown-app', 'rimtownAuth', array(
+        'restUrl'  => rest_url('rimtown/v1/'),
+        'nonce'    => wp_create_nonce('wp_rest'),
+        'loggedIn' => is_user_logged_in(),
+        'username' => is_user_logged_in() ? wp_get_current_user()->user_login : '',
+        'userId'   => get_current_user_id(),
+    ));
 }
 
 /**
@@ -649,6 +695,258 @@ function rimtown_body_class($classes) {
     return $classes;
 }
 add_filter('body_class', 'rimtown_body_class');
+
+// =====================================================
+// REST API — Auth & Cloud Save
+// =====================================================
+add_action('rest_api_init', function () {
+    $ns = 'rimtown/v1';
+
+    // Rate limiting storage (transients)
+    function rimtown_rate_limit($key, $max, $window) {
+        $transient = 'rimtown_rl_' . md5($key);
+        $data = get_transient($transient);
+        if (!$data) $data = array('count' => 0, 'start' => time());
+        if (time() - $data['start'] > $window) {
+            $data = array('count' => 0, 'start' => time());
+        }
+        $data['count']++;
+        set_transient($transient, $data, $window);
+        return $data['count'] <= $max;
+    }
+
+    // Login
+    register_rest_route($ns, '/login', array(
+        'methods' => 'POST',
+        'callback' => function ($req) {
+            $params = $req->get_json_params();
+            $username = sanitize_user($params['username'] ?? '');
+            $password = $params['password'] ?? '';
+            if (!$username || !$password) {
+                return new WP_Error('missing_fields', '請輸入帳號和密碼', array('status' => 400));
+            }
+            $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+            if (!rimtown_rate_limit('login_' . $ip, 5, 300)) {
+                return new WP_Error('rate_limited', '登入嘗試過多，請稍後再試', array('status' => 429));
+            }
+            $user = wp_authenticate($username, $password);
+            if (is_wp_error($user)) {
+                return new WP_Error('login_failed', '帳號或密碼錯誤', array('status' => 401));
+            }
+            wp_set_current_user($user->ID);
+            wp_set_auth_cookie($user->ID, true);
+            return array(
+                'success' => true,
+                'nonce' => wp_create_nonce('wp_rest'),
+                'user' => array('id' => $user->ID, 'username' => $user->user_login),
+            );
+        },
+        'permission_callback' => '__return_true',
+    ));
+
+    // Register
+    register_rest_route($ns, '/register', array(
+        'methods' => 'POST',
+        'callback' => function ($req) {
+            $params = $req->get_json_params();
+            $username = sanitize_user($params['username'] ?? '');
+            $password = $params['password'] ?? '';
+            $email = sanitize_email($params['email'] ?? '');
+            if (!$username || !$password) {
+                return new WP_Error('missing_fields', '請填寫帳號和密碼', array('status' => 400));
+            }
+            if (strlen($password) < 6) {
+                return new WP_Error('weak_password', '密碼至少6個字元', array('status' => 400));
+            }
+            $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+            if (!rimtown_rate_limit('register_' . $ip, 5, 300)) {
+                return new WP_Error('rate_limited', '註冊嘗試過多，請稍後再試', array('status' => 429));
+            }
+            if (username_exists($username)) {
+                return new WP_Error('username_exists', '此帳號已被使用', array('status' => 409));
+            }
+            if ($email && email_exists($email)) {
+                return new WP_Error('email_exists', '此 Email 已被使用', array('status' => 409));
+            }
+            $user_id = wp_create_user($username, $password, $email ?: '');
+            if (is_wp_error($user_id)) {
+                return new WP_Error('register_failed', $user_id->get_error_message(), array('status' => 400));
+            }
+            wp_set_current_user($user_id);
+            wp_set_auth_cookie($user_id, true);
+            return array(
+                'success' => true,
+                'nonce' => wp_create_nonce('wp_rest'),
+                'user' => array('id' => $user_id, 'username' => $username),
+            );
+        },
+        'permission_callback' => '__return_true',
+    ));
+
+    // Reset password
+    register_rest_route($ns, '/reset-password', array(
+        'methods' => 'POST',
+        'callback' => function ($req) {
+            $params = $req->get_json_params();
+            $username = sanitize_user($params['username'] ?? '');
+            $email = sanitize_email($params['email'] ?? '');
+            $new_password = $params['new_password'] ?? '';
+            if (!$username || !$email || !$new_password) {
+                return new WP_Error('missing_fields', '請填寫所有欄位', array('status' => 400));
+            }
+            if (strlen($new_password) < 6) {
+                return new WP_Error('weak_password', '新密碼至少6個字元', array('status' => 400));
+            }
+            $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+            if (!rimtown_rate_limit('reset_' . $ip, 3, 600)) {
+                return new WP_Error('rate_limited', '重設嘗試過多，請稍後再試', array('status' => 429));
+            }
+            $user = get_user_by('login', $username);
+            if (!$user || strtolower($user->user_email) !== strtolower($email)) {
+                return new WP_Error('not_found', '帳號或 Email 不正確', array('status' => 404));
+            }
+            wp_set_password($new_password, $user->ID);
+            return array('success' => true);
+        },
+        'permission_callback' => '__return_true',
+    ));
+
+    // Check login status
+    register_rest_route($ns, '/me', array(
+        'methods' => 'GET',
+        'callback' => function () {
+            if (is_user_logged_in()) {
+                $user = wp_get_current_user();
+                return array('logged_in' => true, 'user' => array('id' => $user->ID, 'username' => $user->user_login));
+            }
+            return array('logged_in' => false);
+        },
+        'permission_callback' => '__return_true',
+    ));
+
+    // Logout
+    register_rest_route($ns, '/logout', array(
+        'methods' => 'POST',
+        'callback' => function () {
+            wp_logout();
+            return array('success' => true);
+        },
+        'permission_callback' => '__return_true',
+    ));
+
+    // List saves
+    register_rest_route($ns, '/saves', array(
+        'methods' => 'GET',
+        'callback' => function () {
+            $user_id = get_current_user_id();
+            $saves = get_user_meta($user_id, 'rimtown_saves', true);
+            if (!$saves) $saves = array();
+            $list = array();
+            foreach ($saves as $town_id => $save) {
+                $list[] = array(
+                    'town_id' => $town_id,
+                    'town_name' => $save['town_name'] ?? '',
+                    'season' => $save['season'] ?? '',
+                    'year' => $save['year'] ?? 1,
+                    'day' => $save['day'] ?? 1,
+                    'population' => $save['population'] ?? 0,
+                    'updated_at' => $save['updated_at'] ?? '',
+                );
+            }
+            return array('saves' => $list);
+        },
+        'permission_callback' => function () { return is_user_logged_in(); },
+    ));
+
+    // Save
+    register_rest_route($ns, '/save', array(
+        'methods' => 'POST',
+        'callback' => function ($req) {
+            $user_id = get_current_user_id();
+            $params = $req->get_json_params();
+            $town_id = sanitize_text_field($params['town_id'] ?? '');
+            if (!$town_id) return new WP_Error('missing_town_id', 'Missing town_id', array('status' => 400));
+            $saves = get_user_meta($user_id, 'rimtown_saves', true);
+            if (!$saves) $saves = array();
+            $saves[$town_id] = array(
+                'town_name' => sanitize_text_field($params['town_name'] ?? ''),
+                'save_data' => $params['save_data'] ?? '',
+                'season' => sanitize_text_field($params['season'] ?? ''),
+                'year' => intval($params['year'] ?? 1),
+                'day' => intval($params['day'] ?? 1),
+                'population' => intval($params['population'] ?? 0),
+                'updated_at' => current_time('mysql'),
+            );
+            update_user_meta($user_id, 'rimtown_saves', $saves);
+            return array('success' => true);
+        },
+        'permission_callback' => function () { return is_user_logged_in(); },
+    ));
+
+    // Load save
+    register_rest_route($ns, '/save/(?P<town_id>[a-zA-Z0-9_-]+)', array(
+        'methods' => 'GET',
+        'callback' => function ($req) {
+            $user_id = get_current_user_id();
+            $town_id = $req['town_id'];
+            $saves = get_user_meta($user_id, 'rimtown_saves', true);
+            if (!$saves || !isset($saves[$town_id])) {
+                return new WP_Error('not_found', 'Save not found', array('status' => 404));
+            }
+            return array('save_data' => $saves[$town_id]['save_data']);
+        },
+        'permission_callback' => function () { return is_user_logged_in(); },
+    ));
+
+    // Delete save
+    register_rest_route($ns, '/save/(?P<town_id>[a-zA-Z0-9_-]+)', array(
+        'methods' => 'DELETE',
+        'callback' => function ($req) {
+            $user_id = get_current_user_id();
+            $town_id = $req['town_id'];
+            $saves = get_user_meta($user_id, 'rimtown_saves', true);
+            if ($saves && isset($saves[$town_id])) {
+                unset($saves[$town_id]);
+                update_user_meta($user_id, 'rimtown_saves', $saves);
+            }
+            return array('success' => true);
+        },
+        'permission_callback' => function () { return is_user_logged_in(); },
+    ));
+
+    // Get achievements
+    register_rest_route($ns, '/achievements', array(
+        'methods' => 'GET',
+        'callback' => function () {
+            $user_id = get_current_user_id();
+            $achievements = get_user_meta($user_id, 'rimtown_achievements', true);
+            return array('achievements' => $achievements ?: array());
+        },
+        'permission_callback' => function () { return is_user_logged_in(); },
+    ));
+
+    // Unlock achievement
+    register_rest_route($ns, '/achievement', array(
+        'methods' => 'POST',
+        'callback' => function ($req) {
+            $user_id = get_current_user_id();
+            $params = $req->get_json_params();
+            $key = sanitize_text_field($params['key'] ?? '');
+            if (!$key) return new WP_Error('missing_key', 'Missing key', array('status' => 400));
+            $achievements = get_user_meta($user_id, 'rimtown_achievements', true);
+            if (!$achievements) $achievements = array();
+            if (!isset($achievements[$key])) {
+                $achievements[$key] = array(
+                    'unlocked_at' => current_time('mysql'),
+                    'town_id' => sanitize_text_field($params['town_id'] ?? ''),
+                );
+                update_user_meta($user_id, 'rimtown_achievements', $achievements);
+            }
+            return array('success' => true);
+        },
+        'permission_callback' => function () { return is_user_logged_in(); },
+    ));
+});
 
 /**
  * Inject critical inline CSS for mobile viewport lock (runs before theme CSS)
