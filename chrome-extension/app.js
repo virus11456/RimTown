@@ -739,6 +739,7 @@ class RimTownApp {
             this.world.logMessage('system', t('已同步至雲端。'));
         } catch (e) {
             console.error('[RimTown] Cloud sync error:', e);
+            this.world.logMessage('system', t('雲端同步失敗。'));
         }
     }
 
@@ -1168,6 +1169,7 @@ class RimTownApp {
         if (!await this._gameConfirm(t('確定刪除雲端存檔？'), '🗑️')) return;
         try {
             await this.auth.cloudDelete(townId);
+            this.world.logMessage('system', t('雲端存檔已刪除。'));
             this._showCloudSaves(); // Refresh list
         } catch(e) { this._gameAlert(t('刪除失敗：') + e.message, '❌'); }
     }
@@ -1993,7 +1995,7 @@ class RimTownApp {
                 case 'settings-save-game': this.saveGame(); break;
                 case 'settings-export': this.exportSave(); break;
                 case 'settings-import': this.importSave(); break;
-                case 'settings-toggle-pause': this.world.paused = !this.world.paused; this.renderSidebar(); break;
+                case 'settings-toggle-pause': this.world.paused = !this.world.paused; this.world.logMessage('system', this.world.paused ? t('遊戲已暫停。') : t('遊戲已繼續。')); this.renderSidebar(); break;
                 case 'settings-speed-mult': {
                     const mult = parseFloat(val) || 1;
                     this._speedMultiplier = mult;
@@ -2132,7 +2134,7 @@ class RimTownApp {
             const speed = document.getElementById('sim-speed').value;
             const fallbackKey = document.getElementById('fallback-groq-key')?.value?.trim() || '';
             if (provider !== 'none' && !apiKey && !fallbackKey) {
-                alert(t('請輸入 API 金鑰，或填寫備用 Groq Key，或選擇「無（模擬對話）」。'));
+                this._gameAlert(t('請輸入 API 金鑰，或填寫備用 Groq Key，或選擇「無（模擬對話）」。'), '🔑');
                 return;
             }
             this.saveSettings(provider, apiKey, speed);
@@ -2142,6 +2144,7 @@ class RimTownApp {
                 if (typeof renderCurrentTab === 'function') renderCurrentTab();
             }
             document.getElementById('settings-modal')?.classList.add('hidden');
+            this._gameAlert(t('設定已儲存。'), '✅');
         });
         document.getElementById('settings-cancel')?.addEventListener('click', () => {
             document.getElementById('settings-modal')?.classList.add('hidden');
@@ -2181,7 +2184,11 @@ class RimTownApp {
                 this.world.logMessage('system', t('遊戲已儲存。'));
             }
             return true;
-        } catch(e) { console.error('Save failed:', e); return false; }
+        } catch(e) {
+            console.error('Save failed:', e);
+            this.world.logMessage('system', t('儲存失敗。'));
+            return false;
+        }
     }
 
     async tryLoadGame() {
@@ -2264,6 +2271,7 @@ class RimTownApp {
         a.download = `rimtown_save_${ck.season || 'unknown'}_Y${ck.year || 1}D${ck.day || 1}.json`;
         a.click();
         URL.revokeObjectURL(url);
+        this._gameAlert(t('存檔已匯出。'), '✅');
     }
 
     importSave() {
@@ -2283,6 +2291,7 @@ class RimTownApp {
                     if (this.tileMap) this.tileMap.agentPositions = {};
                     this.render();
                     await this.saveGame();
+                    this._gameAlert(t('存檔已匯入。'), '✅');
                 } else {
                     this._gameAlert(t('讀取存檔失敗。'), '❌');
                 }
