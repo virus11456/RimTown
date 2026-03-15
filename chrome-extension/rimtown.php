@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 3.6.3
+ * Version: 3.6.4
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '3.6.3');
+define('RIMTOWN_VERSION', '3.6.4');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -694,15 +694,21 @@ add_action('admin_menu', 'rimtown_admin_menu');
 function rimtown_get_changelog() {
     return array(
         array(
-            'version' => '3.6.3',
+            'version' => '3.6.4',
             'date'    => '2026-03-15',
             'changes' => array(
+                '修復 WordPress 腳本載入順序：i18n.js 改為最先載入，所有模組加入依賴，修復 t is not defined',
+                '修復 processing.js 語法錯誤：移除 dailyUpdate() 中多餘的大括號，修復 Illegal continue statement',
                 'NPC 弔念系統：城鎮有人過世後，NPC 會前往墓園弔念',
                 '家人年度弔念：配偶、子女、父母每年會固定前往墓園緬懷逝者',
-                'PWA 支援：新增 manifest、service worker，可安裝到手機主畫面',
+                '全鎮同悲：非親屬鎮民也有機率前往弔念',
+                '弔念行為產生記憶、心情變化與日誌訊息',
+                'PWA 支援：新增 pwa-manifest.json、sw.js，可安裝到手機主畫面',
                 '全螢幕體驗：standalone 模式下隱藏瀏覽器 UI，雙擊標題可切換全螢幕',
                 '離線快取：核心遊戲資源離線可用',
-                '版號同步：所有檔案統一為 3.6.3',
+                '安裝提示橫幅：瀏覽器觸發 beforeinstallprompt 時顯示安裝按鈕',
+                'i18n 新增弔念與安裝相關中英翻譯',
+                '版號同步：所有檔案統一為 3.6.4',
             ),
         ),
         array(
