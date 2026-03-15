@@ -3182,28 +3182,59 @@ class PixelTileMap {
         const moonProgress = (hour >= 19) ? (hour - 19) / 12 : (hour + 5) / 12;
         const mx = this.mapWidth * 0.15 + moonProgress * this.mapWidth * 0.7;
         const arc = Math.sin(moonProgress * Math.PI);
-        const my = this.mapHeight * 0.06 + (1 - arc) * this.mapHeight * 0.1;
-        const moonAlpha = nightAmount * 0.9;
+        const my = this.mapHeight * 0.05 + (1 - arc) * this.mapHeight * 0.08;
+        const moonAlpha = nightAmount * 0.95;
 
-        // Moon glow (large soft halo)
-        const glowR = 28;
+        // Outer atmospheric glow (very large, subtle)
+        const outerR = 120;
+        const outerGrad = ctx.createRadialGradient(mx, my, 0, mx, my, outerR);
+        outerGrad.addColorStop(0, `rgba(180, 200, 240, ${(moonAlpha * 0.12).toFixed(3)})`);
+        outerGrad.addColorStop(0.3, `rgba(140, 170, 220, ${(moonAlpha * 0.06).toFixed(3)})`);
+        outerGrad.addColorStop(0.6, `rgba(100, 130, 200, ${(moonAlpha * 0.02).toFixed(3)})`);
+        outerGrad.addColorStop(1, 'rgba(100, 130, 200, 0)');
+        ctx.fillStyle = outerGrad;
+        ctx.fillRect(mx - outerR, my - outerR, outerR * 2, outerR * 2);
+
+        // Inner glow halo
+        const glowR = 55;
         const grad = ctx.createRadialGradient(mx, my, 0, mx, my, glowR);
-        grad.addColorStop(0, `rgba(200, 220, 255, ${(moonAlpha * 0.2).toFixed(3)})`);
-        grad.addColorStop(0.4, `rgba(150, 180, 230, ${(moonAlpha * 0.08).toFixed(3)})`);
+        grad.addColorStop(0, `rgba(220, 235, 255, ${(moonAlpha * 0.35).toFixed(3)})`);
+        grad.addColorStop(0.3, `rgba(200, 220, 255, ${(moonAlpha * 0.18).toFixed(3)})`);
+        grad.addColorStop(0.6, `rgba(150, 180, 230, ${(moonAlpha * 0.06).toFixed(3)})`);
         grad.addColorStop(1, 'rgba(150, 180, 230, 0)');
         ctx.fillStyle = grad;
         ctx.fillRect(mx - glowR, my - glowR, glowR * 2, glowR * 2);
 
-        // Moon body (crescent effect)
-        ctx.fillStyle = `rgba(240, 245, 255, ${(moonAlpha * 0.95).toFixed(2)})`;
+        // Moon body (larger, brighter)
+        ctx.fillStyle = `rgba(245, 248, 255, ${(moonAlpha * 0.98).toFixed(2)})`;
         ctx.beginPath();
-        ctx.arc(mx, my, 6, 0, Math.PI * 2);
+        ctx.arc(mx, my, 14, 0, Math.PI * 2);
         ctx.fill();
+
+        // Subtle surface texture (darker patches)
+        ctx.fillStyle = `rgba(200, 210, 230, ${(moonAlpha * 0.2).toFixed(2)})`;
+        ctx.beginPath();
+        ctx.arc(mx - 3, my - 2, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(mx + 4, my + 3, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(mx - 1, my + 5, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
         // Shadow for crescent shape
-        ctx.fillStyle = `rgba(8, 12, 40, ${(moonAlpha * 0.85).toFixed(2)})`;
+        ctx.fillStyle = `rgba(8, 12, 40, ${(moonAlpha * 0.9).toFixed(2)})`;
         ctx.beginPath();
-        ctx.arc(mx + 3, my - 1, 5, 0, Math.PI * 2);
+        ctx.arc(mx + 7, my - 2, 12, 0, Math.PI * 2);
         ctx.fill();
+
+        // Bright edge highlight on the lit side
+        ctx.strokeStyle = `rgba(255, 255, 255, ${(moonAlpha * 0.4).toFixed(2)})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(mx, my, 14, Math.PI * 0.7, Math.PI * 1.8);
+        ctx.stroke();
     }
 
     _renderNightVignette(ctx, w, h, nightAmount) {
