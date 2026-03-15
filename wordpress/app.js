@@ -3433,10 +3433,16 @@ class RimTownApp {
     // SETTINGS TAB (consolidated AI + Account + Game settings)
     // =====================================================
     renderSettings(container) {
-        const provider = localStorage.getItem('llm_provider') || 'none';
-        const apiKey = localStorage.getItem('llm_api_key') || '';
-        const speed = localStorage.getItem('sim_speed') || '2000';
-        const fallbackKey = localStorage.getItem('fallback_groq_key') || '';
+        // Preserve unsaved form values from existing DOM inputs (prevents
+        // renderSidebar() calls from wiping user-typed/pasted API keys)
+        const existingProvider = document.getElementById('settings-tab-provider');
+        const existingApiKey = document.getElementById('settings-tab-apikey');
+        const existingSpeed = document.getElementById('settings-tab-speed');
+        const existingGroq = document.getElementById('settings-tab-groq');
+        const provider = existingProvider ? existingProvider.value : (localStorage.getItem('llm_provider') || 'none');
+        const apiKey = existingApiKey ? existingApiKey.value : (localStorage.getItem('llm_api_key') || '');
+        const speed = existingSpeed ? existingSpeed.value : (localStorage.getItem('sim_speed') || '2000');
+        const fallbackKey = existingGroq ? existingGroq.value : (localStorage.getItem('fallback_groq_key') || '');
         const loggedIn = this.auth.loggedIn;
         const username = this.auth.username;
         const paused = this.world?.paused;
