@@ -371,6 +371,8 @@ class Agent {
         this._locationStayTicks = 0; // how many ticks to stay at current location
         this._locationStayRemaining = 0; // countdown
         this.moodModifier = 0; // accumulated mood changes from events, decays over time
+        this._mourningTargets = []; // [{name, deathTick, isFamily}] - deceased to mourn at graveyard
+        this._annualMourning = []; // [{name, lastVisitYear}] - family members to visit yearly
     }
     get moodDescription() {
         if (this.mood >= 80) return 'ecstatic'; if (this.mood >= 60) return 'happy';
@@ -382,7 +384,7 @@ class Agent {
         return map[this.moodDescription] || this.moodDescription;
     }
     get activityLabel() {
-        const map = { sleeping:t('睡覺'), eating:t('進食'), working:t('工作'), socializing:t('社交'), wandering:t('閒逛'), recreation:t('娛樂'), idle:t('閒置'), stargazing:t('看星星'), night_mischief:t('搞事'), night_stroll:t('夜間散步'), exploring:t('探險中') };
+        const map = { sleeping:t('睡覺'), eating:t('進食'), working:t('工作'), socializing:t('社交'), wandering:t('閒逛'), recreation:t('娛樂'), idle:t('閒置'), stargazing:t('看星星'), night_mischief:t('搞事'), night_stroll:t('夜間散步'), exploring:t('探險中'), mourning:t('弔念') };
         return map[this.activity] || this.activity;
     }
     get genderLabel() {
@@ -431,6 +433,7 @@ class Agent {
         if (this.activity === 'socializing') this._trySocialInteraction(world);
         if (this.activity === 'stargazing') this._doStargazing(world);
         if (this.activity === 'night_mischief') this._doNightMischief(world);
+        if (this.activity === 'mourning') this._doMourning(world);
         if (this.activity === 'night_stroll') { this.needs.recreation = Math.min(100, this.needs.recreation + 1); this.needs.comfort = Math.min(100, this.needs.comfort + 0.5); }
         if (Math.random() < 0.1) this._generateThought(world);
     }
@@ -443,6 +446,7 @@ class Agent {
             case 'socializing': return 6 + randInt(0, 4); // stay to chat
             case 'recreation': return 5 + randInt(0, 4);
             case 'stargazing': return 6 + randInt(0, 4);
+            case 'mourning': return 6 + randInt(0, 4);     // mourning at graveyard
             case 'night_stroll': return 3 + randInt(0, 3); // strolling moves more
             case 'wandering': return 5 + randInt(0, 3);
             default: return 4;
@@ -484,6 +488,11 @@ class Agent {
             : (hour >= sleepStart && hour < sleepEnd);
         if (inSleepWindow && this.needs.rest < 90) { this.activity='sleeping'; return; }
 
+        // Mourning: visit graveyard for recently deceased or annual family remembrance
+        if (!inSleepWindow && hour >= 7 && hour < 20 && this._shouldMourn()) {
+            this.activity = 'mourning'; return;
+        }
+
         // Night owl special behaviors when others sleep
         if (isNight && isNightOwl && this.needs.rest >= 30) {
             return this._decideNightOwlActivity(hour);
@@ -511,6 +520,13 @@ class Agent {
         const weights = [3,2,2];
         if (this.personality.socialModifier > 0) weights[0] += 2;
         this.activity = weightedChoice(choices, weights);
+    }
+    _shouldMourn() {
+        // Recent death mourning: 30% chance per tick during mourning window
+        if (this._mourningTargets.length > 0 && Math.random() < 0.3) return true;
+        // Annual family mourning: check if there's an unvisited family grave this year
+        if (this._annualMourning.length > 0 && Math.random() < 0.15) return true;
+        return false;
     }
     _decideNightOwlActivity(hour) {
         const traits = this.personality.traits;
@@ -584,6 +600,7 @@ class Agent {
         }
         else if (this.activity==='stargazing') this.targetLocation = pickRandom(['park','hill','meadow']);
         else if (this.activity==='night_stroll') this.targetLocation = pickRandom(['park','town_square','hill','meadow']);
+        else if (this.activity==='mourning') this.targetLocation = 'chapel';
         else if (this.activity==='night_mischief') this.targetLocation = pickRandom(['town_square','general_store','tavern']);
         else if (this.activity==='wandering') {
             // Employed during work hours: stay near workplace
@@ -713,6 +730,37 @@ class Agent {
             this.currentThought = `${t('糟糕，被')}${witness.name}${t('看到了...')}`;
         }
     }
+    _doMourning(world) {
+        if (Math.random() > 0.15) return; // Process mourning periodically
+        const year = world.clock.year;
+        // Handle recent death mourning
+        if (this._mourningTargets.length > 0) {
+            const target = this._mourningTargets[0];
+            this.currentThought = `${target.name}${t('...我會記得你的。')}`;
+            this.needs.social = Math.min(100, this.needs.social + 0.5);
+            this.moodModifier = (this.moodModifier || 0) + 0.3; // Slight comfort from paying respects
+            this.memory.add(world.tickCount, world.clock.timeStr, 'mourning',
+                `${t('前往墓園弔念')}${target.name}${t('。')}`, 7, [target.name]);
+            world.logMessage('mourning', `🕯️ ${this.name}${t('前往墓園弔念')}${target.name}${t('。')}`, this.name);
+            // If family, add to annual mourning list
+            if (target.isFamily && !this._annualMourning.find(m => m.name === target.name)) {
+                this._annualMourning.push({ name: target.name, lastVisitYear: year });
+            }
+            this._mourningTargets.shift(); // Remove from queue
+            return;
+        }
+        // Handle annual family mourning
+        const unvisited = this._annualMourning.find(m => m.lastVisitYear < year);
+        if (unvisited) {
+            unvisited.lastVisitYear = year;
+            this.currentThought = `${t('又到了一年...去看看')}${unvisited.name}${t('吧。')}`;
+            this.moodModifier = (this.moodModifier || 0) - 2;
+            this.needs.social = Math.min(100, this.needs.social + 1);
+            this.memory.add(world.tickCount, world.clock.timeStr, 'mourning',
+                `${t('每年都會來墓園看望')}${unvisited.name}${t('。')}`, 6, [unvisited.name]);
+            world.logMessage('mourning', `🕯️ ${this.name}${t('來到墓園，緬懷已故的親人')}${unvisited.name}${t('。')}`, this.name);
+        }
+    }
     _generateThought(world) {
         const thoughts = [];
         const hour = world.clock.hour;
@@ -730,6 +778,10 @@ class Agent {
         if (this.activity === 'night_stroll') {
             thoughts.push(t('夜裡的鎮上好安靜...'), t('月光下散步真舒服。'), t('夜風吹來很涼爽。'));
             if (this.mood < 30) thoughts.push(t('睡不著...出來走走吧。'), t('夜裡比較容易想事情...'));
+        }
+        if (this.activity === 'mourning') {
+            thoughts.push(t('願逝者安息...'), t('站在墓前，心裡百感交集。'), t('我不會忘記你的。'));
+            if (this._annualMourning.length > 0) thoughts.push(`${this._annualMourning[0].name}${t('...我來看你了。')}`);
         }
         if (this.activity === 'night_mischief') {
             thoughts.push(t('嘿嘿，趁大家都睡了...'), t('沒人看到的話...'), t('夜裡做點小惡作劇。'));
@@ -3691,22 +3743,38 @@ class LifecycleSystem {
         // Notify the world
         world.logMessage('death', `⚰️ ${npc.name}${t('（')}${npc.age}${t('歲）因')}${cause}${t('離世了。')}${epitaph}`, npc.name);
 
-        // Grief for related NPCs
+        // Grief for related NPCs + mourning behavior
         Object.values(world.agents).forEach(a => {
             if (a.agentId === npc.agentId) return;
             const rel = a.relationships.relationships[npc.agentId];
             if (rel) {
                 let grief = -5;
-                if (rel.status === 'married' || rel.status === 'dating') grief = -30;
+                let isFamily = false;
+                if (rel.status === 'married' || rel.status === 'dating') { grief = -30; isFamily = true; }
                 else if (rel.affinity > 50) grief = -20;
                 else if (rel.affinity > 20) grief = -10;
+                // Check parent-child relationship
+                if (a._parentNames && a._parentNames.includes(npc.name)) isFamily = true;
+                if (npc._parentNames && npc._parentNames.includes(a.name)) isFamily = true;
                 a.moodModifier = (a.moodModifier || 0) + grief;
                 a.memory.add(world.tickCount, world.clock.timeStr, 'social',
                     `${npc.name}${t('去世了...我很難過。')}`, 9, [npc.name]);
+                // Add mourning target — everyone with a relationship will visit graveyard
+                if (!a.isPlayer && a._mourningTargets) {
+                    a._mourningTargets.push({ name: npc.name, deathTick: world.tickCount, isFamily });
+                }
                 // Clear relationship status
                 if (rel.status === 'married' || rel.status === 'dating') {
                     rel.status = 'ex'; rel.statusSince = world.tickCount;
                 }
+            }
+        });
+
+        // Town-wide mourning: even unacquainted NPCs pay brief respects
+        Object.values(world.agents).forEach(a => {
+            if (a.agentId === npc.agentId || a.isPlayer) return;
+            if (!a.relationships.relationships[npc.agentId] && a._mourningTargets && Math.random() < 0.4) {
+                a._mourningTargets.push({ name: npc.name, deathTick: world.tickCount, isFamily: false });
             }
         });
 
@@ -4665,6 +4733,8 @@ class World {
             chatHistory: a.isPlayer ? (a.chatHistory||[]).slice(-10000) : undefined,
             _lastInteractionTick: a._lastInteractionTick,
             _locationStayRemaining: a._locationStayRemaining || 0,
+            _mourningTargets: a._mourningTargets || [],
+            _annualMourning: a._annualMourning || [],
         });
         return {
             version: 2,
@@ -4754,6 +4824,8 @@ class World {
                 agent.currentThought = ad.currentThought || '';
                 agent._lastInteractionTick = ad._lastInteractionTick || 0;
                 agent._locationStayRemaining = ad._locationStayRemaining || 0;
+                agent._mourningTargets = ad._mourningTargets || [];
+                agent._annualMourning = ad._annualMourning || [];
                 // Needs
                 if (ad.needs) { Object.assign(agent.needs, ad.needs); }
                 // Skills

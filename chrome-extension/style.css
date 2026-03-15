@@ -3006,3 +3006,69 @@ body.rimtown-page .wp-block-post-title {
         font-size: 0.85rem;
     }
 }
+
+/* === PWA Install Banner === */
+.pwa-install-banner {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 10000;
+    background: linear-gradient(135deg, #0f3460, #1a1a2e);
+    border-top: 2px solid var(--accent);
+    padding: 12px 16px;
+    animation: pwa-slide-up 0.4s ease;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+}
+.pwa-install-banner.hidden { display: none; }
+@keyframes pwa-slide-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+.pwa-install-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+.pwa-install-icon { font-size: 32px; }
+.pwa-install-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.pwa-install-text strong { color: var(--text-primary); font-size: 0.95rem; }
+.pwa-install-text small { color: var(--text-secondary); font-size: 0.75rem; }
+.pwa-install-accept {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.pwa-install-accept:hover { background: var(--accent-light); }
+.pwa-install-dismiss {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+/* PWA standalone mode adjustments */
+@media (display-mode: standalone) {
+    .rimtown-container {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    .header {
+        padding-top: env(safe-area-inset-top);
+    }
+}

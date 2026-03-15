@@ -2,11 +2,32 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="邊境鎮">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="description" content="RimWorld-inspired AI town simulation - 邊境鎮 AI 小鎮模擬">
+    <link rel="manifest" href="pwa-manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon128.png">
     <title>邊境鎮 - AI 小鎮模擬</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<!-- PWA Install Banner -->
+<div id="pwa-install-banner" class="pwa-install-banner hidden">
+    <div class="pwa-install-content">
+        <span class="pwa-install-icon">🏘️</span>
+        <div class="pwa-install-text">
+            <strong data-i18n="安裝邊境鎮">安裝邊境鎮</strong>
+            <small data-i18n="安裝到主畫面，享受全螢幕體驗">安裝到主畫面，享受全螢幕體驗</small>
+        </div>
+        <button id="pwa-install-btn" class="pwa-install-accept" data-i18n="安裝">安裝</button>
+        <button id="pwa-install-dismiss" class="pwa-install-dismiss">✕</button>
+    </div>
+</div>
+
 <div id="rimtown-app" class="rimtown-container">
     <!-- Town Manager Modal -->
     <div id="town-modal" class="modal hidden">
@@ -230,5 +251,50 @@
     <script src="simulation.js"></script>
     <script src="tilemap.js"></script>
     <script src="app.js"></script>
+    <script>
+    // PWA Service Worker Registration & Install Prompt
+    (function() {
+        // Only register SW in web context (not Chrome Extension)
+        if ('serviceWorker' in navigator && !chrome?.runtime?.id) {
+            navigator.serviceWorker.register('./sw.js').catch(() => {});
+        }
+
+        // PWA Install Prompt
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Don't show if user dismissed before
+            if (localStorage.getItem('rimtown_pwa_dismissed')) return;
+            const banner = document.getElementById('pwa-install-banner');
+            if (banner) banner.classList.remove('hidden');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'pwa-install-btn' && deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(choice => {
+                    deferredPrompt = null;
+                    document.getElementById('pwa-install-banner')?.classList.add('hidden');
+                });
+            }
+            if (e.target.id === 'pwa-install-dismiss') {
+                document.getElementById('pwa-install-banner')?.classList.add('hidden');
+                localStorage.setItem('rimtown_pwa_dismissed', '1');
+            }
+        });
+
+        // Fullscreen toggle on mobile (double-tap header)
+        let lastTap = 0;
+        document.querySelector('.header h1')?.addEventListener('touchend', () => {
+            const now = Date.now();
+            if (now - lastTap < 300) {
+                if (document.fullscreenElement) document.exitFullscreen();
+                else document.documentElement.requestFullscreen?.().catch(() => {});
+            }
+            lastTap = now;
+        });
+    })();
+    </script>
 </body>
 </html>

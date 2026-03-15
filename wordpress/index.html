@@ -2,11 +2,32 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="邊境鎮">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="description" content="RimWorld-inspired AI town simulation - 邊境鎮 AI 小鎮模擬">
+    <link rel="manifest" href="pwa-manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon128.png">
     <title>邊境鎮 - AI 小鎮模擬</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<!-- PWA Install Banner -->
+<div id="pwa-install-banner" class="pwa-install-banner hidden">
+    <div class="pwa-install-content">
+        <span class="pwa-install-icon">🏘️</span>
+        <div class="pwa-install-text">
+            <strong data-i18n="安裝邊境鎮">安裝邊境鎮</strong>
+            <small data-i18n="安裝到主畫面，享受全螢幕體驗">安裝到主畫面，享受全螢幕體驗</small>
+        </div>
+        <button id="pwa-install-btn" class="pwa-install-accept" data-i18n="安裝">安裝</button>
+        <button id="pwa-install-dismiss" class="pwa-install-dismiss">✕</button>
+    </div>
+</div>
+
 <div id="rimtown-app" class="rimtown-container">
     <!-- Town Manager Modal -->
     <div id="town-modal" class="modal hidden">
@@ -66,6 +87,99 @@
         </div>
     </div>
 
+    <!-- Tutorial / Story Intro Overlay -->
+    <div id="tutorial-overlay" class="tutorial-overlay hidden">
+        <div class="tutorial-backdrop"></div>
+        <div class="tutorial-card">
+            <div class="tutorial-step" data-step="0">
+                <div class="tutorial-story-icon">🏘️</div>
+                <h2 class="tutorial-story-title" data-i18n="邊境鎮">邊境鎮</h2>
+                <p class="tutorial-story-subtitle">RimTown — AI Town Simulation</p>
+                <div class="tutorial-story-text">
+                    <p data-i18n="在帝國邊疆的荒野之中，一群拓荒者建立了一座小小的聚落。">在帝國邊疆的荒野之中，一群拓荒者建立了一座小小的聚落。</p>
+                    <p data-i18n="他們來自不同的背景 —— 有農夫、鐵匠、醫生、商人，甚至是流亡的學者。每個人都帶著自己的故事、個性和夢想來到這裡。">他們來自不同的背景 —— 有農夫、鐵匠、醫生、商人，甚至是流亡的學者。每個人都帶著自己的故事、個性和夢想來到這裡。</p>
+                    <p data-i18n-html="作為這座 <strong>邊境鎮</strong> 的管理者，你需要引導居民們建設家園、發展經濟、抵禦外敵，並見證他們之間的愛恨情仇。">作為這座 <strong>邊境鎮</strong> 的管理者，你需要引導居民們建設家園、發展經濟、抵禦外敵，並見證他們之間的愛恨情仇。</p>
+                    <p style="color:var(--accent-light);margin-top:12px;font-style:italic" data-i18n="「每位居民都是獨立的 AI，擁有自己的思想和意志。你的選擇，將塑造這座鎮的命運。」">「每位居民都是獨立的 AI，擁有自己的思想和意志。你的選擇，將塑造這座鎮的命運。」</p>
+                </div>
+            </div>
+            <div class="tutorial-step hidden" data-step="1">
+                <div class="tutorial-step-icon">🗺️</div>
+                <h3 data-i18n="地圖與村莊">地圖與村莊</h3>
+                <div class="tutorial-step-text">
+                    <p>左側的 <strong>像素地圖</strong> 是你的村莊。你可以看到：</p>
+                    <ul>
+                        <li>🏠 各種建築 —— 酒館、農場、鐵匠鋪、診所等</li>
+                        <li>👤 移動中的居民 —— 他們會自主上班、社交、吃飯、睡覺</li>
+                        <li>🌙 日夜交替 —— 白天工作，傍晚社交，深夜休息</li>
+                        <li>💬 對話氣泡 —— 居民之間正在進行的交談</li>
+                    </ul>
+                    <p>點擊地圖上的地點可以移動你的角色。</p>
+                </div>
+            </div>
+            <div class="tutorial-step hidden" data-step="2">
+                <div class="tutorial-step-icon">👥</div>
+                <h3 data-i18n="居民與聊天">居民與聊天</h3>
+                <div class="tutorial-step-text">
+                    <p>右側面板的 <strong>居民</strong> 頁籤顯示所有村民。點擊任一居民可以查看他的詳細資訊。</p>
+                    <p>切換到 <strong>聊天</strong> 頁籤，選擇一位居民就可以和他對話！他們會根據自己的個性、心情和對你的好感度來回應。</p>
+                    <ul>
+                        <li>💕 好感度高的居民會更友善</li>
+                        <li>💼 你可以選擇自己的職業</li>
+                        <li>💒 你甚至可以和居民約會、求婚！</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="tutorial-step hidden" data-step="3">
+                <div class="tutorial-step-icon">💰</div>
+                <h3 data-i18n="經濟與產業">經濟與產業</h3>
+                <div class="tutorial-step-text">
+                    <p><strong>經濟</strong> 頁籤可以查看資源、建築、科技樹和貿易。</p>
+                    <p><strong>產業</strong> 頁籤管理農場種植、工廠加工和產業發展。</p>
+                    <ul>
+                        <li>🌾 種植作物、收穫農產品</li>
+                        <li>🏭 建造工廠加工原料</li>
+                        <li>📈 隨著人口增長，城鎮等級提升</li>
+                        <li>⚔️ 完成任務獲得獎勵</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="tutorial-step hidden" data-step="4">
+                <div class="tutorial-step-icon">📰</div>
+                <h3 data-i18n="事件與探索">事件與探索</h3>
+                <div class="tutorial-step-text">
+                    <p>遊戲中會發生各種 <strong>隨機事件</strong>：</p>
+                    <ul>
+                        <li>🗳️ 鎮長選舉 —— 投票選出你支持的候選人</li>
+                        <li>⚔️ 盜匪襲擊 —— 守衛和居民會奮力防禦</li>
+                        <li>🎪 季節慶典 —— 春祭、仲夏篝火、豐收節、冬至</li>
+                        <li>🗺️ 探索系統 —— 派遣探險隊探索鎮外區域</li>
+                        <li>🗞️ AI 日報 —— 村莊記者會報導鎮上的大小事</li>
+                    </ul>
+                    <p style="color:var(--text-muted);font-size:0.72rem;margin-top:10px">提示：在設定中配置 AI 語言模型（如 Groq 免費），可以讓居民對話更加生動！</p>
+                </div>
+            </div>
+            <div class="tutorial-nav">
+                <button id="tutorial-prev" class="tutorial-btn hidden" data-i18n="上一步">上一步</button>
+                <div class="tutorial-dots" id="tutorial-dots"></div>
+                <button id="tutorial-next" class="tutorial-btn tutorial-btn-primary" data-i18n="開始旅程">開始旅程</button>
+            </div>
+            <button id="tutorial-skip" class="tutorial-skip" data-i18n="跳過引導">跳過引導</button>
+        </div>
+    </div>
+
+    <!-- Achievement Toast -->
+    <div id="achievement-toast" class="achievement-toast hidden"></div>
+
+    <!-- Quest Guidance Banner (post-tutorial) -->
+    <div id="quest-guidance" class="quest-guidance hidden">
+        <div class="quest-guidance-icon">📋</div>
+        <div class="quest-guidance-text">
+            <div class="quest-guidance-title"></div>
+            <div class="quest-guidance-hint"></div>
+        </div>
+        <button class="quest-guidance-dismiss" data-i18n-title="關閉提示" title="關閉提示">✕</button>
+    </div>
+
     <!-- Header -->
     <div class="header">
         <h1 data-i18n="邊境鎮">邊境鎮</h1>
@@ -111,6 +225,7 @@
                 <button data-tab="economy"><span class="tab-icon">💰</span><span class="tab-label" data-i18n="經濟">經濟</span></button>
                 <button data-tab="industry"><span class="tab-icon">🏭</span><span class="tab-label" data-i18n="產業">產業</span></button>
                 <button data-tab="quest"><span class="tab-icon">⚔️</span><span class="tab-label" data-i18n="任務">任務</span></button>
+                <button data-tab="achievements"><span class="tab-icon">🏆</span><span class="tab-label" data-i18n="成就">成就</span></button>
                 <button data-tab="events"><span class="tab-icon">📰</span><span class="tab-label" data-i18n="事件">事件</span></button>
                 <button data-tab="newspaper"><span class="tab-icon">🗞️</span><span class="tab-label" data-i18n="日報">日報</span></button>
                 <button data-tab="log"><span class="tab-icon">📝</span><span class="tab-label" data-i18n="日誌">日誌</span></button>
@@ -136,5 +251,50 @@
     <script src="simulation.js"></script>
     <script src="tilemap.js"></script>
     <script src="app.js"></script>
+    <script>
+    // PWA Service Worker Registration & Install Prompt
+    (function() {
+        // Only register SW in web context (not Chrome Extension)
+        if ('serviceWorker' in navigator && !chrome?.runtime?.id) {
+            navigator.serviceWorker.register('./sw.js').catch(() => {});
+        }
+
+        // PWA Install Prompt
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Don't show if user dismissed before
+            if (localStorage.getItem('rimtown_pwa_dismissed')) return;
+            const banner = document.getElementById('pwa-install-banner');
+            if (banner) banner.classList.remove('hidden');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'pwa-install-btn' && deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(choice => {
+                    deferredPrompt = null;
+                    document.getElementById('pwa-install-banner')?.classList.add('hidden');
+                });
+            }
+            if (e.target.id === 'pwa-install-dismiss') {
+                document.getElementById('pwa-install-banner')?.classList.add('hidden');
+                localStorage.setItem('rimtown_pwa_dismissed', '1');
+            }
+        });
+
+        // Fullscreen toggle on mobile (double-tap header)
+        let lastTap = 0;
+        document.querySelector('.header h1')?.addEventListener('touchend', () => {
+            const now = Date.now();
+            if (now - lastTap < 300) {
+                if (document.fullscreenElement) document.exitFullscreen();
+                else document.documentElement.requestFullscreen?.().catch(() => {});
+            }
+            lastTap = now;
+        });
+    })();
+    </script>
 </body>
 </html>
