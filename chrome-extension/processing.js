@@ -182,7 +182,6 @@ class ProcessingSystem {
                     factory.status = 'active';
                     const def = FACTORIES[key];
                     world.logMessage('factory', `${def.icon} ${def.name}${t('建造完成！')}`);
-                    }
                 }
                 continue;
             }
