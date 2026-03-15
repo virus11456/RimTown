@@ -31,7 +31,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v3.6.9.zip` from Releases
+1. Download `rimtown-v3.6.10.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -46,6 +46,13 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v3.6.10 (2026-03-15)
+
+**Bug Fix - API Key 儲存修復**
+- 修復 API key 儲存時被清空的 race condition：render() 的 setInterval tick 會在點擊儲存按鈕時重新渲染 settings tab，導致未儲存的表單資料被覆蓋，現在 activeTab 為 settings 時跳過 sidebar 重繪
+- 修復 `_escapeHtml` 未跳脫雙引號的問題：API key 若含引號字元會破壞 HTML value 屬性
+- 版號同步：所有檔案統一為 3.6.10
 
 ### v3.6.9 (2026-03-15)
 
