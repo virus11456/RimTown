@@ -1694,20 +1694,20 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
             summary = `${player.name}${t('言語冒犯了')}${npc.name}${t('。')}`;
         } else if (isFlirt) {
             if (isCouple) {
-                npcReply = pickRandom([`你啊...每次都這樣，不過我就是吃這套。`,`哈哈，老夫老妻了還這麼會講。`,`你真的很會撩人，我都不好意思了。`]);
+                npcReply = pickRandom([t('你啊...每次都這樣，不過我就是吃這套。'),t('哈哈，老夫老妻了還這麼會講。'),t('你真的很會撩人，我都不好意思了。')]);
                 affChange = randInt(2,4); romChange = randInt(1,3);
             } else if (romantic && aff > 10) {
-                npcReply = shy ? pickRandom([`你、你在說什麼啦...（臉紅）`,`別、別突然這樣講...`,`...謝謝...（小聲）`])
-                    : pickRandom([`哈哈，你還挺會說話的嘛。`,`嗯？你是在跟我告白嗎？`,`你這話讓人心跳加速呢。`]);
+                npcReply = shy ? pickRandom([t('你、你在說什麼啦...（臉紅）'),t('別、別突然這樣講...'),t('...謝謝...（小聲）')])
+                    : pickRandom([t('哈哈，你還挺會說話的嘛。'),t('嗯？你是在跟我告白嗎？'),t('你這話讓人心跳加速呢。')]);
                 affChange = randInt(1,4); romChange = randInt(2,5);
             } else if (aff < -10) {
-                npcReply = pickRandom([`...你在開什麼玩笑。`,`拜託，省省吧。`,`你是不是搞錯了什麼？`]);
+                npcReply = pickRandom([t('...你在開什麼玩笑。'),t('拜託，省省吧。'),t('你是不是搞錯了什麼？')]);
                 affChange = randInt(-2,0);
             } else {
-                npcReply = shy ? '...什麼？（不知所措）' : pickRandom([`哈？你認真的嗎？`,`嗯...謝謝？`,`你還挺有趣的。`]);
+                npcReply = shy ? t('...什麼？（不知所措）') : pickRandom([t('哈？你認真的嗎？'),t('嗯...謝謝？'),t('你還挺有趣的。')]);
                 affChange = randInt(0,2); romChange = randInt(0,2);
             }
-            summary = `${player.name}對${npc.name}說了甜言蜜語。`;
+            summary = `${player.name}${t('對')}${npc.name}${t('說了甜言蜜語。')}`;
         } else if (isGreeting) {
             if (isCouple) npcReply = pickRandom([`嗨親愛的，我一直在等你呢。`,`你來了！好想你。`,`嘿~今天怎麼這麼晚來找我？`]);
             else if (aff > 50) npcReply = charismatic ? `${player.name}！太好了你來了！`
