@@ -993,6 +993,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
 function rimtown_get_changelog() {
     return array(
         array(
+            'version' => '3.6.7',
+            'date'    => '2026-03-15',
+            'changes' => array(
+                '未登入時自動顯示登入畫面，不需手動點擊',
+                '背景霧化城鎮地圖：登入畫面背景使用模糊濾鏡顯示城鎮地圖',
+                '版號同步：所有檔案統一為 3.6.7',
+            ),
+        ),
+        array(
             'version' => '3.6.6',
             'date'    => '2026-03-15',
             'changes' => array(
