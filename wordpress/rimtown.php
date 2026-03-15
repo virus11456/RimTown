@@ -1014,6 +1014,13 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '修復 WordPress 腳本載入順序：i18n.js 改為最先載入，所有模組加入依賴，修復 t is not defined',
                 '修復 processing.js 語法錯誤：移除 dailyUpdate() 中多餘的大括號，修復 Illegal continue statement',
+                '版號同步：所有檔案統一為 3.6.4',
+            ),
+        ),
+        array(
+            'version' => '3.6.3',
+            'date'    => '2026-03-15',
+            'changes' => array(
                 'NPC 弔念系統：城鎮有人過世後，NPC 會前往墓園弔念',
                 '家人年度弔念：配偶、子女、父母每年會固定前往墓園緬懷逝者',
                 '全鎮同悲：非親屬鎮民也有機率前往弔念',
@@ -1022,8 +1029,12 @@ function rimtown_get_changelog() {
                 '全螢幕體驗：standalone 模式下隱藏瀏覽器 UI，雙擊標題可切換全螢幕',
                 '離線快取：核心遊戲資源離線可用',
                 '安裝提示橫幅：瀏覽器觸發 beforeinstallprompt 時顯示安裝按鈕',
+                'NPC 睡眠凍結：睡眠中的 NPC 抵達家中後不再亂走',
+                '門進出系統：NPC 進出建築物會走門，不再穿牆',
+                '個別房屋系統：住宅區有 4 間可點擊的獨立房屋，每位 NPC 分配至特定房屋',
+                '人生總結報告：結局畫面新增豐富的人生統計、關係圖表、成就列表',
                 'i18n 新增弔念與安裝相關中英翻譯',
-                '版號同步：所有檔案統一為 3.6.4',
+                '版號同步：所有檔案統一為 3.6.3',
             ),
         ),
         array(
