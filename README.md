@@ -31,7 +31,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v3.6.4.zip` from Releases
+1. Download `rimtown-v3.6.5.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -46,6 +46,20 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v3.6.5 (2026-03-15)
+
+**修復登入系統 + 走路撞牆 + 地圖自由點擊**
+- 修復登入功能：新增缺失的 auth-modal HTML（登入/註冊/重設密碼表單）
+- 新增 `wp_localize_script` 注入 `rimtownAuth` 前端認證變數
+- 新增完整 REST API 端點：`login`、`register`、`reset-password`、`me`、`logout`、`saves`、`save`、`achievements`
+- 認證端點速率限制：登入 5次/5分鐘、註冊 5次/5分鐘、重設密碼 3次/10分鐘
+- 修復走路撞牆卡住：新增 `_isWalkableTile()` 牆壁碰撞檢測
+- 新增 `_findWalkableTarget()` 自動尋找最近可行走位置，避免目標點落在牆內
+- 走路時碰到牆壁會沿軸滑動避開，不再卡住原地
+- 地圖自由點擊走路：點擊地圖任意位置都能讓玩家走過去
+- 移動指示器顯示在實際點擊位置，而非區域中心
+- 版號同步：所有檔案統一為 3.6.5
 
 ### v3.6.4 (2026-03-15)
 

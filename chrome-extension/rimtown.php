@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 3.6.4
+ * Version: 3.6.5
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '3.6.4');
+define('RIMTOWN_VERSION', '3.6.5');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -991,6 +991,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '3.6.5',
+            'date'    => '2026-03-15',
+            'changes' => array(
+                '修復登入功能：新增缺失的 auth-modal HTML（登入/註冊/重設密碼表單）',
+                '新增 wp_localize_script 注入 rimtownAuth 前端認證變數',
+                '新增完整 REST API 端點：login、register、reset-password、me、logout、saves、save、achievements',
+                '認證端點速率限制：登入 5次/5分鐘、註冊 5次/5分鐘、重設密碼 3次/10分鐘',
+                '修復走路撞牆卡住：新增 _isWalkableTile() 牆壁碰撞檢測',
+                '新增 _findWalkableTarget() 自動尋找最近可行走位置，避免目標點落在牆內',
+                '走路時碰到牆壁會沿軸滑動避開，不再卡住原地',
+                '地圖自由點擊走路：點擊地圖任意位置都能讓玩家走過去',
+                '移動指示器顯示在實際點擊位置，而非區域中心',
+                '版號同步：所有檔案統一為 3.6.5',
+            ),
+        ),
         array(
             'version' => '3.6.4',
             'date'    => '2026-03-15',
