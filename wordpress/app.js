@@ -375,7 +375,7 @@ class RimTownApp {
 
         // Close buttons
         document.querySelectorAll('.auth-close-btn').forEach(btn => {
-            btn.addEventListener('click', () => document.getElementById('auth-modal')?.classList.add('hidden'));
+            btn.addEventListener('click', () => this._closeAuthModal());
         });
 
         // Login
@@ -413,12 +413,30 @@ class RimTownApp {
         try {
             if (errEl) errEl.textContent = t('登入中...');
             await this.auth.login(user, pass);
-            document.getElementById('auth-modal')?.classList.add('hidden');
+            this._closeAuthModal();
             this._updateAccountButton();
             this.world.logMessage('system', `${t('歡迎回來，')}${this.auth.username}！`);
             this._syncFromCloud();
         } catch (e) {
             if (errEl) errEl.textContent = e.message || t('登入失敗');
+        }
+    }
+
+    // Close auth modal and reset mobile viewport zoom
+    _closeAuthModal() {
+        // Blur active input first to dismiss keyboard and prevent zoom stuck
+        if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+            document.activeElement.blur();
+        }
+        document.getElementById('auth-modal')?.classList.add('hidden');
+        // Force viewport reset on mobile to fix zoom stuck after keyboard dismiss
+        if (window.innerWidth <= 768) {
+            window.scrollTo(0, 0);
+            // Trigger resize recalculation for tilemap
+            setTimeout(() => {
+                if (this.tileMap) this.tileMap._needsResize = true;
+                window.dispatchEvent(new Event('resize'));
+            }, 100);
         }
     }
 
@@ -433,7 +451,7 @@ class RimTownApp {
         try {
             if (errEl) errEl.textContent = t('註冊中...');
             await this.auth.register(user, pass, email);
-            document.getElementById('auth-modal')?.classList.add('hidden');
+            this._closeAuthModal();
             this._updateAccountButton();
             // New user gets a fresh world — clear all old local data
             const oldTowns = this._getTownList();

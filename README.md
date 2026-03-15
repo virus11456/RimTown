@@ -59,6 +59,8 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 - 走路時碰到牆壁會沿軸滑動避開，不再卡住原地
 - 地圖自由點擊走路：點擊地圖任意位置都能讓玩家走過去
 - 移動指示器顯示在實際點擊位置，而非區域中心
+- 修復手機登入後地圖跑版：關閉 auth modal 時先 blur 輸入框、重設 viewport 縮放
+- 防止 iOS 自動放大：登入表單 input font-size 設為 16px
 - 版號同步：所有檔案統一為 3.6.5
 
 ### v3.6.4 (2026-03-15)

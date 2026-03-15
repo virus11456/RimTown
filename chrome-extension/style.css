@@ -1433,11 +1433,15 @@ body.rimtown-page .wp-block-post-title {
 .npc-convo-speaker { color: var(--accent-light); font-weight: bold; }
 
 /* ===== Login Modal ===== */
-.login-content { max-width: 360px; text-align: center; }
+.login-content { max-width: 360px; text-align: center; position: relative; }
 .login-content h2 { font-size: 1.5rem; margin-bottom: 4px; }
 .login-subtitle { color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 16px; }
 .login-error { color: var(--negative); font-size: 0.75rem; min-height: 18px; margin: 4px 0; }
 .login-note { color: var(--text-muted); font-size: 0.65rem; margin-top: 12px; }
+/* Prevent iOS auto-zoom on input focus (requires font-size >= 16px) */
+.login-content input[type="text"],
+.login-content input[type="password"],
+.login-content input[type="email"] { font-size: 16px !important; }
 
 /* ===== User Display ===== */
 .user-display { display: flex; align-items: center; gap: 6px; }
