@@ -1599,6 +1599,11 @@ class RimTownApp {
         if (fallbackEl) fallbackEl.value = fallbackKey;
         localStorage.setItem('fallback_groq_key', fallbackKey || '');
         this.saveSettings(provider, apiKey, speed);
+        const langSelect = document.getElementById('lang-select') || document.getElementById('settings-tab-lang');
+        if (langSelect) {
+            I18N.setLang(langSelect.value);
+            if (typeof renderCurrentTab === 'function') renderCurrentTab();
+        }
         this.world.logMessage('system', t('設定已儲存'));
         this.renderSidebar();
     }
@@ -2054,6 +2059,8 @@ class RimTownApp {
                     if (data.fallback_groq_key) document.getElementById('fallback-groq-key').value = data.fallback_groq_key;
                 });
             }
+            const langSelect = document.getElementById('lang-select');
+            if (langSelect) langSelect.value = I18N.getLang();
         });
         // When switching provider, clear the API key input to enforce one-AI-at-a-time
         document.getElementById('llm-provider')?.addEventListener('change', () => {
@@ -2076,6 +2083,11 @@ class RimTownApp {
                 return;
             }
             this.saveSettings(provider, apiKey, speed);
+            const langSelect = document.getElementById('lang-select');
+            if (langSelect) {
+                I18N.setLang(langSelect.value);
+                if (typeof renderCurrentTab === 'function') renderCurrentTab();
+            }
             document.getElementById('settings-modal')?.classList.add('hidden');
         });
         document.getElementById('settings-cancel')?.addEventListener('click', () => {
@@ -4727,6 +4739,9 @@ class RimTownApp {
         if (!document.getElementById('rimtown-app') && !document.getElementById('town-map-canvas')) return;
         const app = new RimTownApp();
         window.addEventListener('resize', () => { if (app.state) app.renderMap(); });
+        if (I18N.getLang() !== 'zh') {
+            I18N.setLang(I18N.getLang());
+        }
     };
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
