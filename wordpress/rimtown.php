@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '3.6.9');
+define('RIMTOWN_VERSION', '3.6.10');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -992,6 +992,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '3.6.10',
+            'date'    => '2026-03-15',
+            'changes' => array(
+                '修復 API key 儲存時被清空的 race condition：render() 的 setInterval tick 會在點擊儲存按鈕時重新渲染 settings tab，導致未儲存的表單資料被覆蓋，現在 activeTab 為 settings 時跳過 sidebar 重繪',
+                '修復 _escapeHtml 未跳脫雙引號的問題：API key 若含引號字元會破壞 HTML value 屬性',
+                '版號同步：所有檔案統一為 3.6.10',
+            ),
+        ),
         array(
             'version' => '3.6.9',
             'date'    => '2026-03-15',
