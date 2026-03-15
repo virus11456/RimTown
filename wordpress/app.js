@@ -344,6 +344,16 @@ class RimTownApp {
         if (localStorage.getItem('rimtown_tutorial_done')) {
             setTimeout(() => this._updateQuestGuidance(), 2000);
         }
+        // Auto-show login modal if not logged in
+        if (!this.auth.loggedIn) {
+            const authModal = document.getElementById('auth-modal');
+            if (authModal) {
+                authModal.classList.remove('hidden');
+                // Hide close button so user must login/register
+                const closeBtn = authModal.querySelector('.auth-close-btn');
+                if (closeBtn) closeBtn.style.display = 'none';
+            }
+        }
     }
 
     // =====================================================
@@ -356,7 +366,13 @@ class RimTownApp {
                 if (this.auth.loggedIn) {
                     this._showAccountMenu();
                 } else {
-                    document.getElementById('auth-modal')?.classList.remove('hidden');
+                    const authModal = document.getElementById('auth-modal');
+                    if (authModal) {
+                        authModal.classList.remove('hidden');
+                        // Show close button when manually opened
+                        const closeBtn = authModal.querySelector('.auth-close-btn');
+                        if (closeBtn) closeBtn.style.display = '';
+                    }
                 }
             });
         }
@@ -417,6 +433,10 @@ class RimTownApp {
             this._updateAccountButton();
             this.world.logMessage('system', `${t('歡迎回來，')}${this.auth.username}！`);
             this._syncFromCloud();
+            // Show tutorial for new players after login
+            if (!localStorage.getItem('rimtown_tutorial_done')) {
+                this.setupTutorial();
+            }
         } catch (e) {
             if (errEl) errEl.textContent = e.message || t('登入失敗');
         }
@@ -512,6 +532,10 @@ class RimTownApp {
             this._renderTownList();
             this.world.logMessage('system', `${t('註冊成功！歡迎，')}${this.auth.username}${t('！你的全新城鎮已建立。')}`);
             this._syncToCloud();
+            // Show tutorial for new players after registration
+            if (!localStorage.getItem('rimtown_tutorial_done')) {
+                this.setupTutorial();
+            }
         } catch (e) {
             if (errEl) errEl.textContent = e.message || t('註冊失敗');
         }
@@ -559,6 +583,8 @@ class RimTownApp {
         const overlay = document.getElementById('tutorial-overlay');
         if (!overlay) return;
         if (localStorage.getItem('rimtown_tutorial_done')) return;
+        // Don't show tutorial when login screen is active
+        if (!this.auth.loggedIn) return;
         overlay.classList.remove('hidden');
         this._tutorialStep = 0;
         const totalSteps = 5;

@@ -1190,6 +1190,11 @@ body.rimtown-page .wp-block-post-title {
     justify-content: center;
     z-index: 100000;
 }
+.rimtown-container #auth-modal {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
 .modal.hidden { display: none; }
 .hidden { display: none !important; }
 
