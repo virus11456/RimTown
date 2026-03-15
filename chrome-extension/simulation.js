@@ -1301,25 +1301,25 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     summary = `${agentA.name}${t('在')}${loc}${t('向摯友')}${agentB.name}${t('傾訴了最近的煩惱，')}${agentB.name}${t('耐心傾聽並貼心地準備了')}${food}${t('，兩人之間的友誼更加堅定了。')}`;
                 },
                 () => {
-                    lines.push({speaker:agentA.name, text:`${agentB.name}，還記得我們剛來邊境鎮那天嗎？什麼都沒有，就兩個人站在空蕩蕩的廣場上。`});
-                    lines.push({speaker:agentB.name, text:`記得啊！那時候你還摔了一跤，臉都栽進泥巴裡哈哈哈哈！`});
-                    lines.push({speaker:agentA.name, text:`你就記這個！？那你還不是迷路了三次才找到酒館！`});
-                    lines.push({speaker:agentB.name, text:`好了好了，我們扯平。不過認真的...能跟你一起在這裡打拼，我覺得這輩子值了。`});
-                    lines.push({speaker:agentA.name, text:`...你今天不準再說催淚的話了，我眼眶已經紅了。`});
+                    lines.push({speaker:agentA.name, text:`${agentB.name}${t('，還記得我們剛來邊境鎮那天嗎？什麼都沒有，就兩個人站在空蕩蕩的廣場上。')}`});
+                    lines.push({speaker:agentB.name, text:t('記得啊！那時候你還摔了一跤，臉都栽進泥巴裡哈哈哈哈！')});
+                    lines.push({speaker:agentA.name, text:t('你就記這個！？那你還不是迷路了三次才找到酒館！')});
+                    lines.push({speaker:agentB.name, text:t('好了好了，我們扯平。不過認真的...能跟你一起在這裡打拼，我覺得這輩子值了。')});
+                    lines.push({speaker:agentA.name, text:t('...你今天不準再說催淚的話了，我眼眶已經紅了。')});
                     affA = randInt(4,7); affB = randInt(4,7);
-                    summary = `${agentA.name}和${agentB.name}在${loc}回憶起初來邊境鎮的趣事，笑淚交織之間，深厚的友情讓旁人都為之動容。`;
+                    summary = `${agentA.name}${t('和')}${agentB.name}${t('在')}${loc}${t('回憶起初來邊境鎮的趣事，笑淚交織之間，深厚的友情讓旁人都為之動容。')}`;
                 },
             ];
             pickRandom(friendTopics)();
         } else if (isStranger) {
             const strangerTopics = [
                 () => {
-                    lines.push({speaker:agentA.name, text:tA.includes('charismatic')?`嘿！你是新面孔吧？我是${agentA.name}，在這邊做${jobA}的。歡迎來到邊境鎮！`:`你好...我好像沒見過你？`});
-                    lines.push({speaker:agentB.name, text:tB.includes('shy')?`嗯...我是${agentB.name}...你好。這裡的${food}看起來好好吃...`:`哈囉！我叫${agentB.name}！剛到這邊不久，請多指教！這裡比我想像中熱鬧多了。`});
-                    lines.push({speaker:agentA.name, text:`${loc}是鎮上最${pickRandom(['熱鬧','有意思','舒服'])}的地方！對了，如果你想吃好料的，推薦你去試試酒館的${food}，絕對不會後悔。`});
-                    lines.push({speaker:agentB.name, text:`真的嗎！那我一定要去試試。謝謝你，${agentA.name}！`});
+                    lines.push({speaker:agentA.name, text:tA.includes('charismatic')?`${t('嘿！你是新面孔吧？我是')}${agentA.name}${t('，在這邊做')}${jobA}${t('的。歡迎來到邊境鎮！')}`:`${t('你好...我好像沒見過你？')}`});
+                    lines.push({speaker:agentB.name, text:tB.includes('shy')?`${t('嗯...我是')}${agentB.name}...${t('你好。這裡的')}${food}${t('看起來好好吃...')}`:`${t('哈囉！我叫')}${agentB.name}${t('！剛到這邊不久，請多指教！這裡比我想像中熱鬧多了。')}`});
+                    lines.push({speaker:agentA.name, text:`${loc}${t('是鎮上最')}${pickRandom([t('熱鬧'),t('有意思'),t('舒服')])}${t('的地方！對了，如果你想吃好料的，推薦你去試試酒館的')}${food}${t('，絕對不會後悔。')}`});
+                    lines.push({speaker:agentB.name, text:`${t('真的嗎！那我一定要去試試。謝謝你，')}${agentA.name}${t('！')}`});
                     affA = randInt(2,5); affB = randInt(2,5);
-                    summary = `${agentA.name}在${loc}熱情地招呼了新來的${agentB.name}，推薦了鎮上的美食${food}，給${agentB.name}留下了溫暖的第一印象。`;
+                    summary = `${agentA.name}${t('在')}${loc}${t('熱情地招呼了新來的')}${agentB.name}${t('，推薦了鎮上的美食')}${food}${t('，給')}${agentB.name}${t('留下了溫暖的第一印象。')}`;
                 },
                 () => {
                     lines.push({speaker:agentA.name, text:`${agentB.name}對吧？我聽說你是做${jobB}的——正好，我一直想認識做這行的人！`});
