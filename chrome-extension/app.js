@@ -2314,7 +2314,23 @@ class RimTownApp {
     // --- Player Actions ---
     playerMoveTo(locationId) {
         const player = this.world.agents['player'];
-        if (player && player.moveTo(locationId, this.world)) {
+        // Handle individual house sub-zone clicks — move to parent residential area
+        let actualLocId = locationId;
+        if (this.tileMap && this.tileMap._houseSubZones && this.tileMap._houseSubZones[locationId]) {
+            actualLocId = this.tileMap._houseSubZones[locationId].parentLocId;
+            this._selectedHouseSubZone = locationId; // Track which house was clicked
+            // Show house detail panel after moving
+            if (player && player.moveTo(actualLocId, this.world)) {
+                this.state = this.world.getState();
+                this.activeTab = 'detail';
+                if (this._updateTabHighlight) this._updateTabHighlight('detail');
+                this.selectedAgent = null; // Clear agent selection to show house view
+                this.render();
+            }
+            return;
+        }
+        this._selectedHouseSubZone = null;
+        if (player && player.moveTo(actualLocId, this.world)) {
             // Clear chat target when moving to a different location
             if (this.chatTarget && player.currentLocation !== this.state?.agents?.[this.chatTarget]?.current_location) {
                 this.chatTarget = null;
@@ -3079,6 +3095,11 @@ class RimTownApp {
     }
 
     renderAgentDetail(container) {
+        // Show house detail if a house sub-zone was clicked
+        if (!this.selectedAgent && this._selectedHouseSubZone && this.tileMap) {
+            this._renderHouseDetail(container, this._selectedHouseSubZone);
+            return;
+        }
         if (!this.selectedAgent || !this.state) { container.innerHTML = t('<p class="muted-text" style="padding:20px">選擇一位居民查看詳情</p>'); return; }
         const agent = this.state.agents[this.selectedAgent]; if (!agent) return;
         const needs = agent.needs || {}, personality = agent.personality || {};
@@ -3168,6 +3189,39 @@ class RimTownApp {
             <div class="detail-section"><h3>${t('近期記憶')}</h3>
                 ${memories.length===0?t('<p style="font-size:0.7rem;color:var(--text-muted)">尚無記憶</p>'):
                 memories.slice(-10).reverse().map(m=>`<div class="memory-item"><span class="memory-time">${m.time}</span>${m.content}</div>`).join('')}</div></div>`;
+    }
+
+    // =====================================================
+    // HOUSE DETAIL (when clicking individual houses)
+    // =====================================================
+    _renderHouseDetail(container, houseSubId) {
+        const sub = this.tileMap._houseSubZones?.[houseSubId];
+        if (!sub) { container.innerHTML = t('<p class="muted-text" style="padding:20px">選擇一位居民查看詳情</p>'); return; }
+        const residents = this.tileMap.getHouseResidents(houseSubId);
+        const areaLabels = { residential_north: t('北區住宅'), residential_south: t('南區住宅'), residential_east: t('東區住宅') };
+        const areaName = areaLabels[sub.parentLocId] || sub.parentLocId;
+        const houseNum = sub.houseIndex + 1;
+        let html = `<div class="detail-panel visible">`;
+        html += `<div class="detail-section"><h3>🏠 ${areaName} - ${t('房屋')} #${houseNum}</h3></div>`;
+        html += `<div class="detail-section"><h3>${t('住戶')}（${residents.length}）</h3>`;
+        if (residents.length === 0) {
+            html += `<p style="font-size:0.8rem;color:var(--text-secondary)">${t('這間房子目前沒有住戶。')}</p>`;
+        } else {
+            html += `<div class="resident-list">`;
+            for (const aid of residents) {
+                const agent = this.state?.agents[aid];
+                if (!agent) continue;
+                const jobTitle = agent.job?.title || t('無業');
+                const moodIcon = agent.mood > 70 ? '😊' : agent.mood > 30 ? '😐' : '😢';
+                html += `<div class="res-item" data-action="select-agent" data-val="${aid}" style="cursor:pointer;padding:8px;margin:4px 0;border-radius:6px;background:var(--bg-secondary)">
+                    <div style="font-weight:600">${moodIcon} ${agent.name}</div>
+                    <div style="font-size:0.75rem;color:var(--text-secondary)">${jobTitle} · ${agent.age}${t('歲')} · ${agent.activity_label || agent.activity || ''}</div>
+                </div>`;
+            }
+            html += `</div>`;
+        }
+        html += `</div></div>`;
+        container.innerHTML = html;
     }
 
     // =====================================================

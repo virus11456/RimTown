@@ -231,7 +231,7 @@ class PixelTileMap {
         this.grid = null;
         this.tileCache = {};
         this.agentPositions = {}; // {agentId: {x, y, targetX, targetY}}
-        this.buildingZones = {}; // {locationId: {x,y,w,h}}
+        this.buildingZones = {}; // {locationId: {x,y,w,h,doorPixelX,doorPixelY}}
         this.natureZones = {};   // {locationId: {x,y,w,h}}
         this.labelPositions = {};
         this.animFrame = 0;
@@ -444,14 +444,25 @@ class PixelTileMap {
         }
         // Check location zones — first try exact zone hit, then find nearest
         if (this.onClick) {
-            // Exact zone click
+            // Exact zone click — prioritize smaller sub-zones (individual houses) over parent zones
+            let hitLocId = null;
+            let hitZone = null;
+            let hitArea = Infinity;
             for (const [locId, zone] of Object.entries(this.buildingZones)) {
                 if (px >= zone.x * TILE && px < (zone.x + zone.w) * TILE &&
                     py >= zone.y * TILE && py < (zone.y + zone.h) * TILE) {
-                    this._moveIndicator = { x: (zone.x + zone.w / 2) * TILE, y: (zone.y + zone.h / 2) * TILE, expiry: Date.now() + 1500 };
-                    this.onClick(locId);
-                    return;
+                    const area = zone.w * zone.h;
+                    if (area < hitArea) {
+                        hitArea = area;
+                        hitLocId = locId;
+                        hitZone = zone;
+                    }
                 }
+            }
+            if (hitLocId) {
+                this._moveIndicator = { x: (hitZone.x + hitZone.w / 2) * TILE, y: (hitZone.y + hitZone.h / 2) * TILE, expiry: Date.now() + 1500 };
+                this.onClick(hitLocId);
+                return;
             }
             for (const [locId, zone] of Object.entries(this.natureZones)) {
                 if (px >= zone.x * TILE && px < (zone.x + zone.w) * TILE &&
@@ -1203,7 +1214,9 @@ class PixelTileMap {
         // Connect to nearest road with dirt path
         this._connectToRoad(x + tmpl.doorX, y + h + 1);
 
-        this.buildingZones[locId] = { x, y, w, h: h + 1 };
+        const doorPxX = (x + tmpl.doorX + 0.5) * TILE;
+        const doorPxY = (y + h + 1.5) * TILE; // just below the door tile
+        this.buildingZones[locId] = { x, y, w, h: h + 1, doorPixelX: doorPxX, doorPixelY: doorPxY };
         this.labelPositions[locId] = { x: (x + w/2) * TILE, y: y * TILE - 4, name };
     }
 
@@ -1218,6 +1231,9 @@ class PixelTileMap {
             { dx: 0, dy: house.h + gapY + 1 },
             { dx: house.w + gapX, dy: house.h + gapY + 1 },
         ];
+        // Store individual house sub-zones
+        this._houseSubZones = this._houseSubZones || {};
+        let houseIdx = 0;
         for (const p of positions) {
             const hx = x + p.dx, hy = y + p.dy;
             if (hx + house.w >= this.cols || hy + house.h + 1 >= this.rows) continue;
@@ -1232,6 +1248,24 @@ class PixelTileMap {
                 }
             }
             this._connectToRoad(hx + house.doorX, hy + house.h + 1);
+            // Register each house as a sub-zone with door position
+            const subId = `${locId}_${houseIdx}`;
+            const doorPxX = (hx + house.doorX + 0.5) * TILE;
+            const doorPxY = (hy + house.h + 1.5) * TILE;
+            const interiorX = (hx + house.w / 2) * TILE;
+            const interiorY = (hy + house.h / 2 + 1) * TILE;
+            this._houseSubZones[subId] = {
+                x: hx, y: hy, w: house.w, h: house.h + 1,
+                doorPixelX: doorPxX, doorPixelY: doorPxY,
+                interiorX, interiorY,
+                parentLocId: locId, houseIndex: houseIdx
+            };
+            this.buildingZones[subId] = {
+                x: hx, y: hy, w: house.w, h: house.h + 1,
+                doorPixelX: doorPxX, doorPixelY: doorPxY,
+                parentLocId: locId
+            };
+            houseIdx++;
         }
         // Draw small path between the two rows of houses
         const pathY = y + house.h + 1;
@@ -1504,6 +1538,33 @@ class PixelTileMap {
                 }
             }
         }
+    }
+
+    // Assign an agent to a specific house sub-zone within their residential area
+    getAgentHouseId(agentId, homeLocation) {
+        if (!this._houseSubZones || !homeLocation || !homeLocation.startsWith('residential_')) return null;
+        // Find sub-zones for this residential area
+        const subIds = Object.keys(this._houseSubZones).filter(k => this._houseSubZones[k].parentLocId === homeLocation);
+        if (subIds.length === 0) return null;
+        // Use persistent mapping
+        if (!this._agentHouseMap) this._agentHouseMap = {};
+        if (this._agentHouseMap[agentId]) return this._agentHouseMap[agentId];
+        // Count how many agents are in each house
+        const houseCounts = {};
+        subIds.forEach(id => houseCounts[id] = 0);
+        Object.values(this._agentHouseMap).forEach(hid => { if (houseCounts[hid] !== undefined) houseCounts[hid]++; });
+        // Assign to least-populated house
+        const bestHouse = subIds.reduce((a, b) => (houseCounts[a] <= houseCounts[b] ? a : b));
+        this._agentHouseMap[agentId] = bestHouse;
+        return bestHouse;
+    }
+
+    // Get residents of a specific house sub-zone
+    getHouseResidents(houseSubId) {
+        if (!this._agentHouseMap) return [];
+        return Object.entries(this._agentHouseMap)
+            .filter(([_, hid]) => hid === houseSubId)
+            .map(([aid]) => aid);
     }
 
     // Get center position for a location (for agent placement)
@@ -1987,23 +2048,83 @@ class PixelTileMap {
         });
     }
 
+    // Check if a pixel position is inside a building zone
+    _isInsideBuilding(px, py) {
+        // Check sub-zones first (smaller, more precise)
+        if (this._houseSubZones) {
+            for (const [subId, sub] of Object.entries(this._houseSubZones)) {
+                const zx = sub.x * TILE, zy = sub.y * TILE;
+                const zw = sub.w * TILE, zh = sub.h * TILE;
+                if (px >= zx && px <= zx + zw && py >= zy && py <= zy + zh) return subId;
+            }
+        }
+        for (const [locId, zone] of Object.entries(this.buildingZones)) {
+            if (zone.parentLocId) continue; // skip sub-zones already checked
+            const zx = zone.x * TILE, zy = zone.y * TILE;
+            const zw = zone.w * TILE, zh = zone.h * TILE;
+            if (px >= zx && px <= zx + zw && py >= zy && py <= zy + zh) return locId;
+        }
+        return null;
+    }
+
+    // Get door position for a location (or specific sub-zone)
+    _getDoorPosition(locId, agentId) {
+        // If locId is a specific sub-zone, use it directly
+        if (this._houseSubZones && this._houseSubZones[locId]) {
+            const sub = this._houseSubZones[locId];
+            return { x: sub.doorPixelX, y: sub.doorPixelY };
+        }
+        // If locId is a residential area and we have an agent, get their specific house door
+        if (agentId && locId && locId.startsWith('residential_')) {
+            const houseId = this.getAgentHouseId(agentId, locId);
+            if (houseId && this._houseSubZones && this._houseSubZones[houseId]) {
+                const sub = this._houseSubZones[houseId];
+                return { x: sub.doorPixelX, y: sub.doorPixelY };
+            }
+        }
+        const zone = this.buildingZones[locId];
+        if (zone && zone.doorPixelX !== undefined) {
+            return { x: zone.doorPixelX, y: zone.doorPixelY };
+        }
+        return null;
+    }
+
     updateAgents(agents, locations, chatTarget) {
         this.chatTarget = chatTarget || null;
         const WALK_SPEED = 0.3; // pixels per frame — slow leisurely pace
         for (const [aid, agent] of Object.entries(agents)) {
-            const locCenter = this.getLocationCenter(agent.current_location);
-            // Add offset within zone so agents don't overlap
-            const existing = Object.values(this.agentPositions).filter(p => {
-                const dx = Math.abs(p.targetX - locCenter.x);
-                const dy = Math.abs(p.targetY - locCenter.y);
-                return dx < TILE * 3 && dy < TILE * 3;
-            });
-            const idx = existing.length;
-            const spreadX = ((idx % 4) - 1.5) * TILE;
-            const spreadY = (Math.floor(idx / 4) - 0.5) * TILE;
+            const curLoc = agent.current_location;
+            let targetX, targetY;
 
-            const targetX = locCenter.x + spreadX;
-            const targetY = locCenter.y + spreadY;
+            // For residential areas, route agents to their specific house
+            const homeLocation = agent.home_location || agent.homeLocation;
+            if (curLoc && curLoc.startsWith('residential_') && this._houseSubZones) {
+                const houseId = this.getAgentHouseId(aid, curLoc);
+                if (houseId && this._houseSubZones[houseId]) {
+                    const sub = this._houseSubZones[houseId];
+                    // Place inside their specific house with small offset
+                    const hashOffset = (aid.charCodeAt(0) || 0) % 4;
+                    targetX = sub.interiorX + ((hashOffset % 2) - 0.5) * TILE;
+                    targetY = sub.interiorY + (Math.floor(hashOffset / 2) - 0.5) * TILE;
+                } else {
+                    const locCenter = this.getLocationCenter(curLoc);
+                    targetX = locCenter.x;
+                    targetY = locCenter.y;
+                }
+            } else {
+                const locCenter = this.getLocationCenter(curLoc);
+                // Add offset within zone so agents don't overlap
+                const existing = Object.values(this.agentPositions).filter(p => {
+                    const dx = Math.abs(p.targetX - locCenter.x);
+                    const dy = Math.abs(p.targetY - locCenter.y);
+                    return dx < TILE * 3 && dy < TILE * 3;
+                });
+                const idx = existing.length;
+                const spreadX = ((idx % 4) - 1.5) * TILE;
+                const spreadY = (Math.floor(idx / 4) - 0.5) * TILE;
+                targetX = locCenter.x + spreadX;
+                targetY = locCenter.y + spreadY;
+            }
 
             // Extract job key string from agent data
             const jobKey = (agent.job && agent.job.key) ? agent.job.key : (typeof agent.job === 'string' ? agent.job : 'default');
@@ -2015,43 +2136,113 @@ class PixelTileMap {
             const atFarm = agent.current_location === 'farm';
 
             if (!this.agentPositions[aid]) {
-                this.agentPositions[aid] = { x: targetX, y: targetY, targetX, targetY, job: jobKey, gender, walking: false, walkStep: 0, activity, atFarm };
+                // New agent — place at door if target is inside a building
+                const door = this._getDoorPosition(curLoc, aid);
+                const startX = door ? door.x : targetX;
+                const startY = door ? door.y : targetY;
+                this.agentPositions[aid] = { x: startX, y: startY, targetX, targetY, job: jobKey, gender, walking: true, walkStep: 0, activity, atFarm, doorPhase: door ? 'entering' : null };
             } else {
                 this.agentPositions[aid].activity = activity;
                 this.agentPositions[aid].atFarm = atFarm;
-                this.agentPositions[aid].targetX = targetX;
-                this.agentPositions[aid].targetY = targetY;
                 this.agentPositions[aid].job = jobKey;
                 this.agentPositions[aid].gender = gender;
+                // Freeze sleeping NPCs — once at home, stay still
+                const isSleeping = activity === 'sleeping';
+                if (isSleeping && !this.agentPositions[aid].walking) {
+                    // Already at rest position — don't move or update target
+                    this.agentPositions[aid].walkStep = 0;
+                    continue;
+                }
+
+                const pos = this.agentPositions[aid];
+                // Check if NPC is changing to a different location (entering a new building)
+                const prevTarget = { x: pos.targetX, y: pos.targetY };
+                const locationChanged = Math.abs(targetX - prevTarget.x) > TILE * 2 || Math.abs(targetY - prevTarget.y) > TILE * 2;
+
+                if (locationChanged) {
+                    // Get door of destination building
+                    const destDoor = this._getDoorPosition(curLoc, aid);
+                    // Get door of current building (if inside one)
+                    const curBuilding = this._isInsideBuilding(pos.x, pos.y);
+                    const curDoor = curBuilding ? this._getDoorPosition(curBuilding, aid) : null;
+
+                    if (curDoor && destDoor) {
+                        // Inside a building → exit through door first, then walk to destination door
+                        pos.doorPhase = 'exiting';
+                        pos.doorWaypoint = curDoor;
+                        pos.finalTarget = { x: targetX, y: targetY };
+                        pos.destDoor = destDoor;
+                        pos.targetX = curDoor.x;
+                        pos.targetY = curDoor.y;
+                    } else if (destDoor) {
+                        // Outside → walk to destination door first
+                        pos.doorPhase = 'approaching';
+                        pos.doorWaypoint = destDoor;
+                        pos.finalTarget = { x: targetX, y: targetY };
+                        pos.targetX = destDoor.x;
+                        pos.targetY = destDoor.y;
+                    } else {
+                        // Nature zone or no door — walk directly
+                        pos.doorPhase = null;
+                        pos.targetX = targetX;
+                        pos.targetY = targetY;
+                    }
+                } else if (!pos.doorPhase) {
+                    pos.targetX = targetX;
+                    pos.targetY = targetY;
+                }
+
                 // Freeze agents involved in player chat
                 const isChatting = chatTarget && (aid === chatTarget || aid === 'player');
                 // Constant-speed walking
-                const dx = targetX - this.agentPositions[aid].x;
-                const dy = targetY - this.agentPositions[aid].y;
+                const dx = pos.targetX - pos.x;
+                const dy = pos.targetY - pos.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 if (isChatting) {
                     // Stop walking and face each other
-                    this.agentPositions[aid].walking = false;
-                    this.agentPositions[aid].walkStep = 0;
+                    pos.walking = false;
+                    pos.walkStep = 0;
                     if (chatTarget && aid === 'player' && this.agentPositions[chatTarget]) {
-                        this.agentPositions[aid].facing = this.agentPositions[chatTarget].x > this.agentPositions[aid].x ? 1 : -1;
+                        pos.facing = this.agentPositions[chatTarget].x > pos.x ? 1 : -1;
                     } else if (chatTarget && aid === chatTarget && this.agentPositions['player']) {
-                        this.agentPositions[aid].facing = this.agentPositions['player'].x > this.agentPositions[aid].x ? 1 : -1;
+                        pos.facing = this.agentPositions['player'].x > pos.x ? 1 : -1;
                     }
                 } else if (dist > 1) {
                     // Walk toward target at constant speed
                     const step = Math.min(WALK_SPEED, dist);
-                    this.agentPositions[aid].x += (dx / dist) * step;
-                    this.agentPositions[aid].y += (dy / dist) * step;
-                    this.agentPositions[aid].walking = true;
-                    this.agentPositions[aid].walkStep = (this.agentPositions[aid].walkStep || 0) + 1;
+                    pos.x += (dx / dist) * step;
+                    pos.y += (dy / dist) * step;
+                    pos.walking = true;
+                    pos.walkStep = (pos.walkStep || 0) + 1;
                     // Face direction: 1 = right, -1 = left
-                    this.agentPositions[aid].facing = dx > 0 ? 1 : dx < 0 ? -1 : (this.agentPositions[aid].facing || 1);
+                    pos.facing = dx > 0 ? 1 : dx < 0 ? -1 : (pos.facing || 1);
                 } else {
-                    this.agentPositions[aid].x = targetX;
-                    this.agentPositions[aid].y = targetY;
-                    this.agentPositions[aid].walking = false;
-                    this.agentPositions[aid].walkStep = 0;
+                    pos.x = pos.targetX;
+                    pos.y = pos.targetY;
+                    // Handle door waypoint progression
+                    if (pos.doorPhase === 'exiting' && pos.destDoor) {
+                        // Reached exit door → now walk to destination door
+                        pos.doorPhase = 'approaching';
+                        pos.doorWaypoint = pos.destDoor;
+                        pos.targetX = pos.destDoor.x;
+                        pos.targetY = pos.destDoor.y;
+                        pos.destDoor = null;
+                    } else if (pos.doorPhase === 'approaching' && pos.finalTarget) {
+                        // Reached destination door → now walk inside to final position
+                        pos.doorPhase = 'entering';
+                        pos.targetX = pos.finalTarget.x;
+                        pos.targetY = pos.finalTarget.y;
+                        pos.finalTarget = null;
+                        pos.doorWaypoint = null;
+                    } else if (pos.doorPhase === 'entering') {
+                        // Arrived at final position inside building
+                        pos.doorPhase = null;
+                        pos.walking = false;
+                        pos.walkStep = 0;
+                    } else {
+                        pos.walking = false;
+                        pos.walkStep = 0;
+                    }
                 }
             }
         }
