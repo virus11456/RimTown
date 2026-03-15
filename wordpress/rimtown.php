@@ -1238,9 +1238,17 @@ function rimtown_enqueue_assets() {
     );
 
     wp_enqueue_script(
+        'rimtown-i18n',
+        RIMTOWN_URL . 'i18n.js',
+        array(),
+        RIMTOWN_VERSION,
+        true
+    );
+
+    wp_enqueue_script(
         'rimtown-quest',
         RIMTOWN_URL . 'quest-system.js',
-        array(),
+        array('rimtown-i18n'),
         RIMTOWN_VERSION,
         true
     );

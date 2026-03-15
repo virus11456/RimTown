@@ -3,22 +3,22 @@
 // ============================================================
 
 const CROPS = {
-    wheat:        { name:'小麥',     icon:'🌾', seasons:['春季','秋季'], growDays:8,  yield:15, sellPrice:2,  category:'grain',     reqLevel:1 },
-    potato:       { name:'馬鈴薯',   icon:'🥔', seasons:['春季','秋季'], growDays:7,  yield:20, sellPrice:1,  category:'vegetable',  reqLevel:1 },
-    rice:         { name:'稻米',     icon:'🌾', seasons:['夏季'],       growDays:12, yield:20, sellPrice:3,  category:'grain',     reqLevel:2 },
-    corn:         { name:'玉米',     icon:'🌽', seasons:['夏季','秋季'], growDays:10, yield:18, sellPrice:2,  category:'grain',     reqLevel:2 },
-    cotton:       { name:'棉花',     icon:'🌸', seasons:['夏季','秋季'], growDays:10, yield:10, sellPrice:4,  category:'fiber',     reqLevel:2 },
-    flowers:      { name:'花卉',     icon:'🌺', seasons:['春季','夏季'], growDays:5,  yield:12, sellPrice:3,  category:'flower',    reqLevel:2 },
-    herbs:        { name:'草藥',     icon:'🌿', seasons:['春季','夏季'], growDays:6,  yield:8,  sellPrice:5,  category:'herb',      reqLevel:3 },
-    mushroom:     { name:'蘑菇',     icon:'🍄', seasons:['秋季','冬季'], growDays:4,  yield:10, sellPrice:4,  category:'vegetable',  reqLevel:3 },
-    sugarcane:    { name:'甘蔗',     icon:'🎋', seasons:['夏季'],       growDays:12, yield:14, sellPrice:3,  category:'sugar',     reqLevel:3 },
-    tea:          { name:'茶葉',     icon:'🍵', seasons:['春季'],       growDays:10, yield:6,  sellPrice:8,  category:'luxury',    reqLevel:4 },
-    grapes:       { name:'葡萄',     icon:'🍇', seasons:['秋季'],       growDays:14, yield:8,  sellPrice:6,  category:'fruit',     reqLevel:4 },
-    golden_wheat: { name:'金色小麥', icon:'✨', seasons:['秋季'],       growDays:15, yield:10, sellPrice:15, category:'legendary',  reqLevel:5 },
-    dragon_fruit: { name:'火龍果',   icon:'🐉', seasons:['夏季'],       growDays:12, yield:6,  sellPrice:20, category:'legendary',  reqLevel:5 },
+    wheat:        { name:t('小麥'),     icon:'🌾', seasons:['春季','秋季'], growDays:8,  yield:15, sellPrice:2,  category:'grain',     reqLevel:1 },
+    potato:       { name:t('馬鈴薯'),   icon:'🥔', seasons:['春季','秋季'], growDays:7,  yield:20, sellPrice:1,  category:'vegetable',  reqLevel:1 },
+    rice:         { name:t('稻米'),     icon:'🌾', seasons:['夏季'],       growDays:12, yield:20, sellPrice:3,  category:'grain',     reqLevel:2 },
+    corn:         { name:t('玉米'),     icon:'🌽', seasons:['夏季','秋季'], growDays:10, yield:18, sellPrice:2,  category:'grain',     reqLevel:2 },
+    cotton:       { name:t('棉花'),     icon:'🌸', seasons:['夏季','秋季'], growDays:10, yield:10, sellPrice:4,  category:'fiber',     reqLevel:2 },
+    flowers:      { name:t('花卉'),     icon:'🌺', seasons:['春季','夏季'], growDays:5,  yield:12, sellPrice:3,  category:'flower',    reqLevel:2 },
+    herbs:        { name:t('草藥'),     icon:'🌿', seasons:['春季','夏季'], growDays:6,  yield:8,  sellPrice:5,  category:'herb',      reqLevel:3 },
+    mushroom:     { name:t('蘑菇'),     icon:'🍄', seasons:['秋季','冬季'], growDays:4,  yield:10, sellPrice:4,  category:'vegetable',  reqLevel:3 },
+    sugarcane:    { name:t('甘蔗'),     icon:'🎋', seasons:['夏季'],       growDays:12, yield:14, sellPrice:3,  category:'sugar',     reqLevel:3 },
+    tea:          { name:t('茶葉'),     icon:'🍵', seasons:['春季'],       growDays:10, yield:6,  sellPrice:8,  category:'luxury',    reqLevel:4 },
+    grapes:       { name:t('葡萄'),     icon:'🍇', seasons:['秋季'],       growDays:14, yield:8,  sellPrice:6,  category:'fruit',     reqLevel:4 },
+    golden_wheat: { name:t('金色小麥'), icon:'✨', seasons:['秋季'],       growDays:15, yield:10, sellPrice:15, category:'legendary',  reqLevel:5 },
+    dragon_fruit: { name:t('火龍果'),   icon:'🐉', seasons:['夏季'],       growDays:12, yield:6,  sellPrice:20, category:'legendary',  reqLevel:5 },
 };
 
-const QUALITY_NAMES = { normal:'普通', good:'優良', excellent:'極品' };
+const QUALITY_NAMES = { normal:t('普通'), good:t('優良'), excellent:t('極品') };
 const QUALITY_MULT = { normal:1, good:1.5, excellent:2.5 };
 
 class FarmSystem {
@@ -57,28 +57,28 @@ class FarmSystem {
 
     tillPlot(plotId) {
         const plot = this.plots.find(p => p.id === plotId);
-        if (!plot || plot.state !== 'empty') return { ok: false, error: '無法翻土' };
+        if (!plot || plot.state !== 'empty') return { ok: false, error: t('無法翻土') };
         plot.state = 'tilled';
         return { ok: true };
     }
 
     plantCrop(plotId, cropKey, world) {
         const plot = this.plots.find(p => p.id === plotId);
-        if (!plot || plot.state !== 'tilled') return { ok: false, error: '需先翻土' };
+        if (!plot || plot.state !== 'tilled') return { ok: false, error: t('需先翻土') };
         const crop = CROPS[cropKey];
-        if (!crop) return { ok: false, error: '未知作物' };
+        if (!crop) return { ok: false, error: t('未知作物') };
 
         // Check farm level
         const farmInd = world.industry?.industries?.farming;
-        if (!farmInd || crop.reqLevel > farmInd.level) return { ok: false, error: `需要農業 Lv${crop.reqLevel}` };
+        if (!farmInd || crop.reqLevel > farmInd.level) return { ok: false, error: `${t('需要農業')} Lv${crop.reqLevel}` };
 
         // Check season
-        if (!crop.seasons.includes(world.clock.season)) return { ok: false, error: '非當季作物' };
+        if (!crop.seasons.includes(world.clock.season)) return { ok: false, error: t('非當季作物') };
 
         // Seed cost
         const seedCost = crop.sellPrice * 2;
-        if (!world.stockpile.has('silver', seedCost)) return { ok: false, error: `需要 ${seedCost} 銀幣買種子` };
-        world.stockpile.consume('silver', seedCost, world.tickCount, `${crop.name}種子`);
+        if (!world.stockpile.has('silver', seedCost)) return { ok: false, error: `${t('需要')} ${seedCost} ${t('銀幣買種子')}` };
+        world.stockpile.consume('silver', seedCost, world.tickCount, `${crop.name}${t('種子')}`);
 
         plot.state = 'growing';
         plot.crop = cropKey;
@@ -98,19 +98,19 @@ class FarmSystem {
 
     fertilizePlot(plotId, world) {
         const plot = this.plots.find(p => p.id === plotId);
-        if (!plot || plot.state !== 'growing' || plot.fertilized) return { ok: false, error: '無法施肥' };
-        if (!world.stockpile.has('herbs', 2)) return { ok: false, error: '需要 2 草藥' };
-        world.stockpile.consume('herbs', 2, world.tickCount, '製作肥料');
+        if (!plot || plot.state !== 'growing' || plot.fertilized) return { ok: false, error: t('無法施肥') };
+        if (!world.stockpile.has('herbs', 2)) return { ok: false, error: t('需要 2 草藥') };
+        world.stockpile.consume('herbs', 2, world.tickCount, t('製作肥料'));
         plot.fertilized = true;
         return { ok: true };
     }
 
     harvestPlot(plotId, world) {
         const plot = this.plots.find(p => p.id === plotId);
-        if (!plot || plot.state !== 'ready') return { ok: false, error: '未成熟' };
+        if (!plot || plot.state !== 'ready') return { ok: false, error: t('未成熟') };
 
         const crop = CROPS[plot.crop];
-        if (!crop) return { ok: false, error: '作物錯誤' };
+        if (!crop) return { ok: false, error: t('作物錯誤') };
 
         // Calculate quality
         let qualityScore = 0;
@@ -142,7 +142,7 @@ class FarmSystem {
         const resource = ['wheat','rice','corn','potato','cotton','herbs','sugarcane','tea','grapes','flowers','mushroom','golden_wheat','dragon_fruit'].includes(plot.crop)
             ? plot.crop : (resourceMap[crop.category] || 'food');
 
-        world.stockpile.add(resource, amount, world.tickCount, `收穫${crop.name}(${QUALITY_NAMES[quality]})`, 'farm');
+        world.stockpile.add(resource, amount, world.tickCount, `${t('收穫')}${crop.name}(${QUALITY_NAMES[quality]})`, 'farm');
 
         const entry = {
             crop: plot.crop, cropName: crop.name, amount, quality,
@@ -155,7 +155,7 @@ class FarmSystem {
 
         // Notify daily news
         if (world.dailyNews) {
-            world.dailyNews.collectEvent('farm', `收穫了 ${amount} 單位${crop.name}（${QUALITY_NAMES[quality]}品質）！`, 5);
+            world.dailyNews.collectEvent('farm', `${t('收穫了')} ${amount} ${t('單位')}${crop.name}（${QUALITY_NAMES[quality]}${t('品質')}）！`, 5);
         }
 
         // Reset plot
@@ -194,7 +194,7 @@ class FarmSystem {
             // Check season
             if (!crop.seasons.includes(world.clock.season)) {
                 plot.state = 'withered';
-                world.logMessage('farm', `${crop.icon} ${crop.name}因為季節不對而枯萎了！`);
+                world.logMessage('farm', `${crop.icon} ${crop.name}${t('因為季節不對而枯萎了')}！`);
                 continue;
             }
 
@@ -220,7 +220,7 @@ class FarmSystem {
 
             if (plot.growthProgress >= 100) {
                 plot.state = 'ready';
-                world.logMessage('farm', `${crop.icon} ${crop.name}成熟了！可以收穫。`);
+                world.logMessage('farm', `${crop.icon} ${crop.name}${t('成熟了！可以收穫。')}`);
             }
         }
 
@@ -231,7 +231,7 @@ class FarmSystem {
                 if (plot._readyDays > 3) {
                     plot.state = 'withered';
                     const crop = CROPS[plot.crop];
-                    world.logMessage('farm', `${crop?.icon || '🥀'} ${crop?.name || '作物'}因太久沒收穫而枯萎了。`);
+                    world.logMessage('farm', `${crop?.icon || '🥀'} ${crop?.name || t('作物')}${t('因太久沒收穫而枯萎了。')}`);
                 }
             } else {
                 plot._readyDays = 0;

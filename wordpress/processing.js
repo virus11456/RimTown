@@ -4,65 +4,65 @@
 
 const FACTORIES = {
     bakery: {
-        name: '麵包坊', icon: '🍞',
+        name: t('麵包坊'), icon: '🍞',
         cost: { wood:20, stone:15, silver:80 }, buildDays: 5,
         recipes: [
-            { id:'bread',   input:{wheat:5},          output:{bread:8},    time:1, outputPrice:4,  label:'小麥→麵包'   },
-            { id:'pastry',  input:{wheat:3, sugar:2},  output:{pastry:4},   time:2, outputPrice:8,  label:'小麥+糖→糕點' },
+            { id:'bread',   input:{wheat:5},          output:{bread:8},    time:1, outputPrice:4,  label:t('小麥→麵包')   },
+            { id:'pastry',  input:{wheat:3, sugar:2},  output:{pastry:4},   time:2, outputPrice:8,  label:t('小麥+糖→糕點') },
         ],
         workerSlots: 1, preferredJob: 'cook',
     },
     textile_mill: {
-        name: '紡織廠', icon: '🧵',
+        name: t('紡織廠'), icon: '🧵',
         cost: { wood:25, metal:10, silver:100 }, buildDays: 7,
         recipes: [
-            { id:'cloth',    input:{cotton:6},   output:{cloth:10},   time:1, outputPrice:5,  label:'棉花→布料' },
-            { id:'clothing', input:{cloth:4},     output:{clothing:3}, time:2, outputPrice:12, label:'布料→衣服' },
+            { id:'cloth',    input:{cotton:6},   output:{cloth:10},   time:1, outputPrice:5,  label:t('棉花→布料') },
+            { id:'clothing', input:{cloth:4},     output:{clothing:3}, time:2, outputPrice:12, label:t('布料→衣服') },
         ],
         workerSlots: 2, preferredJob: 'tailor',
     },
     brewery: {
-        name: '釀酒廠', icon: '🍺',
+        name: t('釀酒廠'), icon: '🍺',
         cost: { wood:15, metal:5, silver:60 }, buildDays: 4,
         recipes: [
-            { id:'beer', input:{wheat:4},   output:{beer:6}, time:2, outputPrice:5,  label:'小麥→啤酒'   },
-            { id:'wine', input:{grapes:6},  output:{wine:3}, time:4, outputPrice:15, label:'葡萄→葡萄酒' },
+            { id:'beer', input:{wheat:4},   output:{beer:6}, time:2, outputPrice:5,  label:t('小麥→啤酒')   },
+            { id:'wine', input:{grapes:6},  output:{wine:3}, time:4, outputPrice:15, label:t('葡萄→葡萄酒') },
         ],
         workerSlots: 1, preferredJob: 'cook',
     },
     herbal_workshop: {
-        name: '草藥工坊', icon: '⚗️',
+        name: t('草藥工坊'), icon: '⚗️',
         cost: { wood:15, stone:10, silver:70 }, buildDays: 5,
         recipes: [
-            { id:'medicine', input:{herbs:4},            output:{medicine:3}, time:2, outputPrice:14, label:'草藥→藥品' },
-            { id:'perfume',  input:{herbs:2, flowers:3}, output:{perfume:2},  time:3, outputPrice:20, label:'草藥+花→香水' },
+            { id:'medicine', input:{herbs:4},            output:{medicine:3}, time:2, outputPrice:14, label:t('草藥→藥品') },
+            { id:'perfume',  input:{herbs:2, flowers:3}, output:{perfume:2},  time:3, outputPrice:20, label:t('草藥+花→香水') },
         ],
         workerSlots: 1, preferredJob: 'doctor',
     },
     tea_house: {
-        name: '茶坊', icon: '🍵',
+        name: t('茶坊'), icon: '🍵',
         cost: { wood:20, silver:120 }, buildDays: 6,
         recipes: [
-            { id:'fine_tea',   input:{tea:4},          output:{fine_tea:3},   time:2, outputPrice:18, label:'茶葉→精製茶' },
-            { id:'herbal_tea', input:{tea:2, herbs:2}, output:{herbal_tea:4}, time:1, outputPrice:10, label:'茶+草藥→養生茶' },
+            { id:'fine_tea',   input:{tea:4},          output:{fine_tea:3},   time:2, outputPrice:18, label:t('茶葉→精製茶') },
+            { id:'herbal_tea', input:{tea:2, herbs:2}, output:{herbal_tea:4}, time:1, outputPrice:10, label:t('茶+草藥→養生茶') },
         ],
         workerSlots: 1, preferredJob: 'trader',
     },
     sugar_refinery: {
-        name: '製糖廠', icon: '🍬',
+        name: t('製糖廠'), icon: '🍬',
         cost: { wood:15, metal:8, silver:90 }, buildDays: 5,
         recipes: [
-            { id:'sugar', input:{sugarcane:6}, output:{sugar:8}, time:1, outputPrice:5,  label:'甘蔗→糖' },
-            { id:'jam',   input:{sugar:3},     output:{jam:4},   time:2, outputPrice:10, label:'糖→果醬' },
+            { id:'sugar', input:{sugarcane:6}, output:{sugar:8}, time:1, outputPrice:5,  label:t('甘蔗→糖') },
+            { id:'jam',   input:{sugar:3},     output:{jam:4},   time:2, outputPrice:10, label:t('糖→果醬') },
         ],
         workerSlots: 1, preferredJob: 'cook',
     },
     furniture_workshop: {
-        name: '家具工坊', icon: '🪑',
+        name: t('家具工坊'), icon: '🪑',
         cost: { wood:30, metal:10, tools:5, silver:150 }, buildDays: 8,
         recipes: [
-            { id:'furniture',        input:{wood:8},          output:{furniture:4},        time:2, outputPrice:10, label:'木材→家具' },
-            { id:'luxury_furniture', input:{wood:5, cloth:3}, output:{luxury_furniture:2}, time:3, outputPrice:25, label:'木材+布→精裝家具' },
+            { id:'furniture',        input:{wood:8},          output:{furniture:4},        time:2, outputPrice:10, label:t('木材→家具') },
+            { id:'luxury_furniture', input:{wood:5, cloth:3}, output:{luxury_furniture:2}, time:3, outputPrice:25, label:t('木材+布→精裝家具') },
         ],
         workerSlots: 2, preferredJob: 'carpenter',
     },
@@ -86,10 +86,10 @@ class ProcessingSystem {
     }
 
     buildFactory(key, world) {
-        if (this.builtFactories[key]) return { ok: false, error: '已建造' };
+        if (this.builtFactories[key]) return { ok: false, error: t('已建造') };
         const def = FACTORIES[key];
-        if (!def) return { ok: false, error: '未知工廠' };
-        if (!world.stockpile.pay(def.cost, world.tickCount, `建造${def.name}`)) return { ok: false, error: '資源不足' };
+        if (!def) return { ok: false, error: t('未知工廠') };
+        if (!world.stockpile.pay(def.cost, world.tickCount, `${t('建造')}${def.name}`)) return { ok: false, error: t('資源不足') };
 
         this.builtFactories[key] = {
             key, status: 'building',
@@ -97,7 +97,7 @@ class ProcessingSystem {
             recipe: null, productionProgress: 0,
             workers: [], warehouse: {},
         };
-        world.logMessage('factory', `${def.icon} 開始建造${def.name}！`);
+        world.logMessage('factory', `${def.icon} ${t('開始建造')}${def.name}${t('！')}`);
         return { ok: true };
     }
 
@@ -140,7 +140,7 @@ class ProcessingSystem {
         if (take <= 0) return false;
         factory.warehouse[resource] -= take;
         if (factory.warehouse[resource] <= 0) delete factory.warehouse[resource];
-        world.stockpile.add(resource, take, world.tickCount, `${FACTORIES[factoryKey].name}出貨`);
+        world.stockpile.add(resource, take, world.tickCount, `${FACTORIES[factoryKey].name}${t('出貨')}`);
         return true;
     }
 
@@ -164,8 +164,8 @@ class ProcessingSystem {
         factory.warehouse[resource] -= sell;
         if (factory.warehouse[resource] <= 0) delete factory.warehouse[resource];
         const silver = Math.round(sell * price);
-        world.stockpile.add('silver', silver, world.tickCount, `賣出${resource}`, def.name);
-        world.logMessage('factory', `${def.icon} 賣出 ${sell} ${resource}，獲得 ${silver} 銀幣`);
+        world.stockpile.add('silver', silver, world.tickCount, `${t('賣出')}${resource}`, def.name);
+        world.logMessage('factory', `${def.icon} ${t('賣出')} ${sell} ${resource}${t('，獲得')} ${silver} ${t('銀幣')}`);
         return true;
     }
 
@@ -181,9 +181,7 @@ class ProcessingSystem {
                 if (factory.buildProgress >= factory.buildRequired) {
                     factory.status = 'active';
                     const def = FACTORIES[key];
-                    world.logMessage('factory', `${def.icon} ${def.name}建造完成！`);
-                    if (world.dailyNews) {
-                        world.dailyNews.collectEvent('building', `${def.name}建造完成了！`, 7);
+                    world.logMessage('factory', `${def.icon} ${def.name}${t('建造完成！')}`);
                     }
                 }
                 continue;
@@ -227,7 +225,7 @@ class ProcessingSystem {
                 if (!hasAllInputs) continue;
                 // Consume inputs
                 for (const [r, a] of Object.entries(recipe.input)) {
-                    world.stockpile.consume(r, a, world.tickCount, `${def.name}生產`);
+                    world.stockpile.consume(r, a, world.tickCount, `${def.name}${t('生產')}`);
                 }
 
                 // Produce outputs to warehouse
@@ -241,7 +239,7 @@ class ProcessingSystem {
                 if (this.recentOutput.length > 50) this.recentOutput = this.recentOutput.slice(-50);
 
                 if (world.dailyNews) {
-                    world.dailyNews.collectEvent('factory', `${def.name}產出了 ${outputStr}`, 3);
+                    world.dailyNews.collectEvent('factory', `${def.name}${t('產出了')} ${outputStr}`, 3);
                 }
             }
         }
@@ -251,7 +249,7 @@ class ProcessingSystem {
         this._checkOrderExpiry(world);
 
         // Auto-sell at marketplace (if built)
-        const hasMarket = world.buildings.completed.some(b => b.name === '市集');
+        const hasMarket = world.buildings.completed.some(b => b.name === t('市集'));
         if (hasMarket) {
             for (const [key, factory] of Object.entries(this.builtFactories)) {
                 if (factory.status !== 'active') continue;
@@ -286,26 +284,26 @@ class ProcessingSystem {
             reward: Math.round(recipe.outputPrice * amount * priceMult),
             daysLeft: randInt(3, 7),
             factoryKey,
-            description: `需要 ${amount} 個${product}`,
+            description: `${t('需要')} ${amount} ${t('個')}${product}`,
             status: 'active',
         });
-        world.logMessage('order', `📋 新訂單：需要 ${amount} 個${product}！（${Math.round(priceMult * 100)}% 價格）`);
+        world.logMessage('order', `📋 ${t('新訂單')}：${t('需要')} ${amount} ${t('個')}${product}！（${Math.round(priceMult * 100)}% ${t('價格')}）`);
     }
 
     fulfillOrder(orderId, world) {
         const order = this.orders.find(o => o.id === orderId && o.status === 'active');
-        if (!order) return { ok: false, error: '訂單不存在' };
+        if (!order) return { ok: false, error: t('訂單不存在') };
 
         // Check warehouse of relevant factory
         const factory = this.builtFactories[order.factoryKey];
-        if (!factory) return { ok: false, error: '工廠不存在' };
+        if (!factory) return { ok: false, error: t('工廠不存在') };
         const available = factory.warehouse[order.product] || 0;
-        if (available < order.amount) return { ok: false, error: `庫存不足（需要${order.amount}，有${available}）` };
+        if (available < order.amount) return { ok: false, error: `${t('庫存不足')}（${t('需要')}${order.amount}，${t('有')}${available}）` };
 
         factory.warehouse[order.product] -= order.amount;
-        world.stockpile.add('silver', order.reward, world.tickCount, `訂單完成：${order.product}`);
+        world.stockpile.add('silver', order.reward, world.tickCount, `${t('訂單完成')}：${order.product}`);
         order.status = 'completed';
-        world.logMessage('order', `✅ 訂單完成！獲得 ${order.reward} 銀幣`);
+        world.logMessage('order', `✅ ${t('訂單完成')}！${t('獲得')} ${order.reward} ${t('銀幣')}`);
         return { ok: true };
     }
 
@@ -315,7 +313,7 @@ class ProcessingSystem {
             order.daysLeft--;
             if (order.daysLeft <= 0) {
                 order.status = 'expired';
-                world.logMessage('order', `❌ 訂單過期：${order.description}`);
+                world.logMessage('order', `❌ ${t('訂單過期')}：${order.description}`);
             }
         }
         // Clean old orders

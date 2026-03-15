@@ -1860,7 +1860,7 @@ class PixelTileMap {
         ctx.fillStyle = 'rgba(0,0,0,0.75)';
         ctx.fillRect(labelX - 20, labelY - 5, 40, 8);
         ctx.fillStyle = readyCount > 0 ? '#ffd700' : growingCount > 0 ? '#90ee90' : '#b0b0b0';
-        const statusText = readyCount > 0 ? `農場 ${readyCount}塊可收` : growingCount > 0 ? `農場 ${growingCount}塊生長中` : `農場 ${totalPlots}塊`;
+        const statusText = readyCount > 0 ? `${t('農場')} ${readyCount}${t('塊可收')}` : growingCount > 0 ? `${t('農場')} ${growingCount}${t('塊生長中')}` : `${t('農場')} ${totalPlots}${t('塊')}`;
         ctx.fillText(statusText, labelX, labelY);
     }
 
@@ -2482,7 +2482,7 @@ class PixelTileMap {
         }
 
         // Small action label
-        const actionLabels = ['翻土', '翻土', '澆水', '收穫'];
+        const actionLabels = [t('翻土'), t('翻土'), t('澆水'), t('收穫')];
         ctx.font = '5px monospace';
         ctx.textAlign = 'center';
         ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -2842,7 +2842,7 @@ class PixelTileMap {
 
         const TILE = 16;
         const icons = { deep_forest:'🌲', ancient_ruins:'🏛', abandoned_mine:'⛏', mountain_pass:'⛰', riverside_cave:'🕳', cursed_swamp:'🌿' };
-        const names = { deep_forest:'幽深森林', ancient_ruins:'古代遺跡', abandoned_mine:'廢棄礦坑', mountain_pass:'山間隘口', riverside_cave:'河畔洞窟', cursed_swamp:'詛咒沼澤' };
+        const names = { deep_forest:t('幽深森林'), ancient_ruins:t('古代遺跡'), abandoned_mine:t('廢棄礦坑'), mountain_pass:t('山間隘口'), riverside_cave:t('河畔洞窟'), cursed_swamp:t('詛咒沼澤') };
 
         // Place markers at map edges
         const edgePositions = [
@@ -2933,7 +2933,7 @@ class PixelTileMap {
             const labelX = baseX + 25;
             const labelY = baseY - 14;
             ctx.font = 'bold 7px monospace';
-            const text = '墓園';
+            const text = t('墓園');
             const tw = ctx.measureText(text).width;
             ctx.fillStyle = 'rgba(0,0,0,0.6)';
             ctx.fillRect(labelX - tw/2 - 3, labelY - 7, tw + 6, 11);

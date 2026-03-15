@@ -16,7 +16,7 @@ class ProsperityEngine {
             beauty:     { weight: 0.05, value: 0 },  // 美觀：花園、裝飾、花卉種植
         };
         this.prosperity = 0;           // 總繁榮度
-        this.level = '荒涼';            // 繁榮等級名稱
+        this.level = t('荒涼');            // 繁榮等級名稱
         this._lastUpdateDay = -1;
     }
 
@@ -219,11 +219,11 @@ class ProsperityEngine {
     // 繁榮等級
     // ============================================================
     _getLevel() {
-        if (this.prosperity >= 80) return '傳奇';
-        if (this.prosperity >= 60) return '繁榮';
-        if (this.prosperity >= 40) return '發展中';
-        if (this.prosperity >= 20) return '起步';
-        return '荒涼';
+        if (this.prosperity >= 80) return t('傳奇');
+        if (this.prosperity >= 60) return t('繁榮');
+        if (this.prosperity >= 40) return t('發展中');
+        if (this.prosperity >= 20) return t('起步');
+        return t('荒涼');
     }
 
     // ============================================================
@@ -308,7 +308,7 @@ class ProsperityEngine {
             }
         }
         this.prosperity = data.prosperity || 0;
-        this.level = data.level || '荒涼';
+        this.level = data.level || t('荒涼');
         this._lastUpdateDay = data._lastUpdateDay ?? -1;
         this._lastUpdateYear = data._lastUpdateYear ?? undefined;
     }

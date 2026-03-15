@@ -268,19 +268,6 @@ class RimTownApp {
     async init() {
         this.setupEventDelegation();
         await this.loadSettings();
-        // Verify login state with server (fixes mobile cache showing login screen)
-        if (!this.auth.loggedIn && this.auth._restUrl) {
-            try {
-                const me = await this.auth.checkLogin();
-                if (me.logged_in) {
-                    this._dismissLoginScreen();
-                    this._updateAccountButton();
-                    console.log('[RimTown] Session restored from cookie:', this.auth.username);
-                }
-            } catch (e) {
-                console.warn('[RimTown] checkLogin failed:', e);
-            }
-        }
         // Try to load saved game
         const lastTownId = localStorage.getItem('rimtown_last_town');
         let loaded = false;
@@ -335,7 +322,6 @@ class RimTownApp {
         this.setupControlListeners();
         this.setupSettingsListeners();
         this.setupAuthListeners();
-        this.setupLoginScreen();
         this.setupTutorial();
         this._updateAccountButton();
         this._loadAchievementsFromCloud();
@@ -513,155 +499,15 @@ class RimTownApp {
     }
 
     // =====================================================
-    // LOGIN SCREEN — Full-screen login overlay
-    // =====================================================
-    setupLoginScreen() {
-        const screen = document.getElementById('login-screen');
-        if (!screen) return; // Already logged in or no login screen
-
-        const showForm = (formId) => {
-            ['login-form-login', 'login-form-register', 'login-form-forgot'].forEach(id => {
-                document.getElementById(id)?.classList.toggle('hidden', id !== formId);
-            });
-        };
-
-        // Navigation links
-        document.getElementById('login-to-register')?.addEventListener('click', e => { e.preventDefault(); showForm('login-form-register'); });
-        document.getElementById('login-to-forgot')?.addEventListener('click', e => { e.preventDefault(); showForm('login-form-forgot'); });
-        document.getElementById('login-reg-to-login')?.addEventListener('click', e => { e.preventDefault(); showForm('login-form-login'); });
-        document.getElementById('login-reset-to-login')?.addEventListener('click', e => { e.preventDefault(); showForm('login-form-login'); });
-
-        // Guest button — skip login
-        document.getElementById('login-guest-btn')?.addEventListener('click', () => this._dismissLoginScreen());
-
-        // Login
-        const doScreenLogin = async () => {
-            const user = document.getElementById('login-user')?.value?.trim();
-            const pass = document.getElementById('login-pass')?.value;
-            const errEl = document.getElementById('login-error');
-            if (!user || !pass) { if (errEl) errEl.textContent = '請輸入帳號和密碼'; return; }
-            try {
-                if (errEl) errEl.textContent = '登入中...';
-                await this.auth.login(user, pass);
-                this._updateAccountButton();
-                this.world.logMessage('system', `歡迎回來，${this.auth.username}！`);
-                this._syncFromCloud();
-                this._dismissLoginScreen();
-            } catch (e) {
-                if (errEl) errEl.textContent = e.message || '登入失敗';
-            }
-        };
-        document.getElementById('login-submit-btn')?.addEventListener('click', doScreenLogin);
-        document.getElementById('login-pass')?.addEventListener('keydown', e => { if (e.key === 'Enter') doScreenLogin(); });
-
-        // Register
-        const doScreenRegister = async () => {
-            const user = document.getElementById('login-reg-user')?.value?.trim();
-            const email = document.getElementById('login-reg-email')?.value?.trim();
-            const pass = document.getElementById('login-reg-pass')?.value;
-            const pass2 = document.getElementById('login-reg-pass2')?.value;
-            const errEl = document.getElementById('login-reg-error');
-            if (!user || !pass) { if (errEl) errEl.textContent = '請填寫帳號和密碼'; return; }
-            if (pass !== pass2) { if (errEl) errEl.textContent = '兩次密碼不一致'; return; }
-            try {
-                if (errEl) errEl.textContent = '註冊中...';
-                await this.auth.register(user, pass, email);
-                this._updateAccountButton();
-                // New user gets a fresh world
-                const oldTowns = this._getTownList();
-                oldTowns.forEach(t => {
-                    localStorage.removeItem('rimtown_town_' + t.id);
-                    localStorage.removeItem('rimtown_town_' + t.id + '_archives');
-                });
-                localStorage.removeItem('rimtown_town_list');
-                localStorage.removeItem('rimtown_last_town');
-                localStorage.removeItem('rimtown_achievements');
-                localStorage.removeItem('rimtown_raid_count');
-                this.world.reset();
-                if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
-                const townName = `${user}的邊境鎮`;
-                this.currentTownId = this._generateTownId(townName);
-                this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
-                this.state = this.world.getState();
-                this._generateTileMapLayout();
-                if (this.tileMap) this.tileMap.agentPositions = {};
-                this._saveCurrentTown(townName);
-                this.render();
-                this._renderTownList();
-                this.world.logMessage('system', `註冊成功！歡迎，${this.auth.username}！你的全新城鎮已建立。`);
-                this._syncToCloud();
-                this._dismissLoginScreen();
-            } catch (e) {
-                if (errEl) errEl.textContent = e.message || '註冊失敗';
-            }
-        };
-        document.getElementById('login-reg-btn')?.addEventListener('click', doScreenRegister);
-        document.getElementById('login-reg-pass2')?.addEventListener('keydown', e => { if (e.key === 'Enter') doScreenRegister(); });
-
-        // Reset password
-        const doScreenReset = async () => {
-            const user = document.getElementById('login-reset-user')?.value?.trim();
-            const email = document.getElementById('login-reset-email')?.value?.trim();
-            const pass = document.getElementById('login-reset-pass')?.value;
-            const pass2 = document.getElementById('login-reset-pass2')?.value;
-            const errEl = document.getElementById('login-reset-error');
-            const successEl = document.getElementById('login-reset-success');
-            if (errEl) errEl.textContent = '';
-            if (successEl) successEl.textContent = '';
-            if (!user) { if (errEl) errEl.textContent = '請輸入使用者名稱'; return; }
-            if (!email) { if (errEl) errEl.textContent = '請輸入註冊時的電子郵件'; return; }
-            if (!pass || pass.length < 6) { if (errEl) errEl.textContent = '新密碼至少6個字元'; return; }
-            if (pass !== pass2) { if (errEl) errEl.textContent = '兩次密碼不一致'; return; }
-            try {
-                if (errEl) errEl.textContent = '重設中...';
-                const resp = await fetch(`${this.auth._restUrl}/reset-password`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': this.auth._nonce },
-                    body: JSON.stringify({ username: user, email, new_password: pass }),
-                });
-                const data = await resp.json();
-                if (!resp.ok) throw new Error(data.message || '重設失敗');
-                if (errEl) errEl.textContent = '';
-                if (successEl) successEl.textContent = '密碼已重設！請用新密碼登入';
-                setTimeout(() => { showForm('login-form-login'); if (successEl) successEl.textContent = ''; }, 2000);
-            } catch (e) {
-                if (errEl) errEl.textContent = e.message || '重設失敗';
-            }
-        };
-        document.getElementById('login-reset-btn')?.addEventListener('click', doScreenReset);
-        document.getElementById('login-reset-pass2')?.addEventListener('keydown', e => { if (e.key === 'Enter') doScreenReset(); });
-    }
-
-    _dismissLoginScreen() {
-        const screen = document.getElementById('login-screen');
-        if (!screen) return;
-        screen.classList.add('fade-out');
-        setTimeout(() => {
-            screen.remove();
-            // Trigger tutorial after login screen is gone
-            this.setupTutorial();
-        }, 600);
-    }
-
-    // =====================================================
     // TUTORIAL — New player intro & story guide
     // =====================================================
     setupTutorial() {
         const overlay = document.getElementById('tutorial-overlay');
         if (!overlay) return;
-
-        // Check if tutorial already completed
         if (localStorage.getItem('rimtown_tutorial_done')) return;
-
-        // Don't show tutorial if not logged in (login screen is showing)
-        if (document.getElementById('login-screen')) return;
-
-        // Show tutorial
         overlay.classList.remove('hidden');
         this._tutorialStep = 0;
         const totalSteps = 5;
-
-        // Build dots
         const dotsEl = document.getElementById('tutorial-dots');
         if (dotsEl) {
             dotsEl.innerHTML = '';
@@ -671,17 +517,14 @@ class RimTownApp {
                 dotsEl.appendChild(dot);
             }
         }
-
         const showStep = (step) => {
             this._tutorialStep = step;
             overlay.querySelectorAll('.tutorial-step').forEach(s => {
                 s.classList.toggle('hidden', parseInt(s.dataset.step) !== step);
             });
-            // Update dots
             dotsEl?.querySelectorAll('.tutorial-dot').forEach((d, i) => {
                 d.classList.toggle('active', i === step);
             });
-            // Update buttons
             const prevBtn = document.getElementById('tutorial-prev');
             const nextBtn = document.getElementById('tutorial-next');
             if (prevBtn) prevBtn.classList.toggle('hidden', step === 0);
@@ -689,23 +532,14 @@ class RimTownApp {
                 nextBtn.textContent = step === 0 ? '開始旅程' : (step === totalSteps - 1 ? '進入遊戲' : '下一步');
             }
         };
-
         document.getElementById('tutorial-next')?.addEventListener('click', () => {
-            if (this._tutorialStep < totalSteps - 1) {
-                showStep(this._tutorialStep + 1);
-            } else {
-                this._dismissTutorial();
-            }
+            if (this._tutorialStep < totalSteps - 1) showStep(this._tutorialStep + 1);
+            else this._dismissTutorial();
         });
-
         document.getElementById('tutorial-prev')?.addEventListener('click', () => {
             if (this._tutorialStep > 0) showStep(this._tutorialStep - 1);
         });
-
-        document.getElementById('tutorial-skip')?.addEventListener('click', () => {
-            this._dismissTutorial();
-        });
-
+        document.getElementById('tutorial-skip')?.addEventListener('click', () => this._dismissTutorial());
         showStep(0);
     }
 
@@ -723,12 +557,14 @@ class RimTownApp {
     _updateQuestGuidance() {
         const el = document.getElementById('quest-guidance');
         if (!el) return;
+        // Don't show if user explicitly dismissed all guidance
         if (localStorage.getItem('rimtown_guidance_off')) { el.classList.add('hidden'); return; }
 
         const qs = this.world?.questSystem;
         if (!qs) return;
         qs.init();
 
+        // Find current active quest
         const activeQuest = (typeof MAIN_QUESTS !== 'undefined' ? MAIN_QUESTS : []).find(q => qs.quests[q.id]?.status === 'active');
         if (!activeQuest) { el.classList.add('hidden'); return; }
 
@@ -737,7 +573,9 @@ class RimTownApp {
         let title = activeQuest.title;
         let hint = '';
 
+        // Generate contextual hint based on quest and game state
         const chatCount = qs.chatCount || 0;
+        const player = this.world?.agents?.['player'];
 
         if (activeQuest.id === 'ch1_settle') {
             icon = '👋';
@@ -777,14 +615,17 @@ class RimTownApp {
         el.querySelector('.quest-guidance-hint').textContent = hint;
         el.classList.remove('hidden');
 
+        // Wire up dismiss
         const dismissBtn = el.querySelector('.quest-guidance-dismiss');
         if (dismissBtn && !dismissBtn._wired) {
             dismissBtn._wired = true;
             dismissBtn.addEventListener('click', () => {
                 el.classList.add('hidden');
+                // Will re-show on next quest change, not permanently off
                 this._guidanceDismissedQuestId = activeQuest.id;
             });
         }
+        // Don't re-show if user dismissed this specific quest's guidance
         if (this._guidanceDismissedQuestId === activeQuest.id) {
             el.classList.add('hidden');
         }
@@ -959,11 +800,13 @@ class RimTownApp {
     }
 
     _showStoryEventToast(event) {
+        // Reuse achievement toast element with different styling
         const toast = document.getElementById('achievement-toast');
         if (!toast) return;
         toast.innerHTML = `<div class="ach-toast-icon" style="font-size:2rem">${event.icon}</div><div class="ach-toast-info"><div class="ach-toast-title" style="color:var(--accent-light, #80dfff)">【${event.title}】</div><div class="ach-toast-desc" style="font-size:0.78rem;line-height:1.5;max-width:300px">${event.text}</div></div>`;
         toast.classList.remove('hidden');
         toast.classList.add('show');
+        // Story events stay longer (8 seconds) since they have more text
         setTimeout(() => { toast.classList.remove('show'); toast.classList.add('hidden'); }, 8000);
     }
 

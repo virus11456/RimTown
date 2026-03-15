@@ -37,7 +37,7 @@ class GameClock {
     get timeStr() {
         const h = String(this.hour).padStart(2,'0');
         const m = String(this.minute).padStart(2,'0');
-        return `第${this.year}年 ${this.season} 第${this.day}天 ${h}:${m}`;
+        return `${t('第')}${this.year}${t('年 ')}${t(this.season)} ${t('第')}${this.day}${t('天')} ${h}:${m}`;
     }
     get shortTime() {
         return `${String(this.hour).padStart(2,'0')}:${String(this.minute).padStart(2,'0')}`;
@@ -101,16 +101,16 @@ class Memory {
     getImportant(minImp = 7, n = 10) { return this.entries.filter(e => e.importance >= minImp).slice(-n); }
     summarizeRecent(n = 5) {
         const recent = this.getRecent(n);
-        if (!recent.length) return '沒有近期記憶。';
+        if (!recent.length) return t('沒有近期記憶。');
         return recent.map(m => `- [${m.timeStr}] ${m.content}`).join('\n');
     }
     toDict() { return this.entries.slice(-10000).map(e => e.toDict()); }
 }
 
 // --- Relationships ---
-const REL_TYPES = { STRANGER:'陌生人', ACQUAINTANCE:'認識', FRIEND:'朋友',
-    CLOSE_FRIEND:'摯友', RIVAL:'對手', ENEMY:'敵人', CRUSH:'暗戀',
-    DATING:'交往中', MARRIED:'已婚', EX:'前任' };
+const REL_TYPES = { STRANGER:t('陌生人'), ACQUAINTANCE:t('認識'), FRIEND:t('朋友'),
+    CLOSE_FRIEND:t('摯友'), RIVAL:t('對手'), ENEMY:t('敵人'), CRUSH:t('暗戀'),
+    DATING:t('交往中'), MARRIED:t('已婚'), EX:t('前任') };
 
 class Relationship {
     constructor(targetId, targetName) {
@@ -134,7 +134,7 @@ class Relationship {
         return REL_TYPES.ENEMY;
     }
     get statusLabel() {
-        const m = { dating:'交往中', married:'已婚', ex:'前任' };
+        const m = { dating:t('交往中'), married:t('已婚'), ex:t('前任') };
         return this.status ? m[this.status] || '' : '';
     }
     modifyAffinity(d) { this.affinity = Math.max(-100, Math.min(100, this.affinity + d)); }
@@ -176,25 +176,25 @@ class RelationshipManager {
 
 // --- Personality ---
 const TRAIT_POOL = {
-    kind: { social: 2, label: '善良', description: '天生善良且富有同理心' },
-    abrasive: { social: -2, label: '刻薄', description: '容易得罪別人' },
-    shy: { social: -1, label: '害羞', description: '在社交場合感到不自在' },
-    charismatic: { social: 3, label: '魅力', description: '天生具有吸引力' },
-    gossip: { social: 1, label: '八卦', description: '喜歡散播和聽取傳聞' },
-    hardworking: { work: 2, label: '勤勞', description: '在辛勤工作中獲得滿足' },
-    lazy: { work: -2, label: '懶惰', description: '盡可能避免工作' },
-    perfectionist: { work: 1, label: '完美主義', description: '一切都要做到最好' },
-    creative: { work: 1, label: '有創意', description: '思維跳脫框架' },
-    optimist: { mood_base: 10, label: '樂觀', description: '總是看到光明面' },
-    pessimist: { mood_base: -10, label: '悲觀', description: '預期最壞的結果' },
-    neurotic: { mood_sensitivity: 1.5, label: '神經質', description: '情緒波動劇烈' },
-    stoic: { mood_sensitivity: 0.5, label: '沉穩', description: '很少表露情感' },
-    romantic: { romance: 2, label: '浪漫', description: '容易墜入愛河' },
-    jealous: { romance: -1, label: '嫉妒', description: '容易感到嫉妒' },
-    night_owl: { schedule: 'late', label: '夜貓子', description: '偏好晚睡' },
-    early_bird: { schedule: 'early', label: '早起鳥', description: '日出而作' },
-    glutton: { food: 1.5, label: '貪吃', description: '比大多數人更愛吃' },
-    ascetic: { comfort: -1, label: '苦行', description: '偏好簡樸的生活' },
+    kind: { social: 2, label: t('善良'), description: t('天生善良且富有同理心') },
+    abrasive: { social: -2, label: t('刻薄'), description: t('容易得罪別人') },
+    shy: { social: -1, label: t('害羞'), description: t('在社交場合感到不自在') },
+    charismatic: { social: 3, label: t('魅力'), description: t('天生具有吸引力') },
+    gossip: { social: 1, label: t('八卦'), description: t('喜歡散播和聽取傳聞') },
+    hardworking: { work: 2, label: t('勤勞'), description: t('在辛勤工作中獲得滿足') },
+    lazy: { work: -2, label: t('懶惰'), description: t('盡可能避免工作') },
+    perfectionist: { work: 1, label: t('完美主義'), description: t('一切都要做到最好') },
+    creative: { work: 1, label: t('有創意'), description: t('思維跳脫框架') },
+    optimist: { mood_base: 10, label: t('樂觀'), description: t('總是看到光明面') },
+    pessimist: { mood_base: -10, label: t('悲觀'), description: t('預期最壞的結果') },
+    neurotic: { mood_sensitivity: 1.5, label: t('神經質'), description: t('情緒波動劇烈') },
+    stoic: { mood_sensitivity: 0.5, label: t('沉穩'), description: t('很少表露情感') },
+    romantic: { romance: 2, label: t('浪漫'), description: t('容易墜入愛河') },
+    jealous: { romance: -1, label: t('嫉妒'), description: t('容易感到嫉妒') },
+    night_owl: { schedule: 'late', label: t('夜貓子'), description: t('偏好晚睡') },
+    early_bird: { schedule: 'early', label: t('早起鳥'), description: t('日出而作') },
+    glutton: { food: 1.5, label: t('貪吃'), description: t('比大多數人更愛吃') },
+    ascetic: { comfort: -1, label: t('苦行'), description: t('偏好簡樸的生活') },
 };
 const INCOMPATIBLE = [['optimist','pessimist'],['hardworking','lazy'],['shy','charismatic'],['night_owl','early_bird']];
 
@@ -236,7 +236,7 @@ class Personality {
     get socialModifier() { return this.traits.reduce((s,t) => s + (TRAIT_POOL[t]?.social || 0), 0); }
     get workModifier() { return this.traits.reduce((s,t) => s + (TRAIT_POOL[t]?.work || 0), 0); }
     get moodBase() { return this.traits.reduce((s,t) => s + (TRAIT_POOL[t]?.mood_base || 0), 0); }
-    describe() { return this.traits.filter(t => TRAIT_POOL[t]).map(t => `${TRAIT_POOL[t].label}：${TRAIT_POOL[t].description}`).join('；'); }
+    describe() { return this.traits.filter(tr => TRAIT_POOL[tr]).map(tr => `${TRAIT_POOL[tr].label}${t('：')}${TRAIT_POOL[tr].description}`).join(t('；')); }
     toDict() { return { traits:this.traits, background:this.background, values:this.values, description:this.describe() }; }
 }
 
@@ -330,18 +330,18 @@ function generateRandomSkills(jobKey, age = 25, traitList = []) {
 
 // --- Job ---
 const JOB_DEFINITIONS = {
-    farmer:{title:'農夫',category:'production',description:'種植作物與照料田地',workplace:'farm',work_hours:[6,16],daily_output:'食物與農產'},
-    miner:{title:'礦工',category:'production',description:'在礦場開採石頭與礦石',workplace:'quarry',work_hours:[7,16]},
-    cook:{title:'廚師',category:'service',description:'在酒館準備餐食',workplace:'tavern',work_hours:[5,14]},
-    blacksmith:{title:'鐵匠',category:'production',description:'鍛造工具與裝備',workplace:'workshop',work_hours:[8,17]},
-    doctor:{title:'醫生',category:'intellectual',description:'治療傷病患者',workplace:'clinic',work_hours:[8,18]},
-    researcher:{title:'研究員',category:'intellectual',description:'研究與發現新知識',workplace:'library',work_hours:[9,17]},
-    trader:{title:'商人',category:'social',description:'管理雜貨店',workplace:'general_store',work_hours:[8,18]},
-    guard:{title:'守衛',category:'combat',description:'巡邏與保護小鎮',workplace:'guardpost',work_hours:[6,18]},
-    carpenter:{title:'木匠',category:'production',description:'建造與修繕建築',workplace:'workshop',work_hours:[7,16]},
-    tailor:{title:'裁縫',category:'production',description:'製作衣物與紡織品',workplace:'workshop',work_hours:[8,17]},
-    priest:{title:'牧師',category:'social',description:'照顧居民的心靈需求',workplace:'chapel',work_hours:[7,19]},
-    mayor:{title:'鎮長',category:'social',description:'領導小鎮',workplace:'town_hall',work_hours:[9,17]},
+    farmer:{title:t('農夫'),category:'production',description:t('種植作物與照料田地'),workplace:'farm',work_hours:[6,16],daily_output:t('食物與農產')},
+    miner:{title:t('礦工'),category:'production',description:t('在礦場開採石頭與礦石'),workplace:'quarry',work_hours:[7,16]},
+    cook:{title:t('廚師'),category:'service',description:t('在酒館準備餐食'),workplace:'tavern',work_hours:[5,14]},
+    blacksmith:{title:t('鐵匠'),category:'production',description:t('鍛造工具與裝備'),workplace:'workshop',work_hours:[8,17]},
+    doctor:{title:t('醫生'),category:'intellectual',description:t('治療傷病患者'),workplace:'clinic',work_hours:[8,18]},
+    researcher:{title:t('研究員'),category:'intellectual',description:t('研究與發現新知識'),workplace:'library',work_hours:[9,17]},
+    trader:{title:t('商人'),category:'social',description:t('管理雜貨店'),workplace:'general_store',work_hours:[8,18]},
+    guard:{title:t('守衛'),category:'combat',description:t('巡邏與保護小鎮'),workplace:'guardpost',work_hours:[6,18]},
+    carpenter:{title:t('木匠'),category:'production',description:t('建造與修繕建築'),workplace:'workshop',work_hours:[7,16]},
+    tailor:{title:t('裁縫'),category:'production',description:t('製作衣物與紡織品'),workplace:'workshop',work_hours:[8,17]},
+    priest:{title:t('牧師'),category:'social',description:t('照顧居民的心靈需求'),workplace:'chapel',work_hours:[7,19]},
+    mayor:{title:t('鎮長'),category:'social',description:t('領導小鎮'),workplace:'town_hall',work_hours:[9,17]},
 };
 
 class Job {
@@ -378,15 +378,15 @@ class Agent {
         if (this.mood >= 0) return 'stressed'; return 'miserable';
     }
     get moodLabel() {
-        const map = { ecstatic:'欣喜若狂', happy:'快樂', content:'滿足', unhappy:'不開心', stressed:'壓力大', miserable:'痛苦' };
+        const map = { ecstatic:t('欣喜若狂'), happy:t('快樂'), content:t('滿足'), unhappy:t('不開心'), stressed:t('壓力大'), miserable:t('痛苦') };
         return map[this.moodDescription] || this.moodDescription;
     }
     get activityLabel() {
-        const map = { sleeping:'睡覺', eating:'進食', working:'工作', socializing:'社交', wandering:'閒逛', recreation:'娛樂', idle:'閒置', stargazing:'看星星', night_mischief:'搞事', night_stroll:'夜間散步', exploring:'探險中' };
+        const map = { sleeping:t('睡覺'), eating:t('進食'), working:t('工作'), socializing:t('社交'), wandering:t('閒逛'), recreation:t('娛樂'), idle:t('閒置'), stargazing:t('看星星'), night_mischief:t('搞事'), night_stroll:t('夜間散步'), exploring:t('探險中') };
         return map[this.activity] || this.activity;
     }
     get genderLabel() {
-        return this.gender === 'male' ? '男' : this.gender === 'female' ? '女' : '不明';
+        return this.gender === 'male' ? t('男') : this.gender === 'female' ? t('女') : t('不明');
     }
     static guessGender(name) {
         // Common Chinese female name characters
@@ -455,15 +455,15 @@ class Agent {
             if (map) {
                 (map.primary||[]).forEach(n => {
                     if(this.skills.addXp(n, xp*2)) {
-                        world.logMessage('skill_up', `${this.name}的${n}達到等級${this.skills.get(n).level}！`, this.name);
-                        this.currentThought = `${n}技能進步了！`;
+                        world.logMessage('skill_up', `${this.name}${t('的')}${t(n)}${t('達到等級')}${this.skills.get(n).level}${t('！')}`, this.name);
+                        this.currentThought = `${t(n)}${t('技能進步了！')}`;
                     }
                 });
                 (map.secondary||[]).forEach(n => this.skills.addXp(n, xp));
             }
         } else {
             const actMap = ACTIVITY_SKILL_MAP[this.activity] || [];
-            actMap.forEach(n => { if(this.skills.addXp(n, xp)) world.logMessage('skill_up', `${this.name}的${n}達到等級${this.skills.get(n).level}！`, this.name); });
+            actMap.forEach(n => { if(this.skills.addXp(n, xp)) world.logMessage('skill_up', `${this.name}${t('的')}${t(n)}${t('達到等級')}${this.skills.get(n).level}${t('！')}`, this.name); });
         }
     }
     _decideActivity(hour) {
@@ -636,7 +636,7 @@ class Agent {
             const delay = randInt(2, 5);
             this._pendingHangout = { location: spot, activity: hangoutActivity, tick: delay, withAgent: target.name };
             target._pendingHangout = { location: spot, activity: hangoutActivity, tick: delay, withAgent: this.name };
-            const desc = `${this.name}約了${target.name}一起去${spot.replace(/_/g,' ')}`;
+            const desc = `${this.name}${t('約了')}${target.name}${t('一起去')}${spot.replace(/_/g,' ')}`;
             world.logMessage('social', desc, this.name, target.name);
             this.memory.add(world.tickCount, world.clock.timeStr, 'social', desc, 5, [target.name]);
             target.memory.add(world.tickCount, world.clock.timeStr, 'social', desc, 5, [this.name]);
@@ -659,23 +659,23 @@ class Agent {
                 rel.modifyAffinity(Math.round(randInt(1, 4) * starCompat));
                 // Romantic growth only if already have some affinity
                 if (rel.affinity > 20) rel.modifyRomantic(Math.round(randInt(0, 2) * starCompat));
-                rel.addSharedMemory(`一起在${this.currentLocation.replace(/_/g,' ')}看星星`);
+                rel.addSharedMemory(`${t('一起在')}${this.currentLocation.replace(/_/g,' ')}${t('看星星')}`);
                 const otherRel = companion.relationships.getOrCreate(this.agentId, this.name);
                 otherRel.modifyAffinity(Math.round(randInt(1, 4) * starCompat));
                 if (otherRel.affinity > 20) otherRel.modifyRomantic(Math.round(randInt(0, 2) * starCompat));
-                otherRel.addSharedMemory(`一起在${this.currentLocation.replace(/_/g,' ')}看星星`);
-                world.logMessage('social', `${this.name}和${companion.name}一起看星星，感情升溫了。`, this.name, companion.name);
-                this.memory.add(world.tickCount, world.clock.timeStr, 'social', `和${companion.name}一起看星星，很浪漫。`, 7, [companion.name]);
-                companion.memory.add(world.tickCount, world.clock.timeStr, 'social', `和${this.name}一起看星星，很浪漫。`, 7, [this.name]);
+                otherRel.addSharedMemory(`${t('一起在')}${this.currentLocation.replace(/_/g,' ')}${t('看星星')}`);
+                world.logMessage('social', `${this.name}${t('和')}${companion.name}${t('一起看星星，感情升溫了。')}`, this.name, companion.name);
+                this.memory.add(world.tickCount, world.clock.timeStr, 'social', `${t('和')}${companion.name}${t('一起看星星，很浪漫。')}`, 7, [companion.name]);
+                companion.memory.add(world.tickCount, world.clock.timeStr, 'social', `${t('和')}${this.name}${t('一起看星星，很浪漫。')}`, 7, [this.name]);
             }
         }
         // Rare special discovery while stargazing
         if (Math.random() < 0.02) {
             const discoveries = [
-                { text: '看到了一顆流星劃過天際！', mood: 10, topic: '流星' },
-                { text: '發現了一個從未見過的星座圖案。', mood: 5, topic: '神秘星座' },
-                { text: '看到了罕見的月暈現象！', mood: 8, topic: '月暈奇觀' },
-                { text: '在星光下發現了一株發光的植物！', mood: 12, topic: '夜光植物' },
+                { text: t('看到了一顆流星劃過天際！'), mood: 10, topic: t('流星') },
+                { text: t('發現了一個從未見過的星座圖案。'), mood: 5, topic: t('神秘星座') },
+                { text: t('看到了罕見的月暈現象！'), mood: 8, topic: t('月暈奇觀') },
+                { text: t('在星光下發現了一株發光的植物！'), mood: 12, topic: t('夜光植物') },
             ];
             const disc = pickRandom(discoveries);
             this.moodModifier = (this.moodModifier || 0) + disc.mood;
@@ -688,76 +688,76 @@ class Agent {
     _doNightMischief(world) {
         if (Math.random() > 0.08) return; // Low chance per tick
         const mischiefTypes = [
-            { text: '偷偷在鎮公所牆上塗鴉', target: 'town_hall', mood_self: 5, mood_others: -2, severity: 'minor' },
-            { text: '把別人晾的衣服藏起來', target: null, mood_self: 3, mood_others: -3, severity: 'minor' },
-            { text: '偷吃了酒館儲藏室的食物', target: 'tavern', mood_self: 8, mood_others: -2, severity: 'moderate' },
-            { text: '在水井裡放了無害的染料', target: 'well', mood_self: 5, mood_others: -5, severity: 'moderate' },
-            { text: '偷偷移動了路標的方向', target: null, mood_self: 3, mood_others: -2, severity: 'minor' },
-            { text: '在廣場放了一堆假蜘蛛', target: 'town_square', mood_self: 8, mood_others: -4, severity: 'minor' },
+            { text: t('偷偷在鎮公所牆上塗鴉'), target: 'town_hall', mood_self: 5, mood_others: -2, severity: 'minor' },
+            { text: t('把別人晾的衣服藏起來'), target: null, mood_self: 3, mood_others: -3, severity: 'minor' },
+            { text: t('偷吃了酒館儲藏室的食物'), target: 'tavern', mood_self: 8, mood_others: -2, severity: 'moderate' },
+            { text: t('在水井裡放了無害的染料'), target: 'well', mood_self: 5, mood_others: -5, severity: 'moderate' },
+            { text: t('偷偷移動了路標的方向'), target: null, mood_self: 3, mood_others: -2, severity: 'minor' },
+            { text: t('在廣場放了一堆假蜘蛛'), target: 'town_square', mood_self: 8, mood_others: -4, severity: 'minor' },
         ];
         const mischief = pickRandom(mischiefTypes);
         this.moodModifier = (this.moodModifier || 0) + mischief.mood_self;
-        world.logMessage('mischief', `${this.name}趁著夜色${mischief.text}！`, this.name);
-        this.memory.add(world.tickCount, world.clock.timeStr, 'mischief', `我趁夜裡${mischief.text}`, 6, []);
-        this.currentThought = '嘿嘿...成功了。';
-        world.events.conversationTopics.push(`有人在夜裡${mischief.text}`);
+        world.logMessage('mischief', `${this.name}${t('趁著夜色')}${mischief.text}${t('！')}`, this.name);
+        this.memory.add(world.tickCount, world.clock.timeStr, 'mischief', `${t('我趁夜裡')}${mischief.text}`, 6, []);
+        this.currentThought = t('嘿嘿...成功了。');
+        world.events.conversationTopics.push(`${t('有人在夜裡')}${mischief.text}`);
         // Chance to get caught by guards or night owls
         const awakeAgents = Object.values(world.agents).filter(a => a.agentId !== this.agentId && a.activity !== 'sleeping' && !a.isPlayer);
         if (awakeAgents.length && Math.random() < 0.3) {
             const witness = pickRandom(awakeAgents);
             const rel = witness.relationships.getOrCreate(this.agentId, this.name);
             rel.modifyAffinity(-5);
-            world.logMessage('mischief', `${witness.name}撞見了${this.name}的惡作劇！`, witness.name, this.name);
-            witness.memory.add(world.tickCount, world.clock.timeStr, 'witness', `撞見${this.name}在${mischief.text}`, 7, [this.name]);
+            world.logMessage('mischief', `${witness.name}${t('撞見了')}${this.name}${t('的惡作劇！')}`, witness.name, this.name);
+            witness.memory.add(world.tickCount, world.clock.timeStr, 'witness', `${t('撞見')}${this.name}${t('在')}${mischief.text}`, 7, [this.name]);
             this.moodModifier = (this.moodModifier || 0) - 5;
-            this.currentThought = `糟糕，被${witness.name}看到了...`;
+            this.currentThought = `${t('糟糕，被')}${witness.name}${t('看到了...')}`;
         }
     }
     _generateThought(world) {
         const thoughts = [];
         const hour = world.clock.hour;
         const isNight = hour >= 21 || hour < 5;
-        if (this.mood > 60) { thoughts.push('邊境鎮的生活還不錯。', '今天感覺很好！'); }
-        else if (this.mood < 20) { thoughts.push('事情可以更好的...', '我感覺不太好。'); }
-        if (this.needs.hunger < 30) thoughts.push('肚子好餓...');
-        if (this.needs.rest < 30) thoughts.push('好想睡覺...');
-        if (this.needs.social < 30) thoughts.push('應該找人聊聊天...');
+        if (this.mood > 60) { thoughts.push(t('邊境鎮的生活還不錯。'), t('今天感覺很好！')); }
+        else if (this.mood < 20) { thoughts.push(t('事情可以更好的...'), t('我感覺不太好。')); }
+        if (this.needs.hunger < 30) thoughts.push(t('肚子好餓...'));
+        if (this.needs.rest < 30) thoughts.push(t('好想睡覺...'));
+        if (this.needs.social < 30) thoughts.push(t('應該找人聊聊天...'));
         // Night-specific thoughts
         if (this.activity === 'stargazing') {
-            thoughts.push('今晚的星空真美...', '那顆星星特別亮。', '仰望星空讓人感覺渺小...', '流星！快許願！');
-            if (world.clock.season === '冬季') thoughts.push('冬天的星空格外清晰。');
+            thoughts.push(t('今晚的星空真美...'), t('那顆星星特別亮。'), t('仰望星空讓人感覺渺小...'), t('流星！快許願！'));
+            if (world.clock.season === '冬季') thoughts.push(t('冬天的星空格外清晰。'));
         }
         if (this.activity === 'night_stroll') {
-            thoughts.push('夜裡的鎮上好安靜...', '月光下散步真舒服。', '夜風吹來很涼爽。');
-            if (this.mood < 30) thoughts.push('睡不著...出來走走吧。', '夜裡比較容易想事情...');
+            thoughts.push(t('夜裡的鎮上好安靜...'), t('月光下散步真舒服。'), t('夜風吹來很涼爽。'));
+            if (this.mood < 30) thoughts.push(t('睡不著...出來走走吧。'), t('夜裡比較容易想事情...'));
         }
         if (this.activity === 'night_mischief') {
-            thoughts.push('嘿嘿，趁大家都睡了...', '沒人看到的話...', '夜裡做點小惡作劇。');
+            thoughts.push(t('嘿嘿，趁大家都睡了...'), t('沒人看到的話...'), t('夜裡做點小惡作劇。'));
         }
         if (isNight && this.personality.traits.includes('night_owl')) {
-            thoughts.push('夜晚才是我的主場。', '安靜的夜晚最適合思考。');
+            thoughts.push(t('夜晚才是我的主場。'), t('安靜的夜晚最適合思考。'));
         }
         if (isNight && !this.personality.traits.includes('night_owl') && this.activity !== 'sleeping') {
-            thoughts.push('這麼晚了還沒睡...', '明天會很累吧。');
+            thoughts.push(t('這麼晚了還沒睡...'), t('明天會很累吧。'));
         }
         const bf = this.relationships.getBestFriend();
-        if (bf) thoughts.push(`該去找${bf.targetName}敘敘舊了。`);
+        if (bf) thoughts.push(`${t('該去找')}${bf.targetName}${t('敘敘舊了。')}`);
         const rom = this.relationships.getRomanticInterests();
-        if (rom.length) thoughts.push(`一直在想${pickRandom(rom).targetName}...`);
+        if (rom.length) thoughts.push(`${t('一直在想')}${pickRandom(rom).targetName}...`);
         const best = this.skills.bestSkill;
-        if (best.level > 0) thoughts.push(`${best.category}技能進步中...`);
+        if (best.level > 0) thoughts.push(`${t(best.category)}${t('技能進步中...')}`);
         // Economy thoughts
         if (world.stockpile) {
-            if (world.stockpile.get('food') < 30) thoughts.push('食物快不夠了...');
-            if (world.stockpile.get('silver') > 300) thoughts.push('鎮上的國庫很充裕！');
-            if (world.stockpile.get('meals') < 10) thoughts.push('廚師需要多準備一些餐食。');
+            if (world.stockpile.get('food') < 30) thoughts.push(t('食物快不夠了...'));
+            if (world.stockpile.get('silver') > 300) thoughts.push(t('鎮上的國庫很充裕！'));
+            if (world.stockpile.get('meals') < 10) thoughts.push(t('廚師需要多準備一些餐食。'));
         }
-        if (world.buildings?.projects?.length) { const p=world.buildings.projects[0]; thoughts.push(`${p.name}已完成${Math.round(p.workDone/p.workRequired*100)}%！`); }
-        if (world.trade?.merchant) thoughts.push(`去看看${world.trade.merchant.name}在賣什麼吧。`);
+        if (world.buildings?.projects?.length) { const p=world.buildings.projects[0]; thoughts.push(`${p.name}${t('已完成')}${Math.round(p.workDone/p.workRequired*100)}%${t('！')}`); }
+        if (world.trade?.merchant) thoughts.push(`${t('去看看')}${world.trade.merchant.name}${t('在賣什麼吧。')}`);
         if (world.news?.bulletins?.length) {
             const latest = world.news.bulletins[world.news.bulletins.length-1];
-            if (latest.severity === 'danger') thoughts.push(`「${latest.headline}」的消息令人擔憂...`);
-            else if (latest.severity === 'good') thoughts.push(`好消息：${latest.headline}！`);
+            if (latest.severity === 'danger') thoughts.push(`${t('「')}${latest.headline}${t('」的消息令人擔憂...')}`);
+            else if (latest.severity === 'good') thoughts.push(`${t('好消息：')}${latest.headline}${t('！')}`);
         }
         if (thoughts.length) this.currentThought = pickRandom(thoughts);
     }
@@ -777,7 +777,7 @@ class Agent {
 // --- PlayerAgent ---
 class PlayerAgent extends Agent {
     constructor(name = '旅人', age = 25) {
-        super('player', name, age, new Personality(['creative','kind'], '最近抵達邊境鎮的神秘旅人。', ['冒險','友情']), null, 'tavern');
+        super('player', name, age, new Personality(['creative','kind'], t('最近抵達邊境鎮的神秘旅人。'), ['冒險','友情']), null, 'tavern');
         this.isPlayer = true; this.chatHistory = []; this._recentChatTick = 0;
     }
     update(world) {
@@ -828,8 +828,8 @@ class PlayerAgent extends Agent {
     moveTo(locationId, world) {
         if (world.townMap && !world.townMap.locations[locationId]) return false;
         this.currentLocation = locationId; this.activity = 'wandering';
-        const locLabels = {town_hall:'鎮公所',clinic:'診所',workshop:'工坊',farm:'農場',tavern:'酒館',guardpost:'哨站',chapel:'教堂',library:'圖書館',general_store:'雜貨店',quarry:'礦場',town_square:'廣場',park:'公園',well:'水井',residential_north:'北區住宅',residential_south:'南區住宅',residential_east:'東區住宅'};
-        world.logMessage('player_move', `你移動到了${locLabels[locationId] || locationId.replace(/_/g,' ')}`, this.name);
+        const locLabels = {town_hall:t('鎮公所'),clinic:t('診所'),workshop:t('工坊'),farm:t('農場'),tavern:t('酒館'),guardpost:t('哨站'),chapel:t('教堂'),library:t('圖書館'),general_store:t('雜貨店'),quarry:t('礦場'),town_square:t('廣場'),park:t('公園'),well:t('水井'),residential_north:t('北區住宅'),residential_south:t('南區住宅'),residential_east:t('東區住宅')};
+        world.logMessage('player_move', `${t('你移動到了')}${locLabels[locationId] || locationId.replace(/_/g,' ')}`, this.name);
         return true;
     }
     toDict() { const d = super.toDict(); d.is_player = true; d.chat_history = this.chatHistory.slice(-10000); return d; }
@@ -841,22 +841,22 @@ class GossipNetwork {
     createGossip(source, about, world) {
         const rel = source.relationships.getOrCreate(about.agentId, about.name);
         const templates = [];
-        if (rel.romanticInterest > 40) templates.push(`你不覺得${about.name}挺有魅力的嗎？`);
-        if (rel.affinity < -10) templates.push(`說真的，${about.name}最近行為很奇怪。`);
-        if (about.mood < -20) templates.push(`你有注意到${about.name}最近看起來很低落嗎？`);
-        if (about.mood > 50) templates.push(`${about.name}最近心情超好的！`);
+        if (rel.romanticInterest > 40) templates.push(`${t('你不覺得')}${about.name}${t('挺有魅力的嗎？')}`);
+        if (rel.affinity < -10) templates.push(`${t('說真的，')}${about.name}${t('最近行為很奇怪。')}`);
+        if (about.mood < -20) templates.push(`${t('你有注意到')}${about.name}${t('最近看起來很低落嗎？')}`);
+        if (about.mood > 50) templates.push(`${about.name}${t('最近心情超好的！')}`);
         const ri = about.relationships.getRomanticInterests();
-        if (ri.length) templates.push(`聽說${about.name}好像對${pickRandom(ri).targetName}有意思！`);
+        if (ri.length) templates.push(`${t('聽說')}${about.name}${t('好像對')}${pickRandom(ri).targetName}${t('有意思！')}`);
         const partner = about.relationships.getPartner();
         if (partner) {
-            if (partner.status === 'dating') templates.push(`${about.name}和${partner.targetName}在交往呢，你知道嗎？`);
-            if (partner.status === 'married') templates.push(`${about.name}和${partner.targetName}的婚姻生活不知道怎麼樣？`);
-            if (partner.isCheating) templates.push(`我好像看到${about.name}背著${partner.targetName}跟別人在一起⋯⋯`);
+            if (partner.status === 'dating') templates.push(`${about.name}${t('和')}${partner.targetName}${t('在交往呢，你知道嗎？')}`);
+            if (partner.status === 'married') templates.push(`${about.name}${t('和')}${partner.targetName}${t('的婚姻生活不知道怎麼樣？')}`);
+            if (partner.isCheating) templates.push(`${t('我好像看到')}${about.name}${t('背著')}${partner.targetName}${t('跟別人在一起⋯⋯')}`);
         }
         const aboutPartner = about.relationships.getPartner();
         const cheatingRels = Object.values(about.relationships.relationships).filter(r => r.isCheating);
-        if (cheatingRels.length) templates.push(`你聽說了嗎？${about.name}好像在劈腿⋯⋯`);
-        if (!templates.length) templates.push(`你聽說${about.name}昨天在做什麼嗎？`);
+        if (cheatingRels.length) templates.push(`${t('你聽說了嗎？')}${about.name}${t('好像在劈腿⋯⋯')}`);
+        if (!templates.length) templates.push(`${t('你聽說')}${about.name}${t('昨天在做什麼嗎？')}`);
         const content = pickRandom(templates);
         const gossip = { about:about.name, content, source:source.name, spreadCount:0, tickCreated:world.tickCount, isTrue:Math.random()>0.2 };
         this.activeGossip.push(gossip);
@@ -871,8 +871,8 @@ class GossipNetwork {
         const gossip = pickRandom(eligible);
         gossip.spreadCount++;
         listener.memory.add(world.tickCount, world.clock.timeStr, 'social',
-            `${speaker.name}告訴我：「${gossip.content}」`, 4, [speaker.name, gossip.about]);
-        world.logMessage('gossip', `${speaker.name}向${listener.name}八卦了${gossip.about}的事`, speaker.name, listener.name);
+            `${speaker.name}${t('告訴我：「')}${gossip.content}${t('」')}`, 4, [speaker.name, gossip.about]);
+        world.logMessage('gossip', `${speaker.name}${t('向')}${listener.name}${t('八卦了')}${gossip.about}${t('的事')}`, speaker.name, listener.name);
         return gossip;
     }
 }
@@ -890,37 +890,37 @@ class ConversationEngine {
     _buildCharacterProfile(agent) {
         const traitLabels = agent.personality.traits.map(t => TRAIT_POOL[t]?.label || t);
         const partner = agent.relationships.getPartner();
-        let statusStr = '單身';
+        let statusStr = t('單身');
         if (partner) {
-            if (partner.status === 'married') statusStr = `已與${partner.targetName}結婚`;
-            else if (partner.status === 'dating') statusStr = `正在與${partner.targetName}交往`;
+            if (partner.status === 'married') statusStr = `${t('已與')}${partner.targetName}${t('結婚')}`;
+            else if (partner.status === 'dating') statusStr = `${t('正在與')}${partner.targetName}${t('交往')}`;
         }
         const needsStr = [];
-        if (agent.needs.hunger < 30) needsStr.push('肚子很餓');
-        if (agent.needs.rest < 30) needsStr.push('很疲倦');
-        if (agent.needs.social < 30) needsStr.push('渴望社交');
-        if (agent.needs.recreation < 20) needsStr.push('需要娛樂');
+        if (agent.needs.hunger < 30) needsStr.push(t('肚子很餓'));
+        if (agent.needs.rest < 30) needsStr.push(t('很疲倦'));
+        if (agent.needs.social < 30) needsStr.push(t('渴望社交'));
+        if (agent.needs.recreation < 20) needsStr.push(t('需要娛樂'));
         return {
             name: agent.name, age: agent.age,
-            job: agent.job?.title || '無業',
-            traits: traitLabels.join('、'),
-            background: agent.personality.background || '普通居民',
-            values: agent.personality.values.join('、'),
+            job: agent.job?.title || t('無業'),
+            traits: traitLabels.join(t('、')),
+            background: agent.personality.background || t('普通居民'),
+            values: agent.personality.values.join(t('、')),
             mood: agent.moodLabel,
             status: statusStr,
-            needs: needsStr.join('、') || '狀態良好',
+            needs: needsStr.join(t('、')) || t('狀態良好'),
             thought: agent.currentThought || '',
             bestSkill: agent.skills.bestSkill.category,
         };
     }
 
     _buildRelContext(rel, otherName) {
-        let s = `與${otherName}的關係：${rel.type}（好感度${rel.affinity}`;
-        if (rel.romanticInterest > 0) s += `，浪漫${rel.romanticInterest}`;
-        s += `，互動${rel.interactionCount}次）`;
-        if (rel.status) s += `【${rel.statusLabel}】`;
-        if (rel.isCheating) s += '【秘密關係】';
-        if (rel.sharedMemories.length) s += `\n共同回憶：${rel.sharedMemories.slice(-3).join('；')}`;
+        let s = `${t('與')}${otherName}${t('的關係：')}${rel.type}${t('（好感度')}${rel.affinity}`;
+        if (rel.romanticInterest > 0) s += `${t('，浪漫')}${rel.romanticInterest}`;
+        s += `${t('，互動')}${rel.interactionCount}${t('次）')}`;
+        if (rel.status) s += `${t('【')}${rel.statusLabel}${t('】')}`;
+        if (rel.isCheating) s += t('【秘密關係】');
+        if (rel.sharedMemories.length) s += `\n${t('共同回憶：')}${rel.sharedMemories.slice(-3).join(t('；'))}`;
         return s;
     }
 
@@ -928,32 +928,32 @@ class ConversationEngine {
         const parts = [];
         // Prosperity
         if (world.prosperity) {
-            parts.push(`繁榮度：${world.prosperity.prosperity}（${world.prosperity.level}）`);
+            parts.push(`${t('繁榮度：')}${world.prosperity.prosperity}${t('（')}${world.prosperity.level}${t('）')}`);
         }
         // Town level & industries
         if (world.industry) {
-            parts.push(`城鎮等級：${world.industry.townLevelName || '荒村'}`);
+            parts.push(`${t('城鎮等級：')}${world.industry.townLevelName || t('荒村')}`);
             const indNames = Object.keys(world.industry.industries).map(k => {
                 const def = typeof INDUSTRIES !== 'undefined' ? INDUSTRIES[k] : null;
                 const ind = world.industry.industries[k];
                 return def ? `${def.icon}${def.name}Lv${ind.level}` : k;
             });
-            if (indNames.length) parts.push(`產業：${indNames.join('、')}`);
+            if (indNames.length) parts.push(`${t('產業：')}${indNames.join(t('、'))}`);
         }
         // Farm highlights
         if (world.farm && world.farm.plots.length > 0) {
             const growing = world.farm.plots.filter(p => p.state === 'growing').length;
             const ready = world.farm.plots.filter(p => p.state === 'ready').length;
-            if (growing || ready) parts.push(`農場：${growing}塊生長中${ready ? '、'+ready+'塊可收穫' : ''}`);
+            if (growing || ready) parts.push(`${t('農場：')}${growing}${t('塊生長中')}${ready ? t('、')+ready+t('塊可收穫') : ''}`);
             const lastHarvest = world.farm.harvestLog.slice(-1)[0];
-            if (lastHarvest) parts.push(`最近收穫：${lastHarvest.cropName}×${lastHarvest.amount}`);
+            if (lastHarvest) parts.push(`${t('最近收穫：')}${lastHarvest.cropName}×${lastHarvest.amount}`);
         }
         // Factory highlights
         if (world.processing) {
             const active = Object.entries(world.processing.builtFactories)
                 .filter(([, f]) => f.status === 'active')
                 .map(([k]) => { const d = typeof FACTORIES !== 'undefined' ? FACTORIES[k] : null; return d ? `${d.icon}${d.name}` : k; });
-            if (active.length) parts.push(`工廠：${active.join('、')}`);
+            if (active.length) parts.push(`${t('工廠：')}${active.join(t('、'))}`);
         }
         return parts.length ? parts.join('。') : '';
     }
@@ -966,28 +966,28 @@ class ConversationEngine {
         if (questCtx) parts.push(questCtx);
         // Crisis context
         const crisisCtx = world.questSystem.getCrisisContext();
-        if (crisisCtx) parts.push(`【危機】${crisisCtx}`);
+        if (crisisCtx) parts.push(`${t('【危機】')}${crisisCtx}`);
         // NPC-specific quest hints (only if affinity is high enough)
         const affinity = relToPlayer?.affinity || 0;
         const hints = world.questSystem.getQuestHintsForNPC(npc.agentId, affinity);
         if (hints.length > 0) {
-            const hintText = hints.map(h => `關於「${h.questTitle}」，你可以自然地提到：${h.hint}`).join('\n');
-            parts.push(`【你可以給的提示（只在話題相關時自然帶出，不要硬塞）】\n${hintText}`);
+            const hintText = hints.map(h => `${t('關於「')}${h.questTitle}${t('」，你可以自然地提到：')}${h.hint}`).join('\n');
+            parts.push(`${t('【你可以給的提示（只在話題相關時自然帶出，不要硬塞）】')}\n${hintText}`);
         }
         // NPC personal quest hints (個人故事線)
         if (world.npcQuests) {
             const personalHints = world.npcQuests.getPersonalQuestHints(npc.agentId, affinity);
             if (personalHints.length > 0) {
                 const personalText = personalHints.map(h => {
-                    if (h.type === 'active') return `你的心願：${h.hint}`;
-                    if (h.type === 'tease') return `（如果話題相關）${h.hint}`;
-                    return `你聽說：${h.hint}`;
+                    if (h.type === 'active') return `${t('你的心願：')}${h.hint}`;
+                    if (h.type === 'tease') return `${t('（如果話題相關）')}${h.hint}`;
+                    return `${t('你聽說：')}${h.hint}`;
                 }).join('\n');
-                parts.push(`【個人心願】\n${personalText}`);
+                parts.push(`${t('【個人心願】')}\n${personalText}`);
             }
         }
         if (parts.length === 0) return '';
-        return '\n【任務相關】\n' + parts.join('\n') + '\n';
+        return '\n' + t('【任務相關】') + '\n' + parts.join('\n') + '\n';
     }
 
     async generateConversation(agentA, agentB, world) {
@@ -1011,7 +1011,7 @@ class ConversationEngine {
 
     async _llmConversation(agentA, agentB, world, relA, relB) {
         const gossip = world.events.getGossipTopics ? world.events.getGossipTopics() : [];
-        const gossipStr = gossip.slice(-3).join('、') || '沒有特別的事';
+        const gossipStr = gossip.slice(-3).join(t('、')) || t('沒有特別的事');
         const memA = agentA.memory.getAboutAgent(agentB.name, 5);
         const memB = agentB.memory.getAboutAgent(agentA.name, 5);
         const pA = this._buildCharacterProfile(agentA);
@@ -1019,54 +1019,54 @@ class ConversationEngine {
 
         // Pick a random conversation scenario to add variety
         const scenarios = [
-            '兩人剛好在路上遇到，隨意閒聊起來',
-            '一個人正在忙，另一個人過來搭話',
-            '兩人一起吃東西或喝茶時的聊天',
-            '一個人看到另一個人心情不好，主動關心',
-            '分享一個有趣的發現或八卦',
-            '討論最近發生的事情或計劃',
-            '回憶過去的某件事',
-            '為了一件小事開玩笑或互相吐槽',
+            t('兩人剛好在路上遇到，隨意閒聊起來'),
+            t('一個人正在忙，另一個人過來搭話'),
+            t('兩人一起吃東西或喝茶時的聊天'),
+            t('一個人看到另一個人心情不好，主動關心'),
+            t('分享一個有趣的發現或八卦'),
+            t('討論最近發生的事情或計劃'),
+            t('回憶過去的某件事'),
+            t('為了一件小事開玩笑或互相吐槽'),
         ];
         const scenario = pickRandom(scenarios);
 
-        const prompt = `你是一位才華橫溢的小說家，正在為奇幻小鎮「邊境鎮」寫角色對話劇本。
-這是兩位小鎮居民偶然碰面的場景。請寫出生動、自然、有溫度的對話——就像真實的鄰居閒聊一樣。
+        const prompt = `${t('你是一位才華橫溢的小說家，正在為奇幻小鎮「邊境鎮」寫角色對話劇本。')}
+${t('這是兩位小鎮居民偶然碰面的場景。請寫出生動、自然、有溫度的對話——就像真實的鄰居閒聊一樣。')}
 
-【重要規則】
-- 必須使用繁體中文（台灣用語），不可使用簡體中文
-- 絕對不要讓角色報告自己的狀態（不要說「我好餓」「我好累」「我心情不好」這種話）
-- 對話要像真人——談論具體的事、講故事、開玩笑、分享感受、抱怨、八卦
-- 每個人的說話風格要明顯不同（用詞、語氣、句子長短都要有差異）
-- 加入生活細節：提到具體的食物、地點、天氣感受、小鎮裡的人和事
-- 可以有幽默、諷刺、調侃、撒嬌、關心、爭吵等豐富的情感表達
+${t('【重要規則】')}
+${t('- 必須使用繁體中文（台灣用語），不可使用簡體中文')}
+${t('- 絕對不要讓角色報告自己的狀態（不要說「我好餓」「我好累」「我心情不好」這種話）')}
+${t('- 對話要像真人——談論具體的事、講故事、開玩笑、分享感受、抱怨、八卦')}
+${t('- 每個人的說話風格要明顯不同（用詞、語氣、句子長短都要有差異）')}
+${t('- 加入生活細節：提到具體的食物、地點、天氣感受、小鎮裡的人和事')}
+${t('- 可以有幽默、諷刺、調侃、撒嬌、關心、爭吵等豐富的情感表達')}
 
-場景：${scenario}
-時間：${world.clock.timeStr}
-地點：${agentA.currentLocation.replace(/_/g,' ')}
+${t('場景：')}${scenario}
+${t('時間：')}${world.clock.timeStr}
+${t('地點：')}${agentA.currentLocation.replace(/_/g,' ')}
 
-【${pA.name}】${pA.age}歲${pA.job}，性格${pA.traits}，${pA.status}
-${pA.thought ? `最近在想：${pA.thought}` : ''}${pA.needs !== '狀態良好' ? `（有點${pA.needs}）` : ''}
+${t('【')}${pA.name}${t('】')}${pA.age}${t('歲')}${pA.job}${t('，性格')}${pA.traits}${t('，')}${pA.status}
+${pA.thought ? `${t('最近在想：')}${pA.thought}` : ''}${pA.needs !== t('狀態良好') ? `${t('（有點')}${pA.needs}${t('）')}` : ''}
 ${this._buildRelContext(relA, agentB.name)}
-${memA.length ? `記得：${memA.slice(-3).map(m=>m.content).join('；')}` : ''}
+${memA.length ? `${t('記得：')}${memA.slice(-3).map(m=>m.content).join(t('；'))}` : ''}
 
-【${pB.name}】${pB.age}歲${pB.job}，性格${pB.traits}，${pB.status}
-${pB.thought ? `最近在想：${pB.thought}` : ''}${pB.needs !== '狀態良好' ? `（有點${pB.needs}）` : ''}
+${t('【')}${pB.name}${t('】')}${pB.age}${t('歲')}${pB.job}${t('，性格')}${pB.traits}${t('，')}${pB.status}
+${pB.thought ? `${t('最近在想：')}${pB.thought}` : ''}${pB.needs !== t('狀態良好') ? `${t('（有點')}${pB.needs}${t('）')}` : ''}
 ${this._buildRelContext(relB, agentA.name)}
-${memB.length ? `記得：${memB.slice(-3).map(m=>m.content).join('；')}` : ''}
+${memB.length ? `${t('記得：')}${memB.slice(-3).map(m=>m.content).join(t('；'))}` : ''}
 
-小鎮近況：${gossipStr}
+${t('小鎮近況：')}${gossipStr}
 ${this._buildEconomicContext(world)}
 
-請寫4-6句自然對話。範例風格：
-- 好友："欸你昨天有看到老王在河邊釣到一條超大的魚嗎？笑死我了他差點掉下去！"
-- 害羞的人："嗯...那個...你今天做的麵包聞起來好香..."
-- 毒舌的人："又在偷懶？你那個田再不管，雜草都要比你高了。"
-- 情侶："你怎麼又沒穿外套？天都涼了...過來，把這個披上。"
+${t('請寫4-6句自然對話。範例風格：')}
+${t('- 好友："欸你昨天有看到老王在河邊釣到一條超大的魚嗎？笑死我了他差點掉下去！"')}
+${t('- 害羞的人："嗯...那個...你今天做的麵包聞起來好香..."')}
+${t('- 毒舌的人："又在偷懶？你那個田再不管，雜草都要比你高了。"')}
+${t('- 情侶："你怎麼又沒穿外套？天都涼了...過來，把這個披上。"')}
 
-格式：每行「名字: 對話內容」
-最後一行：EFFECTS: {"affinity_change_a": 數字(-3到5), "affinity_change_b": 數字(-3到5), "romantic_change_a": 數字(0到5), "romantic_change_b": 數字(0到5), "summary": "用一句生動的話總結發生了什麼"}
-提示：romantic_change 代表心動程度的變化。只有明確的曖昧、調情、深層情感連結才給 1-2。普通友好聊天應該給 0。大部分對話 romantic_change 應該是 0。`;
+${t('格式：每行「名字: 對話內容」')}
+${t('最後一行：')}EFFECTS: {"affinity_change_a": ${t('數字')}(-3${t('到')}5), "affinity_change_b": ${t('數字')}(-3${t('到')}5), "romantic_change_a": ${t('數字')}(0${t('到')}5), "romantic_change_b": ${t('數字')}(0${t('到')}5), "summary": "${t('用一句生動的話總結發生了什麼')}"}
+${t('提示：romantic_change 代表心動程度的變化。只有明確的曖昧、調情、深層情感連結才給 1-2。普通友好聊天應該給 0。大部分對話 romantic_change 應該是 0。')}`;
 
         const response = await this.llm.generate(prompt, 800);
         return this._parseConversation(response, agentA, agentB, world, relA, relB);
@@ -1099,11 +1099,11 @@ ${this._buildEconomicContext(world)}
         // Default romantic growth: only grow on strongly positive conversations
         const romA = effects.romantic_change_a ?? (affA >= 3 ? randInt(0,1) : 0);
         const romB = effects.romantic_change_b ?? (affB >= 3 ? randInt(0,1) : 0);
-        const summary = effects.summary || `${agentA.name}和${agentB.name}聊了天。`;
+        const summary = effects.summary || `${agentA.name}${t('和')}${agentB.name}${t('聊了天。')}`;
         relA.modifyAffinity(affA); relA.modifyRomantic(romA); relA.recordInteraction(world.tickCount, summary);
         relB.modifyAffinity(affB); relB.modifyRomantic(romB); relB.recordInteraction(world.tickCount, summary);
-        agentA.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `與${agentB.name}交談：${summary}`, Math.min(8,4+Math.abs(affA)), [agentB.name]);
-        agentB.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `與${agentA.name}交談：${summary}`, Math.min(8,4+Math.abs(affB)), [agentA.name]);
+        agentA.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('與')}${agentB.name}${t('交談：')}${summary}`, Math.min(8,4+Math.abs(affA)), [agentB.name]);
+        agentB.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('與')}${agentA.name}${t('交談：')}${summary}`, Math.min(8,4+Math.abs(affB)), [agentA.name]);
         world.logMessage('conversation', summary, agentA.name, agentB.name);
         // Collect notable conversations for daily news
         if (world.dailyNews && (Math.abs(affA) >= 4 || Math.abs(affB) >= 4 || romA >= 2 || romB >= 2)) {
@@ -1132,11 +1132,11 @@ ${this._buildEconomicContext(world)}
         if (affB > 0) affB = Math.round(affB * compatFb);
         const romA = dialogue._romA ?? 0;
         const romB = dialogue._romB ?? 0;
-        const summary = dialogue._summary || `${agentA.name}和${agentB.name}聊了天。`;
+        const summary = dialogue._summary || `${agentA.name}${t('和')}${agentB.name}${t('聊了天。')}`;
         relA.modifyAffinity(affA); relA.modifyRomantic(romA); relA.recordInteraction(world.tickCount, summary);
         relB.modifyAffinity(affB); relB.modifyRomantic(romB); relB.recordInteraction(world.tickCount, summary);
-        agentA.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `與${agentB.name}交談：${summary}`, Math.min(6,3+Math.abs(affA)), [agentB.name]);
-        agentB.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `與${agentA.name}交談：${summary}`, Math.min(6,3+Math.abs(affB)), [agentA.name]);
+        agentA.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('與')}${agentB.name}${t('交談：')}${summary}`, Math.min(6,3+Math.abs(affA)), [agentB.name]);
+        agentB.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('與')}${agentA.name}${t('交談：')}${summary}`, Math.min(6,3+Math.abs(affB)), [agentA.name]);
         world.logMessage('conversation', summary, agentA.name, agentB.name);
         if (world.dailyNews && (Math.abs(affA) >= 4 || Math.abs(affB) >= 4)) {
             world.dailyNews.collectEvent('social', summary, 4, [agentA.name, agentB.name]);
@@ -1157,8 +1157,8 @@ ${this._buildEconomicContext(world)}
     _generatePersonalityDialogue(agentA, agentB, world, relA, relB) {
         const tA = agentA.personality.traits;
         const tB = agentB.personality.traits;
-        const jobA = agentA.job?.title || '無業';
-        const jobB = agentB.job?.title || '無業';
+        const jobA = agentA.job?.title || t('無業');
+        const jobB = agentB.job?.title || t('無業');
         const loc = agentA.currentLocation.replace(/_/g,' ');
         const timeOfDay = world.clock.timeOfDay;
         const season = world.clock.season;
@@ -1167,10 +1167,10 @@ ${this._buildEconomicContext(world)}
         let summary = '';
 
         // --- Rich detail pools for vivid dialogue ---
-        const foods = { '春季':['野菜煎餅','花瓣蜜茶','春筍燉肉','桂花糕','薺菜餛飩'], '夏季':['冰鎮酸梅湯','西瓜','涼拌黃瓜','綠豆湯','荷葉飯'], '秋季':['烤地瓜','桂花釀','栗子燒雞','蘋果派','南瓜濃湯'], '冬季':['薑母茶','熱騰騰的羊肉鍋','烤紅薯','熱奶酒','麻辣火鍋'] };
-        const scenery = { '春季':['櫻花飄落的小徑','河邊盛開的野花','清晨帶著露水的草地'], '夏季':['星空下的河流','螢火蟲飛舞的夜晚','午後蟬鳴的樹蔭下'], '秋季':['金黃落葉鋪滿的石板路','楓紅染遍山頭的景色','豐收後堆滿穀物的倉庫'], '冬季':['白雪覆蓋的屋頂','壁爐旁搖曳的火光','冬夜裡遠處傳來的狼嚎'] };
-        const gifts = ['一束剛採的野花','自己做的手工餅乾','一瓶私藏的好酒','昨天釣到的魚做成的魚乾','一條手織的圍巾','用漂亮石頭做的小飾品'];
-        const rumors = [`聽說${pickRandom(['雜貨店','酒館','鎮公所'])}昨晚有人看到奇怪的光`,`據說最近森林裡出現了${pickRandom(['罕見的白鹿','神秘的遺跡','一群外來的旅人'])}`,`有人說${pickRandom(['河邊','山洞','舊礦坑'])}藏著寶藏`,`聽說隔壁的商隊帶來了${pickRandom(['稀有香料','遠方的書信','神秘的藥草'])}`];
+        const foods = { '春季':[t('野菜煎餅'),t('花瓣蜜茶'),t('春筍燉肉'),t('桂花糕'),t('薺菜餛飩')], '夏季':[t('冰鎮酸梅湯'),t('西瓜'),t('涼拌黃瓜'),t('綠豆湯'),t('荷葉飯')], '秋季':[t('烤地瓜'),t('桂花釀'),t('栗子燒雞'),t('蘋果派'),t('南瓜濃湯')], '冬季':[t('薑母茶'),t('熱騰騰的羊肉鍋'),t('烤紅薯'),t('熱奶酒'),t('麻辣火鍋')] };
+        const scenery = { '春季':[t('櫻花飄落的小徑'),t('河邊盛開的野花'),t('清晨帶著露水的草地')], '夏季':[t('星空下的河流'),t('螢火蟲飛舞的夜晚'),t('午後蟬鳴的樹蔭下')], '秋季':[t('金黃落葉鋪滿的石板路'),t('楓紅染遍山頭的景色'),t('豐收後堆滿穀物的倉庫')], '冬季':[t('白雪覆蓋的屋頂'),t('壁爐旁搖曳的火光'),t('冬夜裡遠處傳來的狼嚎')] };
+        const gifts = [t('一束剛採的野花'),t('自己做的手工餅乾'),t('一瓶私藏的好酒'),t('昨天釣到的魚做成的魚乾'),t('一條手織的圍巾'),t('用漂亮石頭做的小飾品')];
+        const rumors = [`${t('聽說')}${pickRandom([t('雜貨店'),t('酒館'),t('鎮公所')])}${t('昨晚有人看到奇怪的光')}`,`${t('據說最近森林裡出現了')}${pickRandom([t('罕見的白鹿'),t('神秘的遺跡'),t('一群外來的旅人')])}`,`${t('有人說')}${pickRandom([t('河邊'),t('山洞'),t('舊礦坑')])}${t('藏著寶藏')}`,`${t('聽說隔壁的商隊帶來了')}${pickRandom([t('稀有香料'),t('遠方的書信'),t('神秘的藥草')])}`];
         const food = pickRandom(foods[season] || foods['春季']);
         const scene = pickRandom(scenery[season] || scenery['春季']);
 
@@ -1186,13 +1186,13 @@ ${this._buildEconomicContext(world)}
         if (isCouple) {
             const coupleTopics = [
                 () => {
-                    lines.push({speaker:agentA.name, text:`你今天做的${food}真的太好吃了，我到現在嘴裡還有那個味道！`});
-                    lines.push({speaker:agentB.name, text:tB.includes('shy')?`真...真的嗎？其實我怕做得不夠好，特地多加了點${pickRandom(['蜂蜜','香料','秘方'])}...`:`那當然！這可是我花了一整個下午的心血，為了某個人。`});
-                    lines.push({speaker:agentA.name, text:`下次讓我也給你做一頓，雖然我的手藝可能會讓你後悔...`});
-                    lines.push({speaker:agentB.name, text:tB.includes('romantic')?`你做什麼我都喜歡，因為是你做的。`:`哈哈，那我先準備好腸胃藥！`});
-                    lines.push({speaker:agentA.name, text:`你！過分！...不過我真的很幸福。`});
+                    lines.push({speaker:agentA.name, text:`${t('你今天做的')}${food}${t('真的太好吃了，我到現在嘴裡還有那個味道！')}`});
+                    lines.push({speaker:agentB.name, text:tB.includes('shy')?`${t('真...真的嗎？其實我怕做得不夠好，特地多加了點')}${pickRandom([t('蜂蜜'),t('香料'),t('秘方')])}...`:`${t('那當然！這可是我花了一整個下午的心血，為了某個人。')}`});
+                    lines.push({speaker:agentA.name, text:t('下次讓我也給你做一頓，雖然我的手藝可能會讓你後悔...')});
+                    lines.push({speaker:agentB.name, text:tB.includes('romantic')?t('你做什麼我都喜歡，因為是你做的。'):t('哈哈，那我先準備好腸胃藥！')});
+                    lines.push({speaker:agentA.name, text:t('你！過分！...不過我真的很幸福。')});
                     affA = randInt(3,6); affB = randInt(3,6); romA = randInt(2,4); romB = randInt(2,4);
-                    summary = `${loc}裡，${agentA.name}讚美了${agentB.name}親手做的${food}，兩人甜蜜地打鬧著，笑聲讓路過的人都忍不住微笑。`;
+                    summary = `${loc}${t('裡，')}${agentA.name}${t('讚美了')}${agentB.name}${t('親手做的')}${food}${t('，兩人甜蜜地打鬧著，笑聲讓路過的人都忍不住微笑。')}`;
                 },
                 () => {
                     const jealousA = tA.includes('jealous');
@@ -1200,13 +1200,13 @@ ${this._buildEconomicContext(world)}
                     if (jealousA || jealousB) {
                         const j = jealousA ? agentA : agentB;
                         const o = jealousA ? agentB : agentA;
-                        lines.push({speaker:j.name, text:`我剛剛看到你跟那個人聊了好久，你們在說什麼悄悄話？`});
-                        lines.push({speaker:o.name, text:`就是在討論${pickRandom(['工作的事','鎮上活動','建材價格'])}啊，你又胡思亂想了。`});
-                        lines.push({speaker:j.name, text:`...你笑得那麼開心，我在旁邊看著心裡很不是滋味。`});
-                        lines.push({speaker:o.name, text:o.personality.traits.includes('kind')?`傻瓜，我心裡只有你一個人啊。來，把手給我。`:`你能不能信任我一點？每次都這樣我也很累的。`});
-                        lines.push({speaker:j.name, text:`...對不起。我就是太害怕失去你了。`});
+                        lines.push({speaker:j.name, text:t('我剛剛看到你跟那個人聊了好久，你們在說什麼悄悄話？')});
+                        lines.push({speaker:o.name, text:`${t('就是在討論')}${pickRandom([t('工作的事'),t('鎮上活動'),t('建材價格')])}${t('啊，你又胡思亂想了。')}`});
+                        lines.push({speaker:j.name, text:t('...你笑得那麼開心，我在旁邊看著心裡很不是滋味。')});
+                        lines.push({speaker:o.name, text:o.personality.traits.includes('kind')?t('傻瓜，我心裡只有你一個人啊。來，把手給我。'):t('你能不能信任我一點？每次都這樣我也很累的。')});
+                        lines.push({speaker:j.name, text:t('...對不起。我就是太害怕失去你了。')});
                         affA = randInt(-1,2); affB = randInt(-1,2); romA = randInt(0,1); romB = randInt(0,1);
-                        summary = `${j.name}因為看到${o.name}和別人說笑而醋意大發，兩人經歷了一場小風波，最終在${loc}和好。`;
+                        summary = `${j.name}${t('因為看到')}${o.name}${t('和別人說笑而醋意大發，兩人經歷了一場小風波，最終在')}${loc}${t('和好。')}`;
                     } else {
                         lines.push({speaker:agentA.name, text:`${season}的夜晚真美...你看那邊，${scene}。要不要一起去走走？`});
                         lines.push({speaker:agentB.name, text:tB.includes('shy')?`好...牽著我的手好嗎？`:`走啊！我還想帶你去看一個秘密地點，保證你沒去過！`});
