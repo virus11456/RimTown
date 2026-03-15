@@ -2693,6 +2693,9 @@ class RimTownApp {
         if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT')) {
             return; // preserve input focus
         }
+        // Skip settings tab re-render during simulation ticks to prevent
+        // unsaved form data (API keys etc.) from being wiped by innerHTML replacement
+        if (this.activeTab === 'settings') return;
         this.renderSidebar();
     }
 
@@ -4981,7 +4984,7 @@ class RimTownApp {
 
     _escapeHtml(str) {
         if (!str) return '';
-        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 }
 
