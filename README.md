@@ -28,10 +28,17 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 - **AI Daily Newspaper**: LLM-generated town newspaper with NPC reporter personality, gossip, and event coverage (v3)
 - **NPC Relationship Events**: Fights, hospitalizations, sabotage, cheating scandals with town-wide consequences (v3)
 - **Town Level System**: 7 town levels from hamlet to city, unlocking industry slots as you grow (v3)
+- **Daily Decision System**: Daily choice cards that let you make meaningful decisions affecting the whole town (v4)
+- **Shop System**: Buy and sell resources at the general store (v4)
+- **Event Choice System**: Choose how to respond to major events (raids, disasters, etc.) (v4)
+- **NPC Help Requests**: NPCs ask for your help with their problems — your choices affect relationships (v4)
+- **Job Action Buttons**: Manually perform your job (farm, forge, heal, etc.) for resources and skill XP (v4)
+- **Interactive Newspaper**: React to daily news with investigate/support/ignore actions (v4)
+- **Improved Mood System**: Gentler nighttime need decay, graduated mood penalties (v4)
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v3.7.1.zip` from Releases
+1. Download `rimtown-v4.0.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -46,6 +53,23 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v4.0.0 (2026-03-16)
+
+**大型改版：玩家互動系統全面升級**
+
+核心改動：
+- **每日決策卡片**：每天生成一個需要玩家做出選擇的決策（水源爭議、旅人求助、慶典籌備等12種），選擇影響資源、NPC心情和關係
+- **商店系統**：在經濟頁新增商店子頁籤，可用銀幣買賣14種物資（食物、工具、藥品、奢侈品等）
+- **事件選擇分支**：中/大型事件（入侵、災難等）不再自動結算，玩家可選擇應對方式（防禦/談判/疏散等）
+- **NPC 求助通知**：NPC 每隔幾天會因為低心情、飢餓、衝突、過勞等問題向玩家求助，玩家選擇影響好感度
+- **職業動作按鈕**：玩家可手動執行職業動作（農夫澆水、鐵匠鍛造、醫師看診等），獲得資源和技能經驗
+- **每日報紙互動化**：閱讀 AI 日報後可選擇「調查/支持/忽略」，影響全鎮心情
+- **任務刷新按鈕**：任務頁新增手動刷新進度按鈕
+
+修復：
+- **Mood 算法大幅改善**：深夜需求衰減速率降低60%，飢餓/疲勞的心情懲罰改為漸進式（不再全鎮同時崩潰）
+- 夜間飢餓衰減速率從2降至1.2，休息衰減速率從1.5降至0.6
 
 ### v3.7.1 (2026-03-16)
 

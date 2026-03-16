@@ -53,18 +53,33 @@ class Needs {
     constructor() {
         this.hunger = 70; this.rest = 80; this.social = 60; this.comfort = 60; this.recreation = 50; this.beauty = 50;
     }
-    tickDecay(isSleeping, isEating, isSocializing, isRecreating) {
-        this.hunger = isEating ? Math.min(100, this.hunger + 20) : Math.max(0, this.hunger - 2);
-        this.rest = isSleeping ? Math.min(100, this.rest + 8) : Math.max(0, this.rest - 1.5);
+    tickDecay(isSleeping, isEating, isSocializing, isRecreating, hour) {
+        // v4.0: Night-aware decay — rest decays slower at night (NPC should be sleeping)
+        const isNightTime = hour !== undefined ? (hour >= 21 || hour < 6) : false;
+        const restDecay = isNightTime ? 0.6 : 1.5; // 60% slower rest decay at night
+        const hungerDecay = isNightTime ? 1.2 : 2;  // Slower hunger decay at night too
+
+        this.hunger = isEating ? Math.min(100, this.hunger + 20) : Math.max(0, this.hunger - hungerDecay);
+        this.rest = isSleeping ? Math.min(100, this.rest + 8) : Math.max(0, this.rest - restDecay);
         this.social = isSocializing ? Math.min(100, this.social + 10) : Math.max(0, this.social - 1);
         this.recreation = isRecreating ? Math.min(100, this.recreation + 15) : Math.max(0, this.recreation - 0.8);
     }
     get moodContribution() {
         let s = 0;
-        if (this.hunger < 20) s -= 15; else if (this.hunger > 80) s += 5;
-        if (this.rest < 20) s -= 20; else if (this.rest > 80) s += 5;
-        if (this.social < 20) s -= 10; else if (this.social > 70) s += 5;
-        if (this.recreation < 15) s -= 8; else if (this.recreation > 70) s += 3;
+        // v4.0: Gentler mood penalties with graduated thresholds
+        if (this.hunger < 10) s -= 15;       // Only severe penalty at very low hunger
+        else if (this.hunger < 25) s -= 8;   // Moderate penalty
+        else if (this.hunger > 80) s += 5;
+
+        if (this.rest < 10) s -= 18;         // Severe only when extremely tired
+        else if (this.rest < 25) s -= 8;     // Moderate penalty
+        else if (this.rest > 80) s += 5;
+
+        if (this.social < 15) s -= 8;
+        else if (this.social > 70) s += 5;
+
+        if (this.recreation < 10) s -= 6;
+        else if (this.recreation > 70) s += 3;
         return s;
     }
     get mostUrgent() {
@@ -409,7 +424,7 @@ class Agent {
     update(world) {
         const prevActivity = this.activity;
         this._decideActivity(world.clock.hour);
-        this.needs.tickDecay(this.activity==='sleeping', this.activity==='eating', this.activity==='socializing', this.activity==='recreation');
+        this.needs.tickDecay(this.activity==='sleeping', this.activity==='eating', this.activity==='socializing', this.activity==='recreation', world.clock.hour);
         // Decay moodModifier toward 0
         if (this.moodModifier > 0) this.moodModifier = Math.max(0, this.moodModifier - 0.5);
         else if (this.moodModifier < 0) this.moodModifier = Math.min(0, this.moodModifier + 0.5);
@@ -859,7 +874,7 @@ class PlayerAgent extends Agent {
     update(world) {
         // Auto-manage player activity based on needs and context
         this._autoManageActivity(world);
-        this.needs.tickDecay(this.activity==='sleeping', this.activity==='eating', this.activity==='socializing', this.activity==='recreation');
+        this.needs.tickDecay(this.activity==='sleeping', this.activity==='eating', this.activity==='socializing', this.activity==='recreation', world.clock.hour);
         // Passive recovery: location-based need bonuses
         if (this.currentLocation === 'tavern') this.needs.hunger = Math.min(100, this.needs.hunger + 0.5);
         if (['residential_north','residential_south','residential_east'].includes(this.currentLocation)) this.needs.rest = Math.min(100, this.needs.rest + 0.3);
@@ -4525,6 +4540,11 @@ class World {
         this.npcQuests = typeof NPCQuestSystem !== 'undefined' ? new NPCQuestSystem() : null;
         this.customNPC = typeof CustomNPCSystem !== 'undefined' ? new CustomNPCSystem() : null;
         this.multiEnding = typeof MultiEndingSystem !== 'undefined' ? new MultiEndingSystem() : null;
+        // v4.0 systems
+        this.dailyDecision = new DailyDecisionSystem();
+        this.shop = new ShopSystem();
+        this.eventChoice = new EventChoiceSystem();
+        this.npcHelp = new NPCHelpSystem();
     }
     addAgent(agent) { this.agents[agent.agentId] = agent; }
     removeAgent(id) { delete this.agents[id]; }
@@ -4543,7 +4563,12 @@ class World {
             const event = this.events.dailyUpdate(this);
             if (event) {
                 this.logMessage('event', `[${event.severity.toUpperCase()}] ${event.name}: ${event.description}`);
-                if (event.effects.mood_all != null) {
+                // v4.0: Offer player a choice for significant events
+                if (event.severity !== 'minor' && this.eventChoice) {
+                    this.eventChoice.offerChoice(event, this);
+                }
+                // Only auto-apply mood if no choice was offered
+                if (!this.eventChoice?.pendingEvent && event.effects.mood_all != null) {
                     Object.values(this.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + event.effects.mood_all; });
                 }
                 if (this.dailyNews) this.dailyNews.collectEvent('event', `${event.name}${t('：')}${event.description}`, event.severity === 'critical' ? 10 : event.severity === 'major' ? 8 : 5);
@@ -4578,6 +4603,9 @@ class World {
             if (this.prosperity) this.prosperity.dailyUpdate(this);
             if (this.npcQuests) this.npcQuests.dailyUpdate(this);
             if (this.questSystem) this.questSystem.checkProgress(this);
+            // v4.0 systems
+            this.dailyDecision.dailyUpdate(this);
+            this.npcHelp.dailyUpdate(this);
             // AI Daily News (async, fire-and-forget)
             this.dailyNews.generateNewspaper(this).catch(e => console.warn('[DailyNews] Error:', e));
         }
@@ -4619,6 +4647,11 @@ class World {
             npcQuests: this.npcQuests ? this.npcQuests.toDict() : null,
             customNPC: this.customNPC ? this.customNPC.toDict() : null,
             multiEnding: this.multiEnding ? this.multiEnding.toDict() : null,
+            // v4.0
+            dailyDecision: this.dailyDecision.toDict(),
+            shop: this.shop.toDict(),
+            eventChoice: this.eventChoice.toDict(),
+            npcHelp: this.npcHelp.toDict(),
         };
     }
     reset(seed = null) {
@@ -4645,6 +4678,11 @@ class World {
         this.npcQuests = typeof NPCQuestSystem !== 'undefined' ? new NPCQuestSystem() : null;
         this.customNPC = typeof CustomNPCSystem !== 'undefined' ? new CustomNPCSystem() : null;
         this.multiEnding = typeof MultiEndingSystem !== 'undefined' ? new MultiEndingSystem() : null;
+        // v4.0 systems
+        this.dailyDecision = new DailyDecisionSystem();
+        this.shop = new ShopSystem();
+        this.eventChoice = new EventChoiceSystem();
+        this.npcHelp = new NPCHelpSystem();
         this.conversationEngine = new ConversationEngine(this.conversationEngine?.llm);
         this.townMap = generateRandomTown(seed);
         this._loadDefaultResidents();
@@ -4931,6 +4969,11 @@ class World {
             npcQuests: this.npcQuests ? this.npcQuests.serialize() : null,
             customNPC: this.customNPC ? this.customNPC.serialize() : null,
             multiEnding: this.multiEnding ? this.multiEnding.serialize() : null,
+            // v4.0
+            dailyDecision: this.dailyDecision.serialize(),
+            shop: this.shop.serialize(),
+            eventChoice: this.eventChoice.serialize(),
+            npcHelp: this.npcHelp.serialize(),
         };
     }
 
@@ -5133,6 +5176,11 @@ class World {
             if (this.npcQuests && data.npcQuests) this.npcQuests.loadFrom(data.npcQuests);
             if (this.customNPC && data.customNPC) this.customNPC.loadFrom(data.customNPC);
             if (this.multiEnding && data.multiEnding) this.multiEnding.loadFrom(data.multiEnding);
+            // v4.0 systems
+            if (data.dailyDecision) this.dailyDecision.loadFrom(data.dailyDecision);
+            if (data.shop) this.shop.loadFrom(data.shop);
+            if (data.eventChoice) this.eventChoice.loadFrom(data.eventChoice);
+            if (data.npcHelp) this.npcHelp.loadFrom(data.npcHelp);
 
             this.logMessage('system', t('遊戲讀取成功！'));
             return true;
@@ -5140,6 +5188,502 @@ class World {
             console.error('Failed to load save:', e);
             return false;
         }
+    }
+}
+
+// ============================================================
+// v4.0 - Daily Decision System (每日決策卡片)
+// ============================================================
+const DAILY_DECISIONS = [
+    // Resource dilemmas
+    { id:'water_dispute', title:()=>t('水源爭議'), desc:()=>t('農田和工坊都需要水源，但水井產量有限。你怎麼決定？'),
+      optionA:{label:()=>t('優先供水農田'), effects:{food:15,moodTarget:'farmer',moodAmt:5,moodOther:'blacksmith',moodOtherAmt:-3}, desc:()=>t('+15食物，農夫開心，鐵匠不滿')},
+      optionB:{label:()=>t('優先供水工坊'), effects:{tools:5,moodTarget:'blacksmith',moodAmt:5,moodOther:'farmer',moodOtherAmt:-3}, desc:()=>t('+5工具，鐵匠開心，農夫不滿')},
+      condition: w => Object.values(w.agents).some(a=>a.job?.key==='farmer') && Object.values(w.agents).some(a=>a.job?.key==='blacksmith') },
+    { id:'food_surplus', title:()=>t('食物盈餘'), desc:()=>t('倉庫裡的食物快放不下了。怎麼處理？'),
+      optionA:{label:()=>t('舉辦宴會'), effects:{food:-30,mood_all:8}, desc:()=>t('-30食物，全鎮心情+8')},
+      optionB:{label:()=>t('儲存備用'), effects:{food:0,silver:20}, desc:()=>t('賣掉多餘的食物，+20銀幣')},
+      condition: w => w.stockpile.get('food') > 100 },
+    { id:'traveler_arrived', title:()=>t('旅人求助'), desc:()=>t('一個疲憊的旅人來到鎮上，請求食物和住所。'),
+      optionA:{label:()=>t('熱情接待'), effects:{food:-10,silver:-5,mood_all:5,reputation:3}, desc:()=>t('-10食物-5銀幣，全鎮心情+5，聲望+3')},
+      optionB:{label:()=>t('婉拒請求'), effects:{mood_all:-2}, desc:()=>t('全鎮心情-2，但保住資源')},
+      condition: w => w.stockpile.get('food') > 20 },
+    { id:'mine_danger', title:()=>t('礦坑安全'), desc:()=>t('礦工回報礦坑有坍塌風險。要不要停工修繕？'),
+      optionA:{label:()=>t('停工修繕'), effects:{wood:-15,stone:-10,moodTarget:'miner',moodAmt:8}, desc:()=>t('-15木材-10石材，礦工安心')},
+      optionB:{label:()=>t('繼續開採'), effects:{metal:10,moodTarget:'miner',moodAmt:-10}, desc:()=>t('+10金屬，但礦工士氣低落')},
+      condition: w => Object.values(w.agents).some(a=>a.job?.key==='miner') },
+    { id:'merchant_deal', title:()=>t('商人提議'), desc:()=>t('商人趙霞提出一筆冒險的貿易。'),
+      optionA:{label:()=>t('同意交易'), effects:{silver:-30,random_reward:true}, desc:()=>t('-30銀幣，有機會獲得稀有物資')},
+      optionB:{label:()=>t('謝絕提議'), effects:{moodTarget:'trader',moodAmt:-3}, desc:()=>t('商人略顯失望')},
+      condition: w => w.stockpile.get('silver') >= 30 },
+    { id:'sick_npc', title:()=>t('居民生病'), desc:()=>t('有人發燒了。要用珍貴的草藥治療嗎？'),
+      optionA:{label:()=>t('立刻治療'), effects:{herbs:-5,mood_all:3,moodTarget:'doctor',moodAmt:5}, desc:()=>t('-5草藥，醫生有成就感')},
+      optionB:{label:()=>t('讓他自然恢復'), effects:{mood_all:-3}, desc:()=>t('全鎮有點擔心')},
+      condition: w => w.stockpile.get('herbs') >= 5 && Object.values(w.agents).some(a=>a.job?.key==='doctor') },
+    { id:'festival_plan', title:()=>t('慶典籌備'), desc:()=>t('有人提議辦一個小型慶典提振士氣。'),
+      optionA:{label:()=>t('舉辦慶典'), effects:{food:-20,silver:-10,mood_all:12}, desc:()=>t('-20食物-10銀幣，全鎮大幅開心')},
+      optionB:{label:()=>t('節省開支'), effects:{mood_all:-2}, desc:()=>t('居民有些失望')},
+      condition: w => w.stockpile.get('food') > 40 && w.stockpile.get('silver') > 10 },
+    { id:'guard_patrol', title:()=>t('巡邏安排'), desc:()=>t('守衛提議增加夜間巡邏。'),
+      optionA:{label:()=>t('加強巡邏'), effects:{moodTarget:'guard',moodAmt:5,mood_all:3,defense:2}, desc:()=>t('守衛積極，全鎮安心+3')},
+      optionB:{label:()=>t('維持現狀'), effects:{moodTarget:'guard',moodAmt:-3}, desc:()=>t('守衛有些不滿')},
+      condition: w => Object.values(w.agents).some(a=>a.job?.key==='guard') },
+    { id:'library_debate', title:()=>t('知識爭論'), desc:()=>t('研究員和牧師對一本古書的解釋意見不合。你支持誰？'),
+      optionA:{label:()=>t('支持研究員'), effects:{research_points:10,moodTarget:'researcher',moodAmt:8,moodOther:'priest',moodOtherAmt:-5}, desc:()=>t('+10研究點，研究員開心')},
+      optionB:{label:()=>t('支持牧師'), effects:{mood_all:3,moodTarget:'priest',moodAmt:8,moodOther:'researcher',moodOtherAmt:-5}, desc:()=>t('全鎮心情+3，牧師開心')},
+      condition: w => Object.values(w.agents).some(a=>a.job?.key==='researcher') && Object.values(w.agents).some(a=>a.job?.key==='priest') },
+    { id:'crop_choice', title:()=>t('作物選擇'), desc:()=>t('這季該種什麼？農夫們意見不一。'),
+      optionA:{label:()=>t('種經濟作物'), effects:{silver:15,food:-5}, desc:()=>t('+15銀幣，但食物稍減')},
+      optionB:{label:()=>t('種糧食作物'), effects:{food:20}, desc:()=>t('+20食物，穩扎穩打')},
+      condition: w => Object.values(w.agents).some(a=>a.job?.key==='farmer') },
+    { id:'npc_conflict', title:()=>t('居民糾紛'), desc:()=>t('兩個居民因為雞毛蒜皮的事吵了起來，找你調解。'),
+      optionA:{label:()=>t('認真調解'), effects:{mood_all:3,social_boost:5}, desc:()=>t('全鎮關係改善')},
+      optionB:{label:()=>t('讓他們自己解決'), effects:{mood_all:-2}, desc:()=>t('有人覺得你不負責任')},
+      condition: w => true },
+    { id:'woodcutter_rest', title:()=>t('伐木工休息'), desc:()=>t('木匠說最近太累了，想休息一天。'),
+      optionA:{label:()=>t('批准休假'), effects:{moodTarget:'carpenter',moodAmt:10,wood:-5}, desc:()=>t('木匠感激，但今天少產木材')},
+      optionB:{label:()=>t('鼓勵堅持'), effects:{wood:5,moodTarget:'carpenter',moodAmt:-5}, desc:()=>t('+5木材，但木匠累了')},
+      condition: w => Object.values(w.agents).some(a=>a.job?.key==='carpenter') },
+];
+
+class DailyDecisionSystem {
+    constructor() {
+        this.pendingDecision = null;  // Current decision waiting for player
+        this.decisionLog = [];        // Past decisions
+        this._lastDecisionDay = 0;
+    }
+
+    dailyUpdate(world) {
+        const dayKey = `${world.clock.year}-${world.clock.season}-${world.clock.day}`;
+        if (this._lastDecisionDay === dayKey) return;
+        if (this.pendingDecision) return; // Don't generate new if one is pending
+
+        this._lastDecisionDay = dayKey;
+
+        // Filter eligible decisions
+        const eligible = DAILY_DECISIONS.filter(d => !d.condition || d.condition(world));
+        if (eligible.length === 0) return;
+
+        // Avoid repeating recent decisions
+        const recentIds = this.decisionLog.slice(-5).map(d => d.id);
+        const fresh = eligible.filter(d => !recentIds.includes(d.id));
+        const pool = fresh.length > 0 ? fresh : eligible;
+
+        const chosen = pool[Math.floor(Math.random() * pool.length)];
+        this.pendingDecision = {
+            id: chosen.id,
+            title: chosen.title(),
+            desc: chosen.desc(),
+            optionA: { label: chosen.optionA.label(), desc: chosen.optionA.desc(), effects: chosen.optionA.effects },
+            optionB: { label: chosen.optionB.label(), desc: chosen.optionB.desc(), effects: chosen.optionB.effects },
+            dayKey: dayKey,
+        };
+
+        world.logMessage('decision', `🏛️ ${t('今日決策')}：${this.pendingDecision.title}`);
+    }
+
+    resolveDecision(choice, world) {
+        if (!this.pendingDecision) return null;
+        const decision = this.pendingDecision;
+        const effects = choice === 'A' ? decision.optionA.effects : decision.optionB.effects;
+        const label = choice === 'A' ? decision.optionA.label : decision.optionB.label;
+
+        // Apply effects
+        const sp = world.stockpile;
+        const resourceKeys = ['food','wood','stone','metal','silver','tools','herbs','cloth','research_points'];
+        for (const key of resourceKeys) {
+            if (effects[key]) {
+                if (effects[key] > 0) sp.add(key, effects[key], world.tickCount, `${t('決策')}：${decision.title}`);
+                else sp.consume(key, Math.abs(effects[key]), world.tickCount, `${t('決策')}：${decision.title}`);
+            }
+        }
+
+        // Mood effects
+        if (effects.mood_all) {
+            Object.values(world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + effects.mood_all; });
+        }
+        if (effects.moodTarget) {
+            const targets = Object.values(world.agents).filter(a => a.job?.key === effects.moodTarget);
+            targets.forEach(a => { a.moodModifier = (a.moodModifier || 0) + (effects.moodAmt || 0); });
+        }
+        if (effects.moodOther) {
+            const others = Object.values(world.agents).filter(a => a.job?.key === effects.moodOther);
+            others.forEach(a => { a.moodModifier = (a.moodModifier || 0) + (effects.moodOtherAmt || 0); });
+        }
+
+        // Random reward
+        if (effects.random_reward) {
+            const rewards = [{r:'metal',a:15},{r:'cloth',a:10},{r:'herbs',a:10},{r:'silver',a:40},{r:'tools',a:8}];
+            const reward = rewards[Math.floor(Math.random() * rewards.length)];
+            sp.add(reward.r, reward.a, world.tickCount, t('商人交易'));
+            world.logMessage('decision', `💰 ${t('交易獲得了')} ${reward.a} ${t(reward.r)}！`);
+        }
+
+        // Social boost
+        if (effects.social_boost) {
+            Object.values(world.agents).forEach(a => { a.needs.social = Math.min(100, a.needs.social + effects.social_boost); });
+        }
+
+        world.logMessage('decision', `🏛️ ${t('你選擇了')}「${label}」`);
+        if (world.dailyNews) {
+            world.dailyNews.collectEvent('politics', `${t('鎮長決定')}：${decision.title} → ${label}`, 6);
+        }
+
+        this.decisionLog.push({ id: decision.id, choice, dayKey: decision.dayKey, title: decision.title });
+        if (this.decisionLog.length > 100) this.decisionLog = this.decisionLog.slice(-100);
+        this.pendingDecision = null;
+        return { title: decision.title, choice: label };
+    }
+
+    toDict() {
+        return {
+            pendingDecision: this.pendingDecision,
+            recentDecisions: this.decisionLog.slice(-10),
+        };
+    }
+
+    serialize() {
+        return {
+            pendingDecision: this.pendingDecision,
+            decisionLog: this.decisionLog,
+            _lastDecisionDay: this._lastDecisionDay,
+        };
+    }
+
+    loadFrom(data) {
+        if (!data) return;
+        this.pendingDecision = data.pendingDecision || null;
+        this.decisionLog = data.decisionLog || [];
+        this._lastDecisionDay = data._lastDecisionDay || 0;
+    }
+}
+
+// ============================================================
+// v4.0 - Shop System (商店系統)
+// ============================================================
+const SHOP_ITEMS = {
+    food:       { name:()=>t('食物'), icon:'🍖', buyPrice:3,  sellPrice:1, category:'basic' },
+    meals:      { name:()=>t('餐食'), icon:'🍲', buyPrice:5,  sellPrice:2, category:'basic' },
+    wood:       { name:()=>t('木材'), icon:'🪵', buyPrice:4,  sellPrice:2, category:'basic' },
+    stone:      { name:()=>t('石材'), icon:'🪨', buyPrice:5,  sellPrice:2, category:'basic' },
+    metal:      { name:()=>t('金屬'), icon:'⛓️', buyPrice:8,  sellPrice:4, category:'basic' },
+    tools:      { name:()=>t('工具'), icon:'🔧', buyPrice:12, sellPrice:6, category:'craft' },
+    herbs:      { name:()=>t('草藥'), icon:'🌿', buyPrice:6,  sellPrice:3, category:'craft' },
+    cloth:      { name:()=>t('布料'), icon:'🧵', buyPrice:7,  sellPrice:3, category:'craft' },
+    medicine:   { name:()=>t('藥品'), icon:'💊', buyPrice:15, sellPrice:8, category:'craft' },
+    clothing:   { name:()=>t('衣物'), icon:'👕', buyPrice:10, sellPrice:5, category:'craft' },
+    furniture:  { name:()=>t('傢俱'), icon:'🪑', buyPrice:14, sellPrice:7, category:'luxury' },
+    bread:      { name:()=>t('麵包'), icon:'🍞', buyPrice:6,  sellPrice:3, category:'processed' },
+    beer:       { name:()=>t('啤酒'), icon:'🍺', buyPrice:8,  sellPrice:4, category:'processed' },
+    wine:       { name:()=>t('葡萄酒'), icon:'🍷', buyPrice:15, sellPrice:8, category:'luxury' },
+};
+
+class ShopSystem {
+    constructor() {
+        this.transactionLog = [];
+    }
+
+    getAvailableItems(world) {
+        return Object.entries(SHOP_ITEMS).map(([key, item]) => ({
+            key, name: item.name(), icon: item.icon,
+            buyPrice: item.buyPrice, sellPrice: item.sellPrice,
+            category: item.category,
+            stock: world.stockpile.get(key),
+            canBuy: world.stockpile.get('silver') >= item.buyPrice,
+            canSell: world.stockpile.get(key) >= 1,
+        }));
+    }
+
+    buy(itemKey, amount, world) {
+        const item = SHOP_ITEMS[itemKey];
+        if (!item) return { success: false, msg: t('商品不存在') };
+        const totalCost = item.buyPrice * amount;
+        if (!world.stockpile.has('silver', totalCost)) return { success: false, msg: t('銀幣不足') };
+        world.stockpile.consume('silver', totalCost, world.tickCount, `${t('購買')}${item.name()}`);
+        world.stockpile.add(itemKey, amount, world.tickCount, `${t('商店購買')}`);
+        this.transactionLog.push({ type: 'buy', item: itemKey, amount, cost: totalCost, tick: world.tickCount });
+        world.logMessage('economy', `🛒 ${t('購買了')} ${amount} ${item.name()}${t('，花費')} ${totalCost} ${t('銀幣')}`);
+        return { success: true, msg: `${t('購買成功')}！` };
+    }
+
+    sell(itemKey, amount, world) {
+        const item = SHOP_ITEMS[itemKey];
+        if (!item) return { success: false, msg: t('商品不存在') };
+        if (!world.stockpile.has(itemKey, amount)) return { success: false, msg: t('庫存不足') };
+        const totalIncome = item.sellPrice * amount;
+        world.stockpile.consume(itemKey, amount, world.tickCount, `${t('出售')}${item.name()}`);
+        world.stockpile.add('silver', totalIncome, world.tickCount, `${t('商店出售')}`);
+        this.transactionLog.push({ type: 'sell', item: itemKey, amount, income: totalIncome, tick: world.tickCount });
+        world.logMessage('economy', `💰 ${t('出售了')} ${amount} ${item.name()}${t('，獲得')} ${totalIncome} ${t('銀幣')}`);
+        return { success: true, msg: `${t('出售成功')}！` };
+    }
+
+    toDict() {
+        return { recentTransactions: this.transactionLog.slice(-20) };
+    }
+
+    serialize() { return { transactionLog: this.transactionLog }; }
+    loadFrom(data) { if (data) this.transactionLog = data.transactionLog || []; }
+}
+
+// ============================================================
+// v4.0 - Event Choice System (事件選擇分支)
+// ============================================================
+class EventChoiceSystem {
+    constructor() {
+        this.pendingEvent = null;
+        this.eventLog = [];
+    }
+
+    // Called when an event fires — wraps it with player choices
+    offerChoice(event, world) {
+        if (this.pendingEvent) return; // One at a time
+
+        const choices = this._generateChoices(event, world);
+        if (!choices) return; // No choices for this event type
+
+        this.pendingEvent = {
+            eventName: event.name,
+            description: event.description,
+            severity: event.severity,
+            choices: choices,
+            timestamp: world.tickCount,
+        };
+        world.logMessage('event_choice', `⚡ ${event.name}${t('——你需要做出決定！')}`);
+    }
+
+    _generateChoices(event, world) {
+        // Generate contextual choices based on event type
+        if (event.severity === 'minor') return null; // Minor events don't need choices
+
+        if (event.threat_level) {
+            // Raid/attack events
+            return [
+                { label: t('全力防禦'), icon: '🛡️', desc: t('派出所有守衛迎戰'),
+                  effects: { defense_bonus: 3, mood_all: -3, guard_mood: 10 } },
+                { label: t('談判求和'), icon: '🕊️', desc: t('嘗試用銀幣買和平'),
+                  effects: { silver: -(event.threat_level * 15), mood_all: 2 } },
+                { label: t('疏散居民'), icon: '🏃', desc: t('優先保護居民安全'),
+                  effects: { mood_all: 5, resource_loss: true } },
+            ];
+        }
+
+        if (event.effects?.mood_all < -5) {
+            // Negative events (disaster, famine, etc.)
+            return [
+                { label: t('團結面對'), icon: '💪', desc: t('號召全鎮一起渡過難關'),
+                  effects: { mood_all: 5, social_boost: 3 } },
+                { label: t('祈禱平安'), icon: '🙏', desc: t('到教堂為大家祈禱'),
+                  effects: { mood_all: 3, moodTarget: 'priest', moodAmt: 8 } },
+            ];
+        }
+
+        return null;
+    }
+
+    resolveChoice(choiceIndex, world) {
+        if (!this.pendingEvent || !this.pendingEvent.choices[choiceIndex]) return null;
+        const choice = this.pendingEvent.choices[choiceIndex];
+        const effects = choice.effects;
+
+        // Apply effects
+        if (effects.mood_all) {
+            Object.values(world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + effects.mood_all; });
+        }
+        if (effects.silver) {
+            if (effects.silver > 0) world.stockpile.add('silver', effects.silver, world.tickCount, t('事件決策'));
+            else world.stockpile.consume('silver', Math.abs(effects.silver), world.tickCount, t('事件決策'));
+        }
+        if (effects.social_boost) {
+            Object.values(world.agents).forEach(a => { a.needs.social = Math.min(100, a.needs.social + effects.social_boost); });
+        }
+        if (effects.moodTarget) {
+            Object.values(world.agents).filter(a => a.job?.key === effects.moodTarget).forEach(a => {
+                a.moodModifier = (a.moodModifier || 0) + (effects.moodAmt || 0);
+            });
+        }
+        if (effects.guard_mood) {
+            Object.values(world.agents).filter(a => a.job?.key === 'guard').forEach(a => {
+                a.moodModifier = (a.moodModifier || 0) + effects.guard_mood;
+            });
+        }
+        if (effects.resource_loss) {
+            // Lose some random resources from the raid
+            ['food','wood','stone'].forEach(r => {
+                const loss = Math.floor(world.stockpile.get(r) * 0.15);
+                if (loss > 0) world.stockpile.consume(r, loss, world.tickCount, t('入侵損失'));
+            });
+        }
+
+        world.logMessage('event_choice', `⚡ ${t('你選擇了')}「${choice.label}」${t('來應對')}${this.pendingEvent.eventName}`);
+        if (world.dailyNews) {
+            world.dailyNews.collectEvent('event', `${t('面對')}${this.pendingEvent.eventName}${t('，鎮長選擇了')}「${choice.label}」`, 7);
+        }
+
+        this.eventLog.push({ event: this.pendingEvent.eventName, choice: choice.label, tick: world.tickCount });
+        if (this.eventLog.length > 50) this.eventLog = this.eventLog.slice(-50);
+        const result = { event: this.pendingEvent.eventName, choice: choice.label };
+        this.pendingEvent = null;
+        return result;
+    }
+
+    toDict() {
+        return {
+            pendingEvent: this.pendingEvent,
+            recentChoices: this.eventLog.slice(-10),
+        };
+    }
+
+    serialize() { return { pendingEvent: this.pendingEvent, eventLog: this.eventLog }; }
+    loadFrom(data) {
+        if (!data) return;
+        this.pendingEvent = data.pendingEvent || null;
+        this.eventLog = data.eventLog || [];
+    }
+}
+
+// ============================================================
+// v4.0 - NPC Help Request System (NPC 求助系統)
+// ============================================================
+class NPCHelpSystem {
+    constructor() {
+        this.pendingRequest = null;
+        this.requestLog = [];
+        this._daysSinceRequest = 0;
+    }
+
+    dailyUpdate(world) {
+        this._daysSinceRequest++;
+        if (this._daysSinceRequest < 3) return; // Every 3 days max
+        if (this.pendingRequest) return;
+
+        const npcs = Object.values(world.agents).filter(a => !a.isPlayer && a.status !== 'hospitalized');
+        if (npcs.length === 0) return;
+
+        // Find NPCs with issues
+        const candidates = [];
+
+        for (const npc of npcs) {
+            // Low mood NPC
+            if (npc.mood < 20) {
+                candidates.push({ npc, type: 'low_mood',
+                    title: `${npc.name}${t('看起來很沮喪')}`,
+                    desc: `${npc.name}${t('：「最近什麼事都不太順利...你能聽我說說嗎？」')}`,
+                    optionA: { label: t('陪他聊聊'), effects: { targetMood: 15, playerSocial: 10, affinity: 10 } },
+                    optionB: { label: t('給他空間'), effects: { targetMood: -3, affinity: -5 } },
+                });
+            }
+            // Hungry NPC
+            if (npc.needs.hunger < 20) {
+                candidates.push({ npc, type: 'hungry',
+                    title: `${npc.name}${t('肚子餓了')}`,
+                    desc: `${npc.name}${t('：「你有沒有多餘的食物？我快餓扁了...」')}`,
+                    optionA: { label: t('分享食物'), effects: { food: -5, targetHunger: 40, affinity: 8 } },
+                    optionB: { label: t('抱歉沒有'), effects: { affinity: -3 } },
+                });
+            }
+            // Relationship conflict
+            const enemies = Object.values(npc.relationships?.relationships || {}).filter(r => r.affinity < -30);
+            if (enemies.length > 0) {
+                const enemy = world.agents[enemies[0].targetId];
+                if (enemy && !enemy.isPlayer) {
+                    candidates.push({ npc, type: 'conflict',
+                        title: `${npc.name}${t('和')}${enemy.name}${t('鬧矛盾')}`,
+                        desc: `${npc.name}${t('：「我跟')}${enemy.name}${t('吵了一架...你覺得誰對？」')}`,
+                        optionA: { label: `${t('支持')}${npc.name}`, effects: { affinity: 12, enemyAffinity: -8 }, enemyId: enemy.agentId },
+                        optionB: { label: t('勸他們和好'), effects: { affinity: 3, enemyAffinity: 5, mood_all: 2 }, enemyId: enemy.agentId },
+                    });
+                }
+            }
+            // Overworked NPC
+            if (npc.needs.rest < 25 && npc.job) {
+                candidates.push({ npc, type: 'tired',
+                    title: `${npc.name}${t('太累了')}`,
+                    desc: `${npc.name}${t('：「我已經連續工作好幾天了...能不能給我放個假？」')}`,
+                    optionA: { label: t('批准休假'), effects: { targetRest: 40, targetMood: 10, affinity: 5 } },
+                    optionB: { label: t('鼓勵堅持'), effects: { targetMood: -5, affinity: -3 } },
+                });
+            }
+        }
+
+        if (candidates.length === 0) return;
+
+        const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+        this._daysSinceRequest = 0;
+        this.pendingRequest = {
+            npcId: chosen.npc.agentId,
+            npcName: chosen.npc.name,
+            type: chosen.type,
+            title: chosen.title,
+            desc: chosen.desc,
+            optionA: chosen.optionA,
+            optionB: chosen.optionB,
+            enemyId: chosen.optionA.enemyId || chosen.optionB.enemyId || null,
+            timestamp: world.tickCount,
+        };
+
+        world.logMessage('npc_help', `💬 ${chosen.npc.name}${t('需要你的幫助！')}`);
+    }
+
+    resolveRequest(choice, world) {
+        if (!this.pendingRequest) return null;
+        const req = this.pendingRequest;
+        const effects = choice === 'A' ? req.optionA.effects : req.optionB.effects;
+        const label = choice === 'A' ? req.optionA.label : req.optionB.label;
+
+        const npc = world.agents[req.npcId];
+        const player = world.agents['player'];
+
+        if (npc) {
+            if (effects.targetMood) npc.moodModifier = (npc.moodModifier || 0) + effects.targetMood;
+            if (effects.targetHunger) npc.needs.hunger = Math.min(100, npc.needs.hunger + effects.targetHunger);
+            if (effects.targetRest) npc.needs.rest = Math.min(100, npc.needs.rest + effects.targetRest);
+            if (effects.affinity && player) {
+                const rel = npc.relationships.getOrCreate('player', player.name);
+                rel.modifyAffinity(effects.affinity);
+            }
+        }
+
+        if (effects.enemyAffinity && req.enemyId) {
+            const enemy = world.agents[req.enemyId];
+            if (enemy && player) {
+                const rel = enemy.relationships.getOrCreate('player', player.name);
+                rel.modifyAffinity(effects.enemyAffinity);
+            }
+        }
+
+        if (effects.food && effects.food < 0) {
+            world.stockpile.consume('food', Math.abs(effects.food), world.tickCount, `${t('幫助')}${req.npcName}`);
+        }
+        if (effects.playerSocial && player) {
+            player.needs.social = Math.min(100, player.needs.social + effects.playerSocial);
+        }
+        if (effects.mood_all) {
+            Object.values(world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + effects.mood_all; });
+        }
+
+        world.logMessage('npc_help', `💬 ${t('你對')}${req.npcName}${t('說')}：「${label}」`);
+
+        this.requestLog.push({ npcName: req.npcName, type: req.type, choice: label, tick: world.tickCount });
+        if (this.requestLog.length > 50) this.requestLog = this.requestLog.slice(-50);
+        const result = { npcName: req.npcName, choice: label };
+        this.pendingRequest = null;
+        return result;
+    }
+
+    toDict() {
+        return {
+            pendingRequest: this.pendingRequest,
+            recentRequests: this.requestLog.slice(-10),
+        };
+    }
+
+    serialize() { return { pendingRequest: this.pendingRequest, requestLog: this.requestLog, _daysSinceRequest: this._daysSinceRequest }; }
+    loadFrom(data) {
+        if (!data) return;
+        this.pendingRequest = data.pendingRequest || null;
+        this.requestLog = data.requestLog || [];
+        this._daysSinceRequest = data._daysSinceRequest || 0;
     }
 }
 
