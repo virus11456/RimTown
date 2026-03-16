@@ -294,18 +294,19 @@
         </div>
 
         <!-- Sidebar -->
-        <div class="rt-sidebar">
+        <div class="rt-sidebar" id="rimtown-sidebar">
+            <button class="mobile-back-to-map" id="mobile-back-to-map">&#9650; 返回地圖</button>
             <div class="rt-sidebar-tabs">
                 <button data-tab="residents" class="active"><span class="tab-icon">👥</span><span class="tab-label" data-i18n="居民">居民</span></button>
                 <button data-tab="chat"><span class="tab-icon">💬</span><span class="tab-label" data-i18n="聊天">聊天</span></button>
-                <button data-tab="detail"><span class="tab-icon">📋</span><span class="tab-label" data-i18n="詳情">詳情</span></button>
-                <button data-tab="economy"><span class="tab-icon">💰</span><span class="tab-label" data-i18n="經濟">經濟</span></button>
-                <button data-tab="industry"><span class="tab-icon">🏭</span><span class="tab-label" data-i18n="產業">產業</span></button>
                 <button data-tab="quest"><span class="tab-icon">⚔️</span><span class="tab-label" data-i18n="任務">任務</span></button>
-                <button data-tab="achievements"><span class="tab-icon">🏆</span><span class="tab-label" data-i18n="成就">成就</span></button>
-                <button data-tab="events"><span class="tab-icon">📰</span><span class="tab-label" data-i18n="事件">事件</span></button>
-                <button data-tab="newspaper"><span class="tab-icon">🗞️</span><span class="tab-label" data-i18n="日報">日報</span></button>
-                <button data-tab="log"><span class="tab-icon">📝</span><span class="tab-label" data-i18n="日誌">日誌</span></button>
+                <button data-tab="economy"><span class="tab-icon">💰</span><span class="tab-label" data-i18n="經濟">經濟</span></button>
+                <button data-tab="detail" class="mobile-hidden"><span class="tab-icon">📋</span><span class="tab-label" data-i18n="詳情">詳情</span></button>
+                <button data-tab="industry" class="mobile-hidden"><span class="tab-icon">🏭</span><span class="tab-label" data-i18n="產業">產業</span></button>
+                <button data-tab="events" class="mobile-hidden"><span class="tab-icon">📰</span><span class="tab-label" data-i18n="事件">事件</span></button>
+                <button data-tab="records" class="mobile-hidden"><span class="tab-icon">📝</span><span class="tab-label" data-i18n="紀錄">紀錄</span></button>
+                <button data-tab="achievements" class="mobile-hidden"><span class="tab-icon">🏆</span><span class="tab-label" data-i18n="成就">成就</span></button>
+                <button data-tab="settings"><span class="tab-icon">⚙️</span><span class="tab-label" data-i18n="設定">設定</span></button>
             </div>
             <div class="rt-sidebar-content" id="sidebar-content">
                 <!-- Content rendered dynamically -->

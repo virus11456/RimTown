@@ -3723,10 +3723,23 @@ class RimTownApp {
         // --- Game Control Section ---
         const currentMultiplier = this._speedMultiplier || 1;
         html += t('<div class="econ-section"><h3>🎮 遊戲控制</h3>');
+        html += `<div class="setting-group" style="margin-bottom:8px">
+            <label style="font-size:0.82rem;color:var(--text-secondary)">${t('模擬速度')}</label>
+            <select id="settings-tab-speed" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
+                <option value="3000"${speed==='3000'?' selected':''}>${t('慢速（3秒）')}</option>
+                <option value="2000"${speed==='2000'?' selected':''}>${t('正常（2秒）')}</option>
+                <option value="1000"${speed==='1000'?' selected':''}>${t('快速（1秒）')}</option>
+                <option value="500"${speed==='500'?' selected':''}>${t('極快（0.5秒）')}</option>
+            </select>
+        </div>`;
         html += `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+            <label style="font-size:0.82rem;color:var(--text-secondary)">${t('速度倍率')}</label>
             <div class="speed-controls">
                 ${[1, 1.5, 2, 3].map(s => `<button class="btn-speed${currentMultiplier===s?' active':''}" data-action="settings-speed-mult" data-val="${s}">${s}x</button>`).join('')}
             </div>
+        </div>`;
+        html += `<div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="trade-btn" data-action="settings-toggle-pause">${paused ? '▶ ' + t('繼續') : '⏸ ' + t('暫停')}</button>
         </div>`;
         html += `<div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="trade-btn" data-action="show-towns">📋 ${t('城鎮列表')}</button>
@@ -3794,22 +3807,10 @@ class RimTownApp {
         </div>`;
         html += '</div>';
 
-        // --- Game Settings Section ---
-        html += t('<div class="econ-section"><h3>⚡ 模擬速度</h3>');
-        html += `<div class="setting-group" style="margin-bottom:8px">
-            <select id="settings-tab-speed" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
-                <option value="3000"${speed==='3000'?' selected':''}>${t('慢速（3')}${t('秒）')}</option>
-                <option value="2000"${speed==='2000'?' selected':''}>${t('正常（2')}${t('秒）')}</option>
-                <option value="1000"${speed==='1000'?' selected':''}>${t('快速（1')}${t('秒）')}</option>
-                <option value="500"${speed==='500'?' selected':''}>${t('極快（')}0.5${t('秒）')}</option>
-            </select>
-        </div>`;
-        html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+        // --- Save All & Version ---
+        html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0">
             <button class="trade-btn btn-accent" data-action="settings-save-all">${t('儲存設定')}</button>
         </div>`;
-        html += '</div>';
-
-        // (Save section merged into Account section above)
 
         // --- Version ---
         html += `<div style="text-align:center;padding:10px;font-size:0.75rem;color:var(--text-muted)">v${typeof RIMTOWN_APP_VERSION!=='undefined'?RIMTOWN_APP_VERSION:'?'}</div>`;

@@ -2919,6 +2919,18 @@ class PixelTileMap {
         }
     }
 
+    // Render a standalone NPC avatar to a data URL (for chat contacts, etc.)
+    renderAvatarDataURL(jobKey, gender) {
+        const size = 32;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        // Draw agent centered: x=16 places sx=8, y=24 places sy=4
+        this._drawAgent(ctx, 16, 24, jobKey, false, false, '', false, 0, gender, '');
+        return canvas.toDataURL();
+    }
+
     // Draw farming action animation (hoeing, watering, harvesting) for NPC at farm
     _drawFarmAction(ctx, x, y, frame, agentId) {
         const sx = Math.floor(x - 8);
