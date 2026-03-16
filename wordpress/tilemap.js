@@ -3093,7 +3093,7 @@ class PixelTileMap {
             if (!agent) continue;
             const isPlayer = aid === 'player';
             const isSelected = aid === selectedAgent;
-            this._drawAgent(ctx, pos.x, pos.y, pos.job, isPlayer, isSelected, agent.name || 'You', pos.walking, pos.walkStep, pos.gender, agent.job);
+            this._drawAgent(ctx, pos.x, pos.y, pos.job, isPlayer, isSelected, agent.name || 'You', pos.walking, pos.walkStep, pos.gender, agent.job?.title || '');
             // Action animation overlay for farming NPCs
             if (!pos.walking && pos.atFarm && (pos.job === 'farmer' || pos.activity === 'working') && !isPlayer) {
                 this._drawFarmAction(ctx, pos.x, pos.y, this.animFrame, aid);

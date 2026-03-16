@@ -2693,15 +2693,53 @@ class RimTownApp {
         const npc = this.world.agents[targetId];
         if (!player || !npc) { this.chatSending = false; return; }
         // No proximity restriction — can message any NPC from anywhere
+
+        // Render player message immediately, then show typing indicator
+        this.state = this.world.getState();
+        if (this.activeTab === 'chat') { this.renderSidebar(); this._scrollChatToBottom(); }
+
+        // Show typing indicator
+        this._showTypingIndicator(npc.name);
+
         try {
-            await this.world.conversationEngine.generatePlayerReply(player, npc, message.trim(), this.world);
+            // Add a natural delay (1.5-3s) so NPC doesn't reply instantly
+            const typingDelay = 1500 + Math.random() * 1500;
+            const [reply] = await Promise.all([
+                this.world.conversationEngine.generatePlayerReply(player, npc, message.trim(), this.world),
+                new Promise(r => setTimeout(r, typingDelay))
+            ]);
             if (this.world.questSystem) this.world.questSystem.onChat();
             // Clear unread for this NPC
             if (this._chatUnread) this._chatUnread.delete(targetId);
             this.state = this.world.getState();
+            this._hideTypingIndicator();
             if (this.activeTab === 'chat') { this.renderSidebar(); this._scrollChatToBottom(); }
-        } catch(e) { console.error('Chat error:', e); }
+        } catch(e) {
+            console.error('Chat error:', e);
+            this._hideTypingIndicator();
+        }
         this.chatSending = false;
+    }
+
+    _showTypingIndicator(name) {
+        this._typingName = name;
+        const msgEl = document.getElementById('chat-messages');
+        if (!msgEl) return;
+        const existing = msgEl.querySelector('.chat-typing');
+        if (existing) existing.remove();
+        const div = document.createElement('div');
+        div.className = 'chat-typing';
+        div.innerHTML = '<span class="chat-typing-dot"></span><span class="chat-typing-dot"></span><span class="chat-typing-dot"></span>';
+        msgEl.appendChild(div);
+        msgEl.scrollTop = msgEl.scrollHeight;
+    }
+
+    _hideTypingIndicator() {
+        this._typingName = null;
+        const msgEl = document.getElementById('chat-messages');
+        if (!msgEl) return;
+        const existing = msgEl.querySelector('.chat-typing');
+        if (existing) existing.remove();
     }
 
     startChatWith(agentId) {
@@ -2862,7 +2900,7 @@ class RimTownApp {
             .map(([id, a]) => {
                 const msgs = chatHistory.filter(c => c.speaker === a.name || c.target === a.name);
                 const lastMsg = msgs.length ? msgs[msgs.length - 1] : null;
-                return { id, name: a.name, job: a.job, mood: a.mood_description, location: a.current_location, lastMsg, msgCount: msgs.length, hasUnread: this._chatUnread.has(id) };
+                return { id, name: a.name, job: a.job?.title || '', mood: a.mood_description, location: a.current_location, lastMsg, msgCount: msgs.length, hasUnread: this._chatUnread.has(id) };
             });
 
         // Sort: unread first, then by last message time (most recent first), then no-history alphabetically
@@ -2899,7 +2937,7 @@ class RimTownApp {
         if (this.chatTarget) {
             const targetAgent = this.state.agents[this.chatTarget];
             const targetName = targetAgent?.name || this.chatTarget;
-            const targetJob = targetAgent?.job || '';
+            const targetJob = targetAgent?.job?.title || '';
             const targetLoc = targetAgent?.current_location || '';
 
             // Chat header with NPC info
