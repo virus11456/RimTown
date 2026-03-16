@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 3.6.13
+ * Version: 3.6.14
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '3.6.13');
+define('RIMTOWN_VERSION', '3.6.14');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -992,6 +992,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '3.6.14',
+            'date'    => '2026-03-16',
+            'changes' => array(
+                '修復地圖 NPC 名牌與聊天介面中職業顯示為 [object Object] 的 bug',
+                '美化聊天介面：漸層背景、氣泡滑入動畫、未讀紅點脈動效果、輸入框聚焦光暈',
+                'NPC 回覆前顯示打字中動畫並加入隨機延遲，對話更自然',
+                '版號同步：所有檔案統一為 3.6.14',
+            ),
+        ),
         array(
             'version' => '3.6.13',
             'date'    => '2026-03-16',
