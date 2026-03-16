@@ -850,12 +850,13 @@ class RimTownApp {
     }
 
     _showAchievementToast(def) {
-        const toast = document.getElementById('achievement-toast');
-        if (!toast) return;
-        toast.innerHTML = `<div class="ach-toast-icon">${def.icon}${t('</div><div class="ach-toast-info"><div class="ach-toast-title">成就解鎖！</div><div class="ach-toast-name">')}${def.name}</div><div class="ach-toast-desc">${def.desc}</div></div>`;
-        toast.classList.remove('hidden');
-        toast.classList.add('show');
-        setTimeout(() => { toast.classList.remove('show'); toast.classList.add('hidden'); }, 4000);
+        this._showCenterNotification({
+            icon: def.icon,
+            title: t('成就解鎖！'),
+            name: def.name,
+            desc: def.desc,
+            autoDismiss: 6000
+        });
     }
 
     _startAchievementChecker() {
@@ -863,6 +864,8 @@ class RimTownApp {
         setInterval(() => this._checkAchievements(), 5000);
         // Check story events every 3 seconds
         setInterval(() => this._checkStoryEventDisplay(), 3000);
+        // Check newspaper every 10 seconds
+        setInterval(() => this._checkNewspaperNotification(), 10000);
     }
 
     _checkStoryEventDisplay() {
@@ -873,14 +876,65 @@ class RimTownApp {
     }
 
     _showStoryEventToast(event) {
-        // Reuse achievement toast element with different styling
-        const toast = document.getElementById('achievement-toast');
-        if (!toast) return;
-        toast.innerHTML = `<div class="ach-toast-icon" style="font-size:2rem">${event.icon}</div><div class="ach-toast-info"><div class="ach-toast-title" style="color:var(--accent-light, #80dfff)">【${event.title}】</div><div class="ach-toast-desc" style="font-size:0.78rem;line-height:1.5;max-width:300px">${event.text}</div></div>`;
-        toast.classList.remove('hidden');
-        toast.classList.add('show');
-        // Story events stay longer (8 seconds) since they have more text
-        setTimeout(() => { toast.classList.remove('show'); toast.classList.add('hidden'); }, 8000);
+        this._showCenterNotification({
+            icon: event.icon,
+            title: event.title,
+            desc: event.text,
+            autoDismiss: 0 // manual dismiss for story events
+        });
+    }
+
+    // Center-screen notification card (like tutorial cards)
+    _showCenterNotification({ icon, title, name, desc, content, autoDismiss }) {
+        // Queue notifications if one is already showing
+        if (!this._centerNotifQueue) this._centerNotifQueue = [];
+        const notif = { icon, title, name, desc, content, autoDismiss };
+        const overlay = document.getElementById('center-notification-overlay');
+        if (!overlay) return;
+        if (!overlay.classList.contains('hidden')) {
+            this._centerNotifQueue.push(notif);
+            return;
+        }
+        const card = document.getElementById('center-notification-card');
+        if (!card) return;
+        let html = '';
+        if (icon) html += `<div class="center-notif-icon">${icon}</div>`;
+        if (title) html += `<div class="center-notif-title">${title}</div>`;
+        if (name) html += `<div class="center-notif-name">${name}</div>`;
+        if (desc) html += `<div class="center-notif-desc">${desc}</div>`;
+        if (content) html += `<div class="center-notif-content">${content}</div>`;
+        html += `<button class="center-notif-dismiss">${t('確認')}</button>`;
+        card.innerHTML = html;
+        overlay.classList.remove('hidden');
+        const dismissBtn = card.querySelector('.center-notif-dismiss');
+        const dismiss = () => {
+            overlay.classList.add('hidden');
+            // Show next queued notification
+            if (this._centerNotifQueue?.length) {
+                setTimeout(() => this._showCenterNotification(this._centerNotifQueue.shift()), 300);
+            }
+        };
+        dismissBtn.addEventListener('click', dismiss);
+        overlay.querySelector('.center-notification-backdrop').addEventListener('click', dismiss);
+        if (autoDismiss > 0) {
+            setTimeout(dismiss, autoDismiss);
+        }
+    }
+
+    // Check and show daily newspaper as center notification
+    _checkNewspaperNotification() {
+        if (!this.world?.dailyNews?.newspapers?.length) return;
+        const papers = this.world.dailyNews.newspapers;
+        const latest = papers[papers.length - 1];
+        if (this._lastShownNewspaperId === latest.id) return;
+        this._lastShownNewspaperId = latest.id;
+        this._showCenterNotification({
+            icon: '📰',
+            title: t('AI 日報'),
+            name: `${t('第')}${latest.id}${t('期')} — ${t('記者')}：${latest.reporter}`,
+            content: latest.content || '',
+            autoDismiss: 0
+        });
     }
 
     _checkAchievements() {
@@ -2694,9 +2748,14 @@ class RimTownApp {
         if (!player || !npc) { this.chatSending = false; return; }
         // No proximity restriction — can message any NPC from anywhere
 
+        // Add player message to history immediately so it renders before typing indicator
+        const trimmedMsg = message.trim();
+        const timeStr = this.world.clock?.timeStr || '';
+        player.chatHistory.push({speaker:player.name, target:npc.name, text:trimmedMsg, time:timeStr});
+
         // Render player message immediately, then show typing indicator
         this.state = this.world.getState();
-        if (this.activeTab === 'chat') { this.renderSidebar(); this._scrollChatToBottom(); }
+        if (this.activeTab === 'chat') { this._renderChatMessages(); this._scrollChatToBottom(); }
 
         // Show typing indicator
         this._showTypingIndicator(npc.name);
@@ -2705,7 +2764,7 @@ class RimTownApp {
             // Add a natural delay (1.5-3s) so NPC doesn't reply instantly
             const typingDelay = 1500 + Math.random() * 1500;
             const [reply] = await Promise.all([
-                this.world.conversationEngine.generatePlayerReply(player, npc, message.trim(), this.world),
+                this.world.conversationEngine.generatePlayerReply(player, npc, trimmedMsg, this.world),
                 new Promise(r => setTimeout(r, typingDelay))
             ]);
             if (this.world.questSystem) this.world.questSystem.onChat();
@@ -2713,12 +2772,35 @@ class RimTownApp {
             if (this._chatUnread) this._chatUnread.delete(targetId);
             this.state = this.world.getState();
             this._hideTypingIndicator();
-            if (this.activeTab === 'chat') { this.renderSidebar(); this._scrollChatToBottom(); }
+            if (this.activeTab === 'chat') { this._renderChatMessages(); this._scrollChatToBottom(); }
         } catch(e) {
             console.error('Chat error:', e);
             this._hideTypingIndicator();
         }
         this.chatSending = false;
+    }
+
+    // Update only chat messages area without full sidebar re-render (prevents flickering)
+    _renderChatMessages() {
+        const msgEl = document.getElementById('chat-messages');
+        if (!msgEl || !this.chatTarget) return;
+        const player = this.state?.agents?.['player'];
+        if (!player) return;
+        const chatHistory = player.chat_history || [];
+        const targetAgent = this.state.agents[this.chatTarget];
+        const targetName = targetAgent?.name || this.chatTarget;
+        const filtered = chatHistory.filter(c => c.target === targetName || c.speaker === targetName);
+        let html = '';
+        if (!filtered.length) {
+            html = `<p class="muted-text chat-hint">${t('開始與')}${targetName}${t('對話吧！')}</p>`;
+        }
+        filtered.forEach(msg => {
+            const isP = msg.speaker === player.name;
+            html += `<div class="chat-bubble ${isP ? 'chat-player' : 'chat-npc'}">
+                <div class="chat-text">${this._escapeHtml(msg.text)}</div>
+                <div class="chat-time">${msg.time || ''}</div></div>`;
+        });
+        msgEl.innerHTML = html;
     }
 
     _showTypingIndicator(name) {
@@ -2894,13 +2976,22 @@ class RimTownApp {
         const chatHistory = player.chat_history || [];
         if (!this._chatUnread) this._chatUnread = new Set();
 
+        // Job color map for avatars
+        const JOB_AVATAR_COLORS = {
+            mayor:'#c83040', doctor:'#e8e8f0', blacksmith:'#607080', cook:'#e88030',
+            farmer:'#6a9a40', trader:'#8030a0', guard:'#3a5060', researcher:'#2868b8',
+            miner:'#6a5040', priest:'#f0e070', carpenter:'#907060', tailor:'#d06080', default:'#8090a0'
+        };
+
         // Build all NPC list with last message info
         const allNpcs = Object.entries(this.state.agents)
             .filter(([id]) => id !== 'player')
             .map(([id, a]) => {
                 const msgs = chatHistory.filter(c => c.speaker === a.name || c.target === a.name);
                 const lastMsg = msgs.length ? msgs[msgs.length - 1] : null;
-                return { id, name: a.name, job: a.job?.title || '', mood: a.mood_description, location: a.current_location, lastMsg, msgCount: msgs.length, hasUnread: this._chatUnread.has(id) };
+                const jobKey = a.job?.key || 'default';
+                const avatarColor = JOB_AVATAR_COLORS[jobKey] || JOB_AVATAR_COLORS.default;
+                return { id, name: a.name, job: a.job?.title || '', jobKey, avatarColor, mood: a.mood_description, location: a.current_location, currentThought: a.current_thought || '', lastMsg, msgCount: msgs.length, hasUnread: this._chatUnread.has(id) };
             });
 
         // Sort: unread first, then by last message time (most recent first), then no-history alphabetically
@@ -2920,11 +3011,14 @@ class RimTownApp {
             const isActive = this.chatTarget === npc.id;
             const lastText = npc.lastMsg ? (npc.lastMsg.speaker === player.name ? `${t('你')}：${npc.lastMsg.text}` : npc.lastMsg.text) : t('尚未對話');
             const truncated = lastText.length > 20 ? lastText.slice(0, 20) + '...' : lastText;
+            const initial = npc.name.charAt(0);
+            const thoughtText = npc.currentThought ? this._escapeHtml(npc.currentThought.length > 18 ? npc.currentThought.slice(0, 18) + '...' : npc.currentThought) : '';
             contactsHtml += `<button class="chat-contact ${isActive ? 'active' : ''}" data-action="start-chat" data-val="${npc.id}">
-                <div class="chat-contact-avatar"><span class="mood-indicator mood-${npc.mood}"></span></div>
+                <div class="chat-contact-avatar" style="background:${npc.avatarColor};color:#fff;font-weight:bold;font-size:1rem;text-shadow:0 1px 2px rgba(0,0,0,0.4)"><span class="avatar-initial">${initial}</span><span class="mood-indicator mood-${npc.mood}"></span></div>
                 <div class="chat-contact-info">
                     <div class="chat-contact-name">${npc.name}${npc.hasUnread ? '<span class="chat-unread-dot"></span>' : ''}</div>
                     <div class="chat-contact-job">${npc.job || t('無業')}</div>
+                    ${thoughtText ? `<div class="chat-contact-thought">${thoughtText}</div>` : ''}
                     <div class="chat-contact-preview">${this._escapeHtml(truncated)}</div>
                 </div>
                 ${npc.lastMsg?.time ? `<div class="chat-contact-time">${npc.lastMsg.time}</div>` : ''}
