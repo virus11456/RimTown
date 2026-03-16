@@ -31,7 +31,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v3.6.14.zip` from Releases
+1. Download `rimtown-v3.6.15.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -46,6 +46,19 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v3.6.15 (2026-03-16)
+
+**NPC 像素頭像 + 聊天 UX 改善 + 螢幕中央通知系統**
+- 聊天通訊錄頭像改為 NPC 像素風角色圖（顯示職業服裝、髮型、性別、配件）
+- 新增 renderAvatarDataURL()，將 NPC chibi sprite 繪製到離屏 canvas 並快取為 data URL
+- 修正訊息順序：玩家訊息現在正確顯示在「...」打字指示器之前
+- 修正聊天閃爍：新增 _renderChatMessages() 只更新訊息區域，不重新渲染整個側邊欄
+- NPC 聯絡人列表顯示當前心情想法作為簽名文字
+- 成就／事件通知改為螢幕中央大卡片覆蓋（含背景模糊效果）
+- 新增報紙通知：每日新報紙自動彈出螢幕中央卡片
+- 新增通知佇列系統，支援多個同時通知
+- 版號同步：所有檔案統一為 3.6.15
 
 ### v3.6.14 (2026-03-16)
 
