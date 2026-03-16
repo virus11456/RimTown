@@ -2519,7 +2519,7 @@ class PixelTileMap {
 
     // Draw chibi-style agent sprite (inspired by JRPG pixel art)
     // Sprite dimensions: ~16w x 24h, big head, large eyes, short body
-    _drawAgent(ctx, x, y, jobKey, isPlayer, isSelected, name, walking, walkStep, gender) {
+    _drawAgent(ctx, x, y, jobKey, isPlayer, isSelected, name, walking, walkStep, gender, jobTitle) {
         const c = isPlayer ? JOB_COLORS.player : (JOB_COLORS[jobKey] || JOB_COLORS.default);
         const isFemale = gender === 'female';
         const sx = Math.floor(x - 8);  // center 16px wide sprite
@@ -2665,7 +2665,7 @@ class PixelTileMap {
         // === Player arrow ===
         if (isPlayer) {
             const arrowBob = Math.sin(this.animFrame * 0.08) * 2;
-            const ay = sy - 6 + arrowBob;
+            const ay = sy - 20 + arrowBob;
             ctx.fillStyle = '#00e5ff';
             ctx.fillRect(sx + 5, ay, 6, 2);
             ctx.fillRect(sx + 6, ay - 2, 4, 2);
@@ -2674,18 +2674,51 @@ class PixelTileMap {
             ctx.fillRect(sx + 4, ay + 2, 8, 1);
         }
 
-        // === Name label ===
-        if (isSelected || isPlayer) {
-            ctx.font = '8px monospace';
+        // === Name + Job card ===
+        {
+            ctx.font = 'bold 7px monospace';
             ctx.textAlign = 'center';
             const nameShort = name.split('(')[0].trim();
-            const tw = ctx.measureText(nameShort).width;
-            const lx = sx + 8 - tw / 2 - 3;
-            const ly = sy - 12;
-            ctx.fillStyle = isPlayer ? 'rgba(0,229,255,0.88)' : 'rgba(0,0,0,0.78)';
-            ctx.fillRect(lx, ly, tw + 6, 11);
+            const jobLabel = jobTitle || '';
+            const cardText = jobLabel ? nameShort + ' · ' + jobLabel : nameShort;
+            const tw = ctx.measureText(cardText).width;
+            const cardW = tw + 8;
+            const cardH = 12;
+            const cx = sx + 8;
+            const lx = cx - cardW / 2;
+            const ly = sy - 14;
+            // Card background
+            if (isPlayer) {
+                ctx.fillStyle = 'rgba(0,229,255,0.9)';
+            } else if (isSelected) {
+                ctx.fillStyle = 'rgba(233,69,96,0.88)';
+            } else {
+                ctx.fillStyle = 'rgba(0,0,0,0.65)';
+            }
+            // Rounded rect
+            const r = 3;
+            ctx.beginPath();
+            ctx.moveTo(lx + r, ly);
+            ctx.lineTo(lx + cardW - r, ly);
+            ctx.quadraticCurveTo(lx + cardW, ly, lx + cardW, ly + r);
+            ctx.lineTo(lx + cardW, ly + cardH - r);
+            ctx.quadraticCurveTo(lx + cardW, ly + cardH, lx + cardW - r, ly + cardH);
+            ctx.lineTo(lx + r, ly + cardH);
+            ctx.quadraticCurveTo(lx, ly + cardH, lx, ly + cardH - r);
+            ctx.lineTo(lx, ly + r);
+            ctx.quadraticCurveTo(lx, ly, lx + r, ly);
+            ctx.closePath();
+            ctx.fill();
+            // Small triangle pointer
+            ctx.beginPath();
+            ctx.moveTo(cx - 3, ly + cardH);
+            ctx.lineTo(cx, ly + cardH + 3);
+            ctx.lineTo(cx + 3, ly + cardH);
+            ctx.closePath();
+            ctx.fill();
+            // Text
             ctx.fillStyle = isPlayer ? '#003' : '#fff';
-            ctx.fillText(nameShort, sx + 8, sy - 3);
+            ctx.fillText(cardText, cx, ly + 9);
         }
     }
 
@@ -3060,7 +3093,7 @@ class PixelTileMap {
             if (!agent) continue;
             const isPlayer = aid === 'player';
             const isSelected = aid === selectedAgent;
-            this._drawAgent(ctx, pos.x, pos.y, pos.job, isPlayer, isSelected, agent.name || 'You', pos.walking, pos.walkStep, pos.gender);
+            this._drawAgent(ctx, pos.x, pos.y, pos.job, isPlayer, isSelected, agent.name || 'You', pos.walking, pos.walkStep, pos.gender, agent.job);
             // Action animation overlay for farming NPCs
             if (!pos.walking && pos.atFarm && (pos.job === 'farmer' || pos.activity === 'working') && !isPlayer) {
                 this._drawFarmAction(ctx, pos.x, pos.y, this.animFrame, aid);
