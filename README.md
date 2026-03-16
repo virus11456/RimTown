@@ -31,7 +31,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v3.6.11.zip` from Releases
+1. Download `rimtown-v3.6.12.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -46,6 +46,16 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v3.6.12 (2026-03-16)
+
+**手機版速度控制修復 + API Key 連線檢測**
+- 修復手機版速度控制按鈕消失的問題：補齊 mobile header HTML 結構（暫停/播放、1x~3x 速度按鈕、選單下拉），修正 CSS 讓 mobile header 在 ≤768px 時正確顯示
+- 新增 API Key 連線測試功能：設定頁面中每個 API Key 輸入欄旁新增「測試連線」按鈕
+- 連線狀態指示燈：🟢 綠燈（連線成功）、🔴 紅燈（連線失敗，顯示錯誤訊息）、🟡 黃燈閃爍（測試中）
+- 儲存設定後自動測試 API Key 連線狀態
+- 新增 LLMClient.testConnection() 方法，以最小 API 請求驗證金鑰有效性
+- 版號同步：所有檔案統一為 3.6.12
 
 ### v3.6.11 (2026-03-15)
 
