@@ -1803,7 +1803,9 @@ class RimTownApp {
         document.querySelectorAll('.btn-speed').forEach(b => b.classList.remove('active'));
         const btn1x = document.querySelector('.btn-speed[data-speed="1"]');
         if (btn1x) btn1x.classList.add('active');
-        const fallbackGroqKey = document.getElementById('fallback-groq-key')?.value?.trim() || '';
+        const fallbackGroqKey = document.getElementById('fallback-groq-key')?.value?.trim()
+            || document.getElementById('settings-tab-groq')?.value?.trim()
+            || localStorage.getItem('fallback_groq_key') || '';
         if (provider && provider !== 'none' && apiKey) {
             this.llmClient = new LLMClient(provider, apiKey);
             this.world.conversationEngine = new ConversationEngine(this.llmClient);
