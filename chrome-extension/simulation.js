@@ -428,7 +428,8 @@ class Agent {
         // Decay moodModifier toward 0
         if (this.moodModifier > 0) this.moodModifier = Math.max(0, this.moodModifier - 0.5);
         else if (this.moodModifier < 0) this.moodModifier = Math.min(0, this.moodModifier + 0.5);
-        this.mood = Math.max(-100, Math.min(100, 50 + this.personality.moodBase + Math.floor(this.needs.moodContribution) + this.moodModifier));
+        const repMoodBonus = world.reputationSystem ? world.reputationSystem.getModifier('npc_mood_bonus') : 0;
+        this.mood = Math.max(-100, Math.min(100, 50 + this.personality.moodBase + Math.floor(this.needs.moodContribution) + this.moodModifier + repMoodBonus));
         this._gainSkillXp(world);
         // Only re-pick location if activity changed or stay duration expired
         const activityChanged = this.activity !== prevActivity;
@@ -4545,6 +4546,7 @@ class World {
         this.shop = new ShopSystem();
         this.eventChoice = new EventChoiceSystem();
         this.npcHelp = new NPCHelpSystem();
+        this.reputationSystem = new ReputationSystem();
     }
     addAgent(agent) { this.agents[agent.agentId] = agent; }
     removeAgent(id) { delete this.agents[id]; }
@@ -4606,6 +4608,7 @@ class World {
             // v4.0 systems
             this.dailyDecision.dailyUpdate(this);
             this.npcHelp.dailyUpdate(this);
+            this.reputationSystem.dailyUpdate(this);
             // AI Daily News (async, fire-and-forget)
             this.dailyNews.generateNewspaper(this).catch(e => console.warn('[DailyNews] Error:', e));
         }
@@ -4652,6 +4655,7 @@ class World {
             shop: this.shop.toDict(),
             eventChoice: this.eventChoice.toDict(),
             npcHelp: this.npcHelp.toDict(),
+            reputationSystem: this.reputationSystem.toDict(),
         };
     }
     reset(seed = null) {
@@ -4683,6 +4687,7 @@ class World {
         this.shop = new ShopSystem();
         this.eventChoice = new EventChoiceSystem();
         this.npcHelp = new NPCHelpSystem();
+        this.reputationSystem = new ReputationSystem();
         this.conversationEngine = new ConversationEngine(this.conversationEngine?.llm);
         this.townMap = generateRandomTown(seed);
         this._loadDefaultResidents();
@@ -4974,6 +4979,7 @@ class World {
             shop: this.shop.serialize(),
             eventChoice: this.eventChoice.serialize(),
             npcHelp: this.npcHelp.serialize(),
+            reputationSystem: this.reputationSystem.serialize(),
         };
     }
 
@@ -5181,6 +5187,7 @@ class World {
             if (data.shop) this.shop.loadFrom(data.shop);
             if (data.eventChoice) this.eventChoice.loadFrom(data.eventChoice);
             if (data.npcHelp) this.npcHelp.loadFrom(data.npcHelp);
+            if (data.reputationSystem) this.reputationSystem.loadFrom(data.reputationSystem);
 
             this.logMessage('system', t('遊戲讀取成功！'));
             return true;
@@ -5188,6 +5195,199 @@ class World {
             console.error('Failed to load save:', e);
             return false;
         }
+    }
+}
+
+// ============================================================
+// v4.0 - Reputation System (聲望系統)
+// ============================================================
+const REPUTATION_TIERS = [
+    { min: 0,   name:()=>t('無名之輩'), icon:'👤', desc:()=>t('剛來的外地人，沒人認識你') },
+    { min: 15,  name:()=>t('新面孔'),   icon:'🙂', desc:()=>t('居民開始記住你的名字了') },
+    { min: 40,  name:()=>t('可靠鄰人'), icon:'🤝', desc:()=>t('大家覺得你是可以信賴的人') },
+    { min: 70,  name:()=>t('鎮之棟樑'), icon:'⭐', desc:()=>t('你已經是小鎮不可或缺的一份子') },
+    { min: 100, name:()=>t('邊境英雄'), icon:'🏆', desc:()=>t('你的事蹟在邊境廣為流傳') },
+    { min: 150, name:()=>t('傳奇人物'), icon:'👑', desc:()=>t('後人會在書裡讀到你的故事') },
+];
+
+class ReputationSystem {
+    constructor() {
+        this.reputation = 0;        // Total reputation points (synced with questSystem)
+        this.sources = {};          // Track where reputation came from: { quests, decisions, help, trade, events }
+        this._lastEffectTier = -1;
+        this._dailyActionPoints = 0; // Track daily actions for passive rep gain
+    }
+
+    // Get current tier info
+    get tier() {
+        let current = REPUTATION_TIERS[0];
+        for (const tier of REPUTATION_TIERS) {
+            if (this.reputation >= tier.min) current = tier;
+            else break;
+        }
+        return current;
+    }
+
+    get tierIndex() {
+        let idx = 0;
+        for (let i = 0; i < REPUTATION_TIERS.length; i++) {
+            if (this.reputation >= REPUTATION_TIERS[i].min) idx = i;
+            else break;
+        }
+        return idx;
+    }
+
+    get nextTier() {
+        const idx = this.tierIndex;
+        return idx < REPUTATION_TIERS.length - 1 ? REPUTATION_TIERS[idx + 1] : null;
+    }
+
+    // Add reputation from a specific source
+    addReputation(amount, source, world) {
+        if (amount === 0) return;
+        this.reputation = Math.max(0, this.reputation + amount);
+        if (!this.sources[source]) this.sources[source] = 0;
+        this.sources[source] += amount;
+
+        // Sync with quest system
+        if (world?.questSystem) {
+            world.questSystem.reputation = this.reputation;
+        }
+
+        // Check for tier up
+        const newTierIdx = this.tierIndex;
+        if (newTierIdx > this._lastEffectTier && this._lastEffectTier >= 0) {
+            const tier = this.tier;
+            world?.logMessage?.('reputation', `⭐ ${t('聲望提升！你現在是')}「${tier.icon} ${tier.name()}」— ${tier.desc()}`);
+            if (world?.dailyNews) {
+                world.dailyNews.collectEvent('social', `${t('鎮長的聲望提升為')}「${tier.name()}」！`, 7);
+            }
+            // Tier-up mood boost
+            Object.values(world?.agents || {}).forEach(a => {
+                if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) + 3;
+            });
+        }
+        this._lastEffectTier = newTierIdx;
+    }
+
+    // Daily update: passive reputation & apply effects
+    dailyUpdate(world) {
+        // Sync FROM quest system (quests add rep directly to questSystem)
+        if (world.questSystem && world.questSystem.reputation !== this.reputation) {
+            const diff = world.questSystem.reputation - this.reputation;
+            if (diff > 0) {
+                this.reputation = world.questSystem.reputation;
+                if (!this.sources['quests']) this.sources['quests'] = 0;
+                this.sources['quests'] += diff;
+            }
+        }
+
+        // Passive reputation from daily good deeds
+        this._dailyActionPoints = 0;
+        const player = world.agents?.['player'];
+        if (player) {
+            // Working consistently
+            if (player.job) this._dailyActionPoints += 1;
+            // High average affinity
+            const rels = Object.values(player.relationships?.relationships || {});
+            if (rels.length > 0) {
+                const avgAff = rels.reduce((s, r) => s + (r.affinity || 0), 0) / rels.length;
+                if (avgAff > 30) this._dailyActionPoints += 1;
+                if (avgAff > 60) this._dailyActionPoints += 1;
+            }
+        }
+
+        // Convert daily action points to small reputation gains (slow passive growth)
+        if (this._dailyActionPoints >= 2 && Math.random() < 0.3) {
+            this.addReputation(1, 'daily', world);
+        }
+
+        // Apply reputation effects to game systems
+        this._applyEffects(world);
+    }
+
+    // Reputation effects on game mechanics
+    _applyEffects(world) {
+        const tierIdx = this.tierIndex;
+
+        // 1. NPC base trust boost — higher rep = NPCs start with better trust
+        //    (Applied when creating new relationships, checked externally)
+
+        // 2. Trade price bonus (stacks with prosperity)
+        //    tierIdx 0=0%, 1=3%, 2=5%, 3=8%, 4=12%, 5=15%
+
+        // 3. Immigration attraction bonus
+        if (world.events) {
+            const immigrationBonus = [0, 0.02, 0.05, 0.08, 0.12, 0.15][tierIdx] || 0;
+            world.events._reputationImmigrationBonus = immigrationBonus;
+        }
+
+        // 4. NPC mood bonus from respected leader
+        //    Applied via moodContribution check (small flat bonus)
+
+        // 5. Event severity reduction — high rep means fewer bad events
+        if (world.events) {
+            world.events._reputationEventShield = tierIdx >= 3 ? 0.15 : tierIdx >= 2 ? 0.08 : 0;
+        }
+    }
+
+    // Modifiers for other systems to query
+    getModifier(key) {
+        const tierIdx = this.tierIndex;
+        switch (key) {
+            case 'trade_price_bonus':
+                return [0, 0.03, 0.05, 0.08, 0.12, 0.15][tierIdx] || 0;
+            case 'npc_initial_trust':
+                return [0, 2, 5, 8, 12, 15][tierIdx] || 0;
+            case 'npc_mood_bonus':
+                return [0, 0, 1, 2, 3, 5][tierIdx] || 0;
+            case 'immigration_bonus':
+                return [0, 0.02, 0.05, 0.08, 0.12, 0.15][tierIdx] || 0;
+            case 'event_shield':
+                return tierIdx >= 3 ? 0.15 : tierIdx >= 2 ? 0.08 : 0;
+            case 'shop_discount':
+                return [0, 0, 0.05, 0.08, 0.10, 0.15][tierIdx] || 0;
+            default:
+                return 0;
+        }
+    }
+
+    toDict() {
+        const tier = this.tier;
+        const nextTier = this.nextTier;
+        return {
+            reputation: this.reputation,
+            tierName: tier.name(),
+            tierIcon: tier.icon,
+            tierDesc: tier.desc(),
+            tierIndex: this.tierIndex,
+            nextTierName: nextTier ? nextTier.name() : null,
+            nextTierMin: nextTier ? nextTier.min : null,
+            progressToNext: nextTier ? Math.round(((this.reputation - tier.min) / (nextTier.min - tier.min)) * 100) : 100,
+            sources: { ...this.sources },
+            effects: {
+                trade_bonus: `+${Math.round(this.getModifier('trade_price_bonus') * 100)}%`,
+                npc_trust: `+${this.getModifier('npc_initial_trust')}`,
+                mood_bonus: `+${this.getModifier('npc_mood_bonus')}`,
+                shop_discount: `${Math.round(this.getModifier('shop_discount') * 100)}%`,
+                event_shield: `${Math.round(this.getModifier('event_shield') * 100)}%`,
+            },
+        };
+    }
+
+    serialize() {
+        return {
+            reputation: this.reputation,
+            sources: { ...this.sources },
+            _lastEffectTier: this._lastEffectTier,
+        };
+    }
+
+    loadFrom(data) {
+        if (!data) return;
+        this.reputation = data.reputation || 0;
+        this.sources = data.sources || {};
+        this._lastEffectTier = data._lastEffectTier ?? -1;
     }
 }
 
@@ -5324,6 +5524,11 @@ class DailyDecisionSystem {
             Object.values(world.agents).forEach(a => { a.needs.social = Math.min(100, a.needs.social + effects.social_boost); });
         }
 
+        // Reputation effects
+        if (effects.reputation && world.reputationSystem) {
+            world.reputationSystem.addReputation(effects.reputation, 'decisions', world);
+        }
+
         world.logMessage('decision', `🏛️ ${t('你選擇了')}「${label}」`);
         if (world.dailyNews) {
             world.dailyNews.collectEvent('politics', `${t('鎮長決定')}：${decision.title} → ${label}`, 6);
@@ -5397,12 +5602,16 @@ class ShopSystem {
     buy(itemKey, amount, world) {
         const item = SHOP_ITEMS[itemKey];
         if (!item) return { success: false, msg: t('商品不存在') };
-        const totalCost = item.buyPrice * amount;
+        // Apply reputation shop discount
+        const discount = world.reputationSystem ? world.reputationSystem.getModifier('shop_discount') : 0;
+        const discountedPrice = Math.max(1, Math.round(item.buyPrice * (1 - discount)));
+        const totalCost = discountedPrice * amount;
         if (!world.stockpile.has('silver', totalCost)) return { success: false, msg: t('銀幣不足') };
         world.stockpile.consume('silver', totalCost, world.tickCount, `${t('購買')}${item.name()}`);
         world.stockpile.add(itemKey, amount, world.tickCount, `${t('商店購買')}`);
         this.transactionLog.push({ type: 'buy', item: itemKey, amount, cost: totalCost, tick: world.tickCount });
-        world.logMessage('economy', `🛒 ${t('購買了')} ${amount} ${item.name()}${t('，花費')} ${totalCost} ${t('銀幣')}`);
+        const discountText = discount > 0 ? ` (${t('聲望折扣')} ${Math.round(discount*100)}%)` : '';
+        world.logMessage('economy', `🛒 ${t('購買了')} ${amount} ${item.name()}${t('，花費')} ${totalCost} ${t('銀幣')}${discountText}`);
         return { success: true, msg: `${t('購買成功')}！` };
     }
 
@@ -5660,6 +5869,11 @@ class NPCHelpSystem {
         }
         if (effects.mood_all) {
             Object.values(world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + effects.mood_all; });
+        }
+
+        // Reputation for helping NPCs (option A is always the helpful choice)
+        if (choice === 'A' && world.reputationSystem) {
+            world.reputationSystem.addReputation(2, 'help', world);
         }
 
         world.logMessage('npc_help', `💬 ${t('你對')}${req.npcName}${t('說')}：「${label}」`);

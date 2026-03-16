@@ -5518,6 +5518,62 @@ class RimTownApp {
             }
         }
 
+        // ============================================================
+        // 聲望系統 (Reputation)
+        // ============================================================
+        const rep = this.state.reputationSystem;
+        if (rep) {
+            html += `<div class="econ-section"><h3>⭐ ${t('聲望系統')}</h3>`;
+            // Tier badge
+            html += `<div style="display:flex;align-items:center;gap:8px;margin:6px 0">`;
+            html += `<span style="font-size:1.5rem">${rep.tierIcon}</span>`;
+            html += `<div>`;
+            html += `<div style="font-size:0.95rem;font-weight:bold;color:var(--accent)">${rep.tierName}</div>`;
+            html += `<div style="font-size:0.72rem;color:var(--text-secondary)">${rep.tierDesc}</div>`;
+            html += `</div>`;
+            html += `<div style="margin-left:auto;font-size:0.85rem;font-weight:bold">⭐ ${rep.reputation}</div>`;
+            html += `</div>`;
+            // Progress bar to next tier
+            if (rep.nextTierName) {
+                html += `<div style="margin:6px 0">`;
+                html += `<div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-secondary)">`;
+                html += `<span>${rep.tierName}</span><span>${rep.nextTierName} (${rep.nextTierMin})</span>`;
+                html += `</div>`;
+                html += `<div class="progress-bar" style="height:6px;margin-top:2px"><div class="progress-fill" style="width:${rep.progressToNext}%;background:linear-gradient(90deg,var(--accent),#f5c542)"></div></div>`;
+                html += `</div>`;
+            } else {
+                html += `<div style="font-size:0.75rem;color:var(--positive);margin:4px 0">🏆 ${t('已達最高聲望！')}</div>`;
+            }
+            // Effects display
+            html += `<div style="margin-top:8px;padding:6px 8px;background:rgba(255,255,255,0.03);border-radius:6px;font-size:0.75rem">`;
+            html += `<div style="font-weight:bold;margin-bottom:4px;color:var(--text-primary)">${t('聲望效果')}</div>`;
+            const effectLabels = {
+                trade_bonus: t('💰 交易加成'),
+                npc_trust: t('🤝 NPC 初始信任'),
+                mood_bonus: t('😊 NPC 心情加成'),
+                shop_discount: t('🛒 商店折扣'),
+                event_shield: t('🛡️ 事件減免'),
+            };
+            for (const [key, label] of Object.entries(effectLabels)) {
+                const val = rep.effects[key];
+                const active = val && val !== '+0' && val !== '+0%' && val !== '0%';
+                html += `<div style="display:flex;justify-content:space-between;padding:1px 0;color:${active ? 'var(--text-primary)' : 'var(--text-muted)'}">`;
+                html += `<span>${label}</span><span>${val}</span>`;
+                html += `</div>`;
+            }
+            html += `</div>`;
+            // Sources breakdown
+            const sourceEntries = Object.entries(rep.sources || {}).filter(([,v]) => v > 0);
+            if (sourceEntries.length > 0) {
+                const sourceLabels = { quests: t('任務'), decisions: t('決策'), help: t('幫助NPC'), daily: t('日常'), trade: t('交易'), events: t('事件') };
+                html += `<div style="margin-top:6px;font-size:0.7rem;color:var(--text-secondary)">`;
+                html += `${t('聲望來源')}：`;
+                html += sourceEntries.map(([k, v]) => `${sourceLabels[k] || k} ${v}`).join(' · ');
+                html += `</div>`;
+            }
+            html += `</div>`;
+        }
+
         html += '</div>';
         container.innerHTML = html;
     }
