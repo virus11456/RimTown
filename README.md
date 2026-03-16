@@ -31,7 +31,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v3.7.0.zip` from Releases
+1. Download `rimtown-v3.7.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -46,6 +46,12 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v3.7.1 (2026-03-16)
+
+**修復 Groq API Key 儲存後被清空**
+- 修復儲存設定後 Groq API Key 被清空的問題：fallbackGroqKey 讀取來源新增 settings tab input 與 localStorage fallback
+- 確保 Groq 備援金鑰在各種 DOM 狀態下都能正確讀取
 
 ### v3.7.0 (2026-03-16)
 
