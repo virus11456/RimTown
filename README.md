@@ -36,6 +36,9 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 - **Interactive Newspaper**: React to daily news with investigate/support/ignore actions (v4)
 - **Improved Mood System**: Gentler nighttime need decay, graduated mood penalties (v4)
 - **Reputation System**: 6 tiers (Nobody → Legend) with real gameplay effects — trade bonuses, NPC trust, shop discounts, event shields, immigration attraction (v4)
+- **Dynamic Weather Engine**: 10 weather types (clear, rain, storm, snow, blizzard, heatwave, drought, fog, wind, cloudy) with season-weighted pools, 3-day forecast, temperature/humidity/wind tracking, and real gameplay effects on farming, mood, NPC activity (v4)
+- **Natural Disasters**: Weather-driven disasters (severe drought, extreme blizzard, floods) with escalation from extreme weather streaks, disaster warnings, building mitigation (deep well reduces drought), and recovery phases (v4)
+- **NPC Council System**: Auto-formed town council (3-5 senior NPCs), 12 proposal types covering economy/welfare/culture/defense/nature, NPC personality-based voting, player participation, 20-day decree duration with modifier effects (v4)
 
 ## WordPress Plugin Install
 
@@ -69,6 +72,9 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 - **任務刷新按鈕**：任務頁新增手動刷新進度按鈕
 - **聲望系統（完整版）**：6 個聲望等級（無名之輩→傳奇人物），影響交易價格加成、NPC 初始信任、商店折扣、事件減免、移民吸引力；任務頁新增聲望面板（階級徽章、進度條、效果一覽、來源追蹤）
 - 決策、幫助 NPC 現在正確給予聲望點數；每日被動聲望成長（有工作+高好感度）
+- **動態天氣引擎**：10 種天氣類型（晴天、下雨、暴風雨、下雪、暴風雪、熱浪、乾旱、大霧、強風、多雲），按季節加權隨機、3日天氣預報、溫度/濕度/風速追蹤，影響農業產量、NPC心情和活動
+- **天然災害系統**：極端天氣連續出現時觸發嚴重乾旱/暴風雪/洪水，預警機制，建築減災（深井減輕乾旱），災後恢復心情加成
+- **NPC 議會治理**：6人以上自動組建議會（3-5名資深NPC），12種提案（經濟/福利/文化/防禦/自然），NPC依性格投票，玩家可參與投票，通過的政令持續20天影響全鎮
 
 修復：
 - **Mood 算法大幅改善**：深夜需求衰減速率降低60%，飢餓/疲勞的心情懲罰改為漸進式（不再全鎮同時崩潰）

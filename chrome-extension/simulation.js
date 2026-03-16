@@ -429,7 +429,8 @@ class Agent {
         if (this.moodModifier > 0) this.moodModifier = Math.max(0, this.moodModifier - 0.5);
         else if (this.moodModifier < 0) this.moodModifier = Math.min(0, this.moodModifier + 0.5);
         const repMoodBonus = world.reputationSystem ? world.reputationSystem.getModifier('npc_mood_bonus') : 0;
-        this.mood = Math.max(-100, Math.min(100, 50 + this.personality.moodBase + Math.floor(this.needs.moodContribution) + this.moodModifier + repMoodBonus));
+        const weatherMoodBonus = world.weather ? Math.round(world.weather.moodModifier * 0.3) : 0;
+        this.mood = Math.max(-100, Math.min(100, 50 + this.personality.moodBase + Math.floor(this.needs.moodContribution) + this.moodModifier + repMoodBonus + weatherMoodBonus));
         this._gainSkillXp(world);
         // Only re-pick location if activity changed or stay duration expired
         const activityChanged = this.activity !== prevActivity;
@@ -3009,7 +3010,7 @@ function processDailyProduction(world) {
         const skill = agent.skills.get(recipe.skill);
         let eff = 0.5 + ((skill?skill.level:0)/20)*2.0;
         if (isIndustryHandled) eff *= 0.5;
-        if (agent.job.key === 'farmer') { eff *= SEASON_FARM_MOD[world.clock.season] || 1; eff *= 1 + (world.news?world.news.getModifier('farm_bonus',0):0); }
+        if (agent.job.key === 'farmer') { eff *= SEASON_FARM_MOD[world.clock.season] || 1; eff *= 1 + (world.news?world.news.getModifier('farm_bonus',0):0) + (world.weather?world.weather.farmModifier:0); }
         if (agent.job.key === 'miner') eff *= 1 + (world.news?world.news.getModifier('mining_bonus',0):0);
         eff *= 1 + (agent.mood - 50)/500;
         eff *= 0.9 + Math.random()*0.2;
@@ -4547,6 +4548,8 @@ class World {
         this.eventChoice = new EventChoiceSystem();
         this.npcHelp = new NPCHelpSystem();
         this.reputationSystem = new ReputationSystem();
+        this.weather = new WeatherSystem();
+        this.council = new CouncilSystem();
     }
     addAgent(agent) { this.agents[agent.agentId] = agent; }
     removeAgent(id) { delete this.agents[id]; }
@@ -4609,6 +4612,8 @@ class World {
             this.dailyDecision.dailyUpdate(this);
             this.npcHelp.dailyUpdate(this);
             this.reputationSystem.dailyUpdate(this);
+            this.weather.dailyUpdate(this);
+            this.council.dailyUpdate(this);
             // AI Daily News (async, fire-and-forget)
             this.dailyNews.generateNewspaper(this).catch(e => console.warn('[DailyNews] Error:', e));
         }
@@ -4656,6 +4661,8 @@ class World {
             eventChoice: this.eventChoice.toDict(),
             npcHelp: this.npcHelp.toDict(),
             reputationSystem: this.reputationSystem.toDict(),
+            weather: this.weather.toDict(),
+            council: (() => { const cd = this.council.toDict(); cd.memberNames = this.council.members.map(id => this.agents[id]?.name || '?'); return cd; })(),
         };
     }
     reset(seed = null) {
@@ -4688,6 +4695,8 @@ class World {
         this.eventChoice = new EventChoiceSystem();
         this.npcHelp = new NPCHelpSystem();
         this.reputationSystem = new ReputationSystem();
+        this.weather = new WeatherSystem();
+        this.council = new CouncilSystem();
         this.conversationEngine = new ConversationEngine(this.conversationEngine?.llm);
         this.townMap = generateRandomTown(seed);
         this._loadDefaultResidents();
@@ -4980,6 +4989,8 @@ class World {
             eventChoice: this.eventChoice.serialize(),
             npcHelp: this.npcHelp.serialize(),
             reputationSystem: this.reputationSystem.serialize(),
+            weather: this.weather.serialize(),
+            council: this.council.serialize(),
         };
     }
 
@@ -5188,6 +5199,8 @@ class World {
             if (data.eventChoice) this.eventChoice.loadFrom(data.eventChoice);
             if (data.npcHelp) this.npcHelp.loadFrom(data.npcHelp);
             if (data.reputationSystem) this.reputationSystem.loadFrom(data.reputationSystem);
+            if (data.weather) this.weather.loadFrom(data.weather);
+            if (data.council) this.council.loadFrom(data.council);
 
             this.logMessage('system', t('遊戲讀取成功！'));
             return true;
@@ -5388,6 +5401,632 @@ class ReputationSystem {
         this.reputation = data.reputation || 0;
         this.sources = data.sources || {};
         this._lastEffectTier = data._lastEffectTier ?? -1;
+    }
+}
+
+// ============================================================
+// v4.0 - Weather System (動態天氣引擎)
+// ============================================================
+const WEATHER_TYPES = {
+    clear:    { name:()=>t('晴天'),   icon:'☀️', farm:0.1,  mood:2,  desc:()=>t('萬里無雲，適合工作'),     visual:'clear' },
+    cloudy:   { name:()=>t('多雲'),   icon:'☁️', farm:0,    mood:0,  desc:()=>t('雲層遮住了部分陽光'),     visual:'cloudy' },
+    rain:     { name:()=>t('下雨'),   icon:'🌧️', farm:0.2,  mood:-2, desc:()=>t('雨水滋潤了大地'),         visual:'rain' },
+    storm:    { name:()=>t('暴風雨'), icon:'⛈️', farm:-0.2, mood:-8, desc:()=>t('狂風暴雨肆虐小鎮'),       visual:'storm' },
+    snow:     { name:()=>t('下雪'),   icon:'❄️', farm:-0.3, mood:-3, desc:()=>t('白雪覆蓋了田野'),         visual:'snow' },
+    blizzard: { name:()=>t('暴風雪'), icon:'🌨️', farm:-0.5, mood:-12,desc:()=>t('猛烈暴風雪，出門危險'),   visual:'blizzard' },
+    fog:      { name:()=>t('大霧'),   icon:'🌫️', farm:-0.05,mood:-1, desc:()=>t('濃霧籠罩，能見度極低'),   visual:'fog' },
+    heatwave: { name:()=>t('熱浪'),   icon:'🔥', farm:-0.3, mood:-10,desc:()=>t('酷熱難耐，人畜疲憊'),     visual:'heatwave' },
+    drought:  { name:()=>t('乾旱'),   icon:'🏜️', farm:-0.4, mood:-8, desc:()=>t('水源枯竭，作物乾枯'),     visual:'drought' },
+    wind:     { name:()=>t('強風'),   icon:'💨', farm:-0.1, mood:-3, desc:()=>t('大風不斷吹拂'),           visual:'wind' },
+};
+
+// Season → weighted weather pools: [type, weight]
+const SEASON_WEATHER = {
+    '春季': [['clear',3],['cloudy',3],['rain',4],['fog',2],['wind',1],['storm',0.5]],
+    '夏季': [['clear',4],['cloudy',2],['rain',2],['heatwave',2],['drought',1.5],['storm',1]],
+    '秋季': [['clear',2],['cloudy',3],['rain',3],['fog',3],['wind',2],['storm',1.5]],
+    '冬季': [['clear',1],['cloudy',3],['snow',3],['blizzard',1],['fog',2],['wind',2],['storm',0.5]],
+};
+
+class WeatherSystem {
+    constructor() {
+        this.current = 'clear';       // Current weather type key
+        this.duration = 1;            // How many more days this weather lasts
+        this.forecast = [];           // Next 3 days forecast: [{type, day}]
+        this.streak = 0;              // Consecutive days of same weather category (for drought/heatwave escalation)
+        this._temperature = 20;       // Abstract temperature (affects comfort)
+        this._humidity = 50;          // Affects crop water, fog chance
+        this._windSpeed = 0;          // 0-100, affects storm severity
+        this.disasterWarning = null;  // {type, severity, daysUntil} or null
+        this.activeDisaster = null;   // {type, severity, daysLeft, effects} or null
+        this._daysSinceDisaster = 10;
+    }
+
+    dailyUpdate(world) {
+        const season = world.clock.season;
+        this._daysSinceDisaster++;
+
+        // Advance duration
+        this.duration--;
+        if (this.duration <= 0) {
+            this._advanceWeather(season);
+        }
+
+        // Update environmental vars
+        this._updateEnvironment(season);
+
+        // Check for extreme weather escalation → disaster
+        this._checkDisasterEscalation(world);
+
+        // Progress active disaster
+        if (this.activeDisaster) {
+            this.activeDisaster.daysLeft--;
+            if (this.activeDisaster.daysLeft <= 0) {
+                this._endDisaster(world);
+            }
+        }
+
+        // Generate forecast if empty
+        while (this.forecast.length < 3) {
+            this.forecast.push({ type: this._rollWeather(season), day: world.clock.day + this.forecast.length + 1 });
+        }
+
+        // Apply weather effects to game systems
+        this._applyEffects(world);
+
+        // Broadcast to daily news (significant weather only)
+        this._reportWeather(world);
+    }
+
+    _rollWeather(season) {
+        const pool = SEASON_WEATHER[season] || SEASON_WEATHER['春季'];
+        const types = pool.map(p => p[0]);
+        const weights = pool.map(p => p[1]);
+        return weightedChoice(types, weights);
+    }
+
+    _advanceWeather(season) {
+        // Use forecast if available, otherwise roll new
+        if (this.forecast.length > 0) {
+            const next = this.forecast.shift();
+            const prev = this.current;
+            this.current = next.type;
+            // Track streak for same-category weather
+            if (this.current === prev || (this._isHot(this.current) && this._isHot(prev)) || (this._isWet(this.current) && this._isWet(prev))) {
+                this.streak++;
+            } else {
+                this.streak = 0;
+            }
+        } else {
+            this.current = this._rollWeather(season);
+            this.streak = 0;
+        }
+        // Duration: 1-3 days, storms and extreme weather are shorter
+        const w = WEATHER_TYPES[this.current];
+        if (['storm','blizzard','heatwave'].includes(this.current)) {
+            this.duration = Math.random() < 0.3 ? 2 : 1;
+        } else if (['drought'].includes(this.current)) {
+            this.duration = 2 + Math.floor(Math.random() * 2); // 2-3 days
+        } else {
+            this.duration = 1 + Math.floor(Math.random() * 3); // 1-3 days
+        }
+    }
+
+    _isHot(type) { return ['heatwave','drought','clear'].includes(type) && type !== 'clear'; }
+    _isWet(type) { return ['rain','storm'].includes(type); }
+
+    _updateEnvironment(season) {
+        // Base temperature by season
+        const seasonTemp = { '春季':18, '夏季':30, '秋季':15, '冬季':2 };
+        const base = seasonTemp[season] || 18;
+        const weatherMod = { clear:3, cloudy:0, rain:-2, storm:-5, snow:-8, blizzard:-15, fog:-1, heatwave:12, drought:8, wind:-3 };
+        this._temperature = base + (weatherMod[this.current] || 0) + (Math.random() * 4 - 2);
+
+        // Humidity
+        const humidityMap = { clear:30, cloudy:50, rain:85, storm:90, snow:60, blizzard:55, fog:95, heatwave:15, drought:10, wind:35 };
+        this._humidity = humidityMap[this.current] || 50;
+
+        // Wind
+        const windMap = { clear:10, cloudy:15, rain:30, storm:80, snow:25, blizzard:90, fog:5, heatwave:10, drought:5, wind:70 };
+        this._windSpeed = windMap[this.current] || 10;
+    }
+
+    _checkDisasterEscalation(world) {
+        // Drought escalation: 3+ consecutive hot days in summer
+        if (this.streak >= 3 && this._isHot(this.current) && world.clock.season === '夏季' && !this.activeDisaster && this._daysSinceDisaster > 8) {
+            this.disasterWarning = { type: 'drought_severe', severity: 'major', daysUntil: 1 };
+            world.logMessage('weather', `⚠️ ${t('乾旱警報：連續高溫，水源告急！')}`);
+        }
+        // Blizzard escalation: extended cold in winter
+        if (this.streak >= 2 && this.current === 'snow' && world.clock.season === '冬季' && !this.activeDisaster && this._daysSinceDisaster > 8) {
+            this.disasterWarning = { type: 'blizzard_severe', severity: 'major', daysUntil: 1 };
+            world.logMessage('weather', `⚠️ ${t('暴風雪警報：氣溫持續下降，請準備取暖物資！')}`);
+        }
+        // Storm escalation chance
+        if (this.current === 'storm' && Math.random() < 0.3 && !this.activeDisaster && this._daysSinceDisaster > 6) {
+            this.disasterWarning = { type: 'flood', severity: 'major', daysUntil: 0 };
+            world.logMessage('weather', `⚠️ ${t('洪水警報：暴風雨導致河水暴漲！')}`);
+        }
+
+        // Trigger disaster from warning
+        if (this.disasterWarning && this.disasterWarning.daysUntil <= 0) {
+            this._startDisaster(this.disasterWarning.type, world);
+            this.disasterWarning = null;
+        } else if (this.disasterWarning) {
+            this.disasterWarning.daysUntil--;
+        }
+    }
+
+    _startDisaster(type, world) {
+        const disasters = {
+            drought_severe: {
+                name: ()=>t('嚴重乾旱'), severity:'major', daysLeft:4,
+                effects: { farm:-0.5, mood:-10, water:-30, wood_consumption:0.5 },
+                desc: ()=>t('水井乾涸，作物大面積枯死，居民飲水困難。'),
+            },
+            blizzard_severe: {
+                name: ()=>t('極端暴風雪'), severity:'major', daysLeft:3,
+                effects: { farm:-0.6, mood:-15, comfort:-20, wood_consumption:2.0 },
+                desc: ()=>t('暴風雪封路，木材消耗加倍，居民被困室內。'),
+            },
+            flood: {
+                name: ()=>t('洪水'), severity:'major', daysLeft:3,
+                effects: { farm:-0.4, mood:-12, food_loss:0.1 },
+                desc: ()=>t('河水氾濫，部分農田被淹，儲備糧食受損。'),
+            },
+        };
+        const d = disasters[type];
+        if (!d) return;
+        this.activeDisaster = { type, name: d.name(), severity: d.severity, daysLeft: d.daysLeft, effects: d.effects, desc: d.desc() };
+        this._daysSinceDisaster = 0;
+        world.logMessage('weather', `🚨 ${t('天災發生！')}${d.name()}：${d.desc()}`);
+        if (world.dailyNews) {
+            world.dailyNews.collectEvent('disaster', `${d.name()}${t('來襲')}：${d.desc()}`, 10);
+        }
+        // Reputation boost for preparedness (if player has deep well)
+        if (type === 'drought_severe' && world.buildings?.completed?.includes('well_upgrade')) {
+            world.logMessage('weather', `💧 ${t('深井發揮作用，減輕了乾旱影響！')}`);
+            this.activeDisaster.effects.farm = Math.max(-0.3, this.activeDisaster.effects.farm + 0.2);
+        }
+    }
+
+    _endDisaster(world) {
+        const name = this.activeDisaster.name;
+        world.logMessage('weather', `✅ ${name}${t('已經結束，小鎮開始恢復。')}`);
+        if (world.dailyNews) {
+            world.dailyNews.collectEvent('recovery', `${name}${t('結束，開始重建')}`, 7);
+        }
+        // Recovery mood boost
+        Object.values(world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + 5; });
+        this.activeDisaster = null;
+    }
+
+    _applyEffects(world) {
+        const w = WEATHER_TYPES[this.current];
+        if (!w) return;
+
+        // 1. Farm bonus/penalty via news modifier system (stacks with existing)
+        if (world.news) {
+            // Set weather modifier (overwrites previous weather modifier)
+            world.news.activeModifiers['weather_farm_bonus'] = w.farm + (this.activeDisaster?.effects?.farm || 0);
+            world.news.activeModifiers['weather_mood'] = w.mood + (this.activeDisaster?.effects?.mood || 0);
+        }
+
+        // 2. Comfort penalty from extreme temperatures
+        if (this._temperature < 0 || this._temperature > 38) {
+            Object.values(world.agents).forEach(a => {
+                if (a.needs) a.needs.comfort = Math.max(0, a.needs.comfort - (this.activeDisaster ? 8 : 3));
+            });
+        }
+
+        // 3. Disaster-specific: extra wood consumption
+        if (this.activeDisaster?.effects?.wood_consumption) {
+            const npcCount = Object.values(world.agents).filter(a => !a.isPlayer).length;
+            const extraWood = Math.ceil(npcCount * this.activeDisaster.effects.wood_consumption);
+            if (!world.stockpile.consume('wood', extraWood, world.tickCount, this.activeDisaster.name)) {
+                world.logMessage('weather', `🪵 ${t('木材嚴重不足！')}${this.activeDisaster.name}${t('讓居民受凍。')}`);
+                Object.values(world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) - 5; });
+            }
+        }
+
+        // 4. Disaster-specific: food loss (flood)
+        if (this.activeDisaster?.effects?.food_loss) {
+            const foodLost = Math.floor(world.stockpile.get('food') * this.activeDisaster.effects.food_loss);
+            if (foodLost > 0) {
+                world.stockpile.consume('food', foodLost, world.tickCount, this.activeDisaster.name);
+                world.logMessage('weather', `🍖 ${t('洪水沖走了')} ${foodLost} ${t('食物！')}`);
+            }
+        }
+
+        // 5. NPC activity disruption: storms/blizzards keep NPCs indoors
+        if (['storm','blizzard'].includes(this.current) || this.activeDisaster) {
+            Object.values(world.agents).forEach(a => {
+                if (!a.isPlayer && a.activity === 'working' && Math.random() < 0.3) {
+                    a.activity = 'idle';
+                }
+            });
+        }
+    }
+
+    _reportWeather(world) {
+        const w = WEATHER_TYPES[this.current];
+        if (!w) return;
+        // Only report significant weather changes to news
+        if (['storm','blizzard','heatwave','drought','snow'].includes(this.current)) {
+            if (world.dailyNews) {
+                world.dailyNews.collectEvent('weather', `${w.icon} ${w.name()}：${w.desc()}`, 6);
+            }
+        }
+    }
+
+    // Public API for other systems
+    get weatherType() { return WEATHER_TYPES[this.current]; }
+    get temperature() { return Math.round(this._temperature); }
+    get humidity() { return Math.round(this._humidity); }
+    get windSpeed() { return Math.round(this._windSpeed); }
+    get farmModifier() {
+        const w = WEATHER_TYPES[this.current];
+        return (w?.farm || 0) + (this.activeDisaster?.effects?.farm || 0);
+    }
+    get moodModifier() {
+        const w = WEATHER_TYPES[this.current];
+        return (w?.mood || 0) + (this.activeDisaster?.effects?.mood || 0);
+    }
+    get isExtreme() { return ['storm','blizzard','heatwave','drought'].includes(this.current) || !!this.activeDisaster; }
+
+    toDict() {
+        const w = WEATHER_TYPES[this.current];
+        return {
+            current: this.current,
+            name: w?.name() || this.current,
+            icon: w?.icon || '?',
+            desc: w?.desc() || '',
+            duration: this.duration,
+            temperature: this.temperature,
+            humidity: this.humidity,
+            windSpeed: this.windSpeed,
+            forecast: this.forecast.map(f => {
+                const fw = WEATHER_TYPES[f.type];
+                return { type: f.type, name: fw?.name() || f.type, icon: fw?.icon || '?' };
+            }),
+            farmModifier: this.farmModifier,
+            moodModifier: this.moodModifier,
+            isExtreme: this.isExtreme,
+            disasterWarning: this.disasterWarning ? { type: this.disasterWarning.type, severity: this.disasterWarning.severity, daysUntil: this.disasterWarning.daysUntil } : null,
+            activeDisaster: this.activeDisaster ? { type: this.activeDisaster.type, name: this.activeDisaster.name, desc: this.activeDisaster.desc, daysLeft: this.activeDisaster.daysLeft, severity: this.activeDisaster.severity } : null,
+        };
+    }
+
+    serialize() {
+        return {
+            current: this.current, duration: this.duration, streak: this.streak,
+            forecast: this.forecast, _temperature: this._temperature,
+            _humidity: this._humidity, _windSpeed: this._windSpeed,
+            disasterWarning: this.disasterWarning, activeDisaster: this.activeDisaster,
+            _daysSinceDisaster: this._daysSinceDisaster,
+        };
+    }
+
+    loadFrom(data) {
+        if (!data) return;
+        this.current = data.current || 'clear';
+        this.duration = data.duration || 1;
+        this.streak = data.streak || 0;
+        this.forecast = data.forecast || [];
+        this._temperature = data._temperature ?? 20;
+        this._humidity = data._humidity ?? 50;
+        this._windSpeed = data._windSpeed ?? 0;
+        this.disasterWarning = data.disasterWarning || null;
+        this.activeDisaster = data.activeDisaster || null;
+        this._daysSinceDisaster = data._daysSinceDisaster ?? 10;
+    }
+}
+
+// ============================================================
+// v4.0 - Council System (NPC 議會治理系統)
+// ============================================================
+const COUNCIL_PROPOSALS = [
+    { id:'tax_trade', title:()=>t('提高商人稅收'), desc:()=>t('對來往商人收取更高稅金，增加收入但減少商人到訪。'),
+      effects:{ silver:20, merchant_chance:-0.1, mood_traders:-5 }, category:'economy', minRep:15 },
+    { id:'food_reserve', title:()=>t('建立糧食儲備制度'), desc:()=>t('每日扣留部分糧食作為儲備，減少消耗但降低滿意度。'),
+      effects:{ food_save:0.1, mood_all:-2 }, category:'welfare', minRep:0 },
+    { id:'festival_fund', title:()=>t('設立慶典基金'), desc:()=>t('每季撥銀幣舉辦慶典，提升全鎮心情。'),
+      effects:{ silver:-30, mood_all:10, festival_chance:0.3 }, category:'culture', minRep:20 },
+    { id:'night_patrol', title:()=>t('夜間巡邏制度'), desc:()=>t('安排守衛夜間巡邏，降低突襲機率但守衛更疲勞。'),
+      effects:{ raid_chance:-0.08, guard_fatigue:true }, category:'defense', minRep:15 },
+    { id:'open_borders', title:()=>t('開放邊境政策'), desc:()=>t('歡迎外來移民，加速人口增長但可能帶來衝突。'),
+      effects:{ immigration_chance:0.2, mood_all:-3, chain_chance:0.03 }, category:'welfare', minRep:30 },
+    { id:'research_grant', title:()=>t('學術研究補助'), desc:()=>t('投入資源支持研究，加速科技發展。'),
+      effects:{ silver:-20, research_bonus:0.25 }, category:'culture', minRep:25 },
+    { id:'trade_route', title:()=>t('開拓新貿易路線'), desc:()=>t('派商人探索新路線，短期花費大但長期增加貿易機會。'),
+      effects:{ silver:-40, merchant_chance:0.2, sell_bonus:0.1 }, category:'economy', minRep:40 },
+    { id:'herb_garden_public', title:()=>t('公共藥草園'), desc:()=>t('開闢公共藥草園，增加草藥產量。'),
+      effects:{ herbs:5, mood_all:2 }, category:'welfare', minRep:10 },
+    { id:'military_training', title:()=>t('全民防禦訓練'), desc:()=>t('所有居民接受基本防禦訓練，提升防禦但耗費時間。'),
+      effects:{ defense_bonus:3, mood_all:-4 }, category:'defense', minRep:35 },
+    { id:'nature_preserve', title:()=>t('自然保護區'), desc:()=>t('劃設保護區，提升採集效率和居民心情。'),
+      effects:{ gathering_bonus:0.2, mood_all:3, farm_bonus:-0.05 }, category:'nature', minRep:20 },
+    { id:'artisan_market', title:()=>t('工匠市集日'), desc:()=>t('每季舉辦工匠市集，促進手工業發展。'),
+      effects:{ silver:15, mood_all:5, tools:3 }, category:'economy', minRep:30 },
+    { id:'water_management', title:()=>t('水利工程'), desc:()=>t('修建灌溉水渠，大幅提升農業產量。'),
+      effects:{ wood:-20, stone:-15, farm_bonus:0.25 }, category:'economy', minRep:50 },
+];
+
+class CouncilSystem {
+    constructor() {
+        this.members = [];          // agentId[] — council NPCs (3-5 members)
+        this.pendingProposal = null; // {proposal, proposerId, proposerName, votes:{agentId:'for'|'against'}, daysLeft}
+        this.activeDecrees = [];    // [{id, title, effects, expiresDay}]
+        this.proposalLog = [];      // past proposals
+        this._daysSinceProposal = 0;
+        this._daysSinceCouncilCheck = 0;
+        this._formed = false;
+    }
+
+    dailyUpdate(world) {
+        this._daysSinceProposal++;
+        this._daysSinceCouncilCheck++;
+
+        // Try to form council if not yet formed (requires 6+ NPCs)
+        if (!this._formed) {
+            const npcCount = Object.values(world.agents).filter(a => !a.isPlayer).length;
+            if (npcCount >= 6 && this._daysSinceCouncilCheck >= 5) {
+                this._formCouncil(world);
+                this._daysSinceCouncilCheck = 0;
+            }
+            if (!this._formed) return;
+        }
+
+        // Expire old decrees
+        const currentDay = world.clock.year * 60 + (['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15 + world.clock.day;
+        this.activeDecrees = this.activeDecrees.filter(d => d.expiresDay > currentDay);
+
+        // Apply active decree effects
+        this._applyDecreeEffects(world);
+
+        // Clean up members who left the town
+        this.members = this.members.filter(id => world.agents[id]);
+        if (this.members.length < 2) {
+            this._formed = false;
+            this.pendingProposal = null;
+            return;
+        }
+
+        // Process pending proposal voting
+        if (this.pendingProposal) {
+            this.pendingProposal.daysLeft--;
+            this._processVotes(world);
+            if (this.pendingProposal.daysLeft <= 0) {
+                this._resolveProposal(world);
+            }
+            return;
+        }
+
+        // Generate new proposal every 7-12 days
+        if (this._daysSinceProposal >= 7 + Math.floor(Math.random() * 6)) {
+            this._generateProposal(world);
+        }
+    }
+
+    _formCouncil(world) {
+        const npcs = Object.values(world.agents).filter(a => !a.isPlayer);
+        if (npcs.length < 6) return;
+
+        // Select council members: prefer older, higher-skilled, higher-affinity NPCs
+        const scored = npcs.map(a => {
+            let score = 0;
+            if (a.age >= 35) score += 3;
+            if (a.age >= 45) score += 2;
+            score += (a.skills?.skills?.社交?.level || 0) * 2;
+            score += (a.mood + 50) / 25;
+            if (a.personality.traits.includes('hardworking')) score += 2;
+            if (a.personality.traits.includes('kind')) score += 2;
+            if (a.personality.traits.includes('lazy')) score -= 3;
+            if (a.personality.traits.includes('abrasive')) score -= 2;
+            if (a.job?.key === 'mayor') score += 5;
+            score += Math.random() * 4;
+            return { agent: a, score };
+        }).sort((a, b) => b.score - a.score);
+
+        const size = Math.min(5, Math.max(3, Math.floor(npcs.length / 3)));
+        this.members = scored.slice(0, size).map(s => s.agent.agentId);
+        this._formed = true;
+
+        const names = this.members.map(id => world.agents[id]?.name).filter(Boolean).join(t('、'));
+        world.logMessage('council', `🏛️ ${t('議會成立！成員：')}${names}`);
+        if (world.dailyNews) {
+            world.dailyNews.collectEvent('politics', `${t('小鎮議會正式成立，成員有')}${names}`, 8);
+        }
+    }
+
+    _generateProposal(world) {
+        const rep = world.reputationSystem?.reputation || 0;
+        const eligible = COUNCIL_PROPOSALS.filter(p => {
+            // Check reputation requirement
+            if (p.minRep > rep) return false;
+            // Don't repeat recently passed proposals
+            const recent = this.proposalLog.slice(-10);
+            if (recent.some(r => r.id === p.id && r.passed)) return false;
+            return true;
+        });
+        if (!eligible.length) return;
+
+        const proposal = pickRandom(eligible);
+        const proposer = pickRandom(this.members);
+        const proposerAgent = world.agents[proposer];
+
+        this.pendingProposal = {
+            id: proposal.id,
+            title: proposal.title(),
+            desc: proposal.desc(),
+            effects: proposal.effects,
+            category: proposal.category,
+            proposerId: proposer,
+            proposerName: proposerAgent?.name || '?',
+            votes: {},  // agentId → 'for' | 'against'
+            daysLeft: 3,
+            playerVoted: false,
+        };
+        this._daysSinceProposal = 0;
+
+        world.logMessage('council', `🏛️ ${proposerAgent?.name || '?'}${t('提出議案：')}${proposal.title()}`);
+        if (world.dailyNews) {
+            world.dailyNews.collectEvent('politics', `${t('議會提案：')}${proposal.title()}`, 6);
+        }
+    }
+
+    _processVotes(world) {
+        if (!this.pendingProposal) return;
+        for (const memberId of this.members) {
+            if (this.pendingProposal.votes[memberId]) continue; // Already voted
+            if (Math.random() > 0.5) continue; // Not voting today
+            const agent = world.agents[memberId];
+            if (!agent) continue;
+
+            // NPC voting logic based on personality
+            let forScore = 0;
+            const effects = this.pendingProposal.effects;
+            const cat = this.pendingProposal.category;
+
+            // Policy alignment from election policies
+            for (const policy of ELECTION_POLICIES) {
+                if (policy.id === cat) {
+                    for (const v of agent.personality.values) { if (policy.values.includes(v)) forScore += 3; }
+                    for (const tr of agent.personality.traits) { if (policy.traits.includes(tr)) forScore += 2; }
+                }
+            }
+
+            // React to negative effects
+            if (effects.mood_all && effects.mood_all < 0) forScore -= 2;
+            if (effects.mood_all && effects.mood_all > 0) forScore += 2;
+            if (effects.silver && effects.silver < 0) forScore -= 1;
+            if (effects.silver && effects.silver > 0) forScore += 1;
+
+            // Proposer affinity matters
+            const rel = agent.relationships?.relationships?.[this.pendingProposal.proposerId];
+            if (rel) forScore += (rel.affinity / 100) * 5;
+
+            // Random factor
+            forScore += (Math.random() - 0.3) * 4;
+
+            this.pendingProposal.votes[memberId] = forScore >= 0 ? 'for' : 'against';
+        }
+    }
+
+    // Player votes on the current proposal
+    playerVote(choice) {
+        if (!this.pendingProposal || this.pendingProposal.playerVoted) return false;
+        this.pendingProposal.votes['player'] = choice; // 'for' or 'against'
+        this.pendingProposal.playerVoted = true;
+        return true;
+    }
+
+    _resolveProposal(world) {
+        if (!this.pendingProposal) return;
+        const p = this.pendingProposal;
+
+        // Count votes
+        const forVotes = Object.values(p.votes).filter(v => v === 'for').length;
+        const againstVotes = Object.values(p.votes).filter(v => v === 'against').length;
+        const totalVotes = forVotes + againstVotes;
+        const passed = forVotes > againstVotes;
+
+        if (passed) {
+            // Apply immediate resource effects
+            const sp = world.stockpile;
+            if (p.effects.silver && p.effects.silver > 0) sp.add('silver', p.effects.silver, world.tickCount, `${t('議會決議')}：${p.title}`);
+            if (p.effects.silver && p.effects.silver < 0) sp.consume('silver', Math.abs(p.effects.silver), world.tickCount, `${t('議會決議')}：${p.title}`);
+            if (p.effects.food_save) { /* passive effect via decree */ }
+            if (p.effects.herbs) sp.add('herbs', p.effects.herbs, world.tickCount, `${t('議會決議')}：${p.title}`);
+            if (p.effects.tools) sp.add('tools', p.effects.tools, world.tickCount, `${t('議會決議')}：${p.title}`);
+            if (p.effects.wood && p.effects.wood < 0) sp.consume('wood', Math.abs(p.effects.wood), world.tickCount, `${t('議會決議')}：${p.title}`);
+            if (p.effects.stone && p.effects.stone < 0) sp.consume('stone', Math.abs(p.effects.stone), world.tickCount, `${t('議會決議')}：${p.title}`);
+
+            // Mood effects
+            if (p.effects.mood_all) {
+                Object.values(world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + p.effects.mood_all; });
+            }
+
+            // Register as active decree (modifier effects last 20 days)
+            const currentDay = world.clock.year * 60 + (['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15 + world.clock.day;
+            this.activeDecrees.push({
+                id: p.id, title: p.title, effects: p.effects, expiresDay: currentDay + 20,
+            });
+
+            // Reputation gain for passing proposals
+            if (world.reputationSystem) world.reputationSystem.addReputation(3, 'council', world);
+
+            world.logMessage('council', `✅ ${t('議會通過：')}${p.title}（${forVotes}${t(' 票贊成 / ')}${againstVotes}${t(' 票反對）')}`);
+        } else {
+            world.logMessage('council', `❌ ${t('議會否決：')}${p.title}（${forVotes}${t(' 票贊成 / ')}${againstVotes}${t(' 票反對）')}`);
+        }
+
+        if (world.dailyNews) {
+            world.dailyNews.collectEvent('politics', `${t('議會')}${passed ? t('通過') : t('否決')}${t('了')}「${p.title}」（${forVotes}:${againstVotes}）`, 7);
+        }
+
+        this.proposalLog.push({ id: p.id, title: p.title, passed, forVotes, againstVotes, totalVotes });
+        if (this.proposalLog.length > 30) this.proposalLog = this.proposalLog.slice(-30);
+        this.pendingProposal = null;
+    }
+
+    _applyDecreeEffects(world) {
+        // Aggregate all active decree modifiers into news system
+        for (const decree of this.activeDecrees) {
+            const e = decree.effects;
+            if (e.merchant_chance && world.news) world.news.activeModifiers['council_merchant'] = (world.news.activeModifiers['council_merchant'] || 0) + e.merchant_chance;
+            if (e.raid_chance && world.news) world.news.activeModifiers['council_raid'] = (world.news.activeModifiers['council_raid'] || 0) + e.raid_chance;
+            if (e.immigration_chance && world.news) world.news.activeModifiers['council_immigration'] = (world.news.activeModifiers['council_immigration'] || 0) + e.immigration_chance;
+            if (e.research_bonus && world.news) world.news.activeModifiers['council_research'] = (world.news.activeModifiers['council_research'] || 0) + e.research_bonus;
+            if (e.farm_bonus && world.news) world.news.activeModifiers['council_farm'] = (world.news.activeModifiers['council_farm'] || 0) + e.farm_bonus;
+            if (e.gathering_bonus && world.news) world.news.activeModifiers['council_gathering'] = (world.news.activeModifiers['council_gathering'] || 0) + e.gathering_bonus;
+            if (e.sell_bonus && world.news) world.news.activeModifiers['council_sell'] = (world.news.activeModifiers['council_sell'] || 0) + e.sell_bonus;
+            if (e.defense_bonus && world.news) world.news.activeModifiers['council_defense'] = (world.news.activeModifiers['council_defense'] || 0) + e.defense_bonus;
+            if (e.festival_chance && world.news) world.news.activeModifiers['council_festival'] = (world.news.activeModifiers['council_festival'] || 0) + e.festival_chance;
+        }
+    }
+
+    toDict() {
+        return {
+            formed: this._formed,
+            members: [...this.members],
+            memberNames: [], // populated in getState
+            pendingProposal: this.pendingProposal ? {
+                id: this.pendingProposal.id, title: this.pendingProposal.title,
+                desc: this.pendingProposal.desc, category: this.pendingProposal.category,
+                proposerName: this.pendingProposal.proposerName,
+                votes: { ...this.pendingProposal.votes },
+                daysLeft: this.pendingProposal.daysLeft,
+                playerVoted: this.pendingProposal.playerVoted,
+                forCount: Object.values(this.pendingProposal.votes).filter(v => v === 'for').length,
+                againstCount: Object.values(this.pendingProposal.votes).filter(v => v === 'against').length,
+            } : null,
+            activeDecrees: this.activeDecrees.map(d => ({ id:d.id, title:d.title })),
+            proposalLog: this.proposalLog.slice(-10),
+        };
+    }
+
+    serialize() {
+        return {
+            members: [...this.members],
+            pendingProposal: this.pendingProposal,
+            activeDecrees: this.activeDecrees,
+            proposalLog: this.proposalLog,
+            _daysSinceProposal: this._daysSinceProposal,
+            _daysSinceCouncilCheck: this._daysSinceCouncilCheck,
+            _formed: this._formed,
+        };
+    }
+
+    loadFrom(data) {
+        if (!data) return;
+        this.members = data.members || [];
+        this.pendingProposal = data.pendingProposal || null;
+        this.activeDecrees = data.activeDecrees || [];
+        this.proposalLog = data.proposalLog || [];
+        this._daysSinceProposal = data._daysSinceProposal || 0;
+        this._daysSinceCouncilCheck = data._daysSinceCouncilCheck || 0;
+        this._formed = data._formed || false;
     }
 }
 

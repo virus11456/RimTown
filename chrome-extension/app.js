@@ -900,6 +900,29 @@ class RimTownApp {
         } else if (!nh?.pendingRequest) {
             this._shownHelpId = null;
         }
+
+        // Council proposal
+        const cc = this.world.council;
+        if (cc?.pendingProposal && !cc.pendingProposal.playerVoted && !this._shownCouncilId) {
+            this._shownCouncilId = cc.pendingProposal.id + '_' + cc._daysSinceProposal;
+            this._showCouncilCard(cc.pendingProposal);
+        } else if (!cc?.pendingProposal || cc.pendingProposal.playerVoted) {
+            this._shownCouncilId = null;
+        }
+
+        // Weather disaster warning notification
+        const ww = this.world.weather;
+        if (ww?.activeDisaster && !this._shownDisasterId) {
+            this._shownDisasterId = ww.activeDisaster.type;
+            this._showInteractiveNotification({
+                icon: '🚨',
+                title: ww.activeDisaster.name,
+                desc: ww.activeDisaster.desc,
+                buttons: [{ label: t('了解'), action: () => { this.activeTab = 'events'; this.state = this.world.getState(); this.renderSidebar(); } }],
+            });
+        } else if (!ww?.activeDisaster) {
+            this._shownDisasterId = null;
+        }
     }
 
     _showDecisionCard(decision) {
@@ -949,6 +972,26 @@ class RimTownApp {
                 }},
                 { label: request.optionB.label, action: () => {
                     this.world.npcHelp.resolveRequest('B', this.world);
+                    this.state = this.world.getState(); this.renderSidebar();
+                }},
+            ]
+        });
+    }
+
+    _showCouncilCard(proposal) {
+        this._showInteractiveNotification({
+            icon: '🏛️',
+            title: `${t('議會提案')}：${proposal.title}`,
+            desc: proposal.desc,
+            buttons: [
+                { label: `👍 ${t('贊成')}`, action: () => {
+                    this.world.council.playerVote('for');
+                    this.world.logMessage('council', `🏛️ ${t('你對議會提案投了贊成票。')}`);
+                    this.state = this.world.getState(); this.renderSidebar();
+                }},
+                { label: `👎 ${t('反對')}`, action: () => {
+                    this.world.council.playerVote('against');
+                    this.world.logMessage('council', `🏛️ ${t('你對議會提案投了反對票。')}`);
                     this.state = this.world.getState(); this.renderSidebar();
                 }},
             ]
@@ -1552,6 +1595,16 @@ class RimTownApp {
         if (eff.mood_all) Object.values(this.world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + eff.mood_all; });
         this.world.logMessage('player_action', `📰 ${t('你對今日新聞選擇了「')}${labels[reaction] || reaction}${t('」')}`);
         this._newsReacted = true;
+        this.state = this.world.getState(); this.renderSidebar();
+    }
+
+    // v4.0: Council vote
+    _councilVote(choice) {
+        if (!this.world.council) return;
+        const success = this.world.council.playerVote(choice);
+        if (success) {
+            this.world.logMessage('council', `🏛️ ${t('你對議會提案投了')}${choice === 'for' ? t('贊成') : t('反對')}${t('票。')}`);
+        }
         this.state = this.world.getState(); this.renderSidebar();
     }
 
@@ -2447,6 +2500,8 @@ class RimTownApp {
                 case 'quest-refresh': if (this.world.questSystem) { this.world.questSystem.checkProgress(this.world); this.state = this.world.getState(); this.renderSidebar(); } break;
                 // v4.0: News reaction
                 case 'news-react': this._newsReaction(val); break;
+                // v4.0: Council vote
+                case 'council-vote': this._councilVote(val); break;
                 // Settings tab actions
                 case 'settings-save-all': this._saveSettingsFromTab(); break;
                 case 'test-apikey': this._testApiKeyConnection('main'); break;
@@ -3203,6 +3258,15 @@ class RimTownApp {
         const travelText = travelCount > 0 ? `（+${travelCount}${t(' 外出）')}` : '';
         const popEl = document.getElementById('population-count');
         if (popEl) popEl.textContent = `${t('人口：')}${agentCount}${travelText}`;
+
+        // Weather display
+        const weatherEl = document.getElementById('weather-display');
+        if (weatherEl && this.state.weather) {
+            const w = this.state.weather;
+            weatherEl.textContent = `${w.icon} ${w.name} ${w.temperature}°`;
+            weatherEl.title = w.desc + (w.activeDisaster ? ` | 🚨 ${w.activeDisaster.name}` : '');
+            weatherEl.style.color = w.isExtreme ? 'var(--negative)' : 'var(--text-secondary)';
+        }
 
         // Update town-info-bar in residents tab (real-time)
         const infoClockEl = document.querySelector('.town-info-clock');
@@ -4154,6 +4218,98 @@ class RimTownApp {
             html += `<div class="election-history-brief">
                 <span>${t('上次選舉：')}${last.winner.name}${t(' 當選（')}${last.winner.policyIcon || ''}${ELECTION_POLICIES_LABELS[last.winner.policy] || last.winner.policy}，${last.winner.votes}/${last.totalVotes} ${t('票）')}</span>
             </div>`;
+        }
+
+        // --- Weather Panel ---
+        const weather = this.state.weather;
+        if (weather) {
+            html += '<div class="weather-section" style="margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px">';
+            html += `<h4>${weather.icon} ${t('天氣')}：${weather.name}</h4>`;
+            html += `<div style="font-size:0.8rem;color:var(--text-secondary);margin:4px 0">${weather.desc}</div>`;
+            html += `<div style="display:flex;gap:12px;font-size:0.75rem;margin:6px 0">`;
+            html += `<span>🌡️ ${weather.temperature}°C</span>`;
+            html += `<span>💧 ${t('濕度')} ${weather.humidity}%</span>`;
+            html += `<span>💨 ${t('風速')} ${weather.windSpeed}</span>`;
+            html += `</div>`;
+            // Farm & mood modifiers
+            const farmPct = Math.round(weather.farmModifier * 100);
+            const moodVal = weather.moodModifier;
+            html += `<div style="display:flex;gap:12px;font-size:0.75rem;margin:4px 0">`;
+            html += `<span style="color:${farmPct >= 0 ? 'var(--positive)' : 'var(--negative)'}">🌾 ${t('農業')} ${farmPct >= 0 ? '+' : ''}${farmPct}%</span>`;
+            html += `<span style="color:${moodVal >= 0 ? 'var(--positive)' : 'var(--negative)'}">😊 ${t('心情')} ${moodVal >= 0 ? '+' : ''}${moodVal}</span>`;
+            html += `</div>`;
+            // Forecast
+            if (weather.forecast?.length) {
+                html += `<div style="display:flex;gap:8px;margin-top:6px;font-size:0.72rem;color:var(--text-muted)">`;
+                html += `<span>${t('預報')}：</span>`;
+                weather.forecast.forEach(f => { html += `<span title="${f.name}">${f.icon}</span>`; });
+                html += `</div>`;
+            }
+            // Disaster warning
+            if (weather.disasterWarning) {
+                html += `<div style="margin-top:6px;padding:4px 8px;background:rgba(255,80,80,0.1);border-left:3px solid var(--negative);border-radius:4px;font-size:0.75rem">`;
+                html += `⚠️ ${t('災害預警')}：${weather.disasterWarning.type === 'drought_severe' ? t('嚴重乾旱') : weather.disasterWarning.type === 'blizzard_severe' ? t('極端暴風雪') : t('洪水')}`;
+                if (weather.disasterWarning.daysUntil > 0) html += ` (${weather.disasterWarning.daysUntil} ${t('天後')})`;
+                html += `</div>`;
+            }
+            // Active disaster
+            if (weather.activeDisaster) {
+                html += `<div style="margin-top:6px;padding:6px 8px;background:rgba(255,40,40,0.15);border-left:3px solid var(--negative);border-radius:4px;font-size:0.8rem;font-weight:bold">`;
+                html += `🚨 ${weather.activeDisaster.name}（${t('剩餘')} ${weather.activeDisaster.daysLeft} ${t('天')}）`;
+                html += `<div style="font-weight:normal;font-size:0.72rem;margin-top:2px">${weather.activeDisaster.desc}</div>`;
+                html += `</div>`;
+            }
+            html += '</div>';
+        }
+
+        // --- Council Panel ---
+        const council = this.state.council;
+        if (council && council.formed) {
+            html += '<div class="council-section" style="margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px">';
+            html += `<h4>🏛️ ${t('小鎮議會')}</h4>`;
+            html += `<div style="font-size:0.75rem;color:var(--text-secondary);margin:4px 0">${t('成員')}：${council.memberNames.join(t('、'))}</div>`;
+            // Pending proposal
+            if (council.pendingProposal) {
+                const p = council.pendingProposal;
+                html += `<div style="margin-top:8px;padding:8px;background:rgba(255,200,60,0.08);border:1px solid rgba(255,200,60,0.2);border-radius:6px">`;
+                html += `<div style="font-weight:bold;font-size:0.85rem">📜 ${p.title}</div>`;
+                html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin:4px 0">${p.desc}</div>`;
+                html += `<div style="font-size:0.72rem;color:var(--text-muted)">${t('提案者')}：${p.proposerName} | ${t('剩餘')} ${p.daysLeft} ${t('天投票')}</div>`;
+                html += `<div style="display:flex;gap:8px;margin-top:4px;font-size:0.75rem">`;
+                html += `<span style="color:var(--positive)">👍 ${p.forCount} ${t('贊成')}</span>`;
+                html += `<span style="color:var(--negative)">👎 ${p.againstCount} ${t('反對')}</span>`;
+                html += `</div>`;
+                if (!p.playerVoted) {
+                    html += `<div style="display:flex;gap:6px;margin-top:8px">`;
+                    html += `<button class="btn-accent" data-action="council-vote" data-val="for" style="flex:1;padding:6px">👍 ${t('贊成')}</button>`;
+                    html += `<button style="flex:1;padding:6px;border-radius:4px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,80,80,0.1);color:var(--text-primary);cursor:pointer" data-action="council-vote" data-val="against">👎 ${t('反對')}</button>`;
+                    html += `</div>`;
+                } else {
+                    html += `<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">✅ ${t('你已投票')}</div>`;
+                }
+                html += `</div>`;
+            } else {
+                html += `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">${t('目前沒有待表決的議案。')}</div>`;
+            }
+            // Active decrees
+            if (council.activeDecrees?.length) {
+                html += `<div style="margin-top:8px;font-size:0.75rem">`;
+                html += `<div style="font-weight:bold;margin-bottom:4px">${t('生效中的政令')}：</div>`;
+                council.activeDecrees.forEach(d => {
+                    html += `<div style="padding:2px 0;color:var(--text-secondary)">📋 ${d.title}</div>`;
+                });
+                html += `</div>`;
+            }
+            // Proposal log
+            if (council.proposalLog?.length) {
+                html += `<div style="margin-top:8px;font-size:0.7rem;color:var(--text-muted)">`;
+                html += `${t('近期決議')}：`;
+                council.proposalLog.slice(-5).reverse().forEach(p => {
+                    html += `<span style="color:${p.passed ? 'var(--positive)' : 'var(--negative)'}"> ${p.passed ? '✅' : '❌'} ${p.title}(${p.forVotes}:${p.againstVotes})</span>`;
+                });
+                html += `</div>`;
+            }
+            html += '</div>';
         }
 
         // --- News Bulletins ---

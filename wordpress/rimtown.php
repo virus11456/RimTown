@@ -86,6 +86,7 @@ function rimtown_shortcode($atts) {
             <h1>邊境鎮</h1>
             <div class="header-info">
                 <span id="population-count">人口：--</span>
+                <span id="weather-display" style="font-size:0.75rem;margin:0 4px">☀️</span>
                 <span id="clock-display" class="clock-display">載入中...</span>
             </div>
         </div>
@@ -1005,6 +1006,9 @@ function rimtown_get_changelog() {
                 '聲望系統（完整版）：6 個等級（無名之輩→傳奇人物），影響交易價格、NPC 信任、商店折扣、事件減免、移民吸引力',
                 '心情系統優化：夜間需求衰減放緩，心情懲罰改為漸進式而非斷崖式',
                 '任務頁籤新增聲望面板：階級徽章、進度條、效果一覽、來源追蹤',
+                '動態天氣引擎：10 種天氣類型按季節加權，3日預報，溫度/濕度/風速，影響農業、心情、NPC活動',
+                '天然災害系統：嚴重乾旱/暴風雪/洪水，連續極端天氣觸發，預警機制，建築減災，災後恢復',
+                'NPC 議會治理：自動組建議會，12 種提案，NPC 依性格投票，玩家可參與，政令持續 20 天',
                 '版號同步：所有檔案統一為 4.0.0',
             ),
         ),
