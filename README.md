@@ -31,7 +31,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v3.6.15.zip` from Releases
+1. Download `rimtown-v3.6.16.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -46,6 +46,13 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v3.6.16 (2026-03-16)
+
+**修復聊天閃爍 + WordPress 同步**
+- 修復聊天對話持續閃爍問題：模擬 tick 時跳過聊天頁面完整重繪，改用 DOM 原地更新聯絡人資訊
+- 同步 WordPress 版本：像素頭像、style.css、app.js 與 Chrome Extension 完全一致
+- 版號同步：所有檔案統一為 3.6.16
 
 ### v3.6.15 (2026-03-16)
 

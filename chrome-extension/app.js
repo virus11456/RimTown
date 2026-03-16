@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v3.6.15
-const RIMTOWN_APP_VERSION = '3.6.15';
+// RimTown - Frontend App (WordPress Plugin) v3.6.16
+const RIMTOWN_APP_VERSION = '3.6.16';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -2803,6 +2803,88 @@ class RimTownApp {
         msgEl.innerHTML = html;
     }
 
+    // Lightweight in-place update for chat contacts during simulation ticks (prevents flickering)
+    _updateChatContactsInPlace() {
+        const contactBtns = document.querySelectorAll('.chat-contact');
+        if (!contactBtns.length) return;
+        const player = this.state?.agents?.['player'];
+        if (!player) return;
+        const chatHistory = player.chat_history || [];
+
+        contactBtns.forEach(btn => {
+            const npcId = btn.getAttribute('data-val');
+            const agent = this.state.agents[npcId];
+            if (!agent) return;
+
+            // Update mood indicator
+            const moodEl = btn.querySelector('.mood-indicator');
+            if (moodEl) {
+                moodEl.className = `mood-indicator mood-${agent.mood_description}`;
+            }
+
+            // Update thought text
+            const thoughtEl = btn.querySelector('.chat-contact-thought');
+            const thought = agent.current_thought || '';
+            const thoughtText = thought ? this._escapeHtml(thought.length > 18 ? thought.slice(0, 18) + '...' : thought) : '';
+            if (thoughtEl) {
+                if (thoughtText) {
+                    thoughtEl.innerHTML = thoughtText;
+                } else {
+                    thoughtEl.remove();
+                }
+            } else if (thoughtText) {
+                const infoEl = btn.querySelector('.chat-contact-info');
+                if (infoEl) {
+                    const previewEl = infoEl.querySelector('.chat-contact-preview');
+                    const newThought = document.createElement('div');
+                    newThought.className = 'chat-contact-thought';
+                    newThought.innerHTML = thoughtText;
+                    if (previewEl) infoEl.insertBefore(newThought, previewEl);
+                    else infoEl.appendChild(newThought);
+                }
+            }
+
+            // Update unread dot
+            const nameEl = btn.querySelector('.chat-contact-name');
+            const hasUnread = this._chatUnread?.has(npcId);
+            const dotEl = nameEl?.querySelector('.chat-unread-dot');
+            if (hasUnread && !dotEl && nameEl) {
+                nameEl.insertAdjacentHTML('beforeend', '<span class="chat-unread-dot"></span>');
+            } else if (!hasUnread && dotEl) {
+                dotEl.remove();
+            }
+
+            // Update last message preview
+            const msgs = chatHistory.filter(c => c.speaker === agent.name || c.target === agent.name);
+            const lastMsg = msgs.length ? msgs[msgs.length - 1] : null;
+            const previewEl = btn.querySelector('.chat-contact-preview');
+            if (previewEl && lastMsg) {
+                const lastText = lastMsg.speaker === player.name ? `${t('你')}：${lastMsg.text}` : lastMsg.text;
+                const truncated = lastText.length > 20 ? lastText.slice(0, 20) + '...' : lastText;
+                previewEl.textContent = truncated;
+            }
+
+            // Update time
+            const timeEl = btn.querySelector('.chat-contact-time');
+            if (timeEl && lastMsg?.time) {
+                timeEl.textContent = lastMsg.time;
+            }
+        });
+
+        // Also update chat header info if chatting
+        if (this.chatTarget) {
+            const targetAgent = this.state.agents[this.chatTarget];
+            if (targetAgent) {
+                const detailEl = document.querySelector('.chat-conv-detail');
+                if (detailEl) {
+                    const job = targetAgent.job?.title || '';
+                    const loc = targetAgent.current_location ? ' · ' + this._locationLabel(targetAgent.current_location) : '';
+                    detailEl.textContent = job + loc;
+                }
+            }
+        }
+    }
+
     _showTypingIndicator(name) {
         this._typingName = name;
         const msgEl = document.getElementById('chat-messages');
@@ -2863,6 +2945,13 @@ class RimTownApp {
         // Skip settings tab re-render during simulation ticks to prevent
         // unsaved form data (API keys etc.) from being wiped by innerHTML replacement
         if (this.activeTab === 'settings') return;
+        // Skip full chat tab re-render during simulation ticks to prevent flickering.
+        // Only update dynamic data (thoughts, mood, unread) in-place via DOM manipulation.
+        // Full re-renders still happen via explicit renderSidebar() calls (e.g. startChatWith, sendChat).
+        if (this.activeTab === 'chat') {
+            this._updateChatContactsInPlace();
+            return;
+        }
         this.renderSidebar();
     }
 
