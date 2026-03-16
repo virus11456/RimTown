@@ -810,6 +810,19 @@ body.rimtown-page .wp-block-post-title {
     border: 2px solid rgba(233,69,96,0.3);
     position: relative;
 }
+.chat-contact-avatar-pixel {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.avatar-pixel-art {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
 .chat-contact-info {
     flex: 1;
     min-width: 0;

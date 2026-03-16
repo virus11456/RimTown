@@ -3771,4 +3771,33 @@ class PixelTileMap {
             ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
         }
     }
+
+    // Render NPC pixel art avatar to a data URL for use in contact list etc.
+    // Returns a cached data URL string of the NPC's sprite.
+    renderAvatarDataURL(jobKey, gender) {
+        const cacheKey = `${jobKey}_${gender}`;
+        if (!this._avatarCache) this._avatarCache = {};
+        if (this._avatarCache[cacheKey]) return this._avatarCache[cacheKey];
+
+        const scale = 3;
+        const spriteW = 16, spriteH = 28;
+        const w = spriteW * scale, h = spriteH * scale;
+        const offscreen = document.createElement('canvas');
+        offscreen.width = w;
+        offscreen.height = h;
+        const ctx = offscreen.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+
+        // Scale up so pixel art is crisp
+        ctx.scale(scale, scale);
+
+        // Draw the agent at a fixed position (centered in the sprite area)
+        // _drawAgent expects center-bottom x,y — sprite is 16w x 24h drawn from (x-8, y-20)
+        // We place center at x=8, bottom at y=spriteH-2 so sprite fits nicely
+        this._drawAgent(ctx, 8, spriteH - 4, jobKey, false, false, '', false, 0, gender, '');
+
+        const dataUrl = offscreen.toDataURL('image/png');
+        this._avatarCache[cacheKey] = dataUrl;
+        return dataUrl;
+    }
 }

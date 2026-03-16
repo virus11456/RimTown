@@ -2991,7 +2991,7 @@ class RimTownApp {
                 const lastMsg = msgs.length ? msgs[msgs.length - 1] : null;
                 const jobKey = a.job?.key || 'default';
                 const avatarColor = JOB_AVATAR_COLORS[jobKey] || JOB_AVATAR_COLORS.default;
-                return { id, name: a.name, job: a.job?.title || '', jobKey, avatarColor, mood: a.mood_description, location: a.current_location, currentThought: a.current_thought || '', lastMsg, msgCount: msgs.length, hasUnread: this._chatUnread.has(id) };
+                return { id, name: a.name, job: a.job?.title || '', jobKey, avatarColor, gender: a.gender || 'male', mood: a.mood_description, location: a.current_location, currentThought: a.current_thought || '', lastMsg, msgCount: msgs.length, hasUnread: this._chatUnread.has(id) };
             });
 
         // Sort: unread first, then by last message time (most recent first), then no-history alphabetically
@@ -3011,10 +3011,10 @@ class RimTownApp {
             const isActive = this.chatTarget === npc.id;
             const lastText = npc.lastMsg ? (npc.lastMsg.speaker === player.name ? `${t('你')}：${npc.lastMsg.text}` : npc.lastMsg.text) : t('尚未對話');
             const truncated = lastText.length > 20 ? lastText.slice(0, 20) + '...' : lastText;
-            const initial = npc.name.charAt(0);
+            const avatarDataUrl = this.tileMap ? this.tileMap.renderAvatarDataURL(npc.jobKey, npc.gender) : null;
             const thoughtText = npc.currentThought ? this._escapeHtml(npc.currentThought.length > 18 ? npc.currentThought.slice(0, 18) + '...' : npc.currentThought) : '';
             contactsHtml += `<button class="chat-contact ${isActive ? 'active' : ''}" data-action="start-chat" data-val="${npc.id}">
-                <div class="chat-contact-avatar" style="background:${npc.avatarColor};color:#fff;font-weight:bold;font-size:1rem;text-shadow:0 1px 2px rgba(0,0,0,0.4)"><span class="avatar-initial">${initial}</span><span class="mood-indicator mood-${npc.mood}"></span></div>
+                <div class="chat-contact-avatar chat-contact-avatar-pixel" style="background:${npc.avatarColor}">${avatarDataUrl ? `<img src="${avatarDataUrl}" class="avatar-pixel-art" alt="${npc.name}">` : `<span class="avatar-initial" style="color:#fff;font-weight:bold;font-size:1rem;text-shadow:0 1px 2px rgba(0,0,0,0.4)">${npc.name.charAt(0)}</span>`}<span class="mood-indicator mood-${npc.mood}"></span></div>
                 <div class="chat-contact-info">
                     <div class="chat-contact-name">${npc.name}${npc.hasUnread ? '<span class="chat-unread-dot"></span>' : ''}</div>
                     <div class="chat-contact-job">${npc.job || t('無業')}</div>
