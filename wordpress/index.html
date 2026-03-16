@@ -227,6 +227,32 @@
         <button class="quest-guidance-dismiss" data-i18n-title="關閉提示" title="關閉提示">✕</button>
     </div>
 
+    <!-- Mobile Header (shown only on ≤768px) -->
+    <div class="mobile-header">
+        <div class="mobile-header-row">
+            <span class="mobile-title" data-i18n="邊境鎮">邊境鎮</span>
+            <span id="mobile-clock" class="mobile-clock" data-i18n="載入中...">載入中...</span>
+            <span id="mobile-population" class="mobile-population">--</span>
+            <div class="mobile-header-actions">
+                <button id="mobile-btn-pause" class="mobile-ctrl-btn">⏸</button>
+                <div class="mobile-menu-speed">
+                    <button class="btn-speed active" data-speed="1">1x</button>
+                    <button class="btn-speed" data-speed="1.5">1.5x</button>
+                    <button class="btn-speed" data-speed="2">2x</button>
+                    <button class="btn-speed" data-speed="3">3x</button>
+                </div>
+                <button id="mobile-btn-menu" class="mobile-ctrl-btn">☰</button>
+            </div>
+        </div>
+        <div id="mobile-menu-dropdown" class="mobile-menu-dropdown hidden">
+            <button id="mobile-new-game" data-i18n="新地圖">新地圖</button>
+            <button id="mobile-save" data-i18n="儲存">儲存</button>
+            <button id="mobile-btn-settings" data-i18n="設定">設定</button>
+            <button id="mobile-btn-account" data-i18n="帳號">帳號</button>
+            <span id="mobile-llm-status" class="llm-status disconnected">AI:--</span>
+        </div>
+    </div>
+
     <!-- Header -->
     <div class="header">
         <h1 data-i18n="邊境鎮">邊境鎮</h1>

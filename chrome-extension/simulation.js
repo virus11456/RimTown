@@ -2001,6 +2001,26 @@ class LLMClient {
 
     setFallbackGroqKey(key) { this.fallbackGroqKey = key; }
 
+    /**
+     * Test if the API key is valid by making a minimal request.
+     * Returns { ok: true/false, error: string|null }
+     */
+    async testConnection(provider, apiKey) {
+        provider = provider || this.provider;
+        apiKey = apiKey || this.apiKey;
+        if (!provider || provider === 'none' || !apiKey) {
+            return { ok: false, error: 'No provider or API key' };
+        }
+        try {
+            const result = await this._callProvider(provider, apiKey, null, 'Say "ok"', 5, 0);
+            if (result === '__RATE_LIMITED__') return { ok: true, error: null }; // rate limited means key is valid
+            if (result === '__ERROR__') return { ok: false, error: 'API returned error — check your key' };
+            return { ok: true, error: null };
+        } catch (err) {
+            return { ok: false, error: err.message };
+        }
+    }
+
     _canMakeRequest(isPlayerChat = false) {
         const now = Date.now();
         if (now < this._rateLimitedUntil) {

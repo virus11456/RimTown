@@ -1799,6 +1799,13 @@ class RimTownApp {
         }
         this.world.logMessage('system', t('設定已儲存'));
         this.renderSidebar();
+        // Auto-test API key connection after save
+        if (provider !== 'none' && apiKey) {
+            setTimeout(() => this._testApiKeyConnection('main'), 300);
+        }
+        if (fallbackKey) {
+            setTimeout(() => this._testApiKeyConnection('groq'), 500);
+        }
     }
 
     _updateLLMStatus() {
@@ -1815,6 +1822,39 @@ class RimTownApp {
             el.className = 'llm-status disconnected';
             el.title = t('請在設定中配置 AI 提供商和 API Key');
         }
+    }
+
+    async _testApiKeyConnection(type) {
+        const isMain = type === 'main';
+        const statusEl = document.getElementById(isMain ? 'apikey-status' : 'groqkey-status');
+        const btnEl = document.getElementById(isMain ? 'btn-test-apikey' : 'btn-test-groq');
+        if (!statusEl) return;
+
+        const provider = isMain
+            ? (document.getElementById('settings-tab-provider')?.value || 'none')
+            : 'groq';
+        const apiKey = isMain
+            ? (document.getElementById('settings-tab-apikey')?.value || '')
+            : (document.getElementById('settings-tab-groq')?.value?.trim() || '');
+
+        if (!apiKey || (isMain && provider === 'none')) {
+            statusEl.innerHTML = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444"></span><span style="color:#ef4444">${t('請先選擇供應商並輸入 API 金鑰')}</span>`;
+            return;
+        }
+
+        // Show loading state
+        statusEl.innerHTML = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e0b;animation:pulse 1s infinite"></span><span style="color:#f59e0b">${t('測試中...')}</span>`;
+        if (btnEl) btnEl.disabled = true;
+
+        const tester = new LLMClient(provider, apiKey);
+        const result = await tester.testConnection(provider, apiKey);
+
+        if (result.ok) {
+            statusEl.innerHTML = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#22c55e"></span><span style="color:#22c55e">${t('連線成功')}</span>`;
+        } else {
+            statusEl.innerHTML = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444"></span><span style="color:#ef4444">${t('連線失敗')}${result.error ? ' — ' + result.error : ''}</span>`;
+        }
+        if (btnEl) btnEl.disabled = false;
     }
 
     startSimulation() {
@@ -2119,6 +2159,8 @@ class RimTownApp {
                 case 'start-newgame-plus': this._startNewGamePlus(); break;
                 // Settings tab actions
                 case 'settings-save-all': this._saveSettingsFromTab(); break;
+                case 'test-apikey': this._testApiKeyConnection('main'); break;
+                case 'test-groqkey': this._testApiKeyConnection('groq'); break;
                 case 'settings-login': document.getElementById('auth-modal')?.classList.remove('hidden'); break;
                 case 'settings-register': {
                     document.getElementById('auth-modal')?.classList.remove('hidden');
@@ -3507,11 +3549,19 @@ class RimTownApp {
         </div>
         <div class="setting-group" style="margin-bottom:8px">
             <label style="font-size:0.82rem;color:var(--text-secondary)">API ${t('金鑰')}</label>
-            <input type="password" id="settings-tab-apikey" value="${this._escapeHtml(apiKey)}" placeholder="${t('輸入你的')} API ${t('金鑰')}..." style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem;box-sizing:border-box">
+            <div style="display:flex;gap:6px;align-items:center">
+                <input type="password" id="settings-tab-apikey" value="${this._escapeHtml(apiKey)}" placeholder="${t('輸入你的')} API ${t('金鑰')}..." style="flex:1;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem;box-sizing:border-box">
+                <button id="btn-test-apikey" data-action="test-apikey" style="padding:6px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);cursor:pointer;font-size:0.75rem;white-space:nowrap">${t('測試連線')}</button>
+            </div>
+            <div id="apikey-status" style="margin-top:4px;font-size:0.75rem;display:flex;align-items:center;gap:4px"></div>
         </div>
         <div class="setting-group" style="margin-bottom:8px">
             <label style="font-size:0.82rem;color:var(--text-secondary)">${t('備用')} Groq API Key <span style="font-size:0.75rem">${t('（主 AI ')}${t('超限時自動切換）')}</span></label>
-            <input type="password" id="settings-tab-groq" value="${this._escapeHtml(fallbackKey)}" placeholder="gsk_...${t('（選填）')}" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem;box-sizing:border-box">
+            <div style="display:flex;gap:6px;align-items:center">
+                <input type="password" id="settings-tab-groq" value="${this._escapeHtml(fallbackKey)}" placeholder="gsk_...${t('（選填）')}" style="flex:1;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem;box-sizing:border-box">
+                <button id="btn-test-groq" data-action="test-groqkey" style="padding:6px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);cursor:pointer;font-size:0.75rem;white-space:nowrap">${t('測試連線')}</button>
+            </div>
+            <div id="groqkey-status" style="margin-top:4px;font-size:0.75rem;display:flex;align-items:center;gap:4px"></div>
         </div>`;
         html += '</div>';
 

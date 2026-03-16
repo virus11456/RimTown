@@ -1,5 +1,10 @@
 /* RimTown - AI Town Simulation Styles */
 
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
 /* Prevent horizontal scroll on all devices */
 html, body {
     overflow-x: hidden !important;
@@ -2453,7 +2458,9 @@ body.rimtown-page .wp-block-post-title {
         display: none !important;
     }
     .mobile-header {
-        display: none !important;
+        display: block !important;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border);
     }
     .mobile-header-row {
         display: flex;
@@ -2515,9 +2522,28 @@ body.rimtown-page .wp-block-post-title {
     .mobile-menu-speed {
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 1px;
         font-size: 0.7rem;
         color: var(--text-secondary);
+        background: var(--bg-primary);
+        border-radius: 4px;
+        padding: 1px;
+        border: 1px solid var(--border);
+    }
+    .mobile-menu-speed .btn-speed {
+        padding: 4px 6px;
+        border: none;
+        background: transparent;
+        color: var(--text-secondary);
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 0.65rem;
+        font-weight: bold;
+        min-height: 28px;
+    }
+    .mobile-menu-speed .btn-speed.active {
+        background: var(--accent);
+        color: #fff;
     }
     .mobile-menu-ai {
         font-size: 0.7rem;
