@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v3.6.16
-const RIMTOWN_APP_VERSION = '3.6.16';
+// RimTown - Frontend App (WordPress Plugin) v3.6.17
+const RIMTOWN_APP_VERSION = '3.6.17';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -3100,7 +3100,8 @@ class RimTownApp {
             const isActive = this.chatTarget === npc.id;
             const lastText = npc.lastMsg ? (npc.lastMsg.speaker === player.name ? `${t('你')}：${npc.lastMsg.text}` : npc.lastMsg.text) : t('尚未對話');
             const truncated = lastText.length > 20 ? lastText.slice(0, 20) + '...' : lastText;
-            const avatarDataUrl = this.tileMap ? this.tileMap.renderAvatarDataURL(npc.jobKey, npc.gender) : null;
+            let avatarDataUrl = null;
+            try { if (this.tileMap?.renderAvatarDataURL) avatarDataUrl = this.tileMap.renderAvatarDataURL(npc.jobKey, npc.gender); } catch(e) {}
             const thoughtText = npc.currentThought ? this._escapeHtml(npc.currentThought.length > 18 ? npc.currentThought.slice(0, 18) + '...' : npc.currentThought) : '';
             contactsHtml += `<button class="chat-contact ${isActive ? 'active' : ''}" data-action="start-chat" data-val="${npc.id}">
                 <div class="chat-contact-avatar chat-contact-avatar-pixel" style="background:${npc.avatarColor}">${avatarDataUrl ? `<img src="${avatarDataUrl}" class="avatar-pixel-art" alt="${npc.name}">` : `<span class="avatar-initial" style="color:#fff;font-weight:bold;font-size:1rem;text-shadow:0 1px 2px rgba(0,0,0,0.4)">${npc.name.charAt(0)}</span>`}<span class="mood-indicator mood-${npc.mood}"></span></div>

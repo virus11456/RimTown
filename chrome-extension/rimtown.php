@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 3.6.16
+ * Version: 3.6.17
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '3.6.16');
+define('RIMTOWN_VERSION', '3.6.17');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -993,12 +993,12 @@ add_action('admin_menu', 'rimtown_admin_menu');
 function rimtown_get_changelog() {
     return array(
         array(
-            'version' => '3.6.16',
+            'version' => '3.6.17',
             'date'    => '2026-03-16',
             'changes' => array(
                 '修復聊天對話持續閃爍問題：模擬 tick 時跳過聊天頁面完整重繪，改用 DOM 原地更新',
                 '同步 WordPress 版本：像素頭像、style.css、app.js 與 Chrome Extension 完全一致',
-                '版號同步：所有檔案統一為 3.6.16',
+                '版號同步：所有檔案統一為 3.6.17',
             ),
         ),
         array(
