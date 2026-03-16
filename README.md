@@ -31,7 +31,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v3.6.12.zip` from Releases
+1. Download `rimtown-v3.6.13.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -46,6 +46,15 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v3.6.13 (2026-03-16)
+
+**聊天系統大改版 + NPC 名牌顯示**
+- 重新設計聊天介面為訊息 App 風格（Messaging App）
+- 移除 NPC 對話距離限制，任何地方都能與 NPC 交談
+- NPC 主動訊息功能：NPC 會主動傳訊息給玩家
+- 地圖上所有 NPC 頭上顯示名字 + 職業卡片
+- 版號同步：所有檔案統一為 3.6.13
 
 ### v3.6.12 (2026-03-16)
 
