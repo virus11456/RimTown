@@ -35,6 +35,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 - **Job Action Buttons**: Manually perform your job (farm, forge, heal, etc.) for resources and skill XP (v4)
 - **Interactive Newspaper**: React to daily news with investigate/support/ignore actions (v4)
 - **Improved Mood System**: Gentler nighttime need decay, graduated mood penalties (v4)
+- **Reputation System**: 6 tiers (Nobody → Legend) with real gameplay effects — trade bonuses, NPC trust, shop discounts, event shields, immigration attraction (v4)
 
 ## WordPress Plugin Install
 
@@ -66,6 +67,8 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 - **職業動作按鈕**：玩家可手動執行職業動作（農夫澆水、鐵匠鍛造、醫師看診等），獲得資源和技能經驗
 - **每日報紙互動化**：閱讀 AI 日報後可選擇「調查/支持/忽略」，影響全鎮心情
 - **任務刷新按鈕**：任務頁新增手動刷新進度按鈕
+- **聲望系統（完整版）**：6 個聲望等級（無名之輩→傳奇人物），影響交易價格加成、NPC 初始信任、商店折扣、事件減免、移民吸引力；任務頁新增聲望面板（階級徽章、進度條、效果一覽、來源追蹤）
+- 決策、幫助 NPC 現在正確給予聲望點數；每日被動聲望成長（有工作+高好感度）
 
 修復：
 - **Mood 算法大幅改善**：深夜需求衰減速率降低60%，飢餓/疲勞的心情懲罰改為漸進式（不再全鎮同時崩潰）

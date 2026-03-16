@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 3.7.1
+ * Version: 4.0.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '3.7.1');
+define('RIMTOWN_VERSION', '4.0.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -992,6 +992,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '4.0.0',
+            'date'    => '2026-03-16',
+            'changes' => array(
+                '每日決策系統：每天一張選擇卡片，影響資源、居民心情與聲望',
+                '商店系統：14 種商品可買賣，聲望等級享折扣優惠',
+                '事件選擇系統：重大事件（盜匪、災害等）提供多種應對選項',
+                'NPC 求助系統：居民會請求你的幫助，選擇影響好感度與聲望',
+                '工作動作按鈕：手動執行工作獲得資源與技能經驗',
+                '互動式報紙：可對每日新聞進行調查/支持/忽略反應',
+                '聲望系統（完整版）：6 個等級（無名之輩→傳奇人物），影響交易價格、NPC 信任、商店折扣、事件減免、移民吸引力',
+                '心情系統優化：夜間需求衰減放緩，心情懲罰改為漸進式而非斷崖式',
+                '任務頁籤新增聲望面板：階級徽章、進度條、效果一覽、來源追蹤',
+                '版號同步：所有檔案統一為 4.0.0',
+            ),
+        ),
         array(
             'version' => '3.7.1',
             'date'    => '2026-03-16',
