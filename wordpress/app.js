@@ -236,6 +236,7 @@ class RimTownApp {
         this.activeTab = 'residents';
         this.chatTarget = null;
         this.chatSending = false;
+        this._chatUnread = new Set();
         this.agentColors = {};
         this.colorPalette = [
             '#e94560','#4ade80','#60a5fa','#fbbf24','#a78bfa',
@@ -2691,13 +2692,12 @@ class RimTownApp {
         const player = this.world.agents['player'];
         const npc = this.world.agents[targetId];
         if (!player || !npc) { this.chatSending = false; return; }
-        if (player.currentLocation !== npc.currentLocation) {
-            this._appendChatBubble('system', 'They are not at your location.');
-            this.chatSending = false; return;
-        }
+        // No proximity restriction — can message any NPC from anywhere
         try {
             await this.world.conversationEngine.generatePlayerReply(player, npc, message.trim(), this.world);
             if (this.world.questSystem) this.world.questSystem.onChat();
+            // Clear unread for this NPC
+            if (this._chatUnread) this._chatUnread.delete(targetId);
             this.state = this.world.getState();
             if (this.activeTab === 'chat') { this.renderSidebar(); this._scrollChatToBottom(); }
         } catch(e) { console.error('Chat error:', e); }
@@ -2705,17 +2705,12 @@ class RimTownApp {
     }
 
     startChatWith(agentId) {
-        // Auto-move to NPC's location if not already there
-        const npc = this.world?.agents?.[agentId];
-        const player = this.world?.agents?.['player'];
-        if (npc && player && player.currentLocation !== npc.currentLocation) {
-            player.moveTo(npc.currentLocation, this.world);
-            this.state = this.world.getState();
-        }
         this.chatTarget = agentId;
         this.selectedAgent = agentId;
         this.activeTab = 'chat';
         this._focusChatInput = true;
+        // Clear unread for this NPC
+        if (this._chatUnread) this._chatUnread.delete(agentId);
         if (this._updateTabHighlight) this._updateTabHighlight('chat');
         // Auto-open sidebar on mobile
         const sidebar = document.getElementById('rimtown-sidebar');
@@ -2727,6 +2722,16 @@ class RimTownApp {
     // --- Render ---
     render() {
         if (!this.state) return;
+        // Ensure NPC proactive message callback is set
+        if (this.world?.conversationEngine && !this.world.conversationEngine.onNpcMessage) {
+            this.world.conversationEngine.onNpcMessage = (npcId) => {
+                if (!this._chatUnread) this._chatUnread = new Set();
+                // Don't mark as unread if player is already chatting with this NPC
+                if (this.activeTab === 'chat' && this.chatTarget === npcId) return;
+                this._chatUnread.add(npcId);
+                this._updateChatBadge();
+            };
+        }
         this.renderClock();
         this.renderMap();
         // Skip sidebar re-render when user is actively focused on any input/textarea/select
@@ -2848,105 +2853,90 @@ class RimTownApp {
     renderChat(container) {
         const player = this.state?.agents?.['player'];
         if (!player) { container.innerHTML = '<p class="muted-text">Player not found.</p>'; return; }
-        const playerLoc = player.current_location;
         const chatHistory = player.chat_history || [];
-        const nearbyNpcs = Object.entries(this.state.agents)
-            .filter(([id, a]) => id !== 'player' && a.current_location === playerLoc)
-            .map(([id, a]) => ({ id, ...a }));
+        if (!this._chatUnread) this._chatUnread = new Set();
 
-        // Auto-switch chat target: if current target is not nearby and there are nearby NPCs,
-        // auto-select the first nearby NPC so the player can chat immediately
-        if (this.chatTarget) {
-            const targetNearby = nearbyNpcs.some(n => n.id === this.chatTarget);
-            if (!targetNearby && nearbyNpcs.length > 0) {
-                this.chatTarget = nearbyNpcs[0].id;
-                this.selectedAgent = nearbyNpcs[0].id;
-            }
-        } else if (nearbyNpcs.length > 0) {
-            // No chat target set but there are nearby NPCs — auto-select
-            this.chatTarget = nearbyNpcs[0].id;
-            this.selectedAgent = nearbyNpcs[0].id;
-        }
-
-        // Build set of all NPCs player has chatted with (for history)
-        const chattedNames = new Set();
-        chatHistory.forEach(c => {
-            if (c.speaker !== player.name) chattedNames.add(c.speaker);
-            if (c.target !== player.name) chattedNames.add(c.target);
-        });
-        // Map names to agent IDs for past contacts
-        const nameToId = {};
-        for (const [id, a] of Object.entries(this.state.agents)) {
-            if (id !== 'player') nameToId[a.name] = id;
-        }
-
-        let nearbyHtml = `${t('<div class="chat-location">你在：<strong>')}${this._locationLabel(playerLoc)}</strong></div><div class="chat-nearby">`;
-        if (nearbyNpcs.length) {
-            nearbyHtml += t('<div class="nearby-label">附近：</div><div class="nearby-list">');
-            nearbyNpcs.forEach(npc => {
-                nearbyHtml += `<button class="nearby-btn ${this.chatTarget===npc.id?'active':''}" data-action="start-chat" data-val="${npc.id}">
-                    <span class="mood-indicator mood-${npc.mood_description}"></span>${npc.name}
-                    <span class="nearby-job">${npc.job?.title||''}</span></button>`;
+        // Build all NPC list with last message info
+        const allNpcs = Object.entries(this.state.agents)
+            .filter(([id]) => id !== 'player')
+            .map(([id, a]) => {
+                const msgs = chatHistory.filter(c => c.speaker === a.name || c.target === a.name);
+                const lastMsg = msgs.length ? msgs[msgs.length - 1] : null;
+                return { id, name: a.name, job: a.job, mood: a.mood_description, location: a.current_location, lastMsg, msgCount: msgs.length, hasUnread: this._chatUnread.has(id) };
             });
-            nearbyHtml += '</div>';
-        } else {
-            nearbyHtml += t('<p class="muted-text">附近沒有人。</p>');
-        }
 
-        // Show past chat contacts not currently nearby
-        const nearbyIds = new Set(nearbyNpcs.map(n => n.id));
-        const pastContacts = [...chattedNames].filter(name => {
-            const id = nameToId[name];
-            return id && !nearbyIds.has(id);
+        // Sort: unread first, then by last message time (most recent first), then no-history alphabetically
+        allNpcs.sort((a, b) => {
+            if (a.hasUnread !== b.hasUnread) return a.hasUnread ? -1 : 1;
+            if (a.lastMsg && b.lastMsg) return 0; // keep original order for both having messages
+            if (a.lastMsg) return -1;
+            if (b.lastMsg) return 1;
+            return a.name.localeCompare(b.name);
         });
-        if (pastContacts.length) {
-            nearbyHtml += t('<div class="nearby-label" style="margin-top:6px">聊天記錄：</div><div class="nearby-list">');
-            pastContacts.forEach(name => {
-                const id = nameToId[name];
-                const msgCount = chatHistory.filter(c => c.speaker === name || c.target === name).length;
-                nearbyHtml += `<button class="nearby-btn history-btn ${this.chatTarget===id?'active':''}" data-action="start-chat" data-val="${id}">
-                    ${name} <span class="nearby-job">${msgCount}${t('則</span></button>')}`;
-            });
-            nearbyHtml += '</div>';
-        }
-        nearbyHtml += '</div>';
 
-        let messagesHtml = '<div class="chat-messages" id="chat-messages">';
+        // --- Contact list ---
+        let contactsHtml = '<div class="chat-contacts">';
+        contactsHtml += `<div class="chat-contacts-header">${t('聯絡人')}<span class="chat-contacts-count">${allNpcs.length}</span></div>`;
+        contactsHtml += '<div class="chat-contacts-list">';
+        allNpcs.forEach(npc => {
+            const isActive = this.chatTarget === npc.id;
+            const lastText = npc.lastMsg ? (npc.lastMsg.speaker === player.name ? `${t('你')}：${npc.lastMsg.text}` : npc.lastMsg.text) : t('尚未對話');
+            const truncated = lastText.length > 20 ? lastText.slice(0, 20) + '...' : lastText;
+            contactsHtml += `<button class="chat-contact ${isActive ? 'active' : ''}" data-action="start-chat" data-val="${npc.id}">
+                <div class="chat-contact-avatar"><span class="mood-indicator mood-${npc.mood}"></span></div>
+                <div class="chat-contact-info">
+                    <div class="chat-contact-name">${npc.name}${npc.hasUnread ? '<span class="chat-unread-dot"></span>' : ''}</div>
+                    <div class="chat-contact-job">${npc.job || t('無業')}</div>
+                    <div class="chat-contact-preview">${this._escapeHtml(truncated)}</div>
+                </div>
+                ${npc.lastMsg?.time ? `<div class="chat-contact-time">${npc.lastMsg.time}</div>` : ''}
+            </button>`;
+        });
+        contactsHtml += '</div></div>';
+
+        // --- Chat area ---
+        let chatAreaHtml = '';
         if (this.chatTarget) {
             const targetAgent = this.state.agents[this.chatTarget];
             const targetName = targetAgent?.name || this.chatTarget;
+            const targetJob = targetAgent?.job || '';
+            const targetLoc = targetAgent?.current_location || '';
+
+            // Chat header with NPC info
+            chatAreaHtml += `<div class="chat-conv-header">
+                <div class="chat-conv-name">${targetName}</div>
+                <div class="chat-conv-detail">${targetJob}${targetLoc ? ' · ' + this._locationLabel(targetLoc) : ''}</div>
+            </div>`;
+
+            // Messages
+            chatAreaHtml += '<div class="chat-messages" id="chat-messages">';
             const filtered = chatHistory.filter(c => c.target === targetName || c.speaker === targetName);
-            if (!filtered.length) messagesHtml += `${t('<p class="muted-text chat-hint">開始與')}${targetName}${t('對話...</p>')}`;
+            if (!filtered.length) {
+                chatAreaHtml += `<p class="muted-text chat-hint">${t('開始與')}${targetName}${t('對話吧！')}</p>`;
+            }
             filtered.forEach(msg => {
                 const isP = msg.speaker === player.name;
-                messagesHtml += `<div class="chat-bubble ${isP?'chat-player':'chat-npc'}">
-                    <div class="chat-speaker">${msg.speaker}</div>
+                chatAreaHtml += `<div class="chat-bubble ${isP ? 'chat-player' : 'chat-npc'}">
                     <div class="chat-text">${this._escapeHtml(msg.text)}</div>
-                    <div class="chat-time">${msg.time||''}</div></div>`;
+                    <div class="chat-time">${msg.time || ''}</div></div>`;
             });
-        } else messagesHtml += t('<p class="muted-text chat-hint">選擇一個人來查看對話。</p>');
-        messagesHtml += '</div>';
+            chatAreaHtml += '</div>';
 
-        let inputHtml = '';
-        if (this.chatTarget) {
-            const ta = this.state.agents[this.chatTarget];
-            const isNearby = ta && ta.current_location === playerLoc;
-            if (isNearby) {
-                inputHtml = `<div class="chat-input-area">
-                    <input type="text" id="chat-input" class="chat-input" placeholder="${t('輸入訊息')}..."
-                        ${this.chatSending?'disabled':''}>
-                    <button class="chat-send-btn" data-action="send-chat" ${this.chatSending?'disabled':''}>${this.chatSending?'...':t('送出')}</button></div>`;
-            } else {
-                inputHtml = `${t('<div class="chat-input-area"><p class="muted-text" style="padding:8px">📜 查看與')}${ta?.name||t('對方')}${t('的過去對話。前往他們的位置即可聊天。</p></div>')}`;
-            }
+            // Input — always available
+            chatAreaHtml += `<div class="chat-input-area">
+                <input type="text" id="chat-input" class="chat-input" placeholder="${t('輸入訊息')}..." ${this.chatSending ? 'disabled' : ''}>
+                <button class="chat-send-btn" data-action="send-chat" ${this.chatSending ? 'disabled' : ''}>${this.chatSending ? '...' : t('送出')}</button></div>`;
+        } else {
+            chatAreaHtml += `<div class="chat-messages" id="chat-messages"><p class="muted-text chat-hint">${t('選擇一個居民開始聊天')}</p></div>`;
         }
-        // Archive actions bar
-        let archiveBar = `<div class="chat-archive-bar">
+
+        // Archive bar
+        chatAreaHtml += `<div class="chat-archive-bar">
             <button class="btn-archive-view" data-action="show-archives">${t('歷史對話')}</button>
             <button class="btn-archive-save" data-action="manual-archive">${t('立即存檔')}</button>
         </div>`;
 
-        container.innerHTML = nearbyHtml + messagesHtml + inputHtml + archiveBar;
+        container.innerHTML = contactsHtml + chatAreaHtml;
         this._scrollChatToBottom();
         const input = document.getElementById('chat-input');
         if (input && !this.chatSending && this._focusChatInput) {
@@ -3077,6 +3067,24 @@ class RimTownApp {
     }
     _scrollChatToBottom() { requestAnimationFrame(() => { const el = document.getElementById('chat-messages'); if(el) el.scrollTop=el.scrollHeight; }); }
     _appendChatBubble(type, text) { const el = document.getElementById('chat-messages'); if(!el) return; const div=document.createElement('div'); div.className=`chat-bubble chat-${type}`; div.innerHTML=`<div class="chat-text">${this._escapeHtml(text)}</div>`; el.appendChild(div); el.scrollTop=el.scrollHeight; }
+
+    _updateChatBadge() {
+        const count = this._chatUnread ? this._chatUnread.size : 0;
+        const tab = document.querySelector('[data-tab="chat"]');
+        if (!tab) return;
+        let badge = tab.querySelector('.chat-badge');
+        if (count > 0) {
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'chat-badge';
+                tab.style.position = 'relative';
+                tab.appendChild(badge);
+            }
+            badge.textContent = count > 9 ? '9+' : count;
+        } else if (badge) {
+            badge.remove();
+        }
+    }
 
     _renderSkills(skillsData) {
         if (!skillsData?.skills) return t('<p class="muted-text">沒有技能資料</p>');

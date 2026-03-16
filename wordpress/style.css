@@ -744,64 +744,117 @@ body.rimtown-page .wp-block-post-title {
     background: var(--accent-light);
 }
 
-/* Chat panel */
-.chat-location {
-    padding: 8px;
-    font-size: 0.8rem;
+/* Chat panel - Messaging App Style */
+
+/* Contact list */
+.chat-contacts {
+    border-bottom: 1px solid var(--border);
+}
+.chat-contacts-header {
+    padding: 8px 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
     color: var(--text-secondary);
-    border-bottom: 1px solid var(--border);
-}
-
-.chat-nearby {
-    padding: 8px;
-    border-bottom: 1px solid var(--border);
-}
-
-.nearby-label {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    margin-bottom: 6px;
-}
-
-.nearby-list {
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
+    align-items: center;
+    gap: 6px;
 }
-
-.nearby-btn {
+.chat-contacts-count {
+    background: var(--bg-card);
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+}
+.chat-contacts-list {
+    max-height: 180px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+.chat-contact {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-primary);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s;
+    font-size: 0.8rem;
+}
+.chat-contact:hover {
+    background: rgba(233,69,96,0.08);
+}
+.chat-contact.active {
+    background: rgba(233,69,96,0.15);
+    border-left: 3px solid var(--accent);
+}
+.chat-contact-avatar {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    background: var(--bg-card);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.chat-contact-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+.chat-contact-name {
+    font-weight: bold;
+    font-size: 0.78rem;
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 4px 10px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    color: var(--text-primary);
-    border-radius: 16px;
-    cursor: pointer;
-    font-size: 0.75rem;
-    transition: all 0.2s;
 }
-.nearby-btn:hover {
-    border-color: var(--accent);
-}
-.nearby-btn.active {
+.chat-unread-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
     background: var(--accent);
-    border-color: var(--accent);
+    flex-shrink: 0;
 }
-.nearby-job {
-    font-size: 0.6rem;
+.chat-contact-job {
+    font-size: 0.65rem;
     color: var(--text-muted);
 }
-.nearby-btn.active .nearby-job {
-    color: rgba(255,255,255,0.7);
+.chat-contact-preview {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
-.nearby-btn.history-btn {
-    border-style: dashed;
-    opacity: 0.75;
+.chat-contact-time {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    white-space: nowrap;
 }
-.nearby-btn.history-btn:hover {
-    opacity: 1;
+
+/* Conversation header */
+.chat-conv-header {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-card);
+}
+.chat-conv-name {
+    font-weight: bold;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+.chat-conv-detail {
+    font-size: 0.68rem;
+    color: var(--text-muted);
 }
 
 /* Chat messages */
@@ -809,11 +862,11 @@ body.rimtown-page .wp-block-post-title {
     flex: 1;
     overflow-y: auto;
     padding: 10px;
-    min-height: 200px;
-    max-height: calc(100vh - 320px);
+    min-height: 180px;
+    max-height: calc(100vh - 420px);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 .chat-hint {
@@ -822,12 +875,13 @@ body.rimtown-page .wp-block-post-title {
 }
 
 .chat-bubble {
-    max-width: 85%;
+    max-width: 82%;
     padding: 8px 12px;
-    border-radius: 12px;
+    border-radius: 16px;
     font-size: 0.8rem;
     line-height: 1.4;
     word-wrap: break-word;
+    word-break: break-word;
 }
 
 .chat-player {
@@ -867,6 +921,9 @@ body.rimtown-page .wp-block-post-title {
     color: rgba(255, 255, 255, 0.4);
     margin-top: 2px;
     text-align: right;
+}
+.chat-npc .chat-time {
+    color: var(--text-muted);
 }
 
 /* Chat input area */
@@ -912,6 +969,24 @@ body.rimtown-page .wp-block-post-title {
 .chat-send-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Chat badge for unread messages */
+.chat-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: var(--accent);
+    color: white;
+    font-size: 0.55rem;
+    font-weight: bold;
+    min-width: 14px;
+    height: 14px;
+    line-height: 14px;
+    border-radius: 7px;
+    text-align: center;
+    padding: 0 3px;
+    box-sizing: border-box;
 }
 
 /* Chat Archive */

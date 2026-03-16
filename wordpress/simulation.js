@@ -961,6 +961,105 @@ class ConversationEngine {
         this._lastNpcLlmTick = 0;
         this._npcLlmCooldownTicks = 8; // Minimum ticks between NPC LLM calls
         this.onConversation = null; // Callback: (agentAId, agentBId, agentAName, agentBName, textA, textB) => {}
+        this._lastNpcMsgTick = 0;
+        this._npcMsgCooldownTicks = 30; // ~1 minute between proactive NPC messages
+        this.onNpcMessage = null; // Callback: (npcId) => {} — notify UI of incoming message
+    }
+
+    /**
+     * Called every world tick. Occasionally has an NPC send a proactive message to the player.
+     */
+    async tickProactiveMessages(world) {
+        const player = world.agents['player'];
+        if (!player) return;
+        const ticksSince = world.tickCount - this._lastNpcMsgTick;
+        if (ticksSince < this._npcMsgCooldownTicks) return;
+        // ~5% chance per tick after cooldown
+        if (Math.random() > 0.05) return;
+
+        const npcs = Object.values(world.agents).filter(a => !a.isPlayer && a.activity !== 'sleeping');
+        if (!npcs.length) return;
+
+        // Pick NPC — prefer higher affinity NPCs
+        const weighted = npcs.map(npc => {
+            const rel = npc.relationships.getOrCreate(player.agentId, player.name);
+            return { npc, weight: Math.max(1, (rel.affinity || 0) + 10) };
+        });
+        const totalW = weighted.reduce((s, w) => s + w.weight, 0);
+        let r = Math.random() * totalW;
+        let picked = weighted[0].npc;
+        for (const w of weighted) { r -= w.weight; if (r <= 0) { picked = w.npc; break; } }
+
+        this._lastNpcMsgTick = world.tickCount;
+
+        // Generate proactive message
+        const npc = picked;
+        const relNpc = npc.relationships.getOrCreate(player.agentId, player.name);
+        const relPlayer = player.relationships.getOrCreate(npc.agentId, npc.name);
+
+        let npcText = '';
+        if (this.llm && this.llm._canMakeRequest(false)) {
+            try {
+                const pN = this._buildCharacterProfile(npc);
+                const recentChat = player.chatHistory.filter(c => c.target === npc.name || c.speaker === npc.name)
+                    .slice(-5).map(c => `${c.speaker}: ${c.text}`).join('\n');
+
+                const scenarios = [
+                    t('你想跟旅人分享今天工作的趣事'),
+                    t('你想約旅人一起去做某件事'),
+                    t('你突然想到一個問題想問旅人'),
+                    t('你發現了一件有趣的事想告訴旅人'),
+                    t('你想關心旅人最近過得如何'),
+                    t('你想跟旅人聊聊最近鎮上的八卦'),
+                ];
+                const scenario = pickRandom(scenarios);
+
+                const prompt = `${t('你正在扮演「')}${npc.name}${t('」——邊境鎮的居民。你想主動傳一則訊息給')}${player.name}${t('。')}
+${t('情境：')}${scenario}
+
+${t('【你是誰】')}
+${pN.name}${t('，')}${pN.age}${t('歲，')}${pN.job}${t('。性格：')}${pN.traits}${t('。')}
+${t('你現在在')}${npc.currentLocation.replace(/_/g,' ')}${t('，正在')}${npc.activity}${t('。')}
+${this._buildRelContext(relNpc, player.name)}
+
+${recentChat ? `${t('【最近對話】')}\n${recentChat}` : ''}
+
+${t('【規則】')}
+${t('- 繁體中文（台灣用語），1-2句就好，像傳LINE訊息那樣自然')}
+${t('- 不要加任何前綴、名字標籤、引號')}
+${t('- 直接寫訊息內容就好')}`;
+
+                const response = await this.llm.generate(prompt, 150, 0.9, false);
+                if (response && response !== '__ERROR__' && response !== '__RATE_LIMITED__') {
+                    npcText = response.trim().replace(/^["「『]|["」』]$/g, '').trim();
+                    // Strip any name prefix
+                    npcText = npcText.replace(new RegExp(`^${npc.name}[：:]\\s*`), '').trim();
+                }
+            } catch(e) { console.error('[RimTown] Proactive NPC message LLM failed:', e); }
+        }
+
+        // Fallback if no LLM or LLM failed
+        if (!npcText) {
+            const fallbacks = [
+                `${t('欸')}${player.name}${t('，今天有空嗎？')}`,
+                `${t('嘿！你最近在忙什麼啊？')}`,
+                `${t('你有聽說嗎？今天鎮上發生了一件事...')}`,
+                `${t('唉，工作好累，想找人聊聊')}`,
+                `${t('欸欸，等一下要不要一起去逛逛？')}`,
+                `${player.name}${t('！好久沒聊了，最近好嗎？')}`,
+                `${t('我剛剛看到一個超好笑的事想跟你說哈哈')}`,
+            ];
+            npcText = pickRandom(fallbacks);
+        }
+
+        // Record in chat history
+        player.chatHistory.push({ speaker: npc.name, target: player.name, text: npcText, time: world.clock.timeStr });
+        // Record in memory
+        npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('主動傳訊息給')}${player.name}${t('：')}${npcText}`, 3, [player.name]);
+        // Log
+        world.logMessage('player_chat', `${npc.name} → ${player.name}: ${npcText}`, npc.name, player.name);
+        // Notify UI
+        if (this.onNpcMessage) this.onNpcMessage(npc.agentId);
     }
 
     _buildCharacterProfile(agent) {
@@ -4480,6 +4579,8 @@ class World {
             if (agent.currentLocation === 'exploration') return; // Skip agents on expedition
             agent.update(this);
         });
+        // NPC proactive messaging to player
+        this.conversationEngine.tickProactiveMessages(this).catch(e => console.warn('[RimTown] Proactive msg error:', e));
     }
     getState() {
         return {
