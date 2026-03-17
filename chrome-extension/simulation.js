@@ -3147,13 +3147,13 @@ class BuildingManager {
         return p;
     }
     startProject(key, world) {
-        const t=BUILDING_TEMPLATES[key]; if(!t) return null;
+        const tmpl=BUILDING_TEMPLATES[key]; if(!tmpl) return null;
         const names=new Set([...this.completed,...this.projects].map(p=>p.name));
-        if(names.has(t.name)) return null;
-        if(!world.stockpile.pay(t.costs,world.tickCount,`Building: ${t.name}`)) return null;
+        if(names.has(tmpl.name)) return null;
+        if(!world.stockpile.pay(tmpl.costs,world.tickCount,`Building: ${tmpl.name}`)) return null;
         this._counter++;
-        const p={id:`build_${this._counter}`,name:t.name,description:t.description,costs:t.costs,workRequired:t.work,workDone:0,effects:t.effects||{},status:'building',buildingKey:key};
-        this.projects.push(p); world.logMessage('building',`${t('開始建造：')}${t.name}${t('！')}`); return p;
+        const p={id:`build_${this._counter}`,name:tmpl.name,description:tmpl.description,costs:tmpl.costs,workRequired:tmpl.work,workDone:0,effects:tmpl.effects||{},status:'building',buildingKey:key};
+        this.projects.push(p); world.logMessage('building',`${t('開始建造：')}${tmpl.name}${t('！')}`); return p;
     }
     dailyConstruction(world) {
         const done=[];
@@ -3192,7 +3192,7 @@ class BuildingManager {
         });
     }
     getEffect(key, def=0) { return this.activeEffects[key]??def; }
-    toDict() { return {in_progress:this.projects,completed:this.completed,active_effects:{...this.activeEffects},completed_count:this.completed.length}; }
+    toDict() { return {in_progress:this.projects,completed:this.completed,active_effects:{...this.activeEffects},completed_count:this.completed.length,_counter:this._counter}; }
 }
 
 // --- Economy: Trade ---
