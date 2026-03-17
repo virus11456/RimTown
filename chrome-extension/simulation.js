@@ -3057,11 +3057,94 @@ const BUILDING_TEMPLATES = {
     town_walls:{name:t('城牆'),description:t('大幅提升防禦'),costs:{stone:80,wood:30,tools:5},work:40,effects:{defense_bonus:8}},
 };
 
+// --- Building Upgrades ---
+const BUILDING_UPGRADES = {
+    watchtower:{
+        2:{name:t('強化瞭望塔'),description:t('石製加固，視野更遠'),costs:{stone:50,wood:20,metal:10},work:30,effects:{defense_bonus:2}},
+        3:{name:t('哨兵高塔'),description:t('頂層弩砲，全天候警戒'),costs:{stone:80,metal:30,tools:5},work:50,effects:{defense_bonus:4,raid_chance:-0.05}},
+    },
+    granary:{
+        2:{name:t('大型穀倉'),description:t('雙倍容量，通風防潮'),costs:{wood:50,stone:30,tools:3},work:25,effects:{food_capacity:500}},
+        3:{name:t('冷藏穀庫'),description:t('地下冷藏，食物永不腐壞'),costs:{stone:60,metal:20,silver:40},work:40,effects:{food_capacity:800,food_decay:-0.5}},
+    },
+    marketplace:{
+        2:{name:t('商業廣場'),description:t('更多攤位，吸引遠方商人'),costs:{wood:30,stone:25,silver:80},work:28,effects:{trade_bonus:0.15,merchant_frequency:0.5}},
+        3:{name:t('國際商港'),description:t('稀有商品與異國商隊'),costs:{stone:50,metal:15,silver:150},work:45,effects:{trade_bonus:0.2,merchant_frequency:1.0}},
+    },
+    well_upgrade:{
+        2:{name:t('淨水系統'),description:t('過濾雜質，提升健康'),costs:{stone:35,metal:10,tools:4},work:20,effects:{drought_resistance:0.3,healing_bonus:0.2}},
+        3:{name:t('水渠網路'),description:t('全鎮供水，農田灌溉加成'),costs:{stone:60,metal:20,tools:6},work:35,effects:{drought_resistance:0.5,farm_bonus:0.2}},
+    },
+    training_ground:{
+        2:{name:t('演武場'),description:t('專業訓練設施'),costs:{wood:30,stone:20,metal:10},work:18,effects:{defense_bonus:2}},
+        3:{name:t('軍事學院'),description:t('培養精英守衛'),costs:{stone:40,metal:20,silver:50},work:35,effects:{defense_bonus:3,guard_xp_bonus:0.5}},
+    },
+    brewery:{
+        2:{name:t('精釀酒坊'),description:t('釀造高級酒類'),costs:{wood:20,metal:10,silver:50},work:20,effects:{recreation_bonus:8}},
+        3:{name:t('酒莊'),description:t('頂級佳釀，商業價值倍增'),costs:{wood:30,metal:15,silver:80},work:32,effects:{recreation_bonus:12,trade_bonus:0.1}},
+    },
+    garden:{
+        2:{name:t('藥圃'),description:t('多樣藥草，產量加倍'),costs:{wood:15,silver:25,cloth:5},work:14,effects:{herbs_production:2}},
+        3:{name:t('百草園'),description:t('珍稀藥材，治療奇效'),costs:{wood:20,silver:50,tools:3},work:24,effects:{herbs_production:3,healing_bonus:0.3}},
+    },
+    school:{
+        2:{name:t('書院'),description:t('藏書豐富，學者雲集'),costs:{wood:40,stone:30,silver:60},work:30,effects:{xp_bonus:0.3}},
+        3:{name:t('學府'),description:t('最高學府，研究加速'),costs:{stone:50,silver:100,tools:5},work:45,effects:{xp_bonus:0.4,research_bonus:0.2}},
+    },
+    farm_irrigation:{
+        2:{name:t('水車灌溉'),description:t('自動化灌溉，省時省力'),costs:{wood:20,stone:15,metal:10},work:18,effects:{farm_bonus:0.3}},
+        3:{name:t('精耕系統'),description:t('科學農法，產量大增'),costs:{stone:25,metal:15,tools:5},work:30,effects:{farm_bonus:0.5}},
+    },
+    forge_bellows:{
+        2:{name:t('雙室鍛爐'),description:t('同時冶煉，效率翻倍'),costs:{metal:20,stone:15,tools:3},work:18,effects:{smithing_bonus:0.3}},
+        3:{name:t('大師鍛造坊'),description:t('鍛造大師級裝備'),costs:{metal:35,stone:20,silver:40},work:30,effects:{smithing_bonus:0.5,tool_quality:0.3}},
+    },
+    clinic_upgrade:{
+        2:{name:t('診療所'),description:t('專業醫療設備'),costs:{wood:20,cloth:15,silver:40,tools:3},work:22,effects:{healing_bonus:0.5}},
+        3:{name:t('醫院'),description:t('全科醫療，起死回生'),costs:{stone:30,cloth:20,silver:80,tools:5},work:38,effects:{healing_bonus:0.8,mood_modifier:2}},
+    },
+    town_walls:{
+        2:{name:t('加固城牆'),description:t('護城河與箭塔'),costs:{stone:120,wood:40,metal:20},work:55,effects:{defense_bonus:6}},
+        3:{name:t('堅城堡壘'),description:t('銅牆鐵壁，固若金湯'),costs:{stone:180,metal:50,tools:10},work:80,effects:{defense_bonus:10,raid_chance:-0.1}},
+    },
+};
+
 class BuildingManager {
     constructor() { this.projects=[]; this.completed=[]; this.activeEffects={}; this._counter=0; }
     getAvailable(world) {
         const done=new Set(this.completed.map(p=>p.name)), prog=new Set(this.projects.map(p=>p.name));
         return Object.entries(BUILDING_TEMPLATES).filter(([,t])=>!done.has(t.name)&&!prog.has(t.name)).map(([key,t])=>({key,...t,can_afford:world.stockpile.canAfford(t.costs)}));
+    }
+    getUpgradeable(world) {
+        const upgrading=new Set(this.projects.filter(p=>p.upgradeKey).map(p=>p.upgradeKey));
+        return this.completed.filter(b => {
+            const key=b.buildingKey;
+            if(!key||!BUILDING_UPGRADES[key]) return false;
+            const lvl=b.level||1;
+            if(lvl>=3) return false;
+            if(upgrading.has(key)) return false;
+            return !!BUILDING_UPGRADES[key][lvl+1];
+        }).map(b => {
+            const key=b.buildingKey;
+            const nextLvl=(b.level||1)+1;
+            const upg=BUILDING_UPGRADES[key][nextLvl];
+            return { buildingKey:key, currentLevel:b.level||1, nextLevel:nextLvl, name:upg.name, description:upg.description, costs:upg.costs, work:upg.work, effects:upg.effects, can_afford:world.stockpile.canAfford(upg.costs), baseName:b.name };
+        });
+    }
+    startUpgrade(buildingKey, world) {
+        const b=this.completed.find(p=>p.buildingKey===buildingKey);
+        if(!b) return null;
+        const lvl=b.level||1;
+        if(lvl>=3) return null;
+        const upg=BUILDING_UPGRADES[buildingKey]?.[lvl+1];
+        if(!upg) return null;
+        if(this.projects.some(p=>p.upgradeKey===buildingKey)) return null;
+        if(!world.stockpile.pay(upg.costs,world.tickCount,`${t('升級：')}${upg.name}`)) return null;
+        this._counter++;
+        const p={id:`build_${this._counter}`,name:upg.name,description:upg.description,costs:upg.costs,workRequired:upg.work,workDone:0,effects:upg.effects||{},status:'building',upgradeKey:buildingKey,targetLevel:lvl+1};
+        this.projects.push(p);
+        world.logMessage('building',`${t('開始升級：')}${upg.name}${t('！')}`);
+        return p;
     }
     startProject(key, world) {
         const t=BUILDING_TEMPLATES[key]; if(!t) return null;
@@ -3069,7 +3152,7 @@ class BuildingManager {
         if(names.has(t.name)) return null;
         if(!world.stockpile.pay(t.costs,world.tickCount,`Building: ${t.name}`)) return null;
         this._counter++;
-        const p={id:`build_${this._counter}`,name:t.name,description:t.description,costs:t.costs,workRequired:t.work,workDone:0,effects:t.effects||{},status:'building'};
+        const p={id:`build_${this._counter}`,name:t.name,description:t.description,costs:t.costs,workRequired:t.work,workDone:0,effects:t.effects||{},status:'building',buildingKey:key};
         this.projects.push(p); world.logMessage('building',`${t('開始建造：')}${t.name}${t('！')}`); return p;
     }
     dailyConstruction(world) {
@@ -3083,11 +3166,29 @@ class BuildingManager {
             if(p.workDone>=p.workRequired) { p.status='complete'; done.push(p); }
         });
         done.forEach(p => {
-            this.projects=this.projects.filter(x=>x!==p); this.completed.push(p);
-            Object.entries(p.effects).forEach(([k,v])=>{ this.activeEffects[k]=(this.activeEffects[k]||0)+(typeof v==='number'?v:0); if(typeof v!=='number') this.activeEffects[k]=v; });
-            world.logMessage('building',`${t('建造完成：')}${p.name}${t('！')}`);
-            if (world.dailyNews) world.dailyNews.collectEvent('building', `${p.name}${t('建造完成了！')}`, 6);
-            Object.values(world.agents).forEach(a=>{ a.moodModifier=(a.moodModifier||0)+5; });
+            this.projects=this.projects.filter(x=>x!==p);
+            if(p.upgradeKey) {
+                // Upgrade: update existing completed building
+                const existing=this.completed.find(b=>b.buildingKey===p.upgradeKey);
+                if(existing) {
+                    existing.level=p.targetLevel;
+                    existing.name=p.name;
+                    existing.description=p.description;
+                }
+                Object.entries(p.effects).forEach(([k,v])=>{ this.activeEffects[k]=(this.activeEffects[k]||0)+(typeof v==='number'?v:0); if(typeof v!=='number') this.activeEffects[k]=v; });
+                world.logMessage('building',`${t('升級完成：')}${p.name}${t('！')}`);
+                if (world.dailyNews) world.dailyNews.collectEvent('building', `${p.name}${t('升級完成了！')}`, 7);
+                Object.values(world.agents).forEach(a=>{ a.moodModifier=(a.moodModifier||0)+8; });
+            } else {
+                // New building
+                p.buildingKey=p.buildingKey||null;
+                p.level=1;
+                this.completed.push(p);
+                Object.entries(p.effects).forEach(([k,v])=>{ this.activeEffects[k]=(this.activeEffects[k]||0)+(typeof v==='number'?v:0); if(typeof v!=='number') this.activeEffects[k]=v; });
+                world.logMessage('building',`${t('建造完成：')}${p.name}${t('！')}`);
+                if (world.dailyNews) world.dailyNews.collectEvent('building', `${p.name}${t('建造完成了！')}`, 6);
+                Object.values(world.agents).forEach(a=>{ a.moodModifier=(a.moodModifier||0)+5; });
+            }
         });
     }
     getEffect(key, def=0) { return this.activeEffects[key]??def; }
@@ -5093,7 +5194,16 @@ class World {
             this.buildings = new BuildingManager();
             if (data.buildings) {
                 this.buildings.projects = data.buildings.projects || [];
-                this.buildings.completed = data.buildings.completed || [];
+                this.buildings.completed = (data.buildings.completed || []).map(b => {
+                    if (!b.buildingKey) {
+                        // Legacy save: resolve buildingKey from name
+                        for (const [key, tmpl] of Object.entries(BUILDING_TEMPLATES)) {
+                            if (tmpl.name === b.name) { b.buildingKey = key; break; }
+                        }
+                    }
+                    if (!b.level) b.level = 1;
+                    return b;
+                });
                 this.buildings.activeEffects = data.buildings.activeEffects || {};
                 this.buildings._counter = data.buildings._counter || 0;
             }

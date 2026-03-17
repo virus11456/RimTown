@@ -38,6 +38,8 @@ const ACHIEVEMENTS = {
     builder: { name: t('建設者'), desc: t('建造第一棟建築'), icon: '🏗️', category: 'economy' },
     master_builder: { name: t('建築大師'), desc: t('建造5棟建築'), icon: '🏰', category: 'economy' },
     all_buildings: { name: t('鎮之完善'), desc: t('建造所有建築'), icon: '🌆', category: 'economy' },
+    first_upgrade: { name: t('精益求精'), desc: t('首次升級建築'), icon: '🔧', category: 'economy' },
+    max_upgrade: { name: t('登峰造極'), desc: t('將建築升級至最高等級'), icon: '🏯', category: 'economy' },
     first_research: { name: t('學者'), desc: t('完成第一項研究'), icon: '📚', category: 'economy' },
     research_5: { name: t('博學多才'), desc: t('完成5項研究'), icon: '🎓', category: 'economy' },
     all_research: { name: t('科技先驅'), desc: t('完成所有研究'), icon: '🔬', category: 'economy' },
@@ -1161,6 +1163,8 @@ class RimTownApp {
         if (completedBuildings.length >= 5) this._unlockAchievement('master_builder');
         const availBuildings = this.world.buildings?.getAvailable?.(this.world) || [];
         if (completedBuildings.length > 0 && availBuildings.length === 0) this._unlockAchievement('all_buildings');
+        if (completedBuildings.some(b => (b.level || 1) >= 2)) this._unlockAchievement('first_upgrade');
+        if (completedBuildings.some(b => (b.level || 1) >= 3)) this._unlockAchievement('max_upgrade');
         const researchProjects = this.state.research?.projects || {};
         const completedResearch = Object.values(researchProjects).filter(p => p.status === 'complete');
         if (completedResearch.length >= 1) this._unlockAchievement('first_research');
@@ -2440,6 +2444,7 @@ class RimTownApp {
                 // Economy
                 case 'trade': { const [idx, amount] = val.split(','); this.executeTrade(parseInt(idx), parseInt(amount)); this._unlockAchievement('first_trade'); this._tradeCount++; } break;
                 case 'build': this.startBuilding(val); break;
+                case 'upgrade-building': this.startBuildingUpgrade(val); break;
                 case 'research': this.startResearch(val); break;
                 case 'send-expedition': this.sendExpedition(val); break;
                 // Auth & Cloud
@@ -4698,7 +4703,29 @@ class RimTownApp {
                 html += '</div>';
             }
             if (buildings.completed?.length) {
-                html += `${t('<div class="completed-buildings">已完成：')}${buildings.completed.map(p => p.name).join('、')}</div>`;
+                html += t('<div class="completed-buildings"><div class="build-label">已完成：</div>');
+                buildings.completed.forEach(p => {
+                    const lvl = p.level || 1;
+                    const stars = '⭐'.repeat(lvl);
+                    html += `<div class="completed-building-item"><span>${p.name}</span><span class="building-level">${stars} Lv.${lvl}</span></div>`;
+                });
+                html += '</div>';
+            }
+            // Upgradeable buildings
+            const upgradeable = this.world.buildings.getUpgradeable(this.world);
+            if (upgradeable.length) {
+                html += t('<div class="available-buildings"><div class="build-label">🔨 升級：</div>');
+                upgradeable.forEach(u => {
+                    const costStr = Object.entries(u.costs).map(([r,a]) => `${icons[r]||''}${a}`).join(' ');
+                    const effStr = Object.entries(u.effects).map(([k,v]) => `${k}:${v>0?'+':''}${v}`).join(' ');
+                    html += `<div class="build-option ${u.can_afford ? '' : 'cant-afford'}">
+                        <div class="build-name">${u.name} <span class="building-level">Lv.${u.currentLevel}→${u.nextLevel}</span></div>
+                        <div class="build-desc">${u.description}</div>
+                        <div class="build-cost">${costStr}</div>
+                        <div class="build-effects" style="font-size:0.75rem;color:var(--accent-gold)">${effStr}</div>
+                        <button class="build-btn" ${u.can_afford ? '' : 'disabled'} data-action="upgrade-building" data-val="${u.buildingKey}">${t('升級')}</button></div>`;
+                });
+                html += '</div>';
             }
             const available = this.world.buildings.getAvailable(this.world);
             if (available.length) {
@@ -4709,7 +4736,7 @@ class RimTownApp {
                         <div class="build-name">${p.name}</div>
                         <div class="build-desc">${p.description}</div>
                         <div class="build-cost">${costStr}</div>
-                        <button class="build-btn" ${p.can_afford ? '' : 'disabled'} data-action="build" data-val="${p.key}${t('">建造</button></div>')}`;
+                        <button class="build-btn" ${p.can_afford ? '' : 'disabled'} data-action="build" data-val="${p.key}">${t('建造')}</button></div>`;
                 });
                 html += '</div>';
             }
@@ -4808,6 +4835,12 @@ class RimTownApp {
 
     startBuilding(key) {
         this.world.buildings.startProject(key, this.world);
+        this.state = this.world.getState();
+        this.renderSidebar();
+    }
+
+    startBuildingUpgrade(buildingKey) {
+        this.world.buildings.startUpgrade(buildingKey, this.world);
         this.state = this.world.getState();
         this.renderSidebar();
     }
