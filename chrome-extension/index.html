@@ -80,6 +80,13 @@
                     <option value="en">English</option>
                 </select>
             </div>
+            <div class="setting-group">
+                <label data-i18n="背景音樂">背景音樂</label>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <button id="bgm-toggle" class="btn-icon" title="靜音" style="font-size:18px;padding:4px 8px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:6px;cursor:pointer;">🔊</button>
+                    <input id="bgm-volume" type="range" min="0" max="100" value="30" style="flex:1;">
+                </div>
+            </div>
             <div class="modal-buttons">
                 <button id="settings-save" class="btn-accent" data-i18n="儲存">儲存</button>
                 <button id="settings-cancel" data-i18n="取消">取消</button>
@@ -327,6 +334,7 @@
     <script src="custom-npc.js"></script>
     <script src="prosperity.js"></script>
     <script src="simulation.js"></script>
+    <script src="chiptune.js"></script>
     <script src="tilemap.js"></script>
     <script src="app.js"></script>
     <script>

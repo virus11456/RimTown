@@ -328,6 +328,7 @@ class RimTownApp {
         this.setupMobileHeader();
         this.setupControlListeners();
         this.setupSettingsListeners();
+        this.setupBGM();
         this.setupAuthListeners();
         this.setupTutorial();
         this._updateAccountButton();
@@ -2211,6 +2212,7 @@ class RimTownApp {
         this.simInterval = setInterval(() => {
             this.world.tick();
             this.state = this.world.getState();
+            this._updateBGMPhase();
             this.render();
             // Check for ending trigger
             if (this.world.multiEnding?.endingTriggered && !this._endingShown) {
@@ -2689,6 +2691,59 @@ class RimTownApp {
         document.getElementById('settings-cancel')?.addEventListener('click', () => {
             document.getElementById('settings-modal')?.classList.add('hidden');
         });
+    }
+
+    // --- BGM ---
+    setupBGM() {
+        this.bgm = new ChiptuneEngine();
+        this.bgm.loadSettings();
+        this._bgmPhase = null;
+
+        // Update UI to match saved settings
+        const volSlider = document.getElementById('bgm-volume');
+        const toggleBtn = document.getElementById('bgm-toggle');
+        if (volSlider) volSlider.value = Math.round(this.bgm.volume * 100);
+        if (toggleBtn) toggleBtn.textContent = this.bgm.muted ? '🔇' : '🔊';
+
+        // Volume slider
+        volSlider?.addEventListener('input', (e) => {
+            this.bgm.setVolume(parseInt(e.target.value) / 100);
+            if (this.bgm.muted) {
+                this.bgm.toggleMute();
+                if (toggleBtn) toggleBtn.textContent = '🔊';
+            }
+        });
+
+        // Mute toggle
+        toggleBtn?.addEventListener('click', () => {
+            const muted = this.bgm.toggleMute();
+            toggleBtn.textContent = muted ? '🔇' : '🔊';
+        });
+
+        // Init AudioContext on first user interaction (browser requirement)
+        const initOnce = () => {
+            if (!this.bgm._initialized) {
+                this.bgm.init();
+                this.bgm.loadSettings(); // re-apply after init
+                if (this.world?.clock) {
+                    this.bgm.play(this.world.clock.timeOfDay);
+                    this._bgmPhase = this.world.clock.timeOfDay;
+                }
+            }
+            document.removeEventListener('click', initOnce);
+            document.removeEventListener('touchstart', initOnce);
+        };
+        document.addEventListener('click', initOnce);
+        document.addEventListener('touchstart', initOnce);
+    }
+
+    _updateBGMPhase() {
+        if (!this.bgm?._initialized || !this.world?.clock) return;
+        const phase = this.world.clock.timeOfDay;
+        if (phase !== this._bgmPhase) {
+            this._bgmPhase = phase;
+            this.bgm.play(phase);
+        }
     }
 
     // --- Save / Load ---

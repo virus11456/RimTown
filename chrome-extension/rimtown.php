@@ -74,6 +74,13 @@ function rimtown_shortcode($atts) {
                         <option value="500">極快（0.5秒）</option>
                     </select>
                 </div>
+                <div class="setting-group">
+                    <label>背景音樂</label>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <button id="bgm-toggle" class="btn-icon" title="靜音" style="font-size:18px;padding:4px 8px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:6px;cursor:pointer;">🔊</button>
+                        <input id="bgm-volume" type="range" min="0" max="100" value="30" style="flex:1;">
+                    </div>
+                </div>
                 <div class="modal-buttons">
                     <button id="settings-save" class="btn-accent">儲存</button>
                     <button id="settings-cancel">取消</button>
@@ -768,6 +775,14 @@ function rimtown_enqueue_assets() {
     );
 
     wp_enqueue_script(
+        'rimtown-chiptune',
+        RIMTOWN_URL . 'chiptune.js',
+        array('rimtown-simulation'),
+        RIMTOWN_VERSION,
+        true
+    );
+
+    wp_enqueue_script(
         'rimtown-tilemap',
         RIMTOWN_URL . 'tilemap.js',
         array('rimtown-simulation'),
@@ -778,7 +793,7 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-app',
         RIMTOWN_URL . 'app.js',
-        array('rimtown-simulation', 'rimtown-tilemap'),
+        array('rimtown-simulation', 'rimtown-chiptune', 'rimtown-tilemap'),
         RIMTOWN_VERSION,
         true
     );
