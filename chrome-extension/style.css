@@ -69,10 +69,7 @@ body.rimtown-page .wp-block-post-title {
     display: none;
 }
 
-/* Header */
-.header {
-    display: none;
-}
+/* Header removed — town name now in mobile-header */
 .town-info-bar {
     display: flex;
     align-items: center;
@@ -88,12 +85,6 @@ body.rimtown-page .wp-block-post-title {
 .town-info-name { color: var(--accent); font-weight: bold; letter-spacing: 1px; }
 .town-info-pop { color: var(--text-secondary); }
 .town-info-clock { color: var(--warning); font-family: monospace; margin-left: auto;
-}
-
-.header h1 {
-    font-size: 1.1rem;
-    color: var(--accent);
-    letter-spacing: 2px;
 }
 
 .header-info {
@@ -2642,9 +2633,6 @@ body.rimtown-page .wp-block-post-title {
     .rimtown-container .map-panel {
         right: 300px !important;
     }
-    .header h1 {
-        font-size: 0.95rem;
-    }
     .controls button {
         padding: 3px 8px;
         font-size: 0.75rem;
@@ -2689,10 +2677,6 @@ body.rimtown-page .wp-block-post-title {
         width: 100% !important;
     }
 
-    /* Desktop header hidden on mobile, show mobile header */
-    .header {
-        display: none !important;
-    }
     .mobile-header {
         display: block !important;
         background: var(--bg-secondary);
@@ -3414,8 +3398,5 @@ body.rimtown-page .wp-block-post-title {
     .rimtown-container {
         padding-top: env(safe-area-inset-top);
         padding-bottom: env(safe-area-inset-bottom);
-    }
-    .header {
-        padding-top: env(safe-area-inset-top);
     }
 }
