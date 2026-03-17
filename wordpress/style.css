@@ -1535,6 +1535,17 @@ body.rimtown-page .wp-block-post-title {
 .trade-btn { padding: 4px 10px; font-size: 0.7rem; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; }
 .trade-btn:hover { background: var(--accent); border-color: var(--accent); }
 
+.shop-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.shop-card { display: flex; flex-direction: column; align-items: center; padding: 6px 4px; background: var(--bg-secondary); border-radius: 4px; gap: 2px; }
+.shop-card-icon { font-size: 1.1rem; }
+.shop-card-name { font-size: 0.75rem; font-weight: bold; }
+.shop-card-stock { font-size: 0.6rem; color: var(--text-muted); }
+.shop-card-btn { width: 90%; padding: 3px 0; font-size: 0.65rem; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; text-align: center; }
+.shop-card-btn:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); }
+.shop-card-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.shop-card-btn.shop-buy { border-color: var(--info); color: var(--info); }
+.shop-card-btn.shop-sell { border-color: var(--positive); color: var(--positive); }
+
 .building-progress { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; }
 .building-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; }
 .progress-bar { flex: 1; height: 8px; background: var(--bg-primary); border-radius: 4px; overflow: hidden; }

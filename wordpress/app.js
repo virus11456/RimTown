@@ -4667,7 +4667,7 @@ class RimTownApp {
             }
             html += '</div>';
         } else if (this._economySubTab === 'shop') {
-            // v4.0: Shop system
+            // v4.0: Shop system — card grid layout
             html += t('<div class="econ-section"><h3>🛒 商店</h3>');
             const silverAmount = Math.round(res['silver'] || 0);
             html += `<div style="margin-bottom:8px;font-size:0.85rem">${t('💰 你的銀幣：')}<strong>${silverAmount}</strong></div>`;
@@ -4677,15 +4677,17 @@ class RimTownApp {
                 const catItems = shopItems.filter(i => i.category === catKey);
                 if (catItems.length === 0) continue;
                 html += `<div style="font-weight:bold;font-size:0.78rem;margin:8px 0 4px;color:var(--text-secondary)">${catName}</div>`;
+                html += '<div class="shop-grid">';
                 for (const item of catItems) {
-                    html += `<div class="resource-item" style="display:flex;align-items:center;gap:6px;padding:6px 8px;margin:3px 0;border-radius:6px;background:var(--bg-card)">`;
-                    html += `<span style="font-size:1.1rem">${item.icon}</span>`;
-                    html += `<span style="flex:1;font-size:0.8rem">${item.name}</span>`;
-                    html += `<span style="font-size:0.7rem;color:var(--text-muted)">${t('庫存')}:${Math.round(item.stock)}</span>`;
-                    html += `<button class="trade-btn trade-buy" data-action="shop-buy" data-val="${item.key},1" ${item.canBuy?'':'disabled'} style="font-size:0.7rem;padding:3px 8px">${t('買')}${item.buyPrice}💰</button>`;
-                    html += `<button class="trade-btn trade-sell" data-action="shop-sell" data-val="${item.key},1" ${item.canSell?'':'disabled'} style="font-size:0.7rem;padding:3px 8px">${t('賣')}${item.sellPrice}💰</button>`;
+                    html += `<div class="shop-card">`;
+                    html += `<div class="shop-card-icon">${item.icon}</div>`;
+                    html += `<div class="shop-card-name">${item.name}</div>`;
+                    html += `<div class="shop-card-stock">${t('庫存')}:${Math.round(item.stock)}</div>`;
+                    html += `<button class="shop-card-btn shop-buy" data-action="shop-buy" data-val="${item.key},1" ${item.canBuy?'':'disabled'}>${t('買')}${item.buyPrice}💰</button>`;
+                    html += `<button class="shop-card-btn shop-sell" data-action="shop-sell" data-val="${item.key},1" ${item.canSell?'':'disabled'}>${t('賣')}${item.sellPrice}💰</button>`;
                     html += `</div>`;
                 }
+                html += '</div>';
             }
             html += '</div>';
         } else if (this._economySubTab === 'building') {
