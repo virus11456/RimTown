@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 4.0.0
+ * Version: 4.1.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '4.0.0');
+define('RIMTOWN_VERSION', '4.1.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -993,6 +993,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '4.1.0',
+            'date'    => '2026-03-17',
+            'changes' => array(
+                '建築升級系統：所有 12 棟建築支援 3 級升級（Lv.1→Lv.2→Lv.3），每級更強效果',
+                '升級路徑：瞭望塔→強化瞭望塔→哨兵高塔、穀倉→大型穀倉→冷藏穀庫 等',
+                '升級 UI：建築等級星星標示、升級區域含費用與效果預覽',
+                '新成就：精益求精（首次升級）、登峰造極（最高等級）',
+                '修復 startProject 變數遮蔽 bug：const t 遮蔽翻譯函數導致 TypeError',
+                '修復 BuildingManager._counter 未序列化：存讀檔後 ID 計數器重置',
+                '向下相容舊存檔：自動補全 buildingKey 與 level 欄位',
+                '版號同步：所有檔案統一為 4.1.0',
+            ),
+        ),
         array(
             'version' => '4.0.0',
             'date'    => '2026-03-16',

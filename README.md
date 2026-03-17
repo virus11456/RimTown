@@ -39,10 +39,11 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 - **Dynamic Weather Engine**: 10 weather types (clear, rain, storm, snow, blizzard, heatwave, drought, fog, wind, cloudy) with season-weighted pools, 3-day forecast, temperature/humidity/wind tracking, and real gameplay effects on farming, mood, NPC activity (v4)
 - **Natural Disasters**: Weather-driven disasters (severe drought, extreme blizzard, floods) with escalation from extreme weather streaks, disaster warnings, building mitigation (deep well reduces drought), and recovery phases (v4)
 - **NPC Council System**: Auto-formed town council (3-5 senior NPCs), 12 proposal types covering economy/welfare/culture/defense/nature, NPC personality-based voting, player participation, 20-day decree duration with modifier effects (v4)
+- **Building Upgrade System**: All 12 buildings support 3-tier upgrades (Lv.1→Lv.2→Lv.3) with escalating costs and stacking effects — watchtower→sentinel tower, granary→cold storage, marketplace→international port, etc. (v4.1)
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v4.0.0.zip` from Releases
+1. Download `rimtown-v4.1.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -57,6 +58,22 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v4.1.0 (2026-03-17)
+
+**建築升級系統 + Bug 修復**
+
+新功能：
+- **建築升級系統**：所有 12 棟建築支援 3 級升級路徑（Lv.1→Lv.2→Lv.3），每級提供更強效果加成
+  - 瞭望塔→強化瞭望塔→哨兵高塔、穀倉→大型穀倉→冷藏穀庫、市集→商業廣場→國際商港 等
+  - 升級需消耗更高資源與工時，完成後全鎮 +8 心情
+  - UI 顯示建築等級（星星標示）、升級區域含費用與效果預覽
+- **新成就**：精益求精（首次升級建築）、登峰造極（升至最高等級）
+
+修復：
+- **修復 startProject 變數遮蔽 bug**：`const t` 遮蔽全域翻譯函數 `t()`，導致建造開始訊息可能拋出 TypeError
+- **修復 BuildingManager._counter 未序列化**：存讀檔後建築 ID 計數器重置，可能造成 ID 衝突
+- **向下相容舊存檔**：自動補全 buildingKey 與 level 欄位
 
 ### v4.0.0 (2026-03-16)
 
