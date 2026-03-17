@@ -1542,7 +1542,10 @@ body.rimtown-page .wp-block-post-title {
 .research-fill { background: var(--info); }
 .progress-text { font-size: 0.65rem; color: var(--text-secondary); min-width: 30px; text-align: right; }
 
-.completed-buildings { font-size: 0.7rem; color: var(--positive); margin: 4px 0; padding: 4px; background: rgba(74,222,128,0.1); border-radius: 3px; }
+.completed-buildings { font-size: 0.7rem; color: var(--positive); margin: 4px 0; padding: 4px; background: rgba(74,222,128,0.1); border-radius: 3px; display: flex; flex-direction: column; gap: 2px; }
+.completed-building-item { display: flex; justify-content: space-between; align-items: center; padding: 2px 4px; }
+.building-level { font-size: 0.65rem; color: var(--accent-gold, #f59e0b); font-weight: bold; }
+.build-effects { font-size: 0.65rem; color: var(--accent-gold, #f59e0b); width: 100%; }
 
 .build-label { font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 4px; }
 .available-buildings, .research-available { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }

@@ -53,18 +53,33 @@ class Needs {
     constructor() {
         this.hunger = 70; this.rest = 80; this.social = 60; this.comfort = 60; this.recreation = 50; this.beauty = 50;
     }
-    tickDecay(isSleeping, isEating, isSocializing, isRecreating) {
-        this.hunger = isEating ? Math.min(100, this.hunger + 20) : Math.max(0, this.hunger - 2);
-        this.rest = isSleeping ? Math.min(100, this.rest + 8) : Math.max(0, this.rest - 1.5);
+    tickDecay(isSleeping, isEating, isSocializing, isRecreating, hour) {
+        // v4.0: Night-aware decay — rest decays slower at night (NPC should be sleeping)
+        const isNightTime = hour !== undefined ? (hour >= 21 || hour < 6) : false;
+        const restDecay = isNightTime ? 0.6 : 1.5; // 60% slower rest decay at night
+        const hungerDecay = isNightTime ? 1.2 : 2;  // Slower hunger decay at night too
+
+        this.hunger = isEating ? Math.min(100, this.hunger + 20) : Math.max(0, this.hunger - hungerDecay);
+        this.rest = isSleeping ? Math.min(100, this.rest + 8) : Math.max(0, this.rest - restDecay);
         this.social = isSocializing ? Math.min(100, this.social + 10) : Math.max(0, this.social - 1);
         this.recreation = isRecreating ? Math.min(100, this.recreation + 15) : Math.max(0, this.recreation - 0.8);
     }
     get moodContribution() {
         let s = 0;
-        if (this.hunger < 20) s -= 15; else if (this.hunger > 80) s += 5;
-        if (this.rest < 20) s -= 20; else if (this.rest > 80) s += 5;
-        if (this.social < 20) s -= 10; else if (this.social > 70) s += 5;
-        if (this.recreation < 15) s -= 8; else if (this.recreation > 70) s += 3;
+        // v4.0: Gentler mood penalties with graduated thresholds
+        if (this.hunger < 10) s -= 15;       // Only severe penalty at very low hunger
+        else if (this.hunger < 25) s -= 8;   // Moderate penalty
+        else if (this.hunger > 80) s += 5;
+
+        if (this.rest < 10) s -= 18;         // Severe only when extremely tired
+        else if (this.rest < 25) s -= 8;     // Moderate penalty
+        else if (this.rest > 80) s += 5;
+
+        if (this.social < 15) s -= 8;
+        else if (this.social > 70) s += 5;
+
+        if (this.recreation < 10) s -= 6;
+        else if (this.recreation > 70) s += 3;
         return s;
     }
     get mostUrgent() {
@@ -409,11 +424,13 @@ class Agent {
     update(world) {
         const prevActivity = this.activity;
         this._decideActivity(world.clock.hour);
-        this.needs.tickDecay(this.activity==='sleeping', this.activity==='eating', this.activity==='socializing', this.activity==='recreation');
+        this.needs.tickDecay(this.activity==='sleeping', this.activity==='eating', this.activity==='socializing', this.activity==='recreation', world.clock.hour);
         // Decay moodModifier toward 0
         if (this.moodModifier > 0) this.moodModifier = Math.max(0, this.moodModifier - 0.5);
         else if (this.moodModifier < 0) this.moodModifier = Math.min(0, this.moodModifier + 0.5);
-        this.mood = Math.max(-100, Math.min(100, 50 + this.personality.moodBase + Math.floor(this.needs.moodContribution) + this.moodModifier));
+        const repMoodBonus = world.reputationSystem ? world.reputationSystem.getModifier('npc_mood_bonus') : 0;
+        const weatherMoodBonus = world.weather ? Math.round(world.weather.moodModifier * 0.3) : 0;
+        this.mood = Math.max(-100, Math.min(100, 50 + this.personality.moodBase + Math.floor(this.needs.moodContribution) + this.moodModifier + repMoodBonus + weatherMoodBonus));
         this._gainSkillXp(world);
         // Only re-pick location if activity changed or stay duration expired
         const activityChanged = this.activity !== prevActivity;
@@ -859,7 +876,7 @@ class PlayerAgent extends Agent {
     update(world) {
         // Auto-manage player activity based on needs and context
         this._autoManageActivity(world);
-        this.needs.tickDecay(this.activity==='sleeping', this.activity==='eating', this.activity==='socializing', this.activity==='recreation');
+        this.needs.tickDecay(this.activity==='sleeping', this.activity==='eating', this.activity==='socializing', this.activity==='recreation', world.clock.hour);
         // Passive recovery: location-based need bonuses
         if (this.currentLocation === 'tavern') this.needs.hunger = Math.min(100, this.needs.hunger + 0.5);
         if (['residential_north','residential_south','residential_east'].includes(this.currentLocation)) this.needs.rest = Math.min(100, this.needs.rest + 0.3);
@@ -2993,7 +3010,7 @@ function processDailyProduction(world) {
         const skill = agent.skills.get(recipe.skill);
         let eff = 0.5 + ((skill?skill.level:0)/20)*2.0;
         if (isIndustryHandled) eff *= 0.5;
-        if (agent.job.key === 'farmer') { eff *= SEASON_FARM_MOD[world.clock.season] || 1; eff *= 1 + (world.news?world.news.getModifier('farm_bonus',0):0); }
+        if (agent.job.key === 'farmer') { eff *= SEASON_FARM_MOD[world.clock.season] || 1; eff *= 1 + (world.news?world.news.getModifier('farm_bonus',0):0) + (world.weather?world.weather.farmModifier:0); }
         if (agent.job.key === 'miner') eff *= 1 + (world.news?world.news.getModifier('mining_bonus',0):0);
         eff *= 1 + (agent.mood - 50)/500;
         eff *= 0.9 + Math.random()*0.2;
@@ -3040,20 +3057,103 @@ const BUILDING_TEMPLATES = {
     town_walls:{name:t('城牆'),description:t('大幅提升防禦'),costs:{stone:80,wood:30,tools:5},work:40,effects:{defense_bonus:8}},
 };
 
+// --- Building Upgrades ---
+const BUILDING_UPGRADES = {
+    watchtower:{
+        2:{name:t('強化瞭望塔'),description:t('石製加固，視野更遠'),costs:{stone:50,wood:20,metal:10},work:30,effects:{defense_bonus:2}},
+        3:{name:t('哨兵高塔'),description:t('頂層弩砲，全天候警戒'),costs:{stone:80,metal:30,tools:5},work:50,effects:{defense_bonus:4,raid_chance:-0.05}},
+    },
+    granary:{
+        2:{name:t('大型穀倉'),description:t('雙倍容量，通風防潮'),costs:{wood:50,stone:30,tools:3},work:25,effects:{food_capacity:500}},
+        3:{name:t('冷藏穀庫'),description:t('地下冷藏，食物永不腐壞'),costs:{stone:60,metal:20,silver:40},work:40,effects:{food_capacity:800,food_decay:-0.5}},
+    },
+    marketplace:{
+        2:{name:t('商業廣場'),description:t('更多攤位，吸引遠方商人'),costs:{wood:30,stone:25,silver:80},work:28,effects:{trade_bonus:0.15,merchant_frequency:0.5}},
+        3:{name:t('國際商港'),description:t('稀有商品與異國商隊'),costs:{stone:50,metal:15,silver:150},work:45,effects:{trade_bonus:0.2,merchant_frequency:1.0}},
+    },
+    well_upgrade:{
+        2:{name:t('淨水系統'),description:t('過濾雜質，提升健康'),costs:{stone:35,metal:10,tools:4},work:20,effects:{drought_resistance:0.3,healing_bonus:0.2}},
+        3:{name:t('水渠網路'),description:t('全鎮供水，農田灌溉加成'),costs:{stone:60,metal:20,tools:6},work:35,effects:{drought_resistance:0.5,farm_bonus:0.2}},
+    },
+    training_ground:{
+        2:{name:t('演武場'),description:t('專業訓練設施'),costs:{wood:30,stone:20,metal:10},work:18,effects:{defense_bonus:2}},
+        3:{name:t('軍事學院'),description:t('培養精英守衛'),costs:{stone:40,metal:20,silver:50},work:35,effects:{defense_bonus:3,guard_xp_bonus:0.5}},
+    },
+    brewery:{
+        2:{name:t('精釀酒坊'),description:t('釀造高級酒類'),costs:{wood:20,metal:10,silver:50},work:20,effects:{recreation_bonus:8}},
+        3:{name:t('酒莊'),description:t('頂級佳釀，商業價值倍增'),costs:{wood:30,metal:15,silver:80},work:32,effects:{recreation_bonus:12,trade_bonus:0.1}},
+    },
+    garden:{
+        2:{name:t('藥圃'),description:t('多樣藥草，產量加倍'),costs:{wood:15,silver:25,cloth:5},work:14,effects:{herbs_production:2}},
+        3:{name:t('百草園'),description:t('珍稀藥材，治療奇效'),costs:{wood:20,silver:50,tools:3},work:24,effects:{herbs_production:3,healing_bonus:0.3}},
+    },
+    school:{
+        2:{name:t('書院'),description:t('藏書豐富，學者雲集'),costs:{wood:40,stone:30,silver:60},work:30,effects:{xp_bonus:0.3}},
+        3:{name:t('學府'),description:t('最高學府，研究加速'),costs:{stone:50,silver:100,tools:5},work:45,effects:{xp_bonus:0.4,research_bonus:0.2}},
+    },
+    farm_irrigation:{
+        2:{name:t('水車灌溉'),description:t('自動化灌溉，省時省力'),costs:{wood:20,stone:15,metal:10},work:18,effects:{farm_bonus:0.3}},
+        3:{name:t('精耕系統'),description:t('科學農法，產量大增'),costs:{stone:25,metal:15,tools:5},work:30,effects:{farm_bonus:0.5}},
+    },
+    forge_bellows:{
+        2:{name:t('雙室鍛爐'),description:t('同時冶煉，效率翻倍'),costs:{metal:20,stone:15,tools:3},work:18,effects:{smithing_bonus:0.3}},
+        3:{name:t('大師鍛造坊'),description:t('鍛造大師級裝備'),costs:{metal:35,stone:20,silver:40},work:30,effects:{smithing_bonus:0.5,tool_quality:0.3}},
+    },
+    clinic_upgrade:{
+        2:{name:t('診療所'),description:t('專業醫療設備'),costs:{wood:20,cloth:15,silver:40,tools:3},work:22,effects:{healing_bonus:0.5}},
+        3:{name:t('醫院'),description:t('全科醫療，起死回生'),costs:{stone:30,cloth:20,silver:80,tools:5},work:38,effects:{healing_bonus:0.8,mood_modifier:2}},
+    },
+    town_walls:{
+        2:{name:t('加固城牆'),description:t('護城河與箭塔'),costs:{stone:120,wood:40,metal:20},work:55,effects:{defense_bonus:6}},
+        3:{name:t('堅城堡壘'),description:t('銅牆鐵壁，固若金湯'),costs:{stone:180,metal:50,tools:10},work:80,effects:{defense_bonus:10,raid_chance:-0.1}},
+    },
+};
+
 class BuildingManager {
     constructor() { this.projects=[]; this.completed=[]; this.activeEffects={}; this._counter=0; }
     getAvailable(world) {
         const done=new Set(this.completed.map(p=>p.name)), prog=new Set(this.projects.map(p=>p.name));
         return Object.entries(BUILDING_TEMPLATES).filter(([,t])=>!done.has(t.name)&&!prog.has(t.name)).map(([key,t])=>({key,...t,can_afford:world.stockpile.canAfford(t.costs)}));
     }
-    startProject(key, world) {
-        const t=BUILDING_TEMPLATES[key]; if(!t) return null;
-        const names=new Set([...this.completed,...this.projects].map(p=>p.name));
-        if(names.has(t.name)) return null;
-        if(!world.stockpile.pay(t.costs,world.tickCount,`Building: ${t.name}`)) return null;
+    getUpgradeable(world) {
+        const upgrading=new Set(this.projects.filter(p=>p.upgradeKey).map(p=>p.upgradeKey));
+        return this.completed.filter(b => {
+            const key=b.buildingKey;
+            if(!key||!BUILDING_UPGRADES[key]) return false;
+            const lvl=b.level||1;
+            if(lvl>=3) return false;
+            if(upgrading.has(key)) return false;
+            return !!BUILDING_UPGRADES[key][lvl+1];
+        }).map(b => {
+            const key=b.buildingKey;
+            const nextLvl=(b.level||1)+1;
+            const upg=BUILDING_UPGRADES[key][nextLvl];
+            return { buildingKey:key, currentLevel:b.level||1, nextLevel:nextLvl, name:upg.name, description:upg.description, costs:upg.costs, work:upg.work, effects:upg.effects, can_afford:world.stockpile.canAfford(upg.costs), baseName:b.name };
+        });
+    }
+    startUpgrade(buildingKey, world) {
+        const b=this.completed.find(p=>p.buildingKey===buildingKey);
+        if(!b) return null;
+        const lvl=b.level||1;
+        if(lvl>=3) return null;
+        const upg=BUILDING_UPGRADES[buildingKey]?.[lvl+1];
+        if(!upg) return null;
+        if(this.projects.some(p=>p.upgradeKey===buildingKey)) return null;
+        if(!world.stockpile.pay(upg.costs,world.tickCount,`${t('升級：')}${upg.name}`)) return null;
         this._counter++;
-        const p={id:`build_${this._counter}`,name:t.name,description:t.description,costs:t.costs,workRequired:t.work,workDone:0,effects:t.effects||{},status:'building'};
-        this.projects.push(p); world.logMessage('building',`${t('開始建造：')}${t.name}${t('！')}`); return p;
+        const p={id:`build_${this._counter}`,name:upg.name,description:upg.description,costs:upg.costs,workRequired:upg.work,workDone:0,effects:upg.effects||{},status:'building',upgradeKey:buildingKey,targetLevel:lvl+1};
+        this.projects.push(p);
+        world.logMessage('building',`${t('開始升級：')}${upg.name}${t('！')}`);
+        return p;
+    }
+    startProject(key, world) {
+        const tmpl=BUILDING_TEMPLATES[key]; if(!tmpl) return null;
+        const names=new Set([...this.completed,...this.projects].map(p=>p.name));
+        if(names.has(tmpl.name)) return null;
+        if(!world.stockpile.pay(tmpl.costs,world.tickCount,`Building: ${tmpl.name}`)) return null;
+        this._counter++;
+        const p={id:`build_${this._counter}`,name:tmpl.name,description:tmpl.description,costs:tmpl.costs,workRequired:tmpl.work,workDone:0,effects:tmpl.effects||{},status:'building',buildingKey:key};
+        this.projects.push(p); world.logMessage('building',`${t('開始建造：')}${tmpl.name}${t('！')}`); return p;
     }
     dailyConstruction(world) {
         const done=[];
@@ -3066,15 +3166,33 @@ class BuildingManager {
             if(p.workDone>=p.workRequired) { p.status='complete'; done.push(p); }
         });
         done.forEach(p => {
-            this.projects=this.projects.filter(x=>x!==p); this.completed.push(p);
-            Object.entries(p.effects).forEach(([k,v])=>{ this.activeEffects[k]=(this.activeEffects[k]||0)+(typeof v==='number'?v:0); if(typeof v!=='number') this.activeEffects[k]=v; });
-            world.logMessage('building',`${t('建造完成：')}${p.name}${t('！')}`);
-            if (world.dailyNews) world.dailyNews.collectEvent('building', `${p.name}${t('建造完成了！')}`, 6);
-            Object.values(world.agents).forEach(a=>{ a.moodModifier=(a.moodModifier||0)+5; });
+            this.projects=this.projects.filter(x=>x!==p);
+            if(p.upgradeKey) {
+                // Upgrade: update existing completed building
+                const existing=this.completed.find(b=>b.buildingKey===p.upgradeKey);
+                if(existing) {
+                    existing.level=p.targetLevel;
+                    existing.name=p.name;
+                    existing.description=p.description;
+                }
+                Object.entries(p.effects).forEach(([k,v])=>{ this.activeEffects[k]=(this.activeEffects[k]||0)+(typeof v==='number'?v:0); if(typeof v!=='number') this.activeEffects[k]=v; });
+                world.logMessage('building',`${t('升級完成：')}${p.name}${t('！')}`);
+                if (world.dailyNews) world.dailyNews.collectEvent('building', `${p.name}${t('升級完成了！')}`, 7);
+                Object.values(world.agents).forEach(a=>{ a.moodModifier=(a.moodModifier||0)+8; });
+            } else {
+                // New building
+                p.buildingKey=p.buildingKey||null;
+                p.level=1;
+                this.completed.push(p);
+                Object.entries(p.effects).forEach(([k,v])=>{ this.activeEffects[k]=(this.activeEffects[k]||0)+(typeof v==='number'?v:0); if(typeof v!=='number') this.activeEffects[k]=v; });
+                world.logMessage('building',`${t('建造完成：')}${p.name}${t('！')}`);
+                if (world.dailyNews) world.dailyNews.collectEvent('building', `${p.name}${t('建造完成了！')}`, 6);
+                Object.values(world.agents).forEach(a=>{ a.moodModifier=(a.moodModifier||0)+5; });
+            }
         });
     }
     getEffect(key, def=0) { return this.activeEffects[key]??def; }
-    toDict() { return {in_progress:this.projects,completed:this.completed,active_effects:{...this.activeEffects},completed_count:this.completed.length}; }
+    toDict() { return {in_progress:this.projects,completed:this.completed,active_effects:{...this.activeEffects},completed_count:this.completed.length,_counter:this._counter}; }
 }
 
 // --- Economy: Trade ---
@@ -4525,6 +4643,14 @@ class World {
         this.npcQuests = typeof NPCQuestSystem !== 'undefined' ? new NPCQuestSystem() : null;
         this.customNPC = typeof CustomNPCSystem !== 'undefined' ? new CustomNPCSystem() : null;
         this.multiEnding = typeof MultiEndingSystem !== 'undefined' ? new MultiEndingSystem() : null;
+        // v4.0 systems
+        this.dailyDecision = new DailyDecisionSystem();
+        this.shop = new ShopSystem();
+        this.eventChoice = new EventChoiceSystem();
+        this.npcHelp = new NPCHelpSystem();
+        this.reputationSystem = new ReputationSystem();
+        this.weather = new WeatherSystem();
+        this.council = new CouncilSystem();
     }
     addAgent(agent) { this.agents[agent.agentId] = agent; }
     removeAgent(id) { delete this.agents[id]; }
@@ -4543,7 +4669,12 @@ class World {
             const event = this.events.dailyUpdate(this);
             if (event) {
                 this.logMessage('event', `[${event.severity.toUpperCase()}] ${event.name}: ${event.description}`);
-                if (event.effects.mood_all != null) {
+                // v4.0: Offer player a choice for significant events
+                if (event.severity !== 'minor' && this.eventChoice) {
+                    this.eventChoice.offerChoice(event, this);
+                }
+                // Only auto-apply mood if no choice was offered
+                if (!this.eventChoice?.pendingEvent && event.effects.mood_all != null) {
                     Object.values(this.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + event.effects.mood_all; });
                 }
                 if (this.dailyNews) this.dailyNews.collectEvent('event', `${event.name}${t('：')}${event.description}`, event.severity === 'critical' ? 10 : event.severity === 'major' ? 8 : 5);
@@ -4578,6 +4709,12 @@ class World {
             if (this.prosperity) this.prosperity.dailyUpdate(this);
             if (this.npcQuests) this.npcQuests.dailyUpdate(this);
             if (this.questSystem) this.questSystem.checkProgress(this);
+            // v4.0 systems
+            this.dailyDecision.dailyUpdate(this);
+            this.npcHelp.dailyUpdate(this);
+            this.reputationSystem.dailyUpdate(this);
+            this.weather.dailyUpdate(this);
+            this.council.dailyUpdate(this);
             // AI Daily News (async, fire-and-forget)
             this.dailyNews.generateNewspaper(this).catch(e => console.warn('[DailyNews] Error:', e));
         }
@@ -4619,6 +4756,14 @@ class World {
             npcQuests: this.npcQuests ? this.npcQuests.toDict() : null,
             customNPC: this.customNPC ? this.customNPC.toDict() : null,
             multiEnding: this.multiEnding ? this.multiEnding.toDict() : null,
+            // v4.0
+            dailyDecision: this.dailyDecision.toDict(),
+            shop: this.shop.toDict(),
+            eventChoice: this.eventChoice.toDict(),
+            npcHelp: this.npcHelp.toDict(),
+            reputationSystem: this.reputationSystem.toDict(),
+            weather: this.weather.toDict(),
+            council: (() => { const cd = this.council.toDict(); cd.memberNames = this.council.members.map(id => this.agents[id]?.name || '?'); return cd; })(),
         };
     }
     reset(seed = null) {
@@ -4645,6 +4790,14 @@ class World {
         this.npcQuests = typeof NPCQuestSystem !== 'undefined' ? new NPCQuestSystem() : null;
         this.customNPC = typeof CustomNPCSystem !== 'undefined' ? new CustomNPCSystem() : null;
         this.multiEnding = typeof MultiEndingSystem !== 'undefined' ? new MultiEndingSystem() : null;
+        // v4.0 systems
+        this.dailyDecision = new DailyDecisionSystem();
+        this.shop = new ShopSystem();
+        this.eventChoice = new EventChoiceSystem();
+        this.npcHelp = new NPCHelpSystem();
+        this.reputationSystem = new ReputationSystem();
+        this.weather = new WeatherSystem();
+        this.council = new CouncilSystem();
         this.conversationEngine = new ConversationEngine(this.conversationEngine?.llm);
         this.townMap = generateRandomTown(seed);
         this._loadDefaultResidents();
@@ -4931,6 +5084,14 @@ class World {
             npcQuests: this.npcQuests ? this.npcQuests.serialize() : null,
             customNPC: this.customNPC ? this.customNPC.serialize() : null,
             multiEnding: this.multiEnding ? this.multiEnding.serialize() : null,
+            // v4.0
+            dailyDecision: this.dailyDecision.serialize(),
+            shop: this.shop.serialize(),
+            eventChoice: this.eventChoice.serialize(),
+            npcHelp: this.npcHelp.serialize(),
+            reputationSystem: this.reputationSystem.serialize(),
+            weather: this.weather.serialize(),
+            council: this.council.serialize(),
         };
     }
 
@@ -5033,7 +5194,16 @@ class World {
             this.buildings = new BuildingManager();
             if (data.buildings) {
                 this.buildings.projects = data.buildings.projects || [];
-                this.buildings.completed = data.buildings.completed || [];
+                this.buildings.completed = (data.buildings.completed || []).map(b => {
+                    if (!b.buildingKey) {
+                        // Legacy save: resolve buildingKey from name
+                        for (const [key, tmpl] of Object.entries(BUILDING_TEMPLATES)) {
+                            if (tmpl.name === b.name) { b.buildingKey = key; break; }
+                        }
+                    }
+                    if (!b.level) b.level = 1;
+                    return b;
+                });
                 this.buildings.activeEffects = data.buildings.activeEffects || {};
                 this.buildings._counter = data.buildings._counter || 0;
             }
@@ -5133,6 +5303,14 @@ class World {
             if (this.npcQuests && data.npcQuests) this.npcQuests.loadFrom(data.npcQuests);
             if (this.customNPC && data.customNPC) this.customNPC.loadFrom(data.customNPC);
             if (this.multiEnding && data.multiEnding) this.multiEnding.loadFrom(data.multiEnding);
+            // v4.0 systems
+            if (data.dailyDecision) this.dailyDecision.loadFrom(data.dailyDecision);
+            if (data.shop) this.shop.loadFrom(data.shop);
+            if (data.eventChoice) this.eventChoice.loadFrom(data.eventChoice);
+            if (data.npcHelp) this.npcHelp.loadFrom(data.npcHelp);
+            if (data.reputationSystem) this.reputationSystem.loadFrom(data.reputationSystem);
+            if (data.weather) this.weather.loadFrom(data.weather);
+            if (data.council) this.council.loadFrom(data.council);
 
             this.logMessage('system', t('遊戲讀取成功！'));
             return true;
@@ -5140,6 +5318,1335 @@ class World {
             console.error('Failed to load save:', e);
             return false;
         }
+    }
+}
+
+// ============================================================
+// v4.0 - Reputation System (聲望系統)
+// ============================================================
+const REPUTATION_TIERS = [
+    { min: 0,   name:()=>t('無名之輩'), icon:'👤', desc:()=>t('剛來的外地人，沒人認識你') },
+    { min: 15,  name:()=>t('新面孔'),   icon:'🙂', desc:()=>t('居民開始記住你的名字了') },
+    { min: 40,  name:()=>t('可靠鄰人'), icon:'🤝', desc:()=>t('大家覺得你是可以信賴的人') },
+    { min: 70,  name:()=>t('鎮之棟樑'), icon:'⭐', desc:()=>t('你已經是小鎮不可或缺的一份子') },
+    { min: 100, name:()=>t('邊境英雄'), icon:'🏆', desc:()=>t('你的事蹟在邊境廣為流傳') },
+    { min: 150, name:()=>t('傳奇人物'), icon:'👑', desc:()=>t('後人會在書裡讀到你的故事') },
+];
+
+class ReputationSystem {
+    constructor() {
+        this.reputation = 0;        // Total reputation points (synced with questSystem)
+        this.sources = {};          // Track where reputation came from: { quests, decisions, help, trade, events }
+        this._lastEffectTier = -1;
+        this._dailyActionPoints = 0; // Track daily actions for passive rep gain
+    }
+
+    // Get current tier info
+    get tier() {
+        let current = REPUTATION_TIERS[0];
+        for (const tier of REPUTATION_TIERS) {
+            if (this.reputation >= tier.min) current = tier;
+            else break;
+        }
+        return current;
+    }
+
+    get tierIndex() {
+        let idx = 0;
+        for (let i = 0; i < REPUTATION_TIERS.length; i++) {
+            if (this.reputation >= REPUTATION_TIERS[i].min) idx = i;
+            else break;
+        }
+        return idx;
+    }
+
+    get nextTier() {
+        const idx = this.tierIndex;
+        return idx < REPUTATION_TIERS.length - 1 ? REPUTATION_TIERS[idx + 1] : null;
+    }
+
+    // Add reputation from a specific source
+    addReputation(amount, source, world) {
+        if (amount === 0) return;
+        this.reputation = Math.max(0, this.reputation + amount);
+        if (!this.sources[source]) this.sources[source] = 0;
+        this.sources[source] += amount;
+
+        // Sync with quest system
+        if (world?.questSystem) {
+            world.questSystem.reputation = this.reputation;
+        }
+
+        // Check for tier up
+        const newTierIdx = this.tierIndex;
+        if (newTierIdx > this._lastEffectTier && this._lastEffectTier >= 0) {
+            const tier = this.tier;
+            world?.logMessage?.('reputation', `⭐ ${t('聲望提升！你現在是')}「${tier.icon} ${tier.name()}」— ${tier.desc()}`);
+            if (world?.dailyNews) {
+                world.dailyNews.collectEvent('social', `${t('鎮長的聲望提升為')}「${tier.name()}」！`, 7);
+            }
+            // Tier-up mood boost
+            Object.values(world?.agents || {}).forEach(a => {
+                if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) + 3;
+            });
+        }
+        this._lastEffectTier = newTierIdx;
+    }
+
+    // Daily update: passive reputation & apply effects
+    dailyUpdate(world) {
+        // Sync FROM quest system (quests add rep directly to questSystem)
+        if (world.questSystem && world.questSystem.reputation !== this.reputation) {
+            const diff = world.questSystem.reputation - this.reputation;
+            if (diff > 0) {
+                this.reputation = world.questSystem.reputation;
+                if (!this.sources['quests']) this.sources['quests'] = 0;
+                this.sources['quests'] += diff;
+            }
+        }
+
+        // Passive reputation from daily good deeds
+        this._dailyActionPoints = 0;
+        const player = world.agents?.['player'];
+        if (player) {
+            // Working consistently
+            if (player.job) this._dailyActionPoints += 1;
+            // High average affinity
+            const rels = Object.values(player.relationships?.relationships || {});
+            if (rels.length > 0) {
+                const avgAff = rels.reduce((s, r) => s + (r.affinity || 0), 0) / rels.length;
+                if (avgAff > 30) this._dailyActionPoints += 1;
+                if (avgAff > 60) this._dailyActionPoints += 1;
+            }
+        }
+
+        // Convert daily action points to small reputation gains (slow passive growth)
+        if (this._dailyActionPoints >= 2 && Math.random() < 0.3) {
+            this.addReputation(1, 'daily', world);
+        }
+
+        // Apply reputation effects to game systems
+        this._applyEffects(world);
+    }
+
+    // Reputation effects on game mechanics
+    _applyEffects(world) {
+        const tierIdx = this.tierIndex;
+
+        // 1. NPC base trust boost — higher rep = NPCs start with better trust
+        //    (Applied when creating new relationships, checked externally)
+
+        // 2. Trade price bonus (stacks with prosperity)
+        //    tierIdx 0=0%, 1=3%, 2=5%, 3=8%, 4=12%, 5=15%
+
+        // 3. Immigration attraction bonus
+        if (world.events) {
+            const immigrationBonus = [0, 0.02, 0.05, 0.08, 0.12, 0.15][tierIdx] || 0;
+            world.events._reputationImmigrationBonus = immigrationBonus;
+        }
+
+        // 4. NPC mood bonus from respected leader
+        //    Applied via moodContribution check (small flat bonus)
+
+        // 5. Event severity reduction — high rep means fewer bad events
+        if (world.events) {
+            world.events._reputationEventShield = tierIdx >= 3 ? 0.15 : tierIdx >= 2 ? 0.08 : 0;
+        }
+    }
+
+    // Modifiers for other systems to query
+    getModifier(key) {
+        const tierIdx = this.tierIndex;
+        switch (key) {
+            case 'trade_price_bonus':
+                return [0, 0.03, 0.05, 0.08, 0.12, 0.15][tierIdx] || 0;
+            case 'npc_initial_trust':
+                return [0, 2, 5, 8, 12, 15][tierIdx] || 0;
+            case 'npc_mood_bonus':
+                return [0, 0, 1, 2, 3, 5][tierIdx] || 0;
+            case 'immigration_bonus':
+                return [0, 0.02, 0.05, 0.08, 0.12, 0.15][tierIdx] || 0;
+            case 'event_shield':
+                return tierIdx >= 3 ? 0.15 : tierIdx >= 2 ? 0.08 : 0;
+            case 'shop_discount':
+                return [0, 0, 0.05, 0.08, 0.10, 0.15][tierIdx] || 0;
+            default:
+                return 0;
+        }
+    }
+
+    toDict() {
+        const tier = this.tier;
+        const nextTier = this.nextTier;
+        return {
+            reputation: this.reputation,
+            tierName: tier.name(),
+            tierIcon: tier.icon,
+            tierDesc: tier.desc(),
+            tierIndex: this.tierIndex,
+            nextTierName: nextTier ? nextTier.name() : null,
+            nextTierMin: nextTier ? nextTier.min : null,
+            progressToNext: nextTier ? Math.round(((this.reputation - tier.min) / (nextTier.min - tier.min)) * 100) : 100,
+            sources: { ...this.sources },
+            effects: {
+                trade_bonus: `+${Math.round(this.getModifier('trade_price_bonus') * 100)}%`,
+                npc_trust: `+${this.getModifier('npc_initial_trust')}`,
+                mood_bonus: `+${this.getModifier('npc_mood_bonus')}`,
+                shop_discount: `${Math.round(this.getModifier('shop_discount') * 100)}%`,
+                event_shield: `${Math.round(this.getModifier('event_shield') * 100)}%`,
+            },
+        };
+    }
+
+    serialize() {
+        return {
+            reputation: this.reputation,
+            sources: { ...this.sources },
+            _lastEffectTier: this._lastEffectTier,
+        };
+    }
+
+    loadFrom(data) {
+        if (!data) return;
+        this.reputation = data.reputation || 0;
+        this.sources = data.sources || {};
+        this._lastEffectTier = data._lastEffectTier ?? -1;
+    }
+}
+
+// ============================================================
+// v4.0 - Weather System (動態天氣引擎)
+// ============================================================
+const WEATHER_TYPES = {
+    clear:    { name:()=>t('晴天'),   icon:'☀️', farm:0.1,  mood:2,  desc:()=>t('萬里無雲，適合工作'),     visual:'clear' },
+    cloudy:   { name:()=>t('多雲'),   icon:'☁️', farm:0,    mood:0,  desc:()=>t('雲層遮住了部分陽光'),     visual:'cloudy' },
+    rain:     { name:()=>t('下雨'),   icon:'🌧️', farm:0.2,  mood:-2, desc:()=>t('雨水滋潤了大地'),         visual:'rain' },
+    storm:    { name:()=>t('暴風雨'), icon:'⛈️', farm:-0.2, mood:-8, desc:()=>t('狂風暴雨肆虐小鎮'),       visual:'storm' },
+    snow:     { name:()=>t('下雪'),   icon:'❄️', farm:-0.3, mood:-3, desc:()=>t('白雪覆蓋了田野'),         visual:'snow' },
+    blizzard: { name:()=>t('暴風雪'), icon:'🌨️', farm:-0.5, mood:-12,desc:()=>t('猛烈暴風雪，出門危險'),   visual:'blizzard' },
+    fog:      { name:()=>t('大霧'),   icon:'🌫️', farm:-0.05,mood:-1, desc:()=>t('濃霧籠罩，能見度極低'),   visual:'fog' },
+    heatwave: { name:()=>t('熱浪'),   icon:'🔥', farm:-0.3, mood:-10,desc:()=>t('酷熱難耐，人畜疲憊'),     visual:'heatwave' },
+    drought:  { name:()=>t('乾旱'),   icon:'🏜️', farm:-0.4, mood:-8, desc:()=>t('水源枯竭，作物乾枯'),     visual:'drought' },
+    wind:     { name:()=>t('強風'),   icon:'💨', farm:-0.1, mood:-3, desc:()=>t('大風不斷吹拂'),           visual:'wind' },
+};
+
+// Season → weighted weather pools: [type, weight]
+const SEASON_WEATHER = {
+    '春季': [['clear',3],['cloudy',3],['rain',4],['fog',2],['wind',1],['storm',0.5]],
+    '夏季': [['clear',4],['cloudy',2],['rain',2],['heatwave',2],['drought',1.5],['storm',1]],
+    '秋季': [['clear',2],['cloudy',3],['rain',3],['fog',3],['wind',2],['storm',1.5]],
+    '冬季': [['clear',1],['cloudy',3],['snow',3],['blizzard',1],['fog',2],['wind',2],['storm',0.5]],
+};
+
+class WeatherSystem {
+    constructor() {
+        this.current = 'clear';       // Current weather type key
+        this.duration = 1;            // How many more days this weather lasts
+        this.forecast = [];           // Next 3 days forecast: [{type, day}]
+        this.streak = 0;              // Consecutive days of same weather category (for drought/heatwave escalation)
+        this._temperature = 20;       // Abstract temperature (affects comfort)
+        this._humidity = 50;          // Affects crop water, fog chance
+        this._windSpeed = 0;          // 0-100, affects storm severity
+        this.disasterWarning = null;  // {type, severity, daysUntil} or null
+        this.activeDisaster = null;   // {type, severity, daysLeft, effects} or null
+        this._daysSinceDisaster = 10;
+    }
+
+    dailyUpdate(world) {
+        const season = world.clock.season;
+        this._daysSinceDisaster++;
+
+        // Advance duration
+        this.duration--;
+        if (this.duration <= 0) {
+            this._advanceWeather(season);
+        }
+
+        // Update environmental vars
+        this._updateEnvironment(season);
+
+        // Check for extreme weather escalation → disaster
+        this._checkDisasterEscalation(world);
+
+        // Progress active disaster
+        if (this.activeDisaster) {
+            this.activeDisaster.daysLeft--;
+            if (this.activeDisaster.daysLeft <= 0) {
+                this._endDisaster(world);
+            }
+        }
+
+        // Generate forecast if empty
+        while (this.forecast.length < 3) {
+            this.forecast.push({ type: this._rollWeather(season), day: world.clock.day + this.forecast.length + 1 });
+        }
+
+        // Apply weather effects to game systems
+        this._applyEffects(world);
+
+        // Broadcast to daily news (significant weather only)
+        this._reportWeather(world);
+    }
+
+    _rollWeather(season) {
+        const pool = SEASON_WEATHER[season] || SEASON_WEATHER['春季'];
+        const types = pool.map(p => p[0]);
+        const weights = pool.map(p => p[1]);
+        return weightedChoice(types, weights);
+    }
+
+    _advanceWeather(season) {
+        // Use forecast if available, otherwise roll new
+        if (this.forecast.length > 0) {
+            const next = this.forecast.shift();
+            const prev = this.current;
+            this.current = next.type;
+            // Track streak for same-category weather
+            if (this.current === prev || (this._isHot(this.current) && this._isHot(prev)) || (this._isWet(this.current) && this._isWet(prev))) {
+                this.streak++;
+            } else {
+                this.streak = 0;
+            }
+        } else {
+            this.current = this._rollWeather(season);
+            this.streak = 0;
+        }
+        // Duration: 1-3 days, storms and extreme weather are shorter
+        const w = WEATHER_TYPES[this.current];
+        if (['storm','blizzard','heatwave'].includes(this.current)) {
+            this.duration = Math.random() < 0.3 ? 2 : 1;
+        } else if (['drought'].includes(this.current)) {
+            this.duration = 2 + Math.floor(Math.random() * 2); // 2-3 days
+        } else {
+            this.duration = 1 + Math.floor(Math.random() * 3); // 1-3 days
+        }
+    }
+
+    _isHot(type) { return ['heatwave','drought','clear'].includes(type) && type !== 'clear'; }
+    _isWet(type) { return ['rain','storm'].includes(type); }
+
+    _updateEnvironment(season) {
+        // Base temperature by season
+        const seasonTemp = { '春季':18, '夏季':30, '秋季':15, '冬季':2 };
+        const base = seasonTemp[season] || 18;
+        const weatherMod = { clear:3, cloudy:0, rain:-2, storm:-5, snow:-8, blizzard:-15, fog:-1, heatwave:12, drought:8, wind:-3 };
+        this._temperature = base + (weatherMod[this.current] || 0) + (Math.random() * 4 - 2);
+
+        // Humidity
+        const humidityMap = { clear:30, cloudy:50, rain:85, storm:90, snow:60, blizzard:55, fog:95, heatwave:15, drought:10, wind:35 };
+        this._humidity = humidityMap[this.current] || 50;
+
+        // Wind
+        const windMap = { clear:10, cloudy:15, rain:30, storm:80, snow:25, blizzard:90, fog:5, heatwave:10, drought:5, wind:70 };
+        this._windSpeed = windMap[this.current] || 10;
+    }
+
+    _checkDisasterEscalation(world) {
+        // Drought escalation: 3+ consecutive hot days in summer
+        if (this.streak >= 3 && this._isHot(this.current) && world.clock.season === '夏季' && !this.activeDisaster && this._daysSinceDisaster > 8) {
+            this.disasterWarning = { type: 'drought_severe', severity: 'major', daysUntil: 1 };
+            world.logMessage('weather', `⚠️ ${t('乾旱警報：連續高溫，水源告急！')}`);
+        }
+        // Blizzard escalation: extended cold in winter
+        if (this.streak >= 2 && this.current === 'snow' && world.clock.season === '冬季' && !this.activeDisaster && this._daysSinceDisaster > 8) {
+            this.disasterWarning = { type: 'blizzard_severe', severity: 'major', daysUntil: 1 };
+            world.logMessage('weather', `⚠️ ${t('暴風雪警報：氣溫持續下降，請準備取暖物資！')}`);
+        }
+        // Storm escalation chance
+        if (this.current === 'storm' && Math.random() < 0.3 && !this.activeDisaster && this._daysSinceDisaster > 6) {
+            this.disasterWarning = { type: 'flood', severity: 'major', daysUntil: 0 };
+            world.logMessage('weather', `⚠️ ${t('洪水警報：暴風雨導致河水暴漲！')}`);
+        }
+
+        // Trigger disaster from warning
+        if (this.disasterWarning && this.disasterWarning.daysUntil <= 0) {
+            this._startDisaster(this.disasterWarning.type, world);
+            this.disasterWarning = null;
+        } else if (this.disasterWarning) {
+            this.disasterWarning.daysUntil--;
+        }
+    }
+
+    _startDisaster(type, world) {
+        const disasters = {
+            drought_severe: {
+                name: ()=>t('嚴重乾旱'), severity:'major', daysLeft:4,
+                effects: { farm:-0.5, mood:-10, water:-30, wood_consumption:0.5 },
+                desc: ()=>t('水井乾涸，作物大面積枯死，居民飲水困難。'),
+            },
+            blizzard_severe: {
+                name: ()=>t('極端暴風雪'), severity:'major', daysLeft:3,
+                effects: { farm:-0.6, mood:-15, comfort:-20, wood_consumption:2.0 },
+                desc: ()=>t('暴風雪封路，木材消耗加倍，居民被困室內。'),
+            },
+            flood: {
+                name: ()=>t('洪水'), severity:'major', daysLeft:3,
+                effects: { farm:-0.4, mood:-12, food_loss:0.1 },
+                desc: ()=>t('河水氾濫，部分農田被淹，儲備糧食受損。'),
+            },
+        };
+        const d = disasters[type];
+        if (!d) return;
+        this.activeDisaster = { type, name: d.name(), severity: d.severity, daysLeft: d.daysLeft, effects: d.effects, desc: d.desc() };
+        this._daysSinceDisaster = 0;
+        world.logMessage('weather', `🚨 ${t('天災發生！')}${d.name()}：${d.desc()}`);
+        if (world.dailyNews) {
+            world.dailyNews.collectEvent('disaster', `${d.name()}${t('來襲')}：${d.desc()}`, 10);
+        }
+        // Reputation boost for preparedness (if player has deep well)
+        if (type === 'drought_severe' && world.buildings?.completed?.includes('well_upgrade')) {
+            world.logMessage('weather', `💧 ${t('深井發揮作用，減輕了乾旱影響！')}`);
+            this.activeDisaster.effects.farm = Math.max(-0.3, this.activeDisaster.effects.farm + 0.2);
+        }
+    }
+
+    _endDisaster(world) {
+        const name = this.activeDisaster.name;
+        world.logMessage('weather', `✅ ${name}${t('已經結束，小鎮開始恢復。')}`);
+        if (world.dailyNews) {
+            world.dailyNews.collectEvent('recovery', `${name}${t('結束，開始重建')}`, 7);
+        }
+        // Recovery mood boost
+        Object.values(world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + 5; });
+        this.activeDisaster = null;
+    }
+
+    _applyEffects(world) {
+        const w = WEATHER_TYPES[this.current];
+        if (!w) return;
+
+        // 1. Farm bonus/penalty via news modifier system (stacks with existing)
+        if (world.news) {
+            // Set weather modifier (overwrites previous weather modifier)
+            world.news.activeModifiers['weather_farm_bonus'] = w.farm + (this.activeDisaster?.effects?.farm || 0);
+            world.news.activeModifiers['weather_mood'] = w.mood + (this.activeDisaster?.effects?.mood || 0);
+        }
+
+        // 2. Comfort penalty from extreme temperatures
+        if (this._temperature < 0 || this._temperature > 38) {
+            Object.values(world.agents).forEach(a => {
+                if (a.needs) a.needs.comfort = Math.max(0, a.needs.comfort - (this.activeDisaster ? 8 : 3));
+            });
+        }
+
+        // 3. Disaster-specific: extra wood consumption
+        if (this.activeDisaster?.effects?.wood_consumption) {
+            const npcCount = Object.values(world.agents).filter(a => !a.isPlayer).length;
+            const extraWood = Math.ceil(npcCount * this.activeDisaster.effects.wood_consumption);
+            if (!world.stockpile.consume('wood', extraWood, world.tickCount, this.activeDisaster.name)) {
+                world.logMessage('weather', `🪵 ${t('木材嚴重不足！')}${this.activeDisaster.name}${t('讓居民受凍。')}`);
+                Object.values(world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) - 5; });
+            }
+        }
+
+        // 4. Disaster-specific: food loss (flood)
+        if (this.activeDisaster?.effects?.food_loss) {
+            const foodLost = Math.floor(world.stockpile.get('food') * this.activeDisaster.effects.food_loss);
+            if (foodLost > 0) {
+                world.stockpile.consume('food', foodLost, world.tickCount, this.activeDisaster.name);
+                world.logMessage('weather', `🍖 ${t('洪水沖走了')} ${foodLost} ${t('食物！')}`);
+            }
+        }
+
+        // 5. NPC activity disruption: storms/blizzards keep NPCs indoors
+        if (['storm','blizzard'].includes(this.current) || this.activeDisaster) {
+            Object.values(world.agents).forEach(a => {
+                if (!a.isPlayer && a.activity === 'working' && Math.random() < 0.3) {
+                    a.activity = 'idle';
+                }
+            });
+        }
+    }
+
+    _reportWeather(world) {
+        const w = WEATHER_TYPES[this.current];
+        if (!w) return;
+        // Only report significant weather changes to news
+        if (['storm','blizzard','heatwave','drought','snow'].includes(this.current)) {
+            if (world.dailyNews) {
+                world.dailyNews.collectEvent('weather', `${w.icon} ${w.name()}：${w.desc()}`, 6);
+            }
+        }
+    }
+
+    // Public API for other systems
+    get weatherType() { return WEATHER_TYPES[this.current]; }
+    get temperature() { return Math.round(this._temperature); }
+    get humidity() { return Math.round(this._humidity); }
+    get windSpeed() { return Math.round(this._windSpeed); }
+    get farmModifier() {
+        const w = WEATHER_TYPES[this.current];
+        return (w?.farm || 0) + (this.activeDisaster?.effects?.farm || 0);
+    }
+    get moodModifier() {
+        const w = WEATHER_TYPES[this.current];
+        return (w?.mood || 0) + (this.activeDisaster?.effects?.mood || 0);
+    }
+    get isExtreme() { return ['storm','blizzard','heatwave','drought'].includes(this.current) || !!this.activeDisaster; }
+
+    toDict() {
+        const w = WEATHER_TYPES[this.current];
+        return {
+            current: this.current,
+            name: w?.name() || this.current,
+            icon: w?.icon || '?',
+            desc: w?.desc() || '',
+            duration: this.duration,
+            temperature: this.temperature,
+            humidity: this.humidity,
+            windSpeed: this.windSpeed,
+            forecast: this.forecast.map(f => {
+                const fw = WEATHER_TYPES[f.type];
+                return { type: f.type, name: fw?.name() || f.type, icon: fw?.icon || '?' };
+            }),
+            farmModifier: this.farmModifier,
+            moodModifier: this.moodModifier,
+            isExtreme: this.isExtreme,
+            disasterWarning: this.disasterWarning ? { type: this.disasterWarning.type, severity: this.disasterWarning.severity, daysUntil: this.disasterWarning.daysUntil } : null,
+            activeDisaster: this.activeDisaster ? { type: this.activeDisaster.type, name: this.activeDisaster.name, desc: this.activeDisaster.desc, daysLeft: this.activeDisaster.daysLeft, severity: this.activeDisaster.severity } : null,
+        };
+    }
+
+    serialize() {
+        return {
+            current: this.current, duration: this.duration, streak: this.streak,
+            forecast: this.forecast, _temperature: this._temperature,
+            _humidity: this._humidity, _windSpeed: this._windSpeed,
+            disasterWarning: this.disasterWarning, activeDisaster: this.activeDisaster,
+            _daysSinceDisaster: this._daysSinceDisaster,
+        };
+    }
+
+    loadFrom(data) {
+        if (!data) return;
+        this.current = data.current || 'clear';
+        this.duration = data.duration || 1;
+        this.streak = data.streak || 0;
+        this.forecast = data.forecast || [];
+        this._temperature = data._temperature ?? 20;
+        this._humidity = data._humidity ?? 50;
+        this._windSpeed = data._windSpeed ?? 0;
+        this.disasterWarning = data.disasterWarning || null;
+        this.activeDisaster = data.activeDisaster || null;
+        this._daysSinceDisaster = data._daysSinceDisaster ?? 10;
+    }
+}
+
+// ============================================================
+// v4.0 - Council System (NPC 議會治理系統)
+// ============================================================
+const COUNCIL_PROPOSALS = [
+    { id:'tax_trade', title:()=>t('提高商人稅收'), desc:()=>t('對來往商人收取更高稅金，增加收入但減少商人到訪。'),
+      effects:{ silver:20, merchant_chance:-0.1, mood_traders:-5 }, category:'economy', minRep:15 },
+    { id:'food_reserve', title:()=>t('建立糧食儲備制度'), desc:()=>t('每日扣留部分糧食作為儲備，減少消耗但降低滿意度。'),
+      effects:{ food_save:0.1, mood_all:-2 }, category:'welfare', minRep:0 },
+    { id:'festival_fund', title:()=>t('設立慶典基金'), desc:()=>t('每季撥銀幣舉辦慶典，提升全鎮心情。'),
+      effects:{ silver:-30, mood_all:10, festival_chance:0.3 }, category:'culture', minRep:20 },
+    { id:'night_patrol', title:()=>t('夜間巡邏制度'), desc:()=>t('安排守衛夜間巡邏，降低突襲機率但守衛更疲勞。'),
+      effects:{ raid_chance:-0.08, guard_fatigue:true }, category:'defense', minRep:15 },
+    { id:'open_borders', title:()=>t('開放邊境政策'), desc:()=>t('歡迎外來移民，加速人口增長但可能帶來衝突。'),
+      effects:{ immigration_chance:0.2, mood_all:-3, chain_chance:0.03 }, category:'welfare', minRep:30 },
+    { id:'research_grant', title:()=>t('學術研究補助'), desc:()=>t('投入資源支持研究，加速科技發展。'),
+      effects:{ silver:-20, research_bonus:0.25 }, category:'culture', minRep:25 },
+    { id:'trade_route', title:()=>t('開拓新貿易路線'), desc:()=>t('派商人探索新路線，短期花費大但長期增加貿易機會。'),
+      effects:{ silver:-40, merchant_chance:0.2, sell_bonus:0.1 }, category:'economy', minRep:40 },
+    { id:'herb_garden_public', title:()=>t('公共藥草園'), desc:()=>t('開闢公共藥草園，增加草藥產量。'),
+      effects:{ herbs:5, mood_all:2 }, category:'welfare', minRep:10 },
+    { id:'military_training', title:()=>t('全民防禦訓練'), desc:()=>t('所有居民接受基本防禦訓練，提升防禦但耗費時間。'),
+      effects:{ defense_bonus:3, mood_all:-4 }, category:'defense', minRep:35 },
+    { id:'nature_preserve', title:()=>t('自然保護區'), desc:()=>t('劃設保護區，提升採集效率和居民心情。'),
+      effects:{ gathering_bonus:0.2, mood_all:3, farm_bonus:-0.05 }, category:'nature', minRep:20 },
+    { id:'artisan_market', title:()=>t('工匠市集日'), desc:()=>t('每季舉辦工匠市集，促進手工業發展。'),
+      effects:{ silver:15, mood_all:5, tools:3 }, category:'economy', minRep:30 },
+    { id:'water_management', title:()=>t('水利工程'), desc:()=>t('修建灌溉水渠，大幅提升農業產量。'),
+      effects:{ wood:-20, stone:-15, farm_bonus:0.25 }, category:'economy', minRep:50 },
+];
+
+class CouncilSystem {
+    constructor() {
+        this.members = [];          // agentId[] — council NPCs (3-5 members)
+        this.pendingProposal = null; // {proposal, proposerId, proposerName, votes:{agentId:'for'|'against'}, daysLeft}
+        this.activeDecrees = [];    // [{id, title, effects, expiresDay}]
+        this.proposalLog = [];      // past proposals
+        this._daysSinceProposal = 0;
+        this._daysSinceCouncilCheck = 0;
+        this._formed = false;
+    }
+
+    dailyUpdate(world) {
+        this._daysSinceProposal++;
+        this._daysSinceCouncilCheck++;
+
+        // Try to form council if not yet formed (requires 6+ NPCs)
+        if (!this._formed) {
+            const npcCount = Object.values(world.agents).filter(a => !a.isPlayer).length;
+            if (npcCount >= 6 && this._daysSinceCouncilCheck >= 5) {
+                this._formCouncil(world);
+                this._daysSinceCouncilCheck = 0;
+            }
+            if (!this._formed) return;
+        }
+
+        // Expire old decrees
+        const currentDay = world.clock.year * 60 + (['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15 + world.clock.day;
+        this.activeDecrees = this.activeDecrees.filter(d => d.expiresDay > currentDay);
+
+        // Apply active decree effects
+        this._applyDecreeEffects(world);
+
+        // Clean up members who left the town
+        this.members = this.members.filter(id => world.agents[id]);
+        if (this.members.length < 2) {
+            this._formed = false;
+            this.pendingProposal = null;
+            return;
+        }
+
+        // Process pending proposal voting
+        if (this.pendingProposal) {
+            this.pendingProposal.daysLeft--;
+            this._processVotes(world);
+            if (this.pendingProposal.daysLeft <= 0) {
+                this._resolveProposal(world);
+            }
+            return;
+        }
+
+        // Generate new proposal every 7-12 days
+        if (this._daysSinceProposal >= 7 + Math.floor(Math.random() * 6)) {
+            this._generateProposal(world);
+        }
+    }
+
+    _formCouncil(world) {
+        const npcs = Object.values(world.agents).filter(a => !a.isPlayer);
+        if (npcs.length < 6) return;
+
+        // Select council members: prefer older, higher-skilled, higher-affinity NPCs
+        const scored = npcs.map(a => {
+            let score = 0;
+            if (a.age >= 35) score += 3;
+            if (a.age >= 45) score += 2;
+            score += (a.skills?.skills?.社交?.level || 0) * 2;
+            score += (a.mood + 50) / 25;
+            if (a.personality.traits.includes('hardworking')) score += 2;
+            if (a.personality.traits.includes('kind')) score += 2;
+            if (a.personality.traits.includes('lazy')) score -= 3;
+            if (a.personality.traits.includes('abrasive')) score -= 2;
+            if (a.job?.key === 'mayor') score += 5;
+            score += Math.random() * 4;
+            return { agent: a, score };
+        }).sort((a, b) => b.score - a.score);
+
+        const size = Math.min(5, Math.max(3, Math.floor(npcs.length / 3)));
+        this.members = scored.slice(0, size).map(s => s.agent.agentId);
+        this._formed = true;
+
+        const names = this.members.map(id => world.agents[id]?.name).filter(Boolean).join(t('、'));
+        world.logMessage('council', `🏛️ ${t('議會成立！成員：')}${names}`);
+        if (world.dailyNews) {
+            world.dailyNews.collectEvent('politics', `${t('小鎮議會正式成立，成員有')}${names}`, 8);
+        }
+    }
+
+    _generateProposal(world) {
+        const rep = world.reputationSystem?.reputation || 0;
+        const eligible = COUNCIL_PROPOSALS.filter(p => {
+            // Check reputation requirement
+            if (p.minRep > rep) return false;
+            // Don't repeat recently passed proposals
+            const recent = this.proposalLog.slice(-10);
+            if (recent.some(r => r.id === p.id && r.passed)) return false;
+            return true;
+        });
+        if (!eligible.length) return;
+
+        const proposal = pickRandom(eligible);
+        const proposer = pickRandom(this.members);
+        const proposerAgent = world.agents[proposer];
+
+        this.pendingProposal = {
+            id: proposal.id,
+            title: proposal.title(),
+            desc: proposal.desc(),
+            effects: proposal.effects,
+            category: proposal.category,
+            proposerId: proposer,
+            proposerName: proposerAgent?.name || '?',
+            votes: {},  // agentId → 'for' | 'against'
+            daysLeft: 3,
+            playerVoted: false,
+        };
+        this._daysSinceProposal = 0;
+
+        world.logMessage('council', `🏛️ ${proposerAgent?.name || '?'}${t('提出議案：')}${proposal.title()}`);
+        if (world.dailyNews) {
+            world.dailyNews.collectEvent('politics', `${t('議會提案：')}${proposal.title()}`, 6);
+        }
+    }
+
+    _processVotes(world) {
+        if (!this.pendingProposal) return;
+        for (const memberId of this.members) {
+            if (this.pendingProposal.votes[memberId]) continue; // Already voted
+            if (Math.random() > 0.5) continue; // Not voting today
+            const agent = world.agents[memberId];
+            if (!agent) continue;
+
+            // NPC voting logic based on personality
+            let forScore = 0;
+            const effects = this.pendingProposal.effects;
+            const cat = this.pendingProposal.category;
+
+            // Policy alignment from election policies
+            for (const policy of ELECTION_POLICIES) {
+                if (policy.id === cat) {
+                    for (const v of agent.personality.values) { if (policy.values.includes(v)) forScore += 3; }
+                    for (const tr of agent.personality.traits) { if (policy.traits.includes(tr)) forScore += 2; }
+                }
+            }
+
+            // React to negative effects
+            if (effects.mood_all && effects.mood_all < 0) forScore -= 2;
+            if (effects.mood_all && effects.mood_all > 0) forScore += 2;
+            if (effects.silver && effects.silver < 0) forScore -= 1;
+            if (effects.silver && effects.silver > 0) forScore += 1;
+
+            // Proposer affinity matters
+            const rel = agent.relationships?.relationships?.[this.pendingProposal.proposerId];
+            if (rel) forScore += (rel.affinity / 100) * 5;
+
+            // Random factor
+            forScore += (Math.random() - 0.3) * 4;
+
+            this.pendingProposal.votes[memberId] = forScore >= 0 ? 'for' : 'against';
+        }
+    }
+
+    // Player votes on the current proposal
+    playerVote(choice) {
+        if (!this.pendingProposal || this.pendingProposal.playerVoted) return false;
+        this.pendingProposal.votes['player'] = choice; // 'for' or 'against'
+        this.pendingProposal.playerVoted = true;
+        return true;
+    }
+
+    _resolveProposal(world) {
+        if (!this.pendingProposal) return;
+        const p = this.pendingProposal;
+
+        // Count votes
+        const forVotes = Object.values(p.votes).filter(v => v === 'for').length;
+        const againstVotes = Object.values(p.votes).filter(v => v === 'against').length;
+        const totalVotes = forVotes + againstVotes;
+        const passed = forVotes > againstVotes;
+
+        if (passed) {
+            // Apply immediate resource effects
+            const sp = world.stockpile;
+            if (p.effects.silver && p.effects.silver > 0) sp.add('silver', p.effects.silver, world.tickCount, `${t('議會決議')}：${p.title}`);
+            if (p.effects.silver && p.effects.silver < 0) sp.consume('silver', Math.abs(p.effects.silver), world.tickCount, `${t('議會決議')}：${p.title}`);
+            if (p.effects.food_save) { /* passive effect via decree */ }
+            if (p.effects.herbs) sp.add('herbs', p.effects.herbs, world.tickCount, `${t('議會決議')}：${p.title}`);
+            if (p.effects.tools) sp.add('tools', p.effects.tools, world.tickCount, `${t('議會決議')}：${p.title}`);
+            if (p.effects.wood && p.effects.wood < 0) sp.consume('wood', Math.abs(p.effects.wood), world.tickCount, `${t('議會決議')}：${p.title}`);
+            if (p.effects.stone && p.effects.stone < 0) sp.consume('stone', Math.abs(p.effects.stone), world.tickCount, `${t('議會決議')}：${p.title}`);
+
+            // Mood effects
+            if (p.effects.mood_all) {
+                Object.values(world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + p.effects.mood_all; });
+            }
+
+            // Register as active decree (modifier effects last 20 days)
+            const currentDay = world.clock.year * 60 + (['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15 + world.clock.day;
+            this.activeDecrees.push({
+                id: p.id, title: p.title, effects: p.effects, expiresDay: currentDay + 20,
+            });
+
+            // Reputation gain for passing proposals
+            if (world.reputationSystem) world.reputationSystem.addReputation(3, 'council', world);
+
+            world.logMessage('council', `✅ ${t('議會通過：')}${p.title}（${forVotes}${t(' 票贊成 / ')}${againstVotes}${t(' 票反對）')}`);
+        } else {
+            world.logMessage('council', `❌ ${t('議會否決：')}${p.title}（${forVotes}${t(' 票贊成 / ')}${againstVotes}${t(' 票反對）')}`);
+        }
+
+        if (world.dailyNews) {
+            world.dailyNews.collectEvent('politics', `${t('議會')}${passed ? t('通過') : t('否決')}${t('了')}「${p.title}」（${forVotes}:${againstVotes}）`, 7);
+        }
+
+        this.proposalLog.push({ id: p.id, title: p.title, passed, forVotes, againstVotes, totalVotes });
+        if (this.proposalLog.length > 30) this.proposalLog = this.proposalLog.slice(-30);
+        this.pendingProposal = null;
+    }
+
+    _applyDecreeEffects(world) {
+        // Aggregate all active decree modifiers into news system
+        for (const decree of this.activeDecrees) {
+            const e = decree.effects;
+            if (e.merchant_chance && world.news) world.news.activeModifiers['council_merchant'] = (world.news.activeModifiers['council_merchant'] || 0) + e.merchant_chance;
+            if (e.raid_chance && world.news) world.news.activeModifiers['council_raid'] = (world.news.activeModifiers['council_raid'] || 0) + e.raid_chance;
+            if (e.immigration_chance && world.news) world.news.activeModifiers['council_immigration'] = (world.news.activeModifiers['council_immigration'] || 0) + e.immigration_chance;
+            if (e.research_bonus && world.news) world.news.activeModifiers['council_research'] = (world.news.activeModifiers['council_research'] || 0) + e.research_bonus;
+            if (e.farm_bonus && world.news) world.news.activeModifiers['council_farm'] = (world.news.activeModifiers['council_farm'] || 0) + e.farm_bonus;
+            if (e.gathering_bonus && world.news) world.news.activeModifiers['council_gathering'] = (world.news.activeModifiers['council_gathering'] || 0) + e.gathering_bonus;
+            if (e.sell_bonus && world.news) world.news.activeModifiers['council_sell'] = (world.news.activeModifiers['council_sell'] || 0) + e.sell_bonus;
+            if (e.defense_bonus && world.news) world.news.activeModifiers['council_defense'] = (world.news.activeModifiers['council_defense'] || 0) + e.defense_bonus;
+            if (e.festival_chance && world.news) world.news.activeModifiers['council_festival'] = (world.news.activeModifiers['council_festival'] || 0) + e.festival_chance;
+        }
+    }
+
+    toDict() {
+        return {
+            formed: this._formed,
+            members: [...this.members],
+            memberNames: [], // populated in getState
+            pendingProposal: this.pendingProposal ? {
+                id: this.pendingProposal.id, title: this.pendingProposal.title,
+                desc: this.pendingProposal.desc, category: this.pendingProposal.category,
+                proposerName: this.pendingProposal.proposerName,
+                votes: { ...this.pendingProposal.votes },
+                daysLeft: this.pendingProposal.daysLeft,
+                playerVoted: this.pendingProposal.playerVoted,
+                forCount: Object.values(this.pendingProposal.votes).filter(v => v === 'for').length,
+                againstCount: Object.values(this.pendingProposal.votes).filter(v => v === 'against').length,
+            } : null,
+            activeDecrees: this.activeDecrees.map(d => ({ id:d.id, title:d.title })),
+            proposalLog: this.proposalLog.slice(-10),
+        };
+    }
+
+    serialize() {
+        return {
+            members: [...this.members],
+            pendingProposal: this.pendingProposal,
+            activeDecrees: this.activeDecrees,
+            proposalLog: this.proposalLog,
+            _daysSinceProposal: this._daysSinceProposal,
+            _daysSinceCouncilCheck: this._daysSinceCouncilCheck,
+            _formed: this._formed,
+        };
+    }
+
+    loadFrom(data) {
+        if (!data) return;
+        this.members = data.members || [];
+        this.pendingProposal = data.pendingProposal || null;
+        this.activeDecrees = data.activeDecrees || [];
+        this.proposalLog = data.proposalLog || [];
+        this._daysSinceProposal = data._daysSinceProposal || 0;
+        this._daysSinceCouncilCheck = data._daysSinceCouncilCheck || 0;
+        this._formed = data._formed || false;
+    }
+}
+
+// ============================================================
+// v4.0 - Daily Decision System (每日決策卡片)
+// ============================================================
+const DAILY_DECISIONS = [
+    // Resource dilemmas
+    { id:'water_dispute', title:()=>t('水源爭議'), desc:()=>t('農田和工坊都需要水源，但水井產量有限。你怎麼決定？'),
+      optionA:{label:()=>t('優先供水農田'), effects:{food:15,moodTarget:'farmer',moodAmt:5,moodOther:'blacksmith',moodOtherAmt:-3}, desc:()=>t('+15食物，農夫開心，鐵匠不滿')},
+      optionB:{label:()=>t('優先供水工坊'), effects:{tools:5,moodTarget:'blacksmith',moodAmt:5,moodOther:'farmer',moodOtherAmt:-3}, desc:()=>t('+5工具，鐵匠開心，農夫不滿')},
+      condition: w => Object.values(w.agents).some(a=>a.job?.key==='farmer') && Object.values(w.agents).some(a=>a.job?.key==='blacksmith') },
+    { id:'food_surplus', title:()=>t('食物盈餘'), desc:()=>t('倉庫裡的食物快放不下了。怎麼處理？'),
+      optionA:{label:()=>t('舉辦宴會'), effects:{food:-30,mood_all:8}, desc:()=>t('-30食物，全鎮心情+8')},
+      optionB:{label:()=>t('儲存備用'), effects:{food:0,silver:20}, desc:()=>t('賣掉多餘的食物，+20銀幣')},
+      condition: w => w.stockpile.get('food') > 100 },
+    { id:'traveler_arrived', title:()=>t('旅人求助'), desc:()=>t('一個疲憊的旅人來到鎮上，請求食物和住所。'),
+      optionA:{label:()=>t('熱情接待'), effects:{food:-10,silver:-5,mood_all:5,reputation:3}, desc:()=>t('-10食物-5銀幣，全鎮心情+5，聲望+3')},
+      optionB:{label:()=>t('婉拒請求'), effects:{mood_all:-2}, desc:()=>t('全鎮心情-2，但保住資源')},
+      condition: w => w.stockpile.get('food') > 20 },
+    { id:'mine_danger', title:()=>t('礦坑安全'), desc:()=>t('礦工回報礦坑有坍塌風險。要不要停工修繕？'),
+      optionA:{label:()=>t('停工修繕'), effects:{wood:-15,stone:-10,moodTarget:'miner',moodAmt:8}, desc:()=>t('-15木材-10石材，礦工安心')},
+      optionB:{label:()=>t('繼續開採'), effects:{metal:10,moodTarget:'miner',moodAmt:-10}, desc:()=>t('+10金屬，但礦工士氣低落')},
+      condition: w => Object.values(w.agents).some(a=>a.job?.key==='miner') },
+    { id:'merchant_deal', title:()=>t('商人提議'), desc:()=>t('商人趙霞提出一筆冒險的貿易。'),
+      optionA:{label:()=>t('同意交易'), effects:{silver:-30,random_reward:true}, desc:()=>t('-30銀幣，有機會獲得稀有物資')},
+      optionB:{label:()=>t('謝絕提議'), effects:{moodTarget:'trader',moodAmt:-3}, desc:()=>t('商人略顯失望')},
+      condition: w => w.stockpile.get('silver') >= 30 },
+    { id:'sick_npc', title:()=>t('居民生病'), desc:()=>t('有人發燒了。要用珍貴的草藥治療嗎？'),
+      optionA:{label:()=>t('立刻治療'), effects:{herbs:-5,mood_all:3,moodTarget:'doctor',moodAmt:5}, desc:()=>t('-5草藥，醫生有成就感')},
+      optionB:{label:()=>t('讓他自然恢復'), effects:{mood_all:-3}, desc:()=>t('全鎮有點擔心')},
+      condition: w => w.stockpile.get('herbs') >= 5 && Object.values(w.agents).some(a=>a.job?.key==='doctor') },
+    { id:'festival_plan', title:()=>t('慶典籌備'), desc:()=>t('有人提議辦一個小型慶典提振士氣。'),
+      optionA:{label:()=>t('舉辦慶典'), effects:{food:-20,silver:-10,mood_all:12}, desc:()=>t('-20食物-10銀幣，全鎮大幅開心')},
+      optionB:{label:()=>t('節省開支'), effects:{mood_all:-2}, desc:()=>t('居民有些失望')},
+      condition: w => w.stockpile.get('food') > 40 && w.stockpile.get('silver') > 10 },
+    { id:'guard_patrol', title:()=>t('巡邏安排'), desc:()=>t('守衛提議增加夜間巡邏。'),
+      optionA:{label:()=>t('加強巡邏'), effects:{moodTarget:'guard',moodAmt:5,mood_all:3,defense:2}, desc:()=>t('守衛積極，全鎮安心+3')},
+      optionB:{label:()=>t('維持現狀'), effects:{moodTarget:'guard',moodAmt:-3}, desc:()=>t('守衛有些不滿')},
+      condition: w => Object.values(w.agents).some(a=>a.job?.key==='guard') },
+    { id:'library_debate', title:()=>t('知識爭論'), desc:()=>t('研究員和牧師對一本古書的解釋意見不合。你支持誰？'),
+      optionA:{label:()=>t('支持研究員'), effects:{research_points:10,moodTarget:'researcher',moodAmt:8,moodOther:'priest',moodOtherAmt:-5}, desc:()=>t('+10研究點，研究員開心')},
+      optionB:{label:()=>t('支持牧師'), effects:{mood_all:3,moodTarget:'priest',moodAmt:8,moodOther:'researcher',moodOtherAmt:-5}, desc:()=>t('全鎮心情+3，牧師開心')},
+      condition: w => Object.values(w.agents).some(a=>a.job?.key==='researcher') && Object.values(w.agents).some(a=>a.job?.key==='priest') },
+    { id:'crop_choice', title:()=>t('作物選擇'), desc:()=>t('這季該種什麼？農夫們意見不一。'),
+      optionA:{label:()=>t('種經濟作物'), effects:{silver:15,food:-5}, desc:()=>t('+15銀幣，但食物稍減')},
+      optionB:{label:()=>t('種糧食作物'), effects:{food:20}, desc:()=>t('+20食物，穩扎穩打')},
+      condition: w => Object.values(w.agents).some(a=>a.job?.key==='farmer') },
+    { id:'npc_conflict', title:()=>t('居民糾紛'), desc:()=>t('兩個居民因為雞毛蒜皮的事吵了起來，找你調解。'),
+      optionA:{label:()=>t('認真調解'), effects:{mood_all:3,social_boost:5}, desc:()=>t('全鎮關係改善')},
+      optionB:{label:()=>t('讓他們自己解決'), effects:{mood_all:-2}, desc:()=>t('有人覺得你不負責任')},
+      condition: w => true },
+    { id:'woodcutter_rest', title:()=>t('伐木工休息'), desc:()=>t('木匠說最近太累了，想休息一天。'),
+      optionA:{label:()=>t('批准休假'), effects:{moodTarget:'carpenter',moodAmt:10,wood:-5}, desc:()=>t('木匠感激，但今天少產木材')},
+      optionB:{label:()=>t('鼓勵堅持'), effects:{wood:5,moodTarget:'carpenter',moodAmt:-5}, desc:()=>t('+5木材，但木匠累了')},
+      condition: w => Object.values(w.agents).some(a=>a.job?.key==='carpenter') },
+];
+
+class DailyDecisionSystem {
+    constructor() {
+        this.pendingDecision = null;  // Current decision waiting for player
+        this.decisionLog = [];        // Past decisions
+        this._lastDecisionDay = 0;
+    }
+
+    dailyUpdate(world) {
+        const dayKey = `${world.clock.year}-${world.clock.season}-${world.clock.day}`;
+        if (this._lastDecisionDay === dayKey) return;
+        if (this.pendingDecision) return; // Don't generate new if one is pending
+
+        this._lastDecisionDay = dayKey;
+
+        // Filter eligible decisions
+        const eligible = DAILY_DECISIONS.filter(d => !d.condition || d.condition(world));
+        if (eligible.length === 0) return;
+
+        // Avoid repeating recent decisions
+        const recentIds = this.decisionLog.slice(-5).map(d => d.id);
+        const fresh = eligible.filter(d => !recentIds.includes(d.id));
+        const pool = fresh.length > 0 ? fresh : eligible;
+
+        const chosen = pool[Math.floor(Math.random() * pool.length)];
+        this.pendingDecision = {
+            id: chosen.id,
+            title: chosen.title(),
+            desc: chosen.desc(),
+            optionA: { label: chosen.optionA.label(), desc: chosen.optionA.desc(), effects: chosen.optionA.effects },
+            optionB: { label: chosen.optionB.label(), desc: chosen.optionB.desc(), effects: chosen.optionB.effects },
+            dayKey: dayKey,
+        };
+
+        world.logMessage('decision', `🏛️ ${t('今日決策')}：${this.pendingDecision.title}`);
+    }
+
+    resolveDecision(choice, world) {
+        if (!this.pendingDecision) return null;
+        const decision = this.pendingDecision;
+        const effects = choice === 'A' ? decision.optionA.effects : decision.optionB.effects;
+        const label = choice === 'A' ? decision.optionA.label : decision.optionB.label;
+
+        // Apply effects
+        const sp = world.stockpile;
+        const resourceKeys = ['food','wood','stone','metal','silver','tools','herbs','cloth','research_points'];
+        for (const key of resourceKeys) {
+            if (effects[key]) {
+                if (effects[key] > 0) sp.add(key, effects[key], world.tickCount, `${t('決策')}：${decision.title}`);
+                else sp.consume(key, Math.abs(effects[key]), world.tickCount, `${t('決策')}：${decision.title}`);
+            }
+        }
+
+        // Mood effects
+        if (effects.mood_all) {
+            Object.values(world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + effects.mood_all; });
+        }
+        if (effects.moodTarget) {
+            const targets = Object.values(world.agents).filter(a => a.job?.key === effects.moodTarget);
+            targets.forEach(a => { a.moodModifier = (a.moodModifier || 0) + (effects.moodAmt || 0); });
+        }
+        if (effects.moodOther) {
+            const others = Object.values(world.agents).filter(a => a.job?.key === effects.moodOther);
+            others.forEach(a => { a.moodModifier = (a.moodModifier || 0) + (effects.moodOtherAmt || 0); });
+        }
+
+        // Random reward
+        if (effects.random_reward) {
+            const rewards = [{r:'metal',a:15},{r:'cloth',a:10},{r:'herbs',a:10},{r:'silver',a:40},{r:'tools',a:8}];
+            const reward = rewards[Math.floor(Math.random() * rewards.length)];
+            sp.add(reward.r, reward.a, world.tickCount, t('商人交易'));
+            world.logMessage('decision', `💰 ${t('交易獲得了')} ${reward.a} ${t(reward.r)}！`);
+        }
+
+        // Social boost
+        if (effects.social_boost) {
+            Object.values(world.agents).forEach(a => { a.needs.social = Math.min(100, a.needs.social + effects.social_boost); });
+        }
+
+        // Reputation effects
+        if (effects.reputation && world.reputationSystem) {
+            world.reputationSystem.addReputation(effects.reputation, 'decisions', world);
+        }
+
+        world.logMessage('decision', `🏛️ ${t('你選擇了')}「${label}」`);
+        if (world.dailyNews) {
+            world.dailyNews.collectEvent('politics', `${t('鎮長決定')}：${decision.title} → ${label}`, 6);
+        }
+
+        this.decisionLog.push({ id: decision.id, choice, dayKey: decision.dayKey, title: decision.title });
+        if (this.decisionLog.length > 100) this.decisionLog = this.decisionLog.slice(-100);
+        this.pendingDecision = null;
+        return { title: decision.title, choice: label };
+    }
+
+    toDict() {
+        return {
+            pendingDecision: this.pendingDecision,
+            recentDecisions: this.decisionLog.slice(-10),
+        };
+    }
+
+    serialize() {
+        return {
+            pendingDecision: this.pendingDecision,
+            decisionLog: this.decisionLog,
+            _lastDecisionDay: this._lastDecisionDay,
+        };
+    }
+
+    loadFrom(data) {
+        if (!data) return;
+        this.pendingDecision = data.pendingDecision || null;
+        this.decisionLog = data.decisionLog || [];
+        this._lastDecisionDay = data._lastDecisionDay || 0;
+    }
+}
+
+// ============================================================
+// v4.0 - Shop System (商店系統)
+// ============================================================
+const SHOP_ITEMS = {
+    food:       { name:()=>t('食物'), icon:'🍖', buyPrice:3,  sellPrice:1, category:'basic' },
+    meals:      { name:()=>t('餐食'), icon:'🍲', buyPrice:5,  sellPrice:2, category:'basic' },
+    wood:       { name:()=>t('木材'), icon:'🪵', buyPrice:4,  sellPrice:2, category:'basic' },
+    stone:      { name:()=>t('石材'), icon:'🪨', buyPrice:5,  sellPrice:2, category:'basic' },
+    metal:      { name:()=>t('金屬'), icon:'⛓️', buyPrice:8,  sellPrice:4, category:'basic' },
+    tools:      { name:()=>t('工具'), icon:'🔧', buyPrice:12, sellPrice:6, category:'craft' },
+    herbs:      { name:()=>t('草藥'), icon:'🌿', buyPrice:6,  sellPrice:3, category:'craft' },
+    cloth:      { name:()=>t('布料'), icon:'🧵', buyPrice:7,  sellPrice:3, category:'craft' },
+    medicine:   { name:()=>t('藥品'), icon:'💊', buyPrice:15, sellPrice:8, category:'craft' },
+    clothing:   { name:()=>t('衣物'), icon:'👕', buyPrice:10, sellPrice:5, category:'craft' },
+    furniture:  { name:()=>t('傢俱'), icon:'🪑', buyPrice:14, sellPrice:7, category:'luxury' },
+    bread:      { name:()=>t('麵包'), icon:'🍞', buyPrice:6,  sellPrice:3, category:'processed' },
+    beer:       { name:()=>t('啤酒'), icon:'🍺', buyPrice:8,  sellPrice:4, category:'processed' },
+    wine:       { name:()=>t('葡萄酒'), icon:'🍷', buyPrice:15, sellPrice:8, category:'luxury' },
+};
+
+class ShopSystem {
+    constructor() {
+        this.transactionLog = [];
+    }
+
+    getAvailableItems(world) {
+        return Object.entries(SHOP_ITEMS).map(([key, item]) => ({
+            key, name: item.name(), icon: item.icon,
+            buyPrice: item.buyPrice, sellPrice: item.sellPrice,
+            category: item.category,
+            stock: world.stockpile.get(key),
+            canBuy: world.stockpile.get('silver') >= item.buyPrice,
+            canSell: world.stockpile.get(key) >= 1,
+        }));
+    }
+
+    buy(itemKey, amount, world) {
+        const item = SHOP_ITEMS[itemKey];
+        if (!item) return { success: false, msg: t('商品不存在') };
+        // Apply reputation shop discount
+        const discount = world.reputationSystem ? world.reputationSystem.getModifier('shop_discount') : 0;
+        const discountedPrice = Math.max(1, Math.round(item.buyPrice * (1 - discount)));
+        const totalCost = discountedPrice * amount;
+        if (!world.stockpile.has('silver', totalCost)) return { success: false, msg: t('銀幣不足') };
+        world.stockpile.consume('silver', totalCost, world.tickCount, `${t('購買')}${item.name()}`);
+        world.stockpile.add(itemKey, amount, world.tickCount, `${t('商店購買')}`);
+        this.transactionLog.push({ type: 'buy', item: itemKey, amount, cost: totalCost, tick: world.tickCount });
+        const discountText = discount > 0 ? ` (${t('聲望折扣')} ${Math.round(discount*100)}%)` : '';
+        world.logMessage('economy', `🛒 ${t('購買了')} ${amount} ${item.name()}${t('，花費')} ${totalCost} ${t('銀幣')}${discountText}`);
+        return { success: true, msg: `${t('購買成功')}！` };
+    }
+
+    sell(itemKey, amount, world) {
+        const item = SHOP_ITEMS[itemKey];
+        if (!item) return { success: false, msg: t('商品不存在') };
+        if (!world.stockpile.has(itemKey, amount)) return { success: false, msg: t('庫存不足') };
+        const totalIncome = item.sellPrice * amount;
+        world.stockpile.consume(itemKey, amount, world.tickCount, `${t('出售')}${item.name()}`);
+        world.stockpile.add('silver', totalIncome, world.tickCount, `${t('商店出售')}`);
+        this.transactionLog.push({ type: 'sell', item: itemKey, amount, income: totalIncome, tick: world.tickCount });
+        world.logMessage('economy', `💰 ${t('出售了')} ${amount} ${item.name()}${t('，獲得')} ${totalIncome} ${t('銀幣')}`);
+        return { success: true, msg: `${t('出售成功')}！` };
+    }
+
+    toDict() {
+        return { recentTransactions: this.transactionLog.slice(-20) };
+    }
+
+    serialize() { return { transactionLog: this.transactionLog }; }
+    loadFrom(data) { if (data) this.transactionLog = data.transactionLog || []; }
+}
+
+// ============================================================
+// v4.0 - Event Choice System (事件選擇分支)
+// ============================================================
+class EventChoiceSystem {
+    constructor() {
+        this.pendingEvent = null;
+        this.eventLog = [];
+    }
+
+    // Called when an event fires — wraps it with player choices
+    offerChoice(event, world) {
+        if (this.pendingEvent) return; // One at a time
+
+        const choices = this._generateChoices(event, world);
+        if (!choices) return; // No choices for this event type
+
+        this.pendingEvent = {
+            eventName: event.name,
+            description: event.description,
+            severity: event.severity,
+            choices: choices,
+            timestamp: world.tickCount,
+        };
+        world.logMessage('event_choice', `⚡ ${event.name}${t('——你需要做出決定！')}`);
+    }
+
+    _generateChoices(event, world) {
+        // Generate contextual choices based on event type
+        if (event.severity === 'minor') return null; // Minor events don't need choices
+
+        if (event.threat_level) {
+            // Raid/attack events
+            return [
+                { label: t('全力防禦'), icon: '🛡️', desc: t('派出所有守衛迎戰'),
+                  effects: { defense_bonus: 3, mood_all: -3, guard_mood: 10 } },
+                { label: t('談判求和'), icon: '🕊️', desc: t('嘗試用銀幣買和平'),
+                  effects: { silver: -(event.threat_level * 15), mood_all: 2 } },
+                { label: t('疏散居民'), icon: '🏃', desc: t('優先保護居民安全'),
+                  effects: { mood_all: 5, resource_loss: true } },
+            ];
+        }
+
+        if (event.effects?.mood_all < -5) {
+            // Negative events (disaster, famine, etc.)
+            return [
+                { label: t('團結面對'), icon: '💪', desc: t('號召全鎮一起渡過難關'),
+                  effects: { mood_all: 5, social_boost: 3 } },
+                { label: t('祈禱平安'), icon: '🙏', desc: t('到教堂為大家祈禱'),
+                  effects: { mood_all: 3, moodTarget: 'priest', moodAmt: 8 } },
+            ];
+        }
+
+        return null;
+    }
+
+    resolveChoice(choiceIndex, world) {
+        if (!this.pendingEvent || !this.pendingEvent.choices[choiceIndex]) return null;
+        const choice = this.pendingEvent.choices[choiceIndex];
+        const effects = choice.effects;
+
+        // Apply effects
+        if (effects.mood_all) {
+            Object.values(world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + effects.mood_all; });
+        }
+        if (effects.silver) {
+            if (effects.silver > 0) world.stockpile.add('silver', effects.silver, world.tickCount, t('事件決策'));
+            else world.stockpile.consume('silver', Math.abs(effects.silver), world.tickCount, t('事件決策'));
+        }
+        if (effects.social_boost) {
+            Object.values(world.agents).forEach(a => { a.needs.social = Math.min(100, a.needs.social + effects.social_boost); });
+        }
+        if (effects.moodTarget) {
+            Object.values(world.agents).filter(a => a.job?.key === effects.moodTarget).forEach(a => {
+                a.moodModifier = (a.moodModifier || 0) + (effects.moodAmt || 0);
+            });
+        }
+        if (effects.guard_mood) {
+            Object.values(world.agents).filter(a => a.job?.key === 'guard').forEach(a => {
+                a.moodModifier = (a.moodModifier || 0) + effects.guard_mood;
+            });
+        }
+        if (effects.resource_loss) {
+            // Lose some random resources from the raid
+            ['food','wood','stone'].forEach(r => {
+                const loss = Math.floor(world.stockpile.get(r) * 0.15);
+                if (loss > 0) world.stockpile.consume(r, loss, world.tickCount, t('入侵損失'));
+            });
+        }
+
+        world.logMessage('event_choice', `⚡ ${t('你選擇了')}「${choice.label}」${t('來應對')}${this.pendingEvent.eventName}`);
+        if (world.dailyNews) {
+            world.dailyNews.collectEvent('event', `${t('面對')}${this.pendingEvent.eventName}${t('，鎮長選擇了')}「${choice.label}」`, 7);
+        }
+
+        this.eventLog.push({ event: this.pendingEvent.eventName, choice: choice.label, tick: world.tickCount });
+        if (this.eventLog.length > 50) this.eventLog = this.eventLog.slice(-50);
+        const result = { event: this.pendingEvent.eventName, choice: choice.label };
+        this.pendingEvent = null;
+        return result;
+    }
+
+    toDict() {
+        return {
+            pendingEvent: this.pendingEvent,
+            recentChoices: this.eventLog.slice(-10),
+        };
+    }
+
+    serialize() { return { pendingEvent: this.pendingEvent, eventLog: this.eventLog }; }
+    loadFrom(data) {
+        if (!data) return;
+        this.pendingEvent = data.pendingEvent || null;
+        this.eventLog = data.eventLog || [];
+    }
+}
+
+// ============================================================
+// v4.0 - NPC Help Request System (NPC 求助系統)
+// ============================================================
+class NPCHelpSystem {
+    constructor() {
+        this.pendingRequest = null;
+        this.requestLog = [];
+        this._daysSinceRequest = 0;
+    }
+
+    dailyUpdate(world) {
+        this._daysSinceRequest++;
+        if (this._daysSinceRequest < 3) return; // Every 3 days max
+        if (this.pendingRequest) return;
+
+        const npcs = Object.values(world.agents).filter(a => !a.isPlayer && a.status !== 'hospitalized');
+        if (npcs.length === 0) return;
+
+        // Find NPCs with issues
+        const candidates = [];
+
+        for (const npc of npcs) {
+            // Low mood NPC
+            if (npc.mood < 20) {
+                candidates.push({ npc, type: 'low_mood',
+                    title: `${npc.name}${t('看起來很沮喪')}`,
+                    desc: `${npc.name}${t('：「最近什麼事都不太順利...你能聽我說說嗎？」')}`,
+                    optionA: { label: t('陪他聊聊'), effects: { targetMood: 15, playerSocial: 10, affinity: 10 } },
+                    optionB: { label: t('給他空間'), effects: { targetMood: -3, affinity: -5 } },
+                });
+            }
+            // Hungry NPC
+            if (npc.needs.hunger < 20) {
+                candidates.push({ npc, type: 'hungry',
+                    title: `${npc.name}${t('肚子餓了')}`,
+                    desc: `${npc.name}${t('：「你有沒有多餘的食物？我快餓扁了...」')}`,
+                    optionA: { label: t('分享食物'), effects: { food: -5, targetHunger: 40, affinity: 8 } },
+                    optionB: { label: t('抱歉沒有'), effects: { affinity: -3 } },
+                });
+            }
+            // Relationship conflict
+            const enemies = Object.values(npc.relationships?.relationships || {}).filter(r => r.affinity < -30);
+            if (enemies.length > 0) {
+                const enemy = world.agents[enemies[0].targetId];
+                if (enemy && !enemy.isPlayer) {
+                    candidates.push({ npc, type: 'conflict',
+                        title: `${npc.name}${t('和')}${enemy.name}${t('鬧矛盾')}`,
+                        desc: `${npc.name}${t('：「我跟')}${enemy.name}${t('吵了一架...你覺得誰對？」')}`,
+                        optionA: { label: `${t('支持')}${npc.name}`, effects: { affinity: 12, enemyAffinity: -8 }, enemyId: enemy.agentId },
+                        optionB: { label: t('勸他們和好'), effects: { affinity: 3, enemyAffinity: 5, mood_all: 2 }, enemyId: enemy.agentId },
+                    });
+                }
+            }
+            // Overworked NPC
+            if (npc.needs.rest < 25 && npc.job) {
+                candidates.push({ npc, type: 'tired',
+                    title: `${npc.name}${t('太累了')}`,
+                    desc: `${npc.name}${t('：「我已經連續工作好幾天了...能不能給我放個假？」')}`,
+                    optionA: { label: t('批准休假'), effects: { targetRest: 40, targetMood: 10, affinity: 5 } },
+                    optionB: { label: t('鼓勵堅持'), effects: { targetMood: -5, affinity: -3 } },
+                });
+            }
+        }
+
+        if (candidates.length === 0) return;
+
+        const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+        this._daysSinceRequest = 0;
+        this.pendingRequest = {
+            npcId: chosen.npc.agentId,
+            npcName: chosen.npc.name,
+            type: chosen.type,
+            title: chosen.title,
+            desc: chosen.desc,
+            optionA: chosen.optionA,
+            optionB: chosen.optionB,
+            enemyId: chosen.optionA.enemyId || chosen.optionB.enemyId || null,
+            timestamp: world.tickCount,
+        };
+
+        world.logMessage('npc_help', `💬 ${chosen.npc.name}${t('需要你的幫助！')}`);
+    }
+
+    resolveRequest(choice, world) {
+        if (!this.pendingRequest) return null;
+        const req = this.pendingRequest;
+        const effects = choice === 'A' ? req.optionA.effects : req.optionB.effects;
+        const label = choice === 'A' ? req.optionA.label : req.optionB.label;
+
+        const npc = world.agents[req.npcId];
+        const player = world.agents['player'];
+
+        if (npc) {
+            if (effects.targetMood) npc.moodModifier = (npc.moodModifier || 0) + effects.targetMood;
+            if (effects.targetHunger) npc.needs.hunger = Math.min(100, npc.needs.hunger + effects.targetHunger);
+            if (effects.targetRest) npc.needs.rest = Math.min(100, npc.needs.rest + effects.targetRest);
+            if (effects.affinity && player) {
+                const rel = npc.relationships.getOrCreate('player', player.name);
+                rel.modifyAffinity(effects.affinity);
+            }
+        }
+
+        if (effects.enemyAffinity && req.enemyId) {
+            const enemy = world.agents[req.enemyId];
+            if (enemy && player) {
+                const rel = enemy.relationships.getOrCreate('player', player.name);
+                rel.modifyAffinity(effects.enemyAffinity);
+            }
+        }
+
+        if (effects.food && effects.food < 0) {
+            world.stockpile.consume('food', Math.abs(effects.food), world.tickCount, `${t('幫助')}${req.npcName}`);
+        }
+        if (effects.playerSocial && player) {
+            player.needs.social = Math.min(100, player.needs.social + effects.playerSocial);
+        }
+        if (effects.mood_all) {
+            Object.values(world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + effects.mood_all; });
+        }
+
+        // Reputation for helping NPCs (option A is always the helpful choice)
+        if (choice === 'A' && world.reputationSystem) {
+            world.reputationSystem.addReputation(2, 'help', world);
+        }
+
+        world.logMessage('npc_help', `💬 ${t('你對')}${req.npcName}${t('說')}：「${label}」`);
+
+        this.requestLog.push({ npcName: req.npcName, type: req.type, choice: label, tick: world.tickCount });
+        if (this.requestLog.length > 50) this.requestLog = this.requestLog.slice(-50);
+        const result = { npcName: req.npcName, choice: label };
+        this.pendingRequest = null;
+        return result;
+    }
+
+    toDict() {
+        return {
+            pendingRequest: this.pendingRequest,
+            recentRequests: this.requestLog.slice(-10),
+        };
+    }
+
+    serialize() { return { pendingRequest: this.pendingRequest, requestLog: this.requestLog, _daysSinceRequest: this._daysSinceRequest }; }
+    loadFrom(data) {
+        if (!data) return;
+        this.pendingRequest = data.pendingRequest || null;
+        this.requestLog = data.requestLog || [];
+        this._daysSinceRequest = data._daysSinceRequest || 0;
     }
 }
 

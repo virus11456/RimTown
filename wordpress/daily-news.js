@@ -84,7 +84,7 @@ class DailyNewsEngine {
 
         // Get previous newspaper summary for continuity
         const prevPaper = this.newspapers.length > 0 ? this.newspapers[this.newspapers.length - 1] : null;
-        const prevRef = prevPaper ? `上一期日報（記者：${prevPaper.reporter}）的摘要：${(prevPaper.content || '').substring(0, 100)}...` : '';
+        const prevRef = prevPaper ? `${t('上一期日報')}（${t('記者')}：${prevPaper.reporter}）${t('的摘要')}：${(prevPaper.content || '').substring(0, 100)}...` : '';
 
         // Build richer NPC interaction context
         const agentList = Object.values(world.agents).filter(a => !a.isPlayer);
@@ -95,18 +95,18 @@ class DailyNewsEngine {
                 for (const [targetId, rel] of rels) {
                     const target = world.agents[targetId];
                     if (target && rel.affinity !== undefined) {
-                        const status = rel.status || (rel.affinity > 60 ? '好友' : rel.affinity < -20 ? '不合' : t('普通'));
-                        relationshipSnippets.push(`${agent.name}與${target.name}：${status}（好感度${rel.affinity}${rel.romanticInterest > 30 ? '，有浪漫火花💕' : ''}）`);
+                        const status = rel.status || (rel.affinity > 60 ? t('好友') : rel.affinity < -20 ? t('不合') : t('普通'));
+                        relationshipSnippets.push(`${agent.name}${t('與')}${target.name}：${status}（${t('好感度')}${rel.affinity}${rel.romanticInterest > 30 ? t('，有浪漫火花💕') : ''}）`);
                     }
                 }
             }
         }
-        const relContext = relationshipSnippets.length ? `\n居民關係動態：\n${relationshipSnippets.slice(0, 8).join('\n')}` : '';
+        const relContext = relationshipSnippets.length ? `\n${t('居民關係動態')}：\n${relationshipSnippets.slice(0, 8).join('\n')}` : '';
 
         // Get recent NPC conversations for richer material
         const recentConvos = world.conversationEngine?.npcConversationLog?.slice(-5) || [];
         const convoContext = recentConvos.length
-            ? `\n最近的居民對話精華：\n${recentConvos.map(c => `- ${c.agentA}對${c.agentB}：「${c.summary}」`).join('\n')}`
+            ? `\n${t('最近的居民對話精華')}：\n${recentConvos.map(c => `- ${c.agentA}${t('對')}${c.agentB}：「${c.summary}」`).join('\n')}`
             : '';
 
         // Town resource snapshot
@@ -115,19 +115,19 @@ class DailyNewsEngine {
             const labels = {food:t('食物'),wood:t('木材'),stone:t('石材'),silver:t('銀幣'),meals:t('餐食'),tools:t('工具')};
             return `${labels[r]||r}:${Math.round(sp[r])}`;
         }).join('、') : '';
-        const resContext = keyRes ? `\n鎮上資源概況：${keyRes}` : '';
+        const resContext = keyRes ? `\n${t('鎮上資源概況')}：${keyRes}` : '';
 
         // Election context
         const electionCtx = world.election?.active
-            ? `\n選舉動態：${world.election.phase === 'campaign' ? '競選期間' : world.election.phase === 'voting' ? '投票進行中' : '已結束'}${world.election.candidates ? '，候選人：' + world.election.candidates.map(c => `${c.name}(${c.policyLabel})`).join('、') : ''}`
-            : (world.election?.mayor ? `\n現任鎮長：${world.agents[world.election.mayor]?.name || '未知'}` : '');
+            ? `\n${t('選舉動態')}：${world.election.phase === 'campaign' ? t('競選期間') : world.election.phase === 'voting' ? t('投票進行中') : t('已結束')}${world.election.candidates ? t('，候選人：') + world.election.candidates.map(c => `${c.name}(${c.policyLabel})`).join('、') : ''}`
+            : (world.election?.mayor ? `\n${t('現任鎮長')}：${world.agents[world.election.mayor]?.name || t('未知')}` : '');
 
         // Weather / season mood
         const weather = world.news?.bulletins?.find(b => b.category === 'weather');
-        const weatherCtx = weather ? `\n天氣狀況：${weather.headline}` : '';
+        const weatherCtx = weather ? `\n${t('天氣狀況')}：${weather.headline}` : '';
 
         // NPC daily activities snapshot
-        const activitySnap = agentList.slice(0, 6).map(a => `${a.name}(${a.job?.title||'無業'})正在${a.activity||a.currentAction||'閒逛'}`).join('；');
+        const activitySnap = agentList.slice(0, 6).map(a => `${a.name}(${a.job?.title||t('無業')})${t('正在')}${a.activity||a.currentAction||t('閒逛')}`).join('；');
 
         const prompt = `你是「${reporter.name}」，${bg}
 你的性格特徵：${traits}
@@ -187,7 +187,7 @@ ${prevRef}
             building:'🏗️', factory:'🏭', exploration:'🗺️', lifecycle:'👶', incident:'⚠️',
             drama:'🎭', social:'💬', town:'🏘️', industry:'⚒️' };
         const lines = [];
-        lines.push(`📰 【${events[0]?.content || '邊境小鎮的平凡日常'}】`);
+        lines.push(`📰 【${events[0]?.content || t('邊境小鎮的平凡日常')}】`);
         lines.push('');
         lines.push(t('🔥 頭條報導'));
         lines.push(events[0]?.content || t('今天是平靜的一天，鎮上一切如常。'));
@@ -206,7 +206,7 @@ ${prevRef}
             t('聽說隔壁鎮的人都想來我們這裡，不知道是不是因為讀了我的日報呢？'),
             t('手都寫酸了，不過能把小鎮的故事記錄下來，這份工作還是挺值得的。'),
         ];
-        lines.push(`✍️ ${reporter.name}手記`);
+        lines.push(`✍️ ${reporter.name}${t('手記')}`);
         lines.push(thoughts[Math.floor(Math.random() * thoughts.length)]);
         return lines.join('\n');
     }

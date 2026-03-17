@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v3.7.1
-const RIMTOWN_APP_VERSION = '3.7.1';
+// RimTown - Frontend App (WordPress Plugin) v4.1.0
+const RIMTOWN_APP_VERSION = '4.1.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -38,6 +38,8 @@ const ACHIEVEMENTS = {
     builder: { name: t('建設者'), desc: t('建造第一棟建築'), icon: '🏗️', category: 'economy' },
     master_builder: { name: t('建築大師'), desc: t('建造5棟建築'), icon: '🏰', category: 'economy' },
     all_buildings: { name: t('鎮之完善'), desc: t('建造所有建築'), icon: '🌆', category: 'economy' },
+    first_upgrade: { name: t('精益求精'), desc: t('首次升級建築'), icon: '🔧', category: 'economy' },
+    max_upgrade: { name: t('登峰造極'), desc: t('將建築升級至最高等級'), icon: '🏯', category: 'economy' },
     first_research: { name: t('學者'), desc: t('完成第一項研究'), icon: '📚', category: 'economy' },
     research_5: { name: t('博學多才'), desc: t('完成5項研究'), icon: '🎓', category: 'economy' },
     all_research: { name: t('科技先驅'), desc: t('完成所有研究'), icon: '🔬', category: 'economy' },
@@ -866,6 +868,182 @@ class RimTownApp {
         setInterval(() => this._checkStoryEventDisplay(), 3000);
         // Check newspaper every 10 seconds
         setInterval(() => this._checkNewspaperNotification(), 10000);
+        // v4.0: Check interactive notifications every 4 seconds
+        setInterval(() => this._checkV4Notifications(), 4000);
+    }
+
+    // v4.0: Check for pending decisions, event choices, and NPC help requests
+    _checkV4Notifications() {
+        if (!this.world) return;
+
+        // Daily decision
+        const dd = this.world.dailyDecision;
+        if (dd?.pendingDecision && !this._shownDecisionId) {
+            this._shownDecisionId = dd.pendingDecision.dayKey;
+            this._showDecisionCard(dd.pendingDecision);
+        } else if (!dd?.pendingDecision) {
+            this._shownDecisionId = null;
+        }
+
+        // Event choice
+        const ec = this.world.eventChoice;
+        if (ec?.pendingEvent && !this._shownEventChoiceId) {
+            this._shownEventChoiceId = ec.pendingEvent.timestamp;
+            this._showEventChoiceCard(ec.pendingEvent);
+        } else if (!ec?.pendingEvent) {
+            this._shownEventChoiceId = null;
+        }
+
+        // NPC help
+        const nh = this.world.npcHelp;
+        if (nh?.pendingRequest && !this._shownHelpId) {
+            this._shownHelpId = nh.pendingRequest.timestamp;
+            this._showNPCHelpCard(nh.pendingRequest);
+        } else if (!nh?.pendingRequest) {
+            this._shownHelpId = null;
+        }
+
+        // Council proposal
+        const cc = this.world.council;
+        if (cc?.pendingProposal && !cc.pendingProposal.playerVoted && !this._shownCouncilId) {
+            this._shownCouncilId = cc.pendingProposal.id + '_' + cc._daysSinceProposal;
+            this._showCouncilCard(cc.pendingProposal);
+        } else if (!cc?.pendingProposal || cc.pendingProposal.playerVoted) {
+            this._shownCouncilId = null;
+        }
+
+        // Weather disaster warning notification
+        const ww = this.world.weather;
+        if (ww?.activeDisaster && !this._shownDisasterId) {
+            this._shownDisasterId = ww.activeDisaster.type;
+            this._showInteractiveNotification({
+                icon: '🚨',
+                title: ww.activeDisaster.name,
+                desc: ww.activeDisaster.desc,
+                buttons: [{ label: t('了解'), action: () => { this.activeTab = 'events'; this.state = this.world.getState(); this.renderSidebar(); } }],
+            });
+        } else if (!ww?.activeDisaster) {
+            this._shownDisasterId = null;
+        }
+    }
+
+    _showDecisionCard(decision) {
+        this._showInteractiveNotification({
+            icon: '🏛️',
+            title: decision.title,
+            desc: decision.desc,
+            buttons: [
+                { label: `A. ${decision.optionA.label}`, desc: decision.optionA.desc, action: () => {
+                    this.world.dailyDecision.resolveDecision('A', this.world);
+                    this.state = this.world.getState(); this.renderSidebar();
+                }},
+                { label: `B. ${decision.optionB.label}`, desc: decision.optionB.desc, action: () => {
+                    this.world.dailyDecision.resolveDecision('B', this.world);
+                    this.state = this.world.getState(); this.renderSidebar();
+                }},
+            ]
+        });
+    }
+
+    _showEventChoiceCard(event) {
+        const buttons = event.choices.map((choice, i) => ({
+            label: `${choice.icon} ${choice.label}`,
+            desc: choice.desc,
+            action: () => {
+                this.world.eventChoice.resolveChoice(i, this.world);
+                this.state = this.world.getState(); this.renderSidebar();
+            }
+        }));
+        this._showInteractiveNotification({
+            icon: '⚡',
+            title: event.eventName,
+            desc: event.description,
+            buttons: buttons,
+        });
+    }
+
+    _showNPCHelpCard(request) {
+        this._showInteractiveNotification({
+            icon: '💬',
+            title: request.title,
+            desc: request.desc,
+            buttons: [
+                { label: request.optionA.label, action: () => {
+                    this.world.npcHelp.resolveRequest('A', this.world);
+                    this.state = this.world.getState(); this.renderSidebar();
+                }},
+                { label: request.optionB.label, action: () => {
+                    this.world.npcHelp.resolveRequest('B', this.world);
+                    this.state = this.world.getState(); this.renderSidebar();
+                }},
+            ]
+        });
+    }
+
+    _showCouncilCard(proposal) {
+        this._showInteractiveNotification({
+            icon: '🏛️',
+            title: `${t('議會提案')}：${proposal.title}`,
+            desc: proposal.desc,
+            buttons: [
+                { label: `👍 ${t('贊成')}`, action: () => {
+                    this.world.council.playerVote('for');
+                    this.world.logMessage('council', `🏛️ ${t('你對議會提案投了贊成票。')}`);
+                    this.state = this.world.getState(); this.renderSidebar();
+                }},
+                { label: `👎 ${t('反對')}`, action: () => {
+                    this.world.council.playerVote('against');
+                    this.world.logMessage('council', `🏛️ ${t('你對議會提案投了反對票。')}`);
+                    this.state = this.world.getState(); this.renderSidebar();
+                }},
+            ]
+        });
+    }
+
+    _showInteractiveNotification({ icon, title, desc, buttons }) {
+        const overlay = document.getElementById('center-notification-overlay');
+        if (!overlay) return;
+        // Queue if already showing
+        if (!this._centerNotifQueue) this._centerNotifQueue = [];
+        if (!overlay.classList.contains('hidden')) {
+            this._centerNotifQueue.push({ _interactive: true, icon, title, desc, buttons });
+            return;
+        }
+        const card = document.getElementById('center-notification-card');
+        if (!card) return;
+        let html = '';
+        if (icon) html += `<div class="center-notif-icon">${icon}</div>`;
+        if (title) html += `<div class="center-notif-title">${title}</div>`;
+        if (desc) html += `<div class="center-notif-desc" style="margin:8px 0;font-size:0.85rem;line-height:1.5">${desc}</div>`;
+        html += '<div class="decision-buttons" style="display:flex;flex-direction:column;gap:8px;margin-top:12px">';
+        buttons.forEach((btn, i) => {
+            html += `<button class="decision-btn" data-choice="${i}" style="padding:10px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:var(--text-primary);cursor:pointer;text-align:left;transition:all 0.2s">`;
+            html += `<div style="font-weight:bold;font-size:0.85rem">${btn.label}</div>`;
+            if (btn.desc) html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:2px">${btn.desc}</div>`;
+            html += `</button>`;
+        });
+        html += '</div>';
+        card.innerHTML = html;
+        overlay.classList.remove('hidden');
+
+        // Attach button handlers
+        card.querySelectorAll('.decision-btn').forEach((el, i) => {
+            el.addEventListener('click', () => {
+                overlay.classList.add('hidden');
+                if (buttons[i]?.action) buttons[i].action();
+                // Show next queued notification
+                if (this._centerNotifQueue?.length) {
+                    const next = this._centerNotifQueue.shift();
+                    setTimeout(() => {
+                        if (next._interactive) this._showInteractiveNotification(next);
+                        else this._showCenterNotification(next);
+                    }, 300);
+                }
+            });
+            // Hover effect
+            el.addEventListener('mouseenter', () => { el.style.background = 'rgba(255,255,255,0.12)'; });
+            el.addEventListener('mouseleave', () => { el.style.background = 'rgba(255,255,255,0.06)'; });
+        });
     }
 
     _checkStoryEventDisplay() {
@@ -928,6 +1106,7 @@ class RimTownApp {
         const latest = papers[papers.length - 1];
         if (this._lastShownNewspaperId === latest.id) return;
         this._lastShownNewspaperId = latest.id;
+        this._newsReacted = false; // Reset reaction for new newspaper
         this._showCenterNotification({
             icon: '📰',
             title: t('AI 日報'),
@@ -984,6 +1163,8 @@ class RimTownApp {
         if (completedBuildings.length >= 5) this._unlockAchievement('master_builder');
         const availBuildings = this.world.buildings?.getAvailable?.(this.world) || [];
         if (completedBuildings.length > 0 && availBuildings.length === 0) this._unlockAchievement('all_buildings');
+        if (completedBuildings.some(b => (b.level || 1) >= 2)) this._unlockAchievement('first_upgrade');
+        if (completedBuildings.some(b => (b.level || 1) >= 3)) this._unlockAchievement('max_upgrade');
         const researchProjects = this.state.research?.projects || {};
         const completedResearch = Object.values(researchProjects).filter(p => p.status === 'complete');
         if (completedResearch.length >= 1) this._unlockAchievement('first_research');
@@ -1292,7 +1473,12 @@ class RimTownApp {
         let html = t('<div class="detail-section"><h3>你的工作</h3>');
         html += `${t('<div class="job-current-badge"><span class="job-current-label">目前職業</span><span class="job-current-name">')}${currentJob}</span></div>`;
         if (player.job?.key && player.job.key !== 'none') {
-            html += t('<button class="btn-quit-job" data-action="player-quit-job">✋ 辭職</button>');
+            const JOB_ACTION_ICONS = { farmer:'🌾', miner:'⛏️', cook:'🍳', blacksmith:'🔨', doctor:'💊', researcher:'🔬', trader:'💰', guard:'⚔️', carpenter:'🪵', tailor:'🧵', priest:'⛪' };
+            const JOB_ACTION_NAMES = { farmer:t('澆水施肥'), miner:t('開採礦石'), cook:t('烹飪餐食'), blacksmith:t('鍛造工具'), carpenter:t('建造傢俱'), tailor:t('製作衣物'), doctor:t('診治居民'), researcher:t('研究學問'), trader:t('經營生意'), guard:t('巡邏警戒'), priest:t('祈禱祝福') };
+            html += `<div style="display:flex;gap:6px;margin:6px 0">`;
+            html += `<button class="btn-accent" data-action="player-job-action" style="flex:1;padding:8px">${JOB_ACTION_ICONS[player.job.key]||'🔧'} ${JOB_ACTION_NAMES[player.job.key]||t('執行工作')}</button>`;
+            html += t('<button class="btn-quit-job" data-action="player-quit-job" style="padding:8px">✋ 辭職</button>');
+            html += `</div>`;
         }
         html += '<div class="job-grid">';
         for (const [key, title] of Object.entries(JOBS)) {
@@ -1329,6 +1515,101 @@ class RimTownApp {
         this.world.logMessage('player_action', `${t('你辭去了')}${oldJob}${t('的工作。')}`, player.name);
         this.state = this.world.getState();
         this.renderSidebar();
+    }
+
+    // v4.0: Job action button — perform job-specific action
+    _playerJobAction() {
+        const player = this.world.agents['player'];
+        if (!player?.job) return;
+        const jobKey = player.job.key;
+        const sp = this.world.stockpile;
+        const recipe = typeof JOB_PRODUCTION !== 'undefined' ? JOB_PRODUCTION[jobKey] : null;
+        if (!recipe) { this.world.logMessage('player_action', t('這個職業目前沒有可執行的動作。')); this.state = this.world.getState(); this.renderSidebar(); return; }
+
+        // Check inputs
+        for (const [r, a] of Object.entries(recipe.inputs)) {
+            if (!sp.has(r, a)) {
+                this.world.logMessage('player_action', `${t('材料不足！缺少')} ${t(r)}`);
+                this.state = this.world.getState(); this.renderSidebar(); return;
+            }
+        }
+
+        // Consume inputs
+        for (const [r, a] of Object.entries(recipe.inputs)) sp.consume(r, a, this.world.tickCount, t('玩家手動生產'));
+
+        // Calculate efficiency
+        const skill = player.skills.get(recipe.skill);
+        let eff = 0.8 + ((skill ? skill.level : 0) / 20) * 2.0;
+        eff *= 0.9 + Math.random() * 0.2;
+
+        // Produce outputs
+        const results = [];
+        for (const [r, a] of Object.entries(recipe.outputs)) {
+            const amount = Math.round(a * eff * 10) / 10;
+            sp.add(r, amount, this.world.tickCount, t('玩家手動生產'));
+            results.push(`${amount} ${t(r)}`);
+        }
+
+        // Special: priest heals mood
+        if (jobKey === 'priest') {
+            Object.values(this.world.agents).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) + 2; });
+            results.push(t('全鎮心情+2'));
+        }
+
+        // Skill XP
+        if (skill) {
+            const xpGain = 8 + Math.floor(Math.random() * 5);
+            if (player.skills.addXp(recipe.skill, xpGain)) {
+                this.world.logMessage('skill_up', `${player.name}${t('的')}${t(recipe.skill)}${t('達到等級')}${skill.level}${t('！')}`, player.name);
+            }
+        }
+
+        const JOB_ACTION_LABELS = {
+            farmer: t('澆水施肥'), miner: t('開採礦石'), cook: t('烹飪餐食'), blacksmith: t('鍛造工具'),
+            carpenter: t('建造傢俱'), tailor: t('製作衣物'), doctor: t('診治居民'), researcher: t('研究學問'),
+            trader: t('經營生意'), guard: t('巡邏警戒'), priest: t('祈禱祝福'),
+        };
+        const actionLabel = JOB_ACTION_LABELS[jobKey] || t('工作');
+        this.world.logMessage('player_action', `🔧 ${t('你進行了')}${actionLabel}${t('，獲得了 ')}${results.join('、')}`);
+        this.state = this.world.getState(); this.renderSidebar();
+    }
+
+    // v4.0: Shop buy/sell
+    _shopBuy(itemKey, amount) {
+        const result = this.world.shop.buy(itemKey, amount, this.world);
+        if (!result.success) this.world.logMessage('economy', `❌ ${result.msg}`);
+        this.state = this.world.getState(); this.renderSidebar();
+    }
+
+    _shopSell(itemKey, amount) {
+        const result = this.world.shop.sell(itemKey, amount, this.world);
+        if (!result.success) this.world.logMessage('economy', `❌ ${result.msg}`);
+        this.state = this.world.getState(); this.renderSidebar();
+    }
+
+    // v4.0: News reaction
+    _newsReaction(reaction) {
+        const labels = { investigate: t('調查'), support: t('支持'), ignore: t('忽略') };
+        const effects = {
+            investigate: { mood_all: 1, reputation: 1 },
+            support: { mood_all: 2 },
+            ignore: {},
+        };
+        const eff = effects[reaction] || {};
+        if (eff.mood_all) Object.values(this.world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + eff.mood_all; });
+        this.world.logMessage('player_action', `📰 ${t('你對今日新聞選擇了「')}${labels[reaction] || reaction}${t('」')}`);
+        this._newsReacted = true;
+        this.state = this.world.getState(); this.renderSidebar();
+    }
+
+    // v4.0: Council vote
+    _councilVote(choice) {
+        if (!this.world.council) return;
+        const success = this.world.council.playerVote(choice);
+        if (success) {
+            this.world.logMessage('council', `🏛️ ${t('你對議會提案投了')}${choice === 'for' ? t('贊成') : t('反對')}${t('票。')}`);
+        }
+        this.state = this.world.getState(); this.renderSidebar();
     }
 
     _playerVote(candidateId) {
@@ -2163,6 +2444,7 @@ class RimTownApp {
                 // Economy
                 case 'trade': { const [idx, amount] = val.split(','); this.executeTrade(parseInt(idx), parseInt(amount)); this._unlockAchievement('first_trade'); this._tradeCount++; } break;
                 case 'build': this.startBuilding(val); break;
+                case 'upgrade-building': this.startBuildingUpgrade(val); break;
                 case 'research': this.startResearch(val); break;
                 case 'send-expedition': this.sendExpedition(val); break;
                 // Auth & Cloud
@@ -2214,6 +2496,17 @@ class RimTownApp {
                 // Ending
                 case 'close-ending': document.getElementById('ending-overlay')?.remove(); break;
                 case 'start-newgame-plus': this._startNewGamePlus(); break;
+                // v4.0: Shop
+                case 'shop-buy': { const [item, amt] = val.split(','); this._shopBuy(item, parseInt(amt)||1); } break;
+                case 'shop-sell': { const [item, amt] = val.split(','); this._shopSell(item, parseInt(amt)||1); } break;
+                // v4.0: Job action
+                case 'player-job-action': this._playerJobAction(); break;
+                // v4.0: Quest refresh
+                case 'quest-refresh': if (this.world.questSystem) { this.world.questSystem.checkProgress(this.world); this.state = this.world.getState(); this.renderSidebar(); } break;
+                // v4.0: News reaction
+                case 'news-react': this._newsReaction(val); break;
+                // v4.0: Council vote
+                case 'council-vote': this._councilVote(val); break;
                 // Settings tab actions
                 case 'settings-save-all': this._saveSettingsFromTab(); break;
                 case 'test-apikey': this._testApiKeyConnection('main'); break;
@@ -2970,6 +3263,15 @@ class RimTownApp {
         const travelText = travelCount > 0 ? `（+${travelCount}${t(' 外出）')}` : '';
         const popEl = document.getElementById('population-count');
         if (popEl) popEl.textContent = `${t('人口：')}${agentCount}${travelText}`;
+
+        // Weather display
+        const weatherEl = document.getElementById('weather-display');
+        if (weatherEl && this.state.weather) {
+            const w = this.state.weather;
+            weatherEl.textContent = `${w.icon} ${w.name} ${w.temperature}°`;
+            weatherEl.title = w.desc + (w.activeDisaster ? ` | 🚨 ${w.activeDisaster.name}` : '');
+            weatherEl.style.color = w.isExtreme ? 'var(--negative)' : 'var(--text-secondary)';
+        }
 
         // Update town-info-bar in residents tab (real-time)
         const infoClockEl = document.querySelector('.town-info-clock');
@@ -3923,6 +4225,98 @@ class RimTownApp {
             </div>`;
         }
 
+        // --- Weather Panel ---
+        const weather = this.state.weather;
+        if (weather) {
+            html += '<div class="weather-section" style="margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px">';
+            html += `<h4>${weather.icon} ${t('天氣')}：${weather.name}</h4>`;
+            html += `<div style="font-size:0.8rem;color:var(--text-secondary);margin:4px 0">${weather.desc}</div>`;
+            html += `<div style="display:flex;gap:12px;font-size:0.75rem;margin:6px 0">`;
+            html += `<span>🌡️ ${weather.temperature}°C</span>`;
+            html += `<span>💧 ${t('濕度')} ${weather.humidity}%</span>`;
+            html += `<span>💨 ${t('風速')} ${weather.windSpeed}</span>`;
+            html += `</div>`;
+            // Farm & mood modifiers
+            const farmPct = Math.round(weather.farmModifier * 100);
+            const moodVal = weather.moodModifier;
+            html += `<div style="display:flex;gap:12px;font-size:0.75rem;margin:4px 0">`;
+            html += `<span style="color:${farmPct >= 0 ? 'var(--positive)' : 'var(--negative)'}">🌾 ${t('農業')} ${farmPct >= 0 ? '+' : ''}${farmPct}%</span>`;
+            html += `<span style="color:${moodVal >= 0 ? 'var(--positive)' : 'var(--negative)'}">😊 ${t('心情')} ${moodVal >= 0 ? '+' : ''}${moodVal}</span>`;
+            html += `</div>`;
+            // Forecast
+            if (weather.forecast?.length) {
+                html += `<div style="display:flex;gap:8px;margin-top:6px;font-size:0.72rem;color:var(--text-muted)">`;
+                html += `<span>${t('預報')}：</span>`;
+                weather.forecast.forEach(f => { html += `<span title="${f.name}">${f.icon}</span>`; });
+                html += `</div>`;
+            }
+            // Disaster warning
+            if (weather.disasterWarning) {
+                html += `<div style="margin-top:6px;padding:4px 8px;background:rgba(255,80,80,0.1);border-left:3px solid var(--negative);border-radius:4px;font-size:0.75rem">`;
+                html += `⚠️ ${t('災害預警')}：${weather.disasterWarning.type === 'drought_severe' ? t('嚴重乾旱') : weather.disasterWarning.type === 'blizzard_severe' ? t('極端暴風雪') : t('洪水')}`;
+                if (weather.disasterWarning.daysUntil > 0) html += ` (${weather.disasterWarning.daysUntil} ${t('天後')})`;
+                html += `</div>`;
+            }
+            // Active disaster
+            if (weather.activeDisaster) {
+                html += `<div style="margin-top:6px;padding:6px 8px;background:rgba(255,40,40,0.15);border-left:3px solid var(--negative);border-radius:4px;font-size:0.8rem;font-weight:bold">`;
+                html += `🚨 ${weather.activeDisaster.name}（${t('剩餘')} ${weather.activeDisaster.daysLeft} ${t('天')}）`;
+                html += `<div style="font-weight:normal;font-size:0.72rem;margin-top:2px">${weather.activeDisaster.desc}</div>`;
+                html += `</div>`;
+            }
+            html += '</div>';
+        }
+
+        // --- Council Panel ---
+        const council = this.state.council;
+        if (council && council.formed) {
+            html += '<div class="council-section" style="margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px">';
+            html += `<h4>🏛️ ${t('小鎮議會')}</h4>`;
+            html += `<div style="font-size:0.75rem;color:var(--text-secondary);margin:4px 0">${t('成員')}：${council.memberNames.join(t('、'))}</div>`;
+            // Pending proposal
+            if (council.pendingProposal) {
+                const p = council.pendingProposal;
+                html += `<div style="margin-top:8px;padding:8px;background:rgba(255,200,60,0.08);border:1px solid rgba(255,200,60,0.2);border-radius:6px">`;
+                html += `<div style="font-weight:bold;font-size:0.85rem">📜 ${p.title}</div>`;
+                html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin:4px 0">${p.desc}</div>`;
+                html += `<div style="font-size:0.72rem;color:var(--text-muted)">${t('提案者')}：${p.proposerName} | ${t('剩餘')} ${p.daysLeft} ${t('天投票')}</div>`;
+                html += `<div style="display:flex;gap:8px;margin-top:4px;font-size:0.75rem">`;
+                html += `<span style="color:var(--positive)">👍 ${p.forCount} ${t('贊成')}</span>`;
+                html += `<span style="color:var(--negative)">👎 ${p.againstCount} ${t('反對')}</span>`;
+                html += `</div>`;
+                if (!p.playerVoted) {
+                    html += `<div style="display:flex;gap:6px;margin-top:8px">`;
+                    html += `<button class="btn-accent" data-action="council-vote" data-val="for" style="flex:1;padding:6px">👍 ${t('贊成')}</button>`;
+                    html += `<button style="flex:1;padding:6px;border-radius:4px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,80,80,0.1);color:var(--text-primary);cursor:pointer" data-action="council-vote" data-val="against">👎 ${t('反對')}</button>`;
+                    html += `</div>`;
+                } else {
+                    html += `<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">✅ ${t('你已投票')}</div>`;
+                }
+                html += `</div>`;
+            } else {
+                html += `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">${t('目前沒有待表決的議案。')}</div>`;
+            }
+            // Active decrees
+            if (council.activeDecrees?.length) {
+                html += `<div style="margin-top:8px;font-size:0.75rem">`;
+                html += `<div style="font-weight:bold;margin-bottom:4px">${t('生效中的政令')}：</div>`;
+                council.activeDecrees.forEach(d => {
+                    html += `<div style="padding:2px 0;color:var(--text-secondary)">📋 ${d.title}</div>`;
+                });
+                html += `</div>`;
+            }
+            // Proposal log
+            if (council.proposalLog?.length) {
+                html += `<div style="margin-top:8px;font-size:0.7rem;color:var(--text-muted)">`;
+                html += `${t('近期決議')}：`;
+                council.proposalLog.slice(-5).reverse().forEach(p => {
+                    html += `<span style="color:${p.passed ? 'var(--positive)' : 'var(--negative)'}"> ${p.passed ? '✅' : '❌'} ${p.title}(${p.forVotes}:${p.againstVotes})</span>`;
+                });
+                html += `</div>`;
+            }
+            html += '</div>';
+        }
+
         // --- News Bulletins ---
         const news = this.state.news || {};
         const bulletins = news.bulletins || [];
@@ -3988,6 +4382,14 @@ class RimTownApp {
                 }
                 if (isExpanded) {
                     html += `<div class="news-card-content">${this._escapeHtml(paper.content)}</div>`;
+                    // v4.0: Interactive newspaper reaction buttons (only for latest)
+                    if (isLatest && !this._newsReacted) {
+                        html += `<div style="display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08)">`;
+                        html += `<button class="trade-btn" data-action="news-react" data-val="investigate" style="flex:1;font-size:0.72rem">🔍 ${t('調查')}</button>`;
+                        html += `<button class="trade-btn" data-action="news-react" data-val="support" style="flex:1;font-size:0.72rem">👍 ${t('支持')}</button>`;
+                        html += `<button class="trade-btn" data-action="news-react" data-val="ignore" style="flex:1;font-size:0.72rem">🤷 ${t('忽略')}</button>`;
+                        html += `</div>`;
+                    }
                 }
                 html += '</div>';
             }
@@ -4176,6 +4578,7 @@ class RimTownApp {
         html += '<div class="sub-tab-bar">';
         const subTabs = [
             { key:'resources', label:t('資源'), icon:'📦' },
+            { key:'shop', label:t('商店'), icon:'🛒' },
             { key:'building', label:t('建築'), icon:'🏗️' },
             { key:'factory', label:t('工廠'), icon:'🔧' },
         ];
@@ -4263,6 +4666,28 @@ class RimTownApp {
                 html += `${t('<div class="completed-buildings">已完成：')}${completedResearch.map(p => p.name).join('、')}</div>`;
             }
             html += '</div>';
+        } else if (this._economySubTab === 'shop') {
+            // v4.0: Shop system
+            html += t('<div class="econ-section"><h3>🛒 商店</h3>');
+            const silverAmount = Math.round(res['silver'] || 0);
+            html += `<div style="margin-bottom:8px;font-size:0.85rem">${t('💰 你的銀幣：')}<strong>${silverAmount}</strong></div>`;
+            const shopItems = this.world?.shop?.getAvailableItems(this.world) || [];
+            const categories = { basic: t('基本物資'), craft: t('工藝品'), processed: t('加工品'), luxury: t('奢侈品') };
+            for (const [catKey, catName] of Object.entries(categories)) {
+                const catItems = shopItems.filter(i => i.category === catKey);
+                if (catItems.length === 0) continue;
+                html += `<div style="font-weight:bold;font-size:0.78rem;margin:8px 0 4px;color:var(--text-secondary)">${catName}</div>`;
+                for (const item of catItems) {
+                    html += `<div class="resource-item" style="display:flex;align-items:center;gap:6px;padding:6px 8px;margin:3px 0;border-radius:6px;background:var(--bg-card)">`;
+                    html += `<span style="font-size:1.1rem">${item.icon}</span>`;
+                    html += `<span style="flex:1;font-size:0.8rem">${item.name}</span>`;
+                    html += `<span style="font-size:0.7rem;color:var(--text-muted)">${t('庫存')}:${Math.round(item.stock)}</span>`;
+                    html += `<button class="trade-btn trade-buy" data-action="shop-buy" data-val="${item.key},1" ${item.canBuy?'':'disabled'} style="font-size:0.7rem;padding:3px 8px">${t('買')}${item.buyPrice}💰</button>`;
+                    html += `<button class="trade-btn trade-sell" data-action="shop-sell" data-val="${item.key},1" ${item.canSell?'':'disabled'} style="font-size:0.7rem;padding:3px 8px">${t('賣')}${item.sellPrice}💰</button>`;
+                    html += `</div>`;
+                }
+            }
+            html += '</div>';
         } else if (this._economySubTab === 'building') {
             // Buildings
             const buildings = this.state.buildings || {};
@@ -4278,7 +4703,29 @@ class RimTownApp {
                 html += '</div>';
             }
             if (buildings.completed?.length) {
-                html += `${t('<div class="completed-buildings">已完成：')}${buildings.completed.map(p => p.name).join('、')}</div>`;
+                html += t('<div class="completed-buildings"><div class="build-label">已完成：</div>');
+                buildings.completed.forEach(p => {
+                    const lvl = p.level || 1;
+                    const stars = '⭐'.repeat(lvl);
+                    html += `<div class="completed-building-item"><span>${p.name}</span><span class="building-level">${stars} Lv.${lvl}</span></div>`;
+                });
+                html += '</div>';
+            }
+            // Upgradeable buildings
+            const upgradeable = this.world.buildings.getUpgradeable(this.world);
+            if (upgradeable.length) {
+                html += t('<div class="available-buildings"><div class="build-label">🔨 升級：</div>');
+                upgradeable.forEach(u => {
+                    const costStr = Object.entries(u.costs).map(([r,a]) => `${icons[r]||''}${a}`).join(' ');
+                    const effStr = Object.entries(u.effects).map(([k,v]) => `${k}:${v>0?'+':''}${v}`).join(' ');
+                    html += `<div class="build-option ${u.can_afford ? '' : 'cant-afford'}">
+                        <div class="build-name">${u.name} <span class="building-level">Lv.${u.currentLevel}→${u.nextLevel}</span></div>
+                        <div class="build-desc">${u.description}</div>
+                        <div class="build-cost">${costStr}</div>
+                        <div class="build-effects" style="font-size:0.75rem;color:var(--accent-gold)">${effStr}</div>
+                        <button class="build-btn" ${u.can_afford ? '' : 'disabled'} data-action="upgrade-building" data-val="${u.buildingKey}">${t('升級')}</button></div>`;
+                });
+                html += '</div>';
             }
             const available = this.world.buildings.getAvailable(this.world);
             if (available.length) {
@@ -4289,7 +4736,7 @@ class RimTownApp {
                         <div class="build-name">${p.name}</div>
                         <div class="build-desc">${p.description}</div>
                         <div class="build-cost">${costStr}</div>
-                        <button class="build-btn" ${p.can_afford ? '' : 'disabled'} data-action="build" data-val="${p.key}${t('">建造</button></div>')}`;
+                        <button class="build-btn" ${p.can_afford ? '' : 'disabled'} data-action="build" data-val="${p.key}">${t('建造')}</button></div>`;
                 });
                 html += '</div>';
             }
@@ -4388,6 +4835,12 @@ class RimTownApp {
 
     startBuilding(key) {
         this.world.buildings.startProject(key, this.world);
+        this.state = this.world.getState();
+        this.renderSidebar();
+    }
+
+    startBuildingUpgrade(buildingKey) {
+        this.world.buildings.startUpgrade(buildingKey, this.world);
         this.state = this.world.getState();
         this.renderSidebar();
     }
@@ -4973,8 +5426,11 @@ class RimTownApp {
 
         // Header with reputation
         html += t('<div class="econ-section"><h3>⚔️ 主線任務</h3>');
+        html += `<div style="display:flex;justify-content:space-between;align-items:center">`;
         html += `${t('<div style="font-size:0.75rem;color:var(--text-secondary)">進度：')}${qs.completedCount}/${qs.totalCount}${t(' 完成')}`;
         if (qs.reputation) html += `${t(' | ⭐ 聲望：')}${qs.reputation}`;
+        html += `</div>`;
+        html += `<button data-action="quest-refresh" style="font-size:0.7rem;padding:4px 10px;border-radius:4px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:var(--text-primary);cursor:pointer">🔄 ${t('刷新進度')}</button>`;
         html += `</div></div>`;
 
         // Crisis banner
@@ -5249,6 +5705,62 @@ class RimTownApp {
                 }
                 html += '</div>';
             }
+        }
+
+        // ============================================================
+        // 聲望系統 (Reputation)
+        // ============================================================
+        const rep = this.state.reputationSystem;
+        if (rep) {
+            html += `<div class="econ-section"><h3>⭐ ${t('聲望系統')}</h3>`;
+            // Tier badge
+            html += `<div style="display:flex;align-items:center;gap:8px;margin:6px 0">`;
+            html += `<span style="font-size:1.5rem">${rep.tierIcon}</span>`;
+            html += `<div>`;
+            html += `<div style="font-size:0.95rem;font-weight:bold;color:var(--accent)">${rep.tierName}</div>`;
+            html += `<div style="font-size:0.72rem;color:var(--text-secondary)">${rep.tierDesc}</div>`;
+            html += `</div>`;
+            html += `<div style="margin-left:auto;font-size:0.85rem;font-weight:bold">⭐ ${rep.reputation}</div>`;
+            html += `</div>`;
+            // Progress bar to next tier
+            if (rep.nextTierName) {
+                html += `<div style="margin:6px 0">`;
+                html += `<div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-secondary)">`;
+                html += `<span>${rep.tierName}</span><span>${rep.nextTierName} (${rep.nextTierMin})</span>`;
+                html += `</div>`;
+                html += `<div class="progress-bar" style="height:6px;margin-top:2px"><div class="progress-fill" style="width:${rep.progressToNext}%;background:linear-gradient(90deg,var(--accent),#f5c542)"></div></div>`;
+                html += `</div>`;
+            } else {
+                html += `<div style="font-size:0.75rem;color:var(--positive);margin:4px 0">🏆 ${t('已達最高聲望！')}</div>`;
+            }
+            // Effects display
+            html += `<div style="margin-top:8px;padding:6px 8px;background:rgba(255,255,255,0.03);border-radius:6px;font-size:0.75rem">`;
+            html += `<div style="font-weight:bold;margin-bottom:4px;color:var(--text-primary)">${t('聲望效果')}</div>`;
+            const effectLabels = {
+                trade_bonus: t('💰 交易加成'),
+                npc_trust: t('🤝 NPC 初始信任'),
+                mood_bonus: t('😊 NPC 心情加成'),
+                shop_discount: t('🛒 商店折扣'),
+                event_shield: t('🛡️ 事件減免'),
+            };
+            for (const [key, label] of Object.entries(effectLabels)) {
+                const val = rep.effects[key];
+                const active = val && val !== '+0' && val !== '+0%' && val !== '0%';
+                html += `<div style="display:flex;justify-content:space-between;padding:1px 0;color:${active ? 'var(--text-primary)' : 'var(--text-muted)'}">`;
+                html += `<span>${label}</span><span>${val}</span>`;
+                html += `</div>`;
+            }
+            html += `</div>`;
+            // Sources breakdown
+            const sourceEntries = Object.entries(rep.sources || {}).filter(([,v]) => v > 0);
+            if (sourceEntries.length > 0) {
+                const sourceLabels = { quests: t('任務'), decisions: t('決策'), help: t('幫助NPC'), daily: t('日常'), trade: t('交易'), events: t('事件') };
+                html += `<div style="margin-top:6px;font-size:0.7rem;color:var(--text-secondary)">`;
+                html += `${t('聲望來源')}：`;
+                html += sourceEntries.map(([k, v]) => `${sourceLabels[k] || k} ${v}`).join(' · ');
+                html += `</div>`;
+            }
+            html += `</div>`;
         }
 
         html += '</div>';
