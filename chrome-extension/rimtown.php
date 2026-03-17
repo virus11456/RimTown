@@ -115,6 +115,122 @@ function rimtown_shortcode($atts) {
             </div>
             <!-- mobile-sidebar-toggle removed: was non-functional -->
         </div>
+        <!-- Tutorial Overlay -->
+        <div id="tutorial-overlay" class="tutorial-overlay hidden">
+            <div class="tutorial-card">
+                <div class="tutorial-step" data-step="0">
+                    <div class="tutorial-step-icon">🏘️</div>
+                    <h3>歡迎來到邊境鎮</h3>
+                    <div class="tutorial-step-text">
+                        <p>作為這座 <strong>邊境鎮</strong> 的管理者，你需要引導居民們建設家園、發展經濟、抵禦外敵，並見證他們之間的愛恨情仇。</p>
+                        <ul>
+                            <li>📖 主線五章劇情，多路線自由選擇</li>
+                            <li>🎭 20+ 位性格鮮明的居民</li>
+                            <li>💬 AI 驅動的真實對話</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="tutorial-step hidden" data-step="1">
+                    <div class="tutorial-step-icon">🗺️</div>
+                    <h3>地圖與居民</h3>
+                    <div class="tutorial-step-text">
+                        <p>左側是即時更新的 <strong>城鎮地圖</strong>，居民們會在鎮上移動、工作、社交。</p>
+                        <ul>
+                            <li>👥 點擊「居民」查看所有鎮民</li>
+                            <li>🏠 建築會出現在地圖上</li>
+                            <li>🌙 日夜交替，天氣變化</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="tutorial-step hidden" data-step="2">
+                    <div class="tutorial-step-icon">💬</div>
+                    <h3>與居民聊天</h3>
+                    <div class="tutorial-step-text">
+                        <p>點擊「聊天」頁籤，選擇一位居民開始對話。</p>
+                        <ul>
+                            <li>💕 提升好感度，解鎖支線劇情</li>
+                            <li>🤝 建立友誼、戀愛、甚至結婚</li>
+                            <li>🧠 居民會記住你們的互動</li>
+                            <li>📰 居民之間也會自己聊天、產生八卦</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="tutorial-step hidden" data-step="3">
+                    <div class="tutorial-step-icon">💰</div>
+                    <h3>經濟與產業</h3>
+                    <div class="tutorial-step-text">
+                        <p><strong>經濟</strong> 頁籤可以查看資源、建築、科技樹和貿易。</p>
+                        <p><strong>產業</strong> 頁籤管理農場種植、工廠加工和產業發展。</p>
+                        <ul>
+                            <li>🌾 種植作物、收穫農產品</li>
+                            <li>🏭 建造工廠加工原料</li>
+                            <li>📈 隨著人口增長，城鎮等級提升</li>
+                            <li>⚔️ 完成任務獲得獎勵</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="tutorial-step hidden" data-step="4">
+                    <div class="tutorial-step-icon">📰</div>
+                    <h3>事件與探索</h3>
+                    <div class="tutorial-step-text">
+                        <p>遊戲中會發生各種 <strong>隨機事件</strong>：</p>
+                        <ul>
+                            <li>🗳️ 鎮長選舉 —— 投票選出你支持的候選人</li>
+                            <li>⚔️ 盜匪襲擊 —— 守衛和居民會奮力防禦</li>
+                            <li>🎪 季節慶典 —— 春祭、仲夏篝火、豐收節、冬至</li>
+                            <li>🗺️ 探索系統 —— 派遣探險隊探索鎮外區域</li>
+                            <li>🗞️ AI 日報 —— 村莊記者會報導鎮上的大小事</li>
+                        </ul>
+                        <p style="color:var(--text-muted);font-size:0.72rem;margin-top:10px">提示：在設定中配置 AI 語言模型（如 Groq 免費），可以讓居民對話更加生動！</p>
+                    </div>
+                </div>
+                <div class="tutorial-nav">
+                    <button id="tutorial-prev" class="tutorial-btn hidden">上一步</button>
+                    <div class="tutorial-dots" id="tutorial-dots"></div>
+                    <button id="tutorial-next" class="tutorial-btn tutorial-btn-primary">開始旅程</button>
+                </div>
+                <button id="tutorial-skip" class="tutorial-skip">跳過引導</button>
+            </div>
+        </div>
+
+        <!-- Game Dialog -->
+        <div id="game-dialog" class="modal hidden">
+            <div class="modal-content game-dialog-content">
+                <div class="game-dialog-icon" id="game-dialog-icon">⚠️</div>
+                <div class="game-dialog-msg" id="game-dialog-msg"></div>
+                <div class="game-dialog-buttons" id="game-dialog-buttons"></div>
+            </div>
+        </div>
+
+        <!-- Achievement Toast -->
+        <div id="achievement-toast" class="achievement-toast hidden"></div>
+
+        <!-- Center Notification Card Overlay -->
+        <div id="center-notification-overlay" class="center-notification-overlay hidden">
+            <div class="center-notification-backdrop"></div>
+            <div class="center-notification-card" id="center-notification-card"></div>
+        </div>
+
+        <!-- Quest Guidance Banner -->
+        <div id="quest-guidance" class="quest-guidance hidden">
+            <div class="quest-guidance-icon">📋</div>
+            <div class="quest-guidance-text">
+                <div class="quest-guidance-title"></div>
+                <div class="quest-guidance-hint"></div>
+            </div>
+            <button class="quest-guidance-dismiss" title="關閉提示">✕</button>
+        </div>
+
+        <!-- Mobile Header -->
+        <div class="mobile-header">
+            <div class="mobile-header-row">
+                <span class="mobile-title">邊境鎮</span>
+                <span id="mobile-pop-display" style="font-size:0.72rem;color:var(--text-secondary)"></span>
+                <span id="mobile-weather-display" style="font-size:0.75rem"></span>
+                <span id="mobile-clock-display" class="clock-display" style="font-size:0.72rem"></span>
+            </div>
+        </div>
+
         <!-- Auth Modal -->
         <div id="auth-modal" class="modal hidden">
             <div class="modal-content login-content">
