@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v4.1.3.zip` from Releases
+1. Download `rimtown-v4.1.4.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,17 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v4.1.4 (2026-03-17)
+
+**8-bit Chiptune 背景音樂系統**
+
+- 新增 ChiptuneEngine（Web Audio API 程序化合成，無需音檔）
+- 4 首曲目隨日夜自動切換：白天（活潑冒險）、黃昏（溫暖放鬆）、夜晚（寧靜小調）、黎明（柔和甦醒）
+- NES 四聲道音色：方波旋律、三角波低音、琶音和聲、噪音鼓組
+- 設定面板新增「背景音樂」音量滑桿與靜音按鈕
+- 預留 loadCustomTrack() 介面，可用自訂音檔替換程序化曲目
+- 版號同步：所有檔案統一為 4.1.4
 
 ### v4.1.3 (2026-03-17)
 

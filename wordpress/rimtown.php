@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 4.1.3
+ * Version: 4.1.4
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '4.1.3');
+define('RIMTOWN_VERSION', '4.1.4');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1116,6 +1116,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '4.1.4',
+            'date'    => '2026-03-17',
+            'changes' => array(
+                '新增 8-bit chiptune 背景音樂系統（Web Audio API 程序化合成，無需音檔）',
+                '4 首曲目隨日夜自動切換：白天（活潑冒險）、黃昏（溫暖放鬆）、夜晚（寧靜小調）、黎明（柔和甦醒）',
+                'NES 四聲道音色：方波旋律、三角波低音、琶音和聲、噪音鼓組',
+                '設定面板新增「背景音樂」音量滑桿與靜音按鈕',
+                '預留 loadCustomTrack() 介面，可用自訂音檔替換程序化曲目',
+                '版號同步：所有檔案統一為 4.1.4',
+            ),
+        ),
         array(
             'version' => '4.1.3',
             'date'    => '2026-03-17',
