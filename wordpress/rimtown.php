@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '4.1.0');
+define('RIMTOWN_VERSION', '4.1.2');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -81,15 +81,7 @@ function rimtown_shortcode($atts) {
             </div>
         </div>
 
-        <!-- Header (compact info bar) -->
-        <div class="header">
-            <h1>邊境鎮</h1>
-            <div class="header-info">
-                <span id="population-count">人口：--</span>
-                <span id="weather-display" style="font-size:0.75rem;margin:0 4px">☀️</span>
-                <span id="clock-display" class="clock-display">載入中...</span>
-            </div>
-        </div>
+        <!-- Header info is integrated into mobile-header; desktop uses sidebar -->
 
         <!-- Main Layout -->
         <div class="main-layout">
@@ -185,11 +177,11 @@ function rimtown_shortcode($atts) {
                     </div>
                 </div>
                 <div class="tutorial-nav">
-                    <button id="tutorial-prev" class="tutorial-btn hidden">上一步</button>
+                    <button id="tutorial-prev" class="tutorial-btn hidden" onclick="window._rimtownApp?._tutorialPrev?.()">上一步</button>
                     <div class="tutorial-dots" id="tutorial-dots"></div>
-                    <button id="tutorial-next" class="tutorial-btn tutorial-btn-primary">開始旅程</button>
+                    <button id="tutorial-next" class="tutorial-btn tutorial-btn-primary" onclick="window._rimtownApp?._tutorialNext?.()">開始旅程</button>
                 </div>
-                <button id="tutorial-skip" class="tutorial-skip">跳過引導</button>
+                <button id="tutorial-skip" class="tutorial-skip" onclick="window._rimtownApp?._dismissTutorial?.()">跳過引導</button>
             </div>
         </div>
 
