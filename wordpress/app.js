@@ -587,9 +587,8 @@ class RimTownApp {
         const overlay = document.getElementById('tutorial-overlay');
         if (!overlay) return;
         if (localStorage.getItem('rimtown_tutorial_done')) return;
-        // Don't show tutorial when login modal is active
-        const authModal = document.getElementById('auth-modal');
-        if (authModal && !authModal.classList.contains('hidden')) return;
+        // Don't show tutorial before login
+        if (!this.auth?.loggedIn) return;
         overlay.classList.remove('hidden');
         this._tutorialStep = 0;
         this._tutorialTotalSteps = 5;
@@ -885,6 +884,8 @@ class RimTownApp {
     // v4.0: Check for pending decisions, event choices, and NPC help requests
     _checkV4Notifications() {
         if (!this.world) return;
+        // Don't show interactive cards before login
+        if (!this.auth?.loggedIn) return;
 
         // Daily decision
         const dd = this.world.dailyDecision;

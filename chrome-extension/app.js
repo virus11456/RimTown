@@ -587,9 +587,8 @@ class RimTownApp {
         const overlay = document.getElementById('tutorial-overlay');
         if (!overlay) return;
         if (localStorage.getItem('rimtown_tutorial_done')) return;
-        // Don't show tutorial when login screen is active
-        const authModal = document.getElementById('auth-modal');
-        if (authModal && !authModal.classList.contains('hidden')) return;
+        // Don't show tutorial before login
+        if (!this.auth?.loggedIn) return;
         overlay.classList.remove('hidden');
         this._tutorialStep = 0;
         this._tutorialTotalSteps = 5;
@@ -617,13 +616,10 @@ class RimTownApp {
                 nextBtn.textContent = step === 0 ? t('開始旅程') : (step === this._tutorialTotalSteps - 1 ? t('進入遊戲') : t('下一步'));
             }
         };
+        // Expose for inline onclick fallback
         window._rimtownApp = this;
-        document.getElementById('tutorial-next')?.addEventListener('click', () => {
-            this._tutorialNext();
-        });
-        document.getElementById('tutorial-prev')?.addEventListener('click', () => {
-            this._tutorialPrev();
-        });
+        document.getElementById('tutorial-next')?.addEventListener('click', () => this._tutorialNext());
+        document.getElementById('tutorial-prev')?.addEventListener('click', () => this._tutorialPrev());
         document.getElementById('tutorial-skip')?.addEventListener('click', () => this._dismissTutorial());
         this._showTutorialStep(0);
     }
@@ -888,6 +884,8 @@ class RimTownApp {
     // v4.0: Check for pending decisions, event choices, and NPC help requests
     _checkV4Notifications() {
         if (!this.world) return;
+        // Don't show interactive cards before login
+        if (!this.auth?.loggedIn) return;
 
         // Daily decision
         const dd = this.world.dailyDecision;
@@ -2002,8 +2000,8 @@ class RimTownApp {
     }
 
     _updateHeaderTownName(name) {
-        const h1 = document.querySelector('.mobile-title');
-        if (h1) h1.textContent = name || t('邊境鎮');
+        const title = document.querySelector('.mobile-title');
+        if (title) title.textContent = name || t('邊境鎮');
     }
 
     _generateTileMapLayout() {

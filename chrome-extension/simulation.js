@@ -6144,54 +6144,54 @@ class CouncilSystem {
 // v4.0 - Daily Decision System (每日決策卡片)
 // ============================================================
 const DAILY_DECISIONS = [
-    // Resource dilemmas
-    { id:'water_dispute', title:()=>t('水源爭議'), desc:()=>t('農田和工坊都需要水源，但水井產量有限。你怎麼決定？'),
-      optionA:{label:()=>t('優先供水農田'), effects:{food:15,moodTarget:'farmer',moodAmt:5,moodOther:'blacksmith',moodOtherAmt:-3}, desc:()=>t('+15食物，農夫開心，鐵匠不滿')},
-      optionB:{label:()=>t('優先供水工坊'), effects:{tools:5,moodTarget:'blacksmith',moodAmt:5,moodOther:'farmer',moodOtherAmt:-3}, desc:()=>t('+5工具，鐵匠開心，農夫不滿')},
+    // 請託型框架：村民來找你商量、求助、請你幫忙
+    { id:'water_dispute', title:()=>t('農夫的煩惱'), desc:()=>t('農夫氣沖沖地跑來找你抱怨：「工坊把水都搶走了，我的田快乾死了！你能幫我跟鐵匠說說嗎？」'),
+      optionA:{label:()=>t('幫農夫說情'), effects:{food:15,moodTarget:'farmer',moodAmt:5,moodOther:'blacksmith',moodOtherAmt:-3}, desc:()=>t('+15食物，農夫開心，鐵匠不滿')},
+      optionB:{label:()=>t('勸他體諒工坊'), effects:{tools:5,moodTarget:'blacksmith',moodAmt:5,moodOther:'farmer',moodOtherAmt:-3}, desc:()=>t('+5工具，鐵匠開心，農夫不滿')},
       condition: w => Object.values(w.agents).some(a=>a.job?.key==='farmer') && Object.values(w.agents).some(a=>a.job?.key==='blacksmith') },
-    { id:'food_surplus', title:()=>t('食物盈餘'), desc:()=>t('倉庫裡的食物快放不下了。怎麼處理？'),
-      optionA:{label:()=>t('舉辦宴會'), effects:{food:-30,mood_all:8}, desc:()=>t('-30食物，全鎮心情+8')},
-      optionB:{label:()=>t('儲存備用'), effects:{food:0,silver:20}, desc:()=>t('賣掉多餘的食物，+20銀幣')},
+    { id:'food_surplus', title:()=>t('吃不完的食物'), desc:()=>t('你經過倉庫，發現食物堆得滿出來了。鄰居湊過來問：「這麼多吃的，要不要辦個聚餐啊？」'),
+      optionA:{label:()=>t('張羅聚餐'), effects:{food:-30,mood_all:8}, desc:()=>t('-30食物，全鎮心情+8')},
+      optionB:{label:()=>t('建議拿去賣'), effects:{food:0,silver:20}, desc:()=>t('賣掉多餘的食物，+20銀幣')},
       condition: w => w.stockpile.get('food') > 100 },
-    { id:'traveler_arrived', title:()=>t('旅人求助'), desc:()=>t('一個疲憊的旅人來到鎮上，請求食物和住所。'),
-      optionA:{label:()=>t('熱情接待'), effects:{food:-10,silver:-5,mood_all:5,reputation:3}, desc:()=>t('-10食物-5銀幣，全鎮心情+5，聲望+3')},
-      optionB:{label:()=>t('婉拒請求'), effects:{mood_all:-2}, desc:()=>t('全鎮心情-2，但保住資源')},
+    { id:'traveler_arrived', title:()=>t('路邊的旅人'), desc:()=>t('你在鎮口遇到一個疲憊的旅人，他向你搭話：「請問⋯⋯這裡能找到吃的和住的地方嗎？」'),
+      optionA:{label:()=>t('帶他去安頓'), effects:{food:-10,silver:-5,mood_all:5,reputation:3}, desc:()=>t('-10食物-5銀幣，全鎮心情+5，聲望+3')},
+      optionB:{label:()=>t('指個方向就好'), effects:{mood_all:-2}, desc:()=>t('全鎮心情-2，但保住資源')},
       condition: w => w.stockpile.get('food') > 20 },
-    { id:'mine_danger', title:()=>t('礦坑安全'), desc:()=>t('礦工回報礦坑有坍塌風險。要不要停工修繕？'),
-      optionA:{label:()=>t('停工修繕'), effects:{wood:-15,stone:-10,moodTarget:'miner',moodAmt:8}, desc:()=>t('-15木材-10石材，礦工安心')},
-      optionB:{label:()=>t('繼續開採'), effects:{metal:10,moodTarget:'miner',moodAmt:-10}, desc:()=>t('+10金屬，但礦工士氣低落')},
+    { id:'mine_danger', title:()=>t('礦工的擔憂'), desc:()=>t('礦工下工後攔住你：「裡面的支架裂了好幾根，我怕再挖下去會塌⋯⋯你覺得該跟上面說嗎？」'),
+      optionA:{label:()=>t('陪他去反映'), effects:{wood:-15,stone:-10,moodTarget:'miner',moodAmt:8}, desc:()=>t('-15木材-10石材，礦工安心')},
+      optionB:{label:()=>t('安慰他沒事的'), effects:{metal:10,moodTarget:'miner',moodAmt:-10}, desc:()=>t('+10金屬，但礦工士氣低落')},
       condition: w => Object.values(w.agents).some(a=>a.job?.key==='miner') },
-    { id:'merchant_deal', title:()=>t('商人提議'), desc:()=>t('商人趙霞提出一筆冒險的貿易。'),
-      optionA:{label:()=>t('同意交易'), effects:{silver:-30,random_reward:true}, desc:()=>t('-30銀幣，有機會獲得稀有物資')},
-      optionB:{label:()=>t('謝絕提議'), effects:{moodTarget:'trader',moodAmt:-3}, desc:()=>t('商人略顯失望')},
+    { id:'merchant_deal', title:()=>t('商人的暗示'), desc:()=>t('商人趙霞悄悄拉你到一旁：「我手上有批好東西，算你便宜，有興趣嗎？」'),
+      optionA:{label:()=>t('掏錢買下'), effects:{silver:-30,random_reward:true}, desc:()=>t('-30銀幣，有機會獲得稀有物資')},
+      optionB:{label:()=>t('搖頭婉拒'), effects:{moodTarget:'trader',moodAmt:-3}, desc:()=>t('商人略顯失望')},
       condition: w => w.stockpile.get('silver') >= 30 },
-    { id:'sick_npc', title:()=>t('居民生病'), desc:()=>t('有人發燒了。要用珍貴的草藥治療嗎？'),
-      optionA:{label:()=>t('立刻治療'), effects:{herbs:-5,mood_all:3,moodTarget:'doctor',moodAmt:5}, desc:()=>t('-5草藥，醫生有成就感')},
-      optionB:{label:()=>t('讓他自然恢復'), effects:{mood_all:-3}, desc:()=>t('全鎮有點擔心')},
+    { id:'sick_npc', title:()=>t('鄰居的求助'), desc:()=>t('隔壁鄰居敲你的門，滿臉焦急：「我家人發燒了，你手邊有草藥嗎？拜託幫幫忙⋯⋯」'),
+      optionA:{label:()=>t('拿草藥過去'), effects:{herbs:-5,mood_all:3,moodTarget:'doctor',moodAmt:5}, desc:()=>t('-5草藥，醫生有成就感')},
+      optionB:{label:()=>t('建議多休息就好'), effects:{mood_all:-3}, desc:()=>t('全鎮有點擔心')},
       condition: w => w.stockpile.get('herbs') >= 5 && Object.values(w.agents).some(a=>a.job?.key==='doctor') },
-    { id:'festival_plan', title:()=>t('慶典籌備'), desc:()=>t('有人提議辦一個小型慶典提振士氣。'),
-      optionA:{label:()=>t('舉辦慶典'), effects:{food:-20,silver:-10,mood_all:12}, desc:()=>t('-20食物-10銀幣，全鎮大幅開心')},
-      optionB:{label:()=>t('節省開支'), effects:{mood_all:-2}, desc:()=>t('居民有些失望')},
+    { id:'festival_plan', title:()=>t('酒館裡的提議'), desc:()=>t('你在酒館喝酒時，有人站起來喊：「最近大家太悶了，一起辦個慶典吧！」所有人看向你等你表態。'),
+      optionA:{label:()=>t('舉手贊成'), effects:{food:-20,silver:-10,mood_all:12}, desc:()=>t('-20食物-10銀幣，全鎮大幅開心')},
+      optionB:{label:()=>t('搖搖頭算了'), effects:{mood_all:-2}, desc:()=>t('居民有些失望')},
       condition: w => w.stockpile.get('food') > 40 && w.stockpile.get('silver') > 10 },
-    { id:'guard_patrol', title:()=>t('巡邏安排'), desc:()=>t('守衛提議增加夜間巡邏。'),
-      optionA:{label:()=>t('加強巡邏'), effects:{moodTarget:'guard',moodAmt:5,mood_all:3,defense:2}, desc:()=>t('守衛積極，全鎮安心+3')},
-      optionB:{label:()=>t('維持現狀'), effects:{moodTarget:'guard',moodAmt:-3}, desc:()=>t('守衛有些不滿')},
+    { id:'guard_patrol', title:()=>t('守衛的商量'), desc:()=>t('守衛巡邏經過你家門口，停下來跟你聊：「最近夜裡不太平，我想多巡幾圈，你覺得呢？」'),
+      optionA:{label:()=>t('主動幫忙望風'), effects:{moodTarget:'guard',moodAmt:5,mood_all:3,defense:2}, desc:()=>t('守衛積極，全鎮安心+3')},
+      optionB:{label:()=>t('覺得還好吧'), effects:{moodTarget:'guard',moodAmt:-3}, desc:()=>t('守衛有些不滿')},
       condition: w => Object.values(w.agents).some(a=>a.job?.key==='guard') },
-    { id:'library_debate', title:()=>t('知識爭論'), desc:()=>t('研究員和牧師對一本古書的解釋意見不合。你支持誰？'),
-      optionA:{label:()=>t('支持研究員'), effects:{research_points:10,moodTarget:'researcher',moodAmt:8,moodOther:'priest',moodOtherAmt:-5}, desc:()=>t('+10研究點，研究員開心')},
-      optionB:{label:()=>t('支持牧師'), effects:{mood_all:3,moodTarget:'priest',moodAmt:8,moodOther:'researcher',moodOtherAmt:-5}, desc:()=>t('全鎮心情+3，牧師開心')},
+    { id:'library_debate', title:()=>t('書房裡的爭執'), desc:()=>t('你路過書房，研究員和牧師正為一本古書吵得面紅耳赤。看到你進來，兩人同時問：「你說，到底誰說得對？」'),
+      optionA:{label:()=>t('覺得研究員有理'), effects:{research_points:10,moodTarget:'researcher',moodAmt:8,moodOther:'priest',moodOtherAmt:-5}, desc:()=>t('+10研究點，研究員開心')},
+      optionB:{label:()=>t('覺得牧師有理'), effects:{mood_all:3,moodTarget:'priest',moodAmt:8,moodOther:'researcher',moodOtherAmt:-5}, desc:()=>t('全鎮心情+3，牧師開心')},
       condition: w => Object.values(w.agents).some(a=>a.job?.key==='researcher') && Object.values(w.agents).some(a=>a.job?.key==='priest') },
-    { id:'crop_choice', title:()=>t('作物選擇'), desc:()=>t('這季該種什麼？農夫們意見不一。'),
-      optionA:{label:()=>t('種經濟作物'), effects:{silver:15,food:-5}, desc:()=>t('+15銀幣，但食物稍減')},
-      optionB:{label:()=>t('種糧食作物'), effects:{food:20}, desc:()=>t('+20食物，穩扎穩打')},
+    { id:'crop_choice', title:()=>t('田邊的閒聊'), desc:()=>t('農夫蹲在田邊嘆氣，看到你走過來就問：「這季不知道該種什麼，你覺得種值錢的好還是種糧食穩？」'),
+      optionA:{label:()=>t('建議種經濟作物'), effects:{silver:15,food:-5}, desc:()=>t('+15銀幣，但食物稍減')},
+      optionB:{label:()=>t('建議種糧食'), effects:{food:20}, desc:()=>t('+20食物，穩扎穩打')},
       condition: w => Object.values(w.agents).some(a=>a.job?.key==='farmer') },
-    { id:'npc_conflict', title:()=>t('居民糾紛'), desc:()=>t('兩個居民因為雞毛蒜皮的事吵了起來，找你調解。'),
-      optionA:{label:()=>t('認真調解'), effects:{mood_all:3,social_boost:5}, desc:()=>t('全鎮關係改善')},
-      optionB:{label:()=>t('讓他們自己解決'), effects:{mood_all:-2}, desc:()=>t('有人覺得你不負責任')},
+    { id:'npc_conflict', title:()=>t('街上的吵架'), desc:()=>t('兩個居民在街上吵了起來，越吵越兇。旁邊的人推了推你：「你跟他們都熟，去勸勸唄？」'),
+      optionA:{label:()=>t('上前調解'), effects:{mood_all:3,social_boost:5}, desc:()=>t('全鎮關係改善')},
+      optionB:{label:()=>t('假裝沒看到'), effects:{mood_all:-2}, desc:()=>t('有人覺得你太冷漠')},
       condition: w => true },
-    { id:'woodcutter_rest', title:()=>t('伐木工休息'), desc:()=>t('木匠說最近太累了，想休息一天。'),
-      optionA:{label:()=>t('批准休假'), effects:{moodTarget:'carpenter',moodAmt:10,wood:-5}, desc:()=>t('木匠感激，但今天少產木材')},
-      optionB:{label:()=>t('鼓勵堅持'), effects:{wood:5,moodTarget:'carpenter',moodAmt:-5}, desc:()=>t('+5木材，但木匠累了')},
+    { id:'woodcutter_rest', title:()=>t('木匠的訴苦'), desc:()=>t('木匠拎著酒壺坐在你旁邊嘆氣：「最近累得不行，真想休一天⋯⋯但又怕木材不夠用。你說我該怎麼辦？」'),
+      optionA:{label:()=>t('叫他好好休息'), effects:{moodTarget:'carpenter',moodAmt:10,wood:-5}, desc:()=>t('木匠感激，但今天少產木材')},
+      optionB:{label:()=>t('鼓勵他再撐一下'), effects:{wood:5,moodTarget:'carpenter',moodAmt:-5}, desc:()=>t('+5木材，但木匠累了')},
       condition: w => Object.values(w.agents).some(a=>a.job?.key==='carpenter') },
 ];
 
@@ -6228,7 +6228,7 @@ class DailyDecisionSystem {
             dayKey: dayKey,
         };
 
-        world.logMessage('decision', `🏛️ ${t('今日決策')}：${this.pendingDecision.title}`);
+        world.logMessage('decision', `💬 ${t('有人找你商量')}：${this.pendingDecision.title}`);
     }
 
     resolveDecision(choice, world) {
@@ -6278,9 +6278,9 @@ class DailyDecisionSystem {
             world.reputationSystem.addReputation(effects.reputation, 'decisions', world);
         }
 
-        world.logMessage('decision', `🏛️ ${t('你選擇了')}「${label}」`);
+        world.logMessage('decision', `💬 ${t('你決定')}「${label}」`);
         if (world.dailyNews) {
-            world.dailyNews.collectEvent('politics', `${t('鎮長決定')}：${decision.title} → ${label}`, 6);
+            world.dailyNews.collectEvent('social', `${decision.title} → ${label}`, 4);
         }
 
         this.decisionLog.push({ id: decision.id, choice, dayKey: decision.dayKey, title: decision.title });
