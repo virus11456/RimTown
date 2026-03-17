@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v4.1.1
-const RIMTOWN_APP_VERSION = '4.1.1';
+// RimTown - Frontend App (WordPress Plugin) v4.1.2
+const RIMTOWN_APP_VERSION = '4.1.2';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -588,20 +588,21 @@ class RimTownApp {
         if (!overlay) return;
         if (localStorage.getItem('rimtown_tutorial_done')) return;
         // Don't show tutorial when login screen is active
-        if (!this.auth.loggedIn) return;
+        const authModal = document.getElementById('auth-modal');
+        if (authModal && !authModal.classList.contains('hidden')) return;
         overlay.classList.remove('hidden');
         this._tutorialStep = 0;
-        const totalSteps = 5;
+        this._tutorialTotalSteps = 5;
         const dotsEl = document.getElementById('tutorial-dots');
         if (dotsEl) {
             dotsEl.innerHTML = '';
-            for (let i = 0; i < totalSteps; i++) {
+            for (let i = 0; i < this._tutorialTotalSteps; i++) {
                 const dot = document.createElement('span');
                 dot.className = 'tutorial-dot' + (i === 0 ? ' active' : '');
                 dotsEl.appendChild(dot);
             }
         }
-        const showStep = (step) => {
+        this._showTutorialStep = (step) => {
             this._tutorialStep = step;
             overlay.querySelectorAll('.tutorial-step').forEach(s => {
                 s.classList.toggle('hidden', parseInt(s.dataset.step) !== step);
@@ -613,18 +614,30 @@ class RimTownApp {
             const nextBtn = document.getElementById('tutorial-next');
             if (prevBtn) prevBtn.classList.toggle('hidden', step === 0);
             if (nextBtn) {
-                nextBtn.textContent = step === 0 ? t('開始旅程') : (step === totalSteps - 1 ? t('進入遊戲') : t('下一步'));
+                nextBtn.textContent = step === 0 ? t('開始旅程') : (step === this._tutorialTotalSteps - 1 ? t('進入遊戲') : t('下一步'));
             }
         };
+        window._rimtownApp = this;
         document.getElementById('tutorial-next')?.addEventListener('click', () => {
-            if (this._tutorialStep < totalSteps - 1) showStep(this._tutorialStep + 1);
-            else this._dismissTutorial();
+            this._tutorialNext();
         });
         document.getElementById('tutorial-prev')?.addEventListener('click', () => {
-            if (this._tutorialStep > 0) showStep(this._tutorialStep - 1);
+            this._tutorialPrev();
         });
         document.getElementById('tutorial-skip')?.addEventListener('click', () => this._dismissTutorial());
-        showStep(0);
+        this._showTutorialStep(0);
+    }
+
+    _tutorialNext() {
+        if (this._tutorialStep < (this._tutorialTotalSteps || 5) - 1) {
+            this._showTutorialStep?.(this._tutorialStep + 1);
+        } else {
+            this._dismissTutorial();
+        }
+    }
+
+    _tutorialPrev() {
+        if (this._tutorialStep > 0) this._showTutorialStep?.(this._tutorialStep - 1);
     }
 
     _dismissTutorial() {
@@ -1989,7 +2002,7 @@ class RimTownApp {
     }
 
     _updateHeaderTownName(name) {
-        const h1 = document.querySelector('#rimtown-app .header h1');
+        const h1 = document.querySelector('.mobile-title');
         if (h1) h1.textContent = name || t('邊境鎮');
     }
 
