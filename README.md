@@ -59,6 +59,12 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## Changelog
 
+### v4.1.6 (2026-03-25)
+
+**手機版 UI 優化**
+
+- 手機版訪客模式橫幅移至底部 tab bar 上方，不再遮擋遊戲畫面
+
 ### v4.1.5 (2026-03-25)
 
 **訪客試玩模式**
