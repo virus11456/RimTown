@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v4.1.4
-const RIMTOWN_APP_VERSION = '4.1.4';
+// RimTown - Frontend App (WordPress Plugin) v4.1.5
+const RIMTOWN_APP_VERSION = '4.1.5';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -253,6 +253,7 @@ class RimTownApp {
         this._viewingArchive = null;
         this.currentTownId = null;
         // v2.0 — Auth + Achievements
+        this.guestMode = false;
         this.auth = new RimTownAuth();
         this._unlockedAchievements = new Set();
         this._achievementQueue = []; // Toast queue
@@ -349,14 +350,16 @@ class RimTownApp {
         if (localStorage.getItem('rimtown_tutorial_done')) {
             setTimeout(() => this._updateQuestGuidance(), 2000);
         }
-        // Auto-show login modal if not logged in
+        // Auto-show login modal if not logged in (with guest option)
         if (!this.auth.loggedIn) {
             const authModal = document.getElementById('auth-modal');
             if (authModal) {
                 authModal.classList.remove('hidden');
-                // Hide close button so user must login/register
+                // Hide close button but show guest section
                 const closeBtn = authModal.querySelector('.auth-close-btn');
                 if (closeBtn) closeBtn.style.display = 'none';
+                const guestSection = document.getElementById('auth-guest-section');
+                if (guestSection) guestSection.classList.remove('hidden');
             }
         }
     }
@@ -424,6 +427,27 @@ class RimTownApp {
         });
         document.getElementById('auth-reset-btn')?.addEventListener('click', () => this._doResetPassword());
         document.getElementById('auth-reset-pass2')?.addEventListener('keydown', e => { if (e.key === 'Enter') this._doResetPassword(); });
+
+        // Guest mode
+        document.getElementById('auth-guest-btn')?.addEventListener('click', () => this._enterGuestMode());
+        document.getElementById('guest-register-btn')?.addEventListener('click', () => {
+            const authModal = document.getElementById('auth-modal');
+            if (authModal) {
+                authModal.classList.remove('hidden');
+                const closeBtn = authModal.querySelector('.auth-close-btn');
+                if (closeBtn) closeBtn.style.display = '';
+                // Switch to register tab
+                document.querySelectorAll('.auth-tab').forEach(_tw => {
+                    _tw.classList.toggle('active', _tw.dataset.authTab === 'register');
+                });
+                document.getElementById('auth-login-form')?.classList.add('hidden');
+                document.getElementById('auth-register-form')?.classList.remove('hidden');
+                document.getElementById('auth-guest-section')?.classList.add('hidden');
+            }
+        });
+        document.getElementById('guest-banner-close')?.addEventListener('click', () => {
+            document.getElementById('guest-banner')?.classList.add('hidden');
+        });
     }
 
     async _doLogin() {
@@ -434,6 +458,8 @@ class RimTownApp {
         try {
             if (errEl) errEl.textContent = t('登入中...');
             await this.auth.login(user, pass);
+            this.guestMode = false;
+            this._hideGuestBanner();
             this._closeAuthModal();
             this._updateAccountButton();
             this.world.logMessage('system', `${t('歡迎回來，')}${this.auth.username}！`);
@@ -463,6 +489,23 @@ class RimTownApp {
                 window.dispatchEvent(new Event('resize'));
             }, 100);
         }
+    }
+
+    _enterGuestMode() {
+        this.guestMode = true;
+        this._closeAuthModal();
+        // Show guest banner
+        const banner = document.getElementById('guest-banner');
+        if (banner) { banner.classList.remove('hidden'); banner.style.display = 'flex'; }
+        // Update account button
+        this._updateAccountButton();
+        // Enable tutorial for guests
+        this.setupTutorial();
+    }
+
+    _hideGuestBanner() {
+        const banner = document.getElementById('guest-banner');
+        if (banner) { banner.classList.add('hidden'); banner.style.display = 'none'; }
     }
 
     // Custom game-style alert (replaces browser alert)
@@ -512,6 +555,8 @@ class RimTownApp {
         try {
             if (errEl) errEl.textContent = t('註冊中...');
             await this.auth.register(user, pass, email);
+            this.guestMode = false;
+            this._hideGuestBanner();
             this._closeAuthModal();
             this._updateAccountButton();
             // New user gets a fresh world — clear all old local data
@@ -588,8 +633,8 @@ class RimTownApp {
         const overlay = document.getElementById('tutorial-overlay');
         if (!overlay) return;
         if (localStorage.getItem('rimtown_tutorial_done')) return;
-        // Don't show tutorial before login
-        if (!this.auth?.loggedIn) return;
+        // Don't show tutorial before login or guest mode
+        if (!this.auth?.loggedIn && !this.guestMode) return;
         overlay.classList.remove('hidden');
         this._tutorialStep = 0;
         this._tutorialTotalSteps = 5;
@@ -759,6 +804,9 @@ class RimTownApp {
         if (this.auth.loggedIn) {
             btn.textContent = this.auth.username;
             btn.className = 'btn-account logged-in';
+        } else if (this.guestMode) {
+            btn.textContent = t('訪客');
+            btn.className = 'btn-account guest-mode';
         } else {
             btn.textContent = t('帳號');
             btn.className = 'btn-account';
@@ -885,8 +933,8 @@ class RimTownApp {
     // v4.0: Check for pending decisions, event choices, and NPC help requests
     _checkV4Notifications() {
         if (!this.world) return;
-        // Don't show interactive cards before login
-        if (!this.auth?.loggedIn) return;
+        // Don't show interactive cards before login or guest mode
+        if (!this.auth?.loggedIn && !this.guestMode) return;
 
         // Daily decision
         const dd = this.world.dailyDecision;

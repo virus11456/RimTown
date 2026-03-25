@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 4.1.4
+ * Version: 4.1.5
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '4.1.4');
+define('RIMTOWN_VERSION', '4.1.5');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -36,6 +36,12 @@ function rimtown_shortcode($atts) {
     ob_start();
     ?>
     <div id="rimtown-app" class="rimtown-container" style="height:<?php echo $height; ?>">
+        <!-- Guest mode banner -->
+        <div id="guest-banner" class="hidden" style="position:absolute;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 12px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:0.75rem;color:var(--text-secondary)">
+            <span>🎮 訪客模式 — 存檔僅保留在本機</span>
+            <button id="guest-register-btn" style="padding:2px 10px;border:1px solid var(--accent);border-radius:3px;background:transparent;color:var(--accent);cursor:pointer;font-size:0.7rem">註冊帳號</button>
+            <button id="guest-banner-close" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:0.9rem;padding:0 4px">✕</button>
+        </div>
         <!-- Town Manager Modal -->
         <div id="town-modal" class="modal hidden">
             <div class="modal-content town-content">
@@ -245,6 +251,11 @@ function rimtown_shortcode($atts) {
                     <div id="auth-login-error" class="login-error"></div>
                     <button id="auth-login-btn" class="btn-accent" style="width:100%;padding:8px;border:none;border-radius:4px;cursor:pointer;font-size:0.85rem;margin-top:4px">登入</button>
                     <div style="margin-top:8px"><a href="#" id="auth-forgot-link" style="color:var(--text-secondary);font-size:0.75rem">忘記密碼？</a></div>
+                    <div id="auth-guest-section" class="hidden" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);text-align:center">
+                        <p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:8px">不想註冊？先體驗一下也行！</p>
+                        <button id="auth-guest-btn" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:0.85rem;background:var(--bg-secondary);color:var(--text-primary)">🎮 訪客試玩</button>
+                        <p style="font-size:0.65rem;color:var(--text-secondary);margin-top:4px">存檔僅保留在本機，註冊後可同步到雲端</p>
+                    </div>
                 </div>
                 <div id="auth-register-form" class="hidden">
                     <input type="text" id="auth-reg-user" placeholder="帳號" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
@@ -1116,6 +1127,19 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '4.1.5',
+            'date'    => '2026-03-25',
+            'changes' => array(
+                '新增訪客模式：不用註冊也能試玩，點「🎮 訪客試玩」即可進入遊戲',
+                '訪客可體驗完整互動卡片（每日決策、事件選擇、NPC 求助、議會投票）',
+                '訪客可觀看新手教學引導',
+                '頂部顯示訪客模式提示橫幅，可隨時關閉或點「註冊帳號」升級',
+                '登入/註冊後自動退出訪客模式、隱藏橫幅',
+                '帳號按鈕顯示「訪客」文字，點擊可開啟登入視窗',
+                '版號同步：所有檔案統一為 4.1.5',
+            ),
+        ),
         array(
             'version' => '4.1.4',
             'date'    => '2026-03-17',
