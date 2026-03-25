@@ -37,10 +37,10 @@ function rimtown_shortcode($atts) {
     ?>
     <div id="rimtown-app" class="rimtown-container" style="height:<?php echo $height; ?>">
         <!-- Guest mode banner -->
-        <div id="guest-banner" class="hidden" style="position:absolute;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 12px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:0.75rem;color:var(--text-secondary)">
+        <div id="guest-banner" class="hidden">
             <span>🎮 訪客模式 — 存檔僅保留在本機</span>
-            <button id="guest-register-btn" style="padding:2px 10px;border:1px solid var(--accent);border-radius:3px;background:transparent;color:var(--accent);cursor:pointer;font-size:0.7rem">註冊帳號</button>
-            <button id="guest-banner-close" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:0.9rem;padding:0 4px">✕</button>
+            <button id="guest-register-btn">註冊帳號</button>
+            <button id="guest-banner-close">✕</button>
         </div>
         <!-- Town Manager Modal -->
         <div id="town-modal" class="modal hidden">

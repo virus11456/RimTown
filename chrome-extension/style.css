@@ -1359,6 +1359,42 @@ body.rimtown-page .wp-block-post-title {
 .modal.hidden { display: none; }
 .hidden { display: none !important; }
 
+/* ===== Guest Banner ===== */
+#guest-banner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 4px 12px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+#guest-banner.hidden { display: none !important; }
+#guest-register-btn {
+    padding: 2px 10px;
+    border: 1px solid var(--accent);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 0.7rem;
+}
+#guest-banner-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0 4px;
+}
+
 /* Mobile-only elements: hidden on desktop, shown only at ≤768px */
 .mobile-header {
     display: none !important;
@@ -2879,22 +2915,22 @@ body.rimtown-page .wp-block-post-title {
         width: 100%;
     }
 
-    /* Guest banner: move to bottom, inline with tab bar */
+    /* Guest banner: move to bottom, above tab bar */
     #guest-banner {
-        position: fixed !important;
-        top: auto !important;
-        bottom: 52px !important;
-        left: 0 !important;
-        right: 0 !important;
-        z-index: 51 !important;
-        padding: 3px 8px !important;
-        font-size: 0.65rem !important;
-        gap: 4px !important;
-        background: var(--bg-secondary) !important;
-        border-top: 1px solid var(--border) !important;
-        border-bottom: 1px solid var(--border) !important;
+        position: fixed;
+        top: auto;
+        bottom: 52px;
+        left: 0;
+        right: 0;
+        z-index: 51;
+        padding: 3px 8px;
+        font-size: 0.65rem;
+        gap: 4px;
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
     }
     #guest-banner span { white-space: nowrap; }
+    #guest-register-btn { font-size: 0.6rem; padding: 1px 8px; }
     /* Hide overflow tabs on mobile (accessed via mobile group sub-tabs) */
     .rt-sidebar-tabs button.mobile-hidden {
         display: none !important;
