@@ -1826,7 +1826,8 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
         npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${player.name}${t('說：「')}${playerMessage}${t('」— ')}${summary}`, 5, [player.name]);
         player.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('與')}${npc.name}${t('交談：')}${summary}`, 4, [npc.name]);
         // Only push NPC reply (player message already added by playerSendMessage)
-        if (!player.chatHistory.some(m => m.speaker === player.name && m.target === npc.name && m.text === playerMessage && m.time === world.clock.timeStr)) {
+        // 去重不比對時間戳:AI 回覆期間遊戲時間會前進,舊檢查因時間不同而重複寫入玩家訊息(重複留言 bug)
+        if (!player.chatHistory.slice(-6).some(m => m.speaker === player.name && m.target === npc.name && m.text === playerMessage)) {
             player.chatHistory.push({speaker:player.name, target:npc.name, text:playerMessage, time:world.clock.timeStr});
         }
         player.chatHistory.push({speaker:npc.name, target:player.name, text:npcReply, time:world.clock.timeStr});
@@ -2096,7 +2097,8 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
         npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${player.name}${t('說：「')}${playerMessage.slice(0,30)}${t('」— ')}${summary}`, 4+Math.abs(affChange), [player.name]);
         player.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('與')}${npc.name}${t('：')}${summary}`, 3+Math.abs(affChange), [npc.name]);
         // Only push NPC reply (player message already added by playerSendMessage)
-        if (!player.chatHistory.some(m => m.speaker === player.name && m.target === npc.name && m.text === playerMessage && m.time === world.clock.timeStr)) {
+        // 去重不比對時間戳:AI 回覆期間遊戲時間會前進,舊檢查因時間不同而重複寫入玩家訊息(重複留言 bug)
+        if (!player.chatHistory.slice(-6).some(m => m.speaker === player.name && m.target === npc.name && m.text === playerMessage)) {
             player.chatHistory.push({speaker:player.name, target:npc.name, text:playerMessage, time:world.clock.timeStr});
         }
         player.chatHistory.push({speaker:npc.name, target:player.name, text:npcReply, time:world.clock.timeStr});

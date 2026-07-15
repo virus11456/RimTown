@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v4.3.2
-const RIMTOWN_APP_VERSION = '4.3.2';
+// RimTown - Frontend App (WordPress Plugin) v4.3.3
+const RIMTOWN_APP_VERSION = '4.3.3';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -2154,6 +2154,13 @@ class RimTownApp {
             if (!provider && typeof rimtownAuth === 'undefined' && location.protocol.startsWith('http')) {
                 provider = 'server';
             }
+            // 一次性遷移:先前預設存了 none 且沒有金鑰的靜態站玩家 → 升級為伺服器 AI
+            if (provider === 'none' && !apiKey && typeof rimtownAuth === 'undefined'
+                && !localStorage.getItem('rimtown_ai_migrated')) {
+                provider = 'server';
+                localStorage.setItem('llm_provider', 'server');
+            }
+            if (typeof rimtownAuth === 'undefined') localStorage.setItem('rimtown_ai_migrated', '1');
             if (provider === 'server') {
                 this.llmClient = new LLMClient('server', 'server');
                 console.log('[RimTown] LLM client: 小鎮伺服器 AI(/api/chat)');
@@ -4476,9 +4483,13 @@ class RimTownApp {
 
         // --- AI Settings Section ---
         const aiConnected = !!(this.llmClient && this.world?.conversationEngine?.llm);
-        const aiLabel = aiConnected ? 'AI:' + this.llmClient.provider + (this.llmClient.fallbackGroqKey ? t('+備用') : '') : t('AI:未連接');
+        const isServerAI = this.llmClient?.provider === 'server';
+        const aiLabel = isServerAI ? t('🏘️ 小鎮 AI 已啟用（免設定）') : (aiConnected ? 'AI:' + this.llmClient.provider + (this.llmClient.fallbackGroqKey ? t('+備用') : '') : t('AI:未連接'));
         html += t('<div class="econ-section"><h3>🤖 AI 語言模型</h3>');
         html += `<div style="margin-bottom:8px"><span class="llm-status ${aiConnected ? 'connected' : 'disconnected'}">${aiLabel}</span></div>`;
+        // 一般玩家不需要看到金鑰設定 → 收進「進階」摺疊區(預設收合)
+        html += `<details style="margin-bottom:8px"${provider !== 'server' && provider !== 'none' ? ' open' : ''}>
+            <summary style="cursor:pointer;font-size:0.78rem;color:var(--text-secondary);padding:4px 0">⚙️ ${t('進階：自備 AI 金鑰（選用）')}</summary>`;
         html += `<div class="setting-group" style="margin-bottom:8px">
             <label style="font-size:0.82rem;color:var(--text-secondary)">AI ${t('供應商')}</label>
             <select id="settings-tab-provider" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
@@ -4509,6 +4520,7 @@ class RimTownApp {
             </div>
             <div id="groqkey-status" style="margin-top:4px;font-size:0.75rem;display:flex;align-items:center;gap:4px"></div>
         </div>`;
+        html += '</details>';
         html += '</div>';
 
         // --- Save All & Version ---
