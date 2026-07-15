@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v4.3.7
-const RIMTOWN_APP_VERSION = '4.3.7';
+// RimTown - Frontend App (WordPress Plugin) v4.4.0
+const RIMTOWN_APP_VERSION = '4.4.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -2414,6 +2414,7 @@ class RimTownApp {
         // Start collapsed on mobile (only tab bar visible)
         if (window.innerWidth <= 768) {
             sidebar.classList.add('mobile-collapsed');
+            this._setupKairoUI();
         }
 
         // Drag handle: toggle expanded/collapsed
@@ -3526,6 +3527,109 @@ class RimTownApp {
     }
 
     // =====================================================
+    // v4.4.0 開羅式手機 UI:極簡底部列 + 左側浮動選單 + 置中浮動卡片
+    // 地圖永遠全螢幕,UI 全部浮在上面(機場物語式)
+    // =====================================================
+    _setupKairoUI() {
+        const root = document.getElementById('rimtown-app');
+        const sheet = document.getElementById('rimtown-sidebar');
+        if (!root || !sheet || this._kairoReady) return;
+        this._kairoReady = true;
+        root.classList.add('kairo-mode');
+        sheet.classList.add('kairo-hidden'); // 抽屜只在聊天時出現
+
+        // 底部極簡列:☰ 選單 + 💬 聊天
+        const bar = document.createElement('div');
+        bar.id = 'kairo-bar';
+        bar.innerHTML = `
+            <button id="kairo-menu-btn">☰ <span>${t('選單')}</span></button>
+            <button id="kairo-chat-btn" data-tab="chat">💬 <span>${t('聊天')}</span></button>`;
+        root.appendChild(bar);
+
+        // 左側浮動選單
+        const menu = document.createElement('div');
+        menu.id = 'kairo-menu';
+        menu.className = 'hidden';
+        const ITEMS = [
+            ['residents', '👥', t('居民')], ['quest', '⚔️', t('任務')],
+            ['economy', '💰', t('經濟')], ['industry', '🏭', t('產業')],
+            ['events', '📰', t('事件')], ['achievements', '🏆', t('成就')],
+            ['records', '📋', t('紀錄')], ['settings', '⚙️', t('設定')],
+        ];
+        menu.innerHTML = ITEMS.map(([k, ic, lb]) => `<button data-kairo-tab="${k}"><span class="km-ic">${ic}</span>${lb}</button>`).join('');
+        root.appendChild(menu);
+
+        // 置中浮動卡片
+        const card = document.createElement('div');
+        card.id = 'kairo-card';
+        card.className = 'hidden';
+        card.innerHTML = `
+            <div id="kairo-card-header">
+                <span id="kairo-card-title"></span>
+                <button id="kairo-card-back">↩ ${t('返回')}</button>
+            </div>
+            <div id="kairo-card-body"></div>`;
+        root.appendChild(card);
+        this._kairoTitles = Object.fromEntries(ITEMS.map(([k, ic, lb]) => [k, `${ic} ${lb}`]));
+
+        // 事件
+        document.getElementById('kairo-menu-btn').addEventListener('click', () => {
+            card.classList.add('hidden');
+            this._kairoCardOpen = false;
+            menu.classList.toggle('hidden');
+        });
+        document.getElementById('kairo-chat-btn').addEventListener('click', () => {
+            menu.classList.add('hidden');
+            this.activeTab = 'chat';
+            this._updateTabHighlight('chat');
+            this.renderSidebar();
+        });
+        menu.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-kairo-tab]');
+            if (btn) this._openKairoTab(btn.dataset.kairoTab);
+        });
+        document.getElementById('kairo-card-back').addEventListener('click', () => {
+            card.classList.add('hidden');
+            this._kairoCardOpen = false;
+        });
+    }
+
+    _openKairoTab(tab) {
+        document.getElementById('kairo-menu')?.classList.add('hidden');
+        this._kairoCardOpen = true;
+        const title = document.getElementById('kairo-card-title');
+        if (title) title.textContent = this._kairoTitles?.[tab] || tab;
+        this.activeTab = tab;
+        this._updateTabHighlight(tab);
+        this.renderSidebar();
+    }
+
+    // renderSidebar 每次呼叫時,依模式把 #sidebar-content 搬到正確容器
+    _syncKairoLayout() {
+        if (!this._kairoReady || window.innerWidth > 768) return;
+        const content = document.getElementById('sidebar-content');
+        const sheet = document.getElementById('rimtown-sidebar');
+        const card = document.getElementById('kairo-card');
+        const cardBody = document.getElementById('kairo-card-body');
+        if (!content || !sheet || !card || !cardBody) return;
+        if (this.activeTab === 'chat') {
+            // 聊天:內容回到底部抽屜(要打字,給大面板)
+            if (content.parentElement !== sheet) sheet.appendChild(content);
+            card.classList.add('hidden');
+            this._kairoCardOpen = false;
+            sheet.classList.remove('kairo-hidden', 'mobile-collapsed');
+            sheet.classList.add('chat-open');
+        } else if (this._kairoCardOpen) {
+            // 其他分頁:內容進浮動卡片,地圖保持全螢幕
+            if (content.parentElement !== cardBody) cardBody.appendChild(content);
+            card.classList.remove('hidden');
+            sheet.classList.add('kairo-hidden');
+        } else {
+            sheet.classList.add('kairo-hidden');
+        }
+    }
+
+    // =====================================================
     // v4.2.0 礦石鎮式地圖覆蓋層:互動提示 / NPC 快速卡 / 八卦跑馬燈 / 虛擬搖桿
     // =====================================================
     _setupTownOverlays() {
@@ -3730,6 +3834,7 @@ class RimTownApp {
         // 手機抽屜:聊天分頁給較高的面板(62vh),其他分頁 44vh 讓地圖為主
         const _sb = document.getElementById('rimtown-sidebar');
         if (_sb) _sb.classList.toggle('chat-open', this.activeTab === 'chat');
+        this._syncKairoLayout();
         const content = document.getElementById('sidebar-content');
 
         // Mobile sub-tab bar
@@ -4004,20 +4109,21 @@ class RimTownApp {
 
     _updateChatBadge() {
         const count = this._chatUnread ? this._chatUnread.size : 0;
-        const tab = document.querySelector('[data-tab="chat"]');
-        if (!tab) return;
-        let badge = tab.querySelector('.chat-badge');
-        if (count > 0) {
-            if (!badge) {
-                badge = document.createElement('span');
-                badge.className = 'chat-badge';
-                tab.style.position = 'relative';
-                tab.appendChild(badge);
+        // 同步所有聊天入口(桌面分頁 + 開羅底部列)的未讀徽章
+        document.querySelectorAll('[data-tab="chat"]').forEach(tab => {
+            let badge = tab.querySelector('.chat-badge');
+            if (count > 0) {
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'chat-badge';
+                    tab.style.position = 'relative';
+                    tab.appendChild(badge);
+                }
+                badge.textContent = count > 9 ? '9+' : count;
+            } else if (badge) {
+                badge.remove();
             }
-            badge.textContent = count > 9 ? '9+' : count;
-        } else if (badge) {
-            badge.remove();
-        }
+        });
     }
 
     _renderSkills(skillsData) {

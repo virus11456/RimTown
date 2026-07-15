@@ -3695,3 +3695,121 @@ body.rimtown-page .wp-block-post-title {
 .rimtown-container input,
 .rimtown-container select,
 .rimtown-container textarea { color: var(--text-primary); }
+
+/* ===== v4.4.0 開羅式手機 UI ===== */
+#kairo-bar, #kairo-menu, #kairo-card { display: none; }
+@media (max-width: 768px) {
+    /* 隱藏舊 tab bar;聊天抽屜收合時整個消失(回全地圖) */
+    .kairo-mode .rt-sidebar-tabs { display: none !important; }
+    .rt-sidebar.kairo-hidden { display: none !important; }
+    .kairo-mode .rt-sidebar.mobile-collapsed { display: none !important; }
+
+    /* 底部極簡列 */
+    #kairo-bar {
+        display: flex;
+        position: absolute;
+        left: 0; right: 0; bottom: 0;
+        height: calc(52px + env(safe-area-inset-bottom, 0px));
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        background: var(--bg-secondary);
+        border-top: 2px solid var(--accent);
+        z-index: 70;
+    }
+    #kairo-bar button {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: var(--text-primary);
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        position: relative;
+    }
+    #kairo-bar button + button { border-left: 1px solid var(--border); }
+    #kairo-bar button span { font-size: 0.85rem; font-weight: 700; }
+
+    /* 左側浮動選單 */
+    #kairo-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        position: absolute;
+        left: 10px;
+        top: 96px;
+        bottom: 96px;
+        width: 152px;
+        overflow-y: auto;
+        z-index: 66;
+        padding: 8px;
+        background: rgba(13, 20, 38, 0.88);
+        border: 1px solid var(--accent);
+        border-radius: 14px;
+        backdrop-filter: blur(4px);
+        animation: kairoSlide 0.18s ease;
+    }
+    #kairo-menu.hidden { display: none !important; }
+    #kairo-menu button {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 12px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-align: left;
+        flex-shrink: 0;
+    }
+    #kairo-menu .km-ic { font-size: 1.1rem; }
+    @keyframes kairoSlide { from { transform: translateX(-14px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+    /* 置中浮動卡片:地圖仍在背後 */
+    #kairo-card {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        left: 10px; right: 10px;
+        top: 88px;
+        bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+        z-index: 65;
+        background: rgba(13, 20, 38, 0.94);
+        border: 1px solid var(--accent);
+        border-radius: 14px;
+        overflow: hidden;
+        backdrop-filter: blur(5px);
+        animation: kairoPop 0.16s ease;
+    }
+    #kairo-card.hidden { display: none !important; }
+    #kairo-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+    }
+    #kairo-card-title { font-size: 0.95rem; font-weight: 700; color: var(--accent); }
+    #kairo-card-back {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        color: var(--text-primary);
+        padding: 5px 12px;
+        font-size: 0.8rem;
+    }
+    #kairo-card-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    #kairo-card-body .rt-sidebar-content { height: 100%; overflow-y: auto; }
+    @keyframes kairoPop { from { transform: scale(0.96); opacity: 0; } to { transform: none; opacity: 1; } }
+
+    /* 訪客橫幅在開羅列上方 */
+    .kairo-mode #guest-banner { bottom: calc(52px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* 開羅模式下,目標提示卡置於浮動卡/選單之下 */
+@media (max-width: 768px) {
+    .kairo-mode .quest-guidance { z-index: 62; }
+}
