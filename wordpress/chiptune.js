@@ -6,7 +6,7 @@ class ChiptuneEngine {
     constructor() {
         this.ctx = null;
         this.masterGain = null;
-        this.volume = 0.3;
+        this.volume = 0.2;
         this.muted = false;
         this.playing = false;
         this.currentTrack = null;
@@ -24,7 +24,7 @@ class ChiptuneEngine {
         if (this._initialized) return;
         this.ctx = new (window.AudioContext || window.webkitAudioContext)();
         this.masterGain = this.ctx.createGain();
-        this.masterGain.gain.value = this.muted ? 0 : this.volume;
+        this.masterGain.gain.value = this.muted ? 0 : this.volume * this.volume; // 平方感知曲線,方波不再刺耳
         this.masterGain.connect(this.ctx.destination);
         this._initialized = true;
     }
@@ -32,7 +32,7 @@ class ChiptuneEngine {
     setVolume(v) {
         this.volume = Math.max(0, Math.min(1, v));
         if (this.masterGain && !this.muted) {
-            this.masterGain.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.05);
+            this.masterGain.gain.setTargetAtTime(this.volume * this.volume, this.ctx.currentTime, 0.05);
         }
         localStorage.setItem('rimtown_bgm_volume', this.volume);
     }
@@ -40,7 +40,7 @@ class ChiptuneEngine {
     toggleMute() {
         this.muted = !this.muted;
         if (this.masterGain) {
-            this.masterGain.gain.setTargetAtTime(this.muted ? 0 : this.volume, this.ctx.currentTime, 0.05);
+            this.masterGain.gain.setTargetAtTime(this.muted ? 0 : this.volume * this.volume, this.ctx.currentTime, 0.05);
         }
         localStorage.setItem('rimtown_bgm_muted', this.muted ? '1' : '0');
         return this.muted;

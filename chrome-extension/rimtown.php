@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 4.3.0
+ * Version: 4.3.1
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '4.3.0');
+define('RIMTOWN_VERSION', '4.3.1');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -96,7 +96,7 @@ function rimtown_shortcode($atts) {
                     <label>背景音樂</label>
                     <div style="display:flex;align-items:center;gap:8px;">
                         <button id="bgm-toggle" class="btn-icon" title="靜音" style="font-size:18px;padding:4px 8px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:6px;cursor:pointer;">🔊</button>
-                        <input id="bgm-volume" type="range" min="0" max="100" value="30" style="flex:1;">
+                        <input id="bgm-volume" type="range" min="0" max="100" value="20" style="flex:1;">
                     </div>
                 </div>
                 <div class="modal-buttons">
@@ -1181,6 +1181,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '4.3.1',
+            'date'    => '2026-07-15',
+            'changes' => array(
+                '背景音樂音量修正：改用感知音量曲線（不再刺耳），預設音量調低',
+                '桌面版排版重整：單列緊湊 header、資訊改為圓角 chips、控制鈕群組靠右、訪客橫幅不再遮住標題',
+                '手機版標題列壓縮：時間/人口不再擠壓重疊，窄螢幕自動隱藏 1.5x 檔位保住選單按鈕',
+            ),
+        ),
         array(
             'version' => '4.3.0',
             'date'    => '2026-07-15',

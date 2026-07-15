@@ -3586,3 +3586,77 @@ body.rimtown-page .wp-block-post-title {
     .npc-quick-card { bottom: 130px; }
     .drama-ticker { top: 8px; font-size: 0.72rem; }
 }
+
+/* ===== v4.3.1 整體排版優化(桌面 header 重整 + 手機微調) ===== */
+/* 桌面 header:單列緊湊排版,標題內嵌、資訊做成 chips、控制鈕靠右 */
+.rimtown-container .header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 5px 12px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    min-height: 42px;
+    flex-wrap: wrap;
+}
+.rimtown-container .header h1 {
+    font-size: 1.02rem;
+    margin: 0;
+    color: var(--accent);
+    letter-spacing: 3px;
+    white-space: nowrap;
+    text-shadow: 0 0 12px rgba(0,229,255,0.35);
+}
+.rimtown-container .header-info {
+    flex: 1;
+    min-width: 0;
+}
+/* 資訊 chips:人口 / 時鐘 / 地形 / 天氣 */
+.rimtown-container .header #population-count,
+.rimtown-container .header .clock-display,
+.rimtown-container .header #terrain-display:not(:empty),
+.rimtown-container .header #weather-display:not(:empty) {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2px 10px;
+    white-space: nowrap;
+    font-size: 0.76rem;
+    line-height: 1.5;
+}
+.rimtown-container .header .controls { margin-left: auto; }
+.rimtown-container .header .version-display {
+    opacity: 0.4;
+    font-size: 0.68rem;
+    margin-left: 4px;
+}
+/* 訪客橫幅顯示時,header 下移不被壓住(桌面) */
+.rimtown-container.guest-banner-visible .header { margin-top: 25px; }
+
+/* 手機:標題不換行、header 元素不擠壓 */
+@media (max-width: 768px) {
+    .mobile-title { white-space: nowrap; flex-shrink: 0; }
+    .mobile-clock { white-space: nowrap; }
+    .rimtown-container.guest-banner-visible .header { margin-top: 0; }
+}
+
+/* 手機 header 列:壓縮字級與間距,確保 ☰ 不被擠出畫面 */
+@media (max-width: 768px) {
+    .mobile-header-row {
+        flex-wrap: nowrap !important;
+        gap: 5px !important;
+        overflow: hidden;
+        align-items: center;
+    }
+    .mobile-title { font-size: 0.78rem; }
+    .mobile-clock { font-size: 0.66rem; flex-shrink: 0; }
+    .mobile-population { font-size: 0.66rem; flex-shrink: 0; margin-left: 2px; }
+    .mobile-header-actions { margin-left: auto; flex-shrink: 0; gap: 4px !important; }
+    .mobile-menu-speed { padding: 1px !important; gap: 0 !important; }
+    .mobile-menu-speed .btn-speed { padding: 2px 5px !important; font-size: 0.64rem !important; }
+    .mobile-ctrl-btn { padding: 3px 8px !important; }
+}
+/* 窄螢幕:隱藏 1.5x 檔位,保住 ☰ */
+@media (max-width: 430px) {
+    .mobile-menu-speed .btn-speed[data-speed="1.5"] { display: none !important; }
+}
