@@ -3462,3 +3462,127 @@ body.rimtown-page .wp-block-post-title {
         padding-bottom: env(safe-area-inset-bottom);
     }
 }
+
+/* ===== v4.2.0 礦石鎮式操作覆蓋層 ===== */
+.interact-prompt {
+    position: absolute;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: rgba(15, 22, 40, 0.92);
+    border: 1px solid var(--accent);
+    border-radius: 20px;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+    animation: ipPop 0.18s ease;
+}
+.interact-prompt.hidden { display: none !important; }
+.interact-prompt .ip-hearts { color: #ff6b9d; font-size: 0.8rem; }
+.interact-prompt .ip-key {
+    background: var(--accent);
+    color: #0b1020;
+    font-weight: 700;
+    border-radius: 4px;
+    padding: 1px 7px;
+    font-size: 0.75rem;
+}
+@keyframes ipPop { from { transform: translateX(-50%) scale(0.85); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
+
+.drama-ticker {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 55;
+    max-width: min(520px, calc(100% - 24px));
+    padding: 6px 16px;
+    background: linear-gradient(135deg, rgba(60,20,50,0.92), rgba(40,15,60,0.92));
+    border: 1px solid #ff6b9d;
+    border-radius: 16px;
+    color: #ffd7e6;
+    font-size: 0.78rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+}
+.drama-ticker.hidden { display: none !important; }
+.drama-ticker.drama-slide { animation: dramaIn 0.4s ease; }
+@keyframes dramaIn { from { transform: translateX(-50%) translateY(-16px); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }
+
+.npc-quick-card {
+    position: absolute;
+    bottom: 64px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 70;
+    width: min(300px, calc(100% - 32px));
+    padding: 12px 14px;
+    background: linear-gradient(160deg, rgba(20,30,52,0.97), rgba(14,20,38,0.97));
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    color: var(--text-primary);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.55);
+    animation: ipPop 0.16s ease;
+}
+.npc-quick-card.hidden { display: none !important; }
+.npc-quick-card .nqc-close {
+    position: absolute; top: 6px; right: 8px;
+    background: none; border: none; color: var(--text-secondary);
+    font-size: 0.95rem; cursor: pointer; padding: 2px 6px;
+}
+.npc-quick-card .nqc-name { font-size: 0.95rem; font-weight: 700; margin-bottom: 2px; }
+.npc-quick-card .nqc-job { font-size: 0.72rem; color: var(--accent); font-weight: 400; margin-left: 4px; }
+.npc-quick-card .nqc-hearts { font-size: 0.8rem; margin-bottom: 6px; letter-spacing: 1px; }
+.npc-quick-card .nqc-lv { font-size: 0.7rem; color: var(--text-secondary); margin-left: 4px; }
+.npc-quick-card .nqc-rel { font-size: 0.76rem; padding: 2px 0; color: #ffd7e6; }
+.npc-quick-card .nqc-dim { color: var(--text-secondary); }
+.npc-quick-card .nqc-btns { display: flex; gap: 8px; margin-top: 10px; }
+.npc-quick-card .nqc-btns button {
+    flex: 1;
+    padding: 7px 0;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+.npc-quick-card .nqc-chat { background: var(--accent) !important; color: #0b1020 !important; font-weight: 700; border-color: var(--accent) !important; }
+
+.vjoy {
+    position: absolute;
+    left: 16px;
+    bottom: 20px;
+    z-index: 65;
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: rgba(20, 30, 52, 0.35);
+    border: 2px solid rgba(120, 160, 220, 0.4);
+    touch-action: none;
+    backdrop-filter: blur(2px);
+}
+.vjoy .vjoy-knob {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 42px; height: 42px;
+    margin: -21px 0 0 -21px;
+    border-radius: 50%;
+    background: rgba(140, 180, 240, 0.55);
+    border: 2px solid rgba(200, 225, 255, 0.7);
+    pointer-events: none;
+}
+
+@media (max-width: 768px) {
+    .interact-prompt { bottom: 128px; font-size: 0.8rem; }
+    .npc-quick-card { bottom: 130px; }
+    .drama-ticker { top: 8px; font-size: 0.72rem; }
+}

@@ -231,6 +231,11 @@ class PixelTileMap {
         this.grid = null;
         this.tileCache = {};
         this.agentPositions = {}; // {agentId: {x, y, targetX, targetY}}
+        // v4.2.0 礦石鎮式直接操作
+        this.playerInput = { x: 0, y: 0 };  // 鍵盤/搖桿方向輸入(-1..1)
+        this.followPlayer = false;           // 手動移動時鏡頭跟隨(手動平移會取消)
+        this.agentEmotes = {};               // {agentId: emoji} 愛恨糾葛頭上表情
+        this.onPlayerMoved = null;           // 手動移動回呼 (x, y)
         this.buildingZones = {}; // {locationId: {x,y,w,h,doorPixelX,doorPixelY}}
         this.natureZones = {};   // {locationId: {x,y,w,h}}
         this.labelPositions = {};
@@ -355,6 +360,8 @@ class PixelTileMap {
             if (pointers.size === 1 && isPanning) {
                 const dx = (e.clientX - panStartX) / this.zoom;
                 const dy = (e.clientY - panStartY) / this.zoom;
+                // 手動平移 → 取消鏡頭跟隨(有實際位移才算)
+                if (Math.abs(dx) + Math.abs(dy) > 3) this.followPlayer = false;
                 this.camX = camStartX - dx;
                 this.camY = camStartY - dy;
                 this._clampCamera();
@@ -2285,10 +2292,97 @@ class PixelTileMap {
         return result;
     }
 
+    // v4.2.0 礦石鎮式直接操作:方向輸入 → 玩家自由移動(像素級,牆壁碰撞+滑牆)
+    // 手動模式具黏性:按下方向鍵進入,點擊地圖移動時退出(回到目標制)
+    _updateManualPlayer() {
+        const pos = this.agentPositions['player'];
+        if (!pos) { this._playerManual = false; return; }
+        const ix = this.playerInput.x, iy = this.playerInput.y;
+        const inputActive = !!(ix || iy);
+        if (this._playerClickTarget) this._playerManual = false;
+        if (inputActive) this._playerManual = true;
+        if (!this._playerManual) return;
+        if (!inputActive) {
+            if (pos.walking) { pos.walking = false; pos.walkStep = 0; }
+            this._followCamera(pos);
+            return;
+        }
+        const mag = Math.min(1, Math.hypot(ix, iy)) || 1;
+        // 依時間計速(與 frame rate 無關):約 4.5 tile/秒的礦石鎮步行感
+        const PLAYER_SPEED = 72; // px/秒
+        const now = performance.now();
+        const dt = Math.min(50, now - (this._manualLastT || now)) / 1000;
+        this._manualLastT = now;
+        const step = PLAYER_SPEED * dt * Math.min(1, Math.hypot(ix, iy));
+        const dx = (ix / mag) * step;
+        const dy = (iy / mag) * step;
+        // 分軸碰撞:撞牆時沿牆滑行
+        const M = 4; // 邊界留白(px)
+        const nx = Math.max(M, Math.min(this.mapWidth - M, pos.x + dx));
+        const ny = Math.max(M, Math.min(this.mapHeight - M, pos.y + dy));
+        if (this._isWalkableTile(nx, pos.y)) pos.x = nx;
+        if (this._isWalkableTile(pos.x, ny)) pos.y = ny;
+        pos.targetX = pos.x;
+        pos.targetY = pos.y;
+        pos._pathWaypoints = null;
+        pos.walking = true;
+        pos.walkStep = (pos.walkStep || 0) + 1;
+        if (dx) pos.facing = dx > 0 ? 1 : -1;
+        this.followPlayer = true;
+        this._followCamera(pos);
+        if (this.onPlayerMoved) this.onPlayerMoved(pos.x, pos.y);
+    }
+
+    // 鏡頭平滑跟隨玩家(手動平移地圖會關閉,再次輸入方向重新開啟)
+    _followCamera(pos) {
+        if (!this.followPlayer || !this._viewW) return;
+        const vw = this._viewW / this.zoom;
+        const vh = this._viewH / this.zoom;
+        const targetCamX = pos.x - vw / 2;
+        const targetCamY = pos.y - vh / 2;
+        this.camX += (targetCamX - this.camX) * 0.12;
+        this.camY += (targetCamY - this.camY) * 0.12;
+        this._clampCamera();
+    }
+
+    // 玩家所在的地點 zone(手動移動時同步邏輯位置用)
+    getLocationAt(px, py) {
+        let best = null, bestArea = Infinity;
+        for (const [locId, zone] of Object.entries(this.buildingZones)) {
+            if (px >= zone.x * TILE && px < (zone.x + zone.w) * TILE &&
+                py >= zone.y * TILE && py < (zone.y + zone.h) * TILE) {
+                const area = zone.w * zone.h;
+                if (area < bestArea) { bestArea = area; best = locId; }
+            }
+        }
+        if (best) return best;
+        for (const [locId, zone] of Object.entries(this.natureZones)) {
+            if (px >= zone.x * TILE && px < (zone.x + zone.w) * TILE &&
+                py >= zone.y * TILE && py < (zone.y + zone.h) * TILE) return locId;
+        }
+        return null;
+    }
+
+    // 距離玩家最近的 NPC(走近互動提示用),maxDist 為地圖像素
+    getNearbyNPC(maxDist = TILE * 2.5) {
+        const p = this.agentPositions['player'];
+        if (!p) return null;
+        let best = null, bestDist = maxDist;
+        for (const [aid, pos] of Object.entries(this.agentPositions)) {
+            if (aid === 'player') continue;
+            const d = Math.hypot(pos.x - p.x, pos.y - p.y);
+            if (d < bestDist) { bestDist = d; best = aid; }
+        }
+        return best ? { agentId: best, dist: bestDist } : null;
+    }
+
     updateAgents(agents, locations, chatTarget) {
         this.chatTarget = chatTarget || null;
         const WALK_SPEED = 0.3; // pixels per frame — slow leisurely pace
+        this._updateManualPlayer();
         for (const [aid, agent] of Object.entries(agents)) {
+            // 手動操作中的玩家由 _updateManualPlayer 處理,跳過地點目標制
+            if (aid === 'player' && this._playerManual) continue;
             const curLoc = agent.current_location;
             let targetX, targetY;
 
@@ -3109,6 +3203,14 @@ class PixelTileMap {
             // Action animation overlay for farming NPCs
             if (!pos.walking && pos.atFarm && (pos.job === 'farmer' || pos.activity === 'working') && !isPlayer) {
                 this._drawFarmAction(ctx, pos.x, pos.y, this.animFrame, aid);
+            }
+            // v4.2.0 愛恨糾葛頭上表情(💘 暗戀 / 💕 交往 / 💍 已婚 / 🖤 出軌 / 💢 敵對)
+            const emote = this.agentEmotes[aid];
+            if (emote && !isPlayer) {
+                const bob = Math.sin(this.animFrame / 12 + pos.x) * 1.5;
+                ctx.font = '9px serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(emote, pos.x, pos.y - 24 + bob);
             }
         }
 

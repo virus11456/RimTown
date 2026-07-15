@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 4.1.8
+ * Version: 4.2.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '4.1.8');
+define('RIMTOWN_VERSION', '4.2.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1180,6 +1180,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '4.2.0',
+            'date'    => '2026-07-15',
+            'changes' => array(
+                '礦石鎮物語式直接操作：WASD/方向鍵按住即可自由移動角色（像素級移動、撞牆滑行、鏡頭自動跟隨）',
+                '手機版新增虛擬搖桿（地圖左下角），拖曳即可移動角色',
+                '走近村民自動出現「交談」提示（含好感愛心等級），按 E 或點提示立即開聊',
+                '點擊村民改為先顯示快速資訊卡：好感愛心、職業、心情，以及他目前愛誰恨誰的八卦',
+                '愛恨糾葛看得見：戀愛/已婚/暗戀/出軌/敵對的村民頭上會輪播 💕💍💘🖤💢 表情',
+                '新增八卦跑馬燈：鎮上發生戀情、劈腿、打架等大事時即時播報在地圖上方',
+            ),
+        ),
         array(
             'version' => '4.1.8',
             'date'    => '2026-07-15',

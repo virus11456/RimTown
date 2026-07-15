@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v4.1.8
-const RIMTOWN_APP_VERSION = '4.1.8';
+// RimTown - Frontend App (WordPress Plugin) v4.2.0
+const RIMTOWN_APP_VERSION = '4.2.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -2079,8 +2079,18 @@ class RimTownApp {
             console.log('[RimTown] mapPanel rect:', JSON.stringify({top:rect.top,left:rect.left,width:rect.width,height:rect.height}));
         }
         this.tileMap = new PixelTileMap(canvas);
-        this.tileMap.onClick = (locId) => this.playerMoveTo(locId);
+        this.tileMap.onClick = (locId) => { this._hideNpcCard(); this.playerMoveTo(locId); };
         this.tileMap.onAgentClick = (agentId) => this.onAgentClick(agentId);
+        // v4.2.0 礦石鎮式操作:手動移動時同步玩家邏輯位置(節流 400ms)
+        this.tileMap.onPlayerMoved = (x, y) => {
+            const now = Date.now();
+            if (this._locSyncAt && now - this._locSyncAt < 400) return;
+            this._locSyncAt = now;
+            const loc = this.tileMap.getLocationAt(x, y);
+            const player = this.world?.agents?.['player'];
+            if (loc && player && player.currentLocation !== loc) player.currentLocation = loc;
+        };
+        this._setupTownOverlays();
         this._generateTileMapLayout();
     }
 
@@ -2125,6 +2135,7 @@ class RimTownApp {
                 this.tileMap.render(agents, this.selectedAgent, player?.current_location, this.world?.buildings?.completed || [], {
                     farm: this.state?.farm, processing: this.state?.processing, industry: this.state?.industry,
                 });
+                this._updateTownOverlays();
             }
             requestAnimationFrame(loop);
         };
@@ -2664,6 +2675,12 @@ class RimTownApp {
             if (!document.getElementById('rimtown-app')) return;
             this._handleMovementKey(e);
         });
+        // v4.2.0:keyup 釋放方向鍵;視窗失焦時清空避免卡鍵
+        document.addEventListener('keyup', (e) => this._handleMovementKeyUp(e));
+        window.addEventListener('blur', () => {
+            if (this._keysDown) this._keysDown.clear();
+            this._syncPlayerInput();
+        });
     }
 
     setupControlListeners() {
@@ -3094,33 +3111,46 @@ class RimTownApp {
         }
     }
 
+    // v4.2.0 礦石鎮式操作:按住 WASD/方向鍵連續移動(keydown 記錄、keyup 釋放)
     _handleMovementKey(e) {
         if (!this.tileMap || !this.world) return;
         const key = e.key.toLowerCase();
-        // WASD / Arrow keys for directional movement
-        const dirMap = { w:'up', arrowup:'up', s:'down', arrowdown:'down', a:'left', arrowleft:'left', d:'right', arrowright:'right' };
-        const dir = dirMap[key];
-        if (dir) {
+        const DIR_KEYS = { w:1, arrowup:1, s:1, arrowdown:1, a:1, arrowleft:1, d:1, arrowright:1 };
+        if (DIR_KEYS[key]) {
             e.preventDefault();
-            const target = this._getAdjacentLocation(dir);
-            if (target) this.playerMoveTo(target);
+            if (!this._keysDown) this._keysDown = new Set();
+            this._keysDown.add(key);
+            this._syncPlayerInput();
             return;
         }
-        // E key: interact with nearest NPC at same location
+        // E 鍵:與身邊最近的 NPC 交談(2.5 格內)
         if (key === 'e') {
             e.preventDefault();
-            const player = this.state?.agents?.['player'];
-            if (!player) return;
-            const npcsHere = Object.entries(this.state.agents)
-                .filter(([id, a]) => id !== 'player' && a.current_location === player.current_location)
-                .map(([id]) => id);
-            if (npcsHere.length) {
-                // Chat with the first NPC found, or cycle through if already chatting
-                const nextIdx = this.chatTarget ? (npcsHere.indexOf(this.chatTarget) + 1) % npcsHere.length : 0;
-                this.startChatWith(npcsHere[nextIdx]);
-            }
+            this._interactNearby();
             return;
         }
+    }
+
+    _handleMovementKeyUp(e) {
+        const key = e.key.toLowerCase();
+        if (this._keysDown && this._keysDown.delete(key)) this._syncPlayerInput();
+    }
+
+    _syncPlayerInput() {
+        if (!this.tileMap) return;
+        const k = this._keysDown || new Set();
+        let x = 0, y = 0;
+        if (k.has('a') || k.has('arrowleft')) x -= 1;
+        if (k.has('d') || k.has('arrowright')) x += 1;
+        if (k.has('w') || k.has('arrowup')) y -= 1;
+        if (k.has('s') || k.has('arrowdown')) y += 1;
+        this.tileMap.playerInput = { x, y };
+    }
+
+    // 與最近的 NPC 互動(E 鍵 / 互動提示點擊 / 手機互動鈕共用)
+    _interactNearby() {
+        const near = this.tileMap?.getNearbyNPC?.();
+        if (near) this.startChatWith(near.agentId);
     }
 
     _getAdjacentLocation(direction) {
@@ -3463,17 +3493,220 @@ class RimTownApp {
         // This method is kept as a no-op for compatibility
     }
 
+    // v4.2.0:點 NPC → 先開快速資訊卡(好感愛心 + 愛恨對象),卡上按「交談」才走過去聊
     onAgentClick(agentId) {
+        this._showNpcCard(agentId);
+    }
+
+    _walkToAndChat(agentId) {
         const player = this.state?.agents?.['player'];
         const target = this.state?.agents?.[agentId];
         if (!player || !target) return;
-        if (player.current_location === target.current_location) {
-            this.startChatWith(agentId);
-        } else {
-            // Move to NPC's location and start chat
+        if (player.current_location !== target.current_location) {
             this.playerMoveTo(target.current_location);
-            this.startChatWith(agentId);
         }
+        this.startChatWith(agentId);
+    }
+
+    // =====================================================
+    // v4.2.0 礦石鎮式地圖覆蓋層:互動提示 / NPC 快速卡 / 八卦跑馬燈 / 虛擬搖桿
+    // =====================================================
+    _setupTownOverlays() {
+        const panel = document.querySelector('.map-panel');
+        if (!panel || this._overlaysReady) return;
+        this._overlaysReady = true;
+
+        // 走近 NPC 的互動提示(點擊 = E)
+        const prompt = document.createElement('button');
+        prompt.id = 'interact-prompt';
+        prompt.className = 'interact-prompt hidden';
+        prompt.addEventListener('click', () => this._interactNearby());
+        panel.appendChild(prompt);
+
+        // 八卦跑馬燈
+        const ticker = document.createElement('div');
+        ticker.id = 'drama-ticker';
+        ticker.className = 'drama-ticker hidden';
+        panel.appendChild(ticker);
+
+        // NPC 快速資訊卡
+        const card = document.createElement('div');
+        card.id = 'npc-quick-card';
+        card.className = 'npc-quick-card hidden';
+        panel.appendChild(card);
+
+        // 手機虛擬搖桿(僅觸控裝置)
+        if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
+            this._setupVirtualJoystick(panel);
+        }
+    }
+
+    _setupVirtualJoystick(panel) {
+        const base = document.createElement('div');
+        base.id = 'vjoy';
+        base.className = 'vjoy';
+        const knob = document.createElement('div');
+        knob.className = 'vjoy-knob';
+        base.appendChild(knob);
+        panel.appendChild(base);
+        const R = 38; // 搖桿最大半徑(px)
+        let active = null;
+        const setInput = (dx, dy) => {
+            const mag = Math.hypot(dx, dy);
+            const c = mag > R ? R / mag : 1;
+            knob.style.transform = `translate(${dx * c}px, ${dy * c}px)`;
+            if (this.tileMap) this.tileMap.playerInput = { x: (dx * c) / R, y: (dy * c) / R };
+        };
+        base.addEventListener('pointerdown', (e) => {
+            e.preventDefault(); e.stopPropagation();
+            active = e.pointerId;
+            base.setPointerCapture(e.pointerId);
+            const r = base.getBoundingClientRect();
+            this._vjoyCX = r.left + r.width / 2; this._vjoyCY = r.top + r.height / 2;
+            setInput(e.clientX - this._vjoyCX, e.clientY - this._vjoyCY);
+        });
+        base.addEventListener('pointermove', (e) => {
+            if (e.pointerId !== active) return;
+            e.preventDefault(); e.stopPropagation();
+            setInput(e.clientX - this._vjoyCX, e.clientY - this._vjoyCY);
+        });
+        const end = (e) => {
+            if (e.pointerId !== active) return;
+            active = null;
+            knob.style.transform = 'translate(0px, 0px)';
+            if (this.tileMap) this.tileMap.playerInput = { x: 0, y: 0 };
+        };
+        base.addEventListener('pointerup', end);
+        base.addEventListener('pointercancel', end);
+    }
+
+    // NPC 對玩家的好感 → 礦石鎮式愛心等級(0-10)
+    _heartsFor(npcId) {
+        const rel = this.state?.agents?.[npcId]?.relationships?.['player'];
+        const aff = rel ? (rel.affinity || 0) : 0;
+        return Math.max(0, Math.min(10, Math.round((aff + 100) / 20)));
+    }
+
+    // 每 frame 由 render loop 呼叫(內部節流)
+    _updateTownOverlays() {
+        const now = Date.now();
+        if (this._overlayAt && now - this._overlayAt < 200) return;
+        this._overlayAt = now;
+        this._updateInteractPrompt();
+        this._updateAgentEmotes();
+        this._updateDramaTicker();
+    }
+
+    _updateInteractPrompt() {
+        const el = document.getElementById('interact-prompt');
+        if (!el || !this.tileMap) return;
+        const near = this.tileMap.getNearbyNPC ? this.tileMap.getNearbyNPC() : null;
+        if (!near || this.chatTarget === near.agentId) { el.classList.add('hidden'); return; }
+        const npc = this.state?.agents?.[near.agentId];
+        if (!npc) { el.classList.add('hidden'); return; }
+        const lv = this._heartsFor(near.agentId);
+        el.innerHTML = `💬 ${t('與')} <b>${npc.name}</b> ${t('交談')} <span class="ip-hearts">❤${lv}</span><span class="ip-key">E</span>`;
+        el.classList.remove('hidden');
+    }
+
+    // 愛恨糾葛頭上表情:每 NPC 取最強烈的關係狀態,錯開輪播(每 12 秒亮 3 秒)
+    _updateAgentEmotes() {
+        if (!this.tileMap || !this.state?.agents) return;
+        const win = Math.floor(Date.now() / 3000);
+        const emotes = {};
+        for (const [aid, a] of Object.entries(this.state.agents)) {
+            if (aid === 'player' || !a.relationships) continue;
+            let best = null;
+            for (const r of Object.values(a.relationships)) {
+                if (r.target_id === 'player') continue;
+                if (r.is_cheating) { best = '🖤'; break; }
+                if (r.status === 'dating') best = best || '💕';
+                else if (r.status === 'married') best = best || '💍';
+                else if ((r.romantic_interest || 0) > 50 && !r.status) best = best || '💘';
+                else if ((r.affinity || 0) < -60) best = best || '💢';
+            }
+            if (!best) continue;
+            let h = 0;
+            for (let i = 0; i < aid.length; i++) h = (h * 31 + aid.charCodeAt(i)) & 0xffff;
+            if ((win + h) % 4 === 0) emotes[aid] = best;
+        }
+        this.tileMap.agentEmotes = emotes;
+    }
+
+    // 八卦跑馬燈:即時播報戀愛/衝突/八卦事件
+    _updateDramaTicker() {
+        const el = document.getElementById('drama-ticker');
+        const log = this.world?.messageLog;
+        if (!el || !log) return;
+        if (this._dramaIdx == null) this._dramaIdx = log.length;
+        const DRAMA_TYPES = { relationship: '💘', drama: '🎭', incident: '💥' };
+        while (this._dramaIdx < log.length) {
+            const m = log[this._dramaIdx++];
+            const icon = DRAMA_TYPES[m.type];
+            if (icon) {
+                if (!this._dramaQueue) this._dramaQueue = [];
+                if (this._dramaQueue.length < 6) this._dramaQueue.push(`${icon} ${m.content}`);
+            }
+        }
+        const now = Date.now();
+        if (this._dramaQueue?.length && (!this._dramaShownAt || now - this._dramaShownAt > 5500)) {
+            el.textContent = this._dramaQueue.shift();
+            el.classList.remove('hidden');
+            el.classList.remove('drama-slide');
+            void el.offsetWidth; // 重觸發動畫
+            el.classList.add('drama-slide');
+            this._dramaShownAt = now;
+        } else if (this._dramaShownAt && now - this._dramaShownAt > 5000) {
+            el.classList.add('hidden');
+        }
+    }
+
+    _showNpcCard(agentId) {
+        const card = document.getElementById('npc-quick-card');
+        const a = this.state?.agents?.[agentId];
+        if (!card || !a) return;
+        const lv = this._heartsFor(agentId);
+        const hearts = '❤️'.repeat(Math.ceil(lv / 2)) + '🖤'.repeat(5 - Math.ceil(lv / 2));
+        // 感情狀態掃描
+        const lines = [];
+        const rels = a.relationships || {};
+        for (const r of Object.values(rels)) {
+            if (r.target_id === 'player') continue;
+            if (r.status === 'married') lines.push(`💍 ${t('與')} ${r.target_name} ${t('是夫妻')}${r.is_cheating ? ' 🖤' : ''}`);
+            else if (r.status === 'dating') lines.push(`💕 ${t('與')} ${r.target_name} ${t('交往中')}${r.is_cheating ? ' 🖤' : ''}`);
+            else if (r.status === 'ex') lines.push(`💔 ${t('與')} ${r.target_name} ${t('是前任')}`);
+        }
+        const crushes = Object.values(rels).filter(r => r.target_id !== 'player' && !r.status && (r.romantic_interest || 0) > 50).slice(0, 2);
+        crushes.forEach(r => lines.push(`💘 ${t('暗戀')} ${r.target_name}`));
+        const foes = Object.values(rels).filter(r => r.target_id !== 'player' && (r.affinity || 0) < -60).slice(0, 2);
+        foes.forEach(r => lines.push(`💢 ${t('與')} ${r.target_name} ${t('是死對頭')}`));
+        const relHtml = lines.length ? lines.map(l => `<div class="nqc-rel">${l}</div>`).join('') : `<div class="nqc-rel nqc-dim">${t('目前沒有戀愛或仇恨傳聞')}</div>`;
+        card.innerHTML = `
+            <button class="nqc-close" data-nqc="close">✕</button>
+            <div class="nqc-name">${a.name} <span class="nqc-job">${a.job?.title || ''}</span></div>
+            <div class="nqc-hearts" title="${t('對你的好感')}">${hearts} <span class="nqc-lv">${lv}/10</span></div>
+            ${relHtml}
+            <div class="nqc-btns">
+                <button class="nqc-chat" data-nqc="chat">💬 ${t('交談')}</button>
+                <button class="nqc-detail" data-nqc="detail">📋 ${t('詳情')}</button>
+            </div>`;
+        card.onclick = (e) => {
+            const act = e.target?.dataset?.nqc;
+            if (act === 'close') this._hideNpcCard();
+            else if (act === 'chat') { this._hideNpcCard(); this._walkToAndChat(agentId); }
+            else if (act === 'detail') {
+                this._hideNpcCard();
+                this.selectedAgent = agentId;
+                this.activeTab = 'detail';
+                this._updateTabHighlight('detail');
+                this.renderSidebar();
+            }
+        };
+        card.classList.remove('hidden');
+    }
+
+    _hideNpcCard() {
+        document.getElementById('npc-quick-card')?.classList.add('hidden');
     }
 
     renderSidebar() {
@@ -5951,6 +6184,7 @@ class RimTownApp {
     const init = () => {
         if (!document.getElementById('rimtown-app') && !document.getElementById('town-map-canvas')) return;
         const app = new RimTownApp();
+        window.rimtownApp = app; // 除錯/測試用全域參照
         window.addEventListener('resize', () => { if (app.state) app.renderMap(); });
         if (I18N.getLang() !== 'zh') {
             I18N.setLang(I18N.getLang());
