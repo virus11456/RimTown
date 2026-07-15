@@ -15,13 +15,11 @@
 - 存檔：未登入/訪客 → localStorage；已登入 → WordPress 雲端（user meta）
 - 線上站點：rimtown.cc（WordPress）
 
-## 2. Git / PR 狀態
+## 2. Git / PR 狀態（2026-07-15 更新）
 
-- **工作分支**：`claude/rimtown-feature-planning-qFoXd`（所有開發都在此，push 需 `-u origin <branch>`）
-- **PR #3**：`claude/rimtown-feature-planning-qFoXd` → `claude/ai-town-simulation-EOWZ8`，open、mergeable、無 CI、無 review comments
-- 最新 commit：`41d0fc3` fix: 移除 guest-banner inline style
+- 使用者要求整併分支：**PR #3 已合併**，所有開發現在集中在預設分支 **`claude/ai-town-simulation-EOWZ8`**，之後直接在此分支開發
+- 已合併的舊分支 `claude/rimtown-feature-planning-qFoXd`、`claude/update-version-numbers-3HJR2` 內容已全數併入；遠端刪除被環境 proxy 擋（403），使用者可自行在 GitHub 網頁上刪除
 - 工作樹乾淨，全部已推送
-- 注意：舊 session 訂閱了 PR #3 webhook 並排了 1 小時後的自動檢查，那些通知只會進舊視窗；新視窗如需監控請重新訂閱
 
 ## 3. ⚠️ 版號同步規範（使用者非常在意，漏掉會被糾正）
 
@@ -57,24 +55,17 @@
 
 **結論**：可以跑。遊戲是純前端，靜態託管即可完整遊玩（訪客模式 + localStorage 存檔）。只有登入/雲端存檔/成就同步依賴 WordPress REST API，靜態版無法使用（登入會顯示失敗但不會壞掉遊戲）。
 
-**已嘗試**：用 Vercel MCP `deploy_to_vercel` 部署，方案是傳一個小 `build.sh`（因為遊戲檔案 ~1.4MB 無法 inline 傳），build 時從 GitHub clone 公開 repo、把 `wordpress/` 靜態檔 + `chrome-extension/icons` 複製到 `public/` 輸出：
+**進度（2026-07-15）**：部署設定檔已 commit 到 repo 根目錄，本地驗證過 build 產出正確：
+- `vercel.json`（`outputDirectory: public`）
+- `package.json`（`build: bash build.sh`）
+- `build.sh` — 兩用：repo 已 checkout 時（GitHub import）直接複製；只有設定檔時（`deploy_to_vercel`）先 clone `claude/ai-town-simulation-EOWZ8` 分支。產出 = `wordpress/` 的 js/css/html + `pwa-manifest.json` + `chrome-extension/icons` → `public/`
 
-```bash
-git clone --depth 1 -b claude/rimtown-feature-planning-qFoXd https://github.com/virus11456/RimTown.git repo
-mkdir -p public
-cp repo/wordpress/*.js repo/wordpress/*.css repo/wordpress/*.html public/
-cp repo/wordpress/pwa-manifest.json public/
-cp -r repo/chrome-extension/icons public/icons
-```
+**Blocker（仍未解）**：`deploy_to_vercel` 回 **403 "You don't have permission to create a project"**（team `team_SQDuwfJ6mh6QlhQdBWLfeWiV` / virus11456s-projects）。該 team 有 14 個專案但沒有 `rimtown`，整合權限無法建新專案。2026-07-15 重試仍是 403。
 
-（搭配 `package.json` 的 `"build": "bash build.sh"` 和 `vercel.json` 的 `"outputDirectory": "public"`）
-
-**Blocker**：Vercel API 回 **403 "You don't have permission to create a project"**（team `team_SQDuwfJ6mh6QlhQdBWLfeWiV` / virus11456s-projects）。該 team 已有 14 個專案但沒有 `rimtown`，整合的權限無法建新專案。
-
-**下一步（擇一）**：
-1. 請使用者到 Vercel dashboard 手動建立空專案 `rimtown`，然後重試上面的 `deploy_to_vercel`（部署到既有專案可能不需要建立權限）
-2. 或請使用者在 Vercel dashboard 直接 Import GitHub repo `virus11456/RimTown`，Root Directory 設 `wordpress/`（但 icons 會缺，需另外處理）
-3. 或請使用者重新授權 Vercel 整合、給予建立專案權限
+**下一步（擇一，都需要使用者操作）**：
+1. 使用者在 Vercel dashboard 直接 **Import GitHub repo** `virus11456/RimTown`（Production Branch 設 `claude/ai-town-simulation-EOWZ8`）——設定檔已在 repo 根目錄，import 即可用，之後每次 push 自動部署（推薦）
+2. 或使用者在 dashboard 手動建立空專案 `rimtown`，然後重試 `deploy_to_vercel`（部署到既有專案可能不需建立權限）
+3. 或使用者重新授權 Vercel 整合、給予建立專案權限，然後重試
 
 **後續（如果使用者想要完整功能）**：把 WordPress REST API（login/register/saves/achievements，見 `rimtown.php` 約 826-1074 行）移植成 Vercel serverless functions + 資料庫（如 Vercel Postgres / Supabase），前端 `RimTownAuth` 的 `_restUrl` 指向新端點。
 
