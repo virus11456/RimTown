@@ -51,7 +51,7 @@
 - v4.1.4：8-bit chiptune BGM（Web Audio 程序化合成，4 首曲目隨日夜切換；`bgm.loadCustomTrack(phase, url)` 可換自訂音檔——使用者說之後會提供音樂檔）
 - v4.1.5–4.1.6：訪客試玩模式（登入彈窗「🎮 訪客試玩」按鈕、guest banner、手機版 banner 固定在底部 tab bar 上方 `bottom:52px`）
 
-## 6. 🚧 進行中任務：搬到 Vercel（未完成，最優先）
+## 6. ✅ Vercel 部署（已完成 2026-07-15）
 
 **結論**：可以跑。遊戲是純前端，靜態託管即可完整遊玩（訪客模式 + localStorage 存檔）。只有登入/雲端存檔/成就同步依賴 WordPress REST API，靜態版無法使用（登入會顯示失敗但不會壞掉遊戲）。
 
@@ -71,6 +71,6 @@
 
 ## 7. 待辦 / 使用者提過的期望
 
-- [ ] **Vercel 部署**（上節，最優先）
+- [x] **Vercel 部署** — 已上線 https://rimtown.vercel.app,GitHub push 自動部署已綁定
 - [ ] 使用者之後會提供 8-bit 音樂檔，用 `bgm.loadCustomTrack()` 接上
 - [ ] 完成任何變動後：bump 版號 + 更新 README/changelog + 同步兩目錄 + commit + push（第 3、4 節）
