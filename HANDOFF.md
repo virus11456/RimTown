@@ -17,11 +17,10 @@
 
 ## 2. Git / PR 狀態
 
-- **工作分支**：`claude/rimtown-feature-planning-qFoXd`（所有開發都在此，push 需 `-u origin <branch>`）
-- **PR #3**：`claude/rimtown-feature-planning-qFoXd` → `claude/ai-town-simulation-EOWZ8`，open、mergeable、無 CI、無 review comments
-- 最新 commit：`41d0fc3` fix: 移除 guest-banner inline style
+- **PR #3 已合併**（2026-07-15）：v4.0–v4.1.6 全部功能已進入預設分支 `claude/ai-town-simulation-EOWZ8`
+- **工作分支**：`claude/rimtown-feature-planning-qFoXd`，已從合併後的預設分支重新建立（合併過的 PR 不能再堆 commit，後續工作視為全新變更、開新 PR）
+- push 用 `git push -u origin claude/rimtown-feature-planning-qFoXd`；push 後若無 open PR 要開新的 draft PR（base：`claude/ai-town-simulation-EOWZ8`）
 - 工作樹乾淨，全部已推送
-- 注意：舊 session 訂閱了 PR #3 webhook 並排了 1 小時後的自動檢查，那些通知只會進舊視窗；新視窗如需監控請重新訂閱
 
 ## 3. ⚠️ 版號同步規範（使用者非常在意，漏掉會被糾正）
 
@@ -60,7 +59,8 @@
 **已嘗試**：用 Vercel MCP `deploy_to_vercel` 部署，方案是傳一個小 `build.sh`（因為遊戲檔案 ~1.4MB 無法 inline 傳），build 時從 GitHub clone 公開 repo、把 `wordpress/` 靜態檔 + `chrome-extension/icons` 複製到 `public/` 輸出：
 
 ```bash
-git clone --depth 1 -b claude/rimtown-feature-planning-qFoXd https://github.com/virus11456/RimTown.git repo
+git clone --depth 1 -b claude/ai-town-simulation-EOWZ8 https://github.com/virus11456/RimTown.git repo
+# （PR #3 已合併，改 clone 預設分支——內容包含全部 v4.1.6 功能）
 mkdir -p public
 cp repo/wordpress/*.js repo/wordpress/*.css repo/wordpress/*.html public/
 cp repo/wordpress/pwa-manifest.json public/
