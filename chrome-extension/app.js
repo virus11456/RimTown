@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v4.4.0
-const RIMTOWN_APP_VERSION = '4.4.0';
+// RimTown - Frontend App (WordPress Plugin) v4.4.1
+const RIMTOWN_APP_VERSION = '4.4.1';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -946,6 +946,7 @@ class RimTownApp {
     }
 
     _showAchievementToast(def) {
+        this.bgm?.sfx?.('coin');
         this._showCenterNotification({
             icon: def.icon,
             title: t('成就解鎖！'),
@@ -3546,6 +3547,12 @@ class RimTownApp {
             <button id="kairo-chat-btn" data-tab="chat">💬 <span>${t('聊天')}</span></button>`;
         root.appendChild(bar);
 
+        // 底部狀態帶(機場物語式:繁榮/銀幣/食物/人口)
+        const status = document.createElement('div');
+        status.id = 'kairo-status';
+        root.appendChild(status);
+        status.addEventListener('click', () => { this.bgm?.sfx?.('click'); this._openKairoTab('economy'); });
+
         // 左側浮動選單
         const menu = document.createElement('div');
         menu.id = 'kairo-menu';
@@ -3576,7 +3583,9 @@ class RimTownApp {
         document.getElementById('kairo-menu-btn').addEventListener('click', () => {
             card.classList.add('hidden');
             this._kairoCardOpen = false;
+            const willOpen = menu.classList.contains('hidden');
             menu.classList.toggle('hidden');
+            this.bgm?.sfx?.(willOpen ? 'open' : 'close');
         });
         document.getElementById('kairo-chat-btn').addEventListener('click', () => {
             menu.classList.add('hidden');
@@ -3591,10 +3600,12 @@ class RimTownApp {
         document.getElementById('kairo-card-back').addEventListener('click', () => {
             card.classList.add('hidden');
             this._kairoCardOpen = false;
+            this.bgm?.sfx?.('close');
         });
     }
 
     _openKairoTab(tab) {
+        this.bgm?.sfx?.('click');
         document.getElementById('kairo-menu')?.classList.add('hidden');
         this._kairoCardOpen = true;
         const title = document.getElementById('kairo-card-title');
@@ -3716,6 +3727,24 @@ class RimTownApp {
         this._updateInteractPrompt();
         this._updateAgentEmotes();
         this._updateDramaTicker();
+        this._updateKairoStatus();
+    }
+
+    // 底部狀態帶:🏆繁榮 💰銀幣 🍞食物 👥人口(每秒更新)
+    _updateKairoStatus() {
+        const el = document.getElementById('kairo-status');
+        if (!el || !this.state) return;
+        const now = Date.now();
+        if (this._kairoStatusAt && now - this._kairoStatusAt < 1000) return;
+        this._kairoStatusAt = now;
+        const pr = this.state.prosperity || {};
+        const res = this.state.stockpile?.resources || {};
+        const pop = Object.keys(this.state.agents || {}).length;
+        el.innerHTML = `
+            <span>🏆 ${pr.level || '--'} ${Math.round(pr.prosperity || 0)}</span>
+            <span>💰 ${Math.round(res.silver || 0)}</span>
+            <span>🍞 ${Math.round(res.food || 0)}</span>
+            <span>👥 ${pop}</span>`;
     }
 
     _updateInteractPrompt() {

@@ -29,6 +29,33 @@ class ChiptuneEngine {
         this._initialized = true;
     }
 
+    // v4.4.1 8-bit UI 音效(短促方波,跟隨 BGM 靜音/音量設定)
+    sfx(name) {
+        if (!this._initialized || this.muted || !this.ctx) return;
+        const seqs = {
+            click: [[880, 0.045]],
+            open:  [[523, 0.05], [784, 0.07]],
+            close: [[784, 0.05], [523, 0.07]],
+            coin:  [[988, 0.05], [1319, 0.10]],
+            send:  [[660, 0.04], [880, 0.05]],
+        };
+        const seq = seqs[name] || seqs.click;
+        let t = this.ctx.currentTime;
+        const peak = Math.max(0.0002, this.volume * this.volume * 0.6);
+        for (const [freq, dur] of seq) {
+            const o = this.ctx.createOscillator();
+            const g = this.ctx.createGain();
+            o.type = 'square';
+            o.frequency.value = freq;
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime(peak, t + 0.006);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+            o.connect(g); g.connect(this.ctx.destination);
+            o.start(t); o.stop(t + dur + 0.02);
+            t += dur * 0.85;
+        }
+    }
+
     setVolume(v) {
         this.volume = Math.max(0, Math.min(1, v));
         if (this.masterGain && !this.muted) {

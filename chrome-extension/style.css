@@ -3813,3 +3813,35 @@ body.rimtown-page .wp-block-post-title {
 @media (max-width: 768px) {
     .kairo-mode .quest-guidance { z-index: 62; }
 }
+
+/* v4.4.1 底部狀態帶(機場物語式) + 選單按壓回饋 */
+#kairo-status { display: none; }
+@media (max-width: 768px) {
+    #kairo-status {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        position: absolute;
+        left: 0; right: 0;
+        bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+        height: 26px;
+        z-index: 58;
+        background: rgba(13, 20, 38, 0.82);
+        border-top: 1px solid var(--border);
+        font-size: 0.68rem;
+        color: var(--text-primary);
+        backdrop-filter: blur(3px);
+    }
+    #kairo-status span { white-space: nowrap; }
+    /* 訪客橫幅移到狀態帶上方 */
+    .kairo-mode #guest-banner { bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
+    /* 按壓回饋 */
+    #kairo-menu button:active, #kairo-bar button:active, #kairo-card-back:active {
+        transform: scale(0.96);
+        filter: brightness(1.25);
+    }
+    /* 搖桿與互動提示避開狀態帶 */
+    .vjoy { bottom: 92px !important; }
+    .interact-prompt { bottom: 150px !important; }
+    .npc-quick-card { bottom: 152px !important; }
+}
