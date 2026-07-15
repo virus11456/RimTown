@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 4.1.7
+ * Version: 4.1.8
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '4.1.7');
+define('RIMTOWN_VERSION', '4.1.8');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1180,6 +1180,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '4.1.8',
+            'date'    => '2026-07-15',
+            'changes' => array(
+                'Vercel 版新增完整帳號系統：註冊/登入/雲端存檔/成就同步改由 Vercel Serverless Functions + Blob 儲存提供，不再依賴 WordPress',
+                '前端自動偵測執行環境：WordPress 用原 REST API，靜態站(rimtown.cc/Vercel)用 /api/ + JWT',
+                '登入狀態以 JWT 保存於瀏覽器,重新整理頁面仍保持登入',
+            ),
+        ),
         array(
             'version' => '4.1.7',
             'date'    => '2026-07-15',

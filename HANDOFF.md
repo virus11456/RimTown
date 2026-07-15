@@ -23,7 +23,7 @@
 
 ## 3. ⚠️ 版號同步規範（使用者非常在意，漏掉會被糾正）
 
-目前版號：**4.1.7**。每次有任何變動都要 bump 版號並同步以下 **全部位置**：
+目前版號：**4.1.8**。每次有任何變動都要 bump 版號並同步以下 **全部位置**：
 
 | 檔案 | 位置 |
 |---|---|
@@ -67,7 +67,7 @@
 2. 或使用者在 dashboard 手動建立空專案 `rimtown`，然後重試 `deploy_to_vercel`（部署到既有專案可能不需建立權限）
 3. 或使用者重新授權 Vercel 整合、給予建立專案權限，然後重試
 
-**後續（如果使用者想要完整功能）**：把 WordPress REST API（login/register/saves/achievements，見 `rimtown.php` 約 826-1074 行）移植成 Vercel serverless functions + 資料庫（如 Vercel Postgres / Supabase），前端 `RimTownAuth` 的 `_restUrl` 指向新端點。
+**✅ 帳號系統已移植(v4.1.8)**:`api/` 目錄的 Vercel Serverless Functions + Vercel Blob(store: rimtown-db)。JWT 認證(env: JWT_SECRET)、scrypt 密碼雜湊、blob 內容 AES-256-GCM 加密。前端 RimTownAuth 自動偵測:無 rimtownAuth 全域(靜態站)→ `/api/` + JWT(localStorage `rimtown_jwt`)。DNS:rimtown.cc 已指向 Vercel(A @ → 216.198.79.1),WordPress 已離線。GitHub push 到預設分支會自動部署。
 
 ## 7. 待辦 / 使用者提過的期望
 

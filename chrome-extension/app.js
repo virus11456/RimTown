@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v4.1.7
-const RIMTOWN_APP_VERSION = '4.1.7';
+// RimTown - Frontend App (WordPress Plugin) v4.1.8
+const RIMTOWN_APP_VERSION = '4.1.8';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -140,6 +140,25 @@ class RimTownAuth {
             this.loggedIn = !!rimtownAuth.loggedIn;
             this.username = rimtownAuth.username || '';
             this.userId = rimtownAuth.userId || 0;
+        } else if (location.protocol.startsWith('http')) {
+            // Serverless 模式(Vercel 靜態站):帳號 API 在同網域 /api/,JWT 存 localStorage
+            this._serverless = true;
+            this._restUrl = '/api/';
+            try { this._nonce = localStorage.getItem('rimtown_jwt') || ''; } catch (e) { this._nonce = ''; }
+            // 從 token 還原登入狀態(重新整理後仍保持登入)
+            if (this._nonce) {
+                try {
+                    const p = JSON.parse(atob(this._nonce.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+                    if (p.exp * 1000 > Date.now()) {
+                        this.loggedIn = true;
+                        this.username = p.u || '';
+                        this.userId = p.id || 0;
+                    } else {
+                        this._nonce = '';
+                        try { localStorage.removeItem('rimtown_jwt'); } catch (e) {}
+                    }
+                } catch (e) { this._nonce = ''; }
+            }
         }
     }
 
@@ -147,6 +166,7 @@ class RimTownAuth {
         const isPublic = ['login', 'register', 'reset-password', 'me'].includes(endpoint);
         const headers = { 'Content-Type': 'application/json' };
         if (!isPublic && this._nonce) headers['X-WP-Nonce'] = this._nonce;
+        if (this._serverless && this._nonce) headers['Authorization'] = 'Bearer ' + this._nonce;
         const opts = {
             method,
             headers,
@@ -159,12 +179,22 @@ class RimTownAuth {
         return data;
     }
 
+    // Serverless 模式:token 持久化
+    _persistToken() {
+        if (!this._serverless) return;
+        try {
+            if (this._nonce) localStorage.setItem('rimtown_jwt', this._nonce);
+            else localStorage.removeItem('rimtown_jwt');
+        } catch (e) { /* private mode 等情況忽略 */ }
+    }
+
     async register(username, password, email) {
         const data = await this._fetch('register', 'POST', { username, password, email });
         if (data.nonce) this._nonce = data.nonce;
         this.loggedIn = true;
         this.username = data.user.username;
         this.userId = data.user.id;
+        this._persistToken();
         return data;
     }
 
@@ -174,6 +204,7 @@ class RimTownAuth {
         this.loggedIn = true;
         this.username = data.user.username;
         this.userId = data.user.id;
+        this._persistToken();
         return data;
     }
 
@@ -182,6 +213,8 @@ class RimTownAuth {
         this.loggedIn = false;
         this.username = '';
         this.userId = 0;
+        this._nonce = '';
+        this._persistToken();
     }
 
     async checkLogin() {

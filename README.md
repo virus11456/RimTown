@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v4.1.7.zip` from Releases
+1. Download `rimtown-v4.1.8.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,14 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v4.1.8 (2026-07-15)
+
+**Vercel 完整帳號系統 — 脫離 WordPress**
+
+- 註冊/登入/雲端存檔/成就同步改由 Vercel Serverless Functions(`api/`)+ Vercel Blob 提供
+- 前端自動偵測環境:WordPress 走原 REST API,靜態站走 `/api/` + JWT(localStorage 持久化,重新整理保持登入)
+- 密碼 scrypt 雜湊、資料 AES-256-GCM 加密後存入 Blob
 
 ### v4.1.7 (2026-07-15)
 

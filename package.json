@@ -1,8 +1,11 @@
 {
   "name": "rimtown",
-  "version": "4.1.6",
+  "version": "4.1.8",
   "private": true,
   "scripts": {
     "build": "bash build.sh"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.6.1"
   }
 }
