@@ -3473,6 +3473,11 @@ body.rimtown-page .wp-block-post-title {
     display: flex;
     align-items: center;
     gap: 6px;
+    white-space: nowrap;
+    flex-wrap: nowrap;
+    width: max-content;
+    max-width: calc(100% - 24px);
+    overflow: hidden;
     padding: 8px 16px;
     background: rgba(15, 22, 40, 0.92);
     border: 1px solid var(--accent);
@@ -3659,4 +3664,14 @@ body.rimtown-page .wp-block-post-title {
 /* 窄螢幕:隱藏 1.5x 檔位,保住 ☰ */
 @media (max-width: 430px) {
     .mobile-menu-speed .btn-speed[data-speed="1.5"] { display: none !important; }
+}
+
+
+/* 觸控裝置:互動提示的 E 鍵標籤改為「點擊」提示 */
+@media (pointer: coarse) {
+    .interact-prompt .ip-key { display: none; }
+    .interact-prompt::after {
+        content: '👆';
+        font-size: 0.8rem;
+    }
 }
