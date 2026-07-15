@@ -303,6 +303,13 @@ class PixelTileMap {
         this.minZoom = newMinZoom;
         // On first init or if zoom is below minimum, set to fit
         if (this.zoom < this.minZoom) this.zoom = this.minZoom;
+        // v4.3.6 預設縮放拉近(角色看得清楚):手機 ~2x、桌面 ~1.6x,只在首次套用
+        if (!this._initialZoomApplied && this._viewW > 0) {
+            this._initialZoomApplied = true;
+            const wanted = this._viewW <= 820 ? 2.0 : 1.6;
+            this.zoom = Math.min(this.maxZoom, Math.max(this.minZoom, wanted));
+            this.followPlayer = true;
+        }
         this._clampCamera();
     }
 
@@ -2472,6 +2479,14 @@ class PixelTileMap {
         this.chatTarget = chatTarget || null;
         const WALK_SPEED = 0.3; // pixels per frame — slow leisurely pace
         this._updateManualPlayer();
+        // 首次取得玩家位置時把鏡頭對準玩家(搭配預設拉近縮放)
+        if (!this._centeredOnPlayer && this.agentPositions['player'] && this._viewW > 0) {
+            this._centeredOnPlayer = true;
+            const p = this.agentPositions['player'];
+            this.camX = p.x - this._viewW / this.zoom / 2;
+            this.camY = p.y - this._viewH / this.zoom / 2;
+            this._clampCamera();
+        }
         for (const [aid, agent] of Object.entries(agents)) {
             // 手動操作中的玩家由 _updateManualPlayer 處理,跳過地點目標制
             if (aid === 'player' && this._playerManual) continue;
