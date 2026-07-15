@@ -3675,3 +3675,14 @@ body.rimtown-page .wp-block-post-title {
         font-size: 0.8rem;
     }
 }
+
+/* ===== v4.3.5 開羅式抽屜面板:地圖為主、面板變矮(聊天例外) ===== */
+@media (max-width: 768px) {
+    .rimtown-container .rt-sidebar { max-height: 44vh !important; }
+    /* 聊天要打字,給大空間 */
+    .rimtown-container .rt-sidebar.chat-open { max-height: 62vh !important; }
+    /* 收合狀態永遠優先 */
+    .rimtown-container .rt-sidebar.mobile-collapsed { max-height: 52px !important; }
+    /* 收合把手加粗更明顯 */
+    .mobile-drag-handle::after { width: 48px !important; height: 5px !important; background: var(--accent) !important; opacity: 0.6; }
+}

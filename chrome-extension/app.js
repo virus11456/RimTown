@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v4.3.4
-const RIMTOWN_APP_VERSION = '4.3.4';
+// RimTown - Frontend App (WordPress Plugin) v4.3.5
+const RIMTOWN_APP_VERSION = '4.3.5';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -3727,6 +3727,9 @@ class RimTownApp {
     }
 
     renderSidebar() {
+        // 手機抽屜:聊天分頁給較高的面板(62vh),其他分頁 44vh 讓地圖為主
+        const _sb = document.getElementById('rimtown-sidebar');
+        if (_sb) _sb.classList.toggle('chat-open', this.activeTab === 'chat');
         const content = document.getElementById('sidebar-content');
 
         // Mobile sub-tab bar
