@@ -13,9 +13,13 @@
     <link rel="icon" type="image/png" href="icons/icon48.png">
     <link rel="apple-touch-icon" href="icons/icon128.png">
     <title>邊境鎮 - AI 小鎮模擬</title>
+    <style>
+    /* 獨立版關鍵樣式:深色底 + 滿版鎖定,避免 Safari 上下留白/彈跳(style.css 載入前就生效) */
+    html, body { background: #1a1a2e; margin: 0; padding: 0; height: 100%; overscroll-behavior: none; }
+    </style>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="rimtown-page" style="background:#1a1a2e;margin:0;overscroll-behavior:none">
 <!-- PWA Install Banner -->
 <div id="pwa-install-banner" class="pwa-install-banner hidden">
     <div class="pwa-install-content">
