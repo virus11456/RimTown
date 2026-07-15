@@ -231,7 +231,7 @@ class PixelTileMap {
         this.grid = null;
         this.tileCache = {};
         this.agentPositions = {}; // {agentId: {x, y, targetX, targetY}}
-        this.buildingZones = {}; // {locationId: {x,y,w,h}}
+        this.buildingZones = {}; // {locationId: {x,y,w,h,doorPixelX,doorPixelY}}
         this.natureZones = {};   // {locationId: {x,y,w,h}}
         this.labelPositions = {};
         this.animFrame = 0;
@@ -444,24 +444,38 @@ class PixelTileMap {
         }
         // Check location zones — first try exact zone hit, then find nearest
         if (this.onClick) {
-            // Exact zone click
+            // Exact zone click — prioritize smaller sub-zones (individual houses) over parent zones
+            let hitLocId = null;
+            let hitZone = null;
+            let hitArea = Infinity;
             for (const [locId, zone] of Object.entries(this.buildingZones)) {
                 if (px >= zone.x * TILE && px < (zone.x + zone.w) * TILE &&
                     py >= zone.y * TILE && py < (zone.y + zone.h) * TILE) {
-                    this._moveIndicator = { x: (zone.x + zone.w / 2) * TILE, y: (zone.y + zone.h / 2) * TILE, expiry: Date.now() + 1500 };
-                    this.onClick(locId);
-                    return;
+                    const area = zone.w * zone.h;
+                    if (area < hitArea) {
+                        hitArea = area;
+                        hitLocId = locId;
+                        hitZone = zone;
+                    }
                 }
+            }
+            if (hitLocId) {
+                this._moveIndicator = { x: px, y: py, expiry: Date.now() + 1500 };
+                this._playerClickTarget = { x: px, y: py };
+                this.onClick(hitLocId);
+                return;
             }
             for (const [locId, zone] of Object.entries(this.natureZones)) {
                 if (px >= zone.x * TILE && px < (zone.x + zone.w) * TILE &&
                     py >= zone.y * TILE && py < (zone.y + zone.h) * TILE) {
-                    this._moveIndicator = { x: (zone.x + zone.w / 2) * TILE, y: (zone.y + zone.h / 2) * TILE, expiry: Date.now() + 1500 };
+                    this._moveIndicator = { x: px, y: py, expiry: Date.now() + 1500 };
+                    this._playerClickTarget = { x: px, y: py };
                     this.onClick(locId);
                     return;
                 }
             }
-            // Clicked on empty space — find nearest location and move there
+            // Clicked on empty space — find nearest location and move player there
+            // Also set a custom walk target so the player walks to the exact pixel clicked
             let bestLoc = null, bestDist = Infinity;
             const allZones = { ...this.buildingZones, ...this.natureZones };
             for (const [locId, zone] of Object.entries(allZones)) {
@@ -471,15 +485,10 @@ class PixelTileMap {
                 if (dist < bestDist) { bestDist = dist; bestLoc = locId; }
             }
             if (bestLoc) {
-                // Show move indicator at the target zone
-                const zone = allZones[bestLoc];
-                if (zone) {
-                    this._moveIndicator = {
-                        x: (zone.x + zone.w / 2) * TILE,
-                        y: (zone.y + zone.h / 2) * TILE,
-                        expiry: Date.now() + 1500,
-                    };
-                }
+                // Show move indicator at the exact click position
+                this._moveIndicator = { x: px, y: py, expiry: Date.now() + 1500 };
+                // Set custom walk target for player to walk to exact click position
+                this._playerClickTarget = { x: px, y: py };
                 this.onClick(bestLoc);
             }
         }
@@ -1200,10 +1209,26 @@ class PixelTileMap {
             }
         }
 
+        // Clear doorstep area (2 tiles wide in front of door for easier entry)
+        const doorTileX = x + tmpl.doorX;
+        const doorTileY = y + h + 1; // tile row just below door
+        for (let dy = 0; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+                const cx = doorTileX + dx, cy = doorTileY + dy;
+                if (cx >= 0 && cx < this.cols && cy >= 0 && cy < this.rows) {
+                    const t = this.grid[cy][cx];
+                    if (t === T.GRASS || t === T.GRASS2 || t === T.GRASS3) {
+                        this.grid[cy][cx] = T.DIRT;
+                    }
+                }
+            }
+        }
         // Connect to nearest road with dirt path
-        this._connectToRoad(x + tmpl.doorX, y + h + 1);
+        this._connectToRoad(doorTileX, doorTileY);
 
-        this.buildingZones[locId] = { x, y, w, h: h + 1 };
+        const doorPxX = (doorTileX + 0.5) * TILE;
+        const doorPxY = (doorTileY + 0.5) * TILE; // on the doorstep tile
+        this.buildingZones[locId] = { x, y, w, h: h + 1, doorPixelX: doorPxX, doorPixelY: doorPxY };
         this.labelPositions[locId] = { x: (x + w/2) * TILE, y: y * TILE - 4, name };
     }
 
@@ -1218,6 +1243,9 @@ class PixelTileMap {
             { dx: 0, dy: house.h + gapY + 1 },
             { dx: house.w + gapX, dy: house.h + gapY + 1 },
         ];
+        // Store individual house sub-zones
+        this._houseSubZones = this._houseSubZones || {};
+        let houseIdx = 0;
         for (const p of positions) {
             const hx = x + p.dx, hy = y + p.dy;
             if (hx + house.w >= this.cols || hy + house.h + 1 >= this.rows) continue;
@@ -1231,7 +1259,39 @@ class PixelTileMap {
                     }
                 }
             }
-            this._connectToRoad(hx + house.doorX, hy + house.h + 1);
+            // Clear doorstep area for easier entry
+            const doorTX = hx + house.doorX;
+            const doorTY = hy + house.h + 1;
+            for (let ddy = 0; ddy <= 1; ddy++) {
+                for (let ddx = -1; ddx <= 1; ddx++) {
+                    const cx = doorTX + ddx, cy = doorTY + ddy;
+                    if (cx >= 0 && cx < this.cols && cy >= 0 && cy < this.rows) {
+                        const tt = this.grid[cy][cx];
+                        if (tt === T.GRASS || tt === T.GRASS2 || tt === T.GRASS3) {
+                            this.grid[cy][cx] = T.DIRT;
+                        }
+                    }
+                }
+            }
+            this._connectToRoad(doorTX, doorTY);
+            // Register each house as a sub-zone with door position
+            const subId = `${locId}_${houseIdx}`;
+            const doorPxX = (doorTX + 0.5) * TILE;
+            const doorPxY = (doorTY + 0.5) * TILE;
+            const interiorX = (hx + house.w / 2) * TILE;
+            const interiorY = (hy + house.h / 2 + 1) * TILE;
+            this._houseSubZones[subId] = {
+                x: hx, y: hy, w: house.w, h: house.h + 1,
+                doorPixelX: doorPxX, doorPixelY: doorPxY,
+                interiorX, interiorY,
+                parentLocId: locId, houseIndex: houseIdx
+            };
+            this.buildingZones[subId] = {
+                x: hx, y: hy, w: house.w, h: house.h + 1,
+                doorPixelX: doorPxX, doorPixelY: doorPxY,
+                parentLocId: locId
+            };
+            houseIdx++;
         }
         // Draw small path between the two rows of houses
         const pathY = y + house.h + 1;
@@ -1504,6 +1564,33 @@ class PixelTileMap {
                 }
             }
         }
+    }
+
+    // Assign an agent to a specific house sub-zone within their residential area
+    getAgentHouseId(agentId, homeLocation) {
+        if (!this._houseSubZones || !homeLocation || !homeLocation.startsWith('residential_')) return null;
+        // Find sub-zones for this residential area
+        const subIds = Object.keys(this._houseSubZones).filter(k => this._houseSubZones[k].parentLocId === homeLocation);
+        if (subIds.length === 0) return null;
+        // Use persistent mapping
+        if (!this._agentHouseMap) this._agentHouseMap = {};
+        if (this._agentHouseMap[agentId]) return this._agentHouseMap[agentId];
+        // Count how many agents are in each house
+        const houseCounts = {};
+        subIds.forEach(id => houseCounts[id] = 0);
+        Object.values(this._agentHouseMap).forEach(hid => { if (houseCounts[hid] !== undefined) houseCounts[hid]++; });
+        // Assign to least-populated house
+        const bestHouse = subIds.reduce((a, b) => (houseCounts[a] <= houseCounts[b] ? a : b));
+        this._agentHouseMap[agentId] = bestHouse;
+        return bestHouse;
+    }
+
+    // Get residents of a specific house sub-zone
+    getHouseResidents(houseSubId) {
+        if (!this._agentHouseMap) return [];
+        return Object.entries(this._agentHouseMap)
+            .filter(([_, hid]) => hid === houseSubId)
+            .map(([aid]) => aid);
     }
 
     // Get center position for a location (for agent placement)
@@ -1860,7 +1947,7 @@ class PixelTileMap {
         ctx.fillStyle = 'rgba(0,0,0,0.75)';
         ctx.fillRect(labelX - 20, labelY - 5, 40, 8);
         ctx.fillStyle = readyCount > 0 ? '#ffd700' : growingCount > 0 ? '#90ee90' : '#b0b0b0';
-        const statusText = readyCount > 0 ? `農場 ${readyCount}塊可收` : growingCount > 0 ? `農場 ${growingCount}塊生長中` : `農場 ${totalPlots}塊`;
+        const statusText = readyCount > 0 ? `${t('農場')} ${readyCount}${t('塊可收')}` : growingCount > 0 ? `${t('農場')} ${growingCount}${t('塊生長中')}` : `${t('農場')} ${totalPlots}${t('塊')}`;
         ctx.fillText(statusText, labelX, labelY);
     }
 
@@ -1987,23 +2074,264 @@ class PixelTileMap {
         });
     }
 
+    // Check if a pixel position is inside a building zone
+    _isInsideBuilding(px, py) {
+        // Check sub-zones first (smaller, more precise)
+        if (this._houseSubZones) {
+            for (const [subId, sub] of Object.entries(this._houseSubZones)) {
+                const zx = sub.x * TILE, zy = sub.y * TILE;
+                const zw = sub.w * TILE, zh = sub.h * TILE;
+                if (px >= zx && px <= zx + zw && py >= zy && py <= zy + zh) return subId;
+            }
+        }
+        for (const [locId, zone] of Object.entries(this.buildingZones)) {
+            if (zone.parentLocId) continue; // skip sub-zones already checked
+            const zx = zone.x * TILE, zy = zone.y * TILE;
+            const zw = zone.w * TILE, zh = zone.h * TILE;
+            if (px >= zx && px <= zx + zw && py >= zy && py <= zy + zh) return locId;
+        }
+        return null;
+    }
+
+    // Get door position for a location (or specific sub-zone)
+    _getDoorPosition(locId, agentId) {
+        // If locId is a specific sub-zone, use it directly
+        if (this._houseSubZones && this._houseSubZones[locId]) {
+            const sub = this._houseSubZones[locId];
+            return { x: sub.doorPixelX, y: sub.doorPixelY };
+        }
+        // If locId is a residential area and we have an agent, get their specific house door
+        if (agentId && locId && locId.startsWith('residential_')) {
+            const houseId = this.getAgentHouseId(agentId, locId);
+            if (houseId && this._houseSubZones && this._houseSubZones[houseId]) {
+                const sub = this._houseSubZones[houseId];
+                return { x: sub.doorPixelX, y: sub.doorPixelY };
+            }
+        }
+        const zone = this.buildingZones[locId];
+        if (zone && zone.doorPixelX !== undefined) {
+            return { x: zone.doorPixelX, y: zone.doorPixelY };
+        }
+        return null;
+    }
+
+    // Check if a pixel position is walkable (not a wall or solid obstacle)
+    _isWalkableTile(px, py) {
+        if (!this.grid) return true;
+        const tx = Math.floor(px / TILE);
+        const ty = Math.floor(py / TILE);
+        if (tx < 0 || tx >= this.cols || ty < 0 || ty >= this.rows) return false;
+        const tile = this.grid[ty][tx];
+        // Wall, roof, window, and fence tiles are not walkable
+        return tile !== T.WALL_TOP && tile !== T.WALL_FRONT && tile !== T.WINDOW
+            && tile !== T.ROOF && tile !== T.ROOF2
+            && tile !== T.FENCE_H && tile !== T.FENCE_V;
+    }
+
+    // Find the nearest walkable position to target, avoiding walls
+    _findWalkableTarget(targetX, targetY) {
+        if (this._isWalkableTile(targetX, targetY)) return { x: targetX, y: targetY };
+        // Search in expanding ring for nearest walkable tile
+        for (let r = 1; r <= 10; r++) {
+            for (let dy = -r; dy <= r; dy++) {
+                for (let dx = -r; dx <= r; dx++) {
+                    if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+                    const nx = targetX + dx * TILE;
+                    const ny = targetY + dy * TILE;
+                    if (this._isWalkableTile(nx, ny)) return { x: nx, y: ny };
+                }
+            }
+        }
+        return { x: targetX, y: targetY };
+    }
+
+    // Check if a tile coordinate is walkable (tile-based, not pixel-based)
+    _isTileWalkable(tx, ty) {
+        if (!this.grid) return true;
+        if (tx < 0 || tx >= this.cols || ty < 0 || ty >= this.rows) return false;
+        const tile = this.grid[ty][tx];
+        return tile !== T.WALL_TOP && tile !== T.WALL_FRONT && tile !== T.WINDOW
+            && tile !== T.ROOF && tile !== T.ROOF2
+            && tile !== T.FENCE_H && tile !== T.FENCE_V;
+    }
+
+    // A* pathfinding on tile grid — returns array of {x, y} pixel waypoints
+    _findPath(startPx, startPy, endPx, endPy) {
+        if (!this.grid) return null;
+        const sx = Math.floor(startPx / TILE);
+        const sy = Math.floor(startPy / TILE);
+        let ex = Math.floor(endPx / TILE);
+        let ey = Math.floor(endPy / TILE);
+
+        // Clamp to grid bounds
+        const clamp = (v, max) => Math.max(0, Math.min(max - 1, v));
+        const sxc = clamp(sx, this.cols), syc = clamp(sy, this.rows);
+        const exc = clamp(ex, this.cols), eyc = clamp(ey, this.rows);
+
+        // If start == end, no path needed
+        if (sxc === exc && syc === eyc) return null;
+
+        // If end tile is not walkable, find nearest walkable tile
+        if (!this._isTileWalkable(exc, eyc)) {
+            let found = false;
+            for (let r = 1; r <= 8; r++) {
+                for (let dy = -r; dy <= r; dy++) {
+                    for (let dx = -r; dx <= r; dx++) {
+                        if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+                        if (this._isTileWalkable(exc + dx, eyc + dy)) {
+                            ex = exc + dx; ey = eyc + dy; found = true; break;
+                        }
+                    }
+                    if (found) break;
+                }
+                if (found) break;
+            }
+            if (!found) return null;
+        }
+
+        // A* with 8-directional movement
+        const key = (x, y) => x + y * this.cols;
+        const open = []; // min-heap by f
+        const gScore = new Map();
+        const parent = new Map();
+        const closed = new Set();
+
+        const h = (x, y) => Math.abs(x - ex) + Math.abs(y - ey); // Manhattan
+        const startKey = key(sxc, syc);
+        gScore.set(startKey, 0);
+        open.push({ x: sxc, y: syc, f: h(sxc, syc) });
+
+        const dirs = [
+            { dx: 0, dy: -1, cost: 1 }, { dx: 0, dy: 1, cost: 1 },
+            { dx: -1, dy: 0, cost: 1 }, { dx: 1, dy: 0, cost: 1 },
+            { dx: -1, dy: -1, cost: 1.41 }, { dx: 1, dy: -1, cost: 1.41 },
+            { dx: -1, dy: 1, cost: 1.41 }, { dx: 1, dy: 1, cost: 1.41 },
+        ];
+
+        let iterations = 0;
+        const MAX_ITER = 2000; // prevent lag on large maps
+
+        while (open.length > 0 && iterations < MAX_ITER) {
+            iterations++;
+            // Find lowest f in open (simple linear scan — adequate for small grids)
+            let bestIdx = 0;
+            for (let i = 1; i < open.length; i++) {
+                if (open[i].f < open[bestIdx].f) bestIdx = i;
+            }
+            const cur = open[bestIdx];
+            open.splice(bestIdx, 1);
+
+            const ck = key(cur.x, cur.y);
+            if (closed.has(ck)) continue;
+            closed.add(ck);
+
+            // Reached goal
+            if (cur.x === ex && cur.y === ey) {
+                // Reconstruct path as pixel waypoints
+                const path = [];
+                let k = ck;
+                while (k !== undefined) {
+                    const py = Math.floor(k / this.cols);
+                    const px = k - py * this.cols;
+                    path.unshift({ x: (px + 0.5) * TILE, y: (py + 0.5) * TILE });
+                    k = parent.get(k);
+                }
+                // Simplify: remove collinear waypoints
+                return this._simplifyPath(path);
+            }
+
+            const curG = gScore.get(ck) || 0;
+
+            for (const d of dirs) {
+                const nx = cur.x + d.dx, ny = cur.y + d.dy;
+                if (nx < 0 || nx >= this.cols || ny < 0 || ny >= this.rows) continue;
+                const nk = key(nx, ny);
+                if (closed.has(nk)) continue;
+                if (!this._isTileWalkable(nx, ny)) continue;
+
+                // For diagonal, both adjacent cardinal tiles must be walkable (no corner cutting)
+                if (d.dx !== 0 && d.dy !== 0) {
+                    if (!this._isTileWalkable(cur.x + d.dx, cur.y) || !this._isTileWalkable(cur.x, cur.y + d.dy)) continue;
+                }
+
+                const ng = curG + d.cost;
+                if (!gScore.has(nk) || ng < gScore.get(nk)) {
+                    gScore.set(nk, ng);
+                    parent.set(nk, ck);
+                    open.push({ x: nx, y: ny, f: ng + h(nx, ny) });
+                }
+            }
+        }
+
+        return null; // no path found
+    }
+
+    // Remove collinear waypoints to reduce path complexity
+    _simplifyPath(path) {
+        if (path.length <= 2) return path;
+        const result = [path[0]];
+        for (let i = 1; i < path.length - 1; i++) {
+            const prev = result[result.length - 1];
+            const cur = path[i];
+            const next = path[i + 1];
+            const dx1 = cur.x - prev.x, dy1 = cur.y - prev.y;
+            const dx2 = next.x - cur.x, dy2 = next.y - cur.y;
+            // Keep if direction changes
+            if (Math.sign(dx1) !== Math.sign(dx2) || Math.sign(dy1) !== Math.sign(dy2)) {
+                result.push(cur);
+            }
+        }
+        result.push(path[path.length - 1]);
+        return result;
+    }
+
     updateAgents(agents, locations, chatTarget) {
         this.chatTarget = chatTarget || null;
-        const WALK_SPEED = 0.6; // pixels per frame — slower for easier clicking
+        const WALK_SPEED = 0.3; // pixels per frame — slow leisurely pace
         for (const [aid, agent] of Object.entries(agents)) {
-            const locCenter = this.getLocationCenter(agent.current_location);
-            // Add offset within zone so agents don't overlap
-            const existing = Object.values(this.agentPositions).filter(p => {
-                const dx = Math.abs(p.targetX - locCenter.x);
-                const dy = Math.abs(p.targetY - locCenter.y);
-                return dx < TILE * 3 && dy < TILE * 3;
-            });
-            const idx = existing.length;
-            const spreadX = ((idx % 4) - 1.5) * TILE;
-            const spreadY = (Math.floor(idx / 4) - 0.5) * TILE;
+            const curLoc = agent.current_location;
+            let targetX, targetY;
 
-            const targetX = locCenter.x + spreadX;
-            const targetY = locCenter.y + spreadY;
+            // For residential areas, route agents to their specific house
+            const homeLocation = agent.home_location || agent.homeLocation;
+            if (curLoc && curLoc.startsWith('residential_') && this._houseSubZones) {
+                const houseId = this.getAgentHouseId(aid, curLoc);
+                if (houseId && this._houseSubZones[houseId]) {
+                    const sub = this._houseSubZones[houseId];
+                    // Place inside their specific house with small offset
+                    const hashOffset = (aid.charCodeAt(0) || 0) % 4;
+                    targetX = sub.interiorX + ((hashOffset % 2) - 0.5) * TILE;
+                    targetY = sub.interiorY + (Math.floor(hashOffset / 2) - 0.5) * TILE;
+                } else {
+                    const locCenter = this.getLocationCenter(curLoc);
+                    targetX = locCenter.x;
+                    targetY = locCenter.y;
+                }
+            } else {
+                const locCenter = this.getLocationCenter(curLoc);
+                // Add offset within zone so agents don't overlap
+                const existing = Object.values(this.agentPositions).filter(p => {
+                    const dx = Math.abs(p.targetX - locCenter.x);
+                    const dy = Math.abs(p.targetY - locCenter.y);
+                    return dx < TILE * 3 && dy < TILE * 3;
+                });
+                const idx = existing.length;
+                const spreadX = ((idx % 4) - 1.5) * TILE;
+                const spreadY = (Math.floor(idx / 4) - 0.5) * TILE;
+                targetX = locCenter.x + spreadX;
+                targetY = locCenter.y + spreadY;
+            }
+            // Player click target: override position to exact click location
+            if (aid === 'player' && this._playerClickTarget) {
+                const ct = this._findWalkableTarget(this._playerClickTarget.x, this._playerClickTarget.y);
+                targetX = ct.x;
+                targetY = ct.y;
+                this._playerClickTarget = null;
+            }
+            // Ensure target is not inside a wall
+            const walkable = this._findWalkableTarget(targetX, targetY);
+            targetX = walkable.x;
+            targetY = walkable.y;
 
             // Extract job key string from agent data
             const jobKey = (agent.job && agent.job.key) ? agent.job.key : (typeof agent.job === 'string' ? agent.job : 'default');
@@ -2015,43 +2343,171 @@ class PixelTileMap {
             const atFarm = agent.current_location === 'farm';
 
             if (!this.agentPositions[aid]) {
-                this.agentPositions[aid] = { x: targetX, y: targetY, targetX, targetY, job: jobKey, gender, walking: false, walkStep: 0, activity, atFarm };
+                // New agent — place at door if target is inside a building
+                const door = this._getDoorPosition(curLoc, aid);
+                const startX = door ? door.x : targetX;
+                const startY = door ? door.y : targetY;
+                this.agentPositions[aid] = { x: startX, y: startY, targetX, targetY, job: jobKey, gender, walking: true, walkStep: 0, activity, atFarm, doorPhase: door ? 'entering' : null };
             } else {
                 this.agentPositions[aid].activity = activity;
                 this.agentPositions[aid].atFarm = atFarm;
-                this.agentPositions[aid].targetX = targetX;
-                this.agentPositions[aid].targetY = targetY;
                 this.agentPositions[aid].job = jobKey;
                 this.agentPositions[aid].gender = gender;
+                // Freeze sleeping NPCs — once at home, stay still
+                const isSleeping = activity === 'sleeping';
+                if (isSleeping && !this.agentPositions[aid].walking) {
+                    // Already at rest position — don't move or update target
+                    this.agentPositions[aid].walkStep = 0;
+                    continue;
+                }
+
+                const pos = this.agentPositions[aid];
+                // Check if NPC is changing to a different location (entering a new building)
+                const prevTarget = { x: pos.targetX, y: pos.targetY };
+                const locationChanged = Math.abs(targetX - prevTarget.x) > TILE * 2 || Math.abs(targetY - prevTarget.y) > TILE * 2;
+
+                if (locationChanged) {
+                    // Get door of destination building
+                    const destDoor = this._getDoorPosition(curLoc, aid);
+                    // Get door of current building (if inside one)
+                    const curBuilding = this._isInsideBuilding(pos.x, pos.y);
+                    const curDoor = curBuilding ? this._getDoorPosition(curBuilding, aid) : null;
+
+                    if (curDoor && destDoor) {
+                        // Inside a building → exit through door first, then walk to destination door
+                        pos.doorPhase = 'exiting';
+                        pos.doorWaypoint = curDoor;
+                        pos.finalTarget = { x: targetX, y: targetY };
+                        pos.destDoor = destDoor;
+                        pos.targetX = curDoor.x;
+                        pos.targetY = curDoor.y;
+                    } else if (destDoor) {
+                        // Outside → walk to destination door first
+                        pos.doorPhase = 'approaching';
+                        pos.doorWaypoint = destDoor;
+                        pos.finalTarget = { x: targetX, y: targetY };
+                        pos.targetX = destDoor.x;
+                        pos.targetY = destDoor.y;
+                    } else {
+                        // Nature zone or no door — walk directly
+                        pos.doorPhase = null;
+                        pos.targetX = targetX;
+                        pos.targetY = targetY;
+                    }
+                    // Compute A* path for the new movement
+                    pos._pathWaypoints = this._findPath(pos.x, pos.y, pos.targetX, pos.targetY);
+                    pos._pathIdx = 0;
+                } else if (!pos.doorPhase) {
+                    // Only recompute path if target actually changed
+                    if (Math.abs(targetX - pos.targetX) > 1 || Math.abs(targetY - pos.targetY) > 1) {
+                        pos.targetX = targetX;
+                        pos.targetY = targetY;
+                        pos._pathWaypoints = this._findPath(pos.x, pos.y, targetX, targetY);
+                        pos._pathIdx = 0;
+                    }
+                }
+
+                // If NPC is currently stuck inside a wall, teleport them out
+                if (!this._isWalkableTile(pos.x, pos.y)) {
+                    const escape = this._findWalkableTarget(pos.x, pos.y);
+                    pos.x = escape.x; pos.y = escape.y;
+                    pos._pathWaypoints = null; // recalc path
+                }
                 // Freeze agents involved in player chat
                 const isChatting = chatTarget && (aid === chatTarget || aid === 'player');
+
+                // Determine current movement target (A* waypoint or direct target)
+                let moveToX = pos.targetX, moveToY = pos.targetY;
+                if (pos._pathWaypoints && pos._pathWaypoints.length > 0) {
+                    const wpIdx = pos._pathIdx || 0;
+                    if (wpIdx < pos._pathWaypoints.length) {
+                        moveToX = pos._pathWaypoints[wpIdx].x;
+                        moveToY = pos._pathWaypoints[wpIdx].y;
+                    }
+                }
+
                 // Constant-speed walking
-                const dx = targetX - this.agentPositions[aid].x;
-                const dy = targetY - this.agentPositions[aid].y;
+                const dx = moveToX - pos.x;
+                const dy = moveToY - pos.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 if (isChatting) {
                     // Stop walking and face each other
-                    this.agentPositions[aid].walking = false;
-                    this.agentPositions[aid].walkStep = 0;
+                    pos.walking = false;
+                    pos.walkStep = 0;
                     if (chatTarget && aid === 'player' && this.agentPositions[chatTarget]) {
-                        this.agentPositions[aid].facing = this.agentPositions[chatTarget].x > this.agentPositions[aid].x ? 1 : -1;
+                        pos.facing = this.agentPositions[chatTarget].x > pos.x ? 1 : -1;
                     } else if (chatTarget && aid === chatTarget && this.agentPositions['player']) {
-                        this.agentPositions[aid].facing = this.agentPositions['player'].x > this.agentPositions[aid].x ? 1 : -1;
+                        pos.facing = this.agentPositions['player'].x > pos.x ? 1 : -1;
                     }
                 } else if (dist > 1) {
-                    // Walk toward target at constant speed
+                    // Walk toward current waypoint at constant speed
                     const step = Math.min(WALK_SPEED, dist);
-                    this.agentPositions[aid].x += (dx / dist) * step;
-                    this.agentPositions[aid].y += (dy / dist) * step;
-                    this.agentPositions[aid].walking = true;
-                    this.agentPositions[aid].walkStep = (this.agentPositions[aid].walkStep || 0) + 1;
+                    let newX = pos.x + (dx / dist) * step;
+                    let newY = pos.y + (dy / dist) * step;
+                    // Wall collision avoidance fallback (shouldn't happen with A* but just in case)
+                    if (!this._isWalkableTile(newX, newY)) {
+                        const moveX = (dx / dist) * step;
+                        const moveY = (dy / dist) * step;
+                        if (this._isWalkableTile(pos.x + moveX, pos.y)) {
+                            newX = pos.x + moveX; newY = pos.y;
+                        } else if (this._isWalkableTile(pos.x, pos.y + moveY)) {
+                            newX = pos.x; newY = pos.y + moveY;
+                        } else {
+                            // Completely blocked — teleport to walkable target
+                            const escape = this._findWalkableTarget(pos.targetX, pos.targetY);
+                            pos.x = escape.x; pos.y = escape.y;
+                            pos.walking = false; pos.walkStep = 0;
+                            pos._pathWaypoints = null;
+                            continue;
+                        }
+                    }
+                    pos.x = newX;
+                    pos.y = newY;
+                    pos.walking = true;
+                    pos.walkStep = (pos.walkStep || 0) + 1;
                     // Face direction: 1 = right, -1 = left
-                    this.agentPositions[aid].facing = dx > 0 ? 1 : dx < 0 ? -1 : (this.agentPositions[aid].facing || 1);
+                    pos.facing = dx > 0 ? 1 : dx < 0 ? -1 : (pos.facing || 1);
                 } else {
-                    this.agentPositions[aid].x = targetX;
-                    this.agentPositions[aid].y = targetY;
-                    this.agentPositions[aid].walking = false;
-                    this.agentPositions[aid].walkStep = 0;
+                    // Reached current waypoint
+                    pos.x = moveToX;
+                    pos.y = moveToY;
+
+                    // Advance to next A* waypoint if available
+                    if (pos._pathWaypoints && pos._pathIdx < pos._pathWaypoints.length - 1) {
+                        pos._pathIdx++;
+                        // Continue walking to next waypoint
+                        pos.walking = true;
+                    }
+                    // Handle door waypoint progression
+                    else if (pos.doorPhase === 'exiting' && pos.destDoor) {
+                        // Reached exit door → now walk to destination door
+                        pos.doorPhase = 'approaching';
+                        pos.doorWaypoint = pos.destDoor;
+                        pos.targetX = pos.destDoor.x;
+                        pos.targetY = pos.destDoor.y;
+                        pos.destDoor = null;
+                        // Compute new path for outdoor segment
+                        pos._pathWaypoints = this._findPath(pos.x, pos.y, pos.targetX, pos.targetY);
+                        pos._pathIdx = 0;
+                    } else if (pos.doorPhase === 'approaching' && pos.finalTarget) {
+                        // Reached destination door → now walk inside to final position
+                        pos.doorPhase = 'entering';
+                        pos.targetX = pos.finalTarget.x;
+                        pos.targetY = pos.finalTarget.y;
+                        pos.finalTarget = null;
+                        pos.doorWaypoint = null;
+                        pos._pathWaypoints = null; // short indoor path, no A* needed
+                    } else if (pos.doorPhase === 'entering') {
+                        // Arrived at final position inside building
+                        pos.doorPhase = null;
+                        pos.walking = false;
+                        pos.walkStep = 0;
+                        pos._pathWaypoints = null;
+                    } else {
+                        pos.walking = false;
+                        pos.walkStep = 0;
+                        pos._pathWaypoints = null;
+                    }
                 }
             }
         }
@@ -2063,7 +2519,7 @@ class PixelTileMap {
 
     // Draw chibi-style agent sprite (inspired by JRPG pixel art)
     // Sprite dimensions: ~16w x 24h, big head, large eyes, short body
-    _drawAgent(ctx, x, y, jobKey, isPlayer, isSelected, name, walking, walkStep, gender) {
+    _drawAgent(ctx, x, y, jobKey, isPlayer, isSelected, name, walking, walkStep, gender, jobTitle) {
         const c = isPlayer ? JOB_COLORS.player : (JOB_COLORS[jobKey] || JOB_COLORS.default);
         const isFemale = gender === 'female';
         const sx = Math.floor(x - 8);  // center 16px wide sprite
@@ -2209,7 +2665,7 @@ class PixelTileMap {
         // === Player arrow ===
         if (isPlayer) {
             const arrowBob = Math.sin(this.animFrame * 0.08) * 2;
-            const ay = sy - 6 + arrowBob;
+            const ay = sy - 20 + arrowBob;
             ctx.fillStyle = '#00e5ff';
             ctx.fillRect(sx + 5, ay, 6, 2);
             ctx.fillRect(sx + 6, ay - 2, 4, 2);
@@ -2218,18 +2674,51 @@ class PixelTileMap {
             ctx.fillRect(sx + 4, ay + 2, 8, 1);
         }
 
-        // === Name label ===
-        if (isSelected || isPlayer) {
-            ctx.font = '8px monospace';
+        // === Name + Job card ===
+        {
+            ctx.font = 'bold 7px monospace';
             ctx.textAlign = 'center';
             const nameShort = name.split('(')[0].trim();
-            const tw = ctx.measureText(nameShort).width;
-            const lx = sx + 8 - tw / 2 - 3;
-            const ly = sy - 12;
-            ctx.fillStyle = isPlayer ? 'rgba(0,229,255,0.88)' : 'rgba(0,0,0,0.78)';
-            ctx.fillRect(lx, ly, tw + 6, 11);
+            const jobLabel = jobTitle || '';
+            const cardText = jobLabel ? nameShort + ' · ' + jobLabel : nameShort;
+            const tw = ctx.measureText(cardText).width;
+            const cardW = tw + 8;
+            const cardH = 12;
+            const cx = sx + 8;
+            const lx = cx - cardW / 2;
+            const ly = sy - 14;
+            // Card background
+            if (isPlayer) {
+                ctx.fillStyle = 'rgba(0,229,255,0.9)';
+            } else if (isSelected) {
+                ctx.fillStyle = 'rgba(233,69,96,0.88)';
+            } else {
+                ctx.fillStyle = 'rgba(0,0,0,0.65)';
+            }
+            // Rounded rect
+            const r = 3;
+            ctx.beginPath();
+            ctx.moveTo(lx + r, ly);
+            ctx.lineTo(lx + cardW - r, ly);
+            ctx.quadraticCurveTo(lx + cardW, ly, lx + cardW, ly + r);
+            ctx.lineTo(lx + cardW, ly + cardH - r);
+            ctx.quadraticCurveTo(lx + cardW, ly + cardH, lx + cardW - r, ly + cardH);
+            ctx.lineTo(lx + r, ly + cardH);
+            ctx.quadraticCurveTo(lx, ly + cardH, lx, ly + cardH - r);
+            ctx.lineTo(lx, ly + r);
+            ctx.quadraticCurveTo(lx, ly, lx + r, ly);
+            ctx.closePath();
+            ctx.fill();
+            // Small triangle pointer
+            ctx.beginPath();
+            ctx.moveTo(cx - 3, ly + cardH);
+            ctx.lineTo(cx, ly + cardH + 3);
+            ctx.lineTo(cx + 3, ly + cardH);
+            ctx.closePath();
+            ctx.fill();
+            // Text
             ctx.fillStyle = isPlayer ? '#003' : '#fff';
-            ctx.fillText(nameShort, sx + 8, sy - 3);
+            ctx.fillText(cardText, cx, ly + 9);
         }
     }
 
@@ -2430,6 +2919,18 @@ class PixelTileMap {
         }
     }
 
+    // Render a standalone NPC avatar to a data URL (for chat contacts, etc.)
+    renderAvatarDataURL(jobKey, gender) {
+        const size = 32;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        // Draw agent centered: x=16 places sx=8, y=24 places sy=4
+        this._drawAgent(ctx, 16, 24, jobKey, false, false, '', false, 0, gender, '');
+        return canvas.toDataURL();
+    }
+
     // Draw farming action animation (hoeing, watering, harvesting) for NPC at farm
     _drawFarmAction(ctx, x, y, frame, agentId) {
         const sx = Math.floor(x - 8);
@@ -2482,7 +2983,7 @@ class PixelTileMap {
         }
 
         // Small action label
-        const actionLabels = ['翻土', '翻土', '澆水', '收穫'];
+        const actionLabels = [t('翻土'), t('翻土'), t('澆水'), t('收穫')];
         ctx.font = '5px monospace';
         ctx.textAlign = 'center';
         ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -2604,24 +3105,52 @@ class PixelTileMap {
             if (!agent) continue;
             const isPlayer = aid === 'player';
             const isSelected = aid === selectedAgent;
-            this._drawAgent(ctx, pos.x, pos.y, pos.job, isPlayer, isSelected, agent.name || 'You', pos.walking, pos.walkStep, pos.gender);
+            this._drawAgent(ctx, pos.x, pos.y, pos.job, isPlayer, isSelected, agent.name || 'You', pos.walking, pos.walkStep, pos.gender, agent.job?.title || '');
             // Action animation overlay for farming NPCs
             if (!pos.walking && pos.atFarm && (pos.job === 'farmer' || pos.activity === 'working') && !isPlayer) {
                 this._drawFarmAction(ctx, pos.x, pos.y, this.animFrame, aid);
             }
         }
 
-        // Draw NPC conversation speech bubbles (higher priority than thoughts)
+        // Draw zzz above sleeping NPCs
+        for (const [aid, pos] of sortedAgents) {
+            const agent = agents[aid];
+            if (!agent || aid === 'player') continue;
+            if (agent.activity !== 'sleeping') continue;
+            // Animated zzz: three z's floating upward at different phases
+            const phase = (this.animFrame + aid.charCodeAt(0) * 7) % 90;
+            ctx.font = 'bold 7px monospace';
+            ctx.textAlign = 'center';
+            for (let i = 0; i < 3; i++) {
+                const t = ((phase + i * 30) % 90) / 90; // 0-1 cycle
+                const zx = pos.x + 6 + i * 3;
+                const zy = pos.y - 20 - t * 12;
+                const alpha = t < 0.8 ? 0.7 : 0.7 - (t - 0.8) * 3.5; // fade out at end
+                if (alpha <= 0) continue;
+                ctx.fillStyle = `rgba(150,180,255,${alpha})`;
+                ctx.font = `bold ${6 + i * 1.5}px monospace`;
+                ctx.fillText('z', zx, zy);
+            }
+        }
+
+        // Draw NPC conversation speech bubbles (only near player)
         ctx.font = '7px monospace';
         const now = Date.now();
         const activeConvos = this._activeConvoBubbles || [];
         const shownBubbleAgents = new Set();
+        const playerPos = this.agentPositions['player'];
+        const BUBBLE_RANGE = TILE * 8; // Only show bubbles within 8 tiles of player
         for (const convo of activeConvos) {
             if (now > convo.expiry) continue;
             const fadeAlpha = Math.min(1, (convo.expiry - now) / 2000); // Fade in last 2s
             for (const bubble of convo.bubbles) {
                 const pos = this.agentPositions[bubble.agentId];
                 if (!pos) continue;
+                // Skip bubbles far from player
+                if (playerPos) {
+                    const pdx = pos.x - playerPos.x, pdy = pos.y - playerPos.y;
+                    if (Math.sqrt(pdx*pdx + pdy*pdy) > BUBBLE_RANGE) continue;
+                }
                 shownBubbleAgents.add(bubble.agentId);
                 const text = bubble.text.substring(0, 24);
                 const tw = ctx.measureText(text).width;
@@ -2668,10 +3197,19 @@ class PixelTileMap {
         }
 
         // Draw thought bubbles for agents NOT currently showing speech bubbles
+        // Only show dialogue/emotional thoughts near the player (skip status updates)
+        const STATUS_PATTERNS = /技能進步|已完成\d|進步了|開啟|建造|產業|工廠/;
         for (const [aid, pos] of sortedAgents) {
             const agent = agents[aid];
             if (!agent || aid === 'player' || !agent.current_thought) continue;
             if (shownBubbleAgents.has(aid)) continue; // Skip if showing speech
+            // Skip status-like thoughts (skill progress, building progress, etc.)
+            if (STATUS_PATTERNS.test(agent.current_thought)) continue;
+            // Only show thought bubbles near the player
+            if (playerPos) {
+                const pdx = pos.x - playerPos.x, pdy = pos.y - playerPos.y;
+                if (Math.sqrt(pdx*pdx + pdy*pdy) > BUBBLE_RANGE) continue;
+            }
             // Show thoughts less frequently
             if ((this.animFrame + aid.charCodeAt(0)) % 120 < 80) continue;
 
@@ -2805,7 +3343,7 @@ class PixelTileMap {
 
         const TILE = 16;
         const icons = { deep_forest:'🌲', ancient_ruins:'🏛', abandoned_mine:'⛏', mountain_pass:'⛰', riverside_cave:'🕳', cursed_swamp:'🌿' };
-        const names = { deep_forest:'幽深森林', ancient_ruins:'古代遺跡', abandoned_mine:'廢棄礦坑', mountain_pass:'山間隘口', riverside_cave:'河畔洞窟', cursed_swamp:'詛咒沼澤' };
+        const names = { deep_forest:t('幽深森林'), ancient_ruins:t('古代遺跡'), abandoned_mine:t('廢棄礦坑'), mountain_pass:t('山間隘口'), riverside_cave:t('河畔洞窟'), cursed_swamp:t('詛咒沼澤') };
 
         // Place markers at map edges
         const edgePositions = [
@@ -2896,7 +3434,7 @@ class PixelTileMap {
             const labelX = baseX + 25;
             const labelY = baseY - 14;
             ctx.font = 'bold 7px monospace';
-            const text = '墓園';
+            const text = t('墓園');
             const tw = ctx.measureText(text).width;
             ctx.fillStyle = 'rgba(0,0,0,0.6)';
             ctx.fillRect(labelX - tw/2 - 3, labelY - 7, tw + 6, 11);
@@ -2913,23 +3451,25 @@ class PixelTileMap {
         const festival = data.activeFestival;
         const pulse = Math.sin(this.animFrame * 0.08) * 0.3 + 0.7;
 
-        // Draw festival banner at town square
+        // Draw festival banner at town square (above the location label)
         const squareZone = this.buildingZones['town_square'] || this.natureZones['town_square'];
         if (squareZone) {
             const cx = (squareZone.x + squareZone.w / 2) * TILE;
-            const cy = squareZone.y * TILE - 8;
+            const cy = squareZone.y * TILE - 24;
 
             // Banner
             ctx.fillStyle = `rgba(255,200,50,${0.6 * pulse})`;
-            ctx.fillRect(cx - 30, cy - 4, 60, 12);
-            ctx.strokeStyle = `rgba(255,150,0,${0.8 * pulse})`;
-            ctx.lineWidth = 1;
-            ctx.strokeRect(cx - 30, cy - 4, 60, 12);
-
+            const bannerText = `${festival.icon} ${festival.name}`;
             ctx.font = 'bold 8px monospace';
             ctx.textAlign = 'center';
+            const bw = ctx.measureText(bannerText).width + 12;
+            ctx.fillRect(cx - bw/2, cy - 4, bw, 12);
+            ctx.strokeStyle = `rgba(255,150,0,${0.8 * pulse})`;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(cx - bw/2, cy - 4, bw, 12);
+
             ctx.fillStyle = '#8B4513';
-            ctx.fillText(`${festival.icon} ${festival.name}`, cx, cy + 5);
+            ctx.fillText(bannerText, cx, cy + 5);
         }
 
         // Sparkle particles during festival
@@ -2983,22 +3523,37 @@ class PixelTileMap {
 
         if (nightAmount <= 0) return;
 
-        // Very light blue tint instead of heavy fog — just enough to shift palette
-        const tintAlpha = nightAmount * 0.15;
-        ctx.fillStyle = `rgba(15, 20, 60, ${tintAlpha.toFixed(3)})`;
+        // Night blue tint — strong enough to feel dark but still readable
+        const tintAlpha = nightAmount * 0.35;
+        ctx.fillStyle = `rgba(8, 12, 40, ${tintAlpha.toFixed(3)})`;
         ctx.fillRect(0, 0, ow, oh);
 
+        // Second pass: subtle purple/indigo layer for depth
+        const tintAlpha2 = nightAmount * 0.08;
+        ctx.fillStyle = `rgba(30, 15, 60, ${tintAlpha2.toFixed(3)})`;
+        ctx.fillRect(0, 0, ow, oh);
+
+        // Moon at night (only when nightAmount > 0.4)
+        if (nightAmount > 0.4) {
+            this._renderMoon(ctx, h, nightAmount);
+        }
+
         // Stars at night
-        if (nightAmount > 0.3) {
-            this._renderStars(ctx, nightAmount * 0.9);
+        if (nightAmount > 0.2) {
+            this._renderStars(ctx, nightAmount);
         }
 
         // Campfires & torches — the main night indicators
         this._renderCampfires(ctx, nightAmount);
 
         // Window lights at night
-        if (nightAmount > 0.2) {
+        if (nightAmount > 0.15) {
             this._renderWindowLights(ctx, h);
+        }
+
+        // Vignette effect at night — darker edges
+        if (nightAmount > 0.3) {
+            this._renderNightVignette(ctx, ow, oh, nightAmount);
         }
     }
 
@@ -3034,11 +3589,11 @@ class PixelTileMap {
     }
 
     _drawCampfire(ctx, cx, cy, alpha, frame, seed) {
-        // Warm ground glow
-        const glowRadius = 40 + Math.sin(frame * 0.08) * 5;
+        // Warm ground glow — larger radius for contrast against dark night
+        const glowRadius = 55 + Math.sin(frame * 0.08) * 6;
         const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowRadius);
-        grad.addColorStop(0, `rgba(255, 160, 50, ${(alpha * 0.25).toFixed(3)})`);
-        grad.addColorStop(0.5, `rgba(255, 100, 20, ${(alpha * 0.10).toFixed(3)})`);
+        grad.addColorStop(0, `rgba(255, 160, 50, ${(alpha * 0.35).toFixed(3)})`);
+        grad.addColorStop(0.4, `rgba(255, 100, 20, ${(alpha * 0.15).toFixed(3)})`);
         grad.addColorStop(1, 'rgba(255, 80, 0, 0)');
         ctx.fillStyle = grad;
         ctx.fillRect(cx - glowRadius, cy - glowRadius, glowRadius * 2, glowRadius * 2);
@@ -3093,43 +3648,168 @@ class PixelTileMap {
         ctx.fillStyle = `rgba(255, 240, 100, ${(alpha * 0.8).toFixed(2)})`;
         ctx.fillRect(tx, ty - 2 - fh + 1, 1, Math.max(1, Math.floor(fh * 0.5)));
 
-        // Small warm glow
-        const gr = 18 + flicker * 4;
+        // Warm glow — bigger and brighter
+        const gr = 26 + flicker * 5;
         const grad = ctx.createRadialGradient(tx, ty - 3, 0, tx, ty - 3, gr);
-        grad.addColorStop(0, `rgba(255, 150, 50, ${(alpha * 0.12).toFixed(3)})`);
+        grad.addColorStop(0, `rgba(255, 150, 50, ${(alpha * 0.2).toFixed(3)})`);
+        grad.addColorStop(0.5, `rgba(255, 120, 30, ${(alpha * 0.06).toFixed(3)})`);
         grad.addColorStop(1, 'rgba(255, 120, 30, 0)');
         ctx.fillStyle = grad;
         ctx.fillRect(tx - gr, ty - 3 - gr, gr * 2, gr * 2);
     }
 
     _renderStars(ctx, alpha) {
-        // Use deterministic positions based on grid so stars don't flicker
         const seed = 42;
-        const count = 40;
+        const count = 80; // More stars for denser sky
         for (let i = 0; i < count; i++) {
-            const sx = ((seed * (i + 1) * 73) % this.mapWidth);
-            const sy = ((seed * (i + 1) * 37 + i * 91) % (this.mapHeight * 0.6));
-            const twinkle = 0.5 + 0.5 * Math.sin(this.animFrame * 0.02 + i * 2.1);
-            const size = (i % 5 === 0) ? 2 : 1;
-            ctx.fillStyle = `rgba(255, 255, 240, ${(alpha * twinkle * 0.9).toFixed(2)})`;
+            const sx = ((seed * (i + 1) * 73 + i * 17) % this.mapWidth);
+            const sy = ((seed * (i + 1) * 37 + i * 91) % (this.mapHeight * 0.55));
+            const twinkle = 0.4 + 0.6 * Math.sin(this.animFrame * 0.025 + i * 2.1);
+            const isBright = (i % 7 === 0);
+            const size = isBright ? 2 : 1;
+            const brightness = isBright ? 1.0 : 0.85;
+            ctx.fillStyle = `rgba(255, 255, 240, ${(alpha * twinkle * brightness).toFixed(2)})`;
             ctx.fillRect(Math.floor(sx), Math.floor(sy), size, size);
+            // Bright stars get a subtle glow halo
+            if (isBright && alpha > 0.5) {
+                ctx.fillStyle = `rgba(200, 220, 255, ${(alpha * twinkle * 0.15).toFixed(2)})`;
+                ctx.fillRect(Math.floor(sx) - 1, Math.floor(sy) - 1, 4, 4);
+            }
         }
     }
 
+    _renderMoon(ctx, hour, nightAmount) {
+        // Moon position moves across the sky from east to west
+        const moonProgress = (hour >= 19) ? (hour - 19) / 12 : (hour + 5) / 12;
+        const mx = this.mapWidth * 0.15 + moonProgress * this.mapWidth * 0.7;
+        const arc = Math.sin(moonProgress * Math.PI);
+        const my = this.mapHeight * 0.05 + (1 - arc) * this.mapHeight * 0.08;
+        const moonAlpha = nightAmount * 0.95;
+
+        // Outer atmospheric glow (very large, subtle)
+        const outerR = 120;
+        const outerGrad = ctx.createRadialGradient(mx, my, 0, mx, my, outerR);
+        outerGrad.addColorStop(0, `rgba(180, 200, 240, ${(moonAlpha * 0.12).toFixed(3)})`);
+        outerGrad.addColorStop(0.3, `rgba(140, 170, 220, ${(moonAlpha * 0.06).toFixed(3)})`);
+        outerGrad.addColorStop(0.6, `rgba(100, 130, 200, ${(moonAlpha * 0.02).toFixed(3)})`);
+        outerGrad.addColorStop(1, 'rgba(100, 130, 200, 0)');
+        ctx.fillStyle = outerGrad;
+        ctx.fillRect(mx - outerR, my - outerR, outerR * 2, outerR * 2);
+
+        // Inner glow halo
+        const glowR = 55;
+        const grad = ctx.createRadialGradient(mx, my, 0, mx, my, glowR);
+        grad.addColorStop(0, `rgba(220, 235, 255, ${(moonAlpha * 0.35).toFixed(3)})`);
+        grad.addColorStop(0.3, `rgba(200, 220, 255, ${(moonAlpha * 0.18).toFixed(3)})`);
+        grad.addColorStop(0.6, `rgba(150, 180, 230, ${(moonAlpha * 0.06).toFixed(3)})`);
+        grad.addColorStop(1, 'rgba(150, 180, 230, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(mx - glowR, my - glowR, glowR * 2, glowR * 2);
+
+        // Moon body (larger, brighter)
+        ctx.fillStyle = `rgba(245, 248, 255, ${(moonAlpha * 0.98).toFixed(2)})`;
+        ctx.beginPath();
+        ctx.arc(mx, my, 14, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Subtle surface texture (darker patches)
+        ctx.fillStyle = `rgba(200, 210, 230, ${(moonAlpha * 0.2).toFixed(2)})`;
+        ctx.beginPath();
+        ctx.arc(mx - 3, my - 2, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(mx + 4, my + 3, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(mx - 1, my + 5, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Shadow for crescent shape
+        ctx.fillStyle = `rgba(8, 12, 40, ${(moonAlpha * 0.9).toFixed(2)})`;
+        ctx.beginPath();
+        ctx.arc(mx + 7, my - 2, 12, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Bright edge highlight on the lit side
+        ctx.strokeStyle = `rgba(255, 255, 255, ${(moonAlpha * 0.4).toFixed(2)})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(mx, my, 14, Math.PI * 0.7, Math.PI * 1.8);
+        ctx.stroke();
+    }
+
+    _renderNightVignette(ctx, w, h, nightAmount) {
+        const vigAlpha = nightAmount * 0.25;
+        // Top edge
+        const gradT = ctx.createLinearGradient(0, 0, 0, h * 0.2);
+        gradT.addColorStop(0, `rgba(0, 0, 15, ${vigAlpha.toFixed(3)})`);
+        gradT.addColorStop(1, 'rgba(0, 0, 15, 0)');
+        ctx.fillStyle = gradT;
+        ctx.fillRect(0, 0, w, h * 0.2);
+        // Bottom edge
+        const gradB = ctx.createLinearGradient(0, h * 0.85, 0, h);
+        gradB.addColorStop(0, 'rgba(0, 0, 15, 0)');
+        gradB.addColorStop(1, `rgba(0, 0, 15, ${vigAlpha.toFixed(3)})`);
+        ctx.fillStyle = gradB;
+        ctx.fillRect(0, h * 0.85, w, h * 0.15);
+        // Left edge
+        const gradL = ctx.createLinearGradient(0, 0, w * 0.12, 0);
+        gradL.addColorStop(0, `rgba(0, 0, 15, ${(vigAlpha * 0.6).toFixed(3)})`);
+        gradL.addColorStop(1, 'rgba(0, 0, 15, 0)');
+        ctx.fillStyle = gradL;
+        ctx.fillRect(0, 0, w * 0.12, h);
+        // Right edge
+        const gradR = ctx.createLinearGradient(w * 0.88, 0, w, 0);
+        gradR.addColorStop(0, 'rgba(0, 0, 15, 0)');
+        gradR.addColorStop(1, `rgba(0, 0, 15, ${(vigAlpha * 0.6).toFixed(3)})`);
+        ctx.fillStyle = gradR;
+        ctx.fillRect(w * 0.88, 0, w * 0.12, h);
+    }
+
     _renderWindowLights(ctx, hour) {
-        const lightAlpha = (hour >= 22 || hour < 4) ? 0.7 : (hour >= 20 ? (hour - 20) * 0.35 : hour >= 19 ? (hour - 19) * 0.7 : (6 - hour) * 0.35);
+        const lightAlpha = (hour >= 22 || hour < 4) ? 0.8 : (hour >= 20 ? (hour - 20) * 0.4 : hour >= 19 ? (hour - 19) * 0.8 : (6 - hour) * 0.4);
         // Draw warm glow on building zones
         for (const [locId, zone] of Object.entries(this.buildingZones)) {
             // Some buildings have lights off late at night
             if ((hour >= 1 && hour < 5) && !['tavern','guardpost','clinic'].includes(locId)) continue;
             const cx = (zone.x + zone.w / 2) * TILE;
             const cy = (zone.y + zone.h / 2) * TILE;
-            const radius = Math.max(zone.w, zone.h) * TILE * 0.6;
+            const radius = Math.max(zone.w, zone.h) * TILE * 0.7;
             const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-            grad.addColorStop(0, `rgba(255, 200, 80, ${(lightAlpha * 0.3).toFixed(2)})`);
-            grad.addColorStop(1, 'rgba(255, 200, 80, 0)');
+            grad.addColorStop(0, `rgba(255, 200, 80, ${(lightAlpha * 0.4).toFixed(2)})`);
+            grad.addColorStop(0.6, `rgba(255, 180, 60, ${(lightAlpha * 0.12).toFixed(2)})`);
+            grad.addColorStop(1, 'rgba(255, 180, 60, 0)');
             ctx.fillStyle = grad;
             ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
         }
+    }
+
+    // Render NPC pixel art avatar to a data URL for use in contact list etc.
+    // Returns a cached data URL string of the NPC's sprite.
+    renderAvatarDataURL(jobKey, gender) {
+        const cacheKey = `${jobKey}_${gender}`;
+        if (!this._avatarCache) this._avatarCache = {};
+        if (this._avatarCache[cacheKey]) return this._avatarCache[cacheKey];
+
+        const scale = 3;
+        const spriteW = 16, spriteH = 28;
+        const w = spriteW * scale, h = spriteH * scale;
+        const offscreen = document.createElement('canvas');
+        offscreen.width = w;
+        offscreen.height = h;
+        const ctx = offscreen.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+
+        // Scale up so pixel art is crisp
+        ctx.scale(scale, scale);
+
+        // Draw the agent at a fixed position (centered in the sprite area)
+        // _drawAgent expects center-bottom x,y — sprite is 16w x 24h drawn from (x-8, y-20)
+        // We place center at x=8, bottom at y=spriteH-2 so sprite fits nicely
+        this._drawAgent(ctx, 8, spriteH - 4, jobKey, false, false, '', false, 0, gender, '');
+
+        const dataUrl = offscreen.toDataURL('image/png');
+        this._avatarCache[cacheKey] = dataUrl;
+        return dataUrl;
     }
 }

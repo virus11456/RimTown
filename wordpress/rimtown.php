@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 3.1.4
+ * Version: 4.1.6
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,408 +13,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '3.1.4');
+define('RIMTOWN_VERSION', '4.1.5');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
-
-// =====================================================
-// DATABASE SETUP — Custom tables for cloud saves
-// =====================================================
-function rimtown_activate() {
-    global $wpdb;
-    $charset = $wpdb->get_charset_collate();
-    $table = $wpdb->prefix . 'rimtown_saves';
-
-    $sql = "CREATE TABLE $table (
-        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-        user_id BIGINT UNSIGNED NOT NULL,
-        town_id VARCHAR(64) NOT NULL,
-        town_name VARCHAR(128) NOT NULL DEFAULT '',
-        season VARCHAR(16) NOT NULL DEFAULT '',
-        year INT NOT NULL DEFAULT 1,
-        day INT NOT NULL DEFAULT 1,
-        population INT NOT NULL DEFAULT 0,
-        save_data LONGTEXT NOT NULL,
-        achievements TEXT DEFAULT NULL,
-        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        PRIMARY KEY (id),
-        UNIQUE KEY user_town (user_id, town_id),
-        KEY user_id (user_id)
-    ) $charset;";
-
-    require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-    dbDelta($sql);
-
-    // Achievements table
-    $ach_table = $wpdb->prefix . 'rimtown_achievements';
-    $sql2 = "CREATE TABLE $ach_table (
-        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-        user_id BIGINT UNSIGNED NOT NULL,
-        achievement_key VARCHAR(64) NOT NULL,
-        unlocked_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        town_id VARCHAR(64) DEFAULT NULL,
-        PRIMARY KEY (id),
-        UNIQUE KEY user_ach (user_id, achievement_key),
-        KEY user_id (user_id)
-    ) $charset;";
-    dbDelta($sql2);
-
-    update_option('rimtown_db_version', '2.0');
-}
-register_activation_hook(__FILE__, 'rimtown_activate');
-
-// Ensure tables exist on plugin load (handles upgrades)
-function rimtown_check_db() {
-    if (get_option('rimtown_db_version') !== '2.0') {
-        rimtown_activate();
-    }
-}
-add_action('plugins_loaded', 'rimtown_check_db');
-
-// =====================================================
-// RATE LIMITING — Protect auth endpoints from brute force
-// =====================================================
-function rimtown_rate_limit_check($action, $max_attempts = 5, $window_seconds = 300) {
-    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-    $transient_key = 'rimtown_rl_' . md5($action . '_' . $ip);
-    $attempts = get_transient($transient_key);
-    if ($attempts === false) {
-        $attempts = 0;
-    }
-    if ($attempts >= $max_attempts) {
-        return new WP_Error('rate_limited', '請求過於頻繁，請稍後再試', array('status' => 429));
-    }
-    set_transient($transient_key, $attempts + 1, $window_seconds);
-    return true;
-}
-
-// =====================================================
-// REST API — Account, Cloud Saves, Achievements
-// =====================================================
-function rimtown_register_api() {
-    $ns = 'rimtown/v1';
-
-    // --- Auth endpoints ---
-    register_rest_route($ns, '/register', array(
-        'methods' => 'POST',
-        'callback' => 'rimtown_api_register',
-        'permission_callback' => '__return_true',
-    ));
-    register_rest_route($ns, '/login', array(
-        'methods' => 'POST',
-        'callback' => 'rimtown_api_login',
-        'permission_callback' => '__return_true',
-    ));
-    register_rest_route($ns, '/logout', array(
-        'methods' => 'POST',
-        'callback' => 'rimtown_api_logout',
-        'permission_callback' => '__return_true',
-    ));
-    register_rest_route($ns, '/reset-password', array(
-        'methods' => 'POST',
-        'callback' => 'rimtown_api_reset_password',
-        'permission_callback' => '__return_true',
-    ));
-    register_rest_route($ns, '/me', array(
-        'methods' => 'GET',
-        'callback' => 'rimtown_api_me',
-        'permission_callback' => '__return_true',
-    ));
-
-    // --- Cloud save endpoints ---
-    register_rest_route($ns, '/saves', array(
-        'methods' => 'GET',
-        'callback' => 'rimtown_api_list_saves',
-        'permission_callback' => 'is_user_logged_in',
-    ));
-    register_rest_route($ns, '/save', array(
-        'methods' => 'POST',
-        'callback' => 'rimtown_api_save',
-        'permission_callback' => 'is_user_logged_in',
-    ));
-    register_rest_route($ns, '/save/(?P<town_id>[a-zA-Z0-9_]+)', array(
-        'methods' => 'GET',
-        'callback' => 'rimtown_api_load_save',
-        'permission_callback' => 'is_user_logged_in',
-    ));
-    register_rest_route($ns, '/save/(?P<town_id>[a-zA-Z0-9_]+)', array(
-        'methods' => 'DELETE',
-        'callback' => 'rimtown_api_delete_save',
-        'permission_callback' => 'is_user_logged_in',
-    ));
-
-    // --- Achievements ---
-    register_rest_route($ns, '/achievements', array(
-        'methods' => 'GET',
-        'callback' => 'rimtown_api_get_achievements',
-        'permission_callback' => 'is_user_logged_in',
-    ));
-    register_rest_route($ns, '/achievements', array(
-        'methods' => 'POST',
-        'callback' => 'rimtown_api_unlock_achievement',
-        'permission_callback' => 'is_user_logged_in',
-    ));
-}
-add_action('rest_api_init', 'rimtown_register_api');
-
-// Allow registration even if WP settings disable it
-function rimtown_api_register($request) {
-    $rate_check = rimtown_rate_limit_check('register', 5, 300);
-    if (is_wp_error($rate_check)) return $rate_check;
-
-    $username = sanitize_user($request->get_param('username'));
-    $password = $request->get_param('password');
-    $email = sanitize_email($request->get_param('email'));
-
-    if (empty($username) || strlen($username) < 3) {
-        return new WP_Error('bad_username', '使用者名稱至少3個字元', array('status' => 400));
-    }
-    if (empty($password) || strlen($password) < 6) {
-        return new WP_Error('bad_password', '密碼至少6個字元', array('status' => 400));
-    }
-    if (username_exists($username)) {
-        return new WP_Error('username_exists', '此使用者名稱已被使用', array('status' => 409));
-    }
-    if (!empty($email) && email_exists($email)) {
-        return new WP_Error('email_exists', '此電子郵件已被使用', array('status' => 409));
-    }
-
-    $user_id = wp_create_user($username, $password, $email ?: $username . '@rimtown.local');
-    if (is_wp_error($user_id)) {
-        return new WP_Error('register_failed', $user_id->get_error_message(), array('status' => 500));
-    }
-
-    // Auto-login after registration
-    wp_set_current_user($user_id);
-    wp_set_auth_cookie($user_id, true);
-
-    return rest_ensure_response(array(
-        'success' => true,
-        'user' => array('id' => $user_id, 'username' => $username),
-        'nonce' => wp_create_nonce('wp_rest'),
-    ));
-}
-
-function rimtown_api_login($request) {
-    $rate_check = rimtown_rate_limit_check('login', 5, 300);
-    if (is_wp_error($rate_check)) return $rate_check;
-
-    $username = sanitize_user($request->get_param('username'));
-    $password = $request->get_param('password');
-
-    $user = wp_authenticate($username, $password);
-    if (is_wp_error($user)) {
-        return new WP_Error('login_failed', '使用者名稱或密碼錯誤', array('status' => 401));
-    }
-
-    wp_set_current_user($user->ID);
-    wp_set_auth_cookie($user->ID, true);
-
-    return rest_ensure_response(array(
-        'success' => true,
-        'user' => array('id' => $user->ID, 'username' => $user->user_login),
-        'nonce' => wp_create_nonce('wp_rest'),
-    ));
-}
-
-function rimtown_api_reset_password($request) {
-    $rate_check = rimtown_rate_limit_check('reset_password', 3, 600);
-    if (is_wp_error($rate_check)) return $rate_check;
-
-    $username = sanitize_user($request->get_param('username'));
-    $email = sanitize_email($request->get_param('email'));
-    $new_password = $request->get_param('new_password');
-
-    if (empty($username)) {
-        return new WP_Error('missing_username', '請輸入使用者名稱', array('status' => 400));
-    }
-    if (empty($email)) {
-        return new WP_Error('missing_email', '請輸入註冊時的電子郵件', array('status' => 400));
-    }
-    if (empty($new_password) || strlen($new_password) < 6) {
-        return new WP_Error('bad_password', '新密碼至少6個字元', array('status' => 400));
-    }
-
-    $user = get_user_by('login', $username);
-    if (!$user) {
-        return new WP_Error('not_found', '找不到此使用者', array('status' => 404));
-    }
-    if (strtolower($user->user_email) !== strtolower($email)) {
-        return new WP_Error('email_mismatch', '電子郵件不符合', array('status' => 403));
-    }
-
-    wp_set_password($new_password, $user->ID);
-
-    return rest_ensure_response(array(
-        'success' => true,
-        'message' => '密碼已重設，請用新密碼登入',
-    ));
-}
-
-function rimtown_api_logout($request) {
-    wp_logout();
-    return rest_ensure_response(array('success' => true));
-}
-
-function rimtown_api_me($request) {
-    if (!is_user_logged_in()) {
-        return rest_ensure_response(array('logged_in' => false));
-    }
-    $user = wp_get_current_user();
-    return rest_ensure_response(array(
-        'logged_in' => true,
-        'user' => array('id' => $user->ID, 'username' => $user->user_login),
-    ));
-}
-
-// --- Cloud Save CRUD ---
-function rimtown_api_list_saves($request) {
-    global $wpdb;
-    $table = $wpdb->prefix . 'rimtown_saves';
-    $user_id = get_current_user_id();
-
-    $rows = $wpdb->get_results($wpdb->prepare(
-        "SELECT town_id, town_name, season, year, day, population, updated_at FROM $table WHERE user_id = %d ORDER BY updated_at DESC",
-        $user_id
-    ));
-
-    return rest_ensure_response(array('saves' => $rows));
-}
-
-function rimtown_api_save($request) {
-    global $wpdb;
-    $table = $wpdb->prefix . 'rimtown_saves';
-    $user_id = get_current_user_id();
-
-    $town_id = sanitize_text_field($request->get_param('town_id'));
-    $town_name = sanitize_text_field($request->get_param('town_name'));
-    $save_data = $request->get_param('save_data'); // JSON string
-    $season = sanitize_text_field($request->get_param('season'));
-    $year = intval($request->get_param('year'));
-    $day = intval($request->get_param('day'));
-    $population = intval($request->get_param('population'));
-
-    if (empty($town_id) || empty($save_data)) {
-        return new WP_Error('missing_data', '缺少必要資料', array('status' => 400));
-    }
-
-    // Check save size (max 50MB per town)
-    if (strlen($save_data) > 50 * 1024 * 1024) {
-        return new WP_Error('too_large', '存檔大小超過限制', array('status' => 413));
-    }
-
-    // Count user's saves (max 20 towns per user)
-    $count = $wpdb->get_var($wpdb->prepare(
-        "SELECT COUNT(*) FROM $table WHERE user_id = %d",
-        $user_id
-    ));
-    $existing = $wpdb->get_var($wpdb->prepare(
-        "SELECT id FROM $table WHERE user_id = %d AND town_id = %s",
-        $user_id, $town_id
-    ));
-    if (!$existing && $count >= 20) {
-        return new WP_Error('too_many_saves', '每個帳號最多20個城鎮', array('status' => 400));
-    }
-
-    if ($existing) {
-        $wpdb->update($table, array(
-            'town_name' => $town_name,
-            'save_data' => $save_data,
-            'season' => $season,
-            'year' => $year,
-            'day' => $day,
-            'population' => $population,
-        ), array('user_id' => $user_id, 'town_id' => $town_id));
-    } else {
-        $wpdb->insert($table, array(
-            'user_id' => $user_id,
-            'town_id' => $town_id,
-            'town_name' => $town_name,
-            'save_data' => $save_data,
-            'season' => $season,
-            'year' => $year,
-            'day' => $day,
-            'population' => $population,
-        ));
-    }
-
-    return rest_ensure_response(array('success' => true, 'town_id' => $town_id));
-}
-
-function rimtown_api_load_save($request) {
-    global $wpdb;
-    $table = $wpdb->prefix . 'rimtown_saves';
-    $user_id = get_current_user_id();
-    $town_id = sanitize_text_field($request->get_param('town_id'));
-
-    $row = $wpdb->get_row($wpdb->prepare(
-        "SELECT save_data FROM $table WHERE user_id = %d AND town_id = %s",
-        $user_id, $town_id
-    ));
-
-    if (!$row) {
-        return new WP_Error('not_found', '找不到此存檔', array('status' => 404));
-    }
-
-    return rest_ensure_response(array('save_data' => $row->save_data));
-}
-
-function rimtown_api_delete_save($request) {
-    global $wpdb;
-    $table = $wpdb->prefix . 'rimtown_saves';
-    $user_id = get_current_user_id();
-    $town_id = sanitize_text_field($request->get_param('town_id'));
-
-    $wpdb->delete($table, array('user_id' => $user_id, 'town_id' => $town_id));
-    return rest_ensure_response(array('success' => true));
-}
-
-// --- Achievements ---
-function rimtown_api_get_achievements($request) {
-    global $wpdb;
-    $table = $wpdb->prefix . 'rimtown_achievements';
-    $user_id = get_current_user_id();
-
-    $rows = $wpdb->get_results($wpdb->prepare(
-        "SELECT achievement_key, unlocked_at, town_id FROM $table WHERE user_id = %d",
-        $user_id
-    ));
-
-    return rest_ensure_response(array('achievements' => $rows));
-}
-
-function rimtown_api_unlock_achievement($request) {
-    global $wpdb;
-    $table = $wpdb->prefix . 'rimtown_achievements';
-    $user_id = get_current_user_id();
-    $key = sanitize_text_field($request->get_param('key'));
-    $town_id = sanitize_text_field($request->get_param('town_id'));
-
-    if (empty($key)) {
-        return new WP_Error('missing_key', '缺少成就代碼', array('status' => 400));
-    }
-
-    // Insert ignore — don't error on duplicate
-    $wpdb->query($wpdb->prepare(
-        "INSERT IGNORE INTO $table (user_id, achievement_key, town_id) VALUES (%d, %s, %s)",
-        $user_id, $key, $town_id
-    ));
-
-    return rest_ensure_response(array('success' => true, 'key' => $key));
-}
-
-// Pass nonce and login state to frontend
-function rimtown_localize_script() {
-    $user = wp_get_current_user();
-    wp_localize_script('rimtown-app', 'rimtownAuth', array(
-        'restUrl' => esc_url_raw(rest_url('rimtown/v1/')),
-        'nonce' => wp_create_nonce('wp_rest'),
-        'loggedIn' => is_user_logged_in(),
-        'username' => is_user_logged_in() ? $user->user_login : '',
-        'userId' => is_user_logged_in() ? $user->ID : 0,
-    ));
-}
 
 /**
  * Register shortcode [rimtown]
@@ -435,6 +36,12 @@ function rimtown_shortcode($atts) {
     ob_start();
     ?>
     <div id="rimtown-app" class="rimtown-container" style="height:<?php echo $height; ?>">
+        <!-- Guest mode banner -->
+        <div id="guest-banner" class="hidden">
+            <span>🎮 訪客模式 — 存檔僅保留在本機</span>
+            <button id="guest-register-btn">註冊帳號</button>
+            <button id="guest-banner-close">✕</button>
+        </div>
         <!-- Town Manager Modal -->
         <div id="town-modal" class="modal hidden">
             <div class="modal-content town-content">
@@ -465,10 +72,6 @@ function rimtown_shortcode($atts) {
                     <input type="password" id="llm-api-key" placeholder="輸入你的 API 金鑰...">
                 </div>
                 <div class="setting-group">
-                    <label>備用 Groq API Key <span style="font-size:11px;color:var(--text-secondary)">（主 AI 超限時自動切換）</span></label>
-                    <input type="password" id="fallback-groq-key" placeholder="gsk_... （選填，免費申請於 console.groq.com）">
-                </div>
-                <div class="setting-group">
                     <label>模擬速度</label>
                     <select id="sim-speed">
                         <option value="3000">慢速（3秒）</option>
@@ -477,6 +80,13 @@ function rimtown_shortcode($atts) {
                         <option value="500">極快（0.5秒）</option>
                     </select>
                 </div>
+                <div class="setting-group">
+                    <label>背景音樂</label>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <button id="bgm-toggle" class="btn-icon" title="靜音" style="font-size:18px;padding:4px 8px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:6px;cursor:pointer;">🔊</button>
+                        <input id="bgm-volume" type="range" min="0" max="100" value="30" style="flex:1;">
+                    </div>
+                </div>
                 <div class="modal-buttons">
                     <button id="settings-save" class="btn-accent">儲存</button>
                     <button id="settings-cancel">取消</button>
@@ -484,105 +94,7 @@ function rimtown_shortcode($atts) {
             </div>
         </div>
 
-        <!-- Auth Modal -->
-        <div id="auth-modal" class="modal hidden">
-            <div class="modal-content auth-content">
-                <div class="auth-tabs">
-                    <button class="auth-tab active" data-auth-tab="login">登入</button>
-                    <button class="auth-tab" data-auth-tab="register">註冊</button>
-                </div>
-                <div id="auth-login-form" class="auth-form">
-                    <div class="setting-group"><label>使用者名稱</label><input type="text" id="auth-login-user" placeholder="輸入帳號..." autocomplete="username"></div>
-                    <div class="setting-group"><label>密碼</label><input type="password" id="auth-login-pass" placeholder="輸入密碼..." autocomplete="current-password"></div>
-                    <div id="auth-login-error" class="auth-error"></div>
-                    <div class="modal-buttons"><button id="auth-login-btn" class="btn-accent">登入</button><button class="auth-close-btn">取消</button></div>
-                    <div style="text-align:center;margin-top:8px"><a href="#" id="auth-forgot-link" style="font-size:0.72rem;color:var(--accent-light)">忘記密碼？</a></div>
-                </div>
-                <div id="auth-register-form" class="auth-form hidden">
-                    <div class="setting-group"><label>使用者名稱</label><input type="text" id="auth-reg-user" placeholder="至少3個字元..." autocomplete="username"></div>
-                    <div class="setting-group"><label>電子郵件（選填）</label><input type="email" id="auth-reg-email" placeholder="your@email.com" autocomplete="email"></div>
-                    <div class="setting-group"><label>密碼</label><input type="password" id="auth-reg-pass" placeholder="至少6個字元..." autocomplete="new-password"></div>
-                    <div class="setting-group"><label>確認密碼</label><input type="password" id="auth-reg-pass2" placeholder="再次輸入密碼..." autocomplete="new-password"></div>
-                    <div id="auth-reg-error" class="auth-error"></div>
-                    <div class="modal-buttons"><button id="auth-reg-btn" class="btn-accent">註冊</button><button class="auth-close-btn">取消</button></div>
-                </div>
-                <div id="auth-reset-form" class="auth-form hidden">
-                    <h3 style="font-size:0.8rem;color:var(--text-primary);margin-bottom:8px">重設密碼</h3>
-                    <p style="font-size:0.68rem;color:var(--text-muted);margin-bottom:10px">輸入您的帳號和註冊時的電子郵件來重設密碼</p>
-                    <div class="setting-group"><label>使用者名稱</label><input type="text" id="auth-reset-user" placeholder="輸入帳號..." autocomplete="username"></div>
-                    <div class="setting-group"><label>電子郵件</label><input type="email" id="auth-reset-email" placeholder="註冊時的信箱..." autocomplete="email"></div>
-                    <div class="setting-group"><label>新密碼</label><input type="password" id="auth-reset-pass" placeholder="至少6個字元..." autocomplete="new-password"></div>
-                    <div class="setting-group"><label>確認新密碼</label><input type="password" id="auth-reset-pass2" placeholder="再次輸入新密碼..." autocomplete="new-password"></div>
-                    <div id="auth-reset-error" class="auth-error"></div>
-                    <div id="auth-reset-success" class="auth-error" style="color:var(--accent)"></div>
-                    <div class="modal-buttons"><button id="auth-reset-btn" class="btn-accent">重設密碼</button><button id="auth-reset-back" class="auth-close-btn">返回登入</button></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Achievement Toast -->
-        <div id="achievement-toast" class="achievement-toast hidden"></div>
-
-        <!-- Header -->
-        <div class="header">
-            <h1>邊境鎮</h1>
-            <div class="header-info">
-                <span id="population-count">人口：--</span>
-                <span id="clock-display" class="clock-display">載入中...</span>
-                <span id="terrain-display" class="terrain-display"></span>
-                <div class="controls">
-                    <button class="btn-towns" data-action="show-towns">城鎮列表</button>
-                    <button id="btn-new-game" class="btn-new-game">新地圖</button>
-                    <button id="btn-save" class="btn-save">儲存</button>
-                    <button id="btn-export" class="btn-export" title="匯出存檔">匯出</button>
-                    <button id="btn-import" class="btn-import" title="匯入存檔">匯入</button>
-                    <button id="btn-pause">暫停</button>
-                    <button id="btn-resume" class="active">播放</button>
-                    <div class="speed-controls">
-                        <button class="btn-speed active" data-speed="1">1x</button>
-                        <button class="btn-speed" data-speed="1.5">1.5x</button>
-                        <button class="btn-speed" data-speed="2">2x</button>
-                        <button class="btn-speed" data-speed="3">3x</button>
-                    </div>
-                    <span id="llm-status" class="llm-status" title="AI 狀態">AI:--</span>
-                    <button id="btn-settings" class="btn-settings">設定</button>
-                    <button id="btn-account" class="btn-account" title="帳號">帳號</button>
-                    <span id="version-display" class="version-display">v<?php echo RIMTOWN_VERSION; ?></span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Mobile Compact Header (only visible on mobile) -->
-        <div class="mobile-header">
-            <div class="mobile-header-row">
-                <span class="mobile-title">邊境鎮</span>
-                <span id="mobile-population" class="mobile-population">--人</span>
-                <span id="mobile-clock" class="mobile-clock">載入中...</span>
-                <div class="mobile-header-actions">
-                    <button id="mobile-btn-pause" class="mobile-ctrl-btn" title="暫停/播放">⏸</button>
-                    <button id="mobile-btn-menu" class="mobile-ctrl-btn" title="選單">⋯</button>
-                </div>
-            </div>
-            <div id="mobile-menu-dropdown" class="mobile-menu-dropdown hidden">
-                <button data-action="show-towns">城鎮列表</button>
-                <button id="mobile-new-game">新地圖</button>
-                <button id="mobile-save">儲存</button>
-                <button id="mobile-btn-settings">設定</button>
-                <button id="mobile-btn-account">帳號</button>
-                <div class="mobile-menu-speed">
-                    <span>速度</span>
-                    <div class="speed-controls">
-                        <button class="btn-speed active" data-speed="1">1x</button>
-                        <button class="btn-speed" data-speed="1.5">1.5</button>
-                        <button class="btn-speed" data-speed="2">2x</button>
-                        <button class="btn-speed" data-speed="3">3x</button>
-                    </div>
-                </div>
-                <div class="mobile-menu-ai">
-                    <span id="mobile-llm-status" class="llm-status" title="AI 狀態">AI:--</span>
-                </div>
-            </div>
-        </div>
+        <!-- Header info is integrated into mobile-header; desktop uses sidebar -->
 
         <!-- Main Layout -->
         <div class="main-layout">
@@ -592,22 +104,179 @@ function rimtown_shortcode($atts) {
             </div>
             <div class="rt-sidebar" id="rimtown-sidebar">
                 <button class="mobile-back-to-map" id="mobile-back-to-map">&#9650; 返回地圖</button>
-                <div class="mobile-drag-handle" id="mobile-drag-handle"></div>
                 <div class="rt-sidebar-tabs">
-                    <button data-tab="residents" class="active"><span class="tab-icon">&#x1F465;</span><span class="tab-label">居民</span></button>
-                    <button data-tab="chat"><span class="tab-icon">&#x1F4AC;</span><span class="tab-label">聊天</span></button>
-                    <button data-tab="detail"><span class="tab-icon">&#x1F4CB;</span><span class="tab-label">詳情</span></button>
-                    <button data-tab="economy"><span class="tab-icon">&#x1F4B0;</span><span class="tab-label">經濟</span></button>
-                    <button data-tab="industry"><span class="tab-icon">&#x1F3ED;</span><span class="tab-label">產業</span></button>
-                    <button data-tab="quest"><span class="tab-icon">&#x2694;&#xFE0F;</span><span class="tab-label">任務</span></button>
-                    <button data-tab="achievements"><span class="tab-icon">&#x1F3C6;</span><span class="tab-label">成就</span></button>
-                    <button data-tab="events"><span class="tab-icon">&#x1F4F0;</span><span class="tab-label">事件</span></button>
-                    <button data-tab="newspaper"><span class="tab-icon">&#x1F5DE;&#xFE0F;</span><span class="tab-label">日報</span></button>
-                    <button data-tab="log"><span class="tab-icon">&#x1F4DD;</span><span class="tab-label">日誌</span></button>
+                    <button data-tab="residents" class="active"><span class="tab-icon">👥</span><span class="tab-label">居民</span></button>
+                    <button data-tab="chat"><span class="tab-icon">💬</span><span class="tab-label">聊天</span></button>
+                    <button data-tab="quest"><span class="tab-icon">⚔️</span><span class="tab-label">任務</span></button>
+                    <button data-tab="economy"><span class="tab-icon">💰</span><span class="tab-label">經濟</span></button>
+                    <button data-tab="detail" class="mobile-hidden"><span class="tab-icon">📋</span><span class="tab-label">詳情</span></button>
+                    <button data-tab="industry" class="mobile-hidden"><span class="tab-icon">🏭</span><span class="tab-label">產業</span></button>
+                    <button data-tab="events" class="mobile-hidden"><span class="tab-icon">📰</span><span class="tab-label">事件</span></button>
+                    <button data-tab="records" class="mobile-hidden"><span class="tab-icon">📝</span><span class="tab-label">紀錄</span></button>
+                    <button data-tab="achievements" class="mobile-hidden"><span class="tab-icon">🏆</span><span class="tab-label">成就</span></button>
+                    <button data-tab="settings"><span class="tab-icon">⚙️</span><span class="tab-label">設定</span></button>
                 </div>
                 <div class="rt-sidebar-content" id="sidebar-content"></div>
             </div>
-            <button class="mobile-sidebar-toggle" id="mobile-sidebar-toggle" title="顯示側欄">&#9776;</button>
+            <!-- mobile-sidebar-toggle removed: was non-functional -->
+        </div>
+        <!-- Tutorial Overlay -->
+        <div id="tutorial-overlay" class="tutorial-overlay hidden">
+            <div class="tutorial-card">
+                <div class="tutorial-step" data-step="0">
+                    <div class="tutorial-step-icon">🏘️</div>
+                    <h3>歡迎來到邊境鎮</h3>
+                    <div class="tutorial-step-text">
+                        <p>作為這座 <strong>邊境鎮</strong> 的管理者，你需要引導居民們建設家園、發展經濟、抵禦外敵，並見證他們之間的愛恨情仇。</p>
+                        <ul>
+                            <li>📖 主線五章劇情，多路線自由選擇</li>
+                            <li>🎭 20+ 位性格鮮明的居民</li>
+                            <li>💬 AI 驅動的真實對話</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="tutorial-step hidden" data-step="1">
+                    <div class="tutorial-step-icon">🗺️</div>
+                    <h3>地圖與居民</h3>
+                    <div class="tutorial-step-text">
+                        <p>左側是即時更新的 <strong>城鎮地圖</strong>，居民們會在鎮上移動、工作、社交。</p>
+                        <ul>
+                            <li>👥 點擊「居民」查看所有鎮民</li>
+                            <li>🏠 建築會出現在地圖上</li>
+                            <li>🌙 日夜交替，天氣變化</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="tutorial-step hidden" data-step="2">
+                    <div class="tutorial-step-icon">💬</div>
+                    <h3>與居民聊天</h3>
+                    <div class="tutorial-step-text">
+                        <p>點擊「聊天」頁籤，選擇一位居民開始對話。</p>
+                        <ul>
+                            <li>💕 提升好感度，解鎖支線劇情</li>
+                            <li>🤝 建立友誼、戀愛、甚至結婚</li>
+                            <li>🧠 居民會記住你們的互動</li>
+                            <li>📰 居民之間也會自己聊天、產生八卦</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="tutorial-step hidden" data-step="3">
+                    <div class="tutorial-step-icon">💰</div>
+                    <h3>經濟與產業</h3>
+                    <div class="tutorial-step-text">
+                        <p><strong>經濟</strong> 頁籤可以查看資源、建築、科技樹和貿易。</p>
+                        <p><strong>產業</strong> 頁籤管理農場種植、工廠加工和產業發展。</p>
+                        <ul>
+                            <li>🌾 種植作物、收穫農產品</li>
+                            <li>🏭 建造工廠加工原料</li>
+                            <li>📈 隨著人口增長，城鎮等級提升</li>
+                            <li>⚔️ 完成任務獲得獎勵</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="tutorial-step hidden" data-step="4">
+                    <div class="tutorial-step-icon">📰</div>
+                    <h3>事件與探索</h3>
+                    <div class="tutorial-step-text">
+                        <p>遊戲中會發生各種 <strong>隨機事件</strong>：</p>
+                        <ul>
+                            <li>🗳️ 鎮長選舉 —— 投票選出你支持的候選人</li>
+                            <li>⚔️ 盜匪襲擊 —— 守衛和居民會奮力防禦</li>
+                            <li>🎪 季節慶典 —— 春祭、仲夏篝火、豐收節、冬至</li>
+                            <li>🗺️ 探索系統 —— 派遣探險隊探索鎮外區域</li>
+                            <li>🗞️ AI 日報 —— 村莊記者會報導鎮上的大小事</li>
+                        </ul>
+                        <p style="color:var(--text-muted);font-size:0.72rem;margin-top:10px">提示：在設定中配置 AI 語言模型（如 Groq 免費），可以讓居民對話更加生動！</p>
+                    </div>
+                </div>
+                <div class="tutorial-nav">
+                    <button id="tutorial-prev" class="tutorial-btn hidden" onclick="window._rimtownApp?._tutorialPrev?.()">上一步</button>
+                    <div class="tutorial-dots" id="tutorial-dots"></div>
+                    <button id="tutorial-next" class="tutorial-btn tutorial-btn-primary" onclick="window._rimtownApp?._tutorialNext?.()">開始旅程</button>
+                </div>
+                <button id="tutorial-skip" class="tutorial-skip" onclick="window._rimtownApp?._dismissTutorial?.()">跳過引導</button>
+            </div>
+        </div>
+
+        <!-- Game Dialog -->
+        <div id="game-dialog" class="modal hidden">
+            <div class="modal-content game-dialog-content">
+                <div class="game-dialog-icon" id="game-dialog-icon">⚠️</div>
+                <div class="game-dialog-msg" id="game-dialog-msg"></div>
+                <div class="game-dialog-buttons" id="game-dialog-buttons"></div>
+            </div>
+        </div>
+
+        <!-- Achievement Toast -->
+        <div id="achievement-toast" class="achievement-toast hidden"></div>
+
+        <!-- Center Notification Card Overlay -->
+        <div id="center-notification-overlay" class="center-notification-overlay hidden">
+            <div class="center-notification-backdrop"></div>
+            <div class="center-notification-card" id="center-notification-card"></div>
+        </div>
+
+        <!-- Quest Guidance Banner -->
+        <div id="quest-guidance" class="quest-guidance hidden">
+            <div class="quest-guidance-icon">📋</div>
+            <div class="quest-guidance-text">
+                <div class="quest-guidance-title"></div>
+                <div class="quest-guidance-hint"></div>
+            </div>
+            <button class="quest-guidance-dismiss" title="關閉提示">✕</button>
+        </div>
+
+        <!-- Mobile Header -->
+        <div class="mobile-header">
+            <div class="mobile-header-row">
+                <span class="mobile-title">邊境鎮</span>
+                <span id="mobile-pop-display" style="font-size:0.72rem;color:var(--text-secondary)"></span>
+                <span id="mobile-weather-display" style="font-size:0.75rem"></span>
+                <span id="mobile-clock-display" class="clock-display" style="font-size:0.72rem"></span>
+            </div>
+        </div>
+
+        <!-- Auth Modal -->
+        <div id="auth-modal" class="modal hidden">
+            <div class="modal-content login-content">
+                <button class="auth-close-btn" style="position:absolute;top:8px;right:12px;background:none;border:none;color:var(--text-secondary);font-size:1.2rem;cursor:pointer">✕</button>
+                <h2>👤 帳號</h2>
+                <div style="display:flex;gap:0;margin-bottom:12px">
+                    <button class="auth-tab active" data-auth-tab="login" style="flex:1;padding:6px;background:var(--bg-secondary);border:1px solid var(--border);border-bottom:2px solid var(--accent);color:var(--text-primary);cursor:pointer;font-size:0.8rem">登入</button>
+                    <button class="auth-tab" data-auth-tab="register" style="flex:1;padding:6px;background:var(--bg-secondary);border:1px solid var(--border);border-bottom:2px solid transparent;color:var(--text-secondary);cursor:pointer;font-size:0.8rem">註冊</button>
+                </div>
+                <div id="auth-login-form">
+                    <input type="text" id="auth-login-user" placeholder="帳號" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                    <input type="password" id="auth-login-pass" placeholder="密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                    <div id="auth-login-error" class="login-error"></div>
+                    <button id="auth-login-btn" class="btn-accent" style="width:100%;padding:8px;border:none;border-radius:4px;cursor:pointer;font-size:0.85rem;margin-top:4px">登入</button>
+                    <div style="margin-top:8px"><a href="#" id="auth-forgot-link" style="color:var(--text-secondary);font-size:0.75rem">忘記密碼？</a></div>
+                    <div id="auth-guest-section" class="hidden" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);text-align:center">
+                        <p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:8px">不想註冊？先體驗一下也行！</p>
+                        <button id="auth-guest-btn" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:0.85rem;background:var(--bg-secondary);color:var(--text-primary)">🎮 訪客試玩</button>
+                        <p style="font-size:0.65rem;color:var(--text-secondary);margin-top:4px">存檔僅保留在本機，註冊後可同步到雲端</p>
+                    </div>
+                </div>
+                <div id="auth-register-form" class="hidden">
+                    <input type="text" id="auth-reg-user" placeholder="帳號" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                    <input type="email" id="auth-reg-email" placeholder="Email（選填）" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                    <input type="password" id="auth-reg-pass" placeholder="密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                    <input type="password" id="auth-reg-pass2" placeholder="確認密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                    <div id="auth-reg-error" class="login-error"></div>
+                    <button id="auth-reg-btn" class="btn-accent" style="width:100%;padding:8px;border:none;border-radius:4px;cursor:pointer;font-size:0.85rem;margin-top:4px">註冊</button>
+                </div>
+                <div id="auth-reset-form" class="hidden">
+                    <p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:8px">輸入帳號和 Email 來重設密碼</p>
+                    <input type="text" id="auth-reset-user" placeholder="帳號" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                    <input type="email" id="auth-reset-email" placeholder="Email" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                    <input type="password" id="auth-reset-pass" placeholder="新密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                    <input type="password" id="auth-reset-pass2" placeholder="確認新密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                    <div id="auth-reset-error" class="login-error"></div>
+                    <div id="auth-reset-success" style="color:var(--positive);font-size:0.75rem;min-height:18px"></div>
+                    <button id="auth-reset-btn" class="btn-accent" style="width:100%;padding:8px;border:none;border-radius:4px;cursor:pointer;font-size:0.85rem;margin-top:4px">重設密碼</button>
+                    <div style="margin-top:8px"><a href="#" id="auth-reset-back" style="color:var(--text-secondary);font-size:0.75rem">← 返回登入</a></div>
+                </div>
+            </div>
         </div>
     </div>
     <?php
@@ -1026,11 +695,20 @@ function rimtown_enqueue_assets() {
         RIMTOWN_VERSION
     );
 
-    // v3 system modules (must load before simulation.js)
+    // i18n must load FIRST — all other scripts depend on t()
+    wp_enqueue_script(
+        'rimtown-i18n',
+        RIMTOWN_URL . 'i18n.js',
+        array(),
+        RIMTOWN_VERSION,
+        true
+    );
+
+    // v3 system modules (must load before simulation.js, after i18n)
     wp_enqueue_script(
         'rimtown-industry',
         RIMTOWN_URL . 'industry.js',
-        array(),
+        array('rimtown-i18n'),
         RIMTOWN_VERSION,
         true
     );
@@ -1038,7 +716,7 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-farm',
         RIMTOWN_URL . 'farm.js',
-        array(),
+        array('rimtown-i18n'),
         RIMTOWN_VERSION,
         true
     );
@@ -1046,7 +724,7 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-processing',
         RIMTOWN_URL . 'processing.js',
-        array(),
+        array('rimtown-i18n'),
         RIMTOWN_VERSION,
         true
     );
@@ -1054,7 +732,7 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-daily-news',
         RIMTOWN_URL . 'daily-news.js',
-        array(),
+        array('rimtown-i18n'),
         RIMTOWN_VERSION,
         true
     );
@@ -1062,7 +740,7 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-npc-events',
         RIMTOWN_URL . 'npc-events.js',
-        array(),
+        array('rimtown-i18n'),
         RIMTOWN_VERSION,
         true
     );
@@ -1070,7 +748,7 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-npc-quests',
         RIMTOWN_URL . 'npc-quests.js',
-        array(),
+        array('rimtown-i18n'),
         RIMTOWN_VERSION,
         true
     );
@@ -1078,7 +756,7 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-custom-npc',
         RIMTOWN_URL . 'custom-npc.js',
-        array(),
+        array('rimtown-i18n'),
         RIMTOWN_VERSION,
         true
     );
@@ -1086,7 +764,7 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-prosperity',
         RIMTOWN_URL . 'prosperity.js',
-        array(),
+        array('rimtown-i18n'),
         RIMTOWN_VERSION,
         true
     );
@@ -1094,7 +772,7 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-quest',
         RIMTOWN_URL . 'quest-system.js',
-        array(),
+        array('rimtown-i18n'),
         RIMTOWN_VERSION,
         true
     );
@@ -1103,6 +781,14 @@ function rimtown_enqueue_assets() {
         'rimtown-simulation',
         RIMTOWN_URL . 'simulation.js',
         array('rimtown-industry', 'rimtown-farm', 'rimtown-processing', 'rimtown-daily-news', 'rimtown-npc-events', 'rimtown-npc-quests', 'rimtown-custom-npc', 'rimtown-prosperity', 'rimtown-quest'),
+        RIMTOWN_VERSION,
+        true
+    );
+
+    wp_enqueue_script(
+        'rimtown-chiptune',
+        RIMTOWN_URL . 'chiptune.js',
+        array('rimtown-simulation'),
         RIMTOWN_VERSION,
         true
     );
@@ -1118,13 +804,19 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-app',
         RIMTOWN_URL . 'app.js',
-        array('rimtown-simulation', 'rimtown-tilemap'),
+        array('rimtown-simulation', 'rimtown-chiptune', 'rimtown-tilemap'),
         RIMTOWN_VERSION,
         true
     );
 
-    // Pass auth data to frontend
-    rimtown_localize_script();
+    // Inject auth data for the frontend
+    wp_localize_script('rimtown-app', 'rimtownAuth', array(
+        'restUrl'  => rest_url('rimtown/v1/'),
+        'nonce'    => wp_create_nonce('wp_rest'),
+        'loggedIn' => is_user_logged_in(),
+        'username' => is_user_logged_in() ? wp_get_current_user()->user_login : '',
+        'userId'   => get_current_user_id(),
+    ));
 }
 
 /**
@@ -1138,6 +830,259 @@ function rimtown_body_class($classes) {
     return $classes;
 }
 add_filter('body_class', 'rimtown_body_class');
+
+// =====================================================
+// REST API — Auth & Cloud Save
+// =====================================================
+add_action('rest_api_init', function () {
+    $ns = 'rimtown/v1';
+
+    // Rate limiting storage (transients)
+    function rimtown_rate_limit($key, $max, $window) {
+        $transient = 'rimtown_rl_' . md5($key);
+        $data = get_transient($transient);
+        if (!$data) $data = array('count' => 0, 'start' => time());
+        if (time() - $data['start'] > $window) {
+            $data = array('count' => 0, 'start' => time());
+        }
+        $data['count']++;
+        set_transient($transient, $data, $window);
+        return $data['count'] <= $max;
+    }
+
+    // Login
+    register_rest_route($ns, '/login', array(
+        'methods' => 'POST',
+        'callback' => function ($req) {
+            $params = $req->get_json_params();
+            $username = sanitize_user($params['username'] ?? '');
+            $password = $params['password'] ?? '';
+            if (!$username || !$password) {
+                return new WP_Error('missing_fields', '請輸入帳號和密碼', array('status' => 400));
+            }
+            $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+            if (!rimtown_rate_limit('login_' . $ip, 5, 300)) {
+                return new WP_Error('rate_limited', '登入嘗試過多，請稍後再試', array('status' => 429));
+            }
+            $user = wp_authenticate($username, $password);
+            if (is_wp_error($user)) {
+                return new WP_Error('login_failed', '帳號或密碼錯誤', array('status' => 401));
+            }
+            wp_set_current_user($user->ID);
+            wp_set_auth_cookie($user->ID, true);
+            return array(
+                'success' => true,
+                'nonce' => wp_create_nonce('wp_rest'),
+                'user' => array('id' => $user->ID, 'username' => $user->user_login),
+            );
+        },
+        'permission_callback' => '__return_true',
+    ));
+
+    // Register
+    register_rest_route($ns, '/register', array(
+        'methods' => 'POST',
+        'callback' => function ($req) {
+            $params = $req->get_json_params();
+            $username = sanitize_user($params['username'] ?? '');
+            $password = $params['password'] ?? '';
+            $email = sanitize_email($params['email'] ?? '');
+            if (!$username || !$password) {
+                return new WP_Error('missing_fields', '請填寫帳號和密碼', array('status' => 400));
+            }
+            if (strlen($password) < 6) {
+                return new WP_Error('weak_password', '密碼至少6個字元', array('status' => 400));
+            }
+            $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+            if (!rimtown_rate_limit('register_' . $ip, 5, 300)) {
+                return new WP_Error('rate_limited', '註冊嘗試過多，請稍後再試', array('status' => 429));
+            }
+            if (username_exists($username)) {
+                return new WP_Error('username_exists', '此帳號已被使用', array('status' => 409));
+            }
+            if ($email && email_exists($email)) {
+                return new WP_Error('email_exists', '此 Email 已被使用', array('status' => 409));
+            }
+            $user_id = wp_create_user($username, $password, $email ?: '');
+            if (is_wp_error($user_id)) {
+                return new WP_Error('register_failed', $user_id->get_error_message(), array('status' => 400));
+            }
+            wp_set_current_user($user_id);
+            wp_set_auth_cookie($user_id, true);
+            return array(
+                'success' => true,
+                'nonce' => wp_create_nonce('wp_rest'),
+                'user' => array('id' => $user_id, 'username' => $username),
+            );
+        },
+        'permission_callback' => '__return_true',
+    ));
+
+    // Reset password
+    register_rest_route($ns, '/reset-password', array(
+        'methods' => 'POST',
+        'callback' => function ($req) {
+            $params = $req->get_json_params();
+            $username = sanitize_user($params['username'] ?? '');
+            $email = sanitize_email($params['email'] ?? '');
+            $new_password = $params['new_password'] ?? '';
+            if (!$username || !$email || !$new_password) {
+                return new WP_Error('missing_fields', '請填寫所有欄位', array('status' => 400));
+            }
+            if (strlen($new_password) < 6) {
+                return new WP_Error('weak_password', '新密碼至少6個字元', array('status' => 400));
+            }
+            $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+            if (!rimtown_rate_limit('reset_' . $ip, 3, 600)) {
+                return new WP_Error('rate_limited', '重設嘗試過多，請稍後再試', array('status' => 429));
+            }
+            $user = get_user_by('login', $username);
+            if (!$user || strtolower($user->user_email) !== strtolower($email)) {
+                return new WP_Error('not_found', '帳號或 Email 不正確', array('status' => 404));
+            }
+            wp_set_password($new_password, $user->ID);
+            return array('success' => true);
+        },
+        'permission_callback' => '__return_true',
+    ));
+
+    // Check login status
+    register_rest_route($ns, '/me', array(
+        'methods' => 'GET',
+        'callback' => function () {
+            if (is_user_logged_in()) {
+                $user = wp_get_current_user();
+                return array('logged_in' => true, 'user' => array('id' => $user->ID, 'username' => $user->user_login));
+            }
+            return array('logged_in' => false);
+        },
+        'permission_callback' => '__return_true',
+    ));
+
+    // Logout
+    register_rest_route($ns, '/logout', array(
+        'methods' => 'POST',
+        'callback' => function () {
+            wp_logout();
+            return array('success' => true);
+        },
+        'permission_callback' => '__return_true',
+    ));
+
+    // List saves
+    register_rest_route($ns, '/saves', array(
+        'methods' => 'GET',
+        'callback' => function () {
+            $user_id = get_current_user_id();
+            $saves = get_user_meta($user_id, 'rimtown_saves', true);
+            if (!$saves) $saves = array();
+            // Return metadata only, not full save data
+            $list = array();
+            foreach ($saves as $town_id => $save) {
+                $list[] = array(
+                    'town_id' => $town_id,
+                    'town_name' => $save['town_name'] ?? '',
+                    'season' => $save['season'] ?? '',
+                    'year' => $save['year'] ?? 1,
+                    'day' => $save['day'] ?? 1,
+                    'population' => $save['population'] ?? 0,
+                    'updated_at' => $save['updated_at'] ?? '',
+                );
+            }
+            return array('saves' => $list);
+        },
+        'permission_callback' => function () { return is_user_logged_in(); },
+    ));
+
+    // Save
+    register_rest_route($ns, '/save', array(
+        'methods' => 'POST',
+        'callback' => function ($req) {
+            $user_id = get_current_user_id();
+            $params = $req->get_json_params();
+            $town_id = sanitize_text_field($params['town_id'] ?? '');
+            if (!$town_id) return new WP_Error('missing_town_id', 'Missing town_id', array('status' => 400));
+            $saves = get_user_meta($user_id, 'rimtown_saves', true);
+            if (!$saves) $saves = array();
+            $saves[$town_id] = array(
+                'town_name' => sanitize_text_field($params['town_name'] ?? ''),
+                'save_data' => $params['save_data'] ?? '',
+                'season' => sanitize_text_field($params['season'] ?? ''),
+                'year' => intval($params['year'] ?? 1),
+                'day' => intval($params['day'] ?? 1),
+                'population' => intval($params['population'] ?? 0),
+                'updated_at' => current_time('mysql'),
+            );
+            update_user_meta($user_id, 'rimtown_saves', $saves);
+            return array('success' => true);
+        },
+        'permission_callback' => function () { return is_user_logged_in(); },
+    ));
+
+    // Load save
+    register_rest_route($ns, '/save/(?P<town_id>[a-zA-Z0-9_-]+)', array(
+        'methods' => 'GET',
+        'callback' => function ($req) {
+            $user_id = get_current_user_id();
+            $town_id = $req['town_id'];
+            $saves = get_user_meta($user_id, 'rimtown_saves', true);
+            if (!$saves || !isset($saves[$town_id])) {
+                return new WP_Error('not_found', 'Save not found', array('status' => 404));
+            }
+            return array('save_data' => $saves[$town_id]['save_data']);
+        },
+        'permission_callback' => function () { return is_user_logged_in(); },
+    ));
+
+    // Delete save
+    register_rest_route($ns, '/save/(?P<town_id>[a-zA-Z0-9_-]+)', array(
+        'methods' => 'DELETE',
+        'callback' => function ($req) {
+            $user_id = get_current_user_id();
+            $town_id = $req['town_id'];
+            $saves = get_user_meta($user_id, 'rimtown_saves', true);
+            if ($saves && isset($saves[$town_id])) {
+                unset($saves[$town_id]);
+                update_user_meta($user_id, 'rimtown_saves', $saves);
+            }
+            return array('success' => true);
+        },
+        'permission_callback' => function () { return is_user_logged_in(); },
+    ));
+
+    // Get achievements
+    register_rest_route($ns, '/achievements', array(
+        'methods' => 'GET',
+        'callback' => function () {
+            $user_id = get_current_user_id();
+            $achievements = get_user_meta($user_id, 'rimtown_achievements', true);
+            return array('achievements' => $achievements ?: array());
+        },
+        'permission_callback' => function () { return is_user_logged_in(); },
+    ));
+
+    // Unlock achievement
+    register_rest_route($ns, '/achievement', array(
+        'methods' => 'POST',
+        'callback' => function ($req) {
+            $user_id = get_current_user_id();
+            $params = $req->get_json_params();
+            $key = sanitize_text_field($params['key'] ?? '');
+            if (!$key) return new WP_Error('missing_key', 'Missing key', array('status' => 400));
+            $achievements = get_user_meta($user_id, 'rimtown_achievements', true);
+            if (!$achievements) $achievements = array();
+            if (!isset($achievements[$key])) {
+                $achievements[$key] = array(
+                    'unlocked_at' => current_time('mysql'),
+                    'town_id' => sanitize_text_field($params['town_id'] ?? ''),
+                );
+                update_user_meta($user_id, 'rimtown_achievements', $achievements);
+            }
+            return array('success' => true);
+        },
+        'permission_callback' => function () { return is_user_logged_in(); },
+    ));
+});
 
 /**
  * Inject critical inline CSS for mobile viewport lock (runs before theme CSS)
@@ -1182,6 +1127,514 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '4.1.6',
+            'date'    => '2026-03-25',
+            'changes' => array(
+                '手機版訪客模式橫幅移至底部 tab bar 上方，不再遮擋遊戲畫面',
+                '版號同步：所有檔案統一為 4.1.6',
+            ),
+        ),
+        array(
+            'version' => '4.1.5',
+            'date'    => '2026-03-25',
+            'changes' => array(
+                '新增訪客模式：不用註冊也能試玩，點「🎮 訪客試玩」即可進入遊戲',
+                '訪客可體驗完整互動卡片（每日決策、事件選擇、NPC 求助、議會投票）',
+                '訪客可觀看新手教學引導',
+                '頂部顯示訪客模式提示橫幅，可隨時關閉或點「註冊帳號」升級',
+                '登入/註冊後自動退出訪客模式、隱藏橫幅',
+                '帳號按鈕顯示「訪客」文字，點擊可開啟登入視窗',
+                '版號同步：所有檔案統一為 4.1.5',
+            ),
+        ),
+        array(
+            'version' => '4.1.4',
+            'date'    => '2026-03-17',
+            'changes' => array(
+                '新增 8-bit chiptune 背景音樂系統（Web Audio API 程序化合成，無需音檔）',
+                '4 首曲目隨日夜自動切換：白天（活潑冒險）、黃昏（溫暖放鬆）、夜晚（寧靜小調）、黎明（柔和甦醒）',
+                'NES 四聲道音色：方波旋律、三角波低音、琶音和聲、噪音鼓組',
+                '設定面板新增「背景音樂」音量滑桿與靜音按鈕',
+                '預留 loadCustomTrack() 介面，可用自訂音檔替換程序化曲目',
+                '版號同步：所有檔案統一為 4.1.4',
+            ),
+        ),
+        array(
+            'version' => '4.1.3',
+            'date'    => '2026-03-17',
+            'changes' => array(
+                '每日決策改為請託型框架：村民主動找你商量，取代鎮長視角的命令式決策',
+                '未登入時隱藏新手教學與互動圖卡（決策、事件、NPC求助、議會）',
+                '版號同步：所有檔案統一為 4.1.3',
+            ),
+        ),
+        array(
+            'version' => '4.1.2',
+            'date'    => '2026-03-17',
+            'changes' => array(
+                '修正插件 header 版本號與 RIMTOWN_VERSION 不一致',
+            ),
+        ),
+        array(
+            'version' => '4.1.1',
+            'date'    => '2026-03-17',
+            'changes' => array(
+                '修復 WordPress 版本缺少通知 HTML 元素：成就彈窗、事件公告、任務引導、新手教學、遊戲對話框、手機版頭部全部補上',
+                '版號同步：所有檔案統一為 4.1.1',
+            ),
+        ),
+        array(
+            'version' => '4.1.0',
+            'date'    => '2026-03-17',
+            'changes' => array(
+                '建築升級系統：所有 12 棟建築支援 3 級升級（Lv.1→Lv.2→Lv.3），每級更強效果',
+                '升級路徑：瞭望塔→強化瞭望塔→哨兵高塔、穀倉→大型穀倉→冷藏穀庫 等',
+                '升級 UI：建築等級星星標示、升級區域含費用與效果預覽',
+                '新成就：精益求精（首次升級）、登峰造極（最高等級）',
+                '修復 startProject 變數遮蔽 bug：const t 遮蔽翻譯函數導致 TypeError',
+                '修復 BuildingManager._counter 未序列化：存讀檔後 ID 計數器重置',
+                '向下相容舊存檔：自動補全 buildingKey 與 level 欄位',
+                '版號同步：所有檔案統一為 4.1.0',
+            ),
+        ),
+        array(
+            'version' => '4.0.0',
+            'date'    => '2026-03-16',
+            'changes' => array(
+                '每日決策系統：每天一張選擇卡片，影響資源、居民心情與聲望',
+                '商店系統：14 種商品可買賣，聲望等級享折扣優惠',
+                '事件選擇系統：重大事件（盜匪、災害等）提供多種應對選項',
+                'NPC 求助系統：居民會請求你的幫助，選擇影響好感度與聲望',
+                '工作動作按鈕：手動執行工作獲得資源與技能經驗',
+                '互動式報紙：可對每日新聞進行調查/支持/忽略反應',
+                '聲望系統（完整版）：6 個等級（無名之輩→傳奇人物），影響交易價格、NPC 信任、商店折扣、事件減免、移民吸引力',
+                '心情系統優化：夜間需求衰減放緩，心情懲罰改為漸進式而非斷崖式',
+                '任務頁籤新增聲望面板：階級徽章、進度條、效果一覽、來源追蹤',
+                '動態天氣引擎：10 種天氣類型按季節加權，3日預報，溫度/濕度/風速，影響農業、心情、NPC活動',
+                '天然災害系統：嚴重乾旱/暴風雪/洪水，連續極端天氣觸發，預警機制，建築減災，災後恢復',
+                'NPC 議會治理：自動組建議會，12 種提案，NPC 依性格投票，玩家可參與，政令持續 20 天',
+                '版號同步：所有檔案統一為 4.0.0',
+            ),
+        ),
+        array(
+            'version' => '3.7.1',
+            'date'    => '2026-03-16',
+            'changes' => array(
+                '修復儲存設定後 Groq API Key 被清空的問題',
+                'fallbackGroqKey 讀取來源新增 settings tab input 與 localStorage fallback',
+                '版號同步：所有檔案統一為 3.7.1',
+            ),
+        ),
+        array(
+            'version' => '3.7.0',
+            'date'    => '2026-03-16',
+            'changes' => array(
+                '修復聊天對話持續閃爍問題：模擬 tick 時跳過聊天頁面完整重繪，改用 DOM 原地更新',
+                '同步 WordPress 版本：像素頭像、style.css、app.js 與 Chrome Extension 完全一致',
+                '版號同步：所有檔案統一為 3.7.0',
+            ),
+        ),
+        array(
+            'version' => '3.6.15',
+            'date'    => '2026-03-16',
+            'changes' => array(
+                '聊天通訊錄頭像改為 NPC 像素風角色圖（職業服裝、髮型、性別、配件）',
+                '修正聊天閃爍：新增 _renderChatMessages() 只更新訊息區域',
+                '成就／事件通知改為螢幕中央大卡片覆蓋（含背景模糊效果）',
+                '新增報紙通知與通知佇列系統',
+                '版號同步：所有檔案統一為 3.6.15',
+            ),
+        ),
+        array(
+            'version' => '3.6.14',
+            'date'    => '2026-03-16',
+            'changes' => array(
+                '修復地圖 NPC 名牌與聊天介面中職業顯示為 [object Object] 的 bug',
+                '美化聊天介面：漸層背景、氣泡滑入動畫、未讀紅點脈動效果、輸入框聚焦光暈',
+                'NPC 回覆前顯示打字中動畫並加入隨機延遲，對話更自然',
+                '版號同步：所有檔案統一為 3.6.14',
+            ),
+        ),
+        array(
+            'version' => '3.6.13',
+            'date'    => '2026-03-16',
+            'changes' => array(
+                '重新設計聊天介面為訊息 App 風格（Messaging App）',
+                '移除 NPC 對話距離限制，任何地方都能與 NPC 交談',
+                'NPC 主動訊息功能：NPC 會主動傳訊息給玩家',
+                '地圖上所有 NPC 頭上顯示名字 + 職業卡片',
+                '版號同步：所有檔案統一為 3.6.13',
+            ),
+        ),
+        array(
+            'version' => '3.6.12',
+            'date'    => '2026-03-15',
+            'changes' => array(
+                '修正 API key 貼上/儲存時被清空的問題：renderSettings() 改為優先使用現有 DOM input 的值，只有在 input 元素不存在時才從 localStorage 讀取，避免 renderSidebar() 重繪時覆蓋使用者尚未儲存的輸入',
+                '版號同步：所有檔案統一為 3.6.12',
+            ),
+        ),
+        array(
+            'version' => '3.6.10',
+            'date'    => '2026-03-15',
+            'changes' => array(
+                '修復 API key 儲存時被清空的 race condition：render() 的 setInterval tick 會在點擊儲存按鈕時重新渲染 settings tab，導致未儲存的表單資料被覆蓋，現在 activeTab 為 settings 時跳過 sidebar 重繪',
+                '修復 _escapeHtml 未跳脫雙引號的問題：API key 若含引號字元會破壞 HTML value 屬性',
+                '版號同步：所有檔案統一為 3.6.10',
+            ),
+        ),
+        array(
+            'version' => '3.6.9',
+            'date'    => '2026-03-15',
+            'changes' => array(
+                'NPC 智慧尋路：實作 A* 演算法，NPC 不再撞牆，會自動繞過建築物',
+                '建築入口優化：門口清出 3x2 格泥土空地，NPC 更容易進出建築',
+                'NPC 提前出門：睡前 1 小時回家、上班前 1 小時出門，行為更像真人',
+                '城鎮列表按鈕美化：新建城鎮/關閉改為圓角大按鈕',
+                '移除設定面板暫停/繼續按鈕',
+                '版號同步：所有檔案統一為 3.6.9',
+            ),
+        ),
+        array(
+            'version' => '3.6.8',
+            'date'    => '2026-03-15',
+            'changes' => array(
+                '登入畫面預設顯示登入表單',
+                '設定 tab 新增遊戲控制區塊：暫停/繼續、速度倍率、城鎮列表、新地圖',
+                '版號同步：所有檔案統一為 3.6.8',
+            ),
+        ),
+        array(
+            'version' => '3.6.7',
+            'date'    => '2026-03-15',
+            'changes' => array(
+                '未登入時自動顯示登入畫面，不需手動點擊',
+                '背景霧化城鎮地圖：登入畫面背景使用模糊濾鏡顯示城鎮地圖',
+                '版號同步：所有檔案統一為 3.6.7',
+            ),
+        ),
+        array(
+            'version' => '3.6.6',
+            'date'    => '2026-03-15',
+            'changes' => array(
+                '美化對話方塊：將瀏覽器原生 alert/confirm 替換為遊戲風格自訂彈窗',
+                '修復 NPC 卡牆加強版：屋頂(ROOF/ROOF2)與柵欄(FENCE)納入不可行走判定',
+                '修復碰撞滑動邏輯：正確拆分 X/Y 軸分量進行碰撞回避',
+                'NPC 卡在牆內時自動傳送至最近可行走位置',
+                '可行走目標搜索半徑從 5 格擴大至 10 格',
+                '存檔管理 UI 精簡：合併「帳號」與「存檔管理」為「帳號與存檔」',
+                '移除匯出/匯入存檔按鈕，登入後存檔自動同步雲端',
+                '版號同步：所有檔案統一為 3.6.6',
+            ),
+        ),
+        array(
+            'version' => '3.6.5',
+            'date'    => '2026-03-15',
+            'changes' => array(
+                '修復登入功能：新增缺失的 auth-modal HTML（登入/註冊/重設密碼表單）',
+                '新增 wp_localize_script 注入 rimtownAuth 前端認證變數',
+                '新增完整 REST API 端點：login、register、reset-password、me、logout、saves、save、achievements',
+                '認證端點速率限制：登入 5次/5分鐘、註冊 5次/5分鐘、重設密碼 3次/10分鐘',
+                '修復走路撞牆卡住：新增 _isWalkableTile() 牆壁碰撞檢測',
+                '新增 _findWalkableTarget() 自動尋找最近可行走位置，避免目標點落在牆內',
+                '走路時碰到牆壁會沿軸滑動避開，不再卡住原地',
+                '地圖自由點擊走路：點擊地圖任意位置都能讓玩家走過去',
+                '移動指示器顯示在實際點擊位置，而非區域中心',
+                '修復手機登入後地圖跑版：關閉 auth modal 時先 blur 輸入框、重設 viewport 縮放',
+                '防止 iOS 自動放大：登入表單 input font-size 設為 16px',
+                '版號同步：所有檔案統一為 3.6.5',
+            ),
+        ),
+        array(
+            'version' => '3.6.4',
+            'date'    => '2026-03-15',
+            'changes' => array(
+                '修復 WordPress 腳本載入順序：i18n.js 改為最先載入，所有模組加入依賴，修復 t is not defined',
+                '修復 processing.js 語法錯誤：移除 dailyUpdate() 中多餘的大括號，修復 Illegal continue statement',
+                '版號同步：所有檔案統一為 3.6.4',
+            ),
+        ),
+        array(
+            'version' => '3.6.3',
+            'date'    => '2026-03-15',
+            'changes' => array(
+                'NPC 弔念系統：城鎮有人過世後，NPC 會前往墓園弔念',
+                '家人年度弔念：配偶、子女、父母每年會固定前往墓園緬懷逝者',
+                '全鎮同悲：非親屬鎮民也有機率前往弔念',
+                '弔念行為產生記憶、心情變化與日誌訊息',
+                'PWA 支援：新增 pwa-manifest.json、sw.js，可安裝到手機主畫面',
+                '全螢幕體驗：standalone 模式下隱藏瀏覽器 UI，雙擊標題可切換全螢幕',
+                '離線快取：核心遊戲資源離線可用',
+                '安裝提示橫幅：瀏覽器觸發 beforeinstallprompt 時顯示安裝按鈕',
+                'NPC 睡眠凍結：睡眠中的 NPC 抵達家中後不再亂走',
+                '門進出系統：NPC 進出建築物會走門，不再穿牆',
+                '個別房屋系統：住宅區有 4 間可點擊的獨立房屋，每位 NPC 分配至特定房屋',
+                '人生總結報告：結局畫面新增豐富的人生統計、關係圖表、成就列表',
+                'i18n 新增弔念與安裝相關中英翻譯',
+                '版號同步：所有檔案統一為 3.6.3',
+            ),
+        ),
+        array(
+            'version' => '3.6.2',
+            'date'    => '2026-03-15',
+            'changes' => array(
+                '修復手機版多處 RWD 跑版問題',
+                '教學卡片：改用 calc(100vw - 32px) 限制寬度，防止文字溢出螢幕',
+                '任務引導橫幅：使用 min(500px, calc(100vw - 32px)) 避免超出手機螢幕',
+                '底部導覽列：加入 max-width: 100vw 防止水平溢出',
+                '版號同步：所有檔案統一為 3.6.2',
+            ),
+        ),
+        array(
+            'version' => '3.6.1',
+            'date'    => '2026-03-14',
+            'changes' => array(
+                '修復手機重新整理後登入狀態遺失的問題',
+                '版號同步：所有檔案統一為 3.6.1',
+            ),
+        ),
+        array(
+            'version' => '3.4.0',
+            'date'    => '2026-03-14',
+            'changes' => array(
+                '新增 5 步驟新手教學引導（劇情故事 → 地圖 → 居民聊天 → 經濟產業 → 事件探索）',
+                'NPC 日程改版：工作時間留在工作地點，下班後社交，睡覺時待在家不聊天',
+                '夜晚視覺加強：tint 15%→35%、新增月亮、星星 40→80 顆、營火/火把/窗燈光圈加大',
+                '新增夜間暗角 vignette 效果',
+                '版號同步：所有檔案統一為 3.4.0',
+            ),
+        ),
+        array(
+            'version' => '3.3.5',
+            'date'    => '2026-03-14',
+            'changes' => array(
+                '新增全螢幕登入畫面：未登入用戶進入遊戲前顯示登入介面',
+                '登入畫面包含帳號/密碼登入、註冊帳號、忘記密碼、訪客進入',
+                '背景使用 backdrop-filter blur(12px) 模糊化底下的村莊地圖',
+                '登入/註冊成功後畫面淡出動畫，顯示正常遊戲',
+                '村民對話（紀錄 tab）改為預設展開',
+                '版號同步：所有檔案統一為 3.3.5',
+            ),
+        ),
+        array(
+            'version' => '3.3.4',
+            'date'    => '2026-03-14',
+            'changes' => array(
+                '職業按鈕邊框從 var(--border) #333 改為 rgba(255,255,255,0.25)，深色背景上清晰可見',
+                '居民列表無業提示的職業按鈕 padding 加大、邊框加亮',
+                '版號同步：所有檔案統一為 3.3.4',
+            ),
+        ),
+        array(
+            'version' => '3.3.3',
+            'date'    => '2026-03-14',
+            'changes' => array(
+                '村民對話預設收合，只顯示時間+人名+摘要，點擊展開完整對話',
+                '加入 ▶ 展開指示符，展開時旋轉 90° 提供視覺回饋',
+                '每組對話改為卡片式排版（圓角邊框+背景色），群組間有間距',
+                '展開後對話區加左側 accent 色邊線，對話行間距加大+分隔線',
+                '修正 toggle handler: collapsed → expanded class',
+                '版號同步：所有檔案統一為 3.3.3',
+            ),
+        ),
+        array(
+            'version' => '3.3.2',
+            'date'    => '2026-03-14',
+            'changes' => array(
+                '桌面版：section 標題/按鈕 padding/居民名稱職業狀態字體全面放大',
+                '手機版 (≤768px)：section 標題 1.05rem、按鈕 0.85rem、居民/資源/建築/新聞等放大',
+                'iPad (769-1024px)：section 標題/按鈕/居民卡片/資源等中間尺寸',
+                'sub-tab 按鈕手機版 0.85rem、iPad 0.8rem，增加觸控友善度',
+                '設定面板 label 0.72→0.82rem，各 inline 小字 0.65→0.75rem',
+                '版號同步：所有檔案統一為 3.3.2',
+            ),
+        ),
+        array(
+            'version' => '3.3.1',
+            'date'    => '2026-03-14',
+            'changes' => array(
+                '全域加上 overflow-x: hidden，防止手機版/iPad 左右滑動偏移',
+                '手機版 tab icon 從 1rem 放大到 1.35rem，小螢幕 1.2rem，iPad 1.1rem',
+                'tab bar 高度提升（手機 42→48px、小螢幕 38→44px）改善觸控體驗',
+                'sidebar content 加上 overflow-x: hidden + max-width 防止內容溢出',
+                'sub-tab-bar 手機版取消負邊距避免水平溢出',
+                '新增 iPad Portrait (769-1024px) 專用媒體查詢',
+                '版號同步：所有檔案統一為 3.3.1',
+            ),
+        ),
+        array(
+            'version' => '3.3.0',
+            'date'    => '2026-03-14',
+            'changes' => array(
+                'AI 日報從「紀錄」sub-tab 移入「事件」tab，與新聞公告、鎮長選舉等重要資訊整合',
+                '「紀錄」tab 簡化為「日誌」，專門顯示 NPC 對話紀錄',
+                'AI 日報 LLM prompt 大幅增強，新增天氣、資源、選舉、NPC 活動等上下文',
+                '日報結構改為四段式：頭條標題 → 頭條報導 → 鎮務簡報 → 街頭巷尾 → 手記',
+                'max_tokens 800→1200，產出更豐富的 NPC 視角日報內容',
+                '經濟面板資源列表只顯示已取得的項目（amount > 0）',
+                '為 30 種進階物品加上專屬 emoji icon 與中文標籤（木板、磚塊、農作物、加工品等）',
+                '修正手機版點擊 API Key 輸入框時鍵盤會跳掉無法輸入的問題',
+                '版號同步：所有檔案統一為 3.3.0',
+            ),
+        ),
+        array(
+            'version' => '3.2.9',
+            'date'    => '2026-03-14',
+            'changes' => array(
+                '冬季農業產量乘數 0.2→0.4，避免每年冬季必然缺糧崩潰',
+                'NPC 老化速度減半：每 2 季老 1 歲（原本每季 1 歲），延長 NPC 壽命一倍',
+                '結婚門檻提高：交往時間 100→300 ticks、好感 40/35→50/45、浪漫 50/40→55/45、機率 15%→10%',
+                '產業系統對 NPC 職業的壓制從 70%（×0.3）降為 50%（×0.5），NPC 職業仍有存在感',
+                '觀星活動的浪漫值增長新增前提條件：好感度必須 >20 才會產生浪漫',
+                '版號同步：所有檔案統一為 3.2.9',
+            ),
+        ),
+        array(
+            'version' => '3.2.8',
+            'date'    => '2026-03-14',
+            'changes' => array(
+                '玩家-NPC 夫妻生育不受 20 人口上限限制，改為最多 3 個孩子',
+                'NPC-NPC 夫妻仍維持原本的人口上限',
+                '新增 Personality.compatibility() 靜態方法，根據特質組合計算 0.2x ~ 1.6x 倍率',
+                '8 組增益配對 + 8 組衝突配對，套用至所有好感成長管道',
+                '超過 50 ticks 未互動，好感每日 -0.8（情侶 -0.3），浪漫值每日 -0.5',
+                '修復 _checkBirths 中 npc.age 應為 agent.age 的未定義變數 bug',
+                '版號同步：所有檔案統一為 3.2.8',
+            ),
+        ),
+        array(
+            'version' => '3.2.7',
+            'date'    => '2026-03-14',
+            'changes' => array(
+                '新增繼承/二周目系統：玩家可生子，結局後以下一代重新開始',
+                '玩家婚後可觸發生育事件，孩子繼承父母特質',
+                '結局畫面新增「開始新一代」按鈕，繼承部分資源與關係',
+                '版號同步：所有檔案統一為 3.2.7',
+            ),
+        ),
+        array(
+            'version' => '3.2.6',
+            'date'    => '2026-03-14',
+            'changes' => array(
+                '手機版移除「更多」彈出選單，改為各 Tab 內建群組 sub-tab',
+                '居民+詳情、聊天+紀錄、任務+事件+成就、經濟+產業',
+                '設定升級為第 5 個固定 Tab',
+                '版號同步：所有檔案統一為 3.2.6',
+            ),
+        ),
+        array(
+            'version' => '3.2.5',
+            'date'    => '2026-03-12',
+            'changes' => array(
+                '修復手機版「更多」按鈕未顯示的問題',
+                '更多選單改為 3x2 網格佈局',
+                '版號同步：所有檔案統一為 3.2.5',
+            ),
+        ),
+        array(
+            'version' => '3.2.4',
+            'date'    => '2026-03-12',
+            'changes' => array(
+                '手機版導航重新設計：5 Tab + 更多彈出選單',
+                '不再需要左右橫向滾動，操作更直覺',
+                '版號同步：所有檔案統一為 3.2.4',
+            ),
+        ),
+        array(
+            'version' => '3.2.3',
+            'date'    => '2026-03-11',
+            'changes' => array(
+                '修復手機版 mobile-header 仍然顯示的問題',
+                '手機版與平板版 header 統一隱藏，整合至居民 Tab',
+                'app.js 版號同步更新',
+                '版號同步：所有檔案統一為 3.2.3',
+            ),
+        ),
+        array(
+            'version' => '3.2.2',
+            'date'    => '2026-03-11',
+            'changes' => array(
+                'Header 資訊整合至居民 Tab（town-info-bar：城鎮名稱+人口+時鐘）',
+                '移除桌面版頂端 Header 列，釋放更多地圖空間',
+                'town-info-bar 即時更新：renderClock() 每 tick 同步刷新',
+                '經濟頁繁榮度標題旁新增人口數顯示',
+                '版號同步：所有檔案統一為 3.2.2',
+            ),
+        ),
+        array(
+            'version' => '3.2.1',
+            'date'    => '2026-03-11',
+            'changes' => array(
+                '成就系統從 57 個擴展到 99 個（7 大分類全面覆蓋）',
+                '修復新建城鎮按鈕：modal 自動關閉 + 取消暫停 + 確認訊息',
+                'Header 城鎮名稱改為動態顯示',
+                '修復節慶橫幅與城鎮廣場標籤重疊',
+                '版號同步：所有檔案統一為 3.2.1',
+            ),
+        ),
+        array(
+            'version' => '3.2.0',
+            'date'    => '2026-03-11',
+            'changes' => array(
+                '設定 tab 新增 1x/1.5x/2x/3x 加速倍率按鈕',
+                '設定 tab 新增 AI 連線狀態指示器',
+                'Header 中文化：Population→人口、travelling→外出',
+                '移除 Header 中不必要的地形/種子碼顯示',
+                '版號同步：所有檔案統一為 3.2.0',
+            ),
+        ),
+        array(
+            'version' => '3.1.9',
+            'date'    => '2026-03-11',
+            'changes' => array(
+                '移除桌面版整條 toolbar 及手機版選單按鈕/下拉選單',
+                '設定 tab 新增「🎮 遊戲控制」：暫停/繼續、城鎮列表、新地圖',
+                'Header 精簡為只顯示城鎮名稱、人口、時間',
+                '版號同步：所有檔案統一為 3.1.9',
+            ),
+        ),
+        array(
+            'version' => '3.1.8',
+            'date'    => '2026-03-11',
+            'changes' => array(
+                '合併「🗞️ 日報」和「📝 日誌」為單一「📝 紀錄」tab，內含子 tab 切換',
+                'Sidebar tab 從 11 個（3 行）回到 10 個（5×2 grid），設定不再獨佔一行',
+                '版號同步：所有檔案統一為 3.1.8',
+            ),
+        ),
+        array(
+            'version' => '3.1.7',
+            'date'    => '2026-03-11',
+            'changes' => array(
+                '新增 ⚙️ 設定 tab：整合帳號、AI 語言模型、遊戲設定、存檔管理於側邊欄',
+                '工廠子標籤 icon 改為 🔧（避免與 🏭 產業 tab 重複）',
+                '修復手機版 tab bar 右側被裁切（CSS specificity + 寬度約束）',
+                '版號同步：WordPress / Chrome Extension / app.js / manifest.json 統一為 3.1.7',
+            ),
+        ),
+        array(
+            'version' => '3.1.6',
+            'date'    => '2026-03-11',
+            'changes' => array(
+                '手機版 UI 大改版：移除無功能的漢堡 FAB 按鈕',
+                '手機版底部面板重新設計：10 個 tab 改為單行水平滾動（原本 5×2 grid 佔太多空間）',
+                '新增 Bottom Sheet 收合機制：預設只顯示 tab bar，點擊展開內容，再點同一 tab 收合',
+                '手機版地圖可視範圍大幅提升（底部面板收合時幾乎全螢幕）',
+                '支援拖拽手柄上滑展開/下滑收合',
+                '版號同步：WordPress / Chrome Extension / manifest.json 統一為 3.1.6',
+            ),
+        ),
+        array(
+            'version' => '3.1.5',
+            'date'    => '2026-03-10',
+            'changes' => array(
+                '詳情頁職業選擇區塊美化：3x grid 圖示按鈕 + 目前職業 badge + 辭職按鈕樣式',
+                'AI 日報卡片化：期號/日期/記者分層排版 + 摺疊預覽 + 展開全文',
+                '修復主線任務第一個任務（落腳邊境）可能卡在鎖定狀態的 bug',
+                '版號同步：WordPress / Chrome Extension / manifest.json 統一為 3.1.5',
+            ),
+        ),
         array(
             'version' => '3.1.4',
             'date'    => '2026-03-10',
@@ -1230,7 +1683,7 @@ function rimtown_get_changelog() {
                 '修復 .hidden CSS 類別僅作用於 modal 的問題',
                 '修復手機版 header 在桌面版也顯示的 CSS 問題',
                 '版號同步：WordPress / Chrome Extension / app.js 統一為 3.1.0',
-                '補齊 quest-system.js 在 WordPress 的 enqueue 載入',
+                '補齊所有 v3 模組在 Chrome Extension 的 enqueue 載入',
             ),
         ),
         array(

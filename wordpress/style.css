@@ -1,5 +1,16 @@
 /* RimTown - AI Town Simulation Styles */
 
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* Prevent horizontal scroll on all devices */
+html, body {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+}
+
 :root {
     --bg-primary: #1a1a2e;
     --bg-secondary: #16213e;
@@ -58,23 +69,22 @@ body.rimtown-page .wp-block-post-title {
     display: none;
 }
 
-/* Header */
-.header {
+/* Header removed — town name now in mobile-header */
+.town-info-bar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 6px 16px;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border);
-    min-height: 42px;
+    gap: 10px;
+    padding: 6px 10px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-size: 0.78rem;
     flex-wrap: wrap;
-    gap: 4px;
 }
-
-.header h1 {
-    font-size: 1.1rem;
-    color: var(--accent);
-    letter-spacing: 2px;
+.town-info-name { color: var(--accent); font-weight: bold; letter-spacing: 1px; }
+.town-info-pop { color: var(--text-secondary); }
+.town-info-clock { color: var(--warning); font-family: monospace; margin-left: auto;
 }
 
 .header-info {
@@ -326,6 +336,12 @@ body.rimtown-page .wp-block-post-title {
     border-bottom: 1px solid var(--border);
     background: var(--bg-primary);
     flex-shrink: 0;
+    position: relative;
+}
+
+/* Desktop: hide mobile-only elements */
+.mobile-group-tabs {
+    display: none;
 }
 
 /* Sub-tab bar inside panels */
@@ -432,18 +448,18 @@ body.rimtown-page .wp-block-post-title {
 
 .resident-name {
     font-weight: bold;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
 }
 
 .resident-job {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     color: var(--info);
 }
 
 .resident-status {
     display: flex;
     gap: 8px;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     color: var(--text-secondary);
 }
 
@@ -719,73 +735,170 @@ body.rimtown-page .wp-block-post-title {
     background: var(--accent-light);
 }
 
-/* Chat panel */
-.chat-location {
-    padding: 8px;
+/* Chat panel - Messaging App Style */
+
+/* Contact list */
+.chat-contacts {
+    border-bottom: 1px solid var(--border);
+}
+.chat-contacts-header {
+    padding: 10px 14px;
     font-size: 0.8rem;
+    font-weight: bold;
     color: var(--text-secondary);
-    border-bottom: 1px solid var(--border);
-}
-
-.chat-nearby {
-    padding: 8px;
-    border-bottom: 1px solid var(--border);
-}
-
-.nearby-label {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    margin-bottom: 6px;
-}
-
-.nearby-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-}
-
-.nearby-btn {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 4px 10px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    color: var(--text-primary);
-    border-radius: 16px;
-    cursor: pointer;
-    font-size: 0.75rem;
-    transition: all 0.2s;
+    gap: 8px;
+    letter-spacing: 0.5px;
 }
-.nearby-btn:hover {
-    border-color: var(--accent);
-}
-.nearby-btn.active {
+.chat-contacts-count {
     background: var(--accent);
-    border-color: var(--accent);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.65rem;
+    font-weight: bold;
 }
-.nearby-job {
+.chat-contacts-list {
+    max-height: 200px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+.chat-contact {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    color: var(--text-primary);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.2s, transform 0.1s;
+    font-size: 0.8rem;
+}
+.chat-contact:hover {
+    background: rgba(233,69,96,0.08);
+}
+.chat-contact:active {
+    transform: scale(0.98);
+}
+.chat-contact.active {
+    background: linear-gradient(135deg, rgba(233,69,96,0.18), rgba(233,69,96,0.08));
+    border-left: 3px solid var(--accent);
+}
+.chat-contact-avatar {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #1a3a6e, #0f3460);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(233,69,96,0.3);
+    position: relative;
+}
+.chat-contact-avatar-pixel {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.avatar-pixel-art {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+.chat-contact-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+.chat-contact-name {
+    font-weight: bold;
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.chat-unread-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+    box-shadow: 0 0 6px rgba(233,69,96,0.6);
+    animation: unread-pulse 2s infinite;
+}
+@keyframes unread-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+.avatar-initial {
+    font-size: 1rem;
+    line-height: 1;
+}
+.chat-contact-job {
+    font-size: 0.68rem;
+    color: var(--accent-light);
+    opacity: 0.8;
+}
+.chat-contact-thought {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    font-style: italic;
+    line-height: 1.3;
+    opacity: 0.7;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.chat-contact-preview {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+}
+.chat-contact-time {
     font-size: 0.6rem;
     color: var(--text-muted);
+    flex-shrink: 0;
+    white-space: nowrap;
 }
-.nearby-btn.active .nearby-job {
-    color: rgba(255,255,255,0.7);
+
+/* Conversation header */
+.chat-conv-header {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, var(--bg-card), var(--bg-secondary));
 }
-.nearby-btn.history-btn {
-    border-style: dashed;
-    opacity: 0.75;
+.chat-conv-name {
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: var(--text-primary);
 }
-.nearby-btn.history-btn:hover {
-    opacity: 1;
+.chat-conv-detail {
+    font-size: 0.7rem;
+    color: var(--accent-light);
+    opacity: 0.8;
+    margin-top: 2px;
 }
 
 /* Chat messages */
 .chat-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 10px;
-    min-height: 200px;
-    max-height: calc(100vh - 320px);
+    padding: 12px;
+    min-height: 180px;
+    max-height: calc(100vh - 420px);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -793,30 +906,40 @@ body.rimtown-page .wp-block-post-title {
 
 .chat-hint {
     text-align: center;
-    padding: 20px;
+    padding: 30px 20px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
 }
 
 .chat-bubble {
-    max-width: 85%;
-    padding: 8px 12px;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    line-height: 1.4;
+    max-width: 80%;
+    padding: 10px 14px;
+    border-radius: 18px;
+    font-size: 0.82rem;
+    line-height: 1.5;
     word-wrap: break-word;
+    word-break: break-word;
+    animation: bubble-in 0.25s ease-out;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+@keyframes bubble-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .chat-player {
     align-self: flex-end;
-    background: var(--accent);
+    background: linear-gradient(135deg, var(--accent), #d63051);
     color: white;
     border-bottom-right-radius: 4px;
 }
 
 .chat-npc {
     align-self: flex-start;
-    background: var(--bg-card);
+    background: linear-gradient(135deg, #1a3a6e, var(--bg-card));
     color: var(--text-primary);
     border-bottom-left-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.06);
 }
 
 .chat-system {
@@ -838,55 +961,113 @@ body.rimtown-page .wp-block-post-title {
 }
 
 .chat-time {
-    font-size: 0.55rem;
-    color: rgba(255, 255, 255, 0.4);
-    margin-top: 2px;
+    font-size: 0.58rem;
+    color: rgba(255, 255, 255, 0.35);
+    margin-top: 3px;
     text-align: right;
+}
+.chat-npc .chat-time {
+    color: var(--text-muted);
+    text-align: left;
+}
+
+/* Typing indicator */
+.chat-typing {
+    align-self: flex-start;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #1a3a6e, var(--bg-card));
+    border-radius: 18px;
+    border-bottom-left-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    animation: bubble-in 0.25s ease-out;
+}
+.chat-typing-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    animation: typing-bounce 1.4s infinite;
+}
+.chat-typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.chat-typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-4px); opacity: 1; }
 }
 
 /* Chat input area */
 .chat-input-area {
     display: flex;
-    gap: 6px;
-    padding: 8px;
+    gap: 8px;
+    padding: 10px 12px;
     border-top: 1px solid var(--border);
     background: var(--bg-secondary);
 }
 
 .chat-input {
     flex: 1;
-    padding: 8px 12px;
+    padding: 10px 14px;
     background: var(--bg-card);
     border: 1px solid var(--border);
     color: var(--text-primary);
-    border-radius: 20px;
-    font-size: 0.8rem;
+    border-radius: 22px;
+    font-size: 0.82rem;
     outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 .chat-input:focus {
     border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(233,69,96,0.15);
 }
 .chat-input::placeholder {
     color: var(--text-muted);
 }
 
 .chat-send-btn {
-    padding: 8px 16px;
+    padding: 10px 18px;
     background: var(--accent);
     color: white;
     border: none;
-    border-radius: 20px;
+    border-radius: 22px;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     font-weight: bold;
-    min-width: 60px;
+    min-width: 64px;
+    transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+    box-shadow: 0 2px 6px rgba(233,69,96,0.3);
 }
 .chat-send-btn:hover {
     background: var(--accent-light);
+    box-shadow: 0 3px 10px rgba(233,69,96,0.4);
+}
+.chat-send-btn:active {
+    transform: scale(0.95);
 }
 .chat-send-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Chat badge for unread messages */
+.chat-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: var(--accent);
+    color: white;
+    font-size: 0.55rem;
+    font-weight: bold;
+    min-width: 14px;
+    height: 14px;
+    line-height: 14px;
+    border-radius: 7px;
+    text-align: center;
+    padding: 0 3px;
+    box-sizing: border-box;
 }
 
 /* Chat Archive */
@@ -1053,6 +1234,113 @@ body.rimtown-page .wp-block-post-title {
     font-family: monospace;
 }
 
+/* =====================================================
+   TUTORIAL OVERLAY — New player intro & guide
+   ===================================================== */
+/* Quest Guidance Banner */
+.quest-guidance {
+    position: fixed;
+    top: 44px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 150000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, rgba(20,30,50,0.95), rgba(30,45,70,0.95));
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 8px 16px;
+    max-width: min(500px, calc(100vw - 32px));
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 10px rgba(0,229,255,0.15);
+    animation: guidanceSlideIn 0.5s ease;
+    backdrop-filter: blur(8px);
+}
+.quest-guidance.hidden { display: none !important; }
+.quest-guidance-icon { font-size: 1.3rem; flex-shrink: 0; }
+.quest-guidance-text { flex: 1; min-width: 0; }
+.quest-guidance-title {
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: var(--accent-light, #80dfff);
+    margin-bottom: 2px;
+}
+.quest-guidance-hint {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+.quest-guidance-dismiss {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 2px 4px;
+    flex-shrink: 0;
+    opacity: 0.6;
+}
+.quest-guidance-dismiss:hover { opacity: 1; color: var(--text-primary); }
+@keyframes guidanceSlideIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.tutorial-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 190000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.5s ease;
+}
+.tutorial-overlay.hidden { display: none !important; }
+.tutorial-overlay.fade-out { opacity: 0; pointer-events: none; }
+.tutorial-backdrop {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    background: rgba(10, 10, 30, 0.65);
+}
+.tutorial-card {
+    position: relative; z-index: 1;
+    background: rgba(22, 33, 62, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 32px 28px 20px;
+    width: 440px; max-width: 92vw; max-height: 80vh; overflow-y: auto;
+    box-shadow: 0 8px 48px rgba(0, 0, 0, 0.5);
+}
+.tutorial-step.hidden { display: none; }
+.tutorial-story-icon { text-align: center; font-size: 3rem; margin-bottom: 8px; }
+.tutorial-story-title { text-align: center; font-size: 1.5rem; color: var(--text-primary); margin: 0 0 4px; font-weight: 700; letter-spacing: 2px; }
+.tutorial-story-subtitle { text-align: center; font-size: 0.72rem; color: var(--text-muted); margin: 0 0 20px; letter-spacing: 1px; }
+.tutorial-story-text p { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.7; margin: 0 0 10px; }
+.tutorial-step-icon { text-align: center; font-size: 2.2rem; margin-bottom: 6px; }
+.tutorial-step h3 { text-align: center; font-size: 1.1rem; color: var(--accent-light); margin: 0 0 14px; font-weight: 600; }
+.tutorial-step-text p { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; margin: 0 0 8px; }
+.tutorial-step-text ul { list-style: none; padding: 0; margin: 8px 0; }
+.tutorial-step-text li { font-size: 0.78rem; color: var(--text-secondary); padding: 4px 0 4px 4px; line-height: 1.5; }
+.tutorial-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; gap: 12px; }
+.tutorial-dots { display: flex; gap: 6px; justify-content: center; flex: 1; }
+.tutorial-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background 0.2s; }
+.tutorial-dot.active { background: var(--accent); }
+.tutorial-btn { padding: 8px 18px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); border-radius: 8px; cursor: pointer; font-size: 0.8rem; white-space: nowrap; transition: all 0.2s; }
+.tutorial-btn:hover { border-color: var(--accent); }
+.tutorial-btn-primary { background: var(--accent); border-color: var(--accent); font-weight: 600; }
+.tutorial-btn-primary:hover { background: var(--accent-light); }
+.tutorial-btn.hidden { display: none; }
+.tutorial-skip { display: block; margin: 14px auto 0; background: none; border: none; color: var(--text-muted); font-size: 0.7rem; cursor: pointer; padding: 4px 8px; }
+.tutorial-skip:hover { color: var(--text-secondary); }
+@media (max-width: 768px) {
+    .tutorial-overlay { overflow: hidden; }
+    .tutorial-card { padding: 24px 20px 16px; width: calc(100vw - 32px); max-width: calc(100vw - 32px); overflow-x: hidden; }
+    .tutorial-story-title { font-size: 1.3rem; }
+    .tutorial-story-text p { font-size: 0.78rem; word-break: break-word; }
+}
+
 /* ===== Settings Modal ===== */
 .rimtown-container .modal {
     position: fixed;
@@ -1063,8 +1351,49 @@ body.rimtown-page .wp-block-post-title {
     justify-content: center;
     z-index: 100000;
 }
+.rimtown-container #auth-modal {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
 .modal.hidden { display: none; }
 .hidden { display: none !important; }
+
+/* ===== Guest Banner ===== */
+#guest-banner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 4px 12px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+#guest-banner.hidden { display: none !important; }
+#guest-register-btn {
+    padding: 2px 10px;
+    border: 1px solid var(--accent);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 0.7rem;
+}
+#guest-banner-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0 4px;
+}
 
 /* Mobile-only elements: hidden on desktop, shown only at ≤768px */
 .mobile-header {
@@ -1129,6 +1458,61 @@ body.rimtown-page .wp-block-post-title {
     font-size: 0.8rem;
 }
 .modal-buttons button:hover { background: var(--accent); }
+
+/* Game Dialog (custom alert/confirm) */
+.game-dialog-content {
+    text-align: center;
+    padding: 28px 24px 20px;
+    max-width: 320px;
+    animation: gameDialogIn 0.2s ease-out;
+}
+@keyframes gameDialogIn {
+    from { transform: scale(0.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+.game-dialog-icon {
+    font-size: 2.2rem;
+    margin-bottom: 12px;
+}
+.game-dialog-msg {
+    font-size: 0.88rem;
+    color: var(--text-primary);
+    line-height: 1.5;
+    margin-bottom: 20px;
+    white-space: pre-line;
+}
+.game-dialog-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+.game-dialog-buttons button {
+    flex: 1;
+    padding: 10px 16px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background 0.15s, transform 0.1s;
+}
+.game-dialog-buttons button:active {
+    transform: scale(0.96);
+}
+.game-dialog-buttons .game-dialog-ok {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+.game-dialog-buttons .game-dialog-ok:hover {
+    filter: brightness(1.15);
+}
+.game-dialog-buttons .game-dialog-cancel:hover {
+    background: var(--bg-secondary);
+}
+
 .btn-accent {
     background: var(--accent) !important;
     border-color: var(--accent) !important;
@@ -1158,15 +1542,15 @@ body.rimtown-page .wp-block-post-title {
 /* Economy Tab */
 .economy-panel { padding: 8px; }
 .econ-section { margin-bottom: 12px; }
-.econ-section h3 { font-size: 0.85rem; margin-bottom: 6px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 3px; }
+.econ-section h3 { font-size: 0.9rem; margin-bottom: 6px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 3px; }
 
 .resource-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
 .resource-item { display: flex; flex-direction: column; align-items: center; padding: 4px; background: var(--bg-secondary); border-radius: 4px; font-size: 0.7rem; }
 .resource-item.res-low { background: rgba(248,113,113,0.15); }
 .resource-item.res-high { background: rgba(74,222,128,0.1); }
 .res-icon { font-size: 1rem; }
-.res-label { color: var(--text-secondary); font-size: 0.6rem; }
-.res-amount { font-weight: bold; font-size: 0.8rem; }
+.res-label { color: var(--text-secondary); font-size: 0.65rem; }
+.res-amount { font-weight: bold; font-size: 0.85rem; }
 
 .merchant-card { background: var(--bg-secondary); border-radius: 6px; padding: 8px; border: 1px solid var(--warning); }
 .merchant-name { font-weight: bold; color: var(--warning); }
@@ -1175,8 +1559,19 @@ body.rimtown-page .wp-block-post-title {
 .trade-offer { display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: 3px 6px; background: var(--bg-primary); border-radius: 3px; font-size: 0.7rem; }
 .trade-offer.trade-sell { border-left: 2px solid var(--positive); }
 .trade-offer.trade-buy { border-left: 2px solid var(--info); }
-.trade-btn { padding: 2px 6px; font-size: 0.6rem; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 3px; cursor: pointer; }
+.trade-btn { padding: 4px 10px; font-size: 0.7rem; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; }
 .trade-btn:hover { background: var(--accent); border-color: var(--accent); }
+
+.shop-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.shop-card { display: flex; flex-direction: column; align-items: center; padding: 6px 4px; background: var(--bg-secondary); border-radius: 4px; gap: 2px; }
+.shop-card-icon { font-size: 1.1rem; }
+.shop-card-name { font-size: 0.75rem; font-weight: bold; }
+.shop-card-stock { font-size: 0.6rem; color: var(--text-muted); }
+.shop-card-btn { width: 90%; padding: 3px 0; font-size: 0.65rem; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; text-align: center; }
+.shop-card-btn:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); }
+.shop-card-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.shop-card-btn.shop-buy { border-color: var(--info); color: var(--info); }
+.shop-card-btn.shop-sell { border-color: var(--positive); color: var(--positive); }
 
 .building-progress { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; }
 .building-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; }
@@ -1185,7 +1580,10 @@ body.rimtown-page .wp-block-post-title {
 .research-fill { background: var(--info); }
 .progress-text { font-size: 0.65rem; color: var(--text-secondary); min-width: 30px; text-align: right; }
 
-.completed-buildings { font-size: 0.7rem; color: var(--positive); margin: 4px 0; padding: 4px; background: rgba(74,222,128,0.1); border-radius: 3px; }
+.completed-buildings { font-size: 0.7rem; color: var(--positive); margin: 4px 0; padding: 4px; background: rgba(74,222,128,0.1); border-radius: 3px; display: flex; flex-direction: column; gap: 2px; }
+.completed-building-item { display: flex; justify-content: space-between; align-items: center; padding: 2px 4px; }
+.building-level { font-size: 0.65rem; color: var(--accent-gold, #f59e0b); font-weight: bold; }
+.build-effects { font-size: 0.65rem; color: var(--accent-gold, #f59e0b); width: 100%; }
 
 .build-label { font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 4px; }
 .available-buildings, .research-available { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
@@ -1252,23 +1650,69 @@ body.rimtown-page .wp-block-post-title {
 .log-entry.type-discovery { border-left: 2px solid #a78bfa; padding-left: 6px; }
 
 /* ===== NPC Conversation Display ===== */
-.npc-convo-section { border-bottom: 2px solid var(--border); margin-bottom: 8px; }
-.npc-convo-entry { padding: 6px 10px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
-.npc-convo-entry:hover { background: rgba(255,255,255,0.03); }
-.npc-convo-header { font-size: 0.72rem; margin-bottom: 2px; }
-.npc-convo-summary { font-size: 0.68rem; color: var(--text-secondary); }
-.npc-convo-dialogue { display: none; margin-top: 6px; padding: 6px 8px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+.npc-convo-section { margin-bottom: 8px; }
+.npc-convo-entry {
+    padding: 8px 10px;
+    margin: 6px 4px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.npc-convo-entry:hover { background: rgba(255,255,255,0.05); border-color: var(--accent); }
+.npc-convo-header {
+    font-size: 0.78rem;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+.npc-convo-toggle {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    margin-right: 2px;
+    transition: transform 0.2s;
+    display: inline-block;
+}
+.npc-convo-entry.expanded .npc-convo-toggle { transform: rotate(90deg); }
+.npc-convo-summary {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-top: 2px;
+}
+.npc-convo-entry.expanded .npc-convo-summary { color: var(--accent-light); }
+.npc-convo-dialogue {
+    display: none;
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.25);
+    border-radius: 6px;
+    border-left: 2px solid var(--accent);
+}
 .npc-convo-entry.expanded .npc-convo-dialogue { display: block; }
-.npc-convo-entry.expanded .npc-convo-summary { color: var(--accent); }
-.npc-convo-line { font-size: 0.68rem; color: var(--text-primary); margin: 3px 0; line-height: 1.4; }
+.npc-convo-line {
+    font-size: 0.72rem;
+    color: var(--text-primary);
+    margin: 6px 0;
+    line-height: 1.5;
+    padding-left: 4px;
+}
+.npc-convo-line + .npc-convo-line { border-top: 1px solid rgba(255,255,255,0.04); padding-top: 6px; }
 .npc-convo-speaker { color: var(--accent-light); font-weight: bold; }
 
 /* ===== Login Modal ===== */
-.login-content { max-width: 360px; text-align: center; }
+.login-content { max-width: 360px; text-align: center; position: relative; }
 .login-content h2 { font-size: 1.5rem; margin-bottom: 4px; }
 .login-subtitle { color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 16px; }
 .login-error { color: var(--negative); font-size: 0.75rem; min-height: 18px; margin: 4px 0; }
 .login-note { color: var(--text-muted); font-size: 0.65rem; margin-top: 12px; }
+/* Prevent iOS auto-zoom on input focus (requires font-size >= 16px) */
+.login-content input[type="text"],
+.login-content input[type="password"],
+.login-content input[type="email"] { font-size: 16px !important; }
 
 /* ===== User Display ===== */
 .user-display { display: flex; align-items: center; gap: 6px; }
@@ -1292,6 +1736,27 @@ body.rimtown-page .wp-block-post-title {
 .town-actions { display: flex; gap: 4px; }
 .town-actions button { background: transparent; border: 1px solid var(--border); color: var(--text-secondary);
     padding: 2px 6px; font-size: 0.7rem; border-radius: 3px; cursor: pointer; }
+.town-modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+.town-btn {
+    flex: 1; padding: 10px 16px; border: none; border-radius: 8px;
+    font-size: 0.85rem; font-weight: 600; cursor: pointer;
+    transition: all 0.2s ease; text-align: center;
+}
+.town-btn-primary {
+    background: var(--accent); color: #fff;
+    box-shadow: 0 2px 8px rgba(233, 69, 96, 0.3);
+}
+.town-btn-primary:hover {
+    background: #d43d5e; transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(233, 69, 96, 0.4);
+}
+.town-btn-secondary {
+    background: var(--bg-card); color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+.town-btn-secondary:hover {
+    background: var(--border); color: var(--text-primary);
+}
 
 /* ===== Election System ===== */
 .election-section {
@@ -1373,6 +1838,22 @@ body.rimtown-page .wp-block-post-title {
 }
 .election-bar-fill.winner {
     background: var(--warning);
+}
+.btn-vote {
+    width: 100%;
+    padding: 4px 8px;
+    margin-top: 6px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #fff;
+    background: var(--accent);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+}
+.btn-vote:hover {
+    opacity: 0.85;
 }
 .election-total {
     font-size: 0.7rem;
@@ -1763,6 +2244,216 @@ body.rimtown-page .wp-block-post-title {
 }
 .log-entry.type-quest { border-left: 2px solid var(--accent); padding-left: 6px; font-weight: bold; }
 
+/* ===== Job Panel ===== */
+.job-current-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, rgba(233,69,96,0.12), rgba(233,69,96,0.04));
+    border: 1px solid rgba(233,69,96,0.3);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+}
+.job-current-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+.job-current-name {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: var(--accent);
+}
+.btn-quit-job {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(239,68,68,0.12);
+    color: #ef4444;
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: all 0.2s;
+}
+.btn-quit-job:hover {
+    background: rgba(239,68,68,0.25);
+    border-color: rgba(239,68,68,0.5);
+}
+.job-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+}
+.job-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 8px;
+    padding: 8px 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-primary);
+    font-size: 0.7rem;
+}
+.job-btn:hover:not(:disabled) {
+    background: rgba(233,69,96,0.1);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+}
+.job-btn.active {
+    background: rgba(233,69,96,0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 8px rgba(233,69,96,0.2);
+}
+.job-btn:disabled {
+    cursor: default;
+    opacity: 0.8;
+}
+.job-btn-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+.job-btn-title {
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+/* ===== Newspaper Cards ===== */
+.news-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.news-card:hover {
+    border-color: rgba(233,69,96,0.4);
+    background: rgba(255,255,255,0.03);
+}
+.news-card.news-latest {
+    border-color: var(--accent);
+    background: rgba(233,69,96,0.06);
+}
+.news-card.news-expanded {
+    border-color: var(--accent);
+}
+.news-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.news-card-issue {
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: var(--accent);
+    min-width: 32px;
+}
+.news-card-meta {
+    flex: 1;
+    min-width: 0;
+}
+.news-card-date {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+.news-card-reporter {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    margin-top: 1px;
+}
+.news-card-toggle {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+.news-card-preview {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px dashed rgba(255,255,255,0.06);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.news-card-content {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    white-space: pre-wrap;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+/* ===== Center Notification Overlay ===== */
+.center-notification-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 200000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: centerNotifFadeIn 0.3s ease;
+}
+.center-notification-overlay.hidden { display: none !important; }
+.center-notification-backdrop {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    background: rgba(10, 10, 30, 0.65);
+}
+.center-notification-card {
+    position: relative; z-index: 1;
+    background: rgba(22, 33, 62, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    padding: 28px 24px 20px;
+    width: 420px; max-width: 90vw; max-height: 75vh; overflow-y: auto;
+    box-shadow: 0 8px 48px rgba(0, 0, 0, 0.5), 0 0 30px rgba(201, 160, 51, 0.15);
+    text-align: center;
+}
+.center-notif-icon { font-size: 3rem; margin-bottom: 8px; filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.4)); }
+.center-notif-title { font-size: 1.2rem; font-weight: 700; color: #c9a033; letter-spacing: 2px; margin-bottom: 4px; }
+.center-notif-name { font-size: 1.1rem; font-weight: 700; color: #fff; text-shadow: 0 0 8px rgba(255, 215, 0, 0.3); margin-bottom: 8px; }
+.center-notif-desc { font-size: 0.82rem; color: rgba(255, 255, 255, 0.7); line-height: 1.6; margin-bottom: 16px; }
+.center-notif-content { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.7; text-align: left; margin-bottom: 16px; white-space: pre-wrap; }
+.center-notif-dismiss {
+    display: inline-block;
+    padding: 8px 24px;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.center-notif-dismiss:hover { background: var(--accent-light); transform: scale(1.05); }
+@keyframes centerNotifFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@media (max-width: 768px) {
+    .center-notification-card { padding: 20px 16px 16px; width: calc(100vw - 24px); }
+    .center-notif-icon { font-size: 2.5rem; }
+    .center-notif-title { font-size: 1rem; }
+    .center-notif-name { font-size: 0.95rem; }
+}
+
 /* ===== Achievement Toast ===== */
 .achievement-toast {
     position: fixed;
@@ -1943,31 +2634,9 @@ body.rimtown-page .wp-block-post-title {
     font-style: italic;
 }
 
-/* ===== Mobile Sidebar Toggle ===== */
+/* ===== Mobile Sidebar Toggle (removed - was non-functional) ===== */
 .mobile-sidebar-toggle {
     display: none !important;
-    position: fixed;
-    bottom: 16px;
-    right: 16px;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: var(--accent);
-    color: #fff;
-    border: 2px solid rgba(255,255,255,0.3);
-    font-size: 1.2rem;
-    cursor: pointer;
-    z-index: 99999;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.2s;
-}
-.mobile-sidebar-toggle:hover {
-    transform: scale(1.1);
-}
-.mobile-sidebar-toggle:active {
-    transform: scale(0.95);
 }
 
 /* ===== Mobile Back to Map Button ===== */
@@ -1990,25 +2659,26 @@ body.rimtown-page .wp-block-post-title {
 
 /* ===== Responsive: Tablet (≤1024px) ===== */
 @media (max-width: 1024px) {
+    .rimtown-container {
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+    }
     .rimtown-container .rt-sidebar {
         width: 300px !important;
     }
     .rimtown-container .map-panel {
         right: 300px !important;
     }
-    .header h1 {
-        font-size: 0.95rem;
-    }
     .controls button {
         padding: 3px 8px;
         font-size: 0.75rem;
     }
-    /* Tablet: smaller tab icons and labels */
+    /* Tablet: tab icons and labels */
     .rt-sidebar-tabs button {
         padding: 5px 2px;
     }
     .rt-sidebar-tabs .tab-icon {
-        font-size: 0.9rem;
+        font-size: 1rem;
     }
     .rt-sidebar-tabs .tab-label {
         font-size: 0.6rem;
@@ -2023,30 +2693,31 @@ body.rimtown-page .wp-block-post-title {
 
 /* ===== Responsive: Mobile (≤768px) ===== */
 @media (max-width: 768px) {
-    /* Force container to viewport, prevent page scroll */
+    /* Force container to viewport, prevent page scroll & horizontal shift */
     .rimtown-container {
         height: 100vh;
         height: 100dvh;
         max-height: 100vh;
         max-height: 100dvh;
         overflow: hidden !important;
+        max-width: 100vw !important;
+        width: 100% !important;
     }
     /* Prevent WordPress wrappers from scrolling */
     body.rimtown-page {
         overflow: hidden !important;
         height: 100vh !important;
         height: 100dvh !important;
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+        width: 100% !important;
     }
 
-    /* Desktop header hidden on mobile, show mobile header */
-    .header {
-        display: none !important;
-    }
+    /* Show mobile header on mobile */
     .mobile-header {
         display: block !important;
         background: var(--bg-secondary);
         border-bottom: 1px solid var(--border);
-        flex-shrink: 0;
     }
     .mobile-header-row {
         display: flex;
@@ -2077,6 +2748,11 @@ body.rimtown-page .wp-block-post-title {
         border-radius: 4px;
         font-size: 0.8rem;
         cursor: pointer;
+        min-width: 40px;
+        min-height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     .mobile-menu-dropdown {
         background: var(--bg-secondary);
@@ -2094,51 +2770,47 @@ body.rimtown-page .wp-block-post-title {
         background: var(--bg-card);
         border: 1px solid var(--border);
         color: var(--text-primary);
-        padding: 4px 8px;
+        padding: 6px 12px;
         border-radius: 4px;
-        font-size: 0.7rem;
+        font-size: 0.75rem;
         cursor: pointer;
+        min-height: 36px;
     }
     .mobile-menu-speed {
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 1px;
         font-size: 0.7rem;
         color: var(--text-secondary);
+        background: var(--bg-primary);
+        border-radius: 4px;
+        padding: 1px;
+        border: 1px solid var(--border);
+    }
+    .mobile-menu-speed .btn-speed {
+        padding: 4px 6px;
+        border: none;
+        background: transparent;
+        color: var(--text-secondary);
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 0.65rem;
+        font-weight: bold;
+        min-height: 28px;
+    }
+    .mobile-menu-speed .btn-speed.active {
+        background: var(--accent);
+        color: #fff;
     }
     .mobile-menu-ai {
         font-size: 0.7rem;
     }
-    .header h1 {
-        font-size: 0.8rem;
-        letter-spacing: 0;
-        white-space: nowrap;
-    }
-    .header-info {
-        gap: 4px;
-        font-size: 0.7rem;
-        width: auto;
-        flex: 1;
-        justify-content: flex-end;
-        flex-wrap: nowrap;
-        overflow: hidden;
-    }
-    /* Hide info text on mobile to keep header single-row */
+    /* Hide desktop header elements on mobile */
     #population-count,
     .clock-display,
     .terrain-display {
         display: none;
     }
-    .controls {
-        gap: 2px;
-        flex-wrap: nowrap;
-    }
-    .controls button {
-        padding: 3px 6px;
-        font-size: 0.7rem;
-        white-space: nowrap;
-    }
-    /* Hide less important header buttons on mobile */
     .btn-export, .btn-import, .btn-towns, .btn-new-game {
         display: none;
     }
@@ -2149,13 +2821,15 @@ body.rimtown-page .wp-block-post-title {
         display: none;
     }
 
-    /* Main layout on mobile */
+    /* Main layout on mobile: flex column to stack map + sidebar */
     .rimtown-container .main-layout {
         position: relative !important;
         overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
     }
 
-    /* Map: fill everything on mobile */
+    /* Map: fill available space above the bottom bar */
     .rimtown-container .map-panel {
         position: absolute !important;
         top: 0 !important;
@@ -2168,65 +2842,164 @@ body.rimtown-page .wp-block-post-title {
         touch-action: none; /* allow JS to handle pinch/pan */
     }
 
-    /* Sidebar: overlay from bottom */
-    .rt-sidebar {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        width: 100%;
-        height: 60%;
-        max-height: 60vh;
-        border-left: none;
+    /* ===== Bottom Sheet Sidebar ===== */
+    .rimtown-container .rt-sidebar {
+        position: absolute !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        top: auto !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        height: auto !important;
+        max-height: 55vh !important;
+        border-left: none !important;
         border-top: 2px solid var(--accent);
-        transform: translateY(100%);
-        transition: transform 0.3s ease;
         z-index: 50;
-    }
-    .rt-sidebar.mobile-open {
-        transform: translateY(0);
+        display: flex !important;
+        flex-direction: column !important;
+        background: var(--bg-primary) !important;
+        transition: max-height 0.3s ease;
+        padding-bottom: env(safe-area-inset-bottom, 0);
+        overflow: hidden !important;
     }
 
-    /* Show toggle button */
-    .mobile-sidebar-toggle {
-        display: flex !important;
+    /* Collapsed state: only show tab bar */
+    .rt-sidebar.mobile-collapsed {
+        max-height: 52px !important;
     }
-    .rt-sidebar.mobile-open ~ .mobile-sidebar-toggle {
+    .rt-sidebar.mobile-collapsed .rt-sidebar-content {
+        display: none !important;
+    }
+    .rt-sidebar.mobile-collapsed .mobile-back-to-map {
+        display: none !important;
+    }
+    .rt-sidebar.mobile-collapsed .mobile-drag-handle {
         display: none !important;
     }
 
-    /* Show back-to-map button when sidebar open */
+    /* Hide the old back-to-map button, use collapse handle instead */
     .mobile-back-to-map {
         display: none !important;
     }
-    .rt-sidebar.mobile-open .mobile-back-to-map {
+
+    /* Drag handle for bottom sheet */
+    .mobile-drag-handle {
         display: block !important;
+        width: 100%;
+        padding: 4px 0;
+        cursor: grab;
+        text-align: center;
+        flex-shrink: 0;
+    }
+    .mobile-drag-handle::after {
+        content: '';
+        display: block;
+        width: 36px;
+        height: 4px;
+        background: var(--text-muted);
+        border-radius: 2px;
+        margin: 0 auto;
     }
 
-    /* Sidebar tabs: 5-column grid on mobile, icon-only with small labels */
+    /* Tab bar: fixed 5 tabs, no scroll */
     .rt-sidebar-tabs {
-        grid-template-columns: repeat(5, 1fr);
+        display: flex !important;
+        grid-template-columns: none !important;
+        flex-direction: row !important;
+        overflow: hidden !important;
         gap: 0;
+        flex-shrink: 0;
+        border-bottom: 1px solid var(--border);
+        max-width: 100%;
+        width: 100%;
+    }
+
+    /* Guest banner: move to bottom, above tab bar */
+    #guest-banner {
+        position: fixed;
+        top: auto;
+        bottom: 52px;
+        left: 0;
+        right: 0;
+        z-index: 51;
+        padding: 3px 8px;
+        font-size: 0.65rem;
+        gap: 4px;
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+    }
+    #guest-banner span { white-space: nowrap; }
+    #guest-register-btn { font-size: 0.6rem; padding: 1px 8px; }
+    /* Hide overflow tabs on mobile (accessed via mobile group sub-tabs) */
+    .rt-sidebar-tabs button.mobile-hidden {
+        display: none !important;
     }
     .rt-sidebar-tabs button {
-        padding: 4px 2px;
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 8px 4px;
+        min-height: 48px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        white-space: nowrap;
+        border-bottom: 2px solid transparent;
+    }
+    .rt-sidebar-tabs button.active {
+        border-bottom-color: var(--accent);
+        background: rgba(233, 69, 96, 0.12);
     }
     .rt-sidebar-tabs .tab-icon {
-        font-size: 0.85rem;
+        font-size: 1.35rem;
     }
     .rt-sidebar-tabs .tab-label {
-        font-size: 0.55rem;
+        font-size: 0.6rem;
+        display: block;
     }
 
-    /* Sidebar content */
+    /* Mobile group sub-tab bar — visible on mobile */
+    .mobile-group-tabs {
+        display: flex !important;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--bg-secondary);
+    }
+
+    /* Sub-tab bar: prevent negative margin overflow on mobile */
+    .sub-tab-bar {
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    /* Sidebar content: scrollable area when expanded */
     .rt-sidebar-content {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
         padding: 6px;
+        min-height: 0;
+        max-width: 100%;
     }
 
     /* Chat messages */
     .chat-messages {
-        max-height: calc(60vh - 200px);
-        min-height: 120px;
+        max-height: calc(45vh - 160px);
+        min-height: 100px;
+    }
+
+    /* Settings inputs: prevent iOS auto-zoom on focus */
+    .setting-group input,
+    .setting-group select {
+        font-size: 16px !important; /* prevents iOS zoom */
+    }
+
+    /* When virtual keyboard is open, expand sidebar so input stays visible */
+    .rt-sidebar.keyboard-open {
+        max-height: 70vh !important;
     }
 
     /* Chat input bigger touch targets */
@@ -2254,7 +3027,7 @@ body.rimtown-page .wp-block-post-title {
 
     /* Archive list */
     .archive-list {
-        max-height: calc(60vh - 160px);
+        max-height: calc(45vh - 140px);
     }
     .archive-item {
         flex-wrap: wrap;
@@ -2273,27 +3046,9 @@ body.rimtown-page .wp-block-post-title {
         white-space: nowrap;
     }
 
-    /* Increase touch targets for mobile buttons */
-    .mobile-ctrl-btn {
-        min-width: 40px;
-        min-height: 36px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .mobile-menu-dropdown button {
-        min-height: 36px;
-        padding: 6px 12px;
-        font-size: 0.75rem;
-    }
-
-    /* Sidebar tabs: better touch targets with 5-column grid */
-    .rt-sidebar-tabs {
-        grid-template-columns: repeat(5, 1fr);
-    }
-    .rt-sidebar-tabs button {
-        min-height: 40px;
-        padding: 6px 2px;
+    /* Hide hamburger FAB (removed) */
+    .mobile-sidebar-toggle {
+        display: none !important;
     }
 
     /* Festival / Quest / Faction sections responsive */
@@ -2356,12 +3111,7 @@ body.rimtown-page .wp-block-post-title {
     .mobile-header {
         padding-top: env(safe-area-inset-top, 0);
     }
-    .mobile-sidebar-toggle {
-        bottom: calc(16px + env(safe-area-inset-bottom, 0));
-    }
-    .rt-sidebar {
-        padding-bottom: env(safe-area-inset-bottom, 0);
-    }
+
     /* Mobile: achievement toast */
     .achievement-toast {
         top: 12px;
@@ -2380,40 +3130,8 @@ body.rimtown-page .wp-block-post-title {
     .ach-toast-desc {
         font-size: 0.7rem;
     }
-}
 
-/* ===== Responsive: Small Phone (≤480px) ===== */
-@media (max-width: 480px) {
-    .header h1 {
-        font-size: 0.7rem;
-    }
-    .controls button {
-        padding: 2px 5px;
-        font-size: 0.65rem;
-    }
-    /* Hide save button on very small screens */
-    .btn-save {
-        display: none;
-    }
-
-    .rt-sidebar {
-        height: 70%;
-        max-height: 70vh;
-    }
-
-    /* Small phone: icon-only tabs, hide labels */
-    .rt-sidebar-tabs .tab-label {
-        display: none;
-    }
-    .rt-sidebar-tabs button {
-        padding: 6px 2px;
-        min-height: 38px;
-    }
-    .rt-sidebar-tabs .tab-icon {
-        font-size: 1.1rem;
-    }
-
-    /* Nearby buttons: smaller */
+    /* Nearby buttons */
     .nearby-btn {
         padding: 3px 8px;
         font-size: 0.7rem;
@@ -2421,8 +3139,155 @@ body.rimtown-page .wp-block-post-title {
 
     /* Resident cards: tighter */
     .resident-card {
-        padding: 6px 8px;
-        margin-bottom: 4px;
+        padding: 8px 10px;
+        margin-bottom: 6px;
+    }
+
+    /* ── Mobile: enlarge sidebar content text & buttons ── */
+    .econ-section h3 {
+        font-size: 1.05rem;
+        padding-bottom: 5px;
+        margin-bottom: 8px;
+    }
+    .trade-btn {
+        padding: 8px 14px;
+        font-size: 0.85rem;
+        border-radius: 6px;
+        min-height: 36px;
+    }
+    .btn-speed {
+        font-size: 0.8rem !important;
+        padding: 6px 10px !important;
+    }
+    .setting-group label {
+        font-size: 0.88rem !important;
+    }
+    .resident-name {
+        font-size: 1.05rem;
+    }
+    .resident-job {
+        font-size: 0.85rem;
+    }
+    .resident-status {
+        font-size: 0.82rem;
+    }
+    .needs-bar {
+        font-size: 0.78rem;
+    }
+    .needs-bar label {
+        width: 80px;
+    }
+    .needs-bar .bar {
+        height: 8px;
+    }
+    .resource-item {
+        font-size: 0.82rem;
+        padding: 6px;
+    }
+    .res-icon {
+        font-size: 1.2rem;
+    }
+    .res-label {
+        font-size: 0.72rem;
+    }
+    .res-amount {
+        font-size: 0.92rem;
+    }
+    .building-item {
+        font-size: 0.85rem;
+    }
+    .build-name {
+        font-size: 0.88rem;
+    }
+    .build-desc {
+        font-size: 0.78rem;
+    }
+    .build-cost {
+        font-size: 0.78rem;
+    }
+    .build-btn {
+        padding: 4px 12px;
+        font-size: 0.78rem;
+    }
+    .research-current {
+        font-size: 0.85rem;
+    }
+    .progress-text {
+        font-size: 0.78rem;
+    }
+    .news-section h4 {
+        font-size: 0.95rem;
+    }
+    .news-bulletin {
+        font-size: 0.85rem;
+    }
+    .merchant-info {
+        font-size: 0.82rem;
+    }
+    .trade-offer {
+        font-size: 0.82rem;
+    }
+    .completed-buildings {
+        font-size: 0.82rem;
+    }
+    .sub-tab-bar button {
+        font-size: 0.85rem;
+        padding: 10px 6px;
+    }
+    .log-entry {
+        font-size: 0.82rem;
+    }
+    .chat-message {
+        font-size: 0.85rem;
+    }
+    .version-display {
+        font-size: 0.75rem;
+    }
+    .faction-header {
+        font-size: 0.85rem;
+    }
+    .faction-members {
+        font-size: 0.78rem;
+    }
+    .quest-title {
+        font-size: 0.88rem;
+    }
+    .quest-desc {
+        font-size: 0.78rem;
+    }
+    .quest-objectives {
+        font-size: 0.78rem;
+    }
+    .achievement-filters button {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+        min-height: 34px;
+    }
+    .prosperity-bar-label {
+        font-size: 0.78rem;
+    }
+}
+
+/* ===== Responsive: Small Phone (≤480px) ===== */
+@media (max-width: 480px) {
+    /* Hide save button on very small screens */
+    .btn-save {
+        display: none;
+    }
+
+    /* Small phone: tab bar */
+    .rt-sidebar-tabs button {
+        padding: 6px 2px;
+        min-height: 44px;
+    }
+    .rt-sidebar-tabs .tab-icon {
+        font-size: 1.2rem;
+    }
+    .rt-sidebar-tabs .tab-label {
+        font-size: 0.55rem;
+    }
+    .rt-sidebar.mobile-collapsed {
+        max-height: 46px !important;
     }
 
     /* Town manager modal */
@@ -2442,10 +3307,6 @@ body.rimtown-page .wp-block-post-title {
         font-size: 0.65rem;
     }
 
-    /* Safe area for small phones */
-    .rt-sidebar {
-        padding-bottom: env(safe-area-inset-bottom, 0);
-    }
     /* Small phone: achievement toast */
     .achievement-toast {
         top: 8px;
@@ -2464,5 +3325,132 @@ body.rimtown-page .wp-block-post-title {
     }
     .ach-toast-desc {
         font-size: 0.65rem;
+    }
+}
+
+/* ===== Responsive: iPad Portrait (768px-1024px) ===== */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .rimtown-container {
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+    }
+    .rimtown-container .main-layout {
+        overflow-x: hidden !important;
+    }
+    /* iPad: slightly larger tab icons */
+    .rt-sidebar-tabs .tab-icon {
+        font-size: 1.1rem;
+    }
+    .rt-sidebar-tabs .tab-label {
+        font-size: 0.65rem;
+    }
+
+    /* iPad: enlarge sidebar content */
+    .econ-section h3 {
+        font-size: 0.95rem;
+    }
+    .trade-btn {
+        padding: 5px 12px;
+        font-size: 0.78rem;
+    }
+    .resident-name {
+        font-size: 1rem;
+    }
+    .resident-job {
+        font-size: 0.8rem;
+    }
+    .resident-status {
+        font-size: 0.78rem;
+    }
+    .needs-bar {
+        font-size: 0.72rem;
+    }
+    .sub-tab-bar button {
+        font-size: 0.8rem;
+        padding: 9px 6px;
+    }
+    .resource-item {
+        font-size: 0.78rem;
+    }
+    .res-icon {
+        font-size: 1.1rem;
+    }
+    .res-label {
+        font-size: 0.68rem;
+    }
+    .res-amount {
+        font-size: 0.88rem;
+    }
+    .building-item {
+        font-size: 0.82rem;
+    }
+    .news-bulletin {
+        font-size: 0.82rem;
+    }
+    .setting-group label {
+        font-size: 0.85rem;
+    }
+}
+
+/* === PWA Install Banner === */
+.pwa-install-banner {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 10000;
+    background: linear-gradient(135deg, #0f3460, #1a1a2e);
+    border-top: 2px solid var(--accent);
+    padding: 12px 16px;
+    animation: pwa-slide-up 0.4s ease;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+}
+.pwa-install-banner.hidden { display: none; }
+@keyframes pwa-slide-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+.pwa-install-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+.pwa-install-icon { font-size: 32px; }
+.pwa-install-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.pwa-install-text strong { color: var(--text-primary); font-size: 0.95rem; }
+.pwa-install-text small { color: var(--text-secondary); font-size: 0.75rem; }
+.pwa-install-accept {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.pwa-install-accept:hover { background: var(--accent-light); }
+.pwa-install-dismiss {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+/* PWA standalone mode adjustments */
+@media (display-mode: standalone) {
+    .rimtown-container {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
     }
 }

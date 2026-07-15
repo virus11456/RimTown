@@ -1,0 +1,17 @@
+{
+  "name": "邊境鎮 - AI Town Simulation",
+  "short_name": "邊境鎮",
+  "description": "RimWorld-inspired AI town simulation with autonomous agents, relationships, and dynamic events.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "icons": [
+    { "src": "icons/icon48.png", "sizes": "48x48", "type": "image/png" },
+    { "src": "icons/icon128.png", "sizes": "128x128", "type": "image/png" },
+    { "src": "icons/icon128.png", "sizes": "128x128", "type": "image/png", "purpose": "maskable" }
+  ],
+  "categories": ["games", "entertainment"],
+  "lang": "zh-TW"
+}

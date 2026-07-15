@@ -2,16 +2,43 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="邊境鎮">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="description" content="RimWorld-inspired AI town simulation - 邊境鎮 AI 小鎮模擬">
+    <link rel="manifest" href="pwa-manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon128.png">
     <title>邊境鎮 - AI 小鎮模擬</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<!-- PWA Install Banner -->
+<div id="pwa-install-banner" class="pwa-install-banner hidden">
+    <div class="pwa-install-content">
+        <span class="pwa-install-icon">🏘️</span>
+        <div class="pwa-install-text">
+            <strong data-i18n="安裝邊境鎮">安裝邊境鎮</strong>
+            <small data-i18n="安裝到主畫面，享受全螢幕體驗">安裝到主畫面，享受全螢幕體驗</small>
+        </div>
+        <button id="pwa-install-btn" class="pwa-install-accept" data-i18n="安裝">安裝</button>
+        <button id="pwa-install-dismiss" class="pwa-install-dismiss">✕</button>
+    </div>
+</div>
+
 <div id="rimtown-app" class="rimtown-container">
+    <!-- Guest mode banner -->
+    <div id="guest-banner" class="hidden">
+        <span>🎮 訪客模式 — 存檔僅保留在本機</span>
+        <button id="guest-register-btn">註冊帳號</button>
+        <button id="guest-banner-close">✕</button>
+    </div>
     <!-- Town Manager Modal -->
     <div id="town-modal" class="modal hidden">
         <div class="modal-content town-content">
-            <h2>🏘️ 城鎮列表</h2>
+            <h2>🏘️ <span data-i18n="城鎮列表">城鎮列表</span></h2>
             <div id="town-list-content">
                 <!-- Rendered dynamically -->
             </div>
@@ -21,70 +48,256 @@
     <!-- Settings Modal -->
     <div id="settings-modal" class="modal hidden">
         <div class="modal-content">
-            <h2>設定</h2>
+            <h2 data-i18n="設定">設定</h2>
             <div class="setting-group">
-                <label>AI 語言模型</label>
+                <label data-i18n="AI 語言模型">AI 語言模型</label>
                 <select id="llm-provider">
-                    <option value="none">無（模擬對話）</option>
+                    <option value="none" data-i18n="無（模擬對話）">無（模擬對話）</option>
                     <option value="anthropic">Anthropic (Claude)</option>
                     <option value="openai">OpenAI (GPT)</option>
                     <option value="gemini">Google (Gemini)</option>
                     <option value="deepseek">DeepSeek</option>
                     <option value="groq">Groq</option>
                     <option value="together">Together AI</option>
-                    <option value="minimax">MiniMax (海螺AI)</option>
+                    <option value="minimax" data-i18n="MiniMax (海螺AI)">MiniMax (海螺AI)</option>
                 </select>
             </div>
             <div class="setting-group" id="api-key-group">
-                <label>API 金鑰</label>
-                <input type="password" id="llm-api-key" placeholder="輸入你的 API 金鑰...">
+                <label data-i18n="API 金鑰">API 金鑰</label>
+                <input type="password" id="llm-api-key" data-i18n-placeholder="輸入你的 API 金鑰..." placeholder="輸入你的 API 金鑰...">
             </div>
             <div class="setting-group">
-                <label>備用 Groq API Key <span style="font-size:11px;color:var(--text-secondary)">（主 AI 超限時自動切換）</span></label>
-                <input type="password" id="fallback-groq-key" placeholder="gsk_... （選填，免費申請於 console.groq.com）">
+                <label><span data-i18n="備用 Groq API Key">備用 Groq API Key</span> <span style="font-size:11px;color:var(--text-secondary)" data-i18n="主 AI 超限時自動切換">（主 AI 超限時自動切換）</span></label>
+                <input type="password" id="fallback-groq-key" placeholder="gsk_...">
             </div>
             <div class="setting-group">
-                <label>模擬速度</label>
+                <label data-i18n="模擬速度">模擬速度</label>
                 <select id="sim-speed">
-                    <option value="3000">慢速（3秒）</option>
-                    <option value="2000" selected>正常（2秒）</option>
-                    <option value="1000">快速（1秒）</option>
-                    <option value="500">極快（0.5秒）</option>
+                    <option value="3000" data-i18n="慢速（3秒）">慢速（3秒）</option>
+                    <option value="2000" selected data-i18n="正常（2秒）">正常（2秒）</option>
+                    <option value="1000" data-i18n="快速（1秒）">快速（1秒）</option>
+                    <option value="500" data-i18n="極快（0.5秒）">極快（0.5秒）</option>
                 </select>
             </div>
-            <div class="modal-buttons">
-                <button id="settings-save" class="btn-accent">儲存</button>
-                <button id="settings-cancel">取消</button>
+            <div class="setting-group">
+                <label data-i18n="語言">語言</label>
+                <select id="lang-select">
+                    <option value="zh">繁體中文</option>
+                    <option value="en">English</option>
+                </select>
             </div>
+            <div class="setting-group">
+                <label data-i18n="背景音樂">背景音樂</label>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <button id="bgm-toggle" class="btn-icon" title="靜音" style="font-size:18px;padding:4px 8px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:6px;cursor:pointer;">🔊</button>
+                    <input id="bgm-volume" type="range" min="0" max="100" value="30" style="flex:1;">
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button id="settings-save" class="btn-accent" data-i18n="儲存">儲存</button>
+                <button id="settings-cancel" data-i18n="取消">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tutorial / Story Intro Overlay -->
+    <div id="tutorial-overlay" class="tutorial-overlay hidden">
+        <div class="tutorial-backdrop"></div>
+        <div class="tutorial-card">
+            <div class="tutorial-step" data-step="0">
+                <div class="tutorial-story-icon">🏘️</div>
+                <h2 class="tutorial-story-title" data-i18n="邊境鎮">邊境鎮</h2>
+                <p class="tutorial-story-subtitle">RimTown — AI Town Simulation</p>
+                <div class="tutorial-story-text">
+                    <p data-i18n="在帝國邊疆的荒野之中，一群拓荒者建立了一座小小的聚落。">在帝國邊疆的荒野之中，一群拓荒者建立了一座小小的聚落。</p>
+                    <p data-i18n="他們來自不同的背景 —— 有農夫、鐵匠、醫生、商人，甚至是流亡的學者。每個人都帶著自己的故事、個性和夢想來到這裡。">他們來自不同的背景 —— 有農夫、鐵匠、醫生、商人，甚至是流亡的學者。每個人都帶著自己的故事、個性和夢想來到這裡。</p>
+                    <p data-i18n-html="作為這座 <strong>邊境鎮</strong> 的管理者，你需要引導居民們建設家園、發展經濟、抵禦外敵，並見證他們之間的愛恨情仇。">作為這座 <strong>邊境鎮</strong> 的管理者，你需要引導居民們建設家園、發展經濟、抵禦外敵，並見證他們之間的愛恨情仇。</p>
+                    <p style="color:var(--accent-light);margin-top:12px;font-style:italic" data-i18n="「每位居民都是獨立的 AI，擁有自己的思想和意志。你的選擇，將塑造這座鎮的命運。」">「每位居民都是獨立的 AI，擁有自己的思想和意志。你的選擇，將塑造這座鎮的命運。」</p>
+                </div>
+            </div>
+            <div class="tutorial-step hidden" data-step="1">
+                <div class="tutorial-step-icon">🗺️</div>
+                <h3 data-i18n="地圖與村莊">地圖與村莊</h3>
+                <div class="tutorial-step-text">
+                    <p>左側的 <strong>像素地圖</strong> 是你的村莊。你可以看到：</p>
+                    <ul>
+                        <li>🏠 各種建築 —— 酒館、農場、鐵匠鋪、診所等</li>
+                        <li>👤 移動中的居民 —— 他們會自主上班、社交、吃飯、睡覺</li>
+                        <li>🌙 日夜交替 —— 白天工作，傍晚社交，深夜休息</li>
+                        <li>💬 對話氣泡 —— 居民之間正在進行的交談</li>
+                    </ul>
+                    <p>點擊地圖上的地點可以移動你的角色。</p>
+                </div>
+            </div>
+            <div class="tutorial-step hidden" data-step="2">
+                <div class="tutorial-step-icon">👥</div>
+                <h3 data-i18n="居民與聊天">居民與聊天</h3>
+                <div class="tutorial-step-text">
+                    <p>右側面板的 <strong>居民</strong> 頁籤顯示所有村民。點擊任一居民可以查看他的詳細資訊。</p>
+                    <p>切換到 <strong>聊天</strong> 頁籤，選擇一位居民就可以和他對話！他們會根據自己的個性、心情和對你的好感度來回應。</p>
+                    <ul>
+                        <li>💕 好感度高的居民會更友善</li>
+                        <li>💼 你可以選擇自己的職業</li>
+                        <li>💒 你甚至可以和居民約會、求婚！</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="tutorial-step hidden" data-step="3">
+                <div class="tutorial-step-icon">💰</div>
+                <h3 data-i18n="經濟與產業">經濟與產業</h3>
+                <div class="tutorial-step-text">
+                    <p><strong>經濟</strong> 頁籤可以查看資源、建築、科技樹和貿易。</p>
+                    <p><strong>產業</strong> 頁籤管理農場種植、工廠加工和產業發展。</p>
+                    <ul>
+                        <li>🌾 種植作物、收穫農產品</li>
+                        <li>🏭 建造工廠加工原料</li>
+                        <li>📈 隨著人口增長，城鎮等級提升</li>
+                        <li>⚔️ 完成任務獲得獎勵</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="tutorial-step hidden" data-step="4">
+                <div class="tutorial-step-icon">📰</div>
+                <h3 data-i18n="事件與探索">事件與探索</h3>
+                <div class="tutorial-step-text">
+                    <p>遊戲中會發生各種 <strong>隨機事件</strong>：</p>
+                    <ul>
+                        <li>🗳️ 鎮長選舉 —— 投票選出你支持的候選人</li>
+                        <li>⚔️ 盜匪襲擊 —— 守衛和居民會奮力防禦</li>
+                        <li>🎪 季節慶典 —— 春祭、仲夏篝火、豐收節、冬至</li>
+                        <li>🗺️ 探索系統 —— 派遣探險隊探索鎮外區域</li>
+                        <li>🗞️ AI 日報 —— 村莊記者會報導鎮上的大小事</li>
+                    </ul>
+                    <p style="color:var(--text-muted);font-size:0.72rem;margin-top:10px">提示：在設定中配置 AI 語言模型（如 Groq 免費），可以讓居民對話更加生動！</p>
+                </div>
+            </div>
+            <div class="tutorial-nav">
+                <button id="tutorial-prev" class="tutorial-btn hidden" data-i18n="上一步">上一步</button>
+                <div class="tutorial-dots" id="tutorial-dots"></div>
+                <button id="tutorial-next" class="tutorial-btn tutorial-btn-primary" data-i18n="開始旅程">開始旅程</button>
+            </div>
+            <button id="tutorial-skip" class="tutorial-skip" data-i18n="跳過引導">跳過引導</button>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal hidden">
+        <div class="modal-content login-content">
+            <button class="auth-close-btn" style="position:absolute;top:8px;right:12px;background:none;border:none;color:var(--text-secondary);font-size:1.2rem;cursor:pointer">✕</button>
+            <h2>👤 <span data-i18n="帳號">帳號</span></h2>
+            <div style="display:flex;gap:0;margin-bottom:12px">
+                <button class="auth-tab active" data-auth-tab="login" style="flex:1;padding:6px;background:var(--bg-secondary);border:1px solid var(--border);border-bottom:2px solid var(--accent);color:var(--text-primary);cursor:pointer;font-size:0.8rem" data-i18n="登入">登入</button>
+                <button class="auth-tab" data-auth-tab="register" style="flex:1;padding:6px;background:var(--bg-secondary);border:1px solid var(--border);border-bottom:2px solid transparent;color:var(--text-secondary);cursor:pointer;font-size:0.8rem" data-i18n="註冊">註冊</button>
+            </div>
+            <div id="auth-login-form">
+                <input type="text" id="auth-login-user" data-i18n-placeholder="帳號" placeholder="帳號" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                <input type="password" id="auth-login-pass" data-i18n-placeholder="密碼" placeholder="密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                <div id="auth-login-error" class="login-error"></div>
+                <button id="auth-login-btn" class="btn-accent" style="width:100%;padding:8px;border:none;border-radius:4px;cursor:pointer;font-size:0.85rem;margin-top:4px" data-i18n="登入">登入</button>
+                <div style="margin-top:8px"><a href="#" id="auth-forgot-link" style="color:var(--text-secondary);font-size:0.75rem" data-i18n="忘記密碼？">忘記密碼？</a></div>
+                <div id="auth-guest-section" class="hidden" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);text-align:center">
+                    <p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:8px">不想註冊？先體驗一下也行！</p>
+                    <button id="auth-guest-btn" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:0.85rem;background:var(--bg-secondary);color:var(--text-primary)">🎮 訪客試玩</button>
+                    <p style="font-size:0.65rem;color:var(--text-secondary);margin-top:4px">存檔僅保留在本機，註冊後可同步到雲端</p>
+                </div>
+            </div>
+            <div id="auth-register-form" class="hidden">
+                <input type="text" id="auth-reg-user" data-i18n-placeholder="帳號" placeholder="帳號" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                <input type="email" id="auth-reg-email" placeholder="Email" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                <input type="password" id="auth-reg-pass" data-i18n-placeholder="密碼" placeholder="密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                <input type="password" id="auth-reg-pass2" data-i18n-placeholder="確認密碼" placeholder="確認密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                <div id="auth-reg-error" class="login-error"></div>
+                <button id="auth-reg-btn" class="btn-accent" style="width:100%;padding:8px;border:none;border-radius:4px;cursor:pointer;font-size:0.85rem;margin-top:4px" data-i18n="註冊">註冊</button>
+            </div>
+            <div id="auth-reset-form" class="hidden">
+                <p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:8px" data-i18n="輸入帳號和 Email 來重設密碼">輸入帳號和 Email 來重設密碼</p>
+                <input type="text" id="auth-reset-user" data-i18n-placeholder="帳號" placeholder="帳號" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                <input type="email" id="auth-reset-email" placeholder="Email" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                <input type="password" id="auth-reset-pass" data-i18n-placeholder="新密碼" placeholder="新密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                <input type="password" id="auth-reset-pass2" data-i18n-placeholder="確認新密碼" placeholder="確認新密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                <div id="auth-reset-error" class="login-error"></div>
+                <div id="auth-reset-success" style="color:var(--positive);font-size:0.75rem;min-height:18px"></div>
+                <button id="auth-reset-btn" class="btn-accent" style="width:100%;padding:8px;border:none;border-radius:4px;cursor:pointer;font-size:0.85rem;margin-top:4px" data-i18n="重設密碼">重設密碼</button>
+                <div style="margin-top:8px"><a href="#" id="auth-reset-back" style="color:var(--text-secondary);font-size:0.75rem" data-i18n="← 返回登入">← 返回登入</a></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Dialog (replaces browser alert/confirm) -->
+    <div id="game-dialog" class="modal hidden">
+        <div class="modal-content game-dialog-content">
+            <div class="game-dialog-icon" id="game-dialog-icon">⚠️</div>
+            <div class="game-dialog-msg" id="game-dialog-msg"></div>
+            <div class="game-dialog-buttons" id="game-dialog-buttons"></div>
         </div>
     </div>
 
     <!-- Achievement Toast -->
     <div id="achievement-toast" class="achievement-toast hidden"></div>
 
+    <!-- Center Notification Card Overlay -->
+    <div id="center-notification-overlay" class="center-notification-overlay hidden">
+        <div class="center-notification-backdrop"></div>
+        <div class="center-notification-card" id="center-notification-card"></div>
+    </div>
+
+    <!-- Quest Guidance Banner (post-tutorial) -->
+    <div id="quest-guidance" class="quest-guidance hidden">
+        <div class="quest-guidance-icon">📋</div>
+        <div class="quest-guidance-text">
+            <div class="quest-guidance-title"></div>
+            <div class="quest-guidance-hint"></div>
+        </div>
+        <button class="quest-guidance-dismiss" data-i18n-title="關閉提示" title="關閉提示">✕</button>
+    </div>
+
+    <!-- Mobile Header (shown only on ≤768px) -->
+    <div class="mobile-header">
+        <div class="mobile-header-row">
+            <span class="mobile-title" data-i18n="邊境鎮">邊境鎮</span>
+            <span id="mobile-clock" class="mobile-clock" data-i18n="載入中...">載入中...</span>
+            <span id="mobile-population" class="mobile-population">--</span>
+            <div class="mobile-header-actions">
+                <button id="mobile-btn-pause" class="mobile-ctrl-btn">⏸</button>
+                <div class="mobile-menu-speed">
+                    <button class="btn-speed active" data-speed="1">1x</button>
+                    <button class="btn-speed" data-speed="1.5">1.5x</button>
+                    <button class="btn-speed" data-speed="2">2x</button>
+                    <button class="btn-speed" data-speed="3">3x</button>
+                </div>
+                <button id="mobile-btn-menu" class="mobile-ctrl-btn">☰</button>
+            </div>
+        </div>
+        <div id="mobile-menu-dropdown" class="mobile-menu-dropdown hidden">
+            <button id="mobile-new-game" data-i18n="新地圖">新地圖</button>
+            <button id="mobile-save" data-i18n="儲存">儲存</button>
+            <button id="mobile-btn-settings" data-i18n="設定">設定</button>
+            <button id="mobile-btn-account" data-i18n="帳號">帳號</button>
+            <span id="mobile-llm-status" class="llm-status disconnected">AI:--</span>
+        </div>
+    </div>
+
     <!-- Header -->
     <div class="header">
-        <h1>邊境鎮</h1>
+        <h1 data-i18n="邊境鎮">邊境鎮</h1>
         <div class="header-info">
             <span id="population-count">人口：--</span>
-            <span id="clock-display" class="clock-display">載入中...</span>
+            <span id="clock-display" class="clock-display" data-i18n="載入中...">載入中...</span>
             <span id="terrain-display" class="terrain-display"></span>
             <div class="controls">
-                <button class="btn-towns" data-action="show-towns">城鎮列表</button>
-                <button id="btn-new-game" class="btn-new-game">新地圖</button>
-                <button id="btn-save" class="btn-save">儲存</button>
-                <button id="btn-export" class="btn-export" title="匯出存檔">匯出</button>
-                <button id="btn-import" class="btn-import" title="匯入存檔">匯入</button>
-                <button id="btn-pause">暫停</button>
-                <button id="btn-resume" class="active">播放</button>
+                <button class="btn-towns" data-action="show-towns" data-i18n="城鎮列表">城鎮列表</button>
+                <button id="btn-new-game" class="btn-new-game" data-i18n="新地圖">新地圖</button>
+                <button id="btn-save" class="btn-save" data-i18n="儲存">儲存</button>
+                <button id="btn-pause" data-i18n="暫停">暫停</button>
+                <button id="btn-resume" class="active" data-i18n="播放">播放</button>
                 <div class="speed-controls">
                     <button class="btn-speed active" data-speed="1">1x</button>
                     <button class="btn-speed" data-speed="1.5">1.5x</button>
                     <button class="btn-speed" data-speed="2">2x</button>
                     <button class="btn-speed" data-speed="3">3x</button>
                 </div>
-                <span id="llm-status" class="llm-status" title="AI 狀態">AI:--</span>
-                <button id="btn-settings" class="btn-settings">設定</button>
+                <span id="llm-status" class="llm-status" data-i18n-title="AI 狀態" title="AI 狀態">AI:--</span>
+                <button id="btn-settings" class="btn-settings" data-i18n="設定">設定</button>
                 <span id="version-display" class="version-display"></span>
             </div>
         </div>
@@ -99,18 +312,19 @@
         </div>
 
         <!-- Sidebar -->
-        <div class="rt-sidebar">
+        <div class="rt-sidebar" id="rimtown-sidebar">
+            <button class="mobile-back-to-map" id="mobile-back-to-map">&#9650; 返回地圖</button>
             <div class="rt-sidebar-tabs">
-                <button data-tab="residents" class="active"><span class="tab-icon">👥</span><span class="tab-label">居民</span></button>
-                <button data-tab="chat"><span class="tab-icon">💬</span><span class="tab-label">聊天</span></button>
-                <button data-tab="detail"><span class="tab-icon">📋</span><span class="tab-label">詳情</span></button>
-                <button data-tab="economy"><span class="tab-icon">💰</span><span class="tab-label">經濟</span></button>
-                <button data-tab="industry"><span class="tab-icon">🏭</span><span class="tab-label">產業</span></button>
-                <button data-tab="quest"><span class="tab-icon">⚔️</span><span class="tab-label">任務</span></button>
-                <button data-tab="achievements"><span class="tab-icon">🏆</span><span class="tab-label">成就</span></button>
-                <button data-tab="events"><span class="tab-icon">📰</span><span class="tab-label">事件</span></button>
-                <button data-tab="newspaper"><span class="tab-icon">🗞️</span><span class="tab-label">日報</span></button>
-                <button data-tab="log"><span class="tab-icon">📝</span><span class="tab-label">日誌</span></button>
+                <button data-tab="residents" class="active"><span class="tab-icon">👥</span><span class="tab-label" data-i18n="居民">居民</span></button>
+                <button data-tab="chat"><span class="tab-icon">💬</span><span class="tab-label" data-i18n="聊天">聊天</span></button>
+                <button data-tab="quest"><span class="tab-icon">⚔️</span><span class="tab-label" data-i18n="任務">任務</span></button>
+                <button data-tab="economy"><span class="tab-icon">💰</span><span class="tab-label" data-i18n="經濟">經濟</span></button>
+                <button data-tab="detail" class="mobile-hidden"><span class="tab-icon">📋</span><span class="tab-label" data-i18n="詳情">詳情</span></button>
+                <button data-tab="industry" class="mobile-hidden"><span class="tab-icon">🏭</span><span class="tab-label" data-i18n="產業">產業</span></button>
+                <button data-tab="events" class="mobile-hidden"><span class="tab-icon">📰</span><span class="tab-label" data-i18n="事件">事件</span></button>
+                <button data-tab="records" class="mobile-hidden"><span class="tab-icon">📝</span><span class="tab-label" data-i18n="紀錄">紀錄</span></button>
+                <button data-tab="achievements" class="mobile-hidden"><span class="tab-icon">🏆</span><span class="tab-label" data-i18n="成就">成就</span></button>
+                <button data-tab="settings"><span class="tab-icon">⚙️</span><span class="tab-label" data-i18n="設定">設定</span></button>
             </div>
             <div class="rt-sidebar-content" id="sidebar-content">
                 <!-- Content rendered dynamically -->
@@ -120,6 +334,7 @@
 
     </div>
 
+    <script src="i18n.js"></script>
     <script src="quest-system.js"></script>
     <script src="industry.js"></script>
     <script src="farm.js"></script>
@@ -130,7 +345,53 @@
     <script src="custom-npc.js"></script>
     <script src="prosperity.js"></script>
     <script src="simulation.js"></script>
+    <script src="chiptune.js"></script>
     <script src="tilemap.js"></script>
     <script src="app.js"></script>
+    <script>
+    // PWA Service Worker Registration & Install Prompt
+    (function() {
+        // Only register SW in web context (not Chrome Extension)
+        if ('serviceWorker' in navigator && !chrome?.runtime?.id) {
+            navigator.serviceWorker.register('./sw.js').catch(() => {});
+        }
+
+        // PWA Install Prompt
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Don't show if user dismissed before
+            if (localStorage.getItem('rimtown_pwa_dismissed')) return;
+            const banner = document.getElementById('pwa-install-banner');
+            if (banner) banner.classList.remove('hidden');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'pwa-install-btn' && deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(choice => {
+                    deferredPrompt = null;
+                    document.getElementById('pwa-install-banner')?.classList.add('hidden');
+                });
+            }
+            if (e.target.id === 'pwa-install-dismiss') {
+                document.getElementById('pwa-install-banner')?.classList.add('hidden');
+                localStorage.setItem('rimtown_pwa_dismissed', '1');
+            }
+        });
+
+        // Fullscreen toggle on mobile (double-tap header)
+        let lastTap = 0;
+        document.querySelector('.header h1')?.addEventListener('touchend', () => {
+            const now = Date.now();
+            if (now - lastTap < 300) {
+                if (document.fullscreenElement) document.exitFullscreen();
+                else document.documentElement.requestFullscreen?.().catch(() => {});
+            }
+            lastTap = now;
+        });
+    })();
+    </script>
 </body>
 </html>

@@ -27,7 +27,7 @@ class NPCEventSystem {
             agent._hospitalDays = (agent._hospitalDays || 0) + 2;
 
             // Consume medicine
-            const hasMedicine = world.stockpile?.consume('medicine', 1, world.tickCount, `${agent.name}住院治療`) ?? false;
+            const hasMedicine = world.stockpile?.consume('medicine', 1, world.tickCount, `${agent.name}${t('住院治療')}`) ?? false;
             const hasDoctor = Object.values(world.agents).some(a => a.job?.key === 'doctor' && a.status !== 'hospitalized');
 
             // Recovery
@@ -39,9 +39,9 @@ class NPCEventSystem {
                 agent.status = 'normal';
                 agent._hospitalDays = 0;
                 agent.moodModifier = (agent.moodModifier || 0) + 10;
-                world.logMessage?.('incident', `${agent.name}出院了！`);
+                world.logMessage?.('incident', `${agent.name}${t('出院了')}！`);
                 if (world.dailyNews) {
-                    world.dailyNews.collectEvent('lifecycle', `${agent.name}康復出院了！`, 5, [agent.name]);
+                    world.dailyNews.collectEvent('lifecycle', `${agent.name}${t('康復出院了')}！`, 5, [agent.name]);
                 }
             } else {
                 // Friends mood penalty
@@ -72,10 +72,10 @@ class NPCEventSystem {
 
             // 5 days: permanent departure
             if (agent._missingDays >= 5) {
-                world.logMessage?.('incident', `${agent.name}已經失蹤太久了...大家只能祈禱平安。`);
+                world.logMessage?.('incident', `${agent.name}${t('已經失蹤太久了...大家只能祈禱平安。')}`);
                 world.removeAgent(agent.agentId);
                 if (world.dailyNews) {
-                    world.dailyNews.collectEvent('lifecycle', `${agent.name}再也沒有回來...全鎮默哀。`, 10, [agent.name]);
+                    world.dailyNews.collectEvent('lifecycle', `${agent.name}${t('再也沒有回來...全鎮默哀。')}`, 10, [agent.name]);
                 }
             }
         }
@@ -103,7 +103,7 @@ class NPCEventSystem {
                 // Remove from factory work
                 if (world.processing) world.processing.removeWorker(other.agentId);
 
-                world.logMessage?.('incident', `⚠️ ${agent.name}和${other.name}大打出手！${other.name}被送進診所！`);
+                world.logMessage?.('incident', `⚠️ ${agent.name}${t('和')}${other.name}${t('大打出手')}！${other.name}${t('被送進診所')}！`);
 
                 // Others' reaction
                 for (const npc of npcs) {
@@ -118,13 +118,13 @@ class NPCEventSystem {
                 // Gossip
                 world.gossipNetwork?.activeGossip?.push({
                     about: agent.name,
-                    content: `${agent.name}把${other.name}打進了診所！`,
-                    source: '目擊者', spreadCount: 0,
+                    content: `${agent.name}${t('把')}${other.name}${t('打進了診所')}！`,
+                    source: t('目擊者'), spreadCount: 0,
                     tickCreated: world.tickCount, isTrue: true,
                 });
 
                 if (world.dailyNews) {
-                    world.dailyNews.collectEvent('incident', `${agent.name}把${other.name}打進了診所！`, 9, [agent.name, other.name]);
+                    world.dailyNews.collectEvent('incident', `${agent.name}${t('把')}${other.name}${t('打進了診所')}！`, 9, [agent.name, other.name]);
                 }
 
                 this.incidentLog.push({
@@ -154,16 +154,16 @@ class NPCEventSystem {
             const target = growingPlots[Math.floor(Math.random() * growingPlots.length)];
             target.state = 'withered';
 
-            world.logMessage?.('incident', `⚠️ 有人的農田被破壞了！好像是深夜發生的事...`);
+            world.logMessage?.('incident', `⚠️ ${t('有人的農田被破壞了！好像是深夜發生的事...')}`);
 
             // Gossip (anonymous)
             world.gossipNetwork?.activeGossip?.push({
-                about: '未知', content: '農田遭到不明破壞，村民們人心惶惶。',
-                source: '鎮民', spreadCount: 0, tickCreated: world.tickCount, isTrue: true,
+                about: t('未知'), content: t('農田遭到不明破壞，村民們人心惶惶。'),
+                source: t('鎮民'), spreadCount: 0, tickCreated: world.tickCount, isTrue: true,
             });
 
             if (world.dailyNews) {
-                world.dailyNews.collectEvent('incident', `農田遭到不明破壞，村民們人心惶惶。`, 7);
+                world.dailyNews.collectEvent('incident', t('農田遭到不明破壞，村民們人心惶惶。'), 7);
             }
 
             this.incidentLog.push({
@@ -191,7 +191,7 @@ class NPCEventSystem {
                         if (factory.workers.includes(agent.agentId) && factory.workers.includes(rel.targetId)) {
                             agent.moodModifier = (agent.moodModifier || 0) + 3;
                             other.moodModifier = (other.moodModifier || 0) + 3;
-                            world.logMessage?.('social', `${agent.name}和${other.name}配合得越來越默契了！`);
+                            world.logMessage?.('social', `${agent.name}${t('和')}${other.name}${t('配合得越來越默契了')}！`);
                             return;
                         }
                     }
@@ -210,7 +210,7 @@ class NPCEventSystem {
             cheater.status = 'hospitalized';
             cheater._hospitalDays = 0;
             if (world.processing) world.processing.removeWorker(cheater.agentId);
-            world.logMessage?.('drama', `${partner.name}發現${cheater.name}劈腿，當街痛打了一頓！`);
+            world.logMessage?.('drama', `${partner.name}${t('發現')}${cheater.name}${t('劈腿，當街痛打了一頓')}！`);
         }
 
         // Everyone's reaction
@@ -232,15 +232,15 @@ class NPCEventSystem {
             world.farm.moodPenalty = { agentId: partner.agentId, days: 7, penalty: -0.3 };
         }
 
-        const thirdPartyName = thirdParty?.name || '某人';
+        const thirdPartyName = thirdParty?.name || t('某人');
         world.gossipNetwork?.activeGossip?.push({
             about: cheater.name,
-            content: `${cheater.name}劈腿被${partner.name}抓到了！對象是${thirdPartyName}！`,
-            source: '鎮民', spreadCount: 0, tickCreated: world.tickCount, isTrue: true,
+            content: `${cheater.name}${t('劈腿被')}${partner.name}${t('抓到了！對象是')}${thirdPartyName}！`,
+            source: t('鎮民'), spreadCount: 0, tickCreated: world.tickCount, isTrue: true,
         });
 
         if (world.dailyNews) {
-            world.dailyNews.collectEvent('drama', `轟動全鎮！${cheater.name}的秘密關係被揭穿了！`, 10,
+            world.dailyNews.collectEvent('drama', `${t('轟動全鎮')}！${cheater.name}${t('的秘密關係被揭穿了')}！`, 10,
                 [cheater.name, partner.name, thirdPartyName]);
         }
     }
