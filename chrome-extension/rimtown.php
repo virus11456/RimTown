@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 4.1.5
+ * Version: 4.1.7
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '4.1.5');
+define('RIMTOWN_VERSION', '4.1.7');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -37,10 +37,10 @@ function rimtown_shortcode($atts) {
     ?>
     <div id="rimtown-app" class="rimtown-container" style="height:<?php echo $height; ?>">
         <!-- Guest mode banner -->
-        <div id="guest-banner" class="hidden" style="position:absolute;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 12px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:0.75rem;color:var(--text-secondary)">
+        <div id="guest-banner" class="hidden">
             <span>🎮 訪客模式 — 存檔僅保留在本機</span>
-            <button id="guest-register-btn" style="padding:2px 10px;border:1px solid var(--accent);border-radius:3px;background:transparent;color:var(--accent);cursor:pointer;font-size:0.7rem">註冊帳號</button>
-            <button id="guest-banner-close" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:0.9rem;padding:0 4px">✕</button>
+            <button id="guest-register-btn">註冊帳號</button>
+            <button id="guest-banner-close">✕</button>
         </div>
         <!-- Town Manager Modal -->
         <div id="town-modal" class="modal hidden">
@@ -72,12 +72,23 @@ function rimtown_shortcode($atts) {
                     <input type="password" id="llm-api-key" placeholder="輸入你的 API 金鑰...">
                 </div>
                 <div class="setting-group">
+                    <label><span data-i18n="備用 Groq API Key">備用 Groq API Key</span> <span style="font-size:11px;color:var(--text-secondary)" data-i18n="主 AI 超限時自動切換">（主 AI 超限時自動切換）</span></label>
+                    <input type="password" id="fallback-groq-key" placeholder="gsk_...">
+                </div>
+                <div class="setting-group">
                     <label>模擬速度</label>
                     <select id="sim-speed">
                         <option value="3000">慢速（3秒）</option>
                         <option value="2000" selected>正常（2秒）</option>
                         <option value="1000">快速（1秒）</option>
                         <option value="500">極快（0.5秒）</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label data-i18n="語言">語言</label>
+                    <select id="lang-select">
+                        <option value="zh">繁體中文</option>
+                        <option value="en">English</option>
                     </select>
                 </div>
                 <div class="setting-group">
@@ -94,7 +105,33 @@ function rimtown_shortcode($atts) {
             </div>
         </div>
 
-        <!-- Header info is integrated into mobile-header; desktop uses sidebar -->
+        <!-- Header (desktop) -->
+        <div class="header">
+            <h1 data-i18n="邊境鎮">邊境鎮</h1>
+            <div class="header-info">
+                <span id="population-count">人口：--</span>
+                <span id="clock-display" class="clock-display" data-i18n="載入中...">載入中...</span>
+                <span id="terrain-display" class="terrain-display"></span>
+                <span id="weather-display" class="weather-display"></span>
+                <div class="controls">
+                    <button class="btn-towns" data-action="show-towns" data-i18n="城鎮列表">城鎮列表</button>
+                    <button id="btn-new-game" class="btn-new-game" data-i18n="新地圖">新地圖</button>
+                    <button id="btn-save" class="btn-save" data-i18n="儲存">儲存</button>
+                    <button id="btn-pause" data-i18n="暫停">暫停</button>
+                    <button id="btn-resume" class="active" data-i18n="播放">播放</button>
+                    <div class="speed-controls">
+                        <button class="btn-speed active" data-speed="1">1x</button>
+                        <button class="btn-speed" data-speed="1.5">1.5x</button>
+                        <button class="btn-speed" data-speed="2">2x</button>
+                        <button class="btn-speed" data-speed="3">3x</button>
+                    </div>
+                    <span id="llm-status" class="llm-status" data-i18n-title="AI 狀態" title="AI 狀態">AI:--</span>
+                    <button id="btn-account" class="btn-account" data-i18n="帳號">帳號</button>
+                    <button id="btn-settings" class="btn-settings" data-i18n="設定">設定</button>
+                    <span id="version-display" class="version-display"></span>
+                </div>
+            </div>
+        </div>
 
         <!-- Main Layout -->
         <div class="main-layout">
@@ -229,10 +266,26 @@ function rimtown_shortcode($atts) {
         <!-- Mobile Header -->
         <div class="mobile-header">
             <div class="mobile-header-row">
-                <span class="mobile-title">邊境鎮</span>
-                <span id="mobile-pop-display" style="font-size:0.72rem;color:var(--text-secondary)"></span>
-                <span id="mobile-weather-display" style="font-size:0.75rem"></span>
-                <span id="mobile-clock-display" class="clock-display" style="font-size:0.72rem"></span>
+                <span class="mobile-title" data-i18n="邊境鎮">邊境鎮</span>
+                <span id="mobile-clock" class="mobile-clock" data-i18n="載入中...">載入中...</span>
+                <span id="mobile-population" class="mobile-population">--</span>
+                <div class="mobile-header-actions">
+                    <button id="mobile-btn-pause" class="mobile-ctrl-btn">⏸</button>
+                    <div class="mobile-menu-speed">
+                        <button class="btn-speed active" data-speed="1">1x</button>
+                        <button class="btn-speed" data-speed="1.5">1.5x</button>
+                        <button class="btn-speed" data-speed="2">2x</button>
+                        <button class="btn-speed" data-speed="3">3x</button>
+                    </div>
+                    <button id="mobile-btn-menu" class="mobile-ctrl-btn">☰</button>
+                </div>
+            </div>
+            <div id="mobile-menu-dropdown" class="mobile-menu-dropdown hidden">
+                <button id="mobile-new-game" data-i18n="新地圖">新地圖</button>
+                <button id="mobile-save" data-i18n="儲存">儲存</button>
+                <button id="mobile-btn-settings" data-i18n="設定">設定</button>
+                <button id="mobile-btn-account" data-i18n="帳號">帳號</button>
+                <span id="mobile-llm-status" class="llm-status disconnected">AI:--</span>
             </div>
         </div>
 
@@ -1127,6 +1180,32 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '4.1.7',
+            'date'    => '2026-07-15',
+            'changes' => array(
+                '修復重大 bug：旅行歸來居民的記憶還原欄位錯誤，導致每 3 天模擬崩潰（慶典/農場/任務等每日更新全部停擺）',
+                '聲望系統 5 種效果全部真正生效：新增事件護盾（降低襲擊/災難機率）、移民吸引、商人交易價格加成、新居民初始信任',
+                '修復深井減災永不觸發的 bug，抗旱效果隨深井升級（淨水系統）增強',
+                '修復手機版出現兩個標題列的問題（桌面 header 未隱藏）',
+                'WordPress 版補齊缺失的桌面/手機 header 控制列（時鐘、人口、暫停、儲存、速度、AI 狀態等 21 個元素）',
+                '新增桌面版「帳號」按鈕（原本點手機選單的帳號沒有反應）',
+                '修復設定頁籤「儲存設定」會把英文介面強制切回中文的 bug',
+                '修復 Firefox/Safari 上 PWA 註冊直接報錯的問題（chrome 識別字未定義）',
+                '教學提示卡移至 header 下方，不再遮住暫停/速度按鈕；訪客橫幅不再蓋住側欄內容',
+                'Service Worker 快取版本同步 + 補上遺漏的 chiptune.js（離線時 BGM 也能用）',
+                '新增網頁 favicon；header 新增天氣顯示元素',
+                '版號同步：所有檔案統一為 4.1.7',
+            ),
+        ),
+        array(
+            'version' => '4.1.6',
+            'date'    => '2026-03-25',
+            'changes' => array(
+                '手機版訪客模式橫幅移至底部 tab bar 上方，不再遮擋遊戲畫面',
+                '版號同步：所有檔案統一為 4.1.6',
+            ),
+        ),
         array(
             'version' => '4.1.5',
             'date'    => '2026-03-25',

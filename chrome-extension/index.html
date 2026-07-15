@@ -10,6 +10,7 @@
     <meta name="theme-color" content="#1a1a2e">
     <meta name="description" content="RimWorld-inspired AI town simulation - 邊境鎮 AI 小鎮模擬">
     <link rel="manifest" href="pwa-manifest.json">
+    <link rel="icon" type="image/png" href="icons/icon48.png">
     <link rel="apple-touch-icon" href="icons/icon128.png">
     <title>邊境鎮 - AI 小鎮模擬</title>
     <link rel="stylesheet" href="style.css">
@@ -284,6 +285,7 @@
             <span id="population-count">人口：--</span>
             <span id="clock-display" class="clock-display" data-i18n="載入中...">載入中...</span>
             <span id="terrain-display" class="terrain-display"></span>
+            <span id="weather-display" class="weather-display"></span>
             <div class="controls">
                 <button class="btn-towns" data-action="show-towns" data-i18n="城鎮列表">城鎮列表</button>
                 <button id="btn-new-game" class="btn-new-game" data-i18n="新地圖">新地圖</button>
@@ -297,6 +299,7 @@
                     <button class="btn-speed" data-speed="3">3x</button>
                 </div>
                 <span id="llm-status" class="llm-status" data-i18n-title="AI 狀態" title="AI 狀態">AI:--</span>
+                <button id="btn-account" class="btn-account" data-i18n="帳號">帳號</button>
                 <button id="btn-settings" class="btn-settings" data-i18n="設定">設定</button>
                 <span id="version-display" class="version-display"></span>
             </div>
@@ -352,7 +355,7 @@
     // PWA Service Worker Registration & Install Prompt
     (function() {
         // Only register SW in web context (not Chrome Extension)
-        if ('serviceWorker' in navigator && !chrome?.runtime?.id) {
+        if ('serviceWorker' in navigator && (typeof chrome === 'undefined' || !chrome.runtime?.id)) {
             navigator.serviceWorker.register('./sw.js').catch(() => {});
         }
 

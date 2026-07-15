@@ -1240,7 +1240,7 @@ body.rimtown-page .wp-block-post-title {
 /* Quest Guidance Banner */
 .quest-guidance {
     position: fixed;
-    top: 44px;
+    top: 100px; /* header 下方,避免遮住控制列 */
     left: 50%;
     transform: translateX(-50%);
     z-index: 150000;
@@ -2713,6 +2713,10 @@ body.rimtown-page .wp-block-post-title {
         width: 100% !important;
     }
 
+    /* Hide desktop header on mobile — mobile-header takes over (scoped to避免污染 WP 主題) */
+    .rimtown-container .header {
+        display: none !important;
+    }
     /* Show mobile header on mobile */
     .mobile-header {
         display: block !important;
@@ -2931,6 +2935,10 @@ body.rimtown-page .wp-block-post-title {
     }
     #guest-banner span { white-space: nowrap; }
     #guest-register-btn { font-size: 0.6rem; padding: 1px 8px; }
+    /* 訪客橫幅顯示時,側欄內容底部留空避免被蓋住 */
+    .rimtown-container.guest-banner-visible .rt-sidebar-content { padding-bottom: 30px; }
+    /* 手機版:教學提示卡移到 mobile-header 下方 */
+    .quest-guidance { top: 92px; }
     /* Hide overflow tabs on mobile (accessed via mobile group sub-tabs) */
     .rt-sidebar-tabs button.mobile-hidden {
         display: none !important;

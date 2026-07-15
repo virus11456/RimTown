@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v4.1.5
-const RIMTOWN_APP_VERSION = '4.1.5';
+// RimTown - Frontend App (WordPress Plugin) v4.1.7
+const RIMTOWN_APP_VERSION = '4.1.7';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -447,6 +447,7 @@ class RimTownApp {
         });
         document.getElementById('guest-banner-close')?.addEventListener('click', () => {
             document.getElementById('guest-banner')?.classList.add('hidden');
+            document.getElementById('rimtown-app')?.classList.remove('guest-banner-visible');
         });
     }
 
@@ -497,6 +498,7 @@ class RimTownApp {
         // Show guest banner
         const banner = document.getElementById('guest-banner');
         if (banner) { banner.classList.remove('hidden'); banner.style.display = 'flex'; }
+        document.getElementById('rimtown-app')?.classList.add('guest-banner-visible');
         // Update account button
         this._updateAccountButton();
         // Enable tutorial for guests
@@ -506,6 +508,7 @@ class RimTownApp {
     _hideGuestBanner() {
         const banner = document.getElementById('guest-banner');
         if (banner) { banner.classList.add('hidden'); banner.style.display = 'none'; }
+        document.getElementById('rimtown-app')?.classList.remove('guest-banner-visible');
     }
 
     // Custom game-style alert (replaces browser alert)
@@ -2707,6 +2710,11 @@ class RimTownApp {
             const langSelect = document.getElementById('lang-select');
             if (langSelect) langSelect.value = I18N.getLang();
         });
+        // 啟動時同步語言下拉選單,避免從設定頁籤儲存時被重設回預設值 zh
+        {
+            const langSelectInit = document.getElementById('lang-select');
+            if (langSelectInit) langSelectInit.value = I18N.getLang();
+        }
         // When switching provider, clear the API key input to enforce one-AI-at-a-time
         document.getElementById('llm-provider')?.addEventListener('change', () => {
             const provEl = document.getElementById('llm-provider');

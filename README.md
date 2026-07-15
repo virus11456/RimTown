@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v4.1.5.zip` from Releases
+1. Download `rimtown-v4.1.7.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,20 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v4.1.7 (2026-07-15)
+
+**重大 bug 修復 + 聲望系統完整生效 + RWD 修正**
+
+- 修復旅行歸來居民記憶欄位錯誤導致每 3 天模擬崩潰的重大 bug(慶典/農場/任務等每日更新全部停擺)
+- 聲望系統 5 種效果全部真正生效:事件護盾、移民吸引、商人交易加成、新居民初始信任(原本只有商店折扣與心情加成)
+- 修復深井減災永不觸發的 bug,抗旱效果隨升級增強
+- 修復手機版雙標題列(桌面 header 未隱藏)
+- WordPress 版補齊缺失的桌面/手機 header 控制列(21 個元素)+ 新增桌面「帳號」按鈕
+- 修復「儲存設定」把英文介面強制切回中文的 bug
+- 修復 Firefox/Safari 上 PWA 註冊報錯(chrome 識別字未定義)
+- 教學提示卡與訪客橫幅不再遮擋 UI;SW 快取版本同步並補上 chiptune.js;新增 favicon
+- 首次部署到 Vercel:https://rimtown.vercel.app
 
 ### v4.1.6 (2026-03-25)
 

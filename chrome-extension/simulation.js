@@ -2495,8 +2495,10 @@ class EventSystem {
         const roll = Math.random();
         // News modifiers affect event probabilities
         const nm = world.news ? world.news : {getModifier:(k,d)=>d};
-        const raidChance = Math.max(0, Math.min(0.5, 0.10 + nm.getModifier('raid_chance', 0)));
-        const chainChance = Math.max(0, Math.min(0.4, 0.08 + nm.getModifier('chain_chance', 0)));
+        // 聲望事件護盾:高聲望降低負面事件(襲擊/事件鏈)機率
+        const eventShield = world.reputationSystem ? world.reputationSystem.getModifier('event_shield') : 0;
+        const raidChance = Math.max(0, Math.min(0.5, (0.10 + nm.getModifier('raid_chance', 0)) * (1 - eventShield)));
+        const chainChance = Math.max(0, Math.min(0.4, (0.08 + nm.getModifier('chain_chance', 0)) * (1 - eventShield)));
         const festivalBoost = nm.getModifier('festival_chance', 0);
         const departureBoost = nm.getModifier('departure_chance', 0);
 
@@ -2668,7 +2670,7 @@ class EventSystem {
         }
         // Restore memories
         if (d.memories && Array.isArray(d.memories)) {
-            d.memories.forEach(m => agent.memory.add(m.tick, m.time, m.category, m.text, m.importance, m.relatedAgents||[]));
+            d.memories.forEach(m => agent.memory.add(m.tick, m.time, m.category, m.content ?? m.text ?? '', m.importance, m.related_agents || m.relatedAgents || []));
         }
         world.agents[agent.agentId] = agent;
         world.logMessage('arrival', `${agent.name}${t('旅行歸來了！')}`, agent.name);
@@ -2681,7 +2683,8 @@ class EventSystem {
     _managePopulation(world) {
         const npcCount = Object.values(world.agents).filter(a => !a.isPlayer).length;
         const total = npcCount + this._travellingAgents.length;
-        const immigrationBoost = world.news ? world.news.getModifier('immigration_chance', 0) : 0;
+        const repImmigration = world.reputationSystem ? world.reputationSystem.getModifier('immigration_bonus') : 0;
+        const immigrationBoost = (world.news ? world.news.getModifier('immigration_chance', 0) : 0) + repImmigration;
         if (total < this.TARGET_POPULATION) {
             for (let i = 0; i < this.TARGET_POPULATION - total; i++) this._spawnImmigrant(world);
         } else if (immigrationBoost > 0 && Math.random() < immigrationBoost && total < this.TARGET_POPULATION + 3) {
@@ -2700,6 +2703,16 @@ class EventSystem {
         const home = pickRandom(['residential_north','residential_south','residential_east']);
         const agent = new Agent(id, imm.name, imm.age, personality, job, home, imm.gender);
         world.agents[agent.agentId] = agent;
+        // 聲望效果:高聲望的鎮長讓新居民帶著初始信任到來
+        const initTrust = world.reputationSystem ? world.reputationSystem.getModifier('npc_initial_trust') : 0;
+        if (initTrust > 0) {
+            const player = Object.values(world.agents).find(a => a.isPlayer);
+            if (player) {
+                const rel = agent.relationships.getOrCreate(player.agentId, player.name);
+                rel.trust += initTrust;
+                rel.affinity += Math.round(initTrust / 2);
+            }
+        }
         world.logMessage('immigration', `${t('新居民到來：')}${agent.name}${t('，')}${job.title}${t('！')}`, agent.name);
         const event = {name:t('新居民'),description:`${agent.name}${t('以')}${job.title}${t('身分到來！')}`,severity:'minor',effects:{mood_all:5,conversation_topic:`${t('新居民')}${agent.name}`},event_type:'arrival'};
         this.eventLog.push([world.clock.timeStr, event]);
@@ -3225,9 +3238,10 @@ class TradeManager {
         const tradeBonus=world.buildings.getEffect('trade_bonus',0);
         const sellBonus=world.news?world.news.getModifier('sell_bonus',0):0;
         const buyBonus=world.news?world.news.getModifier('buy_bonus',0):0;
+        const repTradeBonus=world.reputationSystem?world.reputationSystem.getModifier('trade_price_bonus'):0;
         const offers=[];
-        mt.sells.forEach(r=>{ const bp=BASE_PRICES[r]||5; offers.push({resource:r,amount:randInt(10,30),price:Math.round(bp*(1.2+Math.random()*0.6)*(1-tradeBonus-buyBonus)*10)/10,isBuying:false}); });
-        mt.buys.forEach(r=>{ const bp=BASE_PRICES[r]||5; offers.push({resource:r,amount:randInt(15,40),price:Math.round(bp*(0.5+Math.random()*0.3)*(1+tradeBonus+sellBonus)*10)/10,isBuying:true}); });
+        mt.sells.forEach(r=>{ const bp=BASE_PRICES[r]||5; offers.push({resource:r,amount:randInt(10,30),price:Math.round(bp*(1.2+Math.random()*0.6)*(1-tradeBonus-buyBonus-repTradeBonus)*10)/10,isBuying:false}); });
+        mt.buys.forEach(r=>{ const bp=BASE_PRICES[r]||5; offers.push({resource:r,amount:randInt(15,40),price:Math.round(bp*(0.5+Math.random()*0.3)*(1+tradeBonus+sellBonus+repTradeBonus)*10)/10,isBuying:true}); });
         this.merchant={name:pickRandom(mt.names),specialty:mt.specialty,offers,daysRemaining:randInt(2,4)};
         world.logMessage('trade',`${t('商人')}${this.merchant.name}${t('到了！專長：')}${mt.specialty}。`);
     }
@@ -3567,7 +3581,7 @@ class FactionSystem {
                 }
                 case 'tavernRegulars': {
                     candidates = npcs.filter(a => {
-                        const socialCount = a.memory.entries.filter(m => m.content.includes(t('酒')) || m.content.includes('tavern')).length;
+                        const socialCount = a.memory.entries.filter(m => (m.content || '').includes(t('酒')) || (m.content || '').includes('tavern')).length;
                         return socialCount > 0 || a.personality.traits.includes('glutton') || a.personality.traits.includes('charismatic');
                     }).slice(0, def.maxSize);
                     break;
@@ -5429,30 +5443,15 @@ class ReputationSystem {
         this._applyEffects(world);
     }
 
-    // Reputation effects on game mechanics
-    _applyEffects(world) {
-        const tierIdx = this.tierIndex;
-
-        // 1. NPC base trust boost — higher rep = NPCs start with better trust
-        //    (Applied when creating new relationships, checked externally)
-
-        // 2. Trade price bonus (stacks with prosperity)
-        //    tierIdx 0=0%, 1=3%, 2=5%, 3=8%, 4=12%, 5=15%
-
-        // 3. Immigration attraction bonus
-        if (world.events) {
-            const immigrationBonus = [0, 0.02, 0.05, 0.08, 0.12, 0.15][tierIdx] || 0;
-            world.events._reputationImmigrationBonus = immigrationBonus;
-        }
-
-        // 4. NPC mood bonus from respected leader
-        //    Applied via moodContribution check (small flat bonus)
-
-        // 5. Event severity reduction — high rep means fewer bad events
-        if (world.events) {
-            world.events._reputationEventShield = tierIdx >= 3 ? 0.15 : tierIdx >= 2 ? 0.08 : 0;
-        }
-    }
+    // Reputation effects on game mechanics —
+    // 全部效果由各系統透過 getModifier() 讀取:
+    // 1. npc_initial_trust → EventSystem._spawnImmigrant(新居民初始信任)
+    // 2. trade_price_bonus → TradeSystem._spawnMerchant(商人買賣價)
+    // 3. immigration_bonus → EventSystem._managePopulation(移民機率)
+    // 4. npc_mood_bonus   → Agent 心情計算(simulation.js Agent.update)
+    // 5. event_shield     → EventSystem._rollDailyEvent(負面事件機率)
+    //    shop_discount    → ShopSystem(商店折扣)
+    _applyEffects(world) {}
 
     // Modifiers for other systems to query
     getModifier(key) {
@@ -5693,10 +5692,11 @@ class WeatherSystem {
         if (world.dailyNews) {
             world.dailyNews.collectEvent('disaster', `${d.name()}${t('來襲')}：${d.desc()}`, 10);
         }
-        // Reputation boost for preparedness (if player has deep well)
-        if (type === 'drought_severe' && world.buildings?.completed?.includes('well_upgrade')) {
+        // 深井/淨水系統的 drought_resistance 效果:依累積抗旱值減輕乾旱(Lv1 深井 0.5 → +0.2,Lv2 淨水再 +0.3 → +0.3)
+        const droughtRes = world.buildings?.getEffect?.('drought_resistance', 0) || 0;
+        if (type === 'drought_severe' && droughtRes > 0) {
             world.logMessage('weather', `💧 ${t('深井發揮作用，減輕了乾旱影響！')}`);
-            this.activeDisaster.effects.farm = Math.max(-0.3, this.activeDisaster.effects.farm + 0.2);
+            this.activeDisaster.effects.farm = Math.max(-0.3, this.activeDisaster.effects.farm + Math.min(0.3, droughtRes * 0.4));
         }
     }
 
