@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 4.3.6
+ * Version: 4.3.7
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '4.3.6');
+define('RIMTOWN_VERSION', '4.3.7');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1181,6 +1181,13 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '4.3.7',
+            'date'    => '2026-07-15',
+            'changes' => array(
+                '修復 iPhone 上按鈕文字變成系統藍色的問題（紅底藍字）：全域強制按鈕/輸入框使用主題文字色，強調按鈕白字',
+            ),
+        ),
         array(
             'version' => '4.3.6',
             'date'    => '2026-07-15',

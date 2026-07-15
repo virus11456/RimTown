@@ -3686,3 +3686,12 @@ body.rimtown-page .wp-block-post-title {
     /* 收合把手加粗更明顯 */
     .mobile-drag-handle::after { width: 48px !important; height: 5px !important; background: var(--accent) !important; opacity: 0.6; }
 }
+
+/* ===== v4.3.7 iOS 按鈕文字色修正 =====
+   iOS Safari 的 button 預設文字色是系統藍,任何沒明確設 color 的按鈕
+   在 iPhone 上都會變藍字(紅底藍字慘案)。全域強制繼承主題色。 */
+.rimtown-container button { color: var(--text-primary); }
+.btn-accent { color: #fff !important; }
+.rimtown-container input,
+.rimtown-container select,
+.rimtown-container textarea { color: var(--text-primary); }
