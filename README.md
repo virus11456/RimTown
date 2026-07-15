@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v4.2.0.zip` from Releases
+1. Download `rimtown-v4.3.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,14 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v4.3.0 (2026-07-15)
+
+**開羅風美術升級 + 小鎮伺服器 AI(免金鑰)**
+
+- 美術:草地平整明亮、道路草鬚鑲邊、水岸沙灘+動態浪花、建築落影/屋脊高光/屋簷/描邊
+- 伺服器 AI:`/api/chat` 代理 Groq(金鑰在伺服器),Vercel 版預設開啟,玩家零設定
+- AI 每日額度:訪客 20 則 / 登入玩家 100 則(Blob 記錄),超額優雅降級為模擬對話
 
 ### v4.2.0 (2026-07-15)
 

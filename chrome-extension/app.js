@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v4.2.0
-const RIMTOWN_APP_VERSION = '4.2.0';
+// RimTown - Frontend App (WordPress Plugin) v4.3.0
+const RIMTOWN_APP_VERSION = '4.3.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -2150,7 +2150,14 @@ class RimTownApp {
             const fallbackGroqKey = localStorage.getItem('fallback_groq_key');
             console.log('[RimTown] loadSettings: provider=', provider, 'hasKey=', !!apiKey, 'speed=', speed, 'hasFallback=', !!fallbackGroqKey);
             if (speed) this.simSpeed = parseInt(speed);
-            if (provider && provider !== 'none' && apiKey) {
+            // 靜態站(Vercel)未設定過 AI → 預設用小鎮伺服器 AI(免金鑰)
+            if (!provider && typeof rimtownAuth === 'undefined' && location.protocol.startsWith('http')) {
+                provider = 'server';
+            }
+            if (provider === 'server') {
+                this.llmClient = new LLMClient('server', 'server');
+                console.log('[RimTown] LLM client: 小鎮伺服器 AI(/api/chat)');
+            } else if (provider && provider !== 'none' && apiKey) {
                 this.llmClient = new LLMClient(provider, apiKey);
                 console.log('[RimTown] LLM client created from localStorage:', provider);
             }
@@ -2194,7 +2201,10 @@ class RimTownApp {
         const fallbackGroqKey = document.getElementById('fallback-groq-key')?.value?.trim()
             || document.getElementById('settings-tab-groq')?.value?.trim()
             || localStorage.getItem('fallback_groq_key') || '';
-        if (provider && provider !== 'none' && apiKey) {
+        if (provider === 'server') {
+            this.llmClient = new LLMClient('server', 'server');
+            this.world.conversationEngine = new ConversationEngine(this.llmClient);
+        } else if (provider && provider !== 'none' && apiKey) {
             this.llmClient = new LLMClient(provider, apiKey);
             this.world.conversationEngine = new ConversationEngine(this.llmClient);
         } else if (fallbackGroqKey) {
@@ -2228,7 +2238,7 @@ class RimTownApp {
         const apiKey = document.getElementById('settings-tab-apikey')?.value || '';
         const speed = document.getElementById('settings-tab-speed')?.value || '2000';
         const fallbackKey = document.getElementById('settings-tab-groq')?.value?.trim() || '';
-        if (provider !== 'none' && !apiKey && !fallbackKey) {
+        if (provider !== 'none' && provider !== 'server' && !apiKey && !fallbackKey) {
             this._gameAlert(t('請輸入 API 金鑰，或填寫備用 Groq Key，或選擇「無（模擬對話）」。'), '🔑');
             return;
         }
@@ -2781,7 +2791,7 @@ class RimTownApp {
             const apiKey = document.getElementById('llm-api-key').value;
             const speed = document.getElementById('sim-speed').value;
             const fallbackKey = document.getElementById('fallback-groq-key')?.value?.trim() || '';
-            if (provider !== 'none' && !apiKey && !fallbackKey) {
+            if (provider !== 'none' && provider !== 'server' && !apiKey && !fallbackKey) {
                 this._gameAlert(t('請輸入 API 金鑰，或填寫備用 Groq Key，或選擇「無（模擬對話）」。'), '🔑');
                 return;
             }
@@ -4472,6 +4482,7 @@ class RimTownApp {
         html += `<div class="setting-group" style="margin-bottom:8px">
             <label style="font-size:0.82rem;color:var(--text-secondary)">AI ${t('供應商')}</label>
             <select id="settings-tab-provider" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
+                <option value="server"${provider==='server'?' selected':''}>🏘️ ${t('小鎮伺服器 AI（免金鑰）')}</option>
                 <option value="none"${provider==='none'?' selected':''}>${t('無（模擬對話）')}</option>
                 <option value="anthropic"${provider==='anthropic'?' selected':''}>Anthropic (Claude)</option>
                 <option value="openai"${provider==='openai'?' selected':''}>OpenAI (GPT)</option>

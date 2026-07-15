@@ -21,11 +21,11 @@ const T = {
 // Color palette for each tile [primary, secondary, highlight, accent]
 // Vibrant lush style inspired by RPG pixel art tilemaps
 const TILE_COLORS = {
-    [T.GRASS]:    ['#5cad42','#4c9838','#6ec050','#3a8028'],
-    [T.GRASS2]:   ['#68b84e','#58a540','#7acc5a','#489235'],
-    [T.GRASS3]:   ['#489238','#38802a','#58a545','#286820'],
-    [T.DIRT]:     ['#b08850','#956e3a','#c8a068','#7a5828'],
-    [T.STONE_PATH]:['#8a7a68','#6e6050','#a09080','#585048'],
+    [T.GRASS]:    ['#5eb34a','#55a743','#6ec455','#4a9639'],
+    [T.GRASS2]:   ['#62b74e','#58aa45','#74c85a','#4d9a3c'],
+    [T.GRASS3]:   ['#58ac45','#4f9f3e','#68be50','#459036'],
+    [T.DIRT]:     ['#c19a62','#b28a52','#d0ac74','#9d7844'],
+    [T.STONE_PATH]:['#9a8d7c','#877a68','#ab9e8c','#786c5c'],
     [T.WALL_TOP]: ['#6b5a3e','#574a32','#7d6a4a','#4a3d28'],
     [T.WALL_FRONT]:['#8b7355','#7a644a','#9e8462','#6b5640'],
     [T.FLOOR]:    ['#d4b896','#c4a882','#e0c8a8','#b49a72'],
@@ -34,8 +34,8 @@ const TILE_COLORS = {
     [T.WATER]:    ['#38a8e0','#2890c8','#58c0f0','#2078b0'],
     [T.WATER2]:   ['#2890c8','#1878b0','#38a0d8','#106898'],
     [T.TREE_TRUNK]:['#6b4226','#5a3720','#7a4d2c','#4a2e18'],
-    [T.TREE_TOP]: ['#1e6828','#105018','#2c8838','#0a3810'],
-    [T.TREE_TOP2]:['#2c8838','#1e6828','#3ca848','#105018'],
+    [T.TREE_TOP]: ['#2f8a3c','#22702e','#42a450','#175824'],
+    [T.TREE_TOP2]:['#3a9a48','#2c8038','#4eb45c','#1e6828'],
     [T.ROOF]:     ['#b44040','#983434','#cc4c4c','#802828'],
     [T.ROOF2]:    ['#a03030','#882828','#b83838','#701e1e'],
     [T.FENCE_H]:  ['#8b6e4e','#7a6040','#a07e5a','#6a5235'],
@@ -45,7 +45,7 @@ const TILE_COLORS = {
     [T.CROP3]:    ['#98d058','#80b848','#b0e070','#68a038'],
     [T.FLOWER1]:  ['#e84080','#c83068','#f06098','#a82050'],
     [T.FLOWER2]:  ['#f0a030','#d88820','#f8b848','#c07018'],
-    [T.BUSH]:     ['#1e6828','#105018','#2c8838','#083010'],
+    [T.BUSH]:     ['#2f8a3c','#22702e','#42a450','#175824'],
     [T.ROCK]:     ['#909898','#707878','#b0b8b8','#585e60'],
     [T.BARREL]:   ['#795548','#5d4037','#8d6e63','#4e342e'],
     [T.CRATE]:    ['#a1887f','#8d6e63','#bcaaa4','#6d4c41'],
@@ -512,6 +512,114 @@ class PixelTileMap {
         }
     }
 
+    // ============================================================
+    // v4.3.0 開羅風美術升級:地形轉場 + 建築立體感(依鄰居 context 疊加)
+    // ============================================================
+    _drawTileOverlays(ctx, tx, ty, tile) {
+        const g = this.grid;
+        const px = tx * TILE, py = ty * TILE;
+        const at = (x, y) => (y < 0 || y >= this.rows || x < 0 || x >= this.cols) ? -1 : g[y][x];
+        const isGrass = t => t === T.GRASS || t === T.GRASS2 || t === T.GRASS3;
+        const isWater = t => t === T.WATER || t === T.WATER2;
+        const isRoof = t => t === T.ROOF || t === T.ROOF2;
+        const isBldg = t => t === T.WALL_TOP || t === T.WALL_FRONT || t === T.WINDOW || isRoof(t);
+        const up = at(tx, ty - 1), dn = at(tx, ty + 1), lf = at(tx - 1, ty), rt = at(tx + 1, ty);
+
+        // --- 1. 草地鑲邊:泥土/石路遇到草,邊緣長出草鬚(去掉生硬直角) ---
+        if (tile === T.DIRT || tile === T.STONE_PATH || tile === T.SAND) {
+            const fr = '#5cad42', frDk = '#3f8f2e';
+            if (isGrass(up)) {
+                ctx.fillStyle = fr; ctx.fillRect(px, py, TILE, 2);
+                ctx.fillStyle = frDk;
+                ctx.fillRect(px + 2, py + 2, 2, 1); ctx.fillRect(px + 7, py + 2, 2, 1); ctx.fillRect(px + 12, py + 2, 2, 1);
+            }
+            if (isGrass(dn)) {
+                ctx.fillStyle = fr; ctx.fillRect(px, py + TILE - 2, TILE, 2);
+                ctx.fillStyle = frDk;
+                ctx.fillRect(px + 3, py + TILE - 3, 2, 1); ctx.fillRect(px + 9, py + TILE - 3, 2, 1); ctx.fillRect(px + 14, py + TILE - 3, 2, 1);
+            }
+            if (isGrass(lf)) {
+                ctx.fillStyle = fr; ctx.fillRect(px, py, 2, TILE);
+                ctx.fillStyle = frDk;
+                ctx.fillRect(px + 2, py + 3, 1, 2); ctx.fillRect(px + 2, py + 9, 1, 2); ctx.fillRect(px + 2, py + 14, 1, 2);
+            }
+            if (isGrass(rt)) {
+                ctx.fillStyle = fr; ctx.fillRect(px + TILE - 2, py, 2, TILE);
+                ctx.fillStyle = frDk;
+                ctx.fillRect(px + TILE - 3, py + 2, 1, 2); ctx.fillRect(px + TILE - 3, py + 8, 1, 2); ctx.fillRect(px + TILE - 3, py + 13, 1, 2);
+            }
+            // 內圓角(兩側都是草的角落)
+            ctx.fillStyle = fr;
+            if (isGrass(up) && isGrass(lf)) ctx.fillRect(px, py, 4, 4);
+            if (isGrass(up) && isGrass(rt)) ctx.fillRect(px + TILE - 4, py, 4, 4);
+            if (isGrass(dn) && isGrass(lf)) ctx.fillRect(px, py + TILE - 4, 4, 4);
+            if (isGrass(dn) && isGrass(rt)) ctx.fillRect(px + TILE - 4, py + TILE - 4, 4, 4);
+        }
+
+        // --- 2. 水岸:沙灘緣 + 深色水線 + 動態浪花 ---
+        if (isWater(tile)) {
+            const sand = '#e3d29b', deep = '#1a6ea8';
+            const foamOn = ((this.animFrame >> 5) + tx + ty) % 3 === 0; // 慢速閃爍浪花
+            const shore = (x0, y0, w, h, fx, fy, fw, fh) => {
+                ctx.fillStyle = sand; ctx.fillRect(x0, y0, w, h);
+                ctx.fillStyle = deep;
+                if (w > h) ctx.fillRect(x0, y0 === py ? y0 + h : y0 - 1, w, 1);
+                else ctx.fillRect(x0 === px ? x0 + w : x0 - 1, y0, 1, h);
+                if (foamOn) { ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.fillRect(fx, fy, fw, fh); }
+            };
+            if (!isWater(up) && up !== -1 && up !== T.BRIDGE) shore(px, py, TILE, 2, px + 3, py + 2, 4, 1);
+            if (!isWater(dn) && dn !== -1 && dn !== T.BRIDGE) shore(px, py + TILE - 2, TILE, 2, px + 8, py + TILE - 3, 4, 1);
+            if (!isWater(lf) && lf !== -1 && lf !== T.BRIDGE) shore(px, py, 2, TILE, px + 2, py + 5, 1, 4);
+            if (!isWater(rt) && rt !== -1 && rt !== T.BRIDGE) shore(px + TILE - 2, py, 2, TILE, px + TILE - 3, py + 9, 1, 4);
+            // 波光(緩慢移動的亮點)
+            const ph = ((tx * 7 + ty * 13) + (this.animFrame >> 4)) % 23;
+            if (ph === 0) {
+                ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                ctx.fillRect(px + 4 + (ty % 3) * 3, py + 5 + (tx % 3) * 2, 3, 1);
+            }
+        }
+
+        // --- 3. 建築落影:建築在上/左的地面 tile 承接柔影(立體感關鍵) ---
+        if (!isBldg(tile) && tile !== T.DOOR && !isWater(tile)) {
+            if (isBldg(up) || up === T.DOOR) {
+                ctx.fillStyle = 'rgba(20,20,35,0.30)'; ctx.fillRect(px, py, TILE, 3);
+                ctx.fillStyle = 'rgba(20,20,35,0.15)'; ctx.fillRect(px, py + 3, TILE, 3);
+            }
+            if (isBldg(lf)) {
+                ctx.fillStyle = 'rgba(20,20,35,0.22)'; ctx.fillRect(px, py, 2, TILE);
+                ctx.fillStyle = 'rgba(20,20,35,0.10)'; ctx.fillRect(px + 2, py, 2, TILE);
+            }
+        }
+
+        // --- 4. 屋頂:脊線高光 / 屋簷深緣 / 側緣描邊 ---
+        if (isRoof(tile)) {
+            if (!isRoof(up)) {
+                ctx.fillStyle = 'rgba(255,235,210,0.42)'; ctx.fillRect(px, py, TILE, 2);
+                ctx.fillStyle = 'rgba(60,15,15,0.35)'; ctx.fillRect(px, py + 2, TILE, 1);
+            }
+            if (!isRoof(dn)) {
+                ctx.fillStyle = 'rgba(40,10,10,0.45)'; ctx.fillRect(px, py + TILE - 2, TILE, 2);
+            }
+            if (!isRoof(lf)) { ctx.fillStyle = 'rgba(40,10,10,0.35)'; ctx.fillRect(px, py, 1, TILE); }
+            if (!isRoof(rt)) { ctx.fillStyle = 'rgba(40,10,10,0.35)'; ctx.fillRect(px + TILE - 1, py, 1, TILE); }
+        }
+
+        // --- 5. 屋簷投影:屋頂下方的牆面頂部壓暗 ---
+        if ((tile === T.WALL_FRONT || tile === T.WINDOW || tile === T.DOOR) && isRoof(up)) {
+            ctx.fillStyle = 'rgba(20,10,5,0.30)'; ctx.fillRect(px, py, TILE, 3);
+        }
+
+        // --- 6. 建築外緣描邊(牆遇到地面的一側加 1px 深線,輪廓乾淨) ---
+        if (isBldg(tile)) {
+            ctx.fillStyle = 'rgba(30,20,15,0.55)';
+            if (!isBldg(lf) && lf !== T.DOOR && lf !== -1) ctx.fillRect(px, py, 1, TILE);
+            if (!isBldg(rt) && rt !== T.DOOR && rt !== -1) ctx.fillRect(px + TILE - 1, py, 1, TILE);
+            if ((tile === T.WALL_FRONT || tile === T.WINDOW) && !isBldg(dn) && dn !== T.DOOR && dn !== -1) {
+                ctx.fillRect(px, py + TILE - 1, TILE, 1);
+            }
+        }
+    }
+
     _drawTile(ctx, type, colors) {
         const [c1, c2, c3, c4] = colors;
         const S = TILE; // 16
@@ -520,40 +628,24 @@ class PixelTileMap {
 
         switch(type) {
             case T.GRASS: case T.GRASS2: case T.GRASS3: {
-                // Lush grass with visible blade strokes (RPG style)
-                // Base with subtle variation patches
+                // 開羅風草地:GRASS 幾乎全平(大片乾淨),點綴集中在 GRASS2/3(低頻散布)
                 ctx.fillStyle = c2;
-                ctx.fillRect(0,0,8,8); ctx.fillRect(8,8,8,8);
-                ctx.fillStyle = c1;
-                ctx.fillRect(2,1,5,6); ctx.fillRect(9,9,6,5);
-                // Tall grass blades (vertical strokes, the key visual!)
-                ctx.fillStyle = c3; // bright blade color
-                ctx.fillRect(1,0,1,4); ctx.fillRect(3,1,1,5); ctx.fillRect(5,0,1,4);
-                ctx.fillRect(7,2,1,4); ctx.fillRect(9,0,1,5); ctx.fillRect(11,1,1,4);
-                ctx.fillRect(13,0,1,3); ctx.fillRect(15,2,1,4);
-                // Second row of blades
-                ctx.fillRect(0,7,1,4); ctx.fillRect(2,8,1,5); ctx.fillRect(4,7,1,4);
-                ctx.fillRect(6,9,1,4); ctx.fillRect(8,7,1,5); ctx.fillRect(10,8,1,4);
-                ctx.fillRect(12,9,1,3); ctx.fillRect(14,7,1,5);
-                // Dark blade bases
-                ctx.fillStyle = c4;
-                ctx.fillRect(1,4,1,2); ctx.fillRect(3,5,1,2); ctx.fillRect(5,4,1,2);
-                ctx.fillRect(9,5,1,2); ctx.fillRect(11,4,1,2);
-                ctx.fillRect(0,11,1,2); ctx.fillRect(2,12,1,2); ctx.fillRect(4,11,1,2);
-                ctx.fillRect(8,12,1,2); ctx.fillRect(10,11,1,2); ctx.fillRect(14,12,1,2);
-                // Bright tips
-                ctx.fillStyle = c3;
-                ctx.fillRect(1,0,1,1); ctx.fillRect(5,0,1,1); ctx.fillRect(9,0,1,1); ctx.fillRect(13,0,1,1);
-                ctx.fillRect(0,7,1,1); ctx.fillRect(4,7,1,1); ctx.fillRect(8,7,1,1);
-                // Tiny flower accents
+                ctx.fillRect(3,2,4,3); ctx.fillRect(10,9,4,3);
                 if (type === T.GRASS2) {
-                    ctx.fillStyle='#f0a030'; ctx.fillRect(6,3,2,2); ctx.fillRect(12,11,2,2);
-                    ctx.fillStyle='#fff'; ctx.fillRect(6,3,1,1); ctx.fillRect(12,11,1,1);
+                    // 草叢 + 小花
+                    ctx.fillStyle = c4;
+                    ctx.fillRect(4,5,1,2); ctx.fillRect(6,5,1,2); ctx.fillRect(5,4,1,2);
+                    ctx.fillStyle = c3; ctx.fillRect(5,3,1,1);
+                    ctx.fillStyle='#f4b642'; ctx.fillRect(11,10,2,2);
+                    ctx.fillStyle='#fff8e0'; ctx.fillRect(11,10,1,1);
                 }
                 if (type === T.GRASS3) {
-                    // Darker grass has small mushroom/pebble
-                    ctx.fillStyle='#b0a890'; ctx.fillRect(7,5,2,1);
-                    ctx.fillStyle='#c0b8a0'; ctx.fillRect(7,4,2,1);
+                    // 草叢 + 小石子
+                    ctx.fillStyle = c4;
+                    ctx.fillRect(10,4,1,2); ctx.fillRect(12,4,1,2); ctx.fillRect(11,3,1,2);
+                    ctx.fillStyle = c3; ctx.fillRect(11,2,1,1);
+                    ctx.fillStyle='#b8b09a'; ctx.fillRect(4,11,2,1);
+                    ctx.fillStyle='#d0c8b2'; ctx.fillRect(4,10,2,1);
                 }
                 break;
             }
@@ -3108,6 +3200,7 @@ class PixelTileMap {
                 const cached = this.tileCache[tile];
                 if (cached) {
                     ctx.drawImage(cached, x * TILE, y * TILE);
+                    this._drawTileOverlays(ctx, x, y, tile);
                 }
             }
         }

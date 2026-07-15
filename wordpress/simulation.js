@@ -2234,6 +2234,28 @@ class LLMClient {
             together: { url: 'https://api.together.xyz/v1/chat/completions', model: model || 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo' },
             minimax: { url: 'https://api.minimaxi.com/v1/text/chatcompletion_v2', model: model || 'MiniMax-M2.5' },
         };
+        // 小鎮伺服器 AI(免金鑰):走同網域 /api/chat,金鑰保管在伺服器
+        if (provider === 'server') {
+            try {
+                const headers = { 'Content-Type': 'application/json' };
+                try {
+                    const jwt = localStorage.getItem('rimtown_jwt');
+                    if (jwt) headers['Authorization'] = 'Bearer ' + jwt;
+                } catch (e) {}
+                const res = await fetch('/api/chat', {
+                    method: 'POST', headers,
+                    body: JSON.stringify({ prompt, max_tokens: maxTokens, temperature }),
+                });
+                if (res.status === 429) return '__RATE_LIMITED__';
+                if (!res.ok) return '__ERROR__';
+                const data = await res.json();
+                return data.reply || '';
+            } catch (err) {
+                console.warn('[RimTown LLM] server provider error:', err.message);
+                return '__ERROR__';
+            }
+        }
+
         const cfg = endpoints[provider];
         if (!cfg) return '__ERROR__';
 
