@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 4.4.2
+ * Version: 4.5.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '4.4.2');
+define('RIMTOWN_VERSION', '4.5.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -148,6 +148,7 @@ function rimtown_shortcode($atts) {
                     <button data-tab="quest"><span class="tab-icon">⚔️</span><span class="tab-label">任務</span></button>
                     <button data-tab="economy"><span class="tab-icon">💰</span><span class="tab-label">經濟</span></button>
                     <button data-tab="detail" class="mobile-hidden"><span class="tab-icon">📋</span><span class="tab-label">詳情</span></button>
+                    <button data-tab="relmap" class="mobile-hidden"><span class="tab-icon">💞</span><span class="tab-label">關係</span></button>
                     <button data-tab="industry" class="mobile-hidden"><span class="tab-icon">🏭</span><span class="tab-label">產業</span></button>
                     <button data-tab="events" class="mobile-hidden"><span class="tab-icon">📰</span><span class="tab-label">事件</span></button>
                     <button data-tab="records" class="mobile-hidden"><span class="tab-icon">📝</span><span class="tab-label">紀錄</span></button>
@@ -1181,6 +1182,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '4.5.0',
+            'date'    => '2026-07-15',
+            'changes' => array(
+                '決策卡延遲後果：做出決定 3 天後，村民會回來道謝（+銀幣+聲望）或抱怨（全鎮心情下降），並在八卦跑馬燈播報',
+                '災害預警防災選擇：乾旱/暴風雪來襲前一天可選「全面防災/基本準備/聽天由命」，投入資源可大幅減輕災損',
+                '美術二輪：角色四方向（往上走看到後腦勺、側走五官偏移）、屋頂 4 色配色（紅藍綠紫）、夜晚窗戶透出暖光',
+                '關係網總覽圖：新「💞 關係」分頁，一張圖看全鎮誰愛誰恨誰（戀愛/單戀/摯友/敵對/出軌）',
+                '每日登入獎勵：連續登入 7 天階梯獎勵（銀幣+食物）',
+                '離線進度結算：離開超過 10 分鐘再回來，小鎮會補跑模擬（上限 2 天）並顯示結算摘要',
+            ),
+        ),
         array(
             'version' => '4.4.2',
             'date'    => '2026-07-15',

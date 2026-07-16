@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v4.4.2
-const RIMTOWN_APP_VERSION = '4.4.2';
+// RimTown - Frontend App (WordPress Plugin) v4.5.0
+const RIMTOWN_APP_VERSION = '4.5.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -383,6 +383,11 @@ class RimTownApp {
         if (localStorage.getItem('rimtown_tutorial_done')) {
             setTimeout(() => this._updateQuestGuidance(), 2000);
         }
+        // v4.5.0 留存機制:離線進度結算 + 每日登入獎勵
+        if (loaded) this._processOfflineProgress();
+        this._checkDailyReward();
+        this._startLastSeenTracker();
+
         // Auto-show login modal if not logged in (with guest option)
         if (!this.auth.loggedIn) {
             const authModal = document.getElementById('auth-modal');
@@ -542,6 +547,75 @@ class RimTownApp {
         const banner = document.getElementById('guest-banner');
         if (banner) { banner.classList.add('hidden'); banner.style.display = 'none'; }
         document.getElementById('rimtown-app')?.classList.remove('guest-banner-visible');
+    }
+
+    // =====================================================
+    // v4.5.0 留存機制:每日登入獎勵 + 離線進度結算
+    // =====================================================
+    _checkDailyReward() {
+        try {
+            const today = new Date().toISOString().slice(0, 10);
+            const last = localStorage.getItem('rimtown_login_date');
+            if (last === today) return;
+            let streak = parseInt(localStorage.getItem('rimtown_login_streak') || '0', 10);
+            const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+            streak = (last === yesterday) ? streak + 1 : 1;
+            localStorage.setItem('rimtown_login_date', today);
+            localStorage.setItem('rimtown_login_streak', String(streak));
+            const day = Math.min(streak, 7);
+            const silver = 10 + day * 10;
+            const food = 5 + day * 5;
+            this.world.stockpile.add('silver', silver, this.world.tickCount, t('每日登入獎勵'));
+            this.world.stockpile.add('food', food, this.world.tickCount, t('每日登入獎勵'));
+            this.world.logMessage('system', `🎁 ${t('每日登入獎勵(連續')} ${streak} ${t('天):+')}${silver} ${t('銀幣、+')}${food} ${t('食物')}`);
+            this.bgm?.sfx?.('coin');
+            this._showCenterNotification({
+                icon: '🎁',
+                title: t('每日登入獎勵'),
+                name: `${t('連續登入')} ${streak} ${t('天')}`,
+                desc: `+${silver} ${t('銀幣')}、+${food} ${t('食物')}${streak < 7 ? t('(連續 7 天獎勵最高!)') : ''}`,
+                autoDismiss: 6000,
+            });
+        } catch (e) { console.warn('[RimTown] daily reward error', e); }
+    }
+
+    _startLastSeenTracker() {
+        const mark = () => { try { localStorage.setItem('rimtown_last_seen', String(Date.now())); } catch (e) {} };
+        setInterval(mark, 30000);
+        window.addEventListener('beforeunload', mark);
+        mark();
+    }
+
+    _processOfflineProgress() {
+        try {
+            const last = parseInt(localStorage.getItem('rimtown_last_seen') || '0', 10);
+            if (!last) return;
+            const elapsedMs = Date.now() - last;
+            if (elapsedMs < 10 * 60 * 1000) return; // 離開 10 分鐘內不結算
+            // 依正常模擬速度換算,上限 2 遊戲日(192 tick)避免爆炸
+            const ticks = Math.min(192, Math.floor(elapsedMs / (this.simSpeed || 2000)));
+            if (ticks < 10) return;
+            const sp = this.world.stockpile;
+            const before = { silver: sp.get('silver'), food: sp.get('food') };
+            const msgIdx = this.world.messageLog.length;
+            for (let i = 0; i < ticks; i++) {
+                try { this.world.tick(); } catch (e) { break; }
+            }
+            const dSil = Math.round(sp.get('silver') - before.silver);
+            const dFood = Math.round(sp.get('food') - before.food);
+            const events = this.world.messageLog.slice(msgIdx)
+                .filter(m => ['event', 'relationship', 'drama', 'incident'].includes(m.type)).length;
+            const hours = Math.round(elapsedMs / 360000) / 10;
+            this.state = this.world.getState();
+            this._showCenterNotification({
+                icon: '🌙',
+                title: t('離線進度結算'),
+                name: `${t('你離開了')} ${hours} ${t('小時')}`,
+                desc: `${t('小鎮繼續運轉了')} ${Math.round(ticks / 96 * 10) / 10} ${t('天')}:${t('銀幣')} ${dSil >= 0 ? '+' : ''}${dSil}、${t('食物')} ${dFood >= 0 ? '+' : ''}${dFood}、${events} ${t('件大小事(見紀錄)')}`,
+                autoDismiss: 9000,
+            });
+            this.world.logMessage('system', `🌙 ${t('離線結算:小鎮在你離開時模擬了')} ${ticks} ${t('個時段')}`);
+        } catch (e) { console.warn('[RimTown] offline progress error', e); }
     }
 
     // Custom game-style alert (replaces browser alert)
@@ -2346,6 +2420,7 @@ class RimTownApp {
             residents: [
                 { key: 'residents', label: t('居民'), icon: '👥' },
                 { key: 'detail', label: t('詳情'), icon: '📋' },
+                { key: 'relmap', label: t('關係網'), icon: '💞' },
             ],
             chat: [
                 { key: 'chat', label: t('聊天'), icon: '💬' },
@@ -3903,7 +3978,113 @@ class RimTownApp {
             case 'industry': this.renderIndustryAndFarm(content); break;
             case 'quest': this.renderQuest(content); break;
             case 'settings': this.renderSettings(content); break;
+            case 'relmap': this.renderRelationMap(content); break;
         }
+    }
+
+    // =====================================================
+    // v4.5.0 關係網總覽圖:一張圖看全鎮誰愛誰恨誰
+    // =====================================================
+    renderRelationMap(container) {
+        if (!this.state) return;
+        let html = this._renderMobileGroupTabs();
+        html += `<div class="econ-section"><h3>💞 ${t('全鎮關係網')}</h3>
+            <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:6px">
+                <span style="color:#ff6b9d">━ ${t('戀愛/婚姻')}</span>　
+                <span style="color:#ff9ec6">┅ ${t('單戀')}</span>　
+                <span style="color:#5cc46a">━ ${t('摯友')}</span>　
+                <span style="color:#e05555">━ ${t('敵對')}</span>
+            </div>
+            <canvas id="relmap-canvas" style="width:100%;border:1px solid var(--border);border-radius:10px;background:#0d1426"></canvas>
+        </div>`;
+        container.innerHTML = html;
+        requestAnimationFrame(() => this._drawRelationMap());
+    }
+
+    _drawRelationMap() {
+        const canvas = document.getElementById('relmap-canvas');
+        if (!canvas || !this.state?.agents) return;
+        const npcs = Object.entries(this.state.agents);
+        const W = canvas.clientWidth || 320;
+        const H = Math.max(300, Math.min(430, W));
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = W * dpr; canvas.height = H * dpr;
+        canvas.style.height = H + 'px';
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        // 圓形佈局
+        const cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2 - 34;
+        const posMap = {};
+        npcs.forEach(([id], i) => {
+            const ang = (i / npcs.length) * Math.PI * 2 - Math.PI / 2;
+            posMap[id] = { x: cx + R * Math.cos(ang), y: cy + R * Math.sin(ang) };
+        });
+        // 邊(避免重複:只畫 id 較小 → 較大,單戀除外)
+        const drawn = new Set();
+        for (const [id, a] of npcs) {
+            for (const r of Object.values(a.relationships || {})) {
+                const tid = r.target_id;
+                if (!posMap[tid]) continue;
+                const p1 = posMap[id], p2 = posMap[tid];
+                const key = id < tid ? `${id}|${tid}` : `${tid}|${id}`;
+                let color = null, width = 1, dash = null;
+                if (r.status === 'married') { color = '#ff6b9d'; width = 2.5; }
+                else if (r.status === 'dating') { color = '#ff6b9d'; width = 2; }
+                else if ((r.romantic_interest || 0) > 50 && !r.status) { color = '#ff9ec6'; width = 1.5; dash = [4, 3]; }
+                else if ((r.affinity || 0) > 60) { color = '#5cc46a'; width = 1.2; }
+                else if ((r.affinity || 0) < -55) { color = '#e05555'; width = 1.5; }
+                if (!color) continue;
+                if (!dash && drawn.has(key)) continue; // 雙向關係只畫一次;單戀(虛線)可各自畫
+                drawn.add(key);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = width;
+                ctx.setLineDash(dash || []);
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+                if (r.is_cheating) { // 出軌:線中央畫 🖤
+                    ctx.setLineDash([]);
+                    ctx.font = '10px serif'; ctx.textAlign = 'center';
+                    ctx.fillText('🖤', (p1.x + p2.x) / 2, (p1.y + p2.y) / 2 + 3);
+                }
+            }
+        }
+        ctx.setLineDash([]);
+        // 節點
+        for (const [id, a] of npcs) {
+            const p = posMap[id];
+            const isP = id === 'player';
+            ctx.fillStyle = isP ? '#ffd700' : '#3a5a94';
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, isP ? 7 : 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.fillStyle = isP ? '#ffd700' : '#dde6f5';
+            ctx.font = `${isP ? 'bold ' : ''}10px sans-serif`;
+            ctx.textAlign = 'center';
+            // 名字放在圓外側
+            const dx = p.x - cx, dy = p.y - cy;
+            const len = Math.hypot(dx, dy) || 1;
+            ctx.fillText(a.name || id, p.x + (dx / len) * 16, p.y + (dy / len) * 16 + 3);
+        }
+    }
+
+    // 行動版群組子分頁列(關係圖共用居民群組)
+    _renderMobileGroupTabs() {
+        if (window.innerWidth > 768) return '';
+        const main = this._mobileSubToMain?.[this.activeTab] || this.activeTab;
+        const group = this._mobileTabGroups?.[main];
+        if (!group) return '';
+        let bar = '<div class="sub-tab-bar mobile-group-tabs">';
+        group.forEach(_tw => {
+            const active = _tw.key === this.activeTab ? ' class="active"' : '';
+            bar += `<button${active} data-action="mobile-group-tab" data-val="${_tw.key}">${_tw.icon} ${_tw.label}</button>`;
+        });
+        bar += '</div>';
+        return bar;
     }
 
     renderChat(container) {

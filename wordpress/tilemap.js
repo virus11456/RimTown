@@ -508,6 +508,50 @@ class PixelTileMap {
         }
     }
 
+    // v4.5.0:屋頂依建築 hash 配色(4 色)+ 收集夜光窗戶
+    _postProcessArt() {
+        if (!this.grid) return;
+        this._artGridReady = true;
+        this._artGridSrc = this.grid;
+        this._roofVariantGrid = Array.from({ length: this.rows }, () => new Array(this.cols).fill(0));
+        for (const [locId, z] of Object.entries(this.buildingZones)) {
+            let h = 0;
+            for (let i = 0; i < locId.length; i++) h = (h * 31 + locId.charCodeAt(i)) & 0xffff;
+            const v = h % 4;
+            if (!v) continue;
+            for (let y = Math.max(0, z.y); y < Math.min(this.rows, z.y + z.h); y++) {
+                for (let x = Math.max(0, z.x); x < Math.min(this.cols, z.x + z.w); x++) {
+                    const tt = this.grid[y][x];
+                    if (tt === T.ROOF || tt === T.ROOF2) this._roofVariantGrid[y][x] = v;
+                }
+            }
+        }
+        this._windowTiles = [];
+        for (let y = 0; y < this.rows; y++) {
+            for (let x = 0; x < this.cols; x++) {
+                if (this.grid[y][x] === T.WINDOW) this._windowTiles.push([x, y]);
+            }
+        }
+    }
+
+    // 夜間窗戶暖光(畫在日夜色調之後,光才不會被壓暗)
+    _renderWindowGlow(ctx) {
+        if (!this._windowTiles || !this._windowTiles.length) return;
+        const h = (this.timeHour || 12) + (this.timeMinute || 0) / 60;
+        let n = 0;
+        if (h >= 19 || h < 5) n = 1;
+        else if (h >= 17.5 && h < 19) n = (h - 17.5) / 1.5;
+        else return;
+        for (const [x, y] of this._windowTiles) {
+            const px = x * TILE, py = y * TILE;
+            const flick = 0.85 + 0.15 * Math.sin(this.animFrame / 22 + x * 3 + y * 7);
+            ctx.fillStyle = `rgba(255,205,95,${(0.45 * n * flick).toFixed(3)})`;
+            ctx.fillRect(px + 2, py + 3, 12, 10);
+            ctx.fillStyle = `rgba(255,180,60,${(0.10 * n).toFixed(3)})`;
+            ctx.fillRect(px - 4, py - 3, 24, 22);
+        }
+    }
+
     _buildTileCache() {
         // Pre-render each tile type to offscreen canvases
         for (const [type, colors] of Object.entries(TILE_COLORS)) {
@@ -516,6 +560,21 @@ class PixelTileMap {
             const cx = c.getContext('2d');
             this._drawTile(cx, parseInt(type), colors);
             this.tileCache[type] = c;
+        }
+        // v4.5.0 屋頂配色變體(1藍 2綠 3紫,0=原紅用主快取)
+        const ROOF_PALS = {
+            1: { [T.ROOF]: ['#4879c0','#3a66a8','#5a8cd0','#2d5590'], [T.ROOF2]: ['#3a66a8','#2d5590','#4879c0','#234878'] },
+            2: { [T.ROOF]: ['#3f9464','#347d53','#4ea875','#2a6844'], [T.ROOF2]: ['#347d53','#2a6844','#3f9464','#215538'] },
+            3: { [T.ROOF]: ['#8a5fb0','#75509a','#9c70c4','#614083'], [T.ROOF2]: ['#75509a','#614083','#8a5fb0','#4f346b'] },
+        };
+        this._roofAltCache = {};
+        for (const v of [1, 2, 3]) {
+            for (const tt of [T.ROOF, T.ROOF2]) {
+                const c2 = document.createElement('canvas');
+                c2.width = TILE; c2.height = TILE;
+                this._drawTile(c2.getContext('2d'), tt, ROOF_PALS[v][tt]);
+                this._roofAltCache[`${v}_${tt}`] = c2;
+            }
         }
     }
 
@@ -2427,6 +2486,7 @@ class PixelTileMap {
         pos.walking = true;
         pos.walkStep = (pos.walkStep || 0) + 1;
         if (dx) pos.facing = dx > 0 ? 1 : -1;
+        pos.dir4 = Math.abs(dy) > Math.abs(dx) * 1.4 ? (dy > 0 ? 'down' : 'up') : (dx >= 0 ? 'right' : 'left');
         this.followPlayer = true;
         this._followCamera(pos);
         if (this.onPlayerMoved) this.onPlayerMoved(pos.x, pos.y);
@@ -2635,6 +2695,7 @@ class PixelTileMap {
                     // Stop walking and face each other
                     pos.walking = false;
                     pos.walkStep = 0;
+                    pos.dir4 = (pos.facing || 1) > 0 ? 'right' : 'left';
                     if (chatTarget && aid === 'player' && this.agentPositions[chatTarget]) {
                         pos.facing = this.agentPositions[chatTarget].x > pos.x ? 1 : -1;
                     } else if (chatTarget && aid === chatTarget && this.agentPositions['player']) {
@@ -2668,6 +2729,8 @@ class PixelTileMap {
                     pos.walkStep = (pos.walkStep || 0) + 1;
                     // Face direction: 1 = right, -1 = left
                     pos.facing = dx > 0 ? 1 : dx < 0 ? -1 : (pos.facing || 1);
+                    // v4.5.0 四向朝向(垂直移動為主時顯示背面/正面)
+                    pos.dir4 = Math.abs(dy) > Math.abs(dx) * 1.4 ? (dy > 0 ? 'down' : 'up') : 'side';
                 } else {
                     // Reached current waypoint
                     pos.x = moveToX;
@@ -2720,7 +2783,7 @@ class PixelTileMap {
 
     // Draw chibi-style agent sprite (inspired by JRPG pixel art)
     // Sprite dimensions: ~16w x 24h, big head, large eyes, short body
-    _drawAgent(ctx, x, y, jobKey, isPlayer, isSelected, name, walking, walkStep, gender, jobTitle) {
+    _drawAgent(ctx, x, y, jobKey, isPlayer, isSelected, name, walking, walkStep, gender, jobTitle, dir4) {
         const c = isPlayer ? JOB_COLORS.player : (JOB_COLORS[jobKey] || JOB_COLORS.default);
         const isFemale = gender === 'female';
         const sx = Math.floor(x - 8);  // center 16px wide sprite
@@ -2821,35 +2884,45 @@ class PixelTileMap {
         // === Hair ===
         this._drawChibiHair(ctx, sx, sy, c, jobKey, isPlayer, isFemale);
 
+        // v4.5.0 四向:背面(往上走)頭髮蓋住臉,不畫五官;側面五官朝行進方向偏移
+        if (dir4 === 'up') {
+            ctx.fillStyle = c.hair || '#5a4636';
+            ctx.fillRect(sx + 3, sy + 3, 10, 8);
+            ctx.fillStyle = 'rgba(0,0,0,0.12)';
+            ctx.fillRect(sx + 3, sy + 9, 10, 2);
+        } else {
+        // 側面行走時五官往行進方向偏移 2px,營造轉頭感
+        const off = dir4 === 'right' ? 2 : dir4 === 'left' ? -2 : 0;
         // === Eyes (large anime-style) ===
         // Eye whites
         ctx.fillStyle = '#fff';
-        ctx.fillRect(sx + 4, sy + 5, 3, 3);
-        ctx.fillRect(sx + 9, sy + 5, 3, 3);
+        ctx.fillRect(sx + 4 + off, sy + 5, 3, 3);
+        ctx.fillRect(sx + 9 + off, sy + 5, 3, 3);
         // Iris
         ctx.fillStyle = '#2a2a3a';
-        ctx.fillRect(sx + 5, sy + 5, 2, 3);
-        ctx.fillRect(sx + 10, sy + 5, 2, 3);
+        ctx.fillRect(sx + 5 + off, sy + 5, 2, 3);
+        ctx.fillRect(sx + 10 + off, sy + 5, 2, 3);
         // Pupil
         ctx.fillStyle = '#111';
-        ctx.fillRect(sx + 5, sy + 6, 2, 2);
-        ctx.fillRect(sx + 10, sy + 6, 2, 2);
+        ctx.fillRect(sx + 5 + off, sy + 6, 2, 2);
+        ctx.fillRect(sx + 10 + off, sy + 6, 2, 2);
         // Eye highlight (the anime sparkle!)
         ctx.fillStyle = '#fff';
-        ctx.fillRect(sx + 5, sy + 5, 1, 1);
-        ctx.fillRect(sx + 10, sy + 5, 1, 1);
+        ctx.fillRect(sx + 5 + off, sy + 5, 1, 1);
+        ctx.fillRect(sx + 10 + off, sy + 5, 1, 1);
         // Lower eye highlight
         ctx.fillStyle = 'rgba(255,255,255,0.5)';
-        ctx.fillRect(sx + 6, sy + 7, 1, 1);
-        ctx.fillRect(sx + 11, sy + 7, 1, 1);
+        ctx.fillRect(sx + 6 + off, sy + 7, 1, 1);
+        ctx.fillRect(sx + 11 + off, sy + 7, 1, 1);
 
         // === Nose hint ===
         ctx.fillStyle = 'rgba(0,0,0,0.08)';
-        ctx.fillRect(sx + 8, sy + 8, 1, 1);
+        ctx.fillRect(sx + 8 + off, sy + 8, 1, 1);
 
         // === Mouth ===
         ctx.fillStyle = '#c08070';
-        ctx.fillRect(sx + 7, sy + 9, 2, 1);
+        ctx.fillRect(sx + 7 + off, sy + 9, 2, 1);
+        }
 
         // === Job-specific accessory ===
         this._drawJobAccessory(ctx, sx, sy, jobKey, isPlayer);
@@ -3208,11 +3281,18 @@ class PixelTileMap {
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         ctx.setTransform(scale, 0, 0, scale, -this.camX * scale, -this.camY * scale);
 
+        // v4.5.0 美術二輪:lazy 預計算屋頂配色與窗戶清單(地圖生成/讀檔後第一次 render)
+        if (!this._artGridReady || this._artGridSrc !== this.grid) this._postProcessArt();
+
         // Draw tile grid
         for (let y = 0; y < this.rows; y++) {
             for (let x = 0; x < this.cols; x++) {
                 const tile = this.grid[y][x];
-                const cached = this.tileCache[tile];
+                let cached = this.tileCache[tile];
+                if ((tile === T.ROOF || tile === T.ROOF2) && this._roofVariantGrid) {
+                    const rv = this._roofVariantGrid[y][x];
+                    if (rv) cached = this._roofAltCache[`${rv}_${tile}`] || cached;
+                }
                 if (cached) {
                     ctx.drawImage(cached, x * TILE, y * TILE);
                     this._drawTileOverlays(ctx, x, y, tile);
@@ -3307,7 +3387,7 @@ class PixelTileMap {
             if (!agent) continue;
             const isPlayer = aid === 'player';
             const isSelected = aid === selectedAgent;
-            this._drawAgent(ctx, pos.x, pos.y, pos.job, isPlayer, isSelected, agent.name || 'You', pos.walking, pos.walkStep, pos.gender, agent.job?.title || '');
+            this._drawAgent(ctx, pos.x, pos.y, pos.job, isPlayer, isSelected, agent.name || 'You', pos.walking, pos.walkStep, pos.gender, agent.job?.title || '', pos.dir4 || 'down');
             // Action animation overlay for farming NPCs
             if (!pos.walking && pos.atFarm && (pos.job === 'farmer' || pos.activity === 'working') && !isPlayer) {
                 this._drawFarmAction(ctx, pos.x, pos.y, this.animFrame, aid);
@@ -3456,6 +3536,7 @@ class PixelTileMap {
 
         // === Day/Night Cycle Overlay ===
         this._renderDayNightOverlay(ctx);
+        this._renderWindowGlow(ctx);
     }
 
     _updateAndDrawParticles(ctx) {

@@ -4749,6 +4749,7 @@ class World {
             if (this.questSystem) this.questSystem.checkProgress(this);
             // v4.0 systems
             this.dailyDecision.dailyUpdate(this);
+            this.dailyDecision.processFollowups(this);
             this.npcHelp.dailyUpdate(this);
             this.reputationSystem.dailyUpdate(this);
             this.weather.dailyUpdate(this);
@@ -5669,11 +5670,13 @@ class WeatherSystem {
         if (this.streak >= 3 && this._isHot(this.current) && world.clock.season === '夏季' && !this.activeDisaster && this._daysSinceDisaster > 8) {
             this.disasterWarning = { type: 'drought_severe', severity: 'major', daysUntil: 1 };
             world.logMessage('weather', `⚠️ ${t('乾旱警報：連續高溫，水源告急！')}`);
+            this._offerPrepChoice(world, t('嚴重乾旱'));
         }
         // Blizzard escalation: extended cold in winter
         if (this.streak >= 2 && this.current === 'snow' && world.clock.season === '冬季' && !this.activeDisaster && this._daysSinceDisaster > 8) {
             this.disasterWarning = { type: 'blizzard_severe', severity: 'major', daysUntil: 1 };
             world.logMessage('weather', `⚠️ ${t('暴風雪警報：氣溫持續下降，請準備取暖物資！')}`);
+            this._offerPrepChoice(world, t('猛烈暴風雪'));
         }
         // Storm escalation chance
         if (this.current === 'storm' && Math.random() < 0.3 && !this.activeDisaster && this._daysSinceDisaster > 6) {
@@ -5688,6 +5691,26 @@ class WeatherSystem {
         } else if (this.disasterWarning) {
             this.disasterWarning.daysUntil--;
         }
+    }
+
+    // v4.5.0 災害預警:給玩家防災準備選擇(明天災害來襲前)
+    _offerPrepChoice(world, disasterName) {
+        if (!world.eventChoice || world.eventChoice.pendingEvent) return;
+        world.eventChoice.pendingEvent = {
+            eventName: `${t('災害預警：')}${disasterName}`,
+            description: `${disasterName}${t('預計明天來襲！現在做準備還來得及——要怎麼應對？')}`,
+            severity: 'major',
+            choices: [
+                { label: t('全面防災'), icon: '🏗️', desc: t('花費 30 木材 + 20 食物：災害效果減半、提早一天結束'),
+                  effects: { wood: -30, food: -20, disaster_prep: 2 } },
+                { label: t('基本準備'), icon: '🧰', desc: t('花費 10 木材：災害效果減輕 25%'),
+                  effects: { wood: -10, disaster_prep: 1 } },
+                { label: t('聽天由命'), icon: '🤷', desc: t('不做任何準備'),
+                  effects: { disaster_prep: 0 } },
+            ],
+            timestamp: world.tickCount,
+        };
+        world.logMessage('event_choice', `⚡ ${t('災害預警——你需要決定如何防災！')}`);
     }
 
     _startDisaster(type, world) {
@@ -5722,6 +5745,19 @@ class WeatherSystem {
             world.logMessage('weather', `💧 ${t('深井發揮作用，減輕了乾旱影響！')}`);
             this.activeDisaster.effects.farm = Math.max(-0.3, this.activeDisaster.effects.farm + Math.min(0.3, droughtRes * 0.4));
         }
+        // v4.5.0 玩家事前防災準備的減災效果
+        const prep = this._prepLevel || 0;
+        if (prep > 0) {
+            const factor = prep === 2 ? 0.5 : 0.75;
+            for (const k of Object.keys(this.activeDisaster.effects)) {
+                if (typeof this.activeDisaster.effects[k] === 'number') this.activeDisaster.effects[k] *= factor;
+            }
+            if (prep === 2) this.activeDisaster.daysLeft = Math.max(1, this.activeDisaster.daysLeft - 1);
+            world.logMessage('weather', prep === 2
+                ? `🏗️ ${t('事前的全面防災大幅減輕了災害衝擊！')}`
+                : `🧰 ${t('基本準備發揮了作用，災損有所減輕。')}`);
+        }
+        this._prepLevel = 0;
     }
 
     _endDisaster(world) {
@@ -6309,8 +6345,42 @@ class DailyDecisionSystem {
 
         this.decisionLog.push({ id: decision.id, choice, dayKey: decision.dayKey, title: decision.title });
         if (this.decisionLog.length > 100) this.decisionLog = this.decisionLog.slice(-100);
+
+        // v4.5.0 延遲後果:3 天後村民回來道謝或抱怨(依選項效果傾向加權)
+        const npcs = Object.values(world.agents).filter(a => !a.isPlayer);
+        if (npcs.length) {
+            const follow = npcs[Math.floor(Math.random() * npcs.length)];
+            const positive = (effects.mood_all || 0) > 0 || (effects.reputation || 0) > 0 || effects.social_boost;
+            this.followups = this.followups || [];
+            this.followups.push({
+                dueTick: world.tickCount + 288, // 3 遊戲日
+                npc: follow.name,
+                title: decision.title,
+                choiceLabel: label,
+                good: Math.random() < (positive ? 0.78 : 0.45),
+            });
+        }
         this.pendingDecision = null;
         return { title: decision.title, choice: label };
+    }
+
+    // v4.5.0 每日結算延遲後果(由 World.tick 的 dailyUpdate 呼叫)
+    processFollowups(world) {
+        if (!this.followups?.length) return;
+        this.followups = this.followups.filter(f => {
+            if (world.tickCount < f.dueTick) return true;
+            if (f.good) {
+                world.stockpile.add('silver', 15, world.tickCount, t('村民答謝'));
+                if (world.reputationSystem) world.reputationSystem.addReputation(2, 'decisions', world);
+                world.logMessage('relationship', `💝 ${f.npc}${t('特地回來道謝：「上次「')}${f.title}${t('」的事，多虧你決定「')}${f.choiceLabel}${t('」，現在順利多了！」(+15 銀幣、+2 聲望)')}`, f.npc);
+                if (world.dailyNews) world.dailyNews.collectEvent('social', `${f.npc}${t('公開感謝鎮長當初的決定')}`, 6, [f.npc]);
+            } else {
+                Object.values(world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) - 2; });
+                world.logMessage('drama', `😤 ${f.npc}${t('抱怨：「上次「')}${f.title}${t('」你決定「')}${f.choiceLabel}${t('」，結果根本沒解決問題…」(全鎮心情 -2)')}`, f.npc);
+                if (world.dailyNews) world.dailyNews.collectEvent('social', `${f.npc}${t('對鎮長先前的決策表達不滿')}`, 5, [f.npc]);
+            }
+            return false;
+        });
     }
 
     toDict() {
@@ -6325,6 +6395,7 @@ class DailyDecisionSystem {
             pendingDecision: this.pendingDecision,
             decisionLog: this.decisionLog,
             _lastDecisionDay: this._lastDecisionDay,
+            followups: this.followups || [],
         };
     }
 
@@ -6332,6 +6403,7 @@ class DailyDecisionSystem {
         if (!data) return;
         this.pendingDecision = data.pendingDecision || null;
         this.decisionLog = data.decisionLog || [];
+        this.followups = data.followups || [];
         this._lastDecisionDay = data._lastDecisionDay || 0;
     }
 }
@@ -6475,6 +6547,16 @@ class EventChoiceSystem {
         if (effects.silver) {
             if (effects.silver > 0) world.stockpile.add('silver', effects.silver, world.tickCount, t('事件決策'));
             else world.stockpile.consume('silver', Math.abs(effects.silver), world.tickCount, t('事件決策'));
+        }
+        // v4.5.0 一般資源消耗/獲得 + 防災準備等級
+        for (const rk of ['food','wood','stone','metal','tools','herbs','cloth']) {
+            if (effects[rk]) {
+                if (effects[rk] > 0) world.stockpile.add(rk, effects[rk], world.tickCount, t('事件決策'));
+                else world.stockpile.consume(rk, Math.abs(effects[rk]), world.tickCount, t('事件決策'));
+            }
+        }
+        if ('disaster_prep' in effects && world.weather) {
+            world.weather._prepLevel = effects.disaster_prep;
         }
         if (effects.social_boost) {
             Object.values(world.agents).forEach(a => { a.needs.social = Math.min(100, a.needs.social + effects.social_boost); });
