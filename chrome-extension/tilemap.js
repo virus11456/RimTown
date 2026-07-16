@@ -3814,15 +3814,15 @@ class PixelTileMap {
 
         if (nightAmount <= 0) return;
 
-        // Night blue tint — strong enough to feel dark but still readable
-        const tintAlpha = nightAmount * 0.35;
-        ctx.fillStyle = `rgba(8, 12, 40, ${tintAlpha.toFixed(3)})`;
+        // v4.5.1 夜晚改用 multiply 混色:變暗但保留色彩對比,不再有半透明疊色的「起霧感」
+        ctx.save();
+        ctx.globalCompositeOperation = 'multiply';
+        const r = Math.round(255 - (255 - 118) * nightAmount);
+        const g2 = Math.round(255 - (255 - 132) * nightAmount);
+        const b = Math.round(255 - (255 - 200) * nightAmount);
+        ctx.fillStyle = `rgb(${r},${g2},${b})`;
         ctx.fillRect(0, 0, ow, oh);
-
-        // Second pass: subtle purple/indigo layer for depth
-        const tintAlpha2 = nightAmount * 0.08;
-        ctx.fillStyle = `rgba(30, 15, 60, ${tintAlpha2.toFixed(3)})`;
-        ctx.fillRect(0, 0, ow, oh);
+        ctx.restore();
 
         // Moon at night (only when nightAmount > 0.4)
         if (nightAmount > 0.4) {

@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v4.5.0
-const RIMTOWN_APP_VERSION = '4.5.0';
+// RimTown - Frontend App (WordPress Plugin) v4.5.1
+const RIMTOWN_APP_VERSION = '4.5.1';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -3529,10 +3529,19 @@ class RimTownApp {
         this.renderSidebar();
     }
 
+    // v4.5.1 日夜階段圖示:一眼分辨現在是白天還是夜晚
+    _dayPhaseIcon(hour) {
+        if (hour >= 5 && hour < 7) return '🌅';
+        if (hour >= 7 && hour < 17) return '☀️';
+        if (hour >= 17 && hour < 19) return '🌆';
+        return '🌙';
+    }
+
     renderClock() {
         const clock = this.state.clock;
+        const phaseIcon = this._dayPhaseIcon(clock.hour || 12);
         const clockEl = document.getElementById('clock-display');
-        if (clockEl) clockEl.textContent = clock.time_str;
+        if (clockEl) clockEl.textContent = `${phaseIcon} ${clock.time_str}`;
         const pauseBtn = document.getElementById('btn-pause');
         const resumeBtn = document.getElementById('btn-resume');
         if (this.state.paused) { pauseBtn?.classList.add('active'); resumeBtn?.classList.remove('active'); }
@@ -3563,7 +3572,7 @@ class RimTownApp {
         if (mobileClock) {
             const h = String(clock.hour || 0).padStart(2, '0');
             const m = String(clock.minute || 0).padStart(2, '0');
-            mobileClock.textContent = `Y${clock.year} ${clock.season} D${clock.day} ${h}:${m}`;
+            mobileClock.textContent = `Y${clock.year} ${clock.season} D${clock.day} ${this._dayPhaseIcon(clock.hour || 12)}${h}:${m}`;
         }
         const mobilePop = document.getElementById('mobile-population');
         if (mobilePop) mobilePop.textContent = `${agentCount}${t('人')}`;
@@ -3654,6 +3663,10 @@ class RimTownApp {
             <div id="kairo-card-body"></div>`;
         root.appendChild(card);
         this._kairoTitles = Object.fromEntries(ITEMS.map(([k, ic, lb]) => [k, `${ic} ${lb}`]));
+        Object.assign(this._kairoTitles, {
+            detail: `📋 ${t('詳情')}`, relmap: `💞 ${t('關係網')}`,
+            industry: `🏭 ${t('產業')}`, records: `📋 ${t('日誌')}`,
+        });
 
         // 事件
         document.getElementById('kairo-menu-btn').addEventListener('click', () => {
@@ -3709,6 +3722,16 @@ class RimTownApp {
         } else if (this._kairoCardOpen) {
             // 其他分頁:內容進浮動卡片,地圖保持全螢幕
             if (content.parentElement !== cardBody) cardBody.appendChild(content);
+            const title = document.getElementById('kairo-card-title');
+            if (title) title.textContent = this._kairoTitles?.[this.activeTab] || this._kairoTitles?.[this._mobileSubToMain?.[this.activeTab]] || '';
+            card.classList.remove('hidden');
+            sheet.classList.add('kairo-hidden');
+        } else if (!sheet.classList.contains('kairo-hidden')) {
+            // 從聊天面板切到其他子分頁(如日誌)→ 自動轉為浮動卡(修:點了沒反應)
+            this._kairoCardOpen = true;
+            if (content.parentElement !== cardBody) cardBody.appendChild(content);
+            const title = document.getElementById('kairo-card-title');
+            if (title) title.textContent = this._kairoTitles?.[this.activeTab] || this._kairoTitles?.[this._mobileSubToMain?.[this.activeTab]] || '';
             card.classList.remove('hidden');
             sheet.classList.add('kairo-hidden');
         } else {
