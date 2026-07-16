@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v4.4.1
-const RIMTOWN_APP_VERSION = '4.4.1';
+// RimTown - Frontend App (WordPress Plugin) v4.4.2
+const RIMTOWN_APP_VERSION = '4.4.2';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -3557,11 +3557,12 @@ class RimTownApp {
         const menu = document.createElement('div');
         menu.id = 'kairo-menu';
         menu.className = 'hidden';
+        // 產業併入經濟卡片的子分頁(經濟|產業),選單不重複列出
         const ITEMS = [
             ['residents', '👥', t('居民')], ['quest', '⚔️', t('任務')],
-            ['economy', '💰', t('經濟')], ['industry', '🏭', t('產業')],
-            ['events', '📰', t('事件')], ['achievements', '🏆', t('成就')],
-            ['records', '📋', t('紀錄')], ['settings', '⚙️', t('設定')],
+            ['economy', '💰', t('經濟')], ['events', '📰', t('事件')],
+            ['achievements', '🏆', t('成就')], ['records', '📋', t('紀錄')],
+            ['settings', '⚙️', t('設定')],
         ];
         menu.innerHTML = ITEMS.map(([k, ic, lb]) => `<button data-kairo-tab="${k}"><span class="km-ic">${ic}</span>${lb}</button>`).join('');
         root.appendChild(menu);
