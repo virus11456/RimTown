@@ -1029,6 +1029,15 @@ class ConversationEngine {
                     t('你想關心旅人最近過得如何'),
                     t('你想跟旅人聊聊最近鎮上的八卦'),
                 ];
+                // v5.0.0 祭典期間:NPC 更想邀玩家一起逛祭典
+                const pFest = world.festivals?.activeFestival;
+                if (pFest) {
+                    scenarios.push(
+                        `${t('今天是')}${pFest.name}${t('!你想邀旅人一起去')}${pickRandom(pFest.activities)}`,
+                        t('你在祭典會場看到超有趣的東西,想趕快告訴旅人'),
+                        `${t('你想約旅人在祭典結束前一起去')}${pickRandom(pFest.activities)}`,
+                    );
+                }
                 const scenario = pickRandom(scenarios);
 
                 const prompt = `${t('你正在扮演「')}${npc.name}${t('」——邊境鎮的居民。你想主動傳一則訊息給')}${player.name}${t('。')}
@@ -1079,14 +1088,64 @@ ${t('- 直接寫訊息內容就好')}`;
         if (this.onNpcMessage) this.onNpcMessage(npc.agentId);
     }
 
+    // v5.0.0: 心動事件 — NPC 用 AI 生成專屬真心話,並排入互動卡等玩家回應
+    async fireHeartEvent(world, npc, ev) {
+        try {
+            const player = Object.values(world.agents).find(a => a.isPlayer);
+            if (!player) return;
+            const rel = npc.relationships.getOrCreate(player.agentId, player.name);
+            let text = '';
+            if (this.llm && this.llm._canMakeRequest(false)) {
+                try {
+                    const pN = this._buildCharacterProfile(npc);
+                    const mems = (rel.sharedMemories || []).slice(-3).join(t('；'));
+                    const prompt = `${t('你正在扮演「')}${npc.name}${t('」——邊境鎮的居民。這是一個重要的感情時刻。')}
+${t('情境：')}${ev.scenario}${t('。對象是')}${player.name}${t('。')}
+
+${t('【你是誰】')}
+${pN.name}${t('，')}${pN.age}${t('歲，')}${pN.job}${t('。性格：')}${pN.traits}${t('。背景：')}${pN.background}${t('。')}
+${mems ? `${t('你們的共同回憶：')}${mems}` : ''}
+
+${t('【規則】')}
+${t('- 繁體中文（台灣用語），2-4句，要真摯、有溫度，符合你的性格')}
+${t('- 可以提到具體的共同回憶或小鎮生活細節')}
+${t('- 不要加任何前綴、名字標籤、引號')}`;
+                    const response = await this.llm.generate(prompt, 250, 0.9, false);
+                    if (response && response !== '__ERROR__' && response !== '__RATE_LIMITED__') {
+                        text = response.trim().replace(/^["「『]|["」』]$/g, '').trim();
+                        text = text.replace(new RegExp(`^${npc.name}[：:]\\s*`), '').trim();
+                    }
+                } catch (e) { console.error('[RimTown] heart event LLM failed:', e); }
+            }
+            if (!text) {
+                const fb = ev.romance ? [
+                    t('那個...我最近發現,只要看到你走過來,我就會不自覺地笑。你...應該懂我的意思吧?'),
+                    t('跟你說話的時候,時間總是過得特別快。我想...我大概是喜歡上你了。'),
+                ] : [
+                    `${t('欸,認真說,自從你來了之後,我覺得這個鎮都不一樣了。有你這個朋友真好。')}`,
+                    `${t('我不太會說這種話,但...謝謝你一直願意聽我說話。這對我來說很重要。')}`,
+                ];
+                text = pickRandom(fb);
+            }
+            player.chatHistory.push({ speaker: npc.name, target: player.name, text, time: world.clock.timeStr });
+            npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('我對')}${player.name}${t('說出了真心話：')}${text}`, 9, [player.name]);
+            rel.addSharedMemory(`${ev.name}${t('：')}${text}`);
+            world.logMessage('player_chat', `${ev.icon} ${npc.name} → ${player.name}: ${text}`, npc.name, player.name);
+            if (this.onNpcMessage) this.onNpcMessage(npc.agentId);
+            world._pendingHeartEvents = world._pendingHeartEvents || [];
+            world._pendingHeartEvents.push({ npcId: npc.agentId, npcName: npc.name, icon: ev.icon, evName: ev.name, text, romance: !!ev.romance });
+        } catch (e) { console.error('[RimTown] fireHeartEvent failed:', e); }
+    }
+
     // v4.9.0: 建築完工/組合發現時,挑一位相關 NPC 用 AI 對玩家發表評論
-    async sendEventComment(world, eventText, preferJobs = []) {
+    async sendEventComment(world, eventText, preferJobs = [], preferIds = [], fallbackLines = null) {
         try {
             const player = Object.values(world.agents).find(a => a.isPlayer);
             if (!player) return;
             const npcs = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead);
             if (!npcs.length) return;
-            let pool = preferJobs.length ? npcs.filter(a => preferJobs.includes(a.job?.key)) : [];
+            let pool = preferIds.length ? npcs.filter(a => preferIds.includes(a.agentId)) : [];
+            if (!pool.length && preferJobs.length) pool = npcs.filter(a => preferJobs.includes(a.job?.key));
             if (!pool.length) pool = npcs;
             const npc = pool[Math.floor(Math.random() * pool.length)];
             let text = '';
@@ -1110,7 +1169,7 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
                 } catch (e) { console.error('[RimTown] sendEventComment LLM failed:', e); }
             }
             if (!text) {
-                const fallbacks = [
+                const fallbacks = fallbackLines || [
                     `${eventText}${t('，太棒了吧！')}`,
                     `${t('你看到了嗎？')}${eventText}${t('！鎮上越來越有樣子了')}`,
                     `${eventText}${t('！鎮長真有眼光')}`,
@@ -1265,7 +1324,17 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
             t('回憶過去的某件事'),
             t('為了一件小事開玩笑或互相吐槽'),
         ];
-        const scenario = pickRandom(scenarios);
+        let scenario = pickRandom(scenarios);
+        // v5.0.0 祭典期間:一半機率改用祭典場景,並注入祭典氣氛
+        const fest = world.festivals?.activeFestival;
+        if (fest && Math.random() < 0.5) {
+            scenario = pickRandom([
+                `${t('兩人在')}${fest.name}${t('會場遇到,聊起眼前的')}${pickRandom(fest.activities)}`,
+                `${t('兩人一起參加')}${pickRandom(fest.activities)}${t(',邊玩邊聊')}`,
+                `${t('祭典的熱鬧中,一人拉著另一人去看')}${pickRandom(fest.activities)}`,
+            ]);
+        }
+        const festCtx = fest ? `${t('【今天是')}${fest.name}${t('!】')}${fest.description}${t('鎮上到處都是祭典活動:')}${fest.activities.join(t('、'))}${t('。對話請自然融入祭典氣氛。')}\n` : '';
 
         const prompt = `${t('你是一位才華橫溢的小說家，正在為奇幻小鎮「邊境鎮」寫角色對話劇本。')}
 ${t('這是兩位小鎮居民偶然碰面的場景。請寫出生動、自然、有溫度的對話——就像真實的鄰居閒聊一樣。')}
@@ -1278,7 +1347,7 @@ ${t('- 每個人的說話風格要明顯不同（用詞、語氣、句子長短�
 ${t('- 加入生活細節：提到具體的食物、地點、天氣感受、小鎮裡的人和事')}
 ${t('- 可以有幽默、諷刺、調侃、撒嬌、關心、爭吵等豐富的情感表達')}
 
-${t('場景：')}${scenario}
+${festCtx}${t('場景：')}${scenario}
 ${t('時間：')}${world.clock.timeStr}
 ${t('地點：')}${agentA.currentLocation.replace(/_/g,' ')}
 
@@ -1774,6 +1843,7 @@ ${pN.thought ? `${t('你最近在想：')}${pN.thought}` : ''}
 ${this._buildRelContext(relNpc, player.name)}
 ${memNpc.length ? `${t('你記得關於')}${player.name}${t('的事：')}${memNpc.map(m=>m.content).join(t('；'))}` : `${t('你跟')}${player.name}${t('還不太熟。')}`}
 
+${world.festivals?.activeFestival ? `${t('【今天是')}${world.festivals.activeFestival.name}${t('!】')}${world.festivals.activeFestival.description}${t('聊天時可以自然提到祭典。')}` : ''}
 ${t('【小鎮經濟】')}
 ${this._buildEconomicContext(world)}
 ${this._buildQuestContext(world, npc, relNpc)}
@@ -1878,6 +1948,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
         player.chatHistory.push({speaker:npc.name, target:player.name, text:npcReply, time:world.clock.timeStr});
         player._recentChatTick = world.tickCount; // Mark for social need recovery
         world.logMessage('player_chat', `${player.name} → ${npc.name}: ${summary}`, player.name, npc.name);
+        world.checkHeartEvents?.(); // v5.0.0 聊天後檢查心動事件
         return { npc_name:npc.name, npc_reply:npcReply, player_message:playerMessage, effects:{affinity_change:affChange,romantic_change:romChange}, summary };
     }
 
@@ -2149,6 +2220,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
         player.chatHistory.push({speaker:npc.name, target:player.name, text:npcReply, time:world.clock.timeStr});
         player._recentChatTick = world.tickCount; // Mark for social need recovery
         world.logMessage('player_chat', summary, player.name, npc.name);
+        world.checkHeartEvents?.(); // v5.0.0 聊天後檢查心動事件
         return { npc_name:npc.name, npc_reply:npcReply, player_message:playerMessage, effects:{affinity_change:affChange,romantic_change:romChange}, summary };
     }
 }
@@ -3203,6 +3275,14 @@ const COMBO_DEFS = [
     {id:'healing_garden',  icon:'🌼', name:t('靜心藥園'), parts:['garden','fountain'],        desc:t('藥草園+小噴泉')},
 ];
 
+// --- v5.0.0 心動事件(礦石鎮式):與玩家的關係到達門檻時,NPC 用 AI 說出專屬真心話 ---
+const HEART_EVENTS = [
+    {id:'friend',   icon:'🌱', name:t('初識之誼'), min:{affinity:25},  scenario:t('你發現自己已經把旅人當朋友了。想跟他說說這段時間認識下來的感受,可以提起你們之間的某件小事')},
+    {id:'close',    icon:'💛', name:t('知心好友'), min:{affinity:55},  scenario:t('旅人已是你的知心好友。你想跟他分享一件你從沒告訴過別人的心事或秘密')},
+    {id:'soulmate', icon:'🌟', name:t('莫逆之交'), min:{affinity:80},  scenario:t('旅人是你此生難得的摯友。你想認真地告訴他,他對你有多重要')},
+    {id:'crush',    icon:'💗', name:t('心動時刻'), min:{romantic:50},  scenario:t('你發現自己對旅人心動了。你鼓起勇氣,想含蓄地(或依你的性格直白地)透露你的感覺'), romance:true},
+];
+
 class BuildingManager {
     constructor() { this.projects=[]; this.completed=[]; this.activeEffects={}; this._counter=0; }
     getAvailable(world) {
@@ -3975,6 +4055,28 @@ class FestivalSystem {
 
             this.festivalLog.push({ name: festival.name, season, year: world.clock.year, tick: world.tickCount });
 
+            // v5.0.0 祭典邀約:對玩家最有感情的 NPC(伴侶>心動>最好的朋友)主動傳訊邀玩家逛祭典
+            const playerAgent = Object.values(world.agents).find(a => a.isPlayer);
+            if (playerAgent && world.conversationEngine?.sendEventComment) {
+                let inviter = null, best = -Infinity;
+                for (const a of Object.values(world.agents)) {
+                    if (a.isPlayer || a.isDead) continue;
+                    const rel = a.relationships.relationships[playerAgent.agentId];
+                    if (!rel) continue;
+                    const score = (rel.status === 'married' ? 300 : rel.status === 'dating' ? 200 : 0) + (rel.romanticInterest >= 50 ? 100 : 0) + rel.affinity;
+                    if (score > best) { best = score; inviter = a; }
+                }
+                if (inviter && best > 10) {
+                    const act = pickRandom(festival.activities);
+                    world.conversationEngine.sendEventComment(world,
+                        `${t('今天是')}${festival.name}${t('！')}${festival.description}${t('你想邀')}${playerAgent.name}${t('一起去')}${act}`,
+                        [], [inviter.agentId], [
+                            `${t('欸欸,今天是')}${festival.name}${t('耶!要不要一起去')}${act}${t('?我在廣場等你!')}`,
+                            `${festival.name}${t('開始了!走啦,陪我去')}${act}${t(',一個人去多無聊')}`,
+                        ]);
+                }
+            }
+
             // Special festival dialogue templates
             world.gossipNetwork.activeGossip.push({
                 about: t('全鎮'), content: `${festival.name}${t('好熱鬧！')}${pickRandom(festival.activities)}${t('太棒了！')}`,
@@ -4725,6 +4827,7 @@ class World {
         this.buildings = new BuildingManager();
         this.decorations = this.decorations || []; // v4.8.0 玩家擺放的裝飾 [{type,x,y}]
         this.combosFound = this.combosFound || []; // v4.9.0 已發現的相鄰組合 id
+        this.heartEventsFired = this.heartEventsFired || {}; // v5.0.0 已觸發的心動事件 {npcId:[eventId]}
         this.trade = new TradeManager();
         this.research = new ResearchManager();
         this.workOrders = new WorkOrderManager();
@@ -4801,6 +4904,7 @@ class World {
             // New systems daily updates
             this.factions.dailyUpdate(this);
             this.festivals.dailyUpdate(this);
+            this.checkHeartEvents(); // v5.0.0 每日掃描心動事件門檻
             this.lifecycle.dailyUpdate(this);
             this.exploration.dailyUpdate(this);
             // v3 systems daily updates
@@ -4877,6 +4981,7 @@ class World {
         this.buildings = new BuildingManager();
         this.decorations = this.decorations || []; // v4.8.0 玩家擺放的裝飾 [{type,x,y}]
         this.combosFound = this.combosFound || []; // v4.9.0 已發現的相鄰組合 id
+        this.heartEventsFired = this.heartEventsFired || {}; // v5.0.0 已觸發的心動事件 {npcId:[eventId]}
         this.trade = new TradeManager();
         this.research = new ResearchManager();
         this.workOrders = new WorkOrderManager();
@@ -5148,6 +5253,31 @@ class World {
         return newly;
     }
 
+    // --- v5.0.0 心動事件:每個 NPC 每個門檻只觸發一次,一次只發一件 ---
+    checkHeartEvents() {
+        if (this._heartEventBusy) return;
+        this.heartEventsFired = this.heartEventsFired || {};
+        const player = Object.values(this.agents).find(a => a.isPlayer);
+        if (!player || !this.conversationEngine?.fireHeartEvent) return;
+        for (const npc of Object.values(this.agents)) {
+            if (npc.isPlayer || npc.isDead) continue;
+            const rel = npc.relationships.relationships[player.agentId];
+            if (!rel) continue;
+            const fired = this.heartEventsFired[npc.agentId] = this.heartEventsFired[npc.agentId] || [];
+            for (const ev of HEART_EVENTS) {
+                if (fired.includes(ev.id)) continue;
+                if (ev.min.affinity !== undefined && rel.affinity < ev.min.affinity) continue;
+                if (ev.min.romantic !== undefined && rel.romanticInterest < ev.min.romantic) continue;
+                fired.push(ev.id);
+                this._heartEventBusy = true;
+                Promise.resolve(this.conversationEngine.fireHeartEvent(this, npc, ev))
+                    .catch(() => {})
+                    .finally(() => { this._heartEventBusy = false; });
+                return; // 一次只觸發一件,避免轟炸
+            }
+        }
+    }
+
     // --- Save / Load ---
     serialize() {
         const serializeAgent = (a) => ({
@@ -5208,6 +5338,7 @@ class World {
             exploration: this.exploration.toDict(),
             decorations: this.decorations || [],
             combosFound: this.combosFound || [],
+            heartEventsFired: this.heartEventsFired || {},
             industry: this.industry.serialize(),
             farm: this.farm.serialize(),
             processing: this.processing.serialize(),
@@ -5328,6 +5459,7 @@ class World {
             this.buildings = new BuildingManager();
         this.decorations = this.decorations || []; // v4.8.0 玩家擺放的裝飾 [{type,x,y}]
         this.combosFound = this.combosFound || []; // v4.9.0 已發現的相鄰組合 id
+        this.heartEventsFired = this.heartEventsFired || {}; // v5.0.0 已觸發的心動事件 {npcId:[eventId]}
             if (data.buildings) {
                 this.buildings.projects = data.buildings.projects || [];
                 this.buildings.completed = (data.buildings.completed || []).map(b => {
@@ -5443,6 +5575,7 @@ class World {
             if (data.dailyDecision) this.dailyDecision.loadFrom(data.dailyDecision);
             this.decorations = Array.isArray(data.decorations) ? data.decorations : [];
             this.combosFound = Array.isArray(data.combosFound) ? data.combosFound : [];
+            this.heartEventsFired = (data.heartEventsFired && typeof data.heartEventsFired === 'object') ? data.heartEventsFired : {};
             if (data.shop) this.shop.loadFrom(data.shop);
             if (data.eventChoice) this.eventChoice.loadFrom(data.eventChoice);
             if (data.npcHelp) this.npcHelp.loadFrom(data.npcHelp);

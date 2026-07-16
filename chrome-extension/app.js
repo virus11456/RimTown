@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v4.9.0
-const RIMTOWN_APP_VERSION = '4.9.0';
+// RimTown - Frontend App (WordPress Plugin) v5.0.0
+const RIMTOWN_APP_VERSION = '5.0.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -932,6 +932,7 @@ class RimTownApp {
         }
         this.world.logMessage('relationship', `🎁 ${t('鎮長送給')}${npc.name}${g.name}${isFav ? t(',對方超喜歡!') : ''}(${t('好感')}+${gain})`, npc.name);
         this.bgm?.sfx?.('coin');
+        this.world.checkHeartEvents?.(); // v5.0.0 送禮後檢查心動事件
         this.state = this.world.getState();
         if (this.activeTab === 'chat') { this._renderChatMessages(); this._scrollChatToBottom(); }
     }
@@ -1465,6 +1466,38 @@ class RimTownApp {
         } else if (!ww?.activeDisaster) {
             this._shownDisasterId = null;
         }
+    }
+
+    // v5.0.0 心動事件卡:NPC 的真心話 + 玩家二選一回應(影響好感/心動)
+    _showHeartEventCard(h) {
+        this.bgm?.sfx?.('open');
+        const respond = (reply, aff, rom) => {
+            const world = this.world;
+            const npc = world?.agents?.[h.npcId];
+            const player = Object.values(world?.agents || {}).find(a => a.isPlayer);
+            if (!npc || !player) return;
+            const relNpc = npc.relationships.getOrCreate(player.agentId, player.name);
+            relNpc.modifyAffinity(aff);
+            if (rom) relNpc.modifyRomantic(rom);
+            relNpc.addSharedMemory(`${h.evName}${t('：')}${reply}`);
+            player.chatHistory.push({ speaker: player.name, target: npc.name, text: reply, time: world.clock.timeStr });
+            npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${player.name}${t('回應了我的真心話：')}${reply}`, 8, [player.name]);
+            world.logMessage('player_chat', `${player.name} → ${npc.name}: ${reply}`, player.name, npc.name);
+            this.bgm?.sfx?.('send');
+            this.state = world.getState();
+            this.renderSidebar();
+        };
+        const optA = h.romance ? t('我也是。其實我早就想告訴你了') : t('能認識你真的很好,這是我的真心話');
+        const optB = h.romance ? t('謝謝你...可以讓我想一想嗎?') : t('哈哈,突然這麼肉麻我會不好意思啦!');
+        this._showInteractiveNotification({
+            icon: h.icon,
+            title: `${h.icon} ${t('心動事件')}——${h.evName}`,
+            desc: `${h.npcName}${t('：「')}${h.text}${t('」')}`,
+            buttons: [
+                { label: `💬 ${optA}`, action: () => respond(optA, 6, h.romance ? 8 : 0) },
+                { label: `😅 ${optB}`, action: () => respond(optB, 2, 0) },
+            ],
+        });
     }
 
     _showDecisionCard(decision) {
@@ -2601,6 +2634,11 @@ class RimTownApp {
                         desc: `${c.desc} — ${t('小鎮美觀與繁榮加成,全鎮心情大好!把相配的東西放在一起,還有更多組合等你發現')}`,
                         autoDismiss: 7000,
                     });
+                }
+                // v5.0.0 心動事件互動卡輪詢
+                if (this.world?._pendingHeartEvents?.length) {
+                    const h = this.world._pendingHeartEvents.shift();
+                    this._showHeartEventCard(h);
                 }
                 this.tileMap.updateAgents(agents, this.state.locations?.locations || {}, this.chatTarget);
                 // Pass time to tilemap for day/night cycle

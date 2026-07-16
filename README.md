@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v4.9.0.zip` from Releases
+1. Download `rimtown-v5.0.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,13 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.0.0 (2026-07-16)
+
+**心動事件 + 季節祭典 AI 互動**
+
+- 心動事件:好感 25/55/80、心動 50 門檻時,村民用 AI 說出專屬真心話(告白/秘密/感謝),二選一回應影響關係,每人每門檻一次
+- 祭典 AI 化:祭典期間 NPC 對話/聊天融入祭典氣氛,感情最深的村民主動邀你逛祭典;送禮聊天後即時檢查心動門檻
 
 ### v4.9.0 (2026-07-16)
 

@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 4.9.0
+ * Version: 5.0.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '4.9.0');
+define('RIMTOWN_VERSION', '5.0.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1182,6 +1182,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.0.0',
+            'date'    => '2026-07-16',
+            'changes' => array(
+                '💗 心動事件（礦石鎮式）：與村民的好感到達門檻（25/55/80、心動50）時，對方會用 AI 說出專屬真心話——告白、秘密、感謝，玩家二選一回應影響好感與心動值，每人每門檻限一次',
+                '🎊 季節祭典 AI 化：祭典期間村民對話與聊天自然融入祭典話題，NPC 主動邀你逛祭典，與你感情最深的人（伴侶＞心動＞摯友）會第一個來約你',
+                '送禮、聊天後即時檢查心動門檻，重要時刻不再錯過',
+            ),
+        ),
         array(
             'version' => '4.9.0',
             'date'    => '2026-07-16',
