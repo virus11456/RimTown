@@ -3851,3 +3851,17 @@ body.rimtown-page .wp-block-post-title {
     .kairo-mode .rt-sidebar.chat-open ~ #guest-banner,
     .kairo-mode:has(.rt-sidebar.chat-open) #guest-banner { display: none !important; }
 }
+
+/* v4.7.0 未解鎖分頁:上鎖外觀 */
+.tab-locked {
+    opacity: 0.38 !important;
+    filter: grayscale(0.85);
+    position: relative;
+}
+.tab-locked::after {
+    content: '🔒';
+    position: absolute;
+    top: 1px;
+    right: 3px;
+    font-size: 0.58rem;
+}

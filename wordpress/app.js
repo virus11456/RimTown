@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v4.6.0
-const RIMTOWN_APP_VERSION = '4.6.0';
+// RimTown - Frontend App (WordPress Plugin) v4.7.0
+const RIMTOWN_APP_VERSION = '4.7.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -616,6 +616,68 @@ class RimTownApp {
             });
             this.world.logMessage('system', `🌙 ${t('離線結算:小鎮在你離開時模擬了')} ${ticks} ${t('個時段')}`);
         } catch (e) { console.warn('[RimTown] offline progress error', e); }
+    }
+
+    // =====================================================
+    // v4.7.0 系統逐步解鎖(開羅式:隨繁榮度開放功能,降低新手認知負擔)
+    // =====================================================
+    _unlockDefs() {
+        return [
+            { key: 'economy',      need: 12, icon: '💰', label: t('經濟') },
+            { key: 'achievements', need: 20, icon: '🏆', label: t('成就') },
+            { key: 'events',       need: 28, icon: '📰', label: t('事件') },
+            { key: 'relmap',       need: 28, icon: '💞', label: t('關係網') },
+            { key: 'industry',     need: 38, icon: '🏭', label: t('產業') },
+        ];
+    }
+
+    _isTabLocked(key) {
+        const def = this._unlockDefs().find(d => d.key === key);
+        if (!def) return false;
+        return !(this._unlockCache && this._unlockCache[key]);
+    }
+
+    _checkUnlocks() {
+        if (!this.state) return;
+        const pros = this.state.prosperity?.prosperity || 0;
+        const stKey = 'rimtown_unlocks_' + (this.currentTownId || 'default');
+        let st = null;
+        try { st = JSON.parse(localStorage.getItem(stKey) || 'null'); } catch (e) {}
+        const firstRun = !st;
+        st = st || {};
+        const newly = [];
+        for (const d of this._unlockDefs()) {
+            if (!st[d.key] && pros >= d.need) {
+                st[d.key] = 1;
+                if (!firstRun) newly.push(d);
+            }
+        }
+        try { localStorage.setItem(stKey, JSON.stringify(st)); } catch (e) {}
+        this._unlockCache = st;
+        this._updateTabLocks();
+        if (newly.length) {
+            this.bgm?.sfx?.('coin');
+            this._showCenterNotification({
+                icon: '🎉',
+                title: t('新功能解鎖!'),
+                name: newly.map(d => `${d.icon} ${d.label}`).join('、'),
+                desc: t('小鎮的發展開啟了新的可能!'),
+                autoDismiss: 6000,
+            });
+        }
+    }
+
+    _updateTabLocks() {
+        for (const d of this._unlockDefs()) {
+            const locked = this._isTabLocked(d.key);
+            document.querySelectorAll(`[data-tab="${d.key}"], [data-kairo-tab="${d.key}"], [data-action="mobile-group-tab"][data-val="${d.key}"]`)
+                .forEach(el => el.classList.toggle('tab-locked', locked));
+        }
+    }
+
+    _lockedAlert(key) {
+        const def = this._unlockDefs().find(d => d.key === key);
+        if (def) this._gameAlert(`${def.icon}「${def.label}」${t('將在繁榮度達到')} ${def.need} ${t('時解鎖!先和村民打好關係、完成任務吧。')}`, '🔒');
     }
 
     // =====================================================
@@ -2623,6 +2685,7 @@ class RimTownApp {
                     ? this._mobileTabGroups[btn.dataset.tab][0].key
                     : btn.dataset.tab;
 
+                if (this._isTabLocked(btn.dataset.tab)) { this._lockedAlert(btn.dataset.tab); return; }
                 if (isMobile) {
                     const currentMain = this._mobileSubToMain[this.activeTab] || this.activeTab;
                     if (currentMain === btn.dataset.tab && sidebar && !sidebar.classList.contains('mobile-collapsed')) {
@@ -2793,6 +2856,9 @@ class RimTownApp {
                 case 'open-gift': this._showGiftPicker(); break;
                 case 'give-gift': this._giveGift(val); break;
                 case 'show-leaderboard': this._showLeaderboard(); break;
+                case 'relmap-filter':
+                    if (this._relmapFilters) { this._relmapFilters[val] = !this._relmapFilters[val]; this.renderSidebar(); }
+                    break;
                 case 'show-archives': this.showChatArchives(); break;
                 case 'manual-archive': this.manualArchiveChat(); break;
                 case 'back-to-chat': this.activeTab = 'chat'; this.renderSidebar(); break;
@@ -2826,6 +2892,7 @@ class RimTownApp {
                 case 'player-flirt': this._playerFlirt(val); break;
                 // Mobile group sub-tab switching
                 case 'mobile-group-tab':
+                    if (this._isTabLocked(val)) { this._lockedAlert(val); break; }
                     this.activeTab = val;
                     if (this._updateTabHighlight) this._updateTabHighlight(val);
                     this.renderSidebar();
@@ -3856,6 +3923,7 @@ class RimTownApp {
     }
 
     _openKairoTab(tab) {
+        if (this._isTabLocked(tab)) { this._lockedAlert(tab); return; }
         this.bgm?.sfx?.('click');
         document.getElementById('kairo-menu')?.classList.add('hidden');
         this._kairoCardOpen = true;
@@ -3989,6 +4057,11 @@ class RimTownApp {
         this._updateAgentEmotes();
         this._updateDramaTicker();
         this._updateKairoStatus();
+        const nowU = Date.now();
+        if (!this._unlockCheckAt || nowU - this._unlockCheckAt > 1500) {
+            this._unlockCheckAt = nowU;
+            this._checkUnlocks();
+        }
     }
 
     // 底部狀態帶:🏆繁榮 💰銀幣 🍞食物 👥人口(每秒更新)
@@ -4172,18 +4245,48 @@ class RimTownApp {
     // =====================================================
     renderRelationMap(container) {
         if (!this.state) return;
+        if (!this._relmapFilters) this._relmapFilters = { love: true, crush: true, foe: true, friend: false };
+        const f = this._relmapFilters;
+        const chip = (k, icon, label, color) =>
+            `<button data-action="relmap-filter" data-val="${k}" style="padding:3px 10px;border-radius:12px;font-size:0.7rem;border:1px solid ${color};background:${f[k] ? color : 'transparent'};color:${f[k] ? '#0b1020' : color};font-weight:700">${icon}${label}</button>`;
         let html = this._renderMobileGroupTabs();
         html += `<div class="econ-section"><h3>💞 ${t('全鎮關係網')}</h3>
-            <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:6px">
-                <span style="color:#ff6b9d">━ ${t('戀愛/婚姻')}</span>　
-                <span style="color:#ff9ec6">┅ ${t('單戀')}</span>　
-                <span style="color:#5cc46a">━ ${t('摯友')}</span>　
-                <span style="color:#e05555">━ ${t('敵對')}</span>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+                ${chip('love', '💕', t('戀愛'), '#ff6b9d')}
+                ${chip('crush', '💘', t('單戀'), '#ff9ec6')}
+                ${chip('foe', '💢', t('敵對'), '#e05555')}
+                ${chip('friend', '💚', t('摯友'), '#5cc46a')}
             </div>
+            <div style="font-size:0.68rem;color:var(--text-secondary);margin-bottom:6px">${this._relmapFocus ? t('👤 個人視角:再點一次空白處返回全鎮') : t('💡 點擊任何人,只看他的關係')}</div>
             <canvas id="relmap-canvas" style="width:100%;border:1px solid var(--border);border-radius:10px;background:#0d1426"></canvas>
+            <div id="relmap-gossip" style="margin-top:8px"></div>
         </div>`;
         container.innerHTML = html;
-        requestAnimationFrame(() => this._drawRelationMap());
+        requestAnimationFrame(() => { this._drawRelationMap(); this._renderGossipDigest(); });
+    }
+
+    // 收集有戲劇性的關係邊(給圖與八卦摘要共用)
+    _relmapEdges() {
+        const npcs = Object.entries(this.state.agents);
+        const edges = [];
+        const seen = new Set();
+        for (const [id, a] of npcs) {
+            for (const r of Object.values(a.relationships || {})) {
+                const tid = r.target_id;
+                if (!this.state.agents[tid]) continue;
+                const key = id < tid ? `${id}|${tid}` : `${tid}|${id}`;
+                if (r.status === 'married' || r.status === 'dating') {
+                    if (!seen.has('L' + key)) { seen.add('L' + key); edges.push({ type: 'love', a: id, b: tid, married: r.status === 'married', cheating: r.is_cheating }); }
+                } else if ((r.romantic_interest || 0) > 55 && !r.status) {
+                    edges.push({ type: 'crush', a: id, b: tid }); // 單戀有方向,各自畫
+                } else if ((r.affinity || 0) < -55) {
+                    if (!seen.has('F' + key)) { seen.add('F' + key); edges.push({ type: 'foe', a: id, b: tid }); }
+                } else if ((r.affinity || 0) > 70) {
+                    if (!seen.has('R' + key)) { seen.add('R' + key); edges.push({ type: 'friend', a: id, b: tid }); }
+                }
+            }
+        }
+        return edges;
     }
 
     _drawRelationMap() {
@@ -4197,64 +4300,110 @@ class RimTownApp {
         canvas.style.height = H + 'px';
         const ctx = canvas.getContext('2d');
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        // 圓形佈局
         const cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2 - 34;
         const posMap = {};
         npcs.forEach(([id], i) => {
             const ang = (i / npcs.length) * Math.PI * 2 - Math.PI / 2;
             posMap[id] = { x: cx + R * Math.cos(ang), y: cy + R * Math.sin(ang) };
         });
-        // 邊(避免重複:只畫 id 較小 → 較大,單戀除外)
-        const drawn = new Set();
-        for (const [id, a] of npcs) {
-            for (const r of Object.values(a.relationships || {})) {
-                const tid = r.target_id;
-                if (!posMap[tid]) continue;
-                const p1 = posMap[id], p2 = posMap[tid];
-                const key = id < tid ? `${id}|${tid}` : `${tid}|${id}`;
-                let color = null, width = 1, dash = null;
-                if (r.status === 'married') { color = '#ff6b9d'; width = 2.5; }
-                else if (r.status === 'dating') { color = '#ff6b9d'; width = 2; }
-                else if ((r.romantic_interest || 0) > 50 && !r.status) { color = '#ff9ec6'; width = 1.5; dash = [4, 3]; }
-                else if ((r.affinity || 0) > 60) { color = '#5cc46a'; width = 1.2; }
-                else if ((r.affinity || 0) < -55) { color = '#e05555'; width = 1.5; }
-                if (!color) continue;
-                if (!dash && drawn.has(key)) continue; // 雙向關係只畫一次;單戀(虛線)可各自畫
-                drawn.add(key);
-                ctx.strokeStyle = color;
-                ctx.lineWidth = width;
-                ctx.setLineDash(dash || []);
-                ctx.beginPath();
-                ctx.moveTo(p1.x, p1.y);
-                ctx.lineTo(p2.x, p2.y);
-                ctx.stroke();
-                if (r.is_cheating) { // 出軌:線中央畫 🖤
-                    ctx.setLineDash([]);
-                    ctx.font = '10px serif'; ctx.textAlign = 'center';
-                    ctx.fillText('🖤', (p1.x + p2.x) / 2, (p1.y + p2.y) / 2 + 3);
-                }
-            }
+        this._relmapPos = posMap;
+        this._relmapCanvasSize = { W, H };
+        const f = this._relmapFilters;
+        const focus = this._relmapFocus;
+        const edges = this._relmapEdges().filter(e => f[e.type] && (!focus || e.a === focus || e.b === focus));
+        const touched = new Set();
+        edges.forEach(e => { touched.add(e.a); touched.add(e.b); });
+        // 邊
+        for (const e of edges) {
+            const p1 = posMap[e.a], p2 = posMap[e.b];
+            if (!p1 || !p2) continue;
+            const style = {
+                love:   { color: '#ff6b9d', width: e.married ? 2.6 : 2, dash: [] },
+                crush:  { color: '#ff9ec6', width: 1.4, dash: [4, 3] },
+                foe:    { color: '#e05555', width: 1.6, dash: [] },
+                friend: { color: 'rgba(92,196,106,0.5)', width: 1, dash: [] },
+            }[e.type];
+            ctx.strokeStyle = style.color;
+            ctx.lineWidth = style.width;
+            ctx.setLineDash(style.dash);
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+            const mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
+            ctx.setLineDash([]);
+            ctx.font = '10px serif'; ctx.textAlign = 'center';
+            if (e.type === 'love') ctx.fillText(e.married ? '💍' : '💕', mx, my + 3);
+            if (e.cheating) ctx.fillText('🖤', mx + 10, my + 3);
+            if (e.type === 'foe') ctx.fillText('💢', mx, my + 3);
         }
         ctx.setLineDash([]);
-        // 節點
+        // 節點(焦點模式:無關的人變暗)
         for (const [id, a] of npcs) {
             const p = posMap[id];
             const isP = id === 'player';
-            ctx.fillStyle = isP ? '#ffd700' : '#3a5a94';
+            const dim = focus ? (id !== focus && !touched.has(id)) : false;
+            ctx.globalAlpha = dim ? 0.22 : 1;
+            ctx.fillStyle = id === focus ? '#ff6b9d' : isP ? '#ffd700' : '#3a5a94';
             ctx.beginPath();
-            ctx.arc(p.x, p.y, isP ? 7 : 6, 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, id === focus ? 8 : isP ? 7 : 6, 0, Math.PI * 2);
             ctx.fill();
             ctx.strokeStyle = 'rgba(255,255,255,0.5)';
             ctx.lineWidth = 1;
             ctx.stroke();
-            ctx.fillStyle = isP ? '#ffd700' : '#dde6f5';
-            ctx.font = `${isP ? 'bold ' : ''}10px sans-serif`;
+            ctx.fillStyle = id === focus ? '#ff9ec6' : isP ? '#ffd700' : '#dde6f5';
+            ctx.font = `${isP || id === focus ? 'bold ' : ''}10px sans-serif`;
             ctx.textAlign = 'center';
-            // 名字放在圓外側
             const dx = p.x - cx, dy = p.y - cy;
             const len = Math.hypot(dx, dy) || 1;
             ctx.fillText(a.name || id, p.x + (dx / len) * 16, p.y + (dy / len) * 16 + 3);
+            ctx.globalAlpha = 1;
         }
+        // 點擊:選人進入個人視角/點空白返回
+        if (!canvas._relmapBound) {
+            canvas._relmapBound = true;
+            canvas.addEventListener('click', (ev) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = ev.clientX - rect.left, y = ev.clientY - rect.top;
+                let hit = null;
+                for (const [id, p] of Object.entries(this._relmapPos || {})) {
+                    if (Math.hypot(p.x - x, p.y - y) < 16) { hit = id; break; }
+                }
+                this._relmapFocus = hit === this._relmapFocus ? null : hit;
+                this.bgm?.sfx?.('click');
+                this.renderSidebar();
+            });
+        }
+    }
+
+    // 八卦頭條:把最有戲的關係用文字講出來
+    _renderGossipDigest() {
+        const el = document.getElementById('relmap-gossip');
+        if (!el || !this.state?.agents) return;
+        const name = id => this.state.agents[id]?.name || id;
+        const edges = this._relmapEdges();
+        const lines = [];
+        const loves = edges.filter(e => e.type === 'love');
+        loves.forEach(e => {
+            lines.push(`${e.married ? '💍' : '💕'} ${name(e.a)} ${t('和')} ${name(e.b)} ${e.married ? t('是夫妻') : t('正在交往')}${e.cheating ? ` 🖤<span style="color:#ff9ec6">${t('(有人偷偷出軌...)')}</span>` : ''}`);
+        });
+        // 三角關係:C 單戀著已有伴侶的人
+        const inCouple = new Set(loves.flatMap(e => [e.a, e.b]));
+        edges.filter(e => e.type === 'crush' && inCouple.has(e.b)).slice(0, 3).forEach(e => {
+            lines.push(`💔 ${name(e.a)} ${t('暗戀著名花有主的')} ${name(e.b)}${t('——三角關係醞釀中!')}`);
+        });
+        // 互相單戀(即將成真?)
+        const crushSet = new Set(edges.filter(e => e.type === 'crush').map(e => `${e.a}|${e.b}`));
+        edges.filter(e => e.type === 'crush' && crushSet.has(`${e.b}|${e.a}`) && e.a < e.b).slice(0, 3).forEach(e => {
+            lines.push(`💘 ${name(e.a)} ${t('和')} ${name(e.b)} ${t('互有好感,就差一層窗戶紙!')}`);
+        });
+        edges.filter(e => e.type === 'foe').slice(0, 3).forEach(e => {
+            lines.push(`💢 ${name(e.a)} ${t('和')} ${name(e.b)} ${t('是出了名的死對頭')}`);
+        });
+        el.innerHTML = lines.length
+            ? `<div style="font-size:0.72rem;color:var(--accent);font-weight:700;margin-bottom:4px">📰 ${t('本鎮八卦頭條')}</div>` +
+              lines.slice(0, 8).map(l => `<div style="font-size:0.74rem;padding:3px 0;color:#ffd7e6">${l}</div>`).join('')
+            : `<div style="font-size:0.72rem;color:var(--text-secondary)">${t('鎮上還很平靜...讓村民多相處幾天,八卦自然就來了。')}</div>`;
     }
 
     // 行動版群組子分頁列(關係圖共用居民群組)

@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 4.6.0
+ * Version: 4.7.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '4.6.0');
+define('RIMTOWN_VERSION', '4.7.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1182,6 +1182,14 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '4.7.0',
+            'date'    => '2026-07-15',
+            'changes' => array(
+                '系統逐步解鎖（開羅式）：新手只看到居民/聊天/任務，經濟(繁榮12)→成就(20)→事件+關係網(28)→產業(38)隨發展開啟，解鎖時有慶祝動畫；老玩家已達標的自動開通',
+                '關係網大改版：預設只顯示戀愛/單戀/敵對（摯友線可切換），點任何人進入個人視角，新增「本鎮八卦頭條」文字摘要（夫妻/三角關係/互相暗戀/死對頭一目瞭然）',
+            ),
+        ),
         array(
             'version' => '4.6.0',
             'date'    => '2026-07-15',
