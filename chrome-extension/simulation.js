@@ -4661,6 +4661,7 @@ class World {
         // Economy
         this.stockpile = new Stockpile();
         this.buildings = new BuildingManager();
+        this.decorations = this.decorations || []; // v4.8.0 玩家擺放的裝飾 [{type,x,y}]
         this.trade = new TradeManager();
         this.research = new ResearchManager();
         this.workOrders = new WorkOrderManager();
@@ -4811,6 +4812,7 @@ class World {
         this.gossipNetwork = new GossipNetwork();
         this.stockpile = new Stockpile();
         this.buildings = new BuildingManager();
+        this.decorations = this.decorations || []; // v4.8.0 玩家擺放的裝飾 [{type,x,y}]
         this.trade = new TradeManager();
         this.research = new ResearchManager();
         this.workOrders = new WorkOrderManager();
@@ -5113,6 +5115,7 @@ class World {
             festivals: this.festivals.toDict(),
             lifecycle: this.lifecycle.toDict(),
             exploration: this.exploration.toDict(),
+            decorations: this.decorations || [],
             industry: this.industry.serialize(),
             farm: this.farm.serialize(),
             processing: this.processing.serialize(),
@@ -5231,6 +5234,7 @@ class World {
 
             // Buildings
             this.buildings = new BuildingManager();
+        this.decorations = this.decorations || []; // v4.8.0 玩家擺放的裝飾 [{type,x,y}]
             if (data.buildings) {
                 this.buildings.projects = data.buildings.projects || [];
                 this.buildings.completed = (data.buildings.completed || []).map(b => {
@@ -5344,6 +5348,7 @@ class World {
             if (this.multiEnding && data.multiEnding) this.multiEnding.loadFrom(data.multiEnding);
             // v4.0 systems
             if (data.dailyDecision) this.dailyDecision.loadFrom(data.dailyDecision);
+            this.decorations = Array.isArray(data.decorations) ? data.decorations : [];
             if (data.shop) this.shop.loadFrom(data.shop);
             if (data.eventChoice) this.eventChoice.loadFrom(data.eventChoice);
             if (data.npcHelp) this.npcHelp.loadFrom(data.npcHelp);

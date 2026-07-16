@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 4.7.0
+ * Version: 4.8.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '4.7.0');
+define('RIMTOWN_VERSION', '4.8.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1182,6 +1182,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '4.8.0',
+            'date'    => '2026-07-16',
+            'changes' => array(
+                '🌸 裝飾自由擺放：經濟頁新增「裝飾小鎮」目錄（花圃/長椅/路燈/雕像/小噴泉），選好後直接點地圖空地擺放，點已有裝飾可移除（退回一半材料）',
+                '裝飾提升小鎮美觀度（繁榮度加分，上限 +35），路燈與噴泉夜晚會發光，噴泉有動態水花',
+                '裝飾隨存檔保存，雲端/本機皆支援',
+            ),
+        ),
         array(
             'version' => '4.7.0',
             'date'    => '2026-07-15',

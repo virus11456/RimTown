@@ -433,6 +433,11 @@ class PixelTileMap {
     }
 
     _handleTap(clientX, clientY) {
+        // v4.8.0 裝飾擺放模式:交給 app 處理原始地圖座標,回傳 true 表示已消費
+        if (this.onTapRaw) {
+            const m = this._screenToMap(clientX, clientY);
+            if (this.onTapRaw(m.x, m.y)) return;
+        }
         const { x: px, y: py } = this._screenToMap(clientX, clientY);
         // Check if an agent was tapped
         let closestAgent = null;
@@ -571,6 +576,57 @@ class PixelTileMap {
         }
     }
 
+    // v4.8.0 玩家裝飾(像素繪製,不進 grid、不擋路)
+    _drawDecorations(ctx) {
+        for (const d of (this.decorations || [])) {
+            const px = d.x * TILE, py = d.y * TILE;
+            switch (d.type) {
+                case 'flowerbed': {
+                    ctx.fillStyle = '#7a5a38'; ctx.fillRect(px + 1, py + 10, 14, 5);
+                    ctx.fillStyle = '#8d6a44'; ctx.fillRect(px + 1, py + 10, 14, 1);
+                    const cols = ['#e84080', '#f0a030', '#f8f8f8', '#b06bd8'];
+                    for (let i = 0; i < 4; i++) {
+                        ctx.fillStyle = cols[i];
+                        ctx.fillRect(px + 2 + i * 3, py + 6 + (i % 2) * 2, 2, 2);
+                        ctx.fillStyle = '#3f8f2e';
+                        ctx.fillRect(px + 2 + i * 3, py + 8 + (i % 2) * 2, 1, 2);
+                    }
+                    break;
+                }
+                case 'lamp': {
+                    ctx.fillStyle = '#3a3a44'; ctx.fillRect(px + 7, py + 4, 2, 11);
+                    ctx.fillStyle = '#2a2a32'; ctx.fillRect(px + 5, py + 14, 6, 2);
+                    ctx.fillStyle = '#ffd23e'; ctx.fillRect(px + 5, py + 1, 6, 4);
+                    ctx.fillStyle = '#3a3a44'; ctx.fillRect(px + 5, py, 6, 1); ctx.fillRect(px + 5, py + 5, 6, 1);
+                    break;
+                }
+                case 'bench': {
+                    ctx.fillStyle = '#8d6a44'; ctx.fillRect(px + 2, py + 7, 12, 3);
+                    ctx.fillStyle = '#7a5a38'; ctx.fillRect(px + 2, py + 4, 12, 2);
+                    ctx.fillStyle = '#5f4527'; ctx.fillRect(px + 3, py + 10, 2, 4); ctx.fillRect(px + 11, py + 10, 2, 4);
+                    break;
+                }
+                case 'statue': {
+                    ctx.fillStyle = '#8a9098'; ctx.fillRect(px + 4, py + 11, 8, 4);
+                    ctx.fillStyle = '#a8b0b8'; ctx.fillRect(px + 6, py + 3, 4, 8);
+                    ctx.fillStyle = '#c0c8d0'; ctx.fillRect(px + 5, py + 1, 6, 3);
+                    ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(px + 4, py + 14, 8, 1);
+                    break;
+                }
+                case 'fountain': {
+                    ctx.fillStyle = '#9aa2ac'; ctx.fillRect(px + 1, py + 9, 14, 6);
+                    ctx.fillStyle = '#38a8e0'; ctx.fillRect(px + 3, py + 10, 10, 4);
+                    ctx.fillStyle = '#9aa2ac'; ctx.fillRect(px + 6, py + 4, 4, 6);
+                    const spl = (this.animFrame >> 3) % 3;
+                    ctx.fillStyle = 'rgba(160,220,255,0.9)';
+                    ctx.fillRect(px + 7, py + 1 + spl, 2, 3);
+                    ctx.fillRect(px + 4 + spl, py + 8, 1, 1); ctx.fillRect(px + 11 - spl, py + 8, 1, 1);
+                    break;
+                }
+            }
+        }
+    }
+
     // 夜間窗戶暖光(畫在日夜色調之後,光才不會被壓暗)
     _renderWindowGlow(ctx) {
         if (!this._windowTiles || !this._windowTiles.length) return;
@@ -586,6 +642,16 @@ class PixelTileMap {
             ctx.fillRect(px + 2, py + 3, 12, 10);
             ctx.fillStyle = `rgba(255,180,60,${(0.10 * n).toFixed(3)})`;
             ctx.fillRect(px - 4, py - 3, 24, 22);
+        }
+        // v4.8.0 玩家路燈夜間發光
+        for (const d of (this.decorations || [])) {
+            if (d.type !== 'lamp') continue;
+            const px = d.x * TILE, py = d.y * TILE;
+            const flick = 0.9 + 0.1 * Math.sin(this.animFrame / 15 + d.x * 5);
+            ctx.fillStyle = `rgba(255,220,110,${(0.55 * n * flick).toFixed(3)})`;
+            ctx.fillRect(px + 4, py, 8, 6);
+            ctx.fillStyle = `rgba(255,200,80,${(0.14 * n).toFixed(3)})`;
+            ctx.fillRect(px - 8, py - 8, 32, 30);
         }
     }
 
@@ -3324,6 +3390,7 @@ class PixelTileMap {
         if (!this._staticLayer || this._staticSrc !== this.grid) this._buildStaticLayer();
         ctx.drawImage(this._staticLayer, 0, 0);
         this._drawWaterAnim(ctx);
+        this._drawDecorations(ctx);
 
         // Water animation: shimmer effect
         if (this.animFrame % 30 === 0) {

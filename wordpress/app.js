@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v4.7.0
-const RIMTOWN_APP_VERSION = '4.7.0';
+// RimTown - Frontend App (WordPress Plugin) v4.8.0
+const RIMTOWN_APP_VERSION = '4.8.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -678,6 +678,91 @@ class RimTownApp {
     _lockedAlert(key) {
         const def = this._unlockDefs().find(d => d.key === key);
         if (def) this._gameAlert(`${def.icon}「${def.label}」${t('將在繁榮度達到')} ${def.need} ${t('時解鎖!先和村民打好關係、完成任務吧。')}`, '🔒');
+    }
+
+    // =====================================================
+    // v4.8.0 裝飾自由擺放
+    // =====================================================
+    _decorDefs() {
+        return [
+            { type: 'flowerbed', icon: '🌸', name: t('花圃'),  beauty: 2, cost: { silver: 15 } },
+            { type: 'bench',     icon: '🪑', name: t('長椅'),  beauty: 2, cost: { silver: 15, wood: 10 } },
+            { type: 'lamp',      icon: '🏮', name: t('路燈'),  beauty: 3, cost: { silver: 20, metal: 5 } },
+            { type: 'statue',    icon: '🗿', name: t('雕像'),  beauty: 6, cost: { silver: 60, stone: 20 } },
+            { type: 'fountain',  icon: '⛲', name: t('小噴泉'), beauty: 8, cost: { silver: 80, stone: 30 } },
+        ];
+    }
+
+    _enterDecorMode(type) {
+        const def = this._decorDefs().find(d => d.type === type);
+        if (!def) return;
+        this._decorMode = def;
+        this.bgm?.sfx?.('open');
+        // 手機:收合面板讓地圖全開
+        if (window.innerWidth <= 768) {
+            document.getElementById('kairo-card')?.classList.add('hidden');
+            this._kairoCardOpen = false;
+        }
+        // 提示橫幅
+        let hint = document.getElementById('decor-hint');
+        if (!hint) {
+            hint = document.createElement('div');
+            hint.id = 'decor-hint';
+            hint.className = 'drama-ticker'; // 重用樣式
+            hint.style.pointerEvents = 'auto';
+            hint.style.cursor = 'pointer';
+            document.querySelector('.map-panel')?.appendChild(hint);
+            hint.addEventListener('click', () => this._exitDecorMode());
+        }
+        hint.textContent = `${def.icon} ${t('點地圖空地擺放')}${def.name}${t('|點裝飾移除|點這裡結束')}`;
+        hint.classList.remove('hidden');
+        // 掛地圖 raw tap
+        this.tileMap.onTapRaw = (mx, my) => this._decorTap(mx, my);
+    }
+
+    _exitDecorMode() {
+        this._decorMode = null;
+        if (this.tileMap) this.tileMap.onTapRaw = null;
+        document.getElementById('decor-hint')?.classList.add('hidden');
+        this.bgm?.sfx?.('close');
+    }
+
+    _decorTap(mx, my) {
+        if (!this._decorMode) return false;
+        const tx = Math.floor(mx / 16), ty = Math.floor(my / 16);
+        const decos = this.world.decorations = this.world.decorations || [];
+        // 點到現有裝飾 → 移除退款一半
+        const hitIdx = decos.findIndex(d => Math.abs(d.x - tx) <= 0 && Math.abs(d.y - ty) <= 0);
+        if (hitIdx >= 0) {
+            const old = decos.splice(hitIdx, 1)[0];
+            const def = this._decorDefs().find(d => d.type === old.type);
+            if (def) for (const [k, v] of Object.entries(def.cost)) {
+                this.world.stockpile.add(k, Math.floor(v / 2), this.world.tickCount, t('移除裝飾退款'));
+            }
+            this.tileMap.decorations = decos;
+            this.bgm?.sfx?.('close');
+            return true;
+        }
+        const def = this._decorMode;
+        // 位置檢查:可行走地面、非水、無重疊
+        if (!this.tileMap._isWalkableTile(tx * 16 + 8, ty * 16 + 8)) return true;
+        const tile = this.tileMap.grid?.[ty]?.[tx];
+        if (tile === 10 || tile === 11) return true; // WATER
+        // 資源檢查與扣款
+        const afford = Object.entries(def.cost).every(([k, v]) => (this.world.stockpile.get(k) || 0) >= v);
+        if (!afford) {
+            this._gameAlert(t('材料不足,無法再擺放!'), '🌸');
+            this._exitDecorMode();
+            return true;
+        }
+        for (const [k, v] of Object.entries(def.cost)) {
+            this.world.stockpile.consume(k, v, this.world.tickCount, `${t('擺放')}${def.name}`);
+        }
+        decos.push({ type: def.type, x: tx, y: ty });
+        this.tileMap.decorations = decos;
+        this.world.logMessage('building', `${def.icon} ${t('鎮長在小鎮擺放了')}${def.name}(${t('美觀')}+${def.beauty})`);
+        this.bgm?.sfx?.('coin');
+        return true;
     }
 
     // =====================================================
@@ -2419,6 +2504,7 @@ class RimTownApp {
                 }
                 const agents = this.state?.agents || {};
                 const player = agents['player'];
+                this.tileMap.decorations = this.world?.decorations || [];
                 this.tileMap.updateAgents(agents, this.state.locations?.locations || {}, this.chatTarget);
                 // Pass time to tilemap for day/night cycle
                 if (this.state.clock) {
@@ -2856,6 +2942,7 @@ class RimTownApp {
                 case 'open-gift': this._showGiftPicker(); break;
                 case 'give-gift': this._giveGift(val); break;
                 case 'show-leaderboard': this._showLeaderboard(); break;
+                case 'decor-place': this._enterDecorMode(val); break;
                 case 'relmap-filter':
                     if (this._relmapFilters) { this._relmapFilters[val] = !this._relmapFilters[val]; this.renderSidebar(); }
                     break;
@@ -5812,6 +5899,22 @@ class RimTownApp {
                 html += '</div>';
             }
             html += '</div>';
+            // v4.8.0 裝飾擺放目錄
+            html += `<div class="econ-section"><h3>🌸 ${t('裝飾小鎮')}</h3>
+                <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:6px">${t('選一樣裝飾,然後點地圖上的空地擺放。裝飾提升小鎮美觀度,路燈晚上會亮!')}</div>`;
+            const decoCount = (this.world?.decorations || []).length;
+            html += `<div style="font-size:0.7rem;color:var(--accent);margin-bottom:6px">${t('已擺放')}:${decoCount} ${t('件')}</div>`;
+            for (const d of this._decorDefs()) {
+                const costStr = Object.entries(d.cost).map(([k, v]) => `${{silver:'💰',wood:'🪵',stone:'🪨',metal:'⚙️'}[k] || k}${v}`).join(' ');
+                const afford = Object.entries(d.cost).every(([k, v]) => (this.world?.stockpile?.get(k) || 0) >= v);
+                html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;margin-bottom:5px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px">
+                    <span style="font-size:0.82rem">${d.icon} ${d.name} <span style="font-size:0.68rem;color:var(--text-secondary)">${t('美觀')}+${d.beauty}</span></span>
+                    <span style="display:flex;gap:8px;align-items:center">
+                        <span style="font-size:0.7rem;color:var(--text-secondary)">${costStr}</span>
+                        <button class="trade-btn" data-action="decor-place" data-val="${d.type}" ${afford ? '' : 'disabled style="opacity:0.4"'}>${t('擺放')}</button>
+                    </span></div>`;
+            }
+            html += `<div style="font-size:0.66rem;color:var(--text-secondary);margin-top:4px">${t('擺放模式中點到已有的裝飾 = 移除(退回一半材料)')}</div></div>`;
         } else if (this._economySubTab === 'factory') {
             // Factory (merged from old factory tab)
             const proc = this.state.processing || {};

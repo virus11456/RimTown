@@ -1194,6 +1194,24 @@ const I18N = (() => {
         '<p class="muted-text">雲端尚無城鎮存檔。</p>': '<p class="muted-text">No town saves in the cloud yet.</p>',
         '<div class="econ-section"><h3>💾 帳號與存檔</h3>': '<div class="econ-section"><h3>💾 Account & Saves</h3>',
 
+        // ── Decoration Placement (v4.8.0) ──
+        '花圃': 'Flower Bed',
+        '長椅': 'Bench',
+        '路燈': 'Street Lamp',
+        '雕像': 'Statue',
+        '小噴泉': 'Fountain',
+        '裝飾小鎮': 'Decorate the Town',
+        '選一樣裝飾,然後點地圖上的空地擺放。裝飾提升小鎮美觀度,路燈晚上會亮!': 'Pick a decoration, then tap an empty spot on the map to place it. Decorations boost town beauty — lamps glow at night!',
+        '已擺放': 'Placed',
+        '件': '',
+        '擺放': 'Place',
+        '點地圖空地擺放': 'Tap an empty spot to place ',
+        '|點裝飾移除|點這裡結束': ' | tap a decoration to remove | tap here to finish',
+        '移除裝飾退款': 'Decoration removal refund',
+        '材料不足,無法再擺放!': 'Not enough materials to place more!',
+        '鎮長在小鎮擺放了': 'The mayor placed a ',
+        '擺放模式中點到已有的裝飾 = 移除(退回一半材料)': 'In placement mode, tapping an existing decoration removes it (refunds half the materials)',
+
         // ── Daily Login Reward / Offline Progress (v4.5.0) ──
         '每日登入獎勵': 'Daily Login Reward',
         '新功能解鎖!': 'New Feature Unlocked!',

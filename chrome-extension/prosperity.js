@@ -208,6 +208,11 @@ class ProsperityEngine {
         ).length;
         score += Math.min(30, beautyBuildings * 10);
 
+        // v4.8.0 玩家擺放的裝飾 (0-35)
+        const decos = world.decorations || [];
+        const decoScore = decos.reduce((sum, d) => sum + ({ flowerbed: 2, bench: 2, lamp: 3, statue: 6, fountain: 8 }[d.type] || 2), 0);
+        score += Math.min(35, decoScore);
+
         // 小鎮等級基底分 (0-30)
         const townLevel = world.industry?.townLevel || 1;
         score += Math.min(30, townLevel * 4);
