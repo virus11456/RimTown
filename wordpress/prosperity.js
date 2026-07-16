@@ -212,6 +212,9 @@ class ProsperityEngine {
         const decos = world.decorations || [];
         const decoScore = decos.reduce((sum, d) => sum + ({ flowerbed: 2, bench: 2, lamp: 3, statue: 6, fountain: 8 }[d.type] || 2), 0);
         score += Math.min(35, decoScore);
+        // v4.9.0 相鄰組合加成:每組 +4,上限 +20
+        const comboCount = (typeof world.getActiveCombos === 'function') ? world.getActiveCombos().length : 0;
+        score += Math.min(20, comboCount * 4);
 
         // 小鎮等級基底分 (0-30)
         const townLevel = world.industry?.townLevel || 1;

@@ -1890,25 +1890,73 @@ class PixelTileMap {
         };
 
         for (const building of completedBuildings) {
-            const placement = BUILDING_PLACEMENTS[building.key];
-            if (!placement) continue;
-            const zone = this.buildingZones[placement.near] || this.natureZones[placement.near];
-            if (!zone) continue;
+            const key = building.buildingKey || building.key;
+            let bx, by;
+            if (Number.isFinite(building.siteX)) {
+                // v4.9.0 玩家選址的建築:畫在玩家挑的位置
+                bx = building.siteX * TILE;
+                by = building.siteY * TILE;
+            } else {
+                const placement = BUILDING_PLACEMENTS[key];
+                if (!placement) continue;
+                const zone = this.buildingZones[placement.near] || this.natureZones[placement.near];
+                if (!zone) continue;
+                bx = (zone.x + placement.offsetX) * TILE;
+                by = (zone.y + placement.offsetY) * TILE;
+            }
 
-            const bx = (zone.x + placement.offsetX) * TILE;
-            const by = (zone.y + placement.offsetY) * TILE;
-
-            this._drawBuildingIcon(ctx, building.key, bx, by);
+            if (Number.isFinite(building.siteX)) {
+                // 佔 2x2 地塊:先鋪石板底座,再放大 2 倍畫建築
+                ctx.fillStyle = '#b9b3a8'; ctx.fillRect(bx, by, TILE * 2, TILE * 2);
+                ctx.fillStyle = '#a49e93';
+                ctx.fillRect(bx, by, TILE * 2, 1); ctx.fillRect(bx, by, 1, TILE * 2);
+                ctx.save();
+                ctx.translate(bx, by);
+                ctx.scale(2, 2);
+                this._drawBuildingIcon(ctx, key, 0, 0);
+                ctx.restore();
+            } else {
+                this._drawBuildingIcon(ctx, key, bx, by);
+            }
 
             // Small label
+            const cx = Number.isFinite(building.siteX) ? bx + TILE : bx + 8;
             ctx.font = '7px monospace';
             ctx.textAlign = 'center';
             const label = building.name;
             const tw = ctx.measureText(label).width;
             ctx.fillStyle = 'rgba(0,0,0,0.7)';
-            ctx.fillRect(bx + 8 - tw/2 - 2, by - 4, tw + 4, 9);
+            ctx.fillRect(cx - tw/2 - 2, by - 4, tw + 4, 9);
             ctx.fillStyle = '#ffd700';
-            ctx.fillText(label, bx + 8, by + 3);
+            ctx.fillText(label, cx, by + 3);
+        }
+    }
+
+    // v4.9.0 施工中工地:土地+鷹架+進度條
+    _drawConstructionSites(ctx) {
+        for (const p of (this.constructionSites || [])) {
+            const x = p.siteX * TILE, y = p.siteY * TILE;
+            // 2x2 土地基底
+            ctx.fillStyle = '#9b7b52'; ctx.fillRect(x, y, TILE * 2, TILE * 2);
+            ctx.fillStyle = '#8a6a42';
+            for (let i = 0; i < 6; i++) ctx.fillRect(x + 3 + (i * 9) % 26, y + 4 + (i * 13) % 24, 3, 2);
+            // 鷹架(木架)
+            ctx.fillStyle = '#8B5A2B';
+            ctx.fillRect(x + 2, y + 2, 2, 26); ctx.fillRect(x + 28, y + 2, 2, 26);
+            ctx.fillRect(x + 2, y + 2, 28, 2); ctx.fillRect(x + 2, y + 14, 28, 2);
+            // 木材堆
+            ctx.fillStyle = '#A0522D'; ctx.fillRect(x + 8, y + 22, 12, 3);
+            ctx.fillStyle = '#8B4513'; ctx.fillRect(x + 8, y + 25, 12, 3);
+            // 進度條
+            const prog = Math.min(1, (p.workDone || 0) / (p.workRequired || 1));
+            ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(x, y - 6, TILE * 2, 4);
+            ctx.fillStyle = '#4caf50'; ctx.fillRect(x + 1, y - 5, (TILE * 2 - 2) * prog, 2);
+            // 標籤
+            ctx.font = '7px monospace'; ctx.textAlign = 'center';
+            const label = `🚧${p.name}`;
+            const tw = ctx.measureText(label).width;
+            ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(x + TILE - tw / 2 - 2, y - 16, tw + 4, 9);
+            ctx.fillStyle = '#ffcc66'; ctx.fillText(label, x + TILE, y - 9);
         }
     }
 
@@ -3408,6 +3456,11 @@ class PixelTileMap {
         // Draw completed buildings on the map
         if (completedBuildings && completedBuildings.length) {
             this._drawCompletedBuildings(ctx, completedBuildings);
+        }
+
+        // v4.9.0 施工中的工地
+        if (this.constructionSites?.length) {
+            this._drawConstructionSites(ctx);
         }
 
         // Draw farm plots overlay near farm location

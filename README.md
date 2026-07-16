@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v4.8.0.zip` from Releases
+1. Download `rimtown-v4.9.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,14 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v4.9.0 (2026-07-16)
+
+**建築選址制 + 開羅式相鄰組合 + AI 深度整合**
+
+- 蓋新建築由玩家點地圖挑位置(2×2 空地),工地有鷹架與進度條,完工蓋在你選的地點
+- 相鄰組合:相配的建築+裝飾放在附近(4格內)觸發 8 種組合(浪漫街角/市集人氣/銅牆鐵壁...),加美觀與繁榮,配方自己摸索
+- AI 整合:建築完工/組合發現時,相關職業村民用 AI 傳訊發表感想;修復完工建築圖示從未顯示的 bug
 
 ### v4.8.0 (2026-07-16)
 

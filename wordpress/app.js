@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v4.8.0
-const RIMTOWN_APP_VERSION = '4.8.0';
+// RimTown - Frontend App (WordPress Plugin) v4.9.0
+const RIMTOWN_APP_VERSION = '4.9.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -696,6 +696,7 @@ class RimTownApp {
     _enterDecorMode(type) {
         const def = this._decorDefs().find(d => d.type === type);
         if (!def) return;
+        this._exitSiteMode?.();
         this._decorMode = def;
         this.bgm?.sfx?.('open');
         // 手機:收合面板讓地圖全開
@@ -712,7 +713,7 @@ class RimTownApp {
             hint.style.pointerEvents = 'auto';
             hint.style.cursor = 'pointer';
             document.querySelector('.map-panel')?.appendChild(hint);
-            hint.addEventListener('click', () => this._exitDecorMode());
+            hint.addEventListener('click', () => { this._exitDecorMode(); this._exitSiteMode(); });
         }
         hint.textContent = `${def.icon} ${t('點地圖空地擺放')}${def.name}${t('|點裝飾移除|點這裡結束')}`;
         hint.classList.remove('hidden');
@@ -762,7 +763,90 @@ class RimTownApp {
         this.tileMap.decorations = decos;
         this.world.logMessage('building', `${def.icon} ${t('鎮長在小鎮擺放了')}${def.name}(${t('美觀')}+${def.beauty})`);
         this.bgm?.sfx?.('coin');
+        this.world.checkCombos?.(); // v4.9.0 擺放後偵測相鄰組合
         return true;
+    }
+
+    // =====================================================
+    // v4.9.0 建築選址(玩家點地圖挑新建築位置,佔 2x2 地塊)
+    _enterSiteMode(key) {
+        const tmpl = (typeof BUILDING_TEMPLATES !== 'undefined') ? BUILDING_TEMPLATES[key] : null;
+        if (!tmpl || !this.tileMap) return;
+        this._exitDecorMode();
+        this._siteMode = key;
+        let hint = document.getElementById('decor-hint');
+        if (!hint) {
+            hint = document.createElement('div');
+            hint.id = 'decor-hint';
+            hint.className = 'drama-ticker';
+            hint.style.pointerEvents = 'auto';
+            hint.style.cursor = 'pointer';
+            document.querySelector('.map-panel')?.appendChild(hint);
+            hint.addEventListener('click', () => { this._exitDecorMode(); this._exitSiteMode(); });
+        }
+        hint.textContent = `🏗️ ${t('點地圖空地選擇')}【${tmpl.name}】${t('的位置(需2×2空地)|點這裡取消')}`;
+        hint.classList.remove('hidden');
+        this.tileMap.onTapRaw = (mx, my) => this._siteTap(mx, my);
+        this.bgm?.sfx?.('open');
+        // 手機版:收起卡片讓玩家看得到地圖
+        if (window.innerWidth <= 768) {
+            document.getElementById('kairo-card')?.classList.add('hidden');
+            this._kairoCardOpen = false;
+        }
+    }
+
+    _exitSiteMode() {
+        if (!this._siteMode) return;
+        this._siteMode = null;
+        if (this.tileMap) this.tileMap.onTapRaw = null;
+        document.getElementById('decor-hint')?.classList.add('hidden');
+    }
+
+    _siteTap(mx, my) {
+        if (!this._siteMode) return false;
+        const tx = Math.floor(mx / 16), ty = Math.floor(my / 16);
+        // 2x2 每格都要是可行走的空地、非水
+        for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+            const cx = tx + dx, cy = ty + dy;
+            const tile = this.tileMap.grid?.[cy]?.[cx];
+            if (tile === undefined || tile === 10 || tile === 11 || !this.tileMap._isWalkableTile(cx * 16 + 8, cy * 16 + 8)) {
+                this._flashSiteHint(t('這裡放不下,需要 2×2 的空地!'));
+                return true;
+            }
+        }
+        // 不可與裝飾、其他工地/已選址建築重疊
+        const blocked = new Set();
+        for (const d of (this.world.decorations || [])) blocked.add(`${d.x},${d.y}`);
+        const sited = [...this.world.buildings.projects, ...this.world.buildings.completed].filter(b => Number.isFinite(b.siteX));
+        for (const b of sited) for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) blocked.add(`${b.siteX + dx},${b.siteY + dy}`);
+        for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+            if (blocked.has(`${tx + dx},${ty + dy}`)) {
+                this._flashSiteHint(t('這裡已經有東西了,換個地方吧!'));
+                return true;
+            }
+        }
+        const p = this.world.buildings.startProject(this._siteMode, this.world, { x: tx, y: ty });
+        if (!p) {
+            this._gameAlert(t('資源不足,無法開工!'), '🏗️');
+            this._exitSiteMode();
+            return true;
+        }
+        this.bgm?.sfx?.('coin');
+        this._gameAlert(`🚧 ${p.name}${t('動工了!工匠們會每天到工地施工')}`, '🏗️');
+        this._exitSiteMode();
+        this.state = this.world.getState();
+        this.renderSidebar();
+        return true;
+    }
+
+    _flashSiteHint(msg) {
+        const hint = document.getElementById('decor-hint');
+        if (!hint) return;
+        const orig = hint.textContent;
+        hint.textContent = `❌ ${msg}`;
+        this.bgm?.sfx?.('close');
+        clearTimeout(this._siteHintTimer);
+        this._siteHintTimer = setTimeout(() => { if (this._siteMode) hint.textContent = orig; }, 1500);
     }
 
     // =====================================================
@@ -2505,6 +2589,19 @@ class RimTownApp {
                 const agents = this.state?.agents || {};
                 const player = agents['player'];
                 this.tileMap.decorations = this.world?.decorations || [];
+                this.tileMap.constructionSites = (this.world?.buildings?.projects || []).filter(p => Number.isFinite(p.siteX));
+                // v4.9.0 相鄰組合發現慶祝(建築完工在 dailyUpdate 內觸發,這裡輪詢顯示)
+                if (this.world?._pendingComboNotifs?.length) {
+                    const c = this.world._pendingComboNotifs.shift();
+                    this.bgm?.sfx?.('coin');
+                    this._showCenterNotification({
+                        icon: c.icon,
+                        title: `✨ ${t('發現相鄰組合!')}`,
+                        name: `${c.icon} ${c.name}`,
+                        desc: `${c.desc} — ${t('小鎮美觀與繁榮加成,全鎮心情大好!把相配的東西放在一起,還有更多組合等你發現')}`,
+                        autoDismiss: 7000,
+                    });
+                }
                 this.tileMap.updateAgents(agents, this.state.locations?.locations || {}, this.chatTarget);
                 // Pass time to tilemap for day/night cycle
                 if (this.state.clock) {
@@ -5915,6 +6012,19 @@ class RimTownApp {
                     </span></div>`;
             }
             html += `<div style="font-size:0.66rem;color:var(--text-secondary);margin-top:4px">${t('擺放模式中點到已有的裝飾 = 移除(退回一半材料)')}</div></div>`;
+            // v4.9.0 相鄰組合圖鑑(開羅式:未發現的顯示 ???)
+            if (typeof COMBO_DEFS !== 'undefined') {
+                const found = new Set(this.world?.combosFound || []);
+                html += `<div class="econ-section"><h3>✨ ${t('相鄰組合')} (${found.size}/${COMBO_DEFS.length})</h3>
+                    <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:6px">${t('把相配的建築和裝飾放在附近(4格內)會觸發組合,提升美觀與繁榮!組合配方要自己摸索')}</div>`;
+                for (const c of COMBO_DEFS) {
+                    const isFound = found.has(c.id);
+                    html += `<div style="display:flex;justify-content:space-between;padding:5px 10px;margin-bottom:4px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:0.75rem;${isFound ? '' : 'opacity:0.5'}">
+                        <span>${isFound ? c.icon + ' ' + c.name : '❓ ???'}</span>
+                        <span style="color:var(--text-secondary);font-size:0.68rem">${isFound ? c.desc : t('尚未發現')}</span></div>`;
+                }
+                html += '</div>';
+            }
         } else if (this._economySubTab === 'factory') {
             // Factory (merged from old factory tab)
             const proc = this.state.processing || {};
@@ -6008,9 +6118,8 @@ class RimTownApp {
     }
 
     startBuilding(key) {
-        this.world.buildings.startProject(key, this.world);
-        this.state = this.world.getState();
-        this.renderSidebar();
+        // v4.9.0 建築選址制:先讓玩家點地圖挑位置,再開工
+        this._enterSiteMode(key);
     }
 
     startBuildingUpgrade(buildingKey) {

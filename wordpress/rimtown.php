@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 4.8.0
+ * Version: 4.9.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '4.8.0');
+define('RIMTOWN_VERSION', '4.9.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1182,6 +1182,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '4.9.0',
+            'date'    => '2026-07-16',
+            'changes' => array(
+                '🏗️ 建築選址制：蓋新建築時由玩家點地圖挑位置（需 2×2 空地），工地有鷹架與施工進度條，完工後建築實際蓋在你選的地點',
+                '✨ 開羅式相鄰組合：把相配的建築和裝飾放在附近會觸發組合（浪漫街角、市集人氣、銅牆鐵壁等 8 種），提升美觀與繁榮，配方要自己摸索',
+                '🤖 AI 深度整合：建築完工、組合發現時，相關職業的村民會用 AI 傳訊息給你發表感想（鐵匠評鍛造坊、守衛評城牆…）',
+                '修復：完工建築的地圖圖示先前因欄位名稱不符從未顯示，現已修正',
+            ),
+        ),
         array(
             'version' => '4.8.0',
             'date'    => '2026-07-16',

@@ -1079,6 +1079,51 @@ ${t('- 直接寫訊息內容就好')}`;
         if (this.onNpcMessage) this.onNpcMessage(npc.agentId);
     }
 
+    // v4.9.0: 建築完工/組合發現時,挑一位相關 NPC 用 AI 對玩家發表評論
+    async sendEventComment(world, eventText, preferJobs = []) {
+        try {
+            const player = Object.values(world.agents).find(a => a.isPlayer);
+            if (!player) return;
+            const npcs = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead);
+            if (!npcs.length) return;
+            let pool = preferJobs.length ? npcs.filter(a => preferJobs.includes(a.job?.key)) : [];
+            if (!pool.length) pool = npcs;
+            const npc = pool[Math.floor(Math.random() * pool.length)];
+            let text = '';
+            if (this.llm && this.llm._canMakeRequest(false)) {
+                try {
+                    const pN = this._buildCharacterProfile(npc);
+                    const prompt = `${t('你正在扮演「')}${npc.name}${t('」——邊境鎮的居民。剛剛發生了一件事：')}${eventText}${t('。你想傳一則訊息給鎮長')}${player.name}${t('聊聊這件事。')}
+
+${t('【你是誰】')}
+${pN.name}${t('，')}${pN.age}${t('歲，')}${pN.job}${t('。性格：')}${pN.traits}${t('。')}
+
+${t('【規則】')}
+${t('- 繁體中文（台灣用語），1-2句就好，像傳LINE訊息那樣自然')}
+${t('- 從你的職業和性格出發評論這件事（開心、期待、或吐槽都行）')}
+${t('- 不要加任何前綴、名字標籤、引號')}`;
+                    const response = await this.llm.generate(prompt, 150, 0.9, false);
+                    if (response && response !== '__ERROR__' && response !== '__RATE_LIMITED__') {
+                        text = response.trim().replace(/^["「『]|["」』]$/g, '').trim();
+                        text = text.replace(new RegExp(`^${npc.name}[：:]\\s*`), '').trim();
+                    }
+                } catch (e) { console.error('[RimTown] sendEventComment LLM failed:', e); }
+            }
+            if (!text) {
+                const fallbacks = [
+                    `${eventText}${t('，太棒了吧！')}`,
+                    `${t('你看到了嗎？')}${eventText}${t('！鎮上越來越有樣子了')}`,
+                    `${eventText}${t('！鎮長真有眼光')}`,
+                ];
+                text = pickRandom(fallbacks);
+            }
+            player.chatHistory.push({ speaker: npc.name, target: player.name, text, time: world.clock.timeStr });
+            npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('跟')}${player.name}${t('聊到：')}${text}`, 3, [player.name]);
+            world.logMessage('player_chat', `${npc.name} → ${player.name}: ${text}`, npc.name, player.name);
+            if (this.onNpcMessage) this.onNpcMessage(npc.agentId);
+        } catch (e) { console.error('[RimTown] sendEventComment failed:', e); }
+    }
+
     _buildCharacterProfile(agent) {
         const traitLabels = agent.personality.traits.map(t => TRAIT_POOL[t]?.label || t);
         const partner = agent.relationships.getPartner();
@@ -3146,6 +3191,18 @@ const BUILDING_UPGRADES = {
     },
 };
 
+// --- v4.9.0 開羅式相鄰組合(建築+裝飾放在一起觸發加成,玩家自行發現) ---
+const COMBO_DEFS = [
+    {id:'romantic_corner', icon:'💞', name:t('浪漫街角'), parts:['flowerbed','bench','lamp'], desc:t('花圃+長椅+路燈')},
+    {id:'plaza_oasis',     icon:'🌿', name:t('綠意廣場'), parts:['fountain','flowerbed'],     desc:t('小噴泉+花圃')},
+    {id:'statue_square',   icon:'🗿', name:t('雕像廣場'), parts:['statue','bench'],           desc:t('雕像+長椅')},
+    {id:'market_buzz',     icon:'🎪', name:t('市集人氣'), parts:['marketplace','lamp'],       desc:t('市集+路燈')},
+    {id:'tavern_night',    icon:'🍺', name:t('酒香夜色'), parts:['brewery','lamp'],           desc:t('釀酒坊+路燈')},
+    {id:'scholar_path',    icon:'📚', name:t('書香步道'), parts:['school','bench'],           desc:t('學堂+長椅')},
+    {id:'iron_bastion',    icon:'🛡️', name:t('銅牆鐵壁'), parts:['watchtower','town_walls'],  desc:t('瞭望塔+城牆')},
+    {id:'healing_garden',  icon:'🌼', name:t('靜心藥園'), parts:['garden','fountain'],        desc:t('藥草園+小噴泉')},
+];
+
 class BuildingManager {
     constructor() { this.projects=[]; this.completed=[]; this.activeEffects={}; this._counter=0; }
     getAvailable(world) {
@@ -3183,13 +3240,14 @@ class BuildingManager {
         world.logMessage('building',`${t('開始升級：')}${upg.name}${t('！')}`);
         return p;
     }
-    startProject(key, world) {
+    startProject(key, world, site) {
         const tmpl=BUILDING_TEMPLATES[key]; if(!tmpl) return null;
         const names=new Set([...this.completed,...this.projects].map(p=>p.name));
         if(names.has(tmpl.name)) return null;
         if(!world.stockpile.pay(tmpl.costs,world.tickCount,`Building: ${tmpl.name}`)) return null;
         this._counter++;
         const p={id:`build_${this._counter}`,name:tmpl.name,description:tmpl.description,costs:tmpl.costs,workRequired:tmpl.work,workDone:0,effects:tmpl.effects||{},status:'building',buildingKey:key};
+        if (site && Number.isFinite(site.x)) { p.siteX = site.x; p.siteY = site.y; }
         this.projects.push(p); world.logMessage('building',`${t('開始建造：')}${tmpl.name}${t('！')}`); return p;
     }
     dailyConstruction(world) {
@@ -3225,6 +3283,10 @@ class BuildingManager {
                 world.logMessage('building',`${t('建造完成：')}${p.name}${t('！')}`);
                 if (world.dailyNews) world.dailyNews.collectEvent('building', `${p.name}${t('建造完成了！')}`, 6);
                 Object.values(world.agents).forEach(a=>{ a.moodModifier=(a.moodModifier||0)+5; });
+                // v4.9.0: 建築完工 → 檢查相鄰組合 + 相關職業 NPC 發表 AI 評論
+                world.checkCombos?.();
+                const commentJobs = {brewery:['cook'],school:['researcher'],marketplace:['trader'],garden:['doctor'],clinic_upgrade:['doctor'],watchtower:['guard'],town_walls:['guard'],training_ground:['guard'],granary:['farmer'],farm_irrigation:['farmer'],forge_bellows:['blacksmith'],well_upgrade:['carpenter']};
+                world.conversationEngine?.sendEventComment?.(world, `${t('小鎮蓋好了新的「')}${p.name}${t('」')}`, commentJobs[p.buildingKey] || []);
             }
         });
     }
@@ -4662,6 +4724,7 @@ class World {
         this.stockpile = new Stockpile();
         this.buildings = new BuildingManager();
         this.decorations = this.decorations || []; // v4.8.0 玩家擺放的裝飾 [{type,x,y}]
+        this.combosFound = this.combosFound || []; // v4.9.0 已發現的相鄰組合 id
         this.trade = new TradeManager();
         this.research = new ResearchManager();
         this.workOrders = new WorkOrderManager();
@@ -4813,6 +4876,7 @@ class World {
         this.stockpile = new Stockpile();
         this.buildings = new BuildingManager();
         this.decorations = this.decorations || []; // v4.8.0 玩家擺放的裝飾 [{type,x,y}]
+        this.combosFound = this.combosFound || []; // v4.9.0 已發現的相鄰組合 id
         this.trade = new TradeManager();
         this.research = new ResearchManager();
         this.workOrders = new WorkOrderManager();
@@ -5057,6 +5121,33 @@ class World {
         });
     }
 
+    // --- v4.9.0 相鄰組合(開羅式):裝飾與有座標的建築放在一起觸發 ---
+    getActiveCombos() {
+        const items = (this.decorations || []).map(d => ({ kind: d.type, x: d.x, y: d.y }));
+        for (const b of (this.buildings?.completed || [])) {
+            if (b.buildingKey && Number.isFinite(b.siteX)) items.push({ kind: b.buildingKey, x: b.siteX + 1, y: b.siteY + 1 });
+        }
+        if (!items.length) return [];
+        const near = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)) <= 4;
+        return COMBO_DEFS.filter(c => {
+            const anchors = items.filter(i => i.kind === c.parts[0]);
+            return anchors.some(a => c.parts.slice(1).every(pk => items.some(i => i !== a && i.kind === pk && near(i, a))));
+        });
+    }
+    checkCombos() {
+        this.combosFound = this.combosFound || [];
+        const newly = this.getActiveCombos().filter(c => !this.combosFound.includes(c.id));
+        for (const c of newly) {
+            this.combosFound.push(c.id);
+            this.logMessage('building', `✨ ${t('發現相鄰組合：')}${c.icon}${c.name}(${c.desc})${t('！全鎮心情大好')}`);
+            this.dailyNews?.collectEvent('building', `${t('小鎮出現了「')}${c.name}${t('」組合！')}`, 7);
+            Object.values(this.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + 6; });
+            this.conversationEngine?.sendEventComment?.(this, `${t('小鎮出現了新組合「')}${c.name}${t('」(')}${c.desc})`);
+        }
+        if (newly.length) this._pendingComboNotifs = (this._pendingComboNotifs || []).concat(newly);
+        return newly;
+    }
+
     // --- Save / Load ---
     serialize() {
         const serializeAgent = (a) => ({
@@ -5116,6 +5207,7 @@ class World {
             lifecycle: this.lifecycle.toDict(),
             exploration: this.exploration.toDict(),
             decorations: this.decorations || [],
+            combosFound: this.combosFound || [],
             industry: this.industry.serialize(),
             farm: this.farm.serialize(),
             processing: this.processing.serialize(),
@@ -5235,6 +5327,7 @@ class World {
             // Buildings
             this.buildings = new BuildingManager();
         this.decorations = this.decorations || []; // v4.8.0 玩家擺放的裝飾 [{type,x,y}]
+        this.combosFound = this.combosFound || []; // v4.9.0 已發現的相鄰組合 id
             if (data.buildings) {
                 this.buildings.projects = data.buildings.projects || [];
                 this.buildings.completed = (data.buildings.completed || []).map(b => {
@@ -5349,6 +5442,7 @@ class World {
             // v4.0 systems
             if (data.dailyDecision) this.dailyDecision.loadFrom(data.dailyDecision);
             this.decorations = Array.isArray(data.decorations) ? data.decorations : [];
+            this.combosFound = Array.isArray(data.combosFound) ? data.combosFound : [];
             if (data.shop) this.shop.loadFrom(data.shop);
             if (data.eventChoice) this.eventChoice.loadFrom(data.eventChoice);
             if (data.npcHelp) this.npcHelp.loadFrom(data.npcHelp);
