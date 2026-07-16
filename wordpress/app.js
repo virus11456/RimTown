@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v4.5.1
-const RIMTOWN_APP_VERSION = '4.5.1';
+// RimTown - Frontend App (WordPress Plugin) v4.6.0
+const RIMTOWN_APP_VERSION = '4.6.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -618,6 +618,144 @@ class RimTownApp {
         } catch (e) { console.warn('[RimTown] offline progress error', e); }
     }
 
+    // =====================================================
+    // v4.6.0 送禮系統(礦石鎮式刷好感)
+    // =====================================================
+    _giftDefs() {
+        return [
+            { key: 'food',   icon: '🍞', name: t('美味餐點'), cost: 10, base: 5 },
+            { key: 'herbs',  icon: '🌿', name: t('草藥花束'), cost: 5,  base: 5 },
+            { key: 'cloth',  icon: '🧵', name: t('精緻布料'), cost: 5,  base: 5 },
+            { key: 'tools',  icon: '🔨', name: t('精良工具'), cost: 2,  base: 5 },
+            { key: 'silver', icon: '💰', name: t('銀幣紅包'), cost: 25, base: 4 },
+        ];
+    }
+
+    _giftPref(jobKey) {
+        const map = { farmer:'tools', miner:'tools', carpenter:'tools', blacksmith:'tools',
+                      doctor:'herbs', researcher:'herbs', priest:'herbs',
+                      chef:'food', cook:'food', guard:'food',
+                      merchant:'silver', tailor:'cloth' };
+        return map[jobKey] || null;
+    }
+
+    _showGiftPicker() {
+        const npc = this.world?.agents?.[this.chatTarget];
+        if (!npc) return;
+        const dayKey = `${this.world.clock.year}-${this.world.clock.season}-${this.world.clock.day}`;
+        if (npc._lastGiftDay === dayKey) {
+            this._gameAlert(`${npc.name}${t('今天已經收過你的禮物了,明天再送吧!')}`, '🎁');
+            return;
+        }
+        let el = document.getElementById('gift-picker');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'gift-picker';
+            el.className = 'modal';
+            document.getElementById('rimtown-app')?.appendChild(el);
+        }
+        const sp = this.world.stockpile;
+        const pref = this._giftPref(npc.job?.key);
+        const rows = this._giftDefs().map(g => {
+            const have = Math.floor(sp.get(g.key) || 0);
+            const ok = have >= g.cost;
+            const fav = pref === g.key ? ` <span style="color:#ffd700">★${t('他的最愛')}</span>` : '';
+            return `<button data-action="give-gift" data-val="${g.key}" ${ok ? '' : 'disabled style="opacity:0.4"'}
+                style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:9px 12px;margin-bottom:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.85rem">
+                <span>${g.icon} ${g.name}${fav}</span><span style="color:var(--text-secondary);font-size:0.75rem">${t('花費')} ${g.cost}(${t('庫存')} ${have})</span></button>`;
+        }).join('');
+        el.innerHTML = `<div class="modal-content" style="max-width:320px">
+            <h2>🎁 ${t('送禮物給')} ${npc.name}</h2>
+            <div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${t('投其所好效果加倍!每人每天限送一次。')}</div>
+            ${rows}
+            <div class="modal-buttons"><button onclick="document.getElementById('gift-picker').classList.add('hidden')">${t('取消')}</button></div>
+        </div>`;
+        el.classList.remove('hidden');
+    }
+
+    _giveGift(giftKey) {
+        const npc = this.world?.agents?.[this.chatTarget];
+        const g = this._giftDefs().find(x => x.key === giftKey);
+        if (!npc || !g) return;
+        const sp = this.world.stockpile;
+        if ((sp.get(g.key) || 0) < g.cost) return;
+        document.getElementById('gift-picker')?.classList.add('hidden');
+        sp.consume(g.key, g.cost, this.world.tickCount, `${t('送禮給')}${npc.name}`);
+        const dayKey = `${this.world.clock.year}-${this.world.clock.season}-${this.world.clock.day}`;
+        npc._lastGiftDay = dayKey;
+        const isFav = this._giftPref(npc.job?.key) === g.key;
+        const gain = isFav ? g.base * 2 : g.base;
+        const rel = npc.relationships.getOrCreate('player', this.world.agents['player']?.name || t('旅人'));
+        rel.modifyAffinity(gain);
+        if (isFav) rel.modifyRomantic(2);
+        npc.memory.add(this.world.tickCount, this.world.clock.timeStr, 'gift',
+            `${t('收到')}${this.world.agents['player']?.name || t('旅人')}${t('送的')}${g.name}${isFav ? t(',是我的最愛!') : ''}`, isFav ? 7 : 5, ['player']);
+        const lines = isFav
+            ? [t('這是我的最愛!你怎麼知道的?太感謝了!'), t('哇!我一直想要這個!你真懂我!')]
+            : [t('謝謝你!我很喜歡。'), t('你真貼心,謝謝!')];
+        const reply = lines[Math.floor(Math.random() * lines.length)];
+        const player = this.world.agents['player'];
+        if (player) {
+            player.chatHistory.push({ speaker: player.name, target: npc.name, text: `🎁(${t('送出')}${g.name})`, time: this.world.clock.timeStr });
+            player.chatHistory.push({ speaker: npc.name, target: player.name, text: reply, time: this.world.clock.timeStr });
+        }
+        this.world.logMessage('relationship', `🎁 ${t('鎮長送給')}${npc.name}${g.name}${isFav ? t(',對方超喜歡!') : ''}(${t('好感')}+${gain})`, npc.name);
+        this.bgm?.sfx?.('coin');
+        this.state = this.world.getState();
+        if (this.activeTab === 'chat') { this._renderChatMessages(); this._scrollChatToBottom(); }
+    }
+
+    // =====================================================
+    // v4.6.0 繁榮度全球排行榜(Serverless)
+    // =====================================================
+    async _submitLeaderboard() {
+        try {
+            if (!this.auth?.loggedIn || !this.auth._serverless) return;
+            const now = Date.now();
+            if (this._lbSubmitAt && now - this._lbSubmitAt < 3600000) return; // 1 小時一次
+            this._lbSubmitAt = now;
+            const pr = this.state?.prosperity || {};
+            await fetch('/api/leaderboard', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + this.auth._nonce },
+                body: JSON.stringify({
+                    town_name: this.state?.town_name || t('邊境鎮'),
+                    prosperity: Math.round(pr.prosperity || 0),
+                    level: pr.level || '',
+                    population: Object.keys(this.state?.agents || {}).length,
+                }),
+            });
+        } catch (e) {}
+    }
+
+    async _showLeaderboard() {
+        let el = document.getElementById('lb-modal');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'lb-modal';
+            el.className = 'modal';
+            document.getElementById('rimtown-app')?.appendChild(el);
+        }
+        el.innerHTML = `<div class="modal-content" style="max-width:340px"><h2>🏆 ${t('全球繁榮排行榜')}</h2><div id="lb-body" style="font-size:0.8rem">${t('載入中...')}</div>
+            <div class="modal-buttons"><button onclick="document.getElementById('lb-modal').classList.add('hidden')">${t('關閉')}</button></div></div>`;
+        el.classList.remove('hidden');
+        try {
+            const res = await fetch('/api/leaderboard');
+            const data = await res.json();
+            const rows = (data.entries || []).map((e, i) => {
+                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+                const me = this.auth?.username === e.username ? ' style="color:#ffd700;font-weight:700"' : '';
+                return `<div${me}>${medal} ${e.username}${t('的')}${e.town_name || t('小鎮')} — 🏆${e.prosperity} 👥${e.population}</div>`;
+            }).join('') || `<div>${t('還沒有人上榜,登入後你的繁榮度會自動參賽!')}</div>`;
+            const hint = this.auth?.loggedIn ? '' : `<div style="margin-top:8px;color:var(--text-secondary)">${t('登入後即可上榜!')}</div>`;
+            const body = document.getElementById('lb-body');
+            if (body) body.innerHTML = `<div style="display:flex;flex-direction:column;gap:6px">${rows}</div>${hint}`;
+        } catch (e) {
+            const body = document.getElementById('lb-body');
+            if (body) body.textContent = t('排行榜暫時無法載入(僅 rimtown.cc 支援)');
+        }
+    }
+
     // Custom game-style alert (replaces browser alert)
     _gameAlert(msg, icon = '⚠️') {
         return new Promise(resolve => {
@@ -830,7 +968,7 @@ class RimTownApp {
             icon = '👋';
             const talked = Math.min(chatCount, 3);
             if (talked === 0) {
-                hint = t('點擊右側「聊天」頁籤，選一位居民打個招呼吧！');
+                hint = t('走到村民身邊按「交談」，或開啟「聊天」（手機:底部💬），選一位居民打招呼吧！');
             } else if (talked < 3) {
                 hint = `${t('已和 ')}${talked}${t('/3 位居民交談。繼續點擊居民聊天吧！')}`;
             } else {
@@ -838,16 +976,16 @@ class RimTownApp {
             }
         } else if (activeQuest.id === 'ch1_survive') {
             icon = '❄️';
-            hint = t('有多種方式過冬：囤物資、交朋友或蓋建築。點「任務」頁籤查看詳情。');
+            hint = t('有多種方式過冬：囤物資、交朋友或蓋建築。開啟「任務」（手機:☰選單）查看詳情。');
         } else if (activeQuest.id === 'ch1_industry') {
             icon = '🏭';
-            hint = t('試試在「產業」頁籤開啟第一個產業，或和更多居民交流提升人脈。');
+            hint = t('試試在「經濟→產業」開啟第一個產業（手機:☰選單→經濟），或和更多居民交流。');
         } else if (activeQuest.chapter === 2) {
             icon = '🌱';
-            hint = t('小鎮開始成長了！查看「任務」頁籤了解當前目標。');
+            hint = t('小鎮開始成長了！開啟「任務」（手機:☰選單）了解當前目標。');
         } else if (activeQuest.chapter === 3) {
             icon = '⚔️';
-            hint = t('危機即將到來，做好準備！查看「任務」頁籤了解詳情。');
+            hint = t('危機即將到來，做好準備！開啟「任務」（手機:☰選單）了解詳情。');
         } else {
             hint = activeQuest.description;
         }
@@ -1901,7 +2039,28 @@ class RimTownApp {
         if (existing) Object.assign(existing, meta);
         else list.push(meta);
         this._saveTownList(list);
-        localStorage.setItem('rimtown_town_' + this.currentTownId, JSON.stringify(saveData));
+        this._submitLeaderboard();
+        // v4.6.0 存檔配額保護:寫入失敗(localStorage 滿)時自動瘦身重試,再失敗才警告
+        try {
+            localStorage.setItem('rimtown_town_' + this.currentTownId, JSON.stringify(saveData));
+        } catch (e) {
+            try {
+                // 瘦身:裁剪各 agent 記憶與共享記憶後重試
+                for (const a of Object.values(saveData.agents || {})) {
+                    if (Array.isArray(a.memories)) a.memories = a.memories.slice(-100);
+                    if (Array.isArray(a.recent_memories)) a.recent_memories = a.recent_memories.slice(-100);
+                    for (const r of Object.values(a.relationships || {})) {
+                        if (Array.isArray(r.sharedMemories)) r.sharedMemories = r.sharedMemories.slice(-30);
+                        if (Array.isArray(r.shared_memories)) r.shared_memories = r.shared_memories.slice(-30);
+                    }
+                }
+                if (Array.isArray(saveData.player_chat_history)) saveData.player_chat_history = saveData.player_chat_history.slice(-200);
+                localStorage.setItem('rimtown_town_' + this.currentTownId, JSON.stringify(saveData));
+                console.warn('[RimTown] 存檔空間不足,已自動瘦身後儲存');
+            } catch (e2) {
+                this._gameAlert(t('儲存空間已滿!請刪除舊城鎮(城鎮列表),或註冊登入改用雲端存檔。'), '💾');
+            }
+        }
         localStorage.setItem('rimtown_last_town', this.currentTownId);
     }
     showTownManager() {
@@ -2631,6 +2790,9 @@ class RimTownApp {
                 // Chat
                 case 'start-chat': this.startChatWith(val); break;
                 case 'send-chat': this._sendFromInput(); break;
+                case 'open-gift': this._showGiftPicker(); break;
+                case 'give-gift': this._giveGift(val); break;
+                case 'show-leaderboard': this._showLeaderboard(); break;
                 case 'show-archives': this.showChatArchives(); break;
                 case 'manual-archive': this.manualArchiveChat(); break;
                 case 'back-to-chat': this.activeTab = 'chat'; this.renderSidebar(); break;
@@ -4198,6 +4360,7 @@ class RimTownApp {
             // Input — always available
             chatAreaHtml += `<div class="chat-input-area">
                 <input type="text" id="chat-input" class="chat-input" placeholder="${t('輸入訊息')}..." ${this.chatSending ? 'disabled' : ''}>
+                <button class="chat-gift-btn" data-action="open-gift" title="${t('送禮')}" style="padding:0 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;font-size:1rem">🎁</button>
                 <button class="chat-send-btn" data-action="send-chat" ${this.chatSending ? 'disabled' : ''}>${this.chatSending ? '...' : t('送出')}</button></div>`;
         } else {
             chatAreaHtml += `<div class="chat-messages" id="chat-messages"><p class="muted-text chat-hint">${t('選擇一個居民開始聊天')}</p></div>`;
@@ -5306,6 +5469,9 @@ class RimTownApp {
         // Prosperity summary
         const prosp = this.state.prosperity;
         if (prosp) {
+            // v4.6.0 排行榜入口(在繁榮度摘要上方)
+            if (!this._lbBtnHtml) this._lbBtnHtml = `<div style="margin:4px 0 8px"><button class="trade-btn" data-action="show-leaderboard" style="width:100%">🏆 ${t('全球繁榮排行榜')}</button></div>`;
+            html += this._lbBtnHtml;
             const pColor = prosp.prosperity >= 80 ? '#ffd700' : prosp.prosperity >= 60 ? 'var(--positive)' : prosp.prosperity >= 40 ? 'var(--accent)' : prosp.prosperity >= 20 ? 'var(--text-secondary)' : 'var(--negative)';
             html += `<div class="econ-section" style="padding:8px 12px">`;
             const popCount = Object.keys(this.state.agents || {}).length;

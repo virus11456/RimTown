@@ -534,6 +534,43 @@ class PixelTileMap {
         }
     }
 
+    // v4.6.0 效能:整張地形預繪成靜態底圖(僅地圖重生成時重建),
+    // 每幀從 4800 次 drawImage 降為 1 次 + 少量動態水面
+    _buildStaticLayer() {
+        if (!this.grid) return;
+        const c = document.createElement('canvas');
+        c.width = this.mapWidth;
+        c.height = this.mapHeight;
+        const sctx = c.getContext('2d');
+        sctx.imageSmoothingEnabled = false;
+        this._waterTiles = [];
+        for (let y = 0; y < this.rows; y++) {
+            for (let x = 0; x < this.cols; x++) {
+                const tile = this.grid[y][x];
+                let cached = this.tileCache[tile];
+                if ((tile === T.ROOF || tile === T.ROOF2) && this._roofVariantGrid) {
+                    const rv = this._roofVariantGrid[y][x];
+                    if (rv) cached = this._roofAltCache[`${rv}_${tile}`] || cached;
+                }
+                if (cached) {
+                    sctx.drawImage(cached, x * TILE, y * TILE);
+                    this._drawTileOverlays(sctx, x, y, tile, true);
+                }
+                if (tile === T.WATER || tile === T.WATER2) this._waterTiles.push([x, y, tile]);
+            }
+        }
+        this._staticLayer = c;
+        this._staticSrc = this.grid;
+    }
+
+    // 動態水面(浪花閃爍 + 波光),疊在靜態底圖上
+    _drawWaterAnim(ctx) {
+        if (!this._waterTiles) return;
+        for (const [x, y, tile] of this._waterTiles) {
+            this._drawTileOverlays(ctx, x, y, tile, false);
+        }
+    }
+
     // 夜間窗戶暖光(畫在日夜色調之後,光才不會被壓暗)
     _renderWindowGlow(ctx) {
         if (!this._windowTiles || !this._windowTiles.length) return;
@@ -581,7 +618,7 @@ class PixelTileMap {
     // ============================================================
     // v4.3.0 開羅風美術升級:地形轉場 + 建築立體感(依鄰居 context 疊加)
     // ============================================================
-    _drawTileOverlays(ctx, tx, ty, tile) {
+    _drawTileOverlays(ctx, tx, ty, tile, staticOnly) {
         const g = this.grid;
         const px = tx * TILE, py = ty * TILE;
         const at = (x, y) => (y < 0 || y >= this.rows || x < 0 || x >= this.cols) ? -1 : g[y][x];
@@ -625,7 +662,7 @@ class PixelTileMap {
         // --- 2. 水岸:沙灘緣 + 深色水線 + 動態浪花 ---
         if (isWater(tile)) {
             const sand = '#e3d29b', deep = '#1a6ea8';
-            const foamOn = ((this.animFrame >> 5) + tx + ty) % 3 === 0; // 慢速閃爍浪花
+            const foamOn = !staticOnly && ((this.animFrame >> 5) + tx + ty) % 3 === 0; // 慢速閃爍浪花
             const shore = (x0, y0, w, h, fx, fy, fw, fh) => {
                 ctx.fillStyle = sand; ctx.fillRect(x0, y0, w, h);
                 ctx.fillStyle = deep;
@@ -639,7 +676,7 @@ class PixelTileMap {
             if (!isWater(rt) && rt !== -1 && rt !== T.BRIDGE) shore(px + TILE - 2, py, 2, TILE, px + TILE - 3, py + 9, 1, 4);
             // 波光(緩慢移動的亮點)
             const ph = ((tx * 7 + ty * 13) + (this.animFrame >> 4)) % 23;
-            if (ph === 0) {
+            if (!staticOnly && ph === 0) {
                 ctx.fillStyle = 'rgba(255,255,255,0.5)';
                 ctx.fillRect(px + 4 + (ty % 3) * 3, py + 5 + (tx % 3) * 2, 3, 1);
             }
@@ -3283,22 +3320,10 @@ class PixelTileMap {
 
         // v4.5.0 美術二輪:lazy 預計算屋頂配色與窗戶清單(地圖生成/讀檔後第一次 render)
         if (!this._artGridReady || this._artGridSrc !== this.grid) this._postProcessArt();
-
-        // Draw tile grid
-        for (let y = 0; y < this.rows; y++) {
-            for (let x = 0; x < this.cols; x++) {
-                const tile = this.grid[y][x];
-                let cached = this.tileCache[tile];
-                if ((tile === T.ROOF || tile === T.ROOF2) && this._roofVariantGrid) {
-                    const rv = this._roofVariantGrid[y][x];
-                    if (rv) cached = this._roofAltCache[`${rv}_${tile}`] || cached;
-                }
-                if (cached) {
-                    ctx.drawImage(cached, x * TILE, y * TILE);
-                    this._drawTileOverlays(ctx, x, y, tile);
-                }
-            }
-        }
+        // v4.6.0 效能:靜態底圖 1 次 drawImage + 動態水面
+        if (!this._staticLayer || this._staticSrc !== this.grid) this._buildStaticLayer();
+        ctx.drawImage(this._staticLayer, 0, 0);
+        this._drawWaterAnim(ctx);
 
         // Water animation: shimmer effect
         if (this.animFrame % 30 === 0) {

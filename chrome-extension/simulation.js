@@ -106,7 +106,7 @@ class MemoryEntry {
 }
 
 class Memory {
-    constructor(capacity = 10000) { this.entries = []; this.capacity = capacity; }
+    constructor(capacity = 500) { this.entries = []; this.capacity = capacity; }
     add(tick, timeStr, category, content, importance = 5, relatedAgents = []) {
         this.entries.push(new MemoryEntry(tick, timeStr, category, content, importance, relatedAgents));
         if (this.entries.length > this.capacity) this.entries = this.entries.slice(-this.capacity);
@@ -158,11 +158,11 @@ class Relationship {
     recordInteraction(tick, summary) {
         this.interactionCount++; this.lastInteractionTick = tick;
         this.sharedMemories.push(summary);
-        if (this.sharedMemories.length > 10000) this.sharedMemories = this.sharedMemories.slice(-10000);
+        if (this.sharedMemories.length > 150) this.sharedMemories = this.sharedMemories.slice(-150);
     }
     addSharedMemory(text) {
         this.sharedMemories.push(text);
-        if (this.sharedMemories.length > 10000) this.sharedMemories = this.sharedMemories.slice(-10000);
+        if (this.sharedMemories.length > 150) this.sharedMemories = this.sharedMemories.slice(-150);
     }
     toDict() {
         return { target_id:this.targetId, target_name:this.targetName, type:this.type,

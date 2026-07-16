@@ -3845,3 +3845,9 @@ body.rimtown-page .wp-block-post-title {
     .interact-prompt { bottom: 150px !important; }
     .npc-quick-card { bottom: 152px !important; }
 }
+
+/* v4.6.0 修:開羅聊天面板開啟時,訪客橫幅移到面板上方不擋輸入列 */
+@media (max-width: 768px) {
+    .kairo-mode .rt-sidebar.chat-open ~ #guest-banner,
+    .kairo-mode:has(.rt-sidebar.chat-open) #guest-banner { display: none !important; }
+}

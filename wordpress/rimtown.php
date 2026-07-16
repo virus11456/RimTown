@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 4.5.1
+ * Version: 4.6.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '4.5.1');
+define('RIMTOWN_VERSION', '4.6.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1182,6 +1182,19 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '4.6.0',
+            'date'    => '2026-07-15',
+            'changes' => array(
+                '🎁 送禮系統：聊天視窗可送 5 種禮物給村民刷好感，投其所好效果加倍（每人每天一次）',
+                '🏆 全球繁榮排行榜：登入玩家的繁榮度自動上榜，經濟頁可查看前 20 名',
+                '⚡ 效能大幅優化：地形改用靜態底圖快取，每幀繪製從 4800 次降為 1 次，手機更省電流暢',
+                '💾 存檔保護：localStorage 滿載時自動瘦身重試，避免存檔靜默失敗',
+                '📖 教學文案更新為新版操作方式（走近交談、☰ 選單、💬 聊天）',
+                '補齊張豪、趙霞的第二條個人故事線；密碼重設加上帳號級冷卻鎖定',
+                '英文介面翻譯補齊',
+            ),
+        ),
         array(
             'version' => '4.5.1',
             'date'    => '2026-07-15',

@@ -307,6 +307,34 @@ const NPC_PERSONAL_QUESTS = {
                     zhang_hao: { minAffinity: 35, hint: t('傳說這座山脈曾經出產過神奇的礦石...你知道嗎？') },
                 },
             },
+            {
+                id: 'zhang_hao_apprentice',
+                title: t('鐵匠的傳承'),
+                trigger: { affinity: 55, chapter: 3 },
+                description: t('張豪年紀漸長，希望能收個徒弟把手藝傳下去，讓鐵匠鋪後繼有人...'),
+                icon: '🔨',
+                routes: [
+                    { id: 'recruit', label: t('幫他招募學徒'), icon: '🧑‍🏭',
+                      conditions: [
+                          { type: 'resource', resource: 'silver', target: 60, label: t('提供 60 銀幣做學徒津貼') },
+                          { type: 'npc_affinity', npcId: 'zhang_hao', target: 65, label: t('張豪好感度達到 65') },
+                      ]},
+                    { id: 'workshop', label: t('擴建鐵匠鋪'), icon: '🏗️',
+                      conditions: [
+                          { type: 'resource', resource: 'wood', target: 40, label: t('提供 40 木材') },
+                          { type: 'resource', resource: 'metal', target: 30, label: t('提供 30 金屬') },
+                      ]},
+                ],
+                rewards: { reputation: 10, silver: 60 },
+                outcomes: {
+                    recruit: { flag: 'smith_apprentice', mood: { zhang_hao: 25 }, industryBonus: { smithing: 0.15 } },
+                    workshop: { flag: 'smith_expanded', mood: { zhang_hao: 20 }, industryBonus: { smithing: 0.25 } },
+                },
+                onComplete: t('鐵匠鋪的爐火從此日夜不熄，張豪的手藝有了傳人。'),
+                npcHints: {
+                    zhang_hao: { minAffinity: 50, hint: t('我這把老骨頭還能打幾年鐵？是時候找個接班人了...') },
+                },
+            },
         ],
     },
     'wang_li': {
@@ -387,6 +415,34 @@ const NPC_PERSONAL_QUESTS = {
                 onComplete: t('新的貿易路線開通了！商人們開始更頻繁地造訪邊境鎮。'),
                 npcHints: {
                     zhao_xia: { minAffinity: 25, hint: t('你有沒有想過，山的另一邊會是什麼樣子？') },
+                },
+            },
+            {
+                id: 'zhao_xia_market',
+                title: t('邊境大市集'),
+                trigger: { affinity: 55, chapter: 3 },
+                description: t('趙霞想在鎮上辦一場盛大的市集，吸引四方商旅前來，讓邊境鎮成為貿易樞紐...'),
+                icon: '🎪',
+                routes: [
+                    { id: 'host', label: t('籌辦市集'), icon: '🏪',
+                      conditions: [
+                          { type: 'resource', resource: 'silver', target: 120, label: t('投入 120 銀幣籌備') },
+                          { type: 'resource', resource: 'food', target: 50, label: t('準備 50 食物款待商旅') },
+                      ]},
+                    { id: 'invite', label: t('廣發邀請'), icon: '📜',
+                      conditions: [
+                          { type: 'npc_affinity', npcId: 'zhao_xia', target: 65, label: t('趙霞好感度達到 65') },
+                          { type: 'resource', resource: 'cloth', target: 20, label: t('提供 20 布料做布置') },
+                      ]},
+                ],
+                rewards: { silver: 150, reputation: 15 },
+                outcomes: {
+                    host: { flag: 'grand_market', mood: { zhao_xia: 28 }, townMoodBonus: 12, industryBonus: { trade: 0.25 } },
+                    invite: { flag: 'grand_market', mood: { zhao_xia: 22 }, townMoodBonus: 15, industryBonus: { trade: 0.18 } },
+                },
+                onComplete: t('邊境大市集轟動四方！各地商旅絡繹不絕，小鎮的名聲遠播。'),
+                npcHints: {
+                    zhao_xia: { minAffinity: 48, hint: t('如果能辦一場大市集，讓所有商人都來這裡就好了...') },
                 },
             },
         ],
