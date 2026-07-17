@@ -42,6 +42,12 @@ class GameClock {
     get shortTime() {
         return `${String(this.hour).padStart(2,'0')}:${String(this.minute).padStart(2,'0')}`;
     }
+    // v5.4.0 遊戲累計天數(供人生故事線計時)
+    get totalDays() {
+        const seasons = ['春季','夏季','秋季','冬季'];
+        const si = Math.max(0, seasons.indexOf(this.season));
+        return (this.year - 1) * 60 + si * this.DAYS_PER_SEASON + (this.day - 1);
+    }
     reset() { this.day=1; this.hour=6; this.minute=0; this.season='春季'; this.year=1; }
     toDict() {
         return { day:this.day, hour:this.hour, minute:this.minute, season:this.season, year:this.year, time_of_day:this.timeOfDay, time_str:this.timeStr };
@@ -1212,6 +1218,43 @@ ${t('- 直接寫訊息內容就好')}`;
         world.logMessage('player_chat', `${npc.name} → ${player.name}: ${npcText}`, npc.name, player.name);
         // Notify UI
         if (this.onNpcMessage) this.onNpcMessage(npc.agentId);
+    }
+
+    // v5.4.0: 人生里程碑敘事 — NPC 達成夢想的某階段時,發鎮民動態 + 進頭條 + 記憶
+    async narrateLifeMilestone(world, npc, def, goal, isDone) {
+        try {
+            const stageName = isDone ? def.stages[def.stages.length - 1] : def.stages[goal.stage];
+            let text = '';
+            if (this.llm && this.llm._canMakeRequest(false) &&
+                world.tickCount - (world.townFeed?._lastLlmPostTick || -9999) > 150) {
+                try {
+                    const pN = this._buildCharacterProfile(npc);
+                    const prompt = `${t('你在為小鎮社群「鎮民動態」寫一則貼文。')}
+${t('發文者:')}${pN.name}${t('，')}${pN.job}${t('。性格：')}${pN.traits}${t('。')}
+${t('他的人生夢想是「')}${def.name}${t('」,現在剛剛達成了一個階段:「')}${stageName}${t('」。')}${isDone ? t('這是他夢想的最終實現!') : ''}
+${t('【格式】只寫一句貼文,表達此刻的心情與這個里程碑,口語、真摯、可加表情符號。繁體中文,不要有其他文字。')}`;
+                    const response = await this.llm.generate(prompt, 120, 0.9, false);
+                    if (response && response !== '__ERROR__' && response !== '__RATE_LIMITED__') {
+                        text = response.trim().replace(/^["「『]|["」』]$/g, '').replace(new RegExp(`^${npc.name}[：:]\\s*`), '').trim();
+                        if (world.townFeed) world.townFeed._lastLlmPostTick = world.tickCount;
+                    }
+                } catch (e) { console.error('[RimTown] life milestone LLM failed:', e); }
+            }
+            if (!text) {
+                text = isDone
+                    ? pickRandom([`${def.icon} ${t('我做到了!「')}${def.name}${t('」——這一路走來,值得了。')}`, `${def.icon} ${t('夢想成真的這一刻,我會記得一輩子。')}${stageName}!`])
+                    : pickRandom([`${def.icon} ${t('離夢想又近了一步:')}${stageName}。${t('繼續加油!')}`, `${t('今天達成了「')}${stageName}${t('」,朝著')}${def.name}${t('前進中 💪')}`]);
+            }
+            if (world.townFeed) world.townFeed.addPost(world, npc, text);
+            npc.memory.add(world.tickCount, world.clock.timeStr, 'milestone', `${t('人生里程碑:')}${stageName}(${def.name})`, isDone ? 10 : 7, []);
+            world.logMessage('milestone', `${def.icon} ${npc.name}${t('的夢想「')}${def.name}${t('」邁入:')}${stageName}${isDone ? t('(達成!)') : ''}`, npc.name);
+            if (world.dailyNews) world.dailyNews.collectEvent('milestone', `${npc.name}${isDone ? t('實現了畢生夢想「') : t('朝夢想邁進:「')}${isDone ? def.name : stageName}${t('」')}`, isDone ? 8 : 5, [npc.name]);
+            if (isDone) {
+                Object.values(world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + 4; });
+                world._pendingMilestones = world._pendingMilestones || [];
+                world._pendingMilestones.push({ npcId: npc.agentId, npcName: npc.name, icon: def.icon, goalName: def.name, text });
+            }
+        } catch (e) { console.error('[RimTown] narrateLifeMilestone failed:', e); }
     }
 
     // v5.2.0: 鎮民動態發文 — AI 寫一則動態+朋友留言,或用模板
@@ -4271,6 +4314,152 @@ const FESTIVALS = {
     },
 };
 
+// --- v5.4.0 村民人生故事線(LifeGoalSystem):每個村民有長期夢想,隨真實狀態推進,AI 敘事 ---
+const LIFE_GOALS = {
+    truelove: {
+        icon: '💗', name: t('尋覓真愛'),
+        stages: [t('憧憬愛情'), t('怦然心動'), t('兩情相悅'), t('步入婚姻')],
+        // 直接讀愛恨引擎:憧憬→有暗戀→交往→結婚
+        stageReady(w, a, stage) {
+            const rels = Object.values(a.relationships.relationships).filter(r => { const o = w.agents[r.targetId]; return o && !o.isPlayer; });
+            if (stage === 0) return rels.some(r => r.romanticInterest > 40);
+            if (stage === 1) return rels.some(r => r.status === 'dating' || r.status === 'married');
+            if (stage === 2) return rels.some(r => r.status === 'married');
+            return false;
+        },
+    },
+    entrepreneur: {
+        icon: '🏪', name: t('開店創業'),
+        stages: [t('胸懷創業夢'), t('攢下第一桶金'), t('盤下店面'), t('開張大吉')],
+        stageReady(w, a, stage) {
+            const prosp = w.prosperity?.score || 0;
+            if (stage === 0) return prosp > 15 || (w.stockpile.get('silver') || 0) > 120;
+            if (stage === 1) return prosp > 30 || (w.stockpile.get('silver') || 0) > 250;
+            if (stage === 2) return prosp > 45 || (w.buildings?.completed?.some(b => b.buildingKey === 'marketplace'));
+            return false;
+        },
+    },
+    master: {
+        icon: '🎨', name: t('技藝登峰'),
+        stages: [t('拜師苦練'), t('小有名氣'), t('獨當一面'), t('一代宗師')],
+        stageReady(w, a, stage) {
+            const cats = ['工藝', '藝術', '烹飪', '醫療', '智識', '建造', '種植'];
+            const lv = Math.max(...cats.map(c => a.skills.get(c)?.level || 0));
+            return lv >= [6, 10, 15, 99][stage];
+        },
+    },
+    adventurer: {
+        icon: '🧭', name: t('浪跡天涯'),
+        stages: [t('嚮往遠方'), t('打點行裝'), t('踏上旅程'), t('滿載而歸')],
+        stageReady(w, a, stage) { return true; }, // 純時間推進(冒險是心境)
+    },
+    family: {
+        icon: '👨‍👩‍👧', name: t('闔家團圓'),
+        stages: [t('渴望有個家'), t('遇見對的人'), t('開枝散葉'), t('兒孫繞膝')],
+        stageReady(w, a, stage) {
+            const partner = a.relationships.getPartner();
+            if (stage === 0) return !!partner;
+            if (stage === 1) return a.relationships.getSpouse && !!a.relationships.getSpouse();
+            if (stage === 2) return (w.lifecycle?.births || []).some(b => (b.parentNames || []).includes(a.name));
+            return false;
+        },
+    },
+    legacy: {
+        icon: '🏛️', name: t('名留青史'),
+        stages: [t('胸懷大志'), t('嶄露頭角'), t('舉足輕重'), t('名留青史')],
+        stageReady(w, a, stage) {
+            const prosp = w.prosperity?.score || 0;
+            const onCouncil = (w.council?.members || []).includes(a.agentId);
+            if (stage === 0) return prosp > 20;
+            if (stage === 1) return prosp > 40 || onCouncil;
+            if (stage === 2) return prosp > 60 && onCouncil;
+            return false;
+        },
+    },
+};
+
+class LifeGoalSystem {
+    constructor() { this.goals = {}; this._assigned = false; }
+    _pickGoal(a) {
+        const v = a.values || a.personality?.values || [];
+        const tr = a.personality?.traits || [];
+        const score = { truelove: 0, entrepreneur: 0, master: 0, adventurer: 0, family: 0, legacy: 0 };
+        if (v.includes(t('財富'))) score.entrepreneur += 3;
+        if (v.includes(t('知識'))) score.master += 2;
+        if (v.includes(t('藝術'))) score.master += 3;
+        if (v.includes(t('家庭'))) { score.family += 3; score.truelove += 1; }
+        if (v.includes(t('冒險'))) score.adventurer += 3;
+        if (v.includes(t('自由'))) score.adventurer += 2;
+        if (v.includes(t('權力'))) score.legacy += 3;
+        if (v.includes(t('榮譽'))) score.legacy += 2;
+        if (v.includes(t('社群')) || v.includes(t('和平'))) score.legacy += 1;
+        if (tr.includes('romantic')) score.truelove += 3;
+        if (tr.includes('creative')) score.master += 2;
+        if (tr.includes('hardworking')) score.entrepreneur += 1;
+        if (tr.includes('charismatic')) score.legacy += 1;
+        // 職業傾向
+        const jobGoal = { blacksmith: 'master', tailor: 'master', carpenter: 'master', cook: 'master',
+            doctor: 'master', researcher: 'master', trader: 'entrepreneur', guard: 'legacy', priest: 'legacy' };
+        if (a.job?.key && jobGoal[a.job.key]) score[jobGoal[a.job.key]] += 2;
+        // 若已婚/交往,傾向 family;單身年輕傾向 truelove
+        if (a.relationships.getPartner()) score.family += 2; else if (a.age < 35) score.truelove += 1;
+        let best = 'truelove', bv = -1;
+        for (const [k, s] of Object.entries(score)) if (s > bv) { bv = s; best = k; }
+        if (bv <= 0) best = pickRandom(['truelove', 'adventurer', 'master']);
+        return best;
+    }
+    ensureAssigned(world) {
+        for (const a of Object.values(world.agents)) {
+            if (a.isPlayer || a.isDead) continue;
+            if (!this.goals[a.agentId]) {
+                this.goals[a.agentId] = { key: this._pickGoal(a), stage: 0, stageStartDay: world.clock.totalDays || 0, done: false };
+            }
+        }
+        this._assigned = true;
+    }
+    dailyUpdate(world) {
+        this.ensureAssigned(world);
+        const today = world.clock.totalDays || 0;
+        for (const a of Object.values(world.agents)) {
+            if (a.isPlayer || a.isDead) continue;
+            const g = this.goals[a.agentId];
+            if (!g || g.done) continue;
+            const def = LIFE_GOALS[g.key]; if (!def) continue;
+            const daysAtStage = today - (g.stageStartDay || 0);
+            const minDays = 6; // 每階段至少醞釀 6 天
+            if (daysAtStage < minDays) continue;
+            const ready = def.stageReady(world, a, g.stage);
+            // 條件達成 → 推進;純時間型(adventurer)靠機率慢慢走
+            const advance = ready && (def.stageReady === LIFE_GOALS.adventurer.stageReady ? Math.random() < 0.18 : Math.random() < 0.5);
+            if (advance) {
+                g.stage++;
+                g.stageStartDay = today;
+                const isDone = g.stage >= def.stages.length;
+                if (isDone) { g.done = true; g.doneDay = today; }
+                // 敘事:AI 或模板,推播里程碑
+                if (world.conversationEngine?.narrateLifeMilestone)
+                    world.conversationEngine.narrateLifeMilestone(world, a, def, g, isDone);
+            }
+        }
+    }
+    getGoal(agentId) { return this.goals[agentId]; }
+    describe(agentId) {
+        const g = this.goals[agentId]; if (!g) return null;
+        const def = LIFE_GOALS[g.key]; if (!def) return null;
+        return { key: g.key, icon: def.icon, name: def.name,
+            stageName: g.done ? def.stages[def.stages.length - 1] : def.stages[g.stage],
+            stage: g.stage, totalStages: def.stages.length, done: g.done };
+    }
+    nudge(world, agentId) { // 玩家助夢:縮短當前階段醞釀時間
+        const g = this.goals[agentId]; if (!g || g.done) return false;
+        g.stageStartDay = Math.min(g.stageStartDay, (world.clock.totalDays || 0) - 6);
+        g._nudged = true;
+        return true;
+    }
+    serialize() { return { goals: this.goals }; }
+    load(d) { if (d && d.goals) { this.goals = d.goals; this._assigned = true; } }
+}
+
 class FestivalSystem {
     constructor() {
         this.activeFestival = null; // current festival or null
@@ -5133,6 +5322,7 @@ class World {
         this.questSystem = typeof QuestSystem !== 'undefined' ? new QuestSystem() : null;
         this.prosperity = typeof ProsperityEngine !== 'undefined' ? new ProsperityEngine() : null;
         this.npcQuests = typeof NPCQuestSystem !== 'undefined' ? new NPCQuestSystem() : null;
+        this.lifeGoals = new LifeGoalSystem(); // v5.4.0 人生故事線
         this.customNPC = typeof CustomNPCSystem !== 'undefined' ? new CustomNPCSystem() : null;
         this.multiEnding = typeof MultiEndingSystem !== 'undefined' ? new MultiEndingSystem() : null;
         // v4.0 systems
@@ -5203,6 +5393,7 @@ class World {
             this.npcEvents.dailyUpdate(this);
             if (this.prosperity) this.prosperity.dailyUpdate(this);
             if (this.npcQuests) this.npcQuests.dailyUpdate(this);
+            if (this.lifeGoals) this.lifeGoals.dailyUpdate(this); // v5.4.0
             if (this.questSystem) this.questSystem.checkProgress(this);
             // v4.0 systems
             this.dailyDecision.dailyUpdate(this);
@@ -5260,6 +5451,7 @@ class World {
             reputationSystem: this.reputationSystem.toDict(),
             weather: this.weather.toDict(),
             council: (() => { const cd = this.council.toDict(); cd.memberNames = this.council.members.map(id => this.agents[id]?.name || '?'); return cd; })(),
+            lifeGoals: (() => { const m = {}; if (this.lifeGoals) for (const a of Object.values(this.agents)) { if (a.isPlayer) continue; const d = this.lifeGoals.describe(a.agentId); if (d) m[a.agentId] = d; } return m; })(),
         };
     }
     reset(seed = null) {
@@ -5288,6 +5480,7 @@ class World {
         this.questSystem = typeof QuestSystem !== 'undefined' ? new QuestSystem() : null;
         this.prosperity = typeof ProsperityEngine !== 'undefined' ? new ProsperityEngine() : null;
         this.npcQuests = typeof NPCQuestSystem !== 'undefined' ? new NPCQuestSystem() : null;
+        this.lifeGoals = new LifeGoalSystem(); // v5.4.0 人生故事線
         this.customNPC = typeof CustomNPCSystem !== 'undefined' ? new CustomNPCSystem() : null;
         this.multiEnding = typeof MultiEndingSystem !== 'undefined' ? new MultiEndingSystem() : null;
         // v4.0 systems
@@ -5684,12 +5877,24 @@ class World {
             }
         }
         this._lastDigestCouples = [...nowCouples];
-        const hasContent = newCouples.length || crushes.length || rivals.length || triangles.length || couples.length;
+        // v5.4.0 夢想進行中:挑最接近實現夢想的村民(階段最高、未完成)
+        const dreams = [];
+        if (this.lifeGoals) {
+            const arr = [];
+            for (const a of Object.values(this.agents)) {
+                if (a.isPlayer || a.isDead) continue;
+                const d = this.lifeGoals.describe(a.agentId);
+                if (d && !d.done && d.stage > 0) arr.push({ name: a.name, d });
+            }
+            arr.sort((x, y) => y.d.stage - x.d.stage);
+            for (const { name, d } of arr.slice(0, 3)) dreams.push(`${d.icon} ${name} ${t('正在追逐「')}${d.name}${t('」:')}${d.stageName}`);
+        }
+        const hasContent = newCouples.length || crushes.length || rivals.length || triangles.length || couples.length || dreams.length;
         if (!hasContent) return null;
         const digest = {
             week: `${this.clock.year}-${this.clock.season}-${this.clock.day}`,
             newCouples, couples: couples.slice(0, 4), crushes: crushes.slice(0, 5),
-            rivals: rivals.slice(0, 4), triangles: triangles.slice(0, 3),
+            rivals: rivals.slice(0, 4), triangles: triangles.slice(0, 3), dreams,
         };
         this._pendingWeeklyDigest = digest;
         return digest;
@@ -5801,6 +6006,7 @@ class World {
             questSystem: this.questSystem ? this.questSystem.serialize() : null,
             prosperity: this.prosperity ? this.prosperity.serialize() : null,
             npcQuests: this.npcQuests ? this.npcQuests.serialize() : null,
+            lifeGoals: this.lifeGoals ? this.lifeGoals.serialize() : null,
             customNPC: this.customNPC ? this.customNPC.serialize() : null,
             multiEnding: this.multiEnding ? this.multiEnding.serialize() : null,
             // v4.0
@@ -6026,6 +6232,7 @@ class World {
             if (this.questSystem && data.questSystem) this.questSystem.loadFrom(data.questSystem);
             if (this.prosperity && data.prosperity) this.prosperity.loadFrom(data.prosperity);
             if (this.npcQuests && data.npcQuests) this.npcQuests.loadFrom(data.npcQuests);
+            if (this.lifeGoals && data.lifeGoals) this.lifeGoals.load(data.lifeGoals);
             if (this.customNPC && data.customNPC) this.customNPC.loadFrom(data.customNPC);
             if (this.multiEnding && data.multiEnding) this.multiEnding.loadFrom(data.multiEnding);
             // v4.0 systems

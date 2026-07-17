@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.3.0
-const RIMTOWN_APP_VERSION = '5.3.0';
+// RimTown - Frontend App (WordPress Plugin) v5.4.0
+const RIMTOWN_APP_VERSION = '5.4.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1468,6 +1468,18 @@ class RimTownApp {
         }
     }
 
+    // v5.4.0 夢想達成慶祝
+    _showMilestoneCard(ms) {
+        this.bgm?.sfx?.('coin');
+        this._showCenterNotification({
+            icon: ms.icon,
+            title: `🏆 ${t('夢想成真')}`,
+            name: `${ms.npcName} — ${ms.goalName}`,
+            desc: `${ms.npcName}${t('：「')}${ms.text}${t('」')}`,
+            autoDismiss: 0,
+        });
+    }
+
     // v5.3.0 本週小鎮頭條:浮現的愛恨糾葛摘要
     _showWeeklyDigest(dg) {
         const esc = (x) => this._escapeHtml(String(x ?? ''));
@@ -1480,6 +1492,7 @@ class RimTownApp {
         body += section(`💘 ${t('暗戀進行中')}`, dg.crushes, '#ff8fb3');
         body += section(`⚔️ ${t('水火不容')}`, dg.rivals, '#ff6b6b');
         body += section(`❤️ ${t('穩定放閃')}`, dg.couples, '#c86bff');
+        body += section(`🌟 ${t('夢想進行中')}`, dg.dreams, '#6bd5a0');
         if (!body) return;
         this._showCenterNotification({
             icon: '📰',
@@ -2860,6 +2873,11 @@ class RimTownApp {
                     const dg = this.world._pendingWeeklyDigest;
                     this.world._pendingWeeklyDigest = null;
                     this._showWeeklyDigest(dg);
+                }
+                // v5.4.0 夢想達成慶祝輪詢
+                if (this.world?._pendingMilestones?.length) {
+                    const ms = this.world._pendingMilestones.shift();
+                    this._showMilestoneCard(ms);
                 }
                 // v5.1.0 祭典攤位按鈕
                 this._updateFestivalStall();
@@ -4617,19 +4635,32 @@ class RimTownApp {
         const foes = Object.values(rels).filter(r => r.target_id !== 'player' && (r.affinity || 0) < -60).slice(0, 2);
         foes.forEach(r => lines.push(`💢 ${t('與')} ${r.target_name} ${t('是死對頭')}`));
         const relHtml = lines.length ? lines.map(l => `<div class="nqc-rel">${l}</div>`).join('') : `<div class="nqc-rel nqc-dim">${t('目前沒有戀愛或仇恨傳聞')}</div>`;
+        // v5.4.0 人生夢想進度
+        const goal = this.state?.lifeGoals?.[agentId];
+        let goalHtml = '';
+        if (goal) {
+            const pips = Array.from({ length: goal.totalStages }, (_, i) => i < goal.stage || goal.done ? '●' : (i === goal.stage ? '◉' : '○')).join('');
+            goalHtml = `<div class="nqc-rel" style="border-top:1px solid var(--border);margin-top:4px;padding-top:5px">
+                ${goal.icon} <b>${goal.name}</b> <span style="color:var(--text-secondary);font-size:0.72rem">${goal.done ? '🏆 ' + t('已實現') : goal.stageName}</span>
+                <span style="letter-spacing:2px;color:var(--accent);font-size:0.7rem">${pips}</span></div>`;
+        }
+        const nudged = this.world?.lifeGoals?.getGoal?.(agentId)?._nudged;
         card.innerHTML = `
             <button class="nqc-close" data-nqc="close">✕</button>
             <div class="nqc-name">${a.name} <span class="nqc-job">${a.job?.title || ''}</span></div>
             <div class="nqc-hearts" title="${t('對你的好感')}">${hearts} <span class="nqc-lv">${lv}/10</span></div>
             ${relHtml}
+            ${goalHtml}
             <div class="nqc-btns">
                 <button class="nqc-chat" data-nqc="chat">💬 ${t('交談')}</button>
+                ${goal && !goal.done ? `<button class="nqc-detail" data-nqc="nudge" ${nudged ? 'disabled style="opacity:0.4"' : ''}>✨ ${t('助夢')}</button>` : ''}
                 <button class="nqc-detail" data-nqc="detail">📋 ${t('詳情')}</button>
             </div>`;
         card.onclick = (e) => {
             const act = e.target?.dataset?.nqc;
             if (act === 'close') this._hideNpcCard();
             else if (act === 'chat') { this._hideNpcCard(); this._walkToAndChat(agentId); }
+            else if (act === 'nudge') { this._nudgeDream(agentId); }
             else if (act === 'detail') {
                 this._hideNpcCard();
                 this.selectedAgent = agentId;
@@ -4643,6 +4674,22 @@ class RimTownApp {
 
     _hideNpcCard() {
         document.getElementById('npc-quick-card')?.classList.add('hidden');
+    }
+
+    // v5.4.0 助夢:替村民加速他的人生夢想,並加好感
+    _nudgeDream(agentId) {
+        const npc = this.world?.agents?.[agentId];
+        if (!npc || !this.world.lifeGoals) return;
+        if (!this.world.lifeGoals.nudge(this.world, agentId)) return;
+        const rel = npc.relationships.getOrCreate('player', this.world.agents['player']?.name || t('旅人'));
+        rel.modifyAffinity(4);
+        const d = this.world.lifeGoals.describe(agentId);
+        this.world.logMessage('milestone', `✨ ${t('鎮長為')}${npc.name}${t('的夢想「')}${d?.name || ''}${t('」加了一把勁!')}`, npc.name);
+        npc.memory.add(this.world.tickCount, this.world.clock.timeStr, 'social', `${t('鎮長支持我的夢想,好感動!')}`, 6, ['player']);
+        this.bgm?.sfx?.('coin');
+        this._gameAlert(`✨ ${t('你鼓勵了')}${npc.name}${t('追逐「')}${d?.name || ''}${t('」的夢想!')}`, npc.icon || '✨');
+        this.state = this.world.getState();
+        this._showNpcCard(agentId);
     }
 
     renderSidebar() {

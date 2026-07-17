@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.3.0.zip` from Releases
+1. Download `rimtown-v5.4.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,14 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.4.0 (2026-07-16)
+
+**村民人生故事線(追劇感)**
+
+- 每個村民依價值觀/性格/職業有一個人生夢想(真愛/創業/技藝/遠行/家庭/名留青史),各 4 階段
+- 夢想綁定真實狀態推進:真愛讀戀愛引擎、技藝讀技能、家庭讀婚育、名留青史讀繁榮議會;里程碑會發動態進頭條
+- NPC 卡顯示夢想進度圓點 + 「助夢」加速刷好感;夢想達成全螢幕慶祝;頭條新增「夢想進行中」
 
 ### v5.3.0 (2026-07-16)
 

@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.3.0
+ * Version: 5.4.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.3.0');
+define('RIMTOWN_VERSION', '5.4.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1182,6 +1182,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.4.0',
+            'date'    => '2026-07-16',
+            'changes' => array(
+                '🌟 村民人生故事線:每個村民依價值觀/性格/職業擁有一個人生夢想(尋覓真愛/開店創業/技藝登峰/浪跡天涯/闔家團圓/名留青史),各有 4 個階段',
+                '夢想隨真實遊戲狀態推進——「尋覓真愛」讀戀愛引擎(暗戀→交往→結婚)、「技藝登峰」讀技能等級、「闔家團圓」讀婚育、「名留青史」讀繁榮與議會。每個里程碑村民會發鎮民動態、進頭條',
+                '✨ 點村民資訊卡可看夢想進度圓點,按「助夢」幫他加速並刷好感;夢想達成時全螢幕慶祝',
+                '📰 本週小鎮頭條新增「夢想進行中」區塊,追蹤最接近實現夢想的村民,小鎮從八點檔升級成群像劇',
+            ),
+        ),
         array(
             'version' => '5.3.0',
             'date'    => '2026-07-16',
