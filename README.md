@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.1.0.zip` from Releases
+1. Download `rimtown-v5.2.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,14 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.2.0 (2026-07-16)
+
+**八卦大戲:鎮民動態 + 謠言傳話 + 玩家放話**
+
+- 鎮民動態(小鎮朋友圈):村民每天發文,朋友/死對頭留言,分手發玻璃心文;玩家按讚留言刷好感,作者會回覆
+- 玩家放話:聊天中爆料(誇讚/酸人/亂點鴛鴦),謠言進入傳播網;誇讚回傳好感大增,壞話被抓包好感-12,鴛鴦譜可能成真
+- 謠言傳話遊戲:每經一手可能越傳越誇張,傳到第四手當事人聽到→當面對質+發文暗諷
 
 ### v5.1.0 (2026-07-16)
 

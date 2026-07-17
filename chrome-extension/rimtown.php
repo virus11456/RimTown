@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.1.0
+ * Version: 5.2.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.1.0');
+define('RIMTOWN_VERSION', '5.2.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1182,6 +1182,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.2.0',
+            'date'    => '2026-07-16',
+            'changes' => array(
+                '📱 鎮民動態：聊天頁新增小鎮朋友圈——村民每天發文（AI 生成或模板）、朋友和死對頭會留言，分手發玻璃心文、結婚曬恩愛；玩家可按讚留言刷好感，作者會回覆你',
+                '🗣️ 玩家放話：聊天時可偷偷爆料（誇讚／酸人／亂點鴛鴦），謠言進入傳播網路——誇讚傳回本人好感大增、壞話被抓到源頭是你就完了、亂點鴛鴦可能真的湊成一對',
+                '📢 謠言傳話遊戲：謠言每經一手有機率越傳越誇張（最多變形兩次），傳到第四手當事人就會聽到——負面謠言引爆當面對質、雙方關係惡化，當事人還會發文暗諷',
+            ),
+        ),
         array(
             'version' => '5.1.0',
             'date'    => '2026-07-16',

@@ -929,6 +929,26 @@ class PlayerAgent extends Agent {
 }
 
 // --- Gossip Network ---
+// --- v5.2.0 鎮民動態(小鎮朋友圈) ---
+class TownFeedSystem {
+    constructor() { this.posts = []; this._counter = 0; this._lastLlmPostTick = -9999; }
+    addPost(world, author, text, opts = {}) {
+        this._counter++;
+        const post = {
+            id: 'p' + this._counter, authorId: author.agentId, authorName: author.name,
+            text, time: world.clock.timeStr,
+            day: `${t('第')}${world.clock.year}${t('年')} ${world.clock.season} ${t('第')}${world.clock.day}${t('天')}`,
+            tick: world.tickCount, likes: [], comments: opts.comments || [],
+        };
+        this.posts.push(post);
+        if (this.posts.length > 120) this.posts = this.posts.slice(-120);
+        world._feedUnread = (world._feedUnread || 0) + 1;
+        return post;
+    }
+    serialize() { return { posts: this.posts.slice(-80), _counter: this._counter }; }
+    load(d) { if (d) { this.posts = Array.isArray(d.posts) ? d.posts : []; this._counter = d._counter || 0; } }
+}
+
 class GossipNetwork {
     constructor() { this.activeGossip = []; }
     createGossip(source, about, world) {
@@ -963,9 +983,91 @@ class GossipNetwork {
         if (!speaker.personality.traits.includes('gossip') && Math.random() > 0.3) return null;
         const gossip = pickRandom(eligible);
         gossip.spreadCount++;
+        // v5.2.0 傳話遊戲:謠言越傳越誇張(最多變形 2 次)
+        if (Math.random() < 0.35 && (gossip._mutations || 0) < 2) {
+            gossip._mutations = (gossip._mutations || 0) + 1;
+            const wraps = [
+                (c) => `${t('我跟你說,')}${c}${t('而且好像不只這樣...')}`,
+                (c) => `${t('千真萬確!')}${c}`,
+                (c) => `${c}${t('聽說整條街都知道了!')}`,
+                (c) => `${c}${t('我聽到的版本更誇張...')}`,
+            ];
+            gossip.content = pickRandom(wraps)(gossip.content);
+        }
         listener.memory.add(world.tickCount, world.clock.timeStr, 'social',
             `${speaker.name}${t('告訴我：「')}${gossip.content}${t('」')}`, 4, [speaker.name, gossip.about]);
         world.logMessage('gossip', `${speaker.name}${t('向')}${listener.name}${t('八卦了')}${gossip.about}${t('的事')}`, speaker.name, listener.name);
+        // v5.2.0 傳到第 4 手,當事人聽到了 → 對質
+        if (gossip.spreadCount >= 4 && !gossip._confronted) {
+            gossip._confronted = true;
+            this._handleGossipReachesSubject(gossip, world);
+        }
+        return gossip;
+    }
+
+    // v5.2.0 謠言傳回當事人耳裡:負面/不實 → 找源頭對質;正面 → 感謝
+    _handleGossipReachesSubject(gossip, world) {
+        const subject = Object.values(world.agents).find(a => a.name === gossip.about);
+        if (!subject || subject.isPlayer) return;
+        const source = Object.values(world.agents).find(a => a.name === gossip.source);
+        const negative = gossip.tone === 'diss' || !gossip.isTrue || /奇怪|劈腿|背著|懶散/.test(gossip.content);
+        const positive = gossip.tone === 'praise';
+        if (source && source.isPlayer) {
+            // 玩家是造謠源頭!
+            const relToPlayer = subject.relationships.getOrCreate(source.agentId, source.name);
+            if (positive) {
+                relToPlayer.modifyAffinity(6);
+                subject.memory.add(world.tickCount, world.clock.timeStr, 'social', `${t('聽說鎮長到處誇我,真開心!')}`, 6, [source.name]);
+                source.chatHistory?.push?.({ speaker: subject.name, target: source.name, text: t('欸,我聽說你到處跟人誇我?哈哈,謝啦,請你喝一杯!'), time: world.clock.timeStr });
+                world.logMessage('gossip', `💐 ${subject.name}${t('聽到了鎮長的美言,好感大增!')}`, subject.name);
+            } else if (negative) {
+                relToPlayer.modifyAffinity(-12); relToPlayer.modifyTrust(-10);
+                subject.memory.add(world.tickCount, world.clock.timeStr, 'social', `${t('居然是鎮長在背後說我壞話...太過分了。')}`, 8, [source.name]);
+                source.chatHistory?.push?.({ speaker: subject.name, target: source.name, text: t('我都聽說了。你在背後那樣說我?虧我還這麼信任你。'), time: world.clock.timeStr });
+                world.logMessage('gossip', `💢 ${subject.name}${t('發現鎮長在背後說他壞話,關係惡化!')}`, subject.name);
+            }
+            if (world.conversationEngine?.onNpcMessage) world.conversationEngine.onNpcMessage(subject.agentId);
+        } else if (source && negative && source !== subject) {
+            const relA = subject.relationships.getOrCreate(source.agentId, source.name);
+            const relB = source.relationships.getOrCreate(subject.agentId, subject.name);
+            relA.modifyAffinity(-12); relB.modifyAffinity(-8);
+            world.logMessage('gossip', `💢 ${subject.name}${t('聽到了')}${source.name}${t('散布的謠言,當面對質!兩人關係惡化')}`, subject.name, source.name);
+            if (world.dailyNews) world.dailyNews.collectEvent('drama', `${subject.name}${t('為了謠言找')}${source.name}${t('對質!')}`, 7, [subject.name, source.name]);
+            // 當事人在鎮民動態發文澄清
+            world.townFeed?.addPost(world, subject, pickRandom([
+                `${t('最近聽到一些關於我的傳言。清者自清,懶得解釋。')}`,
+                `${t('有些人嘴巴可以積點德嗎?')}`,
+                `${t('謠言止於智者。就這樣。')}`,
+            ]));
+        }
+        // v5.2.0 亂點鴛鴦:紅娘謠言讓兩位當事人開始注意彼此
+        if (gossip.tone === 'ship' && gossip.shipWith) {
+            const other = Object.values(world.agents).find(a => a.name === gossip.shipWith);
+            if (other && !subject.isPlayer && !other.isPlayer && !subject.relationships.getPartner() && !other.relationships.getPartner()) {
+                subject.relationships.getOrCreate(other.agentId, other.name).modifyRomantic(randInt(3, 6));
+                other.relationships.getOrCreate(subject.agentId, subject.name).modifyRomantic(randInt(3, 6));
+                world.logMessage('gossip', `💘 ${t('被大家起鬨之後,')}${subject.name}${t('和')}${gossip.shipWith}${t('好像真的開始注意彼此了...')}`, subject.name);
+            }
+        }
+    }
+
+    // v5.2.0 玩家放話:把八卦丟進謠言網路
+    playerSeedGossip(world, player, listener, about, tone, shipWith) {
+        const templates = {
+            praise: [`${about.name}${t('最近超罩的,大家都該學學!')}`, `${t('我覺得')}${about.name}${t('是鎮上最可靠的人。')}`],
+            diss: [`${about.name}${t('最近很懶散,大家小心點...')}`, `${t('說真的,')}${about.name}${t('私底下跟表面不太一樣喔...')}`],
+            ship: [`${about.name}${t('和')}${shipWith || ''}${t('是不是有什麼?我看他們常常眉來眼去...')}`],
+        };
+        const content = pickRandom(templates[tone] || templates.praise);
+        const gossip = {
+            about: about.name, content, source: player.name, spreadCount: 1,
+            tickCreated: world.tickCount, isTrue: tone === 'praise', tone,
+            shipWith: shipWith || null,
+        };
+        this.activeGossip.push(gossip);
+        if (this.activeGossip.length > 10000) this.activeGossip = this.activeGossip.slice(-10000);
+        listener.memory.add(world.tickCount, world.clock.timeStr, 'social', `${player.name}${t('偷偷跟我說:「')}${content}${t('」')}`, 5, [player.name, about.name]);
+        world.logMessage('gossip', `🗣️ ${t('鎮長偷偷向')}${listener.name}${t('爆料了')}${about.name}${t('的事...')}`, player.name, listener.name);
         return gossip;
     }
 }
@@ -1088,6 +1190,75 @@ ${t('- 直接寫訊息內容就好')}`;
         if (this.onNpcMessage) this.onNpcMessage(npc.agentId);
     }
 
+    // v5.2.0: 鎮民動態發文 — AI 寫一則動態+朋友留言,或用模板
+    async generateFeedPost(world, author, tryLlm) {
+        try {
+            if (!world.townFeed) return;
+            let text = '', comments = [];
+            const npcs = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead && a.agentId !== author.agentId);
+            // 挑留言者:一個朋友 + (可能)一個對頭
+            const relOf = (x) => author.relationships.relationships[x.agentId];
+            const friends = npcs.filter(x => (relOf(x)?.affinity || 0) > 20);
+            const rivals = npcs.filter(x => (relOf(x)?.affinity || 0) < -15);
+            const commenters = [];
+            if (friends.length) commenters.push(pickRandom(friends));
+            if (rivals.length && Math.random() < 0.5) commenters.push(pickRandom(rivals));
+            else if (npcs.length && commenters.length < 2 && Math.random() < 0.6) commenters.push(pickRandom(npcs));
+
+            if (tryLlm && this.llm && this.llm._canMakeRequest(false) &&
+                world.tickCount - (world.townFeed._lastLlmPostTick || -9999) > 200) {
+                try {
+                    const pN = this._buildCharacterProfile(author);
+                    const names = commenters.map(c => c.name);
+                    const prompt = `${t('你在為小鎮社群「鎮民動態」寫貼文(像臉書/IG動態)。')}
+${t('發文者:')}${pN.name}${t('，')}${pN.age}${t('歲，')}${pN.job}${t('。性格：')}${pN.traits}${t('。')}
+${pN.thought ? `${t('最近在想：')}${pN.thought}` : ''}
+${t('現在在')}${author.currentLocation.replace(/_/g, ' ')}${t('，正在')}${author.activity}${t('。')}
+
+${t('【格式】第一行寫貼文內容(1-2句,口語、有梗、可加表情符號)。')}
+${names.length ? `${t('接著每行寫一則留言,格式「名字: 留言」,留言者依序是:')}${names.join(t('、'))}` : ''}
+${t('繁體中文(台灣用語),不要有其他任何文字。')}`;
+                    const response = await this.llm.generate(prompt, 250, 0.95, false);
+                    if (response && response !== '__ERROR__' && response !== '__RATE_LIMITED__') {
+                        const lines = response.trim().split('\n').map(s => s.trim()).filter(Boolean);
+                        if (lines.length) {
+                            text = lines[0].replace(/^["「『]|["」』]$/g, '').replace(new RegExp(`^${author.name}[：:]\\s*`), '').trim();
+                            for (const l of lines.slice(1)) {
+                                const idx = l.search(/[:：]/);
+                                if (idx > 0 && idx <= 12) comments.push({ speaker: l.slice(0, idx).trim(), text: l.slice(idx + 1).trim() });
+                            }
+                            comments = comments.slice(0, 2);
+                            world.townFeed._lastLlmPostTick = world.tickCount;
+                        }
+                    }
+                } catch (e) { console.error('[RimTown] feed post LLM failed:', e); }
+            }
+            if (!text) {
+                const mood = author.mood ?? 0;
+                const partner = author.relationships.getPartner();
+                const pool = [
+                    `${t('今天的')}${author.currentLocation.includes('farm') ? t('田') : t('工作')}${t('也太累了吧...誰要請我喝一杯 🍺')}`,
+                    `${t('剛剛在路上看到超好笑的事,笑到肚子痛 😂')}`,
+                    t('天氣真好,適合偷懶(才怪,還有一堆活要幹)'),
+                    t('突然好想吃烤魚。就這樣。'),
+                    mood > 30 ? t('最近的日子真不錯,感恩 🙏') : t('唉,不想說話。懂的都懂。'),
+                ];
+                if (partner) pool.push(`${t('有個人在等我回家吃飯,幸福大概就是這樣 ❤️')}`);
+                if (author.personality.traits.includes('gossip')) pool.push(t('我知道一個大八卦,但我就不說 🤐 問就是不說'));
+                if (author.personality.traits.includes('lazy')) pool.push(t('今日進度:0。明天的我加油 💪'));
+                text = pickRandom(pool);
+                comments = commenters.slice(0, 2).map(c => {
+                    const aff = relOf(c)?.affinity || 0;
+                    const linesPool = aff < -15
+                        ? [t('呵。'), t('有些人真的很閒。'), t('然後呢?')]
+                        : [t('哈哈哈笑死'), t('+1!'), t('晚上老地方見?'), t('你還好嗎?抱抱'), t('這就是你摸魚的藉口?😏')];
+                    return { speaker: c.name, text: pickRandom(linesPool) };
+                });
+            }
+            world.townFeed.addPost(world, author, text, { comments });
+        } catch (e) { console.error('[RimTown] generateFeedPost failed:', e); }
+    }
+
     // v5.1.0: 名場面 — 為 NPC 感情大事件生成 4-6 句對話劇(LLM 或罐頭劇本)
     async generateDramaScene(world, kind, meta, a, b, thirdName) {
         try {
@@ -1163,6 +1334,18 @@ ${t('- 格式：每行「名字: 對話內容」,不要有其他任何東西')}`
             if (!lines.length) return;
             world._pendingDramaScenes = world._pendingDramaScenes || [];
             world._pendingDramaScenes.push({ kind, icon: meta.icon, title: meta.title, aName: a.name, bName: b.name, lines });
+            // v5.2.0 大事件後當事人發鎮民動態
+            if (world.townFeed) {
+                const feedPools = {
+                    confession: { who: b, texts: [t('今天是個好日子 💕'), t('原來被喜歡的人喜歡,是這種感覺。')] },
+                    wedding: { who: a, texts: [t('我!結!婚!啦!🎉 感謝大家的祝福!'), t('執子之手,與子偕老。❤️')] },
+                    busted: { who: a, texts: [t('識人不清,是我活該。'), t('有些人,不點名。祝你們幸福,呵。')] },
+                    breakup: { who: a, texts: [t('恢復單身。別問,問就是不合適。'), t('刪掉了很多東西。包括回憶。')] },
+                    divorce: { who: b, texts: [t('一段路走完了。往前看。'), t('簽完字,天還是藍的。挺好。')] },
+                };
+                const fp = feedPools[kind];
+                if (fp) world.townFeed.addPost(world, fp.who, pickRandom(fp.texts));
+            }
         } catch (e) { console.error('[RimTown] generateDramaScene failed:', e); }
     }
 
@@ -4900,6 +5083,7 @@ class World {
         this.paused = false;
         this.messageLog = [];
         this.gossipNetwork = new GossipNetwork();
+        this.townFeed = new TownFeedSystem(); // v5.2.0 鎮民動態
         this.conversationEngine = new ConversationEngine();
         // Economy
         this.stockpile = new Stockpile();
@@ -4984,6 +5168,7 @@ class World {
             this.factions.dailyUpdate(this);
             this.festivals.dailyUpdate(this);
             this.checkHeartEvents(); // v5.0.0 每日掃描心動事件門檻
+            this.generateDailyFeedPosts(); // v5.2.0 鎮民動態每日發文
             this.lifecycle.dailyUpdate(this);
             this.exploration.dailyUpdate(this);
             // v3 systems daily updates
@@ -5056,6 +5241,7 @@ class World {
         this.clock.reset(); this.events = new EventSystem(); this.election = new ElectionSystem();
         this.agents = {}; this.tickCount = 0; this.paused = false; this.messageLog = [];
         this.gossipNetwork = new GossipNetwork();
+        this.townFeed = new TownFeedSystem(); // v5.2.0 鎮民動態
         this.stockpile = new Stockpile();
         this.buildings = new BuildingManager();
         this.decorations = this.decorations || []; // v4.8.0 玩家擺放的裝飾 [{type,x,y}]
@@ -5350,6 +5536,17 @@ class World {
         Promise.resolve(this.conversationEngine?.generateDramaScene?.(this, kind, meta, agentA, agentB, thirdName)).catch(() => {});
     }
 
+    // --- v5.2.0 鎮民動態:每天挑 2 位村民發文(第 1 篇嘗試 AI,其餘模板) ---
+    generateDailyFeedPosts() {
+        if (!this.townFeed) return;
+        const npcs = Object.values(this.agents).filter(a => !a.isPlayer && !a.isDead);
+        if (!npcs.length) return;
+        const posters = [...npcs].sort(() => Math.random() - 0.5).slice(0, 2);
+        posters.forEach((npc, i) => {
+            Promise.resolve(this.conversationEngine?.generateFeedPost?.(this, npc, i === 0)).catch(() => {});
+        });
+    }
+
     // --- v5.0.0 心動事件:每個 NPC 每個門檻只觸發一次,一次只發一件 ---
     checkHeartEvents() {
         if (this._heartEventBusy) return;
@@ -5411,6 +5608,7 @@ class World {
                 locations: Object.fromEntries(Object.entries(this.townMap.locations).map(([k,v])=>[k,{id:v.id,name:v.name,description:v.description,x:v.x,y:v.y,category:v.category,capacity:v.capacity}])) } : null,
             agents: Object.fromEntries(Object.entries(this.agents).map(([k,a])=>[k,serializeAgent(a)])),
             gossip: this.gossipNetwork.activeGossip.slice(-10000),
+            townFeed: this.townFeed ? this.townFeed.serialize() : null,
             events: {
                 eventLog: this.events.eventLog.slice(-10000),
                 activeEffects: {...this.events.activeEffects},
@@ -5532,7 +5730,9 @@ class World {
 
             // Gossip
             this.gossipNetwork = new GossipNetwork();
+        this.townFeed = new TownFeedSystem(); // v5.2.0 鎮民動態
             this.gossipNetwork.activeGossip = data.gossip || [];
+            if (this.townFeed) this.townFeed.load(data.townFeed);
 
             // Events
             this.events = new EventSystem();

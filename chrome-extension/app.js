@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.1.0
-const RIMTOWN_APP_VERSION = '5.1.0';
+// RimTown - Frontend App (WordPress Plugin) v5.2.0
+const RIMTOWN_APP_VERSION = '5.2.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -3271,6 +3271,13 @@ class RimTownApp {
                 case 'start-chat': this.startChatWith(val); break;
                 case 'send-chat': this._sendFromInput(); break;
                 case 'open-gift': this._showGiftPicker(); break;
+                case 'chat-view': this._chatView = val === 'feed' ? 'feed' : 'dm'; if (val === 'feed') this.world._feedUnread = 0; this.renderSidebar(); break;
+                case 'feed-like': this._feedLike(val); break;
+                case 'feed-comment': this._feedCommentPost = this._feedCommentPost === val ? null : val; this.renderSidebar(); break;
+                case 'feed-comment-send': this._feedCommentSend(val); break;
+                case 'open-rumor': this._showRumorPicker(); break;
+                case 'rumor-about': this._rumorPickTone(val); break;
+                case 'rumor-send': this._sendRumor(val); break;
                 case 'give-gift': this._giveGift(val); break;
                 case 'show-leaderboard': this._showLeaderboard(); break;
                 case 'decor-place': this._enterDecorMode(val); break;
@@ -4842,6 +4849,14 @@ class RimTownApp {
     renderChat(container) {
         const player = this.state?.agents?.['player'];
         if (!player) { container.innerHTML = '<p class="muted-text">Player not found.</p>'; return; }
+        // v5.2.0 私訊 / 鎮民動態 切換
+        const feedUnread = this.world?._feedUnread || 0;
+        const isFeed = this._chatView === 'feed';
+        const toggleHtml = `<div style="display:flex;gap:6px;margin-bottom:8px">
+            <button class="trade-btn" data-action="chat-view" data-val="dm" style="flex:1;${!isFeed ? 'background:var(--accent);color:#fff;' : ''}padding:7px">💬 ${t('私訊')}</button>
+            <button class="trade-btn" data-action="chat-view" data-val="feed" style="flex:1;${isFeed ? 'background:var(--accent);color:#fff;' : ''}padding:7px">📱 ${t('鎮民動態')}${feedUnread && !isFeed ? ` <span style="background:#e33;border-radius:8px;padding:0 6px;font-size:0.68rem">${feedUnread}</span>` : ''}</button>
+        </div>`;
+        if (isFeed) { this.renderTownFeed(container, toggleHtml); return; }
         const chatHistory = player.chat_history || [];
         if (!this._chatUnread) this._chatUnread = new Set();
 
@@ -4928,6 +4943,7 @@ class RimTownApp {
             chatAreaHtml += `<div class="chat-input-area">
                 <input type="text" id="chat-input" class="chat-input" placeholder="${t('輸入訊息')}..." ${this.chatSending ? 'disabled' : ''}>
                 <button class="chat-gift-btn" data-action="open-gift" title="${t('送禮')}" style="padding:0 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;font-size:1rem">🎁</button>
+                <button class="chat-gift-btn" data-action="open-rumor" title="${t('爆料八卦')}" style="padding:0 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;font-size:1rem">🗣️</button>
                 <button class="chat-send-btn" data-action="send-chat" ${this.chatSending ? 'disabled' : ''}>${this.chatSending ? '...' : t('送出')}</button></div>`;
         } else {
             chatAreaHtml += `<div class="chat-messages" id="chat-messages"><p class="muted-text chat-hint">${t('選擇一個居民開始聊天')}</p></div>`;
@@ -4939,13 +4955,161 @@ class RimTownApp {
             <button class="btn-archive-save" data-action="manual-archive">${t('立即存檔')}</button>
         </div>`;
 
-        container.innerHTML = contactsHtml + chatAreaHtml;
+        container.innerHTML = toggleHtml + contactsHtml + chatAreaHtml;
         this._scrollChatToBottom();
         const input = document.getElementById('chat-input');
         if (input && !this.chatSending && this._focusChatInput) {
             input.focus();
             this._focusChatInput = false;
         }
+    }
+
+    // =====================================================
+    // v5.2.0 鎮民動態(小鎮朋友圈)
+    // =====================================================
+    renderTownFeed(container, toggleHtml) {
+        this.world._feedUnread = 0;
+        const esc = (x) => this._escapeHtml(String(x ?? ''));
+        const posts = this.world?.townFeed?.posts ? [...this.world.townFeed.posts].reverse().slice(0, 40) : [];
+        const playerName = this.world?.agents?.['player']?.name || t('旅人');
+        let html = toggleHtml || '';
+        html += `<div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:8px">${t('村民們的日常、心情和玻璃心文都在這裡。按讚留言可以刷好感!')}</div>`;
+        if (!posts.length) html += `<p class="muted-text">${t('還沒有人發文。村民們每天都會更新動態!')}</p>`;
+        for (const p of posts) {
+            const liked = p.likes.includes(playerName);
+            const cmts = (p.comments || []).map(c =>
+                `<div style="font-size:0.75rem;margin:4px 0 0 10px;line-height:1.4"><b style="color:var(--accent)">${esc(c.speaker)}</b><span style="opacity:0.6">：</span>${esc(c.text)}</div>`).join('');
+            html += `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <b style="font-size:0.85rem">${esc(p.authorName)}</b>
+                    <span style="font-size:0.65rem;color:var(--text-secondary)">${esc(p.day || '')} ${esc(p.time || '')}</span>
+                </div>
+                <div style="margin:6px 0;font-size:0.85rem;line-height:1.55">${esc(p.text)}</div>
+                <div style="display:flex;gap:10px">
+                    <button data-action="feed-like" data-val="${p.id}" style="background:none;border:none;cursor:pointer;font-size:0.8rem;color:var(--text-secondary);padding:2px 4px">${liked ? '❤️' : '🤍'} ${p.likes.length}</button>
+                    <button data-action="feed-comment" data-val="${p.id}" style="background:none;border:none;cursor:pointer;font-size:0.8rem;color:var(--text-secondary);padding:2px 4px">💬 ${(p.comments || []).length}</button>
+                </div>
+                ${cmts}
+                ${this._feedCommentPost === p.id ? `<div style="display:flex;gap:6px;margin-top:8px">
+                    <input id="feed-comment-input" maxlength="60" placeholder="${t('留言...')}" style="flex:1;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg-panel);color:var(--text-primary);font-size:0.8rem">
+                    <button class="trade-btn" data-action="feed-comment-send" data-val="${p.id}">${t('送出')}</button></div>` : ''}
+            </div>`;
+        }
+        container.innerHTML = html;
+        document.getElementById('feed-comment-input')?.focus();
+    }
+
+    _feedLike(postId) {
+        const post = this.world?.townFeed?.posts.find(p => p.id === postId);
+        const player = this.world?.agents?.['player'];
+        if (!post || !player || post.likes.includes(player.name)) return;
+        post.likes.push(player.name);
+        const author = this.world.agents[post.authorId];
+        if (author && !author.isPlayer) author.relationships.getOrCreate('player', player.name).modifyAffinity(1);
+        this.bgm?.sfx?.('click');
+        this.renderSidebar();
+    }
+
+    _feedCommentSend(postId) {
+        const input = document.getElementById('feed-comment-input');
+        const text = (input?.value || '').trim();
+        if (!text) return;
+        const post = this.world?.townFeed?.posts.find(p => p.id === postId);
+        const player = this.world?.agents?.['player'];
+        if (!post || !player) return;
+        post.comments = post.comments || [];
+        post.comments.push({ speaker: player.name, text });
+        this._feedCommentPost = null;
+        const author = this.world.agents[post.authorId];
+        if (author && !author.isPlayer) {
+            const rel = author.relationships.getOrCreate('player', player.name);
+            rel.modifyAffinity(2);
+            author.memory.add(this.world.tickCount, this.world.clock.timeStr, 'social', `${player.name}${t('在我的動態下留言:')}${text}`, 4, [player.name]);
+            // 作者回覆留言
+            setTimeout(() => {
+                const aff = rel.affinity;
+                const pool = aff > 40
+                    ? [t('就知道你懂我 😆'), t('哈哈,改天一起!'), `${t('謝啦')}${player.name}!❤️`]
+                    : aff < -10 ? [t('喔,是你啊。'), t('嗯。')]
+                    : [t('哈哈謝謝鎮長!'), t('鎮長也看到啦 😳'), t('感恩!')];
+                post.comments.push({ speaker: author.name, text: pool[Math.floor(Math.random() * pool.length)] });
+                if (this.activeTab === 'chat' && this._chatView === 'feed') this.renderSidebar();
+            }, 900);
+        }
+        this.bgm?.sfx?.('send');
+        this.renderSidebar();
+    }
+
+    // =====================================================
+    // v5.2.0 玩家放話(爆料)
+    // =====================================================
+    _showRumorPicker() {
+        const listener = this.world?.agents?.[this.chatTarget];
+        if (!listener) return;
+        const dayKey = `${this.world.clock.year}-${this.world.clock.season}-${this.world.clock.day}`;
+        if (this.world._lastRumorDay === dayKey) {
+            this._gameAlert(t('今天已經爆過料了,太常放話會被當成大嘴巴!明天再來。'), '🗣️');
+            return;
+        }
+        const npcs = Object.entries(this.world.agents).filter(([id, a]) => !a.isPlayer && id !== this.chatTarget && !a.isDead);
+        let el = document.getElementById('rumor-picker');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'rumor-picker';
+            el.className = 'modal';
+            document.getElementById('rimtown-app')?.appendChild(el);
+        }
+        const rows = npcs.map(([id, a]) => `<button data-action="rumor-about" data-val="${id}"
+            style="display:block;width:100%;text-align:left;padding:8px 12px;margin-bottom:5px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.85rem">${a.name} <span style="font-size:0.7rem;color:var(--text-secondary)">${a.job?.title || t('無業')}</span></button>`).join('');
+        el.innerHTML = `<div class="modal-content" style="max-width:320px;max-height:70vh;overflow-y:auto">
+            <h2>🗣️ ${t('要爆誰的料?')}</h2>
+            <div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${t('偷偷跟')}${listener.name}${t('說別人的八卦。謠言會在鎮上流傳,小心傳回當事人耳裡...')}</div>
+            ${rows}
+            <div class="modal-buttons"><button onclick="document.getElementById('rumor-picker').classList.add('hidden')">${t('取消')}</button></div>
+        </div>`;
+        el.classList.remove('hidden');
+    }
+
+    _rumorPickTone(aboutId) {
+        this._rumorAbout = aboutId;
+        const about = this.world?.agents?.[aboutId];
+        const el = document.getElementById('rumor-picker');
+        if (!about || !el) return;
+        el.innerHTML = `<div class="modal-content" style="max-width:320px">
+            <h2>🗣️ ${t('關於')} ${about.name}...</h2>
+            <button data-action="rumor-send" data-val="praise" style="display:block;width:100%;padding:10px;margin-bottom:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary)">💐 ${t('誇讚他')} <span style="font-size:0.68rem;color:var(--text-secondary)">${t('傳回本人耳裡好感大增')}</span></button>
+            <button data-action="rumor-send" data-val="diss" style="display:block;width:100%;padding:10px;margin-bottom:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary)">🐍 ${t('酸他一下')} <span style="font-size:0.68rem;color:#e88">${t('被發現是你說的就完了')}</span></button>
+            <button data-action="rumor-send" data-val="ship" style="display:block;width:100%;padding:10px;margin-bottom:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary)">💘 ${t('亂點鴛鴦')} <span style="font-size:0.68rem;color:var(--text-secondary)">${t('也許會湊成一對?')}</span></button>
+            <div class="modal-buttons"><button onclick="document.getElementById('rumor-picker').classList.add('hidden')">${t('取消')}</button></div>
+        </div>`;
+    }
+
+    _sendRumor(tone) {
+        const player = this.world?.agents?.['player'];
+        const listener = this.world?.agents?.[this.chatTarget];
+        const about = this.world?.agents?.[this._rumorAbout];
+        if (!player || !listener || !about) return;
+        let shipWith = null;
+        if (tone === 'ship') {
+            const others = Object.values(this.world.agents).filter(a => !a.isPlayer && !a.isDead && a.agentId !== about.agentId && a.agentId !== listener.agentId && !a.relationships.getPartner());
+            if (others.length) shipWith = others[Math.floor(Math.random() * others.length)].name;
+        }
+        const g = this.world.gossipNetwork.playerSeedGossip(this.world, player, listener, about, tone, shipWith);
+        this.world._lastRumorDay = `${this.world.clock.year}-${this.world.clock.season}-${this.world.clock.day}`;
+        player.chatHistory.push({ speaker: player.name, target: listener.name, text: `🗣️(${t('偷偷說')}) ${g.content}`, time: this.world.clock.timeStr });
+        const tr = listener.personality.traits;
+        const relL = listener.relationships.getOrCreate('player', player.name);
+        let reaction;
+        if (tr.includes('gossip')) { reaction = t('哇這個猛!放心,我幫你「不小心」說出去 👀'); relL.modifyAffinity(3); }
+        else if (tr.includes('kind')) { reaction = t('欸...在背後這樣說人家不太好吧...不過我聽到了。'); relL.modifyAffinity(-1); }
+        else { reaction = t('喔~?有意思,我記下了。'); relL.modifyAffinity(1); }
+        listener.chatHistory?.push?.({ speaker: listener.name, target: player.name, text: reaction, time: this.world.clock.timeStr });
+        player.chatHistory.push({ speaker: listener.name, target: player.name, text: reaction, time: this.world.clock.timeStr });
+        document.getElementById('rumor-picker')?.classList.add('hidden');
+        this.bgm?.sfx?.('send');
+        this.state = this.world.getState();
+        if (this.activeTab === 'chat') { this._renderChatMessages(); this._scrollChatToBottom(); }
+        this.renderSidebar();
     }
 
     async showChatArchives() {
