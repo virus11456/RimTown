@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.4.0.zip` from Releases
+1. Download `rimtown-v5.5.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,13 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.5.0 (2026-07-16)
+
+**新村民包 + 開局關係網**
+
+- 小鎮 12→16 人:周明(遊唱商人)、何昌與何秀(恩愛夫妻)、鄭薇(暗戀成疾的天才),各自帶戲劇鉤子
+- 開局就種下關係網:暗戀/前任/世仇/摯友/夫妻 + 周明→趙霞→馬強五角戀;一進遊戲就有八卦在跑,戲劇提早非常多(實測 Day 20 已 4 對情侶)
 
 ### v5.4.0 (2026-07-16)
 

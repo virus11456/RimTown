@@ -5786,6 +5786,11 @@ class World {
             {id:'huang_li',name:t('黃莉'),age:29,gender:'female',job:'priest',home:'residential_north',traits:['kind','optimist','romantic'],values:[t('和平'),t('社群'),t('藝術')],background:t('溫柔的牧師，照顧禮拜堂和居民的心靈。有一副動人的歌喉，經常在教堂唱歌。')},
             {id:'ma_qiang',name:t('馬強'),age:33,gender:'male',job:'carpenter',home:'residential_south',traits:['lazy','charismatic','gossip'],values:[t('自由'),t('冒險')],background:t('迷人的懶鬼，比起幹活更喜歡講故事。但只要認真起來手藝一流。')},
             {id:'xu_ying',name:t('許瑩'),age:20,gender:'female',job:'tailor',home:'residential_east',traits:['shy','perfectionist','early_bird'],values:[t('藝術'),t('家庭')],background:t('鎮上最年輕的居民。天賦異稟的裁縫師，但太害羞不敢接受別人的誇獎。')},
+            // v5.5.0 新村民包(自帶戲劇鉤子)
+            {id:'zhou_ming',name:t('周明'),age:27,gender:'male',job:'trader',home:'residential_east',traits:['charismatic','romantic','creative'],values:[t('冒險'),t('藝術')],background:t('從遠方來的遊唱商人，帶著一把舊吉他和說不完的故事。走到哪都是焦點，也走到哪都留下心碎的人。')},
+            {id:'he_chang',name:t('何昌'),age:44,gender:'male',job:'carpenter',home:'residential_north',traits:['hardworking','kind','stoic'],values:[t('家庭'),t('社群')],background:t('沉穩可靠的老木匠，和妻子何秀結縭二十年。話不多，但眼裡總有妻子的身影。')},
+            {id:'he_xiu',name:t('何秀'),age:41,gender:'female',job:'cook',home:'residential_north',traits:['kind','gossip','optimist'],values:[t('家庭'),t('社群')],background:t('何昌的妻子，開朗愛笑。和王麗是廚房裡的死黨，兩人湊在一起整條街的八卦都藏不住。')},
+            {id:'zheng_wei',name:t('鄭薇'),age:23,gender:'female',job:'researcher',home:'residential_east',traits:['shy','creative','perfectionist'],values:[t('知識'),t('藝術')],background:t('孤僻的年輕天才，總是埋首書堆。最近卻常常為了一個人心神不寧，連公式都算錯。')},
         ];
         residents.forEach(r => {
             const personality = new Personality(r.traits, r.background, r.values);
@@ -5793,6 +5798,50 @@ class World {
             const agent = new Agent(r.id, r.name, r.age, personality, job, r.home, r.gender);
             this.addAgent(agent);
         });
+        this._seedRelationships(); // v5.5.0 開局關係網,讓小鎮一開始就有戲
+    }
+
+    // v5.5.0 預設關係網:開局就種下暗戀/前任/世仇/摯友/夫妻,不必空等 30 天才有戲
+    _seedRelationships() {
+        const A = this.agents;
+        const set = (from, to, { aff = 0, rom = 0, trust = 0, status = null } = {}) => {
+            const f = A[from], t2 = A[to]; if (!f || !t2) return;
+            const r = f.relationships.getOrCreate(t2.agentId, t2.name);
+            r.affinity = aff; r.romanticInterest = rom; r.trust = trust;
+            if (status) { r.status = status; r.statusSince = 0; }
+            r.interactionCount = Math.max(r.interactionCount, 6);
+            r.lastInteractionTick = 0;
+        };
+        const pair = (x, y, opts) => { set(x, y, opts.x); set(y, x, opts.y); };
+
+        // 💌 劉俊 暗戀 許瑩(那些從沒寄出的情書)——單戀
+        pair('liu_jun', 'xu_ying', { x: { aff: 42, rom: 48 }, y: { aff: 26, rom: 8 } });
+        // 💗 張豪 暗戀 黃莉(害羞詩人愛上歌聲牧師)——微微雙向
+        pair('zhang_hao', 'huang_li', { x: { aff: 38, rom: 44 }, y: { aff: 32, rom: 18 } });
+        // 🛡️ 楊鋒 暗戀 林美(嫉妒守衛的心事),林美埋首工作
+        pair('yang_feng', 'lin_mei', { x: { aff: 36, rom: 43 }, y: { aff: 22, rom: 6 } });
+        // ⚔️ 吳達 vs 楊鋒(老礦工與前傭兵的舊怨)——世仇
+        pair('wu_da', 'yang_feng', { x: { aff: -46, trust: -30 }, y: { aff: -44, trust: -28 } });
+        // 👯 王麗 & 何秀 廚房八卦死黨;王麗 & 黃莉 摯友
+        pair('wang_li', 'he_xiu', { x: { aff: 66 }, y: { aff: 66 } });
+        pair('wang_li', 'huang_li', { x: { aff: 62 }, y: { aff: 58 } });
+        // 💔 趙霞 & 馬強 前任(藕斷絲連)
+        pair('zhao_xia', 'ma_qiang', { x: { aff: 16, rom: 18, status: 'ex' }, y: { aff: 28, rom: 24, status: 'ex' } });
+        // 💍 何昌 & 何秀 恩愛老夫妻
+        pair('he_chang', 'he_xiu', { x: { aff: 72, rom: 56, status: 'married', trust: 60 }, y: { aff: 70, rom: 54, status: 'married', trust: 58 } });
+        // 🎸 周明 迷上 趙霞(威脅到馬強)——催化五角戀
+        pair('zhou_ming', 'zhao_xia', { x: { aff: 34, rom: 40 }, y: { aff: 30, rom: 20 } });
+        // 📚 鄭薇 暗戀 周明(算錯公式的原因)——單戀
+        pair('zheng_wei', 'zhou_ming', { x: { aff: 30, rom: 46 }, y: { aff: 18, rom: 4 } });
+        // 🤝 陳偉(鎮長) & 楊鋒 老戰友互敬
+        pair('chen_wei', 'yang_feng', { x: { aff: 54, trust: 40 }, y: { aff: 52, trust: 38 } });
+        // 開局八卦頭條:讓玩家一進來就嗅到戲
+        if (this.gossipNetwork) {
+            this.gossipNetwork.activeGossip.push(
+                { about: A['zhou_ming']?.name, content: t('聽說新來的周明,好像跟趙霞走得很近...而馬強的臉色可不太好看。'), source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: 'crush' },
+                { about: A['wu_da']?.name, content: t('吳達和楊鋒又在酒館互看不順眼了,他們的樑子結很久了。'), source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: 'rivalry' },
+            );
+        }
     }
 
     // --- v4.9.0 相鄰組合(開羅式):裝飾與有座標的建築放在一起觸發 ---

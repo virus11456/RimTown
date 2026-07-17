@@ -1194,6 +1194,10 @@ const I18N = (() => {
         '<p class="muted-text">雲端尚無城鎮存檔。</p>': '<p class="muted-text">No town saves in the cloud yet.</p>',
         '<div class="econ-section"><h3>💾 帳號與存檔</h3>': '<div class="econ-section"><h3>💾 Account & Saves</h3>',
 
+        // ── New Villager Pack + Seeded Relationships (v5.5.0) ──
+        '聽說新來的周明,好像跟趙霞走得很近...而馬強的臉色可不太好看。': "Word is the newcomer Zhou Ming has been getting close to Zhao Xia... and Ma Qiang doesn't look too happy about it.",
+        '吳達和楊鋒又在酒館互看不順眼了,他們的樑子結很久了。': 'Wu Da and Yang Feng were glaring at each other in the tavern again — that grudge goes way back.',
+
         // ── Life Goal Storylines (v5.4.0) ──
         '尋覓真愛': 'Seeking True Love', '憧憬愛情': 'Longing for Love', '怦然心動': 'A Fluttering Heart', '兩情相悅': 'Mutual Affection', '步入婚姻': 'Into Marriage',
         '開店創業': 'Start a Business', '胸懷創業夢': 'A Dream of One\'s Own Shop', '攢下第一桶金': 'Saved the First Fortune', '盤下店面': 'Secured a Storefront', '開張大吉': 'Grand Opening',

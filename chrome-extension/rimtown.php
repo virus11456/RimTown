@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.4.0
+ * Version: 5.5.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.4.0');
+define('RIMTOWN_VERSION', '5.5.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1182,6 +1182,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.5.0',
+            'date'    => '2026-07-16',
+            'changes' => array(
+                '👥 新村民包:小鎮從 12 人增至 16 人。新增周明(迷人的遊唱商人)、何昌與何秀(恩愛老夫妻)、鄭薇(暗戀成疾的年輕天才),每個都自帶戲劇鉤子',
+                '💘 開局關係網:小鎮不再是一張白紙——一開始就種下暗戀(劉俊偷偷愛著許瑩)、前任(趙霞與馬強藕斷絲連)、世仇(吳達與楊鋒的舊怨)、摯友、恩愛夫妻,還有周明→趙霞→馬強的五角戀火藥庫',
+                '一進遊戲就有八卦頭條在跑,戲劇比以前早非常多就開始上演(實測 Day 20 已有 4 對情侶,原本要等約 30 天才有第一對)',
+            ),
+        ),
         array(
             'version' => '5.4.0',
             'date'    => '2026-07-16',
