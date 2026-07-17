@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.2.0.zip` from Releases
+1. Download `rimtown-v5.3.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,15 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.3.0 (2026-07-16)
+
+**愛恨引擎大修(核心體驗修復)**
+
+- 修正核心 bug:戀愛數值被固定衰退壓死,導致從無情侶。現在心動在親密時持續累積、相配者更快來電、有來電火花;實測 30 天內自然成對、告白名場面上演
+- 嫉妒情敵:暗戀被追走會心碎嫉妒、兩人愛上同一人暗自較勁,三角戀燒成死對頭
+- 八卦有內容:寫出實際八卦(「X看Y的眼神不太一樣」→越傳越誇張→「湊成一對了!」),針對真實暗戀/交往/翻臉產生
+- 本週小鎮頭條:每 7 天彈出愛恨摘要(新戀情/三角/暗戀/水火不容/放閃)
 
 ### v5.2.0 (2026-07-16)
 

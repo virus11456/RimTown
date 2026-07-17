@@ -951,6 +951,28 @@ class TownFeedSystem {
 
 class GossipNetwork {
     constructor() { this.activeGossip = []; }
+    // v5.3.0 針對真實關係事件生成「有內容」的八卦(取代空泛的「八卦了全鎮的事」)
+    createRelGossip(world, kind, a, b, extra) {
+        const templates = {
+            crush:   [`${t('欸你有沒有發現,')}${a.name}${t('看')}${b.name}${t('的眼神不太一樣...')}`,
+                      `${t('我猜')}${a.name}${t('對')}${b.name}${t('有意思,不然幹嘛老是找藉口靠近!')}`],
+            jealous: [`${t('聽說')}${a.name}${t('最近超針對')}${b.name}${t('的,好像是為了')}${extra || t('某個人')}${t('...')}`,
+                      `${a.name}${t('跟')}${b.name}${t('之間氣氛好僵,是在吃醋吧?')}`],
+            newCouple:[`${t('天大的消息!')}${a.name}${t('和')}${b.name}${t('在一起了!')}`,
+                      `${a.name}${t('跟')}${b.name}${t('湊成一對了,大家都說很配!')}`],
+            rivalry: [`${a.name}${t('和')}${b.name}${t('鬧翻了,見面都不講話...')}`,
+                      `${t('你敢信嗎?')}${a.name}${t('跟')}${b.name}${t('現在是死對頭了。')}`],
+        };
+        const pool = templates[kind]; if (!pool) return null;
+        const content = pickRandom(pool);
+        const gossip = { about: a.name, content, source: t('鎮民'), spreadCount: 0, tickCreated: world.tickCount, isTrue: true, kind, juicy: true };
+        this.activeGossip.push(gossip);
+        if (this.activeGossip.length > 10000) this.activeGossip = this.activeGossip.slice(-10000);
+        // 直接進八卦頭條 & 每日報
+        world.logMessage('gossip', `🗞️ ${content}`, a.name, b.name);
+        if (world.dailyNews) world.dailyNews.collectEvent('gossip', content, kind === 'newCouple' ? 7 : 5, [a.name, b.name]);
+        return gossip;
+    }
     createGossip(source, about, world) {
         const rel = source.relationships.getOrCreate(about.agentId, about.name);
         const templates = [];
@@ -983,20 +1005,22 @@ class GossipNetwork {
         if (!speaker.personality.traits.includes('gossip') && Math.random() > 0.3) return null;
         const gossip = pickRandom(eligible);
         gossip.spreadCount++;
-        // v5.2.0 傳話遊戲:謠言越傳越誇張(最多變形 2 次)
-        if (Math.random() < 0.35 && (gossip._mutations || 0) < 2) {
-            gossip._mutations = (gossip._mutations || 0) + 1;
+        // v5.2.0/5.3.0 傳話遊戲:謠言誇張化只做一次,不重複堆疊
+        if (!gossip._mutated && gossip.spreadCount >= 2 && Math.random() < 0.4) {
+            gossip._mutated = true;
             const wraps = [
                 (c) => `${t('我跟你說,')}${c}${t('而且好像不只這樣...')}`,
                 (c) => `${t('千真萬確!')}${c}`,
                 (c) => `${c}${t('聽說整條街都知道了!')}`,
-                (c) => `${c}${t('我聽到的版本更誇張...')}`,
             ];
             gossip.content = pickRandom(wraps)(gossip.content);
         }
         listener.memory.add(world.tickCount, world.clock.timeStr, 'social',
             `${speaker.name}${t('告訴我：「')}${gossip.content}${t('」')}`, 4, [speaker.name, gossip.about]);
-        world.logMessage('gossip', `${speaker.name}${t('向')}${listener.name}${t('八卦了')}${gossip.about}${t('的事')}`, speaker.name, listener.name);
+        // v5.3.0 只有「有內容」且還算新鮮(傳不到 3 手)的八卦才進頭條,避免同一則洗版
+        if (gossip.juicy && gossip.spreadCount <= 3) {
+            world.logMessage('gossip', `🗣️ ${speaker.name}${t('偷偷說：「')}${gossip.content}${t('」')}`, speaker.name, listener.name);
+        }
         // v5.2.0 傳到第 4 手,當事人聽到了 → 對質
         if (gossip.spreadCount >= 4 && !gossip._confronted) {
             gossip._confronted = true;
@@ -5169,6 +5193,7 @@ class World {
             this.festivals.dailyUpdate(this);
             this.checkHeartEvents(); // v5.0.0 每日掃描心動事件門檻
             this.generateDailyFeedPosts(); // v5.2.0 鎮民動態每日發文
+            if (this.clock.day % 7 === 0) this.generateWeeklyDigest(); // v5.3.0 每 7 天小鎮頭條
             this.lifecycle.dailyUpdate(this);
             this.exploration.dailyUpdate(this);
             // v3 systems daily updates
@@ -5305,27 +5330,109 @@ class World {
                     const isCouple = rel.status === 'married' || rel.status === 'dating';
                     const decayRate = isCouple ? 0.3 : 0.8;
                     if (rel.affinity > 5) { rel.modifyAffinity(-decayRate); otherRel.modifyAffinity(-decayRate); }
-                    if (rel.romanticInterest > 5 && !isCouple) { rel.modifyRomantic(-0.5); otherRel.modifyRomantic(-0.5); }
+                    // v5.3.0: 心動只在感情疏遠(好感低於30)時才衰退。親密的人會持續累積心動,
+                    // 這是原本戀愛談不成的根因——心動被固定衰退壓在門檻下
+                    if (rel.romanticInterest > 5 && !isCouple && rel.affinity < 30) { rel.modifyRomantic(-0.5); otherRel.modifyRomantic(-0.5); }
                 }
 
-                // --- Natural romantic attraction growth ---
-                // Requires decent affinity and multiple interactions before romance develops
-                if (!rel.status && rel.affinity > 25 && rel.interactionCount > 5) {
+                // --- Natural romantic attraction growth (v5.3.0 大幅加速) ---
+                // 只要有基本好感與幾次互動,相配的人就會慢慢心動
+                if (!rel.status && rel.affinity > 20 && rel.interactionCount > 3) {
                     const tA = agent.personality.traits;
                     const tB = other.personality.traits;
-                    let compat = 0; // Base compatibility — need traits for romance
+                    let compat = 1; // v5.3.0 基礎相容度 1(讓一般人也有機會),而非 0
                     if (tA.includes('romantic') || tB.includes('romantic')) compat += 2;
+                    if (tA.includes('romantic') && tB.includes('romantic')) compat += 1;
                     if (tA.includes('shy') && tB.includes('kind')) compat += 1;
                     if (tA.includes('kind') && tB.includes('shy')) compat += 1;
                     if (tA.includes('charismatic') || tB.includes('charismatic')) compat += 1;
                     if (tA.includes('creative') && tB.includes('creative')) compat += 1;
+                    if (tA.includes('optimist') && tB.includes('optimist')) compat += 1;
                     if (tA.includes('abrasive') && tB.includes('abrasive')) compat -= 2;
-                    const affinityBonus = Math.floor(rel.affinity / 25);
+                    if (tA.includes('jealous') || tB.includes('jealous')) compat -= 1;
+                    const affinityBonus = Math.floor(rel.affinity / 20); // v5.3.0 每20好感 +1(原25)
                     const growth = Math.max(0, affinityBonus + compat);
-                    // Lower chance, requires real compatibility
-                    if (growth > 0 && Math.random() < 0.25) {
-                        rel.modifyRomantic(randInt(1, Math.min(growth, 3)));
+                    // v5.3.0: 機率 0.45(原0.25)、增量最高 5(原3),讓心動能追過衰退、跨過門檻
+                    if (growth > 0 && Math.random() < 0.45) {
+                        rel.modifyRomantic(randInt(1, Math.min(growth + 1, 5)));
                     }
+                    // v5.3.0 來電火花:高好感+高相容,偶爾一次大跳躍(命中注定的感覺)
+                    if (rel.affinity > 45 && compat >= 3 && rel.romanticInterest > 15 && Math.random() < 0.06) {
+                        const spark = randInt(8, 16);
+                        rel.modifyRomantic(spark);
+                        this.logMessage('relationship', `💓 ${agent.name}${t('對')}${other.name}${t('的心動,好像悄悄加深了...')}`, agent.name, other.name);
+                        if (this.gossipNetwork) this.gossipNetwork.createRelGossip(this, 'crush', agent, other);
+                    }
+                    // v5.3.0 日久生情的回應:agent 對 other 明顯有意,若 other 對 agent 也親近且沒別的對象,
+                    // other 有機會回應這份心動——這是讓「單戀」有機會變「兩情相悅」的關鍵
+                    if (rel.romanticInterest > 40 && otherRel.affinity > 30 && !otherRel.status &&
+                        otherRel.romanticInterest < rel.romanticInterest) {
+                        const otherPartner = other.relationships.getPartner();
+                        const otherCrush = Object.values(other.relationships.relationships).find(r => r.romanticInterest > 55 && r.targetId !== agent.agentId);
+                        if (!otherPartner && !otherCrush && Math.random() < 0.3) {
+                            otherRel.modifyRomantic(randInt(2, 5));
+                        }
+                    }
+                }
+
+                // --- v5.3.0 單戀受挫 & 情敵嫉妒 ---
+                // agent 深深暗戀 other,但 other 已經名花有主 → agent 心碎,並嫉妒那個「幸運兒」
+                if (!rel.status && rel.romanticInterest > 45) {
+                    const otherPartner = other.relationships.getPartner();
+                    if (otherPartner && otherPartner.targetId !== agent.agentId) {
+                        const luckyOne = this.agents[otherPartner.targetId];
+                        if (luckyOne && !luckyOne.isPlayer && Math.random() < 0.08) {
+                            const jealousRel = agent.relationships.getOrCreate(luckyOne.agentId, luckyOne.name);
+                            // 心動越深恨越重;已經在恨了就繼續往下探(讓三角戀燒成真正的仇敵)
+                            const bite = jealousRel.affinity < 0 ? randInt(8, 16) : randInt(6, 12);
+                            jealousRel.modifyAffinity(-bite);
+                            agent.moodModifier = (agent.moodModifier || 0) - 6;
+                            rel.modifyRomantic(-randInt(2, 5)); // 慢慢死心
+                            this.logMessage('relationship', `💔 ${agent.name}${t('看著')}${other.name}${t('和')}${luckyOne.name}${t(',心裡很不是滋味...')}`, agent.name, luckyOne.name);
+                            if (this.gossipNetwork && Math.random() < 0.4) this.gossipNetwork.createRelGossip(this, 'jealous', agent, luckyOne, other.name);
+                        }
+                    } else {
+                        // other 還單身,但另有他人也強烈喜歡 other → 情敵!agent 對情敵生恨
+                        for (const rival of npcs) {
+                            if (rival === agent || rival === other || rival.isPlayer) continue;
+                            const rivalCrush = rival.relationships.relationships[other.agentId];
+                            if (rivalCrush && rivalCrush.romanticInterest > 45 && Math.random() < 0.12) {
+                                const feud = agent.relationships.getOrCreate(rival.agentId, rival.name);
+                                const feudBack = rival.relationships.getOrCreate(agent.agentId, agent.name);
+                                // 情敵之恨蓋過友情:已在敵對就繼續探底,直到真正水火不容
+                                const bite = feud.affinity < -10 ? randInt(10, 20) : randInt(8, 15);
+                                feud.modifyAffinity(-bite); feudBack.modifyAffinity(-bite);
+                                feud.modifyTrust(-5); feudBack.modifyTrust(-5);
+                                if (!feud._rivalGossiped && feud.affinity <= -25) {
+                                    feud._rivalGossiped = true;
+                                    this.logMessage('relationship', `⚡ ${agent.name}${t('和')}${rival.name}${t('為了')}${other.name}${t('暗自較勁,關係越來越僵...')}`, agent.name, rival.name);
+                                    if (this.gossipNetwork) this.gossipNetwork.createRelGossip(this, 'rivalry', agent, rival);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // --- v5.3.0 個性摩擦:合不來的人偶爾會起口角,好感下滑(製造仇敵的土壤) ---
+                if (rel.interactionCount > 3 && !rel.status) {
+                    const tA = agent.personality.traits, tB = other.personality.traits;
+                    let friction = 0;
+                    for (const [x, y] of INCOMPATIBLE) {
+                        if ((tA.includes(x) && tB.includes(y)) || (tA.includes(y) && tB.includes(x))) friction += 2;
+                    }
+                    if (tA.includes('abrasive') || tB.includes('abrasive')) friction += 1;
+                    if (tA.includes('jealous') && tB.includes('charismatic')) friction += 1;
+                    if (friction > 0 && Math.random() < 0.10) {
+                        rel.modifyAffinity(-randInt(2, friction + 2));
+                        otherRel.modifyAffinity(-randInt(2, friction + 2));
+                    }
+                }
+                // v5.3.0 剛剛跌破仇敵線 → 生成仇敵八卦(一次)
+                if (rel.affinity <= -40 && !rel._rivalGossiped) {
+                    rel._rivalGossiped = true;
+                    agent.moodModifier = (agent.moodModifier || 0) - 4;
+                    if (this.gossipNetwork) this.gossipNetwork.createRelGossip(this, 'rivalry', agent, other);
                 }
 
                 // --- Start Dating ---
@@ -5343,8 +5450,7 @@ class World {
                         other.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${t('我和')}${agent.name}${t('開始交往了！')}`, 9, [agent.name]);
                         agent.moodModifier = (agent.moodModifier || 0) + 20;
                         other.moodModifier = (other.moodModifier || 0) + 20;
-                        this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}${t('和')}${other.name}${t('在一起了！')}`, source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
-                        if (this.dailyNews) this.dailyNews.collectEvent('relationship', `${agent.name}${t('和')}${other.name}${t('開始交往了！')}`, 7, [agent.name, other.name]);
+                        this.gossipNetwork.createRelGossip(this, 'newCouple', agent, other); // v5.3.0 有內容八卦
                     }
                 }
 
@@ -5534,6 +5640,59 @@ class World {
         }[kind];
         if (!meta || !agentA || !agentB) return;
         Promise.resolve(this.conversationEngine?.generateDramaScene?.(this, kind, meta, agentA, agentB, thirdName)).catch(() => {});
+    }
+
+    // --- v5.3.0 本週小鎮頭條:把浮現的愛恨糾葛整理成可讀摘要,每 7 天推播 ---
+    generateWeeklyDigest() {
+        const couples = [], newCouples = [], crushes = [], rivals = [], triangles = [];
+        const seen = new Set();
+        const prevCouples = new Set(this._lastDigestCouples || []);
+        const nowCouples = new Set();
+        for (const a of Object.values(this.agents)) {
+            if (a.isPlayer || a.isDead) continue;
+            for (const [tid, rel] of Object.entries(a.relationships.relationships)) {
+                const other = this.agents[tid];
+                if (!other || other.isPlayer || other.isDead) continue;
+                const key = [a.agentId, tid].sort().join('|');
+                if (rel.status === 'married' || rel.status === 'dating') {
+                    nowCouples.add(key);
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        const icon = rel.status === 'married' ? '💍' : '💗';
+                        const line = `${icon} ${a.name} × ${other.name}`;
+                        if (!prevCouples.has(key)) newCouples.push(line); else couples.push(line);
+                    }
+                } else if (rel.romanticInterest > 45 && a.agentId < tid) {
+                    crushes.push(`💘 ${a.name} ${t('暗戀著')} ${other.name}`);
+                } else if (rel.affinity <= -25 && a.agentId < tid) {
+                    rivals.push(`⚔️ ${a.name} ${t('與')} ${other.name} ${t('勢不兩立')}`);
+                }
+            }
+        }
+        // 三角戀:兩人暗戀同一人
+        const crushMap = {};
+        for (const a of Object.values(this.agents)) {
+            if (a.isPlayer || a.isDead) continue;
+            for (const [tid, rel] of Object.entries(a.relationships.relationships)) {
+                if (rel.romanticInterest > 40) { (crushMap[tid] = crushMap[tid] || []).push(a.name); }
+            }
+        }
+        for (const [tid, admirers] of Object.entries(crushMap)) {
+            if (admirers.length >= 2) {
+                const target = this.agents[tid];
+                if (target && !target.isPlayer) triangles.push(`🔺 ${admirers.slice(0,3).join(t('、'))} ${t('都喜歡')} ${target.name}`);
+            }
+        }
+        this._lastDigestCouples = [...nowCouples];
+        const hasContent = newCouples.length || crushes.length || rivals.length || triangles.length || couples.length;
+        if (!hasContent) return null;
+        const digest = {
+            week: `${this.clock.year}-${this.clock.season}-${this.clock.day}`,
+            newCouples, couples: couples.slice(0, 4), crushes: crushes.slice(0, 5),
+            rivals: rivals.slice(0, 4), triangles: triangles.slice(0, 3),
+        };
+        this._pendingWeeklyDigest = digest;
+        return digest;
     }
 
     // --- v5.2.0 鎮民動態:每天挑 2 位村民發文(第 1 篇嘗試 AI,其餘模板) ---

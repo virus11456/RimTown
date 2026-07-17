@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.2.0
+ * Version: 5.3.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.2.0');
+define('RIMTOWN_VERSION', '5.3.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1182,6 +1182,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.3.0',
+            'date'    => '2026-07-16',
+            'changes' => array(
+                '💗 愛恨引擎大修：修正一個核心 bug——村民的戀愛數值被固定衰退壓死,導致從來沒有人談得成戀愛。現在心動會在關係親密時持續累積、相配的人更快來電、還有「命中注定」的來電火花。實測 30 天內就會有情侶成對、告白名場面自然上演',
+                '⚔️ 嫉妒與情敵：暗戀的人被追走會心碎並嫉妒情敵、兩人愛上同一人會暗自較勁,三角戀真的會燒成水火不容的死對頭',
+                '🗞️ 八卦有內容了：以前八卦只顯示「X向Y八卦了全鎮的事」,現在會寫出實際內容(「你有沒有發現X看Y的眼神不太一樣...」→越傳越誇張→「X跟Y湊成一對了!」),還會針對真實的暗戀/交往/翻臉事件產生',
+                '📰 本週小鎮頭條：每 7 天自動彈出愛恨糾葛摘要——本週新戀情、三角關係、暗戀進行中、水火不容、穩定放閃,一頁看懂全鎮八點檔',
+            ),
+        ),
         array(
             'version' => '5.2.0',
             'date'    => '2026-07-16',

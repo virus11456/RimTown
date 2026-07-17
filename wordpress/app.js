@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.2.0
-const RIMTOWN_APP_VERSION = '5.2.0';
+// RimTown - Frontend App (WordPress Plugin) v5.3.0
+const RIMTOWN_APP_VERSION = '5.3.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1468,6 +1468,27 @@ class RimTownApp {
         }
     }
 
+    // v5.3.0 本週小鎮頭條:浮現的愛恨糾葛摘要
+    _showWeeklyDigest(dg) {
+        const esc = (x) => this._escapeHtml(String(x ?? ''));
+        const section = (title, arr, color) => arr && arr.length
+            ? `<div style="margin:8px 0"><div style="font-size:0.72rem;color:${color};font-weight:bold;margin-bottom:3px">${title}</div>${arr.map(l => `<div style="font-size:0.82rem;line-height:1.5">${esc(l)}</div>`).join('')}</div>`
+            : '';
+        let body = '';
+        body += section(`🎉 ${t('本週新戀情')}`, dg.newCouples, '#ff6b9d');
+        body += section(`🔺 ${t('三角關係')}`, dg.triangles, '#ffb84d');
+        body += section(`💘 ${t('暗戀進行中')}`, dg.crushes, '#ff8fb3');
+        body += section(`⚔️ ${t('水火不容')}`, dg.rivals, '#ff6b6b');
+        body += section(`❤️ ${t('穩定放閃')}`, dg.couples, '#c86bff');
+        if (!body) return;
+        this._showCenterNotification({
+            icon: '📰',
+            title: `📰 ${t('本週小鎮頭條')}`,
+            content: `<div style="text-align:left;max-height:46vh;overflow-y:auto;padding:2px 4px">${body}<div style="font-size:0.68rem;color:var(--text-secondary);margin-top:8px;text-align:center">${t('去「關係」頁看完整愛恨網路,或找當事人聊聊八卦!')}</div></div>`,
+            autoDismiss: 0,
+        });
+    }
+
     // v5.1.0 名場面直播:NPC 感情大事件的 AI 對話劇
     _showDramaScene(s) {
         this.bgm?.sfx?.('open');
@@ -2833,6 +2854,12 @@ class RimTownApp {
                 if (this.world?._pendingDramaScenes?.length) {
                     const ds = this.world._pendingDramaScenes.shift();
                     this._showDramaScene(ds);
+                }
+                // v5.3.0 本週小鎮頭條輪詢
+                if (this.world?._pendingWeeklyDigest) {
+                    const dg = this.world._pendingWeeklyDigest;
+                    this.world._pendingWeeklyDigest = null;
+                    this._showWeeklyDigest(dg);
                 }
                 // v5.1.0 祭典攤位按鈕
                 this._updateFestivalStall();
