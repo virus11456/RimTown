@@ -1088,6 +1088,84 @@ ${t('- 直接寫訊息內容就好')}`;
         if (this.onNpcMessage) this.onNpcMessage(npc.agentId);
     }
 
+    // v5.1.0: 名場面 — 為 NPC 感情大事件生成 4-6 句對話劇(LLM 或罐頭劇本)
+    async generateDramaScene(world, kind, meta, a, b, thirdName) {
+        try {
+            let lines = [];
+            if (this.llm && this.llm._canMakeRequest(false)) {
+                try {
+                    const pA = this._buildCharacterProfile(a);
+                    const pB = this._buildCharacterProfile(b);
+                    const sceneDesc = {
+                        confession: `${a.name}${t('鼓起勇氣向')}${b.name}${t('告白,對方答應了,兩人正式在一起')}`,
+                        wedding: `${a.name}${t('和')}${b.name}${t('的婚禮現場,兩人交換誓言,賓客起鬨')}`,
+                        busted: `${a.name}${t('當場發現')}${b.name}${t('和')}${thirdName || t('某人')}${t('的秘密關係,情緒爆發對質')}`,
+                        breakup: `${a.name}${t('和')}${b.name}${t('走到感情盡頭,決定分手')}`,
+                        divorce: `${a.name}${t('和')}${b.name}${t('的婚姻破裂,攤牌離婚')}`,
+                    }[kind];
+                    const prompt = `${t('你是一位才華橫溢的小說家，正在為奇幻小鎮「邊境鎮」寫一場關鍵感情戲。')}
+${t('場面：')}${sceneDesc}${t('。')}
+
+${t('【')}${pA.name}${t('】')}${pA.age}${t('歲')}${pA.job}${t('，性格')}${pA.traits}
+${t('【')}${pB.name}${t('】')}${pB.age}${t('歲')}${pB.job}${t('，性格')}${pB.traits}
+
+${t('【規則】')}
+${t('- 必須使用繁體中文（台灣用語），不可使用簡體中文')}
+${t('- 寫4-6句有張力、有情緒的對話,像戲劇高潮的名場面')}
+${t('- 每個人的說話風格要符合性格')}
+${t('- 格式：每行「名字: 對話內容」,不要有其他任何東西')}`;
+                    const response = await this.llm.generate(prompt, 500, 0.95, false);
+                    if (response && response !== '__ERROR__' && response !== '__RATE_LIMITED__') {
+                        for (const raw of response.trim().split('\n')) {
+                            const s = raw.trim();
+                            if (!s || !s.includes(':') && !s.includes('：')) continue;
+                            const idx = s.search(/[:：]/);
+                            const speaker = s.slice(0, idx).replace(/\*/g, '').trim();
+                            const text = s.slice(idx + 1).trim();
+                            if (speaker && text && speaker.length <= 12) lines.push({ speaker, text });
+                        }
+                        lines = lines.slice(0, 6);
+                    }
+                } catch (e) { console.error('[RimTown] drama scene LLM failed:', e); }
+            }
+            if (lines.length < 2) {
+                const FB = {
+                    confession: [
+                        { speaker: a.name, text: t('那個...我練習了好多次,還是好緊張。我喜歡你,很久了。') },
+                        { speaker: b.name, text: t('笨蛋...我等這句話等好久了。') },
+                        { speaker: a.name, text: t('所以...你願意跟我在一起嗎?') },
+                        { speaker: b.name, text: t('願意啦!要說幾次你才聽得懂!') },
+                    ],
+                    wedding: [
+                        { speaker: a.name, text: t('從今以後,不管豐收還是荒年,我都會在你身邊。') },
+                        { speaker: b.name, text: t('說好了喔,一輩子。') },
+                        { speaker: t('賓客'), text: t('親一個!親一個!') },
+                    ],
+                    busted: [
+                        { speaker: a.name, text: `${t('你們兩個...在這裡做什麼?')}` },
+                        { speaker: b.name, text: t('等等,你聽我解釋,不是你想的那樣——') },
+                        { speaker: a.name, text: `${t('我都看到了!')}${thirdName || t('某人')}${t(',虧我還把你當朋友!')}` },
+                        { speaker: b.name, text: t('對不起...是我對不起你。') },
+                    ],
+                    breakup: [
+                        { speaker: a.name, text: t('我們...好像回不去了,對吧。') },
+                        { speaker: b.name, text: t('嗯。與其這樣互相消磨,不如就到這裡吧。') },
+                        { speaker: a.name, text: t('謝謝你陪我走過這一段。祝你幸福。') },
+                    ],
+                    divorce: [
+                        { speaker: a.name, text: t('這些年,我們都累了。簽了吧。') },
+                        { speaker: b.name, text: t('...好。至少我們曾經真心愛過。') },
+                        { speaker: a.name, text: t('保重。') },
+                    ],
+                }[kind] || [];
+                lines = FB;
+            }
+            if (!lines.length) return;
+            world._pendingDramaScenes = world._pendingDramaScenes || [];
+            world._pendingDramaScenes.push({ kind, icon: meta.icon, title: meta.title, aName: a.name, bName: b.name, lines });
+        } catch (e) { console.error('[RimTown] generateDramaScene failed:', e); }
+    }
+
     // v5.0.0: 心動事件 — NPC 用 AI 生成專屬真心話,並排入互動卡等玩家回應
     async fireHeartEvent(world, npc, ev) {
         try {
@@ -4120,6 +4198,7 @@ class FestivalSystem {
             festivalLog: this.festivalLog.slice(-10000),
             activeQuest: this.activeQuest ? { ...this.activeQuest } : null,
             _lastFestivalSeason: this._lastFestivalSeason,
+            _gameRewardKey: this._gameRewardKey || null, // v5.1.0 本屆祭典攤位獎勵是否已領
         };
     }
 }
@@ -5072,6 +5151,7 @@ class World {
                         rel.affinity > 30 && otherRel.affinity > 20 && Math.random() < 0.2) {
                         rel.status = 'dating'; rel.statusSince = this.tickCount;
                         otherRel.status = 'dating'; otherRel.statusSince = this.tickCount;
+                        this.queueDramaScene('confession', agent, other); // v5.1.0 名場面
                         this.logMessage('relationship', `${agent.name}${t('和')}${other.name}${t('開始交往了！')}`, agent.name, other.name);
                         agent.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${t('我和')}${other.name}${t('開始交往了！')}`, 9, [other.name]);
                         other.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${t('我和')}${agent.name}${t('開始交往了！')}`, 9, [agent.name]);
@@ -5090,6 +5170,7 @@ class World {
                         otherRel.affinity > 45 && otherRel.romanticInterest > 45 && Math.random() < 0.10) {
                         rel.status = 'married'; rel.statusSince = this.tickCount;
                         otherRel.status = 'married'; otherRel.statusSince = this.tickCount;
+                        this.queueDramaScene('wedding', agent, other); // v5.1.0 名場面
                         this.logMessage('relationship', `${agent.name}${t('和')}${other.name}${t('結婚了！全鎮舉辦了盛大的婚禮！')}`, agent.name, other.name);
                         agent.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${t('我和')}${other.name}${t('結婚了！這是我人生中最幸福的一天。')}`, 10, [other.name]);
                         other.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${t('我和')}${agent.name}${t('結婚了！太開心了。')}`, 10, [agent.name]);
@@ -5149,6 +5230,7 @@ class World {
                             thirdBack.isCheating = false; thirdBack.status = null;
                         }
                         const action = wasMariage ? t('離婚') : t('分手');
+                        this.queueDramaScene('busted', agent, other, thirdName); // v5.1.0 名場面
                         this.logMessage('relationship', `${agent.name}${t('發現')}${other.name}${t('劈腿')}${thirdName}${t('，兩人')}${action}${t('了！')}`, agent.name, other.name);
                         agent.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${t('發現')}${other.name}${t('背著我和')}${thirdName}${t('在一起。我們')}${action}${t('了。')}`, 10, [other.name, thirdName]);
                         other.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${agent.name}${t('發現了我的事情。我們')}${action}${t('了。')}`, 10, [agent.name]);
@@ -5168,6 +5250,7 @@ class World {
                         rel.status = 'ex'; rel.statusSince = this.tickCount;
                         otherRel.status = 'ex'; otherRel.statusSince = this.tickCount;
                         rel.modifyAffinity(-10); otherRel.modifyAffinity(-10);
+                        this.queueDramaScene('breakup', agent, other); // v5.1.0 名場面
                         this.logMessage('relationship', `${agent.name}${t('和')}${other.name}${t('分手了。')}`, agent.name, other.name);
                         agent.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${t('我和')}${other.name}${t('分手了。')}`, 8, [other.name]);
                         other.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${t('我和')}${agent.name}${t('分手了。')}`, 8, [agent.name]);
@@ -5185,6 +5268,7 @@ class World {
                         rel.status = 'ex'; rel.statusSince = this.tickCount;
                         otherRel.status = 'ex'; otherRel.statusSince = this.tickCount;
                         rel.modifyAffinity(-15); otherRel.modifyAffinity(-15);
+                        this.queueDramaScene('divorce', agent, other); // v5.1.0 名場面
                         this.logMessage('relationship', `${agent.name}${t('和')}${other.name}${t('離婚了。')}`, agent.name, other.name);
                         agent.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${t('我和')}${other.name}${t('離婚了。')}`, 10, [other.name]);
                         other.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${t('我和')}${agent.name}${t('離婚了。')}`, 10, [agent.name]);
@@ -5251,6 +5335,19 @@ class World {
         }
         if (newly.length) this._pendingComboNotifs = (this._pendingComboNotifs || []).concat(newly);
         return newly;
+    }
+
+    // --- v5.1.0 名場面直播:NPC 感情大事件時生成 AI 對話劇,推播給玩家吃瓜 ---
+    queueDramaScene(kind, agentA, agentB, thirdName) {
+        const meta = {
+            confession: { icon: '💘', title: t('告白成功') },
+            wedding:    { icon: '💍', title: t('婚禮現場') },
+            busted:     { icon: '🔥', title: t('修羅場') },
+            breakup:    { icon: '💔', title: t('分手現場') },
+            divorce:    { icon: '⚡', title: t('離婚風暴') },
+        }[kind];
+        if (!meta || !agentA || !agentB) return;
+        Promise.resolve(this.conversationEngine?.generateDramaScene?.(this, kind, meta, agentA, agentB, thirdName)).catch(() => {});
     }
 
     // --- v5.0.0 心動事件:每個 NPC 每個門檻只觸發一次,一次只發一件 ---
@@ -5535,6 +5632,7 @@ class World {
                 this.festivals.festivalLog = data.festivals.festivalLog || [];
                 this.festivals.activeQuest = data.festivals.activeQuest || null;
                 this.festivals._lastFestivalSeason = data.festivals._lastFestivalSeason || null;
+                this.festivals._gameRewardKey = data.festivals._gameRewardKey || null;
             }
 
             // Lifecycle

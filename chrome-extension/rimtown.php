@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.0.0
+ * Version: 5.1.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.0.0');
+define('RIMTOWN_VERSION', '5.1.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1182,6 +1182,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.1.0',
+            'date'    => '2026-07-16',
+            'changes' => array(
+                '📺 名場面直播：村民告白、婚禮、修羅場（劈腿被抓）、分手、離婚時，AI 即時生成 4-6 句戲劇對話並全螢幕直播，吃瓜第一排',
+                '🎪 祭典攤位小遊戲：祭典期間地圖出現攤位按鈕——春祭/冬至猜燈謎、夏祭撈金魚、秋收投壺（計時停針），最高 70 銀幣+30 食物，每屆一次',
+                '玩完攤位遊戲後，看到你成績的村民會用 AI 傳訊吐槽或膜拜',
+            ),
+        ),
         array(
             'version' => '5.0.0',
             'date'    => '2026-07-16',

@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.0.0
-const RIMTOWN_APP_VERSION = '5.0.0';
+// RimTown - Frontend App (WordPress Plugin) v5.1.0
+const RIMTOWN_APP_VERSION = '5.1.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1468,6 +1468,195 @@ class RimTownApp {
         }
     }
 
+    // v5.1.0 名場面直播:NPC 感情大事件的 AI 對話劇
+    _showDramaScene(s) {
+        this.bgm?.sfx?.('open');
+        const esc = (x) => String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const palette = ['#ff6b9d', '#6bc5ff', '#ffd166', '#95e06c'];
+        const colors = {};
+        let ci = 0;
+        const linesHtml = s.lines.map(l => {
+            if (!colors[l.speaker]) colors[l.speaker] = palette[ci++ % palette.length];
+            return `<div style="margin:7px 0;text-align:left;line-height:1.5"><span style="color:${colors[l.speaker]};font-weight:bold">${esc(l.speaker)}</span><span style="opacity:0.6">：</span>${esc(l.text)}</div>`;
+        }).join('');
+        this._showCenterNotification({
+            icon: s.icon,
+            title: `📺 ${t('名場面直播')} — ${s.title}`,
+            name: `${s.aName} × ${s.bName}`,
+            content: `<div style="font-size:0.82rem;max-height:42vh;overflow-y:auto;padding:4px 2px">${linesHtml}</div>`,
+            autoDismiss: 0,
+        });
+    }
+
+    // =====================================================
+    // v5.1.0 祭典攤位小遊戲(猜燈謎/撈金魚/投壺)
+    // =====================================================
+    _festivalGameDef(season) {
+        if (season === '夏季') return { type: 'timing', icon: '🎣', name: t('撈金魚') };
+        if (season === '秋季') return { type: 'timing', icon: '🏺', name: t('投壺') };
+        return { type: 'quiz', icon: '🏮', name: t('猜燈謎') }; // 春祭/冬至
+    }
+
+    _updateFestivalStall() {
+        const fest = this.world?.festivals?.activeFestival;
+        const key = fest ? `${this.world.clock.year}-${fest.season}` : null;
+        const played = key && this.world.festivals._gameRewardKey === key;
+        let btn = document.getElementById('festival-stall-btn');
+        if (fest && !played) {
+            if (!btn) {
+                btn = document.createElement('button');
+                btn.id = 'festival-stall-btn';
+                btn.style.cssText = 'position:absolute;bottom:96px;left:10px;z-index:60;padding:8px 14px;border-radius:20px;border:2px solid #ffd166;background:rgba(18,18,40,0.88);color:#ffd166;font-size:0.85rem;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.45)';
+                document.querySelector('.map-panel')?.appendChild(btn);
+                btn.addEventListener('click', () => this._openFestivalGame());
+            }
+            const def = this._festivalGameDef(fest.season);
+            btn.textContent = `${def.icon} ${t('祭典攤位')}：${def.name}`;
+            btn.style.display = '';
+        } else if (btn) {
+            btn.style.display = 'none';
+        }
+    }
+
+    _openFestivalGame() {
+        const fest = this.world?.festivals?.activeFestival;
+        if (!fest) return;
+        const def = this._festivalGameDef(fest.season);
+        document.getElementById('festival-game-overlay')?.remove();
+        const ov = document.createElement('div');
+        ov.id = 'festival-game-overlay';
+        ov.style.cssText = 'position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.62)';
+        const card = document.createElement('div');
+        card.style.cssText = 'background:var(--bg-panel,#141433);border:2px solid #ffd166;border-radius:14px;padding:18px;width:min(92vw,420px);max-height:80vh;overflow-y:auto;text-align:center;color:var(--text-primary,#eee)';
+        ov.appendChild(card);
+        document.body.appendChild(ov);
+        this.bgm?.sfx?.('open');
+        if (def.type === 'quiz') this._runLanternQuiz(card, ov, def);
+        else this._runTimingGame(card, ov, def);
+    }
+
+    _riddleBank() {
+        return [
+            { q: t('身穿綠衣裳,肚裡水汪汪,生的子兒多,個個黑臉膛。(猜一種食物)'), opts: [t('西瓜'), t('冬瓜'), t('葡萄')], a: 0 },
+            { q: t('千條線,萬條線,掉到水裡看不見。(猜一自然現象)'), opts: [t('下雪'), t('下雨'), t('起霧')], a: 1 },
+            { q: t('有面沒有口,有腳沒有手,聽人來講話,陪人吃飯久。(猜一家具)'), opts: [t('椅子'), t('床'), t('桌子')], a: 2 },
+            { q: t('白天草叢住,夜晚提燈遊。(猜一昆蟲)'), opts: [t('蝴蝶'), t('螢火蟲'), t('蜜蜂')], a: 1 },
+            { q: t('圓圓臉兒白,躲在天上待,十五露全臉,平時遮一塊。(猜一天體)'), opts: [t('月亮'), t('太陽'), t('星星')], a: 0 },
+            { q: t('一個老頭,不跑不走,請他睡覺,他就搖頭。(猜一玩具)'), opts: [t('陀螺'), t('木偶'), t('不倒翁')], a: 2 },
+            { q: t('紅公雞,綠尾巴,身體鑽到地底下。(猜一蔬菜)'), opts: [t('紅蘿蔔'), t('番茄'), t('辣椒')], a: 0 },
+            { q: t('屋子方方,有門沒窗,屋外熱烘,屋裡冰霜。(猜一設施)'), opts: [t('火爐'), t('冰窖'), t('穀倉')], a: 1 },
+        ];
+    }
+
+    _runLanternQuiz(card, ov, def) {
+        const picks = [...this._riddleBank()].sort(() => Math.random() - 0.5).slice(0, 3);
+        let idx = 0, correct = 0;
+        const render = () => {
+            if (idx >= picks.length) return this._finishFestivalGame(ov, card, def, correct, 3);
+            const r = picks[idx];
+            card.innerHTML = `<h3 style="color:#ffd166;margin-bottom:4px">🏮 ${t('猜燈謎')} ${idx + 1}/3</h3>
+                <p style="margin:12px 0;font-size:0.9rem;line-height:1.6">${r.q}</p>`;
+            let answered = false;
+            r.opts.forEach((o, i) => {
+                const b = document.createElement('button');
+                b.className = 'trade-btn';
+                b.style.cssText = 'display:block;width:100%;margin:8px 0;padding:10px;font-size:0.9rem';
+                b.textContent = o;
+                b.addEventListener('click', () => {
+                    if (answered) return;
+                    answered = true;
+                    const ok = i === r.a;
+                    if (ok) correct++;
+                    this.bgm?.sfx?.(ok ? 'coin' : 'close');
+                    b.style.background = ok ? '#2e7d32' : '#b23b3b';
+                    if (!ok) card.children[1].insertAdjacentHTML('afterend', `<div style="font-size:0.75rem;color:var(--text-secondary)">${t('答案是')}:${r.opts[r.a]}</div>`);
+                    setTimeout(() => { idx++; render(); }, 900);
+                });
+                card.appendChild(b);
+            });
+        };
+        render();
+    }
+
+    _runTimingGame(card, ov, def) {
+        let round = 0, score = 0, pos = 0, dir = 1, raf = null;
+        card.innerHTML = `<h3 style="color:#ffd166;margin-bottom:4px">${def.icon} ${def.name}</h3>
+            <p style="font-size:0.78rem;color:var(--text-secondary)">${t('指針掃到綠區時按「停」!共 3 回合')}</p>
+            <div id="fg-round" style="margin:6px 0;font-size:0.85rem">1/3</div>
+            <div style="position:relative;height:26px;border-radius:13px;overflow:hidden;background:#333;margin:10px 0">
+                <div style="position:absolute;left:30%;width:12%;top:0;bottom:0;background:#c9a227"></div>
+                <div style="position:absolute;left:42%;width:16%;top:0;bottom:0;background:#2e7d32"></div>
+                <div style="position:absolute;left:58%;width:12%;top:0;bottom:0;background:#c9a227"></div>
+                <div id="fg-marker" style="position:absolute;left:0;width:4px;top:0;bottom:0;background:#fff"></div>
+            </div>
+            <div id="fg-msg" style="height:22px;font-size:0.85rem"></div>`;
+        const stopBtn = document.createElement('button');
+        stopBtn.className = 'trade-btn btn-accent';
+        stopBtn.textContent = t('停!');
+        stopBtn.style.cssText = 'padding:10px 34px;font-size:1rem;margin-top:8px';
+        card.appendChild(stopBtn);
+        const marker = card.querySelector('#fg-marker');
+        let last = performance.now();
+        const speed = 95; // %/秒
+        const tick = (now) => {
+            const dt = Math.min(0.05, (now - last) / 1000);
+            last = now;
+            pos += dir * speed * dt;
+            if (pos >= 100) { pos = 100; dir = -1; }
+            if (pos <= 0) { pos = 0; dir = 1; }
+            marker.style.left = `calc(${pos}% - 2px)`;
+            raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+        stopBtn.addEventListener('click', () => {
+            if (round >= 3) return;
+            const msg = card.querySelector('#fg-msg');
+            let pts = 0;
+            if (pos >= 42 && pos <= 58) pts = 3;
+            else if (pos >= 30 && pos <= 70) pts = 1;
+            score += pts;
+            msg.textContent = pts === 3 ? `🎯 ${t('正中!')}+3` : pts === 1 ? `👍 ${t('不錯!')}+1` : `💨 ${t('落空...')}+0`;
+            this.bgm?.sfx?.(pts ? 'coin' : 'close');
+            round++;
+            card.querySelector('#fg-round').textContent = `${Math.min(round + 1, 3)}/3`;
+            if (round >= 3) {
+                cancelAnimationFrame(raf);
+                setTimeout(() => this._finishFestivalGame(ov, card, def, score, 9), 800);
+            }
+        });
+    }
+
+    _finishFestivalGame(ov, card, def, score, maxScore) {
+        const fest = this.world.festivals.activeFestival;
+        const key = `${this.world.clock.year}-${fest?.season}`;
+        const perfect = score >= maxScore;
+        const silver = 10 + Math.round((score / maxScore) * 60);
+        const food = perfect ? 30 : 0;
+        this.world.festivals._gameRewardKey = key;
+        this.world.stockpile.add('silver', silver, this.world.tickCount, `${t('祭典攤位')}：${def.name}`);
+        if (food) this.world.stockpile.add('food', food, this.world.tickCount, t('祭典攤位大獎'));
+        const player = this.world.agents['player'];
+        if (player) player.moodModifier = (player.moodModifier || 0) + 8;
+        this.world.logMessage('festival', `${def.icon} ${t('鎮長在祭典攤位玩了')}${def.name}${t(',得分')} ${score}/${maxScore},${t('贏得')} ${silver} ${t('銀幣')}${food ? `+${food} ${t('食物')}` : ''}!`);
+        card.innerHTML = `<h3 style="color:#ffd166">${perfect ? '🏆 ' + t('完美通關!') : '🎁 ' + t('遊戲結束!')}</h3>
+            <p style="margin:10px 0;font-size:1rem">${t('得分')}：${score}/${maxScore}</p>
+            <p style="font-size:0.9rem">💰 +${silver} ${t('銀幣')}${food ? ` 🍞 +${food} ${t('食物')}` : ''}</p>`;
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'trade-btn btn-accent';
+        closeBtn.textContent = t('收下獎品');
+        closeBtn.style.cssText = 'padding:10px 26px;margin-top:10px';
+        closeBtn.addEventListener('click', () => ov.remove());
+        card.appendChild(closeBtn);
+        this.bgm?.sfx?.('coin');
+        // NPC 對你的成績發表 AI 評論
+        this.world.conversationEngine?.sendEventComment?.(this.world,
+            `${t('鎮長在祭典攤位玩')}${def.name}${t('拿了')} ${score}/${maxScore} ${t('分')}`, [], [],
+            perfect
+                ? [t('太神了吧!攤位老闆的臉都綠了哈哈!'), t('你也太準了!下次教教我!')]
+                : [t('我剛剛看到你在玩攤位遊戲,可惜差一點!明年再來!'), t('祭典就是要這樣玩才熱鬧嘛!')]);
+        this.state = this.world.getState();
+    }
+
     // v5.0.0 心動事件卡:NPC 的真心話 + 玩家二選一回應(影響好感/心動)
     _showHeartEventCard(h) {
         this.bgm?.sfx?.('open');
@@ -2640,6 +2829,13 @@ class RimTownApp {
                     const h = this.world._pendingHeartEvents.shift();
                     this._showHeartEventCard(h);
                 }
+                // v5.1.0 名場面直播輪詢
+                if (this.world?._pendingDramaScenes?.length) {
+                    const ds = this.world._pendingDramaScenes.shift();
+                    this._showDramaScene(ds);
+                }
+                // v5.1.0 祭典攤位按鈕
+                this._updateFestivalStall();
                 this.tileMap.updateAgents(agents, this.state.locations?.locations || {}, this.chatTarget);
                 // Pass time to tilemap for day/night cycle
                 if (this.state.clock) {
