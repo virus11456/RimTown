@@ -599,6 +599,25 @@ class PixelTileMap {
                 }
             }
         }
+        // v5.7.0 低頻大塊斑駁:草地大片區域加柔和明暗色塊,破除「大片純綠」的平板感(值域一致,存讀檔穩定)
+        const isGrassT = (t) => t === T.GRASS || t === T.GRASS2 || t === T.GRASS3;
+        const BLOB = 3; // 每 3x3 tile 一個低頻取樣
+        for (let by = 0; by < this.rows; by += BLOB) {
+            for (let bx = 0; bx < this.cols; bx += BLOB) {
+                // 該色塊中心是不是草
+                const cx = Math.min(this.cols - 1, bx + 1), cy = Math.min(this.rows - 1, by + 1);
+                if (!isGrassT(this.grid[cy][cx])) continue;
+                const h = ((bx * 40503) ^ (by * 12289)) >>> 0;
+                const k = h % 5;
+                if (k >= 3) continue; // 只有部分區塊有斑駁,避免整片都髒
+                sctx.fillStyle = (k === 0) ? 'rgba(255,255,210,0.05)' : (k === 1 ? 'rgba(30,80,30,0.06)' : 'rgba(70,140,60,0.05)');
+                // 柔和不規則色塊(避開硬方塊,畫成階梯狀)
+                const ox = bx * TILE, oy = by * TILE, w = BLOB * TILE;
+                sctx.fillRect(ox + 4, oy + 4, w - 8, w - 8);
+                sctx.fillRect(ox + 8, oy + 2, w - 16, w - 4);
+                sctx.fillRect(ox + 2, oy + 8, w - 4, w - 16);
+            }
+        }
     }
 
     // 動態水面(浪花閃爍 + 波光),疊在靜態底圖上
@@ -791,6 +810,25 @@ class PixelTileMap {
                 ctx.fillStyle = 'rgba(20,20,35,0.22)'; ctx.fillRect(px, py, 2, TILE);
                 ctx.fillStyle = 'rgba(20,20,35,0.10)'; ctx.fillRect(px + 2, py, 2, TILE);
             }
+        }
+
+        // --- v5.7.0 植被落影:植物/樹在上方 → 下方地面承接柔影,讓草木落地不飄浮 ---
+        const isVeg = t => t === T.BUSH || t === T.TREE_TOP || t === T.TREE_TOP2 || t === T.TREE_TRUNK || t === T.ROCK;
+        const isGround = t => isGrass(t) || t === T.DIRT || t === T.STONE_PATH || t === T.SAND;
+        if (isGround(tile) && isVeg(up)) {
+            ctx.fillStyle = 'rgba(18,28,14,0.22)'; ctx.fillRect(px + 2, py, TILE - 4, 3);
+            ctx.fillStyle = 'rgba(18,28,14,0.11)'; ctx.fillRect(px + 1, py + 3, TILE - 2, 2);
+        }
+
+        // --- v5.7.0 破除重複貼磚:依座標給灌木/花微調明暗與高光位置,相鄰植物不再像複製貼上 ---
+        if (tile === T.BUSH || tile === T.FLOWER1 || tile === T.FLOWER2) {
+            const hsh = ((tx * 49157) ^ (ty * 98317)) >>> 0;
+            const m = hsh % 3;
+            if (m === 0) { ctx.fillStyle = 'rgba(0,0,0,0.11)'; ctx.fillRect(px, py, TILE, TILE); }
+            else if (m === 1) { ctx.fillStyle = 'rgba(255,250,180,0.07)'; ctx.fillRect(px, py, TILE, TILE); }
+            ctx.fillStyle = 'rgba(255,255,255,0.16)';
+            ctx.fillRect(px + 2 + (hsh % 9), py + 1 + ((hsh >> 4) % 6), 1, 1);
+            if ((hsh >> 6) & 1) ctx.fillRect(px + 3 + ((hsh >> 2) % 8), py + 3 + ((hsh >> 7) % 5), 1, 1);
         }
 
         // --- 4. 屋頂:脊線高光 / 屋簷深緣 / 側緣描邊 ---

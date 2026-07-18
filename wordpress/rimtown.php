@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.6.0
+ * Version: 5.7.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.6.0');
+define('RIMTOWN_VERSION', '5.7.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1182,6 +1182,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.7.0',
+            'date'    => '2026-07-16',
+            'changes' => array(
+                '🌿 地形美化(批次1):草地不再是一大片死綠——加了柔和的低頻明暗斑駁,更有草原的層次感',
+                '🌳 植物落地陰影:灌木、樹、石頭下方的地面會承接柔影,草木不再像浮在地上',
+                '🎨 破除重複貼磚:相鄰的灌木叢與花會依位置微調明暗與高光,不再像複製貼上的格子',
+            ),
+        ),
         array(
             'version' => '5.6.0',
             'date'    => '2026-07-16',
