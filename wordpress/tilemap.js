@@ -3806,6 +3806,25 @@ class PixelTileMap {
 
         // v5.6.0 浮動特效畫在最上層(不被夜晚壓暗)
         this._updateAndDrawFloatFx(ctx);
+
+        // v5.9.0 螢幕暗角(電影感框景,日間極淡)
+        this._renderScreenVignette(ctx);
+    }
+
+    // v5.9.0 螢幕空間暗角:柔和暗化畫面四角,把視線收攏到中央(cinematic framing)
+    _renderScreenVignette(ctx) {
+        const w = this.canvas.width, hh = this.canvas.height;
+        if (!w || !hh) return;
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        const inner = Math.min(w, hh) * 0.42;
+        const outer = Math.max(w, hh) * 0.72;
+        const g = ctx.createRadialGradient(w / 2, hh / 2, inner, w / 2, hh / 2, outer);
+        g.addColorStop(0, 'rgba(0,0,0,0)');
+        g.addColorStop(1, 'rgba(8,6,18,0.26)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, w, hh);
+        ctx.restore();
     }
 
     _updateAndDrawParticles(ctx) {
@@ -4136,11 +4155,24 @@ class PixelTileMap {
         const ow = this.mapWidth;
         const oh = this.mapHeight;
 
-        // Sunset warm tint (very subtle, no fog)
-        if (h >= 17 && h < 19.5) {
-            const t = (h < 18.5) ? (h - 17) / 1.5 : 1 - (h - 18.5);
-            ctx.fillStyle = `rgba(255, 140, 50, ${(t * 0.06).toFixed(3)})`;
-            ctx.fillRect(0, 0, ow, oh);
+        // v5.9.0 時段色調 grading(讓不同時間有電影感的光線)
+        // 清晨 5–7.5:冷藍薄光 + 一抹晨曦暖光
+        if (h >= 5 && h < 7.5) {
+            const t = Math.max(0, h < 6.2 ? (h - 5) / 1.2 : 1 - (h - 6.2) / 1.3);
+            ctx.save();
+            ctx.globalCompositeOperation = 'soft-light';
+            ctx.fillStyle = `rgba(110,145,215,${(t * 0.30).toFixed(3)})`; ctx.fillRect(0, 0, ow, oh);
+            ctx.restore();
+            ctx.fillStyle = `rgba(255,205,130,${(t * 0.09).toFixed(3)})`; ctx.fillRect(0, 0, ow, oh);
+        }
+        // 黃金時刻 16–19.5:暖橘金光斜照(最有味道的時段)
+        if (h >= 16 && h < 19.5) {
+            const t = Math.max(0, h < 18 ? (h - 16) / 2 : 1 - (h - 18) / 1.5);
+            ctx.save();
+            ctx.globalCompositeOperation = 'soft-light';
+            ctx.fillStyle = `rgba(255,150,50,${(t * 0.45).toFixed(3)})`; ctx.fillRect(0, 0, ow, oh);
+            ctx.restore();
+            ctx.fillStyle = `rgba(255,125,45,${(t * 0.08).toFixed(3)})`; ctx.fillRect(0, 0, ow, oh);
         }
 
         if (nightAmount <= 0) return;
