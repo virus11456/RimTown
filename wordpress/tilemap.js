@@ -564,10 +564,48 @@ class PixelTileMap {
                 if (tile === T.WATER || tile === T.WATER2) this._waterTiles.push([x, y, tile]);
             }
         }
+        // v5.7.1 建築落地柔影(整棟往東南投一圈軟陰影,增加立體與重量感)
+        this._drawBuildingGroundShadows(sctx);
         // v5.6.0 全圖飽和/對比提升 + 地面點狀顆粒質感
         this._postProcessStaticLayer(c, sctx);
         this._staticLayer = c;
         this._staticSrc = this.grid;
+    }
+
+    // v5.7.1 用建築 zone 在南/東緣鋪柔影(承接建築體積,太陽在西北)
+    _drawBuildingGroundShadows(sctx) {
+        const isBldgOrGround = (tx, ty) => {
+            const t = (ty < 0 || ty >= this.rows || tx < 0 || tx >= this.cols) ? -1 : this.grid[ty][tx];
+            return t; // 供判斷是否落在別的建築上
+        };
+        const BLD = new Set([T.WALL_TOP, T.WALL_FRONT, T.WINDOW, T.ROOF, T.ROOF2, T.DOOR, T.FLOOR, T.FLOOR2]);
+        for (const zone of Object.values(this.buildingZones)) {
+            if (!zone || zone.w == null || zone.h == null) continue;
+            const L = zone.x * TILE, R = (zone.x + zone.w) * TILE, B = (zone.y + zone.h) * TILE, Tp = zone.y * TILE;
+            // 南側 skirt:4 條逐漸變淡、略往右偏的軟影
+            for (let i = 0; i < 5; i++) {
+                const yy = B + i;
+                if (yy >= this.mapHeight) break;
+                sctx.fillStyle = `rgba(16,14,26,${0.18 - i * 0.034})`;
+                const x0 = L + 2 + i, w = (R - L) - 2;
+                // 避免蓋到南邊相鄰建築(只畫在非建築格上)
+                for (let x = x0; x < x0 + w; x++) {
+                    const t = isBldgOrGround(Math.floor(x / TILE), Math.floor(yy / TILE));
+                    if (!BLD.has(t)) sctx.fillRect(x, yy, 1, 1);
+                }
+            }
+            // 東側 skirt
+            for (let i = 0; i < 4; i++) {
+                const xx = R + i;
+                if (xx >= this.mapWidth) break;
+                sctx.fillStyle = `rgba(16,14,26,${0.15 - i * 0.032})`;
+                const y0 = Tp + 4 + i, h = (B - Tp) - 2;
+                for (let y = y0; y < y0 + h; y++) {
+                    const t = isBldgOrGround(Math.floor(xx / TILE), Math.floor(y / TILE));
+                    if (!BLD.has(t)) sctx.fillRect(xx, y, 1, 1);
+                }
+            }
+        }
     }
 
     // v5.6.0 後處理:整圖飽和+對比(更鮮豔),再疊細微顆粒讓地面有質感(參考動作遊戲的點狀地皮)
@@ -833,12 +871,18 @@ class PixelTileMap {
 
         // --- 4. 屋頂:脊線高光 / 屋簷深緣 / 側緣描邊 ---
         if (isRoof(tile)) {
+            // v5.7.1 屋頂體積:整片依「離屋脊多遠」漸暗(頂亮底暗),屋頂看起來是斜面不是平板
+            let depth = 0; // 往上數幾格還是屋頂 → 離脊越遠越暗
+            for (let k = 1; k <= 4; k++) { if (isRoof(at(tx, ty - k))) depth++; else break; }
+            if (depth > 0) { ctx.fillStyle = `rgba(30,8,8,${Math.min(0.28, depth * 0.08)})`; ctx.fillRect(px, py, TILE, TILE); }
             if (!isRoof(up)) {
-                ctx.fillStyle = 'rgba(255,235,210,0.42)'; ctx.fillRect(px, py, TILE, 2);
+                ctx.fillStyle = 'rgba(255,238,214,0.5)'; ctx.fillRect(px, py, TILE, 2);   // 屋脊亮線加強
+                ctx.fillStyle = 'rgba(255,250,235,0.3)'; ctx.fillRect(px, py, TILE, 1);
                 ctx.fillStyle = 'rgba(60,15,15,0.35)'; ctx.fillRect(px, py + 2, TILE, 1);
             }
             if (!isRoof(dn)) {
-                ctx.fillStyle = 'rgba(40,10,10,0.45)'; ctx.fillRect(px, py + TILE - 2, TILE, 2);
+                ctx.fillStyle = 'rgba(35,8,8,0.5)'; ctx.fillRect(px, py + TILE - 2, TILE, 2); // 屋簷更深
+                ctx.fillStyle = 'rgba(20,4,4,0.35)'; ctx.fillRect(px, py + TILE - 1, TILE, 1);
             }
             if (!isRoof(lf)) { ctx.fillStyle = 'rgba(40,10,10,0.35)'; ctx.fillRect(px, py, 1, TILE); }
             if (!isRoof(rt)) { ctx.fillStyle = 'rgba(40,10,10,0.35)'; ctx.fillRect(px + TILE - 1, py, 1, TILE); }
