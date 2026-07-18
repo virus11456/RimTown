@@ -3049,8 +3049,37 @@ class PixelTileMap {
 
     // Draw chibi-style agent sprite (inspired by JRPG pixel art)
     // Sprite dimensions: ~16w x 24h, big head, large eyes, short body
+    // v5.10.0 顏色明暗調整(-1 全黑 .. +1 全白)
+    _shadeHex(hex, amt) {
+        let h = hex.replace('#', ''); if (h.length === 3) h = h.split('').map(x => x + x).join('');
+        let r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+        const f = amt >= 0 ? (v) => v + (255 - v) * amt : (v) => v * (1 + amt);
+        const cl = (v) => Math.max(0, Math.min(255, Math.round(f(v))));
+        return '#' + [cl(r), cl(g), cl(b)].map(v => v.toString(16).padStart(2, '0')).join('');
+    }
+    // v5.10.0 每位村民依名字給不同膚色/髮色/服裝深淺,同職業也能一眼分辨
+    _variedColors(base, name, jobKey) {
+        this._colorCache = this._colorCache || {};
+        const key = jobKey + '|' + name;
+        if (this._colorCache[key]) return this._colorCache[key];
+        let h = 2166136261;
+        for (let i = 0; i < name.length; i++) { h ^= name.charCodeAt(i); h = (h * 16777619) >>> 0; }
+        const SKINS = ['#fce4c8', '#f6ddbe', '#eecca4', '#e0bc98', '#cda074', '#b88458'];
+        const HAIRS = ['#241812', '#3f2810', '#5a3a1a', '#754824', '#9a6a2a', '#c8a860', '#8c8c92', '#33263f', '#6a2a1a'];
+        const skin = SKINS[h % SKINS.length];
+        const hair = HAIRS[(h >>> 3) % HAIRS.length];
+        const bJit = (((h >>> 6) % 5) - 2) * 0.05;
+        const pJit = (((h >>> 10) % 3) - 1) * 0.06;
+        const c = { ...base, skin,
+            hair, hairDk: this._shadeHex(hair, -0.38), hairLt: this._shadeHex(hair, 0.32),
+            body: this._shadeHex(base.body, bJit), bodyDk: this._shadeHex(base.bodyDk, bJit),
+            pants: this._shadeHex(base.pants, pJit) };
+        this._colorCache[key] = c;
+        return c;
+    }
+
     _drawAgent(ctx, x, y, jobKey, isPlayer, isSelected, name, walking, walkStep, gender, jobTitle, dir4) {
-        const c = isPlayer ? JOB_COLORS.player : (JOB_COLORS[jobKey] || JOB_COLORS.default);
+        const c = isPlayer ? JOB_COLORS.player : this._variedColors(JOB_COLORS[jobKey] || JOB_COLORS.default, name || '', jobKey);
         const isFemale = gender === 'female';
         const sx = Math.floor(x - 8);  // center 16px wide sprite
         const bob = walking ? Math.sin((walkStep || 0) * 0.35) * 1.5 : 0;
@@ -4440,8 +4469,9 @@ class PixelTileMap {
 
     // Render NPC pixel art avatar to a data URL for use in contact list etc.
     // Returns a cached data URL string of the NPC's sprite.
-    renderAvatarDataURL(jobKey, gender) {
-        const cacheKey = `${jobKey}_${gender}`;
+    renderAvatarDataURL(jobKey, gender, name) {
+        // v5.10.0 帶入名字讓聯絡人頭像與地圖上的村民配色一致(同職業也能分辨)
+        const cacheKey = `${jobKey}_${gender}_${name || ''}`;
         if (!this._avatarCache) this._avatarCache = {};
         if (this._avatarCache[cacheKey]) return this._avatarCache[cacheKey];
 
@@ -4460,7 +4490,7 @@ class PixelTileMap {
         // Draw the agent at a fixed position (centered in the sprite area)
         // _drawAgent expects center-bottom x,y — sprite is 16w x 24h drawn from (x-8, y-20)
         // We place center at x=8, bottom at y=spriteH-2 so sprite fits nicely
-        this._drawAgent(ctx, 8, spriteH - 4, jobKey, false, false, '', false, 0, gender, '');
+        this._drawAgent(ctx, 8, spriteH - 4, jobKey, false, false, name || '', false, 0, gender, '');
 
         const dataUrl = offscreen.toDataURL('image/png');
         this._avatarCache[cacheKey] = dataUrl;
