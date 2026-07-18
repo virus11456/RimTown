@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.5.0
-const RIMTOWN_APP_VERSION = '5.5.0';
+// RimTown - Frontend App (WordPress Plugin) v5.6.0
+const RIMTOWN_APP_VERSION = '5.6.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -569,6 +569,7 @@ class RimTownApp {
             this.world.stockpile.add('food', food, this.world.tickCount, t('每日登入獎勵'));
             this.world.logMessage('system', `🎁 ${t('每日登入獎勵(連續')} ${streak} ${t('天):+')}${silver} ${t('銀幣、+')}${food} ${t('食物')}`);
             this.bgm?.sfx?.('coin');
+            this.tileMap?.spawnFxOnAgent?.('player', `💰 +${silver}`, { color: '#ffd166', burst: '🪙', burstCount: 6 });
             this._showCenterNotification({
                 icon: '🎁',
                 title: t('每日登入獎勵'),
@@ -932,6 +933,8 @@ class RimTownApp {
         }
         this.world.logMessage('relationship', `🎁 ${t('鎮長送給')}${npc.name}${g.name}${isFav ? t(',對方超喜歡!') : ''}(${t('好感')}+${gain})`, npc.name);
         this.bgm?.sfx?.('coin');
+        // v5.6.0 浮動特效:好感愛心 + 愛心爆裂
+        this.tileMap?.spawnFxOnAgent?.(this.chatTarget, `❤️ +${gain}`, { color: '#ff6b9d', burst: isFav ? '💖' : '❤️', burstCount: isFav ? 8 : 5 });
         this.world.checkHeartEvents?.(); // v5.0.0 送禮後檢查心動事件
         this.state = this.world.getState();
         if (this.activeTab === 'chat') { this._renderChatMessages(); this._scrollChatToBottom(); }
@@ -1471,6 +1474,7 @@ class RimTownApp {
     // v5.4.0 夢想達成慶祝
     _showMilestoneCard(ms) {
         this.bgm?.sfx?.('coin');
+        this.tileMap?.spawnFxOnAgent?.(ms.npcId, '🏆', { color: '#ffd166', burst: '⭐', burstCount: 10, size: 14 });
         this._showCenterNotification({
             icon: ms.icon,
             title: `🏆 ${t('夢想成真')}`,
@@ -2850,6 +2854,7 @@ class RimTownApp {
                 if (this.world?._pendingComboNotifs?.length) {
                     const c = this.world._pendingComboNotifs.shift();
                     this.bgm?.sfx?.('coin');
+                    this.tileMap?.spawnFxOnAgent?.('player', c.icon, { color: '#ffd166', burst: '✨', burstCount: 8, size: 13 });
                     this._showCenterNotification({
                         icon: c.icon,
                         title: `✨ ${t('發現相鄰組合!')}`,
@@ -4687,6 +4692,7 @@ class RimTownApp {
         this.world.logMessage('milestone', `✨ ${t('鎮長為')}${npc.name}${t('的夢想「')}${d?.name || ''}${t('」加了一把勁!')}`, npc.name);
         npc.memory.add(this.world.tickCount, this.world.clock.timeStr, 'social', `${t('鎮長支持我的夢想,好感動!')}`, 6, ['player']);
         this.bgm?.sfx?.('coin');
+        this.tileMap?.spawnFxOnAgent?.(agentId, '✨', { color: '#6bd5a0', burst: '⭐', burstCount: 6 });
         this._gameAlert(`✨ ${t('你鼓勵了')}${npc.name}${t('追逐「')}${d?.name || ''}${t('」的夢想!')}`, npc.icon || '✨');
         this.state = this.world.getState();
         this._showNpcCard(agentId);
@@ -5079,7 +5085,7 @@ class RimTownApp {
         if (!post || !player || post.likes.includes(player.name)) return;
         post.likes.push(player.name);
         const author = this.world.agents[post.authorId];
-        if (author && !author.isPlayer) author.relationships.getOrCreate('player', player.name).modifyAffinity(1);
+        if (author && !author.isPlayer) { author.relationships.getOrCreate('player', player.name).modifyAffinity(1); this.tileMap?.spawnFxOnAgent?.(post.authorId, '❤️', { color: '#ff6b9d', size: 10 }); }
         this.bgm?.sfx?.('click');
         this.renderSidebar();
     }

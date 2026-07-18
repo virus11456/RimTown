@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.5.0
+ * Version: 5.6.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.5.0');
+define('RIMTOWN_VERSION', '5.6.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1182,6 +1182,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.6.0',
+            'date'    => '2026-07-16',
+            'changes' => array(
+                '✨ 美術三輪 + 打擊感:好事發生時(送禮好感+、每日獎勵、夢想達成、發現組合、按讚)畫面會彈出帶黑色描邊的浮動數字/愛心,並噴出愛心/星星/金幣粒子——就像動作遊戲的傷害數字那樣有 juice',
+                '🎨 全圖色彩更飽和鮮豔、對比更強;草地/土路加了細顆粒質感,不再死板平面',
+                '🧍 村民角色加了深色描邊,從地圖背景中跳出來,更立體有份量',
+            ),
+        ),
         array(
             'version' => '5.5.0',
             'date'    => '2026-07-16',

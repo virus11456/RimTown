@@ -564,8 +564,41 @@ class PixelTileMap {
                 if (tile === T.WATER || tile === T.WATER2) this._waterTiles.push([x, y, tile]);
             }
         }
+        // v5.6.0 全圖飽和/對比提升 + 地面點狀顆粒質感
+        this._postProcessStaticLayer(c, sctx);
         this._staticLayer = c;
         this._staticSrc = this.grid;
+    }
+
+    // v5.6.0 後處理:整圖飽和+對比(更鮮豔),再疊細微顆粒讓地面有質感(參考動作遊戲的點狀地皮)
+    _postProcessStaticLayer(c, sctx) {
+        try {
+            const tmp = document.createElement('canvas');
+            tmp.width = c.width; tmp.height = c.height;
+            const tctx = tmp.getContext('2d');
+            tctx.imageSmoothingEnabled = false;
+            tctx.drawImage(c, 0, 0);
+            sctx.clearRect(0, 0, c.width, c.height);
+            sctx.imageSmoothingEnabled = false;
+            sctx.filter = 'saturate(1.3) contrast(1.06) brightness(1.02)';
+            sctx.drawImage(tmp, 0, 0);
+            sctx.filter = 'none';
+        } catch (e) { /* filter 不支援就跳過,不影響遊戲 */ }
+        // 地面顆粒:草/土/沙上撒確定性明暗噪點(不用亂數,存讀檔一致)
+        const GROUND = new Set([T.GRASS, T.GRASS2, T.GRASS3, T.DIRT, T.SAND, T.STONE_PATH]);
+        for (let y = 0; y < this.rows; y++) {
+            for (let x = 0; x < this.cols; x++) {
+                if (!GROUND.has(this.grid[y][x])) continue;
+                const hsh = ((x * 73856093) ^ (y * 19349663)) >>> 0;
+                const n = 2 + (hsh % 3);
+                for (let i = 0; i < n; i++) {
+                    const px = x * TILE + ((hsh >> (i * 3)) % TILE);
+                    const py = y * TILE + ((hsh >> (i * 3 + 7)) % TILE);
+                    sctx.fillStyle = ((hsh >> i) & 1) ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
+                    sctx.fillRect(px, py, 1, 1);
+                }
+            }
+        }
     }
 
     // 動態水面(浪花閃爍 + 波光),疊在靜態底圖上
@@ -2949,6 +2982,12 @@ class PixelTileMap {
         ctx.fillStyle = 'rgba(0,0,0,0.1)';
         ctx.fillRect(sx + 1, Math.floor(y) + 3, 14, 1);
 
+        // === v5.6.0 深色描邊底(先鋪比 sprite 大 1px 的深色剪影,實際部位畫在上面留 1px 黑框,讓角色從地圖跳出來) ===
+        ctx.fillStyle = '#181521';
+        ctx.fillRect(sx + 2, sy + 1, 12, 12);   // 頭部剪影
+        ctx.fillRect(sx + 1, sy + 11, 15, 9);   // 身體+手臂剪影
+        ctx.fillRect(sx + 2, sy + 17, 12, 8);   // 腿+靴剪影
+
         // === Boots ===
         ctx.fillStyle = c.boots;
         if (walking) {
@@ -3682,6 +3721,9 @@ class PixelTileMap {
         // === Day/Night Cycle Overlay ===
         this._renderDayNightOverlay(ctx);
         this._renderWindowGlow(ctx);
+
+        // v5.6.0 浮動特效畫在最上層(不被夜晚壓暗)
+        this._updateAndDrawFloatFx(ctx);
     }
 
     _updateAndDrawParticles(ctx) {
@@ -3769,6 +3811,68 @@ class PixelTileMap {
 
         // Keep particle count reasonable
         if (this._particles.length > 200) this._particles = this._particles.slice(-150);
+    }
+
+    // ===== v5.6.0 浮動特效(打擊感):彈跳描邊數字/愛心 + emoji 爆裂 =====
+    // 掛在關鍵事件:送禮好感+、賺錢、里程碑、心動、combo。map 座標,和角色同一個相機空間。
+    spawnFloatFx(mapX, mapY, text, opts = {}) {
+        this._floatFx = this._floatFx || [];
+        this._floatFx.push({
+            x: mapX, y: mapY, text,
+            color: opts.color || '#ffe45e',
+            vy: opts.vy || -0.55, vx: (Math.random() - 0.5) * 0.3,
+            life: 0, maxLife: opts.maxLife || 56,
+            size: opts.size || 11, pop: 0,
+        });
+        // 同時噴一圈 emoji 粒子(愛心/星星/金幣)
+        if (opts.burst) {
+            const em = opts.burst;
+            const n = opts.burstCount || 6;
+            for (let i = 0; i < n; i++) {
+                const ang = (Math.PI * 2 * i) / n + Math.random() * 0.4;
+                const spd = 0.7 + Math.random() * 0.8;
+                this._floatFx.push({
+                    x: mapX, y: mapY - 8, text: em, color: opts.color || '#ff6b9d',
+                    vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd - 0.4,
+                    grav: 0.04, life: 0, maxLife: 40 + Math.random() * 20,
+                    size: 8 + Math.random() * 3, pop: 0, spin: (Math.random() - 0.5) * 0.2,
+                });
+            }
+        }
+        if (this._floatFx.length > 120) this._floatFx = this._floatFx.slice(-90);
+    }
+    // 對某個 agent 頭上噴特效
+    spawnFxOnAgent(agentId, text, opts) {
+        const pos = this.agentPositions?.[agentId];
+        if (pos) this.spawnFloatFx(pos.x, pos.y - 18, text, opts);
+    }
+
+    _updateAndDrawFloatFx(ctx) {
+        const fx = this._floatFx;
+        if (!fx || !fx.length) return;
+        ctx.textAlign = 'center';
+        for (let i = fx.length - 1; i >= 0; i--) {
+            const f = fx[i];
+            f.life++;
+            if (f.grav) f.vy += f.grav;
+            f.x += f.vx; f.y += f.vy;
+            if (f.vy < 0 && !f.grav) f.vy *= 0.97; // 上升減速
+            if (f.life >= f.maxLife) { fx.splice(i, 1); continue; }
+            const t = f.life / f.maxLife;
+            const alpha = t < 0.7 ? 1 : 1 - (t - 0.7) / 0.3;
+            // 冒出時的彈跳放大(pop)
+            const popScale = f.life < 6 ? 0.5 + (f.life / 6) * 0.7 : (f.life < 10 ? 1.2 - (f.life - 6) / 4 * 0.2 : 1);
+            const fs = Math.max(1, Math.round(f.size * popScale));
+            ctx.font = `bold ${fs}px 'Segoe UI', sans-serif`;
+            ctx.globalAlpha = Math.max(0, alpha);
+            // 描邊(黑色外框讓字跳出來,像參考圖的傷害數字)
+            ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+            ctx.lineJoin = 'round';
+            ctx.strokeText(f.text, f.x, f.y);
+            ctx.fillStyle = f.color;
+            ctx.fillText(f.text, f.x, f.y);
+        }
+        ctx.globalAlpha = 1;
     }
 
     _drawExplorationMarkers(ctx) {
