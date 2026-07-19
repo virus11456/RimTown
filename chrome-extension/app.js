@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.14.0
-const RIMTOWN_APP_VERSION = '5.14.0';
+// RimTown - Frontend App (WordPress Plugin) v5.15.0
+const RIMTOWN_APP_VERSION = '5.15.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -920,6 +920,7 @@ class RimTownApp {
         const rel = npc.relationships.getOrCreate('player', this.world.agents['player']?.name || t('旅人'));
         rel.modifyAffinity(gain);
         if (isFav) rel.modifyRomantic(2);
+        npc.addThought?.(isFav ? 'fav_gift' : 'gift_received', this.world, 'player', this.world.agents['player']?.name || t('旅人')); // v5.15.0 收禮記憶
         npc.memory.add(this.world.tickCount, this.world.clock.timeStr, 'gift',
             `${t('收到')}${this.world.agents['player']?.name || t('旅人')}${t('送的')}${g.name}${isFav ? t(',是我的最愛!') : ''}`, isFav ? 7 : 5, ['player']);
         const lines = isFav
@@ -4713,12 +4714,30 @@ class RimTownApp {
                 ${goal.icon} <b>${goal.name}</b> <span style="color:var(--text-secondary);font-size:0.72rem">${goal.done ? '🏆 ' + t('已實現') : goal.stageName}</span>
                 <span style="letter-spacing:2px;color:var(--accent);font-size:0.7rem">${pips}</span></div>`;
         }
+        // v5.15.0 心情來源:目前生效的記憶想法(RimWorld thoughts)
+        let moodHtml = '';
+        const now = this.world?.clock?.totalDays ?? 0;
+        const live = (a.thoughts || [])
+            .map(th => ({ ...th, cur: th.mood * Math.max(0, 1 - (now - th.start) / th.days) }))
+            .filter(th => Math.abs(th.cur) >= 0.5)
+            .sort((x, y) => Math.abs(y.cur) - Math.abs(x.cur))
+            .slice(0, 4);
+        if (live.length) {
+            const rows = live.map(th => {
+                const pos = th.cur >= 0;
+                const who = th.targetName ? ` <span style="opacity:0.6">(${th.targetName})</span>` : '';
+                return `<div class="nqc-mood-row"><span>${pos ? '🙂' : '😞'} ${th.label}${who}</span><span style="color:${pos ? '#5cc98f' : '#e07a7a'};font-weight:600">${pos ? '+' : ''}${Math.round(th.cur)}</span></div>`;
+            }).join('');
+            moodHtml = `<div class="nqc-mood" style="border-top:1px solid var(--border);margin-top:4px;padding-top:5px">
+                <div class="nqc-mood-title">💭 ${t('心情來源')}</div>${rows}</div>`;
+        }
         const nudged = this.world?.lifeGoals?.getGoal?.(agentId)?._nudged;
         card.innerHTML = `
             <button class="nqc-close" data-nqc="close">✕</button>
             <div class="nqc-name">${a.name} <span class="nqc-job">${a.job?.title || ''}</span></div>
             <div class="nqc-hearts" title="${t('對你的好感')}">${hearts} <span class="nqc-lv">${lv}/10</span></div>
             ${relHtml}
+            ${moodHtml}
             ${goalHtml}
             <div class="nqc-btns">
                 <button class="nqc-chat" data-nqc="chat">💬 ${t('交談')}</button>

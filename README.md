@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.14.0.zip` from Releases
+1. Download `rimtown-v5.15.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,15 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.15.0 (2026-07-19)
+
+**記憶驅動情緒(RimWorld 式想法系統)**
+
+- 村民現在會「記得」發生在自己身上的大事:收到禮物、戀愛、結婚、被劈腿背叛、失戀、離婚、痛失至親、跟人結樑子、嫉妒、實現夢想、被鎮長誇獎或說壞話、祭典歡樂
+- 每則記憶有隨時間線性衰退的心情影響,並會持續每天微調對特定對象的好感(像 RimWorld 的持久 opinion —— 背叛的怨恨會延燒好幾天)
+- 點村民資訊卡可看到「💭 心情來源」,直接看懂他此刻為什麼開心或難過、對誰有情緒
+- 記憶完整存進存檔,重新載入後情緒延續
 
 ### v5.14.0 (2026-07-16)
 

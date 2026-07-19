@@ -374,6 +374,30 @@ class Job {
     toDict() { return { key:this.key, title:this.title, category:this.category, description:this.description, workplace:this.workplace, work_hours:this.workHours, skill_level:this.skillLevel }; }
 }
 
+// --- v5.15.0 記憶想法系統(RimWorld thoughts):村民記得誰對他做過什麼,
+//     這些記憶會跨天緩慢衰退,持續影響他的「心情」與對那人的「好感」。 ---
+// mood = 峰值心情偏移(隨 days 線性衰退到 0);opinion = 每天對 targetId 好感漂移(記憶還在就一直影響)
+const THOUGHT_DEFS = {
+    gift_received:   { mood:  6, opinion: 0, days: 2,  label: t('收到禮物') },
+    fav_gift:        { mood: 10, opinion: 0, days: 3,  label: t('收到最愛的禮物') },
+    nice_chat:       { mood:  3, opinion: 0, days: 1,  label: t('愉快的聊天') },
+    harsh_words:     { mood: -4, opinion:-1, days: 2,  label: t('被說了難聽的話') },
+    confessed_to:    { mood: 15, opinion: 2, days: 4,  label: t('有人向我表白') },
+    got_together:    { mood: 20, opinion: 0, days: 5,  label: t('戀愛的甜蜜') },
+    married:         { mood: 25, opinion: 0, days: 8,  label: t('新婚的幸福') },
+    betrayed:        { mood:-28, opinion:-4, days:15,  label: t('被劈腿背叛') },
+    broke_up:        { mood:-15, opinion: 0, days: 8,  label: t('剛失戀') },
+    divorced:        { mood:-20, opinion: 0, days:12,  label: t('離婚的傷痛') },
+    lost_loved_one:  { mood:-30, opinion: 0, days:20,  label: t('痛失至親') },
+    rival_formed:    { mood: -6, opinion:-2, days:10,  label: t('跟人結了樑子') },
+    jealous:         { mood: -8, opinion: 0, days: 6,  label: t('嫉妒的煎熬') },
+    dream_progress:  { mood:  8, opinion: 0, days: 3,  label: t('離夢想更近了') },
+    dream_achieved:  { mood: 20, opinion: 0, days:10,  label: t('實現了畢生夢想') },
+    praised:         { mood:  8, opinion: 2, days: 4,  label: t('被鎮長公開稱讚') },
+    slandered:       { mood:-10, opinion:-3, days: 6,  label: t('被鎮長說壞話') },
+    festival_joy:    { mood:  6, opinion: 0, days: 2,  label: t('祭典的歡樂') },
+};
+
 // --- Agent ---
 const ACTIVITIES = ['sleeping','eating','working','socializing','wandering','recreation','idle'];
 
@@ -389,6 +413,7 @@ class Agent {
         this.skills = generateRandomSkills(job?.key, age, this.personality.traits);
         this._lastInteractionTick = 0; this._interactionCooldown = 6;
         this.currentThought = ''; this.isPlayer = false;
+        this.thoughts = []; // v5.15.0 記憶想法(RimWorld thoughts):{kind,label,mood,opinion,targetId,targetName,start,days}
         this._locationStayTicks = 0; // how many ticks to stay at current location
         this._locationStayRemaining = 0; // countdown
         this.moodModifier = 0; // accumulated mood changes from events, decays over time
@@ -427,6 +452,26 @@ class Agent {
         }
         return Math.random() < 0.5 ? 'male' : 'female';
     }
+    // v5.15.0 加一則記憶想法(同 kind+對象會刷新計時,不無限堆疊)
+    addThought(kind, world, targetId, targetName) {
+        const def = THOUGHT_DEFS[kind]; if (!def) return;
+        this.thoughts = this.thoughts || [];
+        const now = world.clock.totalDays || 0;
+        const existing = this.thoughts.find(t2 => t2.kind === kind && t2.targetId === (targetId || null));
+        if (existing) { existing.start = now; return; }
+        this.thoughts.push({ kind, label: def.label, mood: def.mood, opinion: def.opinion, targetId: targetId || null, targetName: targetName || null, start: now, days: def.days });
+        if (this.thoughts.length > 14) this.thoughts = this.thoughts.slice(-14);
+    }
+    // 目前所有記憶想法的心情總貢獻(隨時間線性衰退)
+    thoughtMoodTotal(totalDays) {
+        if (!this.thoughts || !this.thoughts.length) return 0;
+        let s = 0;
+        for (const th of this.thoughts) {
+            const frac = 1 - (totalDays - th.start) / th.days;
+            if (frac > 0) s += th.mood * frac;
+        }
+        return s;
+    }
     update(world) {
         const prevActivity = this.activity;
         this._decideActivity(world.clock.hour);
@@ -436,7 +481,8 @@ class Agent {
         else if (this.moodModifier < 0) this.moodModifier = Math.min(0, this.moodModifier + 0.5);
         const repMoodBonus = world.reputationSystem ? world.reputationSystem.getModifier('npc_mood_bonus') : 0;
         const weatherMoodBonus = world.weather ? Math.round(world.weather.moodModifier * 0.3) : 0;
-        this.mood = Math.max(-100, Math.min(100, 50 + this.personality.moodBase + Math.floor(this.needs.moodContribution) + this.moodModifier + repMoodBonus + weatherMoodBonus));
+        const thoughtMood = Math.round(this.thoughtMoodTotal(world.clock.totalDays || 0)); // v5.15.0 記憶想法心情
+        this.mood = Math.max(-100, Math.min(100, 50 + this.personality.moodBase + Math.floor(this.needs.moodContribution) + this.moodModifier + repMoodBonus + weatherMoodBonus + thoughtMood));
         this._gainSkillXp(world);
         // Only re-pick location if activity changed or stay duration expired
         const activityChanged = this.activity !== prevActivity;
@@ -869,6 +915,7 @@ class Agent {
             current_location:this.currentLocation, home_location:this.homeLocation, current_thought:this.currentThought,
             needs:this.needs.toDict(), skills:this.skills.toDict(),
             relationships:this.relationships.toDict(), recent_memories:this.memory.toDict(),
+            thoughts: (this.thoughts || []).map(t2 => ({ ...t2 })), // v5.15.0 記憶想法(供 UI 顯示心情來源)
         };
     }
 }
@@ -1047,11 +1094,13 @@ class GossipNetwork {
             const relToPlayer = subject.relationships.getOrCreate(source.agentId, source.name);
             if (positive) {
                 relToPlayer.modifyAffinity(6);
+                subject.addThought('praised', world, source.agentId, source.name); // v5.15.0 被鎮長公開稱讚
                 subject.memory.add(world.tickCount, world.clock.timeStr, 'social', `${t('聽說鎮長到處誇我,真開心!')}`, 6, [source.name]);
                 source.chatHistory?.push?.({ speaker: subject.name, target: source.name, text: t('欸,我聽說你到處跟人誇我?哈哈,謝啦,請你喝一杯!'), time: world.clock.timeStr });
                 world.logMessage('gossip', `💐 ${subject.name}${t('聽到了鎮長的美言,好感大增!')}`, subject.name);
             } else if (negative) {
                 relToPlayer.modifyAffinity(-12); relToPlayer.modifyTrust(-10);
+                subject.addThought('slandered', world, source.agentId, source.name); // v5.15.0 被鎮長說壞話
                 subject.memory.add(world.tickCount, world.clock.timeStr, 'social', `${t('居然是鎮長在背後說我壞話...太過分了。')}`, 8, [source.name]);
                 source.chatHistory?.push?.({ speaker: subject.name, target: source.name, text: t('我都聽說了。你在背後那樣說我?虧我還這麼信任你。'), time: world.clock.timeStr });
                 world.logMessage('gossip', `💢 ${subject.name}${t('發現鎮長在背後說他壞話,關係惡化!')}`, subject.name);
@@ -1245,6 +1294,7 @@ ${t('【格式】只寫一句貼文,表達此刻的心情與這個里程碑,口�
                     ? pickRandom([`${def.icon} ${t('我做到了!「')}${def.name}${t('」——這一路走來,值得了。')}`, `${def.icon} ${t('夢想成真的這一刻,我會記得一輩子。')}${stageName}!`])
                     : pickRandom([`${def.icon} ${t('離夢想又近了一步:')}${stageName}。${t('繼續加油!')}`, `${t('今天達成了「')}${stageName}${t('」,朝著')}${def.name}${t('前進中 💪')}`]);
             }
+            npc.addThought(isDone ? 'dream_achieved' : 'dream_progress', world); // v5.15.0 夢想推進的喜悅
             if (world.townFeed) world.townFeed.addPost(world, npc, text);
             npc.memory.add(world.tickCount, world.clock.timeStr, 'milestone', `${t('人生里程碑:')}${stageName}(${def.name})`, isDone ? 10 : 7, []);
             world.logMessage('milestone', `${def.icon} ${npc.name}${t('的夢想「')}${def.name}${t('」邁入:')}${stageName}${isDone ? t('(達成!)') : ''}`, npc.name);
@@ -4543,6 +4593,7 @@ class FestivalSystem {
             // Apply effects
             Object.values(world.agents).forEach(a => {
                 a.moodModifier = (a.moodModifier || 0) + festival.effects.mood_all;
+                if (!a.isPlayer) a.addThought('festival_joy', world); // v5.15.0 祭典的歡樂
                 if (festival.effects.social_boost) {
                     a.needs.social = Math.min(100, a.needs.social + festival.effects.social_boost);
                 }
@@ -4747,6 +4798,7 @@ class LifecycleSystem {
                 if (a._parentNames && a._parentNames.includes(npc.name)) isFamily = true;
                 if (npc._parentNames && npc._parentNames.includes(a.name)) isFamily = true;
                 a.moodModifier = (a.moodModifier || 0) + grief;
+                if (isFamily || rel.affinity > 50) a.addThought('lost_loved_one', world, npc.agentId, npc.name); // v5.15.0 痛失至親
                 a.memory.add(world.tickCount, world.clock.timeStr, 'social',
                     `${npc.name}${t('去世了...我很難過。')}`, 9, [npc.name]);
                 // Add mourning target — everyone with a relationship will visit graveyard
@@ -5428,6 +5480,7 @@ class World {
             this.factions.dailyUpdate(this);
             this.festivals.dailyUpdate(this);
             this.checkHeartEvents(); // v5.0.0 每日掃描心動事件門檻
+            this._processThoughts(); // v5.15.0 記憶想法:清過期 + 對特定對象的好感漂移
             this.generateDailyFeedPosts(); // v5.2.0 鎮民動態每日發文
             if (this.clock.day % 7 === 0) this.generateWeeklyDigest(); // v5.3.0 每 7 天小鎮頭條
             this.lifecycle.dailyUpdate(this);
@@ -5625,6 +5678,7 @@ class World {
                             // 心動越深恨越重;已經在恨了就繼續往下探(讓三角戀燒成真正的仇敵)
                             const bite = jealousRel.affinity < 0 ? randInt(8, 16) : randInt(6, 12);
                             jealousRel.modifyAffinity(-bite);
+                            agent.addThought('jealous', this, luckyOne.agentId, luckyOne.name); // v5.15.0 嫉妒的煎熬
                             agent.moodModifier = (agent.moodModifier || 0) - 6;
                             rel.modifyRomantic(-randInt(2, 5)); // 慢慢死心
                             this.logMessage('relationship', `💔 ${agent.name}${t('看著')}${other.name}${t('和')}${luckyOne.name}${t(',心裡很不是滋味...')}`, agent.name, luckyOne.name);
@@ -5644,6 +5698,8 @@ class World {
                                 feud.modifyTrust(-5); feudBack.modifyTrust(-5);
                                 if (!feud._rivalGossiped && feud.affinity <= -25) {
                                     feud._rivalGossiped = true;
+                                    agent.addThought('rival_formed', this, rival.agentId, rival.name); // v5.15.0 結了樑子
+                                    rival.addThought('rival_formed', this, agent.agentId, agent.name);
                                     this.logMessage('relationship', `⚡ ${agent.name}${t('和')}${rival.name}${t('為了')}${other.name}${t('暗自較勁,關係越來越僵...')}`, agent.name, rival.name);
                                     if (this.gossipNetwork) this.gossipNetwork.createRelGossip(this, 'rivalry', agent, rival);
                                 }
@@ -5684,6 +5740,7 @@ class World {
                         rel.status = 'dating'; rel.statusSince = this.tickCount;
                         otherRel.status = 'dating'; otherRel.statusSince = this.tickCount;
                         this.queueDramaScene('confession', agent, other); // v5.1.0 名場面
+                        agent.addThought('got_together', this, other.agentId, other.name); other.addThought('got_together', this, agent.agentId, agent.name);
                         this.logMessage('relationship', `${agent.name}${t('和')}${other.name}${t('開始交往了！')}`, agent.name, other.name);
                         agent.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${t('我和')}${other.name}${t('開始交往了！')}`, 9, [other.name]);
                         other.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${t('我和')}${agent.name}${t('開始交往了！')}`, 9, [agent.name]);
@@ -5702,6 +5759,7 @@ class World {
                         rel.status = 'married'; rel.statusSince = this.tickCount;
                         otherRel.status = 'married'; otherRel.statusSince = this.tickCount;
                         this.queueDramaScene('wedding', agent, other); // v5.1.0 名場面
+                        agent.addThought('married', this, other.agentId, other.name); other.addThought('married', this, agent.agentId, agent.name);
                         this.logMessage('relationship', `${agent.name}${t('和')}${other.name}${t('結婚了！全鎮舉辦了盛大的婚禮！')}`, agent.name, other.name);
                         agent.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${t('我和')}${other.name}${t('結婚了！這是我人生中最幸福的一天。')}`, 10, [other.name]);
                         other.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${t('我和')}${agent.name}${t('結婚了！太開心了。')}`, 10, [agent.name]);
@@ -5762,6 +5820,7 @@ class World {
                         }
                         const action = wasMariage ? t('離婚') : t('分手');
                         this.queueDramaScene('busted', agent, other, thirdName); // v5.1.0 名場面
+                        agent.addThought('betrayed', this, other.agentId, other.name);
                         this.logMessage('relationship', `${agent.name}${t('發現')}${other.name}${t('劈腿')}${thirdName}${t('，兩人')}${action}${t('了！')}`, agent.name, other.name);
                         agent.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${t('發現')}${other.name}${t('背著我和')}${thirdName}${t('在一起。我們')}${action}${t('了。')}`, 10, [other.name, thirdName]);
                         other.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${agent.name}${t('發現了我的事情。我們')}${action}${t('了。')}`, 10, [agent.name]);
@@ -5782,6 +5841,7 @@ class World {
                         otherRel.status = 'ex'; otherRel.statusSince = this.tickCount;
                         rel.modifyAffinity(-10); otherRel.modifyAffinity(-10);
                         this.queueDramaScene('breakup', agent, other); // v5.1.0 名場面
+                        agent.addThought('broke_up', this); other.addThought('broke_up', this);
                         this.logMessage('relationship', `${agent.name}${t('和')}${other.name}${t('分手了。')}`, agent.name, other.name);
                         agent.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${t('我和')}${other.name}${t('分手了。')}`, 8, [other.name]);
                         other.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${t('我和')}${agent.name}${t('分手了。')}`, 8, [agent.name]);
@@ -5800,6 +5860,7 @@ class World {
                         otherRel.status = 'ex'; otherRel.statusSince = this.tickCount;
                         rel.modifyAffinity(-15); otherRel.modifyAffinity(-15);
                         this.queueDramaScene('divorce', agent, other); // v5.1.0 名場面
+                        agent.addThought('divorced', this); other.addThought('divorced', this);
                         this.logMessage('relationship', `${agent.name}${t('和')}${other.name}${t('離婚了。')}`, agent.name, other.name);
                         agent.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${t('我和')}${other.name}${t('離婚了。')}`, 10, [other.name]);
                         other.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${t('我和')}${agent.name}${t('離婚了。')}`, 10, [agent.name]);
@@ -6006,6 +6067,21 @@ class World {
         });
     }
 
+    // v5.15.0 每日處理記憶想法:過期清除 + 對特定對象的好感每天漂移(RimWorld 式持久 opinion)
+    _processThoughts() {
+        const today = this.clock.totalDays || 0;
+        for (const a of Object.values(this.agents)) {
+            if (a.isPlayer || a.isDead || !a.thoughts?.length) continue;
+            a.thoughts = a.thoughts.filter(th => (today - th.start) < th.days); // 清過期
+            for (const th of a.thoughts) {
+                if (th.opinion && th.targetId) {
+                    const rel = a.relationships.relationships[th.targetId];
+                    if (rel) rel.modifyAffinity(th.opinion); // 記憶還在→每天持續影響好感
+                }
+            }
+        }
+    }
+
     // --- v5.0.0 心動事件:每個 NPC 每個門檻只觸發一次,一次只發一件 ---
     checkHeartEvents() {
         if (this._heartEventBusy) return;
@@ -6054,6 +6130,7 @@ class World {
             _locationStayRemaining: a._locationStayRemaining || 0,
             _mourningTargets: a._mourningTargets || [],
             _annualMourning: a._annualMourning || [],
+            thoughts: (a.thoughts || []).map(t2 => ({ ...t2 })), // v5.15.0 記憶想法
         });
         return {
             version: 2,
@@ -6158,6 +6235,7 @@ class World {
                 agent._locationStayRemaining = ad._locationStayRemaining || 0;
                 agent._mourningTargets = ad._mourningTargets || [];
                 agent._annualMourning = ad._annualMourning || [];
+                agent.thoughts = Array.isArray(ad.thoughts) ? ad.thoughts : []; // v5.15.0 記憶想法
                 // Needs
                 if (ad.needs) { Object.assign(agent.needs, ad.needs); }
                 // Skills

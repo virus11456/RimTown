@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.14.0
+ * Version: 5.15.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.14.0');
+define('RIMTOWN_VERSION', '5.15.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1182,6 +1182,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.15.0',
+            'date'    => '2026-07-19',
+            'changes' => array(
+                '🧠 記憶驅動情緒(RimWorld 式想法系統):村民現在會「記得」發生在自己身上的大事 —— 收到禮物、戀愛、結婚、被劈腿背叛、失戀、離婚、痛失至親、跟人結樑子、嫉妒、實現夢想、被鎮長誇獎或說壞話、祭典歡樂',
+                '⏳ 每則記憶有隨時間衰退的心情影響,並持續每天微調對特定對象的好感(像真人一樣,背叛的怨恨會延燒好幾天才淡去)',
+                '💭 點村民資訊卡可看到「心情來源」,一眼看懂他此刻為什麼開心或難過、對誰有情緒',
+                '💾 記憶完整存進存檔,重新載入後情緒延續',
+            ),
+        ),
         array(
             'version' => '5.14.0',
             'date'    => '2026-07-16',

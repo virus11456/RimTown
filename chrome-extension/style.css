@@ -3553,6 +3553,9 @@ body.rimtown-page .wp-block-post-title {
 .npc-quick-card .nqc-lv { font-size: 0.7rem; color: var(--text-secondary); margin-left: 4px; }
 .npc-quick-card .nqc-rel { font-size: 0.76rem; padding: 2px 0; color: #ffd7e6; }
 .npc-quick-card .nqc-dim { color: var(--text-secondary); }
+.npc-quick-card .nqc-mood-title { font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 2px; }
+.npc-quick-card .nqc-mood-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.74rem; padding: 1px 0; gap: 8px; }
+.npc-quick-card .nqc-mood-row > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .npc-quick-card .nqc-btns { display: flex; gap: 8px; margin-top: 10px; }
 .npc-quick-card .nqc-btns button {
     flex: 1;
