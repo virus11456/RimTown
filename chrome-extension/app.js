@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.10.0
-const RIMTOWN_APP_VERSION = '5.10.0';
+// RimTown - Frontend App (WordPress Plugin) v5.11.0
+const RIMTOWN_APP_VERSION = '5.11.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -4381,11 +4381,26 @@ class RimTownApp {
             this.bgm?.sfx?.(willOpen ? 'open' : 'close');
         });
         document.getElementById('kairo-chat-btn').addEventListener('click', () => {
+            // v5.11.0 切換:聊天已開 → 再點一次收起
+            if (sheet.classList.contains('chat-open')) { this._dismissKairoPanels(); return; }
             menu.classList.add('hidden');
             this.activeTab = 'chat';
             this._updateTabHighlight('chat');
             this.renderSidebar();
         });
+
+        // v5.11.0 點地圖任意處 → 收起開啟中的聊天/選單/卡片(修:聊天打開後沒法點空白收起)
+        const mapPanel = document.querySelector('.map-panel');
+        if (mapPanel) {
+            mapPanel.addEventListener('pointerdown', (e) => {
+                if (window.innerWidth > 768) return;
+                if (this._dismissKairoPanels()) {
+                    // 這一下只用來收面板,不觸發地圖移動/選取
+                    e.stopPropagation();
+                    e.preventDefault();
+                }
+            }, true); // capture:比 canvas 的 handler 先跑
+        }
         menu.addEventListener('click', (e) => {
             const btn = e.target.closest('[data-kairo-tab]');
             if (btn) this._openKairoTab(btn.dataset.kairoTab);
@@ -4407,6 +4422,25 @@ class RimTownApp {
         this.activeTab = tab;
         this._updateTabHighlight(tab);
         this.renderSidebar();
+    }
+
+    // v5.11.0 收起手機版所有浮動面板(聊天抽屜/左側選單/浮動卡片),回到全螢幕地圖
+    _dismissKairoPanels() {
+        if (!this._kairoReady || window.innerWidth > 768) return false;
+        const sheet = document.getElementById('rimtown-sidebar');
+        const menu = document.getElementById('kairo-menu');
+        const card = document.getElementById('kairo-card');
+        let closed = false;
+        if (menu && !menu.classList.contains('hidden')) { menu.classList.add('hidden'); closed = true; }
+        if (card && !card.classList.contains('hidden')) { card.classList.add('hidden'); this._kairoCardOpen = false; closed = true; }
+        if (sheet && sheet.classList.contains('chat-open')) { sheet.classList.remove('chat-open'); sheet.classList.add('kairo-hidden'); closed = true; }
+        else if (sheet && !sheet.classList.contains('kairo-hidden')) { sheet.classList.add('kairo-hidden'); closed = true; }
+        if (closed) {
+            this.activeTab = null; // 不再是聊天/卡片,_syncKairoLayout 會維持隱藏
+            this._kairoCardOpen = false;
+            this.bgm?.sfx?.('close');
+        }
+        return closed;
     }
 
     // renderSidebar 每次呼叫時,依模式把 #sidebar-content 搬到正確容器
