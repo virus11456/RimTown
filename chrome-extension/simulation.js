@@ -1963,6 +1963,52 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     affA = randInt(2,4); affB = randInt(2,4);
                     summary = `${agentA.name}${t('和')}${agentB.name}${t('在')}${loc}${t('初次交談，兩人相談甚歡，約好了改天再深入聊聊，邊境鎮又多了一段新的緣分。')}`;
                 },
+                // v5.13.0 更多樣的初次見面:尷尬的、八卦的、被東西吸引的、毒舌的、一見如故的
+                () => { // 尷尬撞見
+                    lines.push({speaker:agentA.name, text:tA.includes('shy')?t('啊,抱歉!我不是故意擋路的...'):t('喔喔,不好意思,差點撞到你。')});
+                    lines.push({speaker:agentB.name, text:`${t('沒事沒事,是我在發呆。你是...')}${agentA.name}${t('?我常在')}${loc}${t('看到你。')}`});
+                    lines.push({speaker:agentA.name, text:t('對啊,我幾乎天天來這。你也是這一帶的人?')});
+                    lines.push({speaker:agentB.name, text:tB.includes('shy')?t('嗯...算是吧。那個...改天見。'):t('是啊,以後常會碰到,多多關照囉!')});
+                    affA = randInt(1,3); affB = randInt(1,3);
+                    summary = `${agentA.name}${t('和')}${agentB.name}${t('在')}${loc}${t('不小心撞在一起,尷尬又好笑地認識了彼此。')}`;
+                },
+                () => { // 被八卦拉近
+                    const r = pickRandom(rumors);
+                    lines.push({speaker:agentA.name, text:`${t('欸,你有沒有聽說?')}${r}${t('!')}`});
+                    lines.push({speaker:agentB.name, text:tB.includes('gossip')?t('什麼!快跟我說詳細的!我最愛聽這種了!'):t('咦?我還真沒聽過,你消息真靈通。')});
+                    lines.push({speaker:agentA.name, text:t('哈哈,我就是喜歡到處打聽。對了,我還沒問你叫什麼名字呢?')});
+                    lines.push({speaker:agentB.name, text:`${t('我是')}${agentB.name}${t('。看來以後鎮上有什麼風吹草動,找你就對了!')}`});
+                    affA = randInt(2,4); affB = randInt(2,4);
+                    summary = `${agentA.name}${t('用一則八卦成功勾起')}${agentB.name}${t('的興趣,兩人在')}${loc}${t('越聊越起勁。')}`;
+                },
+                () => { // 被手上的東西吸引
+                    const item = pickRandom(gifts);
+                    lines.push({speaker:agentB.name, text:`${t('欸,你手上那個是')}${item}${t('嗎?看起來好特別。')}`});
+                    lines.push({speaker:agentA.name, text:tA.includes('creative')?t('對啊!我自己弄的,還在研究怎麼做得更好。你有興趣?'):t('喔這個啊,隨手弄的。你喜歡的話...改天送你一個?')});
+                    lines.push({speaker:agentB.name, text:t('真的可以嗎!那我就不客氣了。我還不知道你名字呢。')});
+                    lines.push({speaker:agentA.name, text:`${t('我叫')}${agentA.name}${t('。以後想要就來找我,別客氣。')}`});
+                    affA = randInt(2,4); affB = randInt(3,5);
+                    summary = `${agentB.name}${t('被')}${agentA.name}${t('手上的')}${item}${t('吸引,兩人就這麼聊開了,約好改天再見。')}`;
+                },
+                () => { // 毒舌/慢熱的初遇
+                    const grump = tA.includes('abrasive') || tA.includes('pessimist') ? agentA : (tB.includes('abrasive') || tB.includes('pessimist') ? agentB : agentA);
+                    const other = grump === agentA ? agentB : agentA;
+                    lines.push({speaker:grump.name, text:t('新來的?這鎮上沒什麼好的,別抱太大期望。')});
+                    lines.push({speaker:other.name, text:tB.includes('optimist')||tA.includes('optimist')?t('哈哈,你這人真直接!不過我倒覺得這裡挺有意思的。'):t('喔...好吧,謝謝提醒。')});
+                    lines.push({speaker:grump.name, text:`${t('...算了,你要真遇到麻煩,來找我。我叫')}${grump.name}${t('。')}`});
+                    lines.push({speaker:other.name, text:t('嘴硬心軟嘛,我懂。多謝啦!')});
+                    affA = randInt(0,3); affB = randInt(0,3);
+                    summary = `${grump.name}${t('嘴上潑冷水,卻還是對新認識的')}${other.name}${t('伸出了援手,反差讓人莞爾。')}`;
+                },
+                () => { // 一見如故
+                    lines.push({speaker:agentA.name, text:`${t('奇怪,我總覺得跟你特別聊得來,明明才剛認識。')}`});
+                    lines.push({speaker:agentB.name, text:t('我也有這種感覺!是不是上輩子就認識了哈哈。')});
+                    lines.push({speaker:agentA.name, text:`${t('那以後要常一起')}${pickRandom([t('喝一杯'),t('散步'),t('看星星'),t('吃飯')])}${t('啊!')}`});
+                    lines.push({speaker:agentB.name, text:t('一言為定!能認識你真好。')});
+                    affA = randInt(3,6); affB = randInt(3,6);
+                    if (Personality.compatibility(tA, tB) > 1) { romA = randInt(0,2); romB = randInt(0,2); }
+                    summary = `${agentA.name}${t('和')}${agentB.name}${t('在')}${loc}${t('一見如故,相談甚歡,彷彿認識了很久的老友。')}`;
+                },
             ];
             pickRandom(strangerTopics)();
         } else {
