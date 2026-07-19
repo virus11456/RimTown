@@ -868,6 +868,17 @@ class PixelTileMap {
             ctx.fillRect(px + 2 + (hsh % 9), py + 1 + ((hsh >> 4) % 6), 1, 1);
             if ((hsh >> 6) & 1) ctx.fillRect(px + 3 + ((hsh >> 2) % 8), py + 3 + ((hsh >> 7) % 5), 1, 1);
         }
+        // --- v5.14.0 樹冠變化:依座標給樹冠不同深淺綠與高光,森林有層次不再像複製貼上 ---
+        if (tile === T.TREE_TOP || tile === T.TREE_TOP2) {
+            const hsh = ((tx * 40693) ^ (ty * 20201)) >>> 0;
+            const m = hsh % 4;
+            if (m === 0) { ctx.fillStyle = 'rgba(10,40,15,0.16)'; ctx.fillRect(px, py, TILE, TILE); }        // 較深的樹
+            else if (m === 1) { ctx.fillStyle = 'rgba(150,220,110,0.10)'; ctx.fillRect(px, py, TILE, TILE); } // 較亮的樹
+            else if (m === 2) { ctx.fillStyle = 'rgba(200,180,80,0.06)'; ctx.fillRect(px, py, TILE, TILE); }   // 偏黃綠
+            // 額外陽光亮點,位置隨座標變
+            ctx.fillStyle = 'rgba(230,255,180,0.18)';
+            ctx.fillRect(px + 3 + (hsh % 8), py + 1 + ((hsh >> 3) % 5), 1, 1);
+        }
 
         // --- 4. 屋頂:脊線高光 / 屋簷深緣 / 側緣描邊 ---
         if (isRoof(tile)) {
@@ -3594,12 +3605,23 @@ class PixelTileMap {
         if (this.animFrame % 30 === 0) {
             this.waterFrame = (this.waterFrame + 1) % 3;
         }
+        // v5.14.0 流動水波:整片起伏亮暗 + 斜向流動的焦散亮線(caustics),水面活起來
+        const wf = this.animFrame * 0.05;
         for (let y = 0; y < this.rows; y++) {
             for (let x = 0; x < this.cols; x++) {
-                if (this.grid[y][x] === T.WATER || this.grid[y][x] === T.WATER2) {
-                    ctx.fillStyle = `rgba(255,255,255,${0.05 + 0.05 * Math.sin(this.animFrame * 0.05 + x + y)})`;
-                    ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
-                }
+                const wt = this.grid[y][x];
+                if (wt !== T.WATER && wt !== T.WATER2) continue;
+                const px = x * TILE, py = y * TILE;
+                // 整格緩慢起伏(深淺)
+                const swell = 0.045 + 0.045 * Math.sin(wf + x * 0.7 + y * 0.5);
+                ctx.fillStyle = `rgba(180,225,255,${swell.toFixed(3)})`;
+                ctx.fillRect(px, py, TILE, TILE);
+                // 斜向流動的焦散亮線(每格 2 條,隨時間位移)
+                const off = (this.animFrame * 0.4 + x * 5 + y * 3) % 16;
+                ctx.fillStyle = 'rgba(255,255,255,0.16)';
+                ctx.fillRect(px, py + ((off) % 16), TILE, 1);
+                ctx.fillStyle = 'rgba(255,255,255,0.09)';
+                ctx.fillRect(px, py + ((off + 8) % 16), TILE, 1);
             }
         }
 
