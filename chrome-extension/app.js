@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.11.0
-const RIMTOWN_APP_VERSION = '5.11.0';
+// RimTown - Frontend App (WordPress Plugin) v5.12.0
+const RIMTOWN_APP_VERSION = '5.12.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1403,7 +1403,31 @@ class RimTownApp {
         });
     }
 
+    // v5.12.0 全域彈窗關閉:點 modal 半透明背景即關;npc 快速卡點外面即關(避免面板關不掉)
+    _setupGlobalDismiss() {
+        if (this._globalDismissReady) return;
+        this._globalDismissReady = true;
+        document.addEventListener('pointerdown', (e) => {
+            // 1) modal(送禮/爆料/排行榜等):點到背景(不是 modal-content)就關;auth-modal 除外
+            const modal = e.target.classList?.contains('modal') ? e.target : null;
+            if (modal && modal.id !== 'auth-modal' && !modal.classList.contains('hidden')) {
+                modal.classList.add('hidden');
+                this.bgm?.sfx?.('close');
+                return;
+            }
+            // 2) 祭典小遊戲:點半透明背景(不是卡片)就關
+            const fg = document.getElementById('festival-game-overlay');
+            if (fg && e.target === fg) { fg.remove(); this.bgm?.sfx?.('close'); return; }
+            // 3) NPC 快速卡:點卡片以外任何地方就關(點到別的 NPC 會由地圖流程重開)
+            const nqc = document.getElementById('npc-quick-card');
+            if (nqc && !nqc.classList.contains('hidden') && !nqc.contains(e.target)) {
+                nqc.classList.add('hidden');
+            }
+        }, true);
+    }
+
     _startAchievementChecker() {
+        this._setupGlobalDismiss();
         // Check achievements every 5 seconds
         setInterval(() => this._checkAchievements(), 5000);
         // Check story events every 3 seconds
@@ -1565,8 +1589,14 @@ class RimTownApp {
         ov.id = 'festival-game-overlay';
         ov.style.cssText = 'position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.62)';
         const card = document.createElement('div');
-        card.style.cssText = 'background:var(--bg-panel,#141433);border:2px solid #ffd166;border-radius:14px;padding:18px;width:min(92vw,420px);max-height:80vh;overflow-y:auto;text-align:center;color:var(--text-primary,#eee)';
+        card.style.cssText = 'position:relative;background:var(--bg-panel,#141433);border:2px solid #ffd166;border-radius:14px;padding:18px;width:min(92vw,420px);max-height:80vh;overflow-y:auto;text-align:center;color:var(--text-primary,#eee)';
         ov.appendChild(card);
+        // v5.12.0 隨時可退出的 ✕(掛在 overlay 上,card.innerHTML 重繪也不會消失;避免玩到一半卡住)
+        const closeX = document.createElement('button');
+        closeX.textContent = '✕';
+        closeX.style.cssText = 'position:absolute;top:16px;right:16px;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.25);color:#fff;font-size:1.1rem;cursor:pointer;line-height:1;z-index:3';
+        closeX.addEventListener('click', () => { ov.remove(); this.bgm?.sfx?.('close'); });
+        ov.appendChild(closeX);
         document.body.appendChild(ov);
         this.bgm?.sfx?.('open');
         if (def.type === 'quiz') this._runLanternQuiz(card, ov, def);
