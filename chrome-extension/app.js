@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.16.0
-const RIMTOWN_APP_VERSION = '5.16.0';
+// RimTown - Frontend App (WordPress Plugin) v5.17.0
+const RIMTOWN_APP_VERSION = '5.17.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -3427,6 +3427,8 @@ class RimTownApp {
                 case 'fulfill-order': this._fulfillOrder(val); break;
                 // Newspaper
                 case 'view-newspaper': this._viewNewspaper(parseInt(val)); break;
+                case 'news-goto': this._newsGoto(val); break;
+                case 'goto-tab': this.activeTab = val; this._updateTabHighlight?.(val); this.state = this.world.getState(); this.renderSidebar(); break;
                 // Custom NPC
                 case 'show-custom-npc': this._showCustomNPCModal(); break;
                 case 'create-custom-npc': this._createCustomNPC(); break;
@@ -5798,6 +5800,50 @@ class RimTownApp {
         }, 500);
     }
 
+    // v5.17.0 情境入口:分類 → 圖示 / 目的地分頁
+    _newsCatIcon(cat) {
+        return { gossip:'💬', drama:'🔥', milestone:'🌟', social:'🤝', lifecycle:'🌱', building:'🏗️', exploration:'🗺️', event:'⚡', politics:'🗳️', relationship:'💕' }[cat] || '📌';
+    }
+    // v5.17.0 今日頭條:把最新一期日報的重點事件做成可點的情境入口,擺在首頁最上方
+    _renderTownHeadlines() {
+        const papers = this.state?.dailyNews?.newspapers || [];
+        if (!papers.length) return '';
+        const latest = papers[papers.length - 1];
+        const evs = (latest.events || []).slice(0, 4);
+        if (!evs.length) return '';
+        const rows = evs.map((e, i) => `
+            <button class="headline-row" data-action="news-goto" data-val="${latest.id}:${i}">
+                <span class="headline-ic">${this._newsCatIcon(e.category)}</span>
+                <span class="headline-text">${this._escapeHtml(e.content)}</span>
+                <span class="headline-go">›</span>
+            </button>`).join('');
+        return `<div class="town-headlines">
+            <div class="headlines-title">
+                <span>🗞️ ${t('今日頭條')} <span class="headlines-sub">${t('第')}${latest.year}${t('年 ')}${latest.season}${t(' 第')}${latest.day}${t('天')}</span></span>
+                <button class="headlines-more" data-action="goto-tab" data-val="records">${t('完整日報')} ›</button>
+            </div>
+            ${rows}
+        </div>`;
+    }
+    // 點頭條 → 跳到相關情境:有關聯居民就開他的資訊卡(意圖+心情),否則依分類跳到對應分頁
+    _newsGoto(val) {
+        const [pid, idxStr] = String(val).split(':');
+        const papers = this.state?.dailyNews?.newspapers || [];
+        const paper = papers.find(p => String(p.id) === pid);
+        const ev = paper?.events?.[parseInt(idxStr, 10)];
+        if (!ev) return;
+        for (const nm of (ev.agents || [])) {
+            const found = Object.values(this.world?.agents || {}).find(a => !a.isPlayer && a.name === nm);
+            if (found) { this._showNpcCard(found.agentId); return; }
+        }
+        let tab = null;
+        const cat = ev.category;
+        if (cat === 'building') tab = 'industry';
+        else if (cat === 'politics' || cat === 'event' || cat === 'exploration') tab = 'events';
+        else if (cat === 'drama' || cat === 'relationship' || cat === 'gossip') tab = 'relmap';
+        if (tab) { this.activeTab = tab; this._updateTabHighlight?.(tab); this.state = this.world.getState(); this.renderSidebar(); }
+    }
+
     renderResidentsList(container) {
         if (!this.state) return;
         let html = '';
@@ -5814,6 +5860,8 @@ class RimTownApp {
             <span class="town-info-pop">👤 ${popCount}${travelText}</span>
             <span class="town-info-clock">${clock.time_str || ''}</span>
         </div>`;
+        // v5.17.0 今日頭條:日報成為首頁第一眼看到的內容,點頭條直達當事人/相關分頁
+        html += this._renderTownHeadlines();
         // Player card at top
         const playerAgent = this.state.agents['player'];
         if (playerAgent) {
@@ -6385,6 +6433,18 @@ class RimTownApp {
                 }
                 if (isExpanded) {
                     html += `<div class="news-card-content">${this._escapeHtml(paper.content)}</div>`;
+                    // v5.17.0 情境入口:把本期事件做成可點連結,直達當事人資訊卡或相關分頁
+                    const pevs = paper.events || [];
+                    if (pevs.length) {
+                        html += `<div class="news-card-events">`;
+                        pevs.forEach((e, ei) => {
+                            html += `<button class="headline-row" data-action="news-goto" data-val="${paper.id}:${ei}">
+                                <span class="headline-ic">${this._newsCatIcon(e.category)}</span>
+                                <span class="headline-text">${this._escapeHtml(e.content)}</span>
+                                <span class="headline-go">›</span></button>`;
+                        });
+                        html += `</div>`;
+                    }
                     // v4.0: Interactive newspaper reaction buttons (only for latest)
                     if (isLatest && !this._newsReacted) {
                         html += `<div style="display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08)">`;

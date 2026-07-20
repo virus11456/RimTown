@@ -64,7 +64,7 @@ class DailyNewsEngine {
             reporterId: reporter.agentId,
             reporterJob: reporter.job?.title || t('居民'),
             content: content,
-            events: events.map(e => ({ category: e.category, content: e.content, importance: e.importance })),
+            events: events.map(e => ({ category: e.category, content: e.content, importance: e.importance, agents: e.agents || [] })), // v5.17.0 保留關聯人物,供情境入口點擊跳轉
             publishedAt: world.tickCount,
         };
 

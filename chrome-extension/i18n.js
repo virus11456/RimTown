@@ -1323,6 +1323,8 @@ const I18N = (() => {
         '的敵意緩和了一些': "'s hostility softened a little",
         '答應幫': 'agreed to help ',
         '一個忙': ' with a favor',
+        '今日頭條': "Today's Headlines",
+        '完整日報': 'Full paper',
         '你是一位小說家。': 'You are a novelist.',
         '你在為小鎮社群「鎮民動態」寫一則貼文。': 'You are writing a post for the town social feed "Town Feed".',
         '他的人生夢想是「': "Their life dream is \"",

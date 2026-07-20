@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.16.0
+ * Version: 5.17.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.16.0');
+define('RIMTOWN_VERSION', '5.17.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1182,6 +1182,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.17.0',
+            'date'    => '2026-07-20',
+            'changes' => array(
+                '🗞️ 日報變首頁:小鎮首頁最上方新增「今日頭條」,一進遊戲就看到最新一期 AI 日報的重點事件,不用再翻到紀錄分頁',
+                '🧭 情境入口:每則頭條都能點 —— 點到跟居民有關的新聞,直接開他的資訊卡(看意圖+心情來源);點到建築/選舉/探索類,直接跳到對應分頁',
+                '📰 完整日報裡的每則事件也都變成可點連結,把「模擬 → 新聞 → 玩家理解 → 下一步」串成一條可操作的動線',
+            ),
+        ),
         array(
             'version' => '5.16.0',
             'date'    => '2026-07-20',
