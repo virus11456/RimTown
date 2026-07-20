@@ -1007,6 +1007,45 @@ body.rimtown-page .wp-block-post-title {
     background: var(--bg-secondary);
 }
 
+/* v5.18.0 第一天因果鏈引導卡 */
+.firstday-guide {
+    position: fixed;
+    left: 50%;
+    bottom: 20px;
+    transform: translateX(-50%);
+    z-index: 140000;
+    width: min(440px, calc(100vw - 24px));
+    background: linear-gradient(135deg, rgba(24,32,54,0.97), rgba(34,46,74,0.97));
+    border: 1px solid var(--accent);
+    border-radius: 14px;
+    padding: 12px 14px 11px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.5), 0 0 12px rgba(0,229,255,0.12);
+    backdrop-filter: blur(8px);
+    animation: guidanceSlideIn 0.4s ease;
+}
+.firstday-guide .fd-close {
+    position: absolute; top: 6px; right: 8px;
+    background: none; border: none; color: var(--text-muted);
+    font-size: 1rem; cursor: pointer; padding: 4px 6px; line-height: 1;
+}
+.firstday-guide .fd-close:hover { color: var(--text-primary); }
+.firstday-guide .fd-head { font-size: 0.86rem; color: var(--text-primary); margin-bottom: 4px; padding-right: 20px; }
+.firstday-guide .fd-tag { background: var(--accent); color: #0b1020; font-size: 0.66rem; font-weight: 700; padding: 1px 7px; border-radius: 8px; }
+.firstday-guide .fd-count { color: var(--text-muted); font-size: 0.72rem; float: right; }
+.firstday-guide .fd-hint { font-size: 0.78rem; line-height: 1.45; color: var(--text-secondary); margin: 4px 0 8px; }
+.firstday-guide .fd-pips { display: flex; gap: 6px; }
+.firstday-guide .fd-pip {
+    flex: 1; text-align: center; font-size: 0.85rem;
+    padding: 4px 0; border-radius: 8px;
+    background: rgba(255,255,255,0.05); border: 1px solid transparent;
+    opacity: 0.5;
+}
+.firstday-guide .fd-pip.active { opacity: 1; border-color: var(--accent); background: rgba(0,229,255,0.12); }
+.firstday-guide .fd-pip.done { opacity: 1; color: #5cc98f; background: rgba(92,201,143,0.12); }
+@media (max-width: 768px) {
+    .firstday-guide { bottom: 74px; } /* 避開開羅底部列 */
+}
+
 /* v5.17.0 今日頭條(日報首頁化 + 情境入口) */
 .town-headlines {
     margin: 8px 0 10px;

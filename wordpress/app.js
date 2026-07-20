@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.17.0
-const RIMTOWN_APP_VERSION = '5.17.0';
+// RimTown - Frontend App (WordPress Plugin) v5.18.0
+const RIMTOWN_APP_VERSION = '5.18.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -382,6 +382,8 @@ class RimTownApp {
         // Show quest guidance for returning players (tutorial already done)
         if (localStorage.getItem('rimtown_tutorial_done')) {
             setTimeout(() => this._updateQuestGuidance(), 2000);
+            // v5.18.0 第一天因果鏈:介紹已看過但尚未走完核心循環者,續接引導
+            setTimeout(() => { this._initFirstDay(); this._renderFirstDayGuide(); }, 2200);
         }
         // v4.5.0 留存機制:離線進度結算 + 每日登入獎勵
         if (loaded) this._processOfflineProgress();
@@ -921,6 +923,7 @@ class RimTownApp {
         rel.modifyAffinity(gain);
         if (isFav) rel.modifyRomantic(2);
         npc.addThought?.(isFav ? 'fav_gift' : 'gift_received', this.world, 'player', this.world.agents['player']?.name || t('旅人')); // v5.15.0 收禮記憶
+        this._firstDayMark?.('mark'); // v5.18.0 第一天:留下你的選擇
         npc.memory.add(this.world.tickCount, this.world.clock.timeStr, 'gift',
             `${t('收到')}${this.world.agents['player']?.name || t('旅人')}${t('送的')}${g.name}${isFav ? t(',是我的最愛!') : ''}`, isFav ? 7 : 5, ['player']);
         const lines = isFav
@@ -1174,6 +1177,73 @@ class RimTownApp {
         setTimeout(() => overlay.remove(), 500);
         // Show quest guidance after tutorial
         setTimeout(() => this._updateQuestGuidance(), 1000);
+        // v5.18.0 介紹跑完 → 開始「第一天因果鏈」引導
+        setTimeout(() => { this._initFirstDay(); this._renderFirstDayGuide(); }, 1400);
+    }
+
+    // =====================================================
+    // v5.18.0 第一天因果鏈:用一條可操作的動線教會核心循環
+    //   觀察居民 → 發現矛盾 → 出手干預 → 留下選擇 → 看見後果
+    //   證明「這座小鎮會記得你做過的事」
+    // =====================================================
+    _firstDaySteps() {
+        return [
+            { key: 'meet',        icon: '👀', label: t('認識一位居民'), hint: t('點地圖上任何一位居民,打開資訊卡,看看他現在在做什麼、心情從何而來。') },
+            { key: 'relations',   icon: '💘', label: t('發現一段關係'), hint: t('打開「關係網」,看看鎮上誰喜歡誰、誰又跟誰鬧彆扭。') },
+            { key: 'interact',    icon: '💬', label: t('出手互動'),     hint: t('找一位居民聊天,試試「意圖鈕」(安慰/打聽/示好…),看看你的一句話造成了什麼。') },
+            { key: 'mark',        icon: '🎁', label: t('留下你的選擇'), hint: t('送一份禮物,或用「調解」幫某人化解心結——做一件會被記住的事。') },
+            { key: 'consequence', icon: '🗞️', label: t('看見後果'),     hint: t('翻開首頁「今日頭條」並點一則新聞,看看小鎮怎麼記錄你參與的故事。') },
+        ];
+    }
+    _initFirstDay() {
+        if (this._firstDay) return;
+        try { this._firstDay = JSON.parse(localStorage.getItem('rimtown_firstday') || 'null'); } catch (e) { this._firstDay = null; }
+        if (!this._firstDay || typeof this._firstDay !== 'object') this._firstDay = { steps: {}, done: false, dismissed: false };
+        if (!this._firstDay.steps) this._firstDay.steps = {};
+    }
+    _saveFirstDay() { try { localStorage.setItem('rimtown_firstday', JSON.stringify(this._firstDay)); } catch (e) {} }
+    _firstDayActive() {
+        this._initFirstDay();
+        // 只在介紹教學跑完後、且尚未完成/略過時顯示
+        if (!localStorage.getItem('rimtown_tutorial_done')) return false;
+        return !this._firstDay.done && !this._firstDay.dismissed;
+    }
+    _renderFirstDayGuide() {
+        if (!this._firstDayActive()) { document.getElementById('firstday-guide')?.remove(); return; }
+        const steps = this._firstDaySteps();
+        const cur = steps.find(s => !this._firstDay.steps[s.key]);
+        if (!cur) { this._completeFirstDay(); return; }
+        let el = document.getElementById('firstday-guide');
+        if (!el) { el = document.createElement('div'); el.id = 'firstday-guide'; el.className = 'firstday-guide'; (document.getElementById('rimtown-app') || document.body).appendChild(el); }
+        const doneCount = steps.filter(s => this._firstDay.steps[s.key]).length;
+        const pips = steps.map(s => `<span class="fd-pip ${this._firstDay.steps[s.key] ? 'done' : (s.key === cur.key ? 'active' : '')}">${this._firstDay.steps[s.key] ? '✓' : s.icon}</span>`).join('');
+        el.innerHTML = `
+            <button class="fd-close" data-action="firstday-skip" title="${t('略過教學')}">✕</button>
+            <div class="fd-head"><span class="fd-tag">${t('第一天')}</span> <b>${cur.icon} ${cur.label}</b> <span class="fd-count">${doneCount}/5</span></div>
+            <div class="fd-hint">${cur.hint}</div>
+            <div class="fd-pips">${pips}</div>`;
+    }
+    _firstDayMark(key) {
+        this._initFirstDay();
+        if (this._firstDay.done || this._firstDay.dismissed) return;
+        if (this._firstDay.steps[key]) return;
+        this._firstDay.steps[key] = true;
+        this._saveFirstDay();
+        this._renderFirstDayGuide();
+    }
+    _dismissFirstDay() {
+        this._initFirstDay();
+        this._firstDay.dismissed = true;
+        this._saveFirstDay();
+        document.getElementById('firstday-guide')?.remove();
+    }
+    _completeFirstDay() {
+        this._initFirstDay();
+        if (this._firstDay.done) { document.getElementById('firstday-guide')?.remove(); return; }
+        this._firstDay.done = true;
+        this._saveFirstDay();
+        document.getElementById('firstday-guide')?.remove();
+        this._gameAlert(t('觀察居民 → 發現矛盾 → 出手干預 → 小鎮回應。從今天起,這座小鎮會記得你做過的每一件事。'), '🎉');
     }
 
     // === Quest Guidance System (post-tutorial contextual hints) ===
@@ -3427,7 +3497,8 @@ class RimTownApp {
                 case 'fulfill-order': this._fulfillOrder(val); break;
                 // Newspaper
                 case 'view-newspaper': this._viewNewspaper(parseInt(val)); break;
-                case 'news-goto': this._newsGoto(val); break;
+                case 'news-goto': this._newsGoto(val); this._firstDayMark('consequence'); break;
+                case 'firstday-skip': this._dismissFirstDay(); break;
                 case 'goto-tab': this.activeTab = val; this._updateTabHighlight?.(val); this.state = this.world.getState(); this.renderSidebar(); break;
                 // Custom NPC
                 case 'show-custom-npc': this._showCustomNPCModal(); break;
@@ -4778,6 +4849,7 @@ class RimTownApp {
             }
         };
         card.classList.remove('hidden');
+        if (agentId !== 'player') this._firstDayMark?.('meet'); // v5.18.0 第一天:認識一位居民
     }
 
     _hideNpcCard() {
@@ -4853,6 +4925,7 @@ class RimTownApp {
     // =====================================================
     renderRelationMap(container) {
         if (!this.state) return;
+        this._firstDayMark?.('relations'); // v5.18.0 第一天:發現一段關係
         if (!this._relmapFilters) this._relmapFilters = { love: true, crush: true, foe: true, friend: false };
         const f = this._relmapFilters;
         const chip = (k, icon, label, color) =>
@@ -5438,6 +5511,8 @@ class RimTownApp {
         if (this.chatSending || !this.chatTarget) return;
         const it = this._chatIntents().find(x => x.key === key);
         if (!it) return;
+        this._firstDayMark?.('interact'); // v5.18.0 第一天:出手互動
+        if (key === 'comfort' || key === 'mediate') this._firstDayMark?.('mark'); // 這兩種也算「為某人做點事」
         this.playerSendMessage(this.chatTarget, it.opener, key);
     }
 
