@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.22.0.zip` from Releases
+1. Download `rimtown-v5.23.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,15 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.23.0 (2026-07-20)
+
+**夜空 / 天氣粒子 / 月相變化**
+
+- 月相:夜晚月亮依遊戲天數盈虧(新月→上弦→滿月→下弦,約 16 天一輪)
+- 天氣粒子:雨天落雨絲、雪天飄雪花,暴風雨/雪更狂;只在可視範圍生成
+- 流星:夜空偶爾一顆流星拖尾劃過
+
 
 ### v5.22.0 (2026-07-20)
 

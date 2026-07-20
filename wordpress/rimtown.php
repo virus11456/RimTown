@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.22.0
+ * Version: 5.23.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.22.0');
+define('RIMTOWN_VERSION', '5.23.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1175,6 +1175,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.23.0',
+            'date'    => '2026-07-20',
+            'changes' => array(
+                '🌙 月相變化:夜晚的月亮會依遊戲天數盈虧(新月→上弦→滿月→下弦,約 16 天一輪),取代原本固定的月牙',
+                '🌧️ 天氣粒子:下雨會落下雨絲、下雪會飄下雪花,暴風雨/暴風雪更狂;雨雪只在可視範圍內生成,效能友善',
+                '☄️ 流星:夜空偶爾會有一顆流星拖著尾巴劃過',
+            ),
+        ),
         array(
             'version' => '5.22.0',
             'date'    => '2026-07-20',

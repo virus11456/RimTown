@@ -3927,6 +3927,32 @@ class PixelTileMap {
             }
         }
 
+        // v5.23.0 天氣粒子:依 weather 系統落下的雨/雪(覆蓋目前可視範圍)
+        const wt = this.weatherType || 'clear';
+        const isRain = wt === 'rain' || wt === 'storm';
+        const isSnow = wt === 'snow' || wt === 'blizzard';
+        if (isRain || isSnow) {
+            const vpW = (this.canvas.width / this._dpr) / this.zoom;
+            const vpH = (this.canvas.height / this._dpr) / this.zoom;
+            const vpX = this.camX, vpY = this.camY;
+            const heavy = wt === 'storm' || wt === 'blizzard';
+            const spawnN = isRain ? (heavy ? 7 : 4) : (heavy ? 5 : 2);
+            for (let s = 0; s < spawnN; s++) {
+                const px = vpX + Math.random() * vpW;
+                const py = vpY - 6;
+                if (isRain) {
+                    const vy = 7 + Math.random() * 3;
+                    this._particles.push({ x: px, y: py, vx: heavy ? 2.2 : 0.7, vy,
+                        life: Math.ceil((vpH + 12) / vy), maxLife: Math.ceil((vpH + 12) / vy), size: 1, type: 'rain' });
+                } else {
+                    const vy = 1 + Math.random() * 0.9;
+                    this._particles.push({ x: px, y: py, vx: (heavy ? 1.2 : 0.3), vy,
+                        life: Math.ceil((vpH + 12) / vy), maxLife: Math.ceil((vpH + 12) / vy),
+                        size: 1 + Math.round(Math.random()), type: 'snow', phase: Math.random() * Math.PI * 2 });
+                }
+            }
+        }
+
         // Update and draw particles
         for (let i = this._particles.length - 1; i >= 0; i--) {
             const p = this._particles[i];
@@ -3934,6 +3960,18 @@ class PixelTileMap {
             if (p.life <= 0) { this._particles.splice(i, 1); continue; }
 
             const alpha = Math.min(1, p.life / (p.maxLife * 0.3));
+
+            if (p.type === 'rain') {
+                ctx.strokeStyle = `rgba(170, 200, 240, ${(0.35).toFixed(2)})`;
+                ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 0.6, p.y - p.vy * 0.6); ctx.stroke();
+                continue;
+            } else if (p.type === 'snow') {
+                p.x += Math.sin(this.animFrame * 0.05 + p.phase) * 0.3; // 飄移
+                ctx.fillStyle = `rgba(245, 250, 255, ${(0.85).toFixed(2)})`;
+                ctx.fillRect(Math.floor(p.x), Math.floor(p.y), p.size, p.size);
+                continue;
+            }
 
             if (p.type === 'smoke') {
                 p.size += 0.03; // expand
@@ -3961,8 +3999,9 @@ class PixelTileMap {
             }
         }
 
-        // Keep particle count reasonable
-        if (this._particles.length > 200) this._particles = this._particles.slice(-150);
+        // Keep particle count reasonable(下雨/下雪時允許更多粒子)
+        const cap = (this.weatherType === 'clear' || !this.weatherType) ? 200 : 520;
+        if (this._particles.length > cap) this._particles = this._particles.slice(-(cap - 60));
     }
 
     // ===== v5.6.0 浮動特效(打擊感):彈跳描邊數字/愛心 + emoji 爆裂 =====
@@ -4381,6 +4420,27 @@ class PixelTileMap {
                 ctx.fillRect(Math.floor(sx) - 1, Math.floor(sy) - 1, 4, 4);
             }
         }
+        // v5.23.0 偶爾一顆流星劃過夜空
+        const METEOR_CYCLE = 900, METEOR_DUR = 26;
+        const mphase = this.animFrame % METEOR_CYCLE;
+        if (mphase < METEOR_DUR) {
+            const cyc = Math.floor(this.animFrame / METEOR_CYCLE);
+            const startX = (cyc * 131) % Math.max(1, Math.floor(this.mapWidth * 0.6)) + this.mapWidth * 0.2;
+            const startY = (cyc * 71) % Math.max(1, Math.floor(this.mapHeight * 0.18)) + 8;
+            const prog = mphase / METEOR_DUR;
+            const spd = 5;
+            const hx = startX + prog * METEOR_DUR * spd;
+            const hy = startY + prog * METEOR_DUR * spd * 0.5;
+            const fade = Math.sin(prog * Math.PI);
+            const tx = hx - 22, ty = hy - 11;
+            const g = ctx.createLinearGradient(tx, ty, hx, hy);
+            g.addColorStop(0, 'rgba(255,255,255,0)');
+            g.addColorStop(1, `rgba(255,255,255,${(alpha * fade * 0.9).toFixed(2)})`);
+            ctx.strokeStyle = g; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(hx, hy); ctx.stroke();
+            ctx.fillStyle = `rgba(255,255,255,${(alpha * fade).toFixed(2)})`;
+            ctx.fillRect(Math.floor(hx), Math.floor(hy), 2, 2);
+        }
     }
 
     _renderMoon(ctx, hour, nightAmount) {
@@ -4434,17 +4494,25 @@ class PixelTileMap {
         ctx.arc(mx - 1, my + 5, 2.5, 0, Math.PI * 2);
         ctx.fill();
 
-        // Shadow for crescent shape
-        ctx.fillStyle = `rgba(8, 12, 40, ${(moonAlpha * 0.9).toFixed(2)})`;
-        ctx.beginPath();
-        ctx.arc(mx + 7, my - 2, 12, 0, Math.PI * 2);
-        ctx.fill();
+        // v5.23.0 月相變化:依遊戲天數盈虧(約 16 天一輪),用位移陰影圓塑造 新月→上弦→滿月→下弦
+        const R = 14;
+        const cycle = 16;
+        const t = (((this.dayCount || 0) % cycle) + cycle) % cycle / cycle; // 0(新月)..0.5(滿月)..1
+        let shadowDX;
+        if (t < 0.5) shadowDX = (t / 0.5) * 2 * R;        // 上弦:陰影自中心右移,左緣先亮
+        else shadowDX = -((1 - t) / 0.5) * 2 * R;         // 下弦:陰影自左方回歸,右緣後暗
+        if (Math.abs(shadowDX) < 2 * R - 0.5) {           // 滿月(|dx|≈2R)時無陰影
+            ctx.fillStyle = `rgba(10, 14, 42, ${(moonAlpha * 0.92).toFixed(2)})`;
+            ctx.beginPath();
+            ctx.arc(mx + shadowDX, my, R + 0.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
-        // Bright edge highlight on the lit side
-        ctx.strokeStyle = `rgba(255, 255, 255, ${(moonAlpha * 0.4).toFixed(2)})`;
-        ctx.lineWidth = 1.5;
+        // 柔和外緣高光(整圈,適用所有月相)
+        ctx.strokeStyle = `rgba(255, 255, 255, ${(moonAlpha * 0.28).toFixed(2)})`;
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(mx, my, 14, Math.PI * 0.7, Math.PI * 1.8);
+        ctx.arc(mx, my, R, 0, Math.PI * 2);
         ctx.stroke();
     }
 
