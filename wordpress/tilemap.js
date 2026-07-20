@@ -4391,6 +4391,7 @@ class PixelTileMap {
         const my = this.mapHeight * 0.05 + (1 - arc) * this.mapHeight * 0.08;
         const moonAlpha = nightAmount * 0.95;
 
+        // v5.20.1 月暈改用圓形填充(arc),徹底杜絕方形填充區與邊緣色帶造成的「破圖」感
         // Outer atmospheric glow (very large, subtle)
         const outerR = 120;
         const outerGrad = ctx.createRadialGradient(mx, my, 0, mx, my, outerR);
@@ -4399,7 +4400,9 @@ class PixelTileMap {
         outerGrad.addColorStop(0.6, `rgba(100, 130, 200, ${(moonAlpha * 0.02).toFixed(3)})`);
         outerGrad.addColorStop(1, 'rgba(100, 130, 200, 0)');
         ctx.fillStyle = outerGrad;
-        ctx.fillRect(mx - outerR, my - outerR, outerR * 2, outerR * 2);
+        ctx.beginPath();
+        ctx.arc(mx, my, outerR, 0, Math.PI * 2);
+        ctx.fill();
 
         // Inner glow halo
         const glowR = 55;
@@ -4409,7 +4412,9 @@ class PixelTileMap {
         grad.addColorStop(0.6, `rgba(150, 180, 230, ${(moonAlpha * 0.06).toFixed(3)})`);
         grad.addColorStop(1, 'rgba(150, 180, 230, 0)');
         ctx.fillStyle = grad;
-        ctx.fillRect(mx - glowR, my - glowR, glowR * 2, glowR * 2);
+        ctx.beginPath();
+        ctx.arc(mx, my, glowR, 0, Math.PI * 2);
+        ctx.fill();
 
         // Moon body (larger, brighter)
         ctx.fillStyle = `rgba(245, 248, 255, ${(moonAlpha * 0.98).toFixed(2)})`;
