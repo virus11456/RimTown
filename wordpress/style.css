@@ -1007,6 +1007,25 @@ body.rimtown-page .wp-block-post-title {
     background: var(--bg-secondary);
 }
 
+/* v5.21.0 小鎮劇場(名場面回顧) */
+.drama-theater h4 .dt-count {
+    display: inline-block; margin-left: 6px; font-size: 0.68rem; font-weight: 600;
+    background: var(--accent); color: #0b1020; border-radius: 9px; padding: 0 7px;
+}
+.drama-replay-row {
+    display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+    background: rgba(255,255,255,0.03); border: 1px solid transparent; border-radius: 9px;
+    padding: 8px 10px; margin: 4px 0; cursor: pointer; color: var(--text-primary);
+    transition: background 0.15s, border-color 0.15s;
+}
+.drama-replay-row:hover { background: rgba(255,107,157,0.1); border-color: var(--accent); }
+.drama-replay-row .dt-ic { flex: 0 0 auto; font-size: 1.15rem; }
+.drama-replay-row .dt-body { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.drama-replay-row .dt-title { font-size: 0.8rem; font-weight: 700; }
+.drama-replay-row .dt-who { font-size: 0.7rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.drama-replay-row .dt-date { flex: 0 0 auto; font-size: 0.66rem; color: var(--text-muted); white-space: nowrap; }
+.drama-replay-row .dt-play { flex: 0 0 auto; color: var(--accent); font-size: 0.8rem; }
+
 /* v5.19.0 城鎮身分徽章 + 詳情 */
 .town-identity {
     display: flex;

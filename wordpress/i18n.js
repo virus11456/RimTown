@@ -1326,6 +1326,7 @@ const I18N = (() => {
         '今日頭條': "Today's Headlines",
         '完整日報': 'Full paper',
         '故事': 'Story',
+        '小鎮劇場': 'Town Theater',
         '商業自由鎮': 'Free Trade Town',
         '軍事要塞': 'Military Fortress',
         '農業共同體': 'Agrarian Commune',

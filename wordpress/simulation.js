@@ -1501,8 +1501,13 @@ ${t('- 格式：每行「名字: 對話內容」,不要有其他任何東西')}`
                 lines = FB;
             }
             if (!lines.length) return;
+            const scene = { kind, icon: meta.icon, title: meta.title, aName: a.name, bName: b.name, lines };
             world._pendingDramaScenes = world._pendingDramaScenes || [];
-            world._pendingDramaScenes.push({ kind, icon: meta.icon, title: meta.title, aName: a.name, bName: b.name, lines });
+            world._pendingDramaScenes.push(scene);
+            // v5.21.0 小鎮劇場:名場面存進可回顧的檔案,加上時間戳
+            world.dramaArchive = world.dramaArchive || [];
+            world.dramaArchive.push({ ...scene, year: world.clock.year, season: world.clock.season, day: world.clock.day, tick: world.tickCount });
+            if (world.dramaArchive.length > 40) world.dramaArchive = world.dramaArchive.slice(-40);
             // v5.2.0 大事件後當事人發鎮民動態
             if (world.townFeed) {
                 const feedPools = {
@@ -5678,6 +5683,7 @@ class World {
             processing: this.processing.toDict(),
             dailyNews: this.dailyNews.toDict(),
             townIdentity: this.townIdentity.toDict(),
+            dramaArchive: (this.dramaArchive || []).slice(-40),
             npcEvents: this.npcEvents.toDict(),
             questSystem: this.questSystem ? this.questSystem.toDict() : null,
             prosperity: this.prosperity ? this.prosperity.toDict() : null,
@@ -6318,6 +6324,7 @@ class World {
             processing: this.processing.serialize(),
             dailyNews: this.dailyNews.serialize(),
             townIdentity: this.townIdentity.serialize(),
+            dramaArchive: (this.dramaArchive || []).slice(-40),
             npcEvents: this.npcEvents.serialize(),
             questSystem: this.questSystem ? this.questSystem.serialize() : null,
             prosperity: this.prosperity ? this.prosperity.serialize() : null,
@@ -6546,6 +6553,7 @@ class World {
             this.townIdentity = new TownIdentitySystem(); // v5.19.0 城鎮身分/路線
             if (data.dailyNews) this.dailyNews.loadFrom(data.dailyNews);
             if (data.townIdentity) this.townIdentity.load(data.townIdentity);
+            this.dramaArchive = Array.isArray(data.dramaArchive) ? data.dramaArchive : [];
             this.npcEvents = new NPCEventSystem();
             if (data.npcEvents) this.npcEvents.loadFrom(data.npcEvents);
             if (this.questSystem && data.questSystem) this.questSystem.loadFrom(data.questSystem);

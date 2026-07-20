@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.20.1
-const RIMTOWN_APP_VERSION = '5.20.1';
+// RimTown - Frontend App (WordPress Plugin) v5.21.0
+const RIMTOWN_APP_VERSION = '5.21.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -3496,6 +3496,7 @@ class RimTownApp {
                 case 'fulfill-order': this._fulfillOrder(val); break;
                 // Newspaper
                 case 'view-newspaper': this._viewNewspaper(parseInt(val)); break;
+                case 'replay-drama': { const arc = this.world?.dramaArchive || this.state?.dramaArchive || []; const s = arc[parseInt(val, 10)]; if (s) this._showDramaScene(s); break; }
                 case 'news-goto': this._newsGoto(val); this._firstDayMark('consequence'); break;
                 case 'firstday-skip': this._dismissFirstDay(); break;
                 case 'show-identity': this._showTownIdentity(); break;
@@ -6282,6 +6283,22 @@ class RimTownApp {
         if (!this.state) return;
         const messages = (this.state.recent_messages || []).slice().reverse();
         let html = '';
+
+        // v5.21.0 小鎮劇場:回顧錯過的名場面(告白/婚禮/修羅場/分手/離婚)
+        const archive = this.state.dramaArchive || this.world?.dramaArchive || [];
+        if (archive.length) {
+            html += `<div class="news-section drama-theater"><h4>🎭 ${t('小鎮劇場')} <span class="dt-count">${archive.length}</span></h4>`;
+            archive.slice().reverse().slice(0, 20).forEach((s, i) => {
+                const realIdx = archive.length - 1 - i;
+                html += `<button class="drama-replay-row" data-action="replay-drama" data-val="${realIdx}">
+                    <span class="dt-ic">${s.icon}</span>
+                    <span class="dt-body"><span class="dt-title">${this._escapeHtml(s.title)}</span>
+                    <span class="dt-who">${this._escapeHtml(s.aName)} × ${this._escapeHtml(s.bName)}</span></span>
+                    <span class="dt-date">${t('第')}${s.year}${t('年')}${s.season}${s.day}${t('天')}</span>
+                    <span class="dt-play">▶</span></button>`;
+            });
+            html += '</div>';
+        }
 
         // Show recent NPC conversations at the top
         const npcConvos = (this.state.npc_conversations || []).slice().reverse();
