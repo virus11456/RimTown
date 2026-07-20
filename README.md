@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.18.0.zip` from Releases
+1. Download `rimtown-v5.19.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,15 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.19.0 (2026-07-20)
+
+**城鎮身分/路線系統**
+
+- 小鎮依長期經營自然長成一種樣貌:商業自由鎮 / 軍事要塞 / 農業共同體 / 學術聚落 / 浪漫小鎮 / 龍蛇混雜之地
+- 路線由職業分佈、經濟、選舉政策、愛恨密度長期累積,近期權重更高,會隨玩法自然轉型
+- 成形的路線會吸引氣味相投的移民(依職業加權),讓每一局愈走愈有個性
+- 首頁新增身分徽章,點一下可看它由哪些長期傾向形成
 
 ### v5.18.0 (2026-07-20)
 

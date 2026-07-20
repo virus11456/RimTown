@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.18.0
+ * Version: 5.19.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.18.0');
+define('RIMTOWN_VERSION', '5.19.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1182,6 +1182,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.19.0',
+            'date'    => '2026-07-20',
+            'changes' => array(
+                '🏙️ 城鎮身分/路線:小鎮會依你的長期經營自然長成一種樣貌 —— 商業自由鎮、軍事要塞、農業共同體、學術聚落、浪漫小鎮、龍蛇混雜之地',
+                '📈 路線由職業分佈、經濟樣態、選舉政策、愛恨密度長期累積而成,近期權重更高,會隨玩法自然轉型(本來想建農業村,最後卻成了貿易城)',
+                '🧲 成形的路線會吸引「氣味相投」的移民(依職業加權挑選),讓每一局的城鎮愈走愈有個性',
+                '🔎 首頁新增城鎮身分徽章,點一下可看它是由哪些長期傾向形成的',
+            ),
+        ),
         array(
             'version' => '5.18.0',
             'date'    => '2026-07-20',

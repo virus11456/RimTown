@@ -1007,6 +1007,32 @@ body.rimtown-page .wp-block-post-title {
     background: var(--bg-secondary);
 }
 
+/* v5.19.0 城鎮身分徽章 + 詳情 */
+.town-identity {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 6px 0 2px;
+    padding: 7px 10px;
+    background: linear-gradient(135deg, rgba(70,58,120,0.24), rgba(40,50,80,0.16));
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+.town-identity:hover { border-color: var(--accent); }
+.town-identity .ti-badge { flex: 0 0 auto; font-size: 0.82rem; font-weight: 700; color: var(--text-primary); }
+.town-identity .ti-desc { flex: 1; font-size: 0.7rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.town-identity .ti-go { flex: 0 0 auto; color: var(--text-muted); font-size: 0.95rem; }
+.ti-detail { text-align: left; margin-top: 4px; }
+.ti-detail-head { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 8px; }
+.ti-bar-row { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
+.ti-bar-label { flex: 0 0 68px; font-size: 0.76rem; color: var(--text-primary); }
+.ti-bar-track { flex: 1; height: 10px; background: rgba(255,255,255,0.07); border-radius: 6px; overflow: hidden; }
+.ti-bar-fill { display: block; height: 100%; background: rgba(140,150,200,0.55); border-radius: 6px; transition: width 0.4s ease; }
+.ti-bar-fill.ti-bar-top { background: linear-gradient(90deg, var(--accent), #7fc4ff); }
+.ti-detail-foot { font-size: 0.72rem; color: var(--text-muted); margin-top: 10px; line-height: 1.5; }
+
 /* v5.18.0 第一天因果鏈引導卡 */
 .firstday-guide {
     position: fixed;

@@ -3311,7 +3311,14 @@ class EventSystem {
     _spawnImmigrant(world) {
         let available = IMMIGRANT_POOL.filter(p => !this._usedImmigrantNames.has(p.name));
         if (!available.length) { this._usedImmigrantNames.clear(); available = [...IMMIGRANT_POOL]; }
-        const imm = pickRandom(available);
+        // v5.19.0 城鎮身分:成形的路線會吸引「氣味相投」的移民(依職業軸加權挑選)
+        let imm;
+        const routeAxis = world.townIdentity?.routeAxis?.();
+        if (routeAxis && Math.random() < 0.7) {
+            const weights = available.map(p => JOB_AXIS[p.job] === routeAxis ? 4 : 1);
+            imm = weightedChoice(available, weights);
+        }
+        if (!imm) imm = pickRandom(available);
         this._usedImmigrantNames.add(imm.name);
         const id = `imm_${imm.name}_${world.tickCount}`;
         const personality = new Personality(imm.traits, imm.background);
@@ -4608,6 +4615,86 @@ class LifeGoalSystem {
     load(d) { if (d && d.goals) { this.goals = d.goals; this._assigned = true; } }
 }
 
+// v5.19.0 城鎮身分/路線:小鎮依長期決策自然長成某種樣貌,影響移民、氛圍與事件
+const TOWN_ROUTES = {
+    commerce:  { icon: '💰', name: () => t('商業自由鎮'), desc: () => t('金流暢旺,商人與旅人絡繹不絕') },
+    military:  { icon: '🛡️', name: () => t('軍事要塞'),   desc: () => t('壁壘森嚴,以武立鎮') },
+    agrarian:  { icon: '🌾', name: () => t('農業共同體'), desc: () => t('阡陌相連,自給自足') },
+    scholarly: { icon: '📚', name: () => t('學術聚落'),   desc: () => t('崇尚知識,書香瀰漫') },
+    romance:   { icon: '💕', name: () => t('浪漫小鎮'),   desc: () => t('愛情故事在此處處上演') },
+    crime:     { icon: '🗡️', name: () => t('龍蛇混雜之地'), desc: () => t('恩怨情仇,暗流洶湧') },
+};
+const JOB_AXIS = {
+    farmer: 'agrarian', cook: 'agrarian',
+    trader: 'commerce', tailor: 'commerce', carpenter: 'commerce', miner: 'commerce',
+    guard: 'military', blacksmith: 'military',
+    researcher: 'scholarly', doctor: 'scholarly', priest: 'scholarly',
+};
+const POLICY_AXIS = { economy: 'commerce', freedom: 'commerce', defense: 'military', welfare: 'agrarian', nature: 'agrarian', culture: 'scholarly' };
+
+class TownIdentitySystem {
+    constructor() {
+        this.scores = { commerce: 0, military: 0, agrarian: 0, scholarly: 0, romance: 0, crime: 0 };
+        this.route = null;      // 目前結晶出的路線 key
+        this.routeSince = null; // 成為該路線的日子
+        this.history = [];      // [{route, day}]
+    }
+    dailyUpdate(world) {
+        const s = this.scores;
+        const npcs = Object.values(world.agents).filter(a => !a.isPlayer);
+        // 職業分佈:小鎮靠什麼維生
+        for (const a of npcs) { const ax = JOB_AXIS[a.job?.key]; if (ax) s[ax] += 1; }
+        // 經濟樣態
+        const silver = world.stockpile?.get?.('silver') || 0;
+        const food = world.stockpile?.get?.('food') || 0;
+        if (silver > 300) s.commerce += 2; else if (silver > 150) s.commerce += 1;
+        if (food > 150) s.agrarian += 1;
+        // 研究氛圍
+        const techDone = world.research?.completed?.length || world.research?.unlocked?.length || 0;
+        if (techDone > 0) s.scholarly += Math.min(3, techDone * 0.4);
+        // 愛恨密度
+        let couples = 0, rivalPairs = 0;
+        for (const a of npcs) {
+            if (a.relationships?.getPartner?.()) couples++;
+            for (const r of Object.values(a.relationships?.relationships || {})) if ((r.affinity || 0) < -40) rivalPairs++;
+        }
+        s.romance += Math.min(5, couples / 2);
+        s.crime += Math.min(4, rivalPairs / 4);
+        // 選舉政策(最近一屆的方向,強訊號)
+        const pol = world.election?.electionHistory?.slice(-1)[0]?.winner?.policy;
+        if (pol && POLICY_AXIS[pol]) s[POLICY_AXIS[pol]] += 4;
+        // 輕微衰退:讓「近期」比「遠古」更有份量,路線可隨玩法轉變
+        for (const k in s) s[k] *= 0.97;
+        this._evaluate(world);
+    }
+    _evaluate(world) {
+        const days = world.clock?.totalDays || 0;
+        if (days < 15) return; // 需要一段歷史才成形
+        const sorted = Object.entries(this.scores).sort((a, b) => b[1] - a[1]);
+        const [topK, topV] = sorted[0];
+        const runnerV = sorted[1] ? sorted[1][1] : 0;
+        if (topV < 25 || topV < runnerV * 1.2) return; // 訊號不夠強或不夠獨佔 → 尚未成形
+        if (this.route === topK) return;
+        const prev = this.route;
+        this.route = topK; this.routeSince = days;
+        this.history.push({ route: topK, day: days });
+        const def = TOWN_ROUTES[topK];
+        const verb = prev ? t('小鎮的樣貌轉變了,如今成為「') : t('小鎮的樣貌逐漸成形——「');
+        world.logMessage?.('event', `${def.icon} ${verb}${def.name()}${t('」:')}${def.desc()}`);
+        world.dailyNews?.collectEvent?.('event', `${def.icon} ${prev ? t('小鎮轉型為:') : t('小鎮成形為:')}${def.name()}`, 9, []);
+    }
+    currentRoute() {
+        if (!this.route) return null;
+        const def = TOWN_ROUTES[this.route];
+        return { key: this.route, icon: def.icon, name: def.name(), desc: def.desc() };
+    }
+    // 依路線偏好的職業軸(供移民加權)
+    routeAxis() { return this.route; }
+    toDict() { return { route: this.route, routeName: this.route ? TOWN_ROUTES[this.route].name() : null, routeIcon: this.route ? TOWN_ROUTES[this.route].icon : null, routeDesc: this.route ? TOWN_ROUTES[this.route].desc() : null, scores: { ...this.scores } }; }
+    serialize() { return { scores: this.scores, route: this.route, routeSince: this.routeSince, history: this.history }; }
+    load(d) { if (!d) return; this.scores = d.scores || this.scores; this.route = d.route || null; this.routeSince = d.routeSince || null; this.history = d.history || []; }
+}
+
 class FestivalSystem {
     constructor() {
         this.activeFestival = null; // current festival or null
@@ -5468,6 +5555,7 @@ class World {
         this.farm = new FarmSystem();
         this.processing = new ProcessingSystem();
         this.dailyNews = new DailyNewsEngine();
+        this.townIdentity = new TownIdentitySystem(); // v5.19.0 城鎮身分/路線
         this.npcEvents = new NPCEventSystem();
         this.questSystem = typeof QuestSystem !== 'undefined' ? new QuestSystem() : null;
         this.prosperity = typeof ProsperityEngine !== 'undefined' ? new ProsperityEngine() : null;
@@ -5531,6 +5619,7 @@ class World {
             // New systems daily updates
             this.factions.dailyUpdate(this);
             this.festivals.dailyUpdate(this);
+            this.townIdentity.dailyUpdate(this); // v5.19.0 城鎮身分逐日累積並結晶
             this.checkHeartEvents(); // v5.0.0 每日掃描心動事件門檻
             this._processThoughts(); // v5.15.0 記憶想法:清過期 + 對特定對象的好感漂移
             this.generateDailyFeedPosts(); // v5.2.0 鎮民動態每日發文
@@ -5588,6 +5677,7 @@ class World {
             farm: this.farm.toDict(),
             processing: this.processing.toDict(),
             dailyNews: this.dailyNews.toDict(),
+            townIdentity: this.townIdentity.toDict(),
             npcEvents: this.npcEvents.toDict(),
             questSystem: this.questSystem ? this.questSystem.toDict() : null,
             prosperity: this.prosperity ? this.prosperity.toDict() : null,
@@ -5627,6 +5717,7 @@ class World {
         this.farm = new FarmSystem();
         this.processing = new ProcessingSystem();
         this.dailyNews = new DailyNewsEngine();
+        this.townIdentity = new TownIdentitySystem(); // v5.19.0 城鎮身分/路線
         this.npcEvents = new NPCEventSystem();
         this.questSystem = typeof QuestSystem !== 'undefined' ? new QuestSystem() : null;
         this.prosperity = typeof ProsperityEngine !== 'undefined' ? new ProsperityEngine() : null;
@@ -6226,6 +6317,7 @@ class World {
             farm: this.farm.serialize(),
             processing: this.processing.serialize(),
             dailyNews: this.dailyNews.serialize(),
+            townIdentity: this.townIdentity.serialize(),
             npcEvents: this.npcEvents.serialize(),
             questSystem: this.questSystem ? this.questSystem.serialize() : null,
             prosperity: this.prosperity ? this.prosperity.serialize() : null,
@@ -6451,7 +6543,9 @@ class World {
             this.processing = new ProcessingSystem();
             if (data.processing) this.processing.loadFrom(data.processing);
             this.dailyNews = new DailyNewsEngine();
+            this.townIdentity = new TownIdentitySystem(); // v5.19.0 城鎮身分/路線
             if (data.dailyNews) this.dailyNews.loadFrom(data.dailyNews);
+            if (data.townIdentity) this.townIdentity.load(data.townIdentity);
             this.npcEvents = new NPCEventSystem();
             if (data.npcEvents) this.npcEvents.loadFrom(data.npcEvents);
             if (this.questSystem && data.questSystem) this.questSystem.loadFrom(data.questSystem);

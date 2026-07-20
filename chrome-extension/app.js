@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.18.0
-const RIMTOWN_APP_VERSION = '5.18.0';
+// RimTown - Frontend App (WordPress Plugin) v5.19.0
+const RIMTOWN_APP_VERSION = '5.19.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -3499,6 +3499,7 @@ class RimTownApp {
                 case 'view-newspaper': this._viewNewspaper(parseInt(val)); break;
                 case 'news-goto': this._newsGoto(val); this._firstDayMark('consequence'); break;
                 case 'firstday-skip': this._dismissFirstDay(); break;
+                case 'show-identity': this._showTownIdentity(); break;
                 case 'goto-tab': this.activeTab = val; this._updateTabHighlight?.(val); this.state = this.world.getState(); this.renderSidebar(); break;
                 // Custom NPC
                 case 'show-custom-npc': this._showCustomNPCModal(); break;
@@ -5875,6 +5876,28 @@ class RimTownApp {
         }, 500);
     }
 
+    // v5.19.0 城鎮身分詳情:讓玩家看懂「小鎮為什麼長成這樣」
+    _showTownIdentity() {
+        const ident = this.state?.townIdentity;
+        if (!ident || !ident.route) return;
+        const meta = { commerce: ['💰', t('商業')], military: ['🛡️', t('軍事')], agrarian: ['🌾', t('農業')], scholarly: ['📚', t('學術')], romance: ['💕', t('浪漫')], crime: ['🗡️', t('江湖')] };
+        const scores = ident.scores || {};
+        const max = Math.max(1, ...Object.values(scores).map(Number));
+        const rows = Object.entries(scores).sort((a, b) => b[1] - a[1]).map(([k, v]) => {
+            const [ic, label] = meta[k] || ['·', k];
+            const pct = Math.max(2, Math.round((v / max) * 100));
+            const isTop = k === ident.route;
+            return `<div class="ti-bar-row"><span class="ti-bar-label">${ic} ${label}</span>
+                <span class="ti-bar-track"><span class="ti-bar-fill${isTop ? ' ti-bar-top' : ''}" style="width:${pct}%"></span></span></div>`;
+        }).join('');
+        this._showCenterNotification({
+            icon: ident.routeIcon,
+            title: ident.routeName,
+            desc: ident.routeDesc,
+            content: `<div class="ti-detail"><div class="ti-detail-head">${t('小鎮的長期傾向(近期權重)')}</div>${rows}<div class="ti-detail-foot">${t('路線會隨你的長期經營自然轉變——它記錄的是這座小鎮的故事。')}</div></div>`,
+        });
+    }
+
     // v5.17.0 情境入口:分類 → 圖示 / 目的地分頁
     _newsCatIcon(cat) {
         return { gossip:'💬', drama:'🔥', milestone:'🌟', social:'🤝', lifecycle:'🌱', building:'🏗️', exploration:'🗺️', event:'⚡', politics:'🗳️', relationship:'💕' }[cat] || '📌';
@@ -5935,6 +5958,15 @@ class RimTownApp {
             <span class="town-info-pop">👤 ${popCount}${travelText}</span>
             <span class="town-info-clock">${clock.time_str || ''}</span>
         </div>`;
+        // v5.19.0 城鎮身分:小鎮長成的路線,點一下看它是怎麼形成的
+        const ident = this.state.townIdentity;
+        if (ident && ident.route) {
+            html += `<div class="town-identity" data-action="show-identity" title="${this._escapeHtml(ident.routeDesc || '')}">
+                <span class="ti-badge">${ident.routeIcon} ${ident.routeName}</span>
+                <span class="ti-desc">${this._escapeHtml(ident.routeDesc || '')}</span>
+                <span class="ti-go">›</span>
+            </div>`;
+        }
         // v5.17.0 今日頭條:日報成為首頁第一眼看到的內容,點頭條直達當事人/相關分頁
         html += this._renderTownHeadlines();
         // Player card at top
