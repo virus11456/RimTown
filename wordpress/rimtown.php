@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.27.0
+ * Version: 5.28.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.27.0');
+define('RIMTOWN_VERSION', '5.28.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1175,6 +1175,14 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.28.0',
+            'date'    => '2026-07-20',
+            'changes' => array(
+                '🃏 肉鴿③局內際遇卡:每隔幾天會跳出一張「際遇卡」,二/三選一,每個選擇永久改變這一局 —— 旅行商隊、神秘祝福(全鎮屬性+1)、豐收抉擇、謠言火種(撮合/挑撥)、命運賭注、遊方醫者、豐年餘暉…',
+                '⚙️ 效果直接作用在這一局:加減資源、全鎮心情、居民屬性、撮合/拆散關係、持續數天的增益,越選越有肉鴿 build 的感覺',
+            ),
+        ),
         array(
             'version' => '5.27.0',
             'date'    => '2026-07-20',

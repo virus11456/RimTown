@@ -5623,6 +5623,7 @@ class World {
         this.dailyDecision = new DailyDecisionSystem();
         this.shop = new ShopSystem();
         this.eventChoice = new EventChoiceSystem();
+        this.rogueCards = new RogueCardSystem(); // v5.28.0 際遇卡
         this.npcHelp = new NPCHelpSystem();
         this.reputationSystem = new ReputationSystem();
         this.weather = new WeatherSystem();
@@ -5693,6 +5694,7 @@ class World {
             if (this.questSystem) this.questSystem.checkProgress(this);
             // v4.0 systems
             this.dailyDecision.dailyUpdate(this);
+            this.rogueCards.dailyUpdate(this); // v5.28.0 際遇卡每日抽
             this.dailyDecision.processFollowups(this);
             this.npcHelp.dailyUpdate(this);
             this.reputationSystem.dailyUpdate(this);
@@ -5745,6 +5747,7 @@ class World {
             dailyDecision: this.dailyDecision.toDict(),
             shop: this.shop.toDict(),
             eventChoice: this.eventChoice.toDict(),
+            rogueCards: this.rogueCards.toDict(),
             npcHelp: this.npcHelp.toDict(),
             reputationSystem: this.reputationSystem.toDict(),
             weather: this.weather.toDict(),
@@ -5786,6 +5789,7 @@ class World {
         this.dailyDecision = new DailyDecisionSystem();
         this.shop = new ShopSystem();
         this.eventChoice = new EventChoiceSystem();
+        this.rogueCards = new RogueCardSystem(); // v5.28.0 際遇卡
         this.npcHelp = new NPCHelpSystem();
         this.reputationSystem = new ReputationSystem();
         this.weather = new WeatherSystem();
@@ -6497,6 +6501,7 @@ class World {
             dailyDecision: this.dailyDecision.serialize(),
             shop: this.shop.serialize(),
             eventChoice: this.eventChoice.serialize(),
+            rogueCards: this.rogueCards.serialize(),
             npcHelp: this.npcHelp.serialize(),
             reputationSystem: this.reputationSystem.serialize(),
             weather: this.weather.serialize(),
@@ -6732,6 +6737,7 @@ class World {
             this.heartEventsFired = (data.heartEventsFired && typeof data.heartEventsFired === 'object') ? data.heartEventsFired : {};
             if (data.shop) this.shop.loadFrom(data.shop);
             if (data.eventChoice) this.eventChoice.loadFrom(data.eventChoice);
+            this.rogueCards = new RogueCardSystem(); if (data.rogueCards) this.rogueCards.loadFrom(data.rogueCards);
             if (data.npcHelp) this.npcHelp.loadFrom(data.npcHelp);
             if (data.reputationSystem) this.reputationSystem.loadFrom(data.reputationSystem);
             if (data.weather) this.weather.loadFrom(data.weather);
@@ -7990,6 +7996,130 @@ class EventChoiceSystem {
         this.pendingEvent = data.pendingEvent || null;
         this.eventLog = data.eventLog || [];
     }
+}
+
+// ============================================================
+// v5.28.0 肉鴿③:局內隨機事件 / 抽卡強化(每隔幾天跳一張二/三選一,永久改變這一局)
+// ============================================================
+class RogueCardSystem {
+    constructor() {
+        this.pending = null;      // {id, icon, title, flavor, choices:[{label,icon,desc}], stamp}
+        this.buffs = [];          // 持續型增益 [{key,label,daysLeft,kind}]
+        this.history = [];        // [{title, choice, day}]
+        this._lastCardDay = 0;
+        this._nextIn = 4 + randInt(0, 3); // 首張卡的天數
+    }
+    _npcs(world) { return Object.values(world.agents).filter(a => a && !a.isPlayer && !a.isDead); }
+    _singles(world) { return this._npcs(world).filter(a => !a.relationships.getPartner || !a.relationships.getPartner()); }
+    _bumpAttr(world, key, amt) {
+        let n = 0;
+        for (const a of this._npcs(world)) { if (!a.attributes) continue; a.attributes[key] = Math.max(1, Math.min(10, (a.attributes[key] || 5) + amt)); n++; }
+        return n;
+    }
+    _moodAll(world, amt) { for (const a of this._npcs(world)) a.moodModifier = (a.moodModifier || 0) + amt; }
+    _res(world, key, amt) { if (amt >= 0) world.stockpile.add(key, amt, world.tickCount, t('際遇卡')); else world.stockpile.consume(key, Math.abs(amt), world.tickCount, t('際遇卡')); }
+    _spark(world, romance) {
+        const s = shuffle(this._singles(world));
+        if (s.length < 2) return null;
+        const a = s[0], b = s[1];
+        const ra = a.relationships.getOrCreate(b.agentId, b.name), rb = b.relationships.getOrCreate(a.agentId, a.name);
+        if (romance) { ra.modifyRomantic(22); rb.modifyRomantic(16); ra.modifyAffinity(10); rb.modifyAffinity(8); }
+        else { ra.modifyAffinity(-32); rb.modifyAffinity(-30); ra.modifyTrust(-15); rb.modifyTrust(-15); }
+        return [a.name, b.name];
+    }
+    // 卡池:每張卡 apply(world) 回傳結果字串
+    _deck() {
+        return [
+            { id: 'merchant', icon: '🐫', title: t('旅行商隊經過'), flavor: t('一支風塵僕僕的商隊在鎮口停下,領隊朝你眨眨眼。'),
+              choices: [
+                { icon: '💰', label: t('買下稀有貨物'), desc: t('花 40 銀幣,換來全鎮的好心情與糧食'), apply: (w) => { this._res(w, 'silver', -40); this._res(w, 'food', 20); this._moodAll(w, 4); return t('稀有貨物讓全鎮眼睛發亮,士氣大振。'); } },
+                { icon: '🧑', label: t('招募新血'), desc: t('說服一位旅人留下來定居'), apply: (w) => { if (w.events && w.events._spawnImmigrant) w.events._spawnImmigrant(w); return t('一位新居民決定在邊境鎮落腳。'); } },
+                { icon: '👂', label: t('打聽消息'), desc: t('商隊帶來遠方的風流韻事…也撩動了鎮上某兩顆心'), apply: (w) => { const p = this._spark(w, true); return p ? `${p[0]}${t('和')}${p[1]}${t('之間,似乎有什麼悄悄萌芽了。')}` : t('可惜鎮上沒有適合的單身男女。'); } },
+              ] },
+            { id: 'blessing', icon: '🔮', title: t('神秘旅人的祝福'), flavor: t('一位蒙面旅人留下一句祝禱,便消失在暮色裡。'),
+              choices: [
+                { icon: '✨', label: t('魅力之祝'), desc: t('全鎮居民魅力 +1'), apply: (w) => { this._bumpAttr(w, 'charm', 1); return t('一股迷人的氣質,悄悄籠罩了全鎮。'); } },
+                { icon: '🔥', label: t('膽識之祝'), desc: t('全鎮居民膽識 +1'), apply: (w) => { this._bumpAttr(w, 'grit', 1); return t('居民們的眼神,多了幾分堅定。'); } },
+                { icon: '🧠', label: t('智慧之祝'), desc: t('全鎮居民智慧 +1'), apply: (w) => { this._bumpAttr(w, 'wit', 1); return t('鎮上彷彿一夜之間開了竅。'); } },
+              ] },
+            { id: 'harvest', icon: '🌾', title: t('豐收的抉擇'), flavor: t('今年收成不錯,穀倉滿溢。該怎麼運用這份餘裕?'),
+              choices: [
+                { icon: '📦', label: t('囤積過冬'), desc: t('把餘糧全存起來(+40 糧食)'), apply: (w) => { this._res(w, 'food', 40); return t('穀倉裝得滿滿當當,過冬不愁了。'); } },
+                { icon: '🍲', label: t('大辦豐收宴'), desc: t('全鎮同歡(-15 糧食,士氣大漲)'), apply: (w) => { this._res(w, 'food', -15); this._moodAll(w, 7); return t('豐收宴的笑聲響徹整條街。'); } },
+                { icon: '💱', label: t('賣給商人'), desc: t('換成現金(-20 糧食,+30 銀幣)'), apply: (w) => { this._res(w, 'food', -20); this._res(w, 'silver', 30); return t('餘糧換成了沉甸甸的銀幣。'); } },
+              ] },
+            { id: 'rumor', icon: '🔥', title: t('謠言的火種'), flavor: t('一則來路不明的傳聞在鎮上流竄,你要怎麼撥弄這把火?'),
+              choices: [
+                { icon: '💘', label: t('順水推舟'), desc: t('撮合一對有緣人'), apply: (w) => { const p = this._spark(w, true); return p ? `${t('在你的推波助瀾下,')}${p[0]}${t('和')}${p[1]}${t('走得更近了。')}` : t('沒有適合湊對的人。'); } },
+                { icon: '⚡', label: t('挑撥離間'), desc: t('讓兩人反目(製造衝突)'), apply: (w) => { const p = this._spark(w, false); return p ? `${p[0]}${t('和')}${p[1]}${t('因為這則謠言結下了樑子。')}` : t('沒能挑起什麼事端。'); } },
+                { icon: '🤐', label: t('壓下謠言'), desc: t('息事寧人(全鎮 +3 心情)'), apply: (w) => { this._moodAll(w, 3); return t('謠言被你巧妙地平息,鎮上恢復平靜。'); } },
+              ] },
+            { id: 'gamble', icon: '🎲', title: t('命運的賭注'), flavor: t('一位賭徒攤開骰盅,問你敢不敢賭一把。'),
+              choices: [
+                { icon: '🪙', label: t('穩穩收下'), desc: t('拿一筆小錢就走(+15 銀幣)'), apply: (w) => { this._res(w, 'silver', 15); return t('落袋為安,穩穩賺了一小筆。'); } },
+                { icon: '🎰', label: t('豪賭一場'), desc: t('五五波:大賺 +60 或慘賠 -30 銀幣'), apply: (w) => { if (Math.random() < 0.5) { this._res(w, 'silver', 60); return t('骰子擲出好彩頭,大賺一筆!'); } else { this._res(w, 'silver', -30); return t('手氣不佳,賠了 30 銀幣…'); } } },
+                { icon: '🚶', label: t('不賭走人'), desc: t('遠離是非(全鎮 +2 心情)'), apply: (w) => { this._moodAll(w, 2); return t('你搖搖頭離開,鎮民都說鎮長明智。'); } },
+              ] },
+            { id: 'healer', icon: '🩺', title: t('遊方醫者'), flavor: t('一位背著藥箱的醫者投宿一晚,想回報你的款待。'),
+              choices: [
+                { icon: '💊', label: t('為全鎮看診'), desc: t('全鎮 +8 心情'), apply: (w) => { this._moodAll(w, 8); return t('醫者妙手回春,鎮民神清氣爽。'); } },
+                { icon: '📖', label: t('傳授醫術'), desc: t('提升一位居民的智慧 +2'), apply: (w) => { const a = pickRandom(this._npcs(w)); if (a && a.attributes) { a.attributes.wit = Math.min(10, (a.attributes.wit || 5) + 2); return `${a.name}${t('學到了醫者的學問,智慧大增。')}`; } return t('沒有人有空學習。'); } },
+                { icon: '🌿', label: t('留下草藥'), desc: t('+15 糧食(當作補給)'), apply: (w) => { this._res(w, 'food', 15); return t('醫者留下一批珍貴的草藥補給。'); } },
+              ] },
+            { id: 'blessing_buff', icon: '🕯️', title: t('豐年祭的餘暉'), flavor: t('祭典的餘溫還在,你可以讓這份好氣氛延續下去。'),
+              choices: [
+                { icon: '🎐', label: t('延續歡慶'), desc: t('接下來 8 天,全鎮每天 +1 心情'), apply: (w) => { this.buffs.push({ key: 'festive', label: t('歡慶餘暉'), daysLeft: 8, kind: 'mood', amt: 1 }); return t('歡慶的氣氛,會在鎮上多留幾天。'); } },
+                { icon: '💪', label: t('鼓舞士氣'), desc: t('全鎮 +5 心情(一次)'), apply: (w) => { this._moodAll(w, 5); return t('你的一番話,讓鎮民精神為之一振。'); } },
+                { icon: '🤝', label: t('促成情誼'), desc: t('讓兩位居民成為摯友'), apply: (w) => { const s = shuffle(this._npcs(w)); if (s.length >= 2) { s[0].relationships.getOrCreate(s[1].agentId, s[1].name).modifyAffinity(30); s[1].relationships.getOrCreate(s[0].agentId, s[0].name).modifyAffinity(30); return `${s[0].name}${t('和')}${s[1].name}${t('成了無話不談的好友。')}`; } return t('沒能促成什麼。'); } },
+              ] },
+        ];
+    }
+    dailyUpdate(world) {
+        // 持續型增益結算
+        for (let i = this.buffs.length - 1; i >= 0; i--) {
+            const bf = this.buffs[i];
+            if (bf.kind === 'mood') this._moodAll(world, bf.amt || 1);
+            bf.daysLeft--;
+            if (bf.daysLeft <= 0) this.buffs.splice(i, 1);
+        }
+        if (this.pending) return; // 有卡未決,不再抽
+        const day = world.clock.totalDays || 0;
+        if (day - this._lastCardDay < this._nextIn) return;
+        // 抽一張沒剛抽過的卡
+        const deck = this._deck();
+        const recentIds = new Set(this.history.slice(-3).map(h => h.id));
+        const pool = deck.filter(c => !recentIds.has(c.id));
+        const card = pickRandom(pool.length ? pool : deck);
+        this._deckCache = deck; // resolve 時查 apply
+        this.pending = {
+            id: card.id, icon: card.icon, title: card.title, flavor: card.flavor,
+            choices: card.choices.map(ch => ({ icon: ch.icon, label: ch.label, desc: ch.desc })),
+            stamp: world.tickCount,
+        };
+        this._lastCardDay = day;
+        this._nextIn = 5 + randInt(0, 4); // 下一張的間隔
+        world.logMessage('event_choice', `🃏 ${t('際遇卡:')}${card.title}${t('——做個選擇吧!')}`);
+    }
+    resolve(index, world) {
+        if (!this.pending) return null;
+        const deck = this._deckCache || this._deck();
+        const card = deck.find(c => c.id === this.pending.id);
+        const choice = card && card.choices[index];
+        let resultText = '';
+        if (choice && typeof choice.apply === 'function') {
+            try { resultText = choice.apply(world) || ''; } catch (e) { resultText = ''; }
+        }
+        const title = this.pending.title, label = choice ? choice.label : '';
+        this.history.push({ id: this.pending.id, title, choice: label, day: world.clock.totalDays || 0 });
+        if (this.history.length > 30) this.history = this.history.slice(-30);
+        world.logMessage('event_choice', `🃏 ${title}:${t('你選擇了')}「${label}」——${resultText}`);
+        if (world.dailyNews) world.dailyNews.collectEvent('event', `${t('鎮長在「')}${title}${t('」中選擇了')}「${label}」`, 6);
+        this.pending = null;
+        return { title, choice: label, resultText };
+    }
+    toDict() { return { pending: this.pending, buffs: this.buffs, recent: this.history.slice(-8) }; }
+    serialize() { return { pending: this.pending, buffs: this.buffs, history: this.history, _lastCardDay: this._lastCardDay, _nextIn: this._nextIn }; }
+    loadFrom(d) { if (!d) return; this.pending = d.pending || null; this.buffs = d.buffs || []; this.history = d.history || []; this._lastCardDay = d._lastCardDay || 0; this._nextIn = d._nextIn || 5; }
 }
 
 // ============================================================

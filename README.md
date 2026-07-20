@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.27.0.zip` from Releases
+1. Download `rimtown-v5.28.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,14 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.28.0 (2026-07-20)
+
+**肉鴿③:局內際遇卡(隨機事件 / 抽卡強化)**
+
+- 每隔幾天跳一張際遇卡,二/三選一,每個選擇永久改變這一局:旅行商隊/神秘祝福(全鎮屬性+1)/豐收抉擇/謠言火種(撮合或挑撥)/命運賭注/遊方醫者/豐年餘暉
+- 效果直接作用:資源、全鎮心情、居民屬性、撮合拆散關係、數天持續增益
+
 
 ### v5.27.0 (2026-07-20)
 

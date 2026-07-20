@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.27.0
-const RIMTOWN_APP_VERSION = '5.27.0';
+// RimTown - Frontend App (WordPress Plugin) v5.28.0
+const RIMTOWN_APP_VERSION = '5.28.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1533,6 +1533,15 @@ class RimTownApp {
             this._shownEventChoiceId = null;
         }
 
+        // v5.28.0 肉鴿際遇卡
+        const rc = this.world.rogueCards;
+        if (rc?.pending && this._shownRogueStamp !== rc.pending.stamp) {
+            this._shownRogueStamp = rc.pending.stamp;
+            this._showRogueCard(rc.pending);
+        } else if (!rc?.pending && this._shownRogueStamp && !rc?.pending) {
+            // keep stamp until a new card arrives
+        }
+
         // NPC help
         const nh = this.world.npcHelp;
         if (nh?.pendingRequest && !this._shownHelpId) {
@@ -1843,6 +1852,28 @@ class RimTownApp {
                     this.state = this.world.getState(); this.renderSidebar();
                 }},
             ]
+        });
+    }
+
+    // v5.28.0 肉鴿際遇卡:二/三選一,選擇永久改變這一局
+    _showRogueCard(card) {
+        const buttons = card.choices.map((choice, i) => ({
+            label: `${choice.icon || '🃏'} ${choice.label}`,
+            desc: choice.desc,
+            action: () => {
+                const res = this.world.rogueCards.resolve(i, this.world);
+                this.state = this.world.getState();
+                this.renderSidebar();
+                if (res && res.resultText) {
+                    setTimeout(() => this._showCenterNotification({ icon: card.icon, title: card.title, name: res.choice, desc: res.resultText, autoDismiss: 0 }), 260);
+                }
+            }
+        }));
+        this._showInteractiveNotification({
+            icon: `🃏 ${card.icon}`,
+            title: card.title,
+            desc: card.flavor,
+            buttons,
         });
     }
 
