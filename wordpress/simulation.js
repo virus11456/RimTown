@@ -4883,6 +4883,21 @@ const DEATH_CAUSES = [
 const BABY_NAMES_MALE = [t('小龍'),t('天明'),t('子軒'),t('浩宇'),t('嘉禾'),t('承恩'),t('宏志'),t('瑞陽'),t('文博'),t('志遠'),t('新宇'),t('國棟')];
 const BABY_NAMES_FEMALE = [t('小鳳'),t('曉月'),t('詩涵'),t('雨桐'),t('美琪'),t('欣怡'),t('佳穎'),t('思琪'),t('夢瑤'),t('婉清'),t('紫萱'),t('若蘭')];
 
+// v5.27.0 肉鴿:隨機開局用的名字/背景池
+const RANDOM_SURNAMES = ['陳','林','黃','張','李','王','吳','劉','蔡','楊','許','鄭','謝','郭','洪','曾','廖','賴','徐','周','葉','蘇','高','呂','潘','簡'];
+const RANDOM_GIVEN_MALE = ['志明','建宏','俊傑','家豪','承翰','冠廷','宗翰','柏翰','彥廷','子墨','宇軒','澤','思成','岳','峰','昊','翔','睿','浩然','立','風','岩','洲','霆'];
+const RANDOM_GIVEN_FEMALE = ['淑芬','美玲','雅婷','怡君','佳蓉','曉薇','子晴','語彤','欣妍','佩珊','宛柔','思妤','詠晴','若曦','芷若','靜宜','采薇','韻如','婉婷','晴','嵐','薇','蕎','菱'];
+const RANDOM_BG = () => [
+    t('帶著一身故事來到邊境鎮,想在這裡重新開始。'),
+    t('土生土長的鎮民,對這片土地有說不完的感情。'),
+    t('曾在遠方闖蕩多年,如今只想找個安穩的落腳處。'),
+    t('沉默寡言,但只要熟了就會發現一顆熱心腸。'),
+    t('心裡藏著一個沒說出口的夢,也藏著一個沒說出口的人。'),
+    t('嘴上不饒人,做起事來卻比誰都認真。'),
+    t('走到哪都能交到朋友,也總在不經意間牽動誰的心。'),
+    t('看似瀟灑,其實對某段過去始終放不下。'),
+];
+
 class LifecycleSystem {
     constructor() {
         this.graveyard = [];   // { name, age, deathCause, deathTick, deathTime, epitaph, job }
@@ -5777,7 +5792,9 @@ class World {
         this.council = new CouncilSystem();
         this.conversationEngine = new ConversationEngine(this.conversationEngine?.llm);
         this.townMap = generateRandomTown(seed);
-        this._loadDefaultResidents();
+        // v5.27.0 肉鴿:隨機開局模式(rosterMode='random')抽全新村民,否則用劇本卡司
+        if (this.rosterMode === 'random') this._loadRandomResidents(15);
+        else this._loadDefaultResidents();
         const player = new PlayerAgent();
         this.addAgent(player);
     }
@@ -6097,6 +6114,89 @@ class World {
             this.addAgent(agent);
         });
         this._seedRelationships(); // v5.5.0 開局關係網,讓小鎮一開始就有戲
+    }
+
+    // v5.27.0 肉鴿:隨機開局 —— 每一局抽一批全新村民 + 隨機愛恨關係網
+    _loadRandomResidents(count = 15) {
+        const usedNames = new Set();
+        const rollName = (gender) => {
+            const givens = gender === 'male' ? RANDOM_GIVEN_MALE : RANDOM_GIVEN_FEMALE;
+            for (let tryN = 0; tryN < 40; tryN++) {
+                const nm = pickRandom(RANDOM_SURNAMES) + pickRandom(givens);
+                if (!usedNames.has(nm)) { usedNames.add(nm); return nm; }
+            }
+            return pickRandom(RANDOM_SURNAMES) + pickRandom(givens) + randInt(1, 9);
+        };
+        const homes = ['residential_north', 'residential_south', 'residential_east'];
+        const jobKeys = Object.keys(JOB_DEFINITIONS).filter(k => k !== 'mayor');
+        const bgPool = RANDOM_BG();
+        const ids = [];
+        for (let i = 0; i < count; i++) {
+            const gender = Math.random() < 0.5 ? 'male' : 'female';
+            const name = rollName(gender);
+            const jobKey = i === 0 ? 'mayor' : pickRandom(jobKeys); // 第一位當鎮長,其餘隨機
+            const age = i === 0 ? randInt(38, 55) : randInt(20, 52);
+            const personality = Personality.random(3);
+            personality.background = pickRandom(bgPool);
+            const job = new Job(jobKey);
+            const id = `rand_${i}`;
+            const agent = new Agent(id, name, age, personality, job, pickRandom(homes), gender);
+            this.addAgent(agent);
+            ids.push(id);
+        }
+        this._seedRandomRelationships(ids);
+    }
+
+    // 隨機愛恨關係網:夫妻 / 前任 / 暗戀(含三角) / 世仇 / 摯友,一律不分性別
+    _seedRandomRelationships(ids) {
+        const A = this.agents;
+        const pool = shuffle(ids.filter(id => A[id]));
+        const set = (from, to, { aff = 0, rom = 0, trust = 0, status = null } = {}) => {
+            const f = A[from], t2 = A[to]; if (!f || !t2 || from === to) return;
+            const r = f.relationships.getOrCreate(t2.agentId, t2.name);
+            r.affinity = aff; r.romanticInterest = rom; r.trust = trust;
+            if (status) { r.status = status; r.statusSince = 0; }
+            r.interactionCount = Math.max(r.interactionCount, 6); r.lastInteractionTick = 0;
+        };
+        const pair = (x, y, ox, oy) => { set(x, y, ox); set(y, x, oy); };
+        let idx = 0;
+        const take = (n = 1) => pool.slice(idx, idx += n);
+        const gossips = [];
+        // 💍 1 對恩愛夫妻
+        if (pool.length >= 2) { const [a, b] = take(2); pair(a, b, { aff: 70, rom: 54, trust: 58, status: 'married' }, { aff: 68, rom: 52, trust: 56, status: 'married' }); }
+        // 💔 1 對藕斷絲連的前任
+        if (pool.length - idx >= 2) { const [a, b] = take(2); pair(a, b, { aff: 18, rom: 20, status: 'ex' }, { aff: 26, rom: 22, status: 'ex' }); gossips.push({ about: A[a].name, content: `${A[a].name}${t('和')}${A[b].name}${t('明明分了,見面卻還是躲躲閃閃...是還沒放下嗎?')}`, kind: 'crush' }); }
+        // 💘 2~3 段暗戀,其中一段做成三角(兩人搶一人)
+        const crushN = Math.min(3, Math.max(1, Math.floor((pool.length - idx) / 3)));
+        for (let c = 0; c < crushN && pool.length - idx >= 2; c++) {
+            const [a, b] = take(2);
+            pair(a, b, { aff: 34 + randInt(0, 8), rom: 42 + randInt(0, 8) }, { aff: 20 + randInt(0, 10), rom: randInt(2, 14) });
+            if (c === 0 && pool.length - idx >= 1) { // 三角:再找一人也暗戀 b
+                const [rivalC] = take(1);
+                set(rivalC, b, { aff: 30, rom: 44 });
+                gossips.push({ about: A[b].name, content: `${A[a].name}${t('和')}${A[rivalC].name}${t('好像都對')}${A[b].name}${t('有意思,這下有得瞧了。')}`, kind: 'crush' });
+            } else {
+                gossips.push({ about: A[a].name, content: `${t('聽說')}${A[a].name}${t('偷偷喜歡著')}${A[b].name}${t('...')}`, kind: 'crush' });
+            }
+        }
+        // ⚔️ 1~2 對世仇
+        const feudN = Math.min(2, Math.max(1, Math.floor((pool.length - idx) / 4)));
+        for (let f = 0; f < feudN && pool.length - idx >= 2; f++) {
+            const [a, b] = take(2);
+            pair(a, b, { aff: -42 - randInt(0, 12), trust: -28 }, { aff: -40 - randInt(0, 12), trust: -26 });
+            gossips.push({ about: A[a].name, content: `${A[a].name}${t('和')}${A[b].name}${t('的樑子結很久了,一見面就火藥味十足。')}`, kind: 'rivalry' });
+        }
+        // 👯 剩下的隨機配幾對摯友
+        while (pool.length - idx >= 2 && Math.random() < 0.7) {
+            const [a, b] = take(2);
+            pair(a, b, { aff: 58 + randInt(0, 12), trust: 40 }, { aff: 56 + randInt(0, 12), trust: 38 });
+        }
+        // 開局八卦頭條
+        if (this.gossipNetwork) {
+            for (const g of gossips.slice(0, 3)) {
+                this.gossipNetwork.activeGossip.push({ about: g.about, content: g.content, source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: g.kind });
+            }
+        }
     }
 
     // v5.5.0 預設關係網:開局就種下暗戀/前任/世仇/摯友/夫妻,不必空等 30 天才有戲

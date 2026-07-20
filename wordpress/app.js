@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.26.0
-const RIMTOWN_APP_VERSION = '5.26.0';
+// RimTown - Frontend App (WordPress Plugin) v5.27.0
+const RIMTOWN_APP_VERSION = '5.27.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -2809,6 +2809,7 @@ class RimTownApp {
         } else {
             if (this.currentTownId) this._saveCurrentTown();
         }
+        this.world.rosterMode = (localStorage.getItem('rimtown_roster_mode') === 'random') ? 'random' : 'scripted'; // v5.27.0 肉鴿隨機開局
         this.world.reset();
         if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
         this.currentTownId = this._generateTownId(name);
@@ -3552,11 +3553,13 @@ class RimTownApp {
                     this.renderSidebar();
                     break;
                 }
+                case 'settings-roster': { try { localStorage.setItem('rimtown_roster_mode', val === 'random' ? 'random' : 'scripted'); } catch(e){} this.renderSidebar(); break; }
                 case 'settings-new-map': {
                     const name = prompt(t('為新城鎮命名：'), t('邊境鎮 ') + (this._getTownList().length + 1));
                     if (!name) break;
                     this.archiveChatHistory();
                     this._saveCurrentTown();
+                    this.world.rosterMode = (localStorage.getItem('rimtown_roster_mode') === 'random') ? 'random' : 'scripted'; // v5.27.0 肉鴿隨機開局
                     this.world.reset();
                     if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
                     this.currentTownId = this._generateTownId(name);
@@ -6210,6 +6213,16 @@ class RimTownApp {
         </div>`;
         html += `<div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="trade-btn" data-action="settings-toggle-pause">${paused ? '▶ ' + t('繼續') : '⏸ ' + t('暫停')}</button>
+        </div>`;
+        // v5.27.0 肉鴿:開新局的卡司模式
+        const rosterMode = (localStorage.getItem('rimtown_roster_mode') === 'random') ? 'random' : 'scripted';
+        html += `<div style="margin-top:4px">
+            <div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:4px">🎲 ${t('開新局的村民')}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button class="btn-speed${rosterMode==='scripted'?' active':''}" data-action="settings-roster" data-val="scripted">📖 ${t('劇本卡司')}</button>
+                <button class="btn-speed${rosterMode==='random'?' active':''}" data-action="settings-roster" data-val="random">🎲 ${t('隨機卡司')}</button>
+            </div>
+            <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px">${rosterMode==='random'?t('每開一張新地圖都隨機抽一批全新村民與愛恨關係,每局故事都不同'):t('用陳偉、林美等固定劇本村民與開局關係網')}</div>
         </div>`;
         html += `<div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="trade-btn" data-action="show-towns">📋 ${t('城鎮列表')}</button>

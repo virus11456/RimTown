@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.26.0.zip` from Releases
+1. Download `rimtown-v5.27.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,14 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.27.0 (2026-07-20)
+
+**肉鴿②:每局隨機開局**
+
+- 設定可切「劇本卡司 / 隨機卡司」;選隨機後每開新地圖都抽全新村民(名字/性格/職業/背景/屬性)+ 隨機開局愛恨關係網(夫妻/前任/暗戀/三角/世仇/摯友)
+- 每一局的小鎮故事都不同;切回劇本卡司即可玩原本的固定村民(預設)
+
 
 ### v5.26.0 (2026-07-20)
 
