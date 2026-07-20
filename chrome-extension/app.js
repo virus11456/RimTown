@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.19.0
-const RIMTOWN_APP_VERSION = '5.19.0';
+// RimTown - Frontend App (WordPress Plugin) v5.20.0
+const RIMTOWN_APP_VERSION = '5.20.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -3204,25 +3204,22 @@ class RimTownApp {
     }
 
     setupTabListeners() {
-        // Mobile tab groups: main tab -> [sub-tabs]
+        // v5.20.0 三大入口收束:小鎮 / 居民 / 故事(+設定)。主鍵即該組的「頭」分頁。
         this._mobileTabGroups = {
-            residents: [
-                { key: 'residents', label: t('居民'), icon: '👥' },
-                { key: 'detail', label: t('詳情'), icon: '📋' },
-                { key: 'relmap', label: t('關係網'), icon: '💞' },
-            ],
-            chat: [
-                { key: 'chat', label: t('聊天'), icon: '💬' },
-                { key: 'records', label: t('日誌'), icon: '📋' },
-            ],
-            quest: [
-                { key: 'quest', label: t('任務'), icon: '⚔️' },
-                { key: 'events', label: t('事件'), icon: '📰' },
-                { key: 'achievements', label: t('成就'), icon: '🏆' },
-            ],
-            economy: [
+            economy: [ // 小鎮
                 { key: 'economy', label: t('經濟'), icon: '💰' },
                 { key: 'industry', label: t('產業'), icon: '🏭' },
+            ],
+            residents: [ // 居民
+                { key: 'residents', label: t('居民'), icon: '👥' },
+                { key: 'chat', label: t('聊天'), icon: '💬' },
+                { key: 'relmap', label: t('關係'), icon: '💞' },
+            ],
+            quest: [ // 故事
+                { key: 'quest', label: t('任務'), icon: '⚔️' },
+                { key: 'events', label: t('事件'), icon: '📰' },
+                { key: 'records', label: t('紀錄'), icon: '📋' },
+                { key: 'achievements', label: t('成就'), icon: '🏆' },
             ],
         };
         // Reverse lookup: sub-tab -> parent main tab
@@ -3232,12 +3229,14 @@ class RimTownApp {
                 this._mobileSubToMain[sub.key] = main;
             }
         }
+        // 抽屜式細節/封存視圖歸屬「居民」組,讓對應主入口保持高亮
+        this._mobileSubToMain['detail'] = 'residents';
+        this._mobileSubToMain['chat-archives'] = 'residents';
 
         const updateTabHighlight = (tabName) => {
             document.querySelectorAll('.rt-sidebar-tabs > button[data-tab]').forEach(b => b.classList.remove('active'));
-            // On mobile, highlight the parent main tab
-            const isMobile = window.innerWidth <= 768;
-            const highlightTab = isMobile ? (this._mobileSubToMain[tabName] || tabName) : tabName;
+            // v5.20.0 兩種介面都把子分頁對應回三大主入口來高亮
+            const highlightTab = this._mobileSubToMain[tabName] || tabName;
             const mainBtn = document.querySelector(`.rt-sidebar-tabs > button[data-tab="${highlightTab}"]`);
             if (mainBtn) mainBtn.classList.add('active');
         };
@@ -4455,12 +4454,10 @@ class RimTownApp {
         const menu = document.createElement('div');
         menu.id = 'kairo-menu';
         menu.className = 'hidden';
-        // 產業併入經濟卡片的子分頁(經濟|產業),選單不重複列出
+        // v5.20.0 三大入口:每組進去後,卡片頂部的次級分頁列可切換組內其他分頁
         const ITEMS = [
-            ['residents', '👥', t('居民')], ['quest', '⚔️', t('任務')],
-            ['economy', '💰', t('經濟')], ['events', '📰', t('事件')],
-            ['achievements', '🏆', t('成就')], ['records', '📋', t('紀錄')],
-            ['settings', '⚙️', t('設定')],
+            ['residents', '👥', t('居民')], ['quest', '📖', t('故事')],
+            ['economy', '🏙️', t('小鎮')], ['settings', '⚙️', t('設定')],
         ];
         menu.innerHTML = ITEMS.map(([k, ic, lb]) => `<button data-kairo-tab="${k}"><span class="km-ic">${ic}</span>${lb}</button>`).join('');
         root.appendChild(menu);
@@ -4881,11 +4878,11 @@ class RimTownApp {
         this._syncKairoLayout();
         const content = document.getElementById('sidebar-content');
 
-        // Mobile sub-tab bar
+        // v5.20.0 三大入口的次級分頁列(桌面與手機皆顯示;手機聊天抽屜為全幅,不加列)
         const isMobile = window.innerWidth <= 768;
         const mainTab = this._mobileSubToMain?.[this.activeTab] || this.activeTab;
-        const group = isMobile && this._mobileTabGroups?.[mainTab];
-        if (group && group.length > 1) {
+        const group = this._mobileTabGroups?.[mainTab];
+        if (group && group.length > 1 && !(isMobile && this.activeTab === 'chat')) {
             let subBar = '<div class="sub-tab-bar mobile-group-tabs">';
             group.forEach(_tw => {
                 const active = this.activeTab === _tw.key ? ' class="active"' : '';
@@ -4931,7 +4928,7 @@ class RimTownApp {
         const f = this._relmapFilters;
         const chip = (k, icon, label, color) =>
             `<button data-action="relmap-filter" data-val="${k}" style="padding:3px 10px;border-radius:12px;font-size:0.7rem;border:1px solid ${color};background:${f[k] ? color : 'transparent'};color:${f[k] ? '#0b1020' : color};font-weight:700">${icon}${label}</button>`;
-        let html = this._renderMobileGroupTabs();
+        let html = ''; // v5.20.0 次級分頁列已由 renderSidebar 統一渲染,不在此重複
         html += `<div class="econ-section"><h3>💞 ${t('全鎮關係網')}</h3>
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
                 ${chip('love', '💕', t('戀愛'), '#ff6b9d')}
@@ -5670,8 +5667,8 @@ class RimTownApp {
 
     _updateChatBadge() {
         const count = this._chatUnread ? this._chatUnread.size : 0;
-        // 同步所有聊天入口(桌面分頁 + 開羅底部列)的未讀徽章
-        document.querySelectorAll('[data-tab="chat"]').forEach(tab => {
+        // 同步所有聊天入口(開羅底部列 data-tab="chat" + 三大入口「居民」鈕 data-tab-badge="chat")的未讀徽章
+        document.querySelectorAll('[data-tab="chat"], [data-tab-badge="chat"]').forEach(tab => {
             let badge = tab.querySelector('.chat-badge');
             if (count > 0) {
                 if (!badge) {

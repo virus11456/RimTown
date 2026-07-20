@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.19.0
+ * Version: 5.20.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.19.0');
+define('RIMTOWN_VERSION', '5.20.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -143,16 +143,9 @@ function rimtown_shortcode($atts) {
             <div class="rt-sidebar" id="rimtown-sidebar">
                 <button class="mobile-back-to-map" id="mobile-back-to-map">&#9650; 返回地圖</button>
                 <div class="rt-sidebar-tabs">
-                    <button data-tab="residents" class="active"><span class="tab-icon">👥</span><span class="tab-label">居民</span></button>
-                    <button data-tab="chat"><span class="tab-icon">💬</span><span class="tab-label">聊天</span></button>
-                    <button data-tab="quest"><span class="tab-icon">⚔️</span><span class="tab-label">任務</span></button>
-                    <button data-tab="economy"><span class="tab-icon">💰</span><span class="tab-label">經濟</span></button>
-                    <button data-tab="detail" class="mobile-hidden"><span class="tab-icon">📋</span><span class="tab-label">詳情</span></button>
-                    <button data-tab="relmap" class="mobile-hidden"><span class="tab-icon">💞</span><span class="tab-label">關係</span></button>
-                    <button data-tab="industry" class="mobile-hidden"><span class="tab-icon">🏭</span><span class="tab-label">產業</span></button>
-                    <button data-tab="events" class="mobile-hidden"><span class="tab-icon">📰</span><span class="tab-label">事件</span></button>
-                    <button data-tab="records" class="mobile-hidden"><span class="tab-icon">📝</span><span class="tab-label">紀錄</span></button>
-                    <button data-tab="achievements" class="mobile-hidden"><span class="tab-icon">🏆</span><span class="tab-label">成就</span></button>
+                    <button data-tab="economy"><span class="tab-icon">🏙️</span><span class="tab-label">小鎮</span></button>
+                    <button data-tab="residents" data-tab-badge="chat" class="active"><span class="tab-icon">👥</span><span class="tab-label">居民</span></button>
+                    <button data-tab="quest"><span class="tab-icon">📖</span><span class="tab-label">故事</span></button>
                     <button data-tab="settings"><span class="tab-icon">⚙️</span><span class="tab-label">設定</span></button>
                 </div>
                 <div class="rt-sidebar-content" id="sidebar-content"></div>
@@ -1182,6 +1175,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.20.0',
+            'date'    => '2026-07-20',
+            'changes' => array(
+                '🧭 導覽收束成三大入口:小鎮(經濟/產業)、居民(居民/聊天/關係)、故事(任務/事件/紀錄/成就),外加設定,大幅降低新手看到一堆分頁的認知負擔',
+                '📑 每個入口進去後,面板頂部有次級分頁列可切換組內項目;桌面與手機兩套介面都套用,操作一致',
+                '🔔 聊天未讀徽章、功能解鎖鎖頭在新導覽下都正常運作,手機開羅底部列的快捷聊天鈕保留',
+            ),
+        ),
         array(
             'version' => '5.19.0',
             'date'    => '2026-07-20',
