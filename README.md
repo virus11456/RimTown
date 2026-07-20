@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.24.0.zip` from Releases
+1. Download `rimtown-v5.25.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,14 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.25.0 (2026-07-20)
+
+**新村民包(4 位有戲新居民)**
+
+- 糕點師傅蘇晴、老兵高朗、繡藝師柯薇、星象學者凌波加入小鎮
+- 開局鉤子:蘇晴×劉俊×許瑩三角、高朗## Changelog吳達結盟對抗楊鋒、高朗×張豪爭黃莉、柯薇×凌波星空下互相傾心
+
 
 ### v5.24.0 (2026-07-20)
 

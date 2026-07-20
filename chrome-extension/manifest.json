@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "RimTown - AI Town Simulation",
-  "version": "5.24.0",
+  "version": "5.25.0",
   "description": "A RimWorld-inspired AI town simulation with day/night cycle, autonomous agents, relationships, gossip, raids, and event chains.",
   "permissions": ["storage"],
   "host_permissions": [

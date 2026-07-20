@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.24.0
+ * Version: 5.25.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.24.0');
+define('RIMTOWN_VERSION', '5.25.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1175,6 +1175,14 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.25.0',
+            'date'    => '2026-07-20',
+            'changes' => array(
+                '👥 新村民包:小鎮迎來 4 位有戲的新居民 —— 糕點師傅蘇晴、老兵高朗、繡藝師柯薇、星象學者凌波',
+                '💞 開局就有新戲:蘇晴傾心劉俊(和許瑩形成新三角)、高朗是吳達的老袍澤(把跟楊鋒的舊怨燒成兩派)、高朗暗戀黃莉(與張豪成情敵)、柯薇與凌波在星空下互相傾心(夜貓子的雙向暗戀)',
+            ),
+        ),
         array(
             'version' => '5.24.0',
             'date'    => '2026-07-20',

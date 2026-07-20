@@ -6047,6 +6047,11 @@ class World {
             {id:'he_chang',name:t('何昌'),age:44,gender:'male',job:'carpenter',home:'residential_north',traits:['hardworking','kind','stoic'],values:[t('家庭'),t('社群')],background:t('沉穩可靠的老木匠，和妻子何秀結縭二十年。話不多，但眼裡總有妻子的身影。')},
             {id:'he_xiu',name:t('何秀'),age:41,gender:'female',job:'cook',home:'residential_north',traits:['kind','gossip','optimist'],values:[t('家庭'),t('社群')],background:t('何昌的妻子，開朗愛笑。和王麗是廚房裡的死黨，兩人湊在一起整條街的八卦都藏不住。')},
             {id:'zheng_wei',name:t('鄭薇'),age:23,gender:'female',job:'researcher',home:'residential_east',traits:['shy','creative','perfectionist'],values:[t('知識'),t('藝術')],background:t('孤僻的年輕天才，總是埋首書堆。最近卻常常為了一個人心神不寧，連公式都算錯。')},
+            // v5.25.0 新村民包(新的三角、派系與同性甜蜜線)
+            {id:'su_qing',name:t('蘇晴'),age:24,gender:'female',job:'cook',home:'residential_east',traits:['optimist','charismatic','early_bird'],values:[t('社群'),t('冒險')],background:t('剛搬來的糕點師傅，笑起來像陽光。她的甜點總在清晨飄香，也悄悄記住了某個早起農夫的身影。')},
+            {id:'gao_lang',name:t('高朗'),age:31,gender:'male',job:'guard',home:'residential_north',traits:['hardworking','stoic','abrasive'],values:[t('權力'),t('社群')],background:t('吳達的舊袍澤，退伍後追隨老友來到邊境鎮。剛硬耿直,看不慣楊鋒的作風,卻對禮拜堂的歌聲莫名心軟。')},
+            {id:'ke_wei',name:t('柯薇'),age:27,gender:'female',job:'tailor',home:'residential_south',traits:['creative','romantic','night_owl'],values:[t('藝術'),t('自由')],background:t('遊歷各地的繡藝師，指尖有星光。愛自由不受拘束，卻在遇見一位安靜的星象學者後,第一次想為誰停下腳步。')},
+            {id:'ling_bo',name:t('凌波'),age:25,gender:'female',job:'researcher',home:'residential_south',traits:['shy','creative','perfectionist'],values:[t('知識'),t('自然')],background:t('沉靜的星象研究者，總在夜裡觀測。話不多,但每次抬頭看見那位繡藝師,筆記本上的星圖就會多幾筆走神的線條。')},
         ];
         residents.forEach(r => {
             const personality = new Personality(r.traits, r.background, r.values);
@@ -6095,12 +6100,25 @@ class World {
         pair('ma_qiang', 'zhou_ming', { x: { aff: -8, rom: 30 }, y: { aff: 10, rom: 4 } });
         // 🤝 陳偉(鎮長) & 楊鋒 老戰友互敬
         pair('chen_wei', 'yang_feng', { x: { aff: 54, trust: 40 }, y: { aff: 52, trust: 38 } });
+        // v5.25.0 新村民包的開局鉤子 ——
+        // 🧁 蘇晴 傾心 劉俊(早起農夫與糕點師傅),劉俊 心裡卻還有許瑩 → 新三角
+        pair('su_qing', 'liu_jun', { x: { aff: 36, rom: 42 }, y: { aff: 30, rom: 20 } });
+        // 🪖 高朗 & 吳達 生死之交(結盟對抗楊鋒,把舊怨燒成兩派)
+        pair('gao_lang', 'wu_da', { x: { aff: 60, trust: 46 }, y: { aff: 58, trust: 44 } });
+        // ⚔️ 高朗 看不慣楊鋒(袍澤情義使然)——開局微敵意
+        pair('gao_lang', 'yang_feng', { x: { aff: -24, trust: -12 }, y: { aff: -18, trust: -10 } });
+        // 🎶 高朗 暗戀 黃莉(鐵漢被歌聲融化),張豪也暗戀黃莉 → 情敵
+        pair('gao_lang', 'huang_li', { x: { aff: 34, rom: 40 }, y: { aff: 20, rom: 4 } });
+        // 🌌 柯薇 & 凌波 互相傾心(繡藝師與星象學者,夜裡最懂彼此)——雙向漸濃,likely 成雙
+        pair('ke_wei', 'ling_bo', { x: { aff: 42, rom: 46 }, y: { aff: 38, rom: 40 } });
         // 開局八卦頭條:讓玩家一進來就嗅到戲
         if (this.gossipNetwork) {
             this.gossipNetwork.activeGossip.push(
                 { about: A['zhou_ming']?.name, content: t('聽說新來的周明,好像跟趙霞走得很近...而馬強的臉色可不太好看。'), source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: 'crush' },
                 { about: A['wu_da']?.name, content: t('吳達和楊鋒又在酒館互看不順眼了,他們的樑子結很久了。'), source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: 'rivalry' },
                 { about: A['lin_mei']?.name, content: t('聽說孫雨最近老往診所跑,林美醫生好像也不排斥她的陪伴...倒是守衛楊鋒的臉色越來越難看。'), source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: 'crush' },
+                { about: A['gao_lang']?.name, content: t('新來的高朗是吳達的老袍澤,一來就跟楊鋒針鋒相對...酒館的火藥味濃得化不開。'), source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: 'rivalry' },
+                { about: A['su_qing']?.name, content: t('糕點師傅蘇晴的早餐總幫劉俊多留一份,可劉俊的心思好像還在許瑩身上...這下有得瞧了。'), source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: 'crush' },
             );
         }
     }
