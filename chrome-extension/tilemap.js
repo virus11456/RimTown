@@ -4245,6 +4245,48 @@ class PixelTileMap {
         const ow = this.mapWidth;
         const oh = this.mapHeight;
 
+        // v5.24.0 季節色調:每季一抹環境色,讓四季有各自的空氣感(soft-light 保留對比)
+        const seasonTint = {
+            '春季': ['rgba(150, 230, 130,', 0.14],  // 清新嫩綠
+            '夏季': ['rgba(255, 220, 110,', 0.16],  // 溫暖金黃
+            '秋季': ['rgba(238, 135, 45,',  0.22],  // 琥珀橙
+            '冬季': ['rgba(130, 175, 245,', 0.24],  // 清冷藍
+        }[this.season];
+        if (seasonTint) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'soft-light';
+            ctx.fillStyle = `${seasonTint[0]} ${seasonTint[1]})`;
+            ctx.fillRect(0, 0, ow, oh);
+            ctx.restore();
+        }
+
+        // v5.24.0 雲影飄移:晴天/多雲的白天,幾片柔和雲影緩緩掃過地面
+        const _wt = this.weatherType || 'clear';
+        if ((_wt === 'clear' || _wt === 'cloudy') && nightAmount < 0.6) {
+            const dayLight = 1 - nightAmount;
+            const cloudAlpha = (_wt === 'cloudy' ? 0.15 : 0.08) * dayLight;
+            for (let i = 0; i < 4; i++) {
+                const rx = 130 + i * 40;
+                const ry = 68 + (i % 2) * 22;
+                const span = ow + rx * 2;
+                const speed = 0.15 + i * 0.03;
+                const px = ((this.animFrame * speed + i * 337) % span) - rx;
+                const py = (i * 231) % oh;
+                ctx.save();
+                ctx.translate(px, py);
+                ctx.scale(1, ry / rx);
+                const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+                g.addColorStop(0, `rgba(28, 38, 58, ${cloudAlpha.toFixed(3)})`);
+                g.addColorStop(0.6, `rgba(28, 38, 58, ${(cloudAlpha * 0.5).toFixed(3)})`);
+                g.addColorStop(1, 'rgba(28, 38, 58, 0)');
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.arc(0, 0, rx, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
         // v5.9.0 時段色調 grading(讓不同時間有電影感的光線)
         // 清晨 5–7.5:冷藍薄光 + 一抹晨曦暖光
         if (h >= 5 && h < 7.5) {
