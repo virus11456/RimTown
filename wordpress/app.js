@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.15.0
-const RIMTOWN_APP_VERSION = '5.15.0';
+// RimTown - Frontend App (WordPress Plugin) v5.16.0
+const RIMTOWN_APP_VERSION = '5.16.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -3351,6 +3351,7 @@ class RimTownApp {
                 // Chat
                 case 'start-chat': this.startChatWith(val); break;
                 case 'send-chat': this._sendFromInput(); break;
+                case 'chat-intent': this._sendIntent(val); break;
                 case 'open-gift': this._showGiftPicker(); break;
                 case 'chat-view': this._chatView = val === 'feed' ? 'feed' : 'dm'; if (val === 'feed') this.world._feedUnread = 0; this.renderSidebar(); break;
                 case 'feed-like': this._feedLike(val); break;
@@ -4049,7 +4050,7 @@ class RimTownApp {
         return best;
     }
 
-    async playerSendMessage(targetId, message) {
+    async playerSendMessage(targetId, message, intent) {
         if (this.chatSending || !message.trim()) return;
         this.chatSending = true;
         const player = this.world.agents['player'];
@@ -4079,9 +4080,13 @@ class RimTownApp {
             if (this.world.questSystem) this.world.questSystem.onChat();
             // Clear unread for this NPC
             if (this._chatUnread) this._chatUnread.delete(targetId);
+            // v5.16.0 意圖的額外機械後果(獨立於 LLM,永遠可見)
+            const intentLines = intent ? this._applyChatIntent(npc, player, intent) : [];
             this.state = this.world.getState();
             this._hideTypingIndicator();
             if (this.activeTab === 'chat') { this._renderChatMessages(); this._scrollChatToBottom(); }
+            // v5.16.0 對話可見機械後果:聊完跳一張小結果卡
+            this._showChatEffect(npc, reply, intentLines);
         } catch(e) {
             console.error('Chat error:', e);
             this._hideTypingIndicator();
@@ -4731,11 +4736,24 @@ class RimTownApp {
             moodHtml = `<div class="nqc-mood" style="border-top:1px solid var(--border);margin-top:4px;padding-top:5px">
                 <div class="nqc-mood-title">💭 ${t('心情來源')}</div>${rows}</div>`;
         }
+        // v5.16.0 意圖面板:讓玩家看懂這個 AI 現在在做什麼、為什麼、接下來想幹嘛
+        let intentHtml = '';
+        const liveA = this.world?.agents?.[agentId];
+        if (liveA && liveA.activityReason) {
+            const rows = [
+                ['🎯', t('當前行動'), `${liveA.activityLabel}${liveA.currentLocation ? '' : ''}`],
+                ['💬', t('為什麼'), liveA.activityReason()],
+                ['🧭', t('接下來'), liveA.nextIntent(this.world)],
+                ['⚠️', t('對城鎮'), liveA.townConcern(this.world)],
+            ].map(([ic, k, v]) => `<div class="nqc-intent-row"><span class="nqc-intent-k">${ic} ${k}</span><span class="nqc-intent-v">${v}</span></div>`).join('');
+            intentHtml = `<div class="nqc-intent" style="border-top:1px solid var(--border);margin-top:4px;padding-top:5px">${rows}</div>`;
+        }
         const nudged = this.world?.lifeGoals?.getGoal?.(agentId)?._nudged;
         card.innerHTML = `
             <button class="nqc-close" data-nqc="close">✕</button>
             <div class="nqc-name">${a.name} <span class="nqc-job">${a.job?.title || ''}</span></div>
             <div class="nqc-hearts" title="${t('對你的好感')}">${hearts} <span class="nqc-lv">${lv}/10</span></div>
+            ${intentHtml}
             ${relHtml}
             ${moodHtml}
             ${goalHtml}
@@ -5102,6 +5120,11 @@ class RimTownApp {
             });
             chatAreaHtml += '</div>';
 
+            // v5.16.0 意圖化交談鈕:讓玩家一眼看懂「這場對話我能做什麼」(自由輸入照樣保留)
+            const intentBar = this._chatIntents().map(it =>
+                `<button class="chat-intent-btn" data-action="chat-intent" data-val="${it.key}" title="${it.hint}" ${this.chatSending ? 'disabled' : ''}>${it.icon} ${it.label}</button>`
+            ).join('');
+            chatAreaHtml += `<div class="chat-intent-bar">${intentBar}</div>`;
             // Input — always available
             chatAreaHtml += `<div class="chat-input-area">
                 <input type="text" id="chat-input" class="chat-input" placeholder="${t('輸入訊息')}..." ${this.chatSending ? 'disabled' : ''}>
@@ -5394,6 +5417,175 @@ class RimTownApp {
         const msg = input.value.trim(); if (!msg) return;
         input.value = '';
         this.playerSendMessage(this.chatTarget, msg);
+    }
+
+    // v5.16.0 意圖化交談鈕:每個意圖有開場白 + 一組確定會發生的機械後果
+    _chatIntents() {
+        return [
+            { key: 'comfort',  icon: '🤗', label: t('安慰'),   hint: t('紓解對方壓力,拉近關係'),       opener: t('別太往心裡去,有我在呢。') },
+            { key: 'gossip',   icon: '👂', label: t('打聽'),   hint: t('探聽鎮上最新的八卦'),           opener: t('最近鎮上有什麼新鮮事嗎?') },
+            { key: 'persuade', icon: '🗯️', label: t('說服'),   hint: t('選舉期間可拉票;平時緩和恩怨'),   opener: t('聽我說,我覺得你可以再想想…') },
+            { key: 'mediate',  icon: '🕊️', label: t('調解'),   hint: t('替對方化解和某人的仇恨'),        opener: t('別跟人結怨了,退一步海闊天空。') },
+            { key: 'flirt',    icon: '💗', label: t('示好'),   hint: t('增進浪漫好感(關係太差會尷尬)'), opener: t('跟你在一起總是特別開心。') },
+            { key: 'threaten', icon: '😠', label: t('威脅'),   hint: t('讓對方畏懼,但信任與好感重挫'),   opener: t('你最好識相點,別逼我出手。') },
+            { key: 'request',  icon: '📌', label: t('委託'),   hint: t('請對方幫忙(信任夠才會答應)'),   opener: t('有件事想拜託你幫個忙。') },
+        ];
+    }
+
+    _sendIntent(key) {
+        if (this.chatSending || !this.chatTarget) return;
+        const it = this._chatIntents().find(x => x.key === key);
+        if (!it) return;
+        this.playerSendMessage(this.chatTarget, it.opener, key);
+    }
+
+    // 套用意圖的確定性後果,回傳給結果卡顯示的文字行(直接操作世界狀態,存進存檔)
+    _applyChatIntent(npc, player, key) {
+        const rel = npc.relationships.getOrCreate('player', player.name);
+        const world = this.world;
+        const lines = [];
+        const fx = (txt, color) => lines.push({ txt, color });
+        switch (key) {
+            case 'comfort': {
+                npc.needs.social = Math.min(100, npc.needs.social + 15);
+                npc.moodModifier = (npc.moodModifier || 0) + 4;
+                rel.modifyAffinity(2);
+                npc.addThought?.('nice_chat', world, 'player', player.name);
+                fx(`🤗 ${npc.name}${t('覺得被支持了')}`, '#5cc98f');
+                fx(`${t('壓力')} ↓ · ${t('好感')} +2`, '#5cc98f');
+                break;
+            }
+            case 'gossip': {
+                const g = (world.gossipNetwork?.activeGossip || [])
+                    .filter(x => x.about && x.about !== npc.name && x.about !== player.name)
+                    .slice(-8);
+                const pick = g.length ? g[Math.floor(Math.random() * g.length)] : null;
+                rel.modifyAffinity(1);
+                if (pick) {
+                    player.chatHistory.push({ speaker: npc.name, target: player.name, text: `(${t('壓低聲音')}) ${pick.content}`, time: world.clock.timeStr });
+                    fx(`👂 ${npc.name}${t('跟你透露了一則八卦')}`, '#d9b3ff');
+                } else {
+                    fx(`👂 ${npc.name}${t('說最近沒什麼新鮮事')}`, '#9aa');
+                }
+                break;
+            }
+            case 'persuade': {
+                const el = world.election;
+                const active = el && (el.active || el.phase === 'campaign' || el.phase === 'voting');
+                const cands = el?.candidates || [];
+                if (active && cands.length) {
+                    // 拉票:把 NPC 對「玩家最挺的候選人」的好感往上推(信任越高越有效)
+                    const favored = cands
+                        .map(c => ({ c, aff: player.relationships.relationships[c.agentId]?.affinity || 0 }))
+                        .sort((a, b) => b.aff - a.aff)[0]?.c;
+                    if (favored && favored.agentId !== npc.agentId) {
+                        const trust = rel.trust || 0;
+                        if (trust > -10) {
+                            const r2 = npc.relationships.getOrCreate(favored.agentId, favored.name);
+                            const gain = 6 + Math.round(Math.max(0, trust) / 20);
+                            r2.modifyAffinity(gain);
+                            fx(`🗯️ ${npc.name}${t('更傾向支持')}${favored.name}${t('了')}`, '#7fc4ff');
+                            fx(`${t('選舉風向被你撥動了一點')}`, '#7fc4ff');
+                        } else {
+                            rel.modifyAffinity(-3);
+                            fx(`🗯️ ${npc.name}${t('不吃你這套,反而更防著你')}`, '#e07a7a');
+                        }
+                    } else if (favored && favored.agentId === npc.agentId) {
+                        rel.modifyAffinity(2);
+                        fx(`🗯️ ${npc.name}${t('很高興你挺他參選')}`, '#7fc4ff');
+                    }
+                } else {
+                    // 平時:勸他放下對頭
+                    const foe = Object.values(npc.relationships.relationships).filter(r => (r.affinity || 0) < -20).sort((a, b) => a.affinity - b.affinity)[0];
+                    if (foe) { foe.modifyAffinity(5); fx(`🗯️ ${t('你勸')}${npc.name}${t('對')}${foe.targetName}${t('別那麼針對')}`, '#7fc4ff'); fx(`${t('敵意')} ↓`, '#7fc4ff'); }
+                    else { rel.modifyAffinity(1); fx(`🗯️ ${npc.name}${t('點頭聽著你說')}`, '#9aa'); }
+                }
+                break;
+            }
+            case 'mediate': {
+                const foe = Object.values(npc.relationships.relationships).filter(r => (r.affinity || 0) < -20).sort((a, b) => a.affinity - b.affinity)[0];
+                if (foe) {
+                    foe.modifyAffinity(8);
+                    const other = world.agents[foe.targetId];
+                    if (other) other.relationships.getOrCreate(npc.agentId, npc.name).modifyAffinity(4);
+                    rel.modifyAffinity(1);
+                    world.logMessage?.('relationship', `🕊️ ${t('鎮長居中調解,')}${npc.name}${t('對')}${foe.targetName}${t('的敵意緩和了一些')}`, npc.name, foe.targetName);
+                    fx(`🕊️ ${t('你緩和了')}${npc.name}${t('對')}${foe.targetName}${t('的敵意')}`, '#5cc98f');
+                    fx(`${t('好感(對')}${foe.targetName}) +8`, '#5cc98f');
+                } else {
+                    fx(`🕊️ ${npc.name}${t('最近沒跟誰結怨')}`, '#9aa');
+                }
+                break;
+            }
+            case 'flirt': {
+                if ((rel.affinity || 0) > 25) {
+                    rel.modifyRomantic(3); rel.modifyAffinity(1);
+                    npc.addThought?.('nice_chat', world, 'player', player.name);
+                    fx(`💗 ${npc.name}${t('心跳漏了一拍')}`, '#ff8fb0');
+                    fx(`${t('浪漫')} +3`, '#ff8fb0');
+                } else {
+                    rel.modifyAffinity(-3);
+                    fx(`💗 ${t('太唐突了,')}${npc.name}${t('有點尷尬')}`, '#e07a7a');
+                    fx(`${t('好感')} −3`, '#e07a7a');
+                }
+                break;
+            }
+            case 'threaten': {
+                rel.modifyTrust(-12); rel.modifyAffinity(-8);
+                npc.moodModifier = (npc.moodModifier || 0) - 5;
+                npc.addThought?.('harsh_words', world, 'player', player.name);
+                fx(`😠 ${npc.name}${t('怕了你,但更討厭你了')}`, '#e07a7a');
+                fx(`${t('信任')} ↓↓ · ${t('好感')} −8`, '#e07a7a');
+                break;
+            }
+            case 'request': {
+                const trust = rel.trust || 0;
+                if (trust >= 10 || (rel.affinity || 0) >= 30) {
+                    rel.modifyAffinity(3);
+                    npc.memory?.add?.(world.tickCount, world.clock.timeStr, 'social', `${t('答應幫')}${player.name}${t('一個忙')}`, 5, ['player']);
+                    fx(`📌 ${npc.name}${t('答應幫你了')}`, '#5cc98f');
+                    fx(`${t('好感')} +3`, '#5cc98f');
+                } else {
+                    fx(`📌 ${npc.name}${t('跟你還不夠熟,婉拒了')}`, '#e0b07a');
+                }
+                break;
+            }
+        }
+        return lines;
+    }
+
+    // v5.16.0 對話結果卡:把對話對遊戲狀態的影響直接攤給玩家看(暫時浮現,不污染聊天紀錄)
+    _showChatEffect(npc, reply, intentLines) {
+        const el = document.getElementById('chat-messages');
+        if (!el) return;
+        const eff = reply?.effects || {};
+        const rows = [];
+        const aff = eff.affinity_change;
+        if (typeof aff === 'number' && aff !== 0) {
+            const pos = aff > 0;
+            rows.push(`<span style="color:${pos ? '#5cc98f' : '#e07a7a'}">❤️ ${t('好感')} ${pos ? '+' : ''}${aff}</span>`);
+        }
+        const rom = eff.romantic_change;
+        if (typeof rom === 'number' && rom > 0) rows.push(`<span style="color:#ff8fb0">💕 ${t('浪漫')} +${rom}</span>`);
+        (intentLines || []).forEach(l => rows.push(`<span style="color:${l.color || '#ccd'}">${l.txt}</span>`));
+        if (!rows.length) return;
+        // 現在關係層級的一句話狀態(跨過門檻時最有感)
+        const rel = this.world?.agents?.[npc.agentId]?.relationships?.relationships?.['player'];
+        if (rel) {
+            const a = rel.affinity || 0;
+            let statusNote = '';
+            if (a <= -20) statusNote = `${npc.name}${t('把你當成對頭')}`;
+            else if (a >= 55) statusNote = `${npc.name}${t('把你當成摯友')}`;
+            else if (a >= 20) statusNote = `${npc.name}${t('把你當朋友')}`;
+            if (statusNote) rows.push(`<span style="color:#9aa;font-size:0.9em">→ ${statusNote}</span>`);
+        }
+        const div = document.createElement('div');
+        div.className = 'chat-effect-chip';
+        div.innerHTML = rows.join('<span class="chat-effect-dot">·</span>');
+        el.appendChild(div);
+        el.scrollTop = el.scrollHeight;
+        setTimeout(() => { div.classList.add('fade'); }, 4200);
+        setTimeout(() => { div.remove(); }, 5000);
     }
     _scrollChatToBottom() { requestAnimationFrame(() => { const el = document.getElementById('chat-messages'); if(el) el.scrollTop=el.scrollHeight; }); }
     _appendChatBubble(type, text) { const el = document.getElementById('chat-messages'); if(!el) return; const div=document.createElement('div'); div.className=`chat-bubble chat-${type}`; div.innerHTML=`<div class="chat-text">${this._escapeHtml(text)}</div>`; el.appendChild(div); el.scrollTop=el.scrollHeight; }

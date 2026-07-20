@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.15.0
+ * Version: 5.16.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.15.0');
+define('RIMTOWN_VERSION', '5.16.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1182,6 +1182,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.16.0',
+            'date'    => '2026-07-20',
+            'changes' => array(
+                '🧭 居民意圖面板:點村民資訊卡新增「當前行動 / 為什麼 / 接下來 / 對城鎮的意見」,一眼看懂這個 AI 現在在幹嘛、為什麼、接下來想做什麼、對小鎮最大的不滿',
+                '💥 對話可見機械後果:每次聊完會浮現一張小結果卡(好感±、浪漫±、關係層級變化…),讓玩家清楚知道「這句話真的改變了什麼」,對話不再是純裝飾',
+                '🗯️ 意圖化交談鈕:聊天列新增 安慰／打聽／說服／調解／示好／威脅／委託 七種意圖鈕,各有明確後果(安慰紓壓、打聽出真八卦、選舉期說服可拉票、調解化解仇恨、威脅重挫信任…),自由輸入照樣保留',
+            ),
+        ),
         array(
             'version' => '5.15.0',
             'date'    => '2026-07-19',

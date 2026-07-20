@@ -1007,6 +1007,60 @@ body.rimtown-page .wp-block-post-title {
     background: var(--bg-secondary);
 }
 
+/* v5.16.0 意圖化交談鈕 */
+.chat-intent-bar {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px 0;
+    background: var(--bg-secondary);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+.chat-intent-bar::-webkit-scrollbar { display: none; }
+.chat-intent-btn {
+    flex: 0 0 auto;
+    padding: 6px 11px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    border-radius: 16px;
+    font-size: 0.76rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.chat-intent-btn:hover { border-color: var(--accent); background: var(--bg-secondary); }
+.chat-intent-btn:active { transform: scale(0.94); }
+.chat-intent-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* v5.16.0 對話結果卡(暫時浮現) */
+.chat-effect-chip {
+    align-self: center;
+    margin: 6px auto;
+    padding: 6px 12px;
+    background: rgba(20,24,40,0.72);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    max-width: 92%;
+    animation: chatEffectIn 0.28s ease;
+    transition: opacity 0.7s ease;
+}
+.chat-effect-chip.fade { opacity: 0; }
+.chat-effect-dot { color: var(--text-muted); opacity: 0.6; }
+@keyframes chatEffectIn {
+    from { opacity: 0; transform: translateY(6px) scale(0.96); }
+    to { opacity: 1; transform: none; }
+}
+
 .chat-input {
     flex: 1;
     padding: 10px 14px;
@@ -3556,6 +3610,9 @@ body.rimtown-page .wp-block-post-title {
 .npc-quick-card .nqc-mood-title { font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 2px; }
 .npc-quick-card .nqc-mood-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.74rem; padding: 1px 0; gap: 8px; }
 .npc-quick-card .nqc-mood-row > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.npc-quick-card .nqc-intent-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.75rem; padding: 1px 0; gap: 10px; }
+.npc-quick-card .nqc-intent-k { color: var(--text-secondary); white-space: nowrap; flex-shrink: 0; }
+.npc-quick-card .nqc-intent-v { color: #dfe7ff; text-align: right; }
 .npc-quick-card .nqc-btns { display: flex; gap: 8px; margin-top: 10px; }
 .npc-quick-card .nqc-btns button {
     flex: 1;

@@ -472,6 +472,58 @@ class Agent {
         }
         return s;
     }
+    // v5.16.0 意圖面板:為什麼在做現在這件事(從 needs+作息推導,人話一句)
+    activityReason() {
+        const n = this.needs;
+        switch (this.activity) {
+            case 'sleeping': return n.rest < 30 ? t('累壞了,需要補眠') : t('照著作息就寢');
+            case 'eating': return n.hunger < 30 ? t('肚子餓得受不了') : t('到了用餐時間');
+            case 'working': return this.job ? `${t('正在')}${this.job.title || t('工作')}${t('崗位上')}` : t('工作時間');
+            case 'socializing': return n.social < 30 ? t('太久沒跟人說話了') : t('想跟大家聚聚');
+            case 'recreation': return n.recreation < 30 ? t('壓力太大,需要放鬆') : t('享受閒暇時光');
+            case 'wandering': return t('沒什麼事,四處走走');
+            case 'mourning': return t('放不下逝去的人,前往墓園');
+            case 'stargazing': return t('夜貓子睡不著,仰望星空');
+            case 'night_stroll': return t('夜裡出來透透氣');
+            case 'night_mischief': return t('趁夜深搞點小惡作劇');
+            case 'commuting': return t('趕著去上工');
+            case 'heading_home': return t('準備回家休息');
+            case 'exploring': return t('離鎮外出探險');
+            default: return t('沒有特別的事');
+        }
+    }
+    // 接下來打算做什麼(優先人生夢想,其次最迫切的需求)
+    nextIntent(world) {
+        const goal = world?.lifeGoals?.describe?.(this.agentId);
+        if (goal && !goal.done && goal.stageName) {
+            return `${t('朝「')}${goal.stageName}${t('」努力')}`;
+        }
+        const partner = this.relationships.getPartner?.();
+        const crush = this.relationships.getRomanticInterests?.().sort((a,b)=>b.romanticInterest-a.romanticInterest)[0];
+        if (!partner && crush && crush.romanticInterest > 55) return `${t('鼓起勇氣接近')}${crush.targetName}`;
+        switch (this.needs.mostUrgent) {
+            case 'hunger': return t('打算去吃點東西');
+            case 'rest':   return t('想好好睡一覺');
+            case 'social': return t('想找人聊聊');
+            case 'recreation': return t('想找點樂子放鬆');
+        }
+        return t('過好平常的一天');
+    }
+    // 對城鎮目前最大的意見(從需求缺口 + 城鎮狀態推導)
+    townConcern(world) {
+        const n = this.needs;
+        const foodLow = world?.stockpile ? (world.stockpile.get('food') || 0) < 40 : false;
+        if (n.hunger < 35 || foodLow) return t('對糧食配給不太滿意');
+        if (n.rest < 35) return t('覺得日子過得太操勞');
+        if (n.recreation < 30) return t('希望鎮上多點娛樂');
+        if (n.social < 30) return t('覺得鎮上有點冷清');
+        if (n.comfort < 30) return t('對居住環境不太滿意');
+        if (n.beauty < 30) return t('嫌鎮上不夠美觀');
+        const foe = Object.values(this.relationships.relationships).filter(r => (r.affinity||0) < -40).sort((a,b)=>a.affinity-b.affinity)[0];
+        if (foe && Math.random() < 0.5) return `${t('最看不順眼')}${foe.targetName}`;
+        if (this.mood > 65) return t('對現在的生活很滿意');
+        return t('大致上過得去');
+    }
     update(world) {
         const prevActivity = this.activity;
         this._decideActivity(world.clock.hour);
