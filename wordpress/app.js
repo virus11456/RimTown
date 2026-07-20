@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.25.0
-const RIMTOWN_APP_VERSION = '5.25.0';
+// RimTown - Frontend App (WordPress Plugin) v5.26.0
+const RIMTOWN_APP_VERSION = '5.26.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -4823,12 +4823,24 @@ class RimTownApp {
             ].map(([ic, k, v]) => `<div class="nqc-intent-row"><span class="nqc-intent-k">${ic} ${k}</span><span class="nqc-intent-v">${v}</span></div>`).join('');
             intentHtml = `<div class="nqc-intent" style="border-top:1px solid var(--border);margin-top:4px;padding-top:5px">${rows}</div>`;
         }
+        // v5.26.0 肉鴿:核心屬性條(魅力/體魄/智慧/膽識)
+        let attrHtml = '';
+        const attrs = a.attributes || liveA?.attributes;
+        if (attrs) {
+            const meta = [['charm','✨',t('魅力')],['vigor','💪',t('體魄')],['wit','🧠',t('智慧')],['grit','🔥',t('膽識')]];
+            const cells = meta.map(([k, ic, lb]) => {
+                const v = Math.max(1, Math.min(10, attrs[k] || 5));
+                return `<div class="nqc-attr-cell"><span class="nqc-attr-lb">${ic}${lb}</span><span class="nqc-attr-bar"><span class="nqc-attr-fill" style="width:${v * 10}%"></span></span><span class="nqc-attr-val">${v}</span></div>`;
+            }).join('');
+            attrHtml = `<div class="nqc-attr" style="border-top:1px solid var(--border);margin-top:4px;padding-top:5px">${cells}</div>`;
+        }
         const nudged = this.world?.lifeGoals?.getGoal?.(agentId)?._nudged;
         card.innerHTML = `
             <button class="nqc-close" data-nqc="close">✕</button>
             <div class="nqc-name">${a.name} <span class="nqc-job">${a.job?.title || ''}</span></div>
             <div class="nqc-hearts" title="${t('對你的好感')}">${hearts} <span class="nqc-lv">${lv}/10</span></div>
             ${intentHtml}
+            ${attrHtml}
             ${relHtml}
             ${moodHtml}
             ${goalHtml}

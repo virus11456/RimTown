@@ -3746,6 +3746,13 @@ body.rimtown-page .wp-block-post-title {
 .npc-quick-card .nqc-intent-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.75rem; padding: 1px 0; gap: 10px; }
 .npc-quick-card .nqc-intent-k { color: var(--text-secondary); white-space: nowrap; flex-shrink: 0; }
 .npc-quick-card .nqc-intent-v { color: #dfe7ff; text-align: right; }
+/* v5.26.0 核心屬性條 */
+.npc-quick-card .nqc-attr { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 10px; }
+.npc-quick-card .nqc-attr-cell { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; }
+.npc-quick-card .nqc-attr-lb { flex: 0 0 auto; color: var(--text-secondary); white-space: nowrap; }
+.npc-quick-card .nqc-attr-bar { flex: 1; height: 6px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
+.npc-quick-card .nqc-attr-fill { display: block; height: 100%; background: linear-gradient(90deg, #7fc4ff, #b58cff); border-radius: 4px; }
+.npc-quick-card .nqc-attr-val { flex: 0 0 auto; color: var(--text-primary); font-weight: 600; width: 12px; text-align: right; }
 .npc-quick-card .nqc-btns { display: flex; gap: 8px; margin-top: 10px; }
 .npc-quick-card .nqc-btns button {
     flex: 1;

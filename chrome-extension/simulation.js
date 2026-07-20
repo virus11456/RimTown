@@ -411,6 +411,7 @@ class Agent {
         this.mood = 50 + this.personality.moodBase; this.activity = 'idle';
         this.needs = new Needs(); this.memory = new Memory(); this.relationships = new RelationshipManager();
         this.skills = generateRandomSkills(job?.key, age, this.personality.traits);
+        this.attributes = Agent.rollAttributes(this.personality, job); // v5.26.0 肉鴿:核心屬性(每村民不同)
         this._lastInteractionTick = 0; this._interactionCooldown = 6;
         this.currentThought = ''; this.isPlayer = false;
         this.thoughts = []; // v5.15.0 記憶想法(RimWorld thoughts):{kind,label,mood,opinion,targetId,targetName,start,days}
@@ -452,6 +453,39 @@ class Agent {
         }
         return Math.random() < 0.5 ? 'male' : 'female';
     }
+    // v5.26.0 肉鴿:依性格+職業隨機 roll 四項核心屬性(1-10),讓每位村民、每一局都不同
+    static rollAttributes(personality, job) {
+        const r = () => 3 + randInt(0, 4); // 3-7 基礎
+        const a = { charm: r(), vigor: r(), wit: r(), grit: r() };
+        const tr = (personality && personality.traits) || [];
+        if (tr.includes('charismatic')) a.charm += randInt(1, 3);
+        if (tr.includes('romantic')) a.charm += 1;
+        if (tr.includes('shy')) a.charm -= 1;
+        if (tr.includes('hardworking')) a.vigor += randInt(1, 2);
+        if (tr.includes('lazy')) a.vigor -= 1;
+        if (tr.includes('glutton')) a.vigor += 1;
+        if (tr.includes('creative') || tr.includes('perfectionist')) a.wit += randInt(1, 2);
+        if (tr.includes('night_owl')) a.wit += 1;
+        if (tr.includes('stoic') || tr.includes('optimist')) a.grit += randInt(1, 2);
+        if (tr.includes('neurotic') || tr.includes('pessimist')) a.grit -= 1;
+        const jk = job && job.key;
+        if (jk === 'guard') { a.grit += 2; a.vigor += 1; }
+        else if (jk === 'researcher' || jk === 'doctor') a.wit += 2;
+        else if (jk === 'trader' || jk === 'priest') a.charm += 1;
+        else if (jk === 'miner' || jk === 'farmer' || jk === 'blacksmith' || jk === 'carpenter') a.vigor += 1;
+        else if (jk === 'tailor' || jk === 'cook') a.wit += 1;
+        for (const k in a) a[k] = Math.max(1, Math.min(10, a[k]));
+        return a;
+    }
+    static ATTR_META() {
+        return [
+            { key: 'charm', icon: '✨', label: t('魅力') },
+            { key: 'vigor', icon: '💪', label: t('體魄') },
+            { key: 'wit',   icon: '🧠', label: t('智慧') },
+            { key: 'grit',  icon: '🔥', label: t('膽識') },
+        ];
+    }
+    attr(k) { return (this.attributes && this.attributes[k]) || 5; }
     // v5.15.0 加一則記憶想法(同 kind+對象會刷新計時,不無限堆疊)
     addThought(kind, world, targetId, targetName) {
         const def = THOUGHT_DEFS[kind]; if (!def) return;
@@ -534,7 +568,8 @@ class Agent {
         const repMoodBonus = world.reputationSystem ? world.reputationSystem.getModifier('npc_mood_bonus') : 0;
         const weatherMoodBonus = world.weather ? Math.round(world.weather.moodModifier * 0.3) : 0;
         const thoughtMood = Math.round(this.thoughtMoodTotal(world.clock.totalDays || 0)); // v5.15.0 記憶想法心情
-        this.mood = Math.max(-100, Math.min(100, 50 + this.personality.moodBase + Math.floor(this.needs.moodContribution) + this.moodModifier + repMoodBonus + weatherMoodBonus + thoughtMood));
+        const gritMood = Math.round((this.attr('grit') - 5) * 0.8); // v5.26.0 膽識→心情韌性(穩得住)
+        this.mood = Math.max(-100, Math.min(100, 50 + this.personality.moodBase + Math.floor(this.needs.moodContribution) + this.moodModifier + repMoodBonus + weatherMoodBonus + thoughtMood + gritMood));
         this._gainSkillXp(world);
         // Only re-pick location if activity changed or stay duration expired
         const activityChanged = this.activity !== prevActivity;
@@ -576,7 +611,7 @@ class Agent {
         }
     }
     _gainSkillXp(world) {
-        const xp = randInt(3,8);
+        const xp = Math.round(randInt(3,8) * (1 + (this.attr('wit') - 5) * 0.06)); // v5.26.0 智慧→技能成長快慢
         if (this.activity === 'working' && this.job) {
             const map = JOB_SKILL_MAP[this.job.key];
             if (map) {
@@ -968,6 +1003,7 @@ class Agent {
             needs:this.needs.toDict(), skills:this.skills.toDict(),
             relationships:this.relationships.toDict(), recent_memories:this.memory.toDict(),
             thoughts: (this.thoughts || []).map(t2 => ({ ...t2 })), // v5.15.0 記憶想法(供 UI 顯示心情來源)
+            attributes: { ...(this.attributes || {}) }, // v5.26.0 核心屬性
         };
     }
 }
@@ -5792,7 +5828,8 @@ class World {
                     if (tA.includes('abrasive') && tB.includes('abrasive')) compat -= 2;
                     if (tA.includes('jealous') || tB.includes('jealous')) compat -= 1;
                     const affinityBonus = Math.floor(rel.affinity / 20); // v5.3.0 每20好感 +1(原25)
-                    const growth = Math.max(0, affinityBonus + compat);
+                    const charmBonus = Math.floor((other.attr('charm') - 5) / 2); // v5.26.0 對方越有魅力越讓人心動
+                    const growth = Math.max(0, affinityBonus + compat + charmBonus);
                     // v5.3.0: 機率 0.45(原0.25)、增量最高 5(原3),讓心動能追過衰退、跨過門檻
                     if (growth > 0 && Math.random() < 0.45) {
                         rel.modifyRomantic(randInt(1, Math.min(growth + 1, 5)));
@@ -6303,6 +6340,7 @@ class World {
             _mourningTargets: a._mourningTargets || [],
             _annualMourning: a._annualMourning || [],
             thoughts: (a.thoughts || []).map(t2 => ({ ...t2 })), // v5.15.0 記憶想法
+            attributes: { ...(a.attributes || {}) }, // v5.26.0 核心屬性
         });
         return {
             version: 2,
@@ -6410,6 +6448,8 @@ class World {
                 agent._mourningTargets = ad._mourningTargets || [];
                 agent._annualMourning = ad._annualMourning || [];
                 agent.thoughts = Array.isArray(ad.thoughts) ? ad.thoughts : []; // v5.15.0 記憶想法
+                if (ad.attributes && Object.keys(ad.attributes).length) agent.attributes = { ...ad.attributes }; // v5.26.0 核心屬性
+
                 // Needs
                 if (ad.needs) { Object.assign(agent.needs, ad.needs); }
                 // Skills

@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.25.0.zip` from Releases
+1. Download `rimtown-v5.26.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,14 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.26.0 (2026-07-20)
+
+**肉鴿①:角色屬性數值化**
+
+- 每位村民四項核心屬性(魅力/體魄/智慧/膽識,1-10),依性格職業隨機生成,每局每人都不同
+- 接進玩法:魅力→戀愛吸引、膽識→心情韌性、智慧→技能成長;資訊卡顯示屬性條;完整存檔
+
 
 ### v5.25.0 (2026-07-20)
 

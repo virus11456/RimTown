@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.25.0
+ * Version: 5.26.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.25.0');
+define('RIMTOWN_VERSION', '5.26.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1175,6 +1175,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.26.0',
+            'date'    => '2026-07-20',
+            'changes' => array(
+                '🎲 肉鴿化第一步 —— 角色屬性數值化:每位村民有四項核心屬性(✨魅力/💪體魄/🧠智慧/🔥膽識,1-10),依性格與職業隨機生成,所以每位村民、每一局都不一樣',
+                '⚙️ 屬性接進玩法:魅力越高越讓人心動(戀愛)、膽識越高心情越穩(抗壓)、智慧越高技能練得越快',
+                '📊 點村民資訊卡可看到四條屬性長條;屬性完整存進存檔。(這是接下來「隨機開局/事件抽卡/傳承強化」的共同地基)',
+            ),
+        ),
         array(
             'version' => '5.25.0',
             'date'    => '2026-07-20',
