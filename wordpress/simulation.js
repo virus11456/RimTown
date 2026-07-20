@@ -5822,7 +5822,7 @@ class World {
                     const otherPartner = other.relationships.getPartner();
                     if (otherPartner && otherPartner.targetId !== agent.agentId) {
                         const luckyOne = this.agents[otherPartner.targetId];
-                        if (luckyOne && !luckyOne.isPlayer && Math.random() < 0.08) {
+                        if (luckyOne && !luckyOne.isPlayer && Math.random() < 0.13) { // v5.22.0 加溫:單戀嫉妒更常燒起來
                             const jealousRel = agent.relationships.getOrCreate(luckyOne.agentId, luckyOne.name);
                             // 心動越深恨越重;已經在恨了就繼續往下探(讓三角戀燒成真正的仇敵)
                             const bite = jealousRel.affinity < 0 ? randInt(8, 16) : randInt(6, 12);
@@ -5838,7 +5838,7 @@ class World {
                         for (const rival of npcs) {
                             if (rival === agent || rival === other || rival.isPlayer) continue;
                             const rivalCrush = rival.relationships.relationships[other.agentId];
-                            if (rivalCrush && rivalCrush.romanticInterest > 45 && Math.random() < 0.12) {
+                            if (rivalCrush && rivalCrush.romanticInterest > 40 && Math.random() < 0.20) { // v5.22.0 加溫:情敵更容易結樑子
                                 const feud = agent.relationships.getOrCreate(rival.agentId, rival.name);
                                 const feudBack = rival.relationships.getOrCreate(agent.agentId, agent.name);
                                 // 情敵之恨蓋過友情:已在敵對就繼續探底,直到真正水火不容
@@ -5867,7 +5867,7 @@ class World {
                     }
                     if (tA.includes('abrasive') || tB.includes('abrasive')) friction += 1;
                     if (tA.includes('jealous') && tB.includes('charismatic')) friction += 1;
-                    if (friction > 0 && Math.random() < 0.10) {
+                    if (friction > 0 && Math.random() < 0.16) { // v5.22.0 加溫:合不來的人更常起口角
                         rel.modifyAffinity(-randInt(2, friction + 2));
                         otherRel.modifyAffinity(-randInt(2, friction + 2));
                     }
@@ -5935,7 +5935,7 @@ class World {
                         // Both need romantic interest, and agent has low affinity with partner or is neurotic/romantic
                         const isVulnerable = rel.affinity < 20 || agent.personality.traits.includes('romantic') || agent.personality.traits.includes('neurotic');
                         if (isVulnerable && otherRel2.romanticInterest > 50 && thirdRel.romanticInterest > 40 &&
-                            otherRel2.affinity > 30 && Math.random() < 0.03) {
+                            otherRel2.affinity > 30 && Math.random() < 0.06) { // v5.22.0 加溫:偷情更容易發生(修羅場的火種)
                             otherRel2.isCheating = true;
                             thirdRel.isCheating = true;
                             this.logMessage('relationship', `${agent.name}${t('背著')}${other.name}${t('和')}${third.name}${t('有了秘密關係⋯⋯')}`, agent.name, third.name);
@@ -5952,7 +5952,7 @@ class World {
                 if ((rel.status === 'dating' || rel.status === 'married') && !rel.isCheating) {
                     // Check if partner is cheating
                     const partnerCheating = Object.values(other.relationships.relationships).find(r => r.isCheating && r.targetId !== agent.agentId);
-                    if (partnerCheating && Math.random() < 0.1) {
+                    if (partnerCheating && Math.random() < 0.15) { // v5.22.0 加溫:劈腿更容易東窗事發 → 修羅場
                         // Discovered!
                         const thirdParty = this.agents[partnerCheating.targetId];
                         const thirdName = thirdParty?.name || t('某人');
@@ -6089,6 +6089,10 @@ class World {
         pair('zhou_ming', 'zhao_xia', { x: { aff: 34, rom: 40 }, y: { aff: 30, rom: 20 } });
         // 📚 鄭薇 暗戀 周明(算錯公式的原因)——單戀
         pair('zheng_wei', 'zhou_ming', { x: { aff: 30, rom: 46 }, y: { aff: 18, rom: 4 } });
+        // 🌙 孫雨 傾心 林美(兩個夜貓子,焦慮學者與沉靜醫生)——雙向漸濃,且與楊鋒形成三角
+        pair('sun_yu', 'lin_mei', { x: { aff: 40, rom: 46 }, y: { aff: 30, rom: 24 } });
+        // 🎸 馬強 對周明又恨又迷(周明搶了他前任趙霞,偏偏那股魅力也讓他動搖)——愛恨交織
+        pair('ma_qiang', 'zhou_ming', { x: { aff: -8, rom: 30 }, y: { aff: 10, rom: 4 } });
         // 🤝 陳偉(鎮長) & 楊鋒 老戰友互敬
         pair('chen_wei', 'yang_feng', { x: { aff: 54, trust: 40 }, y: { aff: 52, trust: 38 } });
         // 開局八卦頭條:讓玩家一進來就嗅到戲
@@ -6096,6 +6100,7 @@ class World {
             this.gossipNetwork.activeGossip.push(
                 { about: A['zhou_ming']?.name, content: t('聽說新來的周明,好像跟趙霞走得很近...而馬強的臉色可不太好看。'), source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: 'crush' },
                 { about: A['wu_da']?.name, content: t('吳達和楊鋒又在酒館互看不順眼了,他們的樑子結很久了。'), source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: 'rivalry' },
+                { about: A['lin_mei']?.name, content: t('聽說孫雨最近老往診所跑,林美醫生好像也不排斥她的陪伴...倒是守衛楊鋒的臉色越來越難看。'), source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: 'crush' },
             );
         }
     }

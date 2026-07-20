@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.21.0.zip` from Releases
+1. Download `rimtown-v5.22.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,14 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.22.0 (2026-07-20)
+
+**多元戀愛 + 愛恨更容易爆發**
+
+- 戀愛引擎本就不分性別;開局關係網加入同性戀情線(林美×孫雨、馬強→周明),多元的愛從第一天就看得見
+- 調高單戀嫉妒/情敵結怨/口角/偷情/東窗事發機率,三角戀更常燒成仇敵、修羅場更容易上演;實測情侶照樣談得成
+
 
 ### v5.21.0 (2026-07-20)
 

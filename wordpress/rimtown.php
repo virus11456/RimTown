@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.21.0
+ * Version: 5.22.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.21.0');
+define('RIMTOWN_VERSION', '5.22.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1175,6 +1175,14 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.22.0',
+            'date'    => '2026-07-20',
+            'changes' => array(
+                '🏳️‍🌈 戀愛不分性別:確認戀愛引擎本就不看性別,並在開局關係網加入同性戀情線(女醫生林美 × 焦慮學者孫雨、木匠馬強對遊唱周明又恨又迷),讓多元的愛從第一天就看得見',
+                '🔥 愛恨更容易爆發:調高單戀嫉妒、情敵結怨、個性口角、偷情與東窗事發的機率,讓三角戀更常燒成仇敵、修羅場更容易上演(實測情侶照樣談得成,只是恩怨變多了)',
+            ),
+        ),
         array(
             'version' => '5.21.0',
             'date'    => '2026-07-20',
