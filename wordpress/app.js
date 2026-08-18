@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.32.0
-const RIMTOWN_APP_VERSION = '5.32.0';
+// RimTown - Frontend App (WordPress Plugin) v5.32.1
+const RIMTOWN_APP_VERSION = '5.32.1';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -3218,13 +3218,16 @@ class RimTownApp {
         this.restartSimulation();
         this._updateLLMStatus();
         localStorage.setItem('llm_provider', provider);
-        localStorage.setItem('llm_api_key', apiKey);
+        // v5.32.1 空欄位不覆寫已存金鑰:切換供應商時欄位會被清空,直接存會把舊金鑰洗掉
+        if (apiKey) localStorage.setItem('llm_api_key', apiKey);
         localStorage.setItem('sim_speed', speed);
         if (fallbackGroqKey) localStorage.setItem('fallback_groq_key', fallbackGroqKey);
         else localStorage.removeItem('fallback_groq_key');
         try {
             if (typeof chrome !== 'undefined' && chrome.storage) {
-                await chrome.storage.local.set({ llm_provider: provider, llm_api_key: apiKey, sim_speed: speed, fallback_groq_key: fallbackGroqKey });
+                const stored = { llm_provider: provider, sim_speed: speed, fallback_groq_key: fallbackGroqKey };
+                if (apiKey) stored.llm_api_key = apiKey;
+                await chrome.storage.local.set(stored);
             }
         } catch(e) {}
     }
