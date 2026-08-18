@@ -3072,9 +3072,35 @@ class LLMClient {
 
     async _generateWithGroqFallback(prompt, maxTokens, temperature) {
         this._fallbackActive = true;
-        const result = await this._callProvider('groq', this.fallbackGroqKey, 'llama-3.3-70b-versatile', prompt, maxTokens, temperature);
+        const result = await this._callProvider('groq', this.fallbackGroqKey, null, prompt, maxTokens, temperature);
         if (result === '__RATE_LIMITED__' || result === '__ERROR__') return '';
         return this._stripThinkTags(result);
+    }
+
+    // v5.33.3 Groq 模型動態解析:Groq 汰換模型頻繁,寫死模型名遲早 404
+    // 直接查這把 key 當下可用的模型清單,依偏好挑一個;結果快取到 localStorage
+    async _resolveGroqModel(apiKey, force = false) {
+        if (!force && this._groqModelCache) return this._groqModelCache;
+        if (!force) {
+            try { const c = localStorage.getItem('rimtown_groq_model'); if (c) return (this._groqModelCache = c); } catch (e) {}
+        }
+        try {
+            const res = await fetch('https://api.groq.com/openai/v1/models', { headers: { 'Authorization': 'Bearer ' + apiKey } });
+            if (res.ok) {
+                const data = await res.json();
+                const ids = (data.data || []).map(m => m.id);
+                const prefer = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'moonshotai/kimi-k2-instruct', 'qwen/qwen3-32b'];
+                let pick = prefer.find(p => ids.includes(p));
+                if (!pick) pick = ids.find(id => !/whisper|tts|guard|embed|vision|scout|maverick/i.test(id));
+                if (pick) {
+                    this._groqModelCache = pick;
+                    try { localStorage.setItem('rimtown_groq_model', pick); } catch (e) {}
+                    console.log('[RimTown LLM] Groq model resolved:', pick);
+                    return pick;
+                }
+            }
+        } catch (e) { console.warn('[RimTown LLM] Groq model list failed:', e.message); }
+        return this._groqModelCache || 'llama-3.3-70b-versatile';
     }
 
     async _callProvider(provider, apiKey, model, prompt, maxTokens, temperature) {
@@ -3113,6 +3139,8 @@ class LLMClient {
 
         const cfg = endpoints[provider];
         if (!cfg) return '__ERROR__';
+        // v5.33.3 Groq 未指定模型時動態解析(可用清單快取)
+        if (provider === 'groq' && !model) cfg.model = await this._resolveGroqModel(apiKey);
 
         try {
             if (provider === 'anthropic') {
@@ -3170,6 +3198,13 @@ class LLMClient {
                     try { const eb = await res.json(); this._lastError = `HTTP ${res.status}${eb?.error?.message ? ': ' + eb.error.message : ''}`; }
                     catch (e2) { this._lastError = 'HTTP ' + res.status; }
                     console.error('[RimTown LLM]', provider, this._lastError);
+                    // v5.33.3 Groq 快取的模型被下架 → 清快取強制重查清單,換一個模型重試一次
+                    if (provider === 'groq' && res.status === 404 && !model) {
+                        this._groqModelCache = null;
+                        try { localStorage.removeItem('rimtown_groq_model'); } catch (e3) {}
+                        const fresh = await this._resolveGroqModel(apiKey, true);
+                        if (fresh && fresh !== cfg.model) return this._callProvider('groq', apiKey, fresh, prompt, maxTokens, temperature);
+                    }
                     return '__ERROR__';
                 }
                 const data = await res.json();

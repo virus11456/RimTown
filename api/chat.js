@@ -5,7 +5,23 @@ const L = require('./_lib');
 
 const GUEST_DAILY = 20;
 const USER_DAILY = 100;
-const MODEL = 'llama-3.3-70b-versatile';
+// v5.33.3 模型動態解析:Groq 汰換模型頻繁,寫死名稱遲早 404;查可用清單挑一個並快取於 lambda 內存
+const MODEL_PREFER = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'moonshotai/kimi-k2-instruct'];
+let _modelCache = null;
+
+async function resolveModel(apiKey, force = false) {
+    if (_modelCache && !force) return _modelCache;
+    try {
+        const r = await fetch('https://api.groq.com/openai/v1/models', { headers: { 'Authorization': `Bearer ${apiKey}` } });
+        if (r.ok) {
+            const ids = ((await r.json()).data || []).map(m => m.id);
+            let pick = MODEL_PREFER.find(p => ids.includes(p));
+            if (!pick) pick = ids.find(id => !/whisper|tts|guard|embed|vision|scout|maverick/i.test(id));
+            if (pick) { _modelCache = pick; return pick; }
+        }
+    } catch (e) {}
+    return _modelCache || MODEL_PREFER[0];
+}
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') return L.err(res, 405, 'method_not_allowed', 'POST only');
@@ -33,19 +49,16 @@ module.exports = async (req, res) => {
             payload ? '今日 AI 對話額度已用完,明天再來吧!' : '訪客今日 AI 額度已用完,註冊登入可獲得更高額度!');
     }
 
-    // 呼叫 Groq
+    // 呼叫 Groq(模型動態解析;404 表示快取模型被下架 → 重查清單重試一次)
     let reply = '';
     try {
-        const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        const callGroq = (model) => fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model: MODEL,
-                messages: [{ role: 'user', content: prompt }],
-                max_tokens: maxTokens,
-                temperature,
-            }),
+            body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], max_tokens: maxTokens, temperature }),
         });
+        let r = await callGroq(await resolveModel(apiKey));
+        if (r.status === 404) r = await callGroq(await resolveModel(apiKey, true));
         if (r.status === 429) return L.err(res, 429, 'rate_limited', 'AI 忙碌中,請稍後再試');
         if (!r.ok) return L.err(res, 502, 'upstream_error', 'AI 服務暫時無法使用');
         const data = await r.json();
