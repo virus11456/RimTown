@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.34.2
-const RIMTOWN_APP_VERSION = '5.34.2';
+// RimTown - Frontend App (WordPress Plugin) v5.35.0
+const RIMTOWN_APP_VERSION = '5.35.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -3754,6 +3754,7 @@ class RimTownApp {
                 case 'replay-drama': { const arc = this.world?.dramaArchive || this.state?.dramaArchive || []; const s = arc[parseInt(val, 10)]; if (s) this._showDramaScene(s); break; }
                 case 'news-goto': this._newsGoto(val); this._firstDayMark('consequence'); break;
                 case 'focus-go': this._focusGo(val); break; // v5.31.0 今日焦點
+                case 'close-chat': this.chatTarget = null; this._whisperArmed = false; this.renderSidebar(); break; // v5.35.0 關閉對話回聯絡人
                 case 'story-npc': { const ag = this.world?.agents?.[val]; if (ag) this._showNpcCard(val); break; } // v5.31.0 故事流→人物卡
                 case 'firstday-skip': this._dismissFirstDay(); break;
                 case 'show-identity': this._showTownIdentity(); break;
@@ -5447,10 +5448,11 @@ class RimTownApp {
             const targetJob = targetAgent?.job?.title || '';
             const targetLoc = targetAgent?.current_location || '';
 
-            // Chat header with NPC info
-            chatAreaHtml += `<div class="chat-conv-header">
+            // Chat header with NPC info(v5.35.0 加 ✕ 關閉對話,回到聯絡人清單)
+            chatAreaHtml += `<div class="chat-conv-header" style="position:relative">
                 <div class="chat-conv-name">${targetName}</div>
                 <div class="chat-conv-detail">${targetJob}${targetLoc ? ' · ' + this._locationLabel(targetLoc) : ''}</div>
+                <button data-action="close-chat" title="${t('關閉對話')}" style="position:absolute;top:6px;right:8px;background:rgba(255,255,255,0.08);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);width:26px;height:26px;line-height:1;cursor:pointer;font-size:0.85rem">✕</button>
             </div>`;
 
             // Messages
@@ -5763,7 +5765,31 @@ class RimTownApp {
         if (!input || !this.chatTarget) return;
         const msg = input.value.trim(); if (!msg) return;
         input.value = '';
+        // v5.35.0 耳語模式:這句話植入對方內心,不走一般對話
+        if (this._whisperArmed) {
+            this._whisperArmed = false;
+            input.placeholder = t('輸入訊息') + '...';
+            this.playerWhisper(this.chatTarget, msg);
+            return;
+        }
         this.playerSendMessage(this.chatTarget, msg);
+    }
+
+    // v5.35.0 耳語植入(generative_agents whisper):寫進 NPC 記憶流成為他自己的念頭
+    async playerWhisper(targetId, text) {
+        const npc = this.world?.agents?.[targetId];
+        const player = this.world?.agents?.['player'];
+        if (!npc || !player) return;
+        player.chatHistory.push({ speaker: player.name, target: npc.name, text: `🤫 (${t('耳語')}) ${text}`, time: this.world.clock.timeStr });
+        this.state = this.world.getState();
+        if (this.activeTab === 'chat') { this._renderChatMessages(); this._scrollChatToBottom(); }
+        try {
+            const res = await this.world.conversationEngine.plantWhisper(player, npc, text, this.world);
+            player.chatHistory.push({ speaker: npc.name, target: player.name, text: `💭 (${npc.name}${t('若有所思,喃喃自語')}) ${res?.thought || text}`, time: this.world.clock.timeStr });
+        } catch (e) { console.error('[RimTown] whisper failed:', e); }
+        this.state = this.world.getState();
+        if (this.activeTab === 'chat') { this._renderChatMessages(); this._scrollChatToBottom(); }
+        this.bgm?.sfx?.('open');
     }
 
     // v5.16.0 意圖化交談鈕:每個意圖有開場白 + 一組確定會發生的機械後果
@@ -5776,6 +5802,7 @@ class RimTownApp {
             { key: 'flirt',    icon: '💗', label: t('示好'),   hint: t('增進浪漫好感(關係太差會尷尬)'), opener: t('跟你在一起總是特別開心。') },
             { key: 'threaten', icon: '😠', label: t('威脅'),   hint: t('讓對方畏懼,但信任與好感重挫'),   opener: t('你最好識相點,別逼我出手。') },
             { key: 'request',  icon: '📌', label: t('委託'),   hint: t('請對方幫忙(信任夠才會答應)'),   opener: t('有件事想拜託你幫個忙。') },
+            { key: 'whisper',  icon: '🤫', label: t('耳語'),   hint: t('在他心裡種下一個念頭——他會當成自己的想法,影響之後的言行'), opener: '' },
         ];
     }
 
@@ -5783,6 +5810,13 @@ class RimTownApp {
         if (this.chatSending || !this.chatTarget) return;
         const it = this._chatIntents().find(x => x.key === key);
         if (!it) return;
+        // v5.35.0 耳語:進入輸入模式,下一句話會被植入對方內心(不是普通對話)
+        if (key === 'whisper') {
+            this._whisperArmed = true;
+            const input = document.getElementById('chat-input');
+            if (input) { input.placeholder = t('🤫 低聲說出你要植入的念頭...'); input.focus(); }
+            return;
+        }
         this._firstDayMark?.('interact'); // v5.18.0 第一天:出手互動
         if (key === 'comfort' || key === 'mediate') this._firstDayMark?.('mark'); // 這兩種也算「為某人做點事」
         this.playerSendMessage(this.chatTarget, it.opener, key);

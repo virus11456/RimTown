@@ -152,8 +152,8 @@ class Memory {
         scored.sort((a, b) => b.score - a.score);
         return scored.slice(0, n).map(s => s.e).sort((a, b) => a.tick - b.tick);
     }
-    // 反思(thought)節點:dailyReflection 產生,category='reflection'
-    getThoughts(n = 3) { return this.entries.filter(e => e.category === 'reflection').slice(-n); }
+    // 反思(thought)節點:dailyReflection 產生的 reflection + 玩家植入的 whisper(v5.35.0)
+    getThoughts(n = 3) { return this.entries.filter(e => e.category === 'reflection' || e.category === 'whisper').slice(-n); }
     summarizeRecent(n = 5) {
         const recent = this.getRecent(n);
         if (!recent.length) return t('沒有近期記憶。');
@@ -1392,18 +1392,17 @@ class ConversationEngine {
 
     _countNpcLlmUse(world) { world.npcLlmUsedToday = (world.npcLlmUsedToday || 0) + 1; }
 
-    // v5.29.0 每日反思(移植 generative_agents reflect):
-    // 1) 規則式(零成本):統計昨日互動,合成「想法」寫入記憶流
-    // 2) LLM 深度反思(每天最多 1 次):挑昨日記憶重要度總和最高的 NPC,生成一句內心體悟
+    // v5.29.0 每日反思(移植 generative_agents reflect),v5.35.0 豐富化:
+    // 1) 規則式(零成本):每位村民每天合成 1-2 條想法(人際 + 生活/夢想/事件) + 1 條昨日印象觀察
+    // 2) LLM 深度反思:每天最多 3 位(挑昨日記憶重要度最高者),生成內心體悟
     async dailyReflection(world) {
         const TICKS_PER_DAY = 96;
         const since = world.tickCount - TICKS_PER_DAY;
         const npcs = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead);
-        let best = null, bestScore = 0;
+        const scored = [];
         for (const npc of npcs) {
-            const recent = npc.memory.entries.filter(e => e.tick >= since && e.category !== 'reflection');
-            if (!recent.length) continue;
-            // 規則式:昨天跟誰互動最多 → 依好感方向合成一句想法
+            const recent = npc.memory.entries.filter(e => e.tick >= since && e.category !== 'reflection' && e.category !== 'observation');
+            // 規則式想法 1:昨天跟誰互動最多 → 依好感方向合成
             const counts = {};
             recent.forEach(e => (e.relatedAgents || []).forEach(nm => { if (nm && nm !== npc.name) counts[nm] = (counts[nm] || 0) + 1; }));
             const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
@@ -1412,43 +1411,114 @@ class ConversationEngine {
                 const rel = Object.values(npc.relationships.relationships).find(r => r.targetName === topName);
                 const aff = rel ? rel.affinity : 0;
                 let text;
-                if (rel && (rel.status === 'dating' || rel.status === 'married')) text = `${t('最近和')}${topName}${t('的感情越來越深了。')}`;
-                else if (aff > 40) text = `${t('我最近跟')}${topName}${t('走得很近，有這樣的朋友真好。')}`;
-                else if (aff < -20) text = `${topName}${t('最近老是跟我過不去，想到就煩。')}`;
+                if (rel && (rel.status === 'dating' || rel.status === 'married')) text = pickRandom([`${t('最近和')}${topName}${t('的感情越來越深了。')}`, `${t('有')}${topName}${t('在身邊的日子,連工作都不覺得累。')}`]);
+                else if (aff > 40) text = pickRandom([`${t('我最近跟')}${topName}${t('走得很近，有這樣的朋友真好。')}`, `${topName}${t('這個人,值得深交。')}`]);
+                else if (aff < -20) text = pickRandom([`${topName}${t('最近老是跟我過不去，想到就煩。')}`, `${t('再讓')}${topName}${t('這樣下去,我遲早要跟他攤牌。')}`]);
                 else text = `${t('最近常碰到')}${topName}${t('，這人比我想的有意思。')}`;
-                // 同一天不重複寫同對象的規則式反思
                 const dup = npc.memory.entries.some(e => e.category === 'reflection' && e.tick >= since && e.relatedAgents.includes(topName));
                 if (!dup) npc.memory.add(world.tickCount, world.clock.timeStr, 'reflection', text, 6, [topName]);
             }
+            // v5.35.0 規則式想法 2:生活面(夢想/暗戀/需求/天氣/祭典),每天最多一條
+            try {
+                const lifePool = [];
+                const goal = world.lifeGoals?.getGoal?.(npc.agentId);
+                const def = goal && !goal.done && typeof LIFE_GOALS !== 'undefined' ? LIFE_GOALS[goal.goalId] : null;
+                if (def) lifePool.push(`${t('離「')}${def.name}${t('」還有多遠呢...但我不會停下來的。')}`, `${t('夜裡想起我的夢想:')}${def.stages[goal.stage] || ''}${t('。明天再往前一步吧。')}`);
+                const crush = npc.relationships.getRomanticInterests().filter(r => !r.status)[0];
+                if (crush) lifePool.push(`${t('今天又想起')}${crush.targetName}${t('...我到底在期待什麼呢。')}`, `${t('要是能跟')}${crush.targetName}${t('多說上幾句話就好了。')}`);
+                if (npc.needs.social < 35) lifePool.push(t('好久沒跟人好好說話了,心裡悶悶的。'));
+                if (world.weather?.current?.type === 'rain' || world.weather?.current?.type === 'storm') lifePool.push(t('聽著雨聲,思緒飄得很遠。'));
+                if (world.festivals?.activeFestival) lifePool.push(`${world.festivals.activeFestival.name}${t('的熱鬧還在耳邊,好日子總是過得快。')}`);
+                if (npc.personality.traits.includes('gossip')) lifePool.push(t('今天聽到的八卦,不知道是真是假...明天再打聽打聽。'));
+                if (lifePool.length && Math.random() < 0.5) {
+                    npc.memory.add(world.tickCount, world.clock.timeStr, 'reflection', pickRandom(lifePool), 4, []);
+                }
+            } catch (e) {}
+            // v5.35.0 昨日印象:一條低重要度的觀察記憶,讓今日足跡/檢索有生活質感
+            try {
+                const wType = world.weather?.current?.type || 'clear';
+                const obsPool = [
+                    `${t('在')}${(npc.job?.workplace || npc.homeLocation).replace(/_/g, ' ')}${t('忙了一整天,手都酸了。')}`,
+                    wType === 'rain' ? t('昨天雨下個不停,路上都是泥。') : wType === 'snow' ? t('昨天雪景很美,屋簷都白了。') : t('昨天天色不錯,鎮上人來人往。'),
+                    `${t('路過廣場時聞到烤麵包的香味,肚子咕嚕叫了。')}`,
+                    `${t('聽見酒館傳來笑聲,小鎮的日子就是這樣熱熱鬧鬧的。')}`,
+                ];
+                npc.memory.add(world.tickCount, world.clock.timeStr, 'observation', pickRandom(obsPool), 2, []);
+            } catch (e) {}
             const score = recent.reduce((s, e) => s + (e.importance || 5), 0);
-            if (score > bestScore) { bestScore = score; best = { npc, recent }; }
+            if (score >= 40) scored.push({ npc, recent, score });
         }
-        // LLM 深度反思:一天最多 1 次,吃 NPC LLM 額度;昨天夠精彩(重要度總和門檻)才值得花這一次
-        if (!best || bestScore < 40) return;
-        if (!this.llm || !this.llm._canMakeRequest(false)) return;
-        if ((world.npcLlmUsedToday || 0) >= this.npcLlmDailyBudget()) return;
-        try {
-            const npc = best.npc;
-            const topMem = best.recent.slice().sort((a, b) => (b.importance || 0) - (a.importance || 0)).slice(0, 6)
-                .map(m => `- ${m.content}`).join('\n');
-            const pN = this._buildCharacterProfile(npc);
-            const prompt = `${t('你正在扮演「')}${pN.name}${t('」——')}${pN.age}${t('歲的')}${pN.job}${t('，性格')}${pN.traits}${t('。')}
+        // LLM 深度反思:每天最多 3 位,吃 NPC LLM 額度;挑昨日最精彩的村民
+        scored.sort((a, b) => b.score - a.score);
+        for (const { npc, recent } of scored.slice(0, 3)) {
+            if (!this.llm || !this.llm._canMakeRequest(false)) break;
+            if ((world.npcLlmUsedToday || 0) >= this.npcLlmDailyBudget()) break;
+            try {
+                const topMem = recent.slice().sort((a, b) => (b.importance || 0) - (a.importance || 0)).slice(0, 6)
+                    .map(m => `- ${m.content}`).join('\n');
+                const pN = this._buildCharacterProfile(npc);
+                const prompt = `${t('你正在扮演「')}${pN.name}${t('」——')}${pN.age}${t('歲的')}${pN.job}${t('，性格')}${pN.traits}${t('。')}
 ${t('夜深了，你回想今天發生的事：')}
 ${topMem}
 
 ${t('【任務】寫下你今晚睡前心裡最深的一個體悟——關於某個人、某段關係、或你自己的處境。')}
 ${t('【規則】繁體中文（台灣用語），只寫一句話，第一人稱，有情感、有觀點，不要流水帳。不要加引號或其他文字。')}`;
-            this._countNpcLlmUse(world);
-            const response = await this.llm.generate(prompt, 120, 0.9, false);
-            if (response && response !== '__ERROR__' && response !== '__RATE_LIMITED__') {
-                const text = response.trim().replace(/^["「『]|["」』]$/g, '').replace(new RegExp(`^${npc.name}[：:]\\s*`), '').trim();
-                if (text) {
-                    const related = [...new Set(best.recent.flatMap(m => m.relatedAgents || []))].slice(0, 3);
-                    npc.memory.add(world.tickCount, world.clock.timeStr, 'reflection', text, 8, related);
-                    world.logMessage('thought', `💭 ${npc.name}${t('的內心：')}${text}`, npc.name);
+                this._countNpcLlmUse(world);
+                const response = await this.llm.generate(prompt, 120, 0.9, false);
+                if (response && response !== '__ERROR__' && response !== '__RATE_LIMITED__') {
+                    const text = response.trim().replace(/^["「『]|["」』]$/g, '').replace(new RegExp(`^${npc.name}[：:]\\s*`), '').trim();
+                    if (text) {
+                        const related = [...new Set(recent.flatMap(m => m.relatedAgents || []))].slice(0, 3);
+                        npc.memory.add(world.tickCount, world.clock.timeStr, 'reflection', text, 8, related);
+                        world.logMessage('thought', `💭 ${npc.name}${t('的內心：')}${text}`, npc.name);
+                    }
                 }
-            }
-        } catch (e) { console.error('[RimTown] dailyReflection LLM failed:', e); }
+            } catch (e) { console.error('[RimTown] dailyReflection LLM failed:', e); }
+        }
+    }
+
+    // v5.35.0 耳語植入(移植 generative_agents whisper):把玩家的一句話轉寫成
+    // NPC 第一人稱的內心念頭,寫入記憶流——他會當成自己的想法,影響之後的對話與反思
+    async plantWhisper(player, npc, text, world) {
+        let thought = '', fx = {};
+        if (this.llm) {
+            try {
+                const pN = this._buildCharacterProfile(npc);
+                const prompt = `${t('你在為模擬遊戲處理「耳語植入」：玩家在村民耳邊低語,這句話會化成村民自己的內心念頭。')}
+${t('村民：')}${pN.name}${t('，')}${pN.age}${t('歲')}${pN.job}${t('，性格')}${pN.traits}${t('。')}
+${t('玩家的耳語：「')}${text}${t('」')}
+
+${t('【任務】把耳語轉寫成這位村民會相信的「第一人稱內心念頭」——像是他自己冒出的想法,符合他的性格與口吻。')}
+${t('【規則】繁體中文（台灣用語），只寫一句話。多疑或與他認知矛盾時可以寫成半信半疑的念頭。不要引號。')}
+${t('最後一行：')}EFFECTS: {"target": "${t('若念頭涉及某位村民寫其姓名,否則空字串')}", "affinity_change": ${t('數字')}(-8${t('到')}8), "romantic_change": ${t('數字')}(0${t('到')}8)}`;
+                const response = await this.llm.generate(prompt, 250, 0.9, true);
+                if (response && response !== '__ERROR__' && response !== '__RATE_LIMITED__') {
+                    const lines = response.trim().split('\n').filter(Boolean);
+                    const fxLine = lines.find(l => l.includes('EFFECTS:'));
+                    if (fxLine) { try { const js = fxLine.indexOf('{'); fx = JSON.parse(fxLine.slice(js)); } catch (e) {} }
+                    thought = lines.filter(l => !l.includes('EFFECTS:')).join(' ').replace(/^["「『]|["」』]$/g, '').trim();
+                }
+            } catch (e) { console.error('[RimTown] whisper LLM failed:', e); }
+        }
+        if (!thought) thought = text; // 沒有 LLM 就原文植入
+        const targets = [];
+        // 念頭涉及的村民:LLM 給的 target,或直接掃描文字中出現的村民名
+        const targetName = typeof fx.target === 'string' ? fx.target.trim() : '';
+        for (const a of Object.values(world.agents)) {
+            if (a.isPlayer || a.isDead || a.agentId === npc.agentId) continue;
+            if (a.name === targetName || thought.includes(a.name)) targets.push(a.name);
+        }
+        npc.memory.add(world.tickCount, world.clock.timeStr, 'whisper', thought, 8, targets.slice(0, 2));
+        // 機械後果:對被提及村民的好感/浪漫漂移
+        const tgt = Object.values(world.agents).find(a => !a.isPlayer && !a.isDead && a.name === (targetName || targets[0]));
+        if (tgt) {
+            const rel = npc.relationships.getOrCreate(tgt.agentId, tgt.name);
+            const affD = Math.max(-8, Math.min(8, Math.round(fx.affinity_change || 0)));
+            const romD = Math.max(0, Math.min(8, Math.round(fx.romantic_change || 0)));
+            rel.modifyAffinity(affD); rel.modifyRomantic(romD);
+        }
+        world.logMessage('whisper', `🤫 ${t('你在')}${npc.name}${t('耳邊低語...一個念頭在他心裡生根了。')}`, player?.name, npc.name);
+        return { thought };
     }
 
     /**
