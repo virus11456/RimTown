@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.31.0
+ * Version: 5.32.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.31.0');
+define('RIMTOWN_VERSION', '5.32.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1175,6 +1175,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.32.0',
+            'date'    => '2026-08-18',
+            'changes' => array(
+                '📖 章節制(劇情先、經營後):第一章只有「人」——村民/聊天/關係網/故事;第二章(繁榮20)開任務/事件/請託/決策;第三章(45)開經濟/商店/農場;第四章(70)開產業/工廠/研究/議會;章節推進有專屬慶祝卡',
+                '🔕 第一章不再被系統轟炸:事件自動結算、決策卡/求助/際遇卡/議會依章節才啟動;關係網開局即可看(這是劇情核心)',
+                '🔢 數值文字化:關係列不再顯示 +43 原始好感(類型即語意)、NPC 需求改一句話、派系團結度改緊密/普通/渙散;首頁繁榮度重新框成「章節進度」——玩家唯一要在意的成長數字',
+            ),
+        ),
         array(
             'version' => '5.31.0',
             'date'    => '2026-08-18',
