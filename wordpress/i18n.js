@@ -2352,6 +2352,12 @@ const I18N = (() => {
         '渴望有人陪': 'longing for company',
         '悶得發慌': 'bored stiff',
         '過得還不錯,沒什麼匱乏。': 'Doing fine — wants for nothing.',
+
+        // ── v5.34.0 逾時代選 / 角落通知 ──
+        '秒後由小鎮自行決定': 's until the town decides on its own',
+        '你遲遲沒有決定,小鎮自行處理了「': 'You never decided, so the town handled "',
+        '」:': '": ',
+        '的請求': "'s request",
     };
 
     function t(text) {
