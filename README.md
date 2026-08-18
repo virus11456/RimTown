@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.33.0.zip` from Releases
+1. Download `rimtown-v5.33.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,13 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.33.1 (2026-08-18)
+
+**修復部署 + 桌面成就通知不擋畫面**
+
+- 🚑 修復 Vercel Hobby 12 Functions 上限導致的部署失敗：成就查詢/解鎖合併為單一端點（rewrite 保持 API 路徑不變）
+- 🏆 桌面版成就通知改右下角小卡（點擊或 6 秒自動消失），手機版暫維持中央卡
 
 ### v5.33.0 (2026-08-18)
 
