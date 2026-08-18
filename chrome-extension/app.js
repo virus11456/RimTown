@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.32.1
-const RIMTOWN_APP_VERSION = '5.32.1';
+// RimTown - Frontend App (WordPress Plugin) v5.33.0
+const RIMTOWN_APP_VERSION = '5.33.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -252,6 +252,16 @@ class RimTownAuth {
         return this._fetch('save/' + townId, 'DELETE');
     }
 
+    // v5.33.0 帳號設定同步:AI 供應商/金鑰/額度隨帳號走(伺服器端加密保存)
+    async getCloudSettings() {
+        const d = await this._fetch('settings');
+        return d.settings || null;
+    }
+
+    async saveCloudSettings(settings) {
+        return this._fetch('settings', 'POST', settings);
+    }
+
     // Achievements
     async getAchievements() {
         const data = await this._fetch('achievements');
@@ -304,6 +314,8 @@ class RimTownApp {
 
     async init() {
         this.setupEventDelegation();
+        // v5.33.0 已登入就先拉帳號雲端的 AI 設定,再據以建立 LLM client
+        if (this.auth.loggedIn) { try { await this._pullCloudSettings(); } catch (e) {} }
         await this.loadSettings();
         // Try to load saved game
         let loaded = false;
@@ -504,6 +516,11 @@ class RimTownApp {
             this._closeAuthModal();
             this._updateAccountButton();
             this.world.logMessage('system', `${t('歡迎回來，')}${this.auth.username}！`);
+            // v5.33.0 登入後同步帳號的 AI 設定(金鑰/供應商/額度);雲端沒有就把本機的推上去
+            this._pullCloudSettings().then(changed => {
+                if (changed) return this._applySettingsFromStorage();
+                this._pushCloudSettings();
+            }).catch(() => {});
             this._syncFromCloud();
             // Show tutorial for new players after login
             if (!localStorage.getItem('rimtown_tutorial_done')) {
@@ -1067,6 +1084,8 @@ class RimTownApp {
             this._hideGuestBanner();
             this._closeAuthModal();
             this._updateAccountButton();
+            // v5.33.0 新帳號:把本機已設定的 AI 金鑰推上帳號雲端
+            this._pushCloudSettings();
             // New user gets a fresh world — clear all old local data
             const oldTowns = this._getTownList();
             oldTowns.forEach(_tw => {
@@ -1403,6 +1422,42 @@ class RimTownApp {
             console.error('[RimTown] Cloud sync error:', e);
             this.world.logMessage('system', t('雲端同步失敗。'));
         }
+    }
+
+    // v5.33.0 帳號設定同步:雲端有值就套用到本機(換裝置登入免重輸金鑰)
+    async _pullCloudSettings() {
+        if (!this.auth.loggedIn) return false;
+        try {
+            const s = await this.auth.getCloudSettings();
+            if (!s) return false;
+            let changed = false;
+            if (s.llm_provider && s.llm_provider !== localStorage.getItem('llm_provider')) { localStorage.setItem('llm_provider', s.llm_provider); changed = true; }
+            if (s.llm_api_key && s.llm_api_key !== localStorage.getItem('llm_api_key')) { localStorage.setItem('llm_api_key', s.llm_api_key); changed = true; }
+            if (s.fallback_groq_key && s.fallback_groq_key !== localStorage.getItem('fallback_groq_key')) { localStorage.setItem('fallback_groq_key', s.fallback_groq_key); changed = true; }
+            if (s.npc_llm_budget != null) localStorage.setItem('rimtown_npc_llm_budget', String(s.npc_llm_budget));
+            if (changed) console.log('[RimTown] AI settings synced from account');
+            return changed;
+        } catch (e) { console.log('[RimTown] cloud settings pull skipped:', e.message); return false; }
+    }
+
+    // 本機設定推上帳號(fire-and-forget;端點不存在或未登入時靜默略過)
+    _pushCloudSettings() {
+        if (!this.auth.loggedIn) return;
+        const payload = {
+            llm_provider: localStorage.getItem('llm_provider') || '',
+            llm_api_key: localStorage.getItem('llm_api_key') || '',
+            fallback_groq_key: localStorage.getItem('fallback_groq_key') || '',
+        };
+        const budget = parseInt(localStorage.getItem('rimtown_npc_llm_budget'), 10);
+        if (Number.isFinite(budget)) payload.npc_llm_budget = budget;
+        this.auth.saveCloudSettings(payload).catch(e => console.log('[RimTown] cloud settings push skipped:', e.message));
+    }
+
+    // 雲端設定套用後重建 LLM client 與對話引擎
+    async _applySettingsFromStorage() {
+        await this.loadSettings();
+        if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
+        this._updateLLMStatus?.();
     }
 
     async _syncFromCloud() {
@@ -3230,6 +3285,8 @@ class RimTownApp {
                 await chrome.storage.local.set(stored);
             }
         } catch(e) {}
+        // v5.33.0 設定推上帳號雲端(換裝置登入自動帶入)
+        this._pushCloudSettings();
     }
 
     _saveSettingsFromTab() {

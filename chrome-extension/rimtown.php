@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.32.1
+ * Version: 5.33.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.32.1');
+define('RIMTOWN_VERSION', '5.33.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1130,6 +1130,34 @@ add_action('rest_api_init', function () {
         },
         'permission_callback' => function () { return is_user_logged_in(); },
     ));
+
+    // v5.33.0 帳號設定同步(AI 供應商/金鑰/額度隨帳號走,換裝置免重輸)
+    register_rest_route($ns, '/settings', array(
+        'methods' => 'GET',
+        'callback' => function () {
+            $settings = get_user_meta(get_current_user_id(), 'rimtown_settings', true);
+            return array('settings' => $settings ?: null);
+        },
+        'permission_callback' => function () { return is_user_logged_in(); },
+    ));
+    register_rest_route($ns, '/settings', array(
+        'methods' => 'POST',
+        'callback' => function ($req) {
+            $user_id = get_current_user_id();
+            $params = $req->get_json_params();
+            $prev = get_user_meta($user_id, 'rimtown_settings', true);
+            if (!$prev) $prev = array();
+            // 空值不覆寫既有欄位(與前端「空欄位不洗掉金鑰」同一原則)
+            if (!empty($params['llm_provider'])) $prev['llm_provider'] = substr(sanitize_text_field($params['llm_provider']), 0, 20);
+            if (!empty($params['llm_api_key'])) $prev['llm_api_key'] = substr(sanitize_text_field($params['llm_api_key']), 0, 300);
+            if (isset($params['fallback_groq_key'])) $prev['fallback_groq_key'] = substr(sanitize_text_field($params['fallback_groq_key']), 0, 300);
+            if (isset($params['npc_llm_budget']) && is_numeric($params['npc_llm_budget'])) $prev['npc_llm_budget'] = max(0, min(999, intval($params['npc_llm_budget'])));
+            $prev['updated_at'] = current_time('mysql');
+            update_user_meta($user_id, 'rimtown_settings', $prev);
+            return array('success' => true);
+        },
+        'permission_callback' => function () { return is_user_logged_in(); },
+    ));
 });
 
 /**
@@ -1175,6 +1203,14 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.33.0',
+            'date'    => '2026-08-18',
+            'changes' => array(
+                '☁️ AI 設定隨帳號同步:API 金鑰/供應商/NPC 對話額度存進帳號(伺服器端 AES-256-GCM 加密),換裝置登入自動帶入,不用重新輸入',
+                '🔁 同步規則:登入時雲端有值就套用到本機;本機儲存設定時自動推上雲端;空值不互相覆寫',
+            ),
+        ),
         array(
             'version' => '5.32.1',
             'date'    => '2026-08-18',
