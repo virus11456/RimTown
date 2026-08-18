@@ -2986,9 +2986,10 @@ class LLMClient {
             return { ok: false, error: 'No provider or API key' };
         }
         try {
+            this._lastError = '';
             const result = await this._callProvider(provider, apiKey, null, 'Say "ok"', 5, 0);
             if (result === '__RATE_LIMITED__') return { ok: true, error: null }; // rate limited means key is valid
-            if (result === '__ERROR__') return { ok: false, error: 'API returned error — check your key' };
+            if (result === '__ERROR__') return { ok: false, error: this._lastError || 'API returned error — check your key' };
             return { ok: true, error: null };
         } catch (err) {
             return { ok: false, error: err.message };
@@ -3071,7 +3072,7 @@ class LLMClient {
 
     async _generateWithGroqFallback(prompt, maxTokens, temperature) {
         this._fallbackActive = true;
-        const result = await this._callProvider('groq', this.fallbackGroqKey, 'qwen/qwen3-32b', prompt, maxTokens, temperature);
+        const result = await this._callProvider('groq', this.fallbackGroqKey, 'llama-3.3-70b-versatile', prompt, maxTokens, temperature);
         if (result === '__RATE_LIMITED__' || result === '__ERROR__') return '';
         return this._stripThinkTags(result);
     }
@@ -3083,7 +3084,8 @@ class LLMClient {
             openai: { url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o-mini' },
             gemini: { url: `https://generativelanguage.googleapis.com/v1beta/models/${model||'gemini-2.5-flash'}:generateContent` },
             deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: model || 'deepseek-chat' },
-            groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: model || 'qwen/qwen3-32b' },
+            // v5.33.2 Groq 預設改用正式版模型(qwen3-32b 為 preview 已下架,舊預設會 404)
+            groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: model || 'llama-3.3-70b-versatile' },
             together: { url: 'https://api.together.xyz/v1/chat/completions', model: model || 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo' },
             minimax: { url: 'https://api.minimaxi.com/v1/text/chatcompletion_v2', model: model || 'MiniMax-M2.5' },
         };
@@ -3163,7 +3165,13 @@ class LLMClient {
                     body: JSON.stringify({ model:cfg.model, max_tokens:maxTokens, temperature, messages:[{role:'user',content:prompt}] }),
                 });
                 if (res.status === 429) return '__RATE_LIMITED__';
-                if (!res.ok) return '__ERROR__';
+                // v5.33.2 記錄真實錯誤(HTTP 狀態 + API 訊息),測試連線時能顯示原因而非籠統「檢查金鑰」
+                if (!res.ok) {
+                    try { const eb = await res.json(); this._lastError = `HTTP ${res.status}${eb?.error?.message ? ': ' + eb.error.message : ''}`; }
+                    catch (e2) { this._lastError = 'HTTP ' + res.status; }
+                    console.error('[RimTown LLM]', provider, this._lastError);
+                    return '__ERROR__';
+                }
                 const data = await res.json();
                 const content = data.choices?.[0]?.message?.content || '';
                 console.log('[RimTown LLM] Response:', res.status, '| content length:', content.length, '| error:', data.error?.message || 'none');
