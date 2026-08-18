@@ -4578,10 +4578,25 @@ class FactionSystem {
         if (this._daysSinceCheck < 3) return; // check every 3 days
         this._daysSinceCheck = 0;
 
+        this._dedupeFactions(); // v5.35.2 合併同型重複派系(舊版允許同名×2,顯示成兩個「學者聯盟」)
         this._tryFormFactions(world);
         this._updateCohesion(world);
         this._tryFactionEvents(world);
         this._cleanupDeadFactions(world);
+    }
+
+    // v5.35.2 同型派系名字相同,重複存在會顯示成兩個同名派系;合併成一個(保留較早的,成員取聯集)
+    _dedupeFactions() {
+        const byType = {};
+        for (const [id, f] of Object.entries(this.factions)) {
+            const kept = byType[f.type];
+            if (kept) {
+                f.members.forEach(m => kept.addMember(m));
+                delete this.factions[id];
+            } else {
+                byType[f.type] = f;
+            }
+        }
     }
 
     _tryFormFactions(world) {
@@ -4589,7 +4604,7 @@ class FactionSystem {
         const existingTypes = Object.values(this.factions).map(f => f.type);
 
         for (const [type, def] of Object.entries(FACTION_TYPES)) {
-            if (existingTypes.filter(t => t === type).length >= 2) continue; // max 2 of same type
+            if (existingTypes.includes(type)) continue; // v5.35.2 同型派系最多 1 個(同名重複會讓玩家混亂)
 
             let candidates = [];
             switch (def.formCondition) {
