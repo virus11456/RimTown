@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.33.2
+ * Version: 5.33.3
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.33.2');
+define('RIMTOWN_VERSION', '5.33.3');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,13 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.33.3',
+            'date'    => '2026-08-18',
+            'changes' => array(
+                '🔄 Groq 模型不再寫死:自動查詢你的金鑰當下可用的模型清單並挑選(偏好 llama 系列),404 時自動重查換模型重試;前端與伺服器 AI(/api/chat)都套用',
+            ),
+        ),
         array(
             'version' => '5.33.2',
             'date'    => '2026-08-18',
