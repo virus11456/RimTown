@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.33.0
-const RIMTOWN_APP_VERSION = '5.33.0';
+// RimTown - Frontend App (WordPress Plugin) v5.33.1
+const RIMTOWN_APP_VERSION = '5.33.1';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1541,6 +1541,25 @@ class RimTownApp {
 
     _showAchievementToast(def) {
         this.bgm?.sfx?.('coin');
+        // v5.33.1 桌面版:成就改右下角非阻擋 toast,不再硬控整個畫面;手機版暫維持中央卡
+        if (window.innerWidth > 768) {
+            let host = document.getElementById('achv-toast-host');
+            if (!host) {
+                host = document.createElement('div');
+                host.id = 'achv-toast-host';
+                host.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:9500;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none';
+                document.body.appendChild(host);
+            }
+            const el = document.createElement('div');
+            el.style.cssText = 'display:flex;align-items:center;gap:10px;background:rgba(22,22,32,0.95);border:1px solid rgba(245,197,66,0.45);border-radius:10px;padding:10px 14px;max-width:320px;box-shadow:0 4px 16px rgba(0,0,0,0.4);opacity:0;transform:translateY(8px);transition:opacity 0.3s,transform 0.3s;pointer-events:auto;cursor:pointer';
+            el.innerHTML = `<span style="font-size:1.6rem">${def.icon}</span><span><span style="display:block;color:#f5c542;font-size:0.72rem;font-weight:bold">🏆 ${t('成就解鎖！')}</span><span style="display:block;color:#fff;font-size:0.85rem;font-weight:bold">${def.name}</span><span style="display:block;color:rgba(255,255,255,0.65);font-size:0.68rem">${def.desc}</span></span>`;
+            host.appendChild(el);
+            requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
+            const remove = () => { el.style.opacity = '0'; el.style.transform = 'translateY(8px)'; setTimeout(() => el.remove(), 350); };
+            el.addEventListener('click', remove);
+            setTimeout(remove, 6000);
+            return;
+        }
         this._showCenterNotification({
             icon: def.icon,
             title: t('成就解鎖！'),
