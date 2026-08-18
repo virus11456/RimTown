@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.35.2
-const RIMTOWN_APP_VERSION = '5.35.2';
+// RimTown - Frontend App (WordPress Plugin) v5.35.3
+const RIMTOWN_APP_VERSION = '5.35.3';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -3758,7 +3758,11 @@ class RimTownApp {
                 case 'story-npc': { const ag = this.world?.agents?.[val]; if (ag) this._showNpcCard(val); break; } // v5.31.0 故事流→人物卡
                 case 'firstday-skip': this._dismissFirstDay(); break;
                 case 'show-identity': this._showTownIdentity(); break;
-                case 'goto-tab': this.activeTab = val; this._updateTabHighlight?.(val); this.state = this.world.getState(); this.renderSidebar(); break;
+                case 'goto-tab': {
+                    // v5.35.3 手機版:開浮動卡才看得到面板
+                    if (this._kairoReady && window.innerWidth <= 768) this._kairoCardOpen = true;
+                    this.activeTab = val; this._updateTabHighlight?.(val); this.state = this.world.getState(); this.renderSidebar(); break;
+                }
                 // Custom NPC
                 case 'show-custom-npc': this._showCustomNPCModal(); break;
                 case 'create-custom-npc': this._createCustomNPC(); break;
@@ -5116,6 +5120,8 @@ class RimTownApp {
             else if (act === 'detail') {
                 this._hideNpcCard();
                 this.selectedAgent = agentId;
+                // v5.35.3 手機版:面板要靠浮動卡(_kairoCardOpen)才會顯示,否則點了沒反應
+                if (this._kairoReady && window.innerWidth <= 768) this._kairoCardOpen = true;
                 this.activeTab = 'detail';
                 this._updateTabHighlight('detail');
                 this.renderSidebar();
@@ -6234,6 +6240,7 @@ class RimTownApp {
         if (it.npcId && this.world?.agents?.[it.npcId]) { this._showNpcCard(it.npcId); return; }
         if (it.tab) {
             if (this._isTabLocked?.(it.tab)) { this._lockedAlert(it.tab); return; }
+            if (this._kairoReady && window.innerWidth <= 768) this._kairoCardOpen = true; // v5.35.3 手機版開浮動卡
             this.activeTab = it.tab; this._updateTabHighlight?.(it.tab);
             this.state = this.world.getState(); this.renderSidebar();
         }
