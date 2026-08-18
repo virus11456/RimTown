@@ -735,6 +735,26 @@ body.rimtown-page .wp-block-post-title {
     background: var(--accent-light);
 }
 
+/* v5.35.1 調情/告白按鈕:原本沒有樣式,落回瀏覽器預設白底(白字看不見) */
+.btn-flirt,
+.btn-propose {
+    margin-top: 6px;
+    padding: 4px 12px;
+    background: #d64d7a;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+.btn-propose {
+    background: #b0498f;
+}
+.btn-flirt:hover,
+.btn-propose:hover {
+    filter: brightness(1.15);
+}
+
 /* Chat panel - Messaging App Style */
 
 /* Contact list */
