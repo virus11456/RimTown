@@ -2383,6 +2383,15 @@ const I18N = (() => {
         '物資短缺': 'Supply shortage',
         '天氣農作影響': 'Weather farm effect',
         '天氣心情影響': 'Weather mood effect',
+
+        // ── v5.35.0 耳語 / 內心豐富化 ──
+        '耳語': 'Whisper',
+        '在他心裡種下一個念頭——他會當成自己的想法,影響之後的言行': "Plant a thought in their mind — they'll believe it's their own",
+        '🤫 低聲說出你要植入的念頭...': '🤫 Whisper the thought you want to plant...',
+        '關閉對話': 'Close conversation',
+        '若有所思,喃喃自語': ' murmurs thoughtfully',
+        '耳邊低語...一個念頭在他心裡生根了。': "'s ear... a thought has taken root.",
+        '你在': 'You whisper in ',
     };
 
     function t(text) {

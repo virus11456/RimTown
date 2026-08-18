@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.34.2.zip` from Releases
+1. Download `rimtown-v5.35.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,14 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.35.0 (2026-08-18)
+
+**耳語慫恿＋村民內心活動豐富化**
+
+- 🤫 耳語（generative_agents whisper 移植）：聊天「耳語」意圖鈕，一句話被轉寫成村民自己的內心念頭植入記憶流，影響後續對話、反思與對他人的好感／心動
+- 💭 內心豐富化：每人每天人際想法＋生活想法（夢想/暗戀/天氣/祭典）＋昨日印象；LLM 深度反思每天最多 3 位
+- ✕ 聊天視窗加關閉鈕，不再擋住聯絡人清單
 
 ### v5.34.2 (2026-08-18)
 
