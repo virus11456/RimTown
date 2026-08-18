@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.31.0.zip` from Releases
+1. Download `rimtown-v5.32.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,14 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.32.0 (2026-08-18)
+
+**重構 Phase 2：章節制（劇情先、經營後）＋數值文字化**
+
+- 📖 四章節進程：初來乍到（只有人與故事）→ 小鎮的一份子（繁榮20：任務/事件/請託/決策）→ 安家立業（45：經濟/商店/農場）→ 小鎮的支柱（70：產業/工廠/研究/議會）
+- 🔕 第一章不被系統轟炸：事件自動結算，互動卡片依章節啟動；關係網開局即看
+- 🔢 數值文字化：關係不再顯示原始好感數字、NPC 需求一句話、團結度文字化；繁榮度重新框成「章節進度」
 
 ### v5.31.0 (2026-08-18)
 

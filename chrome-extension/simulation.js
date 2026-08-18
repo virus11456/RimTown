@@ -5866,7 +5866,8 @@ class World {
             if (event) {
                 this.logMessage('event', `[${event.severity.toUpperCase()}] ${event.name}: ${event.description}`);
                 // v4.0: Offer player a choice for significant events
-                if (event.severity !== 'minor' && this.eventChoice) {
+                // v5.32.0 第二章(繁榮 20)起才把事件應對交給玩家,第一章自動結算不打擾
+                if (event.severity !== 'minor' && this.eventChoice && (this.prosperity?.prosperity || 0) >= 20) {
                     this.eventChoice.offerChoice(event, this);
                 }
                 // Only auto-apply mood if no choice was offered
@@ -5917,13 +5918,15 @@ class World {
             if (this.lifeGoals) this.lifeGoals.dailyUpdate(this); // v5.4.0
             if (this.questSystem) this.questSystem.checkProgress(this);
             // v4.0 systems
-            this.dailyDecision.dailyUpdate(this);
-            this.rogueCards.dailyUpdate(this); // v5.28.0 際遇卡每日抽
+            // v5.32.0 章節門檻:互動卡片第二章(繁榮 20)起、議會第四章(繁榮 70)起才啟動
+            const chapterPros = this.prosperity?.prosperity || 0;
+            if (chapterPros >= 20) this.dailyDecision.dailyUpdate(this);
+            if (chapterPros >= 20) this.rogueCards.dailyUpdate(this); // v5.28.0 際遇卡每日抽
             this.dailyDecision.processFollowups(this);
-            this.npcHelp.dailyUpdate(this);
+            if (chapterPros >= 20) this.npcHelp.dailyUpdate(this);
             this.reputationSystem.dailyUpdate(this);
             this.weather.dailyUpdate(this);
-            this.council.dailyUpdate(this);
+            if (chapterPros >= 70) this.council.dailyUpdate(this);
             // AI Daily News (async, fire-and-forget)
             this.dailyNews.generateNewspaper(this).catch(e => console.warn('[DailyNews] Error:', e));
             // v5.31.0 今日焦點:回答「我現在該做什麼、為什麼」(放最後,讓它讀得到當日 pending 狀態)

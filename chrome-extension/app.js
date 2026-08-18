@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.31.0
-const RIMTOWN_APP_VERSION = '5.31.0';
+// RimTown - Frontend App (WordPress Plugin) v5.32.0
+const RIMTOWN_APP_VERSION = '5.32.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -622,15 +622,30 @@ class RimTownApp {
     }
 
     // =====================================================
-    // v4.7.0 系統逐步解鎖(開羅式:隨繁榮度開放功能,降低新手認知負擔)
+    // v5.32.0 章節制解鎖(劇情先、經營後):取代 v4.7.0 的零散功能解鎖
+    // 第一章只有「人」——村民/聊天/關係網/故事;經營系統依章節逐步開啟
     // =====================================================
+    _chapterDefs() {
+        return [
+            { n: 1, need: 0,  icon: '🌱', name: t('初來乍到'),   desc: t('認識村民,聊天,看見他們的愛恨與記憶。這座小鎮會記得你做過的事。') },
+            { n: 2, need: 20, icon: '🤝', name: t('小鎮的一份子'), desc: t('村民開始信任你:任務、事件應對、村民請託與每日決策向你敞開。') },
+            { n: 3, need: 45, icon: '🏡', name: t('安家立業'),   desc: t('你有能力參與小鎮的經濟了:商店、農場、產業。') },
+            { n: 4, need: 70, icon: '🏛️', name: t('小鎮的支柱'),  desc: t('小鎮的未來由你塑造:工廠、研究、建築升級、議會。') },
+        ];
+    }
+    currentChapter() {
+        const pros = this.state?.prosperity?.prosperity || 0;
+        const chs = this._chapterDefs();
+        let cur = chs[0];
+        for (const c of chs) if (pros >= c.need) cur = c;
+        return cur;
+    }
     _unlockDefs() {
         return [
-            { key: 'economy',      need: 12, icon: '💰', label: t('經濟') },
+            { key: 'events',       need: 20, icon: '📰', label: t('事件') },
             { key: 'achievements', need: 20, icon: '🏆', label: t('成就') },
-            { key: 'events',       need: 28, icon: '📰', label: t('事件') },
-            { key: 'relmap',       need: 28, icon: '💞', label: t('關係網') },
-            { key: 'industry',     need: 38, icon: '🏭', label: t('產業') },
+            { key: 'economy',      need: 45, icon: '💰', label: t('經濟') },
+            { key: 'industry',     need: 70, icon: '🏭', label: t('產業') },
         ];
     }
 
@@ -655,17 +670,21 @@ class RimTownApp {
                 if (!firstRun) newly.push(d);
             }
         }
+        // v5.32.0 章節推進通知(取代零散的功能解鎖通知)
+        const curCh = this.currentChapter();
+        const prevCh = st._chapter || 1;
+        if (curCh.n > prevCh) st._chapter = curCh.n;
         try { localStorage.setItem(stKey, JSON.stringify(st)); } catch (e) {}
         this._unlockCache = st;
         this._updateTabLocks();
-        if (newly.length) {
+        if (curCh.n > prevCh && !firstRun) {
             this.bgm?.sfx?.('coin');
             this._showCenterNotification({
-                icon: '🎉',
-                title: t('新功能解鎖!'),
-                name: newly.map(d => `${d.icon} ${d.label}`).join('、'),
-                desc: t('小鎮的發展開啟了新的可能!'),
-                autoDismiss: 6000,
+                icon: curCh.icon,
+                title: `${t('第')}${curCh.n}${t('章:')}${curCh.name}`,
+                name: newly.length ? newly.map(d => `${d.icon} ${d.label}`).join('、') : '',
+                desc: curCh.desc,
+                autoDismiss: 0,
             });
         }
     }
@@ -680,7 +699,9 @@ class RimTownApp {
 
     _lockedAlert(key) {
         const def = this._unlockDefs().find(d => d.key === key);
-        if (def) this._gameAlert(`${def.icon}「${def.label}」${t('將在繁榮度達到')} ${def.need} ${t('時解鎖!先和村民打好關係、完成任務吧。')}`, '🔒');
+        if (!def) return;
+        const ch = this._chapterDefs().find(c => c.need === def.need);
+        this._gameAlert(`${def.icon}「${def.label}」${t('會在')}${ch ? `${t('第')}${ch.n}${t('章「')}${ch.name}${t('」')}` : ''}${t('開啟。先專心和村民相處吧——關係好了,小鎮自然會成長。')}`, '🔒');
     }
 
     // =====================================================
@@ -6162,6 +6183,14 @@ class RimTownApp {
             <span class="town-info-pop">👤 ${popCount}${travelText}</span>
             <span class="town-info-clock">${clock.time_str || ''}</span>
         </div>`;
+        // v5.32.0 章節徽章:把繁榮度重新框成「章節進度」——這是玩家唯一需要在意的成長數字
+        const curCh = this.currentChapter();
+        const nextCh = this._chapterDefs().find(c => c.n === curCh.n + 1);
+        const prosNow = this.state?.prosperity?.prosperity || 0;
+        html += `<div class="town-identity" style="cursor:default">
+            <span class="ti-badge">${curCh.icon} ${t('第')}${curCh.n}${t('章')}·${curCh.name}</span>
+            ${nextCh ? `<span class="ti-desc">${t('小鎮成長')} ${Math.min(prosNow, nextCh.need)}/${nextCh.need} → ${nextCh.icon}${nextCh.name}</span>` : `<span class="ti-desc">${t('小鎮已完全成熟')}</span>`}
+        </div>`;
         // v5.19.0 城鎮身分:小鎮長成的路線,點一下看它是怎麼形成的
         const ident = this.state.townIdentity;
         if (ident && ident.route) {
@@ -6334,7 +6363,17 @@ class RimTownApp {
             <div class="detail-section"><h3>${t('感情狀態')}</h3>
                 <p style="font-size:0.8rem">${loveStatus}</p></div>
             ${this.selectedAgent === 'player' ? this._renderPlayerJobPanel(agent) : ''}
-            <div class="detail-section"><h3>${t('需求')}</h3>${makeBar(t('飢餓'),needs.hunger||0)}${makeBar(t('休息'),needs.rest||0)}${makeBar(t('社交'),needs.social||0)}${makeBar(t('舒適'),needs.comfort||0)}${makeBar(t('娛樂'),needs.recreation||0)}</div>
+            ${this.selectedAgent === 'player'
+                ? `<div class="detail-section"><h3>${t('需求')}</h3>${makeBar(t('飢餓'),needs.hunger||0)}${makeBar(t('休息'),needs.rest||0)}${makeBar(t('社交'),needs.social||0)}${makeBar(t('舒適'),needs.comfort||0)}${makeBar(t('娛樂'),needs.recreation||0)}</div>`
+                : `<div class="detail-section"><h3>${t('狀態')}</h3><p style="font-size:0.78rem">${(() => {
+                    // v5.32.0 數值文字化:NPC 需求改為一句話,玩家自己才看數值條
+                    const bits = [];
+                    if ((needs.hunger||0) < 30) bits.push(t('肚子很餓'));
+                    if ((needs.rest||0) < 30) bits.push(t('很疲倦'));
+                    if ((needs.social||0) < 30) bits.push(t('渴望有人陪'));
+                    if ((needs.recreation||0) < 25) bits.push(t('悶得發慌'));
+                    return bits.length ? bits.join(t('、')) + t('。') : t('過得還不錯,沒什麼匱乏。');
+                })()}</p></div>`}
             <div class="detail-section"><h3>${t('技能（總計：')}${agent.skills?.total_level||0}）</h3>${this._renderSkills(agent.skills)}</div>
             <div class="detail-section"><h3>${t('人際關係（')}${relationships.length}）</h3>
                 ${sortedRels.length===0?t('<p style="font-size:0.7rem;color:var(--text-muted)">尚無人際關係</p>'):
@@ -6344,10 +6383,11 @@ class RimTownApp {
                     else if (r.status === 'dating') badge = t('<span class="rel-status-badge rel-dating">💕 交往中</span>');
                     else if (r.status === 'ex') badge = t('<span class="rel-status-badge rel-ex">💔 前任</span>');
                     if (r.is_cheating) badge += t(' <span class="rel-status-badge rel-cheating">🤫 秘密關係</span>');
-                    const romHeart = r.romantic_interest > 0 ? ` <span style="color:#f472b6">&#10084;${r.romantic_interest}</span>` : '';
+                    // v5.32.0 數值文字化:關係類型本身就是好感區間的語意(朋友/摯友/對手…),不再曝露原始數字
+                    const romHeart = r.romantic_interest > 30 ? ' <span style="color:#f472b6">&#10084;</span>' : '';
                     const crushIcon = r.romantic_interest > 30 && !r.status ? t(' <span style="color:#f472b6;font-size:0.75rem">暗戀</span>') : '';
                     return `<div class="relationship-item${r.status?' rel-has-status':''}"><span>${r.target_name} ${badge}${crushIcon}</span>
-                    <span style="color:${r.affinity>0?'var(--positive)':r.affinity<0?'var(--negative)':'var(--text-muted)'}">${r.type}（${r.affinity>0?'+':''}${r.affinity}）${romHeart}</span></div>`;
+                    <span style="color:${r.affinity>0?'var(--positive)':r.affinity<0?'var(--negative)':'var(--text-muted)'}">${r.type}${romHeart}</span></div>`;
                 }).join('')}</div>
             ${this._renderAgentFactions(this.selectedAgent)}
             <div class="detail-section"><h3>${t('近期記憶')}</h3>
@@ -6896,7 +6936,7 @@ class RimTownApp {
                 }
                 html += `<div class="faction-card">
                     <div class="faction-header">${f.icon} <strong>${f.name}</strong>
-                        <span class="faction-cohesion ${cohesionCls}${t('">團結度：')}${Math.round(f.cohesion)}</span></div>
+                        <span class="faction-cohesion ${cohesionCls}${t('">團結度：')}${f.cohesion > 70 ? t('緊密') : f.cohesion < 30 ? t('渙散') : t('普通')}</span></div>
                     <div class="faction-members">${memberNames}</div>
                     ${relHtml ? '<div class="faction-relations">' + relHtml + '</div>' : ''}</div>`;
             });

@@ -2331,6 +2331,27 @@ const I18N = (() => {
         '今天挺平靜的,去找': "A quiet day — go find ",
         '聊聊天吧': ' for a chat',
         '常聊天他會記得你、跟你越來越熟': "Talk often and they'll remember you and grow closer",
+
+        // ── v5.32.0 章節制 / 數值文字化 ──
+        '初來乍到': 'A Stranger Arrives',
+        '小鎮的一份子': 'One of the Town',
+        '安家立業': 'Settling Down',
+        '小鎮的支柱': 'Pillar of the Town',
+        '認識村民,聊天,看見他們的愛恨與記憶。這座小鎮會記得你做過的事。': 'Meet the villagers, chat, and witness their loves, feuds and memories. This town remembers what you do.',
+        '村民開始信任你:任務、事件應對、村民請託與每日決策向你敞開。': 'The villagers begin to trust you: quests, event responses, requests and daily decisions open up.',
+        '你有能力參與小鎮的經濟了:商店、農場、產業。': "You can now take part in the town's economy: shop, farm, industries.",
+        '小鎮的未來由你塑造:工廠、研究、建築升級、議會。': "Shape the town's future: factories, research, building upgrades, the council.",
+        '章:': ': ',
+        '會在': ' opens in ',
+        '章「': ' "',
+        '開啟。先專心和村民相處吧——關係好了,小鎮自然會成長。': '. Focus on the villagers for now — as bonds grow, so does the town.',
+        '小鎮成長': 'Town growth',
+        '小鎮已完全成熟': 'The town is fully grown',
+        '緊密': 'Tight-knit',
+        '渙散': 'Falling apart',
+        '渴望有人陪': 'longing for company',
+        '悶得發慌': 'bored stiff',
+        '過得還不錯,沒什麼匱乏。': 'Doing fine — wants for nothing.',
     };
 
     function t(text) {
