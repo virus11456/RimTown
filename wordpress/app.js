@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.34.0
-const RIMTOWN_APP_VERSION = '5.34.0';
+// RimTown - Frontend App (WordPress Plugin) v5.34.1
+const RIMTOWN_APP_VERSION = '5.34.1';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1534,8 +1534,8 @@ class RimTownApp {
             this.auth.unlockAchievement(key, this.currentTownId).catch(() => {});
         }
 
-        // Show toast
-        this._showAchievementToast(def);
+        // v5.34.1 開局第一輪判定的成就靜默入袋(新地圖開場就達標的一批不洗版),之後的才彈通知
+        if (this._achFirstCheckDone) this._showAchievementToast(def);
         this.world.logMessage('system', `${t('成就解鎖：')}${def.icon} ${def.name}`);
     }
 
@@ -1550,6 +1550,8 @@ class RimTownApp {
                 host.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:9500;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none';
                 document.body.appendChild(host);
             }
+            // v5.34.1 同時最多 3 張,多的擠掉最舊的
+            while (host.childElementCount >= 3) host.firstElementChild.remove();
             const el = document.createElement('div');
             el.style.cssText = 'display:flex;align-items:center;gap:10px;background:rgba(22,22,32,0.95);border:1px solid rgba(245,197,66,0.45);border-radius:10px;padding:10px 14px;max-width:320px;box-shadow:0 4px 16px rgba(0,0,0,0.4);opacity:0;transform:translateY(8px);transition:opacity 0.3s,transform 0.3s;pointer-events:auto;cursor:pointer';
             el.innerHTML = `<span style="font-size:1.6rem">${def.icon}</span><span><span style="display:block;color:#f5c542;font-size:0.72rem;font-weight:bold">🏆 ${t('成就解鎖！')}</span><span style="display:block;color:#fff;font-size:0.85rem;font-weight:bold">${def.name}</span><span style="display:block;color:rgba(255,255,255,0.65);font-size:0.68rem">${def.desc}</span></span>`;
@@ -2170,6 +2172,8 @@ class RimTownApp {
         }
         // 手機版避開底部 tab bar
         host.style.bottom = window.innerWidth <= 768 ? '64px' : '14px';
+        // v5.34.1 同時最多 3 張,多的擠掉最舊的,避免洗版
+        while (host.childElementCount >= 3) host.firstElementChild.remove();
         const el = document.createElement('div');
         el.style.cssText = 'display:flex;align-items:center;gap:10px;background:rgba(22,22,32,0.95);border:1px solid rgba(255,255,255,0.22);border-radius:10px;padding:10px 14px;max-width:min(320px,calc(100vw - 28px));box-shadow:0 4px 16px rgba(0,0,0,0.4);opacity:0;transform:translateY(8px);transition:opacity 0.3s,transform 0.3s;pointer-events:auto;cursor:pointer';
         el.innerHTML = `<span style="font-size:1.5rem">${icon || '🔔'}</span><span><span style="display:block;color:var(--accent,#e94560);font-size:0.72rem;font-weight:bold">${title || ''}</span>${name ? `<span style="display:block;color:#fff;font-size:0.85rem;font-weight:bold">${name}</span>` : ''}${desc ? `<span style="display:block;color:rgba(255,255,255,0.65);font-size:0.68rem">${desc}</span>` : ''}</span>`;
@@ -2460,6 +2464,8 @@ class RimTownApp {
         if (unlockedCount >= 25) this._unlockAchievement('achievement_25');
         if (unlockedCount >= 50) this._unlockAchievement('achievement_50');
         if (unlockedCount >= 96) this._unlockAchievement('achievement_99'); // 96 + the 3 meta = 99
+        // v5.34.1 第一輪判定結束後才開始彈成就通知(開場即達標的一批已靜默入袋)
+        this._achFirstCheckDone = true;
     }
 
     // v5.29.0 重建 ConversationEngine 時保留對話紀錄與節流狀態(對話紀錄要能存檔,不能因改設定而消失)
