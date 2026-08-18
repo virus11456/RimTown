@@ -5926,6 +5926,8 @@ class World {
             this.council.dailyUpdate(this);
             // AI Daily News (async, fire-and-forget)
             this.dailyNews.generateNewspaper(this).catch(e => console.warn('[DailyNews] Error:', e));
+            // v5.31.0 今日焦點:回答「我現在該做什麼、為什麼」(放最後,讓它讀得到當日 pending 狀態)
+            try { this.generateDailyFocus(); } catch (e) { console.warn('[RimTown] daily focus error:', e); }
         }
         Object.values(this.agents).forEach(agent => {
             if (agent.currentLocation === 'exploration') return; // Skip agents on expedition
@@ -5934,6 +5936,69 @@ class World {
         // NPC proactive messaging to player
         this.conversationEngine.tickProactiveMessages(this).catch(e => console.warn('[RimTown] Proactive msg error:', e));
     }
+    // v5.31.0 今日焦點:每天從小鎮當前狀態挑 2-3 個「有理由的具體行動」
+    // 每項 { icon, text, reason, npcId?|tab? } — npcId 點了開資訊卡,tab 點了跳分頁
+    generateDailyFocus() {
+        const items = [];
+        const player = this.agents['player'];
+        const npcOf = (name) => Object.values(this.agents).find(a => !a.isPlayer && !a.isDead && a.name === name);
+        // 1) 有人在等你的回應(最高優先)
+        if (this.npcHelp?.pendingRequest) {
+            const req = this.npcHelp.pendingRequest;
+            items.push({ icon: '🙏', text: `${req.npcName || t('有村民')}${t('正在等你幫忙')}`, reason: t('回應會直接影響他對你的信任'), npcId: req.npcId || null, tab: req.npcId ? null : 'events' });
+        }
+        if (this.eventChoice?.pendingEvent) {
+            items.push({ icon: '⚠️', text: `${t('「')}${this.eventChoice.pendingEvent.name || t('重大事件')}${t('」需要你決定怎麼應對')}`, reason: t('放著不管會自動發展,後果未必是你要的'), tab: 'events' });
+        }
+        if (this.dailyDecision?.pendingDecision && items.length < 2) {
+            items.push({ icon: '🗂️', text: t('有村民來找你商量一件事'), reason: t('今天的選擇會留下長期影響'), tab: 'events' });
+        }
+        // 2) 選舉期
+        if (this.election?.phase === 'campaign') {
+            items.push({ icon: '🗳️', text: t('選舉開跑了!去跟村民聊聊,用「說服」幫你支持的人拉票'), reason: `${t('競選只剩')} ${this.election.campaignDaysLeft} ${t('天')}`, tab: 'events' });
+        } else if (this.election?.phase === 'voting') {
+            items.push({ icon: '🗳️', text: t('投票中!去投下你的一票'), reason: t('你的一票可能改變小鎮未來的政策'), tab: 'events' });
+        }
+        // 3) 昨天的劇情餘波:名場面當事人值得關心
+        const arc = (this.dramaArchive || []).slice(-1)[0];
+        if (arc && items.length < 3) {
+            const sameYear = arc.year === this.clock.year && arc.season === this.clock.season;
+            const dayDiff = sameYear ? this.clock.day - arc.day : 99;
+            if (dayDiff >= 0 && dayDiff <= 1) {
+                const who = npcOf(arc.aName) || npcOf(arc.bName);
+                if (who) items.push({ icon: '🎭', text: `${arc.aName}${t('和')}${arc.bName}${t('之間剛發生大事(')}${arc.title}${t('),去關心一下')}${who.name}`, reason: t('這時候的陪伴最能改變關係'), npcId: who.agentId });
+            }
+        }
+        // 4) 祭典
+        const fest = this.festivals?.activeFestival;
+        if (fest && items.length < 3) {
+            items.push({ icon: fest.icon || '🎪', text: `${t('今天有')}${fest.name}${t('!去會場逛逛、玩攤位')}`, reason: t('祭典期間村民好感更容易提升'), tab: 'events' });
+        }
+        // 5) 好感度接近心動門檻的村民:再推一把
+        if (player && items.length < 3) {
+            const thresholds = [25, 55, 80];
+            let best = null;
+            for (const a of Object.values(this.agents)) {
+                if (a.isPlayer || a.isDead) continue;
+                const aff = a.relationships.relationships['player']?.affinity || 0;
+                for (const th of thresholds) {
+                    if (aff >= th - 6 && aff < th) {
+                        if (!best || aff > best.aff) best = { a, aff, th };
+                    }
+                }
+            }
+            if (best) items.push({ icon: '💗', text: `${t('和')}${best.a.name}${t('的關係就差一點點了,去聊聊天或送個小禮物')}`, reason: t('關係更近時,他會對你說出真心話'), npcId: best.a.agentId });
+        }
+        // 6) 保底:找最好的朋友敘舊
+        if (player && !items.length) {
+            const bf = Object.values(this.agents).filter(a => !a.isPlayer && !a.isDead)
+                .sort((x, y) => (y.relationships.relationships['player']?.affinity || 0) - (x.relationships.relationships['player']?.affinity || 0))[0];
+            if (bf) items.push({ icon: '💬', text: `${t('今天挺平靜的,去找')}${bf.name}${t('聊聊天吧')}`, reason: t('常聊天他會記得你、跟你越來越熟'), npcId: bf.agentId });
+        }
+        this.dailyFocus = { key: `${this.clock.year}-${this.clock.season}-${this.clock.day}`, items: items.slice(0, 3) };
+        return this.dailyFocus;
+    }
+
     getState() {
         return {
             clock: this.clock.toDict(), tick: this.tickCount, paused: this.paused,
@@ -6685,6 +6750,7 @@ class World {
             // v5.29.0 AI 對話紀錄以文字形式持久化(含每則對話全文),反思則隨 agent.memory 一起存
             npcConversationLog: this.conversationEngine.npcConversationLog.slice(-10000).map(c => ({ ...c, dialogue: (c.dialogue || []).map(d => ({ ...d })) })),
             npcLlmUsedToday: this.npcLlmUsedToday || 0,
+            dailyFocus: this.dailyFocus ? { key: this.dailyFocus.key, items: this.dailyFocus.items.map(i => ({ ...i })) } : null, // v5.31.0 今日焦點
             gossip: this.gossipNetwork.activeGossip.slice(-10000),
             townFeed: this.townFeed ? this.townFeed.serialize() : null,
             events: {
@@ -6817,6 +6883,7 @@ class World {
             // v5.29.0 AI 對話紀錄還原(文字形式持久化)
             if (Array.isArray(data.npcConversationLog)) this.conversationEngine.npcConversationLog = data.npcConversationLog;
             this.npcLlmUsedToday = data.npcLlmUsedToday || 0;
+            if (data.dailyFocus) this.dailyFocus = data.dailyFocus; // v5.31.0 今日焦點
 
             // Gossip
             this.gossipNetwork = new GossipNetwork();
