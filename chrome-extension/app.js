@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.30.1
-const RIMTOWN_APP_VERSION = '5.30.1';
+// RimTown - Frontend App (WordPress Plugin) v5.31.0
+const RIMTOWN_APP_VERSION = '5.31.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -3605,6 +3605,8 @@ class RimTownApp {
                 case 'view-newspaper': this._viewNewspaper(parseInt(val)); break;
                 case 'replay-drama': { const arc = this.world?.dramaArchive || this.state?.dramaArchive || []; const s = arc[parseInt(val, 10)]; if (s) this._showDramaScene(s); break; }
                 case 'news-goto': this._newsGoto(val); this._firstDayMark('consequence'); break;
+                case 'focus-go': this._focusGo(val); break; // v5.31.0 今日焦點
+                case 'story-npc': { const ag = this.world?.agents?.[val]; if (ag) this._showNpcCard(val); break; } // v5.31.0 故事流→人物卡
                 case 'firstday-skip': this._dismissFirstDay(); break;
                 case 'show-identity': this._showTownIdentity(); break;
                 case 'goto-tab': this.activeTab = val; this._updateTabHighlight?.(val); this.state = this.world.getState(); this.renderSidebar(); break;
@@ -4929,16 +4931,18 @@ class RimTownApp {
             ].map(([ic, k, v]) => `<div class="nqc-intent-row"><span class="nqc-intent-k">${ic} ${k}</span><span class="nqc-intent-v">${v}</span></div>`).join('');
             intentHtml = `<div class="nqc-intent" style="border-top:1px solid var(--border);margin-top:4px;padding-top:5px">${rows}</div>`;
         }
-        // v5.26.0 肉鴿:核心屬性條(魅力/體魄/智慧/膽識)
+        // v5.31.0 內心第一層:屬性條移到詳情頁,快速卡改放「今日目標 + 最新反思」(這才是這遊戲獨有的)
         let attrHtml = '';
-        const attrs = a.attributes || liveA?.attributes;
-        if (attrs) {
-            const meta = [['charm','✨',t('魅力')],['vigor','💪',t('體魄')],['wit','🧠',t('智慧')],['grit','🔥',t('膽識')]];
-            const cells = meta.map(([k, ic, lb]) => {
-                const v = Math.max(1, Math.min(10, attrs[k] || 5));
-                return `<div class="nqc-attr-cell"><span class="nqc-attr-lb">${ic}${lb}</span><span class="nqc-attr-bar"><span class="nqc-attr-fill" style="width:${v * 10}%"></span></span><span class="nqc-attr-val">${v}</span></div>`;
-            }).join('');
-            attrHtml = `<div class="nqc-attr" style="border-top:1px solid var(--border);margin-top:4px;padding-top:5px">${cells}</div>`;
+        if (liveA && !liveA.isPlayer && liveA.generateDailyPlan) {
+            try {
+                const plan = liveA.generateDailyPlan(this.world);
+                const goals = (plan?.goals || []).filter(g => !/^\d/.test(g)).slice(0, 2); // 挑非例行(不以時間開頭)的目標
+                const refl = liveA.memory.getThoughts(1)[0];
+                const bits = [];
+                if (goals.length) bits.push(`<div class="nqc-mood-title">📅 ${t('今天想做')}</div>` + goals.map(g => `<div class="nqc-mood-row"><span>${this._escapeHtml(g)}</span></div>`).join(''));
+                if (refl) bits.push(`<div class="nqc-mood-title" style="margin-top:3px">💭 ${t('心裡的話')}</div><div class="nqc-mood-row"><span>${this._escapeHtml(refl.content)}</span></div>`);
+                if (bits.length) attrHtml = `<div class="nqc-mood" style="border-top:1px solid var(--border);margin-top:4px;padding-top:5px">${bits.join('')}</div>`;
+            } catch (e) {}
         }
         const nudged = this.world?.lifeGoals?.getGoal?.(agentId)?._nudged;
         card.innerHTML = `
@@ -6021,6 +6025,87 @@ class RimTownApp {
     _newsCatIcon(cat) {
         return { gossip:'💬', drama:'🔥', milestone:'🌟', social:'🤝', lifecycle:'🌱', building:'🏗️', exploration:'🗺️', event:'⚡', politics:'🗳️', relationship:'💕' }[cat] || '📌';
     }
+    // v5.31.0 今日焦點:回答「我現在該做什麼、為什麼」——每天 2-3 個可點的具體行動
+    _renderDailyFocus() {
+        let focus = this.world?.dailyFocus;
+        const clock = this.world?.clock;
+        const key = clock ? `${clock.year}-${clock.season}-${clock.day}` : '';
+        if ((!focus || focus.key !== key) && this.world?.generateDailyFocus) {
+            try { focus = this.world.generateDailyFocus(); } catch (e) { focus = null; }
+        }
+        if (!focus?.items?.length) return '';
+        const rows = focus.items.map((it, i) => `
+            <button class="headline-row" data-action="focus-go" data-val="${i}">
+                <span class="headline-ic">${it.icon}</span>
+                <span class="headline-text">${this._escapeHtml(it.text)}<span style="display:block;font-size:0.65rem;color:var(--text-muted);margin-top:1px">${this._escapeHtml(it.reason || '')}</span></span>
+                <span class="headline-go">›</span>
+            </button>`).join('');
+        return `<div class="town-headlines" style="border-left:3px solid var(--accent)">
+            <div class="headlines-title"><span>🎯 ${t('今日焦點')}</span></div>
+            ${rows}
+        </div>`;
+    }
+
+    _focusGo(idx) {
+        const it = this.world?.dailyFocus?.items?.[parseInt(idx, 10)];
+        if (!it) return;
+        if (it.npcId && this.world?.agents?.[it.npcId]) { this._showNpcCard(it.npcId); return; }
+        if (it.tab) {
+            if (this._isTabLocked?.(it.tab)) { this._lockedAlert(it.tab); return; }
+            this.activeTab = it.tab; this._updateTabHighlight?.(it.tab);
+            this.state = this.world.getState(); this.renderSidebar();
+        }
+    }
+
+    // v5.31.0 今天的故事:把最獨特的記憶流/反思/AI 對話拉到首頁第一層
+    _renderStoryFeed() {
+        if (!this.world) return '';
+        const w = this.world;
+        const dayStart = w.tickCount - (w.clock.hour * 4 + Math.floor(w.clock.minute / 15));
+        const rows = [];
+        const npcs = Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead);
+        // 名場面(今天)
+        const arc = (w.dramaArchive || []).slice(-2);
+        arc.forEach((s, i) => {
+            if (s.year === w.clock.year && s.season === w.clock.season && Math.abs(w.clock.day - s.day) <= 1) {
+                const realIdx = (w.dramaArchive || []).length - arc.length + i;
+                rows.push({ icon: s.icon || '🎭', text: `${s.title}:${s.aName} × ${s.bName}`, action: 'replay-drama', val: String(realIdx) });
+            }
+        });
+        // 反思(今天):村民的內心話
+        for (const npc of npcs) {
+            const refl = npc.memory.entries.filter(e => e.category === 'reflection' && e.tick >= dayStart).slice(-1)[0];
+            if (refl) rows.push({ icon: '💭', text: `${npc.name}:${refl.content}`, action: 'story-npc', val: npc.agentId });
+            if (rows.length >= 6) break;
+        }
+        // 重大關係事件(今天,重要度>=9:交往/結婚/分手/背叛)
+        if (rows.length < 6) {
+            for (const npc of npcs) {
+                const big = npc.memory.entries.filter(e => e.category === 'relationship' && e.tick >= dayStart && e.importance >= 9).slice(-1)[0];
+                if (big) rows.push({ icon: '💥', text: `${npc.name}:${big.content}`, action: 'story-npc', val: npc.agentId });
+                if (rows.length >= 6) break;
+            }
+        }
+        // AI 生成的村民對話(今天,最近 2 場)
+        const convos = (w.conversationEngine?.npcConversationLog || []).slice(-30).filter(c => c.llm).slice(-2);
+        for (const c of convos) {
+            if (rows.length >= 6) break;
+            rows.push({ icon: '✨', text: `${c.agentA} & ${c.agentB}:${c.summary}`, action: 'story-npc', val: c.agentAId });
+        }
+        if (!rows.length) return '';
+        const html = rows.slice(0, 6).map(r => `
+            <button class="headline-row" data-action="${r.action}" data-val="${this._escapeHtml(r.val)}">
+                <span class="headline-ic">${r.icon}</span>
+                <span class="headline-text">${this._escapeHtml(r.text)}</span>
+                <span class="headline-go">›</span>
+            </button>`).join('');
+        return `<div class="town-headlines">
+            <div class="headlines-title"><span>📖 ${t('今天的故事')}</span>
+                <button class="headlines-more" data-action="goto-tab" data-val="records">${t('更多')} ›</button></div>
+            ${html}
+        </div>`;
+    }
+
     // v5.17.0 今日頭條:把最新一期日報的重點事件做成可點的情境入口,擺在首頁最上方
     _renderTownHeadlines() {
         const papers = this.state?.dailyNews?.newspapers || [];
@@ -6086,6 +6171,10 @@ class RimTownApp {
                 <span class="ti-go">›</span>
             </div>`;
         }
+        // v5.31.0 今日焦點:先回答「我現在該做什麼」,再看故事與頭條
+        html += this._renderDailyFocus();
+        // v5.31.0 今天的故事:記憶流/反思/名場面/AI 對話的精華,首頁第一層
+        html += this._renderStoryFeed();
         // v5.17.0 今日頭條:日報成為首頁第一眼看到的內容,點頭條直達當事人/相關分頁
         html += this._renderTownHeadlines();
         // Player card at top
@@ -6239,7 +6328,8 @@ class RimTownApp {
                 <p style="font-size:0.75rem;margin-top:6px">${personality.background||''}</p>${chatBtn}</div>
             <div class="detail-section"><h3>${t('性格')}</h3>
                 ${(personality.traits||[]).map(t=>`<span class="trait-tag">${TRAIT_LABELS[t]||t}</span>`).join('')}
-                <div style="margin-top:4px;font-size:0.7rem;color:var(--text-secondary)">${t('價值觀：')}${(personality.values||[]).join('、')}</div></div>
+                <div style="margin-top:4px;font-size:0.7rem;color:var(--text-secondary)">${t('價值觀：')}${(personality.values||[]).join('、')}</div>
+                ${agent.attributes && Object.keys(agent.attributes).length ? `<div class="nqc-attr" style="margin-top:6px">${[['charm','✨',t('魅力')],['vigor','💪',t('體魄')],['wit','🧠',t('智慧')],['grit','🔥',t('膽識')]].map(([k,ic,lb]) => { const v = Math.max(1, Math.min(10, agent.attributes[k] || 5)); return `<div class="nqc-attr-cell"><span class="nqc-attr-lb">${ic}${lb}</span><span class="nqc-attr-bar"><span class="nqc-attr-fill" style="width:${v*10}%"></span></span><span class="nqc-attr-val">${v}</span></div>`; }).join('')}</div>` : ''}</div>
             ${personaHtml}
             <div class="detail-section"><h3>${t('感情狀態')}</h3>
                 <p style="font-size:0.8rem">${loveStatus}</p></div>
