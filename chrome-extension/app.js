@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.29.3
-const RIMTOWN_APP_VERSION = '5.29.3';
+// RimTown - Frontend App (WordPress Plugin) v5.30.0
+const RIMTOWN_APP_VERSION = '5.30.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -6212,6 +6212,27 @@ class RimTownApp {
             return b.affinity - a.affinity;
         });
 
+        // v5.30.0 人物狀態頁(generative_agents 式):生活作息/近況/今日目標/今日足跡
+        let personaHtml = '';
+        const liveAgent = this.world?.agents?.[this.selectedAgent];
+        if (liveAgent && !liveAgent.isPlayer && liveAgent.generateDailyPlan) {
+            try {
+                const plan = liveAgent.generateDailyPlan(this.world);
+                const status = liveAgent.getPersonaStatus(this.world);
+                const lifestyle = liveAgent.getLifestyleText();
+                const timeline = liveAgent.getTodayTimeline(this.world, 12);
+                const timeOf = (s) => (String(s).match(/(\d{2}:\d{2})\s*$/) || [])[1] || '';
+                const nowLine = `<div class="memory-item"><span class="memory-time">${t('現在')}</span>${liveAgent.activityLabel} @ ${this._locationLabel(liveAgent.currentLocation)}</div>`;
+                personaHtml = `
+            <div class="detail-section"><h3>🧠 ${t('內心狀態')}</h3>
+                <div style="font-size:0.75rem;margin-bottom:6px"><span style="color:var(--text-secondary)">${t('生活作息：')}</span>${lifestyle}</div>
+                <div style="font-size:0.75rem"><span style="color:var(--text-secondary)">${t('近況：')}</span>${status}</div></div>
+            <div class="detail-section"><h3>📅 ${t('今日目標')}</h3>
+                <ol style="font-size:0.75rem;padding-left:18px;margin:2px 0;line-height:1.6">${plan.goals.map(g => `<li>${g}</li>`).join('')}</ol></div>
+            <div class="detail-section"><h3>🕐 ${t('今日足跡')}</h3>
+                ${nowLine}${timeline.length ? timeline.slice().reverse().map(m => `<div class="memory-item"><span class="memory-time">${timeOf(m.timeStr)}</span>${m.content}</div>`).join('') : `<p style="font-size:0.7rem;color:var(--text-muted)">${t('今天還沒發生什麼事')}</p>`}</div>`;
+            } catch (e) { console.warn('[RimTown] persona state render failed:', e); }
+        }
         container.innerHTML = `<div class="detail-panel visible">
             <div class="detail-section"><h3>${agent.name}（${agent.gender_label === t('男') ? '♂' : agent.gender_label === t('女') ? '♀' : ''}${agent.gender_label} · ${agent.age}${t('歲）')}</h3>
                 <p style="font-size:0.8rem;color:var(--text-secondary)">${agent.job?.title||t('無業')} | ${agent.mood_label||agent.mood_description}</p>
@@ -6219,6 +6240,7 @@ class RimTownApp {
             <div class="detail-section"><h3>${t('性格')}</h3>
                 ${(personality.traits||[]).map(t=>`<span class="trait-tag">${TRAIT_LABELS[t]||t}</span>`).join('')}
                 <div style="margin-top:4px;font-size:0.7rem;color:var(--text-secondary)">${t('價值觀：')}${(personality.values||[]).join('、')}</div></div>
+            ${personaHtml}
             <div class="detail-section"><h3>${t('感情狀態')}</h3>
                 <p style="font-size:0.8rem">${loveStatus}</p></div>
             ${this.selectedAgent === 'player' ? this._renderPlayerJobPanel(agent) : ''}

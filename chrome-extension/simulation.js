@@ -1027,6 +1027,88 @@ class Agent {
         }
         if (thoughts.length) this.currentThought = pickRandom(thoughts);
     }
+
+    // ===== v5.30.0 人物狀態頁(移植 generative_agents 的 persona state) =====
+    // 生活作息:由性格與職業推出的固定節奏(對應原版 lifestyle)
+    getLifestyleText() {
+        const isNightOwl = this.personality.traits.includes('night_owl');
+        const isEarlyBird = this.personality.traits.includes('early_bird');
+        const sleepStart = isNightOwl ? 2 : (isEarlyBird ? 20 : 22);
+        const sleepEnd = isNightOwl ? 9 : (isEarlyBird ? 5 : 6);
+        let s = `${t('約')} ${sleepStart}:00 ${t('上床睡覺,')} ${sleepEnd}:00 ${t('起床')}`;
+        if (this.job) s += `${t('；')}${this.job.workHours[0]}:00–${this.job.workHours[1]}:00 ${t('在')}${this.job.workplace.replace(/_/g,' ')}${t('工作')}`;
+        if (isNightOwl) s += t('。是個夜貓子,深夜才有精神');
+        if (isEarlyBird) s += t('。習慣早睡早起');
+        return s + t('。');
+    }
+
+    // 近況:婚戀/夢想/最新反思/僵局,依當下狀態合成(對應原版 currently)
+    getPersonaStatus(world) {
+        const parts = [];
+        const partner = this.relationships.getPartner();
+        if (partner) parts.push(`${partner.status === 'married' ? t('和') + partner.targetName + t('是夫妻') : t('正在和') + partner.targetName + t('交往')}`);
+        const crushes = this.relationships.getRomanticInterests().filter(r => !r.status);
+        if (!partner && crushes.length) parts.push(`${t('偷偷喜歡著')}${crushes[0].targetName}`);
+        const goal = world?.lifeGoals?.getGoal?.(this.agentId);
+        if (goal && !goal.done) {
+            const def = (typeof LIFE_GOALS !== 'undefined') ? LIFE_GOALS[goal.goalId] : null;
+            if (def) parts.push(`${t('正朝著人生夢想「')}${def.name}${t('」努力(')}${def.stages[goal.stage] || ''}${t(')')}`);
+        }
+        const enemy = Object.values(this.relationships.relationships).filter(r => r.affinity < -30).sort((a,b)=>a.affinity-b.affinity)[0];
+        if (enemy) parts.push(`${t('最近跟')}${enemy.targetName}${t('處得很僵')}`);
+        const reflection = this.memory.getThoughts(1)[0];
+        if (reflection) parts.push(`${t('心裡想著:「')}${reflection.content}${t('」')}`);
+        if (!parts.length) parts.push(t('日子過得平平淡淡,沒什麼特別的事'));
+        return parts.join(t('；')) + t('。');
+    }
+
+    // 今日目標:每天早上依作息+職業+性格+當下的人際/夢想/事件生成(對應原版 daily plan)
+    generateDailyPlan(world) {
+        const key = `${world.clock.year}-${world.clock.season}-${world.clock.day}`;
+        if (this.dailyPlan?.key === key) return this.dailyPlan;
+        const traits = this.personality.traits;
+        const isNightOwl = traits.includes('night_owl');
+        const isEarlyBird = traits.includes('early_bird');
+        const sleepStart = isNightOwl ? 2 : (isEarlyBird ? 20 : 22);
+        const sleepEnd = isNightOwl ? 9 : (isEarlyBird ? 5 : 6);
+        const goals = [];
+        goals.push(`${sleepEnd}:00 ${t('起床,展開新的一天')}`);
+        if (this.job) {
+            const flavor = traits.includes('lazy') ? t('(能摸魚就摸魚)') : traits.includes('hardworking') ? t('(打算多做一點)') : traits.includes('perfectionist') ? t('(每件事都要做到位)') : '';
+            goals.push(`${this.job.workHours[0]}:00 ${t('到')}${this.job.workplace.replace(/_/g,' ')}${t('上工,做')}${this.job.title}${t('的活')}${flavor}`);
+        }
+        // 動態目標:依今天的人際/夢想/祭典/選舉
+        const fest = world.festivals?.activeFestival;
+        if (fest) goals.push(`${t('抽空去逛')}${fest.name}${t(',看看')}${pickRandom(fest.activities)}`);
+        const partner = this.relationships.getPartner();
+        const crushes = this.relationships.getRomanticInterests().filter(r => !r.status);
+        if (partner) goals.push(`${t('傍晚想跟')}${partner.targetName}${t('一起吃飯聊聊今天')}`);
+        else if (crushes.length) goals.push(`${t('想找機會跟')}${crushes[0].targetName}${t('多說幾句話')}`);
+        const enemy = Object.values(this.relationships.relationships).filter(r => r.affinity < -30).sort((a,b)=>a.affinity-b.affinity)[0];
+        if (enemy) goals.push(`${t('盡量避開')}${enemy.targetName}${t(',免得又吵起來')}`);
+        const goal = world?.lifeGoals?.getGoal?.(this.agentId);
+        if (goal && !goal.done) {
+            const def = (typeof LIFE_GOALS !== 'undefined') ? LIFE_GOALS[goal.goalId] : null;
+            if (def) goals.push(`${t('為夢想「')}${def.name}${t('」再努力一點:')}${def.stages[goal.stage] || ''}`);
+        }
+        if (world.election?.phase && world.election.phase !== 'none') goals.push(t('跟人聊聊鎮長選舉,想想要投給誰'));
+        if (this.needs.social < 35) goals.push(t('好一陣子沒跟人好好聊天了,今天想找人說說話'));
+        // 晚間安排依性格
+        if (traits.includes('gossip')) goals.push(t('晚上去酒館打聽今天的八卦'));
+        else if (traits.includes('shy')) goals.push(t('晚上想一個人安靜待著'));
+        else if (traits.includes('curious')) goals.push(t('晚上去圖書館翻翻書'));
+        else goals.push(t('晚上找朋友放鬆一下'));
+        goals.push(`${sleepStart}:00 ${t('回家睡覺')}`);
+        this.dailyPlan = { key, goals };
+        return this.dailyPlan;
+    }
+
+    // 今日足跡:今天實際發生的記憶時間軸(對應原版逐格行程,但記的是真實事件)
+    getTodayTimeline(world, n = 12) {
+        const dayStart = world.tickCount - (world.clock.hour * 4 + Math.floor(world.clock.minute / 15));
+        return this.memory.entries.filter(e => e.tick >= dayStart).slice(-n);
+    }
+
     toDict() {
         return {
             id:this.agentId, name:this.name, age:this.age, gender:this.gender, gender_label:this.genderLabel,
@@ -5817,6 +5899,8 @@ class World {
             // v5.29.0 記憶流每日反思(規則式 + 每天至多 1 次 LLM),並重置 NPC 對話 LLM 額度
             this.conversationEngine.dailyReflection(this).catch(e => console.warn('[RimTown] reflection error:', e));
             this.npcLlmUsedToday = 0;
+            // v5.30.0 每天早上為每位村民生成今日目標(規則式,依性格+人際+夢想+事件)
+            Object.values(this.agents).forEach(a => { if (!a.isPlayer && !a.isDead && a.generateDailyPlan) { try { a.generateDailyPlan(this); } catch (e) {} } });
             this.generateDailyFeedPosts(); // v5.2.0 鎮民動態每日發文
             if (this.clock.day % 7 === 0) this.generateWeeklyDigest(); // v5.3.0 每 7 天小鎮頭條
             this.lifecycle.dailyUpdate(this);
@@ -6583,6 +6667,7 @@ class World {
             _annualMourning: a._annualMourning || [],
             thoughts: (a.thoughts || []).map(t2 => ({ ...t2 })), // v5.15.0 記憶想法
             attributes: { ...(a.attributes || {}) }, // v5.26.0 核心屬性
+            dailyPlan: a.dailyPlan ? { key: a.dailyPlan.key, goals: [...a.dailyPlan.goals] } : null, // v5.30.0 今日目標
         });
         return {
             version: 2,
@@ -6695,6 +6780,7 @@ class World {
                 agent._annualMourning = ad._annualMourning || [];
                 agent.thoughts = Array.isArray(ad.thoughts) ? ad.thoughts : []; // v5.15.0 記憶想法
                 if (ad.attributes && Object.keys(ad.attributes).length) agent.attributes = { ...ad.attributes }; // v5.26.0 核心屬性
+                if (ad.dailyPlan) agent.dailyPlan = ad.dailyPlan; // v5.30.0 今日目標
 
                 // Needs
                 if (ad.needs) { Object.assign(agent.needs, ad.needs); }
