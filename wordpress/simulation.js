@@ -3669,8 +3669,10 @@ class ElectionSystem {
             if (this.resultsDaysLeft <= 0) { this.phase = 'none'; this.active = false; }
             return null;
         }
-        if (!this.active && (day - this.lastElectionDay) >= this._electionCooldown) {
-            if (Math.random() < 0.02) this._startElection(world);
+        // v5.30.1 固定每年秋季第 1 天開選(競選3天→投票2天→公布);防止同年重複
+        if (!this.active && world.clock.season === '秋季' && world.clock.day === 1
+            && (day - this.lastElectionDay) >= 20) {
+            this._startElection(world);
         }
         return null;
     }
