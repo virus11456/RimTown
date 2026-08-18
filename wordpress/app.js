@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.29.2
-const RIMTOWN_APP_VERSION = '5.29.2';
+// RimTown - Frontend App (WordPress Plugin) v5.29.3
+const RIMTOWN_APP_VERSION = '5.29.3';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -6321,7 +6321,7 @@ class RimTownApp {
         const rosterMode = (localStorage.getItem('rimtown_roster_mode') === 'random') ? 'random' : 'scripted';
         html += `<div style="margin-top:4px">
             <div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:4px">🎲 ${t('開新局的村民')}</div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <div class="speed-controls">
                 <button class="btn-speed${rosterMode==='scripted'?' active':''}" data-action="settings-roster" data-val="scripted">📖 ${t('劇本卡司')}</button>
                 <button class="btn-speed${rosterMode==='random'?' active':''}" data-action="settings-roster" data-val="random">🎲 ${t('隨機卡司')}</button>
             </div>
