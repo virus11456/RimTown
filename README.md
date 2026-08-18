@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.28.0.zip` from Releases
+1. Download `rimtown-v5.29.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,15 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.29.0 (2026-08-18)
+
+**LLM 記憶流 + 每日反思 + 混合成本控制（generative_agents 移植）**
+
+- 🧠 記憶流檢索:村民記憶依「時近 + 重要度 + 相關度」加權檢索(移植 generative_agents 的 retrieve),AI 對話帶著最相關的過往記憶,聊完各自寫下一句主觀記憶
+- 💭 每日反思:每晚規則式合成人際想法;每天挑一位記憶最精彩的村民做一次 AI 深度反思
+- 💰 混合成本控制:只有玩家附近(8 格內)的村民對話呼叫 AI,遠處對話走內建模擬照樣寫記憶;「NPC 對話每日 AI 額度」可調(預設 40 次/日),玩家聊天與劇情名場面不受限
+- 📝 AI 對話與反思全文隨存檔保存,重新載入不消失
 
 ### v5.28.0 (2026-07-20)
 

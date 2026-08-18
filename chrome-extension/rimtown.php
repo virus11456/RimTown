@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.28.0
+ * Version: 5.29.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.28.0');
+define('RIMTOWN_VERSION', '5.29.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1175,6 +1175,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.29.0',
+            'date'    => '2026-08-18',
+            'changes' => array(
+                '🧠 LLM 記憶流(移植 generative_agents):村民記憶依「時近+重要度+相關度」加權檢索,AI 對話會帶著最相關的過往記憶,聊完再各自寫下一句主觀記憶,越聊越有連續劇感',
+                '💭 每日反思:村民每晚規則式合成人際想法(常互動對象→朋友/煩人),每天再挑一位「今天最精彩」的村民做一次 AI 深度反思,寫進他的內心',
+                '💰 混合成本控制:只有玩家附近(8 格內)的村民對話才呼叫 AI,遠處對話走內建模擬照樣寫記憶;新增「NPC 對話每日 AI 額度」設定(預設 40 次/日,可設 0 全關),玩家聊天與劇情名場面不受限',
+                '📝 AI 對話/反思全文存檔:村民對話紀錄與反思隨存檔保存,重新載入不再消失',
+            ),
+        ),
         array(
             'version' => '5.28.0',
             'date'    => '2026-07-20',

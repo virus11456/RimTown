@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.28.0
-const RIMTOWN_APP_VERSION = '5.28.0';
+// RimTown - Frontend App (WordPress Plugin) v5.29.0
+const RIMTOWN_APP_VERSION = '5.29.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -347,7 +347,7 @@ class RimTownApp {
             }
         }
         if (this.llmClient) {
-            this.world.conversationEngine = new ConversationEngine(this.llmClient);
+            this.world.conversationEngine = this._makeConversationEngine();
             console.log('[RimTown] ConversationEngine initialized with LLM:', this.llmClient.provider);
         } else {
             console.log('[RimTown] WARNING: No LLM client — conversations will use fallback templates');
@@ -1057,7 +1057,7 @@ class RimTownApp {
             localStorage.removeItem('rimtown_achievements');
             localStorage.removeItem('rimtown_raid_count');
             this.world.reset();
-            if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+            if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
             const townName = `${user}${t('的邊境鎮')}`;
             this.currentTownId = this._generateTownId(townName);
             this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
@@ -1402,7 +1402,7 @@ class RimTownApp {
             // Always load from cloud when logged in
             const saveData = await this.auth.cloudLoad(cloudMatch.town_id);
             if (this.world.loadSave(saveData)) {
-                if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
                 this.currentTownId = cloudMatch.town_id;
                 this.state = this.world.getState();
                 this._generateTileMapLayout();
@@ -2277,6 +2277,18 @@ class RimTownApp {
         if (unlockedCount >= 96) this._unlockAchievement('achievement_99'); // 96 + the 3 meta = 99
     }
 
+    // v5.29.0 重建 ConversationEngine 時保留對話紀錄與節流狀態(對話紀錄要能存檔,不能因改設定而消失)
+    _makeConversationEngine() {
+        const prev = this.world?.conversationEngine;
+        const eng = new ConversationEngine(this.llmClient);
+        if (prev) {
+            eng.npcConversationLog = prev.npcConversationLog;
+            eng._lastNpcLlmTick = prev._lastNpcLlmTick;
+            eng._lastNpcMsgTick = prev._lastNpcMsgTick;
+        }
+        return eng;
+    }
+
     // Hook conversation engine to push speech bubbles to tilemap
     _hookConversationBubbles() {
         // Set up a periodic check since ConversationEngine may be re-created
@@ -2287,6 +2299,15 @@ class RimTownApp {
                     if (this.tileMap) {
                         this.tileMap.addConversationBubble(aId, bId, aName, bName, textA, textB);
                     }
+                };
+                // v5.29.0 混合成本控制:注入「是否在玩家 8 格內」判定(與語音泡泡同範圍)
+                this.world.conversationEngine.isNearPlayer = (agentId) => {
+                    const positions = this.tileMap?.agentPositions;
+                    if (!positions) return false;
+                    const p = positions['player'], a = positions[agentId];
+                    if (!p || !a) return false;
+                    const range = TILE * 8;
+                    return (a.x - p.x) * (a.x - p.x) + (a.y - p.y) * (a.y - p.y) <= range * range;
                 };
             }
         }, 2000);
@@ -2336,7 +2357,7 @@ class RimTownApp {
         try {
             const saveData = await this.auth.cloudLoad(townId);
             if (this.world.loadSave(saveData)) {
-                if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
                 this.currentTownId = townId;
                 this._saveCurrentTown();
                 this.state = this.world.getState();
@@ -2774,7 +2795,7 @@ class RimTownApp {
             try {
                 const saveData = await this.auth.cloudLoad(townId);
                 if (saveData && this.world.loadSave(saveData)) {
-                    if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                    if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
                     this.currentTownId = townId;
                     this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
                     this.state = this.world.getState();
@@ -2792,7 +2813,7 @@ class RimTownApp {
             // Not logged in — use local saves
             this._saveCurrentTown();
             if (this._loadTownById(townId)) {
-                if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
                 this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
                 this.state = this.world.getState();
                 this._generateTileMapLayout();
@@ -2842,7 +2863,7 @@ class RimTownApp {
         }
         this.world.rosterMode = (localStorage.getItem('rimtown_roster_mode') === 'random') ? 'random' : 'scripted'; // v5.27.0 肉鴿隨機開局
         this.world.reset();
-        if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+        if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
         this.currentTownId = this._generateTownId(name);
         if (this.auth.loggedIn) {
             // Save new town to cloud immediately
@@ -3109,14 +3130,14 @@ class RimTownApp {
             || localStorage.getItem('fallback_groq_key') || '';
         if (provider === 'server') {
             this.llmClient = new LLMClient('server', 'server');
-            this.world.conversationEngine = new ConversationEngine(this.llmClient);
+            this.world.conversationEngine = this._makeConversationEngine();
         } else if (provider && provider !== 'none' && apiKey) {
             this.llmClient = new LLMClient(provider, apiKey);
-            this.world.conversationEngine = new ConversationEngine(this.llmClient);
+            this.world.conversationEngine = this._makeConversationEngine();
         } else if (fallbackGroqKey) {
             // No primary AI selected but has fallback → use Groq as primary
             this.llmClient = new LLMClient('groq', fallbackGroqKey);
-            this.world.conversationEngine = new ConversationEngine(this.llmClient);
+            this.world.conversationEngine = this._makeConversationEngine();
         } else {
             this.llmClient = null;
             this.world.conversationEngine = new ConversationEngine();
@@ -3152,6 +3173,9 @@ class RimTownApp {
         const fallbackEl = document.getElementById('fallback-groq-key');
         if (fallbackEl) fallbackEl.value = fallbackKey;
         localStorage.setItem('fallback_groq_key', fallbackKey || '');
+        // v5.29.0 NPC 對話每日 AI 額度
+        const npcBudgetRaw = parseInt(document.getElementById('settings-tab-npcbudget')?.value, 10);
+        if (Number.isFinite(npcBudgetRaw) && npcBudgetRaw >= 0) localStorage.setItem('rimtown_npc_llm_budget', String(Math.min(999, npcBudgetRaw)));
         this.saveSettings(provider, apiKey, speed);
         const langSelect = document.getElementById('lang-select') || document.getElementById('settings-tab-lang');
         if (langSelect) {
@@ -3592,7 +3616,7 @@ class RimTownApp {
                     this._saveCurrentTown();
                     this.world.rosterMode = (localStorage.getItem('rimtown_roster_mode') === 'random') ? 'random' : 'scripted'; // v5.27.0 肉鴿隨機開局
                     this.world.reset();
-                    if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                    if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
                     this.currentTownId = this._generateTownId(name);
                     this._saveCurrentTown(name);
                     this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
@@ -3657,7 +3681,7 @@ class RimTownApp {
             await this.archiveChatHistory();
             this._saveCurrentTown();
             this.world.reset();
-            if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+            if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
             this.currentTownId = this._generateTownId(name);
             this._saveCurrentTown(name);
             this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
@@ -3930,7 +3954,7 @@ class RimTownApp {
                 const text = await file.text();
                 const saveData = JSON.parse(text);
                 if (this.world.loadSave(saveData)) {
-                    if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                    if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
                     this.state = this.world.getState();
                     this._generateTileMapLayout();
                     if (this.tileMap) this.tileMap.agentPositions = {};
@@ -5885,7 +5909,7 @@ class RimTownApp {
 
         // Re-init conversation engine
         if (this.llmClient) {
-            this.world.conversationEngine = new ConversationEngine(this.llmClient);
+            this.world.conversationEngine = this._makeConversationEngine();
         }
 
         // Reset app state
@@ -6291,6 +6315,18 @@ class RimTownApp {
         const aiLabel = isServerAI ? t('🏘️ 小鎮 AI 已啟用（免設定）') : (aiConnected ? 'AI:' + this.llmClient.provider + (this.llmClient.fallbackGroqKey ? t('+備用') : '') : t('AI:未連接'));
         html += t('<div class="econ-section"><h3>🤖 AI 語言模型</h3>');
         html += `<div style="margin-bottom:8px"><span class="llm-status ${aiConnected ? 'connected' : 'disconnected'}">${aiLabel}</span></div>`;
+        // v5.29.0 混合成本控制:NPC 之間的對話只有在玩家附近才用 LLM,並受每日額度限制
+        const existingBudget = document.getElementById('settings-tab-npcbudget');
+        const npcBudget = existingBudget ? existingBudget.value : (localStorage.getItem('rimtown_npc_llm_budget') || '40');
+        const npcUsed = this.world?.npcLlmUsedToday || 0;
+        html += `<div class="setting-group" style="margin-bottom:8px">
+            <label style="font-size:0.82rem;color:var(--text-secondary)">💰 ${t('NPC 對話每日 AI 額度')}</label>
+            <div style="display:flex;gap:6px;align-items:center">
+                <input type="number" id="settings-tab-npcbudget" value="${this._escapeHtml(String(npcBudget))}" min="0" max="999" style="width:80px;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
+                <span style="font-size:0.72rem;color:var(--text-muted)">${t('今日已用')} ${npcUsed} ${t('次')}</span>
+            </div>
+            <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px">${t('只有你附近（8 格內）的村民對話會呼叫 AI；遠處對話走內建模擬並照樣寫入記憶。與你的聊天、劇情名場面不受此額度限制。設 0 可完全關閉 NPC 對話 AI。')}</div>
+        </div>`;
         // 一般玩家不需要看到金鑰設定 → 收進「進階」摺疊區(預設收合)
         html += `<details style="margin-bottom:8px"${provider !== 'server' && provider !== 'none' ? ' open' : ''}>
             <summary style="cursor:pointer;font-size:0.78rem;color:var(--text-secondary);padding:4px 0">⚙️ ${t('進階：自備 AI 金鑰（選用）')}</summary>`;
