@@ -2358,6 +2358,31 @@ const I18N = (() => {
         '你遲遲沒有決定,小鎮自行處理了「': 'You never decided, so the town handled "',
         '」:': '": ',
         '的請求': "'s request",
+
+        // ── v5.34.2 生效中 modifier 標籤 ──
+        '農作加成': 'Farm bonus',
+        '售價加成': 'Sell bonus',
+        '買價優惠': 'Buy discount',
+        '貿易加成': 'Trade bonus',
+        '採礦加成': 'Mining bonus',
+        '採集加成': 'Gathering bonus',
+        '研究加成': 'Research bonus',
+        '技能成長': 'Skill growth',
+        '守衛戰力': 'Guard strength',
+        '移民機率': 'Immigration chance',
+        '離鄉機率': 'Departure chance',
+        '襲擊機率': 'Raid chance',
+        '襲擊強度': 'Raid severity',
+        '野獸襲擊機率': 'Animal raid chance',
+        '疫病機率': 'Plague chance',
+        '風暴機率': 'Storm chance',
+        '乾旱機率': 'Drought chance',
+        '連鎖事件機率': 'Chain event chance',
+        '慶典機率': 'Festival chance',
+        '商隊機率': 'Merchant chance',
+        '物資短缺': 'Supply shortage',
+        '天氣農作影響': 'Weather farm effect',
+        '天氣心情影響': 'Weather mood effect',
     };
 
     function t(text) {
