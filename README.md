@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.33.3.zip` from Releases
+1. Download `rimtown-v5.34.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,13 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.34.0 (2026-08-18)
+
+**事件逾時代選＋資訊通知角落化**
+
+- ⏳ 互動選擇卡（事件應對／每日決策／村民請託／際遇卡）60 秒沒選由小鎮隨機代選；pending 滿一個遊戲日自動結算，事件線不再卡住
+- 🔔 成就、章節推進、故事事件等純資訊通知改右下角小卡（手機版避開底部列）；名場面、AI 日報等完整內容維持中央卡
 
 ### v5.33.3 (2026-08-18)
 

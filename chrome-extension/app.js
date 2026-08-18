@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.33.3
-const RIMTOWN_APP_VERSION = '5.33.3';
+// RimTown - Frontend App (WordPress Plugin) v5.34.0
+const RIMTOWN_APP_VERSION = '5.34.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -2108,12 +2108,31 @@ class RimTownApp {
             html += `</button>`;
         });
         html += '</div>';
+        // v5.34.0 60 秒沒選就由小鎮代選(隨機),事件線不再卡在等玩家
+        html += `<div id="interactive-cd" style="margin-top:8px;font-size:0.68rem;color:var(--text-muted);text-align:center"></div>`;
         card.innerHTML = html;
         overlay.classList.remove('hidden');
+
+        clearInterval(this._interactiveCdTimer);
+        let cdRemain = 60;
+        const cdEl = card.querySelector('#interactive-cd');
+        const cdShow = () => { if (cdEl) cdEl.textContent = `⏳ ${cdRemain} ${t('秒後由小鎮自行決定')}`; };
+        cdShow();
+        this._interactiveCdTimer = setInterval(() => {
+            cdRemain--;
+            if (cdRemain <= 0) {
+                clearInterval(this._interactiveCdTimer);
+                const btns = card.querySelectorAll('.decision-btn');
+                if (btns.length && !overlay.classList.contains('hidden')) btns[Math.floor(Math.random() * btns.length)].click();
+                return;
+            }
+            cdShow();
+        }, 1000);
 
         // Attach button handlers
         card.querySelectorAll('.decision-btn').forEach((el, i) => {
             el.addEventListener('click', () => {
+                clearInterval(this._interactiveCdTimer);
                 overlay.classList.add('hidden');
                 if (buttons[i]?.action) buttons[i].action();
                 this._showNextQueuedNotif();
@@ -2140,8 +2159,31 @@ class RimTownApp {
         });
     }
 
+    // v5.34.0 角落通知:純資訊(無長內容)不再佔用整個版面,改右下角小卡堆疊
+    _showCornerNotice({ icon, title, name, desc }) {
+        let host = document.getElementById('achv-toast-host');
+        if (!host) {
+            host = document.createElement('div');
+            host.id = 'achv-toast-host';
+            host.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:9500;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none';
+            document.body.appendChild(host);
+        }
+        // 手機版避開底部 tab bar
+        host.style.bottom = window.innerWidth <= 768 ? '64px' : '14px';
+        const el = document.createElement('div');
+        el.style.cssText = 'display:flex;align-items:center;gap:10px;background:rgba(22,22,32,0.95);border:1px solid rgba(255,255,255,0.22);border-radius:10px;padding:10px 14px;max-width:min(320px,calc(100vw - 28px));box-shadow:0 4px 16px rgba(0,0,0,0.4);opacity:0;transform:translateY(8px);transition:opacity 0.3s,transform 0.3s;pointer-events:auto;cursor:pointer';
+        el.innerHTML = `<span style="font-size:1.5rem">${icon || '🔔'}</span><span><span style="display:block;color:var(--accent,#e94560);font-size:0.72rem;font-weight:bold">${title || ''}</span>${name ? `<span style="display:block;color:#fff;font-size:0.85rem;font-weight:bold">${name}</span>` : ''}${desc ? `<span style="display:block;color:rgba(255,255,255,0.65);font-size:0.68rem">${desc}</span>` : ''}</span>`;
+        host.appendChild(el);
+        requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
+        const remove = () => { el.style.opacity = '0'; el.style.transform = 'translateY(8px)'; setTimeout(() => el.remove(), 350); };
+        el.addEventListener('click', remove);
+        setTimeout(remove, 8000);
+    }
+
     // Center-screen notification card (like tutorial cards)
     _showCenterNotification({ icon, title, name, desc, content, autoDismiss }) {
+        // v5.34.0 純資訊卡(無完整內容)改角落通知;名場面/日報等長內容維持中央卡
+        if (!content) { this._showCornerNotice({ icon, title, name, desc }); return; }
         // Queue notifications if one is already showing, or if the player is busy (chatting / typing)
         if (!this._centerNotifQueue) this._centerNotifQueue = [];
         const notif = { icon, title, name, desc, content, autoDismiss };

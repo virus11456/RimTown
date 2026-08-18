@@ -5905,6 +5905,8 @@ class World {
         this.tickCount++;
         const timeEvents = this.clock.tick();
         if (timeEvents.includes('new_day')) {
+            // v5.34.0 逾時代選:互動選擇放超過一個遊戲日沒人理,小鎮自行決定,避免卡住事件線
+            this._autoResolveStaleChoices();
             const event = this.events.dailyUpdate(this);
             if (event) {
                 this.logMessage('event', `[${event.severity.toUpperCase()}] ${event.name}: ${event.description}`);
@@ -5982,6 +5984,49 @@ class World {
         // NPC proactive messaging to player
         this.conversationEngine.tickProactiveMessages(this).catch(e => console.warn('[RimTown] Proactive msg error:', e));
     }
+    // v5.34.0 逾時代選:pending 的互動選擇滿一個遊戲日(96 ticks)沒人處理就隨機結算
+    _autoResolveStaleChoices() {
+        const DAY = 96;
+        const pickLog = (what, label) => this.logMessage('event_choice', `⏳ ${t('你遲遲沒有決定,小鎮自行處理了「')}${what}${t('」:')}${label}`);
+        try {
+            const ev = this.eventChoice?.pendingEvent;
+            if (ev && this.tickCount - (ev.timestamp || 0) >= DAY) {
+                const i = randInt(0, ev.choices.length - 1);
+                const label = ev.choices[i]?.label || '';
+                this.eventChoice.resolveChoice(i, this);
+                pickLog(ev.eventName, label);
+            }
+        } catch (e) {}
+        try {
+            const dd = this.dailyDecision?.pendingDecision;
+            const todayKey = `${this.clock.year}-${this.clock.season}-${this.clock.day}`;
+            if (dd && dd.dayKey !== todayKey) {
+                const c = Math.random() < 0.5 ? 'A' : 'B';
+                const label = (c === 'A' ? dd.optionA : dd.optionB)?.label || '';
+                this.dailyDecision.resolveDecision(c, this);
+                pickLog(dd.title, label);
+            }
+        } catch (e) {}
+        try {
+            const hq = this.npcHelp?.pendingRequest;
+            if (hq && hq.tick != null && this.tickCount - hq.tick >= DAY) {
+                const c = Math.random() < 0.5 ? 'A' : 'B';
+                const label = (c === 'A' ? hq.optionA : hq.optionB)?.label || '';
+                this.npcHelp.resolveRequest(c, this);
+                pickLog(`${hq.npcName}${t('的請求')}`, label);
+            }
+        } catch (e) {}
+        try {
+            const rc = this.rogueCards?.pending;
+            if (rc && this.tickCount - (rc.stamp || 0) >= DAY) {
+                const i = randInt(0, rc.choices.length - 1);
+                const label = rc.choices[i]?.label || '';
+                this.rogueCards.resolve(i, this);
+                pickLog(rc.title, label);
+            }
+        } catch (e) {}
+    }
+
     // v5.31.0 今日焦點:每天從小鎮當前狀態挑 2-3 個「有理由的具體行動」
     // 每項 { icon, text, reason, npcId?|tab? } — npcId 點了開資訊卡,tab 點了跳分頁
     generateDailyFocus() {
@@ -8537,6 +8582,7 @@ class NPCHelpSystem {
         const chosen = candidates[Math.floor(Math.random() * candidates.length)];
         this._daysSinceRequest = 0;
         this.pendingRequest = {
+            tick: world.tickCount, // v5.34.0 供逾時代選判斷
             npcId: chosen.npc.agentId,
             npcName: chosen.npc.name,
             type: chosen.type,
