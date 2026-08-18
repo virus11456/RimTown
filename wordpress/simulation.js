@@ -2019,7 +2019,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
         }
         // Store NPC conversation for sidebar viewing
         if (dialogue.length) {
-            this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.agentId, agentBId:agentB.agentId });
+            this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.agentId, agentBId:agentB.agentId, llm:true });
             if (this.npcConversationLog.length > 10000) this.npcConversationLog = this.npcConversationLog.slice(-10000);
             // Notify UI for map speech bubbles
             if (this.onConversation) {

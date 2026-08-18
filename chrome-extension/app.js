@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.29.1
-const RIMTOWN_APP_VERSION = '5.29.1';
+// RimTown - Frontend App (WordPress Plugin) v5.29.2
+const RIMTOWN_APP_VERSION = '5.29.2';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1932,13 +1932,71 @@ class RimTownApp {
         });
     }
 
+    // v5.29.2 玩家忙碌判定:正在跟村民聊天、或正在任何輸入框打字時,事件卡先排隊不打斷
+    _isPlayerBusy() {
+        if (this.activeTab === 'chat' && this.chatTarget) return true;
+        const ae = document.activeElement;
+        if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return true;
+        return false;
+    }
+
+    // 忙碌時把通知排進佇列 + 角落小提示(不擋操作),空閒時由 flusher 補播
+    _queueNotifDeferred(notif) {
+        if (!this._centerNotifQueue) this._centerNotifQueue = [];
+        this._centerNotifQueue.push(notif);
+        this._showNotifBadgeToast();
+        this._startNotifFlusher();
+    }
+
+    _showNotifBadgeToast() {
+        const now = Date.now();
+        if (this._lastNotifToastAt && now - this._lastNotifToastAt < 10000) return; // 10 秒內不重複提示
+        this._lastNotifToastAt = now;
+        let toast = document.getElementById('notif-defer-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'notif-defer-toast';
+            toast.style.cssText = 'position:fixed;right:12px;bottom:64px;z-index:9000;background:rgba(20,20,28,0.92);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:8px 12px;font-size:0.78rem;pointer-events:none;opacity:0;transition:opacity 0.3s';
+            document.body.appendChild(toast);
+        }
+        const n = this._centerNotifQueue?.length || 1;
+        toast.textContent = `📬 ${n} ${t('件小鎮動態,等你忙完再看')}`;
+        toast.style.opacity = '1';
+        clearTimeout(this._notifToastTimer);
+        this._notifToastTimer = setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+    }
+
+    // 關掉一張卡後補播下一張;玩家又在忙就交給 flusher 等空閒再播
+    _showNextQueuedNotif() {
+        if (!this._centerNotifQueue?.length) return;
+        if (this._isPlayerBusy()) { this._startNotifFlusher(); return; }
+        const next = this._centerNotifQueue.shift();
+        setTimeout(() => {
+            if (next._interactive) this._showInteractiveNotification(next);
+            else this._showCenterNotification(next);
+        }, 300);
+    }
+
+    _startNotifFlusher() {
+        if (this._notifFlusher) return;
+        this._notifFlusher = setInterval(() => {
+            if (!this._centerNotifQueue?.length) return;
+            const overlay = document.getElementById('center-notification-overlay');
+            if (!overlay || !overlay.classList.contains('hidden')) return;
+            if (this._isPlayerBusy()) return;
+            const next = this._centerNotifQueue.shift();
+            if (next._interactive) this._showInteractiveNotification(next);
+            else this._showCenterNotification(next);
+        }, 3000);
+    }
+
     _showInteractiveNotification({ icon, title, desc, buttons }) {
         const overlay = document.getElementById('center-notification-overlay');
         if (!overlay) return;
-        // Queue if already showing
+        // Queue if already showing, or if the player is busy (chatting / typing)
         if (!this._centerNotifQueue) this._centerNotifQueue = [];
-        if (!overlay.classList.contains('hidden')) {
-            this._centerNotifQueue.push({ _interactive: true, icon, title, desc, buttons });
+        if (!overlay.classList.contains('hidden') || this._isPlayerBusy()) {
+            this._queueNotifDeferred({ _interactive: true, icon, title, desc, buttons });
             return;
         }
         const card = document.getElementById('center-notification-card');
@@ -1963,14 +2021,7 @@ class RimTownApp {
             el.addEventListener('click', () => {
                 overlay.classList.add('hidden');
                 if (buttons[i]?.action) buttons[i].action();
-                // Show next queued notification
-                if (this._centerNotifQueue?.length) {
-                    const next = this._centerNotifQueue.shift();
-                    setTimeout(() => {
-                        if (next._interactive) this._showInteractiveNotification(next);
-                        else this._showCenterNotification(next);
-                    }, 300);
-                }
+                this._showNextQueuedNotif();
             });
             // Hover effect
             el.addEventListener('mouseenter', () => { el.style.background = 'rgba(255,255,255,0.12)'; });
@@ -1996,13 +2047,13 @@ class RimTownApp {
 
     // Center-screen notification card (like tutorial cards)
     _showCenterNotification({ icon, title, name, desc, content, autoDismiss }) {
-        // Queue notifications if one is already showing
+        // Queue notifications if one is already showing, or if the player is busy (chatting / typing)
         if (!this._centerNotifQueue) this._centerNotifQueue = [];
         const notif = { icon, title, name, desc, content, autoDismiss };
         const overlay = document.getElementById('center-notification-overlay');
         if (!overlay) return;
-        if (!overlay.classList.contains('hidden')) {
-            this._centerNotifQueue.push(notif);
+        if (!overlay.classList.contains('hidden') || this._isPlayerBusy()) {
+            this._queueNotifDeferred(notif);
             return;
         }
         const card = document.getElementById('center-notification-card');
@@ -2019,10 +2070,7 @@ class RimTownApp {
         const dismissBtn = card.querySelector('.center-notif-dismiss');
         const dismiss = () => {
             overlay.classList.add('hidden');
-            // Show next queued notification
-            if (this._centerNotifQueue?.length) {
-                setTimeout(() => this._showCenterNotification(this._centerNotifQueue.shift()), 300);
-            }
+            this._showNextQueuedNotif();
         };
         dismissBtn.addEventListener('click', dismiss);
         overlay.querySelector('.center-notification-backdrop').addEventListener('click', dismiss);
@@ -6402,7 +6450,7 @@ class RimTownApp {
             npcConvos.slice(0, 8).forEach(c => {
                 html += `<div class="npc-convo-entry expanded" data-action="toggle-convo">
                     <div class="npc-convo-header"><span class="npc-convo-toggle">▶</span><span class="log-time">${c.time}</span><strong>${c.agentA}</strong> &amp; <strong>${c.agentB}</strong>
-                    <span style="font-size:0.65rem;color:var(--text-muted);margin-left:4px">@ ${this._locationLabel(c.location)}</span></div>
+                    <span style="font-size:0.65rem;color:var(--text-muted);margin-left:4px">@ ${this._locationLabel(c.location)}</span>${c.llm ? `<span style="font-size:0.62rem;margin-left:6px;padding:1px 5px;border-radius:6px;background:rgba(140,120,255,0.25);color:#c9bfff">✨ AI</span>` : ''}</div>
                     <div class="npc-convo-summary">${c.summary}</div>
                     <div class="npc-convo-dialogue">`;
                 (c.dialogue || []).forEach(d => {

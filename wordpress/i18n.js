@@ -2255,6 +2255,7 @@ const I18N = (() => {
         '夜深了，你回想今天發生的事：': 'It is late at night. You look back on what happened today:',
         '【任務】寫下你今晚睡前心裡最深的一個體悟——關於某個人、某段關係、或你自己的處境。': '[Task] Write the deepest realization on your mind tonight — about a person, a relationship, or your own situation.',
         '【規則】繁體中文（台灣用語），只寫一句話，第一人稱，有情感、有觀點，不要流水帳。不要加引號或其他文字。': '[Rules] One sentence only, first person, with emotion and a point of view. No quotes or extra text.',
+        '件小鎮動態,等你忙完再看': 'town updates waiting for you',
     };
 
     function t(text) {
