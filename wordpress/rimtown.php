@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.34.1
+ * Version: 5.34.2
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.34.1');
+define('RIMTOWN_VERSION', '5.34.2');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,14 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.34.2',
+            'date'    => '2026-08-18',
+            'changes' => array(
+                '🌐 修復新聞「生效中」效果直接顯示英文程式 key:補全 24 個 modifier 的中文標籤(農作加成/售價加成/移民機率/天氣影響等)',
+                '🌡️ 修復天氣心情影響顯示成 -100% 的問題:它是心情點數不是百分比,改顯示 ±N',
+            ),
+        ),
         array(
             'version' => '5.34.1',
             'date'    => '2026-08-18',

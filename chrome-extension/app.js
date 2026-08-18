@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.34.1
-const RIMTOWN_APP_VERSION = '5.34.1';
+// RimTown - Frontend App (WordPress Plugin) v5.34.2
+const RIMTOWN_APP_VERSION = '5.34.2';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -6939,10 +6939,26 @@ class RimTownApp {
             if (modEntries.length) {
                 html += t('<div class="news-effects"><span class="news-effects-label">生效中：</span> ');
                 modEntries.forEach(([key, val]) => {
-                    const effectLabels = {food_production:t('食物產量'),mine_output:t('礦產產出'),trade_prices:t('交易價格'),construction_speed:t('建設速度'),mood_bonus:t('心情加成'),crop_growth:t('作物生長'),merchant_frequency:t('商人頻率')};
-                    const label = effectLabels[key] || key.replace(/_/g,' ');
+                    // v5.34.2 補全 modifier 中文標籤(原本只有 7 個,其餘直接露出英文 key)
+                    const effectLabels = {
+                        food_production:t('食物產量'), mine_output:t('礦產產出'), trade_prices:t('交易價格'),
+                        construction_speed:t('建設速度'), mood_bonus:t('心情加成'), crop_growth:t('作物生長'),
+                        merchant_frequency:t('商人頻率'), farm_bonus:t('農作加成'), sell_bonus:t('售價加成'),
+                        buy_bonus:t('買價優惠'), trade_bonus:t('貿易加成'), mining_bonus:t('採礦加成'),
+                        gathering_bonus:t('採集加成'), research_bonus:t('研究加成'), skill_bonus:t('技能成長'),
+                        guard_bonus:t('守衛戰力'), immigration_chance:t('移民機率'), departure_chance:t('離鄉機率'),
+                        raid_chance:t('襲擊機率'), raid_severity:t('襲擊強度'), animal_raid_chance:t('野獸襲擊機率'),
+                        plague_chance:t('疫病機率'), storm_chance:t('風暴機率'), drought_chance:t('乾旱機率'),
+                        chain_chance:t('連鎖事件機率'), festival_chance:t('慶典機率'), merchant_chance:t('商隊機率'),
+                        supply_shortage:t('物資短缺'), weather_farm_bonus:t('天氣農作影響'), weather_mood:t('天氣心情影響'),
+                    };
+                    const label = effectLabels[key] || key.replace(/_/g, ' ');
                     const cls = (typeof val === 'number' && val > 0) ? 'effect-positive' : (typeof val === 'number' && val < 0) ? 'effect-negative' : 'effect-neutral';
-                    const display = typeof val === 'number' ? (val > 0 ? '+' : '') + Math.round(val*100) + '%' : (val ? t('是') : t('否'));
+                    // weather_mood 是心情點數(±N),不是百分比
+                    const flatKeys = { weather_mood: 1 };
+                    const display = typeof val === 'number'
+                        ? (flatKeys[key] ? (val > 0 ? '+' : '') + Math.round(val) : (val > 0 ? '+' : '') + Math.round(val * 100) + '%')
+                        : (val ? t('是') : t('否'));
                     html += `<span class="news-effect ${cls}">${label}: ${display}</span> `;
                 });
                 html += '</div>';
