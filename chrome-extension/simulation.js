@@ -2997,7 +2997,8 @@ class LLMClient {
     async _callProvider(provider, apiKey, model, prompt, maxTokens, temperature) {
         const endpoints = {
             anthropic: { url: 'https://api.anthropic.com/v1/messages', model: model || 'claude-haiku-4-5-20251001' },
-            openai: { url: 'https://api.openai.com/v1/chat/completions', model: model || 'gpt-4o-mini' },
+            // v5.29.1 OpenAI 鎖定 gpt-4o-mini(成本控制):忽略任何 model 覆寫,避免誤用到高價模型
+            openai: { url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o-mini' },
             gemini: { url: `https://generativelanguage.googleapis.com/v1beta/models/${model||'gemini-2.5-flash'}:generateContent` },
             deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: model || 'deepseek-chat' },
             groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: model || 'qwen/qwen3-32b' },

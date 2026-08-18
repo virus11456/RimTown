@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.29.0
+ * Version: 5.29.1
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.29.0');
+define('RIMTOWN_VERSION', '5.29.1');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -60,7 +60,7 @@ function rimtown_shortcode($atts) {
                         <option value="server">🏘️ 小鎮伺服器 AI（免金鑰）</option>
                         <option value="none">無（模擬對話）</option>
                         <option value="anthropic">Anthropic (Claude)</option>
-                        <option value="openai">OpenAI (GPT)</option>
+                        <option value="openai">OpenAI (gpt-4o-mini)</option>
                         <option value="gemini">Google (Gemini)</option>
                         <option value="deepseek">DeepSeek</option>
                         <option value="groq">Groq</option>
@@ -1175,6 +1175,13 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.29.1',
+            'date'    => '2026-08-18',
+            'changes' => array(
+                '💸 OpenAI 供應商鎖定 gpt-4o-mini:無論任何設定都不會呼叫更貴的 GPT 模型,設定頁選項同步標示',
+            ),
+        ),
         array(
             'version' => '5.29.0',
             'date'    => '2026-08-18',

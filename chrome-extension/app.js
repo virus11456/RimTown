@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.29.0
-const RIMTOWN_APP_VERSION = '5.29.0';
+// RimTown - Frontend App (WordPress Plugin) v5.29.1
+const RIMTOWN_APP_VERSION = '5.29.1';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -6336,7 +6336,7 @@ class RimTownApp {
                 <option value="server"${provider==='server'?' selected':''}>🏘️ ${t('小鎮伺服器 AI（免金鑰）')}</option>
                 <option value="none"${provider==='none'?' selected':''}>${t('無（模擬對話）')}</option>
                 <option value="anthropic"${provider==='anthropic'?' selected':''}>Anthropic (Claude)</option>
-                <option value="openai"${provider==='openai'?' selected':''}>OpenAI (GPT)</option>
+                <option value="openai"${provider==='openai'?' selected':''}>OpenAI (gpt-4o-mini)</option>
                 <option value="gemini"${provider==='gemini'?' selected':''}>Google (Gemini)</option>
                 <option value="deepseek"${provider==='deepseek'?' selected':''}>DeepSeek</option>
                 <option value="groq"${provider==='groq'?' selected':''}>Groq</option>
