@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.28.0.zip` from Releases
+1. Download `rimtown-v5.29.2.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,28 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.29.2 (2026-08-18)
+
+**通知不再打斷操作 + AI 對話標籤**
+
+- 🔕 跟村民聊天或打字時，事件/成就/報紙/名場面卡片不再跳出打斷，改排進佇列（右下角小提示告知），等你空閒再依序補播
+- ✨ 日誌的村民對話加「AI」標籤，一眼分辨 LLM 生成 vs 內建模擬
+
+### v5.29.1 (2026-08-18)
+
+**OpenAI 鎖定 gpt-4o-mini（成本控制）**
+
+- 💸 OpenAI 供應商強制使用 gpt-4o-mini，忽略任何 model 覆寫，避免誤用到高價 GPT 模型；設定頁選項同步標示
+
+### v5.29.0 (2026-08-18)
+
+**LLM 記憶流 + 每日反思 + 混合成本控制（generative_agents 移植）**
+
+- 🧠 記憶流檢索:村民記憶依「時近 + 重要度 + 相關度」加權檢索(移植 generative_agents 的 retrieve),AI 對話帶著最相關的過往記憶,聊完各自寫下一句主觀記憶
+- 💭 每日反思:每晚規則式合成人際想法;每天挑一位記憶最精彩的村民做一次 AI 深度反思
+- 💰 混合成本控制:只有玩家附近(8 格內)的村民對話呼叫 AI,遠處對話走內建模擬照樣寫記憶;「NPC 對話每日 AI 額度」可調(預設 40 次/日),玩家聊天與劇情名場面不受限
+- 📝 AI 對話與反思全文隨存檔保存,重新載入不消失
 
 ### v5.28.0 (2026-07-20)
 

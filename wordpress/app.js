@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.28.0
-const RIMTOWN_APP_VERSION = '5.28.0';
+// RimTown - Frontend App (WordPress Plugin) v5.29.2
+const RIMTOWN_APP_VERSION = '5.29.2';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -347,7 +347,7 @@ class RimTownApp {
             }
         }
         if (this.llmClient) {
-            this.world.conversationEngine = new ConversationEngine(this.llmClient);
+            this.world.conversationEngine = this._makeConversationEngine();
             console.log('[RimTown] ConversationEngine initialized with LLM:', this.llmClient.provider);
         } else {
             console.log('[RimTown] WARNING: No LLM client — conversations will use fallback templates');
@@ -1057,7 +1057,7 @@ class RimTownApp {
             localStorage.removeItem('rimtown_achievements');
             localStorage.removeItem('rimtown_raid_count');
             this.world.reset();
-            if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+            if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
             const townName = `${user}${t('的邊境鎮')}`;
             this.currentTownId = this._generateTownId(townName);
             this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
@@ -1402,7 +1402,7 @@ class RimTownApp {
             // Always load from cloud when logged in
             const saveData = await this.auth.cloudLoad(cloudMatch.town_id);
             if (this.world.loadSave(saveData)) {
-                if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
                 this.currentTownId = cloudMatch.town_id;
                 this.state = this.world.getState();
                 this._generateTileMapLayout();
@@ -1932,13 +1932,71 @@ class RimTownApp {
         });
     }
 
+    // v5.29.2 玩家忙碌判定:正在跟村民聊天、或正在任何輸入框打字時,事件卡先排隊不打斷
+    _isPlayerBusy() {
+        if (this.activeTab === 'chat' && this.chatTarget) return true;
+        const ae = document.activeElement;
+        if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return true;
+        return false;
+    }
+
+    // 忙碌時把通知排進佇列 + 角落小提示(不擋操作),空閒時由 flusher 補播
+    _queueNotifDeferred(notif) {
+        if (!this._centerNotifQueue) this._centerNotifQueue = [];
+        this._centerNotifQueue.push(notif);
+        this._showNotifBadgeToast();
+        this._startNotifFlusher();
+    }
+
+    _showNotifBadgeToast() {
+        const now = Date.now();
+        if (this._lastNotifToastAt && now - this._lastNotifToastAt < 10000) return; // 10 秒內不重複提示
+        this._lastNotifToastAt = now;
+        let toast = document.getElementById('notif-defer-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'notif-defer-toast';
+            toast.style.cssText = 'position:fixed;right:12px;bottom:64px;z-index:9000;background:rgba(20,20,28,0.92);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:8px 12px;font-size:0.78rem;pointer-events:none;opacity:0;transition:opacity 0.3s';
+            document.body.appendChild(toast);
+        }
+        const n = this._centerNotifQueue?.length || 1;
+        toast.textContent = `📬 ${n} ${t('件小鎮動態,等你忙完再看')}`;
+        toast.style.opacity = '1';
+        clearTimeout(this._notifToastTimer);
+        this._notifToastTimer = setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+    }
+
+    // 關掉一張卡後補播下一張;玩家又在忙就交給 flusher 等空閒再播
+    _showNextQueuedNotif() {
+        if (!this._centerNotifQueue?.length) return;
+        if (this._isPlayerBusy()) { this._startNotifFlusher(); return; }
+        const next = this._centerNotifQueue.shift();
+        setTimeout(() => {
+            if (next._interactive) this._showInteractiveNotification(next);
+            else this._showCenterNotification(next);
+        }, 300);
+    }
+
+    _startNotifFlusher() {
+        if (this._notifFlusher) return;
+        this._notifFlusher = setInterval(() => {
+            if (!this._centerNotifQueue?.length) return;
+            const overlay = document.getElementById('center-notification-overlay');
+            if (!overlay || !overlay.classList.contains('hidden')) return;
+            if (this._isPlayerBusy()) return;
+            const next = this._centerNotifQueue.shift();
+            if (next._interactive) this._showInteractiveNotification(next);
+            else this._showCenterNotification(next);
+        }, 3000);
+    }
+
     _showInteractiveNotification({ icon, title, desc, buttons }) {
         const overlay = document.getElementById('center-notification-overlay');
         if (!overlay) return;
-        // Queue if already showing
+        // Queue if already showing, or if the player is busy (chatting / typing)
         if (!this._centerNotifQueue) this._centerNotifQueue = [];
-        if (!overlay.classList.contains('hidden')) {
-            this._centerNotifQueue.push({ _interactive: true, icon, title, desc, buttons });
+        if (!overlay.classList.contains('hidden') || this._isPlayerBusy()) {
+            this._queueNotifDeferred({ _interactive: true, icon, title, desc, buttons });
             return;
         }
         const card = document.getElementById('center-notification-card');
@@ -1963,14 +2021,7 @@ class RimTownApp {
             el.addEventListener('click', () => {
                 overlay.classList.add('hidden');
                 if (buttons[i]?.action) buttons[i].action();
-                // Show next queued notification
-                if (this._centerNotifQueue?.length) {
-                    const next = this._centerNotifQueue.shift();
-                    setTimeout(() => {
-                        if (next._interactive) this._showInteractiveNotification(next);
-                        else this._showCenterNotification(next);
-                    }, 300);
-                }
+                this._showNextQueuedNotif();
             });
             // Hover effect
             el.addEventListener('mouseenter', () => { el.style.background = 'rgba(255,255,255,0.12)'; });
@@ -1996,13 +2047,13 @@ class RimTownApp {
 
     // Center-screen notification card (like tutorial cards)
     _showCenterNotification({ icon, title, name, desc, content, autoDismiss }) {
-        // Queue notifications if one is already showing
+        // Queue notifications if one is already showing, or if the player is busy (chatting / typing)
         if (!this._centerNotifQueue) this._centerNotifQueue = [];
         const notif = { icon, title, name, desc, content, autoDismiss };
         const overlay = document.getElementById('center-notification-overlay');
         if (!overlay) return;
-        if (!overlay.classList.contains('hidden')) {
-            this._centerNotifQueue.push(notif);
+        if (!overlay.classList.contains('hidden') || this._isPlayerBusy()) {
+            this._queueNotifDeferred(notif);
             return;
         }
         const card = document.getElementById('center-notification-card');
@@ -2019,10 +2070,7 @@ class RimTownApp {
         const dismissBtn = card.querySelector('.center-notif-dismiss');
         const dismiss = () => {
             overlay.classList.add('hidden');
-            // Show next queued notification
-            if (this._centerNotifQueue?.length) {
-                setTimeout(() => this._showCenterNotification(this._centerNotifQueue.shift()), 300);
-            }
+            this._showNextQueuedNotif();
         };
         dismissBtn.addEventListener('click', dismiss);
         overlay.querySelector('.center-notification-backdrop').addEventListener('click', dismiss);
@@ -2277,6 +2325,18 @@ class RimTownApp {
         if (unlockedCount >= 96) this._unlockAchievement('achievement_99'); // 96 + the 3 meta = 99
     }
 
+    // v5.29.0 重建 ConversationEngine 時保留對話紀錄與節流狀態(對話紀錄要能存檔,不能因改設定而消失)
+    _makeConversationEngine() {
+        const prev = this.world?.conversationEngine;
+        const eng = new ConversationEngine(this.llmClient);
+        if (prev) {
+            eng.npcConversationLog = prev.npcConversationLog;
+            eng._lastNpcLlmTick = prev._lastNpcLlmTick;
+            eng._lastNpcMsgTick = prev._lastNpcMsgTick;
+        }
+        return eng;
+    }
+
     // Hook conversation engine to push speech bubbles to tilemap
     _hookConversationBubbles() {
         // Set up a periodic check since ConversationEngine may be re-created
@@ -2287,6 +2347,15 @@ class RimTownApp {
                     if (this.tileMap) {
                         this.tileMap.addConversationBubble(aId, bId, aName, bName, textA, textB);
                     }
+                };
+                // v5.29.0 混合成本控制:注入「是否在玩家 8 格內」判定(與語音泡泡同範圍)
+                this.world.conversationEngine.isNearPlayer = (agentId) => {
+                    const positions = this.tileMap?.agentPositions;
+                    if (!positions) return false;
+                    const p = positions['player'], a = positions[agentId];
+                    if (!p || !a) return false;
+                    const range = TILE * 8;
+                    return (a.x - p.x) * (a.x - p.x) + (a.y - p.y) * (a.y - p.y) <= range * range;
                 };
             }
         }, 2000);
@@ -2336,7 +2405,7 @@ class RimTownApp {
         try {
             const saveData = await this.auth.cloudLoad(townId);
             if (this.world.loadSave(saveData)) {
-                if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
                 this.currentTownId = townId;
                 this._saveCurrentTown();
                 this.state = this.world.getState();
@@ -2774,7 +2843,7 @@ class RimTownApp {
             try {
                 const saveData = await this.auth.cloudLoad(townId);
                 if (saveData && this.world.loadSave(saveData)) {
-                    if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                    if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
                     this.currentTownId = townId;
                     this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
                     this.state = this.world.getState();
@@ -2792,7 +2861,7 @@ class RimTownApp {
             // Not logged in — use local saves
             this._saveCurrentTown();
             if (this._loadTownById(townId)) {
-                if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
                 this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
                 this.state = this.world.getState();
                 this._generateTileMapLayout();
@@ -2842,7 +2911,7 @@ class RimTownApp {
         }
         this.world.rosterMode = (localStorage.getItem('rimtown_roster_mode') === 'random') ? 'random' : 'scripted'; // v5.27.0 肉鴿隨機開局
         this.world.reset();
-        if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+        if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
         this.currentTownId = this._generateTownId(name);
         if (this.auth.loggedIn) {
             // Save new town to cloud immediately
@@ -3109,14 +3178,14 @@ class RimTownApp {
             || localStorage.getItem('fallback_groq_key') || '';
         if (provider === 'server') {
             this.llmClient = new LLMClient('server', 'server');
-            this.world.conversationEngine = new ConversationEngine(this.llmClient);
+            this.world.conversationEngine = this._makeConversationEngine();
         } else if (provider && provider !== 'none' && apiKey) {
             this.llmClient = new LLMClient(provider, apiKey);
-            this.world.conversationEngine = new ConversationEngine(this.llmClient);
+            this.world.conversationEngine = this._makeConversationEngine();
         } else if (fallbackGroqKey) {
             // No primary AI selected but has fallback → use Groq as primary
             this.llmClient = new LLMClient('groq', fallbackGroqKey);
-            this.world.conversationEngine = new ConversationEngine(this.llmClient);
+            this.world.conversationEngine = this._makeConversationEngine();
         } else {
             this.llmClient = null;
             this.world.conversationEngine = new ConversationEngine();
@@ -3152,6 +3221,9 @@ class RimTownApp {
         const fallbackEl = document.getElementById('fallback-groq-key');
         if (fallbackEl) fallbackEl.value = fallbackKey;
         localStorage.setItem('fallback_groq_key', fallbackKey || '');
+        // v5.29.0 NPC 對話每日 AI 額度
+        const npcBudgetRaw = parseInt(document.getElementById('settings-tab-npcbudget')?.value, 10);
+        if (Number.isFinite(npcBudgetRaw) && npcBudgetRaw >= 0) localStorage.setItem('rimtown_npc_llm_budget', String(Math.min(999, npcBudgetRaw)));
         this.saveSettings(provider, apiKey, speed);
         const langSelect = document.getElementById('lang-select') || document.getElementById('settings-tab-lang');
         if (langSelect) {
@@ -3592,7 +3664,7 @@ class RimTownApp {
                     this._saveCurrentTown();
                     this.world.rosterMode = (localStorage.getItem('rimtown_roster_mode') === 'random') ? 'random' : 'scripted'; // v5.27.0 肉鴿隨機開局
                     this.world.reset();
-                    if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                    if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
                     this.currentTownId = this._generateTownId(name);
                     this._saveCurrentTown(name);
                     this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
@@ -3657,7 +3729,7 @@ class RimTownApp {
             await this.archiveChatHistory();
             this._saveCurrentTown();
             this.world.reset();
-            if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+            if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
             this.currentTownId = this._generateTownId(name);
             this._saveCurrentTown(name);
             this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
@@ -3930,7 +4002,7 @@ class RimTownApp {
                 const text = await file.text();
                 const saveData = JSON.parse(text);
                 if (this.world.loadSave(saveData)) {
-                    if (this.llmClient) this.world.conversationEngine = new ConversationEngine(this.llmClient);
+                    if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
                     this.state = this.world.getState();
                     this._generateTileMapLayout();
                     if (this.tileMap) this.tileMap.agentPositions = {};
@@ -5885,7 +5957,7 @@ class RimTownApp {
 
         // Re-init conversation engine
         if (this.llmClient) {
-            this.world.conversationEngine = new ConversationEngine(this.llmClient);
+            this.world.conversationEngine = this._makeConversationEngine();
         }
 
         // Reset app state
@@ -6291,6 +6363,18 @@ class RimTownApp {
         const aiLabel = isServerAI ? t('🏘️ 小鎮 AI 已啟用（免設定）') : (aiConnected ? 'AI:' + this.llmClient.provider + (this.llmClient.fallbackGroqKey ? t('+備用') : '') : t('AI:未連接'));
         html += t('<div class="econ-section"><h3>🤖 AI 語言模型</h3>');
         html += `<div style="margin-bottom:8px"><span class="llm-status ${aiConnected ? 'connected' : 'disconnected'}">${aiLabel}</span></div>`;
+        // v5.29.0 混合成本控制:NPC 之間的對話只有在玩家附近才用 LLM,並受每日額度限制
+        const existingBudget = document.getElementById('settings-tab-npcbudget');
+        const npcBudget = existingBudget ? existingBudget.value : (localStorage.getItem('rimtown_npc_llm_budget') || '40');
+        const npcUsed = this.world?.npcLlmUsedToday || 0;
+        html += `<div class="setting-group" style="margin-bottom:8px">
+            <label style="font-size:0.82rem;color:var(--text-secondary)">💰 ${t('NPC 對話每日 AI 額度')}</label>
+            <div style="display:flex;gap:6px;align-items:center">
+                <input type="number" id="settings-tab-npcbudget" value="${this._escapeHtml(String(npcBudget))}" min="0" max="999" style="width:80px;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
+                <span style="font-size:0.72rem;color:var(--text-muted)">${t('今日已用')} ${npcUsed} ${t('次')}</span>
+            </div>
+            <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px">${t('只有你附近（8 格內）的村民對話會呼叫 AI；遠處對話走內建模擬並照樣寫入記憶。與你的聊天、劇情名場面不受此額度限制。設 0 可完全關閉 NPC 對話 AI。')}</div>
+        </div>`;
         // 一般玩家不需要看到金鑰設定 → 收進「進階」摺疊區(預設收合)
         html += `<details style="margin-bottom:8px"${provider !== 'server' && provider !== 'none' ? ' open' : ''}>
             <summary style="cursor:pointer;font-size:0.78rem;color:var(--text-secondary);padding:4px 0">⚙️ ${t('進階：自備 AI 金鑰（選用）')}</summary>`;
@@ -6300,7 +6384,7 @@ class RimTownApp {
                 <option value="server"${provider==='server'?' selected':''}>🏘️ ${t('小鎮伺服器 AI（免金鑰）')}</option>
                 <option value="none"${provider==='none'?' selected':''}>${t('無（模擬對話）')}</option>
                 <option value="anthropic"${provider==='anthropic'?' selected':''}>Anthropic (Claude)</option>
-                <option value="openai"${provider==='openai'?' selected':''}>OpenAI (GPT)</option>
+                <option value="openai"${provider==='openai'?' selected':''}>OpenAI (gpt-4o-mini)</option>
                 <option value="gemini"${provider==='gemini'?' selected':''}>Google (Gemini)</option>
                 <option value="deepseek"${provider==='deepseek'?' selected':''}>DeepSeek</option>
                 <option value="groq"${provider==='groq'?' selected':''}>Groq</option>
@@ -6366,7 +6450,7 @@ class RimTownApp {
             npcConvos.slice(0, 8).forEach(c => {
                 html += `<div class="npc-convo-entry expanded" data-action="toggle-convo">
                     <div class="npc-convo-header"><span class="npc-convo-toggle">▶</span><span class="log-time">${c.time}</span><strong>${c.agentA}</strong> &amp; <strong>${c.agentB}</strong>
-                    <span style="font-size:0.65rem;color:var(--text-muted);margin-left:4px">@ ${this._locationLabel(c.location)}</span></div>
+                    <span style="font-size:0.65rem;color:var(--text-muted);margin-left:4px">@ ${this._locationLabel(c.location)}</span>${c.llm ? `<span style="font-size:0.62rem;margin-left:6px;padding:1px 5px;border-radius:6px;background:rgba(140,120,255,0.25);color:#c9bfff">✨ AI</span>` : ''}</div>
                     <div class="npc-convo-summary">${c.summary}</div>
                     <div class="npc-convo-dialogue">`;
                 (c.dialogue || []).forEach(d => {

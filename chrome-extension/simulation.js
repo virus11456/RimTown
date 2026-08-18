@@ -120,6 +120,40 @@ class Memory {
     getRecent(n = 10) { return this.entries.slice(-n); }
     getAboutAgent(name, n = 5) { return this.entries.filter(e => e.relatedAgents.includes(name)).slice(-n); }
     getImportant(minImp = 7, n = 10) { return this.entries.filter(e => e.importance >= minImp).slice(-n); }
+    // v5.29.0 記憶流檢索(移植 generative_agents retrieve.py):
+    // 每則記憶依「時近性 + 重要度 + 與焦點的相關度」加權排序,取前 n 則
+    static _bigrams(text) {
+        const s = String(text || '').replace(/[\s。，、！？!?,.:：;；「」『』()（）\[\]…~—-]/g, '');
+        const set = new Set();
+        for (let i = 0; i < s.length - 1; i++) set.add(s.slice(i, i + 2));
+        return set;
+    }
+    retrieve(focalText, focalAgents = [], n = 5, nowTick = 0) {
+        if (!this.entries.length) return [];
+        const TICKS_PER_DAY = 96; // 1 tick = 15 遊戲分鐘
+        const qBi = Memory._bigrams(focalText);
+        const scored = this.entries.map(e => {
+            const ageDays = Math.max(0, (nowTick - e.tick) / TICKS_PER_DAY);
+            const recency = Math.pow(0.85, ageDays);
+            const importance = Math.min(10, e.importance || 5) / 10;
+            // 相關度:內容字元 bigram Dice 相似 + 涉及人物命中
+            if (!e._bi) e._bi = Memory._bigrams(e.content);
+            let overlap = 0;
+            for (const b of qBi) if (e._bi.has(b)) overlap++;
+            const dice = (qBi.size + e._bi.size) ? (2 * overlap) / (qBi.size + e._bi.size) : 0;
+            let agentHit = 0;
+            for (const nm of focalAgents) {
+                if (nm && (e.relatedAgents.includes(nm) || (e.content || '').includes(nm))) { agentHit = 1; break; }
+            }
+            const relevance = Math.min(1, dice * 2 + agentHit * 0.6);
+            // 權重比照 generative_agents 的 gw = [0.5, 3, 2]
+            return { e, score: 0.5 * recency + 3 * relevance + 2 * importance };
+        });
+        scored.sort((a, b) => b.score - a.score);
+        return scored.slice(0, n).map(s => s.e).sort((a, b) => a.tick - b.tick);
+    }
+    // 反思(thought)節點:dailyReflection 產生,category='reflection'
+    getThoughts(n = 3) { return this.entries.filter(e => e.category === 'reflection').slice(-n); }
     summarizeRecent(n = 5) {
         const recent = this.getRecent(n);
         if (!recent.length) return t('沒有近期記憶。');
@@ -1250,6 +1284,89 @@ class ConversationEngine {
         this._lastNpcMsgTick = 0;
         this._npcMsgCooldownTicks = 30; // ~1 minute between proactive NPC messages
         this.onNpcMessage = null; // Callback: (npcId) => {} — notify UI of incoming message
+        // v5.29.0 混合成本控制:app.js 注入「該 NPC 是否在玩家附近」的判定(8 格內)
+        this.isNearPlayer = null; // (agentId) => bool
+    }
+
+    // v5.29.0 NPC↔NPC 對話每日 LLM 額度(可在設定頁調整;玩家聊天/劇情名場面不受限)
+    npcLlmDailyBudget() {
+        try {
+            const v = parseInt(localStorage.getItem('rimtown_npc_llm_budget'), 10);
+            if (Number.isFinite(v) && v >= 0) return v;
+        } catch (e) {}
+        return 40;
+    }
+
+    // NPC↔NPC 對話是否允許用 LLM:雙方任一在玩家附近 + 今日額度未用完
+    _npcLlmAllowed(world, agentA, agentB) {
+        if ((world.npcLlmUsedToday || 0) >= this.npcLlmDailyBudget()) return false;
+        if (this.isNearPlayer) {
+            return this.isNearPlayer(agentA.agentId) || this.isNearPlayer(agentB.agentId);
+        }
+        // 沒有地圖座標時退回「跟玩家同地點」判定
+        const player = world.agents['player'];
+        return !!player && (agentA.currentLocation === player.currentLocation || agentB.currentLocation === player.currentLocation);
+    }
+
+    _countNpcLlmUse(world) { world.npcLlmUsedToday = (world.npcLlmUsedToday || 0) + 1; }
+
+    // v5.29.0 每日反思(移植 generative_agents reflect):
+    // 1) 規則式(零成本):統計昨日互動,合成「想法」寫入記憶流
+    // 2) LLM 深度反思(每天最多 1 次):挑昨日記憶重要度總和最高的 NPC,生成一句內心體悟
+    async dailyReflection(world) {
+        const TICKS_PER_DAY = 96;
+        const since = world.tickCount - TICKS_PER_DAY;
+        const npcs = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead);
+        let best = null, bestScore = 0;
+        for (const npc of npcs) {
+            const recent = npc.memory.entries.filter(e => e.tick >= since && e.category !== 'reflection');
+            if (!recent.length) continue;
+            // 規則式:昨天跟誰互動最多 → 依好感方向合成一句想法
+            const counts = {};
+            recent.forEach(e => (e.relatedAgents || []).forEach(nm => { if (nm && nm !== npc.name) counts[nm] = (counts[nm] || 0) + 1; }));
+            const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+            if (top && top[1] >= 3) {
+                const [topName] = top;
+                const rel = Object.values(npc.relationships.relationships).find(r => r.targetName === topName);
+                const aff = rel ? rel.affinity : 0;
+                let text;
+                if (rel && (rel.status === 'dating' || rel.status === 'married')) text = `${t('最近和')}${topName}${t('的感情越來越深了。')}`;
+                else if (aff > 40) text = `${t('我最近跟')}${topName}${t('走得很近，有這樣的朋友真好。')}`;
+                else if (aff < -20) text = `${topName}${t('最近老是跟我過不去，想到就煩。')}`;
+                else text = `${t('最近常碰到')}${topName}${t('，這人比我想的有意思。')}`;
+                // 同一天不重複寫同對象的規則式反思
+                const dup = npc.memory.entries.some(e => e.category === 'reflection' && e.tick >= since && e.relatedAgents.includes(topName));
+                if (!dup) npc.memory.add(world.tickCount, world.clock.timeStr, 'reflection', text, 6, [topName]);
+            }
+            const score = recent.reduce((s, e) => s + (e.importance || 5), 0);
+            if (score > bestScore) { bestScore = score; best = { npc, recent }; }
+        }
+        // LLM 深度反思:一天最多 1 次,吃 NPC LLM 額度;昨天夠精彩(重要度總和門檻)才值得花這一次
+        if (!best || bestScore < 40) return;
+        if (!this.llm || !this.llm._canMakeRequest(false)) return;
+        if ((world.npcLlmUsedToday || 0) >= this.npcLlmDailyBudget()) return;
+        try {
+            const npc = best.npc;
+            const topMem = best.recent.slice().sort((a, b) => (b.importance || 0) - (a.importance || 0)).slice(0, 6)
+                .map(m => `- ${m.content}`).join('\n');
+            const pN = this._buildCharacterProfile(npc);
+            const prompt = `${t('你正在扮演「')}${pN.name}${t('」——')}${pN.age}${t('歲的')}${pN.job}${t('，性格')}${pN.traits}${t('。')}
+${t('夜深了，你回想今天發生的事：')}
+${topMem}
+
+${t('【任務】寫下你今晚睡前心裡最深的一個體悟——關於某個人、某段關係、或你自己的處境。')}
+${t('【規則】繁體中文（台灣用語），只寫一句話，第一人稱，有情感、有觀點，不要流水帳。不要加引號或其他文字。')}`;
+            this._countNpcLlmUse(world);
+            const response = await this.llm.generate(prompt, 120, 0.9, false);
+            if (response && response !== '__ERROR__' && response !== '__RATE_LIMITED__') {
+                const text = response.trim().replace(/^["「『]|["」』]$/g, '').replace(new RegExp(`^${npc.name}[：:]\\s*`), '').trim();
+                if (text) {
+                    const related = [...new Set(best.recent.flatMap(m => m.relatedAgents || []))].slice(0, 3);
+                    npc.memory.add(world.tickCount, world.clock.timeStr, 'reflection', text, 8, related);
+                    world.logMessage('thought', `💭 ${npc.name}${t('的內心：')}${text}`, npc.name);
+                }
+            }
+        } catch (e) { console.error('[RimTown] dailyReflection LLM failed:', e); }
     }
 
     /**
@@ -1289,6 +1406,8 @@ class ConversationEngine {
                 const pN = this._buildCharacterProfile(npc);
                 const recentChat = player.chatHistory.filter(c => c.target === npc.name || c.speaker === npc.name)
                     .slice(-5).map(c => `${c.speaker}: ${c.text}`).join('\n');
+                // v5.29.0 記憶流:主動傳訊也帶著對玩家的記憶
+                const memNpc = npc.memory.retrieve(player.name, [player.name], 3, world.tickCount);
 
                 const scenarios = [
                     t('你想跟旅人分享今天工作的趣事'),
@@ -1316,6 +1435,7 @@ ${t('【你是誰】')}
 ${pN.name}${t('，')}${pN.age}${t('歲，')}${pN.job}${t('。性格：')}${pN.traits}${t('。')}
 ${t('你現在在')}${npc.currentLocation.replace(/_/g,' ')}${t('，正在')}${npc.activity}${t('。')}
 ${this._buildRelContext(relNpc, player.name)}
+${memNpc.length ? `${t('你記得：')}${memNpc.map(m=>m.content).join(t('；'))}` : ''}
 
 ${recentChat ? `${t('【最近對話】')}\n${recentChat}` : ''}
 
@@ -1764,13 +1884,13 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
         if (this.llm) {
             // Throttle NPC LLM calls to avoid burning through API quota
             const ticksSinceLast = world.tickCount - this._lastNpcLlmTick;
-            if (ticksSinceLast >= this._npcLlmCooldownTicks && this.llm._canMakeRequest(false)) {
+            // v5.29.0 混合模式:只有玩家附近的對話用 LLM,且受每日額度限制;其餘走規則式(照樣寫入記憶流)
+            if (ticksSinceLast >= this._npcLlmCooldownTicks && this._npcLlmAllowed(world, agentA, agentB) && this.llm._canMakeRequest(false)) {
                 try {
                     this._lastNpcLlmTick = world.tickCount;
+                    this._countNpcLlmUse(world);
                     return await this._llmConversation(agentA, agentB, world, relA, relB);
                 } catch(e) { console.error('LLM conversation failed:', e); }
-            } else {
-                console.log('[RimTown] NPC conversation throttled, using fallback (ticks since last:', ticksSinceLast, ')');
             }
         }
         return this._fallbackConversation(agentA, agentB, world, relA, relB);
@@ -1779,8 +1899,13 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
     async _llmConversation(agentA, agentB, world, relA, relB) {
         const gossip = world.events.getGossipTopics ? world.events.getGossipTopics() : [];
         const gossipStr = gossip.slice(-3).join(t('、')) || t('沒有特別的事');
-        const memA = agentA.memory.getAboutAgent(agentB.name, 5);
-        const memB = agentB.memory.getAboutAgent(agentA.name, 5);
+        // v5.29.0 記憶流檢索:以對方+近況為焦點,撈出「該記得的事」(不只限於跟對方直接相關)
+        const focalA = `${agentB.name} ${agentB.activity} ${agentB.currentLocation} ${gossipStr}`;
+        const focalB = `${agentA.name} ${agentA.activity} ${agentA.currentLocation} ${gossipStr}`;
+        const memA = agentA.memory.retrieve(focalA, [agentB.name], 4, world.tickCount);
+        const memB = agentB.memory.retrieve(focalB, [agentA.name], 4, world.tickCount);
+        const thoughtsA = agentA.memory.getThoughts(2);
+        const thoughtsB = agentB.memory.getThoughts(2);
         const pA = this._buildCharacterProfile(agentA);
         const pB = this._buildCharacterProfile(agentB);
 
@@ -1825,12 +1950,15 @@ ${t('地點：')}${agentA.currentLocation.replace(/_/g,' ')}
 ${t('【')}${pA.name}${t('】')}${pA.age}${t('歲')}${pA.job}${t('，性格')}${pA.traits}${t('，')}${pA.status}
 ${pA.thought ? `${t('最近在想：')}${pA.thought}` : ''}${pA.needs !== t('狀態良好') ? `${t('（有點')}${pA.needs}${t('）')}` : ''}
 ${this._buildRelContext(relA, agentB.name)}
-${memA.length ? `${t('記得：')}${memA.slice(-3).map(m=>m.content).join(t('；'))}` : ''}
+${memA.length ? `${t('記得：')}${memA.map(m=>`[${m.timeStr}] ${m.content}`).join(t('；'))}` : ''}
+${thoughtsA.length ? `${t('心裡的體悟：')}${thoughtsA.map(m=>m.content).join(t('；'))}` : ''}
 
 ${t('【')}${pB.name}${t('】')}${pB.age}${t('歲')}${pB.job}${t('，性格')}${pB.traits}${t('，')}${pB.status}
 ${pB.thought ? `${t('最近在想：')}${pB.thought}` : ''}${pB.needs !== t('狀態良好') ? `${t('（有點')}${pB.needs}${t('）')}` : ''}
 ${this._buildRelContext(relB, agentA.name)}
-${memB.length ? `${t('記得：')}${memB.slice(-3).map(m=>m.content).join(t('；'))}` : ''}
+${memB.length ? `${t('記得：')}${memB.map(m=>`[${m.timeStr}] ${m.content}`).join(t('；'))}` : ''}
+${thoughtsB.length ? `${t('心裡的體悟：')}${thoughtsB.map(m=>m.content).join(t('；'))}` : ''}
+${t('如果「記得」的事跟話題有關，讓角色自然地提起或延續它——這是他們真實的共同過去。')}
 
 ${t('小鎮近況：')}${gossipStr}
 ${this._buildEconomicContext(world)}
@@ -1842,7 +1970,7 @@ ${t('- 毒舌的人："又在偷懶？你那個田再不管，雜草都要比你
 ${t('- 情侶："你怎麼又沒穿外套？天都涼了...過來，把這個披上。"')}
 
 ${t('格式：每行「名字: 對話內容」')}
-${t('最後一行：')}EFFECTS: {"affinity_change_a": ${t('數字')}(-3${t('到')}5), "affinity_change_b": ${t('數字')}(-3${t('到')}5), "romantic_change_a": ${t('數字')}(0${t('到')}5), "romantic_change_b": ${t('數字')}(0${t('到')}5), "summary": "${t('用一句生動的話總結發生了什麼')}"}
+${t('最後一行：')}EFFECTS: {"affinity_change_a": ${t('數字')}(-3${t('到')}5), "affinity_change_b": ${t('數字')}(-3${t('到')}5), "romantic_change_a": ${t('數字')}(0${t('到')}5), "romantic_change_b": ${t('數字')}(0${t('到')}5), "summary": "${t('用一句生動的話總結發生了什麼')}", "memory_a": "${pA.name}${t('會記住的一句話（以他的視角與感受）')}", "memory_b": "${pB.name}${t('會記住的一句話（以他的視角與感受）')}"}
 ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖昧、調情、深層情感連結才給 1-2。普通友好聊天應該給 0。大部分對話 romantic_change 應該是 0。')}`;
 
         const response = await this.llm.generate(prompt, 800);
@@ -1879,8 +2007,11 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
         const summary = effects.summary || `${agentA.name}${t('和')}${agentB.name}${t('聊了天。')}`;
         relA.modifyAffinity(affA); relA.modifyRomantic(romA); relA.recordInteraction(world.tickCount, summary);
         relB.modifyAffinity(affB); relB.modifyRomantic(romB); relB.recordInteraction(world.tickCount, summary);
-        agentA.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('與')}${agentB.name}${t('交談：')}${summary}`, Math.min(8,4+Math.abs(affA)), [agentB.name]);
-        agentB.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('與')}${agentA.name}${t('交談：')}${summary}`, Math.min(8,4+Math.abs(affB)), [agentA.name]);
+        // v5.29.0 主觀記憶回寫:LLM 為兩人各寫一句「他會記住的話」,沒有就退回客觀摘要
+        const memTextA = (typeof effects.memory_a === 'string' && effects.memory_a.trim()) ? effects.memory_a.trim() : `${t('與')}${agentB.name}${t('交談：')}${summary}`;
+        const memTextB = (typeof effects.memory_b === 'string' && effects.memory_b.trim()) ? effects.memory_b.trim() : `${t('與')}${agentA.name}${t('交談：')}${summary}`;
+        agentA.memory.add(world.tickCount, world.clock.timeStr, 'conversation', memTextA, Math.min(8,4+Math.abs(affA)+romA), [agentB.name]);
+        agentB.memory.add(world.tickCount, world.clock.timeStr, 'conversation', memTextB, Math.min(8,4+Math.abs(affB)+romB), [agentA.name]);
         world.logMessage('conversation', summary, agentA.name, agentB.name);
         // Collect notable conversations for daily news
         if (world.dailyNews && (Math.abs(affA) >= 4 || Math.abs(affB) >= 4 || romA >= 2 || romB >= 2)) {
@@ -1888,7 +2019,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
         }
         // Store NPC conversation for sidebar viewing
         if (dialogue.length) {
-            this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.agentId, agentBId:agentB.agentId });
+            this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.agentId, agentBId:agentB.agentId, llm:true });
             if (this.npcConversationLog.length > 10000) this.npcConversationLog = this.npcConversationLog.slice(-10000);
             // Notify UI for map speech bubbles
             if (this.onConversation) {
@@ -2347,7 +2478,9 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
             try {
                 const recentChat = player.chatHistory.filter(c => c.target === npc.name || c.speaker === npc.name)
                     .slice(-10).map(c => `${c.speaker}: ${c.text}`).join('\n');
-                const memNpc = npc.memory.getAboutAgent(player.name, 5);
+                // v5.29.0 記憶流檢索:以玩家這句話為焦點,撈出最相關的記憶(而非只看最近 5 則)
+                const memNpc = npc.memory.retrieve(`${player.name} ${playerMessage}`, [player.name], 5, world.tickCount);
+                const npcThoughts = npc.memory.getThoughts(2);
                 const pN = this._buildCharacterProfile(npc);
                 const prompt = `${t('你正在扮演「')}${npc.name}${t('」——邊境鎮的一位真實居民。有個叫')}${player.name}${t('的人正在跟你說話。')}
 ${t('你要完全入戲，像真人一樣自然地回應。')}
@@ -2358,7 +2491,8 @@ ${t('性格：')}${pN.traits}${t('。背景：')}${pN.background}${t('。')}
 ${t('在意的事：')}${pN.values}${t('。感情狀態：')}${pN.status}${t('。')}
 ${pN.thought ? `${t('你最近在想：')}${pN.thought}` : ''}
 ${this._buildRelContext(relNpc, player.name)}
-${memNpc.length ? `${t('你記得關於')}${player.name}${t('的事：')}${memNpc.map(m=>m.content).join(t('；'))}` : `${t('你跟')}${player.name}${t('還不太熟。')}`}
+${memNpc.length ? `${t('你記得的事（跟話題相關就自然提起）：')}${memNpc.map(m=>`[${m.timeStr}] ${m.content}`).join(t('；'))}` : `${t('你跟')}${player.name}${t('還不太熟。')}`}
+${npcThoughts.length ? `${t('你心裡的體悟：')}${npcThoughts.map(m=>m.content).join(t('；'))}` : ''}
 
 ${world.festivals?.activeFestival ? `${t('【今天是')}${world.festivals.activeFestival.name}${t('!】')}${world.festivals.activeFestival.description}${t('聊天時可以自然提到祭典。')}` : ''}
 ${t('【小鎮經濟】')}
@@ -2863,7 +2997,8 @@ class LLMClient {
     async _callProvider(provider, apiKey, model, prompt, maxTokens, temperature) {
         const endpoints = {
             anthropic: { url: 'https://api.anthropic.com/v1/messages', model: model || 'claude-haiku-4-5-20251001' },
-            openai: { url: 'https://api.openai.com/v1/chat/completions', model: model || 'gpt-4o-mini' },
+            // v5.29.1 OpenAI 鎖定 gpt-4o-mini(成本控制):忽略任何 model 覆寫,避免誤用到高價模型
+            openai: { url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o-mini' },
             gemini: { url: `https://generativelanguage.googleapis.com/v1beta/models/${model||'gemini-2.5-flash'}:generateContent` },
             deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: model || 'deepseek-chat' },
             groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: model || 'qwen/qwen3-32b' },
@@ -5679,6 +5814,9 @@ class World {
             this.townIdentity.dailyUpdate(this); // v5.19.0 城鎮身分逐日累積並結晶
             this.checkHeartEvents(); // v5.0.0 每日掃描心動事件門檻
             this._processThoughts(); // v5.15.0 記憶想法:清過期 + 對特定對象的好感漂移
+            // v5.29.0 記憶流每日反思(規則式 + 每天至多 1 次 LLM),並重置 NPC 對話 LLM 額度
+            this.conversationEngine.dailyReflection(this).catch(e => console.warn('[RimTown] reflection error:', e));
+            this.npcLlmUsedToday = 0;
             this.generateDailyFeedPosts(); // v5.2.0 鎮民動態每日發文
             if (this.clock.day % 7 === 0) this.generateWeeklyDigest(); // v5.3.0 每 7 天小鎮頭條
             this.lifecycle.dailyUpdate(this);
@@ -6457,6 +6595,9 @@ class World {
             townMap: this.townMap ? { seed:this.townMap.seed, terrain:this.townMap.terrain, width:this.townMap.width, height:this.townMap.height,
                 locations: Object.fromEntries(Object.entries(this.townMap.locations).map(([k,v])=>[k,{id:v.id,name:v.name,description:v.description,x:v.x,y:v.y,category:v.category,capacity:v.capacity}])) } : null,
             agents: Object.fromEntries(Object.entries(this.agents).map(([k,a])=>[k,serializeAgent(a)])),
+            // v5.29.0 AI 對話紀錄以文字形式持久化(含每則對話全文),反思則隨 agent.memory 一起存
+            npcConversationLog: this.conversationEngine.npcConversationLog.slice(-10000).map(c => ({ ...c, dialogue: (c.dialogue || []).map(d => ({ ...d })) })),
+            npcLlmUsedToday: this.npcLlmUsedToday || 0,
             gossip: this.gossipNetwork.activeGossip.slice(-10000),
             townFeed: this.townFeed ? this.townFeed.serialize() : null,
             events: {
@@ -6584,6 +6725,10 @@ class World {
                 }
                 this.agents[id] = agent;
             }
+
+            // v5.29.0 AI 對話紀錄還原(文字形式持久化)
+            if (Array.isArray(data.npcConversationLog)) this.conversationEngine.npcConversationLog = data.npcConversationLog;
+            this.npcLlmUsedToday = data.npcLlmUsedToday || 0;
 
             // Gossip
             this.gossipNetwork = new GossipNetwork();

@@ -2231,6 +2231,31 @@ const I18N = (() => {
         '」': '"',
         '結婚了！': ' got married!',
         '開始交往！': ' started dating!',
+
+        // ── v5.29.0 LLM 記憶流 / 反思 / 成本控制 ──
+        'NPC 對話每日 AI 額度': 'Daily AI budget for NPC chatter',
+        '今日已用': 'Used today:',
+        '次': ' calls',
+        '只有你附近（8 格內）的村民對話會呼叫 AI；遠處對話走內建模擬並照樣寫入記憶。與你的聊天、劇情名場面不受此額度限制。設 0 可完全關閉 NPC 對話 AI。': 'Only conversations near you (within 8 tiles) call the AI; distant chats use built-in simulation but still write memories. Your own chats and drama scenes are not limited. Set 0 to disable AI for NPC chatter.',
+        '心裡的體悟：': 'Inner reflections: ',
+        '你心裡的體悟：': 'Your inner reflections: ',
+        '你記得的事（跟話題相關就自然提起）：': 'Things you remember (bring them up naturally if relevant): ',
+        '你記得：': 'You remember: ',
+        '如果「記得」的事跟話題有關，讓角色自然地提起或延續它——這是他們真實的共同過去。': 'If a remembered event is relevant, let the characters naturally bring it up or continue it — it is their real shared past.',
+        '會記住的一句話（以他的視角與感受）': ' will remember, in one line from their own perspective and feelings',
+        '最近和': 'Lately, ',
+        '的感情越來越深了。': ' and I have been growing closer.',
+        '我最近跟': 'I have been spending a lot of time with ',
+        '走得很近，有這樣的朋友真好。': ' lately — good to have such a friend.',
+        '最近老是跟我過不去，想到就煩。': ' keeps getting on my nerves lately. So annoying.',
+        '最近常碰到': 'I keep running into ',
+        '，這人比我想的有意思。': ' — more interesting than I thought.',
+        '的內心：': "'s inner thought: ",
+        '歲的': '-year-old ',
+        '夜深了，你回想今天發生的事：': 'It is late at night. You look back on what happened today:',
+        '【任務】寫下你今晚睡前心裡最深的一個體悟——關於某個人、某段關係、或你自己的處境。': '[Task] Write the deepest realization on your mind tonight — about a person, a relationship, or your own situation.',
+        '【規則】繁體中文（台灣用語），只寫一句話，第一人稱，有情感、有觀點，不要流水帳。不要加引號或其他文字。': '[Rules] One sentence only, first person, with emotion and a point of view. No quotes or extra text.',
+        '件小鎮動態,等你忙完再看': 'town updates waiting for you',
     };
 
     function t(text) {
