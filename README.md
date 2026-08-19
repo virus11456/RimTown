@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.39.1.zip` from Releases
+1. Download `rimtown-v5.40.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,14 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.40.0 (2026-08-19)
+
+**今日足跡全紀錄——零成本的 Sam Moore 式行動時間軸**
+
+- 🕐 村民的行程步驟／活動／地點一有變化就自動記一筆，詳情頁「今日足跡」變成逐段時間軸：「揉麵團（15 分鐘）→ 顧爐火（30 分鐘）→ 跟熟客閒聊兩句（10 分鐘）」，並與當日對話 💬／觀察 👀／反思 💭 記憶合併顯示（最新在上，最多 40 條）
+- 👀 環境感知：村民偶爾把「看到誰正忙著什麼」寫進記憶流（每天最多 6 條、低重要度），之後聊天會自然提起「早上看到你在打鐵」
+- 💾 足跡隨存檔保存；全部規則式生成，不增加任何 AI 費用
 
 ### v5.39.1 (2026-08-19)
 

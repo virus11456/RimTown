@@ -2232,6 +2232,13 @@ const I18N = (() => {
         '結婚了！': ' got married!',
         '開始交往！': ' started dating!',
 
+        // ── v5.40.0 今日足跡全紀錄 ──
+        '看到': 'Saw ',
+        '正忙著': ' busy with: ',
+        '分鐘）': ' min)',
+        '（': ' (',
+        '）': ') ',
+
         // ── v5.39.0 成本優化:批次行程+智慧分流 ──
         '（免費額度，智慧分流用）': ' (free tier, used for smart routing)',
         '填了之後自動分流：你與村民的對話、劇情名場面優先走 Groq 免費額度；行程／反思／背景對話走上面的主金鑰（便宜又不佔 Groq 限額）。任一邊被限流會自動切到另一邊。': 'With this set, traffic is routed automatically: your chats with villagers and drama scenes use the free Groq tier first, while schedules/reflections/background chatter use the main key above (cheap, and saves your Groq quota). If either side is rate-limited, it falls back to the other.',
