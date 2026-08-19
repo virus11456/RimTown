@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.38.0.zip` from Releases
+1. Download `rimtown-v5.39.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,15 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.39.0 (2026-08-19)
+
+**AI 成本優化：批次行程＋輸出收緊＋智慧分流**
+
+- 📦 批次行程生成：村民每日行程改為 3 人一批（共用規則／格式前綴，輸入 token 省約三成），JSON 截斷時自動救回已完整的前幾位
+- ✂️ 輸出上限收緊：NPC 背景對話 800→500 tokens（3-4 句）、行程 5-6 時段×2-3 步驟——輸出是成本大頭，總成本再砍約三成
+- 🔀 智慧分流：同時填主金鑰＋Groq 金鑰時，「你與村民的對話、劇情名場面」優先走 Groq 免費額度，「行程／反思／背景對話」走主金鑰（gpt-4o-mini 便宜又不佔 Groq 限額）；任一邊被限流自動切到另一邊，5 分鐘後重試
+- 🛠️ 設定頁 Groq 欄位改名「免費額度，智慧分流用」並附分流說明
 
 ### v5.38.0 (2026-08-19)
 
