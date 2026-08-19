@@ -1045,7 +1045,9 @@ class Agent {
     }
 
     // 近況:婚戀/夢想/最新反思/僵局,依當下狀態合成(對應原版 currently)
+    // v5.37.0 若有 LLM 每日修訂的近況(this.currently),優先使用——這是他「人生此刻的主線」
     getPersonaStatus(world) {
+        if (this.currently) return this.currently;
         const parts = [];
         const partner = this.relationships.getPartner();
         if (partner) parts.push(`${partner.status === 'married' ? t('和') + partner.targetName + t('是夫妻') : t('正在和') + partner.targetName + t('交往')}`);
@@ -1103,6 +1105,29 @@ class Agent {
         goals.push(`${sleepStart}:00 ${t('回家睡覺')}`);
         this.dailyPlan = { key, goals };
         return this.dailyPlan;
+    }
+
+    // v5.37.0 目前行程步驟:LLM 分解式行程(blocks)中,找出「此刻正在做的子步驟」
+    // 對應 generative_agents 的 task decomposition——行程不只是標籤,而是 5 分鐘級的生活片段
+    getCurrentPlanStep(world) {
+        const blocks = this.dailyPlan?.blocks;
+        if (!blocks || !blocks.length) return null;
+        const toMin = (s) => { const m = String(s || '').match(/(\d{1,2}):(\d{2})/); return m ? parseInt(m[1], 10) * 60 + parseInt(m[2], 10) : null; };
+        const now = world.clock.hour * 60 + world.clock.minute;
+        let cur = null, curStart = null, nextStart = 24 * 60;
+        for (let i = 0; i < blocks.length; i++) {
+            const s = toMin(blocks[i].time);
+            if (s == null) continue;
+            if (s <= now && (curStart == null || s >= curStart)) { cur = blocks[i]; curStart = s; nextStart = 24 * 60; for (let j = 0; j < blocks.length; j++) { const e = toMin(blocks[j].time); if (e != null && e > s && e < nextStart) nextStart = e; } }
+        }
+        if (!cur) return null;
+        const steps = Array.isArray(cur.steps) ? cur.steps.filter(Boolean) : [];
+        let step = '';
+        if (steps.length) {
+            const frac = Math.max(0, Math.min(0.999, (now - curStart) / Math.max(1, nextStart - curStart)));
+            step = steps[Math.floor(frac * steps.length)] || steps[0];
+        }
+        return { goal: cur.text || '', step, time: cur.time || '' };
     }
 
     // 今日足跡:今天實際發生的記憶時間軸(對應原版逐格行程,但記的是真實事件)
@@ -1370,15 +1395,21 @@ class ConversationEngine {
         this.onNpcMessage = null; // Callback: (npcId) => {} — notify UI of incoming message
         // v5.29.0 混合成本控制:app.js 注入「該 NPC 是否在玩家附近」的判定(8 格內)
         this.isNearPlayer = null; // (agentId) => bool
+        // v5.37.0 全鎮 LLM 行程:每天為每位村民排隊生成「近況+分解式行程」,一次一位避免瞬間打爆 API
+        this._planQueue = [];
+        this._planBusy = false;
     }
 
     // v5.29.0 NPC↔NPC 對話每日 LLM 額度(可在設定頁調整;玩家聊天/劇情名場面不受限)
+    // v5.37.0 預設改為無上限(金鑰是使用者自己的);想控費可在設定頁填數字,填 0 = 關閉 NPC 對話 LLM
     npcLlmDailyBudget() {
         try {
-            const v = parseInt(localStorage.getItem('rimtown_npc_llm_budget'), 10);
+            const raw = localStorage.getItem('rimtown_npc_llm_budget');
+            if (raw === null || raw === '') return Infinity;
+            const v = parseInt(raw, 10);
             if (Number.isFinite(v) && v >= 0) return v;
         } catch (e) {}
-        return 40;
+        return Infinity;
     }
 
     // NPC↔NPC 對話是否允許用 LLM:雙方任一在玩家附近 + 今日額度未用完
@@ -1393,6 +1424,88 @@ class ConversationEngine {
     }
 
     _countNpcLlmUse(world) { world.npcLlmUsedToday = (world.npcLlmUsedToday || 0) + 1; }
+
+    // v5.37.0 全鎮 LLM 行程(移植 generative_agents plan.py 的階層式規劃):
+    // 每天清晨把所有村民排進隊伍,每個 tick 生成一位的「近況修訂 + 今日行程(含子步驟分解)」。
+    // 玩家附近/劇情相關的村民優先,額度用完的村民保留規則式行程,不會空白。
+    queueDailyPlans(world) {
+        const npcs = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead && a.currentLocation !== 'exploration');
+        // 優先序:玩家附近 > 昨日記憶精彩(重要度總分高) > 其餘
+        const TICKS_PER_DAY = 96;
+        const since = world.tickCount - TICKS_PER_DAY;
+        const scoreOf = (a) => {
+            let s = a.memory.entries.filter(e => e.tick >= since).reduce((sum, e) => sum + (e.importance || 3), 0);
+            if (this.isNearPlayer && this.isNearPlayer(a.agentId)) s += 1000;
+            return s;
+        };
+        this._planQueue = npcs.sort((a, b) => scoreOf(b) - scoreOf(a)).map(a => a.agentId);
+    }
+
+    async tickPlanQueue(world) {
+        if (this._planBusy || !this._planQueue.length) return;
+        if (!this.llm || !this.llm._canMakeRequest(false)) return;
+        if ((world.npcLlmUsedToday || 0) >= this.npcLlmDailyBudget()) { this._planQueue = []; return; }
+        const id = this._planQueue.shift();
+        const npc = world.agents[id];
+        if (!npc || npc.isDead || npc.isPlayer) return;
+        this._planBusy = true;
+        try {
+            this._countNpcLlmUse(world);
+            await this._generatePlanLLM(npc, world);
+        } catch (e) { console.warn('[RimTown] plan LLM failed:', e); }
+        finally { this._planBusy = false; }
+    }
+
+    async _generatePlanLLM(npc, world) {
+        const TICKS_PER_DAY = 96;
+        const since = world.tickCount - TICKS_PER_DAY;
+        const p = this._buildCharacterProfile(npc);
+        // 昨天的素材:計畫思考(對話裡的約定/待辦) + 最重要的記憶 + 最新體悟
+        const memos = npc.memory.entries.filter(e => e.category === 'plan' && e.tick >= since).slice(-4).map(m => `- ${m.content}`).join('\n');
+        const topMem = npc.memory.entries.filter(e => e.tick >= since && e.category !== 'plan')
+            .sort((a, b) => (b.importance || 0) - (a.importance || 0)).slice(0, 5).map(m => `- ${m.content}`).join('\n');
+        const thoughts = npc.memory.getThoughts(2).map(m => `- ${m.content}`).join('\n');
+        const prevCurrently = npc.currently || npc.getPersonaStatus(world);
+        const fest = world.festivals?.activeFestival;
+        const ctx = [];
+        if (fest) ctx.push(`${t('今天是')}${fest.name}${t('：')}${fest.description}`);
+        if (world.election?.phase && world.election.phase !== 'none') ctx.push(t('鎮長選舉正在進行,鎮上都在討論。'));
+        const wType = world.weather?.current;
+        if (wType?.name) ctx.push(`${t('天氣：')}${wType.name}`);
+        const prompt = `${t('你在為模擬小鎮「邊境鎮」的居民規劃真實的一天。像寫小說一樣,讓行程反映他的性格、人際與心事。')}
+${t('【居民】')}${p.name}${t('，')}${p.age}${t('歲')}${p.job}${t('，性格')}${p.traits}${t('。')}${p.status}
+${t('【作息】')}${npc.getLifestyleText()}
+${t('【目前近況】')}${prevCurrently}
+${ctx.length ? `${t('【今日環境】')}${ctx.join(t('；'))}` : ''}
+${memos ? `${t('【昨天的約定/待辦】')}\n${memos}` : ''}
+${topMem ? `${t('【昨天印象最深的事】')}\n${topMem}` : ''}
+${thoughts ? `${t('【心裡的體悟】')}\n${thoughts}` : ''}
+
+${t('【任務】')}
+1. ${t('根據昨天發生的事,把「近況」改寫成一句 40 字內的人生此刻主線(第三人稱,像「正在存錢想開自己的麵包店,最近和XX走得很近」)。')}
+2. ${t('生成今天的行程:6-8 個時段,每個時段 2-4 個具體的小動作(像「揉麵團」「跟熟客閒聊兩句」,不要抽象標籤)。行程要呼應約定、心事與性格,工作時段要符合作息。')}
+${t('【規則】繁體中文(台灣用語)。只輸出 JSON,不要其他文字：')}
+{"currently": "...", "plan": [{"time": "06:00", "text": "${t('時段在做什麼')}", "steps": ["${t('小動作1')}", "${t('小動作2')}"]}]}`;
+        const response = await this.llm.generate(prompt, 900, 0.85, true);
+        if (!response || response === '__ERROR__' || response === '__RATE_LIMITED__') return;
+        let data = null;
+        try {
+            const js = response.indexOf('{'), je = response.lastIndexOf('}') + 1;
+            if (js >= 0 && je > js) data = JSON.parse(response.slice(js, je));
+        } catch (e) { return; }
+        if (!data || !Array.isArray(data.plan) || !data.plan.length) return;
+        const blocks = data.plan.filter(b => b && b.text).slice(0, 10).map(b => ({
+            time: String(b.time || '').slice(0, 5),
+            text: String(b.text).slice(0, 60),
+            steps: (Array.isArray(b.steps) ? b.steps : []).filter(Boolean).slice(0, 4).map(s => String(s).slice(0, 40)),
+        }));
+        if (!blocks.length) return;
+        const key = `${world.clock.year}-${world.clock.season}-${world.clock.day}`;
+        npc.dailyPlan = { key, goals: blocks.map(b => `${b.time} ${b.text}`), blocks, llm: true };
+        if (typeof data.currently === 'string' && data.currently.trim()) {
+            npc.currently = data.currently.trim().slice(0, 80);
+        }
+    }
 
     // v5.29.0 每日反思(移植 generative_agents reflect),v5.35.0 豐富化:
     // 1) 規則式(零成本):每位村民每天合成 1-2 條想法(人際 + 生活/夢想/事件) + 1 條昨日印象觀察
@@ -2124,7 +2237,7 @@ ${t('- 毒舌的人："又在偷懶？你那個田再不管，雜草都要比你
 ${t('- 情侶："你怎麼又沒穿外套？天都涼了...過來，把這個披上。"')}
 
 ${t('格式：每行「名字: 對話內容」')}
-${t('最後一行：')}EFFECTS: {"affinity_change_a": ${t('數字')}(-3${t('到')}5), "affinity_change_b": ${t('數字')}(-3${t('到')}5), "romantic_change_a": ${t('數字')}(0${t('到')}5), "romantic_change_b": ${t('數字')}(0${t('到')}5), "summary": "${t('用一句生動的話總結發生了什麼')}", "memory_a": "${pA.name}${t('會記住的一句話（以他的視角與感受）')}", "memory_b": "${pB.name}${t('會記住的一句話（以他的視角與感受）')}"}
+${t('最後一行：')}EFFECTS: {"affinity_change_a": ${t('數字')}(-3${t('到')}5), "affinity_change_b": ${t('數字')}(-3${t('到')}5), "romantic_change_a": ${t('數字')}(0${t('到')}5), "romantic_change_b": ${t('數字')}(0${t('到')}5), "summary": "${t('用一句生動的話總結發生了什麼')}", "memory_a": "${pA.name}${t('會記住的一句話（以他的視角與感受）')}", "memory_b": "${pB.name}${t('會記住的一句話（以他的視角與感受）')}", "plan_a": "${t('若對話中有約定或待辦,寫')}${pA.name}${t('的一句「接下來要…」備忘,否則空字串')}", "plan_b": "${t('同上,')}${pB.name}${t('的備忘或空字串')}"}
 ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖昧、調情、深層情感連結才給 1-2。普通友好聊天應該給 0。大部分對話 romantic_change 應該是 0。')}`;
 
         const response = await this.llm.generate(prompt, 800);
@@ -2166,6 +2279,14 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
         const memTextB = (typeof effects.memory_b === 'string' && effects.memory_b.trim()) ? effects.memory_b.trim() : `${t('與')}${agentA.name}${t('交談：')}${summary}`;
         agentA.memory.add(world.tickCount, world.clock.timeStr, 'conversation', memTextA, Math.min(8,4+Math.abs(affA)+romA), [agentB.name]);
         agentB.memory.add(world.tickCount, world.clock.timeStr, 'conversation', memTextB, Math.min(8,4+Math.abs(affB)+romB), [agentA.name]);
+        // v5.37.0 計畫思考(移植 generative_agents 對話後的 planning thought):
+        // 對話裡的約定/待辦寫成 'plan' 記憶,隔天生成行程時會被撈出來——「星期三見」真的會出現在星期三
+        if (typeof effects.plan_a === 'string' && effects.plan_a.trim()) {
+            agentA.memory.add(world.tickCount, world.clock.timeStr, 'plan', effects.plan_a.trim(), 6, [agentB.name]);
+        }
+        if (typeof effects.plan_b === 'string' && effects.plan_b.trim()) {
+            agentB.memory.add(world.tickCount, world.clock.timeStr, 'plan', effects.plan_b.trim(), 6, [agentA.name]);
+        }
         world.logMessage('conversation', summary, agentA.name, agentB.name);
         // Collect notable conversations for daily news
         if (world.dailyNews && (Math.abs(affA) >= 4 || Math.abs(affB) >= 4 || romA >= 2 || romB >= 2)) {
@@ -6036,6 +6157,8 @@ class World {
             this.npcLlmUsedToday = 0;
             // v5.30.0 每天早上為每位村民生成今日目標(規則式,依性格+人際+夢想+事件)
             Object.values(this.agents).forEach(a => { if (!a.isPlayer && !a.isDead && a.generateDailyPlan) { try { a.generateDailyPlan(this); } catch (e) {} } });
+            // v5.37.0 全鎮 LLM 行程:排隊逐位生成「近況修訂+分解式行程」,規則式行程作為墊底
+            try { this.conversationEngine.queueDailyPlans(this); } catch (e) {}
             this.generateDailyFeedPosts(); // v5.2.0 鎮民動態每日發文
             if (this.clock.day % 7 === 0) this.generateWeeklyDigest(); // v5.3.0 每 7 天小鎮頭條
             this.lifecycle.dailyUpdate(this);
@@ -6070,6 +6193,8 @@ class World {
         });
         // NPC proactive messaging to player
         this.conversationEngine.tickProactiveMessages(this).catch(e => console.warn('[RimTown] Proactive msg error:', e));
+        // v5.37.0 每個 tick 處理一位排隊中的村民 LLM 行程(避免清晨瞬間打爆 API)
+        this.conversationEngine.tickPlanQueue(this).catch(e => console.warn('[RimTown] plan queue error:', e));
     }
     // v5.34.0 逾時代選:pending 的互動選擇滿一個遊戲日(96 ticks)沒人處理就隨機結算
     _autoResolveStaleChoices() {
@@ -6912,7 +7037,8 @@ class World {
             _annualMourning: a._annualMourning || [],
             thoughts: (a.thoughts || []).map(t2 => ({ ...t2 })), // v5.15.0 記憶想法
             attributes: { ...(a.attributes || {}) }, // v5.26.0 核心屬性
-            dailyPlan: a.dailyPlan ? { key: a.dailyPlan.key, goals: [...a.dailyPlan.goals] } : null, // v5.30.0 今日目標
+            dailyPlan: a.dailyPlan ? { key: a.dailyPlan.key, goals: [...a.dailyPlan.goals], blocks: a.dailyPlan.blocks ? a.dailyPlan.blocks.map(b => ({ time: b.time, text: b.text, steps: [...(b.steps || [])] })) : undefined, llm: a.dailyPlan.llm || undefined } : null, // v5.30.0 今日目標 / v5.37.0 LLM 分解行程
+            currently: a.currently || undefined, // v5.37.0 LLM 每日修訂的近況
         });
         return {
             version: 2,
@@ -7026,7 +7152,8 @@ class World {
                 agent._annualMourning = ad._annualMourning || [];
                 agent.thoughts = Array.isArray(ad.thoughts) ? ad.thoughts : []; // v5.15.0 記憶想法
                 if (ad.attributes && Object.keys(ad.attributes).length) agent.attributes = { ...ad.attributes }; // v5.26.0 核心屬性
-                if (ad.dailyPlan) agent.dailyPlan = ad.dailyPlan; // v5.30.0 今日目標
+                if (ad.dailyPlan) agent.dailyPlan = ad.dailyPlan; // v5.30.0 今日目標(v5.37.0 含 LLM blocks)
+                if (ad.currently) agent.currently = ad.currently; // v5.37.0 近況
 
                 // Needs
                 if (ad.needs) { Object.assign(agent.needs, ad.needs); }

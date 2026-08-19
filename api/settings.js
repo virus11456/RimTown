@@ -23,7 +23,8 @@ module.exports = async (req, res) => {
         if (b.llm_api_key) s.llm_api_key = String(b.llm_api_key).slice(0, 300);
         if (b.fallback_groq_key !== undefined) s.fallback_groq_key = String(b.fallback_groq_key || '').slice(0, 300);
         if (b.npc_llm_budget !== undefined && Number.isFinite(parseInt(b.npc_llm_budget, 10))) {
-            s.npc_llm_budget = Math.max(0, Math.min(999, parseInt(b.npc_llm_budget, 10)));
+            // v5.37.0 -1 = 無上限(預設);0 = 關閉;正數 = 每日上限
+            s.npc_llm_budget = Math.max(-1, Math.min(9999, parseInt(b.npc_llm_budget, 10)));
         }
         s.updated_at = new Date().toISOString();
         await L.writeJson(path, s);

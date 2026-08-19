@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.36.0.zip` from Releases
+1. Download `rimtown-v5.37.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,17 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.37.0 (2026-08-19)
+
+**全鎮 LLM 行程——像 generative_agents 一樣過日子**
+
+- 📅 全鎮 LLM 行程（移植 generative_agents 階層式規劃）：每位村民每天由 AI 生成「近況修訂＋今日行程」，行程分解到小動作層級（揉麵團、跟熟客閒聊兩句），依性格／人際／昨日經歷／約定量身打造；排隊逐位生成避免瞬間打爆 API，額度用完自動退回規則式行程
+- 🧭 近況（currently）欄位：AI 每天根據昨天發生的事改寫村民的「人生此刻主線」，注入所有對話與反思——村民整天的行動會圍繞這條主線
+- 🤝 對話計畫思考：AI 對話結尾若有約定／待辦，會寫成「接下來要…」備忘記憶，隔天生成行程時真的會排進去——「星期三見」不再是空話
+- 💰 AI 額度預設改為無上限（金鑰是你自己的）：設定頁留空＝無上限，想控費可填每日上限，填 0 關閉；上限設定隨帳號雲端同步
+- 😴 修復「站在戶外睡著」：入睡瞬間人在屋外會被原地凍結，現在會先走進屋裡才睡
+- 🖥️ 村民卡與詳情頁升級：快速卡顯示「此刻正在做的小動作＋下一個時段」，詳情頁今日目標展開完整分解行程
 
 ### v5.36.0 (2026-08-19)
 
