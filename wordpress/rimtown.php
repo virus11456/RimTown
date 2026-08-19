@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.51.0
+ * Version: 5.52.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.51.0');
+define('RIMTOWN_VERSION', '5.52.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.52.0',
+            'date'    => '2026-08-19',
+            'changes' => array(
+                '💰 經濟重構第三波(價值層收束):商人改以「收購加工品」為主(餐食/工具/衣物/藥品/家具賣出換銀幣),買賣原料退場;銀幣水龍頭收緊(商人職業 8→5、鎮長 3→2),加班要付津貼(銀幣新 sink,付不出就照常排班)',
+                '🌾 食物稀缺曲線:超過糧倉容量(400+穀倉擴容)的存糧每日腐壞 5%,冷藏穀庫減緩——食物爆量不再無感,辦慶典/賣商人有了理由',
+                '🔬 研究獨立成「科技」分頁(價值層長線投資),資源分頁更聚焦',
+            ),
+        ),
         array(
             'version' => '5.51.0',
             'date'    => '2026-08-19',

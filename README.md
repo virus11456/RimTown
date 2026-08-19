@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.51.0.zip` from Releases
+1. Download `rimtown-v5.52.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,16 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.52.0 (2026-08-19)
+
+**經濟重構第三波——數值重調＋價值層收束**（三波完結：加工品賣出換銀幣 → 銀幣投入建設／慶典／新居民）
+
+- 💰 商人改以「收購加工品」為主：五種商人的收購單全面轉向餐食／工具／衣物／藥品／家具，買賣原料退場（原料已自動供給）
+- 💸 銀幣水龍頭收緊：商人職業日產 8→5、鎮長 3→2；加班需付津貼（每人每日 3 銀幣的新 sink，銀庫不足自動改回正常排班）
+- 🌾 食物稀缺曲線：超過糧倉容量（基礎 400，穀倉建築擴容）的存糧每日腐壞 5%，冷藏穀庫減緩——過剩食物有了「辦慶典／賣商人」的消化動機
+- 🔬 研究獨立成「科技」分頁（價值層長線投資），資源分頁只剩三層結構
+- 探索派遣的稀有資源獎勵維持不變，作為長線探索目標
 
 ### v5.51.0 (2026-08-19)
 

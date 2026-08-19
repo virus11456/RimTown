@@ -4404,10 +4404,10 @@ const JOB_PRODUCTION = {
     tailor: {inputs:{cloth:3},outputs:{clothing:2},skill:t('工藝')},
     doctor: {inputs:{herbs:2},outputs:{medicine:2},skill:t('醫療')},
     researcher: {inputs:{},outputs:{research_points:5},skill:t('智識')},
-    trader: {inputs:{},outputs:{silver:8},skill:t('社交')},
+    trader: {inputs:{},outputs:{silver:5},skill:t('社交')}, // v5.52.0 銀幣水龍頭收緊(8→5)
     guard: {inputs:{},outputs:{},skill:t('射擊')},
     priest: {inputs:{},outputs:{},skill:t('社交')},
-    mayor: {inputs:{},outputs:{silver:3},skill:t('社交')},
+    mayor: {inputs:{},outputs:{silver:2},skill:t('社交')}, // v5.52.0 銀幣水龍頭收緊(3→2)
 };
 const SEASON_FARM_MOD = {'春季':1.2,'夏季':1.5,'秋季':0.8,'冬季':0.4};
 const NATURE_GATHERING = {forest:{wood:3},river:{food:2},meadow:{herbs:1,cloth:0.5},cave:{stone:2,metal:1},lake:{food:1.5}};
@@ -4447,9 +4447,14 @@ function processDailyProduction(world) {
         let eff = 0.5 + ((skill?skill.level:0)/20)*2.0;
         if (isIndustryHandled) eff *= 0.5;
         if (policy === 'extra') {
-            eff *= 1.5;
-            agent.moodModifier = (agent.moodModifier || 0) - 3;
-            if (Math.random() < 0.3) agent.memory?.add?.(world.tickCount, world.clock.timeStr, 'daily', t('連日加班，身體有點吃不消，但訂單堆著總得有人做。'), 4, []);
+            // v5.52.0 加班要付津貼(銀幣 sink):銀庫付不出來就照常排班
+            if (sp.consume('silver', 3, world.tickCount, `${agent.name}${t('的加班津貼')}`)) {
+                eff *= 1.5;
+                agent.moodModifier = (agent.moodModifier || 0) - 3;
+                if (Math.random() < 0.3) agent.memory?.add?.(world.tickCount, world.clock.timeStr, 'daily', t('連日加班，身體有點吃不消，但訂單堆著總得有人做。'), 4, []);
+            } else {
+                world.logMessage('economy', `${t('銀庫不足，付不出')}${agent.name}${t('的加班津貼，今日照常排班。')}`);
+            }
         }
         if (agent.job.key === 'farmer') { eff *= SEASON_FARM_MOD[world.clock.season] || 1; eff *= 1 + (world.news?world.news.getModifier('farm_bonus',0):0) + (world.weather?world.weather.farmModifier:0); }
         if (agent.job.key === 'miner') eff *= 1 + (world.news?world.news.getModifier('mining_bonus',0):0);
@@ -4493,6 +4498,17 @@ function processDailyProduction(world) {
     if (world.clock.season === '冬季' && !sp.consume('wood',npcCount*0.3,world.tickCount,'冬季取暖')) {
         world.logMessage('economy',t('木材不夠取暖！'));
         Object.values(world.agents).forEach(a => { a.moodModifier=(a.moodModifier||0)-8; a.needs.comfort=Math.max(0,a.needs.comfort-15); });
+    }
+    // v5.52.0 食物稀缺曲線:超過糧倉容量的存糧會腐壞(穀倉擴容、冷藏穀庫減緩腐壞),避免食物爆量失去取捨
+    const foodCap = 400 + (world.buildings?.getEffect?.('food_capacity', 0) || 0);
+    const decayMod = Math.max(0, 1 + (world.buildings?.getEffect?.('food_decay', 0) || 0));
+    const excessFood = sp.get('food') - foodCap;
+    if (excessFood > 0) {
+        const spoiled = Math.floor(excessFood * 0.05 * decayMod);
+        if (spoiled > 0) {
+            sp.consume('food', spoiled, world.tickCount, t('存糧過多腐壞'));
+            world.logMessage('economy', `${t('糧倉滿了，')}${spoiled}${t('份食物腐壞——可辦慶典或賣給商人消化存糧。')}`);
+        }
     }
 }
 
@@ -4681,12 +4697,13 @@ const BASE_PRICES = {food:1,wood:1.5,stone:2,metal:4,cloth:3,herbs:3.5,meals:2.5
     wheat:2,rice:3,corn:2,potato:1,cotton:4,flowers:3,mushroom:4,sugarcane:3,tea:8,grapes:6,golden_wheat:15,dragon_fruit:20,
     bread:4,pastry:8,beer:5,wine:15,perfume:20,fine_tea:18,herbal_tea:10,sugar:5,jam:10,luxury_furniture:25,
 };
+// v5.52.0 經濟C波:商人改以「收購加工品」為主(價值層 sink)——原料有自動補給,買賣原料已無意義
 const MERCHANT_TYPES = [
-    {names:[t('張商人 (Zhang the Trader)'),t('老趙商隊 (Old Zhao\'s Caravan)')],specialty:'general',sells:['food','cloth','tools','wood'],buys:['meals','furniture','clothing']},
-    {names:[t('礦商老李 (Li the Ore Dealer)')],specialty:'metals',sells:['metal','tools','stone'],buys:['food','meals']},
-    {names:[t('藥師小雪 (Xue the Herbalist)')],specialty:'medicine',sells:['herbs','medicine'],buys:['food','cloth']},
-    {names:[t('絲綢商人 (The Silk Trader)')],specialty:'textiles',sells:['cloth','clothing'],buys:['food','wood','stone']},
-    {names:[t('異國商隊 (Exotic Caravan)')],specialty:'exotic',sells:['herbs','cloth','metal'],buys:['meals','clothing','furniture','tools']},
+    {names:[t('張商人 (Zhang the Trader)'),t('老趙商隊 (Old Zhao\'s Caravan)')],specialty:'general',sells:['food','herbs'],buys:['meals','furniture','clothing','tools']},
+    {names:[t('礦商老李 (Li the Ore Dealer)')],specialty:'metals',sells:['metal','tools'],buys:['meals','medicine']},
+    {names:[t('藥師小雪 (Xue the Herbalist)')],specialty:'medicine',sells:['herbs','medicine'],buys:['meals','clothing']},
+    {names:[t('絲綢商人 (The Silk Trader)')],specialty:'textiles',sells:['cloth','clothing'],buys:['furniture','medicine','meals']},
+    {names:[t('異國商隊 (Exotic Caravan)')],specialty:'exotic',sells:['herbs','food'],buys:['meals','clothing','furniture','tools','medicine']},
 ];
 
 class TradeManager {
