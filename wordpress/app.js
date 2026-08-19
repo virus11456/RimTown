@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.47.0
-const RIMTOWN_APP_VERSION = '5.47.0';
+// RimTown - Frontend App (WordPress Plugin) v5.48.0
+const RIMTOWN_APP_VERSION = '5.48.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1611,6 +1611,8 @@ class RimTownApp {
         setInterval(() => this._checkNewspaperNotification(), 10000);
         // v4.0: Check interactive notifications every 4 seconds
         setInterval(() => this._checkV4Notifications(), 4000);
+        // v5.48.0 追蹤的村民有大事 → 角落通知
+        setInterval(() => { try { this._checkFollowedNpcs(); } catch (e) {} }, 5000);
     }
 
     // v4.0: Check for pending decisions, event choices, and NPC help requests
@@ -3670,6 +3672,7 @@ class RimTownApp {
                 case 'player-quit-job': this._playerQuitJob(); break;
                 case 'player-vote': this._playerVote(val); break;
                 case 'run-for-mayor': this._showRunForMayorModal(); break;
+                case 'rel-timeline': this._showRelTimeline(val); break; // v5.48.0 關係時間軸
                 // v5.43.0 小鎮編年史
                 case 'chronicle-view': this._chronicleGet(val).then(arc => { this._chronicleView = arc; this.renderSidebar(); }).catch(() => {}); break;
                 case 'chronicle-export-json': this._chronicleExportJSON().catch(e => this._gameAlert(t('匯出失敗：') + e.message, '📚')); break;
@@ -5092,6 +5095,7 @@ class RimTownApp {
             <div class="nqc-btns">
                 <button class="nqc-chat" data-nqc="chat">💬 ${t('交談')}</button>
                 ${goal && !goal.done ? `<button class="nqc-detail" data-nqc="nudge" ${nudged ? 'disabled style="opacity:0.4"' : ''}>✨ ${t('助夢')}</button>` : ''}
+                <button class="nqc-detail" data-nqc="follow">${this._followSet().has(agentId) ? '🔕' : '🔔'}</button>
                 <button class="nqc-detail" data-nqc="detail">📋 ${t('詳情')}</button>
             </div>`;
         card.onclick = (e) => {
@@ -5099,6 +5103,7 @@ class RimTownApp {
             if (act === 'close') this._hideNpcCard();
             else if (act === 'chat') { this._hideNpcCard(); this._walkToAndChat(agentId); }
             else if (act === 'nudge') { this._nudgeDream(agentId); }
+            else if (act === 'follow') { this._toggleFollow(agentId); this._showNpcCard(agentId); } // v5.48.0 追蹤(重繪按鈕狀態)
             else if (act === 'detail') {
                 this._hideNpcCard();
                 this.selectedAgent = agentId;
@@ -6292,6 +6297,93 @@ class RimTownApp {
     }
 
     // v5.31.0 今天的故事:把最獨特的記憶流/反思/AI 對話拉到首頁第一層
+    // v5.48.0 關係時間軸:兩個人從認識到現在的完整故事線(記憶流+名場面+現狀,零成本)
+    _showRelTimeline(pairKey) {
+        const [idA, idB] = String(pairKey).split('|');
+        const w = this.world;
+        const a = w?.agents?.[idA], b = w?.agents?.[idB];
+        if (!a || !b) return;
+        const rows = [];
+        for (const [own, other] of [[a, b], [b, a]]) {
+            for (const m of own.memory.entries) {
+                if ((m.relatedAgents || []).includes(other.name)) {
+                    rows.push({ tick: m.tick || 0, time: m.timeStr || '', who: own.name, text: m.content, cat: m.category });
+                }
+            }
+        }
+        (w.dramaArchive || []).forEach((s, i) => {
+            if ((s.aName === a.name && s.bName === b.name) || (s.aName === b.name && s.bName === a.name)) {
+                rows.push({ tick: s.tick || 0, time: `${t('第')}${s.year}${t('年 ')}${t(s.season)} ${t('第')}${s.day}${t('天')}`, who: '', text: `${s.icon || '🎭'} ${s.title}`, drama: i });
+            }
+        });
+        rows.sort((x, y) => x.tick - y.tick);
+        const rel = a.relationships.relationships[idB];
+        const statusLine = rel?.status === 'married' ? `💍 ${t('已婚')}` : rel?.status === 'dating' ? `💗 ${t('交往中')}`
+            : rel?.isFeud ? `💢 ${t('絕交中')}` : (rel?.affinity ?? 0) >= 40 ? `🤝 ${t('好友')}`
+            : (rel?.affinity ?? 0) <= -30 ? `⚔️ ${t('交惡')}` : `👋 ${t('相識')}`;
+        const catIc = { conversation: '💬', relationship: '💥', whisper: '🤫', reflection: '💭', election: '🗳️', observation: '👀', plan: '🗓️', gift: '🎁' };
+        document.getElementById('rel-timeline-modal')?.remove();
+        const ov = document.createElement('div');
+        ov.id = 'rel-timeline-modal';
+        ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px';
+        const items = rows.slice(-40).map(r => {
+            const tm = (String(r.time).match(/(\d{2}:\d{2})$/) || [])[1] || r.time;
+            const body = r.drama != null
+                ? `<button data-rt-drama="${r.drama}" style="background:none;border:none;color:#ffd166;cursor:pointer;padding:0;font-size:0.74rem;text-align:left">📺 ${this._escapeHtml(r.text)}（${t('點我重播')}）</button>`
+                : `${catIc[r.cat] || '·'} <b>${this._escapeHtml(r.who)}</b>${t('：')}${this._escapeHtml(r.text)}`;
+            return `<div style="margin:7px 0;font-size:0.72rem;line-height:1.5"><span style="color:var(--text-muted);font-size:0.6rem">${this._escapeHtml(r.time)}</span><br>${body}</div>`;
+        }).join('');
+        ov.innerHTML = `<div style="background:var(--bg-card,#20222c);border:1px solid var(--border,#444);border-radius:12px;max-width:400px;width:100%;max-height:78vh;display:flex;flex-direction:column;padding:14px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <div style="font-weight:700;font-size:0.92rem">📜 ${a.name} × ${b.name}</div>
+                <button data-rt-close="1" style="background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer">✕</button>
+            </div>
+            <div style="font-size:0.72rem;color:var(--text-secondary);margin:2px 0 8px">${t('目前關係：')}${statusLine}</div>
+            <div style="overflow-y:auto;flex:1;border-top:1px solid var(--border,#333);padding-top:4px">${items || `<p style="font-size:0.72rem;color:var(--text-muted)">${t('兩人還沒有共同的故事。')}</p>`}</div>
+        </div>`;
+        ov.addEventListener('click', (e) => {
+            const d = e.target.closest?.('[data-rt-drama]');
+            if (d) { const s = (this.world?.dramaArchive || [])[parseInt(d.dataset.rtDrama, 10)]; if (s) { ov.remove(); this._showDramaScene(s); } return; }
+            if (e.target.closest?.('[data-rt-close]') || e.target === ov) ov.remove();
+        });
+        document.body.appendChild(ov);
+    }
+
+    // v5.48.0 追蹤村民:訂閱你在追的 CP/冤家,大事角落通知
+    _followSet() {
+        if (!this._follows) {
+            try { this._follows = new Set(JSON.parse(localStorage.getItem('rimtown_follows_' + this.currentTownId) || '[]')); }
+            catch (e) { this._follows = new Set(); }
+        }
+        return this._follows;
+    }
+    _toggleFollow(npcId) {
+        const s = this._followSet();
+        if (s.has(npcId)) s.delete(npcId); else s.add(npcId);
+        try { localStorage.setItem('rimtown_follows_' + this.currentTownId, JSON.stringify([...s])); } catch (e) {}
+        const npc = this.world?.agents?.[npcId];
+        if (npc) this._showCornerNotice({ icon: s.has(npcId) ? '🔔' : '🔕', title: s.has(npcId) ? t('已追蹤') : t('取消追蹤'), name: npc.name, desc: s.has(npcId) ? t('他有大事發生時會通知你') : '' });
+    }
+    _checkFollowedNpcs() {
+        const w = this.world;
+        if (!w) return;
+        const s = this._followSet();
+        if (!s.size) return;
+        this._followSeen = this._followSeen || {};
+        let shown = 0;
+        for (const id of s) {
+            const npc = w.agents[id];
+            if (!npc || npc.isDead) continue;
+            if (this._followSeen[id] == null) { this._followSeen[id] = w.tickCount; continue; } // 剛追蹤:從現在開始,不倒灌舊事
+            const fresh = (npc.memory?.entries || []).filter(m => m.tick > this._followSeen[id] && (m.importance || 0) >= 7).slice(-1)[0];
+            this._followSeen[id] = w.tickCount;
+            if (fresh && shown < 2) {
+                shown++;
+                this._showCornerNotice({ icon: '🔔', title: `${t('你追蹤的')}${npc.name}`, name: '', desc: String(fresh.content).slice(0, 48) });
+            }
+        }
+    }
+
     // v5.45.0 昨日回響:蝴蝶效應回饋卡
     _renderDailyEcho() {
         const lines = this.world?.dailyEcho || [];
@@ -6337,18 +6429,93 @@ class RimTownApp {
             if (rows.length >= 6) break;
             rows.push({ icon: '✨', text: `${c.agentA} & ${c.agentB}:${c.summary}`, action: 'story-npc', val: c.agentAId });
         }
-        if (!rows.length) return '';
-        const html = rows.slice(0, 6).map(r => `
+        // v5.48.0 追劇首頁:本集看點 + 進行中的劇情線 + 下集預告——每天像一集連續劇
+        const storylines = this._computeStorylines();
+        const teasers = this._computeTeasers();
+        if (!rows.length && !storylines.length && !teasers.length) return '';
+        const html = rows.slice(0, 4).map(r => `
             <button class="headline-row" data-action="${r.action}" data-val="${this._escapeHtml(r.val)}">
                 <span class="headline-ic">${r.icon}</span>
                 <span class="headline-text">${this._escapeHtml(r.text)}</span>
                 <span class="headline-go">›</span>
             </button>`).join('');
+        const slHtml = storylines.length ? `<div style="padding:5px 8px 2px;font-size:0.66rem;color:var(--text-secondary);font-weight:bold">📈 ${t('進行中的劇情線')}</div>` +
+            storylines.map(s => `<button class="headline-row" data-action="rel-timeline" data-val="${this._escapeHtml(s.val)}">
+                <span class="headline-ic">${s.icon}</span><span class="headline-text">${this._escapeHtml(s.text)}</span><span class="headline-go">📜</span></button>`).join('') : '';
+        const tsHtml = teasers.length ? `<div style="padding:5px 8px 2px;font-size:0.66rem;color:var(--text-secondary);font-weight:bold">🔮 ${t('下集預告')}</div>` +
+            teasers.map(s => `<div class="headline-row" style="cursor:default"><span class="headline-ic">${s.icon}</span><span class="headline-text" style="font-style:italic">${this._escapeHtml(s.text)}</span></div>`).join('') : '';
+        const day = this.world.clock;
         return `<div class="town-headlines">
-            <div class="headlines-title"><span>📖 ${t('今天的故事')}</span>
+            <div class="headlines-title"><span>📺 ${t('第')}${(day.year - 1) * 60 + day.day}${t('集')}·${t('邊境鎮日常')}</span>
                 <button class="headlines-more" data-action="goto-tab" data-val="records">${t('更多')} ›</button></div>
-            ${html}
+            ${html ? `<div style="padding:5px 8px 2px;font-size:0.66rem;color:var(--text-secondary);font-weight:bold">🔥 ${t('本集看點')}</div>${html}` : ''}
+            ${slHtml}${tsHtml}
         </div>`;
+    }
+
+    // v5.48.0 進行中的劇情線:戀愛/婚姻/絕交/三角/和解調停,點了直接開兩人的故事時間軸
+    _computeStorylines() {
+        const w = this.world;
+        if (!w) return [];
+        const out = [];
+        const seen = new Set();
+        const npcs = Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead);
+        const days = (since) => Math.max(1, Math.floor((w.tickCount - (since || 0)) / 96));
+        for (const a of npcs) {
+            for (const [tid, rel] of Object.entries(a.relationships.relationships)) {
+                const b = w.agents[tid];
+                if (!b || b.isPlayer || b.isDead) continue;
+                const key = [a.agentId, tid].sort().join('|');
+                if (seen.has(key)) continue;
+                if (rel.status === 'married') { seen.add(key); out.push({ icon: '💍', text: `${a.name} × ${b.name} — ${t('婚姻第')}${days(rel.statusSince)}${t('天')}`, val: key }); }
+                else if (rel.status === 'dating') { seen.add(key); out.push({ icon: '💗', text: `${a.name} × ${b.name} — ${t('戀愛第')}${days(rel.statusSince)}${t('天')}`, val: key }); }
+                else if (rel.isFeud) {
+                    seen.add(key);
+                    const med = w.mediations?.[key]?.sides;
+                    const medN = med ? Object.keys(med).length : 0;
+                    out.push({ icon: '💢', text: `${a.name} × ${b.name} — ${t('絕交中')}${medN ? `（${t('你調停到')} ${medN}/2）` : ''}`, val: key });
+                }
+            }
+        }
+        // 三角關係:單戀名花有主的人
+        for (const c of npcs) {
+            if (out.length >= 5) break;
+            for (const r of c.relationships.getRomanticInterests()) {
+                if (r.status) continue;
+                const b = w.agents[r.targetId];
+                if (!b || b.isDead) continue;
+                const partner = b.relationships.getPartner?.();
+                if (partner && r.romanticInterest > 40) {
+                    const key = [c.agentId, r.targetId].sort().join('|');
+                    if (seen.has(key)) continue;
+                    seen.add(key);
+                    out.push({ icon: '🔺', text: `${c.name}${t('單戀名花有主的')}${b.name}`, val: key });
+                    break;
+                }
+            }
+        }
+        return out.slice(0, 5);
+    }
+
+    // v5.48.0 下集預告:接近門檻的關係伏筆
+    _computeTeasers() {
+        const w = this.world;
+        if (!w) return [];
+        const out = [];
+        const seen = new Set();
+        const npcs = Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead);
+        for (const a of npcs) {
+            if (out.length >= 2) break;
+            for (const [tid, rel] of Object.entries(a.relationships.relationships)) {
+                const b = w.agents[tid];
+                if (!b || b.isPlayer || b.isDead) continue;
+                const key = [a.agentId, tid].sort().join('|');
+                if (seen.has(key)) continue;
+                if (!rel.isFeud && rel.affinity <= -48 && rel.affinity > -60) { seen.add(key); out.push({ icon: '⚡', text: `${a.name}${t('和')}${b.name}${t('的關係瀕臨絕交…')}` }); break; }
+                if (!rel.status && rel.romanticInterest >= 35 && rel.romanticInterest < 50) { seen.add(key); out.push({ icon: '💘', text: `${a.name}${t('對')}${b.name}${t('的心意,快藏不住了…')}` }); break; }
+            }
+        }
+        return out.slice(0, 2);
     }
 
     // v5.17.0 今日頭條:把最新一期日報的重點事件做成可點的情境入口,擺在首頁最上方
