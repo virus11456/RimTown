@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.37.0
+ * Version: 5.38.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.37.0');
+define('RIMTOWN_VERSION', '5.38.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.38.0',
+            'date'    => '2026-08-19',
+            'changes' => array(
+                '👑 旅人參選鎮長:每年秋季選舉的競選登記期(3天)內,滿足資格(第二章+3位好感40以上村民聯署)即可在「事件」分頁登記參選;選政見、用聊天「說服」向村民逐一拉票(每人一屆一次),聲望與人緣直接左右選情',
+                '🏆 當選後你就是鎮長:施政方針實際生效30天,全鎮大事改由「鎮民等你拿主意」視角;落選則雖敗猶榮,寫入記憶下屆再戰;新增成就「初生之犢」(參選)與「民選鎮長」(當選)',
+                '🗳️ 競選開跑時符合資格會收到角落提醒;今日焦點會引導參選/拉票',
+            ),
+        ),
         array(
             'version' => '5.37.0',
             'date'    => '2026-08-19',

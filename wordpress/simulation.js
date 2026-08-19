@@ -3915,6 +3915,49 @@ class ElectionSystem {
 
     triggerElection(world) { if (this.active) return; this._startElection(world); }
 
+    // v5.38.0 旅人參選鎮長 ----------------------------------------------------
+    // 參選資格:第二章(繁榮 20)起,且至少 3 位村民好感 ≥ 40(有人願意聯署)
+    playerEligibility(world) {
+        const player = world.agents['player'];
+        if (!player) return { ok: false, msg: '' };
+        if ((world.prosperity?.prosperity || 0) < 20) return { ok: false, msg: t('小鎮還不夠認識你——進入第二章(小鎮成長 20)後才能參選。') };
+        const backers = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead && (a.relationships?.relationships?.['player']?.affinity || 0) >= 40);
+        if (backers.length < 3) return { ok: false, msg: `${t('參選需要 3 位好感 40 以上的村民聯署(目前')} ${backers.length}/3${t(')。先去多交幾個朋友吧!')}` };
+        return { ok: true, backers };
+    }
+
+    registerPlayerCandidate(world, policyId) {
+        if (!this.active || this.phase !== 'campaign') return { ok: false, msg: t('現在不是競選登記期間(每年秋季第 1 天開選,登記期 3 天)。') };
+        if (this.candidates.some(c => c.agentId === 'player')) return { ok: false, msg: t('你已經登記參選了。') };
+        const elig = this.playerEligibility(world);
+        if (!elig.ok) return elig;
+        const player = world.agents['player'];
+        const policy = ELECTION_POLICIES.find(p => p.id === policyId) || ELECTION_POLICIES[1];
+        this.candidates.push({ agentId: 'player', name: player.name, policy: policy.id, policyLabel: policy.label, policyIcon: policy.icon, votes: 0, speech: `${t('我雖是旅人,但這裡早已是我的家。我主張')}${policy.label}${t(',請把你的一票交給我!')}`, isPlayer: true });
+        this.playerCanvassed = {};
+        world.logMessage('event', `📢 ${t('旅人')} ${player.name} ${t('宣布參選鎮長!主張')}${policy.icon}${policy.label}`);
+        player.memory?.add(world.tickCount, world.clock.timeStr, 'election', `${t('我登記參選鎮長,主張')}${policy.label}${t('。聯署的朋友們都在為我加油。')}`, 9, []);
+        // 全鎮都會知道旅人出馬了——寫進每個人的記憶流,之後的對話會自然聊到
+        Object.values(world.agents).forEach(a => {
+            if (a.isPlayer || a.isDead) return;
+            a.memory?.add(world.tickCount, world.clock.timeStr, 'election', `${t('鎮上的旅人')}${player.name}${t('宣布參選鎮長,主張')}${policy.label}`, 6, [player.name]);
+        });
+        if (world.dailyNews) world.dailyNews.collectEvent('politics', `${t('旅人')}${player.name}${t('投入鎮長選戰,主張')}${policy.label}`, 9, [player.name]);
+        return { ok: true };
+    }
+
+    // 拉票:每位村民每屆一次;由聊天「說服」意圖觸發
+    canvassNpc(world, npc) {
+        if (!this.candidates.some(c => c.agentId === 'player')) return { ok: false };
+        if (this.phase !== 'campaign' && this.phase !== 'voting') return { ok: false };
+        this.playerCanvassed = this.playerCanvassed || {};
+        if (this.playerCanvassed[npc.agentId]) return { ok: false, dup: true };
+        this.playerCanvassed[npc.agentId] = true;
+        const me = this.candidates.find(c => c.agentId === 'player');
+        npc.memory?.add(world.tickCount, world.clock.timeStr, 'election', `${world.agents['player']?.name || t('旅人')}${t('親自來拉票,認真談了他對')}${me?.policyLabel || ''}${t('的想法')}`, 5, []);
+        return { ok: true };
+    }
+
     _startElection(world) {
         const eligible = Object.values(world.agents).filter(a => !a.isPlayer && a.agentId !== 'player' && !world.events.getTravellingAgents().some(t => t.agentId === a.agentId));
         if (eligible.length < 2) return;
@@ -3998,6 +4041,12 @@ class ElectionSystem {
             if (voter.personality.traits.includes('creative') && c.policy === 'culture') score += 3;
             if (voter.personality.traits.includes('hardworking') && c.policy === 'economy') score += 3;
             if (voter.personality.traits.includes('ascetic') && c.policy === 'nature') score += 3;
+            // v5.38.0 玩家候選人:聲望與親自拉票會左右選情;旅人資歷淺,起步略居劣勢
+            if (c.agentId === 'player') {
+                score -= 6;
+                score += Math.max(-10, Math.min(15, (world.reputationSystem?.reputation || 0) / 15));
+                if (this.playerCanvassed?.[voter.agentId]) score += 8;
+            }
             return { candidate: c, score };
         });
         scores.sort((a, b) => b.score - a.score);
@@ -4038,6 +4087,19 @@ class ElectionSystem {
             if (votedFor === winner.agentId) a.moodModifier = (a.moodModifier || 0) + 8;
             else if (votedFor) a.moodModifier = (a.moodModifier || 0) - 3;
         });
+        // v5.38.0 玩家參選的結局
+        const playerCand = this.candidates.find(c => c.agentId === 'player');
+        if (playerCand) {
+            const playerA = world.agents['player'];
+            if (winner.agentId === 'player') {
+                world.logMessage('event', `👑 ${t('你當選鎮長了!從今天起,全鎮大小事都等你拿主意。')}`);
+                playerA?.memory?.add(world.tickCount, world.clock.timeStr, 'election', `${t('我贏得鎮長選舉(')}${playerCand.votes}${t('票),旅人成了邊境鎮的鎮長!')}`, 10, []);
+            } else {
+                world.logMessage('event', `🗳️ ${t('你以')} ${playerCand.votes} ${t('票落選,雖敗猶榮——村民記住了你的名字,下屆秋季再來!')}`);
+                playerA?.memory?.add(world.tickCount, world.clock.timeStr, 'election', `${t('我在鎮長選舉中落敗(')}${playerCand.votes}${t('票)。')}${winner.name}${t('當選了,但我不會就此放棄。')}`, 8, [winner.name]);
+            }
+        }
+        this.playerCanvassed = {};
         this.phase = 'results'; this.resultsDaysLeft = 3;
         return { name: t('鎮長選舉'), description: `${winner.name} ${t('以')} ${winner.votes}/${totalVotes} ${t('票當選新鎮長')}`, severity: 'major', event_type: 'election', effects: {} };
     }
@@ -4059,7 +4121,7 @@ class ElectionSystem {
     }
 
     toDict() {
-        return { active: this.active, phase: this.phase, candidates: this.candidates.map(c => ({...c})), votes: {...this.votes}, campaignDaysLeft: this.campaignDaysLeft, votingDaysLeft: this.votingDaysLeft, resultsDaysLeft: this.resultsDaysLeft, lastElectionDay: this.lastElectionDay, electionHistory: this.electionHistory.slice(-10) };
+        return { active: this.active, phase: this.phase, candidates: this.candidates.map(c => ({...c})), votes: {...this.votes}, campaignDaysLeft: this.campaignDaysLeft, votingDaysLeft: this.votingDaysLeft, resultsDaysLeft: this.resultsDaysLeft, lastElectionDay: this.lastElectionDay, electionHistory: this.electionHistory.slice(-10), playerCanvassed: { ...(this.playerCanvassed || {}) } };
     }
 
     loadFrom(data) {
@@ -4069,6 +4131,7 @@ class ElectionSystem {
         this.campaignDaysLeft = data.campaignDaysLeft || 0; this.votingDaysLeft = data.votingDaysLeft || 0;
         this.resultsDaysLeft = data.resultsDaysLeft || 0; this.lastElectionDay = data.lastElectionDay || 0;
         this.electionHistory = (data.electionHistory || []).slice(-10);
+        this.playerCanvassed = data.playerCanvassed || {};
     }
 }
 
@@ -6256,11 +6319,19 @@ class World {
         if (this.dailyDecision?.pendingDecision && items.length < 2) {
             items.push({ icon: '🗂️', text: t('有村民來找你商量一件事'), reason: t('今天的選擇會留下長期影響'), tab: 'events' });
         }
-        // 2) 選舉期
+        // 2) 選舉期(v5.38.0 玩家可以親自參選)
         if (this.election?.phase === 'campaign') {
-            items.push({ icon: '🗳️', text: t('選舉開跑了!去跟村民聊聊,用「說服」幫你支持的人拉票'), reason: `${t('競選只剩')} ${this.election.campaignDaysLeft} ${t('天')}`, tab: 'events' });
+            const isCand = this.election.candidates?.some(c => c.agentId === 'player');
+            if (isCand) {
+                items.push({ icon: '👑', text: t('你正在競選鎮長!去找村民聊天,用「說服」為自己拉票'), reason: `${t('競選只剩')} ${this.election.campaignDaysLeft} ${t('天,每位村民只能拉一次票')}`, tab: 'events' });
+            } else if (this.election.playerEligibility?.(this)?.ok) {
+                items.push({ icon: '🗳️', text: t('選舉開跑了!你已符合參選資格——要不要自己出馬選鎮長?'), reason: t('到「事件」分頁登記參選,錯過要再等一年'), tab: 'events' });
+            } else {
+                items.push({ icon: '🗳️', text: t('選舉開跑了!去跟村民聊聊,用「說服」幫你支持的人拉票'), reason: `${t('競選只剩')} ${this.election.campaignDaysLeft} ${t('天')}`, tab: 'events' });
+            }
         } else if (this.election?.phase === 'voting') {
-            items.push({ icon: '🗳️', text: t('投票中!去投下你的一票'), reason: t('你的一票可能改變小鎮未來的政策'), tab: 'events' });
+            const isCand = this.election.candidates?.some(c => c.agentId === 'player');
+            items.push({ icon: '🗳️', text: isCand ? t('投票進行中!你也在選票上——把握最後機會拉票') : t('投票中!去投下你的一票'), reason: t('你的一票可能改變小鎮未來的政策'), tab: 'events' });
         }
         // 3) 昨天的劇情餘波:名場面當事人值得關心
         const arc = (this.dramaArchive || []).slice(-1)[0];
@@ -8494,6 +8565,19 @@ class EventChoiceSystem {
         if (!choices) return; // No choices for this event type
 
         // v5.36.0 敘事修正:玩家是旅人不是鎮長——全鎮大事改為「現任鎮長來徵詢你的意見」
+        // v5.38.0 若玩家已當選鎮長,改回鎮長視角:鎮民等你拿主意
+        const playerIsMayor = world.agents['player']?.job?.key === 'mayor';
+        if (playerIsMayor) {
+            this.pendingEvent = {
+                eventName: event.name,
+                description: `${event.description}${t('身為鎮長,全鎮都在等你拿主意。')}`,
+                severity: event.severity,
+                choices: choices,
+                timestamp: world.tickCount,
+            };
+            world.logMessage('event_choice', `⚡ ${event.name}${t('——鎮民都在等鎮長的決定!')}`);
+            return;
+        }
         const mayor = Object.values(world.agents).find(a => !a.isPlayer && !a.isDead && a.job?.key === 'mayor');
         const asker = mayor ? mayor.name : t('鎮長');
         this.pendingEvent = {

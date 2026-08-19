@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.37.0.zip` from Releases
+1. Download `rimtown-v5.38.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,16 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.38.0 (2026-08-19)
+
+**旅人參選鎮長**
+
+- 👑 你也能選鎮長：每年秋季選舉的競選登記期（3 天）內，滿足資格（第二章＋3 位好感 40 以上村民聯署）即可在「事件」分頁登記參選，從六大政見中選一個主打
+- 🤝 拉票玩法：聊天用「說服」向村民逐一拉票（每位村民一屆一次），聲望與人緣直接左右選情；旅人資歷淺、起步略居劣勢，得靠經營人心翻盤
+- 🏆 當選後你就是鎮長：施政方針實際影響小鎮 30 天，全鎮大事改由「鎮民等你拿主意」視角；落選雖敗猶榮，寫入記憶流下屆再戰
+- 🏅 新增成就：「初生之犢」（登記參選）、「民選鎮長」（贏得選舉）
+- 🔔 競選開跑時符合資格會收到角落提醒；今日焦點會引導你參選與拉票
 
 ### v5.37.0 (2026-08-19)
 
