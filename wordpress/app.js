@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.35.6
-const RIMTOWN_APP_VERSION = '5.35.6';
+// RimTown - Frontend App (WordPress Plugin) v5.35.7
+const RIMTOWN_APP_VERSION = '5.35.7';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -7157,9 +7157,9 @@ class RimTownApp {
                 const zoneDef = this._getExplorationZone(zoneId);
                 if (!zoneDef) return;
                 const canSend = !expeditions.some(e => e.zoneId === zoneId);
+                // v5.35.7 移除只列前 8 位的限制:全部不在探險中的村民都可選
                 const availableNpcs = Object.entries(this.state.agents)
-                    .filter(([id, a]) => !a.is_player && a.activity_label !== t('探險中') && id !== 'player')
-                    .slice(0, 8);
+                    .filter(([id, a]) => !a.is_player && a.activity_label !== t('探險中') && id !== 'player');
                 html += `<div class="explore-zone">
                     <div class="zone-header">${zoneDef.icon} <strong>${zoneDef.name}</strong>
                         <span class="zone-diff">${t('難度：')}${'⭐'.repeat(zoneDef.difficulty)}</span></div>
