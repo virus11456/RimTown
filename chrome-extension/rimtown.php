@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.47.0
+ * Version: 5.48.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.47.0');
+define('RIMTOWN_VERSION', '5.48.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.48.0',
+            'date'    => '2026-08-19',
+            'changes' => array(
+                '📺 追劇首頁:首頁故事區升級為「第N集·邊境鎮日常」——本集看點(名場面/內心話/大事)+進行中的劇情線(戀愛第N天/婚姻/絕交/三角戀/你的調停進度)+下集預告(瀕臨絕交/心意快藏不住的伏筆)',
+                '📜 關係時間軸:點劇情線任一對,打開兩人從認識到現在的完整故事——雙方記憶流互相相關的條目+名場面(可重播)+目前關係,按時間排序',
+                '🔔 追蹤功能:村民快速卡新增追蹤鈕,你在追的 CP/冤家發生大事(重要度高的記憶)時角落通知你,20 人的鎮不再漏掉你在乎的那條線',
+            ),
+        ),
         array(
             'version' => '5.47.0',
             'date'    => '2026-08-19',

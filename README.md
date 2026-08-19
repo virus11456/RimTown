@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.47.0.zip` from Releases
+1. Download `rimtown-v5.48.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,14 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.48.0 (2026-08-19)
+
+**看戲三件組——追劇首頁、關係時間軸、追蹤功能**
+
+- 📺 追劇首頁：首頁故事區升級為「第 N 集·邊境鎮日常」——🔥 本集看點（名場面／內心話／大事）＋📈 進行中的劇情線（戀愛第 N 天／婚姻／絕交＋你的調停進度／三角戀）＋🔮 下集預告（瀕臨絕交、心意快藏不住的伏筆），每天像追一集連續劇
+- 📜 關係時間軸：點劇情線的任一對，打開兩人從認識到現在的完整故事——雙方記憶流互相相關的條目＋名場面（可點擊重播）＋目前關係，按時間排序；你的耳語、挑撥也會留在裡面
+- 🔔 追蹤功能：村民快速卡新增 🔔 追蹤鈕；你在追的 CP／冤家發生大事（高重要度記憶）時右下角通知你——20 人的鎮不再漏掉你在乎的那條線（追蹤名單依城鎮各自保存）
 
 ### v5.47.0 (2026-08-19)
 
