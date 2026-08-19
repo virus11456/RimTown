@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.51.0
-const RIMTOWN_APP_VERSION = '5.51.0';
+// RimTown - Frontend App (WordPress Plugin) v5.52.0
+const RIMTOWN_APP_VERSION = '5.52.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -7538,6 +7538,7 @@ class RimTownApp {
         html += '<div class="sub-tab-bar">';
         const subTabs = [
             { key:'resources', label:t('資源'), icon:'📦' },
+            { key:'tech', label:t('科技'), icon:'🔬' }, // v5.52.0 研究獨立入口(價值層)
             { key:'shop', label:t('商店'), icon:'🛒' },
             { key:'building', label:t('建築'), icon:'🏗️' },
             { key:'factory', label:t('工廠'), icon:'🔧' },
@@ -7655,9 +7656,9 @@ class RimTownApp {
                 html += t('<p class="muted-text">鎮上沒有商人，可能很快就會來一位。</p>');
             }
             html += '</div>';
-            // Research
+        } else if (this._economySubTab === 'tech') {
+            // v5.52.0 經濟C波:研究移出資源分頁,獨立成「科技」入口(價值層長線投資)
             const research = this.state.research || {};
-            // v5.50.0 研究點移出資源格,直接顯示在研究區標題(價值層)
             html += `<div class="econ-section"><h3>🔬 ${t('研究')}<span style="font-weight:normal;font-size:0.72rem;color:var(--text-secondary);margin-left:6px">📚 ${t('研究點')} ${Math.round(res.research_points || 0)}</span></h3>`;
             const projects = research.projects || {};
             const currentKey = research.current_research;

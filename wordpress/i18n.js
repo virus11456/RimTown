@@ -2232,6 +2232,15 @@ const I18N = (() => {
         '結婚了！': ' got married!',
         '開始交往！': ' started dating!',
 
+        // ── v5.52.0 經濟C波:價值層收束 ──
+        '科技': 'Tech',
+        '的加班津貼': "'s overtime pay",
+        '銀庫不足，付不出': 'Treasury too low to pay ',
+        '的加班津貼，今日照常排班。': "'s overtime bonus — normal shift today.",
+        '存糧過多腐壞': 'excess food spoiled',
+        '糧倉滿了，': 'Granary is full — ',
+        '份食物腐壞——可辦慶典或賣給商人消化存糧。': ' food spoiled. Hold a festival or sell to merchants to use up stock.',
+
         // ── v5.51.0 經濟B波:勞動力排班 ──
         '今日產出／消耗，點按排班': "today's flow — tap to schedule",
         '（無人手）': '(no workers)',
