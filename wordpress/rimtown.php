@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.49.3
+ * Version: 5.50.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.49.3');
+define('RIMTOWN_VERSION', '5.50.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,14 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.50.0',
+            'date'    => '2026-08-19',
+            'changes' => array(
+                '📦 經濟重構第一波(三層資源 UI):資源分頁改為「關鍵資源(食物+銀幣大卡)→ 加工產能(餐食/工具/衣物/藥品/家具,顯示今日產出/消耗流量與需求,而非純庫存)→ 原料倉庫(收成一顆綠黃紅燈號,細目摺疊)」',
+                '🔬 研究點移出資源格,直接顯示在研究區標題——玩家要盯的數字從 13+ 種降到 2 種存量+5 條產能',
+            ),
+        ),
         array(
             'version' => '5.49.3',
             'date'    => '2026-08-19',

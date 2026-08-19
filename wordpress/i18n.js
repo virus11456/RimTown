@@ -2232,6 +2232,21 @@ const I18N = (() => {
         '結婚了！': ' got married!',
         '開始交往！': ' started dating!',
 
+        // ── v5.50.0 經濟A波:三層資源 ──
+        '關鍵資源': 'Key Resources',
+        '加工產能': 'Crafting Output',
+        '今日產出／消耗': "today's production / consumption",
+        '每日需': 'daily need',
+        '每日耗損': 'daily wear',
+        '生病時消耗': 'used when sick',
+        '建設與新居用': 'for building & new homes',
+        '原料倉庫': 'Raw Materials',
+        '短缺': 'Shortage',
+        '吃緊': 'Running low',
+        '原料充足，工坊無虞': 'Materials plentiful — workshops are set',
+        '展開明細': 'Show details',
+        '研究點': 'points',
+
         // ── v5.49.2 聊天版面 ──
         '返回聯絡人': 'Back to contacts',
 

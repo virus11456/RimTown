@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.49.3
-const RIMTOWN_APP_VERSION = '5.49.3';
+// RimTown - Frontend App (WordPress Plugin) v5.50.0
+const RIMTOWN_APP_VERSION = '5.50.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -7471,6 +7471,23 @@ class RimTownApp {
     }
 
     // --- Economy Tab (with factory sub-tab) ---
+    // v5.50.0 經濟A波:從 stockpile 歷史計算「今日」各資源的產出/消耗流量(顯示層,不動模擬)
+    _econDailyFlow(keys) {
+        const out = {};
+        keys.forEach(k => { out[k] = { produced: 0, consumed: 0 }; });
+        const hist = this.world?.stockpile?.history;
+        if (!hist) return out;
+        const dayStart = Math.floor((this.world.tickCount || 0) / 96) * 96;
+        for (let i = hist.length - 1; i >= 0; i--) {
+            const e = hist[i];
+            if (e.tick < dayStart) break;
+            const rec = out[e.resource];
+            if (!rec) continue;
+            if (e.amount > 0) rec.produced += e.amount; else rec.consumed -= e.amount;
+        }
+        return out;
+    }
+
     renderEconomy(container) {
         if (!this.state) return;
         if (!this._economySubTab) this._economySubTab = 'resources';
@@ -7531,19 +7548,65 @@ class RimTownApp {
             bread:t('麵包'),pastry:t('糕點'),beer:t('啤酒'),wine:t('葡萄酒'),perfume:t('香水'),fine_tea:t('精品茶'),herbal_tea:t('草本茶'),sugar:t('砂糖'),jam:t('果醬'),luxury_furniture:t('高級家具')};
 
         if (this._economySubTab === 'resources') {
-            // Resources
-            html += t('<div class="econ-section"><h3>資源</h3><div class="resource-grid">');
-            const resEntries = Object.entries(res).filter(([, amount]) => Math.round(amount) > 0);
-            if (resEntries.length === 0) {
-                html += t('<p class="muted-text" style="grid-column:1/-1;text-align:center;padding:12px 0">目前沒有任何資源</p>');
-            }
-            for (const [r, amount] of resEntries) {
-                const icon = icons[r] || '📦';
-                const label = labels[r] || r;
+            // v5.50.0 經濟A波:三層資源結構 —— 關鍵資源 / 加工產能(看流量) / 原料倉庫(燈號)
+            const npcCount = Math.max(1, Object.keys(this.state.agents || {}).length - 1);
+            // ① 關鍵資源:食物+銀幣,唯二要玩家盯的存量
+            const foodAmt = Math.round(res.food || 0), silverAmt = Math.round(res.silver || 0);
+            const foodClr = foodAmt < 50 ? 'var(--negative)' : foodAmt < 200 ? '#e8b030' : 'var(--positive)';
+            const silverClr = silverAmt < 50 ? 'var(--negative)' : silverAmt < 300 ? '#e8b030' : 'var(--positive)';
+            html += `<div class="econ-section"><h3>💎 ${t('關鍵資源')}</h3>
+                <div style="display:flex;gap:8px">
+                    <div style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center">
+                        <div style="font-size:1.3rem">🌾</div><div style="font-size:0.72rem;color:var(--text-secondary)">${t('食物')}</div>
+                        <div style="font-size:1.15rem;font-weight:bold;color:${foodClr}">${foodAmt}</div></div>
+                    <div style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center">
+                        <div style="font-size:1.3rem">💰</div><div style="font-size:0.72rem;color:var(--text-secondary)">${t('銀幣')}</div>
+                        <div style="font-size:1.15rem;font-weight:bold;color:${silverClr}">${silverAmt}</div></div>
+                </div></div>`;
+            // ② 加工產能:看今日流量(做了幾個/用掉幾個),不是純庫存
+            const PROCESSED = ['meals','tools','clothing','medicine','furniture'];
+            const flow = this._econDailyFlow(PROCESSED);
+            const demandNote = {
+                meals: `${t('每日需')} ${Math.round(npcCount * 1.5)}`,
+                tools: `${t('每日耗損')} ${(npcCount * 0.05).toFixed(1)}`,
+                clothing: `${t('每日耗損')} ${(npcCount * 0.03).toFixed(1)}`,
+                medicine: t('生病時消耗'),
+                furniture: t('建設與新居用'),
+            };
+            html += `<div class="econ-section"><h3>⚒️ ${t('加工產能')}<span style="font-weight:normal;font-size:0.68rem;color:var(--text-muted);margin-left:6px">${t('今日產出／消耗')}</span></h3>`;
+            PROCESSED.forEach(k => {
+                const f = flow[k];
+                const stock = Math.round(res[k] || 0);
+                const prod = Math.round(f.produced * 10) / 10, cons = Math.round(f.consumed * 10) / 10;
+                const flowClr = prod >= cons ? 'var(--positive)' : 'var(--negative)';
+                html += `<div style="display:flex;align-items:center;gap:8px;padding:5px 2px;border-bottom:1px solid var(--border);font-size:0.78rem">
+                    <span style="width:20px;text-align:center">${icons[k]}</span>
+                    <span style="width:44px;flex-shrink:0">${labels[k]}</span>
+                    <span style="flex:1;color:${flowClr}">＋${prod}${cons ? ` <span style="color:var(--negative)">−${cons}</span>` : ''}</span>
+                    <span style="color:var(--text-muted);font-size:0.68rem">${demandNote[k]}</span>
+                    <span style="width:46px;text-align:right;color:var(--text-secondary)">${t('庫存')} ${stock}</span>
+                </div>`;
+            });
+            html += '</div>';
+            // ③ 原料倉庫:收成一顆燈,細目摺疊
+            const RAWS = ['wood','stone','metal','cloth','herbs'];
+            const short = RAWS.filter(k => (res[k] || 0) < 10);
+            const tight = RAWS.filter(k => (res[k] || 0) >= 10 && (res[k] || 0) < 40);
+            const light = short.length ? '🔴' : tight.length ? '🟡' : '🟢';
+            const lightText = short.length ? `${t('短缺')}：${short.map(k => labels[k]).join('、')}`
+                : tight.length ? `${t('吃緊')}：${tight.map(k => labels[k]).join('、')}`
+                : t('原料充足，工坊無虞');
+            const detailKeys = Object.keys(res).filter(k => !PROCESSED.includes(k) && k !== 'food' && k !== 'silver' && k !== 'research_points' && Math.round(res[k]) > 0);
+            html += `<div class="econ-section"><h3>📦 ${t('原料倉庫')}</h3>
+                <div style="display:flex;align-items:center;gap:8px;font-size:0.8rem">${light}<span>${lightText}</span></div>
+                <details style="margin-top:6px"><summary style="cursor:pointer;font-size:0.72rem;color:var(--text-muted)">${t('展開明細')}</summary>
+                <div class="resource-grid" style="margin-top:6px">`;
+            detailKeys.forEach(k => {
+                const amount = res[k];
                 const cls = amount < 10 ? 'res-low' : amount > 100 ? 'res-high' : '';
-                html += `<div class="resource-item ${cls}"><span class="res-icon">${icon}</span><span class="res-label">${label}</span><span class="res-amount">${Math.round(amount)}</span></div>`;
-            }
-            html += '</div></div>';
+                html += `<div class="resource-item ${cls}"><span class="res-icon">${icons[k] || '📦'}</span><span class="res-label">${labels[k] || k}</span><span class="res-amount">${Math.round(amount)}</span></div>`;
+            });
+            html += '</div></details></div>';
             // Trade
             const trade = this.state.trade || {};
             html += t('<div class="econ-section"><h3>交易</h3>');
@@ -7570,7 +7633,8 @@ class RimTownApp {
             html += '</div>';
             // Research
             const research = this.state.research || {};
-            html += t('<div class="econ-section"><h3>研究</h3>');
+            // v5.50.0 研究點移出資源格,直接顯示在研究區標題(價值層)
+            html += `<div class="econ-section"><h3>🔬 ${t('研究')}<span style="font-weight:normal;font-size:0.72rem;color:var(--text-secondary);margin-left:6px">📚 ${t('研究點')} ${Math.round(res.research_points || 0)}</span></h3>`;
             const projects = research.projects || {};
             const currentKey = research.current_research;
             if (currentKey && projects[currentKey]) {
