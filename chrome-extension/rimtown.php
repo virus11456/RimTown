@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.41.0
+ * Version: 5.42.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.41.0');
+define('RIMTOWN_VERSION', '5.42.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.42.0',
+            'date'    => '2026-08-19',
+            'changes' => array(
+                '🗯️ 廣場對嗆名場面:互相仇視的兩人偶爾當眾大吵(AI 生成對嗆戲,每對至少隔5天),交情好的旁觀者會選邊站——對另一方觀感變差並寫入記憶,小鎮氣氛真的會僵',
+                '💢 絕交事件:雙方好感都跌破 -60 時積怨爆發,當眾撂下重話正式絕交(名場面+全鎮日報+心情重挫),絕交狀態隨存檔保存',
+                '🕊️ 和事佬和解線:對絕交等級的仇怨,「調解」升級為兩段式任務——分別勸過兩邊(需要基本信任),促成「世紀大和解」名場面:兩人好感大增、你獲得雙方好感+8與聲望+15、解鎖成就「和事佬」;今日焦點會引導你去調解',
+            ),
+        ),
         array(
             'version' => '5.41.0',
             'date'    => '2026-08-19',

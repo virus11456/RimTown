@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.41.0
-const RIMTOWN_APP_VERSION = '5.41.0';
+// RimTown - Frontend App (WordPress Plugin) v5.42.0
+const RIMTOWN_APP_VERSION = '5.42.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -78,6 +78,7 @@ const ACHIEVEMENTS = {
     elected_mayor: { name: t('當選鎮長'), desc: t('玩家當選鎮長'), icon: '👑', category: 'town' },
     election_3: { name: t('政壇老手'), desc: t('經歷3次選舉'), icon: '🏛️', category: 'town' },
     ran_for_mayor: { name: t('初生之犢'), desc: t('登記參選鎮長'), icon: '📢', category: 'town' },
+    peacemaker: { name: t('和事佬'), desc: t('促成一對絕交的村民世紀大和解'), icon: '🕊️', category: 'social' },
     elected_mayor: { name: t('民選鎮長'), desc: t('贏得鎮長選舉'), icon: '👑', category: 'town' },
     first_birth: { name: t('新生命'), desc: t('城鎮迎來第一個新生兒'), icon: '👶', category: 'town' },
     births_5: { name: t('嬰兒潮'), desc: t('累計5個新生兒出生'), icon: '🍼', category: 'town' },
@@ -5994,17 +5995,62 @@ class RimTownApp {
             }
             case 'mediate': {
                 const foe = Object.values(npc.relationships.relationships).filter(r => (r.affinity || 0) < -20).sort((a, b) => a.affinity - b.affinity)[0];
-                if (foe) {
-                    foe.modifyAffinity(8);
-                    const other = world.agents[foe.targetId];
-                    if (other) other.relationships.getOrCreate(npc.agentId, npc.name).modifyAffinity(4);
-                    rel.modifyAffinity(1);
-                    world.logMessage?.('relationship', `🕊️ ${t('鎮長居中調解,')}${npc.name}${t('對')}${foe.targetName}${t('的敵意緩和了一些')}`, npc.name, foe.targetName);
-                    fx(`🕊️ ${t('你緩和了')}${npc.name}${t('對')}${foe.targetName}${t('的敵意')}`, '#5cc98f');
-                    fx(`${t('好感(對')}${foe.targetName}) +8`, '#5cc98f');
-                } else {
-                    fx(`🕊️ ${npc.name}${t('最近沒跟誰結怨')}`, '#9aa');
+                if (!foe) { fx(`🕊️ ${npc.name}${t('最近沒跟誰結怨')}`, '#9aa'); break; }
+                const other = world.agents[foe.targetId];
+                // v5.42.0 和解線:對「絕交」等級的仇怨,調解升級為兩段式任務——
+                // 分別勸過兩邊後,促成「世紀大和解」名場面(大量好感+聲望+成就)
+                if (other && (foe.isFeud || foe.affinity <= -40)) {
+                    world.mediations = world.mediations || {};
+                    const key = [npc.agentId, other.agentId].sort().join('|');
+                    const rec = world.mediations[key] = world.mediations[key] || { sides: {} };
+                    if (rec.sides[npc.agentId]) {
+                        fx(`🕊️ ${npc.name}${t('嘆了口氣:「你上次說的,我還在想...」')}`, '#9aa');
+                        fx(`${t('去勸勸另一邊的')}${foe.targetName}${t('吧')}`, '#7fc4ff');
+                        break;
+                    }
+                    if ((rel.trust || 0) < -10) {
+                        rel.modifyAffinity(-2);
+                        fx(`🕊️ ${npc.name}${t('冷冷地說:「這與你無關。」')}`, '#e07a7a');
+                        break;
+                    }
+                    rec.sides[npc.agentId] = true;
+                    foe.modifyAffinity(6);
+                    npc.memory.add(world.tickCount, world.clock.timeStr, 'plan', `${player.name}${t('苦口婆心勸我和')}${foe.targetName}${t('和好...也許,是該放下了。')}`, 7, [foe.targetName]);
+                    const bothDone = rec.sides[npc.agentId] && rec.sides[other.agentId];
+                    if (bothDone) {
+                        // 兩邊都勸過了 → 世紀大和解
+                        delete world.mediations[key];
+                        const relAB = npc.relationships.getOrCreate(other.agentId, other.name);
+                        const relBA = other.relationships.getOrCreate(npc.agentId, npc.name);
+                        relAB.modifyAffinity(Math.max(0, -5 - relAB.affinity));
+                        relBA.modifyAffinity(Math.max(0, -5 - relBA.affinity));
+                        relAB.isFeud = false; relBA.isFeud = false;
+                        npc.moodModifier = (npc.moodModifier || 0) + 10;
+                        other.moodModifier = (other.moodModifier || 0) + 10;
+                        npc.memory.add(world.tickCount, world.clock.timeStr, 'relationship', `${t('在')}${player.name}${t('的調解下,我和')}${other.name}${t('和解了。心裡一塊石頭落了地。')}`, 9, [other.name, player.name]);
+                        other.memory.add(world.tickCount, world.clock.timeStr, 'relationship', `${t('在')}${player.name}${t('的調解下,我和')}${npc.name}${t('和解了。心裡一塊石頭落了地。')}`, 9, [npc.name, player.name]);
+                        npc.relationships.getOrCreate('player', player.name).modifyAffinity(8);
+                        other.relationships.getOrCreate('player', player.name).modifyAffinity(8);
+                        world.reputationSystem?.addReputation?.(15, 'help', world);
+                        world.logMessage('event', `🕊️ ${t('在')}${player.name}${t('的奔走下,')}${npc.name}${t('和')}${other.name}${t('當眾和解!全鎮傳為佳話')}`);
+                        world.dailyNews?.collectEvent('social', `${npc.name}${t('與')}${other.name}${t('在旅人調解下世紀大和解')}`, 9, [npc.name, other.name]);
+                        world.queueDramaScene?.('reconcile', npc, other, player.name);
+                        this._unlockAchievement('peacemaker');
+                        fx(`🕊️ ${t('成了!')}${npc.name}${t('和')}${other.name}${t('當眾和解!')}`, '#ffd700');
+                        fx(`${t('兩人好感 +8 · 聲望 +15')}`, '#5cc98f');
+                    } else {
+                        fx(`🕊️ ${npc.name}${t('沉默許久:「...讓我想想。」')}`, '#5cc98f');
+                        fx(`${t('再去勸勸')}${foe.targetName}${t(',兩邊都點頭就能促成和解')}`, '#7fc4ff');
+                    }
+                    break;
                 }
+                // 一般恩怨:維持緩和效果
+                foe.modifyAffinity(8);
+                if (other) other.relationships.getOrCreate(npc.agentId, npc.name).modifyAffinity(4);
+                rel.modifyAffinity(1);
+                world.logMessage?.('relationship', `🕊️ ${t('經你居中調解,')}${npc.name}${t('對')}${foe.targetName}${t('的敵意緩和了一些')}`, npc.name, foe.targetName);
+                fx(`🕊️ ${t('你緩和了')}${npc.name}${t('對')}${foe.targetName}${t('的敵意')}`, '#5cc98f');
+                fx(`${t('好感(對')}${foe.targetName}) +8`, '#5cc98f');
                 break;
             }
             case 'flirt': {

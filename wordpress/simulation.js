@@ -2001,6 +2001,9 @@ ${t('繁體中文(台灣用語),不要有其他任何文字。')}`;
                         busted: `${a.name}${t('當場發現')}${b.name}${t('和')}${thirdName || t('某人')}${t('的秘密關係,情緒爆發對質')}`,
                         breakup: `${a.name}${t('和')}${b.name}${t('走到感情盡頭,決定分手')}`,
                         divorce: `${a.name}${t('和')}${b.name}${t('的婚姻破裂,攤牌離婚')}`,
+                        feud: `${a.name}${t('和')}${b.name}${t('這對積怨已久的死對頭在大庭廣眾下狹路相逢,當場吵了起來,句句帶刺誰也不讓誰,圍觀的鎮民議論紛紛')}`,
+                        severance: `${a.name}${t('和')}${b.name}${t('的積怨徹底爆發,當眾撂下重話,正式絕交')}`,
+                        reconcile: `${t('在')}${thirdName || t('旅人')}${t('的奔走調解下,')}${a.name}${t('和')}${b.name}${t('終於放下多年心結,當眾握手言和,圍觀的鎮民鼓掌')}`,
                     }[kind];
                     const prompt = `${t('你是一位才華橫溢的小說家，正在為奇幻小鎮「邊境鎮」寫一場關鍵感情戲。')}
 ${t('場面：')}${sceneDesc}${t('。')}
@@ -2057,6 +2060,24 @@ ${t('- 格式：每行「名字: 對話內容」,不要有其他任何東西')}`
                         { speaker: b.name, text: t('...好。至少我們曾經真心愛過。') },
                         { speaker: a.name, text: t('保重。') },
                     ],
+                    feud: [
+                        { speaker: a.name, text: t('喲,這不是最會做表面功夫的那位嗎?') },
+                        { speaker: b.name, text: t('總比某些人背後嚼舌根來得光明磊落。') },
+                        { speaker: a.name, text: t('你再說一次試試看?大家都在,正好評評理!') },
+                        { speaker: b.name, text: t('評就評!我還怕你不成?') },
+                    ],
+                    severance: [
+                        { speaker: a.name, text: t('夠了。這些年我忍你很久了。') },
+                        { speaker: b.name, text: t('忍?說得好像只有你在忍一樣。') },
+                        { speaker: a.name, text: t('那正好。從今天起,你走你的路,我過我的橋。') },
+                        { speaker: b.name, text: t('求之不得。絕交!') },
+                    ],
+                    reconcile: [
+                        { speaker: a.name, text: `${t('那個...聽說你前陣子過得不容易。')}` },
+                        { speaker: b.name, text: t('彼此彼此。其實...當年那件事,我也有不對。') },
+                        { speaker: a.name, text: t('都過去了。有人苦口婆心勸了我好幾回,我才想通——為那點事賭一輩子的氣,不值得。') },
+                        { speaker: b.name, text: t('嗯。回頭請那位和事佬喝一杯吧,算我們倆的。') },
+                    ],
                 }[kind] || [];
                 lines = FB;
             }
@@ -2081,6 +2102,9 @@ ${t('- 格式：每行「名字: 對話內容」,不要有其他任何東西')}`
                     busted: { who: a, texts: [t('識人不清,是我活該。'), t('有些人,不點名。祝你們幸福,呵。')] },
                     breakup: { who: a, texts: [t('恢復單身。別問,問就是不合適。'), t('刪掉了很多東西。包括回憶。')] },
                     divorce: { who: b, texts: [t('一段路走完了。往前看。'), t('簽完字,天還是藍的。挺好。')] },
+                    feud: { who: a, texts: [t('有些人真的很會踩人底線。不點名。'), t('今天話說重了?不,我只後悔沒早點說。')] },
+                    severance: { who: a, texts: [t('道不同不相為謀。就到這裡吧。'), t('刪掉了一個人。心裡反而輕鬆了。')] },
+                    reconcile: { who: b, texts: [t('冰釋前嫌的感覺,真好。🕊️'), t('謝謝那位替我們兩個奔走的人。改天請你喝一杯!')] },
                 };
                 const fp = feedPools[kind];
                 if (fp) world.townFeed.addPost(world, fp.who, pickRandom(fp.texts));
@@ -6361,6 +6385,8 @@ class World {
             }
             // Relationship progression (dating, marriage, breakup, etc.)
             this._processRelationships();
+            // v5.42.0 衝突敘事:絕交偵測 + 廣場對嗆 + 圍觀選邊站
+            try { this._processFeuds(); } catch (e) { console.warn('[RimTown] feud error:', e); }
             // Daily news (before economy/events so modifiers apply)
             this.news.dailyUpdate(this);
             // Daily economy
@@ -6432,6 +6458,66 @@ class World {
         // v5.37.0 每個 tick 處理一批排隊中的村民 LLM 行程(避免瞬間打爆 API)
         this.conversationEngine.tickPlanQueue(this).catch(e => console.warn('[RimTown] plan queue error:', e));
     }
+    // v5.42.0 衝突敘事:把村民間的敵意做成有戲劇張力的事件鏈
+    // (a) 積怨爆發:雙方好感都 <= -60 → 正式「絕交」名場面(isFeud 標記,等玩家來當和事佬)
+    // (b) 廣場對嗆:互相仇視(<= -35)的兩人偶爾當眾大吵,交情好的旁觀者會選邊站
+    _processFeuds() {
+        const npcs = Object.values(this.agents).filter(a => !a.isPlayer && !a.isDead);
+        this._feudCooldown = this._feudCooldown || {};
+        const day = this.clock.day + (this.clock.year - 1) * 60;
+        const seen = new Set();
+        for (const a of npcs) {
+            for (const [tid, rel] of Object.entries(a.relationships.relationships)) {
+                const b = this.agents[tid];
+                if (!b || b.isPlayer || b.isDead) continue;
+                const key = [a.agentId, tid].sort().join('|');
+                if (seen.has(key)) continue;
+                seen.add(key);
+                const relB = b.relationships.relationships[a.agentId];
+                if (!relB) continue;
+                // (a) 絕交
+                if (rel.affinity <= -60 && relB.affinity <= -60 && !rel.isFeud) {
+                    rel.isFeud = true; relB.isFeud = true;
+                    this._feudCooldown[key] = day;
+                    a.moodModifier = (a.moodModifier || 0) - 10;
+                    b.moodModifier = (b.moodModifier || 0) - 10;
+                    a.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${t('我和')}${b.name}${t('徹底鬧翻,絕交了。這口氣嚥不下去。')}`, 9, [b.name]);
+                    b.memory.add(this.tickCount, this.clock.timeStr, 'relationship', `${t('我和')}${a.name}${t('徹底鬧翻,絕交了。這口氣嚥不下去。')}`, 9, [a.name]);
+                    this.logMessage('event', `💢 ${a.name}${t('和')}${b.name}${t('積怨徹底爆發,當眾撂下重話,正式絕交!')}`);
+                    this.dailyNews?.collectEvent('social', `${a.name}${t('與')}${b.name}${t('公開絕交,兩人再不相往來')}`, 8, [a.name, b.name]);
+                    this.queueDramaScene('severance', a, b);
+                    continue;
+                }
+                // (b) 廣場對嗆(每對至少隔 5 天)
+                if (rel.affinity <= -35 && relB.affinity <= -35
+                    && (day - (this._feudCooldown[key] || -99)) >= 5 && Math.random() < 0.15) {
+                    this._feudCooldown[key] = day;
+                    rel.modifyAffinity(-4); relB.modifyAffinity(-4);
+                    a.moodModifier = (a.moodModifier || 0) - 6;
+                    b.moodModifier = (b.moodModifier || 0) - 6;
+                    this.logMessage('event', `🗯️ ${a.name}${t('和')}${b.name}${t('在眾目睽睽下大吵一架,火藥味十足!')}`);
+                    this.dailyNews?.collectEvent('social', `${a.name}${t('與')}${b.name}${t('當眾對嗆,鎮上議論紛紛')}`, 7, [a.name, b.name]);
+                    // 圍觀選邊站:交情好的替朋友抱不平,對另一方觀感變差
+                    for (const w of npcs) {
+                        if (w === a || w === b) continue;
+                        const wa = w.relationships.relationships[a.agentId]?.affinity || 0;
+                        const wb = w.relationships.relationships[b.agentId]?.affinity || 0;
+                        if (wa >= 40 && wb < 40) {
+                            w.relationships.getOrCreate(b.agentId, b.name).modifyAffinity(-3);
+                            w.memory.add(this.tickCount, this.clock.timeStr, 'observation', `${t('目睹')}${a.name}${t('和')}${b.name}${t('當眾大吵——我當然站')}${a.name}${t('這邊。')}`, 4, [a.name, b.name]);
+                        } else if (wb >= 40 && wa < 40) {
+                            w.relationships.getOrCreate(a.agentId, a.name).modifyAffinity(-3);
+                            w.memory.add(this.tickCount, this.clock.timeStr, 'observation', `${t('目睹')}${a.name}${t('和')}${b.name}${t('當眾大吵——我當然站')}${b.name}${t('這邊。')}`, 4, [a.name, b.name]);
+                        } else if ((wa || wb) && Math.random() < 0.3) {
+                            w.memory.add(this.tickCount, this.clock.timeStr, 'observation', `${t('看到')}${a.name}${t('和')}${b.name}${t('當眾大吵,小鎮的氣氛有點僵。')}`, 3, [a.name, b.name]);
+                        }
+                    }
+                    this.queueDramaScene('feud', a, b);
+                }
+            }
+        }
+    }
+
     // v5.34.0 逾時代選:pending 的互動選擇滿一個遊戲日(96 ticks)沒人處理就隨機結算
     _autoResolveStaleChoices() {
         const DAY = 96;
@@ -6520,6 +6606,32 @@ class World {
         const fest = this.festivals?.activeFestival;
         if (fest && items.length < 3) {
             items.push({ icon: fest.icon || '🎪', text: `${t('今天有')}${fest.name}${t('!去會場逛逛、玩攤位')}`, reason: t('祭典期間村民好感更容易提升'), tab: 'events' });
+        }
+        // 4.5) v5.42.0 和解線:鎮上有人絕交了,你可以當和事佬
+        if (player && items.length < 3) {
+            let feudPair = null;
+            for (const a of Object.values(this.agents)) {
+                if (a.isPlayer || a.isDead || feudPair) break;
+                for (const [tid, rel] of Object.entries(a.relationships.relationships)) {
+                    if (!rel.isFeud) continue;
+                    const b = this.agents[tid];
+                    if (!b || b.isDead) continue;
+                    feudPair = { a, b };
+                    break;
+                }
+            }
+            if (feudPair) {
+                const done = this.mediations?.[[feudPair.a.agentId, feudPair.b.agentId].sort().join('|')]?.sides || {};
+                const doneCount = Object.keys(done).length;
+                items.push({
+                    icon: '🕊️',
+                    text: doneCount === 1
+                        ? `${t('和解只差一步!再去用「調解」勸勸')}${done[feudPair.a.agentId] ? feudPair.b.name : feudPair.a.name}`
+                        : `${feudPair.a.name}${t('和')}${feudPair.b.name}${t('鬧到絕交了——分別找兩人用「調解」勸和')}`,
+                    reason: t('促成世紀大和解:兩人好感大增、聲望 +15、成就「和事佬」'),
+                    npcId: doneCount === 1 ? (done[feudPair.a.agentId] ? feudPair.b.agentId : feudPair.a.agentId) : feudPair.a.agentId,
+                });
+            }
         }
         // 5) 好感度接近心動門檻的村民:再推一把
         if (player && items.length < 3) {
@@ -7135,6 +7247,10 @@ class World {
             busted:     { icon: '🔥', title: t('修羅場') },
             breakup:    { icon: '💔', title: t('分手現場') },
             divorce:    { icon: '⚡', title: t('離婚風暴') },
+            // v5.42.0 衝突敘事
+            feud:       { icon: '🗯️', title: t('廣場對嗆') },
+            severance:  { icon: '💢', title: t('絕交現場') },
+            reconcile:  { icon: '🕊️', title: t('世紀大和解') },
         }[kind];
         if (!meta || !agentA || !agentB) return;
         Promise.resolve(this.conversationEngine?.generateDramaScene?.(this, kind, meta, agentA, agentB, thirdName)).catch(() => {});
@@ -7271,7 +7387,7 @@ class World {
                 targetId:r.targetId, targetName:r.targetName, affinity:r.affinity, trust:r.trust,
                 romanticInterest:r.romanticInterest, interactionCount:r.interactionCount,
                 lastInteractionTick:r.lastInteractionTick, sharedMemories:r.sharedMemories.slice(-10000),
-                status:r.status, statusSince:r.statusSince, isCheating:r.isCheating
+                status:r.status, statusSince:r.statusSince, isCheating:r.isCheating, isFeud:r.isFeud || undefined
             }])),
             memory: a.memory.entries.slice(-10000).map(m=>({tick:m.tick,timeStr:m.timeStr,category:m.category,content:m.content,importance:m.importance,relatedAgents:m.relatedAgents})),
             chatHistory: a.isPlayer ? (a.chatHistory||[]).slice(-10000) : undefined,
@@ -7300,6 +7416,8 @@ class World {
             // v5.29.0 AI 對話紀錄以文字形式持久化(含每則對話全文),反思則隨 agent.memory 一起存
             npcConversationLog: this.conversationEngine.npcConversationLog.slice(-10000).map(c => ({ ...c, dialogue: (c.dialogue || []).map(d => ({ ...d })) })),
             npcLlmUsedToday: this.npcLlmUsedToday || 0,
+            feudCooldown: { ...(this._feudCooldown || {}) }, // v5.42.0 對嗆冷卻
+            mediations: JSON.parse(JSON.stringify(this.mediations || {})), // v5.42.0 和解進度
             dailyFocus: this.dailyFocus ? { key: this.dailyFocus.key, items: this.dailyFocus.items.map(i => ({ ...i })) } : null, // v5.31.0 今日焦點
             gossip: this.gossipNetwork.activeGossip.slice(-10000),
             townFeed: this.townFeed ? this.townFeed.serialize() : null,
@@ -7423,6 +7541,7 @@ class World {
                         rel.status = rv.status || null;
                         rel.statusSince = rv.statusSince || 0;
                         rel.isCheating = rv.isCheating || false;
+                        rel.isFeud = rv.isFeud || false; // v5.42.0 絕交標記
                     }
                 }
                 // Memory
@@ -7435,6 +7554,8 @@ class World {
             // v5.29.0 AI 對話紀錄還原(文字形式持久化)
             if (Array.isArray(data.npcConversationLog)) this.conversationEngine.npcConversationLog = data.npcConversationLog;
             this.npcLlmUsedToday = data.npcLlmUsedToday || 0;
+            this._feudCooldown = data.feudCooldown || {}; // v5.42.0
+            this.mediations = data.mediations || {}; // v5.42.0
             if (data.dailyFocus) this.dailyFocus = data.dailyFocus; // v5.31.0 今日焦點
 
             // Gossip
