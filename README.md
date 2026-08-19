@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.49.3.zip` from Releases
+1. Download `rimtown-v5.50.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,16 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.50.0 (2026-08-19)
+
+**經濟重構第一波——三層資源 UI 收斂**（基於實測提案：深度來自稀缺×取捨，不來自資源種類多）
+
+- 💎 關鍵資源：食物＋銀幣升級為大卡顯示（附短缺變色警示），唯二需要玩家盯的存量
+- ⚒️ 加工產能：餐食／工具／衣物／藥品／家具改為「今日產出／消耗＋需求提示」的流量視圖，看的是產能不是囤積
+- 📦 原料倉庫：木材／石材／金屬／布料／草藥等原料收成一顆充足度燈號（🟢充足／🟡吃緊／🔴短缺點名），細目摺疊可展開
+- 🔬 研究點移出資源格，併入研究區標題（價值層）
+- 純顯示層改造，模擬與平衡完全不動；第二波（勞動力排班）、第三波（數值重調）接續進行
 
 ### v5.49.3 (2026-08-19)
 
