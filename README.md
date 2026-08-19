@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.48.0.zip` from Releases
+1. Download `rimtown-v5.49.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,13 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.49.0 (2026-08-19)
+
+**第二波聚焦——戲劇導演＋經營線降級**
+
+- 🎬 戲劇導演（張力保底）：連續 4 天沒有名場面時，系統從三種手法挑一種在後台輕推——💘 暗戀萌芽（合得來的單身村民之間種下心動）／💢 舊怨復發（交惡的兩人再往絕交推一步）／🔥 嫉妒升溫（單戀有主之人者對情敵觀感惡化），各附對應的內心獨白記憶，會自然流入反思、對話與追劇首頁；導演出手後至少醞釀 3 天
+- ✂️ 際遇卡停止每日抽：與主軸無關的個人 roguelike，已排隊的舊卡仍可正常結算；經營線（資源／產業）維持全自動背景運轉，面板依章節解鎖後可選
 
 ### v5.48.0 (2026-08-19)
 

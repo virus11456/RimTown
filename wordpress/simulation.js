@@ -6424,6 +6424,8 @@ class World {
             this._processRelationships();
             // v5.42.0 衝突敘事:絕交偵測 + 廣場對嗆 + 圍觀選邊站
             try { this._processFeuds(); } catch (e) { console.warn('[RimTown] feud error:', e); }
+            // v5.49.0 戲劇導演:小鎮太平靜時在後台輕推一把,確保戲一直有得看
+            try { this._dramaDirector(); } catch (e) { console.warn('[RimTown] director error:', e); }
             // Daily news (before economy/events so modifiers apply)
             this.news.dailyUpdate(this);
             // Daily economy
@@ -6468,7 +6470,7 @@ class World {
             // v5.32.0 章節門檻:互動卡片第二章(繁榮 20)起、議會第四章(繁榮 70)起才啟動
             const chapterPros = this.prosperity?.prosperity || 0;
             if (chapterPros >= 20) this.dailyDecision.dailyUpdate(this);
-            if (chapterPros >= 20) this.rogueCards.dailyUpdate(this); // v5.28.0 際遇卡每日抽
+            // v5.49.0 際遇卡停止每日抽:與「觀察居民愛恨糾葛」主軸無關的個人 roguelike,已排隊的舊卡仍可正常結算
             this.dailyDecision.processFollowups(this);
             if (chapterPros >= 20) this.npcHelp.dailyUpdate(this);
             this.reputationSystem.dailyUpdate(this);
@@ -6628,6 +6630,73 @@ class World {
                         }
                     }
                     this.queueDramaScene('feud', a, b);
+                }
+            }
+        }
+    }
+
+    // v5.49.0 戲劇導演(張力保底):湧現式模擬偶爾會風平浪靜好幾天——
+    // 連續 4 天沒有名場面時,從三種手法挑一種在後台「輕推」,像編劇埋伏筆,而不是硬寫死劇本:
+    // a) 暗戀萌芽:合得來的單身村民之間種下心動  b) 舊怨復發:交惡的兩人再往絕交推一步  c) 嫉妒:單戀有主之人者情緒升溫
+    _dramaDirector() {
+        const absDay = this.clock.day + (this.clock.year - 1) * 60;
+        // 距上一場名場面幾天
+        const lastScene = (this.dramaArchive || []).slice(-1)[0];
+        const lastSceneDay = lastScene ? (lastScene.day + ((lastScene.year || 1) - 1) * 60) : (this._townFoundedDay || 0);
+        if (absDay - lastSceneDay < 4) return;
+        if (absDay - (this._directorLastDay || -99) < 3) return; // 導演出手後至少醞釀 3 天
+        const npcs = Object.values(this.agents).filter(a => !a.isPlayer && !a.isDead);
+        if (npcs.length < 4) return;
+        const strategies = shuffle(['crush', 'grudge', 'jealousy']);
+        for (const strat of strategies) {
+            if (strat === 'crush') {
+                // 找一對單身、互有基本好感、還沒心動的
+                const singles = npcs.filter(a => !a.relationships.getPartner());
+                for (const a of shuffle(singles)) {
+                    const cand = Object.values(a.relationships.relationships).find(r => {
+                        const b = this.agents[r.targetId];
+                        return b && !b.isPlayer && !b.isDead && !b.relationships.getPartner()
+                            && r.affinity >= 20 && (r.romanticInterest || 0) < 20 && !r.status;
+                    });
+                    if (cand) {
+                        cand.modifyRomantic(12 + randInt(0, 5));
+                        a.memory.add(this.tickCount, this.clock.timeStr, 'reflection', `${t('奇怪...最近看')}${cand.targetName}${t('的眼神,好像跟以前不一樣了。')}`, 7, [cand.targetName]);
+                        this._directorLastDay = absDay;
+                        return;
+                    }
+                }
+            } else if (strat === 'grudge') {
+                // 交惡但還沒仇視的兩人,舊帳重翻
+                for (const a of shuffle(npcs)) {
+                    const foe = Object.values(a.relationships.relationships).find(r => {
+                        const b = this.agents[r.targetId];
+                        return b && !b.isPlayer && !b.isDead && r.affinity <= -18 && r.affinity > -34 && !r.isFeud;
+                    });
+                    if (foe) {
+                        const b = this.agents[foe.targetId];
+                        foe.modifyAffinity(-(6 + randInt(0, 4)));
+                        b.relationships.getOrCreate(a.agentId, a.name).modifyAffinity(-(6 + randInt(0, 4)));
+                        a.memory.add(this.tickCount, this.clock.timeStr, 'reflection', `${t('本來想算了,但一想到')}${foe.targetName}${t('那件事,火又上來了。')}`, 7, [foe.targetName]);
+                        b.memory.add(this.tickCount, this.clock.timeStr, 'reflection', `${t('聽說')}${a.name}${t('又在背後提那件事...是不打算善了了?')}`, 7, [a.name]);
+                        this._directorLastDay = absDay;
+                        return;
+                    }
+                }
+            } else {
+                // 嫉妒:單戀有主之人者,情緒升溫(對情敵觀感變差)
+                for (const c of shuffle(npcs)) {
+                    const crush = c.relationships.getRomanticInterests().find(r => !r.status && (r.romanticInterest || 0) >= 25);
+                    if (!crush) continue;
+                    const b = this.agents[crush.targetId];
+                    const partner = b && !b.isDead ? b.relationships.getPartner?.() : null;
+                    if (!partner) continue;
+                    const rival = this.agents[partner.targetId];
+                    if (!rival || rival.isDead || rival.isPlayer) continue;
+                    crush.modifyRomantic(8);
+                    c.relationships.getOrCreate(rival.agentId, rival.name).modifyAffinity(-(5 + randInt(0, 4)));
+                    c.memory.add(this.tickCount, this.clock.timeStr, 'reflection', `${t('看到')}${b.name}${t('和')}${rival.name}${t('走在一起,心口悶得發疼。憑什麼是他。')}`, 8, [b.name, rival.name]);
+                    this._directorLastDay = absDay;
+                    return;
                 }
             }
         }

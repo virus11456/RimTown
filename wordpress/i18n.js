@@ -2232,6 +2232,15 @@ const I18N = (() => {
         '結婚了！': ' got married!',
         '開始交往！': ' started dating!',
 
+        // ── v5.49.0 戲劇導演 ──
+        '奇怪...最近看': 'Strange... lately when I look at ',
+        '的眼神,好像跟以前不一樣了。': ', something feels different than before.',
+        '本來想算了,但一想到': 'I meant to let it go, but thinking of what ',
+        '那件事,火又上來了。': ' did, the anger flares right back up.',
+        '聽說': 'I hear ',
+        '又在背後提那件事...是不打算善了了?': ' is bringing that up behind my back again... so this isn\'t over?',
+        '走在一起,心口悶得發疼。憑什麼是他。': ' walking together — my chest aches. Why him, of all people.',
+
         // ── v5.48.0 看戲三件組 ──
         '集': ' · Episode',
         '邊境鎮日常': 'Frontier Town Daily',
