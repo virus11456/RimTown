@@ -2967,7 +2967,8 @@ ${t('- 不要加名字前綴')}
 ${t('- 最後另起一行寫：')}EFFECTS: {"affinity_change": ${t('數字')}(-3${t('到')}5), "romantic_change": ${t('數字')}(0${t('到')}3), "summary": "${t('一句話總結')}"}
 ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西')}`;
 
-                const response = await this.llm.generate(prompt, 400, 0.9, true);
+                // v5.44.0 400→600:中文回覆容易撞上限被砍半句(「呃…最近我在算一個關於」),放寬並配合句尾收斂
+                const response = await this.llm.generate(prompt, 600, 0.9, true);
                 console.log('[RimTown] LLM response length:', response?.length, 'preview:', response?.slice(0, 80));
                 return this._parsePlayerReply(response, player, npc, world, playerMessage, relPlayer, relNpc);
             } catch(e) { console.error('[RimTown] LLM player reply failed:', e); }
@@ -3029,7 +3030,12 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
                 if (text) replyLines.push(text);
             }
         }
-        const npcReply = replyLines.join(' ').trim();
+        let npcReply = replyLines.join(' ').trim();
+        // v5.44.0 截斷防護:回覆被 max_tokens 砍斷時,收斂到最後一個完整句子,不再出現半句話
+        if (npcReply && !/[。！？!?…～~」』)）]$/.test(npcReply)) {
+            const m = npcReply.match(/^[\s\S]*[。！？!?…～~」』)）]/);
+            if (m && m[0].length >= 8) npcReply = m[0];
+        }
         if (!npcReply) {
             // Parsing yielded nothing → use fallback
             return this._fallbackPlayerReply(player, npc, world, playerMessage, relPlayer, relNpc);

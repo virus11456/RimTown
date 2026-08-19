@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.43.0
+ * Version: 5.44.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.43.0');
+define('RIMTOWN_VERSION', '5.44.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.44.0',
+            'date'    => '2026-08-19',
+            'changes' => array(
+                '💬 修復對話被截斷:玩家聊天回覆 token 上限 400→600,且回覆若仍被砍斷會自動收斂到最後一個完整句子,不再出現「呃…最近我在算一個關於」這種半句話',
+                '📺 彈窗節奏全面控管:名場面直播/週報等全螢幕內容卡之間至少間隔 45 秒、佇列上限 4 張+去重(名場面隨時可在小鎮劇場回看);AI 日報出刊改為角落通知,全文到「日報」分頁閱讀',
+                '⏸️ 暫停保護:任何全螢幕卡顯示期間世界自動暫停,關閉後還原你原本的暫停狀態——看戲時時間不會偷跑,你按的暫停也不會被彈窗洗掉',
+                '📝 日報手記結尾擴充至 12 種,並依「記者+期數」決定,連續兩期不同記者不再一字不差',
+            ),
+        ),
         array(
             'version' => '5.43.0',
             'date'    => '2026-08-19',

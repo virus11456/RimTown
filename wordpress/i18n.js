@@ -2232,6 +2232,17 @@ const I18N = (() => {
         '結婚了！': ' got married!',
         '開始交往！': ' started dating!',
 
+        // ── v5.44.0 試玩反饋修正 ──
+        'AI 日報出刊': 'AI Daily published',
+        '到「日報」分頁閱讀全文': 'Read the full issue in the Newspaper tab',
+        '寫到一半墨水快沒了，只好去雜貨店賒了一瓶。老闆說用報導抵帳也行。': 'Ran out of ink mid-article and had to put a bottle on credit. The shopkeeper said an article would settle the tab.',
+        '今天採訪時被狗追了兩條街。為了新聞，值得。': 'Got chased two blocks by a dog while reporting today. Worth it, for the news.',
+        '酒館老闆說我上一期把他寫得太摳門。我考慮下期寫得更詳細一點。': 'The tavern keeper says last issue made him sound stingy. I am considering being even more detailed next time.',
+        '有人問我為什麼堅持寫日報。我說：因為總得有人記得這個小鎮發生過什麼。': 'Someone asked why I keep writing this paper. I said: someone has to remember what happened in this town.',
+        '稿紙不夠用了。看來這個鎮的故事，比我想的還要多。': 'Running out of paper. Seems this town has more stories than I thought.',
+        '深夜校稿時聽見窗外有人吵架。明天的頭條有了。': 'Heard an argument outside while proofreading late at night. There is tomorrow\'s headline.',
+        '把今天聽到的八卦都寫進去了⋯希望當事人看到別來找我。': 'Wrote down all the gossip I heard today... hope the people involved don\'t come after me.',
+
         // ── v5.43.0 小鎮編年史 ──
         '小鎮編年史': 'Town Chronicle',
         '每天換日自動歸檔全鎮村民的近況、行程、足跡與所有對話逐字稿(存在你的瀏覽器資料庫)。': 'Every day at rollover, all villagers\' status, schedules, footprints, and full conversation transcripts are archived to your browser\'s database.',
