@@ -695,10 +695,12 @@ class Agent {
         }
 
         // Sleep schedule
+        // v5.35.8 修復半夜遊蕩:原本 rest>=90(睡飽)就不睡,夜間衰減又慢,導致村民凌晨還在外面閒逛
+        // 一般人睡眠時段一律回家睡覺;夜貓子維持自己的作息(sleepStart 2:00)
         const inSleepWindow = sleepStart > sleepEnd
             ? (hour >= sleepStart || hour < sleepEnd)
             : (hour >= sleepStart && hour < sleepEnd);
-        if (inSleepWindow && this.needs.rest < 90) { this.activity='sleeping'; return; }
+        if (inSleepWindow) { this.activity='sleeping'; return; }
 
         // Mourning: visit graveyard for recently deceased or annual family remembrance
         if (!inSleepWindow && hour >= 7 && hour < 20 && this._shouldMourn()) {
