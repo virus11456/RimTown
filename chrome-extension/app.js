@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.44.0
-const RIMTOWN_APP_VERSION = '5.44.0';
+// RimTown - Frontend App (WordPress Plugin) v5.45.0
+const RIMTOWN_APP_VERSION = '5.45.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -976,7 +976,8 @@ class RimTownApp {
             player.chatHistory.push({ speaker: player.name, target: npc.name, text: `🎁(${t('送出')}${g.name})`, time: this.world.clock.timeStr });
             player.chatHistory.push({ speaker: npc.name, target: player.name, text: reply, time: this.world.clock.timeStr });
         }
-        this.world.logMessage('relationship', `🎁 ${t('鎮長送給')}${npc.name}${g.name}${isFav ? t(',對方超喜歡!') : ''}(${t('好感')}+${gain})`, npc.name);
+        this.world.logMessage('relationship', `🎁 ${t('你送給')}${npc.name}${g.name}${isFav ? t(',對方超喜歡!') : ''}(${t('好感')}+${gain})`, npc.name);
+        this.world.recordPlayerAction?.('gift', g.name, npc, null); // v5.45.0 蝴蝶效應
         this.bgm?.sfx?.('coin');
         // v5.6.0 浮動特效:好感愛心 + 愛心爆裂
         this.tileMap?.spawnFxOnAgent?.(this.chatTarget, `❤️ +${gain}`, { color: '#ff6b9d', burst: isFav ? '💖' : '❤️', burstCount: isFav ? 8 : 5 });
@@ -6152,6 +6153,8 @@ class RimTownApp {
                 break;
             }
         }
+        // v5.45.0 蝴蝶效應:記錄這次行動+關係快照,隔天首頁「昨日回響」告訴你發酵了什麼
+        world.recordPlayerAction?.(key, '', npc, null);
         return lines;
     }
 
@@ -6459,6 +6462,17 @@ class RimTownApp {
     }
 
     // v5.31.0 今天的故事:把最獨特的記憶流/反思/AI 對話拉到首頁第一層
+    // v5.45.0 昨日回響:蝴蝶效應回饋卡
+    _renderDailyEcho() {
+        const lines = this.world?.dailyEcho || [];
+        if (!lines.length) return '';
+        return `<div class="town-identity" style="cursor:default;display:block">
+            <span class="ti-badge">🦋 ${t('昨日回響')}</span>
+            ${lines.map(l => `<div style="font-size:0.72rem;line-height:1.5;margin-top:4px;color:var(--text-primary)">· ${this._escapeHtml(l)}</div>`).join('')}
+            <div style="font-size:0.6rem;color:var(--text-muted);margin-top:4px">${t('你昨天的舉動,正在改變這個小鎮')}</div>
+        </div>`;
+    }
+
     _renderStoryFeed() {
         if (!this.world) return '';
         const w = this.world;
@@ -6582,10 +6596,14 @@ class RimTownApp {
         }
         // v5.31.0 今日焦點:先回答「我現在該做什麼」,再看故事與頭條
         html += this._renderDailyFocus();
+        // v5.45.0 昨日回響:你昨天的舉動在小鎮發酵了什麼(蝴蝶效應回饋)
+        html += this._renderDailyEcho();
+        // v5.45.0 首頁分階段減壓:剛開村只看焦點+回響+居民;故事流(成長10)與頭條(成長20)隨小鎮成長逐步展開
+        const prosHome = this.state?.prosperity?.prosperity || 0;
         // v5.31.0 今天的故事:記憶流/反思/名場面/AI 對話的精華,首頁第一層
-        html += this._renderStoryFeed();
+        if (prosHome >= 10) html += this._renderStoryFeed();
         // v5.17.0 今日頭條:日報成為首頁第一眼看到的內容,點頭條直達當事人/相關分頁
-        html += this._renderTownHeadlines();
+        if (prosHome >= 20) html += this._renderTownHeadlines();
         // Player card at top
         const playerAgent = this.state.agents['player'];
         if (playerAgent) {

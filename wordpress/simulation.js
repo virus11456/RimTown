@@ -1768,6 +1768,8 @@ ${t('最後一行：')}EFFECTS: {"target": "${t('若念頭涉及某位村民寫�
             const romD = Math.max(0, Math.min(8, Math.round(fx.romantic_change || 0)));
             rel.modifyAffinity(affD); rel.modifyRomantic(romD);
         }
+        // v5.45.0 蝴蝶效應:記錄耳語+對第三者的態度快照(機械漂移後),隔天回響告訴你「後續」發酵了什麼
+        world.recordPlayerAction?.('whisper', thought, npc, tgt || null);
         world.logMessage('whisper', `🤫 ${t('你在')}${npc.name}${t('耳邊低語...一個念頭在他心裡生根了。')}`, player?.name, npc.name);
         return { thought };
     }
@@ -6451,6 +6453,8 @@ class World {
             this.dailyNews.generateNewspaper(this).catch(e => console.warn('[DailyNews] Error:', e));
             // v5.31.0 今日焦點:回答「我現在該做什麼、為什麼」(放最後,讓它讀得到當日 pending 狀態)
             try { this.generateDailyFocus(); } catch (e) { console.warn('[RimTown] daily focus error:', e); }
+            // v5.45.0 昨日回響:你昨天的舉動在小鎮發酵了什麼
+            try { this._generateDailyEcho(prevDayIds); } catch (e) { console.warn('[RimTown] daily echo error:', e); }
         }
         Object.values(this.agents).forEach(agent => {
             if (agent.currentLocation === 'exploration') return; // Skip agents on expedition
@@ -6468,6 +6472,59 @@ class World {
         // v5.37.0 每個 tick 處理一批排隊中的村民 LLM 行程(避免瞬間打爆 API)
         this.conversationEngine.tickPlanQueue(this).catch(e => console.warn('[RimTown] plan queue error:', e));
     }
+    // v5.45.0 蝴蝶效應:記下你的社交行動與當下的關係快照,隔天對照「發酵了什麼」
+    recordPlayerAction(type, text, npc, target) {
+        try {
+            this.playerActions = this.playerActions || [];
+            const entry = {
+                tick: this.tickCount,
+                dayKey: `${this.clock.year}-${this.clock.season}-${this.clock.day}`,
+                type, text: String(text || '').slice(0, 60),
+                npcId: npc?.agentId || null, npcName: npc?.name || '',
+                targetId: target?.agentId || null, targetName: target?.name || '',
+            };
+            if (npc) {
+                entry.aff0 = npc.relationships?.relationships?.['player']?.affinity ?? null;
+                if (target) entry.tAff0 = npc.relationships?.relationships?.[target.agentId]?.affinity ?? null;
+            }
+            this.playerActions.push(entry);
+            if (this.playerActions.length > 60) this.playerActions = this.playerActions.slice(-60);
+        } catch (e) {}
+    }
+
+    // v5.45.0 昨日回響:把「你昨天的舉動 → 今天世界的變化」翻譯成看得懂的因果句(零成本規則式)
+    _generateDailyEcho(ids) {
+        const yKey = `${ids.year}-${ids.season}-${ids.day}`;
+        const acts = (this.playerActions || []).filter(a => a.dayKey === yKey);
+        const lines = [];
+        const usedNpc = new Set();
+        const typeLabel = { whisper: t('耳語'), comfort: t('安慰'), flirt: t('示好'), threaten: t('威脅'), mediate: t('調解'), persuade: t('說服'), gossip: t('打聽'), request: t('委託'), gift: t('送禮') };
+        const playerName = this.agents['player']?.name || '';
+        for (const a of acts) {
+            if (lines.length >= 3) break;
+            const npc = a.npcId ? this.agents[a.npcId] : null;
+            if (!npc || npc.isDead || usedNpc.has(npc.agentId)) continue;
+            // 耳語:念頭有沒有發酵(對第三者的態度位移 / 行程被改)
+            if (a.type === 'whisper' && a.targetId != null && a.tAff0 != null) {
+                const cur = npc.relationships?.relationships?.[a.targetId]?.affinity;
+                if (cur != null && Math.abs(cur - a.tAff0) >= 3) {
+                    lines.push(`${t('你種在')}${a.npcName}${t('心裡的念頭發酵了——他對')}${a.targetName}${t('的態度')}${cur > a.tAff0 ? t('明顯軟化') : t('更差了')}`);
+                    usedNpc.add(npc.agentId); continue;
+                }
+            }
+            // 一般行動:對你的好感有沒有「後續」位移(行動當下的加成已含在快照裡)
+            if (a.aff0 != null) {
+                const cur = npc.relationships?.relationships?.['player']?.affinity;
+                if (cur != null && cur - a.aff0 >= 4) { lines.push(`${t('昨天對')}${a.npcName}${t('的')}${typeLabel[a.type] || a.type}${t('留下了好印象——他對你更親近了')}`); usedNpc.add(npc.agentId); continue; }
+                if (cur != null && cur - a.aff0 <= -4) { lines.push(`${t('昨天對')}${a.npcName}${t('的')}${typeLabel[a.type] || a.type}${t('起了反效果——他對你起了戒心')}`); usedNpc.add(npc.agentId); continue; }
+            }
+            // 你出現在他的心事/計畫裡:昨天互動過的村民,今天想起了你
+            const mem = (npc.memory?.entries || []).slice(-8).find(m => m.tick > a.tick && (m.relatedAgents || []).includes(playerName) && (m.category === 'reflection' || m.category === 'plan'));
+            if (mem) { lines.push(`${a.npcName}${t('把你放在心上了：「')}${String(mem.content).slice(0, 42)}${t('」')}`); usedNpc.add(npc.agentId); }
+        }
+        this.dailyEcho = lines.slice(0, 3);
+    }
+
     // v5.43.0 小鎮編年史:把一天的作息/行程/足跡/對話打包成可歸檔的紀錄(UI 存進 IndexedDB,可匯出調閱)
     _buildDayArchive(ids) {
         const dayTag = `${ids.year}-${ids.season}-${ids.day}`;
@@ -7451,6 +7508,8 @@ class World {
             npcLlmUsedToday: this.npcLlmUsedToday || 0,
             feudCooldown: { ...(this._feudCooldown || {}) }, // v5.42.0 對嗆冷卻
             mediations: JSON.parse(JSON.stringify(this.mediations || {})), // v5.42.0 和解進度
+            playerActions: (this.playerActions || []).slice(-60).map(a => ({ ...a })), // v5.45.0 蝴蝶效應
+            dailyEcho: [...(this.dailyEcho || [])], // v5.45.0 昨日回響
             dailyFocus: this.dailyFocus ? { key: this.dailyFocus.key, items: this.dailyFocus.items.map(i => ({ ...i })) } : null, // v5.31.0 今日焦點
             gossip: this.gossipNetwork.activeGossip.slice(-10000),
             townFeed: this.townFeed ? this.townFeed.serialize() : null,
@@ -7590,6 +7649,8 @@ class World {
             this._feudCooldown = data.feudCooldown || {}; // v5.42.0
             this.mediations = data.mediations || {}; // v5.42.0
             this._chronicleChatIdx = (this.agents['player']?.chatHistory || []).length; // v5.43.0 讀檔後從當下開始記
+            this.playerActions = data.playerActions || []; // v5.45.0
+            this.dailyEcho = data.dailyEcho || []; // v5.45.0
             if (data.dailyFocus) this.dailyFocus = data.dailyFocus; // v5.31.0 今日焦點
 
             // Gossip

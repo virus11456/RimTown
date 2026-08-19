@@ -2232,6 +2232,19 @@ const I18N = (() => {
         '結婚了！': ' got married!',
         '開始交往！': ' started dating!',
 
+        // ── v5.45.0 蝴蝶效應回顧 ──
+        '昨日回響': 'Yesterday\'s Ripples',
+        '你昨天的舉動,正在改變這個小鎮': 'Your actions yesterday are changing this town',
+        '你種在': 'The thought you planted in ',
+        '心裡的念頭發酵了——他對': '\'s mind has taken root — their attitude toward ',
+        '明顯軟化': ' has clearly softened',
+        '更差了': ' has gotten worse',
+        '昨天對': 'Yesterday\'s ',
+        '留下了好印象——他對你更親近了': ' left a good impression — they feel closer to you now',
+        '起了反效果——他對你起了戒心': ' backfired — they are wary of you now',
+        '把你放在心上了：「': ' has you on their mind: "',
+        '你送給': 'You gave ',
+
         // ── v5.44.0 試玩反饋修正 ──
         'AI 日報出刊': 'AI Daily published',
         '到「日報」分頁閱讀全文': 'Read the full issue in the Newspaper tab',
