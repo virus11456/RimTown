@@ -2232,6 +2232,9 @@ const I18N = (() => {
         '結婚了！': ' got married!',
         '開始交往！': ' started dating!',
 
+        // ── v5.49.2 聊天版面 ──
+        '返回聯絡人': 'Back to contacts',
+
         // ── v5.49.1 追蹤按鈕文字標籤 ──
         '追蹤': 'Follow',
         '追蹤中': 'Following',

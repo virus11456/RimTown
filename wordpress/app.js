@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.49.1
-const RIMTOWN_APP_VERSION = '5.49.1';
+// RimTown - Frontend App (WordPress Plugin) v5.49.2
+const RIMTOWN_APP_VERSION = '5.49.2';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -5409,10 +5409,12 @@ class RimTownApp {
             return a.name.localeCompare(b.name);
         });
 
-        // --- Contact list ---
-        let contactsHtml = '<div class="chat-contacts">';
+        // --- Contact list (v5.49.2 進入對話後隱藏清單,讓對話視窗撐滿;未選人時清單撐滿高度) ---
+        let contactsHtml = '';
+        if (!this.chatTarget) {
+        contactsHtml = '<div class="chat-contacts">';
         contactsHtml += `<div class="chat-contacts-header">${t('聯絡人')}<span class="chat-contacts-count">${allNpcs.length}</span></div>`;
-        contactsHtml += '<div class="chat-contacts-list">';
+        contactsHtml += '<div class="chat-contacts-list chat-contacts-full">';
         allNpcs.forEach(npc => {
             const isActive = this.chatTarget === npc.id;
             const lastText = npc.lastMsg ? (npc.lastMsg.speaker === player.name ? `${t('你')}：${npc.lastMsg.text}` : npc.lastMsg.text) : t('尚未對話');
@@ -5432,6 +5434,7 @@ class RimTownApp {
             </button>`;
         });
         contactsHtml += '</div></div>';
+        }
 
         // --- Chat area ---
         let chatAreaHtml = '';
@@ -5441,11 +5444,13 @@ class RimTownApp {
             const targetJob = targetAgent?.job?.title || '';
             const targetLoc = targetAgent?.current_location || '';
 
-            // Chat header with NPC info(v5.35.0 加 ✕ 關閉對話,回到聯絡人清單)
-            chatAreaHtml += `<div class="chat-conv-header" style="position:relative">
-                <div class="chat-conv-name">${targetName}</div>
-                <div class="chat-conv-detail">${targetJob}${targetLoc ? ' · ' + this._locationLabel(targetLoc) : ''}</div>
-                <button data-action="close-chat" title="${t('關閉對話')}" style="position:absolute;top:6px;right:8px;background:rgba(255,255,255,0.08);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);width:26px;height:26px;line-height:1;cursor:pointer;font-size:0.85rem">✕</button>
+            // Chat header with NPC info(v5.49.2 左側返回鍵回聯絡人清單)
+            chatAreaHtml += `<div class="chat-conv-header" style="display:flex;align-items:center;gap:10px">
+                <button data-action="close-chat" title="${t('返回聯絡人')}" style="background:rgba(255,255,255,0.08);border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);width:32px;height:32px;line-height:1;cursor:pointer;font-size:1.1rem;flex-shrink:0">‹</button>
+                <div style="min-width:0">
+                    <div class="chat-conv-name">${targetName}</div>
+                    <div class="chat-conv-detail">${targetJob}${targetLoc ? ' · ' + this._locationLabel(targetLoc) : ''}</div>
+                </div>
             </div>`;
 
             // Messages
@@ -5473,9 +5478,8 @@ class RimTownApp {
                 <button class="chat-gift-btn" data-action="open-gift" title="${t('送禮')}" style="padding:0 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;font-size:1rem">🎁</button>
                 <button class="chat-gift-btn" data-action="open-rumor" title="${t('爆料八卦')}" style="padding:0 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;font-size:1rem">🗣️</button>
                 <button class="chat-send-btn" data-action="send-chat" ${this.chatSending ? 'disabled' : ''}>${this.chatSending ? '...' : t('送出')}</button></div>`;
-        } else {
-            chatAreaHtml += `<div class="chat-messages" id="chat-messages"><p class="muted-text chat-hint">${t('選擇一個居民開始聊天')}</p></div>`;
         }
+        // v5.49.2 未選人時不再渲染空白對話區佔位,清單直接撐滿
 
         // Archive bar
         chatAreaHtml += `<div class="chat-archive-bar">
