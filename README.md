@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.45.0.zip` from Releases
+1. Download `rimtown-v5.46.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,12 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.46.0 (2026-08-19)
+
+**聚焦主軸——移除祭典攤位小遊戲**
+
+- ✂️ 移除祭典攤位小遊戲（猜燈謎／撈金魚／投壺）：與「觀察居民之間的事件、關係與愛恨糾葛」的核心主軸脫節——它不寫入記憶流、不影響任何關係，只是孤立的反應小遊戲。祭典本身完整保留：村民的祭典行程、祭典場景對話、心情加成照常運作
 
 ### v5.45.0 (2026-08-19)
 
