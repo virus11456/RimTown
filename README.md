@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.50.0.zip` from Releases
+1. Download `rimtown-v5.51.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,15 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.51.0 (2026-08-19)
+
+**經濟重構第二波——勞動力排班核心**（瓶頸從「原料庫存」上移到「村民的時間」）
+
+- 👷 排班指令：每條加工線（餐食／工具／衣物／藥品／家具）顯示「誰在做」，鎮長可下 ⏸休工／▶正常／⏫加班——休工的村民心情變好、多時間社交（會留下對應記憶，流入反思與對話）；加班產量 +50% 但村民疲累心情變差
+- 📦 原料層自動供給：五種原料低於安全線自動回補，玩家不再管原料；材料短缺不再罷工扣心情，改為「邊角料趕工」產能四折
+- 💊 需求波動：心情低落的村民每天會找醫生拿藥並好轉（藥品有了真用途）；冬季衣物耗損翻倍
+- 排班設定隨存檔保存；第三波（數值重調＋價值層收束）接續
 
 ### v5.50.0 (2026-08-19)
 

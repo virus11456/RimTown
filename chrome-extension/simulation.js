@@ -4411,9 +4411,17 @@ const JOB_PRODUCTION = {
 };
 const SEASON_FARM_MOD = {'春季':1.2,'夏季':1.5,'秋季':0.8,'冬季':0.4};
 const NATURE_GATHERING = {forest:{wood:3},river:{food:2},meadow:{herbs:1,cloth:0.5},cave:{stone:2,metal:1},lake:{food:1.5}};
+// v5.51.0 經濟B波:加工職業 → 加工品 對照(勞動力排班的單位)
+const CRAFT_JOB_GOOD = { cook:'meals', blacksmith:'tools', tailor:'clothing', doctor:'medicine', carpenter:'furniture' };
+const RAW_MATERIALS = ['wood','stone','metal','cloth','herbs'];
 
 function processDailyProduction(world) {
     const sp = world.stockpile;
+    // v5.51.0 原料層自動供給:原料低於安全線時自動回補,瓶頸從「庫存」上移到「勞動力」
+    RAW_MATERIALS.forEach(r => {
+        if (sp.get(r) < 40) sp.add(r, 12, world.tickCount, t('原料自動補給'));
+    });
+    if (!world.workPolicy) world.workPolicy = {};
     // Check which NPC jobs are covered by the industry system to avoid double production
     const industryJobs = {};
     if (world.industry) {
@@ -4425,19 +4433,37 @@ function processDailyProduction(world) {
     Object.values(world.agents).forEach(agent => {
         if (agent.isPlayer || !agent.job) return;
         const recipe = JOB_PRODUCTION[agent.job.key]; if (!recipe) return;
+        // v5.51.0 勞動力排班:鎮長(玩家)可對加工線下休工/正常/加班指令,產能 vs 生活的取捨
+        const craftGood = CRAFT_JOB_GOOD[agent.job.key];
+        const policy = craftGood ? (world.workPolicy[craftGood] || 'normal') : 'normal';
+        if (policy === 'off') {
+            agent.moodModifier = (agent.moodModifier || 0) + 4;
+            agent.memory?.add?.(world.tickCount, world.clock.timeStr, 'daily', t('今天工坊休工，難得清閒，多了些時間陪伴身邊的人。'), 3, []);
+            return;
+        }
         // If this job's production is handled by industry system, reduce to 30% (NPC still does ancillary work)
         const isIndustryHandled = industryJobs[agent.job.key];
         const skill = agent.skills.get(recipe.skill);
         let eff = 0.5 + ((skill?skill.level:0)/20)*2.0;
         if (isIndustryHandled) eff *= 0.5;
+        if (policy === 'extra') {
+            eff *= 1.5;
+            agent.moodModifier = (agent.moodModifier || 0) - 3;
+            if (Math.random() < 0.3) agent.memory?.add?.(world.tickCount, world.clock.timeStr, 'daily', t('連日加班，身體有點吃不消，但訂單堆著總得有人做。'), 4, []);
+        }
         if (agent.job.key === 'farmer') { eff *= SEASON_FARM_MOD[world.clock.season] || 1; eff *= 1 + (world.news?world.news.getModifier('farm_bonus',0):0) + (world.weather?world.weather.farmModifier:0); }
         if (agent.job.key === 'miner') eff *= 1 + (world.news?world.news.getModifier('mining_bonus',0):0);
         eff *= 1 + (agent.mood - 50)/500;
         eff *= 0.9 + Math.random()*0.2;
+        // v5.51.0 材料不足不再罷工:改為就地取材、產能打四折(原料層有自動補給,此情況應少見)
         let canProduce = true;
         for (const [r,a] of Object.entries(recipe.inputs)) { if (!sp.has(r,a)) { canProduce=false; break; } }
-        if (!canProduce) { world.logMessage('economy',`${agent.name}${t('無法工作——材料不足！')}`,agent.name); agent.moodModifier=(agent.moodModifier||0)-3; return; }
-        for (const [r,a] of Object.entries(recipe.inputs)) sp.consume(r,a,world.tickCount,`${agent.name}${t('的生產')}`,agent.name);
+        if (!canProduce) {
+            eff *= 0.4;
+            world.logMessage('economy',`${agent.name}${t('材料短缺，用邊角料將就趕工。')}`,agent.name);
+        } else {
+            for (const [r,a] of Object.entries(recipe.inputs)) sp.consume(r,a,world.tickCount,`${agent.name}${t('的生產')}`,agent.name);
+        }
         for (const [r,a] of Object.entries(recipe.outputs)) sp.add(r,Math.round(a*eff*10)/10,world.tickCount,`${agent.name}${t('（')}${agent.job.title}${t('）')}`,agent.name);
         if (agent.job.key === 'priest') Object.values(world.agents).forEach(o => { if(o.agentId!==agent.agentId) o.moodModifier=(o.moodModifier||0)+1; });
     });
@@ -4454,7 +4480,16 @@ function processDailyProduction(world) {
     }
     if (world.townMap) { for (const [locId,gather] of Object.entries(NATURE_GATHERING)) { if (world.townMap.locations[locId]) { for (const [r,a] of Object.entries(gather)) sp.add(r,a*0.5,world.tickCount,`natural (${locId})`); } } }
     sp.consume('tools',npcCount*0.05,world.tickCount,'tool wear');
-    sp.consume('clothing',npcCount*0.03,world.tickCount,'clothing wear');
+    // v5.51.0 需求波動:天冷要衣(冬季衣物耗損翻倍)
+    sp.consume('clothing',npcCount*(world.clock.season==='冬季'?0.06:0.03),world.tickCount,'clothing wear');
+    // v5.51.0 需求波動:心情低落的村民找醫生拿藥(每天最多 3 人),藥品因此有了用處
+    const downcast = Object.values(world.agents).filter(a => !a.isPlayer && a.mood < 30).slice(0, 3);
+    downcast.forEach(a => {
+        if (sp.consume('medicine', 1, world.tickCount, `${a.name}${t('的診療')}`)) {
+            a.moodModifier = (a.moodModifier || 0) + 6;
+            a.memory?.add?.(world.tickCount, world.clock.timeStr, 'daily', t('去找醫生拿了藥，人舒服多了。'), 3, []);
+        }
+    });
     if (world.clock.season === '冬季' && !sp.consume('wood',npcCount*0.3,world.tickCount,'冬季取暖')) {
         world.logMessage('economy',t('木材不夠取暖！'));
         Object.values(world.agents).forEach(a => { a.moodModifier=(a.moodModifier||0)-8; a.needs.comfort=Math.max(0,a.needs.comfort-15); });
@@ -7602,6 +7637,8 @@ class World {
             npcLlmUsedToday: this.npcLlmUsedToday || 0,
             feudCooldown: { ...(this._feudCooldown || {}) }, // v5.42.0 對嗆冷卻
             mediations: JSON.parse(JSON.stringify(this.mediations || {})), // v5.42.0 和解進度
+            workPolicy: { ...(this.workPolicy || {}) }, // v5.51.0 勞動力排班
+
             playerActions: (this.playerActions || []).slice(-60).map(a => ({ ...a })), // v5.45.0 蝴蝶效應
             dailyEcho: [...(this.dailyEcho || [])], // v5.45.0 昨日回響
             dailyFocus: this.dailyFocus ? { key: this.dailyFocus.key, items: this.dailyFocus.items.map(i => ({ ...i })) } : null, // v5.31.0 今日焦點
@@ -7742,6 +7779,7 @@ class World {
             this.npcLlmUsedToday = data.npcLlmUsedToday || 0;
             this._feudCooldown = data.feudCooldown || {}; // v5.42.0
             this.mediations = data.mediations || {}; // v5.42.0
+            this.workPolicy = data.workPolicy || {}; // v5.51.0
             this._chronicleChatIdx = (this.agents['player']?.chatHistory || []).length; // v5.43.0 讀檔後從當下開始記
             this.playerActions = data.playerActions || []; // v5.45.0
             this.dailyEcho = data.dailyEcho || []; // v5.45.0

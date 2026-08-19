@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.50.0
+ * Version: 5.51.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.50.0');
+define('RIMTOWN_VERSION', '5.51.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.51.0',
+            'date'    => '2026-08-19',
+            'changes' => array(
+                '👷 經濟重構第二波(勞動力排班):5 條加工線顯示「誰在做」,鎮長可下 ⏸休工/▶正常/⏫加班 指令——休工村民心情變好、多時間社交;加班產量+50% 但村民會累。經濟從「囤貨」變成「排人」',
+                '📦 原料層自動供給:木材/石材/金屬/布料/草藥低於安全線自動回補;材料短缺不再罷工,改為邊角料趕工(產能四折)',
+                '💊 需求波動:心情低落的村民會找醫生拿藥(藥品有了真用途);冬季衣物耗損翻倍',
+            ),
+        ),
         array(
             'version' => '5.50.0',
             'date'    => '2026-08-19',
