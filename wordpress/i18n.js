@@ -2232,6 +2232,10 @@ const I18N = (() => {
         '結婚了！': ' got married!',
         '開始交往！': ' started dating!',
 
+        // ── v5.49.1 追蹤按鈕文字標籤 ──
+        '追蹤': 'Follow',
+        '追蹤中': 'Following',
+
         // ── v5.49.0 戲劇導演 ──
         '奇怪...最近看': 'Strange... lately when I look at ',
         '的眼神,好像跟以前不一樣了。': ', something feels different than before.',
