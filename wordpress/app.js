@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.43.0
-const RIMTOWN_APP_VERSION = '5.43.0';
+// RimTown - Frontend App (WordPress Plugin) v5.44.0
+const RIMTOWN_APP_VERSION = '5.44.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -2054,14 +2054,21 @@ class RimTownApp {
     // 忙碌時把通知排進佇列 + 角落小提示(不擋操作),空閒時由 flusher 補播
     _queueNotifDeferred(notif) {
         if (!this._centerNotifQueue) this._centerNotifQueue = [];
-        // v5.42.1 去重:同標題的互動卡不重複排隊
+        // v5.42.1 去重:同標題的互動卡不重複排隊 / v5.44.0 內容卡也去重
         if (notif._interactive && this._centerNotifQueue.some(q => q._interactive && q.title === notif.title)) return;
+        if (!notif._interactive && notif.content && this._centerNotifQueue.some(q => !q._interactive && q.title === notif.title && q.name === notif.name)) return;
         this._centerNotifQueue.push(notif);
         // v5.42.1 佇列上限:互動卡最多留 3 張——被擠掉的世界狀態會由「逾時代選」自行結算,不會卡住事件線
         const inter = this._centerNotifQueue.filter(q => q._interactive);
         if (inter.length > 3) {
             const drop = inter[0];
             this._centerNotifQueue = this._centerNotifQueue.filter(q => q !== drop);
+        }
+        // v5.44.0 內容卡(名場面/週報)最多留 4 張——名場面隨時能在「小鎮劇場」回看,擠掉不心疼
+        const contentQ = this._centerNotifQueue.filter(q => !q._interactive && q.content);
+        if (contentQ.length > 4) {
+            const drop2 = contentQ[0];
+            this._centerNotifQueue = this._centerNotifQueue.filter(q => q !== drop2);
         }
         this._showNotifBadgeToast();
         this._startNotifFlusher();
@@ -2075,6 +2082,7 @@ class RimTownApp {
             const n = q[i];
             if (n._interactive && typeof n.stillValid === 'function' && !n.stillValid()) { q.splice(i, 1); i--; continue; } // 世界裡已被結算 → 直接丟棄
             if (n._interactive && Date.now() - (this._lastInteractiveShownAt || 0) < INTERACTIVE_GAP) continue; // 冷卻中,跳過互動卡找後面的一般通知
+            if (!n._interactive && n.content && Date.now() - (this._lastCenterShownAt || 0) < 45000) continue; // v5.44.0 內容卡也有 45 秒冷卻
             q.splice(i, 1);
             return n;
         }
@@ -2139,6 +2147,9 @@ class RimTownApp {
             return;
         }
         this._lastInteractiveShownAt = Date.now();
+        // v5.44.0 互動卡顯示期間暫停世界,關閉後還原原本的暫停狀態
+        this._pausedBeforeNotif = !!this.world?.paused;
+        if (this.world) this.world.paused = true;
         const card = document.getElementById('center-notification-card');
         if (!card) return;
         let html = '';
@@ -2179,6 +2190,7 @@ class RimTownApp {
             el.addEventListener('click', () => {
                 clearInterval(this._interactiveCdTimer);
                 overlay.classList.add('hidden');
+                if (this.world) this.world.paused = this._pausedBeforeNotif; // v5.44.0 還原暫停狀態
                 if (buttons[i]?.action) buttons[i].action();
                 this._showNextQueuedNotif();
             });
@@ -2232,14 +2244,20 @@ class RimTownApp {
         // v5.34.0 純資訊卡(無完整內容)改角落通知;名場面/日報等長內容維持中央卡
         if (!content) { this._showCornerNotice({ icon, title, name, desc }); return; }
         // Queue notifications if one is already showing, or if the player is busy (chatting / typing)
+        // v5.44.0 全螢幕內容卡(名場面/週報等)之間至少間隔 45 秒,不再連環轟炸
         if (!this._centerNotifQueue) this._centerNotifQueue = [];
         const notif = { icon, title, name, desc, content, autoDismiss };
         const overlay = document.getElementById('center-notification-overlay');
         if (!overlay) return;
-        if (!overlay.classList.contains('hidden') || this._isPlayerBusy()) {
+        if (!overlay.classList.contains('hidden') || this._isPlayerBusy()
+            || Date.now() - (this._lastCenterShownAt || 0) < 45000) {
             this._queueNotifDeferred(notif);
             return;
         }
+        this._lastCenterShownAt = Date.now();
+        // v5.44.0 全螢幕卡顯示期間暫停世界,關閉後還原你原本的暫停狀態——看戲時時間不會偷跑,你按的暫停也不會被彈窗洗掉
+        this._pausedBeforeNotif = !!this.world?.paused;
+        if (this.world) this.world.paused = true;
         const card = document.getElementById('center-notification-card');
         if (!card) return;
         let html = '';
@@ -2254,6 +2272,7 @@ class RimTownApp {
         const dismissBtn = card.querySelector('.center-notif-dismiss');
         const dismiss = () => {
             overlay.classList.add('hidden');
+            if (this.world) this.world.paused = this._pausedBeforeNotif; // 還原暫停狀態
             this._showNextQueuedNotif();
         };
         dismissBtn.addEventListener('click', dismiss);
@@ -2271,12 +2290,12 @@ class RimTownApp {
         if (this._lastShownNewspaperId === latest.id) return;
         this._lastShownNewspaperId = latest.id;
         this._newsReacted = false; // Reset reaction for new newspaper
-        this._showCenterNotification({
+        // v5.44.0 日報出刊改角落通知,不再全螢幕打斷;全文在「日報」分頁隨時可讀
+        this._showCornerNotice({
             icon: '📰',
-            title: t('AI 日報'),
+            title: t('AI 日報出刊'),
             name: `${t('第')}${latest.id}${t('期')} — ${t('記者')}：${latest.reporter}`,
-            content: latest.content || '',
-            autoDismiss: 0
+            desc: t('到「日報」分頁閱讀全文'),
         });
     }
 

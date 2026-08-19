@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.43.0.zip` from Releases
+1. Download `rimtown-v5.44.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,15 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.44.0 (2026-08-19)
+
+**試玩反饋修正——對話截斷、彈窗節奏、暫停保護**
+
+- 💬 修復對話被截斷：玩家聊天回覆 token 上限 400→600，回覆若仍被砍斷會自動收斂到最後一個完整句子，不再出現半句話
+- 📺 彈窗節奏全面控管：名場面直播／週報等全螢幕內容卡之間至少間隔 45 秒、佇列上限 4 張＋去重（名場面隨時可在小鎮劇場回看）；AI 日報出刊改為角落通知，全文到「日報」分頁閱讀
+- ⏸️ 暫停保護：任何全螢幕卡顯示期間世界自動暫停、關閉後還原你原本的暫停狀態——看戲時時間不會偷跑，你按的暫停也不會被彈窗洗掉
+- 📝 日報手記結尾擴充至 12 種並依「記者＋期數」決定，連續兩期不同記者不再一字不差
 
 ### v5.43.0 (2026-08-19)
 

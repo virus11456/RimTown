@@ -199,15 +199,25 @@ ${prevRef}
             }
             lines.push('');
         }
+        // v5.44.0 手記結尾擴充到 12 種,並依「記者+期數」決定——連續兩期、不同記者不會撞同一句
         const thoughts = [
             t('坐在廣場的長椅上寫完這篇報導，夕陽正好灑在稿紙上。'),
             t('最近鎮上的人越來越多了，每天都有新鮮事可以寫。'),
             t('希望明天也是值得記錄的一天。要是沒有新聞⋯那就寫天氣吧。'),
             t('聽說隔壁鎮的人都想來我們這裡，不知道是不是因為讀了我的日報呢？'),
             t('手都寫酸了，不過能把小鎮的故事記錄下來，這份工作還是挺值得的。'),
+            t('寫到一半墨水快沒了，只好去雜貨店賒了一瓶。老闆說用報導抵帳也行。'),
+            t('今天採訪時被狗追了兩條街。為了新聞，值得。'),
+            t('酒館老闆說我上一期把他寫得太摳門。我考慮下期寫得更詳細一點。'),
+            t('有人問我為什麼堅持寫日報。我說：因為總得有人記得這個小鎮發生過什麼。'),
+            t('稿紙不夠用了。看來這個鎮的故事，比我想的還要多。'),
+            t('深夜校稿時聽見窗外有人吵架。明天的頭條有了。'),
+            t('把今天聽到的八卦都寫進去了⋯希望當事人看到別來找我。'),
         ];
         lines.push(`✍️ ${reporter.name}${t('手記')}`);
-        lines.push(thoughts[Math.floor(Math.random() * thoughts.length)]);
+        let seed = (this.newspapers?.length || 0) * 7;
+        for (let i = 0; i < (reporter.name || '').length; i++) seed += reporter.name.charCodeAt(i);
+        lines.push(thoughts[seed % thoughts.length]);
         return lines.join('\n');
     }
 
