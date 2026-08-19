@@ -2232,6 +2232,21 @@ const I18N = (() => {
         '結婚了！': ' got married!',
         '開始交往！': ' started dating!',
 
+        // ── v5.43.0 小鎮編年史 ──
+        '小鎮編年史': 'Town Chronicle',
+        '每天換日自動歸檔全鎮村民的近況、行程、足跡與所有對話逐字稿(存在你的瀏覽器資料庫)。': 'Every day at rollover, all villagers\' status, schedules, footprints, and full conversation transcripts are archived to your browser\'s database.',
+        '匯出 JSON': 'Export JSON',
+        '匯出對話 CSV': 'Export conversations CSV',
+        '匯出作息 CSV': 'Export schedules CSV',
+        '清空': 'Clear',
+        '載入中…': 'Loading…',
+        '還沒有歸檔。每天換日時會自動把全鎮的作息、行程、足跡與對話存進資料庫。': 'No archives yet. Each day at rollover, the whole town\'s schedules, plans, footprints, and conversations are stored automatically.',
+        '位村民': ' villagers',
+        '場對話': ' conversations',
+        '你的對話': 'Your conversations',
+        '匯出失敗：': 'Export failed: ',
+        '確定要清空編年史資料庫嗎？此操作無法復原（不影響遊戲存檔）。': 'Clear the chronicle database? This cannot be undone (game saves are unaffected).',
+
         // ── v5.42.0 衝突敘事 ──
         '廣場對嗆': 'Public Showdown',
         '絕交現場': 'The Falling-Out',

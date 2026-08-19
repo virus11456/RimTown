@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.42.1.zip` from Releases
+1. Download `rimtown-v5.43.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,15 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.43.0 (2026-08-19)
+
+**小鎮編年史——全鎮作息與對話的可匯出資料庫**
+
+- 📚 每天換日時自動把全鎮村民的「近況、今日行程、逐段足跡」＋當天**所有對話逐字稿**（NPC 間對話含 AI 標記、你與村民的聊天）歸檔進瀏覽器 IndexedDB 資料庫，跨重新整理保存
+- 🔎 「日誌」分頁新增調閱介面：按日瀏覽（顯示村民數／對話數）、逐村民展開行程與足跡、逐場對話展開逐字稿
+- 📦 一鍵匯出：全部 JSON、對話 CSV（day/time/type/a/b/ai/summary/dialogue）、作息 CSV（day/npc/job/currently/plan/trace）——CSV 含 BOM，Excel 直接開中文不亂碼
+- 🗑️ 可清空資料庫（不影響遊戲存檔）
 
 ### v5.42.1 (2026-08-19)
 

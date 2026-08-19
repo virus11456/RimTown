@@ -2469,7 +2469,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
         }
         // Store NPC conversation for sidebar viewing
         if (dialogue.length) {
-            this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.agentId, agentBId:agentB.agentId, llm:true });
+            this.npcConversationLog.push({ time:world.clock.timeStr, dayTag:`${world.clock.year}-${world.clock.season}-${world.clock.day}`, location:agentA.currentLocation, dialogue, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.agentId, agentBId:agentB.agentId, llm:true });
             if (this.npcConversationLog.length > 10000) this.npcConversationLog = this.npcConversationLog.slice(-10000);
             // Notify UI for map speech bubbles
             if (this.onConversation) {
@@ -2501,7 +2501,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
         }
         const lines = dialogue.lines;
         if (lines.length) {
-            this.npcConversationLog.push({ time:world.clock.timeStr, location:agentA.currentLocation, dialogue:lines, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.agentId, agentBId:agentB.agentId });
+            this.npcConversationLog.push({ time:world.clock.timeStr, dayTag:`${world.clock.year}-${world.clock.season}-${world.clock.day}`, location:agentA.currentLocation, dialogue:lines, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.agentId, agentBId:agentB.agentId });
             if (this.npcConversationLog.length > 10000) this.npcConversationLog = this.npcConversationLog.slice(-10000);
             if (this.onConversation) {
                 const textA = lines[0]?.text || summary;
@@ -6365,8 +6365,12 @@ class World {
     tick() {
         if (this.paused) return;
         this.tickCount++;
+        // v5.43.0 編年史:記下「今天」的身分,換日瞬間把這一天完整打包歸檔
+        const prevDayIds = { year: this.clock.year, season: this.clock.season, day: this.clock.day };
         const timeEvents = this.clock.tick();
         if (timeEvents.includes('new_day')) {
+            // v5.43.0 小鎮編年史:趁足跡/行程還沒被新的一天覆蓋,先打包昨天交給 UI 存進資料庫
+            if (this.onDayArchive) { try { this.onDayArchive(this._buildDayArchive(prevDayIds)); } catch (e) { console.warn('[RimTown] chronicle error:', e); } }
             // v5.34.0 逾時代選:互動選擇放超過一個遊戲日沒人理,小鎮自行決定,避免卡住事件線
             this._autoResolveStaleChoices();
             const event = this.events.dailyUpdate(this);
@@ -6458,6 +6462,29 @@ class World {
         // v5.37.0 每個 tick 處理一批排隊中的村民 LLM 行程(避免瞬間打爆 API)
         this.conversationEngine.tickPlanQueue(this).catch(e => console.warn('[RimTown] plan queue error:', e));
     }
+    // v5.43.0 小鎮編年史:把一天的作息/行程/足跡/對話打包成可歸檔的紀錄(UI 存進 IndexedDB,可匯出調閱)
+    _buildDayArchive(ids) {
+        const dayTag = `${ids.year}-${ids.season}-${ids.day}`;
+        const npcs = Object.values(this.agents).filter(a => !a.isPlayer && !a.isDead).map(a => ({
+            id: a.agentId, name: a.name, job: a.job?.title || '',
+            currently: a.currently || '',
+            lifestyle: a.getLifestyleText ? a.getLifestyleText() : '',
+            plan: a.dailyPlan ? [...(a.dailyPlan.goals || [])] : [],
+            planLlm: !!a.dailyPlan?.llm,
+            replanned: !!a.dailyPlan?.replanned,
+            trace: (a.todayTrace || []).map(e => ({ m: e.m, text: e.text, loc: e.loc })),
+        }));
+        const convos = (this.conversationEngine?.npcConversationLog || [])
+            .filter(c => c.dayTag === dayTag)
+            .map(c => ({ time: c.time, a: c.agentA, b: c.agentB, llm: !!c.llm, summary: c.summary || '', dialogue: (c.dialogue || []).map(d => `${d.speaker}: ${d.text}`) }));
+        // 玩家對話:自上次歸檔以來的增量
+        const player = this.agents['player'];
+        const idx = this._chronicleChatIdx || 0;
+        const playerChats = (player?.chatHistory || []).slice(idx).map(m => ({ time: m.time, speaker: m.speaker, target: m.target, text: m.text }));
+        this._chronicleChatIdx = player?.chatHistory?.length || 0;
+        return { year: ids.year, season: ids.season, day: ids.day, npcs, convos, playerChats, savedAt: Date.now() };
+    }
+
     // v5.42.0 衝突敘事:把村民間的敵意做成有戲劇張力的事件鏈
     // (a) 積怨爆發:雙方好感都 <= -60 → 正式「絕交」名場面(isFeud 標記,等玩家來當和事佬)
     // (b) 廣場對嗆:互相仇視(<= -35)的兩人偶爾當眾大吵,交情好的旁觀者會選邊站
@@ -7556,6 +7583,7 @@ class World {
             this.npcLlmUsedToday = data.npcLlmUsedToday || 0;
             this._feudCooldown = data.feudCooldown || {}; // v5.42.0
             this.mediations = data.mediations || {}; // v5.42.0
+            this._chronicleChatIdx = (this.agents['player']?.chatHistory || []).length; // v5.43.0 讀檔後從當下開始記
             if (data.dailyFocus) this.dailyFocus = data.dailyFocus; // v5.31.0 今日焦點
 
             // Gossip
