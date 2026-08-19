@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.42.0
-const RIMTOWN_APP_VERSION = '5.42.0';
+// RimTown - Frontend App (WordPress Plugin) v5.42.1
+const RIMTOWN_APP_VERSION = '5.42.1';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1957,7 +1957,8 @@ class RimTownApp {
                     this.world.dailyDecision.resolveDecision('B', this.world);
                     this.state = this.world.getState(); this.renderSidebar();
                 }},
-            ]
+            ],
+            stillValid: () => this.world.dailyDecision?.pendingDecision === decision, // v5.42.1 逾時代選後丟棄
         });
     }
 
@@ -1980,6 +1981,7 @@ class RimTownApp {
             title: card.title,
             desc: card.flavor,
             buttons,
+            stillValid: () => this.world.rogueCards?.pending?.id === card.id, // v5.42.1
         });
     }
 
@@ -1997,6 +1999,7 @@ class RimTownApp {
             title: event.eventName,
             desc: event.description,
             buttons: buttons,
+            stillValid: () => this.world.eventChoice?.pendingEvent?.timestamp === event.timestamp, // v5.42.1
         });
     }
 
@@ -2014,7 +2017,8 @@ class RimTownApp {
                     this.world.npcHelp.resolveRequest('B', this.world);
                     this.state = this.world.getState(); this.renderSidebar();
                 }},
-            ]
+            ],
+            stillValid: () => this.world.npcHelp?.pendingRequest?.timestamp === request.timestamp, // v5.42.1
         });
     }
 
@@ -2034,7 +2038,8 @@ class RimTownApp {
                     this.world.logMessage('council', `🏛️ ${t('你對議會提案投了反對票。')}`);
                     this.state = this.world.getState(); this.renderSidebar();
                 }},
-            ]
+            ],
+            stillValid: () => { const p = this.world.council?.pendingProposal; return !!p && p.id === proposal.id && !p.playerVoted; }, // v5.42.1
         });
     }
 
@@ -2049,9 +2054,31 @@ class RimTownApp {
     // 忙碌時把通知排進佇列 + 角落小提示(不擋操作),空閒時由 flusher 補播
     _queueNotifDeferred(notif) {
         if (!this._centerNotifQueue) this._centerNotifQueue = [];
+        // v5.42.1 去重:同標題的互動卡不重複排隊
+        if (notif._interactive && this._centerNotifQueue.some(q => q._interactive && q.title === notif.title)) return;
         this._centerNotifQueue.push(notif);
+        // v5.42.1 佇列上限:互動卡最多留 3 張——被擠掉的世界狀態會由「逾時代選」自行結算,不會卡住事件線
+        const inter = this._centerNotifQueue.filter(q => q._interactive);
+        if (inter.length > 3) {
+            const drop = inter[0];
+            this._centerNotifQueue = this._centerNotifQueue.filter(q => q !== drop);
+        }
         this._showNotifBadgeToast();
         this._startNotifFlusher();
+    }
+
+    // v5.42.1 取下一則「還有效」的通知;互動卡受 90 秒真實時間冷卻保護,冷卻中先留在佇列
+    _dequeueNotif() {
+        const q = this._centerNotifQueue || [];
+        const INTERACTIVE_GAP = 90000;
+        for (let i = 0; i < q.length; i++) {
+            const n = q[i];
+            if (n._interactive && typeof n.stillValid === 'function' && !n.stillValid()) { q.splice(i, 1); i--; continue; } // 世界裡已被結算 → 直接丟棄
+            if (n._interactive && Date.now() - (this._lastInteractiveShownAt || 0) < INTERACTIVE_GAP) continue; // 冷卻中,跳過互動卡找後面的一般通知
+            q.splice(i, 1);
+            return n;
+        }
+        return null;
     }
 
     _showNotifBadgeToast() {
@@ -2073,10 +2100,13 @@ class RimTownApp {
     }
 
     // 關掉一張卡後補播下一張;玩家又在忙就交給 flusher 等空閒再播
+    // v5.42.1 走 _dequeueNotif:互動卡受 90 秒冷卻,答完一張不會立刻又彈下一張(改由 flusher 之後補播)
     _showNextQueuedNotif() {
         if (!this._centerNotifQueue?.length) return;
-        if (this._isPlayerBusy()) { this._startNotifFlusher(); return; }
-        const next = this._centerNotifQueue.shift();
+        this._startNotifFlusher();
+        if (this._isPlayerBusy()) return;
+        const next = this._dequeueNotif();
+        if (!next) return;
         setTimeout(() => {
             if (next._interactive) this._showInteractiveNotification(next);
             else this._showCenterNotification(next);
@@ -2090,21 +2120,25 @@ class RimTownApp {
             const overlay = document.getElementById('center-notification-overlay');
             if (!overlay || !overlay.classList.contains('hidden')) return;
             if (this._isPlayerBusy()) return;
-            const next = this._centerNotifQueue.shift();
+            const next = this._dequeueNotif();
+            if (!next) return;
             if (next._interactive) this._showInteractiveNotification(next);
             else this._showCenterNotification(next);
         }, 3000);
     }
 
-    _showInteractiveNotification({ icon, title, desc, buttons }) {
+    _showInteractiveNotification({ icon, title, desc, buttons, stillValid }) {
         const overlay = document.getElementById('center-notification-overlay');
         if (!overlay) return;
-        // Queue if already showing, or if the player is busy (chatting / typing)
+        if (typeof stillValid === 'function' && !stillValid()) return; // v5.42.1 已被世界結算的卡不再顯示
+        // Queue if already showing, busy, or an interactive card was shown within the last 90s (v5.42.1 防轟炸)
         if (!this._centerNotifQueue) this._centerNotifQueue = [];
-        if (!overlay.classList.contains('hidden') || this._isPlayerBusy()) {
-            this._queueNotifDeferred({ _interactive: true, icon, title, desc, buttons });
+        if (!overlay.classList.contains('hidden') || this._isPlayerBusy()
+            || Date.now() - (this._lastInteractiveShownAt || 0) < 90000) {
+            this._queueNotifDeferred({ _interactive: true, icon, title, desc, buttons, stillValid });
             return;
         }
+        this._lastInteractiveShownAt = Date.now();
         const card = document.getElementById('center-notification-card');
         if (!card) return;
         let html = '';

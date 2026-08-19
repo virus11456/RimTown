@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.42.0
+ * Version: 5.42.1
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.42.0');
+define('RIMTOWN_VERSION', '5.42.1');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,13 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.42.1',
+            'date'    => '2026-08-19',
+            'changes' => array(
+                '🔕 修復互動事件卡連環轟炸(10秒跳3-4張):原本答完一張立刻彈下一張、佇列無上限累積;現在互動卡之間至少間隔 90 秒(真實時間),佇列最多留 3 張且同標題去重,已被「逾時代選」結算的過期卡直接丟棄不再顯示',
+            ),
+        ),
         array(
             'version' => '5.42.0',
             'date'    => '2026-08-19',

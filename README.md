@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.42.0.zip` from Releases
+1. Download `rimtown-v5.42.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,12 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.42.1 (2026-08-19)
+
+**修復互動事件卡連環轟炸**
+
+- 🔕 原本答完一張卡會**立刻**彈下一張、且被延後的通知無上限累積（遊戲加速時更嚴重），造成 10 秒跳 3-4 張根本沒法玩；現在：互動卡之間至少間隔 **90 秒真實時間**、佇列最多保留 3 張＋同標題去重、已被「逾時代選」自動結算的過期卡在出佇列時直接丟棄——被擠掉／過期的事件由小鎮自行決定，事件線不會卡住
 
 ### v5.42.0 (2026-08-19)
 
