@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.44.0
+ * Version: 5.45.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.44.0');
+define('RIMTOWN_VERSION', '5.45.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.45.0',
+            'date'    => '2026-08-19',
+            'changes' => array(
+                '🦋 蝴蝶效應回顧:你的社交行動(耳語/安慰/示好/威脅/調解/說服/送禮…)會記下當下的關係快照,隔天首頁「昨日回響」用因果句告訴你發酵了什麼——「你種在X心裡的念頭發酵了,他對Y的態度明顯軟化」「昨天的威脅起了反效果,他對你起了戒心」,最多3條',
+                '🧘 首頁分階段減壓:剛開村只看「今日焦點+昨日回響+居民列表」;「今天的故事」在小鎮成長10後展開、「今日頭條」在成長20(第二章)後展開——第一次進來不再被資訊牆壓迫',
+                '🎁 送禮日誌殘留的「鎮長」稱謂改為「你」',
+            ),
+        ),
         array(
             'version' => '5.44.0',
             'date'    => '2026-08-19',

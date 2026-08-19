@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.44.0.zip` from Releases
+1. Download `rimtown-v5.45.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,14 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.45.0 (2026-08-19)
+
+**蝴蝶效應回顧＋首頁分階段減壓**
+
+- 🦋 蝴蝶效應回顧：你的社交行動（耳語／安慰／示好／威脅／調解／說服／送禮…）會記下當下的關係快照，隔天首頁「昨日回響」用因果句告訴你發酵了什麼——「你種在X心裡的念頭發酵了，他對Y的態度明顯軟化」「昨天的威脅起了反效果，他對你起了戒心」「Z把你放在心上了：『…』」，每天最多 3 條，回應「玩家存在感偏弱」的反饋
+- 🧘 首頁分階段減壓：剛開村只看「今日焦點＋昨日回響＋居民列表」；「今天的故事」在小鎮成長 10 後展開、「今日頭條」在成長 20（第二章）後展開——第一次進來不再被資訊牆壓迫
+- 🎁 送禮日誌殘留的「鎮長」稱謂改為「你」
 
 ### v5.44.0 (2026-08-19)
 
