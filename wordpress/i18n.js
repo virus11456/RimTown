@@ -2232,6 +2232,23 @@ const I18N = (() => {
         '結婚了！': ' got married!',
         '開始交往！': ' started dating!',
 
+        // ── v5.51.0 經濟B波:勞動力排班 ──
+        '今日產出／消耗，點按排班': "today's flow — tap to schedule",
+        '（無人手）': '(no workers)',
+        '休工：不生產，村民心情變好、多時間社交': 'Day off: no output, workers relax & socialize more',
+        '正常排班': 'Normal shift',
+        '加班：產量+50%，但村民會累、心情變差': 'Overtime: +50% output, but workers tire and sour',
+        '休工': 'Day off',
+        '加班': 'Overtime',
+        '鎮長下令：': 'Mayor\'s order: ',
+        '明日生效': 'takes effect tomorrow',
+        '原料自動補給': 'auto raw-material supply',
+        '今天工坊休工，難得清閒，多了些時間陪伴身邊的人。': 'Workshop closed today — a rare break, more time with the people around me.',
+        '連日加班，身體有點吃不消，但訂單堆著總得有人做。': 'Days of overtime are wearing me down, but someone has to clear these orders.',
+        '材料短缺，用邊角料將就趕工。': ' is short on materials, making do with scraps.',
+        '的診療': "'s treatment",
+        '去找醫生拿了藥，人舒服多了。': 'Got medicine from the doctor — feeling much better.',
+
         // ── v5.50.0 經濟A波:三層資源 ──
         '關鍵資源': 'Key Resources',
         '加工產能': 'Crafting Output',

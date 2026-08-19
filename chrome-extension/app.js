@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.50.0
-const RIMTOWN_APP_VERSION = '5.50.0';
+// RimTown - Frontend App (WordPress Plugin) v5.51.0
+const RIMTOWN_APP_VERSION = '5.51.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -3695,6 +3695,18 @@ class RimTownApp {
                 // Industry sub-tabs
                 case 'industry-subtab': this._industrySubTab = val; this.renderSidebar(); break;
                 case 'economy-subtab': this._economySubTab = val; this.renderSidebar(); break;
+                // v5.51.0 勞動力排班:鎮長對加工線下休工/正常/加班指令
+                case 'work-policy': {
+                    const [good, mode] = (val || '').split(',');
+                    if (this.world && good && ['off','normal','extra'].includes(mode)) {
+                        if (!this.world.workPolicy) this.world.workPolicy = {};
+                        this.world.workPolicy[good] = mode;
+                        const modeLabel = mode === 'off' ? t('休工') : mode === 'extra' ? t('加班') : t('正常排班');
+                        this.world.logMessage('economy', `${t('鎮長下令：')}${modeLabel}（${t('明日生效')}）`);
+                        this.renderSidebar();
+                    }
+                    break;
+                }
                 case 'records-subtab': this._recordsSubTab = val; this.renderSidebar(); break;
                 // Industry
                 case 'choose-industry': this._chooseIndustry(val); break;
@@ -7573,18 +7585,30 @@ class RimTownApp {
                 medicine: t('生病時消耗'),
                 furniture: t('建設與新居用'),
             };
-            html += `<div class="econ-section"><h3>⚒️ ${t('加工產能')}<span style="font-weight:normal;font-size:0.68rem;color:var(--text-muted);margin-left:6px">${t('今日產出／消耗')}</span></h3>`;
+            // v5.51.0 經濟B波:每條加工線顯示「誰在做」+ 排班三態(休工/正常/加班)——經濟＝排人,不是囤貨
+            const GOOD_JOB = { meals:'cook', tools:'blacksmith', clothing:'tailor', medicine:'doctor', furniture:'carpenter' };
+            const workPolicy = this.world?.workPolicy || {};
+            html += `<div class="econ-section"><h3>⚒️ ${t('加工產能')}<span style="font-weight:normal;font-size:0.68rem;color:var(--text-muted);margin-left:6px">${t('今日產出／消耗，點按排班')}</span></h3>`;
             PROCESSED.forEach(k => {
                 const f = flow[k];
                 const stock = Math.round(res[k] || 0);
                 const prod = Math.round(f.produced * 10) / 10, cons = Math.round(f.consumed * 10) / 10;
                 const flowClr = prod >= cons ? 'var(--positive)' : 'var(--negative)';
-                html += `<div style="display:flex;align-items:center;gap:8px;padding:5px 2px;border-bottom:1px solid var(--border);font-size:0.78rem">
-                    <span style="width:20px;text-align:center">${icons[k]}</span>
-                    <span style="width:44px;flex-shrink:0">${labels[k]}</span>
-                    <span style="flex:1;color:${flowClr}">＋${prod}${cons ? ` <span style="color:var(--negative)">−${cons}</span>` : ''}</span>
-                    <span style="color:var(--text-muted);font-size:0.68rem">${demandNote[k]}</span>
-                    <span style="width:46px;text-align:right;color:var(--text-secondary)">${t('庫存')} ${stock}</span>
+                const makers = Object.values(this.state.agents || {}).filter(a => a.job?.key === GOOD_JOB[k]).map(a => a.name);
+                const policy = workPolicy[k] || 'normal';
+                const polBtn = (mode, icon, tip) => `<button data-action="work-policy" data-val="${k},${mode}" title="${tip}" style="width:26px;height:22px;border-radius:5px;border:1px solid var(--border);cursor:pointer;font-size:0.7rem;line-height:1;${policy === mode ? 'background:var(--accent);color:#fff' : 'background:var(--bg-card);color:var(--text-secondary)'}">${icon}</button>`;
+                html += `<div style="padding:6px 2px;border-bottom:1px solid var(--border);font-size:0.78rem">
+                    <div style="display:flex;align-items:center;gap:6px">
+                        <span>${icons[k]}</span><span style="font-weight:bold">${labels[k]}</span>
+                        <span style="color:var(--text-muted);font-size:0.66rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${makers.length ? '👤 ' + makers.join('、') : t('（無人手）')}</span>
+                        <span style="color:var(--text-secondary);font-size:0.7rem">${t('庫存')} ${stock}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:5px;margin-top:3px">
+                        <span style="flex:1;font-size:0.7rem;color:${flowClr}">＋${prod}${cons ? ` <span style="color:var(--negative)">−${cons}</span>` : ''} <span style="color:var(--text-muted)">· ${demandNote[k]}</span></span>
+                        ${polBtn('off', '⏸', t('休工：不生產，村民心情變好、多時間社交'))}
+                        ${polBtn('normal', '▶', t('正常排班'))}
+                        ${polBtn('extra', '⏫', t('加班：產量+50%，但村民會累、心情變差'))}
+                    </div>
                 </div>`;
             });
             html += '</div>';
