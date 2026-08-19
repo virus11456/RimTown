@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.35.8
-const RIMTOWN_APP_VERSION = '5.35.8';
+// RimTown - Frontend App (WordPress Plugin) v5.36.0
+const RIMTOWN_APP_VERSION = '5.36.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -802,7 +802,7 @@ class RimTownApp {
         }
         decos.push({ type: def.type, x: tx, y: ty });
         this.tileMap.decorations = decos;
-        this.world.logMessage('building', `${def.icon} ${t('鎮長在小鎮擺放了')}${def.name}(${t('美觀')}+${def.beauty})`);
+        this.world.logMessage('building', `${def.icon} ${t('你在小鎮擺放了')}${def.name}(${t('美觀')}+${def.beauty})`);
         this.bgm?.sfx?.('coin');
         this.world.checkCombos?.(); // v4.9.0 擺放後偵測相鄰組合
         return true;
