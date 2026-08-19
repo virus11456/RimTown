@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.41.0.zip` from Releases
+1. Download `rimtown-v5.42.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,15 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.42.0 (2026-08-19)
+
+**衝突敘事三件組——對嗆、絕交、世紀大和解**
+
+- 🗯️ 廣場對嗆名場面：互相仇視（好感 ≤ -35）的兩人偶爾當眾大吵（AI 生成對嗆戲、每對至少隔 5 天），交情好的旁觀者會**選邊站**——對另一方好感下降並寫入「我當然站○○這邊」的記憶，小鎮氣氛真的會僵
+- 💢 絕交事件：雙方好感都跌破 -60 時積怨爆發，當眾撂下重話正式絕交（名場面＋日報頭條＋心情重挫），絕交狀態隨存檔保存
+- 🕊️ 和事佬和解線：對絕交等級的仇怨，「調解」升級為**兩段式任務**——分別勸過兩邊（需要對方基本信任你），兩邊都點頭就促成「世紀大和解」名場面：兩人好感大增、你獲得雙方好感 +8 與聲望 +15、解鎖成就「和事佬」；今日焦點會引導你去調解、追蹤進度（差哪一邊）
+- 尺度維持鄰里劇：全部是言語與關係衝突，沒有暴力
 
 ### v5.41.0 (2026-08-19)
 
