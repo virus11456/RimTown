@@ -789,6 +789,40 @@ body.rimtown-page .wp-block-post-title {
     max-height: calc(100vh - 320px);
     min-height: 240px;
 }
+
+/* v5.49.3 聊天雙欄版面:窄版對話模式隱藏清單,桌面對話模式左清單右對話 */
+.chat-layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+.chat-layout .chat-contacts { min-width: 0; }
+.chat-layout .chat-pane {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+.chat-layout.conv .chat-contacts { display: none; }
+@media (min-width: 1025px) {
+    .rimtown-container.chat-wide .rt-sidebar { width: 560px !important; }
+    .rimtown-container.chat-wide .map-panel { right: 560px !important; }
+    .chat-layout.conv { flex-direction: row; align-items: stretch; }
+    .chat-layout.conv .chat-contacts {
+        display: block;
+        width: 172px;
+        flex-shrink: 0;
+        border-right: 1px solid var(--border);
+        border-bottom: none;
+        overflow: hidden;
+    }
+    .chat-layout.conv .chat-contacts-list { max-height: calc(100vh - 240px); }
+    .chat-layout.conv .chat-contact-preview,
+    .chat-layout.conv .chat-contact-thought,
+    .chat-layout.conv .chat-contact-time { display: none; }
+    /* 雙欄時左欄本身就是聯絡人清單,返回鍵多餘 */
+    .chat-layout.conv .chat-conv-header button[data-action="close-chat"] { display: none; }
+}
 .chat-contact {
     display: flex;
     align-items: center;
