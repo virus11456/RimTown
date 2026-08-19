@@ -626,6 +626,51 @@ class Agent {
         if (this.activity === 'mourning') this._doMourning(world);
         if (this.activity === 'night_stroll') { this.needs.recreation = Math.min(100, this.needs.recreation + 1); this.needs.comfort = Math.min(100, this.needs.comfort + 0.5); }
         if (Math.random() < 0.1) this._generateThought(world);
+        // v5.40.0 今日足跡全紀錄 + 環境感知(皆為零成本規則式,移植 generative_agents 的逐格行程/perceive)
+        this._recordTrace(world);
+        this._perceiveSurroundings(world);
+    }
+
+    // v5.40.0 行動軌跡:行程步驟/活動/地點一有變化就記一筆——「今日足跡」因此像
+    // generative_agents 的逐分鐘行程(準備食材(10分)→下鍋(20分)→擺盤(5分)),完全不花 LLM
+    _recordTrace(world) {
+        try {
+            const dayKey = `${world.clock.year}-${world.clock.season}-${world.clock.day}`;
+            if (!this.todayTrace || this._traceDay !== dayKey) { this.todayTrace = []; this._traceDay = dayKey; this._traceKey = ''; }
+            let text;
+            if (this.activity === 'sleeping') text = t('睡覺');
+            else if (this.activity === 'eating') text = t('進食'); // 生理需求蓋過行程時記實際行為
+            else {
+                const cur = this.getCurrentPlanStep ? this.getCurrentPlanStep(world) : null;
+                if (cur && cur.step) text = `${cur.goal}${t('（')}${cur.step}${t('）')}`;
+                else if (cur) text = cur.goal;
+                else text = this.activityLabel;
+            }
+            const key = `${text}|${this.currentLocation}`;
+            if (key === this._traceKey) return;
+            this._traceKey = key;
+            this.todayTrace.push({ m: world.clock.hour * 60 + world.clock.minute, text, loc: this.currentLocation });
+            if (this.todayTrace.length > 160) this.todayTrace = this.todayTrace.slice(-160);
+        } catch (e) {}
+    }
+
+    // v5.40.0 環境感知:偶爾把「看到誰在做什麼」寫進記憶流(每天最多 6 條,低重要度)
+    // 這些記憶會被檢索進對話——村民聊天時會自然提起「早上看到你在打鐵」
+    _perceiveSurroundings(world) {
+        try {
+            if (this.activity === 'sleeping') return;
+            const dayKey = `${world.clock.year}-${world.clock.season}-${world.clock.day}`;
+            if (this._obsDay !== dayKey) { this._obsDay = dayKey; this._obsCount = 0; }
+            if (this._obsCount >= 6) return;
+            if (world.tickCount % 4 !== 0 || Math.random() > 0.18) return;
+            const others = Object.values(world.agents).filter(a => a !== this && !a.isDead && !a.isPlayer && a.currentLocation === this.currentLocation && a.activity !== 'sleeping');
+            if (!others.length) return;
+            const o = pickRandom(others);
+            const oStep = o.getCurrentPlanStep ? o.getCurrentPlanStep(world) : null;
+            const doing = (oStep && oStep.step) ? oStep.step : o.activityLabel;
+            this._obsCount++;
+            this.memory.add(world.tickCount, world.clock.timeStr, 'observation', `${t('看到')}${o.name}${t('正忙著')}${doing}`, 2, [o.name]);
+        } catch (e) {}
     }
     _getStayDuration() {
         // Return how many ticks to stay at current location before moving again
@@ -7162,6 +7207,8 @@ class World {
             attributes: { ...(a.attributes || {}) }, // v5.26.0 核心屬性
             dailyPlan: a.dailyPlan ? { key: a.dailyPlan.key, goals: [...a.dailyPlan.goals], blocks: a.dailyPlan.blocks ? a.dailyPlan.blocks.map(b => ({ time: b.time, text: b.text, steps: [...(b.steps || [])] })) : undefined, llm: a.dailyPlan.llm || undefined } : null, // v5.30.0 今日目標 / v5.37.0 LLM 分解行程
             currently: a.currently || undefined, // v5.37.0 LLM 每日修訂的近況
+            todayTrace: (a.todayTrace && a.todayTrace.length) ? a.todayTrace.slice(-160).map(e => ({ ...e })) : undefined, // v5.40.0 今日足跡
+            _traceDay: a._traceDay || undefined,
         });
         return {
             version: 2,
@@ -7277,6 +7324,7 @@ class World {
                 if (ad.attributes && Object.keys(ad.attributes).length) agent.attributes = { ...ad.attributes }; // v5.26.0 核心屬性
                 if (ad.dailyPlan) agent.dailyPlan = ad.dailyPlan; // v5.30.0 今日目標(v5.37.0 含 LLM blocks)
                 if (ad.currently) agent.currently = ad.currently; // v5.37.0 近況
+                if (Array.isArray(ad.todayTrace)) { agent.todayTrace = ad.todayTrace; agent._traceDay = ad._traceDay || ''; } // v5.40.0 今日足跡
 
                 // Needs
                 if (ad.needs) { Object.assign(agent.needs, ad.needs); }

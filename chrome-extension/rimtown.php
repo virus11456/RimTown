@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.39.1
+ * Version: 5.40.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.39.1');
+define('RIMTOWN_VERSION', '5.40.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.40.0',
+            'date'    => '2026-08-19',
+            'changes' => array(
+                '🕐 今日足跡全紀錄(零成本):村民的行程步驟/活動/地點一有變化就自動記一筆,詳情頁足跡變成 generative_agents 式的逐段時間軸——「揉麵團(15分鐘)→顧爐火(30分鐘)→跟熟客閒聊兩句(10分鐘)」,並與當日對話/觀察/反思記憶合併顯示',
+                '👀 環境感知(零成本):村民偶爾把「看到誰正忙著什麼」寫進記憶流(每天最多6條),之後聊天會自然提起「早上看到你在打鐵」',
+                '💾 足跡隨存檔保存;全部規則式生成,不增加任何 AI 費用',
+            ),
+        ),
         array(
             'version' => '5.39.1',
             'date'    => '2026-08-19',

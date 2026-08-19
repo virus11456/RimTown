@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.39.1
-const RIMTOWN_APP_VERSION = '5.39.1';
+// RimTown - Frontend App (WordPress Plugin) v5.40.0
+const RIMTOWN_APP_VERSION = '5.40.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -6620,7 +6620,25 @@ class RimTownApp {
                     : plan.goals.map(g => `<li>${g}</li>`).join('')}</ol>
                 ${plan.llm ? `<div style="font-size:0.62rem;color:var(--text-muted)">🤖 ${t('由 AI 依他的性格與昨日經歷生成')}</div>` : ''}</div>
             <div class="detail-section"><h3>🕐 ${t('今日足跡')}</h3>
-                ${nowLine}${timeline.length ? timeline.slice().reverse().map(m => `<div class="memory-item"><span class="memory-time">${timeOf(m.timeStr)}</span>${m.content}</div>`).join('') : `<p style="font-size:0.7rem;color:var(--text-muted)">${t('今天還沒發生什麼事')}</p>`}</div>`;
+                ${nowLine}${(() => {
+                    // v5.40.0 密集時間軸(generative_agents 式):行動軌跡(含時長)+今日記憶合併,新的在上
+                    const fmtM = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+                    const rows = [];
+                    const trace = liveAgent.todayTrace || [];
+                    trace.forEach((e, i) => {
+                        const dur = i < trace.length - 1 ? trace[i + 1].m - e.m : null;
+                        rows.push({ m: e.m, html: `${this._escapeHtml(e.text)}${dur > 0 ? ` <span style="color:var(--text-muted)">${t('（')}${dur} ${t('分鐘）')}</span>` : ''}` });
+                    });
+                    timeline.forEach(mm => {
+                        const tm = timeOf(mm.timeStr);
+                        const pm = tm ? parseInt(tm.slice(0, 2), 10) * 60 + parseInt(tm.slice(3, 5), 10) : 0;
+                        const ic = mm.category === 'conversation' ? '💬' : mm.category === 'observation' ? '👀' : mm.category === 'reflection' ? '💭' : mm.category === 'whisper' ? '🤫' : '✨';
+                        rows.push({ m: pm, mem: true, html: `${ic} ${this._escapeHtml(mm.content)}` });
+                    });
+                    rows.sort((a, b) => b.m - a.m || (a.mem === b.mem ? 0 : a.mem ? -1 : 1));
+                    if (!rows.length) return `<p style="font-size:0.7rem;color:var(--text-muted)">${t('今天還沒發生什麼事')}</p>`;
+                    return rows.slice(0, 40).map(r => `<div class="memory-item"><span class="memory-time">${fmtM(r.m)}</span>${r.html}</div>`).join('');
+                })()}</div>`;
             } catch (e) { console.warn('[RimTown] persona state render failed:', e); }
         }
         container.innerHTML = `<div class="detail-panel visible">
