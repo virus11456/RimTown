@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.40.0.zip` from Releases
+1. Download `rimtown-v5.41.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,15 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.41.0 (2026-08-19)
+
+**即時重規劃——白天的遭遇會當場改變行程**
+
+- ⚡ 村民白天碰到夠重大的事，會**當場**改寫今天剩下的行程（generative_agents 的 react/replan）：對話裡約好「傍晚一起吃飯」就真的排進今天下午、耳語種下的念頭會立刻反映在接下來的安排、跟你聊出強烈反應（好感大變／心動）或碰上告白／婚禮／抓姦／分手等名場面也會觸發
+- 🧠 改寫時 AI 會拿到「原本的行程＋剛發生的事」，只重排現在之後的時段，已過的足跡保留；並寫下一條「因為○○，我改變了今天接下來的安排」的記憶
+- 🎛️ 節流：每位村民每天最多臨時改 2 次、21:00 後不再改、共用每日 AI 額度（全鎮一天約多 5-10 次呼叫）
+- 📝 詳情頁行程被調整過會標示「已因今天的際遇臨時調整」
 
 ### v5.40.0 (2026-08-19)
 

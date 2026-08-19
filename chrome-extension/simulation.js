@@ -1568,6 +1568,64 @@ ${t('【規則】繁體中文(台灣用語)。只輸出 JSON,不要其他文字�
         }
     }
 
+    // v5.41.0 即時重規劃(移植 generative_agents 的 react/replan):
+    // 白天碰到夠重大的事(約定/強烈情緒的對話、耳語、劇情名場面)時,當場改寫「現在之後」的行程。
+    // 節流:每位村民每天最多 2 次、共用每日額度、21:00 後不再改(剩沒幾個時段)。
+    _canReplan(npc, world) {
+        const dayKey = `${world.clock.year}-${world.clock.season}-${world.clock.day}`;
+        if (npc._replanDay !== dayKey) { npc._replanDay = dayKey; npc._replanCount = 0; }
+        if ((npc._replanCount || 0) >= 2) return false;
+        if (world.clock.hour >= 21 || world.clock.hour < 5) return false;
+        if (!this.llm || !this.llm._canMakeRequest(false)) return false;
+        if ((world.npcLlmUsedToday || 0) >= this.npcLlmDailyBudget()) return false;
+        return true;
+    }
+
+    async replanRestOfDay(npc, world, reason) {
+        try {
+            if (!npc || npc.isPlayer || npc.isDead) return;
+            if (!this._canReplan(npc, world)) return;
+            npc._replanCount = (npc._replanCount || 0) + 1;
+            this._countNpcLlmUse(world);
+            const toMin = (s) => { const m = String(s || '').match(/(\d{1,2}):(\d{2})/); return m ? parseInt(m[1], 10) * 60 + parseInt(m[2], 10) : null; };
+            const nowMin = world.clock.hour * 60 + world.clock.minute;
+            const nowStr = `${String(world.clock.hour).padStart(2, '0')}:${String(world.clock.minute).padStart(2, '0')}`;
+            const blocks = npc.dailyPlan?.blocks || [];
+            const past = blocks.filter(b => { const s = toMin(b.time); return s != null && s <= nowMin; });
+            const p = this._buildCharacterProfile(npc);
+            const planText = blocks.length ? blocks.map(b => `${b.time} ${b.text}`).join(t('；')) : (npc.dailyPlan?.goals || []).join(t('；'));
+            const shortReason = String(reason || '').slice(0, 80);
+            const prompt = `${t('你在為模擬小鎮「邊境鎮」的居民「即時調整」今天的行程——他剛遇到一件事,接下來的安排要跟著變。')}
+${t('【居民】')}${p.name}${t('，')}${p.age}${t('歲')}${p.job}${t('，性格')}${p.traits}${t('。')}${p.status}
+${t('【現在時刻】')}${nowStr}
+${planText ? `${t('【今天原本的安排】')}${planText}` : ''}
+${t('【剛剛發生的事】')}${shortReason}
+
+${t('【任務】依這件事改寫「現在之後」的行程:2-4 個時段(時間必須晚於現在),每時段 1-3 個小動作。若約好了時間/地點務必排進去;沒被影響的原安排可以保留;睡覺時間照舊。')}
+${t('【規則】繁體中文(台灣用語)。只輸出 JSON,不要其他文字：')}
+{"plan": [{"time": "HH:MM", "text": "${t('時段在做什麼')}", "steps": ["${t('小動作1')}"]}]}`;
+            const response = await this.llm.generate(prompt, 350, 0.85, false);
+            if (!response || response === '__ERROR__' || response === '__RATE_LIMITED__') return;
+            let data = null;
+            try {
+                const js = response.indexOf('{'), je = response.lastIndexOf('}') + 1;
+                if (js >= 0 && je > js) data = JSON.parse(response.slice(js, je));
+            } catch (e) { return; }
+            const fresh = (Array.isArray(data?.plan) ? data.plan : []).filter(b => b && b.text && (toMin(b.time) || 0) > nowMin)
+                .slice(0, 5).map(b => ({
+                    time: String(b.time || '').slice(0, 5),
+                    text: String(b.text).slice(0, 60),
+                    steps: (Array.isArray(b.steps) ? b.steps : []).filter(Boolean).slice(0, 3).map(s => String(s).slice(0, 40)),
+                }));
+            if (!fresh.length) return;
+            const key = `${world.clock.year}-${world.clock.season}-${world.clock.day}`;
+            const merged = [...past, ...fresh];
+            npc.dailyPlan = { key, goals: merged.map(b => `${b.time} ${b.text}`), blocks: merged, llm: true, replanned: true };
+            npc.memory.add(world.tickCount, world.clock.timeStr, 'plan', `${t('因為「')}${shortReason.slice(0, 40)}${t('」,我改變了今天接下來的安排。')}`, 5, []);
+            world.logMessage('thought', `📝 ${npc.name}${t('臨時改變了今天的安排')}`, npc.name);
+        } catch (e) { console.warn('[RimTown] replan failed:', e); }
+    }
+
     _applyPlanData(npc, data, world) {
         if (!data || !Array.isArray(data.plan) || !data.plan.length) return;
         const blocks = data.plan.filter(b => b && b.text).slice(0, 8).map(b => ({
@@ -1700,6 +1758,8 @@ ${t('最後一行：')}EFFECTS: {"target": "${t('若念頭涉及某位村民寫�
             if (a.name === targetName || thought.includes(a.name)) targets.push(a.name);
         }
         npc.memory.add(world.tickCount, world.clock.timeStr, 'whisper', thought, 8, targets.slice(0, 2));
+        // v5.41.0 耳語會即時改變他今天的安排——慫恿的效果看得到
+        this.replanRestOfDay(npc, world, `${t('心裡突然冒出一個念頭：')}${thought}`).catch(() => {});
         // 機械後果:對被提及村民的好感/浪漫漂移
         const tgt = Object.values(world.agents).find(a => !a.isPlayer && !a.isDead && a.name === (targetName || targets[0]));
         if (tgt) {
@@ -2008,6 +2068,11 @@ ${t('- 格式：每行「名字: 對話內容」,不要有其他任何東西')}`
             world.dramaArchive = world.dramaArchive || [];
             world.dramaArchive.push({ ...scene, year: world.clock.year, season: world.clock.season, day: world.clock.day, tick: world.tickCount });
             if (world.dramaArchive.length > 40) world.dramaArchive = world.dramaArchive.slice(-40);
+            // v5.41.0 劇情名場面(告白/婚禮/抓姦/分手/離婚)後,當事人即時改寫今天剩餘行程
+            try {
+                this.replanRestOfDay(a, world, `${meta.title}${t('——這件事把今天整個打亂了')}`).catch(() => {});
+                this.replanRestOfDay(b, world, `${meta.title}${t('——這件事把今天整個打亂了')}`).catch(() => {});
+            } catch (e) {}
             // v5.2.0 大事件後當事人發鎮民動態
             if (world.townFeed) {
                 const feedPools = {
@@ -2366,6 +2431,13 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
         if (typeof effects.plan_b === 'string' && effects.plan_b.trim()) {
             agentB.memory.add(world.tickCount, world.clock.timeStr, 'plan', effects.plan_b.trim(), 6, [agentA.name]);
         }
+        // v5.41.0 即時重規劃:對話裡有約定、或情緒波動夠大 → 當事人當場改寫今天剩餘行程
+        try {
+            const planA = (typeof effects.plan_a === 'string' && effects.plan_a.trim()) || '';
+            const planB = (typeof effects.plan_b === 'string' && effects.plan_b.trim()) || '';
+            if (planA || Math.abs(affA) >= 4 || romA >= 2) this.replanRestOfDay(agentA, world, planA || summary).catch(() => {});
+            if (planB || Math.abs(affB) >= 4 || romB >= 2) this.replanRestOfDay(agentB, world, planB || summary).catch(() => {});
+        } catch (e) {}
         world.logMessage('conversation', summary, agentA.name, agentB.name);
         // Collect notable conversations for daily news
         if (world.dailyNews && (Math.abs(affA) >= 4 || Math.abs(affB) >= 4 || romA >= 2 || romB >= 2)) {
@@ -2953,6 +3025,10 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
         player.chatHistory.push({speaker:npc.name, target:player.name, text:npcReply, time:world.clock.timeStr});
         player._recentChatTick = world.tickCount; // Mark for social need recovery
         world.logMessage('player_chat', `${player.name} → ${npc.name}: ${summary}`, player.name, npc.name);
+        // v5.41.0 跟玩家聊出強烈反應(好感大變/心動) → NPC 即時改寫今天剩餘行程
+        if (Math.abs(affChange) >= 4 || romChange >= 2) {
+            this.replanRestOfDay(npc, world, `${t('和')}${player.name}${t('聊了之後：')}${summary}`).catch(() => {});
+        }
         world.checkHeartEvents?.(); // v5.0.0 聊天後檢查心動事件
         return { npc_name:npc.name, npc_reply:npcReply, player_message:playerMessage, effects:{affinity_change:affChange,romantic_change:romChange}, summary };
     }
