@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.46.0
+ * Version: 5.47.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.46.0');
+define('RIMTOWN_VERSION', '5.47.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,17 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.47.0',
+            'date'    => '2026-08-19',
+            'changes' => array(
+                '🐛 BUG-01(High)修復「該去找 0 敘敘舊了」:外出村民返鄉時關係還原把陣列索引當名字建立關係;修正還原邏輯+讀檔自動清除舊檔壞資料+顯示端防護三層',
+                '🕊️ BUG-02 調解回饋:優先鎖定「絕交」對象、每一步顯示「和解進度 N/2」與心防狀態,硬派對象不再看似白按',
+                '💘 BUG-03 心動事件:改走玩家聊天限流(較寬鬆+Groq 分流),不再被背景額度擠掉;備援真心話 2→6 種並依職業/性格加味,跨村民不再一字不差',
+                '📜 BUG-04 事件徵詢開場加入 4 種變體,乾旱/風暴/寒流不再逐字重複',
+                '⏸️ BUG-05 暫停時抑制所有全螢幕彈窗(名場面/週報/決策卡),排隊等你恢復播放後再補播',
+            ),
+        ),
         array(
             'version' => '5.46.0',
             'date'    => '2026-08-19',

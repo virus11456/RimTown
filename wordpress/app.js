@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.46.0
-const RIMTOWN_APP_VERSION = '5.46.0';
+// RimTown - Frontend App (WordPress Plugin) v5.47.0
+const RIMTOWN_APP_VERSION = '5.47.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1902,6 +1902,8 @@ class RimTownApp {
 
     // v5.42.1 取下一則「還有效」的通知;互動卡受 90 秒真實時間冷卻保護,冷卻中先留在佇列
     _dequeueNotif() {
+        // v5.47.0 BUG-05:玩家按了暫停就不出任何全螢幕卡,恢復播放後 flusher 再補播
+        if (this.world?.paused) return null;
         const q = this._centerNotifQueue || [];
         const INTERACTIVE_GAP = 90000;
         for (let i = 0; i < q.length; i++) {
@@ -1968,6 +1970,7 @@ class RimTownApp {
         // Queue if already showing, busy, or an interactive card was shown within the last 90s (v5.42.1 防轟炸)
         if (!this._centerNotifQueue) this._centerNotifQueue = [];
         if (!overlay.classList.contains('hidden') || this._isPlayerBusy()
+            || (this.world?.paused) // v5.47.0 BUG-05:暫停中不彈,排隊等恢復
             || Date.now() - (this._lastInteractiveShownAt || 0) < 90000) {
             this._queueNotifDeferred({ _interactive: true, icon, title, desc, buttons, stillValid });
             return;
@@ -2076,6 +2079,7 @@ class RimTownApp {
         const overlay = document.getElementById('center-notification-overlay');
         if (!overlay) return;
         if (!overlay.classList.contains('hidden') || this._isPlayerBusy()
+            || (this.world?.paused) // v5.47.0 BUG-05:暫停中不彈,排隊等恢復
             || Date.now() - (this._lastCenterShownAt || 0) < 45000) {
             this._queueNotifDeferred(notif);
             return;
@@ -5883,7 +5887,9 @@ class RimTownApp {
                 break;
             }
             case 'mediate': {
-                const foe = Object.values(npc.relationships.relationships).filter(r => (r.affinity || 0) < -20).sort((a, b) => a.affinity - b.affinity)[0];
+                // v5.47.0 BUG-02:優先挑「絕交」對象(和解任務目標),而不是單純好感最低者
+                const foes = Object.values(npc.relationships.relationships).filter(r => (r.affinity || 0) < -20).sort((a, b) => a.affinity - b.affinity);
+                const foe = foes.find(r => r.isFeud) || foes[0];
                 if (!foe) { fx(`🕊️ ${npc.name}${t('最近沒跟誰結怨')}`, '#9aa'); break; }
                 const other = world.agents[foe.targetId];
                 // v5.42.0 和解線:對「絕交」等級的仇怨,調解升級為兩段式任務——
@@ -5894,12 +5900,13 @@ class RimTownApp {
                     const rec = world.mediations[key] = world.mediations[key] || { sides: {} };
                     if (rec.sides[npc.agentId]) {
                         fx(`🕊️ ${npc.name}${t('嘆了口氣:「你上次說的,我還在想...」')}`, '#9aa');
-                        fx(`${t('去勸勸另一邊的')}${foe.targetName}${t('吧')}`, '#7fc4ff');
+                        fx(`${t('和解進度')} ${Object.keys(rec.sides).length}/2 — ${t('去勸勸另一邊的')}${foe.targetName}${t('吧')}`, '#7fc4ff');
                         break;
                     }
                     if ((rel.trust || 0) < -10) {
                         rel.modifyAffinity(-2);
                         fx(`🕊️ ${npc.name}${t('冷冷地說:「這與你無關。」')}`, '#e07a7a');
+                        fx(`${t('他還不信任你——先提升關係再來調解')}`, '#e07a7a');
                         break;
                     }
                     rec.sides[npc.agentId] = true;
@@ -5928,8 +5935,8 @@ class RimTownApp {
                         fx(`🕊️ ${t('成了!')}${npc.name}${t('和')}${other.name}${t('當眾和解!')}`, '#ffd700');
                         fx(`${t('兩人好感 +8 · 聲望 +15')}`, '#5cc98f');
                     } else {
-                        fx(`🕊️ ${npc.name}${t('沉默許久:「...讓我想想。」')}`, '#5cc98f');
-                        fx(`${t('再去勸勸')}${foe.targetName}${t(',兩邊都點頭就能促成和解')}`, '#7fc4ff');
+                        fx(`🕊️ ${npc.name}${t('沉默許久:「...讓我想想。」')}${t('（心防鬆動了）')}`, '#5cc98f');
+                        fx(`${t('和解進度')} 1/2 — ${t('再去勸勸')}${foe.targetName}${t(',兩邊都點頭就能促成和解')}`, '#7fc4ff');
                     }
                     break;
                 }

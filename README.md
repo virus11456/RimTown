@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.46.0.zip` from Releases
+1. Download `rimtown-v5.47.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,16 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.47.0 (2026-08-19)
+
+**QA 回歸五修（BUG-01～05）**
+
+- 🐛 BUG-01（High）「該去找 0 敘敘舊了」：外出村民返鄉時的關係還原把**陣列索引當名字**建立關係（`Object.entries` 迭代陣列＋欄位名不符）；三層修復——還原邏輯改用 target_id/target_name 並略過斷掉引用、讀檔時自動清除舊檔已產生的壞關係、顯示端過濾純數字名字
+- 🕊️ BUG-02 調解回饋：優先鎖定「絕交」對象（不再被其他低好感者搶走）、每一步顯示「和解進度 N/2」與心防狀態、不信任時明確提示——硬派對象不再看似白按
+- 💘 BUG-03 心動事件：改走玩家聊天限流（較寬鬆＋Groq 智慧分流），不再被背景額度擠掉退回罐頭句；備援真心話 2→6 種並依職業／性格加味
+- 📜 BUG-04 事件徵詢開場加入 4 種變體（急匆匆／皺眉拉到一旁／深夜招手／廣場攔人），天氣危機不再逐字重複
+- ⏸️ BUG-05 暫停時抑制所有全螢幕彈窗，恢復播放後由佇列補播
 
 ### v5.46.0 (2026-08-19)
 

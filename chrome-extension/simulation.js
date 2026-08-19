@@ -1053,9 +1053,10 @@ class Agent {
         if (isNight && !this.personality.traits.includes('night_owl') && this.activity !== 'sleeping') {
             thoughts.push(t('這麼晚了還沒睡...'), t('明天會很累吧。'));
         }
+        // v5.47.0 BUG-01 防護:名字是純數字的斷掉引用(舊檔殘留)不進閒置意圖
         const bf = this.relationships.getBestFriend();
-        if (bf) thoughts.push(`${t('該去找')}${bf.targetName}${t('敘敘舊了。')}`);
-        const rom = this.relationships.getRomanticInterests();
+        if (bf && bf.targetName && !/^\d+$/.test(String(bf.targetName))) thoughts.push(`${t('該去找')}${bf.targetName}${t('敘敘舊了。')}`);
+        const rom = this.relationships.getRomanticInterests().filter(r => r.targetName && !/^\d+$/.test(String(r.targetName)));
         if (rom.length) thoughts.push(`${t('一直在想')}${pickRandom(rom).targetName}...`);
         const best = this.skills.bestSkill;
         if (best.level > 0) thoughts.push(`${t(best.category)}${t('技能進步中...')}`);
@@ -2121,7 +2122,8 @@ ${t('- 格式：每行「名字: 對話內容」,不要有其他任何東西')}`
             if (!player) return;
             const rel = npc.relationships.getOrCreate(player.agentId, player.name);
             let text = '';
-            if (this.llm && this.llm._canMakeRequest(false)) {
+            // v5.47.0 BUG-03:心動事件是關鍵玩家導向內容,改走玩家聊天限流(較寬鬆+Groq 分流),不再被背景額度擠掉
+            if (this.llm && this.llm._canMakeRequest(true)) {
                 try {
                     const pN = this._buildCharacterProfile(npc);
                     const mems = (rel.sharedMemories || []).slice(-3).join(t('；'));
@@ -2145,14 +2147,28 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
                 } catch (e) { console.error('[RimTown] heart event LLM failed:', e); }
             }
             if (!text) {
+                // v5.47.0 BUG-03:備援真心話擴充+依性格/職業輕量填充,跨村民不再一字不差
+                const jobName = npc.job?.title || t('日子');
+                const traits = npc.personality?.traits || [];
                 const fb = ev.romance ? [
                     t('那個...我最近發現,只要看到你走過來,我就會不自覺地笑。你...應該懂我的意思吧?'),
                     t('跟你說話的時候,時間總是過得特別快。我想...我大概是喜歡上你了。'),
+                    `${t('昨晚忙完')}${jobName}${t('的事,躺下來滿腦子都是你。這樣下去不行,我得說出來——我喜歡你。')}`,
+                    t('鎮上的人都說我最近怪怪的。也對,遇見你之後,我就不太像原本的自己了。'),
+                    t('我練習了好多次要怎麼開口...結果一看到你全忘了。總之,我心裡有你,很久了。'),
+                    t('如果哪天你要離開這個鎮,能不能...帶上我?'),
                 ] : [
                     `${t('欸,認真說,自從你來了之後,我覺得這個鎮都不一樣了。有你這個朋友真好。')}`,
                     `${t('我不太會說這種話,但...謝謝你一直願意聽我說話。這對我來說很重要。')}`,
+                    `${t('做')}${jobName}${t('這行,平常沒什麼人真的關心我。你不一樣。這句話我想當面說。')}`,
+                    t('昨天想了想,要是你當初沒來這個鎮,我大概還是一個人悶著。謝了,真的。'),
+                    t('別笑我肉麻——在這鎮上,我最信得過的人就是你。'),
+                    t('我這人朋友不多,但質都很高。比如說,你。'),
                 ];
+                // 性格輕量加味:害羞的人吞吞吐吐,毒舌的人嘴硬
                 text = pickRandom(fb);
+                if (traits.includes('shy')) text = `${t('那個...')}${text}`;
+                else if (traits.includes('abrasive')) text = `${text}${t('...講完了,不准笑。')}`;
             }
             player.chatHistory.push({ speaker: npc.name, target: player.name, text, time: world.clock.timeStr });
             npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('我對')}${player.name}${t('說出了真心話：')}${text}`, 9, [player.name]);
@@ -3971,11 +3987,20 @@ class EventSystem {
             }
         }
         // Restore relationships
+        // v5.47.0 BUG-01 修復:relationships 以陣列(toDict)序列化,舊碼用 Object.entries 迭代,
+        // 鍵變成 "0","1" 且欄位名不符(target_name),導致返鄉村民的關係全被建成「名字=索引」→「該去找 0 敘敘舊了」
         if (d.relationships) {
-            for (const [rid,rd] of Object.entries(d.relationships)) {
-                const r = agent.relationships.getOrCreate(rid, rd.name || rid);
-                Object.assign(r, { affinity:rd.affinity||0, trust:rd.trust||0, romanticInterest:rd.romanticInterest||0,
-                    interactionCount:rd.interactionCount||0, status:rd.status||null, statusSince:rd.statusSince||0 });
+            const list = Array.isArray(d.relationships) ? d.relationships : Object.values(d.relationships);
+            for (const rd of list) {
+                if (!rd) continue;
+                const rid = rd.targetId || rd.target_id || rd.id;
+                const rname = rd.targetName || rd.target_name || rd.name;
+                if (!rid || !rname || /^\d+$/.test(String(rname))) continue; // 斷掉的引用直接略過,絕不把索引當名字
+                const r = agent.relationships.getOrCreate(rid, rname);
+                Object.assign(r, { affinity:rd.affinity||0, trust:rd.trust||0,
+                    romanticInterest:rd.romanticInterest ?? rd.romantic_interest ?? 0,
+                    interactionCount:rd.interactionCount ?? rd.interaction_count ?? 0,
+                    status:rd.status||null, statusSince:rd.statusSince ?? rd.status_since ?? 0 });
             }
         }
         // Restore memories
@@ -7651,6 +7676,16 @@ class World {
             this._chronicleChatIdx = (this.agents['player']?.chatHistory || []).length; // v5.43.0 讀檔後從當下開始記
             this.playerActions = data.playerActions || []; // v5.45.0
             this.dailyEcho = data.dailyEcho || []; // v5.45.0
+            // v5.47.0 BUG-01 舊檔修復:清除「名字=索引」的壞關係(返鄉還原 bug 產生的 targetName "0"/"1")
+            try {
+                for (const a of Object.values(this.agents)) {
+                    for (const [rid, r] of Object.entries(a.relationships?.relationships || {})) {
+                        if (/^\d+$/.test(String(r.targetName || '')) || /^\d+$/.test(String(rid))) {
+                            delete a.relationships.relationships[rid];
+                        }
+                    }
+                }
+            } catch (e) {}
             if (data.dailyFocus) this.dailyFocus = data.dailyFocus; // v5.31.0 今日焦點
 
             // Gossip
@@ -8972,9 +9007,16 @@ class EventChoiceSystem {
         }
         const mayor = Object.values(world.agents).find(a => !a.isPlayer && !a.isDead && a.job?.key === 'mayor');
         const asker = mayor ? mayor.name : t('鎮長');
+        // v5.47.0 BUG-04:徵詢開場加入變體池,乾旱/風暴/寒流等事件不再逐字重複
+        const framing = pickRandom([
+            { pre: t('急匆匆找到你：「'), post: t('你見多識廣，幫我拿個主意！」') },
+            { pre: t('皺著眉頭把你拉到一旁：「'), post: t('鎮上的人都慌了，你說該怎麼辦？」') },
+            { pre: t('深夜還亮著燈,見你經過連忙招手：「'), post: t('我想聽聽你的看法,再晚就來不及了。」') },
+            { pre: t('在廣場上攔住你,壓低聲音：「'), post: t('這件事我拿不定主意...你幫我想想。」') },
+        ]);
         this.pendingEvent = {
             eventName: event.name,
-            description: `${asker}${t('急匆匆找到你：「')}${event.description}${t('你見多識廣，幫我拿個主意！」')}`,
+            description: `${asker}${framing.pre}${event.description}${framing.post}`,
             severity: event.severity,
             choices: choices,
             timestamp: world.tickCount,
