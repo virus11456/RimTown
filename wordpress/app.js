@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.42.1
-const RIMTOWN_APP_VERSION = '5.42.1';
+// RimTown - Frontend App (WordPress Plugin) v5.43.0
+const RIMTOWN_APP_VERSION = '5.43.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -3541,6 +3541,8 @@ class RimTownApp {
 
     startSimulation() {
         if (this.simInterval) clearInterval(this.simInterval);
+        // v5.43.0 小鎮編年史:換日時把整天的作息/行程/足跡/對話歸檔進 IndexedDB
+        if (this.world) this.world.onDayArchive = (arc) => this._chroniclePut(arc);
         this.simInterval = setInterval(() => {
             this.world.tick();
             this.state = this.world.getState();
@@ -3821,6 +3823,16 @@ class RimTownApp {
                 case 'player-quit-job': this._playerQuitJob(); break;
                 case 'player-vote': this._playerVote(val); break;
                 case 'run-for-mayor': this._showRunForMayorModal(); break;
+                // v5.43.0 小鎮編年史
+                case 'chronicle-view': this._chronicleGet(val).then(arc => { this._chronicleView = arc; this.renderSidebar(); }).catch(() => {}); break;
+                case 'chronicle-export-json': this._chronicleExportJSON().catch(e => this._gameAlert(t('匯出失敗：') + e.message, '📚')); break;
+                case 'chronicle-export-convo': this._chronicleExportConvoCSV().catch(e => this._gameAlert(t('匯出失敗：') + e.message, '📚')); break;
+                case 'chronicle-export-sched': this._chronicleExportScheduleCSV().catch(e => this._gameAlert(t('匯出失敗：') + e.message, '📚')); break;
+                case 'chronicle-clear':
+                    if (confirm(t('確定要清空編年史資料庫嗎？此操作無法復原（不影響遊戲存檔）。'))) {
+                        this._chronicleClear().then(() => this.renderSidebar()).catch(() => {});
+                    }
+                    break;
                 case 'player-propose': this._playerPropose(val); break;
                 case 'player-flirt': this._playerFlirt(val); break;
                 // Mobile group sub-tab switching
@@ -8258,6 +8270,153 @@ class RimTownApp {
     // ============================================================
     renderRecords(container) {
         this.renderLog(container);
+        this._renderChronicleSection(container);
+    }
+
+    // ============================================================
+    // v5.43.0 小鎮編年史:IndexedDB 資料庫(每天換日自動歸檔),可調閱/匯出
+    // ============================================================
+    _chronicleDb() {
+        if (this._chronicleDbPromise) return this._chronicleDbPromise;
+        this._chronicleDbPromise = new Promise((resolve, reject) => {
+            try {
+                const req = indexedDB.open('rimtown-chronicle', 1);
+                req.onupgradeneeded = () => { req.result.createObjectStore('days', { keyPath: 'key' }); };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            } catch (e) { reject(e); }
+        });
+        return this._chronicleDbPromise;
+    }
+    _chronicleSeq(arc) {
+        const sIdx = Math.max(0, [t('春季'), t('夏季'), t('秋季'), t('冬季')].indexOf(t(arc.season)));
+        return ((arc.year - 1) * 4 + sIdx) * 15 + (arc.day - 1);
+    }
+    _chronicleLabel(arc) { return `${t('第')}${arc.year}${t('年 ')}${t(arc.season)} ${t('第')}${arc.day}${t('天')}`; }
+    async _chroniclePut(arc) {
+        try {
+            const db = await this._chronicleDb();
+            const rec = { key: this._chronicleSeq(arc), label: this._chronicleLabel(arc), ...arc };
+            await new Promise((res, rej) => {
+                const tx = db.transaction('days', 'readwrite');
+                tx.objectStore('days').put(rec);
+                tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+            });
+            this._chronicleKeys = null; // 讓列表下次重讀
+        } catch (e) { console.warn('[RimTown] chronicle put failed:', e); }
+    }
+    async _chronicleAll() {
+        const db = await this._chronicleDb();
+        return new Promise((res, rej) => {
+            const req = db.transaction('days').objectStore('days').getAll();
+            req.onsuccess = () => res(req.result || []);
+            req.onerror = () => rej(req.error);
+        });
+    }
+    async _chronicleGet(key) {
+        const db = await this._chronicleDb();
+        return new Promise((res, rej) => {
+            const req = db.transaction('days').objectStore('days').get(Number(key));
+            req.onsuccess = () => res(req.result || null);
+            req.onerror = () => rej(req.error);
+        });
+    }
+    async _chronicleClear() {
+        const db = await this._chronicleDb();
+        await new Promise((res, rej) => {
+            const tx = db.transaction('days', 'readwrite');
+            tx.objectStore('days').clear();
+            tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+        });
+        this._chronicleKeys = null; this._chronicleView = null;
+    }
+    _downloadFile(filename, content, mime) {
+        const blob = new Blob([content], { type: mime || 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }
+    _csvCell(v) { const s = String(v ?? ''); return `"${s.replace(/"/g, '""')}"`; }
+    async _chronicleExportJSON() {
+        const all = (await this._chronicleAll()).sort((a, b) => a.key - b.key);
+        this._downloadFile('rimtown-chronicle.json', JSON.stringify(all, null, 2), 'application/json');
+    }
+    async _chronicleExportConvoCSV() {
+        const all = (await this._chronicleAll()).sort((a, b) => a.key - b.key);
+        const rows = [['day', 'time', 'type', 'a', 'b', 'ai', 'summary', 'dialogue'].join(',')];
+        for (const d of all) {
+            for (const c of (d.convos || [])) {
+                rows.push([this._csvCell(d.label), this._csvCell(c.time), 'npc', this._csvCell(c.a), this._csvCell(c.b), c.llm ? 'yes' : 'no', this._csvCell(c.summary), this._csvCell((c.dialogue || []).join(' / '))].join(','));
+            }
+            for (const p of (d.playerChats || [])) {
+                rows.push([this._csvCell(d.label), this._csvCell(p.time), 'player', this._csvCell(p.speaker), this._csvCell(p.target), '', '', this._csvCell(p.text)].join(','));
+            }
+        }
+        this._downloadFile('rimtown-conversations.csv', '\uFEFF' + rows.join('\n'), 'text/csv;charset=utf-8');
+    }
+    async _chronicleExportScheduleCSV() {
+        const all = (await this._chronicleAll()).sort((a, b) => a.key - b.key);
+        const fmtM = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+        const rows = [['day', 'npc', 'job', 'currently', 'plan', 'trace'].join(',')];
+        for (const d of all) {
+            for (const n of (d.npcs || [])) {
+                rows.push([this._csvCell(d.label), this._csvCell(n.name), this._csvCell(n.job), this._csvCell(n.currently),
+                    this._csvCell((n.plan || []).join('；')),
+                    this._csvCell((n.trace || []).map(e => `${fmtM(e.m)} ${e.text}`).join('；'))].join(','));
+            }
+        }
+        this._downloadFile('rimtown-schedules.csv', '\uFEFF' + rows.join('\n'), 'text/csv;charset=utf-8');
+    }
+    _renderChronicleSection(container) {
+        const host = document.createElement('div');
+        host.className = 'econ-section';
+        host.style.cssText = 'margin-top:12px';
+        const keys = this._chronicleKeys;
+        let listHtml;
+        if (keys == null) {
+            listHtml = `<p class="muted-text" style="font-size:0.72rem">${t('載入中…')}</p>`;
+            this._chronicleAll().then(all => {
+                this._chronicleKeys = all.sort((a, b) => b.key - a.key).map(d => ({ key: d.key, label: d.label, n: (d.npcs || []).length, c: (d.convos || []).length + (d.playerChats || []).length }));
+                if (this.activeTab === 'records') this.renderSidebar();
+            }).catch(() => { this._chronicleKeys = []; });
+        } else if (!keys.length) {
+            listHtml = `<p class="muted-text" style="font-size:0.72rem">${t('還沒有歸檔。每天換日時會自動把全鎮的作息、行程、足跡與對話存進資料庫。')}</p>`;
+        } else {
+            listHtml = keys.slice(0, 30).map(k =>
+                `<div class="memory-item" data-action="chronicle-view" data-val="${k.key}" style="cursor:pointer${this._chronicleView?.key === k.key ? ';border-left:2px solid var(--accent,#ffd700)' : ''}">📅 ${k.label} <span style="color:var(--text-muted);font-size:0.68rem">${k.n} ${t('位村民')} · ${k.c} ${t('場對話')}</span></div>`
+            ).join('');
+        }
+        let viewHtml = '';
+        const v = this._chronicleView;
+        if (v) {
+            const fmtM = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+            viewHtml += `<div style="margin-top:8px;font-weight:700;font-size:0.82rem">📖 ${v.label}</div>`;
+            if ((v.convos || []).length) {
+                viewHtml += `<details style="margin-top:6px"><summary style="cursor:pointer;font-size:0.78rem">💬 ${t('對話')}（${v.convos.length}）</summary>` +
+                    v.convos.map(c => `<details style="margin:4px 0 4px 10px"><summary style="cursor:pointer;font-size:0.72rem">${c.time.split(' ').pop()} ${c.a} × ${c.b}${c.llm ? ' 🤖' : ''} — ${this._escapeHtml(c.summary)}</summary><div style="font-size:0.7rem;padding:4px 0 4px 12px;line-height:1.6">${(c.dialogue || []).map(l => this._escapeHtml(l)).join('<br>')}</div></details>`).join('') + '</details>';
+            }
+            if ((v.playerChats || []).length) {
+                viewHtml += `<details style="margin-top:6px"><summary style="cursor:pointer;font-size:0.78rem">🧑 ${t('你的對話')}（${v.playerChats.length}）</summary><div style="font-size:0.7rem;padding:4px 0 4px 12px;line-height:1.6">${v.playerChats.map(p => `${this._escapeHtml(p.speaker)} → ${this._escapeHtml(p.target)}: ${this._escapeHtml(p.text)}`).join('<br>')}</div></details>`;
+            }
+            viewHtml += (v.npcs || []).map(n => `<details style="margin-top:4px"><summary style="cursor:pointer;font-size:0.75rem">👤 ${n.name}${n.job ? `（${n.job}）` : ''}${n.planLlm ? ' 🤖' : ''}${n.replanned ? ' 📝' : ''}</summary>
+                <div style="font-size:0.7rem;padding:4px 0 4px 12px;line-height:1.6">
+                ${n.currently ? `<div>🧭 ${this._escapeHtml(n.currently)}</div>` : ''}
+                ${(n.plan || []).length ? `<div style="margin-top:3px">📅 ${n.plan.map(g => this._escapeHtml(g)).join('　')}</div>` : ''}
+                ${(n.trace || []).length ? `<div style="margin-top:3px">🕐 ${n.trace.map(e => `${fmtM(e.m)} ${this._escapeHtml(e.text)}`).join('　')}</div>` : ''}
+                </div></details>`).join('');
+        }
+        host.innerHTML = `<h3>📚 ${t('小鎮編年史')}</h3>
+            <p class="muted-text" style="font-size:0.68rem;margin:2px 0 6px">${t('每天換日自動歸檔全鎮村民的近況、行程、足跡與所有對話逐字稿(存在你的瀏覽器資料庫)。')}</p>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+                <button class="btn-archive-view" data-action="chronicle-export-json">📦 ${t('匯出 JSON')}</button>
+                <button class="btn-archive-view" data-action="chronicle-export-convo">💬 ${t('匯出對話 CSV')}</button>
+                <button class="btn-archive-view" data-action="chronicle-export-sched">📅 ${t('匯出作息 CSV')}</button>
+                <button class="btn-archive-view" data-action="chronicle-clear" style="opacity:0.7">🗑️ ${t('清空')}</button>
+            </div>
+            ${listHtml}${viewHtml}`;
+        container.appendChild(host);
     }
 
     // ============================================================
