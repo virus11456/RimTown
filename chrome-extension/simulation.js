@@ -1429,7 +1429,10 @@ class ConversationEngine {
     // 每天清晨把所有村民排進隊伍,每個 tick 生成一位的「近況修訂 + 今日行程(含子步驟分解)」。
     // 玩家附近/劇情相關的村民優先,額度用完的村民保留規則式行程,不會空白。
     queueDailyPlans(world) {
-        const npcs = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead && a.currentLocation !== 'exploration');
+        // v5.39.1 只排「今天還沒有 AI 行程」的村民:讀檔/開頁中途補生成時不會重做已完成的人
+        const todayKey = `${world.clock.year}-${world.clock.season}-${world.clock.day}`;
+        const npcs = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead && a.currentLocation !== 'exploration'
+            && !(a.dailyPlan?.llm && a.dailyPlan.key === todayKey));
         // 優先序:玩家附近 > 昨日記憶精彩(重要度總分高) > 其餘
         const TICKS_PER_DAY = 96;
         const since = world.tickCount - TICKS_PER_DAY;
@@ -6263,8 +6266,7 @@ class World {
             this.npcLlmUsedToday = 0;
             // v5.30.0 每天早上為每位村民生成今日目標(規則式,依性格+人際+夢想+事件)
             Object.values(this.agents).forEach(a => { if (!a.isPlayer && !a.isDead && a.generateDailyPlan) { try { a.generateDailyPlan(this); } catch (e) {} } });
-            // v5.37.0 全鎮 LLM 行程:排隊逐位生成「近況修訂+分解式行程」,規則式行程作為墊底
-            try { this.conversationEngine.queueDailyPlans(this); } catch (e) {}
+            // v5.39.1 LLM 行程佇列改由下方的每日檢查統一觸發(換日與讀檔中途都涵蓋)
             this.generateDailyFeedPosts(); // v5.2.0 鎮民動態每日發文
             if (this.clock.day % 7 === 0) this.generateWeeklyDigest(); // v5.3.0 每 7 天小鎮頭條
             this.lifecycle.dailyUpdate(this);
@@ -6299,7 +6301,14 @@ class World {
         });
         // NPC proactive messaging to player
         this.conversationEngine.tickProactiveMessages(this).catch(e => console.warn('[RimTown] Proactive msg error:', e));
-        // v5.37.0 每個 tick 處理一位排隊中的村民 LLM 行程(避免清晨瞬間打爆 API)
+        // v5.39.1 每個遊戲日補排一次 LLM 行程佇列:換日觸發之外,讀檔/開頁在一天中途也會立刻補生成
+        // (queueDailyPlans 只收「今天還沒有 AI 行程」的村民,已完成的不會重做)
+        const planDayKey = `${this.clock.year}-${this.clock.season}-${this.clock.day}`;
+        if (this._planQueueDay !== planDayKey && this.conversationEngine?.llm) {
+            this._planQueueDay = planDayKey;
+            try { this.conversationEngine.queueDailyPlans(this); } catch (e) {}
+        }
+        // v5.37.0 每個 tick 處理一批排隊中的村民 LLM 行程(避免瞬間打爆 API)
         this.conversationEngine.tickPlanQueue(this).catch(e => console.warn('[RimTown] plan queue error:', e));
     }
     // v5.34.0 逾時代選:pending 的互動選擇滿一個遊戲日(96 ticks)沒人處理就隨機結算
