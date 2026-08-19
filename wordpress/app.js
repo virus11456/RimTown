@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.38.0
-const RIMTOWN_APP_VERSION = '5.38.0';
+// RimTown - Frontend App (WordPress Plugin) v5.39.0
+const RIMTOWN_APP_VERSION = '5.39.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -6825,12 +6825,13 @@ class RimTownApp {
             <div id="apikey-status" style="margin-top:4px;font-size:0.75rem;display:flex;align-items:center;gap:4px"></div>
         </div>
         <div class="setting-group" style="margin-bottom:8px">
-            <label style="font-size:0.82rem;color:var(--text-secondary)">${t('備用')} Groq API Key <span style="font-size:0.75rem">${t('（主 AI ')}${t('超限時自動切換）')}</span></label>
+            <label style="font-size:0.82rem;color:var(--text-secondary)">Groq API Key <span style="font-size:0.75rem">${t('（免費額度，智慧分流用）')}</span></label>
             <div style="display:flex;gap:6px;align-items:center">
                 <input type="password" id="settings-tab-groq" value="${this._escapeHtml(fallbackKey)}" placeholder="gsk_...${t('（選填）')}" style="flex:1;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem;box-sizing:border-box">
                 <button id="btn-test-groq" data-action="test-groqkey" style="padding:6px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);cursor:pointer;font-size:0.75rem;white-space:nowrap">${t('測試連線')}</button>
             </div>
             <div id="groqkey-status" style="margin-top:4px;font-size:0.75rem;display:flex;align-items:center;gap:4px"></div>
+            <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px">${t('填了之後自動分流：你與村民的對話、劇情名場面優先走 Groq 免費額度；行程／反思／背景對話走上面的主金鑰（便宜又不佔 Groq 限額）。任一邊被限流會自動切到另一邊。')}</div>
         </div>`;
         html += '</details>';
         html += '</div>';

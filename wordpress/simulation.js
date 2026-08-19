@@ -1445,59 +1445,87 @@ class ConversationEngine {
         if (this._planBusy || !this._planQueue.length) return;
         if (!this.llm || !this.llm._canMakeRequest(false)) return;
         if ((world.npcLlmUsedToday || 0) >= this.npcLlmDailyBudget()) { this._planQueue = []; return; }
-        const id = this._planQueue.shift();
-        const npc = world.agents[id];
-        if (!npc || npc.isDead || npc.isPlayer) return;
+        // v5.39.0 批次生成:一次呼叫規劃 3 位,省下每次重複的規則/格式前綴(輸入省約三成;輸出內容不變)
+        const batch = [];
+        while (batch.length < 3 && this._planQueue.length) {
+            const npc = world.agents[this._planQueue.shift()];
+            if (npc && !npc.isDead && !npc.isPlayer) batch.push(npc);
+        }
+        if (!batch.length) return;
         this._planBusy = true;
         try {
             this._countNpcLlmUse(world);
-            await this._generatePlanLLM(npc, world);
+            await this._generatePlansBatchLLM(batch, world);
         } catch (e) { console.warn('[RimTown] plan LLM failed:', e); }
         finally { this._planBusy = false; }
     }
 
-    async _generatePlanLLM(npc, world) {
+    // v5.39.0 批次行程生成:共用「環境+任務+格式」前綴,逐人附上素材;逐人容錯套用
+    async _generatePlansBatchLLM(npcs, world) {
         const TICKS_PER_DAY = 96;
         const since = world.tickCount - TICKS_PER_DAY;
-        const p = this._buildCharacterProfile(npc);
-        // 昨天的素材:計畫思考(對話裡的約定/待辦) + 最重要的記憶 + 最新體悟
-        const memos = npc.memory.entries.filter(e => e.category === 'plan' && e.tick >= since).slice(-4).map(m => `- ${m.content}`).join('\n');
-        const topMem = npc.memory.entries.filter(e => e.tick >= since && e.category !== 'plan')
-            .sort((a, b) => (b.importance || 0) - (a.importance || 0)).slice(0, 5).map(m => `- ${m.content}`).join('\n');
-        const thoughts = npc.memory.getThoughts(2).map(m => `- ${m.content}`).join('\n');
-        const prevCurrently = npc.currently || npc.getPersonaStatus(world);
         const fest = world.festivals?.activeFestival;
         const ctx = [];
         if (fest) ctx.push(`${t('今天是')}${fest.name}${t('：')}${fest.description}`);
         if (world.election?.phase && world.election.phase !== 'none') ctx.push(t('鎮長選舉正在進行,鎮上都在討論。'));
         const wType = world.weather?.current;
         if (wType?.name) ctx.push(`${t('天氣：')}${wType.name}`);
-        const prompt = `${t('你在為模擬小鎮「邊境鎮」的居民規劃真實的一天。像寫小說一樣,讓行程反映他的性格、人際與心事。')}
-${t('【居民】')}${p.name}${t('，')}${p.age}${t('歲')}${p.job}${t('，性格')}${p.traits}${t('。')}${p.status}
+        const sections = npcs.map((npc, i) => {
+            const p = this._buildCharacterProfile(npc);
+            const memos = npc.memory.entries.filter(e => e.category === 'plan' && e.tick >= since).slice(-3).map(m => `- ${m.content}`).join('\n');
+            const topMem = npc.memory.entries.filter(e => e.tick >= since && e.category !== 'plan')
+                .sort((a, b) => (b.importance || 0) - (a.importance || 0)).slice(0, 4).map(m => `- ${m.content}`).join('\n');
+            const thought = npc.memory.getThoughts(1)[0]?.content || '';
+            const prevCurrently = npc.currently || npc.getPersonaStatus(world);
+            return `=== ${t('居民')} ${i + 1}${t('：')}${p.name} ===
+${p.age}${t('歲')}${p.job}${t('，性格')}${p.traits}${t('。')}${p.status}
 ${t('【作息】')}${npc.getLifestyleText()}
 ${t('【目前近況】')}${prevCurrently}
-${ctx.length ? `${t('【今日環境】')}${ctx.join(t('；'))}` : ''}
 ${memos ? `${t('【昨天的約定/待辦】')}\n${memos}` : ''}
 ${topMem ? `${t('【昨天印象最深的事】')}\n${topMem}` : ''}
-${thoughts ? `${t('【心裡的體悟】')}\n${thoughts}` : ''}
+${thought ? `${t('【心裡的體悟】')}- ${thought}` : ''}`;
+        }).join('\n\n');
+        const prompt = `${t('你在為模擬小鎮「邊境鎮」的居民規劃真實的一天。像寫小說一樣,讓行程反映每個人的性格、人際與心事。')}
+${ctx.length ? `${t('【今日環境】')}${ctx.join(t('；'))}` : ''}
 
-${t('【任務】')}
+${sections}
+
+${t('【任務】為上面每一位居民:')}
 1. ${t('根據昨天發生的事,把「近況」改寫成一句 40 字內的人生此刻主線(第三人稱,像「正在存錢想開自己的麵包店,最近和XX走得很近」)。')}
-2. ${t('生成今天的行程:6-8 個時段,每個時段 2-4 個具體的小動作(像「揉麵團」「跟熟客閒聊兩句」,不要抽象標籤)。行程要呼應約定、心事與性格,工作時段要符合作息。')}
+2. ${t('生成今天的行程:5-6 個時段,每個時段 2-3 個具體的小動作(像「揉麵團」「跟熟客閒聊兩句」,不要抽象標籤)。行程要呼應約定、心事與性格,工作時段要符合作息。')}
 ${t('【規則】繁體中文(台灣用語)。只輸出 JSON,不要其他文字：')}
-{"currently": "...", "plan": [{"time": "06:00", "text": "${t('時段在做什麼')}", "steps": ["${t('小動作1')}", "${t('小動作2')}"]}]}`;
-        const response = await this.llm.generate(prompt, 900, 0.85, true);
+{"plans": [{"name": "${t('居民姓名')}", "currently": "...", "plan": [{"time": "06:00", "text": "${t('時段在做什麼')}", "steps": ["${t('小動作1')}", "${t('小動作2')}"]}]}]}`;
+        const response = await this.llm.generate(prompt, 450 * npcs.length + 100, 0.85, false);
         if (!response || response === '__ERROR__' || response === '__RATE_LIMITED__') return;
         let data = null;
         try {
             const js = response.indexOf('{'), je = response.lastIndexOf('}') + 1;
             if (js >= 0 && je > js) data = JSON.parse(response.slice(js, je));
-        } catch (e) { return; }
+        } catch (e) {}
+        if (!data) {
+            // 截斷救援:砍到最後一個完整的人再閉合陣列,至少救回前幾位
+            try {
+                const js = response.indexOf('{');
+                const cut = response.lastIndexOf('}]}');
+                if (js >= 0 && cut > js) data = JSON.parse(response.slice(js, cut + 3) + ']}');
+            } catch (e) { return; }
+        }
+        if (!data) return;
+        const plans = Array.isArray(data.plans) ? data.plans : (Array.isArray(data.plan) ? [data] : []);
+        for (const entry of plans) {
+            const name = String(entry?.name || '').trim();
+            let npc = npcs.find(n => n.name === name);
+            if (!npc && plans.length === 1 && npcs.length === 1) npc = npcs[0];
+            if (npc) this._applyPlanData(npc, entry, world);
+        }
+    }
+
+    _applyPlanData(npc, data, world) {
         if (!data || !Array.isArray(data.plan) || !data.plan.length) return;
-        const blocks = data.plan.filter(b => b && b.text).slice(0, 10).map(b => ({
+        const blocks = data.plan.filter(b => b && b.text).slice(0, 8).map(b => ({
             time: String(b.time || '').slice(0, 5),
             text: String(b.text).slice(0, 60),
-            steps: (Array.isArray(b.steps) ? b.steps : []).filter(Boolean).slice(0, 4).map(s => String(s).slice(0, 40)),
+            steps: (Array.isArray(b.steps) ? b.steps : []).filter(Boolean).slice(0, 3).map(s => String(s).slice(0, 40)),
         }));
         if (!blocks.length) return;
         const key = `${world.clock.year}-${world.clock.season}-${world.clock.day}`;
@@ -1877,7 +1905,8 @@ ${t('- 必須使用繁體中文（台灣用語），不可使用簡體中文')}
 ${t('- 寫4-6句有張力、有情緒的對話,像戲劇高潮的名場面')}
 ${t('- 每個人的說話風格要符合性格')}
 ${t('- 格式：每行「名字: 對話內容」,不要有其他任何東西')}`;
-                    const response = await this.llm.generate(prompt, 500, 0.95, false);
+                    // v5.39.0 劇情名場面走 chat lane(Groq 免費優先)
+                    const response = await this.llm.generate(prompt, 500, 0.95, true);
                     if (response && response !== '__ERROR__' && response !== '__RATE_LIMITED__') {
                         for (const raw of response.trim().split('\n')) {
                             const s = raw.trim();
@@ -1968,7 +1997,8 @@ ${t('【規則】')}
 ${t('- 繁體中文（台灣用語），2-4句，要真摯、有溫度，符合你的性格')}
 ${t('- 可以提到具體的共同回憶或小鎮生活細節')}
 ${t('- 不要加任何前綴、名字標籤、引號')}`;
-                    const response = await this.llm.generate(prompt, 250, 0.9, false);
+                    // v5.39.0 心動事件走 chat lane(Groq 免費優先)
+                    const response = await this.llm.generate(prompt, 250, 0.9, true);
                     if (response && response !== '__ERROR__' && response !== '__RATE_LIMITED__') {
                         text = response.trim().replace(/^["「『]|["」』]$/g, '').trim();
                         text = text.replace(new RegExp(`^${npc.name}[：:]\\s*`), '').trim();
@@ -2230,7 +2260,7 @@ ${t('如果「記得」的事跟話題有關，讓角色自然地提起或延續
 ${t('小鎮近況：')}${gossipStr}
 ${this._buildEconomicContext(world)}
 
-${t('請寫4-6句自然對話。範例風格：')}
+${t('請寫3-4句自然對話。範例風格：')}
 ${t('- 好友："欸你昨天有看到老王在河邊釣到一條超大的魚嗎？笑死我了他差點掉下去！"')}
 ${t('- 害羞的人："嗯...那個...你今天做的麵包聞起來好香..."')}
 ${t('- 毒舌的人："又在偷懶？你那個田再不管，雜草都要比你高了。"')}
@@ -2240,7 +2270,8 @@ ${t('格式：每行「名字: 對話內容」')}
 ${t('最後一行：')}EFFECTS: {"affinity_change_a": ${t('數字')}(-3${t('到')}5), "affinity_change_b": ${t('數字')}(-3${t('到')}5), "romantic_change_a": ${t('數字')}(0${t('到')}5), "romantic_change_b": ${t('數字')}(0${t('到')}5), "summary": "${t('用一句生動的話總結發生了什麼')}", "memory_a": "${pA.name}${t('會記住的一句話（以他的視角與感受）')}", "memory_b": "${pB.name}${t('會記住的一句話（以他的視角與感受）')}", "plan_a": "${t('若對話中有約定或待辦,寫')}${pA.name}${t('的一句「接下來要…」備忘,否則空字串')}", "plan_b": "${t('同上,')}${pB.name}${t('的備忘或空字串')}"}
 ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖昧、調情、深層情感連結才給 1-2。普通友好聊天應該給 0。大部分對話 romantic_change 應該是 0。')}`;
 
-        const response = await this.llm.generate(prompt, 800);
+        // v5.39.0 輸出上限 800→500:NPC 背景對話 3-4 句就夠,輸出 token 是成本大頭
+        const response = await this.llm.generate(prompt, 500);
         return this._parseConversation(response, agentA, agentB, world, relA, relB);
     }
 
@@ -3207,6 +3238,18 @@ class LLMClient {
     }
 
     async generate(prompt, maxTokens = 500, temperature = 0.9, isPlayerChat = false) {
+        // v5.39.0 智慧分流:有 Groq 金鑰且主供應商不是 Groq 時,「玩家對話/劇情」優先吃 Groq 免費額度,
+        // 把主供應商(gpt-4o-mini 等付費金鑰)留給行程/反思/背景對話;Groq 被限流就退回主供應商,5 分鐘後再試
+        if (isPlayerChat && this.fallbackGroqKey && this.provider !== 'groq'
+            && Date.now() >= (this._groqLaneCooldownUntil || 0)) {
+            this._recordRequest();
+            const viaGroq = await this._callProvider('groq', this.fallbackGroqKey, null, prompt, maxTokens, temperature);
+            if (viaGroq && viaGroq !== '__RATE_LIMITED__' && viaGroq !== '__ERROR__') {
+                return this._stripThinkTags(viaGroq);
+            }
+            this._groqLaneCooldownUntil = Date.now() + 300000;
+            console.log('[RimTown LLM] chat-lane Groq unavailable — falling back to', this.provider);
+        }
         // If primary is in cooldown and fallback available, go straight to fallback
         if (this._primaryCooldownUntil > Date.now() && this.fallbackGroqKey && this.provider !== 'groq') {
             console.log('[RimTown LLM] Primary in cooldown — using Groq fallback');
