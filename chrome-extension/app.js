@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.35.4
-const RIMTOWN_APP_VERSION = '5.35.4';
+// RimTown - Frontend App (WordPress Plugin) v5.35.5
+const RIMTOWN_APP_VERSION = '5.35.5';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -6320,7 +6320,7 @@ class RimTownApp {
         return `<div class="town-headlines">
             <div class="headlines-title">
                 <span>🗞️ ${t('今日頭條')} <span class="headlines-sub">${t('第')}${latest.year}${t('年 ')}${latest.season}${t(' 第')}${latest.day}${t('天')}</span></span>
-                <button class="headlines-more" data-action="goto-tab" data-val="records">${t('完整日報')} ›</button>
+                <button class="headlines-more" data-action="goto-tab" data-val="events">${t('完整日報')} ›</button>
             </div>
             ${rows}
         </div>`;
