@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.37.0
-const RIMTOWN_APP_VERSION = '5.37.0';
+// RimTown - Frontend App (WordPress Plugin) v5.38.0
+const RIMTOWN_APP_VERSION = '5.38.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -77,6 +77,8 @@ const ACHIEVEMENTS = {
     first_election: { name: t('民主初體驗'), desc: t('參與第一次選舉'), icon: '🗳️', category: 'town' },
     elected_mayor: { name: t('當選鎮長'), desc: t('玩家當選鎮長'), icon: '👑', category: 'town' },
     election_3: { name: t('政壇老手'), desc: t('經歷3次選舉'), icon: '🏛️', category: 'town' },
+    ran_for_mayor: { name: t('初生之犢'), desc: t('登記參選鎮長'), icon: '📢', category: 'town' },
+    elected_mayor: { name: t('民選鎮長'), desc: t('贏得鎮長選舉'), icon: '👑', category: 'town' },
     first_birth: { name: t('新生命'), desc: t('城鎮迎來第一個新生兒'), icon: '👶', category: 'town' },
     births_5: { name: t('嬰兒潮'), desc: t('累計5個新生兒出生'), icon: '🍼', category: 'town' },
     first_death: { name: t('永別'), desc: t('失去第一位居民'), icon: '⚰️', category: 'town' },
@@ -2314,6 +2316,18 @@ class RimTownApp {
         const election = this.state.election;
         if (election?.electionHistory?.length >= 1) this._unlockAchievement('first_election');
         if (election?.electionHistory?.length >= 3) this._unlockAchievement('election_3');
+        // v5.38.0 旅人參選/當選
+        if (election?.candidates?.some(c => c.agentId === 'player') || election?.electionHistory?.some(h => h.candidates?.some(c => c.agentId === 'player'))) this._unlockAchievement('ran_for_mayor');
+        if (election?.electionHistory?.some(h => h.winner?.agentId === 'player')) this._unlockAchievement('elected_mayor');
+        // v5.38.0 競選開跑提醒(角落通知,一屆一次;符合資格才提)
+        const elx = this.world?.election;
+        if (elx?.phase === 'campaign' && !elx.candidates?.some(c => c.agentId === 'player')) {
+            const yearKey = `run-${this.world.clock.year}`;
+            if (this._electionNoticeKey !== yearKey && elx.playerEligibility?.(this.world)?.ok) {
+                this._electionNoticeKey = yearKey;
+                this._showCornerNotice({ icon: '🗳️', title: t('秋季選舉開跑'), name: '', desc: t('你已符合參選資格!到「事件」分頁登記參選,登記期只有 3 天') });
+            }
+        }
 
         // Multi-town
         if (this._getTownList().length >= 3) this._unlockAchievement('multi_town');
@@ -2760,6 +2774,45 @@ class RimTownApp {
             this.world.logMessage('council', `🏛️ ${t('你對議會提案投了')}${choice === 'for' ? t('贊成') : t('反對')}${t('票。')}`);
         }
         this.state = this.world.getState(); this.renderSidebar();
+    }
+
+    // v5.38.0 參選鎮長:挑一個主打政見後正式登記
+    _showRunForMayorModal() {
+        const elig = this.world.election?.playerEligibility?.(this.world);
+        if (!elig?.ok) { this._gameAlert(elig?.msg || t('目前無法參選。'), '🗳️'); return; }
+        document.getElementById('run-mayor-modal')?.remove();
+        const POLICIES = [
+            ['economy', '💰', t('經濟發展'), t('加強貿易與生產,讓鎮民富起來')],
+            ['welfare', '🤝', t('社會福利'), t('照顧每一位居民,社區和諧')],
+            ['defense', '🛡️', t('軍事防禦'), t('固若金湯,不再讓突襲得逞')],
+            ['culture', '📚', t('文化教育'), t('研究與技藝,知識就是未來')],
+            ['nature', '🌿', t('自然保育'), t('與自然共處,永續發展')],
+            ['freedom', '🕊️', t('個人自由'), t('減少管束,自由發展')],
+        ];
+        const overlay = document.createElement('div');
+        overlay.id = 'run-mayor-modal';
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px';
+        overlay.innerHTML = `<div style="background:var(--bg-card,#20222c);border:1px solid var(--border,#444);border-radius:12px;max-width:340px;width:100%;padding:16px;max-height:80vh;overflow-y:auto">
+            <div style="font-size:1rem;font-weight:700;margin-bottom:4px">👑 ${t('參選鎮長')}</div>
+            <div style="font-size:0.75rem;color:var(--text-secondary,#aaa);margin-bottom:10px">${t('選一個你要主打的政見。當選後施政方針會實際影響小鎮 30 天,之後每天的鎮政決策都由你拿主意。')}</div>
+            ${POLICIES.map(([id, ic, lb, ds]) => `<button class="btn-vote" data-rm-policy="${id}" style="display:block;width:100%;margin-bottom:6px;text-align:left;padding:8px 10px">${ic} <b>${lb}</b><br><span style="font-size:0.68rem;opacity:0.75">${ds}</span></button>`).join('')}
+            <button class="btn-vote" data-rm-close="1" style="display:block;width:100%;background:transparent;border:1px solid var(--border,#444)">${t('再想想')}</button>
+        </div>`;
+        overlay.addEventListener('click', (e) => {
+            const p = e.target.closest?.('[data-rm-policy]');
+            if (p) { overlay.remove(); this._confirmRunForMayor(p.dataset.rmPolicy); return; }
+            if (e.target.closest?.('[data-rm-close]') || e.target === overlay) overlay.remove();
+        });
+        document.body.appendChild(overlay);
+    }
+
+    _confirmRunForMayor(policyId) {
+        const res = this.world.election?.registerPlayerCandidate?.(this.world, policyId);
+        if (!res) return;
+        if (!res.ok) { this._gameAlert(res.msg || t('登記失敗。'), '🗳️'); return; }
+        this._showCornerNotice({ icon: '👑', title: t('你參選了！'), name: '', desc: t('去找村民聊天,用「說服」為自己拉票——每位村民一屆只能拉一次') });
+        this.state = this.world.getState();
+        this.renderSidebar();
     }
 
     _playerVote(candidateId) {
@@ -3732,6 +3785,7 @@ class RimTownApp {
                 case 'player-choose-job': this._playerChooseJob(val); break;
                 case 'player-quit-job': this._playerQuitJob(); break;
                 case 'player-vote': this._playerVote(val); break;
+                case 'run-for-mayor': this._showRunForMayorModal(); break;
                 case 'player-propose': this._playerPropose(val); break;
                 case 'player-flirt': this._playerFlirt(val); break;
                 // Mobile group sub-tab switching
@@ -5896,7 +5950,20 @@ class RimTownApp {
                 const el = world.election;
                 const active = el && (el.active || el.phase === 'campaign' || el.phase === 'voting');
                 const cands = el?.candidates || [];
-                if (active && cands.length) {
+                // v5.38.0 你自己就是候選人:「說服」= 為自己拉票(每位村民一屆一次)
+                if (active && cands.some(c => c.agentId === 'player')) {
+                    const res = el.canvassNpc ? el.canvassNpc(world, npc) : { ok: false };
+                    if (res.ok) {
+                        rel.modifyAffinity(2);
+                        fx(`👑 ${t('你向')}${npc.name}${t('認真說明了自己的政見')}`, '#ffd700');
+                        fx(t('他聽進去了——投票時會記得你'), '#7fc4ff');
+                    } else if (res.dup) {
+                        fx(`🗳️ ${npc.name}${t('笑說你已經拉過他的票了')}`, '#9aa');
+                    } else {
+                        rel.modifyAffinity(1);
+                        fx(`🗯️ ${npc.name}${t('點頭聽著你說')}`, '#9aa');
+                    }
+                } else if (active && cands.length) {
                     // 拉票:把 NPC 對「玩家最挺的候選人」的好感往上推(信任越高越有效)
                     const favored = cands
                         .map(c => ({ c, aff: player.relationships.relationships[c.agentId]?.affinity || 0 }))
@@ -6842,12 +6909,25 @@ class RimTownApp {
                 election.candidates.forEach(c => {
                     html += `<div class="election-candidate" data-action="select-agent" data-val="${c.agentId}">
                         <div class="candidate-header">
-                            <span class="candidate-name">${c.name}</span>
+                            <span class="candidate-name">${c.agentId === 'player' ? '👑 ' : ''}${c.name}${c.agentId === 'player' ? t('（你）') : ''}</span>
                             <span class="candidate-policy">${c.policyIcon} ${c.policyLabel}</span>
                         </div>
                         <div class="candidate-speech">"${c.speech}"</div>
                     </div>`;
                 });
+                // v5.38.0 旅人參選:競選登記期內可親自出馬
+                const isPlayerCand = election.candidates.some(c => c.agentId === 'player');
+                if (!isPlayerCand) {
+                    const elig = this.world.election?.playerEligibility?.(this.world);
+                    if (elig?.ok) {
+                        html += `<button class="btn-vote" data-action="run-for-mayor" style="width:100%;margin-top:6px">👑 ${t('我要參選鎮長！')}</button>`;
+                    } else if (elig) {
+                        html += `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:6px">🗳️ ${t('想自己選鎮長？')}${this._escapeHtml(elig.msg || '')}</div>`;
+                    }
+                } else {
+                    const canvassed = Object.keys(this.world.election?.playerCanvassed || {}).length;
+                    html += `<div style="font-size:0.72rem;color:#ffd700;margin-top:6px">👑 ${t('你正在競選！已向')} ${canvassed} ${t('位村民拉票——去聊天用「說服」繼續爭取支持')}</div>`;
+                }
             } else if (election.phase === 'voting') {
                 html += t('<h4>🗳️ 鎮長選舉 — 投票進行中</h4>');
                 html += `${t('<div class="election-info">剩餘 ')}${election.votingDaysLeft}${t(' 天投票</div>')}`;
