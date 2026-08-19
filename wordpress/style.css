@@ -784,6 +784,11 @@ body.rimtown-page .wp-block-post-title {
     overflow-y: auto;
     overflow-x: hidden;
 }
+/* v5.49.2 未進入對話時,聯絡人清單撐滿可用高度 */
+.chat-contacts-list.chat-contacts-full {
+    max-height: calc(100vh - 320px);
+    min-height: 240px;
+}
 .chat-contact {
     display: flex;
     align-items: center;
@@ -918,7 +923,8 @@ body.rimtown-page .wp-block-post-title {
     overflow-y: auto;
     padding: 12px;
     min-height: 180px;
-    max-height: calc(100vh - 420px);
+    /* v5.49.2 對話模式下聯絡人清單已隱藏,對話區可以更高 */
+    max-height: calc(100vh - 380px);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -3208,6 +3214,10 @@ body.rimtown-page .wp-block-post-title {
     .chat-messages {
         max-height: calc(45vh - 160px);
         min-height: 100px;
+    }
+    /* v5.49.2 手機版聯絡人清單不設上限,跟著頁面捲動 */
+    .chat-contacts-list.chat-contacts-full {
+        max-height: none;
     }
 
     /* Settings inputs: prevent iOS auto-zoom on focus */
