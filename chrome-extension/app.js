@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.35.3
-const RIMTOWN_APP_VERSION = '5.35.3';
+// RimTown - Frontend App (WordPress Plugin) v5.35.4
+const RIMTOWN_APP_VERSION = '5.35.4';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -3832,6 +3832,15 @@ class RimTownApp {
                     break;
                 }
                 default: console.log('Unknown action:', action, val);
+            }
+        });
+        // v5.35.4 手機鍵盤開啟時隱藏底部列(狀態帶/選單),避免蓋住聊天輸入框
+        document.addEventListener('focusin', (e) => {
+            if (e.target?.id === 'chat-input' && window.innerWidth <= 768) document.body.classList.add('rt-kb-open');
+        });
+        document.addEventListener('focusout', (e) => {
+            if (e.target?.id === 'chat-input') {
+                setTimeout(() => { if (document.activeElement?.id !== 'chat-input') document.body.classList.remove('rt-kb-open'); }, 120);
             }
         });
         // Handle Enter key in chat input via delegation

@@ -4074,6 +4074,11 @@ body.rimtown-page .wp-block-post-title {
 @media (max-width: 768px) {
     .kairo-mode .rt-sidebar.chat-open ~ #guest-banner,
     .kairo-mode:has(.rt-sidebar.chat-open) #guest-banner { display: none !important; }
+
+    /* v5.35.4 鍵盤開啟時(聊天輸入框聚焦):隱藏底部狀態帶與選單列,避免蓋住輸入框 */
+    body.rt-kb-open #kairo-bar,
+    body.rt-kb-open #kairo-status { display: none !important; }
+    body.rt-kb-open .rt-sidebar.chat-open { bottom: 0 !important; max-height: 55vh !important; }
 }
 
 /* v4.7.0 未解鎖分頁:上鎖外觀 */
