@@ -427,8 +427,8 @@ const THOUGHT_DEFS = {
     jealous:         { mood: -8, opinion: 0, days: 6,  label: t('嫉妒的煎熬') },
     dream_progress:  { mood:  8, opinion: 0, days: 3,  label: t('離夢想更近了') },
     dream_achieved:  { mood: 20, opinion: 0, days:10,  label: t('實現了畢生夢想') },
-    praised:         { mood:  8, opinion: 2, days: 4,  label: t('被鎮長公開稱讚') },
-    slandered:       { mood:-10, opinion:-3, days: 6,  label: t('被鎮長說壞話') },
+    praised:         { mood:  8, opinion: 2, days: 4,  label: t('被人公開稱讚') },
+    slandered:       { mood:-10, opinion:-3, days: 6,  label: t('被人說壞話') },
     festival_joy:    { mood:  6, opinion: 0, days: 2,  label: t('祭典的歡樂') },
 };
 
@@ -1300,16 +1300,16 @@ class GossipNetwork {
             const relToPlayer = subject.relationships.getOrCreate(source.agentId, source.name);
             if (positive) {
                 relToPlayer.modifyAffinity(6);
-                subject.addThought('praised', world, source.agentId, source.name); // v5.15.0 被鎮長公開稱讚
-                subject.memory.add(world.tickCount, world.clock.timeStr, 'social', `${t('聽說鎮長到處誇我,真開心!')}`, 6, [source.name]);
+                subject.addThought('praised', world, source.agentId, source.name); // v5.15.0 被公開稱讚
+                subject.memory.add(world.tickCount, world.clock.timeStr, 'social', `${t('聽說')}${source.name}${t('到處誇我,真開心!')}`, 6, [source.name]);
                 source.chatHistory?.push?.({ speaker: subject.name, target: source.name, text: t('欸,我聽說你到處跟人誇我?哈哈,謝啦,請你喝一杯!'), time: world.clock.timeStr });
                 world.logMessage('gossip', `💐 ${subject.name}${t('聽到了鎮長的美言,好感大增!')}`, subject.name);
             } else if (negative) {
                 relToPlayer.modifyAffinity(-12); relToPlayer.modifyTrust(-10);
-                subject.addThought('slandered', world, source.agentId, source.name); // v5.15.0 被鎮長說壞話
-                subject.memory.add(world.tickCount, world.clock.timeStr, 'social', `${t('居然是鎮長在背後說我壞話...太過分了。')}`, 8, [source.name]);
+                subject.addThought('slandered', world, source.agentId, source.name); // v5.15.0 被說壞話
+                subject.memory.add(world.tickCount, world.clock.timeStr, 'social', `${t('居然是')}${source.name}${t('在背後說我壞話...太過分了。')}`, 8, [source.name]);
                 source.chatHistory?.push?.({ speaker: subject.name, target: source.name, text: t('我都聽說了。你在背後那樣說我?虧我還這麼信任你。'), time: world.clock.timeStr });
-                world.logMessage('gossip', `💢 ${subject.name}${t('發現鎮長在背後說他壞話,關係惡化!')}`, subject.name);
+                world.logMessage('gossip', `💢 ${subject.name}${t('發現')}${source.name}${t('在背後說他壞話,關係惡化!')}`, subject.name);
             }
             if (world.conversationEngine?.onNpcMessage) world.conversationEngine.onNpcMessage(subject.agentId);
         } else if (source && negative && source !== subject) {
@@ -8366,14 +8366,17 @@ class EventChoiceSystem {
         const choices = this._generateChoices(event, world);
         if (!choices) return; // No choices for this event type
 
+        // v5.36.0 敘事修正:玩家是旅人不是鎮長——全鎮大事改為「現任鎮長來徵詢你的意見」
+        const mayor = Object.values(world.agents).find(a => !a.isPlayer && !a.isDead && a.job?.key === 'mayor');
+        const asker = mayor ? mayor.name : t('鎮長');
         this.pendingEvent = {
             eventName: event.name,
-            description: event.description,
+            description: `${asker}${t('急匆匆找到你：「')}${event.description}${t('你見多識廣，幫我拿個主意！」')}`,
             severity: event.severity,
             choices: choices,
             timestamp: world.tickCount,
         };
-        world.logMessage('event_choice', `⚡ ${event.name}${t('——你需要做出決定！')}`);
+        world.logMessage('event_choice', `⚡ ${event.name}${t('——')}${asker}${t('來徵詢你的意見！')}`);
     }
 
     _generateChoices(event, world) {

@@ -2359,6 +2359,19 @@ const I18N = (() => {
         '」:': '": ',
         '的請求': "'s request",
 
+        // ── v5.36.0 旅人視角敘事修正 ──
+        '急匆匆找到你：「': ' rushes to find you: "',
+        '你見多識廣，幫我拿個主意！」': ' You\'ve seen the world — help me decide!"',
+        '來徵詢你的意見！': ' seeks your counsel!',
+        '被人公開稱讚': 'Publicly praised',
+        '被人說壞話': 'Badmouthed',
+        '到處誇我,真開心!': ' has been praising me everywhere. So happy!',
+        '居然是': 'It was ',
+        '在背後說我壞話...太過分了。': ' badmouthing me behind my back... unbelievable.',
+        '發現': 'found out ',
+        '在背後說他壞話,關係惡化!': ' was badmouthing them — relationship soured!',
+        '你在小鎮擺放了': 'You placed ',
+
         // ── v5.34.2 生效中 modifier 標籤 ──
         '農作加成': 'Farm bonus',
         '售價加成': 'Sell bonus',
