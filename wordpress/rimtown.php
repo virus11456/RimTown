@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.35.7
+ * Version: 5.35.8
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.35.7');
+define('RIMTOWN_VERSION', '5.35.8');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,13 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.35.8',
+            'date'    => '2026-08-19',
+            'changes' => array(
+                '😴 修復村民半夜不回家睡覺:原本「休息值滿(≥90)就不睡」+夜間衰減慢,導致大批村民凌晨還在外面閒逛;現在一般人睡眠時段(22:00-6:00)一律回家睡覺,夜貓子維持自己的作息(2:00 才睡)',
+            ),
+        ),
         array(
             'version' => '5.35.7',
             'date'    => '2026-08-19',

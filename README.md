@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.35.7.zip` from Releases
+1. Download `rimtown-v5.35.8.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,12 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.35.8 (2026-08-19)
+
+**修復村民半夜不回家睡覺**
+
+- 😴 原本「休息值 ≥90 就不睡」＋夜間衰減慢，導致大批村民凌晨還在外面閒逛；現在一般人睡眠時段（22:00–6:00）一律回家睡覺，夜貓子維持自己的作息（2:00 才睡、有深夜活動）
 
 ### v5.35.7 (2026-08-19)
 
