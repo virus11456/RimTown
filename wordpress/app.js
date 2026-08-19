@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.35.5
-const RIMTOWN_APP_VERSION = '5.35.5';
+// RimTown - Frontend App (WordPress Plugin) v5.35.6
+const RIMTOWN_APP_VERSION = '5.35.6';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -5039,6 +5039,8 @@ class RimTownApp {
         const card = document.getElementById('npc-quick-card');
         const a = this.state?.agents?.[agentId];
         if (!card || !a) return;
+        // v5.35.6 手機版:快速卡開在地圖層,若浮動面板(故事/日報等)開著會蓋住它 → 先收合面板
+        if (this._kairoReady && window.innerWidth <= 768) this._dismissKairoPanels?.();
         const lv = this._heartsFor(agentId);
         const hearts = '❤️'.repeat(Math.ceil(lv / 2)) + '🖤'.repeat(5 - Math.ceil(lv / 2));
         // 感情狀態掃描
