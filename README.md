@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.39.0.zip` from Releases
+1. Download `rimtown-v5.39.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,12 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.39.1 (2026-08-19)
+
+**AI 行程讀檔後立即補生成**
+
+- ⏱️ 原本 LLM 行程只在遊戲日換日（00:00）排隊生成，一天中途讀檔／開頁的玩家整天都只看得到規則式行程；現在讀檔後會立刻為「今天還沒有 AI 行程」的村民補排佇列（已完成的不重做，不會重複花費）
 
 ### v5.39.0 (2026-08-19)
 
