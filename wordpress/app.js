@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.49.0
-const RIMTOWN_APP_VERSION = '5.49.0';
+// RimTown - Frontend App (WordPress Plugin) v5.49.1
+const RIMTOWN_APP_VERSION = '5.49.1';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -5095,7 +5095,7 @@ class RimTownApp {
             <div class="nqc-btns">
                 <button class="nqc-chat" data-nqc="chat">💬 ${t('交談')}</button>
                 ${goal && !goal.done ? `<button class="nqc-detail" data-nqc="nudge" ${nudged ? 'disabled style="opacity:0.4"' : ''}>✨ ${t('助夢')}</button>` : ''}
-                <button class="nqc-detail" data-nqc="follow">${this._followSet().has(agentId) ? '🔕' : '🔔'}</button>
+                <button class="nqc-detail" data-nqc="follow">${this._followSet().has(agentId) ? '🔕 ' + t('追蹤中') : '🔔 ' + t('追蹤')}</button>
                 <button class="nqc-detail" data-nqc="detail">📋 ${t('詳情')}</button>
             </div>`;
         card.onclick = (e) => {
