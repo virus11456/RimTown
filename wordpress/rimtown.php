@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.36.0
+ * Version: 5.37.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.36.0');
+define('RIMTOWN_VERSION', '5.37.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1151,7 +1151,7 @@ add_action('rest_api_init', function () {
             if (!empty($params['llm_provider'])) $prev['llm_provider'] = substr(sanitize_text_field($params['llm_provider']), 0, 20);
             if (!empty($params['llm_api_key'])) $prev['llm_api_key'] = substr(sanitize_text_field($params['llm_api_key']), 0, 300);
             if (isset($params['fallback_groq_key'])) $prev['fallback_groq_key'] = substr(sanitize_text_field($params['fallback_groq_key']), 0, 300);
-            if (isset($params['npc_llm_budget']) && is_numeric($params['npc_llm_budget'])) $prev['npc_llm_budget'] = max(0, min(999, intval($params['npc_llm_budget'])));
+            if (isset($params['npc_llm_budget']) && is_numeric($params['npc_llm_budget'])) $prev['npc_llm_budget'] = max(-1, min(9999, intval($params['npc_llm_budget']))); // v5.37.0 -1=無上限
             $prev['updated_at'] = current_time('mysql');
             update_user_meta($user_id, 'rimtown_settings', $prev);
             return array('success' => true);
@@ -1203,6 +1203,17 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.37.0',
+            'date'    => '2026-08-19',
+            'changes' => array(
+                '📅 全鎮 LLM 行程(移植 generative_agents 階層式規劃):每位村民每天由 AI 生成「近況修訂+今日行程」,行程分解到小動作層級(揉麵團、跟熟客閒聊兩句),依性格/人際/昨日經歷/約定量身打造;排隊逐位生成避免瞬間打爆 API,額度用完自動退回規則式行程',
+                '🧭 近況(currently)欄位:AI 每天根據昨天發生的事改寫村民的「人生此刻主線」,注入所有對話與反思——村民整天的行動會圍繞這條主線,像 Sam Moore 逢人就聊競選一樣',
+                '🤝 對話計畫思考:AI 對話結尾若有約定/待辦,會寫成「接下來要…」備忘記憶,隔天生成行程時真的會排進去——「星期三見」不再是空話',
+                '💰 AI 額度預設改為無上限(金鑰是你自己的):設定頁留空=無上限,想控費可填每日上限,填 0 關閉;上限設定也隨帳號雲端同步',
+                '😴 修復「站在戶外睡著」:入睡瞬間人在屋外會被原地凍結;現在會先走進屋裡才睡',
+            ),
+        ),
         array(
             'version' => '5.36.0',
             'date'    => '2026-08-19',

@@ -2892,8 +2892,11 @@ class PixelTileMap {
                 this.agentPositions[aid].job = jobKey;
                 this.agentPositions[aid].gender = gender;
                 // Freeze sleeping NPCs — once at home, stay still
+                // v5.37.0 修復「站在戶外睡著」:入睡瞬間若人還在屋外,原本就直接凍結在原地;
+                // 現在只有真的走進建築物內才凍結,在戶外會繼續走回家再睡
                 const isSleeping = activity === 'sleeping';
-                if (isSleeping && !this.agentPositions[aid].walking) {
+                if (isSleeping && !this.agentPositions[aid].walking
+                    && this._isInsideBuilding(this.agentPositions[aid].x, this.agentPositions[aid].y)) {
                     // Already at rest position — don't move or update target
                     this.agentPositions[aid].walkStep = 0;
                     continue;

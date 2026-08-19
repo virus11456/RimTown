@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.36.0
-const RIMTOWN_APP_VERSION = '5.36.0';
+// RimTown - Frontend App (WordPress Plugin) v5.37.0
+const RIMTOWN_APP_VERSION = '5.37.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1434,7 +1434,11 @@ class RimTownApp {
             if (s.llm_provider && s.llm_provider !== localStorage.getItem('llm_provider')) { localStorage.setItem('llm_provider', s.llm_provider); changed = true; }
             if (s.llm_api_key && s.llm_api_key !== localStorage.getItem('llm_api_key')) { localStorage.setItem('llm_api_key', s.llm_api_key); changed = true; }
             if (s.fallback_groq_key && s.fallback_groq_key !== localStorage.getItem('fallback_groq_key')) { localStorage.setItem('fallback_groq_key', s.fallback_groq_key); changed = true; }
-            if (s.npc_llm_budget != null) localStorage.setItem('rimtown_npc_llm_budget', String(s.npc_llm_budget));
+            // v5.37.0 -1 = 無上限(預設):同步時清掉本機上限
+            if (s.npc_llm_budget != null) {
+                if (Number(s.npc_llm_budget) < 0) { try { localStorage.removeItem('rimtown_npc_llm_budget'); } catch (e) {} }
+                else localStorage.setItem('rimtown_npc_llm_budget', String(s.npc_llm_budget));
+            }
             if (changed) console.log('[RimTown] AI settings synced from account');
             return changed;
         } catch (e) { console.log('[RimTown] cloud settings pull skipped:', e.message); return false; }
@@ -1448,8 +1452,10 @@ class RimTownApp {
             llm_api_key: localStorage.getItem('llm_api_key') || '',
             fallback_groq_key: localStorage.getItem('fallback_groq_key') || '',
         };
-        const budget = parseInt(localStorage.getItem('rimtown_npc_llm_budget'), 10);
-        if (Number.isFinite(budget)) payload.npc_llm_budget = budget;
+        const budgetRaw = localStorage.getItem('rimtown_npc_llm_budget');
+        const budget = parseInt(budgetRaw, 10);
+        // v5.37.0 本機未設上限 → 推 -1(無上限),讓其他裝置也同步成無上限
+        payload.npc_llm_budget = (budgetRaw !== null && budgetRaw !== '' && Number.isFinite(budget)) ? budget : -1;
         this.auth.saveCloudSettings(payload).catch(e => console.log('[RimTown] cloud settings push skipped:', e.message));
     }
 
@@ -3369,9 +3375,16 @@ class RimTownApp {
         const fallbackEl = document.getElementById('fallback-groq-key');
         if (fallbackEl) fallbackEl.value = fallbackKey;
         localStorage.setItem('fallback_groq_key', fallbackKey || '');
-        // v5.29.0 NPC 對話每日 AI 額度
-        const npcBudgetRaw = parseInt(document.getElementById('settings-tab-npcbudget')?.value, 10);
-        if (Number.isFinite(npcBudgetRaw) && npcBudgetRaw >= 0) localStorage.setItem('rimtown_npc_llm_budget', String(Math.min(999, npcBudgetRaw)));
+        // v5.29.0 NPC 每日 AI 額度(v5.37.0 留空=無上限)
+        const npcBudgetEl = document.getElementById('settings-tab-npcbudget');
+        if (npcBudgetEl) {
+            const rawVal = String(npcBudgetEl.value || '').trim();
+            if (rawVal === '') { try { localStorage.removeItem('rimtown_npc_llm_budget'); } catch (e) {} }
+            else {
+                const npcBudgetRaw = parseInt(rawVal, 10);
+                if (Number.isFinite(npcBudgetRaw) && npcBudgetRaw >= 0) localStorage.setItem('rimtown_npc_llm_budget', String(Math.min(9999, npcBudgetRaw)));
+            }
+        }
         this.saveSettings(provider, apiKey, speed);
         const langSelect = document.getElementById('lang-select') || document.getElementById('settings-tab-lang');
         if (langSelect) {
@@ -5100,10 +5113,20 @@ class RimTownApp {
         if (liveA && !liveA.isPlayer && liveA.generateDailyPlan) {
             try {
                 const plan = liveA.generateDailyPlan(this.world);
-                const goals = (plan?.goals || []).filter(g => !/^\d/.test(g)).slice(0, 2); // 挑非例行(不以時間開頭)的目標
                 const refl = liveA.memory.getThoughts(1)[0];
                 const bits = [];
-                if (goals.length) bits.push(`<div class="nqc-mood-title">📅 ${t('今天想做')}</div>` + goals.map(g => `<div class="nqc-mood-row"><span>${this._escapeHtml(g)}</span></div>`).join(''));
+                // v5.37.0 LLM 分解行程:顯示「此刻正在做的小動作」+ 下一個時段,比抽象目標更有生活感
+                const cur = liveA.getCurrentPlanStep ? liveA.getCurrentPlanStep(this.world) : null;
+                if (cur) {
+                    const rows = [`<div class="nqc-mood-row"><span>🕐 ${this._escapeHtml(cur.step || cur.goal)}</span></div>`];
+                    const nowMin = this.world.clock.hour * 60 + this.world.clock.minute;
+                    const next = (plan.blocks || []).find(b => { const m = String(b.time).match(/(\d{1,2}):(\d{2})/); return m && (parseInt(m[1],10)*60+parseInt(m[2],10)) > nowMin; });
+                    if (next) rows.push(`<div class="nqc-mood-row"><span>⏭ ${this._escapeHtml(next.time)} ${this._escapeHtml(next.text)}</span></div>`);
+                    bits.push(`<div class="nqc-mood-title">📅 ${t('今天想做')}</div>` + rows.join(''));
+                } else {
+                    const goals = (plan?.goals || []).filter(g => !/^\d/.test(g)).slice(0, 2); // 挑非例行(不以時間開頭)的目標
+                    if (goals.length) bits.push(`<div class="nqc-mood-title">📅 ${t('今天想做')}</div>` + goals.map(g => `<div class="nqc-mood-row"><span>${this._escapeHtml(g)}</span></div>`).join(''));
+                }
                 if (refl) bits.push(`<div class="nqc-mood-title" style="margin-top:3px">💭 ${t('心裡的話')}</div><div class="nqc-mood-row"><span>${this._escapeHtml(refl.content)}</span></div>`);
                 if (bits.length) attrHtml = `<div class="nqc-mood" style="border-top:1px solid var(--border);margin-top:4px;padding-top:5px">${bits.join('')}</div>`;
             } catch (e) {}
@@ -6525,7 +6548,10 @@ class RimTownApp {
                 <div style="font-size:0.75rem;margin-bottom:6px"><span style="color:var(--text-secondary)">${t('生活作息：')}</span>${lifestyle}</div>
                 <div style="font-size:0.75rem"><span style="color:var(--text-secondary)">${t('近況：')}</span>${status}</div></div>
             <div class="detail-section"><h3>📅 ${t('今日目標')}</h3>
-                <ol style="font-size:0.75rem;padding-left:18px;margin:2px 0;line-height:1.6">${plan.goals.map(g => `<li>${g}</li>`).join('')}</ol></div>
+                <ol style="font-size:0.75rem;padding-left:18px;margin:2px 0;line-height:1.6">${plan.blocks?.length
+                    ? plan.blocks.map(b => `<li>${this._escapeHtml(b.time)} ${this._escapeHtml(b.text)}${(b.steps || []).length ? `<div style="font-size:0.68rem;color:var(--text-secondary);line-height:1.5">${b.steps.map(s => `· ${this._escapeHtml(s)}`).join('　')}</div>` : ''}</li>`).join('')
+                    : plan.goals.map(g => `<li>${g}</li>`).join('')}</ol>
+                ${plan.llm ? `<div style="font-size:0.62rem;color:var(--text-muted)">🤖 ${t('由 AI 依他的性格與昨日經歷生成')}</div>` : ''}</div>
             <div class="detail-section"><h3>🕐 ${t('今日足跡')}</h3>
                 ${nowLine}${timeline.length ? timeline.slice().reverse().map(m => `<div class="memory-item"><span class="memory-time">${timeOf(m.timeStr)}</span>${m.content}</div>`).join('') : `<p style="font-size:0.7rem;color:var(--text-muted)">${t('今天還沒發生什麼事')}</p>`}</div>`;
             } catch (e) { console.warn('[RimTown] persona state render failed:', e); }
@@ -6696,15 +6722,15 @@ class RimTownApp {
         html += `<div style="margin-bottom:8px"><span class="llm-status ${aiConnected ? 'connected' : 'disconnected'}">${aiLabel}</span></div>`;
         // v5.29.0 混合成本控制:NPC 之間的對話只有在玩家附近才用 LLM,並受每日額度限制
         const existingBudget = document.getElementById('settings-tab-npcbudget');
-        const npcBudget = existingBudget ? existingBudget.value : (localStorage.getItem('rimtown_npc_llm_budget') || '40');
+        const npcBudget = existingBudget ? existingBudget.value : (localStorage.getItem('rimtown_npc_llm_budget') ?? '');
         const npcUsed = this.world?.npcLlmUsedToday || 0;
         html += `<div class="setting-group" style="margin-bottom:8px">
-            <label style="font-size:0.82rem;color:var(--text-secondary)">💰 ${t('NPC 對話每日 AI 額度')}</label>
+            <label style="font-size:0.82rem;color:var(--text-secondary)">💰 ${t('NPC 每日 AI 額度')}</label>
             <div style="display:flex;gap:6px;align-items:center">
-                <input type="number" id="settings-tab-npcbudget" value="${this._escapeHtml(String(npcBudget))}" min="0" max="999" style="width:80px;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
+                <input type="number" id="settings-tab-npcbudget" value="${this._escapeHtml(String(npcBudget))}" placeholder="${t('無上限')}" min="0" max="9999" style="width:80px;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
                 <span style="font-size:0.72rem;color:var(--text-muted)">${t('今日已用')} ${npcUsed} ${t('次')}</span>
             </div>
-            <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px">${t('只有你附近（8 格內）的村民對話會呼叫 AI；遠處對話走內建模擬並照樣寫入記憶。與你的聊天、劇情名場面不受此額度限制。設 0 可完全關閉 NPC 對話 AI。')}</div>
+            <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px">${t('留空＝無上限。村民的每日行程、你附近的村民對話與夜間反思會呼叫 AI；遠處對話走內建模擬並照樣寫入記憶。與你的聊天、劇情名場面不受此額度限制。想控制費用可填每日次數上限，填 0 完全關閉。')}</div>
         </div>`;
         // 一般玩家不需要看到金鑰設定 → 收進「進階」摺疊區(預設收合)
         html += `<details style="margin-bottom:8px"${provider !== 'server' && provider !== 'none' ? ' open' : ''}>
