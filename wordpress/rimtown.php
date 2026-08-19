@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.40.0
+ * Version: 5.41.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.40.0');
+define('RIMTOWN_VERSION', '5.41.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,14 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.41.0',
+            'date'    => '2026-08-19',
+            'changes' => array(
+                '⚡ 即時重規劃(移植 generative_agents react/replan):村民白天碰到夠重大的事,會「當場」改寫今天剩下的行程——對話裡約好「傍晚一起吃飯」就真的排進今天下午;耳語慫恿、跟你聊出強烈反應、告白/婚禮/抓姦等名場面都會觸發',
+                '🎛️ 節流控制:每位村民每天最多臨時改 2 次、21:00 後不再改、共用每日 AI 額度;行程被調整過會在詳情頁標示「📝 已因今天的際遇臨時調整」,紀錄也會留下他改變安排的心聲',
+            ),
+        ),
         array(
             'version' => '5.40.0',
             'date'    => '2026-08-19',

@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.40.0
-const RIMTOWN_APP_VERSION = '5.40.0';
+// RimTown - Frontend App (WordPress Plugin) v5.41.0
+const RIMTOWN_APP_VERSION = '5.41.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -6618,7 +6618,7 @@ class RimTownApp {
                 <ol style="font-size:0.75rem;padding-left:18px;margin:2px 0;line-height:1.6">${plan.blocks?.length
                     ? plan.blocks.map(b => `<li>${this._escapeHtml(b.time)} ${this._escapeHtml(b.text)}${(b.steps || []).length ? `<div style="font-size:0.68rem;color:var(--text-secondary);line-height:1.5">${b.steps.map(s => `· ${this._escapeHtml(s)}`).join('　')}</div>` : ''}</li>`).join('')
                     : plan.goals.map(g => `<li>${g}</li>`).join('')}</ol>
-                ${plan.llm ? `<div style="font-size:0.62rem;color:var(--text-muted)">🤖 ${t('由 AI 依他的性格與昨日經歷生成')}</div>` : ''}</div>
+                ${plan.llm ? `<div style="font-size:0.62rem;color:var(--text-muted)">🤖 ${t('由 AI 依他的性格與昨日經歷生成')}${plan.replanned ? `　📝 ${t('已因今天的際遇臨時調整')}` : ''}</div>` : ''}</div>
             <div class="detail-section"><h3>🕐 ${t('今日足跡')}</h3>
                 ${nowLine}${(() => {
                     // v5.40.0 密集時間軸(generative_agents 式):行動軌跡(含時長)+今日記憶合併,新的在上

@@ -2232,6 +2232,18 @@ const I18N = (() => {
         '結婚了！': ' got married!',
         '開始交往！': ' started dating!',
 
+        // ── v5.41.0 即時重規劃 ──
+        '已因今天的際遇臨時調整': 'Revised mid-day after today\'s events',
+        '臨時改變了今天的安排': ' changed today\'s plans on the spot',
+        '，我改變了今天接下來的安排。': ', I changed the rest of my plans for today.',
+        '因為「': 'Because of "',
+        '心裡突然冒出一個念頭：': 'A thought suddenly popped into my head: ',
+        '——這件事把今天整個打亂了': ' — this threw the whole day off',
+        '聊了之後：': ' after we talked: ',
+        '【現在時刻】': '[Time now] ',
+        '【今天原本的安排】': '[Original plan for today] ',
+        '【剛剛發生的事】': '[What just happened] ',
+
         // ── v5.40.0 今日足跡全紀錄 ──
         '看到': 'Saw ',
         '正忙著': ' busy with: ',
