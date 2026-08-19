@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.48.0
+ * Version: 5.49.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.48.0');
+define('RIMTOWN_VERSION', '5.49.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,14 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.49.0',
+            'date'    => '2026-08-19',
+            'changes' => array(
+                '🎬 戲劇導演(張力保底):連續 4 天沒有名場面時,系統會從三種手法挑一種在後台輕推——暗戀萌芽/舊怨復發/嫉妒升溫(附對應的內心獨白記憶),確保小鎮的戲一直有得看;導演出手後至少醞釀 3 天,不會變成鬧劇',
+                '✂️ 際遇卡停止每日抽:與「觀察居民愛恨糾葛」主軸無關的個人 roguelike;已排隊的舊卡仍可正常結算,經營線(資源/產業)維持全自動背景運轉',
+            ),
+        ),
         array(
             'version' => '5.48.0',
             'date'    => '2026-08-19',
