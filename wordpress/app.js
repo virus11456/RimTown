@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.49.2
-const RIMTOWN_APP_VERSION = '5.49.2';
+// RimTown - Frontend App (WordPress Plugin) v5.49.3
+const RIMTOWN_APP_VERSION = '5.49.3';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -5143,6 +5143,8 @@ class RimTownApp {
         // 手機抽屜:聊天分頁給較高的面板(62vh),其他分頁 44vh 讓地圖為主
         const _sb = document.getElementById('rimtown-sidebar');
         if (_sb) _sb.classList.toggle('chat-open', this.activeTab === 'chat');
+        // v5.49.3 桌面版:聊天分頁進入對話時側欄加寬成雙欄(地圖 canvas 由 ResizeObserver 自動重排)
+        document.querySelector('.rimtown-container')?.classList.toggle('chat-wide', this.activeTab === 'chat' && !!this.chatTarget);
         this._syncKairoLayout();
         const content = document.getElementById('sidebar-content');
 
@@ -5409,10 +5411,8 @@ class RimTownApp {
             return a.name.localeCompare(b.name);
         });
 
-        // --- Contact list (v5.49.2 進入對話後隱藏清單,讓對話視窗撐滿;未選人時清單撐滿高度) ---
-        let contactsHtml = '';
-        if (!this.chatTarget) {
-        contactsHtml = '<div class="chat-contacts">';
+        // --- Contact list (v5.49.3 永遠渲染:窄版對話模式用 CSS 隱藏,桌面雙欄時顯示為左欄) ---
+        let contactsHtml = '<div class="chat-contacts">';
         contactsHtml += `<div class="chat-contacts-header">${t('聯絡人')}<span class="chat-contacts-count">${allNpcs.length}</span></div>`;
         contactsHtml += '<div class="chat-contacts-list chat-contacts-full">';
         allNpcs.forEach(npc => {
@@ -5434,7 +5434,6 @@ class RimTownApp {
             </button>`;
         });
         contactsHtml += '</div></div>';
-        }
 
         // --- Chat area ---
         let chatAreaHtml = '';
@@ -5487,7 +5486,7 @@ class RimTownApp {
             <button class="btn-archive-save" data-action="manual-archive">${t('立即存檔')}</button>
         </div>`;
 
-        container.innerHTML = toggleHtml + contactsHtml + chatAreaHtml;
+        container.innerHTML = toggleHtml + `<div class="chat-layout${this.chatTarget ? ' conv' : ''}">` + contactsHtml + '<div class="chat-pane">' + chatAreaHtml + '</div></div>';
         this._scrollChatToBottom();
         const input = document.getElementById('chat-input');
         if (input && !this.chatSending && this._focusChatInput) {
