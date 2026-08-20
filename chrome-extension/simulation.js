@@ -4398,7 +4398,7 @@ class Stockpile {
 const JOB_PRODUCTION = {
     farmer: {inputs:{},outputs:{food:12},skill:t('種植')},
     miner: {inputs:{tools:0.1},outputs:{stone:6,metal:3},skill:t('採礦')},
-    cook: {inputs:{food:8},outputs:{meals:12},skill:t('烹飪')},
+    cook: {inputs:{food:8},outputs:{meals:9},skill:t('烹飪')}, // v5.53.0 12→9:預設3廚師產能3.3倍於需求,收斂
     blacksmith: {inputs:{metal:3,wood:1},outputs:{tools:3},skill:t('工藝')},
     carpenter: {inputs:{wood:4},outputs:{furniture:2},skill:t('建造')},
     tailor: {inputs:{cloth:3},outputs:{clothing:2},skill:t('工藝')},
@@ -4417,9 +4417,11 @@ const RAW_MATERIALS = ['wood','stone','metal','cloth','herbs'];
 
 function processDailyProduction(world) {
     const sp = world.stockpile;
-    // v5.51.0 原料層自動供給:原料低於安全線時自動回補,瓶頸從「庫存」上移到「勞動力」
+    // v5.51.0 原料層自動供給,v5.53.0 改為「補滿到安全線」:
+    // 固定 +12 補不上木材這種高需求原料(建築+家具線+冬季取暖),紅燈會卡死;直接補到 40
     RAW_MATERIALS.forEach(r => {
-        if (sp.get(r) < 40) sp.add(r, 12, world.tickCount, t('原料自動補給'));
+        const gap = 40 - sp.get(r);
+        if (gap > 0) sp.add(r, gap, world.tickCount, t('原料自動補給'));
     });
     if (!world.workPolicy) world.workPolicy = {};
     // Check which NPC jobs are covered by the industry system to avoid double production
@@ -4447,8 +4449,8 @@ function processDailyProduction(world) {
         let eff = 0.5 + ((skill?skill.level:0)/20)*2.0;
         if (isIndustryHandled) eff *= 0.5;
         if (policy === 'extra') {
-            // v5.52.0 加班要付津貼(銀幣 sink):銀庫付不出來就照常排班
-            if (sp.consume('silver', 3, world.tickCount, `${agent.name}${t('的加班津貼')}`)) {
+            // v5.52.0 加班要付津貼(銀幣 sink),v5.53.0 3→8:試玩回饋 3 銀幣在流水裡無感
+            if (sp.consume('silver', 8, world.tickCount, `${agent.name}${t('的加班津貼')}`)) {
                 eff *= 1.5;
                 agent.moodModifier = (agent.moodModifier || 0) - 3;
                 if (Math.random() < 0.3) agent.memory?.add?.(world.tickCount, world.clock.timeStr, 'daily', t('連日加班，身體有點吃不消，但訂單堆著總得有人做。'), 4, []);
@@ -4498,6 +4500,16 @@ function processDailyProduction(world) {
     if (world.clock.season === '冬季' && !sp.consume('wood',npcCount*0.3,world.tickCount,'冬季取暖')) {
         world.logMessage('economy',t('木材不夠取暖！'));
         Object.values(world.agents).forEach(a => { a.moodModifier=(a.moodModifier||0)-8; a.needs.comfort=Math.max(0,a.needs.comfort-15); });
+    }
+    // v5.53.0 餐食也會過期(試玩回饋:餐食只漲不跌會變新的死資源):超過三天需求量的部分每日 8% 倒掉
+    const mealsCap = Math.ceil(npcCount * 4.5);
+    const excessMeals = sp.get('meals') - mealsCap;
+    if (excessMeals > 0) {
+        const wasted = Math.floor(excessMeals * 0.08);
+        if (wasted > 0) {
+            sp.consume('meals', wasted, world.tickCount, t('餐食放到過期'));
+            world.logMessage('economy', `${wasted}${t('份餐食放到過期倒掉了——考慮讓廚房排休。')}`);
+        }
     }
     // v5.52.0 食物稀缺曲線:超過糧倉容量的存糧會腐壞(穀倉擴容、冷藏穀庫減緩腐壞),避免食物爆量失去取捨
     const foodCap = 400 + (world.buildings?.getEffect?.('food_capacity', 0) || 0);

@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.52.0
+ * Version: 5.53.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.52.0');
+define('RIMTOWN_VERSION', '5.53.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,17 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.53.0',
+            'date'    => '2026-08-19',
+            'changes' => array(
+                '🌾 食物卡顯示「存量/糧倉容量」,超過容量時顯示 ⚠ 每日腐壞5% 警示(腐壞數學已用自動化測試拍板:1000/容量400 → 當晚 −30)',
+                '🍲 餐食也會過期:超過三天需求量的部分每日 8% 倒掉,不再只漲不跌;廚師產出 12→9 收斂預設 3 廚師的過剩',
+                '🪵 原料自動補給改為「補滿到 40」:固定 +12 補不上木材這種高需求原料,紅燈不再卡死',
+                '📊 白天顯示「預估日產 +X(午夜結算)」,排班一下就有回饋,不再誤讀成 +0 沒生效',
+                '💸 加班津貼 3→8 銀幣,sink 有存在感',
+            ),
+        ),
         array(
             'version' => '5.52.0',
             'date'    => '2026-08-19',

@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.52.0
-const RIMTOWN_APP_VERSION = '5.52.0';
+// RimTown - Frontend App (WordPress Plugin) v5.53.0
+const RIMTOWN_APP_VERSION = '5.53.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -7564,14 +7564,18 @@ class RimTownApp {
             // v5.50.0 經濟A波:三層資源結構 —— 關鍵資源 / 加工產能(看流量) / 原料倉庫(燈號)
             const npcCount = Math.max(1, Object.keys(this.state.agents || {}).length - 1);
             // ① 關鍵資源:食物+銀幣,唯二要玩家盯的存量
+            // v5.53.0 食物顯示 /糧倉容量(400+穀倉擴容),玩家才知道離腐壞多遠
             const foodAmt = Math.round(res.food || 0), silverAmt = Math.round(res.silver || 0);
-            const foodClr = foodAmt < 50 ? 'var(--negative)' : foodAmt < 200 ? '#e8b030' : 'var(--positive)';
+            const foodCap = 400 + (this.world?.buildings?.getEffect?.('food_capacity', 0) || 0);
+            const overCap = foodAmt > foodCap;
+            const foodClr = foodAmt < 50 ? 'var(--negative)' : foodAmt < 200 || overCap ? '#e8b030' : 'var(--positive)';
             const silverClr = silverAmt < 50 ? 'var(--negative)' : silverAmt < 300 ? '#e8b030' : 'var(--positive)';
             html += `<div class="econ-section"><h3>💎 ${t('關鍵資源')}</h3>
                 <div style="display:flex;gap:8px">
                     <div style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center">
                         <div style="font-size:1.3rem">🌾</div><div style="font-size:0.72rem;color:var(--text-secondary)">${t('食物')}</div>
-                        <div style="font-size:1.15rem;font-weight:bold;color:${foodClr}">${foodAmt}</div></div>
+                        <div style="font-size:1.15rem;font-weight:bold;color:${foodClr}">${foodAmt}<span style="font-size:0.68rem;font-weight:normal;color:var(--text-muted)">/${foodCap}</span></div>
+                        ${overCap ? `<div style="font-size:0.62rem;color:#e8b030">⚠ ${t('超過糧倉容量，每日腐壞5%')}</div>` : ''}</div>
                     <div style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center">
                         <div style="font-size:1.3rem">💰</div><div style="font-size:0.72rem;color:var(--text-secondary)">${t('銀幣')}</div>
                         <div style="font-size:1.15rem;font-weight:bold;color:${silverClr}">${silverAmt}</div></div>
@@ -7597,6 +7601,10 @@ class RimTownApp {
                 const flowClr = prod >= cons ? 'var(--positive)' : 'var(--negative)';
                 const makers = Object.values(this.state.agents || {}).filter(a => a.job?.key === GOOD_JOB[k]).map(a => a.name);
                 const policy = workPolicy[k] || 'normal';
+                // v5.53.0 產出在午夜結算,白天顯示「預估日產」避免 +0 被誤讀成排班沒生效
+                const RECIPE_OUT = { meals: 9, tools: 3, clothing: 2, medicine: 2, furniture: 2 };
+                const est = Math.round(makers.length * (RECIPE_OUT[k] || 0) * (policy === 'off' ? 0 : policy === 'extra' ? 1.5 : 1));
+                const prodHtml = prod > 0 ? `＋${prod}` : `${t('預估日產')} ＋${est}<span style="color:var(--text-muted)">（${t('午夜結算')}）</span>`;
                 const polBtn = (mode, icon, tip) => `<button data-action="work-policy" data-val="${k},${mode}" title="${tip}" style="width:26px;height:22px;border-radius:5px;border:1px solid var(--border);cursor:pointer;font-size:0.7rem;line-height:1;${policy === mode ? 'background:var(--accent);color:#fff' : 'background:var(--bg-card);color:var(--text-secondary)'}">${icon}</button>`;
                 html += `<div style="padding:6px 2px;border-bottom:1px solid var(--border);font-size:0.78rem">
                     <div style="display:flex;align-items:center;gap:6px">
@@ -7605,7 +7613,7 @@ class RimTownApp {
                         <span style="color:var(--text-secondary);font-size:0.7rem">${t('庫存')} ${stock}</span>
                     </div>
                     <div style="display:flex;align-items:center;gap:5px;margin-top:3px">
-                        <span style="flex:1;font-size:0.7rem;color:${flowClr}">＋${prod}${cons ? ` <span style="color:var(--negative)">−${cons}</span>` : ''} <span style="color:var(--text-muted)">· ${demandNote[k]}</span></span>
+                        <span style="flex:1;font-size:0.7rem;color:${flowClr}">${prodHtml}${cons ? ` <span style="color:var(--negative)">−${cons}</span>` : ''} <span style="color:var(--text-muted)">· ${demandNote[k]}</span></span>
                         ${polBtn('off', '⏸', t('休工：不生產，村民心情變好、多時間社交'))}
                         ${polBtn('normal', '▶', t('正常排班'))}
                         ${polBtn('extra', '⏫', t('加班：產量+50%，但村民會累、心情變差'))}
