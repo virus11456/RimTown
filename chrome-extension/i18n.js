@@ -2232,6 +2232,13 @@ const I18N = (() => {
         '結婚了！': ' got married!',
         '開始交往！': ' started dating!',
 
+        // ── v5.53.0 經濟試玩回饋修正 ──
+        '超過糧倉容量，每日腐壞5%': 'over granary cap — 5% spoils daily',
+        '預估日產': 'est. daily',
+        '午夜結算': 'settles at midnight',
+        '餐食放到過期': 'meals expired',
+        '份餐食放到過期倒掉了——考慮讓廚房排休。': ' meals expired and were tossed — consider giving the kitchen a day off.',
+
         // ── v5.52.0 經濟C波:價值層收束 ──
         '科技': 'Tech',
         '的加班津貼': "'s overtime pay",

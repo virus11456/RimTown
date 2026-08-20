@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.52.0.zip` from Releases
+1. Download `rimtown-v5.53.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,16 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.53.0 (2026-08-19)
+
+**經濟三波試玩回饋修正**（腐壞、餐食過剩、木材紅燈、+0 誤導、津貼無感——五項全修）
+
+- 🌾 食物卡顯示「存量／糧倉容量」（容量＝400＋穀倉擴容），超過容量時顯示 ⚠ 每日腐壞 5% 警示；腐壞數學已用自動化測試驗證（食物 1000／容量 400 → 當晚 −30，精確 5%）
+- 🍲 餐食也會過期：超過三天需求量（4.5×人口）的部分每日 8% 倒掉，餐食不再是只漲不跌的新死資源；廚師產出 12→9，收斂預設 3 廚師 3.3 倍過剩
+- 🪵 原料自動補給改為「補滿到安全線 40」：固定 +12 補不上木材這種高需求原料（建築＋家具線＋冬季取暖都吃它），紅燈不再卡死
+- 📊 加工線白天顯示「預估日產 +X（午夜結算）」——排班立即有回饋，不再被 +0 誤導成沒生效
+- 💸 加班津貼 3→8 銀幣（試玩回饋：3 銀幣在流水裡無感）
 
 ### v5.52.0 (2026-08-19)
 
