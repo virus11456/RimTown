@@ -1059,6 +1059,9 @@ class Agent {
         if (isNight && !this.personality.traits.includes('night_owl') && this.activity !== 'sleeping') {
             thoughts.push(t('這麼晚了還沒睡...'), t('明天會很累吧。'));
         }
+        // v5.58.0 跨鎮親緣:偶爾想起海那頭的親友——路通不通,人都在心上
+        const tie = typeof CROSS_TOWN_TIES !== 'undefined' ? CROSS_TOWN_TIES[this.agentId] : null;
+        if (tie && Math.random() < 0.3) thoughts.push(pickRandom(tie.thoughts));
         // v5.47.0 BUG-01 防護:名字是純數字的斷掉引用(舊檔殘留)不進閒置意圖
         const bf = this.relationships.getBestFriend();
         if (bf && bf.targetName && !/^\d+$/.test(String(bf.targetName))) thoughts.push(`${t('該去找')}${bf.targetName}${t('敘敘舊了。')}`);
@@ -3693,6 +3696,25 @@ const TOWN_THEMES = {
         // 漁獲豐、帆布多;無林缺木、草藥少——與邊境鎮天然互補,為跨鎮貿易鋪路
         stockpile: { food: 320, cloth: 90, wood: 45, herbs: 10 },
     },
+};
+
+// v5.58.0 跨鎮親緣網:兩鎮從第一天就織在同一張關係網裡,只是沿海道路還沒通
+// 邊境鎮居民會想起海那頭的親友,海風鎮的人也記掛著這頭——世界觀在通車前就開始呼吸
+const CROSS_TOWN_TIES = {
+    // 邊境鎮 → 海風鎮
+    wang_li:   { other: '海嬤', thoughts: [t('姑婆又從海風鎮寄魚乾來了，她醃的魚誰都比不上。'), t('我這手醃魚的功夫，是海風鎮的姑婆海嬤教的。')] },
+    wu_da:     { other: '石叔', thoughts: [t('老石那傢伙去海邊曬鹽也二十年了，礦上的日子他還記得嗎。'), t('當年跟老石同一條坑道，現在一個挖礦一個曬鹽。')] },
+    zhao_xia:  { other: '浪叔', thoughts: [t('浪叔的船這批貨怎麼還沒到，別又在哪個港口喝茫了。'), t('我店裡的異國貨，一半是海風鎮浪叔的船捎回來的。')] },
+    zhou_ming: { other: '小鷗', thoughts: [t('在海味居駐唱那陣子，掌杓姑娘的海鮮麵配我的歌，絕了。'), t('那首關於海的歌，是在海風鎮寫的。')] },
+    sun_yu:    { other: '燈爺', thoughts: [t('燈爺的信裡說，航海日誌裡有段記載跟遺跡對得上…'), t('海風鎮的燈爺是我通信多年的筆友，他懂的比書還多。')] },
+    lin_mei:   { other: '阿汐', thoughts: [t('同期的阿汐在海風鎮當醫師，海女出身的她潛得比誰都深。'), t('好想跟阿汐當面討論那個病例，可惜路還封著，只能寫信。')] },
+    // 海風鎮 → 邊境鎮
+    hb_haima:  { other: '王麗', thoughts: [t('邊境鎮的姪孫女王麗，醃魚的手藝是我教的，不知道長進了沒。')] },
+    hb_shishu: { other: '吳達', thoughts: [t('礦上的老吳還在挖嗎…當年說好老了一起釣魚的。')] },
+    hb_langshu:{ other: '趙霞', thoughts: [t('邊境鎮的趙老闆娘又下了一批訂單，這趟得跑快點。')] },
+    hb_xiaoou: { other: '周明', thoughts: [t('那個彈吉他的流浪商人，唱的那首海歌我現在還會哼。')] },
+    hb_dengye: { other: '孫雨', thoughts: [t('邊境鎮那位孫姑娘的信又到了，她問的遺跡我日誌裡正好有記載。')] },
+    hb_axi:    { other: '林美', thoughts: [t('同期的林美在邊境鎮行醫，她的信裡總夾著新藥方。')] },
 };
 
 class TownMap {
@@ -6562,7 +6584,8 @@ class World {
             if (this.prosperity) this.prosperity.dailyUpdate(this);
             if (this.npcQuests) this.npcQuests.dailyUpdate(this);
             if (this.lifeGoals) this.lifeGoals.dailyUpdate(this); // v5.4.0
-            if (this.questSystem) this.questSystem.checkProgress(this);
+            // v5.58.0 邊境鎮主線任務不在海風鎮跑(任務卡司是邊境鎮居民;海風鎮主題任務鏈待後續)
+            if (this.questSystem && this.townTheme !== 'harbor') this.questSystem.checkProgress(this);
             // v4.0 systems
             // v5.32.0 章節門檻:互動卡片第二章(繁榮 20)起、議會第四章(繁榮 70)起才啟動
             const chapterPros = this.prosperity?.prosperity || 0;
@@ -7095,9 +7118,21 @@ class World {
         this.weather = new WeatherSystem();
         this.council = new CouncilSystem();
         this.conversationEngine = new ConversationEngine(this.conversationEngine?.llm);
+        // v5.58.0 清掉上一個世界的敘事殘留:換鎮後「今日焦點還在講陳偉」這類跨鎮鬼影的根源
+        this.dailyFocus = null;
+        this.dailyEcho = [];
+        this.playerActions = [];
+        this.dramaArchive = [];
+        this.mediations = {};
+        this._feudCooldown = {};
+        this.workPolicy = {};
+        this.visitors = {};
+        this.npcLlmUsedToday = 0;
         // v5.55.0 主題城鎮:地圖/物資/名冊都跟著主題走
         this.townTheme = this.townTheme || 'frontier';
         const theme = TOWN_THEMES[this.townTheme] || TOWN_THEMES.frontier;
+        // v5.58.0 鎮名跟著世界走(序列化保存),UI 標題不再永遠寫死邊境鎮
+        this.townName = this.townName || (this.townTheme === 'harbor' ? t('海風鎮') : t('邊境鎮'));
         this.townMap = generateRandomTown(seed, this.townTheme);
         if (theme.stockpile) Object.assign(this.stockpile.resources, theme.stockpile);
         // v5.27.0 肉鴿:隨機開局模式(rosterMode='random')抽全新村民,否則用劇本卡司
@@ -7423,6 +7458,16 @@ class World {
             this.addAgent(agent);
         });
         this._seedRelationships(); // v5.5.0 開局關係網,讓小鎮一開始就有戲
+        this._seedCrossTownMemories(); // v5.58.0 海那頭的親友,從第一天就在記憶裡
+    }
+
+    // v5.58.0 依親緣網為在場居民種下「海那頭的親友」記憶,閒聊/對話/反思自然會提起
+    _seedCrossTownMemories() {
+        if (typeof CROSS_TOWN_TIES === 'undefined') return;
+        for (const [aid, tie] of Object.entries(CROSS_TOWN_TIES)) {
+            const ag = this.agents[aid];
+            if (ag && tie.thoughts?.length) ag.memory.add(0, '08:00', 'family', tie.thoughts[0], 6, [tie.other]);
+        }
     }
 
     // v5.55.0 海風鎮名冊:漁村暱稱式人名、討海人的早起文化、自帶戲劇鉤子
@@ -7468,6 +7513,7 @@ class World {
         pair('hb_axi', 'hb_xiaoou', { aff: 58, rom: 0, trust: 52 }, { aff: 56, rom: 0, trust: 50 }); // 手帕交
         pair('hb_yunyi', 'hb_haibo', { aff: 34, rom: 26, status: 'ex' }, { aff: 30, rom: 22, status: 'ex' }); // 未完的舊情
         pair('hb_aduo', 'hb_axi', { aff: 26, rom: 34 }, { aff: 18, rom: 6 }); // 哨長的佔有慾
+        this._seedCrossTownMemories(); // v5.58.0 海風鎮這頭也記掛著邊境鎮的親友
     }
 
     // v5.27.0 肉鴿:隨機開局 —— 每一局抽一批全新村民 + 隨機愛恨關係網
@@ -7823,6 +7869,7 @@ class World {
             workPolicy: { ...(this.workPolicy || {}) }, // v5.51.0 勞動力排班
             townTheme: this.townTheme || 'frontier', // v5.55.0 主題城鎮
             visitors: JSON.parse(JSON.stringify(this.visitors || {})), // v5.56.0 在鎮訪客名單
+            townName: this.townName || '', // v5.58.0 鎮名
 
             playerActions: (this.playerActions || []).slice(-60).map(a => ({ ...a })), // v5.45.0 蝴蝶效應
             dailyEcho: [...(this.dailyEcho || [])], // v5.45.0 昨日回響
@@ -7967,6 +8014,7 @@ class World {
             this.workPolicy = data.workPolicy || {}; // v5.51.0
             this.townTheme = data.townTheme || 'frontier'; // v5.55.0 主題城鎮
             this.visitors = data.visitors || {}; // v5.56.0 在鎮訪客
+            this.townName = data.townName || this.townName || ''; // v5.58.0 鎮名
             this._chronicleChatIdx = (this.agents['player']?.chatHistory || []).length; // v5.43.0 讀檔後從當下開始記
             this.playerActions = data.playerActions || []; // v5.45.0
             this.dailyEcho = data.dailyEcho || []; // v5.45.0

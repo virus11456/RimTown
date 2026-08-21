@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.57.0
-const RIMTOWN_APP_VERSION = '5.57.0';
+// RimTown - Frontend App (WordPress Plugin) v5.58.0
+const RIMTOWN_APP_VERSION = '5.58.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -2219,10 +2219,13 @@ class RimTownApp {
             }
         }
 
-        // v5.55.0 海風鎮劇情解鎖:第二章(繁榮 20)時碼頭捎來消息,城鎮列表可建立漁村主題
+        // v5.55.0 海風鎮劇情解鎖,v5.58.0 改為「道路重通」:海風鎮本來就存在,
+        // 只是沿海道路一直封著;小鎮發展起來(繁榮 20)後修路隊打通道路,馬車通車
         if ((this.state?.prosperity?.prosperity || 0) >= 20 && localStorage.getItem('rimtown_harbor_unlocked') !== '1') {
             localStorage.setItem('rimtown_harbor_unlocked', '1');
-            this._showCornerNotice({ icon: '🌊', title: t('碼頭來信'), name: '', desc: t('商隊捎來消息:沿著海岸走兩天,有個叫「海風鎮」的漁村——討海人的早起文化、鹽場與燈塔。到「城鎮列表→建立新城鎮」就能前往開拓') });
+            this._ensureNeighborTown();
+            this.world?.logMessage?.('system', t('📯 沿海道路修復完成，往海風鎮的馬車恢復通行！'));
+            this._showCornerNotice({ icon: '🛤️', title: t('道路重通！'), name: '', desc: t('通往漁村「海風鎮」的沿海道路修好了——去東邊的馬車站就能搭車拜訪，兩鎮的村民也會開始互相作客') });
         }
 
         // Multi-town
@@ -2807,7 +2810,7 @@ class RimTownApp {
         card.style.cssText = 'background:var(--bg-secondary);border:1px solid var(--border);border-radius:14px;padding:18px;max-width:330px;width:86%';
         let inner = `<div style="font-weight:bold;font-size:1rem;margin-bottom:6px">🐎 ${t('馬車站')}</div>`;
         if (!towns.length) {
-            inner += `<div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.6">${t('車伕靠在車轅上打盹：「這條路通向遠方——等你有了別的城鎮，我就載你去。」')}</div>`;
+            inner += `<div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.6">${t('車伕靠在車轅上打盹：「往海風鎮的沿海道路還封著呢——聽說鎮子發展起來，就會組修路隊把路打通。急的話，先跟商隊買點那邊的魚乾解解饞吧。」')}</div>`;
         } else {
             inner += `<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px">${t('車伕拍拍車板：「要去哪兒？路上得顛個兩天。」')}</div>`;
             towns.forEach((twn, i) => {
@@ -2864,8 +2867,41 @@ class RimTownApp {
     _pushMailbox(key, entry) {
         try { const arr = JSON.parse(localStorage.getItem(key) || '[]'); arr.push(entry); localStorage.setItem(key, JSON.stringify(arr.slice(-10))); } catch (e) {}
     }
+    // v5.58.0 海風鎮本來就存在:道路重通(繁榮20)後在背景生成它的存檔——
+    // 不用手動建立,馬車直達、兩鎮村民互訪立即可用
+    async _ensureNeighborTown() {
+        if (this._neighborEnsured) return;
+        this._neighborEnsured = true;
+        const harborName = t('海風鎮');
+        try {
+            let exists = false;
+            if (this.auth.loggedIn && Array.isArray(this._cloudSaves)) exists = this._cloudSaves.some(s => (s.town_name || '').includes(harborName));
+            if (!exists) exists = this._getTownList().some(tw => (tw.name || '').includes(harborName));
+            if (exists || (this.world?.townTheme === 'harbor')) return;
+            const nw = new World();
+            nw.townTheme = 'harbor';
+            nw.townName = harborName;
+            nw.rosterMode = 'scripted';
+            nw.reset();
+            const blob = nw.serialize();
+            const tid = this._generateTownId(harborName);
+            const list = this._getTownList();
+            if (!list.some(tw => tw.id === tid)) {
+                list.push({ id: tid, name: harborName, savedAt: new Date().toISOString(), season: blob.clock?.season || t('春季'), year: 1, day: 1, population: Object.keys(blob.agents || {}).length });
+                this._saveTownList(list);
+            }
+            try { localStorage.setItem('rimtown_town_' + tid, JSON.stringify(blob)); } catch (e) {}
+            if (this.auth.loggedIn) {
+                try { await this.auth.cloudSave(tid, harborName, blob, { season: blob.clock?.season, year: 1, day: 1, population: Object.keys(blob.agents || {}).length }); } catch (e) {}
+            }
+            this._otherTownsAt = 0; // 立即讓互訪/馬車看見新鄰鎮
+        } catch (e) { console.warn('[RimTown] neighbor town gen failed', e); this._neighborEnsured = false; }
+    }
+
     _visitorMailboxTick() {
         const w = this.world; if (!w || !this.currentTownId) return;
+        // 道路已通(含老玩家補生成):確保海風鎮存在
+        if (localStorage.getItem('rimtown_harbor_unlocked') === '1' && !this._neighborEnsured) this._ensureNeighborTown();
         // 掛鉤(冪等,換鎮/換世界後自動指向新世界)
         w.onSendVisitor = (agentData, town, stayDays) => this._pushMailbox(this._visitorMailboxKey(town.id),
             { agentData, stayDays, fromTownId: this.currentTownId, fromTownName: this._getCurrentTownName() });
@@ -3121,20 +3157,19 @@ class RimTownApp {
         const defaultSuffix = this.auth.loggedIn
             ? ((this._cloudSaves?.length || 0) + 1)
             : (this._getTownList().length + 1);
-        // v5.55.0 主題選擇:海風鎮經劇情解鎖(繁榮 20 碼頭來信)後可建立
-        let theme = 'frontier';
-        if (localStorage.getItem('rimtown_harbor_unlocked') === '1') {
-            theme = confirm(t('要建立哪種城鎮？\n\n【確定】🌊 海風鎮——海岸漁村：討海人的早起文化、鹽場與燈塔、全新的居民與恩怨\n【取消】🏔️ 邊境鎮——經典開局')) ? 'harbor' : 'frontier';
-        }
-        const name = prompt(t('為新城鎮命名：'), (theme === 'harbor' ? t('海風鎮 ') : t('邊境鎮 ')) + defaultSuffix);
+        // v5.58.0 建立新城鎮恢復原行為(邊境鎮);海風鎮不用建立——它本來就存在,搭馬車去即可
+        const name = prompt(t('為新城鎮命名：'), t('邊境鎮 ') + defaultSuffix);
         if (!name) return;
-        this.world.townTheme = theme;
+        this._showBusyOverlay(`🏗️ ${t('新城鎮建立中，原本的城鎮會先自動儲存…')}`);
         if (this.auth.loggedIn) {
             // When logged in, save current town to cloud before creating new one
             if (this.currentTownId) await this.saveGame();
         } else {
             if (this.currentTownId) this._saveCurrentTown();
         }
+        // (在舊鎮存檔之後才改 theme/name,避免把新名字蓋到舊存檔上)
+        this.world.townTheme = 'frontier';
+        this.world.townName = name;
         this.world.rosterMode = (localStorage.getItem('rimtown_roster_mode') === 'random') ? 'random' : 'scripted'; // v5.27.0 肉鴿隨機開局
         this.world.reset();
         if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
@@ -3154,8 +3189,24 @@ class RimTownApp {
         this.world.paused = !!this._pausedBeforeTownModal;
         this._updateHeaderTownName(name);
         this.world.logMessage('system', `${t('🏘️ 新城鎮「')}${name}${t('」已建立！')}`);
+        this._hideBusyOverlay();
+        this._showCornerNotice({ icon: '🏘️', title: `${name}${t('已建立')}`, name: '', desc: t('原本的城鎮已自動儲存，「城鎮列表」隨時可切換，兩鎮並存') });
         this.render();
     }
+
+    // v5.58.0 忙碌遮罩:建鎮/生成期間顯示,長時間作業不再像當機
+    _showBusyOverlay(text) {
+        this._hideBusyOverlay();
+        const ov = document.createElement('div');
+        ov.id = 'busy-overlay';
+        ov.style.cssText = 'position:fixed;inset:0;background:rgba(6,10,24,0.85);z-index:99998;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px';
+        ov.innerHTML = `<div style="font-size:2.2rem;animation:busySpin 1.2s linear infinite">⏳</div>
+            <div style="color:#cfd8ea;font-size:0.95rem">${text || t('處理中…')}</div>
+            <div style="color:#8fa8c9;font-size:0.75rem">${t('請稍候，不要重新整理頁面')}</div>
+            <style>@keyframes busySpin{to{transform:rotate(360deg)}}</style>`;
+        document.body.appendChild(ov);
+    }
+    _hideBusyOverlay() { document.getElementById('busy-overlay')?.remove(); }
     async renameTownPrompt(townId) {
         let currentName = t('邊境鎮');
         if (this.auth.loggedIn && this._cloudSaves) {
@@ -3248,9 +3299,14 @@ class RimTownApp {
         this._generateTileMapLayout();
     }
 
+    // v5.58.0 鎮名同步到全部三處標題(桌面 h1/手機標題/側欄標),不再永遠寫死邊境鎮
     _updateHeaderTownName(name) {
+        const n = name || this.world?.townName || t('邊境鎮');
         const title = document.querySelector('.mobile-title');
-        if (title) title.textContent = name || t('邊境鎮');
+        if (title) title.textContent = n;
+        const h1 = document.querySelector('.rimtown-container h1[data-i18n], .rimtown-container header h1, #rimtown-header h1');
+        if (h1) h1.textContent = n;
+        document.querySelectorAll('.rt-title-zh').forEach(el => { el.textContent = n; });
     }
 
     _generateTileMapLayout() {

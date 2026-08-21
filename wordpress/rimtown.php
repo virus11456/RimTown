@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.57.0
+ * Version: 5.58.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.57.0');
+define('RIMTOWN_VERSION', '5.58.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.58.0',
+            'date'    => '2026-08-22',
+            'changes' => array(
+                '🛤️ 海風鎮改為「本來就存在」:不用手動建立——沿海道路被風暴封住,小鎮發展到繁榮 20 修路隊打通道路(「道路重通!」事件),海風鎮在背景自動生成,馬車直達、兩鎮村民互訪立即可用;通車前車伕會告訴你路封著',
+                '👪 跨鎮親緣網:王麗的姑婆海嬤在海風鎮、吳達與鹽工石叔是礦上老兄弟、孫雨與燈爺是筆友…6 對手寫羈絆,兩鎮居民從第一天就會在閒聊中提起海那頭的親友',
+                '🐛 QA 修正:換鎮後「今日焦點還在講陳偉」的跨鎮鬼影(reset 清除敘事殘留);鎮名三處標題不再永遠寫死邊境鎮(townName 隨存檔);海風鎮不再顯示邊境鎮主線任務;建鎮加 loading 畫面+「兩鎮並存」提示',
+            ),
+        ),
         array(
             'version' => '5.57.0',
             'date'    => '2026-08-21',

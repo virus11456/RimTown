@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.57.0.zip` from Releases
+1. Download `rimtown-v5.58.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,15 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.58.0 (2026-08-22)
+
+**雙城世界觀合理化——海風鎮本來就存在（QA 回饋＋設計修正）**
+
+- 🛤️ 海風鎮改為「本來就存在」：不再用「建立新城鎮」手動創建——世界觀是**沿海道路被風暴封住**，小鎮發展到繁榮 20 時修路隊打通道路（「道路重通！」事件＋新聞），海風鎮在背景自動生成存檔並登記進城鎮列表，馬車直達、兩鎮村民互訪立即可用；通車前點馬車站，車伕會告訴你路還封著（「先跟商隊買點那邊的魚乾解解饞吧」）；「建立新城鎮」恢復原本用途
+- 👪 跨鎮親緣網（6 對手寫羈絆）：王麗的姑婆海嬤在海風鎮幫廚、吳達與鹽工石叔是礦上老兄弟、趙霞的異國貨來自浪叔的船、周明在海味居駐唱過、孫雨與燈爺是通信筆友、林美與阿汐師出同門——雙邊記憶種子＋閒聊思緒池，**通車前**兩鎮居民就會在日常裡提起海那頭的親友
+- 🐛 QA 修正四件：換鎮後「今日焦點還在講陳偉」的跨鎮鬼影（`reset()` 清除 dailyFocus／dailyEcho／dramaArchive 等敘事殘留）；鎮名三處標題（桌面 h1／手機標題／側欄標）不再寫死邊境鎮（`townName` 隨存檔序列化）；海風鎮不再跑邊境鎮主線任務（卡司是邊境鎮居民，海風鎮主題任務鏈待後續）；建鎮全程 loading 畫面＋完成後「原鎮已自動儲存、兩鎮並存」提示
+- 迴歸：P0 主題 12 項＋P1 互訪 18 項＋本版 7 項（親緣種子／鬼影清除／townName 序列化）全過
 
 ### v5.57.0 (2026-08-21)
 
