@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.58.0
-const RIMTOWN_APP_VERSION = '5.58.0';
+// RimTown - Frontend App (WordPress Plugin) v5.58.1
+const RIMTOWN_APP_VERSION = '5.58.1';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -2842,6 +2842,8 @@ class RimTownApp {
         await new Promise(r => setTimeout(r, 2600));
         try {
             await this.switchTown(townId);
+            // v5.58.1 確認真的切過去了——切換失敗就別演「抵達」
+            if (this.currentTownId !== townId) throw new Error(t('找不到目的地的存檔'));
             // 抵達:把玩家放在對方鎮的馬車站,鏡頭跟過去
             const cs = this.tileMap?.coachStation;
             if (cs) {
@@ -3096,21 +3098,31 @@ class RimTownApp {
         if (this.auth.loggedIn) {
             // When logged in, save current to cloud then load target from cloud
             await this.saveGame();
+            let loaded = false;
             try {
                 const saveData = await this.auth.cloudLoad(townId);
-                if (saveData && this.world.loadSave(saveData)) {
-                    if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
-                    this.currentTownId = townId;
-                    this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
-                    this.state = this.world.getState();
-                    this._generateTileMapLayout();
-                    if (this.tileMap) this.tileMap.agentPositions = {};
-                    const cloudMeta = this._cloudSaves?.find(s => s.town_id === townId);
-                    this._updateHeaderTownName(cloudMeta?.town_name);
-                    this.render();
-                }
+                if (saveData && this.world.loadSave(saveData)) loaded = true;
             } catch (e) {
                 console.error('[RimTown] Cloud switch town error:', e);
+            }
+            // v5.58.1 雲端沒有就退回本地存檔——自動生成的海風鎮/訪客時期的舊鎮常只在本地,
+            // 原本這裡靜默失敗:過場放完人還在原地,什麼提示都沒有
+            if (!loaded && this._loadTownById(townId)) loaded = true;
+            if (loaded) {
+                if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
+                this.currentTownId = townId;
+                this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
+                this.state = this.world.getState();
+                this._generateTileMapLayout();
+                if (this.tileMap) this.tileMap.agentPositions = {};
+                const cloudMeta = this._cloudSaves?.find(s => s.town_id === townId);
+                const localMeta = this._getTownList().find(tw => tw.id === townId);
+                this._updateHeaderTownName(cloudMeta?.town_name || localMeta?.name || this.world.townName);
+                this.render();
+                // 本地載入的鎮順手補上雲端,跨裝置也看得到
+                try { await this.saveGame(); } catch (e) {}
+            } else {
+                this._gameAlert?.(t('切換城鎮失敗：找不到該城鎮的存檔。'), '❌');
                 this.world.logMessage('system', t('切換城鎮失敗。'));
             }
         } else {

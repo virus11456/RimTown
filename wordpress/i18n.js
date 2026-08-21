@@ -2232,6 +2232,10 @@ const I18N = (() => {
         '結婚了！': ' got married!',
         '開始交往！': ' started dating!',
 
+        // ── v5.58.1 馬車切鎮修復 ──
+        '切換城鎮失敗：找不到該城鎮的存檔。': "Failed to switch towns: that town's save could not be found.",
+        '找不到目的地的存檔': "destination save not found",
+
         // ── v5.58.0 海風鎮本來就存在+親緣網 ──
         '新城鎮建立中，原本的城鎮會先自動儲存…': 'Founding new town — your current town is being saved first…',
         '處理中…': 'Working…',
