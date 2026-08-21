@@ -2895,13 +2895,20 @@ class PixelTileMap {
                 // v5.37.0 修復「站在戶外睡著」:入睡瞬間若人還在屋外,原本就直接凍結在原地;
                 // 現在只有真的走進建築物內才凍結,在戶外會繼續走回家再睡
                 const isSleeping = activity === 'sleeping';
-                if (isSleeping && !this.agentPositions[aid].walking) {
+                if (!isSleeping && this.agentPositions[aid]._slpOut) this.agentPositions[aid]._slpOut = 0;
+                if (isSleeping) {
                     const pos0 = this.agentPositions[aid];
-                    if (this._isInsideBuilding(pos0.x, pos0.y)) {
+                    if (!pos0.walking && this._isInsideBuilding(pos0.x, pos0.y)) {
                         // Already at rest position — don't move or update target
                         pos0.walkStep = 0;
+                        pos0._slpOut = 0;
                         continue;
                     }
+                    // v5.54.0 保險絲:睡著卻一直在屋外(不論還在走或卡住),累積一段時間就強制安置進屋
+                    pos0._slpOut = (pos0._slpOut || 0) + 1;
+                    if (pos0.walking && pos0._slpOut <= 600) {
+                        // 還在走回家的路上,給它時間
+                    } else {
                     // v5.53.1 睡著卻停在屋外(小屋內部目標被 walkable 修正推到牆邊等情況):
                     // 直接安置進自家屋內;找不到自家就借宿最近的小屋,保證「睡覺一定在房子裡」
                     let snap = null;
@@ -2923,7 +2930,10 @@ class PixelTileMap {
                         pos0.y = snap.y + (((aid.charCodeAt(1) || 0) % 3) - 1) * 4;
                         pos0.targetX = pos0.x; pos0.targetY = pos0.y;
                         pos0.walkStep = 0; pos0.doorPhase = null;
+                        pos0.walking = false;
+                        pos0._slpOut = 0;
                         continue;
+                    }
                     }
                 }
 

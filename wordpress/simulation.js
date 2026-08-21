@@ -874,6 +874,11 @@ class Agent {
 
         // Handle social hangouts / adventure invitations
         if (this._pendingHangout) {
+            // v5.54.0 睡眠時段不赴約:約好的聚會倒數到半夜,原本會把睡覺的人拉去廣場站整晚;
+            // 已入睡就直接取消這場約(夜貓子還醒著,不受影響)
+            if (this.activity === 'sleeping') {
+                this._pendingHangout = null;
+            } else {
             const hangout = this._pendingHangout;
             if (hangout.tick <= 0) {
                 this.targetLocation = hangout.location;
@@ -881,6 +886,7 @@ class Agent {
                 this._pendingHangout = null;
             } else {
                 hangout.tick--;
+            }
             }
         }
 

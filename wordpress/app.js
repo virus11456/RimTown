@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.53.2
-const RIMTOWN_APP_VERSION = '5.53.2';
+// RimTown - Frontend App (WordPress Plugin) v5.54.0
+const RIMTOWN_APP_VERSION = '5.54.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1980,6 +1980,7 @@ class RimTownApp {
         this._lastInteractiveShownAt = Date.now();
         // v5.44.0 互動卡顯示期間暫停世界,關閉後還原原本的暫停狀態
         this._pausedBeforeNotif = !!this.world?.paused;
+        this._notifCardOpen = true; // v5.54.0 卡片開著時手動按暫停/播放會改寫 _pausedBeforeNotif
         if (this.world) this.world.paused = true;
         const card = document.getElementById('center-notification-card');
         if (!card) return;
@@ -2021,6 +2022,7 @@ class RimTownApp {
             el.addEventListener('click', () => {
                 clearInterval(this._interactiveCdTimer);
                 overlay.classList.add('hidden');
+                this._notifCardOpen = false;
                 if (this.world) this.world.paused = this._pausedBeforeNotif; // v5.44.0 還原暫停狀態
                 if (buttons[i]?.action) buttons[i].action();
                 this._showNextQueuedNotif();
@@ -2089,6 +2091,7 @@ class RimTownApp {
         this._lastCenterShownAt = Date.now();
         // v5.44.0 全螢幕卡顯示期間暫停世界,關閉後還原你原本的暫停狀態——看戲時時間不會偷跑,你按的暫停也不會被彈窗洗掉
         this._pausedBeforeNotif = !!this.world?.paused;
+        this._notifCardOpen = true; // v5.54.0
         if (this.world) this.world.paused = true;
         const card = document.getElementById('center-notification-card');
         if (!card) return;
@@ -2104,6 +2107,7 @@ class RimTownApp {
         const dismissBtn = card.querySelector('.center-notif-dismiss');
         const dismiss = () => {
             overlay.classList.add('hidden');
+            this._notifCardOpen = false;
             if (this.world) this.world.paused = this._pausedBeforeNotif; // 還原暫停狀態
             this._showNextQueuedNotif();
         };
@@ -2464,7 +2468,7 @@ class RimTownApp {
                 this.world.logMessage('system', t('已從雲端載入存檔。'));
             }
             document.getElementById('town-modal')?.classList.add('hidden');
-            this.world.paused = false;
+            this.world.paused = !!this._pausedBeforeTownModal;
         } catch(e) { this._gameAlert(t('載入失敗：') + e.message, '❌'); }
     }
 
@@ -2844,6 +2848,8 @@ class RimTownApp {
         localStorage.setItem('rimtown_last_town', this.currentTownId);
     }
     showTownManager() {
+        // v5.54.0 記住開窗前的暫停狀態,關窗時還原——不再無條件恢復播放蓋掉你按的暫停
+        this._pausedBeforeTownModal = !!this.world.paused;
         this.world.paused = true;
         const modal = document.getElementById('town-modal');
         if (!modal) return;
@@ -2922,7 +2928,7 @@ class RimTownApp {
     async switchTown(townId) {
         if (townId === this.currentTownId) {
             document.getElementById('town-modal')?.classList.add('hidden');
-            this.world.paused = false;
+            this.world.paused = !!this._pausedBeforeTownModal;
             return;
         }
         if (this.auth.loggedIn) {
@@ -2960,7 +2966,7 @@ class RimTownApp {
             }
         }
         document.getElementById('town-modal')?.classList.add('hidden');
-        this.world.paused = false;
+        this.world.paused = !!this._pausedBeforeTownModal;
     }
     _generateTownId(name) {
         // Generate stable town_id based on user_id + town name for cross-device sync
@@ -3013,7 +3019,7 @@ class RimTownApp {
         if (this.tileMap) this.tileMap.agentPositions = {};
         // Close modal and unpause
         document.getElementById('town-modal')?.classList.add('hidden');
-        this.world.paused = false;
+        this.world.paused = !!this._pausedBeforeTownModal;
         this._updateHeaderTownName(name);
         this.world.logMessage('system', `${t('🏘️ 新城鎮「')}${name}${t('」已建立！')}`);
         this.render();
@@ -3546,10 +3552,10 @@ class RimTownApp {
         const mobilePauseBtn = document.getElementById('mobile-btn-pause');
         if (mobilePauseBtn) {
             mobilePauseBtn.addEventListener('click', () => {
-                this.world.paused = !this.world.paused;
-                mobilePauseBtn.textContent = this.world.paused ? '▶' : '⏸';
-                mobilePauseBtn.classList.toggle('paused', this.world.paused);
-                this.render();
+                const wantPaused = this._notifCardOpen ? !this._pausedBeforeNotif : !this.world.paused;
+                this._setPaused(wantPaused);
+                mobilePauseBtn.textContent = wantPaused ? '▶' : '⏸';
+                mobilePauseBtn.classList.toggle('paused', wantPaused);
             });
         }
 
@@ -3623,7 +3629,7 @@ class RimTownApp {
                 case 'rename-town': this.renameTownPrompt(val); break;
                 case 'delete-town': this.deleteTownConfirm(val); break;
                 case 'create-town': this.createNewTown(); break;
-                case 'close-town-modal': document.getElementById('town-modal')?.classList.add('hidden'); this.world.paused = false; break;
+                case 'close-town-modal': document.getElementById('town-modal')?.classList.add('hidden'); this.world.paused = !!this._pausedBeforeTownModal; break;
                 // Chat
                 case 'start-chat': this.startChatWith(val); break;
                 case 'send-chat': this._sendFromInput(); break;
@@ -3774,7 +3780,7 @@ class RimTownApp {
                 case 'settings-save-game': this.saveGame(); break;
                 case 'settings-export': this.exportSave(); break;
                 case 'settings-import': this.importSave(); break;
-                case 'settings-toggle-pause': this.world.paused = !this.world.paused; this.world.logMessage('system', this.world.paused ? t('遊戲已暫停。') : t('遊戲已繼續。')); this.renderSidebar(); break;
+                case 'settings-toggle-pause': { const wantPaused = this._notifCardOpen ? !this._pausedBeforeNotif : !this.world.paused; this._setPaused(wantPaused); this.world.logMessage('system', wantPaused ? t('遊戲已暫停。') : t('遊戲已繼續。')); this.renderSidebar(); break; }
                 case 'settings-speed-mult': {
                     const mult = parseFloat(val) || 1;
                     this._speedMultiplier = mult;
@@ -3836,12 +3842,26 @@ class RimTownApp {
         });
     }
 
+    // v5.54.0 統一暫停切換:按下立即有角落回饋;卡片顯示期間按的暫停/播放寫進
+    // _pausedBeforeNotif,卡片關閉後套用你的選擇,不再被還原邏輯蓋掉
+    _setPaused(v) {
+        if (!this.world) return;
+        if (this._notifCardOpen) {
+            this._pausedBeforeNotif = v;
+            this.world.paused = true; // 卡片顯示期間維持強制暫停
+        } else {
+            this.world.paused = v;
+        }
+        this._showCornerNotice({ icon: v ? '⏸' : '▶', title: v ? t('遊戲已暫停') : t('遊戲已繼續'), name: '', desc: '' });
+        this.render();
+    }
+
     setupControlListeners() {
         document.getElementById('btn-pause')?.addEventListener('click', () => {
-            this.world.paused = true; this.render();
+            this._setPaused(true);
         });
         document.getElementById('btn-resume')?.addEventListener('click', () => {
-            this.world.paused = false; this.render();
+            this._setPaused(false);
         });
         // Speed control buttons
         this.baseSimSpeed = this.simSpeed;
