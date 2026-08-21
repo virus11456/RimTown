@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.53.1.zip` from Releases
+1. Download `rimtown-v5.53.2.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,10 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.53.2 (2026-08-20)
+
+- 🏭 工廠／產業成本與產出在地化：修復顯示英文 key（`wood:20 stone:15`）的 7 處漏翻——可建造工廠成本（2 處）、工廠倉庫、產業日產出（2 處）、產業升級成本（2 處），全部接上與全站一致的中文資源名稱（木材×20 石材×15）
 
 ### v5.53.1 (2026-08-20)
 
