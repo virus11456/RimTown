@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.56.0.zip` from Releases
+1. Download `rimtown-v5.57.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,14 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.57.0 (2026-08-21)
+
+**雙城第三波（P2）——玩家馬車過場拜訪（雙城計畫完結）**
+
+- 🐎 馬車站：每張地圖東側大路盡頭新增馬車站（木平台、遮雨棚、輕晃的馬車、金字站牌），點擊開啟旅行對話——車伕列出可前往的城鎮；還沒有別的鎮時會打盹提示你
+- 🎬 過場動畫：黑幕淡入、馬車剪影橫越畫面、「馬車顛簸了兩天…」＋季節旁白（冬雪／夏蟬／秋稻／春花），抵達後玩家在對方鎮的馬車站下車、鏡頭跟隨
+- 雙城計畫三波（P0 主題城鎮／P1 村民互訪／P2 馬車過場）全數上線；後續糖（跨鎮貿易差價、跨鎮戀愛搬家、日報跨鎮專欄）待排
 
 ### v5.56.0 (2026-08-21)
 

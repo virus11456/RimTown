@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.56.0
-const RIMTOWN_APP_VERSION = '5.56.0';
+// RimTown - Frontend App (WordPress Plugin) v5.57.0
+const RIMTOWN_APP_VERSION = '5.57.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -2794,6 +2794,67 @@ class RimTownApp {
 
     // === Town Management ===
     // ============================================================
+    // v5.57.0 雙城P2:玩家馬車過場拜訪
+    // ============================================================
+    _showCoachDialog() {
+        if (document.getElementById('coach-dialog')) return;
+        const towns = this.world?.otherTowns || [];
+        const esc = s => this._escapeHtml ? this._escapeHtml(String(s)) : String(s);
+        const ov = document.createElement('div');
+        ov.id = 'coach-dialog';
+        ov.style.cssText = 'position:fixed;inset:0;background:rgba(6,10,24,0.72);z-index:9999;display:flex;align-items:center;justify-content:center';
+        const card = document.createElement('div');
+        card.style.cssText = 'background:var(--bg-secondary);border:1px solid var(--border);border-radius:14px;padding:18px;max-width:330px;width:86%';
+        let inner = `<div style="font-weight:bold;font-size:1rem;margin-bottom:6px">🐎 ${t('馬車站')}</div>`;
+        if (!towns.length) {
+            inner += `<div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.6">${t('車伕靠在車轅上打盹：「這條路通向遠方——等你有了別的城鎮，我就載你去。」')}</div>`;
+        } else {
+            inner += `<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px">${t('車伕拍拍車板：「要去哪兒？路上得顛個兩天。」')}</div>`;
+            towns.forEach((twn, i) => {
+                inner += `<button class="trade-btn coach-go" data-idx="${i}" style="width:100%;margin:3px 0;padding:9px">🛺 ${t('前往')} ${esc(twn.name)}</button>`;
+            });
+        }
+        inner += `<button class="trade-btn coach-close" style="width:100%;margin-top:8px;padding:8px;opacity:0.8">${t('下次再說')}</button>`;
+        card.innerHTML = inner;
+        ov.appendChild(card);
+        document.body.appendChild(ov);
+        ov.addEventListener('click', (e) => {
+            const go = e.target.closest?.('.coach-go');
+            if (go) { const twn = towns[parseInt(go.dataset.idx, 10)]; ov.remove(); if (twn) this._coachTravelTo(twn.id, twn.name); return; }
+            if (e.target.closest?.('.coach-close') || e.target === ov) ov.remove();
+        });
+    }
+    async _coachTravelTo(townId, townName) {
+        const esc = s => this._escapeHtml ? this._escapeHtml(String(s)) : String(s);
+        const season = this.world?.clock?.season || '';
+        const seasonLine = { '冬季': t('風雪讓路程多花了些時候…'), '夏季': t('蟬聲一路相送…'), '秋季': t('沿途稻浪翻金…'), '春季': t('野花開了一路…') }[season] || '';
+        const ov = document.createElement('div');
+        ov.style.cssText = 'position:fixed;inset:0;background:#0a0e1e;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity .6s;overflow:hidden';
+        ov.innerHTML = `<div style="font-size:3rem;animation:coachRide 2.4s ease-in-out forwards">🐎🛺</div>
+            <div style="color:#cfd8ea;margin-top:18px;font-size:1rem">${t('馬車顛簸了兩天…')}${seasonLine}</div>
+            <div style="color:#8fa8c9;margin-top:8px;font-size:0.85rem">${t('前往')} ${esc(townName)}</div>
+            <style>@keyframes coachRide{0%{transform:translateX(-42vw)}100%{transform:translateX(42vw)}}</style>`;
+        document.body.appendChild(ov);
+        requestAnimationFrame(() => { ov.style.opacity = '1'; });
+        await new Promise(r => setTimeout(r, 2600));
+        try {
+            await this.switchTown(townId);
+            // 抵達:把玩家放在對方鎮的馬車站,鏡頭跟過去
+            const cs = this.tileMap?.coachStation;
+            if (cs) {
+                const pxx = (cs.x + 1.5) * 16, pyy = (cs.y + cs.h - 1) * 16;
+                this.tileMap.agentPositions['player'] = { x: pxx, y: pyy, targetX: pxx, targetY: pyy, job: 'default', gender: 'male', walking: false, walkStep: 0, activity: '', atFarm: false, doorPhase: null };
+                this.tileMap._centeredOnPlayer = false;
+            }
+            this._showCornerNotice({ icon: '🐎', title: `${t('抵達')}${townName}`, name: '', desc: t('下車活動活動筋骨，去鎮上走走吧') });
+        } catch (e) {
+            this._gameAlert?.(t('旅途出了點問題：') + e.message, '❌');
+        }
+        ov.style.opacity = '0';
+        setTimeout(() => ov.remove(), 700);
+    }
+
+    // ============================================================
     // v5.56.0 雙城P1:跨鎮互訪信箱
     // 兩鎮存檔各自獨立,交流靠 localStorage 信箱:出訪寫進對方鎮的
     // 訪客信箱、返鄉見聞寫進原鎮的回鄉信箱,各鎮載入時收信
@@ -3173,6 +3234,7 @@ class RimTownApp {
         this.tileMap = new PixelTileMap(canvas);
         this.tileMap.onClick = (locId) => { this._hideNpcCard(); this.playerMoveTo(locId); };
         this.tileMap.onAgentClick = (agentId) => this.onAgentClick(agentId);
+        this.tileMap.onCoachClick = () => this._showCoachDialog(); // v5.57.0 馬車站
         // v4.2.0 礦石鎮式操作:手動移動時同步玩家邏輯位置(節流 400ms)
         this.tileMap.onPlayerMoved = (x, y) => {
             const now = Date.now();
