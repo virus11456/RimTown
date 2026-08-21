@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.55.0.zip` from Releases
+1. Download `rimtown-v5.56.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,16 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.56.0 (2026-08-21)
+
+**雙城第二波（P1）——村民跨鎮互訪**
+
+- 🚌 全自動互訪：擁有兩個以上城鎮後，村民每隔幾天會自動去別的鎮作客（同時最多 2 人在外）——完整人格與記憶打包同行，在對方鎮以「名字（原鎮名）」現身、住上 3-5 天，跟當地人聊天、聽八卦、甚至動心；全鎮會留下「遠客來訪」的記憶與話題
+- 🎒 期滿返鄉：訪客把作客期間最重要的三則見聞帶回家鄉，本尊返鄉後灌進記憶流（「在海風鎮時：嘗到小鷗做的海鮮麵…」），自然流入反思、對話與日報
+- 💬 交談新選項「🚌 邀去鄰鎮」（好感 20+）：親手把某個村民送去另一個鎮作客——想拆散曖昙中的兩人或送作堆，現在有了新玩法
+- 📬 技術：兩鎮存檔獨立，交流靠 localStorage 信箱（訪客信箱＋回鄉見聞信箱），切鎮或遊玩中每 5 秒自動收信；`world.visitors` 隨存檔序列化；外鎮訪客不會被旅行事件抽走
+- 18 項端到端測試全過（出訪打包→對方鎮實體化→期滿返鄉→見聞歸戶→村民數回復→序列化）
 
 ### v5.55.0 (2026-08-21)
 

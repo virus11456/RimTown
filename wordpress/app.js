@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.55.0
-const RIMTOWN_APP_VERSION = '5.55.0';
+// RimTown - Frontend App (WordPress Plugin) v5.56.0
+const RIMTOWN_APP_VERSION = '5.56.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1612,7 +1612,7 @@ class RimTownApp {
         // v4.0: Check interactive notifications every 4 seconds
         setInterval(() => this._checkV4Notifications(), 4000);
         // v5.48.0 追蹤的村民有大事 → 角落通知
-        setInterval(() => { try { this._checkFollowedNpcs(); } catch (e) {} }, 5000);
+        setInterval(() => { try { this._checkFollowedNpcs(); } catch (e) {} try { this._visitorMailboxTick(); } catch (e) {} }, 5000);
     }
 
     // v4.0: Check for pending decisions, event choices, and NPC help requests
@@ -2793,6 +2793,65 @@ class RimTownApp {
     }
 
     // === Town Management ===
+    // ============================================================
+    // v5.56.0 雙城P1:跨鎮互訪信箱
+    // 兩鎮存檔各自獨立,交流靠 localStorage 信箱:出訪寫進對方鎮的
+    // 訪客信箱、返鄉見聞寫進原鎮的回鄉信箱,各鎮載入時收信
+    // ============================================================
+    _visitorMailboxKey(townId) { return 'rimtown_visitors_' + townId; }
+    _returnMailboxKey(townId) { return 'rimtown_returns_' + townId; }
+    _pushMailbox(key, entry) {
+        try { const arr = JSON.parse(localStorage.getItem(key) || '[]'); arr.push(entry); localStorage.setItem(key, JSON.stringify(arr.slice(-10))); } catch (e) {}
+    }
+    _visitorMailboxTick() {
+        const w = this.world; if (!w || !this.currentTownId) return;
+        // 掛鉤(冪等,換鎮/換世界後自動指向新世界)
+        w.onSendVisitor = (agentData, town, stayDays) => this._pushMailbox(this._visitorMailboxKey(town.id),
+            { agentData, stayDays, fromTownId: this.currentTownId, fromTownName: this._getCurrentTownName() });
+        w.onVisitorReturn = (meta) => this._pushMailbox(this._returnMailboxKey(meta.fromTownId),
+            { origId: meta.origId, origName: meta.origName, notes: meta.notes || [], visitedTownName: this._getCurrentTownName() });
+        // 其他城鎮清單(出訪目的地),60 秒更新一次
+        const now = Date.now();
+        if (!this._otherTownsAt || now - this._otherTownsAt > 60000) {
+            this._otherTownsAt = now;
+            let towns = [];
+            try {
+                if (this.auth.loggedIn && Array.isArray(this._cloudSaves)) towns = this._cloudSaves.map(s => ({ id: s.town_id, name: s.town_name }));
+                else towns = this._getTownList().map(tw => ({ id: tw.id, name: tw.name }));
+            } catch (e) {}
+            w.otherTowns = towns.filter(tw => tw.id && tw.name && tw.id !== this.currentTownId);
+        }
+        // 收訪客信箱:對方鎮派來的村民實體化
+        try {
+            const vk = this._visitorMailboxKey(this.currentTownId);
+            const varr = JSON.parse(localStorage.getItem(vk) || '[]');
+            if (varr.length) {
+                localStorage.removeItem(vk);
+                varr.forEach(e => {
+                    try {
+                        const ag = w.spawnVisitor(e);
+                        if (ag) this._showCornerNotice({ icon: '🚌', title: t('遠客來訪'), name: '', desc: `${e.agentData?.name}${t('（')}${e.fromTownName}${t('）來作客了，去打個招呼吧')}` });
+                    } catch (err) {}
+                });
+            }
+        } catch (e) {}
+        // 收回鄉信箱:本尊回來後把外地見聞灌進記憶(還在路上就留著下次收)
+        try {
+            const rk = this._returnMailboxKey(this.currentTownId);
+            const rarr = JSON.parse(localStorage.getItem(rk) || '[]');
+            if (rarr.length) {
+                const keep = [];
+                rarr.forEach(e => {
+                    const ag = w.agents[e.origId];
+                    if (!ag) { keep.push(e); return; }
+                    (e.notes || []).slice(0, 3).forEach(nt => ag.memory?.add?.(w.tickCount, w.clock.timeStr, 'travel', `${t('在')}${e.visitedTownName}${t('時：')}${nt}`, 6, []));
+                    w.logMessage('arrival', `${ag.name}${t('從')}${e.visitedTownName}${t('回來了，帶回一肚子見聞。')}`);
+                });
+                if (keep.length) localStorage.setItem(rk, JSON.stringify(keep)); else localStorage.removeItem(rk);
+            }
+        } catch (e) {}
+    }
+
     _getTownList() {
         try { return JSON.parse(localStorage.getItem('rimtown_town_list') || '[]'); } catch(e) { return []; }
     }
@@ -5843,6 +5902,8 @@ class RimTownApp {
             { key: 'threaten', icon: '😠', label: t('威脅'),   hint: t('讓對方畏懼,但信任與好感重挫'),   opener: t('你最好識相點,別逼我出手。') },
             { key: 'request',  icon: '📌', label: t('委託'),   hint: t('請對方幫忙(信任夠才會答應)'),   opener: t('有件事想拜託你幫個忙。') },
             { key: 'whisper',  icon: '🤫', label: t('耳語'),   hint: t('在他心裡種下一個念頭——他會當成自己的想法,影響之後的言行'), opener: '' },
+            // v5.56.0 雙城:有別的鎮才出現
+            ...(this.world?.otherTowns?.length ? [{ key: 'invite-town', icon: '🚌', label: t('邀去鄰鎮'), hint: t('邀請對方去另一個城鎮作客幾天(要夠熟才會答應)'), opener: t('要不要跟我去別的鎮走走？') }] : []),
         ];
     }
 
@@ -5869,6 +5930,21 @@ class RimTownApp {
         const lines = [];
         const fx = (txt, color) => lines.push({ txt, color });
         switch (key) {
+            // v5.56.0 雙城:邀請村民去另一個鎮作客
+            case 'invite-town': {
+                const towns = world.otherTowns || [];
+                const town = towns[Math.floor(Math.random() * towns.length)];
+                if (!town || (npc.agentId || '').startsWith('visit_')) { fx(t('現在沒辦法邀請這位出遠門'), '#c9a05c'); break; }
+                if ((rel.affinity || 0) < 20) {
+                    fx(`🚌 ${npc.name}${t('婉拒了：「跟你還沒熟到一起出遠門啦。」')}`, '#c9a05c');
+                    break;
+                }
+                world.sendVisitorTo(npc, town, 4);
+                fx(`🚌 ${npc.name}${t('答應去')}${town.name}${t('作客幾天，收拾行李出發了！')}`, '#5cc98f');
+                fx(t('切到那個鎮就能看到他作客的樣子；幾天後他會帶著見聞回來'), '#8fa8c9');
+                world.recordPlayerAction?.('invite-town', '', npc, null);
+                break;
+            }
             case 'comfort': {
                 npc.needs.social = Math.min(100, npc.needs.social + 15);
                 npc.moodModifier = (npc.moodModifier || 0) + 4;
