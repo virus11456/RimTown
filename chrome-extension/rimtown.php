@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.55.0
+ * Version: 5.56.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.55.0');
+define('RIMTOWN_VERSION', '5.56.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.56.0',
+            'date'    => '2026-08-21',
+            'changes' => array(
+                '🚌 雙城第二波(村民跨鎮互訪):有兩個鎮之後,村民會自動互訪——帶著完整人格與記憶到對方鎮作客幾天(名字標示原鎮),跟當地人聊天/八卦/動心,期滿返鄉並把外地見聞帶回記憶,流入反思與對話',
+                '💬 新交談選項「🚌 邀去鄰鎮」:好感夠(20+)就能邀請村民去另一個鎮作客,切過去就能看到他作客的樣子',
+                '📬 兩鎮交流靠「信箱」機制:出訪/返鄉見聞在切鎮或遊玩中自動送達;訪客名單隨存檔保存',
+            ),
+        ),
         array(
             'version' => '5.55.0',
             'date'    => '2026-08-21',

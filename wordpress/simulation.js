@@ -3979,6 +3979,8 @@ class EventSystem {
         this._sendAgentTravelling(world, traveller, pickRandom(DEPARTURE_REASONS), randInt(3,7));
     }
     _sendAgentTravelling(world, agent, reason, travelDays) {
+        // v5.56.0 外鎮訪客不會被抽去「旅行」——他們的家在別的鎮,期滿自然返鄉
+        if (agent.agentId && agent.agentId.startsWith('visit_')) return;
         const data = { agentId:agent.agentId, name:agent.name, age:agent.age, jobKey:agent.job?.key,
             traits:agent.personality.traits, values:agent.personality.values, background:agent.personality.background,
             homeLocation:agent.homeLocation, gender:agent.gender,
@@ -6520,6 +6522,7 @@ class World {
             try { this._processFeuds(); } catch (e) { console.warn('[RimTown] feud error:', e); }
             // v5.49.0 戲劇導演:小鎮太平靜時在後台輕推一把,確保戲一直有得看
             try { this._dramaDirector(); } catch (e) { console.warn('[RimTown] director error:', e); }
+            try { this._visitorDaily(); } catch (e) { console.warn('[RimTown] visitor error:', e); } // v5.56.0 跨鎮互訪
             // Daily news (before economy/events so modifiers apply)
             this.news.dailyUpdate(this);
             // Daily economy
@@ -6594,6 +6597,77 @@ class World {
         this.conversationEngine.tickPlanQueue(this).catch(e => console.warn('[RimTown] plan queue error:', e));
     }
     // v5.45.0 蝴蝶效應:記下你的社交行動與當下的關係快照,隔天對照「發酵了什麼」
+    // ============================================================
+    // v5.56.0 雙城P1:村民跨鎮互訪
+    // 兩鎮存檔獨立,交流靠「信箱」:出訪時把完整人格打包寫進對方鎮的
+    // 訪客信箱(app 層負責讀寫 localStorage),玩家切到那個鎮時實體化;
+    // 期滿返鄉,見聞寫進回鄉信箱,原鎮的本尊回來後收到這些記憶
+    // ============================================================
+    _absDay() {
+        const si = ['春季','夏季','秋季','冬季'].indexOf(this.clock.season);
+        return ((this.clock.year - 1) * 4 + Math.max(0, si)) * 15 + this.clock.day;
+    }
+    _visitorDaily() {
+        this.visitors = this.visitors || {};
+        const today = this._absDay();
+        // 1) 到期訪客返鄉,帶走在本鎮最重要的三則見聞
+        for (const [aid, meta] of Object.entries(this.visitors)) {
+            const ag = this.agents[aid];
+            if (!ag) { delete this.visitors[aid]; continue; }
+            if (today >= meta.expireAbsDay) {
+                const notes = (ag.memory?.entries || []).filter(m => m.tick >= meta.arriveTick)
+                    .sort((a, b) => (b.importance || 0) - (a.importance || 0)).slice(0, 3).map(m => m.content);
+                this.onVisitorReturn?.({ ...meta, notes });
+                this.logMessage('departure', `${ag.name}${t('搭上回程的車，返回')}${meta.fromTownName}${t('了。')}`);
+                Object.values(this.agents).forEach(o => { if (o.agentId !== aid && !o.isPlayer) o.memory?.add?.(this.tickCount, this.clock.timeStr, 'departure', `${ag.name}${t('回家鄉去了，說好還會再來。')}`, 4, [ag.name]); });
+                delete this.visitors[aid];
+                delete this.agents[aid];
+            }
+        }
+        // 2) 全自動出訪:有別的鎮就派人去作客(同時最多 2 人在外)
+        if (!Array.isArray(this.otherTowns) || !this.otherTowns.length) return;
+        const away = (this.events._travellingAgents || []).filter(tr => tr.visitTownId).length;
+        if (away >= 2 || Math.random() > 0.25) return;
+        const target = pickRandom(this.otherTowns);
+        const cands = Object.values(this.agents).filter(a => !a.isPlayer && !a.isDead
+            && a.job?.key !== 'mayor' && !a.agentId.startsWith('visit_') && (a.mood || 50) > 40);
+        if (!cands.length) return;
+        this.sendVisitorTo(pickRandom(cands), target, randInt(3, 5));
+    }
+    sendVisitorTo(agent, town, stayDays = 4) {
+        if (!agent || agent.isPlayer || agent.agentId.startsWith('visit_') || !town?.id) return false;
+        const data = { agentId: agent.agentId, name: agent.name, age: agent.age, jobKey: agent.job?.key,
+            traits: agent.personality.traits, values: agent.personality.values, background: agent.personality.background,
+            homeLocation: agent.homeLocation, gender: agent.gender,
+            skills: agent.skills.toDict(), relationships: agent.relationships.toDict(),
+            memories: agent.memory.toDict(), mood: agent.mood, moodModifier: agent.moodModifier || 0 };
+        this.onSendVisitor?.(data, town, stayDays);
+        this.events._sendAgentTravelling(this, agent, `${t('去')}${town.name}${t('作客')}`, stayDays + 2);
+        const tr = this.events._travellingAgents[this.events._travellingAgents.length - 1];
+        if (tr) tr.visitTownId = town.id;
+        return true;
+    }
+    spawnVisitor(entry) {
+        const d = entry?.agentData || {};
+        if (!d.agentId || !d.name) return null;
+        const vid = `visit_${entry.fromTownId}_${d.agentId}`;
+        if (this.agents[vid]) return null;
+        const personality = new Personality(d.traits || [], d.background || '', d.values || []);
+        const agent = new Agent(vid, `${d.name}（${entry.fromTownName}）`, d.age || 30, personality, null, 'residential_north', d.gender);
+        agent.mood = d.mood ?? 60;
+        if (Array.isArray(d.memories)) d.memories.forEach(m => agent.memory.add(m.tick, m.time, m.category, m.content ?? '', m.importance, m.related_agents || []));
+        agent.currently = t('從') + entry.fromTownName + t('來作客的旅人');
+        this.addAgent(agent);
+        this.visitors = this.visitors || {};
+        this.visitors[vid] = { fromTownId: entry.fromTownId, fromTownName: entry.fromTownName,
+            origId: d.agentId, origName: d.name, arriveTick: this.tickCount,
+            expireAbsDay: this._absDay() + (entry.stayDays || 4) };
+        this.logMessage('arrival', `🚌 ${d.name}${t('（')}${entry.fromTownName}${t('）來到鎮上作客，會住上幾天。')}`);
+        Object.values(this.agents).forEach(o => { if (o.agentId !== vid && !o.isPlayer) o.memory?.add?.(this.tickCount, this.clock.timeStr, 'arrival', `${entry.fromTownName}${t('來的')}${d.name}${t('到鎮上作客了，聽說那裡的事真新鮮。')}`, 5, [agent.name]); });
+        this.events.conversationTopics.push(`${entry.fromTownName}${t('來的訪客')}${d.name}`);
+        return agent;
+    }
+
     recordPlayerAction(type, text, npc, target) {
         try {
             this.playerActions = this.playerActions || [];
@@ -7748,6 +7822,7 @@ class World {
             mediations: JSON.parse(JSON.stringify(this.mediations || {})), // v5.42.0 和解進度
             workPolicy: { ...(this.workPolicy || {}) }, // v5.51.0 勞動力排班
             townTheme: this.townTheme || 'frontier', // v5.55.0 主題城鎮
+            visitors: JSON.parse(JSON.stringify(this.visitors || {})), // v5.56.0 在鎮訪客名單
 
             playerActions: (this.playerActions || []).slice(-60).map(a => ({ ...a })), // v5.45.0 蝴蝶效應
             dailyEcho: [...(this.dailyEcho || [])], // v5.45.0 昨日回響
@@ -7891,6 +7966,7 @@ class World {
             this.mediations = data.mediations || {}; // v5.42.0
             this.workPolicy = data.workPolicy || {}; // v5.51.0
             this.townTheme = data.townTheme || 'frontier'; // v5.55.0 主題城鎮
+            this.visitors = data.visitors || {}; // v5.56.0 在鎮訪客
             this._chronicleChatIdx = (this.agents['player']?.chatHistory || []).length; // v5.43.0 讀檔後從當下開始記
             this.playerActions = data.playerActions || []; // v5.45.0
             this.dailyEcho = data.dailyEcho || []; // v5.45.0
