@@ -2232,6 +2232,10 @@ const I18N = (() => {
         '結婚了！': ' got married!',
         '開始交往！': ' started dating!',
 
+        // ── v5.54.0 暫停回饋 ──
+        '遊戲已暫停': 'Game paused',
+        '遊戲已繼續': 'Game resumed',
+
         // ── v5.53.0 經濟試玩回饋修正 ──
         '超過糧倉容量，每日腐壞5%': 'over granary cap — 5% spoils daily',
         '預估日產': 'est. daily',

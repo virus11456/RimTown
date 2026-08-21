@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.53.2.zip` from Releases
+1. Download `rimtown-v5.54.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,15 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.54.0 (2026-08-21)
+
+**暫停可靠性＋半夜赴約修正＋章節爬坡上限**
+
+- ⏸️ 暫停徹底可靠：按下立即顯示「⏸ 已暫停／▶ 已繼續」角落回饋；全螢幕卡片開著時按的暫停會在關卡後生效（不再被卡片還原邏輯蓋掉）；城鎮列表關閉時還原你原本的暫停狀態（不再無條件恢復播放）
+- 🌙 半夜不再全鎮站廣場：村民白天約好的聚會（\_pendingHangout）若倒數到睡眠時段，直接取消不赴約（夜貓子還醒著、不受影響）——這是春祭夜全鎮被拉去村莊綠地站整晚的根因
+- 🛏️ 睡眠保險絲：睡著卻長時間在屋外的村民（不論還在走路或卡住）累積一段時間後一律強制安置進屋，與 v5.53.1 的安置機制形成雙保險
+- 📖 章節節奏修正（早期爬坡上限）：繁榮度是「現狀快照」，新鎮第一晚就會反映 ~40 的底子、第 1 章只活一天；現在建鎮前 5 天繁榮度封頂在 天數×8（8/16/24/32/40），第 6 天起解封——「先和村民相處」的第一章真的有 2-3 天可玩；舊存檔視為老鎮、完全不受影響（已用自動化測試驗證兩者）
 
 ### v5.53.2 (2026-08-20)
 
