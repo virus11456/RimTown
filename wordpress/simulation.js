@@ -3675,6 +3675,26 @@ const TERRAIN_TYPES = [
     {name:'coastal',nature_bonus:['lake','hill'],nature_remove:['forest']},
 ];
 
+// v5.55.0 主題城鎮:每個主題有自己的地點皮膚、開局物資性格與專屬名冊
+// frontier = 邊境鎮(現況,一切照舊);harbor = 海風鎮(漁村:討海文化、鹽場、燈塔)
+const TOWN_THEMES = {
+    frontier: { key: 'frontier' },
+    harbor: {
+        key: 'harbor',
+        terrain: 'coastal',
+        locationNames: {
+            town_hall: t('港務所'), tavern: t('海味居'), clinic: t('海風診療所'), workshop: t('修船工房'),
+            farm: t('蚵田菜畦'), quarry: t('鹽場'), general_store: t('南北雜貨行'), library: t('燈塔書房'),
+            guardpost: t('望潮哨'), chapel: t('海神小廟'), park: t('曬網場'), well: t('淡水井'),
+            town_square: t('碼頭廣場'),
+            residential_north: t('崖上人家'), residential_south: t('沙灘木屋'), residential_east: t('漁港街'),
+            forest: t('防風林'), river: t('外海碼頭'), hill: t('燈塔崖'), meadow: t('鹽灘'), cave: t('海蝕洞'), lake: t('潟湖'),
+        },
+        // 漁獲豐、帆布多;無林缺木、草藥少——與邊境鎮天然互補,為跨鎮貿易鋪路
+        stockpile: { food: 320, cloth: 90, wood: 45, herbs: 10 },
+    },
+};
+
 class TownMap {
     constructor(seed = null) {
         this.locations = {};
@@ -3690,14 +3710,18 @@ class TownMap {
     }
 }
 
-function generateRandomTown(seed = null) {
+function generateRandomTown(seed = null, themeKey = 'frontier') {
     const rng = new SeededRandom(seed);
     const town = new TownMap(seed ?? rng.nextInt(0, 999999));
-    const terrain = TERRAIN_TYPES[rng.nextInt(0, TERRAIN_TYPES.length-1)];
+    const theme = TOWN_THEMES[themeKey] || TOWN_THEMES.frontier;
+    // v5.55.0 主題地形:海風鎮固定海岸地形
+    const terrain = theme.terrain
+        ? (TERRAIN_TYPES.find(tt => tt.name === theme.terrain) || TERRAIN_TYPES[rng.nextInt(0, TERRAIN_TYPES.length-1)])
+        : TERRAIN_TYPES[rng.nextInt(0, TERRAIN_TYPES.length-1)];
     town.terrain = terrain.name;
     const allLocs = [];
     const makeLoc = ([id, names, desc, cat, capRange]) => ({
-        id, name: names[rng.nextInt(0,names.length-1)], description: desc,
+        id, name: theme.locationNames?.[id] || names[rng.nextInt(0,names.length-1)], description: desc,
         x:0, y:0, category: cat, capacity: rng.nextInt(capRange[0], capRange[1]),
     });
 
@@ -6997,9 +7021,14 @@ class World {
         this.weather = new WeatherSystem();
         this.council = new CouncilSystem();
         this.conversationEngine = new ConversationEngine(this.conversationEngine?.llm);
-        this.townMap = generateRandomTown(seed);
+        // v5.55.0 主題城鎮:地圖/物資/名冊都跟著主題走
+        this.townTheme = this.townTheme || 'frontier';
+        const theme = TOWN_THEMES[this.townTheme] || TOWN_THEMES.frontier;
+        this.townMap = generateRandomTown(seed, this.townTheme);
+        if (theme.stockpile) Object.assign(this.stockpile.resources, theme.stockpile);
         // v5.27.0 肉鴿:隨機開局模式(rosterMode='random')抽全新村民,否則用劇本卡司
-        if (this.rosterMode === 'random') this._loadRandomResidents(15);
+        if (this.townTheme === 'harbor') this._loadHarborResidents();
+        else if (this.rosterMode === 'random') this._loadRandomResidents(15);
         else this._loadDefaultResidents();
         const player = new PlayerAgent();
         this.addAgent(player);
@@ -7320,6 +7349,51 @@ class World {
             this.addAgent(agent);
         });
         this._seedRelationships(); // v5.5.0 開局關係網,讓小鎮一開始就有戲
+    }
+
+    // v5.55.0 海風鎮名冊:漁村暱稱式人名、討海人的早起文化、自帶戲劇鉤子
+    _loadHarborResidents() {
+        const residents = [
+            {id:'hb_haibo',name:t('海伯'),age:58,gender:'male',job:'mayor',home:'residential_north',traits:['charismatic','stoic','early_bird'],values:[t('社群'),t('和平')],background:t('跑了四十年船的老船長，退下來當港務長。嗓門大心腸軟，全鎮的船都經過他的手。年輕時和廟祝雲姨有過一段沒說完的故事。')},
+            {id:'hb_achao',name:t('阿潮'),age:26,gender:'male',job:'farmer',home:'residential_east',traits:['early_bird','romantic','hardworking'],values:[t('自然'),t('家庭')],background:t('天不亮就出海的討海青年，蚵田和漁獲都靠他。曬得黝黑，笑起來一口白牙。每天收工都繞去海味居，只為看掌杓的小鷗一眼。')},
+            {id:'hb_xiaoou',name:t('小鷗'),age:22,gender:'female',job:'cook',home:'residential_south',traits:['optimist','early_bird','charismatic'],values:[t('社群'),t('冒險')],background:t('海味居的掌杓姑娘，一手海鮮料理讓過路商人特地繞港。開朗愛笑，渾然不覺兩個男人都在偷偷看她。')},
+            {id:'hb_langshu',name:t('浪叔'),age:49,gender:'male',job:'trader',home:'residential_east',traits:['gossip','charismatic','glutton'],values:[t('財富'),t('社群')],background:t('跑船帶貨的老江湖，南北雜貨行的貨都是他捎回來的。嘴上沒把門，外地的八卦比報紙還快。和補帆的秀姑是老夫老妻。')},
+            {id:'hb_xiugu',name:t('秀姑'),age:45,gender:'female',job:'tailor',home:'residential_east',traits:['kind','gossip','perfectionist'],values:[t('家庭'),t('藝術')],background:t('補了三十年帆的巧手，鎮上人的衣裳也全是她做的。和浪叔鬥了半輩子嘴，針線一拿起來誰都不理。')},
+            {id:'hb_shishu',name:t('石叔'),age:52,gender:'male',job:'miner',home:'residential_south',traits:['stoic','pessimist','hardworking'],values:[t('財富'),t('自由')],background:t('鹽場的老鹽工，沉默得像塊礁石。二十年前一場船難後，就和燈塔的燈爺再沒說過一句話——沒人知道那晚發生了什麼。')},
+            {id:'hb_dengye',name:t('燈爺'),age:60,gender:'male',job:'researcher',home:'residential_north',traits:['night_owl','stoic','creative'],values:[t('知識'),t('和平')],background:t('守了半輩子燈塔的老人，夜裡點燈、白天睡覺，和全鎮作息相反。書房堆滿航海日誌。提到石叔，他只會把燈芯撥得更亮。')},
+            {id:'hb_axi',name:t('阿汐'),age:30,gender:'female',job:'doctor',home:'residential_north',traits:['kind','perfectionist','early_bird'],values:[t('知識'),t('社群')],background:t('海女出身的醫師，潛得比誰都深，也把診療所打理得一塵不染。誰家被海膽扎了、被日頭曬昏了，都是她救的。和小鷗是無話不談的手帕交。')},
+            {id:'hb_amao',name:t('阿錨'),age:33,gender:'male',job:'blacksmith',home:'residential_south',traits:['hardworking','shy','stoic'],values:[t('藝術'),t('家庭')],background:t('修船工房的鐵匠，錨鏈和船釘都出自他的爐子。話少手巧，打鐵的節奏永遠穩。只有小鷗送飯來的時候，鎚子才會敲歪。')},
+            {id:'hb_yunyi',name:t('雲姨'),age:47,gender:'female',job:'priest',home:'residential_north',traits:['kind','optimist','romantic'],values:[t('和平'),t('社群')],background:t('海神小廟的廟祝，出海的人都來求她一炷平安香。溫柔健談，只有海伯經過廟前時，她會突然想不起下一句經文。')},
+            {id:'hb_aduo',name:t('阿舵'),age:36,gender:'male',job:'guard',home:'residential_south',traits:['abrasive','jealous','hardworking'],values:[t('權力'),t('家庭')],background:t('望潮哨的哨長，颱風天全鎮聽他的哨音行動。責任感重但佔有慾也重，看誰跟阿汐多說兩句話都不順眼。')},
+            {id:'hb_muxia',name:t('木蝦'),age:28,gender:'male',job:'carpenter',home:'residential_south',traits:['lazy','charismatic','gossip'],values:[t('自由'),t('冒險')],background:t('船木匠，手藝一流但三天打魚兩天曬網——字面意義上的。最愛躺在曬網場講他「差點抓到人魚」的故事。')},
+            {id:'hb_shanshan',name:t('珊珊'),age:24,gender:'female',job:'researcher',home:'residential_east',traits:['creative','neurotic','night_owl'],values:[t('知識'),t('自然')],background:t('研究潮汐與洋流的年輕學者，筆記本永遠算不完。緊張起來會語無倫次，只有看海的時候是平靜的。')},
+            {id:'hb_afu',name:t('阿浮'),age:21,gender:'male',job:'farmer',home:'residential_east',traits:['shy','early_bird','kind'],values:[t('自然'),t('家庭')],background:t('蚵田的少年，話少得像蚵殼。每天默默把最好的海菜留在珊珊的窗台上，從來不敢署名。')},
+            {id:'hb_haima',name:t('海嬤'),age:66,gender:'female',job:'cook',home:'residential_south',traits:['kind','gossip','optimist'],values:[t('家庭'),t('社群')],background:t('鎮上最老的海女退休後在海味居幫廚，醃的魚乾是傳家手藝。誰家的曾祖父年輕時暗戀過誰，她都記得。')},
+        ];
+        residents.forEach(r => {
+            const personality = new Personality(r.traits, r.background, r.values);
+            const job = r.job ? new Job(r.job) : null;
+            const agent = new Agent(r.id, r.name, r.age, personality, job, r.home, r.gender);
+            this.addAgent(agent);
+        });
+        // 開局關係網:老夫妻/世仇/三角/無名暗戀/手帕交/未完的舊情
+        const A = this.agents;
+        const set = (from, to, { aff = 0, rom = 0, trust = 0, status = null } = {}) => {
+            const f = A[from], t2 = A[to]; if (!f || !t2) return;
+            const r = f.relationships.getOrCreate(t2.agentId, t2.name);
+            r.affinity = aff; r.romanticInterest = rom; r.trust = trust;
+            if (status) { r.status = status; r.statusSince = 0; }
+            r.interactionCount = Math.max(r.interactionCount, 6); r.lastInteractionTick = 0;
+        };
+        const pair = (x, y, ox, oy) => { set(x, y, ox); set(y, x, oy); };
+        pair('hb_langshu', 'hb_xiugu', { aff: 66, rom: 48, trust: 60, status: 'married' }, { aff: 62, rom: 45, trust: 58, status: 'married' }); // 鬥嘴老夫妻
+        pair('hb_shishu', 'hb_dengye', { aff: -46, rom: 0, trust: -20 }, { aff: -44, rom: 0, trust: -18 }); // 船難舊怨
+        pair('hb_achao', 'hb_xiaoou', { aff: 40, rom: 46 }, { aff: 28, rom: 10 }); // 三角:阿潮→小鷗
+        pair('hb_amao', 'hb_xiaoou', { aff: 36, rom: 42 }, { aff: 24, rom: 8 });  // 三角:阿錨→小鷗
+        pair('hb_afu', 'hb_shanshan', { aff: 30, rom: 44 }, { aff: 12, rom: 4 }); // 無名的海菜
+        pair('hb_axi', 'hb_xiaoou', { aff: 58, rom: 0, trust: 52 }, { aff: 56, rom: 0, trust: 50 }); // 手帕交
+        pair('hb_yunyi', 'hb_haibo', { aff: 34, rom: 26, status: 'ex' }, { aff: 30, rom: 22, status: 'ex' }); // 未完的舊情
+        pair('hb_aduo', 'hb_axi', { aff: 26, rom: 34 }, { aff: 18, rom: 6 }); // 哨長的佔有慾
     }
 
     // v5.27.0 肉鴿:隨機開局 —— 每一局抽一批全新村民 + 隨機愛恨關係網
@@ -7673,6 +7747,7 @@ class World {
             feudCooldown: { ...(this._feudCooldown || {}) }, // v5.42.0 對嗆冷卻
             mediations: JSON.parse(JSON.stringify(this.mediations || {})), // v5.42.0 和解進度
             workPolicy: { ...(this.workPolicy || {}) }, // v5.51.0 勞動力排班
+            townTheme: this.townTheme || 'frontier', // v5.55.0 主題城鎮
 
             playerActions: (this.playerActions || []).slice(-60).map(a => ({ ...a })), // v5.45.0 蝴蝶效應
             dailyEcho: [...(this.dailyEcho || [])], // v5.45.0 昨日回響
@@ -7815,6 +7890,7 @@ class World {
             this._feudCooldown = data.feudCooldown || {}; // v5.42.0
             this.mediations = data.mediations || {}; // v5.42.0
             this.workPolicy = data.workPolicy || {}; // v5.51.0
+            this.townTheme = data.townTheme || 'frontier'; // v5.55.0 主題城鎮
             this._chronicleChatIdx = (this.agents['player']?.chatHistory || []).length; // v5.43.0 讀檔後從當下開始記
             this.playerActions = data.playerActions || []; // v5.45.0
             this.dailyEcho = data.dailyEcho || []; // v5.45.0

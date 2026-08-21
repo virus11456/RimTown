@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.54.1
+ * Version: 5.55.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.54.1');
+define('RIMTOWN_VERSION', '5.55.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.55.0',
+            'date'    => '2026-08-21',
+            'changes' => array(
+                '🌊 雙城第一波:全新主題城鎮「海風鎮」——海岸漁村,15 位全新村民(海伯/阿潮/小鷗/燈爺…)各有背景與開局恩怨(三角戀/船難世仇/未完舊情),討海人的早起文化,海味居/鹽場/燈塔書房等專屬地名,漁獲豐但缺木材的互補經濟',
+                '📖 劇情解鎖:繁榮 20(第二章)時「碼頭來信」通知,之後城鎮列表建立新城鎮可選海風鎮;主題隨存檔保存,舊存檔不受影響',
+                '🌙 修復月亮動畫:月相陰影裁切進月盤(不再把黑盤畫到天空上),新月夜保留一彎月牙——不再出現「黑洞套白圈」',
+            ),
+        ),
         array(
             'version' => '5.54.1',
             'date'    => '2026-08-21',

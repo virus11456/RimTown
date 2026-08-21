@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.54.1.zip` from Releases
+1. Download `rimtown-v5.55.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,17 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.55.0 (2026-08-21)
+
+**雙城第一波（P0）——主題城鎮系統＋海風鎮**
+
+- 🌊 全新主題城鎮「海風鎮」：海岸漁村，15 位全新手寫村民（港務長海伯、討海青年阿潮、海味居掌杓小鷗、燈塔守燈爺、海女醫師阿汐…），各有背景與開局恩怨——雙暗戀三角（阿潮與阿錨都心繫小鷗）、二十年船難世仇（石叔×燈爺）、未完的舊情（雲姨×海伯）、無名的海菜暗戀（阿浮→珊珊）
+- 🌅 生活習慣：討海人的早起文化（早起性格佔比高、燈塔守夜貓反差）；地點皮膚：海味居／鹽場／外海碼頭／燈塔書房／海神小廟／曬網場…；固定海岸地形
+- ⚖️ 互補經濟：漁獲豐（食物 320）、帆布多（布料 90）、無林缺木（木材 45）、草藥稀少——與邊境鎮天然互補，為 P3 跨鎮貿易鋪路
+- 📖 劇情解鎖：繁榮 20（第二章）觸發「碼頭來信」角落通知，之後「城鎮列表→建立新城鎮」可選海風鎮；主題隨存檔序列化，舊存檔一律視為邊境鎮不受影響
+- 🌙 修復月亮動畫：月相陰影裁切進月盤、新月夜保留一彎月牙、描邊移到陰影之下——不再出現「黑洞套白圈」
+- 12 項自動化測試全過（名冊／地名／地形／物資／關係種子／序列化／邊境鎮不受影響）；P1 村民跨鎮互訪、P2 馬車過場接續
 
 ### v5.54.1 (2026-08-21)
 

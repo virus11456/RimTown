@@ -4631,26 +4631,34 @@ class PixelTileMap {
         ctx.arc(mx - 1, my + 5, 2.5, 0, Math.PI * 2);
         ctx.fill();
 
-        // v5.23.0 月相變化:依遊戲天數盈虧(約 16 天一輪),用位移陰影圓塑造 新月→上弦→滿月→下弦
+        // 柔和外緣高光(畫在月相陰影之前,暗面那側不會浮出白圈)
         const R = 14;
-        const cycle = 16;
-        const t = (((this.dayCount || 0) % cycle) + cycle) % cycle / cycle; // 0(新月)..0.5(滿月)..1
-        let shadowDX;
-        if (t < 0.5) shadowDX = (t / 0.5) * 2 * R;        // 上弦:陰影自中心右移,左緣先亮
-        else shadowDX = -((1 - t) / 0.5) * 2 * R;         // 下弦:陰影自左方回歸,右緣後暗
-        if (Math.abs(shadowDX) < 2 * R - 0.5) {           // 滿月(|dx|≈2R)時無陰影
-            ctx.fillStyle = `rgba(10, 14, 42, ${(moonAlpha * 0.92).toFixed(2)})`;
-            ctx.beginPath();
-            ctx.arc(mx + shadowDX, my, R + 0.5, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        // 柔和外緣高光(整圈,適用所有月相)
         ctx.strokeStyle = `rgba(255, 255, 255, ${(moonAlpha * 0.28).toFixed(2)})`;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.arc(mx, my, R, 0, Math.PI * 2);
         ctx.stroke();
+
+        // v5.23.0 月相變化,v5.55.0 修正:陰影圓裁切進月盤(不再把黑盤畫到天空上),
+        // 且永遠保留一彎月牙——新月夜不會出現「黑洞套白圈」的日蝕怪圖
+        const cycle = 16;
+        const t = (((this.dayCount || 0) % cycle) + cycle) % cycle / cycle; // 0(新月)..0.5(滿月)..1
+        let shadowDX;
+        if (t < 0.5) shadowDX = (t / 0.5) * 2 * R;        // 上弦:陰影自中心右移,左緣先亮
+        else shadowDX = -((1 - t) / 0.5) * 2 * R;         // 下弦:陰影自左方回歸,右緣後暗
+        const minDX = 6; // 最細也留一彎月牙
+        if (Math.abs(shadowDX) < minDX) shadowDX = (t < 0.5 ? minDX : -minDX);
+        if (Math.abs(shadowDX) < 2 * R - 0.5) {           // 滿月(|dx|≈2R)時無陰影
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(mx, my, R, 0, Math.PI * 2);
+            ctx.clip();
+            ctx.fillStyle = `rgba(10, 14, 42, ${(moonAlpha * 0.92).toFixed(2)})`;
+            ctx.beginPath();
+            ctx.arc(mx + shadowDX, my, R + 0.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
     }
 
     _renderNightVignette(ctx, w, h, nightAmount) {
