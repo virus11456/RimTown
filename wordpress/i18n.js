@@ -2232,6 +2232,12 @@ const I18N = (() => {
         '結婚了！': ' got married!',
         '開始交往！': ' started dating!',
 
+        // ── v5.55.0 主題城鎮:海風鎮 ──
+        '碼頭來信': 'A letter from the docks',
+        '商隊捎來消息:沿著海岸走兩天,有個叫「海風鎮」的漁村——討海人的早起文化、鹽場與燈塔。到「城鎮列表→建立新城鎮」就能前往開拓': 'A caravan brings word: two days down the coast lies a fishing village called Seabreeze — early-rising fisherfolk, salt flats and a lighthouse. Open "Towns → New Town" to settle it',
+        '要建立哪種城鎮？\n\n【確定】🌊 海風鎮——海岸漁村：討海人的早起文化、鹽場與燈塔、全新的居民與恩怨\n【取消】🏔️ 邊境鎮——經典開局': 'Which town would you like to found?\n\n[OK] 🌊 Seabreeze — a coastal fishing village: early-rising fisherfolk, salt flats, a lighthouse, and an all-new cast\n[Cancel] 🏔️ Frontier Town — the classic start',
+        '海風鎮 ': 'Seabreeze ',
+
         // ── v5.54.1 工廠地基+自動上工 ──
         '（村民明早會自動上工）': '(villagers will report for work tomorrow)',
         '主動到': ' showed up to work at ',

@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.54.1
-const RIMTOWN_APP_VERSION = '5.54.1';
+// RimTown - Frontend App (WordPress Plugin) v5.55.0
+const RIMTOWN_APP_VERSION = '5.55.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -2219,6 +2219,12 @@ class RimTownApp {
             }
         }
 
+        // v5.55.0 海風鎮劇情解鎖:第二章(繁榮 20)時碼頭捎來消息,城鎮列表可建立漁村主題
+        if ((this.state?.prosperity?.prosperity || 0) >= 20 && localStorage.getItem('rimtown_harbor_unlocked') !== '1') {
+            localStorage.setItem('rimtown_harbor_unlocked', '1');
+            this._showCornerNotice({ icon: '🌊', title: t('碼頭來信'), name: '', desc: t('商隊捎來消息:沿著海岸走兩天,有個叫「海風鎮」的漁村——討海人的早起文化、鹽場與燈塔。到「城鎮列表→建立新城鎮」就能前往開拓') });
+        }
+
         // Multi-town
         if (this._getTownList().length >= 3) this._unlockAchievement('multi_town');
 
@@ -2995,8 +3001,14 @@ class RimTownApp {
         const defaultSuffix = this.auth.loggedIn
             ? ((this._cloudSaves?.length || 0) + 1)
             : (this._getTownList().length + 1);
-        const name = prompt(t('為新城鎮命名：'), t('邊境鎮 ') + defaultSuffix);
+        // v5.55.0 主題選擇:海風鎮經劇情解鎖(繁榮 20 碼頭來信)後可建立
+        let theme = 'frontier';
+        if (localStorage.getItem('rimtown_harbor_unlocked') === '1') {
+            theme = confirm(t('要建立哪種城鎮？\n\n【確定】🌊 海風鎮——海岸漁村：討海人的早起文化、鹽場與燈塔、全新的居民與恩怨\n【取消】🏔️ 邊境鎮——經典開局')) ? 'harbor' : 'frontier';
+        }
+        const name = prompt(t('為新城鎮命名：'), (theme === 'harbor' ? t('海風鎮 ') : t('邊境鎮 ')) + defaultSuffix);
         if (!name) return;
+        this.world.townTheme = theme;
         if (this.auth.loggedIn) {
             // When logged in, save current town to cloud before creating new one
             if (this.currentTownId) await this.saveGame();
