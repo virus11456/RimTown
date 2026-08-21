@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.58.0.zip` from Releases
+1. Download `rimtown-v5.58.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,10 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.58.1 (2026-08-22)
+
+- 🚌 修復「點了馬車卻沒真的前往」：登入狀態下切換城鎮只查雲端存檔，而自動生成的海風鎮（及訪客時期建立的舊鎮）存在本地 → 過場放完人還在原地、無任何提示。現在雲端找不到會退回本地存檔（載入成功後自動補存雲端，跨裝置可見）；仍失敗會明確跳出「找不到該城鎮的存檔」，馬車過場也會驗證真的抵達才顯示抵達通知
 
 ### v5.58.0 (2026-08-22)
 
