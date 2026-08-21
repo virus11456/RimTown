@@ -461,6 +461,14 @@ class PixelTileMap {
             if (this.onAgentClick) this.onAgentClick(closestAgent);
             return;
         }
+        // v5.57.0 馬車站點擊:開啟跨鎮旅行對話
+        if (this.coachStation && this.onCoachClick) {
+            const cs = this.coachStation;
+            if (px >= cs.x * TILE && px < (cs.x + cs.w) * TILE && py >= cs.y * TILE && py < (cs.y + cs.h) * TILE) {
+                this.onCoachClick();
+                return;
+            }
+        }
         // Check location zones — first try exact zone hit, then find nearest
         if (this.onClick) {
             // Exact zone click — prioritize smaller sub-zones (individual houses) over parent zones
@@ -1466,6 +1474,8 @@ class PixelTileMap {
         this.natureZones = {};
         this.labelPositions = {};
         this._factoryPlots = null; // v5.54.1 重新產圖時重算工廠地基
+        // v5.57.0 馬車站:東側大路盡頭,通往別的城鎮
+        this.coachStation = { x: this.cols - 7, y: 18, w: 5, h: 5 };
 
         // Add grass variation
         for (let y = 0; y < this.rows; y++) {
@@ -2392,6 +2402,43 @@ class PixelTileMap {
         ctx.fillStyle = readyCount > 0 ? '#ffd700' : growingCount > 0 ? '#90ee90' : '#b0b0b0';
         const statusText = readyCount > 0 ? `${t('農場')} ${readyCount}${t('塊可收')}` : growingCount > 0 ? `${t('農場')} ${growingCount}${t('塊生長中')}` : `${t('農場')} ${totalPlots}${t('塊')}`;
         ctx.fillText(statusText, labelX, labelY);
+    }
+
+    // v5.57.0 馬車站:東側大路盡頭的小站——木平台+馬車+站牌,點擊開啟跨鎮旅行
+    _drawCoachStation(ctx) {
+        const cs = this.coachStation;
+        if (!cs) return;
+        const fx = cs.x * TILE, fy = cs.y * TILE;
+        const pw = cs.w * TILE, ph = cs.h * TILE;
+        // 木平台
+        ctx.fillStyle = 'rgba(150,115,75,0.85)';
+        ctx.fillRect(fx + 4, fy + ph - 26, pw - 8, 22);
+        ctx.strokeStyle = 'rgba(90,65,40,0.9)';
+        ctx.strokeRect(fx + 4, fy + ph - 26, pw - 8, 22);
+        // 遮雨棚
+        ctx.fillStyle = '#8a4a3a';
+        ctx.fillRect(fx + 6, fy + 8, pw - 30, 8);
+        ctx.fillStyle = '#6a3a2c';
+        ctx.fillRect(fx + 8, fy + 16, 3, ph - 44);
+        ctx.fillRect(fx + pw - 30, fy + 16, 3, ph - 44);
+        // 馬車(車廂+輪+馬,輕微起伏)
+        const bob = Math.sin((this.animFrame || 0) / 20) * 1.2;
+        ctx.fillStyle = '#7a5236';
+        ctx.fillRect(fx + pw - 34, fy + ph - 40 + bob, 22, 14); // 車廂
+        ctx.fillStyle = '#4a3020';
+        ctx.beginPath(); ctx.arc(fx + pw - 28, fy + ph - 24 + bob, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(fx + pw - 16, fy + ph - 24 + bob, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.font = '11px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🐎', fx + pw - 40, fy + ph - 28 + bob);
+        // 站牌
+        ctx.font = '7px monospace';
+        const label = t('🛺 馬車站');
+        const tw = ctx.measureText(label).width;
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        ctx.fillRect(fx + pw / 2 - tw / 2 - 3, fy - 4, tw + 6, 9);
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText(label, fx + pw / 2, fy + 3);
     }
 
     // v5.54.1 工廠地基:掃描地圖找出不壓路/不壓水/不壓建築的空地作「預留地」,
@@ -3734,6 +3781,8 @@ class PixelTileMap {
         if (extraData?.farm?.plots?.length > 0) {
             this._drawFarmOverlay(ctx, extraData.farm);
         }
+        // v5.57.0 馬車站
+        this._drawCoachStation(ctx);
         // Draw factory icons near workshop/tavern
         if (extraData?.processing?.builtFactories) {
             this._drawFactoryOverlay(ctx, extraData.processing);

@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.56.0
+ * Version: 5.57.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.56.0');
+define('RIMTOWN_VERSION', '5.57.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,13 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.57.0',
+            'date'    => '2026-08-21',
+            'changes' => array(
+                '🐎 雙城第三波(馬車過場):地圖東側大路盡頭新增「馬車站」(木平台+馬車+站牌),點擊即可選擇前往別的城鎮——黑幕過場動畫(馬車行進+季節旁白)後抵達對方鎮的馬車站下車;雙城計畫 P0~P2 全數完成',
+            ),
+        ),
         array(
             'version' => '5.56.0',
             'date'    => '2026-08-21',

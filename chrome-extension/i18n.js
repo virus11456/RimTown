@@ -2232,6 +2232,21 @@ const I18N = (() => {
         '結婚了！': ' got married!',
         '開始交往！': ' started dating!',
 
+        // ── v5.57.0 雙城P2:馬車過場 ──
+        '🛺 馬車站': '🛺 Coach Stop',
+        '馬車站': 'Coach Station',
+        '車伕靠在車轅上打盹：「這條路通向遠方——等你有了別的城鎮，我就載你去。」': 'The coachman dozes against the shaft: "This road leads far away — found another town, and I\'ll take you there."',
+        '車伕拍拍車板：「要去哪兒？路上得顛個兩天。」': 'The coachman pats the boards: "Where to? It\'s a bumpy two-day ride."',
+        '下次再說': 'Maybe later',
+        '馬車顛簸了兩天…': 'Two bumpy days on the road… ',
+        '風雪讓路程多花了些時候…': 'snow made the journey longer…',
+        '蟬聲一路相送…': 'cicadas sang the whole way…',
+        '沿途稻浪翻金…': 'golden rice waves rolled past…',
+        '野花開了一路…': 'wildflowers bloomed along the road…',
+        '抵達': 'Arrived at ',
+        '下車活動活動筋骨，去鎮上走走吧': 'Stretch your legs and take a look around town',
+        '旅途出了點問題：': 'Trouble on the road: ',
+
         // ── v5.56.0 雙城P1:跨鎮互訪 ──
         '搭上回程的車，返回': ' boarded the coach home, back to ',
         '了。': '.',
