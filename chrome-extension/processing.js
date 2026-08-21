@@ -169,7 +169,38 @@ class ProcessingSystem {
         return true;
     }
 
+    // v5.54.1 工廠自動營運:蓋好後村民自己來上班(優先本職,其次心情好的),
+    // 你是旅人不是人事主任——手動指派仍可用,但不指派也會正常運轉
+    _autoStaff(world) {
+        const taken = new Set();
+        Object.values(this.builtFactories).forEach(f => (f.workers || []).forEach(w => taken.add(w)));
+        for (const [key, factory] of Object.entries(this.builtFactories)) {
+            if (factory.status !== 'active') continue;
+            const def = FACTORIES[key];
+            if (!def) continue;
+            // 清掉已離鎮/不存在的工人
+            factory.workers = (factory.workers || []).filter(wId => world.agents[wId]);
+            while (factory.workers.length < def.workerSlots) {
+                const candidates = Object.values(world.agents).filter(a =>
+                    !a.isPlayer && !a.isDead && a.job?.key !== 'mayor' && !taken.has(a.agentId));
+                if (!candidates.length) break;
+                candidates.sort((a, b) => {
+                    const score = x => (x.job?.key === def.preferredJob ? -100 : 0) - (x.mood || 50) / 100;
+                    return score(a) - score(b);
+                });
+                const pick = candidates[0];
+                factory.workers.push(pick.agentId);
+                taken.add(pick.agentId);
+                world.logMessage('factory', `${pick.name}${t('主動到')}${def.name}${t('上工了。')}`);
+                pick.memory?.add?.(world.tickCount, world.clock.timeStr, 'daily', `${t('我開始在')}${def.name}${t('幫忙了，多一份收入也多認識些人。')}`, 4, []);
+            }
+            // 沒選配方就自動開第一個(玩家改過就尊重玩家的選擇)
+            if (!factory.recipe && def.recipes?.length) factory.recipe = def.recipes[0].id;
+        }
+    }
+
     dailyUpdate(world) {
+        this._autoStaff(world);
         // Construction progress
         for (const [key, factory] of Object.entries(this.builtFactories)) {
             if (factory.status === 'building') {

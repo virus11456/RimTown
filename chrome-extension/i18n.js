@@ -2232,6 +2232,13 @@ const I18N = (() => {
         '結婚了！': ' got married!',
         '開始交往！': ' started dating!',
 
+        // ── v5.54.1 工廠地基+自動上工 ──
+        '（村民明早會自動上工）': '(villagers will report for work tomorrow)',
+        '主動到': ' showed up to work at ',
+        '上工了。': '.',
+        '我開始在': 'I started helping out at ',
+        '幫忙了，多一份收入也多認識些人。': ' — extra income, and new faces to meet.',
+
         // ── v5.54.0 暫停回饋 ──
         '遊戲已暫停': 'Game paused',
         '遊戲已繼續': 'Game resumed',

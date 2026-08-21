@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.54.0
-const RIMTOWN_APP_VERSION = '5.54.0';
+// RimTown - Frontend App (WordPress Plugin) v5.54.1
+const RIMTOWN_APP_VERSION = '5.54.1';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -7847,7 +7847,7 @@ class RimTownApp {
                         html += `<button class="trade-btn" style="margin:2px;font-size:0.7rem"${active} data-action="set-recipe" data-val="${key},${r.id}">${r.label}</button>`;
                     });
                     html += '</div>';
-                    html += `${t('<div style="margin:4px 0;font-size:0.8rem"><strong>工人：</strong>')}${factory.workers.length}/${def.workerSlots}`;
+                    html += `${t('<div style="margin:4px 0;font-size:0.8rem"><strong>工人：</strong>')}${factory.workers.length}/${def.workerSlots}${factory.workers.length < def.workerSlots ? ` <span style="color:var(--text-muted);font-size:0.68rem">${t('（村民明早會自動上工）')}</span>` : ''}`;
                     factory.workers.forEach(wId => {
                         const a = this.state.agents[wId];
                         html += ` <span style="color:var(--accent-gold)">${a?.name || wId}</span>`;
@@ -8327,7 +8327,7 @@ class RimTownApp {
                 html += '</div>';
 
                 // Workers
-                html += `${t('<div style="margin:4px 0;font-size:0.8rem"><strong>工人：</strong>')}${factory.workers.length}/${def.workerSlots}`;
+                html += `${t('<div style="margin:4px 0;font-size:0.8rem"><strong>工人：</strong>')}${factory.workers.length}/${def.workerSlots}${factory.workers.length < def.workerSlots ? ` <span style="color:var(--text-muted);font-size:0.68rem">${t('（村民明早會自動上工）')}</span>` : ''}`;
                 factory.workers.forEach(wId => {
                     const a = this.state.agents[wId];
                     html += ` <span style="color:var(--accent-gold)">${a?.name || wId}</span>`;

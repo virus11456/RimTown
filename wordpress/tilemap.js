@@ -1465,6 +1465,7 @@ class PixelTileMap {
         this.buildingZones = {};
         this.natureZones = {};
         this.labelPositions = {};
+        this._factoryPlots = null; // v5.54.1 重新產圖時重算工廠地基
 
         // Add grass variation
         for (let y = 0; y < this.rows; y++) {
@@ -2393,75 +2394,131 @@ class PixelTileMap {
         ctx.fillText(statusText, labelX, labelY);
     }
 
-    // Draw factory building icons
+    // v5.54.1 工廠地基:掃描地圖找出不壓路/不壓水/不壓建築的空地作「預留地」,
+    // 工廠一律蓋在地基上,不再懸浮在馬路中間
+    _getFactoryPlots() {
+        if (this._factoryPlots) return this._factoryPlots;
+        if (!this.grid || !this.grid.length) return [];
+        const PW = 4, PH = 3; // 地基大小(格)
+        const H = this.grid.length, W = this.grid[0].length;
+        const zones = Object.values(this.buildingZones || {}).map(z => ({ x: z.x, y: z.y, w: z.w || 4, h: z.h || 4 }));
+        const rectOverlap = (px, py) => zones.some(z =>
+            px + PW + 1 > z.x && px - 1 < z.x + z.w && py + PH + 1 > z.y && py - 1 < z.y + z.h);
+        const tilesClear = (px, py) => {
+            for (let y = py - 1; y < py + PH + 1; y++) {
+                for (let x = px - 1; x < px + PW + 1; x++) {
+                    if (y < 1 || x < 1 || y >= H - 1 || x >= W - 1) return false;
+                    const tt = this.grid[y][x];
+                    if (tt === T.DIRT || tt === T.WATER || tt === T.WATER2) return false;
+                }
+            }
+            return true;
+        };
+        const anchor = this.buildingZones['workshop'] || this.buildingZones['town_square'] || { x: W >> 1, y: H >> 1, w: 4, h: 4 };
+        const ax = anchor.x + (anchor.w || 4) / 2, ay = anchor.y + (anchor.h || 4) / 2;
+        const cands = [];
+        for (let y = 2; y < H - PH - 2; y += 2) {
+            for (let x = 2; x < W - PW - 2; x += 2) {
+                const cx = x + PW / 2, cy = y + PH / 2;
+                cands.push([x, y, (cx - ax) * (cx - ax) + (cy - ay) * (cy - ay)]);
+            }
+        }
+        cands.sort((a, b) => a[2] - b[2]);
+        const plots = [];
+        for (const [x, y] of cands) {
+            if (plots.length >= 7) break;
+            if (rectOverlap(x, y) || !tilesClear(x, y)) continue;
+            plots.push({ x, y, w: PW, h: PH });
+            zones.push({ x, y, w: PW, h: PH }); // 地基之間也不互相重疊
+        }
+        this._factoryPlots = plots;
+        return plots;
+    }
+
+    // Draw factory foundations + buildings on reserved plots
     _drawFactoryOverlay(ctx, processingData) {
+        const plots = this._getFactoryPlots();
+        if (!plots.length) return;
         const factories = processingData.builtFactories || {};
         const keys = Object.keys(factories);
-        if (keys.length === 0) return;
+        const ROOF_COLORS = ['#c85040', '#4878b8', '#8858a8', '#3a8a58', '#c88030', '#b84878', '#607890'];
 
-        // Place factories near workshop
-        const baseZone = this.buildingZones['workshop'] || this.buildingZones['town_square'];
-        if (!baseZone) return;
+        plots.forEach((plot, i) => {
+            const fx = plot.x * TILE, fy = plot.y * TILE;
+            const pw = plot.w * TILE, ph = plot.h * TILE;
+            const key = keys[i];
+            const factory = key ? factories[key] : null;
+            const def = factory && typeof FACTORIES !== 'undefined' ? FACTORIES[key] : null;
 
-        let offsetIdx = 0;
-        const placements = [
-            { dx: -4, dy: -3 }, { dx: -4, dy: 1 }, { dx: 9, dy: -3 }, { dx: 9, dy: 1 },
-            { dx: -4, dy: 5 }, { dx: 9, dy: 5 }, { dx: -4, dy: -7 },
-        ];
-
-        for (const key of keys) {
-            const factory = factories[key];
-            const def = typeof FACTORIES !== 'undefined' ? FACTORIES[key] : null;
-            if (!def) continue;
-            const p = placements[offsetIdx % placements.length];
-            const fx = (baseZone.x + p.dx) * TILE;
-            const fy = (baseZone.y + p.dy) * TILE;
-
-            // Building body
-            if (factory.status === 'building') {
-                ctx.fillStyle = 'rgba(160,120,80,0.6)';
-                ctx.fillRect(fx, fy, 24, 18);
-                ctx.strokeStyle = '#aaa';
-                ctx.setLineDash([2, 2]);
-                ctx.strokeRect(fx, fy, 24, 18);
+            if (!factory || !def) {
+                // 空地基:虛線框+碎石面,玩家一眼看出「這裡以後會蓋工廠」
+                ctx.fillStyle = 'rgba(150,140,120,0.28)';
+                ctx.fillRect(fx, fy, pw, ph);
+                ctx.strokeStyle = 'rgba(200,190,160,0.55)';
+                ctx.setLineDash([3, 3]);
+                ctx.strokeRect(fx + 1, fy + 1, pw - 2, ph - 2);
                 ctx.setLineDash([]);
-                // Progress bar
+                ctx.font = '8px serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = 'rgba(230,220,190,0.7)';
+                ctx.fillText('🏗️', fx + pw / 2, fy + ph / 2 + 3);
+                return;
+            }
+
+            if (factory.status === 'building') {
+                // 施工中:鷹架+進度條
+                ctx.fillStyle = 'rgba(160,120,80,0.55)';
+                ctx.fillRect(fx + 2, fy + 2, pw - 4, ph - 4);
+                ctx.strokeStyle = '#c8a060';
+                ctx.setLineDash([3, 2]);
+                ctx.strokeRect(fx + 2, fy + 2, pw - 4, ph - 4);
+                ctx.setLineDash([]);
+                ctx.strokeStyle = 'rgba(120,90,60,0.8)';
+                ctx.beginPath();
+                ctx.moveTo(fx + 4, fy + ph - 4); ctx.lineTo(fx + pw - 4, fy + 6);
+                ctx.moveTo(fx + 4, fy + 6); ctx.lineTo(fx + pw - 4, fy + ph - 4);
+                ctx.stroke();
                 const pct = factory.buildProgress / factory.buildRequired;
                 ctx.fillStyle = '#333';
-                ctx.fillRect(fx + 2, fy + 14, 20, 3);
+                ctx.fillRect(fx + 4, fy + ph - 8, pw - 8, 4);
                 ctx.fillStyle = '#4caf50';
-                ctx.fillRect(fx + 2, fy + 14, Math.round(20 * pct), 3);
+                ctx.fillRect(fx + 4, fy + ph - 8, Math.round((pw - 8) * pct), 4);
             } else {
-                // Active factory
-                ctx.fillStyle = '#7a6040';
-                ctx.fillRect(fx, fy + 4, 24, 14);
-                ctx.fillStyle = '#a07050';
-                ctx.fillRect(fx - 1, fy + 2, 26, 4); // Roof
-                // Chimney
+                // 完工:占滿地基的正式建築
+                const roof = ROOF_COLORS[i % ROOF_COLORS.length];
+                ctx.fillStyle = '#8a7050';
+                ctx.fillRect(fx + 2, fy + 10, pw - 4, ph - 12); // 牆身
+                ctx.fillStyle = roof;
+                ctx.fillRect(fx, fy + 2, pw, 10); // 屋頂
+                ctx.fillStyle = 'rgba(0,0,0,0.18)';
+                ctx.fillRect(fx, fy + 10, pw, 2); // 屋簷陰影
                 ctx.fillStyle = '#666';
-                ctx.fillRect(fx + 18, fy - 2, 4, 6);
-                // Door
+                ctx.fillRect(fx + pw - 12, fy - 6, 6, 10); // 煙囪
+                if (factory.recipe) { // 開工中:煙
+                    ctx.fillStyle = 'rgba(220,220,220,0.5)';
+                    ctx.beginPath();
+                    ctx.arc(fx + pw - 9, fy - 10 - (this.animFrame % 30) / 6, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
                 ctx.fillStyle = '#4a3020';
-                ctx.fillRect(fx + 9, fy + 12, 6, 6);
-                // Window
+                ctx.fillRect(fx + pw / 2 - 4, fy + ph - 10, 8, 8); // 門
                 ctx.fillStyle = factory.recipe ? '#ffeb3b' : '#555';
-                ctx.fillRect(fx + 3, fy + 7, 4, 4);
+                ctx.fillRect(fx + 6, fy + 15, 5, 5); // 窗
+                ctx.fillRect(fx + pw - 11, fy + 15, 5, 5);
             }
 
             // Label
-            ctx.font = '6px monospace';
+            ctx.font = '7px monospace';
             ctx.textAlign = 'center';
-            const lx = fx + 12;
-            const ly = fy - 2;
+            const lx = fx + pw / 2;
+            const ly = fy - 3;
             const label = `${def.icon}${def.name}`;
             const tw = ctx.measureText(label).width;
             ctx.fillStyle = 'rgba(0,0,0,0.7)';
-            ctx.fillRect(lx - tw / 2 - 2, ly - 5, tw + 4, 7);
-            ctx.fillStyle = factory.status === 'active' ? '#ffd700' : '#aaa';
+            ctx.fillRect(lx - tw / 2 - 2, ly - 6, tw + 4, 8);
+            ctx.fillStyle = factory.status === 'active' ? '#ffd700' : '#ccc';
             ctx.fillText(label, lx, ly);
-
-            offsetIdx++;
-        }
+        });
     }
 
     // Draw industry level badges

@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.54.0.zip` from Releases
+1. Download `rimtown-v5.54.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,13 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.54.1 (2026-08-21)
+
+**工廠試玩回饋：地基＋自動營運**
+
+- 🏗️ 工廠地基：地圖產生時自動規劃 7 塊「預留地」（避開道路／水域／既有建築，以工坊為中心就近排布），平時顯示虛線地基＋🏗️ 標記；工廠蓋在地基上，施工中有鷹架＋進度條，完工後是佔滿地基的正式建築（彩色屋頂、煙囪、開工時冒煙）——不再有小貼圖懸浮在馬路中間
+- 👷 工廠自動上工：完工後村民每天早上自動補滿工人缺額（優先相關職業、其次心情好的閒人；鎮長與玩家不會被抓去上班），未選配方自動開第一個；上工村民會留下記憶流入對話——你是旅人不是人事主任，不指派也能正常運轉，手動指派仍可覆蓋
 
 ### v5.54.0 (2026-08-21)
 

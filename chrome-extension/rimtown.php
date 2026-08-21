@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.54.0
+ * Version: 5.54.1
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.54.0');
+define('RIMTOWN_VERSION', '5.54.1');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,14 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.54.1',
+            'date'    => '2026-08-21',
+            'changes' => array(
+                '🏗️ 工廠地基:地圖自動規劃 7 塊不壓路/不壓水/不壓建築的「預留地」(虛線地基),工廠蓋在地基上成為正式建築(屋頂/煙囪/開工冒煙),不再懸浮在馬路中間',
+                '👷 工廠自動上工:蓋好後村民自己來上班(優先本職、其次心情好的,鎮長不會來烤麵包),沒選配方自動開第一個——你是旅人,不用當人事主任;手動指派仍可覆蓋',
+            ),
+        ),
         array(
             'version' => '5.54.0',
             'date'    => '2026-08-21',
