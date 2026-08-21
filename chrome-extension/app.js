@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.53.1
-const RIMTOWN_APP_VERSION = '5.53.1';
+// RimTown - Frontend App (WordPress Plugin) v5.53.2
+const RIMTOWN_APP_VERSION = '5.53.2';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -7483,6 +7483,15 @@ class RimTownApp {
     }
 
     // --- Economy Tab (with factory sub-tab) ---
+    // v5.53.2 資源 key → 在地化名稱(跨分頁共用,修工廠/產業成本露出英文 key 的問題)
+    _resName(r) {
+        if (!this._resNameMap) this._resNameMap = { food:t('食物'), wood:t('木材'), stone:t('石材'), metal:t('金屬'), cloth:t('布料'), herbs:t('草藥'), silver:t('銀幣'), meals:t('餐食'), tools:t('工具'), clothing:t('衣物'), medicine:t('藥品'), furniture:t('家具'), research_points:t('研究'),
+            plank:t('木板'), hardwood:t('硬木'), brick:t('磚塊'), marble:t('大理石'), steel:t('鋼鐵'), gold:t('黃金'),
+            wheat:t('小麥'), rice:t('稻米'), corn:t('玉米'), potato:t('馬鈴薯'), cotton:t('棉花'), flowers:t('花卉'), mushroom:t('蘑菇'), sugarcane:t('甘蔗'), tea:t('茶葉'), grapes:t('葡萄'), golden_wheat:t('金色小麥'), dragon_fruit:t('火龍果'),
+            bread:t('麵包'), pastry:t('糕點'), beer:t('啤酒'), wine:t('葡萄酒'), perfume:t('香水'), fine_tea:t('精品茶'), herbal_tea:t('草本茶'), sugar:t('砂糖'), jam:t('果醬'), luxury_furniture:t('高級家具') };
+        return this._resNameMap[r] || r;
+    }
+
     // v5.50.0 經濟A波:從 stockpile 歷史計算「今日」各資源的產出/消耗流量(顯示層,不動模擬)
     _econDailyFlow(keys) {
         const out = {};
@@ -7846,7 +7855,7 @@ class RimTownApp {
                     if (Object.keys(wh).length > 0) {
                         html += t('<div style="margin:4px 0;font-size:0.8rem"><strong>倉庫：</strong>');
                         for (const [r, amt] of Object.entries(wh)) {
-                            html += `<span style="margin-right:8px">${r}: ${amt}`;
+                            html += `<span style="margin-right:8px">${icons[r] || '📦'}${labels[r] || r}: ${amt}`;
                             html += ` <button class="trade-btn" style="font-size:0.6rem;padding:1px 4px" data-action="collect-product" data-val="${key},${r},${amt}${t('">收</button>')}`;
                             html += ` <button class="trade-btn" style="font-size:0.6rem;padding:1px 4px" data-action="sell-product" data-val="${key},${r},${amt}${t('">賣</button></span>')}`;
                         }
@@ -7860,7 +7869,8 @@ class RimTownApp {
             if (availFac.length > 0) {
                 html += t('<div class="econ-section"><h3>可建造工廠</h3>');
                 availFac.forEach(f => {
-                    const costStr = Object.entries(f.cost).map(([r,a]) => `${r}:${a}`).join(' ');
+                    // v5.53.2 工廠成本在地化:接上與全站一致的資源名稱,不再露出英文 key
+                    const costStr = Object.entries(f.cost).map(([r,a]) => `${icons[r] || '📦'}${labels[r] || r}×${a}`).join(' ');
                     const canBuild = f.canAfford ? '' : ' disabled';
                     html += `<div class="build-card"><div><strong>${f.icon} ${f.name}</strong>
                         <br><span style="font-size:0.7rem">${costStr}${t(' | 建造天數：')}${f.buildDays}</span></div>
@@ -7995,12 +8005,12 @@ class RimTownApp {
                     if (lvDef) html += `<br><span style="font-size:0.75rem">${lvDef.bonus || lvDef.name}</span>`;
                     html += `${t('<br><span style="font-size:0.75rem;color:var(--text-secondary)">工人：')}${Array.isArray(data.workers) ? data.workers.length : data.workers}/${lvDef?.workers || '?'}</span>`;
                     if (data.dailyOutput && Object.keys(data.dailyOutput).length) {
-                        const outputStr = Object.entries(data.dailyOutput).map(([r,a]) => `${r}:${Math.round(a*10)/10}`).join(' ');
+                        const outputStr = Object.entries(data.dailyOutput).map(([r,a]) => `${this._resName(r)}×${Math.round(a*10)/10}`).join(' ');
                         html += `<br><span style="font-size:0.7rem;color:var(--accent-gold)">📦 ${outputStr}</span>`;
                     }
                     html += '</div>';
                     if (nextLv) {
-                        const costStr = Object.entries(nextLv.cost).map(([r,a]) => `${r}:${a}`).join(' ');
+                        const costStr = Object.entries(nextLv.cost).map(([r,a]) => `${this._resName(r)}×${a}`).join(' ');
                         html += `<div><button class="trade-btn" data-action="upgrade-industry" data-val="${key}${t('">升級 Lv')}${nextLv.lv}</button>
                             <div style="font-size:0.75rem;color:var(--text-secondary)">${costStr}</div></div>`;
                     }
@@ -8114,12 +8124,12 @@ class RimTownApp {
                 if (lvDef) html += `<br><span style="font-size:0.75rem">${lvDef.bonus || lvDef.name}</span>`;
                 html += `${t('<br><span style="font-size:0.75rem;color:var(--text-secondary)">工人：')}${Array.isArray(data.workers) ? data.workers.length : data.workers}/${lvDef?.workers || '?'}</span>`;
                 if (data.dailyOutput && Object.keys(data.dailyOutput).length) {
-                    const outputStr = Object.entries(data.dailyOutput).map(([r,a]) => `${r}:${Math.round(a*10)/10}`).join(' ');
+                    const outputStr = Object.entries(data.dailyOutput).map(([r,a]) => `${this._resName(r)}×${Math.round(a*10)/10}`).join(' ');
                     html += `<br><span style="font-size:0.7rem;color:var(--accent-gold)">📦 ${outputStr}</span>`;
                 }
                 html += '</div>';
                 if (nextLv) {
-                    const costStr = Object.entries(nextLv.cost).map(([r,a]) => `${r}:${a}`).join(' ');
+                    const costStr = Object.entries(nextLv.cost).map(([r,a]) => `${this._resName(r)}×${a}`).join(' ');
                     html += `<div><button class="trade-btn" data-action="upgrade-industry" data-val="${key}${t('">升級 Lv')}${nextLv.lv}</button>
                         <div style="font-size:0.75rem;color:var(--text-secondary)">${costStr}</div></div>`;
                 }
@@ -8347,7 +8357,7 @@ class RimTownApp {
         if (available.length > 0) {
             html += t('<div class="econ-section"><h3>可建造工廠</h3>');
             available.forEach(f => {
-                const costStr = Object.entries(f.cost).map(([r,a]) => `${r}:${a}`).join(' ');
+                const costStr = Object.entries(f.cost).map(([r,a]) => `${this._resName(r)}×${a}`).join(' ');
                 const canBuild = f.canAfford ? '' : ' disabled';
                 html += `<div class="build-card"><div><strong>${f.icon} ${f.name}</strong>
                     <br><span style="font-size:0.7rem">${costStr}${t(' | 建造天數：')}${f.buildDays}</span></div>
