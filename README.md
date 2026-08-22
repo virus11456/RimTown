@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.59.0.zip` from Releases
+1. Download `rimtown-v5.59.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,14 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.59.1 (2026-08-22)
+
+**雙城重測補修（TC-03 兩處殘留＋切鎮存檔保護）**
+
+- 🏷️ 今日焦點「去找陳偉聊聊天」跨鎮殘留：根因是讀檔時「存檔沒有焦點就跳過」，上一鎮的焦點留在同一個 World 實例上——現在讀檔一律清空並依新鎮重算
+- 🏷️ 海風鎮教學橫幅「落腳邊境」：任何切鎮路徑（城鎮列表直切／馬車）完成後立即重繪教學橫幅，海風鎮的隱藏判斷即時生效
+- 💾 切鎮前自動「本地＋雲端」雙寫存檔：雲端寫入失敗時切走前的進度不再蒸發（QA：海風玩到第 2 天、切走再回來只剩存檔點）
 
 ### v5.59.0 (2026-08-22)
 

@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.59.0
-const RIMTOWN_APP_VERSION = '5.59.0';
+// RimTown - Frontend App (WordPress Plugin) v5.59.1
+const RIMTOWN_APP_VERSION = '5.59.1';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -3134,6 +3134,8 @@ class RimTownApp {
         }
         if (this.auth.loggedIn) {
             // When logged in, save current to cloud then load target from cloud
+            // v5.59.1 切鎮前同時寫一份本地存檔——雲端寫入失敗時進度不再蒸發(QA:海風玩到第2天切走就沒了)
+            try { this._saveCurrentTown(); } catch (e) {}
             await this.saveGame();
             // v5.59.0 雲端與本地都拿出來,比日期挑「較新」的那份——
             // 訪客時期的舊複本(Day1 存檔)不會再蓋掉真實進度(TC-02 半重置根因)
@@ -3180,6 +3182,9 @@ class RimTownApp {
         }
         document.getElementById('town-modal')?.classList.add('hidden');
         this.world.paused = !!this._pausedBeforeTownModal;
+        // v5.59.1 任何切鎮路徑(城鎮列表直切/馬車)完成後,教學橫幅與今日焦點立即依新鎮重算
+        this._updateQuestGuidance?.();
+        try { if (this.world?.generateDailyFocus && !this.world.dailyFocus) this.world.generateDailyFocus(); } catch (e) {}
     }
     _generateTownId(name) {
         // Generate stable town_id based on user_id + town name for cross-device sync
