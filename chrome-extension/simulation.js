@@ -8028,7 +8028,8 @@ class World {
                     }
                 }
             } catch (e) {}
-            if (data.dailyFocus) this.dailyFocus = data.dailyFocus; // v5.31.0 今日焦點
+            // v5.59.1 存檔沒有焦點就清空——原本的 if 會讓上一個鎮的焦點(「去找陳偉聊聊天」)殘留到新鎮
+            this.dailyFocus = data.dailyFocus || null; // v5.31.0 今日焦點
 
             // Gossip
             this.gossipNetwork = new GossipNetwork();

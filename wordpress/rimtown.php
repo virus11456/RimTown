@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.59.0
+ * Version: 5.59.1
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.59.0');
+define('RIMTOWN_VERSION', '5.59.1');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,14 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.59.1',
+            'date'    => '2026-08-22',
+            'changes' => array(
+                '🏷️ TC-03 兩處殘留補修:今日焦點「去找陳偉聊聊天」不再跨鎮殘留(讀檔時上一鎮的焦點會被清掉並依新鎮重算);任何切鎮路徑(城鎮列表直切/馬車)完成後教學橫幅立即重繪,海風鎮不再顯示「落腳邊境」',
+                '💾 切鎮前自動雙寫本地+雲端存檔:雲端寫入失敗時,切走前的進度不再蒸發',
+            ),
+        ),
         array(
             'version' => '5.59.0',
             'date'    => '2026-08-22',
