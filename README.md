@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.58.1.zip` from Releases
+1. Download `rimtown-v5.59.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,17 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.59.0 (2026-08-22)
+
+**雙城 QA 五修（TC-01～TC-05）**
+
+- 🚌 **TC-01 回程死路**：馬車目的地與城鎮清單改為「雲端＋本地合併」——雲端寫入失敗時本地存檔照樣導航；與當前鎮同名的殘留重複 meta 自動去重、只列載得到存檔的鎮；登入時城鎮列表併入僅存於本機的城鎮（標 📱 本機），不再誤報「雲端尚無城鎮存檔」把玩家鎖死
+- 🕐 **TC-02 抵達半重置**：切換城鎮時同時取雲端與本地存檔、比對遊戲日期載入較新的一份——訪客時期殘留的 Day 1 舊複本不會再蓋掉真實進度（Day 1 假象＋落腳任務復活的根因）；馬車抵達後任務／教學橫幅立即依新鎮重繪
+- 🏷️ **TC-03 鎮名寫死**：「第 N 集·◯◯日常」、閒聊台詞「◯◯的生活還不錯」改讀當前 townName；海風鎮不再出現「落腳邊境」任務橫幅與任務頁（改顯示漁村故事頁：這裡的故事在日常裡自己發生）
+- 💬 **TC-04**：node 驗證訪客本來就會進聊天資料源；補上「訪客抵達時聊天清單立即刷新」保險，遠客一到就能私訊
+- 👥 **TC-05**：頂部人口改為「人口：N（+M 訪客）」，跨鎮訪客不再灌水常住人口
+- 兩套迴歸測試（互訪 18 項＋主題 12 項）全過
 
 ### v5.58.1 (2026-08-22)
 

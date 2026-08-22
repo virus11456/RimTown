@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.58.1
-const RIMTOWN_APP_VERSION = '5.58.1';
+// RimTown - Frontend App (WordPress Plugin) v5.59.0
+const RIMTOWN_APP_VERSION = '5.59.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1296,6 +1296,8 @@ class RimTownApp {
         if (!el) return;
         // Don't show if user explicitly dismissed all guidance
         if (localStorage.getItem('rimtown_guidance_off')) { el.classList.add('hidden'); return; }
+        // v5.59.0 TC-03:邊境鎮主線任務不在海風鎮顯示(卡司是邊境鎮居民,海風鎮主題任務鏈待做)
+        if (this.world?.townTheme === 'harbor') { el.classList.add('hidden'); return; }
 
         const qs = this.world?.questSystem;
         if (!qs) return;
@@ -2851,6 +2853,7 @@ class RimTownApp {
                 this.tileMap.agentPositions['player'] = { x: pxx, y: pyy, targetX: pxx, targetY: pyy, job: 'default', gender: 'male', walking: false, walkStep: 0, activity: '', atFarm: false, doorPhase: null };
                 this.tileMap._centeredOnPlayer = false;
             }
+            this._updateQuestGuidance?.(); // v5.59.0 TC-02:抵達後任務/教學橫幅立即依新鎮重繪,不殘留上一鎮的目標
             this._showCornerNotice({ icon: '🐎', title: `${t('抵達')}${townName}`, name: '', desc: t('下車活動活動筋骨，去鎮上走走吧') });
         } catch (e) {
             this._gameAlert?.(t('旅途出了點問題：') + e.message, '❌');
@@ -2910,15 +2913,29 @@ class RimTownApp {
         w.onVisitorReturn = (meta) => this._pushMailbox(this._returnMailboxKey(meta.fromTownId),
             { origId: meta.origId, origName: meta.origName, notes: meta.notes || [], visitedTownName: this._getCurrentTownName() });
         // 其他城鎮清單(出訪目的地),60 秒更新一次
+        // v5.59.0 TC-01 修復:雲端+本地合併(雲端寫入失敗時本地仍可導航)、
+        // 排除與當前鎮同名的重複 meta(訪客時期/登入後的殘留)、只列載得到存檔的鎮
         const now = Date.now();
         if (!this._otherTownsAt || now - this._otherTownsAt > 60000) {
             this._otherTownsAt = now;
-            let towns = [];
+            const currentName = this._getCurrentTownName();
+            const seen = new Set();
+            const towns = [];
+            const push = (id, name) => {
+                if (!id || !name) return;
+                if (id === this.currentTownId || name === currentName) return;
+                if (seen.has(name)) return;
+                const hasLocal = !!localStorage.getItem('rimtown_town_' + id);
+                const inCloud = Array.isArray(this._cloudSaves) && this._cloudSaves.some(s => s.town_id === id);
+                if (!hasLocal && !inCloud) return;
+                seen.add(name);
+                towns.push({ id, name });
+            };
             try {
-                if (this.auth.loggedIn && Array.isArray(this._cloudSaves)) towns = this._cloudSaves.map(s => ({ id: s.town_id, name: s.town_name }));
-                else towns = this._getTownList().map(tw => ({ id: tw.id, name: tw.name }));
+                (Array.isArray(this._cloudSaves) ? this._cloudSaves : []).forEach(s => push(s.town_id, s.town_name));
+                this._getTownList().forEach(tw => push(tw.id, tw.name));
             } catch (e) {}
-            w.otherTowns = towns.filter(tw => tw.id && tw.name && tw.id !== this.currentTownId);
+            w.otherTowns = towns;
         }
         // 收訪客信箱:對方鎮派來的村民實體化
         try {
@@ -2929,7 +2946,12 @@ class RimTownApp {
                 varr.forEach(e => {
                     try {
                         const ag = w.spawnVisitor(e);
-                        if (ag) this._showCornerNotice({ icon: '🚌', title: t('遠客來訪'), name: '', desc: `${e.agentData?.name}${t('（')}${e.fromTownName}${t('）來作客了，去打個招呼吧')}` });
+                        if (ag) {
+                            this._showCornerNotice({ icon: '🚌', title: t('遠客來訪'), name: '', desc: `${e.agentData?.name}${t('（')}${e.fromTownName}${t('）來作客了，去打個招呼吧')}` });
+                            // v5.59.0 TC-04:聊天分頁開著時清單立即刷新,訪客馬上可私訊
+                            this.state = w.getState();
+                            if (this.activeTab === 'chat') this.renderSidebar();
+                        }
                     } catch (err) {}
                 });
             }
@@ -3059,9 +3081,15 @@ class RimTownApp {
         try {
             const saves = await this.auth.listSaves();
             this._cloudSaves = saves;
+            // v5.59.0 TC-01:雲端寫入失敗時本地存檔仍在——併入「只存在本機」的城鎮,
+            // 不再誤報「雲端尚無城鎮存檔」把玩家鎖死
+            const cloudIds = new Set(saves.map(s => s.town_id));
+            const cloudNames = new Set(saves.map(s => s.town_name));
+            const localOnly = this._getTownList().filter(tw =>
+                !cloudIds.has(tw.id) && !cloudNames.has(tw.name) && localStorage.getItem('rimtown_town_' + tw.id));
             let html = '';
-            if (!saves.length) {
-                html = t('<p class="muted-text">雲端尚無城鎮存檔。</p>');
+            if (!saves.length && !localOnly.length) {
+                html = t('<p class="muted-text">尚無城鎮存檔。</p>');
             } else {
                 saves.forEach(_tw => {
                     const isActive = _tw.town_id === this.currentTownId;
@@ -3078,6 +3106,15 @@ class RimTownApp {
                     </div>`;
                 });
             }
+            localOnly.forEach(_tw => {
+                const isActive = _tw.id === this.currentTownId;
+                html += `<div class="town-item ${isActive?'active':''}">
+                    <div class="town-info" data-action="switch-town" data-val="${_tw.id}">
+                        <div class="town-name">${_tw.name} <span style="font-size:0.65rem;color:var(--text-muted)">📱 ${t('本機')}</span> ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
+                        <div class="town-meta">${_tw.season||''}${t(' 第')}${_tw.year||1}${t('年 第')}${_tw.day||1}${t('天 | 人口')}${_tw.population||0}</div>
+                    </div>
+                </div>`;
+            });
             html += `<div class="town-modal-actions">
                 <button class="town-btn town-btn-primary" data-action="create-town">${t('新建城鎮')}</button>
                 <button class="town-btn town-btn-secondary" data-action="close-town-modal">${t('關閉')}</button>
@@ -3098,17 +3135,19 @@ class RimTownApp {
         if (this.auth.loggedIn) {
             // When logged in, save current to cloud then load target from cloud
             await this.saveGame();
+            // v5.59.0 雲端與本地都拿出來,比日期挑「較新」的那份——
+            // 訪客時期的舊複本(Day1 存檔)不會再蓋掉真實進度(TC-02 半重置根因)
+            let cloudData = null, localData = null;
+            try { cloudData = await this.auth.cloudLoad(townId); } catch (e) { console.error('[RimTown] Cloud switch town error:', e); }
+            try { const j = localStorage.getItem('rimtown_town_' + townId); if (j) localData = JSON.parse(j); } catch (e) {}
+            const _absDay = d => { const si = ['春季','夏季','秋季','冬季'].indexOf(d?.clock?.season); return ((d?.clock?.year || 1) - 1) * 60 + Math.max(0, si) * 15 + (d?.clock?.day || 1); };
+            const pickData = (cloudData && localData)
+                ? (_absDay(cloudData) >= _absDay(localData) ? cloudData : localData)
+                : (cloudData || localData);
             let loaded = false;
-            try {
-                const saveData = await this.auth.cloudLoad(townId);
-                if (saveData && this.world.loadSave(saveData)) loaded = true;
-            } catch (e) {
-                console.error('[RimTown] Cloud switch town error:', e);
-            }
-            // v5.58.1 雲端沒有就退回本地存檔——自動生成的海風鎮/訪客時期的舊鎮常只在本地,
-            // 原本這裡靜默失敗:過場放完人還在原地,什麼提示都沒有
-            if (!loaded && this._loadTownById(townId)) loaded = true;
+            if (pickData) { try { loaded = !!this.world.loadSave(pickData); } catch (e) { console.error('[RimTown] switch load error:', e); } }
             if (loaded) {
+                localStorage.setItem('rimtown_last_town', townId);
                 if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
                 this.currentTownId = townId;
                 this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
@@ -4833,8 +4872,12 @@ class RimTownApp {
         const agentCount = Object.keys(this.state.agents).length;
         const travelCount = (this.state.travelling_agents || []).length;
         const travelText = travelCount > 0 ? `（+${travelCount}${t(' 外出）')}` : '';
+        // v5.59.0 TC-05:跨鎮訪客不灌水常住人口,分開顯示
+        const visitorCount = Object.keys(this.world?.visitors || {}).length;
+        const residentCount = Math.max(0, agentCount - visitorCount);
+        const visitorText = visitorCount > 0 ? `（+${visitorCount}${t(' 訪客）')}` : '';
         const popEl = document.getElementById('population-count');
-        if (popEl) popEl.textContent = `${t('人口：')}${agentCount}${travelText}`;
+        if (popEl) popEl.textContent = `${t('人口：')}${residentCount}${visitorText}${travelText}`;
 
         // Weather display
         const weatherEl = document.getElementById('weather-display');
@@ -6699,7 +6742,7 @@ class RimTownApp {
             teasers.map(s => `<div class="headline-row" style="cursor:default"><span class="headline-ic">${s.icon}</span><span class="headline-text" style="font-style:italic">${this._escapeHtml(s.text)}</span></div>`).join('') : '';
         const day = this.world.clock;
         return `<div class="town-headlines">
-            <div class="headlines-title"><span>📺 ${t('第')}${(day.year - 1) * 60 + day.day}${t('集')}·${t('邊境鎮日常')}</span>
+            <div class="headlines-title"><span>📺 ${t('第')}${(day.year - 1) * 60 + day.day}${t('集')}·${this.world?.townName || t('邊境鎮')}${t('日常')}</span>
                 <button class="headlines-more" data-action="goto-tab" data-val="records">${t('更多')} ›</button></div>
             ${html ? `<div style="padding:5px 8px 2px;font-size:0.66rem;color:var(--text-secondary);font-weight:bold">🔥 ${t('本集看點')}</div>${html}` : ''}
             ${slHtml}${tsHtml}
@@ -8864,6 +8907,14 @@ class RimTownApp {
     // ============================================================
     renderQuest(container) {
         if (!this.state) return;
+        // v5.59.0 TC-03:海風鎮沒有邊境鎮的主線(卡司不同),顯示佔位而非「落腳邊境」
+        if (this.world?.townTheme === 'harbor') {
+            container.innerHTML = `<div class="economy-panel"><div class="econ-section">
+                <h3>🌊 ${t('海風鎮的故事')}</h3>
+                <p class="muted-text" style="line-height:1.7">${t('這座漁村沒有既定的劇本——阿潮的暗戀、石叔與燈爺的舊怨、雲姨未說完的往事，都在日常裡自己發生。多跟大家聊聊，故事會找上你。')}</p>
+            </div></div>`;
+            return;
+        }
         // Trigger quest check on view
         if (this.world.questSystem) this.world.questSystem.checkProgress(this.world);
         this.state = this.world.getState();
