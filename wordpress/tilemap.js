@@ -2421,19 +2421,58 @@ class PixelTileMap {
         ctx.fillStyle = '#6a3a2c';
         ctx.fillRect(fx + 8, fy + 16, 3, ph - 44);
         ctx.fillRect(fx + pw - 30, fy + 16, 3, ph - 44);
-        // 馬車(車廂+輪+馬,輕微起伏)
+        // 馬車(車廂+方塊輪+像素馬,輕微起伏)——全部用色塊拼,不用弧線/表情符號
         const bob = Math.sin((this.animFrame || 0) / 20) * 1.2;
+        const cy0 = fy + ph - 40 + bob;
         ctx.fillStyle = '#7a5236';
-        ctx.fillRect(fx + pw - 34, fy + ph - 40 + bob, 22, 14); // 車廂
+        ctx.fillRect(fx + pw - 34, cy0, 22, 14); // 車廂
+        ctx.fillStyle = '#5c3d26';
+        ctx.fillRect(fx + pw - 35, cy0 - 2, 24, 4); // 車頂
+        ctx.fillStyle = '#2e1f12';
+        ctx.fillRect(fx + pw - 30, cy0 + 4, 5, 5); // 車窗
+        ctx.fillRect(fx + pw - 21, cy0 + 4, 5, 5);
+        ctx.fillStyle = '#c9a86a';
+        ctx.fillRect(fx + pw - 34, cy0 + 11, 22, 1); // 飾條
         ctx.fillStyle = '#4a3020';
-        ctx.beginPath(); ctx.arc(fx + pw - 28, fy + ph - 24 + bob, 5, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(fx + pw - 16, fy + ph - 24 + bob, 5, 0, Math.PI * 2); ctx.fill();
-        ctx.font = '11px serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('🐎', fx + pw - 40, fy + ph - 28 + bob);
+        ctx.fillRect(fx + pw - 41, cy0 + 10, 8, 2); // 車轅連向馬
+        // 方塊車輪(階梯八角形+輪轂)
+        const wheel = (wx, wy) => {
+            ctx.fillStyle = '#3a2716';
+            ctx.fillRect(wx - 3, wy - 4, 6, 8);
+            ctx.fillRect(wx - 4, wy - 3, 8, 6);
+            ctx.fillStyle = '#8a6a44';
+            ctx.fillRect(wx - 1, wy - 1, 2, 2);
+        };
+        wheel(fx + pw - 28, fy + ph - 24 + bob);
+        wheel(fx + pw - 16, fy + ph - 24 + bob);
+        // 像素馬(面向左)
+        const hx = fx + pw - 56, hy = fy + ph - 36 + bob;
+        ctx.fillStyle = '#8a5a34';
+        ctx.fillRect(hx + 4, hy + 6, 12, 6); // 軀幹
+        ctx.fillRect(hx + 3, hy + 2, 5, 6); // 頸
+        ctx.fillStyle = '#7a4c2a';
+        ctx.fillRect(hx, hy, 6, 4); // 頭
+        ctx.fillRect(hx - 2, hy + 2, 3, 2); // 口鼻
+        ctx.fillStyle = '#3a2716';
+        ctx.fillRect(hx + 4, hy - 2, 2, 2); // 耳
+        ctx.fillRect(hx + 6, hy, 2, 7); // 鬃毛
+        ctx.fillRect(hx + 16, hy + 6, 2, 7); // 尾巴
+        ctx.fillStyle = '#151515';
+        ctx.fillRect(hx + 1, hy + 1, 1, 1); // 眼
+        ctx.fillStyle = '#6b4222'; // 四腿
+        ctx.fillRect(hx + 5, hy + 12, 2, 5);
+        ctx.fillRect(hx + 8, hy + 12, 2, 5);
+        ctx.fillRect(hx + 12, hy + 12, 2, 5);
+        ctx.fillRect(hx + 14, hy + 12, 2, 5);
+        ctx.fillStyle = '#2e1f12'; // 蹄
+        ctx.fillRect(hx + 5, hy + 16, 2, 1);
+        ctx.fillRect(hx + 8, hy + 16, 2, 1);
+        ctx.fillRect(hx + 12, hy + 16, 2, 1);
+        ctx.fillRect(hx + 14, hy + 16, 2, 1);
         // 站牌
         ctx.font = '7px monospace';
-        const label = t('🛺 馬車站');
+        ctx.textAlign = 'center';
+        const label = t('馬車站');
         const tw = ctx.measureText(label).width;
         ctx.fillStyle = 'rgba(0,0,0,0.7)';
         ctx.fillRect(fx + pw / 2 - tw / 2 - 3, fy - 4, tw + 6, 9);
