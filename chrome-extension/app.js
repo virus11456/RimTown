@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.59.1
-const RIMTOWN_APP_VERSION = '5.59.1';
+// RimTown - Frontend App (WordPress Plugin) v5.59.2
+const RIMTOWN_APP_VERSION = '5.59.2';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -4025,6 +4025,8 @@ class RimTownApp {
                 case 'settings-save-game': this.saveGame(); break;
                 case 'settings-export': this.exportSave(); break;
                 case 'settings-import': this.importSave(); break;
+                // v5.59.2 背景音樂靜音切換
+                case 'settings-bgm-mute': { if (this.bgm) { this.bgm.toggleMute(); this.renderSidebar(); } break; }
                 case 'settings-toggle-pause': { const wantPaused = this._notifCardOpen ? !this._pausedBeforeNotif : !this.world.paused; this._setPaused(wantPaused); this.world.logMessage('system', wantPaused ? t('遊戲已暫停。') : t('遊戲已繼續。')); this.renderSidebar(); break; }
                 case 'settings-speed-mult': {
                     const mult = parseFloat(val) || 1;
@@ -7186,6 +7188,14 @@ class RimTownApp {
         html += `<div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="trade-btn" data-action="settings-toggle-pause">${paused ? '▶ ' + t('繼續') : '⏸ ' + t('暫停')}</button>
         </div>`;
+        // v5.59.2 背景音樂開關搬進設定分頁(原本只在無入口的舊版彈窗裡,玩家關不掉音樂)
+        html += `<div style="margin-top:8px">
+            <div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:4px">🎵 ${t('背景音樂')}</div>
+            <div style="display:flex;align-items:center;gap:8px">
+                <button class="trade-btn" data-action="settings-bgm-mute" style="padding:6px 12px">${this.bgm?.muted ? '🔇 ' + t('已靜音') : '🔊 ' + t('播放中')}</button>
+                <input id="settings-bgm-volume" type="range" min="0" max="100" value="${Math.round((this.bgm?.volume ?? 0.2) * 100)}" style="flex:1">
+            </div>
+        </div>`;
         // v5.27.0 肉鴿:開新局的卡司模式
         const rosterMode = (localStorage.getItem('rimtown_roster_mode') === 'random') ? 'random' : 'scripted';
         html += `<div style="margin-top:4px">
@@ -7290,6 +7300,12 @@ class RimTownApp {
         html += `<div style="text-align:center;padding:10px;font-size:0.75rem;color:var(--text-muted)">v${typeof RIMTOWN_APP_VERSION!=='undefined'?RIMTOWN_APP_VERSION:'?'}</div>`;
 
         container.innerHTML = html;
+        // v5.59.2 音量滑桿即時生效並記憶(設定分頁在模擬 tick 時不重繪,拖曳不會被打斷)
+        document.getElementById('settings-bgm-volume')?.addEventListener('input', (e) => {
+            if (!this.bgm) return;
+            this.bgm.setVolume(parseInt(e.target.value, 10) / 100);
+            if (this.bgm.muted) { this.bgm.toggleMute(); this.renderSidebar(); }
+        });
     }
 
     renderLog(container) {
