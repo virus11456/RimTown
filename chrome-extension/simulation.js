@@ -1032,7 +1032,7 @@ class Agent {
         const thoughts = [];
         const hour = world.clock.hour;
         const isNight = hour >= 21 || hour < 5;
-        if (this.mood > 60) { thoughts.push(t('邊境鎮的生活還不錯。'), t('今天感覺很好！')); }
+        if (this.mood > 60) { thoughts.push(`${world.townName || t('邊境鎮')}${t('的生活還不錯。')}`, t('今天感覺很好！')); }
         else if (this.mood < 20) { thoughts.push(t('事情可以更好的...'), t('我感覺不太好。')); }
         if (this.needs.hunger < 30) thoughts.push(t('肚子好餓...'));
         if (this.needs.rest < 30) thoughts.push(t('好想睡覺...'));

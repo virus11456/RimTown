@@ -2232,6 +2232,13 @@ const I18N = (() => {
         '結婚了！': ' got married!',
         '開始交往！': ' started dating!',
 
+        // ── v5.59.0 雙城QA五修 ──
+        '的生活還不錯。': ' life treats me well.',
+        '本機': 'local',
+        ' 訪客）': ' visiting)',
+        '海風鎮的故事': 'Stories of Seabreeze',
+        '這座漁村沒有既定的劇本——阿潮的暗戀、石叔與燈爺的舊怨、雲姨未說完的往事，都在日常裡自己發生。多跟大家聊聊，故事會找上你。': "This fishing village has no script — Achao's crush, the old grudge between Shishu and Grandpa Deng, Aunt Yun's unfinished past all unfold on their own. Talk to people, and the stories will find you.",
+
         // ── v5.58.1 馬車切鎮修復 ──
         '切換城鎮失敗：找不到該城鎮的存檔。': "Failed to switch towns: that town's save could not be found.",
         '找不到目的地的存檔': "destination save not found",

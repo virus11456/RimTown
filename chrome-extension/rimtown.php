@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.58.1
+ * Version: 5.59.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.58.1');
+define('RIMTOWN_VERSION', '5.59.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.59.0',
+            'date'    => '2026-08-22',
+            'changes' => array(
+                '🚌 TC-01 回程死路修復:馬車目的地與城鎮列表改為「雲端+本地合併」——雲端寫入失敗也能導航;同名重複的殘留城鎮自動去重;登入時城鎮列表併入本機存檔(標📱本機),不再誤報「雲端尚無存檔」',
+                '🕐 TC-02 抵達半重置修復:切鎮時比對雲端與本地存檔日期,一律載入較新的那份——訪客時期的 Day1 舊複本不會再蓋掉真實進度;抵達後任務/教學橫幅立即依新鎮重繪',
+                '🏷️ TC-03 鎮名寫死修復:劇集標題「第N集·◯◯日常」、村民閒聊「◯◯的生活還不錯」改讀當前鎮名;海風鎮不再顯示「落腳邊境」任務(改為漁村故事頁)',
+                '💬 TC-04 訪客抵達時聊天清單立即刷新,可直接私訊遠客;TC-05 人口顯示改為「常住 N(+M 訪客)」,訪客不灌水人口',
+            ),
+        ),
         array(
             'version' => '5.58.1',
             'date'    => '2026-08-22',
