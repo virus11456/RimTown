@@ -2232,6 +2232,10 @@ const I18N = (() => {
         '結婚了！': ' got married!',
         '開始交往！': ' started dating!',
 
+        // ── v5.59.2 音樂開關搬進設定 ──
+        '已靜音': 'Muted',
+        '播放中': 'Playing',
+
         // ── v5.59.0 雙城QA五修 ──
         '的生活還不錯。': ' life treats me well.',
         '本機': 'local',
