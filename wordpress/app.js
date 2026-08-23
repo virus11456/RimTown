@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.59.3
-const RIMTOWN_APP_VERSION = '5.59.3';
+// RimTown - Frontend App (WordPress Plugin) v5.59.4
+const RIMTOWN_APP_VERSION = '5.59.4';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -2801,6 +2801,30 @@ class RimTownApp {
     // ============================================================
     // v5.57.0 雙城P2:玩家馬車過場拜訪
     // ============================================================
+    // v5.59.4 像素馬車圖(與地圖馬車站同款配色):UI 各處不再用系統 emoji,改用方塊 SVG
+    _coachPixelSvg(px) {
+        const R = (x, y, w, h, c) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}"/>`;
+        const hx = 2, hy = 5, cx0 = 24, cy0 = 3;
+        const wheel = (wx, wy) => R(wx - 3, wy - 4, 6, 8, '#3a2716') + R(wx - 4, wy - 3, 8, 6, '#3a2716') + R(wx - 1, wy - 1, 2, 2, '#8a6a44');
+        const body =
+            R(cx0 - 7, cy0 + 10, 8, 2, '#4a3020') + // 車轅
+            R(cx0, cy0, 22, 14, '#7a5236') +        // 車廂
+            R(cx0 - 1, cy0 - 2, 24, 4, '#5c3d26') + // 車頂
+            R(cx0 + 4, cy0 + 4, 5, 5, '#2e1f12') + R(cx0 + 13, cy0 + 4, 5, 5, '#2e1f12') + // 車窗
+            R(cx0, cy0 + 11, 22, 1, '#c9a86a') +    // 飾條
+            wheel(cx0 + 6, cy0 + 16) + wheel(cx0 + 18, cy0 + 16) +
+            R(hx + 4, hy - 2, 2, 2, '#3a2716') +    // 耳
+            R(hx + 3, hy + 2, 5, 6, '#8a5a34') +    // 頸
+            R(hx, hy, 6, 4, '#7a4c2a') +            // 頭
+            R(hx - 2, hy + 2, 3, 2, '#7a4c2a') +    // 口鼻
+            R(hx + 6, hy, 2, 7, '#3a2716') +        // 鬃毛
+            R(hx + 4, hy + 6, 12, 6, '#8a5a34') +   // 軀幹
+            R(hx + 16, hy + 6, 2, 7, '#3a2716') +   // 尾巴
+            R(hx + 1, hy + 1, 1, 1, '#151515') +    // 眼
+            R(hx + 5, hy + 12, 2, 5, '#6b4222') + R(hx + 8, hy + 12, 2, 5, '#6b4222') + R(hx + 12, hy + 12, 2, 5, '#6b4222') + R(hx + 14, hy + 12, 2, 5, '#6b4222') + // 四腿
+            R(hx + 5, hy + 16, 2, 1, '#2e1f12') + R(hx + 8, hy + 16, 2, 1, '#2e1f12') + R(hx + 12, hy + 16, 2, 1, '#2e1f12') + R(hx + 14, hy + 16, 2, 1, '#2e1f12'); // 蹄
+        return `<svg width="${48 * px}" height="${24 * px}" viewBox="0 0 48 24" shape-rendering="crispEdges" style="image-rendering:pixelated;vertical-align:middle">${body}</svg>`;
+    }
     _showCoachDialog() {
         if (document.getElementById('coach-dialog')) return;
         const towns = this.world?.otherTowns || [];
@@ -2810,13 +2834,13 @@ class RimTownApp {
         ov.style.cssText = 'position:fixed;inset:0;background:rgba(6,10,24,0.72);z-index:9999;display:flex;align-items:center;justify-content:center';
         const card = document.createElement('div');
         card.style.cssText = 'background:var(--bg-secondary);border:1px solid var(--border);border-radius:14px;padding:18px;max-width:330px;width:86%';
-        let inner = `<div style="font-weight:bold;font-size:1rem;margin-bottom:6px">🐎 ${t('馬車站')}</div>`;
+        let inner = `<div style="font-weight:bold;font-size:1rem;margin-bottom:6px;display:flex;align-items:center;gap:8px">${this._coachPixelSvg(1)}<span>${t('馬車站')}</span></div>`;
         if (!towns.length) {
             inner += `<div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.6">${t('車伕靠在車轅上打盹：「往海風鎮的沿海道路還封著呢——聽說鎮子發展起來，就會組修路隊把路打通。急的話，先跟商隊買點那邊的魚乾解解饞吧。」')}</div>`;
         } else {
             inner += `<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px">${t('車伕拍拍車板：「要去哪兒？路上得顛個兩天。」')}</div>`;
             towns.forEach((twn, i) => {
-                inner += `<button class="trade-btn coach-go" data-idx="${i}" style="width:100%;margin:3px 0;padding:9px">🛺 ${t('前往')} ${esc(twn.name)}</button>`;
+                inner += `<button class="trade-btn coach-go" data-idx="${i}" style="width:100%;margin:3px 0;padding:9px;display:flex;align-items:center;justify-content:center;gap:7px">${this._coachPixelSvg(0.75)}<span>${t('前往')} ${esc(twn.name)}</span></button>`;
             });
         }
         inner += `<button class="trade-btn coach-close" style="width:100%;margin-top:8px;padding:8px;opacity:0.8">${t('下次再說')}</button>`;
@@ -2835,10 +2859,10 @@ class RimTownApp {
         const seasonLine = { '冬季': t('風雪讓路程多花了些時候…'), '夏季': t('蟬聲一路相送…'), '秋季': t('沿途稻浪翻金…'), '春季': t('野花開了一路…') }[season] || '';
         const ov = document.createElement('div');
         ov.style.cssText = 'position:fixed;inset:0;background:#0a0e1e;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity .6s;overflow:hidden';
-        ov.innerHTML = `<div style="font-size:3rem;animation:coachRide 2.4s ease-in-out forwards">🐎🛺</div>
+        ov.innerHTML = `<div style="animation:coachRide 2.4s ease-in-out forwards">${this._coachPixelSvg(4)}</div>
             <div style="color:#cfd8ea;margin-top:18px;font-size:1rem">${t('馬車顛簸了兩天…')}${seasonLine}</div>
             <div style="color:#8fa8c9;margin-top:8px;font-size:0.85rem">${t('前往')} ${esc(townName)}</div>
-            <style>@keyframes coachRide{0%{transform:translateX(-42vw)}100%{transform:translateX(42vw)}}</style>`;
+            <style>@keyframes coachRide{0%{transform:translateX(42vw)}100%{transform:translateX(-42vw)}}</style>`;
         document.body.appendChild(ov);
         requestAnimationFrame(() => { ov.style.opacity = '1'; });
         await new Promise(r => setTimeout(r, 2600));
