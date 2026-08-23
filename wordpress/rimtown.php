@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.59.4
+ * Version: 5.59.5
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.59.4');
+define('RIMTOWN_VERSION', '5.59.5');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,13 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.59.5',
+            'date'    => '2026-08-23',
+            'changes' => array(
+                '🚏 海風鎮回不了邊境鎮修復:城鎮名字改以「存檔內的鎮名」為權威——過去 meta 對不上 id 時會誤判自己叫「邊境鎮」,馬車名單因此把真正的回程踢掉、還列出海風鎮自己;現在出訪名單一律排除自己、以存檔內鎮名核對、切鎮後立即重建,存錯名字的舊 meta 也會在下次存檔時自動修正',
+            ),
+        ),
         array(
             'version' => '5.59.4',
             'date'    => '2026-08-23',
