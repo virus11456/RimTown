@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.59.4.zip` from Releases
+1. Download `rimtown-v5.59.5.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,10 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.59.5 (2026-08-23)
+
+- 🚏 海風鎮回不了邊境鎮修復：城鎮名字改以「存檔內的鎮名」為權威——過去 meta 對不上 id 時會誤判自己叫「邊境鎮」，馬車名單因此把真正的回程踢掉、還列出海風鎮自己；現在出訪名單一律排除自己、以存檔內鎮名核對、切鎮後立即重建，存錯名字的舊 meta 也會在下次存檔時自動修正
 
 ### v5.59.4 (2026-08-23)
 

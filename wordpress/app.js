@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.59.4
-const RIMTOWN_APP_VERSION = '5.59.4';
+// RimTown - Frontend App (WordPress Plugin) v5.59.5
+const RIMTOWN_APP_VERSION = '5.59.5';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1504,6 +1504,9 @@ class RimTownApp {
     }
 
     _getCurrentTownName() {
+        // v5.59.5 世界自己的鎮名最權威(隨存檔攜帶):同名鎮的 meta id 分裂時,用 id 查表
+        // 會誤報「邊境鎮」——馬車名單因此把回程的鎮踢掉、雲端存檔還會存錯鎮名
+        if (this.world?.townName) return this.world.townName;
         if (this.auth.loggedIn && this._cloudSaves) {
             const cloud = this._cloudSaves.find(s => s.town_id === this.currentTownId);
             if (cloud) return cloud.town_name || t('邊境鎮');
@@ -2827,7 +2830,8 @@ class RimTownApp {
     }
     _showCoachDialog() {
         if (document.getElementById('coach-dialog')) return;
-        const towns = this.world?.otherTowns || [];
+        // v5.59.5 最後一道防線:自己(同 id 或同名)絕不出現在目的地清單
+        const towns = (this.world?.otherTowns || []).filter(tw => tw.id !== this.currentTownId && tw.name !== this.world?.townName);
         const esc = s => this._escapeHtml ? this._escapeHtml(String(s)) : String(s);
         const ov = document.createElement('div');
         ov.id = 'coach-dialog';
@@ -2947,11 +2951,19 @@ class RimTownApp {
             const towns = [];
             const push = (id, name) => {
                 if (!id || !name) return;
-                if (id === this.currentTownId || name === currentName) return;
-                if (seen.has(name)) return;
                 const hasLocal = !!localStorage.getItem('rimtown_town_' + id);
                 const inCloud = Array.isArray(this._cloudSaves) && this._cloudSaves.some(s => s.town_id === id);
                 if (!hasLocal && !inCloud) return;
+                // v5.59.5 名字以本地存檔「內」的鎮名為準:meta 名字曾被錯寫成「邊境鎮」,
+                // 會把海風鎮的分身當成回程目的地(每 id 只解析一次,結果快取整個 session)
+                if (hasLocal) {
+                    const cache = this._blobNameCache || (this._blobNameCache = {});
+                    if (!(id in cache)) { try { cache[id] = JSON.parse(localStorage.getItem('rimtown_town_' + id))?.townName || null; } catch (e) { cache[id] = null; } }
+                    if (cache[id]) name = cache[id];
+                }
+                // v5.59.5 也用世界鎮名擋自己:meta id 分裂時,同名的「自己」不再混進出訪名單
+                if (id === this.currentTownId || name === currentName || name === w.townName) return;
+                if (seen.has(name)) return;
                 seen.add(name);
                 towns.push({ id, name });
             };
@@ -3023,7 +3035,9 @@ class RimTownApp {
         const existing = list.find(t => t.id === this.currentTownId);
         const meta = {
             id: this.currentTownId,
-            name: existing?.name || name || t('邊境鎮'),
+            // v5.59.5 名字優先序:呼叫方指定 > 世界自己的鎮名 > 舊 meta。原本沒條目又沒傳名字時
+            // 一律寫「邊境鎮」,海風鎮的存檔就這樣被掛錯名,馬車回程名單跟著壞;世界名也能修復舊的錯名 meta
+            name: name || this.world?.townName || existing?.name || t('邊境鎮'),
             savedAt: new Date().toISOString(),
             season: clock.season || t('春季'),
             year: clock.year || 1,
@@ -3207,6 +3221,7 @@ class RimTownApp {
         document.getElementById('town-modal')?.classList.add('hidden');
         this.world.paused = !!this._pausedBeforeTownModal;
         // v5.59.1 任何切鎮路徑(城鎮列表直切/馬車)完成後,教學橫幅與今日焦點立即依新鎮重算
+        this._otherTownsAt = 0; // v5.59.5 抵達後立即依新鎮重建出訪名單,不沿用上一鎮的(否則海風鎮的馬車會列出海風鎮自己)
         this._updateQuestGuidance?.();
         try { if (this.world?.generateDailyFocus && !this.world.dailyFocus) this.world.generateDailyFocus(); } catch (e) {}
     }

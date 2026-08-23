@@ -8014,7 +8014,7 @@ class World {
             this.workPolicy = data.workPolicy || {}; // v5.51.0
             this.townTheme = data.townTheme || 'frontier'; // v5.55.0 主題城鎮
             this.visitors = data.visitors || {}; // v5.56.0 在鎮訪客
-            this.townName = data.townName || this.townName || ''; // v5.58.0 鎮名
+            this.townName = data.townName || (this.townTheme === 'harbor' ? t('海風鎮') : t('邊境鎮')); // v5.59.5 舊檔沒鎮名時依主題補上,不再殘留上一鎮的名字
             this._chronicleChatIdx = (this.agents['player']?.chatHistory || []).length; // v5.43.0 讀檔後從當下開始記
             this.playerActions = data.playerActions || []; // v5.45.0
             this.dailyEcho = data.dailyEcho || []; // v5.45.0
