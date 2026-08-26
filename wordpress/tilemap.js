@@ -1480,6 +1480,9 @@ class PixelTileMap {
         this.natureZones = {};
         this.labelPositions = {};
         this._factoryPlots = null; // v5.54.1 重新產圖時重算工廠地基
+        this._houseSubZones = {}; // v5.62.0 重新產圖時清掉舊鎮的房子與住戶分配,切鎮不殘留
+        this._agentHouseMap = {};
+        this._extraHouseCount = 0;
         // v5.57.0 馬車站:東側大路盡頭,通往別的城鎮
         this.coachStation = { x: this.cols - 7, y: 18, w: 5, h: 5 };
 
@@ -1985,15 +1988,103 @@ class PixelTileMap {
         if (subIds.length === 0) return null;
         // Use persistent mapping
         if (!this._agentHouseMap) this._agentHouseMap = {};
+        // v5.62.0 夫妻同住:配偶(已婚,由 app 傳入 agentPartners)已有房就搬進同一間,
+        // 婚後也會自動團圓(id 較大的一方遷就搬家)
+        const partner = this.agentPartners?.[agentId];
+        if (partner && this._agentHouseMap[partner]) {
+            const ph = this._agentHouseMap[partner];
+            if (!this._agentHouseMap[agentId] || (this._agentHouseMap[agentId] !== ph && String(agentId) > String(partner))) {
+                this._agentHouseMap[agentId] = ph;
+            }
+        }
         if (this._agentHouseMap[agentId]) return this._agentHouseMap[agentId];
-        // Count how many agents are in each house
-        const houseCounts = {};
-        subIds.forEach(id => houseCounts[id] = 0);
-        Object.values(this._agentHouseMap).forEach(hid => { if (houseCounts[hid] !== undefined) houseCounts[hid]++; });
-        // Assign to least-populated house
-        const bestHouse = subIds.reduce((a, b) => (houseCounts[a] <= houseCounts[b] ? a : b));
-        this._agentHouseMap[agentId] = bestHouse;
-        return bestHouse;
+        // v5.62.0 沒結婚的不再被塞同一間:優先找沒人住的空屋——先在自家區找,
+        // 不夠再跨區(含加蓋的 residential_extra 小屋),全鎮真的客滿才回到
+        // 舊制「人最少的那間」擠一擠
+        const occupied = new Set(Object.values(this._agentHouseMap));
+        let target = subIds.find(id => !occupied.has(id));
+        if (!target) target = Object.keys(this._houseSubZones).find(id => !occupied.has(id));
+        if (!target) {
+            const houseCounts = {};
+            subIds.forEach(id => houseCounts[id] = 0);
+            Object.values(this._agentHouseMap).forEach(hid => { if (houseCounts[hid] !== undefined) houseCounts[hid]++; });
+            target = subIds.reduce((a, b) => (houseCounts[a] <= houseCounts[b] ? a : b));
+        }
+        this._agentHouseMap[agentId] = target;
+        return target;
+    }
+
+    // v5.62.0 加蓋住宅:房間數(夫妻一間、其他人各一間)不足時,在空地上補單棟小屋
+    ensureHouseCapacity(needed) {
+        if (!this.grid || !this._houseSubZones) return;
+        let have = Object.keys(this._houseSubZones).length;
+        if (have >= needed) return;
+        const house = TILE_BUILDING_TEMPLATES.house;
+        const HW = house.w + 2, HH = house.h + 4; // 含門前空地與邊距
+        const plots = this._getFactoryPlots ? this._getFactoryPlots() : [];
+        const rects = [
+            ...Object.values(this.buildingZones || {}).map(z => ({ x: z.x, y: z.y, w: z.w || 4, h: z.h || 4 })),
+            ...plots,
+            ...(this.constructionSites || []).map(p => ({ x: p.siteX, y: p.siteY, w: 2, h: 2 })),
+            ...(this.sitedCompleted || []).map(b => ({ x: b.siteX, y: b.siteY, w: 2, h: 2 })),
+            ...(this.decorations || []).map(d => ({ x: d.x, y: d.y, w: 1, h: 1 })),
+        ];
+        if (this.coachStation) rects.push(this.coachStation);
+        const blockedRect = (px, py) => rects.some(z =>
+            px + HW + 1 > z.x && px - 1 < z.x + z.w && py + HH + 1 > z.y && py - 1 < z.y + z.h);
+        const tilesClear = (px, py) => {
+            for (let y = py - 1; y < py + HH + 1; y++) {
+                for (let x = px - 1; x < px + HW + 1; x++) {
+                    if (y < 1 || x < 1 || y >= this.rows - 1 || x >= this.cols - 1) return false;
+                    const tt = this.grid[y][x];
+                    if (tt === T.DIRT || tt === T.WATER || tt === T.WATER2) return false;
+                }
+            }
+            return true;
+        };
+        for (let y = 2; y < this.rows - HH - 2 && have < needed; y += 2) {
+            for (let x = 2; x < this.cols - HW - 2 && have < needed; x += 2) {
+                if (blockedRect(x, y) || !tilesClear(x, y)) continue;
+                this._placeExtraHouse(x + 1, y + 1);
+                rects.push({ x, y, w: HW, h: HH });
+                have++;
+            }
+        }
+    }
+
+    _placeExtraHouse(hx, hy) {
+        const house = TILE_BUILDING_TEMPLATES.house;
+        if (hx + house.w >= this.cols || hy + house.h + 1 >= this.rows) return;
+        const idx = this._extraHouseCount = (this._extraHouseCount || 0) + 1;
+        for (let rx = 0; rx < house.w; rx++) this.grid[hy][hx + rx] = T.ROOF;
+        for (let ty = 0; ty < house.h; ty++) {
+            for (let tx = 0; tx < house.w; tx++) {
+                this.grid[hy + ty + 1][hx + tx] = house.tiles[ty][tx];
+            }
+        }
+        const doorTX = hx + house.doorX, doorTY = hy + house.h + 1;
+        for (let ddy = 0; ddy <= 1; ddy++) {
+            for (let ddx = -1; ddx <= 1; ddx++) {
+                const cx = doorTX + ddx, cy = doorTY + ddy;
+                if (cx >= 0 && cx < this.cols && cy >= 0 && cy < this.rows) {
+                    const tt = this.grid[cy][cx];
+                    if (tt === T.GRASS || tt === T.GRASS2 || tt === T.GRASS3) this.grid[cy][cx] = T.DIRT;
+                }
+            }
+        }
+        this._connectToRoad(doorTX, doorTY);
+        const subId = `residential_extra_${idx}`;
+        const doorPxX = (doorTX + 0.5) * TILE, doorPxY = (doorTY + 0.5) * TILE;
+        this._houseSubZones[subId] = {
+            x: hx, y: hy, w: house.w, h: house.h + 1,
+            doorPixelX: doorPxX, doorPixelY: doorPxY,
+            interiorX: (hx + house.w / 2) * TILE, interiorY: (hy + house.h / 2 + 1) * TILE,
+            parentLocId: 'residential_extra', houseIndex: idx,
+        };
+        this.buildingZones[subId] = {
+            x: hx, y: hy, w: house.w, h: house.h + 1,
+            doorPixelX: doorPxX, doorPixelY: doorPxY, parentLocId: 'residential_extra',
+        };
     }
 
     // Get residents of a specific house sub-zone

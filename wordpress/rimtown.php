@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.61.0
+ * Version: 5.62.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.61.0');
+define('RIMTOWN_VERSION', '5.62.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,13 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.62.0',
+            'date'    => '2026-08-26',
+            'changes' => array(
+                '🏠 住房制度重整:沒結婚的村民不再被塞進同一間房——只有夫妻同住一間,單身各自獨居;房間不夠時自動在空地加蓋單棟小屋並接上道路(邊境鎮約加蓋 8 間、海風鎮約 3 間,依實際人口動態計算);婚後兩人會自動搬進同一間;切換城鎮時舊鎮的住戶分配不再殘留',
+            ),
+        ),
         array(
             'version' => '5.61.0',
             'date'    => '2026-08-26',
