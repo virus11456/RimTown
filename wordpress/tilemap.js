@@ -3195,6 +3195,24 @@ class PixelTileMap {
                     pos.x = escape.x; pos.y = escape.y;
                     pos._pathWaypoints = null; // recalc path
                 }
+                // v5.60.2 清醒卡屋保險絲(睡覺保險絲的對稱版):醒著、人在建築物內、
+                // 目標在遠處,卻一直出不了門(房間開口被牆封住、A* 找不到路只能沿牆滑等
+                // 情況)——累積約 6 秒就把人安置到所在建築的門口外,重算路線,保證不會
+                // 永遠困在屋裡
+                const _farTarget = Math.abs(pos.targetX - pos.x) + Math.abs(pos.targetY - pos.y) > TILE * 2;
+                const _inBldg = (activity !== 'sleeping' && _farTarget) ? this._isInsideBuilding(pos.x, pos.y) : null;
+                if (_inBldg) {
+                    pos._inStuck = (pos._inStuck || 0) + 1;
+                    if (pos._inStuck > 360) {
+                        const door = this._getDoorPosition(_inBldg, aid);
+                        const out = door ? this._findWalkableTarget(door.x, door.y + TILE) : this._findWalkableTarget(pos.x, pos.y);
+                        pos.x = out.x; pos.y = out.y;
+                        pos.doorPhase = null; pos.destDoor = null; pos.doorWaypoint = null;
+                        pos._pathWaypoints = this._findPath(pos.x, pos.y, pos.targetX, pos.targetY);
+                        pos._pathIdx = 0;
+                        pos._inStuck = 0;
+                    }
+                } else if (pos._inStuck) pos._inStuck = 0;
                 // Freeze agents involved in player chat
                 const isChatting = chatTarget && (aid === chatTarget || aid === 'player');
 
