@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.60.2
+ * Version: 5.61.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.60.2');
+define('RIMTOWN_VERSION', '5.61.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,13 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.61.0',
+            'date'    => '2026-08-26',
+            'changes' => array(
+                '🧹 移除玩家職業選擇系統:選職業其實對村莊經濟毫無影響(全鎮產出都來自 NPC),卻用「你目前無業!」橫幅和 11 顆按鈕搶走新手第一天的注意力——整套面板(選職/辭職/手動生產鈕)與三個職業成就一併移除;玩家身分固定顯示「旅人」,當選鎮長時照樣顯示鎮長頭銜,參選鎮長玩法不受影響',
+            ),
+        ),
         array(
             'version' => '5.60.2',
             'date'    => '2026-08-26',
