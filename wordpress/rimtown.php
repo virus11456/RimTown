@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.60.1
+ * Version: 5.60.2
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.60.1');
+define('RIMTOWN_VERSION', '5.60.2');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,13 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.60.2',
+            'date'    => '2026-08-26',
+            'changes' => array(
+                '🚪 村民卡在屋裡出不來修復:醒著的村民若在建築物內、目的地在外面,卻因為房間開口被牆擋住/找不到路而一直出不了門,約 6 秒後會自動安置到該建築的門口外並重新找路——與既有的「睡覺一定進屋」保險絲成對,保證不會有人永遠困在房子裡',
+            ),
+        ),
         array(
             'version' => '5.60.1',
             'date'    => '2026-08-23',

@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.60.1.zip` from Releases
+1. Download `rimtown-v5.60.2.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,10 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.60.2 (2026-08-26)
+
+- 🚪 村民卡在屋裡出不來修復：醒著的村民若在建築物內、目的地在外面，卻因為房間開口被牆擋住／找不到路而一直出不了門，約 6 秒後會自動安置到該建築的門口外並重新找路——與既有的「睡覺一定進屋」保險絲成對，保證不會有人永遠困在房子裡
 
 ### v5.60.1 (2026-08-23)
 
