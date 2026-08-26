@@ -1661,6 +1661,10 @@ const I18N = (() => {
         '點地圖空地選擇': 'Tap an empty spot to choose where ',
         '的位置(需2×2空地)|點這裡取消': ' goes (needs a 2×2 clearing) | tap here to cancel',
         '這裡放不下,需要 2×2 的空地!': "It won't fit here — you need a 2×2 clearing!",
+        // v5.60.0 選址引導
+        '點發光的綠色格子選擇': 'Tap a glowing green slot to choose where ',
+        '的位置(會自動對齊格線)|點這裡取消': ' goes (snaps to the grid) | tap here to cancel',
+        '這裡放不下,點發光的綠色格子!': "It won't fit here — tap one of the glowing green slots!",
         '這裡已經有東西了,換個地方吧!': "Something's already here — try another spot!",
         '資源不足,無法開工!': 'Not enough resources to start construction!',
         '動工了!工匠們會每天到工地施工': ' is under way! Craftsmen will work the site every day',
