@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.59.5
+ * Version: 5.60.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.59.5');
+define('RIMTOWN_VERSION', '5.60.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,13 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.60.0',
+            'date'    => '2026-08-23',
+            'changes' => array(
+                '🏗️ 蓋建築選址引導:進入選址模式後,所有可以蓋的 2×2 格位會發出綠光脈動,滑鼠移動時有綠(可蓋)/紅(不可)的佔地預覽框跟著;點擊自動吸附到 2 格網格,所有建築落在同一格線上自然蓋得整齊,不用再憑感覺亂點',
+            ),
+        ),
         array(
             'version' => '5.59.5',
             'date'    => '2026-08-23',

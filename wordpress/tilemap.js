@@ -430,6 +430,12 @@ class PixelTileMap {
             this.camY = cy - (e.clientY - rect.top) / this.zoom;
             this._clampCamera();
         }, { passive: false });
+
+        // v5.60.0 建築選址模式:滑鼠移動時更新佔地預覽框位置(桌面版)
+        this.canvas.addEventListener('pointermove', (e) => {
+            if (!this.sitePreview) return;
+            this.sitePreview.hoverPx = this._screenToMap(e.clientX, e.clientY);
+        });
     }
 
     _handleTap(clientX, clientY) {
@@ -2480,6 +2486,57 @@ class PixelTileMap {
         ctx.fillText(label, fx + pw / 2, fy + 3);
     }
 
+    // v5.60.0 建築選址引導:可蓋的 2×2 格位發光脈動,滑鼠跟隨綠/紅佔地預覽,
+    // 錨點吸附到 2 格網格——所有玩家建築落在同一格線上,自然蓋得整齊
+    _siteSnap(px, py) {
+        const sp = this.sitePreview;
+        const w = sp?.w || 2, h = sp?.h || 2;
+        const tx = Math.round((px / TILE - w / 2) / 2) * 2;
+        const ty = Math.round((py / TILE - h / 2) / 2) * 2;
+        return { tx, ty };
+    }
+
+    _siteValidCached(tx, ty) {
+        const sp = this.sitePreview;
+        if (!sp || !sp.isValid) return false;
+        const cache = sp._cache || (sp._cache = new Map());
+        const k = tx + ',' + ty;
+        if (!cache.has(k)) cache.set(k, sp.isValid(tx, ty) === 0);
+        return cache.get(k);
+    }
+
+    _drawSitePreview(ctx) {
+        const sp = this.sitePreview;
+        if (!sp) return;
+        const w = sp.w || 2, h = sp.h || 2;
+        const pulse = 0.45 + 0.25 * Math.sin((this.animFrame || 0) / 8);
+        // 只掃可視範圍內的偶數錨點
+        const x0 = Math.max(0, Math.floor(this.camX / TILE / 2) * 2 - 2);
+        const y0 = Math.max(0, Math.floor(this.camY / TILE / 2) * 2 - 2);
+        const x1 = Math.min(this.cols - w, Math.ceil((this.camX + this.canvas.width / this.zoom) / TILE) + 1);
+        const y1 = Math.min(this.rows - h, Math.ceil((this.camY + this.canvas.height / this.zoom) / TILE) + 1);
+        for (let ty = y0; ty <= y1; ty += 2) {
+            for (let tx = x0; tx <= x1; tx += 2) {
+                if (!this._siteValidCached(tx, ty)) continue;
+                ctx.fillStyle = `rgba(80,220,120,${(pulse * 0.3).toFixed(3)})`;
+                ctx.fillRect(tx * TILE + 1, ty * TILE + 1, w * TILE - 2, h * TILE - 2);
+                ctx.strokeStyle = `rgba(130,255,170,${pulse.toFixed(3)})`;
+                ctx.strokeRect(tx * TILE + 0.5, ty * TILE + 0.5, w * TILE - 1, h * TILE - 1);
+            }
+        }
+        // 滑鼠跟隨的佔地預覽框:綠=可蓋、紅=不可
+        if (sp.hoverPx) {
+            const { tx, ty } = this._siteSnap(sp.hoverPx.x, sp.hoverPx.y);
+            const ok = this._siteValidCached(tx, ty);
+            ctx.fillStyle = ok ? 'rgba(90,230,130,0.4)' : 'rgba(240,80,80,0.35)';
+            ctx.fillRect(tx * TILE, ty * TILE, w * TILE, h * TILE);
+            ctx.strokeStyle = ok ? '#7dffa0' : '#ff7070';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(tx * TILE + 1, ty * TILE + 1, w * TILE - 2, h * TILE - 2);
+            ctx.lineWidth = 1;
+        }
+    }
+
     // v5.54.1 工廠地基:掃描地圖找出不壓路/不壓水/不壓建築的空地作「預留地」,
     // 工廠一律蓋在地基上,不再懸浮在馬路中間
     _getFactoryPlots() {
@@ -3830,6 +3887,8 @@ class PixelTileMap {
         if (extraData?.industry?.industries) {
             this._drawIndustryBadges(ctx, extraData.industry);
         }
+        // v5.60.0 建築選址引導層(最上層:發光格位+佔地預覽)
+        this._drawSitePreview(ctx);
 
         // Highlight player's current location zone
         if (playerLoc) {

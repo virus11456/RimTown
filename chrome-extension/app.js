@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.59.5
-const RIMTOWN_APP_VERSION = '5.59.5';
+// RimTown - Frontend App (WordPress Plugin) v5.60.0
+const RIMTOWN_APP_VERSION = '5.60.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -828,9 +828,12 @@ class RimTownApp {
             document.querySelector('.map-panel')?.appendChild(hint);
             hint.addEventListener('click', () => { this._exitDecorMode(); this._exitSiteMode(); });
         }
-        hint.textContent = `🏗️ ${t('點地圖空地選擇')}【${tmpl.name}】${t('的位置(需2×2空地)|點這裡取消')}`;
+        hint.textContent = `🏗️ ${t('點發光的綠色格子選擇')}【${tmpl.name}】${t('的位置(會自動對齊格線)|點這裡取消')}`;
         hint.classList.remove('hidden');
         this.tileMap.onTapRaw = (mx, my) => this._siteTap(mx, my);
+        // v5.60.0 選址引導:可蓋格位發光+滑鼠佔地預覽,錨點吸附 2 格網格蓋得整齊
+        this._siteBlocked = null;
+        this.tileMap.sitePreview = { w: 2, h: 2, isValid: (tx, ty) => this._siteValid(tx, ty) };
         this.bgm?.sfx?.('open');
         // 手機版:收起卡片讓玩家看得到地圖
         if (window.innerWidth <= 768) {
@@ -842,33 +845,41 @@ class RimTownApp {
     _exitSiteMode() {
         if (!this._siteMode) return;
         this._siteMode = null;
-        if (this.tileMap) this.tileMap.onTapRaw = null;
+        this._siteBlocked = null;
+        if (this.tileMap) { this.tileMap.onTapRaw = null; this.tileMap.sitePreview = null; }
         document.getElementById('decor-hint')?.classList.add('hidden');
     }
 
-    _siteTap(mx, my) {
-        if (!this._siteMode) return false;
-        const tx = Math.floor(mx / 16), ty = Math.floor(my / 16);
+    // v5.60.0 選址合法性(發光格位/預覽框/點擊共用):0=可蓋 1=地形不行 2=已被占用
+    _siteValid(tx, ty) {
+        if (!this.tileMap) return 1;
         // 2x2 每格都要是可行走的空地、非水
         for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
             const cx = tx + dx, cy = ty + dy;
             const tile = this.tileMap.grid?.[cy]?.[cx];
-            if (tile === undefined || tile === 10 || tile === 11 || !this.tileMap._isWalkableTile(cx * 16 + 8, cy * 16 + 8)) {
-                this._flashSiteHint(t('這裡放不下,需要 2×2 的空地!'));
-                return true;
-            }
+            if (tile === undefined || tile === 10 || tile === 11 || !this.tileMap._isWalkableTile(cx * 16 + 8, cy * 16 + 8)) return 1;
         }
-        // 不可與裝飾、其他工地/已選址建築重疊
-        const blocked = new Set();
-        for (const d of (this.world.decorations || [])) blocked.add(`${d.x},${d.y}`);
-        const sited = [...this.world.buildings.projects, ...this.world.buildings.completed].filter(b => Number.isFinite(b.siteX));
-        for (const b of sited) for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) blocked.add(`${b.siteX + dx},${b.siteY + dy}`);
+        // 不可與裝飾、其他工地/已選址建築重疊(占用集在選址模式期間快取)
+        if (!this._siteBlocked) {
+            const s = new Set();
+            for (const d of (this.world.decorations || [])) s.add(`${d.x},${d.y}`);
+            const sited = [...this.world.buildings.projects, ...this.world.buildings.completed].filter(b => Number.isFinite(b.siteX));
+            for (const b of sited) for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) s.add(`${b.siteX + dx},${b.siteY + dy}`);
+            this._siteBlocked = s;
+        }
         for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
-            if (blocked.has(`${tx + dx},${ty + dy}`)) {
-                this._flashSiteHint(t('這裡已經有東西了,換個地方吧!'));
-                return true;
-            }
+            if (this._siteBlocked.has(`${tx + dx},${ty + dy}`)) return 2;
         }
+        return 0;
+    }
+
+    _siteTap(mx, my) {
+        if (!this._siteMode) return false;
+        // v5.60.0 點擊吸附到 2 格網格(與發光格位/預覽框同一套座標),建築自動對齊
+        const { tx, ty } = this.tileMap._siteSnap(mx, my);
+        const v = this._siteValid(tx, ty);
+        if (v === 1) { this._flashSiteHint(t('這裡放不下,點發光的綠色格子!')); return true; }
+        if (v === 2) { this._flashSiteHint(t('這裡已經有東西了,換個地方吧!')); return true; }
         const p = this.world.buildings.startProject(this._siteMode, this.world, { x: tx, y: ty });
         if (!p) {
             this._gameAlert(t('資源不足,無法開工!'), '🏗️');
