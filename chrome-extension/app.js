@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.60.2
-const RIMTOWN_APP_VERSION = '5.60.2';
+// RimTown - Frontend App (WordPress Plugin) v5.61.0
+const RIMTOWN_APP_VERSION = '5.61.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -87,9 +87,6 @@ const ACHIEVEMENTS = {
     town_lv5: { name: t('城鎮繁榮'), desc: t('城鎮升級到城鎮'), icon: '🏙️', category: 'town' },
     town_lv7: { name: t('大都市'), desc: t('城鎮升級到城市'), icon: '🌆', category: 'town' },
     // === Player (12) ===
-    got_job: { name: t('打工仔'), desc: t('選擇一份工作'), icon: '💼', category: 'player' },
-    job_master: { name: t('職業達人'), desc: t('做過3種不同工作'), icon: '🎯', category: 'player' },
-    job_all: { name: t('全職通'), desc: t('做過所有種類的工作'), icon: '🏅', category: 'player' },
     voted: { name: t('公民責任'), desc: t('在選舉中投票'), icon: '✅', category: 'player' },
     proposed: { name: t('求婚'), desc: t('向某人求婚'), icon: '💎', category: 'player' },
     player_farmer: { name: t('自耕農'), desc: t('親手種植並收穫一次作物'), icon: '🧑‍🌾', category: 'player' },
@@ -308,7 +305,6 @@ class RimTownApp {
         this._raidCount = 0;
         this._seasonsVisited = new Set();
         this._npcConvosSeen = 0;
-        this._playerJobHistory = new Set();
         this._tradeCount = 0;
         this._flirtCount = 0;
         this._datingHistory = new Set();
@@ -2293,13 +2289,6 @@ class RimTownApp {
         if (hasNpcBreakup) this._unlockAchievement('npc_breakup');
         if (npcCouples / 2 >= 5) this._unlockAchievement('npc_couple_5');
 
-        // Player job
-        if (player.job?.title && player.job.title !== t('無業')) {
-            this._unlockAchievement('got_job');
-            this._playerJobHistory.add(player.job.title);
-        }
-        if (this._playerJobHistory.size >= 3) this._unlockAchievement('job_master');
-
         // Raid repel
         const raidEvents = (this.state.recent_events || []).filter(e => e.event_type === 'raid');
         if (raidEvents.length >= 1) this._unlockAchievement('repel_raid');
@@ -2389,9 +2378,6 @@ class RimTownApp {
         // Trade count
         if ((this._tradeCount || 0) >= 50) this._unlockAchievement('trade_50');
         if ((this._tradeCount || 0) >= 1000) this._unlockAchievement('player_trader');
-        // Job all (12 default job types)
-        const JOB_TYPES = ['mayor','doctor','blacksmith','cook','farmer','trader','guard','researcher','miner','priest','carpenter','tailor'];
-        if (this._playerJobHistory.size >= JOB_TYPES.length) this._unlockAchievement('job_all');
         // Flirt count
         if ((this._flirtCount || 0) >= 5) this._unlockAchievement('flirt_master');
         // Player explorer
@@ -2547,124 +2533,7 @@ class RimTownApp {
         container.innerHTML = html;
     }
 
-    // === Player Deep Interaction ===
-    _renderPlayerJobPanel(player) {
-        const currentJob = player.job?.title || t('無業');
-        // Get jobs from JOB_DEFINITIONS (global from simulation.js), excluding mayor
-        let JOBS;
-        const JOB_ICONS = { farmer:'🌾', miner:'⛏️', cook:'🍳', blacksmith:'🔨', doctor:'💊', researcher:'🔬', trader:'💰', guard:'⚔️', carpenter:'🪵', tailor:'🧵', priest:'⛪' };
-        if (typeof JOB_DEFINITIONS !== 'undefined') {
-            JOBS = {};
-            for (const [k, v] of Object.entries(JOB_DEFINITIONS)) {
-                if (k !== 'mayor') JOBS[k] = v.title;
-            }
-        } else {
-            JOBS = { farmer:t('農夫'), miner:t('礦工'), cook:t('廚師'), blacksmith:t('鐵匠'), doctor:t('醫生'), researcher:t('研究員'), trader:t('商人'), guard:t('守衛'), carpenter:t('木匠'), tailor:t('裁縫'), priest:t('牧師') };
-        }
-        let html = t('<div class="detail-section"><h3>你的工作</h3>');
-        html += `${t('<div class="job-current-badge"><span class="job-current-label">目前職業</span><span class="job-current-name">')}${currentJob}</span></div>`;
-        if (player.job?.key && player.job.key !== 'none') {
-            const JOB_ACTION_ICONS = { farmer:'🌾', miner:'⛏️', cook:'🍳', blacksmith:'🔨', doctor:'💊', researcher:'🔬', trader:'💰', guard:'⚔️', carpenter:'🪵', tailor:'🧵', priest:'⛪' };
-            const JOB_ACTION_NAMES = { farmer:t('澆水施肥'), miner:t('開採礦石'), cook:t('烹飪餐食'), blacksmith:t('鍛造工具'), carpenter:t('建造傢俱'), tailor:t('製作衣物'), doctor:t('診治居民'), researcher:t('研究學問'), trader:t('經營生意'), guard:t('巡邏警戒'), priest:t('祈禱祝福') };
-            html += `<div style="display:flex;gap:6px;margin:6px 0">`;
-            html += `<button class="btn-accent" data-action="player-job-action" style="flex:1;padding:8px">${JOB_ACTION_ICONS[player.job.key]||'🔧'} ${JOB_ACTION_NAMES[player.job.key]||t('執行工作')}</button>`;
-            html += t('<button class="btn-quit-job" data-action="player-quit-job" style="padding:8px">✋ 辭職</button>');
-            html += `</div>`;
-        }
-        html += '<div class="job-grid">';
-        for (const [key, title] of Object.entries(JOBS)) {
-            const isActive = player.job?.key === key;
-            const icon = JOB_ICONS[key] || '💼';
-            html += `<button class="job-btn ${isActive ? 'active' : ''}" data-action="player-choose-job" data-val="${key}" ${isActive ? 'disabled' : ''}><span class="job-btn-icon">${icon}</span><span class="job-btn-title">${title}</span></button>`;
-        }
-        html += '</div></div>';
-        return html;
-    }
-
-    _playerChooseJob(jobKey) {
-        const player = this.world.agents['player'];
-        if (!player) return;
-        // Use the Job class from simulation.js (available globally)
-        try {
-            player.job = new Job(jobKey);
-            this.world.logMessage('player_action', `${t('你選擇了')}${player.job.title}${t('的工作。')}`, player.name);
-        } catch(e) {
-            // Fallback if Job class not available
-            player.job = { key: jobKey, title: jobKey, workplace: jobKey, workHours: [8,17] };
-            this.world.logMessage('player_action', `${t('你選擇了')}${jobKey}${t('的工作。')}`, player.name);
-        }
-        this._unlockAchievement('got_job');
-        this.state = this.world.getState();
-        this.renderSidebar();
-    }
-
-    _playerQuitJob() {
-        const player = this.world.agents['player'];
-        if (!player) return;
-        const oldJob = player.job?.title || t('無業');
-        player.job = null;
-        this.world.logMessage('player_action', `${t('你辭去了')}${oldJob}${t('的工作。')}`, player.name);
-        this.state = this.world.getState();
-        this.renderSidebar();
-    }
-
-    // v4.0: Job action button — perform job-specific action
-    _playerJobAction() {
-        const player = this.world.agents['player'];
-        if (!player?.job) return;
-        const jobKey = player.job.key;
-        const sp = this.world.stockpile;
-        const recipe = typeof JOB_PRODUCTION !== 'undefined' ? JOB_PRODUCTION[jobKey] : null;
-        if (!recipe) { this.world.logMessage('player_action', t('這個職業目前沒有可執行的動作。')); this.state = this.world.getState(); this.renderSidebar(); return; }
-
-        // Check inputs
-        for (const [r, a] of Object.entries(recipe.inputs)) {
-            if (!sp.has(r, a)) {
-                this.world.logMessage('player_action', `${t('材料不足！缺少')} ${t(r)}`);
-                this.state = this.world.getState(); this.renderSidebar(); return;
-            }
-        }
-
-        // Consume inputs
-        for (const [r, a] of Object.entries(recipe.inputs)) sp.consume(r, a, this.world.tickCount, t('玩家手動生產'));
-
-        // Calculate efficiency
-        const skill = player.skills.get(recipe.skill);
-        let eff = 0.8 + ((skill ? skill.level : 0) / 20) * 2.0;
-        eff *= 0.9 + Math.random() * 0.2;
-
-        // Produce outputs
-        const results = [];
-        for (const [r, a] of Object.entries(recipe.outputs)) {
-            const amount = Math.round(a * eff * 10) / 10;
-            sp.add(r, amount, this.world.tickCount, t('玩家手動生產'));
-            results.push(`${amount} ${t(r)}`);
-        }
-
-        // Special: priest heals mood
-        if (jobKey === 'priest') {
-            Object.values(this.world.agents).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) + 2; });
-            results.push(t('全鎮心情+2'));
-        }
-
-        // Skill XP
-        if (skill) {
-            const xpGain = 8 + Math.floor(Math.random() * 5);
-            if (player.skills.addXp(recipe.skill, xpGain)) {
-                this.world.logMessage('skill_up', `${player.name}${t('的')}${t(recipe.skill)}${t('達到等級')}${skill.level}${t('！')}`, player.name);
-            }
-        }
-
-        const JOB_ACTION_LABELS = {
-            farmer: t('澆水施肥'), miner: t('開採礦石'), cook: t('烹飪餐食'), blacksmith: t('鍛造工具'),
-            carpenter: t('建造傢俱'), tailor: t('製作衣物'), doctor: t('診治居民'), researcher: t('研究學問'),
-            trader: t('經營生意'), guard: t('巡邏警戒'), priest: t('祈禱祝福'),
-        };
-        const actionLabel = JOB_ACTION_LABELS[jobKey] || t('工作');
-        this.world.logMessage('player_action', `🔧 ${t('你進行了')}${actionLabel}${t('，獲得了 ')}${results.join('、')}`);
-        this.state = this.world.getState(); this.renderSidebar();
-    }
-
+    // v5.61.0 玩家職業選擇系統已移除:玩家定位為鎮長/觀察者,職業欄位僅保留給參選鎮長玩法
     // v4.0: Shop buy/sell
     _shopBuy(itemKey, amount) {
         const result = this.world.shop.buy(itemKey, amount, this.world);
@@ -3983,8 +3852,6 @@ class RimTownApp {
                 case 'load-cloud-save': this._loadCloudSave(val); break;
                 case 'delete-cloud-save': this._deleteCloudSave(val); break;
                 // Player interaction
-                case 'player-choose-job': this._playerChooseJob(val); break;
-                case 'player-quit-job': this._playerQuitJob(); break;
                 case 'player-vote': this._playerVote(val); break;
                 case 'run-for-mayor': this._showRunForMayorModal(); break;
                 case 'rel-timeline': this._showRelTimeline(val); break; // v5.48.0 關係時間軸
@@ -4065,7 +3932,6 @@ class RimTownApp {
                 case 'shop-buy': { const [item, amt] = val.split(','); this._shopBuy(item, parseInt(amt)||1); } break;
                 case 'shop-sell': { const [item, amt] = val.split(','); this._shopSell(item, parseInt(amt)||1); } break;
                 // v4.0: Job action
-                case 'player-job-action': this._playerJobAction(); break;
                 // v4.0: Quest refresh
                 case 'quest-refresh': if (this.world.questSystem) { this.world.questSystem.checkProgress(this.world); this.state = this.world.getState(); this.renderSidebar(); } break;
                 // v4.0: News reaction
@@ -6972,23 +6838,13 @@ class RimTownApp {
         const playerAgent = this.state.agents['player'];
         if (playerAgent) {
             const isSelected = this.selectedAgent === 'player';
-            const playerJobTitle = playerAgent.job?.title || t('無業');
-            const playerIsJobless = !playerAgent.job?.key;
+            // v5.61.0 職業選擇系統已移除:玩家身分固定為「旅人」,當選鎮長時顯示鎮長頭銜
+            const playerJobTitle = playerAgent.job?.title || t('旅人');
             html += `<div class="resident-card player-card ${isSelected?'selected':''}" data-action="select-agent" data-val="player">
                 <div class="resident-header">
                     <span class="resident-name"><span class="mood-indicator mood-${playerAgent.mood_description}"></span>⭐ ${playerAgent.name}${t('（你）')}</span>
                     <span class="resident-job">${playerJobTitle}</span></div>
                 <div class="resident-status"><span>@ ${this._locationLabel(playerAgent.current_location)}</span><span>${playerAgent.mood_label||playerAgent.mood_description} (${playerAgent.mood})</span></div>`;
-            if (playerIsJobless) {
-                html += t('<div style="margin-top:6px;padding:6px 8px;background:rgba(255,200,50,0.1);border:1px solid rgba(255,200,50,0.3);border-radius:6px;font-size:0.75rem;color:#ffc832">💡 你目前無業！點擊下方職業按鈕選擇工作：</div>');
-                html += `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">`;
-                const jobDefs = typeof JOB_DEFINITIONS !== 'undefined' ? JOB_DEFINITIONS : {};
-                for (const [k, v] of Object.entries(jobDefs)) {
-                    if (k === 'mayor') continue;
-                    html += `<button class="job-btn" data-action="player-choose-job" data-val="${k}" style="font-size:0.7rem;padding:5px 10px;border:1px solid rgba(255,255,255,0.3)">${v.title}</button>`;
-                }
-                html += `</div>`;
-            }
             html += `</div>`;
         }
         for (const [aid, agent] of Object.entries(this.state.agents)) {
@@ -7136,7 +6992,7 @@ class RimTownApp {
         }
         container.innerHTML = `<div class="detail-panel visible">
             <div class="detail-section"><h3>${agent.name}（${agent.gender_label === t('男') ? '♂' : agent.gender_label === t('女') ? '♀' : ''}${agent.gender_label} · ${agent.age}${t('歲）')}</h3>
-                <p style="font-size:0.8rem;color:var(--text-secondary)">${agent.job?.title||t('無業')} | ${agent.mood_label||agent.mood_description}</p>
+                <p style="font-size:0.8rem;color:var(--text-secondary)">${agent.job?.title||(this.selectedAgent==='player'?t('旅人'):t('無業'))} | ${agent.mood_label||agent.mood_description}</p>
                 <p style="font-size:0.75rem;margin-top:6px">${personality.background||''}</p>${chatBtn}</div>
             <div class="detail-section"><h3>${t('性格')}</h3>
                 ${(personality.traits||[]).map(t=>`<span class="trait-tag">${TRAIT_LABELS[t]||t}</span>`).join('')}
@@ -7145,7 +7001,6 @@ class RimTownApp {
             ${personaHtml}
             <div class="detail-section"><h3>${t('感情狀態')}</h3>
                 <p style="font-size:0.8rem">${loveStatus}</p></div>
-            ${this.selectedAgent === 'player' ? this._renderPlayerJobPanel(agent) : ''}
             ${this.selectedAgent === 'player'
                 ? `<div class="detail-section"><h3>${t('需求')}</h3>${makeBar(t('飢餓'),needs.hunger||0)}${makeBar(t('休息'),needs.rest||0)}${makeBar(t('社交'),needs.social||0)}${makeBar(t('舒適'),needs.comfort||0)}${makeBar(t('娛樂'),needs.recreation||0)}</div>`
                 : `<div class="detail-section"><h3>${t('狀態')}</h3><p style="font-size:0.78rem">${(() => {
@@ -7198,7 +7053,7 @@ class RimTownApp {
             for (const aid of residents) {
                 const agent = this.state?.agents[aid];
                 if (!agent) continue;
-                const jobTitle = agent.job?.title || t('無業');
+                const jobTitle = agent.job?.title || (aid === 'player' ? t('旅人') : t('無業'));
                 const moodIcon = agent.mood > 70 ? '😊' : agent.mood > 30 ? '😐' : '😢';
                 html += `<div class="res-item" data-action="select-agent" data-val="${aid}" style="cursor:pointer;padding:8px;margin:4px 0;border-radius:6px;background:var(--bg-secondary)">
                     <div style="font-weight:600">${moodIcon} ${agent.name}</div>

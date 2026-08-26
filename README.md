@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.60.2.zip` from Releases
+1. Download `rimtown-v5.61.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,10 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.61.0 (2026-08-26)
+
+- 🧹 移除玩家職業選擇系統：選職業其實對村莊經濟毫無影響（全鎮產出都來自 NPC），卻用「你目前無業！」橫幅和 11 顆按鈕搶走新手第一天的注意力——整套面板（選職／辭職／手動生產鈕）與三個職業成就一併移除；玩家身分固定顯示「旅人」，當選鎮長時照樣顯示鎮長頭銜，參選鎮長玩法不受影響
 
 ### v5.60.2 (2026-08-26)
 
