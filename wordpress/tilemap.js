@@ -2545,6 +2545,11 @@ class PixelTileMap {
         const PW = 4, PH = 3; // 地基大小(格)
         const H = this.grid.length, W = this.grid[0].length;
         const zones = Object.values(this.buildingZones || {}).map(z => ({ x: z.x, y: z.y, w: z.w || 4, h: z.h || 4 }));
+        // v5.60.1 地基也避開馬車站、玩家選址建築(施工中+完工)、裝飾——不再蓋在別人頭上
+        if (this.coachStation) zones.push({ x: this.coachStation.x, y: this.coachStation.y, w: this.coachStation.w, h: this.coachStation.h });
+        for (const p of (this.constructionSites || [])) zones.push({ x: p.siteX, y: p.siteY, w: 2, h: 2 });
+        for (const b of (this.sitedCompleted || [])) zones.push({ x: b.siteX, y: b.siteY, w: 2, h: 2 });
+        for (const d of (this.decorations || [])) zones.push({ x: d.x, y: d.y, w: 1, h: 1 });
         const rectOverlap = (px, py) => zones.some(z =>
             px + PW + 1 > z.x && px - 1 < z.x + z.w && py + PH + 1 > z.y && py - 1 < z.y + z.h);
         const tilesClear = (px, py) => {
@@ -2601,10 +2606,11 @@ class PixelTileMap {
                 ctx.setLineDash([3, 3]);
                 ctx.strokeRect(fx + 1, fy + 1, pw - 2, ph - 2);
                 ctx.setLineDash([]);
-                ctx.font = '8px serif';
-                ctx.textAlign = 'center';
-                ctx.fillStyle = 'rgba(230,220,190,0.7)';
-                ctx.fillText('🏗️', fx + pw / 2, fy + ph / 2 + 3);
+                // v5.60.1 像素木材堆取代 🏗️ 表情符號(與全遊戲方塊風一致)
+                const mx = fx + pw / 2, my = fy + ph / 2;
+                ctx.fillStyle = '#c8a060'; ctx.fillRect(mx - 6, my - 4, 12, 3);
+                ctx.fillStyle = '#a0522d'; ctx.fillRect(mx - 6, my - 1, 12, 3);
+                ctx.fillStyle = '#8b4513'; ctx.fillRect(mx - 6, my + 2, 12, 3);
                 return;
             }
 
@@ -2637,11 +2643,11 @@ class PixelTileMap {
                 ctx.fillRect(fx, fy + 10, pw, 2); // 屋簷陰影
                 ctx.fillStyle = '#666';
                 ctx.fillRect(fx + pw - 12, fy - 6, 6, 10); // 煙囪
-                if (factory.recipe) { // 開工中:煙
+                if (factory.recipe) { // 開工中:煙(v5.60.1 方塊像素煙取代圓形)
+                    const sy = fy - 10 - (this.animFrame % 30) / 6;
                     ctx.fillStyle = 'rgba(220,220,220,0.5)';
-                    ctx.beginPath();
-                    ctx.arc(fx + pw - 9, fy - 10 - (this.animFrame % 30) / 6, 3, 0, Math.PI * 2);
-                    ctx.fill();
+                    ctx.fillRect(fx + pw - 12, sy - 2, 6, 4);
+                    ctx.fillRect(fx + pw - 11, sy - 3, 4, 6);
                 }
                 ctx.fillStyle = '#4a3020';
                 ctx.fillRect(fx + pw / 2 - 4, fy + ph - 10, 8, 8); // 門

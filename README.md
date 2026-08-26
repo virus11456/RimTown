@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.60.0.zip` from Releases
+1. Download `rimtown-v5.60.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,11 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.60.1 (2026-08-23)
+
+- 🏭 工廠與選址互不侵犯：工廠預留地基計算現在會避開馬車站、玩家選址建築（施工中＋完工）與裝飾；反過來蓋建築與擺裝飾也不能占用工廠地基（含空地基）或馬車站，兩套系統不再互相蓋在對方頭上
+- 🎨 工廠繪製像素化補完：空地基上的 🏗️ 表情符號改為像素木材堆，煙囪的圓形煙改為方塊像素煙
 
 ### v5.60.0 (2026-08-23)
 

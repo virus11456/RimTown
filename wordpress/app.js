@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.60.0
-const RIMTOWN_APP_VERSION = '5.60.0';
+// RimTown - Frontend App (WordPress Plugin) v5.60.1
+const RIMTOWN_APP_VERSION = '5.60.1';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -793,6 +793,12 @@ class RimTownApp {
         if (!this.tileMap._isWalkableTile(tx * 16 + 8, ty * 16 + 8)) return true;
         const tile = this.tileMap.grid?.[ty]?.[tx];
         if (tile === 10 || tile === 11) return true; // WATER
+        // v5.60.1 裝飾也不可擺進工廠預留地基或馬車站
+        for (const pl of (this.tileMap._getFactoryPlots?.() || [])) {
+            if (tx >= pl.x && tx < pl.x + pl.w && ty >= pl.y && ty < pl.y + pl.h) return true;
+        }
+        const dcs = this.tileMap.coachStation;
+        if (dcs && tx >= dcs.x && tx < dcs.x + dcs.w && ty >= dcs.y && ty < dcs.y + dcs.h) return true;
         // 資源檢查與扣款
         const afford = Object.entries(def.cost).every(([k, v]) => (this.world.stockpile.get(k) || 0) >= v);
         if (!afford) {
@@ -870,6 +876,12 @@ class RimTownApp {
         for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
             if (this._siteBlocked.has(`${tx + dx},${ty + dy}`)) return 2;
         }
+        // v5.60.1 工廠預留地基(含空地基)與馬車站也是禁區,兩套系統不再互相蓋在對方頭上
+        for (const pl of (this.tileMap._getFactoryPlots?.() || [])) {
+            if (tx + 2 > pl.x && tx < pl.x + pl.w && ty + 2 > pl.y && ty < pl.y + pl.h) return 2;
+        }
+        const cs = this.tileMap.coachStation;
+        if (cs && tx + 2 > cs.x && tx < cs.x + cs.w && ty + 2 > cs.y && ty < cs.y + cs.h) return 2;
         return 0;
     }
 
@@ -3441,6 +3453,8 @@ class RimTownApp {
                 const player = agents['player'];
                 this.tileMap.decorations = this.world?.decorations || [];
                 this.tileMap.constructionSites = (this.world?.buildings?.projects || []).filter(p => Number.isFinite(p.siteX));
+                // v5.60.1 工廠地基計算需避開玩家已蓋好的選址建築
+                this.tileMap.sitedCompleted = (this.world?.buildings?.completed || []).filter(b => Number.isFinite(b.siteX));
                 // v4.9.0 相鄰組合發現慶祝(建築完工在 dailyUpdate 內觸發,這裡輪詢顯示)
                 if (this.world?._pendingComboNotifs?.length) {
                     const c = this.world._pendingComboNotifs.shift();
