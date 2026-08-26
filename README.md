@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.61.0.zip` from Releases
+1. Download `rimtown-v5.62.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,10 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.62.0 (2026-08-26)
+
+- 🏠 住房制度重整：沒結婚的村民不再被塞進同一間房——只有夫妻同住一間，單身各自獨居；房間不夠時自動在空地加蓋單棟小屋並接上道路（邊境鎮約加蓋 8 間、海風鎮約 3 間，依實際人口動態計算）；婚後兩人會自動搬進同一間；切換城鎮時舊鎮的住戶分配不再殘留
 
 ### v5.61.0 (2026-08-26)
 

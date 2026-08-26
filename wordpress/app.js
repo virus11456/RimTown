@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.61.0
-const RIMTOWN_APP_VERSION = '5.61.0';
+// RimTown - Frontend App (WordPress Plugin) v5.62.0
+const RIMTOWN_APP_VERSION = '5.62.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -2787,6 +2787,33 @@ class RimTownApp {
     // 兩鎮存檔各自獨立,交流靠 localStorage 信箱:出訪寫進對方鎮的
     // 訪客信箱、返鄉見聞寫進原鎮的回鄉信箱,各鎮載入時收信
     // ============================================================
+    // v5.62.0 住房同步:告訴地圖誰跟誰是夫妻(只有已婚才同住),並確保
+    // 房間數夠「夫妻一間、其他人各一間(+玩家)」——不夠就在空地加蓋小屋。
+    // 跟著當前載入的世界跑,邊境鎮/海風鎮切到哪就檢查哪
+    _syncHousing() {
+        const w = this.world, tm = this.tileMap;
+        if (!w || !tm || !tm._houseSubZones || !tm.grid) return;
+        const npcs = Object.values(w.agents).filter(a =>
+            !a.isPlayer && !a.isDead && !String(a.agentId || '').startsWith('visit_'));
+        const byName = {};
+        npcs.forEach(a => { byName[a.name] = a.agentId; });
+        const partners = {};
+        const seen = new Set();
+        let couples = 0;
+        npcs.forEach(a => {
+            const sp = a.relationships?.getSpouse?.();
+            const pid = sp ? byName[sp.targetName] : null;
+            if (pid && pid !== a.agentId) {
+                partners[a.agentId] = pid;
+                const key = [a.agentId, pid].sort().join('|');
+                if (!seen.has(key)) { seen.add(key); couples++; }
+            }
+        });
+        tm.agentPartners = partners;
+        const needed = (npcs.length - couples * 2) + couples + 1; // 單身各一間+夫妻一間+玩家一間
+        tm.ensureHouseCapacity?.(needed);
+    }
+
     _visitorMailboxKey(townId) { return 'rimtown_visitors_' + townId; }
     _returnMailboxKey(townId) { return 'rimtown_returns_' + townId; }
     _pushMailbox(key, entry) {
@@ -3324,6 +3351,11 @@ class RimTownApp {
                 this.tileMap.constructionSites = (this.world?.buildings?.projects || []).filter(p => Number.isFinite(p.siteX));
                 // v5.60.1 工廠地基計算需避開玩家已蓋好的選址建築
                 this.tileMap.sitedCompleted = (this.world?.buildings?.completed || []).filter(b => Number.isFinite(b.siteX));
+                // v5.62.0 住房同步:夫妻同住、單身獨居,房子不夠就加蓋(每 5 秒檢查一次,兩鎮通用)
+                if (!this._housingAt || Date.now() - this._housingAt > 5000) {
+                    this._housingAt = Date.now();
+                    try { this._syncHousing(); } catch (e) {}
+                }
                 // v4.9.0 相鄰組合發現慶祝(建築完工在 dailyUpdate 內觸發,這裡輪詢顯示)
                 if (this.world?._pendingComboNotifs?.length) {
                     const c = this.world._pendingComboNotifs.shift();
