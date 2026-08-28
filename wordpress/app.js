@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.62.0
-const RIMTOWN_APP_VERSION = '5.62.0';
+// RimTown - Frontend App (WordPress Plugin) v5.62.1
+const RIMTOWN_APP_VERSION = '5.62.1';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -316,6 +316,8 @@ class RimTownApp {
         // v5.33.0 已登入就先拉帳號雲端的 AI 設定,再據以建立 LLM client
         if (this.auth.loggedIn) { try { await this._pullCloudSettings(); } catch (e) {} }
         await this.loadSettings();
+        // v5.62.1 一次性遷移:清掉城鎮列表裡同名的「第1天孤兒」重複條目
+        this._dedupeTownList();
         // Try to load saved game
         let loaded = false;
         if (this.auth.loggedIn) {
@@ -323,7 +325,9 @@ class RimTownApp {
             try {
                 const saves = await this.auth.listSaves();
                 if (saves.length > 0) {
-                    const cloudMatch = saves[0];
+                    // v5.62.1 優先回到上次玩的鎮,而不是雲端清單第一筆
+                    const lastTown = localStorage.getItem('rimtown_last_town');
+                    const cloudMatch = saves.find(s => s.town_id === lastTown) || saves[0];
                     const saveData = await this.auth.cloudLoad(cloudMatch.town_id);
                     if (saveData && this.world.loadSave(saveData)) {
                         this.currentTownId = cloudMatch.town_id;
@@ -331,13 +335,26 @@ class RimTownApp {
                         loaded = true;
                         console.log('[RimTown] Loaded from cloud on init:', cloudMatch.town_name);
                     }
+                    // v5.62.1 雲端同名 Day1 孤兒順手清掉(背景執行,不擋開機)
+                    this._dedupeCloudSaves(saves).catch(() => {});
                 }
             } catch (e) {
                 console.error('[RimTown] Cloud load on init failed:', e);
             }
             if (!loaded) {
+                // v5.62.1 雲端拿不到時先試本地存檔(v5.59.1 起切鎮有雙寫本地檔),
+                // 不再直接開新世界+領新 id——那正是列表裡 Day1 孤兒條目的製造機
+                const tryIds = [localStorage.getItem('rimtown_last_town'),
+                    ...this._getTownList().map(tw => tw.id)].filter(Boolean);
+                for (const tid of tryIds) {
+                    if (this._loadTownById(tid)) { loaded = true; break; }
+                }
+            }
+            if (!loaded) {
                 this.world.reset();
-                this.currentTownId = this._generateTownId(t('邊境鎮'));
+                // v5.62.1 沿用既有同名條目的 id(覆寫同一 slot),沒有才產新 id
+                const orphan = this._getTownList().find(tw => tw.name === t('邊境鎮'));
+                this.currentTownId = orphan?.id || this._generateTownId(t('邊境鎮'));
             }
         } else {
             // Not logged in — use local saves
@@ -346,13 +363,22 @@ class RimTownApp {
                 loaded = this._loadTownById(lastTownId);
             }
             if (!loaded) {
+                // v5.62.1 last_town 失效時先試列表裡其他有存檔的鎮(新到舊)
+                const rest = this._getTownList()
+                    .sort((a, b) => String(b.savedAt || '').localeCompare(String(a.savedAt || '')));
+                for (const tw of rest) {
+                    if (this._loadTownById(tw.id)) { loaded = true; break; }
+                }
+            }
+            if (!loaded) {
                 const legacyLoaded = await this.tryLoadGame();
+                const orphan = this._getTownList().find(tw => tw.name === t('邊境鎮'));
                 if (legacyLoaded) {
-                    this.currentTownId = this._generateTownId(t('邊境鎮'));
+                    this.currentTownId = orphan?.id || this._generateTownId(t('邊境鎮'));
                     this._saveCurrentTown(t('邊境鎮'));
                 } else {
                     this.world.reset();
-                    this.currentTownId = this._generateTownId(t('邊境鎮'));
+                    this.currentTownId = orphan?.id || this._generateTownId(t('邊境鎮'));
                     this._saveCurrentTown(t('邊境鎮'));
                 }
             }
@@ -2934,6 +2960,71 @@ class RimTownApp {
     _saveTownList(list) {
         localStorage.setItem('rimtown_town_list', JSON.stringify(list));
     }
+    // v5.62.1 一次性遷移+開機守護:清掉同名重複的「第1天孤兒」城鎮條目。
+    // 根因:啟動 fallback 每次用 _generateTownId 領新 id(同名加 _2/_3 字尾),
+    // v5.59.1 雙寫後這些 id 每存一輪就在列表多一筆 Day1 邊境鎮。
+    // 規則:同名分組,留進度最多的那筆;其餘只刪「絕對第1天、非目前鎮、
+    // 非 last_town」的孤兒(含其存檔 blob),有實際進度的同名鎮一律保留
+    _dedupeTownList() {
+        try {
+            const list = this._getTownList();
+            if (list.length < 2) return;
+            const absDay = (id) => {
+                try {
+                    const d = JSON.parse(localStorage.getItem('rimtown_town_' + id) || 'null');
+                    if (!d) return 0;
+                    const si = [t('春季'), t('夏季'), t('秋季'), t('冬季')].indexOf(d?.clock?.season);
+                    return ((d?.clock?.year || 1) - 1) * 60 + Math.max(0, si) * 15 + (d?.clock?.day || 1);
+                } catch (e) { return 0; }
+            };
+            const lastTown = localStorage.getItem('rimtown_last_town');
+            const byName = {};
+            list.forEach(tw => { (byName[tw.name] = byName[tw.name] || []).push(tw); });
+            const keep = new Set();
+            const drop = [];
+            for (const group of Object.values(byName)) {
+                if (group.length === 1) { keep.add(group[0].id); continue; }
+                const scored = group.map(tw => ({ tw, day: absDay(tw.id) }));
+                scored.sort((a, b) => (b.day - a.day)
+                    || ((b.tw.id === lastTown) - (a.tw.id === lastTown))
+                    || String(b.tw.savedAt || '').localeCompare(String(a.tw.savedAt || '')));
+                keep.add(scored[0].tw.id);
+                for (const s of scored.slice(1)) {
+                    if (s.day <= 1 && s.tw.id !== this.currentTownId && s.tw.id !== lastTown) drop.push(s.tw.id);
+                    else keep.add(s.tw.id);
+                }
+            }
+            if (drop.length) {
+                this._saveTownList(list.filter(tw => keep.has(tw.id)));
+                drop.forEach(id => { try { localStorage.removeItem('rimtown_town_' + id); } catch (e) {} });
+                console.log('[RimTown] 城鎮列表去重:移除', drop.length, '筆 Day1 孤兒條目');
+            }
+        } catch (e) {}
+    }
+
+    // v5.62.1 雲端側的同款清理:同名且「第1年第1天」的孤兒存檔,留最有進度的一筆
+    async _dedupeCloudSaves(saves) {
+        if (!this.auth.loggedIn || !Array.isArray(saves) || saves.length < 2) return;
+        const score = s => ((s.year || 1) - 1) * 60 + (s.day || 1);
+        const byName = {};
+        saves.forEach(s => { (byName[s.town_name] = byName[s.town_name] || []).push(s); });
+        const removed = [];
+        for (const group of Object.values(byName)) {
+            if (group.length < 2) continue;
+            const best = group.reduce((a, b) => (score(b) > score(a) ? b : a));
+            for (const s of group) {
+                if (s === best || s.town_id === this.currentTownId) continue;
+                if ((s.year || 1) <= 1 && (s.day || 1) <= 1) {
+                    try { await this.auth.cloudDelete(s.town_id); removed.push(s.town_id); } catch (e) {}
+                }
+            }
+        }
+        if (removed.length) {
+            this._cloudSaves = (this._cloudSaves || []).filter(x => !removed.includes(x.town_id));
+            console.log('[RimTown] 雲端存檔去重:移除', removed.length, '筆 Day1 孤兒');
+        }
+    }
+
     _loadTownById(townId) {
         try {
             const json = localStorage.getItem('rimtown_town_' + townId);

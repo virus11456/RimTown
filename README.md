@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.62.0.zip` from Releases
+1. Download `rimtown-v5.62.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,10 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.62.1 (2026-08-26)
+
+- 🗂️ 城鎮列表不再累積重複的邊境鎮：啟動失敗時的備援路徑每次都領一個新城鎮 id，配合 v5.59.1 的雙寫，每存一輪列表就多一筆「第1天」孤兒條目——現在啟動會優先回到上次玩的鎮（雲端拿不到就讀本地備份），真的要開新世界也沿用既有條目的 id 覆寫同一格；開機時自動清掉既有的同名 Day1 孤兒（本機＋雲端），有實際進度的同名城鎮一律保留不動
 
 ### v5.62.0 (2026-08-26)
 
