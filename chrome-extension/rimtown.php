@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.62.0
+ * Version: 5.62.1
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.62.0');
+define('RIMTOWN_VERSION', '5.62.1');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,13 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.62.1',
+            'date'    => '2026-08-26',
+            'changes' => array(
+                '🗂️ 城鎮列表不再累積重複的邊境鎮:啟動失敗時的備援路徑每次都領一個新城鎮 id,配合 v5.59.1 的雙寫,每存一輪列表就多一筆「第1天」孤兒條目——現在啟動會優先回到上次玩的鎮(雲端拿不到就讀本地備份),真的要開新世界也沿用既有條目的 id 覆寫同一格;開機時自動清掉既有的同名 Day1 孤兒(本機+雲端),有實際進度的同名城鎮一律保留不動',
+            ),
+        ),
         array(
             'version' => '5.62.0',
             'date'    => '2026-08-26',
