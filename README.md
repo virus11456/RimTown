@@ -20,7 +20,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 - **Achievement System**: 50+ achievements across social, romance, economy, survival, faction, exploration, industry categories
 - **NPC Conversation Visualization**: Speech bubbles on map when NPCs talk to each other
 - **Player Interaction**: Choose jobs, vote in elections, flirt, propose, and marry NPCs
-- **Multi-LLM Support**: Claude, GPT, Gemini, DeepSeek, Groq, Together AI, MiniMax (or play without AI) with automatic Groq fallback on rate limit
+- **Built-in Town AI**: every player talks to villagers through the server-side AI proxy (`/api/chat`); all keys live in Vercel env vars (`LLM_*` primary, `GROQ_API_KEY` fallback), nothing to configure on the client
 - **Pixel Art Map**: Animated tilemap with day/night cycle, campfires, particles
 - **Four Industries System**: Lumber, Quarry, Farming, Mining — choose your starting industry and unlock more as your town grows (v3)
 - **Farm & Crop System**: Plant crops, manage plots, seasonal planting, quality system, NPC farmer bonuses (v3)
@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.64.1.zip` from Releases
+1. Download `rimtown-v5.65.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -66,6 +66,11 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.65.0 (2026-09-08)
+
+- 🔐 AI 全面內建：設定頁的「進階：自備 AI 金鑰」整段移除（供應商／API 金鑰／Groq 金鑰／測試連線都拿掉），所有玩家一律走小鎮內建 AI；金鑰只存在 Vercel 環境變數（`LLM_*` 主渠道＋`GROQ_API_KEY` 備援），玩家端不需要、也看不到任何金鑰欄位
+- 🧹 帳號設定不再保存玩家金鑰：伺服器讀取時過濾、寫入時清除舊版留下的 `llm_api_key`／`fallback_groq_key`；前端開機同步清掉本機與擴充功能儲存區的舊金鑰。設定頁只剩 NPC 每日 AI 額度、模擬速度、語言與音樂
 
 ### v5.64.1 (2026-09-08)
 

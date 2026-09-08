@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.64.1
+ * Version: 5.65.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.64.1');
+define('RIMTOWN_VERSION', '5.65.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,14 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.65.0',
+            'date'    => '2026-09-08',
+            'changes' => array(
+                '🔐 AI 全面內建:設定頁的「進階:自備 AI 金鑰」整段移除(供應商/API 金鑰/Groq 金鑰/測試連線都拿掉),所有玩家一律走小鎮內建 AI;金鑰只存在 Vercel 環境變數(LLM_* 主渠道 + GROQ_API_KEY 備援),玩家端不需要、也看不到任何金鑰欄位',
+                '🧹 帳號設定不再保存玩家金鑰:伺服器讀取時過濾、寫入時清除舊版留下的 llm_api_key/fallback_groq_key;前端開機同步清掉本機與擴充功能儲存區的舊金鑰。設定頁只剩 NPC 每日 AI 額度、模擬速度、語言與音樂',
+            ),
+        ),
         array(
             'version' => '5.64.1',
             'date'    => '2026-09-08',

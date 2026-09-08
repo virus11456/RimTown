@@ -1681,6 +1681,9 @@ const I18N = (() => {
         '帳號與存檔已刪除': 'Account and saves deleted',
         '操作失敗：': 'Action failed: ',
         '你的帳號已被管理員停用，已登出。': 'Your account has been disabled by an admin. You have been logged out.',
+        // v5.65.0 AI 全面內建
+        '所有 AI 金鑰由小鎮伺服器統一保管，你不需要、也不會看到任何金鑰欄位。': 'All AI keys are kept on the town server. You never need to enter or see any key.',
+        '此站沒有內建 AI 代理端點，村民對話走內建模擬': 'This site has no built-in AI endpoint; villager chat uses the built-in simulation',
         // v5.64.1 存檔保護
         '雲端已有較新的進度，本次未覆寫。': 'The cloud already has newer progress; this save was not written over it.',
         // v5.64.0 儲存後端 / 搬遷
