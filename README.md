@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.66.6.zip` from Releases
+1. Download `rimtown-v5.67.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -61,6 +61,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ```
 node scripts/method-audit.js   # 前端 this._xxx() 呼叫都有定義(v5.66.6 起)
+node scripts/lane_test.js      # /api/chat 分流、冷卻、逾時、額度感知(v5.67.0 起)
 ```
 
 ## 存檔保護規範（每次改版必讀）
@@ -72,6 +73,11 @@ node scripts/method-audit.js   # 前端 this._xxx() 呼叫都有定義(v5.66.6 �
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.67.0 (2026-09-08)
+
+- 📊 Groq 免費額度感知：免費層 30 RPM／1K RPD／8K TPM／200K TPD 是整把金鑰共用、不分玩家。伺服器每次 Groq 回應都讀 `x-ratelimit-*` 標頭記下剩餘額度與重置時間；下一次請求先估算需要的 token（提示詞＋回覆），不夠就直接走付費主渠道，不去撞 429；真的撞到 429 照 `retry-after` 精準冷卻（上限 6 小時），不再一律 5 分鐘
+- 🔍 `/api/chat` 回應多帶 `groq_quota`（剩餘 token／請求數）與 `groq_skipped`（這次為何沒優先用 Groq），方便看免費額度用到哪
 
 ### v5.66.6 (2026-09-08)
 

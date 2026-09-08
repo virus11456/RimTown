@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.66.6
+ * Version: 5.67.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.66.6');
+define('RIMTOWN_VERSION', '5.67.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,14 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.67.0',
+            'date'    => '2026-09-08',
+            'changes' => array(
+                '📊 Groq 免費額度感知:免費層 30 RPM / 1K RPD / 8K TPM / 200K TPD 是整把金鑰共用、不分玩家。伺服器每次 Groq 回應都讀 x-ratelimit-* 標頭記下剩餘額度與重置時間;下一次請求先估算需要的 token(提示詞+回覆),不夠就直接走付費主渠道,不去撞 429;真的撞到 429 照 retry-after 精準冷卻(上限 6 小時),不再一律 5 分鐘',
+                '🔍 /api/chat 回應多帶 groq_quota(剩餘 token/請求數)與 groq_skipped(這次為何沒優先用 Groq),方便看免費額度用到哪',
+            ),
+        ),
         array(
             'version' => '5.66.6',
             'date'    => '2026-09-08',

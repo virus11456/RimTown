@@ -93,7 +93,12 @@ async function callGroq(apiKey, prompt, maxTokens, temperature, deadline = Date.
     };
     let r = await call(await resolveModel(apiKey, false, deadline));
     if (r.status === 404 && deadline - Date.now() > 3000) r = await call(await resolveModel(apiKey, true, deadline)); // 快取模型被下架 → 時間夠才重查重試
-    if (!r.ok) { const e = new Error('groq_http_' + r.status); e.status = r.status; throw e; }
+    _readGroqHeaders(r);
+    if (!r.ok) {
+        const e = new Error('groq_http_' + r.status); e.status = r.status;
+        if (r.status === 429) { const ra = r.headers && r.headers.get ? _parseDuration(r.headers.get('retry-after')) : 0; if (ra) e.retryAfterMs = ra; }
+        throw e;
+    }
     const data = await r.json();
     let text = String(data.choices?.[0]?.message?.content || '');
     text = text.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<think>[\s\S]*/gi, '').trim();
@@ -103,6 +108,38 @@ async function callGroq(apiKey, prompt, maxTokens, temperature, deadline = Date.
 
 // 分流冷卻狀態(lambda 實例內存)
 const _lane = { groqCooldownUntil: 0, relayCooldownUntil: 0, relayFailCount: 0 };
+
+// v5.67.0 Groq 免費額度感知(免費層:30 RPM / 1K RPD / 8K TPM / 200K TPD,整個組織共用,不分玩家)
+// 每次 Groq 回應都讀 x-ratelimit-* 標頭記下剩餘額度與重置時間;下一次請求先估算需要的 token,
+// 不夠就直接走付費主渠道,不去撞 429;真的撞到 429 就照 retry-after 精準冷卻。
+const _groqQuota = { remainingTokens: null, remainingRequests: null, tokensResetAt: 0, requestsResetAt: 0, at: 0 };
+function _parseDuration(s) { // "2m59.56s" / "1h2m3s" / "500ms" / "7.5s" → 毫秒
+    if (!s) return 0;
+    let ms = 0; const str = String(s).trim();
+    const re = /(\d+(?:\.\d+)?)(ms|h|m|s)/g; let m;
+    while ((m = re.exec(str))) { const v = parseFloat(m[1]); ms += m[2] === 'h' ? v * 3600000 : m[2] === 'm' ? v * 60000 : m[2] === 's' ? v * 1000 : v; }
+    if (!ms && /^\d+(\.\d+)?$/.test(str)) ms = parseFloat(str) * 1000; // 純數字視為秒
+    return ms;
+}
+function _readGroqHeaders(r) {
+    const h = r && r.headers && typeof r.headers.get === 'function' ? r.headers : null;
+    if (!h) return;
+    const rt = parseInt(h.get('x-ratelimit-remaining-tokens'), 10), rr = parseInt(h.get('x-ratelimit-remaining-requests'), 10);
+    const now = Date.now();
+    if (Number.isFinite(rt)) { _groqQuota.remainingTokens = rt; _groqQuota.tokensResetAt = now + _parseDuration(h.get('x-ratelimit-reset-tokens')); }
+    if (Number.isFinite(rr)) { _groqQuota.remainingRequests = rr; _groqQuota.requestsResetAt = now + _parseDuration(h.get('x-ratelimit-reset-requests')); }
+    _groqQuota.at = now;
+}
+// 粗估 token:中文約 1 字 1 token,英文約 4 字元 1 token;取偏保守的估法
+function _estTokens(text) { const s = String(text || ''); const cjk = (s.match(/[\u3000-\u9fff\uf900-\ufaff]/g) || []).length; return Math.ceil(cjk + (s.length - cjk) / 4); }
+// 這次請求 Groq 的額度夠不夠?回 null = 夠(或不知道),否則回原因字串
+function _groqBudgetBlock(prompt, maxTokens) {
+    const now = Date.now();
+    const need = _estTokens(prompt) + Math.max(maxTokens, 160) + 50;
+    if (_groqQuota.remainingRequests !== null && now < _groqQuota.requestsResetAt && _groqQuota.remainingRequests < 1) return 'groq_rpm_exhausted';
+    if (_groqQuota.remainingTokens !== null && now < _groqQuota.tokensResetAt && _groqQuota.remainingTokens < need) return 'groq_tpm_low:' + _groqQuota.remainingTokens + '<' + need;
+    return null;
+}
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') return L.err(res, 405, 'method_not_allowed', 'POST only');
@@ -136,10 +173,11 @@ module.exports = async (req, res) => {
     const now = Date.now();
     const deadline = now + 26000; // v5.66.5 兩條渠道共用 26 秒(函式上限 30 秒,留 4 秒給額度讀寫與回應)
     const candidates = [];
+    const groqBlock = groqKey ? _groqBudgetBlock(prompt, maxTokens) : null; // v5.67.0 免費額度不夠 → 這次不優先用 Groq
     if (lane === 'chat') {
-        if (groqKey && now >= _lane.groqCooldownUntil) candidates.push('groq');
+        if (groqKey && now >= _lane.groqCooldownUntil && !groqBlock) candidates.push('groq');
         if (RELAY_KEY) candidates.push('relay');
-        if (groqKey && !candidates.includes('groq')) candidates.push('groq'); // 冷卻中仍留作最後備援
+        if (groqKey && !candidates.includes('groq')) candidates.push('groq'); // 冷卻中/額度不足仍留作最後備援
     } else {
         if (RELAY_KEY && now >= _lane.relayCooldownUntil) candidates.push('relay');
         if (groqKey) candidates.push('groq');
@@ -165,7 +203,7 @@ module.exports = async (req, res) => {
             console.warn('[chat] provider failed:', c, c === 'groq' ? _lastGroqModel : RELAY_MODEL, String(e && e.message || e).slice(0, 200));
             if (c === 'groq') {
                 // v5.66.4 空回覆是單次現象,只退回這一次不冷卻;限流/故障(429/5xx/逾時)才冷卻 5 分鐘
-                if (e && e.message !== 'groq_empty') _lane.groqCooldownUntil = Date.now() + 300000;
+                if (e && e.message !== 'groq_empty') _lane.groqCooldownUntil = Date.now() + (e.retryAfterMs ? Math.min(e.retryAfterMs, 6 * 3600000) : 300000); // v5.67.0 429 照 retry-after(上限 6 小時)
             } else {
                 _lane.relayFailCount = Math.min(_lane.relayFailCount + 1, 5);
                 _lane.relayCooldownUntil = Date.now() + 60000 * _lane.relayFailCount; // 60s × 次數,最多 5 分鐘
@@ -182,6 +220,8 @@ module.exports = async (req, res) => {
 
     const out = { reply, remaining: Math.max(0, limit - q.count), provider, lane, model: provider === 'groq' ? _lastGroqModel : RELAY_MODEL };
     if (failed.length) out.fallback_from = failed;
+    if (groqBlock) out.groq_skipped = groqBlock;
+    if (_groqQuota.at) out.groq_quota = { tokens: _groqQuota.remainingTokens, requests: _groqQuota.remainingRequests };
     return res.status(200).json(out);
 };
 
