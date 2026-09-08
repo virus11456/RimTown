@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.67.3
-const RIMTOWN_APP_VERSION = '5.67.3';
+// RimTown - Frontend App (WordPress Plugin) v5.67.4
+const RIMTOWN_APP_VERSION = '5.67.4';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -434,6 +434,8 @@ class RimTownApp {
         this._updateHeaderTownName(currentMeta?.name);
         this.render();
         this._startRenderLoop();
+        // v5.67.4 載入時若清掉 AI 助理漏出的內容,提示並回存
+        setTimeout(() => this._notifyScrubbedLeaks(), 1500);
         // Show version in header
         const verEl = document.getElementById('version-display');
         if (verEl && !verEl.textContent) verEl.textContent = 'v' + RIMTOWN_APP_VERSION;
@@ -1512,6 +1514,15 @@ class RimTownApp {
             console.error('[RimTown] Cloud sync error:', e);
             this.world.logMessage('system', t('雲端同步失敗。'));
         }
+    }
+
+    // v5.67.4 存檔清理提示(loadSave 清掉 AI 助理漏出的錯誤回覆後,提示一次並存回)
+    _notifyScrubbedLeaks() {
+        const n = this.world && this.world._scrubbedLeaks;
+        if (!n) return;
+        this.world._scrubbedLeaks = 0;
+        try { this.world.logMessage('system', `🧹 ${t('已清除')} ${n} ${t('則 AI 服務誤回的英文/自報身分內容，存檔已修正。')}`); } catch (e) {}
+        this.saveGame().catch(() => {});
     }
 
     // v5.66.0 帳號自救流程:伺服器回報帳號紀錄遺失 → 請玩家設新密碼 → 重建
@@ -3299,6 +3310,7 @@ class RimTownApp {
             const pickData = this._newerSave(cloudData, localData); // v5.63.0 以 tickCount 比新舊(同一天內也分得出)
             let loaded = false;
             if (pickData) { try { loaded = !!this.world.loadSave(pickData); } catch (e) { console.error('[RimTown] switch load error:', e); } }
+            if (loaded) setTimeout(() => this._notifyScrubbedLeaks(), 1500); // v5.67.4
             if (loaded) {
                 localStorage.setItem('rimtown_last_town', townId);
                 if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();

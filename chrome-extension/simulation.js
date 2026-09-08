@@ -3548,6 +3548,8 @@ class LLMClient {
                 if (res.status === 429) return '__RATE_LIMITED__';
                 if (!res.ok) return '__ERROR__';
                 const data = await res.json();
+                // v5.67.4 雙保險:伺服器已擋,萬一漏網也不讓「我是 AI 助理」進到台詞
+                if (World.looksLikeAssistantLeak(data.reply)) { console.warn('[RimTown LLM] assistant leak blocked'); return '__ERROR__'; }
                 return data.reply || '';
             } catch (err) {
                 console.warn('[RimTown LLM] server provider error:', err.message);
@@ -7927,9 +7929,50 @@ class World {
         };
     }
 
+    // v5.67.4 全存檔清理:AI 中繼曾把「I'm Kiro, an AI development environment…」這類拒絕/自報身分的句子
+    // 當成村民台詞回來,已經寫進聊天紀錄、村民對話、記憶、行程、名場面、新聞。載入時深度掃描整份存檔,
+    // 命中的字串/條目移除,回傳清掉的筆數。伺服器端(/api/chat)自 v5.67.2 起已擋新產生的,這裡清舊的。
+    static looksLikeAssistantLeak(text) {
+        const s = String(text || '').trim();
+        if (!s || s.length < 8) return false;
+        const re = /\b(I'?m|I am) (Kiro|Claude|ChatGPT|an AI|a language model|an assistant)\b|AI (development environment|assistant|language model)|not designed for (roleplay|role-play|fictional)|can'?t (take on|engage in|roleplay|role-play) |fictional character personas?|I can'?t do this|I'?m (here|designed) to help with (coding|software|technical)|我是(一個)?(AI|人工智慧|語言模型|程式開發)|無法(進行|扮演)角色|不能扮演/i;
+        if (!re.test(s)) return false;
+        const ascii = (s.match(/[A-Za-z]/g) || []).length;
+        return ascii / s.length > 0.5 || /Kiro|AI (development|assistant)|roleplay|role-play/i.test(s) || /我是(一個)?(AI|人工智慧|語言模型)/.test(s);
+    }
+    static scrubAssistantLeaks(root) {
+        let removed = 0;
+        const leak = World.looksLikeAssistantLeak;
+        const walk = (node, depth) => {
+            if (!node || typeof node !== 'object' || depth > 12) return node;
+            if (Array.isArray(node)) {
+                const out = [];
+                for (const item of node) {
+                    if (typeof item === 'string') { if (leak(item)) { removed++; continue; } out.push(item); continue; }
+                    if (item && typeof item === 'object' && !Array.isArray(item)) {
+                        // 條目型物件:任一文字欄位命中就整條丟掉(台詞/記憶/新聞/名場面/行程區塊)
+                        const textKeys = ['text', 'content', 'summary', 'reply', 'message', 'line', 'title', 'body', 'desc', 'description', 'thought', 'reflection', 'headline'];
+                        if (textKeys.some(k => typeof item[k] === 'string' && leak(item[k]))) { removed++; continue; }
+                    }
+                    out.push(walk(item, depth + 1));
+                }
+                return out;
+            }
+            for (const k of Object.keys(node)) {
+                const v = node[k];
+                if (typeof v === 'string') { if (leak(v)) { node[k] = ''; removed++; } }
+                else if (v && typeof v === 'object') node[k] = walk(v, depth + 1);
+            }
+            return node;
+        };
+        walk(root, 0);
+        return removed;
+    }
+
     loadSave(data) {
         if (!data || !data.version) return false;
         try {
+            try { const n = World.scrubAssistantLeaks(data); if (n) { this._scrubbedLeaks = n; console.warn('[RimTown] 已清除', n, '則 AI 助理漏出的錯誤回覆'); } } catch (e) {}
             // Clock
             this.clock.day=data.clock.day; this.clock.hour=data.clock.hour; this.clock.minute=data.clock.minute;
             this.clock.season=data.clock.season; this.clock.year=data.clock.year;

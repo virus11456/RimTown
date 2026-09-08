@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.67.3
+ * Version: 5.67.4
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.67.3');
+define('RIMTOWN_VERSION', '5.67.4');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,13 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.67.4',
+            'date'    => '2026-09-08',
+            'changes' => array(
+                '🧹 全存檔清理 AI 助理漏出的內容:中繼曾把「I\'m Kiro, an AI development environment…」這類拒絕/自報身分的句子當成村民台詞回來,已寫進聊天紀錄、村民對話、記憶、行程、名場面、新聞。現在每次載入存檔都深度掃描整份資料,命中的條目移除並提示「已清除 N 則」後回存;前端收到伺服器回覆也再檢查一次,漏網的直接當失敗退回內建模擬對話',
+            ),
+        ),
         array(
             'version' => '5.67.3',
             'date'    => '2026-09-08',

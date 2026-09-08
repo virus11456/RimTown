@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.67.3.zip` from Releases
+1. Download `rimtown-v5.67.4.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -63,6 +63,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 node scripts/method-audit.js   # 前端 this._xxx() 呼叫都有定義(v5.66.6 起)
 node scripts/lane_test.js      # /api/chat 分流、冷卻、逾時、額度感知(v5.67.0 起)
 node scripts/refusal_test.js   # /api/chat 拒絕扮演偵測與退回(v5.67.2 起)
+node scripts/scrub_test.js     # 存檔深度清理 AI 助理漏出內容(v5.67.4 起)
 ```
 
 ## 存檔保護規範（每次改版必讀）
@@ -74,6 +75,10 @@ node scripts/refusal_test.js   # /api/chat 拒絕扮演偵測與退回(v5.67.2 �
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.67.4 (2026-09-08)
+
+- 🧹 全存檔清理 AI 助理漏出的內容：中繼曾把「I'm Kiro, an AI development environment…」這類拒絕／自報身分的句子當成村民台詞回來，已寫進聊天紀錄、村民對話、記憶、行程、名場面、新聞。現在每次載入存檔都深度掃描整份資料，命中的條目移除並提示「已清除 N 則」後回存；前端收到伺服器回覆也再檢查一次，漏網的直接當失敗退回內建模擬對話
 
 ### v5.67.3 (2026-09-08)
 
