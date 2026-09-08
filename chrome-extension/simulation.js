@@ -8170,6 +8170,8 @@ class World {
             this.dramaArchive = Array.isArray(data.dramaArchive) ? data.dramaArchive : [];
             this.npcEvents = new NPCEventSystem();
             if (data.npcEvents) this.npcEvents.loadFrom(data.npcEvents);
+            // v5.63.0 任務系統一律重建再讀:存檔沒任務資料時不再殘留上一鎮的任務狀態
+            if (typeof QuestSystem !== 'undefined') this.questSystem = new QuestSystem();
             if (this.questSystem && data.questSystem) this.questSystem.loadFrom(data.questSystem);
             if (this.prosperity && data.prosperity) this.prosperity.loadFrom(data.prosperity);
             if (this.npcQuests && data.npcQuests) this.npcQuests.loadFrom(data.npcQuests);

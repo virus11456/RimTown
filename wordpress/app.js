@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.62.1
-const RIMTOWN_APP_VERSION = '5.62.1';
+// RimTown - Frontend App (WordPress Plugin) v5.63.0
+const RIMTOWN_APP_VERSION = '5.63.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -222,8 +222,14 @@ class RimTownAuth {
         this.loggedIn = data.logged_in;
         this.username = data.user?.username || '';
         this.userId = data.user?.id || 0;
+        this.isAdmin = !!data.is_admin; // v5.63.0
+        if (!data.logged_in) { this._nonce = ''; this._persistToken(); }
         return data;
     }
+
+    // v5.63.0 管理員操作(僅 serverless 站;身分由伺服器 ADMIN_USERS 判定)
+    async adminListUsers() { return (await this._fetch('admin?action=users')).users || []; }
+    async adminAction(action, username, extra = {}) { return this._fetch('admin', 'POST', { action, username, ...extra }); }
 
     // Cloud save operations
     async listSaves() {
@@ -328,12 +334,18 @@ class RimTownApp {
                     // v5.62.1 優先回到上次玩的鎮,而不是雲端清單第一筆
                     const lastTown = localStorage.getItem('rimtown_last_town');
                     const cloudMatch = saves.find(s => s.town_id === lastTown) || saves[0];
-                    const saveData = await this.auth.cloudLoad(cloudMatch.town_id);
+                    const cloudData = await this.auth.cloudLoad(cloudMatch.town_id);
+                    // v5.63.0 雲端與本機同一鎮比新舊(tickCount),雲端寫入曾失敗時不再載到舊進度
+                    let localData = null;
+                    try { const j = localStorage.getItem('rimtown_town_' + cloudMatch.town_id); if (j) localData = JSON.parse(j); } catch (e) {}
+                    const saveData = this._newerSave(cloudData, localData);
                     if (saveData && this.world.loadSave(saveData)) {
                         this.currentTownId = cloudMatch.town_id;
                         this._cloudSaves = saves;
                         loaded = true;
-                        console.log('[RimTown] Loaded from cloud on init:', cloudMatch.town_name);
+                        console.log('[RimTown] Loaded on init:', cloudMatch.town_name, saveData === localData && cloudData ? '(本機較新)' : '(雲端)');
+                        // 本機較新就回填雲端
+                        if (saveData === localData && cloudData) { this.saveGame().catch(() => {}); }
                     }
                     // v5.62.1 雲端同名 Day1 孤兒順手清掉(背景執行,不擋開機)
                     this._dedupeCloudSaves(saves).catch(() => {});
@@ -416,6 +428,16 @@ class RimTownApp {
         const verEl = document.getElementById('version-display');
         if (verEl && !verEl.textContent) verEl.textContent = 'v' + RIMTOWN_APP_VERSION;
         this._startAchievementChecker();
+        // v5.63.0 向伺服器確認帳號狀態:取管理員旗標;被管理員刪除/封鎖的帳號立即登出
+        if (this.auth._serverless && this.auth.loggedIn) {
+            this.auth.checkLogin().then(d => {
+                if (d?.banned || !d?.logged_in) {
+                    this._gameAlert?.(t('你的帳號已被管理員停用，已登出。'), '🚫');
+                    this._updateAccountButton?.();
+                }
+                if (this.activeTab === 'settings') this.renderSidebar();
+            }).catch(() => {});
+        }
         // Show quest guidance for returning players (tutorial already done)
         if (localStorage.getItem('rimtown_tutorial_done')) {
             setTimeout(() => this._updateQuestGuidance(), 2000);
@@ -1397,21 +1419,25 @@ class RimTownApp {
         el.querySelector('.quest-guidance-icon').textContent = icon;
         el.querySelector('.quest-guidance-title').textContent = `${t('目前目標：')}${title}`;
         el.querySelector('.quest-guidance-hint').textContent = hint;
+        // v5.63.0 目前任務 id 記在元素上,× 的處理函式讀這裡——原本閉包抓的是第一次
+        // 顯示時的任務 id,任務換了之後按 × 記錯 id,下一個 tick 又彈回來(手機版看起來就是關不掉)
+        el.dataset.questId = activeQuest.id;
+        // 這個任務的引導已被關掉就維持隱藏,不再先顯示再隱藏(避免閃一下)
+        if (this._guidanceDismissedQuestId === activeQuest.id) { el.classList.add('hidden'); return; }
         el.classList.remove('hidden');
 
         // Wire up dismiss
         const dismissBtn = el.querySelector('.quest-guidance-dismiss');
         if (dismissBtn && !dismissBtn._wired) {
             dismissBtn._wired = true;
-            dismissBtn.addEventListener('click', () => {
+            const dismiss = (ev) => {
+                ev.preventDefault(); ev.stopPropagation();
                 el.classList.add('hidden');
                 // Will re-show on next quest change, not permanently off
-                this._guidanceDismissedQuestId = activeQuest.id;
-            });
-        }
-        // Don't re-show if user dismissed this specific quest's guidance
-        if (this._guidanceDismissedQuestId === activeQuest.id) {
-            el.classList.add('hidden');
+                this._guidanceDismissedQuestId = el.dataset.questId || activeQuest.id;
+            };
+            dismissBtn.addEventListener('click', dismiss);
+            dismissBtn.addEventListener('touchend', dismiss, { passive: false }); // 手機版直接吃 touchend,不等 click 合成
         }
     }
 
@@ -2813,6 +2839,50 @@ class RimTownApp {
     // 兩鎮存檔各自獨立,交流靠 localStorage 信箱:出訪寫進對方鎮的
     // 訪客信箱、返鄉見聞寫進原鎮的回鄉信箱,各鎮載入時收信
     // ============================================================
+    // v5.63.0 管理員面板:載入玩家列表 / 封鎖 / 解封 / 刪除
+    async _adminLoadUsers() {
+        const box = document.getElementById('admin-user-list');
+        if (box) box.innerHTML = `<span style="color:var(--text-muted)">${t('載入中…')}</span>`;
+        try {
+            const users = await this.auth.adminListUsers();
+            const esc = s => this._escapeHtml ? this._escapeHtml(String(s)) : String(s);
+            const rows = users.map(u => {
+                const name = esc(u.username);
+                const status = u.deleted ? `<span style="color:#f87171">${t('已刪除·封鎖中')}</span>`
+                    : u.banned ? `<span style="color:#fb923c">${t('封鎖中')}</span>`
+                    : u.is_admin ? `<span style="color:#ffd700">${t('管理員')}</span>` : `<span style="color:#34d399">${t('正常')}</span>`;
+                const date = u.created_at ? String(u.created_at).slice(0, 10) : '';
+                const self = u.username.toLowerCase() === String(this.auth.username).toLowerCase();
+                let btns = '';
+                if (!self && !u.is_admin) {
+                    btns += u.banned
+                        ? `<button class="trade-btn" data-action="admin-unban-user" data-val="${name}" style="padding:3px 8px;font-size:0.7rem">${t('解封')}</button>`
+                        : `<button class="trade-btn" data-action="admin-ban-user" data-val="${name}" style="padding:3px 8px;font-size:0.7rem">${t('封鎖')}</button>`;
+                    if (!u.deleted) btns += ` <button class="trade-btn btn-danger" data-action="admin-delete-user" data-val="${name}" style="padding:3px 8px;font-size:0.7rem">🗑️ ${t('刪除')}</button>`;
+                }
+                return `<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border)">
+                    <div style="flex:1;min-width:0"><b>${name}</b> ${status}<div style="color:var(--text-muted);font-size:0.68rem">${date}${u.email ? ' · ' + esc(u.email) : ''} · ${t('存檔')} ${u.saves || 0}</div></div>
+                    <div style="flex-shrink:0;white-space:nowrap">${btns}</div></div>`;
+            });
+            this._adminUsersHtml = rows.length ? `<div style="color:var(--text-secondary);margin-bottom:4px">${t('共')} ${users.length} ${t('個帳號')}</div>${rows.join('')}` : `<span style="color:var(--text-muted)">${t('目前沒有其他玩家')}</span>`;
+        } catch (e) {
+            this._adminUsersHtml = `<span style="color:#f87171">${t('載入失敗：')}${this._escapeHtml ? this._escapeHtml(e.message) : e.message}</span>`;
+        }
+        if (box) box.innerHTML = this._adminUsersHtml;
+    }
+
+    async _adminDo(action, username, confirmText) {
+        if (!username) return;
+        if (!window.confirm(`${confirmText} ${username}？`)) return;
+        try {
+            await this.auth.adminAction(action, username);
+            this._showCornerNotice({ icon: '🛡️', title: t('管理員操作完成'), name: username, desc: { ban: t('已封鎖'), unban: t('已解除封鎖'), delete: t('帳號與存檔已刪除') }[action] || '' });
+            await this._adminLoadUsers();
+        } catch (e) {
+            this._gameAlert?.(`${t('操作失敗：')}${e.message}`, '❌');
+        }
+    }
+
     // v5.62.0 住房同步:告訴地圖誰跟誰是夫妻(只有已婚才同住),並確保
     // 房間數夠「夫妻一間、其他人各一間(+玩家)」——不夠就在空地加蓋小屋。
     // 跟著當前載入的世界跑,邊境鎮/海風鎮切到哪就檢查哪
@@ -3025,6 +3095,16 @@ class RimTownApp {
         }
     }
 
+    // v5.63.0 兩份同鎮存檔挑較新的:先比 tickCount(每 tick 遞增,同一天內也分得出先後),
+    // 沒有 tickCount 的舊檔退回比日期;平手才偏雲端
+    _newerSave(cloudData, localData) {
+        if (!cloudData || !localData) return cloudData || localData || null;
+        const tc = Number(cloudData.tickCount), tl = Number(localData.tickCount);
+        if (Number.isFinite(tc) && Number.isFinite(tl) && tc !== tl) return tl > tc ? localData : cloudData;
+        const absDay = d => { const si = [t('春季'), t('夏季'), t('秋季'), t('冬季')].indexOf(d?.clock?.season); return ((d?.clock?.year || 1) - 1) * 60 + Math.max(0, si) * 15 + (d?.clock?.day || 1); };
+        return absDay(localData) > absDay(cloudData) ? localData : cloudData;
+    }
+
     _loadTownById(townId) {
         try {
             const json = localStorage.getItem('rimtown_town_' + townId);
@@ -3190,10 +3270,7 @@ class RimTownApp {
             let cloudData = null, localData = null;
             try { cloudData = await this.auth.cloudLoad(townId); } catch (e) { console.error('[RimTown] Cloud switch town error:', e); }
             try { const j = localStorage.getItem('rimtown_town_' + townId); if (j) localData = JSON.parse(j); } catch (e) {}
-            const _absDay = d => { const si = ['春季','夏季','秋季','冬季'].indexOf(d?.clock?.season); return ((d?.clock?.year || 1) - 1) * 60 + Math.max(0, si) * 15 + (d?.clock?.day || 1); };
-            const pickData = (cloudData && localData)
-                ? (_absDay(cloudData) >= _absDay(localData) ? cloudData : localData)
-                : (cloudData || localData);
+            const pickData = this._newerSave(cloudData, localData); // v5.63.0 以 tickCount 比新舊(同一天內也分得出)
             let loaded = false;
             if (pickData) { try { loaded = !!this.world.loadSave(pickData); } catch (e) { console.error('[RimTown] switch load error:', e); } }
             if (loaded) {
@@ -4080,6 +4157,11 @@ class RimTownApp {
                 case 'settings-import': this.importSave(); break;
                 // v5.59.2 背景音樂靜音切換
                 case 'settings-bgm-mute': { if (this.bgm) { this.bgm.toggleMute(); this.renderSidebar(); } break; }
+                // v5.63.0 管理員操作
+                case 'admin-load-users': this._adminLoadUsers(); break;
+                case 'admin-ban-user': this._adminDo('ban', val, t('確定要封鎖')); break;
+                case 'admin-unban-user': this._adminDo('unban', val, t('確定要解除封鎖')); break;
+                case 'admin-delete-user': this._adminDo('delete', val, t('⚠️ 確定要刪除帳號？會連同所有雲端存檔一起刪除且無法復原：')); break;
                 case 'settings-toggle-pause': { const wantPaused = this._notifCardOpen ? !this._pausedBeforeNotif : !this.world.paused; this._setPaused(wantPaused); this.world.logMessage('system', wantPaused ? t('遊戲已暫停。') : t('遊戲已繼續。')); this.renderSidebar(); break; }
                 case 'settings-speed-mult': {
                     const mult = parseFloat(val) || 1;
@@ -4333,7 +4415,8 @@ class RimTownApp {
             localStorage.setItem('rimtown_save_count', sc.toString());
             const saveData = this.world.serialize();
             if (this.auth?.loggedIn) {
-                // When logged in, only save to cloud — skip local storage
+                // v5.63.0 登入也同時寫本機:雲端寫入失敗時進度不再蒸發(重新整理後任務/進度回捲的根因)
+                try { if (this.currentTownId) this._saveCurrentTown(); } catch (e) {}
                 try {
                     const clock = saveData.clock || {};
                     await this.auth.cloudSave(this.currentTownId, this._getCurrentTownName(), saveData, {
@@ -4404,7 +4487,8 @@ class RimTownApp {
                 const saveData = this.world.serialize();
                 const json = JSON.stringify(saveData);
                 if (this.auth.loggedIn && this.auth._restUrl) {
-                    // When logged in, only sync to cloud — skip local storage
+                    // v5.63.0 關頁時也留一份本機(雲端 keepalive 請求不保證成功)
+                    try { if (this.currentTownId) this._saveCurrentTown(); } catch (e) {}
                     const clock = saveData.clock || {};
                     const payload = JSON.stringify({
                         town_id: this.currentTownId,
@@ -7208,6 +7292,15 @@ class RimTownApp {
         const paused = this.world?.paused;
 
         let html = '';
+
+        // v5.63.0 管理員面板(只有 ADMIN_USERS 名單裡的帳號看得到):列出玩家、封鎖、刪除帳號
+        if (this.auth._serverless && this.auth.isAdmin) {
+            html += `<div class="econ-section" style="border:1px solid rgba(233,69,96,0.5)"><h3>🛡️ ${t('管理員')}</h3>
+                <p style="font-size:0.72rem;color:var(--text-secondary);margin:0 0 6px">${t('封鎖＝該帳號無法登入、無法用 AI 與存檔；刪除＝連同所有雲端存檔一併清除，且名字不能再註冊。')}</p>
+                <button class="trade-btn" data-action="admin-load-users" style="padding:6px 12px">👥 ${t('載入玩家列表')}</button>
+                <div id="admin-user-list" style="margin-top:8px;font-size:0.75rem">${this._adminUsersHtml || ''}</div>
+            </div>`;
+        }
 
         // --- Game Control Section ---
         const currentMultiplier = this._speedMultiplier || 1;

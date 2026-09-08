@@ -115,6 +115,21 @@ function sanitizeTownId(t) {
 
 function userPath(username) { return `users/${username.toLowerCase()}.json`; }
 function emailPath(email) { return `emails/${crypto.createHash('sha1').update(email.toLowerCase()).digest('hex')}.json`; }
+function banPath(username) { return `bans/${username.toLowerCase()}.json`; }
+
+// ---------- v5.63.0 管理員與封鎖 ----------
+// 管理員名單來自環境變數 ADMIN_USERS(逗號分隔的帳號,不分大小寫)
+function isAdmin(payload) {
+    if (!payload || !payload.u) return false;
+    const admins = String(process.env.ADMIN_USERS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    return admins.includes(String(payload.u).toLowerCase());
+}
+
+// 封鎖名單:bans/<帳號>.json 存在即為封鎖(帳號被刪除後名字也留在名單裡,不能再註冊)
+async function isBanned(username) {
+    if (!username) return false;
+    try { return !!(await readJson(banPath(username))); } catch { return false; }
+}
 
 function err(res, status, code, message) { return res.status(status).json({ code, message }); }
 
@@ -136,6 +151,7 @@ function clientIp(req) {
 module.exports = {
     readJson, writeJson, deleteBlob, listPaths,
     hashPassword, verifyPassword, makeToken, verifyToken, authUser,
-    sanitizeUsername, sanitizeTownId, userPath, emailPath,
+    sanitizeUsername, sanitizeTownId, userPath, emailPath, banPath,
+    isAdmin, isBanned,
     err, rateLimit, clientIp,
 };

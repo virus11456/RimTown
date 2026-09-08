@@ -36,6 +36,7 @@ module.exports = async (req, res) => {
 
     // 額度身分:登入用帳號,訪客用 IP 雜湊
     const payload = L.authUser(req);
+    if (payload && await L.isBanned(payload.u)) return L.err(res, 403, 'banned', '此帳號已被停用'); // v5.63.0
     const limit = payload ? USER_DAILY : GUEST_DAILY;
     const who = payload
         ? 'u_' + payload.u.toLowerCase()

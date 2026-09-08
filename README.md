@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.62.1.zip` from Releases
+1. Download `rimtown-v5.63.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,12 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.63.0 (2026-08-28)
+
+- 🛡️ 管理員帳號管理：在 Vercel 環境變數 `ADMIN_USERS` 填入自己的帳號後，設定分頁出現「管理員」面板，可列出所有玩家、封鎖／解封、刪除帳號（連同所有雲端存檔，名字不能再註冊）；被封鎖或刪除的帳號立即無法登入、用 AI、存檔，舊登入狀態也會被踢下線
+- ✖️ 手機版「目前目標」提醒按 × 關不掉修復：× 的處理函式抓的是第一次顯示時的任務 id，任務換了之後按 × 記錯 id，下一秒又彈回來——改為讀當前任務 id，並直接吃手機 touch 事件、放大可點區域
+- 🔁 做過的任務又出現修復（存檔回捲）：登入後自動存檔原本只寫雲端，雲端寫入失敗進度就沒存到任何地方，重新整理載到舊存檔任務自然重來——現在登入也同時寫本機，開機與切鎮都以 tickCount 比較雲端／本機挑最新的一份（同一天內也分得出），本機較新會自動回填雲端；任務系統讀檔前一律重建，不再殘留上一鎮的任務狀態
 
 ### v5.62.1 (2026-08-26)
 

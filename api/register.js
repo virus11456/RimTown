@@ -10,6 +10,7 @@ module.exports = async (req, res) => {
     if (!L.rateLimit('register_' + L.clientIp(req), 5, 300)) return L.err(res, 429, 'rate_limited', '註冊嘗試過多，請稍後再試');
 
     if (await L.readJson(L.userPath(username))) return L.err(res, 409, 'username_exists', '此帳號已被使用');
+    if (await L.isBanned(username)) return L.err(res, 403, 'banned', '此帳號名稱無法使用'); // v5.63.0
     const cleanEmail = String(email || '').trim().toLowerCase();
     if (cleanEmail) {
         if (await L.readJson(L.emailPath(cleanEmail))) return L.err(res, 409, 'email_exists', '此 Email 已被使用');
