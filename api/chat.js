@@ -64,7 +64,8 @@ async function callRelay(prompt, maxTokens, temperature, deadline = Date.now() +
     } else {
         // 各家 CC 類渠道吃的認證 header 不同,x-api-key 與 Authorization 都送
         headers = { 'Content-Type': 'application/json', 'x-api-key': RELAY_KEY, 'Authorization': `Bearer ${RELAY_KEY}`, 'anthropic-version': '2023-06-01' };
-        body = { model: RELAY_MODEL, max_tokens: maxTokens, temperature, system: GAME_SYSTEM_PROMPT, messages: [{ role: 'user', content: prompt }] };
+        // v5.67.3 不送 system 欄位:Kiro 系代理收到 system 會卡到逾時(上線實測每次 15 秒被中止);改併進使用者訊息開頭
+        body = { model: RELAY_MODEL, max_tokens: maxTokens, temperature, messages: [{ role: 'user', content: '【系統指示】' + GAME_SYSTEM_PROMPT + '\n\n' + prompt }] };
     }
     const r = await fetchTimeout(url, { method: 'POST', headers, body: JSON.stringify(body) }, budget(deadline, 15000));
     if (!r.ok) { const e = new Error('relay_http_' + r.status); e.status = r.status; throw e; }

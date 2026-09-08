@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.67.2.zip` from Releases
+1. Download `rimtown-v5.67.3.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -74,6 +74,10 @@ node scripts/refusal_test.js   # /api/chat 拒絕扮演偵測與退回(v5.67.2 �
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.67.3 (2026-09-08)
+
+- ⏱️ 中繼逾時修復：v5.67.2 對 Anthropic 格式送 `system` 欄位後，Kiro 系代理每次都卡到 15 秒被中止，全部退回 Groq。改為不送 `system` 欄位、把 RimTown 系統提示併進使用者訊息開頭；拒絕偵測與退回機制不變
 
 ### v5.67.2 (2026-09-08)
 
