@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.67.1
+ * Version: 5.67.2
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.67.1');
+define('RIMTOWN_VERSION', '5.67.2');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,13 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.67.2',
+            'date'    => '2026-09-08',
+            'changes' => array(
+                '🎭 村民對話冒出英文「I\'m Kiro, an AI development environment…」修復:付費中繼是 Kiro 系代理,會自己塞「程式開發助理、不做角色扮演」的系統提示。現在每次呼叫都附上 RimTown 自己的角色扮演系統提示(Anthropic 格式走 system 欄位、OpenAI/Groq 格式走 system 訊息),並偵測「拒絕扮演/自報 AI 身分」的回覆,視同失敗立刻改走另一條渠道,不冷卻;兩邊都拒絕才回錯,前端退回內建模擬對話',
+            ),
+        ),
         array(
             'version' => '5.67.1',
             'date'    => '2026-09-08',
