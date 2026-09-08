@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.67.0.zip` from Releases
+1. Download `rimtown-v5.67.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -73,6 +73,10 @@ node scripts/lane_test.js      # /api/chat 分流、冷卻、逾時、額度感�
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.67.1 (2026-09-08)
+
+- 📱 手機離開時也沖存檔：原本只有 beforeunload 會把最後進度寫上雲端，手機切 App／滑掉分頁幾乎不觸發，雲端最多落後 5 分鐘，換裝置就會看到剛做完的任務又出現。現在 pagehide 與畫面隱藏（visibilitychange）也會同步沖本機＋雲端，同一 tick 只沖一次
 
 ### v5.67.0 (2026-09-08)
 
