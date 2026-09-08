@@ -54,7 +54,7 @@ async function callRelay(prompt, maxTokens, temperature) {
 // ---- Groq 備援(原本的小鎮伺服器 AI)----
 // v5.33.3 模型動態解析:Groq 汰換模型頻繁,寫死名稱遲早 404;查可用清單挑一個並快取於 lambda 內存
 // v5.66.1 非推理模型優先(推理模型在小 max_tokens 下會把額度花在思考、content 回空)
-const MODEL_PREFER = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'moonshotai/kimi-k2-instruct-0905', 'moonshotai/kimi-k2-instruct', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b'];
+const MODEL_PREFER = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'moonshotai/kimi-k2-instruct-0905', 'moonshotai/kimi-k2-instruct', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b']; // v5.66.2 120b 對話品質較佳,免費額度與 20b 相同
 let _lastGroqModel = '';
 let _modelCache = null;
 async function resolveModel(apiKey, force = false) {
