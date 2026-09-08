@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.66.5
-const RIMTOWN_APP_VERSION = '5.66.5';
+// RimTown - Frontend App (WordPress Plugin) v5.66.6
+const RIMTOWN_APP_VERSION = '5.66.6';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -3118,6 +3118,17 @@ class RimTownApp {
                 console.log('[RimTown] 城鎮列表去重:移除', drop.length, '筆 Day1 孤兒條目');
             }
         } catch (e) {}
+    }
+
+    // v5.63.0 兩份同鎮存檔挑較新的:先比 tickCount(每 tick 遞增,同一天內也分得出先後),
+    // 沒有 tickCount 的舊檔退回比日期;平手才偏雲端
+    // v5.66.6 回填:v5.64.1 移除 _dedupeCloudSaves 時誤連這個方法一起刪掉,開機/切鎮/馬車過場都會炸
+    _newerSave(cloudData, localData) {
+        if (!cloudData || !localData) return cloudData || localData || null;
+        const tc = Number(cloudData.tickCount), tl = Number(localData.tickCount);
+        if (Number.isFinite(tc) && Number.isFinite(tl) && tc !== tl) return tl > tc ? localData : cloudData;
+        const absDay = d => { const si = [t('春季'), t('夏季'), t('秋季'), t('冬季')].indexOf(d?.clock?.season); return ((d?.clock?.year || 1) - 1) * 60 + Math.max(0, si) * 15 + (d?.clock?.day || 1); };
+        return absDay(localData) > absDay(cloudData) ? localData : cloudData;
     }
 
     _loadTownById(townId) {

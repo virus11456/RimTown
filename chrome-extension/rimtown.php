@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.66.5
+ * Version: 5.66.6
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.66.5');
+define('RIMTOWN_VERSION', '5.66.6');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,14 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.66.6',
+            'date'    => '2026-09-08',
+            'changes' => array(
+                '🚑 熱修「旅途出了點問題:this._newerSave is not a function」:v5.64.1 移除雲端去重時誤把相鄰的 _newerSave 一起刪掉,開機載入、切鎮、馬車過場三條路都會炸;已回填',
+                '🧪 新增發版前稽核 scripts/method-audit.js:檢查前端所有 this._xxx() 呼叫都有對應定義,之後每版必跑',
+            ),
+        ),
         array(
             'version' => '5.66.5',
             'date'    => '2026-09-08',
