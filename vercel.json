@@ -1,6 +1,13 @@
 {
   "outputDirectory": "public",
   "rewrites": [
-    { "source": "/api/achievement", "destination": "/api/achievements" }
+    {
+      "source": "/api/achievement",
+      "destination": "/api/achievements"
+    },
+    {
+      "source": "/api/logout",
+      "destination": "/api/me"
+    }
   ]
 }
