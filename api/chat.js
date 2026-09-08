@@ -33,7 +33,11 @@ async function fetchTimeout(url, opts, ms = 20000) {
 }
 
 // 呼叫付費中繼;非 2xx / 逾時 / 例外都會 throw(由上層決定是否退回 Groq)
-async function callRelay(prompt, maxTokens, temperature) {
+// v5.66.5 整個請求共用一個時間預算(見 handler 的 deadline):每個上游呼叫只能用剩下的時間,
+// 兩條渠道加起來不會超過函式 30 秒上限,最壞情況也是「退回另一邊」而不是 504
+function budget(deadline, cap) { return Math.max(1000, Math.min(cap, deadline - Date.now())); }
+
+async function callRelay(prompt, maxTokens, temperature, deadline = Date.now() + 15000) {
     const url = relayUrl(RELAY_BASE, RELAY_FORMAT);
     let headers, body;
     if (RELAY_FORMAT === 'openai') {
@@ -44,7 +48,7 @@ async function callRelay(prompt, maxTokens, temperature) {
         headers = { 'Content-Type': 'application/json', 'x-api-key': RELAY_KEY, 'Authorization': `Bearer ${RELAY_KEY}`, 'anthropic-version': '2023-06-01' };
         body = { model: RELAY_MODEL, max_tokens: maxTokens, temperature, messages: [{ role: 'user', content: prompt }] };
     }
-    const r = await fetchTimeout(url, { method: 'POST', headers, body: JSON.stringify(body) });
+    const r = await fetchTimeout(url, { method: 'POST', headers, body: JSON.stringify(body) }, budget(deadline, 15000));
     if (!r.ok) { const e = new Error('relay_http_' + r.status); e.status = r.status; throw e; }
     const data = await r.json();
     if (RELAY_FORMAT === 'openai') return data.choices?.[0]?.message?.content || '';
@@ -57,10 +61,10 @@ async function callRelay(prompt, maxTokens, temperature) {
 const MODEL_PREFER = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'moonshotai/kimi-k2-instruct-0905', 'moonshotai/kimi-k2-instruct', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b']; // v5.66.3 120b 上線實測每次首發失敗,退回已驗證的 20b 優先
 let _lastGroqModel = '';
 let _modelCache = null;
-async function resolveModel(apiKey, force = false) {
+async function resolveModel(apiKey, force = false, deadline = Date.now() + 8000) {
     if (_modelCache && !force) return _modelCache;
     try {
-        const r = await fetch('https://api.groq.com/openai/v1/models', { headers: { 'Authorization': `Bearer ${apiKey}` } });
+        const r = await fetchTimeout('https://api.groq.com/openai/v1/models', { headers: { 'Authorization': `Bearer ${apiKey}` } }, budget(deadline, 8000));
         if (r.ok) {
             const ids = ((await r.json()).data || []).map(m => m.id);
             let pick = MODEL_PREFER.find(p => ids.includes(p));
@@ -72,7 +76,7 @@ async function resolveModel(apiKey, force = false) {
 }
 
 // 呼叫 Groq;非 2xx / 例外 / 空回覆都會 throw(錯誤物件帶 status),讓分流退回另一條渠道
-async function callGroq(apiKey, prompt, maxTokens, temperature) {
+async function callGroq(apiKey, prompt, maxTokens, temperature, deadline = Date.now() + 12000) {
     const call = (model) => {
         _lastGroqModel = model;
         const body = { model, messages: [{ role: 'user', content: prompt }], max_tokens: maxTokens, temperature };
@@ -85,10 +89,10 @@ async function callGroq(apiKey, prompt, maxTokens, temperature) {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
-        }, 15000);
+        }, budget(deadline, 12000));
     };
-    let r = await call(await resolveModel(apiKey));
-    if (r.status === 404) r = await call(await resolveModel(apiKey, true)); // 快取模型被下架 → 重查重試
+    let r = await call(await resolveModel(apiKey, false, deadline));
+    if (r.status === 404 && deadline - Date.now() > 3000) r = await call(await resolveModel(apiKey, true, deadline)); // 快取模型被下架 → 時間夠才重查重試
     if (!r.ok) { const e = new Error('groq_http_' + r.status); e.status = r.status; throw e; }
     const data = await r.json();
     let text = String(data.choices?.[0]?.message?.content || '');
@@ -130,6 +134,7 @@ module.exports = async (req, res) => {
     // v5.66.0 智慧分流:決定嘗試順序,逐一嘗試,失敗就記冷卻換下一個
     const lane = b.lane === 'chat' ? 'chat' : 'background';
     const now = Date.now();
+    const deadline = now + 26000; // v5.66.5 兩條渠道共用 26 秒(函式上限 30 秒,留 4 秒給額度讀寫與回應)
     const candidates = [];
     if (lane === 'chat') {
         if (groqKey && now >= _lane.groqCooldownUntil) candidates.push('groq');
@@ -146,10 +151,11 @@ module.exports = async (req, res) => {
     let lastErr = null;
     const failed = []; // v5.66.3 記錄退回原因(回應與日誌都帶,方便線上診斷)
     for (const c of candidates) {
+        if (deadline - Date.now() < 2000) { failed.push({ provider: c, model: '', error: 'no_time_left' }); continue; } // 預算用完就不再嘗試
         try {
             reply = c === 'groq'
-                ? await callGroq(groqKey, prompt, maxTokens, temperature)
-                : await callRelay(prompt, maxTokens, temperature);
+                ? await callGroq(groqKey, prompt, maxTokens, temperature, deadline)
+                : await callRelay(prompt, maxTokens, temperature, deadline);
             provider = c;
             if (c === 'relay' && _lane.relayFailCount) { _lane.relayFailCount = 0; _lane.relayCooldownUntil = 0; } // 中繼恢復
             break;

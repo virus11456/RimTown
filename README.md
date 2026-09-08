@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.66.4.zip` from Releases
+1. Download `rimtown-v5.66.5.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -66,6 +66,10 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.66.5 (2026-09-08)
+
+- ⏱️ 兩條 AI 渠道共用時間預算：原本 Groq 逾時 15 秒＋主渠道逾時 20 秒最壞 35 秒，超過函式 30 秒上限會變 504 而不是退回。現在整個請求共用 26 秒，每個上游呼叫只能用剩下的時間（Groq 模型清單 8 秒、Groq 對話 12 秒、主渠道 15 秒各自封頂），預算不足就不再嘗試；最壞情況也是「退回另一邊」
 
 ### v5.66.4 (2026-09-08)
 
