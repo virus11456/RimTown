@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.66.5.zip` from Releases
+1. Download `rimtown-v5.66.6.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -57,6 +57,12 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ---
 
+## 發版前必跑
+
+```
+node scripts/method-audit.js   # 前端 this._xxx() 呼叫都有定義(v5.66.6 起)
+```
+
 ## 存檔保護規範（每次改版必讀）
 
 1. **不動儲存路徑與鍵名**：`users/`、`saves/`、`savemeta/`、`ach/`、`settings/`、`lb/`、`bans/`、`saves_prev/` 與 localStorage 的 `rimtown_town_*`、`rimtown_town_list`、`rimtown_last_town` 只能新增欄位，不能改名或搬移。
@@ -66,6 +72,11 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.66.6 (2026-09-08)
+
+- 🚑 熱修「旅途出了點問題：this._newerSave is not a function」：v5.64.1 移除雲端去重時誤把相鄰的 `_newerSave` 一起刪掉，開機載入、切鎮、馬車過場三條路都會炸；已回填
+- 🧪 新增發版前稽核 `scripts/method-audit.js`：檢查前端所有 `this._xxx()` 呼叫都有對應定義，之後每版必跑
 
 ### v5.66.5 (2026-09-08)
 
