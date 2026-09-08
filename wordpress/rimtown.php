@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.64.0
+ * Version: 5.64.1
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.64.0');
+define('RIMTOWN_VERSION', '5.64.1');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,14 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.64.1',
+            'date'    => '2026-09-08',
+            'changes' => array(
+                '🛡️ 存檔保護三件組(改版後紀錄不見的根治):① Service Worker 原本把同網域 /api/ 的 GET 當靜態資源 cache-first,第一次抓到的雲端存檔清單/內容會一直用到下次改版才更新——這就是「改版才變、進度好像不見」的真兇;/api/ 現在一律走網路不快取。② 伺服器端進度單調保護:較舊的存檔(舊分頁、舊裝置、備援 reset 出的 Day1 世界)不能再蓋過雲端較新的進度,匯入存檔等玩家明確意圖才可強制覆寫。③ 覆寫前自動保留前一版備份,主檔遺失時讀取端自動退回備份。',
+                '🚫 程式絕不自動刪除任何雲端存檔:移除 v5.62.1 的雲端同名去重自動刪除;要刪只能由玩家或管理員手動操作',
+            ),
+        ),
         array(
             'version' => '5.64.0',
             'date'    => '2026-09-08',

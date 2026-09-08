@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.64.0
-const RIMTOWN_APP_VERSION = '5.64.0';
+// RimTown - Frontend App (WordPress Plugin) v5.64.1
+const RIMTOWN_APP_VERSION = '5.64.1';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -238,7 +238,7 @@ class RimTownAuth {
     }
 
     async cloudSave(townId, townName, saveData, meta) {
-        return this._fetch('save', 'POST', {
+        const body = {
             town_id: townId,
             town_name: townName,
             save_data: typeof saveData === 'string' ? saveData : JSON.stringify(saveData),
@@ -246,7 +246,10 @@ class RimTownAuth {
             year: meta.year || 1,
             day: meta.day || 1,
             population: meta.population || 0,
-        });
+        };
+        // v5.64.1 玩家明確要用較舊的存檔(匯入)時強制覆寫;其餘情況伺服器會擋掉「舊蓋新」
+        if (this.forceNextSave) { body.force = true; this.forceNextSave = false; }
+        return this._fetch('save', 'POST', body);
     }
 
     async cloudLoad(townId) {
@@ -347,8 +350,8 @@ class RimTownApp {
                         // 本機較新就回填雲端
                         if (saveData === localData && cloudData) { this.saveGame().catch(() => {}); }
                     }
-                    // v5.62.1 雲端同名 Day1 孤兒順手清掉(背景執行,不擋開機)
-                    this._dedupeCloudSaves(saves).catch(() => {});
+                    // v5.64.1 存檔保護原則:程式絕不自動刪除任何雲端存檔(v5.62.1 的雲端去重已移除;
+                    // 同名重複條目改由列表顯示處理,要刪只能由玩家/管理員手動)
                 }
             } catch (e) {
                 console.error('[RimTown] Cloud load on init failed:', e);
@@ -3097,39 +3100,6 @@ class RimTownApp {
         } catch (e) {}
     }
 
-    // v5.62.1 雲端側的同款清理:同名且「第1年第1天」的孤兒存檔,留最有進度的一筆
-    async _dedupeCloudSaves(saves) {
-        if (!this.auth.loggedIn || !Array.isArray(saves) || saves.length < 2) return;
-        const score = s => ((s.year || 1) - 1) * 60 + (s.day || 1);
-        const byName = {};
-        saves.forEach(s => { (byName[s.town_name] = byName[s.town_name] || []).push(s); });
-        const removed = [];
-        for (const group of Object.values(byName)) {
-            if (group.length < 2) continue;
-            const best = group.reduce((a, b) => (score(b) > score(a) ? b : a));
-            for (const s of group) {
-                if (s === best || s.town_id === this.currentTownId) continue;
-                if ((s.year || 1) <= 1 && (s.day || 1) <= 1) {
-                    try { await this.auth.cloudDelete(s.town_id); removed.push(s.town_id); } catch (e) {}
-                }
-            }
-        }
-        if (removed.length) {
-            this._cloudSaves = (this._cloudSaves || []).filter(x => !removed.includes(x.town_id));
-            console.log('[RimTown] 雲端存檔去重:移除', removed.length, '筆 Day1 孤兒');
-        }
-    }
-
-    // v5.63.0 兩份同鎮存檔挑較新的:先比 tickCount(每 tick 遞增,同一天內也分得出先後),
-    // 沒有 tickCount 的舊檔退回比日期;平手才偏雲端
-    _newerSave(cloudData, localData) {
-        if (!cloudData || !localData) return cloudData || localData || null;
-        const tc = Number(cloudData.tickCount), tl = Number(localData.tickCount);
-        if (Number.isFinite(tc) && Number.isFinite(tl) && tc !== tl) return tl > tc ? localData : cloudData;
-        const absDay = d => { const si = [t('春季'), t('夏季'), t('秋季'), t('冬季')].indexOf(d?.clock?.season); return ((d?.clock?.year || 1) - 1) * 60 + Math.max(0, si) * 15 + (d?.clock?.day || 1); };
-        return absDay(localData) > absDay(cloudData) ? localData : cloudData;
-    }
-
     _loadTownById(townId) {
         try {
             const json = localStorage.getItem('rimtown_town_' + townId);
@@ -4452,12 +4422,17 @@ class RimTownApp {
                 try { if (this.currentTownId) this._saveCurrentTown(); } catch (e) {}
                 try {
                     const clock = saveData.clock || {};
-                    await this.auth.cloudSave(this.currentTownId, this._getCurrentTownName(), saveData, {
+                    const r = await this.auth.cloudSave(this.currentTownId, this._getCurrentTownName(), saveData, {
                         season: clock.season, year: clock.year, day: clock.day,
                         population: Object.keys(saveData.agents || {}).length,
                     });
                     this._lastCloudSaveAt = Date.now(); this._lastCloudTick = this.world.tickCount; // v5.63.2
-                    this.world.logMessage('system', t('遊戲已儲存至雲端。'));
+                    if (r && r.stale) {
+                        // v5.64.1 雲端已有較新進度,這份較舊的沒有蓋過去(保護玩家進度)
+                        this.world.logMessage('system', t('雲端已有較新的進度，本次未覆寫。'));
+                    } else {
+                        this.world.logMessage('system', t('遊戲已儲存至雲端。'));
+                    }
                 } catch (e) {
                     console.error('[RimTown] Cloud save error:', e);
                     this.world.logMessage('system', t('雲端儲存失敗。'));
@@ -4593,6 +4568,7 @@ class RimTownApp {
                     this._generateTileMapLayout();
                     if (this.tileMap) this.tileMap.agentPositions = {};
                     this.render();
+                    this.auth.forceNextSave = true; // v5.64.1 匯入=玩家明確要用這份,允許覆寫較新的雲端存檔
                     await this.saveGame();
                     this._gameAlert(t('存檔已匯入。'), '✅');
                 } else {

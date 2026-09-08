@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.64.0.zip` from Releases
+1. Download `rimtown-v5.64.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -57,7 +57,20 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ---
 
+## 存檔保護規範（每次改版必讀）
+
+1. **不動儲存路徑與鍵名**：`users/`、`saves/`、`savemeta/`、`ach/`、`settings/`、`lb/`、`bans/`、`saves_prev/` 與 localStorage 的 `rimtown_town_*`、`rimtown_town_list`、`rimtown_last_town` 只能新增欄位，不能改名或搬移。
+2. **程式碼絕不自動刪除雲端存檔**：任何清理都只能是玩家或管理員的手動操作，且要有二次確認。
+3. **改版時 Service Worker 只快取靜態資源**：`/api/` 一律走網路（見 `sw.js`）。
+4. **存檔只能往前**：伺服器以 `tickCount` 擋下「舊蓋新」；只有匯入存檔這類明確意圖才帶 `force`。
+5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
+
 ## Changelog
+
+### v5.64.1 (2026-09-08)
+
+- 🛡️ 存檔保護三件組（改版後紀錄不見的根治）：① Service Worker 原本把同網域 `/api/` 的 GET 當靜態資源 cache-first，第一次抓到的雲端存檔清單／內容會一直用到下次改版才更新——這就是「改版才變、進度好像不見」的真兇；`/api/` 現在一律走網路不快取。② 伺服器端進度單調保護：較舊的存檔（舊分頁、舊裝置、備援 reset 出的 Day1 世界）不能再蓋過雲端較新的進度，匯入存檔等玩家明確意圖才可強制覆寫。③ 覆寫前自動保留前一版備份，主檔遺失時讀取端自動退回備份
+- 🚫 程式絕不自動刪除任何雲端存檔：移除 v5.62.1 的雲端同名去重自動刪除；要刪只能由玩家或管理員手動操作
 
 ### v5.64.0 (2026-09-08)
 
