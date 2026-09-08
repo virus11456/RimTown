@@ -1,0 +1,1632 @@
+{
+  "palette": [
+    "5e9e58",
+    "77ad61",
+    "447b52",
+    "b79970",
+    "8d9891",
+    "438eaa",
+    "dcc598",
+    "574e42",
+    "dfc59a",
+    "b87556",
+    "a54f45",
+    "6b7968",
+    "886447",
+    "4b4540",
+    "eedca8",
+    "9bbfc0",
+    "eed2ad",
+    "c69470",
+    "684835",
+    "342d35",
+    "597d8e",
+    "8b5e7c",
+    "c5a65b",
+    "77915c",
+    "625c50",
+    "d49a51",
+    "f1bb69",
+    "668569",
+    "e8ece2",
+    "c57a4c",
+    "9aa794",
+    "e2cd7f"
+  ],
+  "assets": [
+    {
+      "name": "ter_grass",
+      "kind": "terrain",
+      "triangles": 12,
+      "palette": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "size": [
+        1,
+        0.18,
+        1
+      ]
+    },
+    {
+      "name": "ter_grass_light",
+      "kind": "terrain",
+      "triangles": 12,
+      "palette": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "size": [
+        1,
+        0.18,
+        1
+      ]
+    },
+    {
+      "name": "ter_forest",
+      "kind": "terrain",
+      "triangles": 12,
+      "palette": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "size": [
+        1,
+        0.18,
+        1
+      ]
+    },
+    {
+      "name": "ter_dirt",
+      "kind": "terrain",
+      "triangles": 12,
+      "palette": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "size": [
+        1,
+        0.18,
+        1
+      ]
+    },
+    {
+      "name": "ter_stone",
+      "kind": "terrain",
+      "triangles": 12,
+      "palette": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "size": [
+        1,
+        0.18,
+        1
+      ]
+    },
+    {
+      "name": "ter_water",
+      "kind": "terrain",
+      "triangles": 12,
+      "palette": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "size": [
+        1,
+        0.18,
+        1
+      ]
+    },
+    {
+      "name": "ter_sand",
+      "kind": "terrain",
+      "triangles": 12,
+      "palette": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "size": [
+        1,
+        0.18,
+        1
+      ]
+    },
+    {
+      "name": "ter_soil",
+      "kind": "terrain",
+      "triangles": 12,
+      "palette": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "size": [
+        1,
+        0.18,
+        1
+      ]
+    },
+    {
+      "name": "road_straight",
+      "kind": "road",
+      "triangles": 24,
+      "palette": [
+        3,
+        4
+      ],
+      "size": [
+        1,
+        0.2,
+        1
+      ]
+    },
+    {
+      "name": "road_corner",
+      "kind": "road",
+      "triangles": 24,
+      "palette": [
+        3,
+        4
+      ],
+      "size": [
+        1,
+        0.2,
+        1
+      ]
+    },
+    {
+      "name": "road_t",
+      "kind": "road",
+      "triangles": 24,
+      "palette": [
+        3,
+        4
+      ],
+      "size": [
+        1,
+        0.2,
+        1
+      ]
+    },
+    {
+      "name": "road_cross",
+      "kind": "road",
+      "triangles": 24,
+      "palette": [
+        3,
+        4
+      ],
+      "size": [
+        1,
+        0.2,
+        1
+      ]
+    },
+    {
+      "name": "bld_house_a",
+      "kind": "house",
+      "triangles": 300,
+      "palette": [
+        8,
+        9,
+        10,
+        12,
+        13,
+        14
+      ],
+      "size": [
+        2,
+        2.8,
+        2
+      ]
+    },
+    {
+      "name": "bld_house_b",
+      "kind": "house",
+      "triangles": 300,
+      "palette": [
+        8,
+        9,
+        10,
+        12,
+        13,
+        14
+      ],
+      "size": [
+        2,
+        2.8,
+        2
+      ]
+    },
+    {
+      "name": "bld_house_c",
+      "kind": "house",
+      "triangles": 300,
+      "palette": [
+        8,
+        9,
+        10,
+        12,
+        13,
+        14
+      ],
+      "size": [
+        2,
+        2.8,
+        2
+      ]
+    },
+    {
+      "name": "bld_town_hall",
+      "kind": "large",
+      "triangles": 800,
+      "palette": [
+        8,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "size": [
+        4,
+        6,
+        3
+      ]
+    },
+    {
+      "name": "bld_factory",
+      "kind": "large",
+      "triangles": 800,
+      "palette": [
+        8,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "size": [
+        4,
+        6,
+        3
+      ]
+    },
+    {
+      "name": "bld_lighthouse",
+      "kind": "large",
+      "triangles": 800,
+      "palette": [
+        8,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "size": [
+        4,
+        6,
+        3
+      ]
+    },
+    {
+      "name": "bld_market",
+      "kind": "building",
+      "triangles": 800,
+      "palette": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "size": [
+        4,
+        4,
+        3
+      ]
+    },
+    {
+      "name": "bld_farmhouse",
+      "kind": "building",
+      "triangles": 800,
+      "palette": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "size": [
+        4,
+        4,
+        3
+      ]
+    },
+    {
+      "name": "bld_mine",
+      "kind": "building",
+      "triangles": 800,
+      "palette": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "size": [
+        4,
+        4,
+        3
+      ]
+    },
+    {
+      "name": "bld_chapel",
+      "kind": "building",
+      "triangles": 800,
+      "palette": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "size": [
+        4,
+        4,
+        3
+      ]
+    },
+    {
+      "name": "bld_clinic",
+      "kind": "building",
+      "triangles": 800,
+      "palette": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "size": [
+        4,
+        4,
+        3
+      ]
+    },
+    {
+      "name": "bld_library",
+      "kind": "building",
+      "triangles": 800,
+      "palette": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "size": [
+        4,
+        4,
+        3
+      ]
+    },
+    {
+      "name": "bld_coach_station",
+      "kind": "building",
+      "triangles": 800,
+      "palette": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "size": [
+        4,
+        4,
+        3
+      ]
+    },
+    {
+      "name": "bld_dock",
+      "kind": "building",
+      "triangles": 800,
+      "palette": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "size": [
+        4,
+        4,
+        3
+      ]
+    },
+    {
+      "name": "bld_saltworks",
+      "kind": "building",
+      "triangles": 800,
+      "palette": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "size": [
+        4,
+        4,
+        3
+      ]
+    },
+    {
+      "name": "bld_tavern",
+      "kind": "building",
+      "triangles": 800,
+      "palette": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "size": [
+        4,
+        4,
+        3
+      ]
+    },
+    {
+      "name": "bld_workshop",
+      "kind": "building",
+      "triangles": 800,
+      "palette": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "size": [
+        4,
+        4,
+        3
+      ]
+    },
+    {
+      "name": "bld_guardpost",
+      "kind": "building",
+      "triangles": 800,
+      "palette": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "size": [
+        4,
+        4,
+        3
+      ]
+    },
+    {
+      "name": "prop_tree_pine",
+      "kind": "tree",
+      "triangles": 60,
+      "palette": [
+        2,
+        12,
+        23,
+        29
+      ],
+      "size": [
+        1.7,
+        3,
+        1.7
+      ]
+    },
+    {
+      "name": "prop_tree_oak",
+      "kind": "tree",
+      "triangles": 60,
+      "palette": [
+        2,
+        12,
+        23,
+        29
+      ],
+      "size": [
+        1.7,
+        3,
+        1.7
+      ]
+    },
+    {
+      "name": "prop_tree_birch",
+      "kind": "tree",
+      "triangles": 60,
+      "palette": [
+        2,
+        12,
+        23,
+        29
+      ],
+      "size": [
+        1.7,
+        3,
+        1.7
+      ]
+    },
+    {
+      "name": "prop_crop_1",
+      "kind": "crop",
+      "triangles": 30,
+      "palette": [
+        1,
+        23,
+        31
+      ],
+      "size": [
+        0.6,
+        1,
+        0.6
+      ]
+    },
+    {
+      "name": "prop_crop_2",
+      "kind": "crop",
+      "triangles": 30,
+      "palette": [
+        1,
+        23,
+        31
+      ],
+      "size": [
+        0.6,
+        1,
+        0.6
+      ]
+    },
+    {
+      "name": "prop_crop_3",
+      "kind": "crop",
+      "triangles": 30,
+      "palette": [
+        1,
+        23,
+        31
+      ],
+      "size": [
+        0.6,
+        1,
+        0.6
+      ]
+    },
+    {
+      "name": "prop_fence",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_lamp",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_well",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_campfire",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_rock",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_bush",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_flower",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_barrel",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_crate",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_table",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_chair",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_bed",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_anvil",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_furnace",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_counter",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_bookshelf",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_altar",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_bridge",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_stall",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_weapon_rack",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_rug",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_cauldron",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_bench",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_grave",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_flag",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_lantern",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "prop_snowman",
+      "kind": "prop",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "chr_body_m",
+      "kind": "body",
+      "triangles": 360,
+      "palette": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "size": [
+        0.8,
+        1.6,
+        0.6
+      ]
+    },
+    {
+      "name": "chr_body_f",
+      "kind": "body",
+      "triangles": 360,
+      "palette": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "size": [
+        0.8,
+        1.6,
+        0.6
+      ]
+    },
+    {
+      "name": "chr_body_child",
+      "kind": "body",
+      "triangles": 360,
+      "palette": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "size": [
+        0.8,
+        1.6,
+        0.6
+      ]
+    },
+    {
+      "name": "chr_body_elder",
+      "kind": "body",
+      "triangles": 360,
+      "palette": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "size": [
+        0.8,
+        1.6,
+        0.6
+      ]
+    },
+    {
+      "name": "chr_hair_01",
+      "kind": "hair",
+      "triangles": 60,
+      "palette": [
+        18,
+        19,
+        30
+      ],
+      "size": [
+        0.62,
+        0.38,
+        0.62
+      ]
+    },
+    {
+      "name": "chr_hair_02",
+      "kind": "hair",
+      "triangles": 60,
+      "palette": [
+        18,
+        19,
+        30
+      ],
+      "size": [
+        0.62,
+        0.38,
+        0.62
+      ]
+    },
+    {
+      "name": "chr_hair_03",
+      "kind": "hair",
+      "triangles": 60,
+      "palette": [
+        18,
+        19,
+        30
+      ],
+      "size": [
+        0.62,
+        0.38,
+        0.62
+      ]
+    },
+    {
+      "name": "chr_hair_04",
+      "kind": "hair",
+      "triangles": 60,
+      "palette": [
+        18,
+        19,
+        30
+      ],
+      "size": [
+        0.62,
+        0.38,
+        0.62
+      ]
+    },
+    {
+      "name": "chr_hair_05",
+      "kind": "hair",
+      "triangles": 60,
+      "palette": [
+        18,
+        19,
+        30
+      ],
+      "size": [
+        0.62,
+        0.38,
+        0.62
+      ]
+    },
+    {
+      "name": "chr_hair_06",
+      "kind": "hair",
+      "triangles": 60,
+      "palette": [
+        18,
+        19,
+        30
+      ],
+      "size": [
+        0.62,
+        0.38,
+        0.62
+      ]
+    },
+    {
+      "name": "acc_hat_farmer",
+      "kind": "accessory",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        22,
+        24,
+        25
+      ],
+      "size": [
+        0.8,
+        0.9,
+        0.8
+      ]
+    },
+    {
+      "name": "acc_hat_miner",
+      "kind": "accessory",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        22,
+        24,
+        25
+      ],
+      "size": [
+        0.8,
+        0.9,
+        0.8
+      ]
+    },
+    {
+      "name": "acc_hat_cook",
+      "kind": "accessory",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        22,
+        24,
+        25
+      ],
+      "size": [
+        0.8,
+        0.9,
+        0.8
+      ]
+    },
+    {
+      "name": "acc_hat_guard",
+      "kind": "accessory",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        22,
+        24,
+        25
+      ],
+      "size": [
+        0.8,
+        0.9,
+        0.8
+      ]
+    },
+    {
+      "name": "acc_hat_priest",
+      "kind": "accessory",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        22,
+        24,
+        25
+      ],
+      "size": [
+        0.8,
+        0.9,
+        0.8
+      ]
+    },
+    {
+      "name": "acc_tool_pickaxe",
+      "kind": "accessory",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        22,
+        24,
+        25
+      ],
+      "size": [
+        0.8,
+        0.9,
+        0.8
+      ]
+    },
+    {
+      "name": "acc_tool_hammer",
+      "kind": "accessory",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        22,
+        24,
+        25
+      ],
+      "size": [
+        0.8,
+        0.9,
+        0.8
+      ]
+    },
+    {
+      "name": "acc_tool_hoe",
+      "kind": "accessory",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        22,
+        24,
+        25
+      ],
+      "size": [
+        0.8,
+        0.9,
+        0.8
+      ]
+    },
+    {
+      "name": "acc_tool_fishing",
+      "kind": "accessory",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        22,
+        24,
+        25
+      ],
+      "size": [
+        0.8,
+        0.9,
+        0.8
+      ]
+    },
+    {
+      "name": "acc_tool_book",
+      "kind": "accessory",
+      "triangles": 80,
+      "palette": [
+        12,
+        13,
+        22,
+        24,
+        25
+      ],
+      "size": [
+        0.8,
+        0.9,
+        0.8
+      ]
+    }
+  ]
+}

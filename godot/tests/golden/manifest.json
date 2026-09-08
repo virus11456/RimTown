@@ -1,0 +1,59 @@
+{
+  "seed": 11456,
+  "epoch": "2026-01-01T00:00:00.000Z",
+  "tickMilliseconds": 2000,
+  "scenario": "offline, no LLM, no player actions; day N at 06:00",
+  "sources": {
+    "i18n.js": "d83f9b380680b3df6d7fb809bb0c865563161a940a11c961be20e8c930dc39fe",
+    "quest-system.js": "6e821377421304e1b71dfd83d823e566041c36269ad76cefdf593252948d80e9",
+    "industry.js": "2d10334fd18e7ac08b06e37c8b1435216beb85972199e96c1bdfca907ce25cd4",
+    "farm.js": "d49dbef745cb7663ebcddd7151b1f9634a462c1ee18ac521272b18b070a89eb4",
+    "processing.js": "3bf4e388dd853f5c2bfa063203bf7b8fc3f03a4f9f92db1573403b9525baa8bb",
+    "daily-news.js": "92b8d0be8f3c8099e8e29136fe1793fe6a343bf1f4a28162995224c9e181ba56",
+    "npc-events.js": "4f2cadeeced38ef018b09f6b275e5fef188dfa96025672bdc64620b2c88628ec",
+    "npc-quests.js": "a53c67fea5dd0f08b527411d9fd29f258dc72332da7bfbae8f93497ec36b61c0",
+    "custom-npc.js": "a98fddcb046ee72512d1ccc8cb4bf0c7e1db6df9caec0d54c65915d74a2892c0",
+    "prosperity.js": "30630cf1dcc225e254053e2fb14f1cba920f77bd5fb84ae735d7825279704b4d",
+    "simulation.js": "088315ef72ee334cae1f546191e85a4ffe4121adf85e1c008cbfbe5f877b7762",
+    "tilemap.js": "c5f19421d240e083ed3fd1f2eab1a51a63aea79a9834163974d8442f0f105337",
+    "app.js": "6cf395b4f9739898db3bcc5c3c961d7d9a0028f0289756616c060202bbf59267"
+  },
+  "snapshots": {
+    "frontier-day-01.json": {
+      "sha256": "8cbfdce322da54fbd2b79aee19f81e5da90062633e8550719bc2f8aad81b2aa0",
+      "tickCount": 0,
+      "population": 21,
+      "topLevelKeys": 58
+    },
+    "frontier-day-07.json": {
+      "sha256": "8f961cebb867cb561da93bc6658472e623866d4326c1d943c05b8b9b9536833f",
+      "tickCount": 576,
+      "population": 20,
+      "topLevelKeys": 58
+    },
+    "frontier-day-30.json": {
+      "sha256": "884a86ac58b6d42cec3f27bb08beac19c67cf40f834552c0f64201e40bb4a2d5",
+      "tickCount": 2784,
+      "population": 20,
+      "topLevelKeys": 58
+    },
+    "harbor-day-01.json": {
+      "sha256": "25a90ce544fc22a5f321e796dd9a3fcb7066397425b8dd746ee1f18c1840e570",
+      "tickCount": 0,
+      "population": 16,
+      "topLevelKeys": 58
+    },
+    "harbor-day-07.json": {
+      "sha256": "8c14020524a3ef6d6349ef805b91e2e0e726b163ae882b8d5e47d61aba026390",
+      "tickCount": 576,
+      "population": 16,
+      "topLevelKeys": 58
+    },
+    "harbor-day-30.json": {
+      "sha256": "6805d773afd5ca93b677e1fc4eb746fad11ab6d64cc3d54d66ed8c0fa3c5ee1f",
+      "tickCount": 2784,
+      "population": 16,
+      "topLevelKeys": 58
+    }
+  }
+}
