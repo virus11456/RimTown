@@ -1,5 +1,9 @@
 // 小鎮伺服器 AI 代理:金鑰保管在伺服器端,前端免填任何金鑰即可與村民對話。
 // v5.64.0 主渠道改為付費 AI 中繼(env LLM_*),保留 Groq(GROQ_API_KEY)為備援。
+// v5.66.0 智慧分流搬到伺服器(規則同 v5.39.0 前端版):
+//   lane=chat(玩家與村民對話、劇情名場面)→ 優先 Groq 免費額度,Groq 限流/故障 → 退回付費中繼,5 分鐘後再試 Groq
+//   lane=background(行程/反思/背景對話)→ 付費中繼,失敗 → 退回 Groq,並對中繼累進冷卻(60s×次數,最多 5 分鐘),恢復即切回
+//   冷卻狀態存在 lambda 記憶體(每個實例各自判斷),兩邊都失敗才回 502。
 // 每日額度:訪客(依 IP)/ 登入玩家,記錄在 quota/<日期>/<key>.json(走儲存抽象層)。
 const crypto = require('crypto');
 const L = require('./_lib');
@@ -79,6 +83,9 @@ async function callGroq(apiKey, prompt, maxTokens, temperature) {
     return data.choices?.[0]?.message?.content || '';
 }
 
+// 分流冷卻狀態(lambda 實例內存)
+const _lane = { groqCooldownUntil: 0, relayCooldownUntil: 0, relayFailCount: 0 };
+
 module.exports = async (req, res) => {
     if (req.method !== 'POST') return L.err(res, 405, 'method_not_allowed', 'POST only');
     const groqKey = process.env.GROQ_API_KEY || '';
@@ -106,32 +113,49 @@ module.exports = async (req, res) => {
             payload ? '今日 AI 對話額度已用完,明天再來吧!' : '訪客今日 AI 額度已用完,註冊登入可獲得更高額度!');
     }
 
+    // v5.66.0 智慧分流:決定嘗試順序,逐一嘗試,失敗就記冷卻換下一個
+    const lane = b.lane === 'chat' ? 'chat' : 'background';
+    const now = Date.now();
+    const candidates = [];
+    if (lane === 'chat') {
+        if (groqKey && now >= _lane.groqCooldownUntil) candidates.push('groq');
+        if (RELAY_KEY) candidates.push('relay');
+        if (groqKey && !candidates.includes('groq')) candidates.push('groq'); // 冷卻中仍留作最後備援
+    } else {
+        if (RELAY_KEY && now >= _lane.relayCooldownUntil) candidates.push('relay');
+        if (groqKey) candidates.push('groq');
+        if (RELAY_KEY && !candidates.includes('relay')) candidates.push('relay');
+    }
+
     let reply = '';
     let provider = '';
-    if (RELAY_KEY) {
-        // 主渠道:付費中繼。429/5xx/逾時/例外 → 有 Groq 就退回重試一次,否則 502
+    let lastErr = null;
+    for (const c of candidates) {
         try {
-            reply = await callRelay(prompt, maxTokens, temperature);
-            provider = 'relay';
+            reply = c === 'groq'
+                ? await callGroq(groqKey, prompt, maxTokens, temperature)
+                : await callRelay(prompt, maxTokens, temperature);
+            provider = c;
+            if (c === 'relay' && _lane.relayFailCount) { _lane.relayFailCount = 0; _lane.relayCooldownUntil = 0; } // 中繼恢復
+            break;
         } catch (e) {
-            if (groqKey) {
-                try { reply = await callGroq(groqKey, prompt, maxTokens, temperature); provider = 'groq'; }
-                catch (e2) { return L.err(res, 502, 'upstream_error', 'AI 服務暫時無法使用'); }
+            lastErr = e;
+            if (c === 'groq') {
+                _lane.groqCooldownUntil = Date.now() + 300000; // Groq 限流/故障:5 分鐘後再試
             } else {
-                return L.err(res, 502, 'upstream_error', 'AI 服務暫時無法使用');
+                _lane.relayFailCount = Math.min(_lane.relayFailCount + 1, 5);
+                _lane.relayCooldownUntil = Date.now() + 60000 * _lane.relayFailCount; // 60s × 次數,最多 5 分鐘
             }
         }
-    } else {
-        // 未設定付費中繼金鑰 → 完全走舊 Groq 行為
-        try { reply = await callGroq(groqKey, prompt, maxTokens, temperature); provider = 'groq'; }
-        catch (e) {
-            if (e.status === 429) return L.err(res, 429, 'rate_limited', 'AI 忙碌中,請稍後再試');
-            return L.err(res, 502, 'upstream_error', 'AI 服務暫時無法使用');
-        }
+    }
+    if (!provider) {
+        if (lastErr && lastErr.status === 429) return L.err(res, 429, 'rate_limited', 'AI 忙碌中,請稍後再試');
+        return L.err(res, 502, 'upstream_error', 'AI 服務暫時無法使用');
     }
 
     q.count += 1;
     await L.writeJson(quotaPath, q).catch(() => {}); // 額度寫入失敗不阻擋回覆
 
-    return res.status(200).json({ reply, remaining: Math.max(0, limit - q.count), provider });
+    return res.status(200).json({ reply, remaining: Math.max(0, limit - q.count), provider, lane });
 };
+

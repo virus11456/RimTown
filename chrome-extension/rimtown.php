@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.65.0
+ * Version: 5.66.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.65.0');
+define('RIMTOWN_VERSION', '5.66.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,14 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.66.0',
+            'date'    => '2026-09-08',
+            'changes' => array(
+                '🔀 智慧分流搬到伺服器(規則同 v5.39.0):前端把每次呼叫標成 chat(玩家與村民對話、劇情名場面)或 background(行程/反思/背景對話);chat 優先走 Groq 免費額度(GROQ_API_KEY),限流或故障退回付費主渠道並 5 分鐘後再試;background 走付費主渠道(LLM_*),失敗退回 Groq 並對主渠道累進冷卻(60 秒×次數,最多 5 分鐘),恢復即切回。兩邊都失敗才回錯',
+                '🩹 帳號自救:開機向伺服器確認帳號狀態時,若帳號紀錄遺失(雲端儲存空間停權/搬遷缺漏),趁登入憑證仍有效請玩家設一組新密碼重建紀錄;存檔、成就、設定以帳號名為 key,不受影響。紀錄仍在時一律拒絕,不能拿來改別人的密碼',
+            ),
+        ),
         array(
             'version' => '5.65.0',
             'date'    => '2026-09-08',

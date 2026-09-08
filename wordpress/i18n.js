@@ -1681,6 +1681,13 @@ const I18N = (() => {
         '帳號與存檔已刪除': 'Account and saves deleted',
         '操作失敗：': 'Action failed: ',
         '你的帳號已被管理員停用，已登出。': 'Your account has been disabled by an admin. You have been logged out.',
+        // v5.66.0 伺服器端智慧分流 + 帳號自救
+        '智慧分流：你與村民的對話、劇情名場面優先走 Groq 免費額度；行程／反思／背景對話走付費主渠道；任一邊故障自動切到另一邊。': 'Smart routing: your chats with villagers and story scenes go to Groq\'s free tier first; schedules, reflections and background talk use the paid channel; either side failing switches to the other automatically.',
+        '偵測到你的帳號紀錄遺失（雲端儲存空間故障）。請設定一組新密碼（至少 6 字元）重建帳號，存檔與成就不受影響：': 'Your account record is missing (cloud storage outage). Set a new password (6+ characters) to rebuild it. Saves and achievements are unaffected:',
+        '帳號尚未重建。在重建前請不要登出，下次開啟遊戲會再提醒。': 'Account not rebuilt yet. Please do not log out; you will be reminded next time.',
+        '新密碼至少 6 個字元，請重新開啟遊戲再試。': 'The new password needs at least 6 characters. Reopen the game to try again.',
+        '帳號已重建，之後請用新密碼登入。': 'Account rebuilt. Use the new password from now on.',
+        '帳號重建失敗：': 'Account rebuild failed: ',
         // v5.65.0 AI 全面內建
         '所有 AI 金鑰由小鎮伺服器統一保管，你不需要、也不會看到任何金鑰欄位。': 'All AI keys are kept on the town server. You never need to enter or see any key.',
         '此站沒有內建 AI 代理端點，村民對話走內建模擬': 'This site has no built-in AI endpoint; villager chat uses the built-in simulation',

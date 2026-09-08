@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.65.0
-const RIMTOWN_APP_VERSION = '5.65.0';
+// RimTown - Frontend App (WordPress Plugin) v5.66.0
+const RIMTOWN_APP_VERSION = '5.66.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -215,6 +215,13 @@ class RimTownAuth {
         this.userId = 0;
         this._nonce = '';
         this._persistToken();
+    }
+
+    // v5.66.0 帳號自救:用目前有效的登入憑證重建遺失的帳號紀錄
+    async repairAccount(newPassword) {
+        const data = await this._fetch('me', 'POST', { action: 'repair', new_password: newPassword });
+        if (data.nonce) { this._nonce = data.nonce; this._persistToken(); }
+        return data;
     }
 
     async checkLogin() {
@@ -437,6 +444,9 @@ class RimTownApp {
                 if (d?.banned || !d?.logged_in) {
                     this._gameAlert?.(t('你的帳號已被管理員停用，已登出。'), '🚫');
                     this._updateAccountButton?.();
+                } else if (d?.record_missing) {
+                    // v5.66.0 帳號紀錄遺失(雲端儲存空間故障):趁憑證還有效,讓玩家設新密碼重建
+                    this._repairAccountFlow();
                 }
                 if (this.activeTab === 'settings') this.renderSidebar();
             }).catch(() => {});
@@ -1502,6 +1512,21 @@ class RimTownApp {
             console.error('[RimTown] Cloud sync error:', e);
             this.world.logMessage('system', t('雲端同步失敗。'));
         }
+    }
+
+    // v5.66.0 帳號自救流程:伺服器回報帳號紀錄遺失 → 請玩家設新密碼 → 重建
+    async _repairAccountFlow() {
+        if (this._repairing) return;
+        this._repairing = true;
+        try {
+            const pw = prompt(t('偵測到你的帳號紀錄遺失（雲端儲存空間故障）。請設定一組新密碼（至少 6 字元）重建帳號，存檔與成就不受影響：'));
+            if (pw === null) { this._gameAlert(t('帳號尚未重建。在重建前請不要登出，下次開啟遊戲會再提醒。'), '⚠️'); return; }
+            if (String(pw).length < 6) { this._gameAlert(t('新密碼至少 6 個字元，請重新開啟遊戲再試。'), '🔑'); return; }
+            await this.auth.repairAccount(String(pw));
+            this._gameAlert(t('帳號已重建，之後請用新密碼登入。'), '✅');
+        } catch (e) {
+            this._gameAlert(t('帳號重建失敗：') + (e.message || ''), '❌');
+        } finally { this._repairing = false; }
     }
 
     // v5.33.0 帳號設定同步:雲端有值就套用到本機(換裝置登入免重輸金鑰)
@@ -7244,7 +7269,7 @@ class RimTownApp {
         html += `<div style="margin-bottom:8px"><span class="llm-status ${aiConnected ? 'connected' : 'disconnected'}">${aiLabel}</span></div>`;
         // v5.65.0 AI 全面內建:金鑰由伺服器統一保管,玩家端沒有任何可填的金鑰欄位
         html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${isServerAI
-            ? t('🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 100 則）') + ' ' + t('所有 AI 金鑰由小鎮伺服器統一保管，你不需要、也不會看到任何金鑰欄位。')
+            ? t('🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 100 則）') + ' ' + t('所有 AI 金鑰由小鎮伺服器統一保管，你不需要、也不會看到任何金鑰欄位。') + ' ' + t('智慧分流：你與村民的對話、劇情名場面優先走 Groq 免費額度；行程／反思／背景對話走付費主渠道；任一邊故障自動切到另一邊。')
             : t('此站沒有內建 AI 代理端點，村民對話走內建模擬')}</div>`;
         // v5.29.0 混合成本控制:NPC 之間的對話只有在玩家附近才用 LLM,並受每日額度限制
         const existingBudget = document.getElementById('settings-tab-npcbudget');

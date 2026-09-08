@@ -3450,7 +3450,7 @@ class LLMClient {
         this._recordRequest();
 
         console.log('[RimTown LLM] generate called | provider:', this.provider, '| model:', this.model, '| maxTokens:', maxTokens, '| priority:', isPlayerChat ? 'PLAYER' : 'npc');
-        const result = await this._callProvider(this.provider, this.apiKey, this.model, prompt, maxTokens, temperature);
+        const result = await this._callProvider(this.provider, this.apiKey, this.model, prompt, maxTokens, temperature, isPlayerChat ? 'chat' : 'background');
 
         // If primary failed and we have fallback, try Groq
         if (result === '__RATE_LIMITED__' || result === '__ERROR__') {
@@ -3520,7 +3520,7 @@ class LLMClient {
         return this._groqModelCache || 'llama-3.3-70b-versatile';
     }
 
-    async _callProvider(provider, apiKey, model, prompt, maxTokens, temperature) {
+    async _callProvider(provider, apiKey, model, prompt, maxTokens, temperature, lane = 'background') {
         const endpoints = {
             anthropic: { url: 'https://api.anthropic.com/v1/messages', model: model || 'claude-haiku-4-5-20251001' },
             // v5.29.1 OpenAI 鎖定 gpt-4o-mini(成本控制):忽略任何 model 覆寫,避免誤用到高價模型
@@ -3542,7 +3542,8 @@ class LLMClient {
                 } catch (e) {}
                 const res = await fetch('/api/chat', {
                     method: 'POST', headers,
-                    body: JSON.stringify({ prompt, max_tokens: maxTokens, temperature }),
+                    // v5.66.0 lane 交給伺服器分流:chat=玩家對話/劇情 → Groq 優先;background=行程/反思 → 付費中繼
+                    body: JSON.stringify({ prompt, max_tokens: maxTokens, temperature, lane }),
                 });
                 if (res.status === 429) return '__RATE_LIMITED__';
                 if (!res.ok) return '__ERROR__';
