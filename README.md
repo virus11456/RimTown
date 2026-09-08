@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.63.1.zip` from Releases
+1. Download `rimtown-v5.63.2.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,10 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.63.2 (2026-09-08)
+
+- 📉 Vercel Blob 額度止血：Hobby 方案每月只有 2K 次 advanced operations，原本每次讀取都先 `list()` 找檔案、每 60 秒又寫兩次雲端，額度爆表後雲端寫入被拒（之前「雲端儲存失敗」的真正原因）——讀取改為直接打固定公開網址（只算流量不算次數），封鎖名單查詢加 60 秒記憶體快取；登入玩家本機仍每 60 秒存檔，雲端改為「有進度變化且距上次 ≥5 分鐘」才寫，關頁／手動存檔／切鎮照舊立即寫雲端
 
 ### v5.63.1 (2026-09-08)
 

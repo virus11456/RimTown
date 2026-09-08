@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.63.1
-const RIMTOWN_APP_VERSION = '5.63.1';
+// RimTown - Frontend App (WordPress Plugin) v5.63.2
+const RIMTOWN_APP_VERSION = '5.63.2';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -4423,6 +4423,7 @@ class RimTownApp {
                         season: clock.season, year: clock.year, day: clock.day,
                         population: Object.keys(saveData.agents || {}).length,
                     });
+                    this._lastCloudSaveAt = Date.now(); this._lastCloudTick = this.world.tickCount; // v5.63.2
                     this.world.logMessage('system', t('遊戲已儲存至雲端。'));
                 } catch (e) {
                     console.error('[RimTown] Cloud save error:', e);
@@ -4476,8 +4477,16 @@ class RimTownApp {
 
     setupAutoSave() {
         // Auto-save every 60 seconds (saveGame already handles cloud sync when logged in)
+        // v5.63.2 雲端額度止血:本機每 60 秒存,雲端改為「有進度變化且距上次雲端存檔 ≥5 分鐘」
+        // 才寫(關頁/手動存檔/切鎮仍立即寫雲端)——Vercel Blob 每月 2K 次寫入額度,原本每分鐘 2 次寫入撐不住
         this._autoSaveInterval = setInterval(() => {
-            if (!this.world.paused) {
+            if (this.world.paused) return;
+            if (this.auth?.loggedIn) {
+                try { if (this.currentTownId) this._saveCurrentTown(); } catch (e) {}
+                const due = Date.now() - (this._lastCloudSaveAt || 0) >= 300000;
+                const changed = this.world.tickCount !== this._lastCloudTick;
+                if (due && changed) this.saveGame();
+            } else {
                 this.saveGame();
             }
         }, 60000);

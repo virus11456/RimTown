@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.63.1
+ * Version: 5.63.2
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.63.1');
+define('RIMTOWN_VERSION', '5.63.2');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,13 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.63.2',
+            'date'    => '2026-09-08',
+            'changes' => array(
+                '📉 Vercel Blob 額度止血:Hobby 方案每月只有 2K 次 advanced operations,原本每次讀取都先 list() 找檔案、每 60 秒又寫兩次雲端,額度爆表後雲端寫入被拒(之前「雲端儲存失敗」的真正原因)——讀取改為直接打固定公開網址(只算流量不算次數),封鎖名單查詢加 60 秒記憶體快取;登入玩家本機仍每 60 秒存檔,雲端改為「有進度變化且距上次 ≥5 分鐘」才寫,關頁/手動存檔/切鎮照舊立即寫雲端',
+            ),
+        ),
         array(
             'version' => '5.63.1',
             'date'    => '2026-09-08',
