@@ -25,12 +25,37 @@ function _decrypt(raw) {
     return JSON.parse(dec.toString('utf8'));
 }
 
+// v5.63.2 Blob 額度止血:Hobby 方案每月只有 2K 次 advanced operations(list/put),
+// 原本每次「讀」都先 list() 找 blob,讀一次就燒一次額度。改為直接打公開 URL
+// (addRandomSuffix:false 時路徑固定,直接 GET 只算流量不算 operation);
+// 公開網址的 base 從 put/list 的回傳學來並快取在 lambda 記憶體,cold start
+// 先用 token 裡的 store id 猜,猜錯才退回 list 一次。
+let _blobBase = process.env.BLOB_BASE_URL || '';
+let _blobBaseGuessed = false;
+if (!_blobBase) {
+    const m = /^vercel_blob_rw_([A-Za-z0-9]+)_/.exec(process.env.BLOB_READ_WRITE_TOKEN || '');
+    if (m) { _blobBase = `https://${m[1].toLowerCase()}.public.blob.vercel-storage.com`; _blobBaseGuessed = true; }
+}
+function _learnBase(url, pathname) {
+    if (!url) return;
+    const i = url.indexOf('/' + pathname);
+    if (i > 0) { _blobBase = url.slice(0, i); _blobBaseGuessed = false; }
+}
+
 async function findBlob(pathname) {
     const { blobs } = await list({ prefix: pathname, limit: 10 });
-    return blobs.find(b => b.pathname === pathname) || null;
+    const b = blobs.find(b => b.pathname === pathname) || null;
+    if (b) _learnBase(b.url, pathname);
+    return b;
 }
 
 async function readJson(pathname) {
+    if (_blobBase) {
+        const res = await fetch(`${_blobBase}/${pathname}?nc=${Date.now()}`, { cache: 'no-store' });
+        if (res.ok) return _decrypt(await res.text());
+        // base 是學來的(可靠)→ 404 就是真的不存在;base 是猜的 → 退回 list 確認一次
+        if (!_blobBaseGuessed) return null;
+    }
     const b = await findBlob(pathname);
     if (!b) return null;
     const res = await fetch(`${b.url}?nc=${Date.now()}`, { cache: 'no-store' });
@@ -39,13 +64,17 @@ async function readJson(pathname) {
 }
 
 async function writeJson(pathname, obj) {
-    await put(pathname, _encrypt(JSON.stringify(obj)), {
+    const r = await put(pathname, _encrypt(JSON.stringify(obj)), {
         access: 'public', addRandomSuffix: false, allowOverwrite: true,
         contentType: 'application/json', cacheControlMaxAge: 60,
     });
+    if (r?.url) _learnBase(r.url, pathname);
 }
 
 async function deleteBlob(pathname) {
+    if (_blobBase && !_blobBaseGuessed) {
+        try { await del(`${_blobBase}/${pathname}`); return; } catch (e) {}
+    }
     const b = await findBlob(pathname);
     if (b) await del(b.url);
 }
@@ -126,9 +155,17 @@ function isAdmin(payload) {
 }
 
 // 封鎖名單:bans/<帳號>.json 存在即為封鎖(帳號被刪除後名字也留在名單裡,不能再註冊)
+// v5.63.2 lambda 記憶體快取 60 秒:每個請求都查一次太傷 Blob 額度
+const _banCache = new Map();
 async function isBanned(username) {
     if (!username) return false;
-    try { return !!(await readJson(banPath(username))); } catch { return false; }
+    const k = String(username).toLowerCase();
+    const c = _banCache.get(k);
+    if (c && Date.now() - c.at < 60000) return c.v;
+    let v = false;
+    try { v = !!(await readJson(banPath(k))); } catch { v = false; }
+    _banCache.set(k, { v, at: Date.now() });
+    return v;
 }
 
 function err(res, status, code, message) { return res.status(status).json({ code, message }); }
