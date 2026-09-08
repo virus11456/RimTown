@@ -11,5 +11,6 @@ module.exports = async (req, res) => {
     if (!user || !L.verifyPassword(String(password), user.salt, user.passHash)) {
         return L.err(res, 401, 'login_failed', '帳號或密碼錯誤');
     }
+    if (await L.isBanned(username)) return L.err(res, 403, 'banned', '此帳號已被管理員停用'); // v5.63.0
     return res.status(200).json({ success: true, nonce: L.makeToken(user), user: { id: user.id, username: user.username } });
 };

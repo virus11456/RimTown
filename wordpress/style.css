@@ -1522,10 +1522,14 @@ body.rimtown-page .wp-block-post-title {
     border: none;
     color: var(--text-muted);
     cursor: pointer;
-    font-size: 0.9rem;
-    padding: 2px 4px;
+    font-size: 1rem;
+    /* v5.63.0 手機可點區域至少 36px,避免點到旁邊的地圖 */
+    min-width: 36px;
+    min-height: 36px;
+    padding: 2px 6px;
     flex-shrink: 0;
     opacity: 0.6;
+    touch-action: manipulation;
 }
 .quest-guidance-dismiss:hover { opacity: 1; color: var(--text-primary); }
 @keyframes guidanceSlideIn {
