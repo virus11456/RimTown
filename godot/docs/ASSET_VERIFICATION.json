@@ -1,0 +1,832 @@
+[
+  {
+    "name": "ter_grass",
+    "triangles": 12,
+    "size": [
+      1.0,
+      0.11999999731779099,
+      1.0
+    ],
+    "geometry_sha256": "8637bd505bbf8b2b9ab9656e7acebfee4d56e9cca32dc3f0e8f742929fdd1266"
+  },
+  {
+    "name": "ter_grass_light",
+    "triangles": 12,
+    "size": [
+      1.0,
+      0.11999999731779099,
+      1.0
+    ],
+    "geometry_sha256": "cdd34ecbd96b8ad03bb1f26e99a51ccae4e2120641c917f6aae4f140da74bfe1"
+  },
+  {
+    "name": "ter_forest",
+    "triangles": 12,
+    "size": [
+      1.0,
+      0.11999999731779099,
+      1.0
+    ],
+    "geometry_sha256": "7d7f3cd9cf796e48c94fce632c1c7c2299c4d899bf7d2a8035aa9c057a3657d6"
+  },
+  {
+    "name": "ter_dirt",
+    "triangles": 12,
+    "size": [
+      1.0,
+      0.11999999731779099,
+      1.0
+    ],
+    "geometry_sha256": "dcb71ad1c9cc04ea9b815c862229842553b19e8e421786610d51d86b87a24666"
+  },
+  {
+    "name": "ter_stone",
+    "triangles": 12,
+    "size": [
+      1.0,
+      0.11999999731779099,
+      1.0
+    ],
+    "geometry_sha256": "112415df0e4fc1e1554941f5bec17df7cc27fa14bc1903b0745438b9f261f6e4"
+  },
+  {
+    "name": "ter_water",
+    "triangles": 12,
+    "size": [
+      1.0,
+      0.11999999731779099,
+      1.0
+    ],
+    "geometry_sha256": "3443ffc118f79770b0126780af21036f74b5dec4812b2558ee3dd445e33fa523"
+  },
+  {
+    "name": "ter_sand",
+    "triangles": 12,
+    "size": [
+      1.0,
+      0.11999999731779099,
+      1.0
+    ],
+    "geometry_sha256": "73b00319bad01affdffb7fda7aac3eae594ce9caa372cd8d4bedd02b854c1932"
+  },
+  {
+    "name": "ter_soil",
+    "triangles": 12,
+    "size": [
+      1.0,
+      0.11999999731779099,
+      1.0
+    ],
+    "geometry_sha256": "287b161aa7e9d55dc3e78c3b10cc1302c27088456a05806555f5271ad2dd718f"
+  },
+  {
+    "name": "road_straight",
+    "triangles": 16,
+    "size": [
+      1.0,
+      0.12099999934434891,
+      1.0
+    ],
+    "geometry_sha256": "e6eb15141fbbfec7f598582d73a5ea46d74584d8ac07ec5f0249a1a2fb02d89f"
+  },
+  {
+    "name": "road_corner",
+    "triangles": 16,
+    "size": [
+      1.0,
+      0.12099999934434891,
+      1.0
+    ],
+    "geometry_sha256": "37173fa7cbbe906ef2b2cea42b93d4e2c9dc51ed0a343900a747b73fd7d5f8c6"
+  },
+  {
+    "name": "road_t",
+    "triangles": 18,
+    "size": [
+      1.0,
+      0.12099999934434891,
+      1.0
+    ],
+    "geometry_sha256": "1c7f6878fcaba7ccee41bb198d822ec0d02877782a2b1dadc3dd7f1b04633a46"
+  },
+  {
+    "name": "road_cross",
+    "triangles": 20,
+    "size": [
+      1.0,
+      0.12099999934434891,
+      1.0
+    ],
+    "geometry_sha256": "192781a560b6b87c5a76df94e73429cc666ecff7e1cee045c13f6fec07944913"
+  },
+  {
+    "name": "bld_house_a",
+    "triangles": 80,
+    "size": [
+      2.0,
+      2.049999952316284,
+      1.9500000476837158
+    ],
+    "geometry_sha256": "8edd2efc96cd1bf2d8d1a5e46cefdeb0d1982aa4c57f63612ca4487011465afd"
+  },
+  {
+    "name": "bld_house_b",
+    "triangles": 80,
+    "size": [
+      2.0,
+      2.049999952316284,
+      1.9500000476837158
+    ],
+    "geometry_sha256": "fc32488b234a3d731ba823dbd84993298c30a7337c2e9879bde990ddfe0d9d8a"
+  },
+  {
+    "name": "bld_house_c",
+    "triangles": 80,
+    "size": [
+      2.0,
+      2.049999952316284,
+      1.9500000476837158
+    ],
+    "geometry_sha256": "16271ae48325026f9b4817f4b3a995db03baacf5a4099ffe3986f367544e4340"
+  },
+  {
+    "name": "bld_town_hall",
+    "triangles": 86,
+    "size": [
+      3.5999999046325684,
+      3.505000114440918,
+      2.9000000953674316
+    ],
+    "geometry_sha256": "1beeacd9d16bbf4cf6bbbe74c43d67a00591db72f7ccb88d3e95abee1f373618"
+  },
+  {
+    "name": "bld_factory",
+    "triangles": 92,
+    "size": [
+      3.5999999046325684,
+      2.9000000953674316,
+      2.9000000953674316
+    ],
+    "geometry_sha256": "f074d61ffb180081aadad910a3475a3c09576b00f8566967981d31bfbf188ccc"
+  },
+  {
+    "name": "bld_lighthouse",
+    "triangles": 110,
+    "size": [
+      1.659999966621399,
+      4.680000305175781,
+      1.659999966621399
+    ],
+    "geometry_sha256": "d7080e9d036fb7960fae190ed5638869154650de3d795785517ca2889e8b0fb7"
+  },
+  {
+    "name": "bld_market",
+    "triangles": 92,
+    "size": [
+      3.4000000953674316,
+      2.4000000953674316,
+      2.5
+    ],
+    "geometry_sha256": "aa4d9eec604ee440a7f2b75fae2c7029ae09285c4bf1dfde5b009fcdc03956a4"
+  },
+  {
+    "name": "bld_farmhouse",
+    "triangles": 80,
+    "size": [
+      3.5999999046325684,
+      2.369999885559082,
+      2.9000000953674316
+    ],
+    "geometry_sha256": "89a706b4ea55311f28b0bf312c07786244de20a0eb841e95e27015a65ff6c96e"
+  },
+  {
+    "name": "bld_mine",
+    "triangles": 68,
+    "size": [
+      2.338268518447876,
+      1.7999999523162842,
+      2.7699999809265137
+    ],
+    "geometry_sha256": "68f00c003b832f7357ac7d7b722943bfd80958691d1126d0fa98ae8e6df95d0e"
+  },
+  {
+    "name": "bld_chapel",
+    "triangles": 110,
+    "size": [
+      3.5999999046325684,
+      3.8999996185302734,
+      2.9000000953674316
+    ],
+    "geometry_sha256": "063c263a4dc66a53262e00126e3c843fa1e01c8ba2b737f32b777ed933d1663b"
+  },
+  {
+    "name": "bld_clinic",
+    "triangles": 92,
+    "size": [
+      3.5999999046325684,
+      2.369999885559082,
+      2.9000000953674316
+    ],
+    "geometry_sha256": "49e0d3f07f8bf0a61e53b964277cd0649fbf6af65459c86f3c1c0e959de9a06b"
+  },
+  {
+    "name": "bld_library",
+    "triangles": 68,
+    "size": [
+      3.5999999046325684,
+      2.369999885559082,
+      2.9000000953674316
+    ],
+    "geometry_sha256": "d0c515e3105549db3007c48c70a1b434db64871b4da1ba9fc9a18e276137ca7b"
+  },
+  {
+    "name": "bld_coach_station",
+    "triangles": 80,
+    "size": [
+      3.799999952316284,
+      2.7699999809265137,
+      2.799999952316284
+    ],
+    "geometry_sha256": "3ea1bde16ebbc945f1adc39f112a27245778976513cc60c3e2a5b2cb5413631e"
+  },
+  {
+    "name": "bld_dock",
+    "triangles": 168,
+    "size": [
+      3.940000057220459,
+      0.9300000071525574,
+      2.799999952316284
+    ],
+    "geometry_sha256": "7762211ed4f9134b94cb544b3f8e268d0f94ed56cfd39f1baa02edf21511b24b"
+  },
+  {
+    "name": "bld_saltworks",
+    "triangles": 84,
+    "size": [
+      3.799999952316284,
+      0.2900000214576721,
+      2.700000047683716
+    ],
+    "geometry_sha256": "f6371604a038e8d89b3224c789319929fdccf2cb0cb5cd353827b8e4bb15d4d2"
+  },
+  {
+    "name": "bld_tavern",
+    "triangles": 68,
+    "size": [
+      3.5999999046325684,
+      2.369999885559082,
+      2.9000000953674316
+    ],
+    "geometry_sha256": "5c6794770f64e617abe7a0bc75b243f3feada1ee693c79b1b13f11bf76840306"
+  },
+  {
+    "name": "bld_workshop",
+    "triangles": 92,
+    "size": [
+      3.5999999046325684,
+      2.9000000953674316,
+      2.9000000953674316
+    ],
+    "geometry_sha256": "362f5afa728ba6c42196fa565c94754e3bb2079fe9020f07c65a69c93ebc2de8"
+  },
+  {
+    "name": "bld_guardpost",
+    "triangles": 86,
+    "size": [
+      3.5999999046325684,
+      3.505000114440918,
+      2.9000000953674316
+    ],
+    "geometry_sha256": "1beeacd9d16bbf4cf6bbbe74c43d67a00591db72f7ccb88d3e95abee1f373618"
+  },
+  {
+    "name": "prop_tree_pine",
+    "triangles": 32,
+    "size": [
+      1.2363734245300293,
+      2.625,
+      1.1758610010147095
+    ],
+    "geometry_sha256": "87f91f341860240b2746b803ddf96d8b8ac7015ad8e5ec65674bf8d5df9de22e"
+  },
+  {
+    "name": "prop_tree_oak",
+    "triangles": 40,
+    "size": [
+      1.4836481809616089,
+      2.500000238418579,
+      1.4110331535339355
+    ],
+    "geometry_sha256": "6ea0d669b598e0589a24328a209fe1b7ac8a8502506828f0d3fe6e3a0fa285c7"
+  },
+  {
+    "name": "prop_tree_birch",
+    "triangles": 40,
+    "size": [
+      1.4836481809616089,
+      2.500000238418579,
+      1.4110331535339355
+    ],
+    "geometry_sha256": "008119746f5c25c0819704592945434824696fb9199dad83340e761c18324e8f"
+  },
+  {
+    "name": "prop_crop_1",
+    "triangles": 18,
+    "size": [
+      0.5,
+      0.30000001192092896,
+      0.20000000298023224
+    ],
+    "geometry_sha256": "f0886bbbdf550f7820bd8664867a5998a562ff4c6a6f56c910278d7d20f6fac1"
+  },
+  {
+    "name": "prop_crop_2",
+    "triangles": 18,
+    "size": [
+      0.5,
+      0.6000000238418579,
+      0.20000000298023224
+    ],
+    "geometry_sha256": "62d2e9f22d6ed5a296087ee49fc670de1b553f14d81b66f82510ef6cbc9478c9"
+  },
+  {
+    "name": "prop_crop_3",
+    "triangles": 18,
+    "size": [
+      0.5,
+      0.8999999761581421,
+      0.20000000298023224
+    ],
+    "geometry_sha256": "cd6a7b01e7226a59b06b2f5b3c8c1ffa75aecf11d89a058f6cea03eba5a1b97d"
+  },
+  {
+    "name": "prop_fence",
+    "triangles": 48,
+    "size": [
+      1.0199999809265137,
+      0.8999999761581421,
+      0.11999999731779099
+    ],
+    "geometry_sha256": "b591c262a59d309a11c643b9929a877c554c037d27f6d8c7d428a4d7efbdd910"
+  },
+  {
+    "name": "prop_lamp",
+    "triangles": 24,
+    "size": [
+      0.4999999850988388,
+      1.8399999141693115,
+      0.30000001192092896
+    ],
+    "geometry_sha256": "a1590247c0b5579f90d5db87be37176aa50adf89a2c89b16785679150b17a46d"
+  },
+  {
+    "name": "prop_well",
+    "triangles": 72,
+    "size": [
+      1.4500000476837158,
+      1.9500000476837158,
+      1.100000023841858
+    ],
+    "geometry_sha256": "a1270c3564741cf03b6b315f32c1cf0af2023a801d3a1dcc4c8cda5190fc09a5"
+  },
+  {
+    "name": "prop_campfire",
+    "triangles": 32,
+    "size": [
+      0.7643914222717285,
+      0.7549999952316284,
+      0.4976261854171753
+    ],
+    "geometry_sha256": "34084d8238358a3122e001247d0f4507e8b09fb8efd5b98af22570abb827c37b"
+  },
+  {
+    "name": "prop_rock",
+    "triangles": 16,
+    "size": [
+      0.6657395958900452,
+      0.4399999976158142,
+      0.6331559419631958
+    ],
+    "geometry_sha256": "99d49c1e631ec00124630c4ef45ae315e671ecb202c10b9c51064b6b32005a60"
+  },
+  {
+    "name": "prop_bush",
+    "triangles": 16,
+    "size": [
+      0.6657395958900452,
+      0.4399999976158142,
+      0.6331559419631958
+    ],
+    "geometry_sha256": "52787a48fef82fd796ca9daaeb91da42752e1a820bbe4992ca689352e9ef21ca"
+  },
+  {
+    "name": "prop_flower",
+    "triangles": 16,
+    "size": [
+      0.6657395958900452,
+      0.4399999976158142,
+      0.6331559419631958
+    ],
+    "geometry_sha256": "67341607bd0b52568a44eec207fdbb84ff9b5bd2cd303d51514e4ce410c216c7"
+  },
+  {
+    "name": "prop_barrel",
+    "triangles": 28,
+    "size": [
+      0.699999988079071,
+      0.7200000286102295,
+      0.699999988079071
+    ],
+    "geometry_sha256": "00b67b25fd42ed3dda887464cad05bbe3116e89e5501326505af82fafc704aa0"
+  },
+  {
+    "name": "prop_crate",
+    "triangles": 12,
+    "size": [
+      0.6499999761581421,
+      0.699999988079071,
+      0.6000000238418579
+    ],
+    "geometry_sha256": "d80717ece04684d78468c78b6ffea3b1db1fcfb59895093d40522b2a14587156"
+  },
+  {
+    "name": "prop_table",
+    "triangles": 60,
+    "size": [
+      1.350000023841858,
+      0.6000000238418579,
+      0.7200000286102295
+    ],
+    "geometry_sha256": "a91bd1ee503cac299552f83611003676197751ea146d860b558e6ff8c371a0d2"
+  },
+  {
+    "name": "prop_chair",
+    "triangles": 72,
+    "size": [
+      0.6499999761581421,
+      1.0999999046325684,
+      0.7200000286102295
+    ],
+    "geometry_sha256": "1f023f811fb7f7540be16fd020592794bcacc2040465496ac250ad2eb9b80171"
+  },
+  {
+    "name": "prop_bed",
+    "triangles": 72,
+    "size": [
+      1.350000023841858,
+      0.7799999713897705,
+      0.7200000286102295
+    ],
+    "geometry_sha256": "5303c9e64982f0568cf602c70e203c326e23d906a18201206093bfd0017be4e7"
+  },
+  {
+    "name": "prop_anvil",
+    "triangles": 12,
+    "size": [
+      0.6499999761581421,
+      0.699999988079071,
+      0.6000000238418579
+    ],
+    "geometry_sha256": "1ba3e2cbca596e9655d52e36e494591eec32276566929ea3e4f120050433cf58"
+  },
+  {
+    "name": "prop_furnace",
+    "triangles": 12,
+    "size": [
+      0.6499999761581421,
+      0.699999988079071,
+      0.6000000238418579
+    ],
+    "geometry_sha256": "1ba3e2cbca596e9655d52e36e494591eec32276566929ea3e4f120050433cf58"
+  },
+  {
+    "name": "prop_counter",
+    "triangles": 60,
+    "size": [
+      1.350000023841858,
+      0.6000000238418579,
+      0.7200000286102295
+    ],
+    "geometry_sha256": "a91bd1ee503cac299552f83611003676197751ea146d860b558e6ff8c371a0d2"
+  },
+  {
+    "name": "prop_bookshelf",
+    "triangles": 60,
+    "size": [
+      1.2000000476837158,
+      1.399999976158142,
+      0.3499999940395355
+    ],
+    "geometry_sha256": "866ffd86c9e3b05c0bf29f5d2120dfb62840b8268e0f13500df495c432d97e95"
+  },
+  {
+    "name": "prop_altar",
+    "triangles": 60,
+    "size": [
+      1.350000023841858,
+      0.6000000238418579,
+      0.7200000286102295
+    ],
+    "geometry_sha256": "20bfd668fea9ec6510214134219aacf83e4ba14120781a429fddbe3ef96dcb70"
+  },
+  {
+    "name": "prop_bridge",
+    "triangles": 12,
+    "size": [
+      1.7999999523162842,
+      0.10000000149011612,
+      1.0
+    ],
+    "geometry_sha256": "c17a73c24507d706d3daf469c7e8cd2b0c8cc9022e47afbc7242f225fa436abc"
+  },
+  {
+    "name": "prop_stall",
+    "triangles": 60,
+    "size": [
+      1.350000023841858,
+      0.6000000238418579,
+      0.7200000286102295
+    ],
+    "geometry_sha256": "a91bd1ee503cac299552f83611003676197751ea146d860b558e6ff8c371a0d2"
+  },
+  {
+    "name": "prop_weapon_rack",
+    "triangles": 60,
+    "size": [
+      1.2000000476837158,
+      1.399999976158142,
+      0.3499999940395355
+    ],
+    "geometry_sha256": "866ffd86c9e3b05c0bf29f5d2120dfb62840b8268e0f13500df495c432d97e95"
+  },
+  {
+    "name": "prop_rug",
+    "triangles": 12,
+    "size": [
+      1.7999999523162842,
+      0.10000000149011612,
+      1.0
+    ],
+    "geometry_sha256": "33000b0282dc490cf9d4f902a4aec6b490ab0fcfc7e26b2c8c5a162fb5fb33d2"
+  },
+  {
+    "name": "prop_cauldron",
+    "triangles": 28,
+    "size": [
+      0.699999988079071,
+      0.7200000286102295,
+      0.699999988079071
+    ],
+    "geometry_sha256": "e6a025ac004062929f07489a84c9bdf3d52d5c5028665b805fcfbc3e24cf32a3"
+  },
+  {
+    "name": "prop_bench",
+    "triangles": 72,
+    "size": [
+      1.350000023841858,
+      1.0999999046325684,
+      0.7200000286102295
+    ],
+    "geometry_sha256": "204f5051df1c308d34fafcb20301faff7c93f20b0c5beea9b1addbad795996f0"
+  },
+  {
+    "name": "prop_grave",
+    "triangles": 24,
+    "size": [
+      0.6499999761581421,
+      0.9399999380111694,
+      0.6000000238418579
+    ],
+    "geometry_sha256": "912afec961b7340f88c3114deadbf4ec712592db8f5af90f124180af7a193c79"
+  },
+  {
+    "name": "prop_flag",
+    "triangles": 24,
+    "size": [
+      0.4999999850988388,
+      1.8399999141693115,
+      0.30000001192092896
+    ],
+    "geometry_sha256": "1430fc52911a0f2dd197541afbde324a074a263dbde4247b36ef3742133de505"
+  },
+  {
+    "name": "prop_lantern",
+    "triangles": 24,
+    "size": [
+      0.4999999850988388,
+      1.8399999141693115,
+      0.30000001192092896
+    ],
+    "geometry_sha256": "a1590247c0b5579f90d5db87be37176aa50adf89a2c89b16785679150b17a46d"
+  },
+  {
+    "name": "prop_snowman",
+    "triangles": 40,
+    "size": [
+      0.6928203105926514,
+      1.315000057220459,
+      0.800000011920929
+    ],
+    "geometry_sha256": "8f1d341380fc5fb9a052c1e1f115795c1822326f9414afe70538019469113674"
+  },
+  {
+    "name": "chr_body_m",
+    "triangles": 120,
+    "size": [
+      0.7799999713897705,
+      1.4900000095367432,
+      0.45499998331069946
+    ],
+    "geometry_sha256": "106bfaf309649c63ad45a77af08338817a165a5523548781892a7007f0850718"
+  },
+  {
+    "name": "chr_body_f",
+    "triangles": 120,
+    "size": [
+      0.7799999713897705,
+      1.4900000095367432,
+      0.45499998331069946
+    ],
+    "geometry_sha256": "756b1633ef5ad262a740528fa578ebf6ab725d1d705fb4187b93653e0a1cfd03"
+  },
+  {
+    "name": "chr_body_child",
+    "triangles": 120,
+    "size": [
+      0.7799999713897705,
+      1.162199854850769,
+      0.45499998331069946
+    ],
+    "geometry_sha256": "5a94b17d480a1c93dbfd2d1d96602f69eff16f1fe3f88113b5366e88af511604"
+  },
+  {
+    "name": "chr_body_elder",
+    "triangles": 120,
+    "size": [
+      0.7799999713897705,
+      1.4900000095367432,
+      0.4399999976158142
+    ],
+    "geometry_sha256": "ebf7e0af475ecc80dc210fe7890177917a8b686e68f7199ded494ccc7df62d56"
+  },
+  {
+    "name": "chr_hair_01",
+    "triangles": 12,
+    "size": [
+      0.5600000023841858,
+      0.23999999463558197,
+      0.49000000953674316
+    ],
+    "geometry_sha256": "c6f9654c7a8d4e635b60cd2c2c2b1b72ca3413ae30a6cfaf0069dd24a2c15ca8"
+  },
+  {
+    "name": "chr_hair_02",
+    "triangles": 24,
+    "size": [
+      0.5600000023841858,
+      0.3799999952316284,
+      0.5099999904632568
+    ],
+    "geometry_sha256": "0428c2a73f910c80b840f9dda0679bc13c4d3359e8387d7e6beaa33ae069370e"
+  },
+  {
+    "name": "chr_hair_03",
+    "triangles": 20,
+    "size": [
+      0.5831478834152222,
+      0.3799999952316284,
+      0.49000000953674316
+    ],
+    "geometry_sha256": "8a931c4ef1924fbb2460e6fa89364d55d1930b9b1f3f56e1326db1f98f694666"
+  },
+  {
+    "name": "chr_hair_04",
+    "triangles": 24,
+    "size": [
+      0.5600000023841858,
+      0.3799999952316284,
+      0.5099999904632568
+    ],
+    "geometry_sha256": "0428c2a73f910c80b840f9dda0679bc13c4d3359e8387d7e6beaa33ae069370e"
+  },
+  {
+    "name": "chr_hair_05",
+    "triangles": 20,
+    "size": [
+      0.5831478834152222,
+      0.3799999952316284,
+      0.49000000953674316
+    ],
+    "geometry_sha256": "8a931c4ef1924fbb2460e6fa89364d55d1930b9b1f3f56e1326db1f98f694666"
+  },
+  {
+    "name": "chr_hair_06",
+    "triangles": 24,
+    "size": [
+      0.5600000023841858,
+      0.3799999952316284,
+      0.5099999904632568
+    ],
+    "geometry_sha256": "0428c2a73f910c80b840f9dda0679bc13c4d3359e8387d7e6beaa33ae069370e"
+  },
+  {
+    "name": "acc_hat_farmer",
+    "triangles": 48,
+    "size": [
+      0.800000011920929,
+      0.29999998211860657,
+      0.800000011920929
+    ],
+    "geometry_sha256": "07d8f0538db33ca6392b59883aa89e50bb0d48166eb4f8506aeb060fc81ca526"
+  },
+  {
+    "name": "acc_hat_miner",
+    "triangles": 28,
+    "size": [
+      0.6200000047683716,
+      0.36000001430511475,
+      0.6200000047683716
+    ],
+    "geometry_sha256": "50ab5b49722f8a1b6e0a22e006b3b7bbb9a88673058be72060ef7dd58c19b1dd"
+  },
+  {
+    "name": "acc_hat_cook",
+    "triangles": 28,
+    "size": [
+      0.6000000238418579,
+      0.5,
+      0.6000000238418579
+    ],
+    "geometry_sha256": "ea7fd58502f226fef23aa696f8ee72df039445e3365e2534ad5f8976bb51e361"
+  },
+  {
+    "name": "acc_hat_guard",
+    "triangles": 28,
+    "size": [
+      0.6200000047683716,
+      0.36000001430511475,
+      0.6200000047683716
+    ],
+    "geometry_sha256": "50ab5b49722f8a1b6e0a22e006b3b7bbb9a88673058be72060ef7dd58c19b1dd"
+  },
+  {
+    "name": "acc_hat_priest",
+    "triangles": 6,
+    "size": [
+      0.47999998927116394,
+      0.6399999856948853,
+      0.47999998927116394
+    ],
+    "geometry_sha256": "f6c67d82df95fb8d649b731cdd2f3868348d1feb32e365521ff8c956a54218fb"
+  },
+  {
+    "name": "acc_tool_pickaxe",
+    "triangles": 24,
+    "size": [
+      0.5600000023841858,
+      0.800000011920929,
+      0.11999999731779099
+    ],
+    "geometry_sha256": "2bb955bfee7c857e042fe537dedd63fd9fe27988376d387624592614c6d9a0ae"
+  },
+  {
+    "name": "acc_tool_hammer",
+    "triangles": 24,
+    "size": [
+      0.5600000023841858,
+      0.800000011920929,
+      0.11999999731779099
+    ],
+    "geometry_sha256": "4171362ccfb03b5009cb71c9a5cca4c4c8d4350bdd4534b0303c0ba4cd0edcb9"
+  },
+  {
+    "name": "acc_tool_hoe",
+    "triangles": 24,
+    "size": [
+      0.5600000023841858,
+      0.800000011920929,
+      0.11999999731779099
+    ],
+    "geometry_sha256": "2bb955bfee7c857e042fe537dedd63fd9fe27988376d387624592614c6d9a0ae"
+  },
+  {
+    "name": "acc_tool_fishing",
+    "triangles": 24,
+    "size": [
+      0.3125,
+      0.800000011920929,
+      0.06499999761581421
+    ],
+    "geometry_sha256": "21af51525c8edc78ed6764516e775ed0ed62618316b7df7e7e7020ec03301593"
+  },
+  {
+    "name": "acc_tool_book",
+    "triangles": 24,
+    "size": [
+      0.4000000059604645,
+      0.36000001430511475,
+      0.1550000011920929
+    ],
+    "geometry_sha256": "9636a70b72c0f005aa26bfff9124eca309a7e83def293b26bb13dbd032ad9d0c"
+  }
+]
