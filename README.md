@@ -20,7 +20,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 - **Achievement System**: 50+ achievements across social, romance, economy, survival, faction, exploration, industry categories
 - **NPC Conversation Visualization**: Speech bubbles on map when NPCs talk to each other
 - **Player Interaction**: Choose jobs, vote in elections, flirt, propose, and marry NPCs
-- **Built-in Town AI**: every player talks to villagers through the server-side AI proxy (`/api/chat`); all keys live in Vercel env vars (`LLM_*` primary, `GROQ_API_KEY` fallback), nothing to configure on the client
+- **Built-in Town AI**: every player talks to villagers through the server-side AI proxy (`/api/chat`); all keys live in Vercel env vars, nothing to configure on the client. Server-side smart routing: player chats and story scenes go to Groq's free tier (`GROQ_API_KEY`) first, schedules/reflections/background talk go to the paid channel (`LLM_*`), either side failing falls back to the other
 - **Pixel Art Map**: Animated tilemap with day/night cycle, campfires, particles
 - **Four Industries System**: Lumber, Quarry, Farming, Mining — choose your starting industry and unlock more as your town grows (v3)
 - **Farm & Crop System**: Plant crops, manage plots, seasonal planting, quality system, NPC farmer bonuses (v3)
@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.65.0.zip` from Releases
+1. Download `rimtown-v5.66.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -66,6 +66,11 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.66.0 (2026-09-08)
+
+- 🔀 智慧分流搬到伺服器（規則同 v5.39.0）：前端把每次呼叫標成 chat（玩家與村民對話、劇情名場面）或 background（行程／反思／背景對話）；chat 優先走 Groq 免費額度（`GROQ_API_KEY`），限流或故障退回付費主渠道並 5 分鐘後再試；background 走付費主渠道（`LLM_*`），失敗退回 Groq 並對主渠道累進冷卻（60 秒×次數，最多 5 分鐘），恢復即切回。兩邊都失敗才回錯
+- 🩹 帳號自救：開機向伺服器確認帳號狀態時，若帳號紀錄遺失（雲端儲存空間停權／搬遷缺漏），趁登入憑證仍有效請玩家設一組新密碼重建紀錄；存檔、成就、設定以帳號名為 key，不受影響。紀錄仍在時一律拒絕，不能拿來改別人的密碼
 
 ### v5.65.0 (2026-09-08)
 
