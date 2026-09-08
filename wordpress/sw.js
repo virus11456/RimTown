@@ -1,5 +1,5 @@
 // RimTown Service Worker - PWA Offline Support
-const CACHE_NAME = 'rimtown-v5.64.0';
+const CACHE_NAME = 'rimtown-v5.64.1';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -47,6 +47,13 @@ self.addEventListener('fetch', event => {
 
   // API calls (LLM endpoints) always go to network
   if (url.hostname !== location.hostname) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+  // v5.64.1 同網域 /api/ 也一律走網路、絕不快取:原本 cache-first 會把第一次抓到的
+  // 雲端存檔清單/存檔內容一直用到下次改版(換 CACHE_NAME)才更新——玩家看到的
+  // 「進度不見/改版才變」正是這個。非 GET 請求同樣不進快取。
+  if (url.pathname.startsWith('/api/') || event.request.method !== 'GET') {
     event.respondWith(fetch(event.request));
     return;
   }
