@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.63.2
-const RIMTOWN_APP_VERSION = '5.63.2';
+// RimTown - Frontend App (WordPress Plugin) v5.64.0
+const RIMTOWN_APP_VERSION = '5.64.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -228,7 +228,7 @@ class RimTownAuth {
     }
 
     // v5.63.0 管理員操作(僅 serverless 站;身分由伺服器 ADMIN_USERS 判定)
-    async adminListUsers() { return (await this._fetch('admin?action=users')).users || []; }
+    async adminListUsers() { const d = await this._fetch('admin?action=users'); return { users: d.users || [], storage: d.storage || null }; }
     async adminAction(action, username, extra = {}) { return this._fetch('admin', 'POST', { action, username, ...extra }); }
 
     // Cloud save operations
@@ -2844,7 +2844,7 @@ class RimTownApp {
         const box = document.getElementById('admin-user-list');
         if (box) box.innerHTML = `<span style="color:var(--text-muted)">${t('載入中…')}</span>`;
         try {
-            const users = await this.auth.adminListUsers();
+            const { users, storage } = await this.auth.adminListUsers();
             const esc = s => this._escapeHtml ? this._escapeHtml(String(s)) : String(s);
             const rows = users.map(u => {
                 const name = esc(u.username);
@@ -2864,11 +2864,36 @@ class RimTownApp {
                     <div style="flex:1;min-width:0"><b>${name}</b> ${status}<div style="color:var(--text-muted);font-size:0.68rem">${date}${u.email ? ' · ' + esc(u.email) : ''} · ${t('存檔')} ${u.saves || 0}</div></div>
                     <div style="flex-shrink:0;white-space:nowrap">${btns}</div></div>`;
             });
-            this._adminUsersHtml = rows.length ? `<div style="color:var(--text-secondary);margin-bottom:4px">${t('共')} ${users.length} ${t('個帳號')}</div>${rows.join('')}` : `<span style="color:var(--text-muted)">${t('目前沒有其他玩家')}</span>`;
+            // v5.64.0 儲存後端狀態 + 一鍵搬遷按鈕
+            let storageHtml = '';
+            if (storage) {
+                if (storage.backend === 'postgres') {
+                    storageHtml = storage.migrated
+                        ? `<div style="color:#34d399;margin-bottom:6px">${t('💾 儲存：Postgres（已搬遷）')}</div>`
+                        : `<div style="margin-bottom:6px"><span style="color:#fb923c">${t('💾 儲存：Postgres（尚未搬遷）')}</span> <button class="trade-btn btn-accent" data-action="admin-migrate" style="padding:3px 8px;font-size:0.7rem">${t('📦 搬資料到資料庫')}</button></div>`;
+                } else {
+                    storageHtml = `<div style="color:var(--text-muted);margin-bottom:6px">${t('💾 儲存：Blob（尚未設定資料庫）')}</div>`;
+                }
+            }
+            this._adminUsersHtml = storageHtml + (rows.length ? `<div style="color:var(--text-secondary);margin-bottom:4px">${t('共')} ${users.length} ${t('個帳號')}</div>${rows.join('')}` : `<span style="color:var(--text-muted)">${t('目前沒有其他玩家')}</span>`);
         } catch (e) {
             this._adminUsersHtml = `<span style="color:#f87171">${t('載入失敗：')}${this._escapeHtml ? this._escapeHtml(e.message) : e.message}</span>`;
         }
         if (box) box.innerHTML = this._adminUsersHtml;
+    }
+
+    // v5.64.0 一鍵把 Blob 玩家資料搬進 Postgres
+    async _adminMigrate() {
+        if (!window.confirm(t('確定要把雲端資料搬到資料庫嗎？可重複執行，不會覆蓋較新的資料。'))) return;
+        const box = document.getElementById('admin-user-list');
+        if (box) box.innerHTML = `<span style="color:var(--text-muted)">${t('搬遷中…可能需要數十秒，請勿關閉')}</span>`;
+        try {
+            const r = await this.auth.adminAction('migrate');
+            this._showCornerNotice({ icon: '📦', title: t('搬遷完成'), desc: `${t('複製')} ${r.copied || 0}・${t('略過')} ${r.skipped || 0}・${t('失敗')} ${r.failed || 0}` });
+        } catch (e) {
+            this._gameAlert?.(`${t('搬遷失敗：')}${e.message}`, '❌');
+        }
+        await this._adminLoadUsers();
     }
 
     async _adminDo(action, username, confirmText) {
@@ -3728,10 +3753,17 @@ class RimTownApp {
         if (!el) return;
         if (this.llmClient && this.world.conversationEngine?.llm) {
             const hasFallback = !!this.llmClient.fallbackGroqKey;
-            const providerLabel = this.llmClient.provider + (hasFallback ? t('+備用') : '');
-            el.textContent = 'AI:' + providerLabel;
-            el.className = 'llm-status connected';
-            el.title = t('AI 已連接：') + this.llmClient.provider + (hasFallback ? t('（備用：Groq）') : '');
+            if (this.llmClient.provider === 'server') {
+                // v5.64.0 內建小鎮 AI:徽章顯示「AI:小鎮內建」
+                el.textContent = t('AI:小鎮內建');
+                el.className = 'llm-status connected';
+                el.title = t('🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 100 則）');
+            } else {
+                const providerLabel = this.llmClient.provider + (hasFallback ? t('+備用') : '');
+                el.textContent = 'AI:' + providerLabel;
+                el.className = 'llm-status connected';
+                el.title = t('AI 已連接：') + this.llmClient.provider + (hasFallback ? t('（備用：Groq）') : '');
+            }
         } else {
             el.textContent = t('AI:未連接');
             el.className = 'llm-status disconnected';
@@ -4159,6 +4191,7 @@ class RimTownApp {
                 case 'settings-bgm-mute': { if (this.bgm) { this.bgm.toggleMute(); this.renderSidebar(); } break; }
                 // v5.63.0 管理員操作
                 case 'admin-load-users': this._adminLoadUsers(); break;
+                case 'admin-migrate': this._adminMigrate(); break;
                 case 'admin-ban-user': this._adminDo('ban', val, t('確定要封鎖')); break;
                 case 'admin-unban-user': this._adminDo('unban', val, t('確定要解除封鎖')); break;
                 case 'admin-delete-user': this._adminDo('delete', val, t('⚠️ 確定要刪除帳號？會連同所有雲端存檔一起刪除且無法復原：')); break;
@@ -7383,9 +7416,11 @@ class RimTownApp {
         // --- AI Settings Section ---
         const aiConnected = !!(this.llmClient && this.world?.conversationEngine?.llm);
         const isServerAI = this.llmClient?.provider === 'server';
-        const aiLabel = isServerAI ? t('🏘️ 小鎮 AI 已啟用（免設定）') : (aiConnected ? 'AI:' + this.llmClient.provider + (this.llmClient.fallbackGroqKey ? t('+備用') : '') : t('AI:未連接'));
+        const aiLabel = isServerAI ? t('AI:小鎮內建') : (aiConnected ? 'AI:' + this.llmClient.provider + (this.llmClient.fallbackGroqKey ? t('+備用') : '') : t('AI:未連接'));
         html += t('<div class="econ-section"><h3>🤖 AI 語言模型</h3>');
         html += `<div style="margin-bottom:8px"><span class="llm-status ${aiConnected ? 'connected' : 'disconnected'}">${aiLabel}</span></div>`;
+        // v5.64.0 內建小鎮 AI 說明:免金鑰即可使用
+        if (isServerAI) html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${t('🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 100 則）')}</div>`;
         // v5.29.0 混合成本控制:NPC 之間的對話只有在玩家附近才用 LLM,並受每日額度限制
         const existingBudget = document.getElementById('settings-tab-npcbudget');
         const npcBudget = existingBudget ? existingBudget.value : (localStorage.getItem('rimtown_npc_llm_budget') ?? '');

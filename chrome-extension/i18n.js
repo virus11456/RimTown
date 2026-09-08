@@ -1681,6 +1681,21 @@ const I18N = (() => {
         '帳號與存檔已刪除': 'Account and saves deleted',
         '操作失敗：': 'Action failed: ',
         '你的帳號已被管理員停用，已登出。': 'Your account has been disabled by an admin. You have been logged out.',
+        // v5.64.0 儲存後端 / 搬遷
+        '💾 儲存：Postgres（已搬遷）': '💾 Storage: Postgres (migrated)',
+        '💾 儲存：Postgres（尚未搬遷）': '💾 Storage: Postgres (not migrated yet)',
+        '💾 儲存：Blob（尚未設定資料庫）': '💾 Storage: Blob (no database configured)',
+        '📦 搬資料到資料庫': '📦 Migrate data to database',
+        '確定要把雲端資料搬到資料庫嗎？可重複執行，不會覆蓋較新的資料。': 'Migrate cloud data into the database? Safe to run repeatedly — it will not overwrite newer data.',
+        '搬遷中…可能需要數十秒，請勿關閉': 'Migrating… this may take a minute, please keep this open',
+        '搬遷完成': 'Migration complete',
+        '複製': 'Copied',
+        '略過': 'Skipped',
+        '失敗': 'Failed',
+        '搬遷失敗：': 'Migration failed: ',
+        // v5.64.0 內建小鎮 AI
+        'AI:小鎮內建': 'AI: Built-in',
+        '🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 100 則）': '🏘️ Built-in town AI is on — no API key needed (100/day when logged in)',
         // v5.60.0 選址引導
         '點發光的綠色格子選擇': 'Tap a glowing green slot to choose where ',
         '的位置(會自動對齊格線)|點這裡取消': ' goes (snaps to the grid) | tap here to cancel',

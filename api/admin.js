@@ -42,7 +42,34 @@ module.exports = async (req, res) => {
             if (!users.some(x => x.username.toLowerCase() === b)) users.push({ username: b, email: '', created_at: '', saves: 0, banned: true, deleted: true });
         }
         users.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
-        return res.status(200).json({ users });
+        return res.status(200).json({ users, storage: await L.storageInfo() });
+    }
+
+    // v5.64.0 一鍵把 Blob 的玩家資料搬進 Postgres(僅管理員)。可重複執行:
+    // PG 已有的 path 跳過(不覆蓋較新的 PG 資料),quota/ 不搬,完成後寫入搬遷完成旗標。
+    if (req.method === 'POST' && action === 'migrate') {
+        const info = await L.storageInfo();
+        if (info.backend !== 'postgres') return L.err(res, 400, 'no_database', '尚未設定資料庫(DATABASE_URL)');
+        const prefixes = ['users/', 'emails/', 'saves/', 'savemeta/', 'ach/', 'settings/', 'lb/', 'bans/'];
+        let copied = 0, skipped = 0, failed = 0, total = 0;
+        for (const prefix of prefixes) {
+            let blobPaths = [];
+            try { blobPaths = await L.blobListPaths(prefix); } catch (e) { blobPaths = []; }
+            let pgSet;
+            try { pgSet = new Set(await L.pgListPaths(prefix)); } catch (e) { pgSet = new Set(); }
+            for (const p of blobPaths) {
+                total++;
+                if (pgSet.has(p)) { skipped++; continue; }
+                try {
+                    const v = await L.blobReadJson(p);
+                    if (v === null || v === undefined) { skipped++; continue; }
+                    await L.writeJson(p, v);
+                    copied++;
+                } catch (e) { failed++; } // 單筆失敗不中斷
+            }
+        }
+        await L.writeJson('meta/migrated.json', { at: new Date().toISOString(), copied, skipped }).catch(() => {});
+        return res.status(200).json({ copied, skipped, failed, total });
     }
 
     if (req.method !== 'POST') return L.err(res, 405, 'method_not_allowed', 'POST only');
