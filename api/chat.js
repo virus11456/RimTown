@@ -77,6 +77,8 @@ async function callGroq(apiKey, prompt, maxTokens, temperature) {
         _lastGroqModel = model;
         const body = { model, messages: [{ role: 'user', content: prompt }], max_tokens: maxTokens, temperature };
         // v5.66.1 推理模型:壓低思考量,不要把小額度全花在推理上;qwen 系列把思考段藏起來
+        // v5.66.4 推理模型的思考段會吃掉 max_tokens,小額度(如 20)必回空;Groq 免費不計成本,給最低 160 的餘裕
+        if (/gpt-oss|qwen|deepseek/i.test(model)) body.max_tokens = Math.max(maxTokens, 160);
         if (/gpt-oss/i.test(model)) body.reasoning_effort = 'low';
         if (/qwen|deepseek/i.test(model)) body.reasoning_format = 'hidden';
         return fetchTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -156,7 +158,8 @@ module.exports = async (req, res) => {
             failed.push({ provider: c, model: c === 'groq' ? _lastGroqModel : RELAY_MODEL, error: String(e && e.message || e).slice(0, 120) });
             console.warn('[chat] provider failed:', c, c === 'groq' ? _lastGroqModel : RELAY_MODEL, String(e && e.message || e).slice(0, 200));
             if (c === 'groq') {
-                _lane.groqCooldownUntil = Date.now() + 300000; // Groq 限流/故障:5 分鐘後再試
+                // v5.66.4 空回覆是單次現象,只退回這一次不冷卻;限流/故障(429/5xx/逾時)才冷卻 5 分鐘
+                if (e && e.message !== 'groq_empty') _lane.groqCooldownUntil = Date.now() + 300000;
             } else {
                 _lane.relayFailCount = Math.min(_lane.relayFailCount + 1, 5);
                 _lane.relayCooldownUntil = Date.now() + 60000 * _lane.relayFailCount; // 60s × 次數,最多 5 分鐘
