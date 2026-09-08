@@ -129,6 +129,16 @@ async function callGroq(apiKey, prompt, maxTokens, temperature, deadline = Date.
     return text;
 }
 
+// v5.67.5 回覆一律轉成繁體中文(台灣用語):Groq 的 gpt-oss 即使被要求繁體也常回簡體;
+// 用 OpenCC(cn→twp)在伺服器端統一轉,繁體輸入不受影響。轉換器載入失敗時原樣回傳。
+let _toTW = null;
+function toTraditional(text) {
+    try {
+        if (_toTW === null) { const OpenCC = require('opencc-js/cn2t'); _toTW = OpenCC.Converter({ from: 'cn', to: 'twp' }); }
+        return _toTW(String(text || ''));
+    } catch (e) { _toTW = false; return text; }
+}
+
 // 分流冷卻狀態(lambda 實例內存)
 const _lane = { groqCooldownUntil: 0, relayCooldownUntil: 0, relayFailCount: 0 };
 
@@ -238,6 +248,7 @@ module.exports = async (req, res) => {
         return L.err(res, 502, 'upstream_error', 'AI 服務暫時無法使用');
     }
 
+    if (_toTW !== false) reply = toTraditional(reply); // v5.67.5 簡→繁
     q.count += 1;
     await L.writeJson(quotaPath, q).catch(() => {}); // 額度寫入失敗不阻擋回覆
 

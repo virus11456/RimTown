@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.67.4.zip` from Releases
+1. Download `rimtown-v5.67.5.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -75,6 +75,10 @@ node scripts/scrub_test.js     # 存檔深度清理 AI 助理漏出內容(v5.67.
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.67.5 (2026-09-08)
+
+- 🈶 AI 台詞一律繁體中文：Groq 的 gpt-oss 即使被要求繁體仍常回簡體。伺服器端每則回覆先用 OpenCC（簡→繁，台灣用語，`opencc-js`）轉換，兩條渠道都套用；前端新增 17KB 輕量簡繁字元表（`s2t.js`）做雙保險，並在載入存檔時把已經存進去的簡體台詞（聊天、村民對話、記憶、行程、名場面、新聞）轉成繁體，提示「已把 N 段簡體字台詞轉成繁體」後回存。只轉偵測為簡體的字串，繁體文本不會被誤改
 
 ### v5.67.4 (2026-09-08)
 

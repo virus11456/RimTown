@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.67.4
+ * Version: 5.67.5
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.67.4');
+define('RIMTOWN_VERSION', '5.67.5');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -817,10 +817,19 @@ function rimtown_enqueue_assets() {
         true
     );
 
+    // v5.67.5 簡→繁字元表(舊存檔清理與前端雙保險)
+    wp_enqueue_script(
+        'rimtown-s2t',
+        RIMTOWN_URL . 's2t.js',
+        array(),
+        RIMTOWN_VERSION,
+        true
+    );
+
     wp_enqueue_script(
         'rimtown-quest',
         RIMTOWN_URL . 'quest-system.js',
-        array('rimtown-i18n'),
+        array('rimtown-i18n', 'rimtown-s2t'),
         RIMTOWN_VERSION,
         true
     );
@@ -1203,6 +1212,13 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.67.5',
+            'date'    => '2026-09-08',
+            'changes' => array(
+                '🈶 AI 台詞一律繁體中文:Groq 的 gpt-oss 即使被要求繁體仍常回簡體。伺服器端每則回覆先用 OpenCC(簡→繁,台灣用語)轉換,兩條渠道都套用;前端新增 17KB 輕量簡繁字元表(s2t.js)做雙保險,並在載入存檔時把已經存進去的簡體台詞(聊天、村民對話、記憶、行程、名場面、新聞)轉成繁體,提示「已把 N 段簡體字台詞轉成繁體」後回存。只轉偵測為簡體的字串,繁體文本不會被誤改',
+            ),
+        ),
         array(
             'version' => '5.67.4',
             'date'    => '2026-09-08',

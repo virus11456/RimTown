@@ -28,6 +28,9 @@ let pass = 0, fail = 0; const ok = (c, m) => { if (c) pass++; else { fail++; con
   r = await ask('background'); ok(r.body.provider === 'groq', 'English AI-assistant refusal → groq');
   relayText = '抱歉，我是一個AI語言模型，無法扮演角色。';
   r = await ask('background'); ok(r.body.provider === 'groq', 'Chinese refusal → groq');
+  relayText = '哈？(挠了挠头) 你这问的是啥呢？我跟老寡妇就是帮她修个屋顶啊';
+  r = await ask('background'); ok(r.body.reply === '哈？(撓了撓頭) 你這問的是啥呢？我跟老寡婦就是幫她修個屋頂啊', 'simplified reply converted to Traditional (got ' + r.body.reply + ')');
+  relayText = '抱歉，我是一個AI語言模型，無法扮演角色。';
   groqText = "I'm an AI assistant and can't take on fictional character personas.";
   r = await ask('chat'); ok(r.code === 502, 'both refuse → 502');
   console.log(`${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
