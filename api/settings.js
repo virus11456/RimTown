@@ -1,5 +1,6 @@
-// v5.33.0 帳號設定雲端同步:AI 供應商/金鑰/額度隨帳號走,換裝置登入即自動帶入
-// 金鑰與存檔同一套 AES-256-GCM 加密後存入 Vercel Blob,不以明文落地
+// v5.33.0 帳號設定雲端同步:額度隨帳號走,換裝置登入即自動帶入
+// v5.65.0 AI 全面內建:所有 AI 金鑰只存在 Vercel 環境變數(LLM_*/GROQ_API_KEY),
+// 帳號設定不再保存任何玩家金鑰;舊版留下的 llm_api_key/fallback_groq_key 在讀取時過濾、寫入時清除
 const L = require('./_lib');
 
 module.exports = async (req, res) => {
@@ -10,6 +11,7 @@ module.exports = async (req, res) => {
 
     if (req.method === 'GET') {
         const data = await L.readJson(path);
+        if (data) { delete data.llm_api_key; delete data.fallback_groq_key; delete data.llm_provider; }
         return res.status(200).json({ settings: data || null });
     }
 
@@ -17,11 +19,9 @@ module.exports = async (req, res) => {
         if (!L.rateLimit(`settings:${uname}`, 30, 300)) return L.err(res, 429, 'rate_limited', '請稍後再試');
         const b = req.body || {};
         const prev = (await L.readJson(path)) || {};
-        // 空值不覆寫既有欄位(與前端「空欄位不洗掉金鑰」同一原則)
         const s = { ...prev };
-        if (b.llm_provider) s.llm_provider = String(b.llm_provider).slice(0, 20);
-        if (b.llm_api_key) s.llm_api_key = String(b.llm_api_key).slice(0, 300);
-        if (b.fallback_groq_key !== undefined) s.fallback_groq_key = String(b.fallback_groq_key || '').slice(0, 300);
+        // v5.65.0 玩家金鑰不再落地:不論前端送什麼,舊欄位一律清掉
+        delete s.llm_api_key; delete s.fallback_groq_key; delete s.llm_provider;
         if (b.npc_llm_budget !== undefined && Number.isFinite(parseInt(b.npc_llm_budget, 10))) {
             // v5.37.0 -1 = 無上限(預設);0 = 關閉;正數 = 每日上限
             s.npc_llm_budget = Math.max(-1, Math.min(9999, parseInt(b.npc_llm_budget, 10)));

@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.64.1
-const RIMTOWN_APP_VERSION = '5.64.1';
+// RimTown - Frontend App (WordPress Plugin) v5.65.0
+const RIMTOWN_APP_VERSION = '5.65.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1511,9 +1511,7 @@ class RimTownApp {
             const s = await this.auth.getCloudSettings();
             if (!s) return false;
             let changed = false;
-            if (s.llm_provider && s.llm_provider !== localStorage.getItem('llm_provider')) { localStorage.setItem('llm_provider', s.llm_provider); changed = true; }
-            if (s.llm_api_key && s.llm_api_key !== localStorage.getItem('llm_api_key')) { localStorage.setItem('llm_api_key', s.llm_api_key); changed = true; }
-            if (s.fallback_groq_key && s.fallback_groq_key !== localStorage.getItem('fallback_groq_key')) { localStorage.setItem('fallback_groq_key', s.fallback_groq_key); changed = true; }
+            // v5.65.0 AI 全面內建:金鑰/供應商不再隨帳號同步(伺服器端也已不再保存),只同步額度
             // v5.37.0 -1 = 無上限(預設):同步時清掉本機上限
             if (s.npc_llm_budget != null) {
                 if (Number(s.npc_llm_budget) < 0) { try { localStorage.removeItem('rimtown_npc_llm_budget'); } catch (e) {} }
@@ -1527,11 +1525,8 @@ class RimTownApp {
     // 本機設定推上帳號(fire-and-forget;端點不存在或未登入時靜默略過)
     _pushCloudSettings() {
         if (!this.auth.loggedIn) return;
-        const payload = {
-            llm_provider: localStorage.getItem('llm_provider') || '',
-            llm_api_key: localStorage.getItem('llm_api_key') || '',
-            fallback_groq_key: localStorage.getItem('fallback_groq_key') || '',
-        };
+        // v5.65.0 AI 全面內建:只推額度;伺服器收到後會順手清掉帳號裡舊版存的金鑰
+        const payload = {};
         const budgetRaw = localStorage.getItem('rimtown_npc_llm_budget');
         const budget = parseInt(budgetRaw, 10);
         // v5.37.0 本機未設上限 → 推 -1(無上限),讓其他裝置也同步成無上限
@@ -3577,120 +3572,52 @@ class RimTownApp {
 
     async loadSettings() {
         try {
-            let provider = localStorage.getItem('llm_provider');
-            let apiKey = localStorage.getItem('llm_api_key');
             const speed = localStorage.getItem('sim_speed');
-            const fallbackGroqKey = localStorage.getItem('fallback_groq_key');
-            console.log('[RimTown] loadSettings: provider=', provider, 'hasKey=', !!apiKey, 'speed=', speed, 'hasFallback=', !!fallbackGroqKey);
             if (speed) this.simSpeed = parseInt(speed);
-            // 靜態站(Vercel)未設定過 AI → 預設用小鎮伺服器 AI(免金鑰)
-            if (!provider && typeof rimtownAuth === 'undefined' && location.protocol.startsWith('http')) {
-                provider = 'server';
-            }
-            // 一次性遷移:先前預設存了 none 且沒有金鑰的靜態站玩家 → 升級為伺服器 AI
-            if (provider === 'none' && !apiKey && typeof rimtownAuth === 'undefined'
-                && !localStorage.getItem('rimtown_ai_migrated')) {
-                provider = 'server';
-                localStorage.setItem('llm_provider', 'server');
-            }
-            if (typeof rimtownAuth === 'undefined') localStorage.setItem('rimtown_ai_migrated', '1');
+            // v5.65.0 AI 全面內建:所有金鑰由伺服器(Vercel 環境變數)統一保管,玩家端不再有任何
+            // 自備金鑰設定。舊版留在本機/擴充功能儲存區的金鑰一律清除。
+            try {
+                localStorage.removeItem('llm_api_key');
+                localStorage.removeItem('fallback_groq_key');
+                localStorage.removeItem('llm_model');
+                if (typeof chrome !== 'undefined' && chrome.storage) chrome.storage.local.remove(['llm_provider', 'llm_api_key', 'fallback_groq_key']);
+            } catch (e) {}
+            // 有 /api/chat 的站(rimtown.cc)走內建 AI;WordPress 版沒有代理端點 → 模擬對話
+            const provider = (typeof rimtownAuth === 'undefined' && location.protocol.startsWith('http')) ? 'server' : 'none';
+            localStorage.setItem('llm_provider', provider);
             if (provider === 'server') {
                 this.llmClient = new LLMClient('server', 'server');
-                console.log('[RimTown] LLM client: 小鎮伺服器 AI(/api/chat)');
-            } else if (provider && provider !== 'none' && apiKey) {
-                this.llmClient = new LLMClient(provider, apiKey);
-                console.log('[RimTown] LLM client created from localStorage:', provider);
-            }
-            // No primary AI but has fallback Groq key → use Groq as primary
-            if (!this.llmClient && fallbackGroqKey) {
-                this.llmClient = new LLMClient('groq', fallbackGroqKey);
-                console.log('[RimTown] No primary AI — using fallback Groq as primary');
-            }
-            // Set fallback key on client
-            if (this.llmClient && fallbackGroqKey) {
-                this.llmClient.setFallbackGroqKey(fallbackGroqKey);
-            }
-            // Also try chrome.storage if localStorage didn't have it
-            if (!this.llmClient && typeof chrome !== 'undefined' && chrome.storage) {
-                try {
-                    const data = await chrome.storage.local.get(['llm_provider','llm_api_key','sim_speed','fallback_groq_key']);
-                    if (data.sim_speed && !speed) this.simSpeed = parseInt(data.sim_speed);
-                    if (data.llm_provider && data.llm_provider !== 'none' && data.llm_api_key) {
-                        this.llmClient = new LLMClient(data.llm_provider, data.llm_api_key);
-                        console.log('[RimTown] LLM client created from chrome.storage:', data.llm_provider);
-                    }
-                    if (!this.llmClient && data.fallback_groq_key) {
-                        this.llmClient = new LLMClient('groq', data.fallback_groq_key);
-                        console.log('[RimTown] No primary AI — using fallback Groq from chrome.storage');
-                    }
-                    if (this.llmClient && (data.fallback_groq_key || fallbackGroqKey)) {
-                        this.llmClient.setFallbackGroqKey(data.fallback_groq_key || fallbackGroqKey);
-                    }
-                } catch(e2) { console.log('[RimTown] chrome.storage read error:', e2); }
+                console.log('[RimTown] LLM client: 小鎮內建 AI(/api/chat)');
+            } else {
+                this.llmClient = null;
             }
         } catch(e) { console.log('[RimTown] Settings load error:', e); }
     }
 
-    async saveSettings(provider, apiKey, speed) {
+    // v5.65.0 AI 全面內建:設定只剩模擬速度(AI 由伺服器統一提供,玩家端沒有可填的金鑰)
+    async saveSettings(speed) {
         this.simSpeed = parseInt(speed);
         this.baseSimSpeed = this.simSpeed;
         // Reset speed buttons to 1x
         document.querySelectorAll('.btn-speed').forEach(b => b.classList.remove('active'));
         const btn1x = document.querySelector('.btn-speed[data-speed="1"]');
         if (btn1x) btn1x.classList.add('active');
-        const fallbackGroqKey = document.getElementById('fallback-groq-key')?.value?.trim()
-            || document.getElementById('settings-tab-groq')?.value?.trim()
-            || localStorage.getItem('fallback_groq_key') || '';
-        if (provider === 'server') {
+        if (!this.llmClient && typeof rimtownAuth === 'undefined' && location.protocol.startsWith('http')) {
             this.llmClient = new LLMClient('server', 'server');
-            this.world.conversationEngine = this._makeConversationEngine();
-        } else if (provider && provider !== 'none' && apiKey) {
-            this.llmClient = new LLMClient(provider, apiKey);
-            this.world.conversationEngine = this._makeConversationEngine();
-        } else if (fallbackGroqKey) {
-            // No primary AI selected but has fallback → use Groq as primary
-            this.llmClient = new LLMClient('groq', fallbackGroqKey);
-            this.world.conversationEngine = this._makeConversationEngine();
-        } else {
-            this.llmClient = null;
-            this.world.conversationEngine = new ConversationEngine();
         }
-        // Attach fallback key
-        if (this.llmClient && fallbackGroqKey) {
-            this.llmClient.setFallbackGroqKey(fallbackGroqKey);
-        }
+        this.world.conversationEngine = this.llmClient ? this._makeConversationEngine() : new ConversationEngine();
         this.restartSimulation();
         this._updateLLMStatus();
-        localStorage.setItem('llm_provider', provider);
-        // v5.32.1 空欄位不覆寫已存金鑰:切換供應商時欄位會被清空,直接存會把舊金鑰洗掉
-        if (apiKey) localStorage.setItem('llm_api_key', apiKey);
         localStorage.setItem('sim_speed', speed);
-        if (fallbackGroqKey) localStorage.setItem('fallback_groq_key', fallbackGroqKey);
-        else localStorage.removeItem('fallback_groq_key');
         try {
-            if (typeof chrome !== 'undefined' && chrome.storage) {
-                const stored = { llm_provider: provider, sim_speed: speed, fallback_groq_key: fallbackGroqKey };
-                if (apiKey) stored.llm_api_key = apiKey;
-                await chrome.storage.local.set(stored);
-            }
+            if (typeof chrome !== 'undefined' && chrome.storage) await chrome.storage.local.set({ sim_speed: speed });
         } catch(e) {}
-        // v5.33.0 設定推上帳號雲端(換裝置登入自動帶入)
+        // v5.33.0 設定推上帳號雲端(額度隨帳號走)
         this._pushCloudSettings();
     }
 
     _saveSettingsFromTab() {
-        const provider = document.getElementById('settings-tab-provider')?.value || 'none';
-        const apiKey = document.getElementById('settings-tab-apikey')?.value || '';
         const speed = document.getElementById('settings-tab-speed')?.value || '2000';
-        const fallbackKey = document.getElementById('settings-tab-groq')?.value?.trim() || '';
-        if (provider !== 'none' && provider !== 'server' && !apiKey && !fallbackKey) {
-            this._gameAlert(t('請輸入 API 金鑰，或填寫備用 Groq Key，或選擇「無（模擬對話）」。'), '🔑');
-            return;
-        }
-        // Store fallback key so saveSettings can read it
-        const fallbackEl = document.getElementById('fallback-groq-key');
-        if (fallbackEl) fallbackEl.value = fallbackKey;
-        localStorage.setItem('fallback_groq_key', fallbackKey || '');
         // v5.29.0 NPC 每日 AI 額度(v5.37.0 留空=無上限)
         const npcBudgetEl = document.getElementById('settings-tab-npcbudget');
         if (npcBudgetEl) {
@@ -3701,7 +3628,7 @@ class RimTownApp {
                 if (Number.isFinite(npcBudgetRaw) && npcBudgetRaw >= 0) localStorage.setItem('rimtown_npc_llm_budget', String(Math.min(9999, npcBudgetRaw)));
             }
         }
-        this.saveSettings(provider, apiKey, speed);
+        this.saveSettings(speed);
         const langSelect = document.getElementById('lang-select') || document.getElementById('settings-tab-lang');
         if (langSelect) {
             I18N.setLang(langSelect.value);
@@ -3709,13 +3636,6 @@ class RimTownApp {
         }
         this.world.logMessage('system', t('設定已儲存'));
         this.renderSidebar();
-        // Auto-test API key connection after save
-        if (provider !== 'none' && apiKey) {
-            setTimeout(() => this._testApiKeyConnection('main'), 300);
-        }
-        if (fallbackKey) {
-            setTimeout(() => this._testApiKeyConnection('groq'), 500);
-        }
     }
 
     _updateLLMStatus() {
@@ -3737,41 +3657,8 @@ class RimTownApp {
         } else {
             el.textContent = t('AI:未連接');
             el.className = 'llm-status disconnected';
-            el.title = t('請在設定中配置 AI 提供商和 API Key');
+            el.title = t('此站沒有內建 AI 代理端點，村民對話走內建模擬');
         }
-    }
-
-    async _testApiKeyConnection(type) {
-        const isMain = type === 'main';
-        const statusEl = document.getElementById(isMain ? 'apikey-status' : 'groqkey-status');
-        const btnEl = document.getElementById(isMain ? 'btn-test-apikey' : 'btn-test-groq');
-        if (!statusEl) return;
-
-        const provider = isMain
-            ? (document.getElementById('settings-tab-provider')?.value || 'none')
-            : 'groq';
-        const apiKey = isMain
-            ? (document.getElementById('settings-tab-apikey')?.value || '')
-            : (document.getElementById('settings-tab-groq')?.value?.trim() || '');
-
-        if (!apiKey || (isMain && provider === 'none')) {
-            statusEl.innerHTML = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444"></span><span style="color:#ef4444">${t('請先選擇供應商並輸入 API 金鑰')}</span>`;
-            return;
-        }
-
-        // Show loading state
-        statusEl.innerHTML = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e0b;animation:pulse 1s infinite"></span><span style="color:#f59e0b">${t('測試中...')}</span>`;
-        if (btnEl) btnEl.disabled = true;
-
-        const tester = new LLMClient(provider, apiKey);
-        const result = await tester.testConnection(provider, apiKey);
-
-        if (result.ok) {
-            statusEl.innerHTML = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#22c55e"></span><span style="color:#22c55e">${t('連線成功')}</span>`;
-        } else {
-            statusEl.innerHTML = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444"></span><span style="color:#ef4444">${t('連線失敗')}${result.error ? ' — ' + result.error : ''}</span>`;
-        }
-        if (btnEl) btnEl.disabled = false;
     }
 
     startSimulation() {
@@ -4142,8 +4029,6 @@ class RimTownApp {
                 case 'council-vote': this._councilVote(val); break;
                 // Settings tab actions
                 case 'settings-save-all': this._saveSettingsFromTab(); break;
-                case 'test-apikey': this._testApiKeyConnection('main'); break;
-                case 'test-groqkey': this._testApiKeyConnection('groq'); break;
                 case 'settings-login': document.getElementById('auth-modal')?.classList.remove('hidden'); break;
                 case 'settings-register': {
                     document.getElementById('auth-modal')?.classList.remove('hidden');
@@ -4299,22 +4184,8 @@ class RimTownApp {
     setupSettingsListeners() {
         document.getElementById('btn-settings')?.addEventListener('click', () => {
             document.getElementById('settings-modal')?.classList.remove('hidden');
-            const provider = localStorage.getItem('llm_provider');
-            const apiKey = localStorage.getItem('llm_api_key');
             const speed = localStorage.getItem('sim_speed');
-            const fallbackKey = localStorage.getItem('fallback_groq_key');
-            if (provider) document.getElementById('llm-provider').value = provider;
-            if (apiKey) document.getElementById('llm-api-key').value = apiKey;
             if (speed) document.getElementById('sim-speed').value = speed;
-            if (fallbackKey) document.getElementById('fallback-groq-key').value = fallbackKey;
-            if (!provider && typeof chrome !== 'undefined' && chrome.storage) {
-                chrome.storage.local.get(['llm_provider','llm_api_key','sim_speed','fallback_groq_key'], data => {
-                    if (data.llm_provider) document.getElementById('llm-provider').value = data.llm_provider;
-                    if (data.llm_api_key) document.getElementById('llm-api-key').value = data.llm_api_key;
-                    if (data.sim_speed) document.getElementById('sim-speed').value = data.sim_speed;
-                    if (data.fallback_groq_key) document.getElementById('fallback-groq-key').value = data.fallback_groq_key;
-                });
-            }
             const langSelect = document.getElementById('lang-select');
             if (langSelect) langSelect.value = I18N.getLang();
         });
@@ -4323,27 +4194,9 @@ class RimTownApp {
             const langSelectInit = document.getElementById('lang-select');
             if (langSelectInit) langSelectInit.value = I18N.getLang();
         }
-        // When switching provider, clear the API key input to enforce one-AI-at-a-time
-        document.getElementById('llm-provider')?.addEventListener('change', () => {
-            const provEl = document.getElementById('llm-provider');
-            const keyEl = document.getElementById('llm-api-key');
-            const savedProvider = localStorage.getItem('llm_provider');
-            // If user switched to a different provider, clear the key field
-            if (provEl.value !== savedProvider) {
-                keyEl.value = '';
-                keyEl.placeholder = provEl.value === 'none' ? t('不需要 API 金鑰') : t('請輸入新的 API 金鑰...');
-            }
-        });
         document.getElementById('settings-save')?.addEventListener('click', () => {
-            const provider = document.getElementById('llm-provider').value;
-            const apiKey = document.getElementById('llm-api-key').value;
             const speed = document.getElementById('sim-speed').value;
-            const fallbackKey = document.getElementById('fallback-groq-key')?.value?.trim() || '';
-            if (provider !== 'none' && provider !== 'server' && !apiKey && !fallbackKey) {
-                this._gameAlert(t('請輸入 API 金鑰，或填寫備用 Groq Key，或選擇「無（模擬對話）」。'), '🔑');
-                return;
-            }
-            this.saveSettings(provider, apiKey, speed);
+            this.saveSettings(speed);
             const langSelect = document.getElementById('lang-select');
             if (langSelect) {
                 I18N.setLang(langSelect.value);
@@ -7297,14 +7150,8 @@ class RimTownApp {
     renderSettings(container) {
         // Preserve unsaved form values from existing DOM inputs (prevents
         // renderSidebar() calls from wiping user-typed/pasted API keys)
-        const existingProvider = document.getElementById('settings-tab-provider');
-        const existingApiKey = document.getElementById('settings-tab-apikey');
         const existingSpeed = document.getElementById('settings-tab-speed');
-        const existingGroq = document.getElementById('settings-tab-groq');
-        const provider = existingProvider ? existingProvider.value : (localStorage.getItem('llm_provider') || 'none');
-        const apiKey = existingApiKey ? existingApiKey.value : (localStorage.getItem('llm_api_key') || '');
         const speed = existingSpeed ? existingSpeed.value : (localStorage.getItem('sim_speed') || '2000');
-        const fallbackKey = existingGroq ? existingGroq.value : (localStorage.getItem('fallback_groq_key') || '');
         const loggedIn = this.auth.loggedIn;
         const username = this.auth.username;
         const paused = this.world?.paused;
@@ -7392,11 +7239,13 @@ class RimTownApp {
         // --- AI Settings Section ---
         const aiConnected = !!(this.llmClient && this.world?.conversationEngine?.llm);
         const isServerAI = this.llmClient?.provider === 'server';
-        const aiLabel = isServerAI ? t('AI:小鎮內建') : (aiConnected ? 'AI:' + this.llmClient.provider + (this.llmClient.fallbackGroqKey ? t('+備用') : '') : t('AI:未連接'));
+        const aiLabel = isServerAI ? t('AI:小鎮內建') : (aiConnected ? 'AI:' + this.llmClient.provider : t('AI:未連接'));
         html += t('<div class="econ-section"><h3>🤖 AI 語言模型</h3>');
         html += `<div style="margin-bottom:8px"><span class="llm-status ${aiConnected ? 'connected' : 'disconnected'}">${aiLabel}</span></div>`;
-        // v5.64.0 內建小鎮 AI 說明:免金鑰即可使用
-        if (isServerAI) html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${t('🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 100 則）')}</div>`;
+        // v5.65.0 AI 全面內建:金鑰由伺服器統一保管,玩家端沒有任何可填的金鑰欄位
+        html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${isServerAI
+            ? t('🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 100 則）') + ' ' + t('所有 AI 金鑰由小鎮伺服器統一保管，你不需要、也不會看到任何金鑰欄位。')
+            : t('此站沒有內建 AI 代理端點，村民對話走內建模擬')}</div>`;
         // v5.29.0 混合成本控制:NPC 之間的對話只有在玩家附近才用 LLM,並受每日額度限制
         const existingBudget = document.getElementById('settings-tab-npcbudget');
         const npcBudget = existingBudget ? existingBudget.value : (localStorage.getItem('rimtown_npc_llm_budget') ?? '');
@@ -7409,41 +7258,6 @@ class RimTownApp {
             </div>
             <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px">${t('留空＝無上限。村民的每日行程、你附近的村民對話與夜間反思會呼叫 AI；遠處對話走內建模擬並照樣寫入記憶。與你的聊天、劇情名場面不受此額度限制。想控制費用可填每日次數上限，填 0 完全關閉。')}</div>
         </div>`;
-        // 一般玩家不需要看到金鑰設定 → 收進「進階」摺疊區(預設收合)
-        html += `<details style="margin-bottom:8px"${provider !== 'server' && provider !== 'none' ? ' open' : ''}>
-            <summary style="cursor:pointer;font-size:0.78rem;color:var(--text-secondary);padding:4px 0">⚙️ ${t('進階：自備 AI 金鑰（選用）')}</summary>`;
-        html += `<div class="setting-group" style="margin-bottom:8px">
-            <label style="font-size:0.82rem;color:var(--text-secondary)">AI ${t('供應商')}</label>
-            <select id="settings-tab-provider" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
-                <option value="server"${provider==='server'?' selected':''}>🏘️ ${t('小鎮伺服器 AI（免金鑰）')}</option>
-                <option value="none"${provider==='none'?' selected':''}>${t('無（模擬對話）')}</option>
-                <option value="anthropic"${provider==='anthropic'?' selected':''}>Anthropic (Claude)</option>
-                <option value="openai"${provider==='openai'?' selected':''}>OpenAI (gpt-4o-mini)</option>
-                <option value="gemini"${provider==='gemini'?' selected':''}>Google (Gemini)</option>
-                <option value="deepseek"${provider==='deepseek'?' selected':''}>DeepSeek</option>
-                <option value="groq"${provider==='groq'?' selected':''}>Groq</option>
-                <option value="together"${provider==='together'?' selected':''}>Together AI</option>
-                <option value="minimax"${provider==='minimax'?' selected':''}>MiniMax (${t('海螺')}AI)</option>
-            </select>
-        </div>
-        <div class="setting-group" style="margin-bottom:8px">
-            <label style="font-size:0.82rem;color:var(--text-secondary)">API ${t('金鑰')}</label>
-            <div style="display:flex;gap:6px;align-items:center">
-                <input type="password" id="settings-tab-apikey" value="${this._escapeHtml(apiKey)}" placeholder="${t('輸入你的')} API ${t('金鑰')}..." style="flex:1;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem;box-sizing:border-box">
-                <button id="btn-test-apikey" data-action="test-apikey" style="padding:6px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);cursor:pointer;font-size:0.75rem;white-space:nowrap">${t('測試連線')}</button>
-            </div>
-            <div id="apikey-status" style="margin-top:4px;font-size:0.75rem;display:flex;align-items:center;gap:4px"></div>
-        </div>
-        <div class="setting-group" style="margin-bottom:8px">
-            <label style="font-size:0.82rem;color:var(--text-secondary)">Groq API Key <span style="font-size:0.75rem">${t('（免費額度，智慧分流用）')}</span></label>
-            <div style="display:flex;gap:6px;align-items:center">
-                <input type="password" id="settings-tab-groq" value="${this._escapeHtml(fallbackKey)}" placeholder="gsk_...${t('（選填）')}" style="flex:1;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem;box-sizing:border-box">
-                <button id="btn-test-groq" data-action="test-groqkey" style="padding:6px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);cursor:pointer;font-size:0.75rem;white-space:nowrap">${t('測試連線')}</button>
-            </div>
-            <div id="groqkey-status" style="margin-top:4px;font-size:0.75rem;display:flex;align-items:center;gap:4px"></div>
-            <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px">${t('填了之後自動分流：你與村民的對話、劇情名場面優先走 Groq 免費額度；行程／反思／背景對話走上面的主金鑰（便宜又不佔 Groq 限額）。任一邊被限流會自動切到另一邊。')}</div>
-        </div>`;
-        html += '</details>';
         html += '</div>';
 
         // --- Save All & Version ---

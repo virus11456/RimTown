@@ -54,27 +54,10 @@
     <div id="settings-modal" class="modal hidden">
         <div class="modal-content">
             <h2 data-i18n="設定">設定</h2>
+            <!-- v5.65.0 AI 全面內建:金鑰由伺服器統一保管,設定裡不再有任何金鑰欄位 -->
             <div class="setting-group">
                 <label data-i18n="AI 語言模型">AI 語言模型</label>
-                <select id="llm-provider">
-                    <option value="server" data-i18n="小鎮伺服器 AI（免金鑰）">🏘️ 小鎮伺服器 AI（免金鑰）</option>
-                    <option value="none" data-i18n="無（模擬對話）">無（模擬對話）</option>
-                    <option value="anthropic">Anthropic (Claude)</option>
-                    <option value="openai">OpenAI (gpt-4o-mini)</option>
-                    <option value="gemini">Google (Gemini)</option>
-                    <option value="deepseek">DeepSeek</option>
-                    <option value="groq">Groq</option>
-                    <option value="together">Together AI</option>
-                    <option value="minimax" data-i18n="MiniMax (海螺AI)">MiniMax (海螺AI)</option>
-                </select>
-            </div>
-            <div class="setting-group" id="api-key-group">
-                <label data-i18n="API 金鑰">API 金鑰</label>
-                <input type="password" id="llm-api-key" data-i18n-placeholder="輸入你的 API 金鑰..." placeholder="輸入你的 API 金鑰...">
-            </div>
-            <div class="setting-group">
-                <label><span data-i18n="備用 Groq API Key">備用 Groq API Key</span> <span style="font-size:11px;color:var(--text-secondary)" data-i18n="主 AI 超限時自動切換">（主 AI 超限時自動切換）</span></label>
-                <input type="password" id="fallback-groq-key" placeholder="gsk_...">
+                <div style="font-size:12px;color:var(--text-secondary)" data-i18n="🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 100 則）">🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 100 則）</div>
             </div>
             <div class="setting-group">
                 <label data-i18n="模擬速度">模擬速度</label>
