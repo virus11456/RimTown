@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.63.2
+ * Version: 5.64.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.63.2');
+define('RIMTOWN_VERSION', '5.64.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.64.0',
+            'date'    => '2026-09-08',
+            'changes' => array(
+                '🗄️ 存檔後端可改用 Neon Postgres:設了環境變數 DATABASE_URL 後,所有玩家資料(帳號、存檔、成就、設定、排行榜、封鎖名單)改存 Postgres,徹底避開 Vercel Blob「每月 2K 次 list/put」的額度上限(之前雲端存檔爆額度被拒的根因)。沒設 DATABASE_URL 時行為與現在完全相同,部署不會壞;讀取時 PG 沒有會自動退回 Blob 並順手回填,城鎮列表在搬遷完成前聯集兩邊不漏檔',
+                '📦 管理員一鍵搬遷:設定分頁「🛡️ 管理員」面板新增儲存後端狀態與「📦 搬資料到資料庫」按鈕,按一次就把既有 Blob 資料複製進 Postgres(可重複執行,不覆蓋較新的資料)',
+                '🏘️ 內建小鎮 AI 改接付費渠道:/api/chat 主渠道改為可設定的付費 AI 中繼(env LLM_BASE_URL/LLM_API_KEY/LLM_MODEL/LLM_FORMAT,相容 Anthropic 與 OpenAI 格式),Groq 保留為備援;每日額度可用 env 調整。玩家端免填金鑰即可對話,標頭顯示「AI:小鎮內建」',
+            ),
+        ),
         array(
             'version' => '5.63.2',
             'date'    => '2026-09-08',

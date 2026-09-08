@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.63.2.zip` from Releases
+1. Download `rimtown-v5.64.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -58,6 +58,12 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ---
 
 ## Changelog
+
+### v5.64.0 (2026-09-08)
+
+- 🗄️ 存檔後端可改用 Neon Postgres：設了環境變數 `DATABASE_URL`（接上 Vercel 的 Neon 資料庫）後，所有玩家資料（帳號、存檔、成就、設定、排行榜、封鎖名單）改存 Postgres，徹底避開 Vercel Blob「每月 2K 次 list/put」的 advanced operation 額度上限（之前雲端存檔爆額度被拒的根因）。沒設 `DATABASE_URL` 時一切行為與現在完全相同，部署不會壞；讀取時若 PG 沒有會自動退回 Blob 並順手回填，城鎮列表在搬遷完成前會聯集兩邊不漏檔
+- 📦 管理員一鍵搬遷：設定分頁「🛡️ 管理員」面板新增儲存後端狀態與「📦 搬資料到資料庫」按鈕，按一次就把既有 Blob 資料複製進 Postgres（可重複執行，不覆蓋較新的資料）
+- 🏘️ 內建小鎮 AI 改接付費渠道：`/api/chat` 主渠道改為可設定的付費 AI 中繼（env `LLM_BASE_URL`／`LLM_API_KEY`／`LLM_MODEL`／`LLM_FORMAT`，相容 Anthropic 與 OpenAI 格式），原本的 Groq 保留為備援；訪客／登入每日額度可用 env 調整。玩家端免填任何金鑰即可與村民對話，標頭徽章顯示「AI:小鎮內建」
 
 ### v5.63.2 (2026-09-08)
 

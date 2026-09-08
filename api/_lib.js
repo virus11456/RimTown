@@ -49,7 +49,8 @@ async function findBlob(pathname) {
     return b;
 }
 
-async function readJson(pathname) {
+// ---------- 純 Blob 存取(搬遷來源 + 未設定 DATABASE_URL 時的後備) ----------
+async function blobReadJson(pathname) {
     if (_blobBase) {
         const res = await fetch(`${_blobBase}/${pathname}?nc=${Date.now()}`, { cache: 'no-store' });
         if (res.ok) return _decrypt(await res.text());
@@ -63,7 +64,7 @@ async function readJson(pathname) {
     return _decrypt(await res.text());
 }
 
-async function writeJson(pathname, obj) {
+async function blobWriteJson(pathname, obj) {
     const r = await put(pathname, _encrypt(JSON.stringify(obj)), {
         access: 'public', addRandomSuffix: false, allowOverwrite: true,
         contentType: 'application/json', cacheControlMaxAge: 60,
@@ -71,7 +72,7 @@ async function writeJson(pathname, obj) {
     if (r?.url) _learnBase(r.url, pathname);
 }
 
-async function deleteBlob(pathname) {
+async function blobDelete(pathname) {
     if (_blobBase && !_blobBaseGuessed) {
         try { await del(`${_blobBase}/${pathname}`); return; } catch (e) {}
     }
@@ -79,7 +80,7 @@ async function deleteBlob(pathname) {
     if (b) await del(b.url);
 }
 
-async function listPaths(prefix) {
+async function blobListPaths(prefix) {
     const out = [];
     let cursor;
     do {
@@ -88,6 +89,111 @@ async function listPaths(prefix) {
         cursor = r.hasMore ? r.cursor : null;
     } while (cursor);
     return out;
+}
+
+// ---------- v5.64.0 Postgres(Neon)後端 ----------
+// 設了 DATABASE_URL(或 POSTGRES_URL)就走 Postgres,沒設自動退回 Blob,部署順序無關。
+// 表 rimtown_kv(path 主鍵、value 文字)。value 一律存「純 JSON 字串」,readJson 仍走
+// _decrypt(同時相容過去加密的 Blob 值與現在的純 JSON)。Blob 每月 advanced operation
+// 額度有限,這層把 list/put 的額度消耗搬到 Postgres。
+const PG_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
+
+let _sql = null;
+function pgClient() {
+    if (!_sql) {
+        const { neon } = require('@neondatabase/serverless');
+        _sql = neon(PG_URL); // tagged-template 查詢函式
+    }
+    return _sql;
+}
+
+// 每個 lambda 實例只建一次表;結果 promise 快取,失敗時清掉快取讓下次重試
+let _pgInit = null;
+function pgInit() {
+    if (!_pgInit) {
+        _pgInit = pgClient()`CREATE TABLE IF NOT EXISTS rimtown_kv (path TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now())`
+            .catch(e => { _pgInit = null; throw e; });
+    }
+    return _pgInit;
+}
+
+// 轉義 LIKE 萬用字元,避免帳號含 _ 造成前綴越界比對(search 時另帶 ESCAPE '\')
+function _likePrefix(prefix) { return String(prefix).replace(/([\\%_])/g, '\\$1') + '%'; }
+
+const MIGRATED_FLAG = 'meta/migrated.json';
+let _migrated = false; // 搬遷完成旗標:每個 lambda 實例查一次,一旦為 true 永久快取
+async function _isMigrated() {
+    if (_migrated) return true;
+    try {
+        const rows = await pgClient()`SELECT 1 FROM rimtown_kv WHERE path = ${MIGRATED_FLAG} LIMIT 1`;
+        if (rows && rows.length) _migrated = true;
+    } catch (e) {}
+    return _migrated;
+}
+
+// 純 Postgres 的 path 清單(給搬遷判斷「PG 已有」用,不碰 Blob)
+async function pgListPaths(prefix) {
+    if (!PG_URL) return [];
+    await pgInit();
+    const rows = await pgClient()`SELECT path FROM rimtown_kv WHERE path LIKE ${_likePrefix(prefix)} ESCAPE '\\'`;
+    return (rows || []).map(r => r.path);
+}
+
+async function readJson(pathname) {
+    if (PG_URL) {
+        await pgInit();
+        const rows = await pgClient()`SELECT value FROM rimtown_kv WHERE path = ${pathname} LIMIT 1`;
+        if (rows && rows.length) return _decrypt(rows[0].value);
+        // PG 沒有 → 退回 Blob;讀到就順手回填進 PG(lazy 搬遷)
+        const fromBlob = await blobReadJson(pathname);
+        if (fromBlob !== null && fromBlob !== undefined) {
+            try { await writeJson(pathname, fromBlob); } catch (e) {}
+            return fromBlob;
+        }
+        return null;
+    }
+    return blobReadJson(pathname);
+}
+
+async function writeJson(pathname, obj) {
+    if (PG_URL) {
+        await pgInit();
+        const value = JSON.stringify(obj); // 存純 JSON 字串(_decrypt 相容)
+        await pgClient()`INSERT INTO rimtown_kv (path, value) VALUES (${pathname}, ${value}) ON CONFLICT (path) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`;
+        return;
+    }
+    return blobWriteJson(pathname, obj);
+}
+
+async function deleteBlob(pathname) {
+    if (PG_URL) {
+        await pgInit();
+        await pgClient()`DELETE FROM rimtown_kv WHERE path = ${pathname}`;
+        // 盡力刪掉 Blob 副本,否則下次 readJson 的 lazy 退回會把剛刪的資料又搬回 PG
+        try { await blobDelete(pathname); } catch (e) {}
+        return;
+    }
+    return blobDelete(pathname);
+}
+
+async function listPaths(prefix) {
+    if (PG_URL) {
+        const pgPaths = await pgListPaths(prefix);
+        if (await _isMigrated()) return pgPaths; // 旗標出現後不再碰 Blob list
+        // 搬遷尚未完成:與 Blob 清單聯集去重,否則還沒搬的存檔會從城鎮列表消失
+        let blobPaths = [];
+        try { blobPaths = await blobListPaths(prefix); } catch (e) {}
+        return Array.from(new Set([...pgPaths, ...blobPaths]));
+    }
+    return blobListPaths(prefix);
+}
+
+// 給管理端與前端顯示目前的儲存後端狀態
+async function storageInfo() {
+    if (!PG_URL) return { backend: 'blob', migrated: false };
+    let migrated = false;
+    try { migrated = await _isMigrated(); } catch (e) {}
+    return { backend: 'postgres', migrated };
 }
 
 // ---------- 密碼雜湊 ----------
@@ -187,6 +293,7 @@ function clientIp(req) {
 
 module.exports = {
     readJson, writeJson, deleteBlob, listPaths,
+    blobReadJson, blobListPaths, pgListPaths, storageInfo,
     hashPassword, verifyPassword, makeToken, verifyToken, authUser,
     sanitizeUsername, sanitizeTownId, userPath, emailPath, banPath,
     isAdmin, isBanned,

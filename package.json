@@ -6,6 +6,7 @@
     "build": "bash build.sh"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@vercel/blob": "^2.6.1"
   }
 }

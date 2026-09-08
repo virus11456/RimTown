@@ -1,14 +1,56 @@
-// 小鎮伺服器 AI:代理 Groq,金鑰保管在伺服器端(env: GROQ_API_KEY)
-// 每日額度:訪客(依 IP)20 則 / 登入玩家 100 則,記錄在 Blob quota/<日期>/<key>.json
+// 小鎮伺服器 AI 代理:金鑰保管在伺服器端,前端免填任何金鑰即可與村民對話。
+// v5.64.0 主渠道改為付費 AI 中繼(env LLM_*),保留 Groq(GROQ_API_KEY)為備援。
+// 每日額度:訪客(依 IP)/ 登入玩家,記錄在 quota/<日期>/<key>.json(走儲存抽象層)。
 const crypto = require('crypto');
 const L = require('./_lib');
 
-const GUEST_DAILY = 20;
-const USER_DAILY = 100;
+const GUEST_DAILY = parseInt(process.env.AI_GUEST_DAILY, 10) || 10;
+const USER_DAILY = parseInt(process.env.AI_USER_DAILY, 10) || 100;
+
+// 主渠道(付費中繼):相容 Anthropic(CC 類)與 OpenAI 兩種格式
+const RELAY_BASE = process.env.LLM_BASE_URL || '';
+const RELAY_KEY = process.env.LLM_API_KEY || '';
+const RELAY_MODEL = process.env.LLM_MODEL || 'claude-haiku-4-5-20251001';
+const RELAY_FORMAT = (process.env.LLM_FORMAT || 'anthropic').toLowerCase() === 'openai' ? 'openai' : 'anthropic';
+
+// base URL 正規化:去尾端 /,若以 /v1 結尾也去掉,再接對應 endpoint
+function relayUrl(base, format) {
+    let b = String(base || '').trim().replace(/\/+$/, '');
+    if (/\/v1$/i.test(b)) b = b.slice(0, -3).replace(/\/+$/, '');
+    return b + (format === 'openai' ? '/v1/chat/completions' : '/v1/messages');
+}
+
+// 20 秒逾時的 fetch
+async function fetchTimeout(url, opts, ms = 20000) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), ms);
+    try { return await fetch(url, { ...opts, signal: ctrl.signal }); }
+    finally { clearTimeout(timer); }
+}
+
+// 呼叫付費中繼;非 2xx / 逾時 / 例外都會 throw(由上層決定是否退回 Groq)
+async function callRelay(prompt, maxTokens, temperature) {
+    const url = relayUrl(RELAY_BASE, RELAY_FORMAT);
+    let headers, body;
+    if (RELAY_FORMAT === 'openai') {
+        headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RELAY_KEY}` };
+        body = { model: RELAY_MODEL, messages: [{ role: 'user', content: prompt }], max_tokens: maxTokens, temperature };
+    } else {
+        // 各家 CC 類渠道吃的認證 header 不同,x-api-key 與 Authorization 都送
+        headers = { 'Content-Type': 'application/json', 'x-api-key': RELAY_KEY, 'Authorization': `Bearer ${RELAY_KEY}`, 'anthropic-version': '2023-06-01' };
+        body = { model: RELAY_MODEL, max_tokens: maxTokens, temperature, messages: [{ role: 'user', content: prompt }] };
+    }
+    const r = await fetchTimeout(url, { method: 'POST', headers, body: JSON.stringify(body) });
+    if (!r.ok) { const e = new Error('relay_http_' + r.status); e.status = r.status; throw e; }
+    const data = await r.json();
+    if (RELAY_FORMAT === 'openai') return data.choices?.[0]?.message?.content || '';
+    return (Array.isArray(data.content) ? data.content.filter(c => c && c.type === 'text').map(c => c.text).join('') : '') || '';
+}
+
+// ---- Groq 備援(原本的小鎮伺服器 AI)----
 // v5.33.3 模型動態解析:Groq 汰換模型頻繁,寫死名稱遲早 404;查可用清單挑一個並快取於 lambda 內存
 const MODEL_PREFER = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'moonshotai/kimi-k2-instruct'];
 let _modelCache = null;
-
 async function resolveModel(apiKey, force = false) {
     if (_modelCache && !force) return _modelCache;
     try {
@@ -23,10 +65,24 @@ async function resolveModel(apiKey, force = false) {
     return _modelCache || MODEL_PREFER[0];
 }
 
+// 呼叫 Groq;非 2xx / 例外都會 throw(錯誤物件帶 status)
+async function callGroq(apiKey, prompt, maxTokens, temperature) {
+    const call = (model) => fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], max_tokens: maxTokens, temperature }),
+    });
+    let r = await call(await resolveModel(apiKey));
+    if (r.status === 404) r = await call(await resolveModel(apiKey, true)); // 快取模型被下架 → 重查重試
+    if (!r.ok) { const e = new Error('groq_http_' + r.status); e.status = r.status; throw e; }
+    const data = await r.json();
+    return data.choices?.[0]?.message?.content || '';
+}
+
 module.exports = async (req, res) => {
     if (req.method !== 'POST') return L.err(res, 405, 'method_not_allowed', 'POST only');
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) return L.err(res, 503, 'no_server_key', '伺服器 AI 未設定');
+    const groqKey = process.env.GROQ_API_KEY || '';
+    if (!RELAY_KEY && !groqKey) return L.err(res, 503, 'no_server_key', '伺服器 AI 未設定');
 
     const b = req.body || {};
     const prompt = String(b.prompt || '').slice(0, 6000);
@@ -50,26 +106,32 @@ module.exports = async (req, res) => {
             payload ? '今日 AI 對話額度已用完,明天再來吧!' : '訪客今日 AI 額度已用完,註冊登入可獲得更高額度!');
     }
 
-    // 呼叫 Groq(模型動態解析;404 表示快取模型被下架 → 重查清單重試一次)
     let reply = '';
-    try {
-        const callGroq = (model) => fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], max_tokens: maxTokens, temperature }),
-        });
-        let r = await callGroq(await resolveModel(apiKey));
-        if (r.status === 404) r = await callGroq(await resolveModel(apiKey, true));
-        if (r.status === 429) return L.err(res, 429, 'rate_limited', 'AI 忙碌中,請稍後再試');
-        if (!r.ok) return L.err(res, 502, 'upstream_error', 'AI 服務暫時無法使用');
-        const data = await r.json();
-        reply = data.choices?.[0]?.message?.content || '';
-    } catch (e) {
-        return L.err(res, 502, 'upstream_error', 'AI 服務暫時無法使用');
+    let provider = '';
+    if (RELAY_KEY) {
+        // 主渠道:付費中繼。429/5xx/逾時/例外 → 有 Groq 就退回重試一次,否則 502
+        try {
+            reply = await callRelay(prompt, maxTokens, temperature);
+            provider = 'relay';
+        } catch (e) {
+            if (groqKey) {
+                try { reply = await callGroq(groqKey, prompt, maxTokens, temperature); provider = 'groq'; }
+                catch (e2) { return L.err(res, 502, 'upstream_error', 'AI 服務暫時無法使用'); }
+            } else {
+                return L.err(res, 502, 'upstream_error', 'AI 服務暫時無法使用');
+            }
+        }
+    } else {
+        // 未設定付費中繼金鑰 → 完全走舊 Groq 行為
+        try { reply = await callGroq(groqKey, prompt, maxTokens, temperature); provider = 'groq'; }
+        catch (e) {
+            if (e.status === 429) return L.err(res, 429, 'rate_limited', 'AI 忙碌中,請稍後再試');
+            return L.err(res, 502, 'upstream_error', 'AI 服務暫時無法使用');
+        }
     }
 
     q.count += 1;
     await L.writeJson(quotaPath, q).catch(() => {}); // 額度寫入失敗不阻擋回覆
 
-    return res.status(200).json({ reply, remaining: Math.max(0, limit - q.count) });
+    return res.status(200).json({ reply, remaining: Math.max(0, limit - q.count), provider });
 };
