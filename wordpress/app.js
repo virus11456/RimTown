@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.67.0
-const RIMTOWN_APP_VERSION = '5.67.0';
+// RimTown - Frontend App (WordPress Plugin) v5.67.1
+const RIMTOWN_APP_VERSION = '5.67.1';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -4388,8 +4388,20 @@ class RimTownApp {
             }
         }, 60000);
         // Also save when tab is closing
-        window.addEventListener('beforeunload', () => {
+        // v5.67.1 手機版 beforeunload 幾乎不會觸發(切 App/滑掉分頁),改為 pagehide 與 visibilitychange(hidden)
+        // 也一起沖存檔;同一個 tick 只沖一次,避免三個事件連發重複寫雲端
+        const flushOnExit = () => this._flushSaveOnExit();
+        window.addEventListener('beforeunload', flushOnExit);
+        window.addEventListener('pagehide', flushOnExit);
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushOnExit(); });
+    }
+
+    _flushSaveOnExit() {
+        {
             try {
+                if (!this.world) return;
+                if (this._lastExitFlushTick === this.world.tickCount) return; // 同一 tick 已沖過
+                this._lastExitFlushTick = this.world.tickCount;
                 const saveData = this.world.serialize();
                 const json = JSON.stringify(saveData);
                 if (this.auth.loggedIn && this.auth._restUrl) {
@@ -4407,11 +4419,12 @@ class RimTownApp {
                     });
                     fetch(this.auth._restUrl + 'save', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': this.auth._nonce },
+                        headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': this.auth._nonce, 'Authorization': 'Bearer ' + this.auth._nonce },
                         credentials: 'same-origin',
                         body: payload,
                         keepalive: true,
                     }).catch(() => {});
+                    this._lastCloudSaveAt = Date.now(); this._lastCloudTick = this.world.tickCount;
                 } else {
                     // Not logged in — save locally
                     if (this.currentTownId) {
@@ -4424,7 +4437,7 @@ class RimTownApp {
                     }
                 }
             } catch(e) {}
-        });
+        }
     }
 
     async exportSave() {
