@@ -1681,6 +1681,9 @@ const I18N = (() => {
         '帳號與存檔已刪除': 'Account and saves deleted',
         '操作失敗：': 'Action failed: ',
         '你的帳號已被管理員停用，已登出。': 'Your account has been disabled by an admin. You have been logged out.',
+        // v5.67.4 存檔清理
+        '已清除': 'Removed',
+        '則 AI 服務誤回的英文/自報身分內容，存檔已修正。': 'AI-service glitch replies (English / self-identifying text) from this save; the save has been repaired.',
         // v5.66.0 伺服器端智慧分流 + 帳號自救
         '智慧分流：你與村民的對話、劇情名場面優先走 Groq 免費額度；行程／反思／背景對話走付費主渠道；任一邊故障自動切到另一邊。': 'Smart routing: your chats with villagers and story scenes go to Groq\'s free tier first; schedules, reflections and background talk use the paid channel; either side failing switches to the other automatically.',
         '偵測到你的帳號紀錄遺失（雲端儲存空間故障）。請設定一組新密碼（至少 6 字元）重建帳號，存檔與成就不受影響：': 'Your account record is missing (cloud storage outage). Set a new password (6+ characters) to rebuild it. Saves and achievements are unaffected:',
