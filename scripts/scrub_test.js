@@ -6,6 +6,7 @@ function extractStatic(name) {
   let j = src.indexOf('{', i), depth = 0;
   for (let k = j; k < src.length; k++) { if (src[k] === '{') depth++; else if (src[k] === '}') { depth--; if (!depth) return src.slice(i + 4, k + 1); } }
 }
+require(path.join(__dirname, '..', 'chrome-extension', 's2t.js'));
 const World = eval('(class World {\n' + extractStatic('looksLikeAssistantLeak') + '\n' + extractStatic('scrubAssistantLeaks') + '\n})');
 const LEAK = "I can't do this. I'm Kiro, an AI development environment designed to help with software engineering, infrastructure, and technical tasks. I'm not designed for roleplay scenarios.";
 const save = {
@@ -16,6 +17,7 @@ const save = {
   dramaArchive: [ { title: '對嗆', lines: ['吳達: 你少來!'] }, { title: LEAK, lines: [] } ],
   dailyNews: { items: [ { headline: '抱歉，我是一個AI語言模型，無法扮演角色。' }, { headline: '鹽場豐收' } ] },
   messageLog: [ { type: 'system', text: '已同步至雲端。' } ],
+  cn: { line: '哈？(挠了挠头) 你这问的是啥呢？我跟老寡妇就是帮她修个屋顶啊', list: ['我跟秀儿结婚二十年了', '皇后說：後面的人請往前站'] },
 };
 const removed = World.scrubAssistantLeaks(save);
 let pass = 0, fail = 0; const ok = (c, m) => { if (c) pass++; else { fail++; console.log('FAIL ' + m); } };
@@ -29,4 +31,6 @@ ok(save.dramaArchive.length === 1, 'drama leak removed');
 ok(save.dailyNews.items.length === 1 && save.dailyNews.items[0].headline === '鹽場豐收', 'news leak removed');
 ok(save.messageLog.length === 1, 'system message kept');
 ok(World.looksLikeAssistantLeak('你好，我是吳達，鎮上的鐵匠。') === false, 'self-intro of a villager is not a leak');
+ok(save.cn.line === '哈？(撓了撓頭) 你這問的是啥呢？我跟老寡婦就是幫她修個屋頂啊', 'simplified line converted (got ' + save.cn.line + ')');
+ok(save.cn.list[0] === '我跟秀兒結婚二十年了' && save.cn.list[1] === '皇后說：後面的人請往前站', 'array strings: simplified converted, traditional untouched');
 console.log(`${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

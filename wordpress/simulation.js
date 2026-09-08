@@ -3550,7 +3550,10 @@ class LLMClient {
                 const data = await res.json();
                 // v5.67.4 雙保險:伺服器已擋,萬一漏網也不讓「我是 AI 助理」進到台詞
                 if (World.looksLikeAssistantLeak(data.reply)) { console.warn('[RimTown LLM] assistant leak blocked'); return '__ERROR__'; }
-                return data.reply || '';
+                // v5.67.5 雙保險:伺服器已轉繁體,萬一漏網前端再轉一次
+                let reply = data.reply || '';
+                if (typeof RIMTOWN_S2T !== 'undefined' && RIMTOWN_S2T.looksSimplified(reply)) reply = RIMTOWN_S2T.convert(reply);
+                return reply;
             } catch (err) {
                 console.warn('[RimTown LLM] server provider error:', err.message);
                 return '__ERROR__';
@@ -7943,12 +7946,15 @@ class World {
     static scrubAssistantLeaks(root) {
         let removed = 0;
         const leak = World.looksLikeAssistantLeak;
+        // v5.67.5 順便把 AI 回成簡體的台詞轉成繁體(台灣用字);只轉偵測為簡體的字串
+        const S2T = (typeof RIMTOWN_S2T !== 'undefined') ? RIMTOWN_S2T : null;
+        const fixCn = (s) => (S2T && S2T.looksSimplified(s)) ? (World._s2tCount = (World._s2tCount || 0) + 1, S2T.convert(s)) : s;
         const walk = (node, depth) => {
             if (!node || typeof node !== 'object' || depth > 12) return node;
             if (Array.isArray(node)) {
                 const out = [];
                 for (const item of node) {
-                    if (typeof item === 'string') { if (leak(item)) { removed++; continue; } out.push(item); continue; }
+                    if (typeof item === 'string') { if (leak(item)) { removed++; continue; } out.push(fixCn(item)); continue; }
                     if (item && typeof item === 'object' && !Array.isArray(item)) {
                         // 條目型物件:任一文字欄位命中就整條丟掉(台詞/記憶/新聞/名場面/行程區塊)
                         const textKeys = ['text', 'content', 'summary', 'reply', 'message', 'line', 'title', 'body', 'desc', 'description', 'thought', 'reflection', 'headline'];
@@ -7960,7 +7966,7 @@ class World {
             }
             for (const k of Object.keys(node)) {
                 const v = node[k];
-                if (typeof v === 'string') { if (leak(v)) { node[k] = ''; removed++; } }
+                if (typeof v === 'string') { if (leak(v)) { node[k] = ''; removed++; } else node[k] = fixCn(v); }
                 else if (v && typeof v === 'object') node[k] = walk(v, depth + 1);
             }
             return node;
@@ -7972,7 +7978,12 @@ class World {
     loadSave(data) {
         if (!data || !data.version) return false;
         try {
-            try { const n = World.scrubAssistantLeaks(data); if (n) { this._scrubbedLeaks = n; console.warn('[RimTown] 已清除', n, '則 AI 助理漏出的錯誤回覆'); } } catch (e) {}
+            try {
+                World._s2tCount = 0;
+                const n = World.scrubAssistantLeaks(data);
+                if (n) { this._scrubbedLeaks = n; console.warn('[RimTown] 已清除', n, '則 AI 助理漏出的錯誤回覆'); }
+                if (World._s2tCount) { this._s2tFixed = World._s2tCount; console.warn('[RimTown] 已把', World._s2tCount, '段簡體字轉成繁體'); }
+            } catch (e) {}
             // Clock
             this.clock.day=data.clock.day; this.clock.hour=data.clock.hour; this.clock.minute=data.clock.minute;
             this.clock.season=data.clock.season; this.clock.year=data.clock.year;

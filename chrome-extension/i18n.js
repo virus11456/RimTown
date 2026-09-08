@@ -1681,6 +1681,9 @@ const I18N = (() => {
         '帳號與存檔已刪除': 'Account and saves deleted',
         '操作失敗：': 'Action failed: ',
         '你的帳號已被管理員停用，已登出。': 'Your account has been disabled by an admin. You have been logged out.',
+        // v5.67.5 簡→繁
+        '已把': 'Converted',
+        '段簡體字台詞轉成繁體，存檔已修正。': 'lines from Simplified to Traditional Chinese; the save has been repaired.',
         // v5.67.4 存檔清理
         '已清除': 'Removed',
         '則 AI 服務誤回的英文/自報身分內容，存檔已修正。': 'AI-service glitch replies (English / self-identifying text) from this save; the save has been repaired.',

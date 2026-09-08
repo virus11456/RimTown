@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.67.4
-const RIMTOWN_APP_VERSION = '5.67.4';
+// RimTown - Frontend App (WordPress Plugin) v5.67.5
+const RIMTOWN_APP_VERSION = '5.67.5';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1518,10 +1518,14 @@ class RimTownApp {
 
     // v5.67.4 存檔清理提示(loadSave 清掉 AI 助理漏出的錯誤回覆後,提示一次並存回)
     _notifyScrubbedLeaks() {
-        const n = this.world && this.world._scrubbedLeaks;
-        if (!n) return;
-        this.world._scrubbedLeaks = 0;
-        try { this.world.logMessage('system', `🧹 ${t('已清除')} ${n} ${t('則 AI 服務誤回的英文/自報身分內容，存檔已修正。')}`); } catch (e) {}
+        const n = (this.world && this.world._scrubbedLeaks) || 0;
+        const c = (this.world && this.world._s2tFixed) || 0;
+        if (!n && !c) return;
+        if (this.world) { this.world._scrubbedLeaks = 0; this.world._s2tFixed = 0; }
+        try {
+            if (n) this.world.logMessage('system', `🧹 ${t('已清除')} ${n} ${t('則 AI 服務誤回的英文/自報身分內容，存檔已修正。')}`);
+            if (c) this.world.logMessage('system', `🈶 ${t('已把')} ${c} ${t('段簡體字台詞轉成繁體，存檔已修正。')}`);
+        } catch (e) {}
         this.saveGame().catch(() => {});
     }
 
