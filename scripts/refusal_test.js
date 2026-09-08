@@ -19,7 +19,7 @@ let pass = 0, fail = 0; const ok = (c, m) => { if (c) pass++; else { fail++; con
 (async () => {
   let r = await ask('background');
   ok(r.body.provider === 'groq' && r.body.fallback_from[0].error === 'relay_refusal', 'Kiro refusal → groq');
-  ok(typeof relayBody.system === 'string' && relayBody.system.includes('RimTown'), 'anthropic format carries system prompt');
+  ok(relayBody.system === undefined && relayBody.messages[0].content.includes('RimTown') && relayBody.messages[0].content.includes('黃莉'), 'anthropic format: no system field, prompt prefixed inline');
   ok(groqBody.messages[0].role === 'system', 'groq carries system prompt');
   r = await ask('background'); ok(calls[0] === 'relay', 'refusal did not cool down relay');
   relayText = '唉，我不是故意要瞞你的…只是最近礦坑的事讓我很煩。';
