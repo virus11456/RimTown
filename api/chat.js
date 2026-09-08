@@ -54,7 +54,7 @@ async function callRelay(prompt, maxTokens, temperature) {
 // ---- Groq 備援(原本的小鎮伺服器 AI)----
 // v5.33.3 模型動態解析:Groq 汰換模型頻繁,寫死名稱遲早 404;查可用清單挑一個並快取於 lambda 內存
 // v5.66.1 非推理模型優先(推理模型在小 max_tokens 下會把額度花在思考、content 回空)
-const MODEL_PREFER = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'moonshotai/kimi-k2-instruct-0905', 'moonshotai/kimi-k2-instruct', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b']; // v5.66.2 120b 對話品質較佳,免費額度與 20b 相同
+const MODEL_PREFER = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'moonshotai/kimi-k2-instruct-0905', 'moonshotai/kimi-k2-instruct', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b']; // v5.66.3 120b 上線實測每次首發失敗,退回已驗證的 20b 優先
 let _lastGroqModel = '';
 let _modelCache = null;
 async function resolveModel(apiKey, force = false) {
@@ -142,6 +142,7 @@ module.exports = async (req, res) => {
     let reply = '';
     let provider = '';
     let lastErr = null;
+    const failed = []; // v5.66.3 記錄退回原因(回應與日誌都帶,方便線上診斷)
     for (const c of candidates) {
         try {
             reply = c === 'groq'
@@ -152,6 +153,8 @@ module.exports = async (req, res) => {
             break;
         } catch (e) {
             lastErr = e;
+            failed.push({ provider: c, model: c === 'groq' ? _lastGroqModel : RELAY_MODEL, error: String(e && e.message || e).slice(0, 120) });
+            console.warn('[chat] provider failed:', c, c === 'groq' ? _lastGroqModel : RELAY_MODEL, String(e && e.message || e).slice(0, 200));
             if (c === 'groq') {
                 _lane.groqCooldownUntil = Date.now() + 300000; // Groq 限流/故障:5 分鐘後再試
             } else {
@@ -168,6 +171,8 @@ module.exports = async (req, res) => {
     q.count += 1;
     await L.writeJson(quotaPath, q).catch(() => {}); // 額度寫入失敗不阻擋回覆
 
-    return res.status(200).json({ reply, remaining: Math.max(0, limit - q.count), provider, lane, model: provider === 'groq' ? _lastGroqModel : RELAY_MODEL });
+    const out = { reply, remaining: Math.max(0, limit - q.count), provider, lane, model: provider === 'groq' ? _lastGroqModel : RELAY_MODEL };
+    if (failed.length) out.fallback_from = failed;
+    return res.status(200).json(out);
 };
 
