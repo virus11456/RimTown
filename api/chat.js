@@ -53,7 +53,9 @@ async function callRelay(prompt, maxTokens, temperature) {
 
 // ---- Groq 備援(原本的小鎮伺服器 AI)----
 // v5.33.3 模型動態解析:Groq 汰換模型頻繁,寫死名稱遲早 404;查可用清單挑一個並快取於 lambda 內存
-const MODEL_PREFER = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'moonshotai/kimi-k2-instruct'];
+// v5.66.1 非推理模型優先(推理模型在小 max_tokens 下會把額度花在思考、content 回空)
+const MODEL_PREFER = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'moonshotai/kimi-k2-instruct-0905', 'moonshotai/kimi-k2-instruct', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b'];
+let _lastGroqModel = '';
 let _modelCache = null;
 async function resolveModel(apiKey, force = false) {
     if (_modelCache && !force) return _modelCache;
@@ -69,18 +71,28 @@ async function resolveModel(apiKey, force = false) {
     return _modelCache || MODEL_PREFER[0];
 }
 
-// 呼叫 Groq;非 2xx / 例外都會 throw(錯誤物件帶 status)
+// 呼叫 Groq;非 2xx / 例外 / 空回覆都會 throw(錯誤物件帶 status),讓分流退回另一條渠道
 async function callGroq(apiKey, prompt, maxTokens, temperature) {
-    const call = (model) => fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], max_tokens: maxTokens, temperature }),
-    });
+    const call = (model) => {
+        _lastGroqModel = model;
+        const body = { model, messages: [{ role: 'user', content: prompt }], max_tokens: maxTokens, temperature };
+        // v5.66.1 推理模型:壓低思考量,不要把小額度全花在推理上;qwen 系列把思考段藏起來
+        if (/gpt-oss/i.test(model)) body.reasoning_effort = 'low';
+        if (/qwen|deepseek/i.test(model)) body.reasoning_format = 'hidden';
+        return fetchTimeout('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        }, 15000);
+    };
     let r = await call(await resolveModel(apiKey));
     if (r.status === 404) r = await call(await resolveModel(apiKey, true)); // 快取模型被下架 → 重查重試
     if (!r.ok) { const e = new Error('groq_http_' + r.status); e.status = r.status; throw e; }
     const data = await r.json();
-    return data.choices?.[0]?.message?.content || '';
+    let text = String(data.choices?.[0]?.message?.content || '');
+    text = text.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<think>[\s\S]*/gi, '').trim();
+    if (!text) { const e = new Error('groq_empty'); e.status = 502; throw e; } // 空回覆視同失敗 → 退回主渠道
+    return text;
 }
 
 // 分流冷卻狀態(lambda 實例內存)
@@ -156,6 +168,6 @@ module.exports = async (req, res) => {
     q.count += 1;
     await L.writeJson(quotaPath, q).catch(() => {}); // 額度寫入失敗不阻擋回覆
 
-    return res.status(200).json({ reply, remaining: Math.max(0, limit - q.count), provider, lane });
+    return res.status(200).json({ reply, remaining: Math.max(0, limit - q.count), provider, lane, model: provider === 'groq' ? _lastGroqModel : RELAY_MODEL });
 };
 
