@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.66.3
+ * Version: 5.66.4
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.66.3');
+define('RIMTOWN_VERSION', '5.66.4');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1203,6 +1203,13 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.66.4',
+            'date'    => '2026-09-08',
+            'changes' => array(
+                '🧠 Groq 推理模型空回覆根治:線上日誌確認原因是 groq_empty——gpt-oss 的思考段吃掉小額度 max_tokens(20 必空)。推理模型的 Groq 呼叫改給最低 160 token 餘裕(Groq 免費不計成本);空回覆只退回該次請求、不再觸發 5 分鐘冷卻,冷卻只留給 429/5xx/逾時',
+            ),
+        ),
         array(
             'version' => '5.66.3',
             'date'    => '2026-09-08',
