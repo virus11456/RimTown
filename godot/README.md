@@ -56,3 +56,13 @@ node tools/i18n.mjs
 ## 字型
 
 Noto Sans TC 來源：https://github.com/google/fonts/tree/main/ofl/notosanstc ，授權為隨附的 assets/fonts/OFL.txt。交付字型由官方可變字型使用 FontTools `instantiateVariableFont(font, {"wght": 450}, inplace=True)` 固定為 450 字重；可使用 `python -m fontTools.varLib.instancer 'NotoSansTC[wght].ttf' wght=450 -o assets/fonts/NotoSansTC.ttf` 重建。
+
+## 自動互動驗收（2026-09-09）
+
+```sh
+godot --headless --path . --script res://tests/test_interaction.gd
+```
+
+30 項事件驅動測試通過：透過 Control 座標送入滑鼠按下／釋放、鍵盘事件，覆蓋兩鎮切換、居民資料與定位、四入口、相機、檔案選擇器以 Enter 確認、JSON 匯入／匯出及錯誤輸入保留、375px 按鈕點擊。測試使用內嵌檔案視窗，會在 user:// 產生一份範例存檔副本。報告見 docs/INTERACTION_TESTS.json。
+
+這是引擎內事件派送測試；電腦操作工具對 macOS Godot 嵌入視窗的原生點擊只觀察到游標／焦點變化，未能可靠完成操作，因此不列作 OS 滑鼠端對端通過。未測正式登入、Safari 或觸控硬體。
