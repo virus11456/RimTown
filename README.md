@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.67.5.zip` from Releases
+1. Download `rimtown-v5.67.6.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -75,6 +75,10 @@ node scripts/scrub_test.js     # 存檔深度清理 AI 助理漏出內容(v5.67.
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.67.6 (2026-09-09)
+
+- 🧑‍🌾 旅人不再被叫鎮長：程式裡還留著十幾處把玩家寫死成「鎮長」的文案（八卦稱讚／爆料、事件留言、夢想支持、聲望新聞、決策回饋、事件抉擇、加工線指令），這些句子進了村民記憶後 AI 對話就跟著叫旅人「鎮長」。新增玩家稱謂判斷 `playerTitle()`：只有當選才是鎮長，否則一律「旅人」，全部改用；玩家對話提示詞明講「他是來到鎮上的旅人，不是鎮長，現任鎮長是 X」
 
 ### v5.67.5 (2026-09-08)
 

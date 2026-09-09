@@ -1383,7 +1383,7 @@ class GossipNetwork {
                 subject.addThought('praised', world, source.agentId, source.name); // v5.15.0 被公開稱讚
                 subject.memory.add(world.tickCount, world.clock.timeStr, 'social', `${t('聽說')}${source.name}${t('到處誇我,真開心!')}`, 6, [source.name]);
                 source.chatHistory?.push?.({ speaker: subject.name, target: source.name, text: t('欸,我聽說你到處跟人誇我?哈哈,謝啦,請你喝一杯!'), time: world.clock.timeStr });
-                world.logMessage('gossip', `💐 ${subject.name}${t('聽到了鎮長的美言,好感大增!')}`, subject.name);
+                world.logMessage('gossip', `💐 ${subject.name}${t('聽到了')}${playerTitle(world)}${t('的美言,好感大增!')}`, subject.name);
             } else if (negative) {
                 relToPlayer.modifyAffinity(-12); relToPlayer.modifyTrust(-10);
                 subject.addThought('slandered', world, source.agentId, source.name); // v5.15.0 被說壞話
@@ -1432,7 +1432,7 @@ class GossipNetwork {
         this.activeGossip.push(gossip);
         if (this.activeGossip.length > 10000) this.activeGossip = this.activeGossip.slice(-10000);
         listener.memory.add(world.tickCount, world.clock.timeStr, 'social', `${player.name}${t('偷偷跟我說:「')}${content}${t('」')}`, 5, [player.name, about.name]);
-        world.logMessage('gossip', `🗣️ ${t('鎮長偷偷向')}${listener.name}${t('爆料了')}${about.name}${t('的事...')}`, player.name, listener.name);
+        world.logMessage('gossip', `🗣️ ${playerTitle(world)}${t('偷偷向')}${listener.name}${t('爆料了')}${about.name}${t('的事...')}`, player.name, listener.name);
         return gossip;
     }
 }
@@ -2204,7 +2204,7 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
             if (this.llm && this.llm._canMakeRequest(false)) {
                 try {
                     const pN = this._buildCharacterProfile(npc);
-                    const prompt = `${t('你正在扮演「')}${npc.name}${t('」——邊境鎮的居民。剛剛發生了一件事：')}${eventText}${t('。你想傳一則訊息給鎮長')}${player.name}${t('聊聊這件事。')}
+                    const prompt = `${t('你正在扮演「')}${npc.name}${t('」——邊境鎮的居民。剛剛發生了一件事：')}${eventText}${t('。你想傳一則訊息給')}${playerTitle(world)}${player.name}${t('聊聊這件事。')}${playerTitle(world) === t('旅人') ? t('（他是旅人，不是鎮長，別叫他鎮長。）') : ''}
 
 ${t('【你是誰】')}
 ${pN.name}${t('，')}${pN.age}${t('歲，')}${pN.job}${t('。性格：')}${pN.traits}${t('。')}
@@ -2224,7 +2224,7 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
                 const fallbacks = fallbackLines || [
                     `${eventText}${t('，太棒了吧！')}`,
                     `${t('你看到了嗎？')}${eventText}${t('！鎮上越來越有樣子了')}`,
-                    `${eventText}${t('！鎮長真有眼光')}`,
+                    `${eventText}${t('！')}${playerTitle(world)}${t('真有眼光')}`,
                 ];
                 text = pickRandom(fallbacks);
             }
@@ -2959,7 +2959,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                 const memNpc = npc.memory.retrieve(`${player.name} ${playerMessage}`, [player.name], 5, world.tickCount);
                 const npcThoughts = npc.memory.getThoughts(2);
                 const pN = this._buildCharacterProfile(npc);
-                const prompt = `${t('你正在扮演「')}${npc.name}${t('」——邊境鎮的一位真實居民。有個叫')}${player.name}${t('的人正在跟你說話。')}
+                const prompt = `${t('你正在扮演「')}${npc.name}${t('」——邊境鎮的一位真實居民。有個叫')}${player.name}${t('的人正在跟你說話。')}${playerTitle(world) === t('鎮長') ? t('他是現任鎮長。') : `${t('他是來到鎮上的旅人，不是鎮長，不要叫他鎮長。')}${mayorNameOf(world) ? `${t('現任鎮長是')}${mayorNameOf(world)}${t('。')}` : ''}`}
 ${t('你要完全入戲，像真人一樣自然地回應。')}
 
 ${t('【你是誰】')}
@@ -8317,7 +8317,7 @@ class ReputationSystem {
             const tier = this.tier;
             world?.logMessage?.('reputation', `⭐ ${t('聲望提升！你現在是')}「${tier.icon} ${tier.name()}」— ${tier.desc()}`);
             if (world?.dailyNews) {
-                world.dailyNews.collectEvent('social', `${t('鎮長的聲望提升為')}「${tier.name()}」！`, 7);
+                world.dailyNews.collectEvent('social', `${playerTitle(world)}${t('的聲望提升為')}「${tier.name()}」！`, 7);
             }
             // Tier-up mood boost
             Object.values(world?.agents || {}).forEach(a => {
@@ -9268,11 +9268,11 @@ class DailyDecisionSystem {
                 world.stockpile.add('silver', 15, world.tickCount, t('村民答謝'));
                 if (world.reputationSystem) world.reputationSystem.addReputation(2, 'decisions', world);
                 world.logMessage('relationship', `💝 ${f.npc}${t('特地回來道謝：「上次「')}${f.title}${t('」的事，多虧你決定「')}${f.choiceLabel}${t('」，現在順利多了！」(+15 銀幣、+2 聲望)')}`, f.npc);
-                if (world.dailyNews) world.dailyNews.collectEvent('social', `${f.npc}${t('公開感謝鎮長當初的決定')}`, 6, [f.npc]);
+                if (world.dailyNews) world.dailyNews.collectEvent('social', `${f.npc}${t('公開感謝')}${playerTitle(world)}${t('當初的決定')}`, 6, [f.npc]);
             } else {
                 Object.values(world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) - 2; });
                 world.logMessage('drama', `😤 ${f.npc}${t('抱怨：「上次「')}${f.title}${t('」你決定「')}${f.choiceLabel}${t('」，結果根本沒解決問題…」(全鎮心情 -2)')}`, f.npc);
-                if (world.dailyNews) world.dailyNews.collectEvent('social', `${f.npc}${t('對鎮長先前的決策表達不滿')}`, 5, [f.npc]);
+                if (world.dailyNews) world.dailyNews.collectEvent('social', `${f.npc}${t('對')}${playerTitle(world)}${t('先前的決策表達不滿')}`, 5, [f.npc]);
             }
             return false;
         });
@@ -9499,7 +9499,7 @@ class EventChoiceSystem {
 
         world.logMessage('event_choice', `⚡ ${t('你選擇了')}「${choice.label}」${t('來應對')}${this.pendingEvent.eventName}`);
         if (world.dailyNews) {
-            world.dailyNews.collectEvent('event', `${t('面對')}${this.pendingEvent.eventName}${t('，鎮長選擇了')}「${choice.label}」`, 7);
+            world.dailyNews.collectEvent('event', `${t('面對')}${this.pendingEvent.eventName}${t('，')}${playerTitle(world)}${t('選擇了')}「${choice.label}」`, 7);
         }
 
         this.eventLog.push({ event: this.pendingEvent.eventName, choice: choice.label, tick: world.tickCount });
@@ -9584,7 +9584,7 @@ class RogueCardSystem {
               choices: [
                 { icon: '🪙', label: t('穩穩收下'), desc: t('拿一筆小錢就走(+15 銀幣)'), apply: (w) => { this._res(w, 'silver', 15); return t('落袋為安,穩穩賺了一小筆。'); } },
                 { icon: '🎰', label: t('豪賭一場'), desc: t('五五波:大賺 +60 或慘賠 -30 銀幣'), apply: (w) => { if (Math.random() < 0.5) { this._res(w, 'silver', 60); return t('骰子擲出好彩頭,大賺一筆!'); } else { this._res(w, 'silver', -30); return t('手氣不佳,賠了 30 銀幣…'); } } },
-                { icon: '🚶', label: t('不賭走人'), desc: t('遠離是非(全鎮 +2 心情)'), apply: (w) => { this._moodAll(w, 2); return t('你搖搖頭離開,鎮民都說鎮長明智。'); } },
+                { icon: '🚶', label: t('不賭走人'), desc: t('遠離是非(全鎮 +2 心情)'), apply: (w) => { this._moodAll(w, 2); return `${t('你搖搖頭離開,鎮民都說')}${playerTitle(w)}${t('明智。')}`; } },
               ] },
             { id: 'healer', icon: '🩺', title: t('遊方醫者'), flavor: t('一位背著藥箱的醫者投宿一晚,想回報你的款待。'),
               choices: [
@@ -9639,7 +9639,7 @@ class RogueCardSystem {
         this.history.push({ id: this.pending.id, title, choice: label, day: world.clock.totalDays || 0 });
         if (this.history.length > 30) this.history = this.history.slice(-30);
         world.logMessage('event_choice', `🃏 ${title}:${t('你選擇了')}「${label}」——${resultText}`);
-        if (world.dailyNews) world.dailyNews.collectEvent('event', `${t('鎮長在「')}${title}${t('」中選擇了')}「${label}」`, 6);
+        if (world.dailyNews) world.dailyNews.collectEvent('event', `${playerTitle(world)}${t('在「')}${title}${t('」中選擇了')}「${label}」`, 6);
         this.pending = null;
         return { title, choice: label, resultText };
     }
@@ -9802,6 +9802,17 @@ class NPCHelpSystem {
 // --- Utility Functions ---
 function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+// v5.67.6 玩家稱謂:玩家是旅人,只有當選(job.key === 'mayor')才是鎮長。所有提到玩家身分的文案一律用這個,
+// 不再寫死「鎮長」——寫死的句子進了村民記憶,AI 對話就會跟著叫旅人「鎮長」。
+function playerTitle(world) {
+    const p = world && world.agents && (world.agents['player'] || Object.values(world.agents).find(a => a && a.isPlayer));
+    return (p && p.job && p.job.key === 'mayor') ? t('鎮長') : t('旅人');
+}
+function mayorNameOf(world) {
+    const m = world && world.agents && Object.values(world.agents).find(a => a && !a.isPlayer && !a.isDead && a.job && a.job.key === 'mayor');
+    return m ? m.name : '';
+}
+if (typeof globalThis !== 'undefined') { globalThis.playerTitle = playerTitle; globalThis.mayorNameOf = mayorNameOf; }
 function shuffle(arr, rng = null) {
     const a = [...arr];
     for (let i = a.length-1; i > 0; i--) {
