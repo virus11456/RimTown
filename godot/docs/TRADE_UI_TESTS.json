@@ -1,0 +1,5 @@
+{
+  "checks": 22,
+  "failures": [],
+  "scope": "trade UI buy/sell, fractional silver, empty merchant, invalid/insufficient/stale offer guards, 375px layout and ten-day integrated resume"
+}

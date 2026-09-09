@@ -258,6 +258,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.perception_enabled=bool(document.data.get("_godot4a",{}).get("perception_enabled",true))
 	simulation.economy_enabled=bool(document.data.get("_godot4a",{}).get("economy_enabled",true))
 	simulation.buildings_enabled=bool(document.data.get("_godot4a",{}).get("buildings_enabled",true))
+	simulation.trade_enabled=bool(document.data.get("_godot4a",{}).get("trade_enabled",true))
 	var data := document.snapshot()
 	heading.text = str(data.get("townName","小鎮"))
 	var clock_data: Dictionary = data.clock
@@ -313,6 +314,7 @@ func show_tab(tab: String, refresh := false) -> void:
 			_button("匯出試玩進度",drawer_body,export_progress)
 			_button("公共庫存與收支",drawer_body,show_stockpile)
 			_button("建築工程",drawer_body,show_buildings)
+			_button("商人交易",drawer_body,show_trade)
 			_wrapped("試玩：作息、移動與居民互動已啟用。\n送禮會消耗公共庫存；每日經濟可在設定開關。建設、交易與任務仍待完成。",13)
 			var resources: Dictionary = _current_data().get("stockpile",{}).get("resources",{})
 			for key in resources:
@@ -545,6 +547,7 @@ func _line(placeholder: String, secret := false) -> LineEdit:
 	return field
 
 func _settings_ui() -> void:
+	_button("商人每日來訪："+("開啟" if simulation.trade_enabled else "關閉"),drawer_body,func(): simulation.trade_enabled=not simulation.trade_enabled;show_tab("設定",true))
 	_button("每日建築施工："+("開啟" if simulation.buildings_enabled else "關閉"),drawer_body,func(): simulation.buildings_enabled=not simulation.buildings_enabled;show_tab("設定",true))
 	_button("每日生產與消耗："+("開啟" if simulation.economy_enabled else "關閉"),drawer_body,func(): simulation.economy_enabled=not simulation.economy_enabled; show_tab("設定",true))
 	_button("居民環境感知："+("開啟" if simulation.perception_enabled else "關閉"),drawer_body,func(): simulation.perception_enabled=not simulation.perception_enabled; show_tab("設定",true))
@@ -1471,3 +1474,25 @@ func _building_offer(key: String,template: Dictionary,upgrade: bool) -> void:
 		else: status.text="無法開工：庫存不足或已有相同工程"
 		show_buildings())
 	button.disabled=not SimBuildings.affordable(simulation,template.costs)
+
+func show_trade() -> void:
+	active_tab="小鎮";drawer.show();_clear_drawer();_wrapped("商人交易",22)
+	_wrapped("交易使用小鎮公共庫存與銀幣。商人會在午夜到訪或離開；點選交易後立即結算。",12)
+	if not simulation.trade_enabled: _wrapped("商人每日來訪目前關閉。")
+	var merchant: Variant=simulation.data.trade.get("merchant")
+	if not merchant is Dictionary: _wrapped("目前沒有商人，過幾天再看看。")
+	else:
+		_wrapped(str(merchant.name));_wrapped("停留剩餘 %d 天 · 銀幣 %s"%[merchant.daysRemaining,str(SimEconomy.amount(simulation,"silver"))])
+		for index in merchant.offers.size():
+			var offer: Dictionary=merchant.offers[index]
+			_wrapped(("賣出給商人：" if offer.isBuying else "向商人買入：")+_resource_name(offer.resource))
+			_wrapped("單價 %s 銀幣 · 商人剩餘額度 %s · 公共庫存 %s"%[str(offer.price),str(offer.amount),str(SimEconomy.amount(simulation,offer.resource))],12)
+			var qty:=SpinBox.new();qty.min_value=1;qty.max_value=maxf(1,float(offer.amount));qty.step=1;qty.value=1;qty.custom_minimum_size.y=42;drawer_body.add_child(qty)
+			var button:=_button("賣出" if offer.isBuying else "買入",drawer_body,func():
+				var result:=SimTrade.execute(simulation,index,qty.value,offer)
+				show_trade()
+				if result.get("ok",false): has_simulated=true;status.text="交易完成"
+				else: _wrapped(str(result.error)))
+			button.disabled=float(offer.price)<0 or float(offer.amount)<1
+	_button("重新整理",drawer_body,show_trade)
+	_button("返回小鎮",drawer_body,func(): show_tab("小鎮",true))

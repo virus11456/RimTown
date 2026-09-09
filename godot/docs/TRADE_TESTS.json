@@ -1,0 +1,5 @@
+{
+  "checks": 36,
+  "failures": [],
+  "scope": "nine 30-day source trade scenarios: seeded arrivals/departures/prices, reputation/building/news modifiers, buying/selling/exhaustion, exact ledger/logs/RNG"
+}

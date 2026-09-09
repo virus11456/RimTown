@@ -1,0 +1,122 @@
+{
+  "prices": {
+    "food": 1,
+    "wood": 1.5,
+    "stone": 2,
+    "metal": 4,
+    "cloth": 3,
+    "herbs": 3.5,
+    "meals": 2.5,
+    "tools": 8,
+    "clothing": 6,
+    "medicine": 10,
+    "furniture": 7,
+    "plank": 3,
+    "hardwood": 5,
+    "brick": 5,
+    "marble": 8,
+    "steel": 10,
+    "gold": 15,
+    "wheat": 2,
+    "rice": 3,
+    "corn": 2,
+    "potato": 1,
+    "cotton": 4,
+    "flowers": 3,
+    "mushroom": 4,
+    "sugarcane": 3,
+    "tea": 8,
+    "grapes": 6,
+    "golden_wheat": 15,
+    "dragon_fruit": 20,
+    "bread": 4,
+    "pastry": 8,
+    "beer": 5,
+    "wine": 15,
+    "perfume": 20,
+    "fine_tea": 18,
+    "herbal_tea": 10,
+    "sugar": 5,
+    "jam": 10,
+    "luxury_furniture": 25
+  },
+  "merchants": [
+    {
+      "names": [
+        "張商人 (Zhang the Trader)",
+        "老趙商隊 (Old Zhao's Caravan)"
+      ],
+      "specialty": "general",
+      "sells": [
+        "food",
+        "herbs"
+      ],
+      "buys": [
+        "meals",
+        "furniture",
+        "clothing",
+        "tools"
+      ]
+    },
+    {
+      "names": [
+        "礦商老李 (Li the Ore Dealer)"
+      ],
+      "specialty": "metals",
+      "sells": [
+        "metal",
+        "tools"
+      ],
+      "buys": [
+        "meals",
+        "medicine"
+      ]
+    },
+    {
+      "names": [
+        "藥師小雪 (Xue the Herbalist)"
+      ],
+      "specialty": "medicine",
+      "sells": [
+        "herbs",
+        "medicine"
+      ],
+      "buys": [
+        "meals",
+        "clothing"
+      ]
+    },
+    {
+      "names": [
+        "絲綢商人 (The Silk Trader)"
+      ],
+      "specialty": "textiles",
+      "sells": [
+        "cloth",
+        "clothing"
+      ],
+      "buys": [
+        "furniture",
+        "medicine",
+        "meals"
+      ]
+    },
+    {
+      "names": [
+        "異國商隊 (Exotic Caravan)"
+      ],
+      "specialty": "exotic",
+      "sells": [
+        "herbs",
+        "food"
+      ],
+      "buys": [
+        "meals",
+        "clothing",
+        "furniture",
+        "tools",
+        "medicine"
+      ]
+    }
+  ]
+}
