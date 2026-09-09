@@ -29,6 +29,7 @@ var playback: HBoxContainer
 var play_button: Button
 var speed_button: Button
 var selected_agent := ""
+var whisper_drafts: Dictionary={}
 var chat_offline:=false
 var chat_epoch:=0
 var chat_busy:=false
@@ -79,6 +80,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_chat.flag"): _capture_player_chat()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_intents.flag"): _capture_player_intents()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_offline.flag"): _capture_player_offline()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_whisper.flag"): _capture_player_whisper()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -227,7 +229,7 @@ func _load_document(text: String, source: String) -> bool:
 	if not incoming.parse(text):
 		status.text = incoming.error
 		return false
-	chat_epoch+=1;chat_busy=false;chat_drafts.clear();chat_notice.clear()
+	chat_epoch+=1;chat_busy=false;chat_drafts.clear();chat_notice.clear();whisper_drafts.clear()
 	running=false
 	if traveler!=null: traveler.clear()
 	rig.follow_player=false
@@ -719,7 +721,7 @@ func _tick_simulation() -> void:
 		else: show_tab("故事",true)
 	if active_tab=="居民" and not selected_agent.is_empty():
 		match resident_page:
-			"chat": pass # Preserve draft, focus and scroll while the world ticks.
+			"chat", "whisper": pass # Preserve draft, focus and scroll while the world ticks.
 			"interaction": show_player_interaction(selected_agent)
 			"trace": show_trace(selected_agent)
 			"thoughts": show_thoughts(selected_agent)
@@ -1085,6 +1087,7 @@ func show_player_interaction(id: String) -> void:
 		_wrapped("安慰：增加社交需求 15、對你好感 2，並留下愉快的聊天想法。")
 		_button("安慰他",drawer_body,func(): comfort_resident(id))
 	_button("自由交談",drawer_body,func(): show_player_chat(id))
+	_button("耳語",drawer_body,func(): show_player_whisper(id))
 	_button("返回居民資料",drawer_body,func(): show_agent(id,false))
 func comfort_resident(id: String) -> void:
 	if not SimPlayerInteraction.in_range(id,motion.positions,simulation.data.agents):
@@ -1175,6 +1178,7 @@ func send_player_chat(id: String,message: String,intent: String="") -> void:
 			chat_notice[id]="交談完成 · 好感 %+.0f · 戀慕 %+.0f"%[result.affinity,result.romantic]
 			if not intent.is_empty(): chat_notice[id]+="\n意圖效果："+SimPlayerInteraction.apply_intent(target,simulation,intent)
 	if active_tab=="居民" and resident_page=="chat" and selected_agent==id: show_player_chat(id)
+	elif active_tab=="居民" and resident_page=="whisper": show_player_whisper(selected_agent)
 
 func _capture_player_chat() -> void:
 	await get_tree().create_timer(1).timeout
@@ -1220,4 +1224,44 @@ func _capture_player_offline() -> void:
 	await get_tree().create_timer(.5).timeout
 	await RenderingServer.frame_post_draw
 	viewport.get_texture().get_image().save_png("res://docs/player-offline-mobile.png")
+	viewport.queue_free()
+
+func show_player_whisper(id: String) -> void:
+	selected_agent=id;resident_page="whisper";_clear_drawer()
+	if not simulation.data.agents.has(id) or id=="player" or simulation.data.agents[id].get("isDead",false): _wrapped("這位居民已離開。");return
+	_wrapped("向"+str(simulation.data.agents[id].name)+"耳語",22)
+	_wrapped("把一句話留在他的內心記憶。現在使用本機原文，不連線、不耗 AI 額度。")
+	_wrapped("提到居民姓名會建立記憶關聯；本機耳語不直接加減好感，也還不會立即改變行程。",12)
+	var input:=LineEdit.new();input.max_length=1200;input.placeholder_text="想讓他記住什麼？";input.text=str(whisper_drafts.get(id,""));input.custom_minimum_size.y=42;drawer_body.add_child(input)
+	input.text_changed.connect(func(value): whisper_drafts[id]=value)
+	input.text_submitted.connect(func(value): send_player_whisper(id,value))
+	var send:=_button("留下耳語",drawer_body,func(): send_player_whisper(id,str(whisper_drafts.get(id,""))))
+	send.disabled=chat_busy;input.editable=not chat_busy
+	if chat_busy: _wrapped("請先等待目前的交談完成。")
+	_button("查看耳語記憶",drawer_body,func(): show_memories(id))
+	_button("返回互動",drawer_body,func(): show_player_interaction(id))
+func send_player_whisper(id: String,text: String) -> void:
+	text=text.strip_edges()
+	if chat_busy or text.is_empty() or text.length()>1200: return
+	if not simulation.data.agents.has("player") or not simulation.data.agents.has(id) or id=="player" or simulation.data.agents[id].get("isDead",false): return
+	SimPlayerWhisper.apply(simulation,id,text)
+	simulation.data.agents.player.chatHistory.back()["_godotOffline"]=true
+	whisper_drafts.erase(id);has_simulated=true
+	show_player_whisper(id);_wrapped("已留下耳語："+text)
+	status.text="耳語已存入居民記憶"
+
+func _capture_player_whisper() -> void:
+	await get_tree().create_timer(1).timeout
+	var example:=FileAccess.get_file_as_string("res://tests/player_whisper/compatibility-save.json.tmp")
+	chat_offline=true
+	_load_document(example,"耳語互動驗證")
+	show_tab("居民",true);show_player_whisper("chen_wei")
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/player-whisper-desktop.png")
+	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+	var mobile=load("res://scenes/main.tscn").instantiate();viewport.add_child(mobile)
+	mobile.chat_offline=true;mobile._load_document(example,"耳語互動驗證");mobile.show_tab("居民",true);mobile.show_player_whisper("chen_wei")
+	await get_tree().create_timer(.5).timeout
+	await RenderingServer.frame_post_draw
+	viewport.get_texture().get_image().save_png("res://docs/player-whisper-mobile.png")
 	viewport.queue_free()

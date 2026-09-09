@@ -1,0 +1,5 @@
+{
+  "checks": 172,
+  "passed": true,
+  "scope": "Original JS loads whisper history, provenance, memories, relationships and currentThought. No production API."
+}

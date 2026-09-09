@@ -1,0 +1,5 @@
+{
+  "checks": 21,
+  "failures": [],
+  "scope": "whisper UI entry, no HTTP, drafts, invalid input, memory/history/provenance, pending chat and reenable, 375px layout, world load and resume"
+}

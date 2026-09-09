@@ -1,0 +1,5 @@
+{
+  "checks": 60,
+  "failures": [],
+  "scope": "12 original playerWhisper + offline plantWhisper cases; exact state, history, action records and logs; replan callback excluded"
+}
