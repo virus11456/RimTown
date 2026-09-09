@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.69.0
-const RIMTOWN_APP_VERSION = '5.69.0';
+// RimTown - Frontend App (WordPress Plugin) v5.69.1
+const RIMTOWN_APP_VERSION = '5.69.1';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1578,7 +1578,7 @@ class RimTownApp {
             ['📖', t('任務與多重結局'), t('五章主線、村民個人任務、每日目標、劇情名場面。你可以參選鎮長，也可以只當個看戲的旅人。')],
         ];
         const roadmap = [
-            [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）'), t('海風鎮專屬任務鏈（漁村主線）')]],
+            [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已有觀賞版畫面，見上方'), t('海風鎮專屬任務鏈（漁村主線）')]],
             [t('規劃中'), '#fbbf24', [t('第三座城鎮'), t('村民自訂外觀'), t('跨鎮貿易與商隊')]],
             [t('構想'), '#60a5fa', [t('玩家之間互訪城鎮'), t('手機 App 版')]],
         ];
@@ -1600,6 +1600,12 @@ class RimTownApp {
             </header>
             <section class="landing-section"><h2>${t('這是什麼遊戲')}</h2>
                 <div class="landing-cards">${features.map(f => `<div class="landing-card"><div class="ic">${f[0]}</div><h3>${f[1]}</h3><p>${f[2]}</p></div>`).join('')}</div>
+            </section>
+            <section class="landing-section landing-preview" id="landing-preview"><h2>🧊 ${t('3D low-poly 版搶先看')}</h2>
+                <figure>
+                    <img src="img/lowpoly-preview.jpg" alt="${t('邊境鎮 3D low-poly 版畫面')}" loading="lazy" onerror="this.closest('section').style.display='none'">
+                    <figcaption>${t('用 Blender 程序化建模與 Godot 4 重製的邊境鎮。同一份存檔、同一批村民，換一種角度看他們過日子。目前是觀賞模式，開發中。')}</figcaption>
+                </figure>
             </section>
             ${this._renderBrainSection()}
             <section class="landing-section"><h2>${t('更新紀錄')}</h2>

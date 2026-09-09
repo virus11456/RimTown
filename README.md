@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.69.0.zip` from Releases
+1. Download `rimtown-v5.69.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -77,6 +77,10 @@ node scripts/gen-changelog.js  # 從 rimtown.php 產生首頁更新紀錄 change
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.69.1 (2026-09-09)
+
+- 🧊 首頁新增「3D low-poly 版搶先看」區塊：放上 Blender + Godot 4 重製版的觀賞模式畫面（`chrome-extension/img/lowpoly-preview.jpg`，build.sh 會複製 `img/` 到站台），路線圖「開發中」同步標註；圖片尚未放進去時整區自動隱藏
 
 ### v5.69.0 (2026-09-09)
 
