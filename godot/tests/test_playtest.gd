@@ -31,6 +31,7 @@ func run() -> void:
 	await settle()
 	app.simulation.social_enabled=false # Keep historical Phase 4a preservation assertions; enabled mode has its own oracle/UI tests.
 	app.set_process(false) # Time under test is deterministic, driven explicitly below.
+	app.simulation.stargazing_enabled=false
 	app.simulation.inner_voice_enabled=false # Preserve the older suite scope.
 	app.simulation.thoughts_enabled=false # Earlier feature suites keep their original scope.
 	app.simulation.factions_enabled=false # This suite isolates its historical subsystem.

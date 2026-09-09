@@ -90,3 +90,5 @@ node godot/tools/golden.mjs：兩次獨立 VM 執行、兩個主題、各 1/7/30
 - `World._processThoughts` → `SimThoughts.daily`：先到期清理，再更新既有目標關係的好感；原版每日順序與模式續存已驗證。
 
 - `Agent._generateThought` → `SimInnerVoice.generate`：currentThought 日常文字、原版候選與 RNG 已接入；經濟／新聞僅讀取存檔。
+
+- `Agent._doStargazing` → `SimStargazing.process`：觀星需求／心情、雙向關係與記憶、四種發現與話題已接入；惡作劇和弔念效果待下一批。

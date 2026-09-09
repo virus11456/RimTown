@@ -1,6 +1,6 @@
-# RimTown · 居民心聲與社交試玩版
+# RimTown · 觀星互動與社交試玩版
 
-在 Phase 0–3 觀賞版上加入時鐘、需求、作息、技能成長、A* 尋路、進出建築與卡住復原。兩鎮範例可直接開啟；預設暫停，WASD／方向鍵可直接移動旅人，按「▶ 開始」則推進村民作息。這是分階段試玩版，現已加入 NPC 本地規則對話、八卦傳播、每日戀愛／分離、仇怨、派系事件、每日想法更新與日常心聲；尚未包含建設、AI 對話、經濟、婚禮演出及任務模擬。
+在 Phase 0–3 觀賞版上加入時鐘、需求、作息、技能成長、A* 尋路、進出建築與卡住復原。兩鎮範例可直接開啟；預設暫停，WASD／方向鍵可直接移動旅人，按「▶ 開始」則推進村民作息。這是分階段試玩版，現已加入 NPC 本地規則對話、八卦傳播、每日戀愛／分離、仇怨、派系事件、每日想法更新、日常心聲與觀星互動；尚未包含建設、AI 對話、經濟、婚禮演出及任務模擬。
 
 不會向雲端寫入世界。「匯出原始存檔副本」保留原始 JSON；「匯出試玩進度」另存已推進的時間、居民與行走狀態。
 
@@ -277,3 +277,13 @@ node tools/test_thoughts_reload.mjs
 驗證：320 組原版情境／4,160 項；兩鎮各 30 天限定整合／3,796 項；UI 與續存 21 項；原版 JS 讀回 89 項。既有想法、派系、仇怨、婚戀、八卦、旅人及畫面回歸通過。桌面與 375px 實際 GPU 畫面已檢視。完整 World.tick、夜間活動效果、AI 劇情與經濟系統仍未完成。
 
 重建：`node tools/build_inner_voice.mjs`、`node tools/inner_voice_oracle.mjs`、`node tools/npc_sim_oracle.mjs --inner-voice`。測試：Godot `--headless --path . --script tests/test_inner_voice.gd`、`tests/test_inner_voice_ui.gd`、`tests/test_npc_sim.gd -- --inner-voice`，及 `node tools/test_inner_voice_reload.mjs`。
+
+
+## Phase 4b 第九批：觀星互動與發現
+NPC 觀星現在依原版增加心情修正；同地點的觀星同伴有機會增加雙向好感、已有好感時的心動，以及共同記憶。另有流星、神秘星座、月暈、夜光植物四種稀有發現，會留下記憶、故事紀錄與聊天話題。心情數值在下一次原有心情計算時反映修正；本步產生的發現心聲也可能被後續日常心聲抽選替換。
+
+到「居民 → 選人 → 近期記憶」查閱觀星紀錄。設定「觀星互動」控制新增的心情／人際／發現效果；關閉仍保留原有休閒與舒適恢復。新匯入預設開啟，試玩進度保留開關及效果。角色使用既有觀星活動與簡易動作，沒有新增天空特效。
+
+驗證：336 組原版情境、每組 16 次呼叫，共 1,970 項；含四種發現、同伴篩選、門檻與上限。兩鎮各 30 天、加入四名夜貓子的測試共 3,796 項；UI／續存 24 項，原版 JS 讀回 89 項。既有心聲、社交 UI、旅人與畫面回歸通過。這是限定流程對照，完整 World.tick、惡作劇與弔念效果尚未完成。
+
+重建：`node tools/stargazing_oracle.mjs`、`node tools/npc_sim_oracle.mjs --stargazing`。Godot 測試腳本：`tests/test_stargazing.gd`、`tests/test_stargazing_ui.gd`、`tests/test_npc_sim.gd -- --stargazing`。JS 相容：`node tools/test_stargazing_reload.mjs`。

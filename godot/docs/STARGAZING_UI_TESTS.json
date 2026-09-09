@@ -1,0 +1,5 @@
+{
+  "checks": 24,
+  "failures": [],
+  "scope": "prepared discovery, mood/memory and mobile resident pages, unrelated player, original data, toggle and all-mode JSON/RNG resume; Godot button signals"
+}

@@ -1,0 +1,5 @@
+{
+  "checks": 1970,
+  "failures": [],
+  "scope": "336 original JS scenarios, 16 calls each; solo, companions, location/activity exclusion, traits, affinity thresholds, caps, all discoveries, memories, topics and RNG"
+}

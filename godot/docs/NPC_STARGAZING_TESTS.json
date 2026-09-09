@@ -1,0 +1,12 @@
+{
+  "checks": 3796,
+  "factions_enabled": true,
+  "failures": [],
+  "feuds_enabled": true,
+  "gossip_enabled": true,
+  "inner_voice_enabled": true,
+  "romance_enabled": true,
+  "scope": "two towns x 2880 ticks: Phase 4a + local socializing; gossip, daily romance, feuds, factions and daily thoughts and inner voice included only when respective flags enabled; news and other systems excluded",
+  "stargazing_enabled": true,
+  "thoughts_enabled": true
+}

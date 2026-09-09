@@ -31,6 +31,7 @@ func run() -> void:
 	var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app)
 	await process_frame
 	app.set_process(false)
+	app.simulation.stargazing_enabled=false # Isolate the existing feature suite.
 	app.simulation.inner_voice_enabled=false # Preserve the older suite scope.
 	check(app.simulation.thoughts_enabled,"fresh import enables daily thoughts")
 	app.simulation.social_enabled=false;app.simulation.romance_enabled=false;app.simulation.feuds_enabled=false;app.simulation.factions_enabled=false

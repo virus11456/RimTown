@@ -31,6 +31,7 @@ func run() -> void:
 	var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app)
 	await process_frame
 	app.set_process(false)
+	app.simulation.stargazing_enabled=false # Isolate the existing feature suite.
 	check(app.simulation.inner_voice_enabled,"fresh import enables inner voice")
 	for field in ["social_enabled","romance_enabled","feuds_enabled","factions_enabled","thoughts_enabled"]: app.simulation.set(field,false)
 	var raw: String=app.document.serialize()

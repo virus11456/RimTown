@@ -62,6 +62,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_factions.flag"): _capture_factions()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_thoughts.flag"): _capture_thoughts()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_inner_voice.flag"): _capture_inner_voice()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_stargazing.flag"): _capture_stargazing()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -227,6 +228,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.factions_enabled=bool(document.data.get("_godot4a",{}).get("factions_enabled",true))
 	simulation.thoughts_enabled=bool(document.data.get("_godot4a",{}).get("thoughts_enabled",true))
 	simulation.inner_voice_enabled=bool(document.data.get("_godot4a",{}).get("inner_voice_enabled",true))
+	simulation.stargazing_enabled=bool(document.data.get("_godot4a",{}).get("stargazing_enabled",true))
 	var data := document.snapshot()
 	heading.text = str(data.get("townName","小鎮"))
 	var clock_data: Dictionary = data.clock
@@ -510,6 +512,7 @@ func _line(placeholder: String, secret := false) -> LineEdit:
 	return field
 
 func _settings_ui() -> void:
+	_button("觀星互動："+("開啟" if simulation.stargazing_enabled else "關閉"),drawer_body,func(): simulation.stargazing_enabled=not simulation.stargazing_enabled; show_tab("設定",true))
 	_button("居民日常心聲："+("開啟" if simulation.inner_voice_enabled else "關閉"),drawer_body,func(): simulation.inner_voice_enabled=not simulation.inner_voice_enabled; show_tab("設定",true))
 	_button("每日想法更新："+("開啟" if simulation.thoughts_enabled else "關閉"),drawer_body,func(): simulation.thoughts_enabled=not simulation.thoughts_enabled; show_tab("設定",true))
 	_wrapped("想法更新控制到期清理與每日好感變化；心情影響仍隨時間淡化。")
@@ -945,4 +948,19 @@ func _capture_inner_voice() -> void:
 	await get_tree().create_timer(.5).timeout
 	await RenderingServer.frame_post_draw
 	viewport.get_texture().get_image().save_png("res://docs/inner-voice-mobile.png")
+	viewport.queue_free()
+
+func _capture_stargazing() -> void:
+	await get_tree().create_timer(1).timeout
+	var example:=FileAccess.get_file_as_string("res://tests/stargazing/compatibility-save.json.tmp")
+	_load_document(example,"觀星發現測試情境")
+	show_tab("居民",true);show_memories("chen_wei")
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/stargazing-desktop.png")
+	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+	var mobile=load("res://scenes/main.tscn").instantiate();viewport.add_child(mobile)
+	mobile._load_document(example,"觀星發現測試情境");mobile.show_tab("居民",true);mobile.show_memories("chen_wei")
+	await get_tree().create_timer(.5).timeout
+	await RenderingServer.frame_post_draw
+	viewport.get_texture().get_image().save_png("res://docs/stargazing-mobile.png")
 	viewport.queue_free()
