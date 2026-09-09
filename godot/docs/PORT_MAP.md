@@ -1,6 +1,6 @@
 # 移植對照表
 
-歷史盤點與以下行號基準 commit: `47c44406ffe4ef705b5f8988a47e187e42a73602`。上游已同步 v5.74.1（4eefc58），最新驗證見 UPSTREAM_SYNC.json；歷史行號可能已移動。目前已延伸至使用者授權的 Phase 4a 試玩版。既有存檔的時鐘／需求／作息／技能及視覺移動可推進；其餘子系統保留原始資料。以下為全部前端 JS class（含外部子系統）。方法與檔案雜湊見 SOURCE_AUDIT.md。
+歷史盤點與以下行號基準 commit: `47c44406ffe4ef705b5f8988a47e187e42a73602`。上游已同步 v5.74.1（4eefc58），最新驗證見 UPSTREAM_SYNC.json；歷史行號可能已移動。目前已延伸至使用者授權的 Phase 4b 分批試玩版。時鐘／需求／作息／技能、移動、NPC 本地社交、八卦及每日關係事件已接入；其餘子系統保留原始資料。以下為全部前端 JS class（含外部子系統）。方法與檔案雜湊見 SOURCE_AUDIT.md。
 
 | JS class | 職責 | 建構／World 依賴（摘要） | 存檔鍵 | Phase | 狀態 |
 |---|---|---|---|---|---|
@@ -19,10 +19,10 @@
 | [QuestSystem](../../chrome-extension/quest-system.js#L734) | 主支線每日任務 | —; world: agents, buildings, clock, dailyNews, industry, logMessage, multiEnding, processing, stockpile, tickCount | `questSystem` | 4e | 已盤點，尚未移植 |
 | [GameClock](../../chrome-extension/simulation.js#L6) | 時鐘與季節 | —; world: — | `clock` | 4a | Phase 4a 核心完成；見 SimClock／SimNeeds／SimRandom |
 | [Needs](../../chrome-extension/simulation.js#L58) | 六種需求與心情 | —; world: — | `agents.*.needs` | 4a | Phase 4a 核心完成；見 SimClock／SimNeeds／SimRandom |
-| [MemoryEntry](../../chrome-extension/simulation.js#L103) | 單則記憶 | —; world: — | `agents.*.memory[]` | 4b | 4b 基礎資料層與居民查閱完成；自動社交／婚戀尚未接入，見 SimMemory／SimRelationships |
-| [Memory](../../chrome-extension/simulation.js#L114) | 記憶流與檢索 | MemoryEntry; world: — | `agents.*.memory` | 4b | 4b 基礎資料層與居民查閱完成；自動社交／婚戀尚未接入，見 SimMemory／SimRelationships |
-| [Relationship](../../chrome-extension/simulation.js#L170) | 雙人關係 | —; world: — | `agents.*.relationships.*` | 4b | 4b 基礎資料層與居民查閱完成；自動社交／婚戀尚未接入，見 SimMemory／SimRelationships |
-| [RelationshipManager](../../chrome-extension/simulation.js#L215) | 關係集合 | Relationship; world: — | `agents.*.relationships` | 4b | 4b 基礎資料層與居民查閱完成；自動社交／婚戀尚未接入，見 SimMemory／SimRelationships |
+| [MemoryEntry](../../chrome-extension/simulation.js#L103) | 單則記憶 | —; world: — | `agents.*.memory[]` | 4b | 4b 資料層、居民查閱、自動社交及每日關係事件已接入；見 SimMemory／SimRelationships／SimRomance |
+| [Memory](../../chrome-extension/simulation.js#L114) | 記憶流與檢索 | MemoryEntry; world: — | `agents.*.memory` | 4b | 4b 資料層、居民查閱、自動社交及每日關係事件已接入；見 SimMemory／SimRelationships／SimRomance |
+| [Relationship](../../chrome-extension/simulation.js#L170) | 雙人關係 | —; world: — | `agents.*.relationships.*` | 4b | 4b 資料層、居民查閱、自動社交及每日關係事件已接入；見 SimMemory／SimRelationships／SimRomance |
+| [RelationshipManager](../../chrome-extension/simulation.js#L215) | 關係集合 | Relationship; world: — | `agents.*.relationships` | 4b | 4b 資料層、居民查閱、自動社交及每日關係事件已接入；見 SimMemory／SimRelationships／SimRomance |
 | [Personality](../../chrome-extension/simulation.js#L256) | 性格特質 | Personality; world: — | `agents.*.personality` | 4a | Phase 4a 載入既有角色之運行核心完成；跨系統效果及新角色生成待後續 |
 | [Skill](../../chrome-extension/simulation.js#L305) | 單項技能 | —; world: — | `agents.*.skills.*` | 4a | Phase 4a 載入既有角色之運行核心完成；跨系統效果及新角色生成待後續 |
 | [SkillSet](../../chrome-extension/simulation.js#L329) | 技能集合 | Skill, SkillSet; world: — | `agents.*.skills` | 4a | Phase 4a 載入既有角色之運行核心完成；跨系統效果及新角色生成待後續 |
@@ -50,7 +50,7 @@
 | [LifecycleSystem](../../chrome-extension/simulation.js#L5777) | 生命週期 | Agent, Personality; world: addAgent, agents, clock, dailyNews, events, factions, gossipNetwork, logMessage, processing, removeAgent, tickCount | `lifecycle` | 4d | 已盤點，尚未移植 |
 | [ExplorationSystem](../../chrome-extension/simulation.js#L6086) | 探索 | —; world: agents, clock, dailyNews, events, logMessage, stockpile, tickCount | `exploration` | 4d | 已盤點，尚未移植 |
 | [LegacySystem](../../chrome-extension/simulation.js#L6250) | 世代傳承 | Personality; world: _legacyGeneration, agents, buildings, farm, industry, logMessage, multiEnding, prosperity, research, stockpile | `_legacyGeneration / player / resources` | 4e | 已盤點，尚未移植 |
-| [World](../../chrome-extension/simulation.js#L6457) | 世界更新與序列化 | Agent, BuildingManager, ConversationEngine, CouncilSystem, CustomNPCSystem, DailyDecisionSystem, DailyNewsEngine, ElectionSystem, EventChoiceSystem, EventSystem, ExplorationSystem, Faction, FactionSystem, FarmSystem, FestivalSystem, GameClock, GossipNetwork, IndustryManager, Job, LifeGoalSystem, LifecycleSystem, MultiEndingSystem, NPCEventSystem, NPCHelpSystem, NPCQuestSystem, NewsSystem, Personality, PlayerAgent, ProcessingSystem, ProsperityEngine, QuestSystem, ReputationSystem, ResearchManager, RogueCardSystem, ShopSystem, Stockpile, TownFeedSystem, TownIdentitySystem, TownMap, TradeManager, WeatherSystem, WorkOrderManager; world: — | `58 頂層鍵` | 3 / 4a–4f | 原始 envelope 保留＋4a及可切換NPC本地社交 tick；完整 World.tick 待其餘4b–f |
+| [World](../../chrome-extension/simulation.js#L6457) | 世界更新與序列化 | Agent, BuildingManager, ConversationEngine, CouncilSystem, CustomNPCSystem, DailyDecisionSystem, DailyNewsEngine, ElectionSystem, EventChoiceSystem, EventSystem, ExplorationSystem, Faction, FactionSystem, FarmSystem, FestivalSystem, GameClock, GossipNetwork, IndustryManager, Job, LifeGoalSystem, LifecycleSystem, MultiEndingSystem, NPCEventSystem, NPCHelpSystem, NPCQuestSystem, NewsSystem, Personality, PlayerAgent, ProcessingSystem, ProsperityEngine, QuestSystem, ReputationSystem, ResearchManager, RogueCardSystem, ShopSystem, Stockpile, TownFeedSystem, TownIdentitySystem, TownMap, TradeManager, WeatherSystem, WorkOrderManager; world: — | `58 頂層鍵` | 3 / 4a–4f | 原始 envelope 保留＋4a、可切換 NPC 社交／八卦／每日關係 tick；完整 World.tick 待其餘4b–f |
 | [ReputationSystem](../../chrome-extension/simulation.js#L8216) | 聲望 | —; world: agents, dailyNews, questSystem | `reputationSystem` | 4d | 已盤點，尚未移植 |
 | [WeatherSystem](../../chrome-extension/simulation.js#L8406) | 天氣災害 | —; world: agents, buildings, clock, dailyNews, eventChoice, logMessage, news, stockpile, tickCount | `weather` | 4d | 已盤點，尚未移植 |
 | [CouncilSystem](../../chrome-extension/simulation.js#L8766) | 議會 | —; world: agents, clock, dailyNews, logMessage, news, reputationSystem, stockpile, tickCount | `council` | 4d | 已盤點，尚未移植 |

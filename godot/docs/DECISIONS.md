@@ -39,3 +39,9 @@ SimWorld 預設保留純4a模式供基準測試；使用者介面對新匯入預
 使用者要求繼續開發。將 GossipNetwork 規則與 socializing 的既有0.3觸發接上，不額外創造隨機八卦來源。gossip_enabled 以 _godot4a 保存；新匯入預設開啟、純SimWorld基準預設關閉。NPC對質發文一併移植，其他新聞／動態功能待後續。
 
 JS來源 World.serialize 的 gossip 陣列只有淺拷貝，因此新的長時間 oracle 檢查點對 gossip／townFeed 深拷貝，避免晚期傳播改寫早期預期值。第四手處理無論是否找到當事人，仍依原版記錄 _confronted，避免重複處理。
+
+
+## D24 — 每日關係事件與存檔精度
+使用者要求繼續開發；在既有本地社交上加入 World._processRelationships，固定於 new_day、Agent.update 之前。保留原版事件內容及傳聞效果，AI queueDramaScene、dailyNews.collectEvent、npcEvents.handleCheatingDiscovery 回呼留待相關系統移植。UI 新匯入預設啟用，SimWorld 基準預設停用。
+
+30 天海風鎮續跑測試發現：JSON 解析的單一 ULP 差異使阿浮對石叔的好感在後續日界跨過 40，導致心動增量變動。新增有普通欄位校驗的 relationship_precision 補充，不四捨五入模擬原值。外部編輯優先，原版資料與 Godot 專用續跑擴充各自維持用途。

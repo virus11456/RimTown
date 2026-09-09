@@ -7,12 +7,15 @@ var rng := SimRandom.new()
 var runtime: Dictionary = {}
 var social_enabled := false
 var gossip_enabled := false
+var romance_enabled := false
 var social := SimSocial.new()
 func load_snapshot(snapshot: Dictionary) -> void:
 	data = snapshot.duplicate(true)
 	var saved: Dictionary = data.get("_godot4a",{}) if data.get("_godot4a",{}) is Dictionary else {}
 	social_enabled=bool(saved.get("social_enabled",false))
 	gossip_enabled=bool(saved.get("gossip_enabled",false))
+	romance_enabled=bool(saved.get("romance_enabled",false))
+	_restore_relationship_precision(saved.get("relationship_precision",[]))
 	rng.state = int(saved.get("random_state",11456))
 	runtime = saved.get("agents",{}).duplicate(true)
 	for id in data.agents:
@@ -20,7 +23,7 @@ func load_snapshot(snapshot: Dictionary) -> void:
 func snapshot() -> Dictionary:
 	var result := data.duplicate(true)
 	var extension: Dictionary = result.get("_godot4a",{}).duplicate(true)
-	extension.merge({"version":1,"random_state":rng.state,"agents":runtime.duplicate(true),"social_enabled":social_enabled,"gossip_enabled":gossip_enabled},true)
+	extension.merge({"version":1,"random_state":rng.state,"agents":runtime.duplicate(true),"social_enabled":social_enabled,"gossip_enabled":gossip_enabled,"romance_enabled":romance_enabled,"relationship_precision":_relationship_precision()},true)
 	result._godot4a = extension
 	if gossip_enabled and result.get("townFeed") is Dictionary and result.townFeed.get("posts") is Array:
 		result.townFeed.posts=result.townFeed.posts.slice(maxi(0,result.townFeed.posts.size()-80))
@@ -28,6 +31,7 @@ func snapshot() -> Dictionary:
 func tick() -> Array[String]:
 	data.tickCount = int(data.get("tickCount",0))+1
 	var events := SimClock.tick(data.clock)
+	if romance_enabled and "new_day" in events: SimRomance.process(self)
 	for id in data.agents:
 		if not data.agents[id].get("isDead",false): _update(id)
 	return events
@@ -196,3 +200,32 @@ func validation_error() -> String:
 		for key in ["hunger","rest","social","comfort","recreation","beauty"]:
 			if not a.get("needs",{}).get(key) is float and not a.get("needs",{}).get(key) is int: return error
 	return ""
+
+# Godot JSON parsing can round a decimal by one ULP. Preserve only affected
+# relationship values so flooring affinity at 20-point thresholds survives saves.
+# The decimal guard makes ordinary fields authoritative after external edits.
+func _relationship_precision() -> Array:
+	var patches: Array=[]
+	for id in data.agents:
+		for target in data.agents[id].get("relationships",{}):
+			var relation: Dictionary=data.agents[id].relationships[target]
+			for field in ["affinity","trust","romanticInterest"]:
+				var value: Variant=relation.get(field)
+				if not value is float: continue
+				var decimal:=JSON.stringify(value,"",false,true)
+				if float(JSON.parse_string(decimal))==value: continue
+				var bits:=PackedByteArray();bits.resize(8);bits.encode_double(0,value)
+				patches.append([id,target,field,decimal,bits.hex_encode()])
+	return patches
+func _restore_relationship_precision(patches: Variant) -> void:
+	if not patches is Array: return
+	for patch in patches:
+		if not patch is Array or patch.size()!=5: continue
+		if not patch[0] is String or not patch[1] is String or not patch[2] in ["affinity","trust","romanticInterest"]: continue
+		if not patch[3] is String or not patch[4] is String or patch[4].length()!=16 or not patch[4].is_valid_hex_number(): continue
+		var relation: Dictionary=data.agents.get(patch[0],{}).get("relationships",{}).get(patch[1],{})
+		var current: Variant=relation.get(patch[2])
+		var visible: Variant=JSON.parse_string(patch[3])
+		if not (current is float or current is int) or not (visible is float or visible is int): continue
+		var exact: float=patch[4].hex_decode().decode_double(0)
+		if is_finite(exact) and float(current)==float(visible): relation[patch[2]]=exact

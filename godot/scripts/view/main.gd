@@ -33,6 +33,7 @@ var resident_page := "summary"
 var memory_target := ""
 var conversation_page := false
 var gossip_page := false
+var romance_page := false
 var traveler: TravelerControls
 
 func _ready() -> void:
@@ -55,6 +56,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_social.flag"): _capture_social()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_npc.flag"): _capture_npc()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_gossip.flag"): _capture_gossip()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_romance.flag"): _capture_romance()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -215,6 +217,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.load_snapshot(document.snapshot())
 	simulation.social_enabled=bool(document.data.get("_godot4a",{}).get("social_enabled",true))
 	simulation.gossip_enabled=bool(document.data.get("_godot4a",{}).get("gossip_enabled",true))
+	simulation.romance_enabled=bool(document.data.get("_godot4a",{}).get("romance_enabled",true))
 	var data := document.snapshot()
 	heading.text = str(data.get("townName","小鎮"))
 	var clock_data: Dictionary = data.clock
@@ -255,6 +258,7 @@ func show_tab(tab: String, refresh := false) -> void:
 	active_tab = tab
 	conversation_page=false
 	gossip_page=false
+	romance_page=false
 	if not refresh: selected_agent=""
 	drawer.show()
 	_clear_drawer()
@@ -266,7 +270,7 @@ func show_tab(tab: String, refresh := false) -> void:
 			_button("匯入網頁版存檔",drawer_body,import_save)
 			_button("匯出原始存檔副本",drawer_body,export_save)
 			_button("匯出試玩進度",drawer_body,export_progress)
-			_label("試玩：作息、需求與走路已啟用。\n資源、關係與任務暫不更新。",drawer_body,13)
+			_wrapped("試玩：作息、需求與走路已啟用。\n居民社交與關係事件可在設定開關。\n資源與任務尚未啟用。",13)
 			var resources: Dictionary = _current_data().get("stockpile",{}).get("resources",{})
 			for key in resources:
 				if float(resources[key]) != 0: _label("%s   %d" % [_resource_name(key),resources[key]],drawer_body)
@@ -277,6 +281,7 @@ func show_tab(tab: String, refresh := false) -> void:
 		"故事":
 			_button("村民對話紀錄",drawer_body,show_conversations)
 			_button("八卦與鎮民動態",drawer_body,show_gossip)
+			_button("關係事件",drawer_body,show_romance)
 			var logs: Array = _current_data().get("messageLog",[])
 			if logs.is_empty(): _label("故事從這裡開始。",drawer_body)
 			for entry in logs.slice(maxi(0,logs.size()-30)):
@@ -304,7 +309,24 @@ func show_agent(id: String,focus_camera := true) -> void:
 	_button("人際關係",drawer_body,func(): show_relationships(id))
 	_button("返回居民列表",drawer_body,func(): selected_agent=""; show_tab("居民",true))
 
+func show_romance() -> void:
+	romance_page=true
+	gossip_page=false
+	conversation_page=false
+	_clear_drawer()
+	_wrapped("關係事件",22)
+	_wrapped("每天換日時，居民會依照好感、心動與個性發展關係。")
+	_button("返回故事",drawer_body,func(): show_tab("故事",true))
+	var logs: Array=_current_data().get("messageLog",[]).filter(func(entry): return entry.get("type")=="relationship")
+	if logs.is_empty(): _wrapped("尚無關係事件。按「開始」讓居民相處，再過幾天回來看看。")
+	var recent:=logs.slice(maxi(0,logs.size()-30))
+	recent.reverse()
+	for entry in recent:
+		_wrapped(str(entry.get("time","")),12)
+		_wrapped(str(entry.get("content","")),16)
+
 func show_gossip() -> void:
+	romance_page=false
 	gossip_page=true
 	conversation_page=false
 	_clear_drawer()
@@ -331,6 +353,7 @@ func show_gossip() -> void:
 		_wrapped(str(post.get("text","")))
 
 func show_conversations() -> void:
+	romance_page=false
 	gossip_page=false
 	conversation_page=true
 	_clear_drawer()
@@ -412,6 +435,8 @@ func _line(placeholder: String, secret := false) -> LineEdit:
 	return field
 
 func _settings_ui() -> void:
+	_button("每日關係事件："+("開啟" if simulation.romance_enabled else "關閉"),drawer_body,func(): simulation.romance_enabled=not simulation.romance_enabled; show_tab("設定",true))
+	_wrapped("關係在換日時判定；交往和結婚需要感情累積與機會。")
 	_button("八卦傳播："+("開啟" if simulation.gossip_enabled else "關閉"),drawer_body,func(): simulation.gossip_enabled=not simulation.gossip_enabled; show_tab("設定",true))
 	_wrapped("八卦需同時開啟 NPC 本地社交才會在聊天時傳播。")
 	_button("NPC 本地社交："+("開啟" if simulation.social_enabled else "關閉"),drawer_body,func(): simulation.social_enabled=not simulation.social_enabled; show_tab("設定",true))
@@ -576,7 +601,8 @@ func _tick_simulation() -> void:
 	world_view._light_clock(clock_data)
 	if "new_hour" in events: world_view._weather(simulation.data)
 	if active_tab=="故事":
-		if gossip_page: show_gossip()
+		if romance_page: show_romance()
+		elif gossip_page: show_gossip()
 		elif conversation_page: show_conversations()
 		else: show_tab("故事",true)
 	if active_tab=="居民" and not selected_agent.is_empty():
@@ -727,4 +753,27 @@ func _capture_gossip() -> void:
 	await get_tree().create_timer(1).timeout
 	await RenderingServer.frame_post_draw
 	viewport.get_texture().get_image().save_png("res://docs/gossip-mobile.png")
+	viewport.queue_free()
+
+func _capture_romance() -> void:
+	await get_tree().create_timer(1).timeout
+	var example:=FileAccess.get_file_as_string("res://tests/romance/compatibility-save.json.tmp")
+	_load_document(example,"婚禮測試情境")
+	show_tab("故事",true)
+	show_romance()
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/romance-desktop.png")
+	var viewport:=SubViewport.new()
+	viewport.size=Vector2i(375,812)
+	viewport.own_world_3d=true
+	viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
+	add_child(viewport)
+	var mobile=load("res://scenes/main.tscn").instantiate()
+	viewport.add_child(mobile)
+	mobile._load_document(example,"婚禮測試情境")
+	mobile.show_tab("故事",true)
+	mobile.show_romance()
+	await get_tree().create_timer(1).timeout
+	await RenderingServer.frame_post_draw
+	viewport.get_texture().get_image().save_png("res://docs/romance-mobile.png")
 	viewport.queue_free()

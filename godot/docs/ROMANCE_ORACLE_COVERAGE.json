@@ -1,0 +1,21 @@
+{
+  "scenarios": 360,
+  "seeds": 24,
+  "callsPerScenario": 12,
+  "coverage": {
+    "affair": 17,
+    "jealous": 16,
+    "rival_formed": 44,
+    "got_together": 50,
+    "married": 68,
+    "betrayed": 39,
+    "broke_up": 32,
+    "divorced": 16
+  },
+  "source": "chrome-extension/simulation.js World._processRelationships; v5.74.1",
+  "excluded": [
+    "queueDramaScene",
+    "dailyNews.collectEvent",
+    "npcEvents.handleCheatingDiscovery"
+  ]
+}

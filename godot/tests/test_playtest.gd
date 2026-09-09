@@ -31,6 +31,7 @@ func run() -> void:
 	await settle()
 	app.simulation.social_enabled=false # Keep historical Phase 4a preservation assertions; enabled mode has its own oracle/UI tests.
 	app.set_process(false) # Time under test is deterministic, driven explicitly below.
+	app.simulation.romance_enabled=false # This suite isolates pre-romance behavior.
 	var raw: String=app.document.serialize()
 	check(not app.running,"starts paused")
 	await click("＋15 分")

@@ -14,6 +14,7 @@ func run() -> void:
 	var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app)
 	await process_frame
 	app.set_process(false)
+	app.simulation.romance_enabled=false # This suite isolates pre-romance behavior.
 	var raw: String=app.document.serialize()
 	check(app.simulation.gossip_enabled and app.simulation.social_enabled,"fresh import enables gossip with socializing")
 	app.show_tab("設定",true);press(app.drawer_body,"八卦傳播：開啟")
