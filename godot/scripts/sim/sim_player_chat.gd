@@ -1,5 +1,11 @@
 class_name SimPlayerChat
 extends RefCounted
+static func job(w: SimWorld,a: Dictionary) -> Dictionary:
+	if a.get("job") is Dictionary: return a.job
+	var key: String=str(a.get("jobKey","") if a.get("jobKey")!=null else "")
+	var value: Dictionary=w.rules.jobs.get(key,{}).duplicate(true)
+	if not value.is_empty(): value.key=key
+	return value
 static func prompt(w: SimWorld,id: String,message: String) -> String:
 	var a: Dictionary=w.data.agents[id];var player: Dictionary=w.data.agents.player
 	var memory:=SimMemory.new();memory.load_entries(a.get("memory",[]))
@@ -14,8 +20,8 @@ static func prompt(w: SimWorld,id: String,message: String) -> String:
 	var status: String="單身" if partner.is_empty() else ("已與"+str(partner.targetName)+"結婚" if partner.status=="married" else "正在與"+str(partner.targetName)+"交往")
 	var mayor:=""
 	for resident in w.data.agents.values():
-		if resident.get("job") is Dictionary and resident.job.get("key","")=="mayor": mayor=resident.name
-	var context:={"town":w.data.get("townName","邊境鎮"),"npc":{"name":str(a.name).left(80),"age":a.age,"job":str(a.get("job",{}).get("title","居民") if a.get("job") is Dictionary else "居民").left(80),"traits":traits,"relationshipStatus":status.left(120),"background":str(a.personality.get("background","")).left(600),"values":"、".join(a.personality.get("values",[])).left(300),"currentThought":str(a.get("currentThought","")).left(300),"needs":a.needs,"mood":a.mood},"player":str(player.name).left(80),"mayor":mayor.left(80),"relationship":{"affinity":rel.get("affinity",0),"trust":rel.get("trust",0),"romanticInterest":rel.get("romanticInterest",0),"status":rel.get("status")},"relevantMemories":memories,"reflections":memory.thoughts(2),"recentChat":history,"clock":w.data.clock}
+		if job(w,resident).get("key","")=="mayor": mayor=resident.name
+	var context:={"town":w.data.get("townName","邊境鎮"),"npc":{"name":str(a.name).left(80),"age":a.age,"job":str(job(w,a).get("title","居民")).left(80),"traits":traits,"relationshipStatus":status.left(120),"background":str(a.personality.get("background","")).left(600),"values":"、".join(a.personality.get("values",[])).left(300),"currentThought":str(a.get("currentThought","")).left(300),"needs":a.needs,"mood":a.mood},"player":str(player.name).left(80),"mayor":mayor.left(80),"relationship":{"affinity":rel.get("affinity",0),"trust":rel.get("trust",0),"romanticInterest":rel.get("romanticInterest",0),"status":rel.get("status")},"relevantMemories":memories,"reflections":memory.thoughts(2),"recentChat":history,"clock":w.data.clock}
 	context.relevantMemories=memories.map(func(m): return {"time":str(m.get("timeStr","")).left(40),"content":str(m.content).left(400)})
 	context.reflections=memory.thoughts(2).map(func(m): return str(m.content).left(200))
 	context.recentChat=history.map(func(m): return {"speaker":str(m.speaker).left(80),"text":str(m.text).left(300)})

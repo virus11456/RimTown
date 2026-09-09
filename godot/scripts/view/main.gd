@@ -29,6 +29,7 @@ var playback: HBoxContainer
 var play_button: Button
 var speed_button: Button
 var selected_agent := ""
+var chat_offline:=false
 var chat_epoch:=0
 var chat_busy:=false
 var chat_transport: Callable
@@ -77,6 +78,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_interaction.flag"): _capture_player_interaction()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_chat.flag"): _capture_player_chat()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_intents.flag"): _capture_player_intents()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_offline.flag"): _capture_player_offline()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -1115,11 +1117,13 @@ func show_player_chat(id: String) -> void:
 	if not simulation.data.agents.has(id) or not simulation.data.agents.has("player") or id=="player": _wrapped("找不到交談對象。");return
 	var a: Dictionary=simulation.data.agents[id]
 	_wrapped("與"+str(a.name)+"交談",22)
-	_wrapped("傳送會使用既有 AI 服務與帳號／訪客額度。",12)
+	var mode:=CheckButton.new();mode.text="離線交談（本機台詞）";mode.button_pressed=chat_offline;mode.disabled=chat_busy;mode.custom_minimum_size.y=42;drawer_body.add_child(mode)
+	mode.toggled.connect(func(value): chat_offline=value;show_player_chat(id))
+	_wrapped("目前使用本機預寫台詞，不連線、不使用 AI 額度。" if chat_offline else "傳送會使用既有 AI 服務與帳號／訪客額度。",12)
 	var history: Array=simulation.data.agents.player.get("chatHistory",[]).filter(func(m): return m.speaker==a.name or m.target==a.name)
 	if history.is_empty(): _wrapped("還沒有對話，說聲你好吧。")
 	for entry in history.slice(maxi(0,history.size()-20)):
-		_wrapped(str(entry.speaker)+"："+str(entry.text))
+		_wrapped(str(entry.speaker)+("（離線台詞）：" if entry.get("_godotOffline",false) else "：")+str(entry.text))
 	if chat_notice.has(id): _wrapped(chat_notice[id])
 	if chat_busy: _wrapped("等待回覆中…")
 	var input:=LineEdit.new();input.placeholder_text="想對他說什麼？";input.max_length=1200;input.editable=not chat_busy;input.text=str(chat_drafts.get(id,""));input.custom_minimum_size.y=42;drawer_body.add_child(input)
@@ -1139,6 +1143,13 @@ func send_player_chat(id: String,message: String,intent: String="") -> void:
 	if chat_busy or message.is_empty(): return
 	if message.length()>1200: chat_notice[id]="訊息請控制在 1200 字內。";show_player_chat(id);return
 	if not simulation.data.agents.has("player") or not simulation.data.agents.has(id) or id=="player" or simulation.data.agents[id].get("isDead",false): return
+	if chat_offline:
+		var local_result:=SimPlayerOffline.apply(simulation,id,message)
+		simulation.data.agents.player.chatHistory.back()["_godotOffline"]=true
+		has_simulated=true;chat_drafts.erase(id)
+		chat_notice[id]="離線交談完成 · 好感 %+.0f · 戀慕 %+.0f"%[local_result.affinity,local_result.romantic]
+		if not intent.is_empty(): chat_notice[id]+="\n意圖效果："+SimPlayerInteraction.apply_intent(simulation.data.agents[id],simulation,intent)
+		show_player_chat(id);return
 	chat_drafts[id]=message;chat_notice.erase(id);chat_busy=true
 	var epoch:=chat_epoch
 	var target: Dictionary=simulation.data.agents[id]
@@ -1151,7 +1162,7 @@ func send_player_chat(id: String,message: String,intent: String="") -> void:
 	chat_busy=false
 	if not simulation.data.agents.has(id) or not is_same(simulation.data.agents[id],target) or target.get("isDead",false):
 		chat_notice[id]="對方已離開，回覆未套用。"
-	elif not response.get("ok",false): chat_notice[id]=str(response.get("error","連線失敗，請重試。"))
+	elif not response.get("ok",false): chat_notice[id]=str(response.get("error","連線失敗，請重試。"))+"\n草稿已保留，也可切換離線交談後重試。"
 	elif not response.get("data") is Dictionary or not response.data.get("reply") is String:
 		chat_notice[id]="伺服器回覆格式不正確，未套用變化。"
 	else:
@@ -1193,4 +1204,20 @@ func _capture_player_intents() -> void:
 	await get_tree().create_timer(.5).timeout
 	await RenderingServer.frame_post_draw
 	viewport.get_texture().get_image().save_png("res://docs/player-intents-mobile.png")
+	viewport.queue_free()
+
+func _capture_player_offline() -> void:
+	await get_tree().create_timer(1).timeout
+	var example:=FileAccess.get_file_as_string("res://tests/player_offline/compatibility-save.json.tmp")
+	chat_offline=true
+	_load_document(example,"離線交談驗證")
+	show_tab("居民",true);show_player_chat("chen_wei")
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/player-offline-desktop.png")
+	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+	var mobile=load("res://scenes/main.tscn").instantiate();viewport.add_child(mobile)
+	mobile.chat_offline=true;mobile._load_document(example,"離線交談驗證");mobile.show_tab("居民",true);mobile.show_player_chat("chen_wei")
+	await get_tree().create_timer(.5).timeout
+	await RenderingServer.frame_post_draw
+	viewport.get_texture().get_image().save_png("res://docs/player-offline-mobile.png")
 	viewport.queue_free()
