@@ -72,6 +72,39 @@ module.exports = async (req, res) => {
         return res.status(200).json({ copied, skipped, failed, total });
     }
 
+    // v5.68.0 推薦碼管理:列出 / 建立 / 停用啟用 / 刪除
+    if (req.method === 'GET' && action === 'invites') {
+        const paths = (await L.listPaths('invites/')).slice(0, 500);
+        const invites = [];
+        for (const p of paths) { const v = await L.readJson(p); if (v && v.code) invites.push(v); }
+        invites.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+        return res.status(200).json({ invites });
+    }
+    if (req.method === 'POST' && action === 'invite_create') {
+        let code = L.normalizeInvite(req.body?.code);
+        if (!code) {
+            const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 去掉易混淆的 I/O/0/1
+            const bytes = require('crypto').randomBytes(8);
+            code = Array.from(bytes, b => alphabet[b % alphabet.length]).join('');
+        }
+        if (code.length < 4) return L.err(res, 400, 'bad_code', '推薦碼至少 4 個字（英數）');
+        if (await L.readJson(L.invitePath(code))) return L.err(res, 409, 'code_exists', '這組推薦碼已存在');
+        const maxUses = Math.max(0, Math.min(9999, parseInt(req.body?.max_uses, 10) || 0));
+        const inv = { code, createdBy: payload.u, createdAt: new Date().toISOString(), maxUses, uses: 0, usedBy: [], disabled: false, note: String(req.body?.note || '').slice(0, 60) };
+        await L.writeJson(L.invitePath(code), inv);
+        return res.status(200).json({ success: true, code, invite: inv });
+    }
+    if (req.method === 'POST' && (action === 'invite_toggle' || action === 'invite_delete')) {
+        const code = L.normalizeInvite(req.body?.code);
+        if (!code) return L.err(res, 400, 'missing_code', '缺少推薦碼');
+        const inv = await L.readJson(L.invitePath(code));
+        if (!inv) return L.err(res, 404, 'not_found', '找不到這組推薦碼');
+        if (action === 'invite_delete') { await L.deleteBlob(L.invitePath(code)); return res.status(200).json({ success: true }); }
+        inv.disabled = !inv.disabled;
+        await L.writeJson(L.invitePath(code), inv);
+        return res.status(200).json({ success: true, disabled: inv.disabled });
+    }
+
     if (req.method !== 'POST') return L.err(res, 405, 'method_not_allowed', 'POST only');
     const target = L.sanitizeUsername(req.body?.username);
     if (!target) return L.err(res, 400, 'missing_username', '缺少帳號');

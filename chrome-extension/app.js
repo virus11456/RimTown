@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.67.6
-const RIMTOWN_APP_VERSION = '5.67.6';
+// RimTown - Frontend App (WordPress Plugin) v5.68.0
+const RIMTOWN_APP_VERSION = '5.68.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -188,8 +188,8 @@ class RimTownAuth {
         } catch (e) { /* private mode 等情況忽略 */ }
     }
 
-    async register(username, password, email) {
-        const data = await this._fetch('register', 'POST', { username, password, email });
+    async register(username, password, email, invite) {
+        const data = await this._fetch('register', 'POST', { username, password, email, invite });
         if (data.nonce) this._nonce = data.nonce;
         this.loggedIn = true;
         this.username = data.user.username;
@@ -237,6 +237,9 @@ class RimTownAuth {
     // v5.63.0 管理員操作(僅 serverless 站;身分由伺服器 ADMIN_USERS 判定)
     async adminListUsers() { const d = await this._fetch('admin?action=users'); return { users: d.users || [], storage: d.storage || null }; }
     async adminAction(action, username, extra = {}) { return this._fetch('admin', 'POST', { action, username, ...extra }); }
+    // v5.68.0 推薦碼管理
+    async adminInvites() { const d = await this._fetch('admin?action=invites'); return d.invites || []; }
+    async adminInvite(action, extra = {}) { return this._fetch('admin', 'POST', { action, ...extra }); }
 
     // Cloud save operations
     async listSaves() {
@@ -329,6 +332,20 @@ class RimTownApp {
 
     async init() {
         this.setupEventDelegation();
+        // v5.68.0 首頁(Landing):Vercel 版一律先看首頁。未登入只能註冊/登入(不啟動世界);
+        // 已登入在底下載好世界、暫停等你按「繼續遊戲」。登入/註冊成功後帶 rimtown_enter_now 重載直接進遊戲。
+        this._landingActive = false;
+        if (this.auth._serverless) {
+            let enterNow = false;
+            try { enterNow = sessionStorage.getItem('rimtown_enter_now') === '1'; if (enterNow) sessionStorage.removeItem('rimtown_enter_now'); } catch (e) {}
+            if (!this.auth.loggedIn) {
+                this._landingActive = true; this._landingMode = 'auth';
+                this.setupAuthListeners();
+                this._renderLanding(); this._showLanding();
+                return; // 一律要登入才能玩
+            }
+            if (!enterNow) { this._landingActive = true; this._landingMode = 'continue'; this._renderLanding(); this._showLanding(); }
+        }
         // v5.33.0 已登入就先拉帳號雲端的 AI 設定,再據以建立 LLM client
         if (this.auth.loggedIn) { try { await this._pullCloudSettings(); } catch (e) {} }
         await this.loadSettings();
@@ -374,9 +391,18 @@ class RimTownApp {
             }
             if (!loaded) {
                 this.world.reset();
-                // v5.62.1 沿用既有同名條目的 id(覆寫同一 slot),沒有才產新 id
-                const orphan = this._getTownList().find(tw => tw.name === t('邊境鎮'));
-                this.currentTownId = orphan?.id || this._generateTownId(t('邊境鎮'));
+                // v5.68.0 首頁註冊流程:新帳號重載後在這裡建立「<帳號>的邊境鎮」並同步雲端
+                const pendingName = localStorage.getItem('rimtown_pending_town_name');
+                if (pendingName) {
+                    localStorage.removeItem('rimtown_pending_town_name');
+                    this.currentTownId = this._generateTownId(pendingName);
+                    this._saveCurrentTown(pendingName);
+                    this._syncToCloud().catch(() => {});
+                } else {
+                    // v5.62.1 沿用既有同名條目的 id(覆寫同一 slot),沒有才產新 id
+                    const orphan = this._getTownList().find(tw => tw.name === t('邊境鎮'));
+                    this.currentTownId = orphan?.id || this._generateTownId(t('邊境鎮'));
+                }
             }
         } else {
             // Not logged in — use local saves
@@ -423,10 +449,11 @@ class RimTownApp {
         this.setupSettingsListeners();
         this.setupBGM();
         this.setupAuthListeners();
-        this.setupTutorial();
+        if (!this._landingActive) this.setupTutorial(); // v5.68.0 首頁關掉後才開教學
         this._updateAccountButton();
         this._loadAchievementsFromCloud();
         // Cloud data is already loaded in init() when logged in, no need to sync again
+        if (this._landingActive) { this._pausedForLanding = true; this.world.paused = true; } // v5.68.0 首頁期間不跑模擬
         this.startSimulation();
         this.setupAutoSave();
         // Update header town name from saved metadata
@@ -459,10 +486,12 @@ class RimTownApp {
             // v5.18.0 第一天因果鏈:介紹已看過但尚未走完核心循環者,續接引導
             setTimeout(() => { this._initFirstDay(); this._renderFirstDayGuide(); }, 2200);
         }
-        // v4.5.0 留存機制:離線進度結算 + 每日登入獎勵
-        if (loaded) this._processOfflineProgress();
-        this._checkDailyReward();
+        // v4.5.0 留存機制:離線進度結算 + 每日登入獎勵(v5.68.0 首頁開著時延到按「繼續遊戲」後)
+        const afterEnter = () => { if (loaded) this._processOfflineProgress(); this._checkDailyReward(); };
+        if (this._landingActive) this._afterLanding = afterEnter; else afterEnter();
         this._startLastSeenTracker();
+        this._initReady = true;
+        this._landingUpdateContinue();
 
         // Auto-show login modal if not logged in (with guest option)
         if (!this.auth.loggedIn) {
@@ -573,6 +602,7 @@ class RimTownApp {
         try {
             if (errEl) errEl.textContent = t('登入中...');
             await this.auth.login(user, pass);
+            if (this._landingMode === 'auth') { try { sessionStorage.setItem('rimtown_enter_now', '1'); } catch (e) {} location.reload(); return; } // v5.68.0
             this.guestMode = false;
             this._hideGuestBanner();
             this._closeAuthModal();
@@ -1160,12 +1190,22 @@ class RimTownApp {
         const email = document.getElementById('auth-reg-email')?.value?.trim();
         const pass = document.getElementById('auth-reg-pass')?.value;
         const pass2 = document.getElementById('auth-reg-pass2')?.value;
+        const invite = document.getElementById('auth-reg-invite')?.value?.trim() || '';
         const errEl = document.getElementById('auth-reg-error');
         if (!user || !pass) { if (errEl) errEl.textContent = t('請填寫帳號和密碼'); return; }
+        if (!invite) { if (errEl) errEl.textContent = t('請輸入推薦碼'); return; }
         if (pass !== pass2) { if (errEl) errEl.textContent = t('兩次密碼不一致'); return; }
         try {
             if (errEl) errEl.textContent = t('註冊中...');
-            await this.auth.register(user, pass, email);
+            await this.auth.register(user, pass, email, invite);
+            if (this._landingMode === 'auth') {
+                // v5.68.0 首頁註冊:清掉本機其他帳號殘留,標記新城鎮名,重載走正規登入流程(會顯示教學)
+                this._getTownList().forEach(_tw => { localStorage.removeItem('rimtown_town_' + _tw.id); localStorage.removeItem('rimtown_town_' + _tw.id + '_archives'); });
+                ['rimtown_town_list', 'rimtown_last_town', 'rimtown_achievements', 'rimtown_raid_count', 'rimtown_tutorial_done'].forEach(k => localStorage.removeItem(k));
+                localStorage.setItem('rimtown_pending_town_name', `${user}${t('的邊境鎮')}`);
+                try { sessionStorage.setItem('rimtown_enter_now', '1'); } catch (e) {}
+                location.reload(); return;
+            }
             this.guestMode = false;
             this._hideGuestBanner();
             this._closeAuthModal();
@@ -1514,6 +1554,179 @@ class RimTownApp {
             console.error('[RimTown] Cloud sync error:', e);
             this.world.logMessage('system', t('雲端同步失敗。'));
         }
+    }
+
+    // ============================================================
+    // v5.68.0 首頁(Landing):遊戲介紹 + 更新紀錄 + 路線圖;一律要登入才能進遊戲
+    // 未登入:只顯示註冊/登入;已登入:顯示「繼續遊戲」(世界在底下載好、暫停等你按)
+    // ============================================================
+    _renderLanding() {
+        const el = document.getElementById('landing');
+        if (!el) return;
+        const esc = s => this._escapeHtml ? this._escapeHtml(String(s)) : String(s);
+        const ver = typeof RIMTOWN_APP_VERSION !== 'undefined' ? RIMTOWN_APP_VERSION : '';
+        const loggedIn = !!this.auth.loggedIn;
+        const cta = loggedIn
+            ? `<button class="landing-btn primary" id="landing-continue" disabled>▶ ${t('載入中…')}</button>
+               <button class="landing-btn secondary" id="landing-logout">${t('登出')}</button>`
+            : `<button class="landing-btn primary" id="landing-register">✨ ${t('註冊')}</button>
+               <button class="landing-btn secondary" id="landing-login">🔑 ${t('登入')}</button>`;
+        const features = [
+            ['🧠', t('會記得你的村民'), t('二十多位村民各有性格、記憶與人際關係。你說過的話、送過的禮，他們都記得，也會拿去跟別人八卦。')],
+            ['💬', t('真的在聊天'), t('對話由內建 AI 生成，不用填任何金鑰。安慰、打聽、說服、調解、示好、威脅，每一句都會改變關係。')],
+            ['🐎', t('雙城往返'), t('邊境鎮之外還有漁村海風鎮。搭馬車過去作客，村民也會跨鎮互訪，把另一座鎮的故事帶回來。')],
+            ['📖', t('任務與多重結局'), t('五章主線、村民個人任務、每日目標、劇情名場面。你可以參選鎮長，也可以只當個看戲的旅人。')],
+        ];
+        const roadmap = [
+            [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）'), t('海風鎮專屬任務鏈（漁村主線）')]],
+            [t('規劃中'), '#fbbf24', [t('第三座城鎮'), t('村民自訂外觀'), t('跨鎮貿易與商隊')]],
+            [t('構想'), '#60a5fa', [t('玩家之間互訪城鎮'), t('手機 App 版')]],
+        ];
+        const log = (typeof RIMTOWN_CHANGELOG !== 'undefined' && Array.isArray(RIMTOWN_CHANGELOG)) ? RIMTOWN_CHANGELOG : [];
+        const logHtml = log.map((e, i) => `<div class="landing-log-item${i >= 5 ? ' extra' : ''}">
+                <div class="landing-log-head"><span>v${esc(e.version)}</span><time>${esc(e.date || '')}</time></div>
+                <ul>${(e.changes || []).map(c => `<li>${esc(c)}</li>`).join('')}</ul></div>`).join('');
+        el.innerHTML = `<div class="landing-inner">
+            <header class="landing-hero">
+                <div class="landing-pixel-bg" aria-hidden="true"></div>
+                <div class="landing-hero-content">
+                    <div class="landing-logo">🏘️</div>
+                    <h1>${t('邊境鎮')}<span>RimTown</span></h1>
+                    <p class="landing-tagline">${t('一座由 AI 村民自己過日子的小鎮。你是剛到的旅人。')}</p>
+                    <p class="landing-sub">${t('村民有記憶、有個性、有人際關係；他們會工作、戀愛、吵架、選鎮長。你可以聊天、送禮、耳語、蓋房子、開產業，甚至參選。')}</p>
+                    <div class="landing-cta">${cta}</div>
+                    <div class="landing-version">v${esc(ver)} · ${t('免安裝，手機也能玩')}${loggedIn ? ` · ${esc(this.auth.username)}` : ''}</div>
+                </div>
+            </header>
+            <section class="landing-section"><h2>${t('這是什麼遊戲')}</h2>
+                <div class="landing-cards">${features.map(f => `<div class="landing-card"><div class="ic">${f[0]}</div><h3>${f[1]}</h3><p>${f[2]}</p></div>`).join('')}</div>
+            </section>
+            <section class="landing-section"><h2>${t('更新紀錄')}</h2>
+                <div class="landing-log" id="landing-log">${logHtml || `<div class="landing-log-item">${t('尚無紀錄')}</div>`}</div>
+                ${log.length > 5 ? `<button class="landing-more" id="landing-log-more">${t('顯示全部')} (${log.length})</button>` : ''}
+            </section>
+            <section class="landing-section"><h2>${t('即將實現')}</h2>
+                <div class="landing-roadmap">${roadmap.map(r => `<div class="landing-roadmap-col"><h3><span class="landing-tag" style="background:${r[1]};color:#111">${r[0]}</span></h3><ul>${r[2].map(x => `<li>${x}</li>`).join('')}</ul></div>`).join('')}</div>
+            </section>
+            <footer class="landing-footer">${t('邊境鎮 RimTown')} · v${esc(ver)}<br>${t('存檔自動同步雲端，換裝置登入即可繼續。')}</footer>
+        </div>`;
+        el.querySelector('#landing-register')?.addEventListener('click', () => this._openAuth('register'));
+        el.querySelector('#landing-login')?.addEventListener('click', () => this._openAuth('login'));
+        el.querySelector('#landing-continue')?.addEventListener('click', () => this._enterGame());
+        el.querySelector('#landing-logout')?.addEventListener('click', () => this._doLogout());
+        el.querySelector('#landing-log-more')?.addEventListener('click', (ev) => {
+            const box = el.querySelector('#landing-log'); if (!box) return;
+            const expanded = box.classList.toggle('expanded');
+            ev.currentTarget.textContent = expanded ? t('只看最近 5 版') : `${t('顯示全部')} (${log.length})`;
+        });
+        this._landingUpdateContinue();
+    }
+    _showLanding() {
+        const el = document.getElementById('landing');
+        if (!el) return;
+        el.classList.remove('hidden', 'fade-out');
+        document.body.classList.add('landing-open');
+        try { window.scrollTo(0, 0); } catch (e) {}
+    }
+    _hideLanding() {
+        const el = document.getElementById('landing');
+        if (!el) return;
+        el.classList.add('fade-out');
+        document.body.classList.remove('landing-open');
+        setTimeout(() => el.classList.add('hidden'), 420);
+        this._landingActive = false;
+    }
+    // 已登入:世界載好後把「繼續遊戲」按鈕打開,附上城鎮與日期
+    _landingUpdateContinue() {
+        const btn = document.getElementById('landing-continue');
+        if (!btn) return;
+        if (!this._initReady) { btn.disabled = true; btn.innerHTML = `▶ ${t('載入中…')}`; return; }
+        const meta = this._getTownList().find(tw => tw.id === this.currentTownId);
+        const name = (meta && meta.name) || this._getCurrentTownName?.() || t('邊境鎮');
+        const c = this.world?.clock;
+        const when = c ? `${t('第')}${c.year}${t('年')} ${c.season} ${t('第')}${c.day}${t('天')}` : '';
+        const esc = s => this._escapeHtml ? this._escapeHtml(String(s)) : String(s);
+        btn.disabled = false;
+        btn.innerHTML = `▶ ${t('繼續遊戲')}<span class="landing-continue-sub">${esc(name)}${when ? ' · ' + esc(when) : ''}</span>`;
+    }
+    async _enterGame() {
+        const btn = document.getElementById('landing-continue');
+        if (!this._initReady) { if (btn) { btn.disabled = true; btn.innerHTML = `▶ ${t('載入中…')}`; } return; }
+        this._hideLanding();
+        if (this._pausedForLanding) { this._pausedForLanding = false; if (this.world) this.world.paused = false; }
+        try { this.render(); } catch (e) {}
+        try { this.setupTutorial(); } catch (e) {}
+        if (this._afterLanding) { const f = this._afterLanding; this._afterLanding = null; try { f(); } catch (e) {} }
+        // 手機:進遊戲後重算地圖尺寸
+        setTimeout(() => { if (this.tileMap) this.tileMap._needsResize = true; try { window.dispatchEvent(new Event('resize')); } catch (e) {} }, 100);
+    }
+    // 開啟帳號視窗到指定分頁(首頁用):不顯示訪客試玩
+    _openAuth(tab) {
+        const modal = document.getElementById('auth-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        const closeBtn = modal.querySelector('.auth-close-btn');
+        if (closeBtn) closeBtn.style.display = '';
+        document.getElementById('auth-guest-section')?.classList.add('hidden');
+        document.querySelectorAll('.auth-tab').forEach(_tw => _tw.classList.toggle('active', _tw.dataset.authTab === tab));
+        document.getElementById('auth-login-form')?.classList.toggle('hidden', tab !== 'login');
+        document.getElementById('auth-register-form')?.classList.toggle('hidden', tab !== 'register');
+        document.getElementById('auth-reset-form')?.classList.add('hidden');
+        setTimeout(() => document.getElementById(tab === 'login' ? 'auth-login-user' : 'auth-reg-user')?.focus(), 50);
+    }
+
+    // ============================================================
+    // v5.68.0 管理員:推薦碼管理(註冊必填,由管理員建立/停用/刪除)
+    // ============================================================
+    async _adminLoadInvites() {
+        const box = document.getElementById('admin-invite-list');
+        if (box) box.innerHTML = `<span style="color:var(--text-muted)">${t('載入中…')}</span>`;
+        try {
+            const invites = await this.auth.adminInvites();
+            const esc = s => this._escapeHtml ? this._escapeHtml(String(s)) : String(s);
+            const rows = invites.map(v => {
+                const code = esc(v.code);
+                const used = `${v.uses || 0}/${v.maxUses > 0 ? v.maxUses : '∞'}`;
+                const exhausted = v.maxUses > 0 && (v.uses || 0) >= v.maxUses;
+                const status = v.disabled ? `<span style="color:#fb923c">${t('已停用')}</span>` : exhausted ? `<span style="color:#f87171">${t('已用完')}</span>` : `<span style="color:#34d399">${t('可用')}</span>`;
+                const last = (v.usedBy || []).slice(-3).map(u => esc(u.u)).join(', ');
+                return `<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border)">
+                    <div style="flex:1;min-width:0"><b style="font-family:monospace;letter-spacing:1px">${code}</b> ${status}
+                        <div style="color:var(--text-muted);font-size:0.68rem">${t('已用')} ${used}${v.note ? ' · ' + esc(v.note) : ''}${last ? ' · ' + t('最近：') + last : ''}</div></div>
+                    <div style="flex-shrink:0;white-space:nowrap">
+                        <button class="trade-btn" data-action="admin-invite-toggle" data-val="${code}" style="padding:3px 8px;font-size:0.7rem">${v.disabled ? t('啟用') : t('停用')}</button>
+                        <button class="trade-btn btn-danger" data-action="admin-invite-delete" data-val="${code}" style="padding:3px 8px;font-size:0.7rem">🗑️</button>
+                    </div></div>`;
+            });
+            this._adminInvitesHtml = `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+                    <input id="admin-invite-code" placeholder="${t('自訂代碼（留空自動產生）')}" maxlength="24" style="flex:1;min-width:140px;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem;text-transform:uppercase">
+                    <input id="admin-invite-max" type="number" min="0" max="9999" value="10" title="${t('可用次數，0＝無上限')}" style="width:70px;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
+                    <button class="trade-btn btn-accent" data-action="admin-invite-create" style="padding:6px 10px">➕ ${t('建立推薦碼')}</button>
+                </div>
+                <div style="color:var(--text-muted);font-size:0.68rem;margin-bottom:6px">${t('次數欄＝這組代碼可以註冊幾個帳號，0 代表無上限。註冊時必須輸入有效的推薦碼。')}</div>
+                ${rows.length ? rows.join('') : `<span style="color:var(--text-muted)">${t('還沒有推薦碼，先建立一組給朋友吧。')}</span>`}`;
+            if (box) box.innerHTML = this._adminInvitesHtml;
+        } catch (e) {
+            if (box) box.innerHTML = `<span style="color:#f87171">${t('載入失敗：')}${this._escapeHtml ? this._escapeHtml(e.message || '') : ''}</span>`;
+        }
+    }
+    async _adminInviteCreate() {
+        const code = document.getElementById('admin-invite-code')?.value?.trim() || '';
+        const max = parseInt(document.getElementById('admin-invite-max')?.value, 10);
+        try {
+            const r = await this.auth.adminInvite('invite_create', { code, max_uses: Number.isFinite(max) ? max : 10 });
+            this._gameAlert(`${t('推薦碼已建立：')}${r.code}`, '🎟️');
+            await this._adminLoadInvites();
+        } catch (e) { this._gameAlert(t('建立失敗：') + (e.message || ''), '❌'); }
+    }
+    async _adminInviteToggle(code) {
+        try { await this.auth.adminInvite('invite_toggle', { code }); await this._adminLoadInvites(); }
+        catch (e) { this._gameAlert(t('操作失敗：') + (e.message || ''), '❌'); }
+    }
+    async _adminInviteDelete(code) {
+        if (!await this._gameConfirm(`${t('確定刪除推薦碼')} ${code}？`, '🗑️')) return;
+        try { await this.auth.adminInvite('invite_delete', { code }); await this._adminLoadInvites(); }
+        catch (e) { this._gameAlert(t('操作失敗：') + (e.message || ''), '❌'); }
     }
 
     // v5.67.4 存檔清理提示(loadSave 清掉 AI 助理漏出的錯誤回覆後,提示一次並存回)
@@ -2531,6 +2744,7 @@ class RimTownApp {
     async _doLogout() {
         try {
             await this.auth.logout();
+            if (this.auth._serverless) { location.reload(); return; } // v5.68.0 回到首頁
             this._updateAccountButton();
             this.world.logMessage('system', t('已登出。'));
         } catch(e) { console.error(e); }
@@ -4098,6 +4312,10 @@ class RimTownApp {
                 case 'settings-bgm-mute': { if (this.bgm) { this.bgm.toggleMute(); this.renderSidebar(); } break; }
                 // v5.63.0 管理員操作
                 case 'admin-load-users': this._adminLoadUsers(); break;
+                case 'admin-load-invites': this._adminLoadInvites(); break;
+                case 'admin-invite-create': this._adminInviteCreate(); break;
+                case 'admin-invite-toggle': this._adminInviteToggle(val); break;
+                case 'admin-invite-delete': this._adminInviteDelete(val); break;
                 case 'admin-migrate': this._adminMigrate(); break;
                 case 'admin-ban-user': this._adminDo('ban', val, t('確定要封鎖')); break;
                 case 'admin-unban-user': this._adminDo('unban', val, t('確定要解除封鎖')); break;
@@ -7228,7 +7446,9 @@ class RimTownApp {
             html += `<div class="econ-section" style="border:1px solid rgba(233,69,96,0.5)"><h3>🛡️ ${t('管理員')}</h3>
                 <p style="font-size:0.72rem;color:var(--text-secondary);margin:0 0 6px">${t('封鎖＝該帳號無法登入、無法用 AI 與存檔；刪除＝連同所有雲端存檔一併清除，且名字不能再註冊。')}</p>
                 <button class="trade-btn" data-action="admin-load-users" style="padding:6px 12px">👥 ${t('載入玩家列表')}</button>
+                <button class="trade-btn" data-action="admin-load-invites" style="padding:6px 12px">🎟️ ${t('推薦碼管理')}</button>
                 <div id="admin-user-list" style="margin-top:8px;font-size:0.75rem">${this._adminUsersHtml || ''}</div>
+                <div id="admin-invite-list" style="margin-top:8px;font-size:0.75rem">${this._adminInvitesHtml || ''}</div>
             </div>`;
         }
 

@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.67.6
+ * Version: 5.68.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.67.6');
+define('RIMTOWN_VERSION', '5.68.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.68.0',
+            'date'    => '2026-09-09',
+            'changes' => array(
+                '🏠 遊戲首頁(Landing):打開 rimtown.cc 先看到首頁——遊戲介紹四張卡、更新紀錄(預設最近 5 版,可展開全部,資料直接從版本紀錄產生)、即將實現路線圖(開發中/規劃中/構想)。未登入只有「註冊」「登入」兩顆按鈕,一律要登入才能進遊戲(訪客試玩取消);已登入顯示「繼續遊戲」並附城鎮與日期,世界在底下先載好、暫停等你按',
+                '🎟️ 推薦碼制註冊:註冊必須輸入有效的推薦碼。管理員在設定→管理員→「推薦碼管理」建立(自訂或自動產生 8 碼)、設定可用次數(0＝無上限)、停用/啟用、刪除,並看得到每組已用幾次與最近用的帳號。伺服器端驗證,環境變數 INVITE_REQUIRED=0 可整體關閉',
+                '🔁 登入/註冊後直接進遊戲、登出回首頁;新帳號註冊後建立「<帳號>的邊境鎮」並顯示教學。首頁期間不跑模擬、不彈每日獎勵,按「繼續遊戲」後才結算離線進度',
+            ),
+        ),
         array(
             'version' => '5.67.6',
             'date'    => '2026-09-09',
