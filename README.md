@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.71.0.zip` from Releases
+1. Download `rimtown-v5.72.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -77,6 +77,14 @@ node scripts/gen-changelog.js  # 從 rimtown.php 產生首頁更新紀錄 change
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.72.0 (2026-09-09)
+
+- 🌐 雙語第二波（模擬內容）：補齊 2,334 條英文對照，含地名（邊境鎮 Frontier Town／海風鎮 Seabreeze Harbor 與 100 多個地點）、20＋15 位村民簡介、事件與事件鏈、新聞、慶典、派系、探索、選舉政見、規則式對話模板（陌生人／摯友／情侶／敵對／八卦／工作／心情）、玩家對話回覆、際遇卡、主線／支線／個人故事／每日目標／章節故事、自訂村民與人生總結；LLM 提示詞片段（125 條）刻意保留中文，留給第三波「AI 對話語言」處理
+- 👤 村民英文名：切到 English 後村民以英文名顯示（陳偉 Victor、林美 Mia、王麗 Lily、海伯 Hal、小鷗 Gwen…），隨機卡司「姓＋名」自動拼成 Ethan Carter 這類英文名，新生兒名字也有對照。實作：`I18N.localizeNames()` 在 `t()` 輸出後把句子裡的中文人名換掉，加上 `MutationObserver` 處理未經 `t()` 的動態文字，地圖 canvas 名字另行處理；存檔仍存中文名，切回中文不受影響
+- 🧱 村民／移民／新生兒／隨機背景的資料表改為固定存中文（拿掉建立當下的 `t()`），舊版在英文介面開新局會把英文寫進存檔，價值觀相容度也會對不上；app.js 162 處 `${x.name}` 改為 `${t(x.name)}`，技能名／價值觀／簡介改在顯示時翻譯
+- 🔧 中文介面修正：居民「當前行動」通勤時原本直接露出 commuting，現在顯示「趕著去上工」
+- 🔍 檢查：全部 13 個腳本的 `t()` 字串英文對照只剩 simulation.js 的 125 條 LLM 提示詞（刻意保留）；Playwright 英文模式四個分頁＋居民詳情 0 中文，中文模式 0 英文外漏
 
 ### v5.71.0 (2026-09-09)
 

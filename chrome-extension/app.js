@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.71.0
-const RIMTOWN_APP_VERSION = '5.71.0';
+// RimTown - Frontend App (WordPress Plugin) v5.72.0
+const RIMTOWN_APP_VERSION = '5.72.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -790,7 +790,7 @@ class RimTownApp {
             this.bgm?.sfx?.('coin');
             this._showCenterNotification({
                 icon: curCh.icon,
-                title: `${t('第')}${curCh.n}${t('章:')}${curCh.name}`,
+                title: `${t('第')}${curCh.n}${t('章:')}${t(curCh.name)}`,
                 name: newly.length ? newly.map(d => `${d.icon} ${d.label}`).join('、') : '',
                 desc: curCh.desc,
                 autoDismiss: 0,
@@ -810,7 +810,7 @@ class RimTownApp {
         const def = this._unlockDefs().find(d => d.key === key);
         if (!def) return;
         const ch = this._chapterDefs().find(c => c.need === def.need);
-        this._gameAlert(`${def.icon}「${def.label}」${t('會在')}${ch ? `${t('第')}${ch.n}${t('章「')}${ch.name}${t('」')}` : ''}${t('開啟。先專心和村民相處吧——關係好了,小鎮自然會成長。')}`, '🔒');
+        this._gameAlert(`${def.icon}「${def.label}」${t('會在')}${ch ? `${t('第')}${ch.n}${t('章「')}${t(ch.name)}${t('」')}` : ''}${t('開啟。先專心和村民相處吧——關係好了,小鎮自然會成長。')}`, '🔒');
     }
 
     // =====================================================
@@ -848,7 +848,7 @@ class RimTownApp {
             document.querySelector('.map-panel')?.appendChild(hint);
             hint.addEventListener('click', () => { this._exitDecorMode(); this._exitSiteMode(); });
         }
-        hint.textContent = `${def.icon} ${t('點地圖空地擺放')}${def.name}${t('|點裝飾移除|點這裡結束')}`;
+        hint.textContent = `${def.icon} ${t('點地圖空地擺放')}${t(def.name)}${t('|點裝飾移除|點這裡結束')}`;
         hint.classList.remove('hidden');
         // 掛地圖 raw tap
         this.tileMap.onTapRaw = (mx, my) => this._decorTap(mx, my);
@@ -896,11 +896,11 @@ class RimTownApp {
             return true;
         }
         for (const [k, v] of Object.entries(def.cost)) {
-            this.world.stockpile.consume(k, v, this.world.tickCount, `${t('擺放')}${def.name}`);
+            this.world.stockpile.consume(k, v, this.world.tickCount, `${t('擺放')}${t(def.name)}`);
         }
         decos.push({ type: def.type, x: tx, y: ty });
         this.tileMap.decorations = decos;
-        this.world.logMessage('building', `${def.icon} ${t('你在小鎮擺放了')}${def.name}(${t('美觀')}+${def.beauty})`);
+        this.world.logMessage('building', `${def.icon} ${t('你在小鎮擺放了')}${t(def.name)}(${t('美觀')}+${def.beauty})`);
         this.bgm?.sfx?.('coin');
         this.world.checkCombos?.(); // v4.9.0 擺放後偵測相鄰組合
         return true;
@@ -923,7 +923,7 @@ class RimTownApp {
             document.querySelector('.map-panel')?.appendChild(hint);
             hint.addEventListener('click', () => { this._exitDecorMode(); this._exitSiteMode(); });
         }
-        hint.textContent = `🏗️ ${t('點發光的綠色格子選擇')}【${tmpl.name}】${t('的位置(會自動對齊格線)|點這裡取消')}`;
+        hint.textContent = `🏗️ ${t('點發光的綠色格子選擇')}【${t(tmpl.name)}】${t('的位置(會自動對齊格線)|點這裡取消')}`;
         hint.classList.remove('hidden');
         this.tileMap.onTapRaw = (mx, my) => this._siteTap(mx, my);
         // v5.60.0 選址引導:可蓋格位發光+滑鼠佔地預覽,錨點吸附 2 格網格蓋得整齊
@@ -988,7 +988,7 @@ class RimTownApp {
             return true;
         }
         this.bgm?.sfx?.('coin');
-        this._gameAlert(`🚧 ${p.name}${t('動工了!工匠們會每天到工地施工')}`, '🏗️');
+        this._gameAlert(`🚧 ${t(p.name)}${t('動工了!工匠們會每天到工地施工')}`, '🏗️');
         this._exitSiteMode();
         this.state = this.world.getState();
         this.renderSidebar();
@@ -1031,7 +1031,7 @@ class RimTownApp {
         if (!npc) return;
         const dayKey = `${this.world.clock.year}-${this.world.clock.season}-${this.world.clock.day}`;
         if (npc._lastGiftDay === dayKey) {
-            this._gameAlert(`${npc.name}${t('今天已經收過你的禮物了,明天再送吧!')}`, '🎁');
+            this._gameAlert(`${t(npc.name)}${t('今天已經收過你的禮物了,明天再送吧!')}`, '🎁');
             return;
         }
         let el = document.getElementById('gift-picker');
@@ -1049,10 +1049,10 @@ class RimTownApp {
             const fav = pref === g.key ? ` <span style="color:#ffd700">★${t('他的最愛')}</span>` : '';
             return `<button data-action="give-gift" data-val="${g.key}" ${ok ? '' : 'disabled style="opacity:0.4"'}
                 style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:9px 12px;margin-bottom:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.85rem">
-                <span>${g.icon} ${g.name}${fav}</span><span style="color:var(--text-secondary);font-size:0.75rem">${t('花費')} ${g.cost}(${t('庫存')} ${have})</span></button>`;
+                <span>${g.icon} ${t(g.name)}${fav}</span><span style="color:var(--text-secondary);font-size:0.75rem">${t('花費')} ${g.cost}(${t('庫存')} ${have})</span></button>`;
         }).join('');
         el.innerHTML = `<div class="modal-content" style="max-width:320px">
-            <h2>🎁 ${t('送禮物給')} ${npc.name}</h2>
+            <h2>🎁 ${t('送禮物給')} ${t(npc.name)}</h2>
             <div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${t('投其所好效果加倍!每人每天限送一次。')}</div>
             ${rows}
             <div class="modal-buttons"><button onclick="document.getElementById('gift-picker').classList.add('hidden')">${t('取消')}</button></div>
@@ -1067,7 +1067,7 @@ class RimTownApp {
         const sp = this.world.stockpile;
         if ((sp.get(g.key) || 0) < g.cost) return;
         document.getElementById('gift-picker')?.classList.add('hidden');
-        sp.consume(g.key, g.cost, this.world.tickCount, `${t('送禮給')}${npc.name}`);
+        sp.consume(g.key, g.cost, this.world.tickCount, `${t('送禮給')}${t(npc.name)}`);
         const dayKey = `${this.world.clock.year}-${this.world.clock.season}-${this.world.clock.day}`;
         npc._lastGiftDay = dayKey;
         const isFav = this._giftPref(npc.job?.key) === g.key;
@@ -1078,17 +1078,17 @@ class RimTownApp {
         npc.addThought?.(isFav ? 'fav_gift' : 'gift_received', this.world, 'player', this.world.agents['player']?.name || t('旅人')); // v5.15.0 收禮記憶
         this._firstDayMark?.('mark'); // v5.18.0 第一天:留下你的選擇
         npc.memory.add(this.world.tickCount, this.world.clock.timeStr, 'gift',
-            `${t('收到')}${this.world.agents['player']?.name || t('旅人')}${t('送的')}${g.name}${isFav ? t(',是我的最愛!') : ''}`, isFav ? 7 : 5, ['player']);
+            `${t('收到')}${this.world.agents['player']?.name || t('旅人')}${t('送的')}${t(g.name)}${isFav ? t(',是我的最愛!') : ''}`, isFav ? 7 : 5, ['player']);
         const lines = isFav
             ? [t('這是我的最愛!你怎麼知道的?太感謝了!'), t('哇!我一直想要這個!你真懂我!')]
             : [t('謝謝你!我很喜歡。'), t('你真貼心,謝謝!')];
         const reply = lines[Math.floor(Math.random() * lines.length)];
         const player = this.world.agents['player'];
         if (player) {
-            player.chatHistory.push({ speaker: player.name, target: npc.name, text: `🎁(${t('送出')}${g.name})`, time: this.world.clock.timeStr });
+            player.chatHistory.push({ speaker: player.name, target: npc.name, text: `🎁(${t('送出')}${t(g.name)})`, time: this.world.clock.timeStr });
             player.chatHistory.push({ speaker: npc.name, target: player.name, text: reply, time: this.world.clock.timeStr });
         }
-        this.world.logMessage('relationship', `🎁 ${t('你送給')}${npc.name}${g.name}${isFav ? t(',對方超喜歡!') : ''}(${t('好感')}+${gain})`, npc.name);
+        this.world.logMessage('relationship', `🎁 ${t('你送給')}${t(npc.name)}${t(g.name)}${isFav ? t(',對方超喜歡!') : ''}(${t('好感')}+${gain})`, npc.name);
         this.world.recordPlayerAction?.('gift', g.name, npc, null); // v5.45.0 蝴蝶效應
         this.bgm?.sfx?.('coin');
         // v5.6.0 浮動特效:好感愛心 + 愛心爆裂
@@ -2059,7 +2059,7 @@ class RimTownApp {
 
         // v5.34.1 開局第一輪判定的成就靜默入袋(新地圖開場就達標的一批不洗版),之後的才彈通知
         if (this._achFirstCheckDone) this._showAchievementToast(def);
-        this.world.logMessage('system', `${t('成就解鎖：')}${def.icon} ${def.name}`);
+        this.world.logMessage('system', `${t('成就解鎖：')}${def.icon} ${t(def.name)}`);
     }
 
     _showAchievementToast(def) {
@@ -2077,7 +2077,7 @@ class RimTownApp {
             while (host.childElementCount >= 3) host.firstElementChild.remove();
             const el = document.createElement('div');
             el.style.cssText = 'display:flex;align-items:center;gap:10px;background:rgba(22,22,32,0.95);border:1px solid rgba(245,197,66,0.45);border-radius:10px;padding:10px 14px;max-width:320px;box-shadow:0 4px 16px rgba(0,0,0,0.4);opacity:0;transform:translateY(8px);transition:opacity 0.3s,transform 0.3s;pointer-events:auto;cursor:pointer';
-            el.innerHTML = `<span style="font-size:1.6rem">${def.icon}</span><span><span style="display:block;color:#f5c542;font-size:0.72rem;font-weight:bold">🏆 ${t('成就解鎖！')}</span><span style="display:block;color:#fff;font-size:0.85rem;font-weight:bold">${def.name}</span><span style="display:block;color:rgba(255,255,255,0.65);font-size:0.68rem">${def.desc}</span></span>`;
+            el.innerHTML = `<span style="font-size:1.6rem">${def.icon}</span><span><span style="display:block;color:#f5c542;font-size:0.72rem;font-weight:bold">🏆 ${t('成就解鎖！')}</span><span style="display:block;color:#fff;font-size:0.85rem;font-weight:bold">${t(def.name)}</span><span style="display:block;color:rgba(255,255,255,0.65);font-size:0.68rem">${def.desc}</span></span>`;
             host.appendChild(el);
             requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
             const remove = () => { el.style.opacity = '0'; el.style.transform = 'translateY(8px)'; setTimeout(() => el.remove(), 350); };
@@ -2265,8 +2265,8 @@ class RimTownApp {
             if (rom) relNpc.modifyRomantic(rom);
             relNpc.addSharedMemory(`${h.evName}${t('：')}${reply}`);
             player.chatHistory.push({ speaker: player.name, target: npc.name, text: reply, time: world.clock.timeStr });
-            npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${player.name}${t('回應了我的真心話：')}${reply}`, 8, [player.name]);
-            world.logMessage('player_chat', `${player.name} → ${npc.name}: ${reply}`, player.name, npc.name);
+            npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t(player.name)}${t('回應了我的真心話：')}${reply}`, 8, [player.name]);
+            world.logMessage('player_chat', `${t(player.name)} → ${t(npc.name)}: ${reply}`, player.name, npc.name);
             this.bgm?.sfx?.('send');
             this.state = world.getState();
             this.renderSidebar();
@@ -3114,7 +3114,7 @@ class RimTownApp {
         candidate.votes = (candidate.votes || 0) + 1;
         election._playerVoted = true;
         this._unlockAchievement('voted');
-        this.world.logMessage('player_action', `${t('你投票給了 ')}${candidate.name}。`, 'player');
+        this.world.logMessage('player_action', `${t('你投票給了 ')}${t(candidate.name)}。`, 'player');
         this.state = this.world.getState();
         this.renderSidebar();
     }
@@ -3141,8 +3141,8 @@ class RimTownApp {
                 npcRel.modifyAffinity(1);
             }
             this._flirtCount = (this._flirtCount || 0) + 1;
-            this.world.logMessage('player_action', `${t('你對')}${npc.name}${t('調情。')}`, player.name, npc.name);
-            player.memory?.add?.(this.world.tickCount, this.world.clock.timeStr, 'social', `${t('對')}${npc.name}${t('調情')}`, 3, [npc.name]);
+            this.world.logMessage('player_action', `${t('你對')}${t(npc.name)}${t('調情。')}`, player.name, npc.name);
+            player.memory?.add?.(this.world.tickCount, this.world.clock.timeStr, 'social', `${t('對')}${t(npc.name)}${t('調情')}`, 3, [npc.name]);
         }
         this.state = this.world.getState();
         this.renderSidebar();
@@ -3166,16 +3166,16 @@ class RimTownApp {
             if (rel.status === 'dating') {
                 rel.status = 'married';
                 if (npcRel) npcRel.status = 'married';
-                this.world.logMessage('event', `${player.name}${t('與')}${npc.name}${t('結婚了！')}`, player.name, npc.name);
+                this.world.logMessage('event', `${t(player.name)}${t('與')}${t(npc.name)}${t('結婚了！')}`, player.name, npc.name);
                 this._unlockAchievement('first_marriage');
             } else {
                 rel.status = 'dating';
                 if (npcRel) npcRel.status = 'dating';
-                this.world.logMessage('event', `${player.name}${t('與')}${npc.name}${t('開始交往！')}`, player.name, npc.name);
+                this.world.logMessage('event', `${t(player.name)}${t('與')}${t(npc.name)}${t('開始交往！')}`, player.name, npc.name);
                 this._unlockAchievement('first_dating');
             }
         } else {
-            this.world.logMessage('event', `${npc.name}${t('拒絕了你的告白。')}`, player.name, npc.name);
+            this.world.logMessage('event', `${t(npc.name)}${t('拒絕了你的告白。')}`, player.name, npc.name);
             this._unlockAchievement('rejected');
         }
         this.state = this.world.getState();
@@ -3461,7 +3461,7 @@ class RimTownApp {
                     try {
                         const ag = w.spawnVisitor(e);
                         if (ag) {
-                            this._showCornerNotice({ icon: '🚌', title: t('遠客來訪'), name: '', desc: `${e.agentData?.name}${t('（')}${e.fromTownName}${t('）來作客了，去打個招呼吧')}` });
+                            this._showCornerNotice({ icon: '🚌', title: t('遠客來訪'), name: '', desc: `${t(e.agentData?.name)}${t('（')}${e.fromTownName}${t('）來作客了，去打個招呼吧')}` });
                             // v5.59.0 TC-04:聊天分頁開著時清單立即刷新,訪客馬上可私訊
                             this.state = w.getState();
                             if (this.activeTab === 'chat') this.renderSidebar();
@@ -3480,7 +3480,7 @@ class RimTownApp {
                     const ag = w.agents[e.origId];
                     if (!ag) { keep.push(e); return; }
                     (e.notes || []).slice(0, 3).forEach(nt => ag.memory?.add?.(w.tickCount, w.clock.timeStr, 'travel', `${t('在')}${e.visitedTownName}${t('時：')}${nt}`, 6, []));
-                    w.logMessage('arrival', `${ag.name}${t('從')}${e.visitedTownName}${t('回來了，帶回一肚子見聞。')}`);
+                    w.logMessage('arrival', `${t(ag.name)}${t('從')}${e.visitedTownName}${t('回來了，帶回一肚子見聞。')}`);
                 });
                 if (keep.length) localStorage.setItem(rk, JSON.stringify(keep)); else localStorage.removeItem(rk);
             }
@@ -3656,7 +3656,7 @@ class RimTownApp {
                 const date = new Date(_tw.savedAt).toLocaleString();
                 html += `<div class="town-item ${isActive?'active':''}">
                     <div class="town-info" data-action="switch-town" data-val="${_tw.id}">
-                        <div class="town-name">${_tw.name} ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
+                        <div class="town-name">${t(_tw.name)} ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
                         <div class="town-meta">${_tw.season}${t(' 第')}${_tw.year}${t('年 第')}${_tw.day}${t('天 | 人口')}${_tw.population} | ${date}</div>
                     </div>
                     <div class="town-actions">
@@ -3706,7 +3706,7 @@ class RimTownApp {
                 const isActive = _tw.id === this.currentTownId;
                 html += `<div class="town-item ${isActive?'active':''}">
                     <div class="town-info" data-action="switch-town" data-val="${_tw.id}">
-                        <div class="town-name">${_tw.name} <span style="font-size:0.65rem;color:var(--text-muted)">📱 ${t('本機')}</span> ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
+                        <div class="town-name">${t(_tw.name)} <span style="font-size:0.65rem;color:var(--text-muted)">📱 ${t('本機')}</span> ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
                         <div class="town-meta">${_tw.season||''}${t(' 第')}${_tw.year||1}${t('年 第')}${_tw.day||1}${t('天 | 人口')}${_tw.population||0}</div>
                     </div>
                 </div>`;
@@ -4001,7 +4001,7 @@ class RimTownApp {
                     this._showCenterNotification({
                         icon: c.icon,
                         title: `✨ ${t('發現相鄰組合!')}`,
-                        name: `${c.icon} ${c.name}`,
+                        name: `${c.icon} ${t(c.name)}`,
                         desc: `${c.desc} — ${t('小鎮美觀與繁榮加成,全鎮心情大好!把相配的東西放在一起,還有更多組合等你發現')}`,
                         autoDismiss: 7000,
                     });
@@ -5394,8 +5394,8 @@ class RimTownApp {
         const weatherEl = document.getElementById('weather-display');
         if (weatherEl && this.state.weather) {
             const w = this.state.weather;
-            weatherEl.textContent = `${w.icon} ${w.name} ${w.temperature}°`;
-            weatherEl.title = w.desc + (w.activeDisaster ? ` | 🚨 ${w.activeDisaster.name}` : '');
+            weatherEl.textContent = `${w.icon} ${t(w.name)} ${w.temperature}°`;
+            weatherEl.title = w.desc + (w.activeDisaster ? ` | 🚨 ${t(w.activeDisaster.name)}` : '');
             weatherEl.style.color = w.isExtreme ? 'var(--negative)' : 'var(--text-secondary)';
         }
 
@@ -5730,7 +5730,7 @@ class RimTownApp {
         const npc = this.state?.agents?.[near.agentId];
         if (!npc) { el.classList.add('hidden'); return; }
         const lv = this._heartsFor(near.agentId);
-        el.innerHTML = `💬 ${t('與')} <b>${npc.name}</b> ${t('交談')} <span class="ip-hearts">❤${lv}</span><span class="ip-key">E</span>`;
+        el.innerHTML = `💬 ${t('與')} <b>${t(npc.name)}</b> ${t('交談')} <span class="ip-hearts">❤${lv}</span><span class="ip-key">E</span>`;
         el.classList.remove('hidden');
     }
 
@@ -5814,7 +5814,7 @@ class RimTownApp {
         if (goal) {
             const pips = Array.from({ length: goal.totalStages }, (_, i) => i < goal.stage || goal.done ? '●' : (i === goal.stage ? '◉' : '○')).join('');
             goalHtml = `<div class="nqc-rel" style="border-top:1px solid var(--border);margin-top:4px;padding-top:5px">
-                ${goal.icon} <b>${goal.name}</b> <span style="color:var(--text-secondary);font-size:0.72rem">${goal.done ? '🏆 ' + t('已實現') : goal.stageName}</span>
+                ${goal.icon} <b>${t(goal.name)}</b> <span style="color:var(--text-secondary);font-size:0.72rem">${goal.done ? '🏆 ' + t('已實現') : goal.stageName}</span>
                 <span style="letter-spacing:2px;color:var(--accent);font-size:0.7rem">${pips}</span></div>`;
         }
         // v5.15.0 心情來源:目前生效的記憶想法(RimWorld thoughts)
@@ -5872,7 +5872,7 @@ class RimTownApp {
         const nudged = this.world?.lifeGoals?.getGoal?.(agentId)?._nudged;
         card.innerHTML = `
             <button class="nqc-close" data-nqc="close">✕</button>
-            <div class="nqc-name">${a.name} <span class="nqc-job">${a.job?.title || ''}</span></div>
+            <div class="nqc-name">${t(a.name)} <span class="nqc-job">${a.job?.title || ''}</span></div>
             <div class="nqc-hearts" title="${t('對你的好感')}">${hearts} <span class="nqc-lv">${lv}/10</span></div>
             ${intentHtml}
             ${attrHtml}
@@ -5917,11 +5917,11 @@ class RimTownApp {
         const rel = npc.relationships.getOrCreate('player', this.world.agents['player']?.name || t('旅人'));
         rel.modifyAffinity(4);
         const d = this.world.lifeGoals.describe(agentId);
-        this.world.logMessage('milestone', `✨ ${playerTitle(this.world)}${t('為')}${npc.name}${t('的夢想「')}${d?.name || ''}${t('」加了一把勁!')}`, npc.name);
+        this.world.logMessage('milestone', `✨ ${playerTitle(this.world)}${t('為')}${t(npc.name)}${t('的夢想「')}${d?.name || ''}${t('」加了一把勁!')}`, npc.name);
         npc.memory.add(this.world.tickCount, this.world.clock.timeStr, 'social', `${playerTitle(this.world)}${t('支持我的夢想,好感動!')}`, 6, ['player']);
         this.bgm?.sfx?.('coin');
         this.tileMap?.spawnFxOnAgent?.(agentId, '✨', { color: '#6bd5a0', burst: '⭐', burstCount: 6 });
-        this._gameAlert(`✨ ${t('你鼓勵了')}${npc.name}${t('追逐「')}${d?.name || ''}${t('」的夢想!')}`, npc.icon || '✨');
+        this._gameAlert(`✨ ${t('你鼓勵了')}${t(npc.name)}${t('追逐「')}${d?.name || ''}${t('」的夢想!')}`, npc.icon || '✨');
         this.state = this.world.getState();
         this._showNpcCard(agentId);
     }
@@ -6092,7 +6092,7 @@ class RimTownApp {
             ctx.textAlign = 'center';
             const dx = p.x - cx, dy = p.y - cy;
             const len = Math.hypot(dx, dy) || 1;
-            ctx.fillText(a.name || id, p.x + (dx / len) * 16, p.y + (dy / len) * 16 + 3);
+            ctx.fillText(I18N.localizeNames(a.name || id), p.x + (dx / len) * 16, p.y + (dy / len) * 16 + 3);
             ctx.globalAlpha = 1;
         }
         // 點擊:選人進入個人視角/點空白返回
@@ -6210,9 +6210,9 @@ class RimTownApp {
             try { if (this.tileMap?.renderAvatarDataURL) avatarDataUrl = this.tileMap.renderAvatarDataURL(npc.jobKey, npc.gender, npc.name); } catch(e) {}
             const thoughtText = npc.currentThought ? this._escapeHtml(npc.currentThought.length > 18 ? npc.currentThought.slice(0, 18) + '...' : npc.currentThought) : '';
             contactsHtml += `<button class="chat-contact ${isActive ? 'active' : ''}" data-action="start-chat" data-val="${npc.id}">
-                <div class="chat-contact-avatar chat-contact-avatar-pixel" style="background:${npc.avatarColor}">${avatarDataUrl ? `<img src="${avatarDataUrl}" class="avatar-pixel-art" alt="${npc.name}">` : `<span class="avatar-initial" style="color:#fff;font-weight:bold;font-size:1rem;text-shadow:0 1px 2px rgba(0,0,0,0.4)">${npc.name.charAt(0)}</span>`}<span class="mood-indicator mood-${npc.mood}"></span></div>
+                <div class="chat-contact-avatar chat-contact-avatar-pixel" style="background:${npc.avatarColor}">${avatarDataUrl ? `<img src="${avatarDataUrl}" class="avatar-pixel-art" alt="${t(npc.name)}">` : `<span class="avatar-initial" style="color:#fff;font-weight:bold;font-size:1rem;text-shadow:0 1px 2px rgba(0,0,0,0.4)">${npc.name.charAt(0)}</span>`}<span class="mood-indicator mood-${npc.mood}"></span></div>
                 <div class="chat-contact-info">
-                    <div class="chat-contact-name">${npc.name}${npc.hasUnread ? '<span class="chat-unread-dot"></span>' : ''}</div>
+                    <div class="chat-contact-name">${t(npc.name)}${npc.hasUnread ? '<span class="chat-unread-dot"></span>' : ''}</div>
                     <div class="chat-contact-job">${npc.job || t('無業')}</div>
                     ${thoughtText ? `<div class="chat-contact-thought">${thoughtText}</div>` : ''}
                     <div class="chat-contact-preview">${this._escapeHtml(truncated)}</div>
@@ -6342,12 +6342,12 @@ class RimTownApp {
         if (author && !author.isPlayer) {
             const rel = author.relationships.getOrCreate('player', player.name);
             rel.modifyAffinity(2);
-            author.memory.add(this.world.tickCount, this.world.clock.timeStr, 'social', `${player.name}${t('在我的動態下留言:')}${text}`, 4, [player.name]);
+            author.memory.add(this.world.tickCount, this.world.clock.timeStr, 'social', `${t(player.name)}${t('在我的動態下留言:')}${text}`, 4, [player.name]);
             // 作者回覆留言
             setTimeout(() => {
                 const aff = rel.affinity;
                 const pool = aff > 40
-                    ? [t('就知道你懂我 😆'), t('哈哈,改天一起!'), `${t('謝啦')}${player.name}!❤️`]
+                    ? [t('就知道你懂我 😆'), t('哈哈,改天一起!'), `${t('謝啦')}${t(player.name)}!❤️`]
                     : aff < -10 ? [t('喔,是你啊。'), t('嗯。')]
                     : [`${t('哈哈謝謝')}${playerTitle(this.world)}!`, `${playerTitle(this.world)}${t('也看到啦 😳')}`, t('感恩!')];
                 post.comments.push({ speaker: author.name, text: pool[Math.floor(Math.random() * pool.length)] });
@@ -6378,10 +6378,10 @@ class RimTownApp {
             document.getElementById('rimtown-app')?.appendChild(el);
         }
         const rows = npcs.map(([id, a]) => `<button data-action="rumor-about" data-val="${id}"
-            style="display:block;width:100%;text-align:left;padding:8px 12px;margin-bottom:5px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.85rem">${a.name} <span style="font-size:0.7rem;color:var(--text-secondary)">${a.job?.title || t('無業')}</span></button>`).join('');
+            style="display:block;width:100%;text-align:left;padding:8px 12px;margin-bottom:5px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.85rem">${t(a.name)} <span style="font-size:0.7rem;color:var(--text-secondary)">${a.job?.title || t('無業')}</span></button>`).join('');
         el.innerHTML = `<div class="modal-content" style="max-width:320px;max-height:70vh;overflow-y:auto">
             <h2>🗣️ ${t('要爆誰的料?')}</h2>
-            <div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${t('偷偷跟')}${listener.name}${t('說別人的八卦。謠言會在鎮上流傳,小心傳回當事人耳裡...')}</div>
+            <div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${t('偷偷跟')}${t(listener.name)}${t('說別人的八卦。謠言會在鎮上流傳,小心傳回當事人耳裡...')}</div>
             ${rows}
             <div class="modal-buttons"><button onclick="document.getElementById('rumor-picker').classList.add('hidden')">${t('取消')}</button></div>
         </div>`;
@@ -6394,7 +6394,7 @@ class RimTownApp {
         const el = document.getElementById('rumor-picker');
         if (!about || !el) return;
         el.innerHTML = `<div class="modal-content" style="max-width:320px">
-            <h2>🗣️ ${t('關於')} ${about.name}...</h2>
+            <h2>🗣️ ${t('關於')} ${t(about.name)}...</h2>
             <button data-action="rumor-send" data-val="praise" style="display:block;width:100%;padding:10px;margin-bottom:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary)">💐 ${t('誇讚他')} <span style="font-size:0.68rem;color:var(--text-secondary)">${t('傳回本人耳裡好感大增')}</span></button>
             <button data-action="rumor-send" data-val="diss" style="display:block;width:100%;padding:10px;margin-bottom:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary)">🐍 ${t('酸他一下')} <span style="font-size:0.68rem;color:#e88">${t('被發現是你說的就完了')}</span></button>
             <button data-action="rumor-send" data-val="ship" style="display:block;width:100%;padding:10px;margin-bottom:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary)">💘 ${t('亂點鴛鴦')} <span style="font-size:0.68rem;color:var(--text-secondary)">${t('也許會湊成一對?')}</span></button>
@@ -6568,7 +6568,7 @@ class RimTownApp {
         if (this.activeTab === 'chat') { this._renderChatMessages(); this._scrollChatToBottom(); }
         try {
             const res = await this.world.conversationEngine.plantWhisper(player, npc, text, this.world);
-            player.chatHistory.push({ speaker: npc.name, target: player.name, text: `💭 (${npc.name}${t('若有所思,喃喃自語')}) ${res?.thought || text}`, time: this.world.clock.timeStr });
+            player.chatHistory.push({ speaker: npc.name, target: player.name, text: `💭 (${t(npc.name)}${t('若有所思,喃喃自語')}) ${res?.thought || text}`, time: this.world.clock.timeStr });
         } catch (e) { console.error('[RimTown] whisper failed:', e); }
         this.state = this.world.getState();
         if (this.activeTab === 'chat') { this._renderChatMessages(); this._scrollChatToBottom(); }
@@ -6620,11 +6620,11 @@ class RimTownApp {
                 const town = towns[Math.floor(Math.random() * towns.length)];
                 if (!town || (npc.agentId || '').startsWith('visit_')) { fx(t('現在沒辦法邀請這位出遠門'), '#c9a05c'); break; }
                 if ((rel.affinity || 0) < 20) {
-                    fx(`🚌 ${npc.name}${t('婉拒了：「跟你還沒熟到一起出遠門啦。」')}`, '#c9a05c');
+                    fx(`🚌 ${t(npc.name)}${t('婉拒了：「跟你還沒熟到一起出遠門啦。」')}`, '#c9a05c');
                     break;
                 }
                 world.sendVisitorTo(npc, town, 4);
-                fx(`🚌 ${npc.name}${t('答應去')}${town.name}${t('作客幾天，收拾行李出發了！')}`, '#5cc98f');
+                fx(`🚌 ${t(npc.name)}${t('答應去')}${t(town.name)}${t('作客幾天，收拾行李出發了！')}`, '#5cc98f');
                 fx(t('切到那個鎮就能看到他作客的樣子；幾天後他會帶著見聞回來'), '#8fa8c9');
                 world.recordPlayerAction?.('invite-town', '', npc, null);
                 break;
@@ -6634,7 +6634,7 @@ class RimTownApp {
                 npc.moodModifier = (npc.moodModifier || 0) + 4;
                 rel.modifyAffinity(2);
                 npc.addThought?.('nice_chat', world, 'player', player.name);
-                fx(`🤗 ${npc.name}${t('覺得被支持了')}`, '#5cc98f');
+                fx(`🤗 ${t(npc.name)}${t('覺得被支持了')}`, '#5cc98f');
                 fx(`${t('壓力')} ↓ · ${t('好感')} +2`, '#5cc98f');
                 break;
             }
@@ -6646,9 +6646,9 @@ class RimTownApp {
                 rel.modifyAffinity(1);
                 if (pick) {
                     player.chatHistory.push({ speaker: npc.name, target: player.name, text: `(${t('壓低聲音')}) ${pick.content}`, time: world.clock.timeStr });
-                    fx(`👂 ${npc.name}${t('跟你透露了一則八卦')}`, '#d9b3ff');
+                    fx(`👂 ${t(npc.name)}${t('跟你透露了一則八卦')}`, '#d9b3ff');
                 } else {
-                    fx(`👂 ${npc.name}${t('說最近沒什麼新鮮事')}`, '#9aa');
+                    fx(`👂 ${t(npc.name)}${t('說最近沒什麼新鮮事')}`, '#9aa');
                 }
                 break;
             }
@@ -6661,13 +6661,13 @@ class RimTownApp {
                     const res = el.canvassNpc ? el.canvassNpc(world, npc) : { ok: false };
                     if (res.ok) {
                         rel.modifyAffinity(2);
-                        fx(`👑 ${t('你向')}${npc.name}${t('認真說明了自己的政見')}`, '#ffd700');
+                        fx(`👑 ${t('你向')}${t(npc.name)}${t('認真說明了自己的政見')}`, '#ffd700');
                         fx(t('他聽進去了——投票時會記得你'), '#7fc4ff');
                     } else if (res.dup) {
-                        fx(`🗳️ ${npc.name}${t('笑說你已經拉過他的票了')}`, '#9aa');
+                        fx(`🗳️ ${t(npc.name)}${t('笑說你已經拉過他的票了')}`, '#9aa');
                     } else {
                         rel.modifyAffinity(1);
-                        fx(`🗯️ ${npc.name}${t('點頭聽著你說')}`, '#9aa');
+                        fx(`🗯️ ${t(npc.name)}${t('點頭聽著你說')}`, '#9aa');
                     }
                 } else if (active && cands.length) {
                     // 拉票:把 NPC 對「玩家最挺的候選人」的好感往上推(信任越高越有效)
@@ -6680,21 +6680,21 @@ class RimTownApp {
                             const r2 = npc.relationships.getOrCreate(favored.agentId, favored.name);
                             const gain = 6 + Math.round(Math.max(0, trust) / 20);
                             r2.modifyAffinity(gain);
-                            fx(`🗯️ ${npc.name}${t('更傾向支持')}${favored.name}${t('了')}`, '#7fc4ff');
+                            fx(`🗯️ ${t(npc.name)}${t('更傾向支持')}${t(favored.name)}${t('了')}`, '#7fc4ff');
                             fx(`${t('選舉風向被你撥動了一點')}`, '#7fc4ff');
                         } else {
                             rel.modifyAffinity(-3);
-                            fx(`🗯️ ${npc.name}${t('不吃你這套,反而更防著你')}`, '#e07a7a');
+                            fx(`🗯️ ${t(npc.name)}${t('不吃你這套,反而更防著你')}`, '#e07a7a');
                         }
                     } else if (favored && favored.agentId === npc.agentId) {
                         rel.modifyAffinity(2);
-                        fx(`🗯️ ${npc.name}${t('很高興你挺他參選')}`, '#7fc4ff');
+                        fx(`🗯️ ${t(npc.name)}${t('很高興你挺他參選')}`, '#7fc4ff');
                     }
                 } else {
                     // 平時:勸他放下對頭
                     const foe = Object.values(npc.relationships.relationships).filter(r => (r.affinity || 0) < -20).sort((a, b) => a.affinity - b.affinity)[0];
-                    if (foe) { foe.modifyAffinity(5); fx(`🗯️ ${t('你勸')}${npc.name}${t('對')}${foe.targetName}${t('別那麼針對')}`, '#7fc4ff'); fx(`${t('敵意')} ↓`, '#7fc4ff'); }
-                    else { rel.modifyAffinity(1); fx(`🗯️ ${npc.name}${t('點頭聽著你說')}`, '#9aa'); }
+                    if (foe) { foe.modifyAffinity(5); fx(`🗯️ ${t('你勸')}${t(npc.name)}${t('對')}${foe.targetName}${t('別那麼針對')}`, '#7fc4ff'); fx(`${t('敵意')} ↓`, '#7fc4ff'); }
+                    else { rel.modifyAffinity(1); fx(`🗯️ ${t(npc.name)}${t('點頭聽著你說')}`, '#9aa'); }
                 }
                 break;
             }
@@ -6702,7 +6702,7 @@ class RimTownApp {
                 // v5.47.0 BUG-02:優先挑「絕交」對象(和解任務目標),而不是單純好感最低者
                 const foes = Object.values(npc.relationships.relationships).filter(r => (r.affinity || 0) < -20).sort((a, b) => a.affinity - b.affinity);
                 const foe = foes.find(r => r.isFeud) || foes[0];
-                if (!foe) { fx(`🕊️ ${npc.name}${t('最近沒跟誰結怨')}`, '#9aa'); break; }
+                if (!foe) { fx(`🕊️ ${t(npc.name)}${t('最近沒跟誰結怨')}`, '#9aa'); break; }
                 const other = world.agents[foe.targetId];
                 // v5.42.0 和解線:對「絕交」等級的仇怨,調解升級為兩段式任務——
                 // 分別勸過兩邊後,促成「世紀大和解」名場面(大量好感+聲望+成就)
@@ -6711,19 +6711,19 @@ class RimTownApp {
                     const key = [npc.agentId, other.agentId].sort().join('|');
                     const rec = world.mediations[key] = world.mediations[key] || { sides: {} };
                     if (rec.sides[npc.agentId]) {
-                        fx(`🕊️ ${npc.name}${t('嘆了口氣:「你上次說的,我還在想...」')}`, '#9aa');
+                        fx(`🕊️ ${t(npc.name)}${t('嘆了口氣:「你上次說的,我還在想...」')}`, '#9aa');
                         fx(`${t('和解進度')} ${Object.keys(rec.sides).length}/2 — ${t('去勸勸另一邊的')}${foe.targetName}${t('吧')}`, '#7fc4ff');
                         break;
                     }
                     if ((rel.trust || 0) < -10) {
                         rel.modifyAffinity(-2);
-                        fx(`🕊️ ${npc.name}${t('冷冷地說:「這與你無關。」')}`, '#e07a7a');
+                        fx(`🕊️ ${t(npc.name)}${t('冷冷地說:「這與你無關。」')}`, '#e07a7a');
                         fx(`${t('他還不信任你——先提升關係再來調解')}`, '#e07a7a');
                         break;
                     }
                     rec.sides[npc.agentId] = true;
                     foe.modifyAffinity(6);
-                    npc.memory.add(world.tickCount, world.clock.timeStr, 'plan', `${player.name}${t('苦口婆心勸我和')}${foe.targetName}${t('和好...也許,是該放下了。')}`, 7, [foe.targetName]);
+                    npc.memory.add(world.tickCount, world.clock.timeStr, 'plan', `${t(player.name)}${t('苦口婆心勸我和')}${foe.targetName}${t('和好...也許,是該放下了。')}`, 7, [foe.targetName]);
                     const bothDone = rec.sides[npc.agentId] && rec.sides[other.agentId];
                     if (bothDone) {
                         // 兩邊都勸過了 → 世紀大和解
@@ -6735,19 +6735,19 @@ class RimTownApp {
                         relAB.isFeud = false; relBA.isFeud = false;
                         npc.moodModifier = (npc.moodModifier || 0) + 10;
                         other.moodModifier = (other.moodModifier || 0) + 10;
-                        npc.memory.add(world.tickCount, world.clock.timeStr, 'relationship', `${t('在')}${player.name}${t('的調解下,我和')}${other.name}${t('和解了。心裡一塊石頭落了地。')}`, 9, [other.name, player.name]);
-                        other.memory.add(world.tickCount, world.clock.timeStr, 'relationship', `${t('在')}${player.name}${t('的調解下,我和')}${npc.name}${t('和解了。心裡一塊石頭落了地。')}`, 9, [npc.name, player.name]);
+                        npc.memory.add(world.tickCount, world.clock.timeStr, 'relationship', `${t('在')}${t(player.name)}${t('的調解下,我和')}${t(other.name)}${t('和解了。心裡一塊石頭落了地。')}`, 9, [other.name, player.name]);
+                        other.memory.add(world.tickCount, world.clock.timeStr, 'relationship', `${t('在')}${t(player.name)}${t('的調解下,我和')}${t(npc.name)}${t('和解了。心裡一塊石頭落了地。')}`, 9, [npc.name, player.name]);
                         npc.relationships.getOrCreate('player', player.name).modifyAffinity(8);
                         other.relationships.getOrCreate('player', player.name).modifyAffinity(8);
                         world.reputationSystem?.addReputation?.(15, 'help', world);
-                        world.logMessage('event', `🕊️ ${t('在')}${player.name}${t('的奔走下,')}${npc.name}${t('和')}${other.name}${t('當眾和解!全鎮傳為佳話')}`);
-                        world.dailyNews?.collectEvent('social', `${npc.name}${t('與')}${other.name}${t('在旅人調解下世紀大和解')}`, 9, [npc.name, other.name]);
+                        world.logMessage('event', `🕊️ ${t('在')}${t(player.name)}${t('的奔走下,')}${t(npc.name)}${t('和')}${t(other.name)}${t('當眾和解!全鎮傳為佳話')}`);
+                        world.dailyNews?.collectEvent('social', `${t(npc.name)}${t('與')}${t(other.name)}${t('在旅人調解下世紀大和解')}`, 9, [npc.name, other.name]);
                         world.queueDramaScene?.('reconcile', npc, other, player.name);
                         this._unlockAchievement('peacemaker');
-                        fx(`🕊️ ${t('成了!')}${npc.name}${t('和')}${other.name}${t('當眾和解!')}`, '#ffd700');
+                        fx(`🕊️ ${t('成了!')}${t(npc.name)}${t('和')}${t(other.name)}${t('當眾和解!')}`, '#ffd700');
                         fx(`${t('兩人好感 +8 · 聲望 +15')}`, '#5cc98f');
                     } else {
-                        fx(`🕊️ ${npc.name}${t('沉默許久:「...讓我想想。」')}${t('（心防鬆動了）')}`, '#5cc98f');
+                        fx(`🕊️ ${t(npc.name)}${t('沉默許久:「...讓我想想。」')}${t('（心防鬆動了）')}`, '#5cc98f');
                         fx(`${t('和解進度')} 1/2 — ${t('再去勸勸')}${foe.targetName}${t(',兩邊都點頭就能促成和解')}`, '#7fc4ff');
                     }
                     break;
@@ -6756,8 +6756,8 @@ class RimTownApp {
                 foe.modifyAffinity(8);
                 if (other) other.relationships.getOrCreate(npc.agentId, npc.name).modifyAffinity(4);
                 rel.modifyAffinity(1);
-                world.logMessage?.('relationship', `🕊️ ${t('經你居中調解,')}${npc.name}${t('對')}${foe.targetName}${t('的敵意緩和了一些')}`, npc.name, foe.targetName);
-                fx(`🕊️ ${t('你緩和了')}${npc.name}${t('對')}${foe.targetName}${t('的敵意')}`, '#5cc98f');
+                world.logMessage?.('relationship', `🕊️ ${t('經你居中調解,')}${t(npc.name)}${t('對')}${foe.targetName}${t('的敵意緩和了一些')}`, npc.name, foe.targetName);
+                fx(`🕊️ ${t('你緩和了')}${t(npc.name)}${t('對')}${foe.targetName}${t('的敵意')}`, '#5cc98f');
                 fx(`${t('好感(對')}${foe.targetName}) +8`, '#5cc98f');
                 break;
             }
@@ -6765,11 +6765,11 @@ class RimTownApp {
                 if ((rel.affinity || 0) > 25) {
                     rel.modifyRomantic(3); rel.modifyAffinity(1);
                     npc.addThought?.('nice_chat', world, 'player', player.name);
-                    fx(`💗 ${npc.name}${t('心跳漏了一拍')}`, '#ff8fb0');
+                    fx(`💗 ${t(npc.name)}${t('心跳漏了一拍')}`, '#ff8fb0');
                     fx(`${t('浪漫')} +3`, '#ff8fb0');
                 } else {
                     rel.modifyAffinity(-3);
-                    fx(`💗 ${t('太唐突了,')}${npc.name}${t('有點尷尬')}`, '#e07a7a');
+                    fx(`💗 ${t('太唐突了,')}${t(npc.name)}${t('有點尷尬')}`, '#e07a7a');
                     fx(`${t('好感')} −3`, '#e07a7a');
                 }
                 break;
@@ -6778,7 +6778,7 @@ class RimTownApp {
                 rel.modifyTrust(-12); rel.modifyAffinity(-8);
                 npc.moodModifier = (npc.moodModifier || 0) - 5;
                 npc.addThought?.('harsh_words', world, 'player', player.name);
-                fx(`😠 ${npc.name}${t('怕了你,但更討厭你了')}`, '#e07a7a');
+                fx(`😠 ${t(npc.name)}${t('怕了你,但更討厭你了')}`, '#e07a7a');
                 fx(`${t('信任')} ↓↓ · ${t('好感')} −8`, '#e07a7a');
                 break;
             }
@@ -6786,11 +6786,11 @@ class RimTownApp {
                 const trust = rel.trust || 0;
                 if (trust >= 10 || (rel.affinity || 0) >= 30) {
                     rel.modifyAffinity(3);
-                    npc.memory?.add?.(world.tickCount, world.clock.timeStr, 'social', `${t('答應幫')}${player.name}${t('一個忙')}`, 5, ['player']);
-                    fx(`📌 ${npc.name}${t('答應幫你了')}`, '#5cc98f');
+                    npc.memory?.add?.(world.tickCount, world.clock.timeStr, 'social', `${t('答應幫')}${t(player.name)}${t('一個忙')}`, 5, ['player']);
+                    fx(`📌 ${t(npc.name)}${t('答應幫你了')}`, '#5cc98f');
                     fx(`${t('好感')} +3`, '#5cc98f');
                 } else {
-                    fx(`📌 ${npc.name}${t('跟你還不夠熟,婉拒了')}`, '#e0b07a');
+                    fx(`📌 ${t(npc.name)}${t('跟你還不夠熟,婉拒了')}`, '#e0b07a');
                 }
                 break;
             }
@@ -6820,9 +6820,9 @@ class RimTownApp {
         if (rel) {
             const a = rel.affinity || 0;
             let statusNote = '';
-            if (a <= -20) statusNote = `${npc.name}${t('把你當成對頭')}`;
-            else if (a >= 55) statusNote = `${npc.name}${t('把你當成摯友')}`;
-            else if (a >= 20) statusNote = `${npc.name}${t('把你當朋友')}`;
+            if (a <= -20) statusNote = `${t(npc.name)}${t('把你當成對頭')}`;
+            else if (a >= 55) statusNote = `${t(npc.name)}${t('把你當成摯友')}`;
+            else if (a >= 20) statusNote = `${t(npc.name)}${t('把你當朋友')}`;
             if (statusNote) rows.push(`<span style="color:#9aa;font-size:0.9em">→ ${statusNote}</span>`);
         }
         const div = document.createElement('div');
@@ -6866,7 +6866,7 @@ class RimTownApp {
         for (const [name, s] of sorted) {
             const barPct = s.incapable ? 0 : Math.max(0, Math.min(100, (s.level/20)*100 + s.progress*(100/20)));
             const passionLabel = {'狂熱':'&#9733;&#9733;&#9733;','大':'&#9733;&#9733;','微':'&#9733;','無':'','無能':'&#10007;'}[s.passion]||'';
-            html += `<div class="skill-row passion-${s.passion}"><span class="skill-name">${name}</span>
+            html += `<div class="skill-row passion-${s.passion}"><span class="skill-name">${t(name)}</span>
                 <span class="skill-passion">${passionLabel}</span>
                 <div class="skill-bar"><div class="skill-bar-fill" style="width:${barPct}%"></div></div>
                 <span class="skill-level">${s.incapable?'-':s.level}</span></div>`;
@@ -7142,7 +7142,7 @@ class RimTownApp {
         }).join('');
         ov.innerHTML = `<div style="background:var(--bg-card,#20222c);border:1px solid var(--border,#444);border-radius:12px;max-width:400px;width:100%;max-height:78vh;display:flex;flex-direction:column;padding:14px">
             <div style="display:flex;justify-content:space-between;align-items:center">
-                <div style="font-weight:700;font-size:0.92rem">📜 ${a.name} × ${b.name}</div>
+                <div style="font-weight:700;font-size:0.92rem">📜 ${t(a.name)} × ${t(b.name)}</div>
                 <button data-rt-close="1" style="background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer">✕</button>
             </div>
             <div style="font-size:0.72rem;color:var(--text-secondary);margin:2px 0 8px">${t('目前關係：')}${statusLine}</div>
@@ -7186,7 +7186,7 @@ class RimTownApp {
             this._followSeen[id] = w.tickCount;
             if (fresh && shown < 2) {
                 shown++;
-                this._showCornerNotice({ icon: '🔔', title: `${t('你追蹤的')}${npc.name}`, name: '', desc: String(fresh.content).slice(0, 48) });
+                this._showCornerNotice({ icon: '🔔', title: `${t('你追蹤的')}${t(npc.name)}`, name: '', desc: String(fresh.content).slice(0, 48) });
             }
         }
     }
@@ -7219,14 +7219,14 @@ class RimTownApp {
         // 反思(今天):村民的內心話
         for (const npc of npcs) {
             const refl = npc.memory.entries.filter(e => e.category === 'reflection' && e.tick >= dayStart).slice(-1)[0];
-            if (refl) rows.push({ icon: '💭', text: `${npc.name}:${refl.content}`, action: 'story-npc', val: npc.agentId });
+            if (refl) rows.push({ icon: '💭', text: `${t(npc.name)}:${refl.content}`, action: 'story-npc', val: npc.agentId });
             if (rows.length >= 6) break;
         }
         // 重大關係事件(今天,重要度>=9:交往/結婚/分手/背叛)
         if (rows.length < 6) {
             for (const npc of npcs) {
                 const big = npc.memory.entries.filter(e => e.category === 'relationship' && e.tick >= dayStart && e.importance >= 9).slice(-1)[0];
-                if (big) rows.push({ icon: '💥', text: `${npc.name}:${big.content}`, action: 'story-npc', val: npc.agentId });
+                if (big) rows.push({ icon: '💥', text: `${t(npc.name)}:${big.content}`, action: 'story-npc', val: npc.agentId });
                 if (rows.length >= 6) break;
             }
         }
@@ -7274,13 +7274,13 @@ class RimTownApp {
                 if (!b || b.isPlayer || b.isDead) continue;
                 const key = [a.agentId, tid].sort().join('|');
                 if (seen.has(key)) continue;
-                if (rel.status === 'married') { seen.add(key); out.push({ icon: '💍', text: `${a.name} × ${b.name} — ${t('婚姻第')}${days(rel.statusSince)}${t('天')}`, val: key }); }
-                else if (rel.status === 'dating') { seen.add(key); out.push({ icon: '💗', text: `${a.name} × ${b.name} — ${t('戀愛第')}${days(rel.statusSince)}${t('天')}`, val: key }); }
+                if (rel.status === 'married') { seen.add(key); out.push({ icon: '💍', text: `${t(a.name)} × ${t(b.name)} — ${t('婚姻第')}${days(rel.statusSince)}${t('天')}`, val: key }); }
+                else if (rel.status === 'dating') { seen.add(key); out.push({ icon: '💗', text: `${t(a.name)} × ${t(b.name)} — ${t('戀愛第')}${days(rel.statusSince)}${t('天')}`, val: key }); }
                 else if (rel.isFeud) {
                     seen.add(key);
                     const med = w.mediations?.[key]?.sides;
                     const medN = med ? Object.keys(med).length : 0;
-                    out.push({ icon: '💢', text: `${a.name} × ${b.name} — ${t('絕交中')}${medN ? `（${t('你調停到')} ${medN}/2）` : ''}`, val: key });
+                    out.push({ icon: '💢', text: `${t(a.name)} × ${t(b.name)} — ${t('絕交中')}${medN ? `（${t('你調停到')} ${medN}/2）` : ''}`, val: key });
                 }
             }
         }
@@ -7296,7 +7296,7 @@ class RimTownApp {
                     const key = [c.agentId, r.targetId].sort().join('|');
                     if (seen.has(key)) continue;
                     seen.add(key);
-                    out.push({ icon: '🔺', text: `${c.name}${t('單戀名花有主的')}${b.name}`, val: key });
+                    out.push({ icon: '🔺', text: `${t(c.name)}${t('單戀名花有主的')}${t(b.name)}`, val: key });
                     break;
                 }
             }
@@ -7318,8 +7318,8 @@ class RimTownApp {
                 if (!b || b.isPlayer || b.isDead) continue;
                 const key = [a.agentId, tid].sort().join('|');
                 if (seen.has(key)) continue;
-                if (!rel.isFeud && rel.affinity <= -48 && rel.affinity > -60) { seen.add(key); out.push({ icon: '⚡', text: `${a.name}${t('和')}${b.name}${t('的關係瀕臨絕交…')}` }); break; }
-                if (!rel.status && rel.romanticInterest >= 35 && rel.romanticInterest < 50) { seen.add(key); out.push({ icon: '💘', text: `${a.name}${t('對')}${b.name}${t('的心意,快藏不住了…')}` }); break; }
+                if (!rel.isFeud && rel.affinity <= -48 && rel.affinity > -60) { seen.add(key); out.push({ icon: '⚡', text: `${t(a.name)}${t('和')}${t(b.name)}${t('的關係瀕臨絕交…')}` }); break; }
+                if (!rel.status && rel.romanticInterest >= 35 && rel.romanticInterest < 50) { seen.add(key); out.push({ icon: '💘', text: `${t(a.name)}${t('對')}${t(b.name)}${t('的心意,快藏不住了…')}` }); break; }
             }
         }
         return out.slice(0, 2);
@@ -7386,8 +7386,8 @@ class RimTownApp {
         const nextCh = this._chapterDefs().find(c => c.n === curCh.n + 1);
         const prosNow = this.state?.prosperity?.prosperity || 0;
         html += `<div class="town-identity" style="cursor:default">
-            <span class="ti-badge">${curCh.icon} ${t('第')}${curCh.n}${t('章')}·${curCh.name}</span>
-            ${nextCh ? `<span class="ti-desc">${t('小鎮成長')} ${Math.min(prosNow, nextCh.need)}/${nextCh.need} → ${nextCh.icon}${nextCh.name}</span>` : `<span class="ti-desc">${t('小鎮已完全成熟')}</span>`}
+            <span class="ti-badge">${curCh.icon} ${t('第')}${curCh.n}${t('章')}·${t(curCh.name)}</span>
+            ${nextCh ? `<span class="ti-desc">${t('小鎮成長')} ${Math.min(prosNow, nextCh.need)}/${nextCh.need} → ${nextCh.icon}${t(nextCh.name)}</span>` : `<span class="ti-desc">${t('小鎮已完全成熟')}</span>`}
         </div>`;
         // v5.19.0 城鎮身分:小鎮長成的路線,點一下看它是怎麼形成的
         const ident = this.state.townIdentity;
@@ -7416,7 +7416,7 @@ class RimTownApp {
             const playerJobTitle = playerAgent.job?.title || t('旅人');
             html += `<div class="resident-card player-card ${isSelected?'selected':''}" data-action="select-agent" data-val="player">
                 <div class="resident-header">
-                    <span class="resident-name"><span class="mood-indicator mood-${playerAgent.mood_description}"></span>⭐ ${playerAgent.name}${t('（你）')}</span>
+                    <span class="resident-name"><span class="mood-indicator mood-${playerAgent.mood_description}"></span>⭐ ${t(playerAgent.name)}${t('（你）')}</span>
                     <span class="resident-job">${playerJobTitle}</span></div>
                 <div class="resident-status"><span>@ ${this._locationLabel(playerAgent.current_location)}</span><span>${playerAgent.mood_label||playerAgent.mood_description} (${playerAgent.mood})</span></div>`;
             html += `</div>`;
@@ -7429,7 +7429,7 @@ class RimTownApp {
             const genderIcon = agent.gender_label === t('男') ? '♂' : agent.gender_label === t('女') ? '♀' : '';
             html += `<div class="resident-card ${isSelected?'selected':''}" data-action="select-agent" data-val="${aid}">
                 <div class="resident-header">
-                    <span class="resident-name"><span class="mood-indicator mood-${agent.mood_description}"></span>${genderIcon} ${agent.name}${sameLoc?t('<span class="nearby-badge">附近</span>'):''}</span>
+                    <span class="resident-name"><span class="mood-indicator mood-${agent.mood_description}"></span>${genderIcon} ${t(agent.name)}${sameLoc?t('<span class="nearby-badge">附近</span>'):''}</span>
                     <span class="resident-job">${agent.job?.title||t('無業')}</span></div>
                 <div class="resident-status"><span>${agent.activity_label||agent.activity} @ ${this._locationLabel(agent.current_location)}</span><span>${agent.mood_label||agent.mood_description} (${agent.mood})</span></div>
                 ${agent.current_thought?`<div style="font-size:0.7rem;color:#aaa;margin-top:4px;font-style:italic">「${agent.current_thought}」</div>`:''}
@@ -7565,12 +7565,12 @@ class RimTownApp {
             } catch (e) { console.warn('[RimTown] persona state render failed:', e); }
         }
         container.innerHTML = `<div class="detail-panel visible">
-            <div class="detail-section"><h3>${agent.name}（${agent.gender_label === t('男') ? '♂' : agent.gender_label === t('女') ? '♀' : ''}${agent.gender_label} · ${agent.age}${t('歲）')}</h3>
+            <div class="detail-section"><h3>${t(agent.name)}（${agent.gender_label === t('男') ? '♂' : agent.gender_label === t('女') ? '♀' : ''}${agent.gender_label} · ${agent.age}${t('歲）')}</h3>
                 <p style="font-size:0.8rem;color:var(--text-secondary)">${agent.job?.title||(this.selectedAgent==='player'?t('旅人'):t('無業'))} | ${agent.mood_label||agent.mood_description}</p>
-                <p style="font-size:0.75rem;margin-top:6px">${personality.background||''}</p>${chatBtn}</div>
+                <p style="font-size:0.75rem;margin-top:6px">${t(personality.background||'')}</p>${chatBtn}</div>
             <div class="detail-section"><h3>${t('性格')}</h3>
                 ${(personality.traits||[]).map(t=>`<span class="trait-tag">${TRAIT_LABELS[t]||t}</span>`).join('')}
-                <div style="margin-top:4px;font-size:0.7rem;color:var(--text-secondary)">${t('價值觀：')}${(personality.values||[]).join('、')}</div>
+                <div style="margin-top:4px;font-size:0.7rem;color:var(--text-secondary)">${t('價值觀：')}${(personality.values||[]).map(v => t(v)).join(I18N.getLang() === 'en' ? ', ' : '、')}</div>
                 ${agent.attributes && Object.keys(agent.attributes).length ? `<div class="nqc-attr" style="margin-top:6px">${[['charm','✨',t('魅力')],['vigor','💪',t('體魄')],['wit','🧠',t('智慧')],['grit','🔥',t('膽識')]].map(([k,ic,lb]) => { const v = Math.max(1, Math.min(10, agent.attributes[k] || 5)); return `<div class="nqc-attr-cell"><span class="nqc-attr-lb">${ic}${lb}</span><span class="nqc-attr-bar"><span class="nqc-attr-fill" style="width:${v*10}%"></span></span><span class="nqc-attr-val">${v}</span></div>`; }).join('')}</div>` : ''}</div>
             ${personaHtml}
             <div class="detail-section"><h3>${t('感情狀態')}</h3>
@@ -7630,7 +7630,7 @@ class RimTownApp {
                 const jobTitle = agent.job?.title || (aid === 'player' ? t('旅人') : t('無業'));
                 const moodIcon = agent.mood > 70 ? '😊' : agent.mood > 30 ? '😐' : '😢';
                 html += `<div class="res-item" data-action="select-agent" data-val="${aid}" style="cursor:pointer;padding:8px;margin:4px 0;border-radius:6px;background:var(--bg-secondary)">
-                    <div style="font-weight:600">${moodIcon} ${agent.name}</div>
+                    <div style="font-weight:600">${moodIcon} ${t(agent.name)}</div>
                     <div style="font-size:0.75rem;color:var(--text-secondary)">${jobTitle} · ${agent.age}${t('歲')} · ${agent.activity_label || agent.activity || ''}</div>
                 </div>`;
             }
@@ -7838,7 +7838,7 @@ class RimTownApp {
                 election.candidates.forEach(c => {
                     html += `<div class="election-candidate" data-action="select-agent" data-val="${c.agentId}">
                         <div class="candidate-header">
-                            <span class="candidate-name">${c.agentId === 'player' ? '👑 ' : ''}${c.name}${c.agentId === 'player' ? t('（你）') : ''}</span>
+                            <span class="candidate-name">${c.agentId === 'player' ? '👑 ' : ''}${t(c.name)}${c.agentId === 'player' ? t('（你）') : ''}</span>
                             <span class="candidate-policy">${c.policyIcon} ${c.policyLabel}</span>
                         </div>
                         <div class="candidate-speech">"${c.speech}"</div>
@@ -7866,12 +7866,12 @@ class RimTownApp {
                     const pct = totalVotes > 0 ? Math.round(c.votes / totalVotes * 100) : 0;
                     html += `<div class="election-candidate">
                         <div class="candidate-header">
-                            <span class="candidate-name">${c.name}</span>
+                            <span class="candidate-name">${t(c.name)}</span>
                             <span class="candidate-policy">${c.policyIcon} ${c.policyLabel}</span>
                             <span class="candidate-votes">${c.votes}${t(' 票（')}${pct}%）</span>
                         </div>
                         <div class="election-bar"><div class="election-bar-fill" style="width:${pct}%"></div></div>
-                        ${!playerVoted ? `<button class="btn-vote" data-action="player-vote" data-val="${c.agentId}">投票給${c.name}</button>` : ''}
+                        ${!playerVoted ? `<button class="btn-vote" data-action="player-vote" data-val="${c.agentId}">投票給${t(c.name)}</button>` : ''}
                     </div>`;
                 });
                 html += `${t('<div class="election-total">已投票：')}${totalVotes}${t(' 人')}${playerVoted ? t(' (你已投票)') : ''}</div>`;
@@ -7881,7 +7881,7 @@ class RimTownApp {
                 html += t('<h4>🏆 選舉結果</h4>');
                 if (winner) {
                     html += `<div class="election-winner">
-                        <div class="winner-name">${winner.name} ${t('當選鎮長！')}</div>
+                        <div class="winner-name">${t(winner.name)} ${t('當選鎮長！')}</div>
                         <div class="winner-policy">${t('施政方針：')}${winner.policyIcon} ${winner.policyLabel}</div>
                     </div>`;
                 }
@@ -7889,7 +7889,7 @@ class RimTownApp {
                     const pct = totalVotes > 0 ? Math.round(c.votes / totalVotes * 100) : 0;
                     const isWinner = c === election.candidates[0];
                     html += `<div class="election-candidate ${isWinner ? 'election-winner-card' : ''}">
-                        <span class="candidate-name">${isWinner ? '👑 ' : ''}${c.name}</span>
+                        <span class="candidate-name">${isWinner ? '👑 ' : ''}${t(c.name)}</span>
                         <span class="candidate-policy">${c.policyIcon}</span>
                         <span class="candidate-votes">${c.votes}${t(' 票（')}${pct}%）</span>
                         <div class="election-bar"><div class="election-bar-fill ${isWinner ? 'winner' : ''}" style="width:${pct}%"></div></div>
@@ -7902,7 +7902,7 @@ class RimTownApp {
         if (election?.electionHistory?.length && !election.active) {
             const last = election.electionHistory[election.electionHistory.length - 1];
             html += `<div class="election-history-brief">
-                <span>${t('上次選舉：')}${last.winner.name}${t(' 當選（')}${last.winner.policyIcon || ''}${ELECTION_POLICIES_LABELS[last.winner.policy] || last.winner.policy}，${last.winner.votes}/${last.totalVotes} ${t('票）')}</span>
+                <span>${t('上次選舉：')}${t(last.winner.name)}${t(' 當選（')}${last.winner.policyIcon || ''}${ELECTION_POLICIES_LABELS[last.winner.policy] || last.winner.policy}，${last.winner.votes}/${last.totalVotes} ${t('票）')}</span>
             </div>`;
         }
 
@@ -7910,7 +7910,7 @@ class RimTownApp {
         const weather = this.state.weather;
         if (weather) {
             html += '<div class="weather-section" style="margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px">';
-            html += `<h4>${weather.icon} ${t('天氣')}：${weather.name}</h4>`;
+            html += `<h4>${weather.icon} ${t('天氣')}：${t(weather.name)}</h4>`;
             html += `<div style="font-size:0.8rem;color:var(--text-secondary);margin:4px 0">${weather.desc}</div>`;
             html += `<div style="display:flex;gap:12px;font-size:0.75rem;margin:6px 0">`;
             html += `<span>🌡️ ${weather.temperature}°C</span>`;
@@ -7928,7 +7928,7 @@ class RimTownApp {
             if (weather.forecast?.length) {
                 html += `<div style="display:flex;gap:8px;margin-top:6px;font-size:0.72rem;color:var(--text-muted)">`;
                 html += `<span>${t('預報')}：</span>`;
-                weather.forecast.forEach(f => { html += `<span title="${f.name}">${f.icon}</span>`; });
+                weather.forecast.forEach(f => { html += `<span title="${t(f.name)}">${f.icon}</span>`; });
                 html += `</div>`;
             }
             // Disaster warning
@@ -7941,7 +7941,7 @@ class RimTownApp {
             // Active disaster
             if (weather.activeDisaster) {
                 html += `<div style="margin-top:6px;padding:6px 8px;background:rgba(255,40,40,0.15);border-left:3px solid var(--negative);border-radius:4px;font-size:0.8rem;font-weight:bold">`;
-                html += `🚨 ${weather.activeDisaster.name}（${t('剩餘')} ${weather.activeDisaster.daysLeft} ${t('天')}）`;
+                html += `🚨 ${t(weather.activeDisaster.name)}（${t('剩餘')} ${weather.activeDisaster.daysLeft} ${t('天')}）`;
                 html += `<div style="font-weight:normal;font-size:0.72rem;margin-top:2px">${weather.activeDisaster.desc}</div>`;
                 html += `</div>`;
             }
@@ -8117,7 +8117,7 @@ class RimTownApp {
         const travelling = this.state.travelling_agents || [];
         if (travelling.length) {
             html += t('<div class="travelling-section"><h4>外出中的居民</h4>');
-            travelling.forEach(_tw => { html += `<div class="travelling-item">${_tw.name} — ${_tw.reason}</div>`; });
+            travelling.forEach(_tw => { html += `<div class="travelling-item">${t(_tw.name)} — ${_tw.reason}</div>`; });
             html += '</div>';
         }
         const events = (this.state.recent_events || []).slice().reverse();
@@ -8125,7 +8125,7 @@ class RimTownApp {
             const typeBadge = evt.event_type && evt.event_type !== 'random'
                 ? `<span class="event-type-badge type-${evt.event_type}">${evt.event_type}</span>` : '';
             html += `<div class="event-card severity-${evt.severity}">
-                <div style="font-weight:bold">${evt.name}${typeBadge}</div>
+                <div style="font-weight:bold">${t(evt.name)}${typeBadge}</div>
                 <div style="font-size:0.75rem;color:var(--text-secondary)">${evt.time}</div>
                 <div style="margin-top:4px">${evt.description}</div></div>`;
         });
@@ -8133,13 +8133,13 @@ class RimTownApp {
         const festivals = this.state.festivals || {};
         if (festivals.activeFestival) {
             const f = festivals.activeFestival;
-            html += `<div class="festival-section"><h4>${f.icon} ${f.name}${t('進行中！')}</h4>
+            html += `<div class="festival-section"><h4>${f.icon} ${t(f.name)}${t('進行中！')}</h4>
                 <div style="padding:4px 8px;color:var(--text-secondary)">${f.description}</div></div>`;
         }
         if (festivals.activeQuest) {
             const q = festivals.activeQuest;
             const pct = Math.round((q.progress / q.goal) * 100);
-            html += `${t('<div class="quest-section"><h4>🎯 節日任務：')}${q.name}</h4>
+            html += `${t('<div class="quest-section"><h4>🎯 節日任務：')}${t(q.name)}</h4>
                 <div style="padding:4px 8px">${q.desc}</div>
                 <div class="quest-progress"><div class="quest-bar" style="width:${pct}%"></div><span>${pct}%</span></div></div>`;
         }
@@ -8158,14 +8158,14 @@ class RimTownApp {
                 let relHtml = '';
                 if (f.rivalFactionId) {
                     const rival = factionList.find(x => x.id === f.rivalFactionId);
-                    if (rival) relHtml += `${t('<span class="faction-rival">⚔️ 敵對：')}${rival.name}</span> `;
+                    if (rival) relHtml += `${t('<span class="faction-rival">⚔️ 敵對：')}${t(rival.name)}</span> `;
                 }
                 if (f.allyFactionId) {
                     const ally = factionList.find(x => x.id === f.allyFactionId);
-                    if (ally) relHtml += `${t('<span class="faction-ally">🤝 結盟：')}${ally.name}</span>`;
+                    if (ally) relHtml += `${t('<span class="faction-ally">🤝 結盟：')}${t(ally.name)}</span>`;
                 }
                 html += `<div class="faction-card">
-                    <div class="faction-header">${f.icon} <strong>${f.name}</strong>
+                    <div class="faction-header">${f.icon} <strong>${t(f.name)}</strong>
                         <span class="faction-cohesion ${cohesionCls}${t('">團結度：')}${f.cohesion > 70 ? t('緊密') : f.cohesion < 30 ? t('渙散') : t('普通')}</span></div>
                     <div class="faction-members">${memberNames}</div>
                     ${relHtml ? '<div class="faction-relations">' + relHtml + '</div>' : ''}</div>`;
@@ -8196,13 +8196,13 @@ class RimTownApp {
                 const availableNpcs = Object.entries(this.state.agents)
                     .filter(([id, a]) => !a.is_player && a.activity_label !== t('探險中') && id !== 'player');
                 html += `<div class="explore-zone">
-                    <div class="zone-header">${zoneDef.icon} <strong>${zoneDef.name}</strong>
+                    <div class="zone-header">${zoneDef.icon} <strong>${t(zoneDef.name)}</strong>
                         <span class="zone-diff">${t('難度：')}${'⭐'.repeat(zoneDef.difficulty)}</span></div>
                     <div class="zone-desc">${zoneDef.description}</div>
                     <div class="zone-stats">${t('已探索')} ${info.timesExplored} ${t('次')}</div>
                     ${canSend ? `<div class="zone-send">
                         <select class="explore-select" id="explore-select-${zoneId}" multiple size="3">
-                            ${availableNpcs.map(([id, a]) => `<option value="${id}">${a.name} (${a.job?.title||t('無')})</option>`).join('')}
+                            ${availableNpcs.map(([id, a]) => `<option value="${id}">${t(a.name)} (${a.job?.title||t('無')})</option>`).join('')}
                         </select>
                         <button class="explore-btn" data-action="send-expedition" data-val="${zoneId}">派遣探險</button>
                     </div>` : t('<div class="zone-busy">探險進行中...</div>')}
@@ -8220,14 +8220,14 @@ class RimTownApp {
             if (births.length) {
                 html += t('<h4>🎒 近期出生</h4>');
                 births.slice(-5).reverse().forEach(b => {
-                    html += `<div class="birth-item">${b.name} — ${b.parentNames.join(t('與'))}${t('的孩子 <span class="birth-time">')}${b.birthTime}</span></div>`;
+                    html += `<div class="birth-item">${t(b.name)} — ${b.parentNames.join(t('與'))}${t('的孩子 <span class="birth-time">')}${b.birthTime}</span></div>`;
                 });
             }
             if (graveyard.length) {
                 html += t('<h4>⚰️ 墓園</h4>');
                 graveyard.slice(-10).reverse().forEach(g => {
                     html += `<div class="grave-item">
-                        <div class="grave-name">${g.name}（${g.age}${t('歲）')}</div>
+                        <div class="grave-name">${t(g.name)}（${g.age}${t('歲）')}</div>
                         <div class="grave-info">${g.job} — ${g.deathCause}</div>
                         <div class="grave-epitaph">${g.epitaph}</div>
                         <div class="grave-time">${g.deathTime}</div></div>`;
@@ -8422,7 +8422,7 @@ class RimTownApp {
             const trade = this.state.trade || {};
             html += t('<div class="econ-section"><h3>交易</h3>');
             if (trade.merchant) {
-                html += `<div class="merchant-card"><div class="merchant-name">${trade.merchant.name}</div>
+                html += `<div class="merchant-card"><div class="merchant-name">${t(trade.merchant.name)}</div>
                     <div class="merchant-info">${t('專長：')}${trade.merchant.specialty} | ${trade.merchant.daysRemaining}${t('天後離開')}</div>
                     <div class="trade-offers">`;
                 trade.merchant.offers.forEach((offer, idx) => {
@@ -8451,7 +8451,7 @@ class RimTownApp {
             if (currentKey && projects[currentKey]) {
                 const cur = projects[currentKey];
                 const pct = Math.round((cur.progress / cur.cost) * 100);
-                html += `${t('<div class="research-current">研究中：<strong>')}${cur.name}</strong>
+                html += `${t('<div class="research-current">研究中：<strong>')}${t(cur.name)}</strong>
                     <div class="progress-bar"><div class="progress-fill research-fill" style="width:${pct}%"></div></div>
                     <span class="progress-text">${pct}%</span></div>`;
             }
@@ -8461,7 +8461,7 @@ class RimTownApp {
                 availableResearch.forEach(p => {
                     const isCurrent = p.key === currentKey;
                     html += `<div class="research-option ${isCurrent ? 'active' : ''}">
-                        <div class="build-name">${p.name}</div>
+                        <div class="build-name">${t(p.name)}</div>
                         <div class="build-desc">${p.description}${t('（消耗：')}${p.cost}）</div>
                         <button class="build-btn" data-action="research" data-val="${p.key}" ${isCurrent?'disabled':''}${t('>研究</button></div>')}`;
                 });
@@ -8487,7 +8487,7 @@ class RimTownApp {
                 for (const item of catItems) {
                     html += `<div class="shop-card">`;
                     html += `<div class="shop-card-icon">${item.icon}</div>`;
-                    html += `<div class="shop-card-name">${item.name}</div>`;
+                    html += `<div class="shop-card-name">${t(item.name)}</div>`;
                     html += `<div class="shop-card-stock">${t('庫存')}:${Math.round(item.stock)}</div>`;
                     html += `<button class="shop-card-btn shop-buy" data-action="shop-buy" data-val="${item.key},1" ${item.canBuy?'':'disabled'}>${t('買')}${item.buyPrice}💰</button>`;
                     html += `<button class="shop-card-btn shop-sell" data-action="shop-sell" data-val="${item.key},1" ${item.canSell?'':'disabled'}>${t('賣')}${item.sellPrice}💰</button>`;
@@ -8504,7 +8504,7 @@ class RimTownApp {
                 html += '<div class="building-progress">';
                 buildings.in_progress.forEach(p => {
                     const pct = Math.round((p.workDone / p.workRequired) * 100);
-                    html += `<div class="building-item"><span>${p.name}</span>
+                    html += `<div class="building-item"><span>${t(p.name)}</span>
                         <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
                         <span class="progress-text">${pct}%</span></div>`;
                 });
@@ -8515,7 +8515,7 @@ class RimTownApp {
                 buildings.completed.forEach(p => {
                     const lvl = p.level || 1;
                     const stars = '⭐'.repeat(lvl);
-                    html += `<div class="completed-building-item"><span>${p.name}</span><span class="building-level">${stars} Lv.${lvl}</span></div>`;
+                    html += `<div class="completed-building-item"><span>${t(p.name)}</span><span class="building-level">${stars} Lv.${lvl}</span></div>`;
                 });
                 html += '</div>';
             }
@@ -8527,7 +8527,7 @@ class RimTownApp {
                     const costStr = Object.entries(u.costs).map(([r,a]) => `${icons[r]||''}${a}`).join(' ');
                     const effStr = Object.entries(u.effects).map(([k,v]) => `${k}:${v>0?'+':''}${v}`).join(' ');
                     html += `<div class="build-option ${u.can_afford ? '' : 'cant-afford'}">
-                        <div class="build-name">${u.name} <span class="building-level">Lv.${u.currentLevel}→${u.nextLevel}</span></div>
+                        <div class="build-name">${t(u.name)} <span class="building-level">Lv.${u.currentLevel}→${u.nextLevel}</span></div>
                         <div class="build-desc">${u.description}</div>
                         <div class="build-cost">${costStr}</div>
                         <div class="build-effects" style="font-size:0.75rem;color:var(--accent-gold)">${effStr}</div>
@@ -8541,7 +8541,7 @@ class RimTownApp {
                 available.forEach(p => {
                     const costStr = Object.entries(p.costs).map(([r,a]) => `${icons[r]||''}${a}`).join(' ');
                     html += `<div class="build-option ${p.can_afford ? '' : 'cant-afford'}">
-                        <div class="build-name">${p.name}</div>
+                        <div class="build-name">${t(p.name)}</div>
                         <div class="build-desc">${p.description}</div>
                         <div class="build-cost">${costStr}</div>
                         <button class="build-btn" ${p.can_afford ? '' : 'disabled'} data-action="build" data-val="${p.key}">${t('建造')}</button></div>`;
@@ -8558,7 +8558,7 @@ class RimTownApp {
                 const costStr = Object.entries(d.cost).map(([k, v]) => `${{silver:'💰',wood:'🪵',stone:'🪨',metal:'⚙️'}[k] || k}${v}`).join(' ');
                 const afford = Object.entries(d.cost).every(([k, v]) => (this.world?.stockpile?.get(k) || 0) >= v);
                 html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;margin-bottom:5px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px">
-                    <span style="font-size:0.82rem">${d.icon} ${d.name} <span style="font-size:0.68rem;color:var(--text-secondary)">${t('美觀')}+${d.beauty}</span></span>
+                    <span style="font-size:0.82rem">${d.icon} ${t(d.name)} <span style="font-size:0.68rem;color:var(--text-secondary)">${t('美觀')}+${d.beauty}</span></span>
                     <span style="display:flex;gap:8px;align-items:center">
                         <span style="font-size:0.7rem;color:var(--text-secondary)">${costStr}</span>
                         <button class="trade-btn" data-action="decor-place" data-val="${d.type}" ${afford ? '' : 'disabled style="opacity:0.4"'}>${t('擺放')}</button>
@@ -8586,7 +8586,7 @@ class RimTownApp {
             for (const [key, factory] of Object.entries(factories)) {
                 const def = typeof FACTORIES !== 'undefined' ? FACTORIES[key] : null;
                 if (!def) continue;
-                html += `<div class="econ-section"><h3>${def.icon} ${def.name}`;
+                html += `<div class="econ-section"><h3>${def.icon} ${t(def.name)}`;
                 if (factory.status === 'building') html += `${t(' (建造中 ')}${Math.round(factory.buildProgress / factory.buildRequired * 100)}%)`;
                 html += '</h3>';
                 if (factory.status === 'active') {
@@ -8608,7 +8608,7 @@ class RimTownApp {
                         if (avail.length > 0) {
                             html += '<br>';
                             avail.slice(0, 5).forEach(([id, a]) => {
-                                html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="assign-worker" data-val="${key},${id}">+${a.name}</button>`;
+                                html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="assign-worker" data-val="${key},${id}">+${t(a.name)}</button>`;
                             });
                         }
                     }
@@ -8641,7 +8641,7 @@ class RimTownApp {
                     // v5.53.2 工廠成本在地化:接上與全站一致的資源名稱,不再露出英文 key
                     const costStr = Object.entries(f.cost).map(([r,a]) => `${icons[r] || '📦'}${labels[r] || r}×${a}`).join(' ');
                     const canBuild = f.canAfford ? '' : ' disabled';
-                    html += `<div class="build-card"><div><strong>${f.icon} ${f.name}</strong>
+                    html += `<div class="build-card"><div><strong>${f.icon} ${t(f.name)}</strong>
                         <br><span style="font-size:0.7rem">${costStr}${t(' | 建造天數：')}${f.buildDays}</span></div>
                         <button class="trade-btn"${canBuild} data-action="build-factory" data-val="${f.key}${t('">建造</button></div>')}`;
                 });
@@ -8697,7 +8697,7 @@ class RimTownApp {
             const others = f.members.filter(id => id !== agentId).map(id => {
                 const a = this.state.agents[id]; return a ? a.name : '?';
             }).join('、');
-            html += `<div class="faction-mini">${f.icon} <strong>${f.name}${t('</strong> <span style="font-size:0.7rem;color:var(--text-secondary)">同伴：')}${others}</span></div>`;
+            html += `<div class="faction-mini">${f.icon} <strong>${t(f.name)}${t('</strong> <span style="font-size:0.7rem;color:var(--text-secondary)">同伴：')}${others}</span></div>`;
         });
         html += '</div>';
         return html;
@@ -8758,7 +8758,7 @@ class RimTownApp {
                 html += t('<div class="econ-section"><h3>選擇你的第一個產業</h3>');
                 const available = this.world.industry.getAvailableIndustries(this.world);
                 available.forEach(i => {
-                    html += `<div class="build-card"><div><strong>${i.icon} ${i.name}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
+                    html += `<div class="build-card"><div><strong>${i.icon} ${t(i.name)}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
                         <button class="trade-btn" data-action="choose-industry" data-val="${i.key}${t('">選擇</button></div>')}`;
                 });
                 html += '</div>';
@@ -8792,7 +8792,7 @@ class RimTownApp {
                 html += t('<div class="econ-section"><h3>可開啟新產業！</h3>');
                 const available = this.world.industry.getAvailableIndustries(this.world);
                 available.forEach(i => {
-                    html += `<div class="build-card"><div><strong>${i.icon} ${i.name}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
+                    html += `<div class="build-card"><div><strong>${i.icon} ${t(i.name)}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
                         <button class="trade-btn" data-action="choose-industry" data-val="${i.key}${t('">開啟</button></div>')}`;
                 });
                 html += '</div>';
@@ -8801,7 +8801,7 @@ class RimTownApp {
             if (ind.activeSynergies && ind.activeSynergies.length > 0) {
                 html += t('<div class="econ-section"><h3>產業加成</h3>');
                 ind.activeSynergies.forEach(s => {
-                    html += `<div style="font-size:0.8rem;margin:4px 0">${s.icon} ${s.name}</div>`;
+                    html += `<div style="font-size:0.8rem;margin:4px 0">${s.icon} ${t(s.name)}</div>`;
                 });
                 html += '</div>';
             }
@@ -8818,10 +8818,10 @@ class RimTownApp {
                 html += `<div class="build-card"><div>`;
                 html += `<strong>${stateIcons[plot.state] || '?'}${t(' 田地 #')}${plot.id}</strong> — ${stateLabels[plot.state] || plot.state}`;
                 if (crop && plot.state === 'growing') {
-                    html += `<br><span style="font-size:0.75rem">${crop.icon} ${crop.name}${t(' | 進度：')}${Math.round(plot.growthProgress)}${t('% | 水分：')}${Math.round(plot.waterLevel)}%</span>`;
+                    html += `<br><span style="font-size:0.75rem">${crop.icon} ${t(crop.name)}${t(' | 進度：')}${Math.round(plot.growthProgress)}${t('% | 水分：')}${Math.round(plot.waterLevel)}%</span>`;
                     if (plot.fertilized) html += ' 🧪';
                 } else if (crop && plot.state === 'ready') {
-                    html += `<br><span style="font-size:0.75rem">${crop.icon} ${crop.name}${t(' — 可收穫！</span>')}`;
+                    html += `<br><span style="font-size:0.75rem">${crop.icon} ${t(crop.name)}${t(' — 可收穫！</span>')}`;
                 }
                 html += '</div><div>';
                 if (plot.state === 'empty') {
@@ -8834,7 +8834,7 @@ class RimTownApp {
                     if (seasonCrops.length > 0) {
                         html += '<div style="font-size:0.7rem">';
                         seasonCrops.forEach(c => {
-                            html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="plant-crop" data-val="${plot.id},${c.key}">${c.icon}${c.name}</button>`;
+                            html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="plant-crop" data-val="${plot.id},${c.key}">${c.icon}${t(c.name)}</button>`;
                         });
                         html += '</div>';
                     } else {
@@ -8876,7 +8876,7 @@ class RimTownApp {
             html += t('<div class="econ-section"><h3>選擇你的第一個產業</h3>');
             const available = this.world.industry.getAvailableIndustries(this.world);
             available.forEach(i => {
-                html += `<div class="build-card"><div><strong>${i.icon} ${i.name}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
+                html += `<div class="build-card"><div><strong>${i.icon} ${t(i.name)}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
                     <button class="trade-btn" data-action="choose-industry" data-val="${i.key}${t('">選擇</button></div>')}`;
             });
             html += '</div>';
@@ -8912,7 +8912,7 @@ class RimTownApp {
             html += t('<div class="econ-section"><h3>可開啟新產業！</h3>');
             const available = this.world.industry.getAvailableIndustries(this.world);
             available.forEach(i => {
-                html += `<div class="build-card"><div><strong>${i.icon} ${i.name}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
+                html += `<div class="build-card"><div><strong>${i.icon} ${t(i.name)}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
                     <button class="trade-btn" data-action="choose-industry" data-val="${i.key}${t('">開啟</button></div>')}`;
             });
             html += '</div>';
@@ -8922,7 +8922,7 @@ class RimTownApp {
         if (ind.activeSynergies && ind.activeSynergies.length > 0) {
             html += t('<div class="econ-section"><h3>產業加成</h3>');
             ind.activeSynergies.forEach(s => {
-                html += `<div style="font-size:0.8rem;margin:4px 0">${s.icon} ${s.name}</div>`;
+                html += `<div style="font-size:0.8rem;margin:4px 0">${s.icon} ${t(s.name)}</div>`;
             });
             html += '</div>';
         }
@@ -8967,10 +8967,10 @@ class RimTownApp {
             html += `<div class="build-card"><div>`;
             html += `<strong>${stateIcons[plot.state] || '?'}${t(' 田地 #')}${plot.id}</strong> — ${stateLabels[plot.state] || plot.state}`;
             if (crop && plot.state === 'growing') {
-                html += `<br><span style="font-size:0.75rem">${crop.icon} ${crop.name}${t(' | 進度：')}${Math.round(plot.growthProgress)}${t('% | 水分：')}${Math.round(plot.waterLevel)}%</span>`;
+                html += `<br><span style="font-size:0.75rem">${crop.icon} ${t(crop.name)}${t(' | 進度：')}${Math.round(plot.growthProgress)}${t('% | 水分：')}${Math.round(plot.waterLevel)}%</span>`;
                 if (plot.fertilized) html += ' 🧪';
             } else if (crop && plot.state === 'ready') {
-                html += `<br><span style="font-size:0.75rem">${crop.icon} ${crop.name}${t(' — 可收穫！</span>')}`;
+                html += `<br><span style="font-size:0.75rem">${crop.icon} ${t(crop.name)}${t(' — 可收穫！</span>')}`;
             }
             html += '</div><div>';
             if (plot.state === 'empty') {
@@ -8984,7 +8984,7 @@ class RimTownApp {
                 if (seasonCrops.length > 0) {
                     html += '<div style="font-size:0.7rem">';
                     seasonCrops.forEach(c => {
-                        html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="plant-crop" data-val="${plot.id},${c.key}">${c.icon}${c.name}</button>`;
+                        html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="plant-crop" data-val="${plot.id},${c.key}">${c.icon}${t(c.name)}</button>`;
                     });
                     html += '</div>';
                 } else {
@@ -9060,7 +9060,7 @@ class RimTownApp {
         for (const [key, factory] of Object.entries(factories)) {
             const def = typeof FACTORIES !== 'undefined' ? FACTORIES[key] : null;
             if (!def) continue;
-            html += `<div class="econ-section"><h3>${def.icon} ${def.name}`;
+            html += `<div class="econ-section"><h3>${def.icon} ${t(def.name)}`;
             if (factory.status === 'building') {
                 html += `${t(' (建造中 ')}${Math.round(factory.buildProgress / factory.buildRequired * 100)}%)`;
             }
@@ -9090,7 +9090,7 @@ class RimTownApp {
                     if (available.length > 0) {
                         html += '<br>';
                         available.slice(0, 5).forEach(([id, a]) => {
-                            html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="assign-worker" data-val="${key},${id}">+${a.name}</button>`;
+                            html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="assign-worker" data-val="${key},${id}">+${t(a.name)}</button>`;
                         });
                     }
                 }
@@ -9128,7 +9128,7 @@ class RimTownApp {
             available.forEach(f => {
                 const costStr = Object.entries(f.cost).map(([r,a]) => `${this._resName(r)}×${a}`).join(' ');
                 const canBuild = f.canAfford ? '' : ' disabled';
-                html += `<div class="build-card"><div><strong>${f.icon} ${f.name}</strong>
+                html += `<div class="build-card"><div><strong>${f.icon} ${t(f.name)}</strong>
                     <br><span style="font-size:0.7rem">${costStr}${t(' | 建造天數：')}${f.buildDays}</span></div>
                     <button class="trade-btn"${canBuild} data-action="build-factory" data-val="${f.key}${t('">建造</button></div>')}`;
             });
@@ -9313,7 +9313,7 @@ class RimTownApp {
             if ((v.playerChats || []).length) {
                 viewHtml += `<details style="margin-top:6px"><summary style="cursor:pointer;font-size:0.78rem">🧑 ${t('你的對話')}（${v.playerChats.length}）</summary><div style="font-size:0.7rem;padding:4px 0 4px 12px;line-height:1.6">${v.playerChats.map(p => `${this._escapeHtml(p.speaker)} → ${this._escapeHtml(p.target)}: ${this._escapeHtml(p.text)}`).join('<br>')}</div></details>`;
             }
-            viewHtml += (v.npcs || []).map(n => `<details style="margin-top:4px"><summary style="cursor:pointer;font-size:0.75rem">👤 ${n.name}${n.job ? `（${n.job}）` : ''}${n.planLlm ? ' 🤖' : ''}${n.replanned ? ' 📝' : ''}</summary>
+            viewHtml += (v.npcs || []).map(n => `<details style="margin-top:4px"><summary style="cursor:pointer;font-size:0.75rem">👤 ${t(n.name)}${n.job ? `（${n.job}）` : ''}${n.planLlm ? ' 🤖' : ''}${n.replanned ? ' 📝' : ''}</summary>
                 <div style="font-size:0.7rem;padding:4px 0 4px 12px;line-height:1.6">
                 ${n.currently ? `<div>🧭 ${this._escapeHtml(n.currently)}</div>` : ''}
                 ${(n.plan || []).length ? `<div style="margin-top:3px">📅 ${n.plan.map(g => this._escapeHtml(g)).join('　')}</div>` : ''}

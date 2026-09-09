@@ -466,6 +466,7 @@ class Agent {
     }
     get activityLabel() {
         const map = { sleeping:t('睡覺'), eating:t('進食'), working:t('工作'), socializing:t('社交'), wandering:t('閒逛'), recreation:t('娛樂'), idle:t('閒置'), stargazing:t('看星星'), night_mischief:t('搞事'), night_stroll:t('夜間散步'), exploring:t('探險中'), mourning:t('弔念') };
+        if (this.activity === 'commuting') return t('趕著去上工'); // v5.72.0 通勤原本漏標籤,中文介面直接露出 commuting
         return map[this.activity] || this.activity;
     }
     get genderLabel() {
@@ -1209,7 +1210,7 @@ class Agent {
 // --- PlayerAgent ---
 class PlayerAgent extends Agent {
     constructor(name = t('旅人'), age = 25) {
-        super('player', name, age, new Personality(['creative','kind'], t('最近抵達邊境鎮的神秘旅人。'), ['冒險','友情']), null, 'tavern');
+        super('player', name, age, new Personality(['creative','kind'], '最近抵達邊境鎮的神秘旅人。', ['冒險','友情']), null, 'tavern');
         this.isPlayer = true; this.chatHistory = []; this._recentChatTick = 0;
     }
     update(world) {
@@ -3845,18 +3846,18 @@ const DEPARTURE_REASONS = [
     t('前往首都尋求發展'),t('出門旅行增廣見聞'),
 ];
 const IMMIGRANT_POOL = [
-    {name:t('周明'),age:27,gender:'male',traits:['hardworking','optimist'],job:'farmer',background:t('來自鄰村的開朗年輕農夫。')},
-    {name:t('李雪'),age:31,gender:'female',traits:['kind','perfectionist'],job:'tailor',background:t('聽說邊境鎮需要她的手藝的熟練裁縫。')},
-    {name:t('鄭強'),age:35,gender:'male',traits:['stoic','hardworking'],job:'miner',background:t('來自本地區的資深礦工。')},
-    {name:t('何芳'),age:24,gender:'female',traits:['charismatic','romantic'],job:'cook',background:t('懷抱遠大夢想的熱情廚師。')},
-    {name:t('蔡文'),age:42,gender:'male',traits:['creative','neurotic'],job:'researcher',background:t('被古代遺跡吸引而來的古怪學者。')},
-    {name:t('呂嵐'),age:29,gender:'female',traits:['shy','early_bird'],job:'carpenter',background:t('讓手藝說話的沉靜木匠。')},
-    {name:t('丁傑'),age:38,gender:'male',traits:['abrasive','hardworking'],job:'blacksmith',background:t('言語粗獷但手藝精湛的鐵匠。')},
-    {name:t('蕭瑜'),age:23,gender:'female',traits:['optimist','gossip'],job:'trader',background:t('善於議價的年輕商人。')},
-    {name:t('唐琳'),age:33,gender:'female',traits:['kind','night_owl'],job:'doctor',background:t('四處行醫的慈悲醫者。')},
-    {name:t('曹峰'),age:44,gender:'male',traits:['stoic','pessimist'],job:'guard',background:t('尋求平靜生活的資深戰士。')},
-    {name:t('邱雅'),age:21,gender:'female',traits:['creative','shy'],job:'tailor',background:t('擁有刺繡天賦的年輕工匠。')},
-    {name:t('范浩'),age:36,gender:'male',traits:['lazy','charismatic'],job:'priest',background:t('悠哉的精神導師。')},
+    {name:'周明',age:27,gender:'male',traits:['hardworking','optimist'],job:'farmer',background:'來自鄰村的開朗年輕農夫。'},
+    {name:'李雪',age:31,gender:'female',traits:['kind','perfectionist'],job:'tailor',background:'聽說邊境鎮需要她的手藝的熟練裁縫。'},
+    {name:'鄭強',age:35,gender:'male',traits:['stoic','hardworking'],job:'miner',background:'來自本地區的資深礦工。'},
+    {name:'何芳',age:24,gender:'female',traits:['charismatic','romantic'],job:'cook',background:'懷抱遠大夢想的熱情廚師。'},
+    {name:'蔡文',age:42,gender:'male',traits:['creative','neurotic'],job:'researcher',background:'被古代遺跡吸引而來的古怪學者。'},
+    {name:'呂嵐',age:29,gender:'female',traits:['shy','early_bird'],job:'carpenter',background:'讓手藝說話的沉靜木匠。'},
+    {name:'丁傑',age:38,gender:'male',traits:['abrasive','hardworking'],job:'blacksmith',background:'言語粗獷但手藝精湛的鐵匠。'},
+    {name:'蕭瑜',age:23,gender:'female',traits:['optimist','gossip'],job:'trader',background:'善於議價的年輕商人。'},
+    {name:'唐琳',age:33,gender:'female',traits:['kind','night_owl'],job:'doctor',background:'四處行醫的慈悲醫者。'},
+    {name:'曹峰',age:44,gender:'male',traits:['stoic','pessimist'],job:'guard',background:'尋求平靜生活的資深戰士。'},
+    {name:'邱雅',age:21,gender:'female',traits:['creative','shy'],job:'tailor',background:'擁有刺繡天賦的年輕工匠。'},
+    {name:'范浩',age:36,gender:'male',traits:['lazy','charismatic'],job:'priest',background:'悠哉的精神導師。'},
 ];
 
 class EventSystem {
@@ -5761,22 +5762,22 @@ class FestivalSystem {
 const DEATH_CAUSES = [
     t('年老體衰'), t('突發疾病'), t('意外事故'), t('在探險中犧牲'), t('神秘失蹤後被發現'),
 ];
-const BABY_NAMES_MALE = [t('小龍'),t('天明'),t('子軒'),t('浩宇'),t('嘉禾'),t('承恩'),t('宏志'),t('瑞陽'),t('文博'),t('志遠'),t('新宇'),t('國棟')];
-const BABY_NAMES_FEMALE = [t('小鳳'),t('曉月'),t('詩涵'),t('雨桐'),t('美琪'),t('欣怡'),t('佳穎'),t('思琪'),t('夢瑤'),t('婉清'),t('紫萱'),t('若蘭')];
+const BABY_NAMES_MALE = ['小龍','天明','子軒','浩宇','嘉禾','承恩','宏志','瑞陽','文博','志遠','新宇','國棟'];
+const BABY_NAMES_FEMALE = ['小鳳','曉月','詩涵','雨桐','美琪','欣怡','佳穎','思琪','夢瑤','婉清','紫萱','若蘭'];
 
 // v5.27.0 肉鴿:隨機開局用的名字/背景池
 const RANDOM_SURNAMES = ['陳','林','黃','張','李','王','吳','劉','蔡','楊','許','鄭','謝','郭','洪','曾','廖','賴','徐','周','葉','蘇','高','呂','潘','簡'];
 const RANDOM_GIVEN_MALE = ['志明','建宏','俊傑','家豪','承翰','冠廷','宗翰','柏翰','彥廷','子墨','宇軒','澤','思成','岳','峰','昊','翔','睿','浩然','立','風','岩','洲','霆'];
 const RANDOM_GIVEN_FEMALE = ['淑芬','美玲','雅婷','怡君','佳蓉','曉薇','子晴','語彤','欣妍','佩珊','宛柔','思妤','詠晴','若曦','芷若','靜宜','采薇','韻如','婉婷','晴','嵐','薇','蕎','菱'];
 const RANDOM_BG = () => [
-    t('帶著一身故事來到邊境鎮,想在這裡重新開始。'),
-    t('土生土長的鎮民,對這片土地有說不完的感情。'),
-    t('曾在遠方闖蕩多年,如今只想找個安穩的落腳處。'),
-    t('沉默寡言,但只要熟了就會發現一顆熱心腸。'),
-    t('心裡藏著一個沒說出口的夢,也藏著一個沒說出口的人。'),
-    t('嘴上不饒人,做起事來卻比誰都認真。'),
-    t('走到哪都能交到朋友,也總在不經意間牽動誰的心。'),
-    t('看似瀟灑,其實對某段過去始終放不下。'),
+    '帶著一身故事來到邊境鎮,想在這裡重新開始。',
+    '土生土長的鎮民,對這片土地有說不完的感情。',
+    '曾在遠方闖蕩多年,如今只想找個安穩的落腳處。',
+    '沉默寡言,但只要熟了就會發現一顆熱心腸。',
+    '心裡藏著一個沒說出口的夢,也藏著一個沒說出口的人。',
+    '嘴上不饒人,做起事來卻比誰都認真。',
+    '走到哪都能交到朋友,也總在不經意間牽動誰的心。',
+    '看似瀟灑,其實對某段過去始終放不下。',
 ];
 
 class LifecycleSystem {
@@ -7434,28 +7435,28 @@ class World {
 
     _loadDefaultResidents() {
         const residents = [
-            {id:'chen_wei',name:t('陳偉'),age:45,gender:'male',job:'mayor',home:'residential_north',traits:['charismatic','hardworking','optimist'],values:[t('社群'),t('和平')],background:t('曾是軍官，二十年前定居邊境鎮。他深愛這個社區，把全鎮的安危視為自己的責任。')},
-            {id:'lin_mei',name:t('林美'),age:32,gender:'female',job:'doctor',home:'residential_north',traits:['kind','perfectionist','night_owl'],values:[t('知識'),t('家庭')],background:t('才華洋溢的醫生，離開城裡的大醫院來到邊境鎮行醫。經常工作到深夜。')},
-            {id:'zhang_hao',name:t('張豪'),age:28,gender:'male',job:'blacksmith',home:'residential_south',traits:['hardworking','shy','stoic'],values:[t('藝術'),t('自由')],background:t('沉默寡言但技藝精湛的鐵匠，用金屬表達自己的情感。私下喜歡寫詩。')},
-            {id:'wang_li',name:t('王麗'),age:38,gender:'female',job:'cook',home:'residential_south',traits:['gossip','kind','glutton'],values:[t('社群'),t('家庭')],background:t('酒館的靈魂人物，認識鎮上每一個人，也知道所有人的八卦。煮的菜讓人回味無窮。')},
-            {id:'liu_jun',name:t('劉俊'),age:22,gender:'male',job:'farmer',home:'residential_east',traits:['early_bird','romantic','creative'],values:[t('自然'),t('冒險')],background:t('有著遠大夢想的年輕農夫。偷偷寫情書但從未寄出，心中暗戀著某人。')},
-            {id:'zhao_xia',name:t('趙霞'),age:35,gender:'female',job:'trader',home:'residential_east',traits:['charismatic','creative','pessimist'],values:[t('財富'),t('冒險')],background:t('精明的女商人，與外面的世界有廣泛的聯繫。表面開朗但內心悲觀。')},
-            {id:'yang_feng',name:t('楊鋒'),age:40,gender:'male',job:'guard',home:'residential_north',traits:['stoic','hardworking','jealous'],values:[t('權力'),t('家庭')],background:t('前傭兵，在邊境鎮找到了平靜。但嫉妒心很重，尤其在感情方面。')},
-            {id:'sun_yu',name:t('孫雨'),age:26,gender:'female',job:'researcher',home:'residential_east',traits:['creative','neurotic','night_owl'],values:[t('知識'),t('自由')],background:t('聰明但容易焦慮的年輕學者，正在研究小鎮附近的古代遺跡。')},
-            {id:'wu_da',name:t('吳達'),age:50,gender:'male',job:'miner',home:'residential_south',traits:['hardworking','pessimist','abrasive'],values:[t('財富'),t('自由')],background:t('從十六歲就開始挖礦的老礦工。說話粗魯但非常可靠。')},
-            {id:'huang_li',name:t('黃莉'),age:29,gender:'female',job:'priest',home:'residential_north',traits:['kind','optimist','romantic'],values:[t('和平'),t('社群'),t('藝術')],background:t('溫柔的牧師，照顧禮拜堂和居民的心靈。有一副動人的歌喉，經常在教堂唱歌。')},
-            {id:'ma_qiang',name:t('馬強'),age:33,gender:'male',job:'carpenter',home:'residential_south',traits:['lazy','charismatic','gossip'],values:[t('自由'),t('冒險')],background:t('迷人的懶鬼，比起幹活更喜歡講故事。但只要認真起來手藝一流。')},
-            {id:'xu_ying',name:t('許瑩'),age:20,gender:'female',job:'tailor',home:'residential_east',traits:['shy','perfectionist','early_bird'],values:[t('藝術'),t('家庭')],background:t('鎮上最年輕的居民。天賦異稟的裁縫師，但太害羞不敢接受別人的誇獎。')},
+            {id:'chen_wei',name:'陳偉',age:45,gender:'male',job:'mayor',home:'residential_north',traits:['charismatic','hardworking','optimist'],values:['社群','和平'],background:'曾是軍官，二十年前定居邊境鎮。他深愛這個社區，把全鎮的安危視為自己的責任。'},
+            {id:'lin_mei',name:'林美',age:32,gender:'female',job:'doctor',home:'residential_north',traits:['kind','perfectionist','night_owl'],values:['知識','家庭'],background:'才華洋溢的醫生，離開城裡的大醫院來到邊境鎮行醫。經常工作到深夜。'},
+            {id:'zhang_hao',name:'張豪',age:28,gender:'male',job:'blacksmith',home:'residential_south',traits:['hardworking','shy','stoic'],values:['藝術','自由'],background:'沉默寡言但技藝精湛的鐵匠，用金屬表達自己的情感。私下喜歡寫詩。'},
+            {id:'wang_li',name:'王麗',age:38,gender:'female',job:'cook',home:'residential_south',traits:['gossip','kind','glutton'],values:['社群','家庭'],background:'酒館的靈魂人物，認識鎮上每一個人，也知道所有人的八卦。煮的菜讓人回味無窮。'},
+            {id:'liu_jun',name:'劉俊',age:22,gender:'male',job:'farmer',home:'residential_east',traits:['early_bird','romantic','creative'],values:['自然','冒險'],background:'有著遠大夢想的年輕農夫。偷偷寫情書但從未寄出，心中暗戀著某人。'},
+            {id:'zhao_xia',name:'趙霞',age:35,gender:'female',job:'trader',home:'residential_east',traits:['charismatic','creative','pessimist'],values:['財富','冒險'],background:'精明的女商人，與外面的世界有廣泛的聯繫。表面開朗但內心悲觀。'},
+            {id:'yang_feng',name:'楊鋒',age:40,gender:'male',job:'guard',home:'residential_north',traits:['stoic','hardworking','jealous'],values:['權力','家庭'],background:'前傭兵，在邊境鎮找到了平靜。但嫉妒心很重，尤其在感情方面。'},
+            {id:'sun_yu',name:'孫雨',age:26,gender:'female',job:'researcher',home:'residential_east',traits:['creative','neurotic','night_owl'],values:['知識','自由'],background:'聰明但容易焦慮的年輕學者，正在研究小鎮附近的古代遺跡。'},
+            {id:'wu_da',name:'吳達',age:50,gender:'male',job:'miner',home:'residential_south',traits:['hardworking','pessimist','abrasive'],values:['財富','自由'],background:'從十六歲就開始挖礦的老礦工。說話粗魯但非常可靠。'},
+            {id:'huang_li',name:'黃莉',age:29,gender:'female',job:'priest',home:'residential_north',traits:['kind','optimist','romantic'],values:['和平','社群','藝術'],background:'溫柔的牧師，照顧禮拜堂和居民的心靈。有一副動人的歌喉，經常在教堂唱歌。'},
+            {id:'ma_qiang',name:'馬強',age:33,gender:'male',job:'carpenter',home:'residential_south',traits:['lazy','charismatic','gossip'],values:['自由','冒險'],background:'迷人的懶鬼，比起幹活更喜歡講故事。但只要認真起來手藝一流。'},
+            {id:'xu_ying',name:'許瑩',age:20,gender:'female',job:'tailor',home:'residential_east',traits:['shy','perfectionist','early_bird'],values:['藝術','家庭'],background:'鎮上最年輕的居民。天賦異稟的裁縫師，但太害羞不敢接受別人的誇獎。'},
             // v5.5.0 新村民包(自帶戲劇鉤子)
-            {id:'zhou_ming',name:t('周明'),age:27,gender:'male',job:'trader',home:'residential_east',traits:['charismatic','romantic','creative'],values:[t('冒險'),t('藝術')],background:t('從遠方來的遊唱商人，帶著一把舊吉他和說不完的故事。走到哪都是焦點，也走到哪都留下心碎的人。')},
-            {id:'he_chang',name:t('何昌'),age:44,gender:'male',job:'carpenter',home:'residential_north',traits:['hardworking','kind','stoic'],values:[t('家庭'),t('社群')],background:t('沉穩可靠的老木匠，和妻子何秀結縭二十年。話不多，但眼裡總有妻子的身影。')},
-            {id:'he_xiu',name:t('何秀'),age:41,gender:'female',job:'cook',home:'residential_north',traits:['kind','gossip','optimist'],values:[t('家庭'),t('社群')],background:t('何昌的妻子，開朗愛笑。和王麗是廚房裡的死黨，兩人湊在一起整條街的八卦都藏不住。')},
-            {id:'zheng_wei',name:t('鄭薇'),age:23,gender:'female',job:'researcher',home:'residential_east',traits:['shy','creative','perfectionist'],values:[t('知識'),t('藝術')],background:t('孤僻的年輕天才，總是埋首書堆。最近卻常常為了一個人心神不寧，連公式都算錯。')},
+            {id:'zhou_ming',name:'周明',age:27,gender:'male',job:'trader',home:'residential_east',traits:['charismatic','romantic','creative'],values:['冒險','藝術'],background:'從遠方來的遊唱商人，帶著一把舊吉他和說不完的故事。走到哪都是焦點，也走到哪都留下心碎的人。'},
+            {id:'he_chang',name:'何昌',age:44,gender:'male',job:'carpenter',home:'residential_north',traits:['hardworking','kind','stoic'],values:['家庭','社群'],background:'沉穩可靠的老木匠，和妻子何秀結縭二十年。話不多，但眼裡總有妻子的身影。'},
+            {id:'he_xiu',name:'何秀',age:41,gender:'female',job:'cook',home:'residential_north',traits:['kind','gossip','optimist'],values:['家庭','社群'],background:'何昌的妻子，開朗愛笑。和王麗是廚房裡的死黨，兩人湊在一起整條街的八卦都藏不住。'},
+            {id:'zheng_wei',name:'鄭薇',age:23,gender:'female',job:'researcher',home:'residential_east',traits:['shy','creative','perfectionist'],values:['知識','藝術'],background:'孤僻的年輕天才，總是埋首書堆。最近卻常常為了一個人心神不寧，連公式都算錯。'},
             // v5.25.0 新村民包(新的三角、派系與同性甜蜜線)
-            {id:'su_qing',name:t('蘇晴'),age:24,gender:'female',job:'cook',home:'residential_east',traits:['optimist','charismatic','early_bird'],values:[t('社群'),t('冒險')],background:t('剛搬來的糕點師傅，笑起來像陽光。她的甜點總在清晨飄香，也悄悄記住了某個早起農夫的身影。')},
-            {id:'gao_lang',name:t('高朗'),age:31,gender:'male',job:'guard',home:'residential_north',traits:['hardworking','stoic','abrasive'],values:[t('權力'),t('社群')],background:t('吳達的舊袍澤，退伍後追隨老友來到邊境鎮。剛硬耿直,看不慣楊鋒的作風,卻對禮拜堂的歌聲莫名心軟。')},
-            {id:'ke_wei',name:t('柯薇'),age:27,gender:'female',job:'tailor',home:'residential_south',traits:['creative','romantic','night_owl'],values:[t('藝術'),t('自由')],background:t('遊歷各地的繡藝師，指尖有星光。愛自由不受拘束，卻在遇見一位安靜的星象學者後,第一次想為誰停下腳步。')},
-            {id:'ling_bo',name:t('凌波'),age:25,gender:'female',job:'researcher',home:'residential_south',traits:['shy','creative','perfectionist'],values:[t('知識'),t('自然')],background:t('沉靜的星象研究者，總在夜裡觀測。話不多,但每次抬頭看見那位繡藝師,筆記本上的星圖就會多幾筆走神的線條。')},
+            {id:'su_qing',name:'蘇晴',age:24,gender:'female',job:'cook',home:'residential_east',traits:['optimist','charismatic','early_bird'],values:['社群','冒險'],background:'剛搬來的糕點師傅，笑起來像陽光。她的甜點總在清晨飄香，也悄悄記住了某個早起農夫的身影。'},
+            {id:'gao_lang',name:'高朗',age:31,gender:'male',job:'guard',home:'residential_north',traits:['hardworking','stoic','abrasive'],values:['權力','社群'],background:'吳達的舊袍澤，退伍後追隨老友來到邊境鎮。剛硬耿直,看不慣楊鋒的作風,卻對禮拜堂的歌聲莫名心軟。'},
+            {id:'ke_wei',name:'柯薇',age:27,gender:'female',job:'tailor',home:'residential_south',traits:['creative','romantic','night_owl'],values:['藝術','自由'],background:'遊歷各地的繡藝師，指尖有星光。愛自由不受拘束，卻在遇見一位安靜的星象學者後,第一次想為誰停下腳步。'},
+            {id:'ling_bo',name:'凌波',age:25,gender:'female',job:'researcher',home:'residential_south',traits:['shy','creative','perfectionist'],values:['知識','自然'],background:'沉靜的星象研究者，總在夜裡觀測。話不多,但每次抬頭看見那位繡藝師,筆記本上的星圖就會多幾筆走神的線條。'},
         ];
         residents.forEach(r => {
             const personality = new Personality(r.traits, r.background, r.values);
@@ -7479,21 +7480,21 @@ class World {
     // v5.55.0 海風鎮名冊:漁村暱稱式人名、討海人的早起文化、自帶戲劇鉤子
     _loadHarborResidents() {
         const residents = [
-            {id:'hb_haibo',name:t('海伯'),age:58,gender:'male',job:'mayor',home:'residential_north',traits:['charismatic','stoic','early_bird'],values:[t('社群'),t('和平')],background:t('跑了四十年船的老船長，退下來當港務長。嗓門大心腸軟，全鎮的船都經過他的手。年輕時和廟祝雲姨有過一段沒說完的故事。')},
-            {id:'hb_achao',name:t('阿潮'),age:26,gender:'male',job:'farmer',home:'residential_east',traits:['early_bird','romantic','hardworking'],values:[t('自然'),t('家庭')],background:t('天不亮就出海的討海青年，蚵田和漁獲都靠他。曬得黝黑，笑起來一口白牙。每天收工都繞去海味居，只為看掌杓的小鷗一眼。')},
-            {id:'hb_xiaoou',name:t('小鷗'),age:22,gender:'female',job:'cook',home:'residential_south',traits:['optimist','early_bird','charismatic'],values:[t('社群'),t('冒險')],background:t('海味居的掌杓姑娘，一手海鮮料理讓過路商人特地繞港。開朗愛笑，渾然不覺兩個男人都在偷偷看她。')},
-            {id:'hb_langshu',name:t('浪叔'),age:49,gender:'male',job:'trader',home:'residential_east',traits:['gossip','charismatic','glutton'],values:[t('財富'),t('社群')],background:t('跑船帶貨的老江湖，南北雜貨行的貨都是他捎回來的。嘴上沒把門，外地的八卦比報紙還快。和補帆的秀姑是老夫老妻。')},
-            {id:'hb_xiugu',name:t('秀姑'),age:45,gender:'female',job:'tailor',home:'residential_east',traits:['kind','gossip','perfectionist'],values:[t('家庭'),t('藝術')],background:t('補了三十年帆的巧手，鎮上人的衣裳也全是她做的。和浪叔鬥了半輩子嘴，針線一拿起來誰都不理。')},
-            {id:'hb_shishu',name:t('石叔'),age:52,gender:'male',job:'miner',home:'residential_south',traits:['stoic','pessimist','hardworking'],values:[t('財富'),t('自由')],background:t('鹽場的老鹽工，沉默得像塊礁石。二十年前一場船難後，就和燈塔的燈爺再沒說過一句話——沒人知道那晚發生了什麼。')},
-            {id:'hb_dengye',name:t('燈爺'),age:60,gender:'male',job:'researcher',home:'residential_north',traits:['night_owl','stoic','creative'],values:[t('知識'),t('和平')],background:t('守了半輩子燈塔的老人，夜裡點燈、白天睡覺，和全鎮作息相反。書房堆滿航海日誌。提到石叔，他只會把燈芯撥得更亮。')},
-            {id:'hb_axi',name:t('阿汐'),age:30,gender:'female',job:'doctor',home:'residential_north',traits:['kind','perfectionist','early_bird'],values:[t('知識'),t('社群')],background:t('海女出身的醫師，潛得比誰都深，也把診療所打理得一塵不染。誰家被海膽扎了、被日頭曬昏了，都是她救的。和小鷗是無話不談的手帕交。')},
-            {id:'hb_amao',name:t('阿錨'),age:33,gender:'male',job:'blacksmith',home:'residential_south',traits:['hardworking','shy','stoic'],values:[t('藝術'),t('家庭')],background:t('修船工房的鐵匠，錨鏈和船釘都出自他的爐子。話少手巧，打鐵的節奏永遠穩。只有小鷗送飯來的時候，鎚子才會敲歪。')},
-            {id:'hb_yunyi',name:t('雲姨'),age:47,gender:'female',job:'priest',home:'residential_north',traits:['kind','optimist','romantic'],values:[t('和平'),t('社群')],background:t('海神小廟的廟祝，出海的人都來求她一炷平安香。溫柔健談，只有海伯經過廟前時，她會突然想不起下一句經文。')},
-            {id:'hb_aduo',name:t('阿舵'),age:36,gender:'male',job:'guard',home:'residential_south',traits:['abrasive','jealous','hardworking'],values:[t('權力'),t('家庭')],background:t('望潮哨的哨長，颱風天全鎮聽他的哨音行動。責任感重但佔有慾也重，看誰跟阿汐多說兩句話都不順眼。')},
-            {id:'hb_muxia',name:t('木蝦'),age:28,gender:'male',job:'carpenter',home:'residential_south',traits:['lazy','charismatic','gossip'],values:[t('自由'),t('冒險')],background:t('船木匠，手藝一流但三天打魚兩天曬網——字面意義上的。最愛躺在曬網場講他「差點抓到人魚」的故事。')},
-            {id:'hb_shanshan',name:t('珊珊'),age:24,gender:'female',job:'researcher',home:'residential_east',traits:['creative','neurotic','night_owl'],values:[t('知識'),t('自然')],background:t('研究潮汐與洋流的年輕學者，筆記本永遠算不完。緊張起來會語無倫次，只有看海的時候是平靜的。')},
-            {id:'hb_afu',name:t('阿浮'),age:21,gender:'male',job:'farmer',home:'residential_east',traits:['shy','early_bird','kind'],values:[t('自然'),t('家庭')],background:t('蚵田的少年，話少得像蚵殼。每天默默把最好的海菜留在珊珊的窗台上，從來不敢署名。')},
-            {id:'hb_haima',name:t('海嬤'),age:66,gender:'female',job:'cook',home:'residential_south',traits:['kind','gossip','optimist'],values:[t('家庭'),t('社群')],background:t('鎮上最老的海女退休後在海味居幫廚，醃的魚乾是傳家手藝。誰家的曾祖父年輕時暗戀過誰，她都記得。')},
+            {id:'hb_haibo',name:'海伯',age:58,gender:'male',job:'mayor',home:'residential_north',traits:['charismatic','stoic','early_bird'],values:['社群','和平'],background:'跑了四十年船的老船長，退下來當港務長。嗓門大心腸軟，全鎮的船都經過他的手。年輕時和廟祝雲姨有過一段沒說完的故事。'},
+            {id:'hb_achao',name:'阿潮',age:26,gender:'male',job:'farmer',home:'residential_east',traits:['early_bird','romantic','hardworking'],values:['自然','家庭'],background:'天不亮就出海的討海青年，蚵田和漁獲都靠他。曬得黝黑，笑起來一口白牙。每天收工都繞去海味居，只為看掌杓的小鷗一眼。'},
+            {id:'hb_xiaoou',name:'小鷗',age:22,gender:'female',job:'cook',home:'residential_south',traits:['optimist','early_bird','charismatic'],values:['社群','冒險'],background:'海味居的掌杓姑娘，一手海鮮料理讓過路商人特地繞港。開朗愛笑，渾然不覺兩個男人都在偷偷看她。'},
+            {id:'hb_langshu',name:'浪叔',age:49,gender:'male',job:'trader',home:'residential_east',traits:['gossip','charismatic','glutton'],values:['財富','社群'],background:'跑船帶貨的老江湖，南北雜貨行的貨都是他捎回來的。嘴上沒把門，外地的八卦比報紙還快。和補帆的秀姑是老夫老妻。'},
+            {id:'hb_xiugu',name:'秀姑',age:45,gender:'female',job:'tailor',home:'residential_east',traits:['kind','gossip','perfectionist'],values:['家庭','藝術'],background:'補了三十年帆的巧手，鎮上人的衣裳也全是她做的。和浪叔鬥了半輩子嘴，針線一拿起來誰都不理。'},
+            {id:'hb_shishu',name:'石叔',age:52,gender:'male',job:'miner',home:'residential_south',traits:['stoic','pessimist','hardworking'],values:['財富','自由'],background:'鹽場的老鹽工，沉默得像塊礁石。二十年前一場船難後，就和燈塔的燈爺再沒說過一句話——沒人知道那晚發生了什麼。'},
+            {id:'hb_dengye',name:'燈爺',age:60,gender:'male',job:'researcher',home:'residential_north',traits:['night_owl','stoic','creative'],values:['知識','和平'],background:'守了半輩子燈塔的老人，夜裡點燈、白天睡覺，和全鎮作息相反。書房堆滿航海日誌。提到石叔，他只會把燈芯撥得更亮。'},
+            {id:'hb_axi',name:'阿汐',age:30,gender:'female',job:'doctor',home:'residential_north',traits:['kind','perfectionist','early_bird'],values:['知識','社群'],background:'海女出身的醫師，潛得比誰都深，也把診療所打理得一塵不染。誰家被海膽扎了、被日頭曬昏了，都是她救的。和小鷗是無話不談的手帕交。'},
+            {id:'hb_amao',name:'阿錨',age:33,gender:'male',job:'blacksmith',home:'residential_south',traits:['hardworking','shy','stoic'],values:['藝術','家庭'],background:'修船工房的鐵匠，錨鏈和船釘都出自他的爐子。話少手巧，打鐵的節奏永遠穩。只有小鷗送飯來的時候，鎚子才會敲歪。'},
+            {id:'hb_yunyi',name:'雲姨',age:47,gender:'female',job:'priest',home:'residential_north',traits:['kind','optimist','romantic'],values:['和平','社群'],background:'海神小廟的廟祝，出海的人都來求她一炷平安香。溫柔健談，只有海伯經過廟前時，她會突然想不起下一句經文。'},
+            {id:'hb_aduo',name:'阿舵',age:36,gender:'male',job:'guard',home:'residential_south',traits:['abrasive','jealous','hardworking'],values:['權力','家庭'],background:'望潮哨的哨長，颱風天全鎮聽他的哨音行動。責任感重但佔有慾也重，看誰跟阿汐多說兩句話都不順眼。'},
+            {id:'hb_muxia',name:'木蝦',age:28,gender:'male',job:'carpenter',home:'residential_south',traits:['lazy','charismatic','gossip'],values:['自由','冒險'],background:'船木匠，手藝一流但三天打魚兩天曬網——字面意義上的。最愛躺在曬網場講他「差點抓到人魚」的故事。'},
+            {id:'hb_shanshan',name:'珊珊',age:24,gender:'female',job:'researcher',home:'residential_east',traits:['creative','neurotic','night_owl'],values:['知識','自然'],background:'研究潮汐與洋流的年輕學者，筆記本永遠算不完。緊張起來會語無倫次，只有看海的時候是平靜的。'},
+            {id:'hb_afu',name:'阿浮',age:21,gender:'male',job:'farmer',home:'residential_east',traits:['shy','early_bird','kind'],values:['自然','家庭'],background:'蚵田的少年，話少得像蚵殼。每天默默把最好的海菜留在珊珊的窗台上，從來不敢署名。'},
+            {id:'hb_haima',name:'海嬤',age:66,gender:'female',job:'cook',home:'residential_south',traits:['kind','gossip','optimist'],values:['家庭','社群'],background:'鎮上最老的海女退休後在海味居幫廚，醃的魚乾是傳家手藝。誰家的曾祖父年輕時暗戀過誰，她都記得。'},
         ];
         residents.forEach(r => {
             const personality = new Personality(r.traits, r.background, r.values);
