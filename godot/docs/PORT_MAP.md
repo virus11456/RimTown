@@ -60,7 +60,7 @@
 | [RogueCardSystem](../../chrome-extension/simulation.js#L9476) | 際遇卡 | —; world: agents, clock, dailyNews, logMessage, stockpile, tickCount | `rogueCards` | 4d | 已盤點，尚未移植 |
 | [NPCHelpSystem](../../chrome-extension/simulation.js#L9600) | NPC 求助 | —; world: agents, logMessage, reputationSystem, stockpile, tickCount | `npcHelp` | 4d | 已盤點，尚未移植 |
 | [SeededRandom](../../chrome-extension/simulation.js#L9767) | 地圖種子亂數 | —; world: — | `待確認` | 4a | Phase 4a 核心完成；見 SimClock／SimNeeds／SimRandom |
-| [PixelTileMap](../../chrome-extension/tilemap.js#L225) | 格網住房尋路渲染 | —; world: — | `無；格網與 agentPositions 屬執行期` | 3 / 4a | Phase 3 格網＋4a A*／NPC移動完成；玩家直接操作待 UI 階段 |
+| [PixelTileMap](../../chrome-extension/tilemap.js#L225) | 格網住房尋路渲染 | —; world: — | `無；格網與 agentPositions 屬執行期` | 3 / 4a | Phase 3 格網＋4a A*／NPC移動及桌面旅人直接操作完成；近身互動與手機方向控制待 UI 階段 |
 
 ## 與 brief 不一致之處
 

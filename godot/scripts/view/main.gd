@@ -29,6 +29,7 @@ var playback: HBoxContainer
 var play_button: Button
 var speed_button: Button
 var selected_agent := ""
+var traveler: TravelerControls
 
 func _ready() -> void:
 	TranslationServer.set_locale("zh_TW")
@@ -38,11 +39,15 @@ func _ready() -> void:
 	add_child(rig)
 	_make_world_view()
 	_build_ui()
+	traveler=TravelerControls.new()
+	traveler.modal_open=func(): return dialog.visible
+	add_child(traveler)
 	load_demo("frontier")
 	get_viewport().size_changed.connect(_responsive)
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_matrix.flag"): _capture_demo()
 	_responsive()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_playtest.flag"): _capture_playtest()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_traveler.flag"): _capture_traveler()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -141,6 +146,8 @@ func _build_ui() -> void:
 	play_button = _button("▶ 開始",playback,toggle_simulation)
 	_button("＋15 分",playback,step_simulation)
 	speed_button = _button("1×",playback,func(): speed={1:4,4:16,16:1}[speed]; speed_button.text="%d×"%speed)
+	var locate:=_button("找旅人",playback,focus_traveler)
+	locate.tooltip_text="WASD／方向鍵移動旅人；Q／E 轉向相機。"
 	drawer = PanelContainer.new()
 	drawer.add_theme_stylebox_override("panel",_panel(Color("172e2ef7")))
 	hud.add_child(drawer)
@@ -190,6 +197,8 @@ func _load_document(text: String, source: String) -> bool:
 		status.text = incoming.error
 		return false
 	running=false
+	if traveler!=null: traveler.clear()
+	rig.follow_player=false
 	has_simulated=false
 	frame_accumulator=0
 	tick_accumulator=0
@@ -201,7 +210,7 @@ func _load_document(text: String, source: String) -> bool:
 	heading.text = str(data.get("townName","小鎮"))
 	var clock_data: Dictionary = data.clock
 	summary.text = "%s %d日 %02d:%02d · %d人" % [clock_data.get("season",""),clock_data.get("day",1),clock_data.get("hour",6),clock_data.get("minute",0),data.agents.size()]
-	status.text = "%s · 已暫停，按 ▶ 開始試玩" % source
+	status.text = "%s · 時間暫停 · WASD 移動旅人" % source
 	if world_view != null:
 		world_view.call("display_save",data)
 	if world_view != null:
@@ -209,6 +218,10 @@ func _load_document(text: String, source: String) -> bool:
 		var saved: Dictionary=document.data.get("_godot4a",{})
 		if saved.has("motion") and saved.motion is Dictionary:
 			motion.positions=saved.motion.duplicate(true)
+			motion.manual_player=bool(saved.get("manual_player",false))
+			if motion.manual_player and motion.positions.has("player"):
+				motion.positions.player.walking=false
+				motion.positions.player.walkStep=0
 			if saved.get("house_map") is Dictionary: motion.layout.agent_house=saved.house_map.duplicate(true)
 			tick_accumulator=float(saved.get("tick_accumulator",0))
 		else: motion.update(simulation.data.agents)
@@ -270,6 +283,7 @@ func show_agent(id: String,focus_camera := true) -> void:
 	for key in agent.get("needs",{}):
 		_label("%s    %d" % [{"hunger":"飽足","rest":"休息","social":"社交","comfort":"舒適","recreation":"娛樂","beauty":"美感"}.get(key,key),agent.needs[key]],drawer_body,14)
 	if world_view != null and focus_camera:
+		rig.follow_player=id=="player"
 		var pos: Variant = world_view.call("agent_position",id)
 		if pos is Vector3: rig.position = Vector3(pos.x,0,pos.z)
 	_button("返回居民列表",drawer_body,func(): show_tab("居民",true))
@@ -359,6 +373,7 @@ func progress_snapshot() -> Dictionary:
 	progress._godot4a.motion=motion.positions.duplicate(true)
 	progress._godot4a.house_map=motion.layout.agent_house.duplicate(true)
 	progress._godot4a.tick_accumulator=tick_accumulator
+	progress._godot4a.manual_player=motion.manual_player
 	return progress
 
 func export_progress() -> void:
@@ -445,6 +460,7 @@ func _tick_simulation() -> void:
 	if active_tab=="居民" and not selected_agent.is_empty(): show_agent(selected_agent,false)
 
 func _process(delta: float) -> void:
+	_process_traveler(delta)
 	if not running: return
 	frame_accumulator+=minf(delta,.25)*speed
 	while frame_accumulator>=1.0/60:
@@ -484,3 +500,37 @@ func _capture_playtest() -> void:
 	viewport.get_texture().get_image().save_png("res://docs/playtest-mobile.png")
 	viewport.queue_free()
 	print("PLAYTEST_RENDER_CAPTURE_OK ticks=",simulation.data.tickCount)
+
+func focus_traveler() -> void:
+	if not motion.positions.has("player"):
+		status.text="這份存檔沒有旅人。"
+		return
+	var p: Dictionary=motion.positions.player
+	rig.follow_player=true
+	rig.position=Vector3(float(p.x)/16,0,float(p.y)/16)
+	status.text="WASD／方向鍵移動 · 拖曳地圖可停止跟隨"
+
+func _process_traveler(delta: float) -> void:
+	if traveler==null or not motion.positions.has("player"): return
+	var input:=traveler.direction()
+	# Screen-relative movement remains intuitive after each 90-degree camera rotation.
+	var world_direction:=rig.global_transform.basis.x*input.x+rig.global_transform.basis.z*input.y
+	var moved:=motion.move_player(Vector2(world_direction.x,world_direction.z),delta)
+	if not input.is_zero_approx(): rig.follow_player=true
+	if moved:
+		has_simulated=true
+		var p: Dictionary=motion.positions.player
+		var location:=motion.location_at(Vector2(p.x,p.y))
+		if not location.is_empty(): simulation.data.agents.player.currentLocation=location
+		simulation.data.agents.player.activity="wandering"
+	if motion.manual_player: world_view.animate_agents(motion.positions)
+	var player: Dictionary=motion.positions.player
+	rig.follow_position(Vector3(float(player.x)/16,0,float(player.y)/16),delta)
+
+func _capture_traveler() -> void:
+	await get_tree().create_timer(1).timeout
+	focus_traveler()
+	rig.zoom_by(.6)
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/traveler-preview.png")
+	print("TRAVELER_RENDER_CAPTURE_OK")

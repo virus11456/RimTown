@@ -225,6 +225,18 @@ func _build_villagers(save: Dictionary) -> void:
 		actor.position=Vector3(pos.x/16,.16,pos.y/16)
 		content.add_child(actor)
 		actors[id]=actor
+		if id=="player":
+			var marker:=Label3D.new()
+			marker.name="TravelerMarker"
+			marker.text="▼ 旅人"
+			marker.font=load("res://assets/fonts/NotoSansTC.ttf")
+			marker.font_size=32
+			marker.pixel_size=.014
+			marker.position.y=2.2
+			marker.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+			marker.no_depth_test=true
+			marker.modulate=Color("ffe39b")
+			actor.add_child(marker)
 		var body := _instance(body_name,Vector3.ZERO,Vector3.ONE,actor)
 		var job: String=str(agent.get("jobKey","default"))
 		body.mesh=_recolor(body.mesh,int(jobs.get(job,20)))

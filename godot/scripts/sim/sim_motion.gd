@@ -4,10 +4,12 @@ extends RefCounted
 var layout: TownLayout
 var pathfinder:=SimPath.new()
 var positions: Dictionary={}
+var manual_player := false
 func configure(value: TownLayout) -> void:
 	layout=value
 	pathfinder.grid=layout.grid
 	positions.clear()
+	manual_player=false
 func door(location: String,id: String) -> Variant:
 	var zone: Dictionary=layout.houses.get(location,{})
 	if zone.is_empty() and location.begins_with("residential_"):
@@ -28,6 +30,7 @@ func _set_point(p: Dictionary,value: Vector2) -> void:
 	p.x=value.x; p.y=value.y
 func update(agents: Dictionary,chat_target: String="") -> void:
 	for id in agents:
+		if id=="player" and manual_player: continue
 		var a: Dictionary=agents[id]
 		var location: String=a.currentLocation
 		var target: Vector2
@@ -132,3 +135,41 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 				p.doorPhase=null; p.walking=false; p.walkStep=0; p._pathWaypoints=[]
 	for id in positions.keys():
 		if not agents.has(id): positions.erase(id)
+
+func move_player(direction: Vector2,delta: float) -> bool:
+	if not positions.has("player"): return false
+	var p: Dictionary=positions.player
+	if direction.is_zero_approx():
+		if manual_player: p.walking=false; p.walkStep=0
+		return false
+	manual_player=true
+	var movement:=direction.limit_length()*72.0*clampf(delta,0,.05)
+	var previous:=Vector2(p.x,p.y)
+	# Axis-separated collision allows sliding along walls. Step <= 3.6 px < one tile.
+	var nx:=clampf(float(p.x)+movement.x,4,1276)
+	var ny:=clampf(float(p.y)+movement.y,4,956)
+	if layout._walkable(Vector2(nx,p.y)): p.x=nx
+	if layout._walkable(Vector2(p.x,ny)): p.y=ny
+	p.targetX=p.x; p.targetY=p.y
+	p._pathWaypoints=[]; p._pathIdx=0
+	p.doorPhase=null; p.destDoor=null; p.doorWaypoint=null; p.finalTarget=null
+	var moved:=Vector2(p.x,p.y).distance_squared_to(previous)>.00000001
+	p.walking=moved
+	p.walkStep=p.get("walkStep",0)+1 if moved else 0
+	p.activity="wandering"
+	if movement.x!=0: p.facing=1 if movement.x>0 else -1
+	p.dir4=("down" if movement.y>0 else "up") if absf(movement.y)>absf(movement.x)*1.4 else "side"
+	return moved
+
+func location_at(point: Vector2) -> String:
+	var best:=""
+	var area:=INF
+	for id in layout.buildings:
+		var zone: Dictionary=layout.buildings[id]
+		if point.x>=zone.x*16 and point.x<(zone.x+zone.w)*16 and point.y>=zone.y*16 and point.y<(zone.y+zone.h)*16:
+			if zone.w*zone.h<area: best=id; area=zone.w*zone.h
+	if not best.is_empty(): return best
+	for id in layout.nature:
+		var zone: Dictionary=layout.nature[id]
+		if point.x>=zone.x*16 and point.x<(zone.x+zone.w)*16 and point.y>=zone.y*16 and point.y<(zone.y+zone.h)*16: return id
+	return ""

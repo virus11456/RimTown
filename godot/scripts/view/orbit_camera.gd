@@ -5,6 +5,7 @@ var angle := 45.0
 var width := 40.0
 var touches: Dictionary = {}
 var enabled := true
+var follow_player := false
 
 func _ready() -> void:
 	camera = Camera3D.new()
@@ -31,6 +32,7 @@ func zoom_by(factor: float) -> void:
 	_sync()
 
 func pan(delta: Vector2) -> void:
+	follow_player=false
 	var scale_factor := width / maxf(get_viewport().get_visible_rect().size.x,1)
 	var right := global_transform.basis.x
 	var forward := global_transform.basis.z
@@ -68,3 +70,9 @@ func _input(event: InputEvent) -> void:
 	# Always clean released touches even if release occurs over a UI panel.
 	if event is InputEventScreenTouch and not event.pressed:
 		touches.erase(event.index)
+
+func follow_position(target: Vector3,delta: float) -> void:
+	if not follow_player: return
+	position=position.lerp(Vector3(target.x,0,target.z),1.0-pow(.88,maxf(delta,0)*60.0))
+	position.x=clampf(position.x,0,80)
+	position.z=clampf(position.z,0,60)

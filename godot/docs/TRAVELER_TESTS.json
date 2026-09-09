@@ -1,0 +1,6 @@
+{
+  "checks": 50,
+  "failures": [],
+  "method": "pure collision checks plus Godot keyboard input dispatch",
+  "scope": "desktop keyboard control; mobile hardware not tested"
+}
