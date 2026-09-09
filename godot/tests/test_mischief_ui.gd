@@ -31,47 +31,49 @@ func run() -> void:
 	var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app)
 	await process_frame
 	app.set_process(false)
-	app.simulation.mischief_enabled=false # Isolate earlier suites.
-	check(app.simulation.stargazing_enabled,"fresh import enables stargazing")
+	check(app.simulation.mischief_enabled,"fresh import enables mischief")
 	var raw: String=app.document.serialize()
 	var w: SimWorld=app.simulation
 	var a: Dictionary=w.data.agents.chen_wei
 	var b: Dictionary=w.data.agents.lin_mei
 	w.data.clock.hour=23
+	for other in w.data.agents.values(): other.activity="sleeping"
 	for actor in [a,b]:
-		actor.activity="stargazing";actor.currentLocation="town_square";actor.personality.traits=["night_owl"]
+		actor.activity="night_mischief";actor.currentLocation="town_square";actor.personality.traits=["night_owl","gossip"]
 		actor.needs.rest=100;actor.needs.hunger=100
 	var old_player: Dictionary=w.data.agents.player.duplicate(true)
-	var old_mood: float=w.runtime[a.id].moodModifier
+	var old_affinity: float=SimSocial.relationship(b,a).affinity
 	var old_memory: int=a.memory.size()
 	var found:=false
 	for i in 600:
-		SimStargazing.process(a,w)
-		if w.data.messageLog.back().type=="discovery": found=true;break
-	check(found,"prepared scenario reaches discovery")
-	check(w.runtime[a.id].moodModifier>old_mood,"stargazing mood bonus")
-	check(a.memory.size()>old_memory,"discovery and bonding create memories")
+		SimMischief.process(a,w)
+		if not w.data.messageLog.is_empty() and "撞見了" in w.data.messageLog.back().content: found=true;break
+	check(found,"prepared scenario reaches witnessed prank")
+	check(SimSocial.relationship(b,a).affinity==maxf(-100,old_affinity-5),"witness affinity drops by five")
+	check(a.memory.size()>old_memory,"prank creates actor memory")
 	check(equal(old_player,w.data.agents.player),"unrelated player unchanged")
 	app.has_simulated=true
 	app.show_tab("居民",true);app.show_thoughts(a.id)
-	check(has_text(app.drawer_body,a.currentThought),"discovery visible as current voice")
+	check(has_text(app.drawer_body,a.currentThought),"caught response visible as current voice")
 	app.show_memories(a.id)
-	check(has_text(app.drawer_body,a.currentThought),"discovery visible in memory page")
+	check(has_text(app.drawer_body,"我趁夜裡"),"actor mischief memory")
+	app.show_memories(b.id)
+	check(has_text(app.drawer_body,"撞見"+a.name),"witness memory visible")
 	await process_frame
 	await process_frame
 	for child in app.drawer_body.get_children():
 		if child is Control: check(child.size.x<=app.drawer.size.x,"375px memory content width")
 	check(app.document.serialize()==raw,"original document preserved")
-	FileAccess.open("res://tests/stargazing/compatibility-save.json.tmp",FileAccess.WRITE).store_string(JSON.stringify(app.progress_snapshot(),"",false,true))
-	app.show_tab("設定",true);press(app.drawer_body,"觀星互動：開啟")
-	check(not w.stargazing_enabled,"toggle off")
+	FileAccess.open("res://tests/mischief/compatibility-save.json.tmp",FileAccess.WRITE).store_string(JSON.stringify(app.progress_snapshot(),"",false,true))
+	app.show_tab("設定",true);press(app.drawer_body,"夜間惡作劇：開啟")
+	check(not w.mischief_enabled,"toggle off")
 	app._load_document(JSON.stringify(app.progress_snapshot(),"",false,true),"resume")
-	check(not app.simulation.stargazing_enabled,"disabled mode survives JSON load")
-	app.show_tab("設定",true);press(app.drawer_body,"觀星互動：關閉")
-	check(app.simulation.stargazing_enabled,"toggle on")
+	check(not app.simulation.mischief_enabled,"disabled mode survives JSON load")
+	app.show_tab("設定",true);press(app.drawer_body,"夜間惡作劇：關閉")
+	check(app.simulation.mischief_enabled,"toggle on")
 	var resumed:=SimWorld.new();resumed.load_snapshot(JSON.parse_string(JSON.stringify(app.simulation.snapshot(),"",false,true)))
 	for i in 96: app._tick_simulation();resumed.tick()
 	check(equal(app.simulation.snapshot(),resumed.snapshot()),"all enabled modes resume through a day")
-	var report:={"checks":checks,"failures":failures,"scope":"prepared discovery, mood/memory and mobile resident pages, unrelated player, original data, toggle and all-mode JSON/RNG resume; Godot button signals"}
-	FileAccess.open("res://docs/STARGAZING_UI_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "))
+	var report:={"checks":checks,"failures":failures,"scope":"prepared witnessed prank, affinity/memory and mobile resident pages, unrelated player, original data, toggle and all-mode JSON/RNG resume; Godot button signals"}
+	FileAccess.open("res://docs/MISCHIEF_UI_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "))
 	print(JSON.stringify(report));quit(0 if failures.is_empty() else 1)

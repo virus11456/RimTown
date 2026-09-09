@@ -1,0 +1,5 @@
+{
+  "checks": 2018,
+  "failures": [],
+  "scope": "336 original JS scenarios, 32 calls each; six pranks, solo, awake/sleeping/player/multiple witnesses, remote witnesses, affinity floor, memories, topics and RNG"
+}

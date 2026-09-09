@@ -92,3 +92,5 @@ node godot/tools/golden.mjs：兩次獨立 VM 執行、兩個主題、各 1/7/30
 - `Agent._generateThought` → `SimInnerVoice.generate`：currentThought 日常文字、原版候選與 RNG 已接入；經濟／新聞僅讀取存檔。
 
 - `Agent._doStargazing` → `SimStargazing.process`：觀星需求／心情、雙向關係與記憶、四種發現與話題已接入；惡作劇和弔念效果待下一批。
+
+- `Agent._doNightMischief` → `SimMischief.process`：六種惡作劇、全鎮未睡 NPC 目擊、好感／記憶／話題／心情已接入；弔念待後續。

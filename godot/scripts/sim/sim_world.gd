@@ -13,6 +13,7 @@ var factions_enabled := false
 var thoughts_enabled := false
 var inner_voice_enabled := false
 var stargazing_enabled := false
+var mischief_enabled := false
 var presentation_events: Array=[]
 var social := SimSocial.new()
 func load_snapshot(snapshot: Dictionary) -> void:
@@ -27,6 +28,7 @@ func load_snapshot(snapshot: Dictionary) -> void:
 	thoughts_enabled=bool(saved.get("thoughts_enabled",false))
 	inner_voice_enabled=bool(saved.get("inner_voice_enabled",false))
 	stargazing_enabled=bool(saved.get("stargazing_enabled",false))
+	mischief_enabled=bool(saved.get("mischief_enabled",false))
 	_restore_relationship_precision(saved.get("relationship_precision",[]))
 	rng.state = int(saved.get("random_state",11456))
 	runtime = saved.get("agents",{}).duplicate(true)
@@ -35,7 +37,7 @@ func load_snapshot(snapshot: Dictionary) -> void:
 func snapshot() -> Dictionary:
 	var result := data.duplicate(true)
 	var extension: Dictionary = result.get("_godot4a",{}).duplicate(true)
-	extension.merge({"version":1,"random_state":rng.state,"agents":runtime.duplicate(true),"social_enabled":social_enabled,"gossip_enabled":gossip_enabled,"romance_enabled":romance_enabled,"feuds_enabled":feuds_enabled,"factions_enabled":factions_enabled,"thoughts_enabled":thoughts_enabled,"inner_voice_enabled":inner_voice_enabled,"stargazing_enabled":stargazing_enabled,"relationship_precision":_relationship_precision()},true)
+	extension.merge({"version":1,"random_state":rng.state,"agents":runtime.duplicate(true),"social_enabled":social_enabled,"gossip_enabled":gossip_enabled,"romance_enabled":romance_enabled,"feuds_enabled":feuds_enabled,"factions_enabled":factions_enabled,"thoughts_enabled":thoughts_enabled,"inner_voice_enabled":inner_voice_enabled,"stargazing_enabled":stargazing_enabled,"mischief_enabled":mischief_enabled,"relationship_precision":_relationship_precision()},true)
 	result._godot4a = extension
 	if gossip_enabled and result.get("townFeed") is Dictionary and result.townFeed.get("posts") is Array:
 		result.townFeed.posts=result.townFeed.posts.slice(maxi(0,result.townFeed.posts.size()-80))
@@ -97,6 +99,7 @@ func _update(id: String) -> void:
 	elif a.activity=="stargazing":
 		a.needs.recreation=minf(100,a.needs.recreation+2)
 		a.needs.comfort=minf(100,a.needs.comfort+1)
+	if a.activity=="night_mischief" and mischief_enabled: SimMischief.process(a,self)
 	if a.activity=="night_stroll":
 		a.needs.recreation=minf(100,a.needs.recreation+1)
 		a.needs.comfort=minf(100,a.needs.comfort+.5)
