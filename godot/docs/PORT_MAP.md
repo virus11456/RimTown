@@ -19,10 +19,10 @@
 | [QuestSystem](../../chrome-extension/quest-system.js#L734) | 主支線每日任務 | —; world: agents, buildings, clock, dailyNews, industry, logMessage, multiEnding, processing, stockpile, tickCount | `questSystem` | 4e | 已盤點，尚未移植 |
 | [GameClock](../../chrome-extension/simulation.js#L6) | 時鐘與季節 | —; world: — | `clock` | 4a | Phase 4a 核心完成；見 SimClock／SimNeeds／SimRandom |
 | [Needs](../../chrome-extension/simulation.js#L58) | 六種需求與心情 | —; world: — | `agents.*.needs` | 4a | Phase 4a 核心完成；見 SimClock／SimNeeds／SimRandom |
-| [MemoryEntry](../../chrome-extension/simulation.js#L103) | 單則記憶 | —; world: — | `agents.*.memory[]` | 4b | 已盤點，尚未移植 |
-| [Memory](../../chrome-extension/simulation.js#L114) | 記憶流與檢索 | MemoryEntry; world: — | `agents.*.memory` | 4b | 已盤點，尚未移植 |
-| [Relationship](../../chrome-extension/simulation.js#L170) | 雙人關係 | —; world: — | `agents.*.relationships.*` | 4b | 已盤點，尚未移植 |
-| [RelationshipManager](../../chrome-extension/simulation.js#L215) | 關係集合 | Relationship; world: — | `agents.*.relationships` | 4b | 已盤點，尚未移植 |
+| [MemoryEntry](../../chrome-extension/simulation.js#L103) | 單則記憶 | —; world: — | `agents.*.memory[]` | 4b | 4b 基礎資料層與居民查閱完成；自動社交／婚戀尚未接入，見 SimMemory／SimRelationships |
+| [Memory](../../chrome-extension/simulation.js#L114) | 記憶流與檢索 | MemoryEntry; world: — | `agents.*.memory` | 4b | 4b 基礎資料層與居民查閱完成；自動社交／婚戀尚未接入，見 SimMemory／SimRelationships |
+| [Relationship](../../chrome-extension/simulation.js#L170) | 雙人關係 | —; world: — | `agents.*.relationships.*` | 4b | 4b 基礎資料層與居民查閱完成；自動社交／婚戀尚未接入，見 SimMemory／SimRelationships |
+| [RelationshipManager](../../chrome-extension/simulation.js#L215) | 關係集合 | Relationship; world: — | `agents.*.relationships` | 4b | 4b 基礎資料層與居民查閱完成；自動社交／婚戀尚未接入，見 SimMemory／SimRelationships |
 | [Personality](../../chrome-extension/simulation.js#L256) | 性格特質 | Personality; world: — | `agents.*.personality` | 4a | Phase 4a 載入既有角色之運行核心完成；跨系統效果及新角色生成待後續 |
 | [Skill](../../chrome-extension/simulation.js#L305) | 單項技能 | —; world: — | `agents.*.skills.*` | 4a | Phase 4a 載入既有角色之運行核心完成；跨系統效果及新角色生成待後續 |
 | [SkillSet](../../chrome-extension/simulation.js#L329) | 技能集合 | Skill, SkillSet; world: — | `agents.*.skills` | 4a | Phase 4a 載入既有角色之運行核心完成；跨系統效果及新角色生成待後續 |

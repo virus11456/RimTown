@@ -1,0 +1,5 @@
+{
+  "checks": 695,
+  "failures": [],
+  "scope": "Memory/Relationship primitives against upstream JS and read-only resident pages; no autonomous social simulation"
+}

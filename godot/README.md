@@ -1,4 +1,4 @@
-# RimTown · Phase 4a＋旅人操作試玩版
+# RimTown · 旅人操作＋記憶與關係試玩版
 
 在 Phase 0–3 觀賞版上加入時鐘、需求、作息、技能成長、A* 尋路、進出建築與卡住復原。兩鎮範例可直接開啟；預設暫停，WASD／方向鍵可直接移動旅人，按「▶ 開始」則推進村民作息。這是分階段試玩版，尚未包含建設、對話、經濟、關係與任務的完整模擬。
 
@@ -105,3 +105,18 @@ godot --headless --path . --script res://tests/test_interaction.gd
 GitHub 17 筆更新已合併進本機 codex/godot-viewer。新增推薦碼 register(invite)、chat(lang) 和 set_settings(dialogue_lang) 契約；省略設定語言時不覆寫既有偏好。這些是 API 能力，尚未新增註冊或 AI 對話介面。55 項 API／存檔／相機測試、16 次本機 HTTP 請求通過；既有旅人、試玩、畫面、地圖、模擬與 JS 讀回測試通過。
 
 新版網頁的登入首頁、AI 語言生成／人名對照、載入時清理 AI 台詞及簡轉繁已在原始 JS 合併，但未全部移植成 Godot 功能。Godot 匯入與原始副本仍保留原文；試玩進度送回新版網頁時會接受網頁既有清理。Godot 新介面尚未完整英文化，完整 World.tick 的 30 天對照仍屬歷史基準。此次未推送 GitHub 或部署。
+
+## Phase 4b 首批：記憶與關係
+
+「居民」→選一人→「近期記憶」或「人際關係」。近期頁顯示最後 20 則；關係頁顯示居民對各人的好感、信任、戀慕與互動次數，並可檢索相關記憶或查看對方。空紀錄會顯示提示。兩鎮均可讀取；想看較多既有故事，可匯入 tests/golden/frontier-day-07.json。
+
+SimMemory 提供容量、近期／人物／重要記憶／反思篩選、原版加權檢索（含 JS UTF-16 bigram）；SimRelationships 提供分類、限幅、互動／共同記憶、朋友與伴侶查詢。這些是純 RefCounted 資料層，未知欄位及原始存檔保留。尚未啟用 NPC 自動閒聊、婚戀或派系／八卦；此版本的操作是查看既有社交紀錄，不會新增關係變動，並非整個 Phase 4b 完成。
+
+```sh
+node tools/social_oracle.mjs
+godot --headless --path . --script res://tests/test_social.gd
+```
+
+88 組記憶檢索、44 組關係邊界、修改／管理集合與居民頁面合計 695 項檢查通過。介面測試透過按鈕訊號觸發，非 OS 點擊端對端；另已實際渲染桌面及 375×812 截圖（docs/social-desktop.png、social-mobile.png）。458 項試玩、50 項旅人、36 項畫面回歸通過。
+
+旅人動畫仍為簡易版本。後續統一調整左右手腳交替、步幅與每秒 4.5 格速度匹配、停走過渡，以及 work／sleep／talk 姿勢；本次未更改動畫。

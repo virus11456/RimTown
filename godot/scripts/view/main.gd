@@ -29,6 +29,8 @@ var playback: HBoxContainer
 var play_button: Button
 var speed_button: Button
 var selected_agent := ""
+var resident_page := "summary"
+var memory_target := ""
 var traveler: TravelerControls
 
 func _ready() -> void:
@@ -48,6 +50,7 @@ func _ready() -> void:
 	_responsive()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_playtest.flag"): _capture_playtest()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_traveler.flag"): _capture_traveler()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_social.flag"): _capture_social()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -272,6 +275,7 @@ func show_tab(tab: String, refresh := false) -> void:
 		"設定": _settings_ui()
 
 func show_agent(id: String,focus_camera := true) -> void:
+	resident_page="summary"
 	selected_agent=id
 	_clear_drawer()
 	var agent: Dictionary = _current_data().agents[id]
@@ -286,7 +290,64 @@ func show_agent(id: String,focus_camera := true) -> void:
 		rig.follow_player=id=="player"
 		var pos: Variant = world_view.call("agent_position",id)
 		if pos is Vector3: rig.position = Vector3(pos.x,0,pos.z)
-	_button("返回居民列表",drawer_body,func(): show_tab("居民",true))
+	_button("近期記憶",drawer_body,func(): show_memories(id))
+	_button("人際關係",drawer_body,func(): show_relationships(id))
+	_button("返回居民列表",drawer_body,func(): selected_agent=""; show_tab("居民",true))
+
+func _wrapped(text: String,size := 14) -> Label:
+	var item := _label(text,drawer_body,size)
+	item.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	return item
+
+func show_memories(id: String,target_id := "") -> void:
+	selected_agent=id
+	resident_page="memory"
+	memory_target=target_id
+	_clear_drawer()
+	var data := _current_data()
+	var agent: Dictionary=data.agents[id]
+	var memory := SimMemory.new()
+	memory.load_entries(agent.get("memory",[]))
+	_wrapped(str(agent.get("name",id))+" · 記憶",22)
+	_button("返回居民資料",drawer_body,func(): show_agent(id,false))
+	var entries: Array
+	if target_id.is_empty():
+		entries=memory.recent(20)
+		_wrapped("最近 %d 則／共 %d 則（由新到舊）" % [entries.size(),memory.entries.size()])
+	else:
+		var target_name := str(data.agents.get(target_id,{}).get("name",target_id))
+		entries=memory.retrieve(target_name,[target_name],5,int(data.get("tickCount",0)))
+		_wrapped("與「%s」相關的記憶檢索：按人物、內容、重要度與時間選出最多 5 則；可能包含背景記憶。" % target_name)
+	entries.reverse()
+	if entries.is_empty(): _wrapped("尚無記憶。")
+	for entry in entries:
+		_wrapped("%s · %s · 重要度 %s" % [str(entry.get("timeStr","")),{"arrival":"抵達","conversation":"交談","departure":"離開","family":"家庭","milestone":"里程碑","observation":"見聞","raid":"襲擊","reflection":"反思","relationship":"關係","social":"社交","whisper":"耳語"}.get(str(entry.get("category","")),"記憶"),str(int(entry.get("importance",5)))],12)
+		_wrapped(str(entry.get("content","")))
+	if not target_id.is_empty():
+		_button("返回人際關係",drawer_body,func(): show_relationships(id))
+	_button("返回居民資料",drawer_body,func(): show_agent(id,false))
+
+func show_relationships(id: String) -> void:
+	selected_agent=id
+	resident_page="relationships"
+	_clear_drawer()
+	var data := _current_data()
+	var agent: Dictionary=data.agents[id]
+	var manager := SimRelationships.new()
+	manager.load_relationships(agent.get("relationships",{}))
+	_wrapped(str(agent.get("name",id))+" · 人際關係",22)
+	_button("返回居民資料",drawer_body,func(): show_agent(id,false))
+	_wrapped("以下是這位居民對他人的感受，雙方數值可能不同。")
+	if manager.relationships.is_empty(): _wrapped("尚無關係紀錄。")
+	for target_id in manager.relationships:
+		var relation: Dictionary=manager.relationships[target_id]
+		var target_name := str(data.agents.get(target_id,{}).get("name",relation.get("targetName",target_id)))
+		_wrapped(target_name+" · "+SimRelationships.relationship_type(relation),18)
+		_wrapped("好感 %s · 信任 %s · 戀慕 %s\n互動 %s 次" % [str(snappedf(float(relation.get("affinity",0)),.1)),str(snappedf(float(relation.get("trust",0)),.1)),str(snappedf(float(relation.get("romanticInterest",0)),.1)),str(int(relation.get("interactionCount",0)))])
+		if data.agents.has(target_id):
+			_button("查看「%s」資料" % target_name,drawer_body,func(): show_agent(target_id))
+			_button("檢索相關記憶",drawer_body,func(): show_memories(id,target_id))
+	_button("返回居民資料",drawer_body,func(): show_agent(id,false))
 
 func _line(placeholder: String, secret := false) -> LineEdit:
 	var field := LineEdit.new()
@@ -457,7 +518,11 @@ func _tick_simulation() -> void:
 		motion.pathfinder.grid=world_view.layout.grid
 	world_view._light_clock(clock_data)
 	if "new_hour" in events: world_view._weather(simulation.data)
-	if active_tab=="居民" and not selected_agent.is_empty(): show_agent(selected_agent,false)
+	if active_tab=="居民" and not selected_agent.is_empty():
+		match resident_page:
+			"memory": show_memories(selected_agent,memory_target)
+			"relationships": show_relationships(selected_agent)
+			_: show_agent(selected_agent,false)
 
 func _process(delta: float) -> void:
 	_process_traveler(delta)
@@ -534,3 +599,25 @@ func _capture_traveler() -> void:
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png("res://docs/traveler-preview.png")
 	print("TRAVELER_RENDER_CAPTURE_OK")
+
+func _capture_social() -> void:
+	await get_tree().create_timer(1).timeout
+	_load_document(FileAccess.get_file_as_string("res://tests/golden/frontier-day-07.json"),"記憶與關係展示")
+	show_tab("居民",true)
+	show_relationships(str(simulation.data.agents.keys()[0]))
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/social-desktop.png")
+	var viewport:=SubViewport.new()
+	viewport.size=Vector2i(375,812)
+	viewport.own_world_3d=true
+	viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
+	add_child(viewport)
+	var mobile=load("res://scenes/main.tscn").instantiate()
+	viewport.add_child(mobile)
+	mobile._load_document(FileAccess.get_file_as_string("res://tests/golden/frontier-day-07.json"),"記憶與關係展示")
+	mobile.show_tab("居民",true)
+	mobile.show_memories(str(mobile.simulation.data.agents.keys()[0]))
+	await get_tree().create_timer(1).timeout
+	await RenderingServer.frame_post_draw
+	viewport.get_texture().get_image().save_png("res://docs/social-mobile.png")
+	viewport.queue_free()

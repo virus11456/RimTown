@@ -5,3 +5,4 @@ __pycache__/
 tests/capture_matrix.flag
 tests/capture_playtest.flag
 tests/capture_traveler.flag
+tests/capture_social.flag
