@@ -9,7 +9,10 @@ for(let seed=1;seed<=8;seed++)for(const kind of ['npc','praise','diss','ship','m
  vm.runInContext(`if(seed%2===0)a.personality.traits=['kind'];if(kind==='blocked_ship')b.relationships.getOrCreate(a.agentId,a.name).status='dating';
  if(kind==='create'){const rel=a.relationships.getOrCreate(b.agentId,b.name);rel.affinity=-20;rel.romanticInterest=60;const r=b.relationships.getOrCreate(d.agentId,d.name);r.status='married';r.romanticInterest=50;r.isCheating=true;b.mood=seed%2?80:-50;}
  if(!['praise','diss','ship','blocked_ship','create'].includes(kind)&&!kind.startsWith('rel_'))w.gossipNetwork.activeGossip=[{about:kind==='subject_player'?p.name:b.name,source:kind==='missing'?'不在鎮上的人':kind==='self'?b.name:a.name,content:'最近行為很奇怪。',isTrue:false,spreadCount:0,tickCreated:0,juicy:true,future:{unknown:7}}];`,ctx);
- const input=JSON.parse(vm.runInContext('JSON.stringify(w.serialize())',ctx));const ids=vm.runInContext('({a:a.agentId,b:b.agentId,d:d.agentId,p:p.agentId})',ctx);
+ const fullInput=JSON.parse(vm.runInContext('JSON.stringify(w.serialize())',ctx));
+ const input=Object.fromEntries(['version','clock','tickCount','agents','gossip','messageLog','townFeed'].map(k=>[k,fullInput[k]]));
+ input.agents=Object.fromEntries(Object.entries(input.agents).map(([id,a])=>[id,Object.fromEntries(['id','name','jobKey','isPlayer','personality','mood','relationships','memory','thoughts','chatHistory'].filter(k=>k in a).map(k=>[k,a[k]]))]));
+ const ids=vm.runInContext('({a:a.agentId,b:b.agentId,d:d.agentId,p:p.agentId})',ctx);
  c.setRandomState(seed*11456);
  vm.runInContext(`if(['praise','diss','ship','blocked_ship'].includes(kind))w.gossipNetwork.playerSeedGossip(w,p,d,b,kind==='blocked_ship'?'ship':kind,d.name);
  if(kind==='create')w.gossipNetwork.createGossip(a,b,w);
