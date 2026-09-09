@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.73.0
-const RIMTOWN_APP_VERSION = '5.73.0';
+// RimTown - Frontend App (WordPress Plugin) v5.74.0
+const RIMTOWN_APP_VERSION = '5.74.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1585,7 +1585,7 @@ class RimTownApp {
         const log = (typeof RIMTOWN_CHANGELOG !== 'undefined' && Array.isArray(RIMTOWN_CHANGELOG)) ? RIMTOWN_CHANGELOG : [];
         const logHtml = log.map((e, i) => `<div class="landing-log-item${i >= 5 ? ' extra' : ''}">
                 <div class="landing-log-head"><span>v${esc(e.version)}</span><time>${esc(e.date || '')}</time></div>
-                <ul>${(e.changes || []).map(c => `<li>${esc(c)}</li>`).join('')}</ul></div>`).join('');
+                <ul>${((I18N.getLang() === 'en' && e.changes_en && e.changes_en.length) ? e.changes_en : (e.changes || [])).map(c => `<li>${esc(c)}</li>`).join('')}</ul></div>`).join('');
         el.innerHTML = `<div class="landing-inner">
             <header class="landing-hero">
                 <div class="landing-pixel-bg" aria-hidden="true"></div>

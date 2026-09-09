@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.73.0.zip` from Releases
+1. Download `rimtown-v5.74.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -66,7 +66,7 @@ node scripts/refusal_test.js   # /api/chat 拒絕扮演偵測與退回(v5.67.2 �
 node scripts/scrub_test.js     # 存檔深度清理 AI 助理漏出內容(v5.67.4 起)
 node scripts/invite_test.js    # 推薦碼註冊與管理(v5.68.0 起)
 node scripts/lang_test.js      # /api/chat 對話語言:lang=en 英文系統指示/不轉繁體(v5.73.0 起)
-node scripts/gen-changelog.js  # 從 rimtown.php 產生首頁更新紀錄 changelog.js(v5.68.0 起,改版必跑)
+node scripts/gen-changelog.js   # 從 rimtown.php 產生首頁更新紀錄 changelog.js(v5.68.0 起改版必跑);v5.74.0 起每版必須同時有 changes 與 changes_en,缺英文會失敗
 ```
 
 ## 存檔保護規範（每次改版必讀）
@@ -78,6 +78,11 @@ node scripts/gen-changelog.js  # 從 rimtown.php 產生首頁更新紀錄 change
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.74.0 (2026-09-09)
+
+- 📜 雙語第四波（更新紀錄全譯）：從 v1.0.0 到現在共 222 版、757 條更新紀錄全部有英文版；介面切到 English 時，首頁「更新紀錄」整份改顯示英文（`changes_en`）
+- 🛠️ 版本紀錄改為雙語單一來源：`wordpress/rimtown.php` 每個版本同時有 `changes`（中文）與 `changes_en`（英文）；`scripts/gen-changelog.js` 檢查每一版兩邊條數一致，缺英文就以非零結束碼拒絕產生。**之後每次發版的 changelog 都要同時寫中英文**，發版前必跑清單已註明
 
 ### v5.73.0 (2026-09-09)
 
