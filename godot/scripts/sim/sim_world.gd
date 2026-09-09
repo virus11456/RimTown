@@ -16,6 +16,7 @@ var stargazing_enabled := false
 var mischief_enabled := false
 var mourning_enabled := false
 var trace_enabled := false
+var processing_enabled := false
 var farm_enabled := false
 var industry_enabled := false
 var research_enabled := false
@@ -45,6 +46,7 @@ func load_snapshot(snapshot: Dictionary) -> void:
 	buildings_enabled=bool(saved.get("buildings_enabled",false))
 	trade_enabled=bool(saved.get("trade_enabled",false))
 	research_enabled=bool(saved.get("research_enabled",false))
+	processing_enabled=bool(saved.get("processing_enabled",false))
 	farm_enabled=bool(saved.get("farm_enabled",false))
 	industry_enabled=bool(saved.get("industry_enabled",false))
 	_restore_relationship_precision(saved.get("relationship_precision",[]))
@@ -55,7 +57,7 @@ func load_snapshot(snapshot: Dictionary) -> void:
 func snapshot() -> Dictionary:
 	var result := data.duplicate(true)
 	var extension: Dictionary = result.get("_godot4a",{}).duplicate(true)
-	extension.merge({"version":1,"random_state":rng.state,"agents":runtime.duplicate(true),"social_enabled":social_enabled,"gossip_enabled":gossip_enabled,"romance_enabled":romance_enabled,"feuds_enabled":feuds_enabled,"factions_enabled":factions_enabled,"thoughts_enabled":thoughts_enabled,"inner_voice_enabled":inner_voice_enabled,"stargazing_enabled":stargazing_enabled,"mischief_enabled":mischief_enabled,"mourning_enabled":mourning_enabled,"trace_enabled":trace_enabled,"perception_enabled":perception_enabled,"economy_enabled":economy_enabled,"buildings_enabled":buildings_enabled,"trade_enabled":trade_enabled,"research_enabled":research_enabled,"industry_enabled":industry_enabled,"farm_enabled":farm_enabled,"relationship_precision":_relationship_precision()},true)
+	extension.merge({"version":1,"random_state":rng.state,"agents":runtime.duplicate(true),"social_enabled":social_enabled,"gossip_enabled":gossip_enabled,"romance_enabled":romance_enabled,"feuds_enabled":feuds_enabled,"factions_enabled":factions_enabled,"thoughts_enabled":thoughts_enabled,"inner_voice_enabled":inner_voice_enabled,"stargazing_enabled":stargazing_enabled,"mischief_enabled":mischief_enabled,"mourning_enabled":mourning_enabled,"trace_enabled":trace_enabled,"perception_enabled":perception_enabled,"economy_enabled":economy_enabled,"buildings_enabled":buildings_enabled,"trade_enabled":trade_enabled,"research_enabled":research_enabled,"industry_enabled":industry_enabled,"farm_enabled":farm_enabled,"processing_enabled":processing_enabled,"relationship_precision":_relationship_precision()},true)
 	result._godot4a = extension
 	if gossip_enabled and result.get("townFeed") is Dictionary and result.townFeed.get("posts") is Array:
 		result.townFeed.posts=result.townFeed.posts.slice(maxi(0,result.townFeed.posts.size()-80))
@@ -74,6 +76,7 @@ func tick() -> Array[String]:
 	if thoughts_enabled and "new_day" in events: SimThoughts.daily(self)
 	if industry_enabled and "new_day" in events: SimIndustry.daily(self)
 	if farm_enabled and "new_day" in events: SimFarm.daily(self)
+	if processing_enabled and "new_day" in events: SimProcessing.daily(self)
 	for id in data.agents:
 		if not data.agents[id].get("isDead",false): _update(id)
 	return events

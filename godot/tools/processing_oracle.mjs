@@ -1,0 +1,10 @@
+import fs from 'node:fs';import path from 'node:path';import vm from 'node:vm';import {context,root,json} from './golden.mjs';
+const cases=[];
+for(const mode of ['normal','market','scarce','no_workers'])for(const recipeIndex of [0,1]){
+ const c=context();const ctx=c.ctx;Object.assign(ctx,{raw:JSON.parse(fs.readFileSync(path.join(root,'godot/tests/golden/frontier-day-01.json'))),mode,recipeIndex});
+ vm.runInContext(`var w=new World();w.loadSave(raw);for(const k in w.stockpile.resources)w.stockpile.resources[k]=10000;for(const def of Object.values(FACTORIES))for(const r of def.recipes)for(const k in r.input)w.stockpile.resources[k]=10000;if(mode==='market')w.buildings.completed.push({name:'市集'});if(mode==='no_workers')w.agents={};`,ctx);
+ const input=JSON.parse(vm.runInContext('JSON.stringify(w.serialize())',ctx));c.setRandomState(11456);
+ vm.runInContext(`for(const key of Object.keys(FACTORIES))w.processing.buildFactory(key,w);for(let day=0;day<70;day++){w.processing.dailyUpdate(w);if(day===10)for(const key of Object.keys(FACTORIES))w.processing.setRecipe(key,FACTORIES[key].recipes[recipeIndex].id);if(day===20&&mode==='scarce')for(const key in w.stockpile.resources)w.stockpile.resources[key]=0;for(const o of w.processing.orders)w.processing.fulfillOrder(o.id,w);if(day===40)for(const [key,f] of Object.entries(w.processing.builtFactories))for(const r of Object.keys(f.warehouse)){w.processing.collectProduct(key,r,1,w);w.processing.sellProduct(key,r,2,w);}}`,ctx);
+ const out=JSON.parse(vm.runInContext('JSON.stringify(w.serialize())',ctx));cases.push({input,mode,recipeIndex,processing:out.processing,stock:out.stockpile,logs:out.messageLog,news:out.dailyNews,memories:Object.fromEntries(Object.entries(out.agents).map(([id,a])=>[id,a.memory])),rng:c.getRandomState()});
+}
+fs.mkdirSync(path.join(root,'godot/tests/processing'),{recursive:true});fs.writeFileSync(path.join(root,'godot/tests/processing/oracle.json'),JSON.stringify(cases));console.log(cases.length,'processing scenarios × 70 days');

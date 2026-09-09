@@ -1,0 +1,5 @@
+{
+  "checks": 166,
+  "failures": [],
+  "scope": "8 original 70-day scenarios: seven factories, fourteen recipes, construction/autostaff, shortages, no workers, collection/sale, market, orders/expiry and RNG"
+}

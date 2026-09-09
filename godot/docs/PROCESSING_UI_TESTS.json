@@ -1,0 +1,5 @@
+{
+  "checks": 71,
+  "failures": [],
+  "scope": "UI construction/recipe/collect/sale/order, atomic guards, worker transfer, disabled midnight, ten-day all-system resume and mobile layout"
+}

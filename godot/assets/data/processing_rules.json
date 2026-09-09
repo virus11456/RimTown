@@ -1,0 +1,272 @@
+{
+  "bakery": {
+    "name": "麵包坊",
+    "icon": "🍞",
+    "cost": {
+      "wood": 20,
+      "stone": 15,
+      "silver": 80
+    },
+    "buildDays": 5,
+    "recipes": [
+      {
+        "id": "bread",
+        "input": {
+          "wheat": 5
+        },
+        "output": {
+          "bread": 8
+        },
+        "time": 1,
+        "outputPrice": 4,
+        "label": "小麥→麵包"
+      },
+      {
+        "id": "pastry",
+        "input": {
+          "wheat": 3,
+          "sugar": 2
+        },
+        "output": {
+          "pastry": 4
+        },
+        "time": 2,
+        "outputPrice": 8,
+        "label": "小麥+糖→糕點"
+      }
+    ],
+    "workerSlots": 1,
+    "preferredJob": "cook"
+  },
+  "textile_mill": {
+    "name": "紡織廠",
+    "icon": "🧵",
+    "cost": {
+      "wood": 25,
+      "metal": 10,
+      "silver": 100
+    },
+    "buildDays": 7,
+    "recipes": [
+      {
+        "id": "cloth",
+        "input": {
+          "cotton": 6
+        },
+        "output": {
+          "cloth": 10
+        },
+        "time": 1,
+        "outputPrice": 5,
+        "label": "棉花→布料"
+      },
+      {
+        "id": "clothing",
+        "input": {
+          "cloth": 4
+        },
+        "output": {
+          "clothing": 3
+        },
+        "time": 2,
+        "outputPrice": 12,
+        "label": "布料→衣服"
+      }
+    ],
+    "workerSlots": 2,
+    "preferredJob": "tailor"
+  },
+  "brewery": {
+    "name": "釀酒廠",
+    "icon": "🍺",
+    "cost": {
+      "wood": 15,
+      "metal": 5,
+      "silver": 60
+    },
+    "buildDays": 4,
+    "recipes": [
+      {
+        "id": "beer",
+        "input": {
+          "wheat": 4
+        },
+        "output": {
+          "beer": 6
+        },
+        "time": 2,
+        "outputPrice": 5,
+        "label": "小麥→啤酒"
+      },
+      {
+        "id": "wine",
+        "input": {
+          "grapes": 6
+        },
+        "output": {
+          "wine": 3
+        },
+        "time": 4,
+        "outputPrice": 15,
+        "label": "葡萄→葡萄酒"
+      }
+    ],
+    "workerSlots": 1,
+    "preferredJob": "cook"
+  },
+  "herbal_workshop": {
+    "name": "草藥工坊",
+    "icon": "⚗️",
+    "cost": {
+      "wood": 15,
+      "stone": 10,
+      "silver": 70
+    },
+    "buildDays": 5,
+    "recipes": [
+      {
+        "id": "medicine",
+        "input": {
+          "herbs": 4
+        },
+        "output": {
+          "medicine": 3
+        },
+        "time": 2,
+        "outputPrice": 14,
+        "label": "草藥→藥品"
+      },
+      {
+        "id": "perfume",
+        "input": {
+          "herbs": 2,
+          "flowers": 3
+        },
+        "output": {
+          "perfume": 2
+        },
+        "time": 3,
+        "outputPrice": 20,
+        "label": "草藥+花→香水"
+      }
+    ],
+    "workerSlots": 1,
+    "preferredJob": "doctor"
+  },
+  "tea_house": {
+    "name": "茶坊",
+    "icon": "🍵",
+    "cost": {
+      "wood": 20,
+      "silver": 120
+    },
+    "buildDays": 6,
+    "recipes": [
+      {
+        "id": "fine_tea",
+        "input": {
+          "tea": 4
+        },
+        "output": {
+          "fine_tea": 3
+        },
+        "time": 2,
+        "outputPrice": 18,
+        "label": "茶葉→精製茶"
+      },
+      {
+        "id": "herbal_tea",
+        "input": {
+          "tea": 2,
+          "herbs": 2
+        },
+        "output": {
+          "herbal_tea": 4
+        },
+        "time": 1,
+        "outputPrice": 10,
+        "label": "茶+草藥→養生茶"
+      }
+    ],
+    "workerSlots": 1,
+    "preferredJob": "trader"
+  },
+  "sugar_refinery": {
+    "name": "製糖廠",
+    "icon": "🍬",
+    "cost": {
+      "wood": 15,
+      "metal": 8,
+      "silver": 90
+    },
+    "buildDays": 5,
+    "recipes": [
+      {
+        "id": "sugar",
+        "input": {
+          "sugarcane": 6
+        },
+        "output": {
+          "sugar": 8
+        },
+        "time": 1,
+        "outputPrice": 5,
+        "label": "甘蔗→糖"
+      },
+      {
+        "id": "jam",
+        "input": {
+          "sugar": 3
+        },
+        "output": {
+          "jam": 4
+        },
+        "time": 2,
+        "outputPrice": 10,
+        "label": "糖→果醬"
+      }
+    ],
+    "workerSlots": 1,
+    "preferredJob": "cook"
+  },
+  "furniture_workshop": {
+    "name": "家具工坊",
+    "icon": "🪑",
+    "cost": {
+      "wood": 30,
+      "metal": 10,
+      "tools": 5,
+      "silver": 150
+    },
+    "buildDays": 8,
+    "recipes": [
+      {
+        "id": "furniture",
+        "input": {
+          "wood": 8
+        },
+        "output": {
+          "furniture": 4
+        },
+        "time": 2,
+        "outputPrice": 10,
+        "label": "木材→家具"
+      },
+      {
+        "id": "luxury_furniture",
+        "input": {
+          "wood": 5,
+          "cloth": 3
+        },
+        "output": {
+          "luxury_furniture": 2
+        },
+        "time": 3,
+        "outputPrice": 25,
+        "label": "木材+布→精裝家具"
+      }
+    ],
+    "workerSlots": 2,
+    "preferredJob": "carpenter"
+  }
+}

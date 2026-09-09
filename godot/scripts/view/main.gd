@@ -85,7 +85,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_gift.flag"): _capture_player_gift()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_stockpile.flag"): _capture_stockpile()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_economy.flag"): _capture_economy()
-	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and (FileAccess.file_exists("res://tests/capture_progress.flag") or FileAccess.file_exists("res://tests/capture_industry.flag") or FileAccess.file_exists("res://tests/capture_farm.flag")): _capture_progress()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and (FileAccess.file_exists("res://tests/capture_progress.flag") or FileAccess.file_exists("res://tests/capture_industry.flag") or FileAccess.file_exists("res://tests/capture_farm.flag") or FileAccess.file_exists("res://tests/capture_processing.flag")): _capture_progress()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -261,6 +261,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.buildings_enabled=bool(document.data.get("_godot4a",{}).get("buildings_enabled",true))
 	simulation.trade_enabled=bool(document.data.get("_godot4a",{}).get("trade_enabled",true))
 	simulation.research_enabled=bool(document.data.get("_godot4a",{}).get("research_enabled",true))
+	simulation.processing_enabled=bool(document.data.get("_godot4a",{}).get("processing_enabled",true))
 	simulation.farm_enabled=bool(document.data.get("_godot4a",{}).get("farm_enabled",true))
 	simulation.industry_enabled=bool(document.data.get("_godot4a",{}).get("industry_enabled",true))
 	var data := document.snapshot()
@@ -322,7 +323,8 @@ func show_tab(tab: String, refresh := false) -> void:
 			_button("研究",drawer_body,show_research)
 			_button("產業",drawer_body,show_industry)
 			_button("農田",drawer_body,show_farm)
-			_wrapped("試玩：作息、移動與居民互動已啟用。\n送禮會消耗公共庫存；每日經濟可在設定開關。建築、交易、研究與產業已啟用；農田已啟用；加工及任務仍待完成。",13)
+			_button("加工",drawer_body,show_processing)
+			_wrapped("試玩：作息、移動與居民互動已啟用。\n送禮會消耗公共庫存；每日經濟可在設定開關。建築、交易、研究、產業、農田與加工已啟用；任務仍待完成。",13)
 			var resources: Dictionary = _current_data().get("stockpile",{}).get("resources",{})
 			for key in resources:
 				if float(resources[key]) != 0: _label("%s   %s" % [_resource_name(key),str(resources[key])],drawer_body)
@@ -554,6 +556,7 @@ func _line(placeholder: String, secret := false) -> LineEdit:
 	return field
 
 func _settings_ui() -> void:
+	_button("每日加工營運："+("開啟" if simulation.processing_enabled else "關閉"),drawer_body,func(): simulation.processing_enabled=not simulation.processing_enabled;show_tab("設定",true))
 	_button("每日農田生長："+("開啟" if simulation.farm_enabled else "關閉"),drawer_body,func(): simulation.farm_enabled=not simulation.farm_enabled;show_tab("設定",true))
 	_button("每日產業產出："+("開啟" if simulation.industry_enabled else "關閉"),drawer_body,func(): simulation.industry_enabled=not simulation.industry_enabled;show_tab("設定",true))
 	_button("每日研究："+("開啟" if simulation.research_enabled else "關閉"),drawer_body,func(): simulation.research_enabled=not simulation.research_enabled;show_tab("設定",true))
@@ -1370,7 +1373,7 @@ func show_stockpile(resource: String="",show_zero: bool=false) -> void:
 	active_tab="小鎮";drawer.show();_clear_drawer()
 	_wrapped("公共庫存與收支",22)
 	_button("加工排班",drawer_body,show_work_policy)
-	_wrapped("送禮從這裡扣除；每日生產與消耗在午夜結算，可於設定開關。建築、交易、研究與產業已啟用；農田已啟用；加工仍待完成。",12)
+	_wrapped("送禮從這裡扣除；每日生產與消耗在午夜結算，可於設定開關。農田收成直接入庫，工廠成品需先從加工頁領取。",12)
 	var stockpile: Dictionary=_current_data().get("stockpile",{})
 	var resources: Dictionary=stockpile.get("resources",{})
 	var history: Array=stockpile.get("history",[])
@@ -1510,7 +1513,7 @@ func show_trade() -> void:
 func show_research() -> void:
 	active_tab="小鎮";drawer.show();_clear_drawer();_wrapped("研究",22)
 	_wrapped("研究員每天午夜推進，並最多消耗 5 點公共研究點數。切換項目保留已累積進度；沒有指定項目時會自動選擇可研究項目。",12)
-	_wrapped("完成後保存研究效果；尚未移植的農田、建築外觀等系統不會因此自動出現。",12)
+	_wrapped("完成後保存研究效果；尚未移植的建築外觀等功能不會因此自動出現。",12)
 	if not simulation.research_enabled: _wrapped("每日研究目前關閉。")
 	var research: Dictionary=simulation.data.research
 	for p in research.projects.values():
@@ -1527,7 +1530,7 @@ func show_research() -> void:
 
 func _capture_progress() -> void:
 	await get_tree().create_timer(1).timeout
-	var pages: Array=["farm"] if FileAccess.file_exists("res://tests/capture_farm.flag") else ["industry"] if FileAccess.file_exists("res://tests/capture_industry.flag") else ["buildings","trade","research"]
+	var pages: Array=["processing"] if FileAccess.file_exists("res://tests/capture_processing.flag") else ["farm"] if FileAccess.file_exists("res://tests/capture_farm.flag") else ["industry"] if FileAccess.file_exists("res://tests/capture_industry.flag") else ["buildings","trade","research"]
 	for page in pages:
 		for dimensions in [Vector2i(1280,800),Vector2i(375,812)]:
 			var viewport:=SubViewport.new();viewport.size=dimensions;viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
@@ -1577,7 +1580,7 @@ func show_farm() -> void:
 	var level:=int(simulation.data.industry.industries.get("farming",{}).get("level",0))
 	_wrapped(str(simulation.data.clock.season)+" · 農業 Lv"+str(level)+" · 農地 "+str(farm.plots.size()))
 	_wrapped("先開啟農業，下一次午夜配置農地。翻土後選作物播種；種子扣銀幣，施肥扣 2 草藥。換季不合時令會枯萎，成熟後請盡快收成。",12)
-	_wrapped("收成存為個別作物，並非直接補充餐食。加工系統尚待接入。",12)
+	_wrapped("收成存為個別作物，並非直接補充餐食。可到加工頁建廠，將作物製成商品。",12)
 	if not simulation.farm_enabled: _wrapped("每日農田生長目前關閉。")
 	if level==0: _button("前往產業",drawer_body,show_industry)
 	for p in farm.plots:
@@ -1611,4 +1614,76 @@ func show_farm() -> void:
 		for entry in farm.harvestLog.slice(maxi(0,farm.harvestLog.size()-10)):
 			_wrapped("%s · %s +%d（%s）"%[entry.season,entry.cropName,entry.amount,SimFarm.rules().quality[entry.quality]],12)
 	_button("重新整理",drawer_body,show_farm)
+	_button("返回小鎮",drawer_body,func(): show_tab("小鎮",true))
+
+func show_processing() -> void:
+	active_tab="小鎮";drawer.show();_clear_drawer();_wrapped("加工",22)
+	var manager: Dictionary=simulation.data.processing;var defs:=SimProcessing.rules()
+	_wrapped("建廠立即扣材料，午夜施工。完工隔日自動招工並選第一份配方。成品先存工廠倉庫，可領取、出售或交訂單。",12)
+	_wrapped("切換配方會清除該廠生產進度；原料於每批完成時扣除。移除人手後，隔日仍會自動補位。市集會每天自動出售部分成品。",12)
+	if not simulation.processing_enabled: _wrapped("每日加工營運目前關閉。")
+	for key in defs:
+		var def: Dictionary=defs[key];_wrapped(str(def.name),18)
+		if not manager.builtFactories.has(key):
+			var costs: Array=[]
+			for r in def.cost: costs.append(_resource_name(r)+" "+str(int(def.cost[r])))
+			_wrapped("、".join(costs)+" · 工程量 "+str(int(def.buildDays)),12)
+			var button:=_button("建造："+str(def.name),drawer_body,func():
+				if SimProcessing.build(simulation,key): has_simulated=true
+				show_processing())
+			button.disabled=not SimBuildings.affordable(simulation,def.cost)
+			continue
+		var f: Dictionary=manager.builtFactories[key]
+		if f.status=="building": _wrapped("施工 %.0f／%.0f"%[f.buildProgress,f.buildRequired]);continue
+		var names: Array=[]
+		for id in f.workers: names.append(str(simulation.data.agents.get(id,{}).get("name",id)))
+		_wrapped("人手 %d／%d · %s"%[f.workers.size(),def.workerSlots,"、".join(names)],12)
+		for recipe in def.recipes:
+			var inputs: Array=[];var outputs: Array=[]
+			for r in recipe.input: inputs.append(_resource_name(r)+" "+str(int(recipe.input[r])))
+			for r in recipe.output: outputs.append(_resource_name(r)+" "+str(int(recipe.output[r])))
+			_wrapped(" + ".join(inputs)+" → "+" + ".join(outputs)+" · 所需進度 "+str(int(recipe.time)),12)
+			if f.recipe==recipe.id:
+				_wrapped("生產中 · 進度 %.2f／%.0f"%[f.productionProgress,recipe.time],12)
+				if not SimBuildings.affordable(simulation,recipe.input): _wrapped("原料不足，等待補貨。",12)
+			else: _button("選用："+str(recipe.label),drawer_body,func():
+				if SimProcessing.set_recipe(simulation,key,recipe.id): has_simulated=true
+				show_processing())
+		var candidates:=OptionButton.new();candidates.size_flags_horizontal=Control.SIZE_EXPAND_FILL;drawer_body.add_child(candidates)
+		for a in simulation.data.agents.values():
+			if a.get("isPlayer",false) or a.get("isDead",false) or a.id in f.workers: continue
+			candidates.add_item(str(a.name)+" · "+_job_name(str(a.get("jobKey",""))));candidates.set_item_metadata(candidates.item_count-1,a.id)
+		var assign_button:=_button("指派到："+str(def.name),drawer_body,func():
+			if candidates.selected>=0 and SimProcessing.assign(simulation,key,str(candidates.get_item_metadata(candidates.selected))): has_simulated=true
+			show_processing())
+		assign_button.disabled=candidates.item_count==0 or f.workers.size()>=int(def.workerSlots)
+		for id in f.workers:
+			_button("移除："+str(simulation.data.agents.get(id,{}).get("name",id)),drawer_body,func(): SimProcessing.remove_worker(simulation,id);has_simulated=true;show_processing())
+		if f.warehouse.is_empty(): _wrapped("工廠倉庫：尚無成品",12)
+		for r in f.warehouse:
+			if float(f.warehouse[r])<=0: continue
+			_wrapped("工廠倉庫 · "+_resource_name(r)+" "+str(f.warehouse[r]),12)
+			var quantity:=SpinBox.new();quantity.min_value=1;quantity.max_value=float(f.warehouse[r]);quantity.value=minf(1,quantity.max_value);quantity.step=1;quantity.size_flags_horizontal=Control.SIZE_EXPAND_FILL;drawer_body.add_child(quantity)
+			_button("領取："+_resource_name(r),drawer_body,func():
+				if SimProcessing.transfer(simulation,key,r,quantity.value): has_simulated=true
+				show_processing())
+			var price:=5
+			for recipe in def.recipes:
+				if recipe.output.has(r): price=int(recipe.outputPrice);break
+			_button("出售："+_resource_name(r)+" · 每件 %d 銀"%price,drawer_body,func():
+				if SimProcessing.transfer(simulation,key,r,quantity.value,true): has_simulated=true
+				show_processing())
+	_wrapped("限時訂單",18)
+	var active:=0
+	for order in manager.orders:
+		if order.status!="active": continue
+		active+=1
+		_wrapped("%s × %d · 報酬 %d 銀 · 剩 %d 天"%[_resource_name(order.product),order.amount,order.reward,order.daysLeft],12)
+		var f: Dictionary=manager.builtFactories.get(order.factoryKey,{})
+		var button:=_button("交付："+str(order.id),drawer_body,func():
+			if SimProcessing.fulfill(simulation,order.id): has_simulated=true
+			show_processing())
+		button.disabled=float(f.get("warehouse",{}).get(order.product,0))<float(order.amount)
+	if active==0: _wrapped("目前沒有訂單。",12)
+	_button("重新整理",drawer_body,show_processing)
 	_button("返回小鎮",drawer_body,func(): show_tab("小鎮",true))
