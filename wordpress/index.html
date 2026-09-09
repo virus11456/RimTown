@@ -33,6 +33,9 @@
     </div>
 </div>
 
+<!-- v5.68.0 首頁(Landing):由 app.js _renderLanding() 填入 -->
+<div id="landing" class="landing hidden"></div>
+
 <div id="rimtown-app" class="rimtown-container">
     <!-- Guest mode banner -->
     <div id="guest-banner" class="hidden">
@@ -192,6 +195,7 @@
             </div>
             <div id="auth-register-form" class="hidden">
                 <input type="text" id="auth-reg-user" data-i18n-placeholder="帳號" placeholder="帳號" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
+                <input type="text" id="auth-reg-invite" data-i18n-placeholder="推薦碼（必填）" placeholder="推薦碼（必填）" autocapitalize="characters" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--accent);border-radius:4px;box-sizing:border-box;font-size:0.85rem;letter-spacing:1px;text-transform:uppercase">
                 <input type="email" id="auth-reg-email" placeholder="Email" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
                 <input type="password" id="auth-reg-pass" data-i18n-placeholder="密碼" placeholder="密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
                 <input type="password" id="auth-reg-pass2" data-i18n-placeholder="確認密碼" placeholder="確認密碼" style="width:100%;padding:8px;margin-bottom:6px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;font-size:0.85rem">
@@ -320,6 +324,7 @@
     </div>
 
     <script src="s2t.js"></script>
+    <script src="changelog.js"></script>
     <script src="i18n.js"></script>
     <script src="quest-system.js"></script>
     <script src="industry.js"></script>

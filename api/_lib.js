@@ -251,6 +251,9 @@ function sanitizeTownId(t) {
 function userPath(username) { return `users/${username.toLowerCase()}.json`; }
 function emailPath(email) { return `emails/${crypto.createHash('sha1').update(email.toLowerCase()).digest('hex')}.json`; }
 function banPath(username) { return `bans/${username.toLowerCase()}.json`; }
+// v5.68.0 推薦碼:invites/<CODE>.json(大寫英數與 -,4~24 字)
+function normalizeInvite(code) { return String(code || '').trim().toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 24); }
+function invitePath(code) { return `invites/${normalizeInvite(code)}.json`; }
 
 // ---------- v5.63.0 管理員與封鎖 ----------
 // 管理員名單來自環境變數 ADMIN_USERS(逗號分隔的帳號,不分大小寫)
@@ -294,6 +297,7 @@ function clientIp(req) {
 module.exports = {
     readJson, writeJson, deleteBlob, listPaths,
     blobReadJson, blobListPaths, pgListPaths, storageInfo,
+    normalizeInvite, invitePath,
     hashPassword, verifyPassword, makeToken, verifyToken, authUser,
     sanitizeUsername, sanitizeTownId, userPath, emailPath, banPath,
     isAdmin, isBanned,

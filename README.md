@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.67.6.zip` from Releases
+1. Download `rimtown-v5.68.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -64,6 +64,8 @@ node scripts/method-audit.js   # 前端 this._xxx() 呼叫都有定義(v5.66.6 �
 node scripts/lane_test.js      # /api/chat 分流、冷卻、逾時、額度感知(v5.67.0 起)
 node scripts/refusal_test.js   # /api/chat 拒絕扮演偵測與退回(v5.67.2 起)
 node scripts/scrub_test.js     # 存檔深度清理 AI 助理漏出內容(v5.67.4 起)
+node scripts/invite_test.js    # 推薦碼註冊與管理(v5.68.0 起)
+node scripts/gen-changelog.js  # 從 rimtown.php 產生首頁更新紀錄 changelog.js(v5.68.0 起,改版必跑)
 ```
 
 ## 存檔保護規範（每次改版必讀）
@@ -75,6 +77,12 @@ node scripts/scrub_test.js     # 存檔深度清理 AI 助理漏出內容(v5.67.
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.68.0 (2026-09-09)
+
+- 🏠 遊戲首頁（Landing）：打開 rimtown.cc 先看到首頁。遊戲介紹四張卡、更新紀錄（預設最近 5 版，可展開全部，資料由 `scripts/gen-changelog.js` 從 rimtown.php 產生成 `changelog.js`）、即將實現路線圖（開發中／規劃中／構想）。未登入只有「註冊」「登入」，一律要登入才能進遊戲（訪客試玩取消）；已登入顯示「繼續遊戲」並附城鎮與日期，世界在底下先載好、暫停等你按
+- 🎟️ 推薦碼制註冊：註冊必須輸入有效的推薦碼。管理員在設定→管理員→「推薦碼管理」建立（自訂或自動產生 8 碼）、設定可用次數（0＝無上限）、停用／啟用、刪除，看得到每組已用幾次與最近用的帳號。伺服器端驗證（`invites/<CODE>.json`），環境變數 `INVITE_REQUIRED=0` 可整體關閉
+- 🔁 登入／註冊後直接進遊戲、登出回首頁；新帳號註冊後建立「<帳號>的邊境鎮」並顯示教學。首頁期間不跑模擬、不彈每日獎勵，按「繼續遊戲」後才結算離線進度
 
 ### v5.67.6 (2026-09-09)
 
