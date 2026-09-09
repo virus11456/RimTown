@@ -257,6 +257,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.trace_enabled=bool(document.data.get("_godot4a",{}).get("trace_enabled",true))
 	simulation.perception_enabled=bool(document.data.get("_godot4a",{}).get("perception_enabled",true))
 	simulation.economy_enabled=bool(document.data.get("_godot4a",{}).get("economy_enabled",true))
+	simulation.buildings_enabled=bool(document.data.get("_godot4a",{}).get("buildings_enabled",true))
 	var data := document.snapshot()
 	heading.text = str(data.get("townName","小鎮"))
 	var clock_data: Dictionary = data.clock
@@ -311,6 +312,7 @@ func show_tab(tab: String, refresh := false) -> void:
 			_button("匯出原始存檔副本",drawer_body,export_save)
 			_button("匯出試玩進度",drawer_body,export_progress)
 			_button("公共庫存與收支",drawer_body,show_stockpile)
+			_button("建築工程",drawer_body,show_buildings)
 			_wrapped("試玩：作息、移動與居民互動已啟用。\n送禮會消耗公共庫存；每日經濟可在設定開關。建設、交易與任務仍待完成。",13)
 			var resources: Dictionary = _current_data().get("stockpile",{}).get("resources",{})
 			for key in resources:
@@ -543,6 +545,7 @@ func _line(placeholder: String, secret := false) -> LineEdit:
 	return field
 
 func _settings_ui() -> void:
+	_button("每日建築施工："+("開啟" if simulation.buildings_enabled else "關閉"),drawer_body,func(): simulation.buildings_enabled=not simulation.buildings_enabled;show_tab("設定",true))
 	_button("每日生產與消耗："+("開啟" if simulation.economy_enabled else "關閉"),drawer_body,func(): simulation.economy_enabled=not simulation.economy_enabled; show_tab("設定",true))
 	_button("居民環境感知："+("開啟" if simulation.perception_enabled else "關閉"),drawer_body,func(): simulation.perception_enabled=not simulation.perception_enabled; show_tab("設定",true))
 	_button("居民足跡："+("開啟" if simulation.trace_enabled else "關閉"),drawer_body,func(): simulation.trace_enabled=not simulation.trace_enabled; show_tab("設定",true))
@@ -1435,3 +1438,36 @@ func _capture_economy() -> void:
 	await RenderingServer.frame_post_draw
 	viewport.get_texture().get_image().save_png("res://docs/economy-mobile.png")
 	viewport.queue_free()
+
+func show_buildings() -> void:
+	active_tab="小鎮";drawer.show();_clear_drawer();_wrapped("建築工程",22)
+	_wrapped("開工立即扣公共庫存，木匠、礦工與鐵匠每天午夜施工。此頁管理工程與數值效果；3D 選址與新建築模型尚未接入。",12)
+	if not simulation.buildings_enabled: _wrapped("每日施工目前關閉，請至設定開啟。")
+	var manager: Dictionary=simulation.data.buildings;var definitions:=SimBuildings.rules()
+	_wrapped("施工中",18)
+	if manager.projects.is_empty(): _wrapped("目前沒有工程。")
+	for p in manager.projects: _wrapped(str(p.name)+" · %s／%s 工量"%[str(p.workDone),str(p.workRequired)])
+	_wrapped("已完工",18)
+	if manager.completed.is_empty(): _wrapped("目前沒有已完工建築。")
+	for p in manager.completed:
+		_wrapped(str(p.name)+" · 等級 "+str(int(p.get("level",1))))
+		var key: String=str(p.get("buildingKey",""));var upgrade: Dictionary=definitions.upgrades.get(key,{}).get(str(int(p.get("level",1))+1),{})
+		if not upgrade.is_empty() and not manager.projects.any(func(project): return project.get("upgradeKey")==key): _building_offer(key,upgrade,true)
+	_wrapped("可新建",18)
+	for key in definitions.templates:
+		var template: Dictionary=definitions.templates[key]
+		if (manager.projects+manager.completed).any(func(p): return p.get("buildingKey")==key or p.name==template.name): continue
+		_building_offer(key,template,false)
+	_button("重新整理",drawer_body,show_buildings)
+	_button("返回小鎮",drawer_body,func(): show_tab("小鎮",true))
+func _building_offer(key: String,template: Dictionary,upgrade: bool) -> void:
+	var costs: Array=[]
+	for resource in template.costs: costs.append(_resource_name(resource)+" "+str(template.costs[resource]))
+	_wrapped(str(template.name)+" · "+str(template.description))
+	_wrapped("花費："+"、".join(costs)+" · 需要 "+str(template.work)+" 工量",12)
+	var button:=_button(("升級：" if upgrade else "開工：")+str(template.name),drawer_body,func():
+		var project:=SimBuildings.start(simulation,key,upgrade)
+		if not project.is_empty(): has_simulated=true;status.text="工程已開始 · 材料已扣除"
+		else: status.text="無法開工：庫存不足或已有相同工程"
+		show_buildings())
+	button.disabled=not SimBuildings.affordable(simulation,template.costs)

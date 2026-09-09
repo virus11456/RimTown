@@ -1,0 +1,5 @@
+{
+  "checks": 56,
+  "failures": [],
+  "scope": "paid start/upgrade UI, insufficient/duplicate guards, midnight once, enabled flag, capacity effect, ten-day all-mode save resume, 375px layout"
+}
