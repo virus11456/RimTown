@@ -1,0 +1,5 @@
+{
+  "checks": 165,
+  "failures": [],
+  "scope": "32 source parser/core-effects scenarios, memories/history/dedupe/RNG; invalid reply rejection and bounded effect safety; replan/heart events excluded"
+}

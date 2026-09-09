@@ -35,9 +35,9 @@ func _store_token(value: String) -> void:
 func logout() -> void:
 	_store_token("")
 
-func request_json(endpoint: String, method := HTTPClient.METHOD_GET, payload: Variant = null, authenticated := true) -> Dictionary:
+func request_json(endpoint: String, method := HTTPClient.METHOD_GET, payload: Variant = null, authenticated := true, timeout_override := 0.0) -> Dictionary:
 	var request := HTTPRequest.new()
-	request.timeout = timeout_seconds
+	request.timeout = timeout_override if timeout_override>0 else timeout_seconds
 	request.body_size_limit = 20 * 1024 * 1024
 	add_child(request)
 	var headers := PackedStringArray(["Content-Type: application/json", "Accept: application/json"])
@@ -116,4 +116,4 @@ func chat(prompt: String, lane := "chat", max_tokens := 400, temperature := 0.7,
 		return {"ok": false, "status": 0, "error": "無效的 AI 通道。"}
 	if lang not in ["zh", "en"]:
 		return {"ok": false, "status": 0, "error": "無效的 AI 對話語言。"}
-	return await request_json("chat", HTTPClient.METHOD_POST, {"prompt": prompt, "max_tokens": max_tokens, "temperature": temperature, "lane": lane, "lang": lang})
+	return await request_json("chat", HTTPClient.METHOD_POST, {"prompt": prompt, "max_tokens": max_tokens, "temperature": temperature, "lane": lane, "lang": lang},true,35.0)

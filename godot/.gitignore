@@ -19,3 +19,4 @@ tests/capture_mourning.flag
 tests/capture_trace.flag
 tests/capture_perception.flag
 tests/capture_player_interaction.flag
+tests/capture_player_chat.flag

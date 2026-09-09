@@ -1,0 +1,5 @@
+{
+  "checks": 172,
+  "passed": true,
+  "scope": "Original JS loads player chat history and memories, memory, relationships and currentThought. No production API."
+}
