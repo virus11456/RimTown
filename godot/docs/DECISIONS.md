@@ -45,3 +45,9 @@ JS來源 World.serialize 的 gossip 陣列只有淺拷貝，因此新的長時�
 使用者要求繼續開發；在既有本地社交上加入 World._processRelationships，固定於 new_day、Agent.update 之前。保留原版事件內容及傳聞效果，AI queueDramaScene、dailyNews.collectEvent、npcEvents.handleCheatingDiscovery 回呼留待相關系統移植。UI 新匯入預設啟用，SimWorld 基準預設停用。
 
 30 天海風鎮續跑測試發現：JSON 解析的單一 ULP 差異使阿浮對石叔的好感在後續日界跨過 40，導致心動增量變動。新增有普通欄位校驗的 relationship_precision 補充，不四捨五入模擬原值。外部編輯優先，原版資料與 Godot 專用續跑擴充各自維持用途。
+
+
+## D25 — 先完成每日仇怨，再接派系
+使用者繼續開發；檢視原版後拆為每日仇怨與每三天派系兩個增量。此次只接入 _processFeuds，緊接每日戀愛事件、早於 Agent.update。完整保留原版關係、心情、旁觀記憶、絕交與冷卻效果；dailyNews／queueDramaScene 回呼待其系統完成。
+
+冷卻的原版日期公式忽略季節；先維持相容並以跨季／跨年 oracle 覆蓋。畫面「關係事件」只額外選取仇怨的兩種事件前綴，不把所有未移植事件一概當成關係事件。isFeud 另列標記，不取代原有婚姻／好感分類。

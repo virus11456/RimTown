@@ -8,6 +8,7 @@ var runtime: Dictionary = {}
 var social_enabled := false
 var gossip_enabled := false
 var romance_enabled := false
+var feuds_enabled := false
 var social := SimSocial.new()
 func load_snapshot(snapshot: Dictionary) -> void:
 	data = snapshot.duplicate(true)
@@ -15,6 +16,7 @@ func load_snapshot(snapshot: Dictionary) -> void:
 	social_enabled=bool(saved.get("social_enabled",false))
 	gossip_enabled=bool(saved.get("gossip_enabled",false))
 	romance_enabled=bool(saved.get("romance_enabled",false))
+	feuds_enabled=bool(saved.get("feuds_enabled",false))
 	_restore_relationship_precision(saved.get("relationship_precision",[]))
 	rng.state = int(saved.get("random_state",11456))
 	runtime = saved.get("agents",{}).duplicate(true)
@@ -23,7 +25,7 @@ func load_snapshot(snapshot: Dictionary) -> void:
 func snapshot() -> Dictionary:
 	var result := data.duplicate(true)
 	var extension: Dictionary = result.get("_godot4a",{}).duplicate(true)
-	extension.merge({"version":1,"random_state":rng.state,"agents":runtime.duplicate(true),"social_enabled":social_enabled,"gossip_enabled":gossip_enabled,"romance_enabled":romance_enabled,"relationship_precision":_relationship_precision()},true)
+	extension.merge({"version":1,"random_state":rng.state,"agents":runtime.duplicate(true),"social_enabled":social_enabled,"gossip_enabled":gossip_enabled,"romance_enabled":romance_enabled,"feuds_enabled":feuds_enabled,"relationship_precision":_relationship_precision()},true)
 	result._godot4a = extension
 	if gossip_enabled and result.get("townFeed") is Dictionary and result.townFeed.get("posts") is Array:
 		result.townFeed.posts=result.townFeed.posts.slice(maxi(0,result.townFeed.posts.size()-80))
@@ -32,6 +34,7 @@ func tick() -> Array[String]:
 	data.tickCount = int(data.get("tickCount",0))+1
 	var events := SimClock.tick(data.clock)
 	if romance_enabled and "new_day" in events: SimRomance.process(self)
+	if feuds_enabled and "new_day" in events: SimFeuds.process(self)
 	for id in data.agents:
 		if not data.agents[id].get("isDead",false): _update(id)
 	return events

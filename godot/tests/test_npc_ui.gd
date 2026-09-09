@@ -19,6 +19,7 @@ func run() -> void:
 	viewport.add_child(app)
 	await process_frame
 	app.set_process(false)
+	app.simulation.feuds_enabled=false # Keep this historical suite within its original scope.
 	app.simulation.romance_enabled=false # This suite isolates pre-romance behavior.
 	var raw: String=app.document.serialize()
 	check(app.simulation.social_enabled,"new web import enables local socializing")

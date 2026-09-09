@@ -18,6 +18,7 @@ func run() -> void:
 	var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app)
 	await process_frame
 	app.set_process(false)
+	app.simulation.feuds_enabled=false # Keep this historical suite within its original scope.
 	var raw: String=app.document.serialize()
 	check(app.simulation.romance_enabled,"fresh import enables daily relationships")
 	app.show_tab("設定",true);press(app.drawer_body,"每日關係事件：開啟")

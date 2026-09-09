@@ -57,6 +57,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_npc.flag"): _capture_npc()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_gossip.flag"): _capture_gossip()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_romance.flag"): _capture_romance()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_feuds.flag"): _capture_feuds()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -218,6 +219,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.social_enabled=bool(document.data.get("_godot4a",{}).get("social_enabled",true))
 	simulation.gossip_enabled=bool(document.data.get("_godot4a",{}).get("gossip_enabled",true))
 	simulation.romance_enabled=bool(document.data.get("_godot4a",{}).get("romance_enabled",true))
+	simulation.feuds_enabled=bool(document.data.get("_godot4a",{}).get("feuds_enabled",true))
 	var data := document.snapshot()
 	heading.text = str(data.get("townName","小鎮"))
 	var clock_data: Dictionary = data.clock
@@ -315,9 +317,9 @@ func show_romance() -> void:
 	conversation_page=false
 	_clear_drawer()
 	_wrapped("關係事件",22)
-	_wrapped("每天換日時，居民會依照好感、心動與個性發展關係。")
+	_wrapped("每天換日時判定戀愛與仇怨。居民可能絕交、公開爭吵，旁人也可能選邊站。")
 	_button("返回故事",drawer_body,func(): show_tab("故事",true))
-	var logs: Array=_current_data().get("messageLog",[]).filter(func(entry): return entry.get("type")=="relationship")
+	var logs: Array=_current_data().get("messageLog",[]).filter(func(entry): return entry.get("type")=="relationship" or SimFeuds.is_event(entry))
 	if logs.is_empty(): _wrapped("尚無關係事件。按「開始」讓居民相處，再過幾天回來看看。")
 	var recent:=logs.slice(maxi(0,logs.size()-30))
 	recent.reverse()
@@ -420,6 +422,7 @@ func show_relationships(id: String) -> void:
 		var relation: Dictionary=manager.relationships[target_id]
 		var target_name := str(data.agents.get(target_id,{}).get("name",relation.get("targetName",target_id)))
 		_wrapped(target_name+" · "+SimRelationships.relationship_type(relation),18)
+		if relation.get("isFeud",false): _wrapped("已絕交",14)
 		_wrapped("好感 %s · 信任 %s · 戀慕 %s\n互動 %s 次" % [str(snappedf(float(relation.get("affinity",0)),.1)),str(snappedf(float(relation.get("trust",0)),.1)),str(snappedf(float(relation.get("romanticInterest",0)),.1)),str(int(relation.get("interactionCount",0)))])
 		if data.agents.has(target_id):
 			_button("查看「%s」資料" % target_name,drawer_body,func(): show_agent(target_id))
@@ -435,6 +438,7 @@ func _line(placeholder: String, secret := false) -> LineEdit:
 	return field
 
 func _settings_ui() -> void:
+	_button("每日仇怨事件："+("開啟" if simulation.feuds_enabled else "關閉"),drawer_body,func(): simulation.feuds_enabled=not simulation.feuds_enabled; show_tab("設定",true))
 	_button("每日關係事件："+("開啟" if simulation.romance_enabled else "關閉"),drawer_body,func(): simulation.romance_enabled=not simulation.romance_enabled; show_tab("設定",true))
 	_wrapped("關係在換日時判定；交往和結婚需要感情累積與機會。")
 	_button("八卦傳播："+("開啟" if simulation.gossip_enabled else "關閉"),drawer_body,func(): simulation.gossip_enabled=not simulation.gossip_enabled; show_tab("設定",true))
@@ -776,4 +780,27 @@ func _capture_romance() -> void:
 	await get_tree().create_timer(1).timeout
 	await RenderingServer.frame_post_draw
 	viewport.get_texture().get_image().save_png("res://docs/romance-mobile.png")
+	viewport.queue_free()
+
+func _capture_feuds() -> void:
+	await get_tree().create_timer(1).timeout
+	var example:=FileAccess.get_file_as_string("res://tests/feuds/compatibility-save.json.tmp")
+	_load_document(example,"仇怨測試情境")
+	show_tab("故事",true)
+	show_romance()
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/feuds-desktop.png")
+	var viewport:=SubViewport.new()
+	viewport.size=Vector2i(375,812)
+	viewport.own_world_3d=true
+	viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
+	add_child(viewport)
+	var mobile=load("res://scenes/main.tscn").instantiate()
+	viewport.add_child(mobile)
+	mobile._load_document(example,"仇怨測試情境")
+	mobile.show_tab("故事",true)
+	mobile.show_romance()
+	await get_tree().create_timer(1).timeout
+	await RenderingServer.frame_post_draw
+	viewport.get_texture().get_image().save_png("res://docs/feuds-mobile.png")
 	viewport.queue_free()

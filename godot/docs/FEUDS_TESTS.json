@@ -1,0 +1,5 @@
+{
+  "checks": 21312,
+  "failures": [],
+  "scope": "original feud thresholds, witnesses, cooldown and seasonal/year rollover; source oracle and JSON resume"
+}

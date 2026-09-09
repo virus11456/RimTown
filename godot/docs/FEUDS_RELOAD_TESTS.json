@@ -1,0 +1,5 @@
+{
+  "checks": 66,
+  "passed": true,
+  "scope": "Original JS loads severance flags, argument cooldown, memories and event logs. Unknown relationship fields are ignored by original JS. No production API."
+}

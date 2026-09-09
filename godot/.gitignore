@@ -9,3 +9,4 @@ tests/capture_social.flag
 tests/capture_npc.flag
 tests/capture_gossip.flag
 tests/capture_romance.flag
+tests/capture_feuds.flag

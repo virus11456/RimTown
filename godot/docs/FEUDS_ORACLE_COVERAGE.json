@@ -1,0 +1,7 @@
+{
+  "scenarios": 192,
+  "severances": 16,
+  "arguments": 90,
+  "observations": 217,
+  "scope": "World._processFeuds; excludes daily news and AI scenes; includes seasonal/year rollover with original cooldown formula"
+}
