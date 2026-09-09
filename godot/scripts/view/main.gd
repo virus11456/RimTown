@@ -13,6 +13,8 @@ var drawer: PanelContainer
 var drawer_body: VBoxContainer
 var dialog: FileDialog
 var active_tab := ""
+var desktop_camera: VBoxContainer
+var mobile_turn: Button
 var busy := false
 var import_callback: JavaScriptObject
 var demo_theme := "frontier"
@@ -27,6 +29,7 @@ func _ready() -> void:
 	_build_ui()
 	load_demo("frontier")
 	get_viewport().size_changed.connect(_responsive)
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_matrix.flag"): _capture_demo()
 	_responsive()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
@@ -98,6 +101,7 @@ func _build_ui() -> void:
 	heading = _label("邊境鎮",title_stack,25)
 	summary = _label("",title_stack,13)
 	var controls := VBoxContainer.new()
+	desktop_camera = controls
 	title_row.add_child(controls)
 	var rotate := HBoxContainer.new()
 	controls.add_child(rotate)
@@ -106,6 +110,7 @@ func _build_ui() -> void:
 	_button("＋",rotate,func(): rig.zoom_by(0.8))
 	_button("－",rotate,func(): rig.zoom_by(1.25))
 	_label("拖曳平移 · 滾輪縮放",controls,11)
+	mobile_turn = _button("↻",title_row,func(): rig.turn(1))
 	navigation = HBoxContainer.new()
 	navigation.add_theme_constant_override("separation",8)
 	hud.add_child(navigation)
@@ -144,6 +149,8 @@ func _build_ui() -> void:
 func _responsive() -> void:
 	var size := get_viewport().get_visible_rect().size
 	var mobile := size.x < 650
+	desktop_camera.visible = not mobile
+	mobile_turn.visible = mobile
 	header.position = Vector2(16,16)
 	header.size = Vector2(size.x-32,110)
 	heading.add_theme_font_size_override("font_size",20 if mobile else 25)
@@ -163,7 +170,7 @@ func _load_document(text: String, source: String) -> bool:
 	var data := document.snapshot()
 	heading.text = str(data.get("townName","小鎮"))
 	var clock_data: Dictionary = data.clock
-	summary.text = "%s · 第 %s 天 · %s 位居民" % [clock_data.get("season",""),str(clock_data.get("day",1)),data.agents.size()]
+	summary.text = "%s · 第 %s 天 · %s 位居民" % [clock_data.get("season",""),str(int(clock_data.get("day",1))),data.agents.size()]
 	status.text = "%s · 觀賞模式" % source
 	if world_view != null:
 		world_view.call("display_save",data)
@@ -196,7 +203,7 @@ func show_tab(tab: String, refresh := false) -> void:
 			_button("匯出原始存檔副本",drawer_body,export_save)
 			var resources: Dictionary = document.data.get("stockpile",{}).get("resources",{})
 			for key in resources:
-				if float(resources[key]) != 0: _label("%s   %s" % [key,str(resources[key])],drawer_body)
+				if float(resources[key]) != 0: _label("%s   %d" % [_resource_name(key),resources[key]],drawer_body)
 		"居民":
 			for id in document.data.get("agents",{}):
 				var agent: Dictionary = document.data.agents[id]
@@ -213,11 +220,11 @@ func show_agent(id: String) -> void:
 	_clear_drawer()
 	var agent: Dictionary = document.data.agents[id]
 	_label(str(agent.get("name",id)),drawer_body,24)
-	_label("%s 歲 · %s" % [str(agent.get("age",0)),str(agent.get("jobKey","旅人"))],drawer_body)
+	_label("%s 歲 · %s" % [str(int(agent.get("age",0))),_job_name(str(agent.get("jobKey","旅人")))],drawer_body)
 	var label := _label(str(agent.get("personality",{}).get("background","")),drawer_body)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	for key in agent.get("needs",{}):
-		_label("%s    %d" % [key,agent.needs[key]],drawer_body,14)
+		_label("%s    %d" % [{"hunger":"飽足","rest":"休息","social":"社交","comfort":"舒適","recreation":"娛樂","beauty":"美感"}.get(key,key),agent.needs[key]],drawer_body,14)
 	if world_view != null:
 		var pos: Variant = world_view.call("agent_position",id)
 		if pos is Vector3: rig.position = Vector3(pos.x,0,pos.z)
@@ -312,3 +319,34 @@ func export_save() -> void:
 			file.store_string(document.serialize())
 			status.text="副本已儲存於 " + ProjectSettings.globalize_path(path)
 		else: status.text="無法寫入副本。"
+
+func _capture_demo() -> void:
+	await get_tree().create_timer(3).timeout
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/frontier-preview.png")
+	if FileAccess.file_exists("res://tests/capture_matrix.flag"):
+		load_demo("harbor")
+		await get_tree().create_timer(1).timeout
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("res://docs/harbor-preview.png")
+		var viewport := SubViewport.new()
+		viewport.size = Vector2i(375,812)
+		viewport.own_world_3d = true
+		viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+		add_child(viewport)
+		var mobile: Node = load("res://scenes/main.tscn").instantiate()
+		viewport.add_child(mobile)
+		mobile.show_tab("小鎮",true)
+		await get_tree().create_timer(1).timeout
+		await RenderingServer.frame_post_draw
+		viewport.get_texture().get_image().save_png("res://docs/mobile-preview.png")
+		viewport.queue_free()
+		load_demo("frontier")
+		drawer.hide()
+		active_tab = ""
+
+func _resource_name(key: String) -> String:
+	return tr({"food":"食物","wood":"木材","stone":"石材","metal":"金屬","cloth":"布料","herbs":"草藥","silver":"銀幣","meals":"餐食","tools":"工具","clothing":"衣物","medicine":"藥品","furniture":"家具","research_points":"研究","wheat":"小麥","cotton":"棉花","grapes":"葡萄","tea":"茶葉","sugarcane":"甘蔗","sugar":"砂糖","bread":"麵包","beer":"啤酒","wine":"葡萄酒","flowers":"花卉","plank":"木板","hardwood":"硬木","brick":"磚塊","marble":"大理石","steel":"鋼鐵","gold":"黃金","rice":"稻米","corn":"玉米","potato":"馬鈴薯","mushroom":"蘑菇","golden_wheat":"金色小麥","dragon_fruit":"火龍果","pastry":"糕點","perfume":"香水","fine_tea":"精品茶","herbal_tea":"草本茶","jam":"果醬","luxury_furniture":"高級家具"}.get(key,key))
+
+func _job_name(key: String) -> String:
+	return tr({"mayor":"鎮長","doctor":"醫生","blacksmith":"鐵匠","cook":"廚師","farmer":"農夫","trader":"商人","guard":"守衛","researcher":"研究員","miner":"礦工","priest":"牧師","carpenter":"木匠","tailor":"裁縫","null":"旅人"}.get(key,key))

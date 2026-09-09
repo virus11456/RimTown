@@ -1,3 +1,5 @@
 .godot/
 export/
 *.tmp
+__pycache__/
+tests/capture_matrix.flag

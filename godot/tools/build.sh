@@ -8,7 +8,3 @@ cd "$(dirname "$0")/.."
 read -r -a blender_flags <<< "${BLENDER_FLAGS:-}"
 "$BLENDER" -b --factory-startup "${blender_flags[@]}" --python-exit-code 1 -P tools/blender/build_all.py
 "$GODOT" --headless --editor --import --path .
-if [[ "${1:-}" == "--web" ]]; then
-  mkdir -p export/web
-  "$GODOT" --headless --path . --export-release Web export/web/index.html
-fi
