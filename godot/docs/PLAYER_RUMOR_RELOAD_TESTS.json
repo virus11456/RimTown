@@ -1,0 +1,5 @@
+{
+  "checks": 172,
+  "passed": true,
+  "scope": "Original JS loads rumor history and gossip, memories, relationships and currentThought. No production API."
+}

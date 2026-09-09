@@ -1,0 +1,5 @@
+{
+  "checks": 26,
+  "failures": [],
+  "scope": "UI targets and tones, no HTTP, daily guard, invalid/dead/no-partner cases, 375px layout, 192-tick resume and existing spread integration"
+}

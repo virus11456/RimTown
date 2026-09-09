@@ -81,6 +81,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_intents.flag"): _capture_player_intents()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_offline.flag"): _capture_player_offline()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_whisper.flag"): _capture_player_whisper()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_rumor.flag"): _capture_player_rumor()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -721,7 +722,7 @@ func _tick_simulation() -> void:
 		else: show_tab("故事",true)
 	if active_tab=="居民" and not selected_agent.is_empty():
 		match resident_page:
-			"chat", "whisper": pass # Preserve draft, focus and scroll while the world ticks.
+			"chat", "whisper", "rumor": pass # Preserve draft, focus and scroll while the world ticks.
 			"interaction": show_player_interaction(selected_agent)
 			"trace": show_trace(selected_agent)
 			"thoughts": show_thoughts(selected_agent)
@@ -1088,6 +1089,7 @@ func show_player_interaction(id: String) -> void:
 		_button("安慰他",drawer_body,func(): comfort_resident(id))
 	_button("自由交談",drawer_body,func(): show_player_chat(id))
 	_button("耳語",drawer_body,func(): show_player_whisper(id))
+	_button("偷偷爆料",drawer_body,func(): show_player_rumor(id))
 	_button("返回居民資料",drawer_body,func(): show_agent(id,false))
 func comfort_resident(id: String) -> void:
 	if not SimPlayerInteraction.in_range(id,motion.positions,simulation.data.agents):
@@ -1264,4 +1266,44 @@ func _capture_player_whisper() -> void:
 	await get_tree().create_timer(.5).timeout
 	await RenderingServer.frame_post_draw
 	viewport.get_texture().get_image().save_png("res://docs/player-whisper-mobile.png")
+	viewport.queue_free()
+
+func show_player_rumor(id: String,about_id: String="") -> void:
+	selected_agent=id;resident_page="rumor";_clear_drawer()
+	if not simulation.data.agents.has(id): _wrapped("這位居民已離開。");return
+	_wrapped("偷偷向"+str(simulation.data.agents[id].name)+"爆料",22)
+	_wrapped("每天限一次，不需連線。消息可能傳回當事人耳裡，影響他對你的看法。",12)
+	if not SimPlayerRumor.available(simulation): _wrapped("今天已經爆過料了，明天再來。")
+	elif about_id.is_empty():
+		_wrapped("要談論誰？")
+		var candidates:=SimPlayerRumor.candidates(simulation,id)
+		if candidates.is_empty(): _wrapped("目前沒有其他居民。")
+		for a in candidates: _button(str(a.name),drawer_body,func(): show_player_rumor(id,a.id))
+	elif simulation.data.agents.has(about_id):
+		_wrapped("關於"+str(simulation.data.agents[about_id].name)+"…")
+		_wrapped("亂點鴛鴦會隨機選一位其他單身居民，並不代表兩人會開始交往。",12)
+		for tone in SimPlayerRumor.TONES: _button(SimPlayerRumor.TONES[tone],drawer_body,func(): send_player_rumor(id,about_id,tone))
+		_button("重選對象",drawer_body,func(): show_player_rumor(id))
+	_button("返回互動",drawer_body,func(): show_player_interaction(id))
+func send_player_rumor(id: String,about_id: String,tone: String) -> void:
+	var result:=SimPlayerRumor.send(simulation,id,about_id,tone)
+	show_player_rumor(id)
+	if not result.ok: _wrapped(result.error);return
+	has_simulated=true;_wrapped("你偷偷說："+result.content);_wrapped(result.reaction)
+	status.text="消息已進入八卦網路 · 聽眾好感 %+.0f"%result.affinity
+
+func _capture_player_rumor() -> void:
+	await get_tree().create_timer(1).timeout
+	var example:=FileAccess.get_file_as_string("res://tests/player_rumor/compatibility-save.json.tmp")
+	chat_offline=true
+	_load_document(example,"八卦爆料驗證")
+	simulation.data._godot4a.erase("last_rumor_day");show_tab("居民",true);show_player_rumor("chen_wei","lin_mei")
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/player-rumor-desktop.png")
+	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+	var mobile=load("res://scenes/main.tscn").instantiate();viewport.add_child(mobile)
+	mobile.chat_offline=true;mobile._load_document(example,"八卦爆料驗證");mobile.simulation.data._godot4a.erase("last_rumor_day");mobile.show_tab("居民",true);mobile.show_player_rumor("chen_wei","lin_mei")
+	await get_tree().create_timer(.5).timeout
+	await RenderingServer.frame_post_draw
+	viewport.get_texture().get_image().save_png("res://docs/player-rumor-mobile.png")
 	viewport.queue_free()
