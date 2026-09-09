@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.70.0.zip` from Releases
+1. Download `rimtown-v5.71.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -77,6 +77,12 @@ node scripts/gen-changelog.js  # 從 rimtown.php 產生首頁更新紀錄 change
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.71.0 (2026-09-09)
+
+- 🌐 雙語第一波（介面）：補齊 431 條英文對照，含 99 個成就名稱、居民詳情／關係徽章／選舉／新聞／派系／探索／墓園、經濟／建築／研究／工廠／農場／訂單／產業、任務與個人故事、聊天封存與社群動態、首頁「村民的大腦」全部參數卡；切到 English 後遊戲介面不再夾雜中文
+- 📖 教學視窗 28 段說明與頁首／側欄按鈕加上 `data-i18n` 掛鉤，切換語言即時生效；教學裡過時的「到設定填 Groq 金鑰」提示改為「內建 AI，不需金鑰」
+- 🔍 新增檢查：app.js 所有 `t()` 字串都必須有英文對照（目前 0 缺）；模擬內容（村民名／台詞／事件）的英文在下一波
 
 ### v5.70.0 (2026-09-09)
 

@@ -39,8 +39,8 @@
 <div id="rimtown-app" class="rimtown-container">
     <!-- Guest mode banner -->
     <div id="guest-banner" class="hidden">
-        <span>🎮 訪客模式 — 存檔僅保留在本機</span>
-        <button id="guest-register-btn">註冊帳號</button>
+        <span data-i18n="🎮 訪客模式 — 存檔僅保留在本機">🎮 訪客模式 — 存檔僅保留在本機</span>
+        <button id="guest-register-btn" data-i18n="註冊帳號">註冊帳號</button>
         <button id="guest-banner-close">✕</button>
     </div>
     <!-- Town Manager Modal -->
@@ -81,7 +81,7 @@
             <div class="setting-group">
                 <label data-i18n="背景音樂">背景音樂</label>
                 <div style="display:flex;align-items:center;gap:8px;">
-                    <button id="bgm-toggle" class="btn-icon" title="靜音" style="font-size:18px;padding:4px 8px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:6px;cursor:pointer;">🔊</button>
+                    <button id="bgm-toggle" class="btn-icon" data-i18n-title="靜音" title="靜音" style="font-size:18px;padding:4px 8px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:6px;cursor:pointer;">🔊</button>
                     <input id="bgm-volume" type="range" min="0" max="100" value="20" style="flex:1;">
                 </div>
             </div>
@@ -111,12 +111,12 @@
                 <div class="tutorial-step-icon">🗺️</div>
                 <h3 data-i18n="地圖與村莊">地圖與村莊</h3>
                 <div class="tutorial-step-text">
-                    <p>左側的 <strong>像素地圖</strong> 是你的村莊。你可以看到：</p>
+                    <p data-i18n-html="左側的 <strong>像素地圖</strong> 是你的村莊。你可以看到：">左側的 <strong>像素地圖</strong> 是你的村莊。你可以看到：</p>
                     <ul>
-                        <li>🏠 各種建築 —— 酒館、農場、鐵匠鋪、診所等</li>
-                        <li>👤 移動中的居民 —— 他們會自主上班、社交、吃飯、睡覺</li>
-                        <li>🌙 日夜交替 —— 白天工作，傍晚社交，深夜休息</li>
-                        <li>💬 對話氣泡 —— 居民之間正在進行的交談</li>
+                        <li data-i18n="🏠 各種建築 —— 酒館、農場、鐵匠鋪、診所等">🏠 各種建築 —— 酒館、農場、鐵匠鋪、診所等</li>
+                        <li data-i18n="👤 移動中的居民 —— 他們會自主上班、社交、吃飯、睡覺">👤 移動中的居民 —— 他們會自主上班、社交、吃飯、睡覺</li>
+                        <li data-i18n="🌙 日夜交替 —— 白天工作，傍晚社交，深夜休息">🌙 日夜交替 —— 白天工作，傍晚社交，深夜休息</li>
+                        <li data-i18n="💬 對話氣泡 —— 居民之間正在進行的交談">💬 對話氣泡 —— 居民之間正在進行的交談</li>
                     </ul>
                     <p>點擊地圖上的地點可以移動你的角色。</p>
                 </div>
@@ -125,12 +125,12 @@
                 <div class="tutorial-step-icon">👥</div>
                 <h3 data-i18n="居民與聊天">居民與聊天</h3>
                 <div class="tutorial-step-text">
-                    <p>開啟 <strong>居民</strong>（電腦：右側面板／手機：☰ 選單）可以看到所有村民。點地圖上的村民會顯示好感度與八卦小卡。</p>
-                    <p>用方向鍵／搖桿走到村民身邊按「交談」，或開啟 <strong>聊天</strong>（手機：底部 💬）選人對話！他們會根據個性、心情和好感度回應。</p>
+                    <p data-i18n-html="開啟 <strong>居民</strong>（電腦：右側面板／手機：☰ 選單）可以看到所有村民。點地圖上的村民會顯示好感度與八卦小卡。">開啟 <strong>居民</strong>（電腦：右側面板／手機：☰ 選單）可以看到所有村民。點地圖上的村民會顯示好感度與八卦小卡。</p>
+                    <p data-i18n-html="用方向鍵／搖桿走到村民身邊按「交談」，或開啟 <strong>聊天</strong>（手機：底部 💬）選人對話！他們會根據個性、心情和好感度回應。">用方向鍵／搖桿走到村民身邊按「交談」，或開啟 <strong>聊天</strong>（手機：底部 💬）選人對話！他們會根據個性、心情和好感度回應。</p>
                     <ul>
-                        <li>💕 好感度高的居民會更友善</li>
-                        <li>💼 你可以選擇自己的職業</li>
-                        <li>💒 你甚至可以和居民約會、求婚！</li>
+                        <li data-i18n="💕 好感度高的居民會更友善">💕 好感度高的居民會更友善</li>
+                        <li data-i18n="💼 你可以選擇自己的職業">💼 你可以選擇自己的職業</li>
+                        <li data-i18n="💒 你甚至可以和居民約會、求婚！">💒 你甚至可以和居民約會、求婚！</li>
                     </ul>
                 </div>
             </div>
@@ -138,13 +138,13 @@
                 <div class="tutorial-step-icon">💰</div>
                 <h3 data-i18n="經濟與產業">經濟與產業</h3>
                 <div class="tutorial-step-text">
-                    <p><strong>經濟</strong>（手機：☰ 選單→經濟）可以查看資源、建築、科技樹和貿易。</p>
-                    <p><strong>經濟→產業</strong> 子分頁管理農場種植、工廠加工和產業發展。</p>
+                    <p data-i18n-html="<strong>經濟</strong>（手機：☰ 選單→經濟）可以查看資源、建築、科技樹和貿易。"><strong>經濟</strong>（手機：☰ 選單→經濟）可以查看資源、建築、科技樹和貿易。</p>
+                    <p data-i18n-html="<strong>經濟→產業</strong> 子分頁管理農場種植、工廠加工和產業發展。"><strong>經濟→產業</strong> 子分頁管理農場種植、工廠加工和產業發展。</p>
                     <ul>
-                        <li>🌾 種植作物、收穫農產品</li>
-                        <li>🏭 建造工廠加工原料</li>
-                        <li>📈 隨著人口增長，城鎮等級提升</li>
-                        <li>⚔️ 完成任務獲得獎勵</li>
+                        <li data-i18n="🌾 種植作物、收穫農產品">🌾 種植作物、收穫農產品</li>
+                        <li data-i18n="🏭 建造工廠加工原料">🏭 建造工廠加工原料</li>
+                        <li data-i18n="📈 隨著人口增長，城鎮等級提升">📈 隨著人口增長，城鎮等級提升</li>
+                        <li data-i18n="⚔️ 完成任務獲得獎勵">⚔️ 完成任務獲得獎勵</li>
                     </ul>
                 </div>
             </div>
@@ -152,15 +152,15 @@
                 <div class="tutorial-step-icon">📰</div>
                 <h3 data-i18n="事件與探索">事件與探索</h3>
                 <div class="tutorial-step-text">
-                    <p>遊戲中會發生各種 <strong>隨機事件</strong>：</p>
+                    <p data-i18n-html="遊戲中會發生各種 <strong>隨機事件</strong>：">遊戲中會發生各種 <strong>隨機事件</strong>：</p>
                     <ul>
-                        <li>🗳️ 鎮長選舉 —— 投票選出你支持的候選人</li>
-                        <li>⚔️ 盜匪襲擊 —— 守衛和居民會奮力防禦</li>
-                        <li>🎪 季節慶典 —— 春祭、仲夏篝火、豐收節、冬至</li>
-                        <li>🗺️ 探索系統 —— 派遣探險隊探索鎮外區域</li>
-                        <li>🗞️ AI 日報 —— 村莊記者會報導鎮上的大小事</li>
+                        <li data-i18n="🗳️ 鎮長選舉 —— 投票選出你支持的候選人">🗳️ 鎮長選舉 —— 投票選出你支持的候選人</li>
+                        <li data-i18n="⚔️ 盜匪襲擊 —— 守衛和居民會奮力防禦">⚔️ 盜匪襲擊 —— 守衛和居民會奮力防禦</li>
+                        <li data-i18n="🎪 季節慶典 —— 春祭、仲夏篝火、豐收節、冬至">🎪 季節慶典 —— 春祭、仲夏篝火、豐收節、冬至</li>
+                        <li data-i18n="🗺️ 探索系統 —— 派遣探險隊探索鎮外區域">🗺️ 探索系統 —— 派遣探險隊探索鎮外區域</li>
+                        <li data-i18n="🗞️ AI 日報 —— 村莊記者會報導鎮上的大小事">🗞️ AI 日報 —— 村莊記者會報導鎮上的大小事</li>
                     </ul>
-                    <p style="color:var(--text-muted);font-size:0.72rem;margin-top:10px">提示：在設定中配置 AI 語言模型（如 Groq 免費），可以讓居民對話更加生動！</p>
+                    <p style="color:var(--text-muted);font-size:0.72rem;margin-top:10px" data-i18n="提示：村民對話由內建 AI 生成，不需要設定任何金鑰；走到村民身邊按「交談」就能開聊。">提示：村民對話由內建 AI 生成，不需要設定任何金鑰；走到村民身邊按「交談」就能開聊。</p>
                 </div>
             </div>
             <div class="tutorial-nav">
@@ -188,9 +188,9 @@
                 <button id="auth-login-btn" class="btn-accent" style="width:100%;padding:8px;border:none;border-radius:4px;cursor:pointer;font-size:0.85rem;margin-top:4px" data-i18n="登入">登入</button>
                 <div style="margin-top:8px"><a href="#" id="auth-forgot-link" style="color:var(--text-secondary);font-size:0.75rem" data-i18n="忘記密碼？">忘記密碼？</a></div>
                 <div id="auth-guest-section" class="hidden" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);text-align:center">
-                    <p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:8px">不想註冊？先體驗一下也行！</p>
-                    <button id="auth-guest-btn" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:0.85rem;background:var(--bg-secondary);color:var(--text-primary)">🎮 訪客試玩</button>
-                    <p style="font-size:0.65rem;color:var(--text-secondary);margin-top:4px">存檔僅保留在本機，註冊後可同步到雲端</p>
+                    <p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:8px" data-i18n="不想註冊？先體驗一下也行！">不想註冊？先體驗一下也行！</p>
+                    <button id="auth-guest-btn" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:0.85rem;background:var(--bg-secondary);color:var(--text-primary)" data-i18n="🎮 訪客試玩">🎮 訪客試玩</button>
+                    <p style="font-size:0.65rem;color:var(--text-secondary);margin-top:4px" data-i18n="存檔僅保留在本機，註冊後可同步到雲端">存檔僅保留在本機，註冊後可同步到雲端</p>
                 </div>
             </div>
             <div id="auth-register-form" class="hidden">
@@ -290,7 +290,7 @@
                     <button class="btn-speed" data-speed="2">2x</button>
                     <button class="btn-speed" data-speed="3">3x</button>
                 </div>
-                <span id="llm-status" class="llm-status" data-i18n-title="AI 狀態" title="AI 狀態">AI:--</span>
+                <span id="llm-status" class="llm-status" data-i18n-title="AI 狀態" data-i18n-title="AI 狀態" title="AI 狀態">AI:--</span>
                 <button id="btn-account" class="btn-account" data-i18n="帳號">帳號</button>
                 <button id="btn-settings" class="btn-settings" data-i18n="設定">設定</button>
                 <span id="version-display" class="version-display"></span>
@@ -308,7 +308,7 @@
 
         <!-- Sidebar -->
         <div class="rt-sidebar" id="rimtown-sidebar">
-            <button class="mobile-back-to-map" id="mobile-back-to-map">&#9650; 返回地圖</button>
+            <button class="mobile-back-to-map" id="mobile-back-to-map" data-i18n-html="&#9650; 返回地圖">&#9650; 返回地圖</button>
             <div class="rt-sidebar-tabs">
                 <button data-tab="economy"><span class="tab-icon">🏙️</span><span class="tab-label" data-i18n="小鎮">小鎮</span></button>
                 <button data-tab="residents" data-tab-badge="chat" class="active"><span class="tab-icon">👥</span><span class="tab-label" data-i18n="居民">居民</span></button>

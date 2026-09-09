@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.70.0
+ * Version: 5.71.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.70.0');
+define('RIMTOWN_VERSION', '5.71.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,15 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.71.0',
+            'date'    => '2026-09-09',
+            'changes' => array(
+                '🌐 雙語第一波(介面):補齊 431 條英文對照——99 個成就名稱、居民詳情/關係徽章/選舉/新聞/派系/探索/墓園、經濟/建築/研究/工廠/農場/訂單/產業、任務與個人故事、聊天封存與社群動態、首頁「村民的大腦」全部參數卡;切到 English 後遊戲介面不再夾雜中文',
+                '📖 教學視窗 28 段說明與頁首/側欄按鈕加上翻譯掛鉤,切換語言即時生效;教學裡過時的「到設定填 Groq 金鑰」提示改為「內建 AI,不需金鑰」',
+                '🔍 新增檢查:app.js 所有 t() 字串都必須有英文對照(目前 0 缺);模擬內容(村民名/台詞/事件)的英文在下一波',
+            ),
+        ),
         array(
             'version' => '5.70.0',
             'date'    => '2026-09-09',
