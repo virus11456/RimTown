@@ -1,0 +1,5 @@
+{
+  "checks": 30,
+  "failures": [],
+  "scope": "industry UI choice/upgrade, atomic guards, midnight exactly once, disable, ten-day all-system resume, mobile layout"
+}

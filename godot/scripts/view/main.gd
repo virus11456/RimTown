@@ -85,7 +85,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_gift.flag"): _capture_player_gift()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_stockpile.flag"): _capture_stockpile()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_economy.flag"): _capture_economy()
-	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_progress.flag"): _capture_progress()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and (FileAccess.file_exists("res://tests/capture_progress.flag") or FileAccess.file_exists("res://tests/capture_industry.flag")): _capture_progress()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -261,6 +261,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.buildings_enabled=bool(document.data.get("_godot4a",{}).get("buildings_enabled",true))
 	simulation.trade_enabled=bool(document.data.get("_godot4a",{}).get("trade_enabled",true))
 	simulation.research_enabled=bool(document.data.get("_godot4a",{}).get("research_enabled",true))
+	simulation.industry_enabled=bool(document.data.get("_godot4a",{}).get("industry_enabled",true))
 	var data := document.snapshot()
 	heading.text = str(data.get("townName","小鎮"))
 	var clock_data: Dictionary = data.clock
@@ -318,7 +319,8 @@ func show_tab(tab: String, refresh := false) -> void:
 			_button("建築工程",drawer_body,show_buildings)
 			_button("商人交易",drawer_body,show_trade)
 			_button("研究",drawer_body,show_research)
-			_wrapped("試玩：作息、移動與居民互動已啟用。\n送禮會消耗公共庫存；每日經濟可在設定開關。建築、交易與研究已啟用；任務及產業系統仍待完成。",13)
+			_button("產業",drawer_body,show_industry)
+			_wrapped("試玩：作息、移動與居民互動已啟用。\n送禮會消耗公共庫存；每日經濟可在設定開關。建築、交易、研究與產業已啟用；農田、加工及任務仍待完成。",13)
 			var resources: Dictionary = _current_data().get("stockpile",{}).get("resources",{})
 			for key in resources:
 				if float(resources[key]) != 0: _label("%s   %s" % [_resource_name(key),str(resources[key])],drawer_body)
@@ -550,6 +552,7 @@ func _line(placeholder: String, secret := false) -> LineEdit:
 	return field
 
 func _settings_ui() -> void:
+	_button("每日產業產出："+("開啟" if simulation.industry_enabled else "關閉"),drawer_body,func(): simulation.industry_enabled=not simulation.industry_enabled;show_tab("設定",true))
 	_button("每日研究："+("開啟" if simulation.research_enabled else "關閉"),drawer_body,func(): simulation.research_enabled=not simulation.research_enabled;show_tab("設定",true))
 	_button("商人每日來訪："+("開啟" if simulation.trade_enabled else "關閉"),drawer_body,func(): simulation.trade_enabled=not simulation.trade_enabled;show_tab("設定",true))
 	_button("每日建築施工："+("開啟" if simulation.buildings_enabled else "關閉"),drawer_body,func(): simulation.buildings_enabled=not simulation.buildings_enabled;show_tab("設定",true))
@@ -1364,7 +1367,7 @@ func show_stockpile(resource: String="",show_zero: bool=false) -> void:
 	active_tab="小鎮";drawer.show();_clear_drawer()
 	_wrapped("公共庫存與收支",22)
 	_button("加工排班",drawer_body,show_work_policy)
-	_wrapped("送禮從這裡扣除；每日生產與消耗在午夜結算，可於設定開關。建築、交易與研究已啟用；產業自身运作仍待完成。",12)
+	_wrapped("送禮從這裡扣除；每日生產與消耗在午夜結算，可於設定開關。建築、交易、研究與產業已啟用；農田及加工仍待完成。",12)
 	var stockpile: Dictionary=_current_data().get("stockpile",{})
 	var resources: Dictionary=stockpile.get("resources",{})
 	var history: Array=stockpile.get("history",[])
@@ -1504,7 +1507,7 @@ func show_trade() -> void:
 func show_research() -> void:
 	active_tab="小鎮";drawer.show();_clear_drawer();_wrapped("研究",22)
 	_wrapped("研究員每天午夜推進，並最多消耗 5 點公共研究點數。切換項目保留已累積進度；沒有指定項目時會自動選擇可研究項目。",12)
-	_wrapped("完成後保存研究效果；尚未移植的產業、建築外觀等系統不會因此自動出現。",12)
+	_wrapped("完成後保存研究效果；尚未移植的農田、建築外觀等系統不會因此自動出現。",12)
 	if not simulation.research_enabled: _wrapped("每日研究目前關閉。")
 	var research: Dictionary=simulation.data.research
 	for p in research.projects.values():
@@ -1521,13 +1524,46 @@ func show_research() -> void:
 
 func _capture_progress() -> void:
 	await get_tree().create_timer(1).timeout
-	for page in ["buildings","trade","research"]:
+	var pages: Array=["industry"] if FileAccess.file_exists("res://tests/capture_industry.flag") else ["buildings","trade","research"]
+	for page in pages:
 		for dimensions in [Vector2i(1280,800),Vector2i(375,812)]:
 			var viewport:=SubViewport.new();viewport.size=dimensions;viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
 			var preview=load("res://scenes/main.tscn").instantiate();viewport.add_child(preview)
-			preview._load_document(FileAccess.get_file_as_string("res://tests/"+page+"/compatibility-save.json.tmp"),"建築／交易／研究驗收")
+			preview._load_document(FileAccess.get_file_as_string("res://tests/"+page+"/compatibility-save.json.tmp"),"經濟建設驗收")
 			preview.call("show_"+page)
 			await get_tree().create_timer(.5).timeout
 			await RenderingServer.frame_post_draw
 			viewport.get_texture().get_image().save_png("res://docs/"+page+("-mobile.png" if dimensions.x==375 else "-desktop.png"))
 			viewport.queue_free()
+
+func show_industry() -> void:
+	active_tab="小鎮";drawer.show();_clear_drawer();_wrapped("產業",22)
+	var manager: Dictionary=simulation.data.industry;var defs:=SimIndustry.rules()
+	_wrapped(str(manager.townLevelName)+" · 產業 %d／%d"%[manager.industries.size(),manager.maxIndustries])
+	_wrapped("開啟產業不扣材料；升級立即扣公共庫存。每天午夜按職業人手與組合加成產出，無人手仍有 30% 基礎產能。",12)
+	if not simulation.industry_enabled: _wrapped("每日產業產出目前關閉。")
+	for level in defs.levels:
+		if int(level.lv)>int(manager.townLevel): _wrapped("下一城鎮等級：%s · 人口 %d／%d · 完工建築 %d／%d"%[level.name,simulation.data.agents.size(),level.population,simulation.data.buildings.completed.size(),level.buildings],12);break
+	for key in defs.industries:
+		var def: Dictionary=defs.industries[key];_wrapped(str(def.name),18);_wrapped(str(def.description),12)
+		if manager.industries.has(key):
+			var ind: Dictionary=manager.industries[key];_wrapped("等級 "+str(int(ind.level)))
+			var outputs: Array=[]
+			for resource in ind.dailyOutput: outputs.append(_resource_name(resource)+" +"+str(ind.dailyOutput[resource]))
+			_wrapped("最近一次產出："+("尚未結算" if outputs.is_empty() else "、".join(outputs)),12)
+			var next:=SimIndustry.next_level(simulation,key)
+			if not next.is_empty():
+				var costs: Array=[]
+				for resource in next.cost: costs.append(_resource_name(resource)+" "+str(next.cost[resource]))
+				_wrapped("升級花費："+"、".join(costs),12)
+				var button:=_button("升級："+str(next.name),drawer_body,func():
+					if SimIndustry.upgrade(simulation,key): has_simulated=true
+					show_industry())
+				button.disabled=not SimBuildings.affordable(simulation,next.cost)
+		else:
+			var button:=_button("開啟："+str(def.name),drawer_body,func():
+				if SimIndustry.choose(simulation,key): has_simulated=true
+				show_industry())
+			button.disabled=manager.industries.size()>=int(manager.maxIndustries)
+	_button("重新整理",drawer_body,show_industry)
+	_button("返回小鎮",drawer_body,func(): show_tab("小鎮",true))

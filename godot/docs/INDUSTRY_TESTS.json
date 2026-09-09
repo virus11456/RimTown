@@ -1,0 +1,5 @@
+{
+  "checks": 1200,
+  "failures": [],
+  "scope": "300 original industry scenarios including no workers, sidelined workers and town promotion: all 15 combinations and levels 1–5, choose/upgrade cost, worker efficiency, synergy output, exact state/stock/logs/news"
+}
