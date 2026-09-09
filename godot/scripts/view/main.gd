@@ -60,6 +60,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_romance.flag"): _capture_romance()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_feuds.flag"): _capture_feuds()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_factions.flag"): _capture_factions()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_thoughts.flag"): _capture_thoughts()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -223,6 +224,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.romance_enabled=bool(document.data.get("_godot4a",{}).get("romance_enabled",true))
 	simulation.feuds_enabled=bool(document.data.get("_godot4a",{}).get("feuds_enabled",true))
 	simulation.factions_enabled=bool(document.data.get("_godot4a",{}).get("factions_enabled",true))
+	simulation.thoughts_enabled=bool(document.data.get("_godot4a",{}).get("thoughts_enabled",true))
 	var data := document.snapshot()
 	heading.text = str(data.get("townName","小鎮"))
 	var clock_data: Dictionary = data.clock
@@ -313,6 +315,7 @@ func show_agent(id: String,focus_camera := true) -> void:
 		var pos: Variant = world_view.call("agent_position",id)
 		if pos is Vector3: rig.position = Vector3(pos.x,0,pos.z)
 	_button("近期記憶",drawer_body,func(): show_memories(id))
+	_button("目前想法",drawer_body,func(): show_thoughts(id))
 	_button("人際關係",drawer_body,func(): show_relationships(id))
 	_button("返回居民列表",drawer_body,func(): selected_agent=""; show_tab("居民",true))
 
@@ -439,6 +442,35 @@ func show_memories(id: String,target_id := "") -> void:
 		_button("返回人際關係",drawer_body,func(): show_relationships(id))
 	_button("返回居民資料",drawer_body,func(): show_agent(id,false))
 
+func show_thoughts(id: String) -> void:
+	selected_agent=id
+	resident_page="thoughts"
+	_clear_drawer()
+	var data:=_current_data()
+	var a: Dictionary=data.agents[id]
+	var today:=SimClock.total_days(data.clock)
+	_wrapped(str(a.name)+" · 目前想法",22)
+	_wrapped("心情：%d"%int(a.get("mood",0)),18)
+	_button("返回居民資料",drawer_body,func(): show_agent(id,false))
+	if a.get("isPlayer",false) or a.get("isDead",false):
+		_wrapped("依目前規則，此角色不套用想法心情影響，也不執行每日清理與好感變化。")
+	elif not simulation.thoughts_enabled:
+		_wrapped("每日想法更新已關閉；到期清理與好感變化暫停。")
+	else: _wrapped("想法的心情影響逐日淡化；針對某人的好感變化在換日時套用，直到想法到期。")
+	var thoughts: Array=a.get("thoughts",[]) if a.get("thoughts") is Array else []
+	if thoughts.is_empty(): _wrapped("目前沒有持續影響的想法。")
+	for thought in thoughts:
+		var remaining:=maxf(0,float(thought.get("days",0))-(today-float(thought.get("start",today))))
+		_wrapped(str(thought.get("label",thought.get("kind","想法"))),18)
+		_wrapped("剩餘 %s 天 · 當前心情影響 %+0.1f"%[str(int(remaining)) if remaining==floor(remaining) else str(snappedf(remaining,.1)),0.0 if a.get("isPlayer",false) or a.get("isDead",false) else SimThoughts.mood_effect(thought,today)])
+		if remaining<=0: _wrapped("已到期；下次每日更新時清理。",12)
+		var target: String=str(thought.get("targetId","")) if thought.get("targetId")!=null else ""
+		var opinion:=float(thought.get("opinion",0))
+		if not target.is_empty() and opinion!=0:
+			var name: String=str(data.agents.get(target,{}).get("name",thought.get("targetName",target)))
+			_wrapped("對「%s」的好感：每日 %+0.1f"%[name,opinion])
+			if not a.get("relationships",{}).has(target): _wrapped("缺少這段關係，目前不套用好感變化。",12)
+
 func show_relationships(id: String) -> void:
 	selected_agent=id
 	resident_page="relationships"
@@ -471,6 +503,8 @@ func _line(placeholder: String, secret := false) -> LineEdit:
 	return field
 
 func _settings_ui() -> void:
+	_button("每日想法更新："+("開啟" if simulation.thoughts_enabled else "關閉"),drawer_body,func(): simulation.thoughts_enabled=not simulation.thoughts_enabled; show_tab("設定",true))
+	_wrapped("想法更新控制到期清理與每日好感變化；心情影響仍隨時間淡化。")
 	_button("居民派系："+("開啟" if simulation.factions_enabled else "關閉"),drawer_body,func(): simulation.factions_enabled=not simulation.factions_enabled; show_tab("設定",true))
 	_button("每日仇怨事件："+("開啟" if simulation.feuds_enabled else "關閉"),drawer_body,func(): simulation.feuds_enabled=not simulation.feuds_enabled; show_tab("設定",true))
 	_button("每日關係事件："+("開啟" if simulation.romance_enabled else "關閉"),drawer_body,func(): simulation.romance_enabled=not simulation.romance_enabled; show_tab("設定",true))
@@ -647,6 +681,7 @@ func _tick_simulation() -> void:
 		else: show_tab("故事",true)
 	if active_tab=="居民" and not selected_agent.is_empty():
 		match resident_page:
+			"thoughts": show_thoughts(selected_agent)
 			"memory": show_memories(selected_agent,memory_target)
 			"relationships": show_relationships(selected_agent)
 			_: show_agent(selected_agent,false)
@@ -872,4 +907,19 @@ func _capture_factions() -> void:
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png("res://docs/dispute-desktop.png")
 	viewport.get_texture().get_image().save_png("res://docs/dispute-mobile.png")
+	viewport.queue_free()
+
+func _capture_thoughts() -> void:
+	await get_tree().create_timer(1).timeout
+	var example:=FileAccess.get_file_as_string("res://tests/thoughts/compatibility-save.json.tmp")
+	_load_document(example,"想法效果測試情境")
+	show_tab("居民",true);show_thoughts("chen_wei")
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/thoughts-desktop.png")
+	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+	var mobile=load("res://scenes/main.tscn").instantiate();viewport.add_child(mobile)
+	mobile._load_document(example,"想法效果測試情境");mobile.show_tab("居民",true);mobile.show_thoughts("chen_wei")
+	await get_tree().create_timer(.5).timeout
+	await RenderingServer.frame_post_draw
+	viewport.get_texture().get_image().save_png("res://docs/thoughts-mobile.png")
 	viewport.queue_free()

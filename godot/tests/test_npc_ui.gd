@@ -19,6 +19,7 @@ func run() -> void:
 	viewport.add_child(app)
 	await process_frame
 	app.set_process(false)
+	app.simulation.thoughts_enabled=false # Earlier feature suites keep their original scope.
 	app.simulation.factions_enabled=false # This suite isolates its historical subsystem.
 	app.simulation.feuds_enabled=false # Keep this historical suite within its original scope.
 	app.simulation.romance_enabled=false # This suite isolates pre-romance behavior.

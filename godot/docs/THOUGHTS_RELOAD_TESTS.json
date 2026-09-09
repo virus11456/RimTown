@@ -1,0 +1,5 @@
+{
+  "checks": 68,
+  "passed": true,
+  "scope": "Original JS loads active thoughts including unknown fields, directed opinions, durations and relationships. No production API."
+}

@@ -1,6 +1,6 @@
 # 移植對照表
 
-歷史盤點與以下行號基準 commit: `47c44406ffe4ef705b5f8988a47e187e42a73602`。上游已同步 v5.74.1（4eefc58），最新驗證見 UPSTREAM_SYNC.json；歷史行號可能已移動。目前已延伸至使用者授權的 Phase 4b 分批試玩版。時鐘／需求／作息／技能、移動、NPC 本地社交、八卦、每日關係與仇怨及派系事件已接入；其餘子系統保留原始資料。以下為全部前端 JS class（含外部子系統）。方法與檔案雜湊見 SOURCE_AUDIT.md。
+歷史盤點與以下行號基準 commit: `47c44406ffe4ef705b5f8988a47e187e42a73602`。上游已同步 v5.74.1（4eefc58），最新驗證見 UPSTREAM_SYNC.json；歷史行號可能已移動。目前已延伸至使用者授權的 Phase 4b 分批試玩版。時鐘／需求／作息／技能、移動、NPC 本地社交、八卦、每日關係與仇怨、派系及每日想法更新已接入；其餘子系統保留原始資料。以下為全部前端 JS class（含外部子系統）。方法與檔案雜湊見 SOURCE_AUDIT.md。
 
 | JS class | 職責 | 建構／World 依賴（摘要） | 存檔鍵 | Phase | 狀態 |
 |---|---|---|---|---|---|
@@ -50,7 +50,7 @@
 | [LifecycleSystem](../../chrome-extension/simulation.js#L5777) | 生命週期 | Agent, Personality; world: addAgent, agents, clock, dailyNews, events, factions, gossipNetwork, logMessage, processing, removeAgent, tickCount | `lifecycle` | 4d | 已盤點，尚未移植 |
 | [ExplorationSystem](../../chrome-extension/simulation.js#L6086) | 探索 | —; world: agents, clock, dailyNews, events, logMessage, stockpile, tickCount | `exploration` | 4d | 已盤點，尚未移植 |
 | [LegacySystem](../../chrome-extension/simulation.js#L6250) | 世代傳承 | Personality; world: _legacyGeneration, agents, buildings, farm, industry, logMessage, multiEnding, prosperity, research, stockpile | `_legacyGeneration / player / resources` | 4e | 已盤點，尚未移植 |
-| [World](../../chrome-extension/simulation.js#L6457) | 世界更新與序列化 | Agent, BuildingManager, ConversationEngine, CouncilSystem, CustomNPCSystem, DailyDecisionSystem, DailyNewsEngine, ElectionSystem, EventChoiceSystem, EventSystem, ExplorationSystem, Faction, FactionSystem, FarmSystem, FestivalSystem, GameClock, GossipNetwork, IndustryManager, Job, LifeGoalSystem, LifecycleSystem, MultiEndingSystem, NPCEventSystem, NPCHelpSystem, NPCQuestSystem, NewsSystem, Personality, PlayerAgent, ProcessingSystem, ProsperityEngine, QuestSystem, ReputationSystem, ResearchManager, RogueCardSystem, ShopSystem, Stockpile, TownFeedSystem, TownIdentitySystem, TownMap, TradeManager, WeatherSystem, WorkOrderManager; world: — | `58 頂層鍵` | 3 / 4a–4f | 原始 envelope 保留＋4a、可切換 NPC 社交／八卦／每日關係／仇怨／派系 tick；完整 World.tick 待其餘4b–f |
+| [World](../../chrome-extension/simulation.js#L6457) | 世界更新與序列化 | Agent, BuildingManager, ConversationEngine, CouncilSystem, CustomNPCSystem, DailyDecisionSystem, DailyNewsEngine, ElectionSystem, EventChoiceSystem, EventSystem, ExplorationSystem, Faction, FactionSystem, FarmSystem, FestivalSystem, GameClock, GossipNetwork, IndustryManager, Job, LifeGoalSystem, LifecycleSystem, MultiEndingSystem, NPCEventSystem, NPCHelpSystem, NPCQuestSystem, NewsSystem, Personality, PlayerAgent, ProcessingSystem, ProsperityEngine, QuestSystem, ReputationSystem, ResearchManager, RogueCardSystem, ShopSystem, Stockpile, TownFeedSystem, TownIdentitySystem, TownMap, TradeManager, WeatherSystem, WorkOrderManager; world: — | `58 頂層鍵` | 3 / 4a–4f | 原始 envelope 保留＋4a、可切換 NPC 社交／八卦／每日關係／仇怨／派系／每日想法 tick；完整 World.tick 待其餘4b–f |
 | [ReputationSystem](../../chrome-extension/simulation.js#L8216) | 聲望 | —; world: agents, dailyNews, questSystem | `reputationSystem` | 4d | 已盤點，尚未移植 |
 | [WeatherSystem](../../chrome-extension/simulation.js#L8406) | 天氣災害 | —; world: agents, buildings, clock, dailyNews, eventChoice, logMessage, news, stockpile, tickCount | `weather` | 4d | 已盤點，尚未移植 |
 | [CouncilSystem](../../chrome-extension/simulation.js#L8766) | 議會 | —; world: agents, clock, dailyNews, logMessage, news, reputationSystem, stockpile, tickCount | `council` | 4d | 已盤點，尚未移植 |
@@ -86,3 +86,5 @@ node godot/tools/golden.mjs：兩次獨立 VM 執行、兩個主題、各 1/7/30
 - `World._processFeuds` → `SimFeuds`：每日仇怨／記憶／心情及冷卻已接入，AI 場景／新聞回呼排除；派系三日更新見 SimFactions。
 
 - 新增 DisputeBubbles：僅消費新模擬事件的角色 ID，六秒對話框屬呈現層，不寫入原版世界狀態。
+
+- `World._processThoughts` → `SimThoughts.daily`：先到期清理，再更新既有目標關係的好感；原版每日順序與模式續存已驗證。

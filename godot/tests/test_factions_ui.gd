@@ -31,6 +31,7 @@ func run() -> void:
 	var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app)
 	await process_frame
 	app.set_process(false)
+	app.simulation.thoughts_enabled=false # Earlier feature suites keep their original scope.
 	check(app.simulation.factions_enabled,"new imports enable factions")
 	app.simulation.social_enabled=false;app.simulation.romance_enabled=false;app.simulation.feuds_enabled=false
 	var data: Dictionary=app.simulation.data

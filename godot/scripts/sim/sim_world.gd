@@ -10,6 +10,7 @@ var gossip_enabled := false
 var romance_enabled := false
 var feuds_enabled := false
 var factions_enabled := false
+var thoughts_enabled := false
 var presentation_events: Array=[]
 var social := SimSocial.new()
 func load_snapshot(snapshot: Dictionary) -> void:
@@ -21,6 +22,7 @@ func load_snapshot(snapshot: Dictionary) -> void:
 	romance_enabled=bool(saved.get("romance_enabled",false))
 	feuds_enabled=bool(saved.get("feuds_enabled",false))
 	factions_enabled=bool(saved.get("factions_enabled",false))
+	thoughts_enabled=bool(saved.get("thoughts_enabled",false))
 	_restore_relationship_precision(saved.get("relationship_precision",[]))
 	rng.state = int(saved.get("random_state",11456))
 	runtime = saved.get("agents",{}).duplicate(true)
@@ -29,7 +31,7 @@ func load_snapshot(snapshot: Dictionary) -> void:
 func snapshot() -> Dictionary:
 	var result := data.duplicate(true)
 	var extension: Dictionary = result.get("_godot4a",{}).duplicate(true)
-	extension.merge({"version":1,"random_state":rng.state,"agents":runtime.duplicate(true),"social_enabled":social_enabled,"gossip_enabled":gossip_enabled,"romance_enabled":romance_enabled,"feuds_enabled":feuds_enabled,"factions_enabled":factions_enabled,"relationship_precision":_relationship_precision()},true)
+	extension.merge({"version":1,"random_state":rng.state,"agents":runtime.duplicate(true),"social_enabled":social_enabled,"gossip_enabled":gossip_enabled,"romance_enabled":romance_enabled,"feuds_enabled":feuds_enabled,"factions_enabled":factions_enabled,"thoughts_enabled":thoughts_enabled,"relationship_precision":_relationship_precision()},true)
 	result._godot4a = extension
 	if gossip_enabled and result.get("townFeed") is Dictionary and result.townFeed.get("posts") is Array:
 		result.townFeed.posts=result.townFeed.posts.slice(maxi(0,result.townFeed.posts.size()-80))
@@ -41,6 +43,7 @@ func tick() -> Array[String]:
 	if romance_enabled and "new_day" in events: SimRomance.process(self)
 	if feuds_enabled and "new_day" in events: SimFeuds.process(self)
 	if factions_enabled and "new_day" in events: SimFactions.daily(self)
+	if thoughts_enabled and "new_day" in events: SimThoughts.daily(self)
 	for id in data.agents:
 		if not data.agents[id].get("isDead",false): _update(id)
 	return events
