@@ -261,6 +261,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.buildings_enabled=bool(document.data.get("_godot4a",{}).get("buildings_enabled",true))
 	simulation.trade_enabled=bool(document.data.get("_godot4a",{}).get("trade_enabled",true))
 	simulation.research_enabled=bool(document.data.get("_godot4a",{}).get("research_enabled",true))
+	simulation.supply_enabled=bool(document.data.get("_godot4a",{}).get("supply_enabled",true))
 	simulation.processing_enabled=bool(document.data.get("_godot4a",{}).get("processing_enabled",true))
 	simulation.farm_enabled=bool(document.data.get("_godot4a",{}).get("farm_enabled",true))
 	simulation.industry_enabled=bool(document.data.get("_godot4a",{}).get("industry_enabled",true))
@@ -1621,6 +1622,7 @@ func show_processing() -> void:
 	var manager: Dictionary=simulation.data.processing;var defs:=SimProcessing.rules()
 	_wrapped("建廠立即扣材料，午夜施工。完工隔日自動招工並選第一份配方。成品先存工廠倉庫，可領取、出售或交訂單。",12)
 	_wrapped("切換配方會清除該廠生產進度；原料於每批完成時扣除。移除人手後，隔日仍會自動補位。市集會每天自動出售部分成品。",12)
+	if simulation.supply_enabled: _wrapped("產量控制：全鎮同商品保留約 3 批，另加未完成訂單需求；下一批超標就停產，消耗後恢復。手動與市集販售共用每商品每日 4 件需求。",12)
 	if not simulation.processing_enabled: _wrapped("每日加工營運目前關閉。")
 	for key in defs:
 		var def: Dictionary=defs[key];_wrapped(str(def.name),18)
@@ -1644,7 +1646,9 @@ func show_processing() -> void:
 			for r in recipe.output: outputs.append(_resource_name(r)+" "+str(int(recipe.output[r])))
 			_wrapped(" + ".join(inputs)+" → "+" + ".join(outputs)+" · 所需進度 "+str(int(recipe.time)),12)
 			if f.recipe==recipe.id:
-				_wrapped("生產中 · 進度 %.2f／%.0f"%[f.productionProgress,recipe.time],12)
+				_wrapped(("庫存充足，暫停 · " if SimSupply.blocked(simulation,recipe) else "生產中 · ")+"進度 %.2f／%.0f"%[f.productionProgress,recipe.time],12)
+				if simulation.supply_enabled:
+					for r in recipe.output: _wrapped("全鎮 "+_resource_name(r)+" %.0f／%.0f"%[SimSupply.total(simulation,r),SimSupply.target(simulation,r,float(recipe.output[r]))],12)
 				if not SimBuildings.affordable(simulation,recipe.input): _wrapped("原料不足，等待補貨。",12)
 			else: _button("選用："+str(recipe.label),drawer_body,func():
 				if SimProcessing.set_recipe(simulation,key,recipe.id): has_simulated=true
@@ -1670,6 +1674,7 @@ func show_processing() -> void:
 			var price:=5
 			for recipe in def.recipes:
 				if recipe.output.has(r): price=int(recipe.outputPrice);break
+			if simulation.supply_enabled: _wrapped("今日市場還收 %.0f 件（超量只賣出剩餘需求）"%SimSupply.remaining(simulation,r),12)
 			_button("出售："+_resource_name(r)+" · 每件 %d 銀"%price,drawer_body,func():
 				if SimProcessing.transfer(simulation,key,r,quantity.value,true): has_simulated=true
 				show_processing())

@@ -27,6 +27,9 @@ static func transfer(w: SimWorld,key: String,resource: String,amount: float,sell
 	var f: Dictionary=w.data.processing.builtFactories.get(key,{})
 	if f.is_empty() or not is_finite(amount) or amount<=0: return false
 	var take:=minf(amount,float(f.warehouse.get(resource,0)))
+	if sell:
+		take=minf(take,SimSupply.remaining(w,resource))
+		if w.supply_enabled: take=floorf(take)
 	if take<=0: return false
 	var def: Dictionary=rules().get(key,{})
 	if def.is_empty(): return false
@@ -36,6 +39,7 @@ static func transfer(w: SimWorld,key: String,resource: String,amount: float,sell
 	var price:=5.0
 	for recipe in def.recipes:
 		if recipe.output.has(resource): price=float(recipe.outputPrice);break
+	SimSupply.record_sale(w,resource,take)
 	var silver:=floorf(take*price+.5)
 	SimEconomy.change(w,"silver",silver,"賣出"+resource,def.name)
 	log_event(w,"factory",str(def.icon)+" 賣出 "+(str(int(take)) if take==floorf(take) else str(take))+" "+resource+"，獲得 "+str(int(silver))+" 銀幣");return true
@@ -87,7 +91,7 @@ static func daily(w: SimWorld) -> void:
 		var recipe: Dictionary={}
 		for item in def.recipes:
 			if item.id==f.recipe: recipe=item;break
-		if recipe.is_empty(): continue
+		if recipe.is_empty() or SimSupply.blocked(w,recipe): continue
 		var workers: Array=f.workers.filter(func(id): return w.data.agents.has(id) and can_work(w.data.agents[id]))
 		if workers.is_empty(): continue
 		var efficiency:=float(workers.size())/float(def.workerSlots)

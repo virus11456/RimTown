@@ -3,6 +3,7 @@ func run() -> void:
 	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;root.add_child(viewport)
 	var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app);await process_frame
 	app.set_process(false);var w: SimWorld=app.simulation
+	w.supply_enabled=false
 	app.show_tab("小鎮",true);press(app.drawer_body,"加工");check(w.processing_enabled and has_text(app.drawer_body,"工廠倉庫"),"processing entry")
 	for r in w.data.stockpile.resources: w.data.stockpile.resources[r]=10000
 	app.show_processing();press(app.drawer_body,"建造：麵包坊")
