@@ -1,8 +1,9 @@
 extends "res://tests/test_player_interaction.gd"
 func _initialize() -> void:
-	var cases: Array=JSON.parse_string(FileAccess.get_file_as_string("res://tests/industry/oracle.json"))
+	var oracle: Dictionary=JSON.parse_string(FileAccess.get_file_as_string("res://tests/industry/oracle.json"))
+	var cases: Array=oracle.cases
 	for c in cases:
-		var w:=SimWorld.new();w.load_snapshot(c.input)
+		var w:=SimWorld.new();w.load_snapshot(oracle.inputs[int(c.input)])
 		for key in c.keys:
 			SimIndustry.choose(w,key)
 			for i in int(c.level)-1: SimIndustry.upgrade(w,key)
