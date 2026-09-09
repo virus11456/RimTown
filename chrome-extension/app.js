@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.67.5
-const RIMTOWN_APP_VERSION = '5.67.5';
+// RimTown - Frontend App (WordPress Plugin) v5.67.6
+const RIMTOWN_APP_VERSION = '5.67.6';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -4025,7 +4025,7 @@ class RimTownApp {
                         if (!this.world.workPolicy) this.world.workPolicy = {};
                         this.world.workPolicy[good] = mode;
                         const modeLabel = mode === 'off' ? t('休工') : mode === 'extra' ? t('加班') : t('正常排班');
-                        this.world.logMessage('economy', `${t('鎮長下令：')}${modeLabel}（${t('明日生效')}）`);
+                        this.world.logMessage('economy', `${playerTitle(this.world)}${t('下令：')}${modeLabel}（${t('明日生效')}）`);
                         this.renderSidebar();
                     }
                     break;
@@ -5486,8 +5486,8 @@ class RimTownApp {
         const rel = npc.relationships.getOrCreate('player', this.world.agents['player']?.name || t('旅人'));
         rel.modifyAffinity(4);
         const d = this.world.lifeGoals.describe(agentId);
-        this.world.logMessage('milestone', `✨ ${t('鎮長為')}${npc.name}${t('的夢想「')}${d?.name || ''}${t('」加了一把勁!')}`, npc.name);
-        npc.memory.add(this.world.tickCount, this.world.clock.timeStr, 'social', `${t('鎮長支持我的夢想,好感動!')}`, 6, ['player']);
+        this.world.logMessage('milestone', `✨ ${playerTitle(this.world)}${t('為')}${npc.name}${t('的夢想「')}${d?.name || ''}${t('」加了一把勁!')}`, npc.name);
+        npc.memory.add(this.world.tickCount, this.world.clock.timeStr, 'social', `${playerTitle(this.world)}${t('支持我的夢想,好感動!')}`, 6, ['player']);
         this.bgm?.sfx?.('coin');
         this.tileMap?.spawnFxOnAgent?.(agentId, '✨', { color: '#6bd5a0', burst: '⭐', burstCount: 6 });
         this._gameAlert(`✨ ${t('你鼓勵了')}${npc.name}${t('追逐「')}${d?.name || ''}${t('」的夢想!')}`, npc.icon || '✨');
@@ -5918,7 +5918,7 @@ class RimTownApp {
                 const pool = aff > 40
                     ? [t('就知道你懂我 😆'), t('哈哈,改天一起!'), `${t('謝啦')}${player.name}!❤️`]
                     : aff < -10 ? [t('喔,是你啊。'), t('嗯。')]
-                    : [t('哈哈謝謝鎮長!'), t('鎮長也看到啦 😳'), t('感恩!')];
+                    : [`${t('哈哈謝謝')}${playerTitle(this.world)}!`, `${playerTitle(this.world)}${t('也看到啦 😳')}`, t('感恩!')];
                 post.comments.push({ speaker: author.name, text: pool[Math.floor(Math.random() * pool.length)] });
                 if (this.activeTab === 'chat' && this._chatView === 'feed') this.renderSidebar();
             }, 900);

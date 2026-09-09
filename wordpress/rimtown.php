@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.67.5
+ * Version: 5.67.6
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.67.5');
+define('RIMTOWN_VERSION', '5.67.6');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,13 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.67.6',
+            'date'    => '2026-09-09',
+            'changes' => array(
+                '🧑‍🌾 旅人不再被叫鎮長:程式裡還留著十幾處把玩家寫死成「鎮長」的文案(八卦稱讚/爆料、事件留言、夢想支持、聲望新聞、決策回饋、事件抉擇、加工線指令),這些句子進了村民記憶後 AI 對話就跟著叫旅人「鎮長」。新增玩家稱謂判斷 playerTitle():只有當選才是鎮長,否則一律「旅人」,全部改用;玩家對話提示詞明講「他是來到鎮上的旅人,不是鎮長,現任鎮長是 X」',
+            ),
+        ),
         array(
             'version' => '5.67.5',
             'date'    => '2026-09-08',
