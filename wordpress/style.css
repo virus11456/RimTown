@@ -4215,7 +4215,9 @@ body.landing-open { overflow: hidden; }
 .landing-step-ic { font-size: 1.6rem; }
 .landing-step h3 { margin: 4px 0 4px; font-size: 0.95rem; }
 .landing-step p { margin: 0; color: var(--text-secondary); font-size: 0.8rem; line-height: 1.5; }
-.landing-brain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin-top: 14px; }
+/* v5.69.2 桌機固定兩欄:auto-fit 在 960px 容器會排成 3+1,第四張卡孤零零掉到下一列 */
+.landing-brain-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; align-items: start; }
+@media (max-width: 700px) { .landing-brain-grid { grid-template-columns: 1fr; } }
 .landing-brain-grid .landing-card h3 { margin-top: 0; }
 .landing-brain-grid .landing-card p { margin: 6px 0; }
 .landing-formula { font-family: monospace; background: var(--bg-primary); border: 1px dashed var(--border); border-radius: 6px; padding: 8px 10px; margin: 8px 0; font-size: 0.85rem; color: var(--warning); }
