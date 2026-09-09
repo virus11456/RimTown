@@ -1681,6 +1681,18 @@ const I18N = (() => {
         '帳號與存檔已刪除': 'Account and saves deleted',
         '操作失敗：': 'Action failed: ',
         '你的帳號已被管理員停用，已登出。': 'Your account has been disabled by an admin. You have been logged out.',
+        // v5.69.0 首頁「村民的大腦」
+        '村民的大腦：他們是怎麼社交的': 'Inside a villager\'s head: how they socialize',
+        '沒有劇本。每位村民每 15 分鐘做一次決定，靠的是自己的記憶、性格和跟對方的關係。下面是一輪社交的完整流程，數字都是遊戲裡實際用的參數。': 'No script. Every 15 in-game minutes each villager decides what to do from their own memory, personality and relationships. Below is one full social round; the numbers are the real in-game parameters.',
+        '感知': 'Perceive', '挑對象': 'Pick someone', '約出去': 'Hang out', '效果': 'Effects', '記憶': 'Memory', '反思與計畫': 'Reflect and plan',
+        '記憶流與檢索': 'Memory stream and retrieval', '性格參數': 'Personality parameters', '關係階梯': 'Relationship ladder', '想法與心情': 'Thoughts and mood',
+        '分數': 'Score', '時近': 'Recency', '相關': 'Relevance', '重要度': 'Importance', '已過天數': 'Days ago', '相關程度': 'Relevance',
+        '自己調調看：一條記憶會被想起來嗎？': 'Try it: will this memory be recalled?',
+        '→ 幾乎一定會想起來': '→ almost certainly recalled', '→ 有機會被想起': '→ might be recalled', '→ 大概忘了': '→ probably forgotten',
+        '互斥：': 'Mutually exclusive: ', '價值觀': 'Values', '相容度': 'Compatibility', '六項需求': 'Six needs',
+        '想法': 'Thought', '心情': 'Mood', '持續天數': 'Days', '對人看法': 'Opinion',
+        '摯友': 'Close friend', '朋友': 'Friend', '認識 / 陌生人': 'Acquaintance / stranger', '對手': 'Rival', '敵人': 'Enemy',
+        '基礎心情': 'base mood', '情緒敏感': 'mood sensitivity', '戀愛': 'romance', '晚睡': 'night owl', '早起': 'early bird', '食量': 'appetite', '舒適': 'comfort',
         // v5.68.0 首頁 + 推薦碼
         '一座由 AI 村民自己過日子的小鎮。你是剛到的旅人。': 'A town where AI villagers live their own lives. You are the traveler who just arrived.',
         '村民有記憶、有個性、有人際關係；他們會工作、戀愛、吵架、選鎮長。你可以聊天、送禮、耳語、蓋房子、開產業，甚至參選。': 'Villagers have memories, personalities and relationships. They work, fall in love, quarrel and elect a mayor. You can chat, give gifts, whisper, build, run industries, even run for office.',
