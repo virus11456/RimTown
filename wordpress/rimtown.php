@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.71.0
+ * Version: 5.72.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.71.0');
+define('RIMTOWN_VERSION', '5.72.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.72.0',
+            'date'    => '2026-09-09',
+            'changes' => array(
+                '🌐 雙語第二波(模擬內容):補齊 2,334 條英文對照——地名(邊境鎮 Frontier Town/海風鎮 Seabreeze Harbor 與 100 多個地點)、20+15 位村民簡介、事件與事件鏈、新聞、慶典、派系、探索、選舉政見、規則式對話模板(陌生人/摯友/情侶/敵對/八卦/工作/心情)、玩家對話回覆、際遇卡、主線/支線/個人故事/每日目標/章節故事、自訂村民與人生總結',
+                '👤 村民英文名:切到 English 後村民以英文名顯示(陳偉 Victor、林美 Mia、王麗 Lily、海伯 Hal、小鷗 Gwen…),隨機卡司「姓+名」自動拼成 Ethan Carter 這類英文名,新生兒名字也有對照;存檔仍存中文名,切回中文不受影響',
+                '🧱 村民/移民/新生兒/隨機背景的資料表改為固定存中文,不再在建立當下依介面語言存進英文(舊版在英文介面開新局會把英文寫進存檔,價值觀相容度也會對不上)',
+                '🔧 中文介面修正:居民「當前行動」通勤時原本直接露出 commuting,現在顯示「趕著去上工」',
+            ),
+        ),
         array(
             'version' => '5.71.0',
             'date'    => '2026-09-09',
