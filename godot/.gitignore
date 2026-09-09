@@ -7,3 +7,4 @@ tests/capture_playtest.flag
 tests/capture_traveler.flag
 tests/capture_social.flag
 tests/capture_npc.flag
+tests/capture_gossip.flag

@@ -29,8 +29,8 @@
 | [Job](../../chrome-extension/simulation.js#L402) | 職業 | —; world: — | `agents.*.jobKey` | 4a | Phase 4a 載入既有角色之運行核心完成；跨系統效果及新角色生成待後續 |
 | [Agent](../../chrome-extension/simulation.js#L438) | 村民需求作息 | Memory, Needs, RelationshipManager; world: agents, buildings, clock, conversationEngine, election, events, festivals, getAgentsAtLocation, gossipNetwork, logMessage, news, reputationSystem, stockpile, tickCount | `agents.*` | 4a | Phase 4a 載入既有角色之運行核心完成；跨系統效果及新角色生成待後續 |
 | [PlayerAgent](../../chrome-extension/simulation.js#L1210) | 玩家狀態 | Personality; world: clock, logMessage, tickCount, townMap | `agents.player` | 4a | Phase 4a 載入既有角色之運行核心完成；跨系統效果及新角色生成待後續 |
-| [TownFeedSystem](../../chrome-extension/simulation.js#L1272) | 鎮民動態 | —; world: _feedUnread, clock, tickCount | `townFeed` | 4b | 已盤點，尚未移植 |
-| [GossipNetwork](../../chrome-extension/simulation.js#L1291) | 八卦傳播 | —; world: agents, clock, conversationEngine, dailyNews, logMessage, tickCount, townFeed | `gossip` | 4b | 已盤點，尚未移植 |
+| [TownFeedSystem](../../chrome-extension/simulation.js#L1272) | 鎮民動態 | —; world: _feedUnread, clock, tickCount | `townFeed` | 4b | 八卦對質發文／序列化及查閱完成；其他動態互動待後續 |
+| [GossipNetwork](../../chrome-extension/simulation.js#L1291) | 八卦傳播 | —; world: agents, clock, conversationEngine, dailyNews, logMessage, tickCount, townFeed | `gossip` | 4b | SimGossip建立／傳播／對質核心完成；新聞與事件生產器／玩家放話UI待接 |
 | [ConversationEngine](../../chrome-extension/simulation.js#L1441) | 對話、反思、行程 | RegExp; world: _pendingDramaScenes, _pendingHeartEvents, _pendingMilestones, agents, checkHeartEvents, clock, dailyNews, dramaArchive, election, events, farm, festivals, gossipNetwork, industry | `npcConversationLog / npcLlmUsedToday / agents.*.memory` | 4f | 本地 NPC 對話／性格台詞完成；LLM、玩家聊天與反思待4f |
 | [LLMClient](../../chrome-extension/simulation.js#L3367) | AI 網路通道 | —; world: — | `不存 AI 金鑰` | 4f | 已盤點，尚未移植 |
 | [TownMap](../../chrome-extension/simulation.js#L3721) | 邏輯地點 | SeededRandom, TownMap; world: — | `townMap` | 3 / 4a | 已盤點，尚未移植 |

@@ -18,7 +18,7 @@ static func log_message(data: Dictionary,kind: String,text: String,a: String,b: 
 	var logs: Array=data.get("messageLog",[])
 	logs.append({"time":time_string(data.clock),"tick":data.tickCount,"type":kind,"content":text,"agent":a,"target":b})
 	data.messageLog=logs.slice(maxi(0,logs.size()-10000))
-func try_interaction(a: Dictionary,data: Dictionary,rng: SimRandom,jobs: Dictionary) -> void:
+func try_interaction(a: Dictionary,data: Dictionary,rng: SimRandom,jobs: Dictionary,gossip_enabled := false) -> void:
 	if int(data.tickCount)-int(a.get("_lastInteractionTick",0))<6 or a.activity=="sleeping": return
 	var others: Array=[]
 	var weights: Array=[]
@@ -31,8 +31,7 @@ func try_interaction(a: Dictionary,data: Dictionary,rng: SimRandom,jobs: Diction
 	if others.is_empty(): return
 	var b: Dictionary=rng.weighted(others,weights)
 	a._lastInteractionTick=data.tickCount
-	# Keep the original gossip probability draw; spreading is a later 4b increment.
-	rng.next_float()
+	if rng.next_float()<.3 and gossip_enabled: SimGossip.spread(a,b,data,rng)
 	var rel:=relationship(a,b)
 	if rel.affinity>=30 and rng.next_float()<.12 and not a.get("_pendingHangout") and not b.get("_pendingHangout"):
 		var spot: String=rng.pick(["tavern","park","town_square","chapel","forest","library"])

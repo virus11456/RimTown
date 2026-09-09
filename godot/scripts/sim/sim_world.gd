@@ -6,11 +6,13 @@ var rules: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://a
 var rng := SimRandom.new()
 var runtime: Dictionary = {}
 var social_enabled := false
+var gossip_enabled := false
 var social := SimSocial.new()
 func load_snapshot(snapshot: Dictionary) -> void:
 	data = snapshot.duplicate(true)
 	var saved: Dictionary = data.get("_godot4a",{}) if data.get("_godot4a",{}) is Dictionary else {}
 	social_enabled=bool(saved.get("social_enabled",false))
+	gossip_enabled=bool(saved.get("gossip_enabled",false))
 	rng.state = int(saved.get("random_state",11456))
 	runtime = saved.get("agents",{}).duplicate(true)
 	for id in data.agents:
@@ -18,8 +20,10 @@ func load_snapshot(snapshot: Dictionary) -> void:
 func snapshot() -> Dictionary:
 	var result := data.duplicate(true)
 	var extension: Dictionary = result.get("_godot4a",{}).duplicate(true)
-	extension.merge({"version":1,"random_state":rng.state,"agents":runtime.duplicate(true),"social_enabled":social_enabled},true)
+	extension.merge({"version":1,"random_state":rng.state,"agents":runtime.duplicate(true),"social_enabled":social_enabled,"gossip_enabled":gossip_enabled},true)
 	result._godot4a = extension
+	if gossip_enabled and result.get("townFeed") is Dictionary and result.townFeed.get("posts") is Array:
+		result.townFeed.posts=result.townFeed.posts.slice(maxi(0,result.townFeed.posts.size()-80))
 	return result
 func tick() -> Array[String]:
 	data.tickCount = int(data.get("tickCount",0))+1
@@ -68,7 +72,7 @@ func _update(id: String) -> void:
 		if run.targetLocation!=null and run.targetLocation!=a.currentLocation:
 			a.currentLocation=run.targetLocation; run.targetLocation=null
 		a._locationStayRemaining=_stay(a.activity)
-	if social_enabled and a.activity=="socializing": social.try_interaction(a,data,rng,rules.jobs)
+	if social_enabled and a.activity=="socializing": social.try_interaction(a,data,rng,rules.jobs,gossip_enabled)
 	if a.activity=="stargazing":
 		a.needs.recreation=minf(100,a.needs.recreation+2)
 		a.needs.comfort=minf(100,a.needs.comfort+1)

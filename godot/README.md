@@ -1,4 +1,4 @@
-# RimTown · 旅人操作＋NPC 本地社交試玩版
+# RimTown · 旅人操作＋NPC 社交與八卦試玩版
 
 在 Phase 0–3 觀賞版上加入時鐘、需求、作息、技能成長、A* 尋路、進出建築與卡住復原。兩鎮範例可直接開啟；預設暫停，WASD／方向鍵可直接移動旅人，按「▶ 開始」則推進村民作息。這是分階段試玩版，現已加入 NPC 本地規則對話與記憶／關係更新；尚未包含建設、AI 對話、經濟、完整婚戀及任務模擬。
 
@@ -146,3 +146,26 @@ node tools/test_social_reload.mjs
 - 118 項社交開關／續存／對話頁面／375px 布局通過。匯出後原版 JS 讀回 126 段對話，108 項檢查通過。網頁引擎不執行 Godot 的亂數／模式擴充，也不還原其本身未保存的邀約，因此只保證所測欄位相容。
 - 既有 4a、695 項社交基礎、458 項試玩、50 項旅人和36項畫面回歸通過。Phase 4a preservation 測試明確關閉社交；開啟模式由本批 oracle 與 UI 測試覆蓋。
 - 桌面與 375×812 GPU 截圖已檢視（docs/npc-desktop.png、npc-mobile.png）。動畫本次未更改。
+
+## Phase 4b 第三批：八卦傳播與對質
+
+「開始」後，NPC 社交有機會轉述已載入的八卦；「故事 → 八卦與鎮民動態」可查看來源、轉述次數、被誇大標記及鎮民貼文。「設定」提供獨立八卦開關，必須同時開啟 NPC 本地社交才會傳播。開關與傳聞的 _mutated／_confronted 標記均隨試玩進度保存；初次匯入沒有設定時預設開啟。
+
+遵循原版：不向八卦當事人直接轉述；八卦性格較容易傳話；第二手之後可能誇大一次；第四手觸發一次當事人回應。負面 NPC 消息來源可能被對質並降低雙方好感，當事人會發文；玩家作為消息來源時，會有稱讚／毀謗的好感、信任、想法與訊息效果；紅娘傳聞依雙方伴侶狀態可能增加戀慕。
+
+SimGossip 的一般／關係／玩家來源建立方法已依原版移植並測試，但本次未加入玩家放話按鈕，也未啟用產生新婚戀事件的系統。正常遊玩目前傳播載入存檔的既有傳聞，並不新增任意頻率的造謠事件。每日新聞收集、完整 TownFeed 的其他互動、婚戀／派系、AI 對話與正式服務仍待後續。TownFeed 對質發文保留原版 120 篇執行期上限／80 篇序列化上限；未知欄位保留。
+
+```sh
+node tools/gossip_oracle.mjs
+node tools/npc_sim_oracle.mjs --gossip
+godot --headless --path . --script res://tests/test_gossip.gd
+godot --headless --path . --script res://tests/test_npc_sim.gd -- --gossip
+godot --headless --path . --script res://tests/test_gossip_ui.gd
+node tools/test_gossip_reload.mjs
+```
+
+- 104 組原版八卦情境，1,768 項通過：建立、傳播、誇大、對質、玩家來源、紅娘及鎮民動態。
+- 兩鎮各 2,880 ticks 的社交＋八卦限定對照，2,977 項通過。原版 oracle 明確保留 gossip.spreadGossip；每日新聞與其他尚未移植子系統仍停用，不宣稱完整 World.tick golden。
+- 八卦開關、第四手續跑、未知欄位及手機頁面 33 項通過；原版 JS 讀回 68 項通過。既有 NPC 社交、操作及畫面回歸通過。
+- 桌面／375×812 的對質測試情境截圖已檢視（docs/gossip-desktop.png、gossip-mobile.png）。這是固定测试情境，非正常一天內必定發生的劇情。重建截圖先執行 test_gossip_ui.gd，再使用 capture_gossip.flag；正式試玩包不含旗標或臨時測試存檔。
+- 本次無 Vercel 呼叫、無 AI 額度使用、無部署。旅人動畫保持現狀。

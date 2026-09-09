@@ -1,0 +1,5 @@
+{
+  "checks": 1768,
+  "failures": [],
+  "scope": "upstream gossip creation/spreading/confrontation incl player sources and feed posts; news collection excluded"
+}

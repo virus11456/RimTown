@@ -32,6 +32,7 @@ var selected_agent := ""
 var resident_page := "summary"
 var memory_target := ""
 var conversation_page := false
+var gossip_page := false
 var traveler: TravelerControls
 
 func _ready() -> void:
@@ -53,6 +54,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_traveler.flag"): _capture_traveler()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_social.flag"): _capture_social()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_npc.flag"): _capture_npc()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_gossip.flag"): _capture_gossip()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -212,6 +214,7 @@ func _load_document(text: String, source: String) -> bool:
 	document = incoming
 	simulation.load_snapshot(document.snapshot())
 	simulation.social_enabled=bool(document.data.get("_godot4a",{}).get("social_enabled",true))
+	simulation.gossip_enabled=bool(document.data.get("_godot4a",{}).get("gossip_enabled",true))
 	var data := document.snapshot()
 	heading.text = str(data.get("townName","小鎮"))
 	var clock_data: Dictionary = data.clock
@@ -251,6 +254,7 @@ func show_tab(tab: String, refresh := false) -> void:
 		return
 	active_tab = tab
 	conversation_page=false
+	gossip_page=false
 	if not refresh: selected_agent=""
 	drawer.show()
 	_clear_drawer()
@@ -272,6 +276,7 @@ func show_tab(tab: String, refresh := false) -> void:
 				_button(str(agent.get("name",id)),drawer_body,func(): show_agent(id))
 		"故事":
 			_button("村民對話紀錄",drawer_body,show_conversations)
+			_button("八卦與鎮民動態",drawer_body,show_gossip)
 			var logs: Array = _current_data().get("messageLog",[])
 			if logs.is_empty(): _label("故事從這裡開始。",drawer_body)
 			for entry in logs.slice(maxi(0,logs.size()-30)):
@@ -299,7 +304,34 @@ func show_agent(id: String,focus_camera := true) -> void:
 	_button("人際關係",drawer_body,func(): show_relationships(id))
 	_button("返回居民列表",drawer_body,func(): selected_agent=""; show_tab("居民",true))
 
+func show_gossip() -> void:
+	gossip_page=true
+	conversation_page=false
+	_clear_drawer()
+	_wrapped("八卦與鎮民動態",22)
+	_wrapped("傳聞可能失真；傳到第四手可能引起當事人回應。")
+	_button("返回故事",drawer_body,func(): show_tab("故事",true))
+	var data:=_current_data()
+	var gossip: Array=data.get("gossip",[])
+	_wrapped("最近 %d 則傳聞／共 %d 則"%[mini(20,gossip.size()),gossip.size()])
+	var recent:=gossip.slice(maxi(0,gossip.size()-20))
+	recent.reverse()
+	if recent.is_empty(): _wrapped("目前沒有傳聞。")
+	for item in recent:
+		_wrapped("%s · 來源：%s · 轉述 %d 次"%[item.get("about",""),item.get("source",""),item.get("spreadCount",0)],12)
+		_wrapped(str(item.get("content","")),16)
+		if item.get("_mutated",false): _wrapped("這則傳聞曾被誇大。",12)
+	var posts: Array=data.get("townFeed",{}).get("posts",[])
+	_wrapped("鎮民動態",20)
+	if posts.is_empty(): _wrapped("尚無動態。")
+	var latest:=posts.slice(maxi(0,posts.size()-10))
+	latest.reverse()
+	for post in latest:
+		_wrapped(str(post.get("authorName",""))+" · "+str(post.get("time","")),12)
+		_wrapped(str(post.get("text","")))
+
 func show_conversations() -> void:
+	gossip_page=false
 	conversation_page=true
 	_clear_drawer()
 	_wrapped("村民對話紀錄",22)
@@ -380,6 +412,8 @@ func _line(placeholder: String, secret := false) -> LineEdit:
 	return field
 
 func _settings_ui() -> void:
+	_button("八卦傳播："+("開啟" if simulation.gossip_enabled else "關閉"),drawer_body,func(): simulation.gossip_enabled=not simulation.gossip_enabled; show_tab("設定",true))
+	_wrapped("八卦需同時開啟 NPC 本地社交才會在聊天時傳播。")
 	_button("NPC 本地社交："+("開啟" if simulation.social_enabled else "關閉"),drawer_body,func(): simulation.social_enabled=not simulation.social_enabled; show_tab("設定",true))
 	var description := _label("使用網頁版帳號，讀取同一份小鎮。",drawer_body,14)
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -401,7 +435,7 @@ func _settings_ui() -> void:
 	_button("繁體中文 / English",drawer_body,func():
 		TranslationServer.set_locale("en" if TranslationServer.get_locale().begins_with("zh") else "zh_TW")
 		show_tab("設定",true))
-	var note := _label("本地社交會更新記憶、好感與戀慕；可匯出續玩。AI 對話、建設及完整婚戀／八卦仍在後續階段。",drawer_body,14)
+	var note := _label("本地社交會更新記憶、好感與戀慕；可匯出續玩。八卦可傳播並引發回應；AI 對話、建設及完整婚戀仍在後續階段。",drawer_body,14)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 func show_cloud_saves() -> void:
@@ -542,7 +576,8 @@ func _tick_simulation() -> void:
 	world_view._light_clock(clock_data)
 	if "new_hour" in events: world_view._weather(simulation.data)
 	if active_tab=="故事":
-		if conversation_page: show_conversations()
+		if gossip_page: show_gossip()
+		elif conversation_page: show_conversations()
 		else: show_tab("故事",true)
 	if active_tab=="居民" and not selected_agent.is_empty():
 		match resident_page:
@@ -669,4 +704,27 @@ func _capture_npc() -> void:
 	await get_tree().create_timer(1).timeout
 	await RenderingServer.frame_post_draw
 	viewport.get_texture().get_image().save_png("res://docs/npc-mobile.png")
+	viewport.queue_free()
+
+func _capture_gossip() -> void:
+	await get_tree().create_timer(1).timeout
+	var example:=FileAccess.get_file_as_string("res://tests/gossip/compatibility-save.json.tmp")
+	_load_document(example,"八卦對質測試情境")
+	show_tab("故事",true)
+	show_gossip()
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/gossip-desktop.png")
+	var viewport:=SubViewport.new()
+	viewport.size=Vector2i(375,812)
+	viewport.own_world_3d=true
+	viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
+	add_child(viewport)
+	var mobile=load("res://scenes/main.tscn").instantiate()
+	viewport.add_child(mobile)
+	mobile._load_document(example,"八卦對質測試情境")
+	mobile.show_tab("故事",true)
+	mobile.show_gossip()
+	await get_tree().create_timer(1).timeout
+	await RenderingServer.frame_post_draw
+	viewport.get_texture().get_image().save_png("res://docs/gossip-mobile.png")
 	viewport.queue_free()

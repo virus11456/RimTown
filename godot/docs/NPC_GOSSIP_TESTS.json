@@ -1,6 +1,6 @@
 {
-  "checks": 2949,
+  "checks": 2977,
   "failures": [],
-  "gossip_enabled": false,
+  "gossip_enabled": true,
   "scope": "two towns x 2880 ticks: Phase 4a + local socializing; gossip included only when gossip_enabled; news and other systems excluded"
 }
