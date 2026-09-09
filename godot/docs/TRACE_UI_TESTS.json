@@ -1,0 +1,5 @@
+{
+  "checks": 38,
+  "failures": [],
+  "scope": "normal NPC ticks, live page, 375px layout, mode, stale day display, original/player preservation and JSON/RNG resume across midnight"
+}

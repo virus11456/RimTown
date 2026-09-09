@@ -65,6 +65,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_stargazing.flag"): _capture_stargazing()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_mischief.flag"): _capture_mischief()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_mourning.flag"): _capture_mourning()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_trace.flag"): _capture_trace()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -233,6 +234,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.stargazing_enabled=bool(document.data.get("_godot4a",{}).get("stargazing_enabled",true))
 	simulation.mischief_enabled=bool(document.data.get("_godot4a",{}).get("mischief_enabled",true))
 	simulation.mourning_enabled=bool(document.data.get("_godot4a",{}).get("mourning_enabled",true))
+	simulation.trace_enabled=bool(document.data.get("_godot4a",{}).get("trace_enabled",true))
 	var data := document.snapshot()
 	heading.text = str(data.get("townName","小鎮"))
 	var clock_data: Dictionary = data.clock
@@ -322,6 +324,7 @@ func show_agent(id: String,focus_camera := true) -> void:
 		rig.follow_player=id=="player"
 		var pos: Variant = world_view.call("agent_position",id)
 		if pos is Vector3: rig.position = Vector3(pos.x,0,pos.z)
+	_button("今日足跡",drawer_body,func(): show_trace(id))
 	_button("近期記憶",drawer_body,func(): show_memories(id))
 	_button("目前想法",drawer_body,func(): show_thoughts(id))
 	if not str(agent.get("currentThought","")).is_empty(): _wrapped("此刻心聲："+str(agent.currentThought))
@@ -516,6 +519,7 @@ func _line(placeholder: String, secret := false) -> LineEdit:
 	return field
 
 func _settings_ui() -> void:
+	_button("居民足跡："+("開啟" if simulation.trace_enabled else "關閉"),drawer_body,func(): simulation.trace_enabled=not simulation.trace_enabled; show_tab("設定",true))
 	_button("居民弔念："+("開啟" if simulation.mourning_enabled else "關閉"),drawer_body,func(): simulation.mourning_enabled=not simulation.mourning_enabled; show_tab("設定",true))
 	_button("夜間惡作劇："+("開啟" if simulation.mischief_enabled else "關閉"),drawer_body,func(): simulation.mischief_enabled=not simulation.mischief_enabled; show_tab("設定",true))
 	_button("觀星互動："+("開啟" if simulation.stargazing_enabled else "關閉"),drawer_body,func(): simulation.stargazing_enabled=not simulation.stargazing_enabled; show_tab("設定",true))
@@ -698,6 +702,7 @@ func _tick_simulation() -> void:
 		else: show_tab("故事",true)
 	if active_tab=="居民" and not selected_agent.is_empty():
 		match resident_page:
+			"trace": show_trace(selected_agent)
 			"thoughts": show_thoughts(selected_agent)
 			"memory": show_memories(selected_agent,memory_target)
 			"relationships": show_relationships(selected_agent)
@@ -999,4 +1004,33 @@ func _capture_mourning() -> void:
 	await get_tree().create_timer(.5).timeout
 	await RenderingServer.frame_post_draw
 	viewport.get_texture().get_image().save_png("res://docs/mourning-mobile.png")
+	viewport.queue_free()
+
+func show_trace(id: String) -> void:
+	selected_agent=id;resident_page="trace";_clear_drawer()
+	var data:=_current_data();var a: Dictionary=data.agents[id]
+	_wrapped(str(a.name)+" · 今日足跡",22)
+	_button("返回居民資料",drawer_body,func(): show_agent(id,false))
+	if not simulation.trace_enabled: _wrapped("足跡記錄已暫停。")
+	var entries: Array=a.get("todayTrace",[]) if a.get("_traceDay","")==SimTrace.day_key(data.clock) else []
+	if entries.is_empty(): _wrapped("今天尚無足跡；開始模擬後會記錄居民活動。")
+	else: _wrapped("今日 %d 筆（由早到晚，最多保留 160 筆）"%entries.size())
+	for entry in entries:
+		var location: Dictionary=data.get("townMap",{}).get("locations",{}).get(str(entry.loc),{})
+		_wrapped("%02d:%02d · %s"%[int(entry.m)/60,int(entry.m)%60,str(entry.text)],18)
+		_wrapped(str(location.get("name",entry.loc)))
+
+func _capture_trace() -> void:
+	await get_tree().create_timer(1).timeout
+	var example:=FileAccess.get_file_as_string("res://tests/trace/compatibility-save.json.tmp")
+	_load_document(example,"居民足跡試玩情境")
+	show_tab("居民",true);show_trace("chen_wei")
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/trace-desktop.png")
+	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+	var mobile=load("res://scenes/main.tscn").instantiate();viewport.add_child(mobile)
+	mobile._load_document(example,"居民足跡試玩情境");mobile.show_tab("居民",true);mobile.show_trace("chen_wei")
+	await get_tree().create_timer(.5).timeout
+	await RenderingServer.frame_post_draw
+	viewport.get_texture().get_image().save_png("res://docs/trace-mobile.png")
 	viewport.queue_free()

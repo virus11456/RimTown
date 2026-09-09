@@ -1,0 +1,5 @@
+{
+  "checks": 96,
+  "failures": [],
+  "scope": "12 original JS trace scenarios x 180 updates; dedupe, activity/location changes, day/season/year reset, plans, overrides, cap and JSON resume"
+}

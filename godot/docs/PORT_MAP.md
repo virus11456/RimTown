@@ -96,3 +96,5 @@ node godot/tools/golden.mjs：兩次獨立 VM 執行、兩個主題、各 1/7/30
 - `Agent._doNightMischief` → `SimMischief.process`：六種惡作劇、全鎮未睡 NPC 目擊、好感／記憶／話題／心情已接入；弔念待後續。
 
 - `Agent._doMourning` → `SimMourning.process`：已載入近期／年度名單的弔念、心情／需求／記憶與續存；死亡事件生產名單仍待移植。
+
+- `Agent._recordTrace`／`getCurrentPlanStep` → `SimTrace`：今日足跡、已載入計畫文字及去重續存；AI 計畫生成與環境感知待後續。

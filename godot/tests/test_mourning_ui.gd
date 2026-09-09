@@ -31,6 +31,7 @@ func run() -> void:
 	var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app)
 	await process_frame
 	app.set_process(false)
+	app.simulation.trace_enabled=false # Isolate prior suites.
 	check(app.simulation.mourning_enabled,"fresh import enables mourning")
 	var raw: String=app.document.serialize()
 	var w: SimWorld=app.simulation

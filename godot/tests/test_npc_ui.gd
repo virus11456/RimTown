@@ -19,6 +19,7 @@ func run() -> void:
 	viewport.add_child(app)
 	await process_frame
 	app.set_process(false)
+	app.simulation.trace_enabled=false # Isolate prior suites.
 	app.simulation.mourning_enabled=false # Isolate earlier suites.
 	app.simulation.mischief_enabled=false # Isolate earlier suites.
 	app.simulation.stargazing_enabled=false # Isolate the existing feature suite.
