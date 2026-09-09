@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.69.2
-const RIMTOWN_APP_VERSION = '5.69.2';
+// RimTown - Frontend App (WordPress Plugin) v5.69.3
+const RIMTOWN_APP_VERSION = '5.69.3';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -3511,27 +3511,54 @@ class RimTownApp {
         this._saveTownList(list);
         this._submitLeaderboard();
         // v4.6.0 存檔配額保護:寫入失敗(localStorage 滿)時自動瘦身重試,再失敗才警告
-        try {
-            localStorage.setItem('rimtown_town_' + this.currentTownId, JSON.stringify(saveData));
-        } catch (e) {
-            try {
-                // 瘦身:裁剪各 agent 記憶與共享記憶後重試
-                for (const a of Object.values(saveData.agents || {})) {
-                    if (Array.isArray(a.memories)) a.memories = a.memories.slice(-100);
-                    if (Array.isArray(a.recent_memories)) a.recent_memories = a.recent_memories.slice(-100);
-                    for (const r of Object.values(a.relationships || {})) {
-                        if (Array.isArray(r.sharedMemories)) r.sharedMemories = r.sharedMemories.slice(-30);
-                        if (Array.isArray(r.shared_memories)) r.shared_memories = r.shared_memories.slice(-30);
+        // v5.69.3 重寫:舊版瘦身裁的是不存在的欄位(memories/recent_memories),等於沒瘦,登入玩家也被彈
+        // 「請註冊登入」。現在依序:清聊天封存 → 依真實欄位瘦身 → (登入者)清其他鎮的本機副本 → 仍失敗時
+        // 登入者只提示一次「本機備份空間不足,已改為只存雲端」,訪客才跳警告
+        const key = 'rimtown_town_' + this.currentTownId;
+        const tryWrite = (data) => { try { localStorage.setItem(key, JSON.stringify(data)); return true; } catch (_) { return false; } };
+        if (!tryWrite(saveData)) {
+            let ok = false;
+            const removeKeys = (pred) => { let n = 0; for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && pred(k)) { localStorage.removeItem(k); n++; } } return n; };
+            // 1) 聊天封存(純紀錄,可重新產生)
+            if (removeKeys(k => k.startsWith('rimtown_town_') && k.endsWith('_archives'))) ok = tryWrite(saveData);
+            // 2) 依真實欄位瘦身:村民記憶、全鎮日誌、對話紀錄、八卦、名場面
+            if (!ok) { this._slimSaveForLocal(saveData); ok = tryWrite(saveData); if (ok) console.warn('[RimTown] 存檔空間不足,已自動瘦身後儲存本機備份'); }
+            // 3) 登入者:其他城鎮的本機副本雲端都有,讓位給目前的鎮
+            if (!ok && this.auth?.loggedIn) {
+                if (removeKeys(k => k.startsWith('rimtown_town_') && k !== key && k !== 'rimtown_town_list')) ok = tryWrite(saveData);
+            }
+            if (!ok) {
+                if (this.auth?.loggedIn) {
+                    if (!this._localQuotaNoticeShown) {
+                        this._localQuotaNoticeShown = true;
+                        console.warn('[RimTown] 本機備份空間不足,改為只存雲端');
+                        try { this._showCornerNotice({ icon: '☁️', title: t('本機備份空間不足'), name: '', desc: t('存檔已改為只存雲端，進度安全。') }); } catch (e) {}
                     }
+                } else {
+                    this._gameAlert(t('儲存空間已滿！請到「城鎮列表」刪除舊城鎮，或登入改用雲端存檔。'), '💾');
                 }
-                if (Array.isArray(saveData.player_chat_history)) saveData.player_chat_history = saveData.player_chat_history.slice(-200);
-                localStorage.setItem('rimtown_town_' + this.currentTownId, JSON.stringify(saveData));
-                console.warn('[RimTown] 存檔空間不足,已自動瘦身後儲存');
-            } catch (e2) {
-                this._gameAlert(t('儲存空間已滿!請刪除舊城鎮(城鎮列表),或註冊登入改用雲端存檔。'), '💾');
             }
         }
         localStorage.setItem('rimtown_last_town', this.currentTownId);
+    }
+    // v5.69.3 本機備份瘦身:只裁「可重新累積」的紀錄,不動關係/任務/資源等狀態
+    _slimSaveForLocal(saveData) {
+        try {
+            for (const a of Object.values(saveData.agents || {})) {
+                if (Array.isArray(a.memory)) a.memory = a.memory.slice(-120);
+                if (Array.isArray(a.chatHistory)) a.chatHistory = a.chatHistory.slice(-200);
+                if (Array.isArray(a.chat_history)) a.chat_history = a.chat_history.slice(-200);
+                for (const r of Object.values(a.relationships || {})) {
+                    if (r && Array.isArray(r.sharedMemories)) r.sharedMemories = r.sharedMemories.slice(-30);
+                }
+            }
+            if (Array.isArray(saveData.messageLog)) saveData.messageLog = saveData.messageLog.slice(-300);
+            if (Array.isArray(saveData.npcConversationLog)) saveData.npcConversationLog = saveData.npcConversationLog.slice(-300);
+            if (Array.isArray(saveData.gossip)) saveData.gossip = saveData.gossip.slice(-200);
+            if (Array.isArray(saveData.dramaArchive)) saveData.dramaArchive = saveData.dramaArchive.slice(-20);
+            if (saveData.townFeed && Array.isArray(saveData.townFeed.posts)) saveData.townFeed.posts = saveData.townFeed.posts.slice(-40);
+        } catch (e) {}
+        return saveData;
     }
     showTownManager() {
         // v5.54.0 記住開窗前的暫停狀態,關窗時還原——不再無條件恢復播放蓋掉你按的暫停

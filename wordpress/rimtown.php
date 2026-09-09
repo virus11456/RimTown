@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.69.2
+ * Version: 5.69.3
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.69.2');
+define('RIMTOWN_VERSION', '5.69.3');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,14 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.69.3',
+            'date'    => '2026-09-09',
+            'changes' => array(
+                '💾 修正已登入玩家仍跳出「儲存空間已滿!請…註冊登入改用雲端存檔」的錯誤:那是手機瀏覽器 localStorage(約 5MB)被本機備份塞滿,雲端存檔本身沒有受影響。舊的自動瘦身修剪的是不存在的欄位所以永遠失敗;現在改為先清「聊天封存」、再依序修剪記憶/對話紀錄/八卦/劇情封存,已登入者最後會自動移除其他城鎮的本機備份(雲端仍在)',
+                '☁️ 已登入玩家即使本機真的存不下,也只會收到一次右下角「本機備份空間不足,已改為只存雲端」的柔性提示,不再彈出要你去「註冊」的錯誤視窗;訪客的提示文字改為建議「刪除舊城鎮或登入改用雲端」',
+            ),
+        ),
         array(
             'version' => '5.69.2',
             'date'    => '2026-09-09',

@@ -1681,6 +1681,10 @@ const I18N = (() => {
         '帳號與存檔已刪除': 'Account and saves deleted',
         '操作失敗：': 'Action failed: ',
         '你的帳號已被管理員停用，已登出。': 'Your account has been disabled by an admin. You have been logged out.',
+        // v5.69.3 本機備份配額
+        '本機備份空間不足': 'Local backup storage is full',
+        '存檔已改為只存雲端，進度安全。': 'Saves now go to the cloud only; your progress is safe.',
+        '儲存空間已滿！請到「城鎮列表」刪除舊城鎮，或登入改用雲端存檔。': 'Storage is full! Delete old towns in the Town List, or log in to use cloud saves.',
         // v5.69.1 首頁 3D 搶先看
         '3D low-poly 版搶先看': 'Sneak peek: the 3D low-poly edition',
         '邊境鎮 3D low-poly 版畫面': 'Frontier Town 3D low-poly screenshot',
