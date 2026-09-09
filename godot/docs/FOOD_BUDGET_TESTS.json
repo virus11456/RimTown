@@ -1,0 +1,19 @@
+{
+  "checks": 251,
+  "failures": [],
+  "scenarios": [
+    {
+      "farming": false,
+      "max_silver": 500.0,
+      "min_meals": 56.0,
+      "starving_days": 0
+    },
+    {
+      "farming": true,
+      "max_silver": 500.0,
+      "min_meals": 56.0,
+      "starving_days": 0
+    }
+  ],
+  "scope": "food conversion, closed/dead kitchen, bounded passive support vs earned revenue, 120-day real ticks with/without farming, resume; no discretionary sales/purchases"
+}

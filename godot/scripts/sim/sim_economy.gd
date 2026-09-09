@@ -8,6 +8,7 @@ static func change(w: SimWorld,key: String,value: float,reason: String,source: S
 	history.append({"tick":w.data.tickCount,"resource":key,"amount":value,"reason":reason,"source":source})
 	w.data.stockpile.history=history.slice(maxi(0,history.size()-10000))
 static func consume(w: SimWorld,key: String,value: float,reason: String,source: String="") -> bool:
+	if w.supply_enabled and value==0: return true
 	if amount(w,key)<value: return false
 	change(w,key,-value,reason,source);return true
 static func log_event(w: SimWorld,text: String,agent: String="") -> void:
@@ -28,7 +29,9 @@ static func daily(w: SimWorld) -> void:
 	for a in w.data.agents.values():
 		var key: String=str(a.get("jobKey","") if a.get("jobKey")!=null else "")
 		if a.get("isPlayer",false) or not rules.recipes.has(key): continue
-		var recipe: Dictionary=rules.recipes[key]
+		var recipe: Dictionary=rules.recipes[key].duplicate(true)
+		if w.supply_enabled and a.get("isDead",false): continue
+		if w.supply_enabled and recipe.outputs.has("silver") and passive_room(w)<=0: continue
 		var policy: String=w.data.workPolicy.get(rules.craft.get(key,""),"normal")
 		if policy=="off":
 			SimFeuds._mood(a,w,4);SimFeuds._memory(a,w,"daily","今天工坊休工，難得清閒，多了些時間陪伴身邊的人。",3,[]);continue
@@ -45,6 +48,15 @@ static func daily(w: SimWorld) -> void:
 		if key=="miner": eff*=1+float(news.get("mining_bonus",0))
 		eff*=1+(float(a.mood)-50)/500
 		eff*=.9+w.rng.next_float()*.2
+		if w.supply_enabled and key=="cook":
+			var cooks: int=w.data.agents.values().filter(func(n): return not n.get("isPlayer",false) and not n.get("isDead",false) and n.get("jobKey")=="cook").size()
+			var population: int=w.data.agents.values().filter(func(n): return not n.get("isPlayer",false) and not n.get("isDead",false)).size()
+			var capacity:=maxf(float(recipe.outputs.meals)*eff,float(population)*1.5/maxi(1,cooks)*1.2)
+			var prepared:=minf(capacity,minf(SimSupply.room(w,"meals"),amount(w,"food")*1.5))
+			if prepared>0:
+				consume(w,"food",prepared/1.5,a.name+"的公共廚房",a.name)
+				SimSupply.produce(w,"meals",prepared,a.name+"的公共廚房",a.name)
+			continue
 		var scale:=1.0
 		if w.supply_enabled and not recipe.outputs.is_empty():
 			scale=0
@@ -57,11 +69,14 @@ static func daily(w: SimWorld) -> void:
 		if not can_produce: eff*=.4;log_event(w,a.name+"材料短缺，用邊角料將就趕工。",a.name)
 		else:
 			for resource in recipe.inputs: consume(w,resource,float(recipe.inputs[resource])*scale,a.name+"的生產",a.name)
-		for resource in recipe.outputs: SimSupply.produce(w,resource,floorf(float(recipe.outputs[resource])*eff*10+.5)/10*scale,a.name+"（"+str(w.rules.jobs.get(key,{}).get("title","居民"))+"）",a.name)
+		for resource in recipe.outputs:
+			var produced:=floorf(float(recipe.outputs[resource])*eff*10+.5)/10*scale
+			if w.supply_enabled and resource=="silver": produced=minf(produced,passive_room(w))
+			SimSupply.produce(w,resource,produced,("城鎮基本補助" if w.supply_enabled and resource=="silver" else a.name+"（"+str(w.rules.jobs.get(key,{}).get("title","居民"))+"）"),a.name)
 		if key=="priest":
 			for other in w.data.agents.values():
 				if other.id!=a.id: SimFeuds._mood(other,w,1)
-	var count: int=w.data.agents.values().filter(func(a): return not a.get("isPlayer",false)).size()
+	var count: int=w.data.agents.values().filter(func(a): return not a.get("isPlayer",false) and (not w.supply_enabled or not a.get("isDead",false))).size()
 	var needed:=1.5*count;var meals:=amount(w,"meals")
 	if meals>=needed: consume(w,"meals",needed,"daily consumption")
 	else:
@@ -93,3 +108,9 @@ static func set_policy(w: SimWorld,good: String,mode: String) -> bool:
 	var label: String={"off":"休工","normal":"正常排班","extra":"加班"}[mode]
 	log_event(w,SimGossip._title(w.data)+"下令："+label+"（明日生效）")
 	return true
+
+static func passive_target(w: SimWorld) -> float:
+	var count: int=w.data.agents.values().filter(func(a): return not a.get("isPlayer",false) and not a.get("isDead",false)).size()
+	return maxf(200,count*25)
+static func passive_room(w: SimWorld) -> float:
+	return maxf(0,passive_target(w)-amount(w,"silver"))
