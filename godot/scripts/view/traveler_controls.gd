@@ -1,6 +1,7 @@
 class_name TravelerControls
 extends Node
 # Keyboard state belongs to the view, never to a saved simulation.
+signal interact_requested
 const MOVEMENT_KEYS = [KEY_W,KEY_A,KEY_S,KEY_D,KEY_UP,KEY_LEFT,KEY_DOWN,KEY_RIGHT]
 var held: Dictionary = {}
 var modal_open: Callable
@@ -22,6 +23,8 @@ func direction() -> Vector2:
 func _input(event: InputEvent) -> void:
 	if not event is InputEventKey: return
 	var code: int = event.physical_keycode if event.physical_keycode!=0 else event.keycode
+	if code==KEY_F and event.pressed and not event.echo and not event.ctrl_pressed and not event.meta_pressed and not event.alt_pressed and not blocked():
+		clear();interact_requested.emit();get_viewport().set_input_as_handled();return
 	if code not in MOVEMENT_KEYS: return
 	# Release always clears, including releases over a text field or file dialog.
 	if not event.pressed:

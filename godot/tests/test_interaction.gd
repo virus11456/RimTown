@@ -141,12 +141,14 @@ func run() -> void:
 	check(not app.dialog.visible and int(app.document.data.clock.day)==7 and app.document.data.agents.size()==16,"file picker imports harbor day 7")
 	var source := FileAccess.get_file_as_string("res://tests/golden/harbor-day-07.json")
 	check(app.document.serialize()==source,"import retains byte-exact JSON")
+	app.export_directory="res://tests" # Sandbox cannot write macOS application support.
 	await click("匯出原始存檔副本")
 	var export_prefix := "副本已儲存於 "
 	check(app.status.text.begins_with(export_prefix),"export reports saved file")
 	if app.status.text.begins_with(export_prefix):
 		var path: String = app.status.text.trim_prefix(export_prefix)
 		check(FileAccess.get_file_as_string(path)==source,"exported JSON matches imported bytes")
+		DirAccess.remove_absolute(path)
 	# Only test-generated malformed data, no live-account requests.
 	var invalid_path := "res://tests/invalid-interaction.json"
 	FileAccess.open(invalid_path,FileAccess.WRITE).store_string("{broken")

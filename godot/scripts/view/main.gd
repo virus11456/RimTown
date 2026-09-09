@@ -30,6 +30,7 @@ var play_button: Button
 var speed_button: Button
 var selected_agent := ""
 var resident_page := "summary"
+var export_directory := "user://" # Tests can use a writable temporary directory.
 var memory_target := ""
 var conversation_page := false
 var gossip_page := false
@@ -47,6 +48,7 @@ func _ready() -> void:
 	_build_ui()
 	traveler=TravelerControls.new()
 	traveler.modal_open=func(): return dialog.visible
+	traveler.interact_requested.connect(interact_nearby)
 	add_child(traveler)
 	load_demo("frontier")
 	get_viewport().size_changed.connect(_responsive)
@@ -67,6 +69,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_mourning.flag"): _capture_mourning()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_trace.flag"): _capture_trace()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_perception.flag"): _capture_perception()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_interaction.flag"): _capture_player_interaction()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -326,6 +329,7 @@ func show_agent(id: String,focus_camera := true) -> void:
 		rig.follow_player=id=="player"
 		var pos: Variant = world_view.call("agent_position",id)
 		if pos is Vector3: rig.position = Vector3(pos.x,0,pos.z)
+	if not agent.get("isPlayer",false): _button("與他互動",drawer_body,func(): show_player_interaction(id))
 	_button("今日足跡",drawer_body,func(): show_trace(id))
 	_button("近期記憶",drawer_body,func(): show_memories(id))
 	_button("目前想法",drawer_body,func(): show_thoughts(id))
@@ -624,7 +628,7 @@ func _write_export(text: String,prefix: String) -> void:
 		JavaScriptBridge.download_buffer(text.to_utf8_buffer(),prefix+".json","application/json")
 		status.text="已下載原始存檔副本。"
 	else:
-		var path := "user://%s-%d.json" % [prefix,Time.get_unix_time_from_system()]
+		var path := export_directory.path_join("%s-%d.json" % [prefix,Time.get_unix_time_from_system()])
 		var file := FileAccess.open(path,FileAccess.WRITE)
 		if file:
 			file.store_string(text)
@@ -705,6 +709,7 @@ func _tick_simulation() -> void:
 		else: show_tab("故事",true)
 	if active_tab=="居民" and not selected_agent.is_empty():
 		match resident_page:
+			"interaction": show_player_interaction(selected_agent)
 			"trace": show_trace(selected_agent)
 			"thoughts": show_thoughts(selected_agent)
 			"memory": show_memories(selected_agent,memory_target)
@@ -760,7 +765,7 @@ func focus_traveler() -> void:
 	var p: Dictionary=motion.positions.player
 	rig.follow_player=true
 	rig.position=Vector3(float(p.x)/16,0,float(p.y)/16)
-	status.text="WASD／方向鍵移動 · 拖曳地圖可停止跟隨"
+	status.text="WASD／方向鍵移動 · F 與附近居民互動"
 
 func _process_traveler(delta: float) -> void:
 	if traveler==null or not motion.positions.has("player"): return
@@ -1051,4 +1056,47 @@ func _capture_perception() -> void:
 	await get_tree().create_timer(.5).timeout
 	await RenderingServer.frame_post_draw
 	viewport.get_texture().get_image().save_png("res://docs/perception-mobile.png")
+	viewport.queue_free()
+
+func interact_nearby() -> void:
+	var id:=SimPlayerInteraction.nearby(motion.positions,simulation.data.agents)
+	if id.is_empty(): status.text="附近沒有居民；走近居民後按 F。";return
+	show_tab("居民",true);show_player_interaction(id)
+func show_player_interaction(id: String) -> void:
+	selected_agent=id;resident_page="interaction";_clear_drawer()
+	if not simulation.data.agents.has(id): _wrapped("這位居民已離開。");return
+	var a: Dictionary=simulation.data.agents[id]
+	_wrapped("與"+str(a.name)+"互動",22)
+	_wrapped("走近居民後按 F，也可從居民資料開啟。")
+	if not SimPlayerInteraction.in_range(id,motion.positions,simulation.data.agents):
+		_wrapped("距離太遠，請先走近這位居民。")
+	else:
+		_wrapped("安慰：增加社交需求 15、對你好感 2，並留下愉快的聊天想法。")
+		_button("安慰他",drawer_body,func(): comfort_resident(id))
+	_wrapped("自由輸入的 AI 對話尚未開放。",12)
+	_button("返回居民資料",drawer_body,func(): show_agent(id,false))
+func comfort_resident(id: String) -> void:
+	if not SimPlayerInteraction.in_range(id,motion.positions,simulation.data.agents):
+		show_player_interaction(id);status.text="距離已改變，請走近後再互動。";return
+	SimPlayerInteraction.comfort(simulation.data.agents[id],simulation)
+	has_simulated=true
+	show_player_interaction(id)
+	_wrapped(str(simulation.data.agents[id].name)+"覺得被支持了。")
+	status.text="安慰完成 · 好感 +2"
+
+func _capture_player_interaction() -> void:
+	await get_tree().create_timer(1).timeout
+	var p: Dictionary=motion.positions.chen_wei
+	motion.positions.player.x=float(p.x)+16;motion.positions.player.y=p.y
+	world_view.animate_agents(motion.positions)
+	show_tab("居民",true);show_player_interaction("chen_wei");comfort_resident("chen_wei")
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/player-interaction-desktop.png")
+	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+	var mobile=load("res://scenes/main.tscn").instantiate();viewport.add_child(mobile)
+	mobile.motion.positions.player.x=float(mobile.motion.positions.chen_wei.x)+16;mobile.motion.positions.player.y=mobile.motion.positions.chen_wei.y
+	mobile.show_tab("居民",true);mobile.show_player_interaction("chen_wei");mobile.comfort_resident("chen_wei")
+	await get_tree().create_timer(.5).timeout
+	await RenderingServer.frame_post_draw
+	viewport.get_texture().get_image().save_png("res://docs/player-interaction-mobile.png")
 	viewport.queue_free()
