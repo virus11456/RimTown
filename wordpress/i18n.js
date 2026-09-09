@@ -4422,6 +4422,10 @@ const I18N = (() => {
         '蝗災正在侵襲小鎮，農作物受到嚴重威脅。大家都很擔心糧食問題。': 'Locusts are ravaging the town and the crops are in serious danger. Everyone is worried about food.',
         '盜匪在小鎮附近出沒，安全受到威脅。居民們人心惶惶。': 'Bandits prowl near the town and safety is at risk. Residents are on edge.',
         '一種神秘的疾病在小鎮蔓延，已有多人生病。大家急需醫療資源。': 'A mysterious illness is spreading through town and several people are sick. Medical supplies are urgently needed.',
+        // v5.73.0 AI 對話語言設定
+        'AI 對話語言': 'AI dialogue language',
+        '跟隨介面語言': 'Follow interface language',
+        '村民對話、行程、反思與日報由 AI 生成時使用的語言，不影響介面文字。': 'Language the AI uses for villager dialogue, schedules, reflections and the daily paper; interface text is unaffected.',
         // v5.71.0 index.html 教學/頁首補齊
         '🎮 訪客模式 — 存檔僅保留在本機': '🎮 Guest mode — saves stay on this device',
         '註冊帳號': 'Create account',
@@ -5802,8 +5806,8 @@ const I18N = (() => {
         if (sn && gv && name.length >= 2) return gv + ' ' + sn;
         return name;
     }
-    function localizeNames(str) {
-        if (currentLang === 'zh' || !str || typeof str !== 'string' || !/[\u4e00-\u9fff]/.test(str)) return str;
+    function localizeNames(str, force = false) {
+        if ((currentLang === 'zh' && !force) || !str || typeof str !== 'string' || !/[\u4e00-\u9fff]/.test(str)) return str;
         if (!_nameRe) _buildNameRe();
         return str.replace(_nameRe, (m) => localizeName(m));
     }
@@ -5817,6 +5821,28 @@ const I18N = (() => {
         while ((n = walker.nextNode())) { if (/[\u4e00-\u9fff]/.test(n.data)) todo.push(n); }
         for (const tn of todo) { const v = localizeNames(tn.data); if (v !== tn.data) tn.data = v; }
         if (root.nodeType === 1 && root.title && /[\u4e00-\u9fff]/.test(root.title)) root.title = localizeNames(root.title);
+    }
+    // v5.73.0 反向:AI 用英文名回覆時,把英文名換回存檔用的中文名(固定卡司/新生兒對照 + 隨機卡司 Given Surname)
+    let _revFixed = null, _revRe = null, _revSurname = null, _revGiven = null;
+    function _buildRev() {
+        _revFixed = {}; for (const [zh, en] of Object.entries(NAME_FIXED)) if (!_revFixed[en]) _revFixed[en] = zh;
+        _revSurname = {}; for (const [zh, en] of Object.entries(NAME_SURNAMES)) _revSurname[en] = zh;
+        _revGiven = {}; for (const [zh, en] of Object.entries(NAME_GIVEN)) _revGiven[en] = zh;
+        for (const [zh, en] of Object.entries(NAME_FIXED)) if (zh.length <= 2 && !_revGiven[en]) _revGiven[en] = zh;
+        const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const fixed = Object.keys(_revFixed).sort((a, b) => b.length - a.length).map(esc).join('|');
+        const gv = Object.keys(_revGiven).sort((a, b) => b.length - a.length).map(esc).join('|');
+        const sn = Object.keys(_revSurname).sort((a, b) => b.length - a.length).map(esc).join('|');
+        _revRe = new RegExp('\\b(?:(' + gv + ') (' + sn + ')|(' + fixed + '))\\b', 'g');
+    }
+    function delocalizeNames(str) {
+        if (!str || typeof str !== 'string' || !/[A-Za-z]/.test(str)) return str;
+        if (!_revRe) _buildRev();
+        return str.replace(_revRe, (m, gv, sn, fixed) => {
+            if (fixed) return _revFixed[fixed] || m;
+            if (gv && sn && _revSurname[sn] && _revGiven[gv]) return _revSurname[sn] + _revGiven[gv];
+            return m;
+        });
     }
     let _nameObserver = null;
     function _syncNameObserver() {
@@ -5902,8 +5928,8 @@ const I18N = (() => {
 
     // Expose globally
     window.t = t;
-    window.I18N = { t, setLang, getLang, toggleLang, translations: en, localizeName, localizeNames, localizeTree };
+    window.I18N = { t, setLang, getLang, toggleLang, translations: en, localizeName, localizeNames, localizeTree, delocalizeNames };
     if (typeof document !== 'undefined') { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _syncNameObserver); else _syncNameObserver(); }
 
-    return { t, setLang, getLang, toggleLang, translations: en, localizeName, localizeNames, localizeTree };
+    return { t, setLang, getLang, toggleLang, translations: en, localizeName, localizeNames, localizeTree, delocalizeNames };
 })();
