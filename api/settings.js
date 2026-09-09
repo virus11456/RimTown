@@ -26,6 +26,8 @@ module.exports = async (req, res) => {
             // v5.37.0 -1 = 無上限(預設);0 = 關閉;正數 = 每日上限
             s.npc_llm_budget = Math.max(-1, Math.min(9999, parseInt(b.npc_llm_budget, 10)));
         }
+        // v5.73.0 AI 對話語言(auto=跟隨介面 / zh / en)隨帳號同步
+        if (['auto', 'zh', 'en'].includes(b.dialogue_lang)) s.dialogue_lang = b.dialogue_lang;
         s.updated_at = new Date().toISOString();
         await L.writeJson(path, s);
         return res.status(200).json({ success: true });

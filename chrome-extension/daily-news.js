@@ -172,7 +172,7 @@ ${prevRef}
 - 每個段落用上述 emoji 標題開頭
 - 要有「記者人設」：根據你的性格決定語氣（毒舌就嘲諷、浪漫就抒情、務實就分析）
 - 用具體細節（「她翻了個白眼」比「她不開心」好十倍）
-- 繁體中文（台灣口語風格）
+${(typeof LLM_LANG !== 'undefined') ? LLM_LANG.rule('- 繁體中文（台灣口語風格）', '- Natural, colloquial English') : '- 繁體中文（台灣口語風格）'}
 - 不要用「本報記者」這種官腔`;
 
         const response = await world.conversationEngine.llm.chat([

@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.67.1
-const RIMTOWN_APP_VERSION = '5.67.1';
+// RimTown - Frontend App (WordPress Plugin) v5.74.1
+const RIMTOWN_APP_VERSION = '5.74.1';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -188,8 +188,8 @@ class RimTownAuth {
         } catch (e) { /* private mode 等情況忽略 */ }
     }
 
-    async register(username, password, email) {
-        const data = await this._fetch('register', 'POST', { username, password, email });
+    async register(username, password, email, invite) {
+        const data = await this._fetch('register', 'POST', { username, password, email, invite });
         if (data.nonce) this._nonce = data.nonce;
         this.loggedIn = true;
         this.username = data.user.username;
@@ -237,6 +237,9 @@ class RimTownAuth {
     // v5.63.0 管理員操作(僅 serverless 站;身分由伺服器 ADMIN_USERS 判定)
     async adminListUsers() { const d = await this._fetch('admin?action=users'); return { users: d.users || [], storage: d.storage || null }; }
     async adminAction(action, username, extra = {}) { return this._fetch('admin', 'POST', { action, username, ...extra }); }
+    // v5.68.0 推薦碼管理
+    async adminInvites() { const d = await this._fetch('admin?action=invites'); return d.invites || []; }
+    async adminInvite(action, extra = {}) { return this._fetch('admin', 'POST', { action, ...extra }); }
 
     // Cloud save operations
     async listSaves() {
@@ -329,6 +332,20 @@ class RimTownApp {
 
     async init() {
         this.setupEventDelegation();
+        // v5.68.0 首頁(Landing):Vercel 版一律先看首頁。未登入只能註冊/登入(不啟動世界);
+        // 已登入在底下載好世界、暫停等你按「繼續遊戲」。登入/註冊成功後帶 rimtown_enter_now 重載直接進遊戲。
+        this._landingActive = false;
+        if (this.auth._serverless) {
+            let enterNow = false;
+            try { enterNow = sessionStorage.getItem('rimtown_enter_now') === '1'; if (enterNow) sessionStorage.removeItem('rimtown_enter_now'); } catch (e) {}
+            if (!this.auth.loggedIn) {
+                this._landingActive = true; this._landingMode = 'auth';
+                this.setupAuthListeners();
+                this._renderLanding(); this._showLanding();
+                return; // 一律要登入才能玩
+            }
+            if (!enterNow) { this._landingActive = true; this._landingMode = 'continue'; this._renderLanding(); this._showLanding(); }
+        }
         // v5.33.0 已登入就先拉帳號雲端的 AI 設定,再據以建立 LLM client
         if (this.auth.loggedIn) { try { await this._pullCloudSettings(); } catch (e) {} }
         await this.loadSettings();
@@ -374,9 +391,18 @@ class RimTownApp {
             }
             if (!loaded) {
                 this.world.reset();
-                // v5.62.1 沿用既有同名條目的 id(覆寫同一 slot),沒有才產新 id
-                const orphan = this._getTownList().find(tw => tw.name === t('邊境鎮'));
-                this.currentTownId = orphan?.id || this._generateTownId(t('邊境鎮'));
+                // v5.68.0 首頁註冊流程:新帳號重載後在這裡建立「<帳號>的邊境鎮」並同步雲端
+                const pendingName = localStorage.getItem('rimtown_pending_town_name');
+                if (pendingName) {
+                    localStorage.removeItem('rimtown_pending_town_name');
+                    this.currentTownId = this._generateTownId(pendingName);
+                    this._saveCurrentTown(pendingName);
+                    this._syncToCloud().catch(() => {});
+                } else {
+                    // v5.62.1 沿用既有同名條目的 id(覆寫同一 slot),沒有才產新 id
+                    const orphan = this._getTownList().find(tw => tw.name === t('邊境鎮'));
+                    this.currentTownId = orphan?.id || this._generateTownId(t('邊境鎮'));
+                }
             }
         } else {
             // Not logged in — use local saves
@@ -423,10 +449,11 @@ class RimTownApp {
         this.setupSettingsListeners();
         this.setupBGM();
         this.setupAuthListeners();
-        this.setupTutorial();
+        if (!this._landingActive) this.setupTutorial(); // v5.68.0 首頁關掉後才開教學
         this._updateAccountButton();
         this._loadAchievementsFromCloud();
         // Cloud data is already loaded in init() when logged in, no need to sync again
+        if (this._landingActive) { this._pausedForLanding = true; this.world.paused = true; } // v5.68.0 首頁期間不跑模擬
         this.startSimulation();
         this.setupAutoSave();
         // Update header town name from saved metadata
@@ -434,6 +461,8 @@ class RimTownApp {
         this._updateHeaderTownName(currentMeta?.name);
         this.render();
         this._startRenderLoop();
+        // v5.67.4 載入時若清掉 AI 助理漏出的內容,提示並回存
+        setTimeout(() => this._notifyScrubbedLeaks(), 1500);
         // Show version in header
         const verEl = document.getElementById('version-display');
         if (verEl && !verEl.textContent) verEl.textContent = 'v' + RIMTOWN_APP_VERSION;
@@ -457,10 +486,12 @@ class RimTownApp {
             // v5.18.0 第一天因果鏈:介紹已看過但尚未走完核心循環者,續接引導
             setTimeout(() => { this._initFirstDay(); this._renderFirstDayGuide(); }, 2200);
         }
-        // v4.5.0 留存機制:離線進度結算 + 每日登入獎勵
-        if (loaded) this._processOfflineProgress();
-        this._checkDailyReward();
+        // v4.5.0 留存機制:離線進度結算 + 每日登入獎勵(v5.68.0 首頁開著時延到按「繼續遊戲」後)
+        const afterEnter = () => { if (loaded) this._processOfflineProgress(); this._checkDailyReward(); };
+        if (this._landingActive) this._afterLanding = afterEnter; else afterEnter();
         this._startLastSeenTracker();
+        this._initReady = true;
+        this._landingUpdateContinue();
 
         // Auto-show login modal if not logged in (with guest option)
         if (!this.auth.loggedIn) {
@@ -571,6 +602,7 @@ class RimTownApp {
         try {
             if (errEl) errEl.textContent = t('登入中...');
             await this.auth.login(user, pass);
+            if (this._landingMode === 'auth') { try { sessionStorage.setItem('rimtown_enter_now', '1'); } catch (e) {} location.reload(); return; } // v5.68.0
             this.guestMode = false;
             this._hideGuestBanner();
             this._closeAuthModal();
@@ -758,7 +790,7 @@ class RimTownApp {
             this.bgm?.sfx?.('coin');
             this._showCenterNotification({
                 icon: curCh.icon,
-                title: `${t('第')}${curCh.n}${t('章:')}${curCh.name}`,
+                title: `${t('第')}${curCh.n}${t('章:')}${t(curCh.name)}`,
                 name: newly.length ? newly.map(d => `${d.icon} ${d.label}`).join('、') : '',
                 desc: curCh.desc,
                 autoDismiss: 0,
@@ -778,7 +810,7 @@ class RimTownApp {
         const def = this._unlockDefs().find(d => d.key === key);
         if (!def) return;
         const ch = this._chapterDefs().find(c => c.need === def.need);
-        this._gameAlert(`${def.icon}「${def.label}」${t('會在')}${ch ? `${t('第')}${ch.n}${t('章「')}${ch.name}${t('」')}` : ''}${t('開啟。先專心和村民相處吧——關係好了,小鎮自然會成長。')}`, '🔒');
+        this._gameAlert(`${def.icon}「${def.label}」${t('會在')}${ch ? `${t('第')}${ch.n}${t('章「')}${t(ch.name)}${t('」')}` : ''}${t('開啟。先專心和村民相處吧——關係好了,小鎮自然會成長。')}`, '🔒');
     }
 
     // =====================================================
@@ -816,7 +848,7 @@ class RimTownApp {
             document.querySelector('.map-panel')?.appendChild(hint);
             hint.addEventListener('click', () => { this._exitDecorMode(); this._exitSiteMode(); });
         }
-        hint.textContent = `${def.icon} ${t('點地圖空地擺放')}${def.name}${t('|點裝飾移除|點這裡結束')}`;
+        hint.textContent = `${def.icon} ${t('點地圖空地擺放')}${t(def.name)}${t('|點裝飾移除|點這裡結束')}`;
         hint.classList.remove('hidden');
         // 掛地圖 raw tap
         this.tileMap.onTapRaw = (mx, my) => this._decorTap(mx, my);
@@ -864,11 +896,11 @@ class RimTownApp {
             return true;
         }
         for (const [k, v] of Object.entries(def.cost)) {
-            this.world.stockpile.consume(k, v, this.world.tickCount, `${t('擺放')}${def.name}`);
+            this.world.stockpile.consume(k, v, this.world.tickCount, `${t('擺放')}${t(def.name)}`);
         }
         decos.push({ type: def.type, x: tx, y: ty });
         this.tileMap.decorations = decos;
-        this.world.logMessage('building', `${def.icon} ${t('你在小鎮擺放了')}${def.name}(${t('美觀')}+${def.beauty})`);
+        this.world.logMessage('building', `${def.icon} ${t('你在小鎮擺放了')}${t(def.name)}(${t('美觀')}+${def.beauty})`);
         this.bgm?.sfx?.('coin');
         this.world.checkCombos?.(); // v4.9.0 擺放後偵測相鄰組合
         return true;
@@ -891,7 +923,7 @@ class RimTownApp {
             document.querySelector('.map-panel')?.appendChild(hint);
             hint.addEventListener('click', () => { this._exitDecorMode(); this._exitSiteMode(); });
         }
-        hint.textContent = `🏗️ ${t('點發光的綠色格子選擇')}【${tmpl.name}】${t('的位置(會自動對齊格線)|點這裡取消')}`;
+        hint.textContent = `🏗️ ${t('點發光的綠色格子選擇')}【${t(tmpl.name)}】${t('的位置(會自動對齊格線)|點這裡取消')}`;
         hint.classList.remove('hidden');
         this.tileMap.onTapRaw = (mx, my) => this._siteTap(mx, my);
         // v5.60.0 選址引導:可蓋格位發光+滑鼠佔地預覽,錨點吸附 2 格網格蓋得整齊
@@ -956,7 +988,7 @@ class RimTownApp {
             return true;
         }
         this.bgm?.sfx?.('coin');
-        this._gameAlert(`🚧 ${p.name}${t('動工了!工匠們會每天到工地施工')}`, '🏗️');
+        this._gameAlert(`🚧 ${t(p.name)}${t('動工了!工匠們會每天到工地施工')}`, '🏗️');
         this._exitSiteMode();
         this.state = this.world.getState();
         this.renderSidebar();
@@ -999,7 +1031,7 @@ class RimTownApp {
         if (!npc) return;
         const dayKey = `${this.world.clock.year}-${this.world.clock.season}-${this.world.clock.day}`;
         if (npc._lastGiftDay === dayKey) {
-            this._gameAlert(`${npc.name}${t('今天已經收過你的禮物了,明天再送吧!')}`, '🎁');
+            this._gameAlert(`${t(npc.name)}${t('今天已經收過你的禮物了,明天再送吧!')}`, '🎁');
             return;
         }
         let el = document.getElementById('gift-picker');
@@ -1017,10 +1049,10 @@ class RimTownApp {
             const fav = pref === g.key ? ` <span style="color:#ffd700">★${t('他的最愛')}</span>` : '';
             return `<button data-action="give-gift" data-val="${g.key}" ${ok ? '' : 'disabled style="opacity:0.4"'}
                 style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:9px 12px;margin-bottom:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.85rem">
-                <span>${g.icon} ${g.name}${fav}</span><span style="color:var(--text-secondary);font-size:0.75rem">${t('花費')} ${g.cost}(${t('庫存')} ${have})</span></button>`;
+                <span>${g.icon} ${t(g.name)}${fav}</span><span style="color:var(--text-secondary);font-size:0.75rem">${t('花費')} ${g.cost}(${t('庫存')} ${have})</span></button>`;
         }).join('');
         el.innerHTML = `<div class="modal-content" style="max-width:320px">
-            <h2>🎁 ${t('送禮物給')} ${npc.name}</h2>
+            <h2>🎁 ${t('送禮物給')} ${t(npc.name)}</h2>
             <div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${t('投其所好效果加倍!每人每天限送一次。')}</div>
             ${rows}
             <div class="modal-buttons"><button onclick="document.getElementById('gift-picker').classList.add('hidden')">${t('取消')}</button></div>
@@ -1035,7 +1067,7 @@ class RimTownApp {
         const sp = this.world.stockpile;
         if ((sp.get(g.key) || 0) < g.cost) return;
         document.getElementById('gift-picker')?.classList.add('hidden');
-        sp.consume(g.key, g.cost, this.world.tickCount, `${t('送禮給')}${npc.name}`);
+        sp.consume(g.key, g.cost, this.world.tickCount, `${t('送禮給')}${t(npc.name)}`);
         const dayKey = `${this.world.clock.year}-${this.world.clock.season}-${this.world.clock.day}`;
         npc._lastGiftDay = dayKey;
         const isFav = this._giftPref(npc.job?.key) === g.key;
@@ -1046,17 +1078,17 @@ class RimTownApp {
         npc.addThought?.(isFav ? 'fav_gift' : 'gift_received', this.world, 'player', this.world.agents['player']?.name || t('旅人')); // v5.15.0 收禮記憶
         this._firstDayMark?.('mark'); // v5.18.0 第一天:留下你的選擇
         npc.memory.add(this.world.tickCount, this.world.clock.timeStr, 'gift',
-            `${t('收到')}${this.world.agents['player']?.name || t('旅人')}${t('送的')}${g.name}${isFav ? t(',是我的最愛!') : ''}`, isFav ? 7 : 5, ['player']);
+            `${t('收到')}${this.world.agents['player']?.name || t('旅人')}${t('送的')}${t(g.name)}${isFav ? t(',是我的最愛!') : ''}`, isFav ? 7 : 5, ['player']);
         const lines = isFav
             ? [t('這是我的最愛!你怎麼知道的?太感謝了!'), t('哇!我一直想要這個!你真懂我!')]
             : [t('謝謝你!我很喜歡。'), t('你真貼心,謝謝!')];
         const reply = lines[Math.floor(Math.random() * lines.length)];
         const player = this.world.agents['player'];
         if (player) {
-            player.chatHistory.push({ speaker: player.name, target: npc.name, text: `🎁(${t('送出')}${g.name})`, time: this.world.clock.timeStr });
+            player.chatHistory.push({ speaker: player.name, target: npc.name, text: `🎁(${t('送出')}${t(g.name)})`, time: this.world.clock.timeStr });
             player.chatHistory.push({ speaker: npc.name, target: player.name, text: reply, time: this.world.clock.timeStr });
         }
-        this.world.logMessage('relationship', `🎁 ${t('你送給')}${npc.name}${g.name}${isFav ? t(',對方超喜歡!') : ''}(${t('好感')}+${gain})`, npc.name);
+        this.world.logMessage('relationship', `🎁 ${t('你送給')}${t(npc.name)}${t(g.name)}${isFav ? t(',對方超喜歡!') : ''}(${t('好感')}+${gain})`, npc.name);
         this.world.recordPlayerAction?.('gift', g.name, npc, null); // v5.45.0 蝴蝶效應
         this.bgm?.sfx?.('coin');
         // v5.6.0 浮動特效:好感愛心 + 愛心爆裂
@@ -1158,12 +1190,22 @@ class RimTownApp {
         const email = document.getElementById('auth-reg-email')?.value?.trim();
         const pass = document.getElementById('auth-reg-pass')?.value;
         const pass2 = document.getElementById('auth-reg-pass2')?.value;
+        const invite = document.getElementById('auth-reg-invite')?.value?.trim() || '';
         const errEl = document.getElementById('auth-reg-error');
         if (!user || !pass) { if (errEl) errEl.textContent = t('請填寫帳號和密碼'); return; }
+        if (!invite) { if (errEl) errEl.textContent = t('請輸入推薦碼'); return; }
         if (pass !== pass2) { if (errEl) errEl.textContent = t('兩次密碼不一致'); return; }
         try {
             if (errEl) errEl.textContent = t('註冊中...');
-            await this.auth.register(user, pass, email);
+            await this.auth.register(user, pass, email, invite);
+            if (this._landingMode === 'auth') {
+                // v5.68.0 首頁註冊:清掉本機其他帳號殘留,標記新城鎮名,重載走正規登入流程(會顯示教學)
+                this._getTownList().forEach(_tw => { localStorage.removeItem('rimtown_town_' + _tw.id); localStorage.removeItem('rimtown_town_' + _tw.id + '_archives'); });
+                ['rimtown_town_list', 'rimtown_last_town', 'rimtown_achievements', 'rimtown_raid_count', 'rimtown_tutorial_done'].forEach(k => localStorage.removeItem(k));
+                localStorage.setItem('rimtown_pending_town_name', `${user}${t('的邊境鎮')}`);
+                try { sessionStorage.setItem('rimtown_enter_now', '1'); } catch (e) {}
+                location.reload(); return;
+            }
             this.guestMode = false;
             this._hideGuestBanner();
             this._closeAuthModal();
@@ -1514,6 +1556,389 @@ class RimTownApp {
         }
     }
 
+    // ============================================================
+    // v5.68.0 首頁(Landing):遊戲介紹 + 更新紀錄 + 路線圖;一律要登入才能進遊戲
+    // 未登入:只顯示註冊/登入;已登入:顯示「繼續遊戲」(世界在底下載好、暫停等你按)
+    // ============================================================
+    _renderLanding() {
+        const el = document.getElementById('landing');
+        if (!el) return;
+        const esc = s => this._escapeHtml ? this._escapeHtml(String(s)) : String(s);
+        const ver = typeof RIMTOWN_APP_VERSION !== 'undefined' ? RIMTOWN_APP_VERSION : '';
+        const loggedIn = !!this.auth.loggedIn;
+        const cta = loggedIn
+            ? `<button class="landing-btn primary" id="landing-continue" disabled>▶ ${t('載入中…')}</button>
+               <button class="landing-btn secondary" id="landing-logout">${t('登出')}</button>`
+            : `<button class="landing-btn primary" id="landing-register">✨ ${t('註冊')}</button>
+               <button class="landing-btn secondary" id="landing-login">🔑 ${t('登入')}</button>`;
+        const features = [
+            ['🧠', t('會記得你的村民'), t('二十多位村民各有性格、記憶與人際關係。你說過的話、送過的禮，他們都記得，也會拿去跟別人八卦。')],
+            ['💬', t('真的在聊天'), t('對話由內建 AI 生成，不用填任何金鑰。安慰、打聽、說服、調解、示好、威脅，每一句都會改變關係。')],
+            ['🐎', t('雙城往返'), t('邊境鎮之外還有漁村海風鎮。搭馬車過去作客，村民也會跨鎮互訪，把另一座鎮的故事帶回來。')],
+            ['📖', t('任務與多重結局'), t('五章主線、村民個人任務、每日目標、劇情名場面。你可以參選鎮長，也可以只當個看戲的旅人。')],
+        ];
+        const roadmap = [
+            [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已有觀賞版畫面，見上方'), t('海風鎮專屬任務鏈（漁村主線）')]],
+            [t('規劃中'), '#fbbf24', [t('第三座城鎮'), t('村民自訂外觀'), t('跨鎮貿易與商隊')]],
+            [t('構想'), '#60a5fa', [t('玩家之間互訪城鎮'), t('手機 App 版')]],
+        ];
+        const log = (typeof RIMTOWN_CHANGELOG !== 'undefined' && Array.isArray(RIMTOWN_CHANGELOG)) ? RIMTOWN_CHANGELOG : [];
+        const logHtml = log.map((e, i) => `<div class="landing-log-item${i >= 5 ? ' extra' : ''}">
+                <div class="landing-log-head"><span>v${esc(e.version)}</span><time>${esc(e.date || '')}</time></div>
+                <ul>${((I18N.getLang() === 'en' && e.changes_en && e.changes_en.length) ? e.changes_en : (e.changes || [])).map(c => `<li>${esc(c)}</li>`).join('')}</ul></div>`).join('');
+        el.innerHTML = `<div class="landing-inner">
+            <header class="landing-hero">
+                <div class="landing-pixel-bg" aria-hidden="true"></div>
+                <div class="landing-lang" role="group" aria-label="Language">
+                    <button type="button" data-lang="zh" class="${I18N.getLang() === 'zh' ? 'active' : ''}">中文</button><button type="button" data-lang="en" class="${I18N.getLang() === 'en' ? 'active' : ''}">EN</button>
+                </div>
+                <div class="landing-hero-content">
+                    <div class="landing-logo">🏘️</div>
+                    <h1>${t('邊境鎮')}<span>RimTown</span></h1>
+                    <p class="landing-tagline">${t('一座由 AI 村民自己過日子的小鎮。你是剛到的旅人。')}</p>
+                    <p class="landing-sub">${t('村民有記憶、有個性、有人際關係；他們會工作、戀愛、吵架、選鎮長。你可以聊天、送禮、耳語、蓋房子、開產業，甚至參選。')}</p>
+                    <div class="landing-cta">${cta}</div>
+                    <div class="landing-version">v${esc(ver)} · ${t('免安裝，手機也能玩')}${loggedIn ? ` · ${esc(this.auth.username)}` : ''}</div>
+                </div>
+            </header>
+            <section class="landing-section"><h2>${t('這是什麼遊戲')}</h2>
+                <div class="landing-cards">${features.map(f => `<div class="landing-card"><div class="ic">${f[0]}</div><h3>${f[1]}</h3><p>${f[2]}</p></div>`).join('')}</div>
+            </section>
+            <section class="landing-section landing-preview" id="landing-preview"><h2>🧊 ${t('3D low-poly 版搶先看')}</h2>
+                <figure>
+                    <img src="img/lowpoly-preview.jpg" alt="${t('邊境鎮 3D low-poly 版畫面')}" loading="lazy" onerror="this.closest('section').style.display='none'">
+                    <figcaption>${t('用 Blender 程序化建模與 Godot 4 重製的邊境鎮。同一份存檔、同一批村民，換一種角度看他們過日子。目前是觀賞模式，開發中。')}</figcaption>
+                </figure>
+            </section>
+            ${this._renderBrainSection()}
+            <section class="landing-section"><h2>${t('更新紀錄')}</h2>
+                <div class="landing-log" id="landing-log">${logHtml || `<div class="landing-log-item">${t('尚無紀錄')}</div>`}</div>
+                ${log.length > 5 ? `<button class="landing-more" id="landing-log-more">${t('顯示全部')} (${log.length})</button>` : ''}
+            </section>
+            <section class="landing-section"><h2>${t('即將實現')}</h2>
+                <div class="landing-roadmap">${roadmap.map(r => `<div class="landing-roadmap-col"><h3><span class="landing-tag" style="background:${r[1]};color:#111">${r[0]}</span></h3><ul>${r[2].map(x => `<li>${x}</li>`).join('')}</ul></div>`).join('')}</div>
+            </section>
+            <footer class="landing-footer">${t('邊境鎮 RimTown')} · v${esc(ver)}<br>${t('存檔自動同步雲端，換裝置登入即可繼續。')}</footer>
+        </div>`;
+        this._wireBrainDemo(el);
+        // v5.74.1 首頁語言切換:切完整頁重畫(首頁本身全部字串都有英文對照)
+        el.querySelectorAll('.landing-lang [data-lang]').forEach(b => b.addEventListener('click', () => {
+            const v = b.getAttribute('data-lang');
+            if (v === I18N.getLang()) return;
+            I18N.setLang(v);
+            this._renderLanding();
+            if (typeof renderCurrentTab === 'function') { try { renderCurrentTab(); } catch (e) {} }
+        }));
+        el.querySelector('#landing-register')?.addEventListener('click', () => this._openAuth('register'));
+        el.querySelector('#landing-login')?.addEventListener('click', () => this._openAuth('login'));
+        el.querySelector('#landing-continue')?.addEventListener('click', () => this._enterGame());
+        el.querySelector('#landing-logout')?.addEventListener('click', () => this._doLogout());
+        el.querySelector('#landing-log-more')?.addEventListener('click', (ev) => {
+            const box = el.querySelector('#landing-log'); if (!box) return;
+            const expanded = box.classList.toggle('expanded');
+            ev.currentTarget.textContent = expanded ? t('只看最近 5 版') : `${t('顯示全部')} (${log.length})`;
+        });
+        this._landingUpdateContinue();
+    }
+    // ============================================================
+    // v5.69.0 首頁「村民的大腦」:村民怎麼社交——感知/挑人/八卦/對話/效果/記憶/反思/計畫
+    // 內容直接讀遊戲常數(TRAIT_POOL / THOUGHT_DEFS / REL_TYPES),數字與程式一致
+    // ============================================================
+    _renderBrainSection() {
+        const esc = s => this._escapeHtml ? this._escapeHtml(String(s)) : String(s);
+        const steps = [
+            ['👀', t('感知'), t('每 15 分鐘（1 tick）看一次同地點還醒著的人。睡覺的人不會主動搭話。')],
+            ['🎯', t('挑對象'), t('權重 = 5 ＋ 好感÷10 ＋ 心動÷10；好感低於 −30 的人權重大減。互動後冷卻 6 tick。')],
+            ['🗣️', t('八卦'), t('30% 機率先講一則八卦。八卦性格的人一定講，其他人 30%。傳到第 2 手有 40% 會被誇大，20% 的八卦本來就是假的。')],
+            ['🍻', t('約出去'), t('好感 ≥ 30 時 12% 機率相約去酒館、公園、廣場、教堂、森林或圖書館；心動 > 40 就算約會。')],
+            ['💬', t('對話'), t('玩家附近的對話由內建 AI 生成（受每日額度限制）；遠處的對話走規則式模板，但同樣寫進記憶。')],
+            ['📈', t('效果'), t('對話改變雙方好感（−2 到 +5）與心動；正向增幅乘上性格相容度 0.2 到 1.6。約定會寫成「計畫」記憶，情緒波動大就當場改寫今天剩下的行程。')],
+            ['🧠', t('記憶'), t('每人 500 條記憶流。對話寫進「他會記住的那句話」，重要度 4 到 8。')],
+            ['🌙', t('反思與計畫'), t('每晚合成 1 到 2 條想法（跟誰走得近、暗戀、夢想）；每天最多 3 位由 AI 深度反思。清晨依記憶排今日行程。')],
+        ];
+        const traitFx = tr => {
+            const d = tr || {}; const out = [];
+            if (d.social) out.push(`${t('社交')} ${d.social > 0 ? '+' : ''}${d.social}`);
+            if (d.work) out.push(`${t('工作')} ${d.work > 0 ? '+' : ''}${d.work}`);
+            if (d.mood_base) out.push(`${t('基礎心情')} ${d.mood_base > 0 ? '+' : ''}${d.mood_base}`);
+            if (d.mood_sensitivity) out.push(`${t('情緒敏感')} ×${d.mood_sensitivity}`);
+            if (d.romance) out.push(`${t('戀愛')} ${d.romance > 0 ? '+' : ''}${d.romance}`);
+            if (d.schedule) out.push(d.schedule === 'late' ? t('晚睡') : t('早起'));
+            if (d.food) out.push(`${t('食量')} ×${d.food}`);
+            if (d.comfort) out.push(`${t('舒適')} ${d.comfort}`);
+            return out.join(' · ');
+        };
+        const traits = (typeof TRAIT_POOL !== 'undefined') ? Object.entries(TRAIT_POOL) : [];
+        const traitChips = traits.map(([k, d]) => `<span class="landing-chip" title="${esc(d.description || '')}">${esc(t(d.label || k))}<small>${esc(traitFx(d))}</small></span>`).join('');
+        const incompat = (typeof INCOMPATIBLE !== 'undefined') ? INCOMPATIBLE.map(([a, b]) => `${esc(t(TRAIT_POOL[a]?.label || a))} × ${esc(t(TRAIT_POOL[b]?.label || b))}`).join(t('、')) : '';
+        const values = ['家庭', '自由', '知識', '財富', '權力', '藝術', '自然', '社群', '冒險', '和平'].map(v => `<span class="landing-chip small">${t(v)}</span>`).join('');
+        const thoughts = (typeof THOUGHT_DEFS !== 'undefined') ? Object.values(THOUGHT_DEFS) : [];
+        const thoughtRows = thoughts.map(d => `<tr><td>${esc(t(d.label))}</td><td class="${d.mood >= 0 ? 'pos' : 'neg'}">${d.mood > 0 ? '+' : ''}${d.mood}</td><td>${d.days}</td><td>${d.opinion ? (d.opinion > 0 ? '+' : '') + d.opinion : '—'}</td></tr>`).join('');
+        const ladder = [
+            ['≥ 61', t('摯友')], ['21 ~ 60', t('朋友')], ['−19 ~ 20', t('認識 / 陌生人')], ['−59 ~ −20', t('對手')], ['≤ −60', t('敵人')],
+        ].map(([r, l]) => `<div class="landing-ladder-row"><span>${r}</span><b>${l}</b></div>`).join('');
+        return `<section class="landing-section landing-brain" id="landing-brain"><h2>${t('村民的大腦：他們是怎麼社交的')}</h2>
+            <p class="landing-brain-intro">${t('沒有劇本。每位村民每 15 分鐘做一次決定，靠的是自己的記憶、性格和跟對方的關係。下面是一輪社交的完整流程，數字都是遊戲裡實際用的參數。')}</p>
+            <div class="landing-steps">${steps.map((s, i) => `<div class="landing-step"><div class="landing-step-no">${i + 1}</div><div class="landing-step-ic">${s[0]}</div><h3>${s[1]}</h3><p>${s[2]}</p></div>`).join('')}</div>
+
+            <div class="landing-brain-grid">
+                <div class="landing-card">
+                    <h3>🧠 ${t('記憶流與檢索')}</h3>
+                    <p>${t('每條記憶有時間、類別、內容、重要度（1 到 10）、涉及的人。要說話或做計畫時，不是翻全部，而是用三個分數挑出最該想起的幾條：')}</p>
+                    <div class="landing-formula">${t('分數')} = 0.5 × ${t('時近')} + 3 × ${t('相關')} + 2 × ${t('重要度')}</div>
+                    <ul class="landing-list">
+                        <li><b>${t('時近')}</b>：0.85 ^ ${t('已過天數')}${t('，一週前的事只剩三成份量。')}</li>
+                        <li><b>${t('相關')}</b>：${t('內容與當下話題的字元重疊度，加上「有沒有提到眼前這個人」。')}</li>
+                        <li><b>${t('重要度')}</b>：${t('表白、絕交、劈腿這類事件是 8 到 10；日常觀察只有 2。')}</li>
+                    </ul>
+                    <div class="landing-demo" id="landing-mem-demo">
+                        <div class="landing-demo-title">${t('自己調調看：一條記憶會被想起來嗎？')}</div>
+                        <label>${t('已過天數')} <span data-out="age">3</span><input type="range" min="0" max="30" value="3" data-k="age"></label>
+                        <label>${t('重要度')} <span data-out="imp">6</span><input type="range" min="1" max="10" value="6" data-k="imp"></label>
+                        <label>${t('相關程度')} <span data-out="rel">0.5</span><input type="range" min="0" max="100" value="50" data-k="rel"></label>
+                        <div class="landing-demo-score">${t('分數')} <b data-out="score">—</b> <span data-out="verdict"></span></div>
+                    </div>
+                </div>
+                <div class="landing-card">
+                    <h3>🎭 ${t('性格參數')}</h3>
+                    <p>${t('每人出生時抽 3 個特質（互斥的不會同時出現），加上 1 到 3 個價值觀。特質決定社交加成、工作效率、基礎心情、情緒敏感度與戀愛傾向。')}</p>
+                    <div class="landing-chips">${traitChips}</div>
+                    <p class="landing-muted">${t('互斥：')}${incompat}</p>
+                    <p><b>${t('價值觀')}</b>：${values}</p>
+                    <p><b>${t('相容度')}</b>：${t('善良配善良、魅力配害羞、沉穩配神經質會加分；刻薄配害羞、樂觀配悲觀、懶惰配勤勞會扣分。換算成 0.2 到 1.6 的倍率，乘在每次好感增幅上。')}</p>
+                    <p><b>${t('六項需求')}</b>：${t('飢餓、休息、社交、舒適、娛樂、美感。白天每 tick 飢餓 −2、休息 −1.5、社交 −1；夜裡衰減放慢。任一項見底就拖累心情，心情又決定他今天想不想理人。')}</p>
+                </div>
+                <div class="landing-card">
+                    <h3>💞 ${t('關係階梯')}</h3>
+                    <p>${t('對每個人各記三個數：好感（−100 到 100）、信任、心動（0 到 100）。好感決定稱呼，心動超過 50 就是暗戀。')}</p>
+                    <div class="landing-ladder">${ladder}</div>
+                    <ul class="landing-list">
+                        <li>${t('50 tick 沒互動，好感每天往 0 漂 0.8；情侶夫妻只漂 0.3。')}</li>
+                        <li>${t('好感 > 20 且互動超過 3 次，相配的人每天 45% 機率心動 +1 到 +5；高好感高相配還有 6% 的「來電火花」+8 到 +16。')}</li>
+                        <li>${t('雙方好感 ≤ −35：每隔 5 天 15% 機率在廣場對嗆；雙方 ≤ −60：正式絕交，觸發劇情名場面。')}</li>
+                        <li>${t('聽到自己被造謠會當面對質，造謠者好感 −12；紅娘式八卦會讓兩位當事人開始注意彼此。')}</li>
+                        <li>${t('戲劇導演每天看一眼全鎮：太平靜就悄悄推一把暗戀、舊帳或吃醋。')}</li>
+                    </ul>
+                </div>
+                <div class="landing-card">
+                    <h3>🌤️ ${t('想法與心情')}</h3>
+                    <p>${t('事件會留下有期限的「想法」，直接加減心情，有些還會改變對當事人的看法：')}</p>
+                    <div class="landing-table-wrap"><table class="landing-table"><thead><tr><th>${t('想法')}</th><th>${t('心情')}</th><th>${t('持續天數')}</th><th>${t('對人看法')}</th></tr></thead><tbody>${thoughtRows}</tbody></table></div>
+                </div>
+            </div>
+            <p class="landing-muted landing-brain-foot">${t('成本閘門：只有玩家附近的對話與每日額度內的行程／反思會呼叫 AI，其餘一律規則式運算，所以一整鎮 20 多人同時「活著」也不會燒錢。')}</p>
+            ${this._renderTechDetails()}
+        </section>`;
+    }
+    // v5.70.0 首頁「技術細節」摺疊區:一次 AI 請求的旅程、兩個 AI 怎麼協作
+    _renderTechDetails() {
+        const flow = [
+            ['🗣️', t('玩家附近發生對話')],
+            ['📝', t('組提示詞')],
+            ['⚡', t('快車道 Groq')],
+            ['🤝', t('失敗就換 Claude 接手')],
+            ['🛡️', t('守門：拒答／洩漏／簡體')],
+            ['🧠', t('寫回記憶與關係')],
+        ];
+        const ingredients = [
+            [t('身分行'), t('「你是某某，對面是來到鎮上的旅人，不是鎮長；現任鎮長是誰」——避免叫錯人')],
+            [t('抽出的記憶'), t('用時近×相關×重要度挑出最該想起的 3 到 6 條，不是整本翻')],
+            [t('關係數字'), t('對這個人的好感、信任、心動，以及目前的稱呼（朋友／對手／暗戀）')],
+            [t('今天的計畫'), t('清晨排好的行程與現在正在做的事，讓對話有上下文')],
+            [t('性格與心情'), t('三個特質、價值觀、當下心情與最近的想法')],
+            [t('輸出格式'), t('只准輸出台詞與 EFFECTS 行（好感／心動／記憶變動），不准前言、分析、免責聲明')],
+        ];
+        const lanes = [
+            [t('快車道 chat'), t('玩家附近的即時對話'), t('Groq（開源模型）'), t('Claude'), '12s → 15s'],
+            [t('慢車道 background'), t('每日行程、深度反思、八卦與劇情'), t('Claude'), t('Groq'), '15s → 12s'],
+        ];
+        const handoff = [
+            t('兩條路共用一個 26 秒預算（無伺服器函式上限 30 秒），第一條用掉多少，第二條就只剩多少。'),
+            t('逾時、限流（429）、伺服器錯誤：那條路冷卻。Groq 依回傳的重試時間冷卻，最短 5 分鐘；Claude 每失敗一次冷卻多 60 秒，上限 5 分鐘，成功即解除。'),
+            t('回空白或拒絕扮演不算那條路壞掉，不冷卻，只是這一次換人。'),
+            t('每次回應都帶著 provider、lane、model 與 fallback_from，出問題可以直接從紀錄看出是哪一段接手的。'),
+        ];
+        const quota = [
+            t('每次 Groq 回應都會讀 x-ratelimit 標頭，記下剩餘 token、剩餘請求數與重置時間。'),
+            t('下一次請求先估算要用多少：中文每字算 1 token，其他每 4 個字元算 1，再加輸出上限（至少 160）與 50 的緩衝。'),
+            t('估算超過剩餘額度就直接跳過 Groq 改走 Claude，不會撞到 429 才發現。'),
+            t('推理型模型（gpt-oss）固定輸出下限 160 token、推理強度 low、隱藏推理過程，避免它「想太久」回空白。'),
+        ];
+        const guard = [
+            t('系統指示寫死：一律繁體中文（台灣用語）、不准自報 AI 身分、不准拒絕扮演、不准加前言。'),
+            t('回覆若出現「I\'m Kiro / I am an AI / not designed for roleplay」這類句型，視同失敗，換另一條路重打。'),
+            t('伺服器端先做簡轉繁（OpenCC 台灣用語），前端再掃一次；載入舊存檔時也會把殘留的簡體與洩漏句清掉。'),
+            t('每位村民 500 條記憶上限，對話結束後只把「他會記住的那句話」寫進去，重要度 4 到 8。'),
+        ];
+        const cost = [
+            t('只有玩家附近的村民才會呼叫 AI 對話，遠處的走規則式模板，但一樣寫進記憶、一樣影響好感。'),
+            t('每天有 AI 額度：行程一批打包成一次請求（每人約 450 token），深度反思每天最多 3 位。'),
+            t('Groq 免費層大約每分鐘 30 次、每天 1,000 次、每分鐘 8,000 token；超過就自動改走付費的 Claude，玩家不會感覺到斷線。'),
+        ];
+        const esc = (x) => String(x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        return `<details class="landing-tech" id="landing-tech">
+            <summary>🔧 ${t('想看更深的技術細節：一次 AI 請求的旅程、兩個 AI 怎麼協作')}</summary>
+            <div class="landing-tech-body">
+                <div class="landing-flow">${flow.map((f, i) => `<div class="landing-flow-step"><span class="landing-flow-ico">${f[0]}</span><span>${esc(f[1])}</span></div>${i < flow.length - 1 ? '<span class="landing-flow-arrow">→</span>' : ''}`).join('')}</div>
+                <h4>① ${t('提示詞怎麼組')}</h4>
+                <p class="landing-muted">${t('一次對話只打一個請求，裡面把村民「此刻腦子裡的東西」全部塞進去：')}</p>
+                <dl class="landing-dl">${ingredients.map(x => `<dt>${esc(x[0])}</dt><dd>${esc(x[1])}</dd>`).join('')}</dl>
+                <h4>② ${t('兩條車道：誰先上')}</h4>
+                <div class="landing-table-wrap"><table class="landing-table"><thead><tr><th>${t('車道')}</th><th>${t('用在哪')}</th><th>${t('先問誰')}</th><th>${t('備援')}</th><th>${t('時限')}</th></tr></thead><tbody>${lanes.map(l => `<tr>${l.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+                <p class="landing-muted">${t('即時對話要快，所以先問回應最快的 Groq；行程與反思要寫得細，所以先問 Claude。兩邊互為備援。')}</p>
+                <h4>③ ${t('互相接手與冷卻')}</h4>
+                <ul class="landing-list">${handoff.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+                <h4>④ ${t('免費額度保護')}</h4>
+                <ul class="landing-list">${quota.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+                <h4>⑤ ${t('品質守門')}</h4>
+                <ul class="landing-list">${guard.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+                <h4>⑥ ${t('成本閘門')}</h4>
+                <ul class="landing-list">${cost.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+                <p class="landing-muted">${t('金鑰全部放在伺服器環境變數，前端與存檔裡都沒有；玩家不需要、也不能填自己的金鑰。')}</p>
+            </div>
+        </details>`;
+    }
+    _wireBrainDemo(root) {
+        const box = root.querySelector('#landing-mem-demo');
+        if (!box) return;
+        const upd = () => {
+            const age = parseFloat(box.querySelector('[data-k="age"]').value);
+            const imp = parseFloat(box.querySelector('[data-k="imp"]').value);
+            const rel = parseFloat(box.querySelector('[data-k="rel"]').value) / 100;
+            const score = 0.5 * Math.pow(0.85, age) + 3 * rel + 2 * (imp / 10);
+            box.querySelector('[data-out="age"]').textContent = age;
+            box.querySelector('[data-out="imp"]').textContent = imp;
+            box.querySelector('[data-out="rel"]').textContent = rel.toFixed(2);
+            box.querySelector('[data-out="score"]').textContent = score.toFixed(2);
+            const v = box.querySelector('[data-out="verdict"]');
+            v.textContent = score >= 3.2 ? t('→ 幾乎一定會想起來') : score >= 2.2 ? t('→ 有機會被想起') : t('→ 大概忘了');
+            v.style.color = score >= 3.2 ? '#34d399' : score >= 2.2 ? '#fbbf24' : '#f87171';
+        };
+        box.querySelectorAll('input[type=range]').forEach(r => r.addEventListener('input', upd));
+        upd();
+    }
+
+    _showLanding() {
+        const el = document.getElementById('landing');
+        if (!el) return;
+        el.classList.remove('hidden', 'fade-out');
+        document.body.classList.add('landing-open');
+        try { window.scrollTo(0, 0); } catch (e) {}
+    }
+    _hideLanding() {
+        const el = document.getElementById('landing');
+        if (!el) return;
+        el.classList.add('fade-out');
+        document.body.classList.remove('landing-open');
+        setTimeout(() => el.classList.add('hidden'), 420);
+        this._landingActive = false;
+    }
+    // 已登入:世界載好後把「繼續遊戲」按鈕打開,附上城鎮與日期
+    _landingUpdateContinue() {
+        const btn = document.getElementById('landing-continue');
+        if (!btn) return;
+        if (!this._initReady) { btn.disabled = true; btn.innerHTML = `▶ ${t('載入中…')}`; return; }
+        const meta = this._getTownList().find(tw => tw.id === this.currentTownId);
+        const name = (meta && meta.name) || this._getCurrentTownName?.() || t('邊境鎮');
+        const c = this.world?.clock;
+        const when = c ? `${t('第')}${c.year}${t('年')} ${c.season} ${t('第')}${c.day}${t('天')}` : '';
+        const esc = s => this._escapeHtml ? this._escapeHtml(String(s)) : String(s);
+        btn.disabled = false;
+        btn.innerHTML = `▶ ${t('繼續遊戲')}<span class="landing-continue-sub">${esc(name)}${when ? ' · ' + esc(when) : ''}</span>`;
+    }
+    async _enterGame() {
+        const btn = document.getElementById('landing-continue');
+        if (!this._initReady) { if (btn) { btn.disabled = true; btn.innerHTML = `▶ ${t('載入中…')}`; } return; }
+        this._hideLanding();
+        if (this._pausedForLanding) { this._pausedForLanding = false; if (this.world) this.world.paused = false; }
+        try { this.render(); } catch (e) {}
+        try { this.setupTutorial(); } catch (e) {}
+        if (this._afterLanding) { const f = this._afterLanding; this._afterLanding = null; try { f(); } catch (e) {} }
+        // 手機:進遊戲後重算地圖尺寸
+        setTimeout(() => { if (this.tileMap) this.tileMap._needsResize = true; try { window.dispatchEvent(new Event('resize')); } catch (e) {} }, 100);
+    }
+    // 開啟帳號視窗到指定分頁(首頁用):不顯示訪客試玩
+    _openAuth(tab) {
+        const modal = document.getElementById('auth-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        const closeBtn = modal.querySelector('.auth-close-btn');
+        if (closeBtn) closeBtn.style.display = '';
+        document.getElementById('auth-guest-section')?.classList.add('hidden');
+        document.querySelectorAll('.auth-tab').forEach(_tw => _tw.classList.toggle('active', _tw.dataset.authTab === tab));
+        document.getElementById('auth-login-form')?.classList.toggle('hidden', tab !== 'login');
+        document.getElementById('auth-register-form')?.classList.toggle('hidden', tab !== 'register');
+        document.getElementById('auth-reset-form')?.classList.add('hidden');
+        setTimeout(() => document.getElementById(tab === 'login' ? 'auth-login-user' : 'auth-reg-user')?.focus(), 50);
+    }
+
+    // ============================================================
+    // v5.68.0 管理員:推薦碼管理(註冊必填,由管理員建立/停用/刪除)
+    // ============================================================
+    async _adminLoadInvites() {
+        const box = document.getElementById('admin-invite-list');
+        if (box) box.innerHTML = `<span style="color:var(--text-muted)">${t('載入中…')}</span>`;
+        try {
+            const invites = await this.auth.adminInvites();
+            const esc = s => this._escapeHtml ? this._escapeHtml(String(s)) : String(s);
+            const rows = invites.map(v => {
+                const code = esc(v.code);
+                const used = `${v.uses || 0}/${v.maxUses > 0 ? v.maxUses : '∞'}`;
+                const exhausted = v.maxUses > 0 && (v.uses || 0) >= v.maxUses;
+                const status = v.disabled ? `<span style="color:#fb923c">${t('已停用')}</span>` : exhausted ? `<span style="color:#f87171">${t('已用完')}</span>` : `<span style="color:#34d399">${t('可用')}</span>`;
+                const last = (v.usedBy || []).slice(-3).map(u => esc(u.u)).join(', ');
+                return `<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border)">
+                    <div style="flex:1;min-width:0"><b style="font-family:monospace;letter-spacing:1px">${code}</b> ${status}
+                        <div style="color:var(--text-muted);font-size:0.68rem">${t('已用')} ${used}${v.note ? ' · ' + esc(v.note) : ''}${last ? ' · ' + t('最近：') + last : ''}</div></div>
+                    <div style="flex-shrink:0;white-space:nowrap">
+                        <button class="trade-btn" data-action="admin-invite-toggle" data-val="${code}" style="padding:3px 8px;font-size:0.7rem">${v.disabled ? t('啟用') : t('停用')}</button>
+                        <button class="trade-btn btn-danger" data-action="admin-invite-delete" data-val="${code}" style="padding:3px 8px;font-size:0.7rem">🗑️</button>
+                    </div></div>`;
+            });
+            this._adminInvitesHtml = `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+                    <input id="admin-invite-code" placeholder="${t('自訂代碼（留空自動產生）')}" maxlength="24" style="flex:1;min-width:140px;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem;text-transform:uppercase">
+                    <input id="admin-invite-max" type="number" min="0" max="9999" value="10" title="${t('可用次數，0＝無上限')}" style="width:70px;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
+                    <button class="trade-btn btn-accent" data-action="admin-invite-create" style="padding:6px 10px">➕ ${t('建立推薦碼')}</button>
+                </div>
+                <div style="color:var(--text-muted);font-size:0.68rem;margin-bottom:6px">${t('次數欄＝這組代碼可以註冊幾個帳號，0 代表無上限。註冊時必須輸入有效的推薦碼。')}</div>
+                ${rows.length ? rows.join('') : `<span style="color:var(--text-muted)">${t('還沒有推薦碼，先建立一組給朋友吧。')}</span>`}`;
+            if (box) box.innerHTML = this._adminInvitesHtml;
+        } catch (e) {
+            if (box) box.innerHTML = `<span style="color:#f87171">${t('載入失敗：')}${this._escapeHtml ? this._escapeHtml(e.message || '') : ''}</span>`;
+        }
+    }
+    async _adminInviteCreate() {
+        const code = document.getElementById('admin-invite-code')?.value?.trim() || '';
+        const max = parseInt(document.getElementById('admin-invite-max')?.value, 10);
+        try {
+            const r = await this.auth.adminInvite('invite_create', { code, max_uses: Number.isFinite(max) ? max : 10 });
+            this._gameAlert(`${t('推薦碼已建立：')}${r.code}`, '🎟️');
+            await this._adminLoadInvites();
+        } catch (e) { this._gameAlert(t('建立失敗：') + (e.message || ''), '❌'); }
+    }
+    async _adminInviteToggle(code) {
+        try { await this.auth.adminInvite('invite_toggle', { code }); await this._adminLoadInvites(); }
+        catch (e) { this._gameAlert(t('操作失敗：') + (e.message || ''), '❌'); }
+    }
+    async _adminInviteDelete(code) {
+        if (!await this._gameConfirm(`${t('確定刪除推薦碼')} ${code}？`, '🗑️')) return;
+        try { await this.auth.adminInvite('invite_delete', { code }); await this._adminLoadInvites(); }
+        catch (e) { this._gameAlert(t('操作失敗：') + (e.message || ''), '❌'); }
+    }
+
+    // v5.67.4 存檔清理提示(loadSave 清掉 AI 助理漏出的錯誤回覆後,提示一次並存回)
+    _notifyScrubbedLeaks() {
+        const n = (this.world && this.world._scrubbedLeaks) || 0;
+        const c = (this.world && this.world._s2tFixed) || 0;
+        if (!n && !c) return;
+        if (this.world) { this.world._scrubbedLeaks = 0; this.world._s2tFixed = 0; }
+        try {
+            if (n) this.world.logMessage('system', `🧹 ${t('已清除')} ${n} ${t('則 AI 服務誤回的英文/自報身分內容，存檔已修正。')}`);
+            if (c) this.world.logMessage('system', `🈶 ${t('已把')} ${c} ${t('段簡體字台詞轉成繁體，存檔已修正。')}`);
+        } catch (e) {}
+        this.saveGame().catch(() => {});
+    }
+
     // v5.66.0 帳號自救流程:伺服器回報帳號紀錄遺失 → 請玩家設新密碼 → 重建
     async _repairAccountFlow() {
         if (this._repairing) return;
@@ -1542,6 +1967,7 @@ class RimTownApp {
                 if (Number(s.npc_llm_budget) < 0) { try { localStorage.removeItem('rimtown_npc_llm_budget'); } catch (e) {} }
                 else localStorage.setItem('rimtown_npc_llm_budget', String(s.npc_llm_budget));
             }
+            if (s.dialogue_lang === 'auto' || s.dialogue_lang === 'zh' || s.dialogue_lang === 'en') this._setDialogueLang(s.dialogue_lang); // v5.73.0
             if (changed) console.log('[RimTown] AI settings synced from account');
             return changed;
         } catch (e) { console.log('[RimTown] cloud settings pull skipped:', e.message); return false; }
@@ -1556,6 +1982,7 @@ class RimTownApp {
         const budget = parseInt(budgetRaw, 10);
         // v5.37.0 本機未設上限 → 推 -1(無上限),讓其他裝置也同步成無上限
         payload.npc_llm_budget = (budgetRaw !== null && budgetRaw !== '' && Number.isFinite(budget)) ? budget : -1;
+        try { payload.dialogue_lang = localStorage.getItem('rimtown_dialogue_lang') || 'auto'; } catch (e) {} // v5.73.0
         this.auth.saveCloudSettings(payload).catch(e => console.log('[RimTown] cloud settings push skipped:', e.message));
     }
 
@@ -1645,7 +2072,7 @@ class RimTownApp {
 
         // v5.34.1 開局第一輪判定的成就靜默入袋(新地圖開場就達標的一批不洗版),之後的才彈通知
         if (this._achFirstCheckDone) this._showAchievementToast(def);
-        this.world.logMessage('system', `${t('成就解鎖：')}${def.icon} ${def.name}`);
+        this.world.logMessage('system', `${t('成就解鎖：')}${def.icon} ${t(def.name)}`);
     }
 
     _showAchievementToast(def) {
@@ -1663,7 +2090,7 @@ class RimTownApp {
             while (host.childElementCount >= 3) host.firstElementChild.remove();
             const el = document.createElement('div');
             el.style.cssText = 'display:flex;align-items:center;gap:10px;background:rgba(22,22,32,0.95);border:1px solid rgba(245,197,66,0.45);border-radius:10px;padding:10px 14px;max-width:320px;box-shadow:0 4px 16px rgba(0,0,0,0.4);opacity:0;transform:translateY(8px);transition:opacity 0.3s,transform 0.3s;pointer-events:auto;cursor:pointer';
-            el.innerHTML = `<span style="font-size:1.6rem">${def.icon}</span><span><span style="display:block;color:#f5c542;font-size:0.72rem;font-weight:bold">🏆 ${t('成就解鎖！')}</span><span style="display:block;color:#fff;font-size:0.85rem;font-weight:bold">${def.name}</span><span style="display:block;color:rgba(255,255,255,0.65);font-size:0.68rem">${def.desc}</span></span>`;
+            el.innerHTML = `<span style="font-size:1.6rem">${def.icon}</span><span><span style="display:block;color:#f5c542;font-size:0.72rem;font-weight:bold">🏆 ${t('成就解鎖！')}</span><span style="display:block;color:#fff;font-size:0.85rem;font-weight:bold">${t(def.name)}</span><span style="display:block;color:rgba(255,255,255,0.65);font-size:0.68rem">${def.desc}</span></span>`;
             host.appendChild(el);
             requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
             const remove = () => { el.style.opacity = '0'; el.style.transform = 'translateY(8px)'; setTimeout(() => el.remove(), 350); };
@@ -1851,8 +2278,8 @@ class RimTownApp {
             if (rom) relNpc.modifyRomantic(rom);
             relNpc.addSharedMemory(`${h.evName}${t('：')}${reply}`);
             player.chatHistory.push({ speaker: player.name, target: npc.name, text: reply, time: world.clock.timeStr });
-            npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${player.name}${t('回應了我的真心話：')}${reply}`, 8, [player.name]);
-            world.logMessage('player_chat', `${player.name} → ${npc.name}: ${reply}`, player.name, npc.name);
+            npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t(player.name)}${t('回應了我的真心話：')}${reply}`, 8, [player.name]);
+            world.logMessage('player_chat', `${t(player.name)} → ${t(npc.name)}: ${reply}`, player.name, npc.name);
             this.bgm?.sfx?.('send');
             this.state = world.getState();
             this.renderSidebar();
@@ -2516,6 +2943,7 @@ class RimTownApp {
     async _doLogout() {
         try {
             await this.auth.logout();
+            if (this.auth._serverless) { location.reload(); return; } // v5.68.0 回到首頁
             this._updateAccountButton();
             this.world.logMessage('system', t('已登出。'));
         } catch(e) { console.error(e); }
@@ -2699,7 +3127,7 @@ class RimTownApp {
         candidate.votes = (candidate.votes || 0) + 1;
         election._playerVoted = true;
         this._unlockAchievement('voted');
-        this.world.logMessage('player_action', `${t('你投票給了 ')}${candidate.name}。`, 'player');
+        this.world.logMessage('player_action', `${t('你投票給了 ')}${t(candidate.name)}。`, 'player');
         this.state = this.world.getState();
         this.renderSidebar();
     }
@@ -2726,8 +3154,8 @@ class RimTownApp {
                 npcRel.modifyAffinity(1);
             }
             this._flirtCount = (this._flirtCount || 0) + 1;
-            this.world.logMessage('player_action', `${t('你對')}${npc.name}${t('調情。')}`, player.name, npc.name);
-            player.memory?.add?.(this.world.tickCount, this.world.clock.timeStr, 'social', `${t('對')}${npc.name}${t('調情')}`, 3, [npc.name]);
+            this.world.logMessage('player_action', `${t('你對')}${t(npc.name)}${t('調情。')}`, player.name, npc.name);
+            player.memory?.add?.(this.world.tickCount, this.world.clock.timeStr, 'social', `${t('對')}${t(npc.name)}${t('調情')}`, 3, [npc.name]);
         }
         this.state = this.world.getState();
         this.renderSidebar();
@@ -2751,16 +3179,16 @@ class RimTownApp {
             if (rel.status === 'dating') {
                 rel.status = 'married';
                 if (npcRel) npcRel.status = 'married';
-                this.world.logMessage('event', `${player.name}${t('與')}${npc.name}${t('結婚了！')}`, player.name, npc.name);
+                this.world.logMessage('event', `${t(player.name)}${t('與')}${t(npc.name)}${t('結婚了！')}`, player.name, npc.name);
                 this._unlockAchievement('first_marriage');
             } else {
                 rel.status = 'dating';
                 if (npcRel) npcRel.status = 'dating';
-                this.world.logMessage('event', `${player.name}${t('與')}${npc.name}${t('開始交往！')}`, player.name, npc.name);
+                this.world.logMessage('event', `${t(player.name)}${t('與')}${t(npc.name)}${t('開始交往！')}`, player.name, npc.name);
                 this._unlockAchievement('first_dating');
             }
         } else {
-            this.world.logMessage('event', `${npc.name}${t('拒絕了你的告白。')}`, player.name, npc.name);
+            this.world.logMessage('event', `${t(npc.name)}${t('拒絕了你的告白。')}`, player.name, npc.name);
             this._unlockAchievement('rejected');
         }
         this.state = this.world.getState();
@@ -3046,7 +3474,7 @@ class RimTownApp {
                     try {
                         const ag = w.spawnVisitor(e);
                         if (ag) {
-                            this._showCornerNotice({ icon: '🚌', title: t('遠客來訪'), name: '', desc: `${e.agentData?.name}${t('（')}${e.fromTownName}${t('）來作客了，去打個招呼吧')}` });
+                            this._showCornerNotice({ icon: '🚌', title: t('遠客來訪'), name: '', desc: `${t(e.agentData?.name)}${t('（')}${e.fromTownName}${t('）來作客了，去打個招呼吧')}` });
                             // v5.59.0 TC-04:聊天分頁開著時清單立即刷新,訪客馬上可私訊
                             this.state = w.getState();
                             if (this.activeTab === 'chat') this.renderSidebar();
@@ -3065,7 +3493,7 @@ class RimTownApp {
                     const ag = w.agents[e.origId];
                     if (!ag) { keep.push(e); return; }
                     (e.notes || []).slice(0, 3).forEach(nt => ag.memory?.add?.(w.tickCount, w.clock.timeStr, 'travel', `${t('在')}${e.visitedTownName}${t('時：')}${nt}`, 6, []));
-                    w.logMessage('arrival', `${ag.name}${t('從')}${e.visitedTownName}${t('回來了，帶回一肚子見聞。')}`);
+                    w.logMessage('arrival', `${t(ag.name)}${t('從')}${e.visitedTownName}${t('回來了，帶回一肚子見聞。')}`);
                 });
                 if (keep.length) localStorage.setItem(rk, JSON.stringify(keep)); else localStorage.removeItem(rk);
             }
@@ -3165,27 +3593,54 @@ class RimTownApp {
         this._saveTownList(list);
         this._submitLeaderboard();
         // v4.6.0 存檔配額保護:寫入失敗(localStorage 滿)時自動瘦身重試,再失敗才警告
-        try {
-            localStorage.setItem('rimtown_town_' + this.currentTownId, JSON.stringify(saveData));
-        } catch (e) {
-            try {
-                // 瘦身:裁剪各 agent 記憶與共享記憶後重試
-                for (const a of Object.values(saveData.agents || {})) {
-                    if (Array.isArray(a.memories)) a.memories = a.memories.slice(-100);
-                    if (Array.isArray(a.recent_memories)) a.recent_memories = a.recent_memories.slice(-100);
-                    for (const r of Object.values(a.relationships || {})) {
-                        if (Array.isArray(r.sharedMemories)) r.sharedMemories = r.sharedMemories.slice(-30);
-                        if (Array.isArray(r.shared_memories)) r.shared_memories = r.shared_memories.slice(-30);
+        // v5.69.3 重寫:舊版瘦身裁的是不存在的欄位(memories/recent_memories),等於沒瘦,登入玩家也被彈
+        // 「請註冊登入」。現在依序:清聊天封存 → 依真實欄位瘦身 → (登入者)清其他鎮的本機副本 → 仍失敗時
+        // 登入者只提示一次「本機備份空間不足,已改為只存雲端」,訪客才跳警告
+        const key = 'rimtown_town_' + this.currentTownId;
+        const tryWrite = (data) => { try { localStorage.setItem(key, JSON.stringify(data)); return true; } catch (_) { return false; } };
+        if (!tryWrite(saveData)) {
+            let ok = false;
+            const removeKeys = (pred) => { let n = 0; for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && pred(k)) { localStorage.removeItem(k); n++; } } return n; };
+            // 1) 聊天封存(純紀錄,可重新產生)
+            if (removeKeys(k => k.startsWith('rimtown_town_') && k.endsWith('_archives'))) ok = tryWrite(saveData);
+            // 2) 依真實欄位瘦身:村民記憶、全鎮日誌、對話紀錄、八卦、名場面
+            if (!ok) { this._slimSaveForLocal(saveData); ok = tryWrite(saveData); if (ok) console.warn('[RimTown] 存檔空間不足,已自動瘦身後儲存本機備份'); }
+            // 3) 登入者:其他城鎮的本機副本雲端都有,讓位給目前的鎮
+            if (!ok && this.auth?.loggedIn) {
+                if (removeKeys(k => k.startsWith('rimtown_town_') && k !== key && k !== 'rimtown_town_list')) ok = tryWrite(saveData);
+            }
+            if (!ok) {
+                if (this.auth?.loggedIn) {
+                    if (!this._localQuotaNoticeShown) {
+                        this._localQuotaNoticeShown = true;
+                        console.warn('[RimTown] 本機備份空間不足,改為只存雲端');
+                        try { this._showCornerNotice({ icon: '☁️', title: t('本機備份空間不足'), name: '', desc: t('存檔已改為只存雲端，進度安全。') }); } catch (e) {}
                     }
+                } else {
+                    this._gameAlert(t('儲存空間已滿！請到「城鎮列表」刪除舊城鎮，或登入改用雲端存檔。'), '💾');
                 }
-                if (Array.isArray(saveData.player_chat_history)) saveData.player_chat_history = saveData.player_chat_history.slice(-200);
-                localStorage.setItem('rimtown_town_' + this.currentTownId, JSON.stringify(saveData));
-                console.warn('[RimTown] 存檔空間不足,已自動瘦身後儲存');
-            } catch (e2) {
-                this._gameAlert(t('儲存空間已滿!請刪除舊城鎮(城鎮列表),或註冊登入改用雲端存檔。'), '💾');
             }
         }
         localStorage.setItem('rimtown_last_town', this.currentTownId);
+    }
+    // v5.69.3 本機備份瘦身:只裁「可重新累積」的紀錄,不動關係/任務/資源等狀態
+    _slimSaveForLocal(saveData) {
+        try {
+            for (const a of Object.values(saveData.agents || {})) {
+                if (Array.isArray(a.memory)) a.memory = a.memory.slice(-120);
+                if (Array.isArray(a.chatHistory)) a.chatHistory = a.chatHistory.slice(-200);
+                if (Array.isArray(a.chat_history)) a.chat_history = a.chat_history.slice(-200);
+                for (const r of Object.values(a.relationships || {})) {
+                    if (r && Array.isArray(r.sharedMemories)) r.sharedMemories = r.sharedMemories.slice(-30);
+                }
+            }
+            if (Array.isArray(saveData.messageLog)) saveData.messageLog = saveData.messageLog.slice(-300);
+            if (Array.isArray(saveData.npcConversationLog)) saveData.npcConversationLog = saveData.npcConversationLog.slice(-300);
+            if (Array.isArray(saveData.gossip)) saveData.gossip = saveData.gossip.slice(-200);
+            if (Array.isArray(saveData.dramaArchive)) saveData.dramaArchive = saveData.dramaArchive.slice(-20);
+            if (saveData.townFeed && Array.isArray(saveData.townFeed.posts)) saveData.townFeed.posts = saveData.townFeed.posts.slice(-40);
+        } catch (e) {}
+        return saveData;
     }
     showTownManager() {
         // v5.54.0 記住開窗前的暫停狀態,關窗時還原——不再無條件恢復播放蓋掉你按的暫停
@@ -3214,7 +3669,7 @@ class RimTownApp {
                 const date = new Date(_tw.savedAt).toLocaleString();
                 html += `<div class="town-item ${isActive?'active':''}">
                     <div class="town-info" data-action="switch-town" data-val="${_tw.id}">
-                        <div class="town-name">${_tw.name} ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
+                        <div class="town-name">${t(_tw.name)} ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
                         <div class="town-meta">${_tw.season}${t(' 第')}${_tw.year}${t('年 第')}${_tw.day}${t('天 | 人口')}${_tw.population} | ${date}</div>
                     </div>
                     <div class="town-actions">
@@ -3264,7 +3719,7 @@ class RimTownApp {
                 const isActive = _tw.id === this.currentTownId;
                 html += `<div class="town-item ${isActive?'active':''}">
                     <div class="town-info" data-action="switch-town" data-val="${_tw.id}">
-                        <div class="town-name">${_tw.name} <span style="font-size:0.65rem;color:var(--text-muted)">📱 ${t('本機')}</span> ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
+                        <div class="town-name">${t(_tw.name)} <span style="font-size:0.65rem;color:var(--text-muted)">📱 ${t('本機')}</span> ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
                         <div class="town-meta">${_tw.season||''}${t(' 第')}${_tw.year||1}${t('年 第')}${_tw.day||1}${t('天 | 人口')}${_tw.population||0}</div>
                     </div>
                 </div>`;
@@ -3299,6 +3754,7 @@ class RimTownApp {
             const pickData = this._newerSave(cloudData, localData); // v5.63.0 以 tickCount 比新舊(同一天內也分得出)
             let loaded = false;
             if (pickData) { try { loaded = !!this.world.loadSave(pickData); } catch (e) { console.error('[RimTown] switch load error:', e); } }
+            if (loaded) setTimeout(() => this._notifyScrubbedLeaks(), 1500); // v5.67.4
             if (loaded) {
                 localStorage.setItem('rimtown_last_town', townId);
                 if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
@@ -3558,7 +4014,7 @@ class RimTownApp {
                     this._showCenterNotification({
                         icon: c.icon,
                         title: `✨ ${t('發現相鄰組合!')}`,
-                        name: `${c.icon} ${c.name}`,
+                        name: `${c.icon} ${t(c.name)}`,
                         desc: `${c.desc} — ${t('小鎮美觀與繁榮加成,全鎮心情大好!把相配的東西放在一起,還有更多組合等你發現')}`,
                         autoDismiss: 7000,
                     });
@@ -3652,6 +4108,13 @@ class RimTownApp {
         this._pushCloudSettings();
     }
 
+    // v5.73.0 AI 對話語言:auto=跟隨介面(預設,不落地);zh/en 存本機並推上帳號
+    _setDialogueLang(v) {
+        try {
+            if (v === 'zh' || v === 'en') localStorage.setItem('rimtown_dialogue_lang', v);
+            else localStorage.removeItem('rimtown_dialogue_lang');
+        } catch (e) {}
+    }
     _saveSettingsFromTab() {
         const speed = document.getElementById('settings-tab-speed')?.value || '2000';
         // v5.29.0 NPC 每日 AI 額度(v5.37.0 留空=無上限)
@@ -3664,6 +4127,9 @@ class RimTownApp {
                 if (Number.isFinite(npcBudgetRaw) && npcBudgetRaw >= 0) localStorage.setItem('rimtown_npc_llm_budget', String(Math.min(9999, npcBudgetRaw)));
             }
         }
+        // v5.73.0 AI 對話語言
+        const dlEl = document.getElementById('settings-tab-dialoglang');
+        if (dlEl) this._setDialogueLang(dlEl.value);
         this.saveSettings(speed);
         const langSelect = document.getElementById('lang-select') || document.getElementById('settings-tab-lang');
         if (langSelect) {
@@ -4009,7 +4475,7 @@ class RimTownApp {
                         if (!this.world.workPolicy) this.world.workPolicy = {};
                         this.world.workPolicy[good] = mode;
                         const modeLabel = mode === 'off' ? t('休工') : mode === 'extra' ? t('加班') : t('正常排班');
-                        this.world.logMessage('economy', `${t('鎮長下令：')}${modeLabel}（${t('明日生效')}）`);
+                        this.world.logMessage('economy', `${playerTitle(this.world)}${t('下令：')}${modeLabel}（${t('明日生效')}）`);
                         this.renderSidebar();
                     }
                     break;
@@ -4082,6 +4548,10 @@ class RimTownApp {
                 case 'settings-bgm-mute': { if (this.bgm) { this.bgm.toggleMute(); this.renderSidebar(); } break; }
                 // v5.63.0 管理員操作
                 case 'admin-load-users': this._adminLoadUsers(); break;
+                case 'admin-load-invites': this._adminLoadInvites(); break;
+                case 'admin-invite-create': this._adminInviteCreate(); break;
+                case 'admin-invite-toggle': this._adminInviteToggle(val); break;
+                case 'admin-invite-delete': this._adminInviteDelete(val); break;
                 case 'admin-migrate': this._adminMigrate(); break;
                 case 'admin-ban-user': this._adminDo('ban', val, t('確定要封鎖')); break;
                 case 'admin-unban-user': this._adminDo('unban', val, t('確定要解除封鎖')); break;
@@ -4224,6 +4694,8 @@ class RimTownApp {
             if (speed) document.getElementById('sim-speed').value = speed;
             const langSelect = document.getElementById('lang-select');
             if (langSelect) langSelect.value = I18N.getLang();
+            const dlSel = document.getElementById('dialog-lang-select'); // v5.73.0
+            if (dlSel) { try { dlSel.value = localStorage.getItem('rimtown_dialogue_lang') || 'auto'; } catch (e) {} }
         });
         // 啟動時同步語言下拉選單,避免從設定頁籤儲存時被重設回預設值 zh
         {
@@ -4232,6 +4704,8 @@ class RimTownApp {
         }
         document.getElementById('settings-save')?.addEventListener('click', () => {
             const speed = document.getElementById('sim-speed').value;
+            const dlSel = document.getElementById('dialog-lang-select'); // v5.73.0
+            if (dlSel) this._setDialogueLang(dlSel.value);
             this.saveSettings(speed);
             const langSelect = document.getElementById('lang-select');
             if (langSelect) {
@@ -4947,8 +5421,8 @@ class RimTownApp {
         const weatherEl = document.getElementById('weather-display');
         if (weatherEl && this.state.weather) {
             const w = this.state.weather;
-            weatherEl.textContent = `${w.icon} ${w.name} ${w.temperature}°`;
-            weatherEl.title = w.desc + (w.activeDisaster ? ` | 🚨 ${w.activeDisaster.name}` : '');
+            weatherEl.textContent = `${w.icon} ${t(w.name)} ${w.temperature}°`;
+            weatherEl.title = w.desc + (w.activeDisaster ? ` | 🚨 ${t(w.activeDisaster.name)}` : '');
             weatherEl.style.color = w.isExtreme ? 'var(--negative)' : 'var(--text-secondary)';
         }
 
@@ -5283,7 +5757,7 @@ class RimTownApp {
         const npc = this.state?.agents?.[near.agentId];
         if (!npc) { el.classList.add('hidden'); return; }
         const lv = this._heartsFor(near.agentId);
-        el.innerHTML = `💬 ${t('與')} <b>${npc.name}</b> ${t('交談')} <span class="ip-hearts">❤${lv}</span><span class="ip-key">E</span>`;
+        el.innerHTML = `💬 ${t('與')} <b>${t(npc.name)}</b> ${t('交談')} <span class="ip-hearts">❤${lv}</span><span class="ip-key">E</span>`;
         el.classList.remove('hidden');
     }
 
@@ -5367,7 +5841,7 @@ class RimTownApp {
         if (goal) {
             const pips = Array.from({ length: goal.totalStages }, (_, i) => i < goal.stage || goal.done ? '●' : (i === goal.stage ? '◉' : '○')).join('');
             goalHtml = `<div class="nqc-rel" style="border-top:1px solid var(--border);margin-top:4px;padding-top:5px">
-                ${goal.icon} <b>${goal.name}</b> <span style="color:var(--text-secondary);font-size:0.72rem">${goal.done ? '🏆 ' + t('已實現') : goal.stageName}</span>
+                ${goal.icon} <b>${t(goal.name)}</b> <span style="color:var(--text-secondary);font-size:0.72rem">${goal.done ? '🏆 ' + t('已實現') : goal.stageName}</span>
                 <span style="letter-spacing:2px;color:var(--accent);font-size:0.7rem">${pips}</span></div>`;
         }
         // v5.15.0 心情來源:目前生效的記憶想法(RimWorld thoughts)
@@ -5425,7 +5899,7 @@ class RimTownApp {
         const nudged = this.world?.lifeGoals?.getGoal?.(agentId)?._nudged;
         card.innerHTML = `
             <button class="nqc-close" data-nqc="close">✕</button>
-            <div class="nqc-name">${a.name} <span class="nqc-job">${a.job?.title || ''}</span></div>
+            <div class="nqc-name">${t(a.name)} <span class="nqc-job">${a.job?.title || ''}</span></div>
             <div class="nqc-hearts" title="${t('對你的好感')}">${hearts} <span class="nqc-lv">${lv}/10</span></div>
             ${intentHtml}
             ${attrHtml}
@@ -5470,11 +5944,11 @@ class RimTownApp {
         const rel = npc.relationships.getOrCreate('player', this.world.agents['player']?.name || t('旅人'));
         rel.modifyAffinity(4);
         const d = this.world.lifeGoals.describe(agentId);
-        this.world.logMessage('milestone', `✨ ${t('鎮長為')}${npc.name}${t('的夢想「')}${d?.name || ''}${t('」加了一把勁!')}`, npc.name);
-        npc.memory.add(this.world.tickCount, this.world.clock.timeStr, 'social', `${t('鎮長支持我的夢想,好感動!')}`, 6, ['player']);
+        this.world.logMessage('milestone', `✨ ${playerTitle(this.world)}${t('為')}${t(npc.name)}${t('的夢想「')}${d?.name || ''}${t('」加了一把勁!')}`, npc.name);
+        npc.memory.add(this.world.tickCount, this.world.clock.timeStr, 'social', `${playerTitle(this.world)}${t('支持我的夢想,好感動!')}`, 6, ['player']);
         this.bgm?.sfx?.('coin');
         this.tileMap?.spawnFxOnAgent?.(agentId, '✨', { color: '#6bd5a0', burst: '⭐', burstCount: 6 });
-        this._gameAlert(`✨ ${t('你鼓勵了')}${npc.name}${t('追逐「')}${d?.name || ''}${t('」的夢想!')}`, npc.icon || '✨');
+        this._gameAlert(`✨ ${t('你鼓勵了')}${t(npc.name)}${t('追逐「')}${d?.name || ''}${t('」的夢想!')}`, npc.icon || '✨');
         this.state = this.world.getState();
         this._showNpcCard(agentId);
     }
@@ -5645,7 +6119,7 @@ class RimTownApp {
             ctx.textAlign = 'center';
             const dx = p.x - cx, dy = p.y - cy;
             const len = Math.hypot(dx, dy) || 1;
-            ctx.fillText(a.name || id, p.x + (dx / len) * 16, p.y + (dy / len) * 16 + 3);
+            ctx.fillText(I18N.localizeNames(a.name || id), p.x + (dx / len) * 16, p.y + (dy / len) * 16 + 3);
             ctx.globalAlpha = 1;
         }
         // 點擊:選人進入個人視角/點空白返回
@@ -5763,9 +6237,9 @@ class RimTownApp {
             try { if (this.tileMap?.renderAvatarDataURL) avatarDataUrl = this.tileMap.renderAvatarDataURL(npc.jobKey, npc.gender, npc.name); } catch(e) {}
             const thoughtText = npc.currentThought ? this._escapeHtml(npc.currentThought.length > 18 ? npc.currentThought.slice(0, 18) + '...' : npc.currentThought) : '';
             contactsHtml += `<button class="chat-contact ${isActive ? 'active' : ''}" data-action="start-chat" data-val="${npc.id}">
-                <div class="chat-contact-avatar chat-contact-avatar-pixel" style="background:${npc.avatarColor}">${avatarDataUrl ? `<img src="${avatarDataUrl}" class="avatar-pixel-art" alt="${npc.name}">` : `<span class="avatar-initial" style="color:#fff;font-weight:bold;font-size:1rem;text-shadow:0 1px 2px rgba(0,0,0,0.4)">${npc.name.charAt(0)}</span>`}<span class="mood-indicator mood-${npc.mood}"></span></div>
+                <div class="chat-contact-avatar chat-contact-avatar-pixel" style="background:${npc.avatarColor}">${avatarDataUrl ? `<img src="${avatarDataUrl}" class="avatar-pixel-art" alt="${t(npc.name)}">` : `<span class="avatar-initial" style="color:#fff;font-weight:bold;font-size:1rem;text-shadow:0 1px 2px rgba(0,0,0,0.4)">${npc.name.charAt(0)}</span>`}<span class="mood-indicator mood-${npc.mood}"></span></div>
                 <div class="chat-contact-info">
-                    <div class="chat-contact-name">${npc.name}${npc.hasUnread ? '<span class="chat-unread-dot"></span>' : ''}</div>
+                    <div class="chat-contact-name">${t(npc.name)}${npc.hasUnread ? '<span class="chat-unread-dot"></span>' : ''}</div>
                     <div class="chat-contact-job">${npc.job || t('無業')}</div>
                     ${thoughtText ? `<div class="chat-contact-thought">${thoughtText}</div>` : ''}
                     <div class="chat-contact-preview">${this._escapeHtml(truncated)}</div>
@@ -5895,14 +6369,14 @@ class RimTownApp {
         if (author && !author.isPlayer) {
             const rel = author.relationships.getOrCreate('player', player.name);
             rel.modifyAffinity(2);
-            author.memory.add(this.world.tickCount, this.world.clock.timeStr, 'social', `${player.name}${t('在我的動態下留言:')}${text}`, 4, [player.name]);
+            author.memory.add(this.world.tickCount, this.world.clock.timeStr, 'social', `${t(player.name)}${t('在我的動態下留言:')}${text}`, 4, [player.name]);
             // 作者回覆留言
             setTimeout(() => {
                 const aff = rel.affinity;
                 const pool = aff > 40
-                    ? [t('就知道你懂我 😆'), t('哈哈,改天一起!'), `${t('謝啦')}${player.name}!❤️`]
+                    ? [t('就知道你懂我 😆'), t('哈哈,改天一起!'), `${t('謝啦')}${t(player.name)}!❤️`]
                     : aff < -10 ? [t('喔,是你啊。'), t('嗯。')]
-                    : [t('哈哈謝謝鎮長!'), t('鎮長也看到啦 😳'), t('感恩!')];
+                    : [`${t('哈哈謝謝')}${playerTitle(this.world)}!`, `${playerTitle(this.world)}${t('也看到啦 😳')}`, t('感恩!')];
                 post.comments.push({ speaker: author.name, text: pool[Math.floor(Math.random() * pool.length)] });
                 if (this.activeTab === 'chat' && this._chatView === 'feed') this.renderSidebar();
             }, 900);
@@ -5931,10 +6405,10 @@ class RimTownApp {
             document.getElementById('rimtown-app')?.appendChild(el);
         }
         const rows = npcs.map(([id, a]) => `<button data-action="rumor-about" data-val="${id}"
-            style="display:block;width:100%;text-align:left;padding:8px 12px;margin-bottom:5px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.85rem">${a.name} <span style="font-size:0.7rem;color:var(--text-secondary)">${a.job?.title || t('無業')}</span></button>`).join('');
+            style="display:block;width:100%;text-align:left;padding:8px 12px;margin-bottom:5px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.85rem">${t(a.name)} <span style="font-size:0.7rem;color:var(--text-secondary)">${a.job?.title || t('無業')}</span></button>`).join('');
         el.innerHTML = `<div class="modal-content" style="max-width:320px;max-height:70vh;overflow-y:auto">
             <h2>🗣️ ${t('要爆誰的料?')}</h2>
-            <div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${t('偷偷跟')}${listener.name}${t('說別人的八卦。謠言會在鎮上流傳,小心傳回當事人耳裡...')}</div>
+            <div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${t('偷偷跟')}${t(listener.name)}${t('說別人的八卦。謠言會在鎮上流傳,小心傳回當事人耳裡...')}</div>
             ${rows}
             <div class="modal-buttons"><button onclick="document.getElementById('rumor-picker').classList.add('hidden')">${t('取消')}</button></div>
         </div>`;
@@ -5947,7 +6421,7 @@ class RimTownApp {
         const el = document.getElementById('rumor-picker');
         if (!about || !el) return;
         el.innerHTML = `<div class="modal-content" style="max-width:320px">
-            <h2>🗣️ ${t('關於')} ${about.name}...</h2>
+            <h2>🗣️ ${t('關於')} ${t(about.name)}...</h2>
             <button data-action="rumor-send" data-val="praise" style="display:block;width:100%;padding:10px;margin-bottom:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary)">💐 ${t('誇讚他')} <span style="font-size:0.68rem;color:var(--text-secondary)">${t('傳回本人耳裡好感大增')}</span></button>
             <button data-action="rumor-send" data-val="diss" style="display:block;width:100%;padding:10px;margin-bottom:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary)">🐍 ${t('酸他一下')} <span style="font-size:0.68rem;color:#e88">${t('被發現是你說的就完了')}</span></button>
             <button data-action="rumor-send" data-val="ship" style="display:block;width:100%;padding:10px;margin-bottom:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary)">💘 ${t('亂點鴛鴦')} <span style="font-size:0.68rem;color:var(--text-secondary)">${t('也許會湊成一對?')}</span></button>
@@ -6121,7 +6595,7 @@ class RimTownApp {
         if (this.activeTab === 'chat') { this._renderChatMessages(); this._scrollChatToBottom(); }
         try {
             const res = await this.world.conversationEngine.plantWhisper(player, npc, text, this.world);
-            player.chatHistory.push({ speaker: npc.name, target: player.name, text: `💭 (${npc.name}${t('若有所思,喃喃自語')}) ${res?.thought || text}`, time: this.world.clock.timeStr });
+            player.chatHistory.push({ speaker: npc.name, target: player.name, text: `💭 (${t(npc.name)}${t('若有所思,喃喃自語')}) ${res?.thought || text}`, time: this.world.clock.timeStr });
         } catch (e) { console.error('[RimTown] whisper failed:', e); }
         this.state = this.world.getState();
         if (this.activeTab === 'chat') { this._renderChatMessages(); this._scrollChatToBottom(); }
@@ -6173,11 +6647,11 @@ class RimTownApp {
                 const town = towns[Math.floor(Math.random() * towns.length)];
                 if (!town || (npc.agentId || '').startsWith('visit_')) { fx(t('現在沒辦法邀請這位出遠門'), '#c9a05c'); break; }
                 if ((rel.affinity || 0) < 20) {
-                    fx(`🚌 ${npc.name}${t('婉拒了：「跟你還沒熟到一起出遠門啦。」')}`, '#c9a05c');
+                    fx(`🚌 ${t(npc.name)}${t('婉拒了：「跟你還沒熟到一起出遠門啦。」')}`, '#c9a05c');
                     break;
                 }
                 world.sendVisitorTo(npc, town, 4);
-                fx(`🚌 ${npc.name}${t('答應去')}${town.name}${t('作客幾天，收拾行李出發了！')}`, '#5cc98f');
+                fx(`🚌 ${t(npc.name)}${t('答應去')}${t(town.name)}${t('作客幾天，收拾行李出發了！')}`, '#5cc98f');
                 fx(t('切到那個鎮就能看到他作客的樣子；幾天後他會帶著見聞回來'), '#8fa8c9');
                 world.recordPlayerAction?.('invite-town', '', npc, null);
                 break;
@@ -6187,7 +6661,7 @@ class RimTownApp {
                 npc.moodModifier = (npc.moodModifier || 0) + 4;
                 rel.modifyAffinity(2);
                 npc.addThought?.('nice_chat', world, 'player', player.name);
-                fx(`🤗 ${npc.name}${t('覺得被支持了')}`, '#5cc98f');
+                fx(`🤗 ${t(npc.name)}${t('覺得被支持了')}`, '#5cc98f');
                 fx(`${t('壓力')} ↓ · ${t('好感')} +2`, '#5cc98f');
                 break;
             }
@@ -6199,9 +6673,9 @@ class RimTownApp {
                 rel.modifyAffinity(1);
                 if (pick) {
                     player.chatHistory.push({ speaker: npc.name, target: player.name, text: `(${t('壓低聲音')}) ${pick.content}`, time: world.clock.timeStr });
-                    fx(`👂 ${npc.name}${t('跟你透露了一則八卦')}`, '#d9b3ff');
+                    fx(`👂 ${t(npc.name)}${t('跟你透露了一則八卦')}`, '#d9b3ff');
                 } else {
-                    fx(`👂 ${npc.name}${t('說最近沒什麼新鮮事')}`, '#9aa');
+                    fx(`👂 ${t(npc.name)}${t('說最近沒什麼新鮮事')}`, '#9aa');
                 }
                 break;
             }
@@ -6214,13 +6688,13 @@ class RimTownApp {
                     const res = el.canvassNpc ? el.canvassNpc(world, npc) : { ok: false };
                     if (res.ok) {
                         rel.modifyAffinity(2);
-                        fx(`👑 ${t('你向')}${npc.name}${t('認真說明了自己的政見')}`, '#ffd700');
+                        fx(`👑 ${t('你向')}${t(npc.name)}${t('認真說明了自己的政見')}`, '#ffd700');
                         fx(t('他聽進去了——投票時會記得你'), '#7fc4ff');
                     } else if (res.dup) {
-                        fx(`🗳️ ${npc.name}${t('笑說你已經拉過他的票了')}`, '#9aa');
+                        fx(`🗳️ ${t(npc.name)}${t('笑說你已經拉過他的票了')}`, '#9aa');
                     } else {
                         rel.modifyAffinity(1);
-                        fx(`🗯️ ${npc.name}${t('點頭聽著你說')}`, '#9aa');
+                        fx(`🗯️ ${t(npc.name)}${t('點頭聽著你說')}`, '#9aa');
                     }
                 } else if (active && cands.length) {
                     // 拉票:把 NPC 對「玩家最挺的候選人」的好感往上推(信任越高越有效)
@@ -6233,21 +6707,21 @@ class RimTownApp {
                             const r2 = npc.relationships.getOrCreate(favored.agentId, favored.name);
                             const gain = 6 + Math.round(Math.max(0, trust) / 20);
                             r2.modifyAffinity(gain);
-                            fx(`🗯️ ${npc.name}${t('更傾向支持')}${favored.name}${t('了')}`, '#7fc4ff');
+                            fx(`🗯️ ${t(npc.name)}${t('更傾向支持')}${t(favored.name)}${t('了')}`, '#7fc4ff');
                             fx(`${t('選舉風向被你撥動了一點')}`, '#7fc4ff');
                         } else {
                             rel.modifyAffinity(-3);
-                            fx(`🗯️ ${npc.name}${t('不吃你這套,反而更防著你')}`, '#e07a7a');
+                            fx(`🗯️ ${t(npc.name)}${t('不吃你這套,反而更防著你')}`, '#e07a7a');
                         }
                     } else if (favored && favored.agentId === npc.agentId) {
                         rel.modifyAffinity(2);
-                        fx(`🗯️ ${npc.name}${t('很高興你挺他參選')}`, '#7fc4ff');
+                        fx(`🗯️ ${t(npc.name)}${t('很高興你挺他參選')}`, '#7fc4ff');
                     }
                 } else {
                     // 平時:勸他放下對頭
                     const foe = Object.values(npc.relationships.relationships).filter(r => (r.affinity || 0) < -20).sort((a, b) => a.affinity - b.affinity)[0];
-                    if (foe) { foe.modifyAffinity(5); fx(`🗯️ ${t('你勸')}${npc.name}${t('對')}${foe.targetName}${t('別那麼針對')}`, '#7fc4ff'); fx(`${t('敵意')} ↓`, '#7fc4ff'); }
-                    else { rel.modifyAffinity(1); fx(`🗯️ ${npc.name}${t('點頭聽著你說')}`, '#9aa'); }
+                    if (foe) { foe.modifyAffinity(5); fx(`🗯️ ${t('你勸')}${t(npc.name)}${t('對')}${foe.targetName}${t('別那麼針對')}`, '#7fc4ff'); fx(`${t('敵意')} ↓`, '#7fc4ff'); }
+                    else { rel.modifyAffinity(1); fx(`🗯️ ${t(npc.name)}${t('點頭聽著你說')}`, '#9aa'); }
                 }
                 break;
             }
@@ -6255,7 +6729,7 @@ class RimTownApp {
                 // v5.47.0 BUG-02:優先挑「絕交」對象(和解任務目標),而不是單純好感最低者
                 const foes = Object.values(npc.relationships.relationships).filter(r => (r.affinity || 0) < -20).sort((a, b) => a.affinity - b.affinity);
                 const foe = foes.find(r => r.isFeud) || foes[0];
-                if (!foe) { fx(`🕊️ ${npc.name}${t('最近沒跟誰結怨')}`, '#9aa'); break; }
+                if (!foe) { fx(`🕊️ ${t(npc.name)}${t('最近沒跟誰結怨')}`, '#9aa'); break; }
                 const other = world.agents[foe.targetId];
                 // v5.42.0 和解線:對「絕交」等級的仇怨,調解升級為兩段式任務——
                 // 分別勸過兩邊後,促成「世紀大和解」名場面(大量好感+聲望+成就)
@@ -6264,19 +6738,19 @@ class RimTownApp {
                     const key = [npc.agentId, other.agentId].sort().join('|');
                     const rec = world.mediations[key] = world.mediations[key] || { sides: {} };
                     if (rec.sides[npc.agentId]) {
-                        fx(`🕊️ ${npc.name}${t('嘆了口氣:「你上次說的,我還在想...」')}`, '#9aa');
+                        fx(`🕊️ ${t(npc.name)}${t('嘆了口氣:「你上次說的,我還在想...」')}`, '#9aa');
                         fx(`${t('和解進度')} ${Object.keys(rec.sides).length}/2 — ${t('去勸勸另一邊的')}${foe.targetName}${t('吧')}`, '#7fc4ff');
                         break;
                     }
                     if ((rel.trust || 0) < -10) {
                         rel.modifyAffinity(-2);
-                        fx(`🕊️ ${npc.name}${t('冷冷地說:「這與你無關。」')}`, '#e07a7a');
+                        fx(`🕊️ ${t(npc.name)}${t('冷冷地說:「這與你無關。」')}`, '#e07a7a');
                         fx(`${t('他還不信任你——先提升關係再來調解')}`, '#e07a7a');
                         break;
                     }
                     rec.sides[npc.agentId] = true;
                     foe.modifyAffinity(6);
-                    npc.memory.add(world.tickCount, world.clock.timeStr, 'plan', `${player.name}${t('苦口婆心勸我和')}${foe.targetName}${t('和好...也許,是該放下了。')}`, 7, [foe.targetName]);
+                    npc.memory.add(world.tickCount, world.clock.timeStr, 'plan', `${t(player.name)}${t('苦口婆心勸我和')}${foe.targetName}${t('和好...也許,是該放下了。')}`, 7, [foe.targetName]);
                     const bothDone = rec.sides[npc.agentId] && rec.sides[other.agentId];
                     if (bothDone) {
                         // 兩邊都勸過了 → 世紀大和解
@@ -6288,19 +6762,19 @@ class RimTownApp {
                         relAB.isFeud = false; relBA.isFeud = false;
                         npc.moodModifier = (npc.moodModifier || 0) + 10;
                         other.moodModifier = (other.moodModifier || 0) + 10;
-                        npc.memory.add(world.tickCount, world.clock.timeStr, 'relationship', `${t('在')}${player.name}${t('的調解下,我和')}${other.name}${t('和解了。心裡一塊石頭落了地。')}`, 9, [other.name, player.name]);
-                        other.memory.add(world.tickCount, world.clock.timeStr, 'relationship', `${t('在')}${player.name}${t('的調解下,我和')}${npc.name}${t('和解了。心裡一塊石頭落了地。')}`, 9, [npc.name, player.name]);
+                        npc.memory.add(world.tickCount, world.clock.timeStr, 'relationship', `${t('在')}${t(player.name)}${t('的調解下,我和')}${t(other.name)}${t('和解了。心裡一塊石頭落了地。')}`, 9, [other.name, player.name]);
+                        other.memory.add(world.tickCount, world.clock.timeStr, 'relationship', `${t('在')}${t(player.name)}${t('的調解下,我和')}${t(npc.name)}${t('和解了。心裡一塊石頭落了地。')}`, 9, [npc.name, player.name]);
                         npc.relationships.getOrCreate('player', player.name).modifyAffinity(8);
                         other.relationships.getOrCreate('player', player.name).modifyAffinity(8);
                         world.reputationSystem?.addReputation?.(15, 'help', world);
-                        world.logMessage('event', `🕊️ ${t('在')}${player.name}${t('的奔走下,')}${npc.name}${t('和')}${other.name}${t('當眾和解!全鎮傳為佳話')}`);
-                        world.dailyNews?.collectEvent('social', `${npc.name}${t('與')}${other.name}${t('在旅人調解下世紀大和解')}`, 9, [npc.name, other.name]);
+                        world.logMessage('event', `🕊️ ${t('在')}${t(player.name)}${t('的奔走下,')}${t(npc.name)}${t('和')}${t(other.name)}${t('當眾和解!全鎮傳為佳話')}`);
+                        world.dailyNews?.collectEvent('social', `${t(npc.name)}${t('與')}${t(other.name)}${t('在旅人調解下世紀大和解')}`, 9, [npc.name, other.name]);
                         world.queueDramaScene?.('reconcile', npc, other, player.name);
                         this._unlockAchievement('peacemaker');
-                        fx(`🕊️ ${t('成了!')}${npc.name}${t('和')}${other.name}${t('當眾和解!')}`, '#ffd700');
+                        fx(`🕊️ ${t('成了!')}${t(npc.name)}${t('和')}${t(other.name)}${t('當眾和解!')}`, '#ffd700');
                         fx(`${t('兩人好感 +8 · 聲望 +15')}`, '#5cc98f');
                     } else {
-                        fx(`🕊️ ${npc.name}${t('沉默許久:「...讓我想想。」')}${t('（心防鬆動了）')}`, '#5cc98f');
+                        fx(`🕊️ ${t(npc.name)}${t('沉默許久:「...讓我想想。」')}${t('（心防鬆動了）')}`, '#5cc98f');
                         fx(`${t('和解進度')} 1/2 — ${t('再去勸勸')}${foe.targetName}${t(',兩邊都點頭就能促成和解')}`, '#7fc4ff');
                     }
                     break;
@@ -6309,8 +6783,8 @@ class RimTownApp {
                 foe.modifyAffinity(8);
                 if (other) other.relationships.getOrCreate(npc.agentId, npc.name).modifyAffinity(4);
                 rel.modifyAffinity(1);
-                world.logMessage?.('relationship', `🕊️ ${t('經你居中調解,')}${npc.name}${t('對')}${foe.targetName}${t('的敵意緩和了一些')}`, npc.name, foe.targetName);
-                fx(`🕊️ ${t('你緩和了')}${npc.name}${t('對')}${foe.targetName}${t('的敵意')}`, '#5cc98f');
+                world.logMessage?.('relationship', `🕊️ ${t('經你居中調解,')}${t(npc.name)}${t('對')}${foe.targetName}${t('的敵意緩和了一些')}`, npc.name, foe.targetName);
+                fx(`🕊️ ${t('你緩和了')}${t(npc.name)}${t('對')}${foe.targetName}${t('的敵意')}`, '#5cc98f');
                 fx(`${t('好感(對')}${foe.targetName}) +8`, '#5cc98f');
                 break;
             }
@@ -6318,11 +6792,11 @@ class RimTownApp {
                 if ((rel.affinity || 0) > 25) {
                     rel.modifyRomantic(3); rel.modifyAffinity(1);
                     npc.addThought?.('nice_chat', world, 'player', player.name);
-                    fx(`💗 ${npc.name}${t('心跳漏了一拍')}`, '#ff8fb0');
+                    fx(`💗 ${t(npc.name)}${t('心跳漏了一拍')}`, '#ff8fb0');
                     fx(`${t('浪漫')} +3`, '#ff8fb0');
                 } else {
                     rel.modifyAffinity(-3);
-                    fx(`💗 ${t('太唐突了,')}${npc.name}${t('有點尷尬')}`, '#e07a7a');
+                    fx(`💗 ${t('太唐突了,')}${t(npc.name)}${t('有點尷尬')}`, '#e07a7a');
                     fx(`${t('好感')} −3`, '#e07a7a');
                 }
                 break;
@@ -6331,7 +6805,7 @@ class RimTownApp {
                 rel.modifyTrust(-12); rel.modifyAffinity(-8);
                 npc.moodModifier = (npc.moodModifier || 0) - 5;
                 npc.addThought?.('harsh_words', world, 'player', player.name);
-                fx(`😠 ${npc.name}${t('怕了你,但更討厭你了')}`, '#e07a7a');
+                fx(`😠 ${t(npc.name)}${t('怕了你,但更討厭你了')}`, '#e07a7a');
                 fx(`${t('信任')} ↓↓ · ${t('好感')} −8`, '#e07a7a');
                 break;
             }
@@ -6339,11 +6813,11 @@ class RimTownApp {
                 const trust = rel.trust || 0;
                 if (trust >= 10 || (rel.affinity || 0) >= 30) {
                     rel.modifyAffinity(3);
-                    npc.memory?.add?.(world.tickCount, world.clock.timeStr, 'social', `${t('答應幫')}${player.name}${t('一個忙')}`, 5, ['player']);
-                    fx(`📌 ${npc.name}${t('答應幫你了')}`, '#5cc98f');
+                    npc.memory?.add?.(world.tickCount, world.clock.timeStr, 'social', `${t('答應幫')}${t(player.name)}${t('一個忙')}`, 5, ['player']);
+                    fx(`📌 ${t(npc.name)}${t('答應幫你了')}`, '#5cc98f');
                     fx(`${t('好感')} +3`, '#5cc98f');
                 } else {
-                    fx(`📌 ${npc.name}${t('跟你還不夠熟,婉拒了')}`, '#e0b07a');
+                    fx(`📌 ${t(npc.name)}${t('跟你還不夠熟,婉拒了')}`, '#e0b07a');
                 }
                 break;
             }
@@ -6373,9 +6847,9 @@ class RimTownApp {
         if (rel) {
             const a = rel.affinity || 0;
             let statusNote = '';
-            if (a <= -20) statusNote = `${npc.name}${t('把你當成對頭')}`;
-            else if (a >= 55) statusNote = `${npc.name}${t('把你當成摯友')}`;
-            else if (a >= 20) statusNote = `${npc.name}${t('把你當朋友')}`;
+            if (a <= -20) statusNote = `${t(npc.name)}${t('把你當成對頭')}`;
+            else if (a >= 55) statusNote = `${t(npc.name)}${t('把你當成摯友')}`;
+            else if (a >= 20) statusNote = `${t(npc.name)}${t('把你當朋友')}`;
             if (statusNote) rows.push(`<span style="color:#9aa;font-size:0.9em">→ ${statusNote}</span>`);
         }
         const div = document.createElement('div');
@@ -6419,7 +6893,7 @@ class RimTownApp {
         for (const [name, s] of sorted) {
             const barPct = s.incapable ? 0 : Math.max(0, Math.min(100, (s.level/20)*100 + s.progress*(100/20)));
             const passionLabel = {'狂熱':'&#9733;&#9733;&#9733;','大':'&#9733;&#9733;','微':'&#9733;','無':'','無能':'&#10007;'}[s.passion]||'';
-            html += `<div class="skill-row passion-${s.passion}"><span class="skill-name">${name}</span>
+            html += `<div class="skill-row passion-${s.passion}"><span class="skill-name">${t(name)}</span>
                 <span class="skill-passion">${passionLabel}</span>
                 <div class="skill-bar"><div class="skill-bar-fill" style="width:${barPct}%"></div></div>
                 <span class="skill-level">${s.incapable?'-':s.level}</span></div>`;
@@ -6695,7 +7169,7 @@ class RimTownApp {
         }).join('');
         ov.innerHTML = `<div style="background:var(--bg-card,#20222c);border:1px solid var(--border,#444);border-radius:12px;max-width:400px;width:100%;max-height:78vh;display:flex;flex-direction:column;padding:14px">
             <div style="display:flex;justify-content:space-between;align-items:center">
-                <div style="font-weight:700;font-size:0.92rem">📜 ${a.name} × ${b.name}</div>
+                <div style="font-weight:700;font-size:0.92rem">📜 ${t(a.name)} × ${t(b.name)}</div>
                 <button data-rt-close="1" style="background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer">✕</button>
             </div>
             <div style="font-size:0.72rem;color:var(--text-secondary);margin:2px 0 8px">${t('目前關係：')}${statusLine}</div>
@@ -6739,7 +7213,7 @@ class RimTownApp {
             this._followSeen[id] = w.tickCount;
             if (fresh && shown < 2) {
                 shown++;
-                this._showCornerNotice({ icon: '🔔', title: `${t('你追蹤的')}${npc.name}`, name: '', desc: String(fresh.content).slice(0, 48) });
+                this._showCornerNotice({ icon: '🔔', title: `${t('你追蹤的')}${t(npc.name)}`, name: '', desc: String(fresh.content).slice(0, 48) });
             }
         }
     }
@@ -6772,14 +7246,14 @@ class RimTownApp {
         // 反思(今天):村民的內心話
         for (const npc of npcs) {
             const refl = npc.memory.entries.filter(e => e.category === 'reflection' && e.tick >= dayStart).slice(-1)[0];
-            if (refl) rows.push({ icon: '💭', text: `${npc.name}:${refl.content}`, action: 'story-npc', val: npc.agentId });
+            if (refl) rows.push({ icon: '💭', text: `${t(npc.name)}:${refl.content}`, action: 'story-npc', val: npc.agentId });
             if (rows.length >= 6) break;
         }
         // 重大關係事件(今天,重要度>=9:交往/結婚/分手/背叛)
         if (rows.length < 6) {
             for (const npc of npcs) {
                 const big = npc.memory.entries.filter(e => e.category === 'relationship' && e.tick >= dayStart && e.importance >= 9).slice(-1)[0];
-                if (big) rows.push({ icon: '💥', text: `${npc.name}:${big.content}`, action: 'story-npc', val: npc.agentId });
+                if (big) rows.push({ icon: '💥', text: `${t(npc.name)}:${big.content}`, action: 'story-npc', val: npc.agentId });
                 if (rows.length >= 6) break;
             }
         }
@@ -6827,13 +7301,13 @@ class RimTownApp {
                 if (!b || b.isPlayer || b.isDead) continue;
                 const key = [a.agentId, tid].sort().join('|');
                 if (seen.has(key)) continue;
-                if (rel.status === 'married') { seen.add(key); out.push({ icon: '💍', text: `${a.name} × ${b.name} — ${t('婚姻第')}${days(rel.statusSince)}${t('天')}`, val: key }); }
-                else if (rel.status === 'dating') { seen.add(key); out.push({ icon: '💗', text: `${a.name} × ${b.name} — ${t('戀愛第')}${days(rel.statusSince)}${t('天')}`, val: key }); }
+                if (rel.status === 'married') { seen.add(key); out.push({ icon: '💍', text: `${t(a.name)} × ${t(b.name)} — ${t('婚姻第')}${days(rel.statusSince)}${t('天')}`, val: key }); }
+                else if (rel.status === 'dating') { seen.add(key); out.push({ icon: '💗', text: `${t(a.name)} × ${t(b.name)} — ${t('戀愛第')}${days(rel.statusSince)}${t('天')}`, val: key }); }
                 else if (rel.isFeud) {
                     seen.add(key);
                     const med = w.mediations?.[key]?.sides;
                     const medN = med ? Object.keys(med).length : 0;
-                    out.push({ icon: '💢', text: `${a.name} × ${b.name} — ${t('絕交中')}${medN ? `（${t('你調停到')} ${medN}/2）` : ''}`, val: key });
+                    out.push({ icon: '💢', text: `${t(a.name)} × ${t(b.name)} — ${t('絕交中')}${medN ? `（${t('你調停到')} ${medN}/2）` : ''}`, val: key });
                 }
             }
         }
@@ -6849,7 +7323,7 @@ class RimTownApp {
                     const key = [c.agentId, r.targetId].sort().join('|');
                     if (seen.has(key)) continue;
                     seen.add(key);
-                    out.push({ icon: '🔺', text: `${c.name}${t('單戀名花有主的')}${b.name}`, val: key });
+                    out.push({ icon: '🔺', text: `${t(c.name)}${t('單戀名花有主的')}${t(b.name)}`, val: key });
                     break;
                 }
             }
@@ -6871,8 +7345,8 @@ class RimTownApp {
                 if (!b || b.isPlayer || b.isDead) continue;
                 const key = [a.agentId, tid].sort().join('|');
                 if (seen.has(key)) continue;
-                if (!rel.isFeud && rel.affinity <= -48 && rel.affinity > -60) { seen.add(key); out.push({ icon: '⚡', text: `${a.name}${t('和')}${b.name}${t('的關係瀕臨絕交…')}` }); break; }
-                if (!rel.status && rel.romanticInterest >= 35 && rel.romanticInterest < 50) { seen.add(key); out.push({ icon: '💘', text: `${a.name}${t('對')}${b.name}${t('的心意,快藏不住了…')}` }); break; }
+                if (!rel.isFeud && rel.affinity <= -48 && rel.affinity > -60) { seen.add(key); out.push({ icon: '⚡', text: `${t(a.name)}${t('和')}${t(b.name)}${t('的關係瀕臨絕交…')}` }); break; }
+                if (!rel.status && rel.romanticInterest >= 35 && rel.romanticInterest < 50) { seen.add(key); out.push({ icon: '💘', text: `${t(a.name)}${t('對')}${t(b.name)}${t('的心意,快藏不住了…')}` }); break; }
             }
         }
         return out.slice(0, 2);
@@ -6939,8 +7413,8 @@ class RimTownApp {
         const nextCh = this._chapterDefs().find(c => c.n === curCh.n + 1);
         const prosNow = this.state?.prosperity?.prosperity || 0;
         html += `<div class="town-identity" style="cursor:default">
-            <span class="ti-badge">${curCh.icon} ${t('第')}${curCh.n}${t('章')}·${curCh.name}</span>
-            ${nextCh ? `<span class="ti-desc">${t('小鎮成長')} ${Math.min(prosNow, nextCh.need)}/${nextCh.need} → ${nextCh.icon}${nextCh.name}</span>` : `<span class="ti-desc">${t('小鎮已完全成熟')}</span>`}
+            <span class="ti-badge">${curCh.icon} ${t('第')}${curCh.n}${t('章')}·${t(curCh.name)}</span>
+            ${nextCh ? `<span class="ti-desc">${t('小鎮成長')} ${Math.min(prosNow, nextCh.need)}/${nextCh.need} → ${nextCh.icon}${t(nextCh.name)}</span>` : `<span class="ti-desc">${t('小鎮已完全成熟')}</span>`}
         </div>`;
         // v5.19.0 城鎮身分:小鎮長成的路線,點一下看它是怎麼形成的
         const ident = this.state.townIdentity;
@@ -6969,7 +7443,7 @@ class RimTownApp {
             const playerJobTitle = playerAgent.job?.title || t('旅人');
             html += `<div class="resident-card player-card ${isSelected?'selected':''}" data-action="select-agent" data-val="player">
                 <div class="resident-header">
-                    <span class="resident-name"><span class="mood-indicator mood-${playerAgent.mood_description}"></span>⭐ ${playerAgent.name}${t('（你）')}</span>
+                    <span class="resident-name"><span class="mood-indicator mood-${playerAgent.mood_description}"></span>⭐ ${t(playerAgent.name)}${t('（你）')}</span>
                     <span class="resident-job">${playerJobTitle}</span></div>
                 <div class="resident-status"><span>@ ${this._locationLabel(playerAgent.current_location)}</span><span>${playerAgent.mood_label||playerAgent.mood_description} (${playerAgent.mood})</span></div>`;
             html += `</div>`;
@@ -6982,7 +7456,7 @@ class RimTownApp {
             const genderIcon = agent.gender_label === t('男') ? '♂' : agent.gender_label === t('女') ? '♀' : '';
             html += `<div class="resident-card ${isSelected?'selected':''}" data-action="select-agent" data-val="${aid}">
                 <div class="resident-header">
-                    <span class="resident-name"><span class="mood-indicator mood-${agent.mood_description}"></span>${genderIcon} ${agent.name}${sameLoc?t('<span class="nearby-badge">附近</span>'):''}</span>
+                    <span class="resident-name"><span class="mood-indicator mood-${agent.mood_description}"></span>${genderIcon} ${t(agent.name)}${sameLoc?t('<span class="nearby-badge">附近</span>'):''}</span>
                     <span class="resident-job">${agent.job?.title||t('無業')}</span></div>
                 <div class="resident-status"><span>${agent.activity_label||agent.activity} @ ${this._locationLabel(agent.current_location)}</span><span>${agent.mood_label||agent.mood_description} (${agent.mood})</span></div>
                 ${agent.current_thought?`<div style="font-size:0.7rem;color:#aaa;margin-top:4px;font-style:italic">「${agent.current_thought}」</div>`:''}
@@ -7118,12 +7592,12 @@ class RimTownApp {
             } catch (e) { console.warn('[RimTown] persona state render failed:', e); }
         }
         container.innerHTML = `<div class="detail-panel visible">
-            <div class="detail-section"><h3>${agent.name}（${agent.gender_label === t('男') ? '♂' : agent.gender_label === t('女') ? '♀' : ''}${agent.gender_label} · ${agent.age}${t('歲）')}</h3>
+            <div class="detail-section"><h3>${t(agent.name)}（${agent.gender_label === t('男') ? '♂' : agent.gender_label === t('女') ? '♀' : ''}${agent.gender_label} · ${agent.age}${t('歲）')}</h3>
                 <p style="font-size:0.8rem;color:var(--text-secondary)">${agent.job?.title||(this.selectedAgent==='player'?t('旅人'):t('無業'))} | ${agent.mood_label||agent.mood_description}</p>
-                <p style="font-size:0.75rem;margin-top:6px">${personality.background||''}</p>${chatBtn}</div>
+                <p style="font-size:0.75rem;margin-top:6px">${t(personality.background||'')}</p>${chatBtn}</div>
             <div class="detail-section"><h3>${t('性格')}</h3>
                 ${(personality.traits||[]).map(t=>`<span class="trait-tag">${TRAIT_LABELS[t]||t}</span>`).join('')}
-                <div style="margin-top:4px;font-size:0.7rem;color:var(--text-secondary)">${t('價值觀：')}${(personality.values||[]).join('、')}</div>
+                <div style="margin-top:4px;font-size:0.7rem;color:var(--text-secondary)">${t('價值觀：')}${(personality.values||[]).map(v => t(v)).join(I18N.getLang() === 'en' ? ', ' : '、')}</div>
                 ${agent.attributes && Object.keys(agent.attributes).length ? `<div class="nqc-attr" style="margin-top:6px">${[['charm','✨',t('魅力')],['vigor','💪',t('體魄')],['wit','🧠',t('智慧')],['grit','🔥',t('膽識')]].map(([k,ic,lb]) => { const v = Math.max(1, Math.min(10, agent.attributes[k] || 5)); return `<div class="nqc-attr-cell"><span class="nqc-attr-lb">${ic}${lb}</span><span class="nqc-attr-bar"><span class="nqc-attr-fill" style="width:${v*10}%"></span></span><span class="nqc-attr-val">${v}</span></div>`; }).join('')}</div>` : ''}</div>
             ${personaHtml}
             <div class="detail-section"><h3>${t('感情狀態')}</h3>
@@ -7183,7 +7657,7 @@ class RimTownApp {
                 const jobTitle = agent.job?.title || (aid === 'player' ? t('旅人') : t('無業'));
                 const moodIcon = agent.mood > 70 ? '😊' : agent.mood > 30 ? '😐' : '😢';
                 html += `<div class="res-item" data-action="select-agent" data-val="${aid}" style="cursor:pointer;padding:8px;margin:4px 0;border-radius:6px;background:var(--bg-secondary)">
-                    <div style="font-weight:600">${moodIcon} ${agent.name}</div>
+                    <div style="font-weight:600">${moodIcon} ${t(agent.name)}</div>
                     <div style="font-size:0.75rem;color:var(--text-secondary)">${jobTitle} · ${agent.age}${t('歲')} · ${agent.activity_label || agent.activity || ''}</div>
                 </div>`;
             }
@@ -7212,7 +7686,9 @@ class RimTownApp {
             html += `<div class="econ-section" style="border:1px solid rgba(233,69,96,0.5)"><h3>🛡️ ${t('管理員')}</h3>
                 <p style="font-size:0.72rem;color:var(--text-secondary);margin:0 0 6px">${t('封鎖＝該帳號無法登入、無法用 AI 與存檔；刪除＝連同所有雲端存檔一併清除，且名字不能再註冊。')}</p>
                 <button class="trade-btn" data-action="admin-load-users" style="padding:6px 12px">👥 ${t('載入玩家列表')}</button>
+                <button class="trade-btn" data-action="admin-load-invites" style="padding:6px 12px">🎟️ ${t('推薦碼管理')}</button>
                 <div id="admin-user-list" style="margin-top:8px;font-size:0.75rem">${this._adminUsersHtml || ''}</div>
+                <div id="admin-invite-list" style="margin-top:8px;font-size:0.75rem">${this._adminInvitesHtml || ''}</div>
             </div>`;
         }
 
@@ -7295,6 +7771,20 @@ class RimTownApp {
         html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${isServerAI
             ? t('🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 100 則）') + ' ' + t('所有 AI 金鑰由小鎮伺服器統一保管，你不需要、也不會看到任何金鑰欄位。') + ' ' + t('智慧分流：你與村民的對話、劇情名場面優先走 Groq 免費額度；行程／反思／背景對話走付費主渠道；任一邊故障自動切到另一邊。')
             : t('此站沒有內建 AI 代理端點，村民對話走內建模擬')}</div>`;
+        // v5.73.0 AI 對話語言:跟隨介面 / 繁體中文 / English(村民台詞、行程、反思、日報)
+        {
+            const existingDl = document.getElementById('settings-tab-dialoglang');
+            let dl = 'auto'; try { dl = existingDl ? existingDl.value : (localStorage.getItem('rimtown_dialogue_lang') || 'auto'); } catch (e) {}
+            const optSel = (v) => dl === v ? ' selected' : '';
+            html += `<div class="setting-group" style="margin-bottom:8px">
+            <label style="font-size:0.82rem;color:var(--text-secondary)">🗣️ ${t('AI 對話語言')}</label>
+            <select id="settings-tab-dialoglang" style="padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px">
+                <option value="auto"${optSel('auto')}>${t('跟隨介面語言')}</option>
+                <option value="zh"${optSel('zh')}>繁體中文</option>
+                <option value="en"${optSel('en')}>English</option>
+            </select>
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('村民對話、行程、反思與日報由 AI 生成時使用的語言，不影響介面文字。')}</div></div>`;
+        }
         // v5.29.0 混合成本控制:NPC 之間的對話只有在玩家附近才用 LLM,並受每日額度限制
         const existingBudget = document.getElementById('settings-tab-npcbudget');
         const npcBudget = existingBudget ? existingBudget.value : (localStorage.getItem('rimtown_npc_llm_budget') ?? '');
@@ -7389,7 +7879,7 @@ class RimTownApp {
                 election.candidates.forEach(c => {
                     html += `<div class="election-candidate" data-action="select-agent" data-val="${c.agentId}">
                         <div class="candidate-header">
-                            <span class="candidate-name">${c.agentId === 'player' ? '👑 ' : ''}${c.name}${c.agentId === 'player' ? t('（你）') : ''}</span>
+                            <span class="candidate-name">${c.agentId === 'player' ? '👑 ' : ''}${t(c.name)}${c.agentId === 'player' ? t('（你）') : ''}</span>
                             <span class="candidate-policy">${c.policyIcon} ${c.policyLabel}</span>
                         </div>
                         <div class="candidate-speech">"${c.speech}"</div>
@@ -7417,12 +7907,12 @@ class RimTownApp {
                     const pct = totalVotes > 0 ? Math.round(c.votes / totalVotes * 100) : 0;
                     html += `<div class="election-candidate">
                         <div class="candidate-header">
-                            <span class="candidate-name">${c.name}</span>
+                            <span class="candidate-name">${t(c.name)}</span>
                             <span class="candidate-policy">${c.policyIcon} ${c.policyLabel}</span>
                             <span class="candidate-votes">${c.votes}${t(' 票（')}${pct}%）</span>
                         </div>
                         <div class="election-bar"><div class="election-bar-fill" style="width:${pct}%"></div></div>
-                        ${!playerVoted ? `<button class="btn-vote" data-action="player-vote" data-val="${c.agentId}">投票給${c.name}</button>` : ''}
+                        ${!playerVoted ? `<button class="btn-vote" data-action="player-vote" data-val="${c.agentId}">投票給${t(c.name)}</button>` : ''}
                     </div>`;
                 });
                 html += `${t('<div class="election-total">已投票：')}${totalVotes}${t(' 人')}${playerVoted ? t(' (你已投票)') : ''}</div>`;
@@ -7432,7 +7922,7 @@ class RimTownApp {
                 html += t('<h4>🏆 選舉結果</h4>');
                 if (winner) {
                     html += `<div class="election-winner">
-                        <div class="winner-name">${winner.name} ${t('當選鎮長！')}</div>
+                        <div class="winner-name">${t(winner.name)} ${t('當選鎮長！')}</div>
                         <div class="winner-policy">${t('施政方針：')}${winner.policyIcon} ${winner.policyLabel}</div>
                     </div>`;
                 }
@@ -7440,7 +7930,7 @@ class RimTownApp {
                     const pct = totalVotes > 0 ? Math.round(c.votes / totalVotes * 100) : 0;
                     const isWinner = c === election.candidates[0];
                     html += `<div class="election-candidate ${isWinner ? 'election-winner-card' : ''}">
-                        <span class="candidate-name">${isWinner ? '👑 ' : ''}${c.name}</span>
+                        <span class="candidate-name">${isWinner ? '👑 ' : ''}${t(c.name)}</span>
                         <span class="candidate-policy">${c.policyIcon}</span>
                         <span class="candidate-votes">${c.votes}${t(' 票（')}${pct}%）</span>
                         <div class="election-bar"><div class="election-bar-fill ${isWinner ? 'winner' : ''}" style="width:${pct}%"></div></div>
@@ -7453,7 +7943,7 @@ class RimTownApp {
         if (election?.electionHistory?.length && !election.active) {
             const last = election.electionHistory[election.electionHistory.length - 1];
             html += `<div class="election-history-brief">
-                <span>${t('上次選舉：')}${last.winner.name}${t(' 當選（')}${last.winner.policyIcon || ''}${ELECTION_POLICIES_LABELS[last.winner.policy] || last.winner.policy}，${last.winner.votes}/${last.totalVotes} ${t('票）')}</span>
+                <span>${t('上次選舉：')}${t(last.winner.name)}${t(' 當選（')}${last.winner.policyIcon || ''}${ELECTION_POLICIES_LABELS[last.winner.policy] || last.winner.policy}，${last.winner.votes}/${last.totalVotes} ${t('票）')}</span>
             </div>`;
         }
 
@@ -7461,7 +7951,7 @@ class RimTownApp {
         const weather = this.state.weather;
         if (weather) {
             html += '<div class="weather-section" style="margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px">';
-            html += `<h4>${weather.icon} ${t('天氣')}：${weather.name}</h4>`;
+            html += `<h4>${weather.icon} ${t('天氣')}：${t(weather.name)}</h4>`;
             html += `<div style="font-size:0.8rem;color:var(--text-secondary);margin:4px 0">${weather.desc}</div>`;
             html += `<div style="display:flex;gap:12px;font-size:0.75rem;margin:6px 0">`;
             html += `<span>🌡️ ${weather.temperature}°C</span>`;
@@ -7479,7 +7969,7 @@ class RimTownApp {
             if (weather.forecast?.length) {
                 html += `<div style="display:flex;gap:8px;margin-top:6px;font-size:0.72rem;color:var(--text-muted)">`;
                 html += `<span>${t('預報')}：</span>`;
-                weather.forecast.forEach(f => { html += `<span title="${f.name}">${f.icon}</span>`; });
+                weather.forecast.forEach(f => { html += `<span title="${t(f.name)}">${f.icon}</span>`; });
                 html += `</div>`;
             }
             // Disaster warning
@@ -7492,7 +7982,7 @@ class RimTownApp {
             // Active disaster
             if (weather.activeDisaster) {
                 html += `<div style="margin-top:6px;padding:6px 8px;background:rgba(255,40,40,0.15);border-left:3px solid var(--negative);border-radius:4px;font-size:0.8rem;font-weight:bold">`;
-                html += `🚨 ${weather.activeDisaster.name}（${t('剩餘')} ${weather.activeDisaster.daysLeft} ${t('天')}）`;
+                html += `🚨 ${t(weather.activeDisaster.name)}（${t('剩餘')} ${weather.activeDisaster.daysLeft} ${t('天')}）`;
                 html += `<div style="font-weight:normal;font-size:0.72rem;margin-top:2px">${weather.activeDisaster.desc}</div>`;
                 html += `</div>`;
             }
@@ -7668,7 +8158,7 @@ class RimTownApp {
         const travelling = this.state.travelling_agents || [];
         if (travelling.length) {
             html += t('<div class="travelling-section"><h4>外出中的居民</h4>');
-            travelling.forEach(_tw => { html += `<div class="travelling-item">${_tw.name} — ${_tw.reason}</div>`; });
+            travelling.forEach(_tw => { html += `<div class="travelling-item">${t(_tw.name)} — ${_tw.reason}</div>`; });
             html += '</div>';
         }
         const events = (this.state.recent_events || []).slice().reverse();
@@ -7676,7 +8166,7 @@ class RimTownApp {
             const typeBadge = evt.event_type && evt.event_type !== 'random'
                 ? `<span class="event-type-badge type-${evt.event_type}">${evt.event_type}</span>` : '';
             html += `<div class="event-card severity-${evt.severity}">
-                <div style="font-weight:bold">${evt.name}${typeBadge}</div>
+                <div style="font-weight:bold">${t(evt.name)}${typeBadge}</div>
                 <div style="font-size:0.75rem;color:var(--text-secondary)">${evt.time}</div>
                 <div style="margin-top:4px">${evt.description}</div></div>`;
         });
@@ -7684,13 +8174,13 @@ class RimTownApp {
         const festivals = this.state.festivals || {};
         if (festivals.activeFestival) {
             const f = festivals.activeFestival;
-            html += `<div class="festival-section"><h4>${f.icon} ${f.name}${t('進行中！')}</h4>
+            html += `<div class="festival-section"><h4>${f.icon} ${t(f.name)}${t('進行中！')}</h4>
                 <div style="padding:4px 8px;color:var(--text-secondary)">${f.description}</div></div>`;
         }
         if (festivals.activeQuest) {
             const q = festivals.activeQuest;
             const pct = Math.round((q.progress / q.goal) * 100);
-            html += `${t('<div class="quest-section"><h4>🎯 節日任務：')}${q.name}</h4>
+            html += `${t('<div class="quest-section"><h4>🎯 節日任務：')}${t(q.name)}</h4>
                 <div style="padding:4px 8px">${q.desc}</div>
                 <div class="quest-progress"><div class="quest-bar" style="width:${pct}%"></div><span>${pct}%</span></div></div>`;
         }
@@ -7709,14 +8199,14 @@ class RimTownApp {
                 let relHtml = '';
                 if (f.rivalFactionId) {
                     const rival = factionList.find(x => x.id === f.rivalFactionId);
-                    if (rival) relHtml += `${t('<span class="faction-rival">⚔️ 敵對：')}${rival.name}</span> `;
+                    if (rival) relHtml += `${t('<span class="faction-rival">⚔️ 敵對：')}${t(rival.name)}</span> `;
                 }
                 if (f.allyFactionId) {
                     const ally = factionList.find(x => x.id === f.allyFactionId);
-                    if (ally) relHtml += `${t('<span class="faction-ally">🤝 結盟：')}${ally.name}</span>`;
+                    if (ally) relHtml += `${t('<span class="faction-ally">🤝 結盟：')}${t(ally.name)}</span>`;
                 }
                 html += `<div class="faction-card">
-                    <div class="faction-header">${f.icon} <strong>${f.name}</strong>
+                    <div class="faction-header">${f.icon} <strong>${t(f.name)}</strong>
                         <span class="faction-cohesion ${cohesionCls}${t('">團結度：')}${f.cohesion > 70 ? t('緊密') : f.cohesion < 30 ? t('渙散') : t('普通')}</span></div>
                     <div class="faction-members">${memberNames}</div>
                     ${relHtml ? '<div class="faction-relations">' + relHtml + '</div>' : ''}</div>`;
@@ -7747,13 +8237,13 @@ class RimTownApp {
                 const availableNpcs = Object.entries(this.state.agents)
                     .filter(([id, a]) => !a.is_player && a.activity_label !== t('探險中') && id !== 'player');
                 html += `<div class="explore-zone">
-                    <div class="zone-header">${zoneDef.icon} <strong>${zoneDef.name}</strong>
+                    <div class="zone-header">${zoneDef.icon} <strong>${t(zoneDef.name)}</strong>
                         <span class="zone-diff">${t('難度：')}${'⭐'.repeat(zoneDef.difficulty)}</span></div>
                     <div class="zone-desc">${zoneDef.description}</div>
                     <div class="zone-stats">${t('已探索')} ${info.timesExplored} ${t('次')}</div>
                     ${canSend ? `<div class="zone-send">
                         <select class="explore-select" id="explore-select-${zoneId}" multiple size="3">
-                            ${availableNpcs.map(([id, a]) => `<option value="${id}">${a.name} (${a.job?.title||t('無')})</option>`).join('')}
+                            ${availableNpcs.map(([id, a]) => `<option value="${id}">${t(a.name)} (${a.job?.title||t('無')})</option>`).join('')}
                         </select>
                         <button class="explore-btn" data-action="send-expedition" data-val="${zoneId}">派遣探險</button>
                     </div>` : t('<div class="zone-busy">探險進行中...</div>')}
@@ -7771,14 +8261,14 @@ class RimTownApp {
             if (births.length) {
                 html += t('<h4>🎒 近期出生</h4>');
                 births.slice(-5).reverse().forEach(b => {
-                    html += `<div class="birth-item">${b.name} — ${b.parentNames.join(t('與'))}${t('的孩子 <span class="birth-time">')}${b.birthTime}</span></div>`;
+                    html += `<div class="birth-item">${t(b.name)} — ${b.parentNames.join(t('與'))}${t('的孩子 <span class="birth-time">')}${b.birthTime}</span></div>`;
                 });
             }
             if (graveyard.length) {
                 html += t('<h4>⚰️ 墓園</h4>');
                 graveyard.slice(-10).reverse().forEach(g => {
                     html += `<div class="grave-item">
-                        <div class="grave-name">${g.name}（${g.age}${t('歲）')}</div>
+                        <div class="grave-name">${t(g.name)}（${g.age}${t('歲）')}</div>
                         <div class="grave-info">${g.job} — ${g.deathCause}</div>
                         <div class="grave-epitaph">${g.epitaph}</div>
                         <div class="grave-time">${g.deathTime}</div></div>`;
@@ -7973,7 +8463,7 @@ class RimTownApp {
             const trade = this.state.trade || {};
             html += t('<div class="econ-section"><h3>交易</h3>');
             if (trade.merchant) {
-                html += `<div class="merchant-card"><div class="merchant-name">${trade.merchant.name}</div>
+                html += `<div class="merchant-card"><div class="merchant-name">${t(trade.merchant.name)}</div>
                     <div class="merchant-info">${t('專長：')}${trade.merchant.specialty} | ${trade.merchant.daysRemaining}${t('天後離開')}</div>
                     <div class="trade-offers">`;
                 trade.merchant.offers.forEach((offer, idx) => {
@@ -8002,7 +8492,7 @@ class RimTownApp {
             if (currentKey && projects[currentKey]) {
                 const cur = projects[currentKey];
                 const pct = Math.round((cur.progress / cur.cost) * 100);
-                html += `${t('<div class="research-current">研究中：<strong>')}${cur.name}</strong>
+                html += `${t('<div class="research-current">研究中：<strong>')}${t(cur.name)}</strong>
                     <div class="progress-bar"><div class="progress-fill research-fill" style="width:${pct}%"></div></div>
                     <span class="progress-text">${pct}%</span></div>`;
             }
@@ -8012,7 +8502,7 @@ class RimTownApp {
                 availableResearch.forEach(p => {
                     const isCurrent = p.key === currentKey;
                     html += `<div class="research-option ${isCurrent ? 'active' : ''}">
-                        <div class="build-name">${p.name}</div>
+                        <div class="build-name">${t(p.name)}</div>
                         <div class="build-desc">${p.description}${t('（消耗：')}${p.cost}）</div>
                         <button class="build-btn" data-action="research" data-val="${p.key}" ${isCurrent?'disabled':''}${t('>研究</button></div>')}`;
                 });
@@ -8038,7 +8528,7 @@ class RimTownApp {
                 for (const item of catItems) {
                     html += `<div class="shop-card">`;
                     html += `<div class="shop-card-icon">${item.icon}</div>`;
-                    html += `<div class="shop-card-name">${item.name}</div>`;
+                    html += `<div class="shop-card-name">${t(item.name)}</div>`;
                     html += `<div class="shop-card-stock">${t('庫存')}:${Math.round(item.stock)}</div>`;
                     html += `<button class="shop-card-btn shop-buy" data-action="shop-buy" data-val="${item.key},1" ${item.canBuy?'':'disabled'}>${t('買')}${item.buyPrice}💰</button>`;
                     html += `<button class="shop-card-btn shop-sell" data-action="shop-sell" data-val="${item.key},1" ${item.canSell?'':'disabled'}>${t('賣')}${item.sellPrice}💰</button>`;
@@ -8055,7 +8545,7 @@ class RimTownApp {
                 html += '<div class="building-progress">';
                 buildings.in_progress.forEach(p => {
                     const pct = Math.round((p.workDone / p.workRequired) * 100);
-                    html += `<div class="building-item"><span>${p.name}</span>
+                    html += `<div class="building-item"><span>${t(p.name)}</span>
                         <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
                         <span class="progress-text">${pct}%</span></div>`;
                 });
@@ -8066,7 +8556,7 @@ class RimTownApp {
                 buildings.completed.forEach(p => {
                     const lvl = p.level || 1;
                     const stars = '⭐'.repeat(lvl);
-                    html += `<div class="completed-building-item"><span>${p.name}</span><span class="building-level">${stars} Lv.${lvl}</span></div>`;
+                    html += `<div class="completed-building-item"><span>${t(p.name)}</span><span class="building-level">${stars} Lv.${lvl}</span></div>`;
                 });
                 html += '</div>';
             }
@@ -8078,7 +8568,7 @@ class RimTownApp {
                     const costStr = Object.entries(u.costs).map(([r,a]) => `${icons[r]||''}${a}`).join(' ');
                     const effStr = Object.entries(u.effects).map(([k,v]) => `${k}:${v>0?'+':''}${v}`).join(' ');
                     html += `<div class="build-option ${u.can_afford ? '' : 'cant-afford'}">
-                        <div class="build-name">${u.name} <span class="building-level">Lv.${u.currentLevel}→${u.nextLevel}</span></div>
+                        <div class="build-name">${t(u.name)} <span class="building-level">Lv.${u.currentLevel}→${u.nextLevel}</span></div>
                         <div class="build-desc">${u.description}</div>
                         <div class="build-cost">${costStr}</div>
                         <div class="build-effects" style="font-size:0.75rem;color:var(--accent-gold)">${effStr}</div>
@@ -8092,7 +8582,7 @@ class RimTownApp {
                 available.forEach(p => {
                     const costStr = Object.entries(p.costs).map(([r,a]) => `${icons[r]||''}${a}`).join(' ');
                     html += `<div class="build-option ${p.can_afford ? '' : 'cant-afford'}">
-                        <div class="build-name">${p.name}</div>
+                        <div class="build-name">${t(p.name)}</div>
                         <div class="build-desc">${p.description}</div>
                         <div class="build-cost">${costStr}</div>
                         <button class="build-btn" ${p.can_afford ? '' : 'disabled'} data-action="build" data-val="${p.key}">${t('建造')}</button></div>`;
@@ -8109,7 +8599,7 @@ class RimTownApp {
                 const costStr = Object.entries(d.cost).map(([k, v]) => `${{silver:'💰',wood:'🪵',stone:'🪨',metal:'⚙️'}[k] || k}${v}`).join(' ');
                 const afford = Object.entries(d.cost).every(([k, v]) => (this.world?.stockpile?.get(k) || 0) >= v);
                 html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;margin-bottom:5px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px">
-                    <span style="font-size:0.82rem">${d.icon} ${d.name} <span style="font-size:0.68rem;color:var(--text-secondary)">${t('美觀')}+${d.beauty}</span></span>
+                    <span style="font-size:0.82rem">${d.icon} ${t(d.name)} <span style="font-size:0.68rem;color:var(--text-secondary)">${t('美觀')}+${d.beauty}</span></span>
                     <span style="display:flex;gap:8px;align-items:center">
                         <span style="font-size:0.7rem;color:var(--text-secondary)">${costStr}</span>
                         <button class="trade-btn" data-action="decor-place" data-val="${d.type}" ${afford ? '' : 'disabled style="opacity:0.4"'}>${t('擺放')}</button>
@@ -8137,7 +8627,7 @@ class RimTownApp {
             for (const [key, factory] of Object.entries(factories)) {
                 const def = typeof FACTORIES !== 'undefined' ? FACTORIES[key] : null;
                 if (!def) continue;
-                html += `<div class="econ-section"><h3>${def.icon} ${def.name}`;
+                html += `<div class="econ-section"><h3>${def.icon} ${t(def.name)}`;
                 if (factory.status === 'building') html += `${t(' (建造中 ')}${Math.round(factory.buildProgress / factory.buildRequired * 100)}%)`;
                 html += '</h3>';
                 if (factory.status === 'active') {
@@ -8159,7 +8649,7 @@ class RimTownApp {
                         if (avail.length > 0) {
                             html += '<br>';
                             avail.slice(0, 5).forEach(([id, a]) => {
-                                html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="assign-worker" data-val="${key},${id}">+${a.name}</button>`;
+                                html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="assign-worker" data-val="${key},${id}">+${t(a.name)}</button>`;
                             });
                         }
                     }
@@ -8192,7 +8682,7 @@ class RimTownApp {
                     // v5.53.2 工廠成本在地化:接上與全站一致的資源名稱,不再露出英文 key
                     const costStr = Object.entries(f.cost).map(([r,a]) => `${icons[r] || '📦'}${labels[r] || r}×${a}`).join(' ');
                     const canBuild = f.canAfford ? '' : ' disabled';
-                    html += `<div class="build-card"><div><strong>${f.icon} ${f.name}</strong>
+                    html += `<div class="build-card"><div><strong>${f.icon} ${t(f.name)}</strong>
                         <br><span style="font-size:0.7rem">${costStr}${t(' | 建造天數：')}${f.buildDays}</span></div>
                         <button class="trade-btn"${canBuild} data-action="build-factory" data-val="${f.key}${t('">建造</button></div>')}`;
                 });
@@ -8248,7 +8738,7 @@ class RimTownApp {
             const others = f.members.filter(id => id !== agentId).map(id => {
                 const a = this.state.agents[id]; return a ? a.name : '?';
             }).join('、');
-            html += `<div class="faction-mini">${f.icon} <strong>${f.name}${t('</strong> <span style="font-size:0.7rem;color:var(--text-secondary)">同伴：')}${others}</span></div>`;
+            html += `<div class="faction-mini">${f.icon} <strong>${t(f.name)}${t('</strong> <span style="font-size:0.7rem;color:var(--text-secondary)">同伴：')}${others}</span></div>`;
         });
         html += '</div>';
         return html;
@@ -8309,7 +8799,7 @@ class RimTownApp {
                 html += t('<div class="econ-section"><h3>選擇你的第一個產業</h3>');
                 const available = this.world.industry.getAvailableIndustries(this.world);
                 available.forEach(i => {
-                    html += `<div class="build-card"><div><strong>${i.icon} ${i.name}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
+                    html += `<div class="build-card"><div><strong>${i.icon} ${t(i.name)}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
                         <button class="trade-btn" data-action="choose-industry" data-val="${i.key}${t('">選擇</button></div>')}`;
                 });
                 html += '</div>';
@@ -8343,7 +8833,7 @@ class RimTownApp {
                 html += t('<div class="econ-section"><h3>可開啟新產業！</h3>');
                 const available = this.world.industry.getAvailableIndustries(this.world);
                 available.forEach(i => {
-                    html += `<div class="build-card"><div><strong>${i.icon} ${i.name}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
+                    html += `<div class="build-card"><div><strong>${i.icon} ${t(i.name)}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
                         <button class="trade-btn" data-action="choose-industry" data-val="${i.key}${t('">開啟</button></div>')}`;
                 });
                 html += '</div>';
@@ -8352,7 +8842,7 @@ class RimTownApp {
             if (ind.activeSynergies && ind.activeSynergies.length > 0) {
                 html += t('<div class="econ-section"><h3>產業加成</h3>');
                 ind.activeSynergies.forEach(s => {
-                    html += `<div style="font-size:0.8rem;margin:4px 0">${s.icon} ${s.name}</div>`;
+                    html += `<div style="font-size:0.8rem;margin:4px 0">${s.icon} ${t(s.name)}</div>`;
                 });
                 html += '</div>';
             }
@@ -8369,10 +8859,10 @@ class RimTownApp {
                 html += `<div class="build-card"><div>`;
                 html += `<strong>${stateIcons[plot.state] || '?'}${t(' 田地 #')}${plot.id}</strong> — ${stateLabels[plot.state] || plot.state}`;
                 if (crop && plot.state === 'growing') {
-                    html += `<br><span style="font-size:0.75rem">${crop.icon} ${crop.name}${t(' | 進度：')}${Math.round(plot.growthProgress)}${t('% | 水分：')}${Math.round(plot.waterLevel)}%</span>`;
+                    html += `<br><span style="font-size:0.75rem">${crop.icon} ${t(crop.name)}${t(' | 進度：')}${Math.round(plot.growthProgress)}${t('% | 水分：')}${Math.round(plot.waterLevel)}%</span>`;
                     if (plot.fertilized) html += ' 🧪';
                 } else if (crop && plot.state === 'ready') {
-                    html += `<br><span style="font-size:0.75rem">${crop.icon} ${crop.name}${t(' — 可收穫！</span>')}`;
+                    html += `<br><span style="font-size:0.75rem">${crop.icon} ${t(crop.name)}${t(' — 可收穫！</span>')}`;
                 }
                 html += '</div><div>';
                 if (plot.state === 'empty') {
@@ -8385,7 +8875,7 @@ class RimTownApp {
                     if (seasonCrops.length > 0) {
                         html += '<div style="font-size:0.7rem">';
                         seasonCrops.forEach(c => {
-                            html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="plant-crop" data-val="${plot.id},${c.key}">${c.icon}${c.name}</button>`;
+                            html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="plant-crop" data-val="${plot.id},${c.key}">${c.icon}${t(c.name)}</button>`;
                         });
                         html += '</div>';
                     } else {
@@ -8427,7 +8917,7 @@ class RimTownApp {
             html += t('<div class="econ-section"><h3>選擇你的第一個產業</h3>');
             const available = this.world.industry.getAvailableIndustries(this.world);
             available.forEach(i => {
-                html += `<div class="build-card"><div><strong>${i.icon} ${i.name}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
+                html += `<div class="build-card"><div><strong>${i.icon} ${t(i.name)}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
                     <button class="trade-btn" data-action="choose-industry" data-val="${i.key}${t('">選擇</button></div>')}`;
             });
             html += '</div>';
@@ -8463,7 +8953,7 @@ class RimTownApp {
             html += t('<div class="econ-section"><h3>可開啟新產業！</h3>');
             const available = this.world.industry.getAvailableIndustries(this.world);
             available.forEach(i => {
-                html += `<div class="build-card"><div><strong>${i.icon} ${i.name}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
+                html += `<div class="build-card"><div><strong>${i.icon} ${t(i.name)}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
                     <button class="trade-btn" data-action="choose-industry" data-val="${i.key}${t('">開啟</button></div>')}`;
             });
             html += '</div>';
@@ -8473,7 +8963,7 @@ class RimTownApp {
         if (ind.activeSynergies && ind.activeSynergies.length > 0) {
             html += t('<div class="econ-section"><h3>產業加成</h3>');
             ind.activeSynergies.forEach(s => {
-                html += `<div style="font-size:0.8rem;margin:4px 0">${s.icon} ${s.name}</div>`;
+                html += `<div style="font-size:0.8rem;margin:4px 0">${s.icon} ${t(s.name)}</div>`;
             });
             html += '</div>';
         }
@@ -8518,10 +9008,10 @@ class RimTownApp {
             html += `<div class="build-card"><div>`;
             html += `<strong>${stateIcons[plot.state] || '?'}${t(' 田地 #')}${plot.id}</strong> — ${stateLabels[plot.state] || plot.state}`;
             if (crop && plot.state === 'growing') {
-                html += `<br><span style="font-size:0.75rem">${crop.icon} ${crop.name}${t(' | 進度：')}${Math.round(plot.growthProgress)}${t('% | 水分：')}${Math.round(plot.waterLevel)}%</span>`;
+                html += `<br><span style="font-size:0.75rem">${crop.icon} ${t(crop.name)}${t(' | 進度：')}${Math.round(plot.growthProgress)}${t('% | 水分：')}${Math.round(plot.waterLevel)}%</span>`;
                 if (plot.fertilized) html += ' 🧪';
             } else if (crop && plot.state === 'ready') {
-                html += `<br><span style="font-size:0.75rem">${crop.icon} ${crop.name}${t(' — 可收穫！</span>')}`;
+                html += `<br><span style="font-size:0.75rem">${crop.icon} ${t(crop.name)}${t(' — 可收穫！</span>')}`;
             }
             html += '</div><div>';
             if (plot.state === 'empty') {
@@ -8535,7 +9025,7 @@ class RimTownApp {
                 if (seasonCrops.length > 0) {
                     html += '<div style="font-size:0.7rem">';
                     seasonCrops.forEach(c => {
-                        html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="plant-crop" data-val="${plot.id},${c.key}">${c.icon}${c.name}</button>`;
+                        html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="plant-crop" data-val="${plot.id},${c.key}">${c.icon}${t(c.name)}</button>`;
                     });
                     html += '</div>';
                 } else {
@@ -8611,7 +9101,7 @@ class RimTownApp {
         for (const [key, factory] of Object.entries(factories)) {
             const def = typeof FACTORIES !== 'undefined' ? FACTORIES[key] : null;
             if (!def) continue;
-            html += `<div class="econ-section"><h3>${def.icon} ${def.name}`;
+            html += `<div class="econ-section"><h3>${def.icon} ${t(def.name)}`;
             if (factory.status === 'building') {
                 html += `${t(' (建造中 ')}${Math.round(factory.buildProgress / factory.buildRequired * 100)}%)`;
             }
@@ -8641,7 +9131,7 @@ class RimTownApp {
                     if (available.length > 0) {
                         html += '<br>';
                         available.slice(0, 5).forEach(([id, a]) => {
-                            html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="assign-worker" data-val="${key},${id}">+${a.name}</button>`;
+                            html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="assign-worker" data-val="${key},${id}">+${t(a.name)}</button>`;
                         });
                     }
                 }
@@ -8679,7 +9169,7 @@ class RimTownApp {
             available.forEach(f => {
                 const costStr = Object.entries(f.cost).map(([r,a]) => `${this._resName(r)}×${a}`).join(' ');
                 const canBuild = f.canAfford ? '' : ' disabled';
-                html += `<div class="build-card"><div><strong>${f.icon} ${f.name}</strong>
+                html += `<div class="build-card"><div><strong>${f.icon} ${t(f.name)}</strong>
                     <br><span style="font-size:0.7rem">${costStr}${t(' | 建造天數：')}${f.buildDays}</span></div>
                     <button class="trade-btn"${canBuild} data-action="build-factory" data-val="${f.key}${t('">建造</button></div>')}`;
             });
@@ -8864,7 +9354,7 @@ class RimTownApp {
             if ((v.playerChats || []).length) {
                 viewHtml += `<details style="margin-top:6px"><summary style="cursor:pointer;font-size:0.78rem">🧑 ${t('你的對話')}（${v.playerChats.length}）</summary><div style="font-size:0.7rem;padding:4px 0 4px 12px;line-height:1.6">${v.playerChats.map(p => `${this._escapeHtml(p.speaker)} → ${this._escapeHtml(p.target)}: ${this._escapeHtml(p.text)}`).join('<br>')}</div></details>`;
             }
-            viewHtml += (v.npcs || []).map(n => `<details style="margin-top:4px"><summary style="cursor:pointer;font-size:0.75rem">👤 ${n.name}${n.job ? `（${n.job}）` : ''}${n.planLlm ? ' 🤖' : ''}${n.replanned ? ' 📝' : ''}</summary>
+            viewHtml += (v.npcs || []).map(n => `<details style="margin-top:4px"><summary style="cursor:pointer;font-size:0.75rem">👤 ${t(n.name)}${n.job ? `（${n.job}）` : ''}${n.planLlm ? ' 🤖' : ''}${n.replanned ? ' 📝' : ''}</summary>
                 <div style="font-size:0.7rem;padding:4px 0 4px 12px;line-height:1.6">
                 ${n.currently ? `<div>🧭 ${this._escapeHtml(n.currently)}</div>` : ''}
                 ${(n.plan || []).length ? `<div style="margin-top:3px">📅 ${n.plan.map(g => this._escapeHtml(g)).join('　')}</div>` : ''}

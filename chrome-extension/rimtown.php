@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.67.1
+ * Version: 5.74.1
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.67.1');
+define('RIMTOWN_VERSION', '5.74.1');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -817,10 +817,19 @@ function rimtown_enqueue_assets() {
         true
     );
 
+    // v5.67.5 簡→繁字元表(舊存檔清理與前端雙保險)
+    wp_enqueue_script(
+        'rimtown-s2t',
+        RIMTOWN_URL . 's2t.js',
+        array(),
+        RIMTOWN_VERSION,
+        true
+    );
+
     wp_enqueue_script(
         'rimtown-quest',
         RIMTOWN_URL . 'quest-system.js',
-        array('rimtown-i18n'),
+        array('rimtown-i18n', 'rimtown-s2t'),
         RIMTOWN_VERSION,
         true
     );
@@ -1204,10 +1213,213 @@ add_action('admin_menu', 'rimtown_admin_menu');
 function rimtown_get_changelog() {
     return array(
         array(
+            'version' => '5.74.1',
+            'date'    => '2026-09-09',
+            'changes' => array(
+                '🌐 首頁右上角新增「中文｜EN」語言切換:之前語言開關只藏在遊戲內的設定裡,首頁沒有任何地方可以切,所以永遠是中文;現在首頁直接可切,整頁即時重畫',
+                '🧭 第一次來的訪客依瀏覽器語言決定預設語言(非中文瀏覽器 → English),之後以玩家自己切過的為準',
+                '🔧 首頁「性格參數」的 19 個特質、互斥組與 18 種想法名稱改為顯示時翻譯,執行中切到 English 不再殘留中文',
+            ),
+            'changes_en' => array(
+                '🌐 New "中文 | EN" language toggle in the top-right of the landing page: the language switch used to live only in the in-game settings, with nothing on the landing page to switch it, so the page was always Chinese; it now switches in place and redraws the whole page',
+                '🧭 First-time visitors get a default language from the browser (non-Chinese browsers → English); after that the player\'s own choice sticks',
+                '🔧 The 19 trait names, exclusive pairs and 18 thought names in "Personality parameters" are now translated at render time, so switching to English mid-session leaves no Chinese behind',
+            ),
+        ),
+        array(
+            'version' => '5.74.0',
+            'date'    => '2026-09-09',
+            'changes' => array(
+                '📜 雙語第四波(更新紀錄全譯):從 v1.0.0 到現在共 222 版、757 條更新紀錄全部有英文版;介面切到 English 時,首頁「更新紀錄」整份改顯示英文',
+                '🛠️ 版本紀錄改為雙語單一來源:rimtown.php 每個版本同時有 changes(中文)與 changes_en(英文),產生器 gen-changelog.js 會檢查每一版兩邊條數一致,缺英文就拒絕產生——之後每次發版都必須同時寫中英文',
+            ),
+            'changes_en' => array(
+                '📜 Bilingual wave 4 (full changelog translation): all 222 versions and 757 entries from v1.0.0 to now have English versions; with the interface set to English, the landing page "Changelog" shows the whole log in English',
+                '🛠️ The version log is now a single bilingual source: every version in rimtown.php carries both changes (Chinese) and changes_en (English), and the gen-changelog.js generator verifies matching counts and refuses to build when English is missing — every release from now on must be written in both languages',
+            ),
+        ),
+        array(
+            'version' => '5.73.0',
+            'date'    => '2026-09-09',
+            'changes' => array(
+                '🗣️ 雙語第三波:設定裡新增「AI 對話語言」——跟隨介面語言 / 繁體中文 / English。決定村民台詞、行程、反思、貼文與日報由 AI 生成時用的語言,與介面語言分開;選擇隨帳號同步到其他裝置',
+                '🤖 英文模式下:提示詞裡的中文人名送出前換成英文名(Victor、Lily…),伺服器改用英文系統指示並要求只用英文回覆,回覆不再做簡轉繁;AI 回來的英文名再換回中文名,行程/對話解析與存檔仍用中文名,顯示層才換成英文',
+                '📰 修正 AI 日報:日報呼叫的 llm.chat() 介面先前不存在,一直靜默退回模板;現在補上,日報可由 AI 撰寫並跟著對話語言',
+                '🔍 新增 scripts/lang_test.js(8 項):英文系統指示、中繼英文前綴、未帶語言維持中文、英文不轉繁體、未知語言回退',
+            ),
+            'changes_en' => array(
+                '🗣️ Bilingual wave 3: new "AI dialogue language" setting (follow interface / Traditional Chinese / English). It decides the language the AI uses for villager lines, schedules, reflections, posts and the daily paper, separately from the interface language; the choice syncs to your account across devices',
+                '🤖 In English mode: Chinese villager names in prompts are swapped for English names (Victor, Lily…) before sending, the server switches to an English system instruction and demands English-only replies, and replies skip Simplified→Traditional conversion; English names coming back are mapped to Chinese names again, so schedule/dialogue parsing and saves keep Chinese names and only the display layer shows English',
+                '📰 AI daily paper fix: the llm.chat() interface the paper called never existed, so it silently fell back to templates; it is now implemented, the paper can be AI-written and follows the dialogue language',
+                '🔍 New scripts/lang_test.js (8 checks): English system instruction, English relay prefix, no language → Chinese, English skips Traditional conversion, unknown language falls back',
+            ),
+        ),
+        array(
+            'version' => '5.72.0',
+            'date'    => '2026-09-09',
+            'changes' => array(
+                '🌐 雙語第二波(模擬內容):補齊 2,334 條英文對照——地名(邊境鎮 Frontier Town/海風鎮 Seabreeze Harbor 與 100 多個地點)、20+15 位村民簡介、事件與事件鏈、新聞、慶典、派系、探索、選舉政見、規則式對話模板(陌生人/摯友/情侶/敵對/八卦/工作/心情)、玩家對話回覆、際遇卡、主線/支線/個人故事/每日目標/章節故事、自訂村民與人生總結',
+                '👤 村民英文名:切到 English 後村民以英文名顯示(陳偉 Victor、林美 Mia、王麗 Lily、海伯 Hal、小鷗 Gwen…),隨機卡司「姓+名」自動拼成 Ethan Carter 這類英文名,新生兒名字也有對照;存檔仍存中文名,切回中文不受影響',
+                '🧱 村民/移民/新生兒/隨機背景的資料表改為固定存中文,不再在建立當下依介面語言存進英文(舊版在英文介面開新局會把英文寫進存檔,價值觀相容度也會對不上)',
+                '🔧 中文介面修正:居民「當前行動」通勤時原本直接露出 commuting,現在顯示「趕著去上工」',
+            ),
+            'changes_en' => array(
+                '🌐 Bilingual wave 2 (simulation content): 2,334 more English strings — place names (Frontier Town / Seabreeze Harbor and 100+ locations), 20+15 villager bios, events and event chains, news, festivals, factions, exploration, campaign platforms, rule-based dialogue templates (strangers / best friends / couples / rivals / gossip / work / mood), player-chat replies, encounter cards, main / side / personal / daily / chapter quests, custom residents and the life summary',
+                '👤 English villager names: in English mode villagers show English names (Chen Wei → Victor, Lin Mei → Mia, Wang Li → Lily, Hai Bo → Hal, Xiao Ou → Gwen…), random casts get "Given Surname" names like Ethan Carter, and newborn names have mappings too; saves still store Chinese names, so switching back to Chinese is unaffected',
+                '🧱 Villager / immigrant / newborn / random-background data tables now always store Chinese instead of writing the interface language at creation time (older builds starting a new game in English wrote English into the save and broke value compatibility)',
+                '🔧 Chinese interface fix: a resident\'s "current action" showed the raw word commuting; it now reads "Hurrying to work"',
+            ),
+        ),
+        array(
+            'version' => '5.71.0',
+            'date'    => '2026-09-09',
+            'changes' => array(
+                '🌐 雙語第一波(介面):補齊 431 條英文對照——99 個成就名稱、居民詳情/關係徽章/選舉/新聞/派系/探索/墓園、經濟/建築/研究/工廠/農場/訂單/產業、任務與個人故事、聊天封存與社群動態、首頁「村民的大腦」全部參數卡;切到 English 後遊戲介面不再夾雜中文',
+                '📖 教學視窗 28 段說明與頁首/側欄按鈕加上翻譯掛鉤,切換語言即時生效;教學裡過時的「到設定填 Groq 金鑰」提示改為「內建 AI,不需金鑰」',
+                '🔍 新增檢查:app.js 所有 t() 字串都必須有英文對照(目前 0 缺);模擬內容(村民名/台詞/事件)的英文在下一波',
+            ),
+            'changes_en' => array(
+                '🌐 Bilingual wave 1 (interface): 431 more English strings — 99 achievement names, resident details / relationship badges / elections / news / factions / exploration / cemetery, economy / buildings / research / factories / farm / orders / industries, quests and personal stories, chat archives and the town feed, every parameter card in the landing page\'s "Inside a villager\'s head"; the game UI no longer mixes in Chinese when set to English',
+                '📖 28 tutorial paragraphs plus header / sidebar buttons got translation hooks so switching language applies instantly; the outdated tutorial tip "enter a Groq key in settings" now says "built-in AI, no key needed"',
+                '🔍 New check: every t() string in app.js must have an English entry (currently 0 missing); simulation content (villager names / lines / events) comes in the next wave',
+            ),
+        ),
+        array(
+            'version' => '5.70.0',
+            'date'    => '2026-09-09',
+            'changes' => array(
+                '🔧 首頁「村民的大腦」底下新增可摺疊的「技術細節」區:一次 AI 請求的旅程流程圖、提示詞怎麼組(身分行/抽出的記憶/關係數字/今天的計畫/性格與心情/輸出格式)、兩條車道誰先上(即時對話 Groq 先、行程反思 Claude 先)、互相接手與冷卻規則、免費額度保護(讀 x-ratelimit 估算 token 提前改道)、品質守門(拒答/洩漏/簡轉繁)、成本閘門',
+                '🌐 技術細節區 55 條文字皆有英文對照,切換語言即生效',
+            ),
+            'changes_en' => array(
+                '🔧 New collapsible "Technical details" section under "Inside a villager\'s head": the journey of one AI request, how the prompt is assembled (identity line / retrieved memories / relationship numbers / today\'s plan / personality and mood / output format), which of the two lanes goes first (live chat → Groq first, schedules and reflection → Claude first), handoff and cooldown rules, free-tier protection (reading x-ratelimit headers and estimating tokens to reroute early), quality gates (refusals / leaks / Simplified→Traditional) and the cost gate',
+                '🌐 All 55 strings in the technical section have English versions and switch with the language toggle',
+            ),
+        ),
+        array(
+            'version' => '5.69.4',
+            'date'    => '2026-09-09',
+            'changes' => array(
+                '🖥️ 首頁「村民的大腦」電腦版排版再修:四張參數卡改為瀑布流雙欄(CSS columns),左右兩欄各自往下疊,不再因為卡片高度不同而在旁邊留一大塊空白;手機維持單欄',
+            ),
+            'changes_en' => array(
+                '🖥️ Desktop layout fix for "Inside a villager\'s head": the four parameter cards now flow as a two-column masonry (CSS columns) so each column stacks on its own and card heights no longer leave a big empty gap; mobile stays single-column',
+            ),
+        ),
+        array(
+            'version' => '5.69.3',
+            'date'    => '2026-09-09',
+            'changes' => array(
+                '💾 修正已登入玩家仍跳出「儲存空間已滿!請…註冊登入改用雲端存檔」的錯誤:那是手機瀏覽器 localStorage(約 5MB)被本機備份塞滿,雲端存檔本身沒有受影響。舊的自動瘦身修剪的是不存在的欄位所以永遠失敗;現在改為先清「聊天封存」、再依序修剪記憶/對話紀錄/八卦/劇情封存,已登入者最後會自動移除其他城鎮的本機備份(雲端仍在)',
+                '☁️ 已登入玩家即使本機真的存不下,也只會收到一次右下角「本機備份空間不足,已改為只存雲端」的柔性提示,不再彈出要你去「註冊」的錯誤視窗;訪客的提示文字改為建議「刪除舊城鎮或登入改用雲端」',
+            ),
+            'changes_en' => array(
+                '💾 Fixed logged-in players still seeing "Storage full! …register to use cloud saves": the phone browser\'s localStorage (~5MB) was full of local backup copies; cloud saves were never affected. The old auto-slimming trimmed fields that do not exist, so retries always failed; it now clears chat archives first, then trims memories / conversation logs / gossip / drama archives in order, and logged-in players finally drop other towns\' local backups (still in the cloud)',
+                '☁️ Even when local space really runs out, logged-in players get a single soft corner notice "Local backup space is low, saving to cloud only" instead of an error asking them to "register"; the guest message now suggests deleting old towns or logging in for cloud saves',
+            ),
+        ),
+        array(
+            'version' => '5.69.2',
+            'date'    => '2026-09-09',
+            'changes' => array(
+                '🖥️ 首頁「村民的大腦」電腦版排版修正:四張參數卡原本在桌機排成 3+1,第四張(想法與心情)孤零零掉到下一列留一大片空白;改為固定兩欄(手機單欄),卡片頂端對齊',
+            ),
+            'changes_en' => array(
+                '🖥️ Desktop layout fix for "Inside a villager\'s head": the four parameter cards were laid out 3+1 so the fourth (Thoughts and mood) sat alone on the next row beside a large blank; now a fixed two-column grid (single column on mobile) with cards top-aligned',
+            ),
+        ),
+        array(
+            'version' => '5.69.1',
+            'date'    => '2026-09-09',
+            'changes' => array(
+                '🧊 首頁新增「3D low-poly 版搶先看」區塊:放上 Blender + Godot 4 重製版的觀賞模式畫面(img/lowpoly-preview.jpg),路線圖「開發中」同步標註;圖片尚未放進去時整區自動隱藏',
+            ),
+            'changes_en' => array(
+                '🧊 Landing page gains a "3D low-poly sneak peek" section showing the Blender + Godot 4 remake in viewing mode (img/lowpoly-preview.jpg), and the roadmap marks it "in development"; the section hides itself until the image is in place',
+            ),
+        ),
+        array(
+            'version' => '5.69.0',
+            'date'    => '2026-09-09',
+            'changes' => array(
+                '🧠 首頁新增「村民的大腦：他們是怎麼社交的」展示區:八步驟社交流程(感知→挑對象→八卦→約出去→對話→效果→記憶→反思與計畫)附實際參數;記憶流檢索公式(0.5×時近＋3×相關＋2×重要度)與可拖拉的互動計算器;性格參數(19 種特質與加成、互斥組、10 種價值觀、相容度倍率、六項需求衰減);關係階梯(好感門檻、衰退、心動成長、對嗆/絕交、謠言對質、戲劇導演);18 種想法的心情/天數/看法表。內容直接讀遊戲常數,數字與程式一致',
+            ),
+            'changes_en' => array(
+                '🧠 Landing page gains "Inside a villager\'s head: how they socialize": an eight-step social loop (perceive → pick someone → gossip → hang out → talk → effects → memory → reflect and plan) with real parameters; the memory retrieval formula (0.5×recency + 3×relevance + 2×importance) with a draggable calculator; personality parameters (19 traits and bonuses, exclusive pairs, 10 values, compatibility multiplier, six-need decay); the relationship ladder (affinity thresholds, drift, attraction growth, shouting matches / fallouts, rumor confrontations, drama director); and a table of 18 thoughts with mood / days / opinion. Content reads game constants directly so the numbers match the code',
+            ),
+        ),
+        array(
+            'version' => '5.68.0',
+            'date'    => '2026-09-09',
+            'changes' => array(
+                '🏠 遊戲首頁(Landing):打開 rimtown.cc 先看到首頁——遊戲介紹四張卡、更新紀錄(預設最近 5 版,可展開全部,資料直接從版本紀錄產生)、即將實現路線圖(開發中/規劃中/構想)。未登入只有「註冊」「登入」兩顆按鈕,一律要登入才能進遊戲(訪客試玩取消);已登入顯示「繼續遊戲」並附城鎮與日期,世界在底下先載好、暫停等你按',
+                '🎟️ 推薦碼制註冊:註冊必須輸入有效的推薦碼。管理員在設定→管理員→「推薦碼管理」建立(自訂或自動產生 8 碼)、設定可用次數(0＝無上限)、停用/啟用、刪除,並看得到每組已用幾次與最近用的帳號。伺服器端驗證,環境變數 INVITE_REQUIRED=0 可整體關閉',
+                '🔁 登入/註冊後直接進遊戲、登出回首頁;新帳號註冊後建立「<帳號>的邊境鎮」並顯示教學。首頁期間不跑模擬、不彈每日獎勵,按「繼續遊戲」後才結算離線進度',
+            ),
+            'changes_en' => array(
+                '🏠 Landing page: opening rimtown.cc now shows a home page first — four intro cards, the changelog (latest 5 by default, expandable, generated straight from the version log) and a roadmap (in development / planned / ideas). Logged-out visitors only see "Register" and "Log in"; login is required to play (guest mode removed); logged-in players see "Continue" with town and date while the world loads paused underneath',
+                '🎟️ Invite-code registration: a valid invite code is required to register. Admins create codes in Settings → Admin → "Invite codes" (custom or auto-generated 8 characters), set a use limit (0 = unlimited), enable / disable, delete, and see how often each was used and by whom. Verified server-side; the INVITE_REQUIRED=0 environment variable turns it off entirely',
+                '🔁 Login / registration goes straight into the game and logout returns to the home page; new accounts get "<name>\'s Frontier Town" plus the tutorial. While the home page is up the simulation does not run and no daily reward pops; offline progress settles after pressing "Continue"',
+            ),
+        ),
+        array(
+            'version' => '5.67.6',
+            'date'    => '2026-09-09',
+            'changes' => array(
+                '🧑‍🌾 旅人不再被叫鎮長:程式裡還留著十幾處把玩家寫死成「鎮長」的文案(八卦稱讚/爆料、事件留言、夢想支持、聲望新聞、決策回饋、事件抉擇、加工線指令),這些句子進了村民記憶後 AI 對話就跟著叫旅人「鎮長」。新增玩家稱謂判斷 playerTitle():只有當選才是鎮長,否則一律「旅人」,全部改用;玩家對話提示詞明講「他是來到鎮上的旅人,不是鎮長,現任鎮長是 X」',
+            ),
+            'changes_en' => array(
+                '🧑‍🌾 The traveler is no longer called mayor: a dozen places still hardcoded the player as "mayor" (gossip praise / rumors, event comments, dream support, reputation news, decision feedback, event choices, processing-line orders), and once those lines entered villager memory the AI called the traveler "mayor" too. New playerTitle() check: you are the mayor only if elected, otherwise always "traveler"; the player-chat prompt now states "they are a traveler who came to town, not the mayor; the current mayor is X"',
+            ),
+        ),
+        array(
+            'version' => '5.67.5',
+            'date'    => '2026-09-08',
+            'changes' => array(
+                '🈶 AI 台詞一律繁體中文:Groq 的 gpt-oss 即使被要求繁體仍常回簡體。伺服器端每則回覆先用 OpenCC(簡→繁,台灣用語)轉換,兩條渠道都套用;前端新增 17KB 輕量簡繁字元表(s2t.js)做雙保險,並在載入存檔時把已經存進去的簡體台詞(聊天、村民對話、記憶、行程、名場面、新聞)轉成繁體,提示「已把 N 段簡體字台詞轉成繁體」後回存。只轉偵測為簡體的字串,繁體文本不會被誤改',
+            ),
+            'changes_en' => array(
+                '🈶 AI lines are always Traditional Chinese: Groq\'s gpt-oss often answered in Simplified even when told not to. The server now converts every reply with OpenCC (Simplified→Traditional, Taiwan usage) on both lanes; the client adds a 17KB lightweight character table (s2t.js) as a second guard and, when loading a save, converts Simplified lines already stored (chat, villager conversations, memories, schedules, scenes, news) with a notice "Converted N Simplified lines" before saving back. Only text detected as Simplified is converted',
+            ),
+        ),
+        array(
+            'version' => '5.67.4',
+            'date'    => '2026-09-08',
+            'changes' => array(
+                '🧹 全存檔清理 AI 助理漏出的內容:中繼曾把「I\'m Kiro, an AI development environment…」這類拒絕/自報身分的句子當成村民台詞回來,已寫進聊天紀錄、村民對話、記憶、行程、名場面、新聞。現在每次載入存檔都深度掃描整份資料,命中的條目移除並提示「已清除 N 則」後回存;前端收到伺服器回覆也再檢查一次,漏網的直接當失敗退回內建模擬對話',
+            ),
+            'changes_en' => array(
+                '🧹 Whole-save cleanup of leaked assistant content: the relay had returned refusal / self-identification lines like "I\'m Kiro, an AI development environment…" as villager dialogue, which got into chat logs, conversations, memories, schedules, scenes and news. Every save load now deep-scans the data, removes hits with a "Removed N entries" notice and saves back; the client also re-checks server replies and treats leftovers as failures, falling back to built-in simulated dialogue',
+            ),
+        ),
+        array(
+            'version' => '5.67.3',
+            'date'    => '2026-09-08',
+            'changes' => array(
+                '⏱️ 中繼逾時修復:v5.67.2 對 Anthropic 格式送 system 欄位後,Kiro 系代理每次都卡到 15 秒被中止,全部退回 Groq。改為不送 system 欄位、把 RimTown 系統提示併進使用者訊息開頭;拒絕偵測與退回機制不變',
+            ),
+            'changes_en' => array(
+                '⏱️ Relay timeout fix: after v5.67.2 sent a system field in Anthropic format, the Kiro-style agent stalled to the 15-second abort every time and everything fell back to Groq. The system field is no longer sent; RimTown\'s system instruction is merged into the start of the user message. Refusal detection and fallback are unchanged',
+            ),
+        ),
+        array(
+            'version' => '5.67.2',
+            'date'    => '2026-09-08',
+            'changes' => array(
+                '🎭 村民對話冒出英文「I\'m Kiro, an AI development environment…」修復:付費中繼是 Kiro 系代理,會自己塞「程式開發助理、不做角色扮演」的系統提示。現在每次呼叫都附上 RimTown 自己的角色扮演系統提示(Anthropic 格式走 system 欄位、OpenAI/Groq 格式走 system 訊息),並偵測「拒絕扮演/自報 AI 身分」的回覆,視同失敗立刻改走另一條渠道,不冷卻;兩邊都拒絕才回錯,前端退回內建模擬對話',
+            ),
+            'changes_en' => array(
+                '🎭 Fix for villagers suddenly saying "I\'m Kiro, an AI development environment…" in English: the paid relay is a Kiro-style agent that injects its own "coding assistant, no roleplay" system prompt. Every call now carries RimTown\'s own roleplay system prompt (system field for Anthropic format, system message for OpenAI / Groq), and replies that refuse to roleplay or self-identify as an AI count as failures and immediately switch lanes without cooldown; only when both refuse is an error returned and the client falls back to simulated dialogue',
+            ),
+        ),
+        array(
             'version' => '5.67.1',
             'date'    => '2026-09-08',
             'changes' => array(
                 '📱 手機離開時也沖存檔:原本只有 beforeunload 會把最後進度寫上雲端,手機切 App/滑掉分頁幾乎不觸發,雲端最多落後 5 分鐘,換裝置就會看到剛做完的任務又出現。現在 pagehide 與畫面隱藏(visibilitychange)也會同步沖本機+雲端,同一 tick 只沖一次',
+            ),
+            'changes_en' => array(
+                '📱 Saves also flush when leaving on mobile: only beforeunload used to push the final progress to the cloud, and switching apps or swiping the tab away rarely triggers it, so the cloud could lag up to 5 minutes and another device would show finished quests reappearing. pagehide and visibilitychange now flush local + cloud too, at most once per tick',
             ),
         ),
         array(
@@ -1217,6 +1429,10 @@ function rimtown_get_changelog() {
                 '📊 Groq 免費額度感知:免費層 30 RPM / 1K RPD / 8K TPM / 200K TPD 是整把金鑰共用、不分玩家。伺服器每次 Groq 回應都讀 x-ratelimit-* 標頭記下剩餘額度與重置時間;下一次請求先估算需要的 token(提示詞+回覆),不夠就直接走付費主渠道,不去撞 429;真的撞到 429 照 retry-after 精準冷卻(上限 6 小時),不再一律 5 分鐘',
                 '🔍 /api/chat 回應多帶 groq_quota(剩餘 token/請求數)與 groq_skipped(這次為何沒優先用 Groq),方便看免費額度用到哪',
             ),
+            'changes_en' => array(
+                '📊 Groq free-tier awareness: the free tier\'s 30 RPM / 1K RPD / 8K TPM / 200K TPD is shared by the whole key, not per player. The server reads x-ratelimit-* headers from every Groq response to record remaining quota and reset time; the next request estimates the tokens it needs (prompt + reply) and goes straight to the paid lane when there is not enough, instead of hitting a 429; a real 429 now cools down precisely by retry-after (up to 6 hours) rather than a flat 5 minutes',
+                '🔍 /api/chat responses now include groq_quota (remaining tokens / requests) and groq_skipped (why Groq was not preferred this time) to show how the free tier is being used',
+            ),
         ),
         array(
             'version' => '5.66.6',
@@ -1225,12 +1441,19 @@ function rimtown_get_changelog() {
                 '🚑 熱修「旅途出了點問題:this._newerSave is not a function」:v5.64.1 移除雲端去重時誤把相鄰的 _newerSave 一起刪掉,開機載入、切鎮、馬車過場三條路都會炸;已回填',
                 '🧪 新增發版前稽核 scripts/method-audit.js:檢查前端所有 this._xxx() 呼叫都有對應定義,之後每版必跑',
             ),
+            'changes_en' => array(
+                '🚑 Hotfix for "Something went wrong on the road: this._newerSave is not a function": removing cloud deduplication in v5.64.1 accidentally deleted the adjacent _newerSave, breaking boot loading, town switching and the carriage transition; restored',
+                '🧪 New pre-release audit scripts/method-audit.js: checks that every this._xxx() call in the client has a definition; run on every release from now on',
+            ),
         ),
         array(
             'version' => '5.66.5',
             'date'    => '2026-09-08',
             'changes' => array(
                 '⏱️ 兩條 AI 渠道共用時間預算:原本 Groq 逾時 15 秒 + 主渠道逾時 20 秒最壞 35 秒,超過函式 30 秒上限會變 504 而不是退回。現在整個請求共用 26 秒,每個上游呼叫只能用剩下的時間(Groq 模型清單 8 秒、Groq 對話 12 秒、主渠道 15 秒各自封頂),預算不足就不再嘗試;最壞情況也是「退回另一邊」',
+            ),
+            'changes_en' => array(
+                '⏱️ Both AI lanes share one time budget: a 15-second Groq timeout plus a 20-second main-lane timeout could total 35 seconds, beyond the 30-second function limit, producing a 504 instead of a fallback. The whole request now shares 26 seconds and each upstream call only gets what is left (Groq model list 8s, Groq chat 12s, main lane 15s caps); with no budget left no further attempt is made, so the worst case is still "fall back to the other lane"',
             ),
         ),
         array(
@@ -1239,6 +1462,9 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '🧠 Groq 推理模型空回覆根治:線上日誌確認原因是 groq_empty——gpt-oss 的思考段吃掉小額度 max_tokens(20 必空)。推理模型的 Groq 呼叫改給最低 160 token 餘裕(Groq 免費不計成本);空回覆只退回該次請求、不再觸發 5 分鐘冷卻,冷卻只留給 429/5xx/逾時',
             ),
+            'changes_en' => array(
+                '🧠 Root fix for empty replies from Groq reasoning models: live logs confirmed groq_empty — gpt-oss\'s thinking consumed the small max_tokens (20 always came back empty). Groq calls to reasoning models now get a 160-token floor (free tier costs nothing); an empty reply only fails that request and no longer triggers the 5-minute cooldown, which is reserved for 429 / 5xx / timeouts',
+            ),
         ),
         array(
             'version' => '5.66.3',
@@ -1246,12 +1472,18 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '🔬 分流診斷:/api/chat 回應多帶 fallback_from(哪個渠道/模型因何失敗才退回),伺服器日誌同步記錄;Groq 偏好退回已驗證能用的 gpt-oss-20b 優先(120b 上線實測每次首發失敗,原因待日誌確認)',
             ),
+            'changes_en' => array(
+                '🔬 Routing diagnostics: /api/chat responses now carry fallback_from (which lane / model failed and why before falling back), mirrored in server logs; Groq preference reverts to the verified gpt-oss-20b first (120b failed on every first attempt live, cause pending in logs)',
+            ),
         ),
         array(
             'version' => '5.66.2',
             'date'    => '2026-09-08',
             'changes' => array(
                 '🎯 Groq 模型偏好:線上驗證這把金鑰的清單沒有 llama 系列,實際挑到 gpt-oss;改為 gpt-oss-120b 優先於 20b(對話品質較佳,免費額度相同)。實測 chat 線→Groq、background 線→付費主渠道,20 個 token 也能正常回覆',
+            ),
+            'changes_en' => array(
+                '🎯 Groq model preference: live checks showed this key\'s model list has no llama models and actually picks gpt-oss; gpt-oss-120b is now preferred over 20b (better dialogue, same free quota). Verified live: chat lane → Groq, background lane → paid main lane, and even 20-token replies work',
             ),
         ),
         array(
@@ -1261,6 +1493,10 @@ function rimtown_get_changelog() {
                 '🛟 Groq 對話線回覆保底:上線實測 Groq 在小 max_tokens 下偶爾回空字串(推理模型把額度花在思考)。空回覆現在視同失敗直接退回付費主渠道,玩家不會拿到空白對話;模型偏好改為非推理模型優先(llama-3.3-70b → llama-3.1-8b → kimi-k2 → gpt-oss),gpt-oss 帶 reasoning_effort=low、qwen/deepseek 隱藏思考段,<think> 殘留一律剝掉',
                 '⏱️ /api/chat 函式逾時上限設為 30 秒(vercel.json),Groq 呼叫本身 15 秒逾時;回應多帶 model 欄位方便驗證實際走的模型',
             ),
+            'changes_en' => array(
+                '🛟 Groq chat-lane reply guarantee: live tests showed Groq occasionally returning empty strings at small max_tokens (reasoning models spend the budget thinking). Empty replies now count as failures and fall back to the paid main lane so players never get blank dialogue; model preference favors non-reasoning models (llama-3.3-70b → llama-3.1-8b → kimi-k2 → gpt-oss), gpt-oss gets reasoning_effort=low, qwen / deepseek hide their thinking, and leftover <think> tags are stripped',
+                '⏱️ /api/chat function timeout set to 30 seconds (vercel.json) with a 15-second timeout on the Groq call itself; responses include a model field so the actual model can be verified',
+            ),
         ),
         array(
             'version' => '5.66.0',
@@ -1268,6 +1504,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '🔀 智慧分流搬到伺服器(規則同 v5.39.0):前端把每次呼叫標成 chat(玩家與村民對話、劇情名場面)或 background(行程/反思/背景對話);chat 優先走 Groq 免費額度(GROQ_API_KEY),限流或故障退回付費主渠道並 5 分鐘後再試;background 走付費主渠道(LLM_*),失敗退回 Groq 並對主渠道累進冷卻(60 秒×次數,最多 5 分鐘),恢復即切回。兩邊都失敗才回錯',
                 '🩹 帳號自救:開機向伺服器確認帳號狀態時,若帳號紀錄遺失(雲端儲存空間停權/搬遷缺漏),趁登入憑證仍有效請玩家設一組新密碼重建紀錄;存檔、成就、設定以帳號名為 key,不受影響。紀錄仍在時一律拒絕,不能拿來改別人的密碼',
+            ),
+            'changes_en' => array(
+                '🔀 Smart routing moved to the server (same rules as v5.39.0): the client tags every call as chat (player-villager dialogue, drama scenes) or background (schedules / reflections / background conversations); chat goes to the Groq free tier (GROQ_API_KEY) first and falls back to the paid main lane on rate limits or failures, retrying after 5 minutes; background goes to the paid main lane (LLM_*) and falls back to Groq with progressive main-lane cooldown (60s × failures, up to 5 minutes), switching back on recovery. An error is returned only when both fail',
+                '🩹 Account self-repair: when the boot-time account check finds the account record missing (cloud storage suspended or a migration gap), the player is asked to set a new password to rebuild the record while the login token is still valid; saves, achievements and settings are keyed by account name and unaffected. Refused whenever the record exists, so it cannot be used to change someone else\'s password',
             ),
         ),
         array(
@@ -1277,6 +1517,10 @@ function rimtown_get_changelog() {
                 '🔐 AI 全面內建:設定頁的「進階:自備 AI 金鑰」整段移除(供應商/API 金鑰/Groq 金鑰/測試連線都拿掉),所有玩家一律走小鎮內建 AI;金鑰只存在 Vercel 環境變數(LLM_* 主渠道 + GROQ_API_KEY 備援),玩家端不需要、也看不到任何金鑰欄位',
                 '🧹 帳號設定不再保存玩家金鑰:伺服器讀取時過濾、寫入時清除舊版留下的 llm_api_key/fallback_groq_key;前端開機同步清掉本機與擴充功能儲存區的舊金鑰。設定頁只剩 NPC 每日 AI 額度、模擬速度、語言與音樂',
             ),
+            'changes_en' => array(
+                '🔐 AI fully built in: the "Advanced: bring your own AI key" section (provider / API key / Groq key / test connection) is removed from settings and every player uses the town\'s built-in AI; keys live only in Vercel environment variables (LLM_* main lane + GROQ_API_KEY fallback) and players never need or see a key field',
+                '🧹 Account settings no longer store player keys: the server filters them on read and clears leftover llm_api_key / fallback_groq_key on write; the client wipes old keys from local and extension storage at boot. Settings now only hold the NPC daily AI budget, simulation speed, language and music',
+            ),
         ),
         array(
             'version' => '5.64.1',
@@ -1284,6 +1528,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '🛡️ 存檔保護三件組(改版後紀錄不見的根治):① Service Worker 原本把同網域 /api/ 的 GET 當靜態資源 cache-first,第一次抓到的雲端存檔清單/內容會一直用到下次改版才更新——這就是「改版才變、進度好像不見」的真兇;/api/ 現在一律走網路不快取。② 伺服器端進度單調保護:較舊的存檔(舊分頁、舊裝置、備援 reset 出的 Day1 世界)不能再蓋過雲端較新的進度,匯入存檔等玩家明確意圖才可強制覆寫。③ 覆寫前自動保留前一版備份,主檔遺失時讀取端自動退回備份。',
                 '🚫 程式絕不自動刪除任何雲端存檔:移除 v5.62.1 的雲端同名去重自動刪除;要刪只能由玩家或管理員手動操作',
+            ),
+            'changes_en' => array(
+                '🛡️ Save-protection trio (root fix for progress vanishing after updates): ① the Service Worker treated same-origin /api/ GETs as cache-first static assets, so the first cloud save list / content fetched stayed in use until the next release — the real culprit behind "it only changes after an update, my progress seems gone"; /api/ now always goes to the network. ② Server-side monotonic progress guard: older saves (old tabs, old devices, a Day-1 world from a fallback reset) can no longer overwrite newer cloud progress; only explicit intent such as importing a save can force it. ③ A backup of the previous version is kept before every overwrite, and reads fall back to it if the main file is missing',
+                '🚫 The code never auto-deletes any cloud save: v5.62.1\'s automatic same-name deduplication is removed; deletion is only possible manually by the player or an admin',
             ),
         ),
         array(
@@ -1294,6 +1542,11 @@ function rimtown_get_changelog() {
                 '📦 管理員一鍵搬遷:設定分頁「🛡️ 管理員」面板新增儲存後端狀態與「📦 搬資料到資料庫」按鈕,按一次就把既有 Blob 資料複製進 Postgres(可重複執行,不覆蓋較新的資料)',
                 '🏘️ 內建小鎮 AI 改接付費渠道:/api/chat 主渠道改為可設定的付費 AI 中繼(env LLM_BASE_URL/LLM_API_KEY/LLM_MODEL/LLM_FORMAT,相容 Anthropic 與 OpenAI 格式),Groq 保留為備援;每日額度可用 env 調整。玩家端免填金鑰即可對話,標頭顯示「AI:小鎮內建」',
             ),
+            'changes_en' => array(
+                '🗄️ Save backend can use Neon Postgres: with the DATABASE_URL environment variable set, all player data (accounts, saves, achievements, settings, leaderboard, ban list) is stored in Postgres, avoiding Vercel Blob\'s "2K list/put per month" cap (the root cause of cloud saves being rejected). Without DATABASE_URL behavior is unchanged and deployment cannot break; reads fall back to Blob when Postgres has nothing and backfill on the way, and the town list unions both sides until migration completes',
+                '📦 One-click admin migration: the "🛡️ Admin" panel in Settings shows the storage backend status and a "📦 Move data to database" button that copies existing Blob data into Postgres (re-runnable, never overwrites newer data)',
+                '🏘️ Built-in town AI now uses a paid lane: the /api/chat main lane is a configurable paid AI relay (env LLM_BASE_URL / LLM_API_KEY / LLM_MODEL / LLM_FORMAT, Anthropic and OpenAI formats), with Groq kept as fallback; the daily quota is adjustable via env. Players chat without entering any key and the header shows "AI: built-in"',
+            ),
         ),
         array(
             'version' => '5.63.2',
@@ -1301,12 +1554,18 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '📉 Vercel Blob 額度止血:Hobby 方案每月只有 2K 次 advanced operations,原本每次讀取都先 list() 找檔案、每 60 秒又寫兩次雲端,額度爆表後雲端寫入被拒(之前「雲端儲存失敗」的真正原因)——讀取改為直接打固定公開網址(只算流量不算次數),封鎖名單查詢加 60 秒記憶體快取;登入玩家本機仍每 60 秒存檔,雲端改為「有進度變化且距上次 ≥5 分鐘」才寫,關頁/手動存檔/切鎮照舊立即寫雲端',
             ),
+            'changes_en' => array(
+                '📉 Vercel Blob quota bleeding stopped: the Hobby plan allows only 2K advanced operations a month, and every read used to list() first while two cloud writes fired every 60 seconds, so once the quota blew, cloud writes were rejected (the real cause of "cloud save failed"). Reads now hit fixed public URLs directly (bandwidth only, no operation count), ban-list lookups get a 60-second memory cache, logged-in players still save locally every 60 seconds while cloud writes happen only "when progress changed and ≥5 minutes since the last one"; closing the page, manual saves and town switches still write to the cloud immediately',
+            ),
         ),
         array(
             'version' => '5.63.1',
             'date'    => '2026-09-08',
             'changes' => array(
                 '🚑 部署修復:v5.63.0 新增的管理員端點讓 Vercel Serverless Function 數量達 13,超過 Hobby 方案 12 個上限,正式站部署失敗仍停在 v5.62.1——移除無伺服器狀態的 /api/logout 函式(JWT 登出本來就只是前端丟棄 token),改以 rewrite 導向 /api/me,函式數回到 12',
+            ),
+            'changes_en' => array(
+                '🚑 Deployment fix: the admin endpoint added in v5.63.0 pushed the Vercel Serverless Function count to 13, over the Hobby limit of 12, so production deployment failed and stayed on v5.62.1. The stateless /api/logout function is removed (JWT logout was only the client dropping its token) and rewritten to /api/me, bringing the count back to 12',
             ),
         ),
         array(
@@ -1317,12 +1576,20 @@ function rimtown_get_changelog() {
                 '✖️ 手機版「目前目標」提醒按 × 關不掉修復:× 的處理函式抓的是第一次顯示時的任務 id,任務換了之後按 × 記錯 id,下一秒又彈回來——改為讀當前任務 id,並直接吃手機 touch 事件、放大可點區域',
                 '🔁 做過的任務又出現修復(存檔回捲):登入後自動存檔原本只寫雲端,雲端寫入失敗進度就沒存到任何地方,重新整理載到舊存檔任務自然重來——現在登入也同時寫本機,開機與切鎮都以 tickCount 比較雲端/本機挑最新的一份(同一天內也分得出),本機較新會自動回填雲端;任務系統讀檔前一律重建,不再殘留上一鎮的任務狀態',
             ),
+            'changes_en' => array(
+                '🛡️ Admin account management: list your own account in the ADMIN_USERS Vercel environment variable and an "Admin" panel appears in Settings to list all players, block / unblock and delete accounts (with all their cloud saves; the name cannot be re-registered). Blocked or deleted accounts immediately lose login, AI and saving, and existing sessions are kicked',
+                '✖️ Mobile "current goal" reminder could not be closed: the × handler captured the quest id from the first render, so after the quest changed pressing × dismissed the wrong id and it popped back a second later; it now reads the current quest id, handles touch events directly and has a larger tap area',
+                '🔁 Completed quests reappearing (save rollback) fixed: logged-in auto-save only wrote to the cloud, so when the cloud write failed nothing was saved anywhere and a refresh loaded an old save with quests redone. Logged-in players now also write locally; boot and town switches compare cloud / local by tickCount and pick the newest (even within the same day), with a newer local copy backfilled to the cloud; the quest system is rebuilt before every load so the previous town\'s quest state never lingers',
+            ),
         ),
         array(
             'version' => '5.62.1',
             'date'    => '2026-08-26',
             'changes' => array(
                 '🗂️ 城鎮列表不再累積重複的邊境鎮:啟動失敗時的備援路徑每次都領一個新城鎮 id,配合 v5.59.1 的雙寫,每存一輪列表就多一筆「第1天」孤兒條目——現在啟動會優先回到上次玩的鎮(雲端拿不到就讀本地備份),真的要開新世界也沿用既有條目的 id 覆寫同一格;開機時自動清掉既有的同名 Day1 孤兒(本機+雲端),有實際進度的同名城鎮一律保留不動',
+            ),
+            'changes_en' => array(
+                '🗂️ Town list no longer piles up duplicate Frontier Towns: the boot fallback path claimed a new town id every time, and combined with v5.59.1\'s dual writes each save cycle added another "Day 1" orphan entry. Boot now returns to the last played town first (reading the local backup when the cloud is unavailable), and a genuinely new world reuses the existing entry\'s id; existing same-name Day-1 orphans are cleaned on boot (local + cloud) while same-name towns with real progress are always kept',
             ),
         ),
         array(
@@ -1331,6 +1598,9 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '🏠 住房制度重整:沒結婚的村民不再被塞進同一間房——只有夫妻同住一間,單身各自獨居;房間不夠時自動在空地加蓋單棟小屋並接上道路(邊境鎮約加蓋 8 間、海風鎮約 3 間,依實際人口動態計算);婚後兩人會自動搬進同一間;切換城鎮時舊鎮的住戶分配不再殘留',
             ),
+            'changes_en' => array(
+                '🏠 Housing overhaul: unmarried villagers are no longer packed into one house — only spouses share, singles live alone; when rooms run short, single cottages are built on empty land and connected to the road (about 8 in Frontier Town, 3 in Seabreeze Harbor, computed from real population); newlyweds move in together automatically; switching towns no longer leaves the old town\'s housing assignments behind',
+            ),
         ),
         array(
             'version' => '5.61.0',
@@ -1338,12 +1608,18 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '🧹 移除玩家職業選擇系統:選職業其實對村莊經濟毫無影響(全鎮產出都來自 NPC),卻用「你目前無業!」橫幅和 11 顆按鈕搶走新手第一天的注意力——整套面板(選職/辭職/手動生產鈕)與三個職業成就一併移除;玩家身分固定顯示「旅人」,當選鎮長時照樣顯示鎮長頭銜,參選鎮長玩法不受影響',
             ),
+            'changes_en' => array(
+                '🧹 Player job selection removed: choosing a job had zero effect on the village economy (all output comes from NPCs) yet the "You are unemployed!" banner and 11 buttons hijacked a newcomer\'s first day. The whole panel (choose / quit / manual production buttons) and three job achievements are gone; the player is always shown as "Traveler", still shown as mayor when elected, and running for mayor is unaffected',
+            ),
         ),
         array(
             'version' => '5.60.2',
             'date'    => '2026-08-26',
             'changes' => array(
                 '🚪 村民卡在屋裡出不來修復:醒著的村民若在建築物內、目的地在外面,卻因為房間開口被牆擋住/找不到路而一直出不了門,約 6 秒後會自動安置到該建築的門口外並重新找路——與既有的「睡覺一定進屋」保險絲成對,保證不會有人永遠困在房子裡',
+            ),
+            'changes_en' => array(
+                '🚪 Villagers stuck indoors fixed: an awake villager inside a building whose destination is outside, but who cannot get out because the room opening is blocked or no path is found, is now placed just outside the building\'s door after about 6 seconds and re-routed — paired with the existing "sleeping always goes inside" fuse, nobody stays trapped in a house forever',
             ),
         ),
         array(
@@ -1353,12 +1629,19 @@ function rimtown_get_changelog() {
                 '🏭 工廠與選址互不侵犯:工廠預留地基計算現在會避開馬車站、玩家選址建築(施工中+完工)與裝飾;反過來蓋建築與擺裝飾也不能占用工廠地基(含空地基)或馬車站,兩套系統不再互相蓋在對方頭上',
                 '🎨 工廠繪製像素化補完:空地基上的 🏗️ 表情符號改為像素木材堆,煙囪的圓形煙改為方塊像素煙',
             ),
+            'changes_en' => array(
+                '🏭 Factories and building placement stay out of each other\'s way: factory foundation planning now avoids the carriage station, player-placed buildings (under construction and complete) and decorations; conversely buildings and decorations cannot occupy factory foundations (including empty ones) or the carriage station',
+                '🎨 Factory drawing fully pixelated: the 🏗️ emoji on empty foundations becomes a pixel lumber pile and the round chimney smoke becomes blocky pixel smoke',
+            ),
         ),
         array(
             'version' => '5.60.0',
             'date'    => '2026-08-23',
             'changes' => array(
                 '🏗️ 蓋建築選址引導:進入選址模式後,所有可以蓋的 2×2 格位會發出綠光脈動,滑鼠移動時有綠(可蓋)/紅(不可)的佔地預覽框跟著;點擊自動吸附到 2 格網格,所有建築落在同一格線上自然蓋得整齊,不用再憑感覺亂點',
+            ),
+            'changes_en' => array(
+                '🏗️ Build placement guidance: entering placement mode makes every buildable 2×2 slot pulse green, a green (ok) / red (blocked) footprint preview follows the mouse, and clicks snap to a 2-tile grid so every building lines up neatly without guessing',
             ),
         ),
         array(
@@ -1367,12 +1650,18 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '🚏 海風鎮回不了邊境鎮修復:城鎮名字改以「存檔內的鎮名」為權威——過去 meta 對不上 id 時會誤判自己叫「邊境鎮」,馬車名單因此把真正的回程踢掉、還列出海風鎮自己;現在出訪名單一律排除自己、以存檔內鎮名核對、切鎮後立即重建,存錯名字的舊 meta 也會在下次存檔時自動修正',
             ),
+            'changes_en' => array(
+                '🚏 Could not return from Seabreeze Harbor to Frontier Town fixed: the town name inside the save is now authoritative — when meta did not match the id the town wrongly believed it was "Frontier Town", so the carriage list dropped the real return trip and even listed Seabreeze itself; the destination list now always excludes the current town, checks against the saved name, rebuilds right after switching, and old meta with the wrong name is corrected on the next save',
+            ),
         ),
         array(
             'version' => '5.59.4',
             'date'    => '2026-08-23',
             'changes' => array(
                 '🐎 馬車 UI 全面像素化:馬車站對話框標題、「前往」按鈕、旅途過場動畫裡的系統表情符號(🐴/🛺/🐎)全部換成方塊拼成的像素馬車 SVG,與地圖上的馬車站同款配色;過場動畫行進方向改為與馬頭朝向一致',
+            ),
+            'changes_en' => array(
+                '🐎 Carriage UI fully pixelated: the station dialog title, the "Go" button and the system emoji in the journey transition (🐴/🛺/🐎) are replaced by a blocky pixel carriage SVG in the same colors as the map station; the transition now moves in the direction the horse faces',
             ),
         ),
         array(
@@ -1381,12 +1670,18 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '🐎 馬車站改為純像素風繪製:表情符號小馬換成方塊拼成的像素馬(頭/鬃毛/尾巴/四腿/馬蹄),圓形車輪換成階梯八角方塊輪+輪轂,車廂加上車頂/車窗/車轅細節,站牌文字同步去掉表情符號',
             ),
+            'changes_en' => array(
+                '🐎 Carriage station drawn in pure pixel style: the emoji pony becomes a blocky pixel horse (head / mane / tail / four legs / hooves), round wheels become stepped octagonal block wheels with hubs, the cart gets roof / window / shaft details, and the sign text drops its emoji',
+            ),
         ),
         array(
             'version' => '5.59.2',
             'date'    => '2026-08-22',
             'changes' => array(
                 '🎵 背景音樂開關搬進「設定」分頁:原本的靜音鈕與音量條放在一個沒有入口的舊版彈窗裡,玩家關不掉音樂——現在設定分頁的「遊戲控制」區可直接 🔇靜音/調音量,設定會記住',
+            ),
+            'changes_en' => array(
+                '🎵 Background music controls moved into the "Settings" tab: the mute button and volume slider lived in an old popup with no entry point, so players could not turn the music off; the "Game controls" area in Settings now has 🔇 mute / volume and remembers the choice',
             ),
         ),
         array(
@@ -1395,6 +1690,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '🏷️ TC-03 兩處殘留補修:今日焦點「去找陳偉聊聊天」不再跨鎮殘留(讀檔時上一鎮的焦點會被清掉並依新鎮重算);任何切鎮路徑(城鎮列表直切/馬車)完成後教學橫幅立即重繪,海風鎮不再顯示「落腳邊境」',
                 '💾 切鎮前自動雙寫本地+雲端存檔:雲端寫入失敗時,切走前的進度不再蒸發',
+            ),
+            'changes_en' => array(
+                '🏷️ Two leftover TC-03 fixes: the daily focus "go chat with Chen Wei" no longer leaks across towns (the previous town\'s focus is cleared on load and recomputed for the new town); after any town switch (list or carriage) the tutorial banner redraws immediately so Seabreeze Harbor no longer shows "Settle on the frontier"',
+                '💾 Automatic dual write (local + cloud) before switching towns: if the cloud write fails, progress from before the switch no longer evaporates',
             ),
         ),
         array(
@@ -1406,12 +1705,21 @@ function rimtown_get_changelog() {
                 '🏷️ TC-03 鎮名寫死修復:劇集標題「第N集·◯◯日常」、村民閒聊「◯◯的生活還不錯」改讀當前鎮名;海風鎮不再顯示「落腳邊境」任務(改為漁村故事頁)',
                 '💬 TC-04 訪客抵達時聊天清單立即刷新,可直接私訊遠客;TC-05 人口顯示改為「常住 N(+M 訪客)」,訪客不灌水人口',
             ),
+            'changes_en' => array(
+                '🚌 TC-01 return dead-end fix: carriage destinations and the town list now merge cloud + local, so navigation works even when cloud writes fail; leftover same-name towns are deduplicated; on login the town list includes local saves (tagged 📱 local) instead of wrongly reporting "no cloud saves"',
+                '🕐 TC-02 half-reset on arrival fix: switching towns compares cloud and local save dates and always loads the newer one, so a Day-1 copy from guest days can no longer overwrite real progress; quests and the tutorial banner redraw for the new town right after arrival',
+                '🏷️ TC-03 hardcoded town name fix: episode titles "Episode N · ◯◯ daily life" and villager small talk "life in ◯◯ is good" now read the current town name; Seabreeze Harbor no longer shows the "Settle on the frontier" quest (it gets a fishing-village story page)',
+                '💬 TC-04 the chat list refreshes immediately when a visitor arrives so you can message them directly; TC-05 population shows "residents N (+M visitors)" so visitors do not inflate the count',
+            ),
         ),
         array(
             'version' => '5.58.1',
             'date'    => '2026-08-22',
             'changes' => array(
                 '🚌 修復「點了馬車卻沒真的前往」:登入狀態下切換城鎮只查雲端存檔,自動生成的海風鎮在本地 → 靜默失敗。現在雲端沒有就退回本地存檔(成功後自動補上雲端);切換失敗會明確提示,不再演「抵達」',
+            ),
+            'changes_en' => array(
+                '🚌 "Took the carriage but never actually went" fixed: when logged in, town switching only looked at cloud saves, while the auto-generated Seabreeze Harbor lived locally → silent failure. Cloud misses now fall back to local saves (backfilled to the cloud on success), and a failed switch shows a clear message instead of pretending to "arrive"',
             ),
         ),
         array(
@@ -1422,12 +1730,20 @@ function rimtown_get_changelog() {
                 '👪 跨鎮親緣網:王麗的姑婆海嬤在海風鎮、吳達與鹽工石叔是礦上老兄弟、孫雨與燈爺是筆友…6 對手寫羈絆,兩鎮居民從第一天就會在閒聊中提起海那頭的親友',
                 '🐛 QA 修正:換鎮後「今日焦點還在講陳偉」的跨鎮鬼影(reset 清除敘事殘留);鎮名三處標題不再永遠寫死邊境鎮(townName 隨存檔);海風鎮不再顯示邊境鎮主線任務;建鎮加 loading 畫面+「兩鎮並存」提示',
             ),
+            'changes_en' => array(
+                '🛤️ Seabreeze Harbor now "already exists": no manual creation — the coastal road is blocked by a storm, and once the town reaches prosperity 20 a road crew reopens it ("Road reopened!" event); Seabreeze Harbor generates in the background, the carriage goes straight there and villagers of both towns can visit at once; before that the driver tells you the road is closed',
+                '👪 Cross-town kinship web: Wang Li\'s great-aunt Granny Mae lives in Seabreeze, Wu Da and salt worker Uncle Stone are old mine buddies, Sun Yu and Old Lantern are pen pals… six hand-written bonds, so residents of both towns mention relatives across the water from day one',
+                '🐛 QA fixes: the cross-town ghost of "daily focus still talking about Chen Wei" after switching (reset clears narrative leftovers); three title spots no longer hardcode Frontier Town (townName follows the save); Seabreeze no longer shows Frontier Town\'s main quests; town creation gets a loading screen and a "both towns coexist" hint',
+            ),
         ),
         array(
             'version' => '5.57.0',
             'date'    => '2026-08-21',
             'changes' => array(
                 '🐎 雙城第三波(馬車過場):地圖東側大路盡頭新增「馬車站」(木平台+馬車+站牌),點擊即可選擇前往別的城鎮——黑幕過場動畫(馬車行進+季節旁白)後抵達對方鎮的馬車站下車;雙城計畫 P0~P2 全數完成',
+            ),
+            'changes_en' => array(
+                '🐎 Twin-town wave 3 (carriage transition): a "Carriage station" (wooden platform + carriage + sign) at the end of the eastern road; click to choose another town, watch a black-screen transition (carriage ride + seasonal narration) and step off at the other town\'s station; twin-town plan P0–P2 complete',
             ),
         ),
         array(
@@ -1438,6 +1754,11 @@ function rimtown_get_changelog() {
                 '💬 新交談選項「🚌 邀去鄰鎮」:好感夠(20+)就能邀請村民去另一個鎮作客,切過去就能看到他作客的樣子',
                 '📬 兩鎮交流靠「信箱」機制:出訪/返鄉見聞在切鎮或遊玩中自動送達;訪客名單隨存檔保存',
             ),
+            'changes_en' => array(
+                '🚌 Twin-town wave 2 (villager visits): once there are two towns, villagers visit each other automatically — arriving with full personality and memory for a few days (name tagged with home town), chatting / gossiping / falling for locals, then returning home with the trip written into memory, feeding reflections and dialogue',
+                '💬 New chat option "🚌 Invite to the neighboring town": at affinity 20+ you can send a villager to the other town as a guest and switch over to see them there',
+                '📬 The two towns exchange through a "mailbox": departures / homecoming stories deliver automatically on switching or during play; visitor lists are saved',
+            ),
         ),
         array(
             'version' => '5.55.0',
@@ -1447,6 +1768,11 @@ function rimtown_get_changelog() {
                 '📖 劇情解鎖:繁榮 20(第二章)時「碼頭來信」通知,之後城鎮列表建立新城鎮可選海風鎮;主題隨存檔保存,舊存檔不受影響',
                 '🌙 修復月亮動畫:月相陰影裁切進月盤(不再把黑盤畫到天空上),新月夜保留一彎月牙——不再出現「黑洞套白圈」',
             ),
+            'changes_en' => array(
+                '🌊 Twin-town wave 1: a brand-new themed town, Seabreeze Harbor — a coastal fishing village with 15 new villagers (Hal / Cody / Gwen / Lou…) each with a backstory and starting grudges (love triangles, a shipwreck feud, unfinished old romance), the early-rising culture of fisherfolk, exclusive places like the Sea Kitchen / salt works / lighthouse study, and a complementary economy rich in fish but short of wood',
+                '📖 Story unlock: at prosperity 20 (chapter 2) a "Letter from the docks" notice arrives, after which Seabreeze Harbor can be chosen when creating a town from the list; the theme is saved with the game and old saves are unaffected',
+                '🌙 Moon animation fix: the phase shadow is clipped inside the disc (no more black disc painted on the sky) and new-moon nights keep a thin crescent — no more "black hole with a white ring"',
+            ),
         ),
         array(
             'version' => '5.54.1',
@@ -1454,6 +1780,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '🏗️ 工廠地基:地圖自動規劃 7 塊不壓路/不壓水/不壓建築的「預留地」(虛線地基),工廠蓋在地基上成為正式建築(屋頂/煙囪/開工冒煙),不再懸浮在馬路中間',
                 '👷 工廠自動上工:蓋好後村民自己來上班(優先本職、其次心情好的,鎮長不會來烤麵包),沒選配方自動開第一個——你是旅人,不用當人事主任;手動指派仍可覆蓋',
+            ),
+            'changes_en' => array(
+                '🏗️ Factory foundations: the map automatically plans 7 "reserved lots" (dashed foundations) that avoid roads / water / buildings; factories built on them become proper buildings (roof / chimney / smoke when working) instead of floating in the middle of the road',
+                '👷 Factories staff themselves: once built, villagers come to work on their own (matching profession first, then the cheerful), and the first recipe starts automatically if none was chosen — you are a traveler, not the HR manager; manual assignment still overrides',
             ),
         ),
         array(
@@ -1465,6 +1795,12 @@ function rimtown_get_changelog() {
                 '🛏️ 睡眠保險絲:睡著卻長時間在屋外(不論走路中或卡住)一律強制安置進屋,雙保險',
                 '📖 章節節奏修正:繁榮度是現狀快照,新鎮第一晚就會跳到 ~40 導致第 1 章只活一天;現在前 5 天封頂在 天數×8(8/16/24/32/40),「先和村民相處」的第一章真的有 2-3 天可玩;舊存檔完全不受影響',
             ),
+            'changes_en' => array(
+                '⏸️ Pause is fully reliable: pressing it shows an immediate "Paused / Resumed" corner notice; a pause pressed while a full-screen card is open takes effect after closing (no longer overwritten by restore logic); closing the town list restores your original pause state instead of unconditionally resuming',
+                '🌙 No more whole town standing in the square at midnight: a planned villager gathering whose countdown reaches sleeping hours is cancelled (night owls unaffected) — the root cause of the entire town being dragged to the green all night on Spring Rite',
+                '🛏️ Sleep fuse: anyone asleep but outdoors for a long time (walking or stuck) is forced inside, as a second safeguard',
+                '📖 Chapter pacing fix: prosperity is a snapshot, so a new town jumped to ~40 on its first night and chapter 1 lasted a day; the first 5 days are now capped at days×8 (8/16/24/32/40) so the "get to know the villagers" chapter really lasts 2–3 days; old saves unaffected',
+            ),
         ),
         array(
             'version' => '5.53.2',
@@ -1472,12 +1808,18 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '🏭 工廠/產業成本與產出在地化:修復顯示英文 key(wood:20 stone:15)的 7 處漏翻,全部接上與全站一致的中文資源名稱(木材×20 石材×15)',
             ),
+            'changes_en' => array(
+                '🏭 Factory / industry costs and outputs localized: fixed 7 spots showing raw English keys (wood:20 stone:15), now using the same Chinese resource names as the rest of the game (wood ×20, stone ×15)',
+            ),
         ),
         array(
             'version' => '5.53.1',
             'date'    => '2026-08-20',
             'changes' => array(
                 '🛏️ 徹底修復「睡在戶外」:睡著卻停在屋外的村民(小屋內部目標被路徑修正推到牆邊等情況)會直接安置進自家屋內;找不到自家就借宿最近的小屋——保證睡覺一定在房子裡',
+            ),
+            'changes_en' => array(
+                '🛏️ "Sleeping outdoors" fixed for good: villagers asleep but stopped outside (e.g. an indoor target pushed to a wall by path correction) are placed directly inside their own house, or the nearest cottage if home cannot be found — sleep is guaranteed to happen indoors',
             ),
         ),
         array(
@@ -1490,6 +1832,13 @@ function rimtown_get_changelog() {
                 '📊 白天顯示「預估日產 +X(午夜結算)」,排班一下就有回饋,不再誤讀成 +0 沒生效',
                 '💸 加班津貼 3→8 銀幣,sink 有存在感',
             ),
+            'changes_en' => array(
+                '🌾 The food card shows "stock / granary capacity" and a ⚠ 5% daily spoilage warning above capacity (spoilage math verified by automated tests: 1000 / capacity 400 → −30 that night)',
+                '🍲 Meals expire too: anything beyond three days of demand loses 8% a day, so it no longer only grows; cook output 12→9 to tame the default 3-cook surplus',
+                '🪵 Raw-material auto-restock is now "top up to 40": a flat +12 could never keep up with high-demand wood, so the red light stayed stuck',
+                '📊 Daytime shows "estimated daily output +X (settled at midnight)" so scheduling gives immediate feedback and no longer reads as +0 doing nothing',
+                '💸 Overtime allowance 3→8 silver so the sink is noticeable',
+            ),
         ),
         array(
             'version' => '5.52.0',
@@ -1498,6 +1847,11 @@ function rimtown_get_changelog() {
                 '💰 經濟重構第三波(價值層收束):商人改以「收購加工品」為主(餐食/工具/衣物/藥品/家具賣出換銀幣),買賣原料退場;銀幣水龍頭收緊(商人職業 8→5、鎮長 3→2),加班要付津貼(銀幣新 sink,付不出就照常排班)',
                 '🌾 食物稀缺曲線:超過糧倉容量(400+穀倉擴容)的存糧每日腐壞 5%,冷藏穀庫減緩——食物爆量不再無感,辦慶典/賣商人有了理由',
                 '🔬 研究獨立成「科技」分頁(價值層長線投資),資源分頁更聚焦',
+            ),
+            'changes_en' => array(
+                '💰 Economy rework wave 3 (value layer): merchants now mainly buy processed goods (meals / tools / clothes / medicine / furniture sold for silver) and raw-material trading is gone; silver faucets tightened (merchant job 8→5, mayor 3→2); overtime must be paid (a new silver sink; if you cannot pay, scheduling proceeds as normal)',
+                '🌾 Food scarcity curve: stock above granary capacity (400 + granary upgrades) spoils 5% a day, slowed by the cold granary — surplus food is no longer meaningless, giving festivals and merchant sales a purpose',
+                '🔬 Research moves to its own "Tech" tab (a long-term value-layer investment), making the Resources tab more focused',
             ),
         ),
         array(
@@ -1508,6 +1862,11 @@ function rimtown_get_changelog() {
                 '📦 原料層自動供給:木材/石材/金屬/布料/草藥低於安全線自動回補;材料短缺不再罷工,改為邊角料趕工(產能四折)',
                 '💊 需求波動:心情低落的村民會找醫生拿藥(藥品有了真用途);冬季衣物耗損翻倍',
             ),
+            'changes_en' => array(
+                '👷 Economy rework wave 2 (labor scheduling): the 5 processing lines show "who is working", and the mayor can order ⏸ rest / ▶ normal / ⏫ overtime — resting villagers feel better and socialize more; overtime gives +50% output but tires them. The economy shifts from "stockpiling" to "assigning people"',
+                '📦 Raw-material layer auto-supplies: wood / stone / metal / cloth / herbs refill when below a safety line; shortages no longer stop work but switch to scrap-material rush (40% capacity)',
+                '💊 Demand fluctuation: low-mood villagers visit the doctor for medicine (medicine now has a real use); winter doubles clothing wear',
+            ),
         ),
         array(
             'version' => '5.50.0',
@@ -1516,12 +1875,19 @@ function rimtown_get_changelog() {
                 '📦 經濟重構第一波(三層資源 UI):資源分頁改為「關鍵資源(食物+銀幣大卡)→ 加工產能(餐食/工具/衣物/藥品/家具,顯示今日產出/消耗流量與需求,而非純庫存)→ 原料倉庫(收成一顆綠黃紅燈號,細目摺疊)」',
                 '🔬 研究點移出資源格,直接顯示在研究區標題——玩家要盯的數字從 13+ 種降到 2 種存量+5 條產能',
             ),
+            'changes_en' => array(
+                '📦 Economy rework wave 1 (three-layer resource UI): the Resources tab becomes "key resources (big food + silver cards) → processing capacity (meals / tools / clothes / medicine / furniture showing today\'s output / consumption flow and demand rather than raw stock) → raw warehouse (one green / yellow / red light per harvest, details collapsed)"',
+                '🔬 Research points leave the resource grid and show in the research header — the numbers to watch drop from 13+ kinds to 2 stocks + 5 capacities',
+            ),
         ),
         array(
             'version' => '5.49.3',
             'date'    => '2026-08-19',
             'changes' => array(
                 '🖥️ 桌面版聊天雙欄:進入對話時側欄自動加寬,左欄聯絡人清單(可直接點選切換對象)+右欄對話視窗;窄螢幕維持全屏對話+「‹」返回',
+            ),
+            'changes_en' => array(
+                '🖥️ Desktop two-column chat: entering a conversation widens the sidebar, with the contact list on the left (click to switch) and the conversation on the right; narrow screens keep full-screen chat with a "‹" back button',
             ),
         ),
         array(
@@ -1530,12 +1896,18 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '📱 聊天版面重排:未選人時聯絡人清單撐滿高度(不再擠在小視窗+大片空白);進入對話後清單讓位給對話視窗,左上「‹」返回聯絡人',
             ),
+            'changes_en' => array(
+                '📱 Chat layout rearranged: with nobody selected the contact list fills the height (no more small window plus a big blank); entering a conversation hands the space to the chat window, with "‹" in the top-left to go back',
+            ),
         ),
         array(
             'version' => '5.49.1',
             'date'    => '2026-08-19',
             'changes' => array(
                 '🔔 村民卡的追蹤按鈕加上「追蹤／追蹤中」文字標籤,一眼看懂功能',
+            ),
+            'changes_en' => array(
+                '🔔 The follow button on villager cards gets a "Follow / Following" text label so its purpose is obvious',
             ),
         ),
         array(
@@ -1545,6 +1917,10 @@ function rimtown_get_changelog() {
                 '🎬 戲劇導演(張力保底):連續 4 天沒有名場面時,系統會從三種手法挑一種在後台輕推——暗戀萌芽/舊怨復發/嫉妒升溫(附對應的內心獨白記憶),確保小鎮的戲一直有得看;導演出手後至少醞釀 3 天,不會變成鬧劇',
                 '✂️ 際遇卡停止每日抽:與「觀察居民愛恨糾葛」主軸無關的個人 roguelike;已排隊的舊卡仍可正常結算,經營線(資源/產業)維持全自動背景運轉',
             ),
+            'changes_en' => array(
+                '🎬 Drama director (tension floor): after 4 days without a scene, the system quietly nudges one of three levers in the background — a budding crush, an old grudge resurfacing, or rising jealousy (with matching inner-monologue memories) — so there is always drama to watch; each nudge simmers at least 3 days so it never turns into farce',
+                '✂️ Encounter cards stop drawing daily: a personal roguelike unrelated to the "watch the villagers\' loves and feuds" core; already queued cards still resolve, and the management line (resources / industry) keeps running automatically in the background',
+            ),
         ),
         array(
             'version' => '5.48.0',
@@ -1553,6 +1929,11 @@ function rimtown_get_changelog() {
                 '📺 追劇首頁:首頁故事區升級為「第N集·邊境鎮日常」——本集看點(名場面/內心話/大事)+進行中的劇情線(戀愛第N天/婚姻/絕交/三角戀/你的調停進度)+下集預告(瀕臨絕交/心意快藏不住的伏筆)',
                 '📜 關係時間軸:點劇情線任一對,打開兩人從認識到現在的完整故事——雙方記憶流互相相關的條目+名場面(可重播)+目前關係,按時間排序',
                 '🔔 追蹤功能:村民快速卡新增追蹤鈕,你在追的 CP/冤家發生大事(重要度高的記憶)時角落通知你,20 人的鎮不再漏掉你在乎的那條線',
+            ),
+            'changes_en' => array(
+                '📺 Binge-watch home: the home story area becomes "Episode N · Frontier Town daily life" — this episode\'s highlights (scenes / inner thoughts / big events) + ongoing storylines (dating day N / marriage / fallout / love triangle / your mediation progress) + next-episode teasers (a fallout looming, feelings about to spill)',
+                '📜 Relationship timeline: tap any pair in a storyline to open their full story from first meeting to now — mutually relevant entries from both memory streams + scenes (replayable) + current status, sorted by time',
+                '🔔 Follow feature: villager quick cards gain a follow button; when a couple or feud you follow has a big event (high-importance memory) a corner notice tells you, so in a 20-person town you never miss the thread you care about',
             ),
         ),
         array(
@@ -1565,12 +1946,22 @@ function rimtown_get_changelog() {
                 '📜 BUG-04 事件徵詢開場加入 4 種變體,乾旱/風暴/寒流不再逐字重複',
                 '⏸️ BUG-05 暫停時抑制所有全螢幕彈窗(名場面/週報/決策卡),排隊等你恢復播放後再補播',
             ),
+            'changes_en' => array(
+                '🐛 BUG-01 (High) "Should go find 0 and catch up" fixed: restoring relationships when a traveling villager returned used array indices as names; fixed the restore logic, auto-clean bad data from old saves on load, and added three layers of display guards',
+                '🕊️ BUG-02 mediation feedback: locks onto the "fallout" party first and shows "reconciliation progress N/2" plus the guard state at every step, so hard cases no longer look like wasted clicks',
+                '💘 BUG-03 heart-flutter events: now use the player-chat rate limit (looser + Groq routing) instead of being squeezed out by the background budget; fallback heartfelt lines 2→6, flavored by job / personality so villagers no longer repeat each other word for word',
+                '📜 BUG-04 event consultation openings get 4 variants, so drought / storm / cold snap no longer repeat verbatim',
+                '⏸️ BUG-05 all full-screen popups (scenes / weekly report / decision cards) are suppressed while paused and queued until you resume',
+            ),
         ),
         array(
             'version' => '5.46.0',
             'date'    => '2026-08-19',
             'changes' => array(
                 '✂️ 移除祭典攤位小遊戲(猜燈謎/撈金魚/投壺):與「觀察居民之間的事件、關係與愛恨糾葛」的主軸脫節——不寫入記憶流、不影響關係,只是孤立的反應遊戲。祭典本身保留:村民行程/對話/氣氛加成照常',
+            ),
+            'changes_en' => array(
+                '✂️ Festival stall minigames removed (riddles / goldfish scooping / pitch-pot): disconnected from the core of "watching the residents\' events, relationships and feuds" — they wrote nothing to memory and touched no relationships. Festivals themselves stay: schedules / dialogue / mood bonuses continue',
             ),
         ),
         array(
@@ -1580,6 +1971,11 @@ function rimtown_get_changelog() {
                 '🦋 蝴蝶效應回顧:你的社交行動(耳語/安慰/示好/威脅/調解/說服/送禮…)會記下當下的關係快照,隔天首頁「昨日回響」用因果句告訴你發酵了什麼——「你種在X心裡的念頭發酵了,他對Y的態度明顯軟化」「昨天的威脅起了反效果,他對你起了戒心」,最多3條',
                 '🧘 首頁分階段減壓:剛開村只看「今日焦點+昨日回響+居民列表」;「今天的故事」在小鎮成長10後展開、「今日頭條」在成長20(第二章)後展開——第一次進來不再被資訊牆壓迫',
                 '🎁 送禮日誌殘留的「鎮長」稱謂改為「你」',
+            ),
+            'changes_en' => array(
+                '🦋 Butterfly-effect recap: your social actions (whisper / comfort / charm / threaten / mediate / persuade / gift…) record a relationship snapshot, and the next day the home page\'s "Yesterday\'s echoes" tells you what they set off in cause-and-effect sentences — "the thought you planted in X\'s mind has taken root; their attitude toward Y softened noticeably", "yesterday\'s threat backfired; they are wary of you now" — up to 3 lines',
+                '🧘 Staged home page: a new village only shows "Today\'s focus + Yesterday\'s echoes + resident list"; "Today\'s story" unfolds at growth 10 and "Today\'s headlines" at growth 20 (chapter 2), so first entry is no longer a wall of information',
+                '🎁 Leftover "mayor" title in the gift log changed to "you"',
             ),
         ),
         array(
@@ -1591,6 +1987,12 @@ function rimtown_get_changelog() {
                 '⏸️ 暫停保護:任何全螢幕卡顯示期間世界自動暫停,關閉後還原你原本的暫停狀態——看戲時時間不會偷跑,你按的暫停也不會被彈窗洗掉',
                 '📝 日報手記結尾擴充至 12 種,並依「記者+期數」決定,連續兩期不同記者不再一字不差',
             ),
+            'changes_en' => array(
+                '💬 Truncated dialogue fixed: player-chat reply token cap 400→600, and a reply that is still cut off is trimmed back to the last complete sentence, so no more half-lines like "uh… lately I\'ve been calculating a"',
+                '📺 Popup pacing under control: full-screen content cards (live scenes / weekly report) are at least 45 seconds apart, the queue is capped at 4 with deduplication (scenes can always be replayed in the town theater); AI daily paper releases become a corner notice, with the full text on the "Daily" tab',
+                '⏸️ Pause protection: the world pauses automatically while any full-screen card is shown and restores your original pause state on close — time does not sneak forward while you watch, and your own pause is not wiped by a popup',
+                '📝 Daily paper sign-off notes expanded to 12, chosen by "reporter + issue number", so two consecutive issues by different reporters are never identical',
+            ),
         ),
         array(
             'version' => '5.43.0',
@@ -1599,12 +2001,19 @@ function rimtown_get_changelog() {
                 '📚 小鎮編年史:每天換日自動把全鎮村民的近況/行程/足跡+所有對話逐字稿(含NPC間對話與你的聊天)歸檔進瀏覽器 IndexedDB 資料庫',
                 '🔎 日誌分頁新增調閱介面:按日瀏覽、逐村民/逐場對話展開;一鍵匯出全部 JSON、對話 CSV、作息 CSV(含 BOM,Excel 開啟中文不亂碼);可清空資料庫(不影響遊戲存檔)',
             ),
+            'changes_en' => array(
+                '📚 Town chronicle: at every day change, all villagers\' status / schedules / footsteps plus every conversation transcript (NPC-NPC and your chats) are archived into the browser\'s IndexedDB',
+                '🔎 The Log tab gains a browsing interface: by day, expand per villager / per conversation; one-click export of all JSON, conversation CSV and schedule CSV (with BOM so Excel shows Chinese correctly); the database can be cleared without touching game saves',
+            ),
         ),
         array(
             'version' => '5.42.1',
             'date'    => '2026-08-19',
             'changes' => array(
                 '🔕 修復互動事件卡連環轟炸(10秒跳3-4張):原本答完一張立刻彈下一張、佇列無上限累積;現在互動卡之間至少間隔 90 秒(真實時間),佇列最多留 3 張且同標題去重,已被「逾時代選」結算的過期卡直接丟棄不再顯示',
+            ),
+            'changes_en' => array(
+                '🔕 Interaction-card bombardment fixed (3–4 cards in 10 seconds): answering one popped the next immediately and the queue grew without limit; cards are now at least 90 seconds apart (real time), the queue keeps at most 3 with same-title deduplication, and expired cards already settled by "timeout auto-choice" are dropped',
             ),
         ),
         array(
@@ -1615,6 +2024,11 @@ function rimtown_get_changelog() {
                 '💢 絕交事件:雙方好感都跌破 -60 時積怨爆發,當眾撂下重話正式絕交(名場面+全鎮日報+心情重挫),絕交狀態隨存檔保存',
                 '🕊️ 和事佬和解線:對絕交等級的仇怨,「調解」升級為兩段式任務——分別勸過兩邊(需要基本信任),促成「世紀大和解」名場面:兩人好感大增、你獲得雙方好感+8與聲望+15、解鎖成就「和事佬」;今日焦點會引導你去調解',
             ),
+            'changes_en' => array(
+                '🗯️ Shouting-match scenes in the square: two people who hate each other occasionally quarrel in public (AI-generated, at least 5 days apart per pair); onlookers close to either side pick a side — their view of the other party worsens and is written to memory, so the town mood really sours',
+                '💢 Fallout events: when both sides\' affinity drops below −60 the grudge erupts and they publicly cut ties (scene + town-wide news + heavy mood hit); fallout status is saved',
+                '🕊️ Peacemaker reconciliation line: for fallout-level feuds, "mediate" becomes a two-stage quest — talk each side around separately (basic trust required) to bring about a "reconciliation of the century" scene: both gain lots of affinity, you gain +8 affinity with each and +15 reputation, and unlock the "Peacemaker" achievement; today\'s focus guides you to mediate',
+            ),
         ),
         array(
             'version' => '5.41.0',
@@ -1622,6 +2036,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '⚡ 即時重規劃(移植 generative_agents react/replan):村民白天碰到夠重大的事,會「當場」改寫今天剩下的行程——對話裡約好「傍晚一起吃飯」就真的排進今天下午;耳語慫恿、跟你聊出強烈反應、告白/婚禮/抓姦等名場面都會觸發',
                 '🎛️ 節流控制:每位村民每天最多臨時改 2 次、21:00 後不再改、共用每日 AI 額度;行程被調整過會在詳情頁標示「📝 已因今天的際遇臨時調整」,紀錄也會留下他改變安排的心聲',
+            ),
+            'changes_en' => array(
+                '⚡ Live replanning (ported from generative_agents react/replan): when something big enough happens during the day, a villager rewrites the rest of today\'s schedule on the spot — agreeing to "dinner this evening" in a chat really lands on this afternoon\'s plan; whispers, strong reactions to your chat, and scenes like confessions / weddings / catching cheaters all trigger it',
+                '🎛️ Throttling: at most 2 ad-hoc changes per villager per day, none after 21:00, sharing the daily AI budget; adjusted schedules are flagged "📝 adjusted for today\'s events" on the detail page, and the log keeps their reason for changing plans',
             ),
         ),
         array(
@@ -1632,12 +2050,20 @@ function rimtown_get_changelog() {
                 '👀 環境感知(零成本):村民偶爾把「看到誰正忙著什麼」寫進記憶流(每天最多6條),之後聊天會自然提起「早上看到你在打鐵」',
                 '💾 足跡隨存檔保存;全部規則式生成,不增加任何 AI 費用',
             ),
+            'changes_en' => array(
+                '🕐 Full daily footsteps (zero cost): every change of schedule step / activity / location is logged, turning the detail page into a generative_agents-style timeline — "kneading dough (15 min) → tending the oven (30 min) → chatting with regulars (10 min)" — merged with the day\'s conversation / observation / reflection memories',
+                '👀 Environmental awareness (zero cost): villagers occasionally note "who was busy with what" in their memory stream (up to 6 a day), so later chats naturally mention "saw you at the forge this morning"',
+                '💾 Footsteps are saved with the game; all rule-generated, no AI cost',
+            ),
         ),
         array(
             'version' => '5.39.1',
             'date'    => '2026-08-19',
             'changes' => array(
                 '⏱️ AI 行程立即補生成:原本只在遊戲日換日(00:00)排隊生成,一天中途讀檔/開頁的玩家要等到隔天才看得到 AI 行程;現在讀檔後會立刻為「今天還沒有 AI 行程」的村民補排(已完成的不重做,不多花錢)',
+            ),
+            'changes_en' => array(
+                '⏱️ AI schedules generate immediately: they used to queue only at the game-day rollover (00:00), so players loading mid-day waited until the next day; after loading, villagers without an AI schedule for today get one right away (done ones are not redone, no extra cost)',
             ),
         ),
         array(
@@ -1647,6 +2073,10 @@ function rimtown_get_changelog() {
                 '💰 AI 成本優化三件組:村民行程改 3 人一批生成(共用規則前綴,輸入省約三成,含截斷救援);NPC 背景對話輸出上限 800→500(3-4 句)、行程收緊為 5-6 時段×2-3 步驟,總成本再砍約三成',
                 '🔀 智慧分流:同時填主金鑰+Groq 金鑰時,「你與村民的對話/劇情名場面」優先走 Groq 免費額度,「行程/反思/背景對話」走主金鑰(gpt-4o-mini 便宜又不佔 Groq 限額);任一邊被限流自動切到另一邊(5 分鐘後重試)',
             ),
+            'changes_en' => array(
+                '💰 AI cost trio: villager schedules generate 3 people per batch (shared rule prefix saves about 30% input, with truncation rescue); NPC background dialogue output cap 800→500 (3–4 sentences), schedules tightened to 5–6 slots × 2–3 steps, cutting total cost by roughly another 30%',
+                '🔀 Smart routing: with both a main key and a Groq key set, "your chats with villagers / drama scenes" prefer the Groq free tier while "schedules / reflection / background dialogue" use the main key (gpt-4o-mini is cheap and spares Groq\'s limits); when either side is rate-limited it switches to the other automatically (retry after 5 minutes)',
+            ),
         ),
         array(
             'version' => '5.38.0',
@@ -1655,6 +2085,11 @@ function rimtown_get_changelog() {
                 '👑 旅人參選鎮長:每年秋季選舉的競選登記期(3天)內,滿足資格(第二章+3位好感40以上村民聯署)即可在「事件」分頁登記參選;選政見、用聊天「說服」向村民逐一拉票(每人一屆一次),聲望與人緣直接左右選情',
                 '🏆 當選後你就是鎮長:施政方針實際生效30天,全鎮大事改由「鎮民等你拿主意」視角;落選則雖敗猶榮,寫入記憶下屆再戰;新增成就「初生之犢」(參選)與「民選鎮長」(當選)',
                 '🗳️ 競選開跑時符合資格會收到角落提醒;今日焦點會引導參選/拉票',
+            ),
+            'changes_en' => array(
+                '👑 Run for mayor: during the 3-day candidate registration of each autumn election, if you qualify (chapter 2 + endorsements from 3 villagers with affinity 40+) you can register on the "Events" tab; pick a platform and canvass villagers one by one with "persuade" in chat (once per person per term); reputation and popularity directly sway the race',
+                '🏆 Once elected you are the mayor: your policy takes effect for 30 days and town affairs switch to the "townsfolk wait for your decision" view; losing is honorable, written to memory for next time; new achievements "First Run" (running) and "Elected Mayor" (winning)',
+                '🗳️ A corner reminder appears when the campaign opens and you qualify; today\'s focus guides you to run / canvass',
             ),
         ),
         array(
@@ -1667,12 +2102,22 @@ function rimtown_get_changelog() {
                 '💰 AI 額度預設改為無上限(金鑰是你自己的):設定頁留空=無上限,想控費可填每日上限,填 0 關閉;上限設定也隨帳號雲端同步',
                 '😴 修復「站在戶外睡著」:入睡瞬間人在屋外會被原地凍結;現在會先走進屋裡才睡',
             ),
+            'changes_en' => array(
+                '📅 Town-wide LLM schedules (ported from generative_agents hierarchical planning): every day the AI generates "status revision + today\'s schedule" for each villager, broken down to small actions (kneading dough, chatting with regulars), tailored to personality / relationships / yesterday / promises; generated one by one in a queue to avoid hammering the API, falling back to rule-based schedules when the budget runs out',
+                '🧭 "Currently" field: each day the AI rewrites the villager\'s "main thread of life right now" from yesterday\'s events and injects it into every chat and reflection — their whole day revolves around it, like Sam Moore telling everyone about his campaign',
+                '🤝 Dialogue plan thinking: promises / to-dos at the end of an AI chat become "next I will…" memo memories that really land on the next day\'s schedule — "see you Wednesday" is no longer empty talk',
+                '💰 AI budget defaults to unlimited (it is your own key): leave the settings field blank = unlimited, enter a daily cap to control cost, 0 to disable; the cap also syncs with your account',
+                '😴 "Fell asleep standing outdoors" fixed: falling asleep while outside froze the villager in place; they now walk inside first',
+            ),
         ),
         array(
             'version' => '5.36.0',
             'date'    => '2026-08-19',
             'changes' => array(
                 '🎭 旅人視角敘事修正:你的角色是旅人不是鎮長——全鎮大事(野豬暴走等事件應對)改為「現任鎮長急匆匆來徵詢你的意見」;玩家放話的誇讚/壞話不再被冠上「鎮長」頭銜(改用你的名字);裝飾擺放日誌改「你」',
+            ),
+            'changes_en' => array(
+                '🎭 Traveler-perspective narrative fix: your character is a traveler, not the mayor — town events (like the boar rampage) now have "the current mayor hurrying over to ask your opinion"; player rumors (praise / bad-mouthing) no longer carry the "mayor" title (your name is used); the decoration log says "you"',
             ),
         ),
         array(
@@ -1681,12 +2126,18 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '😴 修復村民半夜不回家睡覺:原本「休息值滿(≥90)就不睡」+夜間衰減慢,導致大批村民凌晨還在外面閒逛;現在一般人睡眠時段(22:00-6:00)一律回家睡覺,夜貓子維持自己的作息(2:00 才睡)',
             ),
+            'changes_en' => array(
+                '😴 Villagers not going home to sleep at night fixed: "rest ≥90 means no sleep" plus slow night decay left crowds wandering at dawn; ordinary people now always go home during sleep hours (22:00–6:00) while night owls keep their own rhythm (asleep at 2:00)',
+            ),
         ),
         array(
             'version' => '5.35.7',
             'date'    => '2026-08-19',
             'changes' => array(
                 '🗺️ 探險選人清單移除「只列前 8 位」的限制:所有不在探險中的村民都可選(探險中的村民照樣自動排除,回鎮後恢復)',
+            ),
+            'changes_en' => array(
+                '🗺️ The expedition roster drops the "first 8 only" limit: every villager not on an expedition is selectable (those away are excluded automatically and return when back)',
             ),
         ),
         array(
@@ -1695,12 +2146,18 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '📱 修復手機點日報/焦點/故事流的人物連結沒反應:村民快速卡開在地圖層被浮動面板蓋住,現在會先收合面板再開卡',
             ),
+            'changes_en' => array(
+                '📱 Mobile fix for unresponsive character links in the paper / focus / story feed: the villager quick card opened on the map layer under a floating panel; the panel now collapses first',
+            ),
         ),
         array(
             'version' => '5.35.5',
             'date'    => '2026-08-19',
             'changes' => array(
                 '🗞️ 修復首頁「完整日報」按鈕跳錯分頁:原本跳到「紀錄」(只有對話日誌),改為正確跳到「事件」的 AI 日報區',
+            ),
+            'changes_en' => array(
+                '🗞️ The home "Full paper" button jumped to the wrong tab (Log, which only has conversation logs); it now goes to the AI Daily area on the Events tab',
             ),
         ),
         array(
@@ -1709,12 +2166,18 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '⌨️ 修復手機打字時輸入框被蓋住:聊天輸入框聚焦(鍵盤開啟)時自動隱藏底部狀態帶與選單列,收鍵盤後恢復',
             ),
+            'changes_en' => array(
+                '⌨️ Mobile input covered while typing fixed: focusing the chat input (keyboard open) hides the bottom status strip and menu bar, restored when the keyboard closes',
+            ),
         ),
         array(
             'version' => '5.35.3',
             'date'    => '2026-08-18',
             'changes' => array(
                 '📱 修復手機版點「詳情」沒反應:村民快速卡的詳情、今日焦點/頭條的分頁跳轉,在手機版會正確開啟浮動面板',
+            ),
+            'changes_en' => array(
+                '📱 Mobile "Details" not responding fixed: the villager quick card\'s details and tab jumps from today\'s focus / headlines now correctly open the floating panel on mobile',
             ),
         ),
         array(
@@ -1723,12 +2186,18 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '👥 修復同名派系出現兩次(兩個「學者聯盟」):同型派系改為最多 1 個;既有存檔的重複派系自動合併(成員取聯集)',
             ),
+            'changes_en' => array(
+                '👥 Duplicate same-name factions fixed (two "Scholars\' Leagues"): at most 1 faction per type; duplicates in existing saves merge automatically (members unioned)',
+            ),
         ),
         array(
             'version' => '5.35.1',
             'date'    => '2026-08-18',
             'changes' => array(
                 '💗 修復村民詳情頁「調情/告白」按鈕白底無字:補上遺漏的按鈕樣式(粉色系)',
+            ),
+            'changes_en' => array(
+                '💗 Villager detail "Flirt / Confess" buttons showing white with no text fixed: the missing pink button styles are added',
             ),
         ),
         array(
@@ -1739,6 +2208,11 @@ function rimtown_get_changelog() {
                 '💭 村民內心活動豐富化:每人每天規則式合成人際想法+生活想法(夢想/暗戀/天氣/祭典)+昨日印象觀察;LLM 深度反思從每天 1 位提高到 3 位(仍受每日額度限制)',
                 '✕ 聊天對話視窗加關閉鈕,不再擋住聯絡人清單',
             ),
+            'changes_en' => array(
+                '🤫 Whisper (ported from generative_agents): chat gains a "Whisper" intent button; the line you murmur is rewritten by the AI into the villager\'s own inner thought and planted in their memory stream — shaping their later dialogue, reflections and affinity / attraction toward specific villagers',
+                '💭 Richer inner life: each villager daily synthesizes rule-based relationship thoughts + life thoughts (dreams / crushes / weather / festivals) + yesterday\'s observations; LLM deep reflection rises from 1 to 3 villagers a day (still within the daily budget)',
+                '✕ The chat conversation window gets a close button so it no longer covers the contact list',
+            ),
         ),
         array(
             'version' => '5.34.2',
@@ -1747,12 +2221,19 @@ function rimtown_get_changelog() {
                 '🌐 修復新聞「生效中」效果直接顯示英文程式 key:補全 24 個 modifier 的中文標籤(農作加成/售價加成/移民機率/天氣影響等)',
                 '🌡️ 修復天氣心情影響顯示成 -100% 的問題:它是心情點數不是百分比,改顯示 ±N',
             ),
+            'changes_en' => array(
+                '🌐 News "in effect" showing raw English program keys fixed: Chinese labels added for all 24 modifiers (farm bonus / sell bonus / immigration chance / weather effects etc.)',
+                '🌡️ Weather mood effect showing as −100% fixed: it is mood points, not a percentage, now shown as ±N',
+            ),
         ),
         array(
             'version' => '5.34.1',
             'date'    => '2026-08-18',
             'changes' => array(
                 '🏆 修復開新局成就洗版:開場第一輪判定就達標的成就(人口/資源等)靜默入袋不彈通知,之後解鎖的才提醒;角落通知同時最多 3 張,多的擠掉最舊的',
+            ),
+            'changes_en' => array(
+                '🏆 Achievement spam on a new game fixed: achievements met on the very first check (population / resources etc.) unlock silently without popups, only later unlocks notify; at most 3 corner notices at once, the oldest pushed out',
             ),
         ),
         array(
@@ -1762,12 +2243,19 @@ function rimtown_get_changelog() {
                 '⏳ 事件逾時代選:事件應對/每日決策/村民請託/際遇卡的選擇卡 60 秒沒選就由小鎮隨機代選;就算卡片被延後沒顯示,pending 滿一個遊戲日也會自動結算,事件線不再卡住',
                 '🔔 資訊通知全面角落化:成就、章節推進、故事事件等純資訊卡改右下角小卡(手機版避開底部列),不再佔用整個版面;名場面直播、AI 日報等完整內容維持中央卡',
             ),
+            'changes_en' => array(
+                '⏳ Timed-out auto-choice: event responses / daily decisions / villager requests / encounter cards choose randomly for the town if not answered within 60 seconds; even cards deferred and never shown auto-settle after a full game day pending, so event lines never get stuck',
+                '🔔 Info notifications move to the corner: pure-information cards (achievements, chapter progress, story events) become small bottom-right cards (avoiding the mobile bottom bar) instead of taking over the screen; live scenes and the AI daily paper keep the center card',
+            ),
         ),
         array(
             'version' => '5.33.3',
             'date'    => '2026-08-18',
             'changes' => array(
                 '🔄 Groq 模型不再寫死:自動查詢你的金鑰當下可用的模型清單並挑選(偏好 llama 系列),404 時自動重查換模型重試;前端與伺服器 AI(/api/chat)都套用',
+            ),
+            'changes_en' => array(
+                '🔄 Groq model no longer hardcoded: the models available to your key are queried and picked automatically (llama family preferred), with re-query and retry on 404; applied to both the client and the server AI (/api/chat)',
             ),
         ),
         array(
@@ -1777,6 +2265,10 @@ function rimtown_get_changelog() {
                 '🔧 修復 Groq 金鑰測試一直失敗:預設模型 qwen3-32b(preview)已被 Groq 下架,改用正式版 llama-3.3-70b-versatile(與伺服器 AI 相同)',
                 '🩺 測試連線失敗時顯示真實原因(HTTP 狀態 + API 錯誤訊息),不再籠統顯示「檢查金鑰」',
             ),
+            'changes_en' => array(
+                '🔧 Groq key test always failing fixed: the default qwen3-32b (preview) was retired by Groq; switched to the stable llama-3.3-70b-versatile (same as the server AI)',
+                '🩺 Connection-test failures show the real reason (HTTP status + API error) instead of a vague "check your key"',
+            ),
         ),
         array(
             'version' => '5.33.1',
@@ -1784,6 +2276,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '🚑 修復 Vercel 部署失敗:Hobby 方案 12 個 Functions 上限——成就查詢/解鎖合併為單一端點(rewrite 保持路徑不變)',
                 '🏆 桌面版成就通知改右下角小卡,不再蓋住整個畫面;點擊或 6 秒後自動消失(手機版暫維持中央卡)',
+            ),
+            'changes_en' => array(
+                '🚑 Vercel deployment failure fixed: the Hobby plan\'s 12-function cap — achievement query / unlock merged into one endpoint (rewrite keeps the paths)',
+                '🏆 Desktop achievement notices become small bottom-right cards instead of covering the screen; they dismiss on click or after 6 seconds (mobile keeps the center card for now)',
             ),
         ),
         array(
@@ -1793,12 +2289,19 @@ function rimtown_get_changelog() {
                 '☁️ AI 設定隨帳號同步:API 金鑰/供應商/NPC 對話額度存進帳號(伺服器端 AES-256-GCM 加密),換裝置登入自動帶入,不用重新輸入',
                 '🔁 同步規則:登入時雲端有值就套用到本機;本機儲存設定時自動推上雲端;空值不互相覆寫',
             ),
+            'changes_en' => array(
+                '☁️ AI settings sync with your account: API key / provider / NPC chat budget are stored on the account (AES-256-GCM encrypted server-side) and applied automatically when you log in on another device',
+                '🔁 Sync rules: cloud values apply locally on login; saving settings locally pushes them to the cloud; empty values never overwrite each other',
+            ),
         ),
         array(
             'version' => '5.32.1',
             'date'    => '2026-08-18',
             'changes' => array(
                 '🔑 修復切換 AI 供應商後按儲存會把已存 API 金鑰洗掉的問題:空欄位不再覆寫已存金鑰',
+            ),
+            'changes_en' => array(
+                '🔑 Saving after switching AI provider wiped the stored API key; empty fields no longer overwrite a saved key',
             ),
         ),
         array(
@@ -1809,6 +2312,11 @@ function rimtown_get_changelog() {
                 '🔕 第一章不再被系統轟炸:事件自動結算、決策卡/求助/際遇卡/議會依章節才啟動;關係網開局即可看(這是劇情核心)',
                 '🔢 數值文字化:關係列不再顯示 +43 原始好感(類型即語意)、NPC 需求改一句話、派系團結度改緊密/普通/渙散;首頁繁榮度重新框成「章節進度」——玩家唯一要在意的成長數字',
             ),
+            'changes_en' => array(
+                '📖 Chapters (story first, management later): chapter 1 is only "people" — villagers / chat / relationship web / stories; chapter 2 (prosperity 20) opens quests / events / requests / decisions; chapter 3 (45) opens economy / shop / farm; chapter 4 (70) opens industries / factories / research / council; each chapter has its own celebration card',
+                '🔕 Chapter 1 is no longer bombarded by systems: events auto-settle, decision cards / requests / encounter cards / council start only by chapter; the relationship web is visible from the start (it is the heart of the story)',
+                '🔢 Numbers become words: relationship rows no longer show +43 raw affinity (the type is the meaning), NPC needs become a sentence, faction unity becomes tight / normal / falling apart; home-page prosperity is reframed as "chapter progress" — the one growth number players need to care about',
+            ),
         ),
         array(
             'version' => '5.31.0',
@@ -1818,12 +2326,20 @@ function rimtown_get_changelog() {
                 '📖 今天的故事:首頁新增故事流,村民反思、重大關係事件、名場面、AI 對話精華全拉到第一層,點任一則直達人物卡',
                 '🃏 村民快速卡內心化:第一層改顯示「今天想做+心裡的話」,屬性條移到詳情頁——先看見人,再看見數字',
             ),
+            'changes_en' => array(
+                '🎯 Today\'s focus: the top of the home page offers 2–3 "concrete actions with reasons" each day (someone needs your help / campaign canvassing / checking on people after a scene / affinity just short of a threshold / a fallback chat with a best friend), each linking straight to the person or tab',
+                '📖 Today\'s story: the home page gains a story feed pulling villager reflections, major relationship events, scenes and AI dialogue highlights to the first layer, each linking to the character card',
+                '🃏 Villager quick cards go inward: the first layer shows "what they want today + what they are thinking" with stat bars moved to details — see the person first, the numbers second',
+            ),
         ),
         array(
             'version' => '5.30.1',
             'date'    => '2026-08-18',
             'changes' => array(
                 '🗳️ 鎮長選舉改為固定每年秋季第 1 天開選(競選3天→投票2天→公布),不再靠機率觸發',
+            ),
+            'changes_en' => array(
+                '🗳️ Mayoral elections now start on a fixed day: day 1 of every autumn (3-day campaign → 2-day vote → results), no longer chance-triggered',
             ),
         ),
         array(
@@ -1834,12 +2350,20 @@ function rimtown_get_changelog() {
                 '📅 今日目標每天早上依性格/職業/戀情/宿敵/夢想/祭典/選舉自動生成,每人每天都不同;近況綜合婚戀、夢想進度、最新反思與人際僵局',
                 '🕐 今日足跡 = 當天真實發生的記憶時間軸(對話/事件/心情),點開就能看懂這個村民今天過得如何;全部規則式合成,零 API 成本',
             ),
+            'changes_en' => array(
+                '🧠 Character status page (generative_agents style): resident detail cards gain "inner state (daily rhythm + status)", "today\'s goal" and "today\'s footsteps"',
+                '📅 Today\'s goal is generated every morning from personality / job / romance / rival / dream / festival / election, different for everyone every day; status combines romance, dream progress, latest reflection and relationship stalemates',
+                '🕐 Today\'s footsteps = a timeline of real memories from the day (conversations / events / mood); open it to see how the villager\'s day went; all rule-based, zero API cost',
+            ),
         ),
         array(
             'version' => '5.29.3',
             'date'    => '2026-08-18',
             'changes' => array(
                 '🎨 修復設定頁「開新局的村民」兩顆按鈕白底無字:補上 speed-controls 容器讓主題樣式生效',
+            ),
+            'changes_en' => array(
+                '🎨 Settings "Villagers for new games" buttons showing white with no text fixed: the speed-controls container is added so theme styles apply',
             ),
         ),
         array(
@@ -1849,12 +2373,19 @@ function rimtown_get_changelog() {
                 '🔕 不再打斷操作:你正在跟村民聊天或打字時,事件/成就/報紙/名場面卡片不會跳出來,改排進佇列,右下角小提示告知,等你忙完(空閒 3 秒內)再依序補播',
                 '✨ 日誌的村民對話加上「AI」標籤,一眼分辨哪些對話是 LLM 生成、哪些是內建模擬',
             ),
+            'changes_en' => array(
+                '🔕 No more interruptions: while you chat with a villager or type, event / achievement / newspaper / scene cards no longer pop up but queue with a small bottom-right hint, replaying in order once you are idle (within 3 seconds)',
+                '✨ Villager conversations in the log get an "AI" tag so you can tell LLM-generated chats from built-in simulation at a glance',
+            ),
         ),
         array(
             'version' => '5.29.1',
             'date'    => '2026-08-18',
             'changes' => array(
                 '💸 OpenAI 供應商鎖定 gpt-4o-mini:無論任何設定都不會呼叫更貴的 GPT 模型,設定頁選項同步標示',
+            ),
+            'changes_en' => array(
+                '💸 OpenAI provider locked to gpt-4o-mini: no setting will ever call a pricier GPT model; the settings option says so',
             ),
         ),
         array(
@@ -1866,6 +2397,12 @@ function rimtown_get_changelog() {
                 '💰 混合成本控制:只有玩家附近(8 格內)的村民對話才呼叫 AI,遠處對話走內建模擬照樣寫記憶;新增「NPC 對話每日 AI 額度」設定(預設 40 次/日,可設 0 全關),玩家聊天與劇情名場面不受限',
                 '📝 AI 對話/反思全文存檔:村民對話紀錄與反思隨存檔保存,重新載入不再消失',
             ),
+            'changes_en' => array(
+                '🧠 LLM memory stream (ported from generative_agents): villager memories are retrieved by "recency + importance + relevance" weighting, AI chats carry the most relevant past memories, and after each chat both sides write a subjective memory, so conversations feel more and more like a serial',
+                '💭 Daily reflection: every night villagers synthesize rule-based relationship thoughts (frequent contacts → friend / annoying), and one "most eventful" villager a day gets an AI deep reflection written into their inner life',
+                '💰 Hybrid cost control: only villager conversations near the player (within 8 tiles) call the AI; distant ones use built-in simulation but still write memories; new "NPC daily AI budget" setting (default 40 a day, 0 turns it off); player chats and drama scenes are unrestricted',
+                '📝 AI dialogue / reflections saved in full: villager conversation records and reflections persist in the save and no longer vanish on reload',
+            ),
         ),
         array(
             'version' => '5.28.0',
@@ -1874,6 +2411,10 @@ function rimtown_get_changelog() {
                 '🃏 肉鴿③局內際遇卡:每隔幾天會跳出一張「際遇卡」,二/三選一,每個選擇永久改變這一局 —— 旅行商隊、神秘祝福(全鎮屬性+1)、豐收抉擇、謠言火種(撮合/挑撥)、命運賭注、遊方醫者、豐年餘暉…',
                 '⚙️ 效果直接作用在這一局:加減資源、全鎮心情、居民屬性、撮合/拆散關係、持續數天的增益,越選越有肉鴿 build 的感覺',
             ),
+            'changes_en' => array(
+                '🃏 Roguelike ③ in-run encounter cards: every few days an "encounter card" appears with two or three choices, each permanently changing this run — a passing caravan, a mysterious blessing (all villagers +1 stat), the harvest decision, a spark of rumor (matchmake / sow discord), a wager of fate, a wandering healer, the festival afterglow…',
+                '⚙️ Effects apply directly to this run: resources, town mood, resident stats, pairing or splitting relationships, multi-day buffs — the more you choose, the more it feels like a roguelike build',
+            ),
         ),
         array(
             'version' => '5.27.0',
@@ -1881,6 +2422,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '🎲 肉鴿②每局隨機開局:設定裡可切「劇本卡司 / 隨機卡司」。選隨機後,每開一張新地圖都會抽出一批全新村民(名字/性格/職業/背景/屬性)+隨機生成的開局愛恨關係網(夫妻/前任/暗戀/三角/世仇/摯友),每一局的小鎮故事都不同',
                 '📖 想玩原本的陳偉、林美等劇本村民?切回「劇本卡司」即可(預設)',
+            ),
+            'changes_en' => array(
+                '🎲 Roguelike ② random starts: settings can switch between "Scripted cast / Random cast". With random, every new map draws a brand-new set of villagers (names / personality / jobs / backgrounds / stats) plus a randomly generated web of starting loves and grudges (spouses / exes / crushes / triangles / feuds / best friends), so every run\'s story is different',
+                '📖 Want the original scripted villagers like Chen Wei and Lin Mei? Switch back to "Scripted cast" (the default)',
             ),
         ),
         array(
@@ -1891,6 +2436,11 @@ function rimtown_get_changelog() {
                 '⚙️ 屬性接進玩法:魅力越高越讓人心動(戀愛)、膽識越高心情越穩(抗壓)、智慧越高技能練得越快',
                 '📊 點村民資訊卡可看到四條屬性長條;屬性完整存進存檔。(這是接下來「隨機開局/事件抽卡/傳承強化」的共同地基)',
             ),
+            'changes_en' => array(
+                '🎲 Roguelike step 1 — numeric character stats: every villager has four core stats (✨charm / 💪vigor / 🧠wisdom / 🔥courage, 1–10), rolled from personality and job, so every villager and every run differs',
+                '⚙️ Stats plug into play: higher charm makes hearts flutter (romance), higher courage steadies mood (stress resistance), higher wisdom levels skills faster',
+                '📊 Villager info cards show four stat bars; stats are fully saved. (This is the shared foundation for the coming "random starts / event cards / legacy upgrades")',
+            ),
         ),
         array(
             'version' => '5.25.0',
@@ -1899,6 +2449,10 @@ function rimtown_get_changelog() {
                 '👥 新村民包:小鎮迎來 4 位有戲的新居民 —— 糕點師傅蘇晴、老兵高朗、繡藝師柯薇、星象學者凌波',
                 '💞 開局就有新戲:蘇晴傾心劉俊(和許瑩形成新三角)、高朗是吳達的老袍澤(把跟楊鋒的舊怨燒成兩派)、高朗暗戀黃莉(與張豪成情敵)、柯薇與凌波在星空下互相傾心(夜貓子的雙向暗戀)',
             ),
+            'changes_en' => array(
+                '👥 New villager pack: 4 dramatic newcomers — pastry chef Su Qing, veteran Gao Lang, embroiderer Ke Wei and stargazer Ling Bo',
+                '💞 New drama from the start: Su Qing falls for Liu Jun (a new triangle with Xu Ying), Gao Lang is Wu Da\'s old comrade (turning the feud with Yang Feng into two camps), Gao Lang secretly loves Huang Li (rival to Zhang Hao), and Ke Wei and Ling Bo fall for each other under the stars (a mutual night-owl crush)',
+            ),
         ),
         array(
             'version' => '5.24.0',
@@ -1906,6 +2460,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '🌤️ 雲影飄移:晴天/多雲的白天,幾片柔和雲影會緩緩掃過草地,小鎮更有生氣',
                 '🍂 季節色調:四季各有一抹環境色 —— 春季嫩綠、夏季金黃、秋季琥珀橙、冬季清冷藍,一眼就知道現在是哪一季',
+            ),
+            'changes_en' => array(
+                '🌤️ Drifting cloud shadows: on sunny / cloudy days soft cloud shadows sweep slowly across the grass, making the town feel alive',
+                '🍂 Seasonal tints: each season gets an ambient hue — fresh green spring, golden summer, amber autumn, cool blue winter — so the season is obvious at a glance',
             ),
         ),
         array(
@@ -1916,6 +2474,11 @@ function rimtown_get_changelog() {
                 '🌧️ 天氣粒子:下雨會落下雨絲、下雪會飄下雪花,暴風雨/暴風雪更狂;雨雪只在可視範圍內生成,效能友善',
                 '☄️ 流星:夜空偶爾會有一顆流星拖著尾巴劃過',
             ),
+            'changes_en' => array(
+                '🌙 Moon phases: the night moon waxes and wanes with the game day (new → first quarter → full → last quarter, about a 16-day cycle), replacing the fixed crescent',
+                '🌧️ Weather particles: rain streaks and drifting snowflakes, wilder in storms and blizzards; spawned only within view for performance',
+                '☄️ Shooting stars: a meteor occasionally streaks across the night sky with a tail',
+            ),
         ),
         array(
             'version' => '5.22.0',
@@ -1923,6 +2486,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '🏳️‍🌈 戀愛不分性別:確認戀愛引擎本就不看性別,並在開局關係網加入同性戀情線(女醫生林美 × 焦慮學者孫雨、木匠馬強對遊唱周明又恨又迷),讓多元的愛從第一天就看得見',
                 '🔥 愛恨更容易爆發:調高單戀嫉妒、情敵結怨、個性口角、偷情與東窗事發的機率,讓三角戀更常燒成仇敵、修羅場更容易上演(實測情侶照樣談得成,只是恩怨變多了)',
+            ),
+            'changes_en' => array(
+                '🏳️‍🌈 Love regardless of gender: confirmed the romance engine never looked at gender, and added same-sex storylines to the starting web (doctor Lin Mei × anxious scholar Sun Yu; carpenter Ma Qiang both resenting and fascinated by minstrel Zhou Ming) so diverse love is visible from day one',
+                '🔥 Love and hate erupt more easily: higher odds of unrequited jealousy, rival grudges, personality quarrels, affairs and getting caught, so triangles turn into feuds and showdowns more often (tested: couples still form, just with more grudges)',
             ),
         ),
         array(
@@ -1932,12 +2499,19 @@ function rimtown_get_changelog() {
                 '🎭 小鎮劇場:村民的名場面(告白/婚禮/修羅場/分手/離婚)現在會存檔,在「故事→紀錄」分頁最上方可回顧',
                 '📺 點任一名場面即可重播那段對話劇,補看你錯過的好戲;戲碼帶年份季節時間戳,完整存進存檔',
             ),
+            'changes_en' => array(
+                '🎭 Town theater: villager scenes (confessions / weddings / showdowns / breakups / divorces) are now saved and can be reviewed at the top of "Story → Log"',
+                '📺 Tap any scene to replay that dialogue and catch what you missed; scenes carry year / season / time stamps and are fully saved',
+            ),
         ),
         array(
             'version' => '5.20.1',
             'date'    => '2026-07-20',
             'changes' => array(
                 '🌙 月亮光暈改用圓形填充繪製,徹底杜絕夜晚月亮周圍偶爾出現的方形邊緣/破圖感',
+            ),
+            'changes_en' => array(
+                '🌙 The moon halo is drawn as a filled circle, eliminating the occasional square edge / glitch around the night moon',
             ),
         ),
         array(
@@ -1947,6 +2521,11 @@ function rimtown_get_changelog() {
                 '🧭 導覽收束成三大入口:小鎮(經濟/產業)、居民(居民/聊天/關係)、故事(任務/事件/紀錄/成就),外加設定,大幅降低新手看到一堆分頁的認知負擔',
                 '📑 每個入口進去後,面板頂部有次級分頁列可切換組內項目;桌面與手機兩套介面都套用,操作一致',
                 '🔔 聊天未讀徽章、功能解鎖鎖頭在新導覽下都正常運作,手機開羅底部列的快捷聊天鈕保留',
+            ),
+            'changes_en' => array(
+                '🧭 Navigation consolidated into three entries: Town (economy / industry), Residents (residents / chat / relationships), Story (quests / events / log / achievements), plus Settings — far fewer tabs for newcomers to process',
+                '📑 Inside each entry a secondary tab row switches between items; applied to both desktop and mobile for consistent operation',
+                '🔔 Chat unread badges and feature-unlock locks work under the new navigation; the quick chat button on the mobile Kairo-style bottom bar stays',
             ),
         ),
         array(
@@ -1958,6 +2537,12 @@ function rimtown_get_changelog() {
                 '🧲 成形的路線會吸引「氣味相投」的移民(依職業加權挑選),讓每一局的城鎮愈走愈有個性',
                 '🔎 首頁新增城鎮身分徽章,點一下可看它是由哪些長期傾向形成的',
             ),
+            'changes_en' => array(
+                '🏙️ Town identity / path: the town naturally grows into a character based on your long-term play — free-trade town, military fortress, farming commune, scholarly settlement, romantic village, or a den of rogues',
+                '📈 The path accumulates from job distribution, economic shape, election policies and love-hate density, weighting recent history more, and shifts naturally with your play (you meant a farming village, you got a trading city)',
+                '🧲 An established path attracts "like-minded" immigrants (weighted by job), so each town grows ever more distinctive',
+                '🔎 The home page gains a town identity badge; tap it to see which long-term tendencies formed it',
+            ),
         ),
         array(
             'version' => '5.18.0',
@@ -1966,6 +2551,11 @@ function rimtown_get_changelog() {
                 '🧭 第一天因果鏈:新手看完介紹後,會出現一張「第一天」引導卡,用一條可操作的動線教會核心循環 —— 認識居民 → 發現關係矛盾 → 出手互動 → 留下選擇 → 看見後果',
                 '✨ 每一步都由你的真實操作解鎖(開資訊卡、看關係網、用意圖鈕、送禮/調解、點頭條),不是罐頭教學;走完會證明「這座小鎮會記得你做過的每一件事」',
                 '🙅 引導卡隨時可按 ✕ 略過,略過或完成後就不再出現',
+            ),
+            'changes_en' => array(
+                '🧭 First-day causal chain: after the intro, newcomers get a "First day" guide card that teaches the core loop through a hands-on path — meet residents → discover a relationship conflict → step in → leave your choice → see the consequences',
+                '✨ Each step unlocks through your real actions (opening info cards, viewing the relationship web, using intent buttons, gifting / mediating, tapping headlines), not canned tutorial; finishing it proves "this town remembers everything you did"',
+                '🙅 The guide card can be skipped with ✕ any time and never returns once skipped or completed',
             ),
         ),
         array(
@@ -1976,6 +2566,11 @@ function rimtown_get_changelog() {
                 '🧭 情境入口:每則頭條都能點 —— 點到跟居民有關的新聞,直接開他的資訊卡(看意圖+心情來源);點到建築/選舉/探索類,直接跳到對應分頁',
                 '📰 完整日報裡的每則事件也都變成可點連結,把「模擬 → 新聞 → 玩家理解 → 下一步」串成一條可操作的動線',
             ),
+            'changes_en' => array(
+                '🗞️ The paper becomes the home page: "Today\'s headlines" at the top of the town home shows the latest AI daily\'s key events as soon as you enter, no more digging through the log tab',
+                '🧭 Contextual entry points: every headline is tappable — resident news opens their info card (intent + mood source); building / election / exploration news jumps to the matching tab',
+                '📰 Every event in the full paper is a link too, wiring "simulation → news → player understanding → next action" into one operable path',
+            ),
         ),
         array(
             'version' => '5.16.0',
@@ -1984,6 +2579,11 @@ function rimtown_get_changelog() {
                 '🧭 居民意圖面板:點村民資訊卡新增「當前行動 / 為什麼 / 接下來 / 對城鎮的意見」,一眼看懂這個 AI 現在在幹嘛、為什麼、接下來想做什麼、對小鎮最大的不滿',
                 '💥 對話可見機械後果:每次聊完會浮現一張小結果卡(好感±、浪漫±、關係層級變化…),讓玩家清楚知道「這句話真的改變了什麼」,對話不再是純裝飾',
                 '🗯️ 意圖化交談鈕:聊天列新增 安慰／打聽／說服／調解／示好／威脅／委託 七種意圖鈕,各有明確後果(安慰紓壓、打聽出真八卦、選舉期說服可拉票、調解化解仇恨、威脅重挫信任…),自由輸入照樣保留',
+            ),
+            'changes_en' => array(
+                '🧭 Resident intent panel: villager info cards gain "current action / why / next / opinion of the town" so you can see at a glance what this AI is doing, why, what it wants next, and its biggest complaint',
+                '💥 Visible mechanical consequences of chat: a small result card after each conversation (affinity ±, romance ±, relationship tier changes…) so you know "that line really changed something"; chat is no longer decorative',
+                '🗯️ Intent chat buttons: the chat bar gains seven intents — comfort / inquire / persuade / mediate / charm / threaten / commission — each with clear consequences (comfort relieves stress, inquiry yields real gossip, persuade canvasses votes during elections, mediate defuses hatred, threats crush trust…); free typing remains',
             ),
         ),
         array(
@@ -1995,6 +2595,12 @@ function rimtown_get_changelog() {
                 '💭 點村民資訊卡可看到「心情來源」,一眼看懂他此刻為什麼開心或難過、對誰有情緒',
                 '💾 記憶完整存進存檔,重新載入後情緒延續',
             ),
+            'changes_en' => array(
+                '🧠 Memory-driven emotions (RimWorld-style thoughts): villagers now "remember" what happens to them — gifts, falling in love, marriage, being cheated on, heartbreak, divorce, losing loved ones, grudges, jealousy, fulfilled dreams, praise or slander from the mayor, festival joy',
+                '⏳ Each memory has a mood effect that decays over time and keeps nudging affinity toward specific people day by day (like real people, resentment over betrayal lingers for days)',
+                '💭 Villager info cards show "mood sources" so you can see why they are happy or sad right now and about whom',
+                '💾 Memories are fully saved; emotions carry on after reload',
+            ),
         ),
         array(
             'version' => '5.14.0',
@@ -2002,6 +2608,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '🌊 水面美化(批次5):水面加入斜向流動的焦散亮線與整片緩慢起伏,不再是死板的靜態藍,像真的在流動',
                 '🌳 樹冠層次:森林的樹冠依位置有深綠/亮綠/黃綠的變化與陽光亮點,一整片樹林不再像複製貼上',
+            ),
+            'changes_en' => array(
+                '🌊 Water polish (batch 5): diagonal flowing caustic highlights and slow whole-surface swell replace the flat static blue; it looks like it is really moving',
+                '🌳 Canopy depth: forest canopies vary between deep / bright / yellow-green by position with sunlit highlights, so a forest no longer looks copy-pasted',
             ),
         ),
         array(
@@ -2011,6 +2621,10 @@ function rimtown_get_changelog() {
                 '💬 村民初次見面對話大幅增加變化:從 2 種罐頭擴充到 7 種(熱情招呼/一見如故/尷尬撞見/八卦拉近/被小物吸引/嘴硬心軟…),並依性格分歧。沒有 AI 額度時,開局那批「初次交談」的日誌不再千篇一律',
                 '手機版全分頁體檢:經濟/任務/事件/紀錄/關係網/設定版面與字級皆確認正常',
             ),
+            'changes_en' => array(
+                '💬 Far more variety in first-meeting dialogue: from 2 canned versions to 7 (warm welcome / instant rapport / awkward collision / gossip icebreaker / drawn to a trinket / tough talk soft heart…) branching by personality. Without AI budget, the opening batch of "first conversations" in the log is no longer identical',
+                'Mobile full-tab checkup: economy / quests / events / log / relationship web / settings layouts and font sizes all verified',
+            ),
         ),
         array(
             'version' => '5.12.0',
@@ -2018,6 +2632,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '📰 手機版小鎮日報字放大:AI 日報內容字級大幅提升、行距加寬,手機上終於看得清楚',
                 '📱 全面修復「關不掉」的彈窗:送禮/爆料/排行榜等視窗點半透明背景即關、NPC 資訊卡點外面即關、祭典小遊戲加了 ✕ 隨時退出',
+            ),
+            'changes_en' => array(
+                '📰 Bigger daily paper text on mobile: AI daily content font size greatly increased with wider line spacing, finally readable on phones',
+                '📱 "Cannot close" popups fixed everywhere: gift / rumor / leaderboard windows close on tapping the translucent backdrop, villager info cards close on tapping outside, festival minigames get a ✕ to quit any time',
             ),
         ),
         array(
@@ -2027,6 +2645,10 @@ function rimtown_get_changelog() {
                 '📱 修復手機版操作:聊天面板打開後,現在點地圖任意空白處就能收起(選單、浮動卡片也一樣),回到全螢幕地圖',
                 '底部「聊天」按鈕改為切換:再點一次即收起',
             ),
+            'changes_en' => array(
+                '📱 Mobile controls fixed: once the chat panel is open, tapping any empty map area collapses it (same for menus and floating cards) back to the full-screen map',
+                'The bottom "Chat" button toggles: tap again to collapse',
+            ),
         ),
         array(
             'version' => '5.10.0',
@@ -2034,6 +2656,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '🧑‍🤝‍🧑 角色辨識度(批次4):每位村民依名字擁有不同的膚色、髮色與服裝深淺,同職業的居民也能一眼分辨,不再像複製人',
                 '聊天聯絡人頭像同步套用,與地圖上的村民外觀一致',
+            ),
+            'changes_en' => array(
+                '🧑‍🤝‍🧑 Character distinctiveness (batch 4): each villager gets skin tone, hair color and clothing shade from their name, so residents with the same job are distinguishable at a glance instead of looking like clones',
+                'Chat contact avatars use the same look as the villagers on the map',
             ),
         ),
         array(
@@ -2043,6 +2669,10 @@ function rimtown_get_changelog() {
                 '🌅 光影氛圍(批次3):加入時段色調 grading——清晨冷藍薄光帶一抹晨曦、黃昏黃金時刻暖橘斜照,不同時間畫面有明顯的「時段感」與電影味',
                 '🎬 螢幕暗角:柔和暗化四角把視線收攏到中央(日間極淡不壓暗),整體更有質感',
             ),
+            'changes_en' => array(
+                '🌅 Lighting atmosphere (batch 3): time-of-day color grading — cool blue dawn with a touch of sunrise, warm orange golden hour — giving each time a clear cinematic "feel"',
+                '🎬 Screen vignette: soft darkened corners draw the eye to the center (very faint by day) for a more polished look',
+            ),
         ),
         array(
             'version' => '5.8.0',
@@ -2050,6 +2680,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '🏠 建築美化(批次2):整棟建築往東南投一圈柔和的落地陰影,房子有了重量感、不再像貼在地上的紙片',
                 '🔺 屋頂立體感:屋頂依斜面漸層(屋脊亮、屋簷暗),看起來是有厚度的斜屋頂而非平板;屋簷陰影加深',
+            ),
+            'changes_en' => array(
+                '🏠 Building polish (batch 2): each building casts a soft ground shadow to the southeast, giving houses weight instead of looking like paper stuck on the ground',
+                '🔺 Roof depth: roofs shade by slope (bright ridge, dark eaves) so they read as thick pitched roofs instead of flat panels; eave shadows deepened',
             ),
         ),
         array(
@@ -2060,6 +2694,11 @@ function rimtown_get_changelog() {
                 '🌳 植物落地陰影:灌木、樹、石頭下方的地面會承接柔影,草木不再像浮在地上',
                 '🎨 破除重複貼磚:相鄰的灌木叢與花會依位置微調明暗與高光,不再像複製貼上的格子',
             ),
+            'changes_en' => array(
+                '🌿 Terrain polish (batch 1): grass is no longer one dead green — soft low-frequency mottling gives the meadow depth',
+                '🌳 Plant ground shadows: bushes, trees and rocks cast soft shadows on the ground below, so vegetation no longer floats',
+                '🎨 Breaking tile repetition: neighboring bushes and flowers vary brightness and highlights by position, no more copy-pasted grid',
+            ),
         ),
         array(
             'version' => '5.6.0',
@@ -2069,6 +2708,11 @@ function rimtown_get_changelog() {
                 '🎨 全圖色彩更飽和鮮豔、對比更強;草地/土路加了細顆粒質感,不再死板平面',
                 '🧍 村民角色加了深色描邊,從地圖背景中跳出來,更立體有份量',
             ),
+            'changes_en' => array(
+                '✨ Art round three + game feel: when good things happen (gift affinity+, daily reward, dream achieved, combo discovered, likes) floating outlined numbers / hearts pop up with heart / star / coin particles — juicy like damage numbers in an action game',
+                '🎨 The whole map is more saturated and higher contrast; grass / dirt roads get fine grain instead of flat planes',
+                '🧍 Villagers get a dark outline so they pop from the map background with more solidity',
+            ),
         ),
         array(
             'version' => '5.5.0',
@@ -2077,6 +2721,11 @@ function rimtown_get_changelog() {
                 '👥 新村民包:小鎮從 12 人增至 16 人。新增周明(迷人的遊唱商人)、何昌與何秀(恩愛老夫妻)、鄭薇(暗戀成疾的年輕天才),每個都自帶戲劇鉤子',
                 '💘 開局關係網:小鎮不再是一張白紙——一開始就種下暗戀(劉俊偷偷愛著許瑩)、前任(趙霞與馬強藕斷絲連)、世仇(吳達與楊鋒的舊怨)、摯友、恩愛夫妻,還有周明→趙霞→馬強的五角戀火藥庫',
                 '一進遊戲就有八卦頭條在跑,戲劇比以前早非常多就開始上演(實測 Day 20 已有 4 對情侶,原本要等約 30 天才有第一對)',
+            ),
+            'changes_en' => array(
+                '👥 New villager pack: the town grows from 12 to 16. New: Zhou Ming (charming minstrel merchant), He Chang and He Xiu (a loving old couple), Zheng Wei (young genius sick with a crush), each with a built-in drama hook',
+                '💘 Starting relationship web: the town is no longer a blank slate — crushes (Liu Jun secretly loves Xu Ying), exes (Zhao Xia and Ma Qiang not quite over), feuds (Wu Da and Yang Feng\'s old grudge), best friends, a loving couple, and the Zhou Ming → Zhao Xia → Ma Qiang powder keg from day one',
+                'Gossip headlines run from the moment you enter, and drama starts far earlier (tested: 4 couples by Day 20, versus about 30 days for the first one before)',
             ),
         ),
         array(
@@ -2088,6 +2737,12 @@ function rimtown_get_changelog() {
                 '✨ 點村民資訊卡可看夢想進度圓點,按「助夢」幫他加速並刷好感;夢想達成時全螢幕慶祝',
                 '📰 本週小鎮頭條新增「夢想進行中」區塊,追蹤最接近實現夢想的村民,小鎮從八點檔升級成群像劇',
             ),
+            'changes_en' => array(
+                '🌟 Villager life stories: every villager has a life dream from values / personality / job (find true love / open a business / master a craft / roam the world / a family together / a place in history), each with 4 stages',
+                'Dreams progress from real game state — "find true love" reads the romance engine (crush → dating → married), "master a craft" reads skill levels, "a family together" reads marriage and births, "a place in history" reads prosperity and the council. Each milestone posts to the town feed and makes headlines',
+                '✨ Villager info cards show dream progress dots; press "Support" to speed it up and raise affinity; a full-screen celebration when a dream comes true',
+                '📰 The weekly headlines add a "Dreams in progress" section tracking villagers closest to their dreams, upgrading the town from soap opera to ensemble drama',
+            ),
         ),
         array(
             'version' => '5.3.0',
@@ -2098,6 +2753,12 @@ function rimtown_get_changelog() {
                 '🗞️ 八卦有內容了：以前八卦只顯示「X向Y八卦了全鎮的事」,現在會寫出實際內容(「你有沒有發現X看Y的眼神不太一樣...」→越傳越誇張→「X跟Y湊成一對了!」),還會針對真實的暗戀/交往/翻臉事件產生',
                 '📰 本週小鎮頭條：每 7 天自動彈出愛恨糾葛摘要——本週新戀情、三角關係、暗戀進行中、水火不容、穩定放閃,一頁看懂全鎮八點檔',
             ),
+            'changes_en' => array(
+                '💗 Love-hate engine overhaul: fixed a core bug — villagers\' romance values were crushed by fixed decay so nobody ever got together. Attraction now accumulates as relationships grow close, compatible people click faster, and there are "meant to be" sparks. Tested: couples form within 30 days and confession scenes play out naturally',
+                '⚔️ Jealousy and rivals: someone whose crush is won by another is heartbroken and jealous of the rival; two people in love with the same person quietly compete, and triangles really burn into bitter enemies',
+                '🗞️ Gossip has content now: it used to show only "X gossiped to Y about the town"; now it says what ("have you noticed how X looks at Y…" → exaggerating as it spreads → "X and Y are a couple!") and is generated from real crushes / dating / fallouts',
+                '📰 Weekly town headlines: every 7 days a love-and-hate digest pops up — new romances, triangles, crushes in progress, sworn enemies, steady couples — the whole soap opera on one page',
+            ),
         ),
         array(
             'version' => '5.2.0',
@@ -2106,6 +2767,11 @@ function rimtown_get_changelog() {
                 '📱 鎮民動態：聊天頁新增小鎮朋友圈——村民每天發文（AI 生成或模板）、朋友和死對頭會留言，分手發玻璃心文、結婚曬恩愛；玩家可按讚留言刷好感，作者會回覆你',
                 '🗣️ 玩家放話：聊天時可偷偷爆料（誇讚／酸人／亂點鴛鴦），謠言進入傳播網路——誇讚傳回本人好感大增、壞話被抓到源頭是你就完了、亂點鴛鴦可能真的湊成一對',
                 '📢 謠言傳話遊戲：謠言每經一手有機率越傳越誇張（最多變形兩次），傳到第四手當事人就會聽到——負面謠言引爆當面對質、雙方關係惡化，當事人還會發文暗諷',
+            ),
+            'changes_en' => array(
+                '📱 Town feed: the chat tab gains a town social feed — villagers post daily (AI or templates), friends and rivals comment, breakups bring vaguebooking and weddings bring gushing; players can like and comment to raise affinity, and authors reply',
+                '🗣️ Player rumors: while chatting you can quietly spill (praise / snark / play matchmaker) and the rumor enters the spreading network — praise reaching the person boosts affinity a lot, bad-mouthing traced back to you is disastrous, and matchmaking may really pair people up',
+                '📢 Telephone-game rumors: each hop may exaggerate the rumor (at most two mutations); by the fourth hop the subject hears it — negative rumors trigger confrontations and sour relationships, and the subject posts a veiled jab',
             ),
         ),
         array(
@@ -2116,6 +2782,11 @@ function rimtown_get_changelog() {
                 '🎪 祭典攤位小遊戲：祭典期間地圖出現攤位按鈕——春祭/冬至猜燈謎、夏祭撈金魚、秋收投壺（計時停針），最高 70 銀幣+30 食物，每屆一次',
                 '玩完攤位遊戲後，看到你成績的村民會用 AI 傳訊吐槽或膜拜',
             ),
+            'changes_en' => array(
+                '📺 Live scenes: when villagers confess, marry, get caught cheating, break up or divorce, the AI generates 4–6 lines of drama and broadcasts it full-screen — front-row seats',
+                '🎪 Festival stall minigames: during festivals a stall button appears on the map — lantern riddles at Spring Rite / Winter Solstice, goldfish scooping in summer, pitch-pot (timed stop) at harvest, up to 70 silver + 30 food, once per festival',
+                'After you play a stall game, villagers who saw your score send AI messages to tease or worship you',
+            ),
         ),
         array(
             'version' => '5.0.0',
@@ -2124,6 +2795,11 @@ function rimtown_get_changelog() {
                 '💗 心動事件（礦石鎮式）：與村民的好感到達門檻（25/55/80、心動50）時，對方會用 AI 說出專屬真心話——告白、秘密、感謝，玩家二選一回應影響好感與心動值，每人每門檻限一次',
                 '🎊 季節祭典 AI 化：祭典期間村民對話與聊天自然融入祭典話題，NPC 主動邀你逛祭典，與你感情最深的人（伴侶＞心動＞摯友）會第一個來約你',
                 '送禮、聊天後即時檢查心動門檻，重要時刻不再錯過',
+            ),
+            'changes_en' => array(
+                '💗 Heart-flutter events (Stardew-style): when affinity with a villager hits a threshold (25/55/80, attraction 50) they speak exclusive AI heartfelt lines — confessions, secrets, thanks; you choose one of two replies affecting affinity and attraction, once per person per threshold',
+                '🎊 AI-powered seasonal festivals: during festivals villager dialogue and chats weave in festival topics, villagers invite you to the fair, and the person closest to you (partner > crush > best friend) asks first',
+                'Heart-flutter thresholds are checked right after gifts and chats so key moments are never missed',
             ),
         ),
         array(
@@ -2135,6 +2811,12 @@ function rimtown_get_changelog() {
                 '🤖 AI 深度整合：建築完工、組合發現時，相關職業的村民會用 AI 傳訊息給你發表感想（鐵匠評鍛造坊、守衛評城牆…）',
                 '修復：完工建築的地圖圖示先前因欄位名稱不符從未顯示，現已修正',
             ),
+            'changes_en' => array(
+                '🏗️ Building placement: when building, the player clicks the map to choose the spot (a 2×2 clear area); the site shows scaffolding and a progress bar, and the finished building stands where you chose',
+                '✨ Kairo-style adjacency combos: placing compatible buildings and decorations near each other triggers combos (romantic corner, market buzz, iron wall… 8 kinds) that boost beauty and prosperity; recipes are yours to discover',
+                '🤖 Deep AI integration: when a building completes or a combo is found, villagers of related jobs send AI messages with their thoughts (the blacksmith on the forge, the guard on the wall…)',
+                'Fix: finished-building map icons never showed because of a field-name mismatch; corrected',
+            ),
         ),
         array(
             'version' => '4.8.0',
@@ -2144,6 +2826,11 @@ function rimtown_get_changelog() {
                 '裝飾提升小鎮美觀度（繁榮度加分，上限 +35），路燈與噴泉夜晚會發光，噴泉有動態水花',
                 '裝飾隨存檔保存，雲端/本機皆支援',
             ),
+            'changes_en' => array(
+                '🌸 Free decoration placement: the Economy tab gains a "Decorate the town" catalog (flower beds / benches / lamps / statues / small fountains); pick one and tap empty ground to place it, tap an existing decoration to remove it (half the materials refunded)',
+                'Decorations raise town beauty (prosperity bonus, up to +35); lamps and fountains glow at night and fountains splash',
+                'Decorations are saved, both cloud and local',
+            ),
         ),
         array(
             'version' => '4.7.0',
@@ -2151,6 +2838,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '系統逐步解鎖（開羅式）：新手只看到居民/聊天/任務，經濟(繁榮12)→成就(20)→事件+關係網(28)→產業(38)隨發展開啟，解鎖時有慶祝動畫；老玩家已達標的自動開通',
                 '關係網大改版：預設只顯示戀愛/單戀/敵對（摯友線可切換），點任何人進入個人視角，新增「本鎮八卦頭條」文字摘要（夫妻/三角關係/互相暗戀/死對頭一目瞭然）',
+            ),
+            'changes_en' => array(
+                'Gradual system unlocks (Kairo-style): newcomers only see residents / chat / quests; economy (prosperity 12) → achievements (20) → events + relationship web (28) → industries (38) open as you grow, with a celebration animation; veterans who already qualify unlock automatically',
+                'Relationship web overhaul: shows only romance / crush / hostility by default (best-friend lines toggleable), tap anyone for their personal view, plus a new "Town gossip headlines" text digest (couples / triangles / mutual crushes / sworn enemies at a glance)',
             ),
         ),
         array(
@@ -2165,6 +2856,15 @@ function rimtown_get_changelog() {
                 '補齊張豪、趙霞的第二條個人故事線；密碼重設加上帳號級冷卻鎖定',
                 '英文介面翻譯補齊',
             ),
+            'changes_en' => array(
+                '🎁 Gift system: send one of 5 gifts from the chat window to raise affinity, doubled when it matches their taste (once per person per day)',
+                '🏆 Global prosperity leaderboard: logged-in players\' prosperity is submitted automatically; the top 20 show on the Economy tab',
+                '⚡ Major performance gains: terrain uses a cached static base layer, cutting per-frame draws from 4800 to 1, smoother and lighter on phone batteries',
+                '💾 Save protection: when localStorage is full the save slims down and retries instead of failing silently',
+                '📖 Tutorial text updated to the new controls (walk up to talk, ☰ menu, 💬 chat)',
+                'Second personal storylines added for Zhang Hao and Zhao Xia; password reset gets an account-level cooldown lock',
+                'English interface translations filled in',
+            ),
         ),
         array(
             'version' => '4.5.1',
@@ -2173,6 +2873,11 @@ function rimtown_get_changelog() {
                 '移除夜晚起霧感：夜色改用 multiply 混色，變暗但色彩保持飽和清晰',
                 '日夜辨識強化：時鐘顯示 🌅☀️🌆🌙 階段圖示（桌面+手機）',
                 '修復聊天面板點「日誌」子分頁沒反應的問題（自動轉為浮動卡呈現）',
+            ),
+            'changes_en' => array(
+                'Night fog removed: night uses multiply blending — darker but colors stay saturated and crisp',
+                'Day / night readability: the clock shows 🌅☀️🌆🌙 phase icons (desktop + mobile)',
+                'Fixed the chat panel\'s "Log" sub-tab not responding (now shown as a floating card)',
             ),
         ),
         array(
@@ -2186,12 +2891,23 @@ function rimtown_get_changelog() {
                 '每日登入獎勵：連續登入 7 天階梯獎勵（銀幣+食物）',
                 '離線進度結算：離開超過 10 分鐘再回來，小鎮會補跑模擬（上限 2 天）並顯示結算摘要',
             ),
+            'changes_en' => array(
+                'Delayed consequences of decision cards: 3 days after a decision villagers return to thank you (+silver +reputation) or complain (town mood drops), reported on the gossip ticker',
+                'Disaster warnings with preparation choices: the day before a drought / blizzard choose "full precautions / basic preparation / leave it to fate"; investing resources greatly reduces damage',
+                'Art round two: four-facing characters (back of the head walking up, shifted features walking sideways), 4 roof colors (red / blue / green / purple), warm window light at night',
+                'Relationship overview: a new "💞 Relationships" tab shows who loves and hates whom across the town in one chart (romance / crush / best friends / hostility / affairs)',
+                'Daily login reward: 7-day streak ladder (silver + food)',
+                'Offline progress: away more than 10 minutes, the town catches up on simulation (up to 2 days) and shows a summary',
+            ),
         ),
         array(
             'version' => '4.4.2',
             'date'    => '2026-07-15',
             'changes' => array(
                 '選單去重：「產業」併入「經濟」卡片的子分頁（經濟｜產業），選單更精簡',
+            ),
+            'changes_en' => array(
+                'Menu deduplication: "Industry" merged into the "Economy" card as a sub-tab (Economy | Industry) for a leaner menu',
             ),
         ),
         array(
@@ -2201,6 +2917,11 @@ function rimtown_get_changelog() {
                 '手機版底部新增狀態帶（機場物語式）：繁榮度/銀幣/食物/人口一目瞭然，點擊直達經濟頁',
                 '8-bit UI 音效：選單開關、按鈕點擊、成就解鎖都有短促音效（跟隨 BGM 音量與靜音設定）',
                 '選單/按鈕按壓縮放回饋；搖桿與互動提示位置配合狀態帶調整',
+            ),
+            'changes_en' => array(
+                'Mobile bottom status strip (Airport-Story style): prosperity / silver / food / population at a glance, tap to jump to Economy',
+                '8-bit UI sounds: short blips for menu open / close, button taps and achievements (following the BGM volume and mute setting)',
+                'Press feedback scaling on menus / buttons; joystick and interaction hints repositioned around the status strip',
             ),
         ),
         array(
@@ -2212,12 +2933,21 @@ function rimtown_get_changelog() {
                 '左側浮動選單：居民/任務/經濟/產業/事件/成就/紀錄/設定 一覽',
                 '分頁內容改為置中浮動卡片＋返回鈕，背後地圖持續運轉；聊天保留大面板方便打字',
             ),
+            'changes_en' => array(
+                'Mobile fully Kairo-style (Airport Story): the map is always full-screen with all UI floating over it',
+                'Minimal bottom bar: just "☰ Menu" and "💬 Chat" (chat with an unread badge)',
+                'Left floating menu: residents / quests / economy / industry / events / achievements / log / settings at a glance',
+                'Tab content becomes centered floating cards with a back button while the map keeps running behind; chat keeps a large panel for typing',
+            ),
         ),
         array(
             'version' => '4.3.7',
             'date'    => '2026-07-15',
             'changes' => array(
                 '修復 iPhone 上按鈕文字變成系統藍色的問題（紅底藍字）：全域強制按鈕/輸入框使用主題文字色，強調按鈕白字',
+            ),
+            'changes_en' => array(
+                'Fixed button text turning system blue on iPhone (blue on red): buttons / inputs globally forced to theme text colors, accent buttons white text',
             ),
         ),
         array(
@@ -2227,6 +2957,10 @@ function rimtown_get_changelog() {
                 '預設縮放拉近：手機 2 倍、桌面 1.6 倍，開場即可看清角色',
                 '開場鏡頭自動對準玩家角色並跟隨',
             ),
+            'changes_en' => array(
+                'Closer default zoom: 2× on mobile, 1.6× on desktop, so characters are clear from the start',
+                'The opening camera centers on and follows the player',
+            ),
         ),
         array(
             'version' => '4.3.5',
@@ -2235,6 +2969,10 @@ function rimtown_get_changelog() {
                 '手機版改為開羅式抽屜介面：地圖為主體，面板高度 55vh→44vh（聊天分頁 62vh 方便打字）',
                 '再點一次目前分頁即可收合面板回到全地圖；收合把手加粗更明顯',
             ),
+            'changes_en' => array(
+                'Mobile switches to a Kairo-style drawer: the map is the main view, panel height 55vh→44vh (chat tab 62vh for typing)',
+                'Tap the current tab again to collapse the panel back to the full map; the drag handle is thicker and clearer',
+            ),
         ),
         array(
             'version' => '4.3.4',
@@ -2242,6 +2980,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '修復手機版互動提示文字直排疊字看不懂的問題（強制單列不換行）',
                 '觸控裝置的互動提示改顯示 👆 點擊提示（取代無意義的 E 鍵標籤）',
+            ),
+            'changes_en' => array(
+                'Fixed unreadable vertical stacked text in mobile interaction hints (forced single line, no wrapping)',
+                'Touch devices show a 👆 tap hint instead of the meaningless "E" key label',
             ),
         ),
         array(
@@ -2252,12 +2994,20 @@ function rimtown_get_changelog() {
                 '設定頁簡化：AI 供應商/金鑰欄位收進「進階」摺疊區，一般玩家只看到「小鎮 AI 已啟用（免設定）」',
                 '舊玩家自動升級：先前預設為模擬對話且未設金鑰者,自動改用小鎮伺服器 AI（一次性遷移）',
             ),
+            'changes_en' => array(
+                'Fixed duplicate chat sends: game time advancing during AI replies broke deduplication and recorded the same line twice',
+                'Settings simplified: AI provider / key fields fold into an "Advanced" section; ordinary players only see "Town AI enabled (no setup)"',
+                'Old players auto-upgraded: those on simulated dialogue with no key are switched to the town server AI (one-time migration)',
+            ),
         ),
         array(
             'version' => '4.3.2',
             'date'    => '2026-07-15',
             'changes' => array(
                 '修復手機版 Safari 上下留白:頁面底色改為深色、鎖定滿版高度、關閉過捲彈跳',
+            ),
+            'changes_en' => array(
+                'Fixed top / bottom gaps in mobile Safari: dark page background, locked full height, overscroll bounce disabled',
             ),
         ),
         array(
@@ -2268,6 +3018,11 @@ function rimtown_get_changelog() {
                 '桌面版排版重整：單列緊湊 header、資訊改為圓角 chips、控制鈕群組靠右、訪客橫幅不再遮住標題',
                 '手機版標題列壓縮：時間/人口不再擠壓重疊，窄螢幕自動隱藏 1.5x 檔位保住選單按鈕',
             ),
+            'changes_en' => array(
+                'Background music volume fix: a perceptual volume curve (no more harshness) with a lower default',
+                'Desktop layout reorganized: single-row compact header, info as rounded chips, control buttons grouped right, the guest banner no longer covers the title',
+                'Mobile title bar compressed: time / population no longer squeeze and overlap; narrow screens hide the 1.5× speed to keep the menu button',
+            ),
         ),
         array(
             'version' => '4.3.0',
@@ -2277,6 +3032,12 @@ function rimtown_get_changelog() {
                 '建築立體感:落影、屋脊高光、屋簷深緣、外緣描邊,不再是平面色塊',
                 '小鎮伺服器 AI(免金鑰):不用自備 API 金鑰,選「🏘️ 小鎮伺服器 AI」即可讓村民用 AI 對話(Vercel 版預設開啟)',
                 'AI 每日額度:訪客 20 則、登入玩家 100 則,超過自動回到模擬對話',
+            ),
+            'changes_en' => array(
+                'Major art upgrade (Kairo-game style): smoother brighter grass, roads with grassy fringes, shorelines with sand and animated waves',
+                'Building depth: drop shadows, ridge highlights, deep eaves, outlines — no more flat color blocks',
+                'Town server AI (no key): no need for your own API key — choose "🏘️ Town server AI" and villagers talk with AI (on by default on the Vercel version)',
+                'AI daily quota: 20 messages for guests, 100 for logged-in players, falling back to simulated dialogue beyond that',
             ),
         ),
         array(
@@ -2290,6 +3051,14 @@ function rimtown_get_changelog() {
                 '愛恨糾葛看得見：戀愛/已婚/暗戀/出軌/敵對的村民頭上會輪播 💕💍💘🖤💢 表情',
                 '新增八卦跑馬燈：鎮上發生戀情、劈腿、打架等大事時即時播報在地圖上方',
             ),
+            'changes_en' => array(
+                'Stardew-style direct control: hold WASD / arrow keys to move freely (pixel movement, wall sliding, camera follow)',
+                'Mobile virtual joystick (bottom-left of the map): drag to move',
+                'Walking up to a villager shows a "Talk" hint (with affinity heart level); press E or tap it to chat immediately',
+                'Tapping a villager now shows a quick info card first: affinity hearts, job, mood, and gossip about who they love or hate',
+                'Visible loves and hates: villagers who are dating / married / crushing / cheating / hostile cycle 💕💍💘🖤💢 above their heads',
+                'New gossip ticker: romances, cheating, fights and other big events scroll above the map as they happen',
+            ),
         ),
         array(
             'version' => '4.1.8',
@@ -2298,6 +3067,11 @@ function rimtown_get_changelog() {
                 'Vercel 版新增完整帳號系統：註冊/登入/雲端存檔/成就同步改由 Vercel Serverless Functions + Blob 儲存提供，不再依賴 WordPress',
                 '前端自動偵測執行環境：WordPress 用原 REST API，靜態站(rimtown.cc/Vercel)用 /api/ + JWT',
                 '登入狀態以 JWT 保存於瀏覽器,重新整理頁面仍保持登入',
+            ),
+            'changes_en' => array(
+                'The Vercel version gains a full account system: registration / login / cloud saves / achievement sync are served by Vercel Serverless Functions + Blob storage, no longer depending on WordPress',
+                'The client auto-detects its environment: WordPress uses the original REST API, static sites (rimtown.cc / Vercel) use /api/ + JWT',
+                'Login state is kept as a JWT in the browser and survives page refreshes',
             ),
         ),
         array(
@@ -2317,6 +3091,20 @@ function rimtown_get_changelog() {
                 '新增網頁 favicon；header 新增天氣顯示元素',
                 '版號同步：所有檔案統一為 4.1.7',
             ),
+            'changes_en' => array(
+                'Major bug fix: returning travelers\' memories were restored to the wrong field, crashing the simulation every 3 days (festivals / farm / quests and all daily updates stopped)',
+                'All 5 reputation effects now really work: event shield (lower raid / disaster chance), immigrant attraction, merchant price bonus, starting trust of new residents',
+                'Fixed deep-well disaster mitigation never triggering; drought resistance grows with well upgrades (water purification)',
+                'Fixed two title bars on mobile (desktop header not hidden)',
+                'WordPress version gets the missing desktop / mobile header controls (clock, population, pause, save, speed, AI status… 21 elements)',
+                'New desktop "Account" button (the mobile menu account entry did nothing before)',
+                'Fixed the settings tab "Save settings" forcing the English interface back to Chinese',
+                'Fixed PWA registration throwing on Firefox / Safari (chrome identifier undefined)',
+                'Tutorial hint card moved below the header so it no longer covers pause / speed; the guest banner no longer covers the sidebar',
+                'Service Worker cache version synced + the missing chiptune.js added (BGM works offline)',
+                'Website favicon added; header gains a weather element',
+                'Version sync: all files set to 4.1.7',
+            ),
         ),
         array(
             'version' => '4.1.6',
@@ -2324,6 +3112,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '手機版訪客模式橫幅移至底部 tab bar 上方，不再遮擋遊戲畫面',
                 '版號同步：所有檔案統一為 4.1.6',
+            ),
+            'changes_en' => array(
+                'Mobile guest banner moved above the bottom tab bar so it no longer covers the game',
+                'Version sync: all files set to 4.1.6',
             ),
         ),
         array(
@@ -2338,6 +3130,15 @@ function rimtown_get_changelog() {
                 '帳號按鈕顯示「訪客」文字，點擊可開啟登入視窗',
                 '版號同步：所有檔案統一為 4.1.5',
             ),
+            'changes_en' => array(
+                'New guest mode: try the game without registering via "🎮 Play as guest"',
+                'Guests get the full interaction cards (daily decisions, event choices, NPC requests, council votes)',
+                'Guests can view the tutorial',
+                'A guest-mode banner at the top can be closed any time or upgraded via "Create account"',
+                'Logging in / registering exits guest mode and hides the banner',
+                'The account button reads "Guest" and opens the login window',
+                'Version sync: all files set to 4.1.5',
+            ),
         ),
         array(
             'version' => '4.1.4',
@@ -2350,6 +3151,14 @@ function rimtown_get_changelog() {
                 '預留 loadCustomTrack() 介面，可用自訂音檔替換程序化曲目',
                 '版號同步：所有檔案統一為 4.1.4',
             ),
+            'changes_en' => array(
+                'New 8-bit chiptune background music (procedurally synthesized with the Web Audio API, no audio files)',
+                '4 tracks switch with the time of day: day (lively adventure), dusk (warm relaxed), night (quiet minor), dawn (gentle awakening)',
+                'NES four-channel timbre: square-wave melody, triangle bass, arpeggio harmony, noise drums',
+                'Settings gain a "Background music" volume slider and mute button',
+                'A loadCustomTrack() interface is reserved to replace procedural tracks with custom audio',
+                'Version sync: all files set to 4.1.4',
+            ),
         ),
         array(
             'version' => '4.1.3',
@@ -2359,12 +3168,20 @@ function rimtown_get_changelog() {
                 '未登入時隱藏新手教學與互動圖卡（決策、事件、NPC求助、議會）',
                 '版號同步：所有檔案統一為 4.1.3',
             ),
+            'changes_en' => array(
+                'Daily decisions reframed as requests: villagers come to consult you instead of mayor-style command decisions',
+                'Tutorial and interaction cards (decisions, events, NPC requests, council) hidden when logged out',
+                'Version sync: all files set to 4.1.3',
+            ),
         ),
         array(
             'version' => '4.1.2',
             'date'    => '2026-03-17',
             'changes' => array(
                 '修正插件 header 版本號與 RIMTOWN_VERSION 不一致',
+            ),
+            'changes_en' => array(
+                'Fixed the plugin header version not matching RIMTOWN_VERSION',
             ),
         ),
         array(
@@ -2373,6 +3190,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '修復 WordPress 版本缺少通知 HTML 元素：成就彈窗、事件公告、任務引導、新手教學、遊戲對話框、手機版頭部全部補上',
                 '版號同步：所有檔案統一為 4.1.1',
+            ),
+            'changes_en' => array(
+                'Fixed missing notification HTML in the WordPress version: achievement popups, event announcements, quest guidance, tutorial, game dialogs and the mobile header are all added',
+                'Version sync: all files set to 4.1.1',
             ),
         ),
         array(
@@ -2387,6 +3208,16 @@ function rimtown_get_changelog() {
                 '修復 BuildingManager._counter 未序列化：存讀檔後 ID 計數器重置',
                 '向下相容舊存檔：自動補全 buildingKey 與 level 欄位',
                 '版號同步：所有檔案統一為 4.1.0',
+            ),
+            'changes_en' => array(
+                'Building upgrade system: all 12 buildings support 3 levels (Lv.1→Lv.2→Lv.3) with stronger effects each level',
+                'Upgrade paths: watchtower → reinforced watchtower → sentinel tower, granary → large granary → cold granary, and so on',
+                'Upgrade UI: level stars on buildings, an upgrade area with cost and effect preview',
+                'New achievements: Ever Better (first upgrade), Pinnacle (max level)',
+                'Fixed a variable shadowing bug in startProject: const t shadowed the translation function causing a TypeError',
+                'Fixed BuildingManager._counter not being serialized: the id counter reset after save / load',
+                'Backward compatible with old saves: buildingKey and level fields are filled in automatically',
+                'Version sync: all files set to 4.1.0',
             ),
         ),
         array(
@@ -2407,6 +3238,21 @@ function rimtown_get_changelog() {
                 'NPC 議會治理：自動組建議會，12 種提案，NPC 依性格投票，玩家可參與，政令持續 20 天',
                 '版號同步：所有檔案統一為 4.0.0',
             ),
+            'changes_en' => array(
+                'Daily decision system: one choice card a day affecting resources, resident mood and reputation',
+                'Shop system: 14 goods to buy and sell, with discounts by reputation tier',
+                'Event choice system: major events (bandits, disasters…) offer several responses',
+                'NPC request system: residents ask for your help; choices affect affinity and reputation',
+                'Work action buttons: perform work manually for resources and skill experience',
+                'Interactive newspaper: investigate / support / ignore each daily news item',
+                'Reputation system (full): 6 tiers (Nobody → Legend) affecting trade prices, NPC trust, shop discounts, event mitigation and immigrant attraction',
+                'Mood tuning: slower need decay at night, mood penalties become gradual instead of cliff-edged',
+                'Quest tab gains a reputation panel: tier badge, progress bar, effect list, source tracking',
+                'Dynamic weather engine: 10 weather types weighted by season, 3-day forecast, temperature / humidity / wind, affecting farming, mood and NPC activity',
+                'Natural disasters: severe drought / blizzard / flood triggered by sustained extreme weather, with warnings, building mitigation and recovery',
+                'NPC council governance: an auto-formed council, 12 proposals, NPCs vote by personality, the player may take part, decrees last 20 days',
+                'Version sync: all files set to 4.0.0',
+            ),
         ),
         array(
             'version' => '3.7.1',
@@ -2416,6 +3262,11 @@ function rimtown_get_changelog() {
                 'fallbackGroqKey 讀取來源新增 settings tab input 與 localStorage fallback',
                 '版號同步：所有檔案統一為 3.7.1',
             ),
+            'changes_en' => array(
+                'Fixed the Groq API key being cleared after saving settings',
+                'fallbackGroqKey now also reads from the settings tab input and localStorage fallback',
+                'Version sync: all files set to 3.7.1',
+            ),
         ),
         array(
             'version' => '3.7.0',
@@ -2424,6 +3275,11 @@ function rimtown_get_changelog() {
                 '修復聊天對話持續閃爍問題：模擬 tick 時跳過聊天頁面完整重繪，改用 DOM 原地更新',
                 '同步 WordPress 版本：像素頭像、style.css、app.js 與 Chrome Extension 完全一致',
                 '版號同步：所有檔案統一為 3.7.0',
+            ),
+            'changes_en' => array(
+                'Fixed constant chat flicker: simulation ticks skip full chat re-renders and update the DOM in place',
+                'WordPress version synced: pixel avatars, style.css and app.js identical to the Chrome extension',
+                'Version sync: all files set to 3.7.0',
             ),
         ),
         array(
@@ -2436,6 +3292,13 @@ function rimtown_get_changelog() {
                 '新增報紙通知與通知佇列系統',
                 '版號同步：所有檔案統一為 3.6.15',
             ),
+            'changes_en' => array(
+                'Chat contact avatars become pixel-art NPC portraits (job outfit, hairstyle, gender, accessories)',
+                'Chat flicker fix: new _renderChatMessages() updates only the message area',
+                'Achievement / event notifications become large centered cards with a blurred backdrop',
+                'New newspaper notification and notification queue',
+                'Version sync: all files set to 3.6.15',
+            ),
         ),
         array(
             'version' => '3.6.14',
@@ -2445,6 +3308,12 @@ function rimtown_get_changelog() {
                 '美化聊天介面：漸層背景、氣泡滑入動畫、未讀紅點脈動效果、輸入框聚焦光暈',
                 'NPC 回覆前顯示打字中動畫並加入隨機延遲，對話更自然',
                 '版號同步：所有檔案統一為 3.6.14',
+            ),
+            'changes_en' => array(
+                'Fixed jobs showing as [object Object] on map name tags and in chat',
+                'Chat polish: gradient background, bubble slide-in animation, pulsing unread dot, input focus glow',
+                'NPCs show a typing animation with random delay before replying, for more natural conversation',
+                'Version sync: all files set to 3.6.14',
             ),
         ),
         array(
@@ -2457,6 +3326,13 @@ function rimtown_get_changelog() {
                 '地圖上所有 NPC 頭上顯示名字 + 職業卡片',
                 '版號同步：所有檔案統一為 3.6.13',
             ),
+            'changes_en' => array(
+                'Chat redesigned as a messaging app',
+                'NPC chat distance limit removed: talk to anyone from anywhere',
+                'NPCs send messages proactively to the player',
+                'Every NPC on the map shows a name + job card overhead',
+                'Version sync: all files set to 3.6.13',
+            ),
         ),
         array(
             'version' => '3.6.12',
@@ -2464,6 +3340,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '修正 API key 貼上/儲存時被清空的問題：renderSettings() 改為優先使用現有 DOM input 的值，只有在 input 元素不存在時才從 localStorage 讀取，避免 renderSidebar() 重繪時覆蓋使用者尚未儲存的輸入',
                 '版號同步：所有檔案統一為 3.6.12',
+            ),
+            'changes_en' => array(
+                'Fixed API keys being cleared on paste / save: renderSettings() now prefers the existing DOM input value and only reads localStorage when the input does not exist, so renderSidebar() re-renders no longer overwrite unsaved input',
+                'Version sync: all files set to 3.6.12',
             ),
         ),
         array(
@@ -2473,6 +3353,11 @@ function rimtown_get_changelog() {
                 '修復 API key 儲存時被清空的 race condition：render() 的 setInterval tick 會在點擊儲存按鈕時重新渲染 settings tab，導致未儲存的表單資料被覆蓋，現在 activeTab 為 settings 時跳過 sidebar 重繪',
                 '修復 _escapeHtml 未跳脫雙引號的問題：API key 若含引號字元會破壞 HTML value 屬性',
                 '版號同步：所有檔案統一為 3.6.10',
+            ),
+            'changes_en' => array(
+                'Fixed a race clearing API keys on save: the render() setInterval tick re-rendered the settings tab while clicking save, overwriting unsaved form data; the sidebar now skips re-rendering while the settings tab is active',
+                'Fixed _escapeHtml not escaping double quotes: keys containing quotes broke the HTML value attribute',
+                'Version sync: all files set to 3.6.10',
             ),
         ),
         array(
@@ -2486,6 +3371,14 @@ function rimtown_get_changelog() {
                 '移除設定面板暫停/繼續按鈕',
                 '版號同步：所有檔案統一為 3.6.9',
             ),
+            'changes_en' => array(
+                'Smart NPC pathfinding: A* implemented, NPCs no longer walk into walls and route around buildings',
+                'Building entrances: a 3×2 dirt clearing at each door makes entering and leaving easier',
+                'NPCs leave early: home an hour before bed, out an hour before work, more like real people',
+                'Town list buttons polished: New town / Close become large rounded buttons',
+                'Pause / resume buttons removed from the settings panel',
+                'Version sync: all files set to 3.6.9',
+            ),
         ),
         array(
             'version' => '3.6.8',
@@ -2495,6 +3388,11 @@ function rimtown_get_changelog() {
                 '設定 tab 新增遊戲控制區塊：暫停/繼續、速度倍率、城鎮列表、新地圖',
                 '版號同步：所有檔案統一為 3.6.8',
             ),
+            'changes_en' => array(
+                'The login screen shows the login form by default',
+                'Settings tab gains a game-control block: pause / resume, speed multiplier, town list, new map',
+                'Version sync: all files set to 3.6.8',
+            ),
         ),
         array(
             'version' => '3.6.7',
@@ -2503,6 +3401,11 @@ function rimtown_get_changelog() {
                 '未登入時自動顯示登入畫面，不需手動點擊',
                 '背景霧化城鎮地圖：登入畫面背景使用模糊濾鏡顯示城鎮地圖',
                 '版號同步：所有檔案統一為 3.6.7',
+            ),
+            'changes_en' => array(
+                'The login screen appears automatically when logged out, no click needed',
+                'Blurred town map behind the login screen',
+                'Version sync: all files set to 3.6.7',
             ),
         ),
         array(
@@ -2517,6 +3420,16 @@ function rimtown_get_changelog() {
                 '存檔管理 UI 精簡：合併「帳號」與「存檔管理」為「帳號與存檔」',
                 '移除匯出/匯入存檔按鈕，登入後存檔自動同步雲端',
                 '版號同步：所有檔案統一為 3.6.6',
+            ),
+            'changes_en' => array(
+                'Prettier dialogs: native alert / confirm replaced by game-styled popups',
+                'Stronger NPC wall-stuck fix: roofs (ROOF/ROOF2) and fences (FENCE) count as impassable',
+                'Collision sliding fixed: X / Y components split correctly for avoidance',
+                'NPCs stuck inside walls teleport to the nearest walkable spot',
+                'Walkable target search radius widened from 5 to 10 tiles',
+                'Save management UI simplified: "Account" and "Save management" merged into "Account & saves"',
+                'Export / import buttons removed; saves sync to the cloud automatically after login',
+                'Version sync: all files set to 3.6.6',
             ),
         ),
         array(
@@ -2536,6 +3449,20 @@ function rimtown_get_changelog() {
                 '防止 iOS 自動放大：登入表單 input font-size 設為 16px',
                 '版號同步：所有檔案統一為 3.6.5',
             ),
+            'changes_en' => array(
+                'Login fixed: the missing auth-modal HTML (login / register / reset password forms) added',
+                'wp_localize_script injects the rimtownAuth client auth variables',
+                'Full REST API endpoints added: login, register, reset-password, me, logout, saves, save, achievements',
+                'Auth rate limits: login 5 per 5 min, register 5 per 5 min, password reset 3 per 10 min',
+                'Walking into walls fixed: new _isWalkableTile() collision check',
+                'New _findWalkableTarget() finds the nearest walkable spot so targets never land inside walls',
+                'Walking slides along walls instead of getting stuck',
+                'Free map clicking: click anywhere on the map to walk there',
+                'The move indicator shows at the actual click position, not the area center',
+                'Fixed the mobile map layout breaking after login: inputs blur and viewport zoom resets when the auth modal closes',
+                'Prevented iOS auto-zoom: login inputs use 16px font',
+                'Version sync: all files set to 3.6.5',
+            ),
         ),
         array(
             'version' => '3.6.4',
@@ -2544,6 +3471,11 @@ function rimtown_get_changelog() {
                 '修復 WordPress 腳本載入順序：i18n.js 改為最先載入，所有模組加入依賴，修復 t is not defined',
                 '修復 processing.js 語法錯誤：移除 dailyUpdate() 中多餘的大括號，修復 Illegal continue statement',
                 '版號同步：所有檔案統一為 3.6.4',
+            ),
+            'changes_en' => array(
+                'Fixed WordPress script load order: i18n.js loads first with all modules depending on it, fixing "t is not defined"',
+                'Fixed a syntax error in processing.js: an extra brace in dailyUpdate() causing "Illegal continue statement"',
+                'Version sync: all files set to 3.6.4',
             ),
         ),
         array(
@@ -2565,6 +3497,22 @@ function rimtown_get_changelog() {
                 'i18n 新增弔念與安裝相關中英翻譯',
                 '版號同步：所有檔案統一為 3.6.3',
             ),
+            'changes_en' => array(
+                'NPC mourning: after a death, NPCs visit the cemetery to pay respects',
+                'Annual family remembrance: spouses, children and parents visit the cemetery every year',
+                'Town-wide grief: unrelated townsfolk may also pay respects',
+                'Mourning creates memories, mood changes and log messages',
+                'PWA support: pwa-manifest.json and sw.js added, installable to the phone home screen',
+                'Full-screen experience: browser UI hidden in standalone mode, double-tap the title to toggle full screen',
+                'Offline cache: core game assets available offline',
+                'Install banner: shows an install button when the browser fires beforeinstallprompt',
+                'NPC sleep freeze: sleeping NPCs stop wandering once home',
+                'Door system: NPCs use doors to enter and leave buildings instead of passing through walls',
+                'Individual houses: 4 clickable houses per residential area, each NPC assigned to one',
+                'Life summary report: the ending screen gains rich life statistics, relationship charts and the achievement list',
+                'i18n adds Chinese / English strings for mourning and installation',
+                'Version sync: all files set to 3.6.3',
+            ),
         ),
         array(
             'version' => '3.6.2',
@@ -2576,6 +3524,13 @@ function rimtown_get_changelog() {
                 '底部導覽列：加入 max-width: 100vw 防止水平溢出',
                 '版號同步：所有檔案統一為 3.6.2',
             ),
+            'changes_en' => array(
+                'Fixed several mobile responsive layout issues',
+                'Tutorial cards: width capped with calc(100vw - 32px) so text no longer overflows',
+                'Quest guidance banner: min(500px, calc(100vw - 32px)) keeps it on screen',
+                'Bottom navigation: max-width 100vw prevents horizontal overflow',
+                'Version sync: all files set to 3.6.2',
+            ),
         ),
         array(
             'version' => '3.6.1',
@@ -2583,6 +3538,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '修復手機重新整理後登入狀態遺失的問題',
                 '版號同步：所有檔案統一為 3.6.1',
+            ),
+            'changes_en' => array(
+                'Fixed login state lost after refreshing on mobile',
+                'Version sync: all files set to 3.6.1',
             ),
         ),
         array(
@@ -2594,6 +3553,13 @@ function rimtown_get_changelog() {
                 '夜晚視覺加強：tint 15%→35%、新增月亮、星星 40→80 顆、營火/火把/窗燈光圈加大',
                 '新增夜間暗角 vignette 效果',
                 '版號同步：所有檔案統一為 3.4.0',
+            ),
+            'changes_en' => array(
+                'New 5-step tutorial (story → map → residents and chat → economy and industry → events and exploration)',
+                'NPC schedules reworked: stay at work during work hours, socialize after, stay home and quiet while sleeping',
+                'Stronger night visuals: tint 15%→35%, a moon added, stars 40→80, larger glow around campfires / torches / windows',
+                'Night vignette effect added',
+                'Version sync: all files set to 3.4.0',
             ),
         ),
         array(
@@ -2607,6 +3573,14 @@ function rimtown_get_changelog() {
                 '村民對話（紀錄 tab）改為預設展開',
                 '版號同步：所有檔案統一為 3.3.5',
             ),
+            'changes_en' => array(
+                'New full-screen login: logged-out users see the login screen before the game',
+                'The login screen includes account / password login, registration, forgot password and guest entry',
+                'backdrop-filter blur(12px) blurs the village map behind it',
+                'A fade-out after successful login / registration reveals the game',
+                'Villager conversations (Log tab) expanded by default',
+                'Version sync: all files set to 3.3.5',
+            ),
         ),
         array(
             'version' => '3.3.4',
@@ -2615,6 +3589,11 @@ function rimtown_get_changelog() {
                 '職業按鈕邊框從 var(--border) #333 改為 rgba(255,255,255,0.25)，深色背景上清晰可見',
                 '居民列表無業提示的職業按鈕 padding 加大、邊框加亮',
                 '版號同步：所有檔案統一為 3.3.4',
+            ),
+            'changes_en' => array(
+                'Job button border changed from var(--border) #333 to rgba(255,255,255,0.25), visible on dark backgrounds',
+                'Job buttons in the unemployed hint of the resident list get more padding and brighter borders',
+                'Version sync: all files set to 3.3.4',
             ),
         ),
         array(
@@ -2628,6 +3607,14 @@ function rimtown_get_changelog() {
                 '修正 toggle handler: collapsed → expanded class',
                 '版號同步：所有檔案統一為 3.3.3',
             ),
+            'changes_en' => array(
+                'Villager conversations collapsed by default, showing time + names + summary; tap to expand',
+                'A ▶ indicator rotates 90° when expanded',
+                'Each conversation is a card (rounded border + background) with spacing between groups',
+                'Expanded conversations get an accent left edge, wider line spacing and dividers',
+                'Fixed toggle handler: collapsed → expanded class',
+                'Version sync: all files set to 3.3.3',
+            ),
         ),
         array(
             'version' => '3.3.2',
@@ -2639,6 +3626,14 @@ function rimtown_get_changelog() {
                 'sub-tab 按鈕手機版 0.85rem、iPad 0.8rem，增加觸控友善度',
                 '設定面板 label 0.72→0.82rem，各 inline 小字 0.65→0.75rem',
                 '版號同步：所有檔案統一為 3.3.2',
+            ),
+            'changes_en' => array(
+                'Desktop: section titles / button padding / resident name, job and status fonts enlarged',
+                'Mobile (≤768px): section titles 1.05rem, buttons 0.85rem, residents / resources / buildings / news enlarged',
+                'iPad (769–1024px): intermediate sizes for section titles / buttons / resident cards / resources',
+                'Sub-tab buttons 0.85rem on mobile, 0.8rem on iPad for touch friendliness',
+                'Settings labels 0.72→0.82rem, inline small text 0.65→0.75rem',
+                'Version sync: all files set to 3.3.2',
             ),
         ),
         array(
@@ -2652,6 +3647,15 @@ function rimtown_get_changelog() {
                 'sub-tab-bar 手機版取消負邊距避免水平溢出',
                 '新增 iPad Portrait (769-1024px) 專用媒體查詢',
                 '版號同步：所有檔案統一為 3.3.1',
+            ),
+            'changes_en' => array(
+                'Global overflow-x: hidden prevents sideways drift on mobile / iPad',
+                'Mobile tab icons enlarged 1rem→1.35rem, 1.2rem on small screens, 1.1rem on iPad',
+                'Taller tab bar (mobile 42→48px, small screens 38→44px) for easier tapping',
+                'Sidebar content gets overflow-x: hidden + max-width to stop overflow',
+                'Sub-tab bar drops negative margins on mobile to avoid horizontal overflow',
+                'New iPad portrait (769–1024px) media query',
+                'Version sync: all files set to 3.3.1',
             ),
         ),
         array(
@@ -2668,6 +3672,17 @@ function rimtown_get_changelog() {
                 '修正手機版點擊 API Key 輸入框時鍵盤會跳掉無法輸入的問題',
                 '版號同步：所有檔案統一為 3.3.0',
             ),
+            'changes_en' => array(
+                'AI Daily moved from the "Log" sub-tab into the "Events" tab alongside news and elections',
+                'The "Log" tab simplified to "Journal", showing only NPC conversations',
+                'AI Daily LLM prompt greatly enriched with weather, resources, election and NPC activity context',
+                'The paper now has four parts: headline → lead story → town briefing → around town → reporter\'s note',
+                'max_tokens 800→1200 for richer NPC-perspective content',
+                'The economy panel lists only resources you actually have (amount > 0)',
+                'Emoji icons and Chinese labels for 30 advanced items (planks, bricks, crops, processed goods…)',
+                'Fixed the keyboard dismissing when tapping the API key input on mobile',
+                'Version sync: all files set to 3.3.0',
+            ),
         ),
         array(
             'version' => '3.2.9',
@@ -2679,6 +3694,14 @@ function rimtown_get_changelog() {
                 '產業系統對 NPC 職業的壓制從 70%（×0.3）降為 50%（×0.5），NPC 職業仍有存在感',
                 '觀星活動的浪漫值增長新增前提條件：好感度必須 >20 才會產生浪漫',
                 '版號同步：所有檔案統一為 3.2.9',
+            ),
+            'changes_en' => array(
+                'Winter farm output multiplier 0.2→0.4 to avoid a guaranteed winter food collapse',
+                'NPC aging halved: 1 year per 2 seasons (was 1 per season), doubling lifespans',
+                'Higher marriage bar: dating time 100→300 ticks, affinity 40/35→50/45, romance 50/40→55/45, chance 15%→10%',
+                'Industry suppression of NPC jobs eased from 70% (×0.3) to 50% (×0.5), so NPC jobs still matter',
+                'Stargazing romance growth now requires affinity >20',
+                'Version sync: all files set to 3.2.9',
             ),
         ),
         array(
@@ -2693,6 +3716,15 @@ function rimtown_get_changelog() {
                 '修復 _checkBirths 中 npc.age 應為 agent.age 的未定義變數 bug',
                 '版號同步：所有檔案統一為 3.2.8',
             ),
+            'changes_en' => array(
+                'Player–NPC couples can have up to 3 children regardless of the 20-person cap',
+                'NPC–NPC couples still respect the population cap',
+                'New static Personality.compatibility() computes a 0.2×–1.6× multiplier from trait combinations',
+                '8 boosting pairs + 8 clashing pairs applied to every affinity gain path',
+                'After 50 ticks without contact, affinity drifts −0.8 a day (couples −0.3) and romance −0.5',
+                'Fixed an undefined variable in _checkBirths (npc.age should be agent.age)',
+                'Version sync: all files set to 3.2.8',
+            ),
         ),
         array(
             'version' => '3.2.7',
@@ -2702,6 +3734,12 @@ function rimtown_get_changelog() {
                 '玩家婚後可觸發生育事件，孩子繼承父母特質',
                 '結局畫面新增「開始新一代」按鈕，繼承部分資源與關係',
                 '版號同步：所有檔案統一為 3.2.7',
+            ),
+            'changes_en' => array(
+                'New inheritance / new-generation system: the player can have children and restart as the next generation after the ending',
+                'Married players can trigger a birth event; children inherit their parents\' traits',
+                'The ending screen gains "Start a new generation", inheriting part of the resources and relationships',
+                'Version sync: all files set to 3.2.7',
             ),
         ),
         array(
@@ -2713,6 +3751,12 @@ function rimtown_get_changelog() {
                 '設定升級為第 5 個固定 Tab',
                 '版號同步：所有檔案統一為 3.2.6',
             ),
+            'changes_en' => array(
+                'Mobile drops the "More" popup menu in favor of grouped sub-tabs inside each tab',
+                'Residents + details, chat + log, quests + events + achievements, economy + industry',
+                'Settings promoted to the 5th fixed tab',
+                'Version sync: all files set to 3.2.6',
+            ),
         ),
         array(
             'version' => '3.2.5',
@@ -2721,6 +3765,11 @@ function rimtown_get_changelog() {
                 '修復手機版「更多」按鈕未顯示的問題',
                 '更多選單改為 3x2 網格佈局',
                 '版號同步：所有檔案統一為 3.2.5',
+            ),
+            'changes_en' => array(
+                'Fixed the mobile "More" button not showing',
+                'The More menu becomes a 3×2 grid',
+                'Version sync: all files set to 3.2.5',
             ),
         ),
         array(
@@ -2731,6 +3780,11 @@ function rimtown_get_changelog() {
                 '不再需要左右橫向滾動，操作更直覺',
                 '版號同步：所有檔案統一為 3.2.4',
             ),
+            'changes_en' => array(
+                'Mobile navigation redesigned: 5 tabs + a More popup',
+                'No more horizontal scrolling, more intuitive controls',
+                'Version sync: all files set to 3.2.4',
+            ),
         ),
         array(
             'version' => '3.2.3',
@@ -2740,6 +3794,12 @@ function rimtown_get_changelog() {
                 '手機版與平板版 header 統一隱藏，整合至居民 Tab',
                 'app.js 版號同步更新',
                 '版號同步：所有檔案統一為 3.2.3',
+            ),
+            'changes_en' => array(
+                'Fixed the mobile header still showing',
+                'Mobile and tablet headers hidden uniformly and merged into the Residents tab',
+                'app.js version synced',
+                'Version sync: all files set to 3.2.3',
             ),
         ),
         array(
@@ -2752,6 +3812,13 @@ function rimtown_get_changelog() {
                 '經濟頁繁榮度標題旁新增人口數顯示',
                 '版號同步：所有檔案統一為 3.2.2',
             ),
+            'changes_en' => array(
+                'Header info merged into the Residents tab (town-info-bar: town name + population + clock)',
+                'Desktop top header removed to free map space',
+                'town-info-bar updates live: renderClock() refreshes every tick',
+                'Population shown next to the prosperity title on the Economy tab',
+                'Version sync: all files set to 3.2.2',
+            ),
         ),
         array(
             'version' => '3.2.1',
@@ -2762,6 +3829,13 @@ function rimtown_get_changelog() {
                 'Header 城鎮名稱改為動態顯示',
                 '修復節慶橫幅與城鎮廣場標籤重疊',
                 '版號同步：所有檔案統一為 3.2.1',
+            ),
+            'changes_en' => array(
+                'Achievements expanded from 57 to 99 across 7 categories',
+                'New town button fixed: modal auto-closes, unpauses, and confirms',
+                'Header town name is now dynamic',
+                'Fixed the festival banner overlapping the town square label',
+                'Version sync: all files set to 3.2.1',
             ),
         ),
         array(
@@ -2774,6 +3848,13 @@ function rimtown_get_changelog() {
                 '移除 Header 中不必要的地形/種子碼顯示',
                 '版號同步：所有檔案統一為 3.2.0',
             ),
+            'changes_en' => array(
+                'Settings tab gains 1x / 1.5x / 2x / 3x speed buttons',
+                'Settings tab gains an AI connection status indicator',
+                'Header localized: Population → 人口, travelling → 外出',
+                'Unnecessary terrain / seed display removed from the header',
+                'Version sync: all files set to 3.2.0',
+            ),
         ),
         array(
             'version' => '3.1.9',
@@ -2784,6 +3865,12 @@ function rimtown_get_changelog() {
                 'Header 精簡為只顯示城鎮名稱、人口、時間',
                 '版號同步：所有檔案統一為 3.1.9',
             ),
+            'changes_en' => array(
+                'Desktop toolbar and mobile menu button / dropdown removed',
+                'Settings tab gains "🎮 Game controls": pause / resume, town list, new map',
+                'Header trimmed to town name, population and time',
+                'Version sync: all files set to 3.1.9',
+            ),
         ),
         array(
             'version' => '3.1.8',
@@ -2792,6 +3879,11 @@ function rimtown_get_changelog() {
                 '合併「🗞️ 日報」和「📝 日誌」為單一「📝 紀錄」tab，內含子 tab 切換',
                 'Sidebar tab 從 11 個（3 行）回到 10 個（5×2 grid），設定不再獨佔一行',
                 '版號同步：所有檔案統一為 3.1.8',
+            ),
+            'changes_en' => array(
+                '"🗞️ Daily" and "📝 Journal" merged into one "📝 Log" tab with sub-tabs',
+                'Sidebar tabs back from 11 (3 rows) to 10 (5×2 grid); settings no longer takes its own row',
+                'Version sync: all files set to 3.1.8',
             ),
         ),
         array(
@@ -2802,6 +3894,12 @@ function rimtown_get_changelog() {
                 '工廠子標籤 icon 改為 🔧（避免與 🏭 產業 tab 重複）',
                 '修復手機版 tab bar 右側被裁切（CSS specificity + 寬度約束）',
                 '版號同步：WordPress / Chrome Extension / app.js / manifest.json 統一為 3.1.7',
+            ),
+            'changes_en' => array(
+                'New ⚙️ Settings tab: account, AI model, game settings and save management in the sidebar',
+                'Factory sub-tab icon changed to 🔧 (avoiding the 🏭 Industry tab)',
+                'Fixed the mobile tab bar clipping on the right (CSS specificity + width constraints)',
+                'Version sync: WordPress / Chrome Extension / app.js / manifest.json set to 3.1.7',
             ),
         ),
         array(
@@ -2815,6 +3913,14 @@ function rimtown_get_changelog() {
                 '支援拖拽手柄上滑展開/下滑收合',
                 '版號同步：WordPress / Chrome Extension / manifest.json 統一為 3.1.6',
             ),
+            'changes_en' => array(
+                'Major mobile UI overhaul: the non-functional hamburger FAB removed',
+                'Mobile bottom panel redesigned: 10 tabs in a single horizontally scrolling row (the 5×2 grid took too much space)',
+                'New bottom sheet: only the tab bar by default, tap to expand, tap the same tab to collapse',
+                'Much more map visible on mobile (nearly full screen when collapsed)',
+                'Drag handle supports swipe up to expand / down to collapse',
+                'Version sync: WordPress / Chrome Extension / manifest.json set to 3.1.6',
+            ),
         ),
         array(
             'version' => '3.1.5',
@@ -2824,6 +3930,12 @@ function rimtown_get_changelog() {
                 'AI 日報卡片化：期號/日期/記者分層排版 + 摺疊預覽 + 展開全文',
                 '修復主線任務第一個任務（落腳邊境）可能卡在鎖定狀態的 bug',
                 '版號同步：WordPress / Chrome Extension / manifest.json 統一為 3.1.5',
+            ),
+            'changes_en' => array(
+                'Job selection on the detail page polished: 3× grid icon buttons + current job badge + quit button style',
+                'AI Daily as cards: issue / date / reporter layout + collapsed preview + expand for full text',
+                'Fixed the first main quest (Settle on the frontier) possibly stuck locked',
+                'Version sync: WordPress / Chrome Extension / manifest.json set to 3.1.5',
             ),
         ),
         array(
@@ -2839,6 +3951,16 @@ function rimtown_get_changelog() {
                 '新增節慶/派系/任務/成就/繁榮度等新組件的 mobile RWD',
                 '版號同步：WordPress / Chrome Extension / manifest.json 統一為 3.1.4',
             ),
+            'changes_en' => array(
+                'WordPress sidebar tabs get emoji icons + tab-icon / tab-label structure',
+                'Redundant farm / factory tabs removed (merged into industry sub-tabs)',
+                'Quest and achievement tabs added',
+                'Mobile header gains a separate population display',
+                'iPhone safe-area-inset support (notch / home indicator)',
+                'Mobile button touch targets raised to min-height 36–40px',
+                'Mobile responsive styles for festivals / factions / quests / achievements / prosperity',
+                'Version sync: WordPress / Chrome Extension / manifest.json set to 3.1.4',
+            ),
         ),
         array(
             'version' => '3.1.3',
@@ -2851,6 +3973,14 @@ function rimtown_get_changelog() {
                 '清理多餘的側邊欄導航項目',
                 '版號同步：WordPress / Chrome Extension / app.js 統一為 3.1.3',
             ),
+            'changes_en' => array(
+                'Events page polished: festival block, quest progress bars and faction cards redesigned',
+                'Achievements page polished: category filter tags and upgraded cards',
+                'AI Daily prompt improved: injects resident relationship dynamics and recent conversation highlights',
+                'Paper writing style upgraded: scene details, expressions and sharper reporter personalities',
+                'Redundant sidebar navigation items cleaned up',
+                'Version sync: WordPress / Chrome Extension / app.js set to 3.1.3',
+            ),
         ),
         array(
             'version' => '3.1.2',
@@ -2860,6 +3990,12 @@ function rimtown_get_changelog() {
                 '全面加強 map-panel / canvas / main-layout 的 CSS !important 防護',
                 '新增地圖初始化 debug logging 方便診斷問題',
                 '版號升級至 3.1.2 強制清除瀏覽器快取',
+            ),
+            'changes_en' => array(
+                'Map disappearing fixed: the mobile header was shown on desktop due to WordPress theme CSS',
+                'Stronger CSS !important guards on map-panel / canvas / main-layout',
+                'Map initialization debug logging added',
+                'Version bumped to 3.1.2 to force browser cache refresh',
             ),
         ),
         array(
@@ -2875,6 +4011,17 @@ function rimtown_get_changelog() {
                 '修復手機版 header 在桌面版也顯示的 CSS 問題',
                 '版號同步：WordPress / Chrome Extension / app.js 統一為 3.1.0',
                 '補齊所有 v3 模組在 Chrome Extension 的 enqueue 載入',
+            ),
+            'changes_en' => array(
+                'Branching story system: NPC dialogue and events can branch into different storylines',
+                'Prosperity system (ProsperityEngine): an overall town development index',
+                'NPC personal storylines (NPCQuestSystem): a quest chain per NPC unlocked by affinity',
+                'Custom NPC system (CustomNPCSystem): players can create new NPCs',
+                'Multiple endings (MultiEndingSystem): different endings based on player choices',
+                'Fixed the .hidden CSS class applying only to modals',
+                'Fixed the mobile header showing on desktop',
+                'Version sync: WordPress / Chrome Extension / app.js set to 3.1.0',
+                'All v3 modules enqueued in the Chrome extension',
             ),
         ),
         array(
@@ -2902,6 +4049,28 @@ function rimtown_get_changelog() {
                 '補齊 Chrome Extension changelog 缺少的 v3.0.0/v3.0.1/v3.0.2 記錄',
                 '以上修正同步套用至 WordPress 與 Chrome Extension 版本',
             ),
+            'changes_en' => array(
+                'Sidebar tabs redesigned: cramped single-line text tabs become a 5×2 icon + text grid',
+                'Tabs merged: industry + farm on one page (sub-tabs), factory into economy, total tabs 10→9',
+                'Main quest system: 14 quests, 5 linear chapters, 13 goal types, full UI with progress bars and rewards',
+                'Farm map visuals: 13 crop palettes, 4 growth stages, soil texture, moisture bars',
+                'Farm animations: ripe crops sway and glow, NPC farming animations (hoeing / tilling / watering / harvesting) with tool sprites and particles',
+                'Fixed direct mood edits being overwritten each tick (new moodModifier mechanism)',
+                'Fixed couple events being processed twice (once per pair now)',
+                'Fixed incomplete meal consumption (some stock never consumed)',
+                'Fixed returning travelers losing skills / memories / relationships',
+                'Fixed election memories storing agentId instead of name',
+                'Fixed SeededRandom(0) producing a degenerate sequence',
+                'Fixed farm sellValue applying the quality multiplier twice',
+                'Fixed factory progress resets discarding fractions and unavailable workers still granting efficiency',
+                'Fixed hospital / missing day counts (2-day cycle counted as 1)',
+                'Fixed negative window brightness between 19:00 and 20:00',
+                'Fixed an XSS hole (unescaped username)',
+                'Fixed the night_owl achievement unlocking at game start',
+                'Fixed the Chrome extension manifest version not synced (2.4.2→3.0.3)',
+                'Added the missing v3.0.0 / v3.0.1 / v3.0.2 entries to the Chrome extension changelog',
+                'All fixes applied to both the WordPress and Chrome extension versions',
+            ),
         ),
         array(
             'version' => '3.0.2',
@@ -2909,6 +4078,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '資安強化：Gemini API 金鑰從 URL 參數移至 x-goog-api-key header，防止金鑰洩漏至瀏覽器歷史和 referrer',
                 '資安強化：認證端點新增伺服器端速率限制（登入 5次/5分鐘、註冊 5次/5分鐘、重設密碼 3次/10分鐘），防止暴力破解攻擊',
+            ),
+            'changes_en' => array(
+                'Security: the Gemini API key moved from the URL to the x-goog-api-key header, preventing leaks into browser history and referrers',
+                'Security: server-side rate limits on auth endpoints (login 5 per 5 min, register 5 per 5 min, password reset 3 per 10 min) against brute force',
             ),
         ),
         array(
@@ -2932,6 +4105,24 @@ function rimtown_get_changelog() {
                 '新增 WordPress shortcode 缺少的 4 個側邊欄標籤（產業、農場、工廠、日報）',
                 '新增 npc-events handleCheatingDiscovery null 防護，避免第三方已離鎮時崩潰',
             ),
+            'changes_en' => array(
+                'Fixed 40+ bugs found in a full code review (simulation / app / tilemap / processing / daily-news)',
+                'JOB_PRODUCTION skill keys changed from English to Chinese, fixing skills having no effect on production',
+                'Researcher / Mayor title matching changed from English to Chinese',
+                'toTimeString() replaced with timeStr, fixing the election crash',
+                'agentA.id changed to agentA.agentId, fixing undefined conversation ids',
+                'Election fallbackJobs fixed: nonexistent jobs removed, plain objects replaced with new Job() instances',
+                'Festival Day renamed to 慶典日, fixing festival events never triggering',
+                'Election day calculation 120→60 (matching 60-day years)',
+                'Fixed invalid PlayerAgent traits; loadSave restores personality and job',
+                'Fixed password reset using nonexistent apiBase / nonce variables',
+                'Null guards added around several DOM getElementById calls',
+                'Tilemap road coordinates aligned with generateLayout',
+                'Factory order cleanup fixed; production validates before consuming',
+                'Fixed daily-news LLM reference names',
+                'Added the 4 sidebar tabs missing from the WordPress shortcode (industry, farm, factory, daily)',
+                'Null guard in npc-events handleCheatingDiscovery to avoid crashing when the third party has left town',
+            ),
         ),
         array(
             'version' => '3.0.0',
@@ -2946,6 +4137,16 @@ function rimtown_get_changelog() {
                 '30+ 種新資源類型，15+ 新成就',
                 '地圖渲染農場田地、工廠建築、產業徽章',
             ),
+            'changes_en' => array(
+                'Four industries: pick one of four at the start (logging / quarrying / farming / mining), Lv1–Lv5 independent upgrades, synergy bonuses',
+                'Town levels: hamlet → small village → village → small town → town → large town → city, unlocking industry slots',
+                'Farming: till → sow → grow → harvest, 13 crops, seasonal limits, quality system',
+                'Factory processing: 7 factories, recipes, NPC staffing, order system',
+                'NPC relationship chain events: fights and hospital stays, field sabotage, caught cheating — affecting industry efficiency',
+                'AI Daily: an AI town newspaper every day in a random NPC reporter\'s voice',
+                '30+ new resource types, 15+ new achievements',
+                'Map renders farm plots, factory buildings and industry badges',
+            ),
         ),
         array(
             'version' => '2.4.1',
@@ -2953,6 +4154,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '更新 v2.4.0 changelog：補齊聊天焦點、登入驗證、存檔同步、版本顯示等 4 項修復記錄',
                 'Chrome Extension 新增遊戲標題列版本號顯示（與 WordPress 版一致）',
+            ),
+            'changes_en' => array(
+                'v2.4.0 changelog updated with 4 missing fixes: chat focus, login validation, save sync and version display',
+                'Chrome extension shows the version in the title bar (matching WordPress)',
             ),
         ),
         array(
@@ -2973,6 +4178,21 @@ function rimtown_get_changelog() {
                 '地圖擴大為 80x60（原 64x48），建築物重新佈局，空間更寬敞',
                 '住宅區升級：每個住宅區有 4 棟房屋（原 2 棟），NPC 的家更明顯',
             ),
+            'changes_en' => array(
+                'Fixed the chat input stealing focus: focus no longer resets every tick, so WASD movement is not interrupted',
+                'Fixed cookie / nonce validation failing on login: public endpoints no longer send the nonce header',
+                'Version shown in the game title bar (top right)',
+                'Save button fixed: syncs to the cloud and updates the town list immediately',
+                'Fixed AI replies showing analysis text: LLM reasoning is filtered, only dialogue is shown',
+                'Fixed the chat box losing focus while typing: no sidebar re-render during input',
+                'Nearby NPC chat improved: auto-switches to NPCs at the same location instead of sticking to distant ones',
+                'Map click movement improved: clicking anywhere moves to the nearest location with a move indicator',
+                'NPC work behavior improved: stay at or near the workplace during hours, go home or socialize after',
+                'NPCs linger longer: work 12–20 ticks, socialize 6–10, less frantic walking',
+                'New friend outings: NPCs with high affinity invite each other to specific places (even skipping work)',
+                'Map enlarged to 80×60 (was 64×48) with buildings re-laid out for more room',
+                'Residential upgrade: 4 houses per residential area (was 2), making NPC homes clearer',
+            ),
         ),
         array(
             'version' => '2.3.8',
@@ -2983,6 +4203,12 @@ function rimtown_get_changelog() {
                 '雲端同步間隔從 5 分鐘縮短為 2 分鐘',
                 '修復 faction_drama（派系風雲）成就缺少觸發條件的問題',
             ),
+            'changes_en' => array(
+                'NPC jitter fixed: a dwell mechanism keeps NPCs in place 3–12 ticks after arriving',
+                'Cloud save loading fixed: after switching devices or clearing cache, the cloud save is loaded instead of resetting',
+                'Cloud sync interval shortened from 5 to 2 minutes',
+                'Fixed the faction_drama achievement lacking a trigger',
+            ),
         ),
         array(
             'version' => '2.3.7',
@@ -2992,6 +4218,12 @@ function rimtown_get_changelog() {
                 '新增 _stripThinkTags() 統一過濾 LLM 回傳的推理標籤',
                 '強化所有 AI prompt 的繁體中文（台灣用語）要求，避免模型回覆簡體中文',
                 '修正插件 header 版本號與 RIMTOWN_VERSION 不一致',
+            ),
+            'changes_en' => array(
+                'Fixed DeepSeek / Qwen replies showing raw <think> reasoning tags in chat',
+                'New _stripThinkTags() filters reasoning tags from all LLM output',
+                'Stronger Traditional Chinese (Taiwan usage) requirement in every AI prompt to avoid Simplified replies',
+                'Fixed the plugin header version not matching RIMTOWN_VERSION',
             ),
         ),
         array(
@@ -3005,6 +4237,14 @@ function rimtown_get_changelog() {
                 '主 AI 冷卻機制：首次失敗冷卻 60 秒，重複失敗逐步延長至最多 5 分鐘',
                 '主 AI 恢復正常後自動切回，無需手動操作',
             ),
+            'changes_en' => array(
+                'Groq default model changed from Llama 3.3 70B to Qwen3-32B (much better Chinese dialogue)',
+                'Automatic Groq fallback: on a 429 rate limit or error from the main AI, switch to the backup Groq',
+                'Settings gain a "Backup Groq API key" field (optional, free at console.groq.com)',
+                'With only a backup Groq key set, Groq becomes the main AI',
+                'Main AI cooldown: 60 seconds after the first failure, growing to at most 5 minutes',
+                'Switches back automatically once the main AI recovers',
+            ),
         ),
         array(
             'version' => '2.3.5',
@@ -3012,6 +4252,10 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '統一所有 AI provider 速率限制為 20 次/分鐘',
                 '移除 MiniMax 特殊限制（NPC 冷卻、token 上限）',
+            ),
+            'changes_en' => array(
+                'All AI providers rate-limited uniformly to 20 requests a minute',
+                'MiniMax special limits removed (NPC cooldown, token cap)',
             ),
         ),
         array(
@@ -3022,6 +4266,11 @@ function rimtown_get_changelog() {
                 'MiniMax NPC 自動對話冷卻提升至 150 ticks（約每 5 分鐘 1 次），優先保留額度給玩家對話',
                 'MiniMax NPC 對話 token 上限降至 400（其他 provider 保持 800）',
             ),
+            'changes_en' => array(
+                'MiniMax quota-saving mode: 2 API calls a minute (12 for other providers)',
+                'MiniMax NPC auto-chat cooldown raised to 150 ticks (about once per 5 minutes), reserving quota for player chat',
+                'MiniMax NPC chat token cap lowered to 400 (800 for other providers)',
+            ),
         ),
         array(
             'version' => '2.3.3',
@@ -3030,12 +4279,19 @@ function rimtown_get_changelog() {
                 '修復登入後雲端存檔/成就 403 錯誤（Cookie 驗證失敗）',
                 '登入/註冊 API 回傳新 nonce，前端自動更新認證令牌',
             ),
+            'changes_en' => array(
+                'Fixed 403 errors on cloud saves / achievements after login (cookie validation)',
+                'Login / register APIs return a fresh nonce and the client updates its token',
+            ),
         ),
         array(
             'version' => '2.3.2',
             'date'    => '2026-03-09',
             'changes' => array(
                 '修復設定面板下拉選單缺少 MiniMax 選項（rimtown.php HTML）',
+            ),
+            'changes_en' => array(
+                'Fixed the missing MiniMax option in the settings dropdown (rimtown.php HTML)',
             ),
         ),
         array(
@@ -3045,6 +4301,11 @@ function rimtown_get_changelog() {
                 '修復 Chrome Extension 版缺少 MiniMax provider 的問題',
                 '新增 MiniMax API 端點與專屬請求處理',
                 '移除 chrome-extension/app.js 中誤將 minimax 標記為 deprecated 的清除邏輯',
+            ),
+            'changes_en' => array(
+                'Fixed the Chrome extension missing the MiniMax provider',
+                'MiniMax API endpoint and dedicated request handling added',
+                'Removed logic in chrome-extension/app.js that wrongly treated minimax as deprecated',
             ),
         ),
         array(
@@ -3057,6 +4318,14 @@ function rimtown_get_changelog() {
                 'Fallback 對話模板全面重寫：所有對話更長、更有戲劇張力',
                 '新增豐富細節池：季節美食、場景描寫、禮物清單、鎮上傳聞',
                 '所有對話摘要改為小說風格，包含地點/季節/情感描寫',
+            ),
+            'changes_en' => array(
+                'MiniMax (China) LLM provider restored: endpoint api.minimaxi.com, model MiniMax-M2.5',
+                'AI settings enforce a single binding: switching provider clears the API key to avoid multiple bindings',
+                'Save validation: choosing a provider requires an API key',
+                'Fallback dialogue templates rewritten: longer and more dramatic',
+                'Rich detail pools: seasonal foods, scenery, gifts, town rumors',
+                'Conversation summaries in novel style with location / season / emotion',
             ),
         ),
         array(
@@ -3073,6 +4342,17 @@ function rimtown_get_changelog() {
                 '地圖渲染：探索標記、墓碑、節慶裝飾',
                 '新增 8 個成就（派系、節慶、生死、探索相關）',
             ),
+            'changes_en' => array(
+                'Factions / social circles: NPCs form groups (work buddies, drinking pals, gossip circles…) with cohesion, rivalry, alliances and internal drama',
+                'Seasonal festivals: Spring Rite, midsummer bonfire, harvest festival, winter solstice with quests, decorations and town celebrations',
+                'NPC life and aging: NPCs age each season, may die of old age / illness / accident, and married couples can have children',
+                'Cemetery: deceased NPCs are buried with epitaphs',
+                'Exploration: 6 discoverable zones outside town (forest, ruins, mine, mountains, cave, swamp)',
+                'Expeditions: send residents out to explore and bring back resources and discoveries',
+                'Events tab gains faction, festival, cemetery and exploration panels',
+                'Map renders exploration markers, gravestones and festival decorations',
+                '8 new achievements (factions, festivals, life and death, exploration)',
+            ),
         ),
         array(
             'version' => '2.1.0',
@@ -3086,6 +4366,15 @@ function rimtown_get_changelog() {
                 '新增拖拽手柄，支援觸控滑動展開/收合功能面板',
                 '桌面版完全不受影響',
             ),
+            'changes_en' => array(
+                'Forgot password: reset via account + email verification',
+                'New users start with a fresh village and no old data or chats',
+                'Mobile layout overhaul: map 75%, panels 25%',
+                'New mobile top bar: title + time + population on one line, controls in a dropdown',
+                'Panels docked at the bottom (tabs always visible), swipe up to expand, down to collapse',
+                'Drag handle with touch swipe to expand / collapse',
+                'Desktop unaffected',
+            ),
         ),
         array(
             'version' => '2.0.0',
@@ -3096,6 +4385,13 @@ function rimtown_get_changelog() {
                 'NPC 對話可視化：地圖對話氣泡 + 偷聽日誌',
                 '玩家深度互動：選擇職業、工作、投票、戀愛求婚',
                 '雲端存檔：多裝置同步，最多20個城鎮',
+            ),
+            'changes_en' => array(
+                'Account system: user registration / login with automatic cloud save sync',
+                'Achievements: 30+ milestones with in-game notifications',
+                'Visible NPC conversations: speech bubbles on the map + eavesdrop log',
+                'Deeper player interaction: choose a job, work, vote, romance and proposals',
+                'Cloud saves: multi-device sync, up to 20 towns',
             ),
         ),
         array(
@@ -3114,6 +4410,19 @@ function rimtown_get_changelog() {
                 '新增 [rimtown_landing] 首頁短碼：動畫像素背景、特色介紹、AI 模型展示',
                 '提供獨立 landing.html 單檔首頁，無需 WordPress',
             ),
+            'changes_en' => array(
+                'Night redesigned: the heavy fog is replaced by campfires, torches and a very faint blue tint',
+                'Campfires: animated flames at the square, tavern, guard post and well',
+                'Flickering torches placed beside buildings for warm glow',
+                'Romance strengthened: natural attraction based on personality compatibility',
+                'Lower dating / proposal thresholds, more romantic sparks per conversation',
+                'Full-screen map: the canvas fills its container with no border',
+                'Pinch-to-zoom and drag panning added',
+                'Desktop supports wheel zoom and drag panning',
+                'Minimum zoom computed automatically, maximum 4×',
+                'New [rimtown_landing] shortcode: animated pixel background, feature intro, AI model showcase',
+                'Standalone landing.html single-file home page, no WordPress needed',
+            ),
         ),
         array(
             'version' => '1.3.0',
@@ -3130,6 +4439,18 @@ function rimtown_get_changelog() {
                 '修正 MiniMax API：模型更新為 M2.5、參數修正為 max_completion_tokens',
                 '更新 Gemini 預設模型為 gemini-2.5-flash',
             ),
+            'changes_en' => array(
+                'Mayoral election system: residents vote by personality, values and relationships',
+                'Election flow: campaign (3 days) → voting (2 days) → results (3 days)',
+                '6 policy platforms: economy, welfare, defense, culture, conservation, freedom',
+                'Candidates pick policies from personality and values automatically',
+                'Voting weights: relationship closeness (40%), value alignment (30%), charm and ability (20%), random (10%)',
+                'The elected mayor\'s policy lasts 30 days (via the news system)',
+                'Election UI: live tallies, progress bars and results on the Events tab',
+                'Election history saved and loaded with the game',
+                'MiniMax API fix: model updated to M2.5, parameter corrected to max_completion_tokens',
+                'Gemini default model updated to gemini-2.5-flash',
+            ),
         ),
         array(
             'version' => '1.2.0',
@@ -3143,6 +4464,16 @@ function rimtown_get_changelog() {
                 '小螢幕手機（≤480px）：隱藏速度控制與儲存按鈕',
                 '平板（≤1024px）：側欄縮窄至 300px',
                 '新增版本更新日誌系統，後台可查看完整更新記錄',
+            ),
+            'changes_en' => array(
+                'Responsive design for phone, tablet and desktop layouts',
+                'Mobile: the sidebar becomes a bottom overlay toggled by a floating button',
+                'Mobile: the sidebar opens automatically when tapping a resident or starting a chat',
+                'Mobile: secondary buttons (export / import) hidden to save space',
+                'Mobile: the chat input uses 16px font to stop iOS auto-zoom',
+                'Small phones (≤480px): speed controls and save button hidden',
+                'Tablet (≤1024px): sidebar narrowed to 300px',
+                'Version changelog system added; the full log is viewable in the admin panel',
             ),
         ),
         array(
@@ -3159,6 +4490,17 @@ function rimtown_get_changelog() {
                 '新增 WordPress 後台設定頁面（使用說明）',
                 'wp_enqueue_script/style 正確載入資源，支援快取清除',
             ),
+            'changes_en' => array(
+                'WordPress plugin structure created (rimtown.php)',
+                '[rimtown] shortcode embeds the game on any page',
+                '[rimtown height="800px"] custom height parameter',
+                'CSS isolation: all styles scoped to .rimtown-container so themes are unaffected',
+                'Event delegation isolation: click handlers bound to the game container without interfering with WordPress',
+                'Auto full width: the game page hides the WordPress header / footer',
+                'Modal z-index 100000 so modals sit above the WordPress admin bar',
+                'WordPress admin settings page (usage instructions)',
+                'Assets loaded via wp_enqueue_script / style with cache busting',
+            ),
         ),
         array(
             'version' => '1.0.0',
@@ -3173,6 +4515,17 @@ function rimtown_get_changelog() {
                 '聊天記錄存檔功能',
                 '多城鎮管理',
                 '匯出/匯入存檔',
+            ),
+            'changes_en' => array(
+                'Initial release: core AI town simulation',
+                'Tilemap rendering engine',
+                'Autonomous resident AI behavior',
+                'Player chat (multiple LLM providers)',
+                'Economy: resources, buildings, research, trade',
+                'Events: raids, event chains, immigration',
+                'Chat log saving',
+                'Multi-town management',
+                'Save export / import',
             ),
         ),
     );
