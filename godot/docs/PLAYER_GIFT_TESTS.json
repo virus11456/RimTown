@@ -1,0 +1,5 @@
+{
+  "checks": 630,
+  "failures": [],
+  "scope": "70 original _giveGift cases: five resources, seven jobs, preference and caps, exact agents/stock ledger/actions/logs/RNG; saved daily guard; first-day and heart callbacks excluded"
+}

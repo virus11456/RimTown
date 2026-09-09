@@ -1,5 +1,5 @@
 {
-  "checks": 22,
+  "checks": 23,
   "failures": [],
   "scope": "nearest range, F event handler, text/modal guards, mobile UI, comfort button, stale distance rejection and save preservation"
 }

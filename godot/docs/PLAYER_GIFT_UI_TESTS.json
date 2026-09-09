@@ -1,0 +1,5 @@
+{
+  "checks": 28,
+  "failures": [],
+  "scope": "UI cost and stock, no HTTP, duplicate/per-resident guard, invalid/dead/fractional stock, repeated thought, 375px layout and 96-tick save resume"
+}

@@ -82,6 +82,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_offline.flag"): _capture_player_offline()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_whisper.flag"): _capture_player_whisper()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_rumor.flag"): _capture_player_rumor()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_gift.flag"): _capture_player_gift()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -723,6 +724,7 @@ func _tick_simulation() -> void:
 	if active_tab=="居民" and not selected_agent.is_empty():
 		match resident_page:
 			"chat", "whisper", "rumor": pass # Preserve draft, focus and scroll while the world ticks.
+			"gift": show_player_gift(selected_agent)
 			"interaction": show_player_interaction(selected_agent)
 			"trace": show_trace(selected_agent)
 			"thoughts": show_thoughts(selected_agent)
@@ -1090,6 +1092,7 @@ func show_player_interaction(id: String) -> void:
 	_button("自由交談",drawer_body,func(): show_player_chat(id))
 	_button("耳語",drawer_body,func(): show_player_whisper(id))
 	_button("偷偷爆料",drawer_body,func(): show_player_rumor(id))
+	_button("送禮",drawer_body,func(): show_player_gift(id))
 	_button("返回居民資料",drawer_body,func(): show_agent(id,false))
 func comfort_resident(id: String) -> void:
 	if not SimPlayerInteraction.in_range(id,motion.positions,simulation.data.agents):
@@ -1306,4 +1309,38 @@ func _capture_player_rumor() -> void:
 	await get_tree().create_timer(.5).timeout
 	await RenderingServer.frame_post_draw
 	viewport.get_texture().get_image().save_png("res://docs/player-rumor-mobile.png")
+	viewport.queue_free()
+
+func show_player_gift(id: String) -> void:
+	selected_agent=id;resident_page="gift";_clear_drawer()
+	if not simulation.data.agents.has(id): _wrapped("這位居民已離開。");return
+	_wrapped("送禮給"+str(simulation.data.agents[id].name),22)
+	_wrapped("花費來自小鎮公共庫存。每位居民每天一次，點選禮物後立即送出。",12)
+	if not SimPlayerGift.available(simulation,id): _wrapped("今天已經送過了，明天再來。")
+	for key in SimPlayerGift.GIFTS:
+		var gift: Dictionary=SimPlayerGift.GIFTS[key];var have:=SimPlayerGift.stock(simulation,key)
+		_wrapped(str(gift.name)+(" ★ 最愛" if SimPlayerGift.favorite(simulation.data.agents[id])==key else ""))
+		var button:=_button("送出 · 花費 %d／庫存 %d"%[gift.cost,floori(have)],drawer_body,func(): send_player_gift(id,key))
+		button.disabled=have<float(gift.cost) or not SimPlayerGift.available(simulation,id)
+	_button("返回互動",drawer_body,func(): show_player_interaction(id))
+func send_player_gift(id: String,key: String) -> void:
+	var result:=SimPlayerGift.send(simulation,id,key)
+	show_player_gift(id)
+	if not result.ok: _wrapped(result.error);return
+	has_simulated=true;_wrapped(result.reply);status.text="送禮完成 · 好感 +%d"%result.gain
+
+func _capture_player_gift() -> void:
+	await get_tree().create_timer(1).timeout
+	var example:=FileAccess.get_file_as_string("res://tests/player_gift/compatibility-save.json.tmp")
+	chat_offline=true
+	_load_document(example,"送禮介面驗證")
+	show_tab("居民",true);show_player_gift("lin_mei")
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/player-gift-desktop.png")
+	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+	var mobile=load("res://scenes/main.tscn").instantiate();viewport.add_child(mobile)
+	mobile.chat_offline=true;mobile._load_document(example,"送禮介面驗證");mobile.show_tab("居民",true);mobile.show_player_gift("lin_mei")
+	await get_tree().create_timer(.5).timeout
+	await RenderingServer.frame_post_draw
+	viewport.get_texture().get_image().save_png("res://docs/player-gift-mobile.png")
 	viewport.queue_free()
