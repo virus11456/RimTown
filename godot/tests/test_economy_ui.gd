@@ -20,6 +20,7 @@ func run() -> void:
 	FileAccess.open("res://tests/economy/compatibility-save.json.tmp",FileAccess.WRITE).store_string(JSON.stringify(app.progress_snapshot(),"",false,true))
 	app.show_tab("設定",true);press(app.drawer_body,"每日生產與消耗：開啟")
 	check(not w.economy_enabled,"toggle off")
+	w.research_enabled=false # Research has an independent stock-consuming toggle.
 	w.data.clock.hour=23;w.data.clock.minute=45;stock=w.data.stockpile.duplicate(true);app._tick_simulation()
 	check(equal(stock,w.data.stockpile),"disabled midnight preserves resources")
 	var off:=SimWorld.new();off.load_snapshot(w.snapshot());check(not off.economy_enabled,"disabled flag saved")

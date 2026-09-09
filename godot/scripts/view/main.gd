@@ -85,6 +85,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_gift.flag"): _capture_player_gift()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_stockpile.flag"): _capture_stockpile()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_economy.flag"): _capture_economy()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_progress.flag"): _capture_progress()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -259,6 +260,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.economy_enabled=bool(document.data.get("_godot4a",{}).get("economy_enabled",true))
 	simulation.buildings_enabled=bool(document.data.get("_godot4a",{}).get("buildings_enabled",true))
 	simulation.trade_enabled=bool(document.data.get("_godot4a",{}).get("trade_enabled",true))
+	simulation.research_enabled=bool(document.data.get("_godot4a",{}).get("research_enabled",true))
 	var data := document.snapshot()
 	heading.text = str(data.get("townName","小鎮"))
 	var clock_data: Dictionary = data.clock
@@ -315,7 +317,8 @@ func show_tab(tab: String, refresh := false) -> void:
 			_button("公共庫存與收支",drawer_body,show_stockpile)
 			_button("建築工程",drawer_body,show_buildings)
 			_button("商人交易",drawer_body,show_trade)
-			_wrapped("試玩：作息、移動與居民互動已啟用。\n送禮會消耗公共庫存；每日經濟可在設定開關。建設、交易與任務仍待完成。",13)
+			_button("研究",drawer_body,show_research)
+			_wrapped("試玩：作息、移動與居民互動已啟用。\n送禮會消耗公共庫存；每日經濟可在設定開關。建築、交易與研究已啟用；任務及產業系統仍待完成。",13)
 			var resources: Dictionary = _current_data().get("stockpile",{}).get("resources",{})
 			for key in resources:
 				if float(resources[key]) != 0: _label("%s   %s" % [_resource_name(key),str(resources[key])],drawer_body)
@@ -547,6 +550,7 @@ func _line(placeholder: String, secret := false) -> LineEdit:
 	return field
 
 func _settings_ui() -> void:
+	_button("每日研究："+("開啟" if simulation.research_enabled else "關閉"),drawer_body,func(): simulation.research_enabled=not simulation.research_enabled;show_tab("設定",true))
 	_button("商人每日來訪："+("開啟" if simulation.trade_enabled else "關閉"),drawer_body,func(): simulation.trade_enabled=not simulation.trade_enabled;show_tab("設定",true))
 	_button("每日建築施工："+("開啟" if simulation.buildings_enabled else "關閉"),drawer_body,func(): simulation.buildings_enabled=not simulation.buildings_enabled;show_tab("設定",true))
 	_button("每日生產與消耗："+("開啟" if simulation.economy_enabled else "關閉"),drawer_body,func(): simulation.economy_enabled=not simulation.economy_enabled; show_tab("設定",true))
@@ -1360,7 +1364,7 @@ func show_stockpile(resource: String="",show_zero: bool=false) -> void:
 	active_tab="小鎮";drawer.show();_clear_drawer()
 	_wrapped("公共庫存與收支",22)
 	_button("加工排班",drawer_body,show_work_policy)
-	_wrapped("送禮從這裡扣除；每日生產與消耗在午夜結算，可於設定開關。建築施工、交易與產業自身運作仍待完成。",12)
+	_wrapped("送禮從這裡扣除；每日生產與消耗在午夜結算，可於設定開關。建築、交易與研究已啟用；產業自身运作仍待完成。",12)
 	var stockpile: Dictionary=_current_data().get("stockpile",{})
 	var resources: Dictionary=stockpile.get("resources",{})
 	var history: Array=stockpile.get("history",[])
@@ -1388,7 +1392,7 @@ func show_stockpile(resource: String="",show_zero: bool=false) -> void:
 	for entry in entries:
 		var amount:=float(entry.get("amount",0))
 		_wrapped(_resource_name(str(entry.get("resource","")))+" "+("+" if amount>0 else "")+str(amount))
-		var reason: String=str(entry.get("reason",""));reason={"daily consumption":"每日餐食消耗","tool wear":"工具磨耗","clothing wear":"衣物磨耗"}.get(reason,reason)
+		var reason: String=str(entry.get("reason",""));reason={"daily consumption":"每日餐食消耗","tool wear":"工具磨耗","clothing wear":"衣物磨耗","research":"研究投入"}.get(reason,reason)
 		if reason.begins_with("natural ("): reason="自然採集 · "+str(_current_data().get("townMap",{}).get("locations",{}).get(reason.trim_prefix("natural (").trim_suffix(")"),{}).get("name",reason))
 		var source: String=str(entry.get("source",""))
 		_wrapped(("未記錄原因" if reason.is_empty() else reason)+(" · "+source if not source.is_empty() else ""),12)
@@ -1496,3 +1500,34 @@ func show_trade() -> void:
 			button.disabled=float(offer.price)<0 or float(offer.amount)<1
 	_button("重新整理",drawer_body,show_trade)
 	_button("返回小鎮",drawer_body,func(): show_tab("小鎮",true))
+
+func show_research() -> void:
+	active_tab="小鎮";drawer.show();_clear_drawer();_wrapped("研究",22)
+	_wrapped("研究員每天午夜推進，並最多消耗 5 點公共研究點數。切換項目保留已累積進度；沒有指定項目時會自動選擇可研究項目。",12)
+	_wrapped("完成後保存研究效果；尚未移植的產業、建築外觀等系統不會因此自動出現。",12)
+	if not simulation.research_enabled: _wrapped("每日研究目前關閉。")
+	var research: Dictionary=simulation.data.research
+	for p in research.projects.values():
+		_wrapped(str(p.name)+" · "+str({"available":"可研究","locked":"尚未解鎖","researching":"研究中","complete":"已完成"}.get(p.status,p.status)),18)
+		_wrapped(str(p.description)+" · %s／%s"%[str(p.progress),str(p.cost)],12)
+		if not p.prerequisites.is_empty():
+			var required: Array=p.prerequisites.map(func(key): return str(research.projects.get(key,{}).get("name",key)))
+			_wrapped("前置："+"、".join(required),12)
+		if p.status=="available": _button("研究："+str(p.name),drawer_body,func():
+			if SimResearch.start(simulation,p.key): has_simulated=true
+			show_research())
+	_button("重新整理",drawer_body,show_research)
+	_button("返回小鎮",drawer_body,func(): show_tab("小鎮",true))
+
+func _capture_progress() -> void:
+	await get_tree().create_timer(1).timeout
+	for page in ["buildings","trade","research"]:
+		for dimensions in [Vector2i(1280,800),Vector2i(375,812)]:
+			var viewport:=SubViewport.new();viewport.size=dimensions;viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+			var preview=load("res://scenes/main.tscn").instantiate();viewport.add_child(preview)
+			preview._load_document(FileAccess.get_file_as_string("res://tests/"+page+"/compatibility-save.json.tmp"),"建築／交易／研究驗收")
+			preview.call("show_"+page)
+			await get_tree().create_timer(.5).timeout
+			await RenderingServer.frame_post_draw
+			viewport.get_texture().get_image().save_png("res://docs/"+page+("-mobile.png" if dimensions.x==375 else "-desktop.png"))
+			viewport.queue_free()
