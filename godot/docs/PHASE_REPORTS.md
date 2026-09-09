@@ -17,3 +17,11 @@
 - 下一步：Phase 2 相機、UI 骨架、JSON 保留與 ApiClient。
 
 建置環境：Blender 3.6.23（--factory-startup --gpu-backend opengl）；本機 Blender 4.5.0 無 headless Metal 支援而在初始化崩潰。替代版本僅影響建模工具，不影響 Godot 4.x 引擎。
+
+## Phase 2 回報
+- 完成：主場景、四入口 UI、四向相機／8–40 格縮放／滑鼠與觸控、ApiClient、SaveDocument、2,609 原版翻譯 key 的 PO、Noto Sans TC（OFL）。
+- 未完成／延後：正式帳號登入及正式同網域 Web 驗收需擁有者自行操作；未取得／建立任何正式憑證。日夜燈光與世界一起於 Phase 3 接入。
+- 驗證：本機真實 HTTP server 與 Godot HTTPRequest 端對端 12 次請求；49 個檢查全過，登入→Bearer me→存檔列表→下載→解析 Dictionary 成功。401 清除 session、stale 不視為覆寫、唯讀寫入攔截、兩個 chat lane 均驗證。主場景 headless smoke 成功。
+- 存檔相容：6/6 原 JS 快照逐位元 round-trip 相同，未知巢狀欄位／未來版本測試成功；丟失鍵數 0。無 Godot 模擬 tick。
+- 待確認決策：D-10 正式登入／部署驗收仍待確認；工程實作先使用本機端對端證據，並非宣稱正式站驗收通過。
+- 下一步：Phase 3 格網重建、住宅與地基對照、兩鎮靜態 3D 顯示。

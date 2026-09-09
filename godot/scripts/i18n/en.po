@@ -1,0 +1,7832 @@
+msgid ""
+msgstr ""
+"Language: en\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "邊境鎮"
+msgstr "Frontier Town"
+
+msgid "人口："
+msgstr "Pop: "
+
+msgid "載入中..."
+msgstr "Loading..."
+
+msgid "城鎮列表"
+msgstr "Town List"
+
+msgid "新地圖"
+msgstr "New Map"
+
+msgid "儲存"
+msgstr "Save"
+
+msgid "匯出"
+msgstr "Export"
+
+msgid "匯入"
+msgstr "Import"
+
+msgid "暫停"
+msgstr "Pause"
+
+msgid "播放"
+msgstr "Play"
+
+msgid "設定"
+msgstr "Settings"
+
+msgid "居民"
+msgstr "Residents"
+
+msgid "聊天"
+msgstr "Chat"
+
+msgid "詳情"
+msgstr "Details"
+
+msgid "經濟"
+msgstr "Economy"
+
+msgid "產業"
+msgstr "Industry"
+
+msgid "任務"
+msgstr "Quests"
+
+msgid "成就"
+msgstr "Achievements"
+
+msgid "事件"
+msgstr "Events"
+
+msgid "日報"
+msgstr "Newspaper"
+
+msgid "日誌"
+msgstr "Log"
+
+msgid "AI 語言模型"
+msgstr "AI Language Model"
+
+msgid "無（模擬對話）"
+msgstr "None (Simulated)"
+
+msgid "API 金鑰"
+msgstr "API Key"
+
+msgid "輸入你的 API 金鑰..."
+msgstr "Enter your API key..."
+
+msgid "備用 Groq API Key"
+msgstr "Fallback Groq API Key"
+
+msgid "主 AI 超限時自動切換"
+msgstr "Auto-switch when primary exceeds limit"
+
+msgid "模擬速度"
+msgstr "Simulation Speed"
+
+msgid "慢速（3秒）"
+msgstr "Slow (3s)"
+
+msgid "正常（2秒）"
+msgstr "Normal (2s)"
+
+msgid "快速（1秒）"
+msgstr "Fast (1s)"
+
+msgid "極快（0.5秒）"
+msgstr "Very Fast (0.5s)"
+
+msgid "儲存設定"
+msgstr "Save Settings"
+
+msgid "取消"
+msgstr "Cancel"
+
+msgid "不需要 API 金鑰"
+msgstr "No API key needed"
+
+msgid "請輸入 API 金鑰，或填寫備用 Groq Key，或選擇「無（模擬對話）」。"
+msgstr "Please enter API key, fill in Groq backup key, or select \"None (Simulated)\"."
+
+msgid "MiniMax (海螺AI)"
+msgstr "MiniMax (Conch AI)"
+
+msgid "開始旅程"
+msgstr "Start Journey"
+
+msgid "下一步"
+msgstr "Next"
+
+msgid "上一步"
+msgstr "Previous"
+
+msgid "進入遊戲"
+msgstr "Enter Game"
+
+msgid "跳過引導"
+msgstr "Skip Tutorial"
+
+msgid "地圖與村莊"
+msgstr "Map & Village"
+
+msgid "居民與聊天"
+msgstr "Residents & Chat"
+
+msgid "經濟與產業"
+msgstr "Economy & Industry"
+
+msgid "事件與探索"
+msgstr "Events & Exploration"
+
+msgid "在帝國邊疆的荒野之中，一群拓荒者建立了一座小小的聚落。"
+msgstr "In the wilderness of the empire's frontier, a group of pioneers established a small settlement."
+
+msgid "他們來自不同的背景 —— 有農夫、鐵匠、醫生、商人，甚至是流亡的學者。每個人都帶著自己的故事、個性和夢想來到這裡。"
+msgstr "They come from different backgrounds — farmers, blacksmiths, doctors, merchants, even scholars in exile. Each brings their own stories, personalities, and dreams."
+
+msgid "作為這座 <strong>邊境鎮</strong> 的管理者，你需要引導居民們建設家園、發展經濟、抵禦外敵，並見證他們之間的愛恨情仇。"
+msgstr "As manager of this <strong>Frontier Town</strong>, you must guide residents to build homes, develop the economy, defend against enemies, and witness their love stories and rivalries."
+
+msgid "「每位居民都是獨立的 AI，擁有自己的思想和意志。你的選擇，將塑造這座鎮的命運。」"
+msgstr "\"Every resident is an independent AI with their own thoughts and will. Your choices will shape the fate of this town.\""
+
+msgid "左側的 <strong>像素地圖</strong> 是你的村莊。你可以看到："
+msgstr "The <strong>pixel map</strong> on the left is your village. You can see:"
+
+msgid "各種建築 —— 酒館、農場、鐵匠鋪、診所等"
+msgstr "Various buildings — tavern, farm, smithy, clinic, etc."
+
+msgid "移動中的居民 —— 他們會自主上班、社交、吃飯、睡覺"
+msgstr "Moving residents — they autonomously work, socialize, eat, sleep"
+
+msgid "日夜交替 —— 白天工作，傍晚社交，深夜休息"
+msgstr "Day/night cycle — work by day, socialize at dusk, rest at night"
+
+msgid "對話氣泡 —— 居民之間正在進行的交談"
+msgstr "Speech bubbles — conversations between residents"
+
+msgid "點擊地圖上的地點可以移動你的角色。"
+msgstr "Click locations on the map to move your character."
+
+msgid "右側面板的 <strong>居民</strong> 頁籤顯示所有村民。點擊任一居民可以查看他的詳細資訊。"
+msgstr "The <strong>Residents</strong> tab in the right panel shows all villagers. Click any resident to view their details."
+
+msgid "切換到 <strong>聊天</strong> 頁籤，選擇一位居民就可以和他對話！他們會根據自己的個性、心情和對你的好感度來回應。"
+msgstr "Switch to the <strong>Chat</strong> tab, select a resident to talk! They respond based on personality, mood, and affinity toward you."
+
+msgid "好感度高的居民會更友善"
+msgstr "Residents with high affinity are friendlier"
+
+msgid "你可以選擇自己的職業"
+msgstr "You can choose your own job"
+
+msgid "你甚至可以和居民約會、求婚！"
+msgstr "You can even date and propose to residents!"
+
+msgid "<strong>經濟</strong> 頁籤可以查看資源、建築、科技樹和貿易。"
+msgstr "The <strong>Economy</strong> tab shows resources, buildings, tech tree, and trade."
+
+msgid "<strong>產業</strong> 頁籤管理農場種植、工廠加工和產業發展。"
+msgstr "The <strong>Industry</strong> tab manages farming, factory processing, and industry development."
+
+msgid "種植作物、收穫農產品"
+msgstr "Plant crops, harvest produce"
+
+msgid "建造工廠加工原料"
+msgstr "Build factories to process materials"
+
+msgid "隨著人口增長，城鎮等級提升"
+msgstr "Town level increases with population growth"
+
+msgid "完成任務獲得獎勵"
+msgstr "Complete quests for rewards"
+
+msgid "遊戲中會發生各種 <strong>隨機事件</strong>："
+msgstr "Various <strong>random events</strong> occur in the game:"
+
+msgid "鎮長選舉 —— 投票選出你支持的候選人"
+msgstr "Mayor election — vote for your candidate"
+
+msgid "盜匪襲擊 —— 守衛和居民會奮力防禦"
+msgstr "Bandit raids — guards and residents fight to defend"
+
+msgid "季節慶典 —— 春祭、仲夏篝火、豐收節、冬至"
+msgstr "Seasonal festivals — Spring Festival, Midsummer Bonfire, Harvest Fest, Winter Solstice"
+
+msgid "探索系統 —— 派遣探險隊探索鎮外區域"
+msgstr "Exploration — send expeditions to explore areas outside town"
+
+msgid "AI 日報 —— 村莊記者會報導鎮上的大小事"
+msgstr "AI Newspaper — village reporter covers town happenings"
+
+msgid "提示：在設定中配置 AI 語言模型（如 Groq 免費），可以讓居民對話更加生動！"
+msgstr "Tip: Configure an AI model in Settings (e.g. Groq, free) for more vivid resident conversations!"
+
+msgid "建造"
+msgstr "Build"
+
+msgid "研究"
+msgstr "Research"
+
+msgid "選擇"
+msgstr "Choose"
+
+msgid "關閉"
+msgstr "Close"
+
+msgid "完成"
+msgstr "Complete"
+
+msgid "送出"
+msgstr "Send"
+
+msgid "刪除"
+msgstr "Delete"
+
+msgid "繼續"
+msgstr "Continue"
+
+msgid "返回聊天"
+msgstr "Back to Chat"
+
+msgid "返回列表"
+msgstr "Back to List"
+
+msgid "對話"
+msgstr "Chat"
+
+msgid "前往對話"
+msgstr "Go Chat"
+
+msgid "調情"
+msgstr "Flirt"
+
+msgid "告白"
+msgstr "Confess"
+
+msgid "求婚"
+msgstr "Propose"
+
+msgid "辭職"
+msgstr "Resign"
+
+msgid "投票給"
+msgstr "Vote for"
+
+msgid "翻土"
+msgstr "Till"
+
+msgid "澆水"
+msgstr "Water"
+
+msgid "施肥"
+msgstr "Fertilize"
+
+msgid "收穫"
+msgstr "Harvest"
+
+msgid "清除"
+msgstr "Clear"
+
+msgid "創建"
+msgstr "Create"
+
+msgid "收"
+msgstr "Collect"
+
+msgid "賣"
+msgstr "Sell"
+
+msgid "新建城鎮"
+msgstr "New Town"
+
+msgid "重新命名"
+msgstr "Rename"
+
+msgid "關閉提示"
+msgstr "Close Tip"
+
+msgid "帳號"
+msgstr "Account"
+
+msgid "登入"
+msgstr "Login"
+
+msgid "註冊"
+msgstr "Register"
+
+msgid "登出"
+msgstr "Logout"
+
+msgid "已登入"
+msgstr "Logged in"
+
+msgid "雲端同步"
+msgstr "Cloud Sync"
+
+msgid "上傳存檔到雲端"
+msgstr "Upload Save to Cloud"
+
+msgid "從雲端下載存檔"
+msgstr "Download Save from Cloud"
+
+msgid "立即存檔"
+msgstr "Save Now"
+
+msgid "登入中..."
+msgstr "Logging in..."
+
+msgid "登入失敗"
+msgstr "Login failed"
+
+msgid "請輸入帳號和密碼"
+msgstr "Enter username and password"
+
+msgid "兩次密碼不一致"
+msgstr "Passwords do not match"
+
+msgid "註冊中..."
+msgstr "Registering..."
+
+msgid "註冊成功！歡迎，"
+msgstr "Registration successful! Welcome, "
+
+msgid "你的全新城鎮已建立。"
+msgstr "Your new town has been created."
+
+msgid "註冊失敗"
+msgstr "Registration failed"
+
+msgid "請填寫帳號和密碼"
+msgstr "Fill in username and password"
+
+msgid "請輸入使用者名稱"
+msgstr "Enter username"
+
+msgid "請輸入註冊時的電子郵件"
+msgstr "Enter registered email"
+
+msgid "新密碼至少6個字元"
+msgstr "New password at least 6 chars"
+
+msgid "重設中..."
+msgstr "Resetting..."
+
+msgid "密碼已重設！請用新密碼登入"
+msgstr "Password reset! Login with new password"
+
+msgid "重設失敗"
+msgstr "Reset failed"
+
+msgid "已登出。"
+msgstr "Logged out."
+
+msgid "遊戲已儲存。"
+msgstr "Game saved."
+
+msgid "遊戲已儲存並同步至雲端。"
+msgstr "Game saved and synced to cloud."
+
+msgid "遊戲已儲存（雲端同步失敗）。"
+msgstr "Game saved (cloud sync failed)."
+
+msgid "已同步至雲端。"
+msgstr "Synced to cloud."
+
+msgid "讀取存檔失敗。"
+msgstr "Failed to load save."
+
+msgid "無效的存檔："
+msgstr "Invalid save: "
+
+msgid "已從雲端載入存檔。"
+msgstr "Loaded save from cloud."
+
+msgid "載入失敗："
+msgstr "Load failed: "
+
+msgid "確定刪除雲端存檔？"
+msgstr "Delete cloud save?"
+
+msgid "刪除失敗："
+msgstr "Delete failed: "
+
+msgid "雲端沒有存檔。請先上傳存檔。"
+msgstr "No cloud saves. Please upload first."
+
+msgid "雲端存檔"
+msgstr "Cloud Saves"
+
+msgid "匯出存檔"
+msgstr "Export Save"
+
+msgid "匯入存檔"
+msgstr "Import Save"
+
+msgid "儲存遊戲"
+msgstr "Save Game"
+
+msgid "存檔管理"
+msgstr "Save Management"
+
+msgid "選擇一位居民查看詳情"
+msgstr "Select a resident for details"
+
+msgid "外出"
+msgstr "Away"
+
+msgid "探險中"
+msgstr "Exploring"
+
+msgid "附近："
+msgstr "Nearby: "
+
+msgid "附近沒有人。"
+msgstr "No one nearby."
+
+msgid "你在："
+msgstr "You're at: "
+
+msgid "（你）"
+msgstr "(You)"
+
+msgid "名字"
+msgstr "Name"
+
+msgid "性別"
+msgstr "Gender"
+
+msgid "年齡"
+msgstr "Age"
+
+msgid "歲"
+msgstr " yrs"
+
+msgid "性格"
+msgstr "Personality"
+
+msgid "價值觀："
+msgstr "Values: "
+
+msgid "感情狀態"
+msgstr "Love Status"
+
+msgid "已婚"
+msgstr "Married"
+
+msgid "交往中"
+msgstr "Dating"
+
+msgid "前任"
+msgstr "Ex"
+
+msgid "秘密關係"
+msgstr "Secret Relationship"
+
+msgid "暗戀"
+msgstr "Crushing"
+
+msgid "單身"
+msgstr "Single"
+
+msgid "已與"
+msgstr "Married to "
+
+msgid "正在與"
+msgstr "Dating "
+
+msgid "同時與"
+msgstr "Also with "
+
+msgid "有秘密關係"
+msgstr "has secret relationships"
+
+msgid "前任："
+msgstr "Exes: "
+
+msgid "目前職業"
+msgstr "Current Job"
+
+msgid "你的工作"
+msgstr "Your Job"
+
+msgid "需求"
+msgstr "Needs"
+
+msgid "技能（總計："
+msgstr "Skills (Total: "
+
+msgid "人際關係（"
+msgstr "Relationships ("
+
+msgid "尚無人際關係"
+msgstr "No relationships"
+
+msgid "社交圈"
+msgstr "Social Circle"
+
+msgid "同伴："
+msgstr "Members: "
+
+msgid "近期記憶"
+msgstr "Recent Memories"
+
+msgid "尚無記憶"
+msgstr "No memories"
+
+msgid "你目前無業！點擊下方職業按鈕選擇工作："
+msgstr "You're unemployed! Click a job button below:"
+
+msgid "聊天記錄："
+msgstr "Chat History: "
+
+msgid "歷史對話"
+msgstr "Chat History"
+
+msgid "開始與"
+msgstr "Start chat with "
+
+msgid "對話..."
+msgstr "chatting..."
+
+msgid "選擇一個人來查看對話。"
+msgstr "Select someone to view conversation."
+
+msgid "輸入訊息..."
+msgstr "Enter message..."
+
+msgid "查看與"
+msgstr "View conversation with "
+
+msgid "的過去對話。前往他們的位置即可聊天。"
+msgstr "past conversations. Go to their location to chat."
+
+msgid "找不到訊息。"
+msgstr "No messages found."
+
+msgid "匯出此對話記錄"
+msgstr "Export this chat log"
+
+msgid "尚無訊息..."
+msgstr "No messages..."
+
+msgid "聊天已存檔（"
+msgstr "Chat archived ("
+
+msgid "則訊息）。"
+msgstr " messages)."
+
+msgid "沒有聊天訊息可存檔。"
+msgstr "No chat messages to archive."
+
+msgid "確定刪除此聊天存檔？"
+msgstr "Delete this chat archive?"
+
+msgid "邊境鎮聊天記錄"
+msgstr "Frontier Town Chat Log"
+
+msgid "遊戲進度："
+msgstr "Game Progress: "
+
+msgid "玩家："
+msgstr "Player: "
+
+msgid "存檔時間："
+msgstr "Save Time: "
+
+msgid "NPC："
+msgstr "NPCs: "
+
+msgid "訊息數："
+msgstr "Messages: "
+
+msgid "資源"
+msgstr "Resources"
+
+msgid "目前沒有任何資源"
+msgstr "No resources"
+
+msgid "交易"
+msgstr "Trade"
+
+msgid "鎮上沒有商人，可能很快就會來一位。"
+msgstr "No merchant in town, one may arrive soon."
+
+msgid "研究中："
+msgstr "Researching: "
+
+msgid "可研究："
+msgstr "Available: "
+
+msgid "已完成："
+msgstr "Completed: "
+
+msgid "建築"
+msgstr "Construction"
+
+msgid "建造："
+msgstr "Build: "
+
+msgid "工廠加工"
+msgstr "Factory Processing"
+
+msgid "配方："
+msgstr "Recipes: "
+
+msgid "工人："
+msgstr "Workers: "
+
+msgid "生產進度："
+msgstr "Production: "
+
+msgid "倉庫："
+msgstr "Warehouse: "
+
+msgid "可建造工廠"
+msgstr "Build Factory"
+
+msgid "建造天數："
+msgstr "Build days: "
+
+msgid "訂單"
+msgstr "Orders"
+
+msgid "獎勵："
+msgstr "Rewards: "
+
+msgid "產業列表"
+msgstr "Industry List"
+
+msgid "產業上限："
+msgstr "Industry Limit: "
+
+msgid "已開啟："
+msgstr "Opened: "
+
+msgid "選擇你的第一個產業"
+msgstr "Choose your first industry"
+
+msgid "可開啟新產業！"
+msgstr "New industry available!"
+
+msgid "產業加成"
+msgstr "Industry Bonuses"
+
+msgid "總覽"
+msgstr "Overview"
+
+msgid "需要 "
+msgstr "Requires "
+
+msgid " 銀幣 + "
+msgstr " Silver + "
+
+msgid " 食物"
+msgstr " Food"
+
+msgid "已達自訂居民上限"
+msgstr "Custom resident limit reached"
+
+msgid "位"
+msgstr " slots"
+
+msgid "主線任務"
+msgstr "Main Quests"
+
+msgid "進度："
+msgstr "Progress: "
+
+msgid "聲望："
+msgstr "Reputation: "
+
+msgid "當前危機："
+msgstr "Current Crisis: "
+
+msgid "蝗災"
+msgstr "Locust Plague"
+
+msgid "盜匪圍城"
+msgstr "Bandit Siege"
+
+msgid "瘟疫"
+msgstr "Plague"
+
+msgid "第"
+msgstr "Ch."
+
+msgid "章"
+msgstr ""
+
+msgid "完成前置任務後解鎖"
+msgstr "Unlock after prerequisites"
+
+msgid "選擇任一路線完成即可："
+msgstr "Complete any route:"
+
+msgid "其他路線："
+msgstr "Other routes: "
+
+msgid "無"
+msgstr "None"
+
+msgid "每日目標"
+msgstr "Daily Objective"
+
+msgid "支線任務"
+msgstr "Side Quests"
+
+msgid "進行中："
+msgstr "Active: "
+
+msgid "NPC 個人故事"
+msgstr "NPC Stories"
+
+msgid "來自："
+msgstr "From: "
+
+msgid "提升與 NPC 的好感度來觸發個人故事線。"
+msgstr "Increase NPC affinity to trigger personal stories."
+
+msgid "已完成的個人故事"
+msgstr "Completed Stories"
+
+msgid "NPC 產業加成"
+msgstr "NPC Industry Bonuses"
+
+msgid "支線："
+msgstr "Side: "
+
+msgid "目前目標："
+msgstr "Current Goal: "
+
+msgid "探索區域"
+msgstr "Exploration Zones"
+
+msgid "進行中的探險："
+msgstr "Active Expeditions: "
+
+msgid "天後返回"
+msgstr "days until return"
+
+msgid "已探索"
+msgstr "Explored "
+
+msgid "次"
+msgstr " calls"
+
+msgid "難度："
+msgstr "Difficulty: "
+
+msgid "探險進行中..."
+msgstr "Expedition in progress..."
+
+msgid "派遣探險"
+msgstr "Send Expedition"
+
+msgid "幽深森林"
+msgstr "Deep Forest"
+
+msgid "城鎮外的茂密森林，傳說中有稀有草藥和野生動物。"
+msgstr "Dense forest outside town with rare herbs and wildlife."
+
+msgid "古代遺跡"
+msgstr "Ancient Ruins"
+
+msgid "神秘的古代建築遺址，可能藏有珍貴的知識和寶物。"
+msgstr "Mysterious ancient site with knowledge and treasures."
+
+msgid "廢棄礦坑"
+msgstr "Abandoned Mine"
+
+msgid "一座被廢棄的老礦坑，據說深處仍有豐富的礦脈。"
+msgstr "Old abandoned mine with rich ore deposits."
+
+msgid "山間隘口"
+msgstr "Mountain Pass"
+
+msgid "通往外界的危險山路，但可能找到貿易路線和珍稀資源。"
+msgstr "Dangerous mountain route with trade routes and rare resources."
+
+msgid "河畔洞窟"
+msgstr "Riverside Cave"
+
+msgid "河邊的一個神秘洞穴，經常有奇怪的回音。"
+msgstr "Mysterious riverside cave with strange echoes."
+
+msgid "詛咒沼澤"
+msgstr "Cursed Swamp"
+
+msgid "傳說被詛咒的沼澤地，危險但也可能有珍貴的材料。"
+msgstr "Legendary cursed swamp with precious materials."
+
+msgid "請選擇至少一名居民！"
+msgstr "Please select at least one resident!"
+
+msgid "無法派遣探險隊。"
+msgstr "Cannot send expedition."
+
+msgid "進行中的事件鏈"
+msgstr "Active Event Chains"
+
+msgid "階段"
+msgstr "Stage "
+
+msgid "外出中的居民"
+msgstr "Travelling Residents"
+
+msgid "節慶進行中！"
+msgstr "Festival ongoing!"
+
+msgid "節日任務："
+msgstr "Festival Quest: "
+
+msgid "進行中的探險"
+msgstr "Active Expeditions"
+
+msgid "新聞公告"
+msgstr "News Bulletin"
+
+msgid "新聞"
+msgstr "News"
+
+msgid "安全"
+msgstr "Security"
+
+msgid "天氣"
+msgstr "Weather"
+
+msgid "社會"
+msgstr "Social"
+
+msgid "健康"
+msgstr "Health"
+
+msgid "發現"
+msgstr "found out "
+
+msgid "自然"
+msgstr "Nature"
+
+msgid "政治"
+msgstr "Political"
+
+msgid "剩餘"
+msgstr "Remaining"
+
+msgid "天"
+msgstr " days"
+
+msgid "生效中："
+msgstr "Active: "
+
+msgid "食物產量"
+msgstr "Food Production"
+
+msgid "礦產產出"
+msgstr "Mine Output"
+
+msgid "交易價格"
+msgstr "Trade Prices"
+
+msgid "建設速度"
+msgstr "Build Speed"
+
+msgid "心情加成"
+msgstr "Mood Bonus"
+
+msgid "作物生長"
+msgstr "Crop Growth"
+
+msgid "商人頻率"
+msgstr "Merchant Frequency"
+
+msgid "AI 日報"
+msgstr "AI Newspaper"
+
+msgid "近期出生"
+msgstr "Recent Births"
+
+msgid "的孩子"
+msgstr "'s child"
+
+msgid "墓園"
+msgstr "Graveyard"
+
+msgid "弔念"
+msgstr "Mourning"
+
+msgid "...我會記得你的。"
+msgstr "...I will remember you."
+
+msgid "前往墓園弔念"
+msgstr "Visiting the graveyard to mourn "
+
+msgid "又到了一年...去看看"
+msgstr "Another year...time to visit "
+
+msgid "吧。"
+msgstr "."
+
+msgid "每年都會來墓園看望"
+msgstr "Annually visiting the grave of "
+
+msgid "來到墓園，緬懷已故的親人"
+msgstr "Visits the graveyard to remember "
+
+msgid "願逝者安息..."
+msgstr "May the departed rest in peace..."
+
+msgid "站在墓前，心裡百感交集。"
+msgstr "Standing before the grave, mixed feelings."
+
+msgid "我不會忘記你的。"
+msgstr "I will never forget you."
+
+msgid "...我來看你了。"
+msgstr "...I came to see you."
+
+msgid "安裝邊境鎮"
+msgstr "Install RimTown"
+
+msgid "安裝到主畫面，享受全螢幕體驗"
+msgstr "Install to home screen for fullscreen experience"
+
+msgid "安裝"
+msgstr "Install"
+
+msgid "派系"
+msgstr "Factions"
+
+msgid "團結度："
+msgstr "Cohesion: "
+
+msgid "敵對："
+msgstr "Rival: "
+
+msgid "結盟："
+msgstr "Allied: "
+
+msgid "共"
+msgstr "Total"
+
+msgid "期"
+msgstr " issues"
+
+msgid "還沒有日報。每天結束時會自動發佈。"
+msgstr "No newspapers yet. Published daily at end of day."
+
+msgid "顯示最近"
+msgstr "Showing latest "
+
+msgid "期（共"
+msgstr " issues (total "
+
+msgid "農場（"
+msgstr "Farm ("
+
+msgid "塊田）"
+msgstr " plots)"
+
+msgid "需要先開啟農業產業才能使用農場。"
+msgstr "Need to unlock farming industry first."
+
+msgid "空地"
+msgstr "Empty"
+
+msgid "已翻土"
+msgstr "Tilled"
+
+msgid "生長中"
+msgstr "Growing"
+
+msgid "可收穫"
+msgstr "Ready"
+
+msgid "枯萎"
+msgstr "Withered"
+
+msgid "田地 #"
+msgstr "Plot #"
+
+msgid "水分："
+msgstr "Water: "
+
+msgid "本季無可種作物"
+msgstr "No crops available this season"
+
+msgid "收穫紀錄"
+msgstr "Harvest Log"
+
+msgid "小鎮等級："
+msgstr "Town Level: "
+
+msgid "塊可收"
+msgstr " ready"
+
+msgid "塊生長中"
+msgstr " growing"
+
+msgid "塊"
+msgstr " plots"
+
+msgid "技能進步"
+msgstr "Skill progress"
+
+msgid "進步了"
+msgstr "progressed"
+
+msgid "開啟"
+msgstr "Unlock"
+
+msgid "成就解鎖！"
+msgstr "Achievement Unlocked!"
+
+msgid "成就解鎖："
+msgstr "Achievement Unlocked: "
+
+msgid "尚無成就"
+msgstr "No achievements"
+
+msgid "已完成"
+msgstr "Completed"
+
+msgid "尚無城鎮存檔。"
+msgstr "No town saves."
+
+msgid "目前"
+msgstr "Current"
+
+msgid "為新城鎮命名："
+msgstr "Name new town: "
+
+msgid "新名稱："
+msgstr "New name: "
+
+msgid "確定要刪除這個城鎮？所有存檔和聊天記錄都會消失。"
+msgstr "Delete this town? All saves and chat logs will be lost."
+
+msgid "創建新居民"
+msgstr "Create New Resident"
+
+msgid "輸入名字（最多10字）"
+msgstr "Enter name (max 10 chars)"
+
+msgid "性格特質（選 1-3 個）"
+msgstr "Traits (choose 1-3)"
+
+msgid "職業偏好"
+msgstr "Job Preference"
+
+msgid "在意的事（選 1-3 個）"
+msgstr "Values (choose 1-3)"
+
+msgid "背景故事（選填，最多 200 字）"
+msgstr "Background (optional, max 200)"
+
+msgid "從遠方來的旅人，帶著一段不願提起的過去..."
+msgstr "A traveler from afar with an untold past..."
+
+msgid "請輸入名字"
+msgstr "Please enter a name"
+
+msgid "名字最多 10 個字"
+msgstr "Name max 10 characters"
+
+msgid "請至少選擇 1 個性格特質"
+msgstr "Select at least 1 trait"
+
+msgid "最多選擇 3 個性格特質"
+msgstr "Select at most 3 traits"
+
+msgid "年齡需在 16-60 之間"
+msgstr "Age must be between 16-60"
+
+msgid "背景故事最多 200 字"
+msgstr "Background max 200 characters"
+
+msgid "食物"
+msgstr "Food"
+
+msgid "木材"
+msgstr "Wood"
+
+msgid "石材"
+msgstr "Stone"
+
+msgid "金屬"
+msgstr "Metal"
+
+msgid "布料"
+msgstr "Cloth"
+
+msgid "草藥"
+msgstr "Herbs"
+
+msgid "銀幣"
+msgstr "Silver"
+
+msgid "餐食"
+msgstr "Meals"
+
+msgid "工具"
+msgstr "Tools"
+
+msgid "衣物"
+msgstr "Clothing"
+
+msgid "藥品"
+msgstr "Medicine"
+
+msgid "家具"
+msgstr "Furniture"
+
+msgid "木板"
+msgstr "Planks"
+
+msgid "硬木"
+msgstr "Hardwood"
+
+msgid "磚塊"
+msgstr "Bricks"
+
+msgid "大理石"
+msgstr "Marble"
+
+msgid "鋼鐵"
+msgstr "Steel"
+
+msgid "黃金"
+msgstr "Gold"
+
+msgid "小麥"
+msgstr "Wheat"
+
+msgid "稻米"
+msgstr "Rice"
+
+msgid "玉米"
+msgstr "Corn"
+
+msgid "馬鈴薯"
+msgstr "Potato"
+
+msgid "棉花"
+msgstr "Cotton"
+
+msgid "花卉"
+msgstr "Flowers"
+
+msgid "蘑菇"
+msgstr "Mushrooms"
+
+msgid "甘蔗"
+msgstr "Sugarcane"
+
+msgid "茶葉"
+msgstr "Tea"
+
+msgid "葡萄"
+msgstr "Grapes"
+
+msgid "金色小麥"
+msgstr "Golden Wheat"
+
+msgid "火龍果"
+msgstr "Dragon Fruit"
+
+msgid "麵包"
+msgstr "Bread"
+
+msgid "糕點"
+msgstr "Pastry"
+
+msgid "啤酒"
+msgstr "Beer"
+
+msgid "葡萄酒"
+msgstr "Wine"
+
+msgid "香水"
+msgstr "Perfume"
+
+msgid "精品茶"
+msgstr "Fine Tea"
+
+msgid "精製茶"
+msgstr "Fine Tea"
+
+msgid "草本茶"
+msgstr "Herbal Tea"
+
+msgid "養生茶"
+msgstr "Herbal Tea"
+
+msgid "砂糖"
+msgstr "Sugar"
+
+msgid "糖"
+msgstr "Sugar"
+
+msgid "果醬"
+msgstr "Jam"
+
+msgid "高級家具"
+msgstr "Luxury Furniture"
+
+msgid "精裝家具"
+msgstr "Luxury Furniture"
+
+msgid "鎮公所"
+msgstr "Town Hall"
+
+msgid "診所"
+msgstr "Clinic"
+
+msgid "工坊"
+msgstr "Workshop"
+
+msgid "農場"
+msgstr "Farm"
+
+msgid "酒館"
+msgstr "Tavern"
+
+msgid "哨站"
+msgstr "Guard Post"
+
+msgid "教堂"
+msgstr "Chapel"
+
+msgid "圖書館"
+msgstr "Library"
+
+msgid "雜貨店"
+msgstr "General Store"
+
+msgid "礦場"
+msgstr "Mine"
+
+msgid "廣場"
+msgstr "Town Square"
+
+msgid "公園"
+msgstr "Park"
+
+msgid "水井"
+msgstr "Well"
+
+msgid "北區住宅"
+msgstr "North Residential"
+
+msgid "南區住宅"
+msgstr "South Residential"
+
+msgid "東區住宅"
+msgstr "East Residential"
+
+msgid "住宅"
+msgstr "Residential"
+
+msgid "市場"
+msgstr "Market"
+
+msgid "城牆"
+msgstr "Wall"
+
+msgid "花園"
+msgstr "Garden"
+
+msgid "倉庫"
+msgstr "Warehouse"
+
+msgid "瞭望塔"
+msgstr "Watchtower"
+
+msgid "學校"
+msgstr "School"
+
+msgid "訓練場"
+msgstr "Training Ground"
+
+msgid "磨坊"
+msgstr "Mill"
+
+msgid "碼頭"
+msgstr "Dock"
+
+msgid "旅館"
+msgstr "Inn"
+
+msgid "銀行"
+msgstr "Bank"
+
+msgid "法院"
+msgstr "Courthouse"
+
+msgid "劇院"
+msgstr "Theater"
+
+msgid "大教堂"
+msgstr "Cathedral"
+
+msgid "農夫"
+msgstr "Farmer"
+
+msgid "礦工"
+msgstr "Miner"
+
+msgid "廚師"
+msgstr "Cook"
+
+msgid "鐵匠"
+msgstr "Blacksmith"
+
+msgid "醫生"
+msgstr "Doctor"
+
+msgid "研究員"
+msgstr "Researcher"
+
+msgid "商人"
+msgstr "Trader"
+
+msgid "守衛"
+msgstr "Guard"
+
+msgid "木匠"
+msgstr "Carpenter"
+
+msgid "裁縫"
+msgstr "Tailor"
+
+msgid "牧師"
+msgstr "Priest"
+
+msgid "無業"
+msgstr "Unemployed"
+
+msgid "酒保"
+msgstr "Bartender"
+
+msgid "店員"
+msgstr "Clerk"
+
+msgid "善良"
+msgstr "Kind"
+
+msgid "刻薄"
+msgstr "Abrasive"
+
+msgid "害羞"
+msgstr "Shy"
+
+msgid "魅力"
+msgstr "Charismatic"
+
+msgid "有魅力"
+msgstr "Charismatic"
+
+msgid "八卦"
+msgstr "Gossip"
+
+msgid "勤勞"
+msgstr "Hardworking"
+
+msgid "懶惰"
+msgstr "Lazy"
+
+msgid "完美主義"
+msgstr "Perfectionist"
+
+msgid "有創意"
+msgstr "Creative"
+
+msgid "樂觀"
+msgstr "Optimist"
+
+msgid "悲觀"
+msgstr "Pessimist"
+
+msgid "神經質"
+msgstr "Neurotic"
+
+msgid "沉穩"
+msgstr "Stoic"
+
+msgid "浪漫"
+msgstr "Romance"
+
+msgid "嫉妒"
+msgstr "Jealous"
+
+msgid "夜貓子"
+msgstr "Night Owl"
+
+msgid "早起鳥"
+msgstr "Early Bird"
+
+msgid "貪吃"
+msgstr "Glutton"
+
+msgid "苦行"
+msgstr "Ascetic"
+
+msgid "好奇"
+msgstr "Curious"
+
+msgid "飢餓"
+msgstr "Hunger"
+
+msgid "休息"
+msgstr "Rest"
+
+msgid "社交"
+msgstr "Social"
+
+msgid "舒適"
+msgstr "Comfort"
+
+msgid "娛樂"
+msgstr "Recreation"
+
+msgid "家庭"
+msgstr "Family"
+
+msgid "自由"
+msgstr "Freedom"
+
+msgid "知識"
+msgstr "Knowledge"
+
+msgid "財富"
+msgstr "Wealth"
+
+msgid "權力"
+msgstr "Power"
+
+msgid "藝術"
+msgstr "Art"
+
+msgid "社群"
+msgstr "Community"
+
+msgid "冒險"
+msgstr "Adventure"
+
+msgid "和平"
+msgstr "Peace"
+
+msgid "繁榮度"
+msgstr "Prosperity"
+
+msgid "建設"
+msgstr "Buildings"
+
+msgid "人口"
+msgstr "Population"
+
+msgid "幸福"
+msgstr "Happiness"
+
+msgid "文化"
+msgstr "Culture"
+
+msgid "防禦"
+msgstr "Defense"
+
+msgid "美觀"
+msgstr "Beauty"
+
+msgid "傳奇"
+msgstr "Legendary"
+
+msgid "繁榮"
+msgstr "Prosperous"
+
+msgid "發展中"
+msgstr "Developing"
+
+msgid "起步"
+msgstr "Starting"
+
+msgid "荒涼"
+msgstr "Barren"
+
+msgid "經濟發展"
+msgstr "Economic Growth"
+
+msgid "社會福利"
+msgstr "Social Welfare"
+
+msgid "軍事防禦"
+msgstr "Military Defense"
+
+msgid "文化教育"
+msgstr "Culture & Education"
+
+msgid "自然保育"
+msgstr "Nature Conservation"
+
+msgid "個人自由"
+msgstr "Personal Freedom"
+
+msgid "選舉結果"
+msgstr "Election Results"
+
+msgid "當選鎮長！"
+msgstr "Elected Mayor!"
+
+msgid "施政方針："
+msgstr "Policy: "
+
+msgid "候選人"
+msgstr "Candidates"
+
+msgid "現任鎮長"
+msgstr "Current Mayor"
+
+msgid "競選期間"
+msgstr "Campaign Period"
+
+msgid "投票進行中"
+msgstr "Voting in Progress"
+
+msgid "伐木業"
+msgstr "Lumber Industry"
+
+msgid "砍伐樹木，生產木材。木材是建築和家具的基礎。"
+msgstr "Cut trees and produce wood. Wood is essential for buildings and furniture."
+
+msgid "伐木小屋"
+msgstr "Lumber Shack"
+
+msgid "基礎伐木"
+msgstr "Basic Logging"
+
+msgid "伐木場"
+msgstr "Logging Site"
+
+msgid "解鎖硬木採集"
+msgstr "Unlock hardwood"
+
+msgid "製材所"
+msgstr "Sawmill"
+
+msgid "原木→木板加工"
+msgstr "Logs→Planks processing"
+
+msgid "林業公司"
+msgstr "Forestry Company"
+
+msgid "稀有木材"
+msgstr "Rare Lumber"
+
+msgid "木材帝國"
+msgstr "Lumber Empire"
+
+msgid "出口木材"
+msgstr "Export Lumber"
+
+msgid "採石業"
+msgstr "Quarry Industry"
+
+msgid "開採石材，是建築城牆和高級建築的基礎。"
+msgstr "Mine stone for walls and advanced buildings."
+
+msgid "採石小坑"
+msgstr "Small Quarry"
+
+msgid "基礎採石"
+msgstr "Basic Quarrying"
+
+msgid "採石場"
+msgstr "Quarry"
+
+msgid "解鎖花崗岩"
+msgstr "Unlock granite"
+
+msgid "石材工坊"
+msgstr "Stone Workshop"
+
+msgid "石頭→磚塊加工"
+msgstr "Stone→Brick processing"
+
+msgid "大型礦場"
+msgstr "Large Mine"
+
+msgid "大理石開採"
+msgstr "Marble mining"
+
+msgid "石材帝國"
+msgstr "Stone Empire"
+
+msgid "出口石材"
+msgstr "Export Stone"
+
+msgid "農業"
+msgstr "Agriculture"
+
+msgid "種植作物，生產食物和經濟作物。養活全鎮的基礎。"
+msgstr "Plant crops, produce food and cash crops."
+
+msgid "小農田"
+msgstr "Small Farm"
+
+msgid "基礎作物"
+msgstr "Basic Crops"
+
+msgid "農莊"
+msgstr "Farmstead"
+
+msgid "解鎖更多作物"
+msgstr "Unlock more crops"
+
+msgid "灌溉農場"
+msgstr "Irrigation Farm"
+
+msgid "灌溉 +30%"
+msgstr "Irrigation +30%"
+
+msgid "大型農莊"
+msgstr "Large Farm"
+
+msgid "高級經濟作物"
+msgstr "Advanced cash crops"
+
+msgid "農業帝國"
+msgstr "Agriculture Empire"
+
+msgid "出口 + 品種改良"
+msgstr "Export + Crop improvement"
+
+msgid "礦業"
+msgstr "Mining"
+
+msgid "開採礦石，冶煉金屬。工具和武器的來源。"
+msgstr "Mine ore and smelt metal. Source of tools and weapons."
+
+msgid "小礦坑"
+msgstr "Small Mine Pit"
+
+msgid "基礎鐵礦"
+msgstr "Basic Iron Ore"
+
+msgid "解鎖銅礦"
+msgstr "Unlock copper"
+
+msgid "冶煉廠"
+msgstr "Smelter"
+
+msgid "鐵→鋼加工"
+msgstr "Iron→Steel processing"
+
+msgid "大型礦業"
+msgstr "Large Mining"
+
+msgid "金礦開採"
+msgstr "Gold mining"
+
+msgid "礦業帝國"
+msgstr "Mining Empire"
+
+msgid "出口金屬"
+msgstr "Export Metal"
+
+msgid "伐木"
+msgstr "Woodcutting"
+
+msgid "採礦"
+msgstr "Mining"
+
+msgid "鍛造"
+msgstr "Smithing"
+
+msgid "貿易"
+msgstr "Trade"
+
+msgid "荒村"
+msgstr "Wilderness"
+
+msgid "小村"
+msgstr "Hamlet"
+
+msgid "村莊"
+msgstr "Village"
+
+msgid "小鎮"
+msgstr "Small Town"
+
+msgid "城鎮"
+msgstr "Town"
+
+msgid "大城鎮"
+msgstr "Large Town"
+
+msgid "城市"
+msgstr "City"
+
+msgid "農林複合"
+msgstr "Agro-forestry"
+
+msgid "營建雙雄"
+msgstr "Construction Duo"
+
+msgid "工業基礎"
+msgstr "Industrial Foundation"
+
+msgid "地下霸主"
+msgstr "Underground Master"
+
+msgid "基建農業"
+msgstr "Infrastructure Agriculture"
+
+msgid "自給自足"
+msgstr "Self-sufficiency"
+
+msgid "工業強鎮"
+msgstr "Industrial Powerhouse"
+
+msgid "資源大鎮"
+msgstr "Resource Hub"
+
+msgid "均衡發展"
+msgstr "Balanced Development"
+
+msgid "完全體"
+msgstr "Complete Form"
+
+msgid "已擁有此產業"
+msgstr "Already own this industry"
+
+msgid "產業上限已滿"
+msgstr "Industry limit reached"
+
+msgid "未知產業"
+msgstr "Unknown industry"
+
+msgid "已達最高等級"
+msgstr "Already at max level"
+
+msgid "麵包坊"
+msgstr "Bakery"
+
+msgid "小麥→麵包"
+msgstr "Wheat→Bread"
+
+msgid "小麥+糖→糕點"
+msgstr "Wheat+Sugar→Pastry"
+
+msgid "紡織廠"
+msgstr "Textile Mill"
+
+msgid "棉花→布料"
+msgstr "Cotton→Cloth"
+
+msgid "布料→衣服"
+msgstr "Cloth→Clothing"
+
+msgid "釀酒廠"
+msgstr "Brewery"
+
+msgid "小麥→啤酒"
+msgstr "Wheat→Beer"
+
+msgid "葡萄→葡萄酒"
+msgstr "Grapes→Wine"
+
+msgid "草藥工坊"
+msgstr "Herbal Workshop"
+
+msgid "草藥→藥品"
+msgstr "Herbs→Medicine"
+
+msgid "草藥+花→香水"
+msgstr "Herbs+Flowers→Perfume"
+
+msgid "茶坊"
+msgstr "Tea House"
+
+msgid "茶葉→精製茶"
+msgstr "Tea→Fine Tea"
+
+msgid "茶+草藥→養生茶"
+msgstr "Tea+Herbs→Herbal Tea"
+
+msgid "製糖廠"
+msgstr "Sugar Refinery"
+
+msgid "甘蔗→糖"
+msgstr "Sugarcane→Sugar"
+
+msgid "糖→果醬"
+msgstr "Sugar→Jam"
+
+msgid "家具工坊"
+msgstr "Furniture Workshop"
+
+msgid "木材→家具"
+msgstr "Wood→Furniture"
+
+msgid "木材+布→精裝家具"
+msgstr "Wood+Cloth→Luxury Furniture"
+
+msgid "已建造"
+msgstr "Already built"
+
+msgid "未知工廠"
+msgstr "Unknown factory"
+
+msgid "資源不足"
+msgstr "Insufficient resources"
+
+msgid "建造完成！"
+msgstr "Construction complete!"
+
+msgid "出貨"
+msgstr "Shipped"
+
+msgid "生產"
+msgstr "Production"
+
+msgid "訂單不存在"
+msgstr "Order does not exist"
+
+msgid "工廠不存在"
+msgstr "Factory does not exist"
+
+msgid "訂單完成！獲得 "
+msgstr "Order completed! Earned "
+
+msgid "春季"
+msgstr "Spring"
+
+msgid "夏季"
+msgstr "Summer"
+
+msgid "秋季"
+msgstr "Autumn"
+
+msgid "冬季"
+msgstr "Winter"
+
+msgid "普通"
+msgstr "Normal"
+
+msgid "優良"
+msgstr "Good"
+
+msgid "極品"
+msgstr "Excellent"
+
+msgid "無法翻土"
+msgstr "Cannot till"
+
+msgid "需先翻土"
+msgstr "Must till first"
+
+msgid "未知作物"
+msgstr "Unknown crop"
+
+msgid "非當季作物"
+msgstr "Out of season"
+
+msgid "無法施肥"
+msgstr "Cannot fertilize"
+
+msgid "需要 2 草藥"
+msgstr "Need 2 herbs"
+
+msgid "製作肥料"
+msgstr "Making fertilizer"
+
+msgid "未成熟"
+msgstr "Not mature"
+
+msgid "作物錯誤"
+msgstr "Crop error"
+
+msgid "因為季節不對而枯萎了！"
+msgstr "Withered due to wrong season!"
+
+msgid "成熟了！可以收穫。"
+msgstr "Mature! Ready to harvest."
+
+msgid "因太久沒收穫而枯萎了。"
+msgstr "Withered from not being harvested in time."
+
+msgid "無法種植"
+msgstr "Cannot plant"
+
+msgid "無法收穫"
+msgstr "Cannot harvest"
+
+msgid "無法建造"
+msgstr "Cannot build"
+
+msgid "無法完成訂單"
+msgstr "Cannot complete order"
+
+msgid "第一章：落腳"
+msgstr "Chapter 1: Settlement"
+
+msgid "第二章：紮根"
+msgstr "Chapter 2: Taking Root"
+
+msgid "第三章：風暴"
+msgstr "Chapter 3: Storm"
+
+msgid "第四章：繁榮"
+msgstr "Chapter 4: Prosperity"
+
+msgid "第五章：傳承"
+msgstr "Chapter 5: Legacy"
+
+msgid "落腳邊境"
+msgstr "Settling at the Border"
+
+msgid "你剛抵達這個偏遠的小鎮。先和鎮上的居民聊聊天，了解這裡的狀況。"
+msgstr "You've just arrived at this remote town. Chat with residents to understand the situation."
+
+msgid "和 3 位居民交談"
+msgstr "Talk to 3 residents"
+
+msgid "鎮民們開始接受你的存在了。"
+msgstr "The townspeople have begun to accept you."
+
+msgid "你是新來的吧？去跟大家聊聊，認識一下這裡的人。"
+msgstr "You're new here, right? Go chat and get to know everyone."
+
+msgid "度過寒冬"
+msgstr "Surviving the Winter"
+
+msgid "第一個冬天即將來臨。你得想辦法讓小鎮撐過去——方法不只一種。"
+msgstr "First winter is coming. Find a way to help the town survive — there's more than one way."
+
+msgid "搜集路線"
+msgstr "Gathering Route"
+
+msgid "靠囤積物資硬撐過去。"
+msgstr "Survive by stockpiling resources."
+
+msgid "儲備 100 食物"
+msgstr "Reserve 100 food"
+
+msgid "出院了！"
+msgstr "Discharged!"
+
+msgid "康復出院了！"
+msgstr "Recovered and discharged!"
+
+msgid "已經失蹤太久了...大家只能祈禱平安。"
+msgstr "Missing for too long... everyone can only pray."
+
+msgid "再也沒有回來...全鎮默哀。"
+msgstr "Never returned... the whole town mourns."
+
+msgid "大打出手！"
+msgstr "Got into a fight!"
+
+msgid "被送進診所！"
+msgstr "Sent to the clinic!"
+
+msgid "配合得越來越默契了！"
+msgstr "Working together more seamlessly!"
+
+msgid "的秘密關係被揭穿了！"
+msgstr "'s secret relationship exposed!"
+
+msgid "農田遭到不明破壞，村民們人心惶惶。"
+msgstr "Farms sabotaged, townspeople in panic."
+
+msgid "有人的農田被破壞了！好像是深夜發生的事..."
+msgstr "Someone's farm was destroyed! Happened at night..."
+
+msgid "居民關係動態"
+msgstr "Relationship Dynamics"
+
+msgid "最近的居民對話精華"
+msgstr "Recent Conversation Highlights"
+
+msgid "鎮上資源概況"
+msgstr "Town Resource Overview"
+
+msgid "選舉動態"
+msgstr "Election News"
+
+msgid "天氣狀況"
+msgstr "Weather Report"
+
+msgid "性格特徵"
+msgstr "Personality Traits"
+
+msgid "職業"
+msgstr "Profession"
+
+msgid "今日重要事件"
+msgstr "Today's Important Events"
+
+msgid "鎮上情報"
+msgstr "Town Intel"
+
+msgid "季節時間"
+msgstr "Season/Time"
+
+msgid "年"
+msgstr " year"
+
+msgid "八卦消息"
+msgstr "Gossip"
+
+msgid "沒什麼特別的"
+msgstr "Nothing special"
+
+msgid "居民動態速寫"
+msgstr "Resident Activity Snapshot"
+
+msgid "正在"
+msgstr "On the "
+
+msgid "閒逛"
+msgstr "wandering"
+
+msgid "好友"
+msgstr "Friend"
+
+msgid "不合"
+msgstr "Incompatible"
+
+msgid "有浪漫火花"
+msgstr "Romantic spark"
+
+msgid "已結束"
+msgstr "Ended"
+
+msgid "初次對話"
+msgstr "First Chat"
+
+msgid "話癆"
+msgstr "Chatterbox"
+
+msgid "社交達人"
+msgstr "Social Butterfly"
+
+msgid "聊天之王"
+msgstr "Chat King"
+
+msgid "全民好友"
+msgstr "Everyone's Friend"
+
+msgid "結怨"
+msgstr "Feud"
+
+msgid "結黨"
+msgstr "Form Faction"
+
+msgid "社交蝴蝶"
+msgstr "Social Butterfly"
+
+msgid "戲劇性"
+msgstr "Dramatic"
+
+msgid "暴力事件"
+msgstr "Violence"
+
+msgid "八點檔"
+msgstr "Drama"
+
+msgid "分手見證人"
+msgstr "Breakup Witness"
+
+msgid "心動"
+msgstr "Infatuated"
+
+msgid "初戀"
+msgstr "First Love"
+
+msgid "白頭偕老"
+msgstr "Growing Old Together"
+
+msgid "渣男/渣女"
+msgstr "Player"
+
+msgid "婚禮祝福"
+msgstr "Wedding Blessing"
+
+msgid "月老"
+msgstr "Matchmaker"
+
+msgid "心碎"
+msgstr "Heartbroken"
+
+msgid "調情高手"
+msgstr "Flirt Master"
+
+msgid "商人初體驗"
+msgstr "First Trade"
+
+msgid "交易老手"
+msgstr "Trade Expert"
+
+msgid "富甲一方"
+msgstr "Rich"
+
+msgid "富可敵國"
+msgstr "Very Rich"
+
+msgid "建設者"
+msgstr "Builder"
+
+msgid "建築大師"
+msgstr "Master Builder"
+
+msgid "鎮之完善"
+msgstr "Complete Town"
+
+msgid "學者"
+msgstr "Scholar"
+
+msgid "博學多才"
+msgstr "Polymath"
+
+msgid "科技先驅"
+msgstr "Tech Pioneer"
+
+msgid "創業家"
+msgstr "Entrepreneur"
+
+msgid "產業升級"
+msgstr "Industry Upgrade"
+
+msgid "產業帝國"
+msgstr "Industry Empire"
+
+msgid "雙線發展"
+msgstr "Dual Industry"
+
+msgid "初次收穫"
+msgstr "First Harvest"
+
+msgid "豐收之王"
+msgstr "Harvest King"
+
+msgid "農業大亨"
+msgstr "Agriculture Mogul"
+
+msgid "極品農產"
+msgstr "Premium Crop"
+
+msgid "工廠主"
+msgstr "Factory Owner"
+
+msgid "訂單達人"
+msgstr "Order Expert"
+
+msgid "量產專家"
+msgstr "Production Expert"
+
+msgid "囤積狂"
+msgstr "Hoarder"
+
+msgid "一週生存"
+msgstr "Week Survivor"
+
+msgid "月生存者"
+msgstr "Month Survivor"
+
+msgid "百日英雄"
+msgstr "Centennial Hero"
+
+msgid "週年慶"
+msgstr "Anniversary"
+
+msgid "老居民"
+msgstr "Old Resident"
+
+msgid "防衛者"
+msgstr "Defender"
+
+msgid "常勝將軍"
+msgstr "Victor"
+
+msgid "鐵壁防線"
+msgstr "Iron Wall"
+
+msgid "探險家"
+msgstr "Explorer"
+
+msgid "全境探索"
+msgstr "Full Exploration"
+
+msgid "凱旋歸來"
+msgstr "Safe Return"
+
+msgid "小鎮風光"
+msgstr "Town Charm"
+
+msgid "繁榮市鎮"
+msgstr "Prosperous Town"
+
+msgid "邊境都市"
+msgstr "Border City"
+
+msgid "人口爆發"
+msgstr "Population Boom"
+
+msgid "大都會"
+msgstr "Metropolis"
+
+msgid "民主初體驗"
+msgstr "First Election"
+
+msgid "當選鎮長"
+msgstr "Mayor Elected"
+
+msgid "政壇老手"
+msgstr "Political Veteran"
+
+msgid "新生命"
+msgstr "New Life"
+
+msgid "嬰兒潮"
+msgstr "Baby Boom"
+
+msgid "永別"
+msgstr "Farewell"
+
+msgid "村莊崛起"
+msgstr "Village Rises"
+
+msgid "城鎮繁榮"
+msgstr "Town Flourishes"
+
+msgid "大都市"
+msgstr "Metropolis"
+
+msgid "打工仔"
+msgstr "Worker"
+
+msgid "職業達人"
+msgstr "Job Master"
+
+msgid "全職通"
+msgstr "Job Specialist"
+
+msgid "公民責任"
+msgstr "Civic Duty"
+
+msgid "自耕農"
+msgstr "Self-Farmer"
+
+msgid "商賈"
+msgstr "Merchant"
+
+msgid "冒險王"
+msgstr "Adventure King"
+
+msgid "速通玩家"
+msgstr "Speed Runner"
+
+msgid "和平主義者"
+msgstr "Pacifist"
+
+msgid "存檔狂"
+msgstr "Save Collector"
+
+msgid "開拓者"
+msgstr "Pioneer"
+
+msgid "八卦通"
+msgstr "Gossip Pro"
+
+msgid "偷聽大師"
+msgstr "Eavesdrop Master"
+
+msgid "情報局長"
+msgstr "Intel Chief"
+
+msgid "四季輪轉"
+msgstr "Four Seasons"
+
+msgid "節慶參與"
+msgstr "Festival Participant"
+
+msgid "四季慶典"
+msgstr "Four Festivals"
+
+msgid "慶典常客"
+msgstr "Festival Regular"
+
+msgid "讀報人"
+msgstr "Newspaper Reader"
+
+msgid "日報收藏家"
+msgstr "Newspaper Collector"
+
+msgid "媒體狂熱"
+msgstr "Media Enthusiast"
+
+msgid "雲端玩家"
+msgstr "Cloud Player"
+
+msgid "傳奇小鎮"
+msgstr "Legendary Town"
+
+msgid "成就獵人"
+msgstr "Achievement Hunter"
+
+msgid "成就大師"
+msgstr "Achievement Master"
+
+msgid "完美主義者"
+msgstr "Perfectionist"
+
+msgid "為人父母"
+msgstr "Parent"
+
+msgid "二周目"
+msgstr "New Game Plus"
+
+msgid "三代傳承"
+msgstr "Three Generations"
+
+msgid "知己"
+msgstr "Best Friend"
+
+msgid "早起的鳥"
+msgstr "Early Bird"
+
+msgid "繁榮結局"
+msgstr "Prosperity Ending"
+
+msgid "小鎮成為遠近聞名的貿易中心"
+msgstr "Town becomes a renowned trade center"
+
+msgid "和平結局"
+msgstr "Peace Ending"
+
+msgid "所有人和睦共處，大團圓"
+msgstr "Everyone lives in harmony"
+
+msgid "傳奇結局"
+msgstr "Legend Ending"
+
+msgid "完美通關，你就是傳奇"
+msgstr "Perfect completion, you are a legend"
+
+msgid "個人結局"
+msgstr "Personal Ending"
+
+msgid "在邊境鎮找到了屬於自己的幸福"
+msgstr "Found personal happiness in Frontier Town"
+
+msgid "遊玩天數"
+msgstr "Days Played"
+
+msgid "朋友數"
+msgstr "Friends"
+
+msgid "完成任務"
+msgstr "Quests Done"
+
+msgid "聲望"
+msgstr "Reputation"
+
+msgid "最好的朋友"
+msgstr "Best Friend"
+
+msgid "伴侶"
+msgstr "Partner"
+
+msgid "邊境鎮志"
+msgstr "Frontier Town Chronicles"
+
+msgid "繼續遊玩"
+msgstr "Continue Playing"
+
+msgid "開始二周目"
+msgstr "Start New Game Plus"
+
+msgid "二周目將繼承：50% 銀幣、已建建築、已開發產業、部分繁榮度"
+msgstr "NG+ inherits: 50% silver, buildings, industries, prosperity"
+
+msgid "鎮民會記得上一代的故事"
+msgstr "Residents remember previous generation"
+
+msgid "確定要開始二周目嗎？"
+msgstr "Start New Game Plus?"
+
+msgid "代開始！"
+msgstr " begins!"
+
+msgid "睡覺"
+msgstr "Sleeping"
+
+msgid "吃飯"
+msgstr "Eating"
+
+msgid "工作"
+msgstr "working"
+
+msgid "散步"
+msgstr "Walking"
+
+msgid "巡邏"
+msgstr "Patrolling"
+
+msgid "看診"
+msgstr "Consulting"
+
+msgid "治療"
+msgstr "Treating"
+
+msgid "烹飪"
+msgstr "Cooking"
+
+msgid "釀酒"
+msgstr "Brewing"
+
+msgid "打鐵"
+msgstr "Smithing"
+
+msgid "禱告"
+msgstr "Praying"
+
+msgid "讀書"
+msgstr "Reading"
+
+msgid "採集"
+msgstr "Gathering"
+
+msgid "採礦中"
+msgstr "Mining"
+
+msgid "伐木中"
+msgstr "Logging"
+
+msgid "種植"
+msgstr "Planting"
+
+msgid "購物"
+msgstr "Shopping"
+
+msgid "做禮拜"
+msgstr "Attending service"
+
+msgid "聊天中"
+msgstr "Chatting"
+
+msgid "喝酒"
+msgstr "Drinking"
+
+msgid "回家"
+msgstr "Going home"
+
+msgid "前往"
+msgstr "Going to "
+
+msgid "說"
+msgstr "says"
+
+msgid "想"
+msgstr "thinks"
+
+msgid "心想"
+msgstr "thinks"
+
+msgid "嘆氣"
+msgstr "sighs"
+
+msgid "微笑"
+msgstr "smiles"
+
+msgid "皺眉"
+msgstr "frowns"
+
+msgid "摯友"
+msgstr "Best Friends"
+
+msgid "點頭之交"
+msgstr "Acquaintance"
+
+msgid "陌生人"
+msgstr "Stranger"
+
+msgid "仇人"
+msgstr "Enemy"
+
+msgid "死對頭"
+msgstr "Nemesis"
+
+msgid "情侶"
+msgstr "Couple"
+
+msgid "配偶"
+msgstr "Spouse"
+
+msgid "暗戀對象"
+msgstr "Crush"
+
+msgid "春"
+msgstr "Spring"
+
+msgid "夏"
+msgstr "Summer"
+
+msgid "秋"
+msgstr "Autumn"
+
+msgid "冬"
+msgstr "Winter"
+
+msgid "晴天"
+msgstr "Sunny"
+
+msgid "多雲"
+msgstr "Cloudy"
+
+msgid "下雨"
+msgstr "Rainy"
+
+msgid "暴風雨"
+msgstr "Storm"
+
+msgid "下雪"
+msgstr "Snowy"
+
+msgid "暴風雪"
+msgstr "Blizzard"
+
+msgid "霧"
+msgstr "Fog"
+
+msgid "大風"
+msgstr "Windy"
+
+msgid "酷暑"
+msgstr "Heat Wave"
+
+msgid "乾旱"
+msgstr "Drought"
+
+msgid "非常開心"
+msgstr "Very Happy"
+
+msgid "開心"
+msgstr "Happy"
+
+msgid "平靜"
+msgstr "Calm"
+
+msgid "不安"
+msgstr "Uneasy"
+
+msgid "難過"
+msgstr "Sad"
+
+msgid "憤怒"
+msgstr "Angry"
+
+msgid "崩潰"
+msgstr "Breakdown"
+
+msgid "興奮"
+msgstr "Excited"
+
+msgid "無聊"
+msgstr "Bored"
+
+msgid "疲倦"
+msgstr "Tired"
+
+msgid "生病"
+msgstr "Sick"
+
+msgid "受傷"
+msgstr "Injured"
+
+msgid "恐懼"
+msgstr "Afraid"
+
+msgid "盜匪襲擊"
+msgstr "Bandit Raid"
+
+msgid "商人到訪"
+msgstr "Merchant Visit"
+
+msgid "流浪者到來"
+msgstr "Wanderer Arrives"
+
+msgid "節慶"
+msgstr "Festival"
+
+msgid "春祭"
+msgstr "Spring Festival"
+
+msgid "仲夏篝火"
+msgstr "Midsummer Bonfire"
+
+msgid "豐收節"
+msgstr "Harvest Festival"
+
+msgid "冬至"
+msgstr "Winter Solstice"
+
+msgid "選舉"
+msgstr "Election"
+
+msgid "瘟疫爆發"
+msgstr "Plague Outbreak"
+
+msgid "豐收"
+msgstr "Bountiful Harvest"
+
+msgid "旱災"
+msgstr "Drought"
+
+msgid "暴風雨來襲"
+msgstr "Storm Approaching"
+
+msgid "新居民到來"
+msgstr "New Resident Arrives"
+
+msgid "戰鬥"
+msgstr "Combat"
+
+msgid "醫療"
+msgstr "Medical"
+
+msgid "社交技巧"
+msgstr "Social Skills"
+
+msgid "手工藝"
+msgstr "Crafting"
+
+msgid "遊戲控制"
+msgstr "Game Control"
+
+msgid "AI 供應商"
+msgstr "AI Provider"
+
+msgid "模擬對話"
+msgstr "Simulated Chat"
+
+msgid "AI 已連接："
+msgstr "AI Connected: "
+
+msgid "備用：Groq"
+msgstr "Backup: Groq"
+
+msgid "AI 狀態"
+msgstr "AI Status"
+
+msgid "請在設定中配置 AI 提供商和 API Key"
+msgstr "Configure AI provider and API key in Settings"
+
+msgid "歡迎回來，"
+msgstr "Welcome back, "
+
+msgid "人"
+msgstr " people"
+
+msgid "點擊右側「聊天」頁籤，選一位居民打個招呼吧！"
+msgstr "Click the \"Chat\" tab and greet a resident!"
+
+msgid "快完成了！任務即將自動結算。"
+msgstr "Almost done! Quest will auto-complete soon."
+
+msgid "有多種方式過冬：囤物資、交朋友或蓋建築。點「任務」頁籤查看詳情。"
+msgstr "Many ways to survive winter: stockpile, make friends, or build. Check Quests tab."
+
+msgid "試試在「產業」頁籤開啟第一個產業，或和更多居民交流提升人脈。"
+msgstr "Try opening first industry in Industry tab or chat more."
+
+msgid "小鎮開始成長了！查看「任務」頁籤了解當前目標。"
+msgstr "Town is growing! Check Quests tab for goals."
+
+msgid "危機即將到來，做好準備！查看「任務」頁籤了解詳情。"
+msgstr "Crisis coming! Prepare by checking Quests tab."
+
+msgid "未寄出的情書"
+msgstr "Unsent Love Letter"
+
+msgid "幫他送出情書"
+msgstr "Help him send the love letter"
+
+msgid "鼓勵他自己去"
+msgstr "Encourage him to go himself"
+
+msgid "NPC 個人任務定義"
+msgstr "NPC Personal Quest Def"
+
+msgid "語言"
+msgstr "Language"
+
+msgid "繁體中文"
+msgstr "Traditional Chinese"
+
+msgid "English"
+msgstr "English"
+
+msgid "或其他"
+msgstr "or other"
+
+msgid "位居民交談。繼續點擊居民聯天吧！"
+msgstr " residents. Keep chatting!"
+
+msgid "已和"
+msgstr "Chatted with "
+
+msgid "沒有近期記憶。"
+msgstr "No recent memories."
+
+msgid "認識"
+msgstr "Acquaintance"
+
+msgid "朋友"
+msgstr "Friend"
+
+msgid "對手"
+msgstr "Rival"
+
+msgid "敵人"
+msgstr "Enemy"
+
+msgid "天生善良且富有同理心"
+msgstr "Naturally kind and empathetic"
+
+msgid "容易得罪別人"
+msgstr "Easily offends others"
+
+msgid "在社交場合感到不自在"
+msgstr "Feels uncomfortable in social situations"
+
+msgid "天生具有吸引力"
+msgstr "Naturally attractive"
+
+msgid "喜歡散播和聽取傳聞"
+msgstr "Enjoys spreading and hearing rumors"
+
+msgid "在辛勤工作中獲得滿足"
+msgstr "Finds satisfaction in hard work"
+
+msgid "盡可能避免工作"
+msgstr "Avoids work whenever possible"
+
+msgid "一切都要做到最好"
+msgstr "Everything must be done perfectly"
+
+msgid "思維跳脫框架"
+msgstr "Thinks outside the box"
+
+msgid "總是看到光明面"
+msgstr "Always sees the bright side"
+
+msgid "預期最壞的結果"
+msgstr "Expects the worst outcome"
+
+msgid "情緒波動劇烈"
+msgstr "Wild emotional swings"
+
+msgid "很少表露情感"
+msgstr "Rarely shows emotions"
+
+msgid "容易墜入愛河"
+msgstr "Falls in love easily"
+
+msgid "嫉妒心強"
+msgstr "Very jealous"
+
+msgid "晚睡晚起的夜行動物"
+msgstr "Night creature, late to bed and late to rise"
+
+msgid "天未亮就起床"
+msgstr "Rises before dawn"
+
+msgid "熱愛美食"
+msgstr "Loves good food"
+
+msgid "禁欲且自律"
+msgstr "Ascetic and disciplined"
+
+msgid "對一切充滿好奇"
+msgstr "Curious about everything"
+
+msgid "年 "
+msgstr " Year "
+
+msgid "天投票"
+msgstr " days voting"
+
+msgid "天競選期"
+msgstr " days campaign"
+
+msgid "票（"
+msgstr " votes ("
+
+msgid "當選（"
+msgstr " elected ("
+
+msgid "(你已投票)"
+msgstr "(You voted)"
+
+msgid "外出）"
+msgstr "Away)"
+
+msgid "建造中 "
+msgstr "Building "
+
+msgid "天）"
+msgstr " days)"
+
+msgid "可收穫！"
+msgstr "Ready to harvest!"
+
+msgid "升級 Lv"
+msgstr "Upgrade Lv"
+
+msgid "尚無存檔。開始新遊戲時聊天記錄會自動存檔。"
+msgstr "No archives. Chat logs are auto-saved when starting a new game."
+
+msgid "沒有技能資料"
+msgstr "No skill data"
+
+msgid "設定已儲存"
+msgstr "Settings saved"
+
+msgid "+備用"
+msgstr "+Backup"
+
+msgid "AI:未連接"
+msgstr "AI:Disconnected"
+
+msgid "供應商"
+msgstr "Provider"
+
+msgid "海螺"
+msgstr "Conch"
+
+msgid "金鑰"
+msgstr "Key"
+
+msgid "輸入你的"
+msgstr "Enter your"
+
+msgid "備用"
+msgstr "Backup"
+
+msgid "（主 AI "
+msgstr "(Primary AI "
+
+msgid "超限時自動切換）"
+msgstr "auto-switch on limit)"
+
+msgid "（選填）"
+msgstr "(Optional)"
+
+msgid "秒）"
+msgstr "s)"
+
+msgid "慢速（3"
+msgstr "Slow (3"
+
+msgid "正常（2"
+msgstr "Normal (2"
+
+msgid "快速（1"
+msgstr "Fast (1"
+
+msgid "極快（"
+msgstr "Very Fast ("
+
+msgid "登入後可使用雲端存檔同步功能"
+msgstr "Login to use cloud save sync"
+
+msgid "對方"
+msgstr "them"
+
+msgid "社交路線"
+msgstr "Social Route"
+
+msgid "建設路線"
+msgstr "Building Route"
+
+msgid "交朋友，靠人情味度過寒冬。"
+msgstr "Make friends, survive winter with camaraderie."
+
+msgid "蓋建築改善居住條件。"
+msgstr "Build structures to improve living conditions."
+
+msgid "與 3 位居民成為朋友"
+msgstr "Become friends with 3 residents"
+
+msgid "建造 2 棟新建築"
+msgstr "Build 2 new buildings"
+
+msgid "建立經濟"
+msgstr "Build Economy"
+
+msgid "開始發展經濟，建設和產業讓小鎮自給自足。"
+msgstr "Develop the economy to make the town self-sufficient."
+
+msgid "經濟路線"
+msgstr "Economy Route"
+
+msgid "產業路線"
+msgstr "Industry Route"
+
+msgid "人脈路線"
+msgstr "Network Route"
+
+msgid "發展產業和工廠。"
+msgstr "Develop industries and factories."
+
+msgid "開啟一項產業"
+msgstr "Open one industry"
+
+msgid "建造一座建築"
+msgstr "Build one structure"
+
+msgid "認識更多人，建立人脈。"
+msgstr "Meet more people, build networks."
+
+msgid "與 5 位居民交談"
+msgstr "Talk to 5 residents"
+
+msgid "抵禦入侵"
+msgstr "Defend Against Invasion"
+
+msgid "保衛小鎮"
+msgstr "Defend the Town"
+
+msgid "軍事路線"
+msgstr "Military Route"
+
+msgid "外交路線"
+msgstr "Diplomatic Route"
+
+msgid "結局與傳承"
+msgstr "Ending & Legacy"
+
+msgid "選單"
+msgstr "Menu"
+
+msgid "返回"
+msgstr "Back"
+
+msgid "關係"
+msgstr "Relations"
+
+msgid "關係網"
+msgstr "Relations"
+
+msgid "紀錄"
+msgstr "Records"
+
+msgid "交談"
+msgstr "Talk"
+
+msgid "了解"
+msgstr "Got it"
+
+msgid "確定"
+msgstr "OK"
+
+msgid "訪客"
+msgstr "Guest"
+
+msgid "聯絡人"
+msgstr "Contacts"
+
+msgid "尚未對話"
+msgstr "No chats yet"
+
+msgid "選擇一個居民開始聊天"
+msgstr "Choose a resident to start chatting"
+
+msgid "對話吧！"
+msgstr "!"
+
+msgid "你"
+msgstr "You"
+
+msgid "刷新進度"
+msgstr "Refresh Progress"
+
+msgid "速度倍率"
+msgstr "Speed Multiplier"
+
+msgid "背景音樂"
+msgstr "Background Music"
+
+msgid "執行工作"
+msgstr "Work Action"
+
+msgid "全鎮關係網"
+msgstr "Town Relationship Map"
+
+msgid "戀愛/婚姻"
+msgstr "Romance/Marriage"
+
+msgid "單戀"
+msgstr "Crush"
+
+msgid "敵對"
+msgstr "Rivals"
+
+msgid "與"
+msgstr " & "
+
+msgid "和"
+msgstr " and "
+
+msgid "是夫妻"
+msgstr " are married"
+
+msgid "是前任"
+msgstr "(ex)"
+
+msgid "是死對頭"
+msgstr "(nemesis)"
+
+msgid "對你的好感"
+msgstr "Affinity toward you"
+
+msgid "目前沒有戀愛或仇恨傳聞"
+msgstr "No romance or feud rumors right now"
+
+msgid "鬧矛盾"
+msgstr " are at odds"
+
+msgid "小鎮伺服器 AI（免金鑰）"
+msgstr "Town Server AI (no key needed)"
+
+msgid "進階：自備 AI 金鑰（選用）"
+msgstr "Advanced: Bring Your Own AI Key (optional)"
+
+msgid "🏘️ 小鎮 AI 已啟用（免設定）"
+msgstr "🏘️ Town AI enabled (no setup)"
+
+msgid "請先選擇供應商並輸入 API 金鑰"
+msgstr "Select a provider and enter an API key first"
+
+msgid "測試連線"
+msgstr "Test Connection"
+
+msgid "測試中..."
+msgstr "Testing..."
+
+msgid "連線成功"
+msgstr "Connected"
+
+msgid "連線失敗"
+msgstr "Connection failed"
+
+msgid "密碼"
+msgstr "Password"
+
+msgid "新密碼"
+msgstr "New Password"
+
+msgid "確認密碼"
+msgstr "Confirm Password"
+
+msgid "確認新密碼"
+msgstr "Confirm New Password"
+
+msgid "重設密碼"
+msgstr "Reset Password"
+
+msgid "忘記密碼？"
+msgstr "Forgot password?"
+
+msgid "← 返回登入"
+msgstr "← Back to Login"
+
+msgid "輸入帳號和 Email 來重設密碼"
+msgstr "Enter your username and email to reset your password"
+
+msgid "儲存失敗。"
+msgstr "Save failed."
+
+msgid "設定已儲存。"
+msgstr "Settings saved."
+
+msgid "遊戲已暫停。"
+msgstr "Game paused."
+
+msgid "遊戲已繼續。"
+msgstr "Game resumed."
+
+msgid "遊戲已儲存至雲端。"
+msgstr "Game saved to cloud."
+
+msgid "雲端儲存失敗。"
+msgstr "Cloud save failed."
+
+msgid "雲端同步失敗。"
+msgstr "Cloud sync failed."
+
+msgid "雲端存檔已刪除。"
+msgstr "Cloud save deleted."
+
+msgid "載入雲端存檔..."
+msgstr "Loading cloud save..."
+
+msgid "載入雲端存檔失敗。"
+msgstr "Failed to load cloud save."
+
+msgid "存檔已匯出。"
+msgstr "Save exported."
+
+msgid "存檔已匯入。"
+msgstr "Save imported."
+
+msgid "切換城鎮失敗。"
+msgstr "Failed to switch town."
+
+msgid "儲存空間已滿!請刪除舊城鎮(城鎮列表),或註冊登入改用雲端存檔。"
+msgstr "Storage is full! Delete old towns (Town List), or register/login to use cloud saves."
+
+msgid "存檔會自動同步至雲端，在任何裝置登入即可讀取。"
+msgstr "Saves sync to the cloud automatically — log in on any device to load them."
+
+msgid "登入後存檔會自動同步至雲端，在任何裝置都能讀取。"
+msgstr "After logging in, saves sync to the cloud automatically and can be loaded on any device."
+
+msgid "<p class=\"muted-text\">雲端尚無城鎮存檔。</p>"
+msgstr "<p class=\"muted-text\">No town saves in the cloud yet.</p>"
+
+msgid "<div class=\"econ-section\"><h3>💾 帳號與存檔</h3>"
+msgstr "<div class=\"econ-section\"><h3>💾 Account & Saves</h3>"
+
+msgid "聽說新來的周明,好像跟趙霞走得很近...而馬強的臉色可不太好看。"
+msgstr "Word is the newcomer Zhou Ming has been getting close to Zhao Xia... and Ma Qiang doesn't look too happy about it."
+
+msgid "吳達和楊鋒又在酒館互看不順眼了,他們的樑子結很久了。"
+msgstr "Wu Da and Yang Feng were glaring at each other in the tavern again — that grudge goes way back."
+
+msgid "尋覓真愛"
+msgstr "Seeking True Love"
+
+msgid "憧憬愛情"
+msgstr "Longing for Love"
+
+msgid "怦然心動"
+msgstr "A Fluttering Heart"
+
+msgid "兩情相悅"
+msgstr "Mutual Affection"
+
+msgid "步入婚姻"
+msgstr "Into Marriage"
+
+msgid "開店創業"
+msgstr "Start a Business"
+
+msgid "胸懷創業夢"
+msgstr "A Dream of One's Own Shop"
+
+msgid "攢下第一桶金"
+msgstr "Saved the First Fortune"
+
+msgid "盤下店面"
+msgstr "Secured a Storefront"
+
+msgid "開張大吉"
+msgstr "Grand Opening"
+
+msgid "技藝登峰"
+msgstr "Master the Craft"
+
+msgid "拜師苦練"
+msgstr "Training Under a Master"
+
+msgid "小有名氣"
+msgstr "Gaining a Name"
+
+msgid "獨當一面"
+msgstr "Standing on Their Own"
+
+msgid "一代宗師"
+msgstr "A True Grandmaster"
+
+msgid "浪跡天涯"
+msgstr "Wander the World"
+
+msgid "嚮往遠方"
+msgstr "Yearning for Distant Lands"
+
+msgid "打點行裝"
+msgstr "Packing for the Journey"
+
+msgid "踏上旅程"
+msgstr "Setting Off"
+
+msgid "滿載而歸"
+msgstr "Home, Fulfilled"
+
+msgid "闔家團圓"
+msgstr "A Happy Family"
+
+msgid "渴望有個家"
+msgstr "Longing for a Family"
+
+msgid "遇見對的人"
+msgstr "Met the Right One"
+
+msgid "開枝散葉"
+msgstr "Starting a Family"
+
+msgid "兒孫繞膝"
+msgstr "Surrounded by Family"
+
+msgid "名留青史"
+msgstr "A Lasting Legacy"
+
+msgid "胸懷大志"
+msgstr "Great Ambitions"
+
+msgid "嶄露頭角"
+msgstr "Making a Mark"
+
+msgid "舉足輕重"
+msgstr "A Person of Influence"
+
+msgid "榮譽"
+msgstr "Honor"
+
+msgid "已實現"
+msgstr "Achieved"
+
+msgid "助夢"
+msgstr "Support Dream"
+
+msgid "夢想進行中"
+msgstr "Dreams in Motion"
+
+msgid "正在追逐「"
+msgstr " is chasing \""
+
+msgid "」:"
+msgstr "\": "
+
+msgid "夢想成真"
+msgstr "A Dream Come True"
+
+msgid "心情來源"
+msgstr "Mood Sources"
+
+msgid "收到禮物"
+msgstr "Received a gift"
+
+msgid "收到最愛的禮物"
+msgstr "Got a favorite gift"
+
+msgid "愉快的聊天"
+msgstr "A pleasant chat"
+
+msgid "被說了難聽的話"
+msgstr "Heard harsh words"
+
+msgid "有人向我表白"
+msgstr "Someone confessed to me"
+
+msgid "戀愛的甜蜜"
+msgstr "Sweetness of new love"
+
+msgid "新婚的幸福"
+msgstr "Newlywed bliss"
+
+msgid "被劈腿背叛"
+msgstr "Betrayed by cheating"
+
+msgid "剛失戀"
+msgstr "Just heartbroken"
+
+msgid "離婚的傷痛"
+msgstr "Pain of divorce"
+
+msgid "痛失至親"
+msgstr "Lost a loved one"
+
+msgid "跟人結了樑子"
+msgstr "Made an enemy"
+
+msgid "嫉妒的煎熬"
+msgstr "Torment of jealousy"
+
+msgid "離夢想更近了"
+msgstr "Closer to my dream"
+
+msgid "實現了畢生夢想"
+msgstr "Achieved a lifelong dream"
+
+msgid "被鎮長公開稱讚"
+msgstr "Praised by the mayor"
+
+msgid "被鎮長說壞話"
+msgstr "Slandered by the mayor"
+
+msgid "祭典的歡樂"
+msgstr "Festival joy"
+
+msgid "當前行動"
+msgstr "Doing now"
+
+msgid "為什麼"
+msgstr "Why"
+
+msgid "接下來"
+msgstr "Next"
+
+msgid "對城鎮"
+msgstr "On the town"
+
+msgid "累壞了,需要補眠"
+msgstr "Exhausted, needs sleep"
+
+msgid "照著作息就寢"
+msgstr "Turning in on schedule"
+
+msgid "肚子餓得受不了"
+msgstr "Starving"
+
+msgid "到了用餐時間"
+msgstr "Mealtime"
+
+msgid "崗位上"
+msgstr " job"
+
+msgid "想跟大家聚聚"
+msgstr "Wants to be around people"
+
+msgid "太久沒跟人說話了"
+msgstr "Hasn't talked to anyone in ages"
+
+msgid "壓力太大,需要放鬆"
+msgstr "Stressed out, needs to unwind"
+
+msgid "享受閒暇時光"
+msgstr "Enjoying free time"
+
+msgid "沒什麼事,四處走走"
+msgstr "Nothing to do, just wandering"
+
+msgid "放不下逝去的人,前往墓園"
+msgstr "Grieving, heading to the graveyard"
+
+msgid "夜貓子睡不著,仰望星空"
+msgstr "Night owl who can't sleep, stargazing"
+
+msgid "夜裡出來透透氣"
+msgstr "Out for some night air"
+
+msgid "趁夜深搞點小惡作劇"
+msgstr "Up to some late-night mischief"
+
+msgid "趕著去上工"
+msgstr "Rushing to work"
+
+msgid "準備回家休息"
+msgstr "Heading home to rest"
+
+msgid "離鎮外出探險"
+msgstr "Away exploring"
+
+msgid "沒有特別的事"
+msgstr "Nothing in particular"
+
+msgid "朝「"
+msgstr "Working toward \""
+
+msgid "」努力"
+msgstr "\""
+
+msgid "鼓起勇氣接近"
+msgstr "Working up the nerve to approach "
+
+msgid "打算去吃點東西"
+msgstr "Plans to grab a bite"
+
+msgid "想好好睡一覺"
+msgstr "Wants a good night's sleep"
+
+msgid "想找人聊聊"
+msgstr "Wants someone to talk to"
+
+msgid "想找點樂子放鬆"
+msgstr "Wants some fun to unwind"
+
+msgid "過好平常的一天"
+msgstr "Just getting through an ordinary day"
+
+msgid "對糧食配給不太滿意"
+msgstr "Unhappy with the food rations"
+
+msgid "覺得日子過得太操勞"
+msgstr "Feels life is too much of a grind"
+
+msgid "希望鎮上多點娛樂"
+msgstr "Wishes the town had more to do"
+
+msgid "覺得鎮上有點冷清"
+msgstr "Finds the town a bit lonely"
+
+msgid "對居住環境不太滿意"
+msgstr "Unhappy with the living conditions"
+
+msgid "嫌鎮上不夠美觀"
+msgstr "Thinks the town could look nicer"
+
+msgid "最看不順眼"
+msgstr "Can't stand "
+
+msgid "對現在的生活很滿意"
+msgstr "Quite content with life right now"
+
+msgid "大致上過得去"
+msgstr "Getting by well enough"
+
+msgid "安慰"
+msgstr "Comfort"
+
+msgid "紓解對方壓力,拉近關係"
+msgstr "Ease their stress, grow closer"
+
+msgid "別太往心裡去,有我在呢。"
+msgstr "Don't take it to heart, I'm here for you."
+
+msgid "打聽"
+msgstr "Ask around"
+
+msgid "探聽鎮上最新的八卦"
+msgstr "Fish for the latest town gossip"
+
+msgid "最近鎮上有什麼新鮮事嗎?"
+msgstr "Anything new around town lately?"
+
+msgid "說服"
+msgstr "Persuade"
+
+msgid "選舉期間可拉票;平時緩和恩怨"
+msgstr "Sway votes during elections; ease grudges otherwise"
+
+msgid "聽我說,我覺得你可以再想想…"
+msgstr "Hear me out, I think you should reconsider…"
+
+msgid "調解"
+msgstr "Mediate"
+
+msgid "替對方化解和某人的仇恨"
+msgstr "Help them defuse a feud with someone"
+
+msgid "別跟人結怨了,退一步海闊天空。"
+msgstr "Don't hold a grudge — let it go."
+
+msgid "示好"
+msgstr "Flirt"
+
+msgid "增進浪漫好感(關係太差會尷尬)"
+msgstr "Build romance (awkward if they dislike you)"
+
+msgid "跟你在一起總是特別開心。"
+msgstr "I'm always happier when I'm with you."
+
+msgid "威脅"
+msgstr "Threaten"
+
+msgid "讓對方畏懼,但信任與好感重挫"
+msgstr "Instill fear, but trust and liking crash"
+
+msgid "你最好識相點,別逼我出手。"
+msgstr "You'd better wise up, don't make me act."
+
+msgid "委託"
+msgstr "Request"
+
+msgid "請對方幫忙(信任夠才會答應)"
+msgstr "Ask a favor (agrees only if they trust you)"
+
+msgid "有件事想拜託你幫個忙。"
+msgstr "There's something I'd like your help with."
+
+msgid "覺得被支持了"
+msgstr " feels supported"
+
+msgid "壓力"
+msgstr "Stress"
+
+msgid "壓低聲音"
+msgstr "lowers their voice"
+
+msgid "跟你透露了一則八卦"
+msgstr " shares a bit of gossip with you"
+
+msgid "說最近沒什麼新鮮事"
+msgstr " says nothing much is new"
+
+msgid "更傾向支持"
+msgstr " leans more toward "
+
+msgid "選舉風向被你撥動了一點"
+msgstr "You nudged the election a little"
+
+msgid "不吃你這套,反而更防著你"
+msgstr " isn't buying it, and now guards against you"
+
+msgid "很高興你挺他參選"
+msgstr " is glad you back their campaign"
+
+msgid "你勸"
+msgstr "You talked "
+
+msgid "別那麼針對"
+msgstr " into easing off"
+
+msgid "敵意"
+msgstr "Hostility"
+
+msgid "點頭聽著你說"
+msgstr " nods along"
+
+msgid "你緩和了"
+msgstr "You eased "
+
+msgid "的敵意"
+msgstr "'s hostility"
+
+msgid "好感(對"
+msgstr "Liking (toward "
+
+msgid "最近沒跟誰結怨"
+msgstr " hasn't fallen out with anyone lately"
+
+msgid "心跳漏了一拍"
+msgstr "'s heart skips a beat"
+
+msgid "太唐突了,"
+msgstr "Too forward — "
+
+msgid "有點尷尬"
+msgstr " feels awkward"
+
+msgid "怕了你,但更討厭你了"
+msgstr " fears you now, but hates you more"
+
+msgid "信任"
+msgstr "Trust"
+
+msgid "答應幫你了"
+msgstr " agrees to help"
+
+msgid "跟你還不夠熟,婉拒了"
+msgstr " doesn't know you well enough, and declines"
+
+msgid "把你當成對頭"
+msgstr " sees you as a rival"
+
+msgid "把你當成摯友"
+msgstr " sees you as a best friend"
+
+msgid "把你當朋友"
+msgstr " sees you as a friend"
+
+msgid "鎮長居中調解,"
+msgstr "The mayor mediated, and "
+
+msgid "的敵意緩和了一些"
+msgstr "'s hostility softened a little"
+
+msgid "答應幫"
+msgstr "agreed to help "
+
+msgid "一個忙"
+msgstr " with a favor"
+
+msgid "今日頭條"
+msgstr "Today's Headlines"
+
+msgid "完整日報"
+msgstr "Full paper"
+
+msgid "故事"
+msgstr "Story"
+
+msgid "膽識"
+msgstr "Grit"
+
+msgid "智慧"
+msgstr "Wit"
+
+msgid "體魄"
+msgstr "Vigor"
+
+msgid "小鎮劇場"
+msgstr "Town Theater"
+
+msgid "商業自由鎮"
+msgstr "Free Trade Town"
+
+msgid "軍事要塞"
+msgstr "Military Fortress"
+
+msgid "農業共同體"
+msgstr "Agrarian Commune"
+
+msgid "學術聚落"
+msgstr "Scholarly Enclave"
+
+msgid "浪漫小鎮"
+msgstr "Town of Romance"
+
+msgid "龍蛇混雜之地"
+msgstr "Den of Intrigue"
+
+msgid "金流暢旺,商人與旅人絡繹不絕"
+msgstr "Coin flows freely; merchants and travelers come and go"
+
+msgid "壁壘森嚴,以武立鎮"
+msgstr "Walls stand tall; the town lives by the blade"
+
+msgid "阡陌相連,自給自足"
+msgstr "Fields upon fields; self-sufficient and content"
+
+msgid "崇尚知識,書香瀰漫"
+msgstr "A place that prizes knowledge and learning"
+
+msgid "愛情故事在此處處上演"
+msgstr "Love stories unfold on every corner"
+
+msgid "恩怨情仇,暗流洶湧"
+msgstr "Grudges and passions; undercurrents run deep"
+
+msgid "小鎮的樣貌轉變了,如今成為「"
+msgstr "The town has transformed — it is now a \""
+
+msgid "小鎮的樣貌逐漸成形——「"
+msgstr "The town is taking shape — a \""
+
+msgid "小鎮轉型為:"
+msgstr "Town transformed into: "
+
+msgid "小鎮成形為:"
+msgstr "Town took shape as: "
+
+msgid "商業"
+msgstr "Commerce"
+
+msgid "軍事"
+msgstr "Military"
+
+msgid "學術"
+msgstr "Scholarship"
+
+msgid "江湖"
+msgstr "Intrigue"
+
+msgid "小鎮的長期傾向(近期權重)"
+msgstr "The town's long-term leanings (recent weighting)"
+
+msgid "路線會隨你的長期經營自然轉變——它記錄的是這座小鎮的故事。"
+msgstr "The path shifts naturally with how you run the town over time — it is the record of this town's story."
+
+msgid "第一天"
+msgstr "Day One"
+
+msgid "略過教學"
+msgstr "Skip tutorial"
+
+msgid "認識一位居民"
+msgstr "Meet a villager"
+
+msgid "點地圖上任何一位居民,打開資訊卡,看看他現在在做什麼、心情從何而來。"
+msgstr "Tap any villager on the map to open their card — see what they're doing and where their mood comes from."
+
+msgid "發現一段關係"
+msgstr "Discover a relationship"
+
+msgid "打開「關係網」,看看鎮上誰喜歡誰、誰又跟誰鬧彆扭。"
+msgstr "Open the Relationship Web to see who loves whom, and who's at odds."
+
+msgid "出手互動"
+msgstr "Take action"
+
+msgid "找一位居民聊天,試試「意圖鈕」(安慰/打聽/示好…),看看你的一句話造成了什麼。"
+msgstr "Chat with a villager and try an intent button (Comfort / Ask around / Flirt…) — see what your words change."
+
+msgid "留下你的選擇"
+msgstr "Leave your mark"
+
+msgid "送一份禮物,或用「調解」幫某人化解心結——做一件會被記住的事。"
+msgstr "Give a gift, or use Mediate to defuse someone's grudge — do something that will be remembered."
+
+msgid "看見後果"
+msgstr "See the consequence"
+
+msgid "翻開首頁「今日頭條」並點一則新聞,看看小鎮怎麼記錄你參與的故事。"
+msgstr "Open Today's Headlines on the home page and tap a story to see how the town records what you were part of."
+
+msgid "觀察居民 → 發現矛盾 → 出手干預 → 小鎮回應。從今天起,這座小鎮會記得你做過的每一件事。"
+msgstr "Observe villagers → spot the conflict → step in → the town responds. From today on, this town remembers everything you do."
+
+msgid "你是一位小說家。"
+msgstr "You are a novelist."
+
+msgid "你在為小鎮社群「鎮民動態」寫一則貼文。"
+msgstr "You are writing a post for the town social feed \"Town Feed\"."
+
+msgid "他的人生夢想是「"
+msgstr "Their life dream is \""
+
+msgid "」,現在剛剛達成了一個階段:「"
+msgstr "\", and they have just reached a milestone: \""
+
+msgid "」。"
+msgstr "\"."
+
+msgid "這是他夢想的最終實現!"
+msgstr "This is the ultimate fulfillment of their dream!"
+
+msgid "【格式】只寫一句貼文,表達此刻的心情與這個里程碑,口語、真摯、可加表情符號。繁體中文,不要有其他文字。"
+msgstr "[Format] Write only one post expressing this moment and milestone — casual, heartfelt, emoji ok. No other text."
+
+msgid "我做到了!「"
+msgstr "I did it! \""
+
+msgid "」——這一路走來,值得了。"
+msgstr "\" — every step of the way was worth it."
+
+msgid "夢想成真的這一刻,我會記得一輩子。"
+msgstr "I'll remember this moment my dream came true for the rest of my life. "
+
+msgid "離夢想又近了一步:"
+msgstr "One step closer to my dream: "
+
+msgid "。繼續加油!"
+msgstr ". Keep pushing!"
+
+msgid "今天達成了「"
+msgstr "Reached \""
+
+msgid "」,朝著"
+msgstr "\" today, moving toward "
+
+msgid "前進中 💪"
+msgstr " 💪"
+
+msgid "人生里程碑:"
+msgstr "Life milestone: "
+
+msgid "的夢想「"
+msgstr "'s dream \""
+
+msgid "」邁入:"
+msgstr "\" advances to: "
+
+msgid "(達成!)"
+msgstr " (achieved!)"
+
+msgid "實現了畢生夢想「"
+msgstr " realized their lifelong dream \""
+
+msgid "朝夢想邁進:「"
+msgstr " moves toward their dream: \""
+
+msgid "鎮長為"
+msgstr "The mayor gave "
+
+msgid "」加了一把勁!"
+msgstr "\" a boost!"
+
+msgid "鎮長支持我的夢想,好感動!"
+msgstr "The mayor supports my dream — I'm so moved!"
+
+msgid "你鼓勵了"
+msgstr "You encouraged "
+
+msgid "追逐「"
+msgstr " to chase their dream of \""
+
+msgid "」的夢想!"
+msgstr "\"!"
+
+msgid "為了"
+msgstr " over "
+
+msgid "暗自較勁,關係越來越僵..."
+msgstr " are quietly competing — things are getting frostier between them..."
+
+msgid "對"
+msgstr " toward "
+
+msgid "的心動,好像悄悄加深了..."
+msgstr "'s heart seems to have quietly grown fonder..."
+
+msgid "看著"
+msgstr " watches "
+
+msgid ",心裡很不是滋味..."
+msgstr " with a bitter pang in their heart..."
+
+msgid "欸你有沒有發現,"
+msgstr "Hey, have you noticed — "
+
+msgid "看"
+msgstr " looks at "
+
+msgid "的眼神不太一樣..."
+msgstr " a little differently these days..."
+
+msgid "我猜"
+msgstr "I bet "
+
+msgid "有意思,不然幹嘛老是找藉口靠近!"
+msgstr ", why else keep finding excuses to get close!"
+
+msgid "天大的消息!"
+msgstr "Huge news! "
+
+msgid "在一起了!"
+msgstr " are together now!"
+
+msgid "湊成一對了,大家都說很配!"
+msgstr " became a couple — everyone says they are perfect together!"
+
+msgid "鬧翻了,見面都不講話..."
+msgstr " had a falling out — they don't even speak when they meet..."
+
+msgid "你敢信嗎?"
+msgstr "Can you believe it? "
+
+msgid "現在是死對頭了。"
+msgstr " are sworn enemies now."
+
+msgid "最近超針對"
+msgstr " has been really targeting "
+
+msgid "的,好像是為了"
+msgstr " lately, seems to be over "
+
+msgid "某個人"
+msgstr "someone"
+
+msgid "之間氣氛好僵,是在吃醋吧?"
+msgstr " — the air between them is so tense. Jealousy, right?"
+
+msgid "偷偷說：「"
+msgstr " whispers: \""
+
+msgid "暗戀著"
+msgstr " has a crush on "
+
+msgid "勢不兩立"
+msgstr " are at each other's throats"
+
+msgid "都喜歡"
+msgstr " all like "
+
+msgid "本週新戀情"
+msgstr "New Romances This Week"
+
+msgid "三角關係"
+msgstr "Love Triangles"
+
+msgid "暗戀進行中"
+msgstr "Crushes Brewing"
+
+msgid "水火不容"
+msgstr "Bad Blood"
+
+msgid "穩定放閃"
+msgstr "Going Strong"
+
+msgid "本週小鎮頭條"
+msgstr "This Week in Frontier Town"
+
+msgid "去「關係」頁看完整愛恨網路,或找當事人聊聊八卦!"
+msgstr "Check the Relationships tab for the full love/hate web, or chat up the people involved!"
+
+msgid "私訊"
+msgstr "Chats"
+
+msgid "鎮民動態"
+msgstr "Town Feed"
+
+msgid "村民們的日常、心情和玻璃心文都在這裡。按讚留言可以刷好感!"
+msgstr "Villagers' daily lives, moods, and vague-posts all live here. Like and comment to build friendship!"
+
+msgid "還沒有人發文。村民們每天都會更新動態!"
+msgstr "No posts yet. Villagers post updates every day!"
+
+msgid "留言..."
+msgstr "Comment..."
+
+msgid "在我的動態下留言:"
+msgstr " commented on my post: "
+
+msgid "就知道你懂我 😆"
+msgstr "Knew you would get me 😆"
+
+msgid "哈哈,改天一起!"
+msgstr "Haha, let's do it together sometime!"
+
+msgid "謝啦"
+msgstr "Thanks, "
+
+msgid "喔,是你啊。"
+msgstr "Oh. You."
+
+msgid "嗯。"
+msgstr "Hm."
+
+msgid "哈哈謝謝鎮長!"
+msgstr "Haha thanks, Mayor!"
+
+msgid "鎮長也看到啦 😳"
+msgstr "Even the Mayor saw this 😳"
+
+msgid "感恩!"
+msgstr "Much appreciated!"
+
+msgid "爆料八卦"
+msgstr "Spill gossip"
+
+msgid "今天已經爆過料了,太常放話會被當成大嘴巴!明天再來。"
+msgstr "You've already spilled today — gossip too much and you'll be known as a blabbermouth! Come back tomorrow."
+
+msgid "要爆誰的料?"
+msgstr "Whose tea are we spilling?"
+
+msgid "偷偷跟"
+msgstr "Quietly tell "
+
+msgid "說別人的八卦。謠言會在鎮上流傳,小心傳回當事人耳裡..."
+msgstr " someone's gossip. Rumors spread around town — careful, they may reach the person's ears..."
+
+msgid "關於"
+msgstr "About"
+
+msgid "誇讚他"
+msgstr "Praise them"
+
+msgid "傳回本人耳裡好感大增"
+msgstr "if it reaches them, big friendship boost"
+
+msgid "酸他一下"
+msgstr "Throw shade"
+
+msgid "被發現是你說的就完了"
+msgstr "if they trace it to you, you're done"
+
+msgid "亂點鴛鴦"
+msgstr "Play matchmaker"
+
+msgid "也許會湊成一對?"
+msgstr "maybe sparks will fly?"
+
+msgid "偷偷說"
+msgstr "whispering"
+
+msgid "哇這個猛!放心,我幫你「不小心」說出去 👀"
+msgstr "Whoa, juicy! Don't worry, I'll \"accidentally\" let it slip 👀"
+
+msgid "欸...在背後這樣說人家不太好吧...不過我聽到了。"
+msgstr "Hey... talking behind someone's back isn't great... but I heard you."
+
+msgid "喔~?有意思,我記下了。"
+msgstr "Oh~? Interesting. Noted."
+
+msgid "我跟你說,"
+msgstr "Listen, "
+
+msgid "而且好像不只這樣..."
+msgstr " and apparently that's not all..."
+
+msgid "千真萬確!"
+msgstr "It is absolutely true! "
+
+msgid "聽說整條街都知道了!"
+msgstr " The whole street knows already!"
+
+msgid "我聽到的版本更誇張..."
+msgstr " The version I heard was even wilder..."
+
+msgid "聽說鎮長到處誇我,真開心!"
+msgstr "I heard the Mayor has been praising me everywhere. So happy!"
+
+msgid "欸,我聽說你到處跟人誇我?哈哈,謝啦,請你喝一杯!"
+msgstr "Hey, I heard you've been praising me around town? Haha, thanks — drinks on me!"
+
+msgid "聽到了鎮長的美言,好感大增!"
+msgstr " heard the Mayor's kind words — friendship soars!"
+
+msgid "居然是鎮長在背後說我壞話...太過分了。"
+msgstr "So it was the Mayor bad-mouthing me behind my back... that's too much."
+
+msgid "我都聽說了。你在背後那樣說我?虧我還這麼信任你。"
+msgstr "I heard everything. You said that about me behind my back? And I trusted you."
+
+msgid "發現鎮長在背後說他壞話,關係惡化!"
+msgstr " found out the Mayor was bad-mouthing them — relationship soured!"
+
+msgid "聽到了"
+msgstr " heard the rumor "
+
+msgid "散布的謠言,當面對質!兩人關係惡化"
+msgstr " spread and confronted them face to face! Their relationship soured"
+
+msgid "為了謠言找"
+msgstr " confronted "
+
+msgid "對質!"
+msgstr " over a rumor!"
+
+msgid "最近聽到一些關於我的傳言。清者自清,懶得解釋。"
+msgstr "Heard some rumors about me lately. The truth speaks for itself — not bothering to explain."
+
+msgid "有些人嘴巴可以積點德嗎?"
+msgstr "Some people could really use nicer mouths."
+
+msgid "謠言止於智者。就這樣。"
+msgstr "Rumors stop with the wise. That is all."
+
+msgid "被大家起鬨之後,"
+msgstr "After all the town teasing, "
+
+msgid "好像真的開始注意彼此了..."
+msgstr " seem to actually be noticing each other..."
+
+msgid "最近超罩的,大家都該學學!"
+msgstr " has been amazing lately — everyone should take notes!"
+
+msgid "我覺得"
+msgstr "I think "
+
+msgid "是鎮上最可靠的人。"
+msgstr " is the most reliable person in town."
+
+msgid "最近很懶散,大家小心點..."
+msgstr " has been slacking lately, watch out..."
+
+msgid "說真的,"
+msgstr "Honestly, "
+
+msgid "私底下跟表面不太一樣喔..."
+msgstr " is not quite the same in private as they seem..."
+
+msgid "是不是有什麼?我看他們常常眉來眼去..."
+msgstr " — is something going on? I keep catching them making eyes at each other..."
+
+msgid "偷偷跟我說:「"
+msgstr " whispered to me: \""
+
+msgid "鎮長偷偷向"
+msgstr "The mayor quietly told "
+
+msgid "爆料了"
+msgstr " gossip about "
+
+msgid "的事..."
+msgstr "..."
+
+msgid "你在為小鎮社群「鎮民動態」寫貼文(像臉書/IG動態)。"
+msgstr "You are writing a post for the town social feed \"Town Feed\" (like a Facebook/IG status)."
+
+msgid "發文者:"
+msgstr "Author: "
+
+msgid "【格式】第一行寫貼文內容(1-2句,口語、有梗、可加表情符號)。"
+msgstr "[Format] First line is the post (1-2 sentences, casual, witty, emoji ok)."
+
+msgid "接著每行寫一則留言,格式「名字: 留言」,留言者依序是:"
+msgstr "Then one comment per line, format \"Name: comment\", commenters in order: "
+
+msgid "繁體中文(台灣用語),不要有其他任何文字。"
+msgstr "No other text."
+
+msgid "今天的"
+msgstr "Today's "
+
+msgid "田"
+msgstr "field work"
+
+msgid "也太累了吧...誰要請我喝一杯 🍺"
+msgstr " wore me out... who is buying me a drink 🍺"
+
+msgid "剛剛在路上看到超好笑的事,笑到肚子痛 😂"
+msgstr "Just saw the funniest thing on the street, my stomach hurts 😂"
+
+msgid "天氣真好,適合偷懶(才怪,還有一堆活要幹)"
+msgstr "Lovely weather, perfect for slacking off (just kidding, so much work to do)"
+
+msgid "突然好想吃烤魚。就這樣。"
+msgstr "Suddenly craving grilled fish. That is all."
+
+msgid "最近的日子真不錯,感恩 🙏"
+msgstr "Life has been good lately, grateful 🙏"
+
+msgid "唉,不想說話。懂的都懂。"
+msgstr "Sigh. Don't feel like talking. If you know, you know."
+
+msgid "有個人在等我回家吃飯,幸福大概就是這樣 ❤️"
+msgstr "Someone is waiting for me to come home for dinner. This must be happiness ❤️"
+
+msgid "我知道一個大八卦,但我就不說 🤐 問就是不說"
+msgstr "I know a HUGE piece of gossip but I'm not telling 🤐 Don't ask"
+
+msgid "今日進度:0。明天的我加油 💪"
+msgstr "Today's progress: 0. Good luck, tomorrow's me 💪"
+
+msgid "呵。"
+msgstr "Heh."
+
+msgid "有些人真的很閒。"
+msgstr "Some people really have too much free time."
+
+msgid "然後呢?"
+msgstr "And?"
+
+msgid "哈哈哈笑死"
+msgstr "LMAO"
+
+msgid "+1!"
+msgstr "+1!"
+
+msgid "晚上老地方見?"
+msgstr "Usual spot tonight?"
+
+msgid "你還好嗎?抱抱"
+msgstr "You okay? Hugs"
+
+msgid "這就是你摸魚的藉口?😏"
+msgstr "So this is your excuse for slacking? 😏"
+
+msgid "今天是個好日子 💕"
+msgstr "Today is a good day 💕"
+
+msgid "原來被喜歡的人喜歡,是這種感覺。"
+msgstr "So this is what it feels like when the one you like likes you back."
+
+msgid "我!結!婚!啦!🎉 感謝大家的祝福!"
+msgstr "I! GOT! MARRIED! 🎉 Thank you all for the blessings!"
+
+msgid "執子之手,與子偕老。❤️"
+msgstr "To hold your hand, and grow old with you. ❤️"
+
+msgid "識人不清,是我活該。"
+msgstr "My fault for trusting the wrong person."
+
+msgid "有些人,不點名。祝你們幸福,呵。"
+msgstr "Some people — no names. Wishing you happiness. Heh."
+
+msgid "恢復單身。別問,問就是不合適。"
+msgstr "Single again. Don't ask. We just weren't right."
+
+msgid "刪掉了很多東西。包括回憶。"
+msgstr "Deleted a lot of things. Memories included."
+
+msgid "一段路走完了。往前看。"
+msgstr "One road ends. Looking forward."
+
+msgid "簽完字,天還是藍的。挺好。"
+msgstr "Signed the papers. The sky is still blue. Good."
+
+msgid "名場面直播"
+msgstr "Live Drama Scene"
+
+msgid "告白成功"
+msgstr "Confession Accepted"
+
+msgid "婚禮現場"
+msgstr "The Wedding"
+
+msgid "修羅場"
+msgstr "Caught in the Act"
+
+msgid "分手現場"
+msgstr "The Breakup"
+
+msgid "離婚風暴"
+msgstr "Divorce Storm"
+
+msgid "鼓起勇氣向"
+msgstr " gathers the courage to confess to "
+
+msgid "告白,對方答應了,兩人正式在一起"
+msgstr ", who says yes — they are now officially together"
+
+msgid "的婚禮現場,兩人交換誓言,賓客起鬨"
+msgstr "'s wedding — vows are exchanged as guests cheer them on"
+
+msgid "當場發現"
+msgstr " catches "
+
+msgid "的秘密關係,情緒爆發對質"
+msgstr "'s secret affair red-handed and confronts them in a burst of emotion"
+
+msgid "走到感情盡頭,決定分手"
+msgstr " reach the end of their road and decide to break up"
+
+msgid "的婚姻破裂,攤牌離婚"
+msgstr "'s marriage falls apart — the final showdown and divorce"
+
+msgid "你是一位才華橫溢的小說家，正在為奇幻小鎮「邊境鎮」寫一場關鍵感情戲。"
+msgstr "You are a gifted novelist writing a pivotal emotional scene for the fantasy town \"Frontier Town\"."
+
+msgid "場面："
+msgstr "Scene: "
+
+msgid "- 寫4-6句有張力、有情緒的對話,像戲劇高潮的名場面"
+msgstr "- Write 4-6 lines of tense, emotional dialogue, like the climactic scene of a drama"
+
+msgid "- 每個人的說話風格要符合性格"
+msgstr "- Each character's speech style must fit their personality"
+
+msgid "- 格式：每行「名字: 對話內容」,不要有其他任何東西"
+msgstr "- Format: each line \"Name: dialogue\", and nothing else"
+
+msgid "那個...我練習了好多次,還是好緊張。我喜歡你,很久了。"
+msgstr "So... I practiced this so many times and I'm still nervous. I like you. Have for a long time."
+
+msgid "笨蛋...我等這句話等好久了。"
+msgstr "You idiot... I've been waiting forever to hear that."
+
+msgid "所以...你願意跟我在一起嗎?"
+msgstr "So... will you be with me?"
+
+msgid "願意啦!要說幾次你才聽得懂!"
+msgstr "Yes, obviously! How many times do I have to say it!"
+
+msgid "從今以後,不管豐收還是荒年,我都會在你身邊。"
+msgstr "From this day on, through harvests and famines, I'll be by your side."
+
+msgid "說好了喔,一輩子。"
+msgstr "It's a promise, then. A lifetime."
+
+msgid "賓客"
+msgstr "Guests"
+
+msgid "親一個!親一個!"
+msgstr "Kiss! Kiss!"
+
+msgid "你們兩個...在這裡做什麼?"
+msgstr "What... what are you two doing here?"
+
+msgid "等等,你聽我解釋,不是你想的那樣——"
+msgstr "Wait, let me explain, it's not what you think—"
+
+msgid "我都看到了!"
+msgstr "I saw everything! "
+
+msgid ",虧我還把你當朋友!"
+msgstr ", and I thought you were my friend!"
+
+msgid "對不起...是我對不起你。"
+msgstr "I'm sorry... I failed you."
+
+msgid "我們...好像回不去了,對吧。"
+msgstr "We... can't go back to how it was, can we."
+
+msgid "嗯。與其這樣互相消磨,不如就到這裡吧。"
+msgstr "Yeah. Rather than wearing each other down, let's end it here."
+
+msgid "謝謝你陪我走過這一段。祝你幸福。"
+msgstr "Thank you for walking this stretch with me. I wish you happiness."
+
+msgid "這些年,我們都累了。簽了吧。"
+msgstr "We're both worn out after all these years. Just sign it."
+
+msgid "...好。至少我們曾經真心愛過。"
+msgstr "...Alright. At least we truly loved each other once."
+
+msgid "保重。"
+msgstr "Take care."
+
+msgid "某人"
+msgstr "someone"
+
+msgid "猜燈謎"
+msgstr "Lantern Riddles"
+
+msgid "撈金魚"
+msgstr "Goldfish Scooping"
+
+msgid "投壺"
+msgstr "Pitch-Pot"
+
+msgid "祭典攤位"
+msgstr "Festival Stall"
+
+msgid "指針掃到綠區時按「停」!共 3 回合"
+msgstr "Hit \"Stop\" when the needle sweeps the green zone! 3 rounds"
+
+msgid "停!"
+msgstr "Stop!"
+
+msgid "正中!"
+msgstr "Bullseye!"
+
+msgid "不錯!"
+msgstr "Nice!"
+
+msgid "落空..."
+msgstr "Missed..."
+
+msgid "完美通關!"
+msgstr "Perfect Clear!"
+
+msgid "遊戲結束!"
+msgstr "Game Over!"
+
+msgid "得分"
+msgstr "Score"
+
+msgid "收下獎品"
+msgstr "Claim Prize"
+
+msgid "祭典攤位大獎"
+msgstr "Festival stall grand prize"
+
+msgid "鎮長在祭典攤位玩了"
+msgstr "The mayor played "
+
+msgid ",得分"
+msgstr " at the festival stall, scoring"
+
+msgid "贏得"
+msgstr "and won"
+
+msgid "答案是"
+msgstr "Answer"
+
+msgid "鎮長在祭典攤位玩"
+msgstr "The mayor played "
+
+msgid "拿了"
+msgstr " at the festival stall and scored"
+
+msgid "分"
+msgstr " points"
+
+msgid "太神了吧!攤位老闆的臉都綠了哈哈!"
+msgstr "Unreal! The stall owner's face went green, haha!"
+
+msgid "你也太準了!下次教教我!"
+msgstr "You're way too accurate! Teach me sometime!"
+
+msgid "我剛剛看到你在玩攤位遊戲,可惜差一點!明年再來!"
+msgstr "I saw you at the stall game just now — so close! Try again next year!"
+
+msgid "祭典就是要這樣玩才熱鬧嘛!"
+msgstr "That's the spirit — festivals are for playing hard!"
+
+msgid "身穿綠衣裳,肚裡水汪汪,生的子兒多,個個黑臉膛。(猜一種食物)"
+msgstr "It wears a green coat, its belly full of water, with many children inside, each with a little black face. (A food)"
+
+msgid "西瓜"
+msgstr "Watermelon"
+
+msgid "冬瓜"
+msgstr "Winter melon"
+
+msgid "千條線,萬條線,掉到水裡看不見。(猜一自然現象)"
+msgstr "A thousand threads, ten thousand threads — they vanish when they fall into water. (A natural phenomenon)"
+
+msgid "起霧"
+msgstr "Fog"
+
+msgid "有面沒有口,有腳沒有手,聽人來講話,陪人吃飯久。(猜一家具)"
+msgstr "It has a face but no mouth, legs but no hands; it listens to people talk and joins every meal. (A piece of furniture)"
+
+msgid "椅子"
+msgstr "Chair"
+
+msgid "床"
+msgstr "Bed"
+
+msgid "桌子"
+msgstr "Table"
+
+msgid "白天草叢住,夜晚提燈遊。(猜一昆蟲)"
+msgstr "It lives in the grass by day and strolls with a lantern by night. (An insect)"
+
+msgid "蝴蝶"
+msgstr "Butterfly"
+
+msgid "螢火蟲"
+msgstr "Firefly"
+
+msgid "蜜蜂"
+msgstr "Bee"
+
+msgid "圓圓臉兒白,躲在天上待,十五露全臉,平時遮一塊。(猜一天體)"
+msgstr "A round white face waiting in the sky — it shows its whole face on the 15th, but usually keeps part hidden. (A celestial body)"
+
+msgid "月亮"
+msgstr "Moon"
+
+msgid "太陽"
+msgstr "Sun"
+
+msgid "星星"
+msgstr "Stars"
+
+msgid "一個老頭,不跑不走,請他睡覺,他就搖頭。(猜一玩具)"
+msgstr "An old man who never runs or walks — ask him to lie down and he just shakes his head. (A toy)"
+
+msgid "陀螺"
+msgstr "Spinning top"
+
+msgid "木偶"
+msgstr "Puppet"
+
+msgid "不倒翁"
+msgstr "Roly-poly doll"
+
+msgid "紅公雞,綠尾巴,身體鑽到地底下。(猜一蔬菜)"
+msgstr "A red rooster with a green tail, its body burrowed underground. (A vegetable)"
+
+msgid "紅蘿蔔"
+msgstr "Carrot"
+
+msgid "番茄"
+msgstr "Tomato"
+
+msgid "辣椒"
+msgstr "Chili pepper"
+
+msgid "屋子方方,有門沒窗,屋外熱烘,屋裡冰霜。(猜一設施)"
+msgstr "A square little house with a door but no windows — warm outside, frost within. (A facility)"
+
+msgid "火爐"
+msgstr "Stove"
+
+msgid "冰窖"
+msgstr "Ice cellar"
+
+msgid "穀倉"
+msgstr "Granary"
+
+msgid "初識之誼"
+msgstr "Budding Friendship"
+
+msgid "知心好友"
+msgstr "Trusted Friend"
+
+msgid "莫逆之交"
+msgstr "Lifelong Bond"
+
+msgid "心動時刻"
+msgstr "Heartbeat Moment"
+
+msgid "心動事件"
+msgstr "Heart Event"
+
+msgid "你發現自己已經把旅人當朋友了。想跟他說說這段時間認識下來的感受,可以提起你們之間的某件小事"
+msgstr "You realize the Traveler has become a friend. You want to share how it's felt getting to know them — maybe bring up a little moment you shared"
+
+msgid "旅人已是你的知心好友。你想跟他分享一件你從沒告訴過別人的心事或秘密"
+msgstr "The Traveler is now a trusted friend. You want to share something you've never told anyone"
+
+msgid "旅人是你此生難得的摯友。你想認真地告訴他,他對你有多重要"
+msgstr "The Traveler is a once-in-a-lifetime friend. You want to tell them, sincerely, how much they mean to you"
+
+msgid "你發現自己對旅人心動了。你鼓起勇氣,想含蓄地(或依你的性格直白地)透露你的感覺"
+msgstr "You realize you've fallen for the Traveler. You gather your courage to hint at (or, per your personality, outright confess) your feelings"
+
+msgid "」——邊境鎮的居民。這是一個重要的感情時刻。"
+msgstr "\" — a resident of Frontier Town. This is an important emotional moment."
+
+msgid "。對象是"
+msgstr ". The person is "
+
+msgid "你們的共同回憶："
+msgstr "Your shared memories: "
+
+msgid "- 繁體中文（台灣用語），2-4句，要真摯、有溫度，符合你的性格"
+msgstr "- 2-4 sentences, sincere and warm, true to your personality"
+
+msgid "- 可以提到具體的共同回憶或小鎮生活細節"
+msgstr "- You may mention specific shared memories or details of town life"
+
+msgid "那個...我最近發現,只要看到你走過來,我就會不自覺地笑。你...應該懂我的意思吧?"
+msgstr "So... lately I've noticed that whenever I see you walking over, I can't help but smile. You... know what I mean, right?"
+
+msgid "跟你說話的時候,時間總是過得特別快。我想...我大概是喜歡上你了。"
+msgstr "Time always flies when I talk with you. I think... I might have fallen for you."
+
+msgid "欸,認真說,自從你來了之後,我覺得這個鎮都不一樣了。有你這個朋友真好。"
+msgstr "Hey, honestly — ever since you came, this town feels different. I'm glad to have you as a friend."
+
+msgid "我不太會說這種話,但...謝謝你一直願意聽我說話。這對我來說很重要。"
+msgstr "I'm not good at saying this kind of thing, but... thank you for always listening. It means a lot to me."
+
+msgid "我對"
+msgstr "To "
+
+msgid "說出了真心話："
+msgstr " I spoke from the heart: "
+
+msgid "回應了我的真心話："
+msgstr " responded to my honest words: "
+
+msgid "我也是。其實我早就想告訴你了"
+msgstr "Me too. Honestly, I've wanted to tell you for a while"
+
+msgid "能認識你真的很好,這是我的真心話"
+msgstr "I'm truly glad I got to know you — I mean it"
+
+msgid "謝謝你...可以讓我想一想嗎?"
+msgstr "Thank you... could you give me some time to think?"
+
+msgid "哈哈,突然這麼肉麻我會不好意思啦!"
+msgstr "Haha, going all mushy on me — you're making me blush!"
+
+msgid "：「"
+msgstr ": \""
+
+msgid "【今天是"
+msgstr "[Today is the "
+
+msgid "!】"
+msgstr "!] "
+
+msgid "鎮上到處都是祭典活動:"
+msgstr "Festival activities are everywhere: "
+
+msgid "。對話請自然融入祭典氣氛。"
+msgstr ". Weave the festive mood naturally into the dialogue."
+
+msgid "聊天時可以自然提到祭典。"
+msgstr "Feel free to mention the festival naturally."
+
+msgid "兩人在"
+msgstr "The two meet at the "
+
+msgid "會場遇到,聊起眼前的"
+msgstr " festival grounds and chat about the "
+
+msgid "兩人一起參加"
+msgstr "The two join the "
+
+msgid ",邊玩邊聊"
+msgstr " together, chatting as they go"
+
+msgid "祭典的熱鬧中,一人拉著另一人去看"
+msgstr "Amid the festival bustle, one drags the other off to see the "
+
+msgid "!你想邀旅人一起去"
+msgstr "! You want to invite the Traveler to the "
+
+msgid "你在祭典會場看到超有趣的東西,想趕快告訴旅人"
+msgstr "You saw something amazing at the festival grounds and want to tell the Traveler right away"
+
+msgid "你想約旅人在祭典結束前一起去"
+msgstr "You want to ask the Traveler to join you, before the festival ends, for the "
+
+msgid "今天是"
+msgstr "Today is the "
+
+msgid "你想邀"
+msgstr ". You want to invite "
+
+msgid "一起去"
+msgstr " to join you for the "
+
+msgid "欸欸,今天是"
+msgstr "Hey hey, it's the "
+
+msgid "耶!要不要一起去"
+msgstr " today! Want to go to the "
+
+msgid "?我在廣場等你!"
+msgstr " together? I'll wait for you at the square!"
+
+msgid "開始了!走啦,陪我去"
+msgstr " has started! Come on, join me for the "
+
+msgid ",一個人去多無聊"
+msgstr " — it's no fun going alone"
+
+msgid "點地圖空地選擇"
+msgstr "Tap an empty spot to choose where "
+
+msgid "的位置(需2×2空地)|點這裡取消"
+msgstr " goes (needs a 2×2 clearing) | tap here to cancel"
+
+msgid "這裡放不下,需要 2×2 的空地!"
+msgstr "It won't fit here — you need a 2×2 clearing!"
+
+msgid "管理員"
+msgstr "Admin"
+
+msgid "封鎖＝該帳號無法登入、無法用 AI 與存檔；刪除＝連同所有雲端存檔一併清除，且名字不能再註冊。"
+msgstr "Ban = the account cannot log in, use AI or save; Delete = wipes the account and all cloud saves, and the name can never be registered again."
+
+msgid "載入玩家列表"
+msgstr "Load player list"
+
+msgid "已刪除·封鎖中"
+msgstr "Deleted · banned"
+
+msgid "封鎖中"
+msgstr "Banned"
+
+msgid "正常"
+msgstr "Active"
+
+msgid "解封"
+msgstr "Unban"
+
+msgid "封鎖"
+msgstr "Ban"
+
+msgid "個帳號"
+msgstr "accounts"
+
+msgid "目前沒有其他玩家"
+msgstr "No other players yet"
+
+msgid "確定要封鎖"
+msgstr "Ban"
+
+msgid "確定要解除封鎖"
+msgstr "Unban"
+
+msgid "⚠️ 確定要刪除帳號？會連同所有雲端存檔一起刪除且無法復原："
+msgstr "⚠️ Delete this account? All cloud saves go with it and this cannot be undone:"
+
+msgid "管理員操作完成"
+msgstr "Admin action done"
+
+msgid "已封鎖"
+msgstr "Banned"
+
+msgid "已解除封鎖"
+msgstr "Unbanned"
+
+msgid "帳號與存檔已刪除"
+msgstr "Account and saves deleted"
+
+msgid "操作失敗："
+msgstr "Action failed: "
+
+msgid "你的帳號已被管理員停用，已登出。"
+msgstr "Your account has been disabled by an admin. You have been logged out."
+
+msgid "智慧分流：你與村民的對話、劇情名場面優先走 Groq 免費額度；行程／反思／背景對話走付費主渠道；任一邊故障自動切到另一邊。"
+msgstr "Smart routing: your chats with villagers and story scenes go to Groq's free tier first; schedules, reflections and background talk use the paid channel; either side failing switches to the other automatically."
+
+msgid "偵測到你的帳號紀錄遺失（雲端儲存空間故障）。請設定一組新密碼（至少 6 字元）重建帳號，存檔與成就不受影響："
+msgstr "Your account record is missing (cloud storage outage). Set a new password (6+ characters) to rebuild it. Saves and achievements are unaffected:"
+
+msgid "帳號尚未重建。在重建前請不要登出，下次開啟遊戲會再提醒。"
+msgstr "Account not rebuilt yet. Please do not log out; you will be reminded next time."
+
+msgid "新密碼至少 6 個字元，請重新開啟遊戲再試。"
+msgstr "The new password needs at least 6 characters. Reopen the game to try again."
+
+msgid "帳號已重建，之後請用新密碼登入。"
+msgstr "Account rebuilt. Use the new password from now on."
+
+msgid "帳號重建失敗："
+msgstr "Account rebuild failed: "
+
+msgid "所有 AI 金鑰由小鎮伺服器統一保管，你不需要、也不會看到任何金鑰欄位。"
+msgstr "All AI keys are kept on the town server. You never need to enter or see any key."
+
+msgid "此站沒有內建 AI 代理端點，村民對話走內建模擬"
+msgstr "This site has no built-in AI endpoint; villager chat uses the built-in simulation"
+
+msgid "雲端已有較新的進度，本次未覆寫。"
+msgstr "The cloud already has newer progress; this save was not written over it."
+
+msgid "💾 儲存：Postgres（已搬遷）"
+msgstr "💾 Storage: Postgres (migrated)"
+
+msgid "💾 儲存：Postgres（尚未搬遷）"
+msgstr "💾 Storage: Postgres (not migrated yet)"
+
+msgid "💾 儲存：Blob（尚未設定資料庫）"
+msgstr "💾 Storage: Blob (no database configured)"
+
+msgid "📦 搬資料到資料庫"
+msgstr "📦 Migrate data to database"
+
+msgid "確定要把雲端資料搬到資料庫嗎？可重複執行，不會覆蓋較新的資料。"
+msgstr "Migrate cloud data into the database? Safe to run repeatedly — it will not overwrite newer data."
+
+msgid "搬遷中…可能需要數十秒，請勿關閉"
+msgstr "Migrating… this may take a minute, please keep this open"
+
+msgid "搬遷完成"
+msgstr "Migration complete"
+
+msgid "複製"
+msgstr "Copied"
+
+msgid "略過"
+msgstr "Skipped"
+
+msgid "失敗"
+msgstr "Failed"
+
+msgid "搬遷失敗："
+msgstr "Migration failed: "
+
+msgid "AI:小鎮內建"
+msgstr "AI: Built-in"
+
+msgid "🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 100 則）"
+msgstr "🏘️ Built-in town AI is on — no API key needed (100/day when logged in)"
+
+msgid "點發光的綠色格子選擇"
+msgstr "Tap a glowing green slot to choose where "
+
+msgid "的位置(會自動對齊格線)|點這裡取消"
+msgstr " goes (snaps to the grid) | tap here to cancel"
+
+msgid "這裡放不下,點發光的綠色格子!"
+msgstr "It won't fit here — tap one of the glowing green slots!"
+
+msgid "這裡已經有東西了,換個地方吧!"
+msgstr "Something's already here — try another spot!"
+
+msgid "資源不足,無法開工!"
+msgstr "Not enough resources to start construction!"
+
+msgid "動工了!工匠們會每天到工地施工"
+msgstr " is under way! Craftsmen will work the site every day"
+
+msgid "發現相鄰組合!"
+msgstr "Combo Discovered!"
+
+msgid "小鎮美觀與繁榮加成,全鎮心情大好!把相配的東西放在一起,還有更多組合等你發現"
+msgstr "Beauty & prosperity bonus — the whole town is delighted! Keep pairing things up; more combos await discovery"
+
+msgid "相鄰組合"
+msgstr "Adjacency Combos"
+
+msgid "把相配的建築和裝飾放在附近(4格內)會觸發組合,提升美觀與繁榮!組合配方要自己摸索"
+msgstr "Place matching buildings and decorations near each other (within 4 tiles) to trigger combos that boost beauty and prosperity! Recipes are yours to discover"
+
+msgid "尚未發現"
+msgstr "Not yet discovered"
+
+msgid "浪漫街角"
+msgstr "Romantic Corner"
+
+msgid "綠意廣場"
+msgstr "Green Plaza"
+
+msgid "雕像廣場"
+msgstr "Statue Square"
+
+msgid "市集人氣"
+msgstr "Market Buzz"
+
+msgid "酒香夜色"
+msgstr "Tavern Nights"
+
+msgid "書香步道"
+msgstr "Scholar's Walk"
+
+msgid "銅牆鐵壁"
+msgstr "Iron Bastion"
+
+msgid "靜心藥園"
+msgstr "Healing Garden"
+
+msgid "花圃+長椅+路燈"
+msgstr "Flower Bed + Bench + Street Lamp"
+
+msgid "小噴泉+花圃"
+msgstr "Fountain + Flower Bed"
+
+msgid "雕像+長椅"
+msgstr "Statue + Bench"
+
+msgid "市集+路燈"
+msgstr "Marketplace + Street Lamp"
+
+msgid "釀酒坊+路燈"
+msgstr "Brewery + Street Lamp"
+
+msgid "學堂+長椅"
+msgstr "School + Bench"
+
+msgid "瞭望塔+城牆"
+msgstr "Watchtower + Town Walls"
+
+msgid "藥草園+小噴泉"
+msgstr "Herb Garden + Fountain"
+
+msgid "發現相鄰組合："
+msgstr "Combo discovered: "
+
+msgid "！全鎮心情大好"
+msgstr "! The whole town is delighted"
+
+msgid "小鎮出現了「"
+msgstr "The town now has the \""
+
+msgid "」組合！"
+msgstr "\" combo!"
+
+msgid "小鎮出現了新組合「"
+msgstr "A new combo appeared in town: \""
+
+msgid "」("
+msgstr "\" ("
+
+msgid "小鎮蓋好了新的「"
+msgstr "The town just finished building the \""
+
+msgid "」——邊境鎮的居民。剛剛發生了一件事："
+msgstr "\" — a resident of Frontier Town. Something just happened: "
+
+msgid "。你想傳一則訊息給鎮長"
+msgstr ". You want to send a message to Mayor "
+
+msgid "聊聊這件事。"
+msgstr " about it."
+
+msgid "- 從你的職業和性格出發評論這件事（開心、期待、或吐槽都行）"
+msgstr "- Comment from your job and personality (happy, excited, or snarky all fine)"
+
+msgid "，太棒了吧！"
+msgstr " — how great is that!"
+
+msgid "你看到了嗎？"
+msgstr "Did you see? "
+
+msgid "！鎮上越來越有樣子了"
+msgstr "! The town is really coming together"
+
+msgid "！鎮長真有眼光"
+msgstr "! The mayor has a good eye"
+
+msgid "跟"
+msgstr "With "
+
+msgid "聊到："
+msgstr " talked about: "
+
+msgid "花圃"
+msgstr "Flower Bed"
+
+msgid "長椅"
+msgstr "Bench"
+
+msgid "路燈"
+msgstr "Street Lamp"
+
+msgid "雕像"
+msgstr "Statue"
+
+msgid "小噴泉"
+msgstr "Fountain"
+
+msgid "裝飾小鎮"
+msgstr "Decorate the Town"
+
+msgid "選一樣裝飾,然後點地圖上的空地擺放。裝飾提升小鎮美觀度,路燈晚上會亮!"
+msgstr "Pick a decoration, then tap an empty spot on the map to place it. Decorations boost town beauty — lamps glow at night!"
+
+msgid "已擺放"
+msgstr "Placed"
+
+msgid "件"
+msgstr ""
+
+msgid "擺放"
+msgstr "Place"
+
+msgid "點地圖空地擺放"
+msgstr "Tap an empty spot to place "
+
+msgid "|點裝飾移除|點這裡結束"
+msgstr " | tap a decoration to remove | tap here to finish"
+
+msgid "移除裝飾退款"
+msgstr "Decoration removal refund"
+
+msgid "材料不足,無法再擺放!"
+msgstr "Not enough materials to place more!"
+
+msgid "鎮長在小鎮擺放了"
+msgstr "The mayor placed a "
+
+msgid "擺放模式中點到已有的裝飾 = 移除(退回一半材料)"
+msgstr "In placement mode, tapping an existing decoration removes it (refunds half the materials)"
+
+msgid "每日登入獎勵"
+msgstr "Daily Login Reward"
+
+msgid "新功能解鎖!"
+msgstr "New Feature Unlocked!"
+
+msgid "小鎮的發展開啟了新的可能!"
+msgstr "The town's growth has opened new possibilities!"
+
+msgid "將在繁榮度達到"
+msgstr "will unlock at prosperity"
+
+msgid "時解鎖!先和村民打好關係、完成任務吧。"
+msgstr "! Build relationships and complete quests first."
+
+msgid "戀愛"
+msgstr "Love"
+
+msgid "👤 個人視角:再點一次空白處返回全鎮"
+msgstr "👤 Personal view: tap empty space to return"
+
+msgid "💡 點擊任何人,只看他的關係"
+msgstr "💡 Tap anyone to see only their relationships"
+
+msgid "本鎮八卦頭條"
+msgstr "Town Gossip Headlines"
+
+msgid "正在交往"
+msgstr "are dating"
+
+msgid "(有人偷偷出軌...)"
+msgstr "(someone is secretly cheating...)"
+
+msgid "暗戀著名花有主的"
+msgstr "has a crush on the already-taken"
+
+msgid "——三角關係醞釀中!"
+msgstr "— a love triangle is brewing!"
+
+msgid "互有好感,就差一層窗戶紙!"
+msgstr "like each other — just one step from romance!"
+
+msgid "是出了名的死對頭"
+msgstr "are famous sworn rivals"
+
+msgid "鎮上還很平靜...讓村民多相處幾天,八卦自然就來了。"
+msgstr "The town is quiet... give the villagers a few days and the gossip will come."
+
+msgid "每日登入獎勵(連續"
+msgstr "Daily login reward (streak"
+
+msgid "天):+"
+msgstr " days): +"
+
+msgid "銀幣、+"
+msgstr " Silver, +"
+
+msgid "(連續 7 天獎勵最高!)"
+msgstr " (max bonus at 7-day streak!)"
+
+msgid "連續登入"
+msgstr "Login streak:"
+
+msgid "離線進度結算"
+msgstr "Offline Progress"
+
+msgid "你離開了"
+msgstr "You were away for"
+
+msgid "小時"
+msgstr "hours"
+
+msgid "小鎮繼續運轉了"
+msgstr "The town kept running for"
+
+msgid "件大小事(見紀錄)"
+msgstr "happenings (see Records)"
+
+msgid "離線結算:小鎮在你離開時模擬了"
+msgstr "Offline recap: while you were away the town simulated"
+
+msgid "個時段"
+msgstr "ticks"
+
+msgid "澆水施肥"
+msgstr "Water & Fertilize"
+
+msgid "開採礦石"
+msgstr "Mine Ore"
+
+msgid "烹飪餐食"
+msgstr "Cook Meals"
+
+msgid "鍛造工具"
+msgstr "Forge Tools"
+
+msgid "建造傢俱"
+msgstr "Build Furniture"
+
+msgid "製作衣物"
+msgstr "Sew Clothing"
+
+msgid "診治居民"
+msgstr "Treat Patients"
+
+msgid "研究學問"
+msgstr "Do Research"
+
+msgid "經營生意"
+msgstr "Run Business"
+
+msgid "巡邏警戒"
+msgstr "Patrol"
+
+msgid "祈禱祝福"
+msgstr "Pray & Bless"
+
+msgid "傢俱"
+msgstr "Furniture"
+
+msgid "你進行了"
+msgstr "You performed "
+
+msgid "，獲得了 "
+msgstr ", gaining "
+
+msgid "你選擇了"
+msgstr "You chose "
+
+msgid "的工作。"
+msgstr " as your job."
+
+msgid "材料不足！缺少"
+msgstr "Not enough materials! Missing"
+
+msgid "玩家手動生產"
+msgstr "Manual production"
+
+msgid "這個職業目前沒有可執行的動作。"
+msgstr "This job has no action to perform right now."
+
+msgid "<button class=\"btn-quit-job\" data-action=\"player-quit-job\" style=\"padding:8px\">✋ 辭職</button>"
+msgstr "<button class=\"btn-quit-job\" data-action=\"player-quit-job\" style=\"padding:8px\">✋ Resign</button>"
+
+msgid "商店"
+msgstr "Shop"
+
+msgid "<div class=\"econ-section\"><h3>🛒 商店</h3>"
+msgstr "<div class=\"econ-section\"><h3>🛒 Shop</h3>"
+
+msgid "💰 你的銀幣："
+msgstr "💰 Your Silver: "
+
+msgid "基本物資"
+msgstr "Basics"
+
+msgid "工藝品"
+msgstr "Crafts"
+
+msgid "加工品"
+msgstr "Processed"
+
+msgid "奢侈品"
+msgstr "Luxuries"
+
+msgid "庫存"
+msgstr "Stock"
+
+msgid "花費"
+msgstr "Cost"
+
+msgid "買"
+msgstr "Buy "
+
+msgid "商店購買"
+msgstr "Shop purchase"
+
+msgid "商店出售"
+msgstr "Shop sale"
+
+msgid "出售"
+msgstr "Sold "
+
+msgid "出售了"
+msgstr "Sold"
+
+msgid "出售成功"
+msgstr "Sale successful"
+
+msgid "購買了"
+msgstr "Bought"
+
+msgid "購買成功"
+msgstr "Purchase successful"
+
+msgid "商品不存在"
+msgstr "Item does not exist"
+
+msgid "，花費"
+msgstr ", spending"
+
+msgid "，獲得"
+msgstr ", gaining"
+
+msgid "聲望折扣"
+msgstr "Reputation discount"
+
+msgid "升級"
+msgstr "Upgrade"
+
+msgid "升級："
+msgstr "Upgrade: "
+
+msgid "開始升級："
+msgstr "Upgrade started: "
+
+msgid "升級完成："
+msgstr "Upgrade complete: "
+
+msgid "升級完成了！"
+msgstr " has been upgraded!"
+
+msgid "<div class=\"available-buildings\"><div class=\"build-label\">🔨 升級：</div>"
+msgstr "<div class=\"available-buildings\"><div class=\"build-label\">🔨 Upgrade:</div>"
+
+msgid "首次升級建築"
+msgstr "Upgrade a building for the first time"
+
+msgid "將建築升級至最高等級"
+msgstr "Upgrade a building to max level"
+
+msgid "精益求精"
+msgstr "Ever Better"
+
+msgid "登峰造極"
+msgstr "Peak Perfection"
+
+msgid "強化瞭望塔"
+msgstr "Reinforced Watchtower"
+
+msgid "石製加固，視野更遠"
+msgstr "Stone-reinforced, sees farther"
+
+msgid "哨兵高塔"
+msgstr "Sentry Tower"
+
+msgid "頂層弩砲，全天候警戒"
+msgstr "Rooftop ballista, round-the-clock watch"
+
+msgid "大型穀倉"
+msgstr "Large Granary"
+
+msgid "雙倍容量，通風防潮"
+msgstr "Double capacity, ventilated and dry"
+
+msgid "冷藏穀庫"
+msgstr "Cold-Storage Granary"
+
+msgid "地下冷藏，食物永不腐壞"
+msgstr "Underground cold storage, food never spoils"
+
+msgid "商業廣場"
+msgstr "Commerce Plaza"
+
+msgid "更多攤位，吸引遠方商人"
+msgstr "More stalls, attracts distant merchants"
+
+msgid "國際商港"
+msgstr "International Port"
+
+msgid "稀有商品與異國商隊"
+msgstr "Rare goods and exotic caravans"
+
+msgid "淨水系統"
+msgstr "Water Purification"
+
+msgid "過濾雜質，提升健康"
+msgstr "Filters impurities, improves health"
+
+msgid "水渠網路"
+msgstr "Canal Network"
+
+msgid "全鎮供水，農田灌溉加成"
+msgstr "Town-wide water supply, farm irrigation bonus"
+
+msgid "演武場"
+msgstr "Training Hall"
+
+msgid "專業訓練設施"
+msgstr "Professional training facility"
+
+msgid "軍事學院"
+msgstr "Military Academy"
+
+msgid "培養精英守衛"
+msgstr "Trains elite guards"
+
+msgid "精釀酒坊"
+msgstr "Craft Brewery"
+
+msgid "釀造高級酒類"
+msgstr "Brews fine liquor"
+
+msgid "酒莊"
+msgstr "Winery"
+
+msgid "頂級佳釀，商業價值倍增"
+msgstr "Top vintages, doubled trade value"
+
+msgid "藥圃"
+msgstr "Herb Plot"
+
+msgid "多樣藥草，產量加倍"
+msgstr "Diverse herbs, double yield"
+
+msgid "百草園"
+msgstr "Herbarium"
+
+msgid "珍稀藥材，治療奇效"
+msgstr "Rare herbs, miraculous healing"
+
+msgid "書院"
+msgstr "Scholars' Hall"
+
+msgid "藏書豐富，學者雲集"
+msgstr "Rich library, scholars gather"
+
+msgid "學府"
+msgstr "Grand Academy"
+
+msgid "最高學府，研究加速"
+msgstr "The highest seat of learning, faster research"
+
+msgid "水車灌溉"
+msgstr "Waterwheel Irrigation"
+
+msgid "自動化灌溉，省時省力"
+msgstr "Automated irrigation, saves time and labor"
+
+msgid "精耕系統"
+msgstr "Intensive Farming"
+
+msgid "科學農法，產量大增"
+msgstr "Scientific farming, big yield boost"
+
+msgid "雙室鍛爐"
+msgstr "Twin-Chamber Furnace"
+
+msgid "同時冶煉，效率翻倍"
+msgstr "Smelts in parallel, double efficiency"
+
+msgid "大師鍛造坊"
+msgstr "Master Forge"
+
+msgid "鍛造大師級裝備"
+msgstr "Forges master-grade gear"
+
+msgid "診療所"
+msgstr "Medical Clinic"
+
+msgid "專業醫療設備"
+msgstr "Professional medical equipment"
+
+msgid "醫院"
+msgstr "Hospital"
+
+msgid "全科醫療，起死回生"
+msgstr "Full medical care, back from the brink"
+
+msgid "加固城牆"
+msgstr "Reinforced Walls"
+
+msgid "護城河與箭塔"
+msgstr "Moat and arrow towers"
+
+msgid "堅城堡壘"
+msgstr "Fortress Walls"
+
+msgid "銅牆鐵壁，固若金湯"
+msgstr "Walls of iron, utterly impregnable"
+
+msgid "預報"
+msgstr "Forecast"
+
+msgid "風速"
+msgstr "Wind"
+
+msgid "濕度"
+msgstr "Humidity"
+
+msgid "心情"
+msgstr "Mood"
+
+msgid "天後"
+msgstr "days away"
+
+msgid "大霧"
+msgstr "Dense Fog"
+
+msgid "強風"
+msgstr "Strong Wind"
+
+msgid "萬里無雲，適合工作"
+msgstr "Cloudless skies, perfect for work"
+
+msgid "雲層遮住了部分陽光"
+msgstr "Clouds veil part of the sun"
+
+msgid "雨水滋潤了大地"
+msgstr "Rain moistens the earth"
+
+msgid "白雪覆蓋了田野"
+msgstr "Snow blankets the fields"
+
+msgid "狂風暴雨肆虐小鎮"
+msgstr "Wind and rain batter the town"
+
+msgid "猛烈暴風雪，出門危險"
+msgstr "Fierce blizzard, dangerous to go out"
+
+msgid "濃霧籠罩，能見度極低"
+msgstr "Thick fog, visibility near zero"
+
+msgid "大風不斷吹拂"
+msgstr "Relentless strong winds"
+
+msgid "酷熱難耐，人畜疲憊"
+msgstr "Sweltering heat exhausts everyone"
+
+msgid "水源枯竭，作物乾枯"
+msgstr "Water depleted, crops parched"
+
+msgid "災害預警"
+msgstr "Disaster Warning"
+
+msgid "災害預警："
+msgstr "Disaster Warning: "
+
+msgid "災害預警——你需要決定如何防災！"
+msgstr "Disaster warning — decide how to prepare!"
+
+msgid "——你需要做出決定！"
+msgstr " — you need to make a decision!"
+
+msgid "預計明天來襲！現在做準備還來得及——要怎麼應對？"
+msgstr " is expected to strike tomorrow! There is still time to prepare — how will you respond?"
+
+msgid "全面防災"
+msgstr "Full preparations"
+
+msgid "花費 30 木材 + 20 食物：災害效果減半、提早一天結束"
+msgstr "Cost 30 Wood + 20 Food: effects halved, ends a day early"
+
+msgid "基本準備"
+msgstr "Basic preparations"
+
+msgid "花費 10 木材：災害效果減輕 25%"
+msgstr "Cost 10 Wood: disaster effects reduced 25%"
+
+msgid "聽天由命"
+msgstr "Leave it to fate"
+
+msgid "不做任何準備"
+msgstr "Make no preparations"
+
+msgid "事前的全面防災大幅減輕了災害衝擊！"
+msgstr "Thorough preparations greatly reduced the disaster's impact!"
+
+msgid "基本準備發揮了作用，災損有所減輕。"
+msgstr "Basic preparations paid off — damage was reduced."
+
+msgid "嚴重乾旱"
+msgstr "Severe Drought"
+
+msgid "水井乾涸，作物大面積枯死，居民飲水困難。"
+msgstr "Wells run dry, crops wither en masse, drinking water is scarce."
+
+msgid "極端暴風雪"
+msgstr "Extreme Blizzard"
+
+msgid "暴風雪封路，木材消耗加倍，居民被困室內。"
+msgstr "Blizzard blocks the roads; wood use doubles and residents are stuck indoors."
+
+msgid "猛烈暴風雪"
+msgstr "Fierce Blizzard"
+
+msgid "洪水"
+msgstr "Flood"
+
+msgid "河水氾濫，部分農田被淹，儲備糧食受損。"
+msgstr "The river floods, farmland is submerged, food stores are damaged."
+
+msgid "乾旱警報：連續高溫，水源告急！"
+msgstr "Drought alert: sustained heat, water running low!"
+
+msgid "暴風雪警報：氣溫持續下降，請準備取暖物資！"
+msgstr "Blizzard alert: temperatures keep falling — stock up on heating supplies!"
+
+msgid "洪水警報：暴風雨導致河水暴漲！"
+msgstr "Flood alert: storms have swollen the river!"
+
+msgid "天災發生！"
+msgstr "Disaster strikes! "
+
+msgid "來襲"
+msgstr " strikes"
+
+msgid "深井發揮作用，減輕了乾旱影響！"
+msgstr "The deep well pays off, easing the drought!"
+
+msgid "洪水沖走了"
+msgstr "The flood washed away"
+
+msgid "食物！"
+msgstr "food!"
+
+msgid "木材嚴重不足！"
+msgstr "Severe wood shortage! "
+
+msgid "讓居民受凍。"
+msgstr " leaves residents freezing."
+
+msgid "已經結束，小鎮開始恢復。"
+msgstr " has ended; the town begins to recover."
+
+msgid "結束，開始重建"
+msgstr " ends; rebuilding begins"
+
+msgid "入侵損失"
+msgstr "Raid losses"
+
+msgid "全力防禦"
+msgstr "Full defense"
+
+msgid "派出所有守衛迎戰"
+msgstr "Send all guards to fight"
+
+msgid "談判求和"
+msgstr "Negotiate peace"
+
+msgid "嘗試用銀幣買和平"
+msgstr "Try to buy peace with silver"
+
+msgid "疏散居民"
+msgstr "Evacuate residents"
+
+msgid "優先保護居民安全"
+msgstr "Put residents' safety first"
+
+msgid "團結面對"
+msgstr "Stand together"
+
+msgid "號召全鎮一起渡過難關"
+msgstr "Rally the whole town to pull through"
+
+msgid "祈禱平安"
+msgstr "Pray for safety"
+
+msgid "到教堂為大家祈禱"
+msgstr "Pray for everyone at the chapel"
+
+msgid "來應對"
+msgstr " in response to "
+
+msgid "面對"
+msgstr "Facing "
+
+msgid "，鎮長選擇了"
+msgstr ", the mayor chose "
+
+msgid "事件決策"
+msgstr "Event decision"
+
+msgid "小鎮議會"
+msgstr "Town Council"
+
+msgid "議會"
+msgstr "Council"
+
+msgid "議會成立！成員："
+msgstr "Council formed! Members: "
+
+msgid "小鎮議會正式成立，成員有"
+msgstr "The Town Council is officially formed, with members "
+
+msgid "提出議案："
+msgstr " proposed a bill: "
+
+msgid "議會提案"
+msgstr "Council Proposal"
+
+msgid "議會提案："
+msgstr "Council proposal: "
+
+msgid "議會通過："
+msgstr "Council passed: "
+
+msgid "議會否決："
+msgstr "Council rejected: "
+
+msgid "議會決議"
+msgstr "Council resolution"
+
+msgid " 票贊成 / "
+msgstr " votes for / "
+
+msgid " 票反對）"
+msgstr " against)"
+
+msgid "通過"
+msgstr " passed"
+
+msgid "否決"
+msgstr " rejected"
+
+msgid "了"
+msgstr " "
+
+msgid "贊成"
+msgstr "Approve"
+
+msgid "反對"
+msgstr "Reject"
+
+msgid "你對議會提案投了"
+msgstr "On the council proposal you voted "
+
+msgid "票。"
+msgstr "."
+
+msgid "你對議會提案投了贊成票。"
+msgstr "You voted for the council proposal."
+
+msgid "你對議會提案投了反對票。"
+msgstr "You voted against the council proposal."
+
+msgid "你已投票"
+msgstr "You have voted"
+
+msgid "提案者"
+msgstr "Proposer"
+
+msgid "目前沒有待表決的議案。"
+msgstr "No proposals awaiting a vote."
+
+msgid "生效中的政令"
+msgstr "Active Policies"
+
+msgid "近期決議"
+msgstr "Recent Resolutions"
+
+msgid "成員"
+msgstr "Members"
+
+msgid "提高商人稅收"
+msgstr "Raise Merchant Taxes"
+
+msgid "對來往商人收取更高稅金，增加收入但減少商人到訪。"
+msgstr "Charge passing merchants higher taxes — more income, fewer visits."
+
+msgid "建立糧食儲備制度"
+msgstr "Food Reserve System"
+
+msgid "每日扣留部分糧食作為儲備，減少消耗但降低滿意度。"
+msgstr "Withhold some food daily as reserves — less consumption, lower satisfaction."
+
+msgid "設立慶典基金"
+msgstr "Festival Fund"
+
+msgid "每季撥銀幣舉辦慶典，提升全鎮心情。"
+msgstr "Fund seasonal festivals with silver to lift town mood."
+
+msgid "夜間巡邏制度"
+msgstr "Night Patrol System"
+
+msgid "安排守衛夜間巡邏，降低突襲機率但守衛更疲勞。"
+msgstr "Guards patrol at night, lowering raid chance but tiring them out."
+
+msgid "開放邊境政策"
+msgstr "Open Borders Policy"
+
+msgid "歡迎外來移民，加速人口增長但可能帶來衝突。"
+msgstr "Welcome immigrants — faster population growth, possible friction."
+
+msgid "學術研究補助"
+msgstr "Research Grants"
+
+msgid "投入資源支持研究，加速科技發展。"
+msgstr "Fund research to speed up technology."
+
+msgid "開拓新貿易路線"
+msgstr "New Trade Routes"
+
+msgid "派商人探索新路線，短期花費大但長期增加貿易機會。"
+msgstr "Send merchants to scout new routes — costly now, more trade later."
+
+msgid "公共藥草園"
+msgstr "Public Herb Garden"
+
+msgid "開闢公共藥草園，增加草藥產量。"
+msgstr "Open a public herb garden to boost herb production."
+
+msgid "全民防禦訓練"
+msgstr "Civil Defense Training"
+
+msgid "所有居民接受基本防禦訓練，提升防禦但耗費時間。"
+msgstr "All residents get basic defense training — better defense, costs time."
+
+msgid "自然保護區"
+msgstr "Nature Preserve"
+
+msgid "劃設保護區，提升採集效率和居民心情。"
+msgstr "Designate a preserve to boost gathering efficiency and mood."
+
+msgid "工匠市集日"
+msgstr "Artisan Market Day"
+
+msgid "每季舉辦工匠市集，促進手工業發展。"
+msgstr "Hold a seasonal artisan market to boost crafts."
+
+msgid "水利工程"
+msgstr "Waterworks"
+
+msgid "修建灌溉水渠，大幅提升農業產量。"
+msgstr "Build irrigation channels to greatly boost farm output."
+
+msgid "聲望系統"
+msgstr "Reputation"
+
+msgid "聲望效果"
+msgstr "Reputation Effects"
+
+msgid "聲望來源"
+msgstr "Reputation Sources"
+
+msgid "已達最高聲望！"
+msgstr "Max reputation reached!"
+
+msgid "聲望提升！你現在是"
+msgstr "Reputation up! You are now "
+
+msgid "鎮長的聲望提升為"
+msgstr "The mayor's reputation rose to "
+
+msgid "無名之輩"
+msgstr "Nobody"
+
+msgid "剛來的外地人，沒人認識你"
+msgstr "A newcomer nobody knows yet"
+
+msgid "新面孔"
+msgstr "New Face"
+
+msgid "居民開始記住你的名字了"
+msgstr "Residents are starting to remember your name"
+
+msgid "可靠鄰人"
+msgstr "Reliable Neighbor"
+
+msgid "大家覺得你是可以信賴的人"
+msgstr "People see you as someone they can trust"
+
+msgid "鎮之棟樑"
+msgstr "Pillar of the Town"
+
+msgid "你已經是小鎮不可或缺的一份子"
+msgstr "You are an indispensable part of the town"
+
+msgid "邊境英雄"
+msgstr "Frontier Hero"
+
+msgid "你的事蹟在邊境廣為流傳"
+msgstr "Your deeds are known across the frontier"
+
+msgid "傳奇人物"
+msgstr "Living Legend"
+
+msgid "後人會在書裡讀到你的故事"
+msgstr "Future generations will read your story in books"
+
+msgid "💰 交易加成"
+msgstr "💰 Trade Bonus"
+
+msgid "🛒 商店折扣"
+msgstr "🛒 Shop Discount"
+
+msgid "🛡️ 事件減免"
+msgstr "🛡️ Event Mitigation"
+
+msgid "🤝 NPC 初始信任"
+msgstr "🤝 NPC Starting Trust"
+
+msgid "😊 NPC 心情加成"
+msgstr "😊 NPC Mood Bonus"
+
+msgid "日常"
+msgstr "Daily"
+
+msgid "幫助NPC"
+msgstr "Helping NPCs"
+
+msgid "決策"
+msgstr "Decision"
+
+msgid "村民答謝"
+msgstr "Villager's thanks"
+
+msgid "公開感謝鎮長當初的決定"
+msgstr "Publicly thanks the mayor for the earlier decision"
+
+msgid "對鎮長先前的決策表達不滿"
+msgstr "Voices displeasure with the mayor's earlier decision"
+
+msgid "特地回來道謝：「上次「"
+msgstr " came back to thank you: \"About \""
+
+msgid "」的事，多虧你決定「"
+msgstr "\", thanks to your decision \""
+
+msgid "」，現在順利多了！」(+15 銀幣、+2 聲望)"
+msgstr "\", things are much better now!\" (+15 Silver, +2 Reputation)"
+
+msgid "抱怨：「上次「"
+msgstr " complains: \"Last time with \""
+
+msgid "」你決定「"
+msgstr "\" you decided \""
+
+msgid "」，結果根本沒解決問題…」(全鎮心情 -2)"
+msgstr "\", but it didn't solve anything…\" (town mood -2)"
+
+msgid "有人找你商量"
+msgstr "Someone wants your advice"
+
+msgid "你決定"
+msgstr "You decided "
+
+msgid "交易獲得了"
+msgstr "Trade earned"
+
+msgid "商人交易"
+msgstr "Merchant trade"
+
+msgid "農夫的煩惱"
+msgstr "The Farmer's Trouble"
+
+msgid "農夫氣沖沖地跑來找你抱怨：「工坊把水都搶走了，我的田快乾死了！你能幫我跟鐵匠說說嗎？」"
+msgstr "The farmer storms over to complain: \"The workshop is taking all the water and my fields are drying up! Can you talk to the blacksmith for me?\""
+
+msgid "幫農夫說情"
+msgstr "Speak up for the farmer"
+
+msgid "+15食物，農夫開心，鐵匠不滿"
+msgstr "+15 Food, farmer happy, blacksmith annoyed"
+
+msgid "勸他體諒工坊"
+msgstr "Ask him to understand the workshop"
+
+msgid "+5工具，鐵匠開心，農夫不滿"
+msgstr "+5 Tools, blacksmith happy, farmer annoyed"
+
+msgid "吃不完的食物"
+msgstr "More Food Than We Can Eat"
+
+msgid "你經過倉庫，發現食物堆得滿出來了。鄰居湊過來問：「這麼多吃的，要不要辦個聚餐啊？」"
+msgstr "Passing the warehouse, you see food piled to overflowing. A neighbor leans in: \"With all this food, how about a feast?\""
+
+msgid "張羅聚餐"
+msgstr "Organize a feast"
+
+msgid "-30食物，全鎮心情+8"
+msgstr "-30 Food, town mood +8"
+
+msgid "建議拿去賣"
+msgstr "Suggest selling it"
+
+msgid "賣掉多餘的食物，+20銀幣"
+msgstr "Sell surplus food, +20 Silver"
+
+msgid "路邊的旅人"
+msgstr "Traveler by the Road"
+
+msgid "你在鎮口遇到一個疲憊的旅人，他向你搭話：「請問⋯⋯這裡能找到吃的和住的地方嗎？」"
+msgstr "At the town gate you meet a weary traveler who asks: \"Excuse me... is there food and lodging to be found here?\""
+
+msgid "帶他去安頓"
+msgstr "Help him settle in"
+
+msgid "-10食物-5銀幣，全鎮心情+5，聲望+3"
+msgstr "-10 Food -5 Silver, town mood +5, reputation +3"
+
+msgid "指個方向就好"
+msgstr "Just point the way"
+
+msgid "全鎮心情-2，但保住資源"
+msgstr "Town mood -2, but resources saved"
+
+msgid "礦工的擔憂"
+msgstr "The Miner's Worry"
+
+msgid "礦工下工後攔住你：「裡面的支架裂了好幾根，我怕再挖下去會塌⋯⋯你覺得該跟上面說嗎？」"
+msgstr "After his shift the miner stops you: \"Several support beams have cracked down there. I'm afraid it will collapse if we keep digging... should I report it?\""
+
+msgid "陪他去反映"
+msgstr "Go report it with him"
+
+msgid "-15木材-10石材，礦工安心"
+msgstr "-15 Wood -10 Stone, miner reassured"
+
+msgid "安慰他沒事的"
+msgstr "Reassure him it's fine"
+
+msgid "+10金屬，但礦工士氣低落"
+msgstr "+10 Metal, but miner morale drops"
+
+msgid "商人的暗示"
+msgstr "The Merchant's Hint"
+
+msgid "商人趙霞悄悄拉你到一旁：「我手上有批好東西，算你便宜，有興趣嗎？」"
+msgstr "Merchant Zhao Xia quietly pulls you aside: \"I've got a batch of good stuff, cheap for you. Interested?\""
+
+msgid "掏錢買下"
+msgstr "Pay up and buy"
+
+msgid "-30銀幣，有機會獲得稀有物資"
+msgstr "-30 Silver, chance to gain rare goods"
+
+msgid "搖頭婉拒"
+msgstr "Politely decline"
+
+msgid "商人略顯失望"
+msgstr "The merchant looks a bit disappointed"
+
+msgid "鄰居的求助"
+msgstr "A Neighbor's Plea"
+
+msgid "隔壁鄰居敲你的門，滿臉焦急：「我家人發燒了，你手邊有草藥嗎？拜託幫幫忙⋯⋯」"
+msgstr "Your neighbor knocks, looking frantic: \"My family has a fever — do you have any herbs? Please help...\""
+
+msgid "拿草藥過去"
+msgstr "Bring herbs over"
+
+msgid "-5草藥，醫生有成就感"
+msgstr "-5 Herbs, doctor feels fulfilled"
+
+msgid "建議多休息就好"
+msgstr "Suggest just resting more"
+
+msgid "全鎮有點擔心"
+msgstr "The town is a little worried"
+
+msgid "酒館裡的提議"
+msgstr "A Proposal at the Tavern"
+
+msgid "你在酒館喝酒時，有人站起來喊：「最近大家太悶了，一起辦個慶典吧！」所有人看向你等你表態。"
+msgstr "While drinking at the tavern, someone stands up and shouts: \"Everyone's been so gloomy lately — let's throw a festival!\" All eyes turn to you."
+
+msgid "舉手贊成"
+msgstr "Raise your hand in favor"
+
+msgid "-20食物-10銀幣，全鎮大幅開心"
+msgstr "-20 Food -10 Silver, big town-wide mood boost"
+
+msgid "搖搖頭算了"
+msgstr "Shake your head and pass"
+
+msgid "居民有些失望"
+msgstr "Residents are a little disappointed"
+
+msgid "守衛的商量"
+msgstr "The Guard's Request"
+
+msgid "守衛巡邏經過你家門口，停下來跟你聊：「最近夜裡不太平，我想多巡幾圈，你覺得呢？」"
+msgstr "A guard on patrol stops by your door: \"Nights haven't been peaceful lately. I'm thinking of extra rounds — what do you say?\""
+
+msgid "主動幫忙望風"
+msgstr "Offer to keep watch"
+
+msgid "守衛積極，全鎮安心+3"
+msgstr "Guard motivated, town-wide reassurance +3"
+
+msgid "覺得還好吧"
+msgstr "Say it seems fine"
+
+msgid "守衛有些不滿"
+msgstr "The guard is a bit unhappy"
+
+msgid "書房裡的爭執"
+msgstr "Dispute in the Study"
+
+msgid "你路過書房，研究員和牧師正為一本古書吵得面紅耳赤。看到你進來，兩人同時問：「你說，到底誰說得對？」"
+msgstr "Passing the study, you find the researcher and the priest red-faced over an old book. Seeing you, both ask at once: \"You tell us — who's right?\""
+
+msgid "覺得研究員有理"
+msgstr "Side with the researcher"
+
+msgid "+10研究點，研究員開心"
+msgstr "+10 research points, researcher happy"
+
+msgid "覺得牧師有理"
+msgstr "Side with the priest"
+
+msgid "全鎮心情+3，牧師開心"
+msgstr "Town mood +3, priest happy"
+
+msgid "田邊的閒聊"
+msgstr "Chat by the Fields"
+
+msgid "農夫蹲在田邊嘆氣，看到你走過來就問：「這季不知道該種什麼，你覺得種值錢的好還是種糧食穩？」"
+msgstr "The farmer squats by the field sighing, and asks as you approach: \"I don't know what to plant this season — cash crops or steady food crops?\""
+
+msgid "建議種經濟作物"
+msgstr "Suggest cash crops"
+
+msgid "+15銀幣，但食物稍減"
+msgstr "+15 Silver, but slightly less food"
+
+msgid "建議種糧食"
+msgstr "Suggest food crops"
+
+msgid "+20食物，穩扎穩打"
+msgstr "+20 Food, steady and safe"
+
+msgid "街上的吵架"
+msgstr "Quarrel in the Street"
+
+msgid "兩個居民在街上吵了起來，越吵越兇。旁邊的人推了推你：「你跟他們都熟，去勸勸唄？」"
+msgstr "Two residents are arguing in the street, getting louder. Someone nudges you: \"You know them both — go talk them down?\""
+
+msgid "上前調解"
+msgstr "Step in to mediate"
+
+msgid "全鎮關係改善"
+msgstr "Town-wide relationships improve"
+
+msgid "全鎮心情+2"
+msgstr "Town mood +2"
+
+msgid "假裝沒看到"
+msgstr "Pretend not to see"
+
+msgid "有人覺得你太冷漠"
+msgstr "Some think you're too cold"
+
+msgid "木匠的訴苦"
+msgstr "The Carpenter's Complaint"
+
+msgid "木匠拎著酒壺坐在你旁邊嘆氣：「最近累得不行，真想休一天⋯⋯但又怕木材不夠用。你說我該怎麼辦？」"
+msgstr "The carpenter sits down beside you with a jug and sighs: \"I'm dead tired and want a day off... but I worry we'll run short on wood. What should I do?\""
+
+msgid "叫他好好休息"
+msgstr "Tell him to rest up"
+
+msgid "木匠感激，但今天少產木材"
+msgstr "Carpenter grateful, but less wood today"
+
+msgid "鼓勵他再撐一下"
+msgstr "Encourage him to hang on"
+
+msgid "+5木材，但木匠累了"
+msgstr "+5 Wood, but the carpenter is worn out"
+
+msgid "需要你的幫助！"
+msgstr " needs your help!"
+
+msgid "幫助"
+msgstr "Helping "
+
+msgid "看起來很沮喪"
+msgstr " looks depressed"
+
+msgid "：「最近什麼事都不太順利...你能聽我說說嗎？」"
+msgstr ": \"Nothing's been going right lately... could you lend an ear?\""
+
+msgid "陪他聊聊"
+msgstr "Keep him company"
+
+msgid "給他空間"
+msgstr "Give him space"
+
+msgid "肚子餓了"
+msgstr " is hungry"
+
+msgid "：「你有沒有多餘的食物？我快餓扁了...」"
+msgstr ": \"Do you have any spare food? I'm starving...\""
+
+msgid "分享食物"
+msgstr "Share food"
+
+msgid "抱歉沒有"
+msgstr "Sorry, I don't"
+
+msgid "：「我跟"
+msgstr ": \"I had a fight with "
+
+msgid "吵了一架...你覺得誰對？」"
+msgstr "... who do you think is right?\""
+
+msgid "支持"
+msgstr "Support "
+
+msgid "勸他們和好"
+msgstr "Urge them to make up"
+
+msgid "太累了"
+msgstr " is exhausted"
+
+msgid "：「我已經連續工作好幾天了...能不能給我放個假？」"
+msgstr ": \"I've been working for days straight... could I get a day off?\""
+
+msgid "批准休假"
+msgstr "Approve time off"
+
+msgid "鼓勵堅持"
+msgstr "Encourage him to push on"
+
+msgid "你正在扮演「"
+msgstr "You are roleplaying \""
+
+msgid "」——邊境鎮的居民。你想主動傳一則訊息給"
+msgstr "\" — a resident of Frontier Town. You want to send a message to "
+
+msgid "情境："
+msgstr "Scenario: "
+
+msgid "【你是誰】"
+msgstr "[Who you are]"
+
+msgid "。性格："
+msgstr ". Personality: "
+
+msgid "你現在在"
+msgstr "You are now at "
+
+msgid "，正在"
+msgstr ", currently "
+
+msgid "【最近對話】"
+msgstr "[Recent conversation]"
+
+msgid "【規則】"
+msgstr "[Rules]"
+
+msgid "- 繁體中文（台灣用語），1-2句就好，像傳LINE訊息那樣自然"
+msgstr "- English, 1-2 short sentences, casual like a text message"
+
+msgid "- 不要加任何前綴、名字標籤、引號"
+msgstr "- No prefixes, name tags, or quotation marks"
+
+msgid "- 直接寫訊息內容就好"
+msgstr "- Just write the message itself"
+
+msgid "你想跟旅人分享今天工作的趣事"
+msgstr "You want to share a funny work story from today with the traveler"
+
+msgid "你想約旅人一起去做某件事"
+msgstr "You want to invite the traveler to do something together"
+
+msgid "你突然想到一個問題想問旅人"
+msgstr "A question just popped into your head to ask the traveler"
+
+msgid "你發現了一件有趣的事想告訴旅人"
+msgstr "You discovered something interesting you want to tell the traveler"
+
+msgid "你想關心旅人最近過得如何"
+msgstr "You want to check in on how the traveler has been doing"
+
+msgid "你想跟旅人聊聊最近鎮上的八卦"
+msgstr "You want to chat with the traveler about recent town gossip"
+
+msgid "欸"
+msgstr "Hey "
+
+msgid "，今天有空嗎？"
+msgstr ", got a minute today?"
+
+msgid "嘿！你最近在忙什麼啊？"
+msgstr "Hey! What have you been up to lately?"
+
+msgid "你有聽說嗎？今天鎮上發生了一件事..."
+msgstr "Did you hear? Something happened in town today..."
+
+msgid "唉，工作好累，想找人聊聊"
+msgstr "Ugh, work is exhausting... I need someone to talk to"
+
+msgid "欸欸，等一下要不要一起去逛逛？"
+msgstr "Hey hey, want to go for a stroll later?"
+
+msgid "！好久沒聊了，最近好嗎？"
+msgstr "! Long time no chat — how have you been?"
+
+msgid "我剛剛看到一個超好笑的事想跟你說哈哈"
+msgstr "I just saw the funniest thing, had to tell you haha"
+
+msgid "主動傳訊息給"
+msgstr "Sent a message to "
+
+msgid "的關係："
+msgstr " — relationship: "
+
+msgid "（好感度"
+msgstr " (affinity "
+
+msgid "歲，"
+msgstr " years old, "
+
+msgid "你對今日新聞選擇了「"
+msgstr "For today's news you chose \""
+
+msgid "忽略"
+msgstr "Ignore"
+
+msgid "調查"
+msgstr "Investigate"
+
+msgid "走到村民身邊按「交談」，或開啟「聊天」（手機:底部💬），選一位居民打招呼吧！"
+msgstr "Walk up to a villager and press \"Talk\", or open \"Chat\" (mobile: 💬 at the bottom) and greet someone!"
+
+msgid "有多種方式過冬：囤物資、交朋友或蓋建築。開啟「任務」（手機:☰選單）查看詳情。"
+msgstr "Many ways to survive winter: stockpile, make friends, or build. Open \"Quests\" (mobile: ☰ Menu) for details."
+
+msgid "試試在「經濟→產業」開啟第一個產業（手機:☰選單→經濟），或和更多居民交流。"
+msgstr "Try opening your first industry in \"Economy → Industry\" (mobile: ☰ Menu → Economy), or chat with more residents."
+
+msgid "小鎮開始成長了！開啟「任務」（手機:☰選單）了解當前目標。"
+msgstr "The town is growing! Open \"Quests\" (mobile: ☰ Menu) to see current goals."
+
+msgid "危機即將到來，做好準備！開啟「任務」（手機:☰選單）了解詳情。"
+msgstr "Crisis is coming — prepare! Open \"Quests\" (mobile: ☰ Menu) for details."
+
+msgid "上一期日報"
+msgstr "Previous issue"
+
+msgid "記者"
+msgstr "Reporter"
+
+msgid "的摘要"
+msgstr " summary"
+
+msgid "好感度"
+msgstr "Affinity "
+
+msgid "，有浪漫火花💕"
+msgstr ", romantic spark 💕"
+
+msgid "，候選人："
+msgstr ", candidates: "
+
+msgid "手記"
+msgstr "'s Notes"
+
+msgid "邊境小鎮的平凡日常"
+msgstr "Everyday life in a frontier town"
+
+msgid "送禮"
+msgstr "Give Gift"
+
+msgid "送禮物給"
+msgstr "Give a gift to"
+
+msgid "送禮給"
+msgstr "Gift for "
+
+msgid "鎮長送給"
+msgstr "The mayor gave "
+
+msgid "收到"
+msgstr "Received "
+
+msgid "送的"
+msgstr "'s gift: "
+
+msgid "好感"
+msgstr "Affinity"
+
+msgid "他的最愛"
+msgstr "Favorite"
+
+msgid ",對方超喜歡!"
+msgstr " — they loved it!"
+
+msgid ",是我的最愛!"
+msgstr ", my favorite!"
+
+msgid "謝謝你!我很喜歡。"
+msgstr "Thank you! I really like it."
+
+msgid "你真貼心,謝謝!"
+msgstr "So thoughtful of you, thanks!"
+
+msgid "哇!我一直想要這個!你真懂我!"
+msgstr "Wow! I've always wanted this! You get me!"
+
+msgid "這是我的最愛!你怎麼知道的?太感謝了!"
+msgstr "This is my favorite! How did you know? Thank you so much!"
+
+msgid "今天已經收過你的禮物了,明天再送吧!"
+msgstr "I already got your gift today — bring one tomorrow!"
+
+msgid "投其所好效果加倍!每人每天限送一次。"
+msgstr "Favorites double the effect! One gift per person per day."
+
+msgid "美味餐點"
+msgstr "Tasty Meal"
+
+msgid "草藥花束"
+msgstr "Herb Bouquet"
+
+msgid "精緻布料"
+msgstr "Fine Cloth"
+
+msgid "精良工具"
+msgstr "Quality Tool"
+
+msgid "銀幣紅包"
+msgstr "Silver Envelope"
+
+msgid "全球繁榮排行榜"
+msgstr "Global Prosperity Leaderboard"
+
+msgid "排行榜暫時無法載入(僅 rimtown.cc 支援)"
+msgstr "Leaderboard unavailable (rimtown.cc only)"
+
+msgid "還沒有人上榜,登入後你的繁榮度會自動參賽!"
+msgstr "No entries yet — log in and your prosperity joins automatically!"
+
+msgid "登入後即可上榜!"
+msgstr "Log in to join the leaderboard!"
+
+msgid "鐵匠的傳承"
+msgstr "The Blacksmith's Legacy"
+
+msgid "張豪好感度達到 65"
+msgstr "Reach 65 affinity with Zhang Hao"
+
+msgid "張豪年紀漸長，希望能收個徒弟把手藝傳下去，讓鐵匠鋪後繼有人..."
+msgstr "Zhang Hao is getting on in years and hopes to take an apprentice so the smithy lives on..."
+
+msgid "我這把老骨頭還能打幾年鐵？是時候找個接班人了..."
+msgstr "How many more years can these old bones swing a hammer? Time to find a successor..."
+
+msgid "幫他招募學徒"
+msgstr "Help him recruit an apprentice"
+
+msgid "提供 60 銀幣做學徒津貼"
+msgstr "Provide 60 Silver as an apprentice stipend"
+
+msgid "提供 40 木材"
+msgstr "Provide 40 Wood"
+
+msgid "擴建鐵匠鋪"
+msgstr "Expand the smithy"
+
+msgid "鐵匠鋪的爐火從此日夜不熄，張豪的手藝有了傳人。"
+msgstr "The forge now burns day and night — Zhang Hao's craft has an heir."
+
+msgid "籌辦市集"
+msgstr "Organize the Market"
+
+msgid "邊境大市集"
+msgstr "Grand Frontier Market"
+
+msgid "趙霞好感度達到 65"
+msgstr "Reach 65 affinity with Zhao Xia"
+
+msgid "趙霞想在鎮上辦一場盛大的市集，吸引四方商旅前來，讓邊境鎮成為貿易樞紐..."
+msgstr "Zhao Xia wants to hold a grand market to draw merchants from afar and make Frontier Town a trade hub..."
+
+msgid "如果能辦一場大市集，讓所有商人都來這裡就好了..."
+msgstr "If only we could hold a grand market and bring every merchant here..."
+
+msgid "投入 120 銀幣籌備"
+msgstr "Invest 120 Silver in preparations"
+
+msgid "準備 50 食物款待商旅"
+msgstr "Prepare 50 Food to host the caravans"
+
+msgid "提供 20 布料做布置"
+msgstr "Provide 20 Cloth for decorations"
+
+msgid "廣發邀請"
+msgstr "Send invitations far and wide"
+
+msgid "邊境大市集轟動四方！各地商旅絡繹不絕，小鎮的名聲遠播。"
+msgstr "The Grand Frontier Market is a sensation! Caravans keep arriving, and the town's fame spreads far."
+
+msgid "，"
+msgstr ", "
+
+msgid "。"
+msgstr ". "
+
+msgid "："
+msgstr ": "
+
+msgid "、"
+msgstr ", "
+
+msgid "！"
+msgstr "!"
+
+msgid "」"
+msgstr "\""
+
+msgid "結婚了！"
+msgstr " got married!"
+
+msgid "開始交往！"
+msgstr " started dating!"
+
+msgid "已靜音"
+msgstr "Muted"
+
+msgid "播放中"
+msgstr "Playing"
+
+msgid "的生活還不錯。"
+msgstr " life treats me well."
+
+msgid "本機"
+msgstr "local"
+
+msgid " 訪客）"
+msgstr " visiting)"
+
+msgid "海風鎮的故事"
+msgstr "Stories of Seabreeze"
+
+msgid "這座漁村沒有既定的劇本——阿潮的暗戀、石叔與燈爺的舊怨、雲姨未說完的往事，都在日常裡自己發生。多跟大家聊聊，故事會找上你。"
+msgstr "This fishing village has no script — Achao's crush, the old grudge between Shishu and Grandpa Deng, Aunt Yun's unfinished past all unfold on their own. Talk to people, and the stories will find you."
+
+msgid "切換城鎮失敗：找不到該城鎮的存檔。"
+msgstr "Failed to switch towns: that town's save could not be found."
+
+msgid "找不到目的地的存檔"
+msgstr "destination save not found"
+
+msgid "新城鎮建立中，原本的城鎮會先自動儲存…"
+msgstr "Founding new town — your current town is being saved first…"
+
+msgid "處理中…"
+msgstr "Working…"
+
+msgid "請稍候，不要重新整理頁面"
+msgstr "Please wait — do not reload the page"
+
+msgid "已建立"
+msgstr " founded"
+
+msgid "原本的城鎮已自動儲存，「城鎮列表」隨時可切換，兩鎮並存"
+msgstr "Your previous town was saved automatically — switch anytime via the Towns list; both coexist"
+
+msgid "📯 沿海道路修復完成，往海風鎮的馬車恢復通行！"
+msgstr "📯 The coastal road is repaired — coaches to Seabreeze are running again!"
+
+msgid "道路重通！"
+msgstr "The road is open!"
+
+msgid "通往漁村「海風鎮」的沿海道路修好了——去東邊的馬車站就能搭車拜訪，兩鎮的村民也會開始互相作客"
+msgstr "The coastal road to the fishing village of Seabreeze is repaired — catch a coach at the station to the east; villagers of both towns will start visiting each other too"
+
+msgid "車伕靠在車轅上打盹：「往海風鎮的沿海道路還封著呢——聽說鎮子發展起來，就會組修路隊把路打通。急的話，先跟商隊買點那邊的魚乾解解饞吧。」"
+msgstr "The coachman dozes against the shaft: \"The coastal road to Seabreeze is still blocked. Word is once this town grows, a repair crew will open it up. Meanwhile, the caravans sell dried fish from over there.\""
+
+msgid "姑婆又從海風鎮寄魚乾來了，她醃的魚誰都比不上。"
+msgstr "Great-aunt sent dried fish from Seabreeze again — no one cures fish like her."
+
+msgid "我這手醃魚的功夫，是海風鎮的姑婆海嬤教的。"
+msgstr "My fish-curing craft came from great-aunt Hai-ma in Seabreeze."
+
+msgid "老石那傢伙去海邊曬鹽也二十年了，礦上的日子他還記得嗎。"
+msgstr "Old Shi's been drying salt by the sea for twenty years — does he still remember the mines?"
+
+msgid "當年跟老石同一條坑道，現在一個挖礦一個曬鹽。"
+msgstr "Old Shi and I shared a mine shaft once — now one digs ore, one dries salt."
+
+msgid "浪叔的船這批貨怎麼還沒到，別又在哪個港口喝茫了。"
+msgstr "Uncle Lang's shipment is late again — better not be drunk in some port."
+
+msgid "我店裡的異國貨，一半是海風鎮浪叔的船捎回來的。"
+msgstr "Half my exotic goods come on Uncle Lang's boat from Seabreeze."
+
+msgid "在海味居駐唱那陣子，掌杓姑娘的海鮮麵配我的歌，絕了。"
+msgstr "Those nights singing at the Sea Flavor Inn — her seafood noodles with my songs, perfection."
+
+msgid "那首關於海的歌，是在海風鎮寫的。"
+msgstr "That song about the sea? I wrote it in Seabreeze."
+
+msgid "燈爺的信裡說，航海日誌裡有段記載跟遺跡對得上…"
+msgstr "Old Deng's letter says a passage in his nautical logs matches the ruins…"
+
+msgid "海風鎮的燈爺是我通信多年的筆友，他懂的比書還多。"
+msgstr "Old Deng the lighthouse keeper has been my pen pal for years — he knows more than any book."
+
+msgid "同期的阿汐在海風鎮當醫師，海女出身的她潛得比誰都深。"
+msgstr "A-Xi from my class practices in Seabreeze — a diver-born doctor who goes deeper than anyone."
+
+msgid "好想跟阿汐當面討論那個病例，可惜路還封著，只能寫信。"
+msgstr "I wish I could discuss that case with A-Xi in person, but the road's still closed — letters it is."
+
+msgid "邊境鎮的姪孫女王麗，醃魚的手藝是我教的，不知道長進了沒。"
+msgstr "My grandniece Wang Li in Frontier Town — I taught her to cure fish. Has she improved?"
+
+msgid "礦上的老吳還在挖嗎…當年說好老了一起釣魚的。"
+msgstr "Is old Wu still digging? We promised to fish together when we got old."
+
+msgid "邊境鎮的趙老闆娘又下了一批訂單，這趟得跑快點。"
+msgstr "Boss Zhao in Frontier Town placed another order — better make this run quick."
+
+msgid "那個彈吉他的流浪商人，唱的那首海歌我現在還會哼。"
+msgstr "That wandering trader with the guitar — I still hum his sea song."
+
+msgid "邊境鎮那位孫姑娘的信又到了，她問的遺跡我日誌裡正好有記載。"
+msgstr "Another letter from Miss Sun in Frontier Town — my logs happen to mention the ruins she asks about."
+
+msgid "同期的林美在邊境鎮行醫，她的信裡總夾著新藥方。"
+msgstr "Lin Mei from my class practices in Frontier Town — her letters always carry new prescriptions."
+
+msgid "🛺 馬車站"
+msgstr "🛺 Coach Stop"
+
+msgid "馬車站"
+msgstr "Coach Station"
+
+msgid "車伕靠在車轅上打盹：「這條路通向遠方——等你有了別的城鎮，我就載你去。」"
+msgstr "The coachman dozes against the shaft: \"This road leads far away — found another town, and I'll take you there.\""
+
+msgid "車伕拍拍車板：「要去哪兒？路上得顛個兩天。」"
+msgstr "The coachman pats the boards: \"Where to? It's a bumpy two-day ride.\""
+
+msgid "下次再說"
+msgstr "Maybe later"
+
+msgid "馬車顛簸了兩天…"
+msgstr "Two bumpy days on the road… "
+
+msgid "風雪讓路程多花了些時候…"
+msgstr "snow made the journey longer…"
+
+msgid "蟬聲一路相送…"
+msgstr "cicadas sang the whole way…"
+
+msgid "沿途稻浪翻金…"
+msgstr "golden rice waves rolled past…"
+
+msgid "野花開了一路…"
+msgstr "wildflowers bloomed along the road…"
+
+msgid "抵達"
+msgstr "Arrived at "
+
+msgid "下車活動活動筋骨，去鎮上走走吧"
+msgstr "Stretch your legs and take a look around town"
+
+msgid "旅途出了點問題："
+msgstr "Trouble on the road: "
+
+msgid "搭上回程的車，返回"
+msgstr " boarded the coach home, back to "
+
+msgid "了。"
+msgstr "."
+
+msgid "回家鄉去了，說好還會再來。"
+msgstr " went back home — promised to visit again."
+
+msgid "去"
+msgstr "Off to "
+
+msgid "作客"
+msgstr " for a visit"
+
+msgid "）來到鎮上作客，會住上幾天。"
+msgstr ") arrived for a stay of a few days."
+
+msgid "來的"
+msgstr "'s "
+
+msgid "到鎮上作客了，聽說那裡的事真新鮮。"
+msgstr " is visiting town — the stories from there sound fascinating."
+
+msgid "來的訪客"
+msgstr " visitor "
+
+msgid "從"
+msgstr "From "
+
+msgid "來作客的旅人"
+msgstr ", here for a visit"
+
+msgid "遠客來訪"
+msgstr "A guest from afar"
+
+msgid "）來作客了，去打個招呼吧"
+msgstr ") is visiting — go say hello"
+
+msgid "在"
+msgstr "In "
+
+msgid "時："
+msgstr ": "
+
+msgid "回來了，帶回一肚子見聞。"
+msgstr " is back, full of stories."
+
+msgid "邀去鄰鎮"
+msgstr "Invite to travel"
+
+msgid "邀請對方去另一個城鎮作客幾天(要夠熟才會答應)"
+msgstr "Invite them to visit another town for a few days (needs enough affinity)"
+
+msgid "要不要跟我去別的鎮走走？"
+msgstr "Want to come see another town with me?"
+
+msgid "現在沒辦法邀請這位出遠門"
+msgstr "Can't invite this one on a trip right now"
+
+msgid "婉拒了：「跟你還沒熟到一起出遠門啦。」"
+msgstr " declined: \"We're not close enough for a trip together yet.\""
+
+msgid "答應去"
+msgstr " agreed to visit "
+
+msgid "作客幾天，收拾行李出發了！"
+msgstr " for a few days — bags packed and off they go!"
+
+msgid "切到那個鎮就能看到他作客的樣子；幾天後他會帶著見聞回來"
+msgstr "Switch to that town to see their visit; they will return with stories in a few days"
+
+msgid "碼頭來信"
+msgstr "A letter from the docks"
+
+msgid "商隊捎來消息:沿著海岸走兩天,有個叫「海風鎮」的漁村——討海人的早起文化、鹽場與燈塔。到「城鎮列表→建立新城鎮」就能前往開拓"
+msgstr "A caravan brings word: two days down the coast lies a fishing village called Seabreeze — early-rising fisherfolk, salt flats and a lighthouse. Open \"Towns → New Town\" to settle it"
+
+msgid "要建立哪種城鎮？\n\n【確定】🌊 海風鎮——海岸漁村：討海人的早起文化、鹽場與燈塔、全新的居民與恩怨\n【取消】🏔️ 邊境鎮——經典開局"
+msgstr "Which town would you like to found?\n\n[OK] 🌊 Seabreeze — a coastal fishing village: early-rising fisherfolk, salt flats, a lighthouse, and an all-new cast\n[Cancel] 🏔️ Frontier Town — the classic start"
+
+msgid "海風鎮 "
+msgstr "Seabreeze "
+
+msgid "（村民明早會自動上工）"
+msgstr "(villagers will report for work tomorrow)"
+
+msgid "主動到"
+msgstr " showed up to work at "
+
+msgid "上工了。"
+msgstr "."
+
+msgid "我開始在"
+msgstr "I started helping out at "
+
+msgid "幫忙了，多一份收入也多認識些人。"
+msgstr " — extra income, and new faces to meet."
+
+msgid "遊戲已暫停"
+msgstr "Game paused"
+
+msgid "遊戲已繼續"
+msgstr "Game resumed"
+
+msgid "超過糧倉容量，每日腐壞5%"
+msgstr "over granary cap — 5% spoils daily"
+
+msgid "預估日產"
+msgstr "est. daily"
+
+msgid "午夜結算"
+msgstr "settles at midnight"
+
+msgid "餐食放到過期"
+msgstr "meals expired"
+
+msgid "份餐食放到過期倒掉了——考慮讓廚房排休。"
+msgstr " meals expired and were tossed — consider giving the kitchen a day off."
+
+msgid "科技"
+msgstr "Tech"
+
+msgid "的加班津貼"
+msgstr "'s overtime pay"
+
+msgid "銀庫不足，付不出"
+msgstr "Treasury too low to pay "
+
+msgid "的加班津貼，今日照常排班。"
+msgstr "'s overtime bonus — normal shift today."
+
+msgid "存糧過多腐壞"
+msgstr "excess food spoiled"
+
+msgid "糧倉滿了，"
+msgstr "Granary is full — "
+
+msgid "份食物腐壞——可辦慶典或賣給商人消化存糧。"
+msgstr " food spoiled. Hold a festival or sell to merchants to use up stock."
+
+msgid "今日產出／消耗，點按排班"
+msgstr "today's flow — tap to schedule"
+
+msgid "（無人手）"
+msgstr "(no workers)"
+
+msgid "休工：不生產，村民心情變好、多時間社交"
+msgstr "Day off: no output, workers relax & socialize more"
+
+msgid "正常排班"
+msgstr "Normal shift"
+
+msgid "加班：產量+50%，但村民會累、心情變差"
+msgstr "Overtime: +50% output, but workers tire and sour"
+
+msgid "休工"
+msgstr "Day off"
+
+msgid "加班"
+msgstr "Overtime"
+
+msgid "鎮長下令："
+msgstr "Mayor's order: "
+
+msgid "明日生效"
+msgstr "takes effect tomorrow"
+
+msgid "原料自動補給"
+msgstr "auto raw-material supply"
+
+msgid "今天工坊休工，難得清閒，多了些時間陪伴身邊的人。"
+msgstr "Workshop closed today — a rare break, more time with the people around me."
+
+msgid "連日加班，身體有點吃不消，但訂單堆著總得有人做。"
+msgstr "Days of overtime are wearing me down, but someone has to clear these orders."
+
+msgid "材料短缺，用邊角料將就趕工。"
+msgstr " is short on materials, making do with scraps."
+
+msgid "的診療"
+msgstr "'s treatment"
+
+msgid "去找醫生拿了藥，人舒服多了。"
+msgstr "Got medicine from the doctor — feeling much better."
+
+msgid "關鍵資源"
+msgstr "Key Resources"
+
+msgid "加工產能"
+msgstr "Crafting Output"
+
+msgid "今日產出／消耗"
+msgstr "today's production / consumption"
+
+msgid "每日需"
+msgstr "daily need"
+
+msgid "每日耗損"
+msgstr "daily wear"
+
+msgid "生病時消耗"
+msgstr "used when sick"
+
+msgid "建設與新居用"
+msgstr "for building & new homes"
+
+msgid "原料倉庫"
+msgstr "Raw Materials"
+
+msgid "短缺"
+msgstr "Shortage"
+
+msgid "吃緊"
+msgstr "Running low"
+
+msgid "原料充足，工坊無虞"
+msgstr "Materials plentiful — workshops are set"
+
+msgid "展開明細"
+msgstr "Show details"
+
+msgid "研究點"
+msgstr "points"
+
+msgid "返回聯絡人"
+msgstr "Back to contacts"
+
+msgid "追蹤"
+msgstr "Follow"
+
+msgid "追蹤中"
+msgstr "Following"
+
+msgid "奇怪...最近看"
+msgstr "Strange... lately when I look at "
+
+msgid "的眼神,好像跟以前不一樣了。"
+msgstr ", something feels different than before."
+
+msgid "本來想算了,但一想到"
+msgstr "I meant to let it go, but thinking of what "
+
+msgid "那件事,火又上來了。"
+msgstr " did, the anger flares right back up."
+
+msgid "聽說"
+msgstr "I hear "
+
+msgid "又在背後提那件事...是不打算善了了?"
+msgstr " is bringing that up behind my back again... so this isn't over?"
+
+msgid "走在一起,心口悶得發疼。憑什麼是他。"
+msgstr " walking together — my chest aches. Why him, of all people."
+
+msgid "集"
+msgstr " · Episode"
+
+msgid "邊境鎮日常"
+msgstr "Frontier Town Daily"
+
+msgid "本集看點"
+msgstr "This episode's highlights"
+
+msgid "進行中的劇情線"
+msgstr "Ongoing storylines"
+
+msgid "下集預告"
+msgstr "Next episode teaser"
+
+msgid "婚姻第"
+msgstr "married, day "
+
+msgid "戀愛第"
+msgstr "dating, day "
+
+msgid "絕交中"
+msgstr "estranged"
+
+msgid "你調停到"
+msgstr "your mediation at"
+
+msgid "單戀名花有主的"
+msgstr " pines for the already-taken "
+
+msgid "的關係瀕臨絕交…"
+msgstr " are on the brink of cutting ties…"
+
+msgid "的心意,快藏不住了…"
+msgstr " can barely hide their feelings anymore…"
+
+msgid "目前關係："
+msgstr "Current status: "
+
+msgid "交惡"
+msgstr "On bad terms"
+
+msgid "相識"
+msgstr "Acquainted"
+
+msgid "點我重播"
+msgstr "tap to replay"
+
+msgid "兩人還沒有共同的故事。"
+msgstr "These two have no shared story yet."
+
+msgid "已追蹤"
+msgstr "Following"
+
+msgid "取消追蹤"
+msgstr "Unfollowed"
+
+msgid "他有大事發生時會通知你"
+msgstr "You'll be notified when something big happens to them"
+
+msgid "你追蹤的"
+msgstr "Following: "
+
+msgid "皺著眉頭把你拉到一旁：「"
+msgstr " pulls you aside with a frown: \""
+
+msgid "鎮上的人都慌了，你說該怎麼辦？」"
+msgstr "Everyone's panicking — what should we do?\""
+
+msgid "深夜還亮著燈,見你經過連忙招手：「"
+msgstr "'s lamp is still lit late at night; they wave you over: \""
+
+msgid "我想聽聽你的看法,再晚就來不及了。」"
+msgstr "I need your take — soon it'll be too late.\""
+
+msgid "在廣場上攔住你,壓低聲音：「"
+msgstr " stops you in the square, voice low: \""
+
+msgid "這件事我拿不定主意...你幫我想想。」"
+msgstr "I can't decide this one... help me think.\""
+
+msgid "和解進度"
+msgstr "Reconciliation progress"
+
+msgid "他還不信任你——先提升關係再來調解"
+msgstr "They don't trust you yet — build the relationship first, then mediate"
+
+msgid "（心防鬆動了）"
+msgstr " (their guard is coming down)"
+
+msgid "昨晚忙完"
+msgstr "Last night after finishing my "
+
+msgid "的事,躺下來滿腦子都是你。這樣下去不行,我得說出來——我喜歡你。"
+msgstr " work, I lay down and could only think of you. I have to say it — I like you."
+
+msgid "鎮上的人都說我最近怪怪的。也對,遇見你之後,我就不太像原本的自己了。"
+msgstr "Everyone says I've been acting strange lately. They're right — since meeting you, I'm not quite my old self."
+
+msgid "我練習了好多次要怎麼開口...結果一看到你全忘了。總之,我心裡有你,很久了。"
+msgstr "I rehearsed this so many times... then forgot it all when I saw you. Anyway — you've been in my heart for a long time."
+
+msgid "如果哪天你要離開這個鎮,能不能...帶上我?"
+msgstr "If you ever leave this town... would you take me with you?"
+
+msgid "做"
+msgstr "Doing "
+
+msgid "這行,平常沒什麼人真的關心我。你不一樣。這句話我想當面說。"
+msgstr " work, few people ever really care about me. You're different. I wanted to say that to your face."
+
+msgid "昨天想了想,要是你當初沒來這個鎮,我大概還是一個人悶著。謝了,真的。"
+msgstr "I was thinking — if you'd never come to this town, I'd probably still be keeping to myself. Thanks. Really."
+
+msgid "別笑我肉麻——在這鎮上,我最信得過的人就是你。"
+msgstr "Don't laugh — of everyone in this town, you're the one I trust most."
+
+msgid "我這人朋友不多,但質都很高。比如說,你。"
+msgstr "I don't have many friends, but the ones I have are top quality. You, for instance."
+
+msgid "那個..."
+msgstr "Um... "
+
+msgid "...講完了,不准笑。"
+msgstr "...That's all. Don't you dare laugh."
+
+msgid "昨日回響"
+msgstr "Yesterday's Ripples"
+
+msgid "你昨天的舉動,正在改變這個小鎮"
+msgstr "Your actions yesterday are changing this town"
+
+msgid "你種在"
+msgstr "The thought you planted in "
+
+msgid "心裡的念頭發酵了——他對"
+msgstr "'s mind has taken root — their attitude toward "
+
+msgid "明顯軟化"
+msgstr " has clearly softened"
+
+msgid "更差了"
+msgstr " has gotten worse"
+
+msgid "昨天對"
+msgstr "Yesterday's "
+
+msgid "留下了好印象——他對你更親近了"
+msgstr " left a good impression — they feel closer to you now"
+
+msgid "起了反效果——他對你起了戒心"
+msgstr " backfired — they are wary of you now"
+
+msgid "把你放在心上了：「"
+msgstr " has you on their mind: \""
+
+msgid "你送給"
+msgstr "You gave "
+
+msgid "AI 日報出刊"
+msgstr "AI Daily published"
+
+msgid "到「日報」分頁閱讀全文"
+msgstr "Read the full issue in the Newspaper tab"
+
+msgid "寫到一半墨水快沒了，只好去雜貨店賒了一瓶。老闆說用報導抵帳也行。"
+msgstr "Ran out of ink mid-article and had to put a bottle on credit. The shopkeeper said an article would settle the tab."
+
+msgid "今天採訪時被狗追了兩條街。為了新聞，值得。"
+msgstr "Got chased two blocks by a dog while reporting today. Worth it, for the news."
+
+msgid "酒館老闆說我上一期把他寫得太摳門。我考慮下期寫得更詳細一點。"
+msgstr "The tavern keeper says last issue made him sound stingy. I am considering being even more detailed next time."
+
+msgid "有人問我為什麼堅持寫日報。我說：因為總得有人記得這個小鎮發生過什麼。"
+msgstr "Someone asked why I keep writing this paper. I said: someone has to remember what happened in this town."
+
+msgid "稿紙不夠用了。看來這個鎮的故事，比我想的還要多。"
+msgstr "Running out of paper. Seems this town has more stories than I thought."
+
+msgid "深夜校稿時聽見窗外有人吵架。明天的頭條有了。"
+msgstr "Heard an argument outside while proofreading late at night. There is tomorrow's headline."
+
+msgid "把今天聽到的八卦都寫進去了⋯希望當事人看到別來找我。"
+msgstr "Wrote down all the gossip I heard today... hope the people involved don't come after me."
+
+msgid "小鎮編年史"
+msgstr "Town Chronicle"
+
+msgid "每天換日自動歸檔全鎮村民的近況、行程、足跡與所有對話逐字稿(存在你的瀏覽器資料庫)。"
+msgstr "Every day at rollover, all villagers' status, schedules, footprints, and full conversation transcripts are archived to your browser's database."
+
+msgid "匯出 JSON"
+msgstr "Export JSON"
+
+msgid "匯出對話 CSV"
+msgstr "Export conversations CSV"
+
+msgid "匯出作息 CSV"
+msgstr "Export schedules CSV"
+
+msgid "清空"
+msgstr "Clear"
+
+msgid "載入中…"
+msgstr "Loading…"
+
+msgid "還沒有歸檔。每天換日時會自動把全鎮的作息、行程、足跡與對話存進資料庫。"
+msgstr "No archives yet. Each day at rollover, the whole town's schedules, plans, footprints, and conversations are stored automatically."
+
+msgid "位村民"
+msgstr " villagers"
+
+msgid "場對話"
+msgstr " conversations"
+
+msgid "你的對話"
+msgstr "Your conversations"
+
+msgid "匯出失敗："
+msgstr "Export failed: "
+
+msgid "確定要清空編年史資料庫嗎？此操作無法復原（不影響遊戲存檔）。"
+msgstr "Clear the chronicle database? This cannot be undone (game saves are unaffected)."
+
+msgid "廣場對嗆"
+msgstr "Public Showdown"
+
+msgid "絕交現場"
+msgstr "The Falling-Out"
+
+msgid "世紀大和解"
+msgstr "The Grand Reconciliation"
+
+msgid "和事佬"
+msgstr "Peacemaker"
+
+msgid "促成一對絕交的村民世紀大和解"
+msgstr "Broker a grand reconciliation between two estranged villagers"
+
+msgid "積怨徹底爆發,當眾撂下重話,正式絕交!"
+msgstr " — their grudge finally exploded; harsh words in public, officially estranged!"
+
+msgid "在眾目睽睽下大吵一架,火藥味十足!"
+msgstr " had a blazing public row — sparks flying!"
+
+msgid "當眾對嗆,鎮上議論紛紛"
+msgstr " clashed in public; the town is abuzz"
+
+msgid "公開絕交,兩人再不相往來"
+msgstr " publicly cut ties — they want nothing to do with each other"
+
+msgid "徹底鬧翻,絕交了。這口氣嚥不下去。"
+msgstr " and I are completely done. I can't swallow this."
+
+msgid "目睹"
+msgstr "Witnessed "
+
+msgid "當眾大吵——我當然站"
+msgstr " arguing in public — of course I side with "
+
+msgid "這邊。"
+msgstr "."
+
+msgid "當眾大吵,小鎮的氣氛有點僵。"
+msgstr " arguing in public; the town feels tense."
+
+msgid "嘆了口氣:「你上次說的,我還在想...」"
+msgstr " sighs: \"I'm still thinking about what you said...\""
+
+msgid "去勸勸另一邊的"
+msgstr "Now go talk to the other side: "
+
+msgid "吧"
+msgstr " "
+
+msgid "冷冷地說:「這與你無關。」"
+msgstr " says coldly: \"This is none of your business.\""
+
+msgid "苦口婆心勸我和"
+msgstr " earnestly urged me to make peace with "
+
+msgid "和好...也許,是該放下了。"
+msgstr "... maybe it's time to let go."
+
+msgid "的調解下,我和"
+msgstr "'s mediation, "
+
+msgid "和解了。心裡一塊石頭落了地。"
+msgstr " and I reconciled. A weight off my heart."
+
+msgid "的奔走下,"
+msgstr "'s efforts, "
+
+msgid "當眾和解!全鎮傳為佳話"
+msgstr " publicly reconciled! The whole town is moved"
+
+msgid "在旅人調解下世紀大和解"
+msgstr " reached a grand reconciliation thanks to the traveler"
+
+msgid "成了!"
+msgstr "It worked! "
+
+msgid "當眾和解!"
+msgstr " publicly reconciled!"
+
+msgid "兩人好感 +8 · 聲望 +15"
+msgstr "Both +8 affinity · Reputation +15"
+
+msgid "沉默許久:「...讓我想想。」"
+msgstr " falls silent for a long while: \"...Let me think.\""
+
+msgid "再去勸勸"
+msgstr "Now go persuade "
+
+msgid ",兩邊都點頭就能促成和解"
+msgstr " — when both sides agree, the reconciliation happens"
+
+msgid "經你居中調解,"
+msgstr "Thanks to your mediation, "
+
+msgid "鬧到絕交了——分別找兩人用「調解」勸和"
+msgstr " are estranged — talk to each of them with \"Mediate\""
+
+msgid "和解只差一步!再去用「調解」勸勸"
+msgstr "One step from peace! Use \"Mediate\" on "
+
+msgid "促成世紀大和解:兩人好感大增、聲望 +15、成就「和事佬」"
+msgstr "Broker the grand reconciliation: big affinity gains, +15 reputation, \"Peacemaker\" achievement"
+
+msgid "喲,這不是最會做表面功夫的那位嗎?"
+msgstr "Well well, if it isn't the master of keeping up appearances?"
+
+msgid "總比某些人背後嚼舌根來得光明磊落。"
+msgstr "Better than gossiping behind backs like some people."
+
+msgid "你再說一次試試看?大家都在,正好評評理!"
+msgstr "Say that again! Everyone's here — let them judge!"
+
+msgid "評就評!我還怕你不成?"
+msgstr "Fine by me! You think I'm scared of you?"
+
+msgid "夠了。這些年我忍你很久了。"
+msgstr "Enough. I've put up with you for years."
+
+msgid "忍?說得好像只有你在忍一樣。"
+msgstr "Put up with ME? As if you were the only one suffering."
+
+msgid "那正好。從今天起,你走你的路,我過我的橋。"
+msgstr "Perfect. From today on, you go your way, I go mine."
+
+msgid "求之不得。絕交!"
+msgstr "Gladly. We're done!"
+
+msgid "那個...聽說你前陣子過得不容易。"
+msgstr "Hey... I heard things have been rough for you lately."
+
+msgid "彼此彼此。其實...當年那件事,我也有不對。"
+msgstr "Same to you. Honestly... I was in the wrong back then too."
+
+msgid "都過去了。有人苦口婆心勸了我好幾回,我才想通——為那點事賭一輩子的氣,不值得。"
+msgstr "It's all in the past. Someone kept urging me until I realized — a lifetime of grudges isn't worth it."
+
+msgid "嗯。回頭請那位和事佬喝一杯吧,算我們倆的。"
+msgstr "Yeah. Let's buy that peacemaker a drink — on both of us."
+
+msgid "有些人真的很會踩人底線。不點名。"
+msgstr "Some people really know how to cross the line. No names."
+
+msgid "今天話說重了?不,我只後悔沒早點說。"
+msgstr "Too harsh today? No — I only regret not saying it sooner."
+
+msgid "道不同不相為謀。就到這裡吧。"
+msgstr "We were never on the same path. This is where it ends."
+
+msgid "刪掉了一個人。心裡反而輕鬆了。"
+msgstr "Cut someone off. Honestly, I feel lighter."
+
+msgid "冰釋前嫌的感覺,真好。🕊️"
+msgstr "Burying the hatchet feels good. 🕊️"
+
+msgid "謝謝那位替我們兩個奔走的人。改天請你喝一杯!"
+msgstr "Thanks to the one who ran back and forth for us. Drinks on me sometime!"
+
+msgid "這對積怨已久的死對頭在大庭廣眾下狹路相逢,當場吵了起來,句句帶刺誰也不讓誰,圍觀的鎮民議論紛紛"
+msgstr " — sworn rivals crossing paths in public, trading barbs, neither backing down as the town watches"
+
+msgid "的積怨徹底爆發,當眾撂下重話,正式絕交"
+msgstr "'s grudge finally explodes — harsh words in public, officially estranged"
+
+msgid "的奔走調解下,"
+msgstr "'s tireless mediation, "
+
+msgid "終於放下多年心結,當眾握手言和,圍觀的鎮民鼓掌"
+msgstr " finally let go of years of resentment and shake hands as the town applauds"
+
+msgid "已因今天的際遇臨時調整"
+msgstr "Revised mid-day after today's events"
+
+msgid "臨時改變了今天的安排"
+msgstr " changed today's plans on the spot"
+
+msgid "，我改變了今天接下來的安排。"
+msgstr ", I changed the rest of my plans for today."
+
+msgid "因為「"
+msgstr "Because of \""
+
+msgid "心裡突然冒出一個念頭："
+msgstr "A thought suddenly popped into my head: "
+
+msgid "——這件事把今天整個打亂了"
+msgstr " — this threw the whole day off"
+
+msgid "聊了之後："
+msgstr " after we talked: "
+
+msgid "【現在時刻】"
+msgstr "[Time now] "
+
+msgid "【今天原本的安排】"
+msgstr "[Original plan for today] "
+
+msgid "【剛剛發生的事】"
+msgstr "[What just happened] "
+
+msgid "看到"
+msgstr "Saw "
+
+msgid "正忙著"
+msgstr " busy with: "
+
+msgid "分鐘）"
+msgstr " min)"
+
+msgid "（"
+msgstr " ("
+
+msgid "）"
+msgstr ") "
+
+msgid "（免費額度，智慧分流用）"
+msgstr " (free tier, used for smart routing)"
+
+msgid "填了之後自動分流：你與村民的對話、劇情名場面優先走 Groq 免費額度；行程／反思／背景對話走上面的主金鑰（便宜又不佔 Groq 限額）。任一邊被限流會自動切到另一邊。"
+msgstr "With this set, traffic is routed automatically: your chats with villagers and drama scenes use the free Groq tier first, while schedules/reflections/background chatter use the main key above (cheap, and saves your Groq quota). If either side is rate-limited, it falls back to the other."
+
+msgid "請寫3-4句自然對話。範例風格："
+msgstr "Write 3-4 natural lines of dialogue. Example styles:"
+
+msgid "我要參選鎮長！"
+msgstr "Run for mayor!"
+
+msgid "想自己選鎮長？"
+msgstr "Want to run for mayor yourself? "
+
+msgid "你正在競選！已向"
+msgstr "You are campaigning! Canvassed "
+
+msgid "位村民拉票——去聊天用「說服」繼續爭取支持"
+msgstr " villagers — use Persuade in chats to win more support"
+
+msgid "參選鎮長"
+msgstr "Run for Mayor"
+
+msgid "選一個你要主打的政見。當選後施政方針會實際影響小鎮 30 天,之後每天的鎮政決策都由你拿主意。"
+msgstr "Pick your platform. If elected, your policy shapes the town for 30 days, and daily town decisions become yours to make."
+
+msgid "加強貿易與生產,讓鎮民富起來"
+msgstr "Boost trade and production — prosperity for all"
+
+msgid "照顧每一位居民,社區和諧"
+msgstr "Care for every resident — community harmony"
+
+msgid "固若金湯,不再讓突襲得逞"
+msgstr "Fortify the town — no more raids"
+
+msgid "研究與技藝,知識就是未來"
+msgstr "Research and craft — knowledge is the future"
+
+msgid "與自然共處,永續發展"
+msgstr "Live with nature — sustainable growth"
+
+msgid "減少管束,自由發展"
+msgstr "Less control, more freedom"
+
+msgid "再想想"
+msgstr "Let me think"
+
+msgid "目前無法參選。"
+msgstr "You cannot run right now."
+
+msgid "登記失敗。"
+msgstr "Registration failed."
+
+msgid "你參選了！"
+msgstr "You are running!"
+
+msgid "去找村民聊天,用「說服」為自己拉票——每位村民一屆只能拉一次"
+msgstr "Chat with villagers and use Persuade to canvass — once per villager per election"
+
+msgid "初生之犢"
+msgstr "Bold Newcomer"
+
+msgid "登記參選鎮長"
+msgstr "Register as a mayoral candidate"
+
+msgid "民選鎮長"
+msgstr "Elected Mayor"
+
+msgid "贏得鎮長選舉"
+msgstr "Win the mayoral election"
+
+msgid "秋季選舉開跑"
+msgstr "Autumn election begins"
+
+msgid "你已符合參選資格!到「事件」分頁登記參選,登記期只有 3 天"
+msgstr "You qualify to run! Register in the Events tab — registration lasts only 3 days"
+
+msgid "小鎮還不夠認識你——進入第二章(小鎮成長 20)後才能參選。"
+msgstr "The town barely knows you yet — reach Chapter 2 (town growth 20) to run."
+
+msgid "參選需要 3 位好感 40 以上的村民聯署(目前"
+msgstr "Running requires 3 villagers at 40+ affinity to endorse you (currently "
+
+msgid ")。先去多交幾個朋友吧!"
+msgstr "). Go make some friends first!"
+
+msgid "現在不是競選登記期間(每年秋季第 1 天開選,登記期 3 天)。"
+msgstr "Registration is closed (elections start on day 1 of autumn; registration lasts 3 days)."
+
+msgid "你已經登記參選了。"
+msgstr "You are already registered."
+
+msgid "我雖是旅人,但這裡早已是我的家。我主張"
+msgstr "I may be a traveler, but this town is my home. I stand for "
+
+msgid ",請把你的一票交給我!"
+msgstr " — give me your vote!"
+
+msgid "旅人"
+msgstr "Traveler"
+
+msgid "宣布參選鎮長!主張"
+msgstr " announces a mayoral run! Platform: "
+
+msgid "我登記參選鎮長,主張"
+msgstr "I registered to run for mayor, standing for "
+
+msgid "。聯署的朋友們都在為我加油。"
+msgstr ". My endorsers are cheering me on."
+
+msgid "鎮上的旅人"
+msgstr "The town traveler "
+
+msgid "宣布參選鎮長,主張"
+msgstr " announced a mayoral run, standing for "
+
+msgid "投入鎮長選戰,主張"
+msgstr " joins the mayoral race, standing for "
+
+msgid "親自來拉票,認真談了他對"
+msgstr " came to canvass in person, speaking earnestly about "
+
+msgid "的想法"
+msgstr " plans"
+
+msgid "你當選鎮長了!從今天起,全鎮大小事都等你拿主意。"
+msgstr "You are elected mayor! From today, the whole town looks to you."
+
+msgid "我贏得鎮長選舉("
+msgstr "I won the mayoral election ("
+
+msgid "票),旅人成了邊境鎮的鎮長!"
+msgstr " votes) — the traveler became mayor of Frontier Town!"
+
+msgid "你以"
+msgstr "You lost with "
+
+msgid "票落選,雖敗猶榮——村民記住了你的名字,下屆秋季再來!"
+msgstr " votes — an honorable defeat. The town remembers your name; try again next autumn!"
+
+msgid "我在鎮長選舉中落敗("
+msgstr "I lost the mayoral election ("
+
+msgid "票)。"
+msgstr " votes). "
+
+msgid "當選了,但我不會就此放棄。"
+msgstr " won, but I am not giving up."
+
+msgid "身為鎮長,全鎮都在等你拿主意。"
+msgstr "As mayor, the whole town awaits your decision."
+
+msgid "——鎮民都在等鎮長的決定!"
+msgstr " — the townsfolk await the mayor's decision!"
+
+msgid "你正在競選鎮長!去找村民聊天,用「說服」為自己拉票"
+msgstr "You are running for mayor! Chat with villagers and Persuade them to back you"
+
+msgid "天,每位村民只能拉一次票"
+msgstr " days left; each villager can be canvassed once"
+
+msgid "選舉開跑了!你已符合參選資格——要不要自己出馬選鎮長?"
+msgstr "The election is on! You qualify — why not run for mayor yourself?"
+
+msgid "到「事件」分頁登記參選,錯過要再等一年"
+msgstr "Register in the Events tab — miss it and you wait a year"
+
+msgid "投票進行中!你也在選票上——把握最後機會拉票"
+msgstr "Voting is underway — and you are on the ballot! Last chance to canvass"
+
+msgid "你向"
+msgstr "You gave "
+
+msgid "認真說明了自己的政見"
+msgstr " an earnest pitch of your platform"
+
+msgid "他聽進去了——投票時會記得你"
+msgstr "They listened — they will remember you at the ballot"
+
+msgid "笑說你已經拉過他的票了"
+msgstr " laughs that you already canvassed them"
+
+msgid "NPC 每日 AI 額度"
+msgstr "Daily AI budget for NPCs"
+
+msgid "無上限"
+msgstr "Unlimited"
+
+msgid "留空＝無上限。村民的每日行程、你附近的村民對話與夜間反思會呼叫 AI；遠處對話走內建模擬並照樣寫入記憶。與你的聊天、劇情名場面不受此額度限制。想控制費用可填每日次數上限，填 0 完全關閉。"
+msgstr "Leave empty = unlimited. Daily NPC schedules, conversations near you, and nightly reflections call the AI; distant chats use built-in simulation but still write memories. Your own chats and drama scenes are never limited. To control cost, set a daily call cap; 0 disables it."
+
+msgid "由 AI 依他的性格與昨日經歷生成"
+msgstr "Generated by AI from their personality and yesterday's experiences"
+
+msgid "NPC 對話每日 AI 額度"
+msgstr "Daily AI budget for NPC chatter"
+
+msgid "今日已用"
+msgstr "Used today:"
+
+msgid "只有你附近（8 格內）的村民對話會呼叫 AI；遠處對話走內建模擬並照樣寫入記憶。與你的聊天、劇情名場面不受此額度限制。設 0 可完全關閉 NPC 對話 AI。"
+msgstr "Only conversations near you (within 8 tiles) call the AI; distant chats use built-in simulation but still write memories. Your own chats and drama scenes are not limited. Set 0 to disable AI for NPC chatter."
+
+msgid "心裡的體悟："
+msgstr "Inner reflections: "
+
+msgid "你心裡的體悟："
+msgstr "Your inner reflections: "
+
+msgid "你記得的事（跟話題相關就自然提起）："
+msgstr "Things you remember (bring them up naturally if relevant): "
+
+msgid "你記得："
+msgstr "You remember: "
+
+msgid "如果「記得」的事跟話題有關，讓角色自然地提起或延續它——這是他們真實的共同過去。"
+msgstr "If a remembered event is relevant, let the characters naturally bring it up or continue it — it is their real shared past."
+
+msgid "會記住的一句話（以他的視角與感受）"
+msgstr " will remember, in one line from their own perspective and feelings"
+
+msgid "最近和"
+msgstr "Lately, "
+
+msgid "的感情越來越深了。"
+msgstr " and I have been growing closer."
+
+msgid "我最近跟"
+msgstr "I have been spending a lot of time with "
+
+msgid "走得很近，有這樣的朋友真好。"
+msgstr " lately — good to have such a friend."
+
+msgid "最近老是跟我過不去，想到就煩。"
+msgstr " keeps getting on my nerves lately. So annoying."
+
+msgid "最近常碰到"
+msgstr "I keep running into "
+
+msgid "，這人比我想的有意思。"
+msgstr " — more interesting than I thought."
+
+msgid "的內心："
+msgstr "'s inner thought: "
+
+msgid "歲的"
+msgstr "-year-old "
+
+msgid "夜深了，你回想今天發生的事："
+msgstr "It is late at night. You look back on what happened today:"
+
+msgid "【任務】寫下你今晚睡前心裡最深的一個體悟——關於某個人、某段關係、或你自己的處境。"
+msgstr "[Task] Write the deepest realization on your mind tonight — about a person, a relationship, or your own situation."
+
+msgid "【規則】繁體中文（台灣用語），只寫一句話，第一人稱，有情感、有觀點，不要流水帳。不要加引號或其他文字。"
+msgstr "[Rules] One sentence only, first person, with emotion and a point of view. No quotes or extra text."
+
+msgid "件小鎮動態,等你忙完再看"
+msgstr "town updates waiting for you"
+
+msgid "內心狀態"
+msgstr "Inner State"
+
+msgid "生活作息："
+msgstr "Lifestyle: "
+
+msgid "近況："
+msgstr "Currently: "
+
+msgid "今日目標"
+msgstr "Today's Goals"
+
+msgid "今日足跡"
+msgstr "Today's Timeline"
+
+msgid "現在"
+msgstr "Now"
+
+msgid "今天還沒發生什麼事"
+msgstr "Nothing has happened yet today"
+
+msgid "約"
+msgstr "Around"
+
+msgid "上床睡覺,"
+msgstr "goes to bed,"
+
+msgid "起床"
+msgstr "wakes up"
+
+msgid "。是個夜貓子,深夜才有精神"
+msgstr ". A night owl, most alive late at night"
+
+msgid "。習慣早睡早起"
+msgstr ". Early to bed, early to rise"
+
+msgid "正在和"
+msgstr "Dating "
+
+msgid "偷偷喜歡著"
+msgstr "Secretly has a crush on "
+
+msgid "正朝著人生夢想「"
+msgstr "Working toward the life dream \""
+
+msgid "」努力("
+msgstr "\" ("
+
+msgid "處得很僵"
+msgstr " — things have been tense lately"
+
+msgid "心裡想著:「"
+msgstr "Thinking: \""
+
+msgid "日子過得平平淡淡,沒什麼特別的事"
+msgstr "Life has been calm and uneventful"
+
+msgid "起床,展開新的一天"
+msgstr "wake up and start the day"
+
+msgid "(能摸魚就摸魚)"
+msgstr " (slacking off whenever possible)"
+
+msgid "(打算多做一點)"
+msgstr " (planning to do extra)"
+
+msgid "(每件事都要做到位)"
+msgstr " (everything must be done right)"
+
+msgid "上工,做"
+msgstr "start work as "
+
+msgid "的活"
+msgstr ""
+
+msgid "抽空去逛"
+msgstr "Find time to visit "
+
+msgid ",看看"
+msgstr " and check out "
+
+msgid "傍晚想跟"
+msgstr "Have dinner with "
+
+msgid "一起吃飯聊聊今天"
+msgstr " in the evening and talk about the day"
+
+msgid "想找機會跟"
+msgstr "Find a chance to talk more with "
+
+msgid "多說幾句話"
+msgstr ""
+
+msgid "盡量避開"
+msgstr "Try to avoid "
+
+msgid ",免得又吵起來"
+msgstr " to prevent another argument"
+
+msgid "為夢想「"
+msgstr "Push the dream \""
+
+msgid "」再努力一點:"
+msgstr "\" a little further: "
+
+msgid "跟人聊聊鎮長選舉,想想要投給誰"
+msgstr "Talk about the mayor election and decide who to vote for"
+
+msgid "好一陣子沒跟人好好聊天了,今天想找人說說話"
+msgstr "Haven't had a good chat in a while — find someone to talk to today"
+
+msgid "晚上去酒館打聽今天的八卦"
+msgstr "Hit the tavern tonight for today's gossip"
+
+msgid "晚上想一個人安靜待著"
+msgstr "Spend the evening quietly alone"
+
+msgid "晚上去圖書館翻翻書"
+msgstr "Browse books at the library tonight"
+
+msgid "晚上找朋友放鬆一下"
+msgstr "Relax with friends tonight"
+
+msgid "回家睡覺"
+msgstr "go home and sleep"
+
+msgid "今日焦點"
+msgstr "Today's Focus"
+
+msgid "今天的故事"
+msgstr "Today's Stories"
+
+msgid "更多"
+msgstr "More"
+
+msgid "今天想做"
+msgstr "Wants to do today"
+
+msgid "心裡的話"
+msgstr "Inner voice"
+
+msgid "有村民"
+msgstr "A villager"
+
+msgid "正在等你幫忙"
+msgstr " is waiting for your help"
+
+msgid "回應會直接影響他對你的信任"
+msgstr "Your response directly affects their trust in you"
+
+msgid "」需要你決定怎麼應對"
+msgstr "\" needs your decision"
+
+msgid "放著不管會自動發展,後果未必是你要的"
+msgstr "Ignore it and it resolves on its own — maybe not the way you want"
+
+msgid "有村民來找你商量一件事"
+msgstr "A villager wants to discuss something with you"
+
+msgid "今天的選擇會留下長期影響"
+msgstr "Today's choice will have lasting effects"
+
+msgid "選舉開跑了!去跟村民聊聊,用「說服」幫你支持的人拉票"
+msgstr "Election season! Chat with villagers and use \"Persuade\" to campaign for your candidate"
+
+msgid "競選只剩"
+msgstr "Only"
+
+msgid "投票中!去投下你的一票"
+msgstr "Voting is open! Cast your vote"
+
+msgid "你的一票可能改變小鎮未來的政策"
+msgstr "Your vote could change the town's future policy"
+
+msgid "之間剛發生大事("
+msgstr " just had a major moment ("
+
+msgid "),去關心一下"
+msgstr ") — go check on "
+
+msgid "這時候的陪伴最能改變關係"
+msgstr "Being there now matters most for the relationship"
+
+msgid "今天有"
+msgstr "Today is "
+
+msgid "!去會場逛逛、玩攤位"
+msgstr "! Visit the grounds and play the stalls"
+
+msgid "祭典期間村民好感更容易提升"
+msgstr "Affinity grows faster during festivals"
+
+msgid "的關係就差一點點了,去聊聊天或送個小禮物"
+msgstr " is so close to a milestone — chat or bring a small gift"
+
+msgid "關係更近時,他會對你說出真心話"
+msgstr "Get closer and they'll open up to you"
+
+msgid "今天挺平靜的,去找"
+msgstr "A quiet day — go find "
+
+msgid "聊聊天吧"
+msgstr " for a chat"
+
+msgid "常聊天他會記得你、跟你越來越熟"
+msgstr "Talk often and they'll remember you and grow closer"
+
+msgid "初來乍到"
+msgstr "A Stranger Arrives"
+
+msgid "小鎮的一份子"
+msgstr "One of the Town"
+
+msgid "安家立業"
+msgstr "Settling Down"
+
+msgid "小鎮的支柱"
+msgstr "Pillar of the Town"
+
+msgid "認識村民,聊天,看見他們的愛恨與記憶。這座小鎮會記得你做過的事。"
+msgstr "Meet the villagers, chat, and witness their loves, feuds and memories. This town remembers what you do."
+
+msgid "村民開始信任你:任務、事件應對、村民請託與每日決策向你敞開。"
+msgstr "The villagers begin to trust you: quests, event responses, requests and daily decisions open up."
+
+msgid "你有能力參與小鎮的經濟了:商店、農場、產業。"
+msgstr "You can now take part in the town's economy: shop, farm, industries."
+
+msgid "小鎮的未來由你塑造:工廠、研究、建築升級、議會。"
+msgstr "Shape the town's future: factories, research, building upgrades, the council."
+
+msgid "章:"
+msgstr ": "
+
+msgid "會在"
+msgstr " opens in "
+
+msgid "章「"
+msgstr " \""
+
+msgid "開啟。先專心和村民相處吧——關係好了,小鎮自然會成長。"
+msgstr ". Focus on the villagers for now — as bonds grow, so does the town."
+
+msgid "小鎮成長"
+msgstr "Town growth"
+
+msgid "小鎮已完全成熟"
+msgstr "The town is fully grown"
+
+msgid "緊密"
+msgstr "Tight-knit"
+
+msgid "渙散"
+msgstr "Falling apart"
+
+msgid "渴望有人陪"
+msgstr "longing for company"
+
+msgid "悶得發慌"
+msgstr "bored stiff"
+
+msgid "過得還不錯,沒什麼匱乏。"
+msgstr "Doing fine — wants for nothing."
+
+msgid "秒後由小鎮自行決定"
+msgstr "s until the town decides on its own"
+
+msgid "你遲遲沒有決定,小鎮自行處理了「"
+msgstr "You never decided, so the town handled \""
+
+msgid "的請求"
+msgstr "'s request"
+
+msgid "急匆匆找到你：「"
+msgstr " rushes to find you: \""
+
+msgid "你見多識廣，幫我拿個主意！」"
+msgstr " You've seen the world — help me decide!\""
+
+msgid "來徵詢你的意見！"
+msgstr " seeks your counsel!"
+
+msgid "被人公開稱讚"
+msgstr "Publicly praised"
+
+msgid "被人說壞話"
+msgstr "Badmouthed"
+
+msgid "到處誇我,真開心!"
+msgstr " has been praising me everywhere. So happy!"
+
+msgid "居然是"
+msgstr "It was "
+
+msgid "在背後說我壞話...太過分了。"
+msgstr " badmouthing me behind my back... unbelievable."
+
+msgid "在背後說他壞話,關係惡化!"
+msgstr " was badmouthing them — relationship soured!"
+
+msgid "你在小鎮擺放了"
+msgstr "You placed "
+
+msgid "農作加成"
+msgstr "Farm bonus"
+
+msgid "售價加成"
+msgstr "Sell bonus"
+
+msgid "買價優惠"
+msgstr "Buy discount"
+
+msgid "貿易加成"
+msgstr "Trade bonus"
+
+msgid "採礦加成"
+msgstr "Mining bonus"
+
+msgid "採集加成"
+msgstr "Gathering bonus"
+
+msgid "研究加成"
+msgstr "Research bonus"
+
+msgid "技能成長"
+msgstr "Skill growth"
+
+msgid "守衛戰力"
+msgstr "Guard strength"
+
+msgid "移民機率"
+msgstr "Immigration chance"
+
+msgid "離鄉機率"
+msgstr "Departure chance"
+
+msgid "襲擊機率"
+msgstr "Raid chance"
+
+msgid "襲擊強度"
+msgstr "Raid severity"
+
+msgid "野獸襲擊機率"
+msgstr "Animal raid chance"
+
+msgid "疫病機率"
+msgstr "Plague chance"
+
+msgid "風暴機率"
+msgstr "Storm chance"
+
+msgid "乾旱機率"
+msgstr "Drought chance"
+
+msgid "連鎖事件機率"
+msgstr "Chain event chance"
+
+msgid "慶典機率"
+msgstr "Festival chance"
+
+msgid "商隊機率"
+msgstr "Merchant chance"
+
+msgid "物資短缺"
+msgstr "Supply shortage"
+
+msgid "天氣農作影響"
+msgstr "Weather farm effect"
+
+msgid "天氣心情影響"
+msgstr "Weather mood effect"
+
+msgid "耳語"
+msgstr "Whisper"
+
+msgid "在他心裡種下一個念頭——他會當成自己的想法,影響之後的言行"
+msgstr "Plant a thought in their mind — they'll believe it's their own"
+
+msgid "🤫 低聲說出你要植入的念頭..."
+msgstr "🤫 Whisper the thought you want to plant..."
+
+msgid "關閉對話"
+msgstr "Close conversation"
+
+msgid "若有所思,喃喃自語"
+msgstr " murmurs thoughtfully"
+
+msgid "耳邊低語...一個念頭在他心裡生根了。"
+msgstr "'s ear... a thought has taken root."
+
+msgid "你在"
+msgstr "You whisper in "
+

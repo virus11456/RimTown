@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="RimTown · 立體小鎮"
-run/main_scene="res://scenes/showcase.tscn"
+run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 
 [display]
@@ -29,3 +29,11 @@ window/stretch/mode="canvas_items"
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 environment/defaults/default_clear_color=Color(0.075, 0.12, 0.14, 1)
+
+[internationalization]
+locale/translations=PackedStringArray("res://scripts/i18n/zh_TW.po", "res://scripts/i18n/en.po")
+locale/fallback="zh_TW"
+
+[input_devices]
+pointing/emulate_touch_from_mouse=false
+pointing/emulate_mouse_from_touch=false
