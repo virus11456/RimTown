@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.69.3.zip` from Releases
+1. Download `rimtown-v5.69.4.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -77,6 +77,10 @@ node scripts/gen-changelog.js  # 從 rimtown.php 產生首頁更新紀錄 change
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.69.4 (2026-09-09)
+
+- 🖥️ 首頁「村民的大腦」電腦版排版再修：四張參數卡改為瀑布流雙欄（CSS columns），左右兩欄各自往下疊，不再因為卡片高度不同而在旁邊留一大塊空白；手機維持單欄
 
 ### v5.69.3 (2026-09-09)
 
