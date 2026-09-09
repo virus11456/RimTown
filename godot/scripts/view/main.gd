@@ -83,6 +83,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_whisper.flag"): _capture_player_whisper()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_rumor.flag"): _capture_player_rumor()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_gift.flag"): _capture_player_gift()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_stockpile.flag"): _capture_stockpile()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -307,10 +308,11 @@ func show_tab(tab: String, refresh := false) -> void:
 			_button("匯入網頁版存檔",drawer_body,import_save)
 			_button("匯出原始存檔副本",drawer_body,export_save)
 			_button("匯出試玩進度",drawer_body,export_progress)
-			_wrapped("試玩：作息、需求與走路已啟用。\n居民社交與關係事件可在設定開關。\n資源與任務尚未啟用。",13)
+			_button("公共庫存與收支",drawer_body,show_stockpile)
+			_wrapped("試玩：作息、移動與居民互動已啟用。\n送禮會消耗公共庫存；自動生產、每日消耗與任務尚待完成。",13)
 			var resources: Dictionary = _current_data().get("stockpile",{}).get("resources",{})
 			for key in resources:
-				if float(resources[key]) != 0: _label("%s   %d" % [_resource_name(key),resources[key]],drawer_body)
+				if float(resources[key]) != 0: _label("%s   %s" % [_resource_name(key),str(resources[key])],drawer_body)
 		"居民":
 			for id in _current_data().get("agents",{}):
 				var agent: Dictionary = _current_data().agents[id]
@@ -1343,4 +1345,56 @@ func _capture_player_gift() -> void:
 	await get_tree().create_timer(.5).timeout
 	await RenderingServer.frame_post_draw
 	viewport.get_texture().get_image().save_png("res://docs/player-gift-mobile.png")
+	viewport.queue_free()
+
+func show_stockpile(resource: String="",show_zero: bool=false) -> void:
+	active_tab="小鎮";drawer.show();_clear_drawer()
+	_wrapped("公共庫存與收支",22)
+	_wrapped("送禮從這裡扣除。自動生產與每日消耗尚未啟用；匯入存檔會保留原有庫存及紀錄。",12)
+	var stockpile: Dictionary=_current_data().get("stockpile",{})
+	var resources: Dictionary=stockpile.get("resources",{})
+	var history: Array=stockpile.get("history",[])
+	var keys: Array=resources.keys()
+	for entry in history:
+		if not keys.has(str(entry.get("resource",""))): keys.append(str(entry.get("resource","")))
+	var filter:=OptionButton.new();filter.custom_minimum_size.y=42;filter.add_item("全部資源");drawer_body.add_child(filter)
+	for key in keys: filter.add_item(_resource_name(str(key)))
+	filter.select(keys.find(resource)+1 if not resource.is_empty() else 0)
+	filter.item_selected.connect(func(index): show_stockpile("" if index==0 else str(keys[index-1]),show_zero))
+	var zeros:=CheckButton.new();zeros.text="顯示零庫存";zeros.button_pressed=show_zero;zeros.custom_minimum_size.y=42;drawer_body.add_child(zeros)
+	zeros.toggled.connect(func(value): show_stockpile(resource,value))
+	_wrapped("目前庫存",18)
+	var visible:=0
+	for key in resources:
+		if not resource.is_empty() and key!=resource: continue
+		if not show_zero and resource.is_empty() and float(resources[key])==0: continue
+		_wrapped(_resource_name(str(key))+"："+str(resources[key]));visible+=1
+	if visible==0: _wrapped("目前沒有符合條件的庫存。")
+	_wrapped("收支紀錄 · 較新在前",18)
+	var entries: Array=history.filter(func(entry): return resource.is_empty() or entry.get("resource","")==resource)
+	_wrapped("符合條件 %d 筆，顯示最近 50 筆；紀錄不代表所有歷史，匯入前可能已有截短。"%entries.size(),12)
+	if entries.is_empty(): _wrapped("尚無收支紀錄。")
+	entries=entries.slice(maxi(0,entries.size()-50));entries.reverse()
+	for entry in entries:
+		var amount:=float(entry.get("amount",0))
+		_wrapped(_resource_name(str(entry.get("resource","")))+" "+("+" if amount>0 else "")+str(amount))
+		var reason: String=str(entry.get("reason",""));var source: String=str(entry.get("source",""))
+		_wrapped(("未記錄原因" if reason.is_empty() else reason)+(" · "+source if not source.is_empty() else ""),12)
+	_button("重新整理",drawer_body,func(): show_stockpile(resource,show_zero))
+	_button("返回小鎮",drawer_body,func(): show_tab("小鎮",true))
+
+func _capture_stockpile() -> void:
+	await get_tree().create_timer(1).timeout
+	var example:=FileAccess.get_file_as_string("res://tests/player_gift/compatibility-save.json.tmp")
+	chat_offline=true
+	_load_document(example,"公共庫存驗證")
+	show_tab("居民",true);show_stockpile("food")
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/stockpile-desktop.png")
+	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+	var mobile=load("res://scenes/main.tscn").instantiate();viewport.add_child(mobile)
+	mobile.chat_offline=true;mobile._load_document(example,"公共庫存驗證");mobile.show_tab("居民",true);mobile.show_stockpile("food")
+	await get_tree().create_timer(.5).timeout
+	await RenderingServer.frame_post_draw
+	viewport.get_texture().get_image().save_png("res://docs/stockpile-mobile.png")
 	viewport.queue_free()
