@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.74.0
-const RIMTOWN_APP_VERSION = '5.74.0';
+// RimTown - Frontend App (WordPress Plugin) v5.74.1
+const RIMTOWN_APP_VERSION = '5.74.1';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1589,6 +1589,9 @@ class RimTownApp {
         el.innerHTML = `<div class="landing-inner">
             <header class="landing-hero">
                 <div class="landing-pixel-bg" aria-hidden="true"></div>
+                <div class="landing-lang" role="group" aria-label="Language">
+                    <button type="button" data-lang="zh" class="${I18N.getLang() === 'zh' ? 'active' : ''}">中文</button><button type="button" data-lang="en" class="${I18N.getLang() === 'en' ? 'active' : ''}">EN</button>
+                </div>
                 <div class="landing-hero-content">
                     <div class="landing-logo">🏘️</div>
                     <h1>${t('邊境鎮')}<span>RimTown</span></h1>
@@ -1618,6 +1621,14 @@ class RimTownApp {
             <footer class="landing-footer">${t('邊境鎮 RimTown')} · v${esc(ver)}<br>${t('存檔自動同步雲端，換裝置登入即可繼續。')}</footer>
         </div>`;
         this._wireBrainDemo(el);
+        // v5.74.1 首頁語言切換:切完整頁重畫(首頁本身全部字串都有英文對照)
+        el.querySelectorAll('.landing-lang [data-lang]').forEach(b => b.addEventListener('click', () => {
+            const v = b.getAttribute('data-lang');
+            if (v === I18N.getLang()) return;
+            I18N.setLang(v);
+            this._renderLanding();
+            if (typeof renderCurrentTab === 'function') { try { renderCurrentTab(); } catch (e) {} }
+        }));
         el.querySelector('#landing-register')?.addEventListener('click', () => this._openAuth('register'));
         el.querySelector('#landing-login')?.addEventListener('click', () => this._openAuth('login'));
         el.querySelector('#landing-continue')?.addEventListener('click', () => this._enterGame());
@@ -1658,11 +1669,11 @@ class RimTownApp {
             return out.join(' · ');
         };
         const traits = (typeof TRAIT_POOL !== 'undefined') ? Object.entries(TRAIT_POOL) : [];
-        const traitChips = traits.map(([k, d]) => `<span class="landing-chip" title="${esc(d.description || '')}">${esc(d.label || k)}<small>${esc(traitFx(d))}</small></span>`).join('');
-        const incompat = (typeof INCOMPATIBLE !== 'undefined') ? INCOMPATIBLE.map(([a, b]) => `${esc(TRAIT_POOL[a]?.label || a)} × ${esc(TRAIT_POOL[b]?.label || b)}`).join(t('、')) : '';
+        const traitChips = traits.map(([k, d]) => `<span class="landing-chip" title="${esc(d.description || '')}">${esc(t(d.label || k))}<small>${esc(traitFx(d))}</small></span>`).join('');
+        const incompat = (typeof INCOMPATIBLE !== 'undefined') ? INCOMPATIBLE.map(([a, b]) => `${esc(t(TRAIT_POOL[a]?.label || a))} × ${esc(t(TRAIT_POOL[b]?.label || b))}`).join(t('、')) : '';
         const values = ['家庭', '自由', '知識', '財富', '權力', '藝術', '自然', '社群', '冒險', '和平'].map(v => `<span class="landing-chip small">${t(v)}</span>`).join('');
         const thoughts = (typeof THOUGHT_DEFS !== 'undefined') ? Object.values(THOUGHT_DEFS) : [];
-        const thoughtRows = thoughts.map(d => `<tr><td>${esc(d.label)}</td><td class="${d.mood >= 0 ? 'pos' : 'neg'}">${d.mood > 0 ? '+' : ''}${d.mood}</td><td>${d.days}</td><td>${d.opinion ? (d.opinion > 0 ? '+' : '') + d.opinion : '—'}</td></tr>`).join('');
+        const thoughtRows = thoughts.map(d => `<tr><td>${esc(t(d.label))}</td><td class="${d.mood >= 0 ? 'pos' : 'neg'}">${d.mood > 0 ? '+' : ''}${d.mood}</td><td>${d.days}</td><td>${d.opinion ? (d.opinion > 0 ? '+' : '') + d.opinion : '—'}</td></tr>`).join('');
         const ladder = [
             ['≥ 61', t('摯友')], ['21 ~ 60', t('朋友')], ['−19 ~ 20', t('認識 / 陌生人')], ['−59 ~ −20', t('對手')], ['≤ −60', t('敵人')],
         ].map(([r, l]) => `<div class="landing-ladder-row"><span>${r}</span><b>${l}</b></div>`).join('');

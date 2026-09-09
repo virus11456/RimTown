@@ -5,7 +5,11 @@
 // Usage: t('Chinese string') → returns translation based on current language
 
 const I18N = (() => {
-    let currentLang = localStorage.getItem('rimtown-lang') || 'zh';
+    // v5.74.1 第一次來的訪客依瀏覽器語言決定預設(非中文 → English);之後以玩家自己切的為準
+    let currentLang = (() => {
+        try { const v = localStorage.getItem('rimtown-lang'); if (v === 'zh' || v === 'en') return v; } catch (e) {}
+        try { const nav = (navigator.language || (navigator.languages && navigator.languages[0]) || 'zh').toLowerCase(); return nav.startsWith('zh') ? 'zh' : 'en'; } catch (e) { return 'zh'; }
+    })();
 
     // English translations (key = Chinese, value = English)
     const en = {
