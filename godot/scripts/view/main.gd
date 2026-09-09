@@ -34,6 +34,7 @@ var memory_target := ""
 var conversation_page := false
 var gossip_page := false
 var romance_page := false
+var factions_page := false
 var traveler: TravelerControls
 
 func _ready() -> void:
@@ -58,6 +59,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_gossip.flag"): _capture_gossip()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_romance.flag"): _capture_romance()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_feuds.flag"): _capture_feuds()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_factions.flag"): _capture_factions()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -220,6 +222,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.gossip_enabled=bool(document.data.get("_godot4a",{}).get("gossip_enabled",true))
 	simulation.romance_enabled=bool(document.data.get("_godot4a",{}).get("romance_enabled",true))
 	simulation.feuds_enabled=bool(document.data.get("_godot4a",{}).get("feuds_enabled",true))
+	simulation.factions_enabled=bool(document.data.get("_godot4a",{}).get("factions_enabled",true))
 	var data := document.snapshot()
 	heading.text = str(data.get("townName","小鎮"))
 	var clock_data: Dictionary = data.clock
@@ -261,6 +264,7 @@ func show_tab(tab: String, refresh := false) -> void:
 	conversation_page=false
 	gossip_page=false
 	romance_page=false
+	factions_page=false
 	if not refresh: selected_agent=""
 	drawer.show()
 	_clear_drawer()
@@ -284,6 +288,7 @@ func show_tab(tab: String, refresh := false) -> void:
 			_button("村民對話紀錄",drawer_body,show_conversations)
 			_button("八卦與鎮民動態",drawer_body,show_gossip)
 			_button("關係事件",drawer_body,show_romance)
+			_button("居民派系",drawer_body,show_factions)
 			var logs: Array = _current_data().get("messageLog",[])
 			if logs.is_empty(): _label("故事從這裡開始。",drawer_body)
 			for entry in logs.slice(maxi(0,logs.size()-30)):
@@ -311,7 +316,33 @@ func show_agent(id: String,focus_camera := true) -> void:
 	_button("人際關係",drawer_body,func(): show_relationships(id))
 	_button("返回居民列表",drawer_body,func(): selected_agent=""; show_tab("居民",true))
 
+func show_factions() -> void:
+	factions_page=true
+	romance_page=false
+	gossip_page=false
+	conversation_page=false
+	_clear_drawer()
+	_wrapped("居民派系",22)
+	_wrapped("每三個遊戲日檢查一次。志趣相近的居民可能組成圈子、結盟或起衝突。")
+	_button("返回故事",drawer_body,func(): show_tab("故事",true))
+	var data:=_current_data()
+	var factions: Dictionary=data.get("factions",{}).get("factions",{})
+	if factions.is_empty(): _wrapped("尚未形成派系。讓居民相處幾天，再回來看看。")
+	for f in factions.values():
+		_wrapped(str(f.icon)+" "+str(f.name),18)
+		var names: PackedStringArray=[]
+		for id in f.members: names.append(str(data.agents.get(id,{}).get("name",id)))
+		_wrapped("成員："+"、".join(names))
+		_wrapped("凝聚力：%d／100"%int(f.cohesion))
+		for field in ["allyFactionId","rivalFactionId"]:
+			if f.get(field): _wrapped(("盟友：" if field=="allyFactionId" else "對立：")+str(factions.get(f[field],{}).get("name","已不存在的派系")))
+	_wrapped("近期派系事件",18)
+	var logs: Array=data.get("messageLog",[]).filter(func(entry): return entry.get("type")=="faction")
+	var recent:=logs.slice(maxi(0,logs.size()-15));recent.reverse()
+	for entry in recent: _wrapped(str(entry.get("time",""))+"\n"+str(entry.get("content","")))
+
 func show_romance() -> void:
+	factions_page=false
 	romance_page=true
 	gossip_page=false
 	conversation_page=false
@@ -329,6 +360,7 @@ func show_romance() -> void:
 
 func show_gossip() -> void:
 	romance_page=false
+	factions_page=false
 	gossip_page=true
 	conversation_page=false
 	_clear_drawer()
@@ -356,6 +388,7 @@ func show_gossip() -> void:
 
 func show_conversations() -> void:
 	romance_page=false
+	factions_page=false
 	gossip_page=false
 	conversation_page=true
 	_clear_drawer()
@@ -438,6 +471,7 @@ func _line(placeholder: String, secret := false) -> LineEdit:
 	return field
 
 func _settings_ui() -> void:
+	_button("居民派系："+("開啟" if simulation.factions_enabled else "關閉"),drawer_body,func(): simulation.factions_enabled=not simulation.factions_enabled; show_tab("設定",true))
 	_button("每日仇怨事件："+("開啟" if simulation.feuds_enabled else "關閉"),drawer_body,func(): simulation.feuds_enabled=not simulation.feuds_enabled; show_tab("設定",true))
 	_button("每日關係事件："+("開啟" if simulation.romance_enabled else "關閉"),drawer_body,func(): simulation.romance_enabled=not simulation.romance_enabled; show_tab("設定",true))
 	_wrapped("關係在換日時判定；交往和結婚需要感情累積與機會。")
@@ -602,10 +636,12 @@ func _tick_simulation() -> void:
 		motion.layout=world_view.layout
 		motion.layout.agent_house=house_map
 		motion.pathfinder.grid=world_view.layout.grid
+	for event in simulation.presentation_events: world_view.dispute_bubbles.show_dispute(event.a,event.b)
 	world_view._light_clock(clock_data)
 	if "new_hour" in events: world_view._weather(simulation.data)
 	if active_tab=="故事":
-		if romance_page: show_romance()
+		if factions_page: show_factions()
+		elif romance_page: show_romance()
 		elif gossip_page: show_gossip()
 		elif conversation_page: show_conversations()
 		else: show_tab("故事",true)
@@ -803,4 +839,37 @@ func _capture_feuds() -> void:
 	await get_tree().create_timer(1).timeout
 	await RenderingServer.frame_post_draw
 	viewport.get_texture().get_image().save_png("res://docs/feuds-mobile.png")
+	viewport.queue_free()
+
+func _prepare_dispute_preview() -> void:
+	simulation.social_enabled=false;simulation.romance_enabled=false;simulation.factions_enabled=false;simulation.feuds_enabled=true
+	for a in simulation.data.agents.values(): a.relationships={}
+	SimSocial.relationship(simulation.data.agents.chen_wei,simulation.data.agents.lin_mei).affinity=-35
+	SimSocial.relationship(simulation.data.agents.lin_mei,simulation.data.agents.chen_wei).affinity=-35
+	simulation.data.feudCooldown={};simulation.data.clock.hour=23;simulation.data.clock.minute=45;simulation.rng.state=11456
+	_tick_simulation()
+	drawer.hide();active_tab=""
+	rig.position=Vector3(40,1.5,30);rig.width=18;rig._sync()
+	world_view.actors.chen_wei.position=Vector3(39,.16,30)
+	world_view.actors.lin_mei.position=Vector3(41,.16,30)
+	world_view.dispute_bubbles._process(0)
+	status.text="爭吵對話框測試 · 固定站位"
+func _capture_factions() -> void:
+	await get_tree().create_timer(1).timeout
+	var example:=FileAccess.get_file_as_string("res://tests/factions/compatibility-save.json.tmp")
+	_load_document(example,"派系測試情境")
+	show_tab("故事",true);show_factions()
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/factions-desktop.png")
+	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+	var mobile=load("res://scenes/main.tscn").instantiate();viewport.add_child(mobile)
+	mobile._load_document(example,"派系測試情境");mobile.show_tab("故事",true);mobile.show_factions()
+	await get_tree().create_timer(.5).timeout
+	await RenderingServer.frame_post_draw
+	viewport.get_texture().get_image().save_png("res://docs/factions-mobile.png")
+	_prepare_dispute_preview();mobile._prepare_dispute_preview()
+	await get_tree().create_timer(.3).timeout
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/dispute-desktop.png")
+	viewport.get_texture().get_image().save_png("res://docs/dispute-mobile.png")
 	viewport.queue_free()

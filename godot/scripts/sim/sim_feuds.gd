@@ -28,6 +28,7 @@ static func process(w: SimWorld) -> void:
 			if back.is_empty(): continue
 			if rel.affinity<= -60 and back.affinity<= -60 and not rel.get("isFeud",false):
 				rel.isFeud=true;back.isFeud=true;cooldown[key]=day
+				w.present_dispute([a.id],[b.id])
 				_mood(a,w,-10);_mood(b,w,-10)
 				_memory(a,w,"relationship","我和"+b.name+"徹底鬧翻,絕交了。這口氣嚥不下去。",9,[b.name])
 				_memory(b,w,"relationship","我和"+a.name+"徹底鬧翻,絕交了。這口氣嚥不下去。",9,[a.name])
@@ -37,6 +38,7 @@ static func process(w: SimWorld) -> void:
 			if last==0: last= -99 # JS || treats zero as absent.
 			if rel.affinity<= -35 and back.affinity<= -35 and day-last>=5 and w.rng.next_float()<.15:
 				cooldown[key]=day
+				w.present_dispute([a.id],[b.id])
 				SimRelationships.modify(rel,"affinity",-4);SimRelationships.modify(back,"affinity",-4)
 				_mood(a,w,-6);_mood(b,w,-6)
 				SimSocial.log_message(w.data,"event","🗯️ "+a.name+"和"+b.name+"在眾目睽睽下大吵一架,火藥味十足!","","")

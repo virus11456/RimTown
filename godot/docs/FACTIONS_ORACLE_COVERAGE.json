@@ -1,0 +1,11 @@
+{
+  "scenarios": 96,
+  "coverage": {
+    "formation": 616,
+    "conflict": 30,
+    "cooperation": 59,
+    "internal": 28,
+    "leave": 945,
+    "dissolve": 301
+  }
+}

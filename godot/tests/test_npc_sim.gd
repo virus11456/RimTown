@@ -18,17 +18,19 @@ func equal(a: Variant,b: Variant) -> bool:
 		return true
 	return a==b
 func _initialize() -> void:
-	var feuds:= "--feuds" in OS.get_cmdline_user_args()
+	var factions:= "--factions" in OS.get_cmdline_user_args()
+	var feuds:= factions or "--feuds" in OS.get_cmdline_user_args()
 	var romance:= feuds or "--romance" in OS.get_cmdline_user_args()
 	var gossip:= romance or "--gossip" in OS.get_cmdline_user_args()
 	for theme in ["frontier","harbor"]:
-		var fixture: Dictionary=JSON.parse_string(FileAccess.get_file_as_string("res://tests/social/"+theme+("-feuds" if feuds else "-romance" if romance else "-gossip" if gossip else "")+"-simulation.json"))
+		var fixture: Dictionary=JSON.parse_string(FileAccess.get_file_as_string("res://tests/social/"+theme+("-factions" if factions else "-feuds" if feuds else "-romance" if romance else "-gossip" if gossip else "")+"-simulation.json"))
 		var world:=SimWorld.new()
 		world.load_snapshot(fixture.input)
 		world.social_enabled=true
 		world.gossip_enabled=gossip
 		world.romance_enabled=romance
 		world.feuds_enabled=feuds
+		world.factions_enabled=factions
 		for checkpoint in fixture.checkpoints:
 			while world.data.tickCount<checkpoint.tick: world.tick()
 			if gossip:
@@ -36,6 +38,8 @@ func _initialize() -> void:
 				check(equal(world.snapshot().townFeed,checkpoint.townFeed),theme+"/town feed")
 			var tag:="%s/%d/"%[theme,checkpoint.tick]
 			if feuds: check(equal(world.data.feudCooldown,checkpoint.feudCooldown),tag+"feud cooldown")
+			if factions:
+				for key in ["factions","events"]: check(equal(world.data[key],checkpoint[key]),tag+key)
 			check(world.rng.state==int(checkpoint.rng),tag+"rng")
 			check(equal(world.data.clock,checkpoint.clock),tag+"clock")
 			for id in checkpoint.agents:
@@ -65,7 +69,7 @@ func _initialize() -> void:
 		resumed.load_snapshot(JSON.parse_string(JSON.stringify(world.snapshot(),"",false,true)))
 		for i in 96: world.tick(); resumed.tick()
 		check(equal(world.snapshot(),resumed.snapshot()),theme+"/save resume with cooldown/hangout/RNG")
-	var report:={"checks":checks,"failures":failures,"gossip_enabled":gossip,"romance_enabled":romance,"feuds_enabled":feuds,"scope":"two towns x 2880 ticks: Phase 4a + local socializing; gossip, daily romance and feuds included only when respective flags enabled; news and other systems excluded"}
-	FileAccess.open("res://docs/NPC_FEUDS_TESTS.json" if feuds else "res://docs/NPC_ROMANCE_TESTS.json" if romance else "res://docs/NPC_GOSSIP_TESTS.json" if gossip else "res://docs/NPC_SOCIAL_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "))
+	var report:={"checks":checks,"failures":failures,"gossip_enabled":gossip,"romance_enabled":romance,"feuds_enabled":feuds,"factions_enabled":factions,"scope":"two towns x 2880 ticks: Phase 4a + local socializing; gossip, daily romance, feuds and factions included only when respective flags enabled; news and other systems excluded"}
+	FileAccess.open("res://docs/NPC_FACTIONS_TESTS.json" if factions else "res://docs/NPC_FEUDS_TESTS.json" if feuds else "res://docs/NPC_ROMANCE_TESTS.json" if romance else "res://docs/NPC_GOSSIP_TESTS.json" if gossip else "res://docs/NPC_SOCIAL_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "))
 	print(JSON.stringify(report))
 	quit(0 if failures.is_empty() else 1)

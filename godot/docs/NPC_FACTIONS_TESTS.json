@@ -1,6 +1,6 @@
 {
-  "checks": 3509,
-  "factions_enabled": false,
+  "checks": 3537,
+  "factions_enabled": true,
   "failures": [],
   "feuds_enabled": true,
   "gossip_enabled": true,

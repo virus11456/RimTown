@@ -1,0 +1,5 @@
+{
+  "checks": 29,
+  "failures": [],
+  "scope": "three-day factions, toggle/resume, mobile UI; fresh feud bubble cue, tracking, overlap, camera rotation, expiry, input passthrough and no simulation mutation"
+}

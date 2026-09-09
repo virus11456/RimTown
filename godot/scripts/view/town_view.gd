@@ -10,8 +10,10 @@ var current_save: Dictionary = {}
 var sun: DirectionalLight3D
 var environment: WorldEnvironment
 var show_labels := true
+var dispute_bubbles: DisputeBubbles
 
 func _ready() -> void:
+	dispute_bubbles=DisputeBubbles.new();dispute_bubbles.town=self;dispute_bubbles.layer=0;add_child(dispute_bubbles)
 	shared_material = StandardMaterial3D.new()
 	shared_material.albedo_texture = load("res://assets/palette/palette.png")
 	shared_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
@@ -62,6 +64,7 @@ func _building(name: String,zone: Dictionary,height_scale := 1.2) -> void:
 	_instance(name,Vector3(zone.x+w/2,0.12,zone.y+depth/2),Vector3(w/float(size[0]),height_scale,depth/float(size[2])))
 
 func display_save(save: Dictionary) -> void:
+	dispute_bubbles.clear()
 	current_save = save.duplicate(true)
 	layout.rebuild(save)
 	actors.clear()

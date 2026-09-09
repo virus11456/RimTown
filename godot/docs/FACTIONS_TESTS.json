@@ -1,0 +1,5 @@
+{
+  "checks": 6624,
+  "failures": [],
+  "scope": "FactionSystem formation, events, dedupe, cohesion, leaving, cleanup and JSON resume against original JS"
+}

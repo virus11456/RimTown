@@ -31,6 +31,7 @@ func run() -> void:
 	var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app)
 	await process_frame
 	app.set_process(false)
+	app.simulation.factions_enabled=false # This suite isolates its historical subsystem.
 	var raw: String=app.document.serialize()
 	check(app.simulation.feuds_enabled,"fresh import enables feuds")
 	app.simulation.social_enabled=false;app.simulation.romance_enabled=false

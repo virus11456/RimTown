@@ -1,8 +1,9 @@
 {
   "checks": 3495,
+  "factions_enabled": false,
   "failures": [],
   "feuds_enabled": false,
   "gossip_enabled": true,
   "romance_enabled": true,
-  "scope": "two towns x 2880 ticks: Phase 4a + local socializing; gossip, daily romance and feuds included only when respective flags enabled; news and other systems excluded"
+  "scope": "two towns x 2880 ticks: Phase 4a + local socializing; gossip, daily romance, feuds and factions included only when respective flags enabled; news and other systems excluded"
 }
