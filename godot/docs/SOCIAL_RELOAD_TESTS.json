@@ -1,0 +1,6 @@
+{
+  "checks": 108,
+  "passed": true,
+  "conversations": 126,
+  "scope": "Original JS loadSave preserves social data; Godot-only mode/RNG/pending-hangout extension is not executed by the web engine. No production server used."
+}

@@ -29,6 +29,7 @@ func run() -> void:
 	root.size=Vector2i(1280,800)
 	app=load("res://scenes/main.tscn").instantiate(); root.add_child(app)
 	await settle()
+	app.simulation.social_enabled=false # Keep historical Phase 4a preservation assertions; enabled mode has its own oracle/UI tests.
 	app.set_process(false) # Time under test is deterministic, driven explicitly below.
 	var raw: String=app.document.serialize()
 	check(not app.running,"starts paused")

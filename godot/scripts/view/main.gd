@@ -31,6 +31,7 @@ var speed_button: Button
 var selected_agent := ""
 var resident_page := "summary"
 var memory_target := ""
+var conversation_page := false
 var traveler: TravelerControls
 
 func _ready() -> void:
@@ -51,6 +52,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_playtest.flag"): _capture_playtest()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_traveler.flag"): _capture_traveler()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_social.flag"): _capture_social()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_npc.flag"): _capture_npc()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -209,6 +211,7 @@ func _load_document(text: String, source: String) -> bool:
 	selected_agent=""
 	document = incoming
 	simulation.load_snapshot(document.snapshot())
+	simulation.social_enabled=bool(document.data.get("_godot4a",{}).get("social_enabled",true))
 	var data := document.snapshot()
 	heading.text = str(data.get("townName","小鎮"))
 	var clock_data: Dictionary = data.clock
@@ -247,6 +250,7 @@ func show_tab(tab: String, refresh := false) -> void:
 		active_tab = ""
 		return
 	active_tab = tab
+	conversation_page=false
 	if not refresh: selected_agent=""
 	drawer.show()
 	_clear_drawer()
@@ -267,6 +271,7 @@ func show_tab(tab: String, refresh := false) -> void:
 				var agent: Dictionary = _current_data().agents[id]
 				_button(str(agent.get("name",id)),drawer_body,func(): show_agent(id))
 		"故事":
+			_button("村民對話紀錄",drawer_body,show_conversations)
 			var logs: Array = _current_data().get("messageLog",[])
 			if logs.is_empty(): _label("故事從這裡開始。",drawer_body)
 			for entry in logs.slice(maxi(0,logs.size()-30)):
@@ -293,6 +298,23 @@ func show_agent(id: String,focus_camera := true) -> void:
 	_button("近期記憶",drawer_body,func(): show_memories(id))
 	_button("人際關係",drawer_body,func(): show_relationships(id))
 	_button("返回居民列表",drawer_body,func(): selected_agent=""; show_tab("居民",true))
+
+func show_conversations() -> void:
+	conversation_page=true
+	_clear_drawer()
+	_wrapped("村民對話紀錄",22)
+	_wrapped("本地規則對話，不使用 AI 額度。新對話會隨模擬時間產生。")
+	_button("返回故事",drawer_body,func(): show_tab("故事",true))
+	var logs: Array=_current_data().get("npcConversationLog",[])
+	_wrapped("最近 %d 段／共 %d 段"%[mini(10,logs.size()),logs.size()])
+	if logs.is_empty(): _wrapped("還沒有對話。按「開始」讓居民作息運行，稍後回來看看。")
+	var recent:=logs.slice(maxi(0,logs.size()-10))
+	recent.reverse()
+	for conversation in recent:
+		_wrapped(str(conversation.get("time","")),12)
+		_wrapped(str(conversation.get("summary","")),16)
+		for line in conversation.get("dialogue",[]):
+			_wrapped(str(line.get("speaker",""))+"："+str(line.get("text","")))
 
 func _wrapped(text: String,size := 14) -> Label:
 	var item := _label(text,drawer_body,size)
@@ -358,6 +380,7 @@ func _line(placeholder: String, secret := false) -> LineEdit:
 	return field
 
 func _settings_ui() -> void:
+	_button("NPC 本地社交："+("開啟" if simulation.social_enabled else "關閉"),drawer_body,func(): simulation.social_enabled=not simulation.social_enabled; show_tab("設定",true))
 	var description := _label("使用網頁版帳號，讀取同一份小鎮。",drawer_body,14)
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	if api.token.is_empty():
@@ -378,7 +401,7 @@ func _settings_ui() -> void:
 	_button("繁體中文 / English",drawer_body,func():
 		TranslationServer.set_locale("en" if TranslationServer.get_locale().begins_with("zh") else "zh_TW")
 		show_tab("設定",true))
-	var note := _label("Phase 4a 試玩：可暫停、加速與匯出本機進度。建設、對話與完整世界模擬仍在後續階段。",drawer_body,14)
+	var note := _label("本地社交會更新記憶、好感與戀慕；可匯出續玩。AI 對話、建設及完整婚戀／八卦仍在後續階段。",drawer_body,14)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 func show_cloud_saves() -> void:
@@ -518,6 +541,9 @@ func _tick_simulation() -> void:
 		motion.pathfinder.grid=world_view.layout.grid
 	world_view._light_clock(clock_data)
 	if "new_hour" in events: world_view._weather(simulation.data)
+	if active_tab=="故事":
+		if conversation_page: show_conversations()
+		else: show_tab("故事",true)
 	if active_tab=="居民" and not selected_agent.is_empty():
 		match resident_page:
 			"memory": show_memories(selected_agent,memory_target)
@@ -620,4 +646,27 @@ func _capture_social() -> void:
 	await get_tree().create_timer(1).timeout
 	await RenderingServer.frame_post_draw
 	viewport.get_texture().get_image().save_png("res://docs/social-mobile.png")
+	viewport.queue_free()
+
+func _capture_npc() -> void:
+	await get_tree().create_timer(1).timeout
+	_load_document(FileAccess.get_file_as_string("res://tests/golden/frontier-day-01.json"),"本地社交展示")
+	for i in 96: _tick_simulation()
+	show_tab("故事",true)
+	show_conversations()
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/npc-desktop.png")
+	var viewport:=SubViewport.new()
+	viewport.size=Vector2i(375,812)
+	viewport.own_world_3d=true
+	viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
+	add_child(viewport)
+	var mobile=load("res://scenes/main.tscn").instantiate()
+	viewport.add_child(mobile)
+	mobile._load_document(JSON.stringify(progress_snapshot(),"",false,true),"本地社交展示")
+	mobile.show_tab("故事",true)
+	mobile.show_conversations()
+	await get_tree().create_timer(1).timeout
+	await RenderingServer.frame_post_draw
+	viewport.get_texture().get_image().save_png("res://docs/npc-mobile.png")
 	viewport.queue_free()

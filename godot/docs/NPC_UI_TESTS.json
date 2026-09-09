@@ -1,0 +1,5 @@
+{
+  "checks": 118,
+  "failures": [],
+  "scope": "local social toggle, story dialogue page, save/resume, mobile layout; button signals, not OS input"
+}

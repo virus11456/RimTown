@@ -1,6 +1,6 @@
-# RimTown · 旅人操作＋記憶與關係試玩版
+# RimTown · 旅人操作＋NPC 本地社交試玩版
 
-在 Phase 0–3 觀賞版上加入時鐘、需求、作息、技能成長、A* 尋路、進出建築與卡住復原。兩鎮範例可直接開啟；預設暫停，WASD／方向鍵可直接移動旅人，按「▶ 開始」則推進村民作息。這是分階段試玩版，尚未包含建設、對話、經濟、關係與任務的完整模擬。
+在 Phase 0–3 觀賞版上加入時鐘、需求、作息、技能成長、A* 尋路、進出建築與卡住復原。兩鎮範例可直接開啟；預設暫停，WASD／方向鍵可直接移動旅人，按「▶ 開始」則推進村民作息。這是分階段試玩版，現已加入 NPC 本地規則對話與記憶／關係更新；尚未包含建設、AI 對話、經濟、完整婚戀及任務模擬。
 
 不會向雲端寫入世界。「匯出原始存檔副本」保留原始 JSON；「匯出試玩進度」另存已推進的時間、居民與行走狀態。
 
@@ -120,3 +120,29 @@ godot --headless --path . --script res://tests/test_social.gd
 88 組記憶檢索、44 組關係邊界、修改／管理集合與居民頁面合計 695 項檢查通過。介面測試透過按鈕訊號觸發，非 OS 點擊端對端；另已實際渲染桌面及 375×812 截圖（docs/social-desktop.png、social-mobile.png）。458 項試玩、50 項旅人、36 項畫面回歸通過。
 
 旅人動畫仍為簡易版本。後續統一調整左右手腳交替、步幅與每秒 4.5 格速度匹配、停走過渡，以及 work／sleep／talk 姿勢；本次未更改動畫。
+
+## Phase 4b 第二批：NPC 自動社交
+
+按「開始」讓世界運行。NPC 在邏輯地點相同、清醒且符合社交作息／6 tick 冷卻時選擇對象；權重取決於好感與戀慕。沿用原版性格台詞，更新雙方好感、戀慕、互動次數和記憶。好友可能邀約至另一地點；尚未實作告白／結婚事件。對話判定依原版邏輯地點，並非 3D 角色實際距離。
+
+「故事 → 村民對話紀錄」顯示最近 10 段完整對話（隨 tick 更新）；「居民」可追蹤記憶與關係變化。「設定 → NPC 本地社交」可開關新社交，已排定邀約仍按既有作息處理。新匯入預設開啟，匯出進度保留開關、冷卻、邀約與亂數狀態；原始副本仍逐位元保留。
+
+這一批完全離線，不需要 Vercel 或 AI 額度。ApiClient 仍只會在使用者操作登入／雲端讀取時使用服務；正式 AI 對話與正式存檔驗收留待後續。八卦傳播、每日新聞收集、觀星社交、婚戀事件及其他 World.tick 子系統仍未啟用；此處只有 socializing 觸發及完整本地對話效果，並非全 Phase 4b 完成。
+
+原版 3 個台詞函式以 tools/build_dialogue.mjs 轉成原生 GDScript（29 組話題函式），包含台詞與條件，不依賴遊戲執行期 JavaScript。產生器限定這三個函式使用的語法，遇不支援語法會停止；使用 Node 24.19.0 內附 Acorn。來源 SHA256 嵌入生成檔，不能手改生成的 sim_dialogue.gd。
+
+```sh
+node tools/build_dialogue.mjs
+node tools/npc_oracle.mjs
+node tools/npc_sim_oracle.mjs
+godot --headless --path . --script res://tests/test_dialogue.gd
+godot --headless --path . --script res://tests/test_npc_sim.gd
+godot --headless --path . --script res://tests/test_npc_ui.gd
+node tools/test_social_reload.mjs
+```
+
+- 320 組完整台詞／亂數案例，640 項通過。
+- 兩鎮各 2,880 ticks，14 個檢查點共 2,949 項通過：核心狀態、關係、冷卻、邀約、記憶全文雜湊、全部對話行雜湊及社交日誌。JS oracle 關閉未移植的八卦、每日新聞、反思／足跡等；只比較社交日誌，排除 loadSave 的讀取成功提示與技能升級日誌。完整 World.tick golden 仍未驗收。
+- 118 項社交開關／續存／對話頁面／375px 布局通過。匯出後原版 JS 讀回 126 段對話，108 項檢查通過。網頁引擎不執行 Godot 的亂數／模式擴充，也不還原其本身未保存的邀約，因此只保證所測欄位相容。
+- 既有 4a、695 項社交基礎、458 項試玩、50 項旅人和36項畫面回歸通過。Phase 4a preservation 測試明確關閉社交；開啟模式由本批 oracle 與 UI 測試覆蓋。
+- 桌面與 375×812 GPU 截圖已檢視（docs/npc-desktop.png、npc-mobile.png）。動畫本次未更改。
