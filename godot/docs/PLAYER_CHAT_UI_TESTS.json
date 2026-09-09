@@ -1,5 +1,5 @@
 {
-  "checks": 24,
+  "checks": 29,
   "failures": [],
   "scope": "mock transport only: context, draft preservation, double submit, success, quota/invalid failures, stale town response, mobile UI and save resume; no production API"
 }

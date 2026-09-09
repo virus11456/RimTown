@@ -1,0 +1,5 @@
+{
+  "checks": 30,
+  "failures": [],
+  "scope": "mock API: four UI buttons, opener, chat-before-intent thresholds, duplicate/failure/invalid/stale response protection, effect display, 96-tick save resume"
+}

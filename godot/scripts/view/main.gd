@@ -76,6 +76,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_perception.flag"): _capture_perception()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_interaction.flag"): _capture_player_interaction()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_chat.flag"): _capture_player_chat()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_intents.flag"): _capture_player_intents()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -1126,8 +1127,14 @@ func show_player_chat(id: String) -> void:
 	input.text_submitted.connect(func(value): send_player_chat(id,value))
 	var send:=_button("傳送",drawer_body,func(): send_player_chat(id,str(chat_drafts.get(id,""))))
 	send.disabled=chat_busy
+	_wrapped("交談意圖：選擇後立即傳送，成功回覆後套用額外影響。威脅會降低信任；委託目前只記錄承諾。",12)
+	for key in SimPlayerInteraction.INTENTS:
+		var option: Array=SimPlayerInteraction.INTENTS[key]
+		var intent_button:=_button(option[0],drawer_body,func(): send_player_chat(id,option[1],key))
+		intent_button.disabled=chat_busy
 	_button("返回互動",drawer_body,func(): show_player_interaction(id))
-func send_player_chat(id: String,message: String) -> void:
+func send_player_chat(id: String,message: String,intent: String="") -> void:
+	if not intent.is_empty() and not SimPlayerInteraction.INTENTS.has(intent): return
 	message=message.strip_edges()
 	if chat_busy or message.is_empty(): return
 	if message.length()>1200: chat_notice[id]="訊息請控制在 1200 字內。";show_player_chat(id);return
@@ -1155,6 +1162,7 @@ func send_player_chat(id: String,message: String) -> void:
 			has_simulated=true
 			if chat_drafts.get(id,"")==message: chat_drafts.erase(id)
 			chat_notice[id]="交談完成 · 好感 %+.0f · 戀慕 %+.0f"%[result.affinity,result.romantic]
+			if not intent.is_empty(): chat_notice[id]+="\n意圖效果："+SimPlayerInteraction.apply_intent(target,simulation,intent)
 	if active_tab=="居民" and resident_page=="chat" and selected_agent==id: show_player_chat(id)
 
 func _capture_player_chat() -> void:
@@ -1170,4 +1178,19 @@ func _capture_player_chat() -> void:
 	await get_tree().create_timer(.5).timeout
 	await RenderingServer.frame_post_draw
 	viewport.get_texture().get_image().save_png("res://docs/player-chat-mobile.png")
+	viewport.queue_free()
+
+func _capture_player_intents() -> void:
+	await get_tree().create_timer(1).timeout
+	var example:=document.serialize()
+	_load_document(example,"交談意圖介面驗證")
+	show_tab("居民",true);show_player_chat("chen_wei")
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/player-intents-desktop.png")
+	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+	var mobile=load("res://scenes/main.tscn").instantiate();viewport.add_child(mobile)
+	mobile._load_document(example,"交談意圖介面驗證");mobile.show_tab("居民",true);mobile.show_player_chat("chen_wei")
+	await get_tree().create_timer(.5).timeout
+	await RenderingServer.frame_post_draw
+	viewport.get_texture().get_image().save_png("res://docs/player-intents-mobile.png")
 	viewport.queue_free()

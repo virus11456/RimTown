@@ -1,0 +1,5 @@
+{
+  "checks": 480,
+  "failures": [],
+  "scope": "96 original _applyChatIntent cases: gossip filtering and RNG, flirt/request thresholds, relationship caps, thought refresh, memory and action history"
+}
