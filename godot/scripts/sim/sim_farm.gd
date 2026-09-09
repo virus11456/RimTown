@@ -12,7 +12,7 @@ static func till(w: SimWorld,id: int) -> bool:
 	p.state="tilled";return true
 static func plant(w: SimWorld,id: int,key: String) -> bool:
 	var p:=plot(w,id);var crop: Dictionary=rules().crops.get(key,{})
-	if p.get("state")!="tilled" or crop.is_empty(): return false
+	if p.get("state")!="tilled" or crop.is_empty() or not SimSupply.crop_space(w,key): return false
 	if int(w.data.industry.industries.get("farming",{}).get("level",0))<int(crop.reqLevel) or not w.data.clock.season in crop.seasons: return false
 	if not SimEconomy.consume(w,"silver",float(crop.sellPrice)*2,str(crop.name)+"種子"): return false
 	p.state="growing";p.crop=key;p.plantedDay=int(w.data.clock.day)+(int(w.data.clock.year)-1)*60;p.growthProgress=0;p.waterLevel=100;p.fertilized=false;return true

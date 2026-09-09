@@ -32,6 +32,7 @@ static func daily(w: SimWorld) -> void:
 		var policy: String=w.data.workPolicy.get(rules.craft.get(key,""),"normal")
 		if policy=="off":
 			SimFeuds._mood(a,w,4);SimFeuds._memory(a,w,"daily","今天工坊休工，難得清閒，多了些時間陪伴身邊的人。",3,[]);continue
+		if w.supply_enabled and not recipe.outputs.is_empty() and recipe.outputs.keys().all(func(r): return SimSupply.room(w,r)<=0): continue
 		var level:=SimWorld.skill_level(float(a.get("skills",{}).get(recipe.skill,{}).get("xp",0))) if a.get("skills",{}).has(recipe.skill) else 0
 		var eff:=0.5+(float(level)/20)*2.0
 		if key in industry_jobs: eff*=.5
@@ -44,13 +45,19 @@ static func daily(w: SimWorld) -> void:
 		if key=="miner": eff*=1+float(news.get("mining_bonus",0))
 		eff*=1+(float(a.mood)-50)/500
 		eff*=.9+w.rng.next_float()*.2
+		var scale:=1.0
+		if w.supply_enabled and not recipe.outputs.is_empty():
+			scale=0
+			for r in recipe.outputs:
+				var expected:=maxf(.1,floorf(float(recipe.outputs[r])*eff*10+.5)/10)
+				scale=maxf(scale,minf(1,SimSupply.room(w,r)/expected))
 		var can_produce:=true
 		for resource in recipe.inputs:
-			if amount(w,resource)<float(recipe.inputs[resource]): can_produce=false;break
+			if amount(w,resource)<float(recipe.inputs[resource])*scale: can_produce=false;break
 		if not can_produce: eff*=.4;log_event(w,a.name+"材料短缺，用邊角料將就趕工。",a.name)
 		else:
-			for resource in recipe.inputs: consume(w,resource,float(recipe.inputs[resource]),a.name+"的生產",a.name)
-		for resource in recipe.outputs: change(w,resource,floorf(float(recipe.outputs[resource])*eff*10+.5)/10,a.name+"（"+str(w.rules.jobs.get(key,{}).get("title","居民"))+"）",a.name)
+			for resource in recipe.inputs: consume(w,resource,float(recipe.inputs[resource])*scale,a.name+"的生產",a.name)
+		for resource in recipe.outputs: SimSupply.produce(w,resource,floorf(float(recipe.outputs[resource])*eff*10+.5)/10*scale,a.name+"（"+str(w.rules.jobs.get(key,{}).get("title","居民"))+"）",a.name)
 		if key=="priest":
 			for other in w.data.agents.values():
 				if other.id!=a.id: SimFeuds._mood(other,w,1)
@@ -65,7 +72,7 @@ static func daily(w: SimWorld) -> void:
 			for a in w.data.agents.values(): SimFeuds._mood(a,w,-10);a.needs.hunger=maxf(0,a.needs.hunger-20)
 	for loc in rules.nature:
 		if w.data.get("townMap",{}).get("locations",{}).has(loc):
-			for resource in rules.nature[loc]: change(w,resource,float(rules.nature[loc][resource])*.5,"natural ("+loc+")")
+			for resource in rules.nature[loc]: SimSupply.produce(w,resource,float(rules.nature[loc][resource])*.5,"natural ("+loc+")")
 	consume(w,"tools",count*.05,"tool wear")
 	consume(w,"clothing",count*(.06 if w.data.clock.season=="冬季" else .03),"clothing wear")
 	var downcast: Array=w.data.agents.values().filter(func(a): return not a.get("isPlayer",false) and a.mood<30).slice(0,3)

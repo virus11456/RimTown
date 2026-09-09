@@ -1375,6 +1375,7 @@ func show_stockpile(resource: String="",show_zero: bool=false) -> void:
 	_wrapped("公共庫存與收支",22)
 	_button("加工排班",drawer_body,show_work_policy)
 	_wrapped("送禮從這裡扣除；每日生產與消耗在午夜結算，可於設定開關。農田收成直接入庫，工廠成品需先從加工頁領取。",12)
+	if simulation.supply_enabled: _wrapped("自動生產依全鎮存量補貨；餐食備約 3 天，建材至少可支付一項高階工程並留餘量。已持有物資不會因目標下調被刪除。",12)
 	var stockpile: Dictionary=_current_data().get("stockpile",{})
 	var resources: Dictionary=stockpile.get("resources",{})
 	var history: Array=stockpile.get("history",[])
@@ -1393,6 +1394,7 @@ func show_stockpile(resource: String="",show_zero: bool=false) -> void:
 		if not resource.is_empty() and key!=resource: continue
 		if not show_zero and resource.is_empty() and float(resources[key])==0: continue
 		_wrapped(_resource_name(str(key))+"："+str(resources[key]));visible+=1
+		if simulation.supply_enabled and key!="silver": _wrapped("全鎮 %.1f · 上游備貨目標 %.0f"%[SimSupply.total(simulation,key),SimSupply.reserve(simulation,key)],12)
 	if visible==0: _wrapped("目前沒有符合條件的庫存。")
 	_wrapped("收支紀錄 · 較新在前",18)
 	var entries: Array=history.filter(func(entry): return resource.is_empty() or entry.get("resource","")==resource)
@@ -1581,7 +1583,7 @@ func show_farm() -> void:
 	var level:=int(simulation.data.industry.industries.get("farming",{}).get("level",0))
 	_wrapped(str(simulation.data.clock.season)+" · 農業 Lv"+str(level)+" · 農地 "+str(farm.plots.size()))
 	_wrapped("先開啟農業，下一次午夜配置農地。翻土後選作物播種；種子扣銀幣，施肥扣 2 草藥。換季不合時令會枯萎，成熟後請盡快收成。",12)
-	_wrapped("收成存為個別作物，並非直接補充餐食。可到加工頁建廠，將作物製成商品。",12)
+	_wrapped("限產時會計入在田作物的最高品質預估收成，備貨足夠就暫停播種；既有作物仍可完整收成。收成存為個別作物，並非直接補充餐食。可到加工頁建廠，將作物製成商品。",12)
 	if not simulation.farm_enabled: _wrapped("每日農田生長目前關閉。")
 	if level==0: _button("前往產業",drawer_body,show_industry)
 	for p in farm.plots:
@@ -1594,13 +1596,13 @@ func show_farm() -> void:
 				var select:=OptionButton.new();select.size_flags_horizontal=Control.SIZE_EXPAND_FILL;drawer_body.add_child(select)
 				for key in crops:
 					var c: Dictionary=crops[key]
-					if int(c.reqLevel)<=level and simulation.data.clock.season in c.seasons:
+					if int(c.reqLevel)<=level and simulation.data.clock.season in c.seasons and SimSupply.crop_space(simulation,key):
 						select.add_item(str(c.name)+" · 種子 "+str(int(c.sellPrice)*2)+" 銀 · "+str(int(c.growDays))+" 天")
 						select.set_item_metadata(select.item_count-1,key)
-				if select.item_count==0: _wrapped("目前沒有可播種的當季作物。",12)
+				if select.item_count==0: _wrapped("目前沒有可播種的作物：需符合季節、農業等級與備貨目標。",12)
 				var button:=_button("播種 #%d"%id,drawer_body,func():
 					if select.selected>=0 and SimFarm.plant(simulation,id,str(select.get_item_metadata(select.selected))): has_simulated=true;show_farm()
-					else: _wrapped("播種失敗，請檢查庫存與作物條件。",12))
+					else: _wrapped("播種失敗：請檢查種子費、季節或全鎮作物備貨目標（含在田作物）。",12))
 				button.disabled=select.item_count==0
 			"growing":
 				_button("澆水 #%d"%id,drawer_body,func(): SimFarm.water(simulation,id);has_simulated=true;show_farm())
@@ -1622,7 +1624,7 @@ func show_processing() -> void:
 	var manager: Dictionary=simulation.data.processing;var defs:=SimProcessing.rules()
 	_wrapped("建廠立即扣材料，午夜施工。完工隔日自動招工並選第一份配方。成品先存工廠倉庫，可領取、出售或交訂單。",12)
 	_wrapped("切換配方會清除該廠生產進度；原料於每批完成時扣除。移除人手後，隔日仍會自動補位。市集會每天自動出售部分成品。",12)
-	if simulation.supply_enabled: _wrapped("產量控制：全鎮同商品保留約 3 批，另加未完成訂單需求；下一批超標就停產，消耗後恢復。手動與市集販售共用每商品每日 4 件需求。",12)
+	if simulation.supply_enabled: _wrapped("產量控制：全鎮同商品保留約 3 批，另備工程、下游配方與未完成訂單需求；下一批超標就停產，消耗後恢復。手動與市集販售共用每商品每日 4 件需求。",12)
 	if not simulation.processing_enabled: _wrapped("每日加工營運目前關閉。")
 	for key in defs:
 		var def: Dictionary=defs[key];_wrapped(str(def.name),18)

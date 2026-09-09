@@ -56,4 +56,4 @@ static func daily(w: SimWorld) -> void:
 		ind.dailyOutput={}
 		for resource in level_def.output:
 			var produced:=floorf(float(level_def.output[resource])*efficiency*multiplier*10+.5)/10
-			SimEconomy.change(w,resource,produced,str(def.name)+" Lv"+str(int(ind.level)),str(def.name));ind.dailyOutput[resource]=produced
+			ind.dailyOutput[resource]=SimSupply.produce(w,resource,produced,str(def.name)+" Lv"+str(int(ind.level)),str(def.name))

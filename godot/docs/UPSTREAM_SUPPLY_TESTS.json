@@ -1,0 +1,103 @@
+{
+  "checks": 7214,
+  "failures": [],
+  "monthly_balances": [
+    {
+      "day": 30,
+      "food": 42.9,
+      "meals": 0.0,
+      "original_meals": 0.0,
+      "original_silver": 438.3,
+      "original_wood": 826.0,
+      "silver": 437.2
+    },
+    {
+      "day": 60,
+      "food": 29.0,
+      "meals": 0.0,
+      "original_meals": 0.0,
+      "original_silver": 722.000000000001,
+      "original_wood": 1522.0,
+      "silver": 721.600000000001
+    },
+    {
+      "day": 90,
+      "food": 23.7,
+      "meals": 0.0,
+      "original_meals": 0.0,
+      "original_silver": 1010.4,
+      "original_wood": 2308.0,
+      "silver": 1005.4
+    },
+    {
+      "day": 120,
+      "food": 24.9,
+      "meals": 0.0,
+      "original_meals": 0.0,
+      "original_silver": 1294.9,
+      "original_wood": 3004.0,
+      "silver": 1292.4
+    },
+    {
+      "day": 150,
+      "food": 41.7,
+      "meals": 0.0,
+      "original_meals": 0.0,
+      "original_silver": 1583.8,
+      "original_wood": 3789.99999999999,
+      "silver": 1578.5
+    },
+    {
+      "day": 180,
+      "food": 27.0,
+      "meals": 0.0,
+      "original_meals": 0.0,
+      "original_silver": 1870.6,
+      "original_wood": 4485.99999999998,
+      "silver": 1866.0
+    }
+  ],
+  "peaks": {
+    "beer": 0.0,
+    "bread": 0.0,
+    "brick": 60.0,
+    "cloth": 39.05,
+    "clothing": 39.4,
+    "corn": 0.0,
+    "cotton": 0.0,
+    "dragon_fruit": 0.0,
+    "fine_tea": 0.0,
+    "flowers": 0.0,
+    "food": 45.05,
+    "furniture": 60.0,
+    "gold": 60.0,
+    "golden_wheat": 0.0,
+    "grapes": 0.0,
+    "hardwood": 60.0,
+    "herbal_tea": 0.0,
+    "herbs": 60.0,
+    "jam": 0.0,
+    "luxury_furniture": 0.0,
+    "marble": 60.0,
+    "meals": 0.0,
+    "medicine": 40.0,
+    "metal": 200.0,
+    "mushroom": 0.0,
+    "pastry": 0.0,
+    "perfume": 0.0,
+    "plank": 60.0,
+    "potato": 0.0,
+    "research_points": 100.0,
+    "rice": 0.0,
+    "steel": 60.0,
+    "stone": 225.0,
+    "sugar": 0.0,
+    "sugarcane": 0.0,
+    "tea": 0.0,
+    "tools": 1.2,
+    "wheat": 0.0,
+    "wine": 0.0,
+    "wood": 200.0
+  },
+  "scope": "180-day bounded upstream stocks, construction floors, proportional inputs, no wasted overtime, crop commitments, grandfathered harvest, resume; silver audit is observational, not a complete balanced economy"
+}
