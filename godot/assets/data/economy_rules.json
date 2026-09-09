@@ -1,0 +1,155 @@
+{
+  "recipes": {
+    "farmer": {
+      "inputs": {},
+      "outputs": {
+        "food": 12
+      },
+      "skill": "種植"
+    },
+    "miner": {
+      "inputs": {
+        "tools": 0.1
+      },
+      "outputs": {
+        "stone": 6,
+        "metal": 3
+      },
+      "skill": "採礦"
+    },
+    "cook": {
+      "inputs": {
+        "food": 8
+      },
+      "outputs": {
+        "meals": 9
+      },
+      "skill": "烹飪"
+    },
+    "blacksmith": {
+      "inputs": {
+        "metal": 3,
+        "wood": 1
+      },
+      "outputs": {
+        "tools": 3
+      },
+      "skill": "工藝"
+    },
+    "carpenter": {
+      "inputs": {
+        "wood": 4
+      },
+      "outputs": {
+        "furniture": 2
+      },
+      "skill": "建造"
+    },
+    "tailor": {
+      "inputs": {
+        "cloth": 3
+      },
+      "outputs": {
+        "clothing": 2
+      },
+      "skill": "工藝"
+    },
+    "doctor": {
+      "inputs": {
+        "herbs": 2
+      },
+      "outputs": {
+        "medicine": 2
+      },
+      "skill": "醫療"
+    },
+    "researcher": {
+      "inputs": {},
+      "outputs": {
+        "research_points": 5
+      },
+      "skill": "智識"
+    },
+    "trader": {
+      "inputs": {},
+      "outputs": {
+        "silver": 5
+      },
+      "skill": "社交"
+    },
+    "guard": {
+      "inputs": {},
+      "outputs": {},
+      "skill": "射擊"
+    },
+    "priest": {
+      "inputs": {},
+      "outputs": {},
+      "skill": "社交"
+    },
+    "mayor": {
+      "inputs": {},
+      "outputs": {
+        "silver": 2
+      },
+      "skill": "社交"
+    }
+  },
+  "seasons": {
+    "春季": 1.2,
+    "夏季": 1.5,
+    "秋季": 0.8,
+    "冬季": 0.4
+  },
+  "nature": {
+    "forest": {
+      "wood": 3
+    },
+    "river": {
+      "food": 2
+    },
+    "meadow": {
+      "herbs": 1,
+      "cloth": 0.5
+    },
+    "cave": {
+      "stone": 2,
+      "metal": 1
+    },
+    "lake": {
+      "food": 1.5
+    }
+  },
+  "craft": {
+    "cook": "meals",
+    "blacksmith": "tools",
+    "tailor": "clothing",
+    "doctor": "medicine",
+    "carpenter": "furniture"
+  },
+  "raw": [
+    "wood",
+    "stone",
+    "metal",
+    "cloth",
+    "herbs"
+  ],
+  "industryJobs": {
+    "lumber": "carpenter",
+    "quarry": "miner",
+    "farming": "farmer",
+    "mining": "blacksmith"
+  },
+  "weather": {
+    "clear": 0.1,
+    "cloudy": 0,
+    "rain": 0.2,
+    "storm": -0.2,
+    "snow": -0.3,
+    "blizzard": -0.5,
+    "fog": -0.05,
+    "heatwave": -0.3,
+    "drought": -0.4,
+    "wind": -0.1
+  }
+}

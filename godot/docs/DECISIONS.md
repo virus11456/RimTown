@@ -143,3 +143,13 @@ Agent._perceiveSurroundings 接在足跡之後，保留原版每日六筆、四 
 依原版 _giveGift 扣除 stockpile.resources，写入同格式收支 history；五種禮物、職業偏好、好感／戀慕、收禮念頭、記憶、台詞與玩家行動均對照原版。merchant 偏好 silver，但 trader 無偏好，保留原版差異。
 
 原版 _lastGiftDay 僅選單檢查且未序列化，Godot 於送出再次檢查並以 _godot4a.gift_days 按居民保存，避免連點或讀檔重送。公共庫存來源與立即扣除在介面明示，庫存不足／無效對象／死亡時無變動。只接送禮所需扣除，不代表自動生產與每日消耗已移植。第一天任務、心動事件回呼與愛心粒子另批完成。
+
+
+## D41 — 每日經濟及加工排班
+完整移植 processDailyProduction 本函式的原料安全線補給、職業生產、排班、投入不足替代、餐食／緊急食物、自然採集、磨耗、診療、取暖與腐壞。配方／氣候／產業映射從原版匯出。每日事件順序放在關係／仇怨之後、派系之前，僅承諾已移植子系統的相對順序，不假稱完整 World.tick。函式對死亡者的生產／需求篩選沿原版，生命週期尚待獨立處理。
+
+news.activeModifiers、weather 與 buildings.activeEffects 使用匯入值；其自身更新尚未接入，效果不會自行過期或變天。industry 已存在時，對應職業依原版乘 0.5；產業本身產出仍待接入。預設主程式開啟，純 SimWorld 預設關閉以保留先前基準，開關保存於 _godot4a。
+
+休工／正常／加班排班 UI 保存 workPolicy，下一次午夜使用，每名加工居民加班津貼 8 銀幣。未加入原版估算日產，避免不含技能及修正的粗估誤導玩家。
+
+56 組 source oracle 包括新增極端人口缺糧／缺柴情境；10 天整合續存一致。原版讀回遺失 _rivalGossiped 的既有 Relationship 私有標記，讀回檢查只明確排除此鍵，Godot 本身續存保留。

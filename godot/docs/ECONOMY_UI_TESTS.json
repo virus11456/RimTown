@@ -1,0 +1,5 @@
+{
+  "checks": 14,
+  "failures": [],
+  "scope": "default enabled, midnight exactly once, disabled settlement, ledger, unchanged source import, ten-day all-mode resume; full original World.tick not claimed"
+}

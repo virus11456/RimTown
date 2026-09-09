@@ -84,6 +84,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_rumor.flag"): _capture_player_rumor()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_gift.flag"): _capture_player_gift()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_stockpile.flag"): _capture_stockpile()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_economy.flag"): _capture_economy()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -255,6 +256,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.mourning_enabled=bool(document.data.get("_godot4a",{}).get("mourning_enabled",true))
 	simulation.trace_enabled=bool(document.data.get("_godot4a",{}).get("trace_enabled",true))
 	simulation.perception_enabled=bool(document.data.get("_godot4a",{}).get("perception_enabled",true))
+	simulation.economy_enabled=bool(document.data.get("_godot4a",{}).get("economy_enabled",true))
 	var data := document.snapshot()
 	heading.text = str(data.get("townName","小鎮"))
 	var clock_data: Dictionary = data.clock
@@ -309,7 +311,7 @@ func show_tab(tab: String, refresh := false) -> void:
 			_button("匯出原始存檔副本",drawer_body,export_save)
 			_button("匯出試玩進度",drawer_body,export_progress)
 			_button("公共庫存與收支",drawer_body,show_stockpile)
-			_wrapped("試玩：作息、移動與居民互動已啟用。\n送禮會消耗公共庫存；自動生產、每日消耗與任務尚待完成。",13)
+			_wrapped("試玩：作息、移動與居民互動已啟用。\n送禮會消耗公共庫存；每日經濟可在設定開關。建設、交易與任務仍待完成。",13)
 			var resources: Dictionary = _current_data().get("stockpile",{}).get("resources",{})
 			for key in resources:
 				if float(resources[key]) != 0: _label("%s   %s" % [_resource_name(key),str(resources[key])],drawer_body)
@@ -541,6 +543,7 @@ func _line(placeholder: String, secret := false) -> LineEdit:
 	return field
 
 func _settings_ui() -> void:
+	_button("每日生產與消耗："+("開啟" if simulation.economy_enabled else "關閉"),drawer_body,func(): simulation.economy_enabled=not simulation.economy_enabled; show_tab("設定",true))
 	_button("居民環境感知："+("開啟" if simulation.perception_enabled else "關閉"),drawer_body,func(): simulation.perception_enabled=not simulation.perception_enabled; show_tab("設定",true))
 	_button("居民足跡："+("開啟" if simulation.trace_enabled else "關閉"),drawer_body,func(): simulation.trace_enabled=not simulation.trace_enabled; show_tab("設定",true))
 	_button("居民弔念："+("開啟" if simulation.mourning_enabled else "關閉"),drawer_body,func(): simulation.mourning_enabled=not simulation.mourning_enabled; show_tab("設定",true))
@@ -1350,7 +1353,8 @@ func _capture_player_gift() -> void:
 func show_stockpile(resource: String="",show_zero: bool=false) -> void:
 	active_tab="小鎮";drawer.show();_clear_drawer()
 	_wrapped("公共庫存與收支",22)
-	_wrapped("送禮從這裡扣除。自動生產與每日消耗尚未啟用；匯入存檔會保留原有庫存及紀錄。",12)
+	_button("加工排班",drawer_body,show_work_policy)
+	_wrapped("送禮從這裡扣除；每日生產與消耗在午夜結算，可於設定開關。建築施工、交易與產業自身運作仍待完成。",12)
 	var stockpile: Dictionary=_current_data().get("stockpile",{})
 	var resources: Dictionary=stockpile.get("resources",{})
 	var history: Array=stockpile.get("history",[])
@@ -1378,7 +1382,9 @@ func show_stockpile(resource: String="",show_zero: bool=false) -> void:
 	for entry in entries:
 		var amount:=float(entry.get("amount",0))
 		_wrapped(_resource_name(str(entry.get("resource","")))+" "+("+" if amount>0 else "")+str(amount))
-		var reason: String=str(entry.get("reason",""));var source: String=str(entry.get("source",""))
+		var reason: String=str(entry.get("reason",""));reason={"daily consumption":"每日餐食消耗","tool wear":"工具磨耗","clothing wear":"衣物磨耗"}.get(reason,reason)
+		if reason.begins_with("natural ("): reason="自然採集 · "+str(_current_data().get("townMap",{}).get("locations",{}).get(reason.trim_prefix("natural (").trim_suffix(")"),{}).get("name",reason))
+		var source: String=str(entry.get("source",""))
 		_wrapped(("未記錄原因" if reason.is_empty() else reason)+(" · "+source if not source.is_empty() else ""),12)
 	_button("重新整理",drawer_body,func(): show_stockpile(resource,show_zero))
 	_button("返回小鎮",drawer_body,func(): show_tab("小鎮",true))
@@ -1397,4 +1403,35 @@ func _capture_stockpile() -> void:
 	await get_tree().create_timer(.5).timeout
 	await RenderingServer.frame_post_draw
 	viewport.get_texture().get_image().save_png("res://docs/stockpile-mobile.png")
+	viewport.queue_free()
+
+func show_work_policy() -> void:
+	active_tab="小鎮";drawer.show();_clear_drawer();_wrapped("加工排班",22)
+	_wrapped("下一次午夜結算生效。休工讓工坊居民休息；加班每人付 8 銀幣、產能乘 1.5，心情降低。銀幣不足時照常排班。",12)
+	if not simulation.economy_enabled: _wrapped("每日經濟目前關閉，請先到設定開啟。")
+	var jobs:={"meals":"cook","tools":"blacksmith","clothing":"tailor","medicine":"doctor","furniture":"carpenter"}
+	for good in jobs:
+		var makers: Array=simulation.data.agents.values().filter(func(a): return not a.get("isPlayer",false) and a.get("jobKey")==jobs[good]).map(func(a): return str(a.name))
+		_wrapped(_resource_name(good)+" · "+("無人手" if makers.is_empty() else "、".join(makers)))
+		var choice:=OptionButton.new();choice.custom_minimum_size.y=42;drawer_body.add_child(choice)
+		for label in ["休工","正常排班","加班"]: choice.add_item(label)
+		choice.select(maxi(0,["off","normal","extra"].find(simulation.data.get("workPolicy",{}).get(good,"normal"))))
+		choice.item_selected.connect(func(index):
+			if SimEconomy.set_policy(simulation,good,["off","normal","extra"][index]): has_simulated=true;status.text="排班已儲存 · 下次午夜生效")
+	_button("返回公共庫存",drawer_body,show_stockpile)
+
+func _capture_economy() -> void:
+	await get_tree().create_timer(1).timeout
+	var example:=FileAccess.get_file_as_string("res://tests/economy/compatibility-save.json.tmp")
+	chat_offline=true
+	_load_document(example,"每日經濟驗證")
+	show_tab("居民",true);show_work_policy()
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/economy-desktop.png")
+	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+	var mobile=load("res://scenes/main.tscn").instantiate();viewport.add_child(mobile)
+	mobile.chat_offline=true;mobile._load_document(example,"每日經濟驗證");mobile.show_tab("居民",true);mobile.show_work_policy()
+	await get_tree().create_timer(.5).timeout
+	await RenderingServer.frame_post_draw
+	viewport.get_texture().get_image().save_png("res://docs/economy-mobile.png")
 	viewport.queue_free()

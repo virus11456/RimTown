@@ -1,0 +1,5 @@
+{
+  "checks": 2600,
+  "failures": [],
+  "scope": "56 original processDailyProduction cases: seasons, work policy, shortage, spoilage, modifiers, exact stock ledger/agents/logs/mood/RNG"
+}
