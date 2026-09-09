@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.69.4
-const RIMTOWN_APP_VERSION = '5.69.4';
+// RimTown - Frontend App (WordPress Plugin) v5.70.0
+const RIMTOWN_APP_VERSION = '5.70.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1716,7 +1716,76 @@ class RimTownApp {
                 </div>
             </div>
             <p class="landing-muted landing-brain-foot">${t('成本閘門：只有玩家附近的對話與每日額度內的行程／反思會呼叫 AI，其餘一律規則式運算，所以一整鎮 20 多人同時「活著」也不會燒錢。')}</p>
+            ${this._renderTechDetails()}
         </section>`;
+    }
+    // v5.70.0 首頁「技術細節」摺疊區:一次 AI 請求的旅程、兩個 AI 怎麼協作
+    _renderTechDetails() {
+        const flow = [
+            ['🗣️', t('玩家附近發生對話')],
+            ['📝', t('組提示詞')],
+            ['⚡', t('快車道 Groq')],
+            ['🤝', t('失敗就換 Claude 接手')],
+            ['🛡️', t('守門：拒答／洩漏／簡體')],
+            ['🧠', t('寫回記憶與關係')],
+        ];
+        const ingredients = [
+            [t('身分行'), t('「你是某某，對面是來到鎮上的旅人，不是鎮長；現任鎮長是誰」——避免叫錯人')],
+            [t('抽出的記憶'), t('用時近×相關×重要度挑出最該想起的 3 到 6 條，不是整本翻')],
+            [t('關係數字'), t('對這個人的好感、信任、心動，以及目前的稱呼（朋友／對手／暗戀）')],
+            [t('今天的計畫'), t('清晨排好的行程與現在正在做的事，讓對話有上下文')],
+            [t('性格與心情'), t('三個特質、價值觀、當下心情與最近的想法')],
+            [t('輸出格式'), t('只准輸出台詞與 EFFECTS 行（好感／心動／記憶變動），不准前言、分析、免責聲明')],
+        ];
+        const lanes = [
+            [t('快車道 chat'), t('玩家附近的即時對話'), t('Groq（開源模型）'), t('Claude'), '12s → 15s'],
+            [t('慢車道 background'), t('每日行程、深度反思、八卦與劇情'), t('Claude'), t('Groq'), '15s → 12s'],
+        ];
+        const handoff = [
+            t('兩條路共用一個 26 秒預算（無伺服器函式上限 30 秒），第一條用掉多少，第二條就只剩多少。'),
+            t('逾時、限流（429）、伺服器錯誤：那條路冷卻。Groq 依回傳的重試時間冷卻，最短 5 分鐘；Claude 每失敗一次冷卻多 60 秒，上限 5 分鐘，成功即解除。'),
+            t('回空白或拒絕扮演不算那條路壞掉，不冷卻，只是這一次換人。'),
+            t('每次回應都帶著 provider、lane、model 與 fallback_from，出問題可以直接從紀錄看出是哪一段接手的。'),
+        ];
+        const quota = [
+            t('每次 Groq 回應都會讀 x-ratelimit 標頭，記下剩餘 token、剩餘請求數與重置時間。'),
+            t('下一次請求先估算要用多少：中文每字算 1 token，其他每 4 個字元算 1，再加輸出上限（至少 160）與 50 的緩衝。'),
+            t('估算超過剩餘額度就直接跳過 Groq 改走 Claude，不會撞到 429 才發現。'),
+            t('推理型模型（gpt-oss）固定輸出下限 160 token、推理強度 low、隱藏推理過程，避免它「想太久」回空白。'),
+        ];
+        const guard = [
+            t('系統指示寫死：一律繁體中文（台灣用語）、不准自報 AI 身分、不准拒絕扮演、不准加前言。'),
+            t('回覆若出現「I\'m Kiro / I am an AI / not designed for roleplay」這類句型，視同失敗，換另一條路重打。'),
+            t('伺服器端先做簡轉繁（OpenCC 台灣用語），前端再掃一次；載入舊存檔時也會把殘留的簡體與洩漏句清掉。'),
+            t('每位村民 500 條記憶上限，對話結束後只把「他會記住的那句話」寫進去，重要度 4 到 8。'),
+        ];
+        const cost = [
+            t('只有玩家附近的村民才會呼叫 AI 對話，遠處的走規則式模板，但一樣寫進記憶、一樣影響好感。'),
+            t('每天有 AI 額度：行程一批打包成一次請求（每人約 450 token），深度反思每天最多 3 位。'),
+            t('Groq 免費層大約每分鐘 30 次、每天 1,000 次、每分鐘 8,000 token；超過就自動改走付費的 Claude，玩家不會感覺到斷線。'),
+        ];
+        const esc = (x) => String(x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        return `<details class="landing-tech" id="landing-tech">
+            <summary>🔧 ${t('想看更深的技術細節：一次 AI 請求的旅程、兩個 AI 怎麼協作')}</summary>
+            <div class="landing-tech-body">
+                <div class="landing-flow">${flow.map((f, i) => `<div class="landing-flow-step"><span class="landing-flow-ico">${f[0]}</span><span>${esc(f[1])}</span></div>${i < flow.length - 1 ? '<span class="landing-flow-arrow">→</span>' : ''}`).join('')}</div>
+                <h4>① ${t('提示詞怎麼組')}</h4>
+                <p class="landing-muted">${t('一次對話只打一個請求，裡面把村民「此刻腦子裡的東西」全部塞進去：')}</p>
+                <dl class="landing-dl">${ingredients.map(x => `<dt>${esc(x[0])}</dt><dd>${esc(x[1])}</dd>`).join('')}</dl>
+                <h4>② ${t('兩條車道：誰先上')}</h4>
+                <div class="landing-table-wrap"><table class="landing-table"><thead><tr><th>${t('車道')}</th><th>${t('用在哪')}</th><th>${t('先問誰')}</th><th>${t('備援')}</th><th>${t('時限')}</th></tr></thead><tbody>${lanes.map(l => `<tr>${l.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+                <p class="landing-muted">${t('即時對話要快，所以先問回應最快的 Groq；行程與反思要寫得細，所以先問 Claude。兩邊互為備援。')}</p>
+                <h4>③ ${t('互相接手與冷卻')}</h4>
+                <ul class="landing-list">${handoff.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+                <h4>④ ${t('免費額度保護')}</h4>
+                <ul class="landing-list">${quota.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+                <h4>⑤ ${t('品質守門')}</h4>
+                <ul class="landing-list">${guard.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+                <h4>⑥ ${t('成本閘門')}</h4>
+                <ul class="landing-list">${cost.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+                <p class="landing-muted">${t('金鑰全部放在伺服器環境變數，前端與存檔裡都沒有；玩家不需要、也不能填自己的金鑰。')}</p>
+            </div>
+        </details>`;
     }
     _wireBrainDemo(root) {
         const box = root.querySelector('#landing-mem-demo');
