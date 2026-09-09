@@ -1,0 +1,5 @@
+{
+  "checks": 1536,
+  "failures": [],
+  "scope": "192 original JS scenarios across two years; recent FIFO, friend/family, duplicate annual name, visited/overdue annual entries, empty queues, needs cap, unknown fields, memories and RNG"
+}

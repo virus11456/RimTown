@@ -1,0 +1,5 @@
+{
+  "checks": 20,
+  "failures": [],
+  "scope": "recent FIFO, annual once per year, memory/voice mobile pages, original/player preservation, pending queue and mode save, all-mode resume; Godot button signals"
+}
