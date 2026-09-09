@@ -1552,7 +1552,7 @@ ${sections}
 ${t('【任務】為上面每一位居民:')}
 1. ${t('根據昨天發生的事,把「近況」改寫成一句 40 字內的人生此刻主線(第三人稱,像「正在存錢想開自己的麵包店,最近和XX走得很近」)。')}
 2. ${t('生成今天的行程:5-6 個時段,每個時段 2-3 個具體的小動作(像「揉麵團」「跟熟客閒聊兩句」,不要抽象標籤)。行程要呼應約定、心事與性格,工作時段要符合作息。')}
-${t('【規則】繁體中文(台灣用語)。只輸出 JSON,不要其他文字：')}
+${LLM_LANG.rule(t('【規則】繁體中文(台灣用語)。只輸出 JSON,不要其他文字：'), '[Rules] Write all text in natural English. Output JSON only, nothing else:')}
 {"plans": [{"name": "${t('居民姓名')}", "currently": "...", "plan": [{"time": "06:00", "text": "${t('時段在做什麼')}", "steps": ["${t('小動作1')}", "${t('小動作2')}"]}]}]}`;
         const response = await this.llm.generate(prompt, 450 * npcs.length + 100, 0.85, false);
         if (!response || response === '__ERROR__' || response === '__RATE_LIMITED__') return;
@@ -1613,7 +1613,7 @@ ${planText ? `${t('【今天原本的安排】')}${planText}` : ''}
 ${t('【剛剛發生的事】')}${shortReason}
 
 ${t('【任務】依這件事改寫「現在之後」的行程:2-4 個時段(時間必須晚於現在),每時段 1-3 個小動作。若約好了時間/地點務必排進去;沒被影響的原安排可以保留;睡覺時間照舊。')}
-${t('【規則】繁體中文(台灣用語)。只輸出 JSON,不要其他文字：')}
+${LLM_LANG.rule(t('【規則】繁體中文(台灣用語)。只輸出 JSON,不要其他文字：'), '[Rules] Write all text in natural English. Output JSON only, nothing else:')}
 {"plan": [{"time": "HH:MM", "text": "${t('時段在做什麼')}", "steps": ["${t('小動作1')}"]}]}`;
             const response = await this.llm.generate(prompt, 350, 0.85, false);
             if (!response || response === '__ERROR__' || response === '__RATE_LIMITED__') return;
@@ -1722,7 +1722,7 @@ ${t('夜深了，你回想今天發生的事：')}
 ${topMem}
 
 ${t('【任務】寫下你今晚睡前心裡最深的一個體悟——關於某個人、某段關係、或你自己的處境。')}
-${t('【規則】繁體中文（台灣用語），只寫一句話，第一人稱，有情感、有觀點，不要流水帳。不要加引號或其他文字。')}`;
+${LLM_LANG.rule(t('【規則】繁體中文（台灣用語），只寫一句話，第一人稱，有情感、有觀點，不要流水帳。不要加引號或其他文字。'), '[Rules] Natural English, one sentence only, first person, with feeling and a point of view, not a log. No quotes or other text.')}`;
                 this._countNpcLlmUse(world);
                 const response = await this.llm.generate(prompt, 120, 0.9, false);
                 if (response && response !== '__ERROR__' && response !== '__RATE_LIMITED__') {
@@ -1749,7 +1749,7 @@ ${t('村民：')}${pN.name}${t('，')}${pN.age}${t('歲')}${pN.job}${t('，性�
 ${t('玩家的耳語：「')}${text}${t('」')}
 
 ${t('【任務】把耳語轉寫成這位村民會相信的「第一人稱內心念頭」——像是他自己冒出的想法,符合他的性格與口吻。')}
-${t('【規則】繁體中文（台灣用語），只寫一句話。多疑或與他認知矛盾時可以寫成半信半疑的念頭。不要引號。')}
+${LLM_LANG.rule(t('【規則】繁體中文（台灣用語），只寫一句話。多疑或與他認知矛盾時可以寫成半信半疑的念頭。不要引號。'), '[Rules] Natural English, one sentence only. If suspicious or contradictory to what they know, write it as a half-believed thought. No quotes.')}
 ${t('最後一行：')}EFFECTS: {"target": "${t('若念頭涉及某位村民寫其姓名,否則空字串')}", "affinity_change": ${t('數字')}(-8${t('到')}8), "romantic_change": ${t('數字')}(0${t('到')}8)}`;
                 const response = await this.llm.generate(prompt, 250, 0.9, true);
                 if (response && response !== '__ERROR__' && response !== '__RATE_LIMITED__') {
@@ -1856,7 +1856,7 @@ ${memNpc.length ? `${t('你記得：')}${memNpc.map(m=>m.content).join(t('；'))
 ${recentChat ? `${t('【最近對話】')}\n${recentChat}` : ''}
 
 ${t('【規則】')}
-${t('- 繁體中文（台灣用語），1-2句就好，像傳LINE訊息那樣自然')}
+${LLM_LANG.rule(t('- 繁體中文（台灣用語），1-2句就好，像傳LINE訊息那樣自然'), '- Natural English, 1-2 sentences, casual like a text message')}
 ${t('- 不要加任何前綴、名字標籤、引號')}
 ${t('- 直接寫訊息內容就好')}`;
 
@@ -1905,7 +1905,7 @@ ${t('- 直接寫訊息內容就好')}`;
                     const prompt = `${t('你在為小鎮社群「鎮民動態」寫一則貼文。')}
 ${t('發文者:')}${pN.name}${t('，')}${pN.job}${t('。性格：')}${pN.traits}${t('。')}
 ${t('他的人生夢想是「')}${def.name}${t('」,現在剛剛達成了一個階段:「')}${stageName}${t('」。')}${isDone ? t('這是他夢想的最終實現!') : ''}
-${t('【格式】只寫一句貼文,表達此刻的心情與這個里程碑,口語、真摯、可加表情符號。繁體中文,不要有其他文字。')}`;
+${LLM_LANG.rule(t('【格式】只寫一句貼文,表達此刻的心情與這個里程碑,口語、真摯、可加表情符號。繁體中文,不要有其他文字。'), '[Format] Write one post only, expressing the mood of this moment and this milestone; casual, sincere, emoji allowed. Natural English, no other text.')}`;
                     const response = await this.llm.generate(prompt, 120, 0.9, false);
                     if (response && response !== '__ERROR__' && response !== '__RATE_LIMITED__') {
                         text = response.trim().replace(/^["「『]|["」』]$/g, '').replace(new RegExp(`^${npc.name}[：:]\\s*`), '').trim();
@@ -1958,7 +1958,7 @@ ${t('現在在')}${author.currentLocation.replace(/_/g, ' ')}${t('，正在')}${
 
 ${t('【格式】第一行寫貼文內容(1-2句,口語、有梗、可加表情符號)。')}
 ${names.length ? `${t('接著每行寫一則留言,格式「名字: 留言」,留言者依序是:')}${names.join(t('、'))}` : ''}
-${t('繁體中文(台灣用語),不要有其他任何文字。')}`;
+${LLM_LANG.rule(t('繁體中文(台灣用語),不要有其他任何文字。'), 'Natural English, no other text at all.')}`;
                     const response = await this.llm.generate(prompt, 250, 0.95, false);
                     if (response && response !== '__ERROR__' && response !== '__RATE_LIMITED__') {
                         const lines = response.trim().split('\n').map(s => s.trim()).filter(Boolean);
@@ -2025,7 +2025,7 @@ ${t('【')}${pA.name}${t('】')}${pA.age}${t('歲')}${pA.job}${t('，性格')}${
 ${t('【')}${pB.name}${t('】')}${pB.age}${t('歲')}${pB.job}${t('，性格')}${pB.traits}
 
 ${t('【規則】')}
-${t('- 必須使用繁體中文（台灣用語），不可使用簡體中文')}
+${LLM_LANG.rule(t('- 必須使用繁體中文（台灣用語），不可使用簡體中文'), '- Write only in natural English; do not use Chinese')}
 ${t('- 寫4-6句有張力、有情緒的對話,像戲劇高潮的名場面')}
 ${t('- 每個人的說話風格要符合性格')}
 ${t('- 格式：每行「名字: 對話內容」,不要有其他任何東西')}`;
@@ -2145,7 +2145,7 @@ ${pN.name}${t('，')}${pN.age}${t('歲，')}${pN.job}${t('。性格：')}${pN.tr
 ${mems ? `${t('你們的共同回憶：')}${mems}` : ''}
 
 ${t('【規則】')}
-${t('- 繁體中文（台灣用語），2-4句，要真摯、有溫度，符合你的性格')}
+${LLM_LANG.rule(t('- 繁體中文（台灣用語），2-4句，要真摯、有溫度，符合你的性格'), '- Natural English, 2-4 sentences, sincere and warm, true to your personality')}
 ${t('- 可以提到具體的共同回憶或小鎮生活細節')}
 ${t('- 不要加任何前綴、名字標籤、引號')}`;
                     // v5.39.0 心動事件走 chat lane(Groq 免費優先)
@@ -2211,7 +2211,7 @@ ${t('【你是誰】')}
 ${pN.name}${t('，')}${pN.age}${t('歲，')}${pN.job}${t('。性格：')}${pN.traits}${t('。')}
 
 ${t('【規則】')}
-${t('- 繁體中文（台灣用語），1-2句就好，像傳LINE訊息那樣自然')}
+${LLM_LANG.rule(t('- 繁體中文（台灣用語），1-2句就好，像傳LINE訊息那樣自然'), '- Natural English, 1-2 sentences, casual like a text message')}
 ${t('- 從你的職業和性格出發評論這件事（開心、期待、或吐槽都行）')}
 ${t('- 不要加任何前綴、名字標籤、引號')}`;
                     const response = await this.llm.generate(prompt, 150, 0.9, false);
@@ -2398,7 +2398,7 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
 ${t('這是兩位小鎮居民偶然碰面的場景。請寫出生動、自然、有溫度的對話——就像真實的鄰居閒聊一樣。')}
 
 ${t('【重要規則】')}
-${t('- 必須使用繁體中文（台灣用語），不可使用簡體中文')}
+${LLM_LANG.rule(t('- 必須使用繁體中文（台灣用語），不可使用簡體中文'), '- Write only in natural English; do not use Chinese')}
 ${t('- 絕對不要讓角色報告自己的狀態（不要說「我好餓」「我好累」「我心情不好」這種話）')}
 ${t('- 對話要像真人——談論具體的事、講故事、開玩笑、分享感受、抱怨、八卦')}
 ${t('- 每個人的說話風格要明顯不同（用詞、語氣、句子長短都要有差異）')}
@@ -2981,7 +2981,7 @@ ${recentChat || t('（剛開始聊）')}
 ${player.name}: ${playerMessage}
 
 ${t('【回覆規則】')}
-${t('- 必須使用繁體中文（台灣用語），不可使用簡體中文。1-3句話')}
+${LLM_LANG.rule(t('- 必須使用繁體中文（台灣用語），不可使用簡體中文。1-3句話'), '- Write only in natural English; do not use Chinese. 1-3 sentences')}
 ${t('- 像真人說話，不要文縐縐的。可以用語助詞（啊、啦、嘛、欸、喔、哈）')}
 ${t('- 根據你的性格回應：')}${pN.traits.includes(t('害羞')) ? t('你會說話結巴、簡短') : pN.traits.includes(t('健談')) ? t('你很愛聊天，會主動延伸話題') : pN.traits.includes(t('刻薄')) ? t('你說話帶刺但可能是關心的方式') : t('用你自己的方式說話')}
 ${t('- 不要直接說「我很累」「我心情不好」這種報告式的話。如果你累了，可能會打哈欠或說「唉今天腰都快斷了」')}
@@ -3365,6 +3365,19 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
 }
 
 // --- LLM Client ---
+// v5.73.0 AI 對話語言:玩家在設定裡選「跟隨介面/繁體中文/English」,決定 AI 生成台詞、行程、反思、日報用的語言。
+// 介面語言與對話語言分開;提示詞本身維持中文,只切換語言規則、系統指示與人名(送出前中→英,回來後英→中,存檔仍是中文名)。
+const LLM_LANG = {
+    get() {
+        let v = null; try { v = localStorage.getItem('rimtown_dialogue_lang'); } catch (e) {}
+        if (v === 'zh' || v === 'en') return v;
+        return (typeof I18N !== 'undefined' && I18N.getLang() === 'en') ? 'en' : 'zh';
+    },
+    isEn() { return this.get() === 'en'; },
+    rule(zh, en) { return this.get() === 'en' ? en : zh; },
+};
+if (typeof window !== 'undefined') window.LLM_LANG = LLM_LANG;
+
 class LLMClient {
     constructor(provider, apiKey, model) {
         this.provider = provider; this.apiKey = apiKey; this.model = model;
@@ -3380,6 +3393,13 @@ class LLMClient {
     }
 
     setFallbackGroqKey(key) { this.fallbackGroqKey = key; }
+    // v5.73.0 daily-news.js 用的 chat([{role,content}], {max_tokens}) 介面:合併成單一提示詞走 generate()
+    async chat(messages, opts = {}) {
+        const prompt = (messages || []).map(m => m && m.content ? String(m.content) : '').filter(Boolean).join('\n\n');
+        const r = await this.generate(prompt, opts.max_tokens || 500, opts.temperature ?? 0.9, false);
+        if (!r || r === '__ERROR__' || r === '__RATE_LIMITED__') return null;
+        return r;
+    }
 
     /**
      * Test if the API key is valid by making a minimal request.
@@ -3541,10 +3561,13 @@ class LLMClient {
                     const jwt = localStorage.getItem('rimtown_jwt');
                     if (jwt) headers['Authorization'] = 'Bearer ' + jwt;
                 } catch (e) {}
+                // v5.73.0 對話語言:英文模式把提示詞裡的中文人名換成英文名再送,伺服器改用英文系統指示並跳過簡轉繁
+                const lang = (typeof LLM_LANG !== 'undefined') ? LLM_LANG.get() : 'zh';
+                const sendPrompt = (lang === 'en' && typeof I18N !== 'undefined') ? I18N.localizeNames(prompt, true) : prompt;
                 const res = await fetch('/api/chat', {
                     method: 'POST', headers,
                     // v5.66.0 lane 交給伺服器分流:chat=玩家對話/劇情 → Groq 優先;background=行程/反思 → 付費中繼
-                    body: JSON.stringify({ prompt, max_tokens: maxTokens, temperature, lane }),
+                    body: JSON.stringify({ prompt: sendPrompt, max_tokens: maxTokens, temperature, lane, lang }),
                 });
                 if (res.status === 429) return '__RATE_LIMITED__';
                 if (!res.ok) return '__ERROR__';
@@ -3553,7 +3576,10 @@ class LLMClient {
                 if (World.looksLikeAssistantLeak(data.reply)) { console.warn('[RimTown LLM] assistant leak blocked'); return '__ERROR__'; }
                 // v5.67.5 雙保險:伺服器已轉繁體,萬一漏網前端再轉一次
                 let reply = data.reply || '';
-                if (typeof RIMTOWN_S2T !== 'undefined' && RIMTOWN_S2T.looksSimplified(reply)) reply = RIMTOWN_S2T.convert(reply);
+                if (lang === 'en') {
+                    // v5.73.0 英文回覆:英文名換回中文名,讓行程/對話解析與存檔仍用中文名(顯示層再換成英文)
+                    if (typeof I18N !== 'undefined') reply = I18N.delocalizeNames(reply);
+                } else if (typeof RIMTOWN_S2T !== 'undefined' && RIMTOWN_S2T.looksSimplified(reply)) reply = RIMTOWN_S2T.convert(reply);
                 return reply;
             } catch (err) {
                 console.warn('[RimTown LLM] server provider error:', err.message);

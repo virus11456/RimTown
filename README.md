@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.72.0.zip` from Releases
+1. Download `rimtown-v5.73.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -65,6 +65,7 @@ node scripts/lane_test.js      # /api/chat 分流、冷卻、逾時、額度感�
 node scripts/refusal_test.js   # /api/chat 拒絕扮演偵測與退回(v5.67.2 起)
 node scripts/scrub_test.js     # 存檔深度清理 AI 助理漏出內容(v5.67.4 起)
 node scripts/invite_test.js    # 推薦碼註冊與管理(v5.68.0 起)
+node scripts/lang_test.js      # /api/chat 對話語言:lang=en 英文系統指示/不轉繁體(v5.73.0 起)
 node scripts/gen-changelog.js  # 從 rimtown.php 產生首頁更新紀錄 changelog.js(v5.68.0 起,改版必跑)
 ```
 
@@ -77,6 +78,13 @@ node scripts/gen-changelog.js  # 從 rimtown.php 產生首頁更新紀錄 change
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.73.0 (2026-09-09)
+
+- 🗣️ 雙語第三波：設定裡新增「AI 對話語言」（跟隨介面語言／繁體中文／English）。決定村民台詞、行程、反思、貼文與日報由 AI 生成時用的語言，與介面語言分開；`localStorage.rimtown_dialogue_lang`（auto 不落地），`api/settings.js` 接受 `dialogue_lang` 隨帳號同步
+- 🤖 英文模式：`LLMClient` 送出前把提示詞裡的中文人名換成英文名（`I18N.localizeNames(prompt, true)`），請求帶 `lang:'en'`；`api/chat.js` 改用 `GAME_SYSTEM_PROMPT_EN`（Anthropic 格式前綴 `[System instructions]`），跳過簡轉繁；回覆用 `I18N.delocalizeNames()` 把英文名換回中文名（含隨機卡司 Given Surname），行程／對話解析與存檔仍用中文名，顯示層才換成英文。12 處提示詞語言規則改為 `LLM_LANG.rule(zh, en)`
+- 📰 修正 AI 日報：`daily-news.js` 呼叫的 `llm.chat()` 先前不存在，一直靜默退回模板；現在 `LLMClient.chat(messages, opts)` 補上，日報可由 AI 撰寫並跟著對話語言
+- 🔍 新增 `scripts/lang_test.js`（8 項）並加進發版前必跑；lane_test 18／refusal_test 9 仍全過
 
 ### v5.72.0 (2026-09-09)
 

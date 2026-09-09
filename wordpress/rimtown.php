@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.72.0
+ * Version: 5.73.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.72.0');
+define('RIMTOWN_VERSION', '5.73.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.73.0',
+            'date'    => '2026-09-09',
+            'changes' => array(
+                '🗣️ 雙語第三波:設定裡新增「AI 對話語言」——跟隨介面語言 / 繁體中文 / English。決定村民台詞、行程、反思、貼文與日報由 AI 生成時用的語言,與介面語言分開;選擇隨帳號同步到其他裝置',
+                '🤖 英文模式下:提示詞裡的中文人名送出前換成英文名(Victor、Lily…),伺服器改用英文系統指示並要求只用英文回覆,回覆不再做簡轉繁;AI 回來的英文名再換回中文名,行程/對話解析與存檔仍用中文名,顯示層才換成英文',
+                '📰 修正 AI 日報:日報呼叫的 llm.chat() 介面先前不存在,一直靜默退回模板;現在補上,日報可由 AI 撰寫並跟著對話語言',
+                '🔍 新增 scripts/lang_test.js(8 項):英文系統指示、中繼英文前綴、未帶語言維持中文、英文不轉繁體、未知語言回退',
+            ),
+        ),
         array(
             'version' => '5.72.0',
             'date'    => '2026-09-09',

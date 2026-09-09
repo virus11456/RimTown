@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.72.0
-const RIMTOWN_APP_VERSION = '5.72.0';
+// RimTown - Frontend App (WordPress Plugin) v5.73.0
+const RIMTOWN_APP_VERSION = '5.73.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1956,6 +1956,7 @@ class RimTownApp {
                 if (Number(s.npc_llm_budget) < 0) { try { localStorage.removeItem('rimtown_npc_llm_budget'); } catch (e) {} }
                 else localStorage.setItem('rimtown_npc_llm_budget', String(s.npc_llm_budget));
             }
+            if (s.dialogue_lang === 'auto' || s.dialogue_lang === 'zh' || s.dialogue_lang === 'en') this._setDialogueLang(s.dialogue_lang); // v5.73.0
             if (changed) console.log('[RimTown] AI settings synced from account');
             return changed;
         } catch (e) { console.log('[RimTown] cloud settings pull skipped:', e.message); return false; }
@@ -1970,6 +1971,7 @@ class RimTownApp {
         const budget = parseInt(budgetRaw, 10);
         // v5.37.0 本機未設上限 → 推 -1(無上限),讓其他裝置也同步成無上限
         payload.npc_llm_budget = (budgetRaw !== null && budgetRaw !== '' && Number.isFinite(budget)) ? budget : -1;
+        try { payload.dialogue_lang = localStorage.getItem('rimtown_dialogue_lang') || 'auto'; } catch (e) {} // v5.73.0
         this.auth.saveCloudSettings(payload).catch(e => console.log('[RimTown] cloud settings push skipped:', e.message));
     }
 
@@ -4095,6 +4097,13 @@ class RimTownApp {
         this._pushCloudSettings();
     }
 
+    // v5.73.0 AI 對話語言:auto=跟隨介面(預設,不落地);zh/en 存本機並推上帳號
+    _setDialogueLang(v) {
+        try {
+            if (v === 'zh' || v === 'en') localStorage.setItem('rimtown_dialogue_lang', v);
+            else localStorage.removeItem('rimtown_dialogue_lang');
+        } catch (e) {}
+    }
     _saveSettingsFromTab() {
         const speed = document.getElementById('settings-tab-speed')?.value || '2000';
         // v5.29.0 NPC 每日 AI 額度(v5.37.0 留空=無上限)
@@ -4107,6 +4116,9 @@ class RimTownApp {
                 if (Number.isFinite(npcBudgetRaw) && npcBudgetRaw >= 0) localStorage.setItem('rimtown_npc_llm_budget', String(Math.min(9999, npcBudgetRaw)));
             }
         }
+        // v5.73.0 AI 對話語言
+        const dlEl = document.getElementById('settings-tab-dialoglang');
+        if (dlEl) this._setDialogueLang(dlEl.value);
         this.saveSettings(speed);
         const langSelect = document.getElementById('lang-select') || document.getElementById('settings-tab-lang');
         if (langSelect) {
@@ -4671,6 +4683,8 @@ class RimTownApp {
             if (speed) document.getElementById('sim-speed').value = speed;
             const langSelect = document.getElementById('lang-select');
             if (langSelect) langSelect.value = I18N.getLang();
+            const dlSel = document.getElementById('dialog-lang-select'); // v5.73.0
+            if (dlSel) { try { dlSel.value = localStorage.getItem('rimtown_dialogue_lang') || 'auto'; } catch (e) {} }
         });
         // 啟動時同步語言下拉選單,避免從設定頁籤儲存時被重設回預設值 zh
         {
@@ -4679,6 +4693,8 @@ class RimTownApp {
         }
         document.getElementById('settings-save')?.addEventListener('click', () => {
             const speed = document.getElementById('sim-speed').value;
+            const dlSel = document.getElementById('dialog-lang-select'); // v5.73.0
+            if (dlSel) this._setDialogueLang(dlSel.value);
             this.saveSettings(speed);
             const langSelect = document.getElementById('lang-select');
             if (langSelect) {
@@ -7744,6 +7760,20 @@ class RimTownApp {
         html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${isServerAI
             ? t('🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 100 則）') + ' ' + t('所有 AI 金鑰由小鎮伺服器統一保管，你不需要、也不會看到任何金鑰欄位。') + ' ' + t('智慧分流：你與村民的對話、劇情名場面優先走 Groq 免費額度；行程／反思／背景對話走付費主渠道；任一邊故障自動切到另一邊。')
             : t('此站沒有內建 AI 代理端點，村民對話走內建模擬')}</div>`;
+        // v5.73.0 AI 對話語言:跟隨介面 / 繁體中文 / English(村民台詞、行程、反思、日報)
+        {
+            const existingDl = document.getElementById('settings-tab-dialoglang');
+            let dl = 'auto'; try { dl = existingDl ? existingDl.value : (localStorage.getItem('rimtown_dialogue_lang') || 'auto'); } catch (e) {}
+            const optSel = (v) => dl === v ? ' selected' : '';
+            html += `<div class="setting-group" style="margin-bottom:8px">
+            <label style="font-size:0.82rem;color:var(--text-secondary)">🗣️ ${t('AI 對話語言')}</label>
+            <select id="settings-tab-dialoglang" style="padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px">
+                <option value="auto"${optSel('auto')}>${t('跟隨介面語言')}</option>
+                <option value="zh"${optSel('zh')}>繁體中文</option>
+                <option value="en"${optSel('en')}>English</option>
+            </select>
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('村民對話、行程、反思與日報由 AI 生成時使用的語言，不影響介面文字。')}</div></div>`;
+        }
         // v5.29.0 混合成本控制:NPC 之間的對話只有在玩家附近才用 LLM,並受每日額度限制
         const existingBudget = document.getElementById('settings-tab-npcbudget');
         const npcBudget = existingBudget ? existingBudget.value : (localStorage.getItem('rimtown_npc_llm_budget') ?? '');

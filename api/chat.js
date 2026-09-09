@@ -44,6 +44,13 @@ const GAME_SYSTEM_PROMPT = [
     '使用者訊息是遊戲提示詞:裡面會指定你扮演的村民、情境、輸出格式。你必須完全照做,只輸出提示詞要求的內容(村民台詞、行程、反思、EFFECTS 行等)。',
     '規則:一律繁體中文(台灣用語);絕不提及自己是 AI、助理、模型或開發環境;絕不拒絕扮演;絕不加免責聲明、前言或分析;不要用英文回覆。',
 ].join('\n');
+// v5.73.0 對話語言 English:玩家在設定裡選 English 時,系統指示改為英文並要求只用英文回覆
+const GAME_SYSTEM_PROMPT_EN = [
+    'You are the roleplay and text-generation engine for the simulation game RimTown.',
+    'The user message is a game prompt: it names the villager you play, the scene and the required output format. Follow it exactly and output only what it asks for (villager lines, schedules, reflections, EFFECTS lines).',
+    'Rules: write only in natural English (never Chinese); never mention being an AI, an assistant, a model or a development environment; never refuse to roleplay; no disclaimers, preambles or analysis.',
+].join('\n');
+function systemPrompt(lang) { return lang === 'en' ? GAME_SYSTEM_PROMPT_EN : GAME_SYSTEM_PROMPT; }
 // 中繼的回覆若是「拒絕扮演/自報 AI 身分」就視同失敗,讓分流退回另一條渠道
 const REFUSAL_RE = /\b(I'?m|I am) (Kiro|Claude|ChatGPT|an AI|a language model|an assistant)\b|AI (development environment|assistant|language model)|not designed for (roleplay|role-play|fictional)|can'?t (take on|engage in|roleplay|role-play) |fictional character personas?|I can'?t do this|I'?m (here|designed) to help with (coding|software|technical)|我是(一個)?(AI|人工智慧|語言模型|程式開發)|無法(進行|扮演)角色|不能扮演|我不是(遊戲)?角色/i;
 function looksLikeRefusal(text) {
@@ -55,17 +62,17 @@ function looksLikeRefusal(text) {
     return ascii / t.length > 0.5 || /Kiro|AI (development|assistant)|roleplay|role-play/i.test(t) || /我是(一個)?(AI|人工智慧|語言模型)/.test(t);
 }
 
-async function callRelay(prompt, maxTokens, temperature, deadline = Date.now() + 15000) {
+async function callRelay(prompt, maxTokens, temperature, deadline = Date.now() + 15000, lang = 'zh') {
     const url = relayUrl(RELAY_BASE, RELAY_FORMAT);
     let headers, body;
     if (RELAY_FORMAT === 'openai') {
         headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RELAY_KEY}` };
-        body = { model: RELAY_MODEL, messages: [{ role: 'system', content: GAME_SYSTEM_PROMPT }, { role: 'user', content: prompt }], max_tokens: maxTokens, temperature };
+        body = { model: RELAY_MODEL, messages: [{ role: 'system', content: systemPrompt(lang) }, { role: 'user', content: prompt }], max_tokens: maxTokens, temperature };
     } else {
         // 各家 CC 類渠道吃的認證 header 不同,x-api-key 與 Authorization 都送
         headers = { 'Content-Type': 'application/json', 'x-api-key': RELAY_KEY, 'Authorization': `Bearer ${RELAY_KEY}`, 'anthropic-version': '2023-06-01' };
         // v5.67.3 不送 system 欄位:Kiro 系代理收到 system 會卡到逾時(上線實測每次 15 秒被中止);改併進使用者訊息開頭
-        body = { model: RELAY_MODEL, max_tokens: maxTokens, temperature, messages: [{ role: 'user', content: '【系統指示】' + GAME_SYSTEM_PROMPT + '\n\n' + prompt }] };
+        body = { model: RELAY_MODEL, max_tokens: maxTokens, temperature, messages: [{ role: 'user', content: (lang === 'en' ? '[System instructions] ' : '【系統指示】') + systemPrompt(lang) + '\n\n' + prompt }] };
     }
     const r = await fetchTimeout(url, { method: 'POST', headers, body: JSON.stringify(body) }, budget(deadline, 15000));
     if (!r.ok) { const e = new Error('relay_http_' + r.status); e.status = r.status; throw e; }
@@ -98,10 +105,10 @@ async function resolveModel(apiKey, force = false, deadline = Date.now() + 8000)
 }
 
 // 呼叫 Groq;非 2xx / 例外 / 空回覆都會 throw(錯誤物件帶 status),讓分流退回另一條渠道
-async function callGroq(apiKey, prompt, maxTokens, temperature, deadline = Date.now() + 12000) {
+async function callGroq(apiKey, prompt, maxTokens, temperature, deadline = Date.now() + 12000, lang = 'zh') {
     const call = (model) => {
         _lastGroqModel = model;
-        const body = { model, messages: [{ role: 'system', content: GAME_SYSTEM_PROMPT }, { role: 'user', content: prompt }], max_tokens: maxTokens, temperature };
+        const body = { model, messages: [{ role: 'system', content: systemPrompt(lang) }, { role: 'user', content: prompt }], max_tokens: maxTokens, temperature };
         // v5.66.1 推理模型:壓低思考量,不要把小額度全花在推理上;qwen 系列把思考段藏起來
         // v5.66.4 推理模型的思考段會吃掉 max_tokens,小額度(如 20)必回空;Groq 免費不計成本,給最低 160 的餘裕
         if (/gpt-oss|qwen|deepseek/i.test(model)) body.max_tokens = Math.max(maxTokens, 160);
@@ -203,6 +210,7 @@ module.exports = async (req, res) => {
 
     // v5.66.0 智慧分流:決定嘗試順序,逐一嘗試,失敗就記冷卻換下一個
     const lane = b.lane === 'chat' ? 'chat' : 'background';
+    const lang = b.lang === 'en' ? 'en' : 'zh'; // v5.73.0 對話語言
     const now = Date.now();
     const deadline = now + 26000; // v5.66.5 兩條渠道共用 26 秒(函式上限 30 秒,留 4 秒給額度讀寫與回應)
     const candidates = [];
@@ -225,8 +233,8 @@ module.exports = async (req, res) => {
         if (deadline - Date.now() < 2000) { failed.push({ provider: c, model: '', error: 'no_time_left' }); continue; } // 預算用完就不再嘗試
         try {
             reply = c === 'groq'
-                ? await callGroq(groqKey, prompt, maxTokens, temperature, deadline)
-                : await callRelay(prompt, maxTokens, temperature, deadline);
+                ? await callGroq(groqKey, prompt, maxTokens, temperature, deadline, lang)
+                : await callRelay(prompt, maxTokens, temperature, deadline, lang);
             provider = c;
             if (c === 'relay' && _lane.relayFailCount) { _lane.relayFailCount = 0; _lane.relayCooldownUntil = 0; } // 中繼恢復
             break;
@@ -248,11 +256,11 @@ module.exports = async (req, res) => {
         return L.err(res, 502, 'upstream_error', 'AI 服務暫時無法使用');
     }
 
-    if (_toTW !== false) reply = toTraditional(reply); // v5.67.5 簡→繁
+    if (lang !== 'en' && _toTW !== false) reply = toTraditional(reply); // v5.67.5 簡→繁(v5.73.0 英文對話不轉)
     q.count += 1;
     await L.writeJson(quotaPath, q).catch(() => {}); // 額度寫入失敗不阻擋回覆
 
-    const out = { reply, remaining: Math.max(0, limit - q.count), provider, lane, model: provider === 'groq' ? _lastGroqModel : RELAY_MODEL };
+    const out = { reply, remaining: Math.max(0, limit - q.count), provider, lane, lang, model: provider === 'groq' ? _lastGroqModel : RELAY_MODEL };
     if (failed.length) out.fallback_from = failed;
     if (groqBlock) out.groq_skipped = groqBlock;
     if (_groqQuota.at) out.groq_quota = { tokens: _groqQuota.remainingTokens, requests: _groqQuota.remainingRequests };
