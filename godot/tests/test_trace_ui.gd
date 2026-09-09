@@ -31,6 +31,7 @@ func run() -> void:
 	var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app)
 	await process_frame
 	app.set_process(false)
+	app.simulation.perception_enabled=false # Isolate prior suites.
 	check(app.simulation.trace_enabled,"fresh imports record traces")
 	var raw: String=app.document.serialize()
 	app.show_tab("居民",true);app.show_agent("chen_wei",false);press(app.drawer_body,"今日足跡")

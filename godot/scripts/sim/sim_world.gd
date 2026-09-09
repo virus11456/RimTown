@@ -16,6 +16,7 @@ var stargazing_enabled := false
 var mischief_enabled := false
 var mourning_enabled := false
 var trace_enabled := false
+var perception_enabled := false
 var presentation_events: Array=[]
 var social := SimSocial.new()
 func load_snapshot(snapshot: Dictionary) -> void:
@@ -33,6 +34,7 @@ func load_snapshot(snapshot: Dictionary) -> void:
 	mischief_enabled=bool(saved.get("mischief_enabled",false))
 	mourning_enabled=bool(saved.get("mourning_enabled",false))
 	trace_enabled=bool(saved.get("trace_enabled",false))
+	perception_enabled=bool(saved.get("perception_enabled",false))
 	_restore_relationship_precision(saved.get("relationship_precision",[]))
 	rng.state = int(saved.get("random_state",11456))
 	runtime = saved.get("agents",{}).duplicate(true)
@@ -41,7 +43,7 @@ func load_snapshot(snapshot: Dictionary) -> void:
 func snapshot() -> Dictionary:
 	var result := data.duplicate(true)
 	var extension: Dictionary = result.get("_godot4a",{}).duplicate(true)
-	extension.merge({"version":1,"random_state":rng.state,"agents":runtime.duplicate(true),"social_enabled":social_enabled,"gossip_enabled":gossip_enabled,"romance_enabled":romance_enabled,"feuds_enabled":feuds_enabled,"factions_enabled":factions_enabled,"thoughts_enabled":thoughts_enabled,"inner_voice_enabled":inner_voice_enabled,"stargazing_enabled":stargazing_enabled,"mischief_enabled":mischief_enabled,"mourning_enabled":mourning_enabled,"trace_enabled":trace_enabled,"relationship_precision":_relationship_precision()},true)
+	extension.merge({"version":1,"random_state":rng.state,"agents":runtime.duplicate(true),"social_enabled":social_enabled,"gossip_enabled":gossip_enabled,"romance_enabled":romance_enabled,"feuds_enabled":feuds_enabled,"factions_enabled":factions_enabled,"thoughts_enabled":thoughts_enabled,"inner_voice_enabled":inner_voice_enabled,"stargazing_enabled":stargazing_enabled,"mischief_enabled":mischief_enabled,"mourning_enabled":mourning_enabled,"trace_enabled":trace_enabled,"perception_enabled":perception_enabled,"relationship_precision":_relationship_precision()},true)
 	result._godot4a = extension
 	if gossip_enabled and result.get("townFeed") is Dictionary and result.townFeed.get("posts") is Array:
 		result.townFeed.posts=result.townFeed.posts.slice(maxi(0,result.townFeed.posts.size()-80))
@@ -111,6 +113,7 @@ func _update(id: String) -> void:
 	# Keep the original 10% draw even when the feature is disabled.
 	if rng.next_float()<.1 and inner_voice_enabled: SimInnerVoice.generate(a,self)
 	if trace_enabled: SimTrace.record(a,self)
+	if perception_enabled: SimPerception.process(a,self)
 func _player_activity(a: Dictionary,hour: int) -> void:
 	var n: Dictionary=a.needs
 	if (hour>=22 or hour<6) and n.rest<95:

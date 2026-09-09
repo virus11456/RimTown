@@ -18,7 +18,8 @@ func equal(a: Variant,b: Variant) -> bool:
 		return true
 	return a==b
 func _initialize() -> void:
-	var trace:= "--trace" in OS.get_cmdline_user_args()
+	var perception:= "--perception" in OS.get_cmdline_user_args()
+	var trace:= perception or "--trace" in OS.get_cmdline_user_args()
 	var mourning:= trace or "--mourning" in OS.get_cmdline_user_args()
 	var mischief:= mourning or "--mischief" in OS.get_cmdline_user_args()
 	var stargazing:= mischief or "--stargazing" in OS.get_cmdline_user_args()
@@ -29,7 +30,7 @@ func _initialize() -> void:
 	var romance:= feuds or "--romance" in OS.get_cmdline_user_args()
 	var gossip:= romance or "--gossip" in OS.get_cmdline_user_args()
 	for theme in ["frontier","harbor"]:
-		var fixture: Dictionary=JSON.parse_string(FileAccess.get_file_as_string("res://tests/social/"+theme+("-trace" if trace else "-mourning" if mourning else "-mischief" if mischief else "-stargazing" if stargazing else "-inner-voice" if inner_voice else "-thoughts" if thoughts else "-factions" if factions else "-feuds" if feuds else "-romance" if romance else "-gossip" if gossip else "")+"-simulation.json"))
+		var fixture: Dictionary=JSON.parse_string(FileAccess.get_file_as_string("res://tests/social/"+theme+("-perception" if perception else "-trace" if trace else "-mourning" if mourning else "-mischief" if mischief else "-stargazing" if stargazing else "-inner-voice" if inner_voice else "-thoughts" if thoughts else "-factions" if factions else "-feuds" if feuds else "-romance" if romance else "-gossip" if gossip else "")+"-simulation.json"))
 		var world:=SimWorld.new()
 		world.load_snapshot(fixture.input)
 		world.social_enabled=true
@@ -43,6 +44,7 @@ func _initialize() -> void:
 		world.mischief_enabled=mischief
 		world.mourning_enabled=mourning
 		world.trace_enabled=trace
+		world.perception_enabled=perception
 		for checkpoint in fixture.checkpoints:
 			while world.data.tickCount<checkpoint.tick: world.tick()
 			if gossip:
@@ -57,6 +59,8 @@ func _initialize() -> void:
 			for id in checkpoint.agents:
 				var expected: Dictionary=checkpoint.agents[id]
 				var a: Dictionary=world.data.agents[id]
+				if perception:
+					check(equal({"day":world.runtime[id].get("obs_day",""),"count":world.runtime[id].get("obs_count",0)},expected.observation),tag+id+"/observation counter")
 				if trace:
 					check(equal(a.get("todayTrace",[]),expected.todayTrace),tag+id+"/trace")
 					check(a.get("_traceDay","")==expected._traceDay,tag+id+"/trace day")
@@ -87,7 +91,7 @@ func _initialize() -> void:
 		resumed.load_snapshot(JSON.parse_string(JSON.stringify(world.snapshot(),"",false,true)))
 		for i in 96: world.tick(); resumed.tick()
 		check(equal(world.snapshot(),resumed.snapshot()),theme+"/save resume with cooldown/hangout/RNG")
-	var report:={"checks":checks,"failures":failures,"gossip_enabled":gossip,"romance_enabled":romance,"feuds_enabled":feuds,"factions_enabled":factions,"thoughts_enabled":thoughts,"inner_voice_enabled":inner_voice,"stargazing_enabled":stargazing,"mischief_enabled":mischief,"mourning_enabled":mourning,"trace_enabled":trace,"scope":"two towns x 2880 ticks: Phase 4a + local socializing; gossip, daily romance, feuds, factions and daily thoughts and inner voice included only when respective flags enabled; news and other systems excluded"}
-	FileAccess.open("res://docs/NPC_TRACE_TESTS.json" if trace else "res://docs/NPC_MOURNING_TESTS.json" if mourning else "res://docs/NPC_MISCHIEF_TESTS.json" if mischief else "res://docs/NPC_STARGAZING_TESTS.json" if stargazing else "res://docs/NPC_INNER_VOICE_TESTS.json" if inner_voice else "res://docs/NPC_THOUGHTS_TESTS.json" if thoughts else "res://docs/NPC_FACTIONS_TESTS.json" if factions else "res://docs/NPC_FEUDS_TESTS.json" if feuds else "res://docs/NPC_ROMANCE_TESTS.json" if romance else "res://docs/NPC_GOSSIP_TESTS.json" if gossip else "res://docs/NPC_SOCIAL_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "))
+	var report:={"checks":checks,"failures":failures,"gossip_enabled":gossip,"romance_enabled":romance,"feuds_enabled":feuds,"factions_enabled":factions,"thoughts_enabled":thoughts,"inner_voice_enabled":inner_voice,"stargazing_enabled":stargazing,"mischief_enabled":mischief,"mourning_enabled":mourning,"trace_enabled":trace,"perception_enabled":perception,"scope":"two towns x 2880 ticks: Phase 4a + local socializing; gossip, daily romance, feuds, factions and daily thoughts and inner voice included only when respective flags enabled; news and other systems excluded"}
+	FileAccess.open("res://docs/NPC_PERCEPTION_TESTS.json" if perception else "res://docs/NPC_TRACE_TESTS.json" if trace else "res://docs/NPC_MOURNING_TESTS.json" if mourning else "res://docs/NPC_MISCHIEF_TESTS.json" if mischief else "res://docs/NPC_STARGAZING_TESTS.json" if stargazing else "res://docs/NPC_INNER_VOICE_TESTS.json" if inner_voice else "res://docs/NPC_THOUGHTS_TESTS.json" if thoughts else "res://docs/NPC_FACTIONS_TESTS.json" if factions else "res://docs/NPC_FEUDS_TESTS.json" if feuds else "res://docs/NPC_ROMANCE_TESTS.json" if romance else "res://docs/NPC_GOSSIP_TESTS.json" if gossip else "res://docs/NPC_SOCIAL_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "))
 	print(JSON.stringify(report))
 	quit(0 if failures.is_empty() else 1)

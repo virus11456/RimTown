@@ -1,0 +1,5 @@
+{
+  "checks": 131,
+  "passed": true,
+  "scope": "Original JS loads observations, memory, relationships and currentThought. No production API."
+}

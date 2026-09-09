@@ -98,3 +98,5 @@ node godot/tools/golden.mjs：兩次獨立 VM 執行、兩個主題、各 1/7/30
 - `Agent._doMourning` → `SimMourning.process`：已載入近期／年度名單的弔念、心情／需求／記憶與續存；死亡事件生產名單仍待移植。
 
 - `Agent._recordTrace`／`getCurrentPlanStep` → `SimTrace`：今日足跡、已載入計畫文字及去重續存；AI 計畫生成與環境感知待後續。
+
+- `Agent._perceiveSurroundings` → `SimPerception.process`：同地點低重要度見聞、計數與 RNG 續存；AI 引用待串接。

@@ -17,3 +17,4 @@ tests/capture_stargazing.flag
 tests/capture_mischief.flag
 tests/capture_mourning.flag
 tests/capture_trace.flag
+tests/capture_perception.flag

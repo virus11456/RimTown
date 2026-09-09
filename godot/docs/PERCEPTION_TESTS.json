@@ -1,0 +1,5 @@
+{
+  "checks": 960,
+  "failures": [],
+  "scope": "80 original JS scenarios across daily cap and next day; four-tick gating, sleeping/self/dead/player/location exclusions, plan steps, multiple candidates and RNG"
+}

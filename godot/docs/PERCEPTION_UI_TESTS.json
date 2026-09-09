@@ -1,0 +1,5 @@
+{
+  "checks": 25,
+  "failures": [],
+  "scope": "prepared observation, memory lookup/mobile display, mode and daily cap reload, new-day reset, original preservation and all-mode JSON/RNG resume"
+}

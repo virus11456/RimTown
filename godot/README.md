@@ -1,4 +1,4 @@
-# RimTown · 居民足跡與社交試玩版
+# RimTown · 居民見聞與社交試玩版
 
 在 Phase 0–3 觀賞版上加入時鐘、需求、作息、技能成長、A* 尋路、進出建築與卡住復原。兩鎮範例可直接開啟；預設暫停，WASD／方向鍵可直接移動旅人，按「▶ 開始」則推進村民作息。這是分階段試玩版，現已加入 NPC 本地規則對話、八卦傳播、每日戀愛／分離、仇怨、派系事件、每日想法更新、日常心聲、觀星互動、夜間惡作劇、居民弔念與今日足跡；尚未包含建設、AI 對話、經濟、婚禮演出及任務模擬。
 
@@ -319,3 +319,13 @@ NPC 處於夜間惡作劇活動時，依原版機率觸發六種事件。成功�
 驗證：12 組原版情境各 180 次更新、96 項（去重、換日／季／年、160 上限、分段計畫及需求覆蓋）；兩鎮各 30 天限定整合 4,832 項；UI／續存 38 項；原版 JS 讀回 171 項。既有社交／夜間活動 UI、旅人與畫面回歸通過。完整 World.tick、環境感知與 AI 生成仍待後續。
 
 重建：`node tools/trace_oracle.mjs`、`node tools/npc_sim_oracle.mjs --trace`；Godot 測試：`tests/test_trace.gd`、`tests/test_trace_ui.gd`、`tests/test_npc_sim.gd -- --trace`；JS 相容：`node tools/test_trace_reload.mjs`。
+
+
+## Phase 4b 第十三批：居民環境感知
+未睡的 NPC 每四個 ticks 有 18% 機率觀察同地點的其他未睡、非玩家且非死亡 NPC。每天最多六筆，寫入重要度 2 的「見聞」記憶；有已載入計畫步驟時優先使用步驟文字，否則使用活動名稱。原版允許同樣見聞重複，沿用六筆上限。
+
+「居民 → 選人 → 近期記憶」可看見聞，也能按人物檢索。設定「居民環境感知」可停用；本版存檔保留每日計數，重新載入不會重置額度。這是記憶生成及檢索，AI 聊天引用仍待串接。
+
+驗證：80 組原版情境 960 項、兩鎮各 30 天限定整合 5,091 項、UI／续存 25 項、原版 JS 讀回 131 項。既有足跡、社交及旅人回歸通過，完整 World.tick 尚未驗收。
+
+重建：`node tools/perception_oracle.mjs`、`node tools/npc_sim_oracle.mjs --perception`。Godot 測試：`tests/test_perception.gd`、`tests/test_perception_ui.gd`、`tests/test_npc_sim.gd -- --perception`。JS 相容：`node tools/test_perception_reload.mjs`。

@@ -91,3 +91,9 @@ JS來源 World.serialize 的 gossip 陣列只有淺拷貝，因此新的長時�
 按原版 Agent._recordTrace／getCurrentPlanStep 接在 NPC 更新末尾，零 RNG。dailyPlan 只讀，保留重複開始時間選後者、無效時間跳過、步驟按剩餘區間分配與睡覺／進食優先。UI 依日期過濾並顯示地點名稱，不把昨日足跡冒充今天。
 
 原版只序列化 todayTrace／_traceDay，沒有 _traceKey；Godot 把去重 key 存入既有 runtime 擴充，使本版續存不重複末項。首次匯入原版存檔仍遵循原版重新記錄第一項。角色的詳細 AI 行程生成與環境感知不在本輪範圍。
+
+
+## D33 — 環境感知及持續開發檢查點
+使用者要求持續接續開發，不再每個小功能停下等待「繼續」。仍按可驗證增量執行、測試、提交。無新增部署或向正式帳號寫入授權。
+
+Agent._perceiveSurroundings 接在足跡之後，保留原版每日六筆、四 tick 與 18% 抽選順序、同地點篩選與計畫步驟文字。obs_day／obs_count 存既有 Godot runtime 擴充，補足原版未序列化計數的續存問題。原始匯入不自行猜測計數；本版續存精確恢復。沒有新增目擊者對話台詞保證。

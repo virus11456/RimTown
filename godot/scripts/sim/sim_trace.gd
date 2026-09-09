@@ -33,8 +33,7 @@ static func record(a: Dictionary,w: SimWorld) -> void:
 	var day:=day_key(w.data.clock);var run: Dictionary=w.runtime[a.id]
 	if not a.get("todayTrace") is Array or a.get("_traceDay","")!=day:
 		a.todayTrace=[];a._traceDay=day;run.trace_key=""
-	var labels:={"sleeping":"睡覺","eating":"進食","working":"工作","socializing":"社交","wandering":"閒逛","recreation":"娛樂","idle":"閒置","stargazing":"看星星","night_mischief":"搞事","night_stroll":"夜間散步","exploring":"探險中","mourning":"弔念","commuting":"趕著去上工"}
-	var text: String=labels.get(a.activity,a.activity)
+	var text: String=activity_label(a)
 	if a.activity not in ["sleeping","eating"]:
 		var current:=plan(a,w.data.clock)
 		if not current.is_empty(): text=str(current.goal)+("（"+str(current.step)+"）" if not str(current.step).is_empty() else "")
@@ -43,3 +42,7 @@ static func record(a: Dictionary,w: SimWorld) -> void:
 	run.trace_key=key
 	a.todayTrace.append({"m":int(w.data.clock.hour)*60+int(w.data.clock.minute),"text":text,"loc":a.currentLocation})
 	a.todayTrace=a.todayTrace.slice(maxi(0,a.todayTrace.size()-160))
+
+static func activity_label(a: Dictionary) -> String:
+	var labels:={"sleeping":"睡覺","eating":"進食","working":"工作","socializing":"社交","wandering":"閒逛","recreation":"娛樂","idle":"閒置","stargazing":"看星星","night_mischief":"搞事","night_stroll":"夜間散步","exploring":"探險中","mourning":"弔念","commuting":"趕著去上工"}
+	return labels.get(a.activity,a.activity)

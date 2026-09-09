@@ -66,6 +66,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_mischief.flag"): _capture_mischief()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_mourning.flag"): _capture_mourning()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_trace.flag"): _capture_trace()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_perception.flag"): _capture_perception()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -235,6 +236,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.mischief_enabled=bool(document.data.get("_godot4a",{}).get("mischief_enabled",true))
 	simulation.mourning_enabled=bool(document.data.get("_godot4a",{}).get("mourning_enabled",true))
 	simulation.trace_enabled=bool(document.data.get("_godot4a",{}).get("trace_enabled",true))
+	simulation.perception_enabled=bool(document.data.get("_godot4a",{}).get("perception_enabled",true))
 	var data := document.snapshot()
 	heading.text = str(data.get("townName","小鎮"))
 	var clock_data: Dictionary = data.clock
@@ -519,6 +521,7 @@ func _line(placeholder: String, secret := false) -> LineEdit:
 	return field
 
 func _settings_ui() -> void:
+	_button("居民環境感知："+("開啟" if simulation.perception_enabled else "關閉"),drawer_body,func(): simulation.perception_enabled=not simulation.perception_enabled; show_tab("設定",true))
 	_button("居民足跡："+("開啟" if simulation.trace_enabled else "關閉"),drawer_body,func(): simulation.trace_enabled=not simulation.trace_enabled; show_tab("設定",true))
 	_button("居民弔念："+("開啟" if simulation.mourning_enabled else "關閉"),drawer_body,func(): simulation.mourning_enabled=not simulation.mourning_enabled; show_tab("設定",true))
 	_button("夜間惡作劇："+("開啟" if simulation.mischief_enabled else "關閉"),drawer_body,func(): simulation.mischief_enabled=not simulation.mischief_enabled; show_tab("設定",true))
@@ -1033,4 +1036,19 @@ func _capture_trace() -> void:
 	await get_tree().create_timer(.5).timeout
 	await RenderingServer.frame_post_draw
 	viewport.get_texture().get_image().save_png("res://docs/trace-mobile.png")
+	viewport.queue_free()
+
+func _capture_perception() -> void:
+	await get_tree().create_timer(1).timeout
+	var example:=FileAccess.get_file_as_string("res://tests/perception/compatibility-save.json.tmp")
+	_load_document(example,"居民見聞測試情境")
+	show_tab("居民",true);show_memories("chen_wei")
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/perception-desktop.png")
+	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+	var mobile=load("res://scenes/main.tscn").instantiate();viewport.add_child(mobile)
+	mobile._load_document(example,"居民見聞測試情境");mobile.show_tab("居民",true);mobile.show_memories("chen_wei")
+	await get_tree().create_timer(.5).timeout
+	await RenderingServer.frame_post_draw
+	viewport.get_texture().get_image().save_png("res://docs/perception-mobile.png")
 	viewport.queue_free()
