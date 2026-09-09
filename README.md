@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.69.2.zip` from Releases
+1. Download `rimtown-v5.69.3.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -77,6 +77,11 @@ node scripts/gen-changelog.js  # 從 rimtown.php 產生首頁更新紀錄 change
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.69.3 (2026-09-09)
+
+- 💾 修正已登入玩家仍跳出「儲存空間已滿！請…註冊登入改用雲端存檔」的錯誤：那是手機瀏覽器 localStorage（約 5MB）被本機備份塞滿，雲端存檔本身沒有受影響。舊的自動瘦身修剪的是不存在的欄位所以永遠失敗；現在改為先清「聊天封存」、再依序修剪記憶／對話紀錄／八卦／劇情封存（`_slimSaveForLocal`），已登入者最後會自動移除其他城鎮的本機備份（雲端仍在）
+- ☁️ 已登入玩家即使本機真的存不下，也只會收到一次右下角「本機備份空間不足，已改為只存雲端」的柔性提示，不再彈出要你去「註冊」的錯誤視窗；訪客的提示文字改為建議「刪除舊城鎮或登入改用雲端」
 
 ### v5.69.2 (2026-09-09)
 
