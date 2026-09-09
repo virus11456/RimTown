@@ -85,7 +85,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_player_gift.flag"): _capture_player_gift()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_stockpile.flag"): _capture_stockpile()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_economy.flag"): _capture_economy()
-	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and (FileAccess.file_exists("res://tests/capture_progress.flag") or FileAccess.file_exists("res://tests/capture_industry.flag")): _capture_progress()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and (FileAccess.file_exists("res://tests/capture_progress.flag") or FileAccess.file_exists("res://tests/capture_industry.flag") or FileAccess.file_exists("res://tests/capture_farm.flag")): _capture_progress()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -261,6 +261,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.buildings_enabled=bool(document.data.get("_godot4a",{}).get("buildings_enabled",true))
 	simulation.trade_enabled=bool(document.data.get("_godot4a",{}).get("trade_enabled",true))
 	simulation.research_enabled=bool(document.data.get("_godot4a",{}).get("research_enabled",true))
+	simulation.farm_enabled=bool(document.data.get("_godot4a",{}).get("farm_enabled",true))
 	simulation.industry_enabled=bool(document.data.get("_godot4a",{}).get("industry_enabled",true))
 	var data := document.snapshot()
 	heading.text = str(data.get("townName","小鎮"))
@@ -320,7 +321,8 @@ func show_tab(tab: String, refresh := false) -> void:
 			_button("商人交易",drawer_body,show_trade)
 			_button("研究",drawer_body,show_research)
 			_button("產業",drawer_body,show_industry)
-			_wrapped("試玩：作息、移動與居民互動已啟用。\n送禮會消耗公共庫存；每日經濟可在設定開關。建築、交易、研究與產業已啟用；農田、加工及任務仍待完成。",13)
+			_button("農田",drawer_body,show_farm)
+			_wrapped("試玩：作息、移動與居民互動已啟用。\n送禮會消耗公共庫存；每日經濟可在設定開關。建築、交易、研究與產業已啟用；農田已啟用；加工及任務仍待完成。",13)
 			var resources: Dictionary = _current_data().get("stockpile",{}).get("resources",{})
 			for key in resources:
 				if float(resources[key]) != 0: _label("%s   %s" % [_resource_name(key),str(resources[key])],drawer_body)
@@ -552,6 +554,7 @@ func _line(placeholder: String, secret := false) -> LineEdit:
 	return field
 
 func _settings_ui() -> void:
+	_button("每日農田生長："+("開啟" if simulation.farm_enabled else "關閉"),drawer_body,func(): simulation.farm_enabled=not simulation.farm_enabled;show_tab("設定",true))
 	_button("每日產業產出："+("開啟" if simulation.industry_enabled else "關閉"),drawer_body,func(): simulation.industry_enabled=not simulation.industry_enabled;show_tab("設定",true))
 	_button("每日研究："+("開啟" if simulation.research_enabled else "關閉"),drawer_body,func(): simulation.research_enabled=not simulation.research_enabled;show_tab("設定",true))
 	_button("商人每日來訪："+("開啟" if simulation.trade_enabled else "關閉"),drawer_body,func(): simulation.trade_enabled=not simulation.trade_enabled;show_tab("設定",true))
@@ -1367,7 +1370,7 @@ func show_stockpile(resource: String="",show_zero: bool=false) -> void:
 	active_tab="小鎮";drawer.show();_clear_drawer()
 	_wrapped("公共庫存與收支",22)
 	_button("加工排班",drawer_body,show_work_policy)
-	_wrapped("送禮從這裡扣除；每日生產與消耗在午夜結算，可於設定開關。建築、交易、研究與產業已啟用；農田及加工仍待完成。",12)
+	_wrapped("送禮從這裡扣除；每日生產與消耗在午夜結算，可於設定開關。建築、交易、研究與產業已啟用；農田已啟用；加工仍待完成。",12)
 	var stockpile: Dictionary=_current_data().get("stockpile",{})
 	var resources: Dictionary=stockpile.get("resources",{})
 	var history: Array=stockpile.get("history",[])
@@ -1524,7 +1527,7 @@ func show_research() -> void:
 
 func _capture_progress() -> void:
 	await get_tree().create_timer(1).timeout
-	var pages: Array=["industry"] if FileAccess.file_exists("res://tests/capture_industry.flag") else ["buildings","trade","research"]
+	var pages: Array=["farm"] if FileAccess.file_exists("res://tests/capture_farm.flag") else ["industry"] if FileAccess.file_exists("res://tests/capture_industry.flag") else ["buildings","trade","research"]
 	for page in pages:
 		for dimensions in [Vector2i(1280,800),Vector2i(375,812)]:
 			var viewport:=SubViewport.new();viewport.size=dimensions;viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
@@ -1566,4 +1569,46 @@ func show_industry() -> void:
 				show_industry())
 			button.disabled=manager.industries.size()>=int(manager.maxIndustries)
 	_button("重新整理",drawer_body,show_industry)
+	_button("返回小鎮",drawer_body,func(): show_tab("小鎮",true))
+
+func show_farm() -> void:
+	active_tab="小鎮";drawer.show();_clear_drawer();_wrapped("農田",22)
+	var farm: Dictionary=simulation.data.farm;var crops: Dictionary=SimFarm.rules().crops
+	var level:=int(simulation.data.industry.industries.get("farming",{}).get("level",0))
+	_wrapped(str(simulation.data.clock.season)+" · 農業 Lv"+str(level)+" · 農地 "+str(farm.plots.size()))
+	_wrapped("先開啟農業，下一次午夜配置農地。翻土後選作物播種；種子扣銀幣，施肥扣 2 草藥。換季不合時令會枯萎，成熟後請盡快收成。",12)
+	_wrapped("收成存為個別作物，並非直接補充餐食。加工系統尚待接入。",12)
+	if not simulation.farm_enabled: _wrapped("每日農田生長目前關閉。")
+	if level==0: _button("前往產業",drawer_body,show_industry)
+	for p in farm.plots:
+		var id:=int(p.id);var crop: Dictionary=crops.get(str(p.crop),{})
+		_wrapped("農地 %d · %s"%[id,{"empty":"空地","tilled":"已翻土","growing":"生長中","ready":"可收成","withered":"已枯萎"}.get(p.state,p.state)],18)
+		if not crop.is_empty(): _wrapped(str(crop.name)+" · 生長 %.1f%% · 水分 %.0f%%"%[p.growthProgress,p.waterLevel]+(" · 已施肥" if p.fertilized else ""),12)
+		match p.state:
+			"empty": _button("翻土 #%d"%id,drawer_body,func(): SimFarm.till(simulation,id);has_simulated=true;show_farm())
+			"tilled":
+				var select:=OptionButton.new();select.size_flags_horizontal=Control.SIZE_EXPAND_FILL;drawer_body.add_child(select)
+				for key in crops:
+					var c: Dictionary=crops[key]
+					if int(c.reqLevel)<=level and simulation.data.clock.season in c.seasons:
+						select.add_item(str(c.name)+" · 種子 "+str(int(c.sellPrice)*2)+" 銀 · "+str(int(c.growDays))+" 天")
+						select.set_item_metadata(select.item_count-1,key)
+				if select.item_count==0: _wrapped("目前沒有可播種的當季作物。",12)
+				var button:=_button("播種 #%d"%id,drawer_body,func():
+					if select.selected>=0 and SimFarm.plant(simulation,id,str(select.get_item_metadata(select.selected))): has_simulated=true;show_farm()
+					else: _wrapped("播種失敗，請檢查庫存與作物條件。",12))
+				button.disabled=select.item_count==0
+			"growing":
+				_button("澆水 #%d"%id,drawer_body,func(): SimFarm.water(simulation,id);has_simulated=true;show_farm())
+				var button:=_button("施肥 #%d · 2 草藥"%id,drawer_body,func():
+					if SimFarm.fertilize(simulation,id): has_simulated=true
+					show_farm())
+				button.disabled=p.fertilized or SimEconomy.amount(simulation,"herbs")<2
+			"ready": _button("收成 #%d"%id,drawer_body,func(): SimFarm.harvest(simulation,id);has_simulated=true;show_farm())
+			"withered": _button("清除 #%d"%id,drawer_body,func(): SimFarm.clear(simulation,id);has_simulated=true;show_farm())
+	if not farm.harvestLog.is_empty():
+		_wrapped("最近收成",18)
+		for entry in farm.harvestLog.slice(maxi(0,farm.harvestLog.size()-10)):
+			_wrapped("%s · %s +%d（%s）"%[entry.season,entry.cropName,entry.amount,SimFarm.rules().quality[entry.quality]],12)
+	_button("重新整理",drawer_body,show_farm)
 	_button("返回小鎮",drawer_body,func(): show_tab("小鎮",true))

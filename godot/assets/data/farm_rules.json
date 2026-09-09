@@ -1,0 +1,177 @@
+{
+  "crops": {
+    "wheat": {
+      "name": "小麥",
+      "icon": "🌾",
+      "seasons": [
+        "春季",
+        "秋季"
+      ],
+      "growDays": 8,
+      "yield": 15,
+      "sellPrice": 2,
+      "category": "grain",
+      "reqLevel": 1
+    },
+    "potato": {
+      "name": "馬鈴薯",
+      "icon": "🥔",
+      "seasons": [
+        "春季",
+        "秋季"
+      ],
+      "growDays": 7,
+      "yield": 20,
+      "sellPrice": 1,
+      "category": "vegetable",
+      "reqLevel": 1
+    },
+    "rice": {
+      "name": "稻米",
+      "icon": "🌾",
+      "seasons": [
+        "夏季"
+      ],
+      "growDays": 12,
+      "yield": 20,
+      "sellPrice": 3,
+      "category": "grain",
+      "reqLevel": 2
+    },
+    "corn": {
+      "name": "玉米",
+      "icon": "🌽",
+      "seasons": [
+        "夏季",
+        "秋季"
+      ],
+      "growDays": 10,
+      "yield": 18,
+      "sellPrice": 2,
+      "category": "grain",
+      "reqLevel": 2
+    },
+    "cotton": {
+      "name": "棉花",
+      "icon": "🌸",
+      "seasons": [
+        "夏季",
+        "秋季"
+      ],
+      "growDays": 10,
+      "yield": 10,
+      "sellPrice": 4,
+      "category": "fiber",
+      "reqLevel": 2
+    },
+    "flowers": {
+      "name": "花卉",
+      "icon": "🌺",
+      "seasons": [
+        "春季",
+        "夏季"
+      ],
+      "growDays": 5,
+      "yield": 12,
+      "sellPrice": 3,
+      "category": "flower",
+      "reqLevel": 2
+    },
+    "herbs": {
+      "name": "草藥",
+      "icon": "🌿",
+      "seasons": [
+        "春季",
+        "夏季"
+      ],
+      "growDays": 6,
+      "yield": 8,
+      "sellPrice": 5,
+      "category": "herb",
+      "reqLevel": 3
+    },
+    "mushroom": {
+      "name": "蘑菇",
+      "icon": "🍄",
+      "seasons": [
+        "秋季",
+        "冬季"
+      ],
+      "growDays": 4,
+      "yield": 10,
+      "sellPrice": 4,
+      "category": "vegetable",
+      "reqLevel": 3
+    },
+    "sugarcane": {
+      "name": "甘蔗",
+      "icon": "🎋",
+      "seasons": [
+        "夏季"
+      ],
+      "growDays": 12,
+      "yield": 14,
+      "sellPrice": 3,
+      "category": "sugar",
+      "reqLevel": 3
+    },
+    "tea": {
+      "name": "茶葉",
+      "icon": "🍵",
+      "seasons": [
+        "春季"
+      ],
+      "growDays": 10,
+      "yield": 6,
+      "sellPrice": 8,
+      "category": "luxury",
+      "reqLevel": 4
+    },
+    "grapes": {
+      "name": "葡萄",
+      "icon": "🍇",
+      "seasons": [
+        "秋季"
+      ],
+      "growDays": 14,
+      "yield": 8,
+      "sellPrice": 6,
+      "category": "fruit",
+      "reqLevel": 4
+    },
+    "golden_wheat": {
+      "name": "金色小麥",
+      "icon": "✨",
+      "seasons": [
+        "秋季"
+      ],
+      "growDays": 15,
+      "yield": 10,
+      "sellPrice": 15,
+      "category": "legendary",
+      "reqLevel": 5
+    },
+    "dragon_fruit": {
+      "name": "火龍果",
+      "icon": "🐉",
+      "seasons": [
+        "夏季"
+      ],
+      "growDays": 12,
+      "yield": 6,
+      "sellPrice": 20,
+      "category": "legendary",
+      "reqLevel": 5
+    }
+  },
+  "quality": {
+    "normal": "普通",
+    "good": "優良",
+    "excellent": "極品"
+  },
+  "multipliers": {
+    "normal": 1,
+    "good": 1.5,
+    "excellent": 2.5
+  }
+}

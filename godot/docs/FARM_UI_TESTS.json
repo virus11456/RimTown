@@ -1,0 +1,5 @@
+{
+  "checks": 33,
+  "failures": [],
+  "scope": "farm UI full crop lifecycle, atomic invalid/cost guards, daily once and disable, ten-day all-system resume and mobile layout"
+}
