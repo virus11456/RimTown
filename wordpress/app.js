@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.68.0
-const RIMTOWN_APP_VERSION = '5.68.0';
+// RimTown - Frontend App (WordPress Plugin) v5.69.0
+const RIMTOWN_APP_VERSION = '5.69.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1601,6 +1601,7 @@ class RimTownApp {
             <section class="landing-section"><h2>${t('這是什麼遊戲')}</h2>
                 <div class="landing-cards">${features.map(f => `<div class="landing-card"><div class="ic">${f[0]}</div><h3>${f[1]}</h3><p>${f[2]}</p></div>`).join('')}</div>
             </section>
+            ${this._renderBrainSection()}
             <section class="landing-section"><h2>${t('更新紀錄')}</h2>
                 <div class="landing-log" id="landing-log">${logHtml || `<div class="landing-log-item">${t('尚無紀錄')}</div>`}</div>
                 ${log.length > 5 ? `<button class="landing-more" id="landing-log-more">${t('顯示全部')} (${log.length})</button>` : ''}
@@ -1610,6 +1611,7 @@ class RimTownApp {
             </section>
             <footer class="landing-footer">${t('邊境鎮 RimTown')} · v${esc(ver)}<br>${t('存檔自動同步雲端，換裝置登入即可繼續。')}</footer>
         </div>`;
+        this._wireBrainDemo(el);
         el.querySelector('#landing-register')?.addEventListener('click', () => this._openAuth('register'));
         el.querySelector('#landing-login')?.addEventListener('click', () => this._openAuth('login'));
         el.querySelector('#landing-continue')?.addEventListener('click', () => this._enterGame());
@@ -1621,6 +1623,115 @@ class RimTownApp {
         });
         this._landingUpdateContinue();
     }
+    // ============================================================
+    // v5.69.0 首頁「村民的大腦」:村民怎麼社交——感知/挑人/八卦/對話/效果/記憶/反思/計畫
+    // 內容直接讀遊戲常數(TRAIT_POOL / THOUGHT_DEFS / REL_TYPES),數字與程式一致
+    // ============================================================
+    _renderBrainSection() {
+        const esc = s => this._escapeHtml ? this._escapeHtml(String(s)) : String(s);
+        const steps = [
+            ['👀', t('感知'), t('每 15 分鐘（1 tick）看一次同地點還醒著的人。睡覺的人不會主動搭話。')],
+            ['🎯', t('挑對象'), t('權重 = 5 ＋ 好感÷10 ＋ 心動÷10；好感低於 −30 的人權重大減。互動後冷卻 6 tick。')],
+            ['🗣️', t('八卦'), t('30% 機率先講一則八卦。八卦性格的人一定講，其他人 30%。傳到第 2 手有 40% 會被誇大，20% 的八卦本來就是假的。')],
+            ['🍻', t('約出去'), t('好感 ≥ 30 時 12% 機率相約去酒館、公園、廣場、教堂、森林或圖書館；心動 > 40 就算約會。')],
+            ['💬', t('對話'), t('玩家附近的對話由內建 AI 生成（受每日額度限制）；遠處的對話走規則式模板，但同樣寫進記憶。')],
+            ['📈', t('效果'), t('對話改變雙方好感（−2 到 +5）與心動；正向增幅乘上性格相容度 0.2 到 1.6。約定會寫成「計畫」記憶，情緒波動大就當場改寫今天剩下的行程。')],
+            ['🧠', t('記憶'), t('每人 500 條記憶流。對話寫進「他會記住的那句話」，重要度 4 到 8。')],
+            ['🌙', t('反思與計畫'), t('每晚合成 1 到 2 條想法（跟誰走得近、暗戀、夢想）；每天最多 3 位由 AI 深度反思。清晨依記憶排今日行程。')],
+        ];
+        const traitFx = tr => {
+            const d = tr || {}; const out = [];
+            if (d.social) out.push(`${t('社交')} ${d.social > 0 ? '+' : ''}${d.social}`);
+            if (d.work) out.push(`${t('工作')} ${d.work > 0 ? '+' : ''}${d.work}`);
+            if (d.mood_base) out.push(`${t('基礎心情')} ${d.mood_base > 0 ? '+' : ''}${d.mood_base}`);
+            if (d.mood_sensitivity) out.push(`${t('情緒敏感')} ×${d.mood_sensitivity}`);
+            if (d.romance) out.push(`${t('戀愛')} ${d.romance > 0 ? '+' : ''}${d.romance}`);
+            if (d.schedule) out.push(d.schedule === 'late' ? t('晚睡') : t('早起'));
+            if (d.food) out.push(`${t('食量')} ×${d.food}`);
+            if (d.comfort) out.push(`${t('舒適')} ${d.comfort}`);
+            return out.join(' · ');
+        };
+        const traits = (typeof TRAIT_POOL !== 'undefined') ? Object.entries(TRAIT_POOL) : [];
+        const traitChips = traits.map(([k, d]) => `<span class="landing-chip" title="${esc(d.description || '')}">${esc(d.label || k)}<small>${esc(traitFx(d))}</small></span>`).join('');
+        const incompat = (typeof INCOMPATIBLE !== 'undefined') ? INCOMPATIBLE.map(([a, b]) => `${esc(TRAIT_POOL[a]?.label || a)} × ${esc(TRAIT_POOL[b]?.label || b)}`).join(t('、')) : '';
+        const values = ['家庭', '自由', '知識', '財富', '權力', '藝術', '自然', '社群', '冒險', '和平'].map(v => `<span class="landing-chip small">${t(v)}</span>`).join('');
+        const thoughts = (typeof THOUGHT_DEFS !== 'undefined') ? Object.values(THOUGHT_DEFS) : [];
+        const thoughtRows = thoughts.map(d => `<tr><td>${esc(d.label)}</td><td class="${d.mood >= 0 ? 'pos' : 'neg'}">${d.mood > 0 ? '+' : ''}${d.mood}</td><td>${d.days}</td><td>${d.opinion ? (d.opinion > 0 ? '+' : '') + d.opinion : '—'}</td></tr>`).join('');
+        const ladder = [
+            ['≥ 61', t('摯友')], ['21 ~ 60', t('朋友')], ['−19 ~ 20', t('認識 / 陌生人')], ['−59 ~ −20', t('對手')], ['≤ −60', t('敵人')],
+        ].map(([r, l]) => `<div class="landing-ladder-row"><span>${r}</span><b>${l}</b></div>`).join('');
+        return `<section class="landing-section landing-brain" id="landing-brain"><h2>${t('村民的大腦：他們是怎麼社交的')}</h2>
+            <p class="landing-brain-intro">${t('沒有劇本。每位村民每 15 分鐘做一次決定，靠的是自己的記憶、性格和跟對方的關係。下面是一輪社交的完整流程，數字都是遊戲裡實際用的參數。')}</p>
+            <div class="landing-steps">${steps.map((s, i) => `<div class="landing-step"><div class="landing-step-no">${i + 1}</div><div class="landing-step-ic">${s[0]}</div><h3>${s[1]}</h3><p>${s[2]}</p></div>`).join('')}</div>
+
+            <div class="landing-brain-grid">
+                <div class="landing-card">
+                    <h3>🧠 ${t('記憶流與檢索')}</h3>
+                    <p>${t('每條記憶有時間、類別、內容、重要度（1 到 10）、涉及的人。要說話或做計畫時，不是翻全部，而是用三個分數挑出最該想起的幾條：')}</p>
+                    <div class="landing-formula">${t('分數')} = 0.5 × ${t('時近')} + 3 × ${t('相關')} + 2 × ${t('重要度')}</div>
+                    <ul class="landing-list">
+                        <li><b>${t('時近')}</b>：0.85 ^ ${t('已過天數')}${t('，一週前的事只剩三成份量。')}</li>
+                        <li><b>${t('相關')}</b>：${t('內容與當下話題的字元重疊度，加上「有沒有提到眼前這個人」。')}</li>
+                        <li><b>${t('重要度')}</b>：${t('表白、絕交、劈腿這類事件是 8 到 10；日常觀察只有 2。')}</li>
+                    </ul>
+                    <div class="landing-demo" id="landing-mem-demo">
+                        <div class="landing-demo-title">${t('自己調調看：一條記憶會被想起來嗎？')}</div>
+                        <label>${t('已過天數')} <span data-out="age">3</span><input type="range" min="0" max="30" value="3" data-k="age"></label>
+                        <label>${t('重要度')} <span data-out="imp">6</span><input type="range" min="1" max="10" value="6" data-k="imp"></label>
+                        <label>${t('相關程度')} <span data-out="rel">0.5</span><input type="range" min="0" max="100" value="50" data-k="rel"></label>
+                        <div class="landing-demo-score">${t('分數')} <b data-out="score">—</b> <span data-out="verdict"></span></div>
+                    </div>
+                </div>
+                <div class="landing-card">
+                    <h3>🎭 ${t('性格參數')}</h3>
+                    <p>${t('每人出生時抽 3 個特質（互斥的不會同時出現），加上 1 到 3 個價值觀。特質決定社交加成、工作效率、基礎心情、情緒敏感度與戀愛傾向。')}</p>
+                    <div class="landing-chips">${traitChips}</div>
+                    <p class="landing-muted">${t('互斥：')}${incompat}</p>
+                    <p><b>${t('價值觀')}</b>：${values}</p>
+                    <p><b>${t('相容度')}</b>：${t('善良配善良、魅力配害羞、沉穩配神經質會加分；刻薄配害羞、樂觀配悲觀、懶惰配勤勞會扣分。換算成 0.2 到 1.6 的倍率，乘在每次好感增幅上。')}</p>
+                    <p><b>${t('六項需求')}</b>：${t('飢餓、休息、社交、舒適、娛樂、美感。白天每 tick 飢餓 −2、休息 −1.5、社交 −1；夜裡衰減放慢。任一項見底就拖累心情，心情又決定他今天想不想理人。')}</p>
+                </div>
+                <div class="landing-card">
+                    <h3>💞 ${t('關係階梯')}</h3>
+                    <p>${t('對每個人各記三個數：好感（−100 到 100）、信任、心動（0 到 100）。好感決定稱呼，心動超過 50 就是暗戀。')}</p>
+                    <div class="landing-ladder">${ladder}</div>
+                    <ul class="landing-list">
+                        <li>${t('50 tick 沒互動，好感每天往 0 漂 0.8；情侶夫妻只漂 0.3。')}</li>
+                        <li>${t('好感 > 20 且互動超過 3 次，相配的人每天 45% 機率心動 +1 到 +5；高好感高相配還有 6% 的「來電火花」+8 到 +16。')}</li>
+                        <li>${t('雙方好感 ≤ −35：每隔 5 天 15% 機率在廣場對嗆；雙方 ≤ −60：正式絕交，觸發劇情名場面。')}</li>
+                        <li>${t('聽到自己被造謠會當面對質，造謠者好感 −12；紅娘式八卦會讓兩位當事人開始注意彼此。')}</li>
+                        <li>${t('戲劇導演每天看一眼全鎮：太平靜就悄悄推一把暗戀、舊帳或吃醋。')}</li>
+                    </ul>
+                </div>
+                <div class="landing-card">
+                    <h3>🌤️ ${t('想法與心情')}</h3>
+                    <p>${t('事件會留下有期限的「想法」，直接加減心情，有些還會改變對當事人的看法：')}</p>
+                    <div class="landing-table-wrap"><table class="landing-table"><thead><tr><th>${t('想法')}</th><th>${t('心情')}</th><th>${t('持續天數')}</th><th>${t('對人看法')}</th></tr></thead><tbody>${thoughtRows}</tbody></table></div>
+                </div>
+            </div>
+            <p class="landing-muted landing-brain-foot">${t('成本閘門：只有玩家附近的對話與每日額度內的行程／反思會呼叫 AI，其餘一律規則式運算，所以一整鎮 20 多人同時「活著」也不會燒錢。')}</p>
+        </section>`;
+    }
+    _wireBrainDemo(root) {
+        const box = root.querySelector('#landing-mem-demo');
+        if (!box) return;
+        const upd = () => {
+            const age = parseFloat(box.querySelector('[data-k="age"]').value);
+            const imp = parseFloat(box.querySelector('[data-k="imp"]').value);
+            const rel = parseFloat(box.querySelector('[data-k="rel"]').value) / 100;
+            const score = 0.5 * Math.pow(0.85, age) + 3 * rel + 2 * (imp / 10);
+            box.querySelector('[data-out="age"]').textContent = age;
+            box.querySelector('[data-out="imp"]').textContent = imp;
+            box.querySelector('[data-out="rel"]').textContent = rel.toFixed(2);
+            box.querySelector('[data-out="score"]').textContent = score.toFixed(2);
+            const v = box.querySelector('[data-out="verdict"]');
+            v.textContent = score >= 3.2 ? t('→ 幾乎一定會想起來') : score >= 2.2 ? t('→ 有機會被想起') : t('→ 大概忘了');
+            v.style.color = score >= 3.2 ? '#34d399' : score >= 2.2 ? '#fbbf24' : '#f87171';
+        };
+        box.querySelectorAll('input[type=range]').forEach(r => r.addEventListener('input', upd));
+        upd();
+    }
+
     _showLanding() {
         const el = document.getElementById('landing');
         if (!el) return;

@@ -4206,3 +4206,39 @@ body.landing-open { overflow: hidden; }
     .landing-btn { width: 100%; }
     .landing-pixel-bg::after { font-size: 20px; letter-spacing: 3px; }
 }
+
+/* v5.69.0 首頁「村民的大腦」 */
+.landing-brain-intro { color: var(--text-secondary); line-height: 1.6; margin: 0 0 14px; }
+.landing-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; counter-reset: step; }
+.landing-step { position: relative; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 10px; padding: 14px 12px 12px; }
+.landing-step-no { position: absolute; top: -8px; left: 10px; background: var(--accent); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+.landing-step-ic { font-size: 1.6rem; }
+.landing-step h3 { margin: 4px 0 4px; font-size: 0.95rem; }
+.landing-step p { margin: 0; color: var(--text-secondary); font-size: 0.8rem; line-height: 1.5; }
+.landing-brain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin-top: 14px; }
+.landing-brain-grid .landing-card h3 { margin-top: 0; }
+.landing-brain-grid .landing-card p { margin: 6px 0; }
+.landing-formula { font-family: monospace; background: var(--bg-primary); border: 1px dashed var(--border); border-radius: 6px; padding: 8px 10px; margin: 8px 0; font-size: 0.85rem; color: var(--warning); }
+.landing-list { margin: 6px 0 0 18px; padding: 0; color: var(--text-secondary); font-size: 0.83rem; line-height: 1.55; }
+.landing-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.landing-chip { display: inline-flex; flex-direction: column; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 0.8rem; line-height: 1.25; }
+.landing-chip small { color: var(--text-muted); font-size: 0.66rem; }
+.landing-chip.small { flex-direction: row; padding: 2px 8px; margin: 2px 2px 0 0; }
+.landing-muted { color: var(--text-muted); font-size: 0.78rem; }
+.landing-ladder { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin: 8px 0; }
+.landing-ladder-row { display: flex; justify-content: space-between; padding: 6px 10px; font-size: 0.82rem; border-bottom: 1px solid var(--border); }
+.landing-ladder-row:last-child { border-bottom: none; }
+.landing-ladder-row span { color: var(--text-muted); font-family: monospace; }
+.landing-table-wrap { overflow-x: auto; }
+.landing-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+.landing-table th, .landing-table td { padding: 4px 6px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+.landing-table th { color: var(--text-muted); font-weight: 600; }
+.landing-table td.pos { color: #34d399; } .landing-table td.neg { color: #f87171; }
+.landing-demo { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-top: 10px; }
+.landing-demo-title { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; }
+.landing-demo label { display: block; font-size: 0.78rem; margin: 4px 0; }
+.landing-demo label span { color: var(--warning); font-family: monospace; margin-left: 4px; }
+.landing-demo input[type=range] { width: 100%; accent-color: var(--accent); }
+.landing-demo-score { font-size: 0.85rem; margin-top: 6px; }
+.landing-demo-score b { font-family: monospace; color: var(--warning); }
+.landing-brain-foot { margin-top: 12px; }
