@@ -69,8 +69,8 @@ func request_json(endpoint: String, method := HTTPClient.METHOD_GET, payload: Va
 func login(username: String, password: String) -> Dictionary:
 	return await _authenticate("login", {"username": username, "password": password})
 
-func register(username: String, password: String, email := "") -> Dictionary:
-	return await _authenticate("register", {"username": username, "password": password, "email": email})
+func register(username: String, password: String, email := "", invite := "") -> Dictionary:
+	return await _authenticate("register", {"username": username, "password": password, "email": email, "invite": invite})
 
 func _authenticate(endpoint: String, payload: Dictionary) -> Dictionary:
 	var result := await request_json(endpoint, HTTPClient.METHOD_POST, payload, false)
@@ -93,8 +93,13 @@ func load_save(town_id: String) -> Dictionary:
 func settings() -> Dictionary:
 	return await request_json("settings")
 
-func set_settings(npc_llm_budget: int) -> Dictionary:
-	return await request_json("settings", HTTPClient.METHOD_POST, {"npc_llm_budget": npc_llm_budget})
+func set_settings(npc_llm_budget: int, dialogue_lang := "") -> Dictionary:
+	var payload := {"npc_llm_budget": npc_llm_budget}
+	if not dialogue_lang.is_empty():
+		if dialogue_lang not in ["auto", "zh", "en"]:
+			return {"ok": false, "status": 0, "error": "無效的 AI 對話語言。"}
+		payload.dialogue_lang = dialogue_lang
+	return await request_json("settings", HTTPClient.METHOD_POST, payload)
 
 func save(town_id: String, document: Dictionary) -> Dictionary:
 	if read_only:
@@ -106,7 +111,9 @@ func save(town_id: String, document: Dictionary) -> Dictionary:
 		return {"ok": false, "status": result.status, "stale": true, "error": "雲端進度較新，未覆寫。請重新載入雲端存檔。"}
 	return result
 
-func chat(prompt: String, lane := "chat", max_tokens := 400, temperature := 0.7) -> Dictionary:
+func chat(prompt: String, lane := "chat", max_tokens := 400, temperature := 0.7, lang := "zh") -> Dictionary:
 	if lane not in ["chat", "background"]:
 		return {"ok": false, "status": 0, "error": "無效的 AI 通道。"}
-	return await request_json("chat", HTTPClient.METHOD_POST, {"prompt": prompt, "max_tokens": max_tokens, "temperature": temperature, "lane": lane})
+	if lang not in ["zh", "en"]:
+		return {"ok": false, "status": 0, "error": "無效的 AI 對話語言。"}
+	return await request_json("chat", HTTPClient.METHOD_POST, {"prompt": prompt, "max_tokens": max_tokens, "temperature": temperature, "lane": lane, "lang": lang})

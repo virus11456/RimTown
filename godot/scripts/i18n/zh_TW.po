@@ -4677,6 +4677,8679 @@ msgstr "操作失敗："
 msgid "你的帳號已被管理員停用，已登出。"
 msgstr "你的帳號已被管理員停用，已登出。"
 
+msgid "第一次與居民聊天"
+msgstr "第一次與居民聊天"
+
+msgid "與居民聊天10次"
+msgstr "與居民聊天10次"
+
+msgid "與居民聊天50次"
+msgstr "與居民聊天50次"
+
+msgid "與居民聊天100次"
+msgstr "與居民聊天100次"
+
+msgid "與每位居民都聊過天"
+msgstr "與每位居民都聊過天"
+
+msgid "與任一居民好感度達到80"
+msgstr "與任一居民好感度達到80"
+
+msgid "與任一居民好感度低於-50"
+msgstr "與任一居民好感度低於-50"
+
+msgid "加入第一個社交圈"
+msgstr "加入第一個社交圈"
+
+msgid "城鎮出現3個以上派系"
+msgstr "城鎮出現3個以上派系"
+
+msgid "見證派系衝突"
+msgstr "見證派系衝突"
+
+msgid "目擊 NPC 打架住院"
+msgstr "目擊 NPC 打架住院"
+
+msgid "目擊劈腿被抓事件"
+msgstr "目擊劈腿被抓事件"
+
+msgid "目擊一對情侶分手"
+msgstr "目擊一對情侶分手"
+
+msgid "有人對你產生好感"
+msgstr "有人對你產生好感"
+
+msgid "開始與某人交往"
+msgstr "開始與某人交往"
+
+msgid "與某人結婚"
+msgstr "與某人結婚"
+
+msgid "與3個以上的人交往過"
+msgstr "與3個以上的人交往過"
+
+msgid "見證一對NPC結婚"
+msgstr "見證一對NPC結婚"
+
+msgid "城鎮中同時有5對情侶"
+msgstr "城鎮中同時有5對情侶"
+
+msgid "求婚被拒絕"
+msgstr "求婚被拒絕"
+
+msgid "成功調情5次"
+msgstr "成功調情5次"
+
+msgid "模範夫妻"
+msgstr "模範夫妻"
+
+msgid "結婚後好感度維持90以上"
+msgstr "結婚後好感度維持90以上"
+
+msgid "完成第一筆交易"
+msgstr "完成第一筆交易"
+
+msgid "完成50筆交易"
+msgstr "完成50筆交易"
+
+msgid "銀幣超過500"
+msgstr "銀幣超過500"
+
+msgid "銀幣超過2000"
+msgstr "銀幣超過2000"
+
+msgid "建造第一棟建築"
+msgstr "建造第一棟建築"
+
+msgid "建造5棟建築"
+msgstr "建造5棟建築"
+
+msgid "建造所有建築"
+msgstr "建造所有建築"
+
+msgid "完成第一項研究"
+msgstr "完成第一項研究"
+
+msgid "完成5項研究"
+msgstr "完成5項研究"
+
+msgid "完成所有研究"
+msgstr "完成所有研究"
+
+msgid "開啟第一個產業"
+msgstr "開啟第一個產業"
+
+msgid "任一產業升到 Lv3"
+msgstr "任一產業升到 Lv3"
+
+msgid "任一產業升到 Lv5"
+msgstr "任一產業升到 Lv5"
+
+msgid "同時擁有兩個產業"
+msgstr "同時擁有兩個產業"
+
+msgid "解鎖全部四大產業"
+msgstr "解鎖全部四大產業"
+
+msgid "第一次收穫農作物"
+msgstr "第一次收穫農作物"
+
+msgid "累計收穫 100 單位作物"
+msgstr "累計收穫 100 單位作物"
+
+msgid "累計收穫 500 單位作物"
+msgstr "累計收穫 500 單位作物"
+
+msgid "收穫極品品質作物"
+msgstr "收穫極品品質作物"
+
+msgid "建造第一座工廠"
+msgstr "建造第一座工廠"
+
+msgid "完成第一筆工廠訂單"
+msgstr "完成第一筆工廠訂單"
+
+msgid "完成10筆工廠訂單"
+msgstr "完成10筆工廠訂單"
+
+msgid "任一資源超過200單位"
+msgstr "任一資源超過200單位"
+
+msgid "存活7天"
+msgstr "存活7天"
+
+msgid "存活30天"
+msgstr "存活30天"
+
+msgid "存活100天"
+msgstr "存活100天"
+
+msgid "存活一整年"
+msgstr "存活一整年"
+
+msgid "存活三年"
+msgstr "存活三年"
+
+msgid "擊退第一次入侵"
+msgstr "擊退第一次入侵"
+
+msgid "擊退5次入侵"
+msgstr "擊退5次入侵"
+
+msgid "擊退10次入侵"
+msgstr "擊退10次入侵"
+
+msgid "發現第一個探索區域"
+msgstr "發現第一個探索區域"
+
+msgid "發現所有探索區域"
+msgstr "發現所有探索區域"
+
+msgid "完成第一次成功探險"
+msgstr "完成第一次成功探險"
+
+msgid "人口達到15"
+msgstr "人口達到15"
+
+msgid "人口達到20"
+msgstr "人口達到20"
+
+msgid "人口達到25"
+msgstr "人口達到25"
+
+msgid "人口達到30"
+msgstr "人口達到30"
+
+msgid "人口達到40"
+msgstr "人口達到40"
+
+msgid "參與第一次選舉"
+msgstr "參與第一次選舉"
+
+msgid "玩家當選鎮長"
+msgstr "玩家當選鎮長"
+
+msgid "經歷3次選舉"
+msgstr "經歷3次選舉"
+
+msgid "城鎮迎來第一個新生兒"
+msgstr "城鎮迎來第一個新生兒"
+
+msgid "累計5個新生兒出生"
+msgstr "累計5個新生兒出生"
+
+msgid "失去第一位居民"
+msgstr "失去第一位居民"
+
+msgid "城鎮升級到村莊"
+msgstr "城鎮升級到村莊"
+
+msgid "城鎮升級到城鎮"
+msgstr "城鎮升級到城鎮"
+
+msgid "城鎮升級到城市"
+msgstr "城鎮升級到城市"
+
+msgid "在選舉中投票"
+msgstr "在選舉中投票"
+
+msgid "向某人求婚"
+msgstr "向某人求婚"
+
+msgid "親手種植並收穫一次作物"
+msgstr "親手種植並收穫一次作物"
+
+msgid "累計交易額達到1000銀幣"
+msgstr "累計交易額達到1000銀幣"
+
+msgid "完成3次成功探險"
+msgstr "完成3次成功探險"
+
+msgid "在30天內建造5棟建築"
+msgstr "在30天內建造5棟建築"
+
+msgid "存活30天且零衝突事件"
+msgstr "存活30天且零衝突事件"
+
+msgid "儲存遊戲10次以上"
+msgstr "儲存遊戲10次以上"
+
+msgid "擁有3個以上城鎮"
+msgstr "擁有3個以上城鎮"
+
+msgid "在深夜（0-4點）仍在活動"
+msgstr "在深夜（0-4點）仍在活動"
+
+msgid "在清晨（5-6點）開始活動"
+msgstr "在清晨（5-6點）開始活動"
+
+msgid "聽到10則村民對話"
+msgstr "聽到10則村民對話"
+
+msgid "聽到50則村民對話"
+msgstr "聽到50則村民對話"
+
+msgid "聽到200則村民對話"
+msgstr "聽到200則村民對話"
+
+msgid "經歷春夏秋冬"
+msgstr "經歷春夏秋冬"
+
+msgid "經歷第一個節日"
+msgstr "經歷第一個節日"
+
+msgid "經歷所有四個節日"
+msgstr "經歷所有四個節日"
+
+msgid "累計經歷5次節慶"
+msgstr "累計經歷5次節慶"
+
+msgid "閱讀第一篇 AI 日報"
+msgstr "閱讀第一篇 AI 日報"
+
+msgid "累計 10 篇日報"
+msgstr "累計 10 篇日報"
+
+msgid "累計 30 篇日報"
+msgstr "累計 30 篇日報"
+
+msgid "首次使用雲端同步"
+msgstr "首次使用雲端同步"
+
+msgid "繁榮度達到「傳奇」等級"
+msgstr "繁榮度達到「傳奇」等級"
+
+msgid "解鎖25個成就"
+msgstr "解鎖25個成就"
+
+msgid "解鎖50個成就"
+msgstr "解鎖50個成就"
+
+msgid "解鎖全部99個成就"
+msgstr "解鎖全部99個成就"
+
+msgid "生下第一個孩子"
+msgstr "生下第一個孩子"
+
+msgid "開始第二代的旅程"
+msgstr "開始第二代的旅程"
+
+msgid "進入第三代"
+msgstr "進入第三代"
+
+msgid "的"
+msgstr "的"
+
+msgid "的邊境鎮"
+msgstr "的邊境鎮"
+
+msgid "！你的全新城鎮已建立。"
+msgstr "！你的全新城鎮已建立。"
+
+msgid "已和 "
+msgstr "已和 "
+
+msgid "/3 位居民交談。繼續點擊居民聊天吧！"
+msgstr "/3 位居民交談。繼續點擊居民聊天吧！"
+
+msgid " | 📖 支線："
+msgstr " | 📖 支線："
+
+msgid "每 15 分鐘（1 tick）看一次同地點還醒著的人。睡覺的人不會主動搭話。"
+msgstr "每 15 分鐘（1 tick）看一次同地點還醒著的人。睡覺的人不會主動搭話。"
+
+msgid "挑對象"
+msgstr "挑對象"
+
+msgid "權重 = 5 ＋ 好感÷10 ＋ 心動÷10；好感低於 −30 的人權重大減。互動後冷卻 6 tick。"
+msgstr "權重 = 5 ＋ 好感÷10 ＋ 心動÷10；好感低於 −30 的人權重大減。互動後冷卻 6 tick。"
+
+msgid "30% 機率先講一則八卦。八卦性格的人一定講，其他人 30%。傳到第 2 手有 40% 會被誇大，20% 的八卦本來就是假的。"
+msgstr "30% 機率先講一則八卦。八卦性格的人一定講，其他人 30%。傳到第 2 手有 40% 會被誇大，20% 的八卦本來就是假的。"
+
+msgid "約出去"
+msgstr "約出去"
+
+msgid "好感 ≥ 30 時 12% 機率相約去酒館、公園、廣場、教堂、森林或圖書館；心動 > 40 就算約會。"
+msgstr "好感 ≥ 30 時 12% 機率相約去酒館、公園、廣場、教堂、森林或圖書館；心動 > 40 就算約會。"
+
+msgid "玩家附近的對話由內建 AI 生成（受每日額度限制）；遠處的對話走規則式模板，但同樣寫進記憶。"
+msgstr "玩家附近的對話由內建 AI 生成（受每日額度限制）；遠處的對話走規則式模板，但同樣寫進記憶。"
+
+msgid "效果"
+msgstr "效果"
+
+msgid "對話改變雙方好感（−2 到 +5）與心動；正向增幅乘上性格相容度 0.2 到 1.6。約定會寫成「計畫」記憶，情緒波動大就當場改寫今天剩下的行程。"
+msgstr "對話改變雙方好感（−2 到 +5）與心動；正向增幅乘上性格相容度 0.2 到 1.6。約定會寫成「計畫」記憶，情緒波動大就當場改寫今天剩下的行程。"
+
+msgid "記憶"
+msgstr "記憶"
+
+msgid "每人 500 條記憶流。對話寫進「他會記住的那句話」，重要度 4 到 8。"
+msgstr "每人 500 條記憶流。對話寫進「他會記住的那句話」，重要度 4 到 8。"
+
+msgid "反思與計畫"
+msgstr "反思與計畫"
+
+msgid "每晚合成 1 到 2 條想法（跟誰走得近、暗戀、夢想）；每天最多 3 位由 AI 深度反思。清晨依記憶排今日行程。"
+msgstr "每晚合成 1 到 2 條想法（跟誰走得近、暗戀、夢想）；每天最多 3 位由 AI 深度反思。清晨依記憶排今日行程。"
+
+msgid "情緒敏感"
+msgstr "情緒敏感"
+
+msgid "晚睡"
+msgstr "晚睡"
+
+msgid "早起"
+msgstr "早起"
+
+msgid "食量"
+msgstr "食量"
+
+msgid "認識 / 陌生人"
+msgstr "認識 / 陌生人"
+
+msgid "每條記憶有時間、類別、內容、重要度（1 到 10）、涉及的人。要說話或做計畫時，不是翻全部，而是用三個分數挑出最該想起的幾條："
+msgstr "每條記憶有時間、類別、內容、重要度（1 到 10）、涉及的人。要說話或做計畫時，不是翻全部，而是用三個分數挑出最該想起的幾條："
+
+msgid "時近"
+msgstr "時近"
+
+msgid "相關"
+msgstr "相關"
+
+msgid "重要度"
+msgstr "重要度"
+
+msgid "已過天數"
+msgstr "已過天數"
+
+msgid "，一週前的事只剩三成份量。"
+msgstr "，一週前的事只剩三成份量。"
+
+msgid "內容與當下話題的字元重疊度，加上「有沒有提到眼前這個人」。"
+msgstr "內容與當下話題的字元重疊度，加上「有沒有提到眼前這個人」。"
+
+msgid "表白、絕交、劈腿這類事件是 8 到 10；日常觀察只有 2。"
+msgstr "表白、絕交、劈腿這類事件是 8 到 10；日常觀察只有 2。"
+
+msgid "相關程度"
+msgstr "相關程度"
+
+msgid "性格參數"
+msgstr "性格參數"
+
+msgid "每人出生時抽 3 個特質（互斥的不會同時出現），加上 1 到 3 個價值觀。特質決定社交加成、工作效率、基礎心情、情緒敏感度與戀愛傾向。"
+msgstr "每人出生時抽 3 個特質（互斥的不會同時出現），加上 1 到 3 個價值觀。特質決定社交加成、工作效率、基礎心情、情緒敏感度與戀愛傾向。"
+
+msgid "價值觀"
+msgstr "價值觀"
+
+msgid "相容度"
+msgstr "相容度"
+
+msgid "善良配善良、魅力配害羞、沉穩配神經質會加分；刻薄配害羞、樂觀配悲觀、懶惰配勤勞會扣分。換算成 0.2 到 1.6 的倍率，乘在每次好感增幅上。"
+msgstr "善良配善良、魅力配害羞、沉穩配神經質會加分；刻薄配害羞、樂觀配悲觀、懶惰配勤勞會扣分。換算成 0.2 到 1.6 的倍率，乘在每次好感增幅上。"
+
+msgid "六項需求"
+msgstr "六項需求"
+
+msgid "飢餓、休息、社交、舒適、娛樂、美感。白天每 tick 飢餓 −2、休息 −1.5、社交 −1；夜裡衰減放慢。任一項見底就拖累心情，心情又決定他今天想不想理人。"
+msgstr "飢餓、休息、社交、舒適、娛樂、美感。白天每 tick 飢餓 −2、休息 −1.5、社交 −1；夜裡衰減放慢。任一項見底就拖累心情，心情又決定他今天想不想理人。"
+
+msgid "關係階梯"
+msgstr "關係階梯"
+
+msgid "對每個人各記三個數：好感（−100 到 100）、信任、心動（0 到 100）。好感決定稱呼，心動超過 50 就是暗戀。"
+msgstr "對每個人各記三個數：好感（−100 到 100）、信任、心動（0 到 100）。好感決定稱呼，心動超過 50 就是暗戀。"
+
+msgid "50 tick 沒互動，好感每天往 0 漂 0.8；情侶夫妻只漂 0.3。"
+msgstr "50 tick 沒互動，好感每天往 0 漂 0.8；情侶夫妻只漂 0.3。"
+
+msgid "好感 > 20 且互動超過 3 次，相配的人每天 45% 機率心動 +1 到 +5；高好感高相配還有 6% 的「來電火花」+8 到 +16。"
+msgstr "好感 > 20 且互動超過 3 次，相配的人每天 45% 機率心動 +1 到 +5；高好感高相配還有 6% 的「來電火花」+8 到 +16。"
+
+msgid "雙方好感 ≤ −35：每隔 5 天 15% 機率在廣場對嗆；雙方 ≤ −60：正式絕交，觸發劇情名場面。"
+msgstr "雙方好感 ≤ −35：每隔 5 天 15% 機率在廣場對嗆；雙方 ≤ −60：正式絕交，觸發劇情名場面。"
+
+msgid "聽到自己被造謠會當面對質，造謠者好感 −12；紅娘式八卦會讓兩位當事人開始注意彼此。"
+msgstr "聽到自己被造謠會當面對質，造謠者好感 −12；紅娘式八卦會讓兩位當事人開始注意彼此。"
+
+msgid "戲劇導演每天看一眼全鎮：太平靜就悄悄推一把暗戀、舊帳或吃醋。"
+msgstr "戲劇導演每天看一眼全鎮：太平靜就悄悄推一把暗戀、舊帳或吃醋。"
+
+msgid "想法與心情"
+msgstr "想法與心情"
+
+msgid "事件會留下有期限的「想法」，直接加減心情，有些還會改變對當事人的看法："
+msgstr "事件會留下有期限的「想法」，直接加減心情，有些還會改變對當事人的看法："
+
+msgid "持續天數"
+msgstr "持續天數"
+
+msgid "對人看法"
+msgstr "對人看法"
+
+msgid "成本閘門：只有玩家附近的對話與每日額度內的行程／反思會呼叫 AI，其餘一律規則式運算，所以一整鎮 20 多人同時「活著」也不會燒錢。"
+msgstr "成本閘門：只有玩家附近的對話與每日額度內的行程／反思會呼叫 AI，其餘一律規則式運算，所以一整鎮 20 多人同時「活著」也不會燒錢。"
+
+msgid "→ 有機會被想起"
+msgstr "→ 有機會被想起"
+
+msgid "→ 大概忘了"
+msgstr "→ 大概忘了"
+
+msgid "已從雲端同步最新存檔（"
+msgstr "已從雲端同步最新存檔（"
+
+msgid "確認"
+msgstr "確認"
+
+msgid "<h3 style=\"margin-bottom:8px\">雲端存檔</h3>"
+msgstr "<h3 style=\"margin-bottom:8px\">雲端存檔</h3>"
+
+msgid " 第"
+msgstr " 第"
+
+msgid "年 第"
+msgstr "年 第"
+
+msgid "天 | 人口"
+msgstr "天 | 人口"
+
+msgid "刪除雲端存檔"
+msgstr "刪除雲端存檔"
+
+msgid "載入雲端存檔失敗："
+msgstr "載入雲端存檔失敗："
+
+msgid "愛情"
+msgstr "愛情"
+
+msgid "生存"
+msgstr "生存"
+
+msgid "玩家"
+msgstr "玩家"
+
+msgid "特殊"
+msgstr "特殊"
+
+msgid "<div class=\"achievements-panel\"><h3>成就 <span class=\"ach-count\">"
+msgstr "<div class=\"achievements-panel\"><h3>成就 <span class=\"ach-count\">"
+
+msgid "尚未解鎖"
+msgstr "尚未解鎖"
+
+msgid "你已經投過票了。"
+msgstr "你已經投過票了。"
+
+msgid "你投票給了 "
+msgstr "你投票給了 "
+
+msgid "你需要在對方身邊才能調情。"
+msgstr "你需要在對方身邊才能調情。"
+
+msgid "你對"
+msgstr "你對"
+
+msgid "調情。"
+msgstr "調情。"
+
+msgid "你跟這個人不夠熟。"
+msgstr "你跟這個人不夠熟。"
+
+msgid "拒絕了你的告白。"
+msgstr "拒絕了你的告白。"
+
+msgid "存檔"
+msgstr "存檔"
+
+msgid "海風鎮"
+msgstr "海風鎮"
+
+msgid "<p class=\"muted-text\">尚無城鎮存檔。</p>"
+msgstr "<p class=\"muted-text\">尚無城鎮存檔。</p>"
+
+msgid "<span class=\"current-badge\">目前</span>"
+msgstr "<span class=\"current-badge\">目前</span>"
+
+msgid "邊境鎮 "
+msgstr "邊境鎮 "
+
+msgid "🏘️ 新城鎮「"
+msgstr "🏘️ 新城鎮「"
+
+msgid "」已建立！"
+msgstr "」已建立！"
+
+msgid "（備用：Groq）"
+msgstr "（備用：Groq）"
+
+msgid "=== 邊境鎮聊天記錄 ==="
+msgstr "=== 邊境鎮聊天記錄 ==="
+
+msgid " 外出）"
+msgstr " 外出）"
+
+msgid "為"
+msgstr "為"
+
+msgid "輸入訊息"
+msgstr "輸入訊息"
+
+msgid "聊天存檔"
+msgstr "聊天存檔"
+
+msgid "<p class=\"muted-text\" style=\"padding:12px\">尚無存檔。開始新遊戲時聊天記錄會自動存檔。</p>"
+msgstr "<p class=\"muted-text\" style=\"padding:12px\">尚無存檔。開始新遊戲時聊天記錄會自動存檔。</p>"
+
+msgid "則訊息 | "
+msgstr "則訊息 | "
+
+msgid "匯出\">"
+msgstr "匯出\">"
+
+msgid "則訊息"
+msgstr "則訊息"
+
+msgid "<p class=\"muted-text chat-hint\">找不到訊息。</p>"
+msgstr "<p class=\"muted-text chat-hint\">找不到訊息。</p>"
+
+msgid "<p class=\"muted-text\">沒有技能資料</p>"
+msgstr "<p class=\"muted-text\">沒有技能資料</p>"
+
+msgid "<h2>👤 創建新居民</h2>"
+msgstr "<h2>👤 創建新居民</h2>"
+
+msgid "<div class=\"setting-group\"><label>名字</label>"
+msgstr "<div class=\"setting-group\"><label>名字</label>"
+
+msgid "<div class=\"setting-group\"><label>性別</label>"
+msgstr "<div class=\"setting-group\"><label>性別</label>"
+
+msgid "<label style=\"cursor:pointer\"><input type=\"radio\" name=\"custom-npc-gender\" value=\"male\" checked> ♂ 男</label>"
+msgstr "<label style=\"cursor:pointer\"><input type=\"radio\" name=\"custom-npc-gender\" value=\"male\" checked> ♂ 男</label>"
+
+msgid "<label style=\"cursor:pointer\"><input type=\"radio\" name=\"custom-npc-gender\" value=\"female\"> ♀ 女</label>"
+msgstr "<label style=\"cursor:pointer\"><input type=\"radio\" name=\"custom-npc-gender\" value=\"female\"> ♀ 女</label>"
+
+msgid "<div class=\"setting-group\"><label>年齡 <span id=\"custom-npc-age-display\" style=\"color:var(--accent)\">25</span></label>"
+msgstr "<div class=\"setting-group\"><label>年齡 <span id=\"custom-npc-age-display\" style=\"color:var(--accent)\">25</span></label>"
+
+msgid "<div class=\"setting-group\"><label>性格特質（選 1-3 個）</label>"
+msgstr "<div class=\"setting-group\"><label>性格特質（選 1-3 個）</label>"
+
+msgid "<div class=\"setting-group\"><label>職業偏好</label>"
+msgstr "<div class=\"setting-group\"><label>職業偏好</label>"
+
+msgid "<div class=\"setting-group\"><label>在意的事（選 1-3 個）</label>"
+msgstr "<div class=\"setting-group\"><label>在意的事（選 1-3 個）</label>"
+
+msgid "<div class=\"setting-group\"><label>背景故事（選填，最多 200 字）</label>"
+msgstr "<div class=\"setting-group\"><label>背景故事（選填，最多 200 字）</label>"
+
+msgid "<button class=\"btn-accent\" data-action=\"create-custom-npc\">創建</button>"
+msgstr "<button class=\"btn-accent\" data-action=\"create-custom-npc\">創建</button>"
+
+msgid "<button data-action=\"close-custom-npc\">取消</button>"
+msgstr "<button data-action=\"close-custom-npc\">取消</button>"
+
+msgid "確定要開始二周目嗎？\n\n將繼承：50% 銀幣、已建建築、已開發產業、部分繁榮度\n鎮民會記得上一代的故事。\n\n當前遊戲進度將被覆蓋。"
+msgstr "確定要開始二周目嗎？\n\n將繼承：50% 銀幣、已建建築、已開發產業、部分繁榮度\n鎮民會記得上一代的故事。\n\n當前遊戲進度將被覆蓋。"
+
+msgid "新旅人"
+msgstr "新旅人"
+
+msgid "繼承了"
+msgstr "繼承了"
+
+msgid "的一切，踏上了新的旅程。"
+msgstr "的一切，踏上了新的旅程。"
+
+msgid "代開始！一位新的旅人帶著"
+msgstr "代開始！一位新的旅人帶著"
+
+msgid "的遺產來到了邊境鎮。"
+msgstr "的遺產來到了邊境鎮。"
+
+msgid " <span style=\"font-size:10px;color:#f0c040;margin-left:4px\">第"
+msgstr " <span style=\"font-size:10px;color:#f0c040;margin-left:4px\">第"
+
+msgid "代</span>"
+msgstr "代</span>"
+
+msgid "男"
+msgstr "男"
+
+msgid "女"
+msgstr "女"
+
+msgid "<span class=\"nearby-badge\">附近</span>"
+msgstr "<span class=\"nearby-badge\">附近</span>"
+
+msgid "👤 創建新居民 (剩餘 "
+msgstr "👤 創建新居民 (剩餘 "
+
+msgid " 位)"
+msgstr " 位)"
+
+msgid "<div style=\"font-size:0.7rem;color:var(--text-muted);margin-top:4px;text-align:center\">需要 "
+msgstr "<div style=\"font-size:0.7rem;color:var(--text-muted);margin-top:4px;text-align:center\">需要 "
+
+msgid " 食物</div>"
+msgstr " 食物</div>"
+
+msgid "<div style=\"font-size:0.8rem;color:var(--text-muted);text-align:center\">已達自訂居民上限 ("
+msgstr "<div style=\"font-size:0.8rem;color:var(--text-muted);text-align:center\">已達自訂居民上限 ("
+
+msgid "<p class=\"muted-text\" style=\"padding:20px\">選擇一位居民查看詳情</p>"
+msgstr "<p class=\"muted-text\" style=\"padding:20px\">選擇一位居民查看詳情</p>"
+
+msgid "\">對話</button>"
+msgstr "\">對話</button>"
+
+msgid "\">調情</button>"
+msgstr "\">調情</button>"
+
+msgid "\">告白</button>"
+msgstr "\">告白</button>"
+
+msgid "\">求婚</button>"
+msgstr "\">求婚</button>"
+
+msgid "已與<b>"
+msgstr "已與<b>"
+
+msgid "</b>結婚"
+msgstr "</b>結婚"
+
+msgid "正在與<b>"
+msgstr "正在與<b>"
+
+msgid "</b>交往"
+msgstr "</b>交往"
+
+msgid " <span style=\"color:var(--negative)\">（同時與"
+msgstr " <span style=\"color:var(--negative)\">（同時與"
+
+msgid "有秘密關係）</span>"
+msgstr "有秘密關係）</span>"
+
+msgid "，暗戀"
+msgstr "，暗戀"
+
+msgid "（前任："
+msgstr "（前任："
+
+msgid "歲）"
+msgstr "歲）"
+
+msgid "狀態"
+msgstr "狀態"
+
+msgid "肚子很餓"
+msgstr "肚子很餓"
+
+msgid "很疲倦"
+msgstr "很疲倦"
+
+msgid "<p style=\"font-size:0.7rem;color:var(--text-muted)\">尚無人際關係</p>"
+msgstr "<p style=\"font-size:0.7rem;color:var(--text-muted)\">尚無人際關係</p>"
+
+msgid "<span class=\"rel-status-badge rel-married\">💍 已婚</span>"
+msgstr "<span class=\"rel-status-badge rel-married\">💍 已婚</span>"
+
+msgid "<span class=\"rel-status-badge rel-dating\">💕 交往中</span>"
+msgstr "<span class=\"rel-status-badge rel-dating\">💕 交往中</span>"
+
+msgid "<span class=\"rel-status-badge rel-ex\">💔 前任</span>"
+msgstr "<span class=\"rel-status-badge rel-ex\">💔 前任</span>"
+
+msgid " <span class=\"rel-status-badge rel-cheating\">🤫 秘密關係</span>"
+msgstr " <span class=\"rel-status-badge rel-cheating\">🤫 秘密關係</span>"
+
+msgid " <span style=\"color:#f472b6;font-size:0.75rem\">暗戀</span>"
+msgstr " <span style=\"color:#f472b6;font-size:0.75rem\">暗戀</span>"
+
+msgid "<p style=\"font-size:0.7rem;color:var(--text-muted)\">尚無記憶</p>"
+msgstr "<p style=\"font-size:0.7rem;color:var(--text-muted)\">尚無記憶</p>"
+
+msgid "房屋"
+msgstr "房屋"
+
+msgid "住戶"
+msgstr "住戶"
+
+msgid "這間房子目前沒有住戶。"
+msgstr "這間房子目前沒有住戶。"
+
+msgid "<div class=\"econ-section\"><h3>🎮 遊戲控制</h3>"
+msgstr "<div class=\"econ-section\"><h3>🎮 遊戲控制</h3>"
+
+msgid "開新局的村民"
+msgstr "開新局的村民"
+
+msgid "劇本卡司"
+msgstr "劇本卡司"
+
+msgid "隨機卡司"
+msgstr "隨機卡司"
+
+msgid "每開一張新地圖都隨機抽一批全新村民與愛恨關係,每局故事都不同"
+msgstr "每開一張新地圖都隨機抽一批全新村民與愛恨關係,每局故事都不同"
+
+msgid "用陳偉、林美等固定劇本村民與開局關係網"
+msgstr "用陳偉、林美等固定劇本村民與開局關係網"
+
+msgid "<div class=\"econ-section\"><h3>🤖 AI 語言模型</h3>"
+msgstr "<div class=\"econ-section\"><h3>🤖 AI 語言模型</h3>"
+
+msgid "<div class=\"npc-convo-section\"><h4 style=\"padding:8px 10px;color:var(--accent);font-size:0.8rem;margin:0\">村民對話</h4>"
+msgstr "<div class=\"npc-convo-section\"><h4 style=\"padding:8px 10px;color:var(--accent);font-size:0.8rem;margin:0\">村民對話</h4>"
+
+msgid "<p class=\"muted-text\" style=\"padding:20px\">尚無訊息...</p>"
+msgstr "<p class=\"muted-text\" style=\"padding:20px\">尚無訊息...</p>"
+
+msgid "<h4>📢 鎮長選舉 — 競選期間</h4>"
+msgstr "<h4>📢 鎮長選舉 — 競選期間</h4>"
+
+msgid "<div class=\"election-info\">剩餘 "
+msgstr "<div class=\"election-info\">剩餘 "
+
+msgid " 天競選期</div>"
+msgstr " 天競選期</div>"
+
+msgid "<h4>🗳️ 鎮長選舉 — 投票進行中</h4>"
+msgstr "<h4>🗳️ 鎮長選舉 — 投票進行中</h4>"
+
+msgid " 天投票</div>"
+msgstr " 天投票</div>"
+
+msgid " 票（"
+msgstr " 票（"
+
+msgid "<div class=\"election-total\">已投票："
+msgstr "<div class=\"election-total\">已投票："
+
+msgid " 人"
+msgstr " 人"
+
+msgid " (你已投票)"
+msgstr " (你已投票)"
+
+msgid "<h4>🏆 選舉結果</h4>"
+msgstr "<h4>🏆 選舉結果</h4>"
+
+msgid "上次選舉："
+msgstr "上次選舉："
+
+msgid " 當選（"
+msgstr " 當選（"
+
+msgid "票）"
+msgstr "票）"
+
+msgid "<div class=\"news-section\"><h4>📰 新聞公告</h4><div class=\"news-ticker\">"
+msgstr "<div class=\"news-section\"><h4>📰 新聞公告</h4><div class=\"news-ticker\">"
+
+msgid "<div class=\"news-effects\"><span class=\"news-effects-label\">生效中：</span> "
+msgstr "<div class=\"news-effects\"><span class=\"news-effects-label\">生效中：</span> "
+
+msgid "是"
+msgstr "是"
+
+msgid "否"
+msgstr "否"
+
+msgid "<div class=\"news-section\"><h4>🗞️ AI 日報</h4>"
+msgstr "<div class=\"news-section\"><h4>🗞️ AI 日報</h4>"
+
+msgid "<div class=\"news-card-date\">第"
+msgstr "<div class=\"news-card-date\">第"
+
+msgid "天</div>"
+msgstr "天</div>"
+
+msgid "<p class=\"muted-text\" style=\"text-align:center;padding:4px 0;font-size:0.7rem\">顯示最近 10 期（共 "
+msgstr "<p class=\"muted-text\" style=\"text-align:center;padding:4px 0;font-size:0.7rem\">顯示最近 10 期（共 "
+
+msgid " 期）</p>"
+msgstr " 期）</p>"
+
+msgid "<div class=\"chain-section\"><h4>進行中的事件鏈</h4>"
+msgstr "<div class=\"chain-section\"><h4>進行中的事件鏈</h4>"
+
+msgid "（階段 "
+msgstr "（階段 "
+
+msgid "<div class=\"travelling-section\"><h4>外出中的居民</h4>"
+msgstr "<div class=\"travelling-section\"><h4>外出中的居民</h4>"
+
+msgid "進行中！"
+msgstr "進行中！"
+
+msgid "<div class=\"quest-section\"><h4>🎯 節日任務："
+msgstr "<div class=\"quest-section\"><h4>🎯 節日任務："
+
+msgid "<div class=\"faction-section\"><h4>👥 派系 / 社交圈</h4>"
+msgstr "<div class=\"faction-section\"><h4>👥 派系 / 社交圈</h4>"
+
+msgid "<span class=\"faction-rival\">⚔️ 敵對："
+msgstr "<span class=\"faction-rival\">⚔️ 敵對："
+
+msgid "<span class=\"faction-ally\">🤝 結盟："
+msgstr "<span class=\"faction-ally\">🤝 結盟："
+
+msgid "\">團結度："
+msgstr "\">團結度："
+
+msgid "<div class=\"explore-section\"><h4>🗺️ 探索區域</h4>"
+msgstr "<div class=\"explore-section\"><h4>🗺️ 探索區域</h4>"
+
+msgid "<div class=\"expedition-active\"><strong>進行中的探險：</strong>"
+msgstr "<div class=\"expedition-active\"><strong>進行中的探險：</strong>"
+
+msgid "天後返回)</div>"
+msgstr "天後返回)</div>"
+
+msgid "<div class=\"zone-busy\">探險進行中...</div>"
+msgstr "<div class=\"zone-busy\">探險進行中...</div>"
+
+msgid "<h4>🎒 近期出生</h4>"
+msgstr "<h4>🎒 近期出生</h4>"
+
+msgid "的孩子 <span class=\"birth-time\">"
+msgstr "的孩子 <span class=\"birth-time\">"
+
+msgid "<h4>⚰️ 墓園</h4>"
+msgstr "<h4>⚰️ 墓園</h4>"
+
+msgid "<p class=\"muted-text\" style=\"padding:20px\">尚無事件。事件每天會隨機發生。</p>"
+msgstr "<p class=\"muted-text\" style=\"padding:20px\">尚無事件。事件每天會隨機發生。</p>"
+
+msgid "<span style=\"font-weight:bold;font-size:0.85rem\">🏛️ 繁榮度 <span style=\"font-weight:normal;font-size:0.75rem;color:var(--text-muted)\">👤 "
+msgstr "<span style=\"font-weight:bold;font-size:0.85rem\">🏛️ 繁榮度 <span style=\"font-weight:normal;font-size:0.75rem;color:var(--text-muted)\">👤 "
+
+msgid " 人</span></span>"
+msgstr " 人</span></span>"
+
+msgid "💰經濟"
+msgstr "💰經濟"
+
+msgid "🏗️建設"
+msgstr "🏗️建設"
+
+msgid "👥人口"
+msgstr "👥人口"
+
+msgid "😊幸福"
+msgstr "😊幸福"
+
+msgid "🎭文化"
+msgstr "🎭文化"
+
+msgid "🛡️防禦"
+msgstr "🛡️防禦"
+
+msgid "🌺美觀"
+msgstr "🌺美觀"
+
+msgid "工廠"
+msgstr "工廠"
+
+msgid "<div class=\"econ-section\"><h3>交易</h3>"
+msgstr "<div class=\"econ-section\"><h3>交易</h3>"
+
+msgid "專長："
+msgstr "專長："
+
+msgid "天後離開"
+msgstr "天後離開"
+
+msgid "賣出"
+msgstr "賣出"
+
+msgid "買入"
+msgstr "買入"
+
+msgid "個"
+msgstr "個"
+
+msgid "\">全"
+msgstr "\">全"
+
+msgid "<p class=\"muted-text\">鎮上沒有商人，可能很快就會來一位。</p>"
+msgstr "<p class=\"muted-text\">鎮上沒有商人，可能很快就會來一位。</p>"
+
+msgid "<div class=\"research-current\">研究中：<strong>"
+msgstr "<div class=\"research-current\">研究中：<strong>"
+
+msgid "<div class=\"research-available\"><div class=\"build-label\">可研究：</div>"
+msgstr "<div class=\"research-available\"><div class=\"build-label\">可研究：</div>"
+
+msgid "（消耗："
+msgstr "（消耗："
+
+msgid ">研究</button></div>"
+msgstr ">研究</button></div>"
+
+msgid "<div class=\"completed-buildings\">已完成："
+msgstr "<div class=\"completed-buildings\">已完成："
+
+msgid "<div class=\"econ-section\"><h3>建築</h3>"
+msgstr "<div class=\"econ-section\"><h3>建築</h3>"
+
+msgid "<div class=\"completed-buildings\"><div class=\"build-label\">已完成：</div>"
+msgstr "<div class=\"completed-buildings\"><div class=\"build-label\">已完成：</div>"
+
+msgid "<div class=\"available-buildings\"><div class=\"build-label\">建造：</div>"
+msgstr "<div class=\"available-buildings\"><div class=\"build-label\">建造：</div>"
+
+msgid "<div class=\"econ-section\"><h3>🏭 工廠加工</h3></div>"
+msgstr "<div class=\"econ-section\"><h3>🏭 工廠加工</h3></div>"
+
+msgid " (建造中 "
+msgstr " (建造中 "
+
+msgid "<div style=\"margin:4px 0\"><strong>配方：</strong>"
+msgstr "<div style=\"margin:4px 0\"><strong>配方：</strong>"
+
+msgid "<div style=\"margin:4px 0;font-size:0.8rem\"><strong>工人：</strong>"
+msgstr "<div style=\"margin:4px 0;font-size:0.8rem\"><strong>工人：</strong>"
+
+msgid "<div style=\"font-size:0.75rem;margin:4px 0\">生產進度："
+msgstr "<div style=\"font-size:0.75rem;margin:4px 0\">生產進度："
+
+msgid "<div style=\"margin:4px 0;font-size:0.8rem\"><strong>倉庫：</strong>"
+msgstr "<div style=\"margin:4px 0;font-size:0.8rem\"><strong>倉庫：</strong>"
+
+msgid "\">收</button>"
+msgstr "\">收</button>"
+
+msgid "\">賣</button></span>"
+msgstr "\">賣</button></span>"
+
+msgid "<div class=\"econ-section\"><h3>可建造工廠</h3>"
+msgstr "<div class=\"econ-section\"><h3>可建造工廠</h3>"
+
+msgid " | 建造天數："
+msgstr " | 建造天數："
+
+msgid "\">建造</button></div>"
+msgstr "\">建造</button></div>"
+
+msgid "<div class=\"econ-section\"><h3>📋 訂單</h3>"
+msgstr "<div class=\"econ-section\"><h3>📋 訂單</h3>"
+
+msgid "銀幣 | 剩餘"
+msgstr "銀幣 | 剩餘"
+
+msgid "\">完成</button></div>"
+msgstr "\">完成</button></div>"
+
+msgid "<div class=\"detail-section\"><h3>社交圈</h3>"
+msgstr "<div class=\"detail-section\"><h3>社交圈</h3>"
+
+msgid "</strong> <span style=\"font-size:0.7rem;color:var(--text-secondary)\">同伴："
+msgstr "</strong> <span style=\"font-size:0.7rem;color:var(--text-secondary)\">同伴："
+
+msgid "<div class=\"econ-section\"><h3>🏘️ 小鎮等級："
+msgstr "<div class=\"econ-section\"><h3>🏘️ 小鎮等級："
+
+msgid "<div style=\"font-size:0.8rem;color:var(--text-secondary)\">產業上限："
+msgstr "<div style=\"font-size:0.8rem;color:var(--text-secondary)\">產業上限："
+
+msgid " | 已開啟："
+msgstr " | 已開啟："
+
+msgid "<div class=\"econ-section\"><h3>選擇你的第一個產業</h3>"
+msgstr "<div class=\"econ-section\"><h3>選擇你的第一個產業</h3>"
+
+msgid "\">選擇</button></div>"
+msgstr "\">選擇</button></div>"
+
+msgid "<div class=\"econ-section\"><h3>產業列表</h3>"
+msgstr "<div class=\"econ-section\"><h3>產業列表</h3>"
+
+msgid "<br><span style=\"font-size:0.75rem;color:var(--text-secondary)\">工人："
+msgstr "<br><span style=\"font-size:0.75rem;color:var(--text-secondary)\">工人："
+
+msgid "\">升級 Lv"
+msgstr "\">升級 Lv"
+
+msgid "<div class=\"econ-section\"><h3>可開啟新產業！</h3>"
+msgstr "<div class=\"econ-section\"><h3>可開啟新產業！</h3>"
+
+msgid "\">開啟</button></div>"
+msgstr "\">開啟</button></div>"
+
+msgid "<div class=\"econ-section\"><h3>產業加成</h3>"
+msgstr "<div class=\"econ-section\"><h3>產業加成</h3>"
+
+msgid "<div class=\"econ-section\"><h3>🌾 農場（"
+msgstr "<div class=\"econ-section\"><h3>🌾 農場（"
+
+msgid " 塊田）</h3></div>"
+msgstr " 塊田）</h3></div>"
+
+msgid "<div class=\"econ-section\"><p class=\"muted-text\">需要先開啟農業產業才能使用農場。</p></div>"
+msgstr "<div class=\"econ-section\"><p class=\"muted-text\">需要先開啟農業產業才能使用農場。</p></div>"
+
+msgid " 田地 #"
+msgstr " 田地 #"
+
+msgid " | 進度："
+msgstr " | 進度："
+
+msgid "% | 水分："
+msgstr "% | 水分："
+
+msgid " — 可收穫！</span>"
+msgstr " — 可收穫！</span>"
+
+msgid "\">翻土</button>"
+msgstr "\">翻土</button>"
+
+msgid "<span style=\"font-size:0.7rem;color:var(--text-secondary)\">本季無可種作物</span>"
+msgstr "<span style=\"font-size:0.7rem;color:var(--text-secondary)\">本季無可種作物</span>"
+
+msgid "\">💧澆水</button>"
+msgstr "\">💧澆水</button>"
+
+msgid "\">🧪施肥</button>"
+msgstr "\">🧪施肥</button>"
+
+msgid "\">🌾收穫</button>"
+msgstr "\">🌾收穫</button>"
+
+msgid "\">清除</button>"
+msgstr "\">清除</button>"
+
+msgid "<div class=\"econ-section\"><h3>收穫紀錄</h3>"
+msgstr "<div class=\"econ-section\"><h3>收穫紀錄</h3>"
+
+msgid "\">賣</button>"
+msgstr "\">賣</button>"
+
+msgid "<div class=\"econ-section\"><h3>📰 AI 日報（共 "
+msgstr "<div class=\"econ-section\"><h3>📰 AI 日報（共 "
+
+msgid " 期）</h3></div>"
+msgstr " 期）</h3></div>"
+
+msgid "<div class=\"econ-section\"><p class=\"muted-text\">還沒有日報。每天結束時會自動發佈。</p></div>"
+msgstr "<div class=\"econ-section\"><p class=\"muted-text\">還沒有日報。每天結束時會自動發佈。</p></div>"
+
+msgid "<div class=\"econ-section\"><p class=\"muted-text\">顯示最近 20 期（共 "
+msgstr "<div class=\"econ-section\"><p class=\"muted-text\">顯示最近 20 期（共 "
+
+msgid " 期）</p></div>"
+msgstr " 期）</p></div>"
+
+msgid "<div class=\"economy-panel\"><p class=\"muted-text\">任務系統尚未載入。</p></div>"
+msgstr "<div class=\"economy-panel\"><p class=\"muted-text\">任務系統尚未載入。</p></div>"
+
+msgid "<div class=\"econ-section\"><h3>⚔️ 主線任務</h3>"
+msgstr "<div class=\"econ-section\"><h3>⚔️ 主線任務</h3>"
+
+msgid "<div style=\"font-size:0.75rem;color:var(--text-secondary)\">進度："
+msgstr "<div style=\"font-size:0.75rem;color:var(--text-secondary)\">進度："
+
+msgid " 完成"
+msgstr " 完成"
+
+msgid " | ⭐ 聲望："
+msgstr " | ⭐ 聲望："
+
+msgid "🦗 蝗災"
+msgstr "🦗 蝗災"
+
+msgid "⚔️ 盜匪圍城"
+msgstr "⚔️ 盜匪圍城"
+
+msgid "🏥 瘟疫"
+msgstr "🏥 瘟疫"
+
+msgid "<div style=\"font-weight:bold;color:var(--negative)\">⚠️ 當前危機："
+msgstr "<div style=\"font-weight:bold;color:var(--negative)\">⚠️ 當前危機："
+
+msgid "<div class=\"quest-card quest-locked\"><div class=\"quest-title\">🔒 ???</div><div class=\"quest-desc\">完成前置任務後解鎖</div></div>"
+msgstr "<div class=\"quest-card quest-locked\"><div class=\"quest-title\">🔒 ???</div><div class=\"quest-desc\">完成前置任務後解鎖</div></div>"
+
+msgid "<div style=\"margin:4px 0;font-size:0.75rem;color:var(--positive)\">✓ 以「"
+msgstr "<div style=\"margin:4px 0;font-size:0.75rem;color:var(--positive)\">✓ 以「"
+
+msgid "」完成</div>"
+msgstr "」完成</div>"
+
+msgid "<div style=\"font-size:0.7rem;color:var(--text-muted);margin-bottom:4px\">選擇任一路線完成即可：</div>"
+msgstr "<div style=\"font-size:0.7rem;color:var(--text-muted);margin-bottom:4px\">選擇任一路線完成即可：</div>"
+
+msgid "<div class=\"quest-rewards\" style=\"margin-top:4px;font-size:0.75rem\">獎勵："
+msgstr "<div class=\"quest-rewards\" style=\"margin-top:4px;font-size:0.75rem\">獎勵："
+
+msgid "<h3>⭐ 每日目標</h3>"
+msgstr "<h3>⭐ 每日目標</h3>"
+
+msgid "<div class=\"quest-rewards\" style=\"margin-top:2px;font-size:0.72rem\">獎勵："
+msgstr "<div class=\"quest-rewards\" style=\"margin-top:2px;font-size:0.72rem\">獎勵："
+
+msgid "<div class=\"econ-section\"><h3>📖 支線任務</h3>"
+msgstr "<div class=\"econ-section\"><h3>📖 支線任務</h3>"
+
+msgid "<div style=\"font-size:0.75rem;color:var(--text-secondary)\">進行中："
+msgstr "<div style=\"font-size:0.75rem;color:var(--text-secondary)\">進行中："
+
+msgid " | 已完成："
+msgstr " | 已完成："
+
+msgid "<div class=\"econ-section\"><h3>💫 NPC 個人故事</h3>"
+msgstr "<div class=\"econ-section\"><h3>💫 NPC 個人故事</h3>"
+
+msgid "<div style=\"font-size:0.7rem;color:var(--accent);margin-bottom:2px\">來自："
+msgstr "<div style=\"font-size:0.7rem;color:var(--accent);margin-bottom:2px\">來自："
+
+msgid "<div class=\"econ-section\"><p class=\"muted-text\" style=\"font-size:0.8rem\">提升與 NPC 的好感度來觸發個人故事線。</p></div>"
+msgstr "<div class=\"econ-section\"><p class=\"muted-text\" style=\"font-size:0.8rem\">提升與 NPC 的好感度來觸發個人故事線。</p></div>"
+
+msgid "<div class=\"econ-section\"><h3 style=\"color:var(--positive)\">✅ 已完成的個人故事</h3>"
+msgstr "<div class=\"econ-section\"><h3 style=\"color:var(--positive)\">✅ 已完成的個人故事</h3>"
+
+msgid "<div style=\"font-size:0.7rem;color:var(--text-muted)\">來自："
+msgstr "<div style=\"font-size:0.7rem;color:var(--text-muted)\">來自："
+
+msgid "<div style=\"font-size:0.7rem;color:var(--positive);margin-top:2px\">✓ 以「"
+msgstr "<div style=\"font-size:0.7rem;color:var(--positive);margin-top:2px\">✓ 以「"
+
+msgid "🪓 伐木"
+msgstr "🪓 伐木"
+
+msgid "⛏️ 採礦"
+msgstr "⛏️ 採礦"
+
+msgid "🌾 農業"
+msgstr "🌾 農業"
+
+msgid "⚒️ 鍛造"
+msgstr "⚒️ 鍛造"
+
+msgid "💰 貿易"
+msgstr "💰 貿易"
+
+msgid "<div class=\"econ-section\"><h3>📈 NPC 產業加成</h3>"
+msgstr "<div class=\"econ-section\"><h3>📈 NPC 產業加成</h3>"
+
+msgid "<input type=\"text\" id=\"custom-npc-name\" maxlength=\"10\" placeholder=\"輸入名字（最多10字）\" style=\"width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:inherit\"></div>"
+msgstr "<input type=\"text\" id=\"custom-npc-name\" maxlength=\"10\" placeholder=\"輸入名字（最多10字）\" style=\"width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:inherit\"></div>"
+
+msgid "<textarea id=\"custom-npc-background\" maxlength=\"200\" rows=\"3\" placeholder=\"從遠方來的旅人，帶著一段不願提起的過去...\" style=\"width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:inherit;resize:vertical\"></textarea></div>"
+msgstr "<textarea id=\"custom-npc-background\" maxlength=\"200\" rows=\"3\" placeholder=\"從遠方來的旅人，帶著一段不願提起的過去...\" style=\"width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:inherit;resize:vertical\"></textarea></div>"
+
+msgid "陳偉"
+msgstr "陳偉"
+
+msgid "林美"
+msgstr "林美"
+
+msgid "張豪"
+msgstr "張豪"
+
+msgid "王麗"
+msgstr "王麗"
+
+msgid "劉俊"
+msgstr "劉俊"
+
+msgid "趙霞"
+msgstr "趙霞"
+
+msgid "楊鋒"
+msgstr "楊鋒"
+
+msgid "孫雨"
+msgstr "孫雨"
+
+msgid "吳達"
+msgstr "吳達"
+
+msgid "黃莉"
+msgstr "黃莉"
+
+msgid "馬強"
+msgstr "馬強"
+
+msgid "許瑩"
+msgstr "許瑩"
+
+msgid "周明"
+msgstr "周明"
+
+msgid "何昌"
+msgstr "何昌"
+
+msgid "何秀"
+msgstr "何秀"
+
+msgid "鄭薇"
+msgstr "鄭薇"
+
+msgid "蘇晴"
+msgstr "蘇晴"
+
+msgid "高朗"
+msgstr "高朗"
+
+msgid "柯薇"
+msgstr "柯薇"
+
+msgid "凌波"
+msgstr "凌波"
+
+msgid "李雪"
+msgstr "李雪"
+
+msgid "鄭強"
+msgstr "鄭強"
+
+msgid "何芳"
+msgstr "何芳"
+
+msgid "蔡文"
+msgstr "蔡文"
+
+msgid "呂嵐"
+msgstr "呂嵐"
+
+msgid "丁傑"
+msgstr "丁傑"
+
+msgid "蕭瑜"
+msgstr "蕭瑜"
+
+msgid "唐琳"
+msgstr "唐琳"
+
+msgid "曹峰"
+msgstr "曹峰"
+
+msgid "邱雅"
+msgstr "邱雅"
+
+msgid "范浩"
+msgstr "范浩"
+
+msgid "海伯"
+msgstr "海伯"
+
+msgid "阿潮"
+msgstr "阿潮"
+
+msgid "小鷗"
+msgstr "小鷗"
+
+msgid "浪叔"
+msgstr "浪叔"
+
+msgid "秀姑"
+msgstr "秀姑"
+
+msgid "石叔"
+msgstr "石叔"
+
+msgid "燈爺"
+msgstr "燈爺"
+
+msgid "阿汐"
+msgstr "阿汐"
+
+msgid "阿錨"
+msgstr "阿錨"
+
+msgid "雲姨"
+msgstr "雲姨"
+
+msgid "阿舵"
+msgstr "阿舵"
+
+msgid "木蝦"
+msgstr "木蝦"
+
+msgid "珊珊"
+msgstr "珊珊"
+
+msgid "阿浮"
+msgstr "阿浮"
+
+msgid "海嬤"
+msgstr "海嬤"
+
+msgid "小龍"
+msgstr "小龍"
+
+msgid "天明"
+msgstr "天明"
+
+msgid "子軒"
+msgstr "子軒"
+
+msgid "浩宇"
+msgstr "浩宇"
+
+msgid "嘉禾"
+msgstr "嘉禾"
+
+msgid "承恩"
+msgstr "承恩"
+
+msgid "宏志"
+msgstr "宏志"
+
+msgid "瑞陽"
+msgstr "瑞陽"
+
+msgid "文博"
+msgstr "文博"
+
+msgid "志遠"
+msgstr "志遠"
+
+msgid "新宇"
+msgstr "新宇"
+
+msgid "國棟"
+msgstr "國棟"
+
+msgid "小鳳"
+msgstr "小鳳"
+
+msgid "曉月"
+msgstr "曉月"
+
+msgid "詩涵"
+msgstr "詩涵"
+
+msgid "雨桐"
+msgstr "雨桐"
+
+msgid "美琪"
+msgstr "美琪"
+
+msgid "欣怡"
+msgstr "欣怡"
+
+msgid "佳穎"
+msgstr "佳穎"
+
+msgid "思琪"
+msgstr "思琪"
+
+msgid "夢瑤"
+msgstr "夢瑤"
+
+msgid "婉清"
+msgstr "婉清"
+
+msgid "紫萱"
+msgstr "紫萱"
+
+msgid "若蘭"
+msgstr "若蘭"
+
+msgid "容易感到嫉妒"
+msgstr "容易感到嫉妒"
+
+msgid "偏好晚睡"
+msgstr "偏好晚睡"
+
+msgid "日出而作"
+msgstr "日出而作"
+
+msgid "比大多數人更愛吃"
+msgstr "比大多數人更愛吃"
+
+msgid "偏好簡樸的生活"
+msgstr "偏好簡樸的生活"
+
+msgid "；"
+msgstr "；"
+
+msgid "無能"
+msgstr "無能"
+
+msgid "的態度"
+msgstr "的態度"
+
+msgid "種植作物與照料田地"
+msgstr "種植作物與照料田地"
+
+msgid "食物與農產"
+msgstr "食物與農產"
+
+msgid "在礦場開採石頭與礦石"
+msgstr "在礦場開採石頭與礦石"
+
+msgid "在酒館準備餐食"
+msgstr "在酒館準備餐食"
+
+msgid "鍛造工具與裝備"
+msgstr "鍛造工具與裝備"
+
+msgid "治療傷病患者"
+msgstr "治療傷病患者"
+
+msgid "研究與發現新知識"
+msgstr "研究與發現新知識"
+
+msgid "管理雜貨店"
+msgstr "管理雜貨店"
+
+msgid "巡邏與保護小鎮"
+msgstr "巡邏與保護小鎮"
+
+msgid "建造與修繕建築"
+msgstr "建造與修繕建築"
+
+msgid "製作衣物與紡織品"
+msgstr "製作衣物與紡織品"
+
+msgid "照顧居民的心靈需求"
+msgstr "照顧居民的心靈需求"
+
+msgid "領導小鎮"
+msgstr "領導小鎮"
+
+msgid "不開心"
+msgstr "不開心"
+
+msgid "壓力大"
+msgstr "壓力大"
+
+msgid "快樂"
+msgstr "快樂"
+
+msgid "欣喜若狂"
+msgstr "欣喜若狂"
+
+msgid "滿足"
+msgstr "滿足"
+
+msgid "痛苦"
+msgstr "痛苦"
+
+msgid "夜間散步"
+msgstr "夜間散步"
+
+msgid "搞事"
+msgstr "搞事"
+
+msgid "看星星"
+msgstr "看星星"
+
+msgid "進食"
+msgstr "進食"
+
+msgid "閒置"
+msgstr "閒置"
+
+msgid "不明"
+msgstr "不明"
+
+msgid "達到等級"
+msgstr "達到等級"
+
+msgid "技能進步了！"
+msgstr "技能進步了！"
+
+msgid "工作時間"
+msgstr "工作時間"
+
+msgid "際遇卡"
+msgstr "際遇卡"
+
+msgid "約了"
+msgstr "約了"
+
+msgid "一起在"
+msgstr "一起在"
+
+msgid "撞見了"
+msgstr "撞見了"
+
+msgid "的惡作劇！"
+msgstr "的惡作劇！"
+
+msgid "撞見"
+msgstr "撞見"
+
+msgid "看到了..."
+msgstr "看到了..."
+
+msgid "糟糕，被"
+msgstr "糟糕，被"
+
+msgid "新居民到來："
+msgstr "新居民到來："
+
+msgid "一起看星星，感情升溫了。"
+msgstr "一起看星星，感情升溫了。"
+
+msgid "一起看星星，很浪漫。"
+msgstr "一起看星星，很浪漫。"
+
+msgid "流星"
+msgstr "流星"
+
+msgid "看到了一顆流星劃過天際！"
+msgstr "看到了一顆流星劃過天際！"
+
+msgid "發現了一個從未見過的星座圖案。"
+msgstr "發現了一個從未見過的星座圖案。"
+
+msgid "神秘星座"
+msgstr "神秘星座"
+
+msgid "月暈奇觀"
+msgstr "月暈奇觀"
+
+msgid "看到了罕見的月暈現象！"
+msgstr "看到了罕見的月暈現象！"
+
+msgid "在星光下發現了一株發光的植物！"
+msgstr "在星光下發現了一株發光的植物！"
+
+msgid "夜光植物"
+msgstr "夜光植物"
+
+msgid "偷偷在鎮公所牆上塗鴉"
+msgstr "偷偷在鎮公所牆上塗鴉"
+
+msgid "把別人晾的衣服藏起來"
+msgstr "把別人晾的衣服藏起來"
+
+msgid "偷吃了酒館儲藏室的食物"
+msgstr "偷吃了酒館儲藏室的食物"
+
+msgid "在水井裡放了無害的染料"
+msgstr "在水井裡放了無害的染料"
+
+msgid "偷偷移動了路標的方向"
+msgstr "偷偷移動了路標的方向"
+
+msgid "在廣場放了一堆假蜘蛛"
+msgstr "在廣場放了一堆假蜘蛛"
+
+msgid "趁著夜色"
+msgstr "趁著夜色"
+
+msgid "我趁夜裡"
+msgstr "我趁夜裡"
+
+msgid "嘿嘿...成功了。"
+msgstr "嘿嘿...成功了。"
+
+msgid "有人在夜裡"
+msgstr "有人在夜裡"
+
+msgid "今天感覺很好！"
+msgstr "今天感覺很好！"
+
+msgid "事情可以更好的..."
+msgstr "事情可以更好的..."
+
+msgid "我感覺不太好。"
+msgstr "我感覺不太好。"
+
+msgid "肚子好餓..."
+msgstr "肚子好餓..."
+
+msgid "好想睡覺..."
+msgstr "好想睡覺..."
+
+msgid "應該找人聊聊天..."
+msgstr "應該找人聊聊天..."
+
+msgid "今晚的星空真美..."
+msgstr "今晚的星空真美..."
+
+msgid "仰望星空讓人感覺渺小..."
+msgstr "仰望星空讓人感覺渺小..."
+
+msgid "流星！快許願！"
+msgstr "流星！快許願！"
+
+msgid "那顆星星特別亮。"
+msgstr "那顆星星特別亮。"
+
+msgid "冬天的星空格外清晰。"
+msgstr "冬天的星空格外清晰。"
+
+msgid "夜裡的鎮上好安靜..."
+msgstr "夜裡的鎮上好安靜..."
+
+msgid "夜風吹來很涼爽。"
+msgstr "夜風吹來很涼爽。"
+
+msgid "月光下散步真舒服。"
+msgstr "月光下散步真舒服。"
+
+msgid "夜裡比較容易想事情..."
+msgstr "夜裡比較容易想事情..."
+
+msgid "睡不著...出來走走吧。"
+msgstr "睡不著...出來走走吧。"
+
+msgid "嘿嘿，趁大家都睡了..."
+msgstr "嘿嘿，趁大家都睡了..."
+
+msgid "夜裡做點小惡作劇。"
+msgstr "夜裡做點小惡作劇。"
+
+msgid "沒人看到的話..."
+msgstr "沒人看到的話..."
+
+msgid "夜晚才是我的主場。"
+msgstr "夜晚才是我的主場。"
+
+msgid "安靜的夜晚最適合思考。"
+msgstr "安靜的夜晚最適合思考。"
+
+msgid "明天會很累吧。"
+msgstr "明天會很累吧。"
+
+msgid "這麼晚了還沒睡..."
+msgstr "這麼晚了還沒睡..."
+
+msgid "敘敘舊了。"
+msgstr "敘敘舊了。"
+
+msgid "該去找"
+msgstr "該去找"
+
+msgid "一直在想"
+msgstr "一直在想"
+
+msgid "技能進步中..."
+msgstr "技能進步中..."
+
+msgid "食物快不夠了..."
+msgstr "食物快不夠了..."
+
+msgid "鎮上的國庫很充裕！"
+msgstr "鎮上的國庫很充裕！"
+
+msgid "廚師需要多準備一些餐食。"
+msgstr "廚師需要多準備一些餐食。"
+
+msgid "去看看"
+msgstr "去看看"
+
+msgid "在賣什麼吧。"
+msgstr "在賣什麼吧。"
+
+msgid "「"
+msgstr "「"
+
+msgid "」的消息令人擔憂..."
+msgstr "」的消息令人擔憂..."
+
+msgid "好消息："
+msgstr "好消息："
+
+msgid "交往"
+msgstr "交往"
+
+msgid "在交往呢，你知道嗎？"
+msgstr "在交往呢，你知道嗎？"
+
+msgid "的婚姻生活不知道怎麼樣？"
+msgstr "的婚姻生活不知道怎麼樣？"
+
+msgid "我好像看到"
+msgstr "我好像看到"
+
+msgid "背著"
+msgstr "背著"
+
+msgid "跟別人在一起⋯⋯"
+msgstr "跟別人在一起⋯⋯"
+
+msgid ")"
+msgstr ")"
+
+msgid "。明天再往前一步吧。"
+msgstr "。明天再往前一步吧。"
+
+msgid "」還有多遠呢...但我不會停下來的。"
+msgstr "」還有多遠呢...但我不會停下來的。"
+
+msgid "夜裡想起我的夢想:"
+msgstr "夜裡想起我的夢想:"
+
+msgid "離「"
+msgstr "離「"
+
+msgid "最近跟"
+msgstr "最近跟"
+
+msgid "到"
+msgstr "到"
+
+msgid "最近抵達邊境鎮的神秘旅人。"
+msgstr "最近抵達邊境鎮的神秘旅人。"
+
+msgid "你移動到了"
+msgstr "你移動到了"
+
+msgid "..."
+msgstr "..."
+
+msgid "你不覺得"
+msgstr "你不覺得"
+
+msgid "挺有魅力的嗎？"
+msgstr "挺有魅力的嗎？"
+
+msgid "最近行為很奇怪。"
+msgstr "最近行為很奇怪。"
+
+msgid "說真的，"
+msgstr "說真的，"
+
+msgid "你有注意到"
+msgstr "你有注意到"
+
+msgid "最近看起來很低落嗎？"
+msgstr "最近看起來很低落嗎？"
+
+msgid "最近心情超好的！"
+msgstr "最近心情超好的！"
+
+msgid "鎮民"
+msgstr "鎮民"
+
+msgid "好像對"
+msgstr "好像對"
+
+msgid "有意思！"
+msgstr "有意思！"
+
+msgid "你聽說了嗎？"
+msgstr "你聽說了嗎？"
+
+msgid "好像在劈腿⋯⋯"
+msgstr "好像在劈腿⋯⋯"
+
+msgid "你聽說"
+msgstr "你聽說"
+
+msgid "昨天在做什麼嗎？"
+msgstr "昨天在做什麼嗎？"
+
+msgid "告訴我：「"
+msgstr "告訴我：「"
+
+msgid "」,我改變了今天接下來的安排。"
+msgstr "」,我改變了今天接下來的安排。"
+
+msgid "在身邊的日子,連工作都不覺得累。"
+msgstr "在身邊的日子,連工作都不覺得累。"
+
+msgid "有"
+msgstr "有"
+
+msgid "這個人,值得深交。"
+msgstr "這個人,值得深交。"
+
+msgid "再讓"
+msgstr "再讓"
+
+msgid "這樣下去,我遲早要跟他攤牌。"
+msgstr "這樣下去,我遲早要跟他攤牌。"
+
+msgid "...我到底在期待什麼呢。"
+msgstr "...我到底在期待什麼呢。"
+
+msgid "今天又想起"
+msgstr "今天又想起"
+
+msgid "多說上幾句話就好了。"
+msgstr "多說上幾句話就好了。"
+
+msgid "要是能跟"
+msgstr "要是能跟"
+
+msgid "好久沒跟人好好說話了,心裡悶悶的。"
+msgstr "好久沒跟人好好說話了,心裡悶悶的。"
+
+msgid "聽著雨聲,思緒飄得很遠。"
+msgstr "聽著雨聲,思緒飄得很遠。"
+
+msgid "的熱鬧還在耳邊,好日子總是過得快。"
+msgstr "的熱鬧還在耳邊,好日子總是過得快。"
+
+msgid "今天聽到的八卦,不知道是真是假...明天再打聽打聽。"
+msgstr "今天聽到的八卦,不知道是真是假...明天再打聽打聽。"
+
+msgid "忙了一整天,手都酸了。"
+msgstr "忙了一整天,手都酸了。"
+
+msgid "昨天天色不錯,鎮上人來人往。"
+msgstr "昨天天色不錯,鎮上人來人往。"
+
+msgid "昨天雨下個不停,路上都是泥。"
+msgstr "昨天雨下個不停,路上都是泥。"
+
+msgid "昨天雪景很美,屋簷都白了。"
+msgstr "昨天雪景很美,屋簷都白了。"
+
+msgid "路過廣場時聞到烤麵包的香味,肚子咕嚕叫了。"
+msgstr "路過廣場時聞到烤麵包的香味,肚子咕嚕叫了。"
+
+msgid "聽見酒館傳來笑聲,小鎮的日子就是這樣熱熱鬧鬧的。"
+msgstr "聽見酒館傳來笑聲,小鎮的日子就是這樣熱熱鬧鬧的。"
+
+msgid "繼續加油!"
+msgstr "繼續加油!"
+
+msgid "聊了天。"
+msgstr "聊了天。"
+
+msgid "回應了"
+msgstr "回應了"
+
+msgid "」— "
+msgstr "」— "
+
+msgid "說：「"
+msgstr "說：「"
+
+msgid "交談："
+msgstr "交談："
+
+msgid "冰鎮酸梅湯"
+msgstr "冰鎮酸梅湯"
+
+msgid "南瓜濃湯"
+msgstr "南瓜濃湯"
+
+msgid "春筍燉肉"
+msgstr "春筍燉肉"
+
+msgid "栗子燒雞"
+msgstr "栗子燒雞"
+
+msgid "桂花糕"
+msgstr "桂花糕"
+
+msgid "桂花釀"
+msgstr "桂花釀"
+
+msgid "涼拌黃瓜"
+msgstr "涼拌黃瓜"
+
+msgid "烤地瓜"
+msgstr "烤地瓜"
+
+msgid "烤紅薯"
+msgstr "烤紅薯"
+
+msgid "熱奶酒"
+msgstr "熱奶酒"
+
+msgid "熱騰騰的羊肉鍋"
+msgstr "熱騰騰的羊肉鍋"
+
+msgid "綠豆湯"
+msgstr "綠豆湯"
+
+msgid "花瓣蜜茶"
+msgstr "花瓣蜜茶"
+
+msgid "荷葉飯"
+msgstr "荷葉飯"
+
+msgid "薑母茶"
+msgstr "薑母茶"
+
+msgid "薺菜餛飩"
+msgstr "薺菜餛飩"
+
+msgid "蘋果派"
+msgstr "蘋果派"
+
+msgid "野菜煎餅"
+msgstr "野菜煎餅"
+
+msgid "麻辣火鍋"
+msgstr "麻辣火鍋"
+
+msgid "冬夜裡遠處傳來的狼嚎"
+msgstr "冬夜裡遠處傳來的狼嚎"
+
+msgid "午後蟬鳴的樹蔭下"
+msgstr "午後蟬鳴的樹蔭下"
+
+msgid "壁爐旁搖曳的火光"
+msgstr "壁爐旁搖曳的火光"
+
+msgid "星空下的河流"
+msgstr "星空下的河流"
+
+msgid "楓紅染遍山頭的景色"
+msgstr "楓紅染遍山頭的景色"
+
+msgid "櫻花飄落的小徑"
+msgstr "櫻花飄落的小徑"
+
+msgid "河邊盛開的野花"
+msgstr "河邊盛開的野花"
+
+msgid "清晨帶著露水的草地"
+msgstr "清晨帶著露水的草地"
+
+msgid "白雪覆蓋的屋頂"
+msgstr "白雪覆蓋的屋頂"
+
+msgid "螢火蟲飛舞的夜晚"
+msgstr "螢火蟲飛舞的夜晚"
+
+msgid "豐收後堆滿穀物的倉庫"
+msgstr "豐收後堆滿穀物的倉庫"
+
+msgid "金黃落葉鋪滿的石板路"
+msgstr "金黃落葉鋪滿的石板路"
+
+msgid "一束剛採的野花"
+msgstr "一束剛採的野花"
+
+msgid "一條手織的圍巾"
+msgstr "一條手織的圍巾"
+
+msgid "一瓶私藏的好酒"
+msgstr "一瓶私藏的好酒"
+
+msgid "昨天釣到的魚做成的魚乾"
+msgstr "昨天釣到的魚做成的魚乾"
+
+msgid "用漂亮石頭做的小飾品"
+msgstr "用漂亮石頭做的小飾品"
+
+msgid "自己做的手工餅乾"
+msgstr "自己做的手工餅乾"
+
+msgid "一群外來的旅人"
+msgstr "一群外來的旅人"
+
+msgid "山洞"
+msgstr "山洞"
+
+msgid "據說最近森林裡出現了"
+msgstr "據說最近森林裡出現了"
+
+msgid "昨晚有人看到奇怪的光"
+msgstr "昨晚有人看到奇怪的光"
+
+msgid "有人說"
+msgstr "有人說"
+
+msgid "河邊"
+msgstr "河邊"
+
+msgid "神秘的藥草"
+msgstr "神秘的藥草"
+
+msgid "神秘的遺跡"
+msgstr "神秘的遺跡"
+
+msgid "稀有香料"
+msgstr "稀有香料"
+
+msgid "罕見的白鹿"
+msgstr "罕見的白鹿"
+
+msgid "聽說隔壁的商隊帶來了"
+msgstr "聽說隔壁的商隊帶來了"
+
+msgid "舊礦坑"
+msgstr "舊礦坑"
+
+msgid "藏著寶藏"
+msgstr "藏著寶藏"
+
+msgid "遠方的書信"
+msgstr "遠方的書信"
+
+msgid "你今天做的"
+msgstr "你今天做的"
+
+msgid "真的太好吃了，我到現在嘴裡還有那個味道！"
+msgstr "真的太好吃了，我到現在嘴裡還有那個味道！"
+
+msgid "真...真的嗎？其實我怕做得不夠好，特地多加了點"
+msgstr "真...真的嗎？其實我怕做得不夠好，特地多加了點"
+
+msgid "秘方"
+msgstr "秘方"
+
+msgid "蜂蜜"
+msgstr "蜂蜜"
+
+msgid "那當然！這可是我花了一整個下午的心血，為了某個人。"
+msgstr "那當然！這可是我花了一整個下午的心血，為了某個人。"
+
+msgid "香料"
+msgstr "香料"
+
+msgid "下次讓我也給你做一頓，雖然我的手藝可能會讓你後悔..."
+msgstr "下次讓我也給你做一頓，雖然我的手藝可能會讓你後悔..."
+
+msgid "你做什麼我都喜歡，因為是你做的。"
+msgstr "你做什麼我都喜歡，因為是你做的。"
+
+msgid "哈哈，那我先準備好腸胃藥！"
+msgstr "哈哈，那我先準備好腸胃藥！"
+
+msgid "你！過分！...不過我真的很幸福。"
+msgstr "你！過分！...不過我真的很幸福。"
+
+msgid "裡，"
+msgstr "裡，"
+
+msgid "親手做的"
+msgstr "親手做的"
+
+msgid "讚美了"
+msgstr "讚美了"
+
+msgid "，兩人甜蜜地打鬧著，笑聲讓路過的人都忍不住微笑。"
+msgstr "，兩人甜蜜地打鬧著，笑聲讓路過的人都忍不住微笑。"
+
+msgid "渴望社交"
+msgstr "渴望社交"
+
+msgid "需要娛樂"
+msgstr "需要娛樂"
+
+msgid "普通居民"
+msgstr "普通居民"
+
+msgid "狀態良好"
+msgstr "狀態良好"
+
+msgid "我剛剛看到你跟那個人聊了好久，你們在說什麼悄悄話？"
+msgstr "我剛剛看到你跟那個人聊了好久，你們在說什麼悄悄話？"
+
+msgid "啊，你又胡思亂想了。"
+msgstr "啊，你又胡思亂想了。"
+
+msgid "就是在討論"
+msgstr "就是在討論"
+
+msgid "工作的事"
+msgstr "工作的事"
+
+msgid "建材價格"
+msgstr "建材價格"
+
+msgid "鎮上活動"
+msgstr "鎮上活動"
+
+msgid "...你笑得那麼開心，我在旁邊看著心裡很不是滋味。"
+msgstr "...你笑得那麼開心，我在旁邊看著心裡很不是滋味。"
+
+msgid "你能不能信任我一點？每次都這樣我也很累的。"
+msgstr "你能不能信任我一點？每次都這樣我也很累的。"
+
+msgid "傻瓜，我心裡只有你一個人啊。來，把手給我。"
+msgstr "傻瓜，我心裡只有你一個人啊。來，把手給我。"
+
+msgid "...對不起。我就是太害怕失去你了。"
+msgstr "...對不起。我就是太害怕失去你了。"
+
+msgid "和別人說笑而醋意大發，兩人經歷了一場小風波，最終在"
+msgstr "和別人說笑而醋意大發，兩人經歷了一場小風波，最終在"
+
+msgid "和好。"
+msgstr "和好。"
+
+msgid "因為看到"
+msgstr "因為看到"
+
+msgid "。要不要一起去走走？"
+msgstr "。要不要一起去走走？"
+
+msgid "的夜晚真美...你看那邊，"
+msgstr "的夜晚真美...你看那邊，"
+
+msgid "好...牽著我的手好嗎？"
+msgstr "好...牽著我的手好嗎？"
+
+msgid "走啊！我還想帶你去看一個秘密地點，保證你沒去過！"
+msgstr "走啊！我還想帶你去看一個秘密地點，保證你沒去過！"
+
+msgid "和你在一起的時候，覺得這個小鎮是全世界最美的地方。"
+msgstr "和你在一起的時候，覺得這個小鎮是全世界最美的地方。"
+
+msgid "笨蛋...突然說這種話，我都不知道該怎麼回了。"
+msgstr "笨蛋...突然說這種話，我都不知道該怎麼回了。"
+
+msgid "手牽手散步，分享著"
+msgstr "手牽手散步，分享著"
+
+msgid "的浪漫景色，氣氛溫馨而甜蜜。"
+msgstr "的浪漫景色，氣氛溫馨而甜蜜。"
+
+msgid "，閉上眼睛，我有東西要給你！"
+msgstr "，閉上眼睛，我有東西要給你！"
+
+msgid "又在搞什麼鬼？...好啦好啦，閉上了。"
+msgstr "又在搞什麼鬼？...好啦好啦，閉上了。"
+
+msgid "好了，睜開！噹噹——"
+msgstr "好了，睜開！噹噹——"
+
+msgid "！看到的時候就想到你了。"
+msgstr "！看到的時候就想到你了。"
+
+msgid "......謝謝。我會好好珍藏的。"
+msgstr "......謝謝。我會好好珍藏的。"
+
+msgid "天啊！這也太可愛了吧！你怎麼知道我一直想要這個？！"
+msgstr "天啊！這也太可愛了吧！你怎麼知道我一直想要這個？！"
+
+msgid "作為驚喜，"
+msgstr "作為驚喜，"
+
+msgid "感動得差點飛撲上去"
+msgstr "感動得差點飛撲上去"
+
+msgid "送了"
+msgstr "送了"
+
+msgid "雖然表面平靜但眼眶微紅"
+msgstr "雖然表面平靜但眼眶微紅"
+
+msgid "，兩人的感情更加深厚了。"
+msgstr "，兩人的感情更加深厚了。"
+
+msgid "對了"
+msgstr "對了"
+
+msgid "，上次你幫了我大忙，一直想謝謝你。"
+msgstr "，上次你幫了我大忙，一直想謝謝你。"
+
+msgid "，這個給你——"
+msgstr "，這個給你——"
+
+msgid "你也太有心了吧！我只是做了該做的事而已！不過...我超喜歡的，謝謝！"
+msgstr "你也太有心了吧！我只是做了該做的事而已！不過...我超喜歡的，謝謝！"
+
+msgid "欸...這也太...我只是舉手之勞啊，你不用這麼客氣的..."
+msgstr "欸...這也太...我只是舉手之勞啊，你不用這麼客氣的..."
+
+msgid "喜歡就好！以後有什麼需要幫忙的儘管開口。"
+msgstr "喜歡就好！以後有什麼需要幫忙的儘管開口。"
+
+msgid "一定！你也是！...今天真的心情變好了。"
+msgstr "一定！你也是！...今天真的心情變好了。"
+
+msgid "作為感謝，"
+msgstr "作為感謝，"
+
+msgid "感動之餘兩人的友誼又更進了一步，"
+msgstr "感動之餘兩人的友誼又更進了一步，"
+
+msgid "的空氣裡充滿了溫暖。"
+msgstr "的空氣裡充滿了溫暖。"
+
+msgid "也在"
+msgstr "也在"
+
+msgid "哦？"
+msgstr "哦？"
+
+msgid "啊，我還以為你早就被鎮上的人趕走了呢。"
+msgstr "啊，我還以為你早就被鎮上的人趕走了呢。"
+
+msgid "......你講話可以再難聽一點，我都習慣了。"
+msgstr "......你講話可以再難聽一點，我都習慣了。"
+
+msgid "你少在那邊冷嘲熱諷，有本事當面說清楚！"
+msgstr "你少在那邊冷嘲熱諷，有本事當面說清楚！"
+
+msgid "你在背後說的那些話"
+msgstr "你在背後說的那些話"
+
+msgid "倉庫的事"
+msgstr "倉庫的事"
+
+msgid "別裝可憐了，你做過什麼你自己心裡清楚。上次"
+msgstr "別裝可憐了，你做過什麼你自己心裡清楚。上次"
+
+msgid "選舉那件事"
+msgstr "選舉那件事"
+
+msgid "，全鎮都知道。"
+msgstr "，全鎮都知道。"
+
+msgid "你！——好，你記住今天說的話。遲早你會後悔的。"
+msgstr "你！——好，你記住今天說的話。遲早你會後悔的。"
+
+msgid "信不信由你。我問心無愧。"
+msgstr "信不信由你。我問心無愧。"
+
+msgid "正面交鋒，針鋒相對的言語讓空氣彷彿凝結，周圍的居民紛紛側目。"
+msgstr "正面交鋒，針鋒相對的言語讓空氣彷彿凝結，周圍的居民紛紛側目。"
+
+msgid "不是"
+msgstr "不是"
+
+msgid "壞話"
+msgstr "壞話"
+
+msgid "是非"
+msgstr "是非"
+
+msgid "聽說你最近又在到處說我"
+msgstr "聽說你最近又在到處說我"
+
+msgid "？有種當面說啊。"
+msgstr "？有種當面說啊。"
+
+msgid "做成什麼樣子，大家有目共睹。"
+msgstr "做成什麼樣子，大家有目共睹。"
+
+msgid "我說的都是事實。你那個"
+msgstr "我說的都是事實。你那個"
+
+msgid "你——！我在這個鎮上付出了多少你知道嗎！？"
+msgstr "你——！我在這個鎮上付出了多少你知道嗎！？"
+
+msgid "笑話。等你做到我一半再來批評吧。"
+msgstr "笑話。等你做到我一半再來批評吧。"
+
+msgid "哼，走著瞧。"
+msgstr "哼，走著瞧。"
+
+msgid "好了，我不想在這種地方吵。但你最好反省一下自己。"
+msgstr "好了，我不想在這種地方吵。但你最好反省一下自己。"
+
+msgid "你才該好好反省！"
+msgstr "你才該好好反省！"
+
+msgid "散播流言蜚語的事，兩人在"
+msgstr "散播流言蜚語的事，兩人在"
+
+msgid "爆發了激烈口角，怒氣沖天，場面一度失控。"
+msgstr "爆發了激烈口角，怒氣沖天，場面一度失控。"
+
+msgid "當面質問"
+msgstr "當面質問"
+
+msgid "，我們需要談談。不是為了吵架，是為了把話說開。"
+msgstr "，我們需要談談。不是為了吵架，是為了把話說開。"
+
+msgid "......好吧。我也不想一直這樣下去。"
+msgstr "......好吧。我也不想一直這樣下去。"
+
+msgid "你覺得有什麼好談的？"
+msgstr "你覺得有什麼好談的？"
+
+msgid "我知道我們之間有很多誤會，但至少在鎮上要做到基本的尊重，你說呢？"
+msgstr "我知道我們之間有很多誤會，但至少在鎮上要做到基本的尊重，你說呢？"
+
+msgid "......我會考慮的。"
+msgstr "......我會考慮的。"
+
+msgid "尊重是互相的。你先做到再來要求我。"
+msgstr "尊重是互相的。你先做到再來要求我。"
+
+msgid "和解，但雙方仍帶著心結，氣氛雖有緩和卻依然充滿張力。"
+msgstr "和解，但雙方仍帶著心結，氣氛雖有緩和卻依然充滿張力。"
+
+msgid "試圖與"
+msgstr "試圖與"
+
+msgid "！你、你頭上有片落葉——我幫你拿掉！"
+msgstr "！你、你頭上有片落葉——我幫你拿掉！"
+
+msgid "哦，謝謝你啊。"
+msgstr "哦，謝謝你啊。"
+
+msgid "啊，謝...謝謝...（心跳好快）你的手好溫暖。"
+msgstr "啊，謝...謝謝...（心跳好快）你的手好溫暖。"
+
+msgid "不客氣！"
+msgstr "不客氣！"
+
+msgid "嘛，到處都是落葉。"
+msgstr "嘛，到處都是落葉。"
+
+msgid "抱歉！我是不是太靠近了...不，我只是...你今天"
+msgstr "抱歉！我是不是太靠近了...不，我只是...你今天"
+
+msgid "看起來好好看"
+msgstr "看起來好好看"
+
+msgid "笑容好好看"
+msgstr "笑容好好看"
+
+msgid "聞起來好香"
+msgstr "聞起來好香"
+
+msgid "你...你也是...（聲音越來越小）"
+msgstr "你...你也是...（聲音越來越小）"
+
+msgid "哈哈，被你這麼一說我都不好意思了！那改天一起去喝杯"
+msgstr "哈哈，被你這麼一說我都不好意思了！那改天一起去喝杯"
+
+msgid "好嗎？"
+msgstr "好嗎？"
+
+msgid "兩人"
+msgstr "兩人"
+
+msgid "幫"
+msgstr "幫"
+
+msgid "拿掉頭上的落葉時兩人靠得很近，"
+msgstr "拿掉頭上的落葉時兩人靠得很近，"
+
+msgid "的空氣中瀰漫著微妙的心動氣息。"
+msgstr "的空氣中瀰漫著微妙的心動氣息。"
+
+msgid "的臉頰微微泛紅，"
+msgstr "的臉頰微微泛紅，"
+
+msgid "，你知道嗎？我昨晚看到了"
+msgstr "，你知道嗎？我昨晚看到了"
+
+msgid "，第一個想到的人就是你。"
+msgstr "，第一個想到的人就是你。"
+
+msgid "哦？聽起來很美呢。"
+msgstr "哦？聽起來很美呢。"
+
+msgid "真的嗎...其實我也常常想著——啊不，我是說，那一定很美！"
+msgstr "真的嗎...其實我也常常想著——啊不，我是說，那一定很美！"
+
+msgid "下次一定要帶你去看。跟你在一起的時候，什麼風景都會更美。"
+msgstr "下次一定要帶你去看。跟你在一起的時候，什麼風景都會更美。"
+
+msgid "...好。一定要說到做到哦。"
+msgstr "...好。一定要說到做到哦。"
+
+msgid "你真會說話！好啊，到時候再說。"
+msgstr "你真會說話！好啊，到時候再說。"
+
+msgid "嗯...好啊。"
+msgstr "嗯...好啊。"
+
+msgid "也悄悄地紅了耳朵"
+msgstr "也悄悄地紅了耳朵"
+
+msgid "分享了"
+msgstr "分享了"
+
+msgid "的美景，話語間暗藏著告白的勇氣，"
+msgstr "的美景，話語間暗藏著告白的勇氣，"
+
+msgid "禮貌地微笑回應"
+msgstr "禮貌地微笑回應"
+
+msgid "！你一定不相信我剛聽到什麼——"
+msgstr "！你一定不相信我剛聽到什麼——"
+
+msgid "什麼！？快跟我說清楚！細節呢！？"
+msgstr "什麼！？快跟我說清楚！細節呢！？"
+
+msgid "真的假的？你確定不是誰在胡說八道？"
+msgstr "真的假的？你確定不是誰在胡說八道？"
+
+msgid "千真萬確！好幾個人都這麼說。要不要找個時間一起去"
+msgstr "千真萬確！好幾個人都這麼說。要不要找個時間一起去"
+
+msgid "看看"
+msgstr "看看"
+
+msgid "？"
+msgstr "？"
+
+msgid "嗯...小心為上，但如果是真的就太刺激了！"
+msgstr "嗯...小心為上，但如果是真的就太刺激了！"
+
+msgid "我們來場冒險！"
+msgstr "我們來場冒險！"
+
+msgid "走啊！怕什麼！帶上"
+msgstr "走啊！怕什麼！帶上"
+
+msgid "分享了一個驚天八卦，兩人越聊越起勁，甚至約好了一起去探個究竟，氣氛既神秘又興奮。"
+msgstr "分享了一個驚天八卦，兩人越聊越起勁，甚至約好了一起去探個究竟，氣氛既神秘又興奮。"
+
+msgid "和摯友"
+msgstr "和摯友"
+
+msgid "興沖沖地在"
+msgstr "興沖沖地在"
+
+msgid "一直在做同一個奇怪的夢"
+msgstr "一直在做同一個奇怪的夢"
+
+msgid "唉..."
+msgstr "唉..."
+
+msgid "的工作壓力大到快喘不過氣"
+msgstr "的工作壓力大到快喘不過氣"
+
+msgid "跟隔壁的鄰居鬧了點不愉快"
+msgstr "跟隔壁的鄰居鬧了點不愉快"
+
+msgid "，你能不能幫我出出主意？最近"
+msgstr "，你能不能幫我出出主意？最近"
+
+msgid "又怎麼了？你最近也太多煩惱了吧——不過說吧，反正你也憋不住。"
+msgstr "又怎麼了？你最近也太多煩惱了吧——不過說吧，反正你也憋不住。"
+
+msgid "怎麼了？慢慢說，我聽著呢。先喝口"
+msgstr "怎麼了？慢慢說，我聽著呢。先喝口"
+
+msgid "暖暖。"
+msgstr "暖暖。"
+
+msgid "你真的是全鎮最了解我的人...每次跟你聊完心裡就踏實多了。"
+msgstr "你真的是全鎮最了解我的人...每次跟你聊完心裡就踏實多了。"
+
+msgid "別肉麻了！不過...有你當朋友我也很慶幸啦。來，我請你吃"
+msgstr "別肉麻了！不過...有你當朋友我也很慶幸啦。來，我請你吃"
+
+msgid "剛摘的水果"
+msgstr "剛摘的水果"
+
+msgid "剛烤好的麵包"
+msgstr "剛烤好的麵包"
+
+msgid "酒館的招牌菜"
+msgstr "酒館的招牌菜"
+
+msgid "傾訴了最近的煩惱，"
+msgstr "傾訴了最近的煩惱，"
+
+msgid "向摯友"
+msgstr "向摯友"
+
+msgid "耐心傾聽並貼心地準備了"
+msgstr "耐心傾聽並貼心地準備了"
+
+msgid "，兩人之間的友誼更加堅定了。"
+msgstr "，兩人之間的友誼更加堅定了。"
+
+msgid "，還記得我們剛來邊境鎮那天嗎？什麼都沒有，就兩個人站在空蕩蕩的廣場上。"
+msgstr "，還記得我們剛來邊境鎮那天嗎？什麼都沒有，就兩個人站在空蕩蕩的廣場上。"
+
+msgid "記得啊！那時候你還摔了一跤，臉都栽進泥巴裡哈哈哈哈！"
+msgstr "記得啊！那時候你還摔了一跤，臉都栽進泥巴裡哈哈哈哈！"
+
+msgid "你就記這個！？那你還不是迷路了三次才找到酒館！"
+msgstr "你就記這個！？那你還不是迷路了三次才找到酒館！"
+
+msgid "好了好了，我們扯平。不過認真的...能跟你一起在這裡打拼，我覺得這輩子值了。"
+msgstr "好了好了，我們扯平。不過認真的...能跟你一起在這裡打拼，我覺得這輩子值了。"
+
+msgid "...你今天不準再說催淚的話了，我眼眶已經紅了。"
+msgstr "...你今天不準再說催淚的話了，我眼眶已經紅了。"
+
+msgid "回憶起初來邊境鎮的趣事，笑淚交織之間，深厚的友情讓旁人都為之動容。"
+msgstr "回憶起初來邊境鎮的趣事，笑淚交織之間，深厚的友情讓旁人都為之動容。"
+
+msgid "嘿"
+msgstr "嘿"
+
+msgid "，你有聽說嗎？"
+msgstr "，你有聽說嗎？"
+
+msgid "嗯？聽起來不太靠譜...不過如果是真的就有意思了。"
+msgstr "嗯？聽起來不太靠譜...不過如果是真的就有意思了。"
+
+msgid "真的！？我的天，這也太刺激了！你從哪裡聯來的？"
+msgstr "真的！？我的天，這也太刺激了！你從哪裡聯來的？"
+
+msgid "一群穿斗篷的人"
+msgstr "一群穿斗篷的人"
+
+msgid "可疑的影子"
+msgstr "可疑的影子"
+
+msgid "奇怪的燈火"
+msgstr "奇怪的燈火"
+
+msgid "好幾個人都這麼說呢！而且昨天夜裡好像真的有人看到"
+msgstr "好幾個人都這麼說呢！而且昨天夜裡好像真的有人看到"
+
+msgid "哼，我倒要看看到底是怎麼回事。明天一起去打聽！"
+msgstr "哼，我倒要看看到底是怎麼回事。明天一起去打聽！"
+
+msgid "嗯...希望不是什麼壞事。不過有你一起我就安心多了。"
+msgstr "嗯...希望不是什麼壞事。不過有你一起我就安心多了。"
+
+msgid "低聲討論著鎮上的神秘傳聞，越聊越覺得事情不簡單，兩人的表情既好奇又緊張。"
+msgstr "低聲討論著鎮上的神秘傳聞，越聊越覺得事情不簡單，兩人的表情既好奇又緊張。"
+
+msgid "你怎麼一個人坐在"
+msgstr "你怎麼一個人坐在"
+
+msgid "發呆？你的眼眶是不是紅紅的..."
+msgstr "發呆？你的眼眶是不是紅紅的..."
+
+msgid "...我沒事。只是在想一些事情。"
+msgstr "...我沒事。只是在想一些事情。"
+
+msgid "...最近什麼事都不順利，我有時候在想，我來邊境鎮到底對不對。"
+msgstr "...最近什麼事都不順利，我有時候在想，我來邊境鎮到底對不對。"
+
+msgid "你少來了，沒有你誰來做"
+msgstr "你少來了，沒有你誰來做"
+
+msgid "你聽我說——你是這個鎮上不可或缺的人。我們都需要你。來，先喝口"
+msgstr "你聽我說——你是這個鎮上不可或缺的人。我們都需要你。來，先喝口"
+
+msgid "暖暖身子。"
+msgstr "暖暖身子。"
+
+msgid "？鎮上離了你可不行。"
+msgstr "？鎮上離了你可不行。"
+
+msgid "......謝謝你，"
+msgstr "......謝謝你，"
+
+msgid "。有你在真好。"
+msgstr "。有你在真好。"
+
+msgid "發現了獨自落寞的"
+msgstr "發現了獨自落寞的"
+
+msgid "眼眶泛紅地笑了。"
+msgstr "眼眶泛紅地笑了。"
+
+msgid "，溫柔地遞上一杯"
+msgstr "，溫柔地遞上一杯"
+
+msgid "，用真摯的話語驅散了陰霾，"
+msgstr "，用真摯的話語驅散了陰霾，"
+
+msgid "工作順利到不可思議"
+msgstr "工作順利到不可思議"
+
+msgid "有人跟我說了一句讓我開心到飛起來的話"
+msgstr "有人跟我說了一句讓我開心到飛起來的話"
+
+msgid "發現了一個超棒的地方"
+msgstr "發現了一個超棒的地方"
+
+msgid "！你猜怎麼著！今天是我這輩子最好的一天——"
+msgstr "！你猜怎麼著！今天是我這輩子最好的一天——"
+
+msgid "你也太浮誇了...不過看你這麼開心我也忍不住笑了。"
+msgstr "你也太浮誇了...不過看你這麼開心我也忍不住笑了。"
+
+msgid "太好了！快跟我說！今天我請你喝"
+msgstr "太好了！快跟我說！今天我請你喝"
+
+msgid "慶祝！"
+msgstr "慶祝！"
+
+msgid "我現在覺得什麼困難都打不倒我！連"
+msgstr "我現在覺得什麼困難都打不倒我！連"
+
+msgid "的天氣都特別配合！"
+msgstr "的天氣都特別配合！"
+
+msgid "哈哈哈，你也太誇張了！不過...你開心我也開心，畢竟你笑起來真的很有感染力。"
+msgstr "哈哈哈，你也太誇張了！不過...你開心我也開心，畢竟你笑起來真的很有感染力。"
+
+msgid "分享喜悅，開懷大笑的聲音感染了整個"
+msgstr "分享喜悅，開懷大笑的聲音感染了整個"
+
+msgid "心情大好的"
+msgstr "心情大好的"
+
+msgid "拉著"
+msgstr "拉著"
+
+msgid "，連路過的人都忍不住嘴角上揚。"
+msgstr "，連路過的人都忍不住嘴角上揚。"
+
+msgid "，你有沒有想過...如果當初沒來邊境鎮，現在會在哪裡？"
+msgstr "，你有沒有想過...如果當初沒來邊境鎮，現在會在哪裡？"
+
+msgid "來吃。"
+msgstr "來吃。"
+
+msgid "想那麼多幹嘛？現在過得不錯就好了。走，去弄點"
+msgstr "想那麼多幹嘛？現在過得不錯就好了。走，去弄點"
+
+msgid "我有時候會想呢。也許在某個大城市裡迷失方向吧...但這裡有"
+msgstr "我有時候會想呢。也許在某個大城市裡迷失方向吧...但這裡有"
+
+msgid "，有你們這些朋友，我不後悔。"
+msgstr "，有你們這些朋友，我不後悔。"
+
+msgid "說得也是。有時候覺得命運把我們送到這裡，一定有它的道理。"
+msgstr "說得也是。有時候覺得命運把我們送到這裡，一定有它的道理。"
+
+msgid "可不等人，走走走！"
+msgstr "可不等人，走走走！"
+
+msgid "少在那邊感慨了！"
+msgstr "少在那邊感慨了！"
+
+msgid "感慨起命運的安排，聊起了"
+msgstr "感慨起命運的安排，聊起了"
+
+msgid "的美好，最後被"
+msgstr "的美好，最後被"
+
+msgid "的香氣拉回了現實，氣氛輕鬆溫馨。"
+msgstr "的香氣拉回了現實，氣氛輕鬆溫馨。"
+
+msgid "但後來氣氛突然變得微妙，兩人不歡而散。"
+msgstr "但後來氣氛突然變得微妙，兩人不歡而散。"
+
+msgid "你好...我好像沒見過你？"
+msgstr "你好...我好像沒見過你？"
+
+msgid "嘿！你是新面孔吧？我是"
+msgstr "嘿！你是新面孔吧？我是"
+
+msgid "的。歡迎來到邊境鎮！"
+msgstr "的。歡迎來到邊境鎮！"
+
+msgid "，在這邊做"
+msgstr "，在這邊做"
+
+msgid "你好。這裡的"
+msgstr "你好。這裡的"
+
+msgid "哈囉！我叫"
+msgstr "哈囉！我叫"
+
+msgid "嗯...我是"
+msgstr "嗯...我是"
+
+msgid "看起來好好吃..."
+msgstr "看起來好好吃..."
+
+msgid "！剛到這邊不久，請多指教！這裡比我想像中熱鬧多了。"
+msgstr "！剛到這邊不久，請多指教！這裡比我想像中熱鬧多了。"
+
+msgid "是鎮上最"
+msgstr "是鎮上最"
+
+msgid "有意思"
+msgstr "有意思"
+
+msgid "熱鬧"
+msgstr "熱鬧"
+
+msgid "的地方！對了，如果你想吃好料的，推薦你去試試酒館的"
+msgstr "的地方！對了，如果你想吃好料的，推薦你去試試酒館的"
+
+msgid "舒服"
+msgstr "舒服"
+
+msgid "，絕對不會後悔。"
+msgstr "，絕對不會後悔。"
+
+msgid "真的嗎！那我一定要去試試。謝謝你，"
+msgstr "真的嗎！那我一定要去試試。謝謝你，"
+
+msgid "熱情地招呼了新來的"
+msgstr "熱情地招呼了新來的"
+
+msgid "留下了溫暖的第一印象。"
+msgstr "留下了溫暖的第一印象。"
+
+msgid "，推薦了鎮上的美食"
+msgstr "，推薦了鎮上的美食"
+
+msgid "，給"
+msgstr "，給"
+
+msgid "對吧？我聽說你是做"
+msgstr "對吧？我聽說你是做"
+
+msgid "的——正好，我一直想認識做這行的人！"
+msgstr "的——正好，我一直想認識做這行的人！"
+
+msgid "。你是"
+msgstr "。你是"
+
+msgid "你認識我？啊，果然小鎮消息傳得快...對，我是"
+msgstr "你認識我？啊，果然小鎮消息傳得快...對，我是"
+
+msgid "吧？"
+msgstr "吧？"
+
+msgid "哈哈，邊境鎮就是這樣，新人來的消息半天就全鎮都知道了。改天聊聊"
+msgstr "哈哈，邊境鎮就是這樣，新人來的消息半天就全鎮都知道了。改天聊聊"
+
+msgid "工作心得"
+msgstr "工作心得"
+
+msgid "生活經驗"
+msgstr "生活經驗"
+
+msgid "鎮上的事"
+msgstr "鎮上的事"
+
+msgid "好啊！期待跟你多認識。"
+msgstr "好啊！期待跟你多認識。"
+
+msgid "初次交談，兩人相談甚歡，約好了改天再深入聊聊，邊境鎮又多了一段新的緣分。"
+msgstr "初次交談，兩人相談甚歡，約好了改天再深入聊聊，邊境鎮又多了一段新的緣分。"
+
+msgid "啊,抱歉!我不是故意擋路的..."
+msgstr "啊,抱歉!我不是故意擋路的..."
+
+msgid "喔喔,不好意思,差點撞到你。"
+msgstr "喔喔,不好意思,差點撞到你。"
+
+msgid "?我常在"
+msgstr "?我常在"
+
+msgid "沒事沒事,是我在發呆。你是..."
+msgstr "沒事沒事,是我在發呆。你是..."
+
+msgid "看到你。"
+msgstr "看到你。"
+
+msgid "對啊,我幾乎天天來這。你也是這一帶的人?"
+msgstr "對啊,我幾乎天天來這。你也是這一帶的人?"
+
+msgid "嗯...算是吧。那個...改天見。"
+msgstr "嗯...算是吧。那個...改天見。"
+
+msgid "是啊,以後常會碰到,多多關照囉!"
+msgstr "是啊,以後常會碰到,多多關照囉!"
+
+msgid "不小心撞在一起,尷尬又好笑地認識了彼此。"
+msgstr "不小心撞在一起,尷尬又好笑地認識了彼此。"
+
+msgid "!"
+msgstr "!"
+
+msgid "欸,你有沒有聽說?"
+msgstr "欸,你有沒有聽說?"
+
+msgid "什麼!快跟我說詳細的!我最愛聽這種了!"
+msgstr "什麼!快跟我說詳細的!我最愛聽這種了!"
+
+msgid "咦?我還真沒聽過,你消息真靈通。"
+msgstr "咦?我還真沒聽過,你消息真靈通。"
+
+msgid "哈哈,我就是喜歡到處打聽。對了,我還沒問你叫什麼名字呢?"
+msgstr "哈哈,我就是喜歡到處打聽。對了,我還沒問你叫什麼名字呢?"
+
+msgid "。看來以後鎮上有什麼風吹草動,找你就對了!"
+msgstr "。看來以後鎮上有什麼風吹草動,找你就對了!"
+
+msgid "我是"
+msgstr "我是"
+
+msgid "用一則八卦成功勾起"
+msgstr "用一則八卦成功勾起"
+
+msgid "的興趣,兩人在"
+msgstr "的興趣,兩人在"
+
+msgid "越聊越起勁。"
+msgstr "越聊越起勁。"
+
+msgid "旅行歸來了！"
+msgstr "旅行歸來了！"
+
+msgid "嗎?看起來好特別。"
+msgstr "嗎?看起來好特別。"
+
+msgid "欸,你手上那個是"
+msgstr "欸,你手上那個是"
+
+msgid "喔這個啊,隨手弄的。你喜歡的話...改天送你一個?"
+msgstr "喔這個啊,隨手弄的。你喜歡的話...改天送你一個?"
+
+msgid "對啊!我自己弄的,還在研究怎麼做得更好。你有興趣?"
+msgstr "對啊!我自己弄的,還在研究怎麼做得更好。你有興趣?"
+
+msgid "真的可以嗎!那我就不客氣了。我還不知道你名字呢。"
+msgstr "真的可以嗎!那我就不客氣了。我還不知道你名字呢。"
+
+msgid "。以後想要就來找我,別客氣。"
+msgstr "。以後想要就來找我,別客氣。"
+
+msgid "我叫"
+msgstr "我叫"
+
+msgid "吸引,兩人就這麼聊開了,約好改天再見。"
+msgstr "吸引,兩人就這麼聊開了,約好改天再見。"
+
+msgid "手上的"
+msgstr "手上的"
+
+msgid "被"
+msgstr "被"
+
+msgid "庫存不足"
+msgstr "庫存不足"
+
+msgid "新來的?這鎮上沒什麼好的,別抱太大期望。"
+msgstr "新來的?這鎮上沒什麼好的,別抱太大期望。"
+
+msgid "哈哈,你這人真直接!不過我倒覺得這裡挺有意思的。"
+msgstr "哈哈,你這人真直接!不過我倒覺得這裡挺有意思的。"
+
+msgid "喔...好吧,謝謝提醒。"
+msgstr "喔...好吧,謝謝提醒。"
+
+msgid "...算了,你要真遇到麻煩,來找我。我叫"
+msgstr "...算了,你要真遇到麻煩,來找我。我叫"
+
+msgid "嘴硬心軟嘛,我懂。多謝啦!"
+msgstr "嘴硬心軟嘛,我懂。多謝啦!"
+
+msgid "伸出了援手,反差讓人莞爾。"
+msgstr "伸出了援手,反差讓人莞爾。"
+
+msgid "嘴上潑冷水,卻還是對新認識的"
+msgstr "嘴上潑冷水,卻還是對新認識的"
+
+msgid "奇怪,我總覺得跟你特別聊得來,明明才剛認識。"
+msgstr "奇怪,我總覺得跟你特別聊得來,明明才剛認識。"
+
+msgid "我也有這種感覺!是不是上輩子就認識了哈哈。"
+msgstr "我也有這種感覺!是不是上輩子就認識了哈哈。"
+
+msgid "啊!"
+msgstr "啊!"
+
+msgid "喝一杯"
+msgstr "喝一杯"
+
+msgid "那以後要常一起"
+msgstr "那以後要常一起"
+
+msgid "一言為定!能認識你真好。"
+msgstr "一言為定!能認識你真好。"
+
+msgid "一見如故,相談甚歡,彷彿認識了很久的老友。"
+msgstr "一見如故,相談甚歡,彷彿認識了很久的老友。"
+
+msgid "退出了「"
+msgstr "退出了「"
+
+msgid "」，我受不了他們了。"
+msgstr "」，我受不了他們了。"
+
+msgid "我退出了「"
+msgstr "我退出了「"
+
+msgid "你知道嗎？我昨天在河邊發現了一種從沒見過的"
+msgstr "你知道嗎？我昨天在河邊發現了一種從沒見過的"
+
+msgid "奇怪的腳印"
+msgstr "奇怪的腳印"
+
+msgid "發光的石頭"
+msgstr "發光的石頭"
+
+msgid "藍色的蘑菇"
+msgstr "藍色的蘑菇"
+
+msgid "一隻從沒見過的鳥"
+msgstr "一隻從沒見過的鳥"
+
+msgid "天上有兩個月亮"
+msgstr "天上有兩個月亮"
+
+msgid "山丘上"
+msgstr "山丘上"
+
+msgid "我昨晚在"
+msgstr "我昨晚在"
+
+msgid "看到了"
+msgstr "看到了"
+
+msgid "神秘的光"
+msgstr "神秘的光"
+
+msgid "禮拜堂"
+msgstr "禮拜堂"
+
+msgid "井邊打水"
+msgstr "井邊打水"
+
+msgid "今天早上我去"
+msgstr "今天早上我去"
+
+msgid "奇怪的低語"
+msgstr "奇怪的低語"
+
+msgid "很美的歌聲"
+msgstr "很美的歌聲"
+
+msgid "林子裡散步"
+msgstr "林子裡散步"
+
+msgid "田裡幹活"
+msgstr "田裡幹活"
+
+msgid "的時候，聽到了"
+msgstr "的時候，聽到了"
+
+msgid "遠方傳來的鐘聲"
+msgstr "遠方傳來的鐘聲"
+
+msgid "什麼！？太神奇了！你帶我去看好不好！"
+msgstr "什麼！？太神奇了！你帶我去看好不好！"
+
+msgid "真的假的？該不會是你看花眼了吧？"
+msgstr "真的假的？該不會是你看花眼了吧？"
+
+msgid "我騙你幹嘛！千真萬確，下次遇到我馬上叫你！"
+msgstr "我騙你幹嘛！千真萬確，下次遇到我馬上叫你！"
+
+msgid "一言為定！記得帶上"
+msgstr "一言為定！記得帶上"
+
+msgid "好吧好吧...不過要是什麼危險的東西你可要負責。"
+msgstr "好吧好吧...不過要是什麼危險的東西你可要負責。"
+
+msgid "，探險可不能餓肚子！"
+msgstr "，探險可不能餓肚子！"
+
+msgid "分享了一個神奇的發現，兩人在"
+msgstr "分享了一個神奇的發現，兩人在"
+
+msgid "聊得眉飛色舞，約好下次一起去探索。"
+msgstr "聊得眉飛色舞，約好下次一起去探索。"
+
+msgid "興奮地和"
+msgstr "興奮地和"
+
+msgid "了！我剛從酒館帶了一份，要不要嚐嚐？"
+msgstr "了！我剛從酒館帶了一份，要不要嚐嚐？"
+
+msgid "最棒的就是"
+msgstr "最棒的就是"
+
+msgid "哇！好香！你也太貼心了吧——等等，你該不會有什麼事要拜託我？"
+msgstr "哇！好香！你也太貼心了吧——等等，你該不會有什麼事要拜託我？"
+
+msgid "還行吧，不過我比較想吃"
+msgstr "還行吧，不過我比較想吃"
+
+msgid "有沒有認識會修屋頂的人"
+msgstr "有沒有認識會修屋頂的人"
+
+msgid "知不知道哪裡可以買到好木材"
+msgstr "知不知道哪裡可以買到好木材"
+
+msgid "被你看穿了！其實是想問你"
+msgstr "被你看穿了！其實是想問你"
+
+msgid "鎮上最近有什麼新鮮事"
+msgstr "鎮上最近有什麼新鮮事"
+
+msgid "哈哈！先吃東西再說正事！來來來，坐下聊。"
+msgstr "哈哈！先吃東西再說正事！來來來，坐下聊。"
+
+msgid "嗯...讓我想想，我好像聽說過一些消息。"
+msgstr "嗯...讓我想想，我好像聽說過一些消息。"
+
+msgid "帶了"
+msgstr "帶了"
+
+msgid "的暖意讓兩人的對話格外愜意。"
+msgstr "的暖意讓兩人的對話格外愜意。"
+
+msgid "邊吃邊聊，"
+msgstr "邊吃邊聊，"
+
+msgid "一塊巨石突然滾下來"
+msgstr "一塊巨石突然滾下來"
+
+msgid "你不知道！今天"
+msgstr "你不知道！今天"
+
+msgid "分享了工作中驚險的一幕"
+msgstr "分享了工作中驚險的一幕"
+
+msgid "工具斷了差點傷到人"
+msgstr "工具斷了差點傷到人"
+
+msgid "發現了一條密道"
+msgstr "發現了一條密道"
+
+msgid "的時候差點出大事——"
+msgstr "的時候差點出大事——"
+
+msgid "倉庫裡藏了一批沒人知道的好東西"
+msgstr "倉庫裡藏了一批沒人知道的好東西"
+
+msgid "告訴你一個祕密，"
+msgstr "告訴你一個祕密，"
+
+msgid "悄悄透露了鎮上的一個祕密"
+msgstr "悄悄透露了鎮上的一個祕密"
+
+msgid "鎮公所的地下室好像有奇怪的聲音"
+msgstr "鎮公所的地下室好像有奇怪的聲音"
+
+msgid "雜貨店老闆其實以前是個冒險家"
+msgstr "雜貨店老闆其實以前是個冒險家"
+
+msgid "一隻雞追著守衛跑了三圈"
+msgstr "一隻雞追著守衛跑了三圈"
+
+msgid "分享了一件讓人笑到肚子痛的趣事"
+msgstr "分享了一件讓人笑到肚子痛的趣事"
+
+msgid "吃飯的時候"
+msgstr "吃飯的時候"
+
+msgid "工作的時候"
+msgstr "工作的時候"
+
+msgid "我今天在"
+msgstr "我今天在"
+
+msgid "有人把一桶水潑在鎮長身上"
+msgstr "有人把一桶水潑在鎮長身上"
+
+msgid "有個旅人居然帶了一頭熊進酒館"
+msgstr "有個旅人居然帶了一頭熊進酒館"
+
+msgid "碰到一件超搞笑的事——"
+msgstr "碰到一件超搞笑的事——"
+
+msgid "路上"
+msgstr "路上"
+
+msgid "不會吧！？然後呢然後呢！？快說！"
+msgstr "不會吧！？然後呢然後呢！？快說！"
+
+msgid "哈哈哈你認真的嗎！？這也太誇張了！"
+msgstr "哈哈哈你認真的嗎！？這也太誇張了！"
+
+msgid "我發誓是真的！當場所有人都傻眼了！"
+msgstr "我發誓是真的！當場所有人都傻眼了！"
+
+msgid "這件事我要跟全鎮的人說！太精彩了！"
+msgstr "這件事我要跟全鎮的人說！太精彩了！"
+
+msgid "向"
+msgstr "向"
+
+msgid "裡充滿了歡樂的氣氛。"
+msgstr "裡充滿了歡樂的氣氛。"
+
+msgid "，兩人笑得前仰後合，"
+msgstr "，兩人笑得前仰後合，"
+
+msgid "嘿，"
+msgstr "嘿，"
+
+msgid "親愛的"
+msgstr "親愛的"
+
+msgid "哈囉"
+msgstr "哈囉"
+
+msgid "嘿！"
+msgstr "嘿！"
+
+msgid "！好久不見！"
+msgstr "！好久不見！"
+
+msgid "，真高興見到你！"
+msgstr "，真高興見到你！"
+
+msgid "...嗨。"
+msgstr "...嗨。"
+
+msgid "你好。"
+msgstr "你好。"
+
+msgid "啊..."
+msgstr "啊..."
+
+msgid "嗯...你好。"
+msgstr "嗯...你好。"
+
+msgid "啊。"
+msgstr "啊。"
+
+msgid "喔，"
+msgstr "喔，"
+
+msgid "怎麼又是你。"
+msgstr "怎麼又是你。"
+
+msgid "嗨"
+msgstr "嗨"
+
+msgid "！今天也是美好的一天！"
+msgstr "！今天也是美好的一天！"
+
+msgid "，你看起來很有精神！"
+msgstr "，你看起來很有精神！"
+
+msgid "唉。"
+msgstr "唉。"
+
+msgid "嗯..."
+msgstr "嗯..."
+
+msgid "你好啊，"
+msgstr "你好啊，"
+
+msgid "哈囉，"
+msgstr "哈囉，"
+
+msgid "，好久不見。"
+msgstr "，好久不見。"
+
+msgid "事"
+msgstr "事"
+
+msgid "哈哈，你知道嗎，你做的"
+msgstr "哈哈，你知道嗎，你做的"
+
+msgid "讓我想到一個笑話——"
+msgstr "讓我想到一個笑話——"
+
+msgid "說真的，你那個表情也太好笑了吧？"
+msgstr "說真的，你那個表情也太好笑了吧？"
+
+msgid "了？我開玩笑的啦。"
+msgstr "了？我開玩笑的啦。"
+
+msgid "你是不是又"
+msgstr "你是不是又"
+
+msgid "偷懶"
+msgstr "偷懶"
+
+msgid "搞砸"
+msgstr "搞砸"
+
+msgid "遲到"
+msgstr "遲到"
+
+msgid "......這一點都不好笑。"
+msgstr "......這一點都不好笑。"
+
+msgid "你這什麼意思！？"
+msgstr "你這什麼意思！？"
+
+msgid "呵，你覺得很幽默嗎？"
+msgstr "呵，你覺得很幽默嗎？"
+
+msgid "抱歉抱歉，我不是那個意思..."
+msgstr "抱歉抱歉，我不是那個意思..."
+
+msgid "開不起玩笑啊？"
+msgstr "開不起玩笑啊？"
+
+msgid "才是最重要的，你不覺得嗎？"
+msgstr "才是最重要的，你不覺得嗎？"
+
+msgid "我倒覺得"
+msgstr "我倒覺得"
+
+msgid "比較重要。你那種想法太天真了。"
+msgstr "比較重要。你那種想法太天真了。"
+
+msgid "哼，你不懂。"
+msgstr "哼，你不懂。"
+
+msgid "看法不同而已。"
+msgstr "看法不同而已。"
+
+msgid "，你最近做的那件事，我覺得不太好。"
+msgstr "，你最近做的那件事，我覺得不太好。"
+
+msgid "你管太多了吧？"
+msgstr "你管太多了吧？"
+
+msgid "你最近是不是胖了？"
+msgstr "你最近是不是胖了？"
+
+msgid "有些人啊，就是不知道自己幾斤幾兩。"
+msgstr "有些人啊，就是不知道自己幾斤幾兩。"
+
+msgid "哦對了，上次的事你還記得吧？算了，不提了。"
+msgstr "哦對了，上次的事你還記得吧？算了，不提了。"
+
+msgid "我不是在說你啦，不過有人最近做事真的很馬虎。"
+msgstr "我不是在說你啦，不過有人最近做事真的很馬虎。"
+
+msgid "...你今天怎麼了？"
+msgstr "...你今天怎麼了？"
+
+msgid "你在暗示什麼？有話直說！"
+msgstr "你在暗示什麼？有話直說！"
+
+msgid "你是不是在說我！？"
+msgstr "你是不是在說我！？"
+
+msgid "閒話"
+msgstr "閒話"
+
+msgid "，我聽說你跟別人說我"
+msgstr "，我聽說你跟別人說我"
+
+msgid "什麼？我沒有啊！"
+msgstr "什麼？我沒有啊！"
+
+msgid "啊...那個...不是你想的那樣。"
+msgstr "啊...那個...不是你想的那樣。"
+
+msgid "我說的都是事實。"
+msgstr "我說的都是事實。"
+
+msgid "我希望以後別這樣了。"
+msgstr "我希望以後別這樣了。"
+
+msgid "我會記住的。"
+msgstr "我會記住的。"
+
+msgid "一直不停地說話"
+msgstr "一直不停地說話"
+
+msgid "你能不能安靜一會兒..."
+msgstr "你能不能安靜一會兒..."
+
+msgid "吃東西的聲音超大"
+msgstr "吃東西的聲音超大"
+
+msgid "拜託，能不能注意一下？"
+msgstr "拜託，能不能注意一下？"
+
+msgid "不請自來地給建議"
+msgstr "不請自來地給建議"
+
+msgid "我沒有問你的意見。"
+msgstr "我沒有問你的意見。"
+
+msgid "你能讓我把話說完嗎！？"
+msgstr "你能讓我把話說完嗎！？"
+
+msgid "打斷"
+msgstr "打斷"
+
+msgid "說話"
+msgstr "說話"
+
+msgid "嗯，我覺得你應該——"
+msgstr "嗯，我覺得你應該——"
+
+msgid "對了對了，我跟你說——"
+msgstr "對了對了，我跟你說——"
+
+msgid "...對不起。"
+msgstr "...對不起。"
+
+msgid "切，好心沒好報。"
+msgstr "切，好心沒好報。"
+
+msgid "你說什麼！？你自己才是吧！"
+msgstr "你說什麼！？你自己才是吧！"
+
+msgid "你這嘴巴欠教訓。"
+msgstr "你這嘴巴欠教訓。"
+
+msgid "哼，你也好不到哪去。"
+msgstr "哼，你也好不到哪去。"
+
+msgid "...你、你怎麼能這樣說..."
+msgstr "...你、你怎麼能這樣說..."
+
+msgid "我做錯什麼了嗎..."
+msgstr "我做錯什麼了嗎..."
+
+msgid "你是不是心情不好？不然怎麼會這樣。"
+msgstr "你是不是心情不好？不然怎麼會這樣。"
+
+msgid "我...不知道你為什麼要這樣。"
+msgstr "我...不知道你為什麼要這樣。"
+
+msgid "這樣說話很傷人的..."
+msgstr "這樣說話很傷人的..."
+
+msgid "......我沒必要跟你計較。"
+msgstr "......我沒必要跟你計較。"
+
+msgid "你認真的嗎？"
+msgstr "你認真的嗎？"
+
+msgid "你這話說得太過分了。"
+msgstr "你這話說得太過分了。"
+
+msgid "言語冒犯了"
+msgstr "言語冒犯了"
+
+msgid "你啊...每次都這樣，不過我就是吃這套。"
+msgstr "你啊...每次都這樣，不過我就是吃這套。"
+
+msgid "你真的很會撩人，我都不好意思了。"
+msgstr "你真的很會撩人，我都不好意思了。"
+
+msgid "哈哈，老夫老妻了還這麼會講。"
+msgstr "哈哈，老夫老妻了還這麼會講。"
+
+msgid "...謝謝...（小聲）"
+msgstr "...謝謝...（小聲）"
+
+msgid "你、你在說什麼啦...（臉紅）"
+msgstr "你、你在說什麼啦...（臉紅）"
+
+msgid "別、別突然這樣講..."
+msgstr "別、別突然這樣講..."
+
+msgid "你這話讓人心跳加速呢。"
+msgstr "你這話讓人心跳加速呢。"
+
+msgid "哈哈，你還挺會說話的嘛。"
+msgstr "哈哈，你還挺會說話的嘛。"
+
+msgid "嗯？你是在跟我告白嗎？"
+msgstr "嗯？你是在跟我告白嗎？"
+
+msgid "...你在開什麼玩笑。"
+msgstr "...你在開什麼玩笑。"
+
+msgid "你是不是搞錯了什麼？"
+msgstr "你是不是搞錯了什麼？"
+
+msgid "拜託，省省吧。"
+msgstr "拜託，省省吧。"
+
+msgid "...什麼？（不知所措）"
+msgstr "...什麼？（不知所措）"
+
+msgid "你還挺有趣的。"
+msgstr "你還挺有趣的。"
+
+msgid "哈？你認真的嗎？"
+msgstr "哈？你認真的嗎？"
+
+msgid "嗯...謝謝？"
+msgstr "嗯...謝謝？"
+
+msgid "說了甜言蜜語。"
+msgstr "說了甜言蜜語。"
+
+msgid "你來了！好想你。"
+msgstr "你來了！好想你。"
+
+msgid "嗨親愛的，我一直在等你呢。"
+msgstr "嗨親愛的，我一直在等你呢。"
+
+msgid "嘿~今天怎麼這麼晚來找我？"
+msgstr "嘿~今天怎麼這麼晚來找我？"
+
+msgid "！太好了你來了！"
+msgstr "！太好了你來了！"
+
+msgid "你好。（微笑）"
+msgstr "你好。（微笑）"
+
+msgid "嘿！好久不見，最近好嗎？"
+msgstr "嘿！好久不見，最近好嗎？"
+
+msgid "你好啊！有什麼事嗎？"
+msgstr "你好啊！有什麼事嗎？"
+
+msgid "哈囉，正好遇到你了。"
+msgstr "哈囉，正好遇到你了。"
+
+msgid "嗨！今天"
+msgstr "嗨！今天"
+
+msgid "挺熱鬧的。"
+msgstr "挺熱鬧的。"
+
+msgid "哈囉。"
+msgstr "哈囉。"
+
+msgid "哦，是你啊。"
+msgstr "哦，是你啊。"
+
+msgid "嗯，你好。"
+msgstr "嗯，你好。"
+
+msgid "嗯？怎麼了。"
+msgstr "嗯？怎麼了。"
+
+msgid "你又來了。"
+msgstr "你又來了。"
+
+msgid "有事嗎？"
+msgstr "有事嗎？"
+
+msgid "打了招呼。"
+msgstr "打了招呼。"
+
+msgid "歲，在鎮上當"
+msgstr "歲，在鎮上當"
+
+msgid "啊，怎麼？你忘了我嗎？"
+msgstr "啊，怎麼？你忘了我嗎？"
+
+msgid "我...我叫"
+msgstr "我...我叫"
+
+msgid "，認識一下！"
+msgstr "，認識一下！"
+
+msgid "自我介紹了。"
+msgstr "自我介紹了。"
+
+msgid "我是農夫啊，每天日出就到田裡去了。"
+msgstr "我是農夫啊，每天日出就到田裡去了。"
+
+msgid "播種"
+msgstr "播種"
+
+msgid "整地"
+msgstr "整地"
+
+msgid "準備"
+msgstr "準備"
+
+msgid "的季節。"
+msgstr "的季節。"
+
+msgid "種田很辛苦，但看到作物長大就很有成就感。"
+msgstr "種田很辛苦，但看到作物長大就很有成就感。"
+
+msgid "挖礦啊，每天鑽到山裡去。最近挖到了一些不錯的"
+msgstr "挖礦啊，每天鑽到山裡去。最近挖到了一些不錯的"
+
+msgid "石頭"
+msgstr "石頭"
+
+msgid "礦坑裡又暗又悶，但能找到好東西的時候特別開心。"
+msgstr "礦坑裡又暗又悶，但能找到好東西的時候特別開心。"
+
+msgid "稀有礦石"
+msgstr "稀有礦石"
+
+msgid "鐵礦"
+msgstr "鐵礦"
+
+msgid "我在酒館煮飯！最近在研究新"
+msgstr "我在酒館煮飯！最近在研究新"
+
+msgid "料理"
+msgstr "料理"
+
+msgid "煮飯給大家吃是我的樂趣，你要不要嚐嚐？"
+msgstr "煮飯給大家吃是我的樂趣，你要不要嚐嚐？"
+
+msgid "菜色"
+msgstr "菜色"
+
+msgid "食譜"
+msgstr "食譜"
+
+msgid "...比跟人打交道容易多了。"
+msgstr "...比跟人打交道容易多了。"
+
+msgid "我是鐵匠，每天跟鐵和火打交道。"
+msgstr "我是鐵匠，每天跟鐵和火打交道。"
+
+msgid "敲打金屬的感覺很療癒，每一件作品都是獨一無二的。"
+msgstr "敲打金屬的感覺很療癒，每一件作品都是獨一無二的。"
+
+msgid "最近在打造一把新的工具。"
+msgstr "最近在打造一把新的工具。"
+
+msgid "...雖然有時候很懶得看診。"
+msgstr "...雖然有時候很懶得看診。"
+
+msgid "我是醫生，"
+msgstr "我是醫生，"
+
+msgid "有什麼不舒服嗎？"
+msgstr "有什麼不舒服嗎？"
+
+msgid "行醫是一份責任很重的工作，但能治好人的時候很開心。"
+msgstr "行醫是一份責任很重的工作，但能治好人的時候很開心。"
+
+msgid "負責照顧鎮上所有人的健康。"
+msgstr "負責照顧鎮上所有人的健康。"
+
+msgid "天文現象"
+msgstr "天文現象"
+
+msgid "學問的世界無窮無盡，每天都有新發現。"
+msgstr "學問的世界無窮無盡，每天都有新發現。"
+
+msgid "我在圖書館做研究，最近在研究"
+msgstr "我在圖書館做研究，最近在研究"
+
+msgid "歷史文獻"
+msgstr "歷史文獻"
+
+msgid "草藥學"
+msgstr "草藥學"
+
+msgid "我做買賣的，跟外面的商隊有聯繫。"
+msgstr "我做買賣的，跟外面的商隊有聯繫。"
+
+msgid "最近市場不太穩定。"
+msgstr "最近市場不太穩定。"
+
+msgid "當商人最重要的是眼光和人脈。"
+msgstr "當商人最重要的是眼光和人脈。"
+
+msgid "要買什麼跟我說，我給你打折！"
+msgstr "要買什麼跟我說，我給你打折！"
+
+msgid "守衛的工作就是讓大家能安心過日子。"
+msgstr "守衛的工作就是讓大家能安心過日子。"
+
+msgid "我是守衛，負責鎮上的安全。"
+msgstr "我是守衛，負責鎮上的安全。"
+
+msgid "這年頭什麼事都可能發生。"
+msgstr "這年頭什麼事都可能發生。"
+
+msgid "還好最近挺太平的。"
+msgstr "還好最近挺太平的。"
+
+msgid "...雖然有時候偷懶。"
+msgstr "...雖然有時候偷懶。"
+
+msgid "我是木匠，蓋房子修東西。"
+msgstr "我是木匠，蓋房子修東西。"
+
+msgid "最近在趕工，忙得很。"
+msgstr "最近在趕工，忙得很。"
+
+msgid "木工的手藝越老越精，每塊木頭都有它的個性。"
+msgstr "木工的手藝越老越精，每塊木頭都有它的個性。"
+
+msgid "...你要訂做什麼嗎？"
+msgstr "...你要訂做什麼嗎？"
+
+msgid "一針一線都是心血，我對品質很要求的。"
+msgstr "一針一線都是心血，我對品質很要求的。"
+
+msgid "我是裁縫，做衣服的。"
+msgstr "我是裁縫，做衣服的。"
+
+msgid "最近在設計新款式呢！"
+msgstr "最近在設計新款式呢！"
+
+msgid "也會幫忙主持各種儀式。"
+msgstr "也會幫忙主持各種儀式。"
+
+msgid "如果有煩惱，可以來找我聊聊。"
+msgstr "如果有煩惱，可以來找我聊聊。"
+
+msgid "我在禮拜堂服務，照顧大家的心靈。"
+msgstr "我在禮拜堂服務，照顧大家的心靈。"
+
+msgid "能為鎮民帶來平靜和希望，就是我最大的滿足。"
+msgstr "能為鎮民帶來平靜和希望，就是我最大的滿足。"
+
+msgid "我對這個鎮的未來很有信心！"
+msgstr "我對這個鎮的未來很有信心！"
+
+msgid "我是鎮長，管理鎮上大小事務。"
+msgstr "我是鎮長，管理鎮上大小事務。"
+
+msgid "治理一個鎮子不容易，但看到大家過得好就值了。"
+msgstr "治理一個鎮子不容易，但看到大家過得好就值了。"
+
+msgid "責任很重，但這是我的使命。"
+msgstr "責任很重，但這是我的使命。"
+
+msgid "我在鎮上當"
+msgstr "我在鎮上當"
+
+msgid "的工作有好有壞，但至少有事做。"
+msgstr "的工作有好有壞，但至少有事做。"
+
+msgid "，還過得去吧。"
+msgstr "，還過得去吧。"
+
+msgid "聊了自己的工作。"
+msgstr "聊了自己的工作。"
+
+msgid "今天特別開心！"
+msgstr "今天特別開心！"
+
+msgid "心情不錯！有什麼好事就是會開心嘛。"
+msgstr "心情不錯！有什麼好事就是會開心嘛。"
+
+msgid "我很好啊！"
+msgstr "我很好啊！"
+
+msgid "挺好的，謝謝你關心。"
+msgstr "挺好的，謝謝你關心。"
+
+msgid "最近一切都挺順利的。"
+msgstr "最近一切都挺順利的。"
+
+msgid "不過總覺得少了什麼。"
+msgstr "不過總覺得少了什麼。"
+
+msgid "就是平常的日子。"
+msgstr "就是平常的日子。"
+
+msgid "沒什麼特別的，過一天算一天。"
+msgstr "沒什麼特別的，過一天算一天。"
+
+msgid "還行吧，普普通通。"
+msgstr "還行吧，普普通通。"
+
+msgid "馬馬虎虎，"
+msgstr "馬馬虎虎，"
+
+msgid "不過沒關係，撐得住。"
+msgstr "不過沒關係，撐得住。"
+
+msgid "別問了。"
+msgstr "別問了。"
+
+msgid "唉...說實話不太好。"
+msgstr "唉...說實話不太好。"
+
+msgid "低落"
+msgstr "低落"
+
+msgid "你真的想聽嗎？"
+msgstr "你真的想聽嗎？"
+
+msgid "最近有點"
+msgstr "最近有點"
+
+msgid "煩"
+msgstr "煩"
+
+msgid "累"
+msgstr "累"
+
+msgid "一如既往地糟。"
+msgstr "一如既往地糟。"
+
+msgid "有點不順，但會過去的。"
+msgstr "有點不順，但會過去的。"
+
+msgid "分享了自己的心情。"
+msgstr "分享了自己的心情。"
+
+msgid "對象"
+msgstr "對象"
+
+msgid "老公/老婆"
+msgstr "老公/老婆"
+
+msgid "你是在試探我嗎？我只有你啊。"
+msgstr "你是在試探我嗎？我只有你啊。"
+
+msgid "哈哈，感情的事...有你就夠了。"
+msgstr "哈哈，感情的事...有你就夠了。"
+
+msgid "在一起啊，你忘了嗎？"
+msgstr "在一起啊，你忘了嗎？"
+
+msgid "我跟"
+msgstr "我跟"
+
+msgid "感、感情的事...我不太想說...（臉紅）"
+msgstr "感、感情的事...我不太想說...（臉紅）"
+
+msgid "你為什麼突然問這個？難道你...？"
+msgstr "你為什麼突然問這個？難道你...？"
+
+msgid "哈，秘密。"
+msgstr "哈，秘密。"
+
+msgid "嗯...其實有一個在意的人啦...不告訴你是誰。"
+msgstr "嗯...其實有一個在意的人啦...不告訴你是誰。"
+
+msgid "我是很期待愛情的，只是...唉。"
+msgstr "我是很期待愛情的，只是...唉。"
+
+msgid "還沒遇到對的人呢...不過我相信緣分。"
+msgstr "還沒遇到對的人呢...不過我相信緣分。"
+
+msgid "哈哈，你怎麼突然問這個？"
+msgstr "哈哈，你怎麼突然問這個？"
+
+msgid "目前沒什麼想法，工作比較重要。"
+msgstr "目前沒什麼想法，工作比較重要。"
+
+msgid "這種事順其自然吧。"
+msgstr "這種事順其自然吧。"
+
+msgid "關你什麼事。"
+msgstr "關你什麼事。"
+
+msgid "問了"
+msgstr "問了"
+
+msgid "感情的事。"
+msgstr "感情的事。"
+
+msgid "我的故事啊..."
+msgstr "我的故事啊..."
+
+msgid "...有點不好意思說。"
+msgstr "...有點不好意思說。"
+
+msgid "以前的事嗎？"
+msgstr "以前的事嗎？"
+
+msgid "坐下來，我慢慢跟你講。"
+msgstr "坐下來，我慢慢跟你講。"
+
+msgid "你想知道我的過去？好吧..."
+msgstr "你想知道我的過去？好吧..."
+
+msgid "分享了自己的故事。"
+msgstr "分享了自己的故事。"
+
+msgid "你想知道最近的八卦？"
+msgstr "你想知道最近的八卦？"
+
+msgid "這可是獨家消息喔！"
+msgstr "這可是獨家消息喔！"
+
+msgid "最近鎮上在聊"
+msgstr "最近鎮上在聊"
+
+msgid "的事，你聽說了嗎？"
+msgstr "的事，你聽說了嗎？"
+
+msgid "也沒什麼特別的事。"
+msgstr "也沒什麼特別的事。"
+
+msgid "挺太平的，大家都過得不錯。"
+msgstr "挺太平的，大家都過得不錯。"
+
+msgid "鎮上最近"
+msgstr "鎮上最近"
+
+msgid "嘛，"
+msgstr "嘛，"
+
+msgid "大家都挺忙的"
+msgstr "大家都挺忙的"
+
+msgid "日子就這樣過"
+msgstr "日子就這樣過"
+
+msgid "農忙的季節"
+msgstr "農忙的季節"
+
+msgid "最近總覺得要出什麼事..."
+msgstr "最近總覺得要出什麼事..."
+
+msgid "邊境鎮就是這樣，每天都有小故事。"
+msgstr "邊境鎮就是這樣，每天都有小故事。"
+
+msgid "聊了鎮上的近況。"
+msgstr "聊了鎮上的近況。"
+
+msgid "你來對人了！我最近做了"
+msgstr "你來對人了！我最近做了"
+
+msgid "吃的是我的專業！等著，我去給你弄點好吃的。"
+msgstr "吃的是我的專業！等著，我去給你弄點好吃的。"
+
+msgid "烤魚"
+msgstr "烤魚"
+
+msgid "燉肉"
+msgstr "燉肉"
+
+msgid "肉包子"
+msgstr "肉包子"
+
+msgid "蔬菜湯"
+msgstr "蔬菜湯"
+
+msgid "，要不要嚐嚐？"
+msgstr "，要不要嚐嚐？"
+
+msgid "別說了，我自己都快餓死了...一起去酒館吧？"
+msgstr "別說了，我自己都快餓死了...一起去酒館吧？"
+
+msgid "王麗煮的菜最好吃了，你應該去嚐嚐。"
+msgstr "王麗煮的菜最好吃了，你應該去嚐嚐。"
+
+msgid "肚子餓了嗎？吃飽了心情才會好。"
+msgstr "肚子餓了嗎？吃飽了心情才會好。"
+
+msgid "酒館的飯菜不錯，推薦你去試試。"
+msgstr "酒館的飯菜不錯，推薦你去試試。"
+
+msgid "聊了吃的。"
+msgstr "聊了吃的。"
+
+msgid "你問這個啊？我倒是有聽到一些..."
+msgstr "你問這個啊？我倒是有聽到一些..."
+
+msgid "呃...我不太確定，但..."
+msgstr "呃...我不太確定，但..."
+
+msgid "嗯...我聽說"
+msgstr "嗯...我聽說"
+
+msgid "我跟你說喔，"
+msgstr "我跟你說喔，"
+
+msgid "嗯...我不太清楚..."
+msgstr "嗯...我不太清楚..."
+
+msgid "我平常不太注意別人的事。"
+msgstr "我平常不太注意別人的事。"
+
+msgid "這個嘛..."
+msgstr "這個嘛..."
+
+msgid "你要不要去問問別人？"
+msgstr "你要不要去問問別人？"
+
+msgid "我怎麼會知道這種事。"
+msgstr "我怎麼會知道這種事。"
+
+msgid "我沒聽說過耶。"
+msgstr "我沒聽說過耶。"
+
+msgid "欸我有聽到一點風聲，但不確定是不是真的..."
+msgstr "欸我有聽到一點風聲，但不確定是不是真的..."
+
+msgid "這個我真的不知道。"
+msgstr "這個我真的不知道。"
+
+msgid "哈哈，你還挺八卦的嘛！"
+msgstr "哈哈，你還挺八卦的嘛！"
+
+msgid "我對這些不太了解欸。"
+msgstr "我對這些不太了解欸。"
+
+msgid "關於其他人的事。"
+msgstr "關於其他人的事。"
+
+msgid "呃...我的想法嗎..."
+msgstr "呃...我的想法嗎..."
+
+msgid "嗯，讓我想想。"
+msgstr "嗯，讓我想想。"
+
+msgid "很難說，要看情況"
+msgstr "很難說，要看情況"
+
+msgid "每個人有每個人的想法吧"
+msgstr "每個人有每個人的想法吧"
+
+msgid "這種事沒有標準答案"
+msgstr "這種事沒有標準答案"
+
+msgid "你問我？"
+msgstr "你問我？"
+
+msgid "反正不管怎樣結果都差不多。"
+msgstr "反正不管怎樣結果都差不多。"
+
+msgid "好問題。"
+msgstr "好問題。"
+
+msgid "我覺得往好的方面想就對了！"
+msgstr "我覺得往好的方面想就對了！"
+
+msgid "這要看怎麼看吧。"
+msgstr "這要看怎麼看吧。"
+
+msgid "哦？你想聽我的看法？"
+msgstr "哦？你想聽我的看法？"
+
+msgid "我個人是覺得還好啦。"
+msgstr "我個人是覺得還好啦。"
+
+msgid "說真的，我也沒什麼特別的想法。"
+msgstr "說真的，我也沒什麼特別的想法。"
+
+msgid "這個嘛...要我說的話...算了，我也不太確定。"
+msgstr "這個嘛...要我說的話...算了，我也不太確定。"
+
+msgid "的看法。"
+msgstr "的看法。"
+
+msgid "詢問了"
+msgstr "詢問了"
+
+msgid "呃..."
+msgstr "呃..."
+
+msgid "嗯，"
+msgstr "嗯，"
+
+msgid "好像有聽說過，但記不太清了。"
+msgstr "好像有聽說過，但記不太清了。"
+
+msgid "我不太確定耶..."
+msgstr "我不太確定耶..."
+
+msgid "這個我沒聽過。"
+msgstr "這個我沒聽過。"
+
+msgid "欸你這麼一說我好像有印象...不過我也不確定是不是真的。"
+msgstr "欸你這麼一說我好像有印象...不過我也不確定是不是真的。"
+
+msgid "這個嘛...我真的不知道欸。"
+msgstr "這個嘛...我真的不知道欸。"
+
+msgid "你可以去問問鎮上其他人，搞不好他們知道。"
+msgstr "你可以去問問鎮上其他人，搞不好他們知道。"
+
+msgid "你覺得我什麼都知道嗎？"
+msgstr "你覺得我什麼都知道嗎？"
+
+msgid "哈，"
+msgstr "哈，"
+
+msgid "你去圖書館查查看？"
+msgstr "你去圖書館查查看？"
+
+msgid "我也想知道呢。"
+msgstr "我也想知道呢。"
+
+msgid "有趣的問題！"
+msgstr "有趣的問題！"
+
+msgid "讓我想想...不，我真的不知道。"
+msgstr "讓我想想...不，我真的不知道。"
+
+msgid "一些事。"
+msgstr "一些事。"
+
+msgid "你突然這樣問我..."
+msgstr "你突然這樣問我..."
+
+msgid "可能吧？"
+msgstr "可能吧？"
+
+msgid "嗯...這個嘛..."
+msgstr "嗯...這個嘛..."
+
+msgid "好問題..."
+msgstr "好問題..."
+
+msgid "我也不太確定。"
+msgstr "我也不太確定。"
+
+msgid "我想想喔..."
+msgstr "我想想喔..."
+
+msgid "我沒想過這個問題欸。"
+msgstr "我沒想過這個問題欸。"
+
+msgid "要看情況。"
+msgstr "要看情況。"
+
+msgid "你為什麼會想問這個？"
+msgstr "你為什麼會想問這個？"
+
+msgid "哈哈，你真的很好奇欸！"
+msgstr "哈哈，你真的很好奇欸！"
+
+msgid "我回去想想再告訴你。"
+msgstr "我回去想想再告訴你。"
+
+msgid "說實話我不太清楚。"
+msgstr "說實話我不太清楚。"
+
+msgid "這種事你自己不知道嗎？"
+msgstr "這種事你自己不知道嗎？"
+
+msgid "嗯，我覺得答案應該是正面的！"
+msgstr "嗯，我覺得答案應該是正面的！"
+
+msgid "我不確定，但大概不會太好吧..."
+msgstr "我不確定，但大概不會太好吧..."
+
+msgid "我沒有什麼特別的想法欸。"
+msgstr "我沒有什麼特別的想法欸。"
+
+msgid "一個問題。"
+msgstr "一個問題。"
+
+msgid "你說的我都聽進去了。"
+msgstr "你說的我都聽進去了。"
+
+msgid "嗯嗯，我在聽。你繼續說。"
+msgstr "嗯嗯，我在聽。你繼續說。"
+
+msgid "是嗎？跟我說更多。"
+msgstr "是嗎？跟我說更多。"
+
+msgid "哈哈，你說的我懂。"
+msgstr "哈哈，你說的我懂。"
+
+msgid "嗯嗯！然後呢？"
+msgstr "嗯嗯！然後呢？"
+
+msgid "我也有同感！"
+msgstr "我也有同感！"
+
+msgid "是嗎？有意思！跟我說更多。"
+msgstr "是嗎？有意思！跟我說更多。"
+
+msgid "原來如此，我沒想過這件事。"
+msgstr "原來如此，我沒想過這件事。"
+
+msgid "哈，你還挺有想法的嘛。"
+msgstr "哈，你還挺有想法的嘛。"
+
+msgid "嗯，你說的有道理。"
+msgstr "嗯，你說的有道理。"
+
+msgid "是喔？有趣。"
+msgstr "是喔？有趣。"
+
+msgid "你這人還挺愛聊的。"
+msgstr "你這人還挺愛聊的。"
+
+msgid "哦，我知道了。"
+msgstr "哦，我知道了。"
+
+msgid "嗯...是嗎。"
+msgstr "嗯...是嗎。"
+
+msgid "嗯嗯..."
+msgstr "嗯嗯..."
+
+msgid "好吧。"
+msgstr "好吧。"
+
+msgid "所以呢？"
+msgstr "所以呢？"
+
+msgid "你說完了嗎？"
+msgstr "你說完了嗎？"
+
+msgid "嗯哼。"
+msgstr "嗯哼。"
+
+msgid "我不太感興趣。"
+msgstr "我不太感興趣。"
+
+msgid "隨便你怎麼說吧。"
+msgstr "隨便你怎麼說吧。"
+
+msgid " ...（肚子咕嚕叫）啊，不好意思。"
+msgstr " ...（肚子咕嚕叫）啊，不好意思。"
+
+msgid " 哎，跟你聊著聊著都忘了吃飯了。"
+msgstr " 哎，跟你聊著聊著都忘了吃飯了。"
+
+msgid " 話說酒館現在有什麼吃的嗎？我都沒吃午飯。"
+msgstr " 話說酒館現在有什麼吃的嗎？我都沒吃午飯。"
+
+msgid " 不好意思，我眼皮有點撐不住了..."
+msgstr " 不好意思，我眼皮有點撐不住了..."
+
+msgid " 唉，今天腰都快斷了，幹了一整天活。"
+msgstr " 唉，今天腰都快斷了，幹了一整天活。"
+
+msgid " （打了個哈欠）抱歉...昨晚沒睡好。"
+msgstr " （打了個哈欠）抱歉...昨晚沒睡好。"
+
+msgid " 啊，都這個時間了？我得回去了。"
+msgstr " 啊，都這個時間了？我得回去了。"
+
+msgid " 好了，夜深了，明天再聊吧。"
+msgstr " 好了，夜深了，明天再聊吧。"
+
+msgid " 今晚的星空真美，你不覺得嗎？"
+msgstr " 今晚的星空真美，你不覺得嗎？"
+
+msgid " 欸你看！那邊那顆星特別亮！"
+msgstr " 欸你看！那邊那顆星特別亮！"
+
+msgid "冬天好冷"
+msgstr "冬天好冷"
+
+msgid "夏天好熱"
+msgstr "夏天好熱"
+
+msgid "春天暖洋洋的"
+msgstr "春天暖洋洋的"
+
+msgid "秋天涼爽"
+msgstr "秋天涼爽"
+
+msgid "今晚的"
+msgstr "今晚的"
+
+msgid "吹風"
+msgstr "吹風"
+
+msgid "夜晚最棒了，安安靜靜的。"
+msgstr "夜晚最棒了，安安靜靜的。"
+
+msgid "夜裡出來"
+msgstr "夜裡出來"
+
+msgid "夜風"
+msgstr "夜風"
+
+msgid "星空"
+msgstr "星空"
+
+msgid "月色"
+msgstr "月色"
+
+msgid "真不錯。"
+msgstr "真不錯。"
+
+msgid "這麼晚了，小心著涼。"
+msgstr "這麼晚了，小心著涼。"
+
+msgid "？我也覺得很舒服。"
+msgstr "？我也覺得很舒服。"
+
+msgid "不過我很享受！"
+msgstr "不過我很享受！"
+
+msgid "到了，"
+msgstr "到了，"
+
+msgid "又是新的季節"
+msgstr "又是新的季節"
+
+msgid "天氣還好"
+msgstr "天氣還好"
+
+msgid "希望別變天。"
+msgstr "希望別變天。"
+
+msgid "時間過得真快"
+msgstr "時間過得真快"
+
+msgid "風景挺美的"
+msgstr "風景挺美的"
+
+msgid "聊了天氣。"
+msgstr "聊了天氣。"
+
+msgid "不、不會啦...你過獎了。"
+msgstr "不、不會啦...你過獎了。"
+
+msgid "啊...謝、謝謝你...（臉紅）"
+msgstr "啊...謝、謝謝你...（臉紅）"
+
+msgid "真的嗎？（開心但不好意思）"
+msgstr "真的嗎？（開心但不好意思）"
+
+msgid "你有什麼目的？"
+msgstr "你有什麼目的？"
+
+msgid "哼，不用奉承我。"
+msgstr "哼，不用奉承我。"
+
+msgid "嗯，我知道。"
+msgstr "嗯，我知道。"
+
+msgid "你真會說話！"
+msgstr "你真會說話！"
+
+msgid "哈哈，謝謝！你這麼說我很開心。"
+msgstr "哈哈，謝謝！你這麼說我很開心。"
+
+msgid "被你這樣誇，有點不好意思呢。"
+msgstr "被你這樣誇，有點不好意思呢。"
+
+msgid "別客氣，鄰居互相幫忙是應該的。"
+msgstr "別客氣，鄰居互相幫忙是應該的。"
+
+msgid "我能做的一定幫！你說吧。"
+msgstr "我能做的一定幫！你說吧。"
+
+msgid "需要幫忙嗎？儘管說！"
+msgstr "需要幫忙嗎？儘管說！"
+
+msgid "嗯...看是什麼事吧。我今天有點懶..."
+msgstr "嗯...看是什麼事吧。我今天有點懶..."
+
+msgid "幫忙可以，但別太累的。"
+msgstr "幫忙可以，但別太累的。"
+
+msgid "你自己不能解決嗎？"
+msgstr "你自己不能解決嗎？"
+
+msgid "我不是慈善機構。"
+msgstr "我不是慈善機構。"
+
+msgid "看什麼事吧。"
+msgstr "看什麼事吧。"
+
+msgid "什麼事？看我能不能幫上忙。"
+msgstr "什麼事？看我能不能幫上忙。"
+
+msgid "好吧，你說說看。"
+msgstr "好吧，你說說看。"
+
+msgid "我盡量吧。"
+msgstr "我盡量吧。"
+
+msgid "求助。"
+msgstr "求助。"
+
+msgid "下次再來找我。"
+msgstr "下次再來找我。"
+
+msgid "嗯...早點回來。"
+msgstr "嗯...早點回來。"
+
+msgid "這麼快就走？路上小心。想你。"
+msgstr "這麼快就走？路上小心。想你。"
+
+msgid "再見！下次再聊！"
+msgstr "再見！下次再聊！"
+
+msgid "好的，有空再來找我！"
+msgstr "好的，有空再來找我！"
+
+msgid "掰掰，保重啊！"
+msgstr "掰掰，保重啊！"
+
+msgid "嗯，再見。"
+msgstr "嗯，再見。"
+
+msgid "好的。"
+msgstr "好的。"
+
+msgid "拜拜。"
+msgstr "拜拜。"
+
+msgid "終於要走了。"
+msgstr "終於要走了。"
+
+msgid "道別了。"
+msgstr "道別了。"
+
+msgid "中央廣場"
+msgstr "中央廣場"
+
+msgid "城鎮廣場"
+msgstr "城鎮廣場"
+
+msgid "市集廣場"
+msgstr "市集廣場"
+
+msgid "村莊綠地"
+msgstr "村莊綠地"
+
+msgid "聚落的核心"
+msgstr "聚落的核心"
+
+msgid "旅人之家"
+msgstr "旅人之家"
+
+msgid "月光酒館"
+msgstr "月光酒館"
+
+msgid "金壺酒館"
+msgstr "金壺酒館"
+
+msgid "鏽鶴酒館"
+msgstr "鏽鶴酒館"
+
+msgid "飲食與社交"
+msgstr "飲食與社交"
+
+msgid "龍憩客棧"
+msgstr "龍憩客棧"
+
+msgid "小鎮的治理中心"
+msgstr "小鎮的治理中心"
+
+msgid "議事廳"
+msgstr "議事廳"
+
+msgid "鎮長辦公室"
+msgstr "鎮長辦公室"
+
+msgid "長老會所"
+msgstr "長老會所"
+
+msgid "晴陽農場"
+msgstr "晴陽農場"
+
+msgid "秋月農莊"
+msgstr "秋月農莊"
+
+msgid "綠畝田園"
+msgstr "綠畝田園"
+
+msgid "肥沃的農田"
+msgstr "肥沃的農田"
+
+msgid "深岩礦場"
+msgstr "深岩礦場"
+
+msgid "石匠坑"
+msgstr "石匠坑"
+
+msgid "豐富的礦藏"
+msgstr "豐富的礦藏"
+
+msgid "鐵嶺礦坑"
+msgstr "鐵嶺礦坑"
+
+msgid "修補工房"
+msgstr "修補工房"
+
+msgid "工匠工坊"
+msgstr "工匠工坊"
+
+msgid "製造商品之處"
+msgstr "製造商品之處"
+
+msgid "鍛造與砧"
+msgstr "鍛造與砧"
+
+msgid "交易站"
+msgstr "交易站"
+
+msgid "交易與補給"
+msgstr "交易與補給"
+
+msgid "商人角落"
+msgstr "商人角落"
+
+msgid "治療小屋"
+msgstr "治療小屋"
+
+msgid "藥房"
+msgstr "藥房"
+
+msgid "醫療照護"
+msgstr "醫療照護"
+
+msgid "鎮醫院"
+msgstr "鎮醫院"
+
+msgid "古老圖書館"
+msgstr "古老圖書館"
+
+msgid "學者典藏"
+msgstr "學者典藏"
+
+msgid "書塔"
+msgstr "書塔"
+
+msgid "知識與研究"
+msgstr "知識與研究"
+
+msgid "守衛哨站"
+msgstr "守衛哨站"
+
+msgid "守護小鎮"
+msgstr "守護小鎮"
+
+msgid "民兵營房"
+msgstr "民兵營房"
+
+msgid "光明教堂"
+msgstr "光明教堂"
+
+msgid "和諧聖壇"
+msgstr "和諧聖壇"
+
+msgid "平靜與沉思"
+msgstr "平靜與沉思"
+
+msgid "石造神殿"
+msgstr "石造神殿"
+
+msgid "寧靜的綠地"
+msgstr "寧靜的綠地"
+
+msgid "日光草地"
+msgstr "日光草地"
+
+msgid "鎮公園"
+msgstr "鎮公園"
+
+msgid "水車坊"
+msgstr "水車坊"
+
+msgid "泉水噴泉"
+msgstr "泉水噴泉"
+
+msgid "清澈的水源"
+msgstr "清澈的水源"
+
+msgid "鎮井"
+msgstr "鎮井"
+
+msgid "上城區"
+msgstr "上城區"
+
+msgid "住宅區"
+msgstr "住宅區"
+
+msgid "北區"
+msgstr "北區"
+
+msgid "山丘住宅"
+msgstr "山丘住宅"
+
+msgid "下城區"
+msgstr "下城區"
+
+msgid "南區"
+msgstr "南區"
+
+msgid "河畔住宅"
+msgstr "河畔住宅"
+
+msgid "朝陽住宅"
+msgstr "朝陽住宅"
+
+msgid "東區"
+msgstr "東區"
+
+msgid "花園區"
+msgstr "花園區"
+
+msgid "低語林"
+msgstr "低語林"
+
+msgid "幽暗松林"
+msgstr "幽暗松林"
+
+msgid "茂密的森林"
+msgstr "茂密的森林"
+
+msgid "長老樹林"
+msgstr "長老樹林"
+
+msgid "平靜的河流"
+msgstr "平靜的河流"
+
+msgid "急流溪"
+msgstr "急流溪"
+
+msgid "水晶河"
+msgstr "水晶河"
+
+msgid "銀溪"
+msgstr "銀溪"
+
+msgid "瞭望丘"
+msgstr "瞭望丘"
+
+msgid "風嘯嶺"
+msgstr "風嘯嶺"
+
+msgid "高地"
+msgstr "高地"
+
+msgid "鷹巢峰"
+msgstr "鷹巢峰"
+
+msgid "暗影洞穴"
+msgstr "暗影洞穴"
+
+msgid "神秘的洞穴"
+msgstr "神秘的洞穴"
+
+msgid "迴音岩洞"
+msgstr "迴音岩洞"
+
+msgid "深潭"
+msgstr "深潭"
+
+msgid "蓮花池"
+msgstr "蓮花池"
+
+msgid "鏡湖"
+msgstr "鏡湖"
+
+msgid "靜水"
+msgstr "靜水"
+
+msgid "三葉草坪"
+msgstr "三葉草坪"
+
+msgid "起伏田野"
+msgstr "起伏田野"
+
+msgid "野花草原"
+msgstr "野花草原"
+
+msgid "開闊的草原"
+msgstr "開闊的草原"
+
+msgid "修船工房"
+msgstr "修船工房"
+
+msgid "海味居"
+msgstr "海味居"
+
+msgid "海風診療所"
+msgstr "海風診療所"
+
+msgid "港務所"
+msgstr "港務所"
+
+msgid "南北雜貨行"
+msgstr "南北雜貨行"
+
+msgid "燈塔書房"
+msgstr "燈塔書房"
+
+msgid "蚵田菜畦"
+msgstr "蚵田菜畦"
+
+msgid "鹽場"
+msgstr "鹽場"
+
+msgid "曬網場"
+msgstr "曬網場"
+
+msgid "望潮哨"
+msgstr "望潮哨"
+
+msgid "海神小廟"
+msgstr "海神小廟"
+
+msgid "淡水井"
+msgstr "淡水井"
+
+msgid "碼頭廣場"
+msgstr "碼頭廣場"
+
+msgid "崖上人家"
+msgstr "崖上人家"
+
+msgid "沙灘木屋"
+msgstr "沙灘木屋"
+
+msgid "漁港街"
+msgstr "漁港街"
+
+msgid "外海碼頭"
+msgstr "外海碼頭"
+
+msgid "海蝕洞"
+msgstr "海蝕洞"
+
+msgid "潟湖"
+msgstr "潟湖"
+
+msgid "燈塔崖"
+msgstr "燈塔崖"
+
+msgid "防風林"
+msgstr "防風林"
+
+msgid "鹽灘"
+msgstr "鹽灘"
+
+msgid "可怕的乾旱"
+msgstr "可怕的乾旱"
+
+msgid "水井乾涸，作物枯萎。"
+msgstr "水井乾涸，作物枯萎。"
+
+msgid "惡化的饑荒"
+msgstr "惡化的饑荒"
+
+msgid "糧食供應嚴重不足。"
+msgstr "糧食供應嚴重不足。"
+
+msgid "饑荒"
+msgstr "饑荒"
+
+msgid "暴動"
+msgstr "暴動"
+
+msgid "絕望的居民為了物資大打出手！"
+msgstr "絕望的居民為了物資大打出手！"
+
+msgid "多名居民出現奇怪的病症。"
+msgstr "多名居民出現奇怪的病症。"
+
+msgid "神秘疾病"
+msgstr "神秘疾病"
+
+msgid "醫生下令進行隔離。"
+msgstr "醫生下令進行隔離。"
+
+msgid "隔離"
+msgstr "隔離"
+
+msgid "隔離措施"
+msgstr "隔離措施"
+
+msgid "康復"
+msgstr "康復"
+
+msgid "疾病已經過去！大家一起慶祝。"
+msgstr "疾病已經過去！大家一起慶祝。"
+
+msgid "可怕的風暴正在侵襲小鎮！"
+msgstr "可怕的風暴正在侵襲小鎮！"
+
+msgid "大風暴"
+msgstr "大風暴"
+
+msgid "毀滅性的風暴"
+msgstr "毀滅性的風暴"
+
+msgid "風暴損害"
+msgstr "風暴損害"
+
+msgid "風暴造成了嚴重的損壞。"
+msgstr "風暴造成了嚴重的損壞。"
+
+msgid "大家齊心協力重建。"
+msgstr "大家齊心協力重建。"
+
+msgid "社區重建"
+msgstr "社區重建"
+
+msgid "重建工作"
+msgstr "重建工作"
+
+msgid "一群盜匪正在逼近！"
+msgstr "一群盜匪正在逼近！"
+
+msgid "盜匪"
+msgstr "盜匪"
+
+msgid "盜匪來襲"
+msgstr "盜匪來襲"
+
+msgid "一群狼從山上下來了！"
+msgstr "一群狼從山上下來了！"
+
+msgid "狼群"
+msgstr "狼群"
+
+msgid "狼群攻擊"
+msgstr "狼群攻擊"
+
+msgid "野獸攻擊"
+msgstr "野獸攻擊"
+
+msgid "掠奪者"
+msgstr "掠奪者"
+
+msgid "掠奪者入侵"
+msgstr "掠奪者入侵"
+
+msgid "武裝掠奪者正在襲擊！"
+msgstr "武裝掠奪者正在襲擊！"
+
+msgid "暴怒的野豬衝進鎮上！"
+msgstr "暴怒的野豬衝進鎮上！"
+
+msgid "野豬"
+msgstr "野豬"
+
+msgid "野豬暴走"
+msgstr "野豬暴走"
+
+msgid "作物長得特別好！"
+msgstr "作物長得特別好！"
+
+msgid "寒流"
+msgstr "寒流"
+
+msgid "突如其來的寒流襲擊小鎮。"
+msgstr "突如其來的寒流襲擊小鎮。"
+
+msgid "小鎮舉辦慶典！大家一起慶祝。"
+msgstr "小鎮舉辦慶典！大家一起慶祝。"
+
+msgid "慶典日"
+msgstr "慶典日"
+
+msgid "貿易路線中斷，物資不足。"
+msgstr "貿易路線中斷，物資不足。"
+
+msgid "天空出現奇怪的光。"
+msgstr "天空出現奇怪的光。"
+
+msgid "奇異光芒"
+msgstr "奇異光芒"
+
+msgid "一位商人帶著稀有貨物到來。"
+msgstr "一位商人帶著稀有貨物到來。"
+
+msgid "商人的異國貨品"
+msgstr "商人的異國貨品"
+
+msgid "旅行商人"
+msgstr "旅行商人"
+
+msgid "壯麗的極光照亮夜空。"
+msgstr "壯麗的極光照亮夜空。"
+
+msgid "美麗極光"
+msgstr "美麗極光"
+
+msgid "熱浪"
+msgstr "熱浪"
+
+msgid "酷熱讓戶外工作難以忍受。"
+msgstr "酷熱讓戶外工作難以忍受。"
+
+msgid "幸運發現"
+msgstr "幸運發現"
+
+msgid "幸運的發現"
+msgstr "幸運的發現"
+
+msgid "有人發現了珍貴的材料！"
+msgstr "有人發現了珍貴的材料！"
+
+msgid "今晚的星空特別清澈，許多居民出門看星星。"
+msgstr "今晚的星空特別清澈，許多居民出門看星星。"
+
+msgid "美麗的星空"
+msgstr "美麗的星空"
+
+msgid "觀星之夜"
+msgstr "觀星之夜"
+
+msgid "月蝕"
+msgstr "月蝕"
+
+msgid "罕見的月蝕！月亮變成了血紅色。"
+msgstr "罕見的月蝕！月亮變成了血紅色。"
+
+msgid "血色月蝕"
+msgstr "血色月蝕"
+
+msgid "成千上萬的螢火蟲在鎮上飛舞！"
+msgstr "成千上萬的螢火蟲在鎮上飛舞！"
+
+msgid "螢火蟲之夜"
+msgstr "螢火蟲之夜"
+
+msgid "螢火蟲奇觀"
+msgstr "螢火蟲奇觀"
+
+msgid "夜間竊盜"
+msgstr "夜間竊盜"
+
+msgid "有人趁夜偷走了倉庫的物資。"
+msgstr "有人趁夜偷走了倉庫的物資。"
+
+msgid "神秘竊賊"
+msgstr "神秘竊賊"
+
+msgid "不可思議的極光"
+msgstr "不可思議的極光"
+
+msgid "天空中出現了壯麗的極光！"
+msgstr "天空中出現了壯麗的極光！"
+
+msgid "極光出現"
+msgstr "極光出現"
+
+msgid "夜半歌聲"
+msgstr "夜半歌聲"
+
+msgid "森林裡的歌聲"
+msgstr "森林裡的歌聲"
+
+msgid "深夜從森林傳來神秘的歌聲。"
+msgstr "深夜從森林傳來神秘的歌聲。"
+
+msgid "決定出發去進行貿易遠征"
+msgstr "決定出發去進行貿易遠征"
+
+msgid "踏上朝聖之旅"
+msgstr "踏上朝聖之旅"
+
+msgid "離開去城裡探望家人"
+msgstr "離開去城裡探望家人"
+
+msgid "出發去探索荒野"
+msgstr "出發去探索荒野"
+
+msgid "離開去遠方的學院進修"
+msgstr "離開去遠方的學院進修"
+
+msgid "出門旅行增廣見聞"
+msgstr "出門旅行增廣見聞"
+
+msgid "前往首都尋求發展"
+msgstr "前往首都尋求發展"
+
+msgid "來自鄰村的開朗年輕農夫。"
+msgstr "來自鄰村的開朗年輕農夫。"
+
+msgid "聽說邊境鎮需要她的手藝的熟練裁縫。"
+msgstr "聽說邊境鎮需要她的手藝的熟練裁縫。"
+
+msgid "來自本地區的資深礦工。"
+msgstr "來自本地區的資深礦工。"
+
+msgid "懷抱遠大夢想的熱情廚師。"
+msgstr "懷抱遠大夢想的熱情廚師。"
+
+msgid "被古代遺跡吸引而來的古怪學者。"
+msgstr "被古代遺跡吸引而來的古怪學者。"
+
+msgid "讓手藝說話的沉靜木匠。"
+msgstr "讓手藝說話的沉靜木匠。"
+
+msgid "言語粗獷但手藝精湛的鐵匠。"
+msgstr "言語粗獷但手藝精湛的鐵匠。"
+
+msgid "善於議價的年輕商人。"
+msgstr "善於議價的年輕商人。"
+
+msgid "四處行醫的慈悲醫者。"
+msgstr "四處行醫的慈悲醫者。"
+
+msgid "尋求平靜生活的資深戰士。"
+msgstr "尋求平靜生活的資深戰士。"
+
+msgid "擁有刺繡天賦的年輕工匠。"
+msgstr "擁有刺繡天賦的年輕工匠。"
+
+msgid "悠哉的精神導師。"
+msgstr "悠哉的精神導師。"
+
+msgid "小鎮成功抵禦了"
+msgstr "小鎮成功抵禦了"
+
+msgid "協助抵禦了"
+msgstr "協助抵禦了"
+
+msgid "突破了我們的防線！"
+msgstr "突破了我們的防線！"
+
+msgid "搶走"
+msgstr "搶走"
+
+msgid "搶走了"
+msgstr "搶走了"
+
+msgid "銀幣！"
+msgstr "銀幣！"
+
+msgid "食物和"
+msgstr "食物和"
+
+msgid "襲擊後逃離"
+msgstr "襲擊後逃離"
+
+msgid "事件鏈開始："
+msgstr "事件鏈開始："
+
+msgid "居民出行"
+msgstr "居民出行"
+
+msgid "離開了小鎮"
+msgstr "離開了小鎮"
+
+msgid "居民歸來"
+msgstr "居民歸來"
+
+msgid "帶著故事回來了！"
+msgstr "帶著故事回來了！"
+
+msgid "的旅行故事"
+msgstr "的旅行故事"
+
+msgid "旅行回來了！"
+msgstr "旅行回來了！"
+
+msgid "以"
+msgstr "以"
+
+msgid "新居民"
+msgstr "新居民"
+
+msgid "身分到來！"
+msgstr "身分到來！"
+
+msgid "到來了！"
+msgstr "到來了！"
+
+msgid "身分來到鎮上！"
+msgstr "身分來到鎮上！"
+
+msgid "」已結束。"
+msgstr "」已結束。"
+
+msgid "事件鏈「"
+msgstr "事件鏈「"
+
+msgid "過幾天就會回來。"
+msgstr "過幾天就會回來。"
+
+msgid "宣布參選鎮長"
+msgstr "宣布參選鎮長"
+
+msgid "選舉開始！"
+msgstr "選舉開始！"
+
+msgid "天，之後進行投票"
+msgstr "天，之後進行投票"
+
+msgid "競選期間為"
+msgstr "競選期間為"
+
+msgid "我宣布參選鎮長，主張"
+msgstr "我宣布參選鎮長，主張"
+
+msgid "出生了！"
+msgstr "出生了！"
+
+msgid "我們的孩子"
+msgstr "我們的孩子"
+
+msgid "加強貿易、開拓資源，讓鎮民富裕起來！"
+msgstr "加強貿易、開拓資源，讓鎮民富裕起來！"
+
+msgid "我會讓每個人都能豐衣足食！"
+msgstr "我會讓每個人都能豐衣足食！"
+
+msgid "身為"
+msgstr "身為"
+
+msgid "，我承諾帶領邊境鎮走向繁榮！"
+msgstr "，我承諾帶領邊境鎮走向繁榮！"
+
+msgid "我會照顧好每一位居民！"
+msgstr "我會照顧好每一位居民！"
+
+msgid "社區的和諧是我最重視的事。"
+msgstr "社區的和諧是我最重視的事。"
+
+msgid "讓大家都能安居樂業！"
+msgstr "讓大家都能安居樂業！"
+
+msgid "保護家園是我的首要任務！"
+msgstr "保護家園是我的首要任務！"
+
+msgid "加強防禦，不再讓突襲得逞！"
+msgstr "加強防禦，不再讓突襲得逞！"
+
+msgid "我會讓邊境鎮固若金湯！"
+msgstr "我會讓邊境鎮固若金湯！"
+
+msgid "我要建立學院，讓知識傳承下去。"
+msgstr "我要建立學院，讓知識傳承下去。"
+
+msgid "教育和文化才是小鎮的未來！"
+msgstr "教育和文化才是小鎮的未來！"
+
+msgid "藝術與智慧將使我們偉大！"
+msgstr "藝術與智慧將使我們偉大！"
+
+msgid "保護環境就是保護我們自己。"
+msgstr "保護環境就是保護我們自己。"
+
+msgid "我們必須與自然和諧共處。"
+msgstr "我們必須與自然和諧共處。"
+
+msgid "永續發展才是正道！"
+msgstr "永續發展才是正道！"
+
+msgid "尊重個人，成就集體！"
+msgstr "尊重個人，成就集體！"
+
+msgid "每個人都應該有選擇的自由！"
+msgstr "每個人都應該有選擇的自由！"
+
+msgid "減少管束，讓大家自由發展。"
+msgstr "減少管束，讓大家自由發展。"
+
+msgid "投票開始！居民們正在投下神聖的一票"
+msgstr "投票開始！居民們正在投下神聖的一票"
+
+msgid "我在選舉中落敗，不再擔任鎮長"
+msgstr "我在選舉中落敗，不再擔任鎮長"
+
+msgid "我贏得了鎮長選舉！得到"
+msgstr "我贏得了鎮長選舉！得到"
+
+msgid "票"
+msgstr "票"
+
+msgid "）："
+msgstr "）："
+
+msgid "當選新鎮長！主張："
+msgstr "當選新鎮長！主張："
+
+msgid "選舉結果："
+msgstr "選舉結果："
+
+msgid "得票："
+msgstr "得票："
+
+msgid "（共"
+msgstr "（共"
+
+msgid "票當選新鎮長"
+msgstr "票當選新鎮長"
+
+msgid "鎮長選舉"
+msgstr "鎮長選舉"
+
+msgid "新鎮長推動經濟改革"
+msgstr "新鎮長推動經濟改革"
+
+msgid "新鎮長推行社會福利"
+msgstr "新鎮長推行社會福利"
+
+msgid "新鎮長加強防禦部署"
+msgstr "新鎮長加強防禦部署"
+
+msgid "新鎮長重視文化教育"
+msgstr "新鎮長重視文化教育"
+
+msgid "新鎮長推動自然保育"
+msgstr "新鎮長推動自然保育"
+
+msgid "新鎮長放寬政策管制"
+msgstr "新鎮長放寬政策管制"
+
+msgid "新鎮長"
+msgstr "新鎮長"
+
+msgid "的施政方針開始影響小鎮"
+msgstr "的施政方針開始影響小鎮"
+
+msgid "工藝"
+msgstr "工藝"
+
+msgid "智識"
+msgstr "智識"
+
+msgid "射擊"
+msgstr "射擊"
+
+msgid "的生產"
+msgstr "的生產"
+
+msgid "緊急食物"
+msgstr "緊急食物"
+
+msgid "餐食不夠！居民正在吃生食。"
+msgstr "餐食不夠！居民正在吃生食。"
+
+msgid "糧食短缺！居民正在挨餓！"
+msgstr "糧食短缺！居民正在挨餓！"
+
+msgid "木材不夠取暖！"
+msgstr "木材不夠取暖！"
+
+msgid "提升防禦與襲擊預警"
+msgstr "提升防禦與襲擊預警"
+
+msgid "增加食物儲存，減少腐壞"
+msgstr "增加食物儲存，減少腐壞"
+
+msgid "市集"
+msgstr "市集"
+
+msgid "更好的交易與更多商人"
+msgstr "更好的交易與更多商人"
+
+msgid "改善供水"
+msgstr "改善供水"
+
+msgid "深井"
+msgstr "深井"
+
+msgid "守衛訓練更快"
+msgstr "守衛訓練更快"
+
+msgid "生產啤酒，提升娛樂"
+msgstr "生產啤酒，提升娛樂"
+
+msgid "釀酒坊"
+msgstr "釀酒坊"
+
+msgid "生產藥草用於醫療"
+msgstr "生產藥草用於醫療"
+
+msgid "藥草園"
+msgstr "藥草園"
+
+msgid "學堂"
+msgstr "學堂"
+
+msgid "提升所有技能經驗獲取"
+msgstr "提升所有技能經驗獲取"
+
+msgid "提升作物產量"
+msgstr "提升作物產量"
+
+msgid "農田灌溉"
+msgstr "農田灌溉"
+
+msgid "加速金屬加工"
+msgstr "加速金屬加工"
+
+msgid "鍛造風箱"
+msgstr "鍛造風箱"
+
+msgid "更好的治療效果"
+msgstr "更好的治療效果"
+
+msgid "醫療病房"
+msgstr "醫療病房"
+
+msgid "大幅提升防禦"
+msgstr "大幅提升防禦"
+
+msgid "開始建造："
+msgstr "開始建造："
+
+msgid "研究完成："
+msgstr "研究完成："
+
+msgid "建造完成："
+msgstr "建造完成："
+
+msgid "建造完成了！"
+msgstr "建造完成了！"
+
+msgid "張商人 (Zhang the Trader)"
+msgstr "張商人 (Zhang the Trader)"
+
+msgid "老趙商隊 (Old Zhao's Caravan)"
+msgstr "老趙商隊 (Old Zhao's Caravan)"
+
+msgid "礦商老李 (Li the Ore Dealer)"
+msgstr "礦商老李 (Li the Ore Dealer)"
+
+msgid "藥師小雪 (Xue the Herbalist)"
+msgstr "藥師小雪 (Xue the Herbalist)"
+
+msgid "絲綢商人 (The Silk Trader)"
+msgstr "絲綢商人 (The Silk Trader)"
+
+msgid "異國商隊 (Exotic Caravan)"
+msgstr "異國商隊 (Exotic Caravan)"
+
+msgid "已離開。"
+msgstr "已離開。"
+
+msgid "到了！專長："
+msgstr "到了！專長："
+
+msgid "沒有商人"
+msgstr "沒有商人"
+
+msgid "無效交易"
+msgstr "無效交易"
+
+msgid "無效數量"
+msgstr "無效數量"
+
+msgid "不足"
+msgstr "不足"
+
+msgid "賣給"
+msgstr "賣給"
+
+msgid "銀幣不足"
+msgstr "銀幣不足"
+
+msgid "購買"
+msgstr "購買"
+
+msgid "銀幣。"
+msgstr "銀幣。"
+
+msgid "更好的農耕（+30%食物）"
+msgstr "更好的農耕（+30%食物）"
+
+msgid "進階農業"
+msgstr "進階農業"
+
+msgid "冶金術"
+msgstr "冶金術"
+
+msgid "更好的金屬冶煉"
+msgstr "更好的金屬冶煉"
+
+msgid "更好的療癒草藥"
+msgstr "更好的療癒草藥"
+
+msgid "草藥醫學"
+msgstr "草藥醫學"
+
+msgid "防禦工事"
+msgstr "防禦工事"
+
+msgid "防禦性建築"
+msgstr "防禦性建築"
+
+msgid "更好的貿易方式"
+msgstr "更好的貿易方式"
+
+msgid "建築學"
+msgstr "建築學"
+
+msgid "進階建造"
+msgstr "進階建造"
+
+msgid "發酵的藝術"
+msgstr "發酵的藝術"
+
+msgid "釀造術"
+msgstr "釀造術"
+
+msgid "後勤學"
+msgstr "後勤學"
+
+msgid "更好的儲存"
+msgstr "更好的儲存"
+
+msgid "教育"
+msgstr "教育"
+
+msgid "正式教育（+15%經驗）"
+msgstr "正式教育（+15%經驗）"
+
+msgid "石匠術"
+msgstr "石匠術"
+
+msgid "進階石工"
+msgstr "進階石工"
+
+msgid "邊境偵察報告：發現可疑蹤跡"
+msgstr "邊境偵察報告：發現可疑蹤跡"
+
+msgid "偵察兵在北方隘口發現營火殘跡。"
+msgstr "偵察兵在北方隘口發現營火殘跡。"
+
+msgid "貿易路線發現不明足跡。"
+msgstr "貿易路線發現不明足跡。"
+
+msgid "山賊集團在鄰近地區活動"
+msgstr "山賊集團在鄰近地區活動"
+
+msgid "商人回報在主要道路遭遇伏擊。"
+msgstr "商人回報在主要道路遭遇伏擊。"
+
+msgid "鄰村難民警告有組織的盜匪。"
+msgstr "鄰村難民警告有組織的盜匪。"
+
+msgid "附近村莊遭受襲擊"
+msgstr "附近村莊遭受襲擊"
+
+msgid "倖存者正逃向邊境鎮尋求安全。"
+msgstr "倖存者正逃向邊境鎮尋求安全。"
+
+msgid "邊境巡邏隊回報一切平靜"
+msgstr "邊境巡邏隊回報一切平靜"
+
+msgid "周邊地區目前看來很平靜。"
+msgstr "周邊地區目前看來很平靜。"
+
+msgid "沒有偵測到敵對活動的跡象。"
+msgstr "沒有偵測到敵對活動的跡象。"
+
+msgid "商路暢通，大型商隊正在途中"
+msgstr "商路暢通，大型商隊正在途中"
+
+msgid "主要貿易道路已經修復。"
+msgstr "主要貿易道路已經修復。"
+
+msgid "好幾位商人帶著異國商品正朝我們而來。"
+msgstr "好幾位商人帶著異國商品正朝我們而來。"
+
+msgid "貿易路線遭到封鎖"
+msgstr "貿易路線遭到封鎖"
+
+msgid "主要貿易道路的橋樑倒塌。"
+msgstr "主要貿易道路的橋樑倒塌。"
+
+msgid "山崩擋住了山間隘口。"
+msgstr "山崩擋住了山間隘口。"
+
+msgid "鄰國需求大增，物價上漲"
+msgstr "鄰國需求大增，物價上漲"
+
+msgid "區域對工藝品的需求急增。"
+msgstr "區域對工藝品的需求急增。"
+
+msgid "首都的大型建設工程需要材料。"
+msgstr "首都的大型建設工程需要材料。"
+
+msgid "市場供過於求，物價下跌"
+msgstr "市場供過於求，物價下跌"
+
+msgid "太多商品湧入區域市場。"
+msgstr "太多商品湧入區域市場。"
+
+msgid "農夫預測：近日天氣適宜耕作"
+msgstr "農夫預測：近日天氣適宜耕作"
+
+msgid "完美的播種條件。"
+msgstr "完美的播種條件。"
+
+msgid "預計晴空萬里並有微雨。"
+msgstr "預計晴空萬里並有微雨。"
+
+msgid "異常天象：暴風雨可能來襲"
+msgstr "異常天象：暴風雨可能來襲"
+
+msgid "動物舉止異常。"
+msgstr "動物舉止異常。"
+
+msgid "地平線上烏雲聚集。"
+msgstr "地平線上烏雲聚集。"
+
+msgid "乾旱警報：水源開始減少"
+msgstr "乾旱警報：水源開始減少"
+
+msgid "水井比平時更低。"
+msgstr "水井比平時更低。"
+
+msgid "河水水位下降很快。"
+msgstr "河水水位下降很快。"
+
+msgid "豐沛雨水帶來好收成的希望"
+msgstr "豐沛雨水帶來好收成的希望"
+
+msgid "這個季節的雨量恰到好處。"
+msgstr "這個季節的雨量恰到好處。"
+
+msgid "居民對鎮長的支持度創新高"
+msgstr "居民對鎮長的支持度創新高"
+
+msgid "鎮議會合作良好。"
+msgstr "鎮議會合作良好。"
+
+msgid "不滿情緒蔓延，居民要求改善"
+msgstr "不滿情緒蔓延，居民要求改善"
+
+msgid "好幾位居民大聲抱怨。"
+msgstr "好幾位居民大聲抱怨。"
+
+msgid "酒館裡的氣氛很緊張。"
+msgstr "酒館裡的氣氛很緊張。"
+
+msgid "有人目擊鄰近地區的疫病"
+msgstr "有人目擊鄰近地區的疫病"
+
+msgid "旅人回報東方聚落正在蔓延疾病。"
+msgstr "旅人回報東方聚落正在蔓延疾病。"
+
+msgid "學者發現了古代遺跡的新線索"
+msgstr "學者發現了古代遺跡的新線索"
+
+msgid "古籍暗示附近藏有寶藏。"
+msgstr "古籍暗示附近藏有寶藏。"
+
+msgid "破解古手稿取得突破。"
+msgstr "破解古手稿取得突破。"
+
+msgid "野生動物出沒增加"
+msgstr "野生動物出沒增加"
+
+msgid "森林附近發現更多鹿和兔子。"
+msgstr "森林附近發現更多鹿和兔子。"
+
+msgid "獵人回報獵物豐富。"
+msgstr "獵人回報獵物豐富。"
+
+msgid "遠方傳來戰爭的消息"
+msgstr "遠方傳來戰爭的消息"
+
+msgid "戰爭帶來危險也帶來機會。"
+msgstr "戰爭帶來危險也帶來機會。"
+
+msgid "難民可能會來此避難。"
+msgstr "難民可能會來此避難。"
+
+msgid "節慶將至，居民期待歡慶"
+msgstr "節慶將至，居民期待歡慶"
+
+msgid "大家都很期待即將到來的慶祝活動。"
+msgstr "大家都很期待即將到來的慶祝活動。"
+
+msgid "季節慶典的準備工作正在進行中。"
+msgstr "季節慶典的準備工作正在進行中。"
+
+msgid "礦坑發現新的礦脈"
+msgstr "礦坑發現新的礦脈"
+
+msgid "新礦脈含有高品質的金屬礦石。"
+msgstr "新礦脈含有高品質的金屬礦石。"
+
+msgid "礦工對豐富的礦藏感到興奮。"
+msgstr "礦工對豐富的礦藏感到興奮。"
+
+msgid "城鎮名聲遠播，吸引新居民"
+msgstr "城鎮名聲遠播，吸引新居民"
+
+msgid "邊境鎮繁榮的消息正在傳播。"
+msgstr "邊境鎮繁榮的消息正在傳播。"
+
+msgid "工作夥伴"
+msgstr "工作夥伴"
+
+msgid "酒友"
+msgstr "酒友"
+
+msgid "八卦圈"
+msgstr "八卦圈"
+
+msgid "學者聯盟"
+msgstr "學者聯盟"
+
+msgid "戀愛同盟"
+msgstr "戀愛同盟"
+
+msgid "搗蛋鬼"
+msgstr "搗蛋鬼"
+
+msgid "長者議會"
+msgstr "長者議會"
+
+msgid "夜貓族"
+msgstr "夜貓族"
+
+msgid "酒"
+msgstr "酒"
+
+msgid "」！"
+msgstr "」！"
+
+msgid "組成了「"
+msgstr "組成了「"
+
+msgid "」，成員有"
+msgstr "」，成員有"
+
+msgid "我加入了「"
+msgstr "我加入了「"
+
+msgid "」和「"
+msgstr "」和「"
+
+msgid "」在鎮上爆發了爭執！"
+msgstr "」在鎮上爆發了爭執！"
+
+msgid "」的成員公開批評「"
+msgstr "」的成員公開批評「"
+
+msgid "」因為意見不合發生衝突。"
+msgstr "」因為意見不合發生衝突。"
+
+msgid "」決定攜手合作！"
+msgstr "」決定攜手合作！"
+
+msgid "」一起舉辦活動。"
+msgstr "」一起舉辦活動。"
+
+msgid "」邀請「"
+msgstr "」邀請「"
+
+msgid "」化敵為友，達成共識。"
+msgstr "」化敵為友，達成共識。"
+
+msgid "」聚會中公開指責"
+msgstr "」聚會中公開指責"
+
+msgid "」內鬧不愉快。"
+msgstr "」內鬧不愉快。"
+
+msgid "」內部出現分裂，"
+msgstr "」內部出現分裂，"
+
+msgid "帶頭反對"
+msgstr "帶頭反對"
+
+msgid "」因人數不足而解散。"
+msgstr "」因人數不足而解散。"
+
+msgid "慶祝新生與播種的季節！全城一起祈禱豐收。"
+msgstr "慶祝新生與播種的季節！全城一起祈禱豐收。"
+
+msgid "春祭慶典"
+msgstr "春祭慶典"
+
+msgid "分享春餅"
+msgstr "分享春餅"
+
+msgid "種下許願樹"
+msgstr "種下許願樹"
+
+msgid "舞龍舞獅"
+msgstr "舞龍舞獅"
+
+msgid "花車遊行"
+msgstr "花車遊行"
+
+msgid "在城外採集100朵春花裝飾廣場。"
+msgstr "在城外採集100朵春花裝飾廣場。"
+
+msgid "採集春花"
+msgstr "採集春花"
+
+msgid "豐收前夜祭"
+msgstr "豐收前夜祭"
+
+msgid "仲夏夜的篝火慶典，居民圍著篝火講故事。"
+msgstr "仲夏夜的篝火慶典，居民圍著篝火講故事。"
+
+msgid "夜間市集"
+msgstr "夜間市集"
+
+msgid "放煙火"
+msgstr "放煙火"
+
+msgid "篝火晚會"
+msgstr "篝火晚會"
+
+msgid "說故事比賽"
+msgstr "說故事比賽"
+
+msgid "收集木材"
+msgstr "收集木材"
+
+msgid "收集足夠的木材來搭建巨型篝火。"
+msgstr "收集足夠的木材來搭建巨型篝火。"
+
+msgid "秋收節"
+msgstr "秋收節"
+
+msgid "感謝大地豐收！全城分享收成的喜悅。"
+msgstr "感謝大地豐收！全城分享收成的喜悅。"
+
+msgid "秋收慶典"
+msgstr "秋收慶典"
+
+msgid "感恩祭祀"
+msgstr "感恩祭祀"
+
+msgid "秋收舞會"
+msgstr "秋收舞會"
+
+msgid "豐收宴席"
+msgstr "豐收宴席"
+
+msgid "農產品比賽"
+msgstr "農產品比賽"
+
+msgid "準備最好的農產品作為祭品。"
+msgstr "準備最好的農產品作為祭品。"
+
+msgid "豐收祭品"
+msgstr "豐收祭品"
+
+msgid "冬至慶典"
+msgstr "冬至慶典"
+
+msgid "最長的夜晚，居民們互相取暖、交換禮物。"
+msgstr "最長的夜晚，居民們互相取暖、交換禮物。"
+
+msgid "冬至禮物"
+msgstr "冬至禮物"
+
+msgid "交換禮物"
+msgstr "交換禮物"
+
+msgid "冬至詩會"
+msgstr "冬至詩會"
+
+msgid "熱湯分享"
+msgstr "熱湯分享"
+
+msgid "雪地遊戲"
+msgstr "雪地遊戲"
+
+msgid "準備禮物"
+msgstr "準備禮物"
+
+msgid "為每位居民準備一份特別的禮物。"
+msgstr "為每位居民準備一份特別的禮物。"
+
+msgid "了！全城都在準備中。"
+msgstr "了！全城都在準備中。"
+
+msgid "明天就是"
+msgstr "明天就是"
+
+msgid "即將到來的"
+msgstr "即將到來的"
+
+msgid "參加了"
+msgstr "參加了"
+
+msgid "真有趣。"
+msgstr "真有趣。"
+
+msgid "開始了！"
+msgstr "開始了！"
+
+msgid "全鎮"
+msgstr "全鎮"
+
+msgid "太棒了！"
+msgstr "太棒了！"
+
+msgid "好熱鬧！"
+msgstr "好熱鬧！"
+
+msgid "結束了，大家帶著美好的回憶回到日常。"
+msgstr "結束了，大家帶著美好的回憶回到日常。"
+
+msgid "」完成！獲得獎勵！"
+msgstr "」完成！獲得獎勵！"
+
+msgid "節日任務「"
+msgstr "節日任務「"
+
+msgid "在探險中犧牲"
+msgstr "在探險中犧牲"
+
+msgid "年老體衰"
+msgstr "年老體衰"
+
+msgid "意外事故"
+msgstr "意外事故"
+
+msgid "神秘失蹤後被發現"
+msgstr "神秘失蹤後被發現"
+
+msgid "突發疾病"
+msgstr "突發疾病"
+
+msgid "帶著一身故事來到邊境鎮,想在這裡重新開始。"
+msgstr "帶著一身故事來到邊境鎮,想在這裡重新開始。"
+
+msgid "土生土長的鎮民,對這片土地有說不完的感情。"
+msgstr "土生土長的鎮民,對這片土地有說不完的感情。"
+
+msgid "曾在遠方闖蕩多年,如今只想找個安穩的落腳處。"
+msgstr "曾在遠方闖蕩多年,如今只想找個安穩的落腳處。"
+
+msgid "沉默寡言,但只要熟了就會發現一顆熱心腸。"
+msgstr "沉默寡言,但只要熟了就會發現一顆熱心腸。"
+
+msgid "心裡藏著一個沒說出口的夢,也藏著一個沒說出口的人。"
+msgstr "心裡藏著一個沒說出口的夢,也藏著一個沒說出口的人。"
+
+msgid "嘴上不饒人,做起事來卻比誰都認真。"
+msgstr "嘴上不饒人,做起事來卻比誰都認真。"
+
+msgid "走到哪都能交到朋友,也總在不經意間牽動誰的心。"
+msgstr "走到哪都能交到朋友,也總在不經意間牽動誰的心。"
+
+msgid "看似瀟灑,其實對某段過去始終放不下。"
+msgstr "看似瀟灑,其實對某段過去始終放不下。"
+
+msgid "歲）因"
+msgstr "歲）因"
+
+msgid "離世了。"
+msgstr "離世了。"
+
+msgid "去世了...我很難過。"
+msgstr "去世了...我很難過。"
+
+msgid "去世了...願他安息。"
+msgstr "去世了...願他安息。"
+
+msgid "的孩子。在邊境鎮出生長大。"
+msgstr "的孩子。在邊境鎮出生長大。"
+
+msgid "你的孩子"
+msgstr "你的孩子"
+
+msgid "出生了！將來可以繼承你的一切。"
+msgstr "出生了！將來可以繼承你的一切。"
+
+msgid "出生了！全鎮慶祝！"
+msgstr "出生了！全鎮慶祝！"
+
+msgid "孩，取名"
+msgstr "孩，取名"
+
+msgid "生了個"
+msgstr "生了個"
+
+msgid "我和"
+msgstr "我和"
+
+msgid "曾任"
+msgstr "曾任"
+
+msgid "以善良著稱"
+msgstr "以善良著稱"
+
+msgid "勤勞一生"
+msgstr "勤勞一生"
+
+msgid "才華洋溢"
+msgstr "才華洋溢"
+
+msgid "深受愛戴"
+msgstr "深受愛戴"
+
+msgid "將被永遠懷念"
+msgstr "將被永遠懷念"
+
+msgid "找到了一個隱藏的獵人小屋。"
+msgstr "找到了一個隱藏的獵人小屋。"
+
+msgid "發現了一片珍貴的草藥田！"
+msgstr "發現了一片珍貴的草藥田！"
+
+msgid "迷路了一陣子，但最終找到了回家的路。"
+msgstr "迷路了一陣子，但最終找到了回家的路。"
+
+msgid "遭遇了一群野狼，但成功擊退！"
+msgstr "遭遇了一群野狼，但成功擊退！"
+
+msgid "找到了珍貴的古代文物。"
+msgstr "找到了珍貴的古代文物。"
+
+msgid "發現了古代文字記錄！"
+msgstr "發現了古代文字記錄！"
+
+msgid "觸發了一個古老的陷阱！"
+msgstr "觸發了一個古老的陷阱！"
+
+msgid "遺跡深處傳來神秘的聲音..."
+msgstr "遺跡深處傳來神秘的聲音..."
+
+msgid "在礦坑深處看到了奇異的光芒。"
+msgstr "在礦坑深處看到了奇異的光芒。"
+
+msgid "找到了前礦工留下的工具。"
+msgstr "找到了前礦工留下的工具。"
+
+msgid "發現了一條新的礦脈！"
+msgstr "發現了一條新的礦脈！"
+
+msgid "礦坑塌方，但安全逃出！"
+msgstr "礦坑塌方，但安全逃出！"
+
+msgid "近戰"
+msgstr "近戰"
+
+msgid "在山頂看到了壯麗的風景！"
+msgstr "在山頂看到了壯麗的風景！"
+
+msgid "暴風雪來襲，艱難地撐了過去。"
+msgstr "暴風雪來襲，艱難地撐了過去。"
+
+msgid "發現了一條通往鄰鎮的捷徑。"
+msgstr "發現了一條通往鄰鎮的捷徑。"
+
+msgid "遭遇山賊，經過一番苦戰取勝。"
+msgstr "遭遇山賊，經過一番苦戰取勝。"
+
+msgid "在洞窟裡發現了古老的壁畫！"
+msgstr "在洞窟裡發現了古老的壁畫！"
+
+msgid "找到了地下泉水，可能對鎮上的供水有幫助。"
+msgstr "找到了地下泉水，可能對鎮上的供水有幫助。"
+
+msgid "洞窟深處有蝙蝠群棲息。"
+msgstr "洞窟深處有蝙蝠群棲息。"
+
+msgid "發現了被水沖來的寶箱殘骸。"
+msgstr "發現了被水沖來的寶箱殘骸。"
+
+msgid "在沼澤中心發現了一塊奇怪的石頭。"
+msgstr "在沼澤中心發現了一塊奇怪的石頭。"
+
+msgid "找到了極為罕見的藥用植物！"
+msgstr "找到了極為罕見的藥用植物！"
+
+msgid "遇到了一位隱居的老藥師。"
+msgstr "遇到了一位隱居的老藥師。"
+
+msgid "陷入了沼澤泥潭，差點走不出來。"
+msgstr "陷入了沼澤泥潭，差點走不出來。"
+
+msgid "發現了新的探索區域："
+msgstr "發現了新的探索區域："
+
+msgid "新發現的"
+msgstr "新發現的"
+
+msgid "出發前往"
+msgstr "出發前往"
+
+msgid "探險！"
+msgstr "探險！"
+
+msgid "天後返回。"
+msgstr "天後返回。"
+
+msgid "探險了！預計"
+msgstr "探險了！預計"
+
+msgid "探險歸來！"
+msgstr "探險歸來！"
+
+msgid "凱旋歸來！"
+msgstr "凱旋歸來！"
+
+msgid "探險隊從"
+msgstr "探險隊從"
+
+msgid "探險失敗返回..."
+msgstr "探險失敗返回..."
+
+msgid "狼狽歸來..."
+msgstr "狼狽歸來..."
+
+msgid "代。"
+msgstr "代。"
+
+msgid "的孩子。繼承了家業，在邊境鎮長大。第"
+msgstr "的孩子。繼承了家業，在邊境鎮長大。第"
+
+msgid "友情"
+msgstr "友情"
+
+msgid "收到了"
+msgstr "收到了"
+
+msgid "的遺產，來到邊境鎮開始新生活。第"
+msgstr "的遺產，來到邊境鎮開始新生活。第"
+
+msgid "第1年 春季 第1天 6:00"
+msgstr "第1年 春季 第1天 6:00"
+
+msgid "來到了鎮上。想起了和"
+msgstr "來到了鎮上。想起了和"
+
+msgid "孩子"
+msgstr "孩子"
+
+msgid "的日子。"
+msgstr "的日子。"
+
+msgid "繼承人"
+msgstr "繼承人"
+
+msgid "的遺產。"
+msgstr "的遺產。"
+
+msgid "個。"
+msgstr "個。"
+
+msgid "棟，產業"
+msgstr "棟，產業"
+
+msgid "繼承銀幣"
+msgstr "繼承銀幣"
+
+msgid "，已建建築"
+msgstr "，已建建築"
+
+msgid "。鎮民們仍然記得"
+msgstr "。鎮民們仍然記得"
+
+msgid "上一代結局："
+msgstr "上一代結局："
+
+msgid "的故事。"
+msgstr "的故事。"
+
+msgid "重大事件"
+msgstr "重大事件"
+
+msgid "開始交往了！"
+msgstr "開始交往了！"
+
+msgid "結婚了！全鎮舉辦了盛大的婚禮！"
+msgstr "結婚了！全鎮舉辦了盛大的婚禮！"
+
+msgid "結婚了！這是我人生中最幸福的一天。"
+msgstr "結婚了！這是我人生中最幸福的一天。"
+
+msgid "結婚了！太開心了。"
+msgstr "結婚了！太開心了。"
+
+msgid "的婚禮！"
+msgstr "的婚禮！"
+
+msgid "結婚了！婚禮好浪漫！"
+msgstr "結婚了！婚禮好浪漫！"
+
+msgid "有了秘密關係⋯⋯"
+msgstr "有了秘密關係⋯⋯"
+
+msgid "在一起了⋯⋯我知道這不對。"
+msgstr "在一起了⋯⋯我知道這不對。"
+
+msgid "我背著"
+msgstr "我背著"
+
+msgid "開始了秘密關係。"
+msgstr "開始了秘密關係。"
+
+msgid "偷偷在一起⋯⋯"
+msgstr "偷偷在一起⋯⋯"
+
+msgid "有人看到"
+msgstr "有人看到"
+
+msgid "分手"
+msgstr "分手"
+
+msgid "離婚"
+msgstr "離婚"
+
+msgid "了！"
+msgstr "了！"
+
+msgid "劈腿"
+msgstr "劈腿"
+
+msgid "，兩人"
+msgstr "，兩人"
+
+msgid "在一起。我們"
+msgstr "在一起。我們"
+
+msgid "背著我和"
+msgstr "背著我和"
+
+msgid "發現了我的事情。我們"
+msgstr "發現了我的事情。我們"
+
+msgid "劈腿被"
+msgstr "劈腿被"
+
+msgid "發現了！兩人"
+msgstr "發現了！兩人"
+
+msgid "發現！兩人"
+msgstr "發現！兩人"
+
+msgid "分手了。"
+msgstr "分手了。"
+
+msgid "分手了⋯⋯"
+msgstr "分手了⋯⋯"
+
+msgid "離婚了。"
+msgstr "離婚了。"
+
+msgid "離婚了⋯⋯好可惜。"
+msgstr "離婚了⋯⋯好可惜。"
+
+msgid "離婚了⋯⋯全鎮不勝唏噓。"
+msgstr "離婚了⋯⋯全鎮不勝唏噓。"
+
+msgid "曾是軍官，二十年前定居邊境鎮。他深愛這個社區，把全鎮的安危視為自己的責任。"
+msgstr "曾是軍官，二十年前定居邊境鎮。他深愛這個社區，把全鎮的安危視為自己的責任。"
+
+msgid "才華洋溢的醫生，離開城裡的大醫院來到邊境鎮行醫。經常工作到深夜。"
+msgstr "才華洋溢的醫生，離開城裡的大醫院來到邊境鎮行醫。經常工作到深夜。"
+
+msgid "沉默寡言但技藝精湛的鐵匠，用金屬表達自己的情感。私下喜歡寫詩。"
+msgstr "沉默寡言但技藝精湛的鐵匠，用金屬表達自己的情感。私下喜歡寫詩。"
+
+msgid "酒館的靈魂人物，認識鎮上每一個人，也知道所有人的八卦。煮的菜讓人回味無窮。"
+msgstr "酒館的靈魂人物，認識鎮上每一個人，也知道所有人的八卦。煮的菜讓人回味無窮。"
+
+msgid "有著遠大夢想的年輕農夫。偷偷寫情書但從未寄出，心中暗戀著某人。"
+msgstr "有著遠大夢想的年輕農夫。偷偷寫情書但從未寄出，心中暗戀著某人。"
+
+msgid "精明的女商人，與外面的世界有廣泛的聯繫。表面開朗但內心悲觀。"
+msgstr "精明的女商人，與外面的世界有廣泛的聯繫。表面開朗但內心悲觀。"
+
+msgid "前傭兵，在邊境鎮找到了平靜。但嫉妒心很重，尤其在感情方面。"
+msgstr "前傭兵，在邊境鎮找到了平靜。但嫉妒心很重，尤其在感情方面。"
+
+msgid "聰明但容易焦慮的年輕學者，正在研究小鎮附近的古代遺跡。"
+msgstr "聰明但容易焦慮的年輕學者，正在研究小鎮附近的古代遺跡。"
+
+msgid "從十六歲就開始挖礦的老礦工。說話粗魯但非常可靠。"
+msgstr "從十六歲就開始挖礦的老礦工。說話粗魯但非常可靠。"
+
+msgid "溫柔的牧師，照顧禮拜堂和居民的心靈。有一副動人的歌喉，經常在教堂唱歌。"
+msgstr "溫柔的牧師，照顧禮拜堂和居民的心靈。有一副動人的歌喉，經常在教堂唱歌。"
+
+msgid "迷人的懶鬼，比起幹活更喜歡講故事。但只要認真起來手藝一流。"
+msgstr "迷人的懶鬼，比起幹活更喜歡講故事。但只要認真起來手藝一流。"
+
+msgid "鎮上最年輕的居民。天賦異稟的裁縫師，但太害羞不敢接受別人的誇獎。"
+msgstr "鎮上最年輕的居民。天賦異稟的裁縫師，但太害羞不敢接受別人的誇獎。"
+
+msgid "從遠方來的遊唱商人，帶著一把舊吉他和說不完的故事。走到哪都是焦點，也走到哪都留下心碎的人。"
+msgstr "從遠方來的遊唱商人，帶著一把舊吉他和說不完的故事。走到哪都是焦點，也走到哪都留下心碎的人。"
+
+msgid "沉穩可靠的老木匠，和妻子何秀結縭二十年。話不多，但眼裡總有妻子的身影。"
+msgstr "沉穩可靠的老木匠，和妻子何秀結縭二十年。話不多，但眼裡總有妻子的身影。"
+
+msgid "何昌的妻子，開朗愛笑。和王麗是廚房裡的死黨，兩人湊在一起整條街的八卦都藏不住。"
+msgstr "何昌的妻子，開朗愛笑。和王麗是廚房裡的死黨，兩人湊在一起整條街的八卦都藏不住。"
+
+msgid "孤僻的年輕天才，總是埋首書堆。最近卻常常為了一個人心神不寧，連公式都算錯。"
+msgstr "孤僻的年輕天才，總是埋首書堆。最近卻常常為了一個人心神不寧，連公式都算錯。"
+
+msgid "剛搬來的糕點師傅，笑起來像陽光。她的甜點總在清晨飄香，也悄悄記住了某個早起農夫的身影。"
+msgstr "剛搬來的糕點師傅，笑起來像陽光。她的甜點總在清晨飄香，也悄悄記住了某個早起農夫的身影。"
+
+msgid "吳達的舊袍澤，退伍後追隨老友來到邊境鎮。剛硬耿直,看不慣楊鋒的作風,卻對禮拜堂的歌聲莫名心軟。"
+msgstr "吳達的舊袍澤，退伍後追隨老友來到邊境鎮。剛硬耿直,看不慣楊鋒的作風,卻對禮拜堂的歌聲莫名心軟。"
+
+msgid "遊歷各地的繡藝師，指尖有星光。愛自由不受拘束，卻在遇見一位安靜的星象學者後,第一次想為誰停下腳步。"
+msgstr "遊歷各地的繡藝師，指尖有星光。愛自由不受拘束，卻在遇見一位安靜的星象學者後,第一次想為誰停下腳步。"
+
+msgid "沉靜的星象研究者，總在夜裡觀測。話不多,但每次抬頭看見那位繡藝師,筆記本上的星圖就會多幾筆走神的線條。"
+msgstr "沉靜的星象研究者，總在夜裡觀測。話不多,但每次抬頭看見那位繡藝師,筆記本上的星圖就會多幾筆走神的線條。"
+
+msgid "跑了四十年船的老船長，退下來當港務長。嗓門大心腸軟，全鎮的船都經過他的手。年輕時和廟祝雲姨有過一段沒說完的故事。"
+msgstr "跑了四十年船的老船長，退下來當港務長。嗓門大心腸軟，全鎮的船都經過他的手。年輕時和廟祝雲姨有過一段沒說完的故事。"
+
+msgid "天不亮就出海的討海青年，蚵田和漁獲都靠他。曬得黝黑，笑起來一口白牙。每天收工都繞去海味居，只為看掌杓的小鷗一眼。"
+msgstr "天不亮就出海的討海青年，蚵田和漁獲都靠他。曬得黝黑，笑起來一口白牙。每天收工都繞去海味居，只為看掌杓的小鷗一眼。"
+
+msgid "海味居的掌杓姑娘，一手海鮮料理讓過路商人特地繞港。開朗愛笑，渾然不覺兩個男人都在偷偷看她。"
+msgstr "海味居的掌杓姑娘，一手海鮮料理讓過路商人特地繞港。開朗愛笑，渾然不覺兩個男人都在偷偷看她。"
+
+msgid "跑船帶貨的老江湖，南北雜貨行的貨都是他捎回來的。嘴上沒把門，外地的八卦比報紙還快。和補帆的秀姑是老夫老妻。"
+msgstr "跑船帶貨的老江湖，南北雜貨行的貨都是他捎回來的。嘴上沒把門，外地的八卦比報紙還快。和補帆的秀姑是老夫老妻。"
+
+msgid "補了三十年帆的巧手，鎮上人的衣裳也全是她做的。和浪叔鬥了半輩子嘴，針線一拿起來誰都不理。"
+msgstr "補了三十年帆的巧手，鎮上人的衣裳也全是她做的。和浪叔鬥了半輩子嘴，針線一拿起來誰都不理。"
+
+msgid "鹽場的老鹽工，沉默得像塊礁石。二十年前一場船難後，就和燈塔的燈爺再沒說過一句話——沒人知道那晚發生了什麼。"
+msgstr "鹽場的老鹽工，沉默得像塊礁石。二十年前一場船難後，就和燈塔的燈爺再沒說過一句話——沒人知道那晚發生了什麼。"
+
+msgid "守了半輩子燈塔的老人，夜裡點燈、白天睡覺，和全鎮作息相反。書房堆滿航海日誌。提到石叔，他只會把燈芯撥得更亮。"
+msgstr "守了半輩子燈塔的老人，夜裡點燈、白天睡覺，和全鎮作息相反。書房堆滿航海日誌。提到石叔，他只會把燈芯撥得更亮。"
+
+msgid "海女出身的醫師，潛得比誰都深，也把診療所打理得一塵不染。誰家被海膽扎了、被日頭曬昏了，都是她救的。和小鷗是無話不談的手帕交。"
+msgstr "海女出身的醫師，潛得比誰都深，也把診療所打理得一塵不染。誰家被海膽扎了、被日頭曬昏了，都是她救的。和小鷗是無話不談的手帕交。"
+
+msgid "修船工房的鐵匠，錨鏈和船釘都出自他的爐子。話少手巧，打鐵的節奏永遠穩。只有小鷗送飯來的時候，鎚子才會敲歪。"
+msgstr "修船工房的鐵匠，錨鏈和船釘都出自他的爐子。話少手巧，打鐵的節奏永遠穩。只有小鷗送飯來的時候，鎚子才會敲歪。"
+
+msgid "海神小廟的廟祝，出海的人都來求她一炷平安香。溫柔健談，只有海伯經過廟前時，她會突然想不起下一句經文。"
+msgstr "海神小廟的廟祝，出海的人都來求她一炷平安香。溫柔健談，只有海伯經過廟前時，她會突然想不起下一句經文。"
+
+msgid "望潮哨的哨長，颱風天全鎮聽他的哨音行動。責任感重但佔有慾也重，看誰跟阿汐多說兩句話都不順眼。"
+msgstr "望潮哨的哨長，颱風天全鎮聽他的哨音行動。責任感重但佔有慾也重，看誰跟阿汐多說兩句話都不順眼。"
+
+msgid "船木匠，手藝一流但三天打魚兩天曬網——字面意義上的。最愛躺在曬網場講他「差點抓到人魚」的故事。"
+msgstr "船木匠，手藝一流但三天打魚兩天曬網——字面意義上的。最愛躺在曬網場講他「差點抓到人魚」的故事。"
+
+msgid "研究潮汐與洋流的年輕學者，筆記本永遠算不完。緊張起來會語無倫次，只有看海的時候是平靜的。"
+msgstr "研究潮汐與洋流的年輕學者，筆記本永遠算不完。緊張起來會語無倫次，只有看海的時候是平靜的。"
+
+msgid "蚵田的少年，話少得像蚵殼。每天默默把最好的海菜留在珊珊的窗台上，從來不敢署名。"
+msgstr "蚵田的少年，話少得像蚵殼。每天默默把最好的海菜留在珊珊的窗台上，從來不敢署名。"
+
+msgid "鎮上最老的海女退休後在海味居幫廚，醃的魚乾是傳家手藝。誰家的曾祖父年輕時暗戀過誰，她都記得。"
+msgstr "鎮上最老的海女退休後在海味居幫廚，醃的魚乾是傳家手藝。誰家的曾祖父年輕時暗戀過誰，她都記得。"
+
+msgid "明明分了,見面卻還是躲躲閃閃...是還沒放下嗎?"
+msgstr "明明分了,見面卻還是躲躲閃閃...是還沒放下嗎?"
+
+msgid "好像都對"
+msgstr "好像都對"
+
+msgid "有意思,這下有得瞧了。"
+msgstr "有意思,這下有得瞧了。"
+
+msgid "的樑子結很久了,一見面就火藥味十足。"
+msgstr "的樑子結很久了,一見面就火藥味十足。"
+
+msgid "聽說孫雨最近老往診所跑,林美醫生好像也不排斥她的陪伴...倒是守衛楊鋒的臉色越來越難看。"
+msgstr "聽說孫雨最近老往診所跑,林美醫生好像也不排斥她的陪伴...倒是守衛楊鋒的臉色越來越難看。"
+
+msgid "新來的高朗是吳達的老袍澤,一來就跟楊鋒針鋒相對...酒館的火藥味濃得化不開。"
+msgstr "新來的高朗是吳達的老袍澤,一來就跟楊鋒針鋒相對...酒館的火藥味濃得化不開。"
+
+msgid "糕點師傅蘇晴的早餐總幫劉俊多留一份,可劉俊的心思好像還在許瑩身上...這下有得瞧了。"
+msgstr "糕點師傅蘇晴的早餐總幫劉俊多留一份,可劉俊的心思好像還在許瑩身上...這下有得瞧了。"
+
+msgid "遊戲讀取成功！"
+msgstr "遊戲讀取成功！"
+
+msgid "——"
+msgstr "——"
+
+msgid "一支風塵僕僕的商隊在鎮口停下,領隊朝你眨眨眼。"
+msgstr "一支風塵僕僕的商隊在鎮口停下,領隊朝你眨眨眼。"
+
+msgid "旅行商隊經過"
+msgstr "旅行商隊經過"
+
+msgid "稀有貨物讓全鎮眼睛發亮,士氣大振。"
+msgstr "稀有貨物讓全鎮眼睛發亮,士氣大振。"
+
+msgid "花 40 銀幣,換來全鎮的好心情與糧食"
+msgstr "花 40 銀幣,換來全鎮的好心情與糧食"
+
+msgid "買下稀有貨物"
+msgstr "買下稀有貨物"
+
+msgid "一位新居民決定在邊境鎮落腳。"
+msgstr "一位新居民決定在邊境鎮落腳。"
+
+msgid "招募新血"
+msgstr "招募新血"
+
+msgid "說服一位旅人留下來定居"
+msgstr "說服一位旅人留下來定居"
+
+msgid "之間,似乎有什麼悄悄萌芽了。"
+msgstr "之間,似乎有什麼悄悄萌芽了。"
+
+msgid "可惜鎮上沒有適合的單身男女。"
+msgstr "可惜鎮上沒有適合的單身男女。"
+
+msgid "商隊帶來遠方的風流韻事…也撩動了鎮上某兩顆心"
+msgstr "商隊帶來遠方的風流韻事…也撩動了鎮上某兩顆心"
+
+msgid "打聽消息"
+msgstr "打聽消息"
+
+msgid "一位蒙面旅人留下一句祝禱,便消失在暮色裡。"
+msgstr "一位蒙面旅人留下一句祝禱,便消失在暮色裡。"
+
+msgid "神秘旅人的祝福"
+msgstr "神秘旅人的祝福"
+
+msgid "一股迷人的氣質,悄悄籠罩了全鎮。"
+msgstr "一股迷人的氣質,悄悄籠罩了全鎮。"
+
+msgid "全鎮居民魅力 +1"
+msgstr "全鎮居民魅力 +1"
+
+msgid "魅力之祝"
+msgstr "魅力之祝"
+
+msgid "全鎮居民膽識 +1"
+msgstr "全鎮居民膽識 +1"
+
+msgid "居民們的眼神,多了幾分堅定。"
+msgstr "居民們的眼神,多了幾分堅定。"
+
+msgid "膽識之祝"
+msgstr "膽識之祝"
+
+msgid "全鎮居民智慧 +1"
+msgstr "全鎮居民智慧 +1"
+
+msgid "智慧之祝"
+msgstr "智慧之祝"
+
+msgid "鎮上彷彿一夜之間開了竅。"
+msgstr "鎮上彷彿一夜之間開了竅。"
+
+msgid "今年收成不錯,穀倉滿溢。該怎麼運用這份餘裕?"
+msgstr "今年收成不錯,穀倉滿溢。該怎麼運用這份餘裕?"
+
+msgid "豐收的抉擇"
+msgstr "豐收的抉擇"
+
+msgid "囤積過冬"
+msgstr "囤積過冬"
+
+msgid "把餘糧全存起來(+40 糧食)"
+msgstr "把餘糧全存起來(+40 糧食)"
+
+msgid "穀倉裝得滿滿當當,過冬不愁了。"
+msgstr "穀倉裝得滿滿當當,過冬不愁了。"
+
+msgid "全鎮同歡(-15 糧食,士氣大漲)"
+msgstr "全鎮同歡(-15 糧食,士氣大漲)"
+
+msgid "大辦豐收宴"
+msgstr "大辦豐收宴"
+
+msgid "豐收宴的笑聲響徹整條街。"
+msgstr "豐收宴的笑聲響徹整條街。"
+
+msgid "換成現金(-20 糧食,+30 銀幣)"
+msgstr "換成現金(-20 糧食,+30 銀幣)"
+
+msgid "賣給商人"
+msgstr "賣給商人"
+
+msgid "餘糧換成了沉甸甸的銀幣。"
+msgstr "餘糧換成了沉甸甸的銀幣。"
+
+msgid "一則來路不明的傳聞在鎮上流竄,你要怎麼撥弄這把火?"
+msgstr "一則來路不明的傳聞在鎮上流竄,你要怎麼撥弄這把火?"
+
+msgid "謠言的火種"
+msgstr "謠言的火種"
+
+msgid "在你的推波助瀾下,"
+msgstr "在你的推波助瀾下,"
+
+msgid "撮合一對有緣人"
+msgstr "撮合一對有緣人"
+
+msgid "沒有適合湊對的人。"
+msgstr "沒有適合湊對的人。"
+
+msgid "走得更近了。"
+msgstr "走得更近了。"
+
+msgid "順水推舟"
+msgstr "順水推舟"
+
+msgid "因為這則謠言結下了樑子。"
+msgstr "因為這則謠言結下了樑子。"
+
+msgid "挑撥離間"
+msgstr "挑撥離間"
+
+msgid "沒能挑起什麼事端。"
+msgstr "沒能挑起什麼事端。"
+
+msgid "讓兩人反目(製造衝突)"
+msgstr "讓兩人反目(製造衝突)"
+
+msgid "壓下謠言"
+msgstr "壓下謠言"
+
+msgid "息事寧人(全鎮 +3 心情)"
+msgstr "息事寧人(全鎮 +3 心情)"
+
+msgid "謠言被你巧妙地平息,鎮上恢復平靜。"
+msgstr "謠言被你巧妙地平息,鎮上恢復平靜。"
+
+msgid "一位賭徒攤開骰盅,問你敢不敢賭一把。"
+msgstr "一位賭徒攤開骰盅,問你敢不敢賭一把。"
+
+msgid "命運的賭注"
+msgstr "命運的賭注"
+
+msgid "拿一筆小錢就走(+15 銀幣)"
+msgstr "拿一筆小錢就走(+15 銀幣)"
+
+msgid "穩穩收下"
+msgstr "穩穩收下"
+
+msgid "落袋為安,穩穩賺了一小筆。"
+msgstr "落袋為安,穩穩賺了一小筆。"
+
+msgid "五五波:大賺 +60 或慘賠 -30 銀幣"
+msgstr "五五波:大賺 +60 或慘賠 -30 銀幣"
+
+msgid "手氣不佳,賠了 30 銀幣…"
+msgstr "手氣不佳,賠了 30 銀幣…"
+
+msgid "豪賭一場"
+msgstr "豪賭一場"
+
+msgid "骰子擲出好彩頭,大賺一筆!"
+msgstr "骰子擲出好彩頭,大賺一筆!"
+
+msgid "不賭走人"
+msgstr "不賭走人"
+
+msgid "遠離是非(全鎮 +2 心情)"
+msgstr "遠離是非(全鎮 +2 心情)"
+
+msgid "一位背著藥箱的醫者投宿一晚,想回報你的款待。"
+msgstr "一位背著藥箱的醫者投宿一晚,想回報你的款待。"
+
+msgid "遊方醫者"
+msgstr "遊方醫者"
+
+msgid "全鎮 +8 心情"
+msgstr "全鎮 +8 心情"
+
+msgid "為全鎮看診"
+msgstr "為全鎮看診"
+
+msgid "醫者妙手回春,鎮民神清氣爽。"
+msgstr "醫者妙手回春,鎮民神清氣爽。"
+
+msgid "傳授醫術"
+msgstr "傳授醫術"
+
+msgid "學到了醫者的學問,智慧大增。"
+msgstr "學到了醫者的學問,智慧大增。"
+
+msgid "提升一位居民的智慧 +2"
+msgstr "提升一位居民的智慧 +2"
+
+msgid "沒有人有空學習。"
+msgstr "沒有人有空學習。"
+
+msgid "+15 糧食(當作補給)"
+msgstr "+15 糧食(當作補給)"
+
+msgid "留下草藥"
+msgstr "留下草藥"
+
+msgid "醫者留下一批珍貴的草藥補給。"
+msgstr "醫者留下一批珍貴的草藥補給。"
+
+msgid "祭典的餘溫還在,你可以讓這份好氣氛延續下去。"
+msgstr "祭典的餘溫還在,你可以讓這份好氣氛延續下去。"
+
+msgid "豐年祭的餘暉"
+msgstr "豐年祭的餘暉"
+
+msgid "延續歡慶"
+msgstr "延續歡慶"
+
+msgid "接下來 8 天,全鎮每天 +1 心情"
+msgstr "接下來 8 天,全鎮每天 +1 心情"
+
+msgid "歡慶的氣氛,會在鎮上多留幾天。"
+msgstr "歡慶的氣氛,會在鎮上多留幾天。"
+
+msgid "歡慶餘暉"
+msgstr "歡慶餘暉"
+
+msgid "你的一番話,讓鎮民精神為之一振。"
+msgstr "你的一番話,讓鎮民精神為之一振。"
+
+msgid "全鎮 +5 心情(一次)"
+msgstr "全鎮 +5 心情(一次)"
+
+msgid "鼓舞士氣"
+msgstr "鼓舞士氣"
+
+msgid "促成情誼"
+msgstr "促成情誼"
+
+msgid "成了無話不談的好友。"
+msgstr "成了無話不談的好友。"
+
+msgid "沒能促成什麼。"
+msgstr "沒能促成什麼。"
+
+msgid "讓兩位居民成為摯友"
+msgstr "讓兩位居民成為摯友"
+
+msgid "——做個選擇吧!"
+msgstr "——做個選擇吧!"
+
+msgid "際遇卡:"
+msgstr "際遇卡:"
+
+msgid "」中選擇了"
+msgstr "」中選擇了"
+
+msgid "動物"
+msgstr "動物"
+
+msgid "秩序"
+msgstr "秩序"
+
+msgid "招募新居民"
+msgstr "招募新居民"
+
+msgid "退還"
+msgstr "退還"
+
+msgid "招募取消"
+msgstr "招募取消"
+
+msgid "需要"
+msgstr "需要"
+
+msgid "加入了邊境鎮"
+msgstr "加入了邊境鎮"
+
+msgid "從遠方來到了邊境鎮"
+msgstr "從遠方來到了邊境鎮"
+
+msgid "已經有人使用了"
+msgstr "已經有人使用了"
+
+msgid "最多只能創建"
+msgstr "最多只能創建"
+
+msgid "個自訂居民"
+msgstr "個自訂居民"
+
+msgid "不能同時選擇"
+msgstr "不能同時選擇"
+
+msgid "在你的帶領下，邊境鎮從一個荒涼的小村莊，發展成為遠近聞名的繁榮城鎮。商人絡繹不絕，居民安居樂業。"
+msgstr "在你的帶領下，邊境鎮從一個荒涼的小村莊，發展成為遠近聞名的繁榮城鎮。商人絡繹不絕，居民安居樂業。"
+
+msgid "你選擇了和平與友愛的道路。鎮上每個人都是你的朋友，這裡沒有紛爭，只有溫暖。"
+msgstr "你選擇了和平與友愛的道路。鎮上每個人都是你的朋友，這裡沒有紛爭，只有溫暖。"
+
+msgid "你征服了每一個挑戰，開創了所有產業，建立了深厚的人際關係。你的名字將被世世代代傳頌。"
+msgstr "你征服了每一個挑戰，開創了所有產業，建立了深厚的人際關係。你的名字將被世世代代傳頌。"
+
+msgid "你在這片土地上找到了真愛，組建了家庭。這就是你的歸宿。"
+msgstr "你在這片土地上找到了真愛，組建了家庭。這就是你的歸宿。"
+
+msgid "恭喜"
+msgstr "恭喜"
+
+msgid "達成"
+msgstr "達成"
+
+msgid "未知"
+msgstr "未知"
+
+msgid "在邊境鎮度過了"
+msgstr "在邊境鎮度過了"
+
+msgid "天的歲月"
+msgstr "天的歲月"
+
+msgid "，以"
+msgstr "，以"
+
+msgid "的身份"
+msgstr "的身份"
+
+msgid "，從一介旅人成長為這座小鎮不可或缺的一份子。"
+msgstr "，從一介旅人成長為這座小鎮不可或缺的一份子。"
+
+msgid "在這段旅途中，與"
+msgstr "在這段旅途中，與"
+
+msgid "結為連理"
+msgstr "結為連理"
+
+msgid "，養育了"
+msgstr "，養育了"
+
+msgid "個孩子"
+msgstr "個孩子"
+
+msgid "，建立了溫暖的家庭。"
+msgstr "，建立了溫暖的家庭。"
+
+msgid "經歷了"
+msgstr "經歷了"
+
+msgid "段感情"
+msgstr "段感情"
+
+msgid "，其中"
+msgstr "，其中"
+
+msgid "段已成往事"
+msgstr "段已成往事"
+
+msgid "結交了"
+msgstr "結交了"
+
+msgid "位摯友"
+msgstr "位摯友"
+
+msgid "，與"
+msgstr "，與"
+
+msgid "的友誼最為深厚"
+msgstr "的友誼最為深厚"
+
+msgid "也樹立了"
+msgstr "也樹立了"
+
+msgid "個敵人"
+msgstr "個敵人"
+
+msgid "的恩怨最深"
+msgstr "的恩怨最深"
+
+msgid "完成了"
+msgstr "完成了"
+
+msgid "個任務"
+msgstr "個任務"
+
+msgid "，聲望達到"
+msgstr "，聲望達到"
+
+msgid "小鎮的繁榮度達到了"
+msgstr "小鎮的繁榮度達到了"
+
+msgid "，等級為"
+msgstr "，等級為"
+
+msgid "在這段歲月中，"
+msgstr "在這段歲月中，"
+
+msgid "位居民離開了人世"
+msgstr "位居民離開了人世"
+
+msgid "，包括"
+msgstr "，包括"
+
+msgid "這就是"
+msgstr "這就是"
+
+msgid "在邊境鎮的故事——"
+msgstr "在邊境鎮的故事——"
+
+msgid "一生總結"
+msgstr "一生總結"
+
+msgid "人生數據"
+msgstr "人生數據"
+
+msgid "感情生活"
+msgstr "感情生活"
+
+msgid "子女"
+msgstr "子女"
+
+msgid "戀愛次數"
+msgstr "戀愛次數"
+
+msgid "仇敵"
+msgstr "仇敵"
+
+msgid "出軌次數"
+msgstr "出軌次數"
+
+msgid "成就統計"
+msgstr "成就統計"
+
+msgid "開發產業"
+msgstr "開發產業"
+
+msgid "建設建築"
+msgstr "建設建築"
+
+msgid "城鎮等級"
+msgstr "城鎮等級"
+
+msgid "鎮民去世"
+msgstr "鎮民去世"
+
+msgid "技能"
+msgstr "技能"
+
+msgid "總計："
+msgstr "總計："
+
+msgid "最重要的人"
+msgstr "最重要的人"
+
+msgid "逝去的人們"
+msgstr "逝去的人們"
+
+msgid "有興趣"
+msgstr "有興趣"
+
+msgid "熱情"
+msgstr "熱情"
+
+msgid "住院治療"
+msgstr "住院治療"
+
+msgid "出院了"
+msgstr "出院了"
+
+msgid "康復出院了"
+msgstr "康復出院了"
+
+msgid "大打出手"
+msgstr "大打出手"
+
+msgid "被送進診所"
+msgstr "被送進診所"
+
+msgid "把"
+msgstr "把"
+
+msgid "打進了診所"
+msgstr "打進了診所"
+
+msgid "目擊者"
+msgstr "目擊者"
+
+msgid "配合得越來越默契了"
+msgstr "配合得越來越默契了"
+
+msgid "劈腿，當街痛打了一頓"
+msgstr "劈腿，當街痛打了一頓"
+
+msgid "抓到了！對象是"
+msgstr "抓到了！對象是"
+
+msgid "轟動全鎮"
+msgstr "轟動全鎮"
+
+msgid "的秘密關係被揭穿了"
+msgstr "的秘密關係被揭穿了"
+
+msgid "🔥 頭條報導"
+msgstr "🔥 頭條報導"
+
+msgid "今天是平靜的一天，鎮上一切如常。"
+msgstr "今天是平靜的一天，鎮上一切如常。"
+
+msgid "📋 鎮務簡報"
+msgstr "📋 鎮務簡報"
+
+msgid "坐在廣場的長椅上寫完這篇報導，夕陽正好灑在稿紙上。"
+msgstr "坐在廣場的長椅上寫完這篇報導，夕陽正好灑在稿紙上。"
+
+msgid "最近鎮上的人越來越多了，每天都有新鮮事可以寫。"
+msgstr "最近鎮上的人越來越多了，每天都有新鮮事可以寫。"
+
+msgid "希望明天也是值得記錄的一天。要是沒有新聞⋯那就寫天氣吧。"
+msgstr "希望明天也是值得記錄的一天。要是沒有新聞⋯那就寫天氣吧。"
+
+msgid "聽說隔壁鎮的人都想來我們這裡，不知道是不是因為讀了我的日報呢？"
+msgstr "聽說隔壁鎮的人都想來我們這裡，不知道是不是因為讀了我的日報呢？"
+
+msgid "手都寫酸了，不過能把小鎮的故事記錄下來，這份工作還是挺值得的。"
+msgstr "手都寫酸了，不過能把小鎮的故事記錄下來，這份工作還是挺值得的。"
+
+msgid "需要農業"
+msgstr "需要農業"
+
+msgid "銀幣買種子"
+msgstr "銀幣買種子"
+
+msgid "種子"
+msgstr "種子"
+
+msgid "收穫了"
+msgstr "收穫了"
+
+msgid "單位"
+msgstr "單位"
+
+msgid "品質"
+msgstr "品質"
+
+msgid "因為季節不對而枯萎了"
+msgstr "因為季節不對而枯萎了"
+
+msgid "作物"
+msgstr "作物"
+
+msgid "開啟了"
+msgstr "開啟了"
+
+msgid "城鎮開啟了新產業"
+msgstr "城鎮開啟了新產業"
+
+msgid "未擁有此產業"
+msgstr "未擁有此產業"
+
+msgid "升級到"
+msgstr "升級到"
+
+msgid "升級到了"
+msgstr "升級到了"
+
+msgid "城鎮升級為"
+msgstr "城鎮升級為"
+
+msgid "可以開啟新產業了"
+msgstr "可以開啟新產業了"
+
+msgid "開始建造"
+msgstr "開始建造"
+
+msgid "產出了"
+msgstr "產出了"
+
+msgid "新訂單"
+msgstr "新訂單"
+
+msgid "價格"
+msgstr "價格"
+
+msgid "訂單完成"
+msgstr "訂單完成"
+
+msgid "獲得"
+msgstr "獲得"
+
+msgid "訂單過期"
+msgstr "訂單過期"
+
+msgid "劉俊偷偷寫了一封情書給許瑩，但不敢寄出..."
+msgstr "劉俊偷偷寫了一封情書給許瑩，但不敢寄出..."
+
+msgid "把情書交給許瑩"
+msgstr "把情書交給許瑩"
+
+msgid "回報劉俊結果"
+msgstr "回報劉俊結果"
+
+msgid "與劉俊好感度達到 60"
+msgstr "與劉俊好感度達到 60"
+
+msgid "鼓勵劉俊 3 次"
+msgstr "鼓勵劉俊 3 次"
+
+msgid "劉俊終於跨出了那一步。不管結果如何，他都很感激你。"
+msgstr "劉俊終於跨出了那一步。不管結果如何，他都很感激你。"
+
+msgid "其實...有件事我想找人幫忙，但有點不好意思說..."
+msgstr "其實...有件事我想找人幫忙，但有點不好意思說..."
+
+msgid "最近劉俊看到我就臉紅，真是奇怪..."
+msgstr "最近劉俊看到我就臉紅，真是奇怪..."
+
+msgid "爺爺的種植手札"
+msgstr "爺爺的種植手札"
+
+msgid "劉俊的爺爺留下一本古老的種植手札，裡面記載了失傳的稀有作物種植法..."
+msgstr "劉俊的爺爺留下一本古老的種植手札，裡面記載了失傳的稀有作物種植法..."
+
+msgid "一起研究手札"
+msgstr "一起研究手札"
+
+msgid "提供 50 食物作為實驗材料"
+msgstr "提供 50 食物作為實驗材料"
+
+msgid "與劉俊討論手札 5 次"
+msgstr "與劉俊討論手札 5 次"
+
+msgid "你們成功解讀了手札中的秘密！農場產量將會提升。"
+msgstr "你們成功解讀了手札中的秘密！農場產量將會提升。"
+
+msgid "我爺爺留下一本種植手札...不知道你有沒有興趣看看？"
+msgstr "我爺爺留下一本種植手札...不知道你有沒有興趣看看？"
+
+msgid "老礦工的秘密"
+msgstr "老礦工的秘密"
+
+msgid "吳達說年輕時發現過一條金礦脈，但礦坑塌了..."
+msgstr "吳達說年輕時發現過一條金礦脈，但礦坑塌了..."
+
+msgid "跟他一起去找"
+msgstr "跟他一起去找"
+
+msgid "準備 40 木材加固礦道"
+msgstr "準備 40 木材加固礦道"
+
+msgid "準備 10 金屬做工具"
+msgstr "準備 10 金屬做工具"
+
+msgid "吳達好感度達到 55"
+msgstr "吳達好感度達到 55"
+
+msgid "組織探礦隊"
+msgstr "組織探礦隊"
+
+msgid "支付 100 銀幣僱人"
+msgstr "支付 100 銀幣僱人"
+
+msgid "鎮上至少 12 人"
+msgstr "鎮上至少 12 人"
+
+msgid "你們找到了傳說中的金礦脈！吳達激動得說不出話來。"
+msgstr "你們找到了傳說中的金礦脈！吳達激動得說不出話來。"
+
+msgid "年輕時我在廢礦裡看到過會發光的石頭...你信嗎？"
+msgstr "年輕時我在廢礦裡看到過會發光的石頭...你信嗎？"
+
+msgid "尋找傳人"
+msgstr "尋找傳人"
+
+msgid "吳達覺得自己年紀大了，想找人傳承採礦技術..."
+msgstr "吳達覺得自己年紀大了，想找人傳承採礦技術..."
+
+msgid "你來學"
+msgstr "你來學"
+
+msgid "跟吳達學習 8 次"
+msgstr "跟吳達學習 8 次"
+
+msgid "幫他找徒弟"
+msgstr "幫他找徒弟"
+
+msgid "全鎮平均好感度 30+"
+msgstr "全鎮平均好感度 30+"
+
+msgid "鎮上至少 15 人"
+msgstr "鎮上至少 15 人"
+
+msgid "吳達的技術不會失傳了。他笑得像個孩子。"
+msgstr "吳達的技術不會失傳了。他笑得像個孩子。"
+
+msgid "唉...我這把老骨頭還能挖幾年呢..."
+msgstr "唉...我這把老骨頭還能挖幾年呢..."
+
+msgid "夢想中的新衣"
+msgstr "夢想中的新衣"
+
+msgid "許瑩想設計一套全新的服飾，作為送給劉俊的禮物..."
+msgstr "許瑩想設計一套全新的服飾，作為送給劉俊的禮物..."
+
+msgid "幫她收集材料"
+msgstr "幫她收集材料"
+
+msgid "提供 30 銀幣買布料"
+msgstr "提供 30 銀幣買布料"
+
+msgid "與許瑩討論設計 3 次"
+msgstr "與許瑩討論設計 3 次"
+
+msgid "許瑩的新作品讓全鎮驚艷！她感激地看著你。"
+msgstr "許瑩的新作品讓全鎮驚艷！她感激地看著你。"
+
+msgid "我最近有個設計靈感...但需要一些材料..."
+msgstr "我最近有個設計靈感...但需要一些材料..."
+
+msgid "邊境鎮時裝秀"
+msgstr "邊境鎮時裝秀"
+
+msgid "許瑩想在鎮上辦一場時裝秀，展示她所有的作品..."
+msgstr "許瑩想在鎮上辦一場時裝秀，展示她所有的作品..."
+
+msgid "幫她籌辦"
+msgstr "幫她籌辦"
+
+msgid "支付 80 銀幣場地費"
+msgstr "支付 80 銀幣場地費"
+
+msgid "邀請至少 5 位朋友來看"
+msgstr "邀請至少 5 位朋友來看"
+
+msgid "邊境鎮第一場時裝秀圓滿成功！全鎮歡慶！"
+msgstr "邊境鎮第一場時裝秀圓滿成功！全鎮歡慶！"
+
+msgid "你覺得我們鎮上能辦一場時裝秀嗎...？"
+msgstr "你覺得我們鎮上能辦一場時裝秀嗎...？"
+
+msgid "鎮長的過去"
+msgstr "鎮長的過去"
+
+msgid "陳偉似乎有著不為人知的過去。他偶爾會望著遠方發呆..."
+msgstr "陳偉似乎有著不為人知的過去。他偶爾會望著遠方發呆..."
+
+msgid "傾聽他的故事"
+msgstr "傾聽他的故事"
+
+msgid "與陳偉深談 6 次"
+msgstr "與陳偉深談 6 次"
+
+msgid "陳偉好感度達到 60"
+msgstr "陳偉好感度達到 60"
+
+msgid "陳偉第一次向人敞開心扉。「謝謝你願意聽我說...」"
+msgstr "陳偉第一次向人敞開心扉。「謝謝你願意聽我說...」"
+
+msgid "有時候我會想...當初離開京城到底是對是錯..."
+msgstr "有時候我會想...當初離開京城到底是對是錯..."
+
+msgid "鎮長的願景"
+msgstr "鎮長的願景"
+
+msgid "陳偉想在卸任前為小鎮留下一份珍貴的禮物——一部完整的鎮志..."
+msgstr "陳偉想在卸任前為小鎮留下一份珍貴的禮物——一部完整的鎮志..."
+
+msgid "幫他撰寫鎮志"
+msgstr "幫他撰寫鎮志"
+
+msgid "總對話次數達到 20"
+msgstr "總對話次數達到 20"
+
+msgid "認識至少 8 位鎮民"
+msgstr "認識至少 8 位鎮民"
+
+msgid "陳偉好感度達到 80"
+msgstr "陳偉好感度達到 80"
+
+msgid "《邊境鎮志》完成了。陳偉老淚縱橫：「這個鎮的故事，值得被記住。」"
+msgstr "《邊境鎮志》完成了。陳偉老淚縱橫：「這個鎮的故事，值得被記住。」"
+
+msgid "如果有人能把這個鎮的故事記下來就好了..."
+msgstr "如果有人能把這個鎮的故事記下來就好了..."
+
+msgid "失傳的草藥方"
+msgstr "失傳的草藥方"
+
+msgid "林美在整理醫書時發現一個古老的草藥配方，但缺少關鍵藥材..."
+msgstr "林美在整理醫書時發現一個古老的草藥配方，但缺少關鍵藥材..."
+
+msgid "幫她採集藥材"
+msgstr "幫她採集藥材"
+
+msgid "採集 30 份草藥（食物類）"
+msgstr "採集 30 份草藥（食物類）"
+
+msgid "與林美討論配方 3 次"
+msgstr "與林美討論配方 3 次"
+
+msgid "林美成功還原了古老的草藥配方！「有了這個，鎮上的人都能更健康了。」"
+msgstr "林美成功還原了古老的草藥配方！「有了這個，鎮上的人都能更健康了。」"
+
+msgid "我最近在舊醫書裡發現了一個有趣的配方..."
+msgstr "我最近在舊醫書裡發現了一個有趣的配方..."
+
+msgid "夢想中的診所"
+msgstr "夢想中的診所"
+
+msgid "林美想建一座真正的診所，不再是在帳篷裡看病..."
+msgstr "林美想建一座真正的診所，不再是在帳篷裡看病..."
+
+msgid "幫她建診所"
+msgstr "幫她建診所"
+
+msgid "提供 60 木材"
+msgstr "提供 60 木材"
+
+msgid "提供 30 石材"
+msgstr "提供 30 石材"
+
+msgid "鎮上至少 4 座建築"
+msgstr "鎮上至少 4 座建築"
+
+msgid "新診所落成了！林美感動地說：「終於可以好好照顧大家了。」"
+msgstr "新診所落成了！林美感動地說：「終於可以好好照顧大家了。」"
+
+msgid "如果能有一間真正的診所就好了...帳篷裡實在不方便。"
+msgstr "如果能有一間真正的診所就好了...帳篷裡實在不方便。"
+
+msgid "傳說中的鑄劍術"
+msgstr "傳說中的鑄劍術"
+
+msgid "張豪一直想重現失傳的古代鑄劍術，但需要特殊的材料..."
+msgstr "張豪一直想重現失傳的古代鑄劍術，但需要特殊的材料..."
+
+msgid "幫他收集材料"
+msgstr "幫他收集材料"
+
+msgid "提供 30 金屬"
+msgstr "提供 30 金屬"
+
+msgid "提供 20 木材（木炭用）"
+msgstr "提供 20 木材（木炭用）"
+
+msgid "找資料"
+msgstr "找資料"
+
+msgid "請孫雨幫忙查古籍 3 次"
+msgstr "請孫雨幫忙查古籍 3 次"
+
+msgid "張豪好感度達到 60"
+msgstr "張豪好感度達到 60"
+
+msgid "張豪成功鑄出了傳說級的武器！「這是我一生的巔峰之作！」"
+msgstr "張豪成功鑄出了傳說級的武器！「這是我一生的巔峰之作！」"
+
+msgid "傳說這座山脈曾經出產過神奇的礦石...你知道嗎？"
+msgstr "傳說這座山脈曾經出產過神奇的礦石...你知道嗎？"
+
+msgid "王麗的秘方"
+msgstr "王麗的秘方"
+
+msgid "王麗想用她母親留下的秘方，為全鎮準備一場盛宴..."
+msgstr "王麗想用她母親留下的秘方，為全鎮準備一場盛宴..."
+
+msgid "幫她準備材料"
+msgstr "幫她準備材料"
+
+msgid "準備 60 食物"
+msgstr "準備 60 食物"
+
+msgid "購買 20 銀幣的香料"
+msgstr "購買 20 銀幣的香料"
+
+msgid "全鎮大宴！每個人都吃得心滿意足，王麗笑開了花。"
+msgstr "全鎮大宴！每個人都吃得心滿意足，王麗笑開了花。"
+
+msgid "我媽媽留了一道拿手菜的食譜給我...但材料不太好找。"
+msgstr "我媽媽留了一道拿手菜的食譜給我...但材料不太好找。"
+
+msgid "開一間餐館"
+msgstr "開一間餐館"
+
+msgid "王麗夢想開一間正式的餐館，讓鎮民有個聚會的好地方..."
+msgstr "王麗夢想開一間正式的餐館，讓鎮民有個聚會的好地方..."
+
+msgid "幫她開餐館"
+msgstr "幫她開餐館"
+
+msgid "提供 50 木材"
+msgstr "提供 50 木材"
+
+msgid "投資 100 銀幣"
+msgstr "投資 100 銀幣"
+
+msgid "鎮上至少 5 座建築"
+msgstr "鎮上至少 5 座建築"
+
+msgid "「邊境小館」正式開張！王麗的手藝讓路過的商人都驚豔不已。"
+msgstr "「邊境小館」正式開張！王麗的手藝讓路過的商人都驚豔不已。"
+
+msgid "如果有一天我能開間餐館就好了..."
+msgstr "如果有一天我能開間餐館就好了..."
+
+msgid "新的貿易路線"
+msgstr "新的貿易路線"
+
+msgid "趙霞聽說山的另一邊有個繁華的城鎮，想開拓新的貿易路線..."
+msgstr "趙霞聽說山的另一邊有個繁華的城鎮，想開拓新的貿易路線..."
+
+msgid "一起去探路"
+msgstr "一起去探路"
+
+msgid "準備 40 食物做路糧"
+msgstr "準備 40 食物做路糧"
+
+msgid "趙霞好感度達到 50"
+msgstr "趙霞好感度達到 50"
+
+msgid "資助她"
+msgstr "資助她"
+
+msgid "提供 150 銀幣資金"
+msgstr "提供 150 銀幣資金"
+
+msgid "新的貿易路線開通了！商人們開始更頻繁地造訪邊境鎮。"
+msgstr "新的貿易路線開通了！商人們開始更頻繁地造訪邊境鎮。"
+
+msgid "你有沒有想過，山的另一邊會是什麼樣子？"
+msgstr "你有沒有想過，山的另一邊會是什麼樣子？"
+
+msgid "守衛的訓練"
+msgstr "守衛的訓練"
+
+msgid "楊鋒想組織一支像樣的巡邏隊，保護小鎮的安全..."
+msgstr "楊鋒想組織一支像樣的巡邏隊，保護小鎮的安全..."
+
+msgid "一起訓練"
+msgstr "一起訓練"
+
+msgid "提供 15 金屬做訓練武器"
+msgstr "提供 15 金屬做訓練武器"
+
+msgid "與楊鋒訓練 4 次"
+msgstr "與楊鋒訓練 4 次"
+
+msgid "巡邏隊成立了！楊鋒信心滿滿地說：「這下沒人敢來鬧事了。」"
+msgstr "巡邏隊成立了！楊鋒信心滿滿地說：「這下沒人敢來鬧事了。」"
+
+msgid "光靠我一個人守不住整個鎮子啊..."
+msgstr "光靠我一個人守不住整個鎮子啊..."
+
+msgid "楊鋒的新武器"
+msgstr "楊鋒的新武器"
+
+msgid "聽說張豪練成了傳說級的鑄劍術，楊鋒想請他打一把好武器..."
+msgstr "聽說張豪練成了傳說級的鑄劍術，楊鋒想請他打一把好武器..."
+
+msgid "幫他牽線"
+msgstr "幫他牽線"
+
+msgid "張豪好感度達到 40"
+msgstr "張豪好感度達到 40"
+
+msgid "提供 20 金屬做材料"
+msgstr "提供 20 金屬做材料"
+
+msgid "楊鋒拿到新武器，激動地舞了一套劍法。「有了這把劍，誰來都不怕！」"
+msgstr "楊鋒拿到新武器，激動地舞了一套劍法。「有了這把劍，誰來都不怕！」"
+
+msgid "聽說張豪最近在研究什麼新的鍛造技術？"
+msgstr "聽說張豪最近在研究什麼新的鍛造技術？"
+
+msgid "古代遺跡的線索"
+msgstr "古代遺跡的線索"
+
+msgid "孫雨在研究中發現了關於附近古代遺跡的線索..."
+msgstr "孫雨在研究中發現了關於附近古代遺跡的線索..."
+
+msgid "一起調查"
+msgstr "一起調查"
+
+msgid "提供 50 銀幣研究經費"
+msgstr "提供 50 銀幣研究經費"
+
+msgid "與孫雨討論發現 5 次"
+msgstr "與孫雨討論發現 5 次"
+
+msgid "你們發現了古代文明的遺跡！孫雨興奮得手都在抖。「這是改寫歷史的發現！」"
+msgstr "你們發現了古代文明的遺跡！孫雨興奮得手都在抖。「這是改寫歷史的發現！」"
+
+msgid "最近我在北邊的山洞裡發現了一些奇怪的符號..."
+msgstr "最近我在北邊的山洞裡發現了一些奇怪的符號..."
+
+msgid "建造圖書館"
+msgstr "建造圖書館"
+
+msgid "孫雨希望建一座圖書館，保存所有的研究成果和知識..."
+msgstr "孫雨希望建一座圖書館，保存所有的研究成果和知識..."
+
+msgid "幫他建圖書館"
+msgstr "幫他建圖書館"
+
+msgid "提供 80 木材"
+msgstr "提供 80 木材"
+
+msgid "提供 40 石材"
+msgstr "提供 40 石材"
+
+msgid "提供 60 銀幣"
+msgstr "提供 60 銀幣"
+
+msgid "圖書館建成了！孫雨小心翼翼地把書一本本擺上書架。「知識是最珍貴的財富。」"
+msgstr "圖書館建成了！孫雨小心翼翼地把書一本本擺上書架。「知識是最珍貴的財富。」"
+
+msgid "這些研究成果如果沒有好好保存，太可惜了..."
+msgstr "這些研究成果如果沒有好好保存，太可惜了..."
+
+msgid "重建神龕"
+msgstr "重建神龕"
+
+msgid "黃莉想在鎮上重建一座被風暴摧毀的古老神龕..."
+msgstr "黃莉想在鎮上重建一座被風暴摧毀的古老神龕..."
+
+msgid "幫她重建"
+msgstr "幫她重建"
+
+msgid "提供 25 石材"
+msgstr "提供 25 石材"
+
+msgid "提供 15 木材"
+msgstr "提供 15 木材"
+
+msgid "與黃莉祈禱 3 次"
+msgstr "與黃莉祈禱 3 次"
+
+msgid "神龕重建完成。黃莉在晨光中虔誠祈禱：「願這片土地上的所有人都平安。」"
+msgstr "神龕重建完成。黃莉在晨光中虔誠祈禱：「願這片土地上的所有人都平安。」"
+
+msgid "那座被毀的老神龕...我一直想把它修好。"
+msgstr "那座被毀的老神龕...我一直想把它修好。"
+
+msgid "豐收祭典"
+msgstr "豐收祭典"
+
+msgid "黃莉想舉辦一場傳統的豐收祭典，祈求來年風調雨順..."
+msgstr "黃莉想舉辦一場傳統的豐收祭典，祈求來年風調雨順..."
+
+msgid "幫她準備祭典"
+msgstr "幫她準備祭典"
+
+msgid "準備 80 食物做祭品"
+msgstr "準備 80 食物做祭品"
+
+msgid "支付 40 銀幣買裝飾"
+msgstr "支付 40 銀幣買裝飾"
+
+msgid "邀請至少 6 位鎮民參加"
+msgstr "邀請至少 6 位鎮民參加"
+
+msgid "豐收祭典圓滿成功！鎮民們載歌載舞，其樂融融。"
+msgstr "豐收祭典圓滿成功！鎮民們載歌載舞，其樂融融。"
+
+msgid "如果能辦一場豐收祭典，大家的心情一定會好很多..."
+msgstr "如果能辦一場豐收祭典，大家的心情一定會好很多..."
+
+msgid "千年古木的傳說"
+msgstr "千年古木的傳說"
+
+msgid "馬強說北山有一棵千年古木，用它的木材可以打造傳世之作..."
+msgstr "馬強說北山有一棵千年古木，用它的木材可以打造傳世之作..."
+
+msgid "一起去北山"
+msgstr "一起去北山"
+
+msgid "準備 30 食物做路糧"
+msgstr "準備 30 食物做路糧"
+
+msgid "馬強好感度達到 65"
+msgstr "馬強好感度達到 65"
+
+msgid "你們找到了傳說中的千年古木！馬強如獲至寶地撫摸著木材。"
+msgstr "你們找到了傳說中的千年古木！馬強如獲至寶地撫摸著木材。"
+
+msgid "有件事...我年輕時在北山發現過一棵千年古木..."
+msgstr "有件事...我年輕時在北山發現過一棵千年古木..."
+
+msgid "馬強的工坊"
+msgstr "馬強的工坊"
+
+msgid "馬強想建一座專業的木工工坊，提升全鎮的建設能力..."
+msgstr "馬強想建一座專業的木工工坊，提升全鎮的建設能力..."
+
+msgid "幫他建工坊"
+msgstr "幫他建工坊"
+
+msgid "提供 100 木材"
+msgstr "提供 100 木材"
+
+msgid "提供 15 金屬做工具"
+msgstr "提供 15 金屬做工具"
+
+msgid "馬強的工坊建成了！全鎮的建設速度都提升了。"
+msgstr "馬強的工坊建成了！全鎮的建設速度都提升了。"
+
+msgid "如果有一間正式的工坊，我能做出更好的東西..."
+msgstr "如果有一間正式的工坊，我能做出更好的東西..."
+
+msgid "馬強（木匠）"
+msgstr "馬強（木匠）"
+
+msgid "透露哪片森林木材最好"
+msgstr "透露哪片森林木材最好"
+
+msgid "教你辨認木材品種（硬木採集捷徑）"
+msgstr "教你辨認木材品種（硬木採集捷徑）"
+
+msgid "千年古木支線任務"
+msgstr "千年古木支線任務"
+
+msgid "自願當伐木場主管"
+msgstr "自願當伐木場主管"
+
+msgid "傳說工具——「這把斧頭跟了我一輩子，現在交給你。」"
+msgstr "傳說工具——「這把斧頭跟了我一輩子，現在交給你。」"
+
+msgid "吳達（礦工）"
+msgstr "吳達（礦工）"
+
+msgid "告訴你哪裡有好石頭"
+msgstr "告訴你哪裡有好石頭"
+
+msgid "大理石礦脈任務"
+msgstr "大理石礦脈任務"
+
+msgid "帶你去秘密礦脈"
+msgstr "帶你去秘密礦脈"
+
+msgid "劉俊（農夫）"
+msgstr "劉俊（農夫）"
+
+msgid "分享種植技巧"
+msgstr "分享種植技巧"
+
+msgid "自動幫你照顧農田"
+msgstr "自動幫你照顧農田"
+
+msgid "張豪（鐵匠）"
+msgstr "張豪（鐵匠）"
+
+msgid "打造工具品質更高"
+msgstr "打造工具品質更高"
+
+msgid "開放大師級鍛造"
+msgstr "開放大師級鍛造"
+
+msgid "趙霞（商人）"
+msgstr "趙霞（商人）"
+
+msgid "交易價格優惠"
+msgstr "交易價格優惠"
+
+msgid "打開商人網絡"
+msgstr "打開商人網絡"
+
+msgid "的個人任務"
+msgstr "的個人任務"
+
+msgid "已觸發"
+msgstr "已觸發"
+
+msgid "似乎有事情想找人幫忙"
+msgstr "似乎有事情想找人幫忙"
+
+msgid "任務獎勵"
+msgstr "任務獎勵"
+
+msgid "的心願"
+msgstr "的心願"
+
+msgid "達成了"
+msgstr "達成了"
+
+msgid "的好感度效果"
+msgstr "的好感度效果"
+
+msgid "你目前有一個未完成的心願"
+msgstr "你目前有一個未完成的心願"
+
+msgid "你因為和玩家的關係好"
+msgstr "你因為和玩家的關係好"
+
+msgid "儲備 80 木材"
+msgstr "儲備 80 木材"
+
+msgid "說服林美教你草藥知識，用智慧過冬。"
+msgstr "說服林美教你草藥知識，用智慧過冬。"
+
+msgid "林美好感度達到 40"
+msgstr "林美好感度達到 40"
+
+msgid "與居民交談 8 次"
+msgstr "與居民交談 8 次"
+
+msgid "建造基礎設施來抵禦寒冬。"
+msgstr "建造基礎設施來抵禦寒冬。"
+
+msgid "完成 2 座建築"
+msgstr "完成 2 座建築"
+
+msgid "開啟 1 個產業"
+msgstr "開啟 1 個產業"
+
+msgid "小鎮平安度過了第一個冬天！你的努力沒有白費。"
+msgstr "小鎮平安度過了第一個冬天！你的努力沒有白費。"
+
+msgid "冬天快到了，得做點準備。你可以多囤點物資，或者找林醫生聊聊。"
+msgstr "冬天快到了，得做點準備。你可以多囤點物資，或者找林醫生聊聊。"
+
+msgid "如果你有興趣，我可以教你一些草藥的知識...對過冬很有幫助。"
+msgstr "如果你有興趣，我可以教你一些草藥的知識...對過冬很有幫助。"
+
+msgid "你要是能幫我找些種子，我教你怎麼種東西。"
+msgstr "你要是能幫我找些種子，我教你怎麼種東西。"
+
+msgid "木材的事找我就對了，不過你得先讓我看看你的誠意。"
+msgstr "木材的事找我就對了，不過你得先讓我看看你的誠意。"
+
+msgid "發展的第一步"
+msgstr "發展的第一步"
+
+msgid "有了基本生存條件，是時候考慮長遠發展了。"
+msgstr "有了基本生存條件，是時候考慮長遠發展了。"
+
+msgid "開啟產業，建立經濟基礎。"
+msgstr "開啟產業，建立經濟基礎。"
+
+msgid "靠人脈和好名聲推動發展。"
+msgstr "靠人脈和好名聲推動發展。"
+
+msgid "全鎮平均好感度達到 20"
+msgstr "全鎮平均好感度達到 20"
+
+msgid "與居民交談 15 次"
+msgstr "與居民交談 15 次"
+
+msgid "產業開始運轉，你正式成為鎮上不可或缺的一份子。"
+msgstr "產業開始運轉，你正式成為鎮上不可或缺的一份子。"
+
+msgid "想賺錢的話，先選個產業做起來。我看好農業或伐木。"
+msgstr "想賺錢的話，先選個產業做起來。我看好農業或伐木。"
+
+msgid "穩定經濟"
+msgstr "穩定經濟"
+
+msgid "小鎮需要一個穩定的經濟體系才能長久。"
+msgstr "小鎮需要一個穩定的經濟體系才能長久。"
+
+msgid "經營路線"
+msgstr "經營路線"
+
+msgid "透過貿易和產業建立經濟。"
+msgstr "透過貿易和產業建立經濟。"
+
+msgid "完成 3 次交易"
+msgstr "完成 3 次交易"
+
+msgid "累積 100 銀幣"
+msgstr "累積 100 銀幣"
+
+msgid "與多位 NPC 建立友誼，互助共榮。"
+msgstr "與多位 NPC 建立友誼，互助共榮。"
+
+msgid "與 3 位 NPC 達到「朋友」關係"
+msgstr "與 3 位 NPC 達到「朋友」關係"
+
+msgid "大興土木，用建設帶動經濟。"
+msgstr "大興土木，用建設帶動經濟。"
+
+msgid "完成 5 座建築"
+msgstr "完成 5 座建築"
+
+msgid "人口達到 12 人"
+msgstr "人口達到 12 人"
+
+msgid "小鎮的經濟開始走上正軌了。"
+msgstr "小鎮的經濟開始走上正軌了。"
+
+msgid "我認識幾個商人，如果你跟我關係好，我可以幫你牽線。"
+msgstr "我認識幾個商人，如果你跟我關係好，我可以幫你牽線。"
+
+msgid "經濟不好的時候，農業最靠譜。我可以幫忙。"
+msgstr "經濟不好的時候，農業最靠譜。我可以幫忙。"
+
+msgid "農耕之道"
+msgstr "農耕之道"
+
+msgid "民以食為天。建立農場，讓小鎮自給自足。"
+msgstr "民以食為天。建立農場，讓小鎮自給自足。"
+
+msgid "務農路線"
+msgstr "務農路線"
+
+msgid "親自種植作物，完成收穫。"
+msgstr "親自種植作物，完成收穫。"
+
+msgid "開啟農業產業"
+msgstr "開啟農業產業"
+
+msgid "完成 3 次收穫"
+msgstr "完成 3 次收穫"
+
+msgid "拜師路線"
+msgstr "拜師路線"
+
+msgid "跟劉俊學種田，事半功倍。"
+msgstr "跟劉俊學種田，事半功倍。"
+
+msgid "劉俊好感度達到 40"
+msgstr "劉俊好感度達到 40"
+
+msgid "完成 1 次收穫"
+msgstr "完成 1 次收穫"
+
+msgid "第一次豐收！農民們歡天喜地。"
+msgstr "第一次豐收！農民們歡天喜地。"
+
+msgid "你對種田有興趣？來，我教你幾招。先從小麥開始最穩。"
+msgstr "你對種田有興趣？來，我教你幾招。先從小麥開始最穩。"
+
+msgid "劉俊那小子種田很有一套，你可以去跟他請教。"
+msgstr "劉俊那小子種田很有一套，你可以去跟他請教。"
+
+msgid "凝聚共識"
+msgstr "凝聚共識"
+
+msgid "小鎮需要向心力。讓居民們感受到歸屬感。"
+msgstr "小鎮需要向心力。讓居民們感受到歸屬感。"
+
+msgid "人氣路線"
+msgstr "人氣路線"
+
+msgid "成為大家喜愛的人物。"
+msgstr "成為大家喜愛的人物。"
+
+msgid "全鎮平均好感度達到 25"
+msgstr "全鎮平均好感度達到 25"
+
+msgid "人口達到 15 人"
+msgstr "人口達到 15 人"
+
+msgid "發展路線"
+msgstr "發展路線"
+
+msgid "用實力說話，讓小鎮更上一層樓。"
+msgstr "用實力說話，讓小鎮更上一層樓。"
+
+msgid "城鎮等級達到 Lv3（村莊）"
+msgstr "城鎮等級達到 Lv3（村莊）"
+
+msgid "開啟 2 個產業"
+msgstr "開啟 2 個產業"
+
+msgid "小鎮的居民們已經把你當成自己人了。"
+msgstr "小鎮的居民們已經把你當成自己人了。"
+
+msgid "你做的事大家都看在眼裡。繼續加油，這個鎮需要你。"
+msgstr "你做的事大家都看在眼裡。繼續加油，這個鎮需要你。"
+
+msgid "人心齊，泰山移。多跟大家聊聊天，讓他們感受到溫暖。"
+msgstr "人心齊，泰山移。多跟大家聊聊天，讓他們感受到溫暖。"
+
+msgid "風暴來襲"
+msgstr "風暴來襲"
+
+msgid "一場突如其來的危機降臨小鎮。你必須帶領大家度過難關。"
+msgstr "一場突如其來的危機降臨小鎮。你必須帶領大家度過難關。"
+
+msgid "武力路線"
+msgstr "武力路線"
+
+msgid "靠武力和防禦正面迎擊。"
+msgstr "靠武力和防禦正面迎擊。"
+
+msgid "楊鋒好感度達到 40"
+msgstr "楊鋒好感度達到 40"
+
+msgid "成功抵禦入侵"
+msgstr "成功抵禦入侵"
+
+msgid "智慧路線"
+msgstr "智慧路線"
+
+msgid "用研究和知識找到對策。"
+msgstr "用研究和知識找到對策。"
+
+msgid "孫雨好感度達到 40"
+msgstr "孫雨好感度達到 40"
+
+msgid "準備 200 銀幣研究經費"
+msgstr "準備 200 銀幣研究經費"
+
+msgid "靠商業人脈從外部取得援助。"
+msgstr "靠商業人脈從外部取得援助。"
+
+msgid "趙霞好感度達到 40"
+msgstr "趙霞好感度達到 40"
+
+msgid "完成 8 次交易"
+msgstr "完成 8 次交易"
+
+msgid "團結路線"
+msgstr "團結路線"
+
+msgid "團結全鎮之力，共同度過。"
+msgstr "團結全鎮之力，共同度過。"
+
+msgid "全鎮平均好感度達到 30"
+msgstr "全鎮平均好感度達到 30"
+
+msgid "與 5 位 NPC 達到「朋友」關係"
+msgstr "與 5 位 NPC 達到「朋友」關係"
+
+msgid "危機解除了！你的領導力讓小鎮度過了最艱難的時刻。"
+msgstr "危機解除了！你的領導力讓小鎮度過了最艱難的時刻。"
+
+msgid "如果你信得過我，我可以幫你組織防禦。但你得聽我的指揮。"
+msgstr "如果你信得過我，我可以幫你組織防禦。但你得聽我的指揮。"
+
+msgid "每個問題都有科學的解決方法。讓我研究一下，也許能找到突破口。"
+msgstr "每個問題都有科學的解決方法。讓我研究一下，也許能找到突破口。"
+
+msgid "外面的人脈很重要。如果你需要援助，我可以幫你聯繫。"
+msgstr "外面的人脈很重要。如果你需要援助，我可以幫你聯繫。"
+
+msgid "大家都在看你怎麼做。不管選哪條路，團結是最重要的。"
+msgstr "大家都在看你怎麼做。不管選哪條路，團結是最重要的。"
+
+msgid "重建家園"
+msgstr "重建家園"
+
+msgid "危機過後，小鎮需要重建。趁這個機會讓它變得更好。"
+msgstr "危機過後，小鎮需要重建。趁這個機會讓它變得更好。"
+
+msgid "大興土木，重建並擴建。"
+msgstr "大興土木，重建並擴建。"
+
+msgid "完成 8 座建築"
+msgstr "完成 8 座建築"
+
+msgid "建造 1 座工廠"
+msgstr "建造 1 座工廠"
+
+msgid "繁榮路線"
+msgstr "繁榮路線"
+
+msgid "用經濟實力快速恢復。"
+msgstr "用經濟實力快速恢復。"
+
+msgid "累積 300 銀幣"
+msgstr "累積 300 銀幣"
+
+msgid "完成 10 次交易"
+msgstr "完成 10 次交易"
+
+msgid "浴火重生的小鎮比以前更加堅強！"
+msgstr "浴火重生的小鎮比以前更加堅強！"
+
+msgid "重建的事交給我吧！...好啦，我會認真的。"
+msgstr "重建的事交給我吧！...好啦，我會認真的。"
+
+msgid "建材的事，我這邊有門路。"
+msgstr "建材的事，我這邊有門路。"
+
+msgid "小鎮擴張"
+msgstr "小鎮擴張"
+
+msgid "小鎮已經站穩腳跟。是時候向更高的目標邁進了。"
+msgstr "小鎮已經站穩腳跟。是時候向更高的目標邁進了。"
+
+msgid "多角化經營，產業全開。"
+msgstr "多角化經營，產業全開。"
+
+msgid "開啟 3 個產業"
+msgstr "開啟 3 個產業"
+
+msgid "城鎮等級達到 Lv5（城鎮）"
+msgstr "城鎮等級達到 Lv5（城鎮）"
+
+msgid "社群路線"
+msgstr "社群路線"
+
+msgid "讓所有人都覺得這裡是家。"
+msgstr "讓所有人都覺得這裡是家。"
+
+msgid "人口達到 20 人"
+msgstr "人口達到 20 人"
+
+msgid "與 6 位 NPC 達到「朋友」關係"
+msgstr "與 6 位 NPC 達到「朋友」關係"
+
+msgid "小鎮的規模今非昔比，已經成為區域內的重要據點。"
+msgstr "小鎮的規模今非昔比，已經成為區域內的重要據點。"
+
+msgid "這個鎮已經不小了。我們需要更正式的管理方式。"
+msgstr "這個鎮已經不小了。我們需要更正式的管理方式。"
+
+msgid "民主之聲"
+msgstr "民主之聲"
+
+msgid "小鎮需要正式的領導人。參與這歷史性的一刻。"
+msgstr "小鎮需要正式的領導人。參與這歷史性的一刻。"
+
+msgid "選舉路線"
+msgstr "選舉路線"
+
+msgid "見證或參與選舉。"
+msgstr "見證或參與選舉。"
+
+msgid "經歷一次選舉"
+msgstr "經歷一次選舉"
+
+msgid "威望路線"
+msgstr "威望路線"
+
+msgid "靠威望獲得大家的信任。"
+msgstr "靠威望獲得大家的信任。"
+
+msgid "全鎮平均好感度達到 40"
+msgstr "全鎮平均好感度達到 40"
+
+msgid "聲望達到 80"
+msgstr "聲望達到 80"
+
+msgid "小鎮有了正式的領導人！民主的種子在邊境發芽了。"
+msgstr "小鎮有了正式的領導人！民主的種子在邊境發芽了。"
+
+msgid "深厚羈絆"
+msgstr "深厚羈絆"
+
+msgid "經歷了這麼多，你和這裡的人建立了深厚的感情。"
+msgstr "經歷了這麼多，你和這裡的人建立了深厚的感情。"
+
+msgid "摯友路線"
+msgstr "摯友路線"
+
+msgid "與某位居民建立深厚的友誼。"
+msgstr "與某位居民建立深厚的友誼。"
+
+msgid "與某位居民好感度達到 70"
+msgstr "與某位居民好感度達到 70"
+
+msgid "眾人路線"
+msgstr "眾人路線"
+
+msgid "成為人人愛戴的存在。"
+msgstr "成為人人愛戴的存在。"
+
+msgid "與 8 位 NPC 達到「朋友」關係"
+msgstr "與 8 位 NPC 達到「朋友」關係"
+
+msgid "全鎮平均好感度達到 35"
+msgstr "全鎮平均好感度達到 35"
+
+msgid "你在這裡找到了真正的歸屬。這些人不只是鄰居——是家人。"
+msgstr "你在這裡找到了真正的歸屬。這些人不只是鄰居——是家人。"
+
+msgid "...謝謝你一直對我這麼好。你是我在鎮上最信任的人。"
+msgstr "...謝謝你一直對我這麼好。你是我在鎮上最信任的人。"
+
+msgid "欸，你是我最好的朋友，你知道吧？"
+msgstr "欸，你是我最好的朋友，你知道吧？"
+
+msgid "傳承"
+msgstr "傳承"
+
+msgid "邊境鎮已經成為一個真正的家。為它寫下歷史吧。"
+msgstr "邊境鎮已經成為一個真正的家。為它寫下歷史吧。"
+
+msgid "讓小鎮成為遠近聞名的繁榮之地。"
+msgstr "讓小鎮成為遠近聞名的繁榮之地。"
+
+msgid "累積 500 銀幣"
+msgstr "累積 500 銀幣"
+
+msgid "人口達到 25 人"
+msgstr "人口達到 25 人"
+
+msgid "城鎮等級達到 Lv6（大城鎮）"
+msgstr "城鎮等級達到 Lv6（大城鎮）"
+
+msgid "讓所有人和睦相處。"
+msgstr "讓所有人和睦相處。"
+
+msgid "與 10 位 NPC 達到「朋友」關係"
+msgstr "與 10 位 NPC 達到「朋友」關係"
+
+msgid "完成所有挑戰，成為傳奇。"
+msgstr "完成所有挑戰，成為傳奇。"
+
+msgid "四大產業全開"
+msgstr "四大產業全開"
+
+msgid "城鎮等級達到 Lv7（城市）"
+msgstr "城鎮等級達到 Lv7（城市）"
+
+msgid "與某位居民好感度達到 80"
+msgstr "與某位居民好感度達到 80"
+
+msgid "邊境鎮的傳奇故事將被世世代代傳頌。這是你書寫的歷史。"
+msgstr "邊境鎮的傳奇故事將被世世代代傳頌。這是你書寫的歷史。"
+
+msgid "王麗的私房菜"
+msgstr "王麗的私房菜"
+
+msgid "「嘿，新來的！你看起來瘦巴巴的。來，嚐嚐我的拿手菜。不過我缺一些食材...幫我找找？」王麗笑著遞給你一張紙條。"
+msgstr "「嘿，新來的！你看起來瘦巴巴的。來，嚐嚐我的拿手菜。不過我缺一些食材...幫我找找？」王麗笑著遞給你一張紙條。"
+
+msgid "幫王麗收集食材，品嚐她的私房菜。"
+msgstr "幫王麗收集食材，品嚐她的私房菜。"
+
+msgid "收集 30 份食材"
+msgstr "收集 30 份食材"
+
+msgid "和王麗好感度達 20"
+msgstr "和王麗好感度達 20"
+
+msgid "王麗端出一桌好菜，整個酒館都飄著香氣。「怎麼樣？好吃吧？以後你就是我的常客了！」你感覺到了家的溫暖。"
+msgstr "王麗端出一桌好菜，整個酒館都飄著香氣。「怎麼樣？好吃吧？以後你就是我的常客了！」你感覺到了家的溫暖。"
+
+msgid "我最近在研究一道新菜，需要一些特別的食材。你能幫忙嗎？"
+msgstr "我最近在研究一道新菜，需要一些特別的食材。你能幫忙嗎？"
+
+msgid "鐵匠的心事"
+msgstr "鐵匠的心事"
+
+msgid "你偶然發現張豪在工坊後面偷偷寫著什麼。他一看到你，慌忙把紙藏起來。「沒...沒什麼。」他的臉紅了。你注意到紙上寫的是一首詩。"
+msgstr "你偶然發現張豪在工坊後面偷偷寫著什麼。他一看到你，慌忙把紙藏起來。「沒...沒什麼。」他的臉紅了。你注意到紙上寫的是一首詩。"
+
+msgid "了解張豪的內心世界，幫助他找到表達自己的方式。"
+msgstr "了解張豪的內心世界，幫助他找到表達自己的方式。"
+
+msgid "和張豪好感度達 30"
+msgstr "和張豪好感度達 30"
+
+msgid "收集 20 金屬"
+msgstr "收集 20 金屬"
+
+msgid "張豪終於鼓起勇氣，把他的詩刻在了一件精美的鐵器上。「謝謝你...你是第一個知道我會寫詩的人。」他遞給你一把特製的工具作為謝禮。"
+msgstr "張豪終於鼓起勇氣，把他的詩刻在了一件精美的鐵器上。「謝謝你...你是第一個知道我會寫詩的人。」他遞給你一把特製的工具作為謝禮。"
+
+msgid "...你不會覺得一個鐵匠寫詩很奇怪吧？"
+msgstr "...你不會覺得一個鐵匠寫詩很奇怪吧？"
+
+msgid "劉俊在田邊嘆氣，手裡攥著一封信。「你...你覺得一個農夫配得上她嗎？」他小聲問你。你看到信封上寫著許瑩的名字。"
+msgstr "劉俊在田邊嘆氣，手裡攥著一封信。「你...你覺得一個農夫配得上她嗎？」他小聲問你。你看到信封上寫著許瑩的名字。"
+
+msgid "幫助劉俊鼓起勇氣，送出他的情書。"
+msgstr "幫助劉俊鼓起勇氣，送出他的情書。"
+
+msgid "和劉俊好感度達 25"
+msgstr "和劉俊好感度達 25"
+
+msgid "和許瑩好感度達 15"
+msgstr "和許瑩好感度達 15"
+
+msgid "在你的鼓勵下，劉俊終於把信交給了許瑩。許瑩讀完後，臉紅得像夕陽一樣。「笨蛋...你早該說的。」她小聲說。劉俊傻傻地笑了。"
+msgstr "在你的鼓勵下，劉俊終於把信交給了許瑩。許瑩讀完後，臉紅得像夕陽一樣。「笨蛋...你早該說的。」她小聲說。劉俊傻傻地笑了。"
+
+msgid "我...我有一封信想交給某個人。但我怕被拒絕。"
+msgstr "我...我有一封信想交給某個人。但我怕被拒絕。"
+
+msgid "最近劉俊好像一直在看我...是我想多了嗎？"
+msgstr "最近劉俊好像一直在看我...是我想多了嗎？"
+
+msgid "古代遺跡之謎"
+msgstr "古代遺跡之謎"
+
+msgid "孫雨興奮地跑來找你：「我在鎮外發現了古代遺跡的入口！裡面可能藏著這片土地的秘密。但我一個人不敢進去...你願意陪我嗎？」"
+msgstr "孫雨興奮地跑來找你：「我在鎮外發現了古代遺跡的入口！裡面可能藏著這片土地的秘密。但我一個人不敢進去...你願意陪我嗎？」"
+
+msgid "和孫雨一起探索古代遺跡，揭開邊境鎮的歷史。"
+msgstr "和孫雨一起探索古代遺跡，揭開邊境鎮的歷史。"
+
+msgid "和孫雨好感度達 35"
+msgstr "和孫雨好感度達 35"
+
+msgid "準備 80 銀幣的探險經費"
+msgstr "準備 80 銀幣的探險經費"
+
+msgid "你和孫雨在遺跡中發現了一面石碑，上面記載著邊境鎮數百年前曾是一個繁華的驛站。「原來這裡曾經這麼輝煌...」孫雨的眼睛閃著光，「也許我們能讓它重現往日的榮光。」"
+msgstr "你和孫雨在遺跡中發現了一面石碑，上面記載著邊境鎮數百年前曾是一個繁華的驛站。「原來這裡曾經這麼輝煌...」孫雨的眼睛閃著光，「也許我們能讓它重現往日的榮光。」"
+
+msgid "鎮外的那些石頭不是普通的石頭，那是古代建築的遺跡！我需要幫手。"
+msgstr "鎮外的那些石頭不是普通的石頭，那是古代建築的遺跡！我需要幫手。"
+
+msgid "一天晚上，吳達在酒館裡喝得醉醺醺的，突然說：「你知道嗎...我年輕的時候，差點把整個礦坑炸了。」他的眼中閃過一絲愧疚。"
+msgstr "一天晚上，吳達在酒館裡喝得醉醺醺的，突然說：「你知道嗎...我年輕的時候，差點把整個礦坑炸了。」他的眼中閃過一絲愧疚。"
+
+msgid "聆聽吳達的過去，幫助他放下心中的包袱。"
+msgstr "聆聽吳達的過去，幫助他放下心中的包袱。"
+
+msgid "和吳達好感度達 40"
+msgstr "和吳達好感度達 40"
+
+msgid "開採 60 石料（證明你理解他的工作）"
+msgstr "開採 60 石料（證明你理解他的工作）"
+
+msgid "吳達終於說出了全部的故事——年輕時因為疏忽導致礦坑事故，兩個同伴受傷。他來邊境鎮就是為了贖罪。「謝謝你聽我說這些...我覺得輕鬆多了。」老礦工第一次露出了笑容。"
+msgstr "吳達終於說出了全部的故事——年輕時因為疏忽導致礦坑事故，兩個同伴受傷。他來邊境鎮就是為了贖罪。「謝謝你聽我說這些...我覺得輕鬆多了。」老礦工第一次露出了笑容。"
+
+msgid "...算了，你不會想聽一個老頭子的嘮叨。"
+msgstr "...算了，你不會想聽一個老頭子的嘮叨。"
+
+msgid "黃莉的歌聲"
+msgstr "黃莉的歌聲"
+
+msgid "「你有沒有聽過邊境鎮的古老歌謠？」黃莉在教堂門口問你。「聽說以前每年豐收節，全鎮的人都會一起唱。要不要幫我恢復這個傳統？」"
+msgstr "「你有沒有聽過邊境鎮的古老歌謠？」黃莉在教堂門口問你。「聽說以前每年豐收節，全鎮的人都會一起唱。要不要幫我恢復這個傳統？」"
+
+msgid "幫助黃莉組織一場音樂會，凝聚鎮民的心。"
+msgstr "幫助黃莉組織一場音樂會，凝聚鎮民的心。"
+
+msgid "和黃莉好感度達 30"
+msgstr "和黃莉好感度達 30"
+
+msgid "鎮上至少有 13 位居民"
+msgstr "鎮上至少有 13 位居民"
+
+msgid "全鎮平均好感度至少 15"
+msgstr "全鎮平均好感度至少 15"
+
+msgid "在黃莉的帶領下，整個小鎮的人聚在廣場上，一起唱著古老的豐收歌。有人笑，有人哭。這一刻，所有人都感受到了歸屬感。你看到陳偉偷偷擦了擦眼角。"
+msgstr "在黃莉的帶領下，整個小鎮的人聚在廣場上，一起唱著古老的豐收歌。有人笑，有人哭。這一刻，所有人都感受到了歸屬感。你看到陳偉偷偷擦了擦眼角。"
+
+msgid "我在整理教堂時找到了一本很舊的歌譜。想不想聽我唱幾首？"
+msgstr "我在整理教堂時找到了一本很舊的歌譜。想不想聽我唱幾首？"
+
+msgid "楊鋒的戰爭記憶"
+msgstr "楊鋒的戰爭記憶"
+
+msgid "危機當前，楊鋒比任何人都緊張。你發現他半夜一個人在城牆上，盯著遠方。「我以前打過仗，」他低聲說，「我知道戰爭是什麼樣子。我不想讓這裡的人經歷那些...」"
+msgstr "危機當前，楊鋒比任何人都緊張。你發現他半夜一個人在城牆上，盯著遠方。「我以前打過仗，」他低聲說，「我知道戰爭是什麼樣子。我不想讓這裡的人經歷那些...」"
+
+msgid "了解楊鋒的過去，幫助他面對內心的恐懼。"
+msgstr "了解楊鋒的過去，幫助他面對內心的恐懼。"
+
+msgid "和楊鋒好感度達 50"
+msgstr "和楊鋒好感度達 50"
+
+msgid "和陳偉好感度達 30（兩個老兵互相理解）"
+msgstr "和陳偉好感度達 30（兩個老兵互相理解）"
+
+msgid "你把陳偉帶到楊鋒身邊。兩個曾經的軍人，第一次坦誠地聊起了戰爭的記憶。「我們不是為了打仗才來這裡的，」陳偉拍拍楊鋒的肩膀，「我們是為了保護要保護的人。」楊鋒的眼眶紅了，但背脊挺得更直了。"
+msgstr "你把陳偉帶到楊鋒身邊。兩個曾經的軍人，第一次坦誠地聊起了戰爭的記憶。「我們不是為了打仗才來這裡的，」陳偉拍拍楊鋒的肩膀，「我們是為了保護要保護的人。」楊鋒的眼眶紅了，但背脊挺得更直了。"
+
+msgid "你有沒有失去過重要的人？...算了，當我沒問。"
+msgstr "你有沒有失去過重要的人？...算了，當我沒問。"
+
+msgid "趙霞的人脈"
+msgstr "趙霞的人脈"
+
+msgid "趙霞緊皺著眉頭在翻她的帳本。「外面的局勢比我想的嚴峻...不過我還有幾張底牌。」她抬頭看你，「要不要跟我一起跑一趟商路？」"
+msgstr "趙霞緊皺著眉頭在翻她的帳本。「外面的局勢比我想的嚴峻...不過我還有幾張底牌。」她抬頭看你，「要不要跟我一起跑一趟商路？」"
+
+msgid "和趙霞一起拓展商業網絡，為小鎮爭取外援。"
+msgstr "和趙霞一起拓展商業網絡，為小鎮爭取外援。"
+
+msgid "和趙霞好感度達 45"
+msgstr "和趙霞好感度達 45"
+
+msgid "完成 5 次交易"
+msgstr "完成 5 次交易"
+
+msgid "趙霞成功聯繫上了遠方的商會。「以後不管發生什麼事，我們都有退路了。」她少見地露出安心的表情。然後她轉頭對你說：「你知道嗎？你是我第一個信任的合夥人。」"
+msgstr "趙霞成功聯繫上了遠方的商會。「以後不管發生什麼事，我們都有退路了。」她少見地露出安心的表情。然後她轉頭對你說：「你知道嗎？你是我第一個信任的合夥人。」"
+
+msgid "做生意最重要的是人脈。我可以帶你認識幾個有用的人。"
+msgstr "做生意最重要的是人脈。我可以帶你認識幾個有用的人。"
+
+msgid "浪子回頭"
+msgstr "浪子回頭"
+
+msgid "馬強最近變得不太一樣。他不再整天吹牛，而是認真地待在工坊裡。「我想替鎮上蓋一座真正的地標，」他說，「證明我不只是個嘴砲。」"
+msgstr "馬強最近變得不太一樣。他不再整天吹牛，而是認真地待在工坊裡。「我想替鎮上蓋一座真正的地標，」他說，「證明我不只是個嘴砲。」"
+
+msgid "支持馬強的改變，幫他建造一座地標建築。"
+msgstr "支持馬強的改變，幫他建造一座地標建築。"
+
+msgid "和馬強好感度達 40"
+msgstr "和馬強好感度達 40"
+
+msgid "鎮上建築達 10 座"
+msgstr "鎮上建築達 10 座"
+
+msgid "準備 100 木材"
+msgstr "準備 100 木材"
+
+msgid "馬強花了整整三天三夜，建造出一座精美的鐘塔。全鎮的人都來圍觀。「我這輩子第一次把一件事做到最好。」他看著自己的作品，眼角有些濕潤。王麗遞給他一碗熱湯：「吃吧，大藝術家。」"
+msgstr "馬強花了整整三天三夜，建造出一座精美的鐘塔。全鎮的人都來圍觀。「我這輩子第一次把一件事做到最好。」他看著自己的作品，眼角有些濕潤。王麗遞給他一碗熱湯：「吃吧，大藝術家。」"
+
+msgid "你信不信，我其實是個天才木匠？...好啦，至少我想成為一個。"
+msgstr "你信不信，我其實是個天才木匠？...好啦，至少我想成為一個。"
+
+msgid "許瑩的夢想"
+msgstr "許瑩的夢想"
+
+msgid "你在許瑩的工坊裡看到一件華麗的禮服——但只完成了一半。「這是...我夢想中的作品。」她小聲說，「但我怕做不好，會被大家笑。」"
+msgstr "你在許瑩的工坊裡看到一件華麗的禮服——但只完成了一半。「這是...我夢想中的作品。」她小聲說，「但我怕做不好，會被大家笑。」"
+
+msgid "鼓勵許瑩完成她的夢想之作。"
+msgstr "鼓勵許瑩完成她的夢想之作。"
+
+msgid "和許瑩好感度達 50"
+msgstr "和許瑩好感度達 50"
+
+msgid "收集 40 布料"
+msgstr "收集 40 布料"
+
+msgid "在你的支持下，許瑩完成了她的傑作。當她怯怯地把禮服展示給大家時，全場安靜了三秒——然後爆發出熱烈的掌聲。許瑩哭了，但這次是開心的眼淚。「謝謝你相信我...」"
+msgstr "在你的支持下，許瑩完成了她的傑作。當她怯怯地把禮服展示給大家時，全場安靜了三秒——然後爆發出熱烈的掌聲。許瑩哭了，但這次是開心的眼淚。「謝謝你相信我...」"
+
+msgid "我有一件很重要的作品...但我還沒有勇氣完成它。"
+msgstr "我有一件很重要的作品...但我還沒有勇氣完成它。"
+
+msgid "老鎮長的心願"
+msgstr "老鎮長的心願"
+
+msgid "陳偉找到你，罕見地露出疲憊的表情。「我老了...這個鎮已經不需要我這樣的人了。」他望著窗外，「但在我交出這個位置之前，我想做最後一件事——寫一部邊境鎮的歷史。你願意幫我嗎？」"
+msgstr "陳偉找到你，罕見地露出疲憊的表情。「我老了...這個鎮已經不需要我這樣的人了。」他望著窗外，「但在我交出這個位置之前，我想做最後一件事——寫一部邊境鎮的歷史。你願意幫我嗎？」"
+
+msgid "幫助陳偉完成邊境鎮的歷史紀錄，讓後人銘記。"
+msgstr "幫助陳偉完成邊境鎮的歷史紀錄，讓後人銘記。"
+
+msgid "和陳偉好感度達 60"
+msgstr "和陳偉好感度達 60"
+
+msgid "聲望達到 60"
+msgstr "聲望達到 60"
+
+msgid "至少和 6 位居民成為朋友"
+msgstr "至少和 6 位居民成為朋友"
+
+msgid "陳偉在最後一頁寫道：「...在這位旅人到來之後，邊境鎮真正活了過來。」他合上書，遞給你。「這本書是鎮上所有人的故事，但你是最重要的那一章。」你翻開扉頁，看到每一位居民都簽上了自己的名字。"
+msgstr "陳偉在最後一頁寫道：「...在這位旅人到來之後，邊境鎮真正活了過來。」他合上書，遞給你。「這本書是鎮上所有人的故事，但你是最重要的那一章。」你翻開扉頁，看到每一位居民都簽上了自己的名字。"
+
+msgid "你知道嗎？我來這裡已經二十年了。有時候我會想...這一切值不值得。"
+msgstr "你知道嗎？我來這裡已經二十年了。有時候我會想...這一切值不值得。"
+
+msgid "和一位居民聊聊天"
+msgstr "和一位居民聊聊天"
+
+msgid "儲備 20 份食物"
+msgstr "儲備 20 份食物"
+
+msgid "收集 15 份木材"
+msgstr "收集 15 份木材"
+
+msgid "讓一位居民對你好感超過 10"
+msgstr "讓一位居民對你好感超過 10"
+
+msgid "完成一次收穫"
+msgstr "完成一次收穫"
+
+msgid "完成一次交易"
+msgstr "完成一次交易"
+
+msgid "累計聊天達 5 次"
+msgstr "累計聊天達 5 次"
+
+msgid "累積 50 銀幣"
+msgstr "累積 50 銀幣"
+
+msgid "開啟一個新產業"
+msgstr "開啟一個新產業"
+
+msgid "擁有至少 3 位朋友"
+msgstr "擁有至少 3 位朋友"
+
+msgid "全鎮平均好感度達 25"
+msgstr "全鎮平均好感度達 25"
+
+msgid "第一個夜晚"
+msgstr "第一個夜晚"
+
+msgid "夜幕降臨，你獨自坐在酒館門口。遠處傳來蟲鳴和偶爾的犬吠。王麗端了一碗熱湯出來：「喝吧，新來的。邊境鎮的夜晚很冷的。」你喝了一口，暖意從胃裡蔓延到全身。也許...這裡不算太糟。"
+msgstr "夜幕降臨，你獨自坐在酒館門口。遠處傳來蟲鳴和偶爾的犬吠。王麗端了一碗熱湯出來：「喝吧，新來的。邊境鎮的夜晚很冷的。」你喝了一口，暖意從胃裡蔓延到全身。也許...這裡不算太糟。"
+
+msgid "第一個朋友"
+msgstr "第一個朋友"
+
+msgid "你發現有人開始主動跟你打招呼了——不再是禮貌性的點頭，而是真心的微笑。在這個偏遠的邊境小鎮，你交到了第一個朋友。原來被人接納的感覺，是這麼的好。"
+msgstr "你發現有人開始主動跟你打招呼了——不再是禮貌性的點頭，而是真心的微笑。在這個偏遠的邊境小鎮，你交到了第一個朋友。原來被人接納的感覺，是這麼的好。"
+
+msgid "第一次豐收"
+msgstr "第一次豐收"
+
+msgid "看著田裡金黃的麥穗隨風搖曳，你第一次理解了劉俊對土地的熱愛。「這就是我留在這裡的原因，」他站在你身邊，驕傲地說，「你種下的每一顆種子，都是對未來的承諾。」"
+msgstr "看著田裡金黃的麥穗隨風搖曳，你第一次理解了劉俊對土地的熱愛。「這就是我留在這裡的原因，」他站在你身邊，驕傲地說，「你種下的每一顆種子，都是對未來的承諾。」"
+
+msgid "小鎮漸成"
+msgstr "小鎮漸成"
+
+msgid "站在高處眺望，你發現小鎮不知不覺已經有了規模。新來的住戶正在搬家，孩子們在街上奔跑，商人們在廣場上討價還價。陳偉走到你身邊：「你看，這就是我們一起建造的。」他的語氣中帶著自豪。"
+msgstr "站在高處眺望，你發現小鎮不知不覺已經有了規模。新來的住戶正在搬家，孩子們在街上奔跑，商人們在廣場上討價還價。陳偉走到你身邊：「你看，這就是我們一起建造的。」他的語氣中帶著自豪。"
+
+msgid "風雨欲來"
+msgstr "風雨欲來"
+
+msgid "天邊烏雲密佈，鎮上的氣氛變得凝重。你看到楊鋒在磨刀，吳達在加固礦道，林美在準備草藥。每個人都在用自己的方式做準備。陳偉拍了拍你的肩膀：「不管發生什麼，我們一起面對。」"
+msgstr "天邊烏雲密佈，鎮上的氣氛變得凝重。你看到楊鋒在磨刀，吳達在加固礦道，林美在準備草藥。每個人都在用自己的方式做準備。陳偉拍了拍你的肩膀：「不管發生什麼，我們一起面對。」"
+
+msgid "廢墟中的希望"
+msgstr "廢墟中的希望"
+
+msgid "危機過後，小鎮滿目瘡痍。但你看到黃莉在廢墟中唱歌，馬強已經在丈量重建的尺寸，王麗架起臨時的鍋灶煮飯。「沒什麼好怕的，」趙霞理了理頭髮，「重建也是一種商機嘛。」你笑了。這些人，才是邊境鎮真正的寶藏。"
+msgstr "危機過後，小鎮滿目瘡痍。但你看到黃莉在廢墟中唱歌，馬強已經在丈量重建的尺寸，王麗架起臨時的鍋灶煮飯。「沒什麼好怕的，」趙霞理了理頭髮，「重建也是一種商機嘛。」你笑了。這些人，才是邊境鎮真正的寶藏。"
+
+msgid "你是我們的一份子"
+msgstr "你是我們的一份子"
+
+msgid "今天有人叫你「我們的人」而不是「那個旅人」。你在酒館裡坐著，四周是熟悉的面孔和笑聲。不知道從什麼時候開始，這裡不再是暫時的落腳處——這裡已經是你的家了。"
+msgstr "今天有人叫你「我們的人」而不是「那個旅人」。你在酒館裡坐著，四周是熟悉的面孔和笑聲。不知道從什麼時候開始，這裡不再是暫時的落腳處——這裡已經是你的家了。"
+
+msgid "支線任務解鎖"
+msgstr "支線任務解鎖"
+
+msgid "支線獎勵"
+msgstr "支線獎勵"
+
+msgid "支線任務完成"
+msgstr "支線任務完成"
+
+msgid "每日目標獎勵"
+msgstr "每日目標獎勵"
+
+msgid "每日目標完成"
+msgstr "每日目標完成"
+
+msgid "主線任務完成"
+msgstr "主線任務完成"
+
+msgid "新任務解鎖"
+msgstr "新任務解鎖"
+
+msgid "危機降臨"
+msgstr "危機降臨"
+
+msgid "重大危機"
+msgstr "重大危機"
+
+msgid "威脅著小鎮的生存"
+msgstr "威脅著小鎮的生存"
+
+msgid "支線"
+msgstr "支線"
+
+msgid "可選路線"
+msgstr "可選路線"
+
+msgid "玩家正在進行的任務"
+msgstr "玩家正在進行的任務"
+
+msgid "蝗災正在侵襲小鎮，農作物受到嚴重威脅。大家都很擔心糧食問題。"
+msgstr "蝗災正在侵襲小鎮，農作物受到嚴重威脅。大家都很擔心糧食問題。"
+
+msgid "盜匪在小鎮附近出沒，安全受到威脅。居民們人心惶惶。"
+msgstr "盜匪在小鎮附近出沒，安全受到威脅。居民們人心惶惶。"
+
+msgid "一種神秘的疾病在小鎮蔓延，已有多人生病。大家急需醫療資源。"
+msgstr "一種神秘的疾病在小鎮蔓延，已有多人生病。大家急需醫療資源。"
+
+msgid "AI 對話語言"
+msgstr "AI 對話語言"
+
+msgid "跟隨介面語言"
+msgstr "跟隨介面語言"
+
+msgid "村民對話、行程、反思與日報由 AI 生成時使用的語言，不影響介面文字。"
+msgstr "村民對話、行程、反思與日報由 AI 生成時使用的語言，不影響介面文字。"
+
+msgid "🎮 訪客模式 — 存檔僅保留在本機"
+msgstr "🎮 訪客模式 — 存檔僅保留在本機"
+
+msgid "註冊帳號"
+msgstr "註冊帳號"
+
+msgid "🏠 各種建築 —— 酒館、農場、鐵匠鋪、診所等"
+msgstr "🏠 各種建築 —— 酒館、農場、鐵匠鋪、診所等"
+
+msgid "👤 移動中的居民 —— 他們會自主上班、社交、吃飯、睡覺"
+msgstr "👤 移動中的居民 —— 他們會自主上班、社交、吃飯、睡覺"
+
+msgid "🌙 日夜交替 —— 白天工作，傍晚社交，深夜休息"
+msgstr "🌙 日夜交替 —— 白天工作，傍晚社交，深夜休息"
+
+msgid "💬 對話氣泡 —— 居民之間正在進行的交談"
+msgstr "💬 對話氣泡 —— 居民之間正在進行的交談"
+
+msgid "開啟 <strong>居民</strong>（電腦：右側面板／手機：☰ 選單）可以看到所有村民。點地圖上的村民會顯示好感度與八卦小卡。"
+msgstr "開啟 <strong>居民</strong>（電腦：右側面板／手機：☰ 選單）可以看到所有村民。點地圖上的村民會顯示好感度與八卦小卡。"
+
+msgid "用方向鍵／搖桿走到村民身邊按「交談」，或開啟 <strong>聊天</strong>（手機：底部 💬）選人對話！他們會根據個性、心情和好感度回應。"
+msgstr "用方向鍵／搖桿走到村民身邊按「交談」，或開啟 <strong>聊天</strong>（手機：底部 💬）選人對話！他們會根據個性、心情和好感度回應。"
+
+msgid "💕 好感度高的居民會更友善"
+msgstr "💕 好感度高的居民會更友善"
+
+msgid "💼 你可以選擇自己的職業"
+msgstr "💼 你可以選擇自己的職業"
+
+msgid "💒 你甚至可以和居民約會、求婚！"
+msgstr "💒 你甚至可以和居民約會、求婚！"
+
+msgid "<strong>經濟</strong>（手機：☰ 選單→經濟）可以查看資源、建築、科技樹和貿易。"
+msgstr "<strong>經濟</strong>（手機：☰ 選單→經濟）可以查看資源、建築、科技樹和貿易。"
+
+msgid "<strong>經濟→產業</strong> 子分頁管理農場種植、工廠加工和產業發展。"
+msgstr "<strong>經濟→產業</strong> 子分頁管理農場種植、工廠加工和產業發展。"
+
+msgid "🌾 種植作物、收穫農產品"
+msgstr "🌾 種植作物、收穫農產品"
+
+msgid "🏭 建造工廠加工原料"
+msgstr "🏭 建造工廠加工原料"
+
+msgid "📈 隨著人口增長，城鎮等級提升"
+msgstr "📈 隨著人口增長，城鎮等級提升"
+
+msgid "⚔️ 完成任務獲得獎勵"
+msgstr "⚔️ 完成任務獲得獎勵"
+
+msgid "🗳️ 鎮長選舉 —— 投票選出你支持的候選人"
+msgstr "🗳️ 鎮長選舉 —— 投票選出你支持的候選人"
+
+msgid "⚔️ 盜匪襲擊 —— 守衛和居民會奮力防禦"
+msgstr "⚔️ 盜匪襲擊 —— 守衛和居民會奮力防禦"
+
+msgid "🎪 季節慶典 —— 春祭、仲夏篝火、豐收節、冬至"
+msgstr "🎪 季節慶典 —— 春祭、仲夏篝火、豐收節、冬至"
+
+msgid "🗺️ 探索系統 —— 派遣探險隊探索鎮外區域"
+msgstr "🗺️ 探索系統 —— 派遣探險隊探索鎮外區域"
+
+msgid "🗞️ AI 日報 —— 村莊記者會報導鎮上的大小事"
+msgstr "🗞️ AI 日報 —— 村莊記者會報導鎮上的大小事"
+
+msgid "不想註冊？先體驗一下也行！"
+msgstr "不想註冊？先體驗一下也行！"
+
+msgid "🎮 訪客試玩"
+msgstr "🎮 訪客試玩"
+
+msgid "存檔僅保留在本機，註冊後可同步到雲端"
+msgstr "存檔僅保留在本機，註冊後可同步到雲端"
+
+msgid "&#9650; 返回地圖"
+msgstr "&#9650; 返回地圖"
+
+msgid "提示：村民對話由內建 AI 生成，不需要設定任何金鑰；走到村民身邊按「交談」就能開聊。"
+msgstr "提示：村民對話由內建 AI 生成，不需要設定任何金鑰；走到村民身邊按「交談」就能開聊。"
+
+msgid "靜音"
+msgstr "靜音"
+
+msgid "玩家附近發生對話"
+msgstr "玩家附近發生對話"
+
+msgid "組提示詞"
+msgstr "組提示詞"
+
+msgid "快車道 Groq"
+msgstr "快車道 Groq"
+
+msgid "失敗就換 Claude 接手"
+msgstr "失敗就換 Claude 接手"
+
+msgid "守門：拒答／洩漏／簡體"
+msgstr "守門：拒答／洩漏／簡體"
+
+msgid "寫回記憶與關係"
+msgstr "寫回記憶與關係"
+
+msgid "身分行"
+msgstr "身分行"
+
+msgid "「你是某某，對面是來到鎮上的旅人，不是鎮長；現任鎮長是誰」——避免叫錯人"
+msgstr "「你是某某，對面是來到鎮上的旅人，不是鎮長；現任鎮長是誰」——避免叫錯人"
+
+msgid "抽出的記憶"
+msgstr "抽出的記憶"
+
+msgid "用時近×相關×重要度挑出最該想起的 3 到 6 條，不是整本翻"
+msgstr "用時近×相關×重要度挑出最該想起的 3 到 6 條，不是整本翻"
+
+msgid "關係數字"
+msgstr "關係數字"
+
+msgid "對這個人的好感、信任、心動，以及目前的稱呼（朋友／對手／暗戀）"
+msgstr "對這個人的好感、信任、心動，以及目前的稱呼（朋友／對手／暗戀）"
+
+msgid "今天的計畫"
+msgstr "今天的計畫"
+
+msgid "清晨排好的行程與現在正在做的事，讓對話有上下文"
+msgstr "清晨排好的行程與現在正在做的事，讓對話有上下文"
+
+msgid "性格與心情"
+msgstr "性格與心情"
+
+msgid "三個特質、價值觀、當下心情與最近的想法"
+msgstr "三個特質、價值觀、當下心情與最近的想法"
+
+msgid "輸出格式"
+msgstr "輸出格式"
+
+msgid "只准輸出台詞與 EFFECTS 行（好感／心動／記憶變動），不准前言、分析、免責聲明"
+msgstr "只准輸出台詞與 EFFECTS 行（好感／心動／記憶變動），不准前言、分析、免責聲明"
+
+msgid "快車道 chat"
+msgstr "快車道 chat"
+
+msgid "玩家附近的即時對話"
+msgstr "玩家附近的即時對話"
+
+msgid "Groq（開源模型）"
+msgstr "Groq（開源模型）"
+
+msgid "Claude"
+msgstr "Claude"
+
+msgid "慢車道 background"
+msgstr "慢車道 background"
+
+msgid "每日行程、深度反思、八卦與劇情"
+msgstr "每日行程、深度反思、八卦與劇情"
+
+msgid "Groq"
+msgstr "Groq"
+
+msgid "兩條路共用一個 26 秒預算（無伺服器函式上限 30 秒），第一條用掉多少，第二條就只剩多少。"
+msgstr "兩條路共用一個 26 秒預算（無伺服器函式上限 30 秒），第一條用掉多少，第二條就只剩多少。"
+
+msgid "逾時、限流（429）、伺服器錯誤：那條路冷卻。Groq 依回傳的重試時間冷卻，最短 5 分鐘；Claude 每失敗一次冷卻多 60 秒，上限 5 分鐘，成功即解除。"
+msgstr "逾時、限流（429）、伺服器錯誤：那條路冷卻。Groq 依回傳的重試時間冷卻，最短 5 分鐘；Claude 每失敗一次冷卻多 60 秒，上限 5 分鐘，成功即解除。"
+
+msgid "回空白或拒絕扮演不算那條路壞掉，不冷卻，只是這一次換人。"
+msgstr "回空白或拒絕扮演不算那條路壞掉，不冷卻，只是這一次換人。"
+
+msgid "每次回應都帶著 provider、lane、model 與 fallback_from，出問題可以直接從紀錄看出是哪一段接手的。"
+msgstr "每次回應都帶著 provider、lane、model 與 fallback_from，出問題可以直接從紀錄看出是哪一段接手的。"
+
+msgid "每次 Groq 回應都會讀 x-ratelimit 標頭，記下剩餘 token、剩餘請求數與重置時間。"
+msgstr "每次 Groq 回應都會讀 x-ratelimit 標頭，記下剩餘 token、剩餘請求數與重置時間。"
+
+msgid "下一次請求先估算要用多少：中文每字算 1 token，其他每 4 個字元算 1，再加輸出上限（至少 160）與 50 的緩衝。"
+msgstr "下一次請求先估算要用多少：中文每字算 1 token，其他每 4 個字元算 1，再加輸出上限（至少 160）與 50 的緩衝。"
+
+msgid "估算超過剩餘額度就直接跳過 Groq 改走 Claude，不會撞到 429 才發現。"
+msgstr "估算超過剩餘額度就直接跳過 Groq 改走 Claude，不會撞到 429 才發現。"
+
+msgid "推理型模型（gpt-oss）固定輸出下限 160 token、推理強度 low、隱藏推理過程，避免它「想太久」回空白。"
+msgstr "推理型模型（gpt-oss）固定輸出下限 160 token、推理強度 low、隱藏推理過程，避免它「想太久」回空白。"
+
+msgid "系統指示寫死：一律繁體中文（台灣用語）、不准自報 AI 身分、不准拒絕扮演、不准加前言。"
+msgstr "系統指示寫死：一律繁體中文（台灣用語）、不准自報 AI 身分、不准拒絕扮演、不准加前言。"
+
+msgid "回覆若出現「I'm Kiro / I am an AI / not designed for roleplay」這類句型，視同失敗，換另一條路重打。"
+msgstr "回覆若出現「I'm Kiro / I am an AI / not designed for roleplay」這類句型，視同失敗，換另一條路重打。"
+
+msgid "伺服器端先做簡轉繁（OpenCC 台灣用語），前端再掃一次；載入舊存檔時也會把殘留的簡體與洩漏句清掉。"
+msgstr "伺服器端先做簡轉繁（OpenCC 台灣用語），前端再掃一次；載入舊存檔時也會把殘留的簡體與洩漏句清掉。"
+
+msgid "每位村民 500 條記憶上限，對話結束後只把「他會記住的那句話」寫進去，重要度 4 到 8。"
+msgstr "每位村民 500 條記憶上限，對話結束後只把「他會記住的那句話」寫進去，重要度 4 到 8。"
+
+msgid "只有玩家附近的村民才會呼叫 AI 對話，遠處的走規則式模板，但一樣寫進記憶、一樣影響好感。"
+msgstr "只有玩家附近的村民才會呼叫 AI 對話，遠處的走規則式模板，但一樣寫進記憶、一樣影響好感。"
+
+msgid "每天有 AI 額度：行程一批打包成一次請求（每人約 450 token），深度反思每天最多 3 位。"
+msgstr "每天有 AI 額度：行程一批打包成一次請求（每人約 450 token），深度反思每天最多 3 位。"
+
+msgid "Groq 免費層大約每分鐘 30 次、每天 1,000 次、每分鐘 8,000 token；超過就自動改走付費的 Claude，玩家不會感覺到斷線。"
+msgstr "Groq 免費層大約每分鐘 30 次、每天 1,000 次、每分鐘 8,000 token；超過就自動改走付費的 Claude，玩家不會感覺到斷線。"
+
+msgid "想看更深的技術細節：一次 AI 請求的旅程、兩個 AI 怎麼協作"
+msgstr "想看更深的技術細節：一次 AI 請求的旅程、兩個 AI 怎麼協作"
+
+msgid "提示詞怎麼組"
+msgstr "提示詞怎麼組"
+
+msgid "一次對話只打一個請求，裡面把村民「此刻腦子裡的東西」全部塞進去："
+msgstr "一次對話只打一個請求，裡面把村民「此刻腦子裡的東西」全部塞進去："
+
+msgid "兩條車道：誰先上"
+msgstr "兩條車道：誰先上"
+
+msgid "車道"
+msgstr "車道"
+
+msgid "用在哪"
+msgstr "用在哪"
+
+msgid "先問誰"
+msgstr "先問誰"
+
+msgid "備援"
+msgstr "備援"
+
+msgid "時限"
+msgstr "時限"
+
+msgid "即時對話要快，所以先問回應最快的 Groq；行程與反思要寫得細，所以先問 Claude。兩邊互為備援。"
+msgstr "即時對話要快，所以先問回應最快的 Groq；行程與反思要寫得細，所以先問 Claude。兩邊互為備援。"
+
+msgid "互相接手與冷卻"
+msgstr "互相接手與冷卻"
+
+msgid "免費額度保護"
+msgstr "免費額度保護"
+
+msgid "品質守門"
+msgstr "品質守門"
+
+msgid "成本閘門"
+msgstr "成本閘門"
+
+msgid "金鑰全部放在伺服器環境變數，前端與存檔裡都沒有；玩家不需要、也不能填自己的金鑰。"
+msgstr "金鑰全部放在伺服器環境變數，前端與存檔裡都沒有；玩家不需要、也不能填自己的金鑰。"
+
+msgid "本機備份空間不足"
+msgstr "本機備份空間不足"
+
+msgid "存檔已改為只存雲端，進度安全。"
+msgstr "存檔已改為只存雲端，進度安全。"
+
+msgid "儲存空間已滿！請到「城鎮列表」刪除舊城鎮，或登入改用雲端存檔。"
+msgstr "儲存空間已滿！請到「城鎮列表」刪除舊城鎮，或登入改用雲端存檔。"
+
+msgid "3D low-poly 版搶先看"
+msgstr "3D low-poly 版搶先看"
+
+msgid "邊境鎮 3D low-poly 版畫面"
+msgstr "邊境鎮 3D low-poly 版畫面"
+
+msgid "用 Blender 程序化建模與 Godot 4 重製的邊境鎮。同一份存檔、同一批村民，換一種角度看他們過日子。目前是觀賞模式，開發中。"
+msgstr "用 Blender 程序化建模與 Godot 4 重製的邊境鎮。同一份存檔、同一批村民，換一種角度看他們過日子。目前是觀賞模式，開發中。"
+
+msgid "已有觀賞版畫面，見上方"
+msgstr "已有觀賞版畫面，見上方"
+
+msgid "村民的大腦：他們是怎麼社交的"
+msgstr "村民的大腦：他們是怎麼社交的"
+
+msgid "沒有劇本。每位村民每 15 分鐘做一次決定，靠的是自己的記憶、性格和跟對方的關係。下面是一輪社交的完整流程，數字都是遊戲裡實際用的參數。"
+msgstr "沒有劇本。每位村民每 15 分鐘做一次決定，靠的是自己的記憶、性格和跟對方的關係。下面是一輪社交的完整流程，數字都是遊戲裡實際用的參數。"
+
+msgid "感知"
+msgstr "感知"
+
+msgid "記憶流與檢索"
+msgstr "記憶流與檢索"
+
+msgid "分數"
+msgstr "分數"
+
+msgid "自己調調看：一條記憶會被想起來嗎？"
+msgstr "自己調調看：一條記憶會被想起來嗎？"
+
+msgid "→ 幾乎一定會想起來"
+msgstr "→ 幾乎一定會想起來"
+
+msgid "互斥："
+msgstr "互斥："
+
+msgid "想法"
+msgstr "想法"
+
+msgid "心情"
+msgstr "心情"
+
+msgid "基礎心情"
+msgstr "基礎心情"
+
+msgid "戀愛"
+msgstr "戀愛"
+
+msgid "一座由 AI 村民自己過日子的小鎮。你是剛到的旅人。"
+msgstr "一座由 AI 村民自己過日子的小鎮。你是剛到的旅人。"
+
+msgid "村民有記憶、有個性、有人際關係；他們會工作、戀愛、吵架、選鎮長。你可以聊天、送禮、耳語、蓋房子、開產業，甚至參選。"
+msgstr "村民有記憶、有個性、有人際關係；他們會工作、戀愛、吵架、選鎮長。你可以聊天、送禮、耳語、蓋房子、開產業，甚至參選。"
+
+msgid "免安裝，手機也能玩"
+msgstr "免安裝，手機也能玩"
+
+msgid "這是什麼遊戲"
+msgstr "這是什麼遊戲"
+
+msgid "會記得你的村民"
+msgstr "會記得你的村民"
+
+msgid "二十多位村民各有性格、記憶與人際關係。你說過的話、送過的禮，他們都記得，也會拿去跟別人八卦。"
+msgstr "二十多位村民各有性格、記憶與人際關係。你說過的話、送過的禮，他們都記得，也會拿去跟別人八卦。"
+
+msgid "真的在聊天"
+msgstr "真的在聊天"
+
+msgid "對話由內建 AI 生成，不用填任何金鑰。安慰、打聽、說服、調解、示好、威脅，每一句都會改變關係。"
+msgstr "對話由內建 AI 生成，不用填任何金鑰。安慰、打聽、說服、調解、示好、威脅，每一句都會改變關係。"
+
+msgid "雙城往返"
+msgstr "雙城往返"
+
+msgid "邊境鎮之外還有漁村海風鎮。搭馬車過去作客，村民也會跨鎮互訪，把另一座鎮的故事帶回來。"
+msgstr "邊境鎮之外還有漁村海風鎮。搭馬車過去作客，村民也會跨鎮互訪，把另一座鎮的故事帶回來。"
+
+msgid "任務與多重結局"
+msgstr "任務與多重結局"
+
+msgid "五章主線、村民個人任務、每日目標、劇情名場面。你可以參選鎮長，也可以只當個看戲的旅人。"
+msgstr "五章主線、村民個人任務、每日目標、劇情名場面。你可以參選鎮長，也可以只當個看戲的旅人。"
+
+msgid "更新紀錄"
+msgstr "更新紀錄"
+
+msgid "尚無紀錄"
+msgstr "尚無紀錄"
+
+msgid "顯示全部"
+msgstr "顯示全部"
+
+msgid "只看最近 5 版"
+msgstr "只看最近 5 版"
+
+msgid "即將實現"
+msgstr "即將實現"
+
+msgid "開發中"
+msgstr "開發中"
+
+msgid "規劃中"
+msgstr "規劃中"
+
+msgid "構想"
+msgstr "構想"
+
+msgid "3D low-poly 版（Blender + Godot 重製）"
+msgstr "3D low-poly 版（Blender + Godot 重製）"
+
+msgid "海風鎮專屬任務鏈（漁村主線）"
+msgstr "海風鎮專屬任務鏈（漁村主線）"
+
+msgid "第三座城鎮"
+msgstr "第三座城鎮"
+
+msgid "村民自訂外觀"
+msgstr "村民自訂外觀"
+
+msgid "跨鎮貿易與商隊"
+msgstr "跨鎮貿易與商隊"
+
+msgid "玩家之間互訪城鎮"
+msgstr "玩家之間互訪城鎮"
+
+msgid "手機 App 版"
+msgstr "手機 App 版"
+
+msgid "邊境鎮 RimTown"
+msgstr "邊境鎮 RimTown"
+
+msgid "存檔自動同步雲端，換裝置登入即可繼續。"
+msgstr "存檔自動同步雲端，換裝置登入即可繼續。"
+
+msgid "繼續遊戲"
+msgstr "繼續遊戲"
+
+msgid "推薦碼（必填）"
+msgstr "推薦碼（必填）"
+
+msgid "請輸入推薦碼"
+msgstr "請輸入推薦碼"
+
+msgid "推薦碼管理"
+msgstr "推薦碼管理"
+
+msgid "自訂代碼（留空自動產生）"
+msgstr "自訂代碼（留空自動產生）"
+
+msgid "可用次數，0＝無上限"
+msgstr "可用次數，0＝無上限"
+
+msgid "建立推薦碼"
+msgstr "建立推薦碼"
+
+msgid "次數欄＝這組代碼可以註冊幾個帳號，0 代表無上限。註冊時必須輸入有效的推薦碼。"
+msgstr "次數欄＝這組代碼可以註冊幾個帳號，0 代表無上限。註冊時必須輸入有效的推薦碼。"
+
+msgid "還沒有推薦碼，先建立一組給朋友吧。"
+msgstr "還沒有推薦碼，先建立一組給朋友吧。"
+
+msgid "已停用"
+msgstr "已停用"
+
+msgid "已用完"
+msgstr "已用完"
+
+msgid "可用"
+msgstr "可用"
+
+msgid "已用"
+msgstr "已用"
+
+msgid "最近："
+msgstr "最近："
+
+msgid "啟用"
+msgstr "啟用"
+
+msgid "停用"
+msgstr "停用"
+
+msgid "推薦碼已建立："
+msgstr "推薦碼已建立："
+
+msgid "建立失敗："
+msgstr "建立失敗："
+
+msgid "確定刪除推薦碼"
+msgstr "確定刪除推薦碼"
+
+msgid "鎮長"
+msgstr "鎮長"
+
+msgid "你搖搖頭離開,鎮民都說"
+msgstr "你搖搖頭離開,鎮民都說"
+
+msgid "明智。"
+msgstr "明智。"
+
+msgid "的美言,好感大增!"
+msgstr "的美言,好感大增!"
+
+msgid "偷偷向"
+msgstr "偷偷向"
+
+msgid "。你想傳一則訊息給"
+msgstr "。你想傳一則訊息給"
+
+msgid "（他是旅人，不是鎮長，別叫他鎮長。）"
+msgstr "（他是旅人，不是鎮長，別叫他鎮長。）"
+
+msgid "真有眼光"
+msgstr "真有眼光"
+
+msgid "他是現任鎮長。"
+msgstr "他是現任鎮長。"
+
+msgid "他是來到鎮上的旅人，不是鎮長，不要叫他鎮長。"
+msgstr "他是來到鎮上的旅人，不是鎮長，不要叫他鎮長。"
+
+msgid "現任鎮長是"
+msgstr "現任鎮長是"
+
+msgid "的聲望提升為"
+msgstr "的聲望提升為"
+
+msgid "公開感謝"
+msgstr "公開感謝"
+
+msgid "當初的決定"
+msgstr "當初的決定"
+
+msgid "先前的決策表達不滿"
+msgstr "先前的決策表達不滿"
+
+msgid "選擇了"
+msgstr "選擇了"
+
+msgid "在「"
+msgstr "在「"
+
+msgid "下令："
+msgstr "下令："
+
+msgid "支持我的夢想,好感動!"
+msgstr "支持我的夢想,好感動!"
+
+msgid "哈哈謝謝"
+msgstr "哈哈謝謝"
+
+msgid "也看到啦 😳"
+msgstr "也看到啦 😳"
+
+msgid "已把"
+msgstr "已把"
+
+msgid "段簡體字台詞轉成繁體，存檔已修正。"
+msgstr "段簡體字台詞轉成繁體，存檔已修正。"
+
+msgid "已清除"
+msgstr "已清除"
+
+msgid "則 AI 服務誤回的英文/自報身分內容，存檔已修正。"
+msgstr "則 AI 服務誤回的英文/自報身分內容，存檔已修正。"
+
 msgid "智慧分流：你與村民的對話、劇情名場面優先走 Groq 免費額度；行程／反思／背景對話走付費主渠道；任一邊故障自動切到另一邊。"
 msgstr "智慧分流：你與村民的對話、劇情名場面優先走 Groq 免費額度；行程／反思／背景對話走付費主渠道；任一邊故障自動切到另一邊。"
 
@@ -4937,9 +13610,6 @@ msgstr "將在繁榮度達到"
 
 msgid "時解鎖!先和村民打好關係、完成任務吧。"
 msgstr "時解鎖!先和村民打好關係、完成任務吧。"
-
-msgid "戀愛"
-msgstr "戀愛"
 
 msgid "👤 個人視角:再點一次空白處返回全鎮"
 msgstr "👤 個人視角:再點一次空白處返回全鎮"
@@ -5312,9 +13982,6 @@ msgstr "風速"
 
 msgid "濕度"
 msgstr "濕度"
-
-msgid "心情"
-msgstr "心情"
 
 msgid "天後"
 msgstr "天後"

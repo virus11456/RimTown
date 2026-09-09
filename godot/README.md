@@ -39,16 +39,18 @@ BLENDER=blender GODOT=godot bash tools/build.sh
 
 Blender 重建同時執行資產驗證。本機驗證使用 Blender 3.6.23；macOS 無 headless Metal 時可加 `BLENDER_FLAGS='--gpu-backend opengl'`。Godot 使用 Compatibility renderer。
 
-如需重新產生來源 golden 與格網 oracle，將此 godot 資料夾放回原始 rimtown 儲存庫中，與 chrome-extension 並列，切換原始碼到基準 `47c44406ffe4ef705b5f8988a47e187e42a73602`，再執行：
+已同步上游 v5.74.1（4eefc58）。原始六份完整世界 golden 保留 47c4440 基準，作為歷史回歸資料；不以重新產生預期值的方式接受差異。最新來源的 Phase 4a／地圖 oracle 與既有 24 份資料逐位元一致，來源雜湊見 docs/UPSTREAM_SYNC.json。
+
+在完整儲存庫中，從 godot 資料夾驗證最新來源：
 
 ```sh
-node tools/golden.mjs
-node tools/layout_oracle.mjs
+node tools/verify_upstream.mjs
 node tools/i18n.mjs
-node tools/phase4a_oracle.mjs
-# 執行 test_playtest.gd 後，可用原版 JS 核對匯出的試玩資料：
+# 執行 test_playtest.gd 後，用最新版 JS 核對匯出的試玩資料：
 node tools/test_js_reload.mjs
 ```
+
+verify_upstream 會重新產生 scoped oracle 並比對原有雜湊；有差異會失敗，需檢查，不應直接接受。若需重建歷史完整世界 golden，請在獨立 checkout 使用 6171e94 的工具和 47c4440 的 chrome-extension 原始碼。
 
 獨立專案包已含 golden、oracle 與全部模型；一般啟動和現有測試不需重新產生來源資料。
 
@@ -72,7 +74,7 @@ node tools/test_js_reload.mjs
 
 目前完成 Phase 4a 的既有存檔運行核心與試玩入口；Phase 4b–4f、5、6 尚未完成。正式站登入／正式使用者存檔、2D 與 3D 人工截圖對照、Safari 觸控與效能、Web 匯出和 `/3d/` 部署未完成驗收。沒有推送 GitHub 或修改正式服務。
 
-原版存檔不含連續行走座標，初次匯入時依地點／門口放置。Godot 試玩進度另以 `_godot4a` 保留行走與亂數狀態，重新載入可接續；原版會忽略此擴充。模型依原版 footprint 縮放，2×2 小屋資產在地圖上採原版 6×6 範圍。部分裝飾採共用造型（例如噴泉用井、雕像用石碑）。角色有移動、轉向、簡易步行起伏與睡眠姿勢，尚未完成完整五組骨架動畫；無音樂。日夜隨時鐘變化，天氣事件仍維持匯入值，季節渲染會隨換季更新。已匯入原版 2,609 個翻譯鍵，新介面仍以繁體中文為主，未宣稱完整英文在地化。
+原版存檔不含連續行走座標，初次匯入時依地點／門口放置。Godot 試玩進度另以 `_godot4a` 保留行走與亂數狀態，重新載入可接續；原版會忽略此擴充。模型依原版 footprint 縮放，2×2 小屋資產在地圖上採原版 6×6 範圍。部分裝飾採共用造型（例如噴泉用井、雕像用石碑）。角色有移動、轉向、簡易步行起伏與睡眠姿勢，尚未完成完整五組骨架動畫；無音樂。日夜隨時鐘變化，天氣事件仍維持匯入值，季節渲染會隨換季更新。已匯入原版 5,498 個翻譯鍵，新介面仍以繁體中文為主，未宣稱完整英文在地化。
 
 原版沒有保存 Math.random 狀態，首次匯入以固定 11456 啟動試玩亂數；因此不宣稱能還原網頁遊玩中的隨機未來。資源、關係、任務等保留原值，不參與本階段更新；試玩進度用於此階段測試，尚未驗收為完整遊戲回存。
 
@@ -97,3 +99,9 @@ godot --headless --path . --script res://tests/test_interaction.gd
 50 項純碰撞／Godot 鍵盤事件測試全過：30／60／120 fps 同速、四向／對角線、七種阻擋地形、沿牆滑行／角落、地圖邊界、相機旋轉／跟隨、輸入欄位與選檔器抑制、焦點離開、世界加速、手動路線優先、位置續存與邏輯地點同步。458 項既有試玩、34 項 NPC 移動與 36 項畫面回歸測試通過。原 API 與原版 JS 未修改。
 
 原版鍵盤對角線會比較快；此 3D 控制先正規化方向，維持每秒 4.5 格。視角相對方向與獨立於世界加速的旅人速度是本次操作選擇。碰撞保留原版 72 px/s、4 px 地圖邊界、逐軸滑行及阻擋格定義。
+
+## 上游 v5.74.1 同步
+
+GitHub 17 筆更新已合併進本機 codex/godot-viewer。新增推薦碼 register(invite)、chat(lang) 和 set_settings(dialogue_lang) 契約；省略設定語言時不覆寫既有偏好。這些是 API 能力，尚未新增註冊或 AI 對話介面。55 項 API／存檔／相機測試、16 次本機 HTTP 請求通過；既有旅人、試玩、畫面、地圖、模擬與 JS 讀回測試通過。
+
+新版網頁的登入首頁、AI 語言生成／人名對照、載入時清理 AI 台詞及簡轉繁已在原始 JS 合併，但未全部移植成 Godot 功能。Godot 匯入與原始副本仍保留原文；試玩進度送回新版網頁時會接受網頁既有清理。Godot 新介面尚未完整英文化，完整 World.tick 的 30 天對照仍屬歷史基準。此次未推送 GitHub 或部署。

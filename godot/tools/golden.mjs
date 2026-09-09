@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
 import {fileURLToPath} from 'node:url';
 export const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
-export const files=['i18n','quest-system','industry','farm','processing','daily-news','npc-events','npc-quests','custom-npc','prosperity','simulation','tilemap','app'];
+export const files=['s2t','i18n','quest-system','industry','farm','processing','daily-news','npc-events','npc-quests','custom-npc','prosperity','simulation','tilemap','app'];
 export function context(seed=11456) {
   let state=seed, tick=0;
   const epoch=Date.UTC(2026,0,1);

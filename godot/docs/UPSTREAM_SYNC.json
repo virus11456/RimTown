@@ -1,0 +1,24 @@
+{
+  "upstream": "4eefc58c822b4c393475db51eaa9d0e5fd7f6a48",
+  "version": "5.74.1",
+  "historicalGoldenBase": "47c44406ffe4ef705b5f8988a47e187e42a73602",
+  "scopedOracleUnchanged": true,
+  "comparedFiles": 24,
+  "sources": {
+    "s2t.js": "7a85e4748b4d26a0dc70f3a172040a2ee9f35d780231c5eb3b871531d3d15ee3",
+    "i18n.js": "9c6b0820d2aab109594ca113c110a6355d658eb36eda5dda3d264f9fb5024109",
+    "quest-system.js": "6e821377421304e1b71dfd83d823e566041c36269ad76cefdf593252948d80e9",
+    "industry.js": "2d10334fd18e7ac08b06e37c8b1435216beb85972199e96c1bdfca907ce25cd4",
+    "farm.js": "d49dbef745cb7663ebcddd7151b1f9634a462c1ee18ac521272b18b070a89eb4",
+    "processing.js": "3bf4e388dd853f5c2bfa063203bf7b8fc3f03a4f9f92db1573403b9525baa8bb",
+    "daily-news.js": "0a027c8aa8fdacb73440191d037df41b7bdd838981e444d6ec2980bb54889486",
+    "npc-events.js": "4f2cadeeced38ef018b09f6b275e5fef188dfa96025672bdc64620b2c88628ec",
+    "npc-quests.js": "a53c67fea5dd0f08b527411d9fd29f258dc72332da7bfbae8f93497ec36b61c0",
+    "custom-npc.js": "a98fddcb046ee72512d1ccc8cb4bf0c7e1db6df9caec0d54c65915d74a2892c0",
+    "prosperity.js": "30630cf1dcc225e254053e2fb14f1cba920f77bd5fb84ae735d7825279704b4d",
+    "simulation.js": "6db2dacf6c6a61a8f1a0e3ab7332cf507213c5c5e6c3b4961ca7c349bfaa3654",
+    "tilemap.js": "c5f19421d240e083ed3fd1f2eab1a51a63aea79a9834163974d8442f0f105337",
+    "app.js": "4312b609808902c989dcce53a06100c1ed901479bed27b0f367e970cef07fe70"
+  },
+  "scope": "Phase 4a and layout against frozen golden inputs; full World.tick golden remains historical; run test_js_reload.mjs after test_playtest.gd for current JS loadSave compatibility"
+}
