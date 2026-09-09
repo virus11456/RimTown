@@ -1,13 +1,17 @@
-# RimTown · 立體小鎮觀賞版
+# RimTown · Phase 4a 試玩版
 
-Phase 0–3 觀賞版原型：讀取 RimTown JSON，以低多邊形 3D 顯示邊境鎮與海風鎮。包含兩鎮第 1／7／30 天範例，啟動預設載入邊境鎮。此版本不推進模擬、不向雲端儲存世界；匯出會保留匯入 JSON 原始內容。
+在 Phase 0–3 觀賞版上加入時鐘、需求、作息、技能成長、A* 尋路、進出建築與卡住復原。兩鎮範例可直接開啟；預設暫停，按「▶ 開始」就能觀察村民活動。這是分階段試玩版，尚未包含建設、對話、經濟、關係與任務的完整模擬。
+
+不會向雲端寫入世界。「匯出原始存檔副本」保留原始 JSON；「匯出試玩進度」另存已推進的時間、居民與行走狀態。
 
 ## 開啟
 
 使用 Godot 4.7.1 匯入本資料夾的 `project.godot`，等待資源匯入後按「執行專案」（macOS ⌘B）。不需要 Blender 或 Node 即可執行。首次匯入字型與模型可能需要一些時間。
 
 - 拖曳移動相機、滾輪縮放、Q／E 或頂端按鈕轉向；手機支援拖曳、雙指縮放與轉向按鈕。
-- 「小鎮」可切換兩個範例、匯入 JSON、匯出原始副本。
+- 「▶ 開始／Ⅱ 暫停」控制運行；「＋15 分」前進一個模擬 tick 並暫停；速度按鈕切換 1×／4×／16×。1× 每 2 秒推進 15 遊戲分鐘。單步更新作息與目標，持續播放才會走完整段路。
+- 「小鎮」可切換兩鎮、匯入 JSON、匯出原始副本或試玩進度。切換／匯入會替換目前試玩狀態並暫停，要保留進度請先匯出。
+- 建議第一次按 4×，觀察上工、用餐、下班回家。選「居民」查看目前活動與變化中的需求。
 - 「居民」可選人查看資料；「故事」顯示存檔紀錄；「設定」提供登入、雲端存檔讀取與語言切換。
 - 桌面匯出路徑會顯示在畫面上；透過 Godot「專案→開啟使用者資料資料夾」亦可找到副本。
 - 全部 83 個模型的排列展示位於 `scenes/showcase.tscn`。
@@ -20,6 +24,9 @@ Phase 0–3 觀賞版原型：讀取 RimTown JSON，以低多邊形 3D 顯示邊
 godot --headless --editor --import --path .
 godot --headless --path . --script res://tests/test_layout.gd
 godot --headless --path . --script res://tests/test_view.gd
+godot --headless --path . --script res://tests/test_phase4a.gd
+godot --headless --path . --script res://tests/test_motion.gd
+godot --headless --path . --script res://tests/test_playtest.gd
 GODOT=godot node tools/test_phase2.mjs
 godot --headless --path . -- --smoke
 BLENDER=blender GODOT=godot bash tools/build.sh
@@ -33,11 +40,22 @@ Blender 重建同時執行資產驗證。本機驗證使用 Blender 3.6.23；mac
 node tools/golden.mjs
 node tools/layout_oracle.mjs
 node tools/i18n.mjs
+node tools/phase4a_oracle.mjs
+# 執行 test_playtest.gd 後，可用原版 JS 核對匯出的試玩資料：
+node tools/test_js_reload.mjs
 ```
 
 獨立專案包已含 golden、oracle 與全部模型；一般啟動和現有測試不需重新產生來源資料。
 
-## 已取得的證據
+## Phase 4a 驗證
+
+- 兩鎮各連續 2,880 ticks（30 個遊戲日）的原版 Agent.update 範圍對照；14 個檢查點核對時鐘、需求、作息、地點、心情、技能與亂數狀態，全過。
+- 12 條 A* 路徑與 22 個移動檢查點全過，包含睡眠／清醒卡住復原。Godot Vector2 的浮點誤差實測最大 0.00231 原版像素（約 0.000145 格）；測試容許 0.05 像素。
+- 開始／暫停／步進／加速、手機布局、模擬與行走續跑、原始與未知欄位保留共 458 個檢查通過。
+- Godot 試玩進度經原版 JS loadSave 再讀取，時鐘、居民數、地點、活動、需求與技能一致。這不代表完整 Phase 4 的經濟／任務等狀態已與原版 30 天 golden 一致。
+- 桌面實際運行後截圖 docs/playtest-desktop.png，以及 375×812 docs/playtest-mobile.png。
+
+## 既有觀賞版證據
 
 - 83 個模型通過幾何、UV、面數等驗證；兩次重建幾何雜湊一致。
 - 49 個存檔／API／相機檢查通過，HTTP 本機端對端 12 次請求。
@@ -47,9 +65,11 @@ node tools/i18n.mjs
 
 ## 驗收界線
 
-這是待擁有者驗收的觀賞版原型，尚未開始 Phase 4–6。正式站登入／正式使用者存檔、2D 與 3D 人工截圖對照、Safari 觸控與效能、Web 匯出和 `/3d/` 部署未完成驗收。沒有推送 GitHub 或修改正式服務。
+目前完成 Phase 4a 的既有存檔運行核心與試玩入口；Phase 4b–4f、5、6 尚未完成。正式站登入／正式使用者存檔、2D 與 3D 人工截圖對照、Safari 觸控與效能、Web 匯出和 `/3d/` 部署未完成驗收。沒有推送 GitHub 或修改正式服務。
 
-原存檔不含連續行走座標，因此居民依原版重新載入時的地點／門口放置；不能對齊任意遊玩中的移動瞬間。模型依原版 footprint 縮放，2×2 小屋資產在地圖上採原版 6×6 範圍。部分裝飾採共用造型（例如噴泉用井、雕像用石碑）。角色靜止、無音樂；日夜與天氣反映存檔而不自行推進。已匯入原版 2,609 個翻譯鍵，新介面仍以繁體中文為主，未宣稱完整英文在地化。
+原版存檔不含連續行走座標，初次匯入時依地點／門口放置。Godot 試玩進度另以 `_godot4a` 保留行走與亂數狀態，重新載入可接續；原版會忽略此擴充。模型依原版 footprint 縮放，2×2 小屋資產在地圖上採原版 6×6 範圍。部分裝飾採共用造型（例如噴泉用井、雕像用石碑）。角色有移動、轉向、簡易步行起伏與睡眠姿勢，尚未完成完整五組骨架動畫；無音樂。日夜隨時鐘變化，天氣事件仍維持匯入值，季節渲染會隨換季更新。已匯入原版 2,609 個翻譯鍵，新介面仍以繁體中文為主，未宣稱完整英文在地化。
+
+原版沒有保存 Math.random 狀態，首次匯入以固定 11456 啟動試玩亂數；因此不宣稱能還原網頁遊玩中的隨機未來。資源、關係、任務等保留原值，不參與本階段更新；試玩進度用於此階段測試，尚未驗收為完整遊戲回存。
 
 正式帳號請由擁有者在「設定」自行登入；本機 HTTP 契約通過不等於正式站驗收通過。詳細範圍、決策與階段記錄見 docs/PHASE_REPORTS.md 和 docs/DECISIONS.md。
 

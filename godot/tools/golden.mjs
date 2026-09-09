@@ -20,7 +20,7 @@ export function context(seed=11456) {
     fetch(){throw Error('Network forbidden in golden');},__setTick:n=>tick=n});
   ctx.window=ctx;
   for(const file of files)vm.runInContext(fs.readFileSync(path.join(root,'chrome-extension',file+'.js'),'utf8'),ctx,{filename:file+'.js'});
-  return {ctx,warnings};
+  return {ctx,warnings,getRandomState:()=>state,setRandomState:value=>{state=value;}};
 }
 export const json=x=>JSON.stringify(x,null,2)+'\n';
 export const sha=x=>crypto.createHash('sha256').update(x).digest('hex');

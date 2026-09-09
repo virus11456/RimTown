@@ -1,0 +1,6 @@
+{
+  "checkpoints": 14,
+  "failures": [],
+  "scope": "Phase 4a agent update; no economy, relationships, quests, events or LLM effects",
+  "ticks_per_town": 2880
+}

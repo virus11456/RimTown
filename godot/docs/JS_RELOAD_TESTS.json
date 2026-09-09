@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "population": 21,
+  "fields": [
+    "clock",
+    "population",
+    "currentLocation",
+    "activity",
+    "needs",
+    "skills"
+  ],
+  "scope": "original JS loadSave only; no live-server or complete economy simulation"
+}

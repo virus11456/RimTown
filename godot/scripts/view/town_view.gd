@@ -260,6 +260,12 @@ func _weather(save: Dictionary) -> void:
 	elif weather in ["snow","blizzard"]: kind="snow"
 	elif season=="秋季": kind="leaves"
 	elif season=="夏季" and (hour>=19 or hour<5): kind="fireflies"
+	for old_kind in ["rain","snow","leaves","fireflies"]:
+		var old:=content.get_node_or_null(old_kind)
+		if old!=null:
+			if old_kind==kind: return
+			content.remove_child(old)
+			old.queue_free()
 	if kind.is_empty(): return
 	var particles:=GPUParticles3D.new()
 	particles.name=kind
@@ -294,3 +300,17 @@ func _weather(save: Dictionary) -> void:
 	mesh.surface_set_material(0,shared_material)
 	particles.draw_pass_1=mesh
 	content.add_child(particles)
+
+func animate_agents(positions: Dictionary) -> void:
+	for id in positions:
+		if not actors.has(id): continue
+		var p: Dictionary=positions[id]
+		var actor: Node3D=actors[id]
+		var previous:=actor.position
+		var walking: bool=p.get("walking",false)
+		var bob:=sin(float(p.get("walkStep",0))*.18)*.045 if walking else 0.0
+		actor.position=Vector3(float(p.x)/16,.16+bob,float(p.y)/16)
+		var direction:=actor.position-previous
+		if walking and Vector2(direction.x,direction.z).length()>.0001:
+			actor.rotation.y=atan2(direction.x,direction.z)
+		actor.rotation.z=PI/2 if p.get("activity")=="sleeping" and not walking else 0.0

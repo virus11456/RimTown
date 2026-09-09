@@ -1,0 +1,6 @@
+{
+  "checks": 34,
+  "failures": [],
+  "maximum_numeric_error_pixels": 0.00230760866043056,
+  "position_tolerance_pixels": 0.05
+}

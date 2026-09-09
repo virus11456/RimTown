@@ -1,0 +1,362 @@
+{
+  "jobs": {
+    "farmer": {
+      "title": "農夫",
+      "category": "production",
+      "description": "種植作物與照料田地",
+      "workplace": "farm",
+      "work_hours": [
+        6,
+        16
+      ],
+      "daily_output": "食物與農產"
+    },
+    "miner": {
+      "title": "礦工",
+      "category": "production",
+      "description": "在礦場開採石頭與礦石",
+      "workplace": "quarry",
+      "work_hours": [
+        7,
+        16
+      ]
+    },
+    "cook": {
+      "title": "廚師",
+      "category": "service",
+      "description": "在酒館準備餐食",
+      "workplace": "tavern",
+      "work_hours": [
+        5,
+        14
+      ]
+    },
+    "blacksmith": {
+      "title": "鐵匠",
+      "category": "production",
+      "description": "鍛造工具與裝備",
+      "workplace": "workshop",
+      "work_hours": [
+        8,
+        17
+      ]
+    },
+    "doctor": {
+      "title": "醫生",
+      "category": "intellectual",
+      "description": "治療傷病患者",
+      "workplace": "clinic",
+      "work_hours": [
+        8,
+        18
+      ]
+    },
+    "researcher": {
+      "title": "研究員",
+      "category": "intellectual",
+      "description": "研究與發現新知識",
+      "workplace": "library",
+      "work_hours": [
+        9,
+        17
+      ]
+    },
+    "trader": {
+      "title": "商人",
+      "category": "social",
+      "description": "管理雜貨店",
+      "workplace": "general_store",
+      "work_hours": [
+        8,
+        18
+      ]
+    },
+    "guard": {
+      "title": "守衛",
+      "category": "combat",
+      "description": "巡邏與保護小鎮",
+      "workplace": "guardpost",
+      "work_hours": [
+        6,
+        18
+      ]
+    },
+    "carpenter": {
+      "title": "木匠",
+      "category": "production",
+      "description": "建造與修繕建築",
+      "workplace": "workshop",
+      "work_hours": [
+        7,
+        16
+      ]
+    },
+    "tailor": {
+      "title": "裁縫",
+      "category": "production",
+      "description": "製作衣物與紡織品",
+      "workplace": "workshop",
+      "work_hours": [
+        8,
+        17
+      ]
+    },
+    "priest": {
+      "title": "牧師",
+      "category": "social",
+      "description": "照顧居民的心靈需求",
+      "workplace": "chapel",
+      "work_hours": [
+        7,
+        19
+      ]
+    },
+    "mayor": {
+      "title": "鎮長",
+      "category": "social",
+      "description": "領導小鎮",
+      "workplace": "town_hall",
+      "work_hours": [
+        9,
+        17
+      ]
+    }
+  },
+  "traits": {
+    "kind": {
+      "social": 2,
+      "label": "善良",
+      "description": "天生善良且富有同理心"
+    },
+    "abrasive": {
+      "social": -2,
+      "label": "刻薄",
+      "description": "容易得罪別人"
+    },
+    "shy": {
+      "social": -1,
+      "label": "害羞",
+      "description": "在社交場合感到不自在"
+    },
+    "charismatic": {
+      "social": 3,
+      "label": "魅力",
+      "description": "天生具有吸引力"
+    },
+    "gossip": {
+      "social": 1,
+      "label": "八卦",
+      "description": "喜歡散播和聽取傳聞"
+    },
+    "hardworking": {
+      "work": 2,
+      "label": "勤勞",
+      "description": "在辛勤工作中獲得滿足"
+    },
+    "lazy": {
+      "work": -2,
+      "label": "懶惰",
+      "description": "盡可能避免工作"
+    },
+    "perfectionist": {
+      "work": 1,
+      "label": "完美主義",
+      "description": "一切都要做到最好"
+    },
+    "creative": {
+      "work": 1,
+      "label": "有創意",
+      "description": "思維跳脫框架"
+    },
+    "optimist": {
+      "mood_base": 10,
+      "label": "樂觀",
+      "description": "總是看到光明面"
+    },
+    "pessimist": {
+      "mood_base": -10,
+      "label": "悲觀",
+      "description": "預期最壞的結果"
+    },
+    "neurotic": {
+      "mood_sensitivity": 1.5,
+      "label": "神經質",
+      "description": "情緒波動劇烈"
+    },
+    "stoic": {
+      "mood_sensitivity": 0.5,
+      "label": "沉穩",
+      "description": "很少表露情感"
+    },
+    "romantic": {
+      "romance": 2,
+      "label": "浪漫",
+      "description": "容易墜入愛河"
+    },
+    "jealous": {
+      "romance": -1,
+      "label": "嫉妒",
+      "description": "容易感到嫉妒"
+    },
+    "night_owl": {
+      "schedule": "late",
+      "label": "夜貓子",
+      "description": "偏好晚睡"
+    },
+    "early_bird": {
+      "schedule": "early",
+      "label": "早起鳥",
+      "description": "日出而作"
+    },
+    "glutton": {
+      "food": 1.5,
+      "label": "貪吃",
+      "description": "比大多數人更愛吃"
+    },
+    "ascetic": {
+      "comfort": -1,
+      "label": "苦行",
+      "description": "偏好簡樸的生活"
+    }
+  },
+  "jobSkills": {
+    "farmer": {
+      "primary": [
+        "種植"
+      ],
+      "secondary": [
+        "動物",
+        "烹飪"
+      ]
+    },
+    "miner": {
+      "primary": [
+        "採礦"
+      ],
+      "secondary": [
+        "建造",
+        "近戰"
+      ]
+    },
+    "cook": {
+      "primary": [
+        "烹飪"
+      ],
+      "secondary": [
+        "種植",
+        "社交"
+      ]
+    },
+    "blacksmith": {
+      "primary": [
+        "工藝"
+      ],
+      "secondary": [
+        "採礦",
+        "建造"
+      ]
+    },
+    "doctor": {
+      "primary": [
+        "醫療"
+      ],
+      "secondary": [
+        "智識",
+        "社交"
+      ]
+    },
+    "researcher": {
+      "primary": [
+        "智識"
+      ],
+      "secondary": [
+        "醫療",
+        "工藝"
+      ]
+    },
+    "trader": {
+      "primary": [
+        "社交"
+      ],
+      "secondary": [
+        "智識",
+        "工藝"
+      ]
+    },
+    "guard": {
+      "primary": [
+        "射擊"
+      ],
+      "secondary": [
+        "近戰",
+        "醫療"
+      ]
+    },
+    "carpenter": {
+      "primary": [
+        "建造"
+      ],
+      "secondary": [
+        "工藝",
+        "種植"
+      ]
+    },
+    "tailor": {
+      "primary": [
+        "工藝"
+      ],
+      "secondary": [
+        "藝術",
+        "社交"
+      ]
+    },
+    "priest": {
+      "primary": [
+        "社交"
+      ],
+      "secondary": [
+        "藝術",
+        "智識"
+      ]
+    },
+    "mayor": {
+      "primary": [
+        "社交"
+      ],
+      "secondary": [
+        "智識",
+        "藝術"
+      ]
+    }
+  },
+  "activitySkills": {
+    "socializing": [
+      "社交"
+    ],
+    "eating": [],
+    "sleeping": [],
+    "recreation": [
+      "藝術"
+    ],
+    "wandering": [
+      "動物",
+      "種植"
+    ],
+    "stargazing": [
+      "智識"
+    ],
+    "night_mischief": [
+      "社交"
+    ],
+    "night_stroll": [
+      "動物"
+    ]
+  },
+  "passions": {
+    "無能": 0,
+    "無": 1,
+    "微": 1.5,
+    "大": 2.5,
+    "狂熱": 4
+  }
+}

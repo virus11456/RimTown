@@ -22,18 +22,18 @@ config/features=PackedStringArray("4.7", "GL Compatibility")
 
 window/size/viewport_width=1280
 window/size/viewport_height=800
-window/stretch/mode="disabled"
+
+[input_devices]
+
+pointing/emulate_mouse_from_touch=false
+
+[internationalization]
+
+locale/translations=PackedStringArray("res://scripts/i18n/zh_TW.po", "res://scripts/i18n/en.po")
+locale/fallback="zh_TW"
 
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 environment/defaults/default_clear_color=Color(0.075, 0.12, 0.14, 1)
-
-[internationalization]
-locale/translations=PackedStringArray("res://scripts/i18n/zh_TW.po", "res://scripts/i18n/en.po")
-locale/fallback="zh_TW"
-
-[input_devices]
-pointing/emulate_touch_from_mouse=false
-pointing/emulate_mouse_from_touch=false

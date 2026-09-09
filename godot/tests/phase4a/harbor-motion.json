@@ -1,0 +1,7286 @@
+{
+  "input": {
+    "version": 2,
+    "_legacyGeneration": 1,
+    "savedAt": "2026-01-01T00:00:00.000Z",
+    "clock": {
+      "day": 1,
+      "hour": 6,
+      "minute": 0,
+      "season": "春季",
+      "year": 1
+    },
+    "tickCount": 0,
+    "paused": false,
+    "messageLog": [
+      {
+        "time": "第1年 春季 第1天 06:00",
+        "tick": 0,
+        "type": "system",
+        "content": "遊戲讀取成功！",
+        "agent": "",
+        "target": ""
+      }
+    ],
+    "townMap": {
+      "seed": 11456,
+      "terrain": "coastal",
+      "width": 800,
+      "height": 600,
+      "locations": {
+        "town_square": {
+          "id": "town_square",
+          "name": "碼頭廣場",
+          "description": "聚落的核心",
+          "x": 473,
+          "y": 301,
+          "category": "social",
+          "capacity": 15
+        },
+        "tavern": {
+          "id": "tavern",
+          "name": "海味居",
+          "description": "飲食與社交",
+          "x": 318,
+          "y": 280,
+          "category": "social",
+          "capacity": 18
+        },
+        "town_hall": {
+          "id": "town_hall",
+          "name": "港務所",
+          "description": "小鎮的治理中心",
+          "x": 283,
+          "y": 363,
+          "category": "work",
+          "capacity": 6
+        },
+        "clinic": {
+          "id": "clinic",
+          "name": "海風診療所",
+          "description": "醫療照護",
+          "x": 345,
+          "y": 430,
+          "category": "work",
+          "capacity": 4
+        },
+        "library": {
+          "id": "library",
+          "name": "燈塔書房",
+          "description": "知識與研究",
+          "x": 592,
+          "y": 431,
+          "category": "work",
+          "capacity": 6
+        },
+        "farm": {
+          "id": "farm",
+          "name": "蚵田菜畦",
+          "description": "肥沃的農田",
+          "x": 193,
+          "y": 378,
+          "category": "work",
+          "capacity": 6
+        },
+        "general_store": {
+          "id": "general_store",
+          "name": "南北雜貨行",
+          "description": "交易與補給",
+          "x": 375,
+          "y": 210,
+          "category": "work",
+          "capacity": 4
+        },
+        "quarry": {
+          "id": "quarry",
+          "name": "鹽場",
+          "description": "豐富的礦藏",
+          "x": 434,
+          "y": 416,
+          "category": "work",
+          "capacity": 6
+        },
+        "guardpost": {
+          "id": "guardpost",
+          "name": "望潮哨",
+          "description": "守護小鎮",
+          "x": 134,
+          "y": 257,
+          "category": "work",
+          "capacity": 3
+        },
+        "park": {
+          "id": "park",
+          "name": "曬網場",
+          "description": "寧靜的綠地",
+          "x": 516,
+          "y": 378,
+          "category": "social",
+          "capacity": 16
+        },
+        "chapel": {
+          "id": "chapel",
+          "name": "海神小廟",
+          "description": "平靜與沉思",
+          "x": 385,
+          "y": 337,
+          "category": "social",
+          "capacity": 13
+        },
+        "residential_north": {
+          "id": "residential_north",
+          "name": "崖上人家",
+          "description": "住宅區",
+          "x": 225,
+          "y": 293,
+          "category": "residential",
+          "capacity": 11
+        },
+        "residential_south": {
+          "id": "residential_south",
+          "name": "沙灘木屋",
+          "description": "住宅區",
+          "x": 212,
+          "y": 203,
+          "category": "residential",
+          "capacity": 9
+        },
+        "residential_east": {
+          "id": "residential_east",
+          "name": "漁港街",
+          "description": "住宅區",
+          "x": 486,
+          "y": 129,
+          "category": "residential",
+          "capacity": 8
+        },
+        "cave": {
+          "id": "cave",
+          "name": "海蝕洞",
+          "description": "神秘的洞穴",
+          "x": 508,
+          "y": 60,
+          "category": "nature",
+          "capacity": 5
+        },
+        "river": {
+          "id": "river",
+          "name": "外海碼頭",
+          "description": "平靜的河流",
+          "x": 595,
+          "y": 60,
+          "category": "nature",
+          "capacity": 7
+        },
+        "meadow": {
+          "id": "meadow",
+          "name": "鹽灘",
+          "description": "開闊的草原",
+          "x": 740,
+          "y": 293,
+          "category": "nature",
+          "capacity": 9
+        },
+        "hill": {
+          "id": "hill",
+          "name": "燈塔崖",
+          "description": "高地",
+          "x": 113,
+          "y": 421,
+          "category": "nature",
+          "capacity": 5
+        }
+      }
+    },
+    "agents": {
+      "hb_haibo": {
+        "id": "hb_haibo",
+        "name": "海伯",
+        "age": 58,
+        "gender": "male",
+        "isPlayer": false,
+        "_isPlayerChild": false,
+        "_parentNames": null,
+        "jobKey": "mayor",
+        "homeLocation": "residential_north",
+        "currentLocation": "residential_north",
+        "mood": 50,
+        "activity": "idle",
+        "currentThought": "",
+        "personality": {
+          "traits": [
+            "charismatic",
+            "stoic",
+            "early_bird"
+          ],
+          "background": "跑了四十年船的老船長，退下來當港務長。嗓門大心腸軟，全鎮的船都經過他的手。年輕時和廟祝雲姨有過一段沒說完的故事。",
+          "values": [
+            "社群",
+            "和平"
+          ]
+        },
+        "needs": {
+          "hunger": 70,
+          "rest": 80,
+          "social": 60,
+          "comfort": 60,
+          "recreation": 50,
+          "beauty": 50
+        },
+        "skills": {
+          "射擊": {
+            "xp": 63,
+            "passion": "無"
+          },
+          "近戰": {
+            "xp": 13,
+            "passion": "無"
+          },
+          "建造": {
+            "xp": 40,
+            "passion": "無"
+          },
+          "採礦": {
+            "xp": 54,
+            "passion": "無"
+          },
+          "烹飪": {
+            "xp": 12,
+            "passion": "無"
+          },
+          "種植": {
+            "xp": 303,
+            "passion": "狂熱"
+          },
+          "動物": {
+            "xp": 27,
+            "passion": "無"
+          },
+          "工藝": {
+            "xp": 74,
+            "passion": "無"
+          },
+          "醫療": {
+            "xp": 204,
+            "passion": "微"
+          },
+          "社交": {
+            "xp": 677,
+            "passion": "微"
+          },
+          "智識": {
+            "xp": 328,
+            "passion": "無"
+          },
+          "藝術": {
+            "xp": 370,
+            "passion": "大"
+          }
+        },
+        "relationships": {
+          "hb_yunyi": {
+            "targetId": "hb_yunyi",
+            "targetName": "雲姨",
+            "affinity": 30,
+            "trust": 0,
+            "romanticInterest": 22,
+            "interactionCount": 6,
+            "lastInteractionTick": 0,
+            "sharedMemories": [],
+            "status": "ex",
+            "statusSince": 0,
+            "isCheating": false
+          }
+        },
+        "memory": [],
+        "_lastInteractionTick": 0,
+        "_locationStayRemaining": 0,
+        "_mourningTargets": [],
+        "_annualMourning": [],
+        "thoughts": [],
+        "attributes": {
+          "charm": 5,
+          "vigor": 4,
+          "wit": 5,
+          "grit": 6
+        },
+        "dailyPlan": null
+      },
+      "hb_achao": {
+        "id": "hb_achao",
+        "name": "阿潮",
+        "age": 26,
+        "gender": "male",
+        "isPlayer": false,
+        "_isPlayerChild": false,
+        "_parentNames": null,
+        "jobKey": "farmer",
+        "homeLocation": "residential_east",
+        "currentLocation": "residential_east",
+        "mood": 50,
+        "activity": "idle",
+        "currentThought": "",
+        "personality": {
+          "traits": [
+            "early_bird",
+            "romantic",
+            "hardworking"
+          ],
+          "background": "天不亮就出海的討海青年，蚵田和漁獲都靠他。曬得黝黑，笑起來一口白牙。每天收工都繞去海味居，只為看掌杓的小鷗一眼。",
+          "values": [
+            "自然",
+            "家庭"
+          ]
+        },
+        "needs": {
+          "hunger": 70,
+          "rest": 80,
+          "social": 60,
+          "comfort": 60,
+          "recreation": 50,
+          "beauty": 50
+        },
+        "skills": {
+          "射擊": {
+            "xp": 132,
+            "passion": "大"
+          },
+          "近戰": {
+            "xp": 40,
+            "passion": "無"
+          },
+          "建造": {
+            "xp": 43,
+            "passion": "微"
+          },
+          "採礦": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "烹飪": {
+            "xp": 150,
+            "passion": "無"
+          },
+          "種植": {
+            "xp": 721,
+            "passion": "大"
+          },
+          "動物": {
+            "xp": 239,
+            "passion": "無"
+          },
+          "工藝": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "醫療": {
+            "xp": 39,
+            "passion": "微"
+          },
+          "社交": {
+            "xp": 38,
+            "passion": "無"
+          },
+          "智識": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "藝術": {
+            "xp": 82,
+            "passion": "微"
+          }
+        },
+        "relationships": {
+          "hb_xiaoou": {
+            "targetId": "hb_xiaoou",
+            "targetName": "小鷗",
+            "affinity": 40,
+            "trust": 0,
+            "romanticInterest": 46,
+            "interactionCount": 6,
+            "lastInteractionTick": 0,
+            "sharedMemories": [],
+            "status": null,
+            "statusSince": 0,
+            "isCheating": false
+          }
+        },
+        "memory": [],
+        "_lastInteractionTick": 0,
+        "_locationStayRemaining": 0,
+        "_mourningTargets": [],
+        "_annualMourning": [],
+        "thoughts": [],
+        "attributes": {
+          "charm": 4,
+          "vigor": 7,
+          "wit": 3,
+          "grit": 7
+        },
+        "dailyPlan": null
+      },
+      "hb_xiaoou": {
+        "id": "hb_xiaoou",
+        "name": "小鷗",
+        "age": 22,
+        "gender": "female",
+        "isPlayer": false,
+        "_isPlayerChild": false,
+        "_parentNames": null,
+        "jobKey": "cook",
+        "homeLocation": "residential_south",
+        "currentLocation": "residential_south",
+        "mood": 60,
+        "activity": "idle",
+        "currentThought": "",
+        "personality": {
+          "traits": [
+            "optimist",
+            "early_bird",
+            "charismatic"
+          ],
+          "background": "海味居的掌杓姑娘，一手海鮮料理讓過路商人特地繞港。開朗愛笑，渾然不覺兩個男人都在偷偷看她。",
+          "values": [
+            "社群",
+            "冒險"
+          ]
+        },
+        "needs": {
+          "hunger": 70,
+          "rest": 80,
+          "social": 60,
+          "comfort": 60,
+          "recreation": 50,
+          "beauty": 50
+        },
+        "skills": {
+          "射擊": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "近戰": {
+            "xp": 45,
+            "passion": "無"
+          },
+          "建造": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "採礦": {
+            "xp": 0,
+            "passion": "微"
+          },
+          "烹飪": {
+            "xp": 447,
+            "passion": "微"
+          },
+          "種植": {
+            "xp": 145,
+            "passion": "無"
+          },
+          "動物": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "工藝": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "醫療": {
+            "xp": 49,
+            "passion": "無"
+          },
+          "社交": {
+            "xp": 128,
+            "passion": "微"
+          },
+          "智識": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "藝術": {
+            "xp": 23,
+            "passion": "無"
+          }
+        },
+        "relationships": {
+          "hb_achao": {
+            "targetId": "hb_achao",
+            "targetName": "阿潮",
+            "affinity": 28,
+            "trust": 0,
+            "romanticInterest": 10,
+            "interactionCount": 6,
+            "lastInteractionTick": 0,
+            "sharedMemories": [],
+            "status": null,
+            "statusSince": 0,
+            "isCheating": false
+          },
+          "hb_amao": {
+            "targetId": "hb_amao",
+            "targetName": "阿錨",
+            "affinity": 24,
+            "trust": 0,
+            "romanticInterest": 8,
+            "interactionCount": 6,
+            "lastInteractionTick": 0,
+            "sharedMemories": [],
+            "status": null,
+            "statusSince": 0,
+            "isCheating": false
+          },
+          "hb_axi": {
+            "targetId": "hb_axi",
+            "targetName": "阿汐",
+            "affinity": 56,
+            "trust": 50,
+            "romanticInterest": 0,
+            "interactionCount": 6,
+            "lastInteractionTick": 0,
+            "sharedMemories": [],
+            "status": null,
+            "statusSince": 0,
+            "isCheating": false
+          }
+        },
+        "memory": [
+          {
+            "tick": 0,
+            "timeStr": "08:00",
+            "category": "family",
+            "content": "那個彈吉他的流浪商人，唱的那首海歌我現在還會哼。",
+            "importance": 6,
+            "relatedAgents": [
+              "周明"
+            ]
+          }
+        ],
+        "_lastInteractionTick": 0,
+        "_locationStayRemaining": 0,
+        "_mourningTargets": [],
+        "_annualMourning": [],
+        "thoughts": [],
+        "attributes": {
+          "charm": 6,
+          "vigor": 6,
+          "wit": 5,
+          "grit": 6
+        },
+        "dailyPlan": null
+      },
+      "hb_langshu": {
+        "id": "hb_langshu",
+        "name": "浪叔",
+        "age": 49,
+        "gender": "male",
+        "isPlayer": false,
+        "_isPlayerChild": false,
+        "_parentNames": null,
+        "jobKey": "trader",
+        "homeLocation": "residential_east",
+        "currentLocation": "residential_east",
+        "mood": 50,
+        "activity": "idle",
+        "currentThought": "",
+        "personality": {
+          "traits": [
+            "gossip",
+            "charismatic",
+            "glutton"
+          ],
+          "background": "跑船帶貨的老江湖，南北雜貨行的貨都是他捎回來的。嘴上沒把門，外地的八卦比報紙還快。和補帆的秀姑是老夫老妻。",
+          "values": [
+            "財富",
+            "社群"
+          ]
+        },
+        "needs": {
+          "hunger": 70,
+          "rest": 80,
+          "social": 60,
+          "comfort": 60,
+          "recreation": 50,
+          "beauty": 50
+        },
+        "skills": {
+          "射擊": {
+            "xp": 103,
+            "passion": "無"
+          },
+          "近戰": {
+            "xp": 0,
+            "passion": "無能"
+          },
+          "建造": {
+            "xp": 294,
+            "passion": "狂熱"
+          },
+          "採礦": {
+            "xp": 71,
+            "passion": "無"
+          },
+          "烹飪": {
+            "xp": 136,
+            "passion": "無"
+          },
+          "種植": {
+            "xp": 217,
+            "passion": "微"
+          },
+          "動物": {
+            "xp": 117,
+            "passion": "無"
+          },
+          "工藝": {
+            "xp": 332,
+            "passion": "無"
+          },
+          "醫療": {
+            "xp": 246,
+            "passion": "微"
+          },
+          "社交": {
+            "xp": 1039,
+            "passion": "大"
+          },
+          "智識": {
+            "xp": 98,
+            "passion": "無"
+          },
+          "藝術": {
+            "xp": 49,
+            "passion": "無"
+          }
+        },
+        "relationships": {
+          "hb_xiugu": {
+            "targetId": "hb_xiugu",
+            "targetName": "秀姑",
+            "affinity": 66,
+            "trust": 60,
+            "romanticInterest": 48,
+            "interactionCount": 6,
+            "lastInteractionTick": 0,
+            "sharedMemories": [],
+            "status": "married",
+            "statusSince": 0,
+            "isCheating": false
+          }
+        },
+        "memory": [
+          {
+            "tick": 0,
+            "timeStr": "08:00",
+            "category": "family",
+            "content": "邊境鎮的趙老闆娘又下了一批訂單，這趟得跑快點。",
+            "importance": 6,
+            "relatedAgents": [
+              "趙霞"
+            ]
+          }
+        ],
+        "_lastInteractionTick": 0,
+        "_locationStayRemaining": 0,
+        "_mourningTargets": [],
+        "_annualMourning": [],
+        "thoughts": [],
+        "attributes": {
+          "charm": 9,
+          "vigor": 6,
+          "wit": 7,
+          "grit": 7
+        },
+        "dailyPlan": null
+      },
+      "hb_xiugu": {
+        "id": "hb_xiugu",
+        "name": "秀姑",
+        "age": 45,
+        "gender": "female",
+        "isPlayer": false,
+        "_isPlayerChild": false,
+        "_parentNames": null,
+        "jobKey": "tailor",
+        "homeLocation": "residential_east",
+        "currentLocation": "residential_east",
+        "mood": 50,
+        "activity": "idle",
+        "currentThought": "",
+        "personality": {
+          "traits": [
+            "kind",
+            "gossip",
+            "perfectionist"
+          ],
+          "background": "補了三十年帆的巧手，鎮上人的衣裳也全是她做的。和浪叔鬥了半輩子嘴，針線一拿起來誰都不理。",
+          "values": [
+            "家庭",
+            "藝術"
+          ]
+        },
+        "needs": {
+          "hunger": 70,
+          "rest": 80,
+          "social": 60,
+          "comfort": 60,
+          "recreation": 50,
+          "beauty": 50
+        },
+        "skills": {
+          "射擊": {
+            "xp": 30,
+            "passion": "無"
+          },
+          "近戰": {
+            "xp": 51,
+            "passion": "無"
+          },
+          "建造": {
+            "xp": 78,
+            "passion": "無"
+          },
+          "採礦": {
+            "xp": 83,
+            "passion": "微"
+          },
+          "烹飪": {
+            "xp": 278,
+            "passion": "大"
+          },
+          "種植": {
+            "xp": 278,
+            "passion": "大"
+          },
+          "動物": {
+            "xp": 55,
+            "passion": "無"
+          },
+          "工藝": {
+            "xp": 320,
+            "passion": "微"
+          },
+          "醫療": {
+            "xp": 222,
+            "passion": "微"
+          },
+          "社交": {
+            "xp": 322,
+            "passion": "大"
+          },
+          "智識": {
+            "xp": 50,
+            "passion": "無"
+          },
+          "藝術": {
+            "xp": 372,
+            "passion": "微"
+          }
+        },
+        "relationships": {
+          "hb_langshu": {
+            "targetId": "hb_langshu",
+            "targetName": "浪叔",
+            "affinity": 62,
+            "trust": 58,
+            "romanticInterest": 45,
+            "interactionCount": 6,
+            "lastInteractionTick": 0,
+            "sharedMemories": [],
+            "status": "married",
+            "statusSince": 0,
+            "isCheating": false
+          }
+        },
+        "memory": [],
+        "_lastInteractionTick": 0,
+        "_locationStayRemaining": 0,
+        "_mourningTargets": [],
+        "_annualMourning": [],
+        "thoughts": [],
+        "attributes": {
+          "charm": 5,
+          "vigor": 4,
+          "wit": 6,
+          "grit": 5
+        },
+        "dailyPlan": null
+      },
+      "hb_shishu": {
+        "id": "hb_shishu",
+        "name": "石叔",
+        "age": 52,
+        "gender": "male",
+        "isPlayer": false,
+        "_isPlayerChild": false,
+        "_parentNames": null,
+        "jobKey": "miner",
+        "homeLocation": "residential_south",
+        "currentLocation": "residential_south",
+        "mood": 40,
+        "activity": "idle",
+        "currentThought": "",
+        "personality": {
+          "traits": [
+            "stoic",
+            "pessimist",
+            "hardworking"
+          ],
+          "background": "鹽場的老鹽工，沉默得像塊礁石。二十年前一場船難後，就和燈塔的燈爺再沒說過一句話——沒人知道那晚發生了什麼。",
+          "values": [
+            "財富",
+            "自由"
+          ]
+        },
+        "needs": {
+          "hunger": 70,
+          "rest": 80,
+          "social": 60,
+          "comfort": 60,
+          "recreation": 50,
+          "beauty": 50
+        },
+        "skills": {
+          "射擊": {
+            "xp": 176,
+            "passion": "微"
+          },
+          "近戰": {
+            "xp": 237,
+            "passion": "無"
+          },
+          "建造": {
+            "xp": 178,
+            "passion": "大"
+          },
+          "採礦": {
+            "xp": 677,
+            "passion": "微"
+          },
+          "烹飪": {
+            "xp": 124,
+            "passion": "無"
+          },
+          "種植": {
+            "xp": 68,
+            "passion": "無"
+          },
+          "動物": {
+            "xp": 216,
+            "passion": "微"
+          },
+          "工藝": {
+            "xp": 102,
+            "passion": "無"
+          },
+          "醫療": {
+            "xp": 96,
+            "passion": "無"
+          },
+          "社交": {
+            "xp": 97,
+            "passion": "無"
+          },
+          "智識": {
+            "xp": 354,
+            "passion": "大"
+          },
+          "藝術": {
+            "xp": 165,
+            "passion": "大"
+          }
+        },
+        "relationships": {
+          "hb_dengye": {
+            "targetId": "hb_dengye",
+            "targetName": "燈爺",
+            "affinity": -46,
+            "trust": -20,
+            "romanticInterest": 0,
+            "interactionCount": 6,
+            "lastInteractionTick": 0,
+            "sharedMemories": [],
+            "status": null,
+            "statusSince": 0,
+            "isCheating": false
+          }
+        },
+        "memory": [
+          {
+            "tick": 0,
+            "timeStr": "08:00",
+            "category": "family",
+            "content": "礦上的老吳還在挖嗎…當年說好老了一起釣魚的。",
+            "importance": 6,
+            "relatedAgents": [
+              "吳達"
+            ]
+          }
+        ],
+        "_lastInteractionTick": 0,
+        "_locationStayRemaining": 0,
+        "_mourningTargets": [],
+        "_annualMourning": [],
+        "thoughts": [],
+        "attributes": {
+          "charm": 6,
+          "vigor": 9,
+          "wit": 5,
+          "grit": 6
+        },
+        "dailyPlan": null
+      },
+      "hb_dengye": {
+        "id": "hb_dengye",
+        "name": "燈爺",
+        "age": 60,
+        "gender": "male",
+        "isPlayer": false,
+        "_isPlayerChild": false,
+        "_parentNames": null,
+        "jobKey": "researcher",
+        "homeLocation": "residential_north",
+        "currentLocation": "residential_north",
+        "mood": 50,
+        "activity": "idle",
+        "currentThought": "",
+        "personality": {
+          "traits": [
+            "night_owl",
+            "stoic",
+            "creative"
+          ],
+          "background": "守了半輩子燈塔的老人，夜裡點燈、白天睡覺，和全鎮作息相反。書房堆滿航海日誌。提到石叔，他只會把燈芯撥得更亮。",
+          "values": [
+            "知識",
+            "和平"
+          ]
+        },
+        "needs": {
+          "hunger": 70,
+          "rest": 80,
+          "social": 60,
+          "comfort": 60,
+          "recreation": 50,
+          "beauty": 50
+        },
+        "skills": {
+          "射擊": {
+            "xp": 108,
+            "passion": "無"
+          },
+          "近戰": {
+            "xp": 163,
+            "passion": "無"
+          },
+          "建造": {
+            "xp": 237,
+            "passion": "大"
+          },
+          "採礦": {
+            "xp": 224,
+            "passion": "無"
+          },
+          "烹飪": {
+            "xp": 179,
+            "passion": "無"
+          },
+          "種植": {
+            "xp": 280,
+            "passion": "微"
+          },
+          "動物": {
+            "xp": 260,
+            "passion": "微"
+          },
+          "工藝": {
+            "xp": 285,
+            "passion": "微"
+          },
+          "醫療": {
+            "xp": 0,
+            "passion": "無能"
+          },
+          "社交": {
+            "xp": 343,
+            "passion": "大"
+          },
+          "智識": {
+            "xp": 422,
+            "passion": "微"
+          },
+          "藝術": {
+            "xp": 187,
+            "passion": "微"
+          }
+        },
+        "relationships": {
+          "hb_shishu": {
+            "targetId": "hb_shishu",
+            "targetName": "石叔",
+            "affinity": -44,
+            "trust": -18,
+            "romanticInterest": 0,
+            "interactionCount": 6,
+            "lastInteractionTick": 0,
+            "sharedMemories": [],
+            "status": null,
+            "statusSince": 0,
+            "isCheating": false
+          }
+        },
+        "memory": [
+          {
+            "tick": 0,
+            "timeStr": "08:00",
+            "category": "family",
+            "content": "邊境鎮那位孫姑娘的信又到了，她問的遺跡我日誌裡正好有記載。",
+            "importance": 6,
+            "relatedAgents": [
+              "孫雨"
+            ]
+          }
+        ],
+        "_lastInteractionTick": 0,
+        "_locationStayRemaining": 0,
+        "_mourningTargets": [],
+        "_annualMourning": [],
+        "thoughts": [],
+        "attributes": {
+          "charm": 3,
+          "vigor": 3,
+          "wit": 8,
+          "grit": 8
+        },
+        "dailyPlan": null
+      },
+      "hb_axi": {
+        "id": "hb_axi",
+        "name": "阿汐",
+        "age": 30,
+        "gender": "female",
+        "isPlayer": false,
+        "_isPlayerChild": false,
+        "_parentNames": null,
+        "jobKey": "doctor",
+        "homeLocation": "residential_north",
+        "currentLocation": "residential_north",
+        "mood": 50,
+        "activity": "idle",
+        "currentThought": "",
+        "personality": {
+          "traits": [
+            "kind",
+            "perfectionist",
+            "early_bird"
+          ],
+          "background": "海女出身的醫師，潛得比誰都深，也把診療所打理得一塵不染。誰家被海膽扎了、被日頭曬昏了，都是她救的。和小鷗是無話不談的手帕交。",
+          "values": [
+            "知識",
+            "社群"
+          ]
+        },
+        "needs": {
+          "hunger": 70,
+          "rest": 80,
+          "social": 60,
+          "comfort": 60,
+          "recreation": 50,
+          "beauty": 50
+        },
+        "skills": {
+          "射擊": {
+            "xp": 75,
+            "passion": "微"
+          },
+          "近戰": {
+            "xp": 22,
+            "passion": "無"
+          },
+          "建造": {
+            "xp": 30,
+            "passion": "無"
+          },
+          "採礦": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "烹飪": {
+            "xp": 85,
+            "passion": "無"
+          },
+          "種植": {
+            "xp": 0,
+            "passion": "微"
+          },
+          "動物": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "工藝": {
+            "xp": 21,
+            "passion": "無"
+          },
+          "醫療": {
+            "xp": 232,
+            "passion": "微"
+          },
+          "社交": {
+            "xp": 289,
+            "passion": "微"
+          },
+          "智識": {
+            "xp": 280,
+            "passion": "大"
+          },
+          "藝術": {
+            "xp": 69,
+            "passion": "大"
+          }
+        },
+        "relationships": {
+          "hb_xiaoou": {
+            "targetId": "hb_xiaoou",
+            "targetName": "小鷗",
+            "affinity": 58,
+            "trust": 52,
+            "romanticInterest": 0,
+            "interactionCount": 6,
+            "lastInteractionTick": 0,
+            "sharedMemories": [],
+            "status": null,
+            "statusSince": 0,
+            "isCheating": false
+          },
+          "hb_aduo": {
+            "targetId": "hb_aduo",
+            "targetName": "阿舵",
+            "affinity": 18,
+            "trust": 0,
+            "romanticInterest": 6,
+            "interactionCount": 6,
+            "lastInteractionTick": 0,
+            "sharedMemories": [],
+            "status": null,
+            "statusSince": 0,
+            "isCheating": false
+          }
+        },
+        "memory": [
+          {
+            "tick": 0,
+            "timeStr": "08:00",
+            "category": "family",
+            "content": "同期的林美在邊境鎮行醫，她的信裡總夾著新藥方。",
+            "importance": 6,
+            "relatedAgents": [
+              "林美"
+            ]
+          }
+        ],
+        "_lastInteractionTick": 0,
+        "_locationStayRemaining": 0,
+        "_mourningTargets": [],
+        "_annualMourning": [],
+        "thoughts": [],
+        "attributes": {
+          "charm": 4,
+          "vigor": 4,
+          "wit": 8,
+          "grit": 7
+        },
+        "dailyPlan": null
+      },
+      "hb_amao": {
+        "id": "hb_amao",
+        "name": "阿錨",
+        "age": 33,
+        "gender": "male",
+        "isPlayer": false,
+        "_isPlayerChild": false,
+        "_parentNames": null,
+        "jobKey": "blacksmith",
+        "homeLocation": "residential_south",
+        "currentLocation": "residential_south",
+        "mood": 50,
+        "activity": "idle",
+        "currentThought": "",
+        "personality": {
+          "traits": [
+            "hardworking",
+            "shy",
+            "stoic"
+          ],
+          "background": "修船工房的鐵匠，錨鏈和船釘都出自他的爐子。話少手巧，打鐵的節奏永遠穩。只有小鷗送飯來的時候，鎚子才會敲歪。",
+          "values": [
+            "藝術",
+            "家庭"
+          ]
+        },
+        "needs": {
+          "hunger": 70,
+          "rest": 80,
+          "social": 60,
+          "comfort": 60,
+          "recreation": 50,
+          "beauty": 50
+        },
+        "skills": {
+          "射擊": {
+            "xp": 57,
+            "passion": "無"
+          },
+          "近戰": {
+            "xp": 41,
+            "passion": "無"
+          },
+          "建造": {
+            "xp": 338,
+            "passion": "大"
+          },
+          "採礦": {
+            "xp": 269,
+            "passion": "大"
+          },
+          "烹飪": {
+            "xp": 77,
+            "passion": "無"
+          },
+          "種植": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "動物": {
+            "xp": 48,
+            "passion": "無"
+          },
+          "工藝": {
+            "xp": 481,
+            "passion": "微"
+          },
+          "醫療": {
+            "xp": 14,
+            "passion": "無"
+          },
+          "社交": {
+            "xp": 92,
+            "passion": "大"
+          },
+          "智識": {
+            "xp": 311,
+            "passion": "狂熱"
+          },
+          "藝術": {
+            "xp": 0,
+            "passion": "無"
+          }
+        },
+        "relationships": {
+          "hb_xiaoou": {
+            "targetId": "hb_xiaoou",
+            "targetName": "小鷗",
+            "affinity": 36,
+            "trust": 0,
+            "romanticInterest": 42,
+            "interactionCount": 6,
+            "lastInteractionTick": 0,
+            "sharedMemories": [],
+            "status": null,
+            "statusSince": 0,
+            "isCheating": false
+          }
+        },
+        "memory": [],
+        "_lastInteractionTick": 0,
+        "_locationStayRemaining": 0,
+        "_mourningTargets": [],
+        "_annualMourning": [],
+        "thoughts": [],
+        "attributes": {
+          "charm": 3,
+          "vigor": 6,
+          "wit": 7,
+          "grit": 9
+        },
+        "dailyPlan": null
+      },
+      "hb_yunyi": {
+        "id": "hb_yunyi",
+        "name": "雲姨",
+        "age": 47,
+        "gender": "female",
+        "isPlayer": false,
+        "_isPlayerChild": false,
+        "_parentNames": null,
+        "jobKey": "priest",
+        "homeLocation": "residential_north",
+        "currentLocation": "residential_north",
+        "mood": 60,
+        "activity": "idle",
+        "currentThought": "",
+        "personality": {
+          "traits": [
+            "kind",
+            "optimist",
+            "romantic"
+          ],
+          "background": "海神小廟的廟祝，出海的人都來求她一炷平安香。溫柔健談，只有海伯經過廟前時，她會突然想不起下一句經文。",
+          "values": [
+            "和平",
+            "社群"
+          ]
+        },
+        "needs": {
+          "hunger": 70,
+          "rest": 80,
+          "social": 60,
+          "comfort": 60,
+          "recreation": 50,
+          "beauty": 50
+        },
+        "skills": {
+          "射擊": {
+            "xp": 74,
+            "passion": "無"
+          },
+          "近戰": {
+            "xp": 49,
+            "passion": "無"
+          },
+          "建造": {
+            "xp": 167,
+            "passion": "無"
+          },
+          "採礦": {
+            "xp": 81,
+            "passion": "無"
+          },
+          "烹飪": {
+            "xp": 84,
+            "passion": "無"
+          },
+          "種植": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "動物": {
+            "xp": 186,
+            "passion": "微"
+          },
+          "工藝": {
+            "xp": 280,
+            "passion": "無"
+          },
+          "醫療": {
+            "xp": 72,
+            "passion": "無"
+          },
+          "社交": {
+            "xp": 390,
+            "passion": "微"
+          },
+          "智識": {
+            "xp": 172,
+            "passion": "無"
+          },
+          "藝術": {
+            "xp": 287,
+            "passion": "微"
+          }
+        },
+        "relationships": {
+          "hb_haibo": {
+            "targetId": "hb_haibo",
+            "targetName": "海伯",
+            "affinity": 34,
+            "trust": 0,
+            "romanticInterest": 26,
+            "interactionCount": 6,
+            "lastInteractionTick": 0,
+            "sharedMemories": [],
+            "status": "ex",
+            "statusSince": 0,
+            "isCheating": false
+          }
+        },
+        "memory": [],
+        "_lastInteractionTick": 0,
+        "_locationStayRemaining": 0,
+        "_mourningTargets": [],
+        "_annualMourning": [],
+        "thoughts": [],
+        "attributes": {
+          "charm": 5,
+          "vigor": 5,
+          "wit": 7,
+          "grit": 8
+        },
+        "dailyPlan": null
+      },
+      "hb_aduo": {
+        "id": "hb_aduo",
+        "name": "阿舵",
+        "age": 36,
+        "gender": "male",
+        "isPlayer": false,
+        "_isPlayerChild": false,
+        "_parentNames": null,
+        "jobKey": "guard",
+        "homeLocation": "residential_south",
+        "currentLocation": "residential_south",
+        "mood": 50,
+        "activity": "idle",
+        "currentThought": "",
+        "personality": {
+          "traits": [
+            "abrasive",
+            "jealous",
+            "hardworking"
+          ],
+          "background": "望潮哨的哨長，颱風天全鎮聽他的哨音行動。責任感重但佔有慾也重，看誰跟阿汐多說兩句話都不順眼。",
+          "values": [
+            "權力",
+            "家庭"
+          ]
+        },
+        "needs": {
+          "hunger": 70,
+          "rest": 80,
+          "social": 60,
+          "comfort": 60,
+          "recreation": 50,
+          "beauty": 50
+        },
+        "skills": {
+          "射擊": {
+            "xp": 371,
+            "passion": "微"
+          },
+          "近戰": {
+            "xp": 184,
+            "passion": "無"
+          },
+          "建造": {
+            "xp": 243,
+            "passion": "大"
+          },
+          "採礦": {
+            "xp": 60,
+            "passion": "無"
+          },
+          "烹飪": {
+            "xp": 64,
+            "passion": "無"
+          },
+          "種植": {
+            "xp": 122,
+            "passion": "微"
+          },
+          "動物": {
+            "xp": 10,
+            "passion": "無"
+          },
+          "工藝": {
+            "xp": 140,
+            "passion": "狂熱"
+          },
+          "醫療": {
+            "xp": 167,
+            "passion": "無"
+          },
+          "社交": {
+            "xp": 151,
+            "passion": "大"
+          },
+          "智識": {
+            "xp": 57,
+            "passion": "無"
+          },
+          "藝術": {
+            "xp": 50,
+            "passion": "無"
+          }
+        },
+        "relationships": {
+          "hb_axi": {
+            "targetId": "hb_axi",
+            "targetName": "阿汐",
+            "affinity": 26,
+            "trust": 0,
+            "romanticInterest": 34,
+            "interactionCount": 6,
+            "lastInteractionTick": 0,
+            "sharedMemories": [],
+            "status": null,
+            "statusSince": 0,
+            "isCheating": false
+          }
+        },
+        "memory": [],
+        "_lastInteractionTick": 0,
+        "_locationStayRemaining": 0,
+        "_mourningTargets": [],
+        "_annualMourning": [],
+        "thoughts": [],
+        "attributes": {
+          "charm": 4,
+          "vigor": 6,
+          "wit": 4,
+          "grit": 5
+        },
+        "dailyPlan": null
+      },
+      "hb_muxia": {
+        "id": "hb_muxia",
+        "name": "木蝦",
+        "age": 28,
+        "gender": "male",
+        "isPlayer": false,
+        "_isPlayerChild": false,
+        "_parentNames": null,
+        "jobKey": "carpenter",
+        "homeLocation": "residential_south",
+        "currentLocation": "residential_south",
+        "mood": 50,
+        "activity": "idle",
+        "currentThought": "",
+        "personality": {
+          "traits": [
+            "lazy",
+            "charismatic",
+            "gossip"
+          ],
+          "background": "船木匠，手藝一流但三天打魚兩天曬網——字面意義上的。最愛躺在曬網場講他「差點抓到人魚」的故事。",
+          "values": [
+            "自由",
+            "冒險"
+          ]
+        },
+        "needs": {
+          "hunger": 70,
+          "rest": 80,
+          "social": 60,
+          "comfort": 60,
+          "recreation": 50,
+          "beauty": 50
+        },
+        "skills": {
+          "射擊": {
+            "xp": 16,
+            "passion": "無"
+          },
+          "近戰": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "建造": {
+            "xp": 708,
+            "passion": "微"
+          },
+          "採礦": {
+            "xp": 66,
+            "passion": "無"
+          },
+          "烹飪": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "種植": {
+            "xp": 138,
+            "passion": "無"
+          },
+          "動物": {
+            "xp": 58,
+            "passion": "無"
+          },
+          "工藝": {
+            "xp": 224,
+            "passion": "無"
+          },
+          "醫療": {
+            "xp": 12,
+            "passion": "無"
+          },
+          "社交": {
+            "xp": 144,
+            "passion": "大"
+          },
+          "智識": {
+            "xp": 11,
+            "passion": "無"
+          },
+          "藝術": {
+            "xp": 64,
+            "passion": "無"
+          }
+        },
+        "relationships": {},
+        "memory": [],
+        "_lastInteractionTick": 0,
+        "_locationStayRemaining": 0,
+        "_mourningTargets": [],
+        "_annualMourning": [],
+        "thoughts": [],
+        "attributes": {
+          "charm": 9,
+          "vigor": 4,
+          "wit": 4,
+          "grit": 5
+        },
+        "dailyPlan": null
+      },
+      "hb_shanshan": {
+        "id": "hb_shanshan",
+        "name": "珊珊",
+        "age": 24,
+        "gender": "female",
+        "isPlayer": false,
+        "_isPlayerChild": false,
+        "_parentNames": null,
+        "jobKey": "researcher",
+        "homeLocation": "residential_east",
+        "currentLocation": "residential_east",
+        "mood": 50,
+        "activity": "idle",
+        "currentThought": "",
+        "personality": {
+          "traits": [
+            "creative",
+            "neurotic",
+            "night_owl"
+          ],
+          "background": "研究潮汐與洋流的年輕學者，筆記本永遠算不完。緊張起來會語無倫次，只有看海的時候是平靜的。",
+          "values": [
+            "知識",
+            "自然"
+          ]
+        },
+        "needs": {
+          "hunger": 70,
+          "rest": 80,
+          "social": 60,
+          "comfort": 60,
+          "recreation": 50,
+          "beauty": 50
+        },
+        "skills": {
+          "射擊": {
+            "xp": 87,
+            "passion": "無"
+          },
+          "近戰": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "建造": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "採礦": {
+            "xp": 0,
+            "passion": "微"
+          },
+          "烹飪": {
+            "xp": 22,
+            "passion": "大"
+          },
+          "種植": {
+            "xp": 48,
+            "passion": "無"
+          },
+          "動物": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "工藝": {
+            "xp": 129,
+            "passion": "微"
+          },
+          "醫療": {
+            "xp": 285,
+            "passion": "狂熱"
+          },
+          "社交": {
+            "xp": 95,
+            "passion": "微"
+          },
+          "智識": {
+            "xp": 246,
+            "passion": "微"
+          },
+          "藝術": {
+            "xp": 48,
+            "passion": "大"
+          }
+        },
+        "relationships": {
+          "hb_afu": {
+            "targetId": "hb_afu",
+            "targetName": "阿浮",
+            "affinity": 12,
+            "trust": 0,
+            "romanticInterest": 4,
+            "interactionCount": 6,
+            "lastInteractionTick": 0,
+            "sharedMemories": [],
+            "status": null,
+            "statusSince": 0,
+            "isCheating": false
+          }
+        },
+        "memory": [],
+        "_lastInteractionTick": 0,
+        "_locationStayRemaining": 0,
+        "_mourningTargets": [],
+        "_annualMourning": [],
+        "thoughts": [],
+        "attributes": {
+          "charm": 6,
+          "vigor": 4,
+          "wit": 10,
+          "grit": 5
+        },
+        "dailyPlan": null
+      },
+      "hb_afu": {
+        "id": "hb_afu",
+        "name": "阿浮",
+        "age": 21,
+        "gender": "male",
+        "isPlayer": false,
+        "_isPlayerChild": false,
+        "_parentNames": null,
+        "jobKey": "farmer",
+        "homeLocation": "residential_east",
+        "currentLocation": "residential_east",
+        "mood": 50,
+        "activity": "idle",
+        "currentThought": "",
+        "personality": {
+          "traits": [
+            "shy",
+            "early_bird",
+            "kind"
+          ],
+          "background": "蚵田的少年，話少得像蚵殼。每天默默把最好的海菜留在珊珊的窗台上，從來不敢署名。",
+          "values": [
+            "自然",
+            "家庭"
+          ]
+        },
+        "needs": {
+          "hunger": 70,
+          "rest": 80,
+          "social": 60,
+          "comfort": 60,
+          "recreation": 50,
+          "beauty": 50
+        },
+        "skills": {
+          "射擊": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "近戰": {
+            "xp": 20,
+            "passion": "無"
+          },
+          "建造": {
+            "xp": 25,
+            "passion": "無"
+          },
+          "採礦": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "烹飪": {
+            "xp": 97,
+            "passion": "大"
+          },
+          "種植": {
+            "xp": 214,
+            "passion": "微"
+          },
+          "動物": {
+            "xp": 80,
+            "passion": "無"
+          },
+          "工藝": {
+            "xp": 39,
+            "passion": "無"
+          },
+          "醫療": {
+            "xp": 21,
+            "passion": "無"
+          },
+          "社交": {
+            "xp": 44,
+            "passion": "大"
+          },
+          "智識": {
+            "xp": 10,
+            "passion": "無"
+          },
+          "藝術": {
+            "xp": 0,
+            "passion": "無"
+          }
+        },
+        "relationships": {
+          "hb_shanshan": {
+            "targetId": "hb_shanshan",
+            "targetName": "珊珊",
+            "affinity": 30,
+            "trust": 0,
+            "romanticInterest": 44,
+            "interactionCount": 6,
+            "lastInteractionTick": 0,
+            "sharedMemories": [],
+            "status": null,
+            "statusSince": 0,
+            "isCheating": false
+          }
+        },
+        "memory": [],
+        "_lastInteractionTick": 0,
+        "_locationStayRemaining": 0,
+        "_mourningTargets": [],
+        "_annualMourning": [],
+        "thoughts": [],
+        "attributes": {
+          "charm": 6,
+          "vigor": 7,
+          "wit": 3,
+          "grit": 3
+        },
+        "dailyPlan": null
+      },
+      "hb_haima": {
+        "id": "hb_haima",
+        "name": "海嬤",
+        "age": 66,
+        "gender": "female",
+        "isPlayer": false,
+        "_isPlayerChild": false,
+        "_parentNames": null,
+        "jobKey": "cook",
+        "homeLocation": "residential_south",
+        "currentLocation": "residential_south",
+        "mood": 60,
+        "activity": "idle",
+        "currentThought": "",
+        "personality": {
+          "traits": [
+            "kind",
+            "gossip",
+            "optimist"
+          ],
+          "background": "鎮上最老的海女退休後在海味居幫廚，醃的魚乾是傳家手藝。誰家的曾祖父年輕時暗戀過誰，她都記得。",
+          "values": [
+            "家庭",
+            "社群"
+          ]
+        },
+        "needs": {
+          "hunger": 70,
+          "rest": 80,
+          "social": 60,
+          "comfort": 60,
+          "recreation": 50,
+          "beauty": 50
+        },
+        "skills": {
+          "射擊": {
+            "xp": 117,
+            "passion": "無"
+          },
+          "近戰": {
+            "xp": 181,
+            "passion": "無"
+          },
+          "建造": {
+            "xp": 188,
+            "passion": "無"
+          },
+          "採礦": {
+            "xp": 345,
+            "passion": "微"
+          },
+          "烹飪": {
+            "xp": 598,
+            "passion": "微"
+          },
+          "種植": {
+            "xp": 305,
+            "passion": "無"
+          },
+          "動物": {
+            "xp": 30,
+            "passion": "無"
+          },
+          "工藝": {
+            "xp": 109,
+            "passion": "無"
+          },
+          "醫療": {
+            "xp": 164,
+            "passion": "微"
+          },
+          "社交": {
+            "xp": 580,
+            "passion": "大"
+          },
+          "智識": {
+            "xp": 195,
+            "passion": "無"
+          },
+          "藝術": {
+            "xp": 28,
+            "passion": "無"
+          }
+        },
+        "relationships": {},
+        "memory": [
+          {
+            "tick": 0,
+            "timeStr": "08:00",
+            "category": "family",
+            "content": "邊境鎮的姪孫女王麗，醃魚的手藝是我教的，不知道長進了沒。",
+            "importance": 6,
+            "relatedAgents": [
+              "王麗"
+            ]
+          }
+        ],
+        "_lastInteractionTick": 0,
+        "_locationStayRemaining": 0,
+        "_mourningTargets": [],
+        "_annualMourning": [],
+        "thoughts": [],
+        "attributes": {
+          "charm": 3,
+          "vigor": 6,
+          "wit": 8,
+          "grit": 4
+        },
+        "dailyPlan": null
+      },
+      "player": {
+        "id": "player",
+        "name": "旅人",
+        "age": 25,
+        "gender": "male",
+        "isPlayer": true,
+        "_isPlayerChild": false,
+        "_parentNames": null,
+        "jobKey": null,
+        "homeLocation": "tavern",
+        "currentLocation": "tavern",
+        "mood": 50,
+        "activity": "idle",
+        "currentThought": "",
+        "personality": {
+          "traits": [
+            "creative",
+            "kind"
+          ],
+          "background": "最近抵達邊境鎮的神秘旅人。",
+          "values": [
+            "冒險",
+            "友情"
+          ]
+        },
+        "needs": {
+          "hunger": 70,
+          "rest": 80,
+          "social": 60,
+          "comfort": 60,
+          "recreation": 50,
+          "beauty": 50
+        },
+        "skills": {
+          "射擊": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "近戰": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "建造": {
+            "xp": 201,
+            "passion": "微"
+          },
+          "採礦": {
+            "xp": 28,
+            "passion": "微"
+          },
+          "烹飪": {
+            "xp": 92,
+            "passion": "大"
+          },
+          "種植": {
+            "xp": 46,
+            "passion": "微"
+          },
+          "動物": {
+            "xp": 0,
+            "passion": "無"
+          },
+          "工藝": {
+            "xp": 30,
+            "passion": "大"
+          },
+          "醫療": {
+            "xp": 21,
+            "passion": "無"
+          },
+          "社交": {
+            "xp": 0,
+            "passion": "微"
+          },
+          "智識": {
+            "xp": 50,
+            "passion": "無"
+          },
+          "藝術": {
+            "xp": 0,
+            "passion": "微"
+          }
+        },
+        "relationships": {},
+        "memory": [],
+        "chatHistory": [],
+        "_lastInteractionTick": 0,
+        "_locationStayRemaining": 0,
+        "_mourningTargets": [],
+        "_annualMourning": [],
+        "thoughts": [],
+        "attributes": {
+          "charm": 6,
+          "vigor": 6,
+          "wit": 7,
+          "grit": 4
+        },
+        "dailyPlan": null
+      }
+    },
+    "npcConversationLog": [],
+    "npcLlmUsedToday": 0,
+    "feudCooldown": {},
+    "mediations": {},
+    "workPolicy": {},
+    "townTheme": "harbor",
+    "visitors": {},
+    "townName": "海風鎮",
+    "playerActions": [],
+    "dailyEcho": [],
+    "dailyFocus": null,
+    "gossip": [],
+    "townFeed": {
+      "posts": [],
+      "_counter": 0
+    },
+    "events": {
+      "eventLog": [],
+      "activeEffects": {},
+      "conversationTopics": [],
+      "_activeChains": [],
+      "_travellingAgents": [],
+      "_daysSinceRaid": 5,
+      "_daysSinceChain": 5,
+      "_daysSinceDeparture": 3,
+      "_usedImmigrantNames": []
+    },
+    "stockpile": {
+      "resources": {
+        "food": 320,
+        "wood": 45,
+        "stone": 80,
+        "metal": 30,
+        "cloth": 90,
+        "herbs": 10,
+        "silver": 150,
+        "meals": 50,
+        "tools": 10,
+        "clothing": 15,
+        "medicine": 5,
+        "furniture": 5,
+        "research_points": 0,
+        "plank": 0,
+        "hardwood": 0,
+        "brick": 0,
+        "marble": 0,
+        "steel": 0,
+        "gold": 0,
+        "wheat": 0,
+        "rice": 0,
+        "corn": 0,
+        "potato": 0,
+        "cotton": 0,
+        "flowers": 0,
+        "mushroom": 0,
+        "sugarcane": 0,
+        "tea": 0,
+        "grapes": 0,
+        "golden_wheat": 0,
+        "dragon_fruit": 0,
+        "bread": 0,
+        "pastry": 0,
+        "beer": 0,
+        "wine": 0,
+        "perfume": 0,
+        "fine_tea": 0,
+        "herbal_tea": 0,
+        "sugar": 0,
+        "jam": 0,
+        "luxury_furniture": 0
+      },
+      "history": []
+    },
+    "buildings": {
+      "projects": [],
+      "completed": [],
+      "activeEffects": {},
+      "_counter": 0
+    },
+    "trade": {
+      "merchant": null,
+      "_daysSince": 0,
+      "tradeHistory": []
+    },
+    "research": {
+      "projects": {
+        "agriculture": {
+          "key": "agriculture",
+          "name": "進階農業",
+          "description": "更好的農耕（+30%食物）",
+          "cost": 50,
+          "progress": 0,
+          "prerequisites": [],
+          "effects": {
+            "farm_bonus": 1.3
+          },
+          "unlocks": [
+            "farm_irrigation",
+            "garden"
+          ],
+          "status": "available"
+        },
+        "metallurgy": {
+          "key": "metallurgy",
+          "name": "冶金術",
+          "description": "更好的金屬冶煉",
+          "cost": 60,
+          "progress": 0,
+          "prerequisites": [],
+          "effects": {
+            "smithing_bonus": 1.2
+          },
+          "unlocks": [
+            "forge_bellows"
+          ],
+          "status": "available"
+        },
+        "medicine_research": {
+          "key": "medicine_research",
+          "name": "草藥醫學",
+          "description": "更好的療癒草藥",
+          "cost": 55,
+          "progress": 0,
+          "prerequisites": [],
+          "effects": {
+            "healing_bonus": 1.3
+          },
+          "unlocks": [
+            "clinic_upgrade",
+            "garden"
+          ],
+          "status": "available"
+        },
+        "fortification": {
+          "key": "fortification",
+          "name": "防禦工事",
+          "description": "防禦性建築",
+          "cost": 70,
+          "progress": 0,
+          "prerequisites": [],
+          "effects": {
+            "defense_bonus": 2
+          },
+          "unlocks": [
+            "watchtower",
+            "training_ground",
+            "town_walls"
+          ],
+          "status": "available"
+        },
+        "commerce": {
+          "key": "commerce",
+          "name": "商業",
+          "description": "更好的貿易方式",
+          "cost": 45,
+          "progress": 0,
+          "prerequisites": [],
+          "effects": {
+            "trade_bonus": 0.15
+          },
+          "unlocks": [
+            "marketplace"
+          ],
+          "status": "available"
+        },
+        "architecture": {
+          "key": "architecture",
+          "name": "建築學",
+          "description": "進階建造",
+          "cost": 65,
+          "progress": 0,
+          "prerequisites": [
+            "metallurgy"
+          ],
+          "effects": {
+            "build_speed": 1.3
+          },
+          "unlocks": [
+            "school",
+            "town_walls"
+          ],
+          "status": "locked"
+        },
+        "brewing": {
+          "key": "brewing",
+          "name": "釀造術",
+          "description": "發酵的藝術",
+          "cost": 35,
+          "progress": 0,
+          "prerequisites": [
+            "agriculture"
+          ],
+          "effects": {
+            "recreation_bonus": 5
+          },
+          "unlocks": [
+            "brewery"
+          ],
+          "status": "locked"
+        },
+        "logistics": {
+          "key": "logistics",
+          "name": "後勤學",
+          "description": "更好的儲存",
+          "cost": 50,
+          "progress": 0,
+          "prerequisites": [
+            "commerce"
+          ],
+          "effects": {
+            "storage_bonus": 1.5
+          },
+          "unlocks": [
+            "granary"
+          ],
+          "status": "locked"
+        },
+        "education": {
+          "key": "education",
+          "name": "教育",
+          "description": "正式教育（+15%經驗）",
+          "cost": 80,
+          "progress": 0,
+          "prerequisites": [
+            "architecture"
+          ],
+          "effects": {
+            "xp_bonus": 1.15
+          },
+          "unlocks": [
+            "school"
+          ],
+          "status": "locked"
+        },
+        "masonry": {
+          "key": "masonry",
+          "name": "石匠術",
+          "description": "進階石工",
+          "cost": 55,
+          "progress": 0,
+          "prerequisites": [
+            "fortification"
+          ],
+          "effects": {
+            "stone_efficiency": 1.3
+          },
+          "unlocks": [
+            "town_walls",
+            "well_upgrade"
+          ],
+          "status": "locked"
+        }
+      },
+      "current": null
+    },
+    "workOrders": {
+      "orders": [],
+      "_counter": 0
+    },
+    "news": {
+      "bulletins": [],
+      "activeModifiers": {},
+      "_lastPublishDay": 0
+    },
+    "election": {
+      "active": false,
+      "phase": "none",
+      "candidates": [],
+      "votes": {},
+      "campaignDaysLeft": 0,
+      "votingDaysLeft": 0,
+      "resultsDaysLeft": 0,
+      "lastElectionDay": 0,
+      "electionHistory": [],
+      "playerCanvassed": {}
+    },
+    "factions": {
+      "factions": {},
+      "_counter": 0,
+      "_daysSinceCheck": 0
+    },
+    "festivals": {
+      "activeFestival": null,
+      "festivalLog": [],
+      "activeQuest": null,
+      "_lastFestivalSeason": null,
+      "_gameRewardKey": null
+    },
+    "lifecycle": {
+      "graveyard": [],
+      "births": [],
+      "playerChildren": [],
+      "_daysSinceCheck": 0
+    },
+    "exploration": {
+      "discoveredZones": {},
+      "activeExpeditions": [],
+      "expeditionLog": [],
+      "_counter": 0
+    },
+    "decorations": [],
+    "combosFound": [],
+    "heartEventsFired": {
+      "hb_haibo": [],
+      "hb_xiaoou": [
+        "friend"
+      ],
+      "hb_langshu": [],
+      "hb_dengye": [
+        "friend"
+      ],
+      "hb_axi": [],
+      "hb_amao": [
+        "friend"
+      ],
+      "hb_aduo": [],
+      "hb_muxia": [],
+      "hb_shanshan": [
+        "friend",
+        "close"
+      ],
+      "hb_afu": [],
+      "hb_haima": [
+        "friend",
+        "close"
+      ],
+      "hb_achao": [],
+      "hb_xiugu": [],
+      "hb_shishu": [],
+      "hb_yunyi": []
+    },
+    "industry": {
+      "townLevel": 1,
+      "townLevelName": "荒村",
+      "industries": {},
+      "maxIndustries": 1,
+      "firstChoice": null,
+      "needsIndustryChoice": true,
+      "_pendingUnlock": false
+    },
+    "farm": {
+      "plots": [],
+      "maxPlots": 0,
+      "harvestLog": [],
+      "totalHarvested": {},
+      "moodPenalty": null,
+      "_plotCounter": 0
+    },
+    "processing": {
+      "builtFactories": {},
+      "orders": [],
+      "recentOutput": [],
+      "_orderCounter": 0
+    },
+    "dailyNews": {
+      "newspapers": [
+        {
+          "id": 1,
+          "day": 2,
+          "season": "春季",
+          "year": 1,
+          "reporter": "阿汐",
+          "reporterId": "hb_axi",
+          "reporterJob": "醫生",
+          "content": "📰 【你敢信嗎?燈爺跟石叔現在是死對頭了。】\n\n🔥 頭條報導\n你敢信嗎?燈爺跟石叔現在是死對頭了。\n\n📋 鎮務簡報\n💬 海伯和阿錨在tavern一見如故,相談甚歡,彷彿認識了很久的老友。\n💬 春季的residential east裡，秀姑和浪叔手牽手散步，分享著河邊盛開的野花的浪漫景色，氣氛溫馨而甜蜜。\n💬 阿錨興奮地和小鷗分享了一個神奇的發現，兩人在tavern聊得眉飛色舞，約好下次一起去探索。\n\n✍️ 阿汐手記\n把今天聽到的八卦都寫進去了⋯希望當事人看到別來找我。",
+          "events": [
+            {
+              "category": "gossip",
+              "content": "你敢信嗎?燈爺跟石叔現在是死對頭了。",
+              "importance": 5,
+              "agents": [
+                "燈爺",
+                "石叔"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "海伯和阿錨在tavern一見如故,相談甚歡,彷彿認識了很久的老友。",
+              "importance": 4,
+              "agents": [
+                "海伯",
+                "阿錨"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "春季的residential east裡，秀姑和浪叔手牽手散步，分享著河邊盛開的野花的浪漫景色，氣氛溫馨而甜蜜。",
+              "importance": 4,
+              "agents": [
+                "秀姑",
+                "浪叔"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿錨興奮地和小鷗分享了一個神奇的發現，兩人在tavern聊得眉飛色舞，約好下次一起去探索。",
+              "importance": 4,
+              "agents": [
+                "阿錨",
+                "小鷗"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "木蝦和阿潮在tavern一見如故,相談甚歡,彷彿認識了很久的老友。",
+              "importance": 4,
+              "agents": [
+                "木蝦",
+                "阿潮"
+              ]
+            }
+          ],
+          "publishedAt": 72
+        },
+        {
+          "id": 2,
+          "day": 3,
+          "season": "春季",
+          "year": 1,
+          "reporter": "阿浮",
+          "reporterId": "hb_afu",
+          "reporterJob": "農夫",
+          "content": "📰 【石叔與燈爺當眾對嗆,鎮上議論紛紛】\n\n🔥 頭條報導\n石叔與燈爺當眾對嗆,鎮上議論紛紛\n\n📋 鎮務簡報\n💬 阿浮和小鷗在tavern不小心撞在一起,尷尬又好笑地認識了彼此。\n💬 阿汐被海伯手上的昨天釣到的魚做成的魚乾吸引,兩人就這麼聊開了,約好改天再見。\n💬 浪叔在town square熱情地招呼了新來的海伯，推薦了鎮上的美食薺菜餛飩，給海伯留下了溫暖的第一印象。\n\n✍️ 阿浮手記\n手都寫酸了，不過能把小鎮的故事記錄下來，這份工作還是挺值得的。",
+          "events": [
+            {
+              "category": "social",
+              "content": "石叔與燈爺當眾對嗆,鎮上議論紛紛",
+              "importance": 7,
+              "agents": [
+                "石叔",
+                "燈爺"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿浮和小鷗在tavern不小心撞在一起,尷尬又好笑地認識了彼此。",
+              "importance": 4,
+              "agents": [
+                "阿浮",
+                "小鷗"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿汐被海伯手上的昨天釣到的魚做成的魚乾吸引,兩人就這麼聊開了,約好改天再見。",
+              "importance": 4,
+              "agents": [
+                "海伯",
+                "阿汐"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "浪叔在town square熱情地招呼了新來的海伯，推薦了鎮上的美食薺菜餛飩，給海伯留下了溫暖的第一印象。",
+              "importance": 4,
+              "agents": [
+                "浪叔",
+                "海伯"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿汐和小鷗在tavern回憶起初來邊境鎮的趣事，笑淚交織之間，深厚的友情讓旁人都為之動容。",
+              "importance": 4,
+              "agents": [
+                "阿汐",
+                "小鷗"
+              ]
+            }
+          ],
+          "publishedAt": 168
+        },
+        {
+          "id": 3,
+          "day": 4,
+          "season": "春季",
+          "year": 1,
+          "reporter": "海伯",
+          "reporterId": "hb_haibo",
+          "reporterJob": "鎮長",
+          "content": "📰 【神秘疾病：多名居民出現奇怪的病症。】\n\n🔥 頭條報導\n神秘疾病：多名居民出現奇怪的病症。\n\n📋 鎮務簡報\n💬 燈爺被珊珊手上的一瓶私藏的好酒吸引,兩人就這麼聊開了,約好改天再見。\n💬 阿汐用一則八卦成功勾起旅人的興趣,兩人在tavern越聊越起勁。\n💬 阿錨在tavern向小鷗分享了工作中驚險的一幕，兩人笑得前仰後合，tavern裡充滿了歡樂的氣氛。\n\n✍️ 海伯手記\n有人問我為什麼堅持寫日報。我說：因為總得有人記得這個小鎮發生過什麼。",
+          "events": [
+            {
+              "category": "event",
+              "content": "神秘疾病：多名居民出現奇怪的病症。",
+              "importance": 5,
+              "agents": []
+            },
+            {
+              "category": "social",
+              "content": "燈爺被珊珊手上的一瓶私藏的好酒吸引,兩人就這麼聊開了,約好改天再見。",
+              "importance": 4,
+              "agents": [
+                "珊珊",
+                "燈爺"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿汐用一則八卦成功勾起旅人的興趣,兩人在tavern越聊越起勁。",
+              "importance": 4,
+              "agents": [
+                "阿汐",
+                "旅人"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿錨在tavern向小鷗分享了工作中驚險的一幕，兩人笑得前仰後合，tavern裡充滿了歡樂的氣氛。",
+              "importance": 4,
+              "agents": [
+                "阿錨",
+                "小鷗"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿潮和海嬤在town square一見如故,相談甚歡,彷彿認識了很久的老友。",
+              "importance": 4,
+              "agents": [
+                "阿潮",
+                "海嬤"
+              ]
+            }
+          ],
+          "publishedAt": 264
+        },
+        {
+          "id": 4,
+          "day": 5,
+          "season": "春季",
+          "year": 1,
+          "reporter": "海嬤",
+          "reporterId": "hb_haima",
+          "reporterJob": "廚師",
+          "content": "📰 【發現了新的探索區域：幽深森林！】\n\n🔥 頭條報導\n發現了新的探索區域：幽深森林！\n\n📋 鎮務簡報\n⚡ 旅行商人：一位商人帶著稀有貨物到來。\n💬 燈爺在town square熱情地招呼了新來的珊珊，推薦了鎮上的美食薺菜餛飩，給珊珊留下了溫暖的第一印象。\n💬 阿汐在park熱情地招呼了新來的阿浮，推薦了鎮上的美食野菜煎餅，給阿浮留下了溫暖的第一印象。\n\n✍️ 海嬤手記\n手都寫酸了，不過能把小鎮的故事記錄下來，這份工作還是挺值得的。",
+          "events": [
+            {
+              "category": "exploration",
+              "content": "發現了新的探索區域：幽深森林！",
+              "importance": 7,
+              "agents": []
+            },
+            {
+              "category": "event",
+              "content": "旅行商人：一位商人帶著稀有貨物到來。",
+              "importance": 5,
+              "agents": []
+            },
+            {
+              "category": "social",
+              "content": "燈爺在town square熱情地招呼了新來的珊珊，推薦了鎮上的美食薺菜餛飩，給珊珊留下了溫暖的第一印象。",
+              "importance": 4,
+              "agents": [
+                "燈爺",
+                "珊珊"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿汐在park熱情地招呼了新來的阿浮，推薦了鎮上的美食野菜煎餅，給阿浮留下了溫暖的第一印象。",
+              "importance": 4,
+              "agents": [
+                "阿汐",
+                "阿浮"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "海伯在town square送了雲姨昨天釣到的魚做成的魚乾作為感謝，雲姨感動之餘兩人的友誼又更進了一步，春季的空氣裡充滿了溫暖。",
+              "importance": 4,
+              "agents": [
+                "海伯",
+                "雲姨"
+              ]
+            }
+          ],
+          "publishedAt": 360
+        },
+        {
+          "id": 5,
+          "day": 6,
+          "season": "春季",
+          "year": 1,
+          "reporter": "阿錨",
+          "reporterId": "hb_amao",
+          "reporterJob": "鐵匠",
+          "content": "📰 【阿汐和阿潮在well一見如故,相談甚歡,彷彿認識了很久的老友。】\n\n🔥 頭條報導\n阿汐和阿潮在well一見如故,相談甚歡,彷彿認識了很久的老友。\n\n📋 鎮務簡報\n💬 阿潮幫小鷗拿掉頭上的落葉時兩人靠得很近，阿潮的臉頰微微泛紅，tavern的空氣中瀰漫著微妙的心動氣息。\n💬 石叔在tavern熱情地招呼了新來的小鷗，推薦了鎮上的美食桂花糕，給小鷗留下了溫暖的第一印象。\n💬 海伯在tavern熱情地招呼了新來的小鷗，推薦了鎮上的美食薺菜餛飩，給小鷗留下了溫暖的第一印象。\n\n✍️ 阿錨手記\n把今天聽到的八卦都寫進去了⋯希望當事人看到別來找我。",
+          "events": [
+            {
+              "category": "social",
+              "content": "阿汐和阿潮在well一見如故,相談甚歡,彷彿認識了很久的老友。",
+              "importance": 4,
+              "agents": [
+                "阿汐",
+                "阿潮"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿潮幫小鷗拿掉頭上的落葉時兩人靠得很近，阿潮的臉頰微微泛紅，tavern的空氣中瀰漫著微妙的心動氣息。",
+              "importance": 4,
+              "agents": [
+                "阿潮",
+                "小鷗"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "石叔在tavern熱情地招呼了新來的小鷗，推薦了鎮上的美食桂花糕，給小鷗留下了溫暖的第一印象。",
+              "importance": 4,
+              "agents": [
+                "石叔",
+                "小鷗"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "海伯在tavern熱情地招呼了新來的小鷗，推薦了鎮上的美食薺菜餛飩，給小鷗留下了溫暖的第一印象。",
+              "importance": 4,
+              "agents": [
+                "海伯",
+                "小鷗"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿汐和雲姨在chapel一見如故,相談甚歡,彷彿認識了很久的老友。",
+              "importance": 4,
+              "agents": [
+                "阿汐",
+                "雲姨"
+              ]
+            }
+          ],
+          "publishedAt": 456
+        },
+        {
+          "id": 6,
+          "day": 7,
+          "season": "春季",
+          "year": 1,
+          "reporter": "阿錨",
+          "reporterId": "hb_amao",
+          "reporterJob": "鐵匠",
+          "content": "📰 【燈爺在tavern向旅人悄悄透露了鎮上的一個祕密，兩人笑得前仰後合，tavern裡充滿了歡樂的氣氛。】\n\n🔥 頭條報導\n燈爺在tavern向旅人悄悄透露了鎮上的一個祕密，兩人笑得前仰後合，tavern裡充滿了歡樂的氣氛。\n\n📋 鎮務簡報\n💬 珊珊在tavern向燈爺分享了一件讓人笑到肚子痛的趣事，兩人笑得前仰後合，tavern裡充滿了歡樂的氣氛。\n💬 阿汐和阿潮在well初次交談，兩人相談甚歡，約好了改天再深入聊聊，邊境鎮又多了一段新的緣分。\n💬 雲姨和阿汐在park初次交談，兩人相談甚歡，約好了改天再深入聊聊，邊境鎮又多了一段新的緣分。\n\n✍️ 阿錨手記\n今天採訪時被狗追了兩條街。為了新聞，值得。",
+          "events": [
+            {
+              "category": "social",
+              "content": "燈爺在tavern向旅人悄悄透露了鎮上的一個祕密，兩人笑得前仰後合，tavern裡充滿了歡樂的氣氛。",
+              "importance": 4,
+              "agents": [
+                "燈爺",
+                "旅人"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "珊珊在tavern向燈爺分享了一件讓人笑到肚子痛的趣事，兩人笑得前仰後合，tavern裡充滿了歡樂的氣氛。",
+              "importance": 4,
+              "agents": [
+                "珊珊",
+                "燈爺"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿汐和阿潮在well初次交談，兩人相談甚歡，約好了改天再深入聊聊，邊境鎮又多了一段新的緣分。",
+              "importance": 4,
+              "agents": [
+                "阿汐",
+                "阿潮"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "雲姨和阿汐在park初次交談，兩人相談甚歡，約好了改天再深入聊聊，邊境鎮又多了一段新的緣分。",
+              "importance": 4,
+              "agents": [
+                "雲姨",
+                "阿汐"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿錨帶了野菜煎餅到tavern和小鷗邊吃邊聊，春季的暖意讓兩人的對話格外愜意。",
+              "importance": 4,
+              "agents": [
+                "阿錨",
+                "小鷗"
+              ]
+            }
+          ],
+          "publishedAt": 552
+        },
+        {
+          "id": 7,
+          "day": 8,
+          "season": "春季",
+          "year": 1,
+          "reporter": "阿浮",
+          "reporterId": "hb_afu",
+          "reporterJob": "農夫",
+          "content": "📰 【掠奪者入侵：武裝掠奪者正在襲擊！】\n\n🔥 頭條報導\n掠奪者入侵：武裝掠奪者正在襲擊！\n\n📋 鎮務簡報\n💬 石叔與燈爺當眾對嗆,鎮上議論紛紛\n📌 浪叔朝夢想邁進:「攢下第一桶金」\n📌 秀姑朝夢想邁進:「小有名氣」\n\n✍️ 阿浮手記\n聽說隔壁鎮的人都想來我們這裡，不知道是不是因為讀了我的日報呢？",
+          "events": [
+            {
+              "category": "event",
+              "content": "掠奪者入侵：武裝掠奪者正在襲擊！",
+              "importance": 8,
+              "agents": []
+            },
+            {
+              "category": "social",
+              "content": "石叔與燈爺當眾對嗆,鎮上議論紛紛",
+              "importance": 7,
+              "agents": [
+                "石叔",
+                "燈爺"
+              ]
+            },
+            {
+              "category": "milestone",
+              "content": "浪叔朝夢想邁進:「攢下第一桶金」",
+              "importance": 5,
+              "agents": [
+                "浪叔"
+              ]
+            },
+            {
+              "category": "milestone",
+              "content": "秀姑朝夢想邁進:「小有名氣」",
+              "importance": 5,
+              "agents": [
+                "秀姑"
+              ]
+            },
+            {
+              "category": "milestone",
+              "content": "石叔朝夢想邁進:「攢下第一桶金」",
+              "importance": 5,
+              "agents": [
+                "石叔"
+              ]
+            }
+          ],
+          "publishedAt": 648
+        },
+        {
+          "id": 8,
+          "day": 9,
+          "season": "春季",
+          "year": 1,
+          "reporter": "小鷗",
+          "reporterId": "hb_xiaoou",
+          "reporterJob": "廚師",
+          "content": "📰 【面對掠奪者入侵，鎮長選擇了「團結面對」】\n\n🔥 頭條報導\n面對掠奪者入侵，鎮長選擇了「團結面對」\n\n📋 鎮務簡報\n⚡ 月蝕：罕見的月蝕！月亮變成了血紅色。\n📌 阿潮朝夢想邁進:「怦然心動」\n📌 阿錨朝夢想邁進:「小有名氣」\n\n✍️ 小鷗手記\n聽說隔壁鎮的人都想來我們這裡，不知道是不是因為讀了我的日報呢？",
+          "events": [
+            {
+              "category": "event",
+              "content": "面對掠奪者入侵，鎮長選擇了「團結面對」",
+              "importance": 7,
+              "agents": []
+            },
+            {
+              "category": "event",
+              "content": "月蝕：罕見的月蝕！月亮變成了血紅色。",
+              "importance": 5,
+              "agents": []
+            },
+            {
+              "category": "milestone",
+              "content": "阿潮朝夢想邁進:「怦然心動」",
+              "importance": 5,
+              "agents": [
+                "阿潮"
+              ]
+            },
+            {
+              "category": "milestone",
+              "content": "阿錨朝夢想邁進:「小有名氣」",
+              "importance": 5,
+              "agents": [
+                "阿錨"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "海嬤對鎮長先前的決策表達不滿",
+              "importance": 5,
+              "agents": [
+                "海嬤"
+              ]
+            }
+          ],
+          "publishedAt": 744
+        },
+        {
+          "id": 9,
+          "day": 10,
+          "season": "春季",
+          "year": 1,
+          "reporter": "浪叔",
+          "reporterId": "hb_langshu",
+          "reporterJob": "商人",
+          "content": "📰 【發現了新的探索區域：古代遺跡！】\n\n🔥 頭條報導\n發現了新的探索區域：古代遺跡！\n\n📋 鎮務簡報\n📌 阿錨和阿潮鬧翻了,見面都不講話...\n💬 阿浮對鎮長先前的決策表達不滿\n💬 燈爺和珊珊在park回憶起初來邊境鎮的趣事，笑淚交織之間，深厚的友情讓旁人都為之動容。\n\n✍️ 浪叔手記\n希望明天也是值得記錄的一天。要是沒有新聞⋯那就寫天氣吧。",
+          "events": [
+            {
+              "category": "exploration",
+              "content": "發現了新的探索區域：古代遺跡！",
+              "importance": 7,
+              "agents": []
+            },
+            {
+              "category": "gossip",
+              "content": "阿錨和阿潮鬧翻了,見面都不講話...",
+              "importance": 5,
+              "agents": [
+                "阿錨",
+                "阿潮"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿浮對鎮長先前的決策表達不滿",
+              "importance": 5,
+              "agents": [
+                "阿浮"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "燈爺和珊珊在park回憶起初來邊境鎮的趣事，笑淚交織之間，深厚的友情讓旁人都為之動容。",
+              "importance": 4,
+              "agents": [
+                "燈爺",
+                "珊珊"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "珊珊興沖沖地在town square和摯友燈爺分享了一個驚天八卦，兩人越聊越起勁，甚至約好了一起去探個究竟，氣氛既神秘又興奮。",
+              "importance": 4,
+              "agents": [
+                "珊珊",
+                "燈爺"
+              ]
+            }
+          ],
+          "publishedAt": 840
+        },
+        {
+          "id": 10,
+          "day": 11,
+          "season": "春季",
+          "year": 1,
+          "reporter": "海伯",
+          "reporterId": "hb_haibo",
+          "reporterJob": "鎮長",
+          "content": "📰 【燈爺公開感謝鎮長當初的決定】\n\n🔥 頭條報導\n燈爺公開感謝鎮長當初的決定\n\n📋 鎮務簡報\n💬 燈爺和珊珊在park回憶起初來邊境鎮的趣事，笑淚交織之間，深厚的友情讓旁人都為之動容。\n💬 珊珊興沖沖地在park和摯友燈爺分享了一個驚天八卦，兩人越聊越起勁，甚至約好了一起去探個究竟，氣氛既神秘又興奮。\n💬 阿汐和浪叔在tavern初次交談，兩人相談甚歡，約好了改天再深入聊聊，邊境鎮又多了一段新的緣分。\n\n✍️ 海伯手記\n稿紙不夠用了。看來這個鎮的故事，比我想的還要多。",
+          "events": [
+            {
+              "category": "social",
+              "content": "燈爺公開感謝鎮長當初的決定",
+              "importance": 6,
+              "agents": [
+                "燈爺"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "燈爺和珊珊在park回憶起初來邊境鎮的趣事，笑淚交織之間，深厚的友情讓旁人都為之動容。",
+              "importance": 4,
+              "agents": [
+                "燈爺",
+                "珊珊"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "珊珊興沖沖地在park和摯友燈爺分享了一個驚天八卦，兩人越聊越起勁，甚至約好了一起去探個究竟，氣氛既神秘又興奮。",
+              "importance": 4,
+              "agents": [
+                "珊珊",
+                "燈爺"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿汐和浪叔在tavern初次交談，兩人相談甚歡，約好了改天再深入聊聊，邊境鎮又多了一段新的緣分。",
+              "importance": 4,
+              "agents": [
+                "阿汐",
+                "浪叔"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "春季的park裡，浪叔和秀姑手牽手散步，分享著櫻花飄落的小徑的浪漫景色，氣氛溫馨而甜蜜。",
+              "importance": 4,
+              "agents": [
+                "浪叔",
+                "秀姑"
+              ]
+            }
+          ],
+          "publishedAt": 936
+        },
+        {
+          "id": 11,
+          "day": 12,
+          "season": "春季",
+          "year": 1,
+          "reporter": "阿浮",
+          "reporterId": "hb_afu",
+          "reporterJob": "農夫",
+          "content": "📰 【阿錨公開感謝鎮長當初的決定】\n\n🔥 頭條報導\n阿錨公開感謝鎮長當初的決定\n\n📋 鎮務簡報\n💬 珊珊興沖沖地在town square和摯友燈爺分享了一個驚天八卦，兩人越聊越起勁，甚至約好了一起去探個究竟，氣氛既神秘又興奮。\n💬 阿汐帶了桂花糕到park和阿浮邊吃邊聊，春季的暖意讓兩人的對話格外愜意。\n💬 浪叔在chapel送了雲姨昨天釣到的魚做成的魚乾作為感謝，雲姨感動之餘兩人的友誼又更進了一步，春季的空氣裡充滿了溫暖。\n\n✍️ 阿浮手記\n酒館老闆說我上一期把他寫得太摳門。我考慮下期寫得更詳細一點。",
+          "events": [
+            {
+              "category": "social",
+              "content": "阿錨公開感謝鎮長當初的決定",
+              "importance": 6,
+              "agents": [
+                "阿錨"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "珊珊興沖沖地在town square和摯友燈爺分享了一個驚天八卦，兩人越聊越起勁，甚至約好了一起去探個究竟，氣氛既神秘又興奮。",
+              "importance": 4,
+              "agents": [
+                "珊珊",
+                "燈爺"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿汐帶了桂花糕到park和阿浮邊吃邊聊，春季的暖意讓兩人的對話格外愜意。",
+              "importance": 4,
+              "agents": [
+                "阿汐",
+                "阿浮"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "浪叔在chapel送了雲姨昨天釣到的魚做成的魚乾作為感謝，雲姨感動之餘兩人的友誼又更進了一步，春季的空氣裡充滿了溫暖。",
+              "importance": 4,
+              "agents": [
+                "浪叔",
+                "雲姨"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "雲姨和浪叔在chapel感慨起命運的安排，聊起了河邊盛開的野花的美好，最後被薺菜餛飩的香氣拉回了現實，氣氛輕鬆溫馨。",
+              "importance": 4,
+              "agents": [
+                "雲姨",
+                "浪叔"
+              ]
+            }
+          ],
+          "publishedAt": 1032
+        },
+        {
+          "id": 12,
+          "day": 13,
+          "season": "春季",
+          "year": 1,
+          "reporter": "浪叔",
+          "reporterId": "hb_langshu",
+          "reporterJob": "商人",
+          "content": "📰 【阿潮與阿錨公開絕交,兩人再不相往來】\n\n🔥 頭條報導\n阿潮與阿錨公開絕交,兩人再不相往來\n\n📋 鎮務簡報\n⚡ 月蝕：罕見的月蝕！月亮變成了血紅色。\n📌 阿潮和阿錨鬧翻了,見面都不講話...\n💬 海嬤對鎮長先前的決策表達不滿\n\n✍️ 浪叔手記\n把今天聽到的八卦都寫進去了⋯希望當事人看到別來找我。",
+          "events": [
+            {
+              "category": "social",
+              "content": "阿潮與阿錨公開絕交,兩人再不相往來",
+              "importance": 8,
+              "agents": [
+                "阿潮",
+                "阿錨"
+              ]
+            },
+            {
+              "category": "event",
+              "content": "月蝕：罕見的月蝕！月亮變成了血紅色。",
+              "importance": 5,
+              "agents": []
+            },
+            {
+              "category": "gossip",
+              "content": "阿潮和阿錨鬧翻了,見面都不講話...",
+              "importance": 5,
+              "agents": [
+                "阿潮",
+                "阿錨"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "海嬤對鎮長先前的決策表達不滿",
+              "importance": 5,
+              "agents": [
+                "海嬤"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "燈爺和珊珊在tavern回憶起初來邊境鎮的趣事，笑淚交織之間，深厚的友情讓旁人都為之動容。",
+              "importance": 4,
+              "agents": [
+                "燈爺",
+                "珊珊"
+              ]
+            }
+          ],
+          "publishedAt": 1128
+        },
+        {
+          "id": 13,
+          "day": 14,
+          "season": "春季",
+          "year": 1,
+          "reporter": "阿浮",
+          "reporterId": "hb_afu",
+          "reporterJob": "農夫",
+          "content": "📰 【秀姑朝夢想邁進:「獨當一面」】\n\n🔥 頭條報導\n秀姑朝夢想邁進:「獨當一面」\n\n📋 鎮務簡報\n📌 石叔朝夢想邁進:「盤下店面」\n📌 阿汐朝夢想邁進:「獨當一面」\n📌 珊珊朝夢想邁進:「獨當一面」\n\n✍️ 阿浮手記\n稿紙不夠用了。看來這個鎮的故事，比我想的還要多。",
+          "events": [
+            {
+              "category": "milestone",
+              "content": "秀姑朝夢想邁進:「獨當一面」",
+              "importance": 5,
+              "agents": [
+                "秀姑"
+              ]
+            },
+            {
+              "category": "milestone",
+              "content": "石叔朝夢想邁進:「盤下店面」",
+              "importance": 5,
+              "agents": [
+                "石叔"
+              ]
+            },
+            {
+              "category": "milestone",
+              "content": "阿汐朝夢想邁進:「獨當一面」",
+              "importance": 5,
+              "agents": [
+                "阿汐"
+              ]
+            },
+            {
+              "category": "milestone",
+              "content": "珊珊朝夢想邁進:「獨當一面」",
+              "importance": 5,
+              "agents": [
+                "珊珊"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿錨對鎮長先前的決策表達不滿",
+              "importance": 5,
+              "agents": [
+                "阿錨"
+              ]
+            }
+          ],
+          "publishedAt": 1224
+        },
+        {
+          "id": 14,
+          "day": 15,
+          "season": "春季",
+          "year": 1,
+          "reporter": "阿潮",
+          "reporterId": "hb_achao",
+          "reporterJob": "農夫",
+          "content": "📰 【雲姨公開感謝鎮長當初的決定】\n\n🔥 頭條報導\n雲姨公開感謝鎮長當初的決定\n\n📋 鎮務簡報\n⚡ 慶典日：小鎮舉辦慶典！大家一起慶祝。\n📌 阿錨朝夢想邁進:「獨當一面」\n💬 珊珊在park向摯友燈爺傾訴了最近的煩惱，燈爺耐心傾聽並貼心地準備了花瓣蜜茶，兩人之間的友誼更加堅定了。\n\n✍️ 阿潮手記\n坐在廣場的長椅上寫完這篇報導，夕陽正好灑在稿紙上。",
+          "events": [
+            {
+              "category": "social",
+              "content": "雲姨公開感謝鎮長當初的決定",
+              "importance": 6,
+              "agents": [
+                "雲姨"
+              ]
+            },
+            {
+              "category": "event",
+              "content": "慶典日：小鎮舉辦慶典！大家一起慶祝。",
+              "importance": 5,
+              "agents": []
+            },
+            {
+              "category": "milestone",
+              "content": "阿錨朝夢想邁進:「獨當一面」",
+              "importance": 5,
+              "agents": [
+                "阿錨"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "珊珊在park向摯友燈爺傾訴了最近的煩惱，燈爺耐心傾聽並貼心地準備了花瓣蜜茶，兩人之間的友誼更加堅定了。",
+              "importance": 4,
+              "agents": [
+                "珊珊",
+                "燈爺"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "燈爺和珊珊在park回憶起初來邊境鎮的趣事，笑淚交織之間，深厚的友情讓旁人都為之動容。",
+              "importance": 4,
+              "agents": [
+                "燈爺",
+                "珊珊"
+              ]
+            }
+          ],
+          "publishedAt": 1320
+        },
+        {
+          "id": 15,
+          "day": 1,
+          "season": "夏季",
+          "year": 1,
+          "reporter": "小鷗",
+          "reporterId": "hb_xiaoou",
+          "reporterJob": "廚師",
+          "content": "📰 【海伯公開感謝鎮長當初的決定】\n\n🔥 頭條報導\n海伯公開感謝鎮長當初的決定\n\n📋 鎮務簡報\n📌 浪叔朝夢想邁進:「盤下店面」\n💬 燈爺和珊珊在tavern回憶起初來邊境鎮的趣事，笑淚交織之間，深厚的友情讓旁人都為之動容。\n💬 阿汐在park向阿潮分享了工作中驚險的一幕，兩人笑得前仰後合，park裡充滿了歡樂的氣氛。\n\n✍️ 小鷗手記\n手都寫酸了，不過能把小鎮的故事記錄下來，這份工作還是挺值得的。",
+          "events": [
+            {
+              "category": "social",
+              "content": "海伯公開感謝鎮長當初的決定",
+              "importance": 6,
+              "agents": [
+                "海伯"
+              ]
+            },
+            {
+              "category": "milestone",
+              "content": "浪叔朝夢想邁進:「盤下店面」",
+              "importance": 5,
+              "agents": [
+                "浪叔"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "燈爺和珊珊在tavern回憶起初來邊境鎮的趣事，笑淚交織之間，深厚的友情讓旁人都為之動容。",
+              "importance": 4,
+              "agents": [
+                "燈爺",
+                "珊珊"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿汐在park向阿潮分享了工作中驚險的一幕，兩人笑得前仰後合，park裡充滿了歡樂的氣氛。",
+              "importance": 4,
+              "agents": [
+                "阿汐",
+                "阿潮"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "雲姨在tavern送了海伯自己做的手工餅乾作為感謝，海伯感動之餘兩人的友誼又更進了一步，春季的空氣裡充滿了溫暖。",
+              "importance": 4,
+              "agents": [
+                "雲姨",
+                "海伯"
+              ]
+            }
+          ],
+          "publishedAt": 1416
+        },
+        {
+          "id": 16,
+          "day": 2,
+          "season": "夏季",
+          "year": 1,
+          "reporter": "木蝦",
+          "reporterId": "hb_muxia",
+          "reporterJob": "木匠",
+          "content": "📰 【阿浮公開感謝鎮長當初的決定】\n\n🔥 頭條報導\n阿浮公開感謝鎮長當初的決定\n\n📋 鎮務簡報\n💬 燈爺和珊珊在town square回憶起初來邊境鎮的趣事，笑淚交織之間，深厚的友情讓旁人都為之動容。\n💬 珊珊和燈爺在town square回憶起初來邊境鎮的趣事，笑淚交織之間，深厚的友情讓旁人都為之動容。\n💬 阿錨在chapel送了雲姨一瓶私藏的好酒作為感謝，雲姨感動之餘兩人的友誼又更進了一步，夏季的空氣裡充滿了溫暖。但後來氣氛突然變得微妙，兩人不歡而散。\n\n✍️ 木蝦手記\n把今天聽到的八卦都寫進去了⋯希望當事人看到別來找我。",
+          "events": [
+            {
+              "category": "social",
+              "content": "阿浮公開感謝鎮長當初的決定",
+              "importance": 6,
+              "agents": [
+                "阿浮"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "燈爺和珊珊在town square回憶起初來邊境鎮的趣事，笑淚交織之間，深厚的友情讓旁人都為之動容。",
+              "importance": 4,
+              "agents": [
+                "燈爺",
+                "珊珊"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "珊珊和燈爺在town square回憶起初來邊境鎮的趣事，笑淚交織之間，深厚的友情讓旁人都為之動容。",
+              "importance": 4,
+              "agents": [
+                "珊珊",
+                "燈爺"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿錨在chapel送了雲姨一瓶私藏的好酒作為感謝，雲姨感動之餘兩人的友誼又更進了一步，夏季的空氣裡充滿了溫暖。但後來氣氛突然變得微妙，兩人不歡而散。",
+              "importance": 4,
+              "agents": [
+                "阿錨",
+                "雲姨"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "雲姨和海伯在tavern回憶起初來邊境鎮的趣事，笑淚交織之間，深厚的友情讓旁人都為之動容。",
+              "importance": 4,
+              "agents": [
+                "雲姨",
+                "海伯"
+              ]
+            }
+          ],
+          "publishedAt": 1512
+        },
+        {
+          "id": 17,
+          "day": 3,
+          "season": "夏季",
+          "year": 1,
+          "reporter": "小鷗",
+          "reporterId": "hb_xiaoou",
+          "reporterJob": "廚師",
+          "content": "📰 【浪叔對鎮長先前的決策表達不滿】\n\n🔥 頭條報導\n浪叔對鎮長先前的決策表達不滿\n\n📋 鎮務簡報\n💬 海伯和旅人在tavern低聲討論著鎮上的神秘傳聞，越聊越覺得事情不簡單，兩人的表情既好奇又緊張。\n💬 秀姑在tavern送了阿汐一條手織的圍巾作為感謝，阿汐感動之餘兩人的友誼又更進了一步，夏季的空氣裡充滿了溫暖。\n💬 阿汐帶了荷葉飯到chapel和雲姨邊吃邊聊，夏季的暖意讓兩人的對話格外愜意。\n\n✍️ 小鷗手記\n今天採訪時被狗追了兩條街。為了新聞，值得。",
+          "events": [
+            {
+              "category": "social",
+              "content": "浪叔對鎮長先前的決策表達不滿",
+              "importance": 5,
+              "agents": [
+                "浪叔"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "海伯和旅人在tavern低聲討論著鎮上的神秘傳聞，越聊越覺得事情不簡單，兩人的表情既好奇又緊張。",
+              "importance": 4,
+              "agents": [
+                "海伯",
+                "旅人"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "秀姑在tavern送了阿汐一條手織的圍巾作為感謝，阿汐感動之餘兩人的友誼又更進了一步，夏季的空氣裡充滿了溫暖。",
+              "importance": 4,
+              "agents": [
+                "秀姑",
+                "阿汐"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿汐帶了荷葉飯到chapel和雲姨邊吃邊聊，夏季的暖意讓兩人的對話格外愜意。",
+              "importance": 4,
+              "agents": [
+                "阿汐",
+                "雲姨"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "海嬤在chapel向雲姨分享了工作中驚險的一幕，兩人笑得前仰後合，chapel裡充滿了歡樂的氣氛。",
+              "importance": 4,
+              "agents": [
+                "海嬤",
+                "雲姨"
+              ]
+            }
+          ],
+          "publishedAt": 1608
+        },
+        {
+          "id": 18,
+          "day": 4,
+          "season": "夏季",
+          "year": 1,
+          "reporter": "秀姑",
+          "reporterId": "hb_xiugu",
+          "reporterJob": "裁縫",
+          "content": "📰 【阿汐公開感謝鎮長當初的決定】\n\n🔥 頭條報導\n阿汐公開感謝鎮長當初的決定\n\n📋 鎮務簡報\n📌 我猜小鷗對雲姨有意思,不然幹嘛老是找藉口靠近!\n📌 木蝦朝夢想邁進:「打點行裝」\n💬 珊珊在tavern向摯友燈爺傾訴了最近的煩惱，燈爺耐心傾聽並貼心地準備了西瓜，兩人之間的友誼更加堅定了。\n\n✍️ 秀姑手記\n手都寫酸了，不過能把小鎮的故事記錄下來，這份工作還是挺值得的。",
+          "events": [
+            {
+              "category": "social",
+              "content": "阿汐公開感謝鎮長當初的決定",
+              "importance": 6,
+              "agents": [
+                "阿汐"
+              ]
+            },
+            {
+              "category": "gossip",
+              "content": "我猜小鷗對雲姨有意思,不然幹嘛老是找藉口靠近!",
+              "importance": 5,
+              "agents": [
+                "小鷗",
+                "雲姨"
+              ]
+            },
+            {
+              "category": "milestone",
+              "content": "木蝦朝夢想邁進:「打點行裝」",
+              "importance": 5,
+              "agents": [
+                "木蝦"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "珊珊在tavern向摯友燈爺傾訴了最近的煩惱，燈爺耐心傾聽並貼心地準備了西瓜，兩人之間的友誼更加堅定了。",
+              "importance": 4,
+              "agents": [
+                "珊珊",
+                "燈爺"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿汐興沖沖地在tavern和摯友小鷗分享了一個驚天八卦，兩人越聊越起勁，甚至約好了一起去探個究竟，氣氛既神秘又興奮。",
+              "importance": 4,
+              "agents": [
+                "阿汐",
+                "小鷗"
+              ]
+            }
+          ],
+          "publishedAt": 1704
+        },
+        {
+          "id": 19,
+          "day": 5,
+          "season": "夏季",
+          "year": 1,
+          "reporter": "秀姑",
+          "reporterId": "hb_xiugu",
+          "reporterJob": "裁縫",
+          "content": "📰 【阿潮跟小鷗湊成一對了,大家都說很配!】\n\n🔥 頭條報導\n阿潮跟小鷗湊成一對了,大家都說很配!\n\n📋 鎮務簡報\n💬 鎮長的聲望提升為「新面孔」！\n💬 海伯公開感謝鎮長當初的決定\n📌 阿潮朝夢想邁進:「兩情相悅」\n\n✍️ 秀姑手記\n把今天聽到的八卦都寫進去了⋯希望當事人看到別來找我。",
+          "events": [
+            {
+              "category": "gossip",
+              "content": "阿潮跟小鷗湊成一對了,大家都說很配!",
+              "importance": 7,
+              "agents": [
+                "阿潮",
+                "小鷗"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "鎮長的聲望提升為「新面孔」！",
+              "importance": 7,
+              "agents": []
+            },
+            {
+              "category": "social",
+              "content": "海伯公開感謝鎮長當初的決定",
+              "importance": 6,
+              "agents": [
+                "海伯"
+              ]
+            },
+            {
+              "category": "milestone",
+              "content": "阿潮朝夢想邁進:「兩情相悅」",
+              "importance": 5,
+              "agents": [
+                "阿潮"
+              ]
+            },
+            {
+              "category": "milestone",
+              "content": "秀姑朝夢想邁進:「一代宗師」",
+              "importance": 5,
+              "agents": [
+                "秀姑"
+              ]
+            }
+          ],
+          "publishedAt": 1800
+        },
+        {
+          "id": 20,
+          "day": 6,
+          "season": "夏季",
+          "year": 1,
+          "reporter": "石叔",
+          "reporterId": "hb_shishu",
+          "reporterJob": "礦工",
+          "content": "📰 【小鷗朝夢想邁進:「打點行裝」】\n\n🔥 頭條報導\n小鷗朝夢想邁進:「打點行裝」\n\n📋 鎮務簡報\n📌 阿錨朝夢想邁進:「一代宗師」\n💬 阿錨對鎮長先前的決策表達不滿\n💬 阿錨幫小鷗拿掉頭上的落葉時兩人靠得很近，阿錨的臉頰微微泛紅，tavern的空氣中瀰漫著微妙的心動氣息。\n\n✍️ 石叔手記\n手都寫酸了，不過能把小鎮的故事記錄下來，這份工作還是挺值得的。",
+          "events": [
+            {
+              "category": "milestone",
+              "content": "小鷗朝夢想邁進:「打點行裝」",
+              "importance": 5,
+              "agents": [
+                "小鷗"
+              ]
+            },
+            {
+              "category": "milestone",
+              "content": "阿錨朝夢想邁進:「一代宗師」",
+              "importance": 5,
+              "agents": [
+                "阿錨"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿錨對鎮長先前的決策表達不滿",
+              "importance": 5,
+              "agents": [
+                "阿錨"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿錨幫小鷗拿掉頭上的落葉時兩人靠得很近，阿錨的臉頰微微泛紅，tavern的空氣中瀰漫著微妙的心動氣息。",
+              "importance": 4,
+              "agents": [
+                "阿錨",
+                "小鷗"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "秀姑和小鷗在tavern一見如故,相談甚歡,彷彿認識了很久的老友。",
+              "importance": 4,
+              "agents": [
+                "秀姑",
+                "小鷗"
+              ]
+            }
+          ],
+          "publishedAt": 1896
+        },
+        {
+          "id": 21,
+          "day": 7,
+          "season": "夏季",
+          "year": 1,
+          "reporter": "木蝦",
+          "reporterId": "hb_muxia",
+          "reporterJob": "木匠",
+          "content": "📰 【發現了新的探索區域：詛咒沼澤！】\n\n🔥 頭條報導\n發現了新的探索區域：詛咒沼澤！\n\n📋 鎮務簡報\n💬 珊珊公開感謝鎮長當初的決定\n📌 🔥 熱浪：酷熱難耐，人畜疲憊\n⚡ 慶典日：小鎮舉辦慶典！大家一起慶祝。\n\n✍️ 木蝦手記\n深夜校稿時聽見窗外有人吵架。明天的頭條有了。",
+          "events": [
+            {
+              "category": "exploration",
+              "content": "發現了新的探索區域：詛咒沼澤！",
+              "importance": 7,
+              "agents": []
+            },
+            {
+              "category": "social",
+              "content": "珊珊公開感謝鎮長當初的決定",
+              "importance": 6,
+              "agents": [
+                "珊珊"
+              ]
+            },
+            {
+              "category": "weather",
+              "content": "🔥 熱浪：酷熱難耐，人畜疲憊",
+              "importance": 6,
+              "agents": []
+            },
+            {
+              "category": "event",
+              "content": "慶典日：小鎮舉辦慶典！大家一起慶祝。",
+              "importance": 5,
+              "agents": []
+            },
+            {
+              "category": "milestone",
+              "content": "燈爺朝夢想邁進:「獨當一面」",
+              "importance": 5,
+              "agents": [
+                "燈爺"
+              ]
+            }
+          ],
+          "publishedAt": 1992
+        },
+        {
+          "id": 22,
+          "day": 8,
+          "season": "夏季",
+          "year": 1,
+          "reporter": "珊珊",
+          "reporterId": "hb_shanshan",
+          "reporterJob": "研究員",
+          "content": "📰 【洪水來襲：河水氾濫，部分農田被淹，儲備糧食受損。】\n\n🔥 頭條報導\n洪水來襲：河水氾濫，部分農田被淹，儲備糧食受損。\n\n📋 鎮務簡報\n💬 石叔公開感謝鎮長當初的決定\n📌 ⛈️ 暴風雨：狂風暴雨肆虐小鎮\n📌 我猜小鷗對雲姨有意思,不然幹嘛老是找藉口靠近!\n\n✍️ 珊珊手記\n酒館老闆說我上一期把他寫得太摳門。我考慮下期寫得更詳細一點。",
+          "events": [
+            {
+              "category": "disaster",
+              "content": "洪水來襲：河水氾濫，部分農田被淹，儲備糧食受損。",
+              "importance": 10,
+              "agents": []
+            },
+            {
+              "category": "social",
+              "content": "石叔公開感謝鎮長當初的決定",
+              "importance": 6,
+              "agents": [
+                "石叔"
+              ]
+            },
+            {
+              "category": "weather",
+              "content": "⛈️ 暴風雨：狂風暴雨肆虐小鎮",
+              "importance": 6,
+              "agents": []
+            },
+            {
+              "category": "gossip",
+              "content": "我猜小鷗對雲姨有意思,不然幹嘛老是找藉口靠近!",
+              "importance": 5,
+              "agents": [
+                "小鷗",
+                "雲姨"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "珊珊興沖沖地在tavern和摯友燈爺分享了一個驚天八卦，兩人越聊越起勁，甚至約好了一起去探個究竟，氣氛既神秘又興奮。",
+              "importance": 4,
+              "agents": [
+                "珊珊",
+                "燈爺"
+              ]
+            }
+          ],
+          "publishedAt": 2088
+        },
+        {
+          "id": 23,
+          "day": 9,
+          "season": "夏季",
+          "year": 1,
+          "reporter": "浪叔",
+          "reporterId": "hb_langshu",
+          "reporterJob": "商人",
+          "content": "📰 【盜匪來襲：一群盜匪正在逼近！】\n\n🔥 頭條報導\n盜匪來襲：一群盜匪正在逼近！\n\n📋 鎮務簡報\n💬 海嬤公開感謝鎮長當初的決定\n📌 🏜️ 乾旱：水源枯竭，作物乾枯\n💬 海伯帶了涼拌黃瓜到well和阿潮邊吃邊聊，夏季的暖意讓兩人的對話格外愜意。\n\n✍️ 浪叔手記\n手都寫酸了，不過能把小鎮的故事記錄下來，這份工作還是挺值得的。",
+          "events": [
+            {
+              "category": "event",
+              "content": "盜匪來襲：一群盜匪正在逼近！",
+              "importance": 8,
+              "agents": []
+            },
+            {
+              "category": "social",
+              "content": "海嬤公開感謝鎮長當初的決定",
+              "importance": 6,
+              "agents": [
+                "海嬤"
+              ]
+            },
+            {
+              "category": "weather",
+              "content": "🏜️ 乾旱：水源枯竭，作物乾枯",
+              "importance": 6,
+              "agents": []
+            },
+            {
+              "category": "social",
+              "content": "海伯帶了涼拌黃瓜到well和阿潮邊吃邊聊，夏季的暖意讓兩人的對話格外愜意。",
+              "importance": 4,
+              "agents": [
+                "海伯",
+                "阿潮"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "浪叔帶了冰鎮酸梅湯到tavern和旅人邊吃邊聊，夏季的暖意讓兩人的對話格外愜意。",
+              "importance": 4,
+              "agents": [
+                "浪叔",
+                "旅人"
+              ]
+            }
+          ],
+          "publishedAt": 2184
+        },
+        {
+          "id": 24,
+          "day": 10,
+          "season": "夏季",
+          "year": 1,
+          "reporter": "阿汐",
+          "reporterId": "hb_axi",
+          "reporterJob": "醫生",
+          "content": "📰 【面對盜匪來襲，鎮長選擇了「祈禱平安」】\n\n🔥 頭條報導\n面對盜匪來襲，鎮長選擇了「祈禱平安」\n\n📋 鎮務簡報\n📌 洪水結束，開始重建\n💬 木蝦公開感謝鎮長當初的決定\n📌 🏜️ 乾旱：水源枯竭，作物乾枯\n\n✍️ 阿汐手記\n手都寫酸了，不過能把小鎮的故事記錄下來，這份工作還是挺值得的。",
+          "events": [
+            {
+              "category": "event",
+              "content": "面對盜匪來襲，鎮長選擇了「祈禱平安」",
+              "importance": 7,
+              "agents": []
+            },
+            {
+              "category": "recovery",
+              "content": "洪水結束，開始重建",
+              "importance": 7,
+              "agents": []
+            },
+            {
+              "category": "social",
+              "content": "木蝦公開感謝鎮長當初的決定",
+              "importance": 6,
+              "agents": [
+                "木蝦"
+              ]
+            },
+            {
+              "category": "weather",
+              "content": "🏜️ 乾旱：水源枯竭，作物乾枯",
+              "importance": 6,
+              "agents": []
+            },
+            {
+              "category": "event",
+              "content": "旅行商人：一位商人帶著稀有貨物到來。",
+              "importance": 5,
+              "agents": []
+            }
+          ],
+          "publishedAt": 2280
+        },
+        {
+          "id": 25,
+          "day": 11,
+          "season": "夏季",
+          "year": 1,
+          "reporter": "木蝦",
+          "reporterId": "hb_muxia",
+          "reporterJob": "木匠",
+          "content": "📰 【阿汐對鎮長先前的決策表達不滿】\n\n🔥 頭條報導\n阿汐對鎮長先前的決策表達不滿\n\n📋 鎮務簡報\n💬 燈爺興奮地和阿舵分享了一個神奇的發現，兩人在tavern聊得眉飛色舞，約好下次一起去探索。\n💬 阿汐在tavern送了浪叔昨天釣到的魚做成的魚乾作為感謝，浪叔感動之餘兩人的友誼又更進了一步，夏季的空氣裡充滿了溫暖。\n💬 心情大好的秀姑在chapel拉著雲姨分享喜悅，開懷大笑的聲音感染了整個chapel，連路過的人都忍不住嘴角上揚。\n\n✍️ 木蝦手記\n希望明天也是值得記錄的一天。要是沒有新聞⋯那就寫天氣吧。",
+          "events": [
+            {
+              "category": "social",
+              "content": "阿汐對鎮長先前的決策表達不滿",
+              "importance": 5,
+              "agents": [
+                "阿汐"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "燈爺興奮地和阿舵分享了一個神奇的發現，兩人在tavern聊得眉飛色舞，約好下次一起去探索。",
+              "importance": 4,
+              "agents": [
+                "燈爺",
+                "阿舵"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿汐在tavern送了浪叔昨天釣到的魚做成的魚乾作為感謝，浪叔感動之餘兩人的友誼又更進了一步，夏季的空氣裡充滿了溫暖。",
+              "importance": 4,
+              "agents": [
+                "阿汐",
+                "浪叔"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "心情大好的秀姑在chapel拉著雲姨分享喜悅，開懷大笑的聲音感染了整個chapel，連路過的人都忍不住嘴角上揚。",
+              "importance": 4,
+              "agents": [
+                "秀姑",
+                "雲姨"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "小鷗幫雲姨拿掉頭上的落葉時兩人靠得很近，小鷗的臉頰微微泛紅，chapel的空氣中瀰漫著微妙的心動氣息。",
+              "importance": 4,
+              "agents": [
+                "小鷗",
+                "雲姨"
+              ]
+            }
+          ],
+          "publishedAt": 2376
+        },
+        {
+          "id": 26,
+          "day": 12,
+          "season": "夏季",
+          "year": 1,
+          "reporter": "阿浮",
+          "reporterId": "hb_afu",
+          "reporterJob": "農夫",
+          "content": "📰 【阿錨公開感謝鎮長當初的決定】\n\n🔥 頭條報導\n阿錨公開感謝鎮長當初的決定\n\n📋 鎮務簡報\n💬 燈爺和旅人在tavern感慨起命運的安排，聊起了午後蟬鳴的樹蔭下的美好，最後被西瓜的香氣拉回了現實，氣氛輕鬆溫馨。\n💬 珊珊在town square向摯友燈爺傾訴了最近的煩惱，燈爺耐心傾聽並貼心地準備了冰鎮酸梅湯，兩人之間的友誼更加堅定了。\n💬 海伯在town square送了阿汐用漂亮石頭做的小飾品作為感謝，阿汐感動之餘兩人的友誼又更進了一步，夏季的空氣裡充滿了溫暖。\n\n✍️ 阿浮手記\n手都寫酸了，不過能把小鎮的故事記錄下來，這份工作還是挺值得的。",
+          "events": [
+            {
+              "category": "social",
+              "content": "阿錨公開感謝鎮長當初的決定",
+              "importance": 6,
+              "agents": [
+                "阿錨"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "燈爺和旅人在tavern感慨起命運的安排，聊起了午後蟬鳴的樹蔭下的美好，最後被西瓜的香氣拉回了現實，氣氛輕鬆溫馨。",
+              "importance": 4,
+              "agents": [
+                "燈爺",
+                "旅人"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "珊珊在town square向摯友燈爺傾訴了最近的煩惱，燈爺耐心傾聽並貼心地準備了冰鎮酸梅湯，兩人之間的友誼更加堅定了。",
+              "importance": 4,
+              "agents": [
+                "珊珊",
+                "燈爺"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "海伯在town square送了阿汐用漂亮石頭做的小飾品作為感謝，阿汐感動之餘兩人的友誼又更進了一步，夏季的空氣裡充滿了溫暖。",
+              "importance": 4,
+              "agents": [
+                "海伯",
+                "阿汐"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "阿汐帶了綠豆湯到chapel和海伯邊吃邊聊，夏季的暖意讓兩人的對話格外愜意。",
+              "importance": 4,
+              "agents": [
+                "阿汐",
+                "海伯"
+              ]
+            }
+          ],
+          "publishedAt": 2472
+        },
+        {
+          "id": 27,
+          "day": 13,
+          "season": "夏季",
+          "year": 1,
+          "reporter": "浪叔",
+          "reporterId": "hb_langshu",
+          "reporterJob": "商人",
+          "content": "📰 【石叔與燈爺當眾對嗆,鎮上議論紛紛】\n\n🔥 頭條報導\n石叔與燈爺當眾對嗆,鎮上議論紛紛\n\n📋 鎮務簡報\n💬 小鷗公開感謝鎮長當初的決定\n📌 🏜️ 乾旱：水源枯竭，作物乾枯\n💬 阿汐在tavern送了浪叔一瓶私藏的好酒作為感謝，浪叔感動之餘兩人的友誼又更進了一步，夏季的空氣裡充滿了溫暖。\n\n✍️ 浪叔手記\n有人問我為什麼堅持寫日報。我說：因為總得有人記得這個小鎮發生過什麼。",
+          "events": [
+            {
+              "category": "social",
+              "content": "石叔與燈爺當眾對嗆,鎮上議論紛紛",
+              "importance": 7,
+              "agents": [
+                "石叔",
+                "燈爺"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "小鷗公開感謝鎮長當初的決定",
+              "importance": 6,
+              "agents": [
+                "小鷗"
+              ]
+            },
+            {
+              "category": "weather",
+              "content": "🏜️ 乾旱：水源枯竭，作物乾枯",
+              "importance": 6,
+              "agents": []
+            },
+            {
+              "category": "social",
+              "content": "阿汐在tavern送了浪叔一瓶私藏的好酒作為感謝，浪叔感動之餘兩人的友誼又更進了一步，夏季的空氣裡充滿了溫暖。",
+              "importance": 4,
+              "agents": [
+                "阿汐",
+                "浪叔"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "浪叔和阿汐在well感慨起命運的安排，聊起了午後蟬鳴的樹蔭下的美好，最後被涼拌黃瓜的香氣拉回了現實，氣氛輕鬆溫馨。",
+              "importance": 4,
+              "agents": [
+                "浪叔",
+                "阿汐"
+              ]
+            }
+          ],
+          "publishedAt": 2568
+        },
+        {
+          "id": 28,
+          "day": 14,
+          "season": "夏季",
+          "year": 1,
+          "reporter": "秀姑",
+          "reporterId": "hb_xiugu",
+          "reporterJob": "裁縫",
+          "content": "📰 【🏜️ 乾旱：水源枯竭，作物乾枯】\n\n🔥 頭條報導\n🏜️ 乾旱：水源枯竭，作物乾枯\n\n📋 鎮務簡報\n📌 燈爺朝夢想邁進:「一代宗師」\n💬 石叔對鎮長先前的決策表達不滿\n💬 燈爺帶了西瓜到tavern和旅人邊吃邊聊，夏季的暖意讓兩人的對話格外愜意。\n\n✍️ 秀姑手記\n希望明天也是值得記錄的一天。要是沒有新聞⋯那就寫天氣吧。",
+          "events": [
+            {
+              "category": "weather",
+              "content": "🏜️ 乾旱：水源枯竭，作物乾枯",
+              "importance": 6,
+              "agents": []
+            },
+            {
+              "category": "milestone",
+              "content": "燈爺朝夢想邁進:「一代宗師」",
+              "importance": 5,
+              "agents": [
+                "燈爺"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "石叔對鎮長先前的決策表達不滿",
+              "importance": 5,
+              "agents": [
+                "石叔"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "燈爺帶了西瓜到tavern和旅人邊吃邊聊，夏季的暖意讓兩人的對話格外愜意。",
+              "importance": 4,
+              "agents": [
+                "燈爺",
+                "旅人"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "珊珊在tavern向摯友燈爺傾訴了最近的煩惱，燈爺耐心傾聽並貼心地準備了西瓜，兩人之間的友誼更加堅定了。",
+              "importance": 4,
+              "agents": [
+                "珊珊",
+                "燈爺"
+              ]
+            }
+          ],
+          "publishedAt": 2664
+        },
+        {
+          "id": 29,
+          "day": 15,
+          "season": "夏季",
+          "year": 1,
+          "reporter": "秀姑",
+          "reporterId": "hb_xiugu",
+          "reporterJob": "裁縫",
+          "content": "📰 【阿潮和小鷗結婚了！全鎮舉辦了盛大的婚禮！】\n\n🔥 頭條報導\n阿潮和小鷗結婚了！全鎮舉辦了盛大的婚禮！\n\n📋 鎮務簡報\n💬 秀姑公開感謝鎮長當初的決定\n📌 🏜️ 乾旱：水源枯竭，作物乾枯\n📌 小鷗朝夢想邁進:「踏上旅程」\n\n✍️ 秀姑手記\n稿紙不夠用了。看來這個鎮的故事，比我想的還要多。",
+          "events": [
+            {
+              "category": "relationship",
+              "content": "阿潮和小鷗結婚了！全鎮舉辦了盛大的婚禮！",
+              "importance": 10,
+              "agents": [
+                "阿潮",
+                "小鷗"
+              ]
+            },
+            {
+              "category": "social",
+              "content": "秀姑公開感謝鎮長當初的決定",
+              "importance": 6,
+              "agents": [
+                "秀姑"
+              ]
+            },
+            {
+              "category": "weather",
+              "content": "🏜️ 乾旱：水源枯竭，作物乾枯",
+              "importance": 6,
+              "agents": []
+            },
+            {
+              "category": "milestone",
+              "content": "小鷗朝夢想邁進:「踏上旅程」",
+              "importance": 5,
+              "agents": [
+                "小鷗"
+              ]
+            },
+            {
+              "category": "milestone",
+              "content": "木蝦朝夢想邁進:「踏上旅程」",
+              "importance": 5,
+              "agents": [
+                "木蝦"
+              ]
+            }
+          ],
+          "publishedAt": 2760
+        }
+      ],
+      "todayEvents": [
+        {
+          "category": "social",
+          "content": "海伯和阿錨在tavern一見如故,相談甚歡,彷彿認識了很久的老友。",
+          "importance": 4,
+          "agents": [
+            "海伯",
+            "阿錨"
+          ],
+          "time": ""
+        },
+        {
+          "category": "social",
+          "content": "春季的residential east裡，秀姑和浪叔手牽手散步，分享著河邊盛開的野花的浪漫景色，氣氛溫馨而甜蜜。",
+          "importance": 4,
+          "agents": [
+            "秀姑",
+            "浪叔"
+          ],
+          "time": ""
+        },
+        {
+          "category": "social",
+          "content": "阿錨興奮地和小鷗分享了一個神奇的發現，兩人在tavern聊得眉飛色舞，約好下次一起去探索。",
+          "importance": 4,
+          "agents": [
+            "阿錨",
+            "小鷗"
+          ],
+          "time": ""
+        },
+        {
+          "category": "social",
+          "content": "木蝦和阿潮在tavern一見如故,相談甚歡,彷彿認識了很久的老友。",
+          "importance": 4,
+          "agents": [
+            "木蝦",
+            "阿潮"
+          ],
+          "time": ""
+        },
+        {
+          "category": "social",
+          "content": "阿潮在park送了小鷗昨天釣到的魚做成的魚乾作為感謝，小鷗感動之餘兩人的友誼又更進了一步，春季的空氣裡充滿了溫暖。",
+          "importance": 4,
+          "agents": [
+            "阿潮",
+            "小鷗"
+          ],
+          "time": ""
+        },
+        {
+          "category": "social",
+          "content": "阿浮在tavern熱情地招呼了新來的木蝦，推薦了鎮上的美食花瓣蜜茶，給木蝦留下了溫暖的第一印象。",
+          "importance": 4,
+          "agents": [
+            "阿浮",
+            "木蝦"
+          ],
+          "time": ""
+        },
+        {
+          "category": "social",
+          "content": "小鷗和海嬤在tavern初次交談，兩人相談甚歡，約好了改天再深入聊聊，邊境鎮又多了一段新的緣分。",
+          "importance": 4,
+          "agents": [
+            "小鷗",
+            "海嬤"
+          ],
+          "time": ""
+        },
+        {
+          "category": "social",
+          "content": "雲姨被珊珊手上的一瓶私藏的好酒吸引,兩人就這麼聊開了,約好改天再見。",
+          "importance": 4,
+          "agents": [
+            "珊珊",
+            "雲姨"
+          ],
+          "time": ""
+        },
+        {
+          "category": "social",
+          "content": "阿浮被石叔手上的昨天釣到的魚做成的魚乾吸引,兩人就這麼聊開了,約好改天再見。",
+          "importance": 4,
+          "agents": [
+            "石叔",
+            "阿浮"
+          ],
+          "time": ""
+        },
+        {
+          "category": "social",
+          "content": "秀姑嘴上潑冷水,卻還是對新認識的雲姨伸出了援手,反差讓人莞爾。",
+          "importance": 4,
+          "agents": [
+            "秀姑",
+            "雲姨"
+          ],
+          "time": ""
+        },
+        {
+          "category": "social",
+          "content": "小鷗和珊珊在park一見如故,相談甚歡,彷彿認識了很久的老友。",
+          "importance": 4,
+          "agents": [
+            "小鷗",
+            "珊珊"
+          ],
+          "time": ""
+        },
+        {
+          "category": "social",
+          "content": "阿汐和阿浮在tavern初次交談，兩人相談甚歡，約好了改天再深入聊聊，邊境鎮又多了一段新的緣分。",
+          "importance": 4,
+          "agents": [
+            "阿汐",
+            "阿浮"
+          ],
+          "time": ""
+        },
+        {
+          "category": "social",
+          "content": "石叔和小鷗在residential south一見如故,相談甚歡,彷彿認識了很久的老友。",
+          "importance": 4,
+          "agents": [
+            "石叔",
+            "小鷗"
+          ],
+          "time": ""
+        },
+        {
+          "category": "social",
+          "content": "秀姑和海嬤在park初次交談，兩人相談甚歡，約好了改天再深入聊聊，邊境鎮又多了一段新的緣分。",
+          "importance": 4,
+          "agents": [
+            "秀姑",
+            "海嬤"
+          ],
+          "time": ""
+        },
+        {
+          "category": "social",
+          "content": "阿錨和海嬤在park一見如故,相談甚歡,彷彿認識了很久的老友。",
+          "importance": 4,
+          "agents": [
+            "阿錨",
+            "海嬤"
+          ],
+          "time": ""
+        },
+        {
+          "category": "social",
+          "content": "秀姑和雲姨在park初次交談，兩人相談甚歡，約好了改天再深入聊聊，邊境鎮又多了一段新的緣分。",
+          "importance": 4,
+          "agents": [
+            "秀姑",
+            "雲姨"
+          ],
+          "time": ""
+        },
+        {
+          "category": "social",
+          "content": "阿舵和石叔在residential south不小心撞在一起,尷尬又好笑地認識了彼此。",
+          "importance": 4,
+          "agents": [
+            "阿舵",
+            "石叔"
+          ],
+          "time": ""
+        },
+        {
+          "category": "social",
+          "content": "阿舵被阿錨手上的一束剛採的野花吸引,兩人就這麼聊開了,約好改天再見。",
+          "importance": 4,
+          "agents": [
+            "阿錨",
+            "阿舵"
+          ],
+          "time": ""
+        },
+        {
+          "category": "social",
+          "content": "珊珊和旅人在tavern一見如故,相談甚歡,彷彿認識了很久的老友。",
+          "importance": 4,
+          "agents": [
+            "珊珊",
+            "旅人"
+          ],
+          "time": ""
+        },
+        {
+          "category": "social",
+          "content": "燈爺嘴上潑冷水,卻還是對新認識的珊珊伸出了援手,反差讓人莞爾。",
+          "importance": 4,
+          "agents": [
+            "燈爺",
+            "珊珊"
+          ],
+          "time": ""
+        },
+        {
+          "category": "gossip",
+          "content": "你敢信嗎?燈爺跟石叔現在是死對頭了。",
+          "importance": 5,
+          "agents": [
+            "燈爺",
+            "石叔"
+          ],
+          "time": ""
+        }
+      ],
+      "_lastPublishDay": 0,
+      "_enabled": true
+    },
+    "townIdentity": {
+      "scores": {
+        "commerce": 109.58280482150883,
+        "military": 37.9328620971228,
+        "agrarian": 94.83215524280702,
+        "scholarly": 75.8657241942456,
+        "romance": 28.171685682046796,
+        "crime": 16.586643142168246
+      },
+      "route": null,
+      "routeSince": null,
+      "history": []
+    },
+    "dramaArchive": [],
+    "npcEvents": {
+      "activeIncidents": [],
+      "incidentLog": [],
+      "_daysSinceCheck": 0
+    },
+    "questSystem": {
+      "quests": {
+        "ch1_settle": {
+          "status": "active",
+          "completedRoute": null,
+          "objectives": {
+            "talk_3": {
+              "progress": 0,
+              "completed": false
+            }
+          }
+        },
+        "ch1_survive": {
+          "status": "locked",
+          "completedRoute": null,
+          "routes": {
+            "gather": {
+              "儲備 100 食物": {
+                "progress": 0,
+                "completed": false
+              },
+              "儲備 80 木材": {
+                "progress": 0,
+                "completed": false
+              }
+            },
+            "social": {
+              "林美好感度達到 40": {
+                "progress": 0,
+                "completed": false
+              },
+              "與居民交談 8 次": {
+                "progress": 0,
+                "completed": false
+              }
+            },
+            "build": {
+              "完成 2 座建築": {
+                "progress": 0,
+                "completed": false
+              },
+              "開啟 1 個產業": {
+                "progress": 0,
+                "completed": false
+              }
+            }
+          }
+        },
+        "ch1_industry": {
+          "status": "locked",
+          "completedRoute": null,
+          "routes": {
+            "standard": {
+              "開啟第一個產業": {
+                "progress": 0,
+                "completed": false
+              }
+            },
+            "social": {
+              "全鎮平均好感度達到 20": {
+                "progress": 0,
+                "completed": false
+              },
+              "與居民交談 15 次": {
+                "progress": 0,
+                "completed": false
+              }
+            }
+          }
+        },
+        "ch2_economy": {
+          "status": "locked",
+          "completedRoute": null,
+          "routes": {
+            "trade": {
+              "完成 3 次交易": {
+                "progress": 0,
+                "completed": false
+              },
+              "累積 100 銀幣": {
+                "progress": 0,
+                "completed": false
+              }
+            },
+            "social": {
+              "與 3 位 NPC 達到「朋友」關係": {
+                "progress": 0,
+                "completed": false
+              }
+            },
+            "build": {
+              "完成 5 座建築": {
+                "progress": 0,
+                "completed": false
+              },
+              "人口達到 12 人": {
+                "progress": 0,
+                "completed": false
+              }
+            }
+          }
+        },
+        "ch2_farm": {
+          "status": "locked",
+          "completedRoute": null,
+          "routes": {
+            "farm": {
+              "開啟農業產業": {
+                "progress": 0,
+                "completed": false
+              },
+              "完成 3 次收穫": {
+                "progress": 0,
+                "completed": false
+              }
+            },
+            "social": {
+              "劉俊好感度達到 40": {
+                "progress": 0,
+                "completed": false
+              },
+              "完成 1 次收穫": {
+                "progress": 0,
+                "completed": false
+              }
+            }
+          }
+        },
+        "ch2_community": {
+          "status": "locked",
+          "completedRoute": null,
+          "routes": {
+            "popular": {
+              "全鎮平均好感度達到 25": {
+                "progress": 0,
+                "completed": false
+              },
+              "人口達到 15 人": {
+                "progress": 0,
+                "completed": false
+              }
+            },
+            "develop": {
+              "城鎮等級達到 Lv3（村莊）": {
+                "progress": 0,
+                "completed": false
+              },
+              "開啟 2 個產業": {
+                "progress": 0,
+                "completed": false
+              }
+            }
+          }
+        },
+        "ch3_crisis": {
+          "status": "locked",
+          "completedRoute": null,
+          "routes": {
+            "force": {
+              "楊鋒好感度達到 40": {
+                "progress": 0,
+                "completed": false
+              },
+              "成功抵禦入侵": {
+                "progress": 0,
+                "completed": false
+              }
+            },
+            "wisdom": {
+              "孫雨好感度達到 40": {
+                "progress": 0,
+                "completed": false
+              },
+              "準備 200 銀幣研究經費": {
+                "progress": 0,
+                "completed": false
+              }
+            },
+            "diplomacy": {
+              "趙霞好感度達到 40": {
+                "progress": 0,
+                "completed": false
+              },
+              "完成 8 次交易": {
+                "progress": 0,
+                "completed": false
+              }
+            },
+            "unity": {
+              "全鎮平均好感度達到 30": {
+                "progress": 0,
+                "completed": false
+              },
+              "與 5 位 NPC 達到「朋友」關係": {
+                "progress": 0,
+                "completed": false
+              }
+            }
+          }
+        },
+        "ch3_rebuild": {
+          "status": "locked",
+          "completedRoute": null,
+          "routes": {
+            "build": {
+              "完成 8 座建築": {
+                "progress": 0,
+                "completed": false
+              },
+              "建造 1 座工廠": {
+                "progress": 0,
+                "completed": false
+              }
+            },
+            "prosper": {
+              "累積 300 銀幣": {
+                "progress": 0,
+                "completed": false
+              },
+              "完成 10 次交易": {
+                "progress": 0,
+                "completed": false
+              }
+            }
+          }
+        },
+        "ch4_expansion": {
+          "status": "locked",
+          "completedRoute": null,
+          "routes": {
+            "industry": {
+              "開啟 3 個產業": {
+                "progress": 0,
+                "completed": false
+              },
+              "城鎮等級達到 Lv5（城鎮）": {
+                "progress": 0,
+                "completed": false
+              }
+            },
+            "community": {
+              "人口達到 20 人": {
+                "progress": 0,
+                "completed": false
+              },
+              "與 6 位 NPC 達到「朋友」關係": {
+                "progress": 0,
+                "completed": false
+              }
+            }
+          }
+        },
+        "ch4_election": {
+          "status": "locked",
+          "completedRoute": null,
+          "routes": {
+            "election": {
+              "經歷一次選舉": {
+                "progress": 0,
+                "completed": false
+              }
+            },
+            "trust": {
+              "全鎮平均好感度達到 40": {
+                "progress": 0,
+                "completed": false
+              },
+              "聲望達到 80": {
+                "progress": 0,
+                "completed": false
+              }
+            }
+          }
+        },
+        "ch4_bonds": {
+          "status": "locked",
+          "completedRoute": null,
+          "routes": {
+            "bestfriend": {
+              "與某位居民好感度達到 70": {
+                "progress": 0,
+                "completed": false
+              }
+            },
+            "beloved": {
+              "與 8 位 NPC 達到「朋友」關係": {
+                "progress": 0,
+                "completed": false
+              },
+              "全鎮平均好感度達到 35": {
+                "progress": 0,
+                "completed": false
+              }
+            }
+          }
+        },
+        "ch5_legacy": {
+          "status": "locked",
+          "completedRoute": null,
+          "routes": {
+            "prosper": {
+              "累積 500 銀幣": {
+                "progress": 0,
+                "completed": false
+              },
+              "人口達到 25 人": {
+                "progress": 0,
+                "completed": false
+              },
+              "城鎮等級達到 Lv6（大城鎮）": {
+                "progress": 0,
+                "completed": false
+              }
+            },
+            "peace": {
+              "全鎮平均好感度達到 40": {
+                "progress": 0,
+                "completed": false
+              },
+              "與 10 位 NPC 達到「朋友」關係": {
+                "progress": 0,
+                "completed": false
+              }
+            },
+            "legend": {
+              "四大產業全開": {
+                "progress": 0,
+                "completed": false
+              },
+              "城鎮等級達到 Lv7（城市）": {
+                "progress": 0,
+                "completed": false
+              },
+              "與某位居民好感度達到 80": {
+                "progress": 0,
+                "completed": false
+              }
+            }
+          }
+        }
+      },
+      "completedOrder": [],
+      "tradeCount": 0,
+      "harvestCount": 0,
+      "chatCount": 0,
+      "raidsSurvived": 0,
+      "electionsHeld": 0,
+      "reputation": 0,
+      "storyFlags": {},
+      "activeCrisis": null,
+      "sideQuests": {
+        "side_wang_recipe": {
+          "status": "locked",
+          "objectives": {
+            "gather_food": {
+              "progress": 0,
+              "completed": false
+            },
+            "talk_wang": {
+              "progress": 0,
+              "completed": false
+            }
+          }
+        },
+        "side_zhang_masterwork": {
+          "status": "locked",
+          "objectives": {
+            "talk_zhang": {
+              "progress": 0,
+              "completed": false
+            },
+            "get_metal": {
+              "progress": 0,
+              "completed": false
+            }
+          }
+        },
+        "side_liu_letter": {
+          "status": "locked",
+          "objectives": {
+            "talk_liu": {
+              "progress": 0,
+              "completed": false
+            },
+            "talk_xu": {
+              "progress": 0,
+              "completed": false
+            }
+          }
+        },
+        "side_sun_ruins": {
+          "status": "locked",
+          "objectives": {
+            "sun_friend": {
+              "progress": 0,
+              "completed": false
+            },
+            "gather_silver": {
+              "progress": 0,
+              "completed": false
+            }
+          }
+        },
+        "side_wu_past": {
+          "status": "locked",
+          "objectives": {
+            "wu_friend": {
+              "progress": 0,
+              "completed": false
+            },
+            "mine_stone": {
+              "progress": 0,
+              "completed": false
+            }
+          }
+        },
+        "side_huang_festival": {
+          "status": "locked",
+          "objectives": {
+            "huang_friend": {
+              "progress": 0,
+              "completed": false
+            },
+            "pop_check": {
+              "progress": 0,
+              "completed": false
+            },
+            "avg_aff": {
+              "progress": 0,
+              "completed": false
+            }
+          }
+        },
+        "side_yang_past": {
+          "status": "locked",
+          "objectives": {
+            "yang_deep": {
+              "progress": 0,
+              "completed": false
+            },
+            "chen_talk": {
+              "progress": 0,
+              "completed": false
+            }
+          }
+        },
+        "side_zhao_network": {
+          "status": "locked",
+          "objectives": {
+            "zhao_friend": {
+              "progress": 0,
+              "completed": false
+            },
+            "trade_5": {
+              "progress": 0,
+              "completed": false
+            }
+          }
+        },
+        "side_ma_redemption": {
+          "status": "locked",
+          "objectives": {
+            "ma_friend": {
+              "progress": 0,
+              "completed": false
+            },
+            "build_many": {
+              "progress": 0,
+              "completed": false
+            },
+            "wood_supply": {
+              "progress": 0,
+              "completed": false
+            }
+          }
+        },
+        "side_xu_dream": {
+          "status": "locked",
+          "objectives": {
+            "xu_deep": {
+              "progress": 0,
+              "completed": false
+            },
+            "cloth_supply": {
+              "progress": 0,
+              "completed": false
+            }
+          }
+        },
+        "side_chen_retirement": {
+          "status": "locked",
+          "objectives": {
+            "chen_deep": {
+              "progress": 0,
+              "completed": false
+            },
+            "high_rep": {
+              "progress": 0,
+              "completed": false
+            },
+            "many_friends": {
+              "progress": 0,
+              "completed": false
+            }
+          }
+        }
+      },
+      "sideCompletedOrder": [],
+      "dailyObjective": null,
+      "dailyCompletedIds": [],
+      "triggeredStoryEvents": []
+    },
+    "prosperity": {
+      "dimensions": {
+        "economy": {
+          "weight": 0.25,
+          "value": 0
+        },
+        "buildings": {
+          "weight": 0.2,
+          "value": 0
+        },
+        "population": {
+          "weight": 0.15,
+          "value": 0
+        },
+        "happiness": {
+          "weight": 0.15,
+          "value": 0
+        },
+        "culture": {
+          "weight": 0.1,
+          "value": 0
+        },
+        "defense": {
+          "weight": 0.1,
+          "value": 0
+        },
+        "beauty": {
+          "weight": 0.05,
+          "value": 0
+        }
+      },
+      "prosperity": 0,
+      "level": "荒涼",
+      "_lastUpdateDay": -1,
+      "_townAgeDays": 0
+    },
+    "npcQuests": {
+      "quests": {},
+      "storyFlags": {},
+      "industryBonuses": {},
+      "chainUnlocks": [],
+      "_lastCheckDay": -1,
+      "_lastCheckYear": -1
+    },
+    "lifeGoals": {
+      "goals": {
+        "hb_haibo": {
+          "key": "legacy",
+          "stage": 0,
+          "stageStartDay": 1,
+          "done": false
+        },
+        "hb_achao": {
+          "key": "truelove",
+          "stage": 2,
+          "stageStartDay": 19,
+          "done": false
+        },
+        "hb_xiaoou": {
+          "key": "adventurer",
+          "stage": 2,
+          "stageStartDay": 29,
+          "done": false
+        },
+        "hb_langshu": {
+          "key": "entrepreneur",
+          "stage": 2,
+          "stageStartDay": 15,
+          "done": false
+        },
+        "hb_xiugu": {
+          "key": "master",
+          "stage": 3,
+          "stageStartDay": 19,
+          "done": false
+        },
+        "hb_shishu": {
+          "key": "entrepreneur",
+          "stage": 2,
+          "stageStartDay": 13,
+          "done": false
+        },
+        "hb_dengye": {
+          "key": "master",
+          "stage": 3,
+          "stageStartDay": 28,
+          "done": false
+        },
+        "hb_axi": {
+          "key": "master",
+          "stage": 3,
+          "stageStartDay": 19,
+          "done": false
+        },
+        "hb_amao": {
+          "key": "master",
+          "stage": 3,
+          "stageStartDay": 20,
+          "done": false
+        },
+        "hb_yunyi": {
+          "key": "truelove",
+          "stage": 0,
+          "stageStartDay": 1,
+          "done": false
+        },
+        "hb_aduo": {
+          "key": "legacy",
+          "stage": 0,
+          "stageStartDay": 1,
+          "done": false
+        },
+        "hb_muxia": {
+          "key": "adventurer",
+          "stage": 2,
+          "stageStartDay": 29,
+          "done": false
+        },
+        "hb_shanshan": {
+          "key": "master",
+          "stage": 3,
+          "stageStartDay": 19,
+          "done": false
+        },
+        "hb_afu": {
+          "key": "family",
+          "stage": 0,
+          "stageStartDay": 1,
+          "done": false
+        },
+        "hb_haima": {
+          "key": "family",
+          "stage": 0,
+          "stageStartDay": 1,
+          "done": false
+        }
+      }
+    },
+    "customNPC": {
+      "customNPCs": []
+    },
+    "multiEnding": {
+      "endingTriggered": null,
+      "endingData": null
+    },
+    "dailyDecision": {
+      "pendingDecision": null,
+      "decisionLog": [
+        {
+          "id": "sick_npc",
+          "choice": "B",
+          "dayKey": "1-春季-4",
+          "title": "鄰居的求助"
+        },
+        {
+          "id": "guard_patrol",
+          "choice": "A",
+          "dayKey": "1-春季-5",
+          "title": "守衛的商量"
+        },
+        {
+          "id": "merchant_deal",
+          "choice": "A",
+          "dayKey": "1-春季-6",
+          "title": "商人的暗示"
+        },
+        {
+          "id": "mine_danger",
+          "choice": "B",
+          "dayKey": "1-春季-7",
+          "title": "礦工的擔憂"
+        },
+        {
+          "id": "festival_plan",
+          "choice": "A",
+          "dayKey": "1-春季-8",
+          "title": "酒館裡的提議"
+        },
+        {
+          "id": "npc_conflict",
+          "choice": "B",
+          "dayKey": "1-春季-9",
+          "title": "街上的吵架"
+        },
+        {
+          "id": "crop_choice",
+          "choice": "A",
+          "dayKey": "1-春季-10",
+          "title": "田邊的閒聊"
+        },
+        {
+          "id": "library_debate",
+          "choice": "A",
+          "dayKey": "1-春季-11",
+          "title": "書房裡的爭執"
+        },
+        {
+          "id": "food_surplus",
+          "choice": "A",
+          "dayKey": "1-春季-12",
+          "title": "吃不完的食物"
+        },
+        {
+          "id": "mine_danger",
+          "choice": "B",
+          "dayKey": "1-春季-13",
+          "title": "礦工的擔憂"
+        },
+        {
+          "id": "merchant_deal",
+          "choice": "B",
+          "dayKey": "1-春季-14",
+          "title": "商人的暗示"
+        },
+        {
+          "id": "water_dispute",
+          "choice": "B",
+          "dayKey": "1-春季-15",
+          "title": "農夫的煩惱"
+        },
+        {
+          "id": "sick_npc",
+          "choice": "B",
+          "dayKey": "1-夏季-1",
+          "title": "鄰居的求助"
+        },
+        {
+          "id": "guard_patrol",
+          "choice": "B",
+          "dayKey": "1-夏季-2",
+          "title": "守衛的商量"
+        },
+        {
+          "id": "npc_conflict",
+          "choice": "A",
+          "dayKey": "1-夏季-3",
+          "title": "街上的吵架"
+        },
+        {
+          "id": "woodcutter_rest",
+          "choice": "A",
+          "dayKey": "1-夏季-4",
+          "title": "木匠的訴苦"
+        },
+        {
+          "id": "merchant_deal",
+          "choice": "B",
+          "dayKey": "1-夏季-5",
+          "title": "商人的暗示"
+        },
+        {
+          "id": "festival_plan",
+          "choice": "A",
+          "dayKey": "1-夏季-6",
+          "title": "酒館裡的提議"
+        },
+        {
+          "id": "food_surplus",
+          "choice": "A",
+          "dayKey": "1-夏季-7",
+          "title": "吃不完的食物"
+        },
+        {
+          "id": "library_debate",
+          "choice": "B",
+          "dayKey": "1-夏季-8",
+          "title": "書房裡的爭執"
+        },
+        {
+          "id": "traveler_arrived",
+          "choice": "B",
+          "dayKey": "1-夏季-9",
+          "title": "路邊的旅人"
+        },
+        {
+          "id": "guard_patrol",
+          "choice": "B",
+          "dayKey": "1-夏季-10",
+          "title": "守衛的商量"
+        },
+        {
+          "id": "npc_conflict",
+          "choice": "B",
+          "dayKey": "1-夏季-11",
+          "title": "街上的吵架"
+        },
+        {
+          "id": "festival_plan",
+          "choice": "A",
+          "dayKey": "1-夏季-12",
+          "title": "酒館裡的提議"
+        },
+        {
+          "id": "water_dispute",
+          "choice": "B",
+          "dayKey": "1-夏季-13",
+          "title": "農夫的煩惱"
+        },
+        {
+          "id": "woodcutter_rest",
+          "choice": "B",
+          "dayKey": "1-夏季-14",
+          "title": "木匠的訴苦"
+        }
+      ],
+      "_lastDecisionDay": 0,
+      "followups": []
+    },
+    "shop": {
+      "transactionLog": []
+    },
+    "eventChoice": {
+      "pendingEvent": null,
+      "eventLog": [
+        {
+          "event": "掠奪者入侵",
+          "choice": "團結面對",
+          "tick": 744
+        },
+        {
+          "event": "盜匪來襲",
+          "choice": "祈禱平安",
+          "tick": 2280
+        }
+      ]
+    },
+    "rogueCards": {
+      "pending": null,
+      "buffs": [],
+      "history": [],
+      "_lastCardDay": 0,
+      "_nextIn": 7
+    },
+    "npcHelp": {
+      "pendingRequest": null,
+      "requestLog": [
+        {
+          "npcName": "海伯",
+          "type": "hungry",
+          "choice": "抱歉沒有",
+          "tick": 552
+        },
+        {
+          "npcName": "海伯",
+          "type": "hungry",
+          "choice": "分享食物",
+          "tick": 840
+        },
+        {
+          "npcName": "石叔",
+          "type": "conflict",
+          "choice": "勸他們和好",
+          "tick": 1128
+        },
+        {
+          "npcName": "阿舵",
+          "type": "hungry",
+          "choice": "抱歉沒有",
+          "tick": 1416
+        },
+        {
+          "npcName": "阿潮",
+          "type": "conflict",
+          "choice": "勸他們和好",
+          "tick": 1704
+        },
+        {
+          "npcName": "阿錨",
+          "type": "conflict",
+          "choice": "支持阿錨",
+          "tick": 1992
+        },
+        {
+          "npcName": "珊珊",
+          "type": "tired",
+          "choice": "批准休假",
+          "tick": 2280
+        },
+        {
+          "npcName": "阿錨",
+          "type": "hungry",
+          "choice": "抱歉沒有",
+          "tick": 2568
+        }
+      ],
+      "_daysSinceRequest": 0
+    },
+    "reputationSystem": {
+      "reputation": 0,
+      "sources": {},
+      "_lastEffectTier": -1
+    },
+    "weather": {
+      "current": "clear",
+      "duration": 1,
+      "streak": 0,
+      "forecast": [
+        {
+          "type": "clear",
+          "day": 12
+        },
+        {
+          "type": "clear",
+          "day": 14
+        },
+        {
+          "type": "clear",
+          "day": 16
+        }
+      ],
+      "_temperature": 20,
+      "_humidity": 50,
+      "_windSpeed": 0,
+      "disasterWarning": null,
+      "activeDisaster": null,
+      "_daysSinceDisaster": 10
+    },
+    "council": {
+      "members": [],
+      "pendingProposal": null,
+      "activeDecrees": [],
+      "proposalLog": [],
+      "_daysSinceProposal": 0,
+      "_daysSinceCouncilCheck": 0,
+      "_formed": false
+    }
+  },
+  "paths": [
+    {
+      "start": [
+        0,
+        0
+      ],
+      "end": [
+        1200,
+        900
+      ],
+      "expected": [
+        {
+          "x": 8,
+          "y": 8
+        },
+        {
+          "x": 152,
+          "y": 152
+        },
+        {
+          "x": 200,
+          "y": 152
+        },
+        {
+          "x": 280,
+          "y": 232
+        },
+        {
+          "x": 280,
+          "y": 328
+        },
+        {
+          "x": 296,
+          "y": 344
+        },
+        {
+          "x": 456,
+          "y": 344
+        },
+        {
+          "x": 760,
+          "y": 648
+        },
+        {
+          "x": 760,
+          "y": 744
+        },
+        {
+          "x": 920,
+          "y": 904
+        },
+        {
+          "x": 1208,
+          "y": 904
+        }
+      ]
+    },
+    {
+      "start": [
+        640,
+        480
+      ],
+      "end": [
+        640,
+        480
+      ],
+      "expected": []
+    },
+    {
+      "start": [
+        256,
+        256
+      ],
+      "end": [
+        400,
+        400
+      ],
+      "expected": [
+        {
+          "x": 264,
+          "y": 264
+        },
+        {
+          "x": 280,
+          "y": 280
+        },
+        {
+          "x": 280,
+          "y": 504
+        },
+        {
+          "x": 376,
+          "y": 504
+        },
+        {
+          "x": 376,
+          "y": 472
+        },
+        {
+          "x": 408,
+          "y": 440
+        },
+        {
+          "x": 408,
+          "y": 408
+        }
+      ]
+    },
+    {
+      "start": [
+        24,
+        24
+      ],
+      "end": [
+        760,
+        616
+      ],
+      "expected": [
+        {
+          "x": 24,
+          "y": 24
+        },
+        {
+          "x": 152,
+          "y": 152
+        },
+        {
+          "x": 200,
+          "y": 152
+        },
+        {
+          "x": 280,
+          "y": 232
+        },
+        {
+          "x": 280,
+          "y": 328
+        },
+        {
+          "x": 296,
+          "y": 344
+        },
+        {
+          "x": 456,
+          "y": 344
+        },
+        {
+          "x": 728,
+          "y": 616
+        },
+        {
+          "x": 760,
+          "y": 616
+        }
+      ]
+    },
+    {
+      "start": [
+        680,
+        600
+      ],
+      "end": [
+        664,
+        320
+      ],
+      "expected": [
+        {
+          "x": 680,
+          "y": 600
+        },
+        {
+          "x": 664,
+          "y": 584
+        },
+        {
+          "x": 664,
+          "y": 328
+        }
+      ]
+    },
+    {
+      "start": [
+        100,
+        100
+      ],
+      "end": [
+        -100,
+        -100
+      ],
+      "expected": []
+    }
+  ],
+  "changes": [
+    {
+      "frame": 100,
+      "location": "tavern",
+      "activity": "eating"
+    },
+    {
+      "frame": 300,
+      "location": "home",
+      "activity": "sleeping"
+    },
+    {
+      "frame": 400,
+      "sleepFuse": true
+    },
+    {
+      "frame": 500,
+      "location": "town_hall",
+      "activity": "working",
+      "awakeFuse": true
+    }
+  ],
+  "checkpoints": [
+    {
+      "frame": 1,
+      "positions": {
+        "hb_haibo": {
+          "x": 504,
+          "y": 152,
+          "targetX": 488,
+          "targetY": 96,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "entering"
+        },
+        "hb_achao": {
+          "x": 1048,
+          "y": 520,
+          "targetX": 1032,
+          "targetY": 464,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "entering"
+        },
+        "hb_xiaoou": {
+          "x": 312,
+          "y": 808,
+          "targetX": 296,
+          "targetY": 752,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "entering"
+        },
+        "hb_langshu": {
+          "x": 1160,
+          "y": 520,
+          "targetX": 1144,
+          "targetY": 464,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "entering"
+        },
+        "hb_xiugu": {
+          "x": 1160,
+          "y": 520,
+          "targetX": 1144,
+          "targetY": 464,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "entering"
+        },
+        "hb_shishu": {
+          "x": 424,
+          "y": 808,
+          "targetX": 408,
+          "targetY": 752,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "entering"
+        },
+        "hb_dengye": {
+          "x": 616,
+          "y": 152,
+          "targetX": 600,
+          "targetY": 96,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "entering"
+        },
+        "hb_axi": {
+          "x": 504,
+          "y": 280,
+          "targetX": 488,
+          "targetY": 224,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "entering"
+        },
+        "hb_amao": {
+          "x": 312,
+          "y": 936,
+          "targetX": 296,
+          "targetY": 880,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "entering"
+        },
+        "hb_yunyi": {
+          "x": 616,
+          "y": 280,
+          "targetX": 600,
+          "targetY": 224,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "entering"
+        },
+        "hb_aduo": {
+          "x": 424,
+          "y": 936,
+          "targetX": 408,
+          "targetY": 880,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "entering"
+        },
+        "hb_muxia": {
+          "x": 1048,
+          "y": 648,
+          "targetX": 1032,
+          "targetY": 592,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "entering"
+        },
+        "hb_shanshan": {
+          "x": 1160,
+          "y": 648,
+          "targetX": 1144,
+          "targetY": 592,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "entering"
+        },
+        "hb_afu": {
+          "x": 296,
+          "y": 152,
+          "targetX": 280,
+          "targetY": 96,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "entering"
+        },
+        "hb_haima": {
+          "x": 872,
+          "y": 152,
+          "targetX": 856,
+          "targetY": 96,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "entering"
+        },
+        "player": {
+          "x": 376,
+          "y": 504,
+          "targetX": 344,
+          "targetY": 416,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "entering"
+        }
+      }
+    },
+    {
+      "frame": 2,
+      "positions": {
+        "hb_haibo": {
+          "x": 503.9175836616308,
+          "y": 151.71154281570776,
+          "targetX": 488,
+          "targetY": 96,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "entering",
+          "_inStuck": 1
+        },
+        "hb_achao": {
+          "x": 1047.9175836616307,
+          "y": 519.7115428157077,
+          "targetX": 1032,
+          "targetY": 464,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "entering",
+          "_inStuck": 1
+        },
+        "hb_xiaoou": {
+          "x": 311.9175836616308,
+          "y": 807.7115428157077,
+          "targetX": 296,
+          "targetY": 752,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "entering",
+          "_inStuck": 1
+        },
+        "hb_langshu": {
+          "x": 1159.9175836616307,
+          "y": 519.7115428157077,
+          "targetX": 1144,
+          "targetY": 464,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "entering",
+          "_inStuck": 1
+        },
+        "hb_xiugu": {
+          "x": 1159.9175836616307,
+          "y": 519.7115428157077,
+          "targetX": 1144,
+          "targetY": 464,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "entering",
+          "_inStuck": 1
+        },
+        "hb_shishu": {
+          "x": 423.9175836616308,
+          "y": 807.7115428157077,
+          "targetX": 408,
+          "targetY": 752,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "entering",
+          "_inStuck": 1
+        },
+        "hb_dengye": {
+          "x": 615.9175836616308,
+          "y": 151.71154281570776,
+          "targetX": 600,
+          "targetY": 96,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "entering",
+          "_inStuck": 1
+        },
+        "hb_axi": {
+          "x": 503.88858279709376,
+          "y": 263.72145699273443,
+          "targetX": 488,
+          "targetY": 224,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "entering",
+          "_inStuck": 1
+        },
+        "hb_amao": {
+          "x": 311.9175836616308,
+          "y": 935.7115428157077,
+          "targetX": 296,
+          "targetY": 880,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "entering"
+        },
+        "hb_yunyi": {
+          "x": 615.8885827970938,
+          "y": 263.72145699273443,
+          "targetX": 600,
+          "targetY": 224,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "entering",
+          "_inStuck": 1
+        },
+        "hb_aduo": {
+          "x": 423.9175836616308,
+          "y": 935.7115428157077,
+          "targetX": 408,
+          "targetY": 880,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "entering"
+        },
+        "hb_muxia": {
+          "x": 1047.9175836616307,
+          "y": 647.7115428157077,
+          "targetX": 1032,
+          "targetY": 592,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "entering"
+        },
+        "hb_shanshan": {
+          "x": 1159.9175836616307,
+          "y": 647.7115428157077,
+          "targetX": 1144,
+          "targetY": 592,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "entering"
+        },
+        "hb_afu": {
+          "x": 295.9175836616308,
+          "y": 151.71154281570776,
+          "targetX": 280,
+          "targetY": 96,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "entering"
+        },
+        "hb_haima": {
+          "x": 871.9175836616308,
+          "y": 151.71154281570776,
+          "targetX": 856,
+          "targetY": 96,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "entering"
+        },
+        "player": {
+          "x": 375.897477081074,
+          "y": 503.7180619729535,
+          "targetX": 344,
+          "targetY": 416,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "entering"
+        }
+      }
+    },
+    {
+      "frame": 60,
+      "positions": {
+        "hb_haibo": {
+          "x": 499.13743603621555,
+          "y": 134.98102612675777,
+          "targetX": 488,
+          "targetY": 96,
+          "walking": true,
+          "walkStep": 59,
+          "doorPhase": "entering",
+          "_inStuck": 59
+        },
+        "hb_achao": {
+          "x": 1043.1374360362122,
+          "y": 502.9810261267561,
+          "targetX": 1032,
+          "targetY": 464,
+          "walking": true,
+          "walkStep": 59,
+          "doorPhase": "entering",
+          "_inStuck": 59
+        },
+        "hb_xiaoou": {
+          "x": 307.13743603621555,
+          "y": 790.9810261267561,
+          "targetX": 296,
+          "targetY": 752,
+          "walking": true,
+          "walkStep": 59,
+          "doorPhase": "entering",
+          "_inStuck": 59
+        },
+        "hb_langshu": {
+          "x": 1155.1374360362122,
+          "y": 502.9810261267561,
+          "targetX": 1144,
+          "targetY": 464,
+          "walking": true,
+          "walkStep": 59,
+          "doorPhase": "entering",
+          "_inStuck": 59
+        },
+        "hb_xiugu": {
+          "x": 1155.1374360362122,
+          "y": 502.9810261267561,
+          "targetX": 1144,
+          "targetY": 464,
+          "walking": true,
+          "walkStep": 59,
+          "doorPhase": "entering",
+          "_inStuck": 59
+        },
+        "hb_shishu": {
+          "x": 419.13743603621555,
+          "y": 790.9810261267561,
+          "targetX": 408,
+          "targetY": 752,
+          "walking": true,
+          "walkStep": 59,
+          "doorPhase": "entering",
+          "_inStuck": 59
+        },
+        "hb_dengye": {
+          "x": 611.1374360362187,
+          "y": 134.98102612675777,
+          "targetX": 600,
+          "targetY": 96,
+          "walking": true,
+          "walkStep": 59,
+          "doorPhase": "entering",
+          "_inStuck": 59
+        },
+        "hb_axi": {
+          "x": 497.4263850285319,
+          "y": 247.56596257133145,
+          "targetX": 488,
+          "targetY": 224,
+          "walking": true,
+          "walkStep": 59,
+          "doorPhase": "entering",
+          "_inStuck": 59
+        },
+        "hb_amao": {
+          "x": 307.13743603621555,
+          "y": 918.9810261267561,
+          "targetX": 296,
+          "targetY": 880,
+          "walking": true,
+          "walkStep": 59,
+          "doorPhase": "entering",
+          "_inStuck": 31
+        },
+        "hb_yunyi": {
+          "x": 609.4263850285333,
+          "y": 247.56596257133145,
+          "targetX": 600,
+          "targetY": 224,
+          "walking": true,
+          "walkStep": 59,
+          "doorPhase": "entering",
+          "_inStuck": 59
+        },
+        "hb_aduo": {
+          "x": 419.13743603621555,
+          "y": 918.9810261267561,
+          "targetX": 408,
+          "targetY": 880,
+          "walking": true,
+          "walkStep": 59,
+          "doorPhase": "entering",
+          "_inStuck": 31
+        },
+        "hb_muxia": {
+          "x": 1043.1374360362122,
+          "y": 630.9810261267561,
+          "targetX": 1032,
+          "targetY": 592,
+          "walking": true,
+          "walkStep": 59,
+          "doorPhase": "entering",
+          "_inStuck": 31
+        },
+        "hb_shanshan": {
+          "x": 1155.1374360362122,
+          "y": 630.9810261267561,
+          "targetX": 1144,
+          "targetY": 592,
+          "walking": true,
+          "walkStep": 59,
+          "doorPhase": "entering",
+          "_inStuck": 31
+        },
+        "hb_afu": {
+          "x": 291.13743603621555,
+          "y": 134.98102612675777,
+          "targetX": 280,
+          "targetY": 96,
+          "walking": true,
+          "walkStep": 59,
+          "doorPhase": "entering",
+          "_inStuck": 31
+        },
+        "hb_haima": {
+          "x": 867.1374360362187,
+          "y": 134.98102612675777,
+          "targetX": 856,
+          "targetY": 96,
+          "walking": true,
+          "walkStep": 59,
+          "doorPhase": "entering",
+          "_inStuck": 31
+        },
+        "player": {
+          "x": 369.95114778336523,
+          "y": 487.3656564042552,
+          "targetX": 344,
+          "targetY": 416,
+          "walking": true,
+          "walkStep": 59,
+          "doorPhase": "entering",
+          "_inStuck": 30
+        }
+      }
+    },
+    {
+      "frame": 100,
+      "positions": {
+        "hb_haibo": {
+          "x": 495.6517879720359,
+          "y": 123.60338302588515,
+          "targetX": 504,
+          "targetY": 152,
+          "walking": true,
+          "walkStep": 99,
+          "doorPhase": "exiting",
+          "_inStuck": 99
+        },
+        "hb_achao": {
+          "x": 1039.6517879720323,
+          "y": 491.6033830258826,
+          "targetX": 1048,
+          "targetY": 520,
+          "walking": true,
+          "walkStep": 99,
+          "doorPhase": "exiting",
+          "_inStuck": 99
+        },
+        "hb_xiaoou": {
+          "x": 303.6517879720357,
+          "y": 779.6033830258826,
+          "targetX": 312,
+          "targetY": 808,
+          "walking": true,
+          "walkStep": 99,
+          "doorPhase": "exiting",
+          "_inStuck": 99
+        },
+        "hb_langshu": {
+          "x": 1151.6517879720323,
+          "y": 491.6033830258826,
+          "targetX": 1160,
+          "targetY": 520,
+          "walking": true,
+          "walkStep": 99,
+          "doorPhase": "exiting",
+          "_inStuck": 99
+        },
+        "hb_xiugu": {
+          "x": 1151.6517879720323,
+          "y": 491.6033830258826,
+          "targetX": 1160,
+          "targetY": 520,
+          "walking": true,
+          "walkStep": 99,
+          "doorPhase": "exiting",
+          "_inStuck": 99
+        },
+        "hb_shishu": {
+          "x": 415.6517879720357,
+          "y": 779.6033830258826,
+          "targetX": 424,
+          "targetY": 808,
+          "walking": true,
+          "walkStep": 99,
+          "doorPhase": "exiting",
+          "_inStuck": 99
+        },
+        "hb_dengye": {
+          "x": 607.6517879720388,
+          "y": 123.6033830258854,
+          "targetX": 616,
+          "targetY": 152,
+          "walking": true,
+          "walkStep": 99,
+          "doorPhase": "exiting",
+          "_inStuck": 99
+        },
+        "hb_axi": {
+          "x": 492.8609437945761,
+          "y": 236.49900837583363,
+          "targetX": 504,
+          "targetY": 280,
+          "walking": true,
+          "walkStep": 99,
+          "doorPhase": "exiting",
+          "_inStuck": 1
+        },
+        "hb_amao": {
+          "x": 303.6517879720357,
+          "y": 907.6033830258826,
+          "targetX": 312,
+          "targetY": 936,
+          "walking": true,
+          "walkStep": 99,
+          "doorPhase": "exiting",
+          "_inStuck": 71
+        },
+        "hb_yunyi": {
+          "x": 604.8609437945776,
+          "y": 236.49900837583414,
+          "targetX": 616,
+          "targetY": 280,
+          "walking": true,
+          "walkStep": 99,
+          "doorPhase": "exiting",
+          "_inStuck": 1
+        },
+        "hb_aduo": {
+          "x": 415.6517879720357,
+          "y": 907.6033830258826,
+          "targetX": 424,
+          "targetY": 936,
+          "walking": true,
+          "walkStep": 99,
+          "doorPhase": "exiting",
+          "_inStuck": 71
+        },
+        "hb_muxia": {
+          "x": 1039.6517879720323,
+          "y": 619.6033830258826,
+          "targetX": 1048,
+          "targetY": 648,
+          "walking": true,
+          "walkStep": 99,
+          "doorPhase": "exiting",
+          "_inStuck": 71
+        },
+        "hb_shanshan": {
+          "x": 1151.6517879720323,
+          "y": 619.6033830258826,
+          "targetX": 1160,
+          "targetY": 648,
+          "walking": true,
+          "walkStep": 99,
+          "doorPhase": "exiting",
+          "_inStuck": 71
+        },
+        "hb_afu": {
+          "x": 287.6517879720359,
+          "y": 123.60338302588515,
+          "targetX": 296,
+          "targetY": 152,
+          "walking": true,
+          "walkStep": 99,
+          "doorPhase": "exiting",
+          "_inStuck": 71
+        },
+        "hb_haima": {
+          "x": 863.6517879720388,
+          "y": 123.6033830258854,
+          "targetX": 872,
+          "targetY": 152,
+          "walking": true,
+          "walkStep": 99,
+          "doorPhase": "exiting",
+          "_inStuck": 71
+        },
+        "player": {
+          "x": 366.5290940838112,
+          "y": 476.10548506069875,
+          "targetX": 344,
+          "targetY": 416,
+          "walking": true,
+          "walkStep": 99,
+          "doorPhase": "entering",
+          "_inStuck": 70
+        }
+      }
+    },
+    {
+      "frame": 300,
+      "positions": {
+        "hb_haibo": {
+          "x": 488,
+          "y": 120,
+          "targetX": 504,
+          "targetY": 152,
+          "walking": true,
+          "walkStep": 124,
+          "doorPhase": "exiting",
+          "_slpOut": 1,
+          "_inStuck": 0
+        },
+        "hb_achao": {
+          "x": 1032,
+          "y": 488,
+          "targetX": 1048,
+          "targetY": 520,
+          "walking": true,
+          "walkStep": 124,
+          "doorPhase": "exiting",
+          "_slpOut": 1,
+          "_inStuck": 0
+        },
+        "hb_xiaoou": {
+          "x": 296,
+          "y": 776,
+          "targetX": 312,
+          "targetY": 808,
+          "walking": true,
+          "walkStep": 124,
+          "doorPhase": "exiting",
+          "_slpOut": 1,
+          "_inStuck": 0
+        },
+        "hb_langshu": {
+          "x": 1144,
+          "y": 488,
+          "targetX": 1160,
+          "targetY": 520,
+          "walking": true,
+          "walkStep": 124,
+          "doorPhase": "exiting",
+          "_slpOut": 1,
+          "_inStuck": 0
+        },
+        "hb_xiugu": {
+          "x": 1144,
+          "y": 488,
+          "targetX": 1160,
+          "targetY": 520,
+          "walking": true,
+          "walkStep": 124,
+          "doorPhase": "exiting",
+          "_slpOut": 1,
+          "_inStuck": 0
+        },
+        "hb_shishu": {
+          "x": 408,
+          "y": 776,
+          "targetX": 424,
+          "targetY": 808,
+          "walking": true,
+          "walkStep": 124,
+          "doorPhase": "exiting",
+          "_slpOut": 1,
+          "_inStuck": 0
+        },
+        "hb_dengye": {
+          "x": 600,
+          "y": 120,
+          "targetX": 616,
+          "targetY": 152,
+          "walking": true,
+          "walkStep": 124,
+          "doorPhase": "exiting",
+          "_slpOut": 1,
+          "_inStuck": 0
+        },
+        "hb_axi": {
+          "x": 488,
+          "y": 232,
+          "targetX": 504,
+          "targetY": 280,
+          "walking": true,
+          "walkStep": 118,
+          "doorPhase": "exiting",
+          "_slpOut": 1,
+          "_inStuck": 0
+        },
+        "hb_amao": {
+          "x": 296,
+          "y": 904,
+          "targetX": 312,
+          "targetY": 936,
+          "walking": true,
+          "walkStep": 124,
+          "doorPhase": "exiting",
+          "_slpOut": 1,
+          "_inStuck": 0
+        },
+        "hb_yunyi": {
+          "x": 600,
+          "y": 232,
+          "targetX": 616,
+          "targetY": 280,
+          "walking": true,
+          "walkStep": 118,
+          "doorPhase": "exiting",
+          "_slpOut": 1,
+          "_inStuck": 0
+        },
+        "hb_aduo": {
+          "x": 408,
+          "y": 904,
+          "targetX": 424,
+          "targetY": 936,
+          "walking": true,
+          "walkStep": 124,
+          "doorPhase": "exiting",
+          "_slpOut": 1,
+          "_inStuck": 0
+        },
+        "hb_muxia": {
+          "x": 1032,
+          "y": 616,
+          "targetX": 1048,
+          "targetY": 648,
+          "walking": true,
+          "walkStep": 124,
+          "doorPhase": "exiting",
+          "_slpOut": 1,
+          "_inStuck": 0
+        },
+        "hb_shanshan": {
+          "x": 1144,
+          "y": 616,
+          "targetX": 1160,
+          "targetY": 648,
+          "walking": true,
+          "walkStep": 124,
+          "doorPhase": "exiting",
+          "_slpOut": 1,
+          "_inStuck": 0
+        },
+        "hb_afu": {
+          "x": 280,
+          "y": 120,
+          "targetX": 296,
+          "targetY": 152,
+          "walking": true,
+          "walkStep": 124,
+          "doorPhase": "exiting",
+          "_slpOut": 1,
+          "_inStuck": 0
+        },
+        "hb_haima": {
+          "x": 856,
+          "y": 120,
+          "targetX": 872,
+          "targetY": 152,
+          "walking": true,
+          "walkStep": 124,
+          "doorPhase": "exiting",
+          "_slpOut": 1,
+          "_inStuck": 0
+        },
+        "player": {
+          "x": 345.4702620843844,
+          "y": 419.9225197169275,
+          "targetX": 344,
+          "targetY": 416,
+          "walking": true,
+          "walkStep": 299,
+          "doorPhase": "entering",
+          "_slpOut": 1,
+          "_inStuck": 0
+        }
+      }
+    },
+    {
+      "frame": 400,
+      "positions": {
+        "hb_haibo": {
+          "x": 500,
+          "y": 108,
+          "targetX": 500,
+          "targetY": 108,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_achao": {
+          "x": 1044,
+          "y": 476,
+          "targetX": 1044,
+          "targetY": 476,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_xiaoou": {
+          "x": 308,
+          "y": 764,
+          "targetX": 308,
+          "targetY": 764,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_langshu": {
+          "x": 1156,
+          "y": 476,
+          "targetX": 1156,
+          "targetY": 476,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_xiugu": {
+          "x": 1156,
+          "y": 476,
+          "targetX": 1156,
+          "targetY": 476,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_shishu": {
+          "x": 420,
+          "y": 764,
+          "targetX": 420,
+          "targetY": 764,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_dengye": {
+          "x": 612,
+          "y": 108,
+          "targetX": 612,
+          "targetY": 108,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_axi": {
+          "x": 500,
+          "y": 236,
+          "targetX": 500,
+          "targetY": 236,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_amao": {
+          "x": 308,
+          "y": 892,
+          "targetX": 308,
+          "targetY": 892,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_yunyi": {
+          "x": 612,
+          "y": 236,
+          "targetX": 612,
+          "targetY": 236,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_aduo": {
+          "x": 420,
+          "y": 892,
+          "targetX": 420,
+          "targetY": 892,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_muxia": {
+          "x": 1044,
+          "y": 604,
+          "targetX": 1044,
+          "targetY": 604,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_shanshan": {
+          "x": 1156,
+          "y": 604,
+          "targetX": 1156,
+          "targetY": 604,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_afu": {
+          "x": 292,
+          "y": 108,
+          "targetX": 292,
+          "targetY": 108,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_haima": {
+          "x": 868,
+          "y": 108,
+          "targetX": 868,
+          "targetY": 108,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "player": {
+          "x": 496,
+          "y": 228,
+          "targetX": 496,
+          "targetY": 228,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        }
+      }
+    },
+    {
+      "frame": 401,
+      "positions": {
+        "hb_haibo": {
+          "x": 500,
+          "y": 108,
+          "targetX": 500,
+          "targetY": 108,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_achao": {
+          "x": 1044,
+          "y": 476,
+          "targetX": 1044,
+          "targetY": 476,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_xiaoou": {
+          "x": 308,
+          "y": 764,
+          "targetX": 308,
+          "targetY": 764,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_langshu": {
+          "x": 1156,
+          "y": 476,
+          "targetX": 1156,
+          "targetY": 476,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_xiugu": {
+          "x": 1156,
+          "y": 476,
+          "targetX": 1156,
+          "targetY": 476,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_shishu": {
+          "x": 420,
+          "y": 764,
+          "targetX": 420,
+          "targetY": 764,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_dengye": {
+          "x": 612,
+          "y": 108,
+          "targetX": 612,
+          "targetY": 108,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_axi": {
+          "x": 500,
+          "y": 236,
+          "targetX": 500,
+          "targetY": 236,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_amao": {
+          "x": 308,
+          "y": 892,
+          "targetX": 308,
+          "targetY": 892,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_yunyi": {
+          "x": 612,
+          "y": 236,
+          "targetX": 612,
+          "targetY": 236,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_aduo": {
+          "x": 420,
+          "y": 892,
+          "targetX": 420,
+          "targetY": 892,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_muxia": {
+          "x": 1044,
+          "y": 604,
+          "targetX": 1044,
+          "targetY": 604,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_shanshan": {
+          "x": 1156,
+          "y": 604,
+          "targetX": 1156,
+          "targetY": 604,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_afu": {
+          "x": 292,
+          "y": 108,
+          "targetX": 292,
+          "targetY": 108,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_haima": {
+          "x": 868,
+          "y": 108,
+          "targetX": 868,
+          "targetY": 108,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "player": {
+          "x": 496,
+          "y": 228,
+          "targetX": 496,
+          "targetY": 228,
+          "walking": false,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        }
+      }
+    },
+    {
+      "frame": 500,
+      "positions": {
+        "hb_haibo": {
+          "x": 504,
+          "y": 168,
+          "targetX": 504,
+          "targetY": 152,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_achao": {
+          "x": 1048,
+          "y": 536,
+          "targetX": 1048,
+          "targetY": 520,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_xiaoou": {
+          "x": 312,
+          "y": 824,
+          "targetX": 312,
+          "targetY": 808,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_langshu": {
+          "x": 1160,
+          "y": 536,
+          "targetX": 1160,
+          "targetY": 520,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_xiugu": {
+          "x": 1160,
+          "y": 536,
+          "targetX": 1160,
+          "targetY": 520,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_shishu": {
+          "x": 424,
+          "y": 824,
+          "targetX": 424,
+          "targetY": 808,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_dengye": {
+          "x": 616,
+          "y": 168,
+          "targetX": 616,
+          "targetY": 152,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_axi": {
+          "x": 504,
+          "y": 295.7,
+          "targetX": 504,
+          "targetY": 280,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_amao": {
+          "x": 312,
+          "y": 952,
+          "targetX": 312,
+          "targetY": 936,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_yunyi": {
+          "x": 616,
+          "y": 295.7,
+          "targetX": 616,
+          "targetY": 280,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_aduo": {
+          "x": 424,
+          "y": 952,
+          "targetX": 424,
+          "targetY": 936,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_muxia": {
+          "x": 1048,
+          "y": 664,
+          "targetX": 1048,
+          "targetY": 648,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_shanshan": {
+          "x": 1160,
+          "y": 664,
+          "targetX": 1160,
+          "targetY": 648,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_afu": {
+          "x": 296,
+          "y": 168,
+          "targetX": 296,
+          "targetY": 152,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_haima": {
+          "x": 872,
+          "y": 168,
+          "targetX": 872,
+          "targetY": 152,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "player": {
+          "x": 504,
+          "y": 295.7,
+          "targetX": 504,
+          "targetY": 280,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": null,
+          "_slpOut": 0,
+          "_inStuck": 0
+        }
+      }
+    },
+    {
+      "frame": 501,
+      "positions": {
+        "hb_haibo": {
+          "x": 504,
+          "y": 168,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "exiting",
+          "_slpOut": 0,
+          "_inStuck": 1
+        },
+        "hb_achao": {
+          "x": 1048,
+          "y": 536,
+          "targetX": 1048,
+          "targetY": 520,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "exiting",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_xiaoou": {
+          "x": 312,
+          "y": 824,
+          "targetX": 312,
+          "targetY": 808,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "exiting",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_langshu": {
+          "x": 1160,
+          "y": 536,
+          "targetX": 1160,
+          "targetY": 520,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "exiting",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_xiugu": {
+          "x": 1160,
+          "y": 536,
+          "targetX": 1160,
+          "targetY": 520,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "exiting",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_shishu": {
+          "x": 424,
+          "y": 824,
+          "targetX": 424,
+          "targetY": 808,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "exiting",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_dengye": {
+          "x": 616,
+          "y": 168,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "exiting",
+          "_slpOut": 0,
+          "_inStuck": 1
+        },
+        "hb_axi": {
+          "x": 504,
+          "y": 296,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_amao": {
+          "x": 312,
+          "y": 952,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_yunyi": {
+          "x": 616,
+          "y": 296,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_aduo": {
+          "x": 424,
+          "y": 952,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_muxia": {
+          "x": 1048,
+          "y": 664,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_shanshan": {
+          "x": 1160,
+          "y": 664,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_afu": {
+          "x": 296,
+          "y": 168,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_haima": {
+          "x": 872,
+          "y": 168,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "player": {
+          "x": 504,
+          "y": 296,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        }
+      }
+    },
+    {
+      "frame": 600,
+      "positions": {
+        "hb_haibo": {
+          "x": 504,
+          "y": 168,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "exiting",
+          "_slpOut": 0,
+          "_inStuck": 100
+        },
+        "hb_achao": {
+          "x": 1048,
+          "y": 536,
+          "targetX": 1048,
+          "targetY": 520,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "exiting",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_xiaoou": {
+          "x": 312,
+          "y": 824,
+          "targetX": 312,
+          "targetY": 808,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "exiting",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_langshu": {
+          "x": 1160,
+          "y": 536,
+          "targetX": 1160,
+          "targetY": 520,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "exiting",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_xiugu": {
+          "x": 1160,
+          "y": 536,
+          "targetX": 1160,
+          "targetY": 520,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "exiting",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_shishu": {
+          "x": 424,
+          "y": 824,
+          "targetX": 424,
+          "targetY": 808,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "exiting",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_dengye": {
+          "x": 616,
+          "y": 168,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "exiting",
+          "_slpOut": 0,
+          "_inStuck": 100
+        },
+        "hb_axi": {
+          "x": 504,
+          "y": 296,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_amao": {
+          "x": 312,
+          "y": 952,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_yunyi": {
+          "x": 616,
+          "y": 296,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_aduo": {
+          "x": 424,
+          "y": 952,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_muxia": {
+          "x": 1048,
+          "y": 664,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_shanshan": {
+          "x": 1160,
+          "y": 664,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_afu": {
+          "x": 296,
+          "y": 168,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_haima": {
+          "x": 872,
+          "y": 168,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "player": {
+          "x": 504,
+          "y": 296,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        }
+      }
+    },
+    {
+      "frame": 720,
+      "positions": {
+        "hb_haibo": {
+          "x": 504,
+          "y": 168,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "exiting",
+          "_slpOut": 0,
+          "_inStuck": 220
+        },
+        "hb_achao": {
+          "x": 1048,
+          "y": 536,
+          "targetX": 1048,
+          "targetY": 520,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "exiting",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_xiaoou": {
+          "x": 312,
+          "y": 824,
+          "targetX": 312,
+          "targetY": 808,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "exiting",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_langshu": {
+          "x": 1160,
+          "y": 536,
+          "targetX": 1160,
+          "targetY": 520,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "exiting",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_xiugu": {
+          "x": 1160,
+          "y": 536,
+          "targetX": 1160,
+          "targetY": 520,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "exiting",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_shishu": {
+          "x": 424,
+          "y": 824,
+          "targetX": 424,
+          "targetY": 808,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "exiting",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_dengye": {
+          "x": 616,
+          "y": 168,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "exiting",
+          "_slpOut": 0,
+          "_inStuck": 220
+        },
+        "hb_axi": {
+          "x": 504,
+          "y": 296,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_amao": {
+          "x": 312,
+          "y": 952,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_yunyi": {
+          "x": 616,
+          "y": 296,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_aduo": {
+          "x": 424,
+          "y": 952,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_muxia": {
+          "x": 1048,
+          "y": 664,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_shanshan": {
+          "x": 1160,
+          "y": 664,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_afu": {
+          "x": 296,
+          "y": 168,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "hb_haima": {
+          "x": 872,
+          "y": 168,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 0,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        },
+        "player": {
+          "x": 504,
+          "y": 296,
+          "targetX": 552,
+          "targetY": 296,
+          "walking": true,
+          "walkStep": 1,
+          "doorPhase": "approaching",
+          "_slpOut": 0,
+          "_inStuck": 0
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "checks": 458,
+  "failures": [],
+  "scope": "Phase 4a controls, deterministic resume, untouched subsystem and unknown-field preservation"
+}

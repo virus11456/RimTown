@@ -18,6 +18,17 @@ var mobile_turn: Button
 var busy := false
 var import_callback: JavaScriptObject
 var demo_theme := "frontier"
+var simulation := SimWorld.new()
+var motion := SimMotion.new()
+var running := false
+var has_simulated := false
+var speed := 1
+var frame_accumulator := 0.0
+var tick_accumulator := 0.0
+var playback: HBoxContainer
+var play_button: Button
+var speed_button: Button
+var selected_agent := ""
 
 func _ready() -> void:
 	TranslationServer.set_locale("zh_TW")
@@ -31,12 +42,13 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_responsive)
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_matrix.flag"): _capture_demo()
 	_responsive()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_playtest.flag"): _capture_playtest()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
 
 func _make_world_view() -> void:
-	# Phase 3 installs a view; no simulation is instantiated by this client.
+	# Rendering consumes snapshots; the Phase 4a core remains independent of Nodes.
 	if ResourceLoader.exists("res://scripts/view/town_view.gd"):
 		world_view = load("res://scripts/view/town_view.gd").new()
 		add_child(world_view)
@@ -100,6 +112,8 @@ func _build_ui() -> void:
 	eyebrow.modulate = Color("d6ba80")
 	heading = _label("邊境鎮",title_stack,25)
 	summary = _label("",title_stack,13)
+	summary.clip_text=true
+	summary.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS
 	var controls := VBoxContainer.new()
 	desktop_camera = controls
 	title_row.add_child(controls)
@@ -118,8 +132,15 @@ func _build_ui() -> void:
 		var button := _button(tab,navigation,func(): show_tab(tab))
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	status = _label("",hud,13)
-	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	status.autowrap_mode = TextServer.AUTOWRAP_OFF
+	status.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS
+	status.clip_text=true
 	status.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	playback = HBoxContainer.new()
+	hud.add_child(playback)
+	play_button = _button("▶ 開始",playback,toggle_simulation)
+	_button("＋15 分",playback,step_simulation)
+	speed_button = _button("1×",playback,func(): speed={1:4,4:16,16:1}[speed]; speed_button.text="%d×"%speed)
 	drawer = PanelContainer.new()
 	drawer.add_theme_stylebox_override("panel",_panel(Color("172e2ef7")))
 	hud.add_child(drawer)
@@ -157,8 +178,10 @@ func _responsive() -> void:
 	navigation.position = Vector2(maxf(16,(size.x-420)/2),size.y-64)
 	navigation.size = Vector2(minf(420,size.x-32),48)
 	status.position = Vector2(20,134)
-	status.size = Vector2(size.x-40,50)
-	drawer.position = Vector2(16 if mobile else size.x-360,192 if mobile else 164)
+	status.size = Vector2(size.x-40,24)
+	playback.position=Vector2(20,158)
+	playback.size=Vector2(260,42)
+	drawer.position = Vector2(16 if mobile else size.x-360,212)
 	drawer.size = Vector2(size.x-32 if mobile else 344,maxf(180,size.y-drawer.position.y-84))
 
 func _load_document(text: String, source: String) -> bool:
@@ -166,14 +189,30 @@ func _load_document(text: String, source: String) -> bool:
 	if not incoming.parse(text):
 		status.text = incoming.error
 		return false
+	running=false
+	has_simulated=false
+	frame_accumulator=0
+	tick_accumulator=0
+	play_button.text="▶ 開始"
+	selected_agent=""
 	document = incoming
+	simulation.load_snapshot(document.snapshot())
 	var data := document.snapshot()
 	heading.text = str(data.get("townName","小鎮"))
 	var clock_data: Dictionary = data.clock
-	summary.text = "%s · 第 %s 天 · %s 位居民" % [clock_data.get("season",""),str(int(clock_data.get("day",1))),data.agents.size()]
-	status.text = "%s · 觀賞模式" % source
+	summary.text = "%s %d日 %02d:%02d · %d人" % [clock_data.get("season",""),clock_data.get("day",1),clock_data.get("hour",6),clock_data.get("minute",0),data.agents.size()]
+	status.text = "%s · 已暫停，按 ▶ 開始試玩" % source
 	if world_view != null:
 		world_view.call("display_save",data)
+	if world_view != null:
+		motion.configure(world_view.layout)
+		var saved: Dictionary=document.data.get("_godot4a",{})
+		if saved.has("motion") and saved.motion is Dictionary:
+			motion.positions=saved.motion.duplicate(true)
+			if saved.get("house_map") is Dictionary: motion.layout.agent_house=saved.house_map.duplicate(true)
+			tick_accumulator=float(saved.get("tick_accumulator",0))
+		else: motion.update(simulation.data.agents)
+		world_view.animate_agents(motion.positions)
 	if not active_tab.is_empty(): show_tab(active_tab,true)
 	return true
 
@@ -192,6 +231,7 @@ func show_tab(tab: String, refresh := false) -> void:
 		active_tab = ""
 		return
 	active_tab = tab
+	if not refresh: selected_agent=""
 	drawer.show()
 	_clear_drawer()
 	_label(tab,drawer_body,24)
@@ -201,31 +241,35 @@ func show_tab(tab: String, refresh := false) -> void:
 			_button("查看海風鎮示範",drawer_body,func(): load_demo("harbor"))
 			_button("匯入網頁版存檔",drawer_body,import_save)
 			_button("匯出原始存檔副本",drawer_body,export_save)
-			var resources: Dictionary = document.data.get("stockpile",{}).get("resources",{})
+			_button("匯出試玩進度",drawer_body,export_progress)
+			_label("試玩：作息、需求與走路已啟用。\n資源、關係與任務暫不更新。",drawer_body,13)
+			var resources: Dictionary = _current_data().get("stockpile",{}).get("resources",{})
 			for key in resources:
 				if float(resources[key]) != 0: _label("%s   %d" % [_resource_name(key),resources[key]],drawer_body)
 		"居民":
-			for id in document.data.get("agents",{}):
-				var agent: Dictionary = document.data.agents[id]
+			for id in _current_data().get("agents",{}):
+				var agent: Dictionary = _current_data().agents[id]
 				_button(str(agent.get("name",id)),drawer_body,func(): show_agent(id))
 		"故事":
-			var logs: Array = document.data.get("messageLog",[])
+			var logs: Array = _current_data().get("messageLog",[])
 			if logs.is_empty(): _label("故事從這裡開始。",drawer_body)
 			for entry in logs.slice(maxi(0,logs.size()-30)):
 				var label := _label(str(entry.get("content","")),drawer_body,14)
 				label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		"設定": _settings_ui()
 
-func show_agent(id: String) -> void:
+func show_agent(id: String,focus_camera := true) -> void:
+	selected_agent=id
 	_clear_drawer()
-	var agent: Dictionary = document.data.agents[id]
+	var agent: Dictionary = _current_data().agents[id]
 	_label(str(agent.get("name",id)),drawer_body,24)
 	_label("%s 歲 · %s" % [str(int(agent.get("age",0))),_job_name(str(agent.get("jobKey","旅人")))],drawer_body)
+	_label("目前："+_activity_name(str(agent.get("activity","idle"))),drawer_body)
 	var label := _label(str(agent.get("personality",{}).get("background","")),drawer_body)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	for key in agent.get("needs",{}):
 		_label("%s    %d" % [{"hunger":"飽足","rest":"休息","social":"社交","comfort":"舒適","recreation":"娛樂","beauty":"美感"}.get(key,key),agent.needs[key]],drawer_body,14)
-	if world_view != null:
+	if world_view != null and focus_camera:
 		var pos: Variant = world_view.call("agent_position",id)
 		if pos is Vector3: rig.position = Vector3(pos.x,0,pos.z)
 	_button("返回居民列表",drawer_body,func(): show_tab("居民",true))
@@ -259,7 +303,7 @@ func _settings_ui() -> void:
 	_button("繁體中文 / English",drawer_body,func():
 		TranslationServer.set_locale("en" if TranslationServer.get_locale().begins_with("zh") else "zh_TW")
 		show_tab("設定",true))
-	var note := _label("觀賞版可讀取小鎮與居民；模擬、聊天、建設與回存將在後續版本開放。",drawer_body,14)
+	var note := _label("Phase 4a 試玩：可暫停、加速與匯出本機進度。建設、對話與完整世界模擬仍在後續階段。",drawer_body,14)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 func show_cloud_saves() -> void:
@@ -308,16 +352,30 @@ func import_save() -> void:
 		dialog.popup_centered_ratio(0.8)
 
 func export_save() -> void:
-	if document.raw_json.is_empty(): return
+	_write_export(document.serialize(),"rimtown-copy")
+
+func progress_snapshot() -> Dictionary:
+	var progress:=simulation.snapshot()
+	progress._godot4a.motion=motion.positions.duplicate(true)
+	progress._godot4a.house_map=motion.layout.agent_house.duplicate(true)
+	progress._godot4a.tick_accumulator=tick_accumulator
+	return progress
+
+func export_progress() -> void:
+	_write_export(JSON.stringify(progress_snapshot(),"",false,true),"rimtown-playtest")
+
+func _write_export(text: String,prefix: String) -> void:
+	if text.is_empty(): return
 	if OS.has_feature("web"):
-		JavaScriptBridge.download_buffer(document.serialize().to_utf8_buffer(),"rimtown-copy.json","application/json")
+		JavaScriptBridge.download_buffer(text.to_utf8_buffer(),prefix+".json","application/json")
 		status.text="已下載原始存檔副本。"
 	else:
-		var path := "user://rimtown-copy-%d.json" % Time.get_unix_time_from_system()
+		var path := "user://%s-%d.json" % [prefix,Time.get_unix_time_from_system()]
 		var file := FileAccess.open(path,FileAccess.WRITE)
 		if file:
-			file.store_string(document.serialize())
+			file.store_string(text)
 			status.text="副本已儲存於 " + ProjectSettings.globalize_path(path)
+			status.tooltip_text=status.text
 		else: status.text="無法寫入副本。"
 
 func _capture_demo() -> void:
@@ -350,3 +408,79 @@ func _resource_name(key: String) -> String:
 
 func _job_name(key: String) -> String:
 	return tr({"mayor":"鎮長","doctor":"醫生","blacksmith":"鐵匠","cook":"廚師","farmer":"農夫","trader":"商人","guard":"守衛","researcher":"研究員","miner":"礦工","priest":"牧師","carpenter":"木匠","tailor":"裁縫","null":"旅人"}.get(key,key))
+
+func _current_data() -> Dictionary:
+	return simulation.data if has_simulated else document.data
+
+func toggle_simulation() -> void:
+	var error:=simulation.validation_error()
+	if not error.is_empty(): status.text=error; return
+	running=not running
+	play_button.text="Ⅱ 暫停" if running else "▶ 繼續"
+	status.text="試玩中 · 作息與移動" if running else "已暫停 · 可匯出試玩進度"
+
+func step_simulation() -> void:
+	var error:=simulation.validation_error()
+	if not error.is_empty(): status.text=error; return
+	running=false
+	play_button.text="▶ 繼續"
+	_tick_simulation()
+	motion.update(simulation.data.agents)
+	world_view.animate_agents(motion.positions)
+	status.text="已前進 15 分鐘 · 已暫停"
+
+func _tick_simulation() -> void:
+	has_simulated=true
+	var events:=simulation.tick()
+	var clock_data: Dictionary=simulation.data.clock
+	summary.text="%s %d日 %02d:%02d · %d人"%[clock_data.season,clock_data.day,clock_data.hour,clock_data.minute,simulation.data.agents.size()]
+	if "new_season" in events:
+		var house_map:=motion.layout.agent_house.duplicate(true)
+		world_view.display_save(simulation.data)
+		motion.layout=world_view.layout
+		motion.layout.agent_house=house_map
+		motion.pathfinder.grid=world_view.layout.grid
+	world_view._light_clock(clock_data)
+	if "new_hour" in events: world_view._weather(simulation.data)
+	if active_tab=="居民" and not selected_agent.is_empty(): show_agent(selected_agent,false)
+
+func _process(delta: float) -> void:
+	if not running: return
+	frame_accumulator+=minf(delta,.25)*speed
+	while frame_accumulator>=1.0/60:
+		frame_accumulator-=1.0/60
+		tick_accumulator+=1.0/60
+		if tick_accumulator>=2.0-0.000001:
+			tick_accumulator-=2.0
+			_tick_simulation()
+		motion.update(simulation.data.agents)
+	world_view.animate_agents(motion.positions)
+
+func _activity_name(activity: String) -> String:
+	return {"idle":"休息","sleeping":"睡覺","eating":"進食","working":"工作","socializing":"社交","wandering":"閒逛","recreation":"娛樂","stargazing":"看星星","night_stroll":"夜間散步","night_mischief":"夜間惡作劇","mourning":"弔念","commuting":"前往工作","heading_home":"回家"}.get(activity,activity)
+
+func _capture_playtest() -> void:
+	await get_tree().create_timer(1).timeout
+	speed=4
+	speed_button.text="4×"
+	toggle_simulation()
+	await get_tree().create_timer(4).timeout
+	toggle_simulation()
+	show_tab("居民",true)
+	show_agent(str(simulation.data.agents.keys()[0]),false)
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/playtest-desktop.png")
+	var viewport:=SubViewport.new()
+	viewport.size=Vector2i(375,812)
+	viewport.own_world_3d=true
+	viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
+	add_child(viewport)
+	var mobile: Node=load("res://scenes/main.tscn").instantiate()
+	viewport.add_child(mobile)
+	mobile.step_simulation()
+	mobile.show_tab("小鎮",true)
+	await get_tree().create_timer(1).timeout
+	await RenderingServer.frame_post_draw
+	viewport.get_texture().get_image().save_png("res://docs/playtest-mobile.png")
+	viewport.queue_free()
+	print("PLAYTEST_RENDER_CAPTURE_OK ticks=",simulation.data.tickCount)

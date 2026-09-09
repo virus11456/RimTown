@@ -1,10 +1,10 @@
 # 移植對照表
 
-基準 commit: `47c44406ffe4ef705b5f8988a47e187e42a73602`。範圍為使用者確認的 Phase 0–3 觀賞版，模擬維持原始 JSON、不 tick。以下為全部前端 JS class（含外部子系統）。方法與檔案雜湊見 SOURCE_AUDIT.md。
+基準 commit: `47c44406ffe4ef705b5f8988a47e187e42a73602`。目前已延伸至使用者授權的 Phase 4a 試玩版。既有存檔的時鐘／需求／作息／技能及視覺移動可推進；其餘子系統保留原始資料。以下為全部前端 JS class（含外部子系統）。方法與檔案雜湊見 SOURCE_AUDIT.md。
 
 | JS class | 職責 | 建構／World 依賴（摘要） | 存檔鍵 | Phase | 狀態 |
 |---|---|---|---|---|---|
-| [RimTownAuth](../../chrome-extension/app.js#L126) | 帳號HTTP | —; world: — | `rimtown_jwt（localStorage）` | 2 / 5 | 已盤點，尚未移植 |
+| [RimTownAuth](../../chrome-extension/app.js#L126) | 帳號HTTP | —; world: — | `rimtown_jwt（localStorage）` | 2 / 5 | ApiClient 已完成；正式登入待驗收 |
 | [RimTownApp](../../chrome-extension/app.js#L292) | 前端流程與UI | Blob, ChiptuneEngine, ConversationEngine, Event, LLMClient, PixelTileMap, RimTownApp, RimTownAuth, World; world: _feedUnread, _lastRumorDay, _legacyGeneration, _pendingComboNotifs, _pendingDramaScenes, _pendingHeartEvents, _pendingMilestones, _pendingWeeklyDigest, agents, buildings, checkCombos, checkHeartEvents, clock, conversationEngine | `城鎮索引 / 存檔 / IndexedDB 編年史` | 2 / 5 | 已盤點，尚未移植 |
 | [ChiptuneEngine](../../chrome-extension/chiptune.js#L5) | 程序音樂 | —; world: — | `音量及靜音偏好` | 6 | 已盤點，尚未移植 |
 | [CustomNPCSystem](../../chrome-extension/custom-npc.js#L49) | 自訂居民 | Agent, Job, Personality; world: addAgent, agents, clock, dailyNews, logMessage, stockpile, tickCount | `customNPC` | 4e | 已盤點，尚未移植 |
@@ -17,18 +17,18 @@
 | [ProcessingSystem](../../chrome-extension/processing.js#L71) | 加工配方 | —; world: agents, buildings, clock, dailyNews, logMessage, stockpile, tickCount | `processing` | 4c | 已盤點，尚未移植 |
 | [ProsperityEngine](../../chrome-extension/prosperity.js#L7) | 繁榮度 | —; world: agents, buildings, clock, decorations, events, farm, festivals, getActiveCombos, industry, lifecycle, processing, questSystem, stockpile | `prosperity` | 4c | 已盤點，尚未移植 |
 | [QuestSystem](../../chrome-extension/quest-system.js#L734) | 主支線每日任務 | —; world: agents, buildings, clock, dailyNews, industry, logMessage, multiEnding, processing, stockpile, tickCount | `questSystem` | 4e | 已盤點，尚未移植 |
-| [GameClock](../../chrome-extension/simulation.js#L6) | 時鐘與季節 | —; world: — | `clock` | 4a | 已盤點，尚未移植 |
-| [Needs](../../chrome-extension/simulation.js#L58) | 六種需求與心情 | —; world: — | `agents.*.needs` | 4a | 已盤點，尚未移植 |
+| [GameClock](../../chrome-extension/simulation.js#L6) | 時鐘與季節 | —; world: — | `clock` | 4a | Phase 4a 核心完成；見 SimClock／SimNeeds／SimRandom |
+| [Needs](../../chrome-extension/simulation.js#L58) | 六種需求與心情 | —; world: — | `agents.*.needs` | 4a | Phase 4a 核心完成；見 SimClock／SimNeeds／SimRandom |
 | [MemoryEntry](../../chrome-extension/simulation.js#L103) | 單則記憶 | —; world: — | `agents.*.memory[]` | 4b | 已盤點，尚未移植 |
 | [Memory](../../chrome-extension/simulation.js#L114) | 記憶流與檢索 | MemoryEntry; world: — | `agents.*.memory` | 4b | 已盤點，尚未移植 |
 | [Relationship](../../chrome-extension/simulation.js#L170) | 雙人關係 | —; world: — | `agents.*.relationships.*` | 4b | 已盤點，尚未移植 |
 | [RelationshipManager](../../chrome-extension/simulation.js#L215) | 關係集合 | Relationship; world: — | `agents.*.relationships` | 4b | 已盤點，尚未移植 |
-| [Personality](../../chrome-extension/simulation.js#L256) | 性格特質 | Personality; world: — | `agents.*.personality` | 4a | 已盤點，尚未移植 |
-| [Skill](../../chrome-extension/simulation.js#L305) | 單項技能 | —; world: — | `agents.*.skills.*` | 4a | 已盤點，尚未移植 |
-| [SkillSet](../../chrome-extension/simulation.js#L329) | 技能集合 | Skill, SkillSet; world: — | `agents.*.skills` | 4a | 已盤點，尚未移植 |
-| [Job](../../chrome-extension/simulation.js#L402) | 職業 | —; world: — | `agents.*.jobKey` | 4a | 已盤點，尚未移植 |
-| [Agent](../../chrome-extension/simulation.js#L438) | 村民需求作息 | Memory, Needs, RelationshipManager; world: agents, buildings, clock, conversationEngine, election, events, festivals, getAgentsAtLocation, gossipNetwork, logMessage, news, reputationSystem, stockpile, tickCount | `agents.*` | 4a | 已盤點，尚未移植 |
-| [PlayerAgent](../../chrome-extension/simulation.js#L1210) | 玩家狀態 | Personality; world: clock, logMessage, tickCount, townMap | `agents.player` | 4a | 已盤點，尚未移植 |
+| [Personality](../../chrome-extension/simulation.js#L256) | 性格特質 | Personality; world: — | `agents.*.personality` | 4a | Phase 4a 載入既有角色之運行核心完成；跨系統效果及新角色生成待後續 |
+| [Skill](../../chrome-extension/simulation.js#L305) | 單項技能 | —; world: — | `agents.*.skills.*` | 4a | Phase 4a 載入既有角色之運行核心完成；跨系統效果及新角色生成待後續 |
+| [SkillSet](../../chrome-extension/simulation.js#L329) | 技能集合 | Skill, SkillSet; world: — | `agents.*.skills` | 4a | Phase 4a 載入既有角色之運行核心完成；跨系統效果及新角色生成待後續 |
+| [Job](../../chrome-extension/simulation.js#L402) | 職業 | —; world: — | `agents.*.jobKey` | 4a | Phase 4a 載入既有角色之運行核心完成；跨系統效果及新角色生成待後續 |
+| [Agent](../../chrome-extension/simulation.js#L438) | 村民需求作息 | Memory, Needs, RelationshipManager; world: agents, buildings, clock, conversationEngine, election, events, festivals, getAgentsAtLocation, gossipNetwork, logMessage, news, reputationSystem, stockpile, tickCount | `agents.*` | 4a | Phase 4a 載入既有角色之運行核心完成；跨系統效果及新角色生成待後續 |
+| [PlayerAgent](../../chrome-extension/simulation.js#L1210) | 玩家狀態 | Personality; world: clock, logMessage, tickCount, townMap | `agents.player` | 4a | Phase 4a 載入既有角色之運行核心完成；跨系統效果及新角色生成待後續 |
 | [TownFeedSystem](../../chrome-extension/simulation.js#L1272) | 鎮民動態 | —; world: _feedUnread, clock, tickCount | `townFeed` | 4b | 已盤點，尚未移植 |
 | [GossipNetwork](../../chrome-extension/simulation.js#L1291) | 八卦傳播 | —; world: agents, clock, conversationEngine, dailyNews, logMessage, tickCount, townFeed | `gossip` | 4b | 已盤點，尚未移植 |
 | [ConversationEngine](../../chrome-extension/simulation.js#L1441) | 對話、反思、行程 | RegExp; world: _pendingDramaScenes, _pendingHeartEvents, _pendingMilestones, agents, checkHeartEvents, clock, dailyNews, dramaArchive, election, events, farm, festivals, gossipNetwork, industry | `npcConversationLog / npcLlmUsedToday / agents.*.memory` | 4f | 已盤點，尚未移植 |
@@ -50,7 +50,7 @@
 | [LifecycleSystem](../../chrome-extension/simulation.js#L5777) | 生命週期 | Agent, Personality; world: addAgent, agents, clock, dailyNews, events, factions, gossipNetwork, logMessage, processing, removeAgent, tickCount | `lifecycle` | 4d | 已盤點，尚未移植 |
 | [ExplorationSystem](../../chrome-extension/simulation.js#L6086) | 探索 | —; world: agents, clock, dailyNews, events, logMessage, stockpile, tickCount | `exploration` | 4d | 已盤點，尚未移植 |
 | [LegacySystem](../../chrome-extension/simulation.js#L6250) | 世代傳承 | Personality; world: _legacyGeneration, agents, buildings, farm, industry, logMessage, multiEnding, prosperity, research, stockpile | `_legacyGeneration / player / resources` | 4e | 已盤點，尚未移植 |
-| [World](../../chrome-extension/simulation.js#L6457) | 世界更新與序列化 | Agent, BuildingManager, ConversationEngine, CouncilSystem, CustomNPCSystem, DailyDecisionSystem, DailyNewsEngine, ElectionSystem, EventChoiceSystem, EventSystem, ExplorationSystem, Faction, FactionSystem, FarmSystem, FestivalSystem, GameClock, GossipNetwork, IndustryManager, Job, LifeGoalSystem, LifecycleSystem, MultiEndingSystem, NPCEventSystem, NPCHelpSystem, NPCQuestSystem, NewsSystem, Personality, PlayerAgent, ProcessingSystem, ProsperityEngine, QuestSystem, ReputationSystem, ResearchManager, RogueCardSystem, ShopSystem, Stockpile, TownFeedSystem, TownIdentitySystem, TownMap, TradeManager, WeatherSystem, WorkOrderManager; world: — | `58 頂層鍵` | 3 / 4a–4f | 已盤點，尚未移植 |
+| [World](../../chrome-extension/simulation.js#L6457) | 世界更新與序列化 | Agent, BuildingManager, ConversationEngine, CouncilSystem, CustomNPCSystem, DailyDecisionSystem, DailyNewsEngine, ElectionSystem, EventChoiceSystem, EventSystem, ExplorationSystem, Faction, FactionSystem, FarmSystem, FestivalSystem, GameClock, GossipNetwork, IndustryManager, Job, LifeGoalSystem, LifecycleSystem, MultiEndingSystem, NPCEventSystem, NPCHelpSystem, NPCQuestSystem, NewsSystem, Personality, PlayerAgent, ProcessingSystem, ProsperityEngine, QuestSystem, ReputationSystem, ResearchManager, RogueCardSystem, ShopSystem, Stockpile, TownFeedSystem, TownIdentitySystem, TownMap, TradeManager, WeatherSystem, WorkOrderManager; world: — | `58 頂層鍵` | 3 / 4a–4f | 原始 envelope 保留＋4a 分範圍 tick 完成；完整 World.tick 待4b–f |
 | [ReputationSystem](../../chrome-extension/simulation.js#L8216) | 聲望 | —; world: agents, dailyNews, questSystem | `reputationSystem` | 4d | 已盤點，尚未移植 |
 | [WeatherSystem](../../chrome-extension/simulation.js#L8406) | 天氣災害 | —; world: agents, buildings, clock, dailyNews, eventChoice, logMessage, news, stockpile, tickCount | `weather` | 4d | 已盤點，尚未移植 |
 | [CouncilSystem](../../chrome-extension/simulation.js#L8766) | 議會 | —; world: agents, clock, dailyNews, logMessage, news, reputationSystem, stockpile, tickCount | `council` | 4d | 已盤點，尚未移植 |
@@ -59,8 +59,8 @@
 | [EventChoiceSystem](../../chrome-extension/simulation.js#L9327) | 事件選擇 | —; world: agents, dailyNews, logMessage, stockpile, tickCount, weather | `eventChoice` | 4d | 已盤點，尚未移植 |
 | [RogueCardSystem](../../chrome-extension/simulation.js#L9476) | 際遇卡 | —; world: agents, clock, dailyNews, logMessage, stockpile, tickCount | `rogueCards` | 4d | 已盤點，尚未移植 |
 | [NPCHelpSystem](../../chrome-extension/simulation.js#L9600) | NPC 求助 | —; world: agents, logMessage, reputationSystem, stockpile, tickCount | `npcHelp` | 4d | 已盤點，尚未移植 |
-| [SeededRandom](../../chrome-extension/simulation.js#L9767) | 地圖種子亂數 | —; world: — | `待確認` | 4a | 已盤點，尚未移植 |
-| [PixelTileMap](../../chrome-extension/tilemap.js#L225) | 格網住房尋路渲染 | —; world: — | `無；格網與 agentPositions 屬執行期` | 3 / 4a | 已盤點，尚未移植 |
+| [SeededRandom](../../chrome-extension/simulation.js#L9767) | 地圖種子亂數 | —; world: — | `待確認` | 4a | Phase 4a 核心完成；見 SimClock／SimNeeds／SimRandom |
+| [PixelTileMap](../../chrome-extension/tilemap.js#L225) | 格網住房尋路渲染 | —; world: — | `無；格網與 agentPositions 屬執行期` | 3 / 4a | Phase 3 格網＋4a A*／NPC移動完成；玩家直接操作待 UI 階段 |
 
 ## 與 brief 不一致之處
 
@@ -81,4 +81,4 @@
 
 ## Golden 驗收範圍
 
-node godot/tools/golden.mjs：兩次獨立 VM 執行、兩個主題、各 1/7/30 天 06:00；tick 0/576/2784，30 日是夏季第 15 天。所有 6 份序列化結果逐位元相同，來源雜湊與結果位於 tests/golden/manifest.json。無 LLM／玩家行動／渲染幀；因此這是 offline 模擬基準，不是完整互動或網路驗證。尚未有 GDScript 模擬，不宣稱 Phase 4 golden 通過。
+node godot/tools/golden.mjs：兩次獨立 VM 執行、兩個主題、各 1/7/30 天 06:00；tick 0/576/2784，30 日是夏季第 15 天。所有 6 份序列化結果逐位元相同，來源雜湊與結果位於 tests/golden/manifest.json。無 LLM／玩家行動／渲染幀；因此這是 offline 模擬基準，不是完整互動或網路驗證。另有 Phase 4a 範圍限定 oracle（tools/phase4a_oracle.mjs），不宣稱完整 Phase 4 golden 通過。
