@@ -12,3 +12,4 @@ tests/capture_romance.flag
 tests/capture_feuds.flag
 tests/capture_factions.flag
 tests/capture_thoughts.flag
+tests/capture_inner_voice.flag

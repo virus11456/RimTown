@@ -18,13 +18,14 @@ func equal(a: Variant,b: Variant) -> bool:
 		return true
 	return a==b
 func _initialize() -> void:
-	var thoughts:= "--thoughts" in OS.get_cmdline_user_args()
+	var inner_voice:= "--inner-voice" in OS.get_cmdline_user_args()
+	var thoughts:= inner_voice or "--thoughts" in OS.get_cmdline_user_args()
 	var factions:= thoughts or "--factions" in OS.get_cmdline_user_args()
 	var feuds:= factions or "--feuds" in OS.get_cmdline_user_args()
 	var romance:= feuds or "--romance" in OS.get_cmdline_user_args()
 	var gossip:= romance or "--gossip" in OS.get_cmdline_user_args()
 	for theme in ["frontier","harbor"]:
-		var fixture: Dictionary=JSON.parse_string(FileAccess.get_file_as_string("res://tests/social/"+theme+("-thoughts" if thoughts else "-factions" if factions else "-feuds" if feuds else "-romance" if romance else "-gossip" if gossip else "")+"-simulation.json"))
+		var fixture: Dictionary=JSON.parse_string(FileAccess.get_file_as_string("res://tests/social/"+theme+("-inner-voice" if inner_voice else "-thoughts" if thoughts else "-factions" if factions else "-feuds" if feuds else "-romance" if romance else "-gossip" if gossip else "")+"-simulation.json"))
 		var world:=SimWorld.new()
 		world.load_snapshot(fixture.input)
 		world.social_enabled=true
@@ -33,6 +34,7 @@ func _initialize() -> void:
 		world.feuds_enabled=feuds
 		world.factions_enabled=factions
 		world.thoughts_enabled=thoughts
+		world.inner_voice_enabled=inner_voice
 		for checkpoint in fixture.checkpoints:
 			while world.data.tickCount<checkpoint.tick: world.tick()
 			if gossip:
@@ -47,6 +49,7 @@ func _initialize() -> void:
 			for id in checkpoint.agents:
 				var expected: Dictionary=checkpoint.agents[id]
 				var a: Dictionary=world.data.agents[id]
+				if inner_voice: check(a.get("currentThought")==expected.currentThought,tag+id+"/inner voice")
 				if romance:
 					check(equal(a.thoughts,expected.thoughts),tag+id+"/thoughts")
 					check(equal(world.runtime[id].moodModifier,expected.moodModifier),tag+id+"/mood modifier")
@@ -71,7 +74,7 @@ func _initialize() -> void:
 		resumed.load_snapshot(JSON.parse_string(JSON.stringify(world.snapshot(),"",false,true)))
 		for i in 96: world.tick(); resumed.tick()
 		check(equal(world.snapshot(),resumed.snapshot()),theme+"/save resume with cooldown/hangout/RNG")
-	var report:={"checks":checks,"failures":failures,"gossip_enabled":gossip,"romance_enabled":romance,"feuds_enabled":feuds,"factions_enabled":factions,"thoughts_enabled":thoughts,"scope":"two towns x 2880 ticks: Phase 4a + local socializing; gossip, daily romance, feuds, factions and daily thoughts included only when respective flags enabled; news and other systems excluded"}
-	FileAccess.open("res://docs/NPC_THOUGHTS_TESTS.json" if thoughts else "res://docs/NPC_FACTIONS_TESTS.json" if factions else "res://docs/NPC_FEUDS_TESTS.json" if feuds else "res://docs/NPC_ROMANCE_TESTS.json" if romance else "res://docs/NPC_GOSSIP_TESTS.json" if gossip else "res://docs/NPC_SOCIAL_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "))
+	var report:={"checks":checks,"failures":failures,"gossip_enabled":gossip,"romance_enabled":romance,"feuds_enabled":feuds,"factions_enabled":factions,"thoughts_enabled":thoughts,"inner_voice_enabled":inner_voice,"scope":"two towns x 2880 ticks: Phase 4a + local socializing; gossip, daily romance, feuds, factions and daily thoughts and inner voice included only when respective flags enabled; news and other systems excluded"}
+	FileAccess.open("res://docs/NPC_INNER_VOICE_TESTS.json" if inner_voice else "res://docs/NPC_THOUGHTS_TESTS.json" if thoughts else "res://docs/NPC_FACTIONS_TESTS.json" if factions else "res://docs/NPC_FEUDS_TESTS.json" if feuds else "res://docs/NPC_ROMANCE_TESTS.json" if romance else "res://docs/NPC_GOSSIP_TESTS.json" if gossip else "res://docs/NPC_SOCIAL_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "))
 	print(JSON.stringify(report))
 	quit(0 if failures.is_empty() else 1)

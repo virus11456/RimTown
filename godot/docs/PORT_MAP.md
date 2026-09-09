@@ -88,3 +88,5 @@ node godot/tools/golden.mjs：兩次獨立 VM 執行、兩個主題、各 1/7/30
 - 新增 DisputeBubbles：僅消費新模擬事件的角色 ID，六秒對話框屬呈現層，不寫入原版世界狀態。
 
 - `World._processThoughts` → `SimThoughts.daily`：先到期清理，再更新既有目標關係的好感；原版每日順序與模式續存已驗證。
+
+- `Agent._generateThought` → `SimInnerVoice.generate`：currentThought 日常文字、原版候選與 RNG 已接入；經濟／新聞僅讀取存檔。

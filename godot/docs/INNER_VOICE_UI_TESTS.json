@@ -1,0 +1,5 @@
+{
+  "checks": 21,
+  "failures": [],
+  "scope": "NPC tick generation, player exclusion, resident summary, prose versus lasting effects, mobile page, mode and JSON/RNG resume"
+}

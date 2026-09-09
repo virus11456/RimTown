@@ -61,6 +61,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_feuds.flag"): _capture_feuds()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_factions.flag"): _capture_factions()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_thoughts.flag"): _capture_thoughts()
+	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_inner_voice.flag"): _capture_inner_voice()
 	if "--smoke" in OS.get_cmdline_user_args():
 		await get_tree().process_frame
 		get_tree().quit()
@@ -225,6 +226,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.feuds_enabled=bool(document.data.get("_godot4a",{}).get("feuds_enabled",true))
 	simulation.factions_enabled=bool(document.data.get("_godot4a",{}).get("factions_enabled",true))
 	simulation.thoughts_enabled=bool(document.data.get("_godot4a",{}).get("thoughts_enabled",true))
+	simulation.inner_voice_enabled=bool(document.data.get("_godot4a",{}).get("inner_voice_enabled",true))
 	var data := document.snapshot()
 	heading.text = str(data.get("townName","小鎮"))
 	var clock_data: Dictionary = data.clock
@@ -316,6 +318,7 @@ func show_agent(id: String,focus_camera := true) -> void:
 		if pos is Vector3: rig.position = Vector3(pos.x,0,pos.z)
 	_button("近期記憶",drawer_body,func(): show_memories(id))
 	_button("目前想法",drawer_body,func(): show_thoughts(id))
+	if not str(agent.get("currentThought","")).is_empty(): _wrapped("此刻心聲："+str(agent.currentThought))
 	_button("人際關係",drawer_body,func(): show_relationships(id))
 	_button("返回居民列表",drawer_body,func(): selected_agent=""; show_tab("居民",true))
 
@@ -451,6 +454,10 @@ func show_thoughts(id: String) -> void:
 	var today:=SimClock.total_days(data.clock)
 	_wrapped(str(a.name)+" · 目前想法",22)
 	_wrapped("心情：%d"%int(a.get("mood",0)),18)
+	_wrapped("此刻心聲",18)
+	_wrapped(str(a.get("currentThought","")) if not str(a.get("currentThought","")).is_empty() else "暫時沒有新的心聲。")
+	_wrapped("日常心聲是當下念頭，不直接改變心情或好感。",12)
+	_wrapped("持續影響的想法",18)
 	_button("返回居民資料",drawer_body,func(): show_agent(id,false))
 	if a.get("isPlayer",false) or a.get("isDead",false):
 		_wrapped("依目前規則，此角色不套用想法心情影響，也不執行每日清理與好感變化。")
@@ -503,6 +510,7 @@ func _line(placeholder: String, secret := false) -> LineEdit:
 	return field
 
 func _settings_ui() -> void:
+	_button("居民日常心聲："+("開啟" if simulation.inner_voice_enabled else "關閉"),drawer_body,func(): simulation.inner_voice_enabled=not simulation.inner_voice_enabled; show_tab("設定",true))
 	_button("每日想法更新："+("開啟" if simulation.thoughts_enabled else "關閉"),drawer_body,func(): simulation.thoughts_enabled=not simulation.thoughts_enabled; show_tab("設定",true))
 	_wrapped("想法更新控制到期清理與每日好感變化；心情影響仍隨時間淡化。")
 	_button("居民派系："+("開啟" if simulation.factions_enabled else "關閉"),drawer_body,func(): simulation.factions_enabled=not simulation.factions_enabled; show_tab("設定",true))
@@ -922,4 +930,19 @@ func _capture_thoughts() -> void:
 	await get_tree().create_timer(.5).timeout
 	await RenderingServer.frame_post_draw
 	viewport.get_texture().get_image().save_png("res://docs/thoughts-mobile.png")
+	viewport.queue_free()
+
+func _capture_inner_voice() -> void:
+	await get_tree().create_timer(1).timeout
+	var example:=FileAccess.get_file_as_string("res://tests/inner_voice/compatibility-save.json.tmp")
+	_load_document(example,"居民心聲測試情境")
+	show_tab("居民",true);show_thoughts("chen_wei")
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://docs/inner-voice-desktop.png")
+	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+	var mobile=load("res://scenes/main.tscn").instantiate();viewport.add_child(mobile)
+	mobile._load_document(example,"居民心聲測試情境");mobile.show_tab("居民",true);mobile.show_thoughts("chen_wei")
+	await get_tree().create_timer(.5).timeout
+	await RenderingServer.frame_post_draw
+	viewport.get_texture().get_image().save_png("res://docs/inner-voice-mobile.png")
 	viewport.queue_free()
