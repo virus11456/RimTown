@@ -1681,6 +1681,11 @@ const I18N = (() => {
         '帳號與存檔已刪除': 'Account and saves deleted',
         '操作失敗：': 'Action failed: ',
         '你的帳號已被管理員停用，已登出。': 'Your account has been disabled by an admin. You have been logged out.',
+        // v5.69.1 首頁 3D 搶先看
+        '3D low-poly 版搶先看': 'Sneak peek: the 3D low-poly edition',
+        '邊境鎮 3D low-poly 版畫面': 'Frontier Town 3D low-poly screenshot',
+        '用 Blender 程序化建模與 Godot 4 重製的邊境鎮。同一份存檔、同一批村民，換一種角度看他們過日子。目前是觀賞模式，開發中。': 'Frontier Town rebuilt with procedural Blender models and Godot 4. Same save, same villagers, a new angle on their days. Currently view-only and in development.',
+        '已有觀賞版畫面，見上方': 'view-only build shown above',
         // v5.69.0 首頁「村民的大腦」
         '村民的大腦：他們是怎麼社交的': 'Inside a villager\'s head: how they socialize',
         '沒有劇本。每位村民每 15 分鐘做一次決定，靠的是自己的記憶、性格和跟對方的關係。下面是一輪社交的完整流程，數字都是遊戲裡實際用的參數。': 'No script. Every 15 in-game minutes each villager decides what to do from their own memory, personality and relationships. Below is one full social round; the numbers are the real in-game parameters.',

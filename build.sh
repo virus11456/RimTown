@@ -16,3 +16,5 @@ mkdir -p public
 cp "$SRC"/wordpress/*.js "$SRC"/wordpress/*.css "$SRC"/wordpress/*.html public/
 cp "$SRC"/wordpress/pwa-manifest.json public/
 cp -r "$SRC"/chrome-extension/icons public/icons
+# v5.69.1 首頁圖片(3D 搶先看等)
+[ -d "$SRC"/chrome-extension/img ] && cp -r "$SRC"/chrome-extension/img public/img || true

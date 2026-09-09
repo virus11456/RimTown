@@ -4242,3 +4242,8 @@ body.landing-open { overflow: hidden; }
 .landing-demo-score { font-size: 0.85rem; margin-top: 6px; }
 .landing-demo-score b { font-family: monospace; color: var(--warning); }
 .landing-brain-foot { margin-top: 12px; }
+
+/* v5.69.1 首頁 3D 搶先看 */
+.landing-preview figure { margin: 0; }
+.landing-preview img { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 24px rgba(0,0,0,0.45); }
+.landing-preview figcaption { color: var(--text-secondary); font-size: 0.85rem; line-height: 1.55; margin-top: 10px; }
