@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.74.0
+ * Version: 5.74.1
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.74.0');
+define('RIMTOWN_VERSION', '5.74.1');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.74.1',
+            'date'    => '2026-09-09',
+            'changes' => array(
+                '🌐 首頁右上角新增「中文｜EN」語言切換:之前語言開關只藏在遊戲內的設定裡,首頁沒有任何地方可以切,所以永遠是中文;現在首頁直接可切,整頁即時重畫',
+                '🧭 第一次來的訪客依瀏覽器語言決定預設語言(非中文瀏覽器 → English),之後以玩家自己切過的為準',
+                '🔧 首頁「性格參數」的 19 個特質、互斥組與 18 種想法名稱改為顯示時翻譯,執行中切到 English 不再殘留中文',
+            ),
+            'changes_en' => array(
+                '🌐 New "中文 | EN" language toggle in the top-right of the landing page: the language switch used to live only in the in-game settings, with nothing on the landing page to switch it, so the page was always Chinese; it now switches in place and redraws the whole page',
+                '🧭 First-time visitors get a default language from the browser (non-Chinese browsers → English); after that the player\'s own choice sticks',
+                '🔧 The 19 trait names, exclusive pairs and 18 thought names in "Personality parameters" are now translated at render time, so switching to English mid-session leaves no Chinese behind',
+            ),
+        ),
         array(
             'version' => '5.74.0',
             'date'    => '2026-09-09',

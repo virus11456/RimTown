@@ -43,7 +43,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.74.0.zip` from Releases
+1. Download `rimtown-v5.74.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -78,6 +78,12 @@ node scripts/gen-changelog.js   # 從 rimtown.php 產生首頁更新紀錄 chang
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.74.1 (2026-09-09)
+
+- 🌐 首頁右上角新增「中文｜EN」語言切換：之前語言開關只藏在遊戲內的設定裡，首頁沒有任何地方可以切，所以永遠是中文；現在首頁直接可切，整頁即時重畫（`.landing-lang`）
+- 🧭 第一次來的訪客依瀏覽器語言決定預設語言（`navigator.language` 非 zh → en），之後以玩家自己切過的 `rimtown-lang` 為準
+- 🔧 首頁「性格參數」的 19 個特質、互斥組與 18 種想法名稱改為顯示時 `t()`，執行中切到 English 不再殘留中文（Playwright：切換後首頁 0 中文）
 
 ### v5.74.0 (2026-09-09)
 

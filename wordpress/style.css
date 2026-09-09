@@ -4154,6 +4154,9 @@ body.rimtown-page .wp-block-post-title {
 .landing * { box-sizing: border-box; }
 .landing-inner { max-width: 960px; margin: 0 auto; padding: 0 18px 60px; }
 .landing-hero { position: relative; padding: 56px 12px 44px; text-align: center; overflow: hidden; border-radius: 0 0 18px 18px; }
+.landing-lang { position: absolute; top: 12px; right: 12px; z-index: 2; display: inline-flex; border: 1px solid rgba(255,255,255,0.25); border-radius: 999px; overflow: hidden; background: rgba(0,0,0,0.35); backdrop-filter: blur(4px); }
+.landing-lang button { background: none; border: none; color: #dde6f5; padding: 6px 12px; font-size: 0.8rem; cursor: pointer; line-height: 1; }
+.landing-lang button.active { background: var(--accent); color: #111; font-weight: 700; }
 .landing-pixel-bg { position: absolute; inset: 0; z-index: 0; opacity: 0.55; image-rendering: pixelated;
     background:
         repeating-linear-gradient(90deg, transparent 0 22px, rgba(255,255,255,0.03) 22px 24px),
