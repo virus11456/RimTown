@@ -1,0 +1,5 @@
+{
+  "checks": 11,
+  "failures": [],
+  "scope": "controlled idle NPC scene, player collision movement, actual app tick local greeting, draft/in-flight/modal guards, no forced panel, recent-speaker button, 375px view, archive and off switch; no AI service"
+}

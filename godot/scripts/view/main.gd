@@ -371,6 +371,9 @@ func show_tab(tab: String, refresh := false) -> void:
 			var appointment:=SimAppointments.current(simulation)
 			if not appointment.is_empty():
 				_button("見面約定"+(" · 待回覆" if appointment.state in ["offered","change_offered"] else ""),drawer_body,func(): show_appointment(str(appointment.npc)))
+			var last_talker: String=simulation.quest_balance.get("daily_talk",{}).get("last_npc","")
+			if simulation.data.agents.has(last_talker):
+				_button("最近搭話："+str(simulation.data.agents[last_talker].name),drawer_body,func(): show_player_chat(last_talker))
 			for id in _current_data().get("agents",{}):
 				var agent: Dictionary = _current_data().agents[id]
 				_button(str(agent.get("name",id)),drawer_body,func(): show_agent(id))
@@ -602,6 +605,8 @@ func _line(placeholder: String, secret := false) -> LineEdit:
 	return field
 
 func _settings_ui() -> void:
+	_button("日常主動搭話："+("開啟" if SimDailyTalk.enabled(simulation) else "關閉"),drawer_body,func(): simulation.quest_balance.daily_talk_enabled=not SimDailyTalk.enabled(simulation);has_simulated=true;show_tab("設定",true))
+	_wrapped("居民在身邊且有空才會搭話；全鎮每日最多兩次、間隔至少四小時。本機台詞，不消耗 AI 額度，也不會自動打開聊天。",12)
 	_button("試玩原料補給："+("開啟" if simulation.relief_enabled else "關閉"),drawer_body,func(): simulation.relief_enabled=not simulation.relief_enabled;has_simulated=true;show_tab("設定",true))
 	_wrapped("開啟時每天將木材、石材、金屬、布料與草藥補至 40；關閉後需依靠採集、產業、收成或交易。",12)
 	_button("廚房使用主食作物："+("開啟" if simulation.kitchen_crops_enabled else "關閉"),drawer_body,func(): simulation.kitchen_crops_enabled=not simulation.kitchen_crops_enabled;has_simulated=true;show_tab("設定",true))
@@ -831,6 +836,17 @@ func _tick_simulation() -> void:
 			"memory": show_memories(selected_agent,memory_target)
 			"relationships": show_relationships(selected_agent)
 			_: show_agent(selected_agent,false)
+
+	_process_daily_talk()
+
+func _process_daily_talk() -> void:
+	if chat_busy or event_comment_busy or dialog.visible: return
+	if drawer.visible and active_tab=="居民" and resident_page in ["chat","whisper","rumor","gift","heart","appointment","interaction"]: return
+	if simulation.quest_balance.has("careers") and not SimCareers.book(simulation).active.is_empty(): return
+	var id:=SimDailyTalk.observe(simulation,motion)
+	if id.is_empty(): return
+	has_simulated=true;status.text=str(simulation.data.agents[id].name)+"向你搭話 · 居民 → 最近搭話"
+	if drawer.visible and active_tab=="居民" and selected_agent.is_empty(): show_tab("居民",true)
 
 func _process(delta: float) -> void:
 	process_event_comment()

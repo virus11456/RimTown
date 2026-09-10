@@ -1,0 +1,5 @@
+{
+  "checks": 25,
+  "failures": [],
+  "scope": "configured physical positions, needs/work/relationship gates, caps/cooldown/reload, topic variation, memories, no rewards/API/RNG and no-op rejection"
+}
