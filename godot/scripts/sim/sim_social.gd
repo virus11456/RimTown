@@ -45,7 +45,7 @@ func try_interaction(a: Dictionary,data: Dictionary,rng: SimRandom,jobs: Diction
 	a._lastInteractionTick=data.tickCount
 	if rng.next_float()<.3 and gossip_enabled: SimGossip.spread(a,b,data,rng)
 	var rel:=relationship(a,b)
-	if rel.affinity>=30 and (physical_positions==null or (not a.get("isPlayer",false) and not b.get("isPlayer",false))) and rng.next_float()<.12 and not a.get("_pendingHangout") and not b.get("_pendingHangout"):
+	if rel.affinity>=30 and (physical_positions==null or (not a.get("isPlayer",false) and not b.get("isPlayer",false) and not a.get("_activeHangout") and not b.get("_activeHangout"))) and rng.next_float()<.12 and not a.get("_pendingHangout") and not b.get("_pendingHangout"):
 		var spot: String=rng.pick(["tavern","park","town_square","chapel","forest","library"])
 		var activity:="recreation" if rel.romanticInterest>40 else "socializing"
 		var delay:=rng.next_int(2,5)

@@ -10,7 +10,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 - 任務核心已接入 12 主線、11 支線、24 居民任務、13 日常、六類人生目標及四種結局；所有路線自然通關驗收仍在進行。
 - 人口與家庭：每兩日檢查出生、每日最多一位居民移入；住宅每棟完工增加 3 位 NPC 容量，最多八棟、總容量 40，住宅不增加產量。
 - 平衡與驗證：保留備貨與市場需求限制；原始新局資源、正常付費施工，伐木起步的經濟路線在 40 日達到 37 人、18 棟及 Lv7。預設原料補給有開啟，並非封閉自給或全結局通關。
-- 行為一致性限制：3D 版自由聊天提到邀約，尚不會自動建立赴約行程；居民間系統邀約已有延遲選址，但準時赴約、等待與失約原因尚待補齊。
+- 行為一致性：3D 玩家邀約需明確接受邀約卡，普通台詞不視為約定；居民同行現在需雙方實際到同地並靠近才留下碰面記憶，工作／需求中止與逾期有結果紀錄。等待與重新協調仍待補齊，見 [同行驗收](godot/docs/HANGOUT_VISITS.md)。
 
 實際測試畫面見[官網 3D 圖集](https://rimtown.vercel.app/#landing-preview)。[3D 開發原始碼](https://github.com/virus11456/RimTown/tree/codex/godot-viewer/godot)與[人口／住宅驗收說明](https://github.com/virus11456/RimTown/blob/codex/godot-viewer/godot/docs/POPULATION_PACKAGE.md)。後續仍有選舉／防禦世界事件、完整自然通關、AI 邀約與行程一致性、動畫音效及雲端驗收。核心玩法與 3D 體驗穩定後，另安排官網整體視覺評估，決定是否全面改版。
 

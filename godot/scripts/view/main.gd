@@ -320,6 +320,7 @@ func _load_document(text: String, source: String) -> bool:
 		motion.configure(world_view.layout)
 		var saved: Dictionary=document.data.get("_godot4a",{})
 		SimLeisurePlan.restore_observations(simulation,saved.motion if saved.get("motion") is Dictionary else {})
+		SimHangoutVisits.restore_observations(simulation,saved.motion if saved.get("motion") is Dictionary else {})
 		if saved.has("motion") and saved.motion is Dictionary:
 			motion.positions=saved.motion.duplicate(true)
 			motion.manual_player=bool(saved.get("manual_player",false))
@@ -824,6 +825,7 @@ func _tick_simulation() -> void:
 	_validate_career_presence()
 	SimAppointments.observe(simulation,motion)
 	SimLeisurePlan.observe(simulation,motion)
+	SimHangoutVisits.observe(simulation,motion)
 	has_simulated=true
 	var old_geometry:=JSON.stringify([simulation.data.buildings,simulation.data.processing,simulation.data.agents.keys()])
 	var appointment_state: String=SimAppointments.current(simulation).get("state","")
@@ -896,6 +898,7 @@ func _process(delta: float) -> void:
 		motion.update(simulation.data.agents)
 		SimAppointments.observe(simulation,motion)
 		SimLeisurePlan.observe(simulation,motion)
+		SimHangoutVisits.observe(simulation,motion)
 	world_view.animate_agents(motion.positions)
 
 func _activity_name(activity: String) -> String:
