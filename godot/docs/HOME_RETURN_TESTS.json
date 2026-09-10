@@ -1,0 +1,6 @@
+{
+  "checks": 20,
+  "failures": [],
+  "first_return_hour": 18,
+  "scope": "controlled route and schedule, early arrival hold, no early sleep/resources, leisure/outing conflict, snapshot, bedtime release and priority guards; not natural sleep-duration proof"
+}

@@ -51,7 +51,7 @@ static func choose(w: SimWorld,id: String) -> Dictionary:
 		else: result.explanation="上次未完成到場停留；目前沒有其他可用空檔，仍依作息安排。"
 	return result
 static func available(w: SimWorld,id: String,hour: int) -> bool:
-	return person_available(w.data.agents[id],w.rules.jobs,hour)
+	return person_available(w.data.agents[id],w.rules.jobs,hour) and (hour!=int(w.data.clock.hour) or SimHomeRest.plan(w,w.data.agents[id]).is_empty())
 static func person_available(a: Dictionary,jobs: Dictionary,hour: int) -> bool:
 	if SimShiftSleep.asleep(a,jobs,hour): return false
 	var lead:=int(SimShiftSleep.window(a,jobs).lead)

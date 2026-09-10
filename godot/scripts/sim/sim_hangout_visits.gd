@@ -53,10 +53,11 @@ static func blocking_reason(w: SimWorld,r: Dictionary) -> String:
 		if a.has("_raidShelterUntil"): return who+"需要避難。"
 		if SimAppointments.directing(w,id): return who+"已有優先的玩家約定。"
 		if SimLeisurePlan.directing(w,id): return who+"已有優先的休閒安排。"
+		if not SimHomeRest.plan(w,a).is_empty(): return who+"需要預留路程返家休息。"
 		if not SimLeisurePlan.available(w,id,int(w.data.clock.hour)):
 			var job: Dictionary=w.rules.jobs.get(str(a.get("jobKey","")),{})
 			var hour:=int(w.data.clock.hour)
-			if not job.is_empty() and hour>=int(job.work_hours[0])-1 and hour<int(job.work_hours[1]): return who+"已到通勤或工作時段。"
+			if not job.is_empty() and hour>=int(job.work_hours[0])-int(SimShiftSleep.window(a,w.rules.jobs).lead) and hour<int(job.work_hours[1]): return who+"已到通勤或工作時段。"
 			return who+"已到睡眠時段。"
 	return ""
 static func tick(w: SimWorld) -> void:

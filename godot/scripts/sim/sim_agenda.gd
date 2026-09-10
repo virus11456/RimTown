@@ -37,5 +37,6 @@ static func routine(w: SimWorld,id: String) -> Array:
 		rows.append("工時：%02d:00–%02d:00 · %s"%[int(job.work_hours[0]),int(job.work_hours[1]),str(w.data.townMap.locations.get(job.workplace,{}).get("name","工作場所"))])
 		if a.has("_shiftSleep"): rows.append("通勤依當下路徑提早出發，最多四小時；提早到場後等候開工。")
 		else: rows.append("上班準備：%02d:00 起（清醒且尚未到工作場所時）"%posmod(int(job.work_hours[0])-1,24))
+	if SimHomeRest.physical(w): rows.append("睡前依返家路程最多提早四小時出發；工作、已確認的玩家約定及緊急需求優先，提早到家不提前計算睡眠。")
 	rows.append("其他時間依飢餓、疲勞、社交與娛樂需求安排；睡眠、避難等可能調整原作息。")
 	return rows

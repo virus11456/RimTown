@@ -1,5 +1,5 @@
 {
-  "checks": 12,
+  "checks": 13,
   "failures": [],
   "scope": "real agenda/trace navigation, normal app tick, deliberate unexecuted plan and legacy trace, adjusted sleep display and native reload, unaccepted appointment, 375px panels, compressed timeline reload and town isolation; no new AI scheduler"
 }

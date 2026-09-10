@@ -145,6 +145,8 @@ func _update(id: String) -> void:
 	var hour := int(data.clock.hour)
 	a.erase("_appointmentDestination");a.erase("_leisureDestination")
 	var commute:=SimCommute.plan(self,a)
+	var home_return:=SimHomeRest.plan(self,a)
+	a.erase("_homeReturn")
 	a.erase("_commuteDestination")
 	var previous: String=a.activity
 	if a.get("isPlayer",false): _player_activity(a,hour)
@@ -152,6 +154,7 @@ func _update(id: String) -> void:
 		a.activity="sleeping";a.currentLocation=a.homeLocation;run.targetLocation=null
 	elif not commute.is_empty(): a.activity="commuting"
 	elif SimAppointments.directing(self,id): a.activity="appointment_wait" if SimAppointments.current(self).state=="waiting" else "appointment_travel"
+	elif not home_return.is_empty(): a.activity="heading_home"
 	elif SimLeisurePlan.directing(self,id): a.activity="planned_leisure"
 	elif SimHangoutVisits.directing(self,id): a.activity="hangout_travel"
 	else: _activity(a,hour)
@@ -181,6 +184,9 @@ func _update(id: String) -> void:
 		return
 	if SimAppointments.directing(self,id):
 		a.currentLocation=SimAppointments.current(self).place;a._appointmentDestination=a.currentLocation;run.targetLocation=null;a._locationStayRemaining=0
+		return
+	if not home_return.is_empty() and a.activity=="heading_home" and float(a.needs.hunger)>=15 and float(a.needs.rest)>=10:
+		a._homeReturn=home_return;a.currentLocation=a.homeLocation;run.targetLocation=null;a._locationStayRemaining=0
 		return
 	if SimLeisurePlan.directing(self,id):
 		a.activity="planned_leisure";a.currentLocation=SimLeisurePlan.plans(self)[id].place;a._leisureDestination=a.currentLocation;run.targetLocation=null;a._locationStayRemaining=0

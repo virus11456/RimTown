@@ -15,3 +15,30 @@ static func apply(w: SimWorld,a: Dictionary) -> void:
 		a.activity="heading_home"
 		# Re-evaluate the home destination even if the previous activity was also heading home.
 		a._locationStayRemaining=0
+
+static func plan(w: SimWorld,a: Dictionary) -> Dictionary:
+	var m: SimMotion=w.social.observed_motion
+	if m==null or not m.stable_routes or a.get("isPlayer",false) or a.get("isDead",false) or a.has("_raidShelterUntil"): return {}
+	if float(a.needs.hunger)<15 or float(a.needs.rest)<10: return {}
+	var hour:=int(w.data.clock.hour);var job: Dictionary=w.rules.jobs.get(str(a.get("jobKey","")),{})
+	if not job.is_empty() and hour>=int(job.work_hours[0]) and hour<int(job.work_hours[1]): return {}
+	var sleep_window:=SimShiftSleep.window(a,w.rules.jobs)
+	var remaining:=posmod(int(sleep_window.start)*4-hour*4-int(w.data.clock.minute)/15,96)
+	if remaining<=0 or remaining>16: return {}
+	var home:=m.layout._house_id(str(a.id),str(a.homeLocation))
+	if not m.layout.houses.has(home) or not m.positions.has(str(a.id)): return {}
+	var until:=int(w.data.tickCount)+remaining
+	var signature:=JSON.stringify([home,a.get("jobKey",""),job,sleep_window.start,until])
+	if a.get("_homeReturn",{}).get("signature")==signature: return a._homeReturn
+	var house: Dictionary=m.layout.houses[home];var p: Dictionary=m.positions[str(a.id)]
+	var start:=Vector2(p.x,p.y);var length:=0.0
+	var exit_door: Variant=m.door(m.inside(start),str(a.id))
+	if exit_door!=null:
+		var exit_point:=Vector2(exit_door.x,exit_door.y)
+		length+=SimHangoutRoute.segment(m,start,exit_point);start=exit_point
+	var entry:=Vector2(house.doorPixelX,house.doorPixelY)
+	length+=SimHangoutRoute.segment(m,start,entry)+SimHangoutRoute.segment(m,entry,Vector2(house.interiorX,house.interiorY))
+	if is_inf(length): return {}
+	var required:=mini(16,maxi(4,ceili(length/30.0)+1))
+	if remaining>required: return {}
+	return {"signature":signature,"until":until,"required_ticks":required,"home":a.homeLocation}

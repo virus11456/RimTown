@@ -12,6 +12,7 @@ func run() -> void:
 	app._tick_simulation();await settle()
 	check(app.resident_page=="agenda" and has_text(app.drawer_body,"今日作息與行程"),"time advancement preserves agenda panel")
 	check(has_text(app.drawer_body,"依班表保留"),"adjusted sleep duration and commute allowance visible")
+	check(has_text(app.drawer_body,"睡前依返家路程"),"return travel priority and no early sleep visible")
 	var trace: Array=app.physical_trace.entries(w,"chen_wei")
 	check(not trace.is_empty() and not trace.any(func(e): return "遠行計畫" in e.text or "還沒去" in e.text),"normal app tick records actual observation")
 	w.data.agents.chen_wei.todayTrace=[{"m":360,"text":"來源作息文字"}];w.data.agents.chen_wei._traceDay=SimTrace.day_key(w.data.clock)
