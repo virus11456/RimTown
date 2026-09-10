@@ -27,6 +27,7 @@ static func check_new(w: SimWorld) -> Array:
 		SimSocial.log_message(w.data,"building","✨ 發現相鄰組合："+str(combo.icon)+str(combo.name)+"("+str(combo.desc)+")！全鎮心情大好","","")
 		SimIndustry.news(w,"building","小鎮出現了「"+str(combo.name)+"」組合！",7)
 		for a in w.data.agents.values(): SimFeuds._mood(a,w,6)
+		SimEventComments.enqueue(w,"小鎮出現了新組合「"+str(combo.name)+"」("+str(combo.desc)+")")
 	w.combo_notifications.append_array(newly)
 	return newly
 static func decoration(key: String) -> Dictionary:

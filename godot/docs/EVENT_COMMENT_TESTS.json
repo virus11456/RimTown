@@ -1,0 +1,5 @@
+{
+  "checks": 90,
+  "failures": [],
+  "scope": "preferred speakers, once-only apply, persisted pending queue, local/default and mock AI success/failure, stale town/death, completion/combo order, no upgrades; no production requests"
+}

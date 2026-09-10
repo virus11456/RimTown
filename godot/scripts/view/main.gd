@@ -31,6 +31,8 @@ var play_button: Button
 var speed_button: Button
 var selected_agent := ""
 var whisper_drafts: Dictionary={}
+var event_comment_busy:=false
+var event_comment_transport: Callable
 var chat_offline:=false
 var chat_epoch:=0
 var chat_busy:=false
@@ -238,7 +240,7 @@ func _load_document(text: String, source: String) -> bool:
 	if not incoming.parse(text):
 		status.text = incoming.error
 		return false
-	chat_epoch+=1;chat_busy=false;chat_drafts.clear();chat_notice.clear();whisper_drafts.clear()
+	chat_epoch+=1;chat_busy=false;event_comment_busy=false;chat_drafts.clear();chat_notice.clear();whisper_drafts.clear()
 	running=false
 	if traveler!=null: traveler.clear()
 	rig.follow_player=false
@@ -265,6 +267,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.buildings_enabled=bool(document.data.get("_godot4a",{}).get("buildings_enabled",true))
 	simulation.trade_enabled=bool(document.data.get("_godot4a",{}).get("trade_enabled",true))
 	simulation.research_enabled=bool(document.data.get("_godot4a",{}).get("research_enabled",true))
+	simulation.event_comments_enabled=bool(document.data.get("_godot4a",{}).get("event_comments_enabled",true))
 	simulation.combos_enabled=bool(document.data.get("_godot4a",{}).get("combos_enabled",true))
 	simulation.supply_enabled=bool(document.data.get("_godot4a",{}).get("supply_enabled",true))
 	simulation.processing_enabled=bool(document.data.get("_godot4a",{}).get("processing_enabled",true))
@@ -574,6 +577,8 @@ func _settings_ui() -> void:
 	_button("每日產業產出："+("開啟" if simulation.industry_enabled else "關閉"),drawer_body,func(): simulation.industry_enabled=not simulation.industry_enabled;show_tab("設定",true))
 	_button("每日研究："+("開啟" if simulation.research_enabled else "關閉"),drawer_body,func(): simulation.research_enabled=not simulation.research_enabled;show_tab("設定",true))
 	_button("商人每日來訪："+("開啟" if simulation.trade_enabled else "關閉"),drawer_body,func(): simulation.trade_enabled=not simulation.trade_enabled;show_tab("設定",true))
+	_button("連線生成事件評論："+("開啟" if simulation.event_comments_online else "關閉"),drawer_body,func(): simulation.event_comments_online=not simulation.event_comments_online;has_simulated=true;show_tab("設定",true))
+	_wrapped("建築完工與首次發現組合時，居民會傳來評論。預設使用本機台詞；開啟連線會使用 AI 背景額度，失敗時改用本機台詞。",12)
 	_button("每日建築施工："+("開啟" if simulation.buildings_enabled else "關閉"),drawer_body,func(): simulation.buildings_enabled=not simulation.buildings_enabled;show_tab("設定",true))
 	_button("每日生產與消耗："+("開啟" if simulation.economy_enabled else "關閉"),drawer_body,func(): simulation.economy_enabled=not simulation.economy_enabled; show_tab("設定",true))
 	_button("居民環境感知："+("開啟" if simulation.perception_enabled else "關閉"),drawer_body,func(): simulation.perception_enabled=not simulation.perception_enabled; show_tab("設定",true))
@@ -767,6 +772,7 @@ func _tick_simulation() -> void:
 			_: show_agent(selected_agent,false)
 
 func _process(delta: float) -> void:
+	process_event_comment()
 	_process_traveler(delta)
 	if not running: return
 	frame_accumulator+=minf(delta,.25)*speed
@@ -1801,3 +1807,27 @@ func _capture_combos() -> void:
 		await RenderingServer.frame_post_draw
 		viewport.get_texture().get_image().save_png("res://docs/combos"+("-mobile.png" if dimensions.x==375 else "-desktop.png"))
 		viewport.queue_free()
+
+func process_event_comment() -> void:
+	if event_comment_busy or chat_busy or simulation.event_comments.is_empty(): return
+	event_comment_busy=true
+	var epoch:=chat_epoch
+	var item: Dictionary=simulation.event_comments[0]
+	var npc: Dictionary=simulation.data.agents.get(item.npc,{})
+	var player: Dictionary=simulation.data.agents.get(item.player,{})
+	var text:=""
+	if simulation.event_comments_online and not chat_offline and not npc.is_empty() and not player.is_empty() and not npc.get("isDead",false):
+		var prompt:=SimEventComments.prompt(simulation,item)
+		var response: Dictionary
+		if event_comment_transport.is_valid(): response=await event_comment_transport.call(prompt)
+		else: response=await api.chat(prompt,"background",150,.9,"zh")
+		if epoch!=chat_epoch: return
+		if response.get("ok",false) and response.get("data") is Dictionary and response.data.get("reply") is String: text=response.data.reply
+		if not simulation.event_comments_online or chat_offline: text=""
+	event_comment_busy=false
+	if not is_same(npc,simulation.data.agents.get(item.npc,{})) or not is_same(player,simulation.data.agents.get(item.player,{})):
+		simulation.event_comments.erase(item);return
+	if SimEventComments.apply(simulation,item,text):
+		has_simulated=true
+		chat_notice[item.npc]="居民傳來了事件評論。"
+		if active_tab=="居民" and resident_page=="chat" and selected_agent==item.npc: show_player_chat(item.npc)
