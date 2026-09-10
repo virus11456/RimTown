@@ -1,0 +1,12 @@
+{
+  "checks": 4,
+  "failures": [],
+  "maximum_history": 7,
+  "motion_frames_per_tick": 120,
+  "outcomes": {
+    "completed": 100,
+    "missed": 60
+  },
+  "scope": "eight simulated days from original frontier world, normal world ticks and physical motion, no position/job/needs/resource changes, no app rendering/API; not whole-game natural playthrough",
+  "ticks": 768
+}

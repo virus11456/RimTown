@@ -1,0 +1,5 @@
+{
+  "checks": 6,
+  "failures": [],
+  "scope": "controlled actual venue fixture, missing observation interval, no false reward, frame deduplication and continuous recovery"
+}

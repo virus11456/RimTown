@@ -99,7 +99,8 @@ static func observe(w: SimWorld,m: SimMotion) -> void:
 			p.state="traveling";p.dwell=0;p.observed_tick=int(w.data.tickCount);p.reason="前往休閒場所，尚未開始停留";continue
 		if p.state!="attending": p.dwell=0;p.state="attending";p.observed_tick=int(w.data.tickCount)
 		elif int(w.data.tickCount)>int(p.get("observed_tick",w.data.tickCount)):
-			p.dwell=int(p.dwell)+1;p.observed_tick=int(w.data.tickCount)
+			p.dwell=int(p.dwell)+1 if int(w.data.tickCount)-int(p.observed_tick)==1 else 0
+			p.observed_tick=int(w.data.tickCount)
 		p.reason="已抵達，實際停留 %d／2 段"%int(p.dwell)
 		if int(p.dwell)>=2:
 			finish(w,id,"completed","已實際抵達並停留三十分鐘")
