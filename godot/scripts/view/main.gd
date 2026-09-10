@@ -793,6 +793,7 @@ func step_simulation() -> void:
 func _tick_simulation() -> void:
 	var career_was_active: bool=simulation.quest_balance.has("careers") and not SimCareers.book(simulation).active.is_empty()
 	_validate_career_presence()
+	SimAppointments.observe(simulation,motion)
 	has_simulated=true
 	var old_geometry:=JSON.stringify([simulation.data.buildings,simulation.data.processing,simulation.data.agents.keys()])
 	var events:=simulation.tick()
@@ -814,6 +815,7 @@ func _tick_simulation() -> void:
 	if active_tab=="居民" and not selected_agent.is_empty():
 		match resident_page:
 			"chat", "whisper", "rumor", "heart": pass # Preserve draft, focus and scroll while the world ticks.
+			"appointment": show_appointment(selected_agent)
 			"gift": show_player_gift(selected_agent)
 			"interaction": show_player_interaction(selected_agent)
 			"trace": show_trace(selected_agent)
@@ -835,10 +837,11 @@ func _process(delta: float) -> void:
 			tick_accumulator-=2.0
 			_tick_simulation()
 		motion.update(simulation.data.agents)
+		SimAppointments.observe(simulation,motion)
 	world_view.animate_agents(motion.positions)
 
 func _activity_name(activity: String) -> String:
-	return {"idle":"休息","sleeping":"睡覺","eating":"進食","working":"工作","socializing":"社交","wandering":"閒逛","recreation":"娛樂","stargazing":"看星星","night_stroll":"夜間散步","night_mischief":"夜間惡作劇","mourning":"弔念","commuting":"前往工作","heading_home":"回家"}.get(activity,activity)
+	return {"appointment_travel":"前往赴約","appointment_wait":"等待赴約者","idle":"休息","sleeping":"睡覺","eating":"進食","working":"工作","socializing":"社交","wandering":"閒逛","recreation":"娛樂","stargazing":"看星星","night_stroll":"夜間散步","night_mischief":"夜間惡作劇","mourning":"弔念","commuting":"前往工作","heading_home":"回家"}.get(activity,activity)
 
 func _capture_playtest() -> void:
 	await get_tree().create_timer(1).timeout
@@ -1217,6 +1220,7 @@ func show_player_chat(id: String) -> void:
 	if not simulation.data.agents.has(id) or not simulation.data.agents.has("player") or id=="player": _wrapped("找不到交談對象。");return
 	var a: Dictionary=simulation.data.agents[id]
 	_wrapped("與"+str(a.name)+"交談",22)
+	_button("見面約定",drawer_body,func(): show_appointment(id))
 	_button("友情與心動",drawer_body,func(): show_heart_events(id))
 	var mode:=CheckButton.new();mode.text="離線交談（本機台詞）";mode.button_pressed=chat_offline;mode.disabled=chat_busy;mode.custom_minimum_size.y=42;drawer_body.add_child(mode)
 	mode.toggled.connect(func(value): chat_offline=value;show_player_chat(id))
@@ -1274,6 +1278,7 @@ func send_player_chat(id: String,message: String,intent: String="") -> void:
 			has_simulated=true
 			if chat_drafts.get(id,"")==message: chat_drafts.erase(id)
 			chat_notice[id]="交談完成 · 好感 %+.0f · 戀慕 %+.0f"%[result.affinity,result.romantic]
+			if result.has("appointment"): chat_notice[id]+="\n"+str(result.appointment)
 			if not intent.is_empty(): chat_notice[id]+="\n意圖效果："+SimPlayerInteraction.apply_intent(target,simulation,intent)
 	if active_tab=="居民" and resident_page=="chat" and selected_agent==id: show_player_chat(id)
 	elif active_tab=="居民" and resident_page=="whisper": show_player_whisper(selected_agent)
@@ -2242,3 +2247,28 @@ func _validate_career_presence() -> void:
 	SimCareers.cancel(simulation,error+" 值勤已取消，未給予獎勵。")
 	has_simulated=true;status.text=str(b.notice)
 	if career_page and drawer.visible and active_tab=="小鎮": show_careers()
+
+func show_appointment(id: String) -> void:
+	selected_agent=id;resident_page="appointment";_clear_drawer()
+	_wrapped("見面約定",22)
+	_wrapped("接受邀約才會排入行程。請讓時間正常前進，並自行走到地點靠近對方；只有口頭說好不算完成邀約。",12)
+	var a:=SimAppointments.current(simulation)
+	if not a.is_empty():
+		var npc: Dictionary=simulation.data.agents.get(a.npc,{})
+		_wrapped(str(npc.get("name",a.npc))+" · "+str(simulation.data.townMap.locations.get(a.place,{}).get("name",a.place)))
+		var remaining:=int(a.due)-int(simulation.data.tickCount)
+		_wrapped(str(a.time))
+		if SimAppointments.LIVE.has(a.state): _wrapped("距約定還有 %d 分鐘"%(remaining*15) if remaining>0 else "已到約定時間（等待兩個遊戲小時）")
+		else: _wrapped("約定已結束")
+		if a.state=="offered": _wrapped("請在兩個遊戲小時內回覆邀約。",12)
+		_wrapped(str(a.reason))
+		if a.state=="offered":
+			_button("接受邀約",drawer_body,func(): SimAppointments.respond(simulation,true);has_simulated=true;show_appointment(id))
+			_button("婉拒邀約",drawer_body,func(): SimAppointments.respond(simulation,false);has_simulated=true;show_appointment(id))
+		elif a.state in ["accepted","waiting"]:
+			_button("取消約定",drawer_body,func(): SimAppointments.finish(simulation,"cancelled","玩家取消約定");has_simulated=true;show_appointment(id))
+	if not SimAppointments.LIVE.has(a.get("state","")):
+		_wrapped("也可以直接詢問對方明天是否有空（本機規則，不消耗 AI 額度）。",12)
+		_button("詢問明天能否見面",drawer_body,func(): chat_notice[id]=SimAppointments.offer(simulation,id);has_simulated=true;show_appointment(id))
+	if chat_notice.has(id): _wrapped(str(chat_notice[id]))
+	_button("返回交談",drawer_body,func(): show_player_chat(id))

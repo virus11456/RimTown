@@ -47,6 +47,8 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 			for p in positions.values():
 				if absf(p.targetX-target.x)<48 and absf(p.targetY-target.y)<48: count+=1
 			target+=Vector2((count%4-1.5)*16,(floori(count/4.0)-.5)*16)
+		var appointment: bool=a.get("_appointmentDestination","")==location
+		if appointment: target=layout._center(location) # Stable meeting point: crowds must not keep replanning the route.
 		target=layout._nearest(target)
 		var activity: String=a.get("activity","")
 		if not positions.has(id):
@@ -91,12 +93,13 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 		elif p.doorPhase==null and (absf(target.x-p.targetX)>1 or absf(target.y-p.targetY)>1):
 			p.targetX=target.x; p.targetY=target.y; _path(p)
 		if not layout._walkable(Vector2(p.x,p.y)):
+			if appointment: p.walking=false;continue # Unreachable meeting must expire, never teleport.
 			_set_point(p,layout._nearest(Vector2(p.x,p.y))); p._pathWaypoints=[]
 		var far:=absf(p.targetX-p.x)+absf(p.targetY-p.y)>32
 		var trapped:=inside(Vector2(p.x,p.y)) if activity!="sleeping" and far else ""
 		if not trapped.is_empty():
 			p._inStuck=p.get("_inStuck",0)+1
-			if p._inStuck>360:
+			if p._inStuck>360 and not appointment:
 				var exit_door: Variant=door(trapped,id)
 				_set_point(p,layout._nearest(Vector2(exit_door.x,exit_door.y+16) if exit_door!=null else Vector2(p.x,p.y)))
 				p.doorPhase=null; p.destDoor=null; p.doorWaypoint=null; _path(p); p._inStuck=0
@@ -110,12 +113,13 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 		if not chat_target.is_empty() and id in [chat_target,"player"]:
 			p.walking=false; p.walkStep=0
 		elif distance>1:
-			var movement:=delta/distance*minf(.3,distance)
+			var movement:=delta/distance*minf(.6 if appointment else .3,distance)
 			var next:=Vector2(p.x,p.y)+movement
 			if not layout._walkable(next):
 				if layout._walkable(Vector2(p.x+movement.x,p.y)): next=Vector2(p.x+movement.x,p.y)
 				elif layout._walkable(Vector2(p.x,p.y+movement.y)): next=Vector2(p.x,p.y+movement.y)
 				else:
+					if appointment: p.walking=false;_path(p);continue
 					_set_point(p,layout._nearest(Vector2(p.targetX,p.targetY)))
 					p.walking=false; p.walkStep=0; p._pathWaypoints=[]; continue
 			_set_point(p,next); p.walking=true; p.walkStep=p.get("walkStep",0)+1

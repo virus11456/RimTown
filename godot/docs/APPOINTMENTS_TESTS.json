@@ -1,0 +1,5 @@
+{
+  "checks": 23,
+  "failures": [],
+  "scope": "offer/accept/decline/expiry, limits, conflicts and memory, save deterministic reload, chat structured invitation and no logical arrival shortcut; configured conflict fixtures"
+}
