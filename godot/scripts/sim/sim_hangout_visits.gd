@@ -32,19 +32,59 @@ static func finish(w: SimWorld,token: String,state: String,reason: String) -> vo
 		if pending is Dictionary and key(id,pending)==token: a._pendingHangout=null
 		SimHangoutSafety.note(w,id,state,reason)
 static func valid(w: SimWorld,r: Dictionary) -> bool:
-	if not w.data.townMap.locations.has(r.place): return false
+	if r.get("paused",false) or not w.data.townMap.locations.has(r.place): return false
 	for id in r.people:
 		if not w.data.agents.has(id): return false
 		var a: Dictionary=w.data.agents[id]
 		if a.get("isDead",false) or a.has("_raidShelterUntil") or SimAppointments.directing(w,id): return false
 		if id in r.departed and (not SimHangoutSafety.available_person(w,a) or a.currentLocation!=r.place): return false
 	return true
+static func directing(w: SimWorld,id: String) -> bool:
+	if not SimHangoutSafety.enabled(w): return false
+	var a: Dictionary=w.data.agents[id]
+	var r: Dictionary=records(w).get(a.get("_activeHangout",""),{})
+	return r.get("state","")=="traveling" and not r.get("paused",false) and id in r.departed and int(w.data.tickCount)<int(r.until) and SimHangoutSafety.available_person(w,a)
 static func tick(w: SimWorld) -> void:
 	for token in records(w):
 		var r: Dictionary=records(w)[token]
 		if r.state!="traveling": continue
-		if not valid(w,r): finish(w,token,"cancelled","工作、需求、既有行程或對象狀態改變，同行外出已中止。")
-		elif int(w.data.tickCount)>=int(r.until): finish(w,token,"missed","期限內未確認雙方近距離到場，聚會未完成。")
+		var now:=int(w.data.tickCount)
+		if now>=int(r.until):
+			finish(w,token,"missed","期限內未確認雙方近距離到場，聚會未完成。")
+			continue
+		var urgent:=false;var blocked: bool=not w.data.townMap.locations.has(r.place)
+		for id in r.people:
+			if not w.data.agents.has(id): blocked=true;continue
+			var a: Dictionary=w.data.agents[id]
+			if a.get("isDead",false) or a.has("_raidShelterUntil") or SimAppointments.directing(w,id) or SimLeisurePlan.directing(w,id) or not SimLeisurePlan.available(w,id,int(w.data.clock.hour)):
+				blocked=true
+			if float(a.needs.hunger)<15 or float(a.needs.rest)<10 or a.activity in ["eating","sleeping"]: urgent=true
+		if blocked:
+			finish(w,token,"cancelled","工作、睡眠時段、既有行程或對象狀態改變，同行外出已中止。")
+			continue
+		if r.get("paused",false):
+			if now>=int(r.pause_until):
+				finish(w,token,"cancelled","短暫休整期限已到，同行安排取消。")
+				continue
+			var ready:=not urgent
+			for id in r.people: ready=ready and SimHangoutSafety.available_person(w,w.data.agents[id])
+			if ready:
+				r.paused=false;r.reason="雙方已可繼續，恢復原地點安排；到場期限不延長。"
+				for id in r.people:
+					if id in r.departed: w.data.agents[id].currentLocation=r.place;w.data.agents[id]._hangoutDestination=r.place
+					SimHangoutSafety.note(w,id,"resumed",r.reason)
+			continue
+		if urgent:
+			if r.get("pause_used",false):
+				finish(w,token,"cancelled","再次需要進食或休息，同行安排取消。")
+				continue
+			r.paused=true;r.pause_used=true;r.pause_until=mini(now+4,int(r.until));r.reason="先處理進食或休息，最多暫停一小時；雙方恢復後繼續，原期限不延長。"
+			for id in r.people:
+				w.data.agents[id].erase("_hangoutDestination")
+				w.data.agents[id]._locationStayRemaining=0
+				SimHangoutSafety.note(w,id,"paused",r.reason)
+			continue
+		if not valid(w,r): finish(w,token,"cancelled","行程或目的地改變，同行外出已中止。")
 static func restore_observations(w: SimWorld,positions: Dictionary) -> void:
 	for token in records(w):
 		var r: Dictionary=records(w)[token]
@@ -57,7 +97,14 @@ static func observe(w: SimWorld,m: SimMotion) -> void:
 	if not SimHangoutSafety.enabled(w): return
 	for token in records(w):
 		var r: Dictionary=records(w)[token]
-		if r.state!="traveling" or r.departed.size()!=2 or int(w.data.tickCount)>=int(r.until) or not valid(w,r): continue
+		if r.state!="traveling" or int(w.data.tickCount)>=int(r.until) or not valid(w,r): continue
+		for id in r.departed:
+			if SimCareerPresence.place(m,id)==str(r.place):
+				var arrivals: Array=r.get("arrived",[])
+				if id not in arrivals:
+					arrivals.append(id);r.arrived=arrivals
+					SimHangoutSafety.note(w,id,"waiting","已實際到場，等待同行者；最晚於原期限結束。")
+		if r.departed.size()!=2: continue
 		var left: String=r.people[0];var right: String=r.people[1]
 		if not SimCareerPresence.together(m,left,right,str(r.place)): continue
 		var a: Dictionary=m.positions[left];var b: Dictionary=m.positions[right]

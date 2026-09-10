@@ -1,5 +1,5 @@
 {
-  "checks": 24,
+  "checks": 22,
   "failures": [],
   "scope": "controlled paired departure, real motion approach, missing-position restore, position fixtures, logical/one-sided arrival rejected, actual joint encounter and memories, no rewards, repeated/reloaded completion, deadline and priority cancellation"
 }

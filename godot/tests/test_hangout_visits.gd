@@ -24,7 +24,7 @@ func _initialize() -> void:
 	check(equal(stock,w.data.stockpile) and equal(rels,w.data.agents.chen_wei.relationships),"no extra resources or affinity")
 	var saved:=w.snapshot();SimHangoutVisits.observe(w,m);check(equal(saved,w.snapshot()),"repeat observation cannot repeat memory")
 	var restored:=SimWorld.new();restored.load_snapshot(saved);SimHangoutVisits.observe(restored,m);check(equal(saved,restored.snapshot()),"reload cannot repeat completion")
-	for fault in ["expired","work","need","dead","left","shelter"]:
+	for fault in ["expired","work","dead","left","shelter"]:
 		w=fixture();token=depart_pair(w);r=SimHangoutVisits.records(w)[token]
 		match fault:
 			"expired": w.data.tickCount=r.until

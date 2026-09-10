@@ -37,6 +37,8 @@ static func route(w: SimWorld,a: Dictionary,run: Dictionary) -> void:
 	var pending: Variant=a.get("_pendingHangout")
 	if not pending is Dictionary: return
 	var p: Dictionary=pending
+	var visit: Dictionary=SimHangoutVisits.records(w).get(SimHangoutVisits.key(str(a.id),p),{})
+	if visit.get("paused",false): return
 	if not w.data.agents.has(p.get("withId","")): return
 	var other: Dictionary=w.data.agents[p.withId]
 	if not available_person(w,a) or not available_person(w,other):

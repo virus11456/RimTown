@@ -149,6 +149,7 @@ func _update(id: String) -> void:
 		a.activity="sleeping";a.currentLocation=a.homeLocation;run.targetLocation=null
 	elif SimAppointments.directing(self,id): a.activity="appointment_wait" if SimAppointments.current(self).state=="waiting" else "appointment_travel"
 	elif SimLeisurePlan.directing(self,id): a.activity="planned_leisure"
+	elif SimHangoutVisits.directing(self,id): a.activity="hangout_travel"
 	else: _activity(a,hour)
 	SimNeeds.decay(a.needs,a.activity,hour)
 	if a.get("isPlayer",false):
@@ -173,6 +174,9 @@ func _update(id: String) -> void:
 		return
 	if SimLeisurePlan.directing(self,id):
 		a.activity="planned_leisure";a.currentLocation=SimLeisurePlan.plans(self)[id].place;a._leisureDestination=a.currentLocation;run.targetLocation=null;a._locationStayRemaining=0
+		return
+	if SimHangoutVisits.directing(self,id):
+		a.activity="hangout_travel";a.currentLocation=SimHangoutVisits.records(self)[a._activeHangout].place;a._hangoutDestination=a.currentLocation;run.targetLocation=null;a._locationStayRemaining=0
 		return
 	_gain_xp(a)
 	if a.activity!=previous: a._locationStayRemaining=0

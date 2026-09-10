@@ -902,7 +902,7 @@ func _process(delta: float) -> void:
 	world_view.animate_agents(motion.positions)
 
 func _activity_name(activity: String) -> String:
-	return {"planned_leisure":"依安排休閒","appointment_travel":"前往赴約","appointment_wait":"等待赴約者","idle":"休息","sleeping":"睡覺","eating":"進食","working":"工作","socializing":"社交","wandering":"閒逛","recreation":"娛樂","stargazing":"看星星","night_stroll":"夜間散步","night_mischief":"夜間惡作劇","mourning":"弔念","commuting":"前往工作","heading_home":"回家"}.get(activity,activity)
+	return {"hangout_travel":"同行赴約／等候","planned_leisure":"依安排休閒","appointment_travel":"前往赴約","appointment_wait":"等待赴約者","idle":"休息","sleeping":"睡覺","eating":"進食","working":"工作","socializing":"社交","wandering":"閒逛","recreation":"娛樂","stargazing":"看星星","night_stroll":"夜間散步","night_mischief":"夜間惡作劇","mourning":"弔念","commuting":"前往工作","heading_home":"回家"}.get(activity,activity)
 
 func _capture_playtest() -> void:
 	await get_tree().create_timer(1).timeout

@@ -1,0 +1,5 @@
+{
+  "checks": 15,
+  "failures": [],
+  "scope": "controlled pair, normal world tick route retention, actual first-arrival observation, one bounded needs pause and recovery, work priority, immutable deadline and snapshot persistence; no production AI"
+}
