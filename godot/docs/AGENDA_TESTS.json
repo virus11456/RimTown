@@ -1,0 +1,5 @@
+{
+  "checks": 14,
+  "failures": [],
+  "scope": "configured real position vs destination, home distinction, imported prose isolation, actual trace dedup/reload/day/cap/disable, job and sleep display, no simulation mutation"
+}

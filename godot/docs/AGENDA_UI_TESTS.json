@@ -1,0 +1,5 @@
+{
+  "checks": 10,
+  "failures": [],
+  "scope": "real agenda/trace navigation, normal app tick, deliberate unexecuted plan, unaccepted appointment, 375px panels, compressed timeline reload and town isolation; no new AI scheduler"
+}

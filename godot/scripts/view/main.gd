@@ -21,6 +21,7 @@ var import_callback: JavaScriptObject
 var demo_theme := "frontier"
 var simulation := SimWorld.new()
 var motion := SimMotion.new()
+var physical_trace:=PhysicalTrace.new()
 var placement_preview: MeshInstance3D
 var running := false
 var has_simulated := false
@@ -264,6 +265,7 @@ func _load_document(text: String, source: String) -> bool:
 	selected_agent=""
 	document = incoming
 	simulation.load_snapshot(document.snapshot())
+	physical_trace.load_state(document.data.get("_godot4a",{}).get("physical_trace",{}))
 	simulation.social_enabled=bool(document.data.get("_godot4a",{}).get("social_enabled",true))
 	simulation.gossip_enabled=bool(document.data.get("_godot4a",{}).get("gossip_enabled",true))
 	simulation.romance_enabled=bool(document.data.get("_godot4a",{}).get("romance_enabled",true))
@@ -400,7 +402,7 @@ func show_agent(id: String,focus_camera := true) -> void:
 	var agent: Dictionary = _current_data().agents[id]
 	_label(str(agent.get("name",id)),drawer_body,24)
 	_label("%s 歲 · %s" % [str(int(agent.get("age",0))),_job_name(str(agent.get("jobKey","旅人")))],drawer_body)
-	_label("目前："+_activity_name(str(agent.get("activity","idle"))),drawer_body)
+	_wrapped("目前："+str(SimAgenda.current(simulation,motion,id).get("text","位置尚未取得")))
 	var label := _label(str(agent.get("personality",{}).get("background","")),drawer_body)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	for key in agent.get("needs",{}):
@@ -410,6 +412,7 @@ func show_agent(id: String,focus_camera := true) -> void:
 		var pos: Variant = world_view.call("agent_position",id)
 		if pos is Vector3: rig.position = Vector3(pos.x,0,pos.z)
 	if not agent.get("isPlayer",false): _button("與他互動",drawer_body,func(): show_player_interaction(id))
+	_button("今日作息與行程",drawer_body,func(): show_agenda(id))
 	_button("今日足跡",drawer_body,func(): show_trace(id))
 	_button("近期記憶",drawer_body,func(): show_memories(id))
 	_button("目前想法",drawer_body,func(): show_thoughts(id))
@@ -713,6 +716,7 @@ func export_save() -> void:
 func progress_snapshot() -> Dictionary:
 	var progress:=simulation.snapshot()
 	progress._godot4a.motion=motion.positions.duplicate(true)
+	progress._godot4a.physical_trace=physical_trace.snapshot()
 	progress._godot4a.house_map=motion.layout.agent_house.duplicate(true)
 	progress._godot4a.tick_accumulator=tick_accumulator
 	progress._godot4a.manual_player=motion.manual_player
@@ -812,6 +816,7 @@ func _tick_simulation() -> void:
 		if active_tab=="居民" and selected_agent.is_empty() and drawer.visible: show_tab("居民",true)
 	if career_was_active and SimCareers.book(simulation).active.is_empty(): status.text=str(SimCareers.book(simulation).get("notice",""))
 	if career_page and drawer.visible and active_tab=="小鎮" and career_was_active: show_careers()
+	physical_trace.record(simulation,motion)
 	var clock_data: Dictionary=simulation.data.clock
 	summary.text="%s %d日 %02d:%02d · %d人"%[clock_data.season,clock_data.day,clock_data.hour,clock_data.minute,simulation.data.agents.size()]
 	if "new_season" in events or old_geometry!=JSON.stringify([simulation.data.buildings,simulation.data.processing,simulation.data.agents.keys()]):
@@ -831,6 +836,7 @@ func _tick_simulation() -> void:
 			"appointment": show_appointment(selected_agent)
 			"gift": show_player_gift(selected_agent)
 			"interaction": show_player_interaction(selected_agent)
+			"agenda": show_agenda(selected_agent)
 			"trace": show_trace(selected_agent)
 			"thoughts": show_thoughts(selected_agent)
 			"memory": show_memories(selected_agent,memory_target)
@@ -1155,13 +1161,17 @@ func show_trace(id: String) -> void:
 	_wrapped(str(a.name)+" · 今日足跡",22)
 	_button("返回居民資料",drawer_body,func(): show_agent(id,false))
 	if not simulation.trace_enabled: _wrapped("足跡記錄已暫停。")
-	var entries: Array=a.get("todayTrace",[]) if a.get("_traceDay","")==SimTrace.day_key(data.clock) else []
-	if entries.is_empty(): _wrapped("今天尚無足跡；開始模擬後會記錄居民活動。")
-	else: _wrapped("今日 %d 筆（由早到晚，最多保留 160 筆）"%entries.size())
-	for entry in entries:
-		var location: Dictionary=data.get("townMap",{}).get("locations",{}).get(str(entry.loc),{})
-		_wrapped("%02d:%02d · %s"%[int(entry.m)/60,int(entry.m)%60,str(entry.text)],18)
-		_wrapped(str(location.get("name",entry.loc)))
+	var recorded:=physical_trace.entries(simulation,id)
+	_wrapped("實際足跡：依每次時間推進時的位置取樣，不把文字計畫當成已執行。",12)
+	if recorded.is_empty(): _wrapped("今天尚無實際位置紀錄；開始模擬後會記錄。")
+	for entry in recorded:
+		_wrapped("%02d:%02d · %s"%[int(entry.m)/60,int(entry.m)%60,str(entry.text)],16)
+		_wrapped(str(entry.location)+" · 目的地："+str(entry.target),12)
+	var old: Array=a.get("todayTrace",[]) if a.get("_traceDay","")==SimTrace.day_key(data.clock) else []
+	if not old.is_empty():
+		_wrapped("作息／文字紀錄（未核對實際位置）",18)
+		for entry in old.slice(-20):
+			_wrapped("%02d:%02d · %s"%[int(entry.m)/60,int(entry.m)%60,str(entry.text)],12)
 
 func _capture_trace() -> void:
 	await get_tree().create_timer(1).timeout
@@ -2321,3 +2331,32 @@ func show_appointment(id: String) -> void:
 			var name: String=simulation.data.agents.get(record.npc,{}).get("name",record.npc)
 			_wrapped(name+" · "+str(record.get("time",""))+"\n"+str(record.reason),12)
 	_button("返回交談",drawer_body,func(): show_player_chat(id))
+
+func show_agenda(id: String) -> void:
+	selected_agent=id;resident_page="agenda";_clear_drawer()
+	if not simulation.data.agents.has(id): _wrapped("找不到居民。");return
+	var a: Dictionary=simulation.data.agents[id]
+	_wrapped(str(a.name)+" · 今日作息與行程",22)
+	var actual:=SimAgenda.current(simulation,motion,id)
+	_wrapped("實際位置："+str(actual.actual))
+	_wrapped("目的地："+str(actual.target)+" · "+("已抵達" if actual.arrived else "尚未抵達"))
+	_wrapped("目前："+str(actual.text))
+	if a.get("isPlayer",false): _wrapped("旅人由你操作，這裡不替你安排自動行程。")
+	else:
+		_wrapped("日常作息",18)
+		for row in SimAgenda.routine(simulation,id): _wrapped(row,12)
+	var appointment:=SimAppointments.current(simulation)
+	if appointment.get("npc")==id:
+		_wrapped("見面約定",18)
+		_wrapped(str(appointment.time)+" · "+str(appointment.reason))
+		if appointment.state=="offered": _wrapped("尚未接受，未排入行程。",12)
+		if appointment.state=="change_offered": _wrapped("原約定暫停；新提議 "+str(appointment.proposal.time)+" 尚待你同意。",12)
+		_button("處理見面約定",drawer_body,func(): show_appointment(id))
+	var plan: Dictionary=a.get("dailyPlan",{}) if a.get("dailyPlan") is Dictionary else {}
+	if plan.get("blocks") is Array and not plan.blocks.is_empty():
+		_wrapped("文字備忘（未排入行程）",18)
+		_wrapped("這些文字尚未成為行動安排，不表示居民已經前往或完成。",12)
+		for block in plan.blocks.slice(0,12):
+			if block is Dictionary: _wrapped(str(block.get("time",""))+" · "+str(block.get("text","")),12)
+	_button("今日足跡",drawer_body,func(): show_trace(id))
+	_button("返回居民資料",drawer_body,func(): show_agent(id,false))
