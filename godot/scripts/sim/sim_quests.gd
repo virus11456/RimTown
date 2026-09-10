@@ -132,7 +132,9 @@ static func check_progress(w: SimWorld) -> void:
 		if state.status!="active": continue
 		if def.has("routes"):
 			for route in def.routes:
-				if conditions(w,route.conditions,state.routes[route.id],"label"): complete(w,def,route);break
+				if conditions(w,route.conditions,state.routes[route.id],"label"):
+					if def.get("isFinale",false) and w.finale_choice_enabled: continue
+					complete(w,def,route);break
 		elif conditions(w,def.get("objectives",[]),state.get("objectives",{}),"id"): complete(w,def)
 	for def in rules().side:
 		var state: Dictionary=q.sideQuests[def.id]
@@ -169,3 +171,20 @@ static func daily(w: SimWorld) -> void:
 		if evaluate(w,def.condition)-float(q.dailyObjective.get("startValue",0))>=float(def.condition.target):
 			q.dailyObjective.completed=true;q.dailyCompletedIds.append(def.id);w.quest_balance.daily_claim_day=day
 			reward(w,def.get("reward",{}),"每日目標獎勵");log_event(w,"⭐ 每日目標完成："+str(def.icon)+" "+str(def.text)+"！")
+
+static func finale_ready(w: SimWorld,route_id: String) -> bool:
+	if not w.quests_enabled or not w.finale_choice_enabled or w.data.get("multiEnding",{}).get("endingTriggered")!=null: return false
+	for def in rules().main:
+		if not def.get("isFinale",false): continue
+		var state: Dictionary=w.data.questSystem.get("quests",{}).get(def.id,{})
+		if state.get("status")!="active": return false
+		for route in def.routes:
+			if route.id==route_id: return route.conditions.all(func(c): return state.routes[route_id].get(c.label,{}).get("completed",false))
+	return false
+static func choose_finale(w: SimWorld,route_id: String) -> bool:
+	if not finale_ready(w,route_id): return false
+	for def in rules().main:
+		if not def.get("isFinale",false): continue
+		for route in def.routes:
+			if route.id==route_id: complete(w,def,route);return true
+	return false

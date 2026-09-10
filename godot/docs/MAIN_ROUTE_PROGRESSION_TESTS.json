@@ -1,0 +1,26 @@
+{
+  "buildings": 20,
+  "checks": 264,
+  "completed_main": [
+    "ch1_settle",
+    "ch1_survive",
+    "ch1_industry",
+    "ch2_economy",
+    "ch2_farm",
+    "ch2_community",
+    "ch3_crisis",
+    "ch3_rebuild",
+    "ch4_expansion",
+    "ch4_election",
+    "ch4_bonds",
+    "ch5_legacy"
+  ],
+  "days": 130,
+  "ending": "legend",
+  "failures": [],
+  "harvests": 3,
+  "level": 7.0,
+  "population": 41,
+  "raids": 12,
+  "scope": "original demo resources, traveler throughout, paid approved construction and industry, no role/backer/budget injection, default material relief enabled; NPC social activity, raids and elections enabled; scripted daily offline conversations, authorized sowing and real growth/harvest plus factory; one main route/legend via simulation APIs, no rendered walking or marriage/all endings"
+}

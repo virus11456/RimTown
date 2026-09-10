@@ -286,6 +286,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.governance_enabled=bool(document.data.get("_godot4a",{}).get("governance_enabled",true))
 	simulation.elections_enabled=bool(document.data.get("_godot4a",{}).get("elections_enabled",true))
 	simulation.quests_enabled=bool(document.data.get("_godot4a",{}).get("quests_enabled",true))
+	simulation.finale_choice_enabled=bool(document.data.get("_godot4a",{}).get("finale_choice_enabled",true))
 	if simulation.quests_enabled: SimQuests.init(simulation);SimNPCQuests.init(simulation);SimLifeGoals.assign(simulation)
 	simulation.heart_events_enabled=bool(document.data.get("_godot4a",{}).get("heart_events_enabled",true))
 	simulation.event_comments_enabled=bool(document.data.get("_godot4a",{}).get("event_comments_enabled",true))
@@ -1927,6 +1928,13 @@ func show_quests(category: String="main") -> void:
 				for route in def.routes:
 					_wrapped(str(route.label)+(" ✓" if state.get("completedRoute")==route.id else ""),15)
 					for c in route.conditions: _wrapped("%s · %.0f / %.0f"%[c.label,state.routes[route.id][c.label].progress,c.get("target",1)],12)
+					if def.get("isFinale",false) and state.status=="active" and simulation.finale_choice_enabled:
+						var married: bool=simulation.data.agents.player.relationships.values().any(func(r): return r.get("status")=="married")
+						if married and route.id!="legend": _wrapped("你已婚：選擇此路線將呈現個人結局，保留原版婚姻規則。",12)
+						var finish_button:=_button("選擇結局："+str(route.label),drawer_body,func():
+							if SimQuests.choose_finale(simulation,route.id): has_simulated=true;show_quests("ending"))
+						finish_button.disabled=not SimQuests.finale_ready(simulation,route.id)
+
 			else:
 				for c in def.get("objectives",[]): _wrapped("%s · %.0f / %.0f"%[c.get("label",c.get("description",c.id)),state.objectives[c.id].progress,c.target],12)
 			_quest_rewards(def.get("rewards",{}))
@@ -1980,7 +1988,7 @@ func show_quests(category: String="main") -> void:
 			_wrapped(str(ending.type.icon)+str(ending.type.title),22);_wrapped(str(ending.type.description))
 			_wrapped("人口 %d · 主線完成 %d · 聲望 %.0f"%[ending.stats.population,ending.stats.questsCompleted,ending.stats.reputation])
 			for entry in ending.history: _wrapped(str(entry.content),12)
-		else: _wrapped("完成第五章最終主線後，依完成路線與婚姻狀態產生結局；仍可繼續經營小鎮。")
+		else: _wrapped("最終主線路線達標後，在主線頁選擇結局。已達成條件會保留，可繼續追求其他路線。非傳奇路線會依婚姻狀態呈現個人結局；結局後仍可繼續經營。")
 	_button("更新任務進度",drawer_body,func():
 		SimQuests.check_progress(simulation);SimNPCQuests.check_progress(simulation);has_simulated=true;show_quests(category))
 	_button("返回故事",drawer_body,func(): show_tab("故事",true))

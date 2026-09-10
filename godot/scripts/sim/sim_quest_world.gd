@@ -31,10 +31,10 @@ static func prosperity(w: SimWorld) -> void:
 	for r in rels: affinity+=float(r.get("affinity",0))
 	p.dimensions.happiness.value=0 if npcs.is_empty() else minf(100,clampf(mood/npcs.size()+50,0,100)+(minf(20,maxf(0,affinity/rels.size()*.5)) if not rels.is_empty() else 0))
 	p.dimensions.culture.value=minf(100,minf(30,float(w.data.questSystem.electionsHeld)*15)+minf(30,w.data.get("festivals",{}).get("completedFestivals",[]).size()*10)+(20 if priest else 0)+(20 if researcher else 0))
-	var defenses: int=w.data.buildings.completed.filter(func(b): return b.get("key") in ["wall","watchtower","barracks"]).size()
+	var defenses: int=w.data.buildings.completed.filter(func(b): return b.get("buildingKey",b.get("key")) in ["wall","town_walls","watchtower","barracks"]).size()
 	p.dimensions.defense.value=minf(100,minf(30,guards*15)+minf(30,float(w.data.questSystem.raidsSurvived)*10)+minf(40,defenses*13))
 	var flowers: int=w.data.farm.plots.filter(func(f): return f.state in ["growing","ready"] and f.get("crop")=="flowers").size()
-	var gardens: int=w.data.buildings.completed.filter(func(b): return b.get("key") in ["garden","fountain","statue","park"]).size()
+	var gardens: int=w.data.buildings.completed.filter(func(b): return b.get("buildingKey",b.get("key")) in ["garden","fountain","statue","park"]).size()
 	var decor:=0.0
 	for d in w.data.get("decorations",[]): decor+=float({"flowerbed":2,"bench":2,"lamp":3,"statue":6,"fountain":8}.get(d.type,2))
 	p.dimensions.beauty.value=minf(100,minf(40,flowers*10)+minf(30,gardens*10)+minf(35,decor)+minf(20,SimCombos.active(w.data).size()*4)+minf(30,float(w.data.industry.townLevel)*4))
