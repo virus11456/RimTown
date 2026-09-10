@@ -41,7 +41,8 @@ func run() -> void:
 	SimEventComments.enqueue(w,"居民離世",[],["chen_wei"]);app.process_event_comment();w.data.agents.chen_wei.isDead=true
 	history=w.data.agents.player.get("chatHistory",[]).size();release_reply.emit();await settle()
 	check(w.data.agents.player.get("chatHistory",[]).size()==history and w.event_comments.is_empty(),"dead recipient drops comment")
-	w.load_snapshot(initial);w.combos_enabled=true;w.data.combosFound=[];w.data.decorations=[{"type":"bench","x":21,"y":21}]
+	w.load_snapshot(initial);w.governance_enabled=false # Isolate paid construction callbacks from the separate approval workflow.
+	w.combos_enabled=true;w.data.combosFound=[];w.data.decorations=[{"type":"bench","x":21,"y":21}]
 	for r in w.data.stockpile.resources: w.data.stockpile.resources[r]=10000
 	var project:=SimBuildings.start(w,"school");project.siteX=20;project.siteY=20;project.workDone=project.workRequired;SimBuildings.daily(w)
 	check(w.event_comments.size()==2 and "新組合" in w.event_comments[0].event and "蓋好了" in w.event_comments[1].event,"combo then completion callbacks")

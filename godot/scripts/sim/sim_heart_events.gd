@@ -37,9 +37,10 @@ static func apply(w: SimWorld,item: Dictionary,response: String="") -> bool:
 	if not w.data.agents.has(item.npc) or not w.data.agents.has(item.player): return false
 	var npc: Dictionary=w.data.agents[item.npc];var player: Dictionary=w.data.agents[item.player]
 	if npc.get("isDead",false) or not player.get("isPlayer",false): return false
-	var text:=SimEventComments.clean_text(response,str(npc.name),str(item.fallback))
+	var text:=SimEventComments.clean_text(SimEventComments.invitation_response(w,item,response),str(npc.name),str(item.fallback))
 	if not player.get("chatHistory") is Array: player.chatHistory=[]
 	player.chatHistory.append({"speaker":npc.name,"target":player.name,"text":text,"time":SimSocial.time_string(w.data.clock)})
+	SimEventComments.invitation_notice(w,item)
 	SimFeuds._memory(npc,w,"conversation","我對"+str(player.name)+"說出了真心話："+text,9,[player.name])
 	var rel:=SimSocial.relationship(npc,player);var event: Dictionary=item.definition
 	SimRelationships.add_shared_memory(rel,str(event.name)+"："+text)

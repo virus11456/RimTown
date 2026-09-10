@@ -367,6 +367,10 @@ func show_tab(tab: String, refresh := false) -> void:
 			for key in resources:
 				if float(resources[key]) != 0: _label("%s   %s" % [_resource_name(key),str(resources[key])],drawer_body)
 		"居民":
+			selected_agent="";resident_page="list"
+			var appointment:=SimAppointments.current(simulation)
+			if not appointment.is_empty():
+				_button("見面約定"+(" · 待回覆" if appointment.state=="offered" else ""),drawer_body,func(): show_appointment(str(appointment.npc)))
 			for id in _current_data().get("agents",{}):
 				var agent: Dictionary = _current_data().agents[id]
 				_button(str(agent.get("name",id)),drawer_body,func(): show_agent(id))
@@ -1899,7 +1903,11 @@ func process_event_comment() -> void:
 		has_simulated=true
 		status.text=str(npc.name)+("向你說出了真心話 · 居民 → 自由交談" if heart else "傳來事件評論 · 居民 → 自由交談")
 		chat_notice[item.npc]=str(item.definition.icon)+" "+str(item.definition.name)+"：居民向你說出了真心話。" if heart else "居民傳來了事件評論。"
+		if item.has("invitation_notice"):
+			chat_notice[item.npc]+="\n"+str(item.invitation_notice)
+			status.text=str(npc.name)+" · "+str(item.invitation_notice)
 		if active_tab=="居民" and resident_page=="chat" and selected_agent==item.npc: show_player_chat(item.npc)
+		elif active_tab=="居民" and selected_agent.is_empty() and drawer.visible: show_tab("居民",true)
 
 func show_heart_events(id: String) -> void:
 	selected_agent=id;resident_page="heart";_clear_drawer()

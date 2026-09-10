@@ -1,0 +1,5 @@
+{
+  "checks": 34,
+  "failures": [],
+  "scope": "mock event-comment and heart-event callbacks, actual list/accept UI and reload; malformed metadata, exact-once, late conflict, town switch and offline fallback; no production AI request"
+}
