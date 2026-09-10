@@ -21,7 +21,7 @@ static func distance(m: SimMotion,id: String,place: String) -> float:
 		total+=segment(m,start,exit_point);start=exit_point
 	var door_point:=Vector2(destination.x,destination.y)
 	return total+segment(m,start,door_point)+segment(m,door_point,goal)
-static func feasible(m: SimMotion,a: Dictionary,b: Dictionary,clock: Dictionary,jobs: Dictionary,spots: Array) -> Array:
+static func feasible(m: SimMotion,a: Dictionary,b: Dictionary,clock: Dictionary,jobs: Dictionary,spots: Array,time_budget: int=24) -> Array:
 	if m==null: return []
 	var result: Array=[]
 	for place in spots:
@@ -29,7 +29,7 @@ static func feasible(m: SimMotion,a: Dictionary,b: Dictionary,clock: Dictionary,
 		if is_inf(length): continue
 		# Five ticks maximum departure delay, plus two ticks of buffer.
 		var required:=5+ceili(length/m.travel_budget(true))+2
-		if required>=24: continue # Original meeting deadline is never extended.
+		if required>=time_budget: continue # Original meeting deadline is never extended.
 		var fits:=true
 		for offset in range(required+1):
 			var hour:=posmod(floori((int(clock.hour)*60+int(clock.minute)+offset*15)/60.0),24)
@@ -63,3 +63,13 @@ static func return_fits(m: SimMotion,a: Dictionary,clock: Dictionary,jobs: Dicti
 		var hour:=posmod(floori((int(clock.hour)*60+int(clock.minute)+offset*15)/60.0),24)
 		if not SimLeisurePlan.person_available(a,jobs,hour): return false
 	return true
+
+static func plan(m: SimMotion,a: Dictionary,b: Dictionary,clock: Dictionary,jobs: Dictionary,spots: Array) -> Dictionary:
+	# Leave five countdown ticks before the original sixteen-tick departure deadline.
+	for wait_ticks in range(11):
+		var future:=clock.duplicate(true)
+		var minutes:=int(clock.hour)*60+int(clock.minute)+wait_ticks*15
+		future.hour=posmod(minutes/60,24);future.minute=posmod(minutes,60)
+		var choices:=feasible(m,a,b,future,jobs,spots,24-wait_ticks)
+		if not choices.is_empty(): return {"spots":choices,"wait_ticks":wait_ticks,"hour":future.hour,"minute":future.minute}
+	return {}

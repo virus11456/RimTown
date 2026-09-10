@@ -32,6 +32,7 @@ static func tick(w: SimWorld) -> void:
 		var a: Dictionary=w.data.agents[id];var p: Variant=a.get("_pendingHangout")
 		if not p is Dictionary or not w.data.agents.has(p.get("withId","")): continue
 		var now:=int(w.data.tickCount)
+		if now<int(p.get("not_before",p.get("issued_tick",now))): continue
 		if now<=int(p.get("countdown_tick",p.get("issued_tick",now))): continue
 		p.countdown_tick=now
 		var visit: Dictionary=SimHangoutVisits.records(w).get(SimHangoutVisits.key(id,p),{})
@@ -52,6 +53,8 @@ static func route(w: SimWorld,a: Dictionary,run: Dictionary) -> void:
 	var other: Dictionary=w.data.agents[p.withId]
 	if not available_person(w,a) or not available_person(w,other):
 		note(w,str(a.id),"deferred","先處理工作、通勤、需求或既有行程；外出暫緩。");return
+	if int(w.data.tickCount)<int(p.get("not_before",0)):
+		note(w,str(a.id),"deferred","等待雙方預留的空檔；尚未開始出發倒數。");return
 	if int(p.tick)>0: note(w,str(a.id),"pending","等待外出；尚未確認共同到場。");return
 	run.targetLocation=p.location;a.activity=p.get("activity","socializing");a._pendingHangout=null
 	SimHangoutVisits.depart(w,str(a.id),p)

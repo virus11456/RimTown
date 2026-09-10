@@ -50,8 +50,10 @@ func try_interaction(a: Dictionary,data: Dictionary,rng: SimRandom,jobs: Diction
 	var spots: Array=["tavern","park","town_square","chapel","forest","library"]
 	if physical_positions!=null: spots=spots.filter(func(place): return data.townMap.locations.has(place))
 	if not spots.is_empty() and rel.affinity>=30 and (physical_positions==null or (not a.get("isPlayer",false) and not b.get("isPlayer",false) and not a.get("_activeHangout") and not b.get("_activeHangout"))) and rng.next_float()<.12 and not a.get("_pendingHangout") and not b.get("_pendingHangout"):
+		var schedule: Dictionary={}
 		if physical_positions!=null:
-			spots=SimHangoutRoute.feasible(observed_motion,a,b,data.clock,jobs,spots)
+			schedule=SimHangoutRoute.plan(observed_motion,a,b,data.clock,jobs,spots)
+			spots=schedule.get("spots",[])
 			if spots.is_empty():
 				converse(a,b,data,rng,jobs)
 				return
@@ -62,8 +64,9 @@ func try_interaction(a: Dictionary,data: Dictionary,rng: SimRandom,jobs: Diction
 		b._pendingHangout={"location":spot,"activity":activity,"tick":delay,"withAgent":a.name}
 		if physical_positions!=null:
 			for pair in [[a,b],[b,a]]:
-				pair[0]._pendingHangout.merge({"withId":pair[1].id,"issued_tick":int(data.tickCount),"expires_at":int(data.tickCount)+16})
+				pair[0]._pendingHangout.merge({"withId":pair[1].id,"issued_tick":int(data.tickCount),"expires_at":int(data.tickCount)+16,"not_before":int(data.tickCount)+int(schedule.get("wait_ticks",0))})
 		var description: String=a.name+"約了"+b.name+"一起去"+spot.replace("_"," ")
+		if int(schedule.get("wait_ticks",0))>0: description+="，預計 %02d:%02d 後有空再出發；仍需實際到場。"%[schedule.hour,schedule.minute]
 		log_message(data,"social",description,a.name,b.name)
 		remember(a,data,"social",description,5,b.name)
 		remember(b,data,"social",description,5,a.name)
