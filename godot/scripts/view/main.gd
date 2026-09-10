@@ -1375,7 +1375,7 @@ func show_stockpile(resource: String="",show_zero: bool=false) -> void:
 	_wrapped("公共庫存與收支",22)
 	_button("加工排班",drawer_body,show_work_policy)
 	_wrapped("送禮從這裡扣除；每日生產與消耗在午夜結算，可於設定開關。農田收成直接入庫，工廠成品需先從加工頁領取。",12)
-	if simulation.supply_enabled: _wrapped("公共廚房依人口備餐，1 食材製成 1.5 餐食；缺料或排班休工就停煮。自動生產依全鎮存量補貨；餐食備約 3 天，建材至少可支付一項高階工程並留餘量。已持有物資不會因目標下調被刪除。",12)
+	if simulation.supply_enabled: _wrapped("公共廚房依人口備餐，1 食材製成 1.5 餐食；缺料、身體無法工作或排班休工就停煮。其他居民也會在缺料時停工，不會憑空產出商品。自動生產依全鎮存量補貨；餐食備約 3 天，建材至少可支付一項高階工程並留餘量。已持有物資不會因目標下調被刪除。",12)
 	if simulation.supply_enabled: _wrapped("城鎮基本補助只補到 %.0f 銀；出售與訂單收入不受此門檻限制。"%SimEconomy.passive_target(simulation),12)
 	var stockpile: Dictionary=_current_data().get("stockpile",{})
 	var resources: Dictionary=stockpile.get("resources",{})

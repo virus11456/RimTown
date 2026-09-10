@@ -27,6 +27,9 @@ static func spawn(w: SimWorld) -> void:
 			var base: float=rules.prices.get(resource,5)
 			var amount:=w.rng.next_int(15,40) if buying else w.rng.next_int(10,30)
 			var price: float=base*(.5+w.rng.next_float()*.3)*(1+bonus+float(news.get("sell_bonus",0))+rep) if buying else base*(1.2+w.rng.next_float()*.6)*(1-bonus-float(news.get("buy_bonus",0))-rep)
+			if w.supply_enabled:
+				# Discounts cannot create zero-price imports or a buy-back arbitrage loop.
+				price=minf(price,base*.95) if buying else maxf(price,base*1.05)
 			offers.append({"resource":resource,"amount":amount,"price":floorf(price*10+.5)/10,"isBuying":buying})
 	trade.merchant={"name":w.rng.pick(merchant.names),"specialty":merchant.specialty,"offers":offers,"daysRemaining":w.rng.next_int(2,4)}
 	SimSocial.log_message(w.data,"trade","商人"+str(trade.merchant.name)+"到了！專長："+str(merchant.specialty)+"。","","")
@@ -36,7 +39,7 @@ static func execute(w: SimWorld,index: int,qty: float,expected: Dictionary={}) -
 	if index<0 or index>=merchant.offers.size(): return {"error":"無效交易"}
 	var offer: Dictionary=merchant.offers[index]
 	if not expected.is_empty() and not is_same(expected,offer): return {"error":"商品已改變，請重新選擇"}
-	if not is_finite(qty) or qty<=0 or not is_finite(float(offer.price)) or float(offer.price)<0: return {"error":"無效數量或價格"}
+	if not is_finite(qty) or qty<=0 or not is_finite(float(offer.price)) or (float(offer.price)<=0 if w.supply_enabled else float(offer.price)<0): return {"error":"無效數量或價格"}
 	qty=minf(qty,float(offer.amount))
 	if qty<=0: return {"error":"無效數量"}
 	var total: float=qty*float(offer.price)

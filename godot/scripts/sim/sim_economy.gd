@@ -30,7 +30,7 @@ static func daily(w: SimWorld) -> void:
 		var key: String=str(a.get("jobKey","") if a.get("jobKey")!=null else "")
 		if a.get("isPlayer",false) or not rules.recipes.has(key): continue
 		var recipe: Dictionary=rules.recipes[key].duplicate(true)
-		if w.supply_enabled and a.get("isDead",false): continue
+		if w.supply_enabled and (a.get("isDead",false) or not SimProcessing.can_work(a)): continue
 		if w.supply_enabled and recipe.outputs.has("silver") and passive_room(w)<=0: continue
 		var policy: String=w.data.workPolicy.get(rules.craft.get(key,""),"normal")
 		if policy=="off":
@@ -39,7 +39,7 @@ static func daily(w: SimWorld) -> void:
 		var level:=SimWorld.skill_level(float(a.get("skills",{}).get(recipe.skill,{}).get("xp",0))) if a.get("skills",{}).has(recipe.skill) else 0
 		var eff:=0.5+(float(level)/20)*2.0
 		if key in industry_jobs: eff*=.5
-		if policy=="extra":
+		if policy=="extra" and (not w.supply_enabled or recipe.inputs.keys().all(func(r): return amount(w,r)>=float(recipe.inputs[r]))):
 			if consume(w,"silver",8,a.name+"的加班津貼"):
 				eff*=1.5;SimFeuds._mood(a,w,-3)
 				if w.rng.next_float()<.3: SimFeuds._memory(a,w,"daily","連日加班，身體有點吃不消，但訂單堆著總得有人做。",4,[])
@@ -49,7 +49,7 @@ static func daily(w: SimWorld) -> void:
 		eff*=1+(float(a.mood)-50)/500
 		eff*=.9+w.rng.next_float()*.2
 		if w.supply_enabled and key=="cook":
-			var cooks: int=w.data.agents.values().filter(func(n): return not n.get("isPlayer",false) and not n.get("isDead",false) and n.get("jobKey")=="cook").size()
+			var cooks: int=w.data.agents.values().filter(func(n): return not n.get("isPlayer",false) and not n.get("isDead",false) and SimProcessing.can_work(n) and n.get("jobKey")=="cook").size()
 			var population: int=w.data.agents.values().filter(func(n): return not n.get("isPlayer",false) and not n.get("isDead",false)).size()
 			var capacity:=maxf(float(recipe.outputs.meals)*eff,float(population)*1.5/maxi(1,cooks)*1.2)
 			var prepared:=minf(capacity,minf(SimSupply.room(w,"meals"),amount(w,"food")*1.5))
@@ -66,7 +66,10 @@ static func daily(w: SimWorld) -> void:
 		var can_produce:=true
 		for resource in recipe.inputs:
 			if amount(w,resource)<float(recipe.inputs[resource])*scale: can_produce=false;break
-		if not can_produce: eff*=.4;log_event(w,a.name+"材料短缺，用邊角料將就趕工。",a.name)
+		if not can_produce:
+			if w.supply_enabled:
+				log_event(w,a.name+"材料不足，今日暫停生產。",a.name);continue
+			eff*=.4;log_event(w,a.name+"材料短缺，用邊角料將就趕工。",a.name)
 		else:
 			for resource in recipe.inputs: consume(w,resource,float(recipe.inputs[resource])*scale,a.name+"的生產",a.name)
 		for resource in recipe.outputs:

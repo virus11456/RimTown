@@ -1,0 +1,25 @@
+{
+  "checks": 11118,
+  "failures": [],
+  "scenarios": [
+    {
+      "basic_support_in_retained_ledger": 0.0,
+      "completed_orders": 3,
+      "earned_income_in_retained_ledger": 3597.8,
+      "initial_after_build": 860.0,
+      "low_staff": false,
+      "sale_operations": 182,
+      "silver": 4457.8
+    },
+    {
+      "basic_support_in_retained_ledger": 0.0,
+      "completed_orders": 4,
+      "earned_income_in_retained_ledger": 3180.0,
+      "initial_after_build": 860.0,
+      "low_staff": true,
+      "sale_operations": 180,
+      "silver": 4040.0
+    }
+  ],
+  "scope": "sick/recovered cook, exhausted raw inputs, extreme discounts, two 120-day mixed trade/factory/order/market scenarios with explicit wheat injections, nonnegative stocks and resume; not a closed economy"
+}
