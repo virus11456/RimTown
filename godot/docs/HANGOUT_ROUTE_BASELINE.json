@@ -1,0 +1,1681 @@
+{
+  "affinity_eligible_conversations": 4,
+  "checks": 4,
+  "conversations": 30,
+  "day_eight": {},
+  "departed_visits": 1,
+  "failures": [],
+  "invalid": [],
+  "maximum_records": 1,
+  "motion_frames_per_tick": 120,
+  "outcomes": {
+    "cancelled": 1
+  },
+  "paused_visits": 0,
+  "proposal_details": {
+    "lin_mei|sun_yu|453": {
+      "issued_tick": 453,
+      "people": [
+        "lin_mei",
+        "sun_yu"
+      ],
+      "state": "departed"
+    }
+  },
+  "proposals": 1,
+  "reasons": {
+    "林美已到睡眠時段。同行外出已中止。": 1
+  },
+  "scope": "Five original app days, no reload, 120 physical motion frames per tick, no altered jobs/needs/positions/affinity/resources or production AI; headless route baseline on 6ff39fe",
+  "ticks": 480,
+  "traces": {
+    "lin_mei|sun_yu|453": [
+      {
+        "hour": 23,
+        "minute": 15,
+        "people": {
+          "lin_mei": {
+            "activity": "socializing",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 28.8,
+            "leisure_directing": false,
+            "location": "park",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [],
+              "_slpOut": 0,
+              "activity": "socializing",
+              "destDoor": {
+                "x": 616.0,
+                "y": 152.0
+              },
+              "dir4": "side",
+              "doorPhase": null,
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": -1,
+              "finalTarget": {
+                "x": 1032.0,
+                "y": 272.0
+              },
+              "targetX": 160.0,
+              "targetY": 392.0,
+              "walkStep": 14,
+              "walking": true,
+              "x": 163.799957275391,
+              "y": 392.0
+            },
+            "pending_delay": 3,
+            "rest": 22.0,
+            "stay": 7
+          },
+          "sun_yu": {
+            "activity": "socializing",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 28.0,
+            "leisure_directing": false,
+            "location": "park",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 2,
+              "_pathWaypoints": [],
+              "_slpOut": 0,
+              "activity": "socializing",
+              "destDoor": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "dir4": "side",
+              "doorPhase": null,
+              "doorWaypoint": {
+                "x": 376.0,
+                "y": 504.0
+              },
+              "facing": -1,
+              "finalTarget": {
+                "x": 360.0,
+                "y": 416.0
+              },
+              "targetX": 160.0,
+              "targetY": 392.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 160.0,
+              "y": 392.0
+            },
+            "pending_delay": 3,
+            "rest": 22.0,
+            "stay": 8
+          }
+        },
+        "tick": 453,
+        "visit": {}
+      },
+      {
+        "hour": 23,
+        "minute": 30,
+        "people": {
+          "lin_mei": {
+            "activity": "recreation",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 27.6,
+            "leisure_directing": false,
+            "location": "tavern",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 280.0,
+                  "y": 504.0
+                },
+                {
+                  "x": 376.0,
+                  "y": 504.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "recreation",
+              "destDoor": {
+                "x": 616.0,
+                "y": 152.0
+              },
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 376.0,
+                "y": 504.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 360.0,
+                "y": 416.0
+              },
+              "targetX": 376.0,
+              "targetY": 504.0,
+              "walkStep": 25,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
+            "pending_delay": 2,
+            "rest": 21.4,
+            "stay": 8
+          },
+          "sun_yu": {
+            "activity": "recreation",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 26.8,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 776.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 792.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 936.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 952.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "recreation",
+              "destDoor": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 1032.0,
+                "y": 272.0
+              },
+              "targetX": 1064.0,
+              "targetY": 344.0,
+              "walkStep": 24,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
+            "pending_delay": 2,
+            "rest": 21.4,
+            "stay": 9
+          }
+        },
+        "tick": 454,
+        "visit": {}
+      },
+      {
+        "hour": 23,
+        "minute": 45,
+        "people": {
+          "lin_mei": {
+            "activity": "recreation",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 26.4,
+            "leisure_directing": false,
+            "location": "tavern",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 280.0,
+                  "y": 504.0
+                },
+                {
+                  "x": 376.0,
+                  "y": 504.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "recreation",
+              "destDoor": {
+                "x": 616.0,
+                "y": 152.0
+              },
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 376.0,
+                "y": 504.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 360.0,
+                "y": 416.0
+              },
+              "targetX": 376.0,
+              "targetY": 504.0,
+              "walkStep": 25,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
+            "pending_delay": 1,
+            "rest": 20.8,
+            "stay": 7
+          },
+          "sun_yu": {
+            "activity": "recreation",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 25.6,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 776.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 792.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 936.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 952.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "recreation",
+              "destDoor": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 1032.0,
+                "y": 272.0
+              },
+              "targetX": 1064.0,
+              "targetY": 344.0,
+              "walkStep": 24,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
+            "pending_delay": 1,
+            "rest": 20.8,
+            "stay": 8
+          }
+        },
+        "tick": 455,
+        "visit": {}
+      },
+      {
+        "hour": 0,
+        "minute": 0,
+        "people": {
+          "lin_mei": {
+            "activity": "hangout_travel",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 25.2,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 776.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 792.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 936.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 952.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "hangout_travel",
+              "destDoor": {
+                "x": 616.0,
+                "y": 152.0
+              },
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 1056.0,
+                "y": 280.0
+              },
+              "targetX": 1064.0,
+              "targetY": 344.0,
+              "walkStep": 25,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
+            "pending_delay": -1,
+            "rest": 20.2,
+            "stay": 0
+          },
+          "sun_yu": {
+            "activity": "hangout_travel",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 24.4,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 776.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 792.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 936.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 952.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "hangout_travel",
+              "destDoor": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 1056.0,
+                "y": 280.0
+              },
+              "targetX": 1064.0,
+              "targetY": 344.0,
+              "walkStep": 24,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
+            "pending_delay": -1,
+            "rest": 20.2,
+            "stay": 0
+          }
+        },
+        "tick": 456,
+        "visit": {
+          "departed": [
+            "lin_mei",
+            "sun_yu"
+          ],
+          "issued_tick": 453,
+          "people": [
+            "lin_mei",
+            "sun_yu"
+          ],
+          "place": "library",
+          "reason": "等待雙方實際到場。",
+          "state": "traveling",
+          "until": 477
+        }
+      },
+      {
+        "hour": 0,
+        "minute": 15,
+        "people": {
+          "lin_mei": {
+            "activity": "hangout_travel",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 24.0,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 776.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 792.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 936.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 952.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "hangout_travel",
+              "destDoor": {
+                "x": 616.0,
+                "y": 152.0
+              },
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 1056.0,
+                "y": 280.0
+              },
+              "targetX": 1064.0,
+              "targetY": 344.0,
+              "walkStep": 25,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
+            "pending_delay": -1,
+            "rest": 19.6,
+            "stay": 0
+          },
+          "sun_yu": {
+            "activity": "hangout_travel",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 23.2,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 776.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 792.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 936.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 952.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "hangout_travel",
+              "destDoor": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 1056.0,
+                "y": 280.0
+              },
+              "targetX": 1064.0,
+              "targetY": 344.0,
+              "walkStep": 24,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
+            "pending_delay": -1,
+            "rest": 19.6,
+            "stay": 0
+          }
+        },
+        "tick": 457,
+        "visit": {
+          "departed": [
+            "lin_mei",
+            "sun_yu"
+          ],
+          "issued_tick": 453,
+          "people": [
+            "lin_mei",
+            "sun_yu"
+          ],
+          "place": "library",
+          "reason": "等待雙方實際到場。",
+          "state": "traveling",
+          "until": 477
+        }
+      },
+      {
+        "hour": 0,
+        "minute": 30,
+        "people": {
+          "lin_mei": {
+            "activity": "hangout_travel",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 22.8,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 776.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 792.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 936.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 952.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "hangout_travel",
+              "destDoor": {
+                "x": 616.0,
+                "y": 152.0
+              },
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 1056.0,
+                "y": 280.0
+              },
+              "targetX": 1064.0,
+              "targetY": 344.0,
+              "walkStep": 25,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
+            "pending_delay": -1,
+            "rest": 19.0,
+            "stay": 0
+          },
+          "sun_yu": {
+            "activity": "hangout_travel",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 22.0,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 776.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 792.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 936.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 952.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "hangout_travel",
+              "destDoor": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 1056.0,
+                "y": 280.0
+              },
+              "targetX": 1064.0,
+              "targetY": 344.0,
+              "walkStep": 24,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
+            "pending_delay": -1,
+            "rest": 19.0,
+            "stay": 0
+          }
+        },
+        "tick": 458,
+        "visit": {
+          "departed": [
+            "lin_mei",
+            "sun_yu"
+          ],
+          "issued_tick": 453,
+          "people": [
+            "lin_mei",
+            "sun_yu"
+          ],
+          "place": "library",
+          "reason": "等待雙方實際到場。",
+          "state": "traveling",
+          "until": 477
+        }
+      },
+      {
+        "hour": 0,
+        "minute": 45,
+        "people": {
+          "lin_mei": {
+            "activity": "hangout_travel",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 21.6,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 776.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 792.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 936.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 952.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "hangout_travel",
+              "destDoor": {
+                "x": 616.0,
+                "y": 152.0
+              },
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 1056.0,
+                "y": 280.0
+              },
+              "targetX": 1064.0,
+              "targetY": 344.0,
+              "walkStep": 25,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
+            "pending_delay": -1,
+            "rest": 18.4,
+            "stay": 0
+          },
+          "sun_yu": {
+            "activity": "hangout_travel",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 20.8,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 776.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 792.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 936.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 952.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "hangout_travel",
+              "destDoor": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 1056.0,
+                "y": 280.0
+              },
+              "targetX": 1064.0,
+              "targetY": 344.0,
+              "walkStep": 24,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
+            "pending_delay": -1,
+            "rest": 18.4,
+            "stay": 0
+          }
+        },
+        "tick": 459,
+        "visit": {
+          "departed": [
+            "lin_mei",
+            "sun_yu"
+          ],
+          "issued_tick": 453,
+          "people": [
+            "lin_mei",
+            "sun_yu"
+          ],
+          "place": "library",
+          "reason": "等待雙方實際到場。",
+          "state": "traveling",
+          "until": 477
+        }
+      },
+      {
+        "hour": 1,
+        "minute": 0,
+        "people": {
+          "lin_mei": {
+            "activity": "hangout_travel",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 20.4,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 776.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 792.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 936.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 952.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "hangout_travel",
+              "destDoor": {
+                "x": 616.0,
+                "y": 152.0
+              },
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 1056.0,
+                "y": 280.0
+              },
+              "targetX": 1064.0,
+              "targetY": 344.0,
+              "walkStep": 25,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
+            "pending_delay": -1,
+            "rest": 17.8,
+            "stay": 0
+          },
+          "sun_yu": {
+            "activity": "hangout_travel",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 19.6,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 776.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 792.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 936.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 952.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "hangout_travel",
+              "destDoor": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 1056.0,
+                "y": 280.0
+              },
+              "targetX": 1064.0,
+              "targetY": 344.0,
+              "walkStep": 24,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
+            "pending_delay": -1,
+            "rest": 17.8,
+            "stay": 0
+          }
+        },
+        "tick": 460,
+        "visit": {
+          "departed": [
+            "lin_mei",
+            "sun_yu"
+          ],
+          "issued_tick": 453,
+          "people": [
+            "lin_mei",
+            "sun_yu"
+          ],
+          "place": "library",
+          "reason": "等待雙方實際到場。",
+          "state": "traveling",
+          "until": 477
+        }
+      },
+      {
+        "hour": 1,
+        "minute": 15,
+        "people": {
+          "lin_mei": {
+            "activity": "hangout_travel",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 19.2,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 776.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 792.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 936.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 952.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "hangout_travel",
+              "destDoor": {
+                "x": 616.0,
+                "y": 152.0
+              },
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 1056.0,
+                "y": 280.0
+              },
+              "targetX": 1064.0,
+              "targetY": 344.0,
+              "walkStep": 25,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
+            "pending_delay": -1,
+            "rest": 17.2,
+            "stay": 0
+          },
+          "sun_yu": {
+            "activity": "hangout_travel",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 18.4,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 776.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 792.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 936.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 952.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "hangout_travel",
+              "destDoor": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 1056.0,
+                "y": 280.0
+              },
+              "targetX": 1064.0,
+              "targetY": 344.0,
+              "walkStep": 24,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
+            "pending_delay": -1,
+            "rest": 17.2,
+            "stay": 0
+          }
+        },
+        "tick": 461,
+        "visit": {
+          "departed": [
+            "lin_mei",
+            "sun_yu"
+          ],
+          "issued_tick": 453,
+          "people": [
+            "lin_mei",
+            "sun_yu"
+          ],
+          "place": "library",
+          "reason": "等待雙方實際到場。",
+          "state": "traveling",
+          "until": 477
+        }
+      },
+      {
+        "hour": 1,
+        "minute": 30,
+        "people": {
+          "lin_mei": {
+            "activity": "hangout_travel",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 18.0,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 776.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 792.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 936.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 952.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "hangout_travel",
+              "destDoor": {
+                "x": 616.0,
+                "y": 152.0
+              },
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 1056.0,
+                "y": 280.0
+              },
+              "targetX": 1064.0,
+              "targetY": 344.0,
+              "walkStep": 25,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
+            "pending_delay": -1,
+            "rest": 16.6,
+            "stay": 0
+          },
+          "sun_yu": {
+            "activity": "hangout_travel",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 17.2,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 776.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 792.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 936.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 952.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "hangout_travel",
+              "destDoor": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 1056.0,
+                "y": 280.0
+              },
+              "targetX": 1064.0,
+              "targetY": 344.0,
+              "walkStep": 24,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
+            "pending_delay": -1,
+            "rest": 16.6,
+            "stay": 0
+          }
+        },
+        "tick": 462,
+        "visit": {
+          "departed": [
+            "lin_mei",
+            "sun_yu"
+          ],
+          "issued_tick": 453,
+          "people": [
+            "lin_mei",
+            "sun_yu"
+          ],
+          "place": "library",
+          "reason": "等待雙方實際到場。",
+          "state": "traveling",
+          "until": 477
+        }
+      },
+      {
+        "hour": 1,
+        "minute": 45,
+        "people": {
+          "lin_mei": {
+            "activity": "hangout_travel",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 16.8,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 776.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 792.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 936.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 952.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "hangout_travel",
+              "destDoor": {
+                "x": 616.0,
+                "y": 152.0
+              },
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 1056.0,
+                "y": 280.0
+              },
+              "targetX": 1064.0,
+              "targetY": 344.0,
+              "walkStep": 25,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
+            "pending_delay": -1,
+            "rest": 16.0,
+            "stay": 0
+          },
+          "sun_yu": {
+            "activity": "hangout_travel",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": true,
+            "hunger": 16.0,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 776.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 792.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 936.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 952.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "hangout_travel",
+              "destDoor": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 1056.0,
+                "y": 280.0
+              },
+              "targetX": 1064.0,
+              "targetY": 344.0,
+              "walkStep": 24,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
+            "pending_delay": -1,
+            "rest": 16.0,
+            "stay": 0
+          }
+        },
+        "tick": 463,
+        "visit": {
+          "departed": [
+            "lin_mei",
+            "sun_yu"
+          ],
+          "issued_tick": 453,
+          "people": [
+            "lin_mei",
+            "sun_yu"
+          ],
+          "place": "library",
+          "reason": "等待雙方實際到場。",
+          "state": "traveling",
+          "until": 477
+        }
+      }
+    ]
+  },
+  "visit_details": {
+    "lin_mei|sun_yu|453": {
+      "departed": [
+        "lin_mei",
+        "sun_yu"
+      ],
+      "issued_tick": 453,
+      "people": [
+        "lin_mei",
+        "sun_yu"
+      ],
+      "place": "library",
+      "reason": "林美已到睡眠時段。同行外出已中止。",
+      "resolved_tick": 464,
+      "state": "cancelled",
+      "until": 477
+    }
+  }
+}

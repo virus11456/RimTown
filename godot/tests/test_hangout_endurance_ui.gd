@@ -36,7 +36,7 @@ func audit(w: SimWorld,m: SimMotion) -> void:
 		if not live and p.state=="pending":
 			p.state="ended_before_departure"
 			p.reason=w.quest_balance.get("hangout_status",{}).get(p.people[0],{}).get("reason","未留下原因")
-func trace_tick(w: SimWorld) -> void:
+func trace_tick(w: SimWorld,m: SimMotion) -> void:
 	for token in proposals:
 		var p: Dictionary=proposals[token]
 		var r: Dictionary=SimHangoutVisits.records(w).get(token,{})
@@ -46,24 +46,33 @@ func trace_tick(w: SimWorld) -> void:
 			var a: Dictionary=w.data.agents.get(id,{})
 			var pending: Variant=a.get("_pendingHangout")
 			people[id]={"activity":a.get("activity"),"location":a.get("currentLocation"),"pending_delay":pending.get("tick",-1) if pending is Dictionary else -1,"stay":a.get("_locationStayRemaining",0),"available":SimHangoutSafety.available_person(w,a) if not a.is_empty() else false,"hunger":a.get("needs",{}).get("hunger"),"rest":a.get("needs",{}).get("rest"),"leisure_directing":SimLeisurePlan.directing(w,id),"appointment_directing":SimAppointments.directing(w,id)}
+			var position: Dictionary=m.positions.get(id,{})
+			people[id].motion=position.duplicate(true)
+			people[id].actual_place=SimCareerPresence.place(m,id)
 		rows.append({"tick":int(w.data.tickCount),"hour":w.data.clock.hour,"minute":w.data.clock.minute,"people":people,"visit":r.duplicate(true)})
 		traces[token]=rows
 func run() -> void:
 	var viewport:=SubViewport.new();viewport.size=Vector2i(960,640);viewport.own_world_3d=true;root.add_child(viewport)
 	var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app);await process_frame;app.set_process(false)
 	var w: SimWorld=app.simulation
-	for t in 3072:
+	var focused: bool="--route-focus" in OS.get_cmdline_user_args()
+	var ticks:=480 if focused else 3072
+	var captured:=false
+	for t in ticks:
 		var affinities: Dictionary={}
 		for id in w.data.agents:
 			for other in w.data.agents[id].get("relationships",{}): affinities[id+"|"+other]=w.data.agents[id].relationships[other].get("affinity",0)
 		var previous: Array=w.data.get("npcConversationLog",[]).duplicate(true)
-		trace_tick(w)
+		trace_tick(w,app.motion)
 		app._tick_simulation()
 		for row in w.data.get("npcConversationLog",[]):
 			if not previous.has(row):
 				conversations+=1
 				if not w.data.agents[row.agentAId].get("isPlayer",false) and not w.data.agents[row.agentBId].get("isPlayer",false) and float(affinities.get(row.agentAId+"|"+row.agentBId,0))>=30: eligible_conversations+=1
 		audit(w,app.motion)
+		if focused and not captured and not visits.is_empty():
+			FileAccess.open("/private/tmp/rimtown-hangout-route-start.json",FileAccess.WRITE).store_string(JSON.stringify(app.progress_snapshot()))
+			captured=true
 		for frame in 120:
 			app.motion.update(w.data.agents)
 			SimAppointments.observe(w,app.motion);SimLeisurePlan.observe(w,app.motion);SimHangoutVisits.observe(w,app.motion)
@@ -86,5 +95,5 @@ func run() -> void:
 	check(conversations>0,"original residents have natural conversations")
 	check(max_records<=20,"observed visit history remains bounded")
 	check(not proposals.is_empty(),"natural simulation generates at least one paired proposal")
-	var report:={"checks":checks,"failures":failures,"ticks":3072,"day_eight":day_eight,"affinity_eligible_conversations":eligible_conversations,"motion_frames_per_tick":120,"conversations":conversations,"proposals":proposals.size(),"departed_visits":visits.size(),"outcomes":outcomes,"reasons":reasons,"paused_visits":pauses,"maximum_records":max_records,"invalid":invalid,"traces":traces,"proposal_details":proposals,"visit_details":visits,"scope":"32 days of original app residents and settings, 120 physical motion frames per tick, app reload halfway, no altered jobs/needs/positions/affinity/resources or production AI; headless, not full game playthrough"}
-	FileAccess.open("res://docs/HANGOUT_ENDURANCE_UI_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "));print(JSON.stringify({"checks":checks,"failures":failures,"outcomes":outcomes,"proposals":proposals.size(),"visits":visits.size(),"reasons":reasons}));quit(0 if failures.is_empty() else 1)
+	var report:={"checks":checks,"failures":failures,"ticks":ticks,"day_eight":day_eight,"affinity_eligible_conversations":eligible_conversations,"motion_frames_per_tick":120,"conversations":conversations,"proposals":proposals.size(),"departed_visits":visits.size(),"outcomes":outcomes,"reasons":reasons,"paused_visits":pauses,"maximum_records":max_records,"invalid":invalid,"traces":traces,"proposal_details":proposals,"visit_details":visits,"scope":("Five original app days, no reload" if focused else "32 original app days, reload halfway")+", 120 physical motion frames per tick, no altered jobs/needs/positions/affinity/resources or production AI; headless, not full game playthrough"}
+	FileAccess.open(("res://docs/HANGOUT_ROUTE_FIXED.json" if "--route-fixed" in OS.get_cmdline_user_args() else "res://docs/HANGOUT_ROUTE_BASELINE.json") if focused else "res://docs/HANGOUT_ENDURANCE_UI_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "));print(JSON.stringify({"checks":checks,"failures":failures,"outcomes":outcomes,"proposals":proposals.size(),"visits":visits.size(),"reasons":reasons}));quit(0 if failures.is_empty() else 1)

@@ -1,0 +1,6 @@
+{
+  "checks": 5,
+  "failures": [],
+  "maximum_step": 0.80767822265625,
+  "scope": "controlled park-to-library pair, real motion and collision grid with fixed simulation clock to isolate routing; not enough-time or natural completion proof"
+}

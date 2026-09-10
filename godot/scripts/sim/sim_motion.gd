@@ -77,6 +77,14 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 					p.targetX=p.x; p.targetY=p.y; p.walkStep=0; p.doorPhase=null; p.walking=false; p._slpOut=0
 					continue
 		var changed:=absf(target.x-p.targetX)>32 or absf(target.y-p.targetY)>32
+		if appointment:
+			# Track the final directed destination separately from intermediate doors.
+			var goal: Dictionary=p.get("_directedGoal",{})
+			changed=goal.get("location","")!=location or absf(float(goal.get("x",-9999))-target.x)>1 or absf(float(goal.get("y",-9999))-target.y)>1
+			if changed:
+				p._directedGoal={"location":location,"x":target.x,"y":target.y}
+				p.doorPhase=null;p.erase("destDoor");p.erase("finalTarget");p.erase("doorWaypoint")
+		else: p.erase("_directedGoal")
 		if changed:
 			var dest: Variant=door(location,id)
 			var building:=inside(Vector2(p.x,p.y))

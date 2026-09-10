@@ -1,0 +1,28 @@
+{
+  "checks": 4,
+  "distance_walked": {
+    "lin_mei": 575.47667080164,
+    "sun_yu": 575.47667080164
+  },
+  "end_tick": 464,
+  "failures": [],
+  "maximum_step": 0.683326542377472,
+  "outcome": {
+    "departed": [
+      "lin_mei",
+      "sun_yu"
+    ],
+    "issued_tick": 453.0,
+    "people": [
+      "lin_mei",
+      "sun_yu"
+    ],
+    "place": "library",
+    "reason": "林美已到睡眠時段。同行外出已中止。",
+    "resolved_tick": 464,
+    "state": "cancelled",
+    "until": 477.0
+  },
+  "scope": "unchanged original app natural departure snapshot from five-day baseline; real motion and normal ticks, no changed positions/jobs/needs/clock/resources; fixture replay, not fresh 32-day natural run",
+  "start_tick": 456
+}
