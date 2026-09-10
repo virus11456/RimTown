@@ -1,0 +1,5 @@
+{
+  "checks": 173,
+  "failures": [],
+  "scope": "four production jobs, single-use public authorization, attendance, save/reload, exact ledger, dynamic demand/material/mayor cancellation, 120-day repeated-attempt stock bound (isolated fixture)"
+}
