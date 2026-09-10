@@ -42,7 +42,7 @@ static func daily(w: SimWorld) -> void:
 	for p in manager.projects:
 		if p.status!="building": continue
 		for a in w.data.agents.values():
-			if a.get("isPlayer",false) or a.get("jobKey") not in ["carpenter","miner","blacksmith"]: continue
+			if a.get("isPlayer",false) or a.has("_raidShelterUntil") or a.get("jobKey") not in ["carpenter","miner","blacksmith"]: continue
 			var level:=SimWorld.skill_level(float(a.skills.get("建造",{}).get("xp",0))) if a.skills.has("建造") else 0
 			p.workDone+=1+floori(float(level)/5)
 		if p.workDone>=p.workRequired: p.status="complete";done.append(p)

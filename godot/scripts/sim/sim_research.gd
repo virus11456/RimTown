@@ -14,7 +14,7 @@ static func daily(w: SimWorld) -> void:
 		return
 	var points:=0.0
 	for a in w.data.agents.values():
-		if not a.get("isPlayer",false) and SimPlayerChat.job(w,a).get("title")=="研究員":
+		if not a.get("isPlayer",false) and not a.has("_raidShelterUntil") and SimPlayerChat.job(w,a).get("title")=="研究員":
 			var level:=SimWorld.skill_level(float(a.skills.get("智識",{}).get("xp",0))) if a.skills.has("智識") else 0
 			points+=3+level*.5
 	points*=1+float(w.data.get("news",{}).get("activeModifiers",{}).get("research_bonus",0))

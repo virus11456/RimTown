@@ -53,6 +53,7 @@ static func _execute_fulfill(w: SimWorld,id: String) -> bool:
 		log_event(w,"order","✅ 訂單完成！獲得 "+str(int(order.reward))+" 銀幣");return true
 	return false
 static func can_work(a: Dictionary) -> bool:
+	if a.has("_raidShelterUntil"): return false
 	var status: Variant=a.get("status")
 	return status==null or (status is String and status in ["","normal"]) or (status is bool and not status) or ((status is int or status is float) and status==0)
 static func auto_staff(w: SimWorld,defs: Dictionary) -> void:

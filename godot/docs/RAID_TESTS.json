@@ -1,0 +1,5 @@
+{
+  "checks": 9,
+  "failures": [],
+  "scope": "NPC authority, reload, failure/shelter/workforce recovery, budget atomicity, negotiation, automatic deadline"
+}

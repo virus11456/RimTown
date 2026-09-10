@@ -1,0 +1,46 @@
+[
+  {
+    "name": "盜匪來襲",
+    "description": "一群盜匪正在逼近！",
+    "severity": "major",
+    "threat_level": 3,
+    "attacker": "盜匪",
+    "effects": {
+      "mood_all": -15,
+      "conversation_topic": "盜匪襲擊"
+    }
+  },
+  {
+    "name": "野獸攻擊",
+    "description": "一群狼從山上下來了！",
+    "severity": "moderate",
+    "threat_level": 2,
+    "attacker": "狼群",
+    "effects": {
+      "mood_all": -10,
+      "conversation_topic": "狼群攻擊"
+    }
+  },
+  {
+    "name": "掠奪者入侵",
+    "description": "武裝掠奪者正在襲擊！",
+    "severity": "major",
+    "threat_level": 4,
+    "attacker": "掠奪者",
+    "effects": {
+      "mood_all": -18,
+      "conversation_topic": "掠奪者"
+    }
+  },
+  {
+    "name": "野豬暴走",
+    "description": "暴怒的野豬衝進鎮上！",
+    "severity": "moderate",
+    "threat_level": 2,
+    "attacker": "野豬",
+    "effects": {
+      "mood_all": -8,
+      "conversation_topic": "野豬暴走"
+    }
+  }
+]

@@ -281,6 +281,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.research_enabled=bool(document.data.get("_godot4a",{}).get("research_enabled",true))
 	simulation.population_enabled=bool(document.data.get("_godot4a",{}).get("population_enabled",true))
 	simulation.births_enabled=bool(document.data.get("_godot4a",{}).get("births_enabled",true))
+	simulation.raids_enabled=bool(document.data.get("_godot4a",{}).get("raids_enabled",true))
 	simulation.governance_enabled=bool(document.data.get("_godot4a",{}).get("governance_enabled",true))
 	simulation.elections_enabled=bool(document.data.get("_godot4a",{}).get("elections_enabled",true))
 	simulation.quests_enabled=bool(document.data.get("_godot4a",{}).get("quests_enabled",true))
@@ -355,6 +356,7 @@ func show_tab(tab: String, refresh := false) -> void:
 			_button("研究",drawer_body,show_research)
 			_button("產業",drawer_body,show_industry)
 			_button("農田",drawer_body,show_farm)
+			_button("職業與值勤",drawer_body,show_careers)
 			_button("加工",drawer_body,show_processing)
 			_wrapped("試玩：作息、移動與居民互動已啟用。\n慰問使用每日公共額度；旅人支出需鎮長核准。每日經濟可在設定開關。建築、交易、研究、產業、農田與加工已啟用；任務與人生進度可從故事頁查看。",13)
 			var resources: Dictionary = _current_data().get("stockpile",{}).get("resources",{})
@@ -368,6 +370,7 @@ func show_tab(tab: String, refresh := false) -> void:
 			_button("任務與人生",drawer_body,show_quests)
 			_button("人口與家庭",drawer_body,show_births)
 			_button("鎮長選舉",drawer_body,show_elections)
+			_button("小鎮防禦",drawer_body,show_raids)
 			_button("村民對話紀錄",drawer_body,show_conversations)
 			_button("八卦與鎮民動態",drawer_body,show_gossip)
 			_button("關係事件",drawer_body,show_romance)
@@ -860,6 +863,7 @@ func _process_traveler(delta: float) -> void:
 		var p: Dictionary=motion.positions.player
 		var location:=motion.location_at(Vector2(p.x,p.y))
 		if not location.is_empty(): simulation.data.agents.player.currentLocation=location
+		if simulation.quest_balance.has("careers") and not SimCareers.book(simulation).active.is_empty() and location!=SimCareers.book(simulation).active.location: SimCareers.cancel(simulation)
 		simulation.data.agents.player.activity="wandering"
 	if motion.manual_player: world_view.animate_agents(motion.positions)
 	var player: Dictionary=motion.positions.player
@@ -2088,3 +2092,55 @@ func _capture_governance() -> void:
 		await RenderingServer.frame_post_draw
 		viewport.get_texture().get_image().save_png("res://docs/governance-"+("mobile" if dimensions.x==375 else "desktop")+".png")
 		viewport.queue_free()
+
+func show_raids() -> void:
+	active_tab="小鎮";drawer.show();_clear_drawer();_wrapped("小鎮防禦",22)
+	var b:=SimRaids.book(simulation);var p: Dictionary=b.pending
+	_wrapped("守備 %.1f · 可出勤守衛 %d 人"%[SimRaids.strength(simulation),SimRaids.guards(simulation).size()])
+	_wrapped("突襲至少間隔五天。預警後一天內應對；旅人提出建議，由鎮長依守備與預算決策。未回應會自動應變。",12)
+	_button("突襲事件："+("開啟" if simulation.raids_enabled else "關閉"),drawer_body,func(): simulation.raids_enabled=not simulation.raids_enabled;has_simulated=true;show_raids())
+	if not p.is_empty():
+		_wrapped(str(p.name)+" · 威脅 %d"%p.threat_level,18);_wrapped(str(p.description))
+		_wrapped("距截止 %.1f 小時 · 求和費 %d 公共銀幣"%[maxf(0,(int(p.deadline)-int(simulation.data.tickCount))*.25),p.threat_level*15],12)
+		_wrapped("全力防禦有守衛才增加 3 守備；疏散會損失 15% 食物、木材及石材，非守衛居民在家避難至翌日。",12)
+		for key in SimRaids.CHOICES:
+			_button(("下令：" if SimGovernance.mayor(simulation)=="player" else "建議：")+str(SimRaids.CHOICES[key]),drawer_body,func():
+				var result:=SimRaids.decide(simulation,int(p.id),key);has_simulated=true;show_raids();_wrapped(str(result.message)))
+	else: _wrapped("目前沒有待處理突襲。")
+	for result in b.history.slice(-5):
+		_wrapped(str(result.name)+" · "+str(result.authority)+"決定"+str(SimRaids.CHOICES[result.choice]),18)
+		_wrapped(str(result.reason)+" "+str(result.message),12)
+		var losses: Array=[]
+		for key in result.losses: losses.append(_resource_name(key)+" "+str(result.losses[key]))
+		if not losses.is_empty(): _wrapped("公共支出／損失："+"、".join(losses),12)
+	_button("重新整理",drawer_body,show_raids)
+	_button("返回故事",drawer_body,func(): show_tab("故事",true))
+
+func show_careers() -> void:
+	active_tab="小鎮";drawer.show();_clear_drawer();_wrapped("職業與值勤",22)
+	var w: SimWorld=simulation;var b:=SimCareers.book(w)
+	var job: String=str(w.data.agents.get("player",{}).get("jobKey",""))
+	_wrapped("目前："+str(SimCareers.JOBS.get(job,{"name":"鎮長" if job=="mayor" else "旅人"}).name))
+	_wrapped("每日共三次值勤，轉職不重置。每次需到場停留一個遊戲小時，暫停時不計時。成果歸小鎮，不發個人銀幣，也不增加鎮務權限。",12)
+	_wrapped("農務：照料缺水作物，不額外產生商品。守衛：走完三處巡查，當日守備 +2。醫護：照護疲憊居民，體力 +15；尚非疾病診療。",12)
+	_wrapped("今日完成 %d / 3 · 累計 %d 次"%[b.used,b.completed])
+	if job!="mayor":
+		for key in SimCareers.JOBS:
+			if key!=job: _button("登記："+str(SimCareers.JOBS[key].name),drawer_body,func():
+				var r:=SimCareers.enroll(w,key);has_simulated=true;show_careers();_wrapped(r.message))
+	else: _wrapped("鎮長可直接决定鎮務，無需 NPC 核准。")
+	if not b.active.is_empty():
+		_wrapped(str(b.active.label)+"進行中；剩餘 %.0f 分鐘"%[maxf(0,int(b.active.finish)-int(w.data.tickCount))*15])
+		_button("取消值勤",drawer_body,func(): SimCareers.cancel(w);has_simulated=true;show_careers())
+	else:
+		var tasks:=SimCareers.available(w)
+		if tasks.is_empty(): _wrapped("目前沒有符合需求的工作。農務需已種植且缺水的農田；醫護需疲憊居民。")
+		for task in tasks:
+			_wrapped(str(task.label)+" · 地點："+str(w.data.townMap.locations[task.location].name),12)
+			_button("開始："+str(task.label),drawer_body,func():
+				var pos: Dictionary=motion.positions.player
+				if motion.location_at(Vector2(pos.x,pos.y))!=task.location: _wrapped("請先操作旅人走到工作地點。");return
+				var r:=SimCareers.start(w,task.id);has_simulated=true;show_careers();_wrapped(r.message))
+	for item in b.history: _wrapped(str(item),12)
+	_button("重新整理",drawer_body,show_careers)
+	_button("返回小鎮",drawer_body,func(): show_tab("小鎮",true))

@@ -45,7 +45,7 @@ static func daily(w: SimWorld) -> void:
 		for level in def.levels:
 			if int(level.lv)==int(ind.level): level_def=level;break
 		if level_def.is_empty(): continue
-		var workers: Array=w.data.agents.values().filter(func(a): return not a.get("isPlayer",false) and a.get("jobKey")==def.npcJob and (a.get("status")==null or a.get("status")=="" or a.get("status")=="normal"))
+		var workers: Array=w.data.agents.values().filter(func(a): return not a.get("isPlayer",false) and not a.has("_raidShelterUntil") and a.get("jobKey")==def.npcJob and (a.get("status")==null or a.get("status")=="" or a.get("status")=="normal"))
 		var count:=mini(workers.size(),int(level_def.workers));var efficiency:=float(count)/float(level_def.workers) if count>0 else .3
 		var multiplier:=1.0
 		for synergy in defs.synergies:
