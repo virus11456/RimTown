@@ -1,5 +1,5 @@
 {
   "checks": 12,
   "failures": [],
-  "scope": "real accept and camera buttons, physical-position fixtures vs logical destinations, collision-based player arrival, no world changes or early completion, expired callback and phone width"
+  "scope": "controlled free-day NPC for return availability; real accept and camera buttons, physical-position fixtures vs logical destinations, collision-based player arrival, no world changes or early completion, expired callback and phone width"
 }

@@ -1,22 +1,29 @@
 {
-  "checks": 10,
+  "checks": 8,
   "failures": [],
-  "max_step_pixels": 0.999847412109375,
-  "scope": "actual reschedule button, mobile panel, delivered compressed native reload, natural ticks and SimMotion until rescheduled date, player collision movement and meeting; no live AI or visual art review",
+  "max_step_pixels": 0.998870849609375,
+  "needs_before_decision_tick": {
+    "beauty": 50.0,
+    "comfort": 60.0,
+    "hunger": 14.4,
+    "recreation": 55.0000000000002,
+    "rest": 40.0,
+    "social": 55.0
+  },
+  "scope": "controlled free-day NPC; valid natural urgent-needs cancellation is an outcome, not a completed meeting; actual reschedule button, mobile panel, delivered compressed native reload, natural ticks and SimMotion until rescheduled date, player collision movement and meeting; no live AI or visual art review",
   "state": {
-    "due": 240.0,
+    "due": 232.0,
     "expires": 8.0,
-    "hour": 18.0,
+    "hour": 16.0,
     "npc": "chen_wei",
-    "npc_arrived": true,
     "place": "town_square",
-    "previous_due": 144.0,
-    "previous_time": "小鎮第 2 天 18:00",
-    "reason": "雙方已在約定地點實際碰面",
+    "previous_due": 136.0,
+    "previous_time": "小鎮第 2 天 16:00",
+    "reason": "對方需要先休息或進食",
     "reschedule_count": 1.0,
-    "resolved_tick": 240,
-    "state": "met",
-    "time": "小鎮第 3 天 18:00",
-    "until": 248.0
+    "resolved_tick": 232,
+    "state": "cancelled",
+    "time": "小鎮第 3 天 16:00",
+    "until": 240.0
   }
 }

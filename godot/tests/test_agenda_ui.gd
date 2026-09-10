@@ -3,8 +3,10 @@ func run() -> void:
 	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;root.add_child(viewport)
 	var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app);await process_frame;app.set_process(false)
 	var w: SimWorld=app.simulation
+	w.data.agents.chen_wei.jobKey="" # Controlled free-day fixture for the stricter return-time check.
 	w.data.agents.chen_wei.dailyPlan={"blocks":[{"time":"00:00","text":"尚未執行的遠行計畫","steps":["還沒去的地方"]}]}
 	SimAppointments.offer(w,"chen_wei")
+	w.data.agents.chen_wei.jobKey="mayor" # Restore work fixture for the adjusted-sleep display checks.
 	app.show_tab("居民",true);app.show_agent("chen_wei",false);press(app.drawer_body,"今日作息與行程");await settle()
 	check(has_text(app.drawer_body,"文字備忘（未排入行程）") and has_text(app.drawer_body,"尚未執行的遠行計畫"),"imported plan clearly separate from executable routine")
 	check(has_text(app.drawer_body,"尚未接受，未排入行程"),"unaccepted appointment is not advertised as confirmed")

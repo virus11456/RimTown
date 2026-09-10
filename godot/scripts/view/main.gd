@@ -335,6 +335,7 @@ func _load_document(text: String, source: String) -> bool:
 			tick_accumulator=float(saved.get("tick_accumulator",0))
 		else: motion.update(simulation.data.agents)
 		SimShiftSleep.refresh(simulation,motion)
+		simulation.social.observe_positions(motion)
 		world_view.animate_agents(motion.positions)
 	if not active_tab.is_empty(): show_tab(active_tab,true)
 	return true
@@ -2358,6 +2359,7 @@ func _show_appointment_arrival(a: Dictionary) -> void:
 func show_appointment(id: String) -> void:
 	selected_agent=id;resident_page="appointment";_clear_drawer()
 	_wrapped("見面約定",22)
+	_wrapped("安排時會預留兩小時等候與居民慢走返家的時間；臨時需求仍可能影響赴約。",12)
 	_wrapped("接受邀約才會排入行程。請讓時間正常前進，並自行走到地點靠近對方；只有口頭說好不算完成邀約。",12)
 	var a:=SimAppointments.current(simulation)
 	if not a.is_empty():

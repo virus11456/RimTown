@@ -15,12 +15,14 @@ func run() -> void:
 	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;root.add_child(viewport)
 	var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app);await process_frame;app.set_process(false)
 	var w: SimWorld=app.simulation
+	w.data.agents.chen_wei.jobKey="" # Controlled free-day fixture for the stricter return-time check.
 	app.chat_transport=mock;reply={"ok":true,"data":{"reply":"要不要明天找時間見面？\nEFFECTS: {\"affinity_change\":0,\"romantic_change\":0,\"summary\":\"想與旅人見面\",\"invitation\":true}"}}
 	app.show_tab("居民",true);app.show_player_chat("chen_wei");app.send_player_chat("chen_wei","你明天有空嗎？");release_reply.emit();await settle()
 	var a:=SimAppointments.current(w)
 	check(a.get("state")=="offered","mock AI chat creates offered appointment")
 	press(app.drawer_body,"見面約定");await settle();press(app.drawer_body,"接受邀約");await settle()
 	check(a.state=="accepted" and has_text(app.drawer_body,"已接受"),"UI accepts into schedule")
+	check(has_text(app.drawer_body,"慢走返家"),"card explains waiting and ordinary return allowance")
 	var fits:=true
 	for child in app.drawer_body.get_children():
 		if child is Control and child.size.x>app.drawer.size.x: fits=false
@@ -56,5 +58,5 @@ func run() -> void:
 	check(max_step<=1,"NPC appointment travel never teleports: "+str(max_step))
 	app.show_appointment("chen_wei");await settle()
 	check(has_text(app.drawer_body,str(a.reason)),"final reason visible")
-	var report:={"checks":checks,"failures":failures,"npc_max_step_pixels":max_step,"state":a,"scope":"mock AI response through actual chat UI, accept, app save reload, natural clock/needs/work, real SimMotion NPC path and collision-based player movement, proximity meeting, mobile panel; headless rendering, no production AI service"}
+	var report:={"checks":checks,"failures":failures,"npc_max_step_pixels":max_step,"state":a,"scope":"controlled free-day NPC for return availability; mock AI response through actual chat UI, accept, app save reload, natural clock/needs/work, real SimMotion NPC path and collision-based player movement, proximity meeting, mobile panel; headless rendering, no production AI service"}
 	FileAccess.open("res://docs/APPOINTMENTS_UI_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "));print(JSON.stringify(report));quit(0 if failures.is_empty() else 1)

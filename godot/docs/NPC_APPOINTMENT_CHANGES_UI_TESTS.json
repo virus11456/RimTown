@@ -2,5 +2,5 @@
   "checks": 10,
   "failures": [],
   "max_step_pixels": 0.999847412109375,
-  "scope": "configured switch to supported priest job; actual app tick notification, mobile card, native archive, accept/reject callbacks, natural needs/time and physical NPC/player movement on replacement date; no live AI"
+  "scope": "configured free day and earlier sleep preference; actual app tick notification, mobile card, native archive, accept/reject callbacks, natural needs/time and physical NPC/player movement on replacement date; no live AI"
 }

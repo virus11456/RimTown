@@ -3,6 +3,7 @@ func run() -> void:
 	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;root.add_child(viewport)
 	var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app);await process_frame;app.set_process(false)
 	var w: SimWorld=app.simulation
+	w.data.agents.chen_wei.jobKey="" # Controlled free-day fixture for the stricter return-time check.
 	check(app.appointment_shortcut.disabled,"no active appointment shortcut disabled")
 	SimAppointments.offer(w,"chen_wei");app._refresh_appointment_reminder()
 	check(not app.appointment_shortcut.disabled,"pending offer shortcut enabled")
@@ -23,5 +24,5 @@ func run() -> void:
 	SimAppointments.finish(w,"cancelled","取消");app._refresh_appointment_reminder()
 	check(app.appointment_shortcut.disabled,"finished appointment shortcut disabled")
 	DirAccess.remove_absolute(path)
-	var report:={"checks":checks,"failures":failures,"scope":"375px global navigation, pending/accepted/terminal shortcut, busy deferral, once-only status and native archive; controlled due time, no API"}
+	var report:={"checks":checks,"failures":failures,"scope":"controlled free-day NPC for return availability; 375px global navigation, pending/accepted/terminal shortcut, busy deferral, once-only status and native archive; controlled due time, no API"}
 	FileAccess.open("res://docs/APPOINTMENT_REMINDER_UI_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "));print(JSON.stringify(report));quit(0 if failures.is_empty() else 1)

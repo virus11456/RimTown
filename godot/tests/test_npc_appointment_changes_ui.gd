@@ -3,9 +3,10 @@ func run() -> void:
 	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;root.add_child(viewport)
 	var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app);await process_frame;app.set_process(false)
 	var w: SimWorld=app.simulation
+	w.data.agents.chen_wei.jobKey="" # Free-day fixture for return-window rescheduling.
 	SimAppointments.offer(w,"chen_wei");SimAppointments.respond(w,true)
-	# Controlled trigger: a real supported job with later working hours.
-	w.data.agents.chen_wei.jobKey="priest"
+	# Controlled trigger: earlier sleep leaves less time for a normal walk home.
+	w.data.agents.chen_wei.personality.traits=["early_bird"]
 	app.show_tab("居民",true);app._tick_simulation();await settle()
 	var a:=SimAppointments.current(w)
 	check(a.state=="change_offered" and "提出改約" in app.status.text,"app tick emits visible NPC change notice")
@@ -19,9 +20,9 @@ func run() -> void:
 	var archive:=SaveArchive.encode(JSON.stringify(app.progress_snapshot()))
 	var file:=FileAccess.open(path,FileAccess.WRITE);file.store_buffer(archive);file.close()
 	app.dialog.file_selected.emit(path);await settle();a=SimAppointments.current(w)
-	check(a.state=="change_offered" and int(a.hour)==18 and int(a.proposal.hour)==19,"native archive retains unaccepted alternative")
+	check(a.state=="change_offered" and int(a.proposal.hour)<int(a.hour),"native archive retains unaccepted alternative")
 	app.show_appointment("chen_wei");press(app.drawer_body,"同意新時間");await settle()
-	check(a.state=="accepted" and int(a.hour)==19,"actual consent button applies new hour")
+	check(a.state=="accepted" and SimAppointments.free_hour(w,"chen_wei",int(a.hour)),"actual consent button applies new hour")
 	app.motion.manual_player=true
 	var arrived:=false;var maximum:=0.0
 	for tick in 300:
@@ -42,5 +43,5 @@ func run() -> void:
 	app.dialog.file_selected.emit(path);await settle();a=SimAppointments.current(w);app.show_appointment("chen_wei")
 	press(app.drawer_body,"婉拒改約");await settle()
 	check(a.state=="cancelled" and has_text(app.drawer_body,"玩家婉拒改約"),"decline cancels old appointment with visible reason")
-	var report:={"checks":checks,"failures":failures,"max_step_pixels":maximum,"scope":"configured switch to supported priest job; actual app tick notification, mobile card, native archive, accept/reject callbacks, natural needs/time and physical NPC/player movement on replacement date; no live AI"}
+	var report:={"checks":checks,"failures":failures,"max_step_pixels":maximum,"scope":"configured free day and earlier sleep preference; actual app tick notification, mobile card, native archive, accept/reject callbacks, natural needs/time and physical NPC/player movement on replacement date; no live AI"}
 	FileAccess.open("res://docs/NPC_APPOINTMENT_CHANGES_UI_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "));print(JSON.stringify(report));quit(0 if failures.is_empty() else 1)

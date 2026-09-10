@@ -17,13 +17,15 @@ static func free_hour(w: SimWorld,id: String,hour: int) -> bool:
 		for offset in 3:
 			if not SimLeisurePlan.person_available(resident,w.rules.jobs,posmod(hour+offset,24)): return false
 	var job:=SimPlayerChat.job(w,w.data.agents[id])
-	if job.is_empty() or not job.has("work_hours"): return true
-	var start:=int(job.work_hours[0]);var end:=int(job.work_hours[1])
-	# Include the commute hour, including jobs spanning midnight.
-	for h in 3:
-		var value:=posmod(hour+h,24)
-		if value==posmod(start-1,24) or (value>=start and value<end if start<end else value>=start or value<end): return false
+	if not job.is_empty() and job.has("work_hours"):
+		var start:=int(job.work_hours[0]);var end:=int(job.work_hours[1])
+		for h in 3:
+			var value:=posmod(hour+h,24)
+			if value==posmod(start-1,24) or (value>=start and value<end if start<end else value>=start or value<end): return false
+	if SimHomeRest.physical(w):
+		return SimHangoutRoute.return_fits(w.social.observed_motion,resident,{"hour":hour,"minute":0},w.rules.jobs,"town_square",8)
 	return true
+
 static func offer(w: SimWorld,id: String,place: String="town_square") -> String:
 	if id=="player" or not w.data.agents.has("player") or not reason(w,id).is_empty(): return "目前無法安排邀約。"
 	if not PLACES.has(place) or not w.data.townMap.locations.has(place): return "這個地點無法安排見面。"
@@ -33,7 +35,7 @@ static func offer(w: SimWorld,id: String,place: String="town_square") -> String:
 	var hour:=-1
 	for candidate in [18,19,17,16,15,14,13,12,11,10,9,8]:
 		if free_hour(w,id,candidate): hour=candidate;break
-	if hour<0: return "對方明天沒有合適的空檔。"
+	if hour<0: return "對方明天沒有同時容納見面、等候與返家的空檔。"
 	var delay:=96-int(w.data.clock.hour)*4-int(w.data.clock.minute)/15+hour*4
 	book.last_offer_tick=int(w.data.tickCount)
 	book.current={"npc":id,"place":place,"due":int(w.data.tickCount)+delay,"until":int(w.data.tickCount)+delay+8,"expires":int(w.data.tickCount)+8,"state":"offered","time":"小鎮第 %d 天 %02d:00"%[SimClock.total_days(w.data.clock)+2,hour],"hour":hour,"reason":"等待玩家回覆"}
@@ -49,6 +51,7 @@ static func finish(w: SimWorld,state: String,why: String) -> void:
 		if w.data.agents.has(id): SimFeuds._memory(w.data.agents[id],w,"appointment","見面約定："+why,5,[])
 	if w.data.agents.has(a.npc):
 		w.data.agents[a.npc]._locationStayRemaining=0;w.data.agents[a.npc].erase("_appointmentDestination")
+		if state=="met": SimHomeRest.after_meeting(w,w.data.agents[a.npc],str(a.place))
 static func respond(w: SimWorld,accept: bool) -> bool:
 	var a:=current(w)
 	if a.get("state")!="offered": return false
@@ -56,6 +59,8 @@ static func respond(w: SimWorld,accept: bool) -> bool:
 	if not accept: finish(w,"declined","玩家婉拒邀約");return true
 	var why:=reason(w,a.npc)
 	if not why.is_empty(): finish(w,"cancelled",why);return false
+	if not w.data.townMap.locations.has(a.place) or not free_hour(w,a.npc,int(a.hour)):
+		finish(w,"cancelled","時段或返家路程已不適用，未接受邀約");return false
 	a.state="accepted";a.reason="已接受，到時間後請自行前往見面地點"
 	for id in ["player",a.npc]: SimFeuds._memory(w.data.agents[id],w,"appointment","已約定於"+a.time+"在"+str(w.data.townMap.locations[a.place].get("name",a.place))+"見面",5,[])
 	return true
@@ -74,7 +79,7 @@ static func tick(w: SimWorld) -> void:
 		return
 	if not w.data.townMap.locations.has(a.place): finish(w,"cancelled","見面地點已不存在");return
 	if not free_hour(w,a.npc,int(a.hour)):
-		if not SimAppointmentChanges.propose(w): finish(w,"cancelled","對方的工作時間改變，沒有可確認的新時段或已用完改期次數")
+		if not SimAppointmentChanges.propose(w): finish(w,"cancelled","對方的工作時間、作息或返家路程已不適用，沒有可確認的新時段或已用完改期次數")
 		return
 	if int(w.data.tickCount)>=int(a.until):
 		finish(w,"missed","等待時間結束，未在現場碰面（玩家未到或雙方未靠近）" if a.get("npc_arrived",false) else "等待時間結束，對方尚未抵達；未視為完成見面")
@@ -113,7 +118,7 @@ static func reschedule_error(w: SimWorld) -> String:
 	var why:=reason(w,a.npc)
 	if not why.is_empty(): return why+"，目前無法確認改期。"
 	if not w.data.townMap.locations.has(a.place): return "原本的見面地點已不存在。"
-	if not free_hour(w,a.npc,int(a.hour)): return "對方隔天這個時段有工作，無法同意改期。"
+	if not free_hour(w,a.npc,int(a.hour)): return "對方隔天這個時段或返家路程不適用，無法同意改期。"
 	return ""
 static func reschedule(w: SimWorld) -> Dictionary:
 	var error:=reschedule_error(w)

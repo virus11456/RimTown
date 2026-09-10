@@ -1,0 +1,5 @@
+{
+  "checks": 16,
+  "failures": [],
+  "scope": "controlled free-day NPC, full waiting window plus normal return, earlier offer, initial/replacement consent rechecks, player postponement, explicit NPC reschedule and shared limit, scene restore, actual close meeting and NPC-only return; not natural invitation frequency"
+}

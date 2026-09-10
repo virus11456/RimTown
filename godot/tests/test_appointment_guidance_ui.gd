@@ -3,6 +3,7 @@ func run() -> void:
 	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;root.add_child(viewport)
 	var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app);await process_frame;app.set_process(false)
 	var w: SimWorld=app.simulation
+	w.data.agents.chen_wei.jobKey="" # Controlled free-day fixture for the stricter return-time check.
 	SimAppointments.offer(w,"chen_wei");app.show_tab("居民",true);app.show_appointment("chen_wei")
 	check(not has_text(app.drawer_body,"赴約狀態"),"unaccepted offer has no active guidance")
 	press(app.drawer_body,"接受邀約");await settle();var a:=SimAppointments.current(w)
@@ -31,5 +32,5 @@ func run() -> void:
 	check(has_text(app.drawer_body,"赴約時段已結束"),"expired window not displayed as extra two-hour wait")
 	saved=w.snapshot();var camera: Vector3=app.rig.position;press(app.drawer_body,"查看約定地點")
 	check(equal(saved,w.snapshot()) and app.rig.position==camera,"stale locate callback is harmless")
-	var report:={"checks":checks,"failures":failures,"scope":"real accept and camera buttons, physical-position fixtures vs logical destinations, collision-based player arrival, no world changes or early completion, expired callback and phone width"}
+	var report:={"checks":checks,"failures":failures,"scope":"controlled free-day NPC for return availability; real accept and camera buttons, physical-position fixtures vs logical destinations, collision-based player arrival, no world changes or early completion, expired callback and phone width"}
 	FileAccess.open("res://docs/APPOINTMENT_GUIDANCE_UI_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "));print(JSON.stringify(report));quit(0 if failures.is_empty() else 1)
