@@ -274,6 +274,7 @@ func _load_document(text: String, source: String) -> bool:
 	selected_agent=""
 	document = incoming
 	simulation.load_snapshot(document.snapshot())
+	simulation.quest_balance.hangout_safety_enabled=true
 	simulation.quest_balance.leisure_plans_enabled=bool(simulation.quest_balance.get("leisure_plans_enabled",true))
 	appointment_reminder=document.data.get("_godot4a",{}).get("appointment_reminder",{}).duplicate(true)
 	physical_trace.load_state(document.data.get("_godot4a",{}).get("physical_trace",{}))
@@ -2405,6 +2406,10 @@ func show_agenda(id: String) -> void:
 	else:
 		_wrapped("日常作息",18)
 		for row in SimAgenda.routine(simulation,id): _wrapped(row,12)
+	var hangout: Dictionary=simulation.quest_balance.get("hangout_status",{}).get(id,{})
+	if not hangout.is_empty():
+		_wrapped("最近居民同行安排",18)
+		_wrapped(str(hangout.reason))
 	var leisure: Dictionary=SimLeisurePlan.plans(simulation).get(id,{})
 	if not leisure.is_empty():
 		_wrapped("今日自主休閒安排",18)

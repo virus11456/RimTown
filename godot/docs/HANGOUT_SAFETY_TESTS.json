@@ -1,0 +1,5 @@
+{
+  "checks": 20,
+  "failures": [],
+  "scope": "configured paired plans, work/sleep/commute/needs/other agenda priority, both-party expiry/death/shelter/missing destination/legacy cancellation, departure only, no resources, status reload and compatibility"
+}

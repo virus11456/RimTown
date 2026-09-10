@@ -125,6 +125,7 @@ func tick() -> Array[String]:
 		SimQuestWorld.daily(self);SimNPCQuests.daily(self);SimLifeGoals.daily(self);SimQuests.check_progress(self)
 	SimAppointments.tick(self)
 	SimLeisurePlan.tick(self)
+	SimHangoutSafety.tick(self)
 	for id in data.agents:
 		if not data.agents[id].get("isDead",false): _update(id)
 	SimCareers.tick(self)
@@ -262,7 +263,8 @@ func _location(a: Dictionary,run: Dictionary,hour: int) -> void:
 		"night_mischief": run.targetLocation=rng.pick(["town_square","general_store","tavern"])
 		"wandering": run.targetLocation=job.workplace if working else rng.pick(["town_square","park","well",home,home])
 	if a.get("_pendingHangout")!=null:
-		if a.activity=="sleeping": a._pendingHangout=null
+		if SimHangoutSafety.enabled(self): SimHangoutSafety.route(self,a,run)
+		elif a.activity=="sleeping": a._pendingHangout=null
 		elif a._pendingHangout.tick<=0:
 			run.targetLocation=a._pendingHangout.location
 			a.activity=a._pendingHangout.get("activity","socializing")
