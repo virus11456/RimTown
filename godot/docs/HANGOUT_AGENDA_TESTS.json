@@ -1,0 +1,5 @@
+{
+  "checks": 19,
+  "failures": [],
+  "scope": "controlled healthy close pair, existing leisure on either side, travel window and exact end, terminal/disabled plans, real proposal creation, changed plan and reload, explicit paired cancellation without rewriting leisure or adding goods; not natural frequency proof"
+}

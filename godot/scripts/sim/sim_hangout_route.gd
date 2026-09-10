@@ -64,12 +64,27 @@ static func return_fits(m: SimMotion,a: Dictionary,clock: Dictionary,jobs: Dicti
 		if not SimLeisurePlan.person_available(a,jobs,hour): return false
 	return true
 
-static func plan(m: SimMotion,a: Dictionary,b: Dictionary,clock: Dictionary,jobs: Dictionary,spots: Array) -> Dictionary:
+static func plan(m: SimMotion,a: Dictionary,b: Dictionary,clock: Dictionary,jobs: Dictionary,spots: Array,w: SimWorld=null) -> Dictionary:
 	# Leave five countdown ticks before the original sixteen-tick departure deadline.
 	for wait_ticks in range(11):
 		var future:=clock.duplicate(true)
 		var minutes:=int(clock.hour)*60+int(clock.minute)+wait_ticks*15
 		future.hour=posmod(minutes/60,24);future.minute=posmod(minutes,60)
 		var choices:=feasible(m,a,b,future,jobs,spots,24-wait_ticks)
+		if w!=null:
+			var start:=int(w.data.tickCount)+wait_ticks
+			choices=choices.filter(func(place): return not leisure_conflict(w,str(a.id),start,start+reservation_ticks(m,a,b,place)) and not leisure_conflict(w,str(b.id),start,start+reservation_ticks(m,a,b,place)))
 		if not choices.is_empty(): return {"spots":choices,"wait_ticks":wait_ticks,"hour":future.hour,"minute":future.minute}
 	return {}
+
+static func reservation_ticks(m: SimMotion,a: Dictionary,b: Dictionary,place: String) -> int:
+	var outward:=maxf(distance(m,str(a.id),place),distance(m,str(b.id),place))
+	var homeward:=maxf(home_distance(m,a,place),home_distance(m,b,place))
+	if is_inf(outward) or is_inf(homeward): return 96
+	return 5+ceili(outward/m.travel_budget(true))+2+ceili(homeward/m.travel_budget())+1
+static func leisure_conflict(w: SimWorld,id: String,start: int,finish: int) -> bool:
+	if not SimLeisurePlan.enabled(w): return false
+	var p: Dictionary=SimLeisurePlan.plans(w).get(id,{})
+	if not SimLeisurePlan.LIVE.has(p.get("state","")) or not w.data.townMap.locations.has(p.get("place","")): return false
+	# Leisure may start walking four hours before its stay. Keep the existing plan intact.
+	return start<int(p.until) and finish>=int(p.due)-16

@@ -26,6 +26,8 @@ static func tick(w: SimWorld) -> void:
 		if a.has("_raidShelterUntil") or w.data.agents[p.withId].has("_raidShelterUntil"): cancel(w,id,"避難優先，外出安排取消。");continue
 		if not w.data.townMap.locations.has(p.location): cancel(w,id,"目的地已不存在，外出安排取消。");continue
 		if int(w.data.tickCount)>=int(p.expires_at): cancel(w,id,"期限內未能開始外出，安排已到期。");continue
+		if p.has("agenda_until") and (SimHangoutRoute.leisure_conflict(w,id,maxi(int(w.data.tickCount),int(p.get("not_before",0))),int(p.agenda_until)) or SimHangoutRoute.leisure_conflict(w,str(p.withId),maxi(int(w.data.tickCount),int(p.get("not_before",0))),int(p.agenda_until))):
+			cancel(w,id,"既有自主休閒與同行時段重疊，保留休閒安排，取消這次同行。");continue
 		if SimAppointments.directing(w,id) or SimAppointments.directing(w,str(p.withId)): cancel(w,id,"已確認的玩家約定優先。");continue
 	SimHangoutVisits.tick(w)
 	for id in w.data.agents:
