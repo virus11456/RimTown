@@ -265,6 +265,7 @@ func _load_document(text: String, source: String) -> bool:
 	selected_agent=""
 	document = incoming
 	simulation.load_snapshot(document.snapshot())
+	simulation.quest_balance.leisure_plans_enabled=bool(simulation.quest_balance.get("leisure_plans_enabled",true))
 	physical_trace.load_state(document.data.get("_godot4a",{}).get("physical_trace",{}))
 	simulation.social_enabled=bool(document.data.get("_godot4a",{}).get("social_enabled",true))
 	simulation.gossip_enabled=bool(document.data.get("_godot4a",{}).get("gossip_enabled",true))
@@ -608,6 +609,8 @@ func _line(placeholder: String, secret := false) -> LineEdit:
 	return field
 
 func _settings_ui() -> void:
+	_button("居民自主休閒安排："+("開啟" if SimLeisurePlan.enabled(simulation) else "關閉"),drawer_body,func(): simulation.quest_balance.leisure_plans_enabled=not SimLeisurePlan.enabled(simulation);SimLeisurePlan.tick(simulation);has_simulated=true;show_tab("設定",true))
+	_wrapped("居民每天自行找一段工時之外的空檔；走到場所並停留才完成。工作、需求、睡眠與約定優先，不生產商品或銀幣。",12)
 	_button("日常主動搭話："+("開啟" if SimDailyTalk.enabled(simulation) else "關閉"),drawer_body,func(): simulation.quest_balance.daily_talk_enabled=not SimDailyTalk.enabled(simulation);has_simulated=true;show_tab("設定",true))
 	_wrapped("居民在身邊且有空才會搭話；全鎮每日最多兩次、間隔至少四小時。本機台詞，不消耗 AI 額度，也不會自動打開聊天。",12)
 	_button("試玩原料補給："+("開啟" if simulation.relief_enabled else "關閉"),drawer_body,func(): simulation.relief_enabled=not simulation.relief_enabled;has_simulated=true;show_tab("設定",true))
@@ -807,6 +810,7 @@ func _tick_simulation() -> void:
 	var career_was_active: bool=simulation.quest_balance.has("careers") and not SimCareers.book(simulation).active.is_empty()
 	_validate_career_presence()
 	SimAppointments.observe(simulation,motion)
+	SimLeisurePlan.observe(simulation,motion)
 	has_simulated=true
 	var old_geometry:=JSON.stringify([simulation.data.buildings,simulation.data.processing,simulation.data.agents.keys()])
 	var appointment_state: String=SimAppointments.current(simulation).get("state","")
@@ -868,10 +872,11 @@ func _process(delta: float) -> void:
 			_tick_simulation()
 		motion.update(simulation.data.agents)
 		SimAppointments.observe(simulation,motion)
+		SimLeisurePlan.observe(simulation,motion)
 	world_view.animate_agents(motion.positions)
 
 func _activity_name(activity: String) -> String:
-	return {"appointment_travel":"前往赴約","appointment_wait":"等待赴約者","idle":"休息","sleeping":"睡覺","eating":"進食","working":"工作","socializing":"社交","wandering":"閒逛","recreation":"娛樂","stargazing":"看星星","night_stroll":"夜間散步","night_mischief":"夜間惡作劇","mourning":"弔念","commuting":"前往工作","heading_home":"回家"}.get(activity,activity)
+	return {"planned_leisure":"依安排休閒","appointment_travel":"前往赴約","appointment_wait":"等待赴約者","idle":"休息","sleeping":"睡覺","eating":"進食","working":"工作","socializing":"社交","wandering":"閒逛","recreation":"娛樂","stargazing":"看星星","night_stroll":"夜間散步","night_mischief":"夜間惡作劇","mourning":"弔念","commuting":"前往工作","heading_home":"回家"}.get(activity,activity)
 
 func _capture_playtest() -> void:
 	await get_tree().create_timer(1).timeout
@@ -2345,6 +2350,11 @@ func show_agenda(id: String) -> void:
 	else:
 		_wrapped("日常作息",18)
 		for row in SimAgenda.routine(simulation,id): _wrapped(row,12)
+	var leisure: Dictionary=SimLeisurePlan.plans(simulation).get(id,{})
+	if not leisure.is_empty():
+		_wrapped("今日自主休閒安排",18)
+		if int(leisure.hour)>=0: _wrapped("%02d:00–%02d:00 · %s"%[int(leisure.hour),int(leisure.hour)+2,str(simulation.data.townMap.locations.get(leisure.place,{}).get("name","戶外場所"))])
+		_wrapped(str(leisure.reason))
 	var appointment:=SimAppointments.current(simulation)
 	if appointment.get("npc")==id:
 		_wrapped("見面約定",18)

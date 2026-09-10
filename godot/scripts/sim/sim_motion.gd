@@ -47,7 +47,7 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 			for p in positions.values():
 				if absf(p.targetX-target.x)<48 and absf(p.targetY-target.y)<48: count+=1
 			target+=Vector2((count%4-1.5)*16,(floori(count/4.0)-.5)*16)
-		var appointment: bool=a.get("_appointmentDestination","")==location
+		var appointment: bool=a.get("_appointmentDestination","")==location or a.get("_leisureDestination","")==location
 		if appointment: target=layout._center(location) # Stable meeting point: crowds must not keep replanning the route.
 		target=layout._nearest(target)
 		var activity: String=a.get("activity","")
@@ -58,7 +58,7 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 		var p: Dictionary=positions[id]
 		p.activity=activity
 		if activity!="sleeping" and p.get("_slpOut",0): p._slpOut=0
-		if activity=="sleeping":
+		if activity=="sleeping" and not appointment:
 			if not p.walking and not inside(Vector2(p.x,p.y)).is_empty():
 				p.walkStep=0; p._slpOut=0; continue
 			p._slpOut=p.get("_slpOut",0)+1

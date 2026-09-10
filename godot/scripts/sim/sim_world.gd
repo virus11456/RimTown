@@ -123,6 +123,7 @@ func tick() -> Array[String]:
 	if quests_enabled and "new_day" in events:
 		SimQuestWorld.daily(self);SimNPCQuests.daily(self);SimLifeGoals.daily(self);SimQuests.check_progress(self)
 	SimAppointments.tick(self)
+	SimLeisurePlan.tick(self)
 	for id in data.agents:
 		if not data.agents[id].get("isDead",false): _update(id)
 	SimCareers.tick(self)
@@ -139,12 +140,13 @@ func _update(id: String) -> void:
 	var a: Dictionary=data.agents[id]
 	var run: Dictionary=runtime[id]
 	var hour := int(data.clock.hour)
-	a.erase("_appointmentDestination")
+	a.erase("_appointmentDestination");a.erase("_leisureDestination")
 	var previous: String=a.activity
 	if a.get("isPlayer",false): _player_activity(a,hour)
 	elif a.has("_raidShelterUntil"):
 		a.activity="sleeping";a.currentLocation=a.homeLocation;run.targetLocation=null
 	elif SimAppointments.directing(self,id): a.activity="appointment_wait" if SimAppointments.current(self).state=="waiting" else "appointment_travel"
+	elif SimLeisurePlan.directing(self,id): a.activity="planned_leisure"
 	else: _activity(a,hour)
 	SimNeeds.decay(a.needs,a.activity,hour)
 	if a.get("isPlayer",false):
@@ -166,6 +168,9 @@ func _update(id: String) -> void:
 	if a.get("isPlayer",false): return
 	if SimAppointments.directing(self,id):
 		a.currentLocation=SimAppointments.current(self).place;a._appointmentDestination=a.currentLocation;run.targetLocation=null;a._locationStayRemaining=0
+		return
+	if SimLeisurePlan.directing(self,id):
+		a.activity="planned_leisure";a.currentLocation=SimLeisurePlan.plans(self)[id].place;a._leisureDestination=a.currentLocation;run.targetLocation=null;a._locationStayRemaining=0
 		return
 	_gain_xp(a)
 	if a.activity!=previous: a._locationStayRemaining=0
