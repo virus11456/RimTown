@@ -1,0 +1,5 @@
+{
+  "checks": 9,
+  "failures": [],
+  "scope": "actual prior waiting save, player collision movement and physical meeting, 96 natural ticks, then controlled idle scene for follow-up; normal chat UI and native archive; no invented meeting or AI service"
+}

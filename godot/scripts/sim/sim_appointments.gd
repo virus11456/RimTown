@@ -38,7 +38,7 @@ static func offer(w: SimWorld,id: String,place: String="town_square") -> String:
 static func finish(w: SimWorld,state: String,why: String) -> void:
 	var a:=current(w)
 	if not LIVE.has(a.get("state","")): return
-	a.state=state;a.reason=why
+	a.state=state;a.reason=why;a.resolved_tick=int(w.data.tickCount)
 	var book: Dictionary=w.quest_balance.appointments
 	book.history.append(a.duplicate(true));book.history=book.history.slice(-20)
 	for id in ["player",a.npc]:
