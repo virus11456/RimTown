@@ -1925,6 +1925,9 @@ func show_quests(category: String="main") -> void:
 		for def in SimQuests.rules().stories:
 			if def.id in simulation.data.questSystem.triggeredStoryEvents: _wrapped(str(def.icon)+" "+str(def.title),18);_wrapped(str(def.text),12)
 	elif category=="life":
+		_wrapped("繁榮度 %.0f · %s"%[float(simulation.data.get("prosperity",{}).get("prosperity",0)),str(simulation.data.get("prosperity",{}).get("level","荒涼"))])
+		var council_names: Array=simulation.data.get("council",{}).get("members",[]).map(func(id): return simulation.data.agents.get(id,{}).get("name",id))
+		_wrapped("議會："+("、".join(council_names) if not council_names.is_empty() else "尚未成立"),12)
 		SimLifeGoals.assign(simulation)
 		for id in simulation.data.lifeGoals.goals:
 			if not simulation.data.agents.has(id): continue
@@ -1937,7 +1940,7 @@ func show_quests(category: String="main") -> void:
 					if SimLifeGoals.nudge(simulation,id): has_simulated=true
 					show_quests("life"))
 				button.disabled=g.get("_nudged",false) or simulation.data.agents[id].get("isDead",false)
-		_wrapped("每階段可鼓勵一次，縮短等待但仍須符合實際條件。家庭出生、議會及繁榮由對應世界系統提供，尚未移植的來源需後續世界工作包補齊。",12)
+		_wrapped("每階段可鼓勵一次，縮短等待但仍須符合實際條件。繁榮度每日更新，議會符合人口條件後成立。家庭出生仍需生命週期系統補齊。",12)
 	elif category=="ending":
 		var ending: Variant=simulation.data.get("multiEnding",{}).get("endingData")
 		if ending is Dictionary:

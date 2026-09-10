@@ -105,7 +105,7 @@ func tick() -> Array[String]:
 	if farm_enabled and "new_day" in events: SimFarm.daily(self)
 	if processing_enabled and "new_day" in events: SimProcessing.daily(self)
 	if quests_enabled and "new_day" in events:
-		SimNPCQuests.daily(self);SimLifeGoals.daily(self);SimQuests.check_progress(self)
+		SimQuestWorld.daily(self);SimNPCQuests.daily(self);SimLifeGoals.daily(self);SimQuests.check_progress(self)
 	for id in data.agents:
 		if not data.agents[id].get("isDead",false): _update(id)
 	return events
