@@ -75,8 +75,8 @@ static func start(w: SimWorld,id: String) -> Dictionary:
 		if t.job=="trader":
 			if not SimCareerTrade.request(w,t.id): return {"ok":false,"message":"請先申請這份交易報價的公共資源用途。"}
 			if not SimBuildings.affordable(w,t.costs): return {"ok":false,"message":"公共資源不足，無法開始交接。"}
-		b.active=t.duplicate(true);b.active.finish=int(w.data.tickCount)+4
-		return {"ok":true,"message":"開始值勤，需停留一個遊戲小時；離開會取消。"}
+		b.active=t.duplicate(true);b.active.finish=int(w.data.tickCount)+SimCareerProgress.ticks(w,t.job)
+		return {"ok":true,"message":"開始值勤，需停留 %d 遊戲分鐘；離開會取消。"%(SimCareerProgress.ticks(w,t.job)*15)}
 	return {"ok":false,"message":"需求已改變，請重新查看工作。"}
 static func cancel(w: SimWorld) -> void:
 	book(w).active={}
@@ -120,6 +120,7 @@ static func tick(w: SimWorld) -> void:
 	var skill: String=JOBS[t.job].skill
 	if not player.skills.has(skill): player.skills[skill]={"xp":0,"passion":"無"}
 	player.skills[skill].xp+=3;b.used+=1;b.completed+=1
+	SimCareerProgress.record(w,t)
 	b.history.append(str(t.label)+"完成");b.history=b.history.slice(-10)
 	SimSocial.log_message(w.data,"career",str(t.label)+"完成。",str(player.name),"")
 	b.active={}
