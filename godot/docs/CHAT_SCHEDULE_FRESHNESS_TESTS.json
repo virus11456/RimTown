@@ -1,0 +1,5 @@
+{
+  "checks": 19,
+  "failures": [],
+  "scope": "mock free-chat app callback, cancellation/day/settings/appointment changes, whole-world no-op including intent, draft/retry notice, stable facts accept reply, no automatic retry and phone width; no production AI"
+}

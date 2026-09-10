@@ -1302,6 +1302,8 @@ func send_player_chat(id: String,message: String,intent: String="") -> void:
 	chat_drafts[id]=message;chat_notice.erase(id);chat_busy=true
 	var epoch:=chat_epoch
 	var target: Dictionary=simulation.data.agents[id]
+	var leisure_context:=SimLeisureChat.context(simulation,id)
+	var appointment_context:=SimAppointments.current(simulation).duplicate(true)
 	var prompt:=SimPlayerChat.prompt(simulation,id,message)
 	show_player_chat(id)
 	var response: Dictionary
@@ -1311,6 +1313,8 @@ func send_player_chat(id: String,message: String,intent: String="") -> void:
 	chat_busy=false
 	if not simulation.data.agents.has(id) or not is_same(simulation.data.agents[id],target) or target.get("isDead",false):
 		chat_notice[id]="對方已離開，回覆未套用。"
+	elif leisure_context!=SimLeisureChat.context(simulation,id) or appointment_context!=SimAppointments.current(simulation):
+		chat_notice[id]="等待回覆期間，行程或見面約定已改變。舊回覆及效果未套用；草稿已保留，請重新傳送。"
 	elif not response.get("ok",false): chat_notice[id]=str(response.get("error","連線失敗，請重試。"))+"\n草稿已保留，也可切換離線交談後重試。"
 	elif not response.get("data") is Dictionary or not response.data.get("reply") is String:
 		chat_notice[id]="伺服器回覆格式不正確，未套用變化。"
