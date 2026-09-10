@@ -4,7 +4,9 @@ extends RefCounted
 var dialogue := SimDialogue.new()
 # Scene observations are transient; pure source-compatible simulations omit them.
 var physical_positions: Variant=null
+var observed_motion: SimMotion=null
 func observe_positions(m: SimMotion) -> void:
+	observed_motion=m
 	physical_positions={}
 	for id in m.positions:
 		var p: Dictionary=m.positions[id]
@@ -48,6 +50,11 @@ func try_interaction(a: Dictionary,data: Dictionary,rng: SimRandom,jobs: Diction
 	var spots: Array=["tavern","park","town_square","chapel","forest","library"]
 	if physical_positions!=null: spots=spots.filter(func(place): return data.townMap.locations.has(place))
 	if not spots.is_empty() and rel.affinity>=30 and (physical_positions==null or (not a.get("isPlayer",false) and not b.get("isPlayer",false) and not a.get("_activeHangout") and not b.get("_activeHangout"))) and rng.next_float()<.12 and not a.get("_pendingHangout") and not b.get("_pendingHangout"):
+		if physical_positions!=null:
+			spots=SimHangoutRoute.feasible(observed_motion,a,b,data.clock,jobs,spots)
+			if spots.is_empty():
+				converse(a,b,data,rng,jobs)
+				return
 		var spot: String=rng.pick(spots)
 		var activity:="recreation" if rel.romanticInterest>40 else "socializing"
 		var delay:=rng.next_int(2,5)

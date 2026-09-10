@@ -51,11 +51,13 @@ static func choose(w: SimWorld,id: String) -> Dictionary:
 		else: result.explanation="上次未完成到場停留；目前沒有其他可用空檔，仍依作息安排。"
 	return result
 static func available(w: SimWorld,id: String,hour: int) -> bool:
-	var a: Dictionary=w.data.agents[id];var traits: Array=a.personality.get("traits",[])
+	return person_available(w.data.agents[id],w.rules.jobs,hour)
+static func person_available(a: Dictionary,jobs: Dictionary,hour: int) -> bool:
+	var traits: Array=a.personality.get("traits",[])
 	var start:=2 if "night_owl" in traits else 20 if "early_bird" in traits else 22
 	var end:=9 if "night_owl" in traits else 5 if "early_bird" in traits else 6
 	if (hour>=start or hour<end if start>end else hour>=start and hour<end): return false
-	var job: Dictionary=w.rules.jobs.get(str(a.get("jobKey","")),{})
+	var job: Dictionary=jobs.get(str(a.get("jobKey","")),{})
 	return job.is_empty() or not (hour>=int(job.work_hours[0])-1 and hour<int(job.work_hours[1]))
 static func finish(w: SimWorld,id: String,state: String,why: String) -> void:
 	var p: Dictionary=plans(w).get(id,{})

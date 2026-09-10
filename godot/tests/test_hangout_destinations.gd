@@ -1,7 +1,7 @@
 extends "res://tests/test_daily_talk.gd"
 func _initialize() -> void:
 	for available in [true,false]:
-		var f:=setup();var w: SimWorld=f.w;var m: SimMotion=f.m
+		var f:=setup();var w: SimWorld=f.w;var m: SimMotion=f.m;w.data.clock.hour=18;w.data.clock.minute=0
 		for a in w.data.agents.values(): a.activity="sleeping"
 		var a: Dictionary=w.data.agents.chen_wei;var b: Dictionary=w.data.agents.lin_mei
 		a.activity="socializing";b.activity="wandering";a.currentLocation="town_square";b.currentLocation="town_square"

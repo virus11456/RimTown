@@ -1,39 +1,22 @@
 {
-  "affinity_eligible_conversations": 19,
-  "checks": 5,
-  "conversations": 159,
+  "affinity_eligible_conversations": 16,
+  "checks": 6,
+  "conversations": 178,
   "day_eight": {
-    "affinity_eligible_conversations": 9,
-    "conversations": 50,
+    "affinity_eligible_conversations": 4,
+    "conversations": 47,
     "proposals": 1
   },
-  "departed_visits": 2,
+  "departed_visits": 1,
   "failures": [],
   "invalid": [],
-  "maximum_records": 2,
+  "maximum_records": 1,
   "motion_frames_per_tick": 120,
   "outcomes": {
-    "cancelled": 2
+    "met": 1
   },
-  "paused_visits": 1,
+  "paused_visits": 0,
   "proposal_details": {
-    "gao_lang|wu_da|1689": {
-      "issued_tick": 1689,
-      "people": [
-        "gao_lang",
-        "wu_da"
-      ],
-      "reason": "期限內未能開始外出，安排已到期。",
-      "state": "ended_before_departure"
-    },
-    "lin_mei|sun_yu|1498": {
-      "issued_tick": 1498,
-      "people": [
-        "lin_mei",
-        "sun_yu"
-      ],
-      "state": "departed"
-    },
     "lin_mei|sun_yu|453": {
       "issued_tick": 453,
       "people": [
@@ -43,1391 +26,11 @@
       "state": "departed"
     }
   },
-  "proposals": 3,
-  "reasons": {
-    "期限內未能開始外出，安排已到期。": 1,
-    "林美已到睡眠時段。同行外出已中止。": 2
-  },
-  "scope": "32 days of original app residents and settings, 120 physical motion frames per tick, app reload halfway, no altered jobs/needs/positions/affinity/resources or production AI; headless, not full game playthrough",
+  "proposals": 1,
+  "reasons": {},
+  "scope": "32 original app days, reload halfway, 120 physical motion frames per tick, no altered jobs/needs/positions/affinity/resources or production AI; headless, not full game playthrough",
   "ticks": 3072,
   "traces": {
-    "gao_lang|wu_da|1689": [
-      {
-        "hour": 20,
-        "minute": 15,
-        "people": {
-          "gao_lang": {
-            "activity": "socializing",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 14.4000000000002,
-            "leisure_directing": false,
-            "location": "park",
-            "pending_delay": 3,
-            "rest": 13.0,
-            "stay": 6
-          },
-          "wu_da": {
-            "activity": "socializing",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 14.4000000000002,
-            "leisure_directing": false,
-            "location": "park",
-            "pending_delay": 3,
-            "rest": 13.0,
-            "stay": 8
-          }
-        },
-        "tick": 1689,
-        "visit": {}
-      },
-      {
-        "hour": 20,
-        "minute": 30,
-        "people": {
-          "gao_lang": {
-            "activity": "eating",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 34.4000000000002,
-            "leisure_directing": false,
-            "location": "tavern",
-            "pending_delay": 3,
-            "rest": 11.5,
-            "stay": 7
-          },
-          "wu_da": {
-            "activity": "eating",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 34.4000000000002,
-            "leisure_directing": false,
-            "location": "tavern",
-            "pending_delay": 3,
-            "rest": 11.5,
-            "stay": 7
-          }
-        },
-        "tick": 1690,
-        "visit": {}
-      },
-      {
-        "hour": 20,
-        "minute": 45,
-        "people": {
-          "gao_lang": {
-            "activity": "socializing",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 32.4000000000002,
-            "leisure_directing": false,
-            "location": "park",
-            "pending_delay": 3,
-            "rest": 10.0,
-            "stay": 10
-          },
-          "wu_da": {
-            "activity": "recreation",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 32.4000000000002,
-            "leisure_directing": false,
-            "location": "park",
-            "pending_delay": 3,
-            "rest": 10.0,
-            "stay": 7
-          }
-        },
-        "tick": 1691,
-        "visit": {}
-      },
-      {
-        "hour": 21,
-        "minute": 0,
-        "people": {
-          "gao_lang": {
-            "activity": "heading_home",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 31.2000000000002,
-            "leisure_directing": false,
-            "location": "residential_north",
-            "pending_delay": 2,
-            "rest": 9.4,
-            "stay": 20
-          },
-          "wu_da": {
-            "activity": "heading_home",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 31.2000000000002,
-            "leisure_directing": false,
-            "location": "residential_south",
-            "pending_delay": 2,
-            "rest": 9.4,
-            "stay": 20
-          }
-        },
-        "tick": 1692,
-        "visit": {}
-      },
-      {
-        "hour": 21,
-        "minute": 15,
-        "people": {
-          "gao_lang": {
-            "activity": "sleeping",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 30.0000000000002,
-            "leisure_directing": false,
-            "location": "residential_north",
-            "pending_delay": 2,
-            "rest": 17.4,
-            "stay": 9
-          },
-          "wu_da": {
-            "activity": "sleeping",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 30.0000000000002,
-            "leisure_directing": false,
-            "location": "residential_south",
-            "pending_delay": 2,
-            "rest": 17.4,
-            "stay": 8
-          }
-        },
-        "tick": 1693,
-        "visit": {}
-      },
-      {
-        "hour": 21,
-        "minute": 30,
-        "people": {
-          "gao_lang": {
-            "activity": "recreation",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 28.8000000000002,
-            "leisure_directing": false,
-            "location": "tavern",
-            "pending_delay": 2,
-            "rest": 16.8,
-            "stay": 7
-          },
-          "wu_da": {
-            "activity": "recreation",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 28.8000000000002,
-            "leisure_directing": false,
-            "location": "library",
-            "pending_delay": 2,
-            "rest": 16.8,
-            "stay": 6
-          }
-        },
-        "tick": 1694,
-        "visit": {}
-      },
-      {
-        "hour": 21,
-        "minute": 45,
-        "people": {
-          "gao_lang": {
-            "activity": "heading_home",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 27.6000000000002,
-            "leisure_directing": false,
-            "location": "residential_north",
-            "pending_delay": 1,
-            "rest": 16.2,
-            "stay": 20
-          },
-          "wu_da": {
-            "activity": "heading_home",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 27.6000000000002,
-            "leisure_directing": false,
-            "location": "residential_south",
-            "pending_delay": 1,
-            "rest": 16.2,
-            "stay": 20
-          }
-        },
-        "tick": 1695,
-        "visit": {}
-      },
-      {
-        "hour": 22,
-        "minute": 0,
-        "people": {
-          "gao_lang": {
-            "activity": "sleeping",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 26.4000000000002,
-            "leisure_directing": false,
-            "location": "residential_north",
-            "pending_delay": 1,
-            "rest": 24.2,
-            "stay": 10
-          },
-          "wu_da": {
-            "activity": "sleeping",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 26.4000000000002,
-            "leisure_directing": false,
-            "location": "residential_south",
-            "pending_delay": 1,
-            "rest": 24.2,
-            "stay": 10
-          }
-        },
-        "tick": 1696,
-        "visit": {}
-      },
-      {
-        "hour": 22,
-        "minute": 15,
-        "people": {
-          "gao_lang": {
-            "activity": "sleeping",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 25.2000000000002,
-            "leisure_directing": false,
-            "location": "residential_north",
-            "pending_delay": 1,
-            "rest": 32.2,
-            "stay": 9
-          },
-          "wu_da": {
-            "activity": "sleeping",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 25.2000000000002,
-            "leisure_directing": false,
-            "location": "residential_south",
-            "pending_delay": 1,
-            "rest": 32.2,
-            "stay": 9
-          }
-        },
-        "tick": 1697,
-        "visit": {}
-      },
-      {
-        "hour": 22,
-        "minute": 30,
-        "people": {
-          "gao_lang": {
-            "activity": "sleeping",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 24.0000000000002,
-            "leisure_directing": false,
-            "location": "residential_north",
-            "pending_delay": 1,
-            "rest": 40.2,
-            "stay": 8
-          },
-          "wu_da": {
-            "activity": "sleeping",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 24.0000000000002,
-            "leisure_directing": false,
-            "location": "residential_south",
-            "pending_delay": 1,
-            "rest": 40.2,
-            "stay": 8
-          }
-        },
-        "tick": 1698,
-        "visit": {}
-      },
-      {
-        "hour": 22,
-        "minute": 45,
-        "people": {
-          "gao_lang": {
-            "activity": "sleeping",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 22.8000000000002,
-            "leisure_directing": false,
-            "location": "residential_north",
-            "pending_delay": 1,
-            "rest": 48.2,
-            "stay": 7
-          },
-          "wu_da": {
-            "activity": "sleeping",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 22.8000000000002,
-            "leisure_directing": false,
-            "location": "residential_south",
-            "pending_delay": 1,
-            "rest": 48.2,
-            "stay": 7
-          }
-        },
-        "tick": 1699,
-        "visit": {}
-      },
-      {
-        "hour": 23,
-        "minute": 0,
-        "people": {
-          "gao_lang": {
-            "activity": "sleeping",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 21.6000000000002,
-            "leisure_directing": false,
-            "location": "residential_north",
-            "pending_delay": 1,
-            "rest": 56.2,
-            "stay": 6
-          },
-          "wu_da": {
-            "activity": "sleeping",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 21.6000000000002,
-            "leisure_directing": false,
-            "location": "residential_south",
-            "pending_delay": 1,
-            "rest": 56.2,
-            "stay": 6
-          }
-        },
-        "tick": 1700,
-        "visit": {}
-      },
-      {
-        "hour": 23,
-        "minute": 15,
-        "people": {
-          "gao_lang": {
-            "activity": "sleeping",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 20.4000000000002,
-            "leisure_directing": false,
-            "location": "residential_north",
-            "pending_delay": 1,
-            "rest": 64.2,
-            "stay": 5
-          },
-          "wu_da": {
-            "activity": "sleeping",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 20.4000000000002,
-            "leisure_directing": false,
-            "location": "residential_south",
-            "pending_delay": 1,
-            "rest": 64.2,
-            "stay": 5
-          }
-        },
-        "tick": 1701,
-        "visit": {}
-      },
-      {
-        "hour": 23,
-        "minute": 30,
-        "people": {
-          "gao_lang": {
-            "activity": "sleeping",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 19.2000000000002,
-            "leisure_directing": false,
-            "location": "residential_north",
-            "pending_delay": 1,
-            "rest": 72.2,
-            "stay": 4
-          },
-          "wu_da": {
-            "activity": "sleeping",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 19.2000000000002,
-            "leisure_directing": false,
-            "location": "residential_south",
-            "pending_delay": 1,
-            "rest": 72.2,
-            "stay": 4
-          }
-        },
-        "tick": 1702,
-        "visit": {}
-      },
-      {
-        "hour": 23,
-        "minute": 45,
-        "people": {
-          "gao_lang": {
-            "activity": "sleeping",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 18.0000000000002,
-            "leisure_directing": false,
-            "location": "residential_north",
-            "pending_delay": 1,
-            "rest": 80.2,
-            "stay": 3
-          },
-          "wu_da": {
-            "activity": "sleeping",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 18.0000000000002,
-            "leisure_directing": false,
-            "location": "residential_south",
-            "pending_delay": 1,
-            "rest": 80.2,
-            "stay": 3
-          }
-        },
-        "tick": 1703,
-        "visit": {}
-      },
-      {
-        "hour": 0,
-        "minute": 0,
-        "people": {
-          "gao_lang": {
-            "activity": "sleeping",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 16.8000000000002,
-            "leisure_directing": false,
-            "location": "residential_north",
-            "pending_delay": 1,
-            "rest": 88.2,
-            "stay": 2
-          },
-          "wu_da": {
-            "activity": "sleeping",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 16.8000000000002,
-            "leisure_directing": false,
-            "location": "residential_south",
-            "pending_delay": 1,
-            "rest": 88.2,
-            "stay": 2
-          }
-        },
-        "tick": 1704,
-        "visit": {}
-      }
-    ],
-    "lin_mei|sun_yu|1498": [
-      {
-        "hour": 20,
-        "minute": 30,
-        "people": {
-          "lin_mei": {
-            "activity": "socializing",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 37.9999999999999,
-            "leisure_directing": false,
-            "location": "park",
-            "pending_delay": 4,
-            "rest": 29.5,
-            "stay": 6
-          },
-          "sun_yu": {
-            "activity": "planned_leisure",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 14.3999999999999,
-            "leisure_directing": false,
-            "location": "park",
-            "pending_delay": 4,
-            "rest": 29.5,
-            "stay": 4
-          }
-        },
-        "tick": 1498,
-        "visit": {}
-      },
-      {
-        "hour": 20,
-        "minute": 45,
-        "people": {
-          "lin_mei": {
-            "activity": "socializing",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 35.9999999999999,
-            "leisure_directing": false,
-            "location": "park",
-            "pending_delay": 4,
-            "rest": 28.0,
-            "stay": 5
-          },
-          "sun_yu": {
-            "activity": "planned_leisure",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 34.3999999999999,
-            "leisure_directing": true,
-            "location": "park",
-            "pending_delay": 4,
-            "rest": 28.0,
-            "stay": 0
-          }
-        },
-        "tick": 1499,
-        "visit": {}
-      },
-      {
-        "hour": 21,
-        "minute": 0,
-        "people": {
-          "lin_mei": {
-            "activity": "recreation",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 34.7999999999999,
-            "leisure_directing": false,
-            "location": "library",
-            "pending_delay": 4,
-            "rest": 27.4,
-            "stay": 5
-          },
-          "sun_yu": {
-            "activity": "recreation",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 33.1999999999999,
-            "leisure_directing": false,
-            "location": "tavern",
-            "pending_delay": 4,
-            "rest": 27.4,
-            "stay": 7
-          }
-        },
-        "tick": 1500,
-        "visit": {}
-      },
-      {
-        "hour": 21,
-        "minute": 15,
-        "people": {
-          "lin_mei": {
-            "activity": "socializing",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 33.5999999999999,
-            "leisure_directing": false,
-            "location": "tavern",
-            "pending_delay": 3,
-            "rest": 26.8,
-            "stay": 8
-          },
-          "sun_yu": {
-            "activity": "recreation",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 31.9999999999999,
-            "leisure_directing": false,
-            "location": "tavern",
-            "pending_delay": 3,
-            "rest": 26.8,
-            "stay": 6
-          }
-        },
-        "tick": 1501,
-        "visit": {}
-      },
-      {
-        "hour": 21,
-        "minute": 30,
-        "people": {
-          "lin_mei": {
-            "activity": "socializing",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 32.3999999999999,
-            "leisure_directing": false,
-            "location": "tavern",
-            "pending_delay": 2,
-            "rest": 26.2,
-            "stay": 7
-          },
-          "sun_yu": {
-            "activity": "socializing",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 30.7999999999999,
-            "leisure_directing": false,
-            "location": "tavern",
-            "pending_delay": 2,
-            "rest": 26.2,
-            "stay": 9
-          }
-        },
-        "tick": 1502,
-        "visit": {}
-      },
-      {
-        "hour": 21,
-        "minute": 45,
-        "people": {
-          "lin_mei": {
-            "activity": "wandering",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 31.1999999999999,
-            "leisure_directing": false,
-            "location": "well",
-            "pending_delay": 1,
-            "rest": 25.6,
-            "stay": 6
-          },
-          "sun_yu": {
-            "activity": "recreation",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 29.5999999999999,
-            "leisure_directing": false,
-            "location": "tavern",
-            "pending_delay": 1,
-            "rest": 25.6,
-            "stay": 7
-          }
-        },
-        "tick": 1503,
-        "visit": {}
-      },
-      {
-        "hour": 22,
-        "minute": 0,
-        "people": {
-          "lin_mei": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 29.9999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 25.0,
-            "stay": 0
-          },
-          "sun_yu": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 28.3999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 25.0,
-            "stay": 0
-          }
-        },
-        "tick": 1504,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 1498,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "chapel",
-          "reason": "等待雙方實際到場。",
-          "state": "traveling",
-          "until": 1522
-        }
-      },
-      {
-        "hour": 22,
-        "minute": 15,
-        "people": {
-          "lin_mei": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 28.7999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 24.4,
-            "stay": 0
-          },
-          "sun_yu": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 27.1999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 24.4,
-            "stay": 0
-          }
-        },
-        "tick": 1505,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 1498,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "chapel",
-          "reason": "等待雙方實際到場。",
-          "state": "traveling",
-          "until": 1522
-        }
-      },
-      {
-        "hour": 22,
-        "minute": 30,
-        "people": {
-          "lin_mei": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 27.5999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 23.8,
-            "stay": 0
-          },
-          "sun_yu": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 25.9999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 23.8,
-            "stay": 0
-          }
-        },
-        "tick": 1506,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 1498,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "chapel",
-          "reason": "等待雙方實際到場。",
-          "state": "traveling",
-          "until": 1522
-        }
-      },
-      {
-        "hour": 22,
-        "minute": 45,
-        "people": {
-          "lin_mei": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 26.3999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 23.2,
-            "stay": 0
-          },
-          "sun_yu": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 24.7999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 23.2,
-            "stay": 0
-          }
-        },
-        "tick": 1507,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 1498,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "chapel",
-          "reason": "等待雙方實際到場。",
-          "state": "traveling",
-          "until": 1522
-        }
-      },
-      {
-        "hour": 23,
-        "minute": 0,
-        "people": {
-          "lin_mei": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 25.1999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 22.6,
-            "stay": 0
-          },
-          "sun_yu": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 23.5999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 22.6,
-            "stay": 0
-          }
-        },
-        "tick": 1508,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 1498,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "chapel",
-          "reason": "等待雙方實際到場。",
-          "state": "traveling",
-          "until": 1522
-        }
-      },
-      {
-        "hour": 23,
-        "minute": 15,
-        "people": {
-          "lin_mei": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 23.9999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 22.0,
-            "stay": 0
-          },
-          "sun_yu": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 22.3999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 22.0,
-            "stay": 0
-          }
-        },
-        "tick": 1509,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 1498,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "chapel",
-          "reason": "等待雙方實際到場。",
-          "state": "traveling",
-          "until": 1522
-        }
-      },
-      {
-        "hour": 23,
-        "minute": 30,
-        "people": {
-          "lin_mei": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 22.7999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 21.4,
-            "stay": 0
-          },
-          "sun_yu": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 21.1999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 21.4,
-            "stay": 0
-          }
-        },
-        "tick": 1510,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 1498,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "chapel",
-          "reason": "等待雙方實際到場。",
-          "state": "traveling",
-          "until": 1522
-        }
-      },
-      {
-        "hour": 23,
-        "minute": 45,
-        "people": {
-          "lin_mei": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 21.5999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 20.8,
-            "stay": 0
-          },
-          "sun_yu": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 19.9999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 20.8,
-            "stay": 0
-          }
-        },
-        "tick": 1511,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 1498,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "chapel",
-          "reason": "等待雙方實際到場。",
-          "state": "traveling",
-          "until": 1522
-        }
-      },
-      {
-        "hour": 0,
-        "minute": 0,
-        "people": {
-          "lin_mei": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 20.3999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 20.2,
-            "stay": 0
-          },
-          "sun_yu": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 18.7999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 20.2,
-            "stay": 0
-          }
-        },
-        "tick": 1512,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 1498,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "chapel",
-          "reason": "等待雙方實際到場。",
-          "state": "traveling",
-          "until": 1522
-        }
-      },
-      {
-        "hour": 0,
-        "minute": 15,
-        "people": {
-          "lin_mei": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 19.1999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 19.6,
-            "stay": 0
-          },
-          "sun_yu": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 17.5999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 19.6,
-            "stay": 0
-          }
-        },
-        "tick": 1513,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 1498,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "chapel",
-          "reason": "等待雙方實際到場。",
-          "state": "traveling",
-          "until": 1522
-        }
-      },
-      {
-        "hour": 0,
-        "minute": 30,
-        "people": {
-          "lin_mei": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 17.9999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 19.0,
-            "stay": 0
-          },
-          "sun_yu": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 16.3999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 19.0,
-            "stay": 0
-          }
-        },
-        "tick": 1514,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 1498,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "chapel",
-          "reason": "等待雙方實際到場。",
-          "state": "traveling",
-          "until": 1522
-        }
-      },
-      {
-        "hour": 0,
-        "minute": 45,
-        "people": {
-          "lin_mei": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 16.7999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 18.4,
-            "stay": 0
-          },
-          "sun_yu": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 15.1999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 18.4,
-            "stay": 0
-          }
-        },
-        "tick": 1515,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 1498,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "chapel",
-          "reason": "等待雙方實際到場。",
-          "state": "traveling",
-          "until": 1522
-        }
-      },
-      {
-        "hour": 1,
-        "minute": 0,
-        "people": {
-          "lin_mei": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 15.5999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 17.8,
-            "stay": 0
-          },
-          "sun_yu": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 13.9999999999999,
-            "leisure_directing": false,
-            "location": "chapel",
-            "pending_delay": -1,
-            "rest": 17.8,
-            "stay": 4
-          }
-        },
-        "tick": 1516,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 1498,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "chapel",
-          "reason": "等待雙方實際到場。",
-          "state": "traveling",
-          "until": 1522
-        }
-      },
-      {
-        "hour": 1,
-        "minute": 15,
-        "people": {
-          "lin_mei": {
-            "activity": "heading_home",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 14.3999999999999,
-            "leisure_directing": false,
-            "location": "residential_north",
-            "pending_delay": -1,
-            "rest": 17.2,
-            "stay": 20
-          },
-          "sun_yu": {
-            "activity": "eating",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 33.9999999999999,
-            "leisure_directing": false,
-            "location": "tavern",
-            "pending_delay": -1,
-            "rest": 17.2,
-            "stay": 6
-          }
-        },
-        "tick": 1517,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 1498,
-          "pause_until": 1521,
-          "pause_used": true,
-          "paused": true,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "chapel",
-          "reason": "先處理進食或休息，最多暫停一小時；雙方恢復後繼續，原期限不延長。",
-          "state": "traveling",
-          "until": 1522
-        }
-      },
-      {
-        "hour": 1,
-        "minute": 30,
-        "people": {
-          "lin_mei": {
-            "activity": "eating",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 34.3999999999999,
-            "leisure_directing": false,
-            "location": "tavern",
-            "pending_delay": -1,
-            "rest": 16.6,
-            "stay": 7
-          },
-          "sun_yu": {
-            "activity": "heading_home",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 32.7999999999999,
-            "leisure_directing": false,
-            "location": "residential_east",
-            "pending_delay": -1,
-            "rest": 16.6,
-            "stay": 20
-          }
-        },
-        "tick": 1518,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 1498,
-          "pause_until": 1521,
-          "pause_used": true,
-          "paused": true,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "chapel",
-          "reason": "先處理進食或休息，最多暫停一小時；雙方恢復後繼續，原期限不延長。",
-          "state": "traveling",
-          "until": 1522
-        }
-      },
-      {
-        "hour": 1,
-        "minute": 45,
-        "people": {
-          "lin_mei": {
-            "activity": "heading_home",
-            "appointment_directing": false,
-            "available": false,
-            "hunger": 33.1999999999999,
-            "leisure_directing": false,
-            "location": "residential_north",
-            "pending_delay": -1,
-            "rest": 16.0,
-            "stay": 20
-          },
-          "sun_yu": {
-            "activity": "socializing",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 31.5999999999999,
-            "leisure_directing": false,
-            "location": "park",
-            "pending_delay": -1,
-            "rest": 16.0,
-            "stay": 7
-          }
-        },
-        "tick": 1519,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 1498,
-          "pause_until": 1521,
-          "pause_used": true,
-          "paused": true,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "chapel",
-          "reason": "先處理進食或休息，最多暫停一小時；雙方恢復後繼續，原期限不延長。",
-          "state": "traveling",
-          "until": 1522
-        }
-      }
-    ],
     "lin_mei|sun_yu|453": [
       {
         "hour": 23,
@@ -1435,22 +38,72 @@
         "people": {
           "lin_mei": {
             "activity": "socializing",
+            "actual_place": "park",
             "appointment_directing": false,
             "available": true,
             "hunger": 28.8,
             "leisure_directing": false,
             "location": "park",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [],
+              "_slpOut": 0,
+              "activity": "socializing",
+              "dir4": "side",
+              "doorPhase": null,
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": -1,
+              "finalTarget": {
+                "x": 1032.0,
+                "y": 272.0
+              },
+              "targetX": 160.0,
+              "targetY": 392.0,
+              "walkStep": 14,
+              "walking": true,
+              "x": 163.799957275391,
+              "y": 392.0
+            },
             "pending_delay": 3,
             "rest": 22.0,
             "stay": 7
           },
           "sun_yu": {
             "activity": "socializing",
+            "actual_place": "park",
             "appointment_directing": false,
             "available": true,
             "hunger": 28.0,
             "leisure_directing": false,
             "location": "park",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 2,
+              "_pathWaypoints": [],
+              "_slpOut": 0,
+              "activity": "socializing",
+              "dir4": "side",
+              "doorPhase": null,
+              "doorWaypoint": {
+                "x": 376.0,
+                "y": 504.0
+              },
+              "facing": -1,
+              "finalTarget": {
+                "x": 360.0,
+                "y": 416.0
+              },
+              "targetX": 160.0,
+              "targetY": 392.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 160.0,
+              "y": 392.0
+            },
             "pending_delay": 3,
             "rest": 22.0,
             "stay": 8
@@ -1465,22 +118,114 @@
         "people": {
           "lin_mei": {
             "activity": "recreation",
+            "actual_place": "park",
             "appointment_directing": false,
             "available": true,
             "hunger": 27.6,
             "leisure_directing": false,
             "location": "tavern",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 280.0,
+                  "y": 504.0
+                },
+                {
+                  "x": 376.0,
+                  "y": 504.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "recreation",
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 376.0,
+                "y": 504.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 360.0,
+                "y": 416.0
+              },
+              "targetX": 376.0,
+              "targetY": 504.0,
+              "walkStep": 25,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
             "pending_delay": 2,
             "rest": 21.4,
             "stay": 8
           },
           "sun_yu": {
             "activity": "recreation",
+            "actual_place": "park",
             "appointment_directing": false,
             "available": true,
             "hunger": 26.8,
             "leisure_directing": false,
             "location": "library",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 776.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 792.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 936.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 952.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "recreation",
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 1032.0,
+                "y": 272.0
+              },
+              "targetX": 1064.0,
+              "targetY": 344.0,
+              "walkStep": 24,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
             "pending_delay": 2,
             "rest": 21.4,
             "stay": 9
@@ -1495,22 +240,114 @@
         "people": {
           "lin_mei": {
             "activity": "recreation",
+            "actual_place": "park",
             "appointment_directing": false,
             "available": true,
             "hunger": 26.4,
             "leisure_directing": false,
             "location": "tavern",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 280.0,
+                  "y": 504.0
+                },
+                {
+                  "x": 376.0,
+                  "y": 504.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "recreation",
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 376.0,
+                "y": 504.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 360.0,
+                "y": 416.0
+              },
+              "targetX": 376.0,
+              "targetY": 504.0,
+              "walkStep": 25,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
             "pending_delay": 1,
             "rest": 20.8,
             "stay": 7
           },
           "sun_yu": {
             "activity": "recreation",
+            "actual_place": "park",
             "appointment_directing": false,
             "available": true,
             "hunger": 25.6,
             "leisure_directing": false,
             "location": "library",
+            "motion": {
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [
+                {
+                  "x": 168.0,
+                  "y": 392.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 776.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 792.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 936.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 952.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                }
+              ],
+              "_slpOut": 0,
+              "activity": "recreation",
+              "dir4": "side",
+              "doorPhase": "approaching",
+              "doorWaypoint": {
+                "x": 1064.0,
+                "y": 344.0
+              },
+              "facing": 1,
+              "finalTarget": {
+                "x": 1032.0,
+                "y": 272.0
+              },
+              "targetX": 1064.0,
+              "targetY": 344.0,
+              "walkStep": 24,
+              "walking": true,
+              "x": 168.0,
+              "y": 392.0
+            },
             "pending_delay": 1,
             "rest": 20.8,
             "stay": 8
@@ -1518,382 +355,15 @@
         },
         "tick": 455,
         "visit": {}
-      },
-      {
-        "hour": 0,
-        "minute": 0,
-        "people": {
-          "lin_mei": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 25.2,
-            "leisure_directing": false,
-            "location": "library",
-            "pending_delay": -1,
-            "rest": 20.2,
-            "stay": 0
-          },
-          "sun_yu": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 24.4,
-            "leisure_directing": false,
-            "location": "library",
-            "pending_delay": -1,
-            "rest": 20.2,
-            "stay": 0
-          }
-        },
-        "tick": 456,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 453,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "library",
-          "reason": "等待雙方實際到場。",
-          "state": "traveling",
-          "until": 477
-        }
-      },
-      {
-        "hour": 0,
-        "minute": 15,
-        "people": {
-          "lin_mei": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 24.0,
-            "leisure_directing": false,
-            "location": "library",
-            "pending_delay": -1,
-            "rest": 19.6,
-            "stay": 0
-          },
-          "sun_yu": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 23.2,
-            "leisure_directing": false,
-            "location": "library",
-            "pending_delay": -1,
-            "rest": 19.6,
-            "stay": 0
-          }
-        },
-        "tick": 457,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 453,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "library",
-          "reason": "等待雙方實際到場。",
-          "state": "traveling",
-          "until": 477
-        }
-      },
-      {
-        "hour": 0,
-        "minute": 30,
-        "people": {
-          "lin_mei": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 22.8,
-            "leisure_directing": false,
-            "location": "library",
-            "pending_delay": -1,
-            "rest": 19.0,
-            "stay": 0
-          },
-          "sun_yu": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 22.0,
-            "leisure_directing": false,
-            "location": "library",
-            "pending_delay": -1,
-            "rest": 19.0,
-            "stay": 0
-          }
-        },
-        "tick": 458,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 453,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "library",
-          "reason": "等待雙方實際到場。",
-          "state": "traveling",
-          "until": 477
-        }
-      },
-      {
-        "hour": 0,
-        "minute": 45,
-        "people": {
-          "lin_mei": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 21.6,
-            "leisure_directing": false,
-            "location": "library",
-            "pending_delay": -1,
-            "rest": 18.4,
-            "stay": 0
-          },
-          "sun_yu": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 20.8,
-            "leisure_directing": false,
-            "location": "library",
-            "pending_delay": -1,
-            "rest": 18.4,
-            "stay": 0
-          }
-        },
-        "tick": 459,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 453,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "library",
-          "reason": "等待雙方實際到場。",
-          "state": "traveling",
-          "until": 477
-        }
-      },
-      {
-        "hour": 1,
-        "minute": 0,
-        "people": {
-          "lin_mei": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 20.4,
-            "leisure_directing": false,
-            "location": "library",
-            "pending_delay": -1,
-            "rest": 17.8,
-            "stay": 0
-          },
-          "sun_yu": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 19.6,
-            "leisure_directing": false,
-            "location": "library",
-            "pending_delay": -1,
-            "rest": 17.8,
-            "stay": 0
-          }
-        },
-        "tick": 460,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 453,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "library",
-          "reason": "等待雙方實際到場。",
-          "state": "traveling",
-          "until": 477
-        }
-      },
-      {
-        "hour": 1,
-        "minute": 15,
-        "people": {
-          "lin_mei": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 19.2,
-            "leisure_directing": false,
-            "location": "library",
-            "pending_delay": -1,
-            "rest": 17.2,
-            "stay": 0
-          },
-          "sun_yu": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 18.4,
-            "leisure_directing": false,
-            "location": "library",
-            "pending_delay": -1,
-            "rest": 17.2,
-            "stay": 0
-          }
-        },
-        "tick": 461,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 453,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "library",
-          "reason": "等待雙方實際到場。",
-          "state": "traveling",
-          "until": 477
-        }
-      },
-      {
-        "hour": 1,
-        "minute": 30,
-        "people": {
-          "lin_mei": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 18.0,
-            "leisure_directing": false,
-            "location": "library",
-            "pending_delay": -1,
-            "rest": 16.6,
-            "stay": 0
-          },
-          "sun_yu": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 17.2,
-            "leisure_directing": false,
-            "location": "library",
-            "pending_delay": -1,
-            "rest": 16.6,
-            "stay": 0
-          }
-        },
-        "tick": 462,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 453,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "library",
-          "reason": "等待雙方實際到場。",
-          "state": "traveling",
-          "until": 477
-        }
-      },
-      {
-        "hour": 1,
-        "minute": 45,
-        "people": {
-          "lin_mei": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 16.8,
-            "leisure_directing": false,
-            "location": "library",
-            "pending_delay": -1,
-            "rest": 16.0,
-            "stay": 0
-          },
-          "sun_yu": {
-            "activity": "hangout_travel",
-            "appointment_directing": false,
-            "available": true,
-            "hunger": 16.0,
-            "leisure_directing": false,
-            "location": "library",
-            "pending_delay": -1,
-            "rest": 16.0,
-            "stay": 0
-          }
-        },
-        "tick": 463,
-        "visit": {
-          "departed": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "issued_tick": 453,
-          "people": [
-            "lin_mei",
-            "sun_yu"
-          ],
-          "place": "library",
-          "reason": "等待雙方實際到場。",
-          "state": "traveling",
-          "until": 477
-        }
       }
     ]
   },
   "visit_details": {
-    "lin_mei|sun_yu|1498": {
-      "departed": [
-        "lin_mei",
-        "sun_yu"
-      ],
-      "issued_tick": 1498.0,
-      "pause_until": 1521.0,
-      "pause_used": true,
-      "paused": true,
-      "people": [
-        "lin_mei",
-        "sun_yu"
-      ],
-      "place": "chapel",
-      "reason": "林美已到睡眠時段。同行外出已中止。",
-      "resolved_tick": 1520.0,
-      "state": "cancelled",
-      "until": 1522.0
-    },
     "lin_mei|sun_yu|453": {
+      "arrived": [
+        "lin_mei",
+        "sun_yu"
+      ],
       "departed": [
         "lin_mei",
         "sun_yu"
@@ -1903,10 +373,10 @@
         "lin_mei",
         "sun_yu"
       ],
-      "place": "library",
-      "reason": "林美已到睡眠時段。同行外出已中止。",
-      "resolved_tick": 464.0,
-      "state": "cancelled",
+      "place": "park",
+      "reason": "雙方已實際在花園近距離碰面。",
+      "resolved_tick": 456.0,
+      "state": "met",
       "until": 477.0
     }
   }

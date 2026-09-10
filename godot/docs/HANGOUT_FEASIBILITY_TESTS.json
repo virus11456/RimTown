@@ -1,0 +1,5 @@
+{
+  "checks": 8,
+  "failures": [],
+  "scope": "controlled night-owl time window, real route length, work priority, absent/disconnected path, no world or position mutation; not natural encounter proof"
+}
