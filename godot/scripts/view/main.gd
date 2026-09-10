@@ -557,6 +557,10 @@ func _line(placeholder: String, secret := false) -> LineEdit:
 	return field
 
 func _settings_ui() -> void:
+	_button("試玩原料補給："+("開啟" if simulation.relief_enabled else "關閉"),drawer_body,func(): simulation.relief_enabled=not simulation.relief_enabled;has_simulated=true;show_tab("設定",true))
+	_wrapped("開啟時每天將木材、石材、金屬、布料與草藥補至 40；關閉後需依靠採集、產業、收成或交易。",12)
+	_button("廚房使用主食作物："+("開啟" if simulation.kitchen_crops_enabled else "關閉"),drawer_body,func(): simulation.kitchen_crops_enabled=not simulation.kitchen_crops_enabled;has_simulated=true;show_tab("設定",true))
+	_wrapped("食材不足時，可使用公共庫存的馬鈴薯、稻米、玉米、小麥、蘑菇；若要留給加工或交易可關閉。",12)
 	_button("每日加工營運："+("開啟" if simulation.processing_enabled else "關閉"),drawer_body,func(): simulation.processing_enabled=not simulation.processing_enabled;show_tab("設定",true))
 	_button("每日農田生長："+("開啟" if simulation.farm_enabled else "關閉"),drawer_body,func(): simulation.farm_enabled=not simulation.farm_enabled;show_tab("設定",true))
 	_button("每日產業產出："+("開啟" if simulation.industry_enabled else "關閉"),drawer_body,func(): simulation.industry_enabled=not simulation.industry_enabled;show_tab("設定",true))
@@ -1375,8 +1379,9 @@ func show_stockpile(resource: String="",show_zero: bool=false) -> void:
 	_wrapped("公共庫存與收支",22)
 	_button("加工排班",drawer_body,show_work_policy)
 	_wrapped("送禮從這裡扣除；每日生產與消耗在午夜結算，可於設定開關。農田收成直接入庫，工廠成品需先從加工頁領取。",12)
-	if simulation.supply_enabled: _wrapped("公共廚房依人口備餐，1 食材製成 1.5 餐食；缺料、身體無法工作或排班休工就停煮。其他居民也會在缺料時停工，不會憑空產出商品。自動生產依全鎮存量補貨；餐食備約 3 天，建材至少可支付一項高階工程並留餘量。已持有物資不會因目標下調被刪除。",12)
+	if simulation.supply_enabled: _wrapped("公共廚房依人口備餐，1 食材製成 1.5 餐食；設定允許時，食材不足會改用主食作物。缺料、身體無法工作或排班休工就停煮。其他居民也會在缺料時停工，不會憑空產出商品。自動生產依全鎮存量補貨；餐食備約 3 天，建材至少可支付一項高階工程並留餘量。已持有物資不會因目標下調被刪除。",12)
 	if simulation.supply_enabled: _wrapped("城鎮基本補助只補到 %.0f 銀；出售與訂單收入不受此門檻限制。"%SimEconomy.passive_target(simulation),12)
+	if simulation.supply_enabled: _wrapped("原料來源："+("試玩補給開啟，每日部分原料補至 40。" if simulation.relief_enabled else "自給模式，沒有每日原料補給。")+"可在設定切換。",12)
 	var stockpile: Dictionary=_current_data().get("stockpile",{})
 	var resources: Dictionary=stockpile.get("resources",{})
 	var history: Array=stockpile.get("history",[])
@@ -1584,7 +1589,7 @@ func show_farm() -> void:
 	var level:=int(simulation.data.industry.industries.get("farming",{}).get("level",0))
 	_wrapped(str(simulation.data.clock.season)+" · 農業 Lv"+str(level)+" · 農地 "+str(farm.plots.size()))
 	_wrapped("先開啟農業，下一次午夜配置農地。翻土後選作物播種；種子扣銀幣，施肥扣 2 草藥。換季不合時令會枯萎，成熟後請盡快收成。",12)
-	_wrapped("限產時會計入在田作物的最高品質預估收成，備貨足夠就暫停播種；既有作物仍可完整收成。收成存為個別作物，並非直接補充餐食。可到加工頁建廠，將作物製成商品。",12)
+	_wrapped("限產時會計入在田作物的最高品質預估收成，備貨足夠就暫停播種；既有作物仍可完整收成。收成先存為個別作物；允許廚房使用時，主食作物可在食材不足時煮成餐食，也能送往加工。",12)
 	if not simulation.farm_enabled: _wrapped("每日農田生長目前關閉。")
 	if level==0: _button("前往產業",drawer_body,show_industry)
 	for p in farm.plots:

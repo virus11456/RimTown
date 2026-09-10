@@ -17,7 +17,7 @@ static func daily(w: SimWorld) -> void:
 	var rules: Dictionary=JSON.parse_string(FileAccess.get_file_as_string("res://assets/data/economy_rules.json"))
 	for key in rules.raw:
 		var gap:=40-amount(w,key)
-		if gap>0: change(w,key,gap,"原料自動補給")
+		if gap>0 and (not w.supply_enabled or w.relief_enabled): change(w,key,gap,"原料自動補給")
 	if not w.data.get("workPolicy") is Dictionary: w.data.workPolicy={}
 	var industry_jobs: Array=[]
 	for key in w.data.get("industry",{}).get("industries",{}):
@@ -52,10 +52,7 @@ static func daily(w: SimWorld) -> void:
 			var cooks: int=w.data.agents.values().filter(func(n): return not n.get("isPlayer",false) and not n.get("isDead",false) and SimProcessing.can_work(n) and n.get("jobKey")=="cook").size()
 			var population: int=w.data.agents.values().filter(func(n): return not n.get("isPlayer",false) and not n.get("isDead",false)).size()
 			var capacity:=maxf(float(recipe.outputs.meals)*eff,float(population)*1.5/maxi(1,cooks)*1.2)
-			var prepared:=minf(capacity,minf(SimSupply.room(w,"meals"),amount(w,"food")*1.5))
-			if prepared>0:
-				consume(w,"food",prepared/1.5,a.name+"的公共廚房",a.name)
-				SimSupply.produce(w,"meals",prepared,a.name+"的公共廚房",a.name)
+			prepare_meals(w,a,capacity)
 			continue
 		var scale:=1.0
 		if w.supply_enabled and not recipe.outputs.is_empty():
@@ -117,3 +114,16 @@ static func passive_target(w: SimWorld) -> float:
 	return maxf(200,count*25)
 static func passive_room(w: SimWorld) -> float:
 	return maxf(0,passive_target(w)-amount(w,"silver"))
+
+static func prepare_meals(w: SimWorld,cook: Dictionary,capacity: float) -> float:
+	var remaining:=minf(capacity,SimSupply.room(w,"meals"));var prepared:=0.0
+	var ingredients: Array=["food"]
+	if w.kitchen_crops_enabled: ingredients.append_array(["potato","rice","corn","wheat","mushroom"])
+	for resource in ingredients:
+		if remaining<=.000001: break
+		var output:=minf(remaining,maxf(0,amount(w,resource))*1.5)
+		if output<=0: continue
+		consume(w,resource,output/1.5,str(cook.name)+"的公共廚房",str(cook.name))
+		SimSupply.produce(w,"meals",output,str(cook.name)+"的公共廚房",str(cook.name))
+		remaining-=output;prepared+=output
+	return prepared

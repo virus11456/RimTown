@@ -1,0 +1,34 @@
+{
+  "checks": 15185,
+  "failures": [],
+  "scenarios": [
+    {
+      "harvests": 2,
+      "hunger_days": 0,
+      "industry_output": true,
+      "kitchen_crops": false,
+      "meals": 60.0,
+      "silver": 500.0,
+      "sowings": 2
+    },
+    {
+      "harvests": 2,
+      "hunger_days": 0,
+      "industry_output": true,
+      "kitchen_crops": true,
+      "meals": 60.0,
+      "silver": 500.0,
+      "sowings": 2
+    },
+    {
+      "harvests": 6,
+      "hunger_days": 9,
+      "industry_output": false,
+      "kitchen_crops": true,
+      "meals": 19.35,
+      "silver": 500.0,
+      "sowings": 8
+    }
+  ],
+  "scope": "visible aid/crop controls, exact crop conversion and no creation, actual farm lifecycle over 120 days without injected raw resources, settings/resume and mobile UI; basic silver support still enabled"
+}
