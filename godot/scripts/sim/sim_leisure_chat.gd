@@ -16,7 +16,7 @@ static func reply(w: SimWorld,id: String) -> String:
 	var place: String=p.place;var text:=""
 	match str(p.state):
 		"completed": text="今天已經到"+place+"休閒，實際停留三十分鐘後完成了。"
-		"missed": text="今天原本安排到"+place+"休閒，但沒有在時段內完成到場停留。"
+		"missed": text="今天原本安排到"+place+"休閒，但沒有在時段內完成到場停留。"+str(p.reason)
 		"cancelled": text="今天的休閒安排取消了。"+str(p.reason)+"。"
 		"skipped": text="今天沒有足夠的空檔，沒有排休閒行程。"
 		_: text="今天安排 %02d:00 到%s休閒，目前還沒完成到場停留。"%[int(p.hour),place]

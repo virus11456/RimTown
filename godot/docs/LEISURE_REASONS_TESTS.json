@@ -1,0 +1,5 @@
+{
+  "checks": 24,
+  "failures": [],
+  "scope": "actual-position fixtures distinguish absent observations, no observed arrival, needs interruption, departure, observation gap and insufficient dwell; same local reply/history/native world snapshot; no path-block inference"
+}

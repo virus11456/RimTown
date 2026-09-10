@@ -7,11 +7,25 @@ static func plans(w: SimWorld) -> Dictionary:
 	return w.quest_balance.get("leisure_plans",{})
 static func history(w: SimWorld,id: String) -> Array:
 	return w.quest_balance.get("leisure_history",{}).get(id,[])
+static func interrupt(p: Dictionary,cause: String) -> void:
+	if p.get("state","")!="attending": return
+	var causes: Array=p.get("interruptions",[])
+	if cause not in causes: causes.append(cause)
+	p.interruptions=causes
+static func missed_reason(p: Dictionary) -> String:
+	if not p.get("arrival_observed",false):
+		return "時段已結束；觀察期間未確認到場，未完成停留。" if p.get("observation_started",false) else "時段已結束，未完成實際到場停留；沒有足夠的到場觀察紀錄。"
+	var causes: Array=p.get("interruptions",[])
+	var text:="已確認到場，但期限前未完成連續三十分鐘停留。"
+	if "needs" in causes: text+="停留曾因進食或休息需求中斷。"
+	if "left" in causes: text+="停留期間曾離開場所。"
+	if "gap" in causes: text+="位置觀察有缺口，已重新計時。"
+	return text
 static func remember(w: SimWorld,id: String,p: Dictionary) -> void:
 	var book: Dictionary=w.quest_balance.get("leisure_history",{})
 	var rows: Array=book.get(id,[])
 	if rows.any(func(row): return row.day==p.day): return
-	rows.append({"day":p.day,"hour":p.hour,"place":p.place,"place_name":str(w.data.townMap.locations.get(p.place,{}).get("name","已移除的場所")),"state":p.state,"reason":p.reason,"resolved_tick":int(w.data.tickCount)})
+	rows.append({"day":p.day,"hour":p.hour,"place":p.place,"place_name":str(w.data.townMap.locations.get(p.place,{}).get("name","已移除的場所")),"state":p.state,"reason":p.reason,"resolved_tick":int(w.data.tickCount),"arrival_observed":bool(p.get("arrival_observed",false)),"interruptions":p.get("interruptions",[]).duplicate()} )
 	while rows.size()>7: rows.pop_front()
 	book[id]=rows;w.quest_balance.leisure_history=book
 static func choose(w: SimWorld,id: String) -> Dictionary:
@@ -60,7 +74,7 @@ static func tick(w: SimWorld) -> void:
 		if a.get("isPlayer",false): continue
 		if a.get("isDead",false): finish(w,id,"cancelled","居民已過世");continue
 		if book.get(id,{}).get("day","")!=day:
-			if book.has(id) and LIVE.has(book[id].get("state","")): finish(w,id,"missed","前一日已結束，未完成實際到場停留")
+			if book.has(id) and LIVE.has(book[id].get("state","")): finish(w,id,"missed",missed_reason(book[id]))
 			var choice:=choose(w,id);var hour: int=choice.hour
 			var place: String="park" if w.data.townMap.locations.has("park") else "town_square"
 			var due:=now+hour*4-int(w.data.clock.hour)*4-int(w.data.clock.minute)/15 if hour>=0 else now
@@ -75,8 +89,9 @@ static func tick(w: SimWorld) -> void:
 		var meeting:=SimAppointments.current(w)
 		if meeting.get("npc")==id and meeting.get("state") in ["accepted","waiting"] and int(meeting.due)-32<int(p.until) and int(meeting.until)>int(p.due)-16:
 			finish(w,id,"cancelled","已確認的見面約定優先");continue
-		if now>=int(p.until): finish(w,id,"missed","時段已結束，未完成實際到場停留");continue
+		if now>=int(p.until): finish(w,id,"missed",missed_reason(p));continue
 		if float(a.needs.hunger)<15 or float(a.needs.rest)<10:
+			interrupt(p,"needs")
 			p.state="scheduled";p.dwell=0;p.erase("observed_tick");p.reason="先處理進食或休息需求"
 	for id in book.keys():
 		if not w.data.agents.has(id): book.erase(id)
@@ -97,13 +112,20 @@ static func observe(w: SimWorld,m: SimMotion) -> void:
 	if not enabled(w): return
 	for id in plans(w):
 		var p: Dictionary=plans(w)[id]
+		if LIVE.has(p.get("state","")) and int(w.data.tickCount)>=int(p.due) and int(w.data.tickCount)<int(p.until): p.observation_started=true
 		if not directing(w,id):
+			if w.data.agents.has(id):
+				var a: Dictionary=w.data.agents[id]
+				if float(a.needs.hunger)<15 or float(a.needs.rest)<10: interrupt(p,"needs")
 			if LIVE.has(p.get("state","")): p.state="scheduled";p.dwell=0;p.erase("observed_tick")
 			continue
 		if int(w.data.tickCount)<int(p.due) or SimCareerPresence.place(m,id)!=p.place:
+			if int(w.data.tickCount)>=int(p.due): interrupt(p,"left")
 			p.state="traveling";p.dwell=0;p.observed_tick=int(w.data.tickCount);p.reason="前往休閒場所，尚未開始停留";continue
+		p.arrival_observed=true
 		if p.state!="attending": p.dwell=0;p.state="attending";p.observed_tick=int(w.data.tickCount)
 		elif int(w.data.tickCount)>int(p.get("observed_tick",w.data.tickCount)):
+			if int(w.data.tickCount)-int(p.observed_tick)>1: interrupt(p,"gap")
 			p.dwell=int(p.dwell)+1 if int(w.data.tickCount)-int(p.observed_tick)==1 else 0
 			p.observed_tick=int(w.data.tickCount)
 		p.reason="已抵達，實際停留 %d／2 段"%int(p.dwell)
