@@ -1,0 +1,27 @@
+{
+  "checks": 13,
+  "failures": [],
+  "routes": [
+    {
+      "additional_days": 0,
+      "average_affinity": 46.0,
+      "conversations": 0,
+      "friends": 33.0,
+      "population": 41,
+      "ready": true,
+      "route": "prosper",
+      "silver": 2490.0
+    },
+    {
+      "additional_days": 0,
+      "average_affinity": 46.0,
+      "conversations": 0,
+      "friends": 33.0,
+      "population": 41,
+      "ready": true,
+      "route": "peace",
+      "silver": 2490.0
+    }
+  ],
+  "scope": "Branches already earned in the existing 130-day checkpoint; no additional conversations or condition/stock/relationship injection. Simulation API validation, not rendered walking. Personal marriage ending still excluded."
+}

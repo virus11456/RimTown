@@ -1,0 +1,5 @@
+{
+  "checks": 24,
+  "failures": [],
+  "scope": "actual earned compressed checkpoints, native file selection callback, enabled finale buttons and ending display at 375/1280 pixels, continued app tick; headless UI, not rendered walking"
+}

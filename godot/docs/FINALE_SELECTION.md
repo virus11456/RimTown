@@ -17,3 +17,13 @@ MAIN_ROUTE_PROGRESSION_TESTS.json：原始示範資源、旅人身分、預設�
 主線腳本另外輸出選擇前存檔 main-route-ready.json.tmp（不進 git／專案 ZIP），複製為輸出目錄的第130天結局前.json 供人工試玩。
 
 FINALE_CHOICE_TESTS.json 與 FINALE_CHOICE_UI_TESTS.json 使用明示達標 fixture，驗證三種可選路線、婚姻覆蓋、未達標防護、重複結算、待選存檔、375px 介面及實際建築繁榮度。此類 fixture 不與上述一條主線進程混稱。
+
+## 三條可選路線的真實存檔驗收
+
+REMAINING_ROUTES_TESTS.json 從上述第 130 天結局前檢查點分支，確認繁榮與和平也已達標：公共銀幣 2490、人口 41、玩家平均好感 46、主線判定的朋友 33 人。沒有額外注入資源、關係或完成旗標，也不需要再交談或推進天數。兩路均可選定，續玩一天後結局統計保留，重新載入後的下一 tick 與未重載世界一致。三條路線共用此建鎮歷程，不代表各自從零跑了三次遊戲。
+
+REMAINING_ROUTES_UI_TESTS.json 透過原生載入回呼打開同一壓縮存檔，在 375／1280 寬度驗證繁榮及和平按鈕啟用、實際點選、結局呈現與續玩。這是 headless 介面驗證，不是畫面美術或逐段走路驗收。個人婚姻結局仍僅有規則測試，未完成自然可玩婚姻流程。
+
+交付檔案：outputs/三路線結局前.rimtown。用長期存檔版或更新的試玩程式載入，開啟「故事 → 任務與人生 → 主線」，選擇任一已達標結局。選完可繼續遊玩；想比較另一條路線，重新載入這份結局前存檔。
+
+重現順序（在 repo 根目錄）：先執行 Godot headless 的 res://tests/test_main_route_progression.gd 生成檢查點，再執行 test_remaining_routes.gd 生成壓縮檔，最後執行 test_remaining_routes_ui.gd。各次需指定可寫的 --log-file；生成檔位於專案外 outputs，不納入 git。
