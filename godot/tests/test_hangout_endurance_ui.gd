@@ -6,6 +6,7 @@ var max_records:=0
 var conversations:=0
 var eligible_conversations:=0
 var day_eight: Dictionary={}
+var traces: Dictionary={}
 func audit(w: SimWorld,m: SimMotion) -> void:
 	for id in w.data.agents:
 		var p: Variant=w.data.agents[id].get("_pendingHangout")
@@ -35,6 +36,18 @@ func audit(w: SimWorld,m: SimMotion) -> void:
 		if not live and p.state=="pending":
 			p.state="ended_before_departure"
 			p.reason=w.quest_balance.get("hangout_status",{}).get(p.people[0],{}).get("reason","未留下原因")
+func trace_tick(w: SimWorld) -> void:
+	for token in proposals:
+		var p: Dictionary=proposals[token]
+		var r: Dictionary=SimHangoutVisits.records(w).get(token,{})
+		if p.state=="ended_before_departure" or r.get("state","") in ["met","missed","cancelled"]: continue
+		var rows: Array=traces.get(token,[]);var people: Dictionary={}
+		for id in p.people:
+			var a: Dictionary=w.data.agents.get(id,{})
+			var pending: Variant=a.get("_pendingHangout")
+			people[id]={"activity":a.get("activity"),"location":a.get("currentLocation"),"pending_delay":pending.get("tick",-1) if pending is Dictionary else -1,"stay":a.get("_locationStayRemaining",0),"available":SimHangoutSafety.available_person(w,a) if not a.is_empty() else false,"hunger":a.get("needs",{}).get("hunger"),"rest":a.get("needs",{}).get("rest"),"leisure_directing":SimLeisurePlan.directing(w,id),"appointment_directing":SimAppointments.directing(w,id)}
+		rows.append({"tick":int(w.data.tickCount),"hour":w.data.clock.hour,"minute":w.data.clock.minute,"people":people,"visit":r.duplicate(true)})
+		traces[token]=rows
 func run() -> void:
 	var viewport:=SubViewport.new();viewport.size=Vector2i(960,640);viewport.own_world_3d=true;root.add_child(viewport)
 	var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app);await process_frame;app.set_process(false)
@@ -44,6 +57,7 @@ func run() -> void:
 		for id in w.data.agents:
 			for other in w.data.agents[id].get("relationships",{}): affinities[id+"|"+other]=w.data.agents[id].relationships[other].get("affinity",0)
 		var previous: Array=w.data.get("npcConversationLog",[]).duplicate(true)
+		trace_tick(w)
 		app._tick_simulation()
 		for row in w.data.get("npcConversationLog",[]):
 			if not previous.has(row):
@@ -72,5 +86,5 @@ func run() -> void:
 	check(conversations>0,"original residents have natural conversations")
 	check(max_records<=20,"observed visit history remains bounded")
 	check(not proposals.is_empty(),"natural simulation generates at least one paired proposal")
-	var report:={"checks":checks,"failures":failures,"ticks":3072,"day_eight":day_eight,"affinity_eligible_conversations":eligible_conversations,"motion_frames_per_tick":120,"conversations":conversations,"proposals":proposals.size(),"departed_visits":visits.size(),"outcomes":outcomes,"reasons":reasons,"paused_visits":pauses,"maximum_records":max_records,"invalid":invalid,"proposal_details":proposals,"visit_details":visits,"scope":"32 days of original app residents and settings, 120 physical motion frames per tick, app reload halfway, no altered jobs/needs/positions/affinity/resources or production AI; headless, not full game playthrough"}
+	var report:={"checks":checks,"failures":failures,"ticks":3072,"day_eight":day_eight,"affinity_eligible_conversations":eligible_conversations,"motion_frames_per_tick":120,"conversations":conversations,"proposals":proposals.size(),"departed_visits":visits.size(),"outcomes":outcomes,"reasons":reasons,"paused_visits":pauses,"maximum_records":max_records,"invalid":invalid,"traces":traces,"proposal_details":proposals,"visit_details":visits,"scope":"32 days of original app residents and settings, 120 physical motion frames per tick, app reload halfway, no altered jobs/needs/positions/affinity/resources or production AI; headless, not full game playthrough"}
 	FileAccess.open("res://docs/HANGOUT_ENDURANCE_UI_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "));print(JSON.stringify({"checks":checks,"failures":failures,"outcomes":outcomes,"proposals":proposals.size(),"visits":visits.size(),"reasons":reasons}));quit(0 if failures.is_empty() else 1)

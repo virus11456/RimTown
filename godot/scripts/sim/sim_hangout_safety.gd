@@ -28,6 +28,15 @@ static func tick(w: SimWorld) -> void:
 		if int(w.data.tickCount)>=int(p.expires_at): cancel(w,id,"期限內未能開始外出，安排已到期。");continue
 		if SimAppointments.directing(w,id) or SimAppointments.directing(w,str(p.withId)): cancel(w,id,"已確認的玩家約定優先。");continue
 	SimHangoutVisits.tick(w)
+	for id in w.data.agents:
+		var a: Dictionary=w.data.agents[id];var p: Variant=a.get("_pendingHangout")
+		if not p is Dictionary or not w.data.agents.has(p.get("withId","")): continue
+		var now:=int(w.data.tickCount)
+		if now<=int(p.get("countdown_tick",p.get("issued_tick",now))): continue
+		p.countdown_tick=now
+		var visit: Dictionary=SimHangoutVisits.records(w).get(SimHangoutVisits.key(id,p),{})
+		if visit.get("paused",false): continue
+		if available_person(w,a) and available_person(w,w.data.agents[p.withId]): p.tick=maxi(0,int(p.tick)-1)
 	var book: Dictionary=w.quest_balance.get("hangout_status",{})
 	for id in book.keys():
 		if not w.data.agents.has(id): book.erase(id)
@@ -43,7 +52,7 @@ static func route(w: SimWorld,a: Dictionary,run: Dictionary) -> void:
 	var other: Dictionary=w.data.agents[p.withId]
 	if not available_person(w,a) or not available_person(w,other):
 		note(w,str(a.id),"deferred","先處理工作、通勤、需求或既有行程；外出暫緩。");return
-	if int(p.tick)>0: p.tick-=1;note(w,str(a.id),"pending","等待外出；尚未確認共同到場。");return
+	if int(p.tick)>0: note(w,str(a.id),"pending","等待外出；尚未確認共同到場。");return
 	run.targetLocation=p.location;a.activity=p.get("activity","socializing");a._pendingHangout=null
 	SimHangoutVisits.depart(w,str(a.id),p)
 	note(w,str(a.id),"departed","已設定外出目的地；不代表同行者已到場或完成聚會。")

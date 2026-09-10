@@ -44,6 +44,21 @@ static func directing(w: SimWorld,id: String) -> bool:
 	var a: Dictionary=w.data.agents[id]
 	var r: Dictionary=records(w).get(a.get("_activeHangout",""),{})
 	return r.get("state","")=="traveling" and not r.get("paused",false) and id in r.departed and int(w.data.tickCount)<int(r.until) and SimHangoutSafety.available_person(w,a)
+static func blocking_reason(w: SimWorld,r: Dictionary) -> String:
+	if not w.data.townMap.locations.has(r.place): return "目的地已不存在。"
+	for id in r.people:
+		if not w.data.agents.has(id): return "同行對象已離開小鎮。"
+		var a: Dictionary=w.data.agents[id];var who:=str(a.name)
+		if a.get("isDead",false): return who+"已離世。"
+		if a.has("_raidShelterUntil"): return who+"需要避難。"
+		if SimAppointments.directing(w,id): return who+"已有優先的玩家約定。"
+		if SimLeisurePlan.directing(w,id): return who+"已有優先的休閒安排。"
+		if not SimLeisurePlan.available(w,id,int(w.data.clock.hour)):
+			var job: Dictionary=w.rules.jobs.get(str(a.get("jobKey","")),{})
+			var hour:=int(w.data.clock.hour)
+			if not job.is_empty() and hour>=int(job.work_hours[0])-1 and hour<int(job.work_hours[1]): return who+"已到通勤或工作時段。"
+			return who+"已到睡眠時段。"
+	return ""
 static func tick(w: SimWorld) -> void:
 	for token in records(w):
 		var r: Dictionary=records(w)[token]
@@ -52,16 +67,13 @@ static func tick(w: SimWorld) -> void:
 		if now>=int(r.until):
 			finish(w,token,"missed","期限內未確認雙方近距離到場，聚會未完成。")
 			continue
-		var urgent:=false;var blocked: bool=not w.data.townMap.locations.has(r.place)
-		for id in r.people:
-			if not w.data.agents.has(id): blocked=true;continue
-			var a: Dictionary=w.data.agents[id]
-			if a.get("isDead",false) or a.has("_raidShelterUntil") or SimAppointments.directing(w,id) or SimLeisurePlan.directing(w,id) or not SimLeisurePlan.available(w,id,int(w.data.clock.hour)):
-				blocked=true
-			if float(a.needs.hunger)<15 or float(a.needs.rest)<10 or a.activity in ["eating","sleeping"]: urgent=true
-		if blocked:
-			finish(w,token,"cancelled","工作、睡眠時段、既有行程或對象狀態改變，同行外出已中止。")
+		var urgent:=false;var why:=blocking_reason(w,r)
+		if not why.is_empty():
+			finish(w,token,"cancelled",why+"同行外出已中止。")
 			continue
+		for id in r.people:
+			var a: Dictionary=w.data.agents[id]
+			if float(a.needs.hunger)<15 or float(a.needs.rest)<10 or a.activity in ["eating","sleeping"]: urgent=true
 		if r.get("paused",false):
 			if now>=int(r.pause_until):
 				finish(w,token,"cancelled","短暫休整期限已到，同行安排取消。")

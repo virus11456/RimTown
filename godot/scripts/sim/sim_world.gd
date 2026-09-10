@@ -178,6 +178,11 @@ func _update(id: String) -> void:
 	if SimHangoutVisits.directing(self,id):
 		a.activity="hangout_travel";a.currentLocation=SimHangoutVisits.records(self)[a._activeHangout].place;a._hangoutDestination=a.currentLocation;run.targetLocation=null;a._locationStayRemaining=0
 		return
+	if SimHangoutSafety.enabled(self) and a.get("_pendingHangout") is Dictionary:
+		SimHangoutSafety.route(self,a,run)
+		if a.get("_pendingHangout")==null and SimHangoutVisits.directing(self,id):
+			a.activity="hangout_travel";a.currentLocation=SimHangoutVisits.records(self)[a._activeHangout].place;run.targetLocation=null;a._locationStayRemaining=0
+			return
 	_gain_xp(a)
 	if a.activity!=previous: a._locationStayRemaining=0
 	if a.get("_locationStayRemaining",0)>0: a._locationStayRemaining-=1
