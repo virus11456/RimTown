@@ -1,0 +1,9 @@
+{
+  "checks": 18,
+  "continued_archive_bytes": 1967498,
+  "continued_json_bytes": 21660298,
+  "day130_archive_bytes": 1931897,
+  "day130_json_bytes": 20896534,
+  "failures": [],
+  "scope": "lossless envelope and legacy JSON, integrity/size/version checks, no-overwrite writes, actual 130-day checkpoint then ten post-ending days and deterministic reload; no cloud upload"
+}

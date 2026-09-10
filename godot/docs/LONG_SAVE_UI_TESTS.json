@@ -1,0 +1,5 @@
+{
+  "checks": 2,
+  "failures": [],
+  "scope": "actual delivered 140-day compressed archive via normal native file callback and next app tick"
+}

@@ -222,12 +222,12 @@ func _build_ui() -> void:
 	dialog = FileDialog.new()
 	dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
 	dialog.access = FileDialog.ACCESS_FILESYSTEM
-	dialog.filters = PackedStringArray(["*.json ; RimTown JSON"])
+	dialog.filters = PackedStringArray(["*.rimtown,*.json ; RimTown 存檔"])
 	dialog.file_selected.connect(func(path):
-		if FileAccess.get_file_as_bytes(path).size() > 20*1024*1024:
-			status.text="檔案超過 20 MB。"
-			return
-		_load_document(FileAccess.get_file_as_string(path),"本機存檔"))
+		var file:=FileAccess.open(path,FileAccess.READ)
+		if file==null: status.text="無法讀取存檔。";return
+		if file.get_length()>SaveArchive.LIMIT: status.text="檔案超過 64 MB。";return
+		_load_save_bytes(file.get_buffer(file.get_length()),"本機存檔"))
 	add_child(dialog)
 
 func _responsive() -> void:
@@ -351,6 +351,7 @@ func show_tab(tab: String, refresh := false) -> void:
 			_button("匯入網頁版存檔",drawer_body,import_save)
 			_button("匯出原始存檔副本",drawer_body,export_save)
 			_button("匯出試玩進度",drawer_body,export_progress)
+			_button("匯出進度 JSON 相容版",drawer_body,export_progress_json)
 			_button("鎮務提案與權限",drawer_body,show_governance)
 			_button("公共庫存與收支",drawer_body,show_stockpile)
 			_button("建築工程",drawer_body,show_buildings)
@@ -689,9 +690,11 @@ func load_cloud(town_id: String) -> void:
 
 func import_save() -> void:
 	if OS.has_feature("web"):
-		import_callback = JavaScriptBridge.create_callback(func(args): _load_document(str(args[0]),"本機存檔"))
+		import_callback = JavaScriptBridge.create_callback(func(args):
+			if str(args[0])=="too_large": status.text="檔案超過 64 MB。";return
+			_load_save_bytes(Marshalls.base64_to_raw(str(args[0])),"本機存檔"))
 		JavaScriptBridge.get_interface("window").rimtownImport = import_callback
-		JavaScriptBridge.eval("const input=document.createElement('input');input.type='file';input.accept='.json,application/json';input.onchange=async()=>{if(input.files[0] && input.files[0].size<=20971520)window.rimtownImport(await input.files[0].text());};input.click();",true)
+		JavaScriptBridge.eval("const input=document.createElement('input');input.type='file';input.accept='.json,.rimtown,application/json';input.onchange=()=>{const f=input.files[0];if(!f)return;if(f.size>67108864){window.rimtownImport('too_large');return;}const reader=new FileReader();reader.onload=()=>window.rimtownImport(String(reader.result).split(',')[1]);reader.readAsDataURL(f);};input.click();",true)
 	else:
 		dialog.popup_centered_ratio(0.8)
 
@@ -707,21 +710,34 @@ func progress_snapshot() -> Dictionary:
 	return progress
 
 func export_progress() -> void:
+	var bytes:=SaveArchive.encode(JSON.stringify(progress_snapshot(),"",false,true))
+	if bytes.is_empty(): status.text="存檔超過 64 MB，未寫入；目前進度仍保留。";return
+	_write_export_bytes(bytes,"rimtown-playtest","rimtown")
+
+func export_progress_json() -> void:
 	_write_export(JSON.stringify(progress_snapshot(),"",false,true),"rimtown-playtest")
+
+func _load_save_bytes(bytes: PackedByteArray,source: String) -> bool:
+	var decoded:=SaveArchive.decode(bytes)
+	if not decoded.ok: status.text=str(decoded.error);return false
+	return _load_document(str(decoded.text),source)
+
 
 func _write_export(text: String,prefix: String) -> void:
 	if text.is_empty(): return
+	var bytes:=text.to_utf8_buffer()
+	if bytes.size()>SaveArchive.LIMIT: status.text="存檔超過 64 MB，未寫入；目前進度仍保留。";return
+	_write_export_bytes(bytes,prefix,"json")
+
+func _write_export_bytes(bytes: PackedByteArray,prefix: String,extension: String) -> void:
 	if OS.has_feature("web"):
-		JavaScriptBridge.download_buffer(text.to_utf8_buffer(),prefix+".json","application/json")
-		status.text="已下載原始存檔副本。"
+		JavaScriptBridge.download_buffer(bytes,prefix+"."+extension,"application/json" if extension=="json" else "application/octet-stream")
+		status.text="已下載進度存檔。"
 	else:
-		var path := export_directory.path_join("%s-%d.json" % [prefix,Time.get_unix_time_from_system()])
-		var file := FileAccess.open(path,FileAccess.WRITE)
-		if file:
-			file.store_string(text)
-			status.text="副本已儲存於 " + ProjectSettings.globalize_path(path)
-			status.tooltip_text=status.text
-		else: status.text="無法寫入副本。"
+		var path:=export_directory.path_join("%s-%d-%d.%s"%[prefix,int(Time.get_unix_time_from_system()*1000000),OS.get_process_id(),extension])
+		if SaveArchive.write_new(path,bytes):
+			status.text="存檔已儲存於 "+ProjectSettings.globalize_path(path);status.tooltip_text=status.text
+		else: status.text="無法完成寫檔，既有存檔未覆寫；目前進度仍保留。"
 
 func _capture_demo() -> void:
 	await get_tree().create_timer(3).timeout

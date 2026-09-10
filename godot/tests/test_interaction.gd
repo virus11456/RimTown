@@ -143,7 +143,7 @@ func run() -> void:
 	check(app.document.serialize()==source,"import retains byte-exact JSON")
 	app.export_directory="res://tests" # Sandbox cannot write macOS application support.
 	await click("匯出原始存檔副本")
-	var export_prefix := "副本已儲存於 "
+	var export_prefix := "存檔已儲存於 "
 	check(app.status.text.begins_with(export_prefix),"export reports saved file")
 	if app.status.text.begins_with(export_prefix):
 		var path: String = app.status.text.trim_prefix(export_prefix)

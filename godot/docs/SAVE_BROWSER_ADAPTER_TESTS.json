@@ -1,0 +1,5 @@
+{
+  "checks": 6,
+  "failures": [],
+  "scope": "actual shipped browser import JavaScript under mocked DOM/FileReader; UTF-8/binary transport, extensions, limit and cancel; not full Web build validation"
+}
