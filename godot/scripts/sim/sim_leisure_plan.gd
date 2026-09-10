@@ -5,6 +5,32 @@ static func enabled(w: SimWorld) -> bool:
 	return bool(w.quest_balance.get("leisure_plans_enabled",false))
 static func plans(w: SimWorld) -> Dictionary:
 	return w.quest_balance.get("leisure_plans",{})
+static func history(w: SimWorld,id: String) -> Array:
+	return w.quest_balance.get("leisure_history",{}).get(id,[])
+static func remember(w: SimWorld,id: String,p: Dictionary) -> void:
+	var book: Dictionary=w.quest_balance.get("leisure_history",{})
+	var rows: Array=book.get(id,[])
+	if rows.any(func(row): return row.day==p.day): return
+	rows.append({"day":p.day,"hour":p.hour,"place":p.place,"place_name":str(w.data.townMap.locations.get(p.place,{}).get("name","已移除的場所")),"state":p.state,"reason":p.reason,"resolved_tick":int(w.data.tickCount)})
+	while rows.size()>7: rows.pop_front()
+	book[id]=rows;w.quest_balance.leisure_history=book
+static func choose(w: SimWorld,id: String) -> Dictionary:
+	var candidates: Array=[18,19,16,14,12,10,9]
+	var rows:=history(w,id);var basis: Dictionary={}
+	if not rows.is_empty():
+		var last: Dictionary=rows.back();var age:=int(w.data.tickCount)-int(last.get("resolved_tick",-9999))
+		if last.state=="missed" and age>=0 and age<=192:
+			basis=last.duplicate(true)
+			var earlier: Array=[9,10,12,14,16,18,19]
+			earlier=earlier.filter(func(h): return h<int(last.hour))
+			candidates=earlier+candidates.filter(func(h): return not earlier.has(h))
+	var result:={"hour":-1,"basis":basis,"explanation":"依目前工時與睡眠空檔安排。"}
+	for h in candidates:
+		if h*60<int(w.data.clock.hour)*60+int(w.data.clock.minute)+60: continue
+		if available(w,id,h) and available(w,id,h+1): result.hour=h;break
+	if not basis.is_empty():
+		result.explanation="上次未完成到場停留，這次改選較早的空檔。" if result.hour>=0 and result.hour<int(basis.hour) else "上次未完成到場停留；目前沒有可用的更早空檔，仍依作息安排。"
+	return result
 static func available(w: SimWorld,id: String,hour: int) -> bool:
 	var a: Dictionary=w.data.agents[id];var traits: Array=a.personality.get("traits",[])
 	var start:=2 if "night_owl" in traits else 20 if "early_bird" in traits else 22
@@ -16,6 +42,7 @@ static func finish(w: SimWorld,id: String,state: String,why: String) -> void:
 	var p: Dictionary=plans(w).get(id,{})
 	if not LIVE.has(p.get("state","")): return
 	p.state=state;p.reason=why
+	remember(w,id,p)
 	if w.data.agents.has(id):
 		w.data.agents[id].erase("_leisureDestination");w.data.agents[id]._locationStayRemaining=0
 static func tick(w: SimWorld) -> void:
@@ -28,15 +55,14 @@ static func tick(w: SimWorld) -> void:
 		if a.get("isPlayer",false): continue
 		if a.get("isDead",false): finish(w,id,"cancelled","居民已過世");continue
 		if book.get(id,{}).get("day","")!=day:
-			var hour:=-1
-			for h in [18,19,16,14,12,10,9]:
-				if h*60<int(w.data.clock.hour)*60+int(w.data.clock.minute)+60: continue
-				if available(w,id,h) and available(w,id,h+1): hour=h;break
+			if book.has(id) and LIVE.has(book[id].get("state","")): finish(w,id,"missed","前一日已結束，未完成實際到場停留")
+			var choice:=choose(w,id);var hour: int=choice.hour
 			var place: String="park" if w.data.townMap.locations.has("park") else "town_square"
 			var due:=now+hour*4-int(w.data.clock.hour)*4-int(w.data.clock.minute)/15 if hour>=0 else now
-			book[id]={"day":day,"place":place,"due":due,"until":due+8,"hour":hour,"state":"scheduled" if hour>=0 else "skipped","reason":"依空檔安排休閒，尚未抵達" if hour>=0 else "今天沒有足夠的休閒空檔","dwell":0}
+			book[id]={"day":day,"place":place,"due":due,"until":due+8,"hour":hour,"state":"scheduled" if hour>=0 else "skipped","reason":"依空檔安排休閒，尚未抵達" if hour>=0 else "今天沒有足夠的休閒空檔","dwell":0,"basis":choice.basis,"explanation":choice.explanation}
 		w.quest_balance.leisure_plans=book
 		var p: Dictionary=book[id]
+		if p.state=="skipped": remember(w,id,p)
 		if not LIVE.has(p.state): continue
 		if a.has("_raidShelterUntil"): finish(w,id,"cancelled","避難優先");continue
 		if not w.data.townMap.locations.has(p.place): finish(w,id,"cancelled","休閒場所已不存在");continue
@@ -50,6 +76,9 @@ static func tick(w: SimWorld) -> void:
 	for id in book.keys():
 		if not w.data.agents.has(id): book.erase(id)
 	w.quest_balance.leisure_plans=book
+	var past: Dictionary=w.quest_balance.get("leisure_history",{})
+	for id in past.keys():
+		if not w.data.agents.has(id): past.erase(id)
 static func directing(w: SimWorld,id: String) -> bool:
 	var p: Dictionary=plans(w).get(id,{})
 	if not enabled(w) or not LIVE.has(p.get("state","")) or not w.data.agents.has(id): return false

@@ -1,0 +1,5 @@
+{
+  "checks": 15,
+  "failures": [],
+  "scope": "structured outcomes, once/day bounded history, saved failure changes next day slot, actual job precedence, stale history, no intraday reroll or rewards, rollover and removed residents"
+}

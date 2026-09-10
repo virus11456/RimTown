@@ -2355,6 +2355,12 @@ func show_agenda(id: String) -> void:
 		_wrapped("今日自主休閒安排",18)
 		if int(leisure.hour)>=0: _wrapped("%02d:00–%02d:00 · %s"%[int(leisure.hour),int(leisure.hour)+2,str(simulation.data.townMap.locations.get(leisure.place,{}).get("name","戶外場所"))])
 		_wrapped(str(leisure.reason))
+		_wrapped(str(leisure.get("explanation","依當時作息安排；舊存檔沒有調整依據。")),12)
+	var leisure_history:=SimLeisurePlan.history(simulation,id)
+	if not leisure_history.is_empty():
+		_wrapped("最近休閒結果",18)
+		for entry in leisure_history.slice(maxi(0,leisure_history.size()-3)):
+			_wrapped(str(entry.day)+" · "+str(entry.place_name)+" · "+str(entry.reason),12)
 	var appointment:=SimAppointments.current(simulation)
 	if appointment.get("npc")==id:
 		_wrapped("見面約定",18)
