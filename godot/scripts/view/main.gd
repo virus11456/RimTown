@@ -1927,6 +1927,7 @@ func process_event_comment() -> void:
 	var heart: bool=item.get("kind","")=="heart"
 	var online: bool=simulation.heart_events_online if heart else simulation.event_comments_online
 	if online and not chat_offline and not npc.is_empty() and not player.is_empty() and not npc.get("isDead",false):
+		var leisure_context:=SimLeisureChat.context(simulation,str(item.npc))
 		var prompt:=SimHeartEvents.prompt(simulation,item) if heart else SimEventComments.prompt(simulation,item)
 		var response: Dictionary
 		if event_comment_transport.is_valid(): response=await event_comment_transport.call(prompt)
@@ -1934,7 +1935,7 @@ func process_event_comment() -> void:
 		if epoch!=chat_epoch: return
 		if response.get("ok",false) and response.get("data") is Dictionary and response.data.get("reply") is String: text=response.data.reply
 		online=simulation.heart_events_online if heart else simulation.event_comments_online
-		if not online or chat_offline: text=""
+		if not online or chat_offline or leisure_context!=SimLeisureChat.context(simulation,str(item.npc)): text=""
 	event_comment_busy=false
 	if not is_same(npc,simulation.data.agents.get(item.npc,{})) or not is_same(player,simulation.data.agents.get(item.player,{})):
 		simulation.event_comments.erase(item);return

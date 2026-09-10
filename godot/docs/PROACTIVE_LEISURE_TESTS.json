@@ -1,0 +1,5 @@
+{
+  "checks": 24,
+  "failures": [],
+  "scope": "event and heart app callbacks with mock AI, prompt context/budget, unchanged invitation behavior, leisure changed while pending discards response and effects; no production AI or semantic guarantee"
+}
