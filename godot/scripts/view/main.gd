@@ -60,6 +60,7 @@ func _ready() -> void:
 	add_child(traveler)
 	load_demo("frontier")
 	get_viewport().size_changed.connect(_responsive)
+	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_combos.flag"): _capture_combos()
 	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_sites.flag"): _capture_sites()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_matrix.flag"): _capture_demo()
 	_responsive()
@@ -264,6 +265,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.buildings_enabled=bool(document.data.get("_godot4a",{}).get("buildings_enabled",true))
 	simulation.trade_enabled=bool(document.data.get("_godot4a",{}).get("trade_enabled",true))
 	simulation.research_enabled=bool(document.data.get("_godot4a",{}).get("research_enabled",true))
+	simulation.combos_enabled=bool(document.data.get("_godot4a",{}).get("combos_enabled",true))
 	simulation.supply_enabled=bool(document.data.get("_godot4a",{}).get("supply_enabled",true))
 	simulation.processing_enabled=bool(document.data.get("_godot4a",{}).get("processing_enabled",true))
 	simulation.farm_enabled=bool(document.data.get("_godot4a",{}).get("farm_enabled",true))
@@ -325,6 +327,7 @@ func show_tab(tab: String, refresh := false) -> void:
 			_button("匯出試玩進度",drawer_body,export_progress)
 			_button("公共庫存與收支",drawer_body,show_stockpile)
 			_button("建築工程",drawer_body,show_buildings)
+			_button("裝飾與組合",drawer_body,show_decorations)
 			_button("商人交易",drawer_body,show_trade)
 			_button("研究",drawer_body,show_research)
 			_button("產業",drawer_body,show_industry)
@@ -1715,35 +1718,37 @@ func _refresh_building_world() -> void:
 		var safe: Vector2=motion.layout._nearest(Vector2(p.x,p.y));p.x=safe.x;p.y=safe.y
 		motion._path(p)
 	world_view.animate_agents(motion.positions)
-func show_building_site(key: String,index: int=0) -> void:
+func show_building_site(key: String,index: int=0,decor: bool=false) -> void:
 	_clear_site_preview();active_tab="小鎮";drawer.show();_clear_drawer()
-	var choices:=BuildingSites.candidates(simulation.data)
-	_wrapped("3D 選址 · "+str(SimBuildings.rules().templates[key].name),22)
+	var footprint:=1 if decor else 2
+	var choices:=BuildingSites.candidates(simulation.data,footprint)
+	_wrapped("3D 選址 · "+str(SimCombos.decoration(key).name if decor else SimBuildings.rules().templates[key].name),22)
 	if choices.is_empty():
 		_wrapped("沒有足夠的安全空地，未扣材料。")
-		_button("返回工程",drawer_body,show_buildings);return
+		_button("返回",drawer_body,show_decorations if decor else show_buildings);return
 	index=posmod(index,choices.size());var site: Vector2i=choices[index]
 	_wrapped("候選空地 %d／%d · 地圖格 (%d, %d)"%[index+1,choices.size(),site.x,site.y],12)
-	_wrapped("綠色範圍為 2×2 格建築用地，已避開道路、水域、住宅與預留工廠區。確認時會再次檢查位置與材料。",12)
-	placement_preview=MeshInstance3D.new();var mesh:=BoxMesh.new();mesh.size=Vector3(2,.12,2);placement_preview.mesh=mesh
+	_wrapped("綠色範圍為 %d×%d 格用地，已避開道路、水域、住宅與預留工廠區。確認時會再次檢查位置與材料。"%[footprint,footprint],12)
+	placement_preview=MeshInstance3D.new();var mesh:=BoxMesh.new();mesh.size=Vector3(footprint,.12,footprint);placement_preview.mesh=mesh
 	var material:=StandardMaterial3D.new();material.albedo_color=Color(.2,1,.45,.65);material.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;placement_preview.material_override=material
-	placement_preview.position=Vector3(site.x+1,.3,site.y+1);add_child(placement_preview)
+	placement_preview.position=Vector3(site.x+footprint*.5,.3,site.y+footprint*.5);add_child(placement_preview)
 	rig.follow_player=false;rig.position=Vector3(site.x+1,0,site.y+1);rig.width=16;rig._sync()
 	# An in-panel camera keeps the site visible even when the mobile drawer covers the map.
 	var inset:=SubViewportContainer.new();inset.custom_minimum_size=Vector2(0,170);inset.size_flags_horizontal=Control.SIZE_EXPAND_FILL;inset.stretch=true;inset.mouse_filter=Control.MOUSE_FILTER_IGNORE;drawer_body.add_child(inset)
 	var mini:=SubViewport.new();mini.size=Vector2i(320,170);mini.world_3d=get_world_3d();mini.render_target_update_mode=SubViewport.UPDATE_ALWAYS;inset.add_child(mini)
 	var camera:=Camera3D.new();mini.add_child(camera);camera.projection=Camera3D.PROJECTION_ORTHOGONAL;camera.size=6;camera.position=Vector3(site.x+6,8,site.y+7);camera.look_at(Vector3(site.x+1,0,site.y+1));camera.current=true
-	_button("上一塊空地",drawer_body,func(): show_building_site(key,index-1))
-	_button("下一塊空地",drawer_body,func(): show_building_site(key,index+1))
+	_button("上一塊空地",drawer_body,func(): show_building_site(key,index-1,decor))
+	_button("下一塊空地",drawer_body,func(): show_building_site(key,index+1,decor))
 	var active_world: Dictionary=simulation.data
-	_button("確認開工",drawer_body,func():
+	_button("確認擺放" if decor else "確認開工",drawer_body,func():
 		if not is_same(active_world,simulation.data): return
-		var project:=SimBuildings.start(simulation,key,false,site)
+		var project: Dictionary={"ok":true} if decor and SimCombos.place(simulation,key,site) else ({} if decor else SimBuildings.start(simulation,key,false,site))
 		_clear_site_preview()
-		if not project.is_empty(): has_simulated=true;status.text="已開工 · 材料已扣除";_refresh_building_world()
-		else: status.text="位置或材料已改變，未開工"
-		show_buildings())
-	_button("取消選址",drawer_body,show_buildings)
+		if not project.is_empty(): has_simulated=true;status.text="已擺放 · 材料已扣除" if decor else "已開工 · 材料已扣除";_refresh_building_world()
+		else: status.text="位置或材料已改變，未扣款"
+		if decor: show_decorations()
+		else: show_buildings())
+	_button("取消選址",drawer_body,show_decorations if decor else show_buildings)
 
 func _capture_sites() -> void:
 	await get_tree().create_timer(1).timeout
@@ -1760,3 +1765,39 @@ func _capture_sites() -> void:
 			await RenderingServer.frame_post_draw
 			viewport.get_texture().get_image().save_png("res://docs/site-"+stage+("-mobile.png" if dimensions.x==375 else "-desktop.png"))
 			viewport.queue_free()
+
+func show_decorations() -> void:
+	active_tab="小鎮";drawer.show();_clear_drawer();_wrapped("裝飾與相鄰組合",22)
+	_wrapped("每個組合首次發現，全鎮心情 +6；移除後重建不會重複領取。組合以第一項為中心，其他項目需在橫、縱各 4 格內。沒有持續生產或售價加成。",12)
+	var active: Array=SimCombos.active(simulation.data).map(func(c): return c.id)
+	for combo in SimCombos.rules().combos:
+		var found: bool=combo.id in simulation.data.get("combosFound",[])
+		_wrapped(str(combo.name)+" · "+("成立" if combo.id in active else ("曾發現，目前未成立" if found else "尚未發現")),16)
+		_wrapped(str(combo.desc),12)
+	_wrapped("擺放裝飾",18)
+	for def in SimCombos.rules().decorations:
+		var costs: Array=[]
+		for r in def.cost: costs.append(_resource_name(r)+" "+str(int(def.cost[r])))
+		_wrapped("、".join(costs),12)
+		var button:=_button("擺放："+str(def.name),drawer_body,func(): show_building_site(def.type,0,true))
+		button.disabled=not SimBuildings.affordable(simulation,def.cost)
+	_wrapped("已擺放（移除退各項材料一半，向下取整）",16)
+	for item in simulation.data.get("decorations",[]):
+		var def:=SimCombos.decoration(str(item.type))
+		_button("移除：%s (%d,%d)"%[def.get("name",item.type),item.x,item.y],drawer_body,func():
+			if SimCombos.remove(simulation,item): has_simulated=true;_refresh_building_world()
+			show_decorations())
+	_button("重新整理",drawer_body,show_decorations)
+	_button("返回小鎮",drawer_body,func(): show_tab("小鎮",true))
+
+func _capture_combos() -> void:
+	await get_tree().create_timer(1).timeout
+	for dimensions in [Vector2i(1280,800),Vector2i(375,812)]:
+		var viewport:=SubViewport.new();viewport.size=dimensions;viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+		var preview=load("res://scenes/main.tscn").instantiate();viewport.add_child(preview)
+		preview._load_document(FileAccess.get_file_as_string("res://tests/combos/compatibility-save.json.tmp"),"相鄰組合驗收")
+		preview.show_decorations()
+		await get_tree().create_timer(.5).timeout
+		await RenderingServer.frame_post_draw
+		viewport.get_texture().get_image().save_png("res://docs/combos"+("-mobile.png" if dimensions.x==375 else "-desktop.png"))
+		viewport.queue_free()

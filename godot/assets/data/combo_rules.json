@@ -1,0 +1,136 @@
+{
+  "combos": [
+    {
+      "id": "romantic_corner",
+      "icon": "💞",
+      "name": "浪漫街角",
+      "parts": [
+        "flowerbed",
+        "bench",
+        "lamp"
+      ],
+      "desc": "花圃+長椅+路燈"
+    },
+    {
+      "id": "plaza_oasis",
+      "icon": "🌿",
+      "name": "綠意廣場",
+      "parts": [
+        "fountain",
+        "flowerbed"
+      ],
+      "desc": "小噴泉+花圃"
+    },
+    {
+      "id": "statue_square",
+      "icon": "🗿",
+      "name": "雕像廣場",
+      "parts": [
+        "statue",
+        "bench"
+      ],
+      "desc": "雕像+長椅"
+    },
+    {
+      "id": "market_buzz",
+      "icon": "🎪",
+      "name": "市集人氣",
+      "parts": [
+        "marketplace",
+        "lamp"
+      ],
+      "desc": "市集+路燈"
+    },
+    {
+      "id": "tavern_night",
+      "icon": "🍺",
+      "name": "酒香夜色",
+      "parts": [
+        "brewery",
+        "lamp"
+      ],
+      "desc": "釀酒坊+路燈"
+    },
+    {
+      "id": "scholar_path",
+      "icon": "📚",
+      "name": "書香步道",
+      "parts": [
+        "school",
+        "bench"
+      ],
+      "desc": "學堂+長椅"
+    },
+    {
+      "id": "iron_bastion",
+      "icon": "🛡️",
+      "name": "銅牆鐵壁",
+      "parts": [
+        "watchtower",
+        "town_walls"
+      ],
+      "desc": "瞭望塔+城牆"
+    },
+    {
+      "id": "healing_garden",
+      "icon": "🌼",
+      "name": "靜心藥園",
+      "parts": [
+        "garden",
+        "fountain"
+      ],
+      "desc": "藥草園+小噴泉"
+    }
+  ],
+  "decorations": [
+    {
+      "type": "flowerbed",
+      "icon": "🌸",
+      "name": "花圃",
+      "beauty": 2,
+      "cost": {
+        "silver": 15
+      }
+    },
+    {
+      "type": "bench",
+      "icon": "🪑",
+      "name": "長椅",
+      "beauty": 2,
+      "cost": {
+        "silver": 15,
+        "wood": 10
+      }
+    },
+    {
+      "type": "lamp",
+      "icon": "🏮",
+      "name": "路燈",
+      "beauty": 3,
+      "cost": {
+        "silver": 20,
+        "metal": 5
+      }
+    },
+    {
+      "type": "statue",
+      "icon": "🗿",
+      "name": "雕像",
+      "beauty": 6,
+      "cost": {
+        "silver": 60,
+        "stone": 20
+      }
+    },
+    {
+      "type": "fountain",
+      "icon": "⛲",
+      "name": "小噴泉",
+      "beauty": 8,
+      "cost": {
+        "silver": 80,
+        "stone": 30
+      }
+    }
+  ]
+}

@@ -203,7 +203,7 @@ func _build_overlays(save: Dictionary) -> void:
 		crate.set_meta("construction_key",project.get("buildingKey",project.get("upgradeKey","")));crate.set_meta("phase","building")
 		_instance("prop_fence",Vector3(project.siteX+1,.3,project.siteY+1.8),Vector3(1.8,1,1))
 	for decoration in layout.decorations:
-		var name: String={"tree":"prop_tree_oak","pine":"prop_tree_pine","flower":"prop_flower","flowers":"prop_flower","bench":"prop_bench","lamp":"prop_lamp","lantern":"prop_lantern","campfire":"prop_campfire","fence":"prop_fence","well":"prop_well","statue":"prop_grave","fountain":"prop_well"}.get(str(decoration.get("type","")),"prop_flower")
+		var name: String={"flowerbed":"prop_flower","tree":"prop_tree_oak","pine":"prop_tree_pine","flower":"prop_flower","flowers":"prop_flower","bench":"prop_bench","lamp":"prop_lamp","lantern":"prop_lantern","campfire":"prop_campfire","fence":"prop_fence","well":"prop_well","statue":"prop_grave","fountain":"prop_well"}.get(str(decoration.get("type","")),"prop_flower")
 		_instance(name,Vector3(decoration.x+.5,.14,decoration.y+.5))
 
 func _recolor(source: Mesh,color_index: int,all_faces := false) -> ArrayMesh:

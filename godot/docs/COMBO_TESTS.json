@@ -1,0 +1,5 @@
+{
+  "checks": 1202,
+  "failures": [],
+  "scope": "48 original decoration/building cases across 8 combos, distance 0/4/5, anchor geometry, discovery/recheck/remove/rebuild, logs/news/mood; AI callback omitted"
+}

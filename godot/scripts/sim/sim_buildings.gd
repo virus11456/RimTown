@@ -60,3 +60,4 @@ static func daily(w: SimWorld) -> void:
 			var news: Array=w.data.dailyNews.get("todayEvents",[])
 			news.append({"category":"building","content":str(p.name)+("升級完成了！" if upgrade else "建造完成了！"),"importance":7 if upgrade else 6,"agents":[],"time":""});w.data.dailyNews.todayEvents=news
 		for a in w.data.agents.values(): SimFeuds._mood(a,w,8 if upgrade else 5)
+		if not upgrade and w.combos_enabled: SimCombos.check_new(w)
