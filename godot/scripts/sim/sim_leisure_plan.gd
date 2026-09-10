@@ -19,17 +19,22 @@ static func choose(w: SimWorld,id: String) -> Dictionary:
 	var rows:=history(w,id);var basis: Dictionary={}
 	if not rows.is_empty():
 		var last: Dictionary=rows.back();var age:=int(w.data.tickCount)-int(last.get("resolved_tick",-9999))
-		if last.state=="missed" and age>=0 and age<=192:
+		if last.state in ["missed","completed"] and age>=0 and age<=192:
 			basis=last.duplicate(true)
 			var earlier: Array=[9,10,12,14,16,18,19]
 			earlier=earlier.filter(func(h): return h<int(last.hour))
-			candidates=earlier+candidates.filter(func(h): return not earlier.has(h))
+			var later: Array=candidates.filter(func(h): return h>int(last.hour))
+			candidates=earlier+later+[int(last.hour)] if last.state=="missed" else [int(last.hour)]+candidates.filter(func(h): return h!=int(last.hour))
 	var result:={"hour":-1,"basis":basis,"explanation":"依目前工時與睡眠空檔安排。"}
 	for h in candidates:
 		if h*60<int(w.data.clock.hour)*60+int(w.data.clock.minute)+60: continue
 		if available(w,id,h) and available(w,id,h+1): result.hour=h;break
 	if not basis.is_empty():
-		result.explanation="上次未完成到場停留，這次改選較早的空檔。" if result.hour>=0 and result.hour<int(basis.hour) else "上次未完成到場停留；目前沒有可用的更早空檔，仍依作息安排。"
+		if basis.state=="completed":
+			result.explanation="上次已實際完成休閒，這次優先沿用成功的時段。" if result.hour==int(basis.hour) else "上次已完成，但原時段目前不適用，依作息另選空檔。"
+		elif result.hour>=0 and result.hour<int(basis.hour): result.explanation="上次未完成到場停留，這次改選較早的空檔。"
+		elif result.hour>int(basis.hour): result.explanation="上次未完成到場停留；沒有可用的更早空檔，這次試較晚時段，增加下班後的趕路時間。"
+		else: result.explanation="上次未完成到場停留；目前沒有其他可用空檔，仍依作息安排。"
 	return result
 static func available(w: SimWorld,id: String,hour: int) -> bool:
 	var a: Dictionary=w.data.agents[id];var traits: Array=a.personality.get("traits",[])

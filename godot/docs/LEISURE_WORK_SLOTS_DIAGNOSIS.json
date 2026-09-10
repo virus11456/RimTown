@@ -1,0 +1,190 @@
+{
+  "baseline_commit": "ac4faf6",
+  "baseline_eight_days": {
+    "completed": 100,
+    "missed": 60
+  },
+  "scope": "first two days, last tick before deadline for unfinished original residents; actual observed facts, not proof of root cause for every miss",
+  "observations": [
+    {
+      "resident": "lin_mei",
+      "day": "1-春季-1",
+      "hour": 18,
+      "state_at_last_tick": "attending",
+      "dwell": 1,
+      "actual_place": "park",
+      "hunger": 26.0,
+      "rest": 34.0,
+      "x": 152.0,
+      "y": 400.0
+    },
+    {
+      "resident": "zhao_xia",
+      "day": "1-春季-1",
+      "hour": 18,
+      "state_at_last_tick": "traveling",
+      "dwell": 0,
+      "actual_place": "town_square",
+      "hunger": 26.0,
+      "rest": 16.5,
+      "x": 659.002807617188,
+      "y": 408.0
+    },
+    {
+      "resident": "yang_feng",
+      "day": "1-春季-1",
+      "hour": 18,
+      "state_at_last_tick": "attending",
+      "dwell": 0,
+      "actual_place": "park",
+      "hunger": 26.0,
+      "rest": 16.5,
+      "x": 187.452972412109,
+      "y": 411.453063964844
+    },
+    {
+      "resident": "sun_yu",
+      "day": "1-春季-1",
+      "hour": 18,
+      "state_at_last_tick": "traveling",
+      "dwell": 0,
+      "actual_place": "",
+      "hunger": 26.0,
+      "rest": 34.0,
+      "x": 354.406524658203,
+      "y": 504.0
+    },
+    {
+      "resident": "xu_ying",
+      "day": "1-春季-1",
+      "hour": 18,
+      "state_at_last_tick": "traveling",
+      "dwell": 0,
+      "actual_place": "",
+      "hunger": 26.0,
+      "rest": 16.5,
+      "x": 433.799285888672,
+      "y": 504.0
+    },
+    {
+      "resident": "zheng_wei",
+      "day": "1-春季-1",
+      "hour": 18,
+      "state_at_last_tick": "attending",
+      "dwell": 0,
+      "actual_place": "park",
+      "hunger": 26.0,
+      "rest": 16.5,
+      "x": 152.0,
+      "y": 400.0
+    },
+    {
+      "resident": "gao_lang",
+      "day": "1-春季-1",
+      "hour": 18,
+      "state_at_last_tick": "attending",
+      "dwell": 0,
+      "actual_place": "park",
+      "hunger": 26.0,
+      "rest": 16.5,
+      "x": 187.452972412109,
+      "y": 411.453063964844
+    },
+    {
+      "resident": "lin_mei",
+      "day": "1-春季-2",
+      "hour": 18,
+      "state_at_last_tick": "attending",
+      "dwell": 1,
+      "actual_place": "park",
+      "hunger": 15.2,
+      "rest": 34.0,
+      "x": 152.0,
+      "y": 400.0
+    },
+    {
+      "resident": "zhao_xia",
+      "day": "1-春季-2",
+      "hour": 18,
+      "state_at_last_tick": "traveling",
+      "dwell": 0,
+      "actual_place": "town_square",
+      "hunger": 15.2,
+      "rest": 16.0,
+      "x": 665.209716796875,
+      "y": 408.0
+    },
+    {
+      "resident": "yang_feng",
+      "day": "1-春季-2",
+      "hour": 18,
+      "state_at_last_tick": "attending",
+      "dwell": 1,
+      "actual_place": "park",
+      "hunger": 15.2,
+      "rest": 16.0,
+      "x": 152.0,
+      "y": 400.0
+    },
+    {
+      "resident": "sun_yu",
+      "day": "1-春季-2",
+      "hour": 18,
+      "state_at_last_tick": "traveling",
+      "dwell": 0,
+      "actual_place": "",
+      "hunger": 15.2,
+      "rest": 34.0,
+      "x": 259.211486816406,
+      "y": 483.211486816406
+    },
+    {
+      "resident": "xu_ying",
+      "day": "1-春季-2",
+      "hour": 18,
+      "state_at_last_tick": "scheduled",
+      "dwell": 0,
+      "actual_place": "",
+      "hunger": 14.4,
+      "rest": 13.6,
+      "x": 343.001342773438,
+      "y": 504.0
+    },
+    {
+      "resident": "zheng_wei",
+      "day": "1-春季-2",
+      "hour": 18,
+      "state_at_last_tick": "attending",
+      "dwell": 1,
+      "actual_place": "park",
+      "hunger": 15.2,
+      "rest": 16.0,
+      "x": 152.0,
+      "y": 400.0
+    },
+    {
+      "resident": "gao_lang",
+      "day": "1-春季-2",
+      "hour": 18,
+      "state_at_last_tick": "attending",
+      "dwell": 1,
+      "actual_place": "park",
+      "hunger": 15.2,
+      "rest": 16.0,
+      "x": 152.0,
+      "y": 400.0
+    },
+    {
+      "resident": "huang_li",
+      "day": "1-春季-2",
+      "hour": 19,
+      "state_at_last_tick": "attending",
+      "dwell": 1,
+      "actual_place": "park",
+      "hunger": 29.2,
+      "rest": 10.0,
+      "x": 152.0,
+      "y": 400.0
+    }
+  ]
+}

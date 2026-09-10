@@ -9,3 +9,5 @@ LEISURE_OBSERVATION_GAPS_TESTS.json 的受控位置案例專門驗證觀察缺�
 測試報告：LEISURE_ENDURANCE_TESTS.json（長期 4 項整體條件）、LEISURE_OBSERVATION_GAPS_TESTS.json（6 項）。原有休閒核心 27、行程調整 15、實際移動到本機對話介面 10 項回歸；合計 62 項檢查。
 
 修正後完整重跑八天結果：100 次完成、60 次未完成，最大歷史七筆，四項整體條件全通過。與修正前正常觀察頻率的結果相同；新增缺口案例確認不再錯算連續停留。未完成原因仍需後續逐居民診斷，不以強制瞬移或自動成功掩蓋。
+
+後續時段選擇改良已於 LEISURE_WORK_SLOTS.md 記錄；本頁的 100／60 是當時基準，最新 LEISURE_ENDURANCE_TESTS.json 為新版重跑結果。

@@ -1,0 +1,5 @@
+{
+  "checks": 5,
+  "failures": [],
+  "scope": "doctor work fixture, later retry, successful slot reuse, reload and changed sleep constraints; outcomes injected only to isolate selection"
+}

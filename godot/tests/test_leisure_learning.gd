@@ -19,7 +19,7 @@ func _initialize() -> void:
 	check(equal(stock,w.data.stockpile) and equal(skills,w.data.agents.chen_wei.skills),"learning adds no goods currency or XP")
 	for reason in ["completed","cancelled"]:
 		f=fixture();w=f.w;SimLeisurePlan.finish(w,"chen_wei",reason,"test outcome");next_day(w)
-		check(SimLeisurePlan.plans(w).chen_wei.hour==18 and SimLeisurePlan.plans(w).chen_wei.basis.is_empty(),"no invented travel failure from "+reason)
+		check(SimLeisurePlan.plans(w).chen_wei.hour==18 and (SimLeisurePlan.plans(w).chen_wei.basis.get("state","")=="completed" if reason=="completed" else SimLeisurePlan.plans(w).chen_wei.basis.is_empty()),"no invented travel failure from "+reason)
 	f=fixture();w=f.w;SimLeisurePlan.finish(w,"chen_wei","missed","deadline");w.data.agents.chen_wei.jobKey="priest";next_day(w)
 	p=SimLeisurePlan.plans(w).chen_wei
 	check(p.hour==19 and "沒有可用" in p.explanation,"earlier plan cannot override actual job hours")
