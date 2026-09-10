@@ -11,8 +11,10 @@ func run() -> void:
 	check(has_text(app.drawer_body,"實際位置：") and has_text(app.drawer_body,"目的地："),"actual place and destination shown separately")
 	app._tick_simulation();await settle()
 	check(app.resident_page=="agenda" and has_text(app.drawer_body,"今日作息與行程"),"time advancement preserves agenda panel")
+	check(has_text(app.drawer_body,"依班表保留"),"adjusted sleep duration and commute allowance visible")
 	var trace: Array=app.physical_trace.entries(w,"chen_wei")
 	check(not trace.is_empty() and not trace.any(func(e): return "遠行計畫" in e.text or "還沒去" in e.text),"normal app tick records actual observation")
+	w.data.agents.chen_wei.todayTrace=[{"m":360,"text":"來源作息文字"}];w.data.agents.chen_wei._traceDay=SimTrace.day_key(w.data.clock)
 	press(app.drawer_body,"今日足跡");await settle()
 	check(has_text(app.drawer_body,"實際足跡") and has_text(app.drawer_body,"未核對實際位置"),"actual and legacy trace provenance visible")
 	var fits:=true
@@ -25,10 +27,12 @@ func run() -> void:
 		if child is Control and child.size.x>app.drawer.size.x: fits=false
 	check(fits,"375px agenda panel fits")
 	var before: Dictionary=app.physical_trace.snapshot()
+	var sleep_before: Dictionary=w.data.agents.chen_wei._shiftSleep.duplicate(true)
 	var path:=ProjectSettings.globalize_path("res://../../../outputs/居民作息與實際足跡.rimtown")
 	var file:=FileAccess.open(path,FileAccess.WRITE);file.store_buffer(SaveArchive.encode(JSON.stringify(app.progress_snapshot())));file.close()
 	app.dialog.file_selected.emit(path);await settle()
 	check(equal(before,app.physical_trace.snapshot()),"native archive restores physical timeline")
+	check(equal(sleep_before,w.data.agents.chen_wei._shiftSleep),"native archive preserves adjusted sleep schedule")
 	app.load_demo("harbor");check(app.physical_trace.snapshot().entries.is_empty(),"switching towns cannot leak previous physical trace")
-	var report:={"checks":checks,"failures":failures,"scope":"real agenda/trace navigation, normal app tick, deliberate unexecuted plan, unaccepted appointment, 375px panels, compressed timeline reload and town isolation; no new AI scheduler"}
+	var report:={"checks":checks,"failures":failures,"scope":"real agenda/trace navigation, normal app tick, deliberate unexecuted plan and legacy trace, adjusted sleep display and native reload, unaccepted appointment, 375px panels, compressed timeline reload and town isolation; no new AI scheduler"}
 	FileAccess.open("res://docs/AGENDA_UI_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "));print(JSON.stringify(report));quit(0 if failures.is_empty() else 1)

@@ -1,8 +1,8 @@
 {
   "checks": 3,
   "failures": [],
-  "maximum_step": 0.999847412109375,
-  "on_time": 4,
+  "maximum_step": 0.9998779296875,
+  "on_time": 9,
   "scope": "two original app days with real movement, measured actual venue at scheduled work start before movement of that tick; no changed jobs/needs/positions/resources, not proof of every worker arriving on time",
   "shifts": [
     {
@@ -38,8 +38,8 @@
       "workplace": "workshop"
     },
     {
-      "activity": "sleeping",
-      "actual_place": "residential_north",
+      "activity": "working",
+      "actual_place": "",
       "id": "lin_mei",
       "on_time": false,
       "tick": 8,
@@ -78,8 +78,8 @@
       "workplace": "general_store"
     },
     {
-      "activity": "sleeping",
-      "actual_place": "residential_extra",
+      "activity": "working",
+      "actual_place": "",
       "id": "ke_wei",
       "on_time": false,
       "tick": 8,
@@ -95,9 +95,9 @@
     },
     {
       "activity": "working",
-      "actual_place": "residential_east",
+      "actual_place": "library",
       "id": "sun_yu",
-      "on_time": false,
+      "on_time": true,
       "tick": 12,
       "workplace": "library"
     },
@@ -118,24 +118,24 @@
       "workplace": "library"
     },
     {
-      "activity": "sleeping",
-      "actual_place": "residential_south",
+      "activity": "eating",
+      "actual_place": "tavern",
       "id": "wang_li",
-      "on_time": false,
+      "on_time": true,
       "tick": 92,
       "workplace": "tavern"
     },
     {
-      "activity": "sleeping",
-      "actual_place": "residential_extra",
+      "activity": "working",
+      "actual_place": "",
       "id": "he_xiu",
       "on_time": false,
       "tick": 92,
       "workplace": "tavern"
     },
     {
-      "activity": "eating",
-      "actual_place": "residential_extra",
+      "activity": "working",
+      "actual_place": "",
       "id": "su_qing",
       "on_time": false,
       "tick": 92,
@@ -158,8 +158,8 @@
       "workplace": "guardpost"
     },
     {
-      "activity": "eating",
-      "actual_place": "residential_extra",
+      "activity": "working",
+      "actual_place": "",
       "id": "gao_lang",
       "on_time": false,
       "tick": 96,
@@ -167,7 +167,7 @@
     },
     {
       "activity": "working",
-      "actual_place": "residential_south",
+      "actual_place": "",
       "id": "wu_da",
       "on_time": false,
       "tick": 100,
@@ -191,15 +191,15 @@
     },
     {
       "activity": "working",
-      "actual_place": "",
+      "actual_place": "town_square",
       "id": "he_chang",
       "on_time": false,
       "tick": 100,
       "workplace": "workshop"
     },
     {
-      "activity": "sleeping",
-      "actual_place": "residential_north",
+      "activity": "working",
+      "actual_place": "town_square",
       "id": "lin_mei",
       "on_time": false,
       "tick": 104,
@@ -207,7 +207,7 @@
     },
     {
       "activity": "working",
-      "actual_place": "residential_south",
+      "actual_place": "",
       "id": "zhang_hao",
       "on_time": false,
       "tick": 104,
@@ -215,7 +215,7 @@
     },
     {
       "activity": "working",
-      "actual_place": "residential_east",
+      "actual_place": "",
       "id": "zhao_xia",
       "on_time": false,
       "tick": 104,
@@ -230,23 +230,23 @@
       "workplace": "workshop"
     },
     {
-      "activity": "eating",
-      "actual_place": "",
+      "activity": "working",
+      "actual_place": "general_store",
       "id": "zhou_ming",
-      "on_time": false,
+      "on_time": true,
       "tick": 104,
       "workplace": "general_store"
     },
     {
-      "activity": "sleeping",
-      "actual_place": "residential_extra",
+      "activity": "working",
+      "actual_place": "",
       "id": "ke_wei",
       "on_time": false,
       "tick": 104,
       "workplace": "workshop"
     },
     {
-      "activity": "working",
+      "activity": "eating",
       "actual_place": "town_hall",
       "id": "chen_wei",
       "on_time": true,
@@ -262,10 +262,10 @@
       "workplace": "library"
     },
     {
-      "activity": "eating",
-      "actual_place": "",
+      "activity": "working",
+      "actual_place": "library",
       "id": "zheng_wei",
-      "on_time": false,
+      "on_time": true,
       "tick": 108,
       "workplace": "library"
     },
@@ -278,16 +278,16 @@
       "workplace": "library"
     },
     {
-      "activity": "sleeping",
-      "actual_place": "residential_south",
+      "activity": "working",
+      "actual_place": "tavern",
       "id": "wang_li",
-      "on_time": false,
+      "on_time": true,
       "tick": 188,
       "workplace": "tavern"
     },
     {
-      "activity": "sleeping",
-      "actual_place": "residential_extra",
+      "activity": "working",
+      "actual_place": "",
       "id": "he_xiu",
       "on_time": false,
       "tick": 188,
@@ -295,14 +295,14 @@
     },
     {
       "activity": "working",
-      "actual_place": "residential_extra",
+      "actual_place": "",
       "id": "su_qing",
       "on_time": false,
       "tick": 188,
       "workplace": "tavern"
     },
     {
-      "activity": "eating",
+      "activity": "working",
       "actual_place": "",
       "id": "liu_jun",
       "on_time": false,
@@ -319,7 +319,7 @@
     },
     {
       "activity": "working",
-      "actual_place": "residential_extra",
+      "actual_place": "",
       "id": "gao_lang",
       "on_time": false,
       "tick": 192,

@@ -12,6 +12,10 @@ static func reason(w: SimWorld,id: String) -> String:
 	if float(a.needs.rest)<10 or float(a.needs.hunger)<15: return "對方需要先休息或進食"
 	return ""
 static func free_hour(w: SimWorld,id: String,hour: int) -> bool:
+	var resident: Dictionary=w.data.agents[id]
+	if resident.has("_shiftSleep"):
+		for offset in 3:
+			if not SimLeisurePlan.person_available(resident,w.rules.jobs,posmod(hour+offset,24)): return false
 	var job:=SimPlayerChat.job(w,w.data.agents[id])
 	if job.is_empty() or not job.has("work_hours"): return true
 	var start:=int(job.work_hours[0]);var end:=int(job.work_hours[1])
@@ -78,6 +82,7 @@ static func directing(w: SimWorld,id: String) -> bool:
 	var a:=current(w)
 	if not w.data.agents.has(id) or not reason(w,id).is_empty(): return false
 	var hour:=int(w.data.clock.hour)
+	if w.data.agents[id].has("_shiftSleep") and not SimLeisurePlan.person_available(w.data.agents[id],w.rules.jobs,hour): return false
 	if hour<6 or hour>=22: return false
 	var job:=SimPlayerChat.job(w,w.data.agents[id])
 	if job.has("work_hours"):

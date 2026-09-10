@@ -331,6 +331,7 @@ func _load_document(text: String, source: String) -> bool:
 			if saved.get("house_map") is Dictionary: motion.layout.agent_house=saved.house_map.duplicate(true)
 			tick_accumulator=float(saved.get("tick_accumulator",0))
 		else: motion.update(simulation.data.agents)
+		SimShiftSleep.refresh(simulation,motion)
 		world_view.animate_agents(motion.positions)
 	if not active_tab.is_empty(): show_tab(active_tab,true)
 	return true

@@ -25,14 +25,17 @@ static func routine(w: SimWorld,id: String) -> Array:
 	if not w.data.agents.has(id): return []
 	var a: Dictionary=w.data.agents[id]
 	if a.get("isPlayer",false) or a.get("isDead",false): return []
-	var traits: Array=a.personality.get("traits",[])
-	var start:=2 if "night_owl" in traits else 20 if "early_bird" in traits else 22
-	var end:=9 if "night_owl" in traits else 5 if "early_bird" in traits else 6
+	var sleep_window:=SimShiftSleep.window(a,w.rules.jobs)
+	var start:=int(sleep_window.start);var end:=int(sleep_window.end)
 	var rows: Array=["平常睡眠：%02d:00–%02d:00"%[start,end]]
+	if a.has("_shiftSleep"):
+		rows.append("依班表保留 %d 小時睡眠時段，預留 %d 小時通勤。"%[sleep_window.duration,sleep_window.lead])
+		if sleep_window.get("conflict",false): rows.append("班表空檔不足以容納估計通勤；保留完整睡眠，仍可能遲到。")
 	# Read the exact job table used by SimWorld's daily activity decisions.
 	var job: Dictionary=w.rules.jobs.get(str(a.get("jobKey","")),{})
 	if not job.is_empty():
 		rows.append("工時：%02d:00–%02d:00 · %s"%[int(job.work_hours[0]),int(job.work_hours[1]),str(w.data.townMap.locations.get(job.workplace,{}).get("name","工作場所"))])
-		rows.append("上班準備：%02d:00 起（清醒且尚未到工作場所時）"%posmod(int(job.work_hours[0])-1,24))
+		if a.has("_shiftSleep"): rows.append("通勤依當下路徑提早出發，最多四小時；提早到場後等候開工。")
+		else: rows.append("上班準備：%02d:00 起（清醒且尚未到工作場所時）"%posmod(int(job.work_hours[0])-1,24))
 	rows.append("其他時間依飢餓、疲勞、社交與娛樂需求安排；睡眠、避難等可能調整原作息。")
 	return rows

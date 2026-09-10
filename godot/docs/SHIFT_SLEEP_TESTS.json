@@ -1,0 +1,5 @@
+{
+  "checks": 80,
+  "failures": [],
+  "scope": "all original jobs x three sleep preferences, no shortened duration or shift overlap, shared activity/leisure/invitation constraints, live job removal, cache reload and overfull-day conflict; scheduled windows, not measured sleep quality"
+}

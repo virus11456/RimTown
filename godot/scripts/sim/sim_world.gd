@@ -123,6 +123,7 @@ func tick() -> Array[String]:
 	if "new_day" in events: SimBirths.daily(self);SimPopulation.daily(self);SimElections.daily(self);SimGovernance.daily(self)
 	if quests_enabled and "new_day" in events:
 		SimQuestWorld.daily(self);SimNPCQuests.daily(self);SimLifeGoals.daily(self);SimQuests.check_progress(self)
+	SimShiftSleep.refresh(self,social.observed_motion)
 	SimAppointments.tick(self)
 	SimLeisurePlan.tick(self)
 	SimHangoutSafety.tick(self)
@@ -226,10 +227,10 @@ func _player_activity(a: Dictionary,hour: int) -> void:
 func _activity(a: Dictionary,hour: int) -> void:
 	var traits: Array=a.personality.traits
 	var owl := "night_owl" in traits
-	var early := "early_bird" in traits
 	var night := hour>=21 or hour<5
-	var start := 2 if owl else 20 if early else 22
-	var end := 9 if owl else 5 if early else 6
+	var sleep_window:=SimShiftSleep.window(a,rules.jobs)
+	var start:=int(sleep_window.start)
+	var end:=int(sleep_window.end)
 	var n: Dictionary=a.needs
 	var job:=_job(a)
 	if n.hunger<15: a.activity="eating"; return

@@ -1,13 +1,12 @@
 {
   "checks": 6,
   "completed_residents": [
-    "chen_wei",
     "wang_li",
-    "liu_jun",
-    "zhao_xia",
-    "zhou_ming",
     "he_xiu",
-    "su_qing"
+    "su_qing",
+    "chen_wei",
+    "zhao_xia",
+    "zhou_ming"
   ],
   "failures": [],
   "maximum_directed_frame_displacement": 0.999847412109375,
