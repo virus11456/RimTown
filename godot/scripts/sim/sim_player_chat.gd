@@ -24,6 +24,7 @@ static func prompt(w: SimWorld,id: String,message: String) -> String:
 	var context:={"town":w.data.get("townName","邊境鎮"),"npc":{"name":str(a.name).left(80),"age":a.age,"job":str(job(w,a).get("title","居民")).left(80),"traits":traits,"relationshipStatus":status.left(120),"background":str(a.personality.get("background","")).left(600),"values":"、".join(a.personality.get("values",[])).left(300),"currentThought":str(a.get("currentThought","")).left(300),"needs":a.needs,"mood":a.mood},"player":str(player.name).left(80),"mayor":mayor.left(80),"relationship":{"affinity":rel.get("affinity",0),"trust":rel.get("trust",0),"romanticInterest":rel.get("romanticInterest",0),"status":rel.get("status")},"relevantMemories":memories,"reflections":memory.thoughts(2),"recentChat":history,"clock":w.data.clock,"quests":SimQuests.chat_context(w,id)}
 	if w.governance_enabled: context.publicResources={"owner":"小鎮公共庫存；無個人錢包","playerRole":"鎮長" if SimGovernance.mayor(w)=="player" else "只能提案的旅人","rule":"旅人不能自行動用公款或決定工程；需現任鎮長核准。慰問代表小鎮、每日全鎮兩份，不是私人物品。不要聲稱未核准的建設已開工。"}
 	context.appointment={"current":SimAppointments.current(w),"rule":"若想邀約，在 EFFECTS 加上 invitation:true。系統會提供明天的合法空檔與地點，玩家接受後才排入行程；回覆只問要不要見面，不自行捏造時間、地點或已到場。沒有邀約卡的口頭承諾不會排程。"}
+	context.leisure=SimLeisureChat.context(w,id)
 	context.relevantMemories=memories.map(func(m): return {"time":str(m.get("timeStr","")).left(40),"content":str(m.content).left(400)})
 	context.reflections=memory.thoughts(2).map(func(m): return str(m.content).left(200))
 	context.recentChat=history.map(func(m): return {"speaker":str(m.speaker).left(80),"text":str(m.text).left(300)})
@@ -35,7 +36,7 @@ static func prompt(w: SimWorld,id: String,message: String) -> String:
 		if not context.recentChat.is_empty(): context.recentChat.pop_front()
 		elif not context.relevantMemories.is_empty(): context.relevantMemories.pop_front()
 		elif not context.reflections.is_empty(): context.reflections.pop_front()
-		else: return "請用繁體中文自然回覆這位旅人的訊息："+message+"\n最後用 EFFECTS: {\"affinity_change\":0,\"romantic_change\":0,\"summary\":\"交談\"} 結尾。"
+		else: return "已核對的休閒紀錄（不是與玩家的見面約定，不代表目前位置）："+SimLeisureChat.reply(w,id)+"\n請用繁體中文自然回覆這位旅人的訊息："+message+"\n最後用 EFFECTS: {\"affinity_change\":0,\"romantic_change\":0,\"summary\":\"交談\"} 結尾。"
 	return output
 
 static func replace_regex(text: String,pattern: String,replacement: String) -> String:

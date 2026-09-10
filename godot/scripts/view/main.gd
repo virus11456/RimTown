@@ -1261,6 +1261,11 @@ func show_player_chat(id: String) -> void:
 	_wrapped("與"+str(a.name)+"交談",22)
 	_button("見面約定",drawer_body,func(): show_appointment(id))
 	_button("友情與心動",drawer_body,func(): show_heart_events(id))
+	var leisure_button:=_button("詢問休閒安排（本機）",drawer_body,func():
+		if chat_busy: return
+		if SimLeisureChat.ask(simulation,id): has_simulated=true
+		show_player_chat(id))
+	leisure_button.disabled=chat_busy or a.get("isDead",false)
 	var mode:=CheckButton.new();mode.text="離線交談（本機台詞）";mode.button_pressed=chat_offline;mode.disabled=chat_busy;mode.custom_minimum_size.y=42;drawer_body.add_child(mode)
 	mode.toggled.connect(func(value): chat_offline=value;show_player_chat(id))
 	_wrapped("目前使用本機預寫台詞，不連線、不使用 AI 額度。" if chat_offline else "傳送會使用既有 AI 服務與帳號／訪客額度。",12)

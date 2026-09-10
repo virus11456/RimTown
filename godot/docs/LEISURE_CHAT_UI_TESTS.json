@@ -1,0 +1,6 @@
+{
+  "checks": 10,
+  "completed_resident": "zhou_ming",
+  "failures": [],
+  "scope": "real local inquiry button, draft/dedup/busy guards, mock AI prompt transport, unmodified residents actual motion to completion, phone chat and native save; no production AI output guarantee"
+}

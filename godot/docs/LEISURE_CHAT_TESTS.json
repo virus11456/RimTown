@@ -1,0 +1,5 @@
+{
+  "checks": 22,
+  "failures": [],
+  "scope": "all plan states, source prompt context, no memo execution, only history mutation, duplicate/reload and stale/dead/disabled guards; no real model output verification"
+}
