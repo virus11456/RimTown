@@ -1,0 +1,5 @@
+{
+  "checks": 13,
+  "failures": [],
+  "scope": "actual app process at 1x/4x/16x, old and new partial-tick saves, exact position preservation, shared route budgets and pure-source cadence"
+}

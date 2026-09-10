@@ -211,6 +211,7 @@ func _build_ui() -> void:
 	play_button = _button("▶ 開始",playback,toggle_simulation)
 	_button("＋15 分",playback,step_simulation)
 	speed_button = _button("1×",playback,func(): speed={1:4,4:16,16:1}[speed]; speed_button.text="%d×"%speed)
+	speed_button.tooltip_text="1×：每 8 秒經過 15 分鐘；4×／16× 同時加快時間與居民行走。"
 	var locate:=_button("找旅人",playback,focus_traveler)
 	locate.tooltip_text="WASD／方向鍵移動旅人；Q／E 轉向相機。"
 	drawer = PanelContainer.new()
@@ -319,6 +320,7 @@ func _load_document(text: String, source: String) -> bool:
 	if world_view != null:
 		motion.configure(world_view.layout)
 		motion.stable_routes=true
+		motion.tick_seconds=8.0
 		var saved: Dictionary=document.data.get("_godot4a",{})
 		SimLeisurePlan.restore_observations(simulation,saved.motion if saved.get("motion") is Dictionary else {})
 		SimHangoutVisits.restore_observations(simulation,saved.motion if saved.get("motion") is Dictionary else {})
@@ -332,7 +334,7 @@ func _load_document(text: String, source: String) -> bool:
 				motion.positions.player.walking=false
 				motion.positions.player.walkStep=0
 			if saved.get("house_map") is Dictionary: motion.layout.agent_house=saved.house_map.duplicate(true)
-			tick_accumulator=float(saved.get("tick_accumulator",0))
+			tick_accumulator=clampf(float(saved.get("tick_accumulator",0))/maxf(.001,float(saved.get("tick_seconds",2.0))),0.0,.999999)*motion.tick_seconds
 		else: motion.update(simulation.data.agents)
 		SimShiftSleep.refresh(simulation,motion)
 		simulation.social.observe_positions(motion)
@@ -743,6 +745,7 @@ func progress_snapshot() -> Dictionary:
 	progress._godot4a.physical_trace=physical_trace.snapshot()
 	progress._godot4a.house_map=motion.layout.agent_house.duplicate(true)
 	progress._godot4a.tick_accumulator=tick_accumulator
+	progress._godot4a.tick_seconds=motion.tick_seconds
 	progress._godot4a.manual_player=motion.manual_player
 	return progress
 
@@ -899,8 +902,8 @@ func _process(delta: float) -> void:
 	while frame_accumulator>=1.0/60:
 		frame_accumulator-=1.0/60
 		tick_accumulator+=1.0/60
-		if tick_accumulator>=2.0-0.000001:
-			tick_accumulator-=2.0
+		if tick_accumulator>=motion.tick_seconds-0.000001:
+			tick_accumulator-=motion.tick_seconds
 			_tick_simulation()
 		motion.update(simulation.data.agents)
 		SimAppointments.observe(simulation,motion)

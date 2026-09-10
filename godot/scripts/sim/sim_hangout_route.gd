@@ -1,7 +1,6 @@
 class_name SimHangoutRoute
 extends RefCounted
-# At 1x there are 120 motion frames per game tick, with 0.6 px/frame.
-# Budget 60 px/tick to leave room for door and waypoint transitions.
+# Travel budgets follow the motion clock and reserve room for door/waypoint transitions.
 static func segment(m: SimMotion,start: Vector2,finish: Vector2) -> float:
 	if not m.layout._walkable(start) or not m.layout._walkable(finish): return INF
 	var path:=m.pathfinder.find_path(start,finish)
@@ -29,7 +28,7 @@ static func feasible(m: SimMotion,a: Dictionary,b: Dictionary,clock: Dictionary,
 		var length:=maxf(distance(m,str(a.id),place),distance(m,str(b.id),place))
 		if is_inf(length): continue
 		# Five ticks maximum departure delay, plus two ticks of buffer.
-		var required:=5+ceili(length/60.0)+2
+		var required:=5+ceili(length/m.travel_budget(true))+2
 		if required>=24: continue # Original meeting deadline is never extended.
 		var fits:=true
 		for offset in range(required+1):
@@ -58,7 +57,7 @@ static func return_fits(m: SimMotion,a: Dictionary,clock: Dictionary,jobs: Dicti
 	var length:=home_distance(m,a,place)
 	if is_inf(length) or after_ticks<0: return false
 	# Return travel uses ordinary 0.3 px/frame walking, not the faster meeting approach.
-	var ticks:=ceili(length/30.0)+1
+	var ticks:=ceili(length/m.travel_budget())+1
 	if ticks+after_ticks>=96: return false
 	for offset in range(after_ticks,after_ticks+ticks+1):
 		var hour:=posmod(floori((int(clock.hour)*60+int(clock.minute)+offset*15)/60.0),24)

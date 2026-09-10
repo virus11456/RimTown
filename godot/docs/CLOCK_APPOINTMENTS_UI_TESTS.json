@@ -1,0 +1,21 @@
+{
+  "checks": 16,
+  "failures": [],
+  "npc_max_step_pixels": 0.933537185192108,
+  "return_max_step_pixels": 0.999603271484375,
+  "returned_home": true,
+  "scope": "original mayor work schedule and needs; mock AI response through actual chat UI, accept, app save reload, natural clock/needs/work, real SimMotion NPC path and collision-based player movement, proximity meeting, mobile panel; headless rendering, no production AI service",
+  "state": {
+    "due": 144.0,
+    "expires": 8.0,
+    "hour": 18.0,
+    "npc": "chen_wei",
+    "npc_arrived": true,
+    "place": "town_square",
+    "reason": "雙方已在約定地點實際碰面",
+    "resolved_tick": 144,
+    "state": "met",
+    "time": "小鎮第 2 天 18:00",
+    "until": 152.0
+  }
+}

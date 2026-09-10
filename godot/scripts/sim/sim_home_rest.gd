@@ -30,7 +30,7 @@ static func plan(w: SimWorld,a: Dictionary) -> Dictionary:
 	var home:=m.layout._house_id(str(a.id),str(a.homeLocation))
 	if not m.layout.houses.has(home) or not m.positions.has(str(a.id)): return {}
 	var until:=int(w.data.tickCount)+remaining
-	var signature:=JSON.stringify([home,a.get("jobKey",""),job,sleep_window.start,until])
+	var signature:=JSON.stringify([home,a.get("jobKey",""),job,sleep_window.start,until,m.tick_seconds])
 	if a.get("_homeReturn",{}).get("signature")==signature: return a._homeReturn
 	var house: Dictionary=m.layout.houses[home];var p: Dictionary=m.positions[str(a.id)]
 	var start:=Vector2(p.x,p.y);var length:=0.0
@@ -41,7 +41,7 @@ static func plan(w: SimWorld,a: Dictionary) -> Dictionary:
 	var entry:=Vector2(house.doorPixelX,house.doorPixelY)
 	length+=SimHangoutRoute.segment(m,start,entry)+SimHangoutRoute.segment(m,entry,Vector2(house.interiorX,house.interiorY))
 	if is_inf(length): return {}
-	var required:=mini(16,maxi(4,ceili(length/30.0)+1))
+	var required:=mini(16,maxi(4,ceili(length/m.travel_budget())+1))
 	if remaining>required: return {}
 	return {"signature":signature,"until":until,"required_ticks":required,"home":a.homeLocation}
 
@@ -50,7 +50,7 @@ static func after_meeting(w: SimWorld,a: Dictionary,place: String) -> void:
 	if m==null or not m.stable_routes or a.get("isPlayer",false): return
 	var length:=SimHangoutRoute.home_distance(m,a,place)
 	if is_inf(length): return
-	var ticks:=ceili(length/30.0)+2
+	var ticks:=ceili(length/m.travel_budget())+2
 	if ticks>=96: return
 	a._hangoutHome={"home":a.homeLocation,"until":int(w.data.tickCount)+ticks,"required_ticks":ticks,"signature":"hangout:"+str(w.data.tickCount)}
 	a._locationStayRemaining=0

@@ -14,7 +14,7 @@ func run() -> void:
 	var completed:=[];var max_step:=0.0
 	for t in 80:
 		app._tick_simulation()
-		for frame in 120:
+		for frame in app.motion.frames_per_tick():
 			var before: Dictionary=app.motion.positions.duplicate(true)
 			app.motion.update(w.data.agents)
 			for id in SimLeisurePlan.plans(w):
@@ -32,5 +32,5 @@ func run() -> void:
 	var file:=FileAccess.open(path,FileAccess.WRITE);file.store_buffer(SaveArchive.encode(JSON.stringify(app.progress_snapshot())));file.close()
 	app.dialog.file_selected.emit(path);await settle()
 	check(equal(before,SimLeisurePlan.plans(app.simulation)),"native archive restores plan states")
-	var report:={"checks":checks,"failures":failures,"completed_residents":completed,"maximum_directed_frame_displacement":max_step,"scope":"original app residents, 80 normal simulation ticks with 120 movement frames each, no position/needs/job changes, phone agenda and native archive"}
+	var report:={"checks":checks,"failures":failures,"completed_residents":completed,"maximum_directed_frame_displacement":max_step,"scope":"original app residents, 80 normal simulation ticks with 480 movement frames each, no position/needs/job changes, phone agenda and native archive"}
 	FileAccess.open("res://docs/LEISURE_PLAN_UI_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "));print(JSON.stringify(report));quit(0 if failures.is_empty() else 1)

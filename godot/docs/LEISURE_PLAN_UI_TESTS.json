@@ -1,9 +1,13 @@
 {
   "checks": 6,
-  "completed_residents": [],
-  "failures": [
-    "original residents physically complete with normal simulation and motion"
+  "completed_residents": [
+    "wang_li",
+    "he_xiu",
+    "su_qing",
+    "lin_mei",
+    "sun_yu"
   ],
-  "maximum_directed_frame_displacement": 0.999359130859375,
-  "scope": "original app residents, 80 normal simulation ticks with 120 movement frames each, no position/needs/job changes, phone agenda and native archive"
+  "failures": [],
+  "maximum_directed_frame_displacement": 0.999847412109375,
+  "scope": "original app residents, 80 normal simulation ticks with 480 movement frames each, no position/needs/job changes, phone agenda and native archive"
 }

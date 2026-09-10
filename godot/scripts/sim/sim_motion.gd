@@ -6,6 +6,12 @@ var pathfinder:=SimPath.new()
 var positions: Dictionary={}
 var manual_player := false
 var stable_routes := false
+# Legacy source simulation keeps two seconds; the 3D app selects eight.
+var tick_seconds := 2.0
+func frames_per_tick() -> int:
+	return roundi(tick_seconds*60.0)
+func travel_budget(approach: bool=false) -> float:
+	return tick_seconds*(30.0 if approach else 15.0)
 func configure(value: TownLayout) -> void:
 	layout=value
 	pathfinder.grid=layout.grid

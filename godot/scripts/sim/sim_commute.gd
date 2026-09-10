@@ -12,8 +12,8 @@ static func plan(w: SimWorld,a: Dictionary) -> Dictionary:
 	if remaining<=0 or remaining>16: return {}
 	var length:=SimHangoutRoute.distance(m,str(a.id),str(job.workplace))
 	if is_inf(length): return {}
-	# Ordinary movement is 36 px/game tick; budget 30 plus one tick margin.
-	var required:=mini(16,maxi(4,ceili(length/30.0)+1))
+	# Budget ordinary walking using the same clock cadence as the app.
+	var required:=mini(16,maxi(4,ceili(length/m.travel_budget())+1))
 	var continuing: bool=a.get("_commuteDestination","")==job.workplace and a.get("_commuteDay",-1)==SimClock.total_days(w.data.clock)
 	if not continuing and remaining>required: return {}
 	return {"place":job.workplace,"required_ticks":required,"remaining_ticks":remaining}

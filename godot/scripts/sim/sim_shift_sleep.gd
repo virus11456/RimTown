@@ -34,7 +34,7 @@ static func refresh(w: SimWorld,m: SimMotion) -> void:
 		var a: Dictionary=w.data.agents[id];var job: Dictionary=w.rules.jobs.get(str(a.get("jobKey","")),{})
 		if a.get("isPlayer",false) or a.get("isDead",false) or job.is_empty() or not w.data.townMap.locations.has(job.get("workplace","")): a.erase("_shiftSleep");continue
 		var home: String=m.layout._house_id(id,str(a.homeLocation))
-		var signature:=JSON.stringify([SimClock.total_days(w.data.clock),a.jobKey,job.work_hours,job.workplace,home,a.personality.get("traits",[])])
+		var signature:=JSON.stringify([SimClock.total_days(w.data.clock),a.jobKey,job.work_hours,job.workplace,home,a.personality.get("traits",[]),m.tick_seconds])
 		if a.get("_shiftSleep",{}).get("signature")==signature: continue
 		var house: Dictionary=m.layout.houses.get(home,{})
 		if house.is_empty(): a.erase("_shiftSleep");continue
@@ -43,7 +43,7 @@ static func refresh(w: SimWorld,m: SimMotion) -> void:
 		var goal:=m.layout._nearest(m.layout._center(str(job.workplace)))
 		var length:=SimHangoutRoute.segment(m,origin,goal) if door==null else SimHangoutRoute.segment(m,origin,Vector2(door.x,door.y))+SimHangoutRoute.segment(m,Vector2(door.x,door.y),goal)
 		if is_inf(length): a.erase("_shiftSleep");continue
-		var lead:=clampi(ceili((length/30.0+1)/4),1,4)
+		var lead:=clampi(ceili((length/m.travel_budget()+1)/4),1,4)
 		var p:=choose(a,job,lead)
 		p.merge({"signature":signature,"job":a.jobKey,"hours":job.work_hours.duplicate(),"workplace":job.workplace,"traits":a.personality.get("traits",[]).duplicate(),"estimated_lead":lead})
 		a._shiftSleep=p
