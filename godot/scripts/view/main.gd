@@ -2122,19 +2122,20 @@ func show_careers() -> void:
 	var job: String=str(w.data.agents.get("player",{}).get("jobKey",""))
 	_wrapped("目前："+str(SimCareers.JOBS.get(job,{"name":"鎮長" if job=="mayor" else "旅人"}).name))
 	_wrapped("每日共三次值勤，轉職不重置。每次需到場停留一個遊戲小時，暫停時不計時。成果歸小鎮，不發個人銀幣，也不增加鎮務權限。",12)
-	_wrapped("農務：照料缺水作物，不額外產生商品。守衛：走完三處巡查，當日守備 +2。醫護：照護疲憊居民，體力 +15；尚非疾病診療。",12)
+	var duties: Dictionary={"farmer":"照料缺水作物，水位 +30；不額外產生商品。", "guard":"走完三處巡查，當日守備 +2。", "doctor":"照護疲憊居民，體力 +15；尚非疾病診療。", "carpenter":"在工房為核准工程製備構件，工量 +2，午夜驗收。", "researcher":"依目前研究缺口整理最多 3 點公共資料，午夜投入研究。", "priest":"到場陪伴低落居民，心情 +8；同一居民每天一次。"}
+	_wrapped(str(duties.get(job,"選擇職業後查看專屬工作；沒有需求時不發放空白委託。")),12)
 	_wrapped("今日完成 %d / 3 · 累計 %d 次"%[b.used,b.completed])
 	if job!="mayor":
 		for key in SimCareers.JOBS:
 			if key!=job: _button("登記："+str(SimCareers.JOBS[key].name),drawer_body,func():
 				var r:=SimCareers.enroll(w,key);has_simulated=true;show_careers();_wrapped(r.message))
-	else: _wrapped("鎮長可直接决定鎮務，無需 NPC 核准。")
+	else: _wrapped("鎮長可直接決定鎮務，無需 NPC 核准。")
 	if not b.active.is_empty():
 		_wrapped(str(b.active.label)+"進行中；剩餘 %.0f 分鐘"%[maxf(0,int(b.active.finish)-int(w.data.tickCount))*15])
 		_button("取消值勤",drawer_body,func(): SimCareers.cancel(w);has_simulated=true;show_careers())
 	else:
 		var tasks:=SimCareers.available(w)
-		if tasks.is_empty(): _wrapped("目前沒有符合需求的工作。農務需已種植且缺水的農田；醫護需疲憊居民。")
+		if tasks.is_empty(): _wrapped("目前沒有符合需求的工作。農務需缺水作物、木匠需已開工工程、研究需未備足資料的研究項目；醫護需疲憊居民、牧師需心情低落居民。")
 		for task in tasks:
 			_wrapped(str(task.label)+" · 地點："+str(w.data.townMap.locations[task.location].name),12)
 			_button("開始："+str(task.label),drawer_body,func():

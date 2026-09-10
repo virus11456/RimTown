@@ -1,12 +1,12 @@
 class_name SimCareers
 extends RefCounted
-const JOBS: Dictionary={"farmer":{"name":"農務員","skill":"種植"},"guard":{"name":"守衛","skill":"近戰"},"doctor":{"name":"醫護員","skill":"醫療"}}
+const JOBS: Dictionary={"farmer":{"name":"農務員","skill":"種植"},"guard":{"name":"守衛","skill":"近戰"},"doctor":{"name":"醫護員","skill":"醫療"},"carpenter":{"name":"木匠","skill":"建造"},"researcher":{"name":"研究員","skill":"智識"},"priest":{"name":"牧師","skill":"社交"}}
 const PATROL: Array=["town_square","quarry","residential_east"]
 static func book(w: SimWorld) -> Dictionary:
 	if not w.quest_balance.has("careers"): w.quest_balance.careers={"day":-1,"used":0,"visits":[],"treated":[],"active":{},"completed":0,"history":[]}
 	var b: Dictionary=w.quest_balance.careers
 	var day:=SimClock.total_days(w.data.clock)
-	if int(b.day)!=day: b.day=day;b.used=0;b.visits=[];b.treated=[];b.active={}
+	if int(b.day)!=day: b.day=day;b.used=0;b.visits=[];b.treated=[];b.counseled=[];b.active={}
 	return b
 static func enroll(w: SimWorld,key: String) -> Dictionary:
 	if not JOBS.has(key) or not w.data.agents.has("player"): return {"ok":false,"message":"職業尚未開放。"}
@@ -27,7 +27,19 @@ static func available(w: SimWorld) -> Array:
 		"doctor":
 			for a in w.data.agents.values():
 				if not a.get("isPlayer",false) and not a.get("isDead",false) and float(a.needs.rest)<=40 and not a.id in b.treated and w.data.townMap.locations.has(a.currentLocation): tasks.append({"id":"care:"+str(a.id),"target":a.id,"location":a.currentLocation,"label":"照護疲憊的"+str(a.name),"job":"doctor"})
+		"carpenter":
+			for p in w.data.buildings.projects:
+				if p.status=="building" and float(p.workDone)<float(p.workRequired): tasks.append({"id":"build:"+str(p.id),"target":p.id,"location":"workshop","label":"製備工程構件："+str(p.name),"job":"carpenter"})
+		"researcher":
+			var key: String=str(w.data.research.get("current",""));var p: Dictionary=w.data.research.projects.get(key,{})
+			if p.get("status")=="researching" and research_room(w,p)>0: tasks.append({"id":"research:"+key,"target":key,"location":"library","label":"整理研究資料："+str(p.name),"job":"researcher"})
+		"priest":
+			for a in w.data.agents.values():
+				if not a.get("isPlayer",false) and not a.get("isDead",false) and float(a.mood)<0 and not a.id in b.get("counseled",[]) and w.data.townMap.locations.has(a.currentLocation): tasks.append({"id":"counsel:"+str(a.id),"target":a.id,"location":a.currentLocation,"label":"陪伴低落的"+str(a.name),"job":"priest"})
 	return tasks
+static func research_room(w: SimWorld,p: Dictionary) -> float:
+	# One hour of labor produces at most three notes; existing town notes cover demand first.
+	return maxf(0,minf(float(p.cost)-float(p.progress),SimSupply.reserve(w,"research_points"))-SimSupply.total(w,"research_points"))
 static func start(w: SimWorld,id: String) -> Dictionary:
 	var b:=book(w)
 	if not b.active.is_empty() or int(b.used)>=3: return {"ok":false,"message":"已有進行中的工作，或今日三次值勤已用完。"}
@@ -56,6 +68,17 @@ static func tick(w: SimWorld) -> void:
 		"doctor":
 			var a: Dictionary=w.data.agents[t.target];a.needs.rest=minf(100,float(a.needs.rest)+15);b.treated.append(t.target)
 			SimFeuds._memory(a,w,"care","接受了"+str(player.name)+"的照護，恢復一些體力。",5,["player"])
+		"carpenter":
+			for p in w.data.buildings.projects:
+				if p.id==t.target: p.workDone=minf(float(p.workRequired),float(p.workDone)+2)
+		"researcher":
+			var p: Dictionary=w.data.research.projects[t.target]
+			SimEconomy.change(w,"research_points",minf(3,research_room(w,p)),"研究值勤："+str(p.name),"player")
+		"priest":
+			var a: Dictionary=w.data.agents[t.target]
+			SimFeuds._mood(a,w,8);SimFeuds._memory(a,w,"care","與"+str(player.name)+"談心，感到受到支持。",5,["player"])
+			if not b.has("counseled"): b.counseled=[]
+			b.counseled.append(t.target)
 	var skill: String=JOBS[t.job].skill
 	if not player.skills.has(skill): player.skills[skill]={"xp":0,"passion":"無"}
 	player.skills[skill].xp+=3;b.used+=1;b.completed+=1
