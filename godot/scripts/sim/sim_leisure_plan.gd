@@ -108,6 +108,13 @@ static func directing(w: SimWorld,id: String) -> bool:
 	var meeting:=SimAppointments.current(w)
 	if meeting.get("npc")==id and meeting.get("state") in ["accepted","waiting"] and int(meeting.due)-32<int(p.until) and int(meeting.until)>int(p.due)-16: return false
 	return int(w.data.tickCount)>=int(p.due)-16 and int(w.data.tickCount)<int(p.until) and available(w,id,int(w.data.clock.hour)) and not a.has("_raidShelterUntil") and float(a.needs.hunger)>=15 and float(a.needs.rest)>=10
+static func restore_observations(w: SimWorld,positions: Dictionary) -> void:
+	for id in plans(w):
+		var p: Dictionary=plans(w)[id]
+		if positions.has(id) or not LIVE.has(p.get("state","")): continue
+		interrupt(p,"gap")
+		p.state="scheduled";p.dwell=0;p.erase("observed_tick")
+		p.reason="存檔缺少實際位置，停留需重新觀察與計時。"
 static func observe(w: SimWorld,m: SimMotion) -> void:
 	if not enabled(w): return
 	for id in plans(w):

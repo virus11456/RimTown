@@ -308,6 +308,7 @@ func _load_document(text: String, source: String) -> bool:
 	if world_view != null:
 		motion.configure(world_view.layout)
 		var saved: Dictionary=document.data.get("_godot4a",{})
+		SimLeisurePlan.restore_observations(simulation,saved.motion if saved.get("motion") is Dictionary else {})
 		if saved.has("motion") and saved.motion is Dictionary:
 			motion.positions=saved.motion.duplicate(true)
 			motion.manual_player=bool(saved.get("manual_player",false))
