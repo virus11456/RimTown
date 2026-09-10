@@ -1,0 +1,7 @@
+{
+  "checks": 13,
+  "failures": [],
+  "maximum_step": 0.999603271484375,
+  "scope": "controlled fixed bedtime, actual slow path home with per-tick needs checks, own-house identity, movement/door guards, restored observations, player and legacy compatibility; not a natural full-night duration test",
+  "travel_ticks_checked": 16
+}

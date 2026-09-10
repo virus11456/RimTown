@@ -155,9 +155,10 @@ func _update(id: String) -> void:
 	elif SimLeisurePlan.directing(self,id): a.activity="planned_leisure"
 	elif SimHangoutVisits.directing(self,id): a.activity="hangout_travel"
 	else: _activity(a,hour)
+	SimHomeRest.apply(self,a)
 	SimNeeds.decay(a.needs,a.activity,hour)
 	if not commute.is_empty() and (float(a.needs.hunger)<15 or float(a.needs.rest)<10):
-		commute={};_activity(a,hour)
+		commute={};_activity(a,hour);SimHomeRest.apply(self,a)
 	if a.get("isPlayer",false):
 		if a.currentLocation=="tavern": a.needs.hunger=minf(100,a.needs.hunger+.5)
 		if a.currentLocation in ["residential_north","residential_south","residential_east"]: a.needs.rest=minf(100,a.needs.rest+.3)
