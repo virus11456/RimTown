@@ -1,0 +1,20 @@
+{
+  "checks": 5,
+  "conversations": 42,
+  "departed_visits": 0,
+  "failures": [
+    "natural simulation generates at least one paired proposal"
+  ],
+  "invalid": [],
+  "maximum_records": 0,
+  "motion_frames_per_tick": 120,
+  "outcomes": {},
+  "paused_visits": 0,
+  "proposal_details": {},
+  "proposals": 0,
+  "reasons": {},
+  "scope": "eight days of original app residents and settings, 120 physical motion frames per tick, app reload halfway, no altered jobs/needs/positions/affinity/resources or production AI; headless, not full game playthrough",
+  "ticks": 768,
+  "visit_details": {},
+  "note": "Eight-day baseline: no natural proposal; insufficient coverage, not proof of completed hangout lifecycle."
+}

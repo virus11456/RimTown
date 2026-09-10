@@ -1,0 +1,67 @@
+{
+  "affinity_eligible_conversations": 21,
+  "checks": 5,
+  "conversations": 169,
+  "day_eight": {
+    "affinity_eligible_conversations": 5,
+    "conversations": 44,
+    "proposals": 1
+  },
+  "departed_visits": 1,
+  "failures": [],
+  "invalid": [],
+  "maximum_records": 1,
+  "motion_frames_per_tick": 120,
+  "outcomes": {
+    "cancelled": 1
+  },
+  "paused_visits": 1,
+  "proposal_details": {
+    "he_chang|he_xiu|1395": {
+      "issued_tick": 1395,
+      "people": [
+        "he_chang",
+        "he_xiu"
+      ],
+      "state": "departed"
+    },
+    "lin_mei|sun_yu|453": {
+      "issued_tick": 453,
+      "people": [
+        "lin_mei",
+        "sun_yu"
+      ],
+      "reason": "目的地已不存在，外出安排取消。",
+      "state": "ended_before_departure"
+    }
+  },
+  "proposals": 2,
+  "reasons": {
+    "工作、睡眠時段、既有行程或對象狀態改變，同行外出已中止。": 1,
+    "目的地已不存在，外出安排取消。": 1
+  },
+  "scope": "32 days of original app residents and settings, 120 physical motion frames per tick, app reload halfway, no altered jobs/needs/positions/affinity/resources or production AI; headless, not full game playthrough",
+  "ticks": 3072,
+  "visit_details": {
+    "he_chang|he_xiu|1395": {
+      "departed": [
+        "he_xiu"
+      ],
+      "issued_tick": 1395.0,
+      "pause_until": 1409.0,
+      "pause_used": true,
+      "paused": false,
+      "people": [
+        "he_xiu",
+        "he_chang"
+      ],
+      "place": "library",
+      "reason": "工作、睡眠時段、既有行程或對象狀態改變，同行外出已中止。",
+      "resolved_tick": 1408.0,
+      "state": "cancelled",
+      "until": 1419.0
+    }
+  },
+  "tested_commit": "bd491bd",
+  "note": "Before destination candidate fix. No natural completed encounter observed; zero invalid encounters is not completion coverage."
+}
