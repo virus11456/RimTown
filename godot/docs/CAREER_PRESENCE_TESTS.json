@@ -1,0 +1,5 @@
+{
+  "checks": 13,
+  "failures": [],
+  "scope": "real app ticks, physical NPC attendance at start and during work, automatic countdown/completion/cancellation, residential mapping and distinct homes, dismissed panel and midnight; configured needs/positions, not whole-game natural progression"
+}

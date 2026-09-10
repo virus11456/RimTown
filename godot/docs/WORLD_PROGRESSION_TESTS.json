@@ -1,0 +1,10 @@
+{
+  "buildings": 18,
+  "checks": 132,
+  "days": 65,
+  "failures": [],
+  "level": 7.0,
+  "population": 37,
+  "raids": 6,
+  "scope": "original demo resources, traveler throughout, paid approved construction and industry, no role/backer/budget injection, default material relief enabled; NPC social activity, raids and elections enabled; economy/world-condition integration, not all quest routes or rendered movement"
+}

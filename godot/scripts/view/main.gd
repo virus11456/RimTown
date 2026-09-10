@@ -13,6 +13,7 @@ var drawer: PanelContainer
 var drawer_body: VBoxContainer
 var dialog: FileDialog
 var active_tab := ""
+var career_page := false
 var desktop_camera: VBoxContainer
 var mobile_turn: Button
 var busy := false
@@ -321,6 +322,7 @@ func load_demo(theme: String) -> void:
 	_load_document(FileAccess.get_file_as_string("res://tests/golden/%s-day-01.json" % theme),"示範小鎮")
 
 func _clear_drawer() -> void:
+	career_page=false
 	_clear_site_preview()
 	for child in drawer_body.get_children():
 		drawer_body.remove_child(child)
@@ -772,9 +774,13 @@ func step_simulation() -> void:
 	status.text="已前進 15 分鐘 · 已暫停"
 
 func _tick_simulation() -> void:
+	var career_was_active: bool=simulation.quest_balance.has("careers") and not SimCareers.book(simulation).active.is_empty()
+	_validate_career_presence()
 	has_simulated=true
 	var old_geometry:=JSON.stringify([simulation.data.buildings,simulation.data.processing,simulation.data.agents.keys()])
 	var events:=simulation.tick()
+	if career_was_active and SimCareers.book(simulation).active.is_empty(): status.text=str(SimCareers.book(simulation).get("notice",""))
+	if career_page and drawer.visible and active_tab=="小鎮" and career_was_active: show_careers()
 	var clock_data: Dictionary=simulation.data.clock
 	summary.text="%s %d日 %02d:%02d · %d人"%[clock_data.season,clock_data.day,clock_data.hour,clock_data.minute,simulation.data.agents.size()]
 	if "new_season" in events or old_geometry!=JSON.stringify([simulation.data.buildings,simulation.data.processing,simulation.data.agents.keys()]):
@@ -802,6 +808,7 @@ func _tick_simulation() -> void:
 func _process(delta: float) -> void:
 	process_event_comment()
 	_process_traveler(delta)
+	_validate_career_presence()
 	if not running: return
 	frame_accumulator+=minf(delta,.25)*speed
 	while frame_accumulator>=1.0/60:
@@ -861,9 +868,8 @@ func _process_traveler(delta: float) -> void:
 	if moved:
 		has_simulated=true
 		var p: Dictionary=motion.positions.player
-		var location:=motion.location_at(Vector2(p.x,p.y))
+		var location:=SimCareerPresence.place(motion,"player")
 		if not location.is_empty(): simulation.data.agents.player.currentLocation=location
-		if simulation.quest_balance.has("careers") and not SimCareers.book(simulation).active.is_empty() and location!=SimCareers.book(simulation).active.location: SimCareers.cancel(simulation)
 		simulation.data.agents.player.activity="wandering"
 	if motion.manual_player: world_view.animate_agents(motion.positions)
 	var player: Dictionary=motion.positions.player
@@ -2117,8 +2123,9 @@ func show_raids() -> void:
 	_button("返回故事",drawer_body,func(): show_tab("故事",true))
 
 func show_careers() -> void:
-	active_tab="小鎮";drawer.show();_clear_drawer();_wrapped("職業與值勤",22)
+	active_tab="小鎮";drawer.show();_clear_drawer();career_page=true;_wrapped("職業與值勤",22)
 	var w: SimWorld=simulation;var b:=SimCareers.book(w)
+	if not str(b.get("notice","")).is_empty(): _wrapped(str(b.notice),12)
 	var job: String=str(w.data.agents.get("player",{}).get("jobKey",""))
 	_wrapped("目前："+str(SimCareers.JOBS.get(job,{"name":"鎮長" if job=="mayor" else "旅人"}).name))
 	_button("職涯回饋交流",drawer_body,show_career_reviews)
@@ -2165,8 +2172,8 @@ func show_careers() -> void:
 				_button("申請："+str(task.label),drawer_body,func(): SimCareerTrade.request(w,task.id);has_simulated=true;show_careers())
 			_wrapped(str(task.label)+" · 地點："+str(w.data.townMap.locations[task.location].name),12)
 			_button("開始："+str(task.label),drawer_body,func():
-				var pos: Dictionary=motion.positions.player
-				if motion.location_at(Vector2(pos.x,pos.y))!=task.location: _wrapped("請先操作旅人走到工作地點。");return
+				var error:=_career_presence_error(task)
+				if not error.is_empty(): _wrapped(error);return
 				var r:=SimCareers.start(w,task.id);has_simulated=true;show_careers();_wrapped(r.message))
 	for item in b.history: _wrapped(str(item),12)
 	_button("重新整理",drawer_body,show_careers)
@@ -2187,11 +2194,7 @@ func show_career_reviews() -> void:
 			_wrapped(str(a.name)+" · "+str(simulation.data.townMap.locations[a.currentLocation].name),12)
 			for choice in ["practice","cooperate"]:
 				_button(str(a.name)+"："+("討論方法（技能 +3）" if choice=="practice" else "分享經驗（對方好感 +1）"),drawer_body,func():
-					var pos: Dictionary=motion.positions.player
-					if motion.location_at(Vector2(pos.x,pos.y))!=simulation.data.agents[id].currentLocation: _wrapped("請先操作旅人走到對方所在場所。");return
-					if not motion.positions.has(id): _wrapped("對方尚未到場，請稍後再試。");return
-					var npc_pos: Dictionary=motion.positions[id]
-					if motion.location_at(Vector2(npc_pos.x,npc_pos.y))!=simulation.data.agents[id].currentLocation: _wrapped("對方正在移動，請等他到場再交流。");return
+					if not SimCareerPresence.together(motion,"player",id,simulation.data.agents[id].currentLocation): _wrapped("請等雙方到達同一工作場所或同一住家，再交流。");return
 					var r:=SimCareerReviews.choose(simulation,job,stage,id,choice);has_simulated=true;show_career_reviews();_wrapped(str(r.message)))
 	if not found: _wrapped("目前沒有待交流的階段。完成值勤、達成職涯任務後再來。")
 	for job in simulation.quest_balance.get("career_reviews",{}):
@@ -2201,3 +2204,17 @@ func show_career_reviews() -> void:
 			_wrapped(str(record.reply),12)
 	_button("重新整理",drawer_body,show_career_reviews)
 	_button("返回職業與值勤",drawer_body,show_careers)
+
+func _career_presence_error(task: Dictionary) -> String:
+	if SimCareerPresence.place(motion,"player")!=task.location: return "請先操作旅人走到工作地點。"
+	if task.job in ["doctor","priest"] and not SimCareerPresence.together(motion,"player",str(task.target),str(task.location)): return "對方尚未在同一場所到場，請等待或重新查看工作。"
+	return ""
+func _validate_career_presence() -> void:
+	if not simulation.quest_balance.has("careers"): return
+	var b:=SimCareers.book(simulation)
+	if b.active.is_empty(): return
+	var error:=_career_presence_error(b.active)
+	if error.is_empty(): return
+	SimCareers.cancel(simulation,error+" 值勤已取消，未給予獎勵。")
+	has_simulated=true;status.text=str(b.notice)
+	if career_page and drawer.visible and active_tab=="小鎮": show_careers()

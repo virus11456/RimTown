@@ -7,7 +7,9 @@ static func book(w: SimWorld) -> Dictionary:
 	if not w.quest_balance.has("careers"): w.quest_balance.careers={"day":-1,"used":0,"visits":[],"treated":[],"active":{},"completed":0,"history":[]}
 	var b: Dictionary=w.quest_balance.careers
 	var day:=SimClock.total_days(w.data.clock)
-	if int(b.day)!=day: b.day=day;b.used=0;b.visits=[];b.treated=[];b.counseled=[];b.traded=0;b.active={}
+	if int(b.day)!=day:
+		if not b.active.is_empty(): b.notice="午夜已換日，未完成值勤已取消，未給予獎勵。"
+		b.day=day;b.used=0;b.visits=[];b.treated=[];b.counseled=[];b.traded=0;b.active={}
 	return b
 static func enroll(w: SimWorld,key: String) -> Dictionary:
 	if not JOBS.has(key) or not w.data.agents.has("player"): return {"ok":false,"message":"職業尚未開放。"}
@@ -75,23 +77,25 @@ static func start(w: SimWorld,id: String) -> Dictionary:
 		if t.job=="trader":
 			if not SimCareerTrade.request(w,t.id): return {"ok":false,"message":"請先申請這份交易報價的公共資源用途。"}
 			if not SimBuildings.affordable(w,t.costs): return {"ok":false,"message":"公共資源不足，無法開始交接。"}
-		b.active=t.duplicate(true);b.active.finish=int(w.data.tickCount)+SimCareerProgress.ticks(w,t.job)
+		b.active=t.duplicate(true);b.active.finish=int(w.data.tickCount)+SimCareerProgress.ticks(w,t.job);b.notice=str(t.label)+"進行中。"
 		return {"ok":true,"message":"開始值勤，需停留 %d 遊戲分鐘；離開會取消。"%(SimCareerProgress.ticks(w,t.job)*15)}
 	return {"ok":false,"message":"需求已改變，請重新查看工作。"}
-static func cancel(w: SimWorld) -> void:
-	book(w).active={}
+static func cancel(w: SimWorld,reason: String="值勤已取消，未給予獎勵。") -> void:
+	var b:=book(w)
+	if not b.active.is_empty(): b.notice=reason
+	b.active={}
 static func tick(w: SimWorld) -> void:
 	if not w.quest_balance.has("careers"): return
 	var b:=book(w);var t: Dictionary=b.active
 	if t.is_empty(): return
 	var player: Dictionary=w.data.agents.player
-	if player.currentLocation!=t.location or player.jobKey!=t.job: cancel(w);return
+	if player.currentLocation!=t.location or player.jobKey!=t.job: cancel(w,"已離開工作地點或職務改變，值勤取消。");return
 	var valid:=false
 	for candidate in available(w):
 		if candidate.id==t.id and candidate.location==t.location: valid=true
 	if PRODUCTION.has(t.job) and (not material_permit(w,t.job) or not SimBuildings.affordable(w,recipe(t.job).inputs)): valid=false
 	if t.job=="trader" and (not SimCareerTrade.approved(w,t) or not SimBuildings.affordable(w,t.costs)): valid=false
-	if not valid: cancel(w);return
+	if not valid: cancel(w,"需求、對象、材料或核准已改變，值勤取消；未扣料、未給獎勵。");return
 	if int(w.data.tickCount)<int(t.finish): return
 	match str(t.job):
 		"farmer": SimFarm.water(w,int(t.target))
@@ -121,6 +125,7 @@ static func tick(w: SimWorld) -> void:
 	if not player.skills.has(skill): player.skills[skill]={"xp":0,"passion":"無"}
 	player.skills[skill].xp+=3;b.used+=1;b.completed+=1
 	SimCareerProgress.record(w,t)
+	b.notice=str(t.label)+"完成。"
 	b.history.append(str(t.label)+"完成");b.history=b.history.slice(-10)
 	SimSocial.log_message(w.data,"career",str(t.label)+"完成。",str(player.name),"")
 	b.active={}
