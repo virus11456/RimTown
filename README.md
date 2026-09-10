@@ -2,6 +2,20 @@
 
 A RimWorld-inspired AI town simulation where every resident is an autonomous AI agent with unique personality, background, job, relationships, and daily life. Available as a WordPress plugin.
 
+## Godot 3D 開發進度（2026-09-10）
+
+獨立的 Godot 3D 測試版已可操作旅人；官網目前仍提供 2D 網頁版。3D 尚未正式發行，不能將下方原版功能清單視作全部已移植。
+
+- Godot 3D 開發進度：旅人移動、近身互動、聊天／送禮、心動事件、建築選址與加工農業已接入。以下是獨立 3D 測試版進度，並非網頁版新增玩法。
+- 任務核心已接入 12 主線、11 支線、24 居民任務、13 日常、六類人生目標及四種結局；所有路線自然通關驗收仍在進行。
+- 人口與家庭：每兩日檢查出生、每日最多一位居民移入；住宅每棟完工增加 3 位 NPC 容量，最多八棟、總容量 40，住宅不增加產量。
+- 平衡與驗證：保留備貨與市場需求限制；原始新局資源、正常付費施工，伐木起步的經濟路線在 40 日達到 37 人、18 棟及 Lv7。預設原料補給有開啟，並非封閉自給或全結局通關。
+- 行為一致性限制：3D 版自由聊天提到邀約，尚不會自動建立赴約行程；居民間系統邀約已有延遲選址，但準時赴約、等待與失約原因尚待補齊。
+
+實際測試畫面見[官網 3D 圖集](https://rimtown.vercel.app/#landing-preview)。[3D 開發原始碼](https://github.com/virus11456/RimTown/tree/codex/godot-viewer/godot)與[人口／住宅驗收說明](https://github.com/virus11456/RimTown/blob/codex/godot-viewer/godot/docs/POPULATION_PACKAGE.md)。後續仍有選舉／防禦世界事件、完整自然通關、AI 邀約與行程一致性、動畫音效及雲端驗收。核心玩法與 3D 體驗穩定後，另安排官網整體視覺評估，決定是否全面改版。
+
+English: the separate Godot test build now includes traveler controls, interactions, construction, economy, quests and population growth. The public browser game remains 2D. Free-form invitations do not yet guarantee attendance; full ending playthroughs and other world systems are still being validated. The gallery contains real test scenes, including prepared fixtures.
+
 ## Features
 
 - **Autonomous AI Agents**: 25+ residents with unique personality, memory, moods, and psychological needs

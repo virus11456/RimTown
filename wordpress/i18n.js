@@ -13,6 +13,16 @@ const I18N = (() => {
 
     // English translations (key = Chinese, value = English)
     const en = {
+        "3D 測試圖集・開發中": "3D test gallery · in development",
+        "實際 Godot 測試截圖，含預設測試情境。官網目前仍是 2D 版；以下功能屬於獨立 3D 測試版。": "Real Godot screenshots, including prepared test scenarios. The live browser game remains 2D; these features belong to the separate 3D test build.",
+        "建設選址：確認空地後才扣料施工。": "Construction placement: materials are charged after confirming a clear site.",
+        "居民任務：查看故事、好感與章節門檻。": "Resident quests: story progress, relationship and chapter requirements.",
+        "人口與家庭：出生紀錄、移入及住宅容量。": "Population and families: birth records, arrivals and housing capacity.",
+        "友情與心動：已觸發事件與關係里程碑。": "Friendship and heart events: triggered scenes and relationship milestones.",
+        "點圖片可查看原圖。任務與關係畫面含測試資料，不代表自然通關。": "Open an image to see it at full size. Quest and relationship scenes include test data, not a natural playthrough.",
+        "已可操作旅人，建設／任務／人口持續驗證": "Traveler controls available; construction, quests and population under validation",
+        "3D 版 AI 聊天邀約尚未建立赴約行程；全路線自然通關仍在驗證。": "3D AI dialogue invitations do not yet create appointments; full natural playthrough validation is ongoing.",
+
         // ── Header / Navigation ──
         '邊境鎮': 'Frontier Town',
         '人口：': 'Pop: ',
