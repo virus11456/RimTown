@@ -18,6 +18,7 @@ var mourning_enabled := false
 var trace_enabled := false
 var population_enabled := false
 var births_enabled := false
+var elections_enabled := false
 var quests_enabled := false
 var quest_balance: Dictionary={}
 var heart_events_enabled := false
@@ -64,6 +65,7 @@ func load_snapshot(snapshot: Dictionary) -> void:
 	research_enabled=bool(saved.get("research_enabled",false))
 	population_enabled=bool(saved.get("population_enabled",false))
 	births_enabled=bool(saved.get("births_enabled",false))
+	elections_enabled=bool(saved.get("elections_enabled",false))
 	quests_enabled=bool(saved.get("quests_enabled",false))
 	quest_balance=saved.get("quest_balance",{}).duplicate(true)
 	heart_events_enabled=bool(saved.get("heart_events_enabled",false))
@@ -87,7 +89,7 @@ func load_snapshot(snapshot: Dictionary) -> void:
 func snapshot() -> Dictionary:
 	var result := data.duplicate(true)
 	var extension: Dictionary = result.get("_godot4a",{}).duplicate(true)
-	extension.merge({"version":1,"random_state":rng.state,"agents":runtime.duplicate(true),"social_enabled":social_enabled,"gossip_enabled":gossip_enabled,"romance_enabled":romance_enabled,"feuds_enabled":feuds_enabled,"factions_enabled":factions_enabled,"thoughts_enabled":thoughts_enabled,"inner_voice_enabled":inner_voice_enabled,"stargazing_enabled":stargazing_enabled,"mischief_enabled":mischief_enabled,"mourning_enabled":mourning_enabled,"trace_enabled":trace_enabled,"perception_enabled":perception_enabled,"economy_enabled":economy_enabled,"buildings_enabled":buildings_enabled,"trade_enabled":trade_enabled,"research_enabled":research_enabled,"industry_enabled":industry_enabled,"farm_enabled":farm_enabled,"processing_enabled":processing_enabled,"supply_enabled":supply_enabled,"relief_enabled":relief_enabled,"combos_enabled":combos_enabled,"population_enabled":population_enabled,"births_enabled":births_enabled,"quests_enabled":quests_enabled,"quest_balance":quest_balance.duplicate(true),"heart_events_enabled":heart_events_enabled,"heart_events_online":heart_events_online,"event_comments_enabled":event_comments_enabled,"event_comments_online":event_comments_online,"event_comments":event_comments.duplicate(true),"kitchen_crops_enabled":kitchen_crops_enabled,"supply_state":supply_state.duplicate(true),"relationship_precision":_relationship_precision()},true)
+	extension.merge({"version":1,"random_state":rng.state,"agents":runtime.duplicate(true),"social_enabled":social_enabled,"gossip_enabled":gossip_enabled,"romance_enabled":romance_enabled,"feuds_enabled":feuds_enabled,"factions_enabled":factions_enabled,"thoughts_enabled":thoughts_enabled,"inner_voice_enabled":inner_voice_enabled,"stargazing_enabled":stargazing_enabled,"mischief_enabled":mischief_enabled,"mourning_enabled":mourning_enabled,"trace_enabled":trace_enabled,"perception_enabled":perception_enabled,"economy_enabled":economy_enabled,"buildings_enabled":buildings_enabled,"trade_enabled":trade_enabled,"research_enabled":research_enabled,"industry_enabled":industry_enabled,"farm_enabled":farm_enabled,"processing_enabled":processing_enabled,"supply_enabled":supply_enabled,"relief_enabled":relief_enabled,"combos_enabled":combos_enabled,"population_enabled":population_enabled,"births_enabled":births_enabled,"elections_enabled":elections_enabled,"quests_enabled":quests_enabled,"quest_balance":quest_balance.duplicate(true),"heart_events_enabled":heart_events_enabled,"heart_events_online":heart_events_online,"event_comments_enabled":event_comments_enabled,"event_comments_online":event_comments_online,"event_comments":event_comments.duplicate(true),"kitchen_crops_enabled":kitchen_crops_enabled,"supply_state":supply_state.duplicate(true),"relationship_precision":_relationship_precision()},true)
 	result._godot4a = extension
 	if gossip_enabled and result.get("townFeed") is Dictionary and result.townFeed.get("posts") is Array:
 		result.townFeed.posts=result.townFeed.posts.slice(maxi(0,result.townFeed.posts.size()-80))
@@ -96,6 +98,7 @@ func tick() -> Array[String]:
 	presentation_events.clear()
 	data.tickCount = int(data.get("tickCount",0))+1
 	var events := SimClock.tick(data.clock)
+	if "new_day" in events: SimElections.expire_policy(self)
 	if romance_enabled and "new_day" in events: SimRomance.process(self)
 	if feuds_enabled and "new_day" in events: SimFeuds.process(self)
 	if economy_enabled and "new_day" in events: SimEconomy.daily(self)
@@ -108,7 +111,7 @@ func tick() -> Array[String]:
 	if industry_enabled and "new_day" in events: SimIndustry.daily(self)
 	if farm_enabled and "new_day" in events: SimFarm.daily(self)
 	if processing_enabled and "new_day" in events: SimProcessing.daily(self)
-	if "new_day" in events: SimBirths.daily(self);SimPopulation.daily(self)
+	if "new_day" in events: SimBirths.daily(self);SimPopulation.daily(self);SimElections.daily(self)
 	if quests_enabled and "new_day" in events:
 		SimQuestWorld.daily(self);SimNPCQuests.daily(self);SimLifeGoals.daily(self);SimQuests.check_progress(self)
 	for id in data.agents:

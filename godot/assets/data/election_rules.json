@@ -1,0 +1,81 @@
+[
+  {
+    "id": "economy",
+    "label": "經濟發展",
+    "icon": "💰",
+    "values": [
+      "財富",
+      "冒險"
+    ],
+    "traits": [
+      "hardworking",
+      "perfectionist"
+    ]
+  },
+  {
+    "id": "welfare",
+    "label": "社會福利",
+    "icon": "🤝",
+    "values": [
+      "家庭",
+      "社群",
+      "和平"
+    ],
+    "traits": [
+      "kind",
+      "optimist"
+    ]
+  },
+  {
+    "id": "defense",
+    "label": "軍事防禦",
+    "icon": "🛡️",
+    "values": [
+      "權力",
+      "冒險"
+    ],
+    "traits": [
+      "stoic",
+      "hardworking"
+    ]
+  },
+  {
+    "id": "culture",
+    "label": "文化教育",
+    "icon": "📚",
+    "values": [
+      "知識",
+      "藝術"
+    ],
+    "traits": [
+      "creative",
+      "perfectionist"
+    ]
+  },
+  {
+    "id": "nature",
+    "label": "自然保育",
+    "icon": "🌿",
+    "values": [
+      "自然",
+      "和平"
+    ],
+    "traits": [
+      "ascetic",
+      "romantic"
+    ]
+  },
+  {
+    "id": "freedom",
+    "label": "個人自由",
+    "icon": "🕊️",
+    "values": [
+      "自由",
+      "冒險"
+    ],
+    "traits": [
+      "creative",
+      "night_owl"
+    ]
+  }
+]

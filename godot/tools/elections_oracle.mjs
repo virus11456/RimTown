@@ -1,0 +1,4 @@
+import fs from 'node:fs';import path from 'node:path';import vm from 'node:vm';import {context,root} from './golden.mjs';
+const raw=JSON.parse(fs.readFileSync(path.join(root,'godot/tests/golden/frontier-day-01.json')));const cases=[];
+for(const seed of [1,42,11456,123456,987654]){const c=context();c.ctx.raw=raw;vm.runInContext('var w=new World();w.loadSave(raw);',c.ctx);c.setRandomState(seed);vm.runInContext('w.election._startElection(w)',c.ctx);const election=JSON.parse(vm.runInContext('JSON.stringify(w.election.toDict())',c.ctx));const votes=JSON.parse(vm.runInContext('JSON.stringify(Object.values(w.agents).filter(a=>!a.isPlayer).map(a=>[a.agentId,w.election._calculateVote(a,w).agentId]))',c.ctx));cases.push({seed,input:raw,election,votes,rng:c.getRandomState()});}
+fs.mkdirSync(path.join(root,'godot/tests/elections'),{recursive:true});fs.writeFileSync(path.join(root,'godot/tests/elections/oracle.json'),JSON.stringify(cases));

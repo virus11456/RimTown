@@ -66,6 +66,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_hearts.flag"): _capture_hearts()
 	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_quests.flag"): _capture_quests()
 	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_population.flag"): _capture_population()
+	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_elections.flag"): _capture_elections()
 	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_sites.flag"): _capture_sites()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_matrix.flag"): _capture_demo()
 	_responsive()
@@ -272,6 +273,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.research_enabled=bool(document.data.get("_godot4a",{}).get("research_enabled",true))
 	simulation.population_enabled=bool(document.data.get("_godot4a",{}).get("population_enabled",true))
 	simulation.births_enabled=bool(document.data.get("_godot4a",{}).get("births_enabled",true))
+	simulation.elections_enabled=bool(document.data.get("_godot4a",{}).get("elections_enabled",true))
 	simulation.quests_enabled=bool(document.data.get("_godot4a",{}).get("quests_enabled",true))
 	if simulation.quests_enabled: SimQuests.init(simulation);SimNPCQuests.init(simulation);SimLifeGoals.assign(simulation)
 	simulation.heart_events_enabled=bool(document.data.get("_godot4a",{}).get("heart_events_enabled",true))
@@ -355,6 +357,7 @@ func show_tab(tab: String, refresh := false) -> void:
 		"故事":
 			_button("任務與人生",drawer_body,show_quests)
 			_button("人口與家庭",drawer_body,show_births)
+			_button("鎮長選舉",drawer_body,show_elections)
 			_button("村民對話紀錄",drawer_body,show_conversations)
 			_button("八卦與鎮民動態",drawer_body,show_gossip)
 			_button("關係事件",drawer_body,show_romance)
@@ -2005,3 +2008,34 @@ func _capture_population() -> void:
 			await RenderingServer.frame_post_draw
 			viewport.get_texture().get_image().save_png("res://docs/population-"+category+"-"+("mobile" if dimensions.x==375 else "desktop")+".png")
 			viewport.queue_free()
+
+func show_elections() -> void:
+	active_tab="小鎮";drawer.show();_clear_drawer();_wrapped("鎮長選舉",22)
+	var e:=SimElections.state(simulation)
+	_wrapped("每年秋季第一天開始，競選三天、投票兩天、公告三天。",12)
+	_wrapped("政見影響投票，政策維持三十天。現已接入農業與研究加成；其餘效果仍待後續系統。",12)
+	_button("年度選舉："+("開啟" if simulation.elections_enabled else "關閉"),drawer_body,func(): simulation.elections_enabled=not simulation.elections_enabled;has_simulated=true;show_elections())
+	_wrapped({"none":"尚未開選","campaign":"競選登記中","voting":"投票中","results":"結果公告"}.get(e.phase,e.phase),18)
+	for c in e.candidates:
+		_wrapped(str(c.name)+" · "+str(c.policyIcon)+str(c.policyLabel)+" · %d 票"%c.votes)
+		if e.phase=="voting" and not e.votes.has("player"):
+			_button("投給 "+str(c.name),drawer_body,func(): SimElections.vote(simulation,c.agentId);has_simulated=true;show_elections())
+	if e.phase=="campaign" and not e.candidates.any(func(c): return c.agentId=="player"):
+		var gate:=SimElections.eligible(simulation);_wrapped(gate.msg,12)
+		if gate.ok:
+			for p in SimElections.policies(): _button("參選："+str(p.label),drawer_body,func(): SimElections.register(simulation,p.id);has_simulated=true;show_elections())
+	for history in e.electionHistory.slice(-5): _wrapped("第 %d 年 · %s 當選 · %d 票"%[history.year,history.winner.name,history.winner.votes],12)
+	_button("重新整理",drawer_body,show_elections)
+	_button("返回故事",drawer_body,func(): show_tab("故事",true))
+
+func _capture_elections() -> void:
+	await get_tree().create_timer(1).timeout
+	for dimensions in [Vector2i(1280,800),Vector2i(375,812)]:
+		var viewport:=SubViewport.new();viewport.size=dimensions;viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+		var preview=load("res://scenes/main.tscn").instantiate();viewport.add_child(preview)
+		preview._load_document(FileAccess.get_file_as_string("res://tests/elections/compatibility-save.json.tmp"),"選舉流程驗收")
+		preview.show_elections()
+		await get_tree().create_timer(.5).timeout
+		await RenderingServer.frame_post_draw
+		viewport.get_texture().get_image().save_png("res://docs/elections-"+("mobile" if dimensions.x==375 else "desktop")+".png")
+		viewport.queue_free()
