@@ -11,6 +11,7 @@
     "npc_arrived": true,
     "place": "town_square",
     "reason": "雙方已在約定地點實際碰面",
+    "resolved_tick": 144,
     "state": "met",
     "time": "小鎮第 2 天 18:00",
     "until": 152.0

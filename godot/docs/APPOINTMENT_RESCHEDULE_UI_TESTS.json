@@ -14,6 +14,7 @@
     "previous_time": "小鎮第 2 天 18:00",
     "reason": "雙方已在約定地點實際碰面",
     "reschedule_count": 1.0,
+    "resolved_tick": 240,
     "state": "met",
     "time": "小鎮第 3 天 18:00",
     "until": 248.0

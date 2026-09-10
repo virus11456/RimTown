@@ -2302,6 +2302,28 @@ func _validate_career_presence() -> void:
 	has_simulated=true;status.text=str(b.notice)
 	if career_page and drawer.visible and active_tab=="小鎮": show_careers()
 
+func _show_appointment_arrival(a: Dictionary) -> void:
+	var now:=int(simulation.data.tickCount)
+	var left:=maxi(0,int(a.until)-now)*15
+	_wrapped("赴約狀態",18)
+	_wrapped("距結束還有 %d 個遊戲分鐘"%left if left>0 else "赴約時段已結束，等待時間推進結算。",12)
+	var player_here:=SimCareerPresence.place(motion,"player")==str(a.place)
+	var npc_here:=SimCareerPresence.place(motion,str(a.npc))==str(a.place)
+	_wrapped("你："+("已到約定場所" if player_here else "尚未到約定場所"))
+	_wrapped("對方："+("已在約定場所" if npc_here else "尚未到約定場所"))
+	if now<int(a.due): _wrapped("可先前往地點；到約定時間後，雙方靠近才算見面。",12)
+	elif player_here and npc_here: _wrapped("雙方已在場所內，請靠近對方；系統確認近距離碰面後才完成。",12)
+	else: _wrapped("請操作旅人走到場所並靠近對方，讓時間正常前進。",12)
+	var locate:=_button("查看約定地點",drawer_body,func():
+		var current:=SimAppointments.current(simulation)
+		if current.get("state","") not in ["accepted","waiting"] or current.get("npc","")!=a.npc or current.get("place","")!=a.place: return
+		if int(simulation.data.tickCount)>=int(current.until) or not simulation.data.townMap.locations.has(current.place): return
+		var point:=motion.layout._center(str(current.place))
+		rig.follow_player=false;rig.position=Vector3(point.x/16,0,point.y/16)
+		_clear_site_preview();drawer.hide();active_tab=""
+		status.text="約定地點："+str(simulation.data.townMap.locations[current.place].get("name",current.place))+" · 鏡頭已定位，請自行操作旅人前往。")
+	locate.disabled=left<=0 or not simulation.data.townMap.locations.has(a.place)
+
 func show_appointment(id: String) -> void:
 	selected_agent=id;resident_page="appointment";_clear_drawer()
 	_wrapped("見面約定",22)
@@ -2313,7 +2335,7 @@ func show_appointment(id: String) -> void:
 		var remaining:=int(a.due)-int(simulation.data.tickCount)
 		_wrapped(str(a.time))
 		if a.state=="change_offered": _wrapped("新提議："+str(a.proposal.time)+"\n原約定已暫停；拒絕或逾期會取消，不會保留舊時段。")
-		elif SimAppointments.LIVE.has(a.state): _wrapped("距約定還有 %d 分鐘"%(remaining*15) if remaining>0 else "已到約定時間（等待兩個遊戲小時）")
+		elif SimAppointments.LIVE.has(a.state): _wrapped("距約定還有 %d 分鐘"%(remaining*15) if remaining>0 else "已到約定時間")
 		else: _wrapped("約定已結束")
 		if a.state=="offered": _wrapped("請在兩個遊戲小時內回覆邀約。",12)
 		_wrapped(str(a.reason))
@@ -2325,6 +2347,7 @@ func show_appointment(id: String) -> void:
 			_button("接受邀約",drawer_body,func(): SimAppointments.respond(simulation,true);has_simulated=true;show_appointment(id))
 			_button("婉拒邀約",drawer_body,func(): SimAppointments.respond(simulation,false);has_simulated=true;show_appointment(id))
 		elif a.state in ["accepted","waiting"]:
+			_show_appointment_arrival(a)
 			if a.state=="accepted":
 				_wrapped("可提前至少兩個遊戲小時申請順延至原約定隔天同一時間，每份約定限一次。",12)
 				var change_error:=SimAppointments.reschedule_error(simulation)
