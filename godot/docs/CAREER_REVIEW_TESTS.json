@@ -1,0 +1,5 @@
+{
+  "checks": 28,
+  "failures": [],
+  "scope": "earned-stage local dialogue branches, actual XP/affinity, one-use/reload, both memories/chat, attendance/availability, no money, legacy and career-change support"
+}

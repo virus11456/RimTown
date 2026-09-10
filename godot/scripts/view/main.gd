@@ -2121,6 +2121,7 @@ func show_careers() -> void:
 	var w: SimWorld=simulation;var b:=SimCareers.book(w)
 	var job: String=str(w.data.agents.get("player",{}).get("jobKey",""))
 	_wrapped("目前："+str(SimCareers.JOBS.get(job,{"name":"鎮長" if job=="mayor" else "旅人"}).name))
+	_button("職涯回饋交流",drawer_body,show_career_reviews)
 	_wrapped("每日共三次值勤，轉職不重置。每次需到場停留 30–60 遊戲分鐘，依熟練階段決定；暫停時不計時。成果歸小鎮，不發個人銀幣，也不增加鎮務權限。",12)
 	var duties: Dictionary={"farmer":"照料缺水作物，水位 +30；不額外產生商品。", "guard":"走完三處巡查，當日守備 +2。", "doctor":"照護疲憊居民，體力 +15；尚非疾病診療。", "carpenter":"在工房為核准工程製備構件，工量 +2，午夜驗收。", "researcher":"依目前研究缺口整理最多 3 點公共資料，午夜投入研究。", "priest":"到場陪伴低落居民，心情 +8；同一居民每天一次。", "miner":"依備貨缺口採集石材與金屬，消耗少量公共工具。", "cook":"將公共食材製成餐食，備足後停止。", "blacksmith":"使用公共金屬與木材打造工具，備足後停止。", "tailor":"使用公共布料縫製衣物，備足後停止。", "trader":"到交易站交接核准報價：低於半數備貨時採購，高於四分之三備貨時才交售。每日共四件貨品，收入進公共銀庫。"}
 	_wrapped(str(duties.get(job,"選擇職業後查看專屬工作；沒有需求時不發放空白委託。")),12)
@@ -2170,3 +2171,33 @@ func show_careers() -> void:
 	for item in b.history: _wrapped(str(item),12)
 	_button("重新整理",drawer_body,show_careers)
 	_button("返回小鎮",drawer_body,func(): show_tab("小鎮",true))
+
+func show_career_reviews() -> void:
+	active_tab="小鎮";drawer.show();_clear_drawer();_wrapped("職涯回饋交流",22)
+	_wrapped("每達成一個階段，可找同行交流；沒有可交流同行時找鎮長。需親自到場，每職業每階段僅一次。轉職後仍可回顧已取得的階段。",12)
+	var found:=false
+	for job in SimCareers.JOBS:
+		var stage:=SimCareerReviews.next_stage(simulation,job)
+		if stage==0: continue
+		found=true;_wrapped(str(SimCareers.JOBS[job].name)+" · "+str(SimCareerProgress.STAGES[stage]),18)
+		var people:=SimCareerReviews.people(simulation,job)
+		if people.is_empty(): _wrapped("目前沒有能交流的同行或鎮長，進度保留，稍後再來。",12)
+		for id in people:
+			var a: Dictionary=simulation.data.agents[id]
+			_wrapped(str(a.name)+" · "+str(simulation.data.townMap.locations[a.currentLocation].name),12)
+			for choice in ["practice","cooperate"]:
+				_button(str(a.name)+"："+("討論方法（技能 +3）" if choice=="practice" else "分享經驗（對方好感 +1）"),drawer_body,func():
+					var pos: Dictionary=motion.positions.player
+					if motion.location_at(Vector2(pos.x,pos.y))!=simulation.data.agents[id].currentLocation: _wrapped("請先操作旅人走到對方所在場所。");return
+					if not motion.positions.has(id): _wrapped("對方尚未到場，請稍後再試。");return
+					var npc_pos: Dictionary=motion.positions[id]
+					if motion.location_at(Vector2(npc_pos.x,npc_pos.y))!=simulation.data.agents[id].currentLocation: _wrapped("對方正在移動，請等他到場再交流。");return
+					var r:=SimCareerReviews.choose(simulation,job,stage,id,choice);has_simulated=true;show_career_reviews();_wrapped(str(r.message)))
+	if not found: _wrapped("目前沒有待交流的階段。完成值勤、達成職涯任務後再來。")
+	for job in simulation.quest_balance.get("career_reviews",{}):
+		for stage in simulation.quest_balance.career_reviews[job]:
+			var record: Dictionary=simulation.quest_balance.career_reviews[job][stage]
+			_wrapped(str(SimCareers.JOBS[job].name)+" · "+str(SimCareerProgress.STAGES[int(stage)])+" · "+str(record.name),16)
+			_wrapped(str(record.reply),12)
+	_button("重新整理",drawer_body,show_career_reviews)
+	_button("返回職業與值勤",drawer_body,show_careers)
