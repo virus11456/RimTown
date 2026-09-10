@@ -4270,3 +4270,11 @@ body.landing-open { overflow: hidden; }
 .landing-preview figure { margin: 0; }
 .landing-preview img { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 24px rgba(0,0,0,0.45); }
 .landing-preview figcaption { color: var(--text-secondary); font-size: 0.85rem; line-height: 1.55; margin-top: 10px; }
+
+/* Godot development gallery: consistent landscape previews. */
+.landing-test-gallery { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; margin:24px 0; }
+.landing-test-gallery figure { min-width:0; }
+.landing-test-gallery img { width:100%; height:auto; aspect-ratio:8/5; object-fit:contain; background:#122827; }
+.landing-test-gallery a { display:block; }
+.landing-test-gallery a:focus-visible { outline:3px solid #34d399; outline-offset:4px; border-radius:12px; }
+@media(max-width:600px) { .landing-test-gallery { grid-template-columns:1fr; } }

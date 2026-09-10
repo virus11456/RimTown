@@ -1578,13 +1578,13 @@ class RimTownApp {
             ['📖', t('任務與多重結局'), t('五章主線、村民個人任務、每日目標、劇情名場面。你可以參選鎮長，也可以只當個看戲的旅人。')],
         ];
         const roadmap = [
-            [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已有觀賞版畫面，見上方'), t('海風鎮專屬任務鏈（漁村主線）')]],
+            [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證'), t('海風鎮專屬任務鏈（漁村主線）')]],
             [t('規劃中'), '#fbbf24', [t('第三座城鎮'), t('村民自訂外觀'), t('跨鎮貿易與商隊')]],
             [t('構想'), '#60a5fa', [t('玩家之間互訪城鎮'), t('手機 App 版')]],
         ];
         const log = (typeof RIMTOWN_CHANGELOG !== 'undefined' && Array.isArray(RIMTOWN_CHANGELOG)) ? RIMTOWN_CHANGELOG : [];
         const logHtml = log.map((e, i) => `<div class="landing-log-item${i >= 5 ? ' extra' : ''}">
-                <div class="landing-log-head"><span>v${esc(e.version)}</span><time>${esc(e.date || '')}</time></div>
+                <div class="landing-log-head"><span>${String(e.version).startsWith('Godot') ? '' : 'v'}${esc(e.version)}</span><time>${esc(e.date || '')}</time></div>
                 <ul>${((I18N.getLang() === 'en' && e.changes_en && e.changes_en.length) ? e.changes_en : (e.changes || [])).map(c => `<li>${esc(c)}</li>`).join('')}</ul></div>`).join('');
         el.innerHTML = `<div class="landing-inner">
             <header class="landing-hero">
@@ -1604,12 +1604,6 @@ class RimTownApp {
             <section class="landing-section"><h2>${t('這是什麼遊戲')}</h2>
                 <div class="landing-cards">${features.map(f => `<div class="landing-card"><div class="ic">${f[0]}</div><h3>${f[1]}</h3><p>${f[2]}</p></div>`).join('')}</div>
             </section>
-            <section class="landing-section landing-preview" id="landing-preview"><h2>🧊 ${t('3D low-poly 版搶先看')}</h2>
-                <figure>
-                    <img src="img/lowpoly-preview.jpg" alt="${t('邊境鎮 3D low-poly 版畫面')}" loading="lazy" onerror="this.closest('section').style.display='none'">
-                    <figcaption>${t('用 Blender 程序化建模與 Godot 4 重製的邊境鎮。同一份存檔、同一批村民，換一種角度看他們過日子。目前是觀賞模式，開發中。')}</figcaption>
-                </figure>
-            </section>
             ${this._renderBrainSection()}
             <section class="landing-section"><h2>${t('更新紀錄')}</h2>
                 <div class="landing-log" id="landing-log">${logHtml || `<div class="landing-log-item">${t('尚無紀錄')}</div>`}</div>
@@ -1617,6 +1611,17 @@ class RimTownApp {
             </section>
             <section class="landing-section"><h2>${t('即將實現')}</h2>
                 <div class="landing-roadmap">${roadmap.map(r => `<div class="landing-roadmap-col"><h3><span class="landing-tag" style="background:${r[1]};color:#111">${r[0]}</span></h3><ul>${r[2].map(x => `<li>${x}</li>`).join('')}</ul></div>`).join('')}</div>
+            </section>
+            <section class="landing-section landing-preview" id="landing-preview"><h2>🧊 ${t('3D 測試圖集・開發中')}</h2>
+                <p>${t('實際 Godot 測試截圖，含預設測試情境。官網目前仍是 2D 版；以下功能屬於獨立 3D 測試版。')}</p>
+                <div class="landing-test-gallery">
+                    <figure><a href="img/godot-site-preview-desktop.png" target="_blank" rel="noopener"><img src="img/godot-site-preview-desktop.png" alt="${t('建設選址：確認空地後才扣料施工。')}" loading="lazy"></a><figcaption>${t('建設選址：確認空地後才扣料施工。')}</figcaption></figure>
+                    <figure><a href="img/godot-quests-personal-desktop.png" target="_blank" rel="noopener"><img src="img/godot-quests-personal-desktop.png" alt="${t('居民任務：查看故事、好感與章節門檻。')}" loading="lazy"></a><figcaption>${t('居民任務：查看故事、好感與章節門檻。')}</figcaption></figure>
+                    <figure><a href="img/godot-population-family-desktop.png" target="_blank" rel="noopener"><img src="img/godot-population-family-desktop.png" alt="${t('人口與家庭：出生紀錄、移入及住宅容量。')}" loading="lazy"></a><figcaption>${t('人口與家庭：出生紀錄、移入及住宅容量。')}</figcaption></figure>
+                    <figure><a href="img/godot-hearts-desktop.png" target="_blank" rel="noopener"><img src="img/godot-hearts-desktop.png" alt="${t('友情與心動：已觸發事件與關係里程碑。')}" loading="lazy"></a><figcaption>${t('友情與心動：已觸發事件與關係里程碑。')}</figcaption></figure>
+                </div>
+                <p>${t('點圖片可查看原圖。任務與關係畫面含測試資料，不代表自然通關。')}</p>
+                <p>${t('3D 版 AI 聊天邀約尚未建立赴約行程；全路線自然通關仍在驗證。')}</p>
             </section>
             <footer class="landing-footer">${t('邊境鎮 RimTown')} · v${esc(ver)}<br>${t('存檔自動同步雲端，換裝置登入即可繼續。')}</footer>
         </div>`;
