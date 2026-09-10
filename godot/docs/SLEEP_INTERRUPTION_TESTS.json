@@ -1,0 +1,5 @@
+{
+  "checks": 11,
+  "failures": [],
+  "scope": "controlled overlapping preferred sleep/job window, actual slow home arrival, sleep-period meal without leaving or restoring rest, unchanged stockpile, save restore, work and legacy boundaries"
+}

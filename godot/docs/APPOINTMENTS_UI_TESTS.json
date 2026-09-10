@@ -1,7 +1,7 @@
 {
   "checks": 13,
   "failures": [],
-  "npc_max_step_pixels": 0.933537185192108,
+  "npc_max_step_pixels": 0.855625510215759,
   "scope": "mock AI response through actual chat UI, accept, app save reload, natural clock/needs/work, real SimMotion NPC path and collision-based player movement, proximity meeting, mobile panel; headless rendering, no production AI service",
   "state": {
     "due": 144.0,
@@ -11,7 +11,7 @@
     "npc_arrived": true,
     "place": "town_square",
     "reason": "雙方已在約定地點實際碰面",
-    "resolved_tick": 144,
+    "resolved_tick": 145,
     "state": "met",
     "time": "小鎮第 2 天 18:00",
     "until": 152.0

@@ -242,6 +242,7 @@ func _activity(a: Dictionary,hour: int) -> void:
 	var job:=_job(a)
 	if n.hunger<15: a.activity="eating"; return
 	if n.rest<10: a.activity="sleeping"; return
+	if SimHomeRest.physical(self) and SimShiftSleep.asleep(a,rules.jobs,hour): a.activity="sleeping"; return
 	if hour==posmod(start-1,24) and n.rest<90 and a.currentLocation!=a.homeLocation:
 		a.activity="heading_home"; return
 	if not job.is_empty() and hour==posmod(int(job.work_hours[0])-1,24) and a.activity!="sleeping" and a.currentLocation!=job.workplace:
@@ -279,7 +280,10 @@ func _location(a: Dictionary,run: Dictionary,hour: int) -> void:
 		"heading_home","sleeping": run.targetLocation=home
 		"commuting","working":
 			if not job.is_empty(): run.targetLocation=job.workplace
-		"eating": run.targetLocation=rng.pick([job.workplace,"tavern","tavern"]) if working else rng.pick(["tavern","tavern","home"]) if night else "tavern"
+		"eating":
+			if not a.get("isPlayer",false) and SimHomeRest.physical(self) and SimShiftSleep.asleep(a,rules.jobs,hour) and SimHomeRest.arrived(self,a):
+				run.targetLocation=home
+			else: run.targetLocation=rng.pick([job.workplace,"tavern","tavern"]) if working else rng.pick(["tavern","tavern","home"]) if night else "tavern"
 		"socializing": run.targetLocation=job.workplace if working else rng.pick(["tavern","tavern","town_square","park"]) if night else rng.pick(["tavern","town_square","park","well","chapel",home])
 		"recreation": run.targetLocation=rng.pick(["tavern","library"] if night else ["park","library","tavern"])
 		"stargazing": run.targetLocation=rng.pick(["park","hill","meadow"])
