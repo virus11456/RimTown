@@ -1,5 +1,5 @@
 {
-  "checks": 36,
+  "checks": 37,
   "failures": [],
   "scope": "offline toggle and no HTTP, four intents, source provenance, invalid input, failure-to-offline retry, mode lock, 375px UI and 96-tick save resume; no production API"
 }

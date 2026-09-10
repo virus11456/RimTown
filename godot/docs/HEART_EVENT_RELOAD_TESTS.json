@@ -1,0 +1,5 @@
+{
+  "checks": 184,
+  "passed": true,
+  "scope": "Original JS loads heart event history and shared memories plus building/trade/research/industry/farm/processing state and stock, memories, relationships and currentThought. Original reload drops _rivalGossiped; Godot resume retains it. No production API."
+}

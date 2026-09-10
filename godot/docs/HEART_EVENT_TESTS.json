@@ -1,0 +1,5 @@
+{
+  "checks": 528,
+  "failures": [],
+  "scope": "48 original threshold/order/busy cases and 72 original fallback/job/trait speech, memory, relationship and log cases; no production API"
+}

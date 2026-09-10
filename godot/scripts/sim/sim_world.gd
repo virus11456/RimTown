@@ -16,6 +16,8 @@ var stargazing_enabled := false
 var mischief_enabled := false
 var mourning_enabled := false
 var trace_enabled := false
+var heart_events_enabled := false
+var heart_events_online := false
 var event_comments_enabled := false
 var event_comments_online := false
 var event_comments: Array=[]
@@ -56,6 +58,8 @@ func load_snapshot(snapshot: Dictionary) -> void:
 	buildings_enabled=bool(saved.get("buildings_enabled",false))
 	trade_enabled=bool(saved.get("trade_enabled",false))
 	research_enabled=bool(saved.get("research_enabled",false))
+	heart_events_enabled=bool(saved.get("heart_events_enabled",false))
+	heart_events_online=bool(saved.get("heart_events_online",false))
 	event_comments_enabled=bool(saved.get("event_comments_enabled",false))
 	event_comments_online=bool(saved.get("event_comments_online",false))
 	event_comments=saved.get("event_comments",[]).duplicate(true)
@@ -75,7 +79,7 @@ func load_snapshot(snapshot: Dictionary) -> void:
 func snapshot() -> Dictionary:
 	var result := data.duplicate(true)
 	var extension: Dictionary = result.get("_godot4a",{}).duplicate(true)
-	extension.merge({"version":1,"random_state":rng.state,"agents":runtime.duplicate(true),"social_enabled":social_enabled,"gossip_enabled":gossip_enabled,"romance_enabled":romance_enabled,"feuds_enabled":feuds_enabled,"factions_enabled":factions_enabled,"thoughts_enabled":thoughts_enabled,"inner_voice_enabled":inner_voice_enabled,"stargazing_enabled":stargazing_enabled,"mischief_enabled":mischief_enabled,"mourning_enabled":mourning_enabled,"trace_enabled":trace_enabled,"perception_enabled":perception_enabled,"economy_enabled":economy_enabled,"buildings_enabled":buildings_enabled,"trade_enabled":trade_enabled,"research_enabled":research_enabled,"industry_enabled":industry_enabled,"farm_enabled":farm_enabled,"processing_enabled":processing_enabled,"supply_enabled":supply_enabled,"relief_enabled":relief_enabled,"combos_enabled":combos_enabled,"event_comments_enabled":event_comments_enabled,"event_comments_online":event_comments_online,"event_comments":event_comments.duplicate(true),"kitchen_crops_enabled":kitchen_crops_enabled,"supply_state":supply_state.duplicate(true),"relationship_precision":_relationship_precision()},true)
+	extension.merge({"version":1,"random_state":rng.state,"agents":runtime.duplicate(true),"social_enabled":social_enabled,"gossip_enabled":gossip_enabled,"romance_enabled":romance_enabled,"feuds_enabled":feuds_enabled,"factions_enabled":factions_enabled,"thoughts_enabled":thoughts_enabled,"inner_voice_enabled":inner_voice_enabled,"stargazing_enabled":stargazing_enabled,"mischief_enabled":mischief_enabled,"mourning_enabled":mourning_enabled,"trace_enabled":trace_enabled,"perception_enabled":perception_enabled,"economy_enabled":economy_enabled,"buildings_enabled":buildings_enabled,"trade_enabled":trade_enabled,"research_enabled":research_enabled,"industry_enabled":industry_enabled,"farm_enabled":farm_enabled,"processing_enabled":processing_enabled,"supply_enabled":supply_enabled,"relief_enabled":relief_enabled,"combos_enabled":combos_enabled,"heart_events_enabled":heart_events_enabled,"heart_events_online":heart_events_online,"event_comments_enabled":event_comments_enabled,"event_comments_online":event_comments_online,"event_comments":event_comments.duplicate(true),"kitchen_crops_enabled":kitchen_crops_enabled,"supply_state":supply_state.duplicate(true),"relationship_precision":_relationship_precision()},true)
 	result._godot4a = extension
 	if gossip_enabled and result.get("townFeed") is Dictionary and result.townFeed.get("posts") is Array:
 		result.townFeed.posts=result.townFeed.posts.slice(maxi(0,result.townFeed.posts.size()-80))
@@ -91,6 +95,7 @@ func tick() -> Array[String]:
 	if trade_enabled and "new_day" in events: SimTrade.daily(self)
 	if research_enabled and "new_day" in events: SimResearch.daily(self)
 	if factions_enabled and "new_day" in events: SimFactions.daily(self)
+	if "new_day" in events: SimHeartEvents.check_new(self)
 	if thoughts_enabled and "new_day" in events: SimThoughts.daily(self)
 	if industry_enabled and "new_day" in events: SimIndustry.daily(self)
 	if farm_enabled and "new_day" in events: SimFarm.daily(self)

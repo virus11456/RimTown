@@ -84,4 +84,5 @@ static func apply(w: SimWorld,id: String,message: String,parsed: Dictionary) -> 
 	history.append({"speaker":a.name,"target":player.name,"text":parsed.text,"time":SimSocial.time_string(w.data.clock)})
 	player.chatHistory=history.slice(maxi(0,history.size()-10000));player._recentChatTick=w.data.tickCount
 	SimSocial.log_message(w.data,"player_chat",player.name+" → "+a.name+": "+summary,player.name,a.name)
+	SimHeartEvents.check_new(w)
 	return {"affinity":affinity,"romantic":romantic,"summary":summary}

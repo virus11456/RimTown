@@ -25,15 +25,19 @@ static func apply(w: SimWorld,item: Dictionary,response: String="") -> bool:
 	if not w.data.agents.has(item.npc) or not w.data.agents.has(item.player): return false
 	var npc: Dictionary=w.data.agents[item.npc];var player: Dictionary=w.data.agents[item.player]
 	if npc.get("isDead",false) or not player.get("isPlayer",false): return false
-	var text:=response.strip_edges()
-	if text in ["__ERROR__","__RATE_LIMITED__"]: text=""
-	text=SimPlayerChat.replace_regex(text,"^[\"「『]|[\"」』]$","").strip_edges()
-	for separator in ["：",":"]:
-		if text.begins_with(str(npc.name)+separator): text=text.substr(str(npc.name).length()+1).strip_edges()
-	if text.is_empty(): text=item.fallback
-	text=text.left(1000)
+	var text:=clean_text(response,str(npc.name),str(item.fallback))
 	if not player.get("chatHistory") is Array: player.chatHistory=[]
 	player.chatHistory.append({"speaker":npc.name,"target":player.name,"text":text,"time":SimSocial.time_string(w.data.clock)})
 	SimFeuds._memory(npc,w,"conversation","跟"+str(player.name)+"聊到："+text,3,[player.name])
 	SimSocial.log_message(w.data,"player_chat",str(npc.name)+" → "+str(player.name)+": "+text,npc.name,player.name)
 	return true
+
+static func clean_text(response: String,name: String,fallback: String) -> String:
+	var text:=response.strip_edges()
+	if text in ["__ERROR__","__RATE_LIMITED__"]: text=""
+	text=SimPlayerChat.replace_regex(text,"^[\"「『]|[\"」』]$","").strip_edges()
+	for separator in ["：",":"]:
+		if text.begins_with(name+separator): text=text.substr(name.length()+1).strip_edges()
+	if text.is_empty(): text=fallback
+	text=text.left(1000)
+	return text

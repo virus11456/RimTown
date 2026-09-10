@@ -1,0 +1,5 @@
+{
+  "checks": 35,
+  "failures": [],
+  "scope": "offline and online chat callbacks, daily scanning, queue resume, milestone mobile UI, mock AI success/quota, stale town, death, four sequential events and fired reload; no production service"
+}

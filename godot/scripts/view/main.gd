@@ -63,6 +63,7 @@ func _ready() -> void:
 	load_demo("frontier")
 	get_viewport().size_changed.connect(_responsive)
 	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_combos.flag"): _capture_combos()
+	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_hearts.flag"): _capture_hearts()
 	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_sites.flag"): _capture_sites()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_matrix.flag"): _capture_demo()
 	_responsive()
@@ -267,6 +268,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.buildings_enabled=bool(document.data.get("_godot4a",{}).get("buildings_enabled",true))
 	simulation.trade_enabled=bool(document.data.get("_godot4a",{}).get("trade_enabled",true))
 	simulation.research_enabled=bool(document.data.get("_godot4a",{}).get("research_enabled",true))
+	simulation.heart_events_enabled=bool(document.data.get("_godot4a",{}).get("heart_events_enabled",true))
 	simulation.event_comments_enabled=bool(document.data.get("_godot4a",{}).get("event_comments_enabled",true))
 	simulation.combos_enabled=bool(document.data.get("_godot4a",{}).get("combos_enabled",true))
 	simulation.supply_enabled=bool(document.data.get("_godot4a",{}).get("supply_enabled",true))
@@ -577,6 +579,8 @@ func _settings_ui() -> void:
 	_button("每日產業產出："+("開啟" if simulation.industry_enabled else "關閉"),drawer_body,func(): simulation.industry_enabled=not simulation.industry_enabled;show_tab("設定",true))
 	_button("每日研究："+("開啟" if simulation.research_enabled else "關閉"),drawer_body,func(): simulation.research_enabled=not simulation.research_enabled;show_tab("設定",true))
 	_button("商人每日來訪："+("開啟" if simulation.trade_enabled else "關閉"),drawer_body,func(): simulation.trade_enabled=not simulation.trade_enabled;show_tab("設定",true))
+	_button("連線生成真心話："+("開啟" if simulation.heart_events_online else "關閉"),drawer_body,func(): simulation.heart_events_online=not simulation.heart_events_online;has_simulated=true;show_tab("設定",true))
+	_wrapped("友情／心動里程碑預設使用本機台詞。開啟後使用 AI 聊天額度；每位居民每個里程碑只觸發一次。",12)
 	_button("連線生成事件評論："+("開啟" if simulation.event_comments_online else "關閉"),drawer_body,func(): simulation.event_comments_online=not simulation.event_comments_online;has_simulated=true;show_tab("設定",true))
 	_wrapped("建築完工與首次發現組合時，居民會傳來評論。預設使用本機台詞；開啟連線會使用 AI 背景額度，失敗時改用本機台詞。",12)
 	_button("每日建築施工："+("開啟" if simulation.buildings_enabled else "關閉"),drawer_body,func(): simulation.buildings_enabled=not simulation.buildings_enabled;show_tab("設定",true))
@@ -762,7 +766,7 @@ func _tick_simulation() -> void:
 		else: show_tab("故事",true)
 	if active_tab=="居民" and not selected_agent.is_empty():
 		match resident_page:
-			"chat", "whisper", "rumor": pass # Preserve draft, focus and scroll while the world ticks.
+			"chat", "whisper", "rumor", "heart": pass # Preserve draft, focus and scroll while the world ticks.
 			"gift": show_player_gift(selected_agent)
 			"interaction": show_player_interaction(selected_agent)
 			"trace": show_trace(selected_agent)
@@ -1165,6 +1169,7 @@ func show_player_chat(id: String) -> void:
 	if not simulation.data.agents.has(id) or not simulation.data.agents.has("player") or id=="player": _wrapped("找不到交談對象。");return
 	var a: Dictionary=simulation.data.agents[id]
 	_wrapped("與"+str(a.name)+"交談",22)
+	_button("友情與心動",drawer_body,func(): show_heart_events(id))
 	var mode:=CheckButton.new();mode.text="離線交談（本機台詞）";mode.button_pressed=chat_offline;mode.disabled=chat_busy;mode.custom_minimum_size.y=42;drawer_body.add_child(mode)
 	mode.toggled.connect(func(value): chat_offline=value;show_player_chat(id))
 	_wrapped("目前使用本機預寫台詞，不連線、不使用 AI 額度。" if chat_offline else "傳送會使用既有 AI 服務與帳號／訪客額度。",12)
@@ -1816,18 +1821,51 @@ func process_event_comment() -> void:
 	var npc: Dictionary=simulation.data.agents.get(item.npc,{})
 	var player: Dictionary=simulation.data.agents.get(item.player,{})
 	var text:=""
-	if simulation.event_comments_online and not chat_offline and not npc.is_empty() and not player.is_empty() and not npc.get("isDead",false):
-		var prompt:=SimEventComments.prompt(simulation,item)
+	var heart: bool=item.get("kind","")=="heart"
+	var online: bool=simulation.heart_events_online if heart else simulation.event_comments_online
+	if online and not chat_offline and not npc.is_empty() and not player.is_empty() and not npc.get("isDead",false):
+		var prompt:=SimHeartEvents.prompt(simulation,item) if heart else SimEventComments.prompt(simulation,item)
 		var response: Dictionary
 		if event_comment_transport.is_valid(): response=await event_comment_transport.call(prompt)
-		else: response=await api.chat(prompt,"background",150,.9,"zh")
+		else: response=await api.chat(prompt,"chat" if heart else "background",250 if heart else 150,.9,"zh")
 		if epoch!=chat_epoch: return
 		if response.get("ok",false) and response.get("data") is Dictionary and response.data.get("reply") is String: text=response.data.reply
-		if not simulation.event_comments_online or chat_offline: text=""
+		online=simulation.heart_events_online if heart else simulation.event_comments_online
+		if not online or chat_offline: text=""
 	event_comment_busy=false
 	if not is_same(npc,simulation.data.agents.get(item.npc,{})) or not is_same(player,simulation.data.agents.get(item.player,{})):
 		simulation.event_comments.erase(item);return
-	if SimEventComments.apply(simulation,item,text):
+	var applied:=SimHeartEvents.apply(simulation,item,text) if heart else SimEventComments.apply(simulation,item,text)
+	if applied:
 		has_simulated=true
-		chat_notice[item.npc]="居民傳來了事件評論。"
+		status.text=str(npc.name)+("向你說出了真心話 · 居民 → 自由交談" if heart else "傳來事件評論 · 居民 → 自由交談")
+		chat_notice[item.npc]=str(item.definition.icon)+" "+str(item.definition.name)+"：居民向你說出了真心話。" if heart else "居民傳來了事件評論。"
 		if active_tab=="居民" and resident_page=="chat" and selected_agent==item.npc: show_player_chat(item.npc)
+
+func show_heart_events(id: String) -> void:
+	selected_agent=id;resident_page="heart";_clear_drawer()
+	if not simulation.data.agents.has(id): return
+	var npc: Dictionary=simulation.data.agents[id]
+	var rel: Dictionary=npc.get("relationships",{}).get("player",{})
+	_wrapped(str(npc.name)+" · 友情與心動",22)
+	_wrapped("好感 %.0f · 戀慕 %.0f"%[float(rel.get("affinity",0)),float(rel.get("romanticInterest",0))])
+	_wrapped("聊天後與每日檢查，每次只觸發一件。每個里程碑只發生一次，真心話會保留在交談紀錄與居民的共同回憶。",12)
+	var fired: Array=simulation.data.get("heartEventsFired",{}).get(id,[])
+	for event in SimHeartEvents.rules().events:
+		var pending: bool=simulation.event_comments.any(func(item): return item.get("kind","")=="heart" and item.npc==id and item.definition.id==event.id)
+		_wrapped(str(event.icon)+" "+str(event.name)+" · "+("待送出" if pending else ("已觸發" if event.id in fired else "尚未觸發")),18)
+		_wrapped(("戀慕 ≥ "+str(event.min.romantic)) if event.min.has("romantic") else ("好感 ≥ "+str(event.min.affinity)),12)
+	_button("重新整理",drawer_body,func(): show_heart_events(id))
+	_button("返回交談",drawer_body,func(): show_player_chat(id))
+
+func _capture_hearts() -> void:
+	await get_tree().create_timer(1).timeout
+	for dimensions in [Vector2i(1280,800),Vector2i(375,812)]:
+		var viewport:=SubViewport.new();viewport.size=dimensions;viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+		var preview=load("res://scenes/main.tscn").instantiate();viewport.add_child(preview)
+		preview._load_document(FileAccess.get_file_as_string("res://tests/heart_events/compatibility-save.json.tmp"),"友情與心動驗收")
+		preview.show_tab("居民",true);preview.show_heart_events("chen_wei")
+		await get_tree().create_timer(.5).timeout
+		await RenderingServer.frame_post_draw
+		viewport.get_texture().get_image().save_png("res://docs/hearts-"+("mobile" if dimensions.x==375 else "desktop")+".png")
+		viewport.queue_free()
