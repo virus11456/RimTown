@@ -32,3 +32,18 @@ static func ask(w: SimWorld,id: String) -> bool:
 	history.append({"speaker":npc.name,"target":player.name,"text":text,"time":SimSocial.time_string(w.data.clock),"_godotOffline":true,"_godotLeisure":source})
 	player.chatHistory=history.slice(-10000)
 	return true
+static func recall(w: SimWorld,id: String,book: Dictionary) -> Dictionary:
+	var rows:=SimLeisurePlan.history(w,id)
+	if rows.is_empty(): return {}
+	var last: Dictionary=rows.back()
+	if not last.has("resolved_tick") or last.get("state","") not in ["completed","missed","cancelled"]: return {}
+	var age:=int(w.data.tickCount)-int(last.resolved_tick)
+	if age<4 or age>192: return {}
+	var token:="leisure|%s|%s|%s"%[id,last.get("day",""),last.state]
+	if token in book.get("recalled",[]): return {}
+	var text:=""
+	match str(last.state):
+		"completed": text="前陣子我到"+str(last.get("place_name","休閒場所")).left(80)+"休閒，確實待了一會兒。剛好遇到你，想打聲招呼。"
+		"missed": text="前陣子的休閒安排沒有完成。"+str(last.get("reason","沒有足夠紀錄確認原因。")).left(160)+"今天碰到你，打聲招呼。"
+		"cancelled": text="前陣子的休閒安排取消了。今天剛好遇到你，最近還好嗎？"
+	return {"key":token,"text":text,"source":{"kind":"leisure","npc":id,"day":last.get("day",""),"state":last.state,"resolved_tick":int(last.resolved_tick)}}
