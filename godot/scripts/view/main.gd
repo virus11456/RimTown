@@ -826,6 +826,7 @@ func _tick_simulation() -> void:
 	has_simulated=true
 	var old_geometry:=JSON.stringify([simulation.data.buildings,simulation.data.processing,simulation.data.agents.keys()])
 	var appointment_state: String=SimAppointments.current(simulation).get("state","")
+	simulation.social.observe_positions(motion)
 	var events:=simulation.tick()
 	if appointment_state!="change_offered" and SimAppointments.current(simulation).get("state")=="change_offered":
 		status.text="居民提出改約 · 居民 → 見面約定 · 待回覆"

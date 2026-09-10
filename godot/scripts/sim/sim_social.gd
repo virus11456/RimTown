@@ -2,6 +2,18 @@ class_name SimSocial
 extends RefCounted
 ## Scoped NPC socializing + original offline dialogue. Gossip/news effects deferred.
 var dialogue := SimDialogue.new()
+# Scene observations are transient; pure source-compatible simulations omit them.
+var physical_positions: Variant=null
+func observe_positions(m: SimMotion) -> void:
+	physical_positions={}
+	for id in m.positions:
+		var p: Dictionary=m.positions[id]
+		physical_positions[id]={"point":Vector2(p.x,p.y),"room":SimCareerPresence.room(m,id),"place":SimCareerPresence.place(m,id)}
+func physically_together(a: Dictionary,b: Dictionary) -> bool:
+	if physical_positions==null: return true
+	if a.get("isDead",false) or b.get("isDead",false) or not physical_positions.has(a.id) or not physical_positions.has(b.id): return false
+	var pa: Dictionary=physical_positions[a.id];var pb: Dictionary=physical_positions[b.id]
+	return not str(pa.room).is_empty() and pa.room==pb.room and pa.place==a.currentLocation and pb.place==b.currentLocation and pa.point.distance_to(pb.point)<=48.0
 static func time_string(clock: Dictionary) -> String:
 	return "第%d年 %s 第%d天 %02d:%02d" % [clock.year,clock.season,clock.day,clock.hour,clock.minute]
 static func relationship(a: Dictionary,b: Dictionary) -> Dictionary:
@@ -23,7 +35,7 @@ func try_interaction(a: Dictionary,data: Dictionary,rng: SimRandom,jobs: Diction
 	var others: Array=[]
 	var weights: Array=[]
 	for b in data.agents.values():
-		if b.id==a.id or b.activity=="sleeping" or b.currentLocation!=a.currentLocation: continue
+		if b.id==a.id or b.activity=="sleeping" or b.currentLocation!=a.currentLocation or not physically_together(a,b): continue
 		var rel:=relationship(a,b)
 		var weight:=5+maxi(0,floori(float(rel.affinity)/10))+floori(float(rel.romanticInterest)/10)
 		if rel.affinity< -30: weight=maxi(1,weight-5)

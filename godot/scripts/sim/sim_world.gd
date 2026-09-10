@@ -47,6 +47,7 @@ var perception_enabled := false
 var presentation_events: Array=[]
 var social := SimSocial.new()
 func load_snapshot(snapshot: Dictionary) -> void:
+	social.physical_positions=null
 	presentation_events.clear()
 	combo_notifications.clear()
 	data = snapshot.duplicate(true)

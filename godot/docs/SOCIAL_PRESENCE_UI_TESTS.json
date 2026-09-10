@@ -1,0 +1,6 @@
+{
+  "checks": 5,
+  "conversations": 2,
+  "failures": [],
+  "scope": "96 original app ticks with 120 motion frames each, no job/needs/position changes, all generated pair logs checked against pre-tick actual observations, reload refresh; no visual art or production AI verification"
+}

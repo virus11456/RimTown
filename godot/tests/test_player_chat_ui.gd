@@ -90,6 +90,7 @@ func run() -> void:
 	# Replay the same physical observations; the pure world has no scene positions.
 	for i in 96:
 		SimAppointments.observe(resumed,app.motion);SimLeisurePlan.observe(resumed,app.motion)
+		resumed.social.observe_positions(app.motion)
 		app._tick_simulation();resumed.tick()
 	check(equal(w.snapshot(),resumed.snapshot()),"post-chat all-mode resume")
 	var report:={"checks":checks,"failures":failures,"scope":"mock transport only: context, draft preservation, double submit, success, quota/invalid failures, stale town response, mobile UI and save resume; no production API"}
