@@ -1,0 +1,288 @@
+{
+  "male": [
+    "小龍",
+    "天明",
+    "子軒",
+    "浩宇",
+    "嘉禾",
+    "承恩",
+    "宏志",
+    "瑞陽",
+    "文博",
+    "志遠",
+    "新宇",
+    "國棟"
+  ],
+  "female": [
+    "小鳳",
+    "曉月",
+    "詩涵",
+    "雨桐",
+    "美琪",
+    "欣怡",
+    "佳穎",
+    "思琪",
+    "夢瑤",
+    "婉清",
+    "紫萱",
+    "若蘭"
+  ],
+  "immigrants": [
+    {
+      "name": "周明",
+      "age": 27,
+      "gender": "male",
+      "traits": [
+        "hardworking",
+        "optimist"
+      ],
+      "job": "farmer",
+      "background": "來自鄰村的開朗年輕農夫。"
+    },
+    {
+      "name": "李雪",
+      "age": 31,
+      "gender": "female",
+      "traits": [
+        "kind",
+        "perfectionist"
+      ],
+      "job": "tailor",
+      "background": "聽說邊境鎮需要她的手藝的熟練裁縫。"
+    },
+    {
+      "name": "鄭強",
+      "age": 35,
+      "gender": "male",
+      "traits": [
+        "stoic",
+        "hardworking"
+      ],
+      "job": "miner",
+      "background": "來自本地區的資深礦工。"
+    },
+    {
+      "name": "何芳",
+      "age": 24,
+      "gender": "female",
+      "traits": [
+        "charismatic",
+        "romantic"
+      ],
+      "job": "cook",
+      "background": "懷抱遠大夢想的熱情廚師。"
+    },
+    {
+      "name": "蔡文",
+      "age": 42,
+      "gender": "male",
+      "traits": [
+        "creative",
+        "neurotic"
+      ],
+      "job": "researcher",
+      "background": "被古代遺跡吸引而來的古怪學者。"
+    },
+    {
+      "name": "呂嵐",
+      "age": 29,
+      "gender": "female",
+      "traits": [
+        "shy",
+        "early_bird"
+      ],
+      "job": "carpenter",
+      "background": "讓手藝說話的沉靜木匠。"
+    },
+    {
+      "name": "丁傑",
+      "age": 38,
+      "gender": "male",
+      "traits": [
+        "abrasive",
+        "hardworking"
+      ],
+      "job": "blacksmith",
+      "background": "言語粗獷但手藝精湛的鐵匠。"
+    },
+    {
+      "name": "蕭瑜",
+      "age": 23,
+      "gender": "female",
+      "traits": [
+        "optimist",
+        "gossip"
+      ],
+      "job": "trader",
+      "background": "善於議價的年輕商人。"
+    },
+    {
+      "name": "唐琳",
+      "age": 33,
+      "gender": "female",
+      "traits": [
+        "kind",
+        "night_owl"
+      ],
+      "job": "doctor",
+      "background": "四處行醫的慈悲醫者。"
+    },
+    {
+      "name": "曹峰",
+      "age": 44,
+      "gender": "male",
+      "traits": [
+        "stoic",
+        "pessimist"
+      ],
+      "job": "guard",
+      "background": "尋求平靜生活的資深戰士。"
+    },
+    {
+      "name": "邱雅",
+      "age": 21,
+      "gender": "female",
+      "traits": [
+        "creative",
+        "shy"
+      ],
+      "job": "tailor",
+      "background": "擁有刺繡天賦的年輕工匠。"
+    },
+    {
+      "name": "范浩",
+      "age": 36,
+      "gender": "male",
+      "traits": [
+        "lazy",
+        "charismatic"
+      ],
+      "job": "priest",
+      "background": "悠哉的精神導師。"
+    }
+  ],
+  "skills": [
+    "射擊",
+    "近戰",
+    "建造",
+    "採礦",
+    "烹飪",
+    "種植",
+    "動物",
+    "工藝",
+    "醫療",
+    "社交",
+    "智識",
+    "藝術"
+  ],
+  "jobSkills": {
+    "farmer": {
+      "primary": [
+        "種植"
+      ],
+      "secondary": [
+        "動物",
+        "烹飪"
+      ]
+    },
+    "miner": {
+      "primary": [
+        "採礦"
+      ],
+      "secondary": [
+        "建造",
+        "近戰"
+      ]
+    },
+    "cook": {
+      "primary": [
+        "烹飪"
+      ],
+      "secondary": [
+        "種植",
+        "社交"
+      ]
+    },
+    "blacksmith": {
+      "primary": [
+        "工藝"
+      ],
+      "secondary": [
+        "採礦",
+        "建造"
+      ]
+    },
+    "doctor": {
+      "primary": [
+        "醫療"
+      ],
+      "secondary": [
+        "智識",
+        "社交"
+      ]
+    },
+    "researcher": {
+      "primary": [
+        "智識"
+      ],
+      "secondary": [
+        "醫療",
+        "工藝"
+      ]
+    },
+    "trader": {
+      "primary": [
+        "社交"
+      ],
+      "secondary": [
+        "智識",
+        "工藝"
+      ]
+    },
+    "guard": {
+      "primary": [
+        "射擊"
+      ],
+      "secondary": [
+        "近戰",
+        "醫療"
+      ]
+    },
+    "carpenter": {
+      "primary": [
+        "建造"
+      ],
+      "secondary": [
+        "工藝",
+        "種植"
+      ]
+    },
+    "tailor": {
+      "primary": [
+        "工藝"
+      ],
+      "secondary": [
+        "藝術",
+        "社交"
+      ]
+    },
+    "priest": {
+      "primary": [
+        "社交"
+      ],
+      "secondary": [
+        "藝術",
+        "智識"
+      ]
+    },
+    "mayor": {
+      "primary": [
+        "社交"
+      ],
+      "secondary": [
+        "智識",
+        "藝術"
+      ]
+    }
+  }
+}

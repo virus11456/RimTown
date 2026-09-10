@@ -1,0 +1,5 @@
+{
+  "checks": 730,
+  "failures": [],
+  "scope": "10 original birth scenarios, child skills/attributes/inheritance, parents, memories/mood/gossip/news, player children and RNG; unique ID guard"
+}

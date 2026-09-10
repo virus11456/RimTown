@@ -1,5 +1,5 @@
 {
-  "checks": 175,
+  "checks": 176,
   "failures": [],
   "scope": "reserve cap, no input waste, resume, orders, shared daily market cap, season/save persistence, 120-day bound and mobile UI"
 }

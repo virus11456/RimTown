@@ -1,12 +1,15 @@
 class_name SimBuildings
 extends RefCounted
 static func rules() -> Dictionary:
-	return JSON.parse_string(FileAccess.get_file_as_string("res://assets/data/building_rules.json"))
+	var value: Dictionary=JSON.parse_string(FileAccess.get_file_as_string("res://assets/data/building_rules.json"))
+	value.templates.housing=SimPopulation.HOUSING.duplicate(true)
+	return value
 static func affordable(w: SimWorld,costs: Dictionary) -> bool:
 	for key in costs:
 		if SimEconomy.amount(w,key)<float(costs[key]): return false
 	return true
 static func start(w: SimWorld,key: String,upgrade: bool=false,site: Vector2i=Vector2i(-1,-1)) -> Dictionary:
+	if key=="housing" and (not w.population_enabled or upgrade or site==Vector2i(-1,-1) or SimPopulation.homes(w,true)>=8): return {}
 	if site!=Vector2i(-1,-1) and (upgrade or not BuildingSites.allowed(w.data,site)): return {}
 	var definitions:=rules();var manager: Dictionary=w.data.buildings
 	var template: Dictionary={};var level:=1
@@ -20,7 +23,7 @@ static func start(w: SimWorld,key: String,upgrade: bool=false,site: Vector2i=Vec
 		if template.is_empty(): return {}
 		# Also reject a base building after its name has changed through upgrades.
 		for p in manager.projects+manager.completed:
-			if p.get("buildingKey")==key or p.name==template.name: return {}
+			if key!="housing" and (p.get("buildingKey")==key or p.name==template.name): return {}
 	if template.is_empty() or not affordable(w,template.costs): return {}
 	for resource in template.costs: SimEconomy.consume(w,resource,float(template.costs[resource]),("升級：" if upgrade else "Building: ")+str(template.name))
 	manager._counter=int(manager.get("_counter",0))+1

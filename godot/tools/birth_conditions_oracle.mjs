@@ -1,0 +1,7 @@
+import fs from 'node:fs';import path from 'node:path';import vm from 'node:vm';import {context,root} from './golden.mjs';
+const raw=JSON.parse(fs.readFileSync(path.join(root,'godot/tests/golden/frontier-day-01.json')));const cases=[];
+for(const age of [19,20,35,36,40,41,45,46])for(const count of [3,20])for(const player of [false,true])for(const children of [0,3]){
+ const c=context();Object.assign(c.ctx,{raw,age,count,player,children});vm.runInContext(`var w=new World();w.loadSave(raw);for(const a of Object.values(w.agents))a.relationships.relationships={};if(count===3)for(const id of Object.keys(w.agents))if(!['player','chen_wei','lin_mei'].includes(id))delete w.agents[id];var a=w.agents[player?'player':'chen_wei'];var b=w.agents.lin_mei;a.age=age;b.age=age;var r=a.relationships.getOrCreate(b.agentId,b.name);r.status='married';r.affinity=80;var r2=b.relationships.getOrCreate(a.agentId,a.name);r2.status='married';r2.affinity=80;w.lifecycle.playerChildren=Array.from({length:children},()=>({}));var called=[];w.lifecycle._birthChild=(_w,a,b,p)=>called.push([a.agentId,b.agentId,p]);`,c.ctx);
+ const input=JSON.parse(vm.runInContext('JSON.stringify(w.serialize())',c.ctx));c.setRandomState(1);vm.runInContext('w.lifecycle._checkBirths(w)',c.ctx);cases.push({input,called:JSON.parse(vm.runInContext('JSON.stringify(called)',c.ctx)),rng:c.getRandomState()});
+}
+fs.writeFileSync(path.join(root,'godot/tests/births/conditions.json'),JSON.stringify(cases));console.log(cases.length);

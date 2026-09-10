@@ -65,6 +65,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_combos.flag"): _capture_combos()
 	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_hearts.flag"): _capture_hearts()
 	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_quests.flag"): _capture_quests()
+	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_population.flag"): _capture_population()
 	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_sites.flag"): _capture_sites()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_matrix.flag"): _capture_demo()
 	_responsive()
@@ -269,6 +270,8 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.buildings_enabled=bool(document.data.get("_godot4a",{}).get("buildings_enabled",true))
 	simulation.trade_enabled=bool(document.data.get("_godot4a",{}).get("trade_enabled",true))
 	simulation.research_enabled=bool(document.data.get("_godot4a",{}).get("research_enabled",true))
+	simulation.population_enabled=bool(document.data.get("_godot4a",{}).get("population_enabled",true))
+	simulation.births_enabled=bool(document.data.get("_godot4a",{}).get("births_enabled",true))
 	simulation.quests_enabled=bool(document.data.get("_godot4a",{}).get("quests_enabled",true))
 	if simulation.quests_enabled: SimQuests.init(simulation);SimNPCQuests.init(simulation);SimLifeGoals.assign(simulation)
 	simulation.heart_events_enabled=bool(document.data.get("_godot4a",{}).get("heart_events_enabled",true))
@@ -351,6 +354,7 @@ func show_tab(tab: String, refresh := false) -> void:
 				_button(str(agent.get("name",id)),drawer_body,func(): show_agent(id))
 		"故事":
 			_button("任務與人生",drawer_body,show_quests)
+			_button("人口與家庭",drawer_body,show_births)
 			_button("村民對話紀錄",drawer_body,show_conversations)
 			_button("八卦與鎮民動態",drawer_body,show_gossip)
 			_button("關係事件",drawer_body,show_romance)
@@ -753,11 +757,11 @@ func step_simulation() -> void:
 
 func _tick_simulation() -> void:
 	has_simulated=true
-	var old_geometry:=JSON.stringify([simulation.data.buildings,simulation.data.processing])
+	var old_geometry:=JSON.stringify([simulation.data.buildings,simulation.data.processing,simulation.data.agents.keys()])
 	var events:=simulation.tick()
 	var clock_data: Dictionary=simulation.data.clock
 	summary.text="%s %d日 %02d:%02d · %d人"%[clock_data.season,clock_data.day,clock_data.hour,clock_data.minute,simulation.data.agents.size()]
-	if "new_season" in events or old_geometry!=JSON.stringify([simulation.data.buildings,simulation.data.processing]):
+	if "new_season" in events or old_geometry!=JSON.stringify([simulation.data.buildings,simulation.data.processing,simulation.data.agents.keys()]):
 		_refresh_building_world()
 	for event in simulation.presentation_events: world_view.dispute_bubbles.show_dispute(event.a,event.b)
 	world_view._light_clock(clock_data)
@@ -1502,7 +1506,9 @@ func show_buildings() -> void:
 	_wrapped("可新建",18)
 	for key in definitions.templates:
 		var template: Dictionary=definitions.templates[key]
-		if (manager.projects+manager.completed).any(func(p): return p.get("buildingKey")==key or p.name==template.name): continue
+		if key=="housing":
+			if not simulation.population_enabled or SimPopulation.homes(simulation,true)>=8: continue
+		elif (manager.projects+manager.completed).any(func(p): return p.get("buildingKey")==key or p.name==template.name): continue
 		_building_offer(key,template,false)
 	_button("重新整理",drawer_body,show_buildings)
 	_button("返回小鎮",drawer_body,func(): show_tab("小鎮",true))
@@ -1728,10 +1734,11 @@ func _clear_site_preview() -> void:
 	placement_preview=null
 func _refresh_building_world() -> void:
 	var houses:=motion.layout.agent_house.duplicate(true)
-	world_view.display_save(simulation.data);motion.layout=world_view.layout;motion.layout.agent_house=houses;motion.pathfinder.grid=world_view.layout.grid
+	world_view.display_save(simulation.data);motion.layout=world_view.layout;motion.layout.agent_house.merge(houses,true);motion.pathfinder.grid=world_view.layout.grid
 	for p in motion.positions.values():
 		var safe: Vector2=motion.layout._nearest(Vector2(p.x,p.y));p.x=safe.x;p.y=safe.y
 		motion._path(p)
+	motion.update(simulation.data.agents)
 	world_view.animate_agents(motion.positions)
 func show_building_site(key: String,index: int=0,decor: bool=false) -> void:
 	_clear_site_preview();active_tab="小鎮";drawer.show();_clear_drawer()
@@ -1940,7 +1947,7 @@ func show_quests(category: String="main") -> void:
 					if SimLifeGoals.nudge(simulation,id): has_simulated=true
 					show_quests("life"))
 				button.disabled=g.get("_nudged",false) or simulation.data.agents[id].get("isDead",false)
-		_wrapped("每階段可鼓勵一次，縮短等待但仍須符合實際條件。繁榮度每日更新，議會符合人口條件後成立。家庭出生仍需生命週期系統補齊。",12)
+		_wrapped("每階段可鼓勵一次，縮短等待但仍須符合實際條件。繁榮度每日更新，議會符合人口條件後成立。家庭出生已接入，可從故事頁的「人口與家庭」查看。",12)
 	elif category=="ending":
 		var ending: Variant=simulation.data.get("multiEnding",{}).get("endingData")
 		if ending is Dictionary:
@@ -1968,4 +1975,33 @@ func _capture_quests() -> void:
 			await get_tree().create_timer(.5).timeout
 			await RenderingServer.frame_post_draw
 			viewport.get_texture().get_image().save_png("res://docs/quests-"+category+"-"+("mobile" if dimensions.x==375 else "desktop")+".png")
+			viewport.queue_free()
+
+func show_births() -> void:
+	active_tab="小鎮";drawer.show();_clear_drawer();_wrapped("人口與家庭",22)
+	_wrapped("居民 %d 人 · 出生紀錄 %d 筆"%[simulation.data.agents.size(),simulation.data.lifecycle.get("births",[]).size()])
+	_wrapped("已婚居民每兩天依年齡與關係檢查。沿原版，孩子直接以 16 歲、無職業的年輕居民加入；一般家庭受住宅容量限制，旅人家庭最多三位孩子。",12)
+	_wrapped("住宅容量 %d 位 NPC · 目前移民目標 %d 位 · 每天最多到來 1 人"%[SimPopulation.capacity(simulation),SimPopulation.target(simulation)],12)
+	_button("居民移入："+("開啟" if simulation.population_enabled else "關閉"),drawer_body,func(): simulation.population_enabled=not simulation.population_enabled;has_simulated=true;show_births())
+	_button("住宅擴建",drawer_body,show_buildings)
+	_button("家庭出生："+("開啟" if simulation.births_enabled else "關閉"),drawer_body,func(): simulation.births_enabled=not simulation.births_enabled;has_simulated=true;show_births())
+	for birth in simulation.data.lifecycle.get("births",[]).slice(-30):
+		_wrapped(str(birth.name)+" · "+"、".join(birth.get("parentNames",[])),18);_wrapped(str(birth.get("birthTime","")),12)
+	if simulation.data.lifecycle.get("births",[]).is_empty(): _wrapped("尚無出生紀錄。")
+	_button("人生目標",drawer_body,func(): show_quests("life"))
+	_button("返回故事",drawer_body,func(): show_tab("故事",true))
+
+func _capture_population() -> void:
+	await get_tree().create_timer(1).timeout
+	for dimensions in [Vector2i(1280,800),Vector2i(375,812)]:
+		for category in ["family","housing"]:
+			var viewport:=SubViewport.new();viewport.size=dimensions;viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+			var preview=load("res://scenes/main.tscn").instantiate();viewport.add_child(preview)
+			preview._load_document(FileAccess.get_file_as_string("res://tests/births/compatibility-save.json.tmp"),"人口與家庭驗收")
+			preview.simulation.population_enabled=true
+			if category=="family": preview.show_births()
+			else: preview.show_buildings()
+			await get_tree().create_timer(.5).timeout
+			await RenderingServer.frame_post_draw
+			viewport.get_texture().get_image().save_png("res://docs/population-"+category+"-"+("mobile" if dimensions.x==375 else "desktop")+".png")
 			viewport.queue_free()

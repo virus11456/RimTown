@@ -1,0 +1,139 @@
+{
+  "checks": 1683,
+  "failures": [],
+  "finalBuildings": 18,
+  "finalLevel": 7.0,
+  "finalPopulation": 37,
+  "milestones": [
+    {
+      "buildings": 0,
+      "day": 1,
+      "level": 1.0,
+      "population": 21
+    },
+    {
+      "buildings": 15,
+      "day": 31,
+      "level": 5.0,
+      "population": 29
+    }
+  ],
+  "scope": "unmodified demo resources, normal paid safe-site construction and daily work, gradual arrivals, economy and supply caps enabled, default raw-material relief enabled; economic progression only, no social/ending playthrough",
+  "started": [
+    {
+      "day": 0,
+      "key": "housing"
+    },
+    {
+      "day": 0,
+      "key": "forge_bellows"
+    },
+    {
+      "day": 1,
+      "key": "watchtower"
+    },
+    {
+      "day": 2,
+      "key": "granary"
+    },
+    {
+      "day": 2,
+      "key": "well_upgrade"
+    },
+    {
+      "day": 2,
+      "key": "brewery"
+    },
+    {
+      "day": 3,
+      "key": "marketplace"
+    },
+    {
+      "day": 3,
+      "key": "training_ground"
+    },
+    {
+      "day": 4,
+      "key": "garden"
+    },
+    {
+      "day": 4,
+      "key": "school"
+    },
+    {
+      "day": 5,
+      "key": "farm_irrigation"
+    },
+    {
+      "day": 5,
+      "key": "clinic_upgrade"
+    },
+    {
+      "day": 9,
+      "key": "town_walls"
+    },
+    {
+      "day": 17,
+      "key": "housing"
+    },
+    {
+      "day": 22,
+      "key": "housing"
+    },
+    {
+      "day": 27,
+      "key": "housing"
+    },
+    {
+      "day": 32,
+      "key": "housing"
+    },
+    {
+      "day": 37,
+      "key": "housing"
+    }
+  ],
+  "stock": {
+    "beer": 0.0,
+    "bread": 0.0,
+    "brick": 0.0,
+    "cloth": 39.6666666666667,
+    "clothing": 68.95,
+    "corn": 0.0,
+    "cotton": 0.0,
+    "dragon_fruit": 0.0,
+    "fine_tea": 0.0,
+    "flowers": 0.0,
+    "food": 133.755040251115,
+    "furniture": 60.0,
+    "gold": 0.0,
+    "golden_wheat": 0.0,
+    "grapes": 0.0,
+    "hardwood": 0.0,
+    "herbal_tea": 0.0,
+    "herbs": 42.3722524962518,
+    "jam": 0.0,
+    "luxury_furniture": 0.0,
+    "marble": 0.0,
+    "meals": 105.0,
+    "medicine": 70.0,
+    "metal": 200.0,
+    "mushroom": 0.0,
+    "pastry": 0.0,
+    "perfume": 0.0,
+    "plank": 0.0,
+    "potato": 0.0,
+    "research_points": 100.0,
+    "rice": 0.0,
+    "silver": 875.0,
+    "steel": 0.0,
+    "stone": 225.0,
+    "sugar": 0.0,
+    "sugarcane": 0.0,
+    "tea": 0.0,
+    "tools": 68.25,
+    "wheat": 0.0,
+    "wine": 0.0,
+    "wood": 82.2751931254243
+  }
+}
