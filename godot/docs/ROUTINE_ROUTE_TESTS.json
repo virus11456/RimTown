@@ -1,0 +1,6 @@
+{
+  "checks": 11,
+  "failures": [],
+  "maximum_step": 0.999603271484375,
+  "scope": "controlled sequential ordinary work/eating/home/sleep/outdoor destinations, real slow motion and collision grid, retarget and physical-state resume; fixed activity/time, not natural schedule completion"
+}

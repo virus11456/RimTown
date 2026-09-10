@@ -5,6 +5,7 @@ var layout: TownLayout
 var pathfinder:=SimPath.new()
 var positions: Dictionary={}
 var manual_player := false
+var stable_routes := false
 func configure(value: TownLayout) -> void:
 	layout=value
 	pathfinder.grid=layout.grid
@@ -48,6 +49,11 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 				if absf(p.targetX-target.x)<48 and absf(p.targetY-target.y)<48: count+=1
 			target+=Vector2((count%4-1.5)*16,(floori(count/4.0)-.5)*16)
 		var appointment: bool=a.get("_appointmentDestination","")==location or a.get("_leisureDestination","")==location or a.get("_hangoutDestination","")==location
+		var strict_route: bool=appointment or stable_routes
+		var route_key:=layout._house_id(id,location) if location.begins_with("residential_") else location
+		var existing: Dictionary=positions.get(id,{}).get("_directedGoal",{})
+		if stable_routes and not appointment and existing.get("route_key","")==route_key and existing.get("appointment")==false:
+			target=Vector2(existing.x,existing.y)
 		if appointment: target=layout._center(location) # Stable meeting point: crowds must not keep replanning the route.
 		target=layout._nearest(target)
 		var activity: String=a.get("activity","")
@@ -58,7 +64,7 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 		var p: Dictionary=positions[id]
 		p.activity=activity
 		if activity!="sleeping" and p.get("_slpOut",0): p._slpOut=0
-		if activity=="sleeping" and not appointment:
+		if activity=="sleeping" and not strict_route:
 			if not p.walking and not inside(Vector2(p.x,p.y)).is_empty():
 				p.walkStep=0; p._slpOut=0; continue
 			p._slpOut=p.get("_slpOut",0)+1
@@ -77,12 +83,12 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 					p.targetX=p.x; p.targetY=p.y; p.walkStep=0; p.doorPhase=null; p.walking=false; p._slpOut=0
 					continue
 		var changed:=absf(target.x-p.targetX)>32 or absf(target.y-p.targetY)>32
-		if appointment:
+		if strict_route:
 			# Track the final directed destination separately from intermediate doors.
 			var goal: Dictionary=p.get("_directedGoal",{})
-			changed=goal.get("location","")!=location or absf(float(goal.get("x",-9999))-target.x)>1 or absf(float(goal.get("y",-9999))-target.y)>1
+			changed=goal.get("location","")!=location or goal.get("route_key","")!=route_key or goal.get("appointment")!=appointment or absf(float(goal.get("x",-9999))-target.x)>1 or absf(float(goal.get("y",-9999))-target.y)>1
 			if changed:
-				p._directedGoal={"location":location,"x":target.x,"y":target.y}
+				p._directedGoal={"location":location,"route_key":route_key,"appointment":appointment,"x":target.x,"y":target.y}
 				p.doorPhase=null;p.erase("destDoor");p.erase("finalTarget");p.erase("doorWaypoint")
 		else: p.erase("_directedGoal")
 		if changed:
@@ -101,13 +107,13 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 		elif p.doorPhase==null and (absf(target.x-p.targetX)>1 or absf(target.y-p.targetY)>1):
 			p.targetX=target.x; p.targetY=target.y; _path(p)
 		if not layout._walkable(Vector2(p.x,p.y)):
-			if appointment: p.walking=false;continue # Unreachable meeting must expire, never teleport.
+			if strict_route: p.walking=false;continue # Unreachable meeting must expire, never teleport.
 			_set_point(p,layout._nearest(Vector2(p.x,p.y))); p._pathWaypoints=[]
 		var far:=absf(p.targetX-p.x)+absf(p.targetY-p.y)>32
 		var trapped:=inside(Vector2(p.x,p.y)) if activity!="sleeping" and far else ""
 		if not trapped.is_empty():
 			p._inStuck=p.get("_inStuck",0)+1
-			if p._inStuck>360 and not appointment:
+			if p._inStuck>360 and not strict_route:
 				var exit_door: Variant=door(trapped,id)
 				_set_point(p,layout._nearest(Vector2(exit_door.x,exit_door.y+16) if exit_door!=null else Vector2(p.x,p.y)))
 				p.doorPhase=null; p.destDoor=null; p.doorWaypoint=null; _path(p); p._inStuck=0
@@ -127,7 +133,7 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 				if layout._walkable(Vector2(p.x+movement.x,p.y)): next=Vector2(p.x+movement.x,p.y)
 				elif layout._walkable(Vector2(p.x,p.y+movement.y)): next=Vector2(p.x,p.y+movement.y)
 				else:
-					if appointment: p.walking=false;_path(p);continue
+					if strict_route: p.walking=false;_path(p);continue
 					_set_point(p,layout._nearest(Vector2(p.targetX,p.targetY)))
 					p.walking=false; p.walkStep=0; p._pathWaypoints=[]; continue
 			_set_point(p,next); p.walking=true; p.walkStep=p.get("walkStep",0)+1

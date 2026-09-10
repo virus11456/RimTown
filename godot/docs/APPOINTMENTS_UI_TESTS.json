@@ -1,7 +1,7 @@
 {
   "checks": 13,
   "failures": [],
-  "npc_max_step_pixels": 0.999847412109375,
+  "npc_max_step_pixels": 0.999359130859375,
   "scope": "mock AI response through actual chat UI, accept, app save reload, natural clock/needs/work, real SimMotion NPC path and collision-based player movement, proximity meeting, mobile panel; headless rendering, no production AI service",
   "state": {
     "due": 144.0,

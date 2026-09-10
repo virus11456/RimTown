@@ -5,13 +5,8 @@
     "chen_wei",
     "wang_li",
     "liu_jun",
-    "wu_da",
-    "ma_qiang",
-    "he_chang",
     "he_xiu",
-    "su_qing",
-    "ke_wei",
-    "huang_li"
+    "su_qing"
   ],
   "failures": [],
   "maximum_directed_frame_displacement": 0.999847412109375,

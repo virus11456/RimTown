@@ -318,6 +318,7 @@ func _load_document(text: String, source: String) -> bool:
 		world_view.call("display_save",data)
 	if world_view != null:
 		motion.configure(world_view.layout)
+		motion.stable_routes=true
 		var saved: Dictionary=document.data.get("_godot4a",{})
 		SimLeisurePlan.restore_observations(simulation,saved.motion if saved.get("motion") is Dictionary else {})
 		SimHangoutVisits.restore_observations(simulation,saved.motion if saved.get("motion") is Dictionary else {})
