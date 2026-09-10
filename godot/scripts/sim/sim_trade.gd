@@ -33,7 +33,7 @@ static func spawn(w: SimWorld) -> void:
 			offers.append({"resource":resource,"amount":amount,"price":floorf(price*10+.5)/10,"isBuying":buying})
 	trade.merchant={"name":w.rng.pick(merchant.names),"specialty":merchant.specialty,"offers":offers,"daysRemaining":w.rng.next_int(2,4)}
 	SimSocial.log_message(w.data,"trade","商人"+str(trade.merchant.name)+"到了！專長："+str(merchant.specialty)+"。","","")
-static func execute(w: SimWorld,index: int,qty: float,expected: Dictionary={}) -> Dictionary:
+static func _execute(w: SimWorld,index: int,qty: float,expected: Dictionary={}) -> Dictionary:
 	if not w.data.trade.get("merchant") is Dictionary: return {"error":"沒有商人"}
 	var merchant: Dictionary=w.data.trade.merchant
 	if index<0 or index>=merchant.offers.size(): return {"error":"無效交易"}
@@ -54,3 +54,15 @@ static func execute(w: SimWorld,index: int,qty: float,expected: Dictionary={}) -
 	SimSocial.log_message(w.data,"trade",("賣出" if offer.isBuying else "買入")+" "+str(qty).trim_suffix(".0")+" "+str(offer.resource)+"，"+str(int(floorf(total+.5)))+"銀幣。","","")
 	SimQuests.count(w,"tradeCount")
 	return {"ok":true}
+
+static func execute(w: SimWorld,index: int,qty: float,expected: Dictionary={}) -> Dictionary:
+	var m: Variant=w.data.trade.get("merchant")
+	if not m is Dictionary or index<0 or index>=m.offers.size() or not is_finite(qty) or qty<=0: return {"error":"無效交易"}
+	var offer: Dictionary=m.offers[index]
+	if not expected.is_empty() and not is_same(offer,expected): return {"error":"商品已改變"}
+	var amount:=minf(qty,float(offer.amount))
+	var costs: Dictionary={str(offer.resource):amount} if offer.isBuying else {"silver":amount*float(offer.price)}
+	var args: Array=[m.name,offer.duplicate(true),amount]
+	if not SimGovernance.permit(w,"trade",args,costs): return {"error":w.governance_notice}
+	var result:=_execute(w,index,qty,expected)
+	SimGovernance.complete(w,"trade",args,costs,result.get("ok",false));return result

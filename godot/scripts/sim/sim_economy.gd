@@ -101,7 +101,7 @@ static func daily(w: SimWorld) -> void:
 	var effects: Dictionary=w.data.get("buildings",{}).get("activeEffects",{})
 	var spoiled:=floorf((amount(w,"food")-400-float(effects.get("food_capacity",0)))*.05*maxf(0,1+float(effects.get("food_decay",0))))
 	if spoiled>0: consume(w,"food",spoiled,"存糧過多腐壞");log_event(w,"糧倉滿了，"+str(int(spoiled))+"份食物腐壞——可辦慶典或賣給商人消化存糧。")
-static func set_policy(w: SimWorld,good: String,mode: String) -> bool:
+static func _execute_set_policy(w: SimWorld,good: String,mode: String) -> bool:
 	if good not in ["meals","tools","clothing","medicine","furniture"] or mode not in ["off","normal","extra"]: return false
 	if not w.data.get("workPolicy") is Dictionary: w.data.workPolicy={}
 	w.data.workPolicy[good]=mode
@@ -127,3 +127,9 @@ static func prepare_meals(w: SimWorld,cook: Dictionary,capacity: float) -> float
 		SimSupply.produce(w,"meals",output,str(cook.name)+"的公共廚房",str(cook.name))
 		remaining-=output;prepared+=output
 	return prepared
+
+static func set_policy(w: SimWorld,good: String,mode: String) -> bool:
+	var costs: Dictionary={};var args: Array=[good,mode]
+	if not SimGovernance.permit(w,"work_policy",args,costs): return false
+	var result:=_execute_set_policy(w,good,mode)
+	SimGovernance.complete(w,"work_policy",args,costs,result);return result

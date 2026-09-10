@@ -6,7 +6,7 @@ static func news(w: SimWorld,category: String,text: String,importance: int) -> v
 	if not w.data.get("dailyNews") is Dictionary: return
 	var events: Array=w.data.dailyNews.get("todayEvents",[])
 	events.append({"category":category,"content":text,"importance":importance,"agents":[],"time":""});w.data.dailyNews.todayEvents=events
-static func choose(w: SimWorld,key: String) -> bool:
+static func _execute_choose(w: SimWorld,key: String) -> bool:
 	var manager: Dictionary=w.data.industry;var defs:=rules()
 	if manager.industries.has(key) or manager.industries.size()>=int(manager.maxIndustries) or not defs.industries.has(key): return false
 	if manager.get("firstChoice")==null or str(manager.firstChoice).is_empty(): manager.firstChoice=key
@@ -21,7 +21,7 @@ static func next_level(w: SimWorld,key: String) -> Dictionary:
 	for level in defs.industries.get(key,{}).get("levels",[]):
 		if int(level.lv)==int(w.data.industry.industries[key].level)+1: return level
 	return {}
-static func upgrade(w: SimWorld,key: String) -> bool:
+static func _execute_upgrade(w: SimWorld,key: String) -> bool:
 	var level:=next_level(w,key)
 	if level.is_empty() or not SimBuildings.affordable(w,level.cost): return false
 	var def: Dictionary=rules().industries[key]
@@ -57,3 +57,21 @@ static func daily(w: SimWorld) -> void:
 		for resource in level_def.output:
 			var produced:=floorf(float(level_def.output[resource])*efficiency*multiplier*10+.5)/10
 			ind.dailyOutput[resource]=SimSupply.produce(w,resource,produced,str(def.name)+" Lv"+str(int(ind.level)),str(def.name))
+
+static func choose(w: SimWorld,key: String) -> bool:
+	if not rules().industries.has(key) or w.data.industry.industries.has(key) or w.data.industry.industries.size()>=int(w.data.industry.maxIndustries): return false
+	var costs: Dictionary={}
+	var args: Array=[key]
+	if not SimGovernance.permit(w,"industry",args,costs): return false
+	var result: bool=_execute_choose(w,key)
+	SimGovernance.complete(w,"industry",args,costs,result)
+	return result
+
+static func upgrade(w: SimWorld,key: String) -> bool:
+	if next_level(w,key).is_empty(): return false
+	var costs: Dictionary=next_level(w,key).get("cost",{})
+	var args: Array=[key]
+	if not SimGovernance.permit(w,"industry_upgrade",args,costs): return false
+	var result: bool=_execute_upgrade(w,key)
+	SimGovernance.complete(w,"industry_upgrade",args,costs,result)
+	return result

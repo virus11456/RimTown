@@ -9,29 +9,32 @@ static func stock(w: SimWorld,key: String) -> float:
 	return float(w.data.get("stockpile",{}).get("resources",{}).get(key,0))
 static func send(w: SimWorld,id: String,key: String) -> Dictionary:
 	if not GIFTS.has(key) or not w.data.agents.has("player") or not w.data.agents.has(id) or id=="player" or w.data.agents[id].get("isDead",false): return {"ok":false,"error":"找不到送禮對象或禮物。"}
+	if w.governance_enabled and (key=="silver" or SimGovernance.gift_remaining(w)<=0): return {"ok":false,"error":"公共慰問每天全鎮共兩份，不發銀幣紅包。"}
 	if not available(w,id): return {"ok":false,"error":"這位居民今天已經收過禮物，明天再送吧。"}
 	var gift: Dictionary=GIFTS[key]
 	if stock(w,key)<float(gift.cost): return {"ok":false,"error":"小鎮公共庫存不足。"}
 	var npc: Dictionary=w.data.agents[id];var player: Dictionary=w.data.agents.player
+	if w.governance_enabled: SimGovernance.record_gift(w)
 	w.data.stockpile.resources[key]-=gift.cost
 	var history: Array=w.data.stockpile.get("history",[])
-	history.append({"tick":w.data.tickCount,"resource":key,"amount":-gift.cost,"reason":"送禮給"+npc.name,"source":""})
+	history.append({"tick":w.data.tickCount,"resource":key,"amount":-gift.cost,"reason":("公共慰問：" if w.governance_enabled else "送禮給")+npc.name,"source":""})
 	w.data.stockpile.history=history.slice(maxi(0,history.size()-10000))
 	var extension: Dictionary=w.data.get("_godot4a",{});var days: Dictionary=extension.get("gift_days",{});days[id]=SimTrace.day_key(w.data.clock);extension.gift_days=days;w.data._godot4a=extension
-	var preferred:=favorite(npc)==key;var gain: int=int(gift.base)*(2 if preferred else 1)
+	var preferred:=favorite(npc)==key;var gain: int=(3 if preferred else 2) if w.governance_enabled else int(gift.base)*(2 if preferred else 1)
 	var rel:=SimSocial.relationship(npc,player);SimRelationships.modify(rel,"affinity",gain)
-	if preferred: SimRelationships.modify(rel,"romanticInterest",2)
+	if preferred and not w.governance_enabled: SimRelationships.modify(rel,"romanticInterest",2)
 	var kind:="fav_gift" if preferred else "gift_received"
 	var thoughts: Array=npc.get("thoughts",[]);var found:=false
 	for thought in thoughts:
 		if thought.kind==kind and thought.get("targetId")=="player": thought.start=SimClock.total_days(w.data.clock);found=true;break
 	if not found: thoughts.append({"kind":kind,"label":"收到最愛的禮物" if preferred else "收到禮物","mood":10 if preferred else 6,"opinion":0,"days":3 if preferred else 2,"targetId":"player","targetName":player.name,"start":SimClock.total_days(w.data.clock)})
 	npc.thoughts=thoughts.slice(maxi(0,thoughts.size()-14))
-	SimFeuds._memory(npc,w,"gift","收到"+player.name+"送的"+str(gift.name)+(",是我的最愛!" if preferred else ""),7 if preferred else 5,["player"])
+	SimFeuds._memory(npc,w,"gift",("收到"+player.name+"代表小鎮送來的慰問品：" if w.governance_enabled else "收到"+player.name+"送的")+str(gift.name)+(",是我的最愛!" if preferred else ""),7 if preferred else 5,["player"])
 	var reply: String=w.rng.pick(["這是我的最愛!你怎麼知道的?太感謝了!","哇!我一直想要這個!你真懂我!"] if preferred else ["謝謝你!我很喜歡。","你真貼心,謝謝!"])
+	if w.governance_enabled: reply="謝謝你替小鎮送來慰問，也謝謝大家的照顧。"
 	var chat: Array=player.get("chatHistory",[])
-	chat.append({"speaker":player.name,"target":npc.name,"text":"🎁(送出"+str(gift.name)+")","time":SimSocial.time_string(w.data.clock)})
+	chat.append({"speaker":player.name,"target":npc.name,"text":("🎁(代表小鎮慰問：" if w.governance_enabled else "🎁(送出")+str(gift.name)+")","time":SimSocial.time_string(w.data.clock)})
 	chat.append({"speaker":npc.name,"target":player.name,"text":reply,"time":SimSocial.time_string(w.data.clock)});player.chatHistory=chat.slice(maxi(0,chat.size()-10000))
-	SimSocial.log_message(w.data,"relationship","🎁 你送給"+npc.name+str(gift.name)+(",對方超喜歡!" if preferred else "")+"(好感+"+str(gain)+")",npc.name,"")
+	SimSocial.log_message(w.data,"relationship",("🎁 你代表小鎮慰問" if w.governance_enabled else "🎁 你送給")+npc.name+str(gift.name)+(",對方超喜歡!" if preferred else "")+"(好感+"+str(gain)+")",npc.name,"")
 	SimPlayerInteraction._record(npc,w,"gift");w.data.playerActions.back().text=gift.name
 	return {"ok":true,"reply":reply,"gain":gain,"favorite":preferred}

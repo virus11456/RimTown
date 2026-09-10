@@ -10,7 +10,7 @@ static func till(w: SimWorld,id: int) -> bool:
 	var p:=plot(w,id)
 	if p.get("state")!="empty": return false
 	p.state="tilled";return true
-static func plant(w: SimWorld,id: int,key: String) -> bool:
+static func _execute_plant(w: SimWorld,id: int,key: String) -> bool:
 	var p:=plot(w,id);var crop: Dictionary=rules().crops.get(key,{})
 	if p.get("state")!="tilled" or crop.is_empty() or not SimSupply.crop_space(w,key): return false
 	if int(w.data.industry.industries.get("farming",{}).get("level",0))<int(crop.reqLevel) or not w.data.clock.season in crop.seasons: return false
@@ -20,7 +20,7 @@ static func water(w: SimWorld,id: int) -> bool:
 	var p:=plot(w,id)
 	if p.get("state")!="growing": return false
 	p.waterLevel=minf(100,float(p.waterLevel)+30);return true
-static func fertilize(w: SimWorld,id: int) -> bool:
+static func _execute_fertilize(w: SimWorld,id: int) -> bool:
 	var p:=plot(w,id)
 	if p.get("state")!="growing" or p.fertilized: return false
 	if not SimEconomy.consume(w,"herbs",2,"製作肥料"): return false
@@ -88,3 +88,19 @@ static func daily(w: SimWorld) -> void:
 				p.state="withered";var crop: Dictionary=defs.crops.get(p.crop,{})
 				SimSocial.log_message(w.data,"farm",str(crop.get("icon","🥀"))+" "+str(crop.get("name","作物"))+"因太久沒收穫而枯萎了。","","")
 		else: p._readyDays=0
+
+static func plant(w: SimWorld,id: int,key: String) -> bool:
+	var costs: Dictionary={"silver":float(rules().crops.get(key,{}).get("sellPrice",0))*2}
+	var args: Array=[id,key]
+	if not SimGovernance.permit(w,"plant",args,costs): return false
+	var result: bool=_execute_plant(w,id,key)
+	SimGovernance.complete(w,"plant",args,costs,result)
+	return result
+
+static func fertilize(w: SimWorld,id: int) -> bool:
+	var costs: Dictionary={"herbs":2}
+	var args: Array=[id]
+	if not SimGovernance.permit(w,"fertilize",args,costs): return false
+	var result: bool=_execute_fertilize(w,id)
+	SimGovernance.complete(w,"fertilize",args,costs,result)
+	return result

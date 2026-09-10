@@ -1,6 +1,6 @@
 class_name SimResearch
 extends RefCounted
-static func start(w: SimWorld,key: String) -> bool:
+static func _execute_start(w: SimWorld,key: String) -> bool:
 	var research: Dictionary=w.data.research
 	if not research.projects.has(key) or research.projects[key].status!="available": return false
 	var current: Variant=research.get("current")
@@ -10,7 +10,7 @@ static func daily(w: SimWorld) -> void:
 	var research: Dictionary=w.data.research
 	if research.get("current")==null or str(research.current).is_empty():
 		for p in research.projects.values():
-			if p.status=="available": start(w,p.key);break
+			if p.status=="available": _execute_start(w,p.key);break
 		return
 	var points:=0.0
 	for a in w.data.agents.values():
@@ -33,3 +33,9 @@ static func daily(w: SimWorld) -> void:
 		if p.status=="locked" and p.prerequisites.all(func(pre): return research.projects.has(pre) and research.projects[pre].status=="complete"): p.status="available"
 	SimSocial.log_message(w.data,"research","研究完成："+str(project.name)+"！","","")
 	for a in w.data.agents.values(): SimFeuds._mood(a,w,3)
+
+static func start(w: SimWorld,key: String) -> bool:
+	var costs: Dictionary={};var args: Array=[key]
+	if not SimGovernance.permit(w,"research",args,costs): return false
+	var result:=_execute_start(w,key)
+	SimGovernance.complete(w,"research",args,costs,result);return result

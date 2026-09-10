@@ -34,7 +34,7 @@ static func decoration(key: String) -> Dictionary:
 	for def in rules().decorations:
 		if def.type==key: return def
 	return {}
-static func place(w: SimWorld,key: String,site: Vector2i) -> bool:
+static func _execute_place(w: SimWorld,key: String,site: Vector2i) -> bool:
 	var def:=decoration(key)
 	if def.is_empty() or not BuildingSites.allowed(w.data,site,1) or not SimBuildings.affordable(w,def.cost): return false
 	for r in def.cost: SimEconomy.consume(w,r,float(def.cost[r]),"擺放"+str(def.name))
@@ -43,7 +43,7 @@ static func place(w: SimWorld,key: String,site: Vector2i) -> bool:
 	SimSocial.log_message(w.data,"building",str(def.icon)+" 你在小鎮擺放了"+str(def.name)+"(美觀+"+str(int(def.beauty))+")","","")
 	if w.combos_enabled: check_new(w)
 	return true
-static func remove(w: SimWorld,item: Dictionary) -> bool:
+static func _execute_remove(w: SimWorld,item: Dictionary) -> bool:
 	var index: int=-1
 	for i in w.data.get("decorations",[]).size():
 		if is_same(w.data.decorations[i],item): index=i;break
@@ -51,3 +51,15 @@ static func remove(w: SimWorld,item: Dictionary) -> bool:
 	var def:=decoration(str(item.type));w.data.decorations.remove_at(index)
 	for r in def.get("cost",{}): SimEconomy.change(w,r,floorf(float(def.cost[r])/2),"移除裝飾退款")
 	return true
+
+static func place(w: SimWorld,key: String,site: Vector2i) -> bool:
+	var costs: Dictionary=decoration(key).get("cost",{});var args: Array=[key,site.x,site.y]
+	if not SimGovernance.permit(w,"decoration",args,costs): return false
+	var result:=_execute_place(w,key,site)
+	SimGovernance.complete(w,"decoration",args,costs,result);return result
+
+static func remove(w: SimWorld,item: Dictionary) -> bool:
+	var costs: Dictionary={};var args: Array=[item.duplicate(true)]
+	if not SimGovernance.permit(w,"remove_decoration",args,costs): return false
+	var result:=_execute_remove(w,item)
+	SimGovernance.complete(w,"remove_decoration",args,costs,result);return result

@@ -8,7 +8,7 @@ static func affordable(w: SimWorld,costs: Dictionary) -> bool:
 	for key in costs:
 		if SimEconomy.amount(w,key)<float(costs[key]): return false
 	return true
-static func start(w: SimWorld,key: String,upgrade: bool=false,site: Vector2i=Vector2i(-1,-1)) -> Dictionary:
+static func _execute_start(w: SimWorld,key: String,upgrade: bool=false,site: Vector2i=Vector2i(-1,-1)) -> Dictionary:
 	if key=="housing" and (not w.population_enabled or upgrade or site==Vector2i(-1,-1) or SimPopulation.homes(w,true)>=8): return {}
 	if site!=Vector2i(-1,-1) and (upgrade or not BuildingSites.allowed(w.data,site)): return {}
 	var definitions:=rules();var manager: Dictionary=w.data.buildings
@@ -65,3 +65,16 @@ static func daily(w: SimWorld) -> void:
 		for a in w.data.agents.values(): SimFeuds._mood(a,w,8 if upgrade else 5)
 		if not upgrade and w.combos_enabled: SimCombos.check_new(w)
 		if not upgrade: SimEventComments.enqueue(w,"小鎮蓋好了新的「"+str(p.name)+"」",SimEventComments.JOBS.get(p.get("buildingKey",""),[]))
+
+static func start(w: SimWorld,key: String,upgrade: bool=false,site: Vector2i=Vector2i(-1,-1)) -> Dictionary:
+	if not rules().templates.has(key): return {}
+	if key=="housing" and (not w.population_enabled or upgrade or site==Vector2i(-1,-1) or SimPopulation.homes(w,true)>=8): return {}
+	if site!=Vector2i(-1,-1) and (upgrade or not BuildingSites.allowed(w.data,site)): return {}
+	if not upgrade and key!="housing" and (w.data.buildings.projects+w.data.buildings.completed).any(func(p): return p.get("buildingKey")==key or p.name==rules().templates[key].name): return {}
+	if upgrade and (w.data.buildings.completed.filter(func(p): return p.get("buildingKey")==key).is_empty() or w.data.buildings.projects.any(func(p): return p.get("upgradeKey")==key)): return {}
+	var costs: Dictionary=(rules().upgrades.get(key,{}).get(str(int(w.data.buildings.completed.filter(func(p): return p.get("buildingKey")==key)[0].get("level",1))+1),{}) if upgrade and not w.data.buildings.completed.filter(func(p): return p.get("buildingKey")==key).is_empty() else rules().templates.get(key,{})).get("costs",{})
+	var args: Array=[key,upgrade,site.x,site.y]
+	if not SimGovernance.permit(w,"building",args,costs): return {}
+	var result: Dictionary=_execute_start(w,key,upgrade,site)
+	SimGovernance.complete(w,"building",args,costs,not result.is_empty())
+	return result

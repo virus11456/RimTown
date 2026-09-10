@@ -67,6 +67,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_quests.flag"): _capture_quests()
 	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_population.flag"): _capture_population()
 	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_elections.flag"): _capture_elections()
+	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_governance.flag"): _capture_governance()
 	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_sites.flag"): _capture_sites()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_matrix.flag"): _capture_demo()
 	_responsive()
@@ -120,13 +121,20 @@ func _panel(color: Color, radius := 14) -> StyleBoxFlat:
 
 func _button(text: String, parent: Node, action: Callable) -> Button:
 	var button := Button.new()
+	if simulation.governance_enabled and not SimGovernance.direct(simulation):
+		if text in ["確認開工","確認擺放","買入","賣出"]: text="提出建議："+text.trim_prefix("確認")
+		elif text.begins_with("開工：") or text.begins_with("升級："): text="提案 · "+text
 	button.text = text
 	button.custom_minimum_size.y = 42
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	button.add_theme_stylebox_override("normal", _panel(Color("294542"),8))
 	button.add_theme_stylebox_override("hover", _panel(Color("3b6256"),8))
 	button.add_theme_stylebox_override("pressed", _panel(Color("526d56"),8))
-	button.pressed.connect(action)
+	button.pressed.connect(func():
+		simulation.governance_notice=""
+		action.call()
+		if not simulation.governance_notice.is_empty():
+			has_simulated=true;status.text=simulation.governance_notice;show_governance())
 	parent.add_child(button)
 	return button
 
@@ -273,6 +281,7 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.research_enabled=bool(document.data.get("_godot4a",{}).get("research_enabled",true))
 	simulation.population_enabled=bool(document.data.get("_godot4a",{}).get("population_enabled",true))
 	simulation.births_enabled=bool(document.data.get("_godot4a",{}).get("births_enabled",true))
+	simulation.governance_enabled=bool(document.data.get("_godot4a",{}).get("governance_enabled",true))
 	simulation.elections_enabled=bool(document.data.get("_godot4a",{}).get("elections_enabled",true))
 	simulation.quests_enabled=bool(document.data.get("_godot4a",{}).get("quests_enabled",true))
 	if simulation.quests_enabled: SimQuests.init(simulation);SimNPCQuests.init(simulation);SimLifeGoals.assign(simulation)
@@ -338,6 +347,7 @@ func show_tab(tab: String, refresh := false) -> void:
 			_button("匯入網頁版存檔",drawer_body,import_save)
 			_button("匯出原始存檔副本",drawer_body,export_save)
 			_button("匯出試玩進度",drawer_body,export_progress)
+			_button("鎮務提案與權限",drawer_body,show_governance)
 			_button("公共庫存與收支",drawer_body,show_stockpile)
 			_button("建築工程",drawer_body,show_buildings)
 			_button("裝飾與組合",drawer_body,show_decorations)
@@ -346,7 +356,7 @@ func show_tab(tab: String, refresh := false) -> void:
 			_button("產業",drawer_body,show_industry)
 			_button("農田",drawer_body,show_farm)
 			_button("加工",drawer_body,show_processing)
-			_wrapped("試玩：作息、移動與居民互動已啟用。\n送禮會消耗公共庫存；每日經濟可在設定開關。建築、交易、研究、產業、農田與加工已啟用；任務與人生進度可從故事頁查看。",13)
+			_wrapped("試玩：作息、移動與居民互動已啟用。\n慰問使用每日公共額度；旅人支出需鎮長核准。每日經濟可在設定開關。建築、交易、研究、產業、農田與加工已啟用；任務與人生進度可從故事頁查看。",13)
 			var resources: Dictionary = _current_data().get("stockpile",{}).get("resources",{})
 			for key in resources:
 				if float(resources[key]) != 0: _label("%s   %s" % [_resource_name(key),str(resources[key])],drawer_body)
@@ -1370,20 +1380,21 @@ func _capture_player_rumor() -> void:
 func show_player_gift(id: String) -> void:
 	selected_agent=id;resident_page="gift";_clear_drawer()
 	if not simulation.data.agents.has(id): _wrapped("這位居民已離開。");return
-	_wrapped("送禮給"+str(simulation.data.agents[id].name),22)
-	_wrapped("花費來自小鎮公共庫存。每位居民每天一次，點選禮物後立即送出。",12)
+	_wrapped(("代表小鎮慰問：" if simulation.governance_enabled else "送禮給")+str(simulation.data.agents[id].name),22)
+	_wrapped("公共慰問：全鎮每天共兩份，每人每天一次，不發紅包、不增加戀慕；剩餘 %d 份。"%SimGovernance.gift_remaining(simulation) if simulation.governance_enabled else "花費來自小鎮公共庫存。每位居民每天一次。",12)
 	if not SimPlayerGift.available(simulation,id): _wrapped("今天已經送過了，明天再來。")
 	for key in SimPlayerGift.GIFTS:
+		if simulation.governance_enabled and key=="silver": continue
 		var gift: Dictionary=SimPlayerGift.GIFTS[key];var have:=SimPlayerGift.stock(simulation,key)
 		_wrapped(str(gift.name)+(" ★ 最愛" if SimPlayerGift.favorite(simulation.data.agents[id])==key else ""))
 		var button:=_button("送出 · 花費 %d／庫存 %d"%[gift.cost,floori(have)],drawer_body,func(): send_player_gift(id,key))
-		button.disabled=have<float(gift.cost) or not SimPlayerGift.available(simulation,id)
+		button.disabled=have<float(gift.cost) or not SimPlayerGift.available(simulation,id) or (simulation.governance_enabled and SimGovernance.gift_remaining(simulation)<=0)
 	_button("返回互動",drawer_body,func(): show_player_interaction(id))
 func send_player_gift(id: String,key: String) -> void:
 	var result:=SimPlayerGift.send(simulation,id,key)
 	show_player_gift(id)
 	if not result.ok: _wrapped(result.error);return
-	has_simulated=true;_wrapped(result.reply);status.text="送禮完成 · 好感 +%d"%result.gain
+	has_simulated=true;_wrapped(result.reply);status.text=("公共慰問完成 · 好感 +%d" if simulation.governance_enabled else "送禮完成 · 好感 +%d")%result.gain
 
 func _capture_player_gift() -> void:
 	await get_tree().create_timer(1).timeout
@@ -1404,6 +1415,7 @@ func _capture_player_gift() -> void:
 func show_stockpile(resource: String="",show_zero: bool=false) -> void:
 	active_tab="小鎮";drawer.show();_clear_drawer()
 	_wrapped("公共庫存與收支",22)
+	_wrapped("所有物資及銀幣屬於小鎮，沒有個人錢包。旅人提案，鎮長決策。",12)
 	_button("加工排班",drawer_body,show_work_policy)
 	_wrapped("送禮從這裡扣除；每日生產與消耗在午夜結算，可於設定開關。農田收成直接入庫，工廠成品需先從加工頁領取。",12)
 	if simulation.supply_enabled: _wrapped("公共廚房依人口備餐，1 食材製成 1.5 餐食；設定允許時，食材不足會改用主食作物。缺料、身體無法工作或排班休工就停煮。其他居民也會在缺料時停工，不會憑空產出商品。自動生產依全鎮存量補貨；餐食備約 3 天，建材至少可支付一項高階工程並留餘量。已持有物資不會因目標下調被刪除。",12)
@@ -1472,7 +1484,8 @@ func show_work_policy() -> void:
 		for label in ["休工","正常排班","加班"]: choice.add_item(label)
 		choice.select(maxi(0,["off","normal","extra"].find(simulation.data.get("workPolicy",{}).get(good,"normal"))))
 		choice.item_selected.connect(func(index):
-			if SimEconomy.set_policy(simulation,good,["off","normal","extra"][index]): has_simulated=true;status.text="排班已儲存 · 下次午夜生效")
+			if SimEconomy.set_policy(simulation,good,["off","normal","extra"][index]): has_simulated=true;status.text="排班已儲存 · 下次午夜生效"
+			elif not simulation.governance_notice.is_empty(): has_simulated=true;show_governance())
 	_button("返回公共庫存",drawer_body,show_stockpile)
 
 func _capture_economy() -> void:
@@ -1494,7 +1507,7 @@ func _capture_economy() -> void:
 func show_buildings() -> void:
 	_clear_site_preview()
 	active_tab="小鎮";drawer.show();_clear_drawer();_wrapped("建築工程",22)
-	_wrapped("開工立即扣公共庫存，木匠、礦工與鐵匠每天午夜施工。3D 選址先挑安全空地，確認後才扣料；地圖會呈現工地、完工與等級外觀。",12)
+	_wrapped("旅人先提案，鎮長核准後才扣公共庫存施工。木匠、礦工與鐵匠每天午夜施工。3D 選址先挑安全空地，確認後才扣料；地圖會呈現工地、完工與等級外觀。",12)
 	if not simulation.buildings_enabled: _wrapped("每日施工目前關閉，請至設定開啟。")
 	var manager: Dictionary=simulation.data.buildings;var definitions:=SimBuildings.rules()
 	_wrapped("施工中",18)
@@ -1530,7 +1543,7 @@ func _building_offer(key: String,template: Dictionary,upgrade: bool) -> void:
 
 func show_trade() -> void:
 	active_tab="小鎮";drawer.show();_clear_drawer();_wrapped("商人交易",22)
-	_wrapped("交易使用小鎮公共庫存與銀幣。商人會在午夜到訪或離開；點選交易後立即結算。",12)
+	_wrapped("交易使用公共庫存；旅人須提案核准後結算。商人離開或報價改變，須重新確認。",12)
 	if not simulation.trade_enabled: _wrapped("商人每日來訪目前關閉。")
 	var merchant: Variant=simulation.data.trade.get("merchant")
 	if not merchant is Dictionary: _wrapped("目前沒有商人，過幾天再看看。")
@@ -1586,7 +1599,7 @@ func show_industry() -> void:
 	active_tab="小鎮";drawer.show();_clear_drawer();_wrapped("產業",22)
 	var manager: Dictionary=simulation.data.industry;var defs:=SimIndustry.rules()
 	_wrapped(str(manager.townLevelName)+" · 產業 %d／%d"%[manager.industries.size(),manager.maxIndustries])
-	_wrapped("開啟產業不扣材料；升級立即扣公共庫存。每天午夜按職業人手與組合加成產出，無人手仍有 30% 基礎產能。",12)
+	_wrapped("開啟產業與升級需鎮長決策；旅人先提案。核准升級執行時才扣公共庫存。每天午夜按職業人手與組合加成產出，無人手仍有 30% 基礎產能。",12)
 	if not simulation.industry_enabled: _wrapped("每日產業產出目前關閉。")
 	for level in defs.levels:
 		if int(level.lv)>int(manager.townLevel): _wrapped("下一城鎮等級：%s · 人口 %d／%d · 完工建築 %d／%d"%[level.name,simulation.data.agents.size(),level.population,simulation.data.buildings.completed.size(),level.buildings],12);break
@@ -2038,4 +2051,40 @@ func _capture_elections() -> void:
 		await get_tree().create_timer(.5).timeout
 		await RenderingServer.frame_post_draw
 		viewport.get_texture().get_image().save_png("res://docs/elections-"+("mobile" if dimensions.x==375 else "desktop")+".png")
+		viewport.queue_free()
+
+func show_governance() -> void:
+	active_tab="小鎮";drawer.show();_clear_drawer();_wrapped("鎮務提案與權限",22)
+	var mayor_id:=SimGovernance.mayor(simulation)
+	_wrapped("公共庫存屬於小鎮，不是旅人財產。",14)
+	_wrapped("你是現任鎮長，可直接決定公共支出。" if mayor_id=="player" else "你是旅人，可以提出建議；現任鎮長："+str(simulation.data.agents.get(mayor_id,{}).get("name","暫缺")),14)
+	_wrapped("每天審一案，依糧食與公共預算核准；核准後三天內執行，換任鎮長需重新提案。澆水與收成是協助工作，不需逐次請款。",12)
+	if not simulation.governance_notice.is_empty(): _wrapped(simulation.governance_notice,14)
+	var labels: Dictionary={"building":"建築工程","industry":"開設產業","industry_upgrade":"產業升級","factory":"建造工廠","plant":"播種","fertilize":"施肥","trade":"公共交易","decoration":"公共裝飾","remove_decoration":"移除裝飾","work_policy":"工作排班","research":"研究方向","recipe":"工廠配方","staff":"工廠人力","remove_staff":"調離工廠","transfer":"工廠出貨","order":"交付訂單"}
+	for p in SimGovernance.book(simulation).proposals.slice(-15):
+		_wrapped("#%d · %s · %s"%[p.id,labels.get(p.action,p.action),{"pending":"待審","approved":"核准","rejected":"未核准","executed":"已執行","cancelled":"已撤回","expired":"已失效"}.get(p.status,p.status)],18)
+		_wrapped(SimGovernance.describe(simulation,p),14)
+		_wrapped(str(p.reason),12)
+		var costs: Array=[]
+		for key in p.costs: costs.append(_resource_name(key)+" "+str(p.costs[key]))
+		_wrapped("預算："+"、".join(costs) if not costs.is_empty() else "無即時支出，仍屬鎮務決策。",12)
+		if p.status=="approved": _button("執行核准案 #%d"%p.id,drawer_body,func():
+			var ok:=SimGovernance.execute(simulation,int(p.id));has_simulated=true
+			if ok: _refresh_building_world()
+			show_governance();_wrapped("已執行。" if ok else "條件已改變，未執行；請撤回後重新提案。"))
+		if p.status in ["pending","approved"]: _button("撤回 #%d"%p.id,drawer_body,func(): SimGovernance.cancel(simulation,int(p.id));has_simulated=true;show_governance())
+	_button("重新整理",drawer_body,show_governance)
+	_button("返回小鎮",drawer_body,func(): show_tab("小鎮",true))
+
+func _capture_governance() -> void:
+	await get_tree().create_timer(1).timeout
+	for dimensions in [Vector2i(1280,800),Vector2i(375,812)]:
+		var viewport:=SubViewport.new();viewport.size=dimensions;viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+		var preview=load("res://scenes/main.tscn").instantiate();viewport.add_child(preview)
+		preview._load_document(FileAccess.get_file_as_string("res://tests/golden/frontier-day-01.json"),"公共提案流程驗收")
+		SimBuildings.start(preview.simulation,"watchtower",false,BuildingSites.candidates(preview.simulation.data)[0])
+		SimGovernance.daily(preview.simulation);preview.show_governance()
+		await get_tree().create_timer(.5).timeout
+		await RenderingServer.frame_post_draw
+		viewport.get_texture().get_image().save_png("res://docs/governance-"+("mobile" if dimensions.x==375 else "desktop")+".png")
 		viewport.queue_free()

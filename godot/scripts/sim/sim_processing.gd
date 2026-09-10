@@ -4,26 +4,26 @@ static func rules() -> Dictionary:
 	return JSON.parse_string(FileAccess.get_file_as_string("res://assets/data/processing_rules.json"))
 static func log_event(w: SimWorld,kind: String,text: String) -> void:
 	SimSocial.log_message(w.data,kind,text,"","")
-static func build(w: SimWorld,key: String) -> bool:
+static func _execute_build(w: SimWorld,key: String) -> bool:
 	var def: Dictionary=rules().get(key,{})
 	if def.is_empty() or w.data.processing.builtFactories.has(key) or not SimBuildings.affordable(w,def.cost): return false
 	for r in def.cost: SimEconomy.consume(w,r,float(def.cost[r]),"建造"+str(def.name))
 	w.data.processing.builtFactories[key]={"key":key,"status":"building","buildProgress":0,"buildRequired":def.buildDays,"recipe":null,"productionProgress":0,"workers":[],"warehouse":{}}
 	log_event(w,"factory",str(def.icon)+" 開始建造"+str(def.name)+"！");return true
-static func set_recipe(w: SimWorld,key: String,recipe_id: String) -> bool:
+static func _execute_set_recipe(w: SimWorld,key: String,recipe_id: String) -> bool:
 	var factory: Dictionary=w.data.processing.builtFactories.get(key,{})
 	if factory.get("status")!="active": return false
 	for recipe in rules().get(key,{}).get("recipes",[]):
 		if recipe.id==recipe_id: factory.recipe=recipe_id;factory.productionProgress=0;return true
 	return false
-static func assign(w: SimWorld,key: String,id: String) -> bool:
+static func _execute_assign(w: SimWorld,key: String,id: String) -> bool:
 	var factory: Dictionary=w.data.processing.builtFactories.get(key,{})
 	if factory.get("status")!="active" or not w.data.agents.has(id): return false
 	if factory.workers.size()>=int(rules()[key].workerSlots) or id in factory.workers: return false
-	remove_worker(w,id);factory.workers.append(id);return true
-static func remove_worker(w: SimWorld,id: String) -> void:
+	_execute_remove_worker(w,id);factory.workers.append(id);return true
+static func _execute_remove_worker(w: SimWorld,id: String) -> void:
 	for f in w.data.processing.builtFactories.values(): f.workers=f.workers.filter(func(worker): return worker!=id)
-static func transfer(w: SimWorld,key: String,resource: String,amount: float,sell: bool=false) -> bool:
+static func _execute_transfer(w: SimWorld,key: String,resource: String,amount: float,sell: bool=false) -> bool:
 	var f: Dictionary=w.data.processing.builtFactories.get(key,{})
 	if f.is_empty() or not is_finite(amount) or amount<=0: return false
 	var take:=minf(amount,float(f.warehouse.get(resource,0)))
@@ -43,7 +43,7 @@ static func transfer(w: SimWorld,key: String,resource: String,amount: float,sell
 	var silver:=floorf(take*price+.5)
 	SimEconomy.change(w,"silver",silver,"賣出"+resource,def.name)
 	log_event(w,"factory",str(def.icon)+" 賣出 "+(str(int(take)) if take==floorf(take) else str(take))+" "+resource+"，獲得 "+str(int(silver))+" 銀幣");return true
-static func fulfill(w: SimWorld,id: String) -> bool:
+static func _execute_fulfill(w: SimWorld,id: String) -> bool:
 	for order in w.data.processing.orders:
 		if order.id!=id or order.status!="active": continue
 		var f: Dictionary=w.data.processing.builtFactories.get(order.factoryKey,{})
@@ -122,7 +122,7 @@ static func daily(w: SimWorld) -> void:
 			var f: Dictionary=manager.builtFactories[key]
 			if f.status!="active": continue
 			for r in f.warehouse.keys():
-				if float(f.warehouse[r])>=3: transfer(w,key,r,2,true)
+				if float(f.warehouse[r])>=3: _execute_transfer(w,key,r,2,true)
 static func generate_orders(w: SimWorld,defs: Dictionary) -> void:
 	var manager: Dictionary=w.data.processing
 	if manager.orders.filter(func(o): return o.status=="active").size()>=3: return
@@ -134,3 +134,41 @@ static func generate_orders(w: SimWorld,defs: Dictionary) -> void:
 	manager._orderCounter+=1
 	manager.orders.append({"id":"order_"+str(int(manager._orderCounter)),"product":product,"amount":amount,"reward":floorf(float(recipe.outputPrice)*amount*multiplier+.5),"daysLeft":w.rng.next_int(3,7),"factoryKey":key,"description":"需要 "+str(amount)+" 個"+product,"status":"active"})
 	log_event(w,"order","📋 新訂單：需要 "+str(amount)+" 個"+product+"！（"+str(int(floorf(multiplier*100+.5)))+"% 價格）")
+
+static func build(w: SimWorld,key: String) -> bool:
+	if not rules().has(key) or w.data.processing.builtFactories.has(key): return false
+	var costs: Dictionary=rules().get(key,{}).get("cost",{})
+	var args: Array=[key]
+	if not SimGovernance.permit(w,"factory",args,costs): return false
+	var result: bool=_execute_build(w,key)
+	SimGovernance.complete(w,"factory",args,costs,result)
+	return result
+
+static func set_recipe(w: SimWorld,key: String,recipe_id: String) -> bool:
+	var costs: Dictionary={};var args: Array=[key,recipe_id]
+	if not SimGovernance.permit(w,"recipe",args,costs): return false
+	var result:=_execute_set_recipe(w,key,recipe_id)
+	SimGovernance.complete(w,"recipe",args,costs,result);return result
+
+static func assign(w: SimWorld,key: String,id: String) -> bool:
+	var costs: Dictionary={};var args: Array=[key,id]
+	if not SimGovernance.permit(w,"staff",args,costs): return false
+	var result:=_execute_assign(w,key,id)
+	SimGovernance.complete(w,"staff",args,costs,result);return result
+
+static func transfer(w: SimWorld,key: String,resource: String,amount: float,sell: bool=false) -> bool:
+	var costs: Dictionary={};var args: Array=[key,resource,amount,sell]
+	if not SimGovernance.permit(w,"transfer",args,costs): return false
+	var result:=_execute_transfer(w,key,resource,amount,sell)
+	SimGovernance.complete(w,"transfer",args,costs,result);return result
+
+static func fulfill(w: SimWorld,id: String) -> bool:
+	var costs: Dictionary={};var args: Array=[id]
+	if not SimGovernance.permit(w,"order",args,costs): return false
+	var result:=_execute_fulfill(w,id)
+	SimGovernance.complete(w,"order",args,costs,result);return result
+
+static func remove_worker(w: SimWorld,id: String) -> bool:
+	if not w.data.processing.builtFactories.values().any(func(f): return id in f.get("workers",[])): return false
+	if not SimGovernance.permit(w,"remove_staff",[id],{}): return false
+	_execute_remove_worker(w,id);SimGovernance.complete(w,"remove_staff",[id],{},true);return true
