@@ -67,6 +67,7 @@ func display_save(save: Dictionary) -> void:
 	dispute_bubbles.clear()
 	current_save = save.duplicate(true)
 	layout.solid_projects=true
+	layout.separate_civic_buildings=true
 	layout.rebuild(save)
 	actors.clear()
 	if content != null:

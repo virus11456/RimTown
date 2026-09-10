@@ -324,6 +324,9 @@ func _load_document(text: String, source: String) -> bool:
 		SimHangoutVisits.restore_observations(simulation,saved.motion if saved.get("motion") is Dictionary else {})
 		if saved.has("motion") and saved.motion is Dictionary:
 			motion.positions=saved.motion.duplicate(true)
+			if int(saved.get("civic_layout_version",0))<1 and motion.layout.civic_offset!=Vector2i.ZERO:
+				# Old paths reference the overlapping town hall. Preserve positions; replan at the next frame.
+				for position in motion.positions.values(): position.erase("_directedGoal")
 			motion.manual_player=bool(saved.get("manual_player",false))
 			if motion.manual_player and motion.positions.has("player"):
 				motion.positions.player.walking=false
@@ -734,6 +737,7 @@ func export_save() -> void:
 func progress_snapshot() -> Dictionary:
 	var progress:=simulation.snapshot()
 	progress._godot4a.motion=motion.positions.duplicate(true)
+	progress._godot4a.civic_layout_version=1
 	progress._godot4a.appointment_reminder=appointment_reminder.duplicate(true)
 	progress._godot4a.physical_trace=physical_trace.snapshot()
 	progress._godot4a.house_map=motion.layout.agent_house.duplicate(true)

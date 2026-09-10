@@ -1,7 +1,7 @@
 class_name BuildingSites
 extends RefCounted
 static func allowed(save: Dictionary,site: Vector2i,footprint: int=2) -> bool:
-	var layout:=TownLayout.new();layout.rebuild(save)
+	var layout:=TownLayout.new();layout.separate_civic_buildings=true;layout.rebuild(save)
 	if site.x<2 or site.y<2 or site.x>76 or site.y>56: return false
 	if not layout._clear(site.x,site.y,footprint,footprint): return false
 	var zones:=reserved(layout,save)
@@ -13,7 +13,7 @@ static func allowed(save: Dictionary,site: Vector2i,footprint: int=2) -> bool:
 static func candidates(save: Dictionary,footprint: int=2) -> Array[Vector2i]:
 	var result: Array[Vector2i]=[]
 	# A single layout keeps candidate enumeration cheap.
-	var layout:=TownLayout.new();layout.rebuild(save)
+	var layout:=TownLayout.new();layout.separate_civic_buildings=true;layout.rebuild(save)
 	var zones:=reserved(layout,save)
 	for y in range(2,57,2):
 		for x in range(2,77,2):

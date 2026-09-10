@@ -2,6 +2,8 @@ class_name TownLayout
 extends RefCounted
 ## View-only reconstruction of PixelTileMap. Never edits the save dictionary.
 var solid_projects := false
+var separate_civic_buildings := false
+var civic_offset:=Vector2i.ZERO
 var grid: Array = []
 var buildings: Dictionary = {}
 var houses: Dictionary = {}
@@ -23,6 +25,8 @@ func rebuild(save: Dictionary) -> void:
 	grid = rules.base.duplicate(true)
 	for y in 60:
 		for x in 80: grid[y][x] = int(grid[y][x])
+	civic_offset=Vector2i.ZERO
+	if separate_civic_buildings: _separate_town_hall(save)
 	buildings.clear(); houses.clear(); nature.clear(); labels.clear(); agent_house.clear(); partners.clear(); agent_positions.clear(); factory_plots.clear()
 	extra_count = 0
 	for id in save.townMap.locations:
@@ -216,3 +220,32 @@ func _place_agents(agents: Dictionary) -> void:
 		if door.is_empty(): door=buildings.get(location,{})
 		if door.has("doorPixelX"): point=Vector2(door.doorPixelX,door.doorPixelY)
 		agent_positions[id]={"x":point.x,"y":point.y}
+
+func _separate_town_hall(save: Dictionary) -> void:
+	if not save.townMap.locations.has("town_hall"): return
+	var recipe: Dictionary=rules.rules.town_hall
+	var hall: Dictionary=recipe.buildings.town_hall
+	var zones: Array=[coach];var overlaps:=false
+	for id in save.townMap.locations:
+		if not rules.rules.has(id) or id=="town_hall": continue
+		var other: Dictionary=rules.rules[id]
+		zones.append_array(other.buildings.values())
+		zones.append_array(other.nature.values())
+		for house in other.houses.values():
+			if Rect2(hall.x,hall.y,hall.w,hall.h).intersects(Rect2(house.x,house.y,house.w,house.h)): overlaps=true
+	if not overlaps: return
+	for p in save.get("buildings",{}).get("projects",[])+save.get("buildings",{}).get("completed",[]):
+		if p.get("siteX")!=null: zones.append({"x":p.siteX,"y":p.siteY,"w":2,"h":2})
+	for d in save.get("decorations",[]): zones.append({"x":d.x,"y":d.y,"w":1,"h":1})
+	var candidates: Array=[]
+	for y in range(2,59-int(hall.h)-2):
+		for x in range(2,79-int(hall.w)):
+			if _overlap(x,y,int(hall.w),int(hall.h)+2,zones) or not _clear(x,y,int(hall.w),int(hall.h)+2): continue
+			candidates.append(Vector2i(x,y))
+	if candidates.is_empty(): return
+	var origin:=Vector2i(hall.x,hall.y)
+	candidates.sort_custom(func(a,b): return a.distance_squared_to(origin)<b.distance_squared_to(origin) if a.distance_squared_to(origin)!=b.distance_squared_to(origin) else (a.y<b.y if a.y!=b.y else a.x<b.x))
+	civic_offset=candidates[0]-origin
+	for op in recipe.ops: op[1]+=civic_offset.x;op[2]+=civic_offset.y
+	hall.x+=civic_offset.x;hall.y+=civic_offset.y;hall.doorPixelX+=civic_offset.x*16;hall.doorPixelY+=civic_offset.y*16
+	for label in recipe.labels.values(): label.x+=civic_offset.x*16;label.y+=civic_offset.y*16

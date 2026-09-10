@@ -2,7 +2,12 @@ extends "res://tests/test_player_chat_ui.gd"
 func run() -> void:
 	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;root.add_child(viewport)
 	var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app);await process_frame;app.set_process(false)
-	var w: SimWorld=app.simulation;var choices:=BuildingSites.candidates(w.data)
+	var w: SimWorld=app.simulation
+	# Placement fixture: an elected player may authorize construction directly.
+	for a in w.data.agents.values():
+		if a.get("jobKey")=="mayor": a.jobKey=""
+	w.data.agents.player.jobKey="mayor"
+	var choices:=BuildingSites.candidates(w.data)
 	check(not choices.is_empty(),"frontier has safe sites")
 	for site in choices: check(BuildingSites.allowed(w.data,site),"candidate passes final validation")
 	var harbor: Dictionary=JSON.parse_string(FileAccess.get_file_as_string("res://tests/golden/harbor-day-01.json"))
@@ -37,6 +42,7 @@ func run() -> void:
 	check(complete.siteX==site.x and complete.siteY==site.y and complete.level==2,"upgrade retains site")
 	check(app.world_view.content.get_children().any(func(n): return n.get_meta("construction_key","")=="granary" and n.get_meta("level",0)==2),"upgrade visual level")
 	FileAccess.open("res://tests/buildings/site-complete.json.tmp",FileAccess.WRITE).store_string(JSON.stringify(app.progress_snapshot(),"",false,true))
+	w.social.observed_motion=null;w.social.physical_positions=null # Core-only continuation on both sides.
 	var resumed:=SimWorld.new();resumed.load_snapshot(JSON.parse_string(JSON.stringify(w.snapshot(),"",false,true)))
 	for i in 960: w.tick();resumed.tick()
 	check(equal(w.snapshot(),resumed.snapshot()),"site survives ten-day resume")
@@ -44,6 +50,6 @@ func run() -> void:
 	for child in app.drawer_body.get_children():
 		if child is Control: check(child.size.x<=app.drawer.size.x,"mobile placement layout")
 	app.show_tab("設定",true);check(not is_instance_valid(app.placement_preview),"navigation clears placement")
-	var report:={"checks":checks,"failures":failures,"scope":"safe sites, road/boundary/occupancy atomic guards, preview/cancel/confirm, collision and geometry refresh, upgrade location, save/resume and mobile layout"}
+	var report:={"checks":checks,"failures":failures,"scope":"controlled elected-player fixture and matched observation-free core replay; safe sites, road/boundary/occupancy atomic guards, preview/cancel/confirm, collision and geometry refresh, upgrade location, save/resume and mobile layout"}
 	FileAccess.open("res://docs/BUILDING_SITE_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "))
 	print(JSON.stringify(report));quit(0 if failures.is_empty() else 1)
