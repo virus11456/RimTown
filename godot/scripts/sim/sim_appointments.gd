@@ -2,7 +2,7 @@ class_name SimAppointments
 extends RefCounted
 # One player appointment at a time. No resources, romance rewards or logical arrival shortcuts.
 const PLACES := ["town_square"]
-const LIVE := ["offered", "accepted", "waiting"]
+const LIVE := ["offered", "accepted", "waiting", "change_offered"]
 static func current(w: SimWorld) -> Dictionary:
 	return w.quest_balance.get("appointments",{}).get("current",{})
 static func reason(w: SimWorld,id: String) -> String:
@@ -59,6 +59,7 @@ static func tick(w: SimWorld) -> void:
 	var a:=current(w)
 	if not LIVE.has(a.get("state","")): return
 	if not w.data.agents.has("player") or w.data.agents.player.get("isDead",false): finish(w,"cancelled","玩家已無法赴約");return
+	if a.state=="change_offered": SimAppointmentChanges.tick(w);return
 	if a.state=="offered":
 		if int(w.data.tickCount)>=int(a.expires): finish(w,"expired","邀約超過回覆時間，未排入行程")
 		return
@@ -68,7 +69,9 @@ static func tick(w: SimWorld) -> void:
 		if why!="對方需要先休息或進食" or int(w.data.tickCount)>=int(a.due): finish(w,"cancelled",why)
 		return
 	if not w.data.townMap.locations.has(a.place): finish(w,"cancelled","見面地點已不存在");return
-	if not free_hour(w,a.npc,int(a.hour)): finish(w,"cancelled","對方的工作時間改變，與約定衝突");return
+	if not free_hour(w,a.npc,int(a.hour)):
+		if not SimAppointmentChanges.propose(w): finish(w,"cancelled","對方的工作時間改變，沒有可確認的新時段或已用完改期次數")
+		return
 	if int(w.data.tickCount)>=int(a.until):
 		finish(w,"missed","等待時間結束，未在現場碰面（玩家未到或雙方未靠近）" if a.get("npc_arrived",false) else "等待時間結束，對方尚未抵達；未視為完成見面")
 static func directing(w: SimWorld,id: String) -> bool:
@@ -84,7 +87,7 @@ static func directing(w: SimWorld,id: String) -> bool:
 static func observe(w: SimWorld,m: SimMotion) -> void:
 	var a:=current(w)
 	if not a.get("state") in ["accepted","waiting"] or int(w.data.tickCount)<int(a.due) or int(w.data.tickCount)>=int(a.until): return
-	if not reason(w,a.npc).is_empty(): return
+	if not reason(w,a.npc).is_empty() or not free_hour(w,a.npc,int(a.hour)): return
 	if SimCareerPresence.place(m,a.npc)!=a.place: return
 	a.state="waiting";a.npc_arrived=true;a.reason="對方已抵達，正在等待你靠近"
 	if not SimCareerPresence.together(m,"player",a.npc,a.place): return

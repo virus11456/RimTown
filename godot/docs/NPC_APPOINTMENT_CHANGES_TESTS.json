@@ -1,0 +1,5 @@
+{
+  "checks": 23,
+  "failures": [],
+  "scope": "configured work changes, pending proposal without implicit consent, suspended old route, local speech, shared cap, accept/reject/deadline/revalidation, memory and save determinism; no live AI"
+}
