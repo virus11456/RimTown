@@ -87,7 +87,10 @@ func run() -> void:
 	app._load_document(saved,"chat resume")
 	check(w.data.agents.player.chatHistory.size()==2,"chat history restored")
 	var resumed:=SimWorld.new();resumed.load_snapshot(JSON.parse_string(JSON.stringify(w.snapshot(),"",false,true)))
-	for i in 96: app._tick_simulation();resumed.tick()
+	# Replay the same physical observations; the pure world has no scene positions.
+	for i in 96:
+		SimAppointments.observe(resumed,app.motion);SimLeisurePlan.observe(resumed,app.motion)
+		app._tick_simulation();resumed.tick()
 	check(equal(w.snapshot(),resumed.snapshot()),"post-chat all-mode resume")
 	var report:={"checks":checks,"failures":failures,"scope":"mock transport only: context, draft preservation, double submit, success, quota/invalid failures, stale town response, mobile UI and save resume; no production API"}
 	FileAccess.open("res://docs/PLAYER_CHAT_UI_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "))

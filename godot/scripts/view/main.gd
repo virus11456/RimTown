@@ -8,6 +8,8 @@ var header: PanelContainer
 var heading: Label
 var summary: Label
 var status: Label
+var appointment_reminder: Dictionary={}
+var appointment_shortcut: Button
 var navigation: HBoxContainer
 var drawer: PanelContainer
 var drawer_body: VBoxContainer
@@ -193,6 +195,12 @@ func _build_ui() -> void:
 	for tab in ["小鎮","居民","故事","設定"]:
 		var button := _button(tab,navigation,func(): show_tab(tab))
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	appointment_shortcut=_button("約定",navigation,func():
+		var a:=SimAppointments.current(simulation)
+		if not SimAppointments.LIVE.has(a.get("state","")): return
+		show_tab("居民",true);show_appointment(str(a.npc)))
+	appointment_shortcut.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	appointment_shortcut.disabled=true
 	status = _label("",hud,13)
 	status.autowrap_mode = TextServer.AUTOWRAP_OFF
 	status.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -239,6 +247,7 @@ func _responsive() -> void:
 	header.position = Vector2(16,16)
 	header.size = Vector2(size.x-32,110)
 	heading.add_theme_font_size_override("font_size",20 if mobile else 25)
+	navigation.add_theme_constant_override("separation",4 if mobile else 8)
 	navigation.position = Vector2(maxf(16,(size.x-420)/2),size.y-64)
 	navigation.size = Vector2(minf(420,size.x-32),48)
 	status.position = Vector2(20,134)
@@ -266,6 +275,7 @@ func _load_document(text: String, source: String) -> bool:
 	document = incoming
 	simulation.load_snapshot(document.snapshot())
 	simulation.quest_balance.leisure_plans_enabled=bool(simulation.quest_balance.get("leisure_plans_enabled",true))
+	appointment_reminder=document.data.get("_godot4a",{}).get("appointment_reminder",{}).duplicate(true)
 	physical_trace.load_state(document.data.get("_godot4a",{}).get("physical_trace",{}))
 	simulation.social_enabled=bool(document.data.get("_godot4a",{}).get("social_enabled",true))
 	simulation.gossip_enabled=bool(document.data.get("_godot4a",{}).get("gossip_enabled",true))
@@ -720,6 +730,7 @@ func export_save() -> void:
 func progress_snapshot() -> Dictionary:
 	var progress:=simulation.snapshot()
 	progress._godot4a.motion=motion.positions.duplicate(true)
+	progress._godot4a.appointment_reminder=appointment_reminder.duplicate(true)
 	progress._godot4a.physical_trace=physical_trace.snapshot()
 	progress._godot4a.house_map=motion.layout.agent_house.duplicate(true)
 	progress._godot4a.tick_accumulator=tick_accumulator
@@ -849,6 +860,7 @@ func _tick_simulation() -> void:
 			_: show_agent(selected_agent,false)
 
 	_process_daily_talk()
+	_refresh_appointment_reminder()
 
 func _process_daily_talk() -> void:
 	if chat_busy or event_comment_busy or dialog.visible: return
@@ -859,10 +871,18 @@ func _process_daily_talk() -> void:
 	has_simulated=true;status.text=str(simulation.data.agents[id].name)+"向你搭話 · 居民 → 最近搭話"
 	if drawer.visible and active_tab=="居民" and selected_agent.is_empty(): show_tab("居民",true)
 
+func _refresh_appointment_reminder() -> void:
+	var a:=SimAppointments.current(simulation)
+	appointment_shortcut.disabled=not SimAppointments.LIVE.has(a.get("state",""))
+	if chat_busy or event_comment_busy or dialog.visible: return
+	var notice:=SimAppointments.reminder(simulation,motion,appointment_reminder)
+	if not notice.is_empty(): has_simulated=true;status.text=notice
+
 func _process(delta: float) -> void:
 	process_event_comment()
 	_process_traveler(delta)
 	_validate_career_presence()
+	_refresh_appointment_reminder()
 	if not running: return
 	frame_accumulator+=minf(delta,.25)*speed
 	while frame_accumulator>=1.0/60:

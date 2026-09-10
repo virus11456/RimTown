@@ -1,0 +1,5 @@
+{
+  "checks": 11,
+  "failures": [],
+  "scope": "confirmed time thresholds, actual venue vs logical destination, once-per-stage persisted bounded state, no repeat on departure/expiry/cancellation; configured position fixture"
+}

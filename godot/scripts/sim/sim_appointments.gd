@@ -129,3 +129,19 @@ static func reschedule(w: SimWorld) -> Dictionary:
 	w.runtime[a.npc].targetLocation=null
 	for id in ["player",a.npc]: SimFeuds._memory(w.data.agents[id],w,"appointment","與"+str(npc.name if id=="player" else w.data.agents.player.name)+"的約定改期："+old_time+" → "+new_time,5,[])
 	return {"ok":true,"notice":why}
+static func reminder(w: SimWorld,m: SimMotion,book: Dictionary) -> String:
+	var a:=current(w)
+	if a.get("state","") not in ["accepted","waiting"]: return ""
+	if not w.data.agents.has(a.npc) or w.data.agents[a.npc].get("isDead",false) or not w.data.townMap.locations.has(a.place): return ""
+	var now:=int(w.data.tickCount)
+	if now>=int(a.until) or now<int(a.due)-8: return ""
+	var level:=1 if now<int(a.due) else 2
+	if now>=int(a.due) and SimCareerPresence.place(m,str(a.npc))==str(a.place): level=3
+	var key:="%s|%d"%[a.npc,int(a.due)]
+	if book.get("key","")==key and int(book.get("level",0))>=level: return ""
+	book.clear();book.key=key;book.level=level
+	var name: String=w.data.agents.get(a.npc,{}).get("name",a.npc)
+	var place: String=w.data.townMap.locations.get(a.place,{}).get("name",a.place)
+	if level==3: return name+"已在"+place+" · 點「約定」查看"
+	if level==2: return "已到與"+name+"約定的時間 · 點「約定」查看"
+	return "距與"+name+"見面還有 %d 個遊戲分鐘 · 點「約定」查看"%((int(a.due)-now)*15)
