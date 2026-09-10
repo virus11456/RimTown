@@ -1,13 +1,13 @@
 class_name SimCareers
 extends RefCounted
-const JOBS: Dictionary={"farmer":{"name":"農務員","skill":"種植"},"guard":{"name":"守衛","skill":"近戰"},"doctor":{"name":"醫護員","skill":"醫療"},"carpenter":{"name":"木匠","skill":"建造"},"researcher":{"name":"研究員","skill":"智識"},"priest":{"name":"牧師","skill":"社交"},"miner":{"name":"礦工","skill":"採礦"},"cook":{"name":"廚師","skill":"烹飪"},"blacksmith":{"name":"鐵匠","skill":"工藝"},"tailor":{"name":"裁縫","skill":"工藝"}}
+const JOBS: Dictionary={"farmer":{"name":"農務員","skill":"種植"},"guard":{"name":"守衛","skill":"近戰"},"doctor":{"name":"醫護員","skill":"醫療"},"carpenter":{"name":"木匠","skill":"建造"},"researcher":{"name":"研究員","skill":"智識"},"priest":{"name":"牧師","skill":"社交"},"miner":{"name":"礦工","skill":"採礦"},"cook":{"name":"廚師","skill":"烹飪"},"blacksmith":{"name":"鐵匠","skill":"工藝"},"tailor":{"name":"裁縫","skill":"工藝"},"trader":{"name":"商人","skill":"社交"}}
 const PRODUCTION: Dictionary={"miner":{"location":"quarry","label":"採集石材與金屬"},"cook":{"location":"tavern","label":"製作公共餐食"},"blacksmith":{"location":"workshop","label":"打造公共工具"},"tailor":{"location":"workshop","label":"縫製公共衣物"}}
 const PATROL: Array=["town_square","quarry","residential_east"]
 static func book(w: SimWorld) -> Dictionary:
 	if not w.quest_balance.has("careers"): w.quest_balance.careers={"day":-1,"used":0,"visits":[],"treated":[],"active":{},"completed":0,"history":[]}
 	var b: Dictionary=w.quest_balance.careers
 	var day:=SimClock.total_days(w.data.clock)
-	if int(b.day)!=day: b.day=day;b.used=0;b.visits=[];b.treated=[];b.counseled=[];b.active={}
+	if int(b.day)!=day: b.day=day;b.used=0;b.visits=[];b.treated=[];b.counseled=[];b.traded=0;b.active={}
 	return b
 static func enroll(w: SimWorld,key: String) -> Dictionary:
 	if not JOBS.has(key) or not w.data.agents.has("player"): return {"ok":false,"message":"職業尚未開放。"}
@@ -40,6 +40,7 @@ static func available(w: SimWorld) -> Array:
 		"miner","cook","blacksmith","tailor":
 			var job: String=w.data.agents.player.jobKey
 			if production_needed(w,job): tasks.append({"id":"produce:"+job,"target":job,"location":PRODUCTION[job].location,"label":PRODUCTION[job].label,"job":job})
+		"trader": tasks=SimCareerTrade.tasks(w)
 	return tasks
 static func recipe(job: String) -> Dictionary:
 	if not PRODUCTION.has(job): return {}
@@ -71,6 +72,9 @@ static func start(w: SimWorld,id: String) -> Dictionary:
 		if PRODUCTION.has(t.job):
 			if not request_materials(w,t.job): return {"ok":false,"message":"材料用途需鎮長核准，核准後回到工作地點開始。"}
 			if not SimBuildings.affordable(w,recipe(t.job).inputs): return {"ok":false,"message":"公共材料不足，尚未開始工作。"}
+		if t.job=="trader":
+			if not SimCareerTrade.request(w,t.id): return {"ok":false,"message":"請先申請這份交易報價的公共資源用途。"}
+			if not SimBuildings.affordable(w,t.costs): return {"ok":false,"message":"公共資源不足，無法開始交接。"}
 		b.active=t.duplicate(true);b.active.finish=int(w.data.tickCount)+4
 		return {"ok":true,"message":"開始值勤，需停留一個遊戲小時；離開會取消。"}
 	return {"ok":false,"message":"需求已改變，請重新查看工作。"}
@@ -86,6 +90,7 @@ static func tick(w: SimWorld) -> void:
 	for candidate in available(w):
 		if candidate.id==t.id and candidate.location==t.location: valid=true
 	if PRODUCTION.has(t.job) and (not material_permit(w,t.job) or not SimBuildings.affordable(w,recipe(t.job).inputs)): valid=false
+	if t.job=="trader" and (not SimCareerTrade.approved(w,t) or not SimBuildings.affordable(w,t.costs)): valid=false
 	if not valid: cancel(w);return
 	if int(w.data.tickCount)<int(t.finish): return
 	match str(t.job):
@@ -110,6 +115,8 @@ static func tick(w: SimWorld) -> void:
 			for key in r.inputs: SimEconomy.consume(w,key,float(r.inputs[key]),"職業製作："+str(t.label),"player")
 			for key in r.outputs: SimEconomy.change(w,key,float(r.outputs[key]),"職業成品："+str(t.label),"player")
 			SimGovernance.complete(w,"career_materials",[t.job],r.inputs,true)
+		"trader":
+			if not SimCareerTrade.settle(w,t): cancel(w);return
 	var skill: String=JOBS[t.job].skill
 	if not player.skills.has(skill): player.skills[skill]={"xp":0,"passion":"無"}
 	player.skills[skill].xp+=3;b.used+=1;b.completed+=1

@@ -49,7 +49,7 @@ static func daily(w: SimWorld) -> void:
 		if p.status!="pending": continue
 		if mayor(w).is_empty(): p.reason="目前沒有鎮長，暫緩審核。";return
 		var reason:="";var population: int=w.data.agents.size()
-		var essential: bool=(p.action=="career_materials" and p.args[0]=="cook") or p.action=="plant" or (p.action=="building" and p.args[0] in ["granary","farm_irrigation"]) or (p.action=="industry" and p.args[0]=="farming") or (p.action=="trade" and not p.args[1].isBuying and p.args[1].resource in ["food","meals"])
+		var essential: bool=(p.action=="career_materials" and p.args[0]=="cook") or (p.action=="career_trade" and not p.args[1].isBuying and p.args[1].resource in ["food","meals"]) or p.action=="plant" or (p.action=="building" and p.args[0] in ["granary","farm_irrigation"]) or (p.action=="industry" and p.args[0]=="farming") or (p.action=="trade" and not p.args[1].isBuying and p.args[1].resource in ["food","meals"])
 		if not essential and SimEconomy.amount(w,"food")+SimEconomy.amount(w,"meals")-float(p.costs.get("food",0))-float(p.costs.get("meals",0))<population*2: reason="鎮上食物不足，先改善糧食供應。"
 		for key in p.costs:
 			var reserve:=0.0
@@ -66,6 +66,8 @@ static func execute(w: SimWorld,id: int) -> bool:
 		if p.approver!=mayor(w) or int(p.expires)<SimClock.total_days(w.data.clock): return false
 		var a: Array=p.args
 		match p.action:
+			"career_trade":
+				w.governance_notice="交易已核准，請回職業頁並到交易站完成交接；不在此遠端成交。";return false
 			"career_materials":
 				w.governance_notice="材料用途已核准。請回職業與值勤頁，親自到場開始工作；完成才扣料。";return false
 			"decoration": return SimCombos.place(w,a[0],Vector2i(int(a[1]),int(a[2])))
@@ -108,6 +110,6 @@ static func describe(w: SimWorld,p: Dictionary) -> String:
 		"building": return str(SimBuildings.rules().templates.get(a[0],{}).get("name",a[0]))+("升級" if a[1] else " · 選址 (%d, %d)"%[a[2],a[3]])
 		"industry","industry_upgrade": return str(SimIndustry.rules().industries.get(a[0],{}).get("name",a[0]))
 		"factory": return str(SimProcessing.rules().get(a[0],{}).get("name",a[0]))
-		"trade": return str(a[0])+" · "+("賣出 " if a[1].isBuying else "買入 ")+str(a[1].resource)+" × "+str(a[2])+" · 單價 "+str(a[1].price)
+		"trade","career_trade": return str(a[0])+" · "+("賣出 " if a[1].isBuying else "買入 ")+str(a[1].resource)+" × "+str(a[2])+" · 單價 "+str(a[1].price)
 		"plant": return "農地 %d · %s"%[a[0],SimFarm.rules().crops.get(a[1],{}).get("name",a[1])]
 	return "、".join(a.map(func(value): return str(value)))

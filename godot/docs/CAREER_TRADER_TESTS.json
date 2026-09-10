@@ -1,0 +1,5 @@
+{
+  "checks": 39,
+  "failures": [],
+  "scope": "trader buy/sell real quote approval and public ledger, onsite timed work, save/reload, changed quote/merchant/authority/demand/funds, reserves and shared market cap"
+}
