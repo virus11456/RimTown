@@ -20,6 +20,7 @@ var import_callback: JavaScriptObject
 var demo_theme := "frontier"
 var simulation := SimWorld.new()
 var motion := SimMotion.new()
+var placement_preview: MeshInstance3D
 var running := false
 var has_simulated := false
 var speed := 1
@@ -59,6 +60,7 @@ func _ready() -> void:
 	add_child(traveler)
 	load_demo("frontier")
 	get_viewport().size_changed.connect(_responsive)
+	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_sites.flag"): _capture_sites()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_matrix.flag"): _capture_demo()
 	_responsive()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_playtest.flag"): _capture_playtest()
@@ -191,7 +193,7 @@ func _build_ui() -> void:
 	hud.add_child(drawer)
 	var outer := VBoxContainer.new()
 	drawer.add_child(outer)
-	_button("收起面板 ×",outer,func(): drawer.hide(); active_tab="")
+	_button("收起面板 ×",outer,func(): _clear_site_preview();drawer.hide(); active_tab="")
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -230,6 +232,7 @@ func _responsive() -> void:
 	drawer.size = Vector2(size.x-32 if mobile else 344,maxf(180,size.y-drawer.position.y-84))
 
 func _load_document(text: String, source: String) -> bool:
+	_clear_site_preview()
 	var incoming := SaveDocument.new()
 	if not incoming.parse(text):
 		status.text = incoming.error
@@ -298,6 +301,7 @@ func _clear_drawer() -> void:
 		child.queue_free()
 
 func show_tab(tab: String, refresh := false) -> void:
+	_clear_site_preview()
 	if active_tab == tab and not refresh:
 		drawer.hide()
 		active_tab = ""
@@ -732,15 +736,12 @@ func step_simulation() -> void:
 
 func _tick_simulation() -> void:
 	has_simulated=true
+	var old_geometry:=JSON.stringify([simulation.data.buildings,simulation.data.processing])
 	var events:=simulation.tick()
 	var clock_data: Dictionary=simulation.data.clock
 	summary.text="%s %d日 %02d:%02d · %d人"%[clock_data.season,clock_data.day,clock_data.hour,clock_data.minute,simulation.data.agents.size()]
-	if "new_season" in events:
-		var house_map:=motion.layout.agent_house.duplicate(true)
-		world_view.display_save(simulation.data)
-		motion.layout=world_view.layout
-		motion.layout.agent_house=house_map
-		motion.pathfinder.grid=world_view.layout.grid
+	if "new_season" in events or old_geometry!=JSON.stringify([simulation.data.buildings,simulation.data.processing]):
+		_refresh_building_world()
 	for event in simulation.presentation_events: world_view.dispute_bubbles.show_dispute(event.a,event.b)
 	world_view._light_clock(clock_data)
 	if "new_hour" in events: world_view._weather(simulation.data)
@@ -1465,8 +1466,9 @@ func _capture_economy() -> void:
 	viewport.queue_free()
 
 func show_buildings() -> void:
+	_clear_site_preview()
 	active_tab="小鎮";drawer.show();_clear_drawer();_wrapped("建築工程",22)
-	_wrapped("開工立即扣公共庫存，木匠、礦工與鐵匠每天午夜施工。此頁管理工程與數值效果；3D 選址與新建築模型尚未接入。",12)
+	_wrapped("開工立即扣公共庫存，木匠、礦工與鐵匠每天午夜施工。3D 選址先挑安全空地，確認後才扣料；地圖會呈現工地、完工與等級外觀。",12)
 	if not simulation.buildings_enabled: _wrapped("每日施工目前關閉，請至設定開啟。")
 	var manager: Dictionary=simulation.data.buildings;var definitions:=SimBuildings.rules()
 	_wrapped("施工中",18)
@@ -1491,8 +1493,9 @@ func _building_offer(key: String,template: Dictionary,upgrade: bool) -> void:
 	_wrapped(str(template.name)+" · "+str(template.description))
 	_wrapped("花費："+"、".join(costs)+" · 需要 "+str(template.work)+" 工量",12)
 	var button:=_button(("升級：" if upgrade else "開工：")+str(template.name),drawer_body,func():
+		if not upgrade: show_building_site(key);return
 		var project:=SimBuildings.start(simulation,key,upgrade)
-		if not project.is_empty(): has_simulated=true;status.text="工程已開始 · 材料已扣除"
+		if not project.is_empty(): has_simulated=true;status.text="工程已開始 · 材料已扣除";_refresh_building_world()
 		else: status.text="無法開工：庫存不足或已有相同工程"
 		show_buildings())
 	button.disabled=not SimBuildings.affordable(simulation,template.costs)
@@ -1700,3 +1703,59 @@ func show_processing() -> void:
 	if active==0: _wrapped("目前沒有訂單。",12)
 	_button("重新整理",drawer_body,show_processing)
 	_button("返回小鎮",drawer_body,func(): show_tab("小鎮",true))
+
+func _clear_site_preview() -> void:
+	if is_instance_valid(placement_preview): placement_preview.queue_free()
+	placement_preview=null
+func _refresh_building_world() -> void:
+	var houses:=motion.layout.agent_house.duplicate(true)
+	world_view.display_save(simulation.data);motion.layout=world_view.layout;motion.layout.agent_house=houses;motion.pathfinder.grid=world_view.layout.grid
+	for p in motion.positions.values():
+		var safe: Vector2=motion.layout._nearest(Vector2(p.x,p.y));p.x=safe.x;p.y=safe.y
+		motion._path(p)
+	world_view.animate_agents(motion.positions)
+func show_building_site(key: String,index: int=0) -> void:
+	_clear_site_preview();active_tab="小鎮";drawer.show();_clear_drawer()
+	var choices:=BuildingSites.candidates(simulation.data)
+	_wrapped("3D 選址 · "+str(SimBuildings.rules().templates[key].name),22)
+	if choices.is_empty():
+		_wrapped("沒有足夠的安全空地，未扣材料。")
+		_button("返回工程",drawer_body,show_buildings);return
+	index=posmod(index,choices.size());var site: Vector2i=choices[index]
+	_wrapped("候選空地 %d／%d · 地圖格 (%d, %d)"%[index+1,choices.size(),site.x,site.y],12)
+	_wrapped("綠色範圍為 2×2 格建築用地，已避開道路、水域、住宅與預留工廠區。確認時會再次檢查位置與材料。",12)
+	placement_preview=MeshInstance3D.new();var mesh:=BoxMesh.new();mesh.size=Vector3(2,.12,2);placement_preview.mesh=mesh
+	var material:=StandardMaterial3D.new();material.albedo_color=Color(.2,1,.45,.65);material.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;placement_preview.material_override=material
+	placement_preview.position=Vector3(site.x+1,.3,site.y+1);add_child(placement_preview)
+	rig.follow_player=false;rig.position=Vector3(site.x+1,0,site.y+1);rig.width=16;rig._sync()
+	# An in-panel camera keeps the site visible even when the mobile drawer covers the map.
+	var inset:=SubViewportContainer.new();inset.custom_minimum_size=Vector2(0,170);inset.size_flags_horizontal=Control.SIZE_EXPAND_FILL;inset.stretch=true;inset.mouse_filter=Control.MOUSE_FILTER_IGNORE;drawer_body.add_child(inset)
+	var mini:=SubViewport.new();mini.size=Vector2i(320,170);mini.world_3d=get_world_3d();mini.render_target_update_mode=SubViewport.UPDATE_ALWAYS;inset.add_child(mini)
+	var camera:=Camera3D.new();mini.add_child(camera);camera.projection=Camera3D.PROJECTION_ORTHOGONAL;camera.size=6;camera.position=Vector3(site.x+6,8,site.y+7);camera.look_at(Vector3(site.x+1,0,site.y+1));camera.current=true
+	_button("上一塊空地",drawer_body,func(): show_building_site(key,index-1))
+	_button("下一塊空地",drawer_body,func(): show_building_site(key,index+1))
+	var active_world: Dictionary=simulation.data
+	_button("確認開工",drawer_body,func():
+		if not is_same(active_world,simulation.data): return
+		var project:=SimBuildings.start(simulation,key,false,site)
+		_clear_site_preview()
+		if not project.is_empty(): has_simulated=true;status.text="已開工 · 材料已扣除";_refresh_building_world()
+		else: status.text="位置或材料已改變，未開工"
+		show_buildings())
+	_button("取消選址",drawer_body,show_buildings)
+
+func _capture_sites() -> void:
+	await get_tree().create_timer(1).timeout
+	for stage in ["building","complete","preview"]:
+		for dimensions in [Vector2i(1280,800),Vector2i(375,812)]:
+			var viewport:=SubViewport.new();viewport.size=dimensions;viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+			var preview=load("res://scenes/main.tscn").instantiate();viewport.add_child(preview)
+			preview._load_document(FileAccess.get_file_as_string("res://tests/buildings/site-"+("complete" if stage!="building" else "building")+".json.tmp"),"建築選址驗收")
+			if stage=="preview": preview.show_building_site("school")
+			else:
+				var items: Array=preview.simulation.data.buildings.projects if stage=="building" else preview.simulation.data.buildings.completed
+				preview.rig.position=Vector3(items[0].siteX+1,0,items[0].siteY+1);preview.rig.width=10;preview.rig._sync();preview.drawer.hide()
+			await get_tree().create_timer(.5).timeout
+			await RenderingServer.frame_post_draw
+			viewport.get_texture().get_image().save_png("res://docs/site-"+stage+("-mobile.png" if dimensions.x==375 else "-desktop.png"))
+			viewport.queue_free()

@@ -1,6 +1,7 @@
 class_name TownLayout
 extends RefCounted
 ## View-only reconstruction of PixelTileMap. Never edits the save dictionary.
+var solid_projects := false
 var grid: Array = []
 var buildings: Dictionary = {}
 var houses: Dictionary = {}
@@ -43,6 +44,10 @@ func rebuild(save: Dictionary) -> void:
 	projects = save.get("buildings",{}).get("projects",[]).filter(func(p): return p.has("siteX") and p.siteX != null)
 	completed = save.get("buildings",{}).get("completed",[]).filter(func(p): return p.has("siteX") and p.siteX != null)
 	_sync_housing(save.agents)
+	if solid_projects:
+		for p in projects+completed:
+			for y in range(int(p.siteY),int(p.siteY)+2):
+				for x in range(int(p.siteX),int(p.siteX)+2): _set_tile(x,y,5)
 	_place_agents(save.agents)
 
 func _set_tile(x: int,y: int,tile: int,only_grass := false) -> void:

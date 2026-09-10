@@ -1,0 +1,5 @@
+{
+  "checks": 361,
+  "failures": [],
+  "scope": "safe sites, road/boundary/occupancy atomic guards, preview/cancel/confirm, collision and geometry refresh, upgrade location, save/resume and mobile layout"
+}

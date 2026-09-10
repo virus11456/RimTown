@@ -57,15 +57,16 @@ func _instance(name: String,position_value: Vector3,scale_value := Vector3.ONE,p
 	(parent if parent != null else content).add_child(model)
 	return model
 
-func _building(name: String,zone: Dictionary,height_scale := 1.2) -> void:
+func _building(name: String,zone: Dictionary,height_scale := 1.2) -> MeshInstance3D:
 	var size: Array = dimensions[name]
 	var w: float = zone.w
 	var depth: float = zone.h
-	_instance(name,Vector3(zone.x+w/2,0.12,zone.y+depth/2),Vector3(w/float(size[0]),height_scale,depth/float(size[2])))
+	return _instance(name,Vector3(zone.x+w/2,0.12,zone.y+depth/2),Vector3(w/float(size[0]),height_scale,depth/float(size[2])))
 
 func display_save(save: Dictionary) -> void:
 	dispute_bubbles.clear()
 	current_save = save.duplicate(true)
+	layout.solid_projects=true
 	layout.rebuild(save)
 	actors.clear()
 	if content != null:
@@ -193,11 +194,14 @@ func _build_overlays(save: Dictionary) -> void:
 			if zone.is_empty(): continue
 			pos=Vector2(zone.x+rule[1],zone.y+rule[2])
 		else: continue
-		var model: String={"watchtower":"bld_guardpost","marketplace":"bld_market","well_upgrade":"prop_well","garden":"prop_bush","farm_irrigation":"prop_well","town_walls":"prop_fence"}.get(key,"bld_house_b")
-		_building(model,{"x":pos.x,"y":pos.y,"w":2,"h":2},0.75)
+		var model: String={"watchtower":"bld_guardpost","granary":"bld_farmhouse","school":"bld_library","brewery":"bld_tavern","clinic_upgrade":"bld_clinic","forge_bellows":"bld_workshop","training_ground":"bld_guardpost","marketplace":"bld_market","well_upgrade":"prop_well","garden":"prop_bush","farm_irrigation":"prop_well","town_walls":"prop_fence"}.get(key,"bld_house_b")
+		var built:=_building(model,{"x":pos.x,"y":pos.y,"w":2,"h":2},0.75+.18*(int(building.get("level",1))-1))
+		built.set_meta("construction_key",key);built.set_meta("level",int(building.get("level",1)));built.set_meta("phase","complete")
 	for project in layout.projects:
 		_instance("ter_soil",Vector3(project.siteX+1,.15,project.siteY+1),Vector3(2,1,2))
-		_instance("prop_crate",Vector3(project.siteX+.5,.3,project.siteY+.5))
+		var crate:=_instance("prop_crate",Vector3(project.siteX+.5,.3,project.siteY+.5))
+		crate.set_meta("construction_key",project.get("buildingKey",project.get("upgradeKey","")));crate.set_meta("phase","building")
+		_instance("prop_fence",Vector3(project.siteX+1,.3,project.siteY+1.8),Vector3(1.8,1,1))
 	for decoration in layout.decorations:
 		var name: String={"tree":"prop_tree_oak","pine":"prop_tree_pine","flower":"prop_flower","flowers":"prop_flower","bench":"prop_bench","lamp":"prop_lamp","lantern":"prop_lantern","campfire":"prop_campfire","fence":"prop_fence","well":"prop_well","statue":"prop_grave","fountain":"prop_well"}.get(str(decoration.get("type","")),"prop_flower")
 		_instance(name,Vector3(decoration.x+.5,.14,decoration.y+.5))

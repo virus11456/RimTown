@@ -6,7 +6,8 @@ static func affordable(w: SimWorld,costs: Dictionary) -> bool:
 	for key in costs:
 		if SimEconomy.amount(w,key)<float(costs[key]): return false
 	return true
-static func start(w: SimWorld,key: String,upgrade: bool=false) -> Dictionary:
+static func start(w: SimWorld,key: String,upgrade: bool=false,site: Vector2i=Vector2i(-1,-1)) -> Dictionary:
+	if site!=Vector2i(-1,-1) and (upgrade or not BuildingSites.allowed(w.data,site)): return {}
 	var definitions:=rules();var manager: Dictionary=w.data.buildings
 	var template: Dictionary={};var level:=1
 	if upgrade:
@@ -24,8 +25,12 @@ static func start(w: SimWorld,key: String,upgrade: bool=false) -> Dictionary:
 	for resource in template.costs: SimEconomy.consume(w,resource,float(template.costs[resource]),("升級：" if upgrade else "Building: ")+str(template.name))
 	manager._counter=int(manager.get("_counter",0))+1
 	var project:={"id":"build_"+str(manager._counter),"name":template.name,"description":template.description,"costs":template.costs.duplicate(true),"workRequired":template.work,"workDone":0,"effects":template.get("effects",{}).duplicate(true),"status":"building"}
-	if upgrade: project.upgradeKey=key;project.targetLevel=level
+	if upgrade:
+		project.upgradeKey=key;project.targetLevel=level
+		for existing in manager.completed:
+			if existing.get("buildingKey")==key and existing.get("siteX")!=null: project.siteX=existing.siteX;project.siteY=existing.siteY;break
 	else: project.buildingKey=key
+	if site!=Vector2i(-1,-1): project.siteX=site.x;project.siteY=site.y
 	manager.projects.append(project)
 	SimSocial.log_message(w.data,"building",("開始升級：" if upgrade else "開始建造：")+str(template.name)+"！","","")
 	return project

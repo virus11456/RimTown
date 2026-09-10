@@ -6,7 +6,7 @@ func run() -> void:
 	app.set_process(false);var w: SimWorld=app.simulation
 	app.show_tab("小鎮",true);press(app.drawer_body,"建築工程")
 	check(w.buildings_enabled and has_text(app.drawer_body,"3D 選址"),"default and scope disclosed")
-	var wood:=SimEconomy.amount(w,"wood");press(app.drawer_body,"開工：穀倉");await settle()
+	var wood:=SimEconomy.amount(w,"wood");press(app.drawer_body,"開工：穀倉");press(app.drawer_body,"確認開工");await settle()
 	check(w.data.buildings.projects.size()==1 and SimEconomy.amount(w,"wood")==wood-30,"UI starts paid project")
 	var before:=w.snapshot();check(SimBuildings.start(w,"granary").is_empty() and equal(before,w.snapshot()),"duplicate atomic")
 	w.data.clock.hour=23;w.data.clock.minute=30;app._tick_simulation()
