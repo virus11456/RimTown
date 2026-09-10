@@ -168,5 +168,7 @@ static func apply(w: SimWorld,id: String,message: String) -> Dictionary:
 	history.append({"speaker":npc.name,"target":player.name,"text":result.text,"time":SimSocial.time_string(w.data.clock)})
 	player.chatHistory=history.slice(maxi(0,history.size()-10000));player._recentChatTick=w.data.tickCount
 	SimSocial.log_message(w.data,"player_chat",summary,player.name,npc.name)
+	SimQuests.count(w,"chatCount")
+	if w.quests_enabled: SimQuests.check_progress(w);SimNPCQuests.check_progress(w)
 	SimHeartEvents.check_new(w)
 	return result

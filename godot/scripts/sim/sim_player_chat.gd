@@ -21,7 +21,7 @@ static func prompt(w: SimWorld,id: String,message: String) -> String:
 	var mayor:=""
 	for resident in w.data.agents.values():
 		if job(w,resident).get("key","")=="mayor": mayor=resident.name
-	var context:={"town":w.data.get("townName","邊境鎮"),"npc":{"name":str(a.name).left(80),"age":a.age,"job":str(job(w,a).get("title","居民")).left(80),"traits":traits,"relationshipStatus":status.left(120),"background":str(a.personality.get("background","")).left(600),"values":"、".join(a.personality.get("values",[])).left(300),"currentThought":str(a.get("currentThought","")).left(300),"needs":a.needs,"mood":a.mood},"player":str(player.name).left(80),"mayor":mayor.left(80),"relationship":{"affinity":rel.get("affinity",0),"trust":rel.get("trust",0),"romanticInterest":rel.get("romanticInterest",0),"status":rel.get("status")},"relevantMemories":memories,"reflections":memory.thoughts(2),"recentChat":history,"clock":w.data.clock}
+	var context:={"town":w.data.get("townName","邊境鎮"),"npc":{"name":str(a.name).left(80),"age":a.age,"job":str(job(w,a).get("title","居民")).left(80),"traits":traits,"relationshipStatus":status.left(120),"background":str(a.personality.get("background","")).left(600),"values":"、".join(a.personality.get("values",[])).left(300),"currentThought":str(a.get("currentThought","")).left(300),"needs":a.needs,"mood":a.mood},"player":str(player.name).left(80),"mayor":mayor.left(80),"relationship":{"affinity":rel.get("affinity",0),"trust":rel.get("trust",0),"romanticInterest":rel.get("romanticInterest",0),"status":rel.get("status")},"relevantMemories":memories,"reflections":memory.thoughts(2),"recentChat":history,"clock":w.data.clock,"quests":SimQuests.chat_context(w,id)}
 	context.relevantMemories=memories.map(func(m): return {"time":str(m.get("timeStr","")).left(40),"content":str(m.content).left(400)})
 	context.reflections=memory.thoughts(2).map(func(m): return str(m.content).left(200))
 	context.recentChat=history.map(func(m): return {"speaker":str(m.speaker).left(80),"text":str(m.text).left(300)})
@@ -84,5 +84,7 @@ static func apply(w: SimWorld,id: String,message: String,parsed: Dictionary) -> 
 	history.append({"speaker":a.name,"target":player.name,"text":parsed.text,"time":SimSocial.time_string(w.data.clock)})
 	player.chatHistory=history.slice(maxi(0,history.size()-10000));player._recentChatTick=w.data.tickCount
 	SimSocial.log_message(w.data,"player_chat",player.name+" → "+a.name+": "+summary,player.name,a.name)
+	SimQuests.count(w,"chatCount")
+	if w.quests_enabled: SimQuests.check_progress(w);SimNPCQuests.check_progress(w)
 	SimHeartEvents.check_new(w)
 	return {"affinity":affinity,"romantic":romantic,"summary":summary}

@@ -52,4 +52,5 @@ static func execute(w: SimWorld,index: int,qty: float,expected: Dictionary={}) -
 		SimEconomy.change(w,offer.resource,qty,"與"+str(merchant.name)+"交易")
 	offer.amount-=qty;merchant.offers=merchant.offers.filter(func(o): return o.amount>.5)
 	SimSocial.log_message(w.data,"trade",("賣出" if offer.isBuying else "買入")+" "+str(qty).trim_suffix(".0")+" "+str(offer.resource)+"，"+str(int(floorf(total+.5)))+"銀幣。","","")
+	SimQuests.count(w,"tradeCount")
 	return {"ok":true}

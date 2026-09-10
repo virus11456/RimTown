@@ -1,0 +1,5 @@
+{
+  "checks": 188,
+  "passed": true,
+  "scope": "Original JS loads quest/NPC/life/ending states plus building/trade/research/industry/farm/processing state and stock, memories, relationships and currentThought. Original reload drops _rivalGossiped; Godot resume retains it. No production API."
+}

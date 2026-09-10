@@ -46,6 +46,7 @@ static func harvest(w: SimWorld,id: int) -> bool:
 	farm.harvestLog=farm.harvestLog.slice(maxi(0,farm.harvestLog.size()-100))
 	farm.totalHarvested[p.crop]=float(farm.totalHarvested.get(p.crop,0))+amount
 	SimIndustry.news(w,"farm","收穫了 "+str(int(amount))+" 單位"+str(crop.name)+"（"+str(defs.quality[quality])+"品質）！",5)
+	SimQuests.count(w,"harvestCount")
 	p.lastCrop=p.crop;p.state="empty";p.crop=null;p.growthProgress=0;p.fertilized=false;return true
 static func clear(w: SimWorld,id: int) -> bool:
 	var p:=plot(w,id)

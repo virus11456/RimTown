@@ -64,6 +64,7 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_responsive)
 	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_combos.flag"): _capture_combos()
 	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_hearts.flag"): _capture_hearts()
+	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_quests.flag"): _capture_quests()
 	if DisplayServer.get_name() != "headless" and get_viewport()==get_tree().root and FileAccess.file_exists("res://tests/capture_sites.flag"): _capture_sites()
 	if DisplayServer.get_name() != "headless" and get_viewport() == get_tree().root and FileAccess.file_exists("res://tests/capture_matrix.flag"): _capture_demo()
 	_responsive()
@@ -268,6 +269,8 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.buildings_enabled=bool(document.data.get("_godot4a",{}).get("buildings_enabled",true))
 	simulation.trade_enabled=bool(document.data.get("_godot4a",{}).get("trade_enabled",true))
 	simulation.research_enabled=bool(document.data.get("_godot4a",{}).get("research_enabled",true))
+	simulation.quests_enabled=bool(document.data.get("_godot4a",{}).get("quests_enabled",true))
+	if simulation.quests_enabled: SimQuests.init(simulation);SimNPCQuests.init(simulation);SimLifeGoals.assign(simulation)
 	simulation.heart_events_enabled=bool(document.data.get("_godot4a",{}).get("heart_events_enabled",true))
 	simulation.event_comments_enabled=bool(document.data.get("_godot4a",{}).get("event_comments_enabled",true))
 	simulation.combos_enabled=bool(document.data.get("_godot4a",{}).get("combos_enabled",true))
@@ -338,7 +341,7 @@ func show_tab(tab: String, refresh := false) -> void:
 			_button("產業",drawer_body,show_industry)
 			_button("農田",drawer_body,show_farm)
 			_button("加工",drawer_body,show_processing)
-			_wrapped("試玩：作息、移動與居民互動已啟用。\n送禮會消耗公共庫存；每日經濟可在設定開關。建築、交易、研究、產業、農田與加工已啟用；任務仍待完成。",13)
+			_wrapped("試玩：作息、移動與居民互動已啟用。\n送禮會消耗公共庫存；每日經濟可在設定開關。建築、交易、研究、產業、農田與加工已啟用；任務與人生進度可從故事頁查看。",13)
 			var resources: Dictionary = _current_data().get("stockpile",{}).get("resources",{})
 			for key in resources:
 				if float(resources[key]) != 0: _label("%s   %s" % [_resource_name(key),str(resources[key])],drawer_body)
@@ -347,6 +350,7 @@ func show_tab(tab: String, refresh := false) -> void:
 				var agent: Dictionary = _current_data().agents[id]
 				_button(str(agent.get("name",id)),drawer_body,func(): show_agent(id))
 		"故事":
+			_button("任務與人生",drawer_body,show_quests)
 			_button("村民對話紀錄",drawer_body,show_conversations)
 			_button("八卦與鎮民動態",drawer_body,show_gossip)
 			_button("關係事件",drawer_body,show_romance)
@@ -1869,3 +1873,96 @@ func _capture_hearts() -> void:
 		await RenderingServer.frame_post_draw
 		viewport.get_texture().get_image().save_png("res://docs/hearts-"+("mobile" if dimensions.x==375 else "desktop")+".png")
 		viewport.queue_free()
+
+func show_quests(category: String="main") -> void:
+	active_tab="小鎮";drawer.show();_clear_drawer();SimQuests.init(simulation);SimNPCQuests.init(simulation)
+	_wrapped("任務與人生 · 第 %d 章"%SimQuests.chapter(simulation),22)
+	var tabs:={"main":"主線","side":"支線","personal":"居民任務","daily":"日常與劇情","life":"人生目標","ending":"結局與鎮史"}
+	var navigation:=GridContainer.new();navigation.columns=3;navigation.size_flags_horizontal=Control.SIZE_EXPAND_FILL;drawer_body.add_child(navigation)
+	for key in tabs:
+		var tab_button:=_button(tabs[key],navigation,func(): show_quests(key))
+		tab_button.add_theme_font_size_override("font_size",12);tab_button.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	_wrapped("聲望："+str(simulation.data.questSystem.reputation),16)
+	if category in ["main","side"]:
+		var states: Dictionary=simulation.data.questSystem.quests if category=="main" else simulation.data.questSystem.sideQuests
+		for def in SimQuests.rules()[category]:
+			var state: Dictionary=states[def.id]
+			_wrapped(str(def.get("icon","📜"))+" "+str(def.title)+" · "+{"active":"進行中","completed":"已完成","locked":"未解鎖"}.get(state.status,state.status),18)
+			if state.status=="locked": continue
+			_wrapped(str(def.get("description",def.get("story",""))),12)
+			if def.has("routes"):
+				for route in def.routes:
+					_wrapped(str(route.label)+(" ✓" if state.get("completedRoute")==route.id else ""),15)
+					for c in route.conditions: _wrapped("%s · %.0f / %.0f"%[c.label,state.routes[route.id][c.label].progress,c.get("target",1)],12)
+			else:
+				for c in def.get("objectives",[]): _wrapped("%s · %.0f / %.0f"%[c.get("label",c.get("description",c.id)),state.objectives[c.id].progress,c.target],12)
+			_quest_rewards(def.get("rewards",{}))
+	elif category=="personal":
+		_wrapped("與居民聊天、提升好感可解鎖。多路線任一條達標就自動完成；資源条件是持有量，不會繳交。",12)
+		for q in simulation.data.npcQuests.quests.values():
+			_wrapped(str(q.icon)+" "+str(q.title)+(" · 已完成" if q.status=="completed" else " · 進行中"),18);_wrapped(str(q.description),12)
+			for route in q.routes:
+				_wrapped(str(route.label),15)
+				for c in route.conditions: _wrapped("%s · %.0f / %.0f"%[c.get("label",c.type),c.progress,c.get("target",1)],12)
+			_quest_rewards(q.rewards)
+			var npc_id: String=q.npcId
+			_button("找他交談",drawer_body,func(): show_tab("居民",true);show_player_chat(npc_id))
+		_wrapped("尚未解鎖的居民任務",18)
+		for npc_id in SimQuests.rules().personal:
+			if not simulation.data.agents.has(npc_id): continue
+			for def in SimQuests.rules().personal[npc_id].quests:
+				if simulation.data.npcQuests.quests.has(def.id): continue
+				_wrapped(str(simulation.data.agents[npc_id].name)+" · "+str(def.title),15)
+				_wrapped("好感 ≥ %d · 第 %d 章"%[int(def.trigger.get("affinity",0)),int(def.trigger.get("chapter",1))]+(" · 需前置故事" if def.trigger.has("requireFlag") else ""),12)
+	elif category=="daily":
+		_wrapped("日常目標每個完整遊戲日最多領一次獎勵。",12)
+		var current: Variant=simulation.data.questSystem.dailyObjective
+		if current is Dictionary:
+			for def in SimQuests.rules().daily:
+				if def.id==current.id:
+					_wrapped(str(def.icon)+" "+str(def.text)+( " · 已完成" if current.completed else ""),18)
+					_wrapped("新增進度 %.0f / %.0f"%[maxf(0,SimQuests.evaluate(simulation,def.condition)-float(current.startValue)),def.condition.target]);_quest_rewards(def.get("reward",{}))
+		for def in SimQuests.rules().stories:
+			if def.id in simulation.data.questSystem.triggeredStoryEvents: _wrapped(str(def.icon)+" "+str(def.title),18);_wrapped(str(def.text),12)
+	elif category=="life":
+		SimLifeGoals.assign(simulation)
+		for id in simulation.data.lifeGoals.goals:
+			if not simulation.data.agents.has(id): continue
+			var g: Dictionary=simulation.data.lifeGoals.goals[id];var def: Dictionary=SimQuests.rules().goals.get(g.key,{})
+			if def.is_empty(): continue
+			_wrapped(str(simulation.data.agents[id].name)+" · "+str(def.icon)+str(def.name),18)
+			_wrapped(str(def.stages[mini(int(g.stage),def.stages.size()-1)])+(" · 已實現" if g.done else ""))
+			if not g.done:
+				var button:=_button("鼓勵追夢",drawer_body,func():
+					if SimLifeGoals.nudge(simulation,id): has_simulated=true
+					show_quests("life"))
+				button.disabled=g.get("_nudged",false) or simulation.data.agents[id].get("isDead",false)
+		_wrapped("每階段可鼓勵一次，縮短等待但仍須符合實際條件。家庭出生、議會及繁榮由對應世界系統提供，尚未移植的來源需後續世界工作包補齊。",12)
+	elif category=="ending":
+		var ending: Variant=simulation.data.get("multiEnding",{}).get("endingData")
+		if ending is Dictionary:
+			_wrapped(str(ending.type.icon)+str(ending.type.title),22);_wrapped(str(ending.type.description))
+			_wrapped("人口 %d · 主線完成 %d · 聲望 %.0f"%[ending.stats.population,ending.stats.questsCompleted,ending.stats.reputation])
+			for entry in ending.history: _wrapped(str(entry.content),12)
+		else: _wrapped("完成第五章最終主線後，依完成路線與婚姻狀態產生結局；仍可繼續經營小鎮。")
+	_button("更新任務進度",drawer_body,func():
+		SimQuests.check_progress(simulation);SimNPCQuests.check_progress(simulation);has_simulated=true;show_quests(category))
+	_button("返回故事",drawer_body,func(): show_tab("故事",true))
+func _quest_rewards(rewards: Dictionary) -> void:
+	var parts: Array=[]
+	for key in rewards: parts.append(("聲望" if key=="reputation" else _resource_name(key))+" "+str(rewards[key]))
+	if not parts.is_empty(): _wrapped("獎勵："+"、".join(parts),12)
+
+func _capture_quests() -> void:
+	await get_tree().create_timer(1).timeout
+	for dimensions in [Vector2i(1280,800),Vector2i(375,812)]:
+		for category in ["main","personal","life","ending"]:
+			var viewport:=SubViewport.new();viewport.size=dimensions;viewport.own_world_3d=true;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS;add_child(viewport)
+			var preview=load("res://scenes/main.tscn").instantiate();viewport.add_child(preview)
+			preview._load_document(FileAccess.get_file_as_string("res://tests/quests/compatibility-save.json.tmp"),"任務工作包驗收")
+			if category=="ending": SimEndings.trigger(preview.simulation,"peace")
+			preview.show_quests(category)
+			await get_tree().create_timer(.5).timeout
+			await RenderingServer.frame_post_draw
+			viewport.get_texture().get_image().save_png("res://docs/quests-"+category+"-"+("mobile" if dimensions.x==375 else "desktop")+".png")
+			viewport.queue_free()
