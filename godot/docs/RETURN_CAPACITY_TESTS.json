@@ -1,0 +1,290 @@
+{
+  "checks": 2,
+  "failures": [],
+  "residents": [
+    {
+      "id": "chen_wei",
+      "job": "mayor",
+      "name": "陳偉",
+      "park_return_hours": 5.0,
+      "player_invitation_hours": [],
+      "sleep_end": 5,
+      "sleep_start": 21,
+      "square_return_hours": 3.75,
+      "work_hours": [
+        9.0,
+        17.0
+      ]
+    },
+    {
+      "id": "lin_mei",
+      "job": "doctor",
+      "name": "林美",
+      "park_return_hours": 6.25,
+      "player_invitation_hours": [
+        18,
+        19
+      ],
+      "sleep_end": 9,
+      "sleep_start": 2,
+      "square_return_hours": 4.0,
+      "work_hours": [
+        8.0,
+        18.0
+      ]
+    },
+    {
+      "id": "zhang_hao",
+      "job": "blacksmith",
+      "name": "張豪",
+      "park_return_hours": 5.0,
+      "player_invitation_hours": [],
+      "sleep_end": 4,
+      "sleep_start": 20,
+      "square_return_hours": 5.0,
+      "work_hours": [
+        8.0,
+        17.0
+      ]
+    },
+    {
+      "id": "wang_li",
+      "job": "cook",
+      "name": "王麗",
+      "park_return_hours": 5.25,
+      "player_invitation_hours": [],
+      "sleep_end": 1,
+      "sleep_start": 17,
+      "square_return_hours": 4.5,
+      "work_hours": [
+        5.0,
+        14.0
+      ]
+    },
+    {
+      "id": "liu_jun",
+      "job": "farmer",
+      "name": "劉俊",
+      "park_return_hours": 9.25,
+      "player_invitation_hours": [],
+      "sleep_end": 5,
+      "sleep_start": 20,
+      "square_return_hours": 5.25,
+      "work_hours": [
+        6.0,
+        16.0
+      ]
+    },
+    {
+      "id": "zhao_xia",
+      "job": "trader",
+      "name": "趙霞",
+      "park_return_hours": 10.25,
+      "player_invitation_hours": [],
+      "sleep_end": 4,
+      "sleep_start": 20,
+      "square_return_hours": 6.0,
+      "work_hours": [
+        8.0,
+        18.0
+      ]
+    },
+    {
+      "id": "yang_feng",
+      "job": "guard",
+      "name": "楊鋒",
+      "park_return_hours": 4.25,
+      "player_invitation_hours": [],
+      "sleep_end": 6,
+      "sleep_start": 22,
+      "square_return_hours": 2.75,
+      "work_hours": [
+        6.0,
+        18.0
+      ]
+    },
+    {
+      "id": "sun_yu",
+      "job": "researcher",
+      "name": "孫雨",
+      "park_return_hours": 9.0,
+      "player_invitation_hours": [],
+      "sleep_end": 5,
+      "sleep_start": 22,
+      "square_return_hours": 5.25,
+      "work_hours": [
+        9.0,
+        17.0
+      ]
+    },
+    {
+      "id": "wu_da",
+      "job": "miner",
+      "name": "吳達",
+      "park_return_hours": 5.75,
+      "player_invitation_hours": [],
+      "sleep_end": 3,
+      "sleep_start": 19,
+      "square_return_hours": 6.0,
+      "work_hours": [
+        7.0,
+        16.0
+      ]
+    },
+    {
+      "id": "huang_li",
+      "job": "priest",
+      "name": "黃莉",
+      "park_return_hours": 5.25,
+      "player_invitation_hours": [],
+      "sleep_end": 3,
+      "sleep_start": 19,
+      "square_return_hours": 2.5,
+      "work_hours": [
+        7.0,
+        19.0
+      ]
+    },
+    {
+      "id": "ma_qiang",
+      "job": "carpenter",
+      "name": "馬強",
+      "park_return_hours": 6.5,
+      "player_invitation_hours": [],
+      "sleep_end": 3,
+      "sleep_start": 19,
+      "square_return_hours": 5.75,
+      "work_hours": [
+        7.0,
+        16.0
+      ]
+    },
+    {
+      "id": "xu_ying",
+      "job": "tailor",
+      "name": "許瑩",
+      "park_return_hours": 10.25,
+      "player_invitation_hours": [],
+      "sleep_end": 4,
+      "sleep_start": 19,
+      "square_return_hours": 6.25,
+      "work_hours": [
+        8.0,
+        17.0
+      ]
+    },
+    {
+      "id": "zhou_ming",
+      "job": "trader",
+      "name": "周明",
+      "park_return_hours": 3.25,
+      "player_invitation_hours": [],
+      "sleep_end": 4,
+      "sleep_start": 20,
+      "square_return_hours": 6.5,
+      "work_hours": [
+        8.0,
+        18.0
+      ]
+    },
+    {
+      "id": "he_chang",
+      "job": "carpenter",
+      "name": "何昌",
+      "park_return_hours": 3.5,
+      "player_invitation_hours": [],
+      "sleep_end": 3,
+      "sleep_start": 19,
+      "square_return_hours": 5.25,
+      "work_hours": [
+        7.0,
+        16.0
+      ]
+    },
+    {
+      "id": "he_xiu",
+      "job": "cook",
+      "name": "何秀",
+      "park_return_hours": 3.5,
+      "player_invitation_hours": [],
+      "sleep_end": 1,
+      "sleep_start": 17,
+      "square_return_hours": 5.25,
+      "work_hours": [
+        5.0,
+        14.0
+      ]
+    },
+    {
+      "id": "zheng_wei",
+      "job": "researcher",
+      "name": "鄭薇",
+      "park_return_hours": 9.75,
+      "player_invitation_hours": [],
+      "sleep_end": 5,
+      "sleep_start": 21,
+      "square_return_hours": 5.75,
+      "work_hours": [
+        9.0,
+        17.0
+      ]
+    },
+    {
+      "id": "su_qing",
+      "job": "cook",
+      "name": "蘇晴",
+      "park_return_hours": 2.0,
+      "player_invitation_hours": [],
+      "sleep_end": 1,
+      "sleep_start": 16,
+      "square_return_hours": 5.0,
+      "work_hours": [
+        5.0,
+        14.0
+      ]
+    },
+    {
+      "id": "gao_lang",
+      "job": "guard",
+      "name": "高朗",
+      "park_return_hours": 4.25,
+      "player_invitation_hours": [],
+      "sleep_end": 6,
+      "sleep_start": 22,
+      "square_return_hours": 6.0,
+      "work_hours": [
+        6.0,
+        18.0
+      ]
+    },
+    {
+      "id": "ke_wei",
+      "job": "tailor",
+      "name": "柯薇",
+      "park_return_hours": 5.75,
+      "player_invitation_hours": [],
+      "sleep_end": 4,
+      "sleep_start": 21,
+      "square_return_hours": 4.0,
+      "work_hours": [
+        8.0,
+        17.0
+      ]
+    },
+    {
+      "id": "ling_bo",
+      "job": "researcher",
+      "name": "凌波",
+      "park_return_hours": 11.5,
+      "player_invitation_hours": [],
+      "sleep_end": 5,
+      "sleep_start": 21,
+      "square_return_hours": 7.25,
+      "work_hours": [
+        9.0,
+        17.0
+      ]
+    }
+  ],
+  "scope": "read-only original app opening snapshot: actual normal-speed routes and current jobs/sleep windows; available invitation hours already include full two-hour wait; not actual player attendance"
+}

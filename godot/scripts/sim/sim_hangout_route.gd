@@ -44,7 +44,7 @@ static func home_distance(m: SimMotion,a: Dictionary,place: String) -> float:
 	if m==null or (not m.layout.buildings.has(place) and not m.layout.nature.has(place)): return INF
 	var home:=m.layout._house_id(str(a.id),str(a.get("homeLocation","")))
 	var house: Dictionary=m.layout.houses.get(home,{})
-	if house.is_empty() or house.get("parentLocId")!=a.get("homeLocation"): return INF
+	if house.is_empty(): return INF # Assigned overflow housing may belong to residential_extra.
 	var start:=m.layout._nearest(m.layout._center(place));var length:=0.0
 	var exit_door: Variant=m.door(place,str(a.id))
 	if exit_door!=null:

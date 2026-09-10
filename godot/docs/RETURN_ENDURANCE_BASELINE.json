@@ -1,0 +1,3488 @@
+{
+  "affinity_eligible_conversations": 0,
+  "availability": [
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        }
+      ],
+      "tick": 96
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        }
+      ],
+      "tick": 192
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        }
+      ],
+      "tick": 288
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        }
+      ],
+      "tick": 384
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        }
+      ],
+      "tick": 480
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        }
+      ],
+      "tick": 576
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        }
+      ],
+      "tick": 672
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        }
+      ],
+      "tick": 768
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        }
+      ],
+      "tick": 864
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        }
+      ],
+      "tick": 960
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        }
+      ],
+      "tick": 1056
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        }
+      ],
+      "tick": 1152
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        }
+      ],
+      "tick": 1248
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        }
+      ],
+      "tick": 1344
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        }
+      ],
+      "tick": 1440
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 1536.0
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 1632
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 1728
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 1824
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 1920
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 2016
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 2112
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 2208
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 2304
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 2400
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 2496
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 2592
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 2688
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 2784
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 2880
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 2976
+    },
+    {
+      "residents": [
+        {
+          "hours": [],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 3072
+    }
+  ],
+  "checks": 7,
+  "conversations": 0,
+  "day_eight": {
+    "affinity_eligible_conversations": 0,
+    "conversations": 0,
+    "proposals": 0
+  },
+  "departed_visits": 0,
+  "failures": [
+    "original residents have natural conversations",
+    "natural simulation generates at least one paired proposal",
+    "natural paired encounter completes at actual venue"
+  ],
+  "home_returns": {},
+  "invalid": [],
+  "max_return_step": 0.0,
+  "maximum_records": 0,
+  "motion_frames_per_tick": 120,
+  "outcomes": {},
+  "paused_visits": 0,
+  "proposal_details": {},
+  "proposals": 0,
+  "reasons": {},
+  "scope": "32 original app days, reload halfway, 120 physical motion frames per tick, no altered jobs/needs/positions/affinity/resources or production AI; headless, not full game playthrough",
+  "ticks": 3072,
+  "traces": {},
+  "visit_details": {}
+}

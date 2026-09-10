@@ -191,6 +191,7 @@ func _update(id: String) -> void:
 		return
 	if SimLeisurePlan.directing(self,id):
 		a.activity="planned_leisure";a.currentLocation=SimLeisurePlan.plans(self)[id].place;a._leisureDestination=a.currentLocation;run.targetLocation=null;a._locationStayRemaining=0
+		if social_enabled and social.observed_motion!=null and SimLeisurePlan.plans(self)[id].state=="attending": social.try_interaction(a,data,rng,rules.jobs,gossip_enabled)
 		return
 	if SimHangoutVisits.directing(self,id):
 		a.activity="hangout_travel";a.currentLocation=SimHangoutVisits.records(self)[a._activeHangout].place;a._hangoutDestination=a.currentLocation;run.targetLocation=null;a._locationStayRemaining=0
@@ -208,7 +209,8 @@ func _update(id: String) -> void:
 		if run.targetLocation!=null and run.targetLocation!=a.currentLocation:
 			a.currentLocation=run.targetLocation; run.targetLocation=null
 		a._locationStayRemaining=_stay(a.activity)
-	if social_enabled and a.activity=="socializing": social.try_interaction(a,data,rng,rules.jobs,gossip_enabled)
+	var work_talk: bool=a.activity=="working" and social.observed_motion!=null and social.physical_positions!=null and not social.observed_motion.positions.get(id,{}).get("walking",true) and float(a.needs.hunger)>=15 and float(a.needs.rest)>=10
+	if social_enabled and (a.activity=="socializing" or work_talk): social.try_interaction(a,data,rng,rules.jobs,gossip_enabled)
 	if a.activity=="stargazing" and stargazing_enabled: SimStargazing.process(a,self)
 	elif a.activity=="stargazing":
 		a.needs.recreation=minf(100,a.needs.recreation+2)
