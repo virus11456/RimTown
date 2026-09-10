@@ -296,6 +296,7 @@ func load_demo(theme: String) -> void:
 	_load_document(FileAccess.get_file_as_string("res://tests/golden/%s-day-01.json" % theme),"示範小鎮")
 
 func _clear_drawer() -> void:
+	_clear_site_preview()
 	for child in drawer_body.get_children():
 		drawer_body.remove_child(child)
 		child.queue_free()
