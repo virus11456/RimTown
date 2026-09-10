@@ -1,0 +1,5 @@
+{
+  "checks": 14,
+  "failures": [],
+  "scope": "controlled custom shift and route, four-hour cap, actual agent update, waiting after arrival, work start release, needs/sleep/raid/player priorities and no-observation fallback; not natural punctuality proof"
+}
