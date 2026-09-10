@@ -1,0 +1,21 @@
+{
+  "checks": 10,
+  "failures": [],
+  "max_step_pixels": 0.999847412109375,
+  "scope": "actual reschedule button, mobile panel, delivered compressed native reload, natural ticks and SimMotion until rescheduled date, player collision movement and meeting; no live AI or visual art review",
+  "state": {
+    "due": 240.0,
+    "expires": 8.0,
+    "hour": 18.0,
+    "npc": "chen_wei",
+    "npc_arrived": true,
+    "place": "town_square",
+    "previous_due": 144.0,
+    "previous_time": "小鎮第 2 天 18:00",
+    "reason": "雙方已在約定地點實際碰面",
+    "reschedule_count": 1.0,
+    "state": "met",
+    "time": "小鎮第 3 天 18:00",
+    "until": 248.0
+  }
+}

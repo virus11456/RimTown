@@ -95,3 +95,34 @@ static func observe(w: SimWorld,m: SimMotion) -> void:
 	var history: Array=player.get("chatHistory",[])
 	history.append({"speaker":npc.name,"target":player.name,"text":"你來了！很高興我們都記得這次約定。","time":SimSocial.time_string(w.data.clock),"_godotOffline":true})
 	player.chatHistory=history.slice(-10000)
+
+static func reschedule_error(w: SimWorld) -> String:
+	var a:=current(w)
+	if a.get("state")!="accepted": return "只有已接受、尚未到場等待的約定可以改期。"
+	if int(a.get("reschedule_count",0))>=1: return "這份約定已改期一次，不能反覆順延。"
+	if int(w.data.tickCount)>int(a.due)-8: return "請至少在約定前兩個遊戲小時提出改期。"
+	if not w.data.agents.has("player") or w.data.agents.player.get("isDead",false): return "玩家已無法赴約。"
+	var why:=reason(w,a.npc)
+	if not why.is_empty(): return why+"，目前無法確認改期。"
+	if not w.data.townMap.locations.has(a.place): return "原本的見面地點已不存在。"
+	if not free_hour(w,a.npc,int(a.hour)): return "對方隔天這個時段有工作，無法同意改期。"
+	return ""
+static func reschedule(w: SimWorld) -> Dictionary:
+	var error:=reschedule_error(w)
+	if not error.is_empty(): return {"ok":false,"error":error}
+	var a:=current(w);var old_time: String=a.time;var old_due:=int(a.due)
+	var due:=old_due+96
+	var minutes:=int(w.data.clock.hour)*60+int(w.data.clock.minute)+(due-int(w.data.tickCount))*15
+	var day:=SimClock.total_days(w.data.clock)+int(minutes/1440)+1
+	var new_time: String="小鎮第 %d 天 %02d:00"%[day,int(a.hour)]
+	var why: String="對方同意改期："+old_time+" → "+new_time
+	var entry:=a.duplicate(true);entry.state="rescheduled";entry.reason=why;entry.changed_tick=int(w.data.tickCount)
+	var book: Dictionary=w.quest_balance.appointments
+	book.history.append(entry);book.history=book.history.slice(-20)
+	a.due=due;a.until=int(a.until)+96;a.time=new_time;a.reason=why;a.reschedule_count=1
+	a.previous_due=old_due;a.previous_time=old_time;a.erase("npc_arrived")
+	var npc: Dictionary=w.data.agents[a.npc]
+	npc.erase("_appointmentDestination");npc._locationStayRemaining=0
+	w.runtime[a.npc].targetLocation=null
+	for id in ["player",a.npc]: SimFeuds._memory(w.data.agents[id],w,"appointment","與"+str(npc.name if id=="player" else w.data.agents.player.name)+"的約定改期："+old_time+" → "+new_time,5,[])
+	return {"ok":true,"notice":why}

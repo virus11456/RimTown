@@ -1,0 +1,5 @@
+{
+  "checks": 22,
+  "failures": [],
+  "scope": "one-day delay, two-hour cutoff, once per appointment, conflict rejection atomicity, date/memory/history, save limit and next-tick consistency, old/new destination windows; configured clock and conflict fixtures"
+}

@@ -2274,9 +2274,25 @@ func show_appointment(id: String) -> void:
 			_button("接受邀約",drawer_body,func(): SimAppointments.respond(simulation,true);has_simulated=true;show_appointment(id))
 			_button("婉拒邀約",drawer_body,func(): SimAppointments.respond(simulation,false);has_simulated=true;show_appointment(id))
 		elif a.state in ["accepted","waiting"]:
+			if a.state=="accepted":
+				_wrapped("可提前至少兩個遊戲小時申請順延至原約定隔天同一時間，每份約定限一次。",12)
+				var change_error:=SimAppointments.reschedule_error(simulation)
+				var change:=_button("申請順延一天",drawer_body,func():
+					var result:=SimAppointments.reschedule(simulation)
+					chat_notice[id]=str(result.get("notice",result.get("error","")))
+					if result.ok: has_simulated=true
+					show_appointment(id))
+				change.disabled=not change_error.is_empty()
+				if not change_error.is_empty(): _wrapped(change_error,12)
 			_button("取消約定",drawer_body,func(): SimAppointments.finish(simulation,"cancelled","玩家取消約定");has_simulated=true;show_appointment(id))
 	if not SimAppointments.LIVE.has(a.get("state","")):
 		_wrapped("也可以直接詢問對方明天是否有空（本機規則，不消耗 AI 額度）。",12)
 		_button("詢問明天能否見面",drawer_body,func(): chat_notice[id]=SimAppointments.offer(simulation,id);has_simulated=true;show_appointment(id))
 	if chat_notice.has(id): _wrapped(str(chat_notice[id]))
+	var records: Array=simulation.quest_balance.get("appointments",{}).get("history",[])
+	if not records.is_empty():
+		_wrapped("最近約定紀錄",18)
+		for record in records.slice(-5):
+			var name: String=simulation.data.agents.get(record.npc,{}).get("name",record.npc)
+			_wrapped(name+" · "+str(record.get("time",""))+"\n"+str(record.reason),12)
 	_button("返回交談",drawer_body,func(): show_player_chat(id))
