@@ -22,6 +22,8 @@ static func plan(w: SimWorld,a: Dictionary) -> Dictionary:
 	if float(a.needs.hunger)<15 or float(a.needs.rest)<10: return {}
 	var hour:=int(w.data.clock.hour);var job: Dictionary=w.rules.jobs.get(str(a.get("jobKey","")),{})
 	if not job.is_empty() and hour>=int(job.work_hours[0]) and hour<int(job.work_hours[1]): return {}
+	var after_meeting: Dictionary=a.get("_hangoutHome",{})
+	if after_meeting.get("home")==a.homeLocation and int(after_meeting.get("until",0))>int(w.data.tickCount) and not arrived(w,a): return after_meeting
 	var sleep_window:=SimShiftSleep.window(a,w.rules.jobs)
 	var remaining:=posmod(int(sleep_window.start)*4-hour*4-int(w.data.clock.minute)/15,96)
 	if remaining<=0 or remaining>16: return {}
@@ -42,3 +44,13 @@ static func plan(w: SimWorld,a: Dictionary) -> Dictionary:
 	var required:=mini(16,maxi(4,ceili(length/30.0)+1))
 	if remaining>required: return {}
 	return {"signature":signature,"until":until,"required_ticks":required,"home":a.homeLocation}
+
+static func after_meeting(w: SimWorld,a: Dictionary,place: String) -> void:
+	var m: SimMotion=w.social.observed_motion
+	if m==null or not m.stable_routes or a.get("isPlayer",false): return
+	var length:=SimHangoutRoute.home_distance(m,a,place)
+	if is_inf(length): return
+	var ticks:=ceili(length/30.0)+2
+	if ticks>=96: return
+	a._hangoutHome={"home":a.homeLocation,"until":int(w.data.tickCount)+ticks,"required_ticks":ticks,"signature":"hangout:"+str(w.data.tickCount)}
+	a._locationStayRemaining=0

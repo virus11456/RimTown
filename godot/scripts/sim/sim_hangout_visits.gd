@@ -30,6 +30,7 @@ static func finish(w: SimWorld,token: String,state: String,reason: String) -> vo
 		if a.get("_activeHangout","")==token: a.erase("_activeHangout");a.erase("_hangoutDestination")
 		var pending: Variant=a.get("_pendingHangout")
 		if pending is Dictionary and key(id,pending)==token: a._pendingHangout=null
+		if state=="met": SimHomeRest.after_meeting(w,a,str(r.place))
 		SimHangoutSafety.note(w,id,state,reason)
 static func valid(w: SimWorld,r: Dictionary) -> bool:
 	if r.get("paused",false) or not w.data.townMap.locations.has(r.place): return false

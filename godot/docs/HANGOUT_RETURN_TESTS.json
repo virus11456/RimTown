@@ -1,0 +1,6 @@
+{
+  "checks": 13,
+  "failures": [],
+  "maximum_step": 0.941889047622681,
+  "scope": "controlled late versus early nearby invitation, both actual home paths at normal walking budget, exact sleep boundary, missing observations/home/place, work conflict and no world/position mutation; not natural social encounter proof"
+}

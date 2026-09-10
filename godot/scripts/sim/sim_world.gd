@@ -145,6 +145,7 @@ func _update(id: String) -> void:
 	var hour := int(data.clock.hour)
 	a.erase("_appointmentDestination");a.erase("_leisureDestination")
 	var commute:=SimCommute.plan(self,a)
+	if a.has("_hangoutHome") and (int(a._hangoutHome.until)<=int(data.tickCount) or a._hangoutHome.home!=a.homeLocation or SimHomeRest.arrived(self,a)): a.erase("_hangoutHome")
 	var home_return:=SimHomeRest.plan(self,a)
 	a.erase("_homeReturn")
 	a.erase("_commuteDestination")
