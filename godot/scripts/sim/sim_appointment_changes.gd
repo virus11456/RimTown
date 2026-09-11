@@ -3,7 +3,7 @@ extends RefCounted
 # Work conflicts may propose one replacement; the player must explicitly accept it.
 static func propose(w: SimWorld) -> bool:
 	var a:=SimAppointments.current(w)
-	if a.get("state")!="accepted" or int(a.get("reschedule_count",0))>=1: return false
+	if a.get("state")!="accepted" or int(a.get("reschedule_count",0))>=1 or int(w.data.tickCount)>=int(a.until): return false
 	if not SimAppointments.reason(w,a.npc).is_empty() or not w.data.townMap.locations.has(a.place): return false
 	if SimAppointments.free_hour(w,a.npc,int(a.hour)): return false
 	var hour:=-1

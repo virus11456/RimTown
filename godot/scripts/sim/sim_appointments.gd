@@ -72,6 +72,9 @@ static func tick(w: SimWorld) -> void:
 	if a.state=="offered":
 		if int(w.data.tickCount)>=int(a.expires): finish(w,"expired","邀約超過回覆時間，未排入行程")
 		return
+	if int(w.data.tickCount)>=int(a.until):
+		finish(w,"missed","等待時間結束，未在現場碰面（玩家未到或雙方未靠近）" if a.get("npc_arrived",false) else "等待時間結束，對方尚未抵達；未視為完成見面")
+		return
 	var why:=reason(w,a.npc)
 	if not why.is_empty():
 		# A need arising before the meeting is handled by normal eating/sleeping first.
@@ -81,8 +84,7 @@ static func tick(w: SimWorld) -> void:
 	if not free_hour(w,a.npc,int(a.hour)):
 		if not SimAppointmentChanges.propose(w): finish(w,"cancelled","對方的工作時間、作息或返家路程已不適用，沒有可確認的新時段或已用完改期次數")
 		return
-	if int(w.data.tickCount)>=int(a.until):
-		finish(w,"missed","等待時間結束，未在現場碰面（玩家未到或雙方未靠近）" if a.get("npc_arrived",false) else "等待時間結束，對方尚未抵達；未視為完成見面")
+
 static func directing(w: SimWorld,id: String) -> bool:
 	var a:=current(w)
 	if not w.data.agents.has(id) or not reason(w,id).is_empty(): return false

@@ -1,0 +1,11 @@
+{
+  "checks": 9,
+  "door_phases": [
+    "approaching",
+    "entering"
+  ],
+  "failures": [],
+  "maximum_step": 0.999603271484375,
+  "scope": "controlled mayor/material and starting-position fixture; real factory build UI, preexisting route crossed footprint, immediate reroute, native reload, real doorway entry and assigned home return; clock fixed to isolate movement, not a natural appointment success claim",
+  "venue": "tavern"
+}

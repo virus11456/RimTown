@@ -1,0 +1,190 @@
+{
+  "checks": 175,
+  "failures": [],
+  "tests": [
+    {
+      "test": "appointments",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 23,
+        "failures": [],
+        "scope": "offer/accept/decline/expiry, limits, conflicts and memory, save deterministic reload, chat structured invitation and no logical arrival shortcut; configured conflict fixtures"
+      },
+      "tail": ""
+    },
+    {
+      "test": "appointments_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 14,
+        "failures": [],
+        "npc_max_step_pixels": 0.599987685680389,
+        "scope": "controlled free-day NPC for return availability; mock AI response through actual chat UI, accept, app save reload, natural clock/needs/work, real SimMotion NPC path and collision-based player movement, proximity meeting, mobile panel; headless rendering, no production AI service",
+        "state": {
+          "due": 144.0,
+          "expires": 8.0,
+          "hour": 18.0,
+          "npc": "chen_wei",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "雙方已在約定地點實際碰面",
+          "resolved_tick": 144,
+          "state": "met",
+          "time": "小鎮第 2 天 18:00",
+          "until": 152.0
+        }
+      },
+      "tail": ""
+    },
+    {
+      "test": "npc_appointment_changes",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 23,
+        "failures": [],
+        "scope": "configured work changes, pending proposal without implicit consent, suspended old route, local speech, shared cap, accept/reject/deadline/revalidation, memory and save determinism; no live AI"
+      },
+      "tail": ""
+    },
+    {
+      "test": "npc_appointment_changes_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 10,
+        "failures": [],
+        "max_step_pixels": 0.998870849609375,
+        "scope": "configured free day and earlier sleep preference; actual app tick notification, mobile card, native archive, accept/reject callbacks, natural needs/time and physical NPC/player movement on replacement date; no live AI"
+      },
+      "tail": ""
+    },
+    {
+      "test": "appointment_reschedule",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 22,
+        "failures": [],
+        "scope": "one-day delay, two-hour cutoff, once per appointment, conflict rejection atomicity, date/memory/history, save limit and next-tick consistency, old/new destination windows; configured clock and conflict fixtures"
+      },
+      "tail": ""
+    },
+    {
+      "test": "appointment_reschedule_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 10,
+        "failures": [],
+        "max_step_pixels": 0.722902715206146,
+        "needs_before_decision_tick": {
+          "beauty": 50.0,
+          "comfort": 60.0,
+          "hunger": 20.0,
+          "recreation": 64.4000000000002,
+          "rest": 28.0,
+          "social": 68.0
+        },
+        "scope": "controlled free-day NPC; valid natural urgent-needs cancellation is an outcome, not a completed meeting; actual reschedule button, mobile panel, delivered compressed native reload, natural ticks and SimMotion until rescheduled date, player collision movement and meeting; no live AI or visual art review",
+        "state": {
+          "due": 240.0,
+          "expires": 8.0,
+          "hour": 18.0,
+          "npc": "chen_wei",
+          "npc_arrived": true,
+          "place": "town_square",
+          "previous_due": 144.0,
+          "previous_time": "小鎮第 2 天 18:00",
+          "reason": "雙方已在約定地點實際碰面",
+          "reschedule_count": 1.0,
+          "resolved_tick": 240,
+          "state": "met",
+          "time": "小鎮第 3 天 18:00",
+          "until": 248.0
+        }
+      },
+      "tail": ""
+    },
+    {
+      "test": "clock_appointments_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 16,
+        "failures": [],
+        "npc_max_step_pixels": 0.933537185192108,
+        "return_max_step_pixels": 0.999603271484375,
+        "returned_home": true,
+        "scope": "original mayor work schedule and needs; mock AI response through actual chat UI, accept, app save reload, natural clock/needs/work, real SimMotion NPC path and collision-based player movement, proximity meeting, mobile panel; headless rendering, no production AI service",
+        "state": {
+          "due": 144.0,
+          "expires": 8.0,
+          "hour": 18.0,
+          "npc": "chen_wei",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "雙方已在約定地點實際碰面",
+          "resolved_tick": 144,
+          "state": "met",
+          "time": "小鎮第 2 天 18:00",
+          "until": 152.0
+        }
+      },
+      "tail": ""
+    },
+    {
+      "test": "blocked_route",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 14,
+        "failures": [],
+        "maximum_step": 0.80322265625,
+        "scope": "controlled head-on zero-slide regression, sealed wall, bounded retry, reopened gap, bypass, changed destination, JSON state, agenda reason, manual player exclusion and no world mutation"
+      },
+      "tail": ""
+    },
+    {
+      "test": "factory_occupancy",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 17,
+        "failures": [],
+        "maximum_refresh_step": 0.0,
+        "path_points": 5,
+        "scope": "controlled mayor/material/position fixtures; NPC/player occupancy, full rectangular footprint, atomic public/internal build, immediate model and navigation, actual refresh positions, invalid old-position no-snap, native reload and missing plot; no full factory production endurance"
+      },
+      "tail": ""
+    },
+    {
+      "test": "construction_deadline",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 17,
+        "failures": [],
+        "scope": "exact deadline vs changed schedule conflict, direct proposal guard, prior-arrival distinction, one-time history/memory, native snapshot reload, pre-deadline explicit reschedule consent, blocked physical home doorway and late co-location"
+      }
+    },
+    {
+      "test": "construction_detour",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 9,
+        "door_phases": [
+          "approaching",
+          "entering"
+        ],
+        "failures": [],
+        "maximum_step": 0.999603271484375,
+        "scope": "controlled mayor/material and starting-position fixture; real factory build UI, preexisting route crossed footprint, immediate reroute, native reload, real doorway entry and assigned home return; clock fixed to isolate movement, not a natural appointment success claim",
+        "venue": "tavern"
+      }
+    }
+  ]
+}
