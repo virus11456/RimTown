@@ -52,7 +52,8 @@ func try_interaction(a: Dictionary,data: Dictionary,rng: SimRandom,jobs: Diction
 	if not spots.is_empty() and rel.affinity>=30 and (physical_positions==null or (not a.get("isPlayer",false) and not b.get("isPlayer",false) and not a.get("_activeHangout") and not b.get("_activeHangout"))) and rng.next_float()<.12 and not a.get("_pendingHangout") and not b.get("_pendingHangout"):
 		var schedule: Dictionary={}
 		if physical_positions!=null:
-			schedule=SimHangoutRoute.plan(observed_motion,a,b,data.clock,jobs,spots,w)
+			schedule=SimSharedLeisure.plan(w,observed_motion,a,b,spots)
+			if schedule.is_empty(): schedule=SimHangoutRoute.plan(observed_motion,a,b,data.clock,jobs,spots,w)
 			spots=schedule.get("spots",[])
 			if spots.is_empty():
 				converse(a,b,data,rng,jobs)
@@ -65,11 +66,14 @@ func try_interaction(a: Dictionary,data: Dictionary,rng: SimRandom,jobs: Diction
 		if physical_positions!=null:
 			for pair in [[a,b],[b,a]]:
 				pair[0]._pendingHangout.merge({"withId":pair[1].id,"issued_tick":int(data.tickCount),"expires_at":int(data.tickCount)+16,"not_before":int(data.tickCount)+int(schedule.get("wait_ticks",0))})
-		if physical_positions!=null and w!=null:
+		if schedule.has("shared_leisure"):
+			for resident in [a,b]: resident._pendingHangout.shared_leisure=schedule.shared_leisure.duplicate(true);resident._pendingHangout.tick=0
+		elif physical_positions!=null and w!=null:
 			var end:=int(data.tickCount)+int(schedule.wait_ticks)+SimHangoutRoute.reservation_ticks(observed_motion,a,b,spot)
 			a._pendingHangout.agenda_until=end;b._pendingHangout.agenda_until=end
 		var description: String=a.name+"約了"+b.name+"一起去"+spot.replace("_"," ")
-		if int(schedule.get("wait_ticks",0))>0: description+="，預計 %02d:%02d 後有空再出發；仍需實際到場。"%[schedule.hour,schedule.minute]
+		if schedule.has("shared_leisure"): description+="，依各自原有休閒安排前往，完成停留後再碰面。"
+		elif int(schedule.get("wait_ticks",0))>0: description+="，預計 %02d:%02d 後有空再出發；仍需實際到場。"%[schedule.hour,schedule.minute]
 		log_message(data,"social",description,a.name,b.name)
 		remember(a,data,"social",description,5,b.name)
 		remember(b,data,"social",description,5,a.name)

@@ -109,6 +109,7 @@ static func restore_observations(w: SimWorld,positions: Dictionary) -> void:
 				break
 static func observe(w: SimWorld,m: SimMotion) -> void:
 	if not SimHangoutSafety.enabled(w): return
+	SimSharedLeisure.observe(w,m)
 	for token in records(w):
 		var r: Dictionary=records(w)[token]
 		if r.state!="traveling" or int(w.data.tickCount)>=int(r.until) or not valid(w,r): continue
@@ -123,8 +124,11 @@ static func observe(w: SimWorld,m: SimMotion) -> void:
 		if not SimCareerPresence.together(m,left,right,str(r.place)): continue
 		var a: Dictionary=m.positions[left];var b: Dictionary=m.positions[right]
 		if Vector2(a.x,a.y).distance_to(Vector2(b.x,b.y))>48: continue
-		var place: String=w.data.townMap.locations[r.place].get("name",r.place)
-		var reason:="雙方已實際在"+place+"近距離碰面。"
-		finish(w,token,"met",reason)
-		for pair in [[left,right],[right,left]]:
-			SimFeuds._memory(w.data.agents[pair[0]],w,"social","與"+str(w.data.agents[pair[1]].name)+"依同行安排，實際在"+place+"碰面。",4,[w.data.agents[pair[1]].name])
+		complete(w,token)
+static func complete(w: SimWorld,token: String) -> void:
+	var r: Dictionary=records(w).get(token,{})
+	if r.get("state","")!="traveling": return
+	var place: String=w.data.townMap.locations[r.place].get("name",r.place)
+	finish(w,token,"met","雙方已實際在"+place+"近距離碰面。")
+	for pair in [[r.people[0],r.people[1]],[r.people[1],r.people[0]]]:
+		SimFeuds._memory(w.data.agents[pair[0]],w,"social","與"+str(w.data.agents[pair[1]].name)+"依同行安排，實際在"+place+"碰面。",4,[w.data.agents[pair[1]].name])

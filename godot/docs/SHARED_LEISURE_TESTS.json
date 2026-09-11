@@ -1,0 +1,5 @@
+{
+  "checks": 22,
+  "failures": [],
+  "scope": "controlled shared original plans, true observed dwell progression, mid-stay reload, proximity and urgency guards, paired cancellation, one-time original reward, deferred return; separate negative cases use completed-state fixtures, not natural evidence"
+}

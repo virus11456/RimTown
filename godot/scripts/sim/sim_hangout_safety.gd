@@ -26,6 +26,8 @@ static func tick(w: SimWorld) -> void:
 		if a.has("_raidShelterUntil") or w.data.agents[p.withId].has("_raidShelterUntil"): cancel(w,id,"避難優先，外出安排取消。");continue
 		if not w.data.townMap.locations.has(p.location): cancel(w,id,"目的地已不存在，外出安排取消。");continue
 		if int(w.data.tickCount)>=int(p.expires_at): cancel(w,id,"期限內未能開始外出，安排已到期。");continue
+		if p.has("shared_leisure") and not SimSharedLeisure.valid(w,p):
+			cancel(w,id,"原本共同休閒安排已改變，取消這次同行。");continue
 		if p.has("agenda_until") and (SimHangoutRoute.leisure_conflict(w,id,maxi(int(w.data.tickCount),int(p.get("not_before",0))),int(p.agenda_until)) or SimHangoutRoute.leisure_conflict(w,str(p.withId),maxi(int(w.data.tickCount),int(p.get("not_before",0))),int(p.agenda_until))):
 			cancel(w,id,"既有自主休閒與同行時段重疊，保留休閒安排，取消這次同行。");continue
 		if SimAppointments.directing(w,id) or SimAppointments.directing(w,str(p.withId)): cancel(w,id,"已確認的玩家約定優先。");continue
@@ -33,6 +35,7 @@ static func tick(w: SimWorld) -> void:
 	for id in w.data.agents:
 		var a: Dictionary=w.data.agents[id];var p: Variant=a.get("_pendingHangout")
 		if not p is Dictionary or not w.data.agents.has(p.get("withId","")): continue
+		if p.has("shared_leisure"): continue
 		var now:=int(w.data.tickCount)
 		if now<int(p.get("not_before",p.get("issued_tick",now))): continue
 		if now<=int(p.get("countdown_tick",p.get("issued_tick",now))): continue
@@ -49,6 +52,8 @@ static func route(w: SimWorld,a: Dictionary,run: Dictionary) -> void:
 	var pending: Variant=a.get("_pendingHangout")
 	if not pending is Dictionary: return
 	var p: Dictionary=pending
+	if p.has("shared_leisure"):
+		note(w,str(a.id),"pending","依原休閒安排前往；各自完成停留並實際靠近後才算碰面。");return
 	var visit: Dictionary=SimHangoutVisits.records(w).get(SimHangoutVisits.key(str(a.id),p),{})
 	if visit.get("paused",false): return
 	if not w.data.agents.has(p.get("withId","")): return
