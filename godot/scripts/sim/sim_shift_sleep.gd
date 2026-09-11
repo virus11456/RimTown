@@ -5,10 +5,16 @@ static func preferred(a: Dictionary) -> Dictionary:
 	var start:=2 if "night_owl" in traits else 20 if "early_bird" in traits else 22
 	var end:=9 if "night_owl" in traits else 5 if "early_bird" in traits else 6
 	return {"start":start,"end":end,"duration":posmod(end-start,24),"lead":1}
+static func same_hours(a: Variant,b: Variant) -> bool:
+	if not a is Array or not b is Array or a.size()!=2 or b.size()!=2: return false
+	for i in 2:
+		if not (a[i] is int or a[i] is float) or not (b[i] is int or b[i] is float): return false
+		if float(a[i])!=float(b[i]): return false
+	return true
 static func window(a: Dictionary,jobs: Dictionary) -> Dictionary:
 	var saved: Dictionary=a.get("_shiftSleep",{})
 	var job: Dictionary=SimWorkSchedule.job(a,jobs)
-	if not a.get("isPlayer",false) and not saved.is_empty() and saved.get("job")==a.get("jobKey") and saved.get("hours")==job.get("work_hours") and saved.get("workplace")==job.get("workplace") and saved.get("traits")==a.personality.get("traits",[]): return saved
+	if not a.get("isPlayer",false) and not saved.is_empty() and saved.get("job")==a.get("jobKey") and same_hours(saved.get("hours"),job.get("work_hours")) and saved.get("workplace")==job.get("workplace") and saved.get("traits")==a.personality.get("traits",[]): return saved
 	return preferred(a)
 static func asleep(a: Dictionary,jobs: Dictionary,hour: int) -> bool:
 	var p:=window(a,jobs);return posmod(hour-int(p.start),24)<int(p.duration)

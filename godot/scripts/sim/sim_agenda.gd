@@ -21,6 +21,17 @@ static func current(w: SimWorld,m: SimMotion,id: String) -> Dictionary:
 	elif not arrived: text=("前往目的地" if moving else "尚未抵達目的地")+"（預定："+text+"）"
 	elif moving: text="在場所內移動（預定："+text+"）"
 	return {"room":room,"actual":place_name(w,m,room),"destination":destination,"target":str(w.data.townMap.locations.get(destination,{}).get("name","未指定")),"arrived":arrived,"text":text}
+static func attendance(w: SimWorld,m: SimMotion,id: String) -> String:
+	var a: Dictionary=w.data.agents.get(id,{})
+	if a.is_empty() or a.get("isPlayer",false) or a.get("isDead",false): return ""
+	var job:=SimWorkSchedule.job(a,w.rules.jobs)
+	if job.is_empty() or not SimWorkSchedule.working(job,int(w.data.clock.hour)): return ""
+	if not w.data.townMap.locations.has(job.workplace): return "工作場所尚未建成，目前無法到場上工。"
+	if m==null or not m.positions.has(id): return "工時內，位置尚未取得，無法確認是否到場。"
+	var p: Dictionary=m.positions[id]
+	if SimCareerPresence.place(m,id)!=job.workplace: return "工時內，目前不在工作場所；目前活動："+activity(a)+"。"
+	if p.get("walking",false) or p.get("doorPhase")!=null: return "工時內，正在工作場所進出或移動。"
+	return "工時內，已在工作場所；目前活動："+activity(a)+"。"
 static func routine(w: SimWorld,id: String) -> Array:
 	if not w.data.agents.has(id): return []
 	var a: Dictionary=w.data.agents[id]

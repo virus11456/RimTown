@@ -2417,6 +2417,8 @@ func show_agenda(id: String) -> void:
 	_wrapped("實際位置："+str(actual.actual))
 	_wrapped("目的地："+str(actual.target)+" · "+("已抵達" if actual.arrived else "尚未抵達"))
 	_wrapped("目前："+str(actual.text))
+	var attendance:=SimAgenda.attendance(simulation,motion,id)
+	if not attendance.is_empty(): _wrapped("上工狀態："+attendance)
 	if a.get("isPlayer",false): _wrapped("旅人由你操作，這裡不替你安排自動行程。")
 	else:
 		_wrapped("日常作息",18)

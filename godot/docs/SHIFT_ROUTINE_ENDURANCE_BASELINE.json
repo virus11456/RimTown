@@ -1,0 +1,4959 @@
+{
+  "affinity_eligible_conversations": 454,
+  "attendance": {
+    "eligible": 144,
+    "guard_on_time": 15,
+    "guard_total": 16,
+    "on_time": 140,
+    "unavailable": 16
+  },
+  "availability": [
+    {
+      "residents": [
+        {
+          "hours": [
+            17,
+            18
+          ],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [
+            17
+          ],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [
+            14,
+            15
+          ],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [
+            17,
+            18,
+            19
+          ],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [
+            16,
+            17
+          ],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [
+            14,
+            15
+          ],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [
+            17,
+            18
+          ],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [
+            14
+          ],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [
+            17,
+            18,
+            19
+          ],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            17
+          ],
+          "id": "ling_bo",
+          "job": "researcher"
+        }
+      ],
+      "tick": 96
+    },
+    {
+      "residents": [
+        {
+          "hours": [
+            17,
+            18
+          ],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [
+            17
+          ],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [
+            14,
+            15
+          ],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [
+            17,
+            18,
+            19
+          ],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [
+            16,
+            17
+          ],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [
+            14,
+            15
+          ],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [
+            17,
+            18
+          ],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [
+            14
+          ],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [
+            17,
+            18,
+            19
+          ],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            17
+          ],
+          "id": "ling_bo",
+          "job": "researcher"
+        }
+      ],
+      "tick": 192
+    },
+    {
+      "residents": [
+        {
+          "hours": [
+            17,
+            18
+          ],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [
+            17
+          ],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [
+            14,
+            15
+          ],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [
+            17,
+            18,
+            19
+          ],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [
+            16,
+            17
+          ],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [
+            14,
+            15
+          ],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [
+            17,
+            18
+          ],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [
+            14
+          ],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [
+            17,
+            18,
+            19
+          ],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            17
+          ],
+          "id": "ling_bo",
+          "job": "researcher"
+        }
+      ],
+      "tick": 288
+    },
+    {
+      "residents": [
+        {
+          "hours": [
+            17,
+            18
+          ],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [
+            14,
+            15
+          ],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [
+            17,
+            18,
+            19
+          ],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [
+            17
+          ],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [
+            16,
+            17
+          ],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [
+            14
+          ],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [
+            17,
+            18,
+            19
+          ],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [
+            14,
+            15
+          ],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18
+          ],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [
+            17
+          ],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [
+            17,
+            18
+          ],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 384.0
+    },
+    {
+      "residents": [
+        {
+          "hours": [
+            17,
+            18
+          ],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [
+            14,
+            15
+          ],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [
+            17,
+            18,
+            19
+          ],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [
+            17
+          ],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [
+            16,
+            17
+          ],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [
+            14
+          ],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [
+            17,
+            18,
+            19
+          ],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [
+            14,
+            15
+          ],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [
+            17
+          ],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [
+            17,
+            18
+          ],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 480
+    },
+    {
+      "residents": [
+        {
+          "hours": [
+            17,
+            18
+          ],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [
+            14,
+            15
+          ],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [
+            17,
+            18,
+            19
+          ],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [
+            17
+          ],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [
+            16,
+            17
+          ],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [
+            14
+          ],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [
+            17,
+            18,
+            19
+          ],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [
+            14,
+            15
+          ],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [
+            17
+          ],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [
+            17,
+            18
+          ],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 576
+    },
+    {
+      "residents": [
+        {
+          "hours": [
+            17,
+            18
+          ],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [
+            14,
+            15
+          ],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [
+            17,
+            18,
+            19
+          ],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [
+            17
+          ],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [
+            16,
+            17
+          ],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [
+            14
+          ],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [
+            17,
+            18,
+            19
+          ],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [
+            14,
+            15
+          ],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [
+            17
+          ],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [
+            17,
+            18
+          ],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 672
+    },
+    {
+      "residents": [
+        {
+          "hours": [
+            17,
+            18
+          ],
+          "id": "chen_wei",
+          "job": "mayor"
+        },
+        {
+          "hours": [],
+          "id": "gao_lang",
+          "job": "guard"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "he_chang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [
+            14,
+            15
+          ],
+          "id": "he_xiu",
+          "job": "cook"
+        },
+        {
+          "hours": [],
+          "id": "huang_li",
+          "job": "priest"
+        },
+        {
+          "hours": [
+            17,
+            18,
+            19
+          ],
+          "id": "ke_wei",
+          "job": "tailor"
+        },
+        {
+          "hours": [
+            18,
+            19
+          ],
+          "id": "lin_mei",
+          "job": "doctor"
+        },
+        {
+          "hours": [
+            17
+          ],
+          "id": "ling_bo",
+          "job": "researcher"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "liu_jun",
+          "job": "farmer"
+        },
+        {
+          "hours": [
+            16,
+            17
+          ],
+          "id": "ma_qiang",
+          "job": "carpenter"
+        },
+        {
+          "hours": [
+            14
+          ],
+          "id": "su_qing",
+          "job": "cook"
+        },
+        {
+          "hours": [
+            17,
+            18,
+            19
+          ],
+          "id": "sun_yu",
+          "job": "researcher"
+        },
+        {
+          "hours": [
+            14,
+            15
+          ],
+          "id": "wang_li",
+          "job": "cook"
+        },
+        {
+          "hours": [
+            16
+          ],
+          "id": "wu_da",
+          "job": "miner"
+        },
+        {
+          "hours": [],
+          "id": "xu_ying",
+          "job": "tailor"
+        },
+        {
+          "hours": [],
+          "id": "yang_feng",
+          "job": "guard"
+        },
+        {
+          "hours": [
+            17
+          ],
+          "id": "zhang_hao",
+          "job": "blacksmith"
+        },
+        {
+          "hours": [],
+          "id": "zhao_xia",
+          "job": "trader"
+        },
+        {
+          "hours": [
+            17,
+            18
+          ],
+          "id": "zheng_wei",
+          "job": "researcher"
+        },
+        {
+          "hours": [],
+          "id": "zhou_ming",
+          "job": "trader"
+        }
+      ],
+      "tick": 768
+    }
+  ],
+  "checks": 12,
+  "conversations": 769,
+  "day_eight": {
+    "affinity_eligible_conversations": 454,
+    "conversations": 769,
+    "proposals": 3
+  },
+  "departed_visits": 3,
+  "failures": [],
+  "false_sleep": [],
+  "home_returns": {
+    "he_xiu|hangout:330": {
+      "home": "residential_north",
+      "id": "he_xiu",
+      "last_x": 248.0,
+      "last_y": 96.0,
+      "meal_allowance_ticks": 1,
+      "resolved": 335,
+      "signature": "hangout:330",
+      "started": 331,
+      "state": "arrived",
+      "until": 337
+    },
+    "he_xiu|hangout:42": {
+      "home": "residential_north",
+      "id": "he_xiu",
+      "last_x": 248.0,
+      "last_y": 96.0,
+      "meal_allowance_ticks": 0,
+      "resolved": 45,
+      "signature": "hangout:42",
+      "started": 43,
+      "state": "arrived",
+      "until": 48
+    },
+    "su_qing|hangout:330": {
+      "home": "residential_east",
+      "id": "su_qing",
+      "last_x": 104.0,
+      "last_y": 464.0,
+      "meal_allowance_ticks": 0,
+      "resolved": 332,
+      "signature": "hangout:330",
+      "started": 331,
+      "state": "arrived",
+      "until": 334
+    },
+    "sun_yu|hangout:626": {
+      "home": "residential_east",
+      "id": "sun_yu",
+      "last_x": 1048.0,
+      "last_y": 608.0,
+      "meal_allowance_ticks": 1,
+      "resolved": 635,
+      "signature": "hangout:626",
+      "started": 627,
+      "state": "arrived",
+      "until": 638
+    },
+    "wang_li|hangout:42": {
+      "home": "residential_south",
+      "id": "wang_li",
+      "last_x": 424.0,
+      "last_y": 768.0,
+      "meal_allowance_ticks": 0,
+      "resolved": 47,
+      "signature": "hangout:42",
+      "started": 43,
+      "state": "arrived",
+      "until": 49
+    },
+    "zheng_wei|hangout:626": {
+      "home": "residential_east",
+      "id": "zheng_wei",
+      "last_x": 1016.0,
+      "last_y": 112.0,
+      "meal_allowance_ticks": 1,
+      "resolved": 636,
+      "signature": "hangout:626",
+      "started": 627,
+      "state": "arrived",
+      "until": 639
+    }
+  },
+  "invalid": [],
+  "max_return_step": 0.983622491359711,
+  "maximum_records": 3,
+  "motion_frames_per_tick": 480,
+  "night_guard_sleep_hours": {
+    "10": 22,
+    "10.0": 4,
+    "11": 24,
+    "11.0": 4,
+    "12": 20,
+    "12.0": 4,
+    "13": 22,
+    "13.0": 3,
+    "14": 20,
+    "14.0": 6,
+    "15": 24,
+    "15.0": 4,
+    "17.0": 2,
+    "20.0": 1,
+    "21.0": 1,
+    "22.0": 1,
+    "23.0": 4,
+    "8": 22,
+    "8.0": 4,
+    "9": 20,
+    "9.0": 4
+  },
+  "outcomes": {
+    "met": 3
+  },
+  "paused_visits": 0,
+  "proposal_details": {
+    "he_xiu|su_qing|329": {
+      "issued_tick": 329,
+      "people": [
+        "he_xiu",
+        "su_qing"
+      ],
+      "state": "departed"
+    },
+    "he_xiu|wang_li|30": {
+      "issued_tick": 30,
+      "people": [
+        "wang_li",
+        "he_xiu"
+      ],
+      "state": "departed"
+    },
+    "sun_yu|zheng_wei|615": {
+      "issued_tick": 615,
+      "people": [
+        "sun_yu",
+        "zheng_wei"
+      ],
+      "state": "departed"
+    }
+  },
+  "proposals": 3,
+  "reasons": {},
+  "scope": "8 original app days, reload halfway, 480 physical motion frames per tick, no altered jobs/needs/positions/affinity/resources or production AI; headless, not full game playthrough",
+  "shifts": [
+    {
+      "activity": "working",
+      "actual": "",
+      "available": true,
+      "id": "wu_da",
+      "on_time": false,
+      "tick": 4,
+      "workplace": "quarry"
+    },
+    {
+      "activity": "working",
+      "actual": "chapel",
+      "available": true,
+      "id": "huang_li",
+      "on_time": true,
+      "tick": 4,
+      "workplace": "chapel"
+    },
+    {
+      "activity": "working",
+      "actual": "",
+      "available": true,
+      "id": "ma_qiang",
+      "on_time": false,
+      "tick": 4,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "town_square",
+      "available": true,
+      "id": "he_chang",
+      "on_time": false,
+      "tick": 4,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "waiting_workplace",
+      "actual": "",
+      "available": false,
+      "id": "lin_mei",
+      "on_time": false,
+      "tick": 8,
+      "workplace": "clinic"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "zhang_hao",
+      "on_time": true,
+      "tick": 8,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "general_store",
+      "available": true,
+      "id": "zhao_xia",
+      "on_time": true,
+      "tick": 8,
+      "workplace": "general_store"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "xu_ying",
+      "on_time": true,
+      "tick": 8,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "general_store",
+      "available": true,
+      "id": "zhou_ming",
+      "on_time": true,
+      "tick": 8,
+      "workplace": "general_store"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "ke_wei",
+      "on_time": true,
+      "tick": 8,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "town_hall",
+      "available": true,
+      "id": "chen_wei",
+      "on_time": true,
+      "tick": 12,
+      "workplace": "town_hall"
+    },
+    {
+      "activity": "working",
+      "actual": "library",
+      "available": true,
+      "id": "sun_yu",
+      "on_time": true,
+      "tick": 12,
+      "workplace": "library"
+    },
+    {
+      "activity": "working",
+      "actual": "library",
+      "available": true,
+      "id": "zheng_wei",
+      "on_time": true,
+      "tick": 12,
+      "workplace": "library"
+    },
+    {
+      "activity": "working",
+      "actual": "library",
+      "available": true,
+      "id": "ling_bo",
+      "on_time": true,
+      "tick": 12,
+      "workplace": "library"
+    },
+    {
+      "activity": "working",
+      "actual": "town_square",
+      "available": true,
+      "id": "gao_lang",
+      "on_time": true,
+      "tick": 48,
+      "workplace": "town_square"
+    },
+    {
+      "activity": "eating",
+      "actual": "tavern",
+      "available": true,
+      "id": "wang_li",
+      "on_time": true,
+      "tick": 92,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "working",
+      "actual": "tavern",
+      "available": true,
+      "id": "he_xiu",
+      "on_time": true,
+      "tick": 92,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "working",
+      "actual": "tavern",
+      "available": true,
+      "id": "su_qing",
+      "on_time": true,
+      "tick": 92,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "waiting_workplace",
+      "actual": "",
+      "available": false,
+      "id": "liu_jun",
+      "on_time": false,
+      "tick": 96,
+      "workplace": "farm"
+    },
+    {
+      "activity": "working",
+      "actual": "town_square",
+      "available": true,
+      "id": "yang_feng",
+      "on_time": true,
+      "tick": 96,
+      "workplace": "town_square"
+    },
+    {
+      "activity": "working",
+      "actual": "quarry",
+      "available": true,
+      "id": "wu_da",
+      "on_time": true,
+      "tick": 100,
+      "workplace": "quarry"
+    },
+    {
+      "activity": "working",
+      "actual": "chapel",
+      "available": true,
+      "id": "huang_li",
+      "on_time": true,
+      "tick": 100,
+      "workplace": "chapel"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "ma_qiang",
+      "on_time": true,
+      "tick": 100,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "he_chang",
+      "on_time": true,
+      "tick": 100,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "waiting_workplace",
+      "actual": "town_square",
+      "available": false,
+      "id": "lin_mei",
+      "on_time": false,
+      "tick": 104,
+      "workplace": "clinic"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "zhang_hao",
+      "on_time": true,
+      "tick": 104,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "general_store",
+      "available": true,
+      "id": "zhao_xia",
+      "on_time": true,
+      "tick": 104,
+      "workplace": "general_store"
+    },
+    {
+      "activity": "eating",
+      "actual": "workshop",
+      "available": true,
+      "id": "xu_ying",
+      "on_time": true,
+      "tick": 104,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "eating",
+      "actual": "general_store",
+      "available": true,
+      "id": "zhou_ming",
+      "on_time": true,
+      "tick": 104,
+      "workplace": "general_store"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "ke_wei",
+      "on_time": true,
+      "tick": 104,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "town_hall",
+      "available": true,
+      "id": "chen_wei",
+      "on_time": true,
+      "tick": 108,
+      "workplace": "town_hall"
+    },
+    {
+      "activity": "working",
+      "actual": "library",
+      "available": true,
+      "id": "sun_yu",
+      "on_time": true,
+      "tick": 108,
+      "workplace": "library"
+    },
+    {
+      "activity": "working",
+      "actual": "library",
+      "available": true,
+      "id": "zheng_wei",
+      "on_time": true,
+      "tick": 108,
+      "workplace": "library"
+    },
+    {
+      "activity": "working",
+      "actual": "library",
+      "available": true,
+      "id": "ling_bo",
+      "on_time": true,
+      "tick": 108,
+      "workplace": "library"
+    },
+    {
+      "activity": "working",
+      "actual": "town_square",
+      "available": true,
+      "id": "gao_lang",
+      "on_time": true,
+      "tick": 144,
+      "workplace": "town_square"
+    },
+    {
+      "activity": "working",
+      "actual": "tavern",
+      "available": true,
+      "id": "wang_li",
+      "on_time": true,
+      "tick": 188,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "working",
+      "actual": "tavern",
+      "available": true,
+      "id": "he_xiu",
+      "on_time": true,
+      "tick": 188,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "working",
+      "actual": "tavern",
+      "available": true,
+      "id": "su_qing",
+      "on_time": true,
+      "tick": 188,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "waiting_workplace",
+      "actual": "chapel",
+      "available": false,
+      "id": "liu_jun",
+      "on_time": false,
+      "tick": 192,
+      "workplace": "farm"
+    },
+    {
+      "activity": "working",
+      "actual": "town_square",
+      "available": true,
+      "id": "yang_feng",
+      "on_time": true,
+      "tick": 192,
+      "workplace": "town_square"
+    },
+    {
+      "activity": "eating",
+      "actual": "quarry",
+      "available": true,
+      "id": "wu_da",
+      "on_time": true,
+      "tick": 196,
+      "workplace": "quarry"
+    },
+    {
+      "activity": "working",
+      "actual": "chapel",
+      "available": true,
+      "id": "huang_li",
+      "on_time": true,
+      "tick": 196,
+      "workplace": "chapel"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "ma_qiang",
+      "on_time": true,
+      "tick": 196,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "eating",
+      "actual": "workshop",
+      "available": true,
+      "id": "he_chang",
+      "on_time": true,
+      "tick": 196,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "waiting_workplace",
+      "actual": "",
+      "available": false,
+      "id": "lin_mei",
+      "on_time": false,
+      "tick": 200,
+      "workplace": "clinic"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "zhang_hao",
+      "on_time": true,
+      "tick": 200,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "general_store",
+      "available": true,
+      "id": "zhao_xia",
+      "on_time": true,
+      "tick": 200,
+      "workplace": "general_store"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "xu_ying",
+      "on_time": true,
+      "tick": 200,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "general_store",
+      "available": true,
+      "id": "zhou_ming",
+      "on_time": true,
+      "tick": 200,
+      "workplace": "general_store"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "ke_wei",
+      "on_time": true,
+      "tick": 200,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "town_hall",
+      "available": true,
+      "id": "chen_wei",
+      "on_time": true,
+      "tick": 204,
+      "workplace": "town_hall"
+    },
+    {
+      "activity": "working",
+      "actual": "library",
+      "available": true,
+      "id": "sun_yu",
+      "on_time": true,
+      "tick": 204,
+      "workplace": "library"
+    },
+    {
+      "activity": "working",
+      "actual": "library",
+      "available": true,
+      "id": "zheng_wei",
+      "on_time": true,
+      "tick": 204,
+      "workplace": "library"
+    },
+    {
+      "activity": "eating",
+      "actual": "library",
+      "available": true,
+      "id": "ling_bo",
+      "on_time": true,
+      "tick": 204,
+      "workplace": "library"
+    },
+    {
+      "activity": "working",
+      "actual": "town_square",
+      "available": true,
+      "id": "gao_lang",
+      "on_time": true,
+      "tick": 240,
+      "workplace": "town_square"
+    },
+    {
+      "activity": "eating",
+      "actual": "tavern",
+      "available": true,
+      "id": "wang_li",
+      "on_time": true,
+      "tick": 284,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "working",
+      "actual": "tavern",
+      "available": true,
+      "id": "he_xiu",
+      "on_time": true,
+      "tick": 284,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "working",
+      "actual": "tavern",
+      "available": true,
+      "id": "su_qing",
+      "on_time": true,
+      "tick": 284,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "waiting_workplace",
+      "actual": "",
+      "available": false,
+      "id": "liu_jun",
+      "on_time": false,
+      "tick": 288,
+      "workplace": "farm"
+    },
+    {
+      "activity": "working",
+      "actual": "town_square",
+      "available": true,
+      "id": "yang_feng",
+      "on_time": true,
+      "tick": 288,
+      "workplace": "town_square"
+    },
+    {
+      "activity": "working",
+      "actual": "quarry",
+      "available": true,
+      "id": "wu_da",
+      "on_time": true,
+      "tick": 292,
+      "workplace": "quarry"
+    },
+    {
+      "activity": "working",
+      "actual": "chapel",
+      "available": true,
+      "id": "huang_li",
+      "on_time": true,
+      "tick": 292,
+      "workplace": "chapel"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "ma_qiang",
+      "on_time": true,
+      "tick": 292,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "he_chang",
+      "on_time": true,
+      "tick": 292,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "waiting_workplace",
+      "actual": "",
+      "available": false,
+      "id": "lin_mei",
+      "on_time": false,
+      "tick": 296,
+      "workplace": "clinic"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "zhang_hao",
+      "on_time": true,
+      "tick": 296,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "general_store",
+      "available": true,
+      "id": "zhao_xia",
+      "on_time": true,
+      "tick": 296,
+      "workplace": "general_store"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "xu_ying",
+      "on_time": true,
+      "tick": 296,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "general_store",
+      "available": true,
+      "id": "zhou_ming",
+      "on_time": true,
+      "tick": 296,
+      "workplace": "general_store"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "ke_wei",
+      "on_time": true,
+      "tick": 296,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "town_hall",
+      "available": true,
+      "id": "chen_wei",
+      "on_time": true,
+      "tick": 300,
+      "workplace": "town_hall"
+    },
+    {
+      "activity": "working",
+      "actual": "library",
+      "available": true,
+      "id": "sun_yu",
+      "on_time": true,
+      "tick": 300,
+      "workplace": "library"
+    },
+    {
+      "activity": "eating",
+      "actual": "library",
+      "available": true,
+      "id": "zheng_wei",
+      "on_time": true,
+      "tick": 300,
+      "workplace": "library"
+    },
+    {
+      "activity": "working",
+      "actual": "library",
+      "available": true,
+      "id": "ling_bo",
+      "on_time": true,
+      "tick": 300,
+      "workplace": "library"
+    },
+    {
+      "activity": "working",
+      "actual": "town_square",
+      "available": true,
+      "id": "gao_lang",
+      "on_time": true,
+      "tick": 336,
+      "workplace": "town_square"
+    },
+    {
+      "activity": "working",
+      "actual": "tavern",
+      "available": true,
+      "id": "wang_li",
+      "on_time": true,
+      "tick": 380,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "working",
+      "actual": "tavern",
+      "available": true,
+      "id": "he_xiu",
+      "on_time": true,
+      "tick": 380,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "working",
+      "actual": "tavern",
+      "available": true,
+      "id": "su_qing",
+      "on_time": true,
+      "tick": 380,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "waiting_workplace",
+      "actual": "",
+      "available": false,
+      "id": "liu_jun",
+      "on_time": false,
+      "tick": 384,
+      "workplace": "farm"
+    },
+    {
+      "activity": "eating",
+      "actual": "town_square",
+      "available": true,
+      "id": "yang_feng",
+      "on_time": true,
+      "tick": 384,
+      "workplace": "town_square"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "he_chang",
+      "on_time": true,
+      "tick": 388,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "chapel",
+      "available": true,
+      "id": "huang_li",
+      "on_time": true,
+      "tick": 388,
+      "workplace": "chapel"
+    },
+    {
+      "activity": "eating",
+      "actual": "workshop",
+      "available": true,
+      "id": "ma_qiang",
+      "on_time": true,
+      "tick": 388,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "eating",
+      "actual": "quarry",
+      "available": true,
+      "id": "wu_da",
+      "on_time": true,
+      "tick": 388,
+      "workplace": "quarry"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "ke_wei",
+      "on_time": true,
+      "tick": 392,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "waiting_workplace",
+      "actual": "",
+      "available": false,
+      "id": "lin_mei",
+      "on_time": false,
+      "tick": 392,
+      "workplace": "clinic"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "xu_ying",
+      "on_time": true,
+      "tick": 392,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "zhang_hao",
+      "on_time": true,
+      "tick": 392,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "general_store",
+      "available": true,
+      "id": "zhao_xia",
+      "on_time": true,
+      "tick": 392,
+      "workplace": "general_store"
+    },
+    {
+      "activity": "working",
+      "actual": "general_store",
+      "available": true,
+      "id": "zhou_ming",
+      "on_time": true,
+      "tick": 392,
+      "workplace": "general_store"
+    },
+    {
+      "activity": "eating",
+      "actual": "town_hall",
+      "available": true,
+      "id": "chen_wei",
+      "on_time": true,
+      "tick": 396,
+      "workplace": "town_hall"
+    },
+    {
+      "activity": "working",
+      "actual": "library",
+      "available": true,
+      "id": "ling_bo",
+      "on_time": true,
+      "tick": 396,
+      "workplace": "library"
+    },
+    {
+      "activity": "working",
+      "actual": "library",
+      "available": true,
+      "id": "sun_yu",
+      "on_time": true,
+      "tick": 396,
+      "workplace": "library"
+    },
+    {
+      "activity": "working",
+      "actual": "library",
+      "available": true,
+      "id": "zheng_wei",
+      "on_time": true,
+      "tick": 396,
+      "workplace": "library"
+    },
+    {
+      "activity": "eating",
+      "actual": "",
+      "available": true,
+      "id": "gao_lang",
+      "on_time": false,
+      "tick": 432,
+      "workplace": "town_square"
+    },
+    {
+      "activity": "working",
+      "actual": "tavern",
+      "available": true,
+      "id": "he_xiu",
+      "on_time": true,
+      "tick": 476,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "working",
+      "actual": "tavern",
+      "available": true,
+      "id": "su_qing",
+      "on_time": true,
+      "tick": 476,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "working",
+      "actual": "tavern",
+      "available": true,
+      "id": "wang_li",
+      "on_time": true,
+      "tick": 476,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "waiting_workplace",
+      "actual": "",
+      "available": false,
+      "id": "liu_jun",
+      "on_time": false,
+      "tick": 480,
+      "workplace": "farm"
+    },
+    {
+      "activity": "working",
+      "actual": "town_square",
+      "available": true,
+      "id": "yang_feng",
+      "on_time": true,
+      "tick": 480,
+      "workplace": "town_square"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "he_chang",
+      "on_time": true,
+      "tick": 484,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "eating",
+      "actual": "chapel",
+      "available": true,
+      "id": "huang_li",
+      "on_time": true,
+      "tick": 484,
+      "workplace": "chapel"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "ma_qiang",
+      "on_time": true,
+      "tick": 484,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "quarry",
+      "available": true,
+      "id": "wu_da",
+      "on_time": true,
+      "tick": 484,
+      "workplace": "quarry"
+    },
+    {
+      "activity": "eating",
+      "actual": "workshop",
+      "available": true,
+      "id": "ke_wei",
+      "on_time": true,
+      "tick": 488,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "waiting_workplace",
+      "actual": "town_square",
+      "available": false,
+      "id": "lin_mei",
+      "on_time": false,
+      "tick": 488,
+      "workplace": "clinic"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "xu_ying",
+      "on_time": true,
+      "tick": 488,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "zhang_hao",
+      "on_time": true,
+      "tick": 488,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "general_store",
+      "available": true,
+      "id": "zhao_xia",
+      "on_time": true,
+      "tick": 488,
+      "workplace": "general_store"
+    },
+    {
+      "activity": "eating",
+      "actual": "general_store",
+      "available": true,
+      "id": "zhou_ming",
+      "on_time": true,
+      "tick": 488,
+      "workplace": "general_store"
+    },
+    {
+      "activity": "working",
+      "actual": "town_hall",
+      "available": true,
+      "id": "chen_wei",
+      "on_time": true,
+      "tick": 492,
+      "workplace": "town_hall"
+    },
+    {
+      "activity": "working",
+      "actual": "library",
+      "available": true,
+      "id": "ling_bo",
+      "on_time": true,
+      "tick": 492,
+      "workplace": "library"
+    },
+    {
+      "activity": "eating",
+      "actual": "library",
+      "available": true,
+      "id": "sun_yu",
+      "on_time": true,
+      "tick": 492,
+      "workplace": "library"
+    },
+    {
+      "activity": "working",
+      "actual": "library",
+      "available": true,
+      "id": "zheng_wei",
+      "on_time": true,
+      "tick": 492,
+      "workplace": "library"
+    },
+    {
+      "activity": "working",
+      "actual": "town_square",
+      "available": true,
+      "id": "gao_lang",
+      "on_time": true,
+      "tick": 528,
+      "workplace": "town_square"
+    },
+    {
+      "activity": "working",
+      "actual": "tavern",
+      "available": true,
+      "id": "he_xiu",
+      "on_time": true,
+      "tick": 572,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "working",
+      "actual": "tavern",
+      "available": true,
+      "id": "su_qing",
+      "on_time": true,
+      "tick": 572,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "working",
+      "actual": "tavern",
+      "available": true,
+      "id": "wang_li",
+      "on_time": true,
+      "tick": 572,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "waiting_workplace",
+      "actual": "well",
+      "available": false,
+      "id": "liu_jun",
+      "on_time": false,
+      "tick": 576,
+      "workplace": "farm"
+    },
+    {
+      "activity": "working",
+      "actual": "town_square",
+      "available": true,
+      "id": "yang_feng",
+      "on_time": true,
+      "tick": 576,
+      "workplace": "town_square"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "he_chang",
+      "on_time": true,
+      "tick": 580,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "chapel",
+      "available": true,
+      "id": "huang_li",
+      "on_time": true,
+      "tick": 580,
+      "workplace": "chapel"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "ma_qiang",
+      "on_time": true,
+      "tick": 580,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "eating",
+      "actual": "quarry",
+      "available": true,
+      "id": "wu_da",
+      "on_time": true,
+      "tick": 580,
+      "workplace": "quarry"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "ke_wei",
+      "on_time": true,
+      "tick": 584,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "waiting_workplace",
+      "actual": "well",
+      "available": false,
+      "id": "lin_mei",
+      "on_time": false,
+      "tick": 584,
+      "workplace": "clinic"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "xu_ying",
+      "on_time": true,
+      "tick": 584,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "zhang_hao",
+      "on_time": true,
+      "tick": 584,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "general_store",
+      "available": true,
+      "id": "zhao_xia",
+      "on_time": true,
+      "tick": 584,
+      "workplace": "general_store"
+    },
+    {
+      "activity": "working",
+      "actual": "general_store",
+      "available": true,
+      "id": "zhou_ming",
+      "on_time": true,
+      "tick": 584,
+      "workplace": "general_store"
+    },
+    {
+      "activity": "working",
+      "actual": "town_hall",
+      "available": true,
+      "id": "chen_wei",
+      "on_time": true,
+      "tick": 588,
+      "workplace": "town_hall"
+    },
+    {
+      "activity": "working",
+      "actual": "library",
+      "available": true,
+      "id": "ling_bo",
+      "on_time": true,
+      "tick": 588,
+      "workplace": "library"
+    },
+    {
+      "activity": "working",
+      "actual": "library",
+      "available": true,
+      "id": "sun_yu",
+      "on_time": true,
+      "tick": 588,
+      "workplace": "library"
+    },
+    {
+      "activity": "working",
+      "actual": "library",
+      "available": true,
+      "id": "zheng_wei",
+      "on_time": true,
+      "tick": 588,
+      "workplace": "library"
+    },
+    {
+      "activity": "working",
+      "actual": "town_square",
+      "available": true,
+      "id": "gao_lang",
+      "on_time": true,
+      "tick": 624,
+      "workplace": "town_square"
+    },
+    {
+      "activity": "working",
+      "actual": "tavern",
+      "available": true,
+      "id": "he_xiu",
+      "on_time": true,
+      "tick": 668,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "working",
+      "actual": "tavern",
+      "available": true,
+      "id": "su_qing",
+      "on_time": true,
+      "tick": 668,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "working",
+      "actual": "tavern",
+      "available": true,
+      "id": "wang_li",
+      "on_time": true,
+      "tick": 668,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "waiting_workplace",
+      "actual": "",
+      "available": false,
+      "id": "liu_jun",
+      "on_time": false,
+      "tick": 672,
+      "workplace": "farm"
+    },
+    {
+      "activity": "working",
+      "actual": "town_square",
+      "available": true,
+      "id": "yang_feng",
+      "on_time": true,
+      "tick": 672,
+      "workplace": "town_square"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "he_chang",
+      "on_time": true,
+      "tick": 676,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "chapel",
+      "available": true,
+      "id": "huang_li",
+      "on_time": true,
+      "tick": 676,
+      "workplace": "chapel"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "ma_qiang",
+      "on_time": true,
+      "tick": 676,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "quarry",
+      "available": true,
+      "id": "wu_da",
+      "on_time": true,
+      "tick": 676,
+      "workplace": "quarry"
+    },
+    {
+      "activity": "eating",
+      "actual": "workshop",
+      "available": true,
+      "id": "ke_wei",
+      "on_time": true,
+      "tick": 680,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "waiting_workplace",
+      "actual": "",
+      "available": false,
+      "id": "lin_mei",
+      "on_time": false,
+      "tick": 680,
+      "workplace": "clinic"
+    },
+    {
+      "activity": "working",
+      "actual": "workshop",
+      "available": true,
+      "id": "xu_ying",
+      "on_time": true,
+      "tick": 680,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "eating",
+      "actual": "workshop",
+      "available": true,
+      "id": "zhang_hao",
+      "on_time": true,
+      "tick": 680,
+      "workplace": "workshop"
+    },
+    {
+      "activity": "working",
+      "actual": "general_store",
+      "available": true,
+      "id": "zhao_xia",
+      "on_time": true,
+      "tick": 680,
+      "workplace": "general_store"
+    },
+    {
+      "activity": "eating",
+      "actual": "general_store",
+      "available": true,
+      "id": "zhou_ming",
+      "on_time": true,
+      "tick": 680,
+      "workplace": "general_store"
+    },
+    {
+      "activity": "eating",
+      "actual": "town_hall",
+      "available": true,
+      "id": "chen_wei",
+      "on_time": true,
+      "tick": 684,
+      "workplace": "town_hall"
+    },
+    {
+      "activity": "working",
+      "actual": "library",
+      "available": true,
+      "id": "ling_bo",
+      "on_time": true,
+      "tick": 684,
+      "workplace": "library"
+    },
+    {
+      "activity": "working",
+      "actual": "library",
+      "available": true,
+      "id": "sun_yu",
+      "on_time": true,
+      "tick": 684,
+      "workplace": "library"
+    },
+    {
+      "activity": "working",
+      "actual": "library",
+      "available": true,
+      "id": "zheng_wei",
+      "on_time": true,
+      "tick": 684,
+      "workplace": "library"
+    },
+    {
+      "activity": "working",
+      "actual": "town_square",
+      "available": true,
+      "id": "gao_lang",
+      "on_time": true,
+      "tick": 720,
+      "workplace": "town_square"
+    },
+    {
+      "activity": "eating",
+      "actual": "tavern",
+      "available": true,
+      "id": "he_xiu",
+      "on_time": true,
+      "tick": 764,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "working",
+      "actual": "tavern",
+      "available": true,
+      "id": "su_qing",
+      "on_time": true,
+      "tick": 764,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "eating",
+      "actual": "tavern",
+      "available": true,
+      "id": "wang_li",
+      "on_time": true,
+      "tick": 764,
+      "workplace": "tavern"
+    },
+    {
+      "activity": "waiting_workplace",
+      "actual": "",
+      "available": false,
+      "id": "liu_jun",
+      "on_time": false,
+      "tick": 768,
+      "workplace": "farm"
+    },
+    {
+      "activity": "eating",
+      "actual": "town_square",
+      "available": true,
+      "id": "yang_feng",
+      "on_time": true,
+      "tick": 768,
+      "workplace": "town_square"
+    }
+  ],
+  "ticks": 768,
+  "traces": {
+    "he_xiu|su_qing|329": [
+      {
+        "hour": 16,
+        "minute": 15,
+        "people": {
+          "he_xiu": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 19.2,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 2,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 29.8000000000001,
+            "stay": 0
+          },
+          "su_qing": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 20.0,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 6,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 29.8000000000001,
+            "stay": 0
+          }
+        },
+        "tick": 329,
+        "visit": {}
+      }
+    ],
+    "he_xiu|wang_li|30": [
+      {
+        "hour": 13.0,
+        "minute": 30,
+        "people": {
+          "he_xiu": {
+            "activity": "working",
+            "actual_place": "tavern",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 32.0,
+            "leisure_directing": false,
+            "location": "tavern",
+            "motion": {
+              "_directedGoal": {
+                "appointment": false,
+                "location": "tavern",
+                "route_key": "tavern",
+                "x": 360.0,
+                "y": 416.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 3,
+              "_pathWaypoints": [],
+              "activity": "working",
+              "dir4": "up",
+              "doorPhase": null,
+              "doorWaypoint": null,
+              "facing": -1,
+              "finalTarget": null,
+              "targetX": 360.0,
+              "targetY": 416.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 360.0,
+              "y": 416.0
+            },
+            "pending_delay": 0,
+            "rest": 35.0,
+            "stay": 10
+          },
+          "wang_li": {
+            "activity": "working",
+            "actual_place": "tavern",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 32.0,
+            "leisure_directing": false,
+            "location": "tavern",
+            "motion": {
+              "_directedGoal": {
+                "appointment": false,
+                "location": "tavern",
+                "route_key": "tavern",
+                "x": 360.0,
+                "y": 416.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 4,
+              "_pathWaypoints": [],
+              "activity": "working",
+              "destDoor": null,
+              "dir4": "up",
+              "doorPhase": null,
+              "doorWaypoint": null,
+              "facing": -1,
+              "finalTarget": null,
+              "targetX": 360.0,
+              "targetY": 416.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 360.0,
+              "y": 416.0
+            },
+            "pending_delay": 0,
+            "rest": 35.0,
+            "stay": 18
+          }
+        },
+        "tick": 30,
+        "visit": {}
+      },
+      {
+        "hour": 13.0,
+        "minute": 45,
+        "people": {
+          "he_xiu": {
+            "activity": "working",
+            "actual_place": "tavern",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 30.0,
+            "leisure_directing": false,
+            "location": "tavern",
+            "motion": {
+              "_directedGoal": {
+                "appointment": false,
+                "location": "tavern",
+                "route_key": "tavern",
+                "x": 360.0,
+                "y": 416.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 3,
+              "_pathWaypoints": [],
+              "activity": "working",
+              "dir4": "up",
+              "doorPhase": null,
+              "doorWaypoint": null,
+              "facing": -1,
+              "finalTarget": null,
+              "targetX": 360.0,
+              "targetY": 416.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 360.0,
+              "y": 416.0
+            },
+            "pending_delay": 0,
+            "rest": 33.5,
+            "stay": 9
+          },
+          "wang_li": {
+            "activity": "working",
+            "actual_place": "tavern",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 30.0,
+            "leisure_directing": false,
+            "location": "tavern",
+            "motion": {
+              "_directedGoal": {
+                "appointment": false,
+                "location": "tavern",
+                "route_key": "tavern",
+                "x": 360.0,
+                "y": 416.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 4,
+              "_pathWaypoints": [],
+              "activity": "working",
+              "destDoor": null,
+              "dir4": "up",
+              "doorPhase": null,
+              "doorWaypoint": null,
+              "facing": -1,
+              "finalTarget": null,
+              "targetX": 360.0,
+              "targetY": 416.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 360.0,
+              "y": 416.0
+            },
+            "pending_delay": 0,
+            "rest": 33.5,
+            "stay": 17
+          }
+        },
+        "tick": 31,
+        "visit": {}
+      },
+      {
+        "hour": 14.0,
+        "minute": 0,
+        "people": {
+          "he_xiu": {
+            "activity": "planned_leisure",
+            "actual_place": "",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 28.0,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 5,
+              "_pathWaypoints": [
+                {
+                  "x": 360.0,
+                  "y": 424.0
+                },
+                {
+                  "x": 360.0,
+                  "y": 456.0
+                },
+                {
+                  "x": 376.0,
+                  "y": 472.0
+                },
+                {
+                  "x": 376.0,
+                  "y": 504.0
+                },
+                {
+                  "x": 280.0,
+                  "y": 504.0
+                },
+                {
+                  "x": 184.0,
+                  "y": 408.0
+                },
+                {
+                  "x": 152.0,
+                  "y": 408.0
+                }
+              ],
+              "activity": "planned_leisure",
+              "dir4": "side",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 475,
+              "walking": true,
+              "x": 210.846038818359,
+              "y": 434.846374511719
+            },
+            "pending_delay": 0,
+            "rest": 32.0,
+            "stay": 0
+          },
+          "wang_li": {
+            "activity": "planned_leisure",
+            "actual_place": "",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 28.0,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 5,
+              "_pathWaypoints": [
+                {
+                  "x": 360.0,
+                  "y": 424.0
+                },
+                {
+                  "x": 360.0,
+                  "y": 456.0
+                },
+                {
+                  "x": 376.0,
+                  "y": 472.0
+                },
+                {
+                  "x": 376.0,
+                  "y": 504.0
+                },
+                {
+                  "x": 280.0,
+                  "y": 504.0
+                },
+                {
+                  "x": 184.0,
+                  "y": 408.0
+                },
+                {
+                  "x": 152.0,
+                  "y": 408.0
+                }
+              ],
+              "activity": "planned_leisure",
+              "dir4": "side",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 475,
+              "walking": true,
+              "x": 210.846038818359,
+              "y": 434.846374511719
+            },
+            "pending_delay": 0,
+            "rest": 32.0,
+            "stay": 0
+          }
+        },
+        "tick": 32,
+        "visit": {}
+      },
+      {
+        "hour": 14.0,
+        "minute": 15,
+        "people": {
+          "he_xiu": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 26.0,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 6,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 30.5,
+            "stay": 0
+          },
+          "wang_li": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 26.0,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 6,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 30.5,
+            "stay": 0
+          }
+        },
+        "tick": 33,
+        "visit": {}
+      },
+      {
+        "hour": 14.0,
+        "minute": 30,
+        "people": {
+          "he_xiu": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 24.0,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 6,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 29.0,
+            "stay": 0
+          },
+          "wang_li": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 24.0,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 6,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 29.0,
+            "stay": 0
+          }
+        },
+        "tick": 34,
+        "visit": {}
+      },
+      {
+        "hour": 14.0,
+        "minute": 45,
+        "people": {
+          "he_xiu": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 22.0,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 6,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 27.5,
+            "stay": 0
+          },
+          "wang_li": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 22.0,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 6,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 27.5,
+            "stay": 0
+          }
+        },
+        "tick": 35,
+        "visit": {}
+      },
+      {
+        "hour": 15.0,
+        "minute": 0,
+        "people": {
+          "he_xiu": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 20.0,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 6,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 26.0,
+            "stay": 0
+          },
+          "wang_li": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 20.0,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 6,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 26.0,
+            "stay": 0
+          }
+        },
+        "tick": 36,
+        "visit": {}
+      },
+      {
+        "hour": 15.0,
+        "minute": 15,
+        "people": {
+          "he_xiu": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 18.0,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 6,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 24.5,
+            "stay": 0
+          },
+          "wang_li": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 18.0,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 6,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 24.5,
+            "stay": 0
+          }
+        },
+        "tick": 37,
+        "visit": {}
+      },
+      {
+        "hour": 15.0,
+        "minute": 30,
+        "people": {
+          "he_xiu": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 16.0,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 6,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 23.0,
+            "stay": 0
+          },
+          "wang_li": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 16.0,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 6,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 23.0,
+            "stay": 0
+          }
+        },
+        "tick": 38,
+        "visit": {}
+      },
+      {
+        "hour": 15.0,
+        "minute": 45,
+        "people": {
+          "he_xiu": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 14.0,
+            "leisure_directing": false,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": false,
+                "location": "park",
+                "route_key": "park",
+                "x": 176.0,
+                "y": 392.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 2,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "side",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 176.0,
+              "targetY": 392.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 176.0,
+              "y": 392.0
+            },
+            "pending_delay": 0,
+            "rest": 21.5,
+            "stay": 4
+          },
+          "wang_li": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 14.0,
+            "leisure_directing": false,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": false,
+                "location": "park",
+                "route_key": "park",
+                "x": 176.0,
+                "y": 392.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 2,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "side",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 176.0,
+              "targetY": 392.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 176.0,
+              "y": 392.0
+            },
+            "pending_delay": 0,
+            "rest": 21.5,
+            "stay": 4
+          }
+        },
+        "tick": 39,
+        "visit": {}
+      },
+      {
+        "hour": 16.0,
+        "minute": 0,
+        "people": {
+          "he_xiu": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 34.0,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 2,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 20.0,
+            "stay": 0
+          },
+          "wang_li": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 34.0,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 2,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 20.0,
+            "stay": 0
+          }
+        },
+        "tick": 40,
+        "visit": {}
+      },
+      {
+        "hour": 16.0,
+        "minute": 15,
+        "people": {
+          "he_xiu": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 32.0,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 2,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 18.5,
+            "stay": 0
+          },
+          "wang_li": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 32.0,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 2,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 18.5,
+            "stay": 0
+          }
+        },
+        "tick": 41,
+        "visit": {}
+      }
+    ],
+    "sun_yu|zheng_wei|615": [
+      {
+        "hour": 15,
+        "minute": 45,
+        "people": {
+          "sun_yu": {
+            "activity": "working",
+            "actual_place": "library",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 37.2000000000001,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_directedGoal": {
+                "appointment": false,
+                "location": "library",
+                "route_key": "library",
+                "x": 1064.0,
+                "y": 272.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [],
+              "activity": "working",
+              "dir4": "up",
+              "doorPhase": null,
+              "doorWaypoint": null,
+              "facing": 1,
+              "finalTarget": null,
+              "targetX": 1064.0,
+              "targetY": 272.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 1064.0,
+              "y": 272.0
+            },
+            "pending_delay": 0,
+            "rest": 46.0,
+            "stay": 12
+          },
+          "zheng_wei": {
+            "activity": "working",
+            "actual_place": "library",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 37.2000000000001,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_directedGoal": {
+                "appointment": false,
+                "location": "library",
+                "route_key": "library",
+                "x": 1048.0,
+                "y": 272.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [],
+              "activity": "working",
+              "dir4": "up",
+              "doorPhase": null,
+              "doorWaypoint": null,
+              "facing": -1,
+              "finalTarget": null,
+              "targetX": 1048.0,
+              "targetY": 272.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 1048.0,
+              "y": 272.0
+            },
+            "pending_delay": 0,
+            "rest": 40.0,
+            "stay": 12
+          }
+        },
+        "tick": 615,
+        "visit": {}
+      },
+      {
+        "hour": 16,
+        "minute": 0,
+        "people": {
+          "sun_yu": {
+            "activity": "working",
+            "actual_place": "library",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 35.2000000000001,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_directedGoal": {
+                "appointment": false,
+                "location": "library",
+                "route_key": "library",
+                "x": 1064.0,
+                "y": 272.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [],
+              "activity": "working",
+              "dir4": "up",
+              "doorPhase": null,
+              "doorWaypoint": null,
+              "facing": 1,
+              "finalTarget": null,
+              "targetX": 1064.0,
+              "targetY": 272.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 1064.0,
+              "y": 272.0
+            },
+            "pending_delay": 0,
+            "rest": 44.5,
+            "stay": 11
+          },
+          "zheng_wei": {
+            "activity": "working",
+            "actual_place": "library",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 35.2000000000001,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_directedGoal": {
+                "appointment": false,
+                "location": "library",
+                "route_key": "library",
+                "x": 1048.0,
+                "y": 272.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [],
+              "activity": "working",
+              "dir4": "up",
+              "doorPhase": null,
+              "doorWaypoint": null,
+              "facing": -1,
+              "finalTarget": null,
+              "targetX": 1048.0,
+              "targetY": 272.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 1048.0,
+              "y": 272.0
+            },
+            "pending_delay": 0,
+            "rest": 38.5,
+            "stay": 11
+          }
+        },
+        "tick": 616,
+        "visit": {}
+      },
+      {
+        "hour": 16,
+        "minute": 15,
+        "people": {
+          "sun_yu": {
+            "activity": "working",
+            "actual_place": "library",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 33.2000000000001,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_directedGoal": {
+                "appointment": false,
+                "location": "library",
+                "route_key": "library",
+                "x": 1064.0,
+                "y": 272.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [],
+              "activity": "working",
+              "dir4": "up",
+              "doorPhase": null,
+              "doorWaypoint": null,
+              "facing": 1,
+              "finalTarget": null,
+              "targetX": 1064.0,
+              "targetY": 272.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 1064.0,
+              "y": 272.0
+            },
+            "pending_delay": 0,
+            "rest": 43.0,
+            "stay": 10
+          },
+          "zheng_wei": {
+            "activity": "working",
+            "actual_place": "library",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 33.2000000000001,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_directedGoal": {
+                "appointment": false,
+                "location": "library",
+                "route_key": "library",
+                "x": 1048.0,
+                "y": 272.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [],
+              "activity": "working",
+              "dir4": "up",
+              "doorPhase": null,
+              "doorWaypoint": null,
+              "facing": -1,
+              "finalTarget": null,
+              "targetX": 1048.0,
+              "targetY": 272.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 1048.0,
+              "y": 272.0
+            },
+            "pending_delay": 0,
+            "rest": 37.0,
+            "stay": 10
+          }
+        },
+        "tick": 617,
+        "visit": {}
+      },
+      {
+        "hour": 16,
+        "minute": 30,
+        "people": {
+          "sun_yu": {
+            "activity": "working",
+            "actual_place": "library",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 31.2000000000001,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_directedGoal": {
+                "appointment": false,
+                "location": "library",
+                "route_key": "library",
+                "x": 1064.0,
+                "y": 272.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [],
+              "activity": "working",
+              "dir4": "up",
+              "doorPhase": null,
+              "doorWaypoint": null,
+              "facing": 1,
+              "finalTarget": null,
+              "targetX": 1064.0,
+              "targetY": 272.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 1064.0,
+              "y": 272.0
+            },
+            "pending_delay": 0,
+            "rest": 41.5,
+            "stay": 9
+          },
+          "zheng_wei": {
+            "activity": "working",
+            "actual_place": "library",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 31.2000000000001,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_directedGoal": {
+                "appointment": false,
+                "location": "library",
+                "route_key": "library",
+                "x": 1048.0,
+                "y": 272.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [],
+              "activity": "working",
+              "dir4": "up",
+              "doorPhase": null,
+              "doorWaypoint": null,
+              "facing": -1,
+              "finalTarget": null,
+              "targetX": 1048.0,
+              "targetY": 272.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 1048.0,
+              "y": 272.0
+            },
+            "pending_delay": 0,
+            "rest": 35.5,
+            "stay": 9
+          }
+        },
+        "tick": 618,
+        "visit": {}
+      },
+      {
+        "hour": 16,
+        "minute": 45,
+        "people": {
+          "sun_yu": {
+            "activity": "working",
+            "actual_place": "library",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 29.2000000000001,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_directedGoal": {
+                "appointment": false,
+                "location": "library",
+                "route_key": "library",
+                "x": 1064.0,
+                "y": 272.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [],
+              "activity": "working",
+              "dir4": "up",
+              "doorPhase": null,
+              "doorWaypoint": null,
+              "facing": 1,
+              "finalTarget": null,
+              "targetX": 1064.0,
+              "targetY": 272.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 1064.0,
+              "y": 272.0
+            },
+            "pending_delay": 0,
+            "rest": 40.0,
+            "stay": 8
+          },
+          "zheng_wei": {
+            "activity": "working",
+            "actual_place": "library",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 29.2000000000001,
+            "leisure_directing": false,
+            "location": "library",
+            "motion": {
+              "_directedGoal": {
+                "appointment": false,
+                "location": "library",
+                "route_key": "library",
+                "x": 1048.0,
+                "y": 272.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 1,
+              "_pathWaypoints": [],
+              "activity": "working",
+              "dir4": "up",
+              "doorPhase": null,
+              "doorWaypoint": null,
+              "facing": -1,
+              "finalTarget": null,
+              "targetX": 1048.0,
+              "targetY": 272.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 1048.0,
+              "y": 272.0
+            },
+            "pending_delay": 0,
+            "rest": 34.0,
+            "stay": 8
+          }
+        },
+        "tick": 619,
+        "visit": {}
+      },
+      {
+        "hour": 17,
+        "minute": 0,
+        "people": {
+          "sun_yu": {
+            "activity": "planned_leisure",
+            "actual_place": "",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 27.2000000000001,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 3,
+              "_pathWaypoints": [
+                {
+                  "x": 1064.0,
+                  "y": 280.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1048.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 472.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 456.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 280.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 408.0
+                },
+                {
+                  "x": 152.0,
+                  "y": 408.0
+                }
+              ],
+              "activity": "planned_leisure",
+              "dir4": "side",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 477,
+              "walking": true,
+              "x": 854.207885742188,
+              "y": 360.0
+            },
+            "pending_delay": 0,
+            "rest": 38.5,
+            "stay": 0
+          },
+          "zheng_wei": {
+            "activity": "planned_leisure",
+            "actual_place": "",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 27.2000000000001,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 5,
+              "_pathWaypoints": [
+                {
+                  "x": 1048.0,
+                  "y": 280.0
+                },
+                {
+                  "x": 1048.0,
+                  "y": 296.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 312.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1048.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 472.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 456.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 280.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 408.0
+                },
+                {
+                  "x": 152.0,
+                  "y": 408.0
+                }
+              ],
+              "activity": "planned_leisure",
+              "dir4": "side",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 475,
+              "walking": true,
+              "x": 860.8076171875,
+              "y": 360.0
+            },
+            "pending_delay": 0,
+            "rest": 32.5,
+            "stay": 0
+          }
+        },
+        "tick": 620,
+        "visit": {}
+      },
+      {
+        "hour": 17,
+        "minute": 15,
+        "people": {
+          "sun_yu": {
+            "activity": "planned_leisure",
+            "actual_place": "",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 25.2000000000001,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 3,
+              "_pathWaypoints": [
+                {
+                  "x": 1064.0,
+                  "y": 280.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1048.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 472.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 456.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 280.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 408.0
+                },
+                {
+                  "x": 152.0,
+                  "y": 408.0
+                }
+              ],
+              "activity": "planned_leisure",
+              "dir4": "side",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 957,
+              "walking": true,
+              "x": 566.219604492188,
+              "y": 360.0
+            },
+            "pending_delay": 0,
+            "rest": 37.0,
+            "stay": 0
+          },
+          "zheng_wei": {
+            "activity": "planned_leisure",
+            "actual_place": "",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 25.2000000000001,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 5,
+              "_pathWaypoints": [
+                {
+                  "x": 1048.0,
+                  "y": 280.0
+                },
+                {
+                  "x": 1048.0,
+                  "y": 296.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 312.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1048.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 472.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 456.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 280.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 408.0
+                },
+                {
+                  "x": 152.0,
+                  "y": 408.0
+                }
+              ],
+              "activity": "planned_leisure",
+              "dir4": "side",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 955,
+              "walking": true,
+              "x": 572.8193359375,
+              "y": 360.0
+            },
+            "pending_delay": 0,
+            "rest": 31.0,
+            "stay": 0
+          }
+        },
+        "tick": 621,
+        "visit": {}
+      },
+      {
+        "hour": 17,
+        "minute": 30,
+        "people": {
+          "sun_yu": {
+            "activity": "planned_leisure",
+            "actual_place": "",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 23.2000000000001,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 5,
+              "_pathWaypoints": [
+                {
+                  "x": 1064.0,
+                  "y": 280.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1048.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 472.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 456.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 280.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 408.0
+                },
+                {
+                  "x": 152.0,
+                  "y": 408.0
+                }
+              ],
+              "activity": "planned_leisure",
+              "dir4": "side",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 1435,
+              "walking": true,
+              "x": 284.998260498047,
+              "y": 344.0
+            },
+            "pending_delay": 0,
+            "rest": 35.5,
+            "stay": 0
+          },
+          "zheng_wei": {
+            "activity": "planned_leisure",
+            "actual_place": "",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 23.2000000000001,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 7,
+              "_pathWaypoints": [
+                {
+                  "x": 1048.0,
+                  "y": 280.0
+                },
+                {
+                  "x": 1048.0,
+                  "y": 296.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 312.0
+                },
+                {
+                  "x": 1064.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 1048.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 472.0,
+                  "y": 360.0
+                },
+                {
+                  "x": 456.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 280.0,
+                  "y": 344.0
+                },
+                {
+                  "x": 216.0,
+                  "y": 408.0
+                },
+                {
+                  "x": 152.0,
+                  "y": 408.0
+                }
+              ],
+              "activity": "planned_leisure",
+              "dir4": "side",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 1433,
+              "walking": true,
+              "x": 291.598327636719,
+              "y": 344.0
+            },
+            "pending_delay": 0,
+            "rest": 29.5,
+            "stay": 0
+          }
+        },
+        "tick": 622,
+        "visit": {}
+      },
+      {
+        "hour": 17,
+        "minute": 45,
+        "people": {
+          "sun_yu": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 21.2000000000001,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 7,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 34.0,
+            "stay": 0
+          },
+          "zheng_wei": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 21.2000000000001,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 9,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 28.0,
+            "stay": 0
+          }
+        },
+        "tick": 623,
+        "visit": {}
+      },
+      {
+        "hour": 18,
+        "minute": 0,
+        "people": {
+          "sun_yu": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 19.2000000000001,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 7,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 32.5,
+            "stay": 0
+          },
+          "zheng_wei": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 19.2000000000001,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 9,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 26.5,
+            "stay": 0
+          }
+        },
+        "tick": 624,
+        "visit": {}
+      },
+      {
+        "hour": 18,
+        "minute": 15,
+        "people": {
+          "sun_yu": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 17.2000000000001,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 7,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 31.0,
+            "stay": 0
+          },
+          "zheng_wei": {
+            "activity": "planned_leisure",
+            "actual_place": "park",
+            "appointment_directing": false,
+            "available": false,
+            "hunger": 17.2000000000001,
+            "leisure_directing": true,
+            "location": "park",
+            "motion": {
+              "_directedGoal": {
+                "appointment": true,
+                "location": "park",
+                "route_key": "park",
+                "x": 152.0,
+                "y": 400.0
+              },
+              "_inStuck": 0,
+              "_pathIdx": 9,
+              "_pathWaypoints": [],
+              "activity": "planned_leisure",
+              "dir4": "up",
+              "doorPhase": null,
+              "facing": -1,
+              "targetX": 152.0,
+              "targetY": 400.0,
+              "walkStep": 0,
+              "walking": false,
+              "x": 152.0,
+              "y": 400.0
+            },
+            "pending_delay": 0,
+            "rest": 25.0,
+            "stay": 0
+          }
+        },
+        "tick": 625,
+        "visit": {}
+      }
+    ]
+  },
+  "visit_details": {
+    "he_xiu|su_qing|329": {
+      "arrived": [
+        "he_xiu",
+        "su_qing"
+      ],
+      "departed": [
+        "he_xiu",
+        "su_qing"
+      ],
+      "issued_tick": 329.0,
+      "mode": "shared_leisure",
+      "people": [
+        "he_xiu",
+        "su_qing"
+      ],
+      "place": "park",
+      "reason": "雙方已實際在花園近距離碰面。",
+      "resolved_tick": 330.0,
+      "state": "met",
+      "until": 353.0
+    },
+    "he_xiu|wang_li|30": {
+      "arrived": [
+        "wang_li",
+        "he_xiu"
+      ],
+      "departed": [
+        "wang_li",
+        "he_xiu"
+      ],
+      "issued_tick": 30.0,
+      "mode": "shared_leisure",
+      "people": [
+        "wang_li",
+        "he_xiu"
+      ],
+      "place": "park",
+      "reason": "雙方已實際在花園近距離碰面。",
+      "resolved_tick": 42.0,
+      "state": "met",
+      "until": 54.0
+    },
+    "sun_yu|zheng_wei|615": {
+      "arrived": [
+        "sun_yu",
+        "zheng_wei"
+      ],
+      "departed": [
+        "sun_yu",
+        "zheng_wei"
+      ],
+      "issued_tick": 615,
+      "mode": "shared_leisure",
+      "people": [
+        "sun_yu",
+        "zheng_wei"
+      ],
+      "place": "park",
+      "reason": "雙方已實際在花園近距離碰面。",
+      "resolved_tick": 626,
+      "state": "met",
+      "until": 639
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "checks": 12,
+  "failures": [],
+  "scope": "natural first-hour travel and phone agenda; controlled overnight, meal, doorway, off-duty, missing facility/position, player and dead states; read-only world and motion check"
+}
