@@ -1,0 +1,99 @@
+extends "res://tests/test_player_chat_ui.gd"
+var last_points: Dictionary={}
+var maximum_npc:=0.0
+var maximum_player:=0.0
+var invalid_steps: Array=[]
+func audit(m: SimMotion) -> void:
+	for id in m.positions:
+		var p: Dictionary=m.positions[id];var point:=Vector2(p.x,p.y)
+		if last_points.has(id):
+			var step: float=point.distance_to(last_points[id])
+			if id=="player": maximum_player=maxf(maximum_player,step)
+			else: maximum_npc=maxf(maximum_npc,step)
+		if not m.layout._walkable(point) and invalid_steps.size()<10: invalid_steps.append({"id":id,"x":point.x,"y":point.y})
+		last_points[id]=point
+func run() -> void:
+	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;root.add_child(viewport)
+	var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app);await process_frame;app.set_process(false)
+	var w: SimWorld=app.simulation;var m: SimMotion=app.motion
+	var initial_stock: Dictionary=w.data.stockpile.duplicate(true);var initial_jobs: Dictionary={}
+	for id in w.data.agents: initial_jobs[id]=w.data.agents[id].jobKey
+	check(SimGovernance.mayor(w)=="chen_wei" and not SimGovernance.direct(w),"original traveler has no mayor spending authority")
+	var site:=Vector2i(-1,-1)
+	for candidate in BuildingSites.candidates(w.data):
+		if BuildingSites.vacant(w,candidate): site=candidate;break
+	check(site!=Vector2i(-1,-1),"original town has a currently vacant construction site")
+	var project:=SimBuildings.start(w,"farm_irrigation",false,site)
+	check(project.is_empty() and equal(initial_stock,w.data.stockpile),"traveler submits proposal without spending or free construction")
+	var proposal: Dictionary=SimGovernance.book(w).proposals.back()
+	check(proposal.status=="pending","normal mayor review is pending")
+	app.chat_transport=mock;reply={"ok":true,"data":{"reply":"明天找時間在廣場見面吧。\nEFFECTS: {\"affinity_change\":0,\"romantic_change\":0,\"summary\":\"邀請旅人見面\",\"invitation\":true}"}}
+	app.show_tab("居民",true);app.show_player_chat("chen_wei");app.send_player_chat("chen_wei","你明天有空嗎？");release_reply.emit();await settle()
+	var appointment:=SimAppointments.current(w)
+	check(appointment.get("state")=="offered","mock chat creates a real offer with original mayor schedule")
+	press(app.drawer_body,"見面約定");await settle();press(app.drawer_body,"接受邀約");await settle()
+	check(appointment.state=="accepted","actual card acceptance schedules the meeting")
+	m.manual_player=true
+	var initial_until:=int(appointment.until);var executed_tick:=-1;var complete_tick:=-1;var met_tick:=-1;var returned_tick:=-1
+	var slept: Dictionary={};var worked: Dictionary={};var bad_sleep: Array=[];var negative_stock: Array=[];var stages: Array=[]
+	var player_path: Array=[];var player_index:=0;var paid: Dictionary={};var reload_ok:=false
+	audit(m)
+	for tick in range(288):
+		app._tick_simulation();audit(m)
+		proposal=SimGovernance.book(w).proposals[0];appointment=SimAppointments.current(w)
+		if proposal.status=="approved":
+			var before: Dictionary=w.data.stockpile.resources.duplicate(true)
+			app.show_governance();press(app.drawer_body,"執行核准案 #%d"%int(proposal.id));audit(m)
+			if proposal.status=="executed":
+				executed_tick=int(w.data.tickCount)
+				for key in ["wood","stone","tools"]: paid[key]=float(before.get(key,0))-SimEconomy.amount(w,key)
+		if complete_tick<0 and w.data.buildings.completed.any(func(p): return p.get("buildingKey")=="farm_irrigation"): complete_tick=int(w.data.tickCount)
+		if tick==119:
+			var save: Dictionary=app.progress_snapshot();var before_positions: Dictionary=m.positions.duplicate(true)
+			app._load_document(JSON.stringify(save),"original town integrated reload")
+			reload_ok=equal(before_positions,m.positions) and SimAppointments.current(w).state=="accepted"
+			audit(m);appointment=SimAppointments.current(w)
+		for id in w.data.agents:
+			var resident: Dictionary=w.data.agents[id]
+			if id=="player": continue
+			if resident.activity=="sleeping":
+				if SimHomeRest.arrived(w,resident): slept[id]=true
+				elif bad_sleep.size()<10: bad_sleep.append({"id":id,"tick":w.data.tickCount})
+		for resource in w.data.stockpile.resources:
+			if float(w.data.stockpile.resources[resource])<0 and negative_stock.size()<10: negative_stock.append({"key":resource,"tick":w.data.tickCount})
+		for frame in m.frames_per_tick():
+			m.update(w.data.agents);audit(m)
+			if appointment.state=="waiting" and player_path.is_empty():
+				var npc: Dictionary=m.positions.chen_wei;var player: Dictionary=m.positions.player
+				player_path=m.pathfinder.find_path(Vector2(player.x,player.y),Vector2(npc.x,npc.y));player_index=0
+			if appointment.state=="waiting" and player_index<player_path.size():
+				var player: Dictionary=m.positions.player;var goal:=Vector2(player_path[player_index].x,player_path[player_index].y)
+				var delta:=goal-Vector2(player.x,player.y)
+				if delta.length()<2: player_index+=1;m.move_player(Vector2.ZERO,1.0/60)
+				else: m.move_player(delta.normalized(),minf(1.0/60,delta.length()/72.0))
+				audit(m)
+			else: m.move_player(Vector2.ZERO,1.0/60)
+			SimAppointments.observe(w,m);SimLeisurePlan.observe(w,m);SimHangoutVisits.observe(w,m)
+			if appointment.state=="met" and met_tick<0: met_tick=int(w.data.tickCount)
+			if met_tick>=0 and returned_tick<0 and SimHomeRest.arrived(w,w.data.agents.chen_wei): returned_tick=int(w.data.tickCount)
+			if complete_tick>=0 and w.data.agents.liu_jun.activity=="working" and not m.positions.liu_jun.walking and m.positions.liu_jun.doorPhase==null and SimCareerPresence.place(m,"liu_jun")=="farm": worked.liu_jun=true
+		if tick%48==47:
+			var stage:={"tick":w.data.tickCount,"proposal":proposal.status,"completion":complete_tick,"appointment":appointment.state,"returned":returned_tick}
+			stages.append(stage);print(JSON.stringify(stage))
+	check(executed_tick>=0 and proposal.status=="executed","normal daily mayor approval is actually executed")
+	check(equal(paid,{"wood":10.0,"stone":15.0,"tools":2.0}),"only original irrigation costs are charged at execution")
+	check(complete_tick>executed_tick and w.data.buildings.completed.filter(func(p): return p.get("buildingKey")=="farm_irrigation").size()==1,"normal daily work completes one irrigation project")
+	check(m.layout.work_sites.has("farm") and worked.has("liu_jun"),"farmer actually walks to completed farm workplace and works")
+	check(reload_ok,"mid-run native reload preserves positions and accepted appointment")
+	check(met_tick>=0 and met_tick<initial_until and int(appointment.until)==initial_until,"moving player and original mayor physically meet within unchanged deadline")
+	check(returned_tick>met_tick,"mayor actually returns to assigned home after meeting")
+	check(w.quest_balance.appointments.history.size()==1,"meeting is recorded exactly once during continued play")
+	check(slept.size()>=20 and bad_sleep.is_empty(),"all original residents sleep at their real homes, never remotely")
+	check(maximum_npc<1.001 and maximum_player<=1.201 and invalid_steps.is_empty(),"all movement frames and scene refreshes stay walkable without teleport")
+	check(negative_stock.is_empty() and w.supply_enabled,"public stock remains nonnegative with existing supply controls enabled")
+	var jobs_same:=true
+	for id in initial_jobs:
+		if w.data.agents[id].jobKey!=initial_jobs[id]: jobs_same=false
+	check(jobs_same and w.data.agents.yang_feng._guardShift=="day" and w.data.agents.gao_lang._guardShift=="night","original jobs and day/night guards remain intact")
+	var report:={"checks":checks,"failures":failures,"ticks":288,"motion_frames_per_tick":m.frames_per_tick(),"initial_stock":initial_stock,"paid":paid,"executed_tick":executed_tick,"complete_tick":complete_tick,"met_tick":met_tick,"returned_tick":returned_tick,"sleepers":slept.keys(),"worked":worked.keys(),"maximum_npc_step":maximum_npc,"maximum_player_step":maximum_player,"invalid_steps":invalid_steps,"bad_sleep":bad_sleep,"negative_stock":negative_stock,"stages":stages,"final_appointment":appointment,"scope":"original frontier resources/jobs/needs/positions, traveler proposal and daily mayor review, real execution UI and normal daily construction, mock AI offer and acceptance, 288 clock ticks with 480 motion frames each, player collision walking during clock progression, native reload, actual farm work/meeting/home sleep; no granted resources, elected fixture, compressed midnight or production AI"}
+	FileAccess.open("res://docs/TOWN_INTEGRATION_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "));print(JSON.stringify(report));quit(0 if failures.is_empty() else 1)
