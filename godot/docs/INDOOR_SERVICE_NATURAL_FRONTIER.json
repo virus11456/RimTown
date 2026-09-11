@@ -1,0 +1,378 @@
+{
+  "active_reload": true,
+  "attempts": {
+    "doctor": 36,
+    "priest": 0
+  },
+  "bad_sleep": [],
+  "checks": 7,
+  "controlled_mood_setback": false,
+  "daily_used": {
+    "0": 2,
+    "1": 1,
+    "2": 1,
+    "3": 1,
+    "4": 0
+  },
+  "day_reload": true,
+  "entered_houses": [
+    "residential_east_0",
+    "residential_south_1",
+    "residential_north_3",
+    "residential_north_1",
+    "residential_north_0",
+    "residential_east_2"
+  ],
+  "failures": [],
+  "finished": {
+    "doctor": 5,
+    "priest": 0
+  },
+  "indoor_attempts": 20,
+  "indoor_finished": 0,
+  "invalid_steps": [],
+  "max_npc_step": 0.999847412109375,
+  "max_player_step": 1.20010221004486,
+  "motion_frames": 184320,
+  "negative_stock": [],
+  "observed_need_ids": {
+    "doctor": [
+      "chen_wei",
+      "zhang_hao",
+      "wang_li",
+      "liu_jun",
+      "zhao_xia",
+      "yang_feng",
+      "wu_da",
+      "huang_li",
+      "ma_qiang",
+      "xu_ying",
+      "zhou_ming",
+      "he_chang",
+      "he_xiu",
+      "zheng_wei",
+      "su_qing",
+      "ke_wei",
+      "ling_bo",
+      "lin_mei",
+      "sun_yu",
+      "gao_lang"
+    ],
+    "priest": []
+  },
+  "outcomes": [
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "liu_jun",
+      "tick": 29.0
+    },
+    {
+      "completed": true,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "照護疲憊的陳偉完成。",
+      "target": "chen_wei",
+      "tick": 35
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "請走近對方再照護或陪伴；需要保持在三格距離內。 值勤已取消，未給予獎勵。",
+      "target": "he_chang",
+      "tick": 40
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "he_xiu",
+      "tick": 43
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "he_chang",
+      "tick": 48
+    },
+    {
+      "completed": true,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "照護疲憊的孫雨完成。",
+      "target": "sun_yu",
+      "tick": 54
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "wang_li",
+      "tick": 58
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "huang_li",
+      "tick": 64
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "請走過門檻，等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "lin_mei",
+      "tick": 66
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "對方尚未在同一場所到場，請等待或重新查看工作。 值勤已取消，未給予獎勵。",
+      "target": "lin_mei",
+      "tick": 67
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "午夜已換日，未完成值勤已取消，未給予獎勵。",
+      "target": "lin_mei",
+      "tick": 72
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "lin_mei",
+      "tick": 75
+    },
+    {
+      "completed": true,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "照護疲憊的何秀完成。",
+      "target": "he_xiu",
+      "tick": 137
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "請走近對方再照護或陪伴；需要保持在三格距離內。 值勤已取消，未給予獎勵。",
+      "target": "chen_wei",
+      "tick": 140
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "he_chang",
+      "tick": 146
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "wang_li",
+      "tick": 151
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "liu_jun",
+      "tick": 156
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "huang_li",
+      "tick": 160
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "chen_wei",
+      "tick": 162
+    },
+    {
+      "completed": true,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "照護疲憊的何秀完成。",
+      "target": "he_xiu",
+      "tick": 233
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "請走近對方再照護或陪伴；需要保持在三格距離內。 值勤已取消，未給予獎勵。",
+      "target": "chen_wei",
+      "tick": 236
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "對方尚未在同一場所到場，請等待或重新查看工作。 值勤已取消，未給予獎勵。",
+      "target": "he_chang",
+      "tick": 240
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "wang_li",
+      "tick": 243
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "wang_li",
+      "tick": 249
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "huang_li",
+      "tick": 257
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "lin_mei",
+      "tick": 259
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "午夜已換日，未完成值勤已取消，未給予獎勵。",
+      "target": "lin_mei",
+      "tick": 264
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "lin_mei",
+      "tick": 266
+    },
+    {
+      "completed": true,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "照護疲憊的何秀完成。",
+      "target": "he_xiu",
+      "tick": 329
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "請走近對方再照護或陪伴；需要保持在三格距離內。 值勤已取消，未給予獎勵。",
+      "target": "chen_wei",
+      "tick": 332
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "請走近對方再照護或陪伴；需要保持在三格距離內。 值勤已取消，未給予獎勵。",
+      "target": "lin_mei",
+      "tick": 336
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "wang_li",
+      "tick": 343
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "liu_jun",
+      "tick": 348
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "huang_li",
+      "tick": 352
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "chen_wei",
+      "tick": 354
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "sun_yu",
+      "tick": 363
+    }
+  ],
+  "scope": "original town needs/jobs, normal simulation, player chooses available service and collision walks to current target including occupied homes, no later forced NPC needs/positions or freeze, native reload; no natural priest completion claim if no suitable demand arises",
+  "sleepers": [
+    "lin_mei",
+    "sun_yu",
+    "gao_lang",
+    "su_qing",
+    "yang_feng",
+    "he_xiu",
+    "zhang_hao",
+    "wang_li",
+    "wu_da",
+    "he_chang",
+    "ke_wei",
+    "liu_jun",
+    "zhao_xia",
+    "huang_li",
+    "xu_ying",
+    "zhou_ming",
+    "zheng_wei",
+    "ma_qiang",
+    "ling_bo",
+    "chen_wei"
+  ],
+  "ticks": 384,
+  "town": "frontier"
+}

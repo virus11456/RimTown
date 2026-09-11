@@ -1,0 +1,222 @@
+{
+  "active_reload": true,
+  "attempts": {
+    "doctor": 10,
+    "priest": 7
+  },
+  "bad_sleep": [],
+  "checks": 7,
+  "controlled_mood_setback": true,
+  "daily_used": {
+    "0": 3,
+    "1": 3,
+    "2": 0
+  },
+  "day_reload": true,
+  "entered_houses": [
+    "residential_north_1",
+    "residential_east_0"
+  ],
+  "failures": [],
+  "finished": {
+    "doctor": 4,
+    "priest": 2
+  },
+  "indoor_attempts": 7,
+  "indoor_finished": 0,
+  "invalid_steps": [],
+  "max_npc_step": 0.999847412109375,
+  "max_player_step": 1.20007264614105,
+  "motion_frames": 92160,
+  "negative_stock": [],
+  "observed_need_ids": {
+    "doctor": [
+      "chen_wei",
+      "he_chang",
+      "he_xiu",
+      "huang_li",
+      "ke_wei",
+      "ling_bo",
+      "liu_jun",
+      "ma_qiang",
+      "su_qing",
+      "wang_li",
+      "wu_da",
+      "xu_ying",
+      "yang_feng",
+      "zhang_hao",
+      "zhao_xia",
+      "zheng_wei",
+      "zhou_ming",
+      "lin_mei",
+      "sun_yu",
+      "gao_lang"
+    ],
+    "priest": [
+      "lin_mei"
+    ]
+  },
+  "outcomes": [
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "priest",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "lin_mei",
+      "tick": 4.0
+    },
+    {
+      "completed": true,
+      "indoor": false,
+      "job": "priest",
+      "reason": "陪伴低落的林美完成。",
+      "target": "lin_mei",
+      "tick": 15
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "liu_jun",
+      "tick": 29
+    },
+    {
+      "completed": true,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "照護疲憊的陳偉完成。",
+      "target": "chen_wei",
+      "tick": 35
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "he_chang",
+      "tick": 38
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "he_xiu",
+      "tick": 43
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "he_chang",
+      "tick": 48
+    },
+    {
+      "completed": true,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "照護疲憊的孫雨完成。",
+      "target": "sun_yu",
+      "tick": 54
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "lin_mei",
+      "tick": 75
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "priest",
+      "reason": "對方正在睡覺，請等醒來後再談心；不會為了值勤叫醒居民。 值勤已取消，未給予獎勵。",
+      "target": "lin_mei",
+      "tick": 82
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "priest",
+      "reason": "對方正在睡覺，請等醒來後再談心；不會為了值勤叫醒居民。 值勤已取消，未給予獎勵。",
+      "target": "lin_mei",
+      "tick": 99
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "priest",
+      "reason": "請走過門檻，等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "lin_mei",
+      "tick": 100
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "priest",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "lin_mei",
+      "tick": 101
+    },
+    {
+      "completed": true,
+      "indoor": false,
+      "job": "priest",
+      "reason": "陪伴低落的林美完成。",
+      "target": "lin_mei",
+      "tick": 118
+    },
+    {
+      "completed": true,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "照護疲憊的何秀完成。",
+      "target": "he_xiu",
+      "tick": 136
+    },
+    {
+      "completed": true,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "照護疲憊的黃莉完成。",
+      "target": "huang_li",
+      "tick": 142
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "lin_mei",
+      "tick": 171
+    }
+  ],
+  "scope": "one resident initial mood modifier -120; subsequent needs, schedules and movement unchanged, no forced positions; original town needs/jobs, normal simulation, player chooses available service and collision walks to current target including occupied homes, no later forced NPC needs/positions or freeze, native reload; no natural priest completion claim if no suitable demand arises",
+  "sleepers": [
+    "lin_mei",
+    "sun_yu",
+    "gao_lang",
+    "su_qing",
+    "yang_feng",
+    "huang_li",
+    "zhang_hao",
+    "wang_li",
+    "wu_da",
+    "he_chang",
+    "he_xiu",
+    "ke_wei",
+    "liu_jun",
+    "zhao_xia",
+    "xu_ying",
+    "zhou_ming",
+    "zheng_wei",
+    "ma_qiang",
+    "ling_bo",
+    "chen_wei"
+  ],
+  "ticks": 192,
+  "town": "frontier"
+}

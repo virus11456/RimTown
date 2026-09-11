@@ -38,7 +38,7 @@ static func available(w: SimWorld) -> Array:
 			if p.get("status")=="researching" and research_room(w,p)>0: tasks.append({"id":"research:"+key,"target":key,"location":"library","label":"整理研究資料："+str(p.name),"job":"researcher"})
 		"priest":
 			for a in w.data.agents.values():
-				if not a.get("isPlayer",false) and not a.get("isDead",false) and float(a.mood)<0 and not a.id in b.get("counseled",[]) and w.data.townMap.locations.has(SimCareerPresence.service_location(w,a)): tasks.append({"id":"counsel:"+str(a.id),"target":a.id,"location":SimCareerPresence.service_location(w,a),"label":"陪伴低落的"+str(a.name),"job":"priest"})
+				if not a.get("isPlayer",false) and not a.get("isDead",false) and a.get("activity","")!="sleeping" and float(a.mood)<0 and not a.id in b.get("counseled",[]) and w.data.townMap.locations.has(SimCareerPresence.service_location(w,a)): tasks.append({"id":"counsel:"+str(a.id),"target":a.id,"location":SimCareerPresence.service_location(w,a),"label":"陪伴低落的"+str(a.name),"job":"priest"})
 		"miner","cook","blacksmith","tailor":
 			var job: String=w.data.agents.player.jobKey
 			if production_needed(w,job): tasks.append({"id":"produce:"+job,"target":job,"location":PRODUCTION[job].location,"label":PRODUCTION[job].label,"job":job})

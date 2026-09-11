@@ -1,5 +1,7 @@
 # RimTown - AI Town Simulation 邊境鎮
 
+睡眠與拜訪更新：睡著的居民不再接受談心；醫護顯示睡眠恢復可能中止服務。兩鎮四日實際拜訪結果與限制見 [自然室內服務驗收](godot/docs/INDOOR_SERVICE_NATURAL.md)。
+
 室內拜訪更新：醫護／牧師可查看居民實際房屋入口，親自走入服務；門檻停步、不同住家與離開中斷均有驗證。見 [室內拜訪與服務](godot/docs/INDOOR_SERVICE.md)。
 
 A RimWorld-inspired AI town simulation where every resident is an autonomous AI agent with unique personality, background, job, relationships, and daily life. Available as a WordPress plugin.

@@ -32,6 +32,7 @@ static func service_need_error(w: SimWorld,task: Dictionary) -> String:
 	var a: Dictionary=w.data.agents.get(str(task.get("target","")),{})
 	if a.is_empty() or a.get("isDead",false): return "服務對象已不在，無法繼續這次值勤。"
 	if task.job=="doctor" and float(a.needs.rest)>40: return "對方目前已不符合疲憊照護需求，這次不需要服務。"
+	if task.job=="priest" and a.get("activity","")=="sleeping": return "對方正在睡覺，請等醒來後再談心；不會為了值勤叫醒居民。"
 	if task.job=="priest" and float(a.mood)>=0: return "對方目前已不符合低落陪伴需求，這次不需要服務。"
 	return ""
 
@@ -41,7 +42,10 @@ static func service_status(w: SimWorld,m: SimMotion,task: Dictionary) -> String:
 	if not need.is_empty(): return need
 	if m==null or not m.positions.has(id): return "位置尚未取得，請稍後重新查看。"
 	var actual:=SimAgenda.current(w,m,id)
-	return "實際位置："+str(actual.actual)+"\n目前："+str(actual.text)+"\n預定目的地："+str(actual.target)+"（不代表已到場）"
+	var notice:=""
+	if task.get("job","")=="doctor" and a.get("activity","")=="sleeping":
+		notice="\n對方正在睡眠恢復體力；若照護完成前已不再疲憊，會停止服務，不計獎勵或每日次數。"
+	return "實際位置："+str(actual.actual)+"\n目前："+str(actual.text)+"\n預定目的地："+str(actual.target)+"（不代表已到場）"+notice
 
 static func service_location(w: SimWorld,a: Dictionary) -> String:
 	# A changed destination is an intention, not evidence of physical departure.

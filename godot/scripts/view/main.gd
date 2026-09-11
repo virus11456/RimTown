@@ -2306,7 +2306,7 @@ func show_careers() -> void:
 		_button("取消值勤",drawer_body,func(): SimCareers.cancel(w);has_simulated=true;show_careers())
 	else:
 		var tasks:=SimCareers.available(w)
-		if tasks.is_empty(): _wrapped("目前沒有可交接的交易：需有到訪商人及符合庫存需求的報價，且今日貨量未用完。" if job=="trader" else "目前沒有符合需求的工作。農務需缺水作物、木匠需已開工工程、研究需未備足資料的研究項目；醫護需疲憊居民、牧師需心情低落居民。")
+		if tasks.is_empty(): _wrapped("目前沒有可交接的交易：需有到訪商人及符合庫存需求的報價，且今日貨量未用完。" if job=="trader" else "目前沒有符合需求的工作。農務需缺水作物、木匠需已開工工程、研究需未備足資料的研究項目；醫護需疲憊居民、牧師需清醒且心情低落居民。")
 		for task in tasks:
 			if task.job=="trader":
 				_wrapped(_resource_name(task.resource)+" × "+str(task.qty)+" · 總價 "+str(task.total)+" 公共銀幣 · "+str(task.args[0]),12)
@@ -2478,6 +2478,7 @@ func show_agenda(id: String) -> void:
 		_wrapped("拜訪與服務",18)
 		var guidance:=SimCareerPresence.visit(motion,id)
 		_wrapped(str(guidance.text),12)
+		if a.activity=="sleeping": _wrapped("對方正在休息，談心請等醒來；睡眠恢復體力後，照護需求也可能消失。",12)
 		if guidance.has("entrance"): _button("查看目前房屋入口",drawer_body,func(): show_service_entrance(id))
 		_button("查看居民目前位置",drawer_body,func(): show_service_target(id))
 	var attendance:=SimAgenda.attendance(simulation,motion,id)

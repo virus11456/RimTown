@@ -26,7 +26,7 @@ func _initialize() -> void:
 	SimCareers.start(w,"research:trial");w.data.research.current=null;finish(w)
 	check(SimEconomy.amount(w,"research_points")==0,"changed research cancels stale commission")
 	w=world();SimCareers.enroll(w,"priest");w.data.agents.player.currentLocation="town_square"
-	var a: Dictionary=w.data.agents.lin_mei;a.currentLocation="town_square";a.mood=-20
+	var a: Dictionary=w.data.agents.lin_mei;a.currentLocation="town_square";a.mood=-20;a.activity="wandering"
 	check(SimCareers.start(w,"counsel:lin_mei").ok,"low mood request")
 	var before: float=w.runtime.lin_mei.moodModifier;finish(w)
 	check(w.runtime.lin_mei.moodModifier==before+8,"support modifies durable mood modifier")
@@ -37,7 +37,7 @@ func _initialize() -> void:
 	for i in 96: w.tick()
 	check(SimCareers.book(w).used==0 and SimCareers.book(w).counseled.is_empty(),"real midnight resets daily requests")
 	# Legacy save lacking the new field remains playable.
-	SimCareers.book(w).erase("counseled");a.currentLocation="town_square";a.mood=-20;w.data.agents.player.currentLocation="town_square"
+	SimCareers.book(w).erase("counseled");a.currentLocation="town_square";a.mood=-20;a.activity="wandering";w.data.agents.player.currentLocation="town_square"
 	check(SimCareers.start(w,"counsel:lin_mei").ok,"old career save migrates lazily");finish(w)
 	check(SimCareers.book(w).counseled.has("lin_mei"),"new field persisted")
 	var report:={"checks":checks,"failures":failures,"scope":"three additional careers, real authority and progress, research demand and downstream use, mood, cap, midnight, old save compatibility"}

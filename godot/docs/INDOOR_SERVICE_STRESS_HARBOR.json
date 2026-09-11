@@ -1,0 +1,207 @@
+{
+  "active_reload": true,
+  "attempts": {
+    "doctor": 13,
+    "priest": 3
+  },
+  "bad_sleep": [],
+  "checks": 7,
+  "controlled_mood_setback": true,
+  "daily_used": {
+    "0": 3,
+    "1": 2,
+    "2": 0
+  },
+  "day_reload": true,
+  "entered_houses": [
+    "residential_north_1",
+    "residential_east_0",
+    "residential_east_1",
+    "residential_east_2"
+  ],
+  "failures": [],
+  "finished": {
+    "doctor": 3,
+    "priest": 2
+  },
+  "indoor_attempts": 7,
+  "indoor_finished": 0,
+  "invalid_steps": [],
+  "max_npc_step": 0.999847412109375,
+  "max_player_step": 1.20011615753174,
+  "motion_frames": 92160,
+  "negative_stock": [],
+  "observed_need_ids": {
+    "doctor": [
+      "hb_achao",
+      "hb_aduo",
+      "hb_afu",
+      "hb_amao",
+      "hb_axi",
+      "hb_haibo",
+      "hb_haima",
+      "hb_langshu",
+      "hb_muxia",
+      "hb_shishu",
+      "hb_xiaoou",
+      "hb_xiugu",
+      "hb_yunyi",
+      "hb_dengye",
+      "hb_shanshan",
+      "imm_蕭瑜_72"
+    ],
+    "priest": [
+      "hb_achao"
+    ]
+  },
+  "outcomes": [
+    {
+      "completed": true,
+      "indoor": false,
+      "job": "priest",
+      "reason": "陪伴低落的阿潮完成。",
+      "target": "hb_achao",
+      "tick": 13
+    },
+    {
+      "completed": true,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "照護疲憊的阿潮完成。",
+      "target": "hb_achao",
+      "tick": 31
+    },
+    {
+      "completed": true,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "照護疲憊的阿舵完成。",
+      "target": "hb_aduo",
+      "tick": 36
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_dengye",
+      "tick": 75
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "priest",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_achao",
+      "tick": 94
+    },
+    {
+      "completed": true,
+      "indoor": false,
+      "job": "priest",
+      "reason": "陪伴低落的阿潮完成。",
+      "target": "hb_achao",
+      "tick": 100
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_haima",
+      "tick": 133
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "對方尚未在同一場所到場，請等待或重新查看工作。 值勤已取消，未給予獎勵。",
+      "target": "hb_afu",
+      "tick": 136
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_achao",
+      "tick": 142
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_aduo",
+      "tick": 144
+    },
+    {
+      "completed": true,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "照護疲憊的阿錨完成。",
+      "target": "hb_amao",
+      "tick": 152
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_achao",
+      "tick": 156
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_langshu",
+      "tick": 158
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_muxia",
+      "tick": 162
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "午夜已換日，未完成值勤已取消，未給予獎勵。",
+      "target": "hb_dengye",
+      "tick": 168
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_dengye",
+      "tick": 171
+    }
+  ],
+  "scope": "one resident initial mood modifier -120; subsequent needs, schedules and movement unchanged, no forced positions; original town needs/jobs, normal simulation, player chooses available service and collision walks to current target including occupied homes, no later forced NPC needs/positions or freeze, native reload; no natural priest completion claim if no suitable demand arises",
+  "sleepers": [
+    "hb_dengye",
+    "hb_shanshan",
+    "hb_xiaoou",
+    "hb_haima",
+    "hb_yunyi",
+    "hb_aduo",
+    "hb_langshu",
+    "hb_shishu",
+    "hb_axi",
+    "hb_afu",
+    "hb_haibo",
+    "hb_achao",
+    "hb_amao",
+    "hb_muxia",
+    "hb_xiugu"
+  ],
+  "ticks": 192,
+  "town": "harbor"
+}
