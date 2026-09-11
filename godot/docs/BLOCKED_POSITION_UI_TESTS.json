@@ -1,0 +1,5 @@
+{
+  "checks": 5,
+  "failures": [],
+  "scope": "real resident card and agenda at 375px, invalid imported position, native reload preserves coordinates, live diagnostic refresh; controlled fixture only"
+}

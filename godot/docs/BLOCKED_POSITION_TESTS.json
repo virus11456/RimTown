@@ -1,0 +1,6 @@
+{
+  "checks": 14,
+  "failures": [],
+  "maximum_step": 0.80322265625,
+  "scope": "controlled blocked cell, live agenda reason, 600-frame no-teleport hold, JSON positions, cache invalidation, ordinary recovery walk, manual traveler diagnosis; no removal gameplay or arbitrary wall escape"
+}

@@ -35,6 +35,12 @@ func _path(p: Dictionary) -> void:
 	p._pathIdx=0
 func _set_point(p: Dictionary,value: Vector2) -> void:
 	p.x=value.x; p.y=value.y
+func obstruction(id: String) -> String:
+	if not positions.has(id): return ""
+	var p: Dictionary=positions[id]
+	if not layout._walkable(Vector2(p.x,p.y)):
+		return "目前位置不可通行，暫停移動；地圖障礙解除後才能重新找路。"
+	return ""
 func update(agents: Dictionary,chat_target: String="") -> void:
 	for id in agents:
 		if id=="player" and manual_player: continue
@@ -114,8 +120,15 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 		elif p.doorPhase==null and (absf(target.x-p.targetX)>1 or absf(target.y-p.targetY)>1):
 			p.targetX=target.x; p.targetY=target.y; _path(p)
 		if not layout._walkable(Vector2(p.x,p.y)):
-			if strict_route: p.walking=false;continue # Unreachable meeting must expire, never teleport.
+			if strict_route:
+				p.walking=false;p.walkStep=0;p._blockedStart=true
+				continue # Keep the real position until the cell becomes walkable.
 			_set_point(p,layout._nearest(Vector2(p.x,p.y))); p._pathWaypoints=[]
+		if p.get("_blockedStart",false):
+			p.erase("_blockedStart")
+			# Revalidate the route, including caches from before the obstruction cleared.
+			pathfinder.grid=layout.grid
+			_path(p)
 		var far:=absf(p.targetX-p.x)+absf(p.targetY-p.y)>32
 		var trapped:=inside(Vector2(p.x,p.y)) if activity!="sleeping" and far else ""
 		if not trapped.is_empty():

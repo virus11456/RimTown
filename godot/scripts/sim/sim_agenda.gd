@@ -15,12 +15,14 @@ static func current(w: SimWorld,m: SimMotion,id: String) -> Dictionary:
 	var target_room:=m.layout._house_id(id,destination) if destination.begins_with("residential_") else destination
 	var arrived: bool=not room.is_empty() and room==target_room
 	var moving: bool=m.positions.get(id,{}).get("walking",false)
+	var blocked:=m.obstruction(id)
 	var text:=activity(a)
 	if a.get("isDead",false): text="已過世"
 	elif not m.positions.has(id): text="位置尚未取得"
+	elif not blocked.is_empty(): text=blocked+"（預定："+text+"）"
 	elif not arrived: text=("前往目的地" if moving else "尚未抵達目的地")+"（預定："+text+"）"
 	elif moving: text="在場所內移動（預定："+text+"）"
-	return {"room":room,"actual":place_name(w,m,room),"destination":destination,"target":str(w.data.townMap.locations.get(destination,{}).get("name","未指定")),"arrived":arrived,"text":text}
+	return {"room":room,"actual":place_name(w,m,room),"destination":destination,"target":str(w.data.townMap.locations.get(destination,{}).get("name","未指定")),"arrived":arrived,"blocked":blocked,"text":text}
 static func attendance(w: SimWorld,m: SimMotion,id: String) -> String:
 	var a: Dictionary=w.data.agents.get(id,{})
 	if a.is_empty() or a.get("isPlayer",false) or a.get("isDead",false): return ""

@@ -1,0 +1,113 @@
+{
+  "checks": 151,
+  "failures": [],
+  "tests": {
+    "blocked_position": {
+      "checks": 14,
+      "failures": [],
+      "maximum_step": 0.80322265625,
+      "scope": "controlled blocked cell, live agenda reason, 600-frame no-teleport hold, JSON positions, cache invalidation, ordinary recovery walk, manual traveler diagnosis; no removal gameplay or arbitrary wall escape"
+    },
+    "blocked_position_ui": {
+      "checks": 5,
+      "failures": [],
+      "scope": "real resident card and agenda at 375px, invalid imported position, native reload preserves coordinates, live diagnostic refresh; controlled fixture only"
+    },
+    "motion": {
+      "checks": 34,
+      "failures": [],
+      "maximum_numeric_error_pixels": 0.00230760866043056,
+      "position_tolerance_pixels": 0.05
+    },
+    "agenda": {
+      "checks": 14,
+      "failures": [],
+      "scope": "configured real position vs destination, home distinction, imported prose isolation, actual trace dedup/reload/day/cap/disable, job and sleep display, no simulation mutation"
+    },
+    "agenda_ui": {
+      "checks": 13,
+      "failures": [],
+      "scope": "real agenda/trace navigation, normal app tick, deliberate unexecuted plan and legacy trace, adjusted sleep display and native reload, unaccepted appointment, 375px panels, compressed timeline reload and town isolation; no new AI scheduler"
+    },
+    "factory_occupancy": {
+      "checks": 17,
+      "failures": [],
+      "maximum_refresh_step": 0.0,
+      "path_points": 5,
+      "scope": "controlled mayor/material/position fixtures; NPC/player occupancy, full rectangular footprint, atomic public/internal build, immediate model and navigation, actual refresh positions, invalid old-position no-snap, native reload and missing plot; no full factory production endurance"
+    },
+    "routine_routes_ui": {
+      "arrivals": [
+        "lin_mei|sleeping|residential_north",
+        "sun_yu|sleeping|residential_east",
+        "yang_feng|working|town_square",
+        "su_qing|working|tavern",
+        "huang_li|working|chapel",
+        "xu_ying|working|workshop",
+        "wang_li|working|tavern",
+        "zhou_ming|working|general_store",
+        "zheng_wei|working|library",
+        "he_xiu|working|tavern",
+        "ke_wei|working|workshop",
+        "sun_yu|working|library",
+        "chen_wei|working|town_hall",
+        "ma_qiang|working|workshop",
+        "su_qing|eating|tavern",
+        "ling_bo|working|library",
+        "yang_feng|eating|town_square",
+        "zhou_ming|eating|general_store",
+        "he_xiu|eating|tavern",
+        "wang_li|eating|tavern",
+        "ke_wei|eating|workshop",
+        "wu_da|working|quarry",
+        "zhang_hao|working|workshop",
+        "he_chang|working|workshop",
+        "zhao_xia|working|general_store",
+        "player|eating|tavern",
+        "chen_wei|eating|town_hall",
+        "he_chang|eating|workshop",
+        "lin_mei|eating|tavern",
+        "player|sleeping|tavern",
+        "yang_feng|sleeping|residential_north",
+        "huang_li|sleeping|residential_north",
+        "gao_lang|working|town_square",
+        "chen_wei|sleeping|residential_north",
+        "gao_lang|eating|town_square",
+        "wang_li|sleeping|residential_south",
+        "wang_li|eating|residential_south",
+        "yang_feng|eating|residential_north",
+        "huang_li|eating|residential_north",
+        "xu_ying|sleeping|residential_east",
+        "zhang_hao|sleeping|residential_south",
+        "wu_da|sleeping|residential_south",
+        "ma_qiang|sleeping|residential_south",
+        "liu_jun|sleeping|residential_east",
+        "zhao_xia|sleeping|residential_east",
+        "chen_wei|eating|residential_north",
+        "lin_mei|eating|residential_north",
+        "zhang_hao|eating|residential_south",
+        "liu_jun|eating|residential_east",
+        "zhao_xia|eating|residential_east",
+        "sun_yu|eating|residential_east",
+        "wu_da|eating|residential_south",
+        "ma_qiang|eating|residential_south",
+        "xu_ying|eating|residential_east",
+        "xu_ying|eating|workshop",
+        "ma_qiang|eating|workshop",
+        "liu_jun|eating|tavern",
+        "zhao_xia|eating|general_store"
+      ],
+      "checks": 5,
+      "failures": [],
+      "maximum_step": 0.999847412109375,
+      "motion_frames_per_tick": 120,
+      "scope": "two original app days, no changed destinations/jobs/needs/positions/resources, every motion frame displacement audited, distinct observed work/eating/sleep arrivals, day-one reload; headless, not universal arrival guarantee",
+      "ticks": 192
+    },
+    "shift_sleep_reload": {
+      "checks": 49,
+      "failures": [],
+      "scope": "two native JSON app round trips compare 24-hour sleep decisions for every NPC, unchanged resources, phone agenda, numeric normalization and real shift invalidation"
+    }
+  }
+}
