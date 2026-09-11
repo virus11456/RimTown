@@ -29,7 +29,7 @@ static func available(w: SimWorld) -> Array:
 				if w.data.townMap.locations.has(loc) and not loc in b.visits: tasks.append({"id":"patrol:"+loc,"target":loc,"location":loc,"label":"巡查"+str(w.data.townMap.locations[loc].name),"job":"guard"})
 		"doctor":
 			for a in w.data.agents.values():
-				if not a.get("isPlayer",false) and not a.get("isDead",false) and float(a.needs.rest)<=40 and not a.id in b.treated and w.data.townMap.locations.has(a.currentLocation): tasks.append({"id":"care:"+str(a.id),"target":a.id,"location":a.currentLocation,"label":"照護疲憊的"+str(a.name),"job":"doctor"})
+				if not a.get("isPlayer",false) and not a.get("isDead",false) and float(a.needs.rest)<=40 and not a.id in b.treated and w.data.townMap.locations.has(SimCareerPresence.service_location(w,a)): tasks.append({"id":"care:"+str(a.id),"target":a.id,"location":SimCareerPresence.service_location(w,a),"label":"照護疲憊的"+str(a.name),"job":"doctor"})
 		"carpenter":
 			for p in w.data.buildings.projects:
 				if p.status=="building" and float(p.workDone)<float(p.workRequired): tasks.append({"id":"build:"+str(p.id),"target":p.id,"location":"workshop","label":"製備工程構件："+str(p.name),"job":"carpenter"})
@@ -38,7 +38,7 @@ static func available(w: SimWorld) -> Array:
 			if p.get("status")=="researching" and research_room(w,p)>0: tasks.append({"id":"research:"+key,"target":key,"location":"library","label":"整理研究資料："+str(p.name),"job":"researcher"})
 		"priest":
 			for a in w.data.agents.values():
-				if not a.get("isPlayer",false) and not a.get("isDead",false) and float(a.mood)<0 and not a.id in b.get("counseled",[]) and w.data.townMap.locations.has(a.currentLocation): tasks.append({"id":"counsel:"+str(a.id),"target":a.id,"location":a.currentLocation,"label":"陪伴低落的"+str(a.name),"job":"priest"})
+				if not a.get("isPlayer",false) and not a.get("isDead",false) and float(a.mood)<0 and not a.id in b.get("counseled",[]) and w.data.townMap.locations.has(SimCareerPresence.service_location(w,a)): tasks.append({"id":"counsel:"+str(a.id),"target":a.id,"location":SimCareerPresence.service_location(w,a),"label":"陪伴低落的"+str(a.name),"job":"priest"})
 		"miner","cook","blacksmith","tailor":
 			var job: String=w.data.agents.player.jobKey
 			if production_needed(w,job): tasks.append({"id":"produce:"+job,"target":job,"location":PRODUCTION[job].location,"label":PRODUCTION[job].label,"job":job})
@@ -98,6 +98,8 @@ static func tick(w: SimWorld) -> void:
 	var b:=book(w);var t: Dictionary=b.active
 	if t.is_empty(): return
 	var player: Dictionary=w.data.agents.player
+	var need_error:=SimCareerPresence.service_need_error(w,t)
+	if not need_error.is_empty(): cancel(w,need_error+" 值勤已取消，未給予獎勵。");return
 	var presence_error:=SimCareerPresence.task_error(w.social.observed_motion,t)
 	if not presence_error.is_empty(): cancel(w,presence_error+" 值勤已取消，未給予獎勵。");return
 	if player.currentLocation!=t.location or player.jobKey!=t.job: cancel(w,"已離開工作地點或職務改變，值勤取消。");return

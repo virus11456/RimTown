@@ -439,6 +439,7 @@ func show_agent(id: String,focus_camera := true) -> void:
 		if pos is Vector3: rig.position = Vector3(pos.x,0,pos.z)
 	if not agent.get("isPlayer",false): _button("與他互動",drawer_body,func(): show_player_interaction(id))
 	_button("今日作息與行程",drawer_body,func(): show_agenda(id))
+	if simulation.data.agents.get("player",{}).get("jobKey","") in ["doctor","priest"]: _button("返回職業與值勤",drawer_body,show_careers)
 	_button("今日足跡",drawer_body,func(): show_trace(id))
 	_button("近期記憶",drawer_body,func(): show_memories(id))
 	_button("目前想法",drawer_body,func(): show_thoughts(id))
@@ -2311,9 +2312,16 @@ func show_careers() -> void:
 				_wrapped(_resource_name(task.resource)+" × "+str(task.qty)+" · 總價 "+str(task.total)+" 公共銀幣 · "+str(task.args[0]),12)
 				_wrapped("交易用途："+("已核准" if SimCareerTrade.approved(w,task) else "待申請／審核"),12)
 				_button("申請："+str(task.label),drawer_body,func(): SimCareerTrade.request(w,task.id);has_simulated=true;show_careers())
+			if task.job in ["doctor","priest"]:
+				_wrapped(SimCareerPresence.service_status(w,motion,task),12)
+				_button("查看"+str(w.data.agents[task.target].name)+"的目前行程",drawer_body,func(): show_service_target(str(task.target)))
 			_wrapped(str(task.label)+" · 地點："+str(w.data.townMap.locations[task.location].name),12)
 			_button("開始："+str(task.label),drawer_body,func():
-				var error:=_career_presence_error(task)
+				var current_task: Dictionary=task
+				if task.job in ["doctor","priest"]:
+					for fresh in SimCareers.available(w):
+						if fresh.id==task.id: current_task=fresh;break
+				var error:=_career_presence_error(current_task)
 				if not error.is_empty(): _wrapped(error);return
 				var r:=SimCareers.start(w,task.id);has_simulated=true;show_careers();_wrapped(r.message))
 	for item in b.history: _wrapped(str(item),12)
@@ -2346,8 +2354,18 @@ func show_career_reviews() -> void:
 	_button("重新整理",drawer_body,show_career_reviews)
 	_button("返回職業與值勤",drawer_body,show_careers)
 
+func show_service_target(id: String) -> void:
+	active_tab="居民"
+	drawer.show()
+	if motion.positions.has(id):
+		var p: Dictionary=motion.positions[id]
+		rig.follow_player=false
+		rig.position=Vector3(float(p.x)/16,0,float(p.y)/16)
+	show_agenda(id)
+
 func _career_presence_error(task: Dictionary) -> String:
-	return SimCareerPresence.task_error(motion,task)
+	var need_error:=SimCareerPresence.service_need_error(simulation,task)
+	return need_error if not need_error.is_empty() else SimCareerPresence.task_error(motion,task)
 func _validate_career_presence() -> void:
 	if not simulation.quest_balance.has("careers"): return
 	var b:=SimCareers.book(simulation)
@@ -2481,6 +2499,7 @@ func show_agenda(id: String) -> void:
 		_wrapped("這些文字尚未成為行動安排，不表示居民已經前往或完成。",12)
 		for block in plan.blocks.slice(0,12):
 			if block is Dictionary: _wrapped(str(block.get("time",""))+" · "+str(block.get("text","")),12)
+	if simulation.data.agents.get("player",{}).get("jobKey","") in ["doctor","priest"]: _button("返回職業與值勤",drawer_body,show_careers)
 	_button("今日足跡",drawer_body,func(): show_trace(id))
 	if not a.get("isPlayer",false): _button("回到自由交談",drawer_body,func(): show_player_chat(id))
 	_button("返回居民資料",drawer_body,func(): show_agent(id,false))

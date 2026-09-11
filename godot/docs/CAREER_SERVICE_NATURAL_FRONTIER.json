@@ -1,0 +1,234 @@
+{
+  "active_reload": true,
+  "attempts": {
+    "doctor": 22,
+    "priest": 0
+  },
+  "bad_sleep": [],
+  "checks": 6,
+  "controlled_mood_setback": false,
+  "daily_used": {
+    "0": 3,
+    "1": 2,
+    "2": 3,
+    "3": 2,
+    "4": 0
+  },
+  "day_reload": true,
+  "failures": [],
+  "finished": {
+    "doctor": 10,
+    "priest": 0
+  },
+  "invalid_steps": [],
+  "max_npc_step": 0.999847412109375,
+  "max_player_step": 1.20010769367218,
+  "motion_frames": 184320,
+  "negative_stock": [],
+  "observed_need_ids": {
+    "doctor": [
+      "chen_wei",
+      "zhang_hao",
+      "wang_li",
+      "liu_jun",
+      "zhao_xia",
+      "yang_feng",
+      "wu_da",
+      "huang_li",
+      "ma_qiang",
+      "xu_ying",
+      "zhou_ming",
+      "he_chang",
+      "he_xiu",
+      "zheng_wei",
+      "su_qing",
+      "ke_wei",
+      "ling_bo",
+      "lin_mei",
+      "sun_yu",
+      "gao_lang"
+    ],
+    "priest": []
+  },
+  "outcomes": [
+    {
+      "completed": true,
+      "job": "doctor",
+      "reason": "照護疲憊的陳偉完成。",
+      "target": "chen_wei",
+      "tick": 33
+    },
+    {
+      "completed": true,
+      "job": "doctor",
+      "reason": "照護疲憊的何昌完成。",
+      "target": "he_chang",
+      "tick": 39
+    },
+    {
+      "completed": false,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "he_xiu",
+      "tick": 43
+    },
+    {
+      "completed": false,
+      "job": "doctor",
+      "reason": "請走近對方再照護或陪伴；需要保持在三格距離內。 值勤已取消，未給予獎勵。",
+      "target": "lin_mei",
+      "tick": 48
+    },
+    {
+      "completed": true,
+      "job": "doctor",
+      "reason": "照護疲憊的孫雨完成。",
+      "target": "sun_yu",
+      "tick": 54
+    },
+    {
+      "completed": true,
+      "job": "doctor",
+      "reason": "照護疲憊的何秀完成。",
+      "target": "he_xiu",
+      "tick": 135
+    },
+    {
+      "completed": false,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "chen_wei",
+      "tick": 138
+    },
+    {
+      "completed": true,
+      "job": "doctor",
+      "reason": "照護疲憊的何昌完成。",
+      "target": "he_chang",
+      "tick": 145
+    },
+    {
+      "completed": false,
+      "job": "doctor",
+      "reason": "請走近對方再照護或陪伴；需要保持在三格距離內。 值勤已取消，未給予獎勵。",
+      "target": "chen_wei",
+      "tick": 147
+    },
+    {
+      "completed": false,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "ke_wei",
+      "tick": 153
+    },
+    {
+      "completed": false,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "lin_mei",
+      "tick": 159
+    },
+    {
+      "completed": false,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "lin_mei",
+      "tick": 163
+    },
+    {
+      "completed": true,
+      "job": "doctor",
+      "reason": "照護疲憊的何秀完成。",
+      "target": "he_xiu",
+      "tick": 233
+    },
+    {
+      "completed": false,
+      "job": "doctor",
+      "reason": "請走近對方再照護或陪伴；需要保持在三格距離內。 值勤已取消，未給予獎勵。",
+      "target": "chen_wei",
+      "tick": 236
+    },
+    {
+      "completed": true,
+      "job": "doctor",
+      "reason": "照護疲憊的何昌完成。",
+      "target": "he_chang",
+      "tick": 242
+    },
+    {
+      "completed": true,
+      "job": "doctor",
+      "reason": "照護疲憊的陳偉完成。",
+      "target": "chen_wei",
+      "tick": 245
+    },
+    {
+      "completed": true,
+      "job": "doctor",
+      "reason": "照護疲憊的何秀完成。",
+      "target": "he_xiu",
+      "tick": 326
+    },
+    {
+      "completed": false,
+      "job": "doctor",
+      "reason": "請走近對方再照護或陪伴；需要保持在三格距離內。 值勤已取消，未給予獎勵。",
+      "target": "he_chang",
+      "tick": 328
+    },
+    {
+      "completed": false,
+      "job": "doctor",
+      "reason": "請走近對方再照護或陪伴；需要保持在三格距離內。 值勤已取消，未給予獎勵。",
+      "target": "chen_wei",
+      "tick": 332
+    },
+    {
+      "completed": true,
+      "job": "doctor",
+      "reason": "照護疲憊的何昌完成。",
+      "target": "he_chang",
+      "tick": 338
+    },
+    {
+      "completed": false,
+      "job": "doctor",
+      "reason": "請走近對方再照護或陪伴；需要保持在三格距離內。 值勤已取消，未給予獎勵。",
+      "target": "chen_wei",
+      "tick": 339
+    },
+    {
+      "completed": false,
+      "job": "doctor",
+      "reason": "對方尚未在同一場所到場，請等待或重新查看工作。 值勤已取消，未給予獎勵。",
+      "target": "ke_wei",
+      "tick": 343
+    }
+  ],
+  "scope": "original town needs/jobs, normal simulation, player chooses available service and collision walks to current outdoor target, no later forced NPC needs/positions or freeze, native reload; no natural priest completion claim if no suitable demand arises",
+  "sleepers": [
+    "lin_mei",
+    "sun_yu",
+    "gao_lang",
+    "su_qing",
+    "wang_li",
+    "yang_feng",
+    "he_xiu",
+    "zhang_hao",
+    "wu_da",
+    "zhou_ming",
+    "ke_wei",
+    "liu_jun",
+    "zhao_xia",
+    "he_chang",
+    "huang_li",
+    "xu_ying",
+    "zheng_wei",
+    "ma_qiang",
+    "ling_bo",
+    "chen_wei"
+  ],
+  "ticks": 384,
+  "town": "frontier"
+}

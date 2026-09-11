@@ -25,3 +25,26 @@ static func task_error(m: SimMotion,task: Dictionary) -> String:
 	if Vector2(p.x,p.y).distance_to(Vector2(a.x,a.y))>48: return "請走近對方再照護或陪伴；需要保持在三格距離內。"
 	if p.get("doorPhase")!=null or a.get("doorPhase")!=null: return "請等雙方完成進出門後再開始服務。"
 	return ""
+
+static func service_need_error(w: SimWorld,task: Dictionary) -> String:
+	if task.get("job","") not in ["doctor","priest"]: return ""
+	var a: Dictionary=w.data.agents.get(str(task.get("target","")),{})
+	if a.is_empty() or a.get("isDead",false): return "服務對象已不在，無法繼續這次值勤。"
+	if task.job=="doctor" and float(a.needs.rest)>40: return "對方目前已不符合疲憊照護需求，這次不需要服務。"
+	if task.job=="priest" and float(a.mood)>=0: return "對方目前已不符合低落陪伴需求，這次不需要服務。"
+	return ""
+
+static func service_status(w: SimWorld,m: SimMotion,task: Dictionary) -> String:
+	var id:=str(task.get("target",""));var a: Dictionary=w.data.agents.get(id,{})
+	var need:=service_need_error(w,task)
+	if not need.is_empty(): return need
+	if m==null or not m.positions.has(id): return "位置尚未取得，請稍後重新查看。"
+	var actual:=SimAgenda.current(w,m,id)
+	return "實際位置："+str(actual.actual)+"\n目前："+str(actual.text)+"\n預定目的地："+str(actual.target)+"（不代表已到場）"
+
+static func service_location(w: SimWorld,a: Dictionary) -> String:
+	# A changed destination is an intention, not evidence of physical departure.
+	if w.social.observed_motion!=null:
+		var actual:=place(w.social.observed_motion,str(a.id))
+		if w.data.townMap.locations.has(actual): return actual
+	return str(a.currentLocation)

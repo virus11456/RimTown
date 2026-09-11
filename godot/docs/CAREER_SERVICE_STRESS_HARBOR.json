@@ -1,0 +1,162 @@
+{
+  "active_reload": true,
+  "attempts": {
+    "doctor": 10,
+    "priest": 3
+  },
+  "bad_sleep": [],
+  "checks": 6,
+  "controlled_mood_setback": true,
+  "daily_used": {
+    "0": 3,
+    "1": 2,
+    "2": 0
+  },
+  "day_reload": true,
+  "failures": [],
+  "finished": {
+    "doctor": 3,
+    "priest": 2
+  },
+  "invalid_steps": [],
+  "max_npc_step": 0.999914765357971,
+  "max_player_step": 1.20007276535034,
+  "motion_frames": 92160,
+  "negative_stock": [],
+  "observed_need_ids": {
+    "doctor": [
+      "hb_achao",
+      "hb_aduo",
+      "hb_afu",
+      "hb_amao",
+      "hb_axi",
+      "hb_haibo",
+      "hb_haima",
+      "hb_langshu",
+      "hb_muxia",
+      "hb_shishu",
+      "hb_xiaoou",
+      "hb_xiugu",
+      "hb_yunyi",
+      "hb_dengye",
+      "hb_shanshan",
+      "imm_周明_72"
+    ],
+    "priest": [
+      "hb_achao"
+    ]
+  },
+  "outcomes": [
+    {
+      "completed": true,
+      "job": "priest",
+      "reason": "陪伴低落的阿潮完成。",
+      "target": "hb_achao",
+      "tick": 12
+    },
+    {
+      "completed": true,
+      "job": "doctor",
+      "reason": "照護疲憊的阿潮完成。",
+      "target": "hb_achao",
+      "tick": 31
+    },
+    {
+      "completed": false,
+      "job": "doctor",
+      "reason": "對方的預定目的地已改為海味居，請重新查看服務安排。 值勤已取消，未給予獎勵。",
+      "target": "hb_aduo",
+      "tick": 33
+    },
+    {
+      "completed": true,
+      "job": "doctor",
+      "reason": "照護疲憊的阿錨完成。",
+      "target": "hb_amao",
+      "tick": 39
+    },
+    {
+      "completed": false,
+      "job": "priest",
+      "reason": "對方的預定目的地已改為海味居，請重新查看服務安排。 值勤已取消，未給予獎勵。",
+      "target": "hb_achao",
+      "tick": 123
+    },
+    {
+      "completed": true,
+      "job": "priest",
+      "reason": "陪伴低落的阿潮完成。",
+      "target": "hb_achao",
+      "tick": 129
+    },
+    {
+      "completed": false,
+      "job": "doctor",
+      "reason": "對方的預定目的地已改為沙灘木屋，請重新查看服務安排。 值勤已取消，未給予獎勵。",
+      "target": "hb_haima",
+      "tick": 133
+    },
+    {
+      "completed": false,
+      "job": "doctor",
+      "reason": "對方的預定目的地已改為曬網場，請重新查看服務安排。 值勤已取消，未給予獎勵。",
+      "target": "hb_achao",
+      "tick": 136
+    },
+    {
+      "completed": true,
+      "job": "doctor",
+      "reason": "照護疲憊的阿舵完成。",
+      "target": "hb_aduo",
+      "tick": 141
+    },
+    {
+      "completed": false,
+      "job": "doctor",
+      "reason": "對方的預定目的地已改為碼頭廣場，請重新查看服務安排。 值勤已取消，未給予獎勵。",
+      "target": "hb_amao",
+      "tick": 147
+    },
+    {
+      "completed": false,
+      "job": "doctor",
+      "reason": "對方的預定目的地已改為漁港街，請重新查看服務安排。 值勤已取消，未給予獎勵。",
+      "target": "hb_xiugu",
+      "tick": 149
+    },
+    {
+      "completed": false,
+      "job": "doctor",
+      "reason": "對方的預定目的地已改為其他地點，請重新查看服務安排。 值勤已取消，未給予獎勵。",
+      "target": "hb_shanshan",
+      "tick": 151
+    },
+    {
+      "completed": false,
+      "job": "doctor",
+      "reason": "對方的預定目的地已改為崖上人家，請重新查看服務安排。 值勤已取消，未給予獎勵。",
+      "target": "hb_dengye",
+      "tick": 160
+    }
+  ],
+  "scope": "one resident initial mood modifier -120; subsequent needs, schedules and movement unchanged, no forced positions; original town needs/jobs, normal simulation, player chooses available service and collision walks to current outdoor target, no later forced NPC needs/positions or freeze, native reload; no natural priest completion claim if no suitable demand arises",
+  "sleepers": [
+    "hb_dengye",
+    "hb_shanshan",
+    "hb_xiaoou",
+    "hb_haima",
+    "hb_axi",
+    "hb_langshu",
+    "hb_shishu",
+    "hb_afu",
+    "hb_haibo",
+    "hb_achao",
+    "hb_aduo",
+    "hb_yunyi",
+    "hb_muxia",
+    "hb_xiugu",
+    "hb_amao"
+  ],
+  "ticks": 192,
+  "town": "harbor"
+}
