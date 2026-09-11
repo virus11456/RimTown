@@ -1,0 +1,5 @@
+{
+  "checks": 17,
+  "failures": [],
+  "scope": "six actual retained UI callbacks for accept/decline/cancel/player reschedule/NPC replacement accept/decline cannot touch new appointments; same-card native reload remains valid, phone width"
+}

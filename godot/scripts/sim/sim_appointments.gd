@@ -5,6 +5,8 @@ const PLACES := ["town_square"]
 const LIVE := ["offered", "accepted", "waiting", "change_offered"]
 static func current(w: SimWorld) -> Dictionary:
 	return w.quest_balance.get("appointments",{}).get("current",{})
+static func card_key(a: Dictionary) -> String:
+	return JSON.stringify([a.get("npc",""),a.get("place",""),int(a.get("due",-1)),int(a.get("expires",-1)),int(a.get("proposal",{}).get("due",-1))])
 static func reason(w: SimWorld,id: String) -> String:
 	if not w.data.agents.has(id) or w.data.agents[id].get("isDead",false): return "對方已離開或過世"
 	var a: Dictionary=w.data.agents[id]
@@ -51,7 +53,12 @@ static func finish(w: SimWorld,state: String,why: String) -> void:
 		if w.data.agents.has(id): SimFeuds._memory(w.data.agents[id],w,"appointment","見面約定："+why,5,[])
 	if w.data.agents.has(a.npc):
 		w.data.agents[a.npc]._locationStayRemaining=0;w.data.agents[a.npc].erase("_appointmentDestination")
-		if state=="met": SimHomeRest.after_meeting(w,w.data.agents[a.npc],str(a.place))
+		var resident: Dictionary=w.data.agents[a.npc]
+		if state=="met": SimHomeRest.after_meeting(w,resident,str(a.place))
+		elif state=="missed" or (state=="cancelled" and why=="玩家取消約定"):
+			var m: SimMotion=w.social.observed_motion
+			if m!=null and not resident.get("isDead",false) and not resident.has("_raidShelterUntil") and SimCareerPresence.place(m,str(a.npc))==str(a.place):
+				SimHomeRest.after_appointment_wait(w,resident)
 static func respond(w: SimWorld,accept: bool) -> bool:
 	var a:=current(w)
 	if a.get("state")!="offered": return false

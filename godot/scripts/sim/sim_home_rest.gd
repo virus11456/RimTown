@@ -55,6 +55,15 @@ static func after_meeting(w: SimWorld,a: Dictionary,place: String) -> void:
 	a._hangoutHome={"home":a.homeLocation,"until":int(w.data.tickCount)+ticks,"required_ticks":ticks,"signature":"hangout:"+str(w.data.tickCount)}
 	a._locationStayRemaining=0
 
+static func after_appointment_wait(w: SimWorld,a: Dictionary) -> void:
+	var m: SimMotion=w.social.observed_motion
+	if m==null or not m.stable_routes or a.get("isPlayer",false): return
+	var length:=remaining_distance(m,a)
+	if is_inf(length): return
+	var ticks:=ceili(length/m.travel_budget())+2
+	if ticks>=96: return
+	a._hangoutHome={"home":a.homeLocation,"until":int(w.data.tickCount)+ticks,"required_ticks":ticks,"signature":"appointment_wait:"+str(w.data.tickCount)}
+	a._locationStayRemaining=0
 static func remaining_distance(m: SimMotion,a: Dictionary) -> float:
 	if m==null or not m.positions.has(str(a.id)): return INF
 	var home:=m.layout._house_id(str(a.id),str(a.homeLocation));var house: Dictionary=m.layout.houses.get(home,{})

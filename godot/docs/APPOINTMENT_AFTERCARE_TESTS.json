@@ -1,0 +1,5 @@
+{
+  "checks": 27,
+  "failures": [],
+  "scope": "controlled physical presence and original home routes; missed and explicit cancellation return, stale arrival flag, declined/dead/shelter/unreachable exclusions, meal priority, no movement/spending/affinity/player control side effects, terminal idempotency"
+}

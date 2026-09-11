@@ -2380,12 +2380,19 @@ func _show_appointment_arrival(a: Dictionary) -> void:
 		status.text="約定地點："+str(simulation.data.townMap.locations[current.place].get("name",current.place))+" · 鏡頭已定位，請自行操作旅人前往。")
 	locate.disabled=left<=0 or not simulation.data.townMap.locations.has(a.place)
 
+func _appointment_action(key: String,id: String,action: Callable) -> void:
+	if key!=SimAppointments.card_key(SimAppointments.current(simulation)):
+		chat_notice[id]="約定已更新，請查看目前卡片後再操作。"
+		show_appointment(id)
+		return
+	action.call()
 func show_appointment(id: String) -> void:
 	selected_agent=id;resident_page="appointment";_clear_drawer()
 	_wrapped("見面約定",22)
 	_wrapped("安排時會預留兩小時等候與居民慢走返家的時間；臨時需求仍可能影響赴約。",12)
 	_wrapped("接受邀約才會排入行程。請讓時間正常前進，並自行走到地點靠近對方；只有口頭說好不算完成邀約。",12)
 	var a:=SimAppointments.current(simulation)
+	var card_key:=SimAppointments.card_key(a)
 	if not a.is_empty():
 		var npc: Dictionary=simulation.data.agents.get(a.npc,{})
 		_wrapped(str(npc.get("name",a.npc))+" · "+str(simulation.data.townMap.locations.get(a.place,{}).get("name",a.place)))
@@ -2396,26 +2403,29 @@ func show_appointment(id: String) -> void:
 		else: _wrapped("約定已結束")
 		if a.state=="offered": _wrapped("請在兩個遊戲小時內回覆邀約。",12)
 		_wrapped(str(a.reason))
+		if a.state=="missed": _wrapped("這次沒有完成見面；居民會依實際位置、工作與需求安排返家。之後仍可重新詢問空檔，新邀約需要重新接受。",12)
 		if a.state=="change_offered":
 			_wrapped("請在兩個遊戲小時內決定是否接受新時間。",12)
-			_button("同意新時間",drawer_body,func(): SimAppointmentChanges.respond(simulation,true);has_simulated=true;show_appointment(id))
-			_button("婉拒改約",drawer_body,func(): SimAppointmentChanges.respond(simulation,false);has_simulated=true;show_appointment(id))
+			_button("同意新時間",drawer_body,func(): _appointment_action(card_key,id,func(): SimAppointmentChanges.respond(simulation,true);has_simulated=true;show_appointment(id)))
+			_button("婉拒改約",drawer_body,func(): _appointment_action(card_key,id,func(): SimAppointmentChanges.respond(simulation,false);has_simulated=true;show_appointment(id)))
 		elif a.state=="offered":
-			_button("接受邀約",drawer_body,func(): SimAppointments.respond(simulation,true);has_simulated=true;show_appointment(id))
-			_button("婉拒邀約",drawer_body,func(): SimAppointments.respond(simulation,false);has_simulated=true;show_appointment(id))
+			_button("接受邀約",drawer_body,func(): _appointment_action(card_key,id,func(): SimAppointments.respond(simulation,true);has_simulated=true;show_appointment(id)))
+			_button("婉拒邀約",drawer_body,func(): _appointment_action(card_key,id,func(): SimAppointments.respond(simulation,false);has_simulated=true;show_appointment(id)))
 		elif a.state in ["accepted","waiting"]:
 			_show_appointment_arrival(a)
 			if a.state=="accepted":
 				_wrapped("可提前至少兩個遊戲小時申請順延至原約定隔天同一時間，每份約定限一次。",12)
 				var change_error:=SimAppointments.reschedule_error(simulation)
 				var change:=_button("申請順延一天",drawer_body,func():
+					if card_key!=SimAppointments.card_key(SimAppointments.current(simulation)):
+						_appointment_action(card_key,id,func(): pass);return
 					var result:=SimAppointments.reschedule(simulation)
 					chat_notice[id]=str(result.get("notice",result.get("error","")))
 					if result.ok: has_simulated=true
 					show_appointment(id))
 				change.disabled=not change_error.is_empty()
 				if not change_error.is_empty(): _wrapped(change_error,12)
-			_button("取消約定",drawer_body,func(): SimAppointments.finish(simulation,"cancelled","玩家取消約定");has_simulated=true;show_appointment(id))
+			_button("取消約定",drawer_body,func(): _appointment_action(card_key,id,func(): SimAppointments.finish(simulation,"cancelled","玩家取消約定");has_simulated=true;show_appointment(id)))
 	if not SimAppointments.LIVE.has(a.get("state","")):
 		_wrapped("也可以直接詢問對方明天是否有空（本機規則，不消耗 AI 額度）。",12)
 		_button("詢問明天能否見面",drawer_body,func(): chat_notice[id]=SimAppointments.offer(simulation,id);has_simulated=true;show_appointment(id))

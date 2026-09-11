@@ -1,0 +1,432 @@
+{
+  "checks": 256,
+  "failures": [],
+  "tests": [
+    {
+      "test": "appointment_lifecycle_archive",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 8,
+        "failures": [],
+        "scope": "delivered compressed five-day archive loaded through app picker; original mayor, approved construction, separate missed/met history, mobile explanation, no replay, farm and night roster"
+      },
+      "tail": ""
+    },
+    {
+      "test": "appointments",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 23,
+        "failures": [],
+        "scope": "offer/accept/decline/expiry, limits, conflicts and memory, save deterministic reload, chat structured invitation and no logical arrival shortcut; configured conflict fixtures"
+      },
+      "tail": ""
+    },
+    {
+      "test": "appointment_return",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 16,
+        "failures": [],
+        "scope": "controlled free-day NPC, full waiting window plus normal return, earlier offer, initial/replacement consent rechecks, player postponement, explicit NPC reschedule and shared limit, scene restore, actual close meeting and NPC-only return; not natural invitation frequency"
+      },
+      "tail": ""
+    },
+    {
+      "test": "home_rest",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 13,
+        "failures": [],
+        "maximum_step": 0.999603271484375,
+        "scope": "controlled fixed bedtime, actual slow path home with per-tick needs checks, own-house identity, movement/door guards, restored observations, player and legacy compatibility; not a natural full-night duration test",
+        "travel_ticks_checked": 16
+      },
+      "tail": ""
+    },
+    {
+      "test": "home_return",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 20,
+        "failures": [],
+        "first_return_hour": 18,
+        "scope": "controlled route and schedule, early arrival hold, no early sleep/resources, leisure/outing conflict, snapshot, bedtime release and priority guards; not natural sleep-duration proof"
+      },
+      "tail": ""
+    },
+    {
+      "test": "return_meal",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 23,
+        "failures": [],
+        "scope": "controlled return metadata and meal state, finite allowance, repeated calls, invalid or expired task and no resource/needs/position mutation; not natural arrival evidence"
+      },
+      "tail": ""
+    },
+    {
+      "test": "npc_appointment_changes",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 23,
+        "failures": [],
+        "scope": "configured work changes, pending proposal without implicit consent, suspended old route, local speech, shared cap, accept/reject/deadline/revalidation, memory and save determinism; no live AI"
+      },
+      "tail": ""
+    },
+    {
+      "test": "npc_appointment_changes_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 10,
+        "failures": [],
+        "max_step_pixels": 0.998870849609375,
+        "scope": "configured free day and earlier sleep preference; actual app tick notification, mobile card, native archive, accept/reject callbacks, natural needs/time and physical NPC/player movement on replacement date; no live AI"
+      },
+      "tail": ""
+    },
+    {
+      "test": "appointment_reschedule_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 10,
+        "failures": [],
+        "max_step_pixels": 0.722902715206146,
+        "needs_before_decision_tick": {
+          "beauty": 50.0,
+          "comfort": 60.0,
+          "hunger": 20.0,
+          "recreation": 64.4000000000002,
+          "rest": 28.0,
+          "social": 68.0
+        },
+        "scope": "controlled free-day NPC; valid natural urgent-needs cancellation is an outcome, not a completed meeting; actual reschedule button, mobile panel, delivered compressed native reload, natural ticks and SimMotion until rescheduled date, player collision movement and meeting; no live AI or visual art review",
+        "state": {
+          "due": 240.0,
+          "expires": 8.0,
+          "hour": 18.0,
+          "npc": "chen_wei",
+          "npc_arrived": true,
+          "place": "town_square",
+          "previous_due": 144.0,
+          "previous_time": "小鎮第 2 天 18:00",
+          "reason": "雙方已在約定地點實際碰面",
+          "reschedule_count": 1.0,
+          "resolved_tick": 240,
+          "state": "met",
+          "time": "小鎮第 3 天 18:00",
+          "until": 248.0
+        }
+      },
+      "tail": ""
+    },
+    {
+      "test": "clock_appointments_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 16,
+        "failures": [],
+        "npc_max_step_pixels": 0.933537185192108,
+        "return_max_step_pixels": 0.999603271484375,
+        "returned_home": true,
+        "scope": "original mayor work schedule and needs; mock AI response through actual chat UI, accept, app save reload, natural clock/needs/work, real SimMotion NPC path and collision-based player movement, proximity meeting, mobile panel; headless rendering, no production AI service",
+        "state": {
+          "due": 144.0,
+          "expires": 8.0,
+          "hour": 18.0,
+          "npc": "chen_wei",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "雙方已在約定地點實際碰面",
+          "resolved_tick": 144,
+          "state": "met",
+          "time": "小鎮第 2 天 18:00",
+          "until": 152.0
+        }
+      },
+      "tail": ""
+    },
+    {
+      "test": "construction_deadline",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 17,
+        "failures": [],
+        "scope": "exact deadline vs changed schedule conflict, direct proposal guard, prior-arrival distinction, one-time history/memory, native snapshot reload, pre-deadline explicit reschedule consent, blocked physical home doorway and late co-location"
+      },
+      "tail": ""
+    },
+    {
+      "test": "appointment_reminders_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 9,
+        "failures": [],
+        "scope": "controlled free-day NPC for return availability; 375px global navigation, pending/accepted/terminal shortcut, busy deferral, once-only status and native archive; controlled due time, no API"
+      },
+      "tail": ""
+    },
+    {
+      "test": "appointment_aftercare",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 27,
+        "failures": [],
+        "scope": "controlled physical presence and original home routes; missed and explicit cancellation return, stale arrival flag, declined/dead/shelter/unreachable exclusions, meal priority, no movement/spending/affinity/player control side effects, terminal idempotency"
+      }
+    },
+    {
+      "test": "appointment_card_isolation",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 17,
+        "failures": [],
+        "scope": "six actual retained UI callbacks for accept/decline/cancel/player reschedule/NPC replacement accept/decline cannot touch new appointments; same-card native reload remains valid, phone width"
+      }
+    },
+    {
+      "test": "appointment_lifecycle",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "bad_sleep": [],
+        "checks": 24,
+        "complete_tick": 264,
+        "executed_tick": 72,
+        "failures": [],
+        "final_appointment": {
+          "due": 240,
+          "expires": 165,
+          "hour": 18,
+          "npc": "chen_wei",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "雙方已在約定地點實際碰面",
+          "resolved_tick": 240,
+          "state": "met",
+          "time": "小鎮第 3 天 18:00",
+          "until": 248
+        },
+        "first_appointment": {
+          "due": 144.0,
+          "expires": 8.0,
+          "hour": 18.0,
+          "npc": "chen_wei",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "等待時間結束，未在現場碰面（玩家未到或雙方未靠近）",
+          "resolved_tick": 152,
+          "state": "missed",
+          "time": "小鎮第 2 天 18:00",
+          "until": 152.0
+        },
+        "first_wait_tick": 144,
+        "initial_stock": {
+          "history": [],
+          "resources": {
+            "beer": 0.0,
+            "bread": 0.0,
+            "brick": 0.0,
+            "cloth": 40.0,
+            "clothing": 15.0,
+            "corn": 0.0,
+            "cotton": 0.0,
+            "dragon_fruit": 0.0,
+            "fine_tea": 0.0,
+            "flowers": 0.0,
+            "food": 200.0,
+            "furniture": 5.0,
+            "gold": 0.0,
+            "golden_wheat": 0.0,
+            "grapes": 0.0,
+            "hardwood": 0.0,
+            "herbal_tea": 0.0,
+            "herbs": 20.0,
+            "jam": 0.0,
+            "luxury_furniture": 0.0,
+            "marble": 0.0,
+            "meals": 50.0,
+            "medicine": 5.0,
+            "metal": 30.0,
+            "mushroom": 0.0,
+            "pastry": 0.0,
+            "perfume": 0.0,
+            "plank": 0.0,
+            "potato": 0.0,
+            "research_points": 0.0,
+            "rice": 0.0,
+            "silver": 150.0,
+            "steel": 0.0,
+            "stone": 80.0,
+            "sugar": 0.0,
+            "sugarcane": 0.0,
+            "tea": 0.0,
+            "tools": 10.0,
+            "wheat": 0.0,
+            "wine": 0.0,
+            "wood": 100.0
+          }
+        },
+        "invalid_steps": [],
+        "maximum_npc_step": 0.999847412109375,
+        "maximum_player_step": 1.20001649856567,
+        "met_tick": 240,
+        "missed_home_tick": 156,
+        "missed_tick": 152,
+        "motion_frames_per_tick": 480,
+        "negative_stock": [],
+        "paid": {
+          "stone": 15.0,
+          "tools": 2.0,
+          "wood": 10.0
+        },
+        "returned_tick": 244,
+        "scope": "original frontier resources/jobs/needs/positions, traveler proposal and daily mayor review, real execution UI and normal daily construction, mock AI offer and acceptance, 480 clock ticks with 480 motion frames each, player collision walking during clock progression, native reload, first player absence, actual home return, fresh local offer and second physical meeting, terminal reload, farm work/home sleep; no granted resources, elected fixture, compressed midnight or production AI",
+        "second_offer_tick": 157,
+        "sleepers": [
+          "lin_mei",
+          "sun_yu",
+          "gao_lang",
+          "su_qing",
+          "yang_feng",
+          "chen_wei",
+          "zhang_hao",
+          "wang_li",
+          "huang_li",
+          "he_xiu",
+          "wu_da",
+          "he_chang",
+          "ke_wei",
+          "liu_jun",
+          "zhao_xia",
+          "ma_qiang",
+          "xu_ying",
+          "zhou_ming",
+          "zheng_wei",
+          "ling_bo"
+        ],
+        "stages": [
+          {
+            "appointment": "accepted",
+            "completion": -1,
+            "missed": -1,
+            "missed_home": -1,
+            "proposal": "pending",
+            "returned": -1,
+            "second_offer": -1,
+            "tick": 48
+          },
+          {
+            "appointment": "accepted",
+            "completion": -1,
+            "missed": -1,
+            "missed_home": -1,
+            "proposal": "executed",
+            "returned": -1,
+            "second_offer": -1,
+            "tick": 96
+          },
+          {
+            "appointment": "waiting",
+            "completion": -1,
+            "missed": -1,
+            "missed_home": -1,
+            "proposal": "executed",
+            "returned": -1,
+            "second_offer": -1,
+            "tick": 144
+          },
+          {
+            "appointment": "accepted",
+            "completion": -1,
+            "missed": 152,
+            "missed_home": 156,
+            "proposal": "executed",
+            "returned": -1,
+            "second_offer": 157,
+            "tick": 192
+          },
+          {
+            "appointment": "met",
+            "completion": -1,
+            "missed": 152,
+            "missed_home": 156,
+            "proposal": "executed",
+            "returned": -1,
+            "second_offer": 157,
+            "tick": 240
+          },
+          {
+            "appointment": "met",
+            "completion": 264,
+            "missed": 152,
+            "missed_home": 156,
+            "proposal": "executed",
+            "returned": 244,
+            "second_offer": 157,
+            "tick": 288
+          },
+          {
+            "appointment": "met",
+            "completion": 264,
+            "missed": 152,
+            "missed_home": 156,
+            "proposal": "executed",
+            "returned": 244,
+            "second_offer": 157,
+            "tick": 336
+          },
+          {
+            "appointment": "met",
+            "completion": 264,
+            "missed": 152,
+            "missed_home": 156,
+            "proposal": "executed",
+            "returned": 244,
+            "second_offer": 157,
+            "tick": 384
+          },
+          {
+            "appointment": "met",
+            "completion": 264,
+            "missed": 152,
+            "missed_home": 156,
+            "proposal": "executed",
+            "returned": 244,
+            "second_offer": 157,
+            "tick": 432
+          },
+          {
+            "appointment": "met",
+            "completion": 264,
+            "missed": 152,
+            "missed_home": 156,
+            "proposal": "executed",
+            "returned": 244,
+            "second_offer": 157,
+            "tick": 480
+          }
+        ],
+        "ticks": 480,
+        "worked": [
+          "liu_jun"
+        ]
+      }
+    }
+  ]
+}
