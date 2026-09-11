@@ -60,6 +60,10 @@ func rebuild(save: Dictionary) -> void:
 		_road(int(zone.x),int(zone.y))
 	_sync_housing(save.agents)
 	if solid_projects:
+		for i in mini(factory_plots.size(),save.get("processing",{}).get("builtFactories",{}).size()):
+			var plot: Dictionary=factory_plots[i]
+			for y in range(int(plot.y),int(plot.y+plot.h)):
+				for x in range(int(plot.x),int(plot.x+plot.w)): _set_tile(x,y,5)
 		for p in projects+completed:
 			for y in range(int(p.siteY),int(p.siteY)+2):
 				for x in range(int(p.siteX),int(p.siteX)+2): _set_tile(x,y,5)

@@ -139,7 +139,7 @@ func _button(text: String, parent: Node, action: Callable) -> Button:
 		action.call()
 		if not simulation.governance_notice.is_empty():
 			status.text=simulation.governance_notice
-			if simulation.governance_notice!=BuildingSites.OCCUPIED_NOTICE: has_simulated=true;show_governance())
+			if simulation.governance_notice not in [BuildingSites.OCCUPIED_NOTICE,BuildingSites.NO_FACTORY_SITE_NOTICE]: has_simulated=true;show_governance())
 	parent.add_child(button)
 	return button
 
@@ -1806,7 +1806,7 @@ func show_processing() -> void:
 			for r in def.cost: costs.append(_resource_name(r)+" "+str(int(def.cost[r])))
 			_wrapped("、".join(costs)+" · 工程量 "+str(int(def.buildDays)),12)
 			var button:=_button("建造："+str(def.name),drawer_body,func():
-				if SimProcessing.build(simulation,key): has_simulated=true
+				if SimProcessing.build(simulation,key): has_simulated=true;_refresh_building_world()
 				show_processing())
 			button.disabled=not SimBuildings.affordable(simulation,def.cost)
 			continue
@@ -1876,7 +1876,6 @@ func _refresh_building_world() -> void:
 	var houses:=motion.layout.agent_house.duplicate(true)
 	world_view.display_save(simulation.data);motion.layout=world_view.layout;motion.layout.agent_house.merge(houses,true);motion.pathfinder.grid=world_view.layout.grid
 	for p in motion.positions.values():
-		var safe: Vector2=motion.layout._nearest(Vector2(p.x,p.y));p.x=safe.x;p.y=safe.y
 		motion._path(p)
 	SimWorkSchedule.refresh(simulation,motion)
 	for a in simulation.data.agents.values(): a.erase("_shiftSleep")

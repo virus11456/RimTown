@@ -6,7 +6,7 @@ static func log_event(w: SimWorld,kind: String,text: String) -> void:
 	SimSocial.log_message(w.data,kind,text,"","")
 static func _execute_build(w: SimWorld,key: String) -> bool:
 	var def: Dictionary=rules().get(key,{})
-	if def.is_empty() or w.data.processing.builtFactories.has(key) or not SimBuildings.affordable(w,def.cost): return false
+	if def.is_empty() or w.data.processing.builtFactories.has(key) or not SimBuildings.affordable(w,def.cost) or not BuildingSites.factory_vacant(w): return false
 	for r in def.cost: SimEconomy.consume(w,r,float(def.cost[r]),"建造"+str(def.name))
 	w.data.processing.builtFactories[key]={"key":key,"status":"building","buildProgress":0,"buildRequired":def.buildDays,"recipe":null,"productionProgress":0,"workers":[],"warehouse":{}}
 	log_event(w,"factory",str(def.icon)+" 開始建造"+str(def.name)+"！");return true
@@ -137,7 +137,7 @@ static func generate_orders(w: SimWorld,defs: Dictionary) -> void:
 	log_event(w,"order","📋 新訂單：需要 "+str(amount)+" 個"+product+"！（"+str(int(floorf(multiplier*100+.5)))+"% 價格）")
 
 static func build(w: SimWorld,key: String) -> bool:
-	if not rules().has(key) or w.data.processing.builtFactories.has(key): return false
+	if not rules().has(key) or w.data.processing.builtFactories.has(key) or not BuildingSites.factory_vacant(w): return false
 	var costs: Dictionary=rules().get(key,{}).get("cost",{})
 	var args: Array=[key]
 	if not SimGovernance.permit(w,"factory",args,costs): return false

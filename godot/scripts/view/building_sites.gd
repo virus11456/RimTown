@@ -1,11 +1,21 @@
 class_name BuildingSites
 extends RefCounted
 const OCCUPIED_NOTICE="用地附近有人，請等他離開後再試；未扣材料。"
-static func vacant(w: SimWorld,site: Vector2i,footprint: int=2) -> bool:
+const NO_FACTORY_SITE_NOTICE="沒有可用的工廠預留地，未扣材料。"
+static func factory_vacant(w: SimWorld) -> bool:
 	var motion: SimMotion=w.social.observed_motion
 	if motion==null: return true
+	var index: int=w.data.processing.builtFactories.size()
+	if index>=motion.layout.factory_plots.size():
+		w.governance_notice=NO_FACTORY_SITE_NOTICE;return false
+	var plot: Dictionary=motion.layout.factory_plots[index]
+	return vacant(w,Vector2i(int(plot.x),int(plot.y)),int(plot.w),int(plot.h))
+static func vacant(w: SimWorld,site: Vector2i,footprint: int=2,height: int=-1) -> bool:
+	var motion: SimMotion=w.social.observed_motion
+	if motion==null: return true
+	var rows:=footprint if height<0 else height
 	for pos in motion.positions.values():
-		if float(pos.x)>=site.x*16-8 and float(pos.x)<(site.x+footprint)*16+8 and float(pos.y)>=site.y*16-8 and float(pos.y)<(site.y+footprint)*16+8:
+		if float(pos.x)>=site.x*16-8 and float(pos.x)<(site.x+footprint)*16+8 and float(pos.y)>=site.y*16-8 and float(pos.y)<(site.y+rows)*16+8:
 			w.governance_notice=OCCUPIED_NOTICE;return false
 	return true
 static func allowed(save: Dictionary,site: Vector2i,footprint: int=2) -> bool:

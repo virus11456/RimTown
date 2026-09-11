@@ -1,0 +1,7 @@
+{
+  "checks": 17,
+  "failures": [],
+  "maximum_refresh_step": 0.0,
+  "path_points": 5,
+  "scope": "controlled mayor/material/position fixtures; NPC/player occupancy, full rectangular footprint, atomic public/internal build, immediate model and navigation, actual refresh positions, invalid old-position no-snap, native reload and missing plot; no full factory production endurance"
+}

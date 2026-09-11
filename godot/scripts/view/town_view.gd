@@ -182,7 +182,8 @@ func _build_overlays(save: Dictionary) -> void:
 	for i in layout.factory_plots.size():
 		var plot: Dictionary=layout.factory_plots[i]
 		_instance("ter_stone",Vector3(plot.x+2,.13,plot.y+1.5),Vector3(4,1,3))
-		if i<factory_keys.size(): _building("bld_factory",plot,0.8)
+		if i<factory_keys.size():
+			var factory:=_building("bld_factory",plot,0.8);factory.set_meta("factory_key",factory_keys[i])
 		else: _instance("prop_crate",Vector3(plot.x+2,.3,plot.y+1.5),Vector3.ONE*.7)
 	var placement := {"watchtower":["guardpost",-2,-2],"granary":["farm",8,-1],"marketplace":["town_square",9,-1],"well_upgrade":["well",0,-1],"training_ground":["guardpost",7,0],"brewery":["tavern",-3,-1],"garden":["clinic",-3,-1],"school":["library",-3,0],"farm_irrigation":["farm",-2,5],"forge_bellows":["workshop",-3,-1],"clinic_upgrade":["clinic",6,-1],"town_walls":["town_square",-5,-3]}
 	for building in save.get("buildings",{}).get("completed",[]):
