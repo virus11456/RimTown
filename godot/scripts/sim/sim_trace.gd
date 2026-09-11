@@ -44,5 +44,5 @@ static func record(a: Dictionary,w: SimWorld) -> void:
 	a.todayTrace=a.todayTrace.slice(maxi(0,a.todayTrace.size()-160))
 
 static func activity_label(a: Dictionary) -> String:
-	var labels:={"sleeping":"睡覺","eating":"進食","working":"工作","waiting_workplace":"工作設施未就緒，待命","socializing":"社交","wandering":"閒逛","recreation":"娛樂","idle":"閒置","stargazing":"看星星","night_mischief":"搞事","night_stroll":"夜間散步","exploring":"探險中","mourning":"弔念","commuting":"趕著去上工"}
+	var labels:={"receiving_service":"在現場接受服務","sleeping":"睡覺","eating":"進食","working":"工作","waiting_workplace":"工作設施未就緒，待命","socializing":"社交","wandering":"閒逛","recreation":"娛樂","idle":"閒置","stargazing":"看星星","night_mischief":"搞事","night_stroll":"夜間散步","exploring":"探險中","mourning":"弔念","commuting":"趕著去上工"}
 	return labels.get(a.activity,a.activity)

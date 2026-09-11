@@ -8,6 +8,7 @@ static func book(w: SimWorld) -> Dictionary:
 	var b: Dictionary=w.quest_balance.careers
 	var day:=SimClock.total_days(w.data.clock)
 	if int(b.day)!=day:
+		SimServiceStay.clear(w)
 		if not b.active.is_empty(): b.notice="午夜已換日，未完成值勤已取消，未給予獎勵。"
 		b.day=day;b.used=0;b.visits=[];b.treated=[];b.counseled=[];b.traded=0;b.active={}
 	return b
@@ -87,16 +88,22 @@ static func start(w: SimWorld,id: String) -> Dictionary:
 			if not SimCareerTrade.request(w,t.id): return {"ok":false,"message":"請先申請這份交易報價的公共資源用途。"}
 			if not SimBuildings.affordable(w,t.costs): return {"ok":false,"message":"公共資源不足，無法開始交接。"}
 		b.active=t.duplicate(true);b.active.finish=int(w.data.tickCount)+SimCareerProgress.ticks(w,t.job);b.notice=str(t.label)+"進行中。"
+		if t.job in ["doctor","priest"] and w.social.observed_motion!=null and SimServiceStay.priority(w,str(t.target)).is_empty():
+			b.active.stay=true;SimServiceStay.sync(w)
 		return {"ok":true,"message":"開始值勤，需停留 %d 遊戲分鐘；離開會取消。"%(SimCareerProgress.ticks(w,t.job)*15)}
 	return {"ok":false,"message":"需求已改變，請重新查看工作。"}
 static func cancel(w: SimWorld,reason: String="值勤已取消，未給予獎勵。") -> void:
 	var b:=book(w)
+	SimServiceStay.clear(w)
 	if not b.active.is_empty(): b.notice=reason
 	b.active={}
 static func tick(w: SimWorld) -> void:
 	if not w.quest_balance.has("careers"): return
 	var b:=book(w);var t: Dictionary=b.active
 	if t.is_empty(): return
+	if t.get("stay",false):
+		var reason:=SimServiceStay.priority(w,str(t.target))
+		if not reason.is_empty(): cancel(w,reason+" 值勤已取消，未給予獎勵。");return
 	var player: Dictionary=w.data.agents.player
 	var need_error:=SimCareerPresence.service_need_error(w,t)
 	if not need_error.is_empty(): cancel(w,need_error+" 值勤已取消，未給予獎勵。");return
@@ -141,6 +148,7 @@ static func tick(w: SimWorld) -> void:
 	b.notice=str(t.label)+"完成。"
 	b.history.append(str(t.label)+"完成");b.history=b.history.slice(-10)
 	SimSocial.log_message(w.data,"career",str(t.label)+"完成。",str(player.name),"")
+	SimServiceStay.clear(w)
 	b.active={}
 static func defense_bonus(w: SimWorld) -> float:
 	if not w.quest_balance.has("careers"): return 0

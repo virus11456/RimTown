@@ -63,6 +63,9 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 	for id in agents:
 		if id=="player" and manual_player: continue
 		var a: Dictionary=agents[id]
+		if a.get("_serviceStay",false) and positions.has(id):
+			positions[id].walking=false;positions[id].walkStep=0;positions[id].activity="receiving_service"
+			continue
 		var location: String=a.currentLocation
 		var target: Vector2
 		if location.begins_with("residential_"):

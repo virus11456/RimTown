@@ -1,0 +1,322 @@
+{
+  "accepted_stays": 4,
+  "active_reload": true,
+  "attempts": {
+    "doctor": 30,
+    "priest": 0
+  },
+  "bad_sleep": [],
+  "checks": 7,
+  "controlled_mood_setback": false,
+  "daily_used": {
+    "0": 3,
+    "1": 0,
+    "2": 0,
+    "3": 1,
+    "4": 0
+  },
+  "day_reload": true,
+  "entered_houses": [
+    "residential_south_0",
+    "residential_north_1",
+    "residential_east_0",
+    "residential_east_1",
+    "residential_south_2",
+    "residential_east_3"
+  ],
+  "failures": [],
+  "finished": {
+    "doctor": 4,
+    "priest": 0
+  },
+  "indoor_attempts": 15,
+  "indoor_finished": 2,
+  "invalid_steps": [],
+  "max_npc_step": 0.999847412109375,
+  "max_player_step": 1.20011603832245,
+  "motion_frames": 184320,
+  "negative_stock": [],
+  "observed_need_ids": {
+    "doctor": [
+      "hb_haibo",
+      "hb_achao",
+      "hb_xiaoou",
+      "hb_langshu",
+      "hb_xiugu",
+      "hb_shishu",
+      "hb_axi",
+      "hb_amao",
+      "hb_yunyi",
+      "hb_aduo",
+      "hb_muxia",
+      "hb_afu",
+      "hb_haima",
+      "hb_dengye",
+      "hb_shanshan",
+      "imm_何芳_72"
+    ],
+    "priest": []
+  },
+  "outcomes": [
+    {
+      "completed": true,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "照護疲憊的海伯完成。",
+      "target": "hb_haibo",
+      "tick": 33
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_aduo",
+      "tick": 35
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "對方尚未在同一場所到場，請等待或重新查看工作。 值勤已取消，未給予獎勵。",
+      "target": "hb_achao",
+      "tick": 40
+    },
+    {
+      "completed": true,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "照護疲憊的小鷗完成。",
+      "target": "hb_xiaoou",
+      "tick": 52
+    },
+    {
+      "completed": true,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "照護疲憊的燈爺完成。",
+      "target": "hb_dengye",
+      "tick": 57
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "對方需要準備走回家休息。 值勤已取消，未給予獎勵。",
+      "target": "hb_haima",
+      "tick": 133
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_haima",
+      "tick": 133
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "對方尚未在同一場所到場，請等待或重新查看工作。 值勤已取消，未給予獎勵。",
+      "target": "hb_achao",
+      "tick": 136
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_aduo",
+      "tick": 144
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "對方需要先吃飯。 值勤已取消，未給予獎勵。",
+      "target": "hb_amao",
+      "tick": 149
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_achao",
+      "tick": 156
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_langshu",
+      "tick": 160
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "午夜已換日，未完成值勤已取消，未給予獎勵。",
+      "target": "hb_dengye",
+      "tick": 168
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_dengye",
+      "tick": 171
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_haima",
+      "tick": 229
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "對方尚未在同一場所到場，請等待或重新查看工作。 值勤已取消，未給予獎勵。",
+      "target": "hb_achao",
+      "tick": 232
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_xiaoou",
+      "tick": 242
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "imm_何芳_72",
+      "tick": 248
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_achao",
+      "tick": 251
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_langshu",
+      "tick": 255
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_amao",
+      "tick": 261
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_dengye",
+      "tick": 266
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "對方需要準備走回家休息。 值勤已取消，未給予獎勵。",
+      "target": "hb_haima",
+      "tick": 325
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_haima",
+      "tick": 325
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "對方尚未在同一場所到場，請等待或重新查看工作。 值勤已取消，未給予獎勵。",
+      "target": "hb_achao",
+      "tick": 328
+    },
+    {
+      "completed": false,
+      "indoor": false,
+      "job": "doctor",
+      "reason": "請等雙方完成進出門後再開始服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_aduo",
+      "tick": 336
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "imm_何芳_72",
+      "tick": 343
+    },
+    {
+      "completed": true,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "照護疲憊的阿潮完成。",
+      "target": "hb_achao",
+      "tick": 347
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "午夜已換日，未完成值勤已取消，未給予獎勵。",
+      "target": "hb_shanshan",
+      "tick": 360
+    },
+    {
+      "completed": false,
+      "indoor": true,
+      "job": "doctor",
+      "reason": "對方目前已不符合疲憊照護需求，這次不需要服務。 值勤已取消，未給予獎勵。",
+      "target": "hb_shanshan",
+      "tick": 363
+    }
+  ],
+  "scope": "original town needs/jobs, normal simulation, player chooses available service and collision walks to current target including occupied homes, no later forced NPC needs/positions or freeze, native reload; no natural priest completion claim if no suitable demand arises",
+  "sleepers": [
+    "hb_dengye",
+    "hb_shanshan",
+    "hb_xiaoou",
+    "hb_haima",
+    "hb_axi",
+    "hb_yunyi",
+    "hb_achao",
+    "hb_shishu",
+    "hb_aduo",
+    "hb_afu",
+    "hb_haibo",
+    "hb_amao",
+    "hb_langshu",
+    "hb_muxia",
+    "hb_xiugu"
+  ],
+  "ticks": 384,
+  "town": "harbor"
+}

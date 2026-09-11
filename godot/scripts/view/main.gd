@@ -342,6 +342,7 @@ func _load_document(text: String, source: String) -> bool:
 		SimWorkSchedule.refresh(simulation,motion)
 		SimShiftSleep.refresh(simulation,motion)
 		simulation.social.observe_positions(motion)
+		SimServiceStay.sync(simulation)
 		world_view.animate_agents(motion.positions)
 	if not active_tab.is_empty(): show_tab(active_tab,true)
 	return true
@@ -917,7 +918,7 @@ func _process(delta: float) -> void:
 	world_view.animate_agents(motion.positions)
 
 func _activity_name(activity: String) -> String:
-	return {"hangout_travel":"同行赴約／等候","planned_leisure":"依安排休閒","appointment_travel":"前往赴約","appointment_wait":"等待赴約者","idle":"休息","sleeping":"睡覺","eating":"進食","working":"工作","waiting_workplace":"工作設施未就緒，待命","socializing":"社交","wandering":"閒逛","recreation":"娛樂","stargazing":"看星星","night_stroll":"夜間散步","night_mischief":"夜間惡作劇","mourning":"弔念","commuting":"前往工作","heading_home":"回家"}.get(activity,activity)
+	return {"receiving_service":"在現場接受服務","hangout_travel":"同行赴約／等候","planned_leisure":"依安排休閒","appointment_travel":"前往赴約","appointment_wait":"等待赴約者","idle":"休息","sleeping":"睡覺","eating":"進食","working":"工作","waiting_workplace":"工作設施未就緒，待命","socializing":"社交","wandering":"閒逛","recreation":"娛樂","stargazing":"看星星","night_stroll":"夜間散步","night_mischief":"夜間惡作劇","mourning":"弔念","commuting":"前往工作","heading_home":"回家"}.get(activity,activity)
 
 func _capture_playtest() -> void:
 	await get_tree().create_timer(1).timeout
@@ -2302,6 +2303,8 @@ func show_careers() -> void:
 				var r:=SimCareers.enroll(w,key);has_simulated=true;show_careers();_wrapped(r.message))
 	else: _wrapped("鎮長可直接決定鎮務，無需 NPC 核准。")
 	if not b.active.is_empty():
+		if b.active.get("stay",false): _wrapped("對方同意短暫留在現場；吃飯、休息、上工或見面行程仍會中斷服務。",12)
+		elif b.active.job in ["doctor","priest"]: _wrapped("對方仍依原本行程活動；這次服務不會要求他停下工作、睡眠或其他安排。",12)
 		_wrapped(str(b.active.label)+"進行中；剩餘 %.0f 分鐘"%[maxf(0,int(b.active.finish)-int(w.data.tickCount))*15])
 		_button("取消值勤",drawer_body,func(): SimCareers.cancel(w);has_simulated=true;show_careers())
 	else:
@@ -2373,9 +2376,13 @@ func show_service_entrance(id: String) -> void:
 	else: _wrapped("對方目前沒有可查看的室內入口，請查看居民目前位置。")
 
 func _career_presence_error(task: Dictionary) -> String:
+	if task.get("stay",false):
+		var reason:=SimServiceStay.priority(simulation,str(task.target))
+		if not reason.is_empty(): return reason
 	var need_error:=SimCareerPresence.service_need_error(simulation,task)
 	return need_error if not need_error.is_empty() else SimCareerPresence.task_error(motion,task)
 func _validate_career_presence() -> void:
+	SimServiceStay.sync(simulation)
 	if not simulation.quest_balance.has("careers"): return
 	var b:=SimCareers.book(simulation)
 	if b.active.is_empty(): return

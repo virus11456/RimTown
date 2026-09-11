@@ -161,6 +161,7 @@ func _update(id: String) -> void:
 	elif not commute.is_empty(): a.activity="commuting"
 	elif SimAppointments.directing(self,id): a.activity="appointment_wait" if SimAppointments.current(self).state=="waiting" else "appointment_travel"
 	elif not home_return.is_empty(): a.activity="heading_home"
+	elif SimServiceStay.holding(self,id): a.activity="receiving_service"
 	elif SimLeisurePlan.directing(self,id): a.activity="planned_leisure"
 	elif SimHangoutVisits.directing(self,id): a.activity="hangout_travel"
 	else: _activity(a,hour)
@@ -185,6 +186,10 @@ func _update(id: String) -> void:
 		bonus=floor(thoughts+.5)+floor((float(a.get("attributes",{}).get("grit",5))-5)*.8+.5)
 	a.mood=clampf(50+_trait_sum(a,"mood_base")+SimNeeds.mood(a.needs)+run.moodModifier+bonus,-100,100)
 	if a.get("isPlayer",false): return
+	if SimServiceStay.holding(self,id):
+		a._serviceStay=true;run.targetLocation=null;a._locationStayRemaining=0
+		return
+	a.erase("_serviceStay")
 	if not meal_place.is_empty():
 		a.currentLocation=meal_place;run.targetLocation=null;a._locationStayRemaining=0
 		return

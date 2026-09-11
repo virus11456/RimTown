@@ -1,0 +1,5 @@
+{
+  "checks": 184,
+  "failures": [],
+  "scope": "two towns two service jobs; controlled unemployed awake resident and need state; real simulation ticks, fixed physical stay without frozen needs, completion, cancel, hunger, rest, work, raid, active reload, player departure, accepted appointment, midnight, sleep window and resumed walking; no natural multi-day claim"
+}
