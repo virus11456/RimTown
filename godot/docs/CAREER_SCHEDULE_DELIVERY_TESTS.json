@@ -1,0 +1,99 @@
+{
+  "checks": 18,
+  "failures": [],
+  "scope": "two four-day archives actual picker, full snapshot/position roundtrip, terminal no replay, quotas, original NPC jobs and day/night shifts, player not auto-shifted, harbor workshop still absent; no production AI",
+  "towns": [
+    {
+      "carpenter_progress": {
+        "completed": 1.0,
+        "days": [
+          1.0
+        ],
+        "directions": [],
+        "routes": [],
+        "stage": 1.0,
+        "targets": [
+          "build_1"
+        ]
+      },
+      "guard_progress": {
+        "completed": 14.0,
+        "days": [
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          4.0
+        ],
+        "directions": [],
+        "routes": [
+          0.0,
+          2.0,
+          3.0
+        ],
+        "stage": 2.0,
+        "targets": [
+          "quarry",
+          "town_square",
+          "residential_east"
+        ]
+      },
+      "guards": [
+        {
+          "id": "gao_lang",
+          "shift": "night"
+        },
+        {
+          "id": "yang_feng",
+          "shift": "day"
+        }
+      ],
+      "population": 21,
+      "town": "frontier"
+    },
+    {
+      "carpenter_progress": {
+        "completed": 0,
+        "days": [],
+        "directions": [],
+        "routes": [],
+        "stage": 0,
+        "targets": []
+      },
+      "guard_progress": {
+        "completed": 15.0,
+        "days": [
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          4.0
+        ],
+        "directions": [],
+        "routes": [
+          0.0,
+          1.0,
+          2.0
+        ],
+        "stage": 3.0,
+        "targets": [
+          "quarry",
+          "town_square",
+          "residential_east"
+        ]
+      },
+      "guards": [
+        {
+          "id": "hb_aduo",
+          "shift": "day"
+        },
+        {
+          "id": "imm_曹峰_72",
+          "shift": "night"
+        }
+      ],
+      "population": 17,
+      "town": "harbor"
+    }
+  ]
+}

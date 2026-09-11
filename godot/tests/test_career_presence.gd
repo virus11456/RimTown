@@ -5,17 +5,17 @@ func run() -> void:
 	var w: SimWorld=app.simulation;w.data.clock.hour=12;w.data.clock.minute=0
 	SimCareers.enroll(w,"doctor");var id:=SimGovernance.mayor(w);var a: Dictionary=w.data.agents[id]
 	a.needs.rest=25;a.needs.hunger=90;a.currentLocation="town_hall";a._pendingHangout=null;w.runtime[id].targetLocation=null
-	stand(app,"tavern");app.motion.positions[id].x=app.motion.positions.player.x;app.motion.positions[id].y=app.motion.positions.player.y
+	stand(app,"tavern");app.motion.positions[id].x=app.motion.positions.player.x;app.motion.positions[id].y=app.motion.positions.player.y;app.motion.positions[id].doorPhase=null
 	stand(app,"town_hall");app.show_careers();await settle();var label: String="開始：照護疲憊的"+str(a.name)
 	press(app.drawer_body,label);await settle();check(SimCareers.book(w).active.is_empty(),"care cannot begin before NPC visual arrival")
-	app.motion.positions[id].x=app.motion.positions.player.x;app.motion.positions[id].y=app.motion.positions.player.y
+	app.motion.positions[id].x=app.motion.positions.player.x;app.motion.positions[id].y=app.motion.positions.player.y;app.motion.positions[id].doorPhase=null
 	press(app.drawer_body,label);await settle();check(not SimCareers.book(w).active.is_empty(),"arrived pair starts care")
 	app._tick_simulation();await settle();check(has_text(app.drawer_body,"剩餘 45 分鐘"),"countdown refreshes on real app tick")
 	var xp: float=w.data.agents.player.skills["醫療"].xp
 	app.motion.positions[id].x=0;app.motion.positions[id].y=0;app._tick_simulation();await settle()
 	check(SimCareers.book(w).active.is_empty() and w.data.agents.player.skills["醫療"].xp==xp,"physical departure cancels before reward")
 	check(has_text(app.drawer_body,"值勤已取消"),"cancel reason displayed automatically")
-	app.motion.positions[id].x=app.motion.positions.player.x;app.motion.positions[id].y=app.motion.positions.player.y
+	app.motion.positions[id].x=app.motion.positions.player.x;app.motion.positions[id].y=app.motion.positions.player.y;app.motion.positions[id].doorPhase=null
 	a.currentLocation="town_hall";a.needs.rest=25;a._pendingHangout=null;app.show_careers();await settle();press(app.drawer_body,label);await settle()
 	for i in 4: app._tick_simulation();await settle()
 	check(SimCareers.book(w).used==1 and has_text(app.drawer_body,"今日完成 1 / 3"),"actual app tick completes and refreshes count")

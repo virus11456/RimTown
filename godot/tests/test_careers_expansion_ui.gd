@@ -1,5 +1,6 @@
 extends "res://tests/test_player_chat_ui.gd"
 func stand(app: Node,loc: String) -> void:
+	app.motion.positions.player.doorPhase=null
 	var zone: Dictionary=app.motion.layout.buildings.get(loc,app.motion.layout.nature.get(loc,{}))
 	app.motion.positions.player.x=(zone.x+zone.w*.5)*16;app.motion.positions.player.y=(zone.y+zone.h*.5)*16;app.simulation.data.agents.player.currentLocation=loc
 func run() -> void:
@@ -21,7 +22,7 @@ func run() -> void:
 	app.show_careers();press(app.drawer_body,"登記：牧師");await settle()
 	w.data.clock.hour=12;w.data.clock.minute=0
 	var a: Dictionary=w.data.agents[SimGovernance.mayor(w)];a.needs.hunger=90;a._pendingHangout=null;a.currentLocation="town_hall";a.mood=-50;w.runtime[a.id].moodModifier=-90;w._activity(a,int(w.data.clock.hour));a._locationStayRemaining=20;w.runtime[a.id].targetLocation=null
-	stand(app,"town_hall");app.motion.positions[a.id].x=app.motion.positions.player.x;app.motion.positions[a.id].y=app.motion.positions.player.y;app.show_careers();await settle();press(app.drawer_body,"開始：陪伴低落的"+str(a.name));await settle()
+	stand(app,"town_hall");app.motion.positions[a.id].x=app.motion.positions.player.x;app.motion.positions[a.id].y=app.motion.positions.player.y;app.motion.positions[a.id].doorPhase=null;app.show_careers();await settle();press(app.drawer_body,"開始：陪伴低落的"+str(a.name));await settle()
 	for i in 4:
 		w.tick()
 	check(SimCareers.book(w).get("counseled",[]).has(a.id),"support UI affects actual resident")

@@ -1,0 +1,56 @@
+{
+  "active_reload": true,
+  "bad_sleep": [],
+  "cancelled": true,
+  "career_completed": {
+    "carpenter": 1.0,
+    "guard": 14
+  },
+  "checks": 11,
+  "daily_used": {
+    "0": 3,
+    "1": 3,
+    "2": 3,
+    "3": 3,
+    "4": 3
+  },
+  "day_reload": true,
+  "failures": [],
+  "invalid_steps": [],
+  "max_npc_step": 0.999847412109375,
+  "max_player_step": 1.20009064674377,
+  "meeting_tick": 145,
+  "motion_frames": 184320,
+  "negative_stock": [],
+  "paid": {
+    "stone": 15.0,
+    "tools": 2.0,
+    "wood": 10.0
+  },
+  "project_complete_tick": 264,
+  "scope": "original town resources/resident routines, player registers carpenter/guard, collision walks between job sites, leaves first patrol, native active work and day reload, shared cap, normal mayor approval and original costs, explicitly accepted resident appointment; no forced NPC needs/positions or AI requests",
+  "sleepers": [
+    "lin_mei",
+    "sun_yu",
+    "gao_lang",
+    "wang_li",
+    "su_qing",
+    "yang_feng",
+    "he_xiu",
+    "chen_wei",
+    "huang_li",
+    "he_chang",
+    "zhang_hao",
+    "wu_da",
+    "ke_wei",
+    "liu_jun",
+    "zhao_xia",
+    "xu_ying",
+    "zhou_ming",
+    "zheng_wei",
+    "ma_qiang",
+    "ling_bo"
+  ],
+  "ticks": 384,
+  "town": "frontier"
+}

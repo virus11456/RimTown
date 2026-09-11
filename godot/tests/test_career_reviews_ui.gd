@@ -3,7 +3,7 @@ func run() -> void:
 	for choice in ["practice","cooperate"]:
 		var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;root.add_child(viewport)
 		var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app);await process_frame;app.set_process(false)
-		var w: SimWorld=app.simulation;SimCareers.enroll(w,"guard");w.data.agents.player.currentLocation="quarry";SimCareers.start(w,"patrol:quarry")
+		var w: SimWorld=app.simulation;SimCareers.enroll(w,"guard");stand(app,"quarry");SimCareers.start(w,"patrol:quarry")
 		for i in 4: w.tick()
 		for a in w.data.agents.values():
 			if not a.get("isPlayer",false): a.jobKey="farmer"

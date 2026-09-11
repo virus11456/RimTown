@@ -26,7 +26,7 @@ static func available(w: SimWorld) -> Array:
 				if p.state=="growing" and float(p.waterLevel)<=70: tasks.append({"id":"water:"+str(p.id),"target":str(p.id),"location":"meadow","label":"照料農田 #"+str(p.id),"job":"farmer"})
 		"guard":
 			for loc in PATROL:
-				if not loc in b.visits: tasks.append({"id":"patrol:"+loc,"target":loc,"location":loc,"label":"巡查"+str(w.data.townMap.locations[loc].name),"job":"guard"})
+				if w.data.townMap.locations.has(loc) and not loc in b.visits: tasks.append({"id":"patrol:"+loc,"target":loc,"location":loc,"label":"巡查"+str(w.data.townMap.locations[loc].name),"job":"guard"})
 		"doctor":
 			for a in w.data.agents.values():
 				if not a.get("isPlayer",false) and not a.get("isDead",false) and float(a.needs.rest)<=40 and not a.id in b.treated and w.data.townMap.locations.has(a.currentLocation): tasks.append({"id":"care:"+str(a.id),"target":a.id,"location":a.currentLocation,"label":"照護疲憊的"+str(a.name),"job":"doctor"})
@@ -43,13 +43,20 @@ static func available(w: SimWorld) -> Array:
 			var job: String=w.data.agents.player.jobKey
 			if production_needed(w,job): tasks.append({"id":"produce:"+job,"target":job,"location":PRODUCTION[job].location,"label":PRODUCTION[job].label,"job":job})
 		"trader": tasks=SimCareerTrade.tasks(w)
-	return tasks
+	return tasks.filter(func(t): return w.data.townMap.locations.has(t.location))
+static func facility_notice(w: SimWorld,job: String) -> String:
+	var places: Dictionary={"farmer":"meadow","carpenter":"workshop","researcher":"library","trader":"general_store"}
+	if PRODUCTION.has(job): places[job]=PRODUCTION[job].location
+	var names: Dictionary={"meadow":"農務地點","workshop":"工房","library":"圖書館","general_store":"交易站","quarry":"採集場","tavern":"餐食製作場所"}
+	if places.has(job) and not w.data.townMap.locations.has(places[job]): return "本鎮尚無"+str(names.get(places[job],"工作設施"))+"，目前不能提供這項值勤；登記職業不會免費新增設施。"
+	if job=="guard" and PATROL.any(func(loc): return not w.data.townMap.locations.has(loc)): return "部分巡查地點不存在，僅列出目前可前往的地點；完整巡邏仍需三處全部完成。"
+	return ""
 static func recipe(job: String) -> Dictionary:
 	if not PRODUCTION.has(job): return {}
 	return JSON.parse_string(FileAccess.get_file_as_string("res://assets/data/economy_rules.json")).recipes[job]
 static func production_needed(w: SimWorld,job: String) -> bool:
 	var r:=recipe(job)
-	if r.is_empty(): return false
+	if r.is_empty() or not w.data.townMap.locations.has(PRODUCTION[job].location): return false
 	for resource in r.outputs:
 		if SimSupply.total(w,resource)+float(r.outputs[resource])>SimSupply.reserve(w,resource): return false
 	return true
@@ -70,6 +77,8 @@ static func start(w: SimWorld,id: String) -> Dictionary:
 	if not b.active.is_empty() or int(b.used)>=3: return {"ok":false,"message":"已有進行中的工作，或今日三次值勤已用完。"}
 	for t in available(w):
 		if t.id!=id: continue
+		var presence_error:=SimCareerPresence.task_error(w.social.observed_motion,t)
+		if not presence_error.is_empty(): return {"ok":false,"message":presence_error}
 		if w.data.agents.player.currentLocation!=t.location: return {"ok":false,"message":"請先親自前往"+str(w.data.townMap.locations[t.location].name)+"。"}
 		if PRODUCTION.has(t.job):
 			if not request_materials(w,t.job): return {"ok":false,"message":"材料用途需鎮長核准，核准後回到工作地點開始。"}
@@ -89,6 +98,8 @@ static func tick(w: SimWorld) -> void:
 	var b:=book(w);var t: Dictionary=b.active
 	if t.is_empty(): return
 	var player: Dictionary=w.data.agents.player
+	var presence_error:=SimCareerPresence.task_error(w.social.observed_motion,t)
+	if not presence_error.is_empty(): cancel(w,presence_error+" 值勤已取消，未給予獎勵。");return
 	if player.currentLocation!=t.location or player.jobKey!=t.job: cancel(w,"已離開工作地點或職務改變，值勤取消。");return
 	var valid:=false
 	for candidate in available(w):

@@ -15,7 +15,7 @@ static func quantity(w: SimWorld,offer: Dictionary) -> float:
 	return floorf(maxf(0,minf(remaining(w),minf(float(offer.amount),gap))))
 static func tasks(w: SimWorld) -> Array:
 	var m: Variant=w.data.trade.get("merchant");var result: Array=[]
-	if not m is Dictionary: return result
+	if not m is Dictionary or not w.data.townMap.locations.has("general_store"): return result
 	for i in m.offers.size():
 		var offer: Dictionary=m.offers[i];var qty:=quantity(w,offer)
 		if qty<1: continue
