@@ -1,5 +1,7 @@
 # RimTown - AI Town Simulation 邊境鎮
 
+服務對話更新：居民可本機回答照護／談心是否完成及中止原因，行程頁與 AI 提示使用同一份事實；過時回覆防護已接入。見 [居民服務對話](godot/docs/SERVICE_DIALOGUE.md)。
+
 現場服務更新：清醒且沒有優先行程的居民接受照護／陪伴後可短暫停留，正常需求與重要行程仍可中斷。見 [現場停留與自然驗收](godot/docs/SERVICE_STAY.md)。
 
 睡眠與拜訪更新：睡著的居民不再接受談心；醫護顯示睡眠恢復可能中止服務。兩鎮四日實際拜訪結果與限制見 [自然室內服務驗收](godot/docs/INDOOR_SERVICE_NATURAL.md)。

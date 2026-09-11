@@ -1304,6 +1304,11 @@ func show_player_chat(id: String) -> void:
 	_button("查看目前行程",drawer_body,func(): show_agenda(id))
 	_button("見面約定",drawer_body,func(): show_appointment(id))
 	_button("友情與心動",drawer_body,func(): show_heart_events(id))
+	var service_button:=_button("詢問服務結果（本機）",drawer_body,func():
+		if chat_busy: return
+		if SimServiceChat.ask(simulation,id): has_simulated=true
+		show_player_chat(id))
+	service_button.disabled=chat_busy or a.get("isDead",false)
 	var leisure_button:=_button("詢問休閒安排（本機）",drawer_body,func():
 		if chat_busy: return
 		if SimLeisureChat.ask(simulation,id): has_simulated=true
@@ -2488,6 +2493,12 @@ func show_agenda(id: String) -> void:
 		if a.activity=="sleeping": _wrapped("對方正在休息，談心請等醒來；睡眠恢復體力後，照護需求也可能消失。",12)
 		if guidance.has("entrance"): _button("查看目前房屋入口",drawer_body,func(): show_service_entrance(id))
 		_button("查看居民目前位置",drawer_body,func(): show_service_target(id))
+	var service_facts:=SimServiceChat.context(simulation,id)
+	if not service_facts.current.is_empty() or not service_facts.recentOutcomes.is_empty():
+		_wrapped("照護與陪伴紀錄",18)
+		_wrapped(SimServiceChat.reply(simulation,id),12)
+		for row in service_facts.recentOutcomes:
+			_wrapped(str(row.time)+" · "+str(row.place)+" · "+("已完成" if row.state=="completed" else "未完成")+" · "+str(row.reason),12)
 	var attendance:=SimAgenda.attendance(simulation,motion,id)
 	if not attendance.is_empty(): _wrapped("上工狀態："+attendance)
 	if a.get("isPlayer",false): _wrapped("旅人由你操作，這裡不替你安排自動行程。")

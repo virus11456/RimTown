@@ -1,0 +1,5 @@
+{
+  "checks": 256,
+  "failures": [],
+  "scope": "two towns, three actual await channels with mock transport; service start/cancel/complete changes isolated from other schedule categories; stable time and other resident outcome accepted, stale free effects wholly rejected and draft retained, proactive fallback/no invitation, local busy guard, no retry; no production AI"
+}

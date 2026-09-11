@@ -27,13 +27,14 @@ static func context(w: SimWorld,id: String) -> Dictionary:
 	return {"enabled":SimHangoutSafety.enabled(w),"pending":pending,"active":active,"lastOutcome":fields(w.quest_balance.get("hangout_status",{}).get(id),["state","reason"]),"people":people,"place":fields(w.data.townMap.locations.get(place),["name"]),"rule":"同行是居民彼此的安排，與玩家邀約分開。pending／traveling／單方 arrived 不等於碰面，只有 met 已完成；paused 暫停，cancelled／missed 未完成。依目前原因回答，不沿用舊承諾、不把口頭文字當行動。"}
 
 static func capture(w: SimWorld,id: String) -> Dictionary:
-	return {"leisure":SimLeisureChat.context(w,id),"workplace":SimWorkplaces.context(w,id),"appointment":SimAppointments.current(w),"hangout":context(w,id)}.duplicate(true)
+	return {"leisure":SimLeisureChat.context(w,id),"workplace":SimWorkplaces.context(w,id),"appointment":SimAppointments.current(w),"hangout":context(w,id),"service":SimServiceChat.context(w,id)}.duplicate(true)
 
 static func changes(before: Dictionary,after: Dictionary) -> String:
 	var reasons: Array=[]
-	for key in ["appointment","workplace","leisure","hangout"]:
+	for key in ["appointment","workplace","leisure","hangout","service"]:
 		if before.get(key)==after.get(key): continue
 		match key:
+			"service": reasons.append("照護或談心服務的進度／結果已更新")
 			"appointment": reasons.append("玩家見面約定已更新")
 			"workplace": reasons.append("班表或實際上工狀態已更新")
 			"leisure": reasons.append("休閒安排或完成紀錄已更新")

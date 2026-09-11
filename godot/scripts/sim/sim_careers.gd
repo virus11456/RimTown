@@ -9,7 +9,9 @@ static func book(w: SimWorld) -> Dictionary:
 	var day:=SimClock.total_days(w.data.clock)
 	if int(b.day)!=day:
 		SimServiceStay.clear(w)
-		if not b.active.is_empty(): b.notice="午夜已換日，未完成值勤已取消，未給予獎勵。"
+		if not b.active.is_empty():
+			b.notice="午夜已換日，未完成值勤已取消，未給予獎勵。"
+			SimServiceChat.outcome(w,b.active,"cancelled",b.notice)
 		b.day=day;b.used=0;b.visits=[];b.treated=[];b.counseled=[];b.traded=0;b.active={}
 	return b
 static func enroll(w: SimWorld,key: String) -> Dictionary:
@@ -95,7 +97,9 @@ static func start(w: SimWorld,id: String) -> Dictionary:
 static func cancel(w: SimWorld,reason: String="值勤已取消，未給予獎勵。") -> void:
 	var b:=book(w)
 	SimServiceStay.clear(w)
-	if not b.active.is_empty(): b.notice=reason
+	if not b.active.is_empty():
+		b.notice=reason
+		SimServiceChat.outcome(w,b.active,"cancelled",reason)
 	b.active={}
 static func tick(w: SimWorld) -> void:
 	if not w.quest_balance.has("careers"): return
@@ -146,6 +150,7 @@ static func tick(w: SimWorld) -> void:
 	player.skills[skill].xp+=3;b.used+=1;b.completed+=1
 	SimCareerProgress.record(w,t)
 	b.notice=str(t.label)+"完成。"
+	SimServiceChat.outcome(w,t,"completed",b.notice)
 	b.history.append(str(t.label)+"完成");b.history=b.history.slice(-10)
 	SimSocial.log_message(w.data,"career",str(t.label)+"完成。",str(player.name),"")
 	SimServiceStay.clear(w)

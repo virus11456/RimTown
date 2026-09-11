@@ -1,0 +1,5 @@
+{
+  "checks": 211,
+  "failures": [],
+  "scope": "two towns two jobs actual start/finish/cancel/midnight core calls with controlled actor needs/position and settlement clock; local UI, source preservation, dedup, old-save non-inference, no reward on cancellation, full save roundtrip, resident isolation, bounded history and 375px; no production AI"
+}
