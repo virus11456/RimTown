@@ -7,7 +7,7 @@ static func preferred(a: Dictionary) -> Dictionary:
 	return {"start":start,"end":end,"duration":posmod(end-start,24),"lead":1}
 static func window(a: Dictionary,jobs: Dictionary) -> Dictionary:
 	var saved: Dictionary=a.get("_shiftSleep",{})
-	var job: Dictionary=jobs.get(str(a.get("jobKey","")),{})
+	var job: Dictionary=SimWorkSchedule.job(a,jobs)
 	if not a.get("isPlayer",false) and not saved.is_empty() and saved.get("job")==a.get("jobKey") and saved.get("hours")==job.get("work_hours") and saved.get("workplace")==job.get("workplace") and saved.get("traits")==a.personality.get("traits",[]): return saved
 	return preferred(a)
 static func asleep(a: Dictionary,jobs: Dictionary,hour: int) -> bool:
@@ -15,14 +15,15 @@ static func asleep(a: Dictionary,jobs: Dictionary,hour: int) -> bool:
 static func choose(a: Dictionary,job: Dictionary,lead: int) -> Dictionary:
 	var p:=preferred(a);var duration:=int(p.duration)
 	var start:=int(job.work_hours[0]);var end:=int(job.work_hours[1])
-	var room:=24-(end-start)-duration
+	var work_duration:=posmod(end-start,24)
+	var room:=24-work_duration-duration
 	p.lead=mini(lead,maxi(1,room));p.conflict=room<lead
 	if room<1: return p
 	var best:=99
 	for bed in 24:
 		var fits:=true
 		for offset in duration:
-			if posmod(bed+offset-(start-int(p.lead)),24)<end-start+int(p.lead): fits=false;break
+			if posmod(bed+offset-(start-int(p.lead)),24)<work_duration+int(p.lead): fits=false;break
 		if not fits: continue
 		var distance:=mini(posmod(bed-int(p.start),24),posmod(int(p.start)-bed,24))
 		if distance<best: best=distance;p["chosen"]=bed
@@ -31,19 +32,23 @@ static func choose(a: Dictionary,job: Dictionary,lead: int) -> Dictionary:
 static func refresh(w: SimWorld,m: SimMotion) -> void:
 	if m==null or not m.stable_routes: return
 	for id in w.data.agents:
-		var a: Dictionary=w.data.agents[id];var job: Dictionary=w.rules.jobs.get(str(a.get("jobKey","")),{})
-		if a.get("isPlayer",false) or a.get("isDead",false) or job.is_empty() or not w.data.townMap.locations.has(job.get("workplace","")): a.erase("_shiftSleep");continue
+		var a: Dictionary=w.data.agents[id];var job: Dictionary=SimWorkSchedule.job(a,w.rules.jobs)
+		if a.get("isPlayer",false) or a.get("isDead",false) or job.is_empty(): a.erase("_shiftSleep");continue
 		var home: String=m.layout._house_id(id,str(a.homeLocation))
-		var signature:=JSON.stringify([SimClock.total_days(w.data.clock),a.jobKey,job.work_hours,job.workplace,home,a.personality.get("traits",[]),m.tick_seconds])
+		var signature:=JSON.stringify([SimClock.total_days(w.data.clock),a.jobKey,job.work_hours,job.workplace,home,a.personality.get("traits",[]),m.tick_seconds,w.data.townMap.locations.has(job.workplace)])
 		if a.get("_shiftSleep",{}).get("signature")==signature: continue
 		var house: Dictionary=m.layout.houses.get(home,{})
 		if house.is_empty(): a.erase("_shiftSleep");continue
+		var facility_available: bool=w.data.townMap.locations.has(job.workplace)
 		var origin:=Vector2(house.interiorX,house.interiorY)
 		var door: Variant=m.door(str(job.workplace),id)
 		var goal:=m.layout._nearest(m.layout._center(str(job.workplace)))
 		var length:=SimHangoutRoute.segment(m,origin,goal) if door==null else SimHangoutRoute.segment(m,origin,Vector2(door.x,door.y))+SimHangoutRoute.segment(m,Vector2(door.x,door.y),goal)
-		if is_inf(length): a.erase("_shiftSleep");continue
-		var lead:=clampi(ceili((length/m.travel_budget()+1)/4),1,4)
+		if a.has("_guardShift") and facility_available: length=SimHangoutRoute.home_distance(m,a,job.workplace)
+		if facility_available and is_inf(length): a.erase("_shiftSleep");continue
+		var lead:=clampi(ceili((length/m.travel_budget()+1)/4),1,4) if facility_available else 1
 		var p:=choose(a,job,lead)
-		p.merge({"signature":signature,"job":a.jobKey,"hours":job.work_hours.duplicate(),"workplace":job.workplace,"traits":a.personality.get("traits",[]).duplicate(),"estimated_lead":lead})
+		if a.has("_guardShift") and posmod(int(job.work_hours[1])-int(job.work_hours[0]),24)+int(p.duration)+2*lead<=24:
+			p.start=posmod(int(job.work_hours[1])+lead,24);p.end=posmod(int(p.start)+int(p.duration),24);p.return_lead=lead
+		p.merge({"signature":signature,"job":a.jobKey,"hours":job.work_hours.duplicate(),"workplace":job.workplace,"traits":a.personality.get("traits",[]).duplicate(),"estimated_lead":lead,"facility_available":facility_available})
 		a._shiftSleep=p

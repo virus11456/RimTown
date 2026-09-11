@@ -1,9 +1,9 @@
 class_name SimPlayerChat
 extends RefCounted
 static func job(w: SimWorld,a: Dictionary) -> Dictionary:
-	if a.get("job") is Dictionary: return a.job
+	if a.get("job") is Dictionary and not a.has("_guardShift"): return a.job
 	var key: String=str(a.get("jobKey","") if a.get("jobKey")!=null else "")
-	var value: Dictionary=w.rules.jobs.get(key,{}).duplicate(true)
+	var value: Dictionary=SimWorkSchedule.job(a,w.rules.jobs).duplicate(true)
 	if not value.is_empty(): value.key=key
 	return value
 static func prompt(w: SimWorld,id: String,message: String) -> String:

@@ -28,14 +28,20 @@ static func routine(w: SimWorld,id: String) -> Array:
 	var sleep_window:=SimShiftSleep.window(a,w.rules.jobs)
 	var start:=int(sleep_window.start);var end:=int(sleep_window.end)
 	var rows: Array=["平常睡眠：%02d:00–%02d:00"%[start,end]]
-	if a.has("_shiftSleep"):
+	if a.has("_shiftSleep") and sleep_window.get("facility_available",true):
 		rows.append("依班表保留 %d 小時睡眠時段，預留 %d 小時通勤。"%[sleep_window.duration,sleep_window.lead])
 		if sleep_window.get("conflict",false): rows.append("班表空檔不足以容納估計通勤；保留完整睡眠，仍可能遲到。")
 	# Read the exact job table used by SimWorld's daily activity decisions.
-	var job: Dictionary=w.rules.jobs.get(str(a.get("jobKey","")),{})
+	var job: Dictionary=SimWorkSchedule.job(a,w.rules.jobs)
 	if not job.is_empty():
 		rows.append("工時：%02d:00–%02d:00 · %s"%[int(job.work_hours[0]),int(job.work_hours[1]),str(w.data.townMap.locations.get(job.workplace,{}).get("name","工作場所"))])
-		if a.has("_shiftSleep"): rows.append("通勤依當下路徑提早出發，最多四小時；提早到場後等候開工。")
+		if a.has("_guardShift"):
+			rows.append("守衛輪值："+("夜班，白天補眠。" if a._guardShift=="night" else "白班。"))
+			if job.workplace=="town_square": rows.append("哨站尚未建成，先在現有廣場值勤；沒有新增免費設施。")
+		if SimHomeRest.physical(w) and not w.data.townMap.locations.has(job.workplace):
+			var name: String={"clinic":"診所","farm":"農場","guardpost":"哨站"}.get(job.workplace,"指定工作設施")
+			rows.append("工作設施未就緒："+name+"目前不存在，清醒且需求穩定時留在現有地點待命；設施可用後恢復正常通勤，不算一般遲到。")
+		elif a.has("_shiftSleep"): rows.append("通勤依當下路徑提早出發，最多四小時；提早到場後等候開工。")
 		else: rows.append("上班準備：%02d:00 起（清醒且尚未到工作場所時）"%posmod(int(job.work_hours[0])-1,24))
 	if SimHomeRest.physical(w): rows.append("睡前依返家路程最多提早四小時出發；工作、已確認的玩家約定及緊急需求優先，提早到家不提前計算睡眠。")
 	rows.append("其他時間依飢餓、疲勞、社交與娛樂需求安排；睡眠、避難等可能調整原作息。")

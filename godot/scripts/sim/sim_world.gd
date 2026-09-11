@@ -123,6 +123,7 @@ func tick() -> Array[String]:
 	if "new_day" in events: SimBirths.daily(self);SimPopulation.daily(self);SimElections.daily(self);SimGovernance.daily(self)
 	if quests_enabled and "new_day" in events:
 		SimQuestWorld.daily(self);SimNPCQuests.daily(self);SimLifeGoals.daily(self);SimQuests.check_progress(self)
+	SimWorkSchedule.refresh(self,social.observed_motion)
 	SimShiftSleep.refresh(self,social.observed_motion)
 	SimAppointments.tick(self)
 	SimLeisurePlan.tick(self)
@@ -136,9 +137,9 @@ func _trait_sum(a: Dictionary, field: String) -> float:
 	for trait_key in a.personality.traits: value += float(rules.traits.get(trait_key,{}).get(field,0))
 	return value
 func _job(a: Dictionary) -> Dictionary:
-	return rules.jobs.get(str(a.get("jobKey","")),{})
+	return SimWorkSchedule.job(a,rules.jobs)
 func _work(job: Dictionary,hour: int) -> bool:
-	return not job.is_empty() and hour>=job.work_hours[0] and hour<job.work_hours[1]
+	return SimWorkSchedule.working(job,hour)
 func _update(id: String) -> void:
 	var a: Dictionary=data.agents[id]
 	var run: Dictionary=runtime[id]
@@ -189,6 +190,10 @@ func _update(id: String) -> void:
 		return
 	if not home_return.is_empty() and a.activity=="heading_home" and float(a.needs.hunger)>=15 and float(a.needs.rest)>=10:
 		a._homeReturn=home_return;a.currentLocation=a.homeLocation;run.targetLocation=null;a._locationStayRemaining=0
+		return
+	if a.activity=="waiting_workplace":
+		if not data.townMap.locations.has(a.currentLocation): a.currentLocation=a.homeLocation
+		run.targetLocation=null;a._locationStayRemaining=0
 		return
 	if SimLeisurePlan.directing(self,id):
 		a.activity="planned_leisure";a.currentLocation=SimLeisurePlan.plans(self)[id].place;a._leisureDestination=a.currentLocation;run.targetLocation=null;a._locationStayRemaining=0
@@ -247,9 +252,12 @@ func _activity(a: Dictionary,hour: int) -> void:
 	if n.hunger<15: a.activity="eating"; return
 	if n.rest<10: a.activity="sleeping"; return
 	if SimHomeRest.physical(self) and SimShiftSleep.asleep(a,rules.jobs,hour): a.activity="sleeping"; return
+	if SimHomeRest.physical(self) and not job.is_empty() and not data.townMap.locations.has(job.workplace) and _work(job,hour): a.activity="waiting_workplace";return
+	if a.has("_guardShift") and _work(job,hour):
+		a.activity="eating" if n.hunger<30 and rng.next_float()<.3 else "working";return
 	if hour==posmod(start-1,24) and n.rest<90 and a.currentLocation!=a.homeLocation:
 		a.activity="heading_home"; return
-	if not job.is_empty() and hour==posmod(int(job.work_hours[0])-1,24) and a.activity!="sleeping" and a.currentLocation!=job.workplace:
+	if not job.is_empty() and (not SimHomeRest.physical(self) or data.townMap.locations.has(job.workplace)) and hour==posmod(int(job.work_hours[0])-1,24) and a.activity!="sleeping" and a.currentLocation!=job.workplace:
 		a.activity="commuting"; return
 	var sleeping := (hour>=start or hour<end) if start>end else (hour>=start and hour<end)
 	if sleeping: a.activity="sleeping"; return
@@ -278,6 +286,7 @@ func _activity(a: Dictionary,hour: int) -> void:
 func _location(a: Dictionary,run: Dictionary,hour: int) -> void:
 	var night:=hour>=21 or hour<5
 	var job:=_job(a)
+	if SimHomeRest.physical(self) and not job.is_empty() and not data.townMap.locations.has(job.workplace): job={}
 	var working:=_work(job,hour)
 	var home: String=a.homeLocation
 	match a.activity:

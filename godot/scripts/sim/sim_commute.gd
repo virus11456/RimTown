@@ -6,9 +6,9 @@ static func plan(w: SimWorld,a: Dictionary) -> Dictionary:
 	if float(a.needs.hunger)<15 or float(a.needs.rest)<10: return {}
 	var hour:=int(w.data.clock.hour)
 	if SimShiftSleep.asleep(a,w.rules.jobs,hour): return {}
-	var job: Dictionary=w.rules.jobs.get(str(a.get("jobKey","")),{})
+	var job: Dictionary=SimWorkSchedule.job(a,w.rules.jobs)
 	if job.is_empty() or not w.data.townMap.locations.has(job.workplace): return {}
-	var remaining:=int(job.work_hours[0])*4-hour*4-int(w.data.clock.minute)/15
+	var remaining:=posmod(int(job.work_hours[0])*4-hour*4-int(w.data.clock.minute)/15,96)
 	if remaining<=0 or remaining>16: return {}
 	var length:=SimHangoutRoute.distance(m,str(a.id),str(job.workplace))
 	if is_inf(length): return {}

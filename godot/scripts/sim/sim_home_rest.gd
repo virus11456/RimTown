@@ -20,8 +20,8 @@ static func plan(w: SimWorld,a: Dictionary) -> Dictionary:
 	var m: SimMotion=w.social.observed_motion
 	if m==null or not m.stable_routes or a.get("isPlayer",false) or a.get("isDead",false) or a.has("_raidShelterUntil"): return {}
 	if float(a.needs.hunger)<15 or float(a.needs.rest)<10: return {}
-	var hour:=int(w.data.clock.hour);var job: Dictionary=w.rules.jobs.get(str(a.get("jobKey","")),{})
-	if not job.is_empty() and hour>=int(job.work_hours[0]) and hour<int(job.work_hours[1]): return {}
+	var hour:=int(w.data.clock.hour);var job: Dictionary=SimWorkSchedule.job(a,w.rules.jobs)
+	if not job.is_empty() and SimWorkSchedule.working(job,hour): return {}
 	var after_meeting: Dictionary=a.get("_hangoutHome",{})
 	if after_meeting.get("home")==a.homeLocation and int(after_meeting.get("until",0))>int(w.data.tickCount) and not arrived(w,a): return after_meeting
 	var sleep_window:=SimShiftSleep.window(a,w.rules.jobs)

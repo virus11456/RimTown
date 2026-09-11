@@ -55,8 +55,8 @@ static func available(w: SimWorld,id: String,hour: int) -> bool:
 static func person_available(a: Dictionary,jobs: Dictionary,hour: int) -> bool:
 	if SimShiftSleep.asleep(a,jobs,hour): return false
 	var lead:=int(SimShiftSleep.window(a,jobs).lead)
-	var job: Dictionary=jobs.get(str(a.get("jobKey","")),{})
-	return job.is_empty() or not (hour>=int(job.work_hours[0])-lead and hour<int(job.work_hours[1]))
+	var job: Dictionary=SimWorkSchedule.job(a,jobs)
+	return job.is_empty() or not SimWorkSchedule.working(job,hour,lead)
 static func finish(w: SimWorld,id: String,state: String,why: String) -> void:
 	var p: Dictionary=plans(w).get(id,{})
 	if not LIVE.has(p.get("state","")): return
