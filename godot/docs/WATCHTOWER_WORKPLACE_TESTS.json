@@ -1,0 +1,40 @@
+{
+  "arrived": [
+    "gao_lang",
+    "yang_feng"
+  ],
+  "checks": 23,
+  "failures": [],
+  "maximum_step": 0.983622491359711,
+  "scope": "controlled mayor/material fixture and compressed midnight construction with original costs/work; then two full days with 480 frames/tick and unchanged needs/positions, phone agenda, prompt only, reload and single-guard roster; no climbing or indoor tower claim",
+  "shifts": [
+    {
+      "actual": "guardpost",
+      "id": "yang_feng",
+      "on_time": true,
+      "tick": 29
+    },
+    {
+      "actual": "guardpost",
+      "id": "gao_lang",
+      "on_time": true,
+      "tick": 77
+    },
+    {
+      "actual": "guardpost",
+      "id": "yang_feng",
+      "on_time": true,
+      "tick": 125
+    },
+    {
+      "actual": "guardpost",
+      "id": "gao_lang",
+      "on_time": true,
+      "tick": 173
+    }
+  ],
+  "slept": [
+    "yang_feng",
+    "gao_lang"
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "checks": 6,
+  "failures": [],
+  "scope": "controlled completed-project metadata fixtures: coexistence, identity, original guardpost preservation, unfinished/unplaced/invalid-site rejection; physical construction covered separately"
+}
