@@ -2363,6 +2363,15 @@ func show_service_target(id: String) -> void:
 		rig.position=Vector3(float(p.x)/16,0,float(p.y)/16)
 	show_agenda(id)
 
+func show_service_entrance(id: String) -> void:
+	# A stale button resolves again after the resident moves or changes rooms.
+	var guidance:=SimCareerPresence.visit(motion,id)
+	show_agenda(id)
+	if guidance.has("entrance"):
+		rig.follow_player=false
+		rig.position=Vector3(float(guidance.entrance.x)/16,0,float(guidance.entrance.y)/16)
+	else: _wrapped("對方目前沒有可查看的室內入口，請查看居民目前位置。")
+
 func _career_presence_error(task: Dictionary) -> String:
 	var need_error:=SimCareerPresence.service_need_error(simulation,task)
 	return need_error if not need_error.is_empty() else SimCareerPresence.task_error(motion,task)
@@ -2465,6 +2474,12 @@ func show_agenda(id: String) -> void:
 	_wrapped("實際位置："+str(actual.actual))
 	_wrapped("目的地："+str(actual.target)+" · "+("已抵達" if actual.arrived else "尚未抵達"))
 	_wrapped("目前："+str(actual.text))
+	if id!="player" and simulation.data.agents.get("player",{}).get("jobKey","") in ["doctor","priest"]:
+		_wrapped("拜訪與服務",18)
+		var guidance:=SimCareerPresence.visit(motion,id)
+		_wrapped(str(guidance.text),12)
+		if guidance.has("entrance"): _button("查看目前房屋入口",drawer_body,func(): show_service_entrance(id))
+		_button("查看居民目前位置",drawer_body,func(): show_service_target(id))
 	var attendance:=SimAgenda.attendance(simulation,motion,id)
 	if not attendance.is_empty(): _wrapped("上工狀態："+attendance)
 	if a.get("isPlayer",false): _wrapped("旅人由你操作，這裡不替你安排自動行程。")

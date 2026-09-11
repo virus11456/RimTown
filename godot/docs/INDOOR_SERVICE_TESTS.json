@@ -1,0 +1,8 @@
+{
+  "bad_cells": 0,
+  "checks": 323,
+  "failures": [],
+  "maximum_step": 1.20001482963562,
+  "scope": "two towns, all existing houses and door-bearing public buildings entered and exited using manual collision movement; controlled patient needs and initial positions; doctor/priest indoor completion, departure cancellation, active and stationary threshold reload, stale entrance UI, 375px layout; controlled settlement clock, not natural multi-day simulation",
+  "walked_frames": 8946
+}

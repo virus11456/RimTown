@@ -19,6 +19,7 @@ static func task_error(m: SimMotion,task: Dictionary) -> String:
 	if place(m,"player")!=str(task.location): return "請先操作旅人走到工作地點。"
 	if task.job not in ["doctor","priest"]: return ""
 	var id:=str(task.target)
+	if at_threshold(m,"player") or at_threshold(m,id): return "請走過門檻，等雙方完成進出門後再開始服務。"
 	if not together(m,"player",id,str(task.location)): return "對方尚未在同一場所到場，請等待或重新查看工作。"
 	var p: Dictionary=m.positions.get("player",{});var a: Dictionary=m.positions.get(id,{})
 	if p.is_empty() or a.is_empty(): return "尚未取得雙方實際位置，無法開始服務。"
@@ -48,3 +49,27 @@ static func service_location(w: SimWorld,a: Dictionary) -> String:
 		var actual:=place(w.social.observed_motion,str(a.id))
 		if w.data.townMap.locations.has(actual): return actual
 	return str(a.currentLocation)
+
+static func at_threshold(m: SimMotion,id: String) -> bool:
+	if m==null or not m.positions.has(id): return false
+	var p: Dictionary=m.positions[id]
+	var x:=floori(float(p.x)/16);var y:=floori(float(p.y)/16)
+	return y>=0 and y<m.layout.grid.size() and x>=0 and x<m.layout.grid[y].size() and int(m.layout.grid[y][x])==9
+
+static func visit(m: SimMotion,id: String) -> Dictionary:
+	# Resolve the occupied room, never the assigned home or intended destination.
+	if m==null or not m.positions.has(id) or not m.positions.has("player"):
+		return {"text":"位置尚未取得，請稍後重新查看。"}
+	var target_room:=room(m,id)
+	var zone: Dictionary=m.layout.houses.get(target_room,m.layout.buildings.get(target_room,{}))
+	var result:={"text":"對方目前在戶外，請走近居民；查看位置不會移動旅人。"}
+	if zone.has("doorPixelX"):
+		result.entrance={"x":zone.doorPixelX,"y":zone.doorPixelY}
+		result.text="對方目前在室內。查看這間房屋入口後，用方向鍵或 WASD 穿過門口，再走近居民。"
+		if room(m,"player")==target_room:
+			result.text="你已進入同一間房屋，請走過門檻並靠近居民，保持三格以內。"
+	if at_threshold(m,id) or m.positions[id].get("doorPhase")!=null:
+		result.text+=" 對方仍在進出門，請等他站定；位置會隨行程更新。"
+	if not result.has("entrance") and not target_room.is_empty():
+		result.text+=" 若居民走進房屋，請重新查看目前入口。"
+	return result

@@ -1,5 +1,7 @@
 # RimTown - AI Town Simulation 邊境鎮
 
+室內拜訪更新：醫護／牧師可查看居民實際房屋入口，親自走入服務；門檻停步、不同住家與離開中斷均有驗證。見 [室內拜訪與服務](godot/docs/INDOOR_SERVICE.md)。
+
 A RimWorld-inspired AI town simulation where every resident is an autonomous AI agent with unique personality, background, job, relationships, and daily life. Available as a WordPress plugin.
 
 ## Godot 3D 開發進度（2026-09-11）
