@@ -25,6 +25,7 @@ static func prompt(w: SimWorld,id: String,message: String) -> String:
 	if w.governance_enabled: context.publicResources={"owner":"小鎮公共庫存；無個人錢包","playerRole":"鎮長" if SimGovernance.mayor(w)=="player" else "只能提案的旅人","rule":"旅人不能自行動用公款或決定工程；需現任鎮長核准。慰問代表小鎮、每日全鎮兩份，不是私人物品。不要聲稱未核准的建設已開工。"}
 	context.appointment={"current":SimAppointments.current(w),"rule":"若想邀約，在 EFFECTS 加上 invitation:true。系統會提供明天的合法空檔與地點，玩家接受後才排入行程；回覆只問要不要見面，不自行捏造時間、地點或已到場。沒有邀約卡的口頭承諾不會排程。"}
 	context.leisure=SimLeisureChat.context(w,id)
+	context.workplace=SimWorkplaces.context(w,id)
 	context.relevantMemories=memories.map(func(m): return {"time":str(m.get("timeStr","")).left(40),"content":str(m.content).left(400)})
 	context.reflections=memory.thoughts(2).map(func(m): return str(m.content).left(200))
 	context.recentChat=history.map(func(m): return {"speaker":str(m.speaker).left(80),"text":str(m.text).left(300)})

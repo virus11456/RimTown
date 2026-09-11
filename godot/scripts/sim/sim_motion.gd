@@ -54,6 +54,7 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 			for p in positions.values():
 				if absf(p.targetX-target.x)<48 and absf(p.targetY-target.y)<48: count+=1
 			target+=Vector2((count%4-1.5)*16,(floori(count/4.0)-.5)*16)
+		if layout.work_sites.has(location): target=layout._center(location)
 		var appointment: bool=a.get("_appointmentDestination","")==location or a.get("_leisureDestination","")==location or a.get("_hangoutDestination","")==location
 		var strict_route: bool=appointment or stable_routes
 		var route_key:=layout._house_id(id,location) if location.begins_with("residential_") else location

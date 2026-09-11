@@ -123,6 +123,7 @@ func tick() -> Array[String]:
 	if "new_day" in events: SimBirths.daily(self);SimPopulation.daily(self);SimElections.daily(self);SimGovernance.daily(self)
 	if quests_enabled and "new_day" in events:
 		SimQuestWorld.daily(self);SimNPCQuests.daily(self);SimLifeGoals.daily(self);SimQuests.check_progress(self)
+	if social.observed_motion!=null and social.observed_motion.stable_routes: SimWorkplaces.sync(self)
 	SimWorkSchedule.refresh(self,social.observed_motion)
 	SimShiftSleep.refresh(self,social.observed_motion)
 	SimAppointments.tick(self)

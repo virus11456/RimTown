@@ -1,0 +1,33 @@
+{
+  "checks": 22,
+  "failures": [],
+  "maximum_step": 0.983600914478302,
+  "scope": "controlled elected-player and material fixture, compressed midnight construction ticks with original costs/work, then normal physical walking; actual app completion geometry, mobile agenda, AI prompt only and native reload; no full economic balance or indoor treatment claim",
+  "site": [
+    32,
+    34
+  ],
+  "trace": [
+    {
+      "activity": "working",
+      "actual": "residential_north",
+      "tick": 5
+    },
+    {
+      "activity": "working",
+      "actual": "town_square",
+      "tick": 6
+    },
+    {
+      "activity": "working",
+      "actual": "",
+      "tick": 7
+    },
+    {
+      "activity": "working",
+      "actual": "clinic",
+      "tick": 8
+    }
+  ],
+  "work_done": 16
+}

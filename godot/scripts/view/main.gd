@@ -310,7 +310,9 @@ func _load_document(text: String, source: String) -> bool:
 	simulation.processing_enabled=bool(document.data.get("_godot4a",{}).get("processing_enabled",true))
 	simulation.farm_enabled=bool(document.data.get("_godot4a",{}).get("farm_enabled",true))
 	simulation.industry_enabled=bool(document.data.get("_godot4a",{}).get("industry_enabled",true))
+	SimWorkplaces.sync(simulation)
 	var data := document.snapshot()
+	data.townMap.locations=simulation.data.townMap.locations.duplicate(true)
 	heading.text = str(data.get("townName","小鎮"))
 	var clock_data: Dictionary = data.clock
 	summary.text = "%s %d日 %02d:%02d · %d人" % [clock_data.get("season",""),clock_data.get("day",1),clock_data.get("hour",6),clock_data.get("minute",0),data.agents.size()]
@@ -1340,6 +1342,7 @@ func send_player_chat(id: String,message: String,intent: String="") -> void:
 	var epoch:=chat_epoch
 	var target: Dictionary=simulation.data.agents[id]
 	var leisure_context:=SimLeisureChat.context(simulation,id)
+	var workplace_context:=SimWorkplaces.context(simulation,id)
 	var appointment_context:=SimAppointments.current(simulation).duplicate(true)
 	var prompt:=SimPlayerChat.prompt(simulation,id,message)
 	show_player_chat(id)
@@ -1350,8 +1353,8 @@ func send_player_chat(id: String,message: String,intent: String="") -> void:
 	chat_busy=false
 	if not simulation.data.agents.has(id) or not is_same(simulation.data.agents[id],target) or target.get("isDead",false):
 		chat_notice[id]="對方已離開，回覆未套用。"
-	elif leisure_context!=SimLeisureChat.context(simulation,id) or appointment_context!=SimAppointments.current(simulation):
-		chat_notice[id]="等待回覆期間，行程或見面約定已改變。舊回覆及效果未套用；草稿已保留，請重新傳送。"
+	elif leisure_context!=SimLeisureChat.context(simulation,id) or appointment_context!=SimAppointments.current(simulation) or workplace_context!=SimWorkplaces.context(simulation,id):
+		chat_notice[id]="等待回覆期間，行程、工作場所或見面約定已改變。舊回覆及效果未套用；草稿已保留，請重新傳送。"
 	elif not response.get("ok",false): chat_notice[id]=str(response.get("error","連線失敗，請重試。"))+"\n草稿已保留，也可切換離線交談後重試。"
 	elif not response.get("data") is Dictionary or not response.data.get("reply") is String:
 		chat_notice[id]="伺服器回覆格式不正確，未套用變化。"
@@ -1871,6 +1874,8 @@ func _refresh_building_world() -> void:
 	for p in motion.positions.values():
 		var safe: Vector2=motion.layout._nearest(Vector2(p.x,p.y));p.x=safe.x;p.y=safe.y
 		motion._path(p)
+	for a in simulation.data.agents.values(): a.erase("_shiftSleep")
+	SimShiftSleep.refresh(simulation,motion)
 	motion.update(simulation.data.agents)
 	world_view.animate_agents(motion.positions)
 func show_building_site(key: String,index: int=0,decor: bool=false) -> void:

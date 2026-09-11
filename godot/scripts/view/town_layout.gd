@@ -8,6 +8,7 @@ var grid: Array = []
 var buildings: Dictionary = {}
 var houses: Dictionary = {}
 var nature: Dictionary = {}
+var work_sites: Dictionary = {}
 var labels: Dictionary = {}
 var agent_house: Dictionary = {}
 var partners: Dictionary = {}
@@ -29,7 +30,11 @@ func rebuild(save: Dictionary) -> void:
 	if separate_civic_buildings: _separate_town_hall(save)
 	buildings.clear(); houses.clear(); nature.clear(); labels.clear(); agent_house.clear(); partners.clear(); agent_positions.clear(); factory_plots.clear()
 	extra_count = 0
+	work_sites.clear()
 	for id in save.townMap.locations:
+		if save.townMap.locations[id].get("_workSite") is Dictionary:
+			work_sites[id]=save.townMap.locations[id]._workSite.duplicate(true)
+			continue
 		if not rules.rules.has(id): continue
 		var recipe: Dictionary = rules.rules[id]
 		for op in recipe.ops:
@@ -47,6 +52,12 @@ func rebuild(save: Dictionary) -> void:
 	decorations = save.get("decorations",[])
 	projects = save.get("buildings",{}).get("projects",[]).filter(func(p): return p.has("siteX") and p.siteX != null)
 	completed = save.get("buildings",{}).get("completed",[]).filter(func(p): return p.has("siteX") and p.siteX != null)
+	for id in work_sites:
+		var zone: Dictionary=work_sites[id]
+		nature[id]=zone.duplicate(true)
+		labels[id]={"name":save.townMap.locations[id].name,"x":(zone.x+1)*16,"y":(zone.y+.5)*16}
+		for x in range(int(zone.x),int(zone.x)+int(zone.w)): _set_tile(x,int(zone.y),3)
+		_road(int(zone.x),int(zone.y))
 	_sync_housing(save.agents)
 	if solid_projects:
 		for p in projects+completed:
@@ -71,6 +82,7 @@ func _road(x: int,y: int) -> void:
 func _rects() -> Array:
 	var rects := buildings.values().duplicate(true)
 	rects.append(coach)
+	rects.append_array(work_sites.values())
 	for p in projects + completed: rects.append({"x":p.siteX,"y":p.get("siteY",0),"w":2,"h":2})
 	for d in decorations: rects.append({"x":d.x,"y":d.y,"w":1,"h":1})
 	return rects
