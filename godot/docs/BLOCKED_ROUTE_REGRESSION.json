@@ -1,0 +1,1234 @@
+{
+  "checks": 127,
+  "failures": [],
+  "tests": [
+    {
+      "test": "blocked_route",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 14,
+        "failures": [],
+        "maximum_step": 0.80322265625,
+        "scope": "controlled head-on zero-slide regression, sealed wall, bounded retry, reopened gap, bypass, changed destination, JSON state, agenda reason, manual player exclusion and no world mutation"
+      }
+    },
+    {
+      "test": "blocked_route_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 4,
+        "failures": [],
+        "scope": "375px resident card and agenda with controlled navigation barrier; current geometry clears stale reason; no screenshot or full-scene visual claim"
+      },
+      "tail": ""
+    },
+    {
+      "test": "blocked_position",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 14,
+        "failures": [],
+        "maximum_step": 0.80322265625,
+        "scope": "controlled blocked cell, live agenda reason, 600-frame no-teleport hold, JSON positions, cache invalidation, ordinary recovery walk, manual traveler diagnosis; no removal gameplay or arbitrary wall escape"
+      },
+      "tail": ""
+    },
+    {
+      "test": "blocked_position_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 5,
+        "failures": [],
+        "scope": "real resident card and agenda at 375px, invalid imported position, native reload preserves coordinates, live diagnostic refresh; controlled fixture only"
+      },
+      "tail": ""
+    },
+    {
+      "test": "motion",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 34,
+        "failures": [],
+        "maximum_numeric_error_pixels": 0.00230760866043056,
+        "position_tolerance_pixels": 0.05
+      },
+      "tail": ""
+    },
+    {
+      "test": "factory_occupancy",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 17,
+        "failures": [],
+        "maximum_refresh_step": 0.0,
+        "path_points": 5,
+        "scope": "controlled mayor/material/position fixtures; NPC/player occupancy, full rectangular footprint, atomic public/internal build, immediate model and navigation, actual refresh positions, invalid old-position no-snap, native reload and missing plot; no full factory production endurance"
+      },
+      "tail": ""
+    },
+    {
+      "test": "routine_routes_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "arrivals": [
+          "lin_mei|sleeping|residential_north",
+          "sun_yu|sleeping|residential_east",
+          "yang_feng|working|town_square",
+          "huang_li|working|chapel",
+          "xu_ying|working|workshop",
+          "su_qing|working|tavern",
+          "zhou_ming|working|general_store",
+          "zheng_wei|working|library",
+          "wang_li|working|tavern",
+          "ke_wei|working|workshop",
+          "he_xiu|working|tavern",
+          "sun_yu|working|library",
+          "ma_qiang|working|workshop",
+          "chen_wei|working|town_hall",
+          "ling_bo|working|library",
+          "zhang_hao|working|workshop",
+          "wang_li|eating|tavern",
+          "he_xiu|eating|tavern",
+          "su_qing|eating|tavern",
+          "he_chang|working|workshop",
+          "wu_da|working|quarry",
+          "zhao_xia|working|general_store",
+          "huang_li|eating|chapel",
+          "ma_qiang|eating|workshop",
+          "xu_ying|eating|workshop",
+          "sun_yu|eating|library",
+          "wu_da|eating|quarry",
+          "player|eating|tavern",
+          "lin_mei|eating|tavern",
+          "player|sleeping|tavern",
+          "yang_feng|sleeping|residential_north",
+          "chen_wei|sleeping|residential_north",
+          "huang_li|sleeping|residential_north",
+          "gao_lang|working|town_square",
+          "wang_li|sleeping|residential_south",
+          "chen_wei|eating|residential_north",
+          "wang_li|eating|residential_south",
+          "yang_feng|eating|residential_north",
+          "huang_li|eating|residential_north",
+          "wu_da|sleeping|residential_south",
+          "ma_qiang|sleeping|residential_south",
+          "xu_ying|sleeping|residential_east",
+          "zhang_hao|sleeping|residential_south",
+          "gao_lang|eating|town_square",
+          "liu_jun|sleeping|residential_east",
+          "zhao_xia|sleeping|residential_east",
+          "lin_mei|eating|residential_north",
+          "zhang_hao|eating|residential_south",
+          "liu_jun|eating|residential_east",
+          "zhao_xia|eating|residential_east",
+          "sun_yu|eating|residential_east",
+          "wu_da|eating|residential_south",
+          "ma_qiang|eating|residential_south",
+          "xu_ying|eating|residential_east",
+          "zhou_ming|eating|general_store",
+          "he_chang|eating|workshop",
+          "ling_bo|eating|library",
+          "zhang_hao|eating|workshop",
+          "liu_jun|eating|tavern",
+          "chen_wei|eating|town_hall",
+          "zheng_wei|eating|library"
+        ],
+        "checks": 5,
+        "failures": [],
+        "maximum_step": 0.999847412109375,
+        "motion_frames_per_tick": 120,
+        "scope": "two original app days, no changed destinations/jobs/needs/positions/resources, every motion frame displacement audited, distinct observed work/eating/sleep arrivals, day-one reload; headless, not universal arrival guarantee",
+        "ticks": 192
+      },
+      "tail": ""
+    },
+    {
+      "test": "watchtower_workplace",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "arrived": [
+          "gao_lang",
+          "yang_feng"
+        ],
+        "checks": 23,
+        "failures": [],
+        "maximum_step": 0.983622491359711,
+        "scope": "controlled mayor/material fixture and compressed midnight construction with original costs/work; then two full days with 480 frames/tick and unchanged needs/positions, phone agenda, prompt only, reload and single-guard roster; no climbing or indoor tower claim",
+        "shifts": [
+          {
+            "actual": "guardpost",
+            "id": "yang_feng",
+            "on_time": true,
+            "tick": 29
+          },
+          {
+            "actual": "guardpost",
+            "id": "gao_lang",
+            "on_time": true,
+            "tick": 77
+          },
+          {
+            "actual": "guardpost",
+            "id": "yang_feng",
+            "on_time": true,
+            "tick": 125
+          },
+          {
+            "actual": "guardpost",
+            "id": "gao_lang",
+            "on_time": true,
+            "tick": 173
+          }
+        ],
+        "slept": [
+          "yang_feng",
+          "gao_lang"
+        ]
+      },
+      "tail": ""
+    },
+    {
+      "test": "hangout_indoor_route",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 5,
+        "failures": [],
+        "maximum_step": 0.80767822265625,
+        "scope": "controlled park-to-library pair, real motion and collision grid with fixed simulation clock to isolate routing; not enough-time or natural completion proof"
+      },
+      "tail": ""
+    },
+    {
+      "test": "clock_home_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 6,
+        "failures": [],
+        "false_sleep": [],
+        "maximum_step": 0.999847412109375,
+        "on_time": 29,
+        "resident_calendar_days": [
+          {
+            "day": "0",
+            "eating_ticks": 4,
+            "id": "chen_wei",
+            "observed_ticks": 71,
+            "return_ticks": 10,
+            "scheduled_ticks": 8,
+            "sleep_in_window": 7,
+            "sleep_ticks": 9,
+            "work_ticks": 31
+          },
+          {
+            "day": "0",
+            "eating_ticks": 3,
+            "id": "lin_mei",
+            "observed_ticks": 71,
+            "return_ticks": 10,
+            "scheduled_ticks": 3,
+            "sleep_in_window": 2,
+            "sleep_ticks": 3,
+            "work_ticks": 0
+          },
+          {
+            "day": "0",
+            "eating_ticks": 4,
+            "id": "zhang_hao",
+            "observed_ticks": 71,
+            "return_ticks": 9,
+            "scheduled_ticks": 12,
+            "sleep_in_window": 11,
+            "sleep_ticks": 12,
+            "work_ticks": 34
+          },
+          {
+            "day": "0",
+            "eating_ticks": 3,
+            "id": "wang_li",
+            "observed_ticks": 71,
+            "return_ticks": 9,
+            "scheduled_ticks": 20,
+            "sleep_in_window": 17,
+            "sleep_ticks": 18,
+            "work_ticks": 30
+          },
+          {
+            "day": "0",
+            "eating_ticks": 3,
+            "id": "liu_jun",
+            "observed_ticks": 71,
+            "return_ticks": 9,
+            "scheduled_ticks": 16,
+            "sleep_in_window": 15,
+            "sleep_ticks": 15,
+            "work_ticks": 0
+          },
+          {
+            "day": "0",
+            "eating_ticks": 4,
+            "id": "zhao_xia",
+            "observed_ticks": 71,
+            "return_ticks": 9,
+            "scheduled_ticks": 12,
+            "sleep_in_window": 11,
+            "sleep_ticks": 13,
+            "work_ticks": 38
+          },
+          {
+            "day": "0",
+            "eating_ticks": 4,
+            "id": "yang_feng",
+            "observed_ticks": 71,
+            "return_ticks": 3,
+            "scheduled_ticks": 20,
+            "sleep_in_window": 19,
+            "sleep_ticks": 20,
+            "work_ticks": 44
+          },
+          {
+            "day": "0",
+            "eating_ticks": 3,
+            "id": "sun_yu",
+            "observed_ticks": 71,
+            "return_ticks": 10,
+            "scheduled_ticks": 3,
+            "sleep_in_window": 2,
+            "sleep_ticks": 3,
+            "work_ticks": 30
+          },
+          {
+            "day": "0",
+            "eating_ticks": 4,
+            "id": "wu_da",
+            "observed_ticks": 71,
+            "return_ticks": 6,
+            "scheduled_ticks": 16,
+            "sleep_in_window": 15,
+            "sleep_ticks": 16,
+            "work_ticks": 34
+          },
+          {
+            "day": "0",
+            "eating_ticks": 4,
+            "id": "huang_li",
+            "observed_ticks": 71,
+            "return_ticks": 8,
+            "scheduled_ticks": 12,
+            "sleep_in_window": 11,
+            "sleep_ticks": 13,
+            "work_ticks": 41
+          },
+          {
+            "day": "0",
+            "eating_ticks": 4,
+            "id": "ma_qiang",
+            "observed_ticks": 71,
+            "return_ticks": 8,
+            "scheduled_ticks": 12,
+            "sleep_in_window": 11,
+            "sleep_ticks": 12,
+            "work_ticks": 34
+          },
+          {
+            "day": "0",
+            "eating_ticks": 4,
+            "id": "xu_ying",
+            "observed_ticks": 71,
+            "return_ticks": 10,
+            "scheduled_ticks": 16,
+            "sleep_in_window": 13,
+            "sleep_ticks": 13,
+            "work_ticks": 34
+          },
+          {
+            "day": "0",
+            "eating_ticks": 4,
+            "id": "zhou_ming",
+            "observed_ticks": 71,
+            "return_ticks": 11,
+            "scheduled_ticks": 8,
+            "sleep_in_window": 6,
+            "sleep_ticks": 8,
+            "work_ticks": 37
+          },
+          {
+            "day": "0",
+            "eating_ticks": 4,
+            "id": "he_chang",
+            "observed_ticks": 71,
+            "return_ticks": 6,
+            "scheduled_ticks": 16,
+            "sleep_in_window": 15,
+            "sleep_ticks": 16,
+            "work_ticks": 34
+          },
+          {
+            "day": "0",
+            "eating_ticks": 3,
+            "id": "he_xiu",
+            "observed_ticks": 71,
+            "return_ticks": 7,
+            "scheduled_ticks": 20,
+            "sleep_in_window": 17,
+            "sleep_ticks": 18,
+            "work_ticks": 30
+          },
+          {
+            "day": "0",
+            "eating_ticks": 4,
+            "id": "zheng_wei",
+            "observed_ticks": 71,
+            "return_ticks": 14,
+            "scheduled_ticks": 8,
+            "sleep_in_window": 6,
+            "sleep_ticks": 8,
+            "work_ticks": 31
+          },
+          {
+            "day": "0",
+            "eating_ticks": 3,
+            "id": "su_qing",
+            "observed_ticks": 71,
+            "return_ticks": 4,
+            "scheduled_ticks": 24,
+            "sleep_in_window": 22,
+            "sleep_ticks": 22,
+            "work_ticks": 30
+          },
+          {
+            "day": "0",
+            "eating_ticks": 4,
+            "id": "gao_lang",
+            "observed_ticks": 71,
+            "return_ticks": 4,
+            "scheduled_ticks": 32,
+            "sleep_in_window": 31,
+            "sleep_ticks": 31,
+            "work_ticks": 22
+          },
+          {
+            "day": "0",
+            "eating_ticks": 4,
+            "id": "ke_wei",
+            "observed_ticks": 71,
+            "return_ticks": 9,
+            "scheduled_ticks": 4,
+            "sleep_in_window": 4,
+            "sleep_ticks": 7,
+            "work_ticks": 34
+          },
+          {
+            "day": "0",
+            "eating_ticks": 4,
+            "id": "ling_bo",
+            "observed_ticks": 71,
+            "return_ticks": 14,
+            "scheduled_ticks": 8,
+            "sleep_in_window": 6,
+            "sleep_ticks": 8,
+            "work_ticks": 31
+          },
+          {
+            "day": "1",
+            "eating_ticks": 7,
+            "id": "chen_wei",
+            "observed_ticks": 96,
+            "return_ticks": 7,
+            "scheduled_ticks": 32,
+            "sleep_in_window": 31,
+            "sleep_ticks": 32,
+            "work_ticks": 28
+          },
+          {
+            "day": "1",
+            "eating_ticks": 7,
+            "id": "lin_mei",
+            "observed_ticks": 96,
+            "return_ticks": 3,
+            "scheduled_ticks": 28,
+            "sleep_in_window": 26,
+            "sleep_ticks": 27,
+            "work_ticks": 0
+          },
+          {
+            "day": "1",
+            "eating_ticks": 7,
+            "id": "zhang_hao",
+            "observed_ticks": 96,
+            "return_ticks": 5,
+            "scheduled_ticks": 32,
+            "sleep_in_window": 31,
+            "sleep_ticks": 31,
+            "work_ticks": 32
+          },
+          {
+            "day": "1",
+            "eating_ticks": 6,
+            "id": "wang_li",
+            "observed_ticks": 96,
+            "return_ticks": 6,
+            "scheduled_ticks": 32,
+            "sleep_in_window": 30,
+            "sleep_ticks": 30,
+            "work_ticks": 33
+          },
+          {
+            "day": "1",
+            "eating_ticks": 7,
+            "id": "liu_jun",
+            "observed_ticks": 96,
+            "return_ticks": 6,
+            "scheduled_ticks": 36,
+            "sleep_in_window": 34,
+            "sleep_ticks": 34,
+            "work_ticks": 0
+          },
+          {
+            "day": "1",
+            "eating_ticks": 7,
+            "id": "zhao_xia",
+            "observed_ticks": 96,
+            "return_ticks": 9,
+            "scheduled_ticks": 32,
+            "sleep_in_window": 31,
+            "sleep_ticks": 32,
+            "work_ticks": 36
+          },
+          {
+            "day": "1",
+            "eating_ticks": 7,
+            "id": "yang_feng",
+            "observed_ticks": 96,
+            "return_ticks": 4,
+            "scheduled_ticks": 32,
+            "sleep_in_window": 30,
+            "sleep_ticks": 30,
+            "work_ticks": 44
+          },
+          {
+            "day": "1",
+            "eating_ticks": 7,
+            "id": "sun_yu",
+            "observed_ticks": 96,
+            "return_ticks": 6,
+            "scheduled_ticks": 28,
+            "sleep_in_window": 26,
+            "sleep_ticks": 27,
+            "work_ticks": 28
+          },
+          {
+            "day": "1",
+            "eating_ticks": 6,
+            "id": "wu_da",
+            "observed_ticks": 96,
+            "return_ticks": 8,
+            "scheduled_ticks": 32,
+            "sleep_in_window": 30,
+            "sleep_ticks": 30,
+            "work_ticks": 33
+          },
+          {
+            "day": "1",
+            "eating_ticks": 7,
+            "id": "huang_li",
+            "observed_ticks": 96,
+            "return_ticks": 5,
+            "scheduled_ticks": 32,
+            "sleep_in_window": 31,
+            "sleep_ticks": 31,
+            "work_ticks": 43
+          },
+          {
+            "day": "1",
+            "eating_ticks": 7,
+            "id": "ma_qiang",
+            "observed_ticks": 96,
+            "return_ticks": 8,
+            "scheduled_ticks": 32,
+            "sleep_in_window": 31,
+            "sleep_ticks": 31,
+            "work_ticks": 32
+          },
+          {
+            "day": "1",
+            "eating_ticks": 7,
+            "id": "xu_ying",
+            "observed_ticks": 96,
+            "return_ticks": 9,
+            "scheduled_ticks": 36,
+            "sleep_in_window": 34,
+            "sleep_ticks": 34,
+            "work_ticks": 32
+          },
+          {
+            "day": "1",
+            "eating_ticks": 7,
+            "id": "zhou_ming",
+            "observed_ticks": 96,
+            "return_ticks": 5,
+            "scheduled_ticks": 32,
+            "sleep_in_window": 31,
+            "sleep_ticks": 32,
+            "work_ticks": 36
+          },
+          {
+            "day": "1",
+            "eating_ticks": 6,
+            "id": "he_chang",
+            "observed_ticks": 96,
+            "return_ticks": 6,
+            "scheduled_ticks": 32,
+            "sleep_in_window": 30,
+            "sleep_ticks": 30,
+            "work_ticks": 33
+          },
+          {
+            "day": "1",
+            "eating_ticks": 7,
+            "id": "he_xiu",
+            "observed_ticks": 96,
+            "return_ticks": 6,
+            "scheduled_ticks": 32,
+            "sleep_in_window": 30,
+            "sleep_ticks": 30,
+            "work_ticks": 32
+          },
+          {
+            "day": "1",
+            "eating_ticks": 7,
+            "id": "zheng_wei",
+            "observed_ticks": 96,
+            "return_ticks": 7,
+            "scheduled_ticks": 32,
+            "sleep_in_window": 31,
+            "sleep_ticks": 32,
+            "work_ticks": 29
+          },
+          {
+            "day": "1",
+            "eating_ticks": 6,
+            "id": "su_qing",
+            "observed_ticks": 96,
+            "return_ticks": 4,
+            "scheduled_ticks": 36,
+            "sleep_in_window": 33,
+            "sleep_ticks": 33,
+            "work_ticks": 33
+          },
+          {
+            "day": "1",
+            "eating_ticks": 8,
+            "id": "gao_lang",
+            "observed_ticks": 96,
+            "return_ticks": 7,
+            "scheduled_ticks": 32,
+            "sleep_in_window": 29,
+            "sleep_ticks": 29,
+            "work_ticks": 44
+          },
+          {
+            "day": "1",
+            "eating_ticks": 7,
+            "id": "ke_wei",
+            "observed_ticks": 96,
+            "return_ticks": 7,
+            "scheduled_ticks": 28,
+            "sleep_in_window": 27,
+            "sleep_ticks": 28,
+            "work_ticks": 32
+          },
+          {
+            "day": "1",
+            "eating_ticks": 7,
+            "id": "ling_bo",
+            "observed_ticks": 96,
+            "return_ticks": 11,
+            "scheduled_ticks": 32,
+            "sleep_in_window": 31,
+            "sleep_ticks": 31,
+            "work_ticks": 29
+          },
+          {
+            "day": "2",
+            "eating_ticks": 3,
+            "id": "chen_wei",
+            "observed_ticks": 25,
+            "return_ticks": 0,
+            "scheduled_ticks": 24,
+            "sleep_in_window": 22,
+            "sleep_ticks": 22,
+            "work_ticks": 0
+          },
+          {
+            "day": "2",
+            "eating_ticks": 2,
+            "id": "lin_mei",
+            "observed_ticks": 25,
+            "return_ticks": 0,
+            "scheduled_ticks": 25,
+            "sleep_in_window": 23,
+            "sleep_ticks": 23,
+            "work_ticks": 0
+          },
+          {
+            "day": "2",
+            "eating_ticks": 3,
+            "id": "zhang_hao",
+            "observed_ticks": 25,
+            "return_ticks": 0,
+            "scheduled_ticks": 20,
+            "sleep_in_window": 18,
+            "sleep_ticks": 18,
+            "work_ticks": 0
+          },
+          {
+            "day": "2",
+            "eating_ticks": 2,
+            "id": "wang_li",
+            "observed_ticks": 25,
+            "return_ticks": 0,
+            "scheduled_ticks": 12,
+            "sleep_in_window": 11,
+            "sleep_ticks": 11,
+            "work_ticks": 5
+          },
+          {
+            "day": "2",
+            "eating_ticks": 2,
+            "id": "liu_jun",
+            "observed_ticks": 25,
+            "return_ticks": 0,
+            "scheduled_ticks": 20,
+            "sleep_in_window": 18,
+            "sleep_ticks": 18,
+            "work_ticks": 0
+          },
+          {
+            "day": "2",
+            "eating_ticks": 3,
+            "id": "zhao_xia",
+            "observed_ticks": 25,
+            "return_ticks": 0,
+            "scheduled_ticks": 20,
+            "sleep_in_window": 18,
+            "sleep_ticks": 18,
+            "work_ticks": 0
+          },
+          {
+            "day": "2",
+            "eating_ticks": 2,
+            "id": "yang_feng",
+            "observed_ticks": 25,
+            "return_ticks": 0,
+            "scheduled_ticks": 12,
+            "sleep_in_window": 11,
+            "sleep_ticks": 11,
+            "work_ticks": 1
+          },
+          {
+            "day": "2",
+            "eating_ticks": 2,
+            "id": "sun_yu",
+            "observed_ticks": 25,
+            "return_ticks": 0,
+            "scheduled_ticks": 25,
+            "sleep_in_window": 23,
+            "sleep_ticks": 23,
+            "work_ticks": 0
+          },
+          {
+            "day": "2",
+            "eating_ticks": 2,
+            "id": "wu_da",
+            "observed_ticks": 25,
+            "return_ticks": 0,
+            "scheduled_ticks": 16,
+            "sleep_in_window": 15,
+            "sleep_ticks": 15,
+            "work_ticks": 0
+          },
+          {
+            "day": "2",
+            "eating_ticks": 2,
+            "id": "huang_li",
+            "observed_ticks": 25,
+            "return_ticks": 0,
+            "scheduled_ticks": 20,
+            "sleep_in_window": 18,
+            "sleep_ticks": 18,
+            "work_ticks": 0
+          },
+          {
+            "day": "2",
+            "eating_ticks": 2,
+            "id": "ma_qiang",
+            "observed_ticks": 25,
+            "return_ticks": 0,
+            "scheduled_ticks": 20,
+            "sleep_in_window": 18,
+            "sleep_ticks": 18,
+            "work_ticks": 0
+          },
+          {
+            "day": "2",
+            "eating_ticks": 3,
+            "id": "xu_ying",
+            "observed_ticks": 25,
+            "return_ticks": 0,
+            "scheduled_ticks": 20,
+            "sleep_in_window": 18,
+            "sleep_ticks": 18,
+            "work_ticks": 0
+          },
+          {
+            "day": "2",
+            "eating_ticks": 3,
+            "id": "zhou_ming",
+            "observed_ticks": 25,
+            "return_ticks": 0,
+            "scheduled_ticks": 24,
+            "sleep_in_window": 22,
+            "sleep_ticks": 22,
+            "work_ticks": 0
+          },
+          {
+            "day": "2",
+            "eating_ticks": 2,
+            "id": "he_chang",
+            "observed_ticks": 25,
+            "return_ticks": 0,
+            "scheduled_ticks": 16,
+            "sleep_in_window": 15,
+            "sleep_ticks": 15,
+            "work_ticks": 0
+          },
+          {
+            "day": "2",
+            "eating_ticks": 3,
+            "id": "he_xiu",
+            "observed_ticks": 25,
+            "return_ticks": 0,
+            "scheduled_ticks": 12,
+            "sleep_in_window": 11,
+            "sleep_ticks": 11,
+            "work_ticks": 4
+          },
+          {
+            "day": "2",
+            "eating_ticks": 3,
+            "id": "zheng_wei",
+            "observed_ticks": 25,
+            "return_ticks": 0,
+            "scheduled_ticks": 24,
+            "sleep_in_window": 22,
+            "sleep_ticks": 22,
+            "work_ticks": 0
+          },
+          {
+            "day": "2",
+            "eating_ticks": 2,
+            "id": "su_qing",
+            "observed_ticks": 25,
+            "return_ticks": 0,
+            "scheduled_ticks": 12,
+            "sleep_in_window": 11,
+            "sleep_ticks": 11,
+            "work_ticks": 5
+          },
+          {
+            "day": "2",
+            "eating_ticks": 1,
+            "id": "gao_lang",
+            "observed_ticks": 25,
+            "return_ticks": 0,
+            "scheduled_ticks": 0,
+            "sleep_in_window": 0,
+            "sleep_ticks": 0,
+            "work_ticks": 23
+          },
+          {
+            "day": "2",
+            "eating_ticks": 3,
+            "id": "ke_wei",
+            "observed_ticks": 25,
+            "return_ticks": 0,
+            "scheduled_ticks": 24,
+            "sleep_in_window": 22,
+            "sleep_ticks": 22,
+            "work_ticks": 0
+          },
+          {
+            "day": "2",
+            "eating_ticks": 3,
+            "id": "ling_bo",
+            "observed_ticks": 25,
+            "return_ticks": 0,
+            "scheduled_ticks": 24,
+            "sleep_in_window": 22,
+            "sleep_ticks": 22,
+            "work_ticks": 0
+          }
+        ],
+        "return_ticks": 299,
+        "scope": "two original app days with real movement, measured actual venue at scheduled work start before movement of that tick; no changed jobs/needs/positions/resources, not proof of every worker arriving on time",
+        "shifts": [
+          {
+            "activity": "working",
+            "actual_place": "",
+            "id": "wu_da",
+            "on_time": false,
+            "tick": 4,
+            "workplace": "quarry"
+          },
+          {
+            "activity": "working",
+            "actual_place": "chapel",
+            "id": "huang_li",
+            "on_time": true,
+            "tick": 4,
+            "workplace": "chapel"
+          },
+          {
+            "activity": "working",
+            "actual_place": "",
+            "id": "ma_qiang",
+            "on_time": false,
+            "tick": 4,
+            "workplace": "workshop"
+          },
+          {
+            "activity": "working",
+            "actual_place": "town_square",
+            "id": "he_chang",
+            "on_time": false,
+            "tick": 4,
+            "workplace": "workshop"
+          },
+          {
+            "activity": "waiting_workplace",
+            "actual_place": "",
+            "id": "lin_mei",
+            "on_time": false,
+            "tick": 8,
+            "workplace": "clinic"
+          },
+          {
+            "activity": "working",
+            "actual_place": "workshop",
+            "id": "zhang_hao",
+            "on_time": true,
+            "tick": 8,
+            "workplace": "workshop"
+          },
+          {
+            "activity": "working",
+            "actual_place": "general_store",
+            "id": "zhao_xia",
+            "on_time": true,
+            "tick": 8,
+            "workplace": "general_store"
+          },
+          {
+            "activity": "working",
+            "actual_place": "workshop",
+            "id": "xu_ying",
+            "on_time": true,
+            "tick": 8,
+            "workplace": "workshop"
+          },
+          {
+            "activity": "working",
+            "actual_place": "general_store",
+            "id": "zhou_ming",
+            "on_time": true,
+            "tick": 8,
+            "workplace": "general_store"
+          },
+          {
+            "activity": "working",
+            "actual_place": "workshop",
+            "id": "ke_wei",
+            "on_time": true,
+            "tick": 8,
+            "workplace": "workshop"
+          },
+          {
+            "activity": "working",
+            "actual_place": "town_hall",
+            "id": "chen_wei",
+            "on_time": true,
+            "tick": 12,
+            "workplace": "town_hall"
+          },
+          {
+            "activity": "working",
+            "actual_place": "library",
+            "id": "sun_yu",
+            "on_time": true,
+            "tick": 12,
+            "workplace": "library"
+          },
+          {
+            "activity": "working",
+            "actual_place": "library",
+            "id": "zheng_wei",
+            "on_time": true,
+            "tick": 12,
+            "workplace": "library"
+          },
+          {
+            "activity": "working",
+            "actual_place": "library",
+            "id": "ling_bo",
+            "on_time": true,
+            "tick": 12,
+            "workplace": "library"
+          },
+          {
+            "activity": "working",
+            "actual_place": "tavern",
+            "id": "wang_li",
+            "on_time": true,
+            "tick": 92,
+            "workplace": "tavern"
+          },
+          {
+            "activity": "working",
+            "actual_place": "tavern",
+            "id": "he_xiu",
+            "on_time": true,
+            "tick": 92,
+            "workplace": "tavern"
+          },
+          {
+            "activity": "working",
+            "actual_place": "tavern",
+            "id": "su_qing",
+            "on_time": true,
+            "tick": 92,
+            "workplace": "tavern"
+          },
+          {
+            "activity": "waiting_workplace",
+            "actual_place": "",
+            "id": "liu_jun",
+            "on_time": false,
+            "tick": 96,
+            "workplace": "farm"
+          },
+          {
+            "activity": "working",
+            "actual_place": "town_square",
+            "id": "yang_feng",
+            "on_time": false,
+            "tick": 96,
+            "workplace": "guardpost"
+          },
+          {
+            "activity": "socializing",
+            "actual_place": "town_square",
+            "id": "gao_lang",
+            "on_time": false,
+            "tick": 96,
+            "workplace": "guardpost"
+          },
+          {
+            "activity": "working",
+            "actual_place": "quarry",
+            "id": "wu_da",
+            "on_time": true,
+            "tick": 100,
+            "workplace": "quarry"
+          },
+          {
+            "activity": "working",
+            "actual_place": "chapel",
+            "id": "huang_li",
+            "on_time": true,
+            "tick": 100,
+            "workplace": "chapel"
+          },
+          {
+            "activity": "working",
+            "actual_place": "workshop",
+            "id": "ma_qiang",
+            "on_time": true,
+            "tick": 100,
+            "workplace": "workshop"
+          },
+          {
+            "activity": "working",
+            "actual_place": "workshop",
+            "id": "he_chang",
+            "on_time": true,
+            "tick": 100,
+            "workplace": "workshop"
+          },
+          {
+            "activity": "waiting_workplace",
+            "actual_place": "",
+            "id": "lin_mei",
+            "on_time": false,
+            "tick": 104,
+            "workplace": "clinic"
+          },
+          {
+            "activity": "working",
+            "actual_place": "workshop",
+            "id": "zhang_hao",
+            "on_time": true,
+            "tick": 104,
+            "workplace": "workshop"
+          },
+          {
+            "activity": "eating",
+            "actual_place": "general_store",
+            "id": "zhao_xia",
+            "on_time": true,
+            "tick": 104,
+            "workplace": "general_store"
+          },
+          {
+            "activity": "working",
+            "actual_place": "workshop",
+            "id": "xu_ying",
+            "on_time": true,
+            "tick": 104,
+            "workplace": "workshop"
+          },
+          {
+            "activity": "eating",
+            "actual_place": "general_store",
+            "id": "zhou_ming",
+            "on_time": true,
+            "tick": 104,
+            "workplace": "general_store"
+          },
+          {
+            "activity": "eating",
+            "actual_place": "workshop",
+            "id": "ke_wei",
+            "on_time": true,
+            "tick": 104,
+            "workplace": "workshop"
+          },
+          {
+            "activity": "working",
+            "actual_place": "town_hall",
+            "id": "chen_wei",
+            "on_time": true,
+            "tick": 108,
+            "workplace": "town_hall"
+          },
+          {
+            "activity": "working",
+            "actual_place": "library",
+            "id": "sun_yu",
+            "on_time": true,
+            "tick": 108,
+            "workplace": "library"
+          },
+          {
+            "activity": "working",
+            "actual_place": "library",
+            "id": "zheng_wei",
+            "on_time": true,
+            "tick": 108,
+            "workplace": "library"
+          },
+          {
+            "activity": "working",
+            "actual_place": "library",
+            "id": "ling_bo",
+            "on_time": true,
+            "tick": 108,
+            "workplace": "library"
+          },
+          {
+            "activity": "working",
+            "actual_place": "tavern",
+            "id": "wang_li",
+            "on_time": true,
+            "tick": 188,
+            "workplace": "tavern"
+          },
+          {
+            "activity": "working",
+            "actual_place": "tavern",
+            "id": "he_xiu",
+            "on_time": true,
+            "tick": 188,
+            "workplace": "tavern"
+          },
+          {
+            "activity": "working",
+            "actual_place": "tavern",
+            "id": "su_qing",
+            "on_time": true,
+            "tick": 188,
+            "workplace": "tavern"
+          },
+          {
+            "activity": "waiting_workplace",
+            "actual_place": "residential_east",
+            "id": "liu_jun",
+            "on_time": false,
+            "tick": 192,
+            "workplace": "farm"
+          },
+          {
+            "activity": "working",
+            "actual_place": "town_square",
+            "id": "yang_feng",
+            "on_time": false,
+            "tick": 192,
+            "workplace": "guardpost"
+          },
+          {
+            "activity": "recreation",
+            "actual_place": "town_square",
+            "id": "gao_lang",
+            "on_time": false,
+            "tick": 192,
+            "workplace": "guardpost"
+          }
+        ],
+        "sleep_ticks": 1217,
+        "sleepers": [
+          "lin_mei",
+          "sun_yu",
+          "gao_lang",
+          "wang_li",
+          "su_qing",
+          "yang_feng",
+          "he_xiu",
+          "huang_li",
+          "chen_wei",
+          "zhang_hao",
+          "wu_da",
+          "he_chang",
+          "ke_wei",
+          "liu_jun",
+          "zhao_xia",
+          "ma_qiang",
+          "xu_ying",
+          "zhou_ming",
+          "zheng_wei",
+          "ling_bo"
+        ],
+        "total": 40
+      },
+      "tail": ""
+    }
+  ]
+}

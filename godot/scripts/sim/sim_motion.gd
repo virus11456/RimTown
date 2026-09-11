@@ -31,8 +31,21 @@ func inside(point: Vector2) -> String:
 			if point.x>=z.x*16 and point.x<=(z.x+z.w)*16 and point.y>=z.y*16 and point.y<=(z.y+z.h)*16: return id
 	return ""
 func _path(p: Dictionary) -> void:
+	p.erase("_blockedRoute");p.erase("_routeRetry")
 	p._pathWaypoints=pathfinder.find_path(Vector2(p.x,p.y),Vector2(p.targetX,p.targetY))
 	p._pathIdx=0
+func _retry_route(p: Dictionary) -> void:
+	p.walking=false;p.walkStep=0
+	pathfinder.grid=layout.grid
+	_path(p)
+	if p._pathWaypoints.is_empty():
+		p._blockedRoute={"x":p.x,"y":p.y,"targetX":p.targetX,"targetY":p.targetY}
+		p._routeRetry=60 # Retry after 60 fixed motion frames while the route stays closed.
+func _same_blocked_route(p: Dictionary) -> bool:
+	var blocked: Dictionary=p.get("_blockedRoute",{})
+	for key in ["x","y","targetX","targetY"]:
+		if not blocked.has(key) or float(blocked[key])!=float(p[key]): return false
+	return true
 func _set_point(p: Dictionary,value: Vector2) -> void:
 	p.x=value.x; p.y=value.y
 func obstruction(id: String) -> String:
@@ -40,6 +53,11 @@ func obstruction(id: String) -> String:
 	var p: Dictionary=positions[id]
 	if not layout._walkable(Vector2(p.x,p.y)):
 		return "目前位置不可通行，暫停移動；地圖障礙解除後才能重新找路。"
+	if not (id=="player" and manual_player) and _same_blocked_route(p):
+		# Display current geometry rather than trusting a persisted retry marker/cache.
+		var probe:=SimPath.new();probe.grid=layout.grid
+		if probe.find_path(Vector2(p.x,p.y),Vector2(p.targetX,p.targetY)).is_empty():
+			return "前方受阻，目前找不到可通行路線；暫停移動並定期重新找路。"
 	return ""
 func update(agents: Dictionary,chat_target: String="") -> void:
 	for id in agents:
@@ -129,6 +147,12 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 			# Revalidate the route, including caches from before the obstruction cleared.
 			pathfinder.grid=layout.grid
 			_path(p)
+		if strict_route and p.has("_blockedRoute"):
+			if _same_blocked_route(p) and int(p.get("_routeRetry",0))>0:
+				p._routeRetry=int(p._routeRetry)-1;p.walking=false;p.walkStep=0
+				continue
+			_retry_route(p)
+			if p.has("_blockedRoute"): continue
 		var far:=absf(p.targetX-p.x)+absf(p.targetY-p.y)>32
 		var trapped:=inside(Vector2(p.x,p.y)) if activity!="sleeping" and far else ""
 		if not trapped.is_empty():
@@ -150,10 +174,11 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 			var movement:=delta/distance*minf(.6 if appointment else .3,distance)
 			var next:=Vector2(p.x,p.y)+movement
 			if not layout._walkable(next):
+				if strict_route:
+					_retry_route(p);continue
 				if layout._walkable(Vector2(p.x+movement.x,p.y)): next=Vector2(p.x+movement.x,p.y)
 				elif layout._walkable(Vector2(p.x,p.y+movement.y)): next=Vector2(p.x,p.y+movement.y)
 				else:
-					if strict_route: p.walking=false;_path(p);continue
 					_set_point(p,layout._nearest(Vector2(p.targetX,p.targetY)))
 					p.walking=false; p.walkStep=0; p._pathWaypoints=[]; continue
 			_set_point(p,next); p.walking=true; p.walkStep=p.get("walkStep",0)+1

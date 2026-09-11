@@ -1,0 +1,6 @@
+{
+  "checks": 14,
+  "failures": [],
+  "maximum_step": 0.80322265625,
+  "scope": "controlled head-on zero-slide regression, sealed wall, bounded retry, reopened gap, bypass, changed destination, JSON state, agenda reason, manual player exclusion and no world mutation"
+}
