@@ -1,11 +1,11 @@
 extends "res://tests/test_daily_talk.gd"
 func _initialize() -> void:
 	var f:=setup();var w: SimWorld=f.w
-	w.data.townMap.locations.erase("clinic");w.data.townMap.locations.erase("guardpost")
-	w.data.buildings.completed=[{"id":"ward","buildingKey":"clinic_upgrade","status":"complete","siteX":32,"siteY":34},{"id":"tower","buildingKey":"watchtower","status":"complete","siteX":34,"siteY":40}]
+	w.data.townMap.locations.erase("clinic");w.data.townMap.locations.erase("guardpost");w.data.townMap.locations.erase("farm")
+	w.data.buildings.completed=[{"id":"ward","buildingKey":"clinic_upgrade","status":"complete","siteX":32,"siteY":34},{"id":"tower","buildingKey":"watchtower","status":"complete","siteX":34,"siteY":40},{"id":"irrigation","buildingKey":"farm_irrigation","status":"complete","siteX":40,"siteY":44}]
 	SimWorkplaces.sync(w)
-	check(w.data.townMap.locations.has("clinic") and w.data.townMap.locations.has("guardpost"),"clinic and tower can both register in the same refresh")
-	check(w.data.townMap.locations.clinic._workSite.project=="ward" and w.data.townMap.locations.guardpost._workSite.project=="tower","each workplace retains its own project identity")
+	check(w.data.townMap.locations.has("clinic") and w.data.townMap.locations.has("guardpost") and w.data.townMap.locations.has("farm"),"clinic, tower and irrigation can all register in the same refresh")
+	check(w.data.townMap.locations.clinic._workSite.project=="ward" and w.data.townMap.locations.guardpost._workSite.project=="tower" and w.data.townMap.locations.farm._workSite.project=="irrigation","each workplace retains its own project identity")
 	w.data.townMap.locations.guardpost={"id":"guardpost","name":"原有守衛站"};var before:=w.snapshot();SimWorkplaces.sync(w)
 	check(equal(before,w.snapshot()),"existing guardpost and clinic remain unchanged")
 	for fault in ["unfinished","unplaced","invalid_site"]:

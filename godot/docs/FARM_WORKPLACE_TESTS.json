@@ -1,0 +1,33 @@
+{
+  "checks": 24,
+  "failures": [],
+  "maximum_step": 0.973998129367828,
+  "scope": "controlled elected-player and material fixture, compressed midnight construction ticks with original costs/work, then normal physical walking; actual app completion geometry, mobile agenda, AI prompt only and native reload; no full economic balance or crop-tending animation claim",
+  "site": [
+    32,
+    34
+  ],
+  "trace": [
+    {
+      "activity": "working",
+      "actual": "",
+      "tick": 4
+    },
+    {
+      "activity": "working",
+      "actual": "",
+      "tick": 5
+    },
+    {
+      "activity": "working",
+      "actual": "",
+      "tick": 6
+    },
+    {
+      "activity": "working",
+      "actual": "farm",
+      "tick": 7
+    }
+  ],
+  "work_done": 12
+}

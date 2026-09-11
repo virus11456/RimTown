@@ -3,6 +3,7 @@ extends RefCounted
 # Completed, explicitly placed facilities supply outdoor work points.
 # Existing town facilities retain their original layout and identity.
 const FACILITIES={
+	"farm_irrigation":{"id":"farm","name":"農田灌溉作業點","description":"已完工灌溉設施旁的農務作業點；不另增耕地或自動發放收成。"},
 	"clinic_upgrade":{"id":"clinic","name":"醫療病房入口","description":"已完工醫療病房的入口執勤處；室內治療演出尚未加入。"},
 	"watchtower":{"id":"guardpost","name":"瞭望塔值勤處","description":"已完工瞭望塔前的守衛值勤處；登塔與室內演出尚未加入。"}
 }

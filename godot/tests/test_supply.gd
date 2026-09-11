@@ -4,6 +4,10 @@ func run() -> void:
 	var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app);await process_frame
 	app.set_process(false);var w: SimWorld=app.simulation
 	check(w.supply_enabled,"balance enabled in playable mode")
+	# Controlled elected-player fixture: the test may authorize factory spending.
+	for a in w.data.agents.values():
+		if a.get("jobKey")=="mayor": a.jobKey=""
+	w.data.agents.player.jobKey="mayor"
 	w.data.processing.builtFactories={};w.data.processing.orders=[]
 	for r in w.data.stockpile.resources: w.data.stockpile.resources[r]=1000
 	SimProcessing.build(w,"bakery");var f: Dictionary=w.data.processing.builtFactories.bakery;f.status="active";f.recipe="bread"
@@ -34,13 +38,15 @@ func run() -> void:
 		for i in 96: SimClock.tick(w.data.clock)
 		SimProcessing.daily(w)
 		check(SimSupply.total(w,"bread")<=84,"120-day upper bound including three orders")
+	# Compare two core-only continuations; a live scene observation on just one side is not a save equivalence test.
+	w.social.observed_motion=null;w.social.physical_positions=null
 	var saved:=SimWorld.new();saved.load_snapshot(JSON.parse_string(JSON.stringify(w.snapshot(),"",false,true)))
 	for i in 960: w.tick();saved.tick()
-	check(equal(w.snapshot(),saved.snapshot()),"ten-day balance resume")
+	check(equal(w.snapshot(),saved.snapshot()),"ten-day matched core balance resume")
 	app.show_processing();await settle();check(has_text(app.drawer_body,"產量控制") and has_text(app.drawer_body,"全鎮"),"UI explains reserve and demand")
 	for child in app.drawer_body.get_children():
 		if child is Control: check(child.size.x<=app.drawer.size.x,"mobile supply layout")
 	FileAccess.open("res://tests/processing/compatibility-save.json.tmp",FileAccess.WRITE).store_string(JSON.stringify(app.progress_snapshot(),"",false,true))
-	var report:={"checks":checks,"failures":failures,"scope":"reserve cap, no input waste, resume, orders, shared daily market cap, season/save persistence, 120-day bound and mobile UI"}
+	var report:={"checks":checks,"failures":failures,"scope":"controlled elected-player/material fixture; reserve cap, no input waste, resume, orders, shared daily market cap, season/save persistence, matched observation-free core replay, 120-day bound and mobile UI"}
 	FileAccess.open("res://docs/SUPPLY_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "))
 	print(JSON.stringify(report));quit(0 if failures.is_empty() else 1)
