@@ -1,0 +1,5 @@
+{
+  "checks": 24,
+  "failures": [],
+  "scope": "controlled legacy completed-project fixtures; phone preview/cancel, ordinary NPC mayor approval and approved save reload, actual governance UI execution, elected-player direct action, atomic site/upgrade checks, preserved costs/effects/level/count and native site/motion reload; no full economy or new walking endurance claim"
+}

@@ -1638,6 +1638,8 @@ func show_buildings() -> void:
 	for p in manager.completed:
 		_wrapped(str(p.name)+" · 等級 "+str(int(p.get("level",1))))
 		var key: String=str(p.get("buildingKey",""));var upgrade: Dictionary=definitions.upgrades.get(key,{}).get(str(int(p.get("level",1))+1),{})
+		if not SimBuildings.unplaced(simulation,str(p.get("id",""))).is_empty():
+			_button("補選址："+str(p.name),drawer_body,func(): show_building_site(key,0,false,str(p.id)))
 		if not upgrade.is_empty() and not manager.projects.any(func(project): return project.get("upgradeKey")==key): _building_offer(key,upgrade,true)
 	_wrapped("可新建",18)
 	for key in definitions.templates:
@@ -1869,26 +1871,31 @@ func _clear_site_preview() -> void:
 	if is_instance_valid(placement_preview): placement_preview.queue_free()
 	placement_preview=null
 func _refresh_building_world() -> void:
+	SimWorkplaces.sync(simulation)
 	var houses:=motion.layout.agent_house.duplicate(true)
 	world_view.display_save(simulation.data);motion.layout=world_view.layout;motion.layout.agent_house.merge(houses,true);motion.pathfinder.grid=world_view.layout.grid
 	for p in motion.positions.values():
 		var safe: Vector2=motion.layout._nearest(Vector2(p.x,p.y));p.x=safe.x;p.y=safe.y
 		motion._path(p)
+	SimWorkSchedule.refresh(simulation,motion)
 	for a in simulation.data.agents.values(): a.erase("_shiftSleep")
 	SimShiftSleep.refresh(simulation,motion)
 	motion.update(simulation.data.agents)
 	world_view.animate_agents(motion.positions)
-func show_building_site(key: String,index: int=0,decor: bool=false) -> void:
+func show_building_site(key: String,index: int=0,decor: bool=false,completed_id: String="") -> void:
 	_clear_site_preview();active_tab="小鎮";drawer.show();_clear_drawer()
+	var restoring:=not completed_id.is_empty()
+	if restoring and SimBuildings.unplaced(simulation,completed_id).is_empty():
+		_wrapped("這項工程已選址或目前無法補選址。");_button("返回",drawer_body,show_buildings);return
 	var footprint:=1 if decor else 2
 	var choices:=BuildingSites.candidates(simulation.data,footprint)
-	_wrapped("3D 選址 · "+str(SimCombos.decoration(key).name if decor else SimBuildings.rules().templates[key].name),22)
+	_wrapped(("舊工程補選址 · " if restoring else "3D 選址 · ")+str(SimCombos.decoration(key).name if decor else SimBuildings.rules().templates[key].name),22)
 	if choices.is_empty():
 		_wrapped("沒有足夠的安全空地，未扣材料。")
 		_button("返回",drawer_body,show_decorations if decor else show_buildings);return
 	index=posmod(index,choices.size());var site: Vector2i=choices[index]
 	_wrapped("候選空地 %d／%d · 地圖格 (%d, %d)"%[index+1,choices.size(),site.x,site.y],12)
-	_wrapped("綠色範圍為 %d×%d 格用地，已避開道路、水域、住宅與預留工廠區。確認時會再次檢查位置與材料。"%[footprint,footprint],12)
+	_wrapped("已完工工程只補上位置，不重複扣材料、不重建或加發效果；旅人仍需鎮長核准。" if restoring else "綠色範圍為 %d×%d 格用地，已避開道路、水域、住宅與預留工廠區。確認時會再次檢查位置與材料。"%[footprint,footprint],12)
 	placement_preview=MeshInstance3D.new();var mesh:=BoxMesh.new();mesh.size=Vector3(footprint,.12,footprint);placement_preview.mesh=mesh
 	var material:=StandardMaterial3D.new();material.albedo_color=Color(.2,1,.45,.65);material.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;placement_preview.material_override=material
 	placement_preview.position=Vector3(site.x+footprint*.5,.3,site.y+footprint*.5);add_child(placement_preview)
@@ -1897,11 +1904,18 @@ func show_building_site(key: String,index: int=0,decor: bool=false) -> void:
 	var inset:=SubViewportContainer.new();inset.custom_minimum_size=Vector2(0,170);inset.size_flags_horizontal=Control.SIZE_EXPAND_FILL;inset.stretch=true;inset.mouse_filter=Control.MOUSE_FILTER_IGNORE;drawer_body.add_child(inset)
 	var mini:=SubViewport.new();mini.size=Vector2i(320,170);mini.world_3d=get_world_3d();mini.render_target_update_mode=SubViewport.UPDATE_ALWAYS;inset.add_child(mini)
 	var camera:=Camera3D.new();mini.add_child(camera);camera.projection=Camera3D.PROJECTION_ORTHOGONAL;camera.size=6;camera.position=Vector3(site.x+6,8,site.y+7);camera.look_at(Vector3(site.x+1,0,site.y+1));camera.current=true
-	_button("上一塊空地",drawer_body,func(): show_building_site(key,index-1,decor))
-	_button("下一塊空地",drawer_body,func(): show_building_site(key,index+1,decor))
+	_button("上一塊空地",drawer_body,func(): show_building_site(key,index-1,decor,completed_id))
+	_button("下一塊空地",drawer_body,func(): show_building_site(key,index+1,decor,completed_id))
 	var active_world: Dictionary=simulation.data
-	_button("確認擺放" if decor else "確認開工",drawer_body,func():
+	_button("確認補選址" if restoring else "確認擺放" if decor else "確認開工",drawer_body,func():
 		if not is_same(active_world,simulation.data): return
+		if restoring:
+			simulation.governance_notice=""
+			var ok:=SimBuildings.place_completed(simulation,completed_id,site)
+			_clear_site_preview()
+			if ok: has_simulated=true;_refresh_building_world();status.text="已補選址 · 未重複扣料"
+			else: status.text=simulation.governance_notice if not simulation.governance_notice.is_empty() else "位置或工程狀態已改變，未執行"
+			show_buildings();return
 		var project: Dictionary={"ok":true} if decor and SimCombos.place(simulation,key,site) else ({} if decor else SimBuildings.start(simulation,key,false,site))
 		_clear_site_preview()
 		if not project.is_empty(): has_simulated=true;status.text="已擺放 · 材料已扣除" if decor else "已開工 · 材料已扣除";_refresh_building_world()

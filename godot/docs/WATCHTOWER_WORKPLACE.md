@@ -19,3 +19,5 @@
 原始證據：`WATCHTOWER_WORKPLACE_TESTS.json`、`WORKPLACE_REGISTRY_TESTS.json`。登錄測試中的雙設施與無效工程資料是受控資料檢查，不冒充自然建成兩座建築。本包未重跑八日耐久；四次準時不等於保證所有城鎮全天在崗。
 
 下一包：農田工作場所；舊工程補選址另行處理。
+
+後續更新：符合條件的無座標已完工工程，現可使用 [舊工程補選址](LEGACY_BUILDING_SITE.md)，不重複扣料。

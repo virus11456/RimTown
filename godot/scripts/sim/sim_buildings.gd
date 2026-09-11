@@ -78,3 +78,27 @@ static func start(w: SimWorld,key: String,upgrade: bool=false,site: Vector2i=Vec
 	var result: Dictionary=_execute_start(w,key,upgrade,site)
 	SimGovernance.complete(w,"building",args,costs,not result.is_empty())
 	return result
+
+static func unplaced(w: SimWorld,id: String) -> Dictionary:
+	var matches: Array=w.data.buildings.completed.filter(func(p): return str(p.get("id",""))==id)
+	if id.is_empty() or matches.size()!=1: return {}
+	var p: Dictionary=matches[0];var key: String=str(p.get("buildingKey",""))
+	if key=="housing" or not rules().templates.has(key) or p.get("status","complete")!="complete": return {}
+	if p.get("siteX")!=null or p.get("siteY")!=null: return {}
+	if w.data.buildings.projects.any(func(active): return active.get("upgradeKey")==key): return {}
+	return p
+static func place_completed(w: SimWorld,id: String,site: Vector2i) -> bool:
+	var p:=unplaced(w,id)
+	if p.is_empty() or not BuildingSites.allowed(w.data,site): return false
+	var motion: SimMotion=w.social.observed_motion
+	if motion!=null:
+		for pos in motion.positions.values():
+			if float(pos.x)>=site.x*16-8 and float(pos.x)<(site.x+2)*16+8 and float(pos.y)>=site.y*16-8 and float(pos.y)<(site.y+2)*16+8:
+				w.governance_notice="用地附近有人，請等他離開後再補選址。";return false
+	var args: Array=[id,site.x,site.y]
+	if not SimGovernance.permit(w,"building_site",args,{}): return false
+	# Existing completion, level, costs and effects remain intact. No second build.
+	p.siteX=site.x;p.siteY=site.y
+	SimWorkplaces.sync(w)
+	SimGovernance.complete(w,"building_site",args,{},true)
+	return true

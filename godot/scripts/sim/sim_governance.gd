@@ -33,7 +33,7 @@ static func complete(w: SimWorld,action: String,args: Array,costs: Dictionary,su
 	if not success or direct(w): return
 	var signature:=fingerprint(action,args,costs)
 	for p in book(w).proposals:
-		if p.signature==signature and p.status=="approved": p.status="executed";p.reason="依核准內容執行，公共帳本已記錄。";return
+		if p.signature==signature and p.status=="approved": p.status="executed";p.reason="已依核准位置補選址，未重複扣料或施工。" if action=="building_site" else "依核准內容執行，公共帳本已記錄。";return
 static func cancel(w: SimWorld,id: int) -> void:
 	for p in book(w).proposals:
 		if int(p.id)==id and p.status in ["pending","approved"]: p.status="cancelled";p.reason="旅人撤回。";return
@@ -81,6 +81,7 @@ static func execute(w: SimWorld,id: int) -> bool:
 			"remove_staff": return SimProcessing.remove_worker(w,a[0])
 			"transfer": return SimProcessing.transfer(w,a[0],a[1],float(a[2]),a[3])
 			"order": return SimProcessing.fulfill(w,a[0])
+			"building_site": return SimBuildings.place_completed(w,str(a[0]),Vector2i(int(a[1]),int(a[2])))
 			"building": return not SimBuildings.start(w,a[0],a[1],Vector2i(int(a[2]),int(a[3]))).is_empty()
 			"industry": return SimIndustry.choose(w,a[0])
 			"industry_upgrade": return SimIndustry.upgrade(w,a[0])
@@ -107,6 +108,10 @@ static func describe(w: SimWorld,p: Dictionary) -> String:
 	var a: Array=p.args
 	match p.action:
 		"career_materials": return str(SimCareers.JOBS.get(a[0],{}).get("name",a[0]))+" · 單次值勤材料（完成才扣料）"
+		"building_site":
+			var matches: Array=w.data.buildings.completed.filter(func(item): return str(item.get("id",""))==str(a[0]))
+			var name: String=str(matches[0].get("name","已完工工程")) if matches.size()==1 else "已完工工程"
+			return name+" · 補選址 (%d, %d)，不重複扣料"%[int(a[1]),int(a[2])]
 		"building": return str(SimBuildings.rules().templates.get(a[0],{}).get("name",a[0]))+("升級" if a[1] else " · 選址 (%d, %d)"%[a[2],a[3]])
 		"industry","industry_upgrade": return str(SimIndustry.rules().industries.get(a[0],{}).get("name",a[0]))
 		"factory": return str(SimProcessing.rules().get(a[0],{}).get("name",a[0]))
