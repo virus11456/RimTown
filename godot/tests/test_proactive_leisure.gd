@@ -5,7 +5,7 @@ func run() -> void:
 	var w: SimWorld=app.simulation;var initial:=w.snapshot();app.event_comment_transport=mock
 	for heart in [false,true]:
 		for stale in [false,true]:
-			w.load_snapshot(initial);w.quest_balance.leisure_plans_enabled=true;SimLeisurePlan.tick(w)
+			app._load_document(JSON.stringify(initial),"proactive leisure fixture");w.quest_balance.leisure_plans_enabled=true;SimLeisurePlan.tick(w)
 			w.event_comments_online=true;w.heart_events_online=true;app.chat_offline=false
 			var item:=event(w,heart);var before: Dictionary=SimLeisurePlan.plans(w).duplicate(true)
 			reply={"ok":true,"data":{"reply":"今天還沒完成休閒，改天要不要見面？\nEFFECTS: {\"invitation\":true}"}}

@@ -1,0 +1,150 @@
+{
+  "checks": 1301,
+  "failures": [],
+  "new_suite": {
+    "checks": 306,
+    "failures": [],
+    "scope": "two town fixtures; real app await callbacks with mock AI in free chat, event and heart channels; cancel/pause/resume/arrival/reschedule/peer needs/shelter/player invitation/workplace changes, stable countdown, reload and town switch; no production AI or natural motion endurance"
+  },
+  "regressions": [
+    {
+      "test": "player_chat",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 165,
+        "failures": [],
+        "scope": "32 source parser/core-effects scenarios, memories/history/dedupe/RNG; invalid reply rejection and bounded effect safety; replan/heart events excluded"
+      },
+      "tail": ""
+    },
+    {
+      "test": "player_chat_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 33,
+        "failures": [],
+        "scope": "mock transport only: context, draft preservation, double submit, success, quota/invalid failures, stale town response, mobile UI and save resume; no production API"
+      },
+      "tail": ""
+    },
+    {
+      "test": "chat_schedule_freshness",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 23,
+        "failures": [],
+        "scope": "mock free-chat app callback, cancellation/day/settings/appointment/workplace changes, whole-world no-op including intent, draft/retry notice, stable facts accept reply, no automatic retry and phone width; no production AI"
+      },
+      "tail": ""
+    },
+    {
+      "test": "event_comments",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 96,
+        "failures": [],
+        "scope": "preferred speakers, once-only apply, persisted pending queue, local/default and mock AI success/failure, stale town/death, completion/combo order, no upgrades; no production requests"
+      },
+      "tail": ""
+    },
+    {
+      "test": "heart_events",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 528,
+        "failures": [],
+        "scope": "48 original threshold/order/busy cases and 72 original fallback/job/trait speech, memory, relationship and log cases; no production API"
+      },
+      "tail": ""
+    },
+    {
+      "test": "heart_events_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 35,
+        "failures": [],
+        "scope": "offline and online chat callbacks, daily scanning, queue resume, milestone mobile UI, mock AI success/quota, stale town, death, four sequential events and fired reload; no production service"
+      },
+      "tail": ""
+    },
+    {
+      "test": "proactive_appointments",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 34,
+        "failures": [],
+        "scope": "mock event-comment and heart-event callbacks, actual list/accept UI and reload; malformed metadata, exact-once, late conflict, town switch and offline fallback; no production AI request"
+      },
+      "initial_run": {
+        "test": "proactive_appointments",
+        "timeout": true,
+        "tail": "Godot Engine v4.7.1.stable.official.a13da4feb - https://godotengine.org\n\nERROR: Condition \"ret != noErr\" is true. Returning: \"\"\n   at: get_system_ca_certificates (platform/macos/os_macos.mm:1035)\nSCRIPT ERROR: Invalid access to property or key 'state' on a base object of type 'Dictionary'.\n          at: run (res://tests/test_proactive_appointments.gd:30)\n          GDScript backtrace (most recent call first):\n              [0] run (res://tests/test_proactive_appointments.gd:30)\n              [1] settle (res://tests/test_player_chat_ui.gd:38)\n"
+      }
+    },
+    {
+      "test": "proactive_leisure",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 24,
+        "failures": [],
+        "scope": "event and heart app callbacks with mock AI, prompt context/budget, unchanged invitation behavior, leisure changed while pending discards response and effects; no production AI or semantic guarantee"
+      },
+      "initial_run": {
+        "test": "proactive_leisure",
+        "exit": 1,
+        "script_error": false,
+        "report": {
+          "checks": 24,
+          "failures": [
+            "unchanged context preserves invitation path",
+            "unchanged context preserves invitation path"
+          ],
+          "scope": "event and heart app callbacks with mock AI, prompt context/budget, unchanged invitation behavior, leisure changed while pending discards response and effects; no production AI or semantic guarantee"
+        },
+        "tail": "Godot Engine v4.7.1.stable.official.a13da4feb - https://godotengine.org\n\nERROR: Condition \"ret != noErr\" is true. Returning: \"\"\n   at: get_system_ca_certificates (platform/macos/os_macos.mm:1035)\n{\"checks\":24,\"failures\":[\"unchanged context preserves invitation path\",\"unchanged context preserves invitation path\"],\"scope\":\"event and heart app callbacks with mock AI, prompt context/budget, unchanged invitation behavior, leisure changed while pending discards response and effects; no production AI or semantic guarantee\"}\n"
+      }
+    },
+    {
+      "test": "leisure_chat",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 22,
+        "failures": [],
+        "scope": "all plan states, source prompt context, no memo execution, only history mutation, duplicate/reload and stale/dead/disabled guards; no real model output verification"
+      },
+      "tail": ""
+    },
+    {
+      "test": "leisure_chat_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 10,
+        "completed_resident": "wang_li",
+        "failures": [],
+        "scope": "real local inquiry button, draft/dedup/busy guards, mock AI prompt transport, unmodified residents actual motion to completion, phone chat and native save; no production AI output guarantee"
+      },
+      "tail": ""
+    },
+    {
+      "test": "social_schedule_conflicts",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 25,
+        "failures": [],
+        "scope": "pending and departed NPC pair vs confirmed future player interval, both memories/reasons, no reward/deadline mutation, old command cleanup, terminal replay/reload, proposal vs consent, exact boundary, unrelated peer and missed gathering"
+      },
+      "tail": ""
+    }
+  ]
+}
