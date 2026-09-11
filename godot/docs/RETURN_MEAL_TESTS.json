@@ -1,0 +1,5 @@
+{
+  "checks": 23,
+  "failures": [],
+  "scope": "controlled return metadata and meal state, finite allowance, repeated calls, invalid or expired task and no resource/needs/position mutation; not natural arrival evidence"
+}

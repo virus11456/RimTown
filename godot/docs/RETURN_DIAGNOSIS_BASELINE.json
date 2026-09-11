@@ -1,0 +1,928 @@
+{
+  "checks": 1,
+  "failures": [],
+  "rows": [
+    {
+      "activity": "planned_leisure",
+      "arrived": false,
+      "clock": {
+        "day": 2.0,
+        "hour": 16,
+        "minute": 0,
+        "season": "春季",
+        "year": 1.0
+      },
+      "location": "park",
+      "motion": {
+        "_directedGoal": {
+          "appointment": true,
+          "location": "park",
+          "route_key": "park",
+          "x": 152.0,
+          "y": 400.0
+        },
+        "_inStuck": 0,
+        "_pathIdx": 2,
+        "_pathWaypoints": [],
+        "activity": "planned_leisure",
+        "dir4": "up",
+        "doorPhase": null,
+        "facing": -1,
+        "targetX": 152.0,
+        "targetY": 400.0,
+        "walkStep": 0,
+        "walking": false,
+        "x": 152.0,
+        "y": 400.0
+      },
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 22.4,
+        "recreation": 0.0,
+        "rest": 31.3000000000001,
+        "social": 0.0
+      },
+      "return": {},
+      "tick": 136
+    },
+    {
+      "activity": "planned_leisure",
+      "arrived": false,
+      "clock": {
+        "day": 2.0,
+        "hour": 16,
+        "minute": 15,
+        "season": "春季",
+        "year": 1.0
+      },
+      "location": "park",
+      "motion": {
+        "_directedGoal": {
+          "appointment": true,
+          "location": "park",
+          "route_key": "park",
+          "x": 152.0,
+          "y": 400.0
+        },
+        "_inStuck": 0,
+        "_pathIdx": 2,
+        "_pathWaypoints": [],
+        "activity": "planned_leisure",
+        "dir4": "up",
+        "doorPhase": null,
+        "facing": -1,
+        "targetX": 152.0,
+        "targetY": 400.0,
+        "walkStep": 0,
+        "walking": false,
+        "x": 152.0,
+        "y": 400.0
+      },
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 20.4,
+        "recreation": 0.0,
+        "rest": 29.8000000000001,
+        "social": 0.0
+      },
+      "return": {},
+      "tick": 137
+    },
+    {
+      "activity": "planned_leisure",
+      "arrived": false,
+      "clock": {
+        "day": 2.0,
+        "hour": 16,
+        "minute": 30,
+        "season": "春季",
+        "year": 1.0
+      },
+      "location": "park",
+      "motion": {
+        "_directedGoal": {
+          "appointment": false,
+          "location": "park",
+          "route_key": "park",
+          "x": 176.0,
+          "y": 408.0
+        },
+        "_inStuck": 0,
+        "_pathIdx": 1,
+        "_pathWaypoints": [],
+        "activity": "planned_leisure",
+        "dir4": "side",
+        "doorPhase": null,
+        "facing": -1,
+        "targetX": 176.0,
+        "targetY": 408.0,
+        "walkStep": 0,
+        "walking": false,
+        "x": 176.0,
+        "y": 408.0
+      },
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 18.4,
+        "recreation": 15.0,
+        "rest": 28.3000000000001,
+        "social": 0.0
+      },
+      "return": {
+        "home": "residential_south",
+        "required_ticks": 7,
+        "signature": "hangout:138",
+        "until": 145
+      },
+      "tick": 138
+    },
+    {
+      "activity": "heading_home",
+      "arrived": false,
+      "clock": {
+        "day": 2.0,
+        "hour": 16,
+        "minute": 45,
+        "season": "春季",
+        "year": 1.0
+      },
+      "location": "residential_south",
+      "motion": {
+        "_directedGoal": {
+          "appointment": false,
+          "location": "residential_south",
+          "route_key": "residential_south_1",
+          "x": 424.0,
+          "y": 768.0
+        },
+        "_inStuck": 0,
+        "_pathIdx": 1,
+        "_pathWaypoints": [
+          {
+            "x": 184.0,
+            "y": 408.0
+          },
+          {
+            "x": 360.0,
+            "y": 584.0
+          },
+          {
+            "x": 360.0,
+            "y": 808.0
+          },
+          {
+            "x": 424.0,
+            "y": 808.0
+          }
+        ],
+        "activity": "heading_home",
+        "dir4": "side",
+        "doorPhase": "approaching",
+        "doorWaypoint": {
+          "x": 424.0,
+          "y": 808.0
+        },
+        "facing": 1,
+        "finalTarget": {
+          "x": 424.0,
+          "y": 768.0
+        },
+        "targetX": 424.0,
+        "targetY": 808.0,
+        "walkStep": 479,
+        "walking": true,
+        "x": 280.518096923828,
+        "y": 504.518096923828
+      },
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 16.4,
+        "recreation": 14.2,
+        "rest": 26.8000000000001,
+        "social": 0.0
+      },
+      "return": {
+        "home": "residential_south",
+        "required_ticks": 7,
+        "signature": "hangout:138",
+        "until": 145
+      },
+      "tick": 139
+    },
+    {
+      "activity": "heading_home",
+      "arrived": false,
+      "clock": {
+        "day": 2.0,
+        "hour": 17,
+        "minute": 0,
+        "season": "春季",
+        "year": 1.0
+      },
+      "location": "residential_south",
+      "motion": {
+        "_directedGoal": {
+          "appointment": false,
+          "location": "residential_south",
+          "route_key": "residential_south_1",
+          "x": 424.0,
+          "y": 768.0
+        },
+        "_inStuck": 0,
+        "_pathIdx": 2,
+        "_pathWaypoints": [
+          {
+            "x": 184.0,
+            "y": 408.0
+          },
+          {
+            "x": 360.0,
+            "y": 584.0
+          },
+          {
+            "x": 360.0,
+            "y": 808.0
+          },
+          {
+            "x": 424.0,
+            "y": 808.0
+          }
+        ],
+        "activity": "heading_home",
+        "dir4": "down",
+        "doorPhase": "approaching",
+        "doorWaypoint": {
+          "x": 424.0,
+          "y": 808.0
+        },
+        "facing": 1,
+        "finalTarget": {
+          "x": 424.0,
+          "y": 768.0
+        },
+        "targetX": 424.0,
+        "targetY": 808.0,
+        "walkStep": 958,
+        "walking": true,
+        "x": 360.0,
+        "y": 616.098693847656
+      },
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 14.4,
+        "recreation": 13.4,
+        "rest": 25.3000000000001,
+        "social": 0.0
+      },
+      "return": {
+        "home": "residential_south",
+        "required_ticks": 7,
+        "signature": "hangout:138",
+        "until": 145
+      },
+      "tick": 140
+    },
+    {
+      "activity": "eating",
+      "arrived": false,
+      "clock": {
+        "day": 2.0,
+        "hour": 17,
+        "minute": 15,
+        "season": "春季",
+        "year": 1.0
+      },
+      "location": "tavern",
+      "motion": {
+        "_directedGoal": {
+          "appointment": false,
+          "location": "tavern",
+          "route_key": "tavern",
+          "x": 360.0,
+          "y": 416.0
+        },
+        "_inStuck": 59,
+        "_pathIdx": 2,
+        "_pathWaypoints": [],
+        "activity": "eating",
+        "dir4": "up",
+        "doorPhase": "entering",
+        "doorWaypoint": null,
+        "facing": -1,
+        "finalTarget": null,
+        "targetX": 360.0,
+        "targetY": 416.0,
+        "walkStep": 1435,
+        "walking": true,
+        "x": 371.330902099609,
+        "y": 478.320556640625
+      },
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 34.4,
+        "recreation": 12.6,
+        "rest": 23.8000000000001,
+        "social": 0.0
+      },
+      "return": {
+        "home": "residential_south",
+        "required_ticks": 7,
+        "signature": "hangout:138",
+        "until": 145
+      },
+      "tick": 141
+    },
+    {
+      "activity": "heading_home",
+      "arrived": false,
+      "clock": {
+        "day": 2.0,
+        "hour": 17,
+        "minute": 30,
+        "season": "春季",
+        "year": 1.0
+      },
+      "location": "residential_south",
+      "motion": {
+        "_directedGoal": {
+          "appointment": false,
+          "location": "residential_south",
+          "route_key": "residential_south_1",
+          "x": 424.0,
+          "y": 768.0
+        },
+        "_inStuck": 0,
+        "_pathIdx": 1,
+        "_pathWaypoints": [
+          {
+            "x": 376.0,
+            "y": 504.0
+          },
+          {
+            "x": 376.0,
+            "y": 680.0
+          },
+          {
+            "x": 360.0,
+            "y": 696.0
+          },
+          {
+            "x": 360.0,
+            "y": 808.0
+          },
+          {
+            "x": 424.0,
+            "y": 808.0
+          }
+        ],
+        "activity": "heading_home",
+        "destDoor": null,
+        "dir4": "down",
+        "doorPhase": "approaching",
+        "doorWaypoint": {
+          "x": 424.0,
+          "y": 808.0
+        },
+        "facing": 1,
+        "finalTarget": {
+          "x": 424.0,
+          "y": 768.0
+        },
+        "targetX": 424.0,
+        "targetY": 808.0,
+        "walkStep": 1912,
+        "walking": true,
+        "x": 376.0,
+        "y": 608.995727539062
+      },
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 32.4,
+        "recreation": 11.8,
+        "rest": 22.3000000000001,
+        "social": 0.0
+      },
+      "return": {
+        "home": "residential_south",
+        "required_ticks": 7,
+        "signature": "hangout:138",
+        "until": 145
+      },
+      "tick": 142
+    },
+    {
+      "activity": "heading_home",
+      "arrived": false,
+      "clock": {
+        "day": 2.0,
+        "hour": 17,
+        "minute": 45,
+        "season": "春季",
+        "year": 1.0
+      },
+      "location": "residential_south",
+      "motion": {
+        "_directedGoal": {
+          "appointment": false,
+          "location": "residential_south",
+          "route_key": "residential_south_1",
+          "x": 424.0,
+          "y": 768.0
+        },
+        "_inStuck": 144,
+        "_pathIdx": 3,
+        "_pathWaypoints": [
+          {
+            "x": 376.0,
+            "y": 504.0
+          },
+          {
+            "x": 376.0,
+            "y": 680.0
+          },
+          {
+            "x": 360.0,
+            "y": 696.0
+          },
+          {
+            "x": 360.0,
+            "y": 808.0
+          },
+          {
+            "x": 424.0,
+            "y": 808.0
+          }
+        ],
+        "activity": "heading_home",
+        "destDoor": null,
+        "dir4": "down",
+        "doorPhase": "approaching",
+        "doorWaypoint": {
+          "x": 424.0,
+          "y": 808.0
+        },
+        "facing": -1,
+        "finalTarget": {
+          "x": 424.0,
+          "y": 768.0
+        },
+        "targetX": 424.0,
+        "targetY": 808.0,
+        "walkStep": 2390,
+        "walking": true,
+        "x": 360.0,
+        "y": 747.297912597656
+      },
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 30.4,
+        "recreation": 11.0,
+        "rest": 20.8000000000001,
+        "social": 0.0
+      },
+      "return": {
+        "home": "residential_south",
+        "required_ticks": 7,
+        "signature": "hangout:138",
+        "until": 145
+      },
+      "tick": 143
+    },
+    {
+      "activity": "heading_home",
+      "arrived": false,
+      "clock": {
+        "day": 2.0,
+        "hour": 18,
+        "minute": 0,
+        "season": "春季",
+        "year": 1.0
+      },
+      "location": "residential_south",
+      "motion": {
+        "_directedGoal": {
+          "appointment": false,
+          "location": "residential_south",
+          "route_key": "residential_south_1",
+          "x": 424.0,
+          "y": 768.0
+        },
+        "_inStuck": 0,
+        "_pathIdx": 4,
+        "_pathWaypoints": [],
+        "activity": "heading_home",
+        "destDoor": null,
+        "dir4": "up",
+        "doorPhase": "entering",
+        "doorWaypoint": null,
+        "facing": 1,
+        "finalTarget": null,
+        "targetX": 424.0,
+        "targetY": 768.0,
+        "walkStep": 2868,
+        "walking": true,
+        "x": 424.0,
+        "y": 787.900817871094
+      },
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 28.4,
+        "recreation": 10.2,
+        "rest": 19.3000000000001,
+        "social": 0.0
+      },
+      "return": {
+        "home": "residential_south",
+        "required_ticks": 7,
+        "signature": "hangout:138",
+        "until": 145
+      },
+      "tick": 144
+    },
+    {
+      "activity": "heading_home",
+      "arrived": true,
+      "clock": {
+        "day": 2.0,
+        "hour": 18,
+        "minute": 15,
+        "season": "春季",
+        "year": 1.0
+      },
+      "location": "residential_south",
+      "motion": {
+        "_directedGoal": {
+          "appointment": false,
+          "location": "residential_south",
+          "route_key": "residential_south_1",
+          "x": 424.0,
+          "y": 768.0
+        },
+        "_inStuck": 0,
+        "_pathIdx": 4,
+        "_pathWaypoints": [],
+        "activity": "heading_home",
+        "destDoor": null,
+        "dir4": "up",
+        "doorPhase": null,
+        "doorWaypoint": null,
+        "facing": 1,
+        "finalTarget": null,
+        "targetX": 424.0,
+        "targetY": 768.0,
+        "walkStep": 0,
+        "walking": false,
+        "x": 424.0,
+        "y": 768.0
+      },
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 26.4,
+        "recreation": 9.4,
+        "rest": 17.8000000000001,
+        "social": 0.0
+      },
+      "return": {},
+      "tick": 145
+    },
+    {
+      "activity": "heading_home",
+      "arrived": true,
+      "clock": {
+        "day": 2.0,
+        "hour": 18,
+        "minute": 30,
+        "season": "春季",
+        "year": 1.0
+      },
+      "location": "residential_south",
+      "motion": {
+        "_directedGoal": {
+          "appointment": false,
+          "location": "residential_south",
+          "route_key": "residential_south_1",
+          "x": 424.0,
+          "y": 768.0
+        },
+        "_inStuck": 0,
+        "_pathIdx": 4,
+        "_pathWaypoints": [],
+        "activity": "heading_home",
+        "destDoor": null,
+        "dir4": "up",
+        "doorPhase": null,
+        "doorWaypoint": null,
+        "facing": 1,
+        "finalTarget": null,
+        "targetX": 424.0,
+        "targetY": 768.0,
+        "walkStep": 0,
+        "walking": false,
+        "x": 424.0,
+        "y": 768.0
+      },
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 24.4,
+        "recreation": 8.59999999999999,
+        "rest": 16.3000000000001,
+        "social": 0.0
+      },
+      "return": {},
+      "tick": 146
+    },
+    {
+      "activity": "heading_home",
+      "arrived": true,
+      "clock": {
+        "day": 2.0,
+        "hour": 18,
+        "minute": 45,
+        "season": "春季",
+        "year": 1.0
+      },
+      "location": "residential_south",
+      "motion": {
+        "_directedGoal": {
+          "appointment": false,
+          "location": "residential_south",
+          "route_key": "residential_south_1",
+          "x": 424.0,
+          "y": 768.0
+        },
+        "_inStuck": 0,
+        "_pathIdx": 4,
+        "_pathWaypoints": [],
+        "activity": "heading_home",
+        "destDoor": null,
+        "dir4": "up",
+        "doorPhase": null,
+        "doorWaypoint": null,
+        "facing": 1,
+        "finalTarget": null,
+        "targetX": 424.0,
+        "targetY": 768.0,
+        "walkStep": 0,
+        "walking": false,
+        "x": 424.0,
+        "y": 768.0
+      },
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 22.4,
+        "recreation": 7.79999999999999,
+        "rest": 14.8000000000001,
+        "social": 0.0
+      },
+      "return": {},
+      "tick": 147
+    },
+    {
+      "activity": "sleeping",
+      "arrived": true,
+      "clock": {
+        "day": 2.0,
+        "hour": 19,
+        "minute": 0,
+        "season": "春季",
+        "year": 1.0
+      },
+      "location": "residential_south",
+      "motion": {
+        "_directedGoal": {
+          "appointment": false,
+          "location": "residential_south",
+          "route_key": "residential_south_1",
+          "x": 424.0,
+          "y": 768.0
+        },
+        "_inStuck": 0,
+        "_pathIdx": 4,
+        "_pathWaypoints": [],
+        "activity": "sleeping",
+        "destDoor": null,
+        "dir4": "up",
+        "doorPhase": null,
+        "doorWaypoint": null,
+        "facing": 1,
+        "finalTarget": null,
+        "targetX": 424.0,
+        "targetY": 768.0,
+        "walkStep": 0,
+        "walking": false,
+        "x": 424.0,
+        "y": 768.0
+      },
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 20.4,
+        "recreation": 6.99999999999999,
+        "rest": 22.8000000000001,
+        "social": 0.0
+      },
+      "return": {},
+      "tick": 148
+    },
+    {
+      "activity": "sleeping",
+      "arrived": true,
+      "clock": {
+        "day": 2.0,
+        "hour": 19,
+        "minute": 15,
+        "season": "春季",
+        "year": 1.0
+      },
+      "location": "residential_south",
+      "motion": {
+        "_directedGoal": {
+          "appointment": false,
+          "location": "residential_south",
+          "route_key": "residential_south_1",
+          "x": 424.0,
+          "y": 768.0
+        },
+        "_inStuck": 0,
+        "_pathIdx": 4,
+        "_pathWaypoints": [],
+        "activity": "sleeping",
+        "destDoor": null,
+        "dir4": "up",
+        "doorPhase": null,
+        "doorWaypoint": null,
+        "facing": 1,
+        "finalTarget": null,
+        "targetX": 424.0,
+        "targetY": 768.0,
+        "walkStep": 0,
+        "walking": false,
+        "x": 424.0,
+        "y": 768.0
+      },
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 18.4,
+        "recreation": 6.19999999999999,
+        "rest": 30.8000000000001,
+        "social": 0.0
+      },
+      "return": {},
+      "tick": 149
+    },
+    {
+      "activity": "sleeping",
+      "arrived": true,
+      "clock": {
+        "day": 2.0,
+        "hour": 19,
+        "minute": 30,
+        "season": "春季",
+        "year": 1.0
+      },
+      "location": "residential_south",
+      "motion": {
+        "_directedGoal": {
+          "appointment": false,
+          "location": "residential_south",
+          "route_key": "residential_south_1",
+          "x": 424.0,
+          "y": 768.0
+        },
+        "_inStuck": 0,
+        "_pathIdx": 4,
+        "_pathWaypoints": [],
+        "activity": "sleeping",
+        "destDoor": null,
+        "dir4": "up",
+        "doorPhase": null,
+        "doorWaypoint": null,
+        "facing": 1,
+        "finalTarget": null,
+        "targetX": 424.0,
+        "targetY": 768.0,
+        "walkStep": 0,
+        "walking": false,
+        "x": 424.0,
+        "y": 768.0
+      },
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 16.4,
+        "recreation": 5.4,
+        "rest": 38.8000000000001,
+        "social": 0.0
+      },
+      "return": {},
+      "tick": 150
+    },
+    {
+      "activity": "sleeping",
+      "arrived": true,
+      "clock": {
+        "day": 2.0,
+        "hour": 19,
+        "minute": 45,
+        "season": "春季",
+        "year": 1.0
+      },
+      "location": "residential_south",
+      "motion": {
+        "_directedGoal": {
+          "appointment": false,
+          "location": "residential_south",
+          "route_key": "residential_south_1",
+          "x": 424.0,
+          "y": 768.0
+        },
+        "_inStuck": 0,
+        "_pathIdx": 4,
+        "_pathWaypoints": [],
+        "activity": "sleeping",
+        "destDoor": null,
+        "dir4": "up",
+        "doorPhase": null,
+        "doorWaypoint": null,
+        "facing": 1,
+        "finalTarget": null,
+        "targetX": 424.0,
+        "targetY": 768.0,
+        "walkStep": 0,
+        "walking": false,
+        "x": 424.0,
+        "y": 768.0
+      },
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 14.4,
+        "recreation": 4.6,
+        "rest": 46.8000000000001,
+        "social": 0.0
+      },
+      "return": {},
+      "tick": 151
+    },
+    {
+      "activity": "eating",
+      "arrived": true,
+      "clock": {
+        "day": 2.0,
+        "hour": 20,
+        "minute": 0,
+        "season": "春季",
+        "year": 1.0
+      },
+      "location": "residential_south",
+      "motion": {
+        "_directedGoal": {
+          "appointment": false,
+          "location": "residential_south",
+          "route_key": "residential_south_1",
+          "x": 424.0,
+          "y": 768.0
+        },
+        "_inStuck": 0,
+        "_pathIdx": 4,
+        "_pathWaypoints": [],
+        "activity": "eating",
+        "destDoor": null,
+        "dir4": "up",
+        "doorPhase": null,
+        "doorWaypoint": null,
+        "facing": 1,
+        "finalTarget": null,
+        "targetX": 424.0,
+        "targetY": 768.0,
+        "walkStep": 0,
+        "walking": false,
+        "x": 424.0,
+        "y": 768.0
+      },
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 34.4,
+        "recreation": 3.8,
+        "rest": 45.3000000000001,
+        "social": 0.0
+      },
+      "return": {},
+      "tick": 152
+    }
+  ]
+}

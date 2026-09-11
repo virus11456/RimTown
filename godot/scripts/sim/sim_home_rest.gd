@@ -54,3 +54,28 @@ static func after_meeting(w: SimWorld,a: Dictionary,place: String) -> void:
 	if ticks>=96: return
 	a._hangoutHome={"home":a.homeLocation,"until":int(w.data.tickCount)+ticks,"required_ticks":ticks,"signature":"hangout:"+str(w.data.tickCount)}
 	a._locationStayRemaining=0
+
+static func remaining_distance(m: SimMotion,a: Dictionary) -> float:
+	if m==null or not m.positions.has(str(a.id)): return INF
+	var home:=m.layout._house_id(str(a.id),str(a.homeLocation));var house: Dictionary=m.layout.houses.get(home,{})
+	if house.is_empty(): return INF
+	var p: Dictionary=m.positions[str(a.id)];var start:=Vector2(p.x,p.y);var length:=0.0
+	var exit_door: Variant=m.door(m.inside(start),str(a.id))
+	if exit_door!=null:
+		var exit_point:=Vector2(exit_door.x,exit_door.y)
+		length+=SimHangoutRoute.segment(m,start,exit_point);start=exit_point
+	var entry:=Vector2(house.doorPixelX,house.doorPixelY);var offset:=str(a.id).unicode_at(0)%4
+	var goal:=m.layout._nearest(Vector2(house.interiorX+(offset%2-.5)*16,house.interiorY+(floori(offset/2.0)-.5)*16))
+	return length+SimHangoutRoute.segment(m,start,entry)+SimHangoutRoute.segment(m,entry,goal)
+static func resume_after_meal(w: SimWorld,a: Dictionary) -> void:
+	var m: SimMotion=w.social.observed_motion;var task: Dictionary=a.get("_hangoutHome",{})
+	var now:=int(w.data.tickCount)
+	if m==null or not m.stable_routes or a.get("isPlayer",false) or a.get("isDead",false) or a.has("_raidShelterUntil") or task.is_empty(): return
+	if task.get("meal_replanned",false) or task.get("home")!=a.homeLocation or now>=int(task.get("until",0)) or arrived(w,a): return
+	if a.activity!="eating" or float(a.needs.hunger)<15: return
+	var length:=remaining_distance(m,a)
+	if is_inf(length): return
+	var original:=int(task.until);var needed:=now+ceili(length/m.travel_budget())+1
+	task.meal_replanned=true;task.meal_resumed_tick=now;task.original_until=original
+	task.until=mini(original+4,maxi(original,needed))
+	task.meal_allowance_ticks=int(task.until)-original

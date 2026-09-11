@@ -1,0 +1,61 @@
+{
+  "arrival_tick": 145,
+  "checks": 6,
+  "failures": [],
+  "max_step": 0.958069562911987,
+  "meal_allowance_ticks": 2,
+  "original_deadline": 145.0,
+  "revised_deadline": 147,
+  "rows": [
+    {
+      "activity": "heading_home",
+      "arrived": false,
+      "deadline": 145,
+      "hunger": 16.4,
+      "tick": 139
+    },
+    {
+      "activity": "heading_home",
+      "arrived": false,
+      "deadline": 145,
+      "hunger": 14.4,
+      "tick": 140
+    },
+    {
+      "activity": "eating",
+      "arrived": false,
+      "deadline": 145,
+      "hunger": 34.4,
+      "tick": 141
+    },
+    {
+      "activity": "heading_home",
+      "arrived": false,
+      "deadline": 147,
+      "hunger": 32.4,
+      "tick": 142.0
+    },
+    {
+      "activity": "heading_home",
+      "arrived": false,
+      "deadline": 147,
+      "hunger": 30.4,
+      "tick": 143
+    },
+    {
+      "activity": "heading_home",
+      "arrived": false,
+      "deadline": 147,
+      "hunger": 28.4,
+      "tick": 144
+    },
+    {
+      "activity": "heading_home",
+      "arrived": true,
+      "deadline": 147,
+      "hunger": 26.4,
+      "tick": 145
+    }
+  ],
+  "scope": "unmodified natural first-meeting snapshot plus remaining frames, actual app ticks and motion, meal replan reload; no edited needs, jobs or positions"
+}
