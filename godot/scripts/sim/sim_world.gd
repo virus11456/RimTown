@@ -145,7 +145,8 @@ func _update(id: String) -> void:
 	var run: Dictionary=runtime[id]
 	var hour := int(data.clock.hour)
 	a.erase("_appointmentDestination");a.erase("_leisureDestination")
-	var commute:=SimCommute.plan(self,a)
+	var meal_place:=SimCommute.meal_place(self,a)
+	var commute:=SimCommute.plan(self,a) if meal_place.is_empty() else {}
 	SimHomeRest.resume_after_meal(self,a)
 	if a.has("_hangoutHome") and (int(a._hangoutHome.until)<=int(data.tickCount) or a._hangoutHome.home!=a.homeLocation or SimHomeRest.arrived(self,a)): a.erase("_hangoutHome")
 	var home_return:=SimHomeRest.plan(self,a)
@@ -155,6 +156,7 @@ func _update(id: String) -> void:
 	if a.get("isPlayer",false): _player_activity(a,hour)
 	elif a.has("_raidShelterUntil"):
 		a.activity="sleeping";a.currentLocation=a.homeLocation;run.targetLocation=null
+	elif not meal_place.is_empty(): a.activity="eating"
 	elif not commute.is_empty(): a.activity="commuting"
 	elif SimAppointments.directing(self,id): a.activity="appointment_wait" if SimAppointments.current(self).state=="waiting" else "appointment_travel"
 	elif not home_return.is_empty(): a.activity="heading_home"
@@ -182,6 +184,9 @@ func _update(id: String) -> void:
 		bonus=floor(thoughts+.5)+floor((float(a.get("attributes",{}).get("grit",5))-5)*.8+.5)
 	a.mood=clampf(50+_trait_sum(a,"mood_base")+SimNeeds.mood(a.needs)+run.moodModifier+bonus,-100,100)
 	if a.get("isPlayer",false): return
+	if not meal_place.is_empty():
+		a.currentLocation=meal_place;run.targetLocation=null;a._locationStayRemaining=0
+		return
 	if not commute.is_empty():
 		a.currentLocation=commute.place;a._commuteDestination=commute.place;a._commuteDay=SimClock.total_days(data.clock);run.targetLocation=null;a._locationStayRemaining=0
 		return
