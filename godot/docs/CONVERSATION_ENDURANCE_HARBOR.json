@@ -1,0 +1,351 @@
+{
+  "accepted_cards": 8,
+  "bad_sleep": [],
+  "checks": 420,
+  "complete": 360,
+  "counters": {
+    "accepted": 89,
+    "event": 1,
+    "free": 124,
+    "heart": 3,
+    "reloads": 3,
+    "retries": 38,
+    "stale": 39
+  },
+  "executed": 72,
+  "failures": [],
+  "invalid_steps": [],
+  "max_npc_step": 0.999914765357971,
+  "max_player_step": 1.20001649856567,
+  "motion_frames": 368640,
+  "negative_stock": [],
+  "paid": {
+    "stone": 15.0,
+    "tools": 2.0,
+    "wood": 10.0
+  },
+  "physical_meetings": 1,
+  "requests": 166,
+  "samples": [
+    {
+      "changes": "玩家見面約定已更新。",
+      "channel": "free",
+      "stale": false,
+      "tick": 2
+    },
+    {
+      "changes": "班表或實際上工狀態已更新。",
+      "channel": "free",
+      "stale": true,
+      "tick": 8
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 14
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 20
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 26
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 32
+    },
+    {
+      "changes": "班表或實際上工狀態已更新；居民同行安排或目前活動／需求已更新。",
+      "channel": "free",
+      "stale": true,
+      "tick": 38
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 44
+    },
+    {
+      "changes": "居民同行安排或目前活動／需求已更新。",
+      "channel": "free",
+      "stale": true,
+      "tick": 50
+    },
+    {
+      "changes": "休閒安排或完成紀錄已更新；居民同行安排或目前活動／需求已更新。",
+      "channel": "free",
+      "stale": true,
+      "tick": 56
+    },
+    {
+      "changes": "居民同行安排或目前活動／需求已更新。",
+      "channel": "free",
+      "stale": true,
+      "tick": 62
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 68
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 74
+    },
+    {
+      "changes": "居民同行安排或目前活動／需求已更新。",
+      "channel": "free",
+      "stale": true,
+      "tick": 80
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 86
+    },
+    {
+      "changes": "居民同行安排或目前活動／需求已更新。",
+      "channel": "free",
+      "stale": true,
+      "tick": 92
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 98
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 104
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 110
+    },
+    {
+      "changes": "班表或實際上工狀態已更新。",
+      "channel": "free",
+      "stale": true,
+      "tick": 116
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 122
+    },
+    {
+      "changes": "班表或實際上工狀態已更新；居民同行安排或目前活動／需求已更新。",
+      "channel": "free",
+      "stale": true,
+      "tick": 128
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 134
+    },
+    {
+      "changes": "居民同行安排或目前活動／需求已更新。",
+      "channel": "free",
+      "stale": true,
+      "tick": 140
+    },
+    {
+      "changes": "玩家見面約定已更新。",
+      "channel": "free",
+      "stale": false,
+      "tick": 146
+    },
+    {
+      "changes": "居民同行安排或目前活動／需求已更新。",
+      "channel": "free",
+      "stale": true,
+      "tick": 152
+    },
+    {
+      "changes": "",
+      "channel": "heart",
+      "stale": false,
+      "tick": 158
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 164
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 170
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 176
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 182
+    },
+    {
+      "changes": "居民同行安排或目前活動／需求已更新。",
+      "channel": "free",
+      "stale": true,
+      "tick": 188
+    },
+    {
+      "changes": "班表或實際上工狀態已更新；居民同行安排或目前活動／需求已更新。",
+      "channel": "free",
+      "stale": true,
+      "tick": 194
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 200
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 206
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 212
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 218
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 224
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 230
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 236
+    },
+    {
+      "changes": "玩家見面約定已更新；居民同行安排或目前活動／需求已更新。",
+      "channel": "free",
+      "stale": true,
+      "tick": 242
+    },
+    {
+      "changes": "居民同行安排或目前活動／需求已更新。",
+      "channel": "free",
+      "stale": true,
+      "tick": 248
+    },
+    {
+      "changes": "居民同行安排或目前活動／需求已更新。",
+      "channel": "free",
+      "stale": true,
+      "tick": 254
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 260
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 266
+    },
+    {
+      "changes": "居民同行安排或目前活動／需求已更新。",
+      "channel": "free",
+      "stale": true,
+      "tick": 272
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 278
+    },
+    {
+      "changes": "居民同行安排或目前活動／需求已更新。",
+      "channel": "free",
+      "stale": true,
+      "tick": 284
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 290
+    },
+    {
+      "changes": "",
+      "channel": "free",
+      "stale": false,
+      "tick": 296
+    }
+  ],
+  "scope": "eight natural days with original population/jobs/resources, normal governance construction, genuine queued event/heart comments, mock AI with one-tick delay, explicit retries via live UI, accepted invitations with collision walking, native reload; no production AI or forced NPC positions",
+  "sleepers": [
+    "hb_dengye",
+    "hb_shanshan",
+    "hb_xiaoou",
+    "hb_haima",
+    "hb_axi",
+    "hb_achao",
+    "hb_shishu",
+    "hb_afu",
+    "hb_haibo",
+    "hb_langshu",
+    "hb_amao",
+    "hb_aduo",
+    "hb_yunyi",
+    "hb_muxia",
+    "hb_xiugu"
+  ],
+  "ticks": 768,
+  "town": "harbor"
+}

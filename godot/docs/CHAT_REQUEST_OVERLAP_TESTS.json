@@ -1,0 +1,5 @@
+{
+  "checks": 38,
+  "failures": [],
+  "scope": "two towns, separate awaited callbacks, replacement-world new free/event/heart requests, old callback cannot clear new busy/draft; concurrent background and free replies preserve newer invitation and fallback exactly once; mock AI"
+}

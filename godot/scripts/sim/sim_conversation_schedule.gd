@@ -28,3 +28,14 @@ static func context(w: SimWorld,id: String) -> Dictionary:
 
 static func capture(w: SimWorld,id: String) -> Dictionary:
 	return {"leisure":SimLeisureChat.context(w,id),"workplace":SimWorkplaces.context(w,id),"appointment":SimAppointments.current(w),"hangout":context(w,id)}.duplicate(true)
+
+static func changes(before: Dictionary,after: Dictionary) -> String:
+	var reasons: Array=[]
+	for key in ["appointment","workplace","leisure","hangout"]:
+		if before.get(key)==after.get(key): continue
+		match key:
+			"appointment": reasons.append("玩家見面約定已更新")
+			"workplace": reasons.append("班表或實際上工狀態已更新")
+			"leisure": reasons.append("休閒安排或完成紀錄已更新")
+			"hangout": reasons.append("居民同行安排或目前活動／需求已更新")
+	return "；".join(reasons)+"。" if not reasons.is_empty() else ""

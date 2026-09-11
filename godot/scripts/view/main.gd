@@ -1299,6 +1299,7 @@ func show_player_chat(id: String) -> void:
 	if not simulation.data.agents.has(id) or not simulation.data.agents.has("player") or id=="player": _wrapped("找不到交談對象。");return
 	var a: Dictionary=simulation.data.agents[id]
 	_wrapped("與"+str(a.name)+"交談",22)
+	_button("查看目前行程",drawer_body,func(): show_agenda(id))
 	_button("見面約定",drawer_body,func(): show_appointment(id))
 	_button("友情與心動",drawer_body,func(): show_heart_events(id))
 	var leisure_button:=_button("詢問休閒安排（本機）",drawer_body,func():
@@ -1353,7 +1354,7 @@ func send_player_chat(id: String,message: String,intent: String="") -> void:
 	if not simulation.data.agents.has(id) or not is_same(simulation.data.agents[id],target) or target.get("isDead",false):
 		chat_notice[id]="對方已離開，回覆未套用。"
 	elif schedule_context!=SimConversationSchedule.capture(simulation,id):
-		chat_notice[id]="等待回覆期間，行程、工作場所或見面約定已改變。舊回覆及效果未套用；草稿已保留，請重新傳送。"
+		chat_notice[id]="等待回覆期間，行程、工作場所或見面約定已改變。舊回覆及效果未套用；草稿已保留，請重新傳送。\n"+SimConversationSchedule.changes(schedule_context,SimConversationSchedule.capture(simulation,id))
 	elif not response.get("ok",false): chat_notice[id]=str(response.get("error","連線失敗，請重試。"))+"\n草稿已保留，也可切換離線交談後重試。"
 	elif not response.get("data") is Dictionary or not response.data.get("reply") is String:
 		chat_notice[id]="伺服器回覆格式不正確，未套用變化。"
@@ -2480,4 +2481,5 @@ func show_agenda(id: String) -> void:
 		for block in plan.blocks.slice(0,12):
 			if block is Dictionary: _wrapped(str(block.get("time",""))+" · "+str(block.get("text","")),12)
 	_button("今日足跡",drawer_body,func(): show_trace(id))
+	if not a.get("isPlayer",false): _button("回到自由交談",drawer_body,func(): show_player_chat(id))
 	_button("返回居民資料",drawer_body,func(): show_agent(id,false))

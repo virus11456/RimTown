@@ -1,0 +1,205 @@
+{
+  "checks": 16,
+  "failures": [],
+  "scope": "actual archive picker, eight-day source progress to background-off delivery archives, full snapshot and physical-position roundtrip, existing meeting history/no replay, paid construction, chat-to-agenda buttons; no production AI",
+  "towns": [
+    {
+      "file": "/Users/frank/Documents/Codex/2026-09-09/files-mentioned-by-the-user-godot/work/rimtown/godot/../../../outputs/聊天八日試玩_frontier.rimtown",
+      "history": [
+        {
+          "due": 144.0,
+          "expires": 10.0,
+          "hour": 18.0,
+          "npc": "chen_wei",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "雙方已在約定地點實際碰面",
+          "resolved_tick": 144.0,
+          "state": "met",
+          "time": "小鎮第 2 天 18:00",
+          "until": 152.0
+        },
+        {
+          "due": 240.0,
+          "expires": 154.0,
+          "hour": 18.0,
+          "npc": "chen_wei",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "雙方已在約定地點實際碰面",
+          "resolved_tick": 240.0,
+          "state": "met",
+          "time": "小鎮第 3 天 18:00",
+          "until": 248.0
+        },
+        {
+          "due": 336.0,
+          "expires": 256.0,
+          "hour": 18.0,
+          "npc": "chen_wei",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "雙方已在約定地點實際碰面",
+          "resolved_tick": 336.0,
+          "state": "met",
+          "time": "小鎮第 4 天 18:00",
+          "until": 344.0
+        },
+        {
+          "due": 432.0,
+          "expires": 352.0,
+          "hour": 18.0,
+          "npc": "chen_wei",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "雙方已在約定地點實際碰面",
+          "resolved_tick": 432.0,
+          "state": "met",
+          "time": "小鎮第 5 天 18:00",
+          "until": 440.0
+        },
+        {
+          "due": 528.0,
+          "expires": 448.0,
+          "hour": 18.0,
+          "npc": "chen_wei",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "雙方已在約定地點實際碰面",
+          "resolved_tick": 528.0,
+          "state": "met",
+          "time": "小鎮第 6 天 18:00",
+          "until": 536.0
+        },
+        {
+          "due": 624.0,
+          "expires": 556.0,
+          "hour": 18.0,
+          "npc": "chen_wei",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "雙方已在約定地點實際碰面",
+          "resolved_tick": 624.0,
+          "state": "met",
+          "time": "小鎮第 7 天 18:00",
+          "until": 632.0
+        },
+        {
+          "due": 720.0,
+          "expires": 652.0,
+          "hour": 18.0,
+          "npc": "chen_wei",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "雙方已在約定地點實際碰面",
+          "resolved_tick": 720.0,
+          "state": "met",
+          "time": "小鎮第 8 天 18:00",
+          "until": 728.0
+        }
+      ],
+      "population": 21,
+      "town": "frontier",
+      "verified_meetings": 7
+    },
+    {
+      "file": "/Users/frank/Documents/Codex/2026-09-09/files-mentioned-by-the-user-godot/work/rimtown/godot/../../../outputs/聊天八日試玩_harbor.rimtown",
+      "history": [
+        {
+          "due": 136.0,
+          "expires": 10.0,
+          "hour": 16.0,
+          "npc": "hb_achao",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "雙方已在約定地點實際碰面",
+          "resolved_tick": 137.0,
+          "state": "met",
+          "time": "小鎮第 2 天 16:00",
+          "until": 144.0
+        },
+        {
+          "due": 232.0,
+          "expires": 154.0,
+          "hour": 16.0,
+          "npc": "hb_achao",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "雙方已在約定地點實際碰面",
+          "resolved_tick": 233.0,
+          "state": "met",
+          "time": "小鎮第 3 天 16:00",
+          "until": 240.0
+        },
+        {
+          "due": 328.0,
+          "expires": 250.0,
+          "hour": 16.0,
+          "npc": "hb_achao",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "雙方已在約定地點實際碰面",
+          "resolved_tick": 329.0,
+          "state": "met",
+          "time": "小鎮第 4 天 16:00",
+          "until": 336.0
+        },
+        {
+          "due": 424.0,
+          "expires": 352.0,
+          "hour": 16.0,
+          "npc": "hb_achao",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "雙方已在約定地點實際碰面",
+          "resolved_tick": 425.0,
+          "state": "met",
+          "time": "小鎮第 5 天 16:00",
+          "until": 432.0
+        },
+        {
+          "due": 520.0,
+          "expires": 448.0,
+          "hour": 16.0,
+          "npc": "hb_achao",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "雙方已在約定地點實際碰面",
+          "resolved_tick": 520.0,
+          "state": "met",
+          "time": "小鎮第 6 天 16:00",
+          "until": 528.0
+        },
+        {
+          "due": 616.0,
+          "expires": 544.0,
+          "hour": 16.0,
+          "npc": "hb_achao",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "雙方已在約定地點實際碰面",
+          "resolved_tick": 617.0,
+          "state": "met",
+          "time": "小鎮第 7 天 16:00",
+          "until": 624.0
+        },
+        {
+          "due": 712.0,
+          "expires": 640.0,
+          "hour": 16.0,
+          "npc": "hb_achao",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "雙方已在約定地點實際碰面",
+          "resolved_tick": 713.0,
+          "state": "met",
+          "time": "小鎮第 8 天 16:00",
+          "until": 720.0
+        }
+      ],
+      "population": 17,
+      "town": "harbor",
+      "verified_meetings": 7
+    }
+  ]
+}
