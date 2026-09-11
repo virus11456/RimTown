@@ -138,7 +138,8 @@ func _button(text: String, parent: Node, action: Callable) -> Button:
 		simulation.governance_notice=""
 		action.call()
 		if not simulation.governance_notice.is_empty():
-			has_simulated=true;status.text=simulation.governance_notice;show_governance())
+			status.text=simulation.governance_notice
+			if simulation.governance_notice!=BuildingSites.OCCUPIED_NOTICE: has_simulated=true;show_governance())
 	parent.add_child(button)
 	return button
 
@@ -1916,10 +1917,11 @@ func show_building_site(key: String,index: int=0,decor: bool=false,completed_id:
 			if ok: has_simulated=true;_refresh_building_world();status.text="已補選址 · 未重複扣料"
 			else: status.text=simulation.governance_notice if not simulation.governance_notice.is_empty() else "位置或工程狀態已改變，未執行"
 			show_buildings();return
+		simulation.governance_notice=""
 		var project: Dictionary={"ok":true} if decor and SimCombos.place(simulation,key,site) else ({} if decor else SimBuildings.start(simulation,key,false,site))
 		_clear_site_preview()
 		if not project.is_empty(): has_simulated=true;status.text="已擺放 · 材料已扣除" if decor else "已開工 · 材料已扣除";_refresh_building_world()
-		else: status.text="位置或材料已改變，未扣款"
+		else: status.text=simulation.governance_notice if not simulation.governance_notice.is_empty() else "位置或材料已改變，未扣款"
 		if decor: show_decorations()
 		else: show_buildings())
 	_button("取消選址",drawer_body,show_decorations if decor else show_buildings)

@@ -1,5 +1,13 @@
 class_name BuildingSites
 extends RefCounted
+const OCCUPIED_NOTICE="用地附近有人，請等他離開後再試；未扣材料。"
+static func vacant(w: SimWorld,site: Vector2i,footprint: int=2) -> bool:
+	var motion: SimMotion=w.social.observed_motion
+	if motion==null: return true
+	for pos in motion.positions.values():
+		if float(pos.x)>=site.x*16-8 and float(pos.x)<(site.x+footprint)*16+8 and float(pos.y)>=site.y*16-8 and float(pos.y)<(site.y+footprint)*16+8:
+			w.governance_notice=OCCUPIED_NOTICE;return false
+	return true
 static func allowed(save: Dictionary,site: Vector2i,footprint: int=2) -> bool:
 	var layout:=TownLayout.new();layout.separate_civic_buildings=true;layout.rebuild(save)
 	if site.x<2 or site.y<2 or site.x>76 or site.y>56: return false

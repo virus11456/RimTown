@@ -10,7 +10,7 @@ static func affordable(w: SimWorld,costs: Dictionary) -> bool:
 	return true
 static func _execute_start(w: SimWorld,key: String,upgrade: bool=false,site: Vector2i=Vector2i(-1,-1)) -> Dictionary:
 	if key=="housing" and (not w.population_enabled or upgrade or site==Vector2i(-1,-1) or SimPopulation.homes(w,true)>=8): return {}
-	if site!=Vector2i(-1,-1) and (upgrade or not BuildingSites.allowed(w.data,site)): return {}
+	if site!=Vector2i(-1,-1) and (upgrade or not BuildingSites.allowed(w.data,site) or not BuildingSites.vacant(w,site)): return {}
 	var definitions:=rules();var manager: Dictionary=w.data.buildings
 	var template: Dictionary={};var level:=1
 	if upgrade:
@@ -69,7 +69,7 @@ static func daily(w: SimWorld) -> void:
 static func start(w: SimWorld,key: String,upgrade: bool=false,site: Vector2i=Vector2i(-1,-1)) -> Dictionary:
 	if not rules().templates.has(key): return {}
 	if key=="housing" and (not w.population_enabled or upgrade or site==Vector2i(-1,-1) or SimPopulation.homes(w,true)>=8): return {}
-	if site!=Vector2i(-1,-1) and (upgrade or not BuildingSites.allowed(w.data,site)): return {}
+	if site!=Vector2i(-1,-1) and (upgrade or not BuildingSites.allowed(w.data,site) or not BuildingSites.vacant(w,site)): return {}
 	if not upgrade and key!="housing" and (w.data.buildings.projects+w.data.buildings.completed).any(func(p): return p.get("buildingKey")==key or p.name==rules().templates[key].name): return {}
 	if upgrade and (w.data.buildings.completed.filter(func(p): return p.get("buildingKey")==key).is_empty() or w.data.buildings.projects.any(func(p): return p.get("upgradeKey")==key)): return {}
 	var costs: Dictionary=(rules().upgrades.get(key,{}).get(str(int(w.data.buildings.completed.filter(func(p): return p.get("buildingKey")==key)[0].get("level",1))+1),{}) if upgrade and not w.data.buildings.completed.filter(func(p): return p.get("buildingKey")==key).is_empty() else rules().templates.get(key,{})).get("costs",{})
@@ -90,11 +90,7 @@ static func unplaced(w: SimWorld,id: String) -> Dictionary:
 static func place_completed(w: SimWorld,id: String,site: Vector2i) -> bool:
 	var p:=unplaced(w,id)
 	if p.is_empty() or not BuildingSites.allowed(w.data,site): return false
-	var motion: SimMotion=w.social.observed_motion
-	if motion!=null:
-		for pos in motion.positions.values():
-			if float(pos.x)>=site.x*16-8 and float(pos.x)<(site.x+2)*16+8 and float(pos.y)>=site.y*16-8 and float(pos.y)<(site.y+2)*16+8:
-				w.governance_notice="用地附近有人，請等他離開後再補選址。";return false
+	if not BuildingSites.vacant(w,site): return false
 	var args: Array=[id,site.x,site.y]
 	if not SimGovernance.permit(w,"building_site",args,{}): return false
 	# Existing completion, level, costs and effects remain intact. No second build.

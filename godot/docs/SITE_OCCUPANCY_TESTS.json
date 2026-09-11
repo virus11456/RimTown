@@ -1,0 +1,5 @@
+{
+  "checks": 17,
+  "failures": [],
+  "scope": "controlled position/material fixtures, player and NPC, public and internal construction/decor executors, post-preview arrival, phone status, safe retry, footprint margin and NPC mayor approved execution; no long-run movement claim"
+}

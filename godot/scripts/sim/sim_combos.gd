@@ -36,7 +36,7 @@ static func decoration(key: String) -> Dictionary:
 	return {}
 static func _execute_place(w: SimWorld,key: String,site: Vector2i) -> bool:
 	var def:=decoration(key)
-	if def.is_empty() or not BuildingSites.allowed(w.data,site,1) or not SimBuildings.affordable(w,def.cost): return false
+	if def.is_empty() or not BuildingSites.allowed(w.data,site,1) or not BuildingSites.vacant(w,site,1) or not SimBuildings.affordable(w,def.cost): return false
 	for r in def.cost: SimEconomy.consume(w,r,float(def.cost[r]),"擺放"+str(def.name))
 	if not w.data.get("decorations") is Array: w.data.decorations=[]
 	w.data.decorations.append({"type":key,"x":site.x,"y":site.y})
@@ -53,6 +53,7 @@ static func _execute_remove(w: SimWorld,item: Dictionary) -> bool:
 	return true
 
 static func place(w: SimWorld,key: String,site: Vector2i) -> bool:
+	if not BuildingSites.vacant(w,site,1): return false
 	var costs: Dictionary=decoration(key).get("cost",{});var args: Array=[key,site.x,site.y]
 	if not SimGovernance.permit(w,"decoration",args,costs): return false
 	var result:=_execute_place(w,key,site)
