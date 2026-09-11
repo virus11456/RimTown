@@ -1,0 +1,19 @@
+{
+  "checks": 12,
+  "failures": [],
+  "scope": "two delivered five-day archives loaded via real picker, town isolation, actual player histories, naturally resolved NPC records and memory, no settlement replay; zero natural cancellation count is not coverage of injected conflict branches",
+  "towns": [
+    {
+      "npc_records": 3,
+      "population": 21,
+      "resolved_npc_gatherings": 0,
+      "town": "雙城整合邊境鎮.rimtown"
+    },
+    {
+      "npc_records": 0,
+      "population": 17,
+      "resolved_npc_gatherings": 0,
+      "town": "海風鎮五日邀約驗收.rimtown"
+    }
+  ]
+}

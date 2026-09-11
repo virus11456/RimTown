@@ -1,0 +1,5 @@
+{
+  "checks": 25,
+  "failures": [],
+  "scope": "pending and departed NPC pair vs confirmed future player interval, both memories/reasons, no reward/deadline mutation, old command cleanup, terminal replay/reload, proposal vs consent, exact boundary, unrelated peer and missed gathering"
+}

@@ -86,8 +86,7 @@ static func tick(w: SimWorld) -> void:
 		if a.has("_raidShelterUntil"): finish(w,id,"cancelled","避難優先");continue
 		if not w.data.townMap.locations.has(p.place): finish(w,id,"cancelled","休閒場所已不存在");continue
 		if not available(w,id,int(p.hour)) or not available(w,id,int(p.hour)+1): finish(w,id,"cancelled","工時或睡眠安排改變");continue
-		var meeting:=SimAppointments.current(w)
-		if meeting.get("npc")==id and meeting.get("state") in ["accepted","waiting"] and int(meeting.due)-32<int(p.until) and int(meeting.until)>int(p.due)-16:
+		if SimAppointments.overlaps(w,id,int(p.due)-16,int(p.until)):
 			finish(w,id,"cancelled","已確認的見面約定優先");continue
 		if now>=int(p.until): finish(w,id,"missed",missed_reason(p));continue
 		if float(a.needs.hunger)<15 or float(a.needs.rest)<10:

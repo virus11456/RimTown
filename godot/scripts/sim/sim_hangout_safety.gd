@@ -7,14 +7,19 @@ static func note(w: SimWorld,id: String,state: String,reason: String) -> void:
 	book[id]={"state":state,"reason":reason,"tick":int(w.data.tickCount)}
 	w.quest_balance.hangout_status=book
 static func cancel(w: SimWorld,id: String,reason: String) -> void:
-	var a: Dictionary=w.data.agents[id];var p: Dictionary=a.get("_pendingHangout",{})
+	if not w.data.agents.has(id) or not w.data.agents[id].get("_pendingHangout") is Dictionary: return
+	var a: Dictionary=w.data.agents[id];var p: Dictionary=a._pendingHangout
 	var other: String=p.get("withId","")
+	var token:=SimHangoutVisits.key(id,p)
+	var active: bool=SimHangoutVisits.records(w).get(token,{}).get("state")=="traveling"
+	var people: Array=[id]
 	a._pendingHangout=null;note(w,id,"cancelled",reason)
 	SimHangoutVisits.finish(w,SimHangoutVisits.key(id,p),"cancelled",reason)
 	if w.data.agents.has(other):
 		var peer: Variant=w.data.agents[other].get("_pendingHangout")
 		if peer is Dictionary and peer.get("withId")==id and peer.get("issued_tick")==p.get("issued_tick"):
-			w.data.agents[other]._pendingHangout=null;note(w,other,"cancelled",reason)
+			w.data.agents[other]._pendingHangout=null;note(w,other,"cancelled",reason);people.append(other)
+	if not active: SimHangoutVisits.remember_end(w,people,reason)
 static func tick(w: SimWorld) -> void:
 	if not enabled(w): return
 	for id in w.data.agents:
@@ -30,7 +35,9 @@ static func tick(w: SimWorld) -> void:
 			cancel(w,id,"原本共同休閒安排已改變，取消這次同行。");continue
 		if p.has("agenda_until") and (SimHangoutRoute.leisure_conflict(w,id,maxi(int(w.data.tickCount),int(p.get("not_before",0))),int(p.agenda_until)) or SimHangoutRoute.leisure_conflict(w,str(p.withId),maxi(int(w.data.tickCount),int(p.get("not_before",0))),int(p.agenda_until))):
 			cancel(w,id,"既有自主休閒與同行時段重疊，保留休閒安排，取消這次同行。");continue
-		if SimAppointments.directing(w,id) or SimAppointments.directing(w,str(p.withId)): cancel(w,id,"已確認的玩家約定優先。");continue
+		var start:=maxi(int(w.data.tickCount),int(p.get("not_before",w.data.tickCount)))
+		var end:=int(p.get("agenda_until",int(p.expires_at)+8))
+		if SimAppointments.overlaps(w,id,start,end) or SimAppointments.overlaps(w,str(p.withId),start,end): cancel(w,id,"同行時段與已確認的玩家約定重疊，保留玩家約定。");continue
 	SimHangoutVisits.tick(w)
 	for id in w.data.agents:
 		var a: Dictionary=w.data.agents[id];var p: Variant=a.get("_pendingHangout")

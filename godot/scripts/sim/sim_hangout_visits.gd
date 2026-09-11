@@ -20,14 +20,24 @@ static func depart(w: SimWorld,id: String,p: Dictionary) -> void:
 			if book[old].state!="traveling": book.erase(old);removed=true;break
 		if not removed: break
 	w.quest_balance.hangout_visits=book
+static func remember_end(w: SimWorld,people: Array,reason: String) -> void:
+	for id in people:
+		if not w.data.agents.has(id) or w.data.agents[id].get("isDead",false): continue
+		var names: Array=[]
+		for other in people:
+			if other!=id and w.data.agents.has(other): names.append(str(w.data.agents[other].name))
+		SimFeuds._memory(w.data.agents[id],w,"social","同行安排未完成"+("（與"+"、".join(names)+"）" if not names.is_empty() else "")+"："+reason,4,names)
 static func finish(w: SimWorld,token: String,state: String,reason: String) -> void:
 	var r: Dictionary=records(w).get(token,{})
 	if r.get("state","")!="traveling": return
 	r.state=state;r.reason=reason;r.resolved_tick=int(w.data.tickCount)
+	if state in ["cancelled","missed"]: remember_end(w,r.people,reason)
 	for id in r.people:
 		if not w.data.agents.has(id): continue
 		var a: Dictionary=w.data.agents[id]
-		if a.get("_activeHangout","")==token: a.erase("_activeHangout");a.erase("_hangoutDestination")
+		if a.get("_activeHangout","")==token:
+			a.erase("_activeHangout");a.erase("_hangoutDestination");a._locationStayRemaining=0
+			if w.runtime.has(id): w.runtime[id].targetLocation=null
 		var pending: Variant=a.get("_pendingHangout")
 		if pending is Dictionary and key(id,pending)==token: a._pendingHangout=null
 		if state=="met": SimHomeRest.after_meeting(w,a,str(r.place))
@@ -37,7 +47,7 @@ static func valid(w: SimWorld,r: Dictionary) -> bool:
 	for id in r.people:
 		if not w.data.agents.has(id): return false
 		var a: Dictionary=w.data.agents[id]
-		if a.get("isDead",false) or a.has("_raidShelterUntil") or SimAppointments.directing(w,id): return false
+		if a.get("isDead",false) or a.has("_raidShelterUntil") or SimAppointments.overlaps(w,id,int(w.data.tickCount),int(r.until)): return false
 		if id in r.departed and (not SimHangoutSafety.available_person(w,a) or a.currentLocation!=r.place): return false
 	return true
 static func directing(w: SimWorld,id: String) -> bool:
@@ -52,7 +62,7 @@ static func blocking_reason(w: SimWorld,r: Dictionary) -> String:
 		var a: Dictionary=w.data.agents[id];var who:=str(a.name)
 		if a.get("isDead",false): return who+"已離世。"
 		if a.has("_raidShelterUntil"): return who+"需要避難。"
-		if SimAppointments.directing(w,id): return who+"已有優先的玩家約定。"
+		if SimAppointments.overlaps(w,id,int(w.data.tickCount),int(r.until)): return who+"的同行時段與已確認的玩家約定重疊。"
 		if SimLeisurePlan.directing(w,id): return who+"已有優先的休閒安排。"
 		if not SimHomeRest.plan(w,a).is_empty(): return who+"需要預留路程返家休息。"
 		if not SimLeisurePlan.available(w,id,int(w.data.clock.hour)):

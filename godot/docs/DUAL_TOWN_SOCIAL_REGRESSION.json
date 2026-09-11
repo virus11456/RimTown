@@ -1,0 +1,1444 @@
+{
+  "checks": 299,
+  "failures": [],
+  "tests": [
+    {
+      "test": "social_conflict_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 7,
+        "failures": [],
+        "scope": "controlled overlapping pair and real accepted player card, both agenda pages and chat memory context, no position change, native replay protection and 375px width; no generated AI response claim"
+      },
+      "tail": ""
+    },
+    {
+      "test": "hangout_safety",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 20,
+        "failures": [],
+        "scope": "configured paired plans, work/sleep/commute/needs/other agenda priority, both-party expiry/death/shelter/missing destination/legacy cancellation, departure only, no resources, status reload and compatibility"
+      },
+      "tail": ""
+    },
+    {
+      "test": "hangout_visits",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 22,
+        "failures": [],
+        "scope": "controlled paired departure, real motion approach, missing-position restore, position fixtures, logical/one-sided arrival rejected, actual joint encounter and memories, no rewards, repeated/reloaded completion, deadline and priority cancellation"
+      },
+      "tail": ""
+    },
+    {
+      "test": "hangout_waiting",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 15,
+        "failures": [],
+        "scope": "controlled pair, normal world tick route retention, actual first-arrival observation, one bounded needs pause and recovery, work priority, immutable deadline and snapshot persistence; no production AI"
+      },
+      "tail": ""
+    },
+    {
+      "test": "hangout_reasons",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 12,
+        "failures": [],
+        "scope": "controlled work/sleep/shelter/death/missing venue/removed participant, existing cancellation priority unchanged, shared factual reason"
+      },
+      "tail": ""
+    },
+    {
+      "test": "hangout_agenda",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 19,
+        "failures": [],
+        "scope": "controlled healthy close pair, existing leisure on either side, travel window and exact end, terminal/disabled plans, real proposal creation, changed plan and reload, explicit paired cancellation without rewriting leisure or adding goods; not natural frequency proof"
+      },
+      "tail": ""
+    },
+    {
+      "test": "leisure_plan",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 27,
+        "failures": [],
+        "scope": "daily cap, sleep/work/needs/raid/appointment/death/removal priority, physical dwell fixture, save continuation, no duplicate goods or XP"
+      },
+      "tail": ""
+    },
+    {
+      "test": "leisure_restore_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 9,
+        "failures": [],
+        "scope": "controlled actual-position dwell fixture; native compressed load with complete, absent and partial motion data, preserve earned normal progress, reset unverifiable continuity without rewards"
+      },
+      "tail": ""
+    },
+    {
+      "test": "leisure_learning",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 15,
+        "failures": [],
+        "scope": "structured outcomes, once/day bounded history, saved failure changes next day slot, actual job precedence, stale history, no intraday reroll or rewards, rollover and removed residents"
+      },
+      "tail": ""
+    },
+    {
+      "test": "shared_leisure",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 22,
+        "failures": [],
+        "scope": "controlled shared original plans, true observed dwell progression, mid-stay reload, proximity and urgency guards, paired cancellation, one-time original reward, deferred return; separate negative cases use completed-state fixtures, not natural evidence"
+      },
+      "tail": ""
+    },
+    {
+      "test": "construction_deadline",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 17,
+        "failures": [],
+        "scope": "exact deadline vs changed schedule conflict, direct proposal guard, prior-arrival distinction, one-time history/memory, native snapshot reload, pre-deadline explicit reschedule consent, blocked physical home doorway and late co-location"
+      },
+      "tail": ""
+    },
+    {
+      "test": "appointment_aftercare",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 27,
+        "failures": [],
+        "scope": "controlled physical presence and original home routes; missed and explicit cancellation return, stale arrival flag, declined/dead/shelter/unreachable exclusions, meal priority, no movement/spending/affinity/player control side effects, terminal idempotency"
+      },
+      "tail": ""
+    },
+    {
+      "test": "social_schedule_conflicts",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 25,
+        "failures": [],
+        "scope": "pending and departed NPC pair vs confirmed future player interval, both memories/reasons, no reward/deadline mutation, old command cleanup, terminal replay/reload, proposal vs consent, exact boundary, unrelated peer and missed gathering"
+      }
+    },
+    {
+      "test": "dual_town_frontier",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "bad_sleep": [],
+        "checks": 24,
+        "complete_tick": 264,
+        "executed_tick": 72,
+        "failures": [],
+        "final_appointment": {
+          "due": 240,
+          "expires": 165,
+          "hour": 18,
+          "npc": "chen_wei",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "雙方已在約定地點實際碰面",
+          "resolved_tick": 240,
+          "state": "met",
+          "time": "小鎮第 3 天 18:00",
+          "until": 248
+        },
+        "first_appointment": {
+          "due": 144.0,
+          "expires": 8.0,
+          "hour": 18.0,
+          "npc": "chen_wei",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "等待時間結束，未在現場碰面（玩家未到或雙方未靠近）",
+          "resolved_tick": 152,
+          "state": "missed",
+          "time": "小鎮第 2 天 18:00",
+          "until": 152.0
+        },
+        "first_wait_tick": 144,
+        "initial_stock": {
+          "history": [],
+          "resources": {
+            "beer": 0.0,
+            "bread": 0.0,
+            "brick": 0.0,
+            "cloth": 40.0,
+            "clothing": 15.0,
+            "corn": 0.0,
+            "cotton": 0.0,
+            "dragon_fruit": 0.0,
+            "fine_tea": 0.0,
+            "flowers": 0.0,
+            "food": 200.0,
+            "furniture": 5.0,
+            "gold": 0.0,
+            "golden_wheat": 0.0,
+            "grapes": 0.0,
+            "hardwood": 0.0,
+            "herbal_tea": 0.0,
+            "herbs": 20.0,
+            "jam": 0.0,
+            "luxury_furniture": 0.0,
+            "marble": 0.0,
+            "meals": 50.0,
+            "medicine": 5.0,
+            "metal": 30.0,
+            "mushroom": 0.0,
+            "pastry": 0.0,
+            "perfume": 0.0,
+            "plank": 0.0,
+            "potato": 0.0,
+            "research_points": 0.0,
+            "rice": 0.0,
+            "silver": 150.0,
+            "steel": 0.0,
+            "stone": 80.0,
+            "sugar": 0.0,
+            "sugarcane": 0.0,
+            "tea": 0.0,
+            "tools": 10.0,
+            "wheat": 0.0,
+            "wine": 0.0,
+            "wood": 100.0
+          }
+        },
+        "invalid_steps": [],
+        "maximum_npc_step": 0.999847412109375,
+        "maximum_player_step": 1.20001649856567,
+        "met_tick": 240,
+        "missed_home_tick": 156,
+        "missed_tick": 152,
+        "motion_frames_per_tick": 480,
+        "negative_stock": [],
+        "paid": {
+          "stone": 15.0,
+          "tools": 2.0,
+          "wood": 10.0
+        },
+        "returned_tick": 244,
+        "scope": "original frontier resources/jobs/needs/positions, traveler proposal and daily mayor review, real execution UI and normal daily construction, mock AI offer and acceptance, 480 clock ticks with 480 motion frames each, player collision walking during clock progression, native reload, first player absence, actual home return, fresh local offer and second physical meeting, terminal reload, farm work/home sleep; no granted resources, elected fixture, compressed midnight or production AI",
+        "second_offer_tick": 157,
+        "sleepers": [
+          "lin_mei",
+          "sun_yu",
+          "gao_lang",
+          "su_qing",
+          "yang_feng",
+          "chen_wei",
+          "zhang_hao",
+          "wang_li",
+          "huang_li",
+          "he_xiu",
+          "wu_da",
+          "he_chang",
+          "ke_wei",
+          "liu_jun",
+          "zhao_xia",
+          "ma_qiang",
+          "xu_ying",
+          "zhou_ming",
+          "zheng_wei",
+          "ling_bo"
+        ],
+        "stages": [
+          {
+            "appointment": "accepted",
+            "completion": -1,
+            "missed": -1,
+            "missed_home": -1,
+            "proposal": "pending",
+            "returned": -1,
+            "second_offer": -1,
+            "tick": 48
+          },
+          {
+            "appointment": "accepted",
+            "completion": -1,
+            "missed": -1,
+            "missed_home": -1,
+            "proposal": "executed",
+            "returned": -1,
+            "second_offer": -1,
+            "tick": 96
+          },
+          {
+            "appointment": "waiting",
+            "completion": -1,
+            "missed": -1,
+            "missed_home": -1,
+            "proposal": "executed",
+            "returned": -1,
+            "second_offer": -1,
+            "tick": 144
+          },
+          {
+            "appointment": "accepted",
+            "completion": -1,
+            "missed": 152,
+            "missed_home": 156,
+            "proposal": "executed",
+            "returned": -1,
+            "second_offer": 157,
+            "tick": 192
+          },
+          {
+            "appointment": "met",
+            "completion": -1,
+            "missed": 152,
+            "missed_home": 156,
+            "proposal": "executed",
+            "returned": -1,
+            "second_offer": 157,
+            "tick": 240
+          },
+          {
+            "appointment": "met",
+            "completion": 264,
+            "missed": 152,
+            "missed_home": 156,
+            "proposal": "executed",
+            "returned": 244,
+            "second_offer": 157,
+            "tick": 288
+          },
+          {
+            "appointment": "met",
+            "completion": 264,
+            "missed": 152,
+            "missed_home": 156,
+            "proposal": "executed",
+            "returned": 244,
+            "second_offer": 157,
+            "tick": 336
+          },
+          {
+            "appointment": "met",
+            "completion": 264,
+            "missed": 152,
+            "missed_home": 156,
+            "proposal": "executed",
+            "returned": 244,
+            "second_offer": 157,
+            "tick": 384
+          },
+          {
+            "appointment": "met",
+            "completion": 264,
+            "missed": 152,
+            "missed_home": 156,
+            "proposal": "executed",
+            "returned": 244,
+            "second_offer": 157,
+            "tick": 432
+          },
+          {
+            "appointment": "met",
+            "completion": 264,
+            "missed": 152,
+            "missed_home": 156,
+            "proposal": "executed",
+            "returned": 244,
+            "second_offer": 157,
+            "tick": 480
+          }
+        ],
+        "ticks": 480,
+        "worked": [
+          "liu_jun"
+        ]
+      }
+    },
+    {
+      "test": "harbor_appointment_integration",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "bad_sleep": [],
+        "checks": 26,
+        "complete_tick": 360,
+        "executed_tick": 72,
+        "failures": [],
+        "final_appointment": {
+          "due": 232,
+          "expires": 156,
+          "hour": 16,
+          "npc": "hb_achao",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "雙方已在約定地點實際碰面",
+          "resolved_tick": 233,
+          "state": "met",
+          "time": "小鎮第 3 天 16:00",
+          "until": 240
+        },
+        "final_guards": [
+          {
+            "_annualMourning": [],
+            "_commuteDay": 5,
+            "_guardShift": "day",
+            "_guardWorkplace": "guardpost",
+            "_isPlayerChild": false,
+            "_lastInteractionTick": 480,
+            "_locationStayRemaining": 16,
+            "_mourningTargets": [],
+            "_parentNames": null,
+            "_shiftSleep": {
+              "conflict": false,
+              "duration": 8,
+              "end": 3,
+              "estimated_lead": 3,
+              "facility_available": true,
+              "hours": [
+                6,
+                18
+              ],
+              "job": "guard",
+              "lead": 3,
+              "signature": "[5,\"guard\",[6,18],\"guardpost\",\"residential_south_3\",[\"abrasive\",\"jealous\",\"hardworking\"],8.0,true]",
+              "start": 19,
+              "traits": [
+                "abrasive",
+                "jealous",
+                "hardworking"
+              ],
+              "workplace": "guardpost"
+            },
+            "_traceDay": "1-春季-6",
+            "activity": "working",
+            "age": 36.0,
+            "attributes": {
+              "charm": 4.0,
+              "grit": 5.0,
+              "vigor": 6.0,
+              "wit": 4.0
+            },
+            "currentLocation": "guardpost",
+            "currentThought": "射擊技能進步了！",
+            "dailyPlan": null,
+            "gender": "male",
+            "homeLocation": "residential_south",
+            "id": "hb_aduo",
+            "isPlayer": false,
+            "jobKey": "guard",
+            "memory": [
+              {
+                "category": "immigration",
+                "content": "新居民曹峰到來了！",
+                "importance": 5.0,
+                "relatedAgents": [
+                  "曹峰"
+                ],
+                "tick": 72.0,
+                "timeStr": "第1年 春季 第2天 00:00"
+              },
+              {
+                "category": "conversation",
+                "content": "與曹峰交談：阿舵被曹峰手上的昨天釣到的魚做成的魚乾吸引,兩人就這麼聊開了,約好改天再見。",
+                "importance": 6.0,
+                "relatedAgents": [
+                  "曹峰"
+                ],
+                "tick": 94.0,
+                "timeStr": "第1年 春季 第2天 05:30"
+              },
+              {
+                "category": "conversation",
+                "content": "與曹峰交談：阿舵用一則八卦成功勾起曹峰的興趣,兩人在guardpost越聊越起勁。",
+                "importance": 6.0,
+                "relatedAgents": [
+                  "曹峰"
+                ],
+                "tick": 96.0,
+                "timeStr": "第1年 春季 第2天 06:00"
+              },
+              {
+                "category": "observation",
+                "content": "看到浪叔正忙著進食",
+                "importance": 2.0,
+                "relatedAgents": [
+                  "浪叔"
+                ],
+                "tick": 124.0,
+                "timeStr": "第1年 春季 第2天 13:00"
+              },
+              {
+                "category": "conversation",
+                "content": "與曹峰交談：曹峰被阿舵手上的昨天釣到的魚做成的魚乾吸引,兩人就這麼聊開了,約好改天再見。",
+                "importance": 5.0,
+                "relatedAgents": [
+                  "曹峰"
+                ],
+                "tick": 142.0,
+                "timeStr": "第1年 春季 第2天 17:30"
+              },
+              {
+                "category": "conversation",
+                "content": "與曹峰交談：曹峰和阿舵在guardpost低聲討論著鎮上的神秘傳聞，越聊越覺得事情不簡單，兩人的表情既好奇又緊張。但後來氣氛突然變得微妙，兩人不歡而散。",
+                "importance": 6,
+                "relatedAgents": [
+                  "曹峰"
+                ],
+                "tick": 189,
+                "timeStr": "第1年 春季 第3天 05:15"
+              },
+              {
+                "category": "conversation",
+                "content": "與曹峰交談：阿舵興奮地和曹峰分享了一個神奇的發現，兩人在guardpost聊得眉飛色舞，約好下次一起去探索。",
+                "importance": 5,
+                "relatedAgents": [
+                  "曹峰"
+                ],
+                "tick": 192,
+                "timeStr": "第1年 春季 第3天 06:00"
+              },
+              {
+                "category": "observation",
+                "content": "看到曹峰正忙著工作",
+                "importance": 2,
+                "relatedAgents": [
+                  "曹峰"
+                ],
+                "tick": 192,
+                "timeStr": "第1年 春季 第3天 06:00"
+              },
+              {
+                "category": "observation",
+                "content": "看到曹峰正忙著趕著去上工",
+                "importance": 2,
+                "relatedAgents": [
+                  "曹峰"
+                ],
+                "tick": 236,
+                "timeStr": "第1年 春季 第3天 17:00"
+              },
+              {
+                "category": "conversation",
+                "content": "與曹峰交談：阿舵在guardpost向曹峰分享了一件讓人笑到肚子痛的趣事，兩人笑得前仰後合，guardpost裡充滿了歡樂的氣氛。",
+                "importance": 6,
+                "relatedAgents": [
+                  "曹峰"
+                ],
+                "tick": 238,
+                "timeStr": "第1年 春季 第3天 17:30"
+              },
+              {
+                "category": "observation",
+                "content": "看到海嬤正忙著進食",
+                "importance": 2,
+                "relatedAgents": [
+                  "海嬤"
+                ],
+                "tick": 244,
+                "timeStr": "第1年 春季 第3天 19:00"
+              },
+              {
+                "category": "social",
+                "content": "我加入了「搗蛋鬼」，成員有阿舵、木蝦。",
+                "importance": 6,
+                "relatedAgents": [
+                  "阿舵",
+                  "木蝦"
+                ],
+                "tick": 264,
+                "timeStr": "第1年 春季 第4天 00:00"
+              },
+              {
+                "category": "conversation",
+                "content": "與曹峰交談：曹峰在guardpost送了阿舵自己做的手工餅乾作為感謝，阿舵感動之餘兩人的友誼又更進了一步，春季的空氣裡充滿了溫暖。",
+                "importance": 6,
+                "relatedAgents": [
+                  "曹峰"
+                ],
+                "tick": 286,
+                "timeStr": "第1年 春季 第4天 05:30"
+              },
+              {
+                "category": "conversation",
+                "content": "與曹峰交談：阿舵帶了野菜煎餅到guardpost和曹峰邊吃邊聊，春季的暖意讓兩人的對話格外愜意。",
+                "importance": 6,
+                "relatedAgents": [
+                  "曹峰"
+                ],
+                "tick": 288,
+                "timeStr": "第1年 春季 第4天 06:00"
+              },
+              {
+                "category": "conversation",
+                "content": "與曹峰交談：阿舵和曹峰在guardpost感慨起命運的安排，聊起了清晨帶著露水的草地的美好，最後被桂花糕的香氣拉回了現實，氣氛輕鬆溫馨。",
+                "importance": 5,
+                "relatedAgents": [
+                  "曹峰"
+                ],
+                "tick": 335,
+                "timeStr": "第1年 春季 第4天 17:45"
+              },
+              {
+                "category": "raid",
+                "content": "協助抵禦了狼群",
+                "importance": 8,
+                "relatedAgents": [],
+                "tick": 360,
+                "timeStr": "第1年 春季 第5天 00:00"
+              },
+              {
+                "category": "raid",
+                "content": "海伯決定「全力防禦」；小鎮成功抵禦了狼群！",
+                "importance": 7,
+                "relatedAgents": [],
+                "tick": 360,
+                "timeStr": "第1年 春季 第5天 00:00"
+              },
+              {
+                "category": "conversation",
+                "content": "與曹峰交談：曹峰帶了野菜煎餅到guardpost和阿舵邊吃邊聊，春季的暖意讓兩人的對話格外愜意。",
+                "importance": 5,
+                "relatedAgents": [
+                  "曹峰"
+                ],
+                "tick": 382,
+                "timeStr": "第1年 春季 第5天 05:30"
+              },
+              {
+                "category": "conversation",
+                "content": "與曹峰交談：阿舵帶了春筍燉肉到guardpost和曹峰邊吃邊聊，春季的暖意讓兩人的對話格外愜意。",
+                "importance": 6,
+                "relatedAgents": [
+                  "曹峰"
+                ],
+                "tick": 384,
+                "timeStr": "第1年 春季 第5天 06:00"
+              },
+              {
+                "category": "observation",
+                "content": "看到曹峰正忙著工作",
+                "importance": 2,
+                "relatedAgents": [
+                  "曹峰"
+                ],
+                "tick": 384,
+                "timeStr": "第1年 春季 第5天 06:00"
+              },
+              {
+                "category": "observation",
+                "content": "看到海嬤正忙著工作",
+                "importance": 2,
+                "relatedAgents": [
+                  "海嬤"
+                ],
+                "tick": 396,
+                "timeStr": "第1年 春季 第5天 09:00"
+              },
+              {
+                "category": "observation",
+                "content": "看到海嬤正忙著工作",
+                "importance": 2,
+                "relatedAgents": [
+                  "海嬤"
+                ],
+                "tick": 416,
+                "timeStr": "第1年 春季 第5天 14:00"
+              },
+              {
+                "category": "conversation",
+                "content": "與曹峰交談：阿舵興奮地和曹峰分享了一個神奇的發現，兩人在guardpost聊得眉飛色舞，約好下次一起去探索。",
+                "importance": 5,
+                "relatedAgents": [
+                  "曹峰"
+                ],
+                "tick": 430,
+                "timeStr": "第1年 春季 第5天 17:30"
+              },
+              {
+                "category": "conversation",
+                "content": "與曹峰交談：曹峰興奮地和阿舵分享了一個神奇的發現，兩人在guardpost聊得眉飛色舞，約好下次一起去探索。",
+                "importance": 6,
+                "relatedAgents": [
+                  "曹峰"
+                ],
+                "tick": 478,
+                "timeStr": "第1年 春季 第6天 05:30"
+              },
+              {
+                "category": "conversation",
+                "content": "與曹峰交談：阿舵興奮地和曹峰分享了一個神奇的發現，兩人在guardpost聊得眉飛色舞，約好下次一起去探索。",
+                "importance": 6,
+                "relatedAgents": [
+                  "曹峰"
+                ],
+                "tick": 480,
+                "timeStr": "第1年 春季 第6天 06:00"
+              }
+            ],
+            "mood": 41.0,
+            "name": "阿舵",
+            "needs": {
+              "beauty": 50.0,
+              "comfort": 63.0,
+              "hunger": 35.5999999999999,
+              "recreation": 0.0,
+              "rest": 91.3000000000001,
+              "social": 0.0
+            },
+            "personality": {
+              "background": "望潮哨的哨長，颱風天全鎮聽他的哨音行動。責任感重但佔有慾也重，看誰跟阿汐多說兩句話都不順眼。",
+              "traits": [
+                "abrasive",
+                "jealous",
+                "hardworking"
+              ],
+              "values": [
+                "權力",
+                "家庭"
+              ]
+            },
+            "relationships": {
+              "hb_axi": {
+                "affinity": 22.0,
+                "interactionCount": 6.0,
+                "isCheating": false,
+                "lastInteractionTick": 0.0,
+                "romanticInterest": 31.5,
+                "sharedMemories": [],
+                "status": null,
+                "statusSince": 0.0,
+                "targetId": "hb_axi",
+                "targetName": "阿汐",
+                "trust": 0.0
+              },
+              "hb_muxia": {
+                "affinity": 2.0,
+                "interactionCount": 0,
+                "isCheating": false,
+                "lastInteractionTick": 0,
+                "romanticInterest": 0,
+                "sharedMemories": [],
+                "status": null,
+                "statusSince": 0,
+                "targetId": "hb_muxia",
+                "targetName": "木蝦",
+                "trust": 1.0
+              },
+              "imm_曹峰_72": {
+                "affinity": 38.0,
+                "interactionCount": 14,
+                "isCheating": false,
+                "lastInteractionTick": 480,
+                "romanticInterest": 1.0,
+                "sharedMemories": [
+                  "阿舵被曹峰手上的昨天釣到的魚做成的魚乾吸引,兩人就這麼聊開了,約好改天再見。",
+                  "阿舵用一則八卦成功勾起曹峰的興趣,兩人在guardpost越聊越起勁。",
+                  "曹峰被阿舵手上的昨天釣到的魚做成的魚乾吸引,兩人就這麼聊開了,約好改天再見。",
+                  "曹峰和阿舵在guardpost低聲討論著鎮上的神秘傳聞，越聊越覺得事情不簡單，兩人的表情既好奇又緊張。但後來氣氛突然變得微妙，兩人不歡而散。",
+                  "阿舵興奮地和曹峰分享了一個神奇的發現，兩人在guardpost聊得眉飛色舞，約好下次一起去探索。",
+                  "阿舵在guardpost向曹峰分享了一件讓人笑到肚子痛的趣事，兩人笑得前仰後合，guardpost裡充滿了歡樂的氣氛。",
+                  "曹峰在guardpost送了阿舵自己做的手工餅乾作為感謝，阿舵感動之餘兩人的友誼又更進了一步，春季的空氣裡充滿了溫暖。",
+                  "阿舵帶了野菜煎餅到guardpost和曹峰邊吃邊聊，春季的暖意讓兩人的對話格外愜意。",
+                  "阿舵和曹峰在guardpost感慨起命運的安排，聊起了清晨帶著露水的草地的美好，最後被桂花糕的香氣拉回了現實，氣氛輕鬆溫馨。",
+                  "曹峰帶了野菜煎餅到guardpost和阿舵邊吃邊聊，春季的暖意讓兩人的對話格外愜意。",
+                  "阿舵帶了春筍燉肉到guardpost和曹峰邊吃邊聊，春季的暖意讓兩人的對話格外愜意。",
+                  "阿舵興奮地和曹峰分享了一個神奇的發現，兩人在guardpost聊得眉飛色舞，約好下次一起去探索。",
+                  "曹峰興奮地和阿舵分享了一個神奇的發現，兩人在guardpost聊得眉飛色舞，約好下次一起去探索。",
+                  "阿舵興奮地和曹峰分享了一個神奇的發現，兩人在guardpost聊得眉飛色舞，約好下次一起去探索。"
+                ],
+                "status": null,
+                "statusSince": 0.0,
+                "targetId": "imm_曹峰_72",
+                "targetName": "曹峰",
+                "trust": 0.0
+              }
+            },
+            "skills": {
+              "動物": {
+                "passion": "無",
+                "xp": 17.0
+              },
+              "射擊": {
+                "passion": "微",
+                "xp": 4082.0
+              },
+              "工藝": {
+                "passion": "狂熱",
+                "xp": 140.0
+              },
+              "建造": {
+                "passion": "大",
+                "xp": 243.0
+              },
+              "採礦": {
+                "passion": "無",
+                "xp": 60.0
+              },
+              "智識": {
+                "passion": "無",
+                "xp": 66.0
+              },
+              "烹飪": {
+                "passion": "無",
+                "xp": 64.0
+              },
+              "社交": {
+                "passion": "大",
+                "xp": 218.0
+              },
+              "種植": {
+                "passion": "微",
+                "xp": 122.0
+              },
+              "藝術": {
+                "passion": "無",
+                "xp": 69.0
+              },
+              "近戰": {
+                "passion": "無",
+                "xp": 1421.0
+              },
+              "醫療": {
+                "passion": "無",
+                "xp": 1404.0
+              }
+            },
+            "thoughts": [],
+            "todayTrace": [
+              {
+                "loc": "residential_south",
+                "m": 0,
+                "text": "睡覺"
+              },
+              {
+                "loc": "residential_south",
+                "m": 120,
+                "text": "進食"
+              },
+              {
+                "loc": "residential_south",
+                "m": 135,
+                "text": "睡覺"
+              },
+              {
+                "loc": "park",
+                "m": 195,
+                "text": "看星星"
+              },
+              {
+                "loc": "guardpost",
+                "m": 360,
+                "text": "工作"
+              }
+            ]
+          },
+          {
+            "_annualMourning": [],
+            "_commuteDay": 4,
+            "_guardShift": "night",
+            "_guardWorkplace": "guardpost",
+            "_isPlayerChild": false,
+            "_lastInteractionTick": 478,
+            "_locationStayRemaining": 6,
+            "_mourningTargets": [],
+            "_parentNames": null,
+            "_shiftSleep": {
+              "conflict": false,
+              "duration": 8,
+              "end": 16,
+              "estimated_lead": 2,
+              "facility_available": true,
+              "hours": [
+                18,
+                6
+              ],
+              "job": "guard",
+              "lead": 2,
+              "return_lead": 2,
+              "signature": "[5,\"guard\",[18,6],\"guardpost\",\"residential_extra_3\",[\"stoic\",\"pessimist\"],8.0,true]",
+              "start": 8,
+              "traits": [
+                "stoic",
+                "pessimist"
+              ],
+              "workplace": "guardpost"
+            },
+            "_traceDay": "1-春季-6",
+            "activity": "recreation",
+            "age": 44.0,
+            "attributes": {
+              "charm": 6.0,
+              "grit": 10.0,
+              "vigor": 5.0,
+              "wit": 5.0
+            },
+            "currentLocation": "park",
+            "currentThought": "射擊技能進步中...",
+            "dailyPlan": null,
+            "gender": "male",
+            "homeLocation": "residential_north",
+            "id": "imm_曹峰_72",
+            "isPlayer": false,
+            "jobKey": "guard",
+            "memory": [
+              {
+                "category": "conversation",
+                "content": "與阿舵交談：阿舵被曹峰手上的昨天釣到的魚做成的魚乾吸引,兩人就這麼聊開了,約好改天再見。",
+                "importance": 6.0,
+                "relatedAgents": [
+                  "阿舵"
+                ],
+                "tick": 94.0,
+                "timeStr": "第1年 春季 第2天 05:30"
+              },
+              {
+                "category": "conversation",
+                "content": "與阿舵交談：阿舵用一則八卦成功勾起曹峰的興趣,兩人在guardpost越聊越起勁。",
+                "importance": 5.0,
+                "relatedAgents": [
+                  "阿舵"
+                ],
+                "tick": 96.0,
+                "timeStr": "第1年 春季 第2天 06:00"
+              },
+              {
+                "category": "conversation",
+                "content": "與阿舵交談：曹峰被阿舵手上的昨天釣到的魚做成的魚乾吸引,兩人就這麼聊開了,約好改天再見。",
+                "importance": 6.0,
+                "relatedAgents": [
+                  "阿舵"
+                ],
+                "tick": 142.0,
+                "timeStr": "第1年 春季 第2天 17:30"
+              },
+              {
+                "category": "conversation",
+                "content": "與阿舵交談：曹峰和阿舵在guardpost低聲討論著鎮上的神秘傳聞，越聊越覺得事情不簡單，兩人的表情既好奇又緊張。但後來氣氛突然變得微妙，兩人不歡而散。",
+                "importance": 6,
+                "relatedAgents": [
+                  "阿舵"
+                ],
+                "tick": 189,
+                "timeStr": "第1年 春季 第3天 05:15"
+              },
+              {
+                "category": "conversation",
+                "content": "與阿舵交談：阿舵興奮地和曹峰分享了一個神奇的發現，兩人在guardpost聊得眉飛色舞，約好下次一起去探索。",
+                "importance": 6,
+                "relatedAgents": [
+                  "阿舵"
+                ],
+                "tick": 192,
+                "timeStr": "第1年 春季 第3天 06:00"
+              },
+              {
+                "category": "conversation",
+                "content": "與阿舵交談：阿舵在guardpost向曹峰分享了一件讓人笑到肚子痛的趣事，兩人笑得前仰後合，guardpost裡充滿了歡樂的氣氛。",
+                "importance": 6,
+                "relatedAgents": [
+                  "阿舵"
+                ],
+                "tick": 238,
+                "timeStr": "第1年 春季 第3天 17:30"
+              },
+              {
+                "category": "observation",
+                "content": "看到阿舵正忙著趕著去上工",
+                "importance": 2,
+                "relatedAgents": [
+                  "阿舵"
+                ],
+                "tick": 280,
+                "timeStr": "第1年 春季 第4天 04:00"
+              },
+              {
+                "category": "conversation",
+                "content": "與阿舵交談：曹峰在guardpost送了阿舵自己做的手工餅乾作為感謝，阿舵感動之餘兩人的友誼又更進了一步，春季的空氣裡充滿了溫暖。",
+                "importance": 6,
+                "relatedAgents": [
+                  "阿舵"
+                ],
+                "tick": 286,
+                "timeStr": "第1年 春季 第4天 05:30"
+              },
+              {
+                "category": "conversation",
+                "content": "與阿舵交談：阿舵帶了野菜煎餅到guardpost和曹峰邊吃邊聊，春季的暖意讓兩人的對話格外愜意。",
+                "importance": 6,
+                "relatedAgents": [
+                  "阿舵"
+                ],
+                "tick": 288,
+                "timeStr": "第1年 春季 第4天 06:00"
+              },
+              {
+                "category": "social",
+                "content": "阿舵告訴我：「我跟你說,燈爺和石叔鬧翻了,見面都不講話...而且好像不只這樣...」",
+                "importance": 4,
+                "relatedAgents": [
+                  "阿舵",
+                  "燈爺"
+                ],
+                "tick": 335,
+                "timeStr": "第1年 春季 第4天 17:45"
+              },
+              {
+                "category": "conversation",
+                "content": "與阿舵交談：阿舵和曹峰在guardpost感慨起命運的安排，聊起了清晨帶著露水的草地的美好，最後被桂花糕的香氣拉回了現實，氣氛輕鬆溫馨。",
+                "importance": 6,
+                "relatedAgents": [
+                  "阿舵"
+                ],
+                "tick": 335,
+                "timeStr": "第1年 春季 第4天 17:45"
+              },
+              {
+                "category": "raid",
+                "content": "協助抵禦了狼群",
+                "importance": 8,
+                "relatedAgents": [],
+                "tick": 360,
+                "timeStr": "第1年 春季 第5天 00:00"
+              },
+              {
+                "category": "raid",
+                "content": "海伯決定「全力防禦」；小鎮成功抵禦了狼群！",
+                "importance": 7,
+                "relatedAgents": [],
+                "tick": 360,
+                "timeStr": "第1年 春季 第5天 00:00"
+              },
+              {
+                "category": "conversation",
+                "content": "與阿舵交談：曹峰帶了野菜煎餅到guardpost和阿舵邊吃邊聊，春季的暖意讓兩人的對話格外愜意。",
+                "importance": 5,
+                "relatedAgents": [
+                  "阿舵"
+                ],
+                "tick": 382,
+                "timeStr": "第1年 春季 第5天 05:30"
+              },
+              {
+                "category": "conversation",
+                "content": "與阿舵交談：阿舵帶了春筍燉肉到guardpost和曹峰邊吃邊聊，春季的暖意讓兩人的對話格外愜意。",
+                "importance": 6,
+                "relatedAgents": [
+                  "阿舵"
+                ],
+                "tick": 384,
+                "timeStr": "第1年 春季 第5天 06:00"
+              },
+              {
+                "category": "conversation",
+                "content": "與阿舵交談：阿舵興奮地和曹峰分享了一個神奇的發現，兩人在guardpost聊得眉飛色舞，約好下次一起去探索。",
+                "importance": 6,
+                "relatedAgents": [
+                  "阿舵"
+                ],
+                "tick": 430,
+                "timeStr": "第1年 春季 第5天 17:30"
+              },
+              {
+                "category": "conversation",
+                "content": "與阿舵交談：曹峰興奮地和阿舵分享了一個神奇的發現，兩人在guardpost聊得眉飛色舞，約好下次一起去探索。",
+                "importance": 5,
+                "relatedAgents": [
+                  "阿舵"
+                ],
+                "tick": 478,
+                "timeStr": "第1年 春季 第6天 05:30"
+              },
+              {
+                "category": "conversation",
+                "content": "與阿舵交談：阿舵興奮地和曹峰分享了一個神奇的發現，兩人在guardpost聊得眉飛色舞，約好下次一起去探索。",
+                "importance": 6,
+                "relatedAgents": [
+                  "阿舵"
+                ],
+                "tick": 480,
+                "timeStr": "第1年 春季 第6天 06:00"
+              }
+            ],
+            "mood": 36.0,
+            "name": "曹峰",
+            "needs": {
+              "beauty": 50.0,
+              "comfort": 60.0,
+              "hunger": 39.1999999999997,
+              "recreation": 15.0,
+              "rest": 46.9,
+              "social": 0.0
+            },
+            "personality": {
+              "background": "尋求平靜生活的資深戰士。",
+              "traits": [
+                "stoic",
+                "pessimist"
+              ],
+              "values": [
+                "自然",
+                "和平"
+              ]
+            },
+            "relationships": {
+              "hb_aduo": {
+                "affinity": 41.0,
+                "interactionCount": 14,
+                "isCheating": false,
+                "lastInteractionTick": 480,
+                "romanticInterest": 0.0,
+                "sharedMemories": [
+                  "阿舵被曹峰手上的昨天釣到的魚做成的魚乾吸引,兩人就這麼聊開了,約好改天再見。",
+                  "阿舵用一則八卦成功勾起曹峰的興趣,兩人在guardpost越聊越起勁。",
+                  "曹峰被阿舵手上的昨天釣到的魚做成的魚乾吸引,兩人就這麼聊開了,約好改天再見。",
+                  "曹峰和阿舵在guardpost低聲討論著鎮上的神秘傳聞，越聊越覺得事情不簡單，兩人的表情既好奇又緊張。但後來氣氛突然變得微妙，兩人不歡而散。",
+                  "阿舵興奮地和曹峰分享了一個神奇的發現，兩人在guardpost聊得眉飛色舞，約好下次一起去探索。",
+                  "阿舵在guardpost向曹峰分享了一件讓人笑到肚子痛的趣事，兩人笑得前仰後合，guardpost裡充滿了歡樂的氣氛。",
+                  "曹峰在guardpost送了阿舵自己做的手工餅乾作為感謝，阿舵感動之餘兩人的友誼又更進了一步，春季的空氣裡充滿了溫暖。",
+                  "阿舵帶了野菜煎餅到guardpost和曹峰邊吃邊聊，春季的暖意讓兩人的對話格外愜意。",
+                  "阿舵和曹峰在guardpost感慨起命運的安排，聊起了清晨帶著露水的草地的美好，最後被桂花糕的香氣拉回了現實，氣氛輕鬆溫馨。",
+                  "曹峰帶了野菜煎餅到guardpost和阿舵邊吃邊聊，春季的暖意讓兩人的對話格外愜意。",
+                  "阿舵帶了春筍燉肉到guardpost和曹峰邊吃邊聊，春季的暖意讓兩人的對話格外愜意。",
+                  "阿舵興奮地和曹峰分享了一個神奇的發現，兩人在guardpost聊得眉飛色舞，約好下次一起去探索。",
+                  "曹峰興奮地和阿舵分享了一個神奇的發現，兩人在guardpost聊得眉飛色舞，約好下次一起去探索。",
+                  "阿舵興奮地和曹峰分享了一個神奇的發現，兩人在guardpost聊得眉飛色舞，約好下次一起去探索。"
+                ],
+                "status": null,
+                "statusSince": 0.0,
+                "targetId": "hb_aduo",
+                "targetName": "阿舵",
+                "trust": 0.0
+              }
+            },
+            "skills": {
+              "動物": {
+                "passion": "無",
+                "xp": 70.0
+              },
+              "射擊": {
+                "passion": "微",
+                "xp": 4110.0
+              },
+              "工藝": {
+                "passion": "無",
+                "xp": 125.0
+              },
+              "建造": {
+                "passion": "無",
+                "xp": 16.0
+              },
+              "採礦": {
+                "passion": "無",
+                "xp": 123.0
+              },
+              "智識": {
+                "passion": "微",
+                "xp": 211.0
+              },
+              "烹飪": {
+                "passion": "無",
+                "xp": 154.0
+              },
+              "社交": {
+                "passion": "無",
+                "xp": 282.0
+              },
+              "種植": {
+                "passion": "微",
+                "xp": 145.0
+              },
+              "藝術": {
+                "passion": "大",
+                "xp": 403.0
+              },
+              "近戰": {
+                "passion": "無",
+                "xp": 1366.0
+              },
+              "醫療": {
+                "passion": "無能",
+                "xp": 0.0
+              }
+            },
+            "thoughts": [],
+            "todayTrace": [
+              {
+                "loc": "guardpost",
+                "m": 0,
+                "text": "工作"
+              },
+              {
+                "loc": "tavern",
+                "m": 300,
+                "text": "進食"
+              },
+              {
+                "loc": "guardpost",
+                "m": 315,
+                "text": "工作"
+              },
+              {
+                "loc": "park",
+                "m": 360,
+                "text": "娛樂"
+              }
+            ]
+          }
+        ],
+        "first_appointment": {
+          "due": 136.0,
+          "expires": 8.0,
+          "hour": 16.0,
+          "npc": "hb_achao",
+          "npc_arrived": true,
+          "place": "town_square",
+          "reason": "等待時間結束，未在現場碰面（玩家未到或雙方未靠近）",
+          "resolved_tick": 144,
+          "state": "missed",
+          "time": "小鎮第 2 天 16:00",
+          "until": 144.0
+        },
+        "first_wait_tick": 137,
+        "initial_farm": {
+          "capacity": 6.0,
+          "category": "work",
+          "description": "肥沃的農田",
+          "id": "farm",
+          "name": "蚵田菜畦",
+          "x": 193.0,
+          "y": 378.0
+        },
+        "initial_stock": {
+          "history": [],
+          "resources": {
+            "beer": 0.0,
+            "bread": 0.0,
+            "brick": 0.0,
+            "cloth": 90.0,
+            "clothing": 15.0,
+            "corn": 0.0,
+            "cotton": 0.0,
+            "dragon_fruit": 0.0,
+            "fine_tea": 0.0,
+            "flowers": 0.0,
+            "food": 320.0,
+            "furniture": 5.0,
+            "gold": 0.0,
+            "golden_wheat": 0.0,
+            "grapes": 0.0,
+            "hardwood": 0.0,
+            "herbal_tea": 0.0,
+            "herbs": 10.0,
+            "jam": 0.0,
+            "luxury_furniture": 0.0,
+            "marble": 0.0,
+            "meals": 50.0,
+            "medicine": 5.0,
+            "metal": 30.0,
+            "mushroom": 0.0,
+            "pastry": 0.0,
+            "perfume": 0.0,
+            "plank": 0.0,
+            "potato": 0.0,
+            "research_points": 0.0,
+            "rice": 0.0,
+            "silver": 150.0,
+            "steel": 0.0,
+            "stone": 80.0,
+            "sugar": 0.0,
+            "sugarcane": 0.0,
+            "tea": 0.0,
+            "tools": 10.0,
+            "wheat": 0.0,
+            "wine": 0.0,
+            "wood": 45.0
+          }
+        },
+        "invalid_steps": [],
+        "invitee": "hb_achao",
+        "maximum_npc_step": 0.999847412109375,
+        "maximum_player_step": 1.20001649856567,
+        "met_tick": 233,
+        "missed_home_tick": 147,
+        "missed_tick": 144,
+        "motion_frames_per_tick": 480,
+        "negative_stock": [],
+        "paid": {
+          "stone": 15.0,
+          "tools": 2.0,
+          "wood": 10.0
+        },
+        "returned_tick": 237,
+        "scope": "original harbor resources/jobs/needs/positions, traveler proposal and daily mayor review, real execution UI and normal daily construction, local invitation and acceptance, 480 clock ticks with 480 motion frames each, player collision walking during clock progression, native reload, first player absence, actual home return, fresh local offer and second physical meeting, terminal reload, farm work/home sleep; no granted resources, elected fixture, compressed midnight or production AI",
+        "second_offer_tick": 148,
+        "sleepers": [
+          "hb_dengye",
+          "hb_shanshan",
+          "hb_xiaoou",
+          "hb_haima",
+          "hb_axi",
+          "hb_achao",
+          "hb_shishu",
+          "hb_afu",
+          "hb_haibo",
+          "hb_langshu",
+          "hb_amao",
+          "hb_aduo",
+          "hb_yunyi",
+          "hb_muxia",
+          "hb_xiugu",
+          "imm_曹峰_72"
+        ],
+        "stages": [
+          {
+            "appointment": "accepted",
+            "completion": -1,
+            "missed": -1,
+            "missed_home": -1,
+            "proposal": "pending",
+            "returned": -1,
+            "second_offer": -1,
+            "tick": 48
+          },
+          {
+            "appointment": "accepted",
+            "completion": -1,
+            "missed": -1,
+            "missed_home": -1,
+            "proposal": "executed",
+            "returned": -1,
+            "second_offer": -1,
+            "tick": 96
+          },
+          {
+            "appointment": "missed",
+            "completion": -1,
+            "missed": 144,
+            "missed_home": -1,
+            "proposal": "executed",
+            "returned": -1,
+            "second_offer": -1,
+            "tick": 144.0
+          },
+          {
+            "appointment": "accepted",
+            "completion": -1,
+            "missed": 144,
+            "missed_home": 147,
+            "proposal": "executed",
+            "returned": -1,
+            "second_offer": 148,
+            "tick": 192
+          },
+          {
+            "appointment": "met",
+            "completion": -1,
+            "missed": 144,
+            "missed_home": 147,
+            "proposal": "executed",
+            "returned": 237,
+            "second_offer": 148,
+            "tick": 240
+          },
+          {
+            "appointment": "met",
+            "completion": -1,
+            "missed": 144,
+            "missed_home": 147,
+            "proposal": "executed",
+            "returned": 237,
+            "second_offer": 148,
+            "tick": 288
+          },
+          {
+            "appointment": "met",
+            "completion": -1,
+            "missed": 144,
+            "missed_home": 147,
+            "proposal": "executed",
+            "returned": 237,
+            "second_offer": 148,
+            "tick": 336
+          },
+          {
+            "appointment": "met",
+            "completion": 360,
+            "missed": 144,
+            "missed_home": 147,
+            "proposal": "executed",
+            "returned": 237,
+            "second_offer": 148,
+            "tick": 384
+          },
+          {
+            "appointment": "met",
+            "completion": 360,
+            "missed": 144,
+            "missed_home": 147,
+            "proposal": "executed",
+            "returned": 237,
+            "second_offer": 148,
+            "tick": 432
+          },
+          {
+            "appointment": "met",
+            "completion": 360,
+            "missed": 144,
+            "missed_home": 147,
+            "proposal": "executed",
+            "returned": 237,
+            "second_offer": 148,
+            "tick": 480
+          }
+        ],
+        "ticks": 480,
+        "worked": [
+          "hb_achao"
+        ]
+      }
+    },
+    {
+      "test": "dual_town_archives",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 12,
+        "failures": [],
+        "scope": "two delivered five-day archives loaded via real picker, town isolation, actual player histories, naturally resolved NPC records and memory, no settlement replay; zero natural cancellation count is not coverage of injected conflict branches",
+        "towns": [
+          {
+            "npc_records": 3,
+            "population": 21,
+            "resolved_npc_gatherings": 0,
+            "town": "雙城整合邊境鎮.rimtown"
+          },
+          {
+            "npc_records": 0,
+            "population": 17,
+            "resolved_npc_gatherings": 0,
+            "town": "海風鎮五日邀約驗收.rimtown"
+          }
+        ]
+      }
+    }
+  ]
+}

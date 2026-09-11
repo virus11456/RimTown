@@ -5,6 +5,9 @@ const PLACES := ["town_square"]
 const LIVE := ["offered", "accepted", "waiting", "change_offered"]
 static func current(w: SimWorld) -> Dictionary:
 	return w.quest_balance.get("appointments",{}).get("current",{})
+static func overlaps(w: SimWorld,id: String,start: int,finish: int) -> bool:
+	var a:=current(w)
+	return a.get("npc")==id and a.get("state") in ["accepted","waiting"] and start<finish and int(a.due)-32<finish and int(a.until)>start
 static func card_key(a: Dictionary) -> String:
 	return JSON.stringify([a.get("npc",""),a.get("place",""),int(a.get("due",-1)),int(a.get("expires",-1)),int(a.get("proposal",{}).get("due",-1))])
 static func reason(w: SimWorld,id: String) -> String:
