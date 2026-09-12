@@ -1,0 +1,47 @@
+{
+  "cases": [
+    {
+      "job": "doctor",
+      "recipient_age": 9,
+      "town": "frontier"
+    },
+    {
+      "job": "doctor",
+      "recipient_age": 70,
+      "town": "frontier"
+    },
+    {
+      "job": "priest",
+      "recipient_age": 9,
+      "town": "frontier"
+    },
+    {
+      "job": "priest",
+      "recipient_age": 70,
+      "town": "frontier"
+    },
+    {
+      "job": "doctor",
+      "recipient_age": 9,
+      "town": "harbor"
+    },
+    {
+      "job": "doctor",
+      "recipient_age": 70,
+      "town": "harbor"
+    },
+    {
+      "job": "priest",
+      "recipient_age": 9,
+      "town": "harbor"
+    },
+    {
+      "job": "priest",
+      "recipient_age": 70,
+      "town": "harbor"
+    }
+  ],
+  "checks": 1176,
+  "failures": [],
+  "scope": "controlled need, clinic registration, recipient position and genuine conversation API; provider collision arrival; display only, no treatment completion or new rewards"
+}

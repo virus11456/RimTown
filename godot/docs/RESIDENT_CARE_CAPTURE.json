@@ -1,0 +1,29 @@
+{
+  "cases": [
+    {
+      "actual_conversation": true,
+      "job": "doctor",
+      "stops_on_return_home": true,
+      "town": "frontier"
+    },
+    {
+      "actual_conversation": true,
+      "job": "priest",
+      "stops_on_return_home": true,
+      "town": "frontier"
+    },
+    {
+      "actual_conversation": true,
+      "job": "doctor",
+      "stops_on_return_home": true,
+      "town": "harbor"
+    },
+    {
+      "actual_conversation": true,
+      "job": "priest",
+      "stops_on_return_home": true,
+      "town": "harbor"
+    }
+  ],
+  "scope": "controlled clinic, needs, recipient location and conversation event; native display with no new medical outcome"
+}

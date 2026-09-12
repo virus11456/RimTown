@@ -15,6 +15,7 @@ var service_performance := ServicePerformance.new()
 var traveler_gait := TravelerGait.new()
 var resident_gaits: Dictionary={}
 var resident_work:=ResidentWorkPerformance.new()
+var resident_care:=ResidentCarePerformance.new()
 var furnishings: InteriorFurnishings
 var interior: InteriorCutaway
 
@@ -77,7 +78,7 @@ func display_save(save: Dictionary) -> void:
 	layout.solid_projects=true
 	layout.separate_civic_buildings=true
 	layout.rebuild(save)
-	actors.clear();resident_gaits.clear();resident_work=ResidentWorkPerformance.new()
+	actors.clear();resident_gaits.clear();resident_work=ResidentWorkPerformance.new();resident_care=ResidentCarePerformance.new()
 	if content != null:
 		remove_child(content)
 		content.queue_free()
