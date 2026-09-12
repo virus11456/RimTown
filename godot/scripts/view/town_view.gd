@@ -161,6 +161,7 @@ func _build_locations(harbor: bool) -> void:
 		elif mapping.has(id):
 			var footprint := zone.duplicate()
 			if id == "farm": footprint.w=6; footprint.h=5
+			if id == "quarry": footprint.h=maxf(1,float(zone.h)-2) # Leave the existing front stone apron visible for workers.
 			var shell:=_building(mapping[id],footprint)
 			if zone.has("doorPixelX"): interior.register_shell(id,shell)
 		elif id == "well": _instance("prop_well",Vector3(zone.x+2,.12,zone.y+2),Vector3.ONE*1.5)
@@ -286,9 +287,6 @@ func _build_villagers(save: Dictionary) -> void:
 		if hats.has(job): _instance(hats[job],Vector3(0,head_y+.1,0),Vector3.ONE,actor)
 		if "shy" in traits: actor.rotation_degrees.y=-18
 		elif "charismatic" in traits: actor.rotation_degrees.y=18
-		if id!="player" and job in ["miner","farmer"]:
-			var tool: String={"miner":"acc_tool_pickaxe","blacksmith":"acc_tool_hammer","farmer":"acc_tool_hoe","researcher":"acc_tool_book"}[job]
-			_instance(tool,Vector3(.4,.35,0),Vector3.ONE*.7,actor)
 
 func agent_position(id: String) -> Variant:
 	return actors[id].position if actors.has(id) else null

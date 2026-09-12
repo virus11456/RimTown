@@ -1,0 +1,45 @@
+{
+  "cases": [
+    {
+      "age": 28,
+      "arrived": true,
+      "job": "miner",
+      "placed": true,
+      "tools_hidden_on_departure": true,
+      "town": "frontier"
+    },
+    {
+      "age": 28,
+      "arrived": true,
+      "job": "farmer",
+      "placed": true,
+      "tools_hidden_on_departure": true,
+      "town": "frontier"
+    },
+    {
+      "age": 70,
+      "arrived": true,
+      "job": "farmer",
+      "placed": false,
+      "tools_hidden_on_departure": true,
+      "town": "frontier"
+    },
+    {
+      "age": 28,
+      "arrived": true,
+      "job": "miner",
+      "placed": true,
+      "tools_hidden_on_departure": true,
+      "town": "harbor"
+    },
+    {
+      "age": 9,
+      "arrived": true,
+      "job": "farmer",
+      "placed": true,
+      "tools_hidden_on_departure": true,
+      "town": "harbor"
+    }
+  ],
+  "scope": "controlled jobs, ages, farm registration and nearby start positions; real collision arrival and leaving; visible original town geometry"
+}

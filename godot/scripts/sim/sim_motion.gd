@@ -90,6 +90,8 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 		if stable_routes and not appointment and existing.get("route_key","")==route_key and existing.get("appointment")==false:
 			target=Vector2(existing.x,existing.y)
 		if appointment: target=layout._center(location) # Stable meeting point: crowds must not keep replanning the route.
+		var field: Dictionary=SimResidentField.destination(layout,a,agents) if stable_routes and id!="player" else {}
+		if not field.is_empty(): target=field.target;route_key=field.key
 		if stations.has(id):
 			target=stations[id].target;route_key=stations[id].key
 		target=layout._nearest(target)

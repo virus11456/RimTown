@@ -1,0 +1,152 @@
+{
+  "cases": [
+    {
+      "age": 9,
+      "arrived": true,
+      "frames": 141,
+      "job": "miner",
+      "layout": "miner",
+      "town": "frontier"
+    },
+    {
+      "age": 28,
+      "arrived": true,
+      "frames": 141,
+      "job": "miner",
+      "layout": "miner",
+      "town": "frontier"
+    },
+    {
+      "age": 70,
+      "arrived": true,
+      "frames": 141,
+      "job": "miner",
+      "layout": "miner",
+      "town": "frontier"
+    },
+    {
+      "age": 9,
+      "arrived": true,
+      "frames": 208,
+      "job": "farmer",
+      "layout": "farm_site",
+      "town": "frontier"
+    },
+    {
+      "age": 28,
+      "arrived": true,
+      "frames": 208,
+      "job": "farmer",
+      "layout": "farm_site",
+      "town": "frontier"
+    },
+    {
+      "age": 70,
+      "arrived": true,
+      "frames": 208,
+      "job": "farmer",
+      "layout": "farm_site",
+      "town": "frontier"
+    },
+    {
+      "age": 9,
+      "arrived": true,
+      "frames": 151,
+      "job": "farmer",
+      "layout": "farm_legacy",
+      "town": "frontier"
+    },
+    {
+      "age": 28,
+      "arrived": true,
+      "frames": 151,
+      "job": "farmer",
+      "layout": "farm_legacy",
+      "town": "frontier"
+    },
+    {
+      "age": 70,
+      "arrived": true,
+      "frames": 151,
+      "job": "farmer",
+      "layout": "farm_legacy",
+      "town": "frontier"
+    },
+    {
+      "age": 9,
+      "arrived": true,
+      "frames": 141,
+      "job": "miner",
+      "layout": "miner",
+      "town": "harbor"
+    },
+    {
+      "age": 28,
+      "arrived": true,
+      "frames": 141,
+      "job": "miner",
+      "layout": "miner",
+      "town": "harbor"
+    },
+    {
+      "age": 70,
+      "arrived": true,
+      "frames": 141,
+      "job": "miner",
+      "layout": "miner",
+      "town": "harbor"
+    },
+    {
+      "age": 9,
+      "arrived": true,
+      "frames": 208,
+      "job": "farmer",
+      "layout": "farm_site",
+      "town": "harbor"
+    },
+    {
+      "age": 28,
+      "arrived": true,
+      "frames": 208,
+      "job": "farmer",
+      "layout": "farm_site",
+      "town": "harbor"
+    },
+    {
+      "age": 70,
+      "arrived": true,
+      "frames": 208,
+      "job": "farmer",
+      "layout": "farm_site",
+      "town": "harbor"
+    },
+    {
+      "age": 9,
+      "arrived": true,
+      "frames": 151,
+      "job": "farmer",
+      "layout": "farm_legacy",
+      "town": "harbor"
+    },
+    {
+      "age": 28,
+      "arrived": true,
+      "frames": 151,
+      "job": "farmer",
+      "layout": "farm_legacy",
+      "town": "harbor"
+    },
+    {
+      "age": 70,
+      "arrived": true,
+      "frames": 151,
+      "job": "farmer",
+      "layout": "farm_legacy",
+      "town": "harbor"
+    }
+  ],
+  "checks": 10645,
+  "failures": [],
+  "maximum_step": 0.90191650390625,
+  "scope": "controlled jobs/ages and legacy or placed farms; collision arrival; tool geometry, work interrupts, pure stock/crop/motion state, pause and reload; no new production"
+}
