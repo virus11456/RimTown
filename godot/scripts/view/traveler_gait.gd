@@ -11,6 +11,7 @@ var target_facing := 0.0
 var feet: Array = []
 var support := 0
 var replants := 0
+var fast_blend := 0.0
 
 static func floor_height(layout: TownLayout, point: Vector2) -> float:
 	var cell:=Vector2i(floori(point.x),floori(point.y))
@@ -70,19 +71,26 @@ func reset_feet(actor: Node3D,body: Node3D,town: TownView) -> void:
 	feet.clear();support=0;phase=PI/2
 	for side in 2:
 		var point:=neutral(actor,body,side,town)
-		feet.append({"point":point,"start":point,"yaw":actor.rotation.y,"planted":side==0})
+		feet.append({"point":point,"start":point,"yaw":actor.rotation.y,"planted":side==0,"pitch":0.0})
 
 static func rod_pose(node: Node3D,a: Vector3,b: Vector3,height: float) -> void:
 	var direction:=b-a
 	node.position=(a+b)*.5
 	node.basis=Basis(Quaternion(Vector3.UP,direction.normalized())).scaled(Vector3(1,direction.length()/(.42*height),1))
 
-func solve(body: Node3D,side: int,point: Vector3,yaw: float,height: float) -> void:
+func solve(body: Node3D,side: int,point: Vector3,yaw: float,height: float,pitch: float=0.0) -> void:
 	var name:="GaitRight" if side==0 else "GaitLeft"
 	var shoe: Node3D=body.get_node(name)
-	shoe.global_transform=Transform3D(Basis(Vector3.UP,yaw),point+Vector3.UP*.1*height)
+	var heading:=Basis(Vector3.UP,yaw)
+	var orientation:=heading*Basis(Vector3.RIGHT,pitch)
+	# Roll around the heel or toe on the sole, keeping that contact fixed in world space.
+	var sole: AABB=(shoe as MeshInstance3D).mesh.get_aabb()
+	var pivot:=Vector3(0,sole.position.y,sole.end.z if pitch>=0 else sole.position.z)
+	var contact:=point+heading*Vector3(0,0,pivot.z)
+	shoe.global_transform=Transform3D(orientation,contact-orientation*pivot)
+	shoe.set_meta("contact_local",pivot);shoe.set_meta("contact_world",contact);shoe.set_meta("pitch",pitch)
 	var hip:=Vector3(.14 if side==0 else -.14,.57*height,0)
-	var ankle:=body.to_local(point+Vector3.UP*.16*height)
+	var ankle:=body.to_local(shoe.to_global(Vector3(0,.06*height,0)))
 	var axis:=(ankle-hip).normalized()
 	var length:=.28*height
 	var distance:=hip.distance_to(ankle)
@@ -102,12 +110,14 @@ func update(town: TownView,positions: Dictionary,delta: float) -> void:
 	var p: Dictionary=positions.player;var now:=Vector2(p.x,p.y)/16
 	var changed:=actor_id!=actor.get_instance_id()
 	if changed:
-		initialized=false;weight=0;actor_id=actor.get_instance_id();facing=actor.rotation.y;target_facing=facing;feet.clear()
+		initialized=false;weight=0;fast_blend=0;actor_id=actor.get_instance_id();facing=actor.rotation.y;target_facing=facing;feet.clear()
 	var direction:=now-previous if initialized else Vector2.ZERO
 	var distance:=direction.length();previous=now;initialized=true
-	if distance>1.0: distance=0;weight=0;feet.clear()
+	if distance>1.0: distance=0;weight=0;fast_blend=0;feet.clear()
 	var walking: bool=p.get("walking",false) and distance>.00001
 	var dt:=clampf(delta,0,.1)
+	var speed:=distance/maxf(delta,.000001)
+	fast_blend=move_toward(fast_blend,smoothstep(2.0,3.5,speed) if walking else 0.0,dt*6)
 	var old_weight:=weight
 	weight=move_toward(weight,1.0 if walking else 0.0,dt*10)
 	if walking:
@@ -118,8 +128,10 @@ func update(town: TownView,positions: Dictionary,delta: float) -> void:
 	if weight>.001:
 		facing=lerp_angle(facing,target_facing,1-exp(-18*dt));actor.rotation.y=facing
 	else: facing=actor.rotation.y
+	if weight>.001: actor.rotation.x=fast_blend*.10*weight
+	elif town.service_performance.observed.is_empty(): actor.rotation.x=0
 	if p.get("activity","")=="sleeping":
-		weight=0;feet.clear()
+		weight=0;fast_blend=0;actor.rotation.x=0;feet.clear()
 		for name in ["GaitRight","GaitLeft"]:
 			for part in ["","Upper","Lower"]:
 				var node: Node3D=body.get_node(name+part);node.transform=node.get_meta("gait_rest")
@@ -141,7 +153,7 @@ func update(town: TownView,positions: Dictionary,delta: float) -> void:
 			var t:=fmod(phase/PI,1.0)
 			var target:=neutral(actor,body,side,town)+forward*.24*h
 			target.y=floor_height(town.layout,Vector2(target.x,target.z))
-			feet[side].point=Vector3(feet[side].start).lerp(target,smoothstep(0,1,t))+Vector3.UP*sin(t*PI)*.10*h
+			feet[side].point=Vector3(feet[side].start).lerp(target,smoothstep(0,1,t))+Vector3.UP*sin(t*PI)*lerpf(.10,.16,fast_blend)*h
 			feet[side].yaw=facing
 	else:
 		for side in 2:
@@ -153,7 +165,14 @@ func update(town: TownView,positions: Dictionary,delta: float) -> void:
 		var ankle: Vector3=feet[side].point+Vector3.UP*.16*h
 		if hip.distance_to(ankle)>.558*h:
 			feet[side].point=neutral(actor,body,side,town);feet[side].start=feet[side].point;feet[side].planted=false;replants+=1
-		solve(body,side,feet[side].point,feet[side].yaw,h)
+		var t:=fmod(phase/PI,1.0)
+		var pitch:=0.0
+		if walking and feet[side].planted:
+			pitch=-.18*(1-smoothstep(0,.22,t))+lerpf(.28,.38,fast_blend)*smoothstep(.65,1,t)
+		elif walking:
+			pitch=lerpf(.28,-.08,smoothstep(0,.3,t))-.10*smoothstep(.7,1,t)
+		feet[side].pitch=move_toward(float(feet[side].get("pitch",0)),pitch*weight,dt*5)
+		solve(body,side,feet[side].point,feet[side].yaw,h,feet[side].pitch)
 	if weight>.001:
-		var swing:=sin(phase)*.27*weight
+		var swing:=sin(phase)*lerpf(.27,.48,fast_blend)*weight
 		body.get_node("ServiceRight").rotation.x=-swing;body.get_node("ServiceLeft").rotation.x=swing

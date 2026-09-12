@@ -14,9 +14,9 @@ func audit_pose(app: Node) -> void:
 		var leg: MeshInstance3D=actor.get_node("Body/"+side)
 		var bottom:=INF
 		var vertices: PackedVector3Array=leg.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
-		for v in vertices: bottom=minf(bottom,(leg.transform*v).y)
-		bottom+=actor.position.y-TravelerGait.floor_height(app.motion.layout,Vector2(actor.position.x,actor.position.z))
-		check(bottom>=-.0001 and bottom<=.101,"shoe geometry stays above floor with bounded swing lift")
+		for v in vertices: bottom=minf(bottom,(leg.global_transform*v).y)
+		bottom-=TravelerGait.floor_height(app.motion.layout,Vector2(actor.position.x,actor.position.z))
+		check(bottom>=-.0001 and bottom<=.161,"shoe geometry stays above floor with bounded swing lift")
 		grounded=grounded or absf(bottom)<.0001;lifted=lifted or bottom>.005
 	check(grounded,"at least one foot remains grounded")
 	samples+=1

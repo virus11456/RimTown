@@ -1,0 +1,52 @@
+{
+  "cases": [
+    {
+      "arrived_without_starting": true,
+      "captures": [
+        "toe",
+        "heel",
+        "stopped"
+      ],
+      "fast": false,
+      "frames": 316,
+      "maximum_step": 0.400024831295013,
+      "town": "frontier"
+    },
+    {
+      "arrived_without_starting": true,
+      "captures": [
+        "toe",
+        "heel",
+        "stopped"
+      ],
+      "fast": true,
+      "frames": 108,
+      "maximum_step": 1.20001220703125,
+      "town": "frontier"
+    },
+    {
+      "arrived_without_starting": true,
+      "captures": [
+        "toe",
+        "heel",
+        "stopped"
+      ],
+      "fast": false,
+      "frames": 244,
+      "maximum_step": 0.400081485509872,
+      "town": "harbor"
+    },
+    {
+      "arrived_without_starting": true,
+      "captures": [
+        "toe",
+        "heel",
+        "stopped"
+      ],
+      "fast": true,
+      "frames": 80,
+      "maximum_step": 1.20006632804871,
+      "town": "harbor"
+    }
+  ]
+}

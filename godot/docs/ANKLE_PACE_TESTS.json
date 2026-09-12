@@ -1,0 +1,8 @@
+{
+  "checks": 12667,
+  "failures": [],
+  "heel_samples": 376,
+  "scope": "two towns, flat collision fixture, 30/60/120Hz walking-fast-walking transitions, actual shoe vertices, heel/toe anchors, lean recovery, flat stop and no resource writes",
+  "support_contacts": 2514,
+  "toe_samples": 448
+}

@@ -31,7 +31,7 @@ func run() -> void:
 					check(absf(hip.distance_to(knee)-.28)<.0001 and absf(knee.distance_to(ankle)-.28)<.0001,"both leg bones preserve length")
 					check((knee-(hip+ankle)*.5).z>=-.00001,"knee bends forward")
 					var index:=0 if side=="GaitRight" else 1
-					check(shoe.global_position.distance_to(Vector3(gait.feet[index].point)+Vector3.UP*.1)<.0001,"rendered shoe follows world support target")
+					check(shoe.to_global(shoe.get_meta("contact_local")).distance_to(shoe.get_meta("contact_world"))<.0001,"rendered heel or toe matches world contact target")
 			# Actual direction reversal and stop release stale support without stretched legs.
 			for frame in fps:
 				app.motion.move_player(Vector2.RIGHT,1.0/fps,fast);pose(app,1.0/fps)
