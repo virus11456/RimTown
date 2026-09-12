@@ -154,6 +154,7 @@ func _update(id: String) -> void:
 	var home_return:=SimHomeRest.plan(self,a)
 	a.erase("_homeReturn")
 	a.erase("_commuteDestination")
+	var recovery:=SimResidentCare.recovery_activity(self,a)
 	var previous: String=a.activity
 	if a.get("isPlayer",false): _player_activity(a,hour)
 	elif a.has("_raidShelterUntil"):
@@ -165,6 +166,7 @@ func _update(id: String) -> void:
 	elif SimServiceStay.holding(self,id): a.activity="receiving_service"
 	elif SimLeisurePlan.directing(self,id): a.activity="planned_leisure"
 	elif SimHangoutVisits.directing(self,id): a.activity="hangout_travel"
+	elif not recovery.is_empty(): a.activity=recovery
 	else: _activity(a,hour)
 	SimHomeRest.apply(self,a)
 	SimNeeds.decay(a.needs,a.activity,hour)
@@ -206,6 +208,9 @@ func _update(id: String) -> void:
 	if a.activity=="waiting_workplace":
 		if not data.townMap.locations.has(a.currentLocation): a.currentLocation=a.homeLocation
 		run.targetLocation=null;a._locationStayRemaining=0
+		return
+	if not recovery.is_empty():
+		a.currentLocation=a.homeLocation;run.targetLocation=null;a._locationStayRemaining=0
 		return
 	if SimResidentCare.apply(self,a,run): return
 	if SimLeisurePlan.directing(self,id):

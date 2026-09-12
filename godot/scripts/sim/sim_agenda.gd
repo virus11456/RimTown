@@ -7,7 +7,7 @@ static func place_name(w: SimWorld,m: SimMotion,room: String) -> String:
 		return str(w.data.townMap.locations.get(parent,{}).get("name","住宅區"))+"（住家）"
 	return str(w.data.townMap.locations.get(room,{}).get("name","其他場所"))
 static func activity(a: Dictionary) -> String:
-	return {"care_travel":"前往尋求關懷","care_wait":"在現場接受關懷","receiving_service":"在現場接受服務","hangout_travel":"同行赴約／等候","planned_leisure":"休閒安排","appointment_travel":"赴約","appointment_wait":"等待見面"}.get(a.activity,SimTrace.activity_label(a))
+	return {"heading_home":"慢走返家","care_travel":"前往尋求關懷","care_wait":"在現場接受關懷","receiving_service":"在現場接受服務","hangout_travel":"同行赴約／等候","planned_leisure":"休閒安排","appointment_travel":"赴約","appointment_wait":"等待見面"}.get(a.activity,SimTrace.activity_label(a))
 static func current(w: SimWorld,m: SimMotion,id: String) -> Dictionary:
 	if not w.data.agents.has(id): return {}
 	var a: Dictionary=w.data.agents[id]
@@ -42,6 +42,12 @@ static func routine(w: SimWorld,id: String) -> Array:
 	var start:=int(sleep_window.start);var end:=int(sleep_window.end)
 	var rows: Array=["平常睡眠：%02d:00–%02d:00"%[start,end]]
 	if a.has("_careVisitNotice"): rows.append("最近求助："+str(a._careVisitNotice))
+	if a.has("_careRecovery"):
+		var recovery: Dictionary=a._careRecovery
+		if SimHomeRest.arrived(w,a):
+			rows.append("在家用餐／短暫休息：最多剩餘 %d 分鐘；結束後重新評估需要（遊戲時間）。"%(maxi(0,mini(int(recovery.get("finish",recovery.until)),int(recovery.until))-int(w.data.tickCount))*15))
+		else:
+			rows.append("先返家恢復：剩餘 %d 分鐘抵達；走路時不恢復體力（遊戲時間）。"%(maxi(0,int(recovery.arrive_until)-int(w.data.tickCount))*15))
 	for result in a.get("_careResults",[]):
 		rows.append(("照護完成：" if result.get("state","")=="completed" else "求助中止：")+str(w.data.agents.get(str(result.get("provider","")),{}).get("name","居民"))+"："+str(result.get("reason","")))
 	if a.has("_careVisit"):

@@ -4,10 +4,11 @@ extends RefCounted
 const PROVIDER_DAILY_LIMIT := 3
 const MAX_TRAVEL_TICKS := 16 # At most four in-game hours, including arrival observation.
 const SERVICE_TICKS := 2
+const RECOVERY_REASON := "完成前可能需要先吃飯或休息。"
 static func eligible(w: SimWorld,id: String) -> bool:
 	var a: Dictionary=w.data.agents.get(id,{})
 	if id=="player" or a.is_empty() or not SimServiceStay.priority(w,id).is_empty(): return false
-	if a.get("_serviceStay",false) or SimLeisurePlan.directing(w,id): return false
+	if a.has("_careRecovery") or a.get("_serviceStay",false) or SimLeisurePlan.directing(w,id): return false
 	return w.quest_balance.get("careers",{}).get("active",{}).get("target","")!=id
 static func provider_ready(w: SimWorld,m: SimMotion,id: String) -> bool:
 	var a: Dictionary=w.data.agents.get(id,{})
@@ -87,7 +88,7 @@ static func feasibility(w: SimWorld,a: Dictionary,b: Dictionary,goal: Vector2) -
 	var travel:=travel_ticks(m,str(a.id),str(b.currentLocation),goal)
 	if travel>MAX_TRAVEL_TICKS: return "步行超過四小時的赴診上限，先保留必要作息。"
 	var duration:=travel+SERVICE_TICKS
-	if float(a.needs.hunger)-duration*2<20 or float(a.needs.rest)-duration*1.5<10: return "完成前可能需要先吃飯或休息。"
+	if float(a.needs.hunger)-duration*2<20 or float(a.needs.rest)-duration*1.5<10: return RECOVERY_REASON
 	if float(b.needs.hunger)-duration*2<20 or float(b.needs.rest)-duration*1.5<10: return "服務者需要先用餐或休息。"
 	var job:=SimWorkSchedule.job(b,w.rules.jobs)
 	for offset in range(duration+1):
@@ -99,6 +100,38 @@ static func feasibility(w: SimWorld,a: Dictionary,b: Dictionary,goal: Vector2) -
 		if SimAppointments.overlaps(w,id,now,now+duration+1) or SimHangoutRoute.leisure_conflict(w,id,now,now+duration+1): return "已有約定或休閒安排，先保留原行程。"
 	if not SimHangoutRoute.return_fits(m,a,w.data.clock,w.rules.jobs,str(b.currentLocation),duration): return "照護後沒有足夠時間慢走返家。"
 	return ""
+static func end_recovery(a: Dictionary,reason: String) -> void:
+	a.erase("_careRecovery");a.erase("_careDeferred");a._careVisitNotice=reason
+static func begin_recovery(w: SimWorld,a: Dictionary,duration: int) -> void:
+	var m: SimMotion=w.social.observed_motion;var now:=int(w.data.tickCount)
+	if a.has("_careRecovery") or int(a.get("_careRecoveryDay",-1))==SimClock.total_days(w.data.clock): return
+	var distance:=SimHomeRest.remaining_distance(m,a)
+	if not is_finite(distance): return
+	var travel:=ceili(distance/m.travel_budget())+1
+	if travel>16 or float(a.needs.hunger)-travel*2<15 or float(a.needs.rest)-travel*1.5<10: return
+	for offset in range(travel+5):
+		var hour:=posmod(floori((int(w.data.clock.hour)*60+int(w.data.clock.minute)+offset*15)/60.0),24)
+		if not SimLeisurePlan.person_available(a,w.rules.jobs,hour): return
+	if SimAppointments.overlaps(w,str(a.id),now,now+travel+5) or SimHangoutRoute.leisure_conflict(w,str(a.id),now,now+travel+5): return
+	a._careRecovery={"home":str(a.homeLocation),"day":SimClock.total_days(w.data.clock),"arrive_until":now+travel,"until":now+travel+5,"hunger_target":20+duration*2,"rest_target":10+duration*1.5}
+	a._careRecoveryDay=SimClock.total_days(w.data.clock);a.erase("_careQueue")
+	a._careVisitNotice="先慢走返家，到家後用餐或短暫休息，再確認是否仍需要照護。"
+static func recovery_activity(w: SimWorld,a: Dictionary) -> String:
+	if not a.has("_careRecovery"): return ""
+	var task: Dictionary=a._careRecovery;var now:=int(w.data.tickCount);var id:=str(a.id)
+	var blocked: bool=not w.social_enabled or not SimHomeRest.physical(w) or a.get("isPlayer",false) or a.get("isDead",false) or a.has("_raidShelterUntil") or task.home!=a.homeLocation or now>=int(task.until) or int(task.day)!=SimClock.total_days(w.data.clock)
+	blocked=blocked or SimWorkSchedule.working(SimWorkSchedule.job(a,w.rules.jobs),int(w.data.clock.hour)) or SimShiftSleep.asleep(a,w.rules.jobs,int(w.data.clock.hour)) or not SimCommute.plan(w,a).is_empty() or not SimHomeRest.plan(w,a).is_empty()
+	blocked=blocked or SimAppointments.directing(w,id) or SimLeisurePlan.directing(w,id) or SimHangoutVisits.directing(w,id) or SimServiceStay.holding(w,id) or float(a.needs.hunger)<15 or float(a.needs.rest)<10
+	if blocked:
+		end_recovery(a,"返家恢復安排已結束，先處理目前必要行程。");return ""
+	if not SimHomeRest.arrived(w,a):
+		if now>int(task.arrive_until) or task.has("finish"):
+			end_recovery(a,"未能按時到家或已離開，結束這次短暫恢復安排。");return ""
+		return "heading_home"
+	if not task.has("finish"): task.finish=now+4
+	if now>=int(task.finish) or (float(a.needs.hunger)>=float(task.hunger_target) and float(a.needs.rest)>=float(task.rest_target)):
+		end_recovery(a,"已先用餐或休息，依目前需要重新評估照護。");return ""
+	return "eating" if float(a.needs.hunger)<float(task.hunger_target) else "sleeping"
 static func interrupt_for_player(w: SimWorld,target: String) -> void:
 	for a in w.data.agents.values():
 		if a.has("_careVisit") and (str(a.id)==target or str(a._careVisit.get("provider",""))==target):
@@ -109,6 +142,7 @@ static func tick(w: SimWorld) -> void:
 		for a in w.data.agents.values():
 			if a.has("_careVisit"): clear(a,"目前無法繼續關懷行程。",w.data.tickCount)
 			a.erase("_careQueue")
+			if a.has("_careRecovery"): end_recovery(a,"目前無法繼續返家恢復安排。")
 		return
 	SimCareers.book(w) # Expire yesterday's player reservation before checking NPC availability.
 	var ids: Array=w.data.agents.keys();ids.sort();var used: Dictionary={}
@@ -154,6 +188,9 @@ static func tick(w: SimWorld) -> void:
 			var reason:=feasibility(w,a,b,goal)
 			if not reason.is_empty():
 				a._careDeferred={"day":SimClock.total_days(w.data.clock),"tick":int(w.data.tickCount),"reason":reason};a._careVisitNotice="暫緩求助："+reason
+				if reason==RECOVERY_REASON:
+					begin_recovery(w,a,travel_ticks(m,id,str(b.currentLocation),goal)+SERVICE_TICKS)
+					if a.has("_careRecovery"): break
 				continue
 			if used.has(provider):
 				if not a.has("_careQueue"): a._careQueue={"day":SimClock.total_days(w.data.clock),"since":int(w.data.tickCount),"job":str(b.jobKey)}

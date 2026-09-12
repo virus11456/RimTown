@@ -1,0 +1,83 @@
+{
+  "cases": [
+    {
+      "activity": "heading_home",
+      "at_home": false,
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 48.0,
+        "recreation": 49.2,
+        "rest": 28.5,
+        "social": 59.0
+      },
+      "town": "frontier"
+    },
+    {
+      "activity": "eating",
+      "at_home": true,
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 68.0,
+        "recreation": 48.4,
+        "rest": 27.0,
+        "social": 58.0
+      },
+      "town": "frontier"
+    },
+    {
+      "activity": "sleeping",
+      "at_home": true,
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 66.0,
+        "recreation": 47.6,
+        "rest": 35.0,
+        "social": 57.0
+      },
+      "town": "frontier"
+    },
+    {
+      "activity": "heading_home",
+      "at_home": false,
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 48.0,
+        "recreation": 49.2,
+        "rest": 28.5,
+        "social": 59.0
+      },
+      "town": "harbor"
+    },
+    {
+      "activity": "eating",
+      "at_home": true,
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 68.0,
+        "recreation": 48.4,
+        "rest": 27.0,
+        "social": 58.0
+      },
+      "town": "harbor"
+    },
+    {
+      "activity": "sleeping",
+      "at_home": true,
+      "needs": {
+        "beauty": 50.0,
+        "comfort": 60.0,
+        "hunger": 66.0,
+        "recreation": 47.6,
+        "rest": 35.0,
+        "social": 57.0
+      },
+      "town": "harbor"
+    }
+  ],
+  "scope": "controlled near-home need deficit; regular tick, walking and actual at-home meal/rest with native agenda"
+}
