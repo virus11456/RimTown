@@ -1,5 +1,5 @@
 {
-  "checks": 196,
+  "checks": 216,
   "failures": [],
   "rendered_samples": false,
   "scope": "two towns, two roles, actual start/completion/cancel/distance/need/reload; pure visual poses, pause, walking precedence, timed outcome; optional staged render capture"

@@ -49,6 +49,7 @@ func update(town: TownView, w: SimWorld, m: SimMotion, delta: float) -> void:
 	var right: Node3D = body.get_node("ServiceRight")
 	var left: Node3D = body.get_node("ServiceLeft")
 	var label: Label3D = actor.get_node("ServiceStatus")
+	var marker: Label3D = actor.get_node("TravelerMarker")
 	right.rotation = Vector3.ZERO; left.rotation = Vector3.ZERO
 	actor.rotation.x = 0
 	var serial := int(w.quest_balance.get("service_outcome_serial", 0))
@@ -69,13 +70,15 @@ func update(town: TownView, w: SimWorld, m: SimMotion, delta: float) -> void:
 		observed = ""; phase = 0
 		label.text = message if remaining > 0 else ""
 		label.visible = remaining > 0
+		marker.visible = not label.visible
 		return
 	var key := str(task.id) + ":" + str(task.finish)
 	if observed != key: phase = 0; remaining = 0
 	observed = key
 	phase += delta
 	label.visible = true
-	label.text = ("照護中" if task.job == "doctor" else "談心陪伴中") + " · 尚未完成"
+	marker.visible = false
+	label.text = ("照護中" if task.job == "doctor" else "談心陪伴中") + "\n尚未完成"
 	# Manual motion always owns the player's facing and feet while walking.
 	if m.positions.player.get("walking", false): return
 	var target: Dictionary = m.positions[str(task.target)]

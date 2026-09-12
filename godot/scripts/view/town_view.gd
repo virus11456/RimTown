@@ -261,6 +261,7 @@ func _build_villagers(save: Dictionary) -> void:
 			service_label.pixel_size=.009
 			service_label.position.y=2.65
 			service_label.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+			service_label.no_depth_test=true
 			service_label.modulate=Color("fff0c2")
 			service_label.visible=false
 			actor.add_child(service_label)

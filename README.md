@@ -1,6 +1,6 @@
 # RimTown - AI Town Simulation 邊境鎮
 
-醫護／牧師現場動作：值勤時轉身、抬手，完成／中止依實際結果顯示；邏輯與模型檢查通過，畫面仍待目視驗收。見 [服務動作](godot/docs/SERVICE_PERFORMANCE.md)。
+醫護／牧師現場動作：值勤時轉身、抬手，完成／中止依實際結果顯示；兩鎮桌面畫面已目視檢查，修正提示遮擋及重疊。見 [服務動作](godot/docs/SERVICE_PERFORMANCE.md)。
 
 主動服務回憶：居民近身閒聊時可提起最近照護／談心的完成或中止結果，沿用每日上限與冷卻，讀檔不重複。見 [服務回憶驗收](godot/docs/SERVICE_RECALL.md)。
 

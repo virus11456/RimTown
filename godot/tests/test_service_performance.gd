@@ -21,6 +21,7 @@ func run() -> void:
 				check(SimCareers.start(w,task.id).ok,"actual service starts")
 				var before:=w.snapshot();var positions: Dictionary=m.positions.duplicate(true)
 				for i in 12: pose(app)
+				check(not actor.get_node("TravelerMarker").visible and label.no_depth_test and "\n" in label.text,"service label is unobstructed and replaces traveler marker")
 				check(arm.rotation.x<-.2 and label.visible and "尚未完成" in label.text,"active service has articulated pose and truthful text")
 				check(equal(before,w.snapshot()) and equal(positions,m.positions),"presentation cannot mutate simulation or movement")
 				var angle: float=arm.rotation.x;pose(app,0);check(is_equal_approx(angle,arm.rotation.x),"pause freezes gesture")
@@ -39,7 +40,7 @@ func run() -> void:
 				pose(app)
 				check(arm.rotation==Vector3.ZERO and label.text==("服務完成" if ending=="completed" else "服務中止"),"terminal pose clears and outcome is truthful "+ending)
 				for i in 30: pose(app)
-				check(not label.visible,"terminal cue expires")
+				check(not label.visible and actor.get_node("TravelerMarker").visible,"terminal cue expires and traveler marker returns")
 	for model in ["chr_body_m","chr_body_f","chr_body_elder","chr_body_child"]:
 		var mesh_instance:=MeshInstance3D.new();mesh_instance.mesh=app.world_view._mesh(model)
 		var triangles:=mesh_instance.mesh.get_faces().size()

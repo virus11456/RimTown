@@ -1,0 +1,78 @@
+[
+  {
+    "active": {
+      "finish": 4,
+      "id": "care:chen_wei",
+      "job": "doctor",
+      "label": "照護疲憊的陳偉",
+      "location": "town_square",
+      "stay": true,
+      "target": "chen_wei"
+    },
+    "job": "doctor",
+    "need": "",
+    "presence": "",
+    "start": {
+      "message": "開始值勤，需停留 60 遊戲分鐘；離開會取消。",
+      "ok": true
+    },
+    "town": "frontier"
+  },
+  {
+    "active": {
+      "finish": 4,
+      "id": "counsel:chen_wei",
+      "job": "priest",
+      "label": "陪伴低落的陳偉",
+      "location": "town_square",
+      "stay": true,
+      "target": "chen_wei"
+    },
+    "job": "priest",
+    "need": "",
+    "presence": "",
+    "start": {
+      "message": "開始值勤，需停留 60 遊戲分鐘；離開會取消。",
+      "ok": true
+    },
+    "town": "frontier"
+  },
+  {
+    "active": {
+      "finish": 4,
+      "id": "care:hb_haibo",
+      "job": "doctor",
+      "label": "照護疲憊的海伯",
+      "location": "town_square",
+      "stay": true,
+      "target": "hb_haibo"
+    },
+    "job": "doctor",
+    "need": "",
+    "presence": "",
+    "start": {
+      "message": "開始值勤，需停留 60 遊戲分鐘；離開會取消。",
+      "ok": true
+    },
+    "town": "harbor"
+  },
+  {
+    "active": {
+      "finish": 4,
+      "id": "counsel:hb_haibo",
+      "job": "priest",
+      "label": "陪伴低落的海伯",
+      "location": "town_square",
+      "stay": true,
+      "target": "hb_haibo"
+    },
+    "job": "priest",
+    "need": "",
+    "presence": "",
+    "start": {
+      "message": "開始值勤，需停留 60 遊戲分鐘；離開會取消。",
+      "ok": true
+    },
+    "town": "harbor"
+  }
+]
