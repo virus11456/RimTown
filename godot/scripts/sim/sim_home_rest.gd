@@ -31,7 +31,12 @@ static func plan(w: SimWorld,a: Dictionary) -> Dictionary:
 	if not m.layout.houses.has(home) or not m.positions.has(str(a.id)): return {}
 	var until:=int(w.data.tickCount)+remaining
 	var signature:=JSON.stringify([home,a.get("jobKey",""),job,sleep_window.start,until,m.tick_seconds])
-	if a.get("_homeReturn",{}).get("signature")==signature: return a._homeReturn
+	if a.get("_homeReturn",{}).get("signature")==signature:
+		var retained: Dictionary=a._homeReturn.duplicate(true)
+		retained.settled=arrived(w,a)
+		return retained
+	if arrived(w,a):
+		return {"home":a.homeLocation,"until":until,"required_ticks":remaining,"settled":true} if remaining<=4 else {}
 	var house: Dictionary=m.layout.houses[home];var p: Dictionary=m.positions[str(a.id)]
 	var start:=Vector2(p.x,p.y);var length:=0.0
 	var exit_door: Variant=m.door(m.inside(start),str(a.id))
@@ -69,6 +74,7 @@ static func remaining_distance(m: SimMotion,a: Dictionary) -> float:
 	var home:=m.layout._house_id(str(a.id),str(a.homeLocation));var house: Dictionary=m.layout.houses.get(home,{})
 	if house.is_empty(): return INF
 	var p: Dictionary=m.positions[str(a.id)];var start:=Vector2(p.x,p.y);var length:=0.0
+	if SimCareerPresence.room(m,str(a.id))==home and not p.get("walking",true) and p.get("doorPhase")==null: return 0.0
 	var exit_door: Variant=m.door(m.inside(start),str(a.id))
 	if exit_door!=null:
 		var exit_point:=Vector2(exit_door.x,exit_door.y)

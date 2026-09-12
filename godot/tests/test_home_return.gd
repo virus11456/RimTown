@@ -17,13 +17,13 @@ func _initialize() -> void:
 	check(a.activity=="heading_home" and a.currentLocation==a.homeLocation and a.has("_homeReturn"),"world routes and retains early return plan")
 	check(a.needs.rest<80 and equal(stock,w.data.stockpile),"early departure awards neither sleep nor goods")
 	check(not SimLeisurePlan.available(w,"chen_wei",first),"current return time unavailable for leisure")
-	check(SimHangoutVisits.blocking_reason(w,{"place":"park","people":["chen_wei"]}).contains("返家"),"outing interruption names return travel")
+	check(SimHangoutVisits.blocking_reason(w,{"place":"park","people":["chen_wei"],"until":int(w.data.tickCount)+4}).contains("返家"),"outing interruption names return travel")
 	var house: Dictionary=layout.houses[layout._house_id("chen_wei",a.homeLocation)]
 	m.positions.chen_wei.x=house.interiorX;m.positions.chen_wei.y=house.interiorY;m.positions.chen_wei.walking=false;m.positions.chen_wei.doorPhase=null
-	check(SimHomeRest.plan(w,a)==plan,"early arrival retains plan until bedtime")
-	w._update("chen_wei");check(a.activity=="heading_home","early arrival does not start sleeping early")
+	check(SimHomeRest.plan(w,a).get("settled",false) and SimHomeRest.plan(w,a).until==plan.until,"early arrival retains plan until bedtime")
+	w._update("chen_wei");check(a.activity=="idle","early arrival does not start sleeping early")
 	var restored:=SimWorld.new();restored.load_snapshot(w.snapshot());restored.social.observe_positions(m)
-	check(SimHomeRest.plan(restored,restored.data.agents.chen_wei)==plan,"active return plan survives snapshot with physical observations")
+	check(SimHomeRest.plan(restored,restored.data.agents.chen_wei).get("settled",false) and SimHomeRest.plan(restored,restored.data.agents.chen_wei).until==plan.until,"active return plan survives snapshot with physical observations")
 	w.data.clock.hour=22;check(SimHomeRest.plan(w,a).is_empty(),"bedtime releases return plan")
 	w._update("chen_wei");check(a.activity=="sleeping" and not a.has("_homeReturn"),"actual home sleep takes over at bedtime")
 	w.data.clock.hour=first

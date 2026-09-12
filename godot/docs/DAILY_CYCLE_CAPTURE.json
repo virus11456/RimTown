@@ -1,0 +1,53 @@
+{
+  "cases": [
+    {
+      "hour": 21,
+      "id": "chen_wei",
+      "minute": 15,
+      "original_sleep_start": 22,
+      "phase": "settled",
+      "town": "frontier"
+    },
+    {
+      "hour": 22,
+      "id": "chen_wei",
+      "minute": 0,
+      "original_sleep_start": 22,
+      "phase": "sleeping",
+      "town": "frontier"
+    },
+    {
+      "hour": 7,
+      "id": "gao_lang",
+      "minute": 15,
+      "original_sleep_start": 8,
+      "phase": "settled",
+      "town": "frontier"
+    },
+    {
+      "hour": 8,
+      "id": "gao_lang",
+      "minute": 0,
+      "original_sleep_start": 8,
+      "phase": "sleeping",
+      "town": "frontier"
+    },
+    {
+      "hour": 18,
+      "id": "hb_aduo",
+      "minute": 15,
+      "original_sleep_start": 19,
+      "phase": "settled",
+      "town": "harbor"
+    },
+    {
+      "hour": 19,
+      "id": "hb_aduo",
+      "minute": 0,
+      "original_sleep_start": 19,
+      "phase": "sleeping",
+      "town": "harbor"
+    }
+  ],
+  "scope": "original daytime/nighttime schedules; controlled at-home position and needs, regular ticks, pre-bed settled state and actual sleep entry"
+}

@@ -1,0 +1,1566 @@
+[
+  {
+    "test": "daily_cycle",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "cases": [
+        {
+          "id": "chen_wei",
+          "sleep_end": 6,
+          "sleep_start": 22,
+          "town": "frontier"
+        },
+        {
+          "id": "lin_mei",
+          "sleep_end": 7,
+          "sleep_start": 0,
+          "town": "frontier"
+        },
+        {
+          "id": "zhang_hao",
+          "sleep_end": 5,
+          "sleep_start": 21,
+          "town": "frontier"
+        },
+        {
+          "id": "wang_li",
+          "sleep_end": 3,
+          "sleep_start": 19,
+          "town": "frontier"
+        },
+        {
+          "id": "liu_jun",
+          "sleep_end": 5,
+          "sleep_start": 20,
+          "town": "frontier"
+        },
+        {
+          "id": "zhao_xia",
+          "sleep_end": 5,
+          "sleep_start": 21,
+          "town": "frontier"
+        },
+        {
+          "id": "yang_feng",
+          "sleep_end": 3,
+          "sleep_start": 19,
+          "town": "frontier"
+        },
+        {
+          "id": "sun_yu",
+          "sleep_end": 7,
+          "sleep_start": 0,
+          "town": "frontier"
+        },
+        {
+          "id": "wu_da",
+          "sleep_end": 4,
+          "sleep_start": 20,
+          "town": "frontier"
+        },
+        {
+          "id": "huang_li",
+          "sleep_end": 5,
+          "sleep_start": 21,
+          "town": "frontier"
+        },
+        {
+          "id": "ma_qiang",
+          "sleep_end": 5,
+          "sleep_start": 21,
+          "town": "frontier"
+        },
+        {
+          "id": "xu_ying",
+          "sleep_end": 5,
+          "sleep_start": 20,
+          "town": "frontier"
+        },
+        {
+          "id": "zhou_ming",
+          "sleep_end": 6,
+          "sleep_start": 22,
+          "town": "frontier"
+        },
+        {
+          "id": "he_chang",
+          "sleep_end": 4,
+          "sleep_start": 20,
+          "town": "frontier"
+        },
+        {
+          "id": "he_xiu",
+          "sleep_end": 3,
+          "sleep_start": 19,
+          "town": "frontier"
+        },
+        {
+          "id": "zheng_wei",
+          "sleep_end": 6,
+          "sleep_start": 22,
+          "town": "frontier"
+        },
+        {
+          "id": "su_qing",
+          "sleep_end": 3,
+          "sleep_start": 18,
+          "town": "frontier"
+        },
+        {
+          "id": "gao_lang",
+          "sleep_end": 16,
+          "sleep_start": 8,
+          "town": "frontier"
+        },
+        {
+          "id": "ke_wei",
+          "sleep_end": 6,
+          "sleep_start": 23,
+          "town": "frontier"
+        },
+        {
+          "id": "ling_bo",
+          "sleep_end": 6,
+          "sleep_start": 22,
+          "town": "frontier"
+        },
+        {
+          "id": "hb_haibo",
+          "sleep_end": 5,
+          "sleep_start": 20,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_achao",
+          "sleep_end": 5,
+          "sleep_start": 20,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_xiaoou",
+          "sleep_end": 3,
+          "sleep_start": 18,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_langshu",
+          "sleep_end": 5,
+          "sleep_start": 21,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_xiugu",
+          "sleep_end": 6,
+          "sleep_start": 22,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_shishu",
+          "sleep_end": 5,
+          "sleep_start": 21,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_dengye",
+          "sleep_end": 7,
+          "sleep_start": 0,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_axi",
+          "sleep_end": 5,
+          "sleep_start": 20,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_amao",
+          "sleep_end": 6,
+          "sleep_start": 22,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_yunyi",
+          "sleep_end": 5,
+          "sleep_start": 21,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_aduo",
+          "sleep_end": 3,
+          "sleep_start": 19,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_muxia",
+          "sleep_end": 6,
+          "sleep_start": 22,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_shanshan",
+          "sleep_end": 7,
+          "sleep_start": 0,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_afu",
+          "sleep_end": 5,
+          "sleep_start": 20,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_haima",
+          "sleep_end": 2,
+          "sleep_start": 18,
+          "town": "harbor"
+        }
+      ],
+      "checks": 537,
+      "failures": [],
+      "scope": "all original residents in both towns with original jobs/shifts; controlled at-home hour before sleep, real ticks/motion, reload, no early sleep reward, schedule entry/wake release and door threshold"
+    },
+    "tail": ""
+  },
+  {
+    "test": "recovery_reasons",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "cases": [
+        {
+          "job": "doctor",
+          "max_step": 0.899520874023438,
+          "meal": true,
+          "rest": true,
+          "town": "frontier",
+          "walk": true
+        },
+        {
+          "job": "priest",
+          "max_step": 0.899520874023438,
+          "meal": true,
+          "rest": true,
+          "town": "frontier",
+          "walk": true
+        },
+        {
+          "job": "doctor",
+          "max_step": 0.941872239112854,
+          "meal": true,
+          "rest": true,
+          "town": "harbor",
+          "walk": true
+        },
+        {
+          "job": "priest",
+          "max_step": 0.941872239112854,
+          "meal": true,
+          "rest": true,
+          "town": "harbor",
+          "walk": true
+        }
+      ],
+      "checks": 318,
+      "failures": [],
+      "scope": "specific cancellation causes, observed follow-up position versus intent; actual recovery receipts, memory, recall, interruption without invented actions, resolved reload; controlled preflight nutrition deficit, near-home start, real ticks and movement, actual reload, physical meals/rest, bounded recovery and no care quota/reward"
+    },
+    "tail": ""
+  },
+  {
+    "test": "recovery_records",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "cases": [
+        {
+          "job": "doctor",
+          "max_step": 0.899520874023438,
+          "meal": true,
+          "rest": true,
+          "town": "frontier",
+          "walk": true
+        },
+        {
+          "job": "priest",
+          "max_step": 0.899520874023438,
+          "meal": true,
+          "rest": true,
+          "town": "frontier",
+          "walk": true
+        },
+        {
+          "job": "doctor",
+          "max_step": 0.941872239112854,
+          "meal": true,
+          "rest": true,
+          "town": "harbor",
+          "walk": true
+        },
+        {
+          "job": "priest",
+          "max_step": 0.941872239112854,
+          "meal": true,
+          "rest": true,
+          "town": "harbor",
+          "walk": true
+        }
+      ],
+      "checks": 160,
+      "failures": [],
+      "scope": "actual recovery receipts, memory, recall, interruption without invented actions, resolved reload; controlled preflight nutrition deficit, near-home start, real ticks and movement, actual reload, physical meals/rest, bounded recovery and no care quota/reward"
+    },
+    "tail": ""
+  },
+  {
+    "test": "care_recovery",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "cases": [
+        {
+          "job": "doctor",
+          "max_step": 0.899520874023438,
+          "meal": true,
+          "rest": true,
+          "town": "frontier",
+          "walk": true
+        },
+        {
+          "job": "priest",
+          "max_step": 0.899520874023438,
+          "meal": true,
+          "rest": true,
+          "town": "frontier",
+          "walk": true
+        },
+        {
+          "job": "doctor",
+          "max_step": 0.941872239112854,
+          "meal": true,
+          "rest": true,
+          "town": "harbor",
+          "walk": true
+        },
+        {
+          "job": "priest",
+          "max_step": 0.941872239112854,
+          "meal": true,
+          "rest": true,
+          "town": "harbor",
+          "walk": true
+        }
+      ],
+      "checks": 92,
+      "failures": [],
+      "scope": "controlled preflight nutrition deficit, near-home start, real ticks and movement, actual reload, physical meals/rest, bounded recovery and no care quota/reward"
+    },
+    "tail": ""
+  },
+  {
+    "test": "care_journey",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "cases": [
+        {
+          "completed": true,
+          "job": "doctor",
+          "maximum_step": 0.999465942382812,
+          "town": "frontier",
+          "travel_budget_ticks": 7
+        },
+        {
+          "completed": true,
+          "job": "priest",
+          "maximum_step": 0.850910484790802,
+          "town": "frontier",
+          "travel_budget_ticks": 8
+        },
+        {
+          "completed": true,
+          "job": "doctor",
+          "maximum_step": 0.80517578125,
+          "town": "harbor",
+          "travel_budget_ticks": 6
+        },
+        {
+          "completed": true,
+          "job": "priest",
+          "maximum_step": 0.850910484790802,
+          "town": "harbor",
+          "travel_budget_ticks": 8
+        }
+      ],
+      "checks": 94,
+      "failures": [],
+      "scope": "two towns two roles, controlled fatigue and provider needs, real long map routes beyond old eight-tick total, actual simulation ticks/collision frames, mid-route reload, fixed deadlines, arrival-only care and single outcome; inclusive arrival boundary, missed arrival without reward and legacy deadline reload"
+    },
+    "tail": ""
+  },
+  {
+    "test": "care_queue",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 55,
+      "failures": [],
+      "scope": "two towns/two roles: busy provider, queue seniority, no quota or movement, actual reload, release/admission/completion without replay, day/sleep/disable cleanup and exact door route"
+    },
+    "tail": ""
+  },
+  {
+    "test": "care_feasibility",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 40,
+      "failures": [],
+      "scope": "two towns and care roles, close-time forecast, hunger/rest reserve, travel deadline, deferral without quota use and later admission; controlled needs"
+    },
+    "tail": ""
+  },
+  {
+    "test": "care_lifecycle",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "cases": [
+        {
+          "mode": "player_patient",
+          "town": "frontier"
+        },
+        {
+          "mode": "player_provider",
+          "town": "frontier"
+        },
+        {
+          "mode": "provider_job",
+          "town": "frontier"
+        },
+        {
+          "mode": "patient_job",
+          "town": "frontier"
+        },
+        {
+          "mode": "removed_place",
+          "town": "frontier"
+        },
+        {
+          "mode": "midnight",
+          "town": "frontier"
+        },
+        {
+          "mode": "player_patient",
+          "town": "harbor"
+        },
+        {
+          "mode": "player_provider",
+          "town": "harbor"
+        },
+        {
+          "mode": "provider_job",
+          "town": "harbor"
+        },
+        {
+          "mode": "patient_job",
+          "town": "harbor"
+        },
+        {
+          "mode": "removed_place",
+          "town": "harbor"
+        },
+        {
+          "mode": "midnight",
+          "town": "harbor"
+        }
+      ],
+      "checks": 72,
+      "failures": [],
+      "scope": "controlled doctor demand, actual arrival and player start/complete APIs, provider/patient role change, facility removal, midnight and cancelled reload; no fabricated player task"
+    },
+    "tail": ""
+  },
+  {
+    "test": "resident_care_quota",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 18,
+      "failures": [],
+      "scope": "four distinct residents, two provider roles, three actual completed visits, fourth blocked, next-day admission; controlled demand and initial patient positions"
+    },
+    "tail": ""
+  },
+  {
+    "test": "resident_care_outcomes",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 74,
+      "failures": [],
+      "scope": "both towns and care roles, real collision arrival, delayed bounded effect, shared recipient cap, provider quota, replay/reload, cancellation, bounded history and agenda; controlled demand"
+    },
+    "tail": ""
+  },
+  {
+    "test": "resident_care_visits_integration",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "cases": [
+        {
+          "ended": true,
+          "job": "doctor",
+          "town": "frontier",
+          "travel": true,
+          "visit": true
+        },
+        {
+          "ended": true,
+          "job": "doctor",
+          "town": "harbor",
+          "travel": true,
+          "visit": true
+        },
+        {
+          "ended": true,
+          "job": "priest",
+          "town": "frontier",
+          "travel": true,
+          "visit": true
+        },
+        {
+          "ended": true,
+          "job": "priest",
+          "town": "harbor",
+          "travel": true,
+          "visit": true
+        }
+      ],
+      "checks": 16,
+      "failures": [],
+      "scope": "controlled fatigue/low mood demand and clinic, real simulation ticks and collision frames, mid-route save/load, arrival, bounded stay and continuation"
+    },
+    "tail": ""
+  },
+  {
+    "test": "resident_care_visits",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "cases": [
+        {
+          "job": "doctor",
+          "town": "frontier",
+          "walk_frames": 66
+        },
+        {
+          "job": "priest",
+          "town": "frontier",
+          "walk_frames": 161
+        },
+        {
+          "job": "doctor",
+          "town": "harbor",
+          "walk_frames": 162
+        },
+        {
+          "job": "priest",
+          "town": "harbor",
+          "walk_frames": 161
+        }
+      ],
+      "checks": 650,
+      "failures": [],
+      "scope": "controlled need and clinic; actual route to provider, arrival, conversation, bounded stay, interruption, saved state and daily cap; bounded care, no goods or player career reward"
+    },
+    "tail": ""
+  },
+  {
+    "test": "resident_care",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "cases": [
+        {
+          "job": "doctor",
+          "recipient_age": 9,
+          "town": "frontier"
+        },
+        {
+          "job": "doctor",
+          "recipient_age": 70,
+          "town": "frontier"
+        },
+        {
+          "job": "priest",
+          "recipient_age": 9,
+          "town": "frontier"
+        },
+        {
+          "job": "priest",
+          "recipient_age": 70,
+          "town": "frontier"
+        },
+        {
+          "job": "doctor",
+          "recipient_age": 9,
+          "town": "harbor"
+        },
+        {
+          "job": "doctor",
+          "recipient_age": 70,
+          "town": "harbor"
+        },
+        {
+          "job": "priest",
+          "recipient_age": 9,
+          "town": "harbor"
+        },
+        {
+          "job": "priest",
+          "recipient_age": 70,
+          "town": "harbor"
+        }
+      ],
+      "checks": 1176,
+      "failures": [],
+      "scope": "controlled need, clinic registration, recipient position and genuine conversation API; provider collision arrival; display only, no treatment completion or new rewards"
+    },
+    "tail": ""
+  },
+  {
+    "test": "resident_care_matching",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 5,
+      "failures": [],
+      "scope": "controlled simultaneous conversations, single-recipient ownership, provider hunger, changed partner, player exclusion and expiry"
+    },
+    "tail": ""
+  },
+  {
+    "test": "civic_work",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "cases": [
+        {
+          "age": 9,
+          "arrived": true,
+          "frames": 290,
+          "kind": "day",
+          "town": "frontier"
+        },
+        {
+          "age": 28,
+          "arrived": true,
+          "frames": 290,
+          "kind": "day",
+          "town": "frontier"
+        },
+        {
+          "age": 70,
+          "arrived": true,
+          "frames": 290,
+          "kind": "day",
+          "town": "frontier"
+        },
+        {
+          "age": 9,
+          "arrived": true,
+          "frames": 290,
+          "kind": "night",
+          "town": "frontier"
+        },
+        {
+          "age": 28,
+          "arrived": true,
+          "frames": 290,
+          "kind": "night",
+          "town": "frontier"
+        },
+        {
+          "age": 70,
+          "arrived": true,
+          "frames": 290,
+          "kind": "night",
+          "town": "frontier"
+        },
+        {
+          "age": 9,
+          "arrived": true,
+          "frames": 208,
+          "kind": "post",
+          "town": "frontier"
+        },
+        {
+          "age": 28,
+          "arrived": true,
+          "frames": 208,
+          "kind": "post",
+          "town": "frontier"
+        },
+        {
+          "age": 70,
+          "arrived": true,
+          "frames": 208,
+          "kind": "post",
+          "town": "frontier"
+        },
+        {
+          "age": 9,
+          "arrived": true,
+          "frames": 405,
+          "kind": "trader",
+          "town": "frontier"
+        },
+        {
+          "age": 28,
+          "arrived": true,
+          "frames": 405,
+          "kind": "trader",
+          "town": "frontier"
+        },
+        {
+          "age": 70,
+          "arrived": true,
+          "frames": 405,
+          "kind": "trader",
+          "town": "frontier"
+        },
+        {
+          "age": 9,
+          "arrived": true,
+          "frames": 338,
+          "kind": "day",
+          "town": "harbor"
+        },
+        {
+          "age": 28,
+          "arrived": true,
+          "frames": 338,
+          "kind": "day",
+          "town": "harbor"
+        },
+        {
+          "age": 70,
+          "arrived": true,
+          "frames": 338,
+          "kind": "day",
+          "town": "harbor"
+        },
+        {
+          "age": 9,
+          "arrived": true,
+          "frames": 338,
+          "kind": "night",
+          "town": "harbor"
+        },
+        {
+          "age": 28,
+          "arrived": true,
+          "frames": 338,
+          "kind": "night",
+          "town": "harbor"
+        },
+        {
+          "age": 70,
+          "arrived": true,
+          "frames": 338,
+          "kind": "night",
+          "town": "harbor"
+        },
+        {
+          "age": 9,
+          "arrived": true,
+          "frames": 208,
+          "kind": "post",
+          "town": "harbor"
+        },
+        {
+          "age": 28,
+          "arrived": true,
+          "frames": 208,
+          "kind": "post",
+          "town": "harbor"
+        },
+        {
+          "age": 70,
+          "arrived": true,
+          "frames": 208,
+          "kind": "post",
+          "town": "harbor"
+        },
+        {
+          "age": 9,
+          "arrived": true,
+          "frames": 405,
+          "kind": "trader",
+          "town": "harbor"
+        },
+        {
+          "age": 28,
+          "arrived": true,
+          "frames": 405,
+          "kind": "trader",
+          "town": "harbor"
+        },
+        {
+          "age": 70,
+          "arrived": true,
+          "frames": 405,
+          "kind": "trader",
+          "town": "harbor"
+        }
+      ],
+      "checks": 33349,
+      "failures": [],
+      "maximum_step": 0.999847412109375,
+      "scope": "controlled duty clock, age and tower work point; normal routes, geometry, priority, pause and reload; no economic or roster writes"
+    },
+    "tail": ""
+  },
+  {
+    "test": "guard_roster",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 20,
+      "failures": [],
+      "night_sleep": {
+        "conflict": false,
+        "duration": 8,
+        "end": 16,
+        "estimated_lead": 2,
+        "facility_available": true,
+        "hours": [
+          18,
+          6
+        ],
+        "job": "guard",
+        "lead": 2,
+        "return_lead": 2,
+        "signature": "[0,\"guard\",[18,6],\"town_square\",\"residential_extra_5\",[\"hardworking\",\"stoic\",\"abrasive\"],8.0,true]",
+        "start": 8,
+        "traits": [
+          "hardworking",
+          "stoic",
+          "abrasive"
+        ],
+        "workplace": "town_square"
+      },
+      "scope": "original two guards, job identity, cyclic hours, daytime sleep and homeward margin, actual night update, mobile agenda, save reload; controlled one/zero guard and new facility cases, no hiring or resource production"
+    },
+    "tail": ""
+  },
+  {
+    "test": "outdoor_work",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "cases": [
+        {
+          "age": 9,
+          "arrived": true,
+          "frames": 141,
+          "job": "miner",
+          "layout": "miner",
+          "town": "frontier"
+        },
+        {
+          "age": 28,
+          "arrived": true,
+          "frames": 141,
+          "job": "miner",
+          "layout": "miner",
+          "town": "frontier"
+        },
+        {
+          "age": 70,
+          "arrived": true,
+          "frames": 141,
+          "job": "miner",
+          "layout": "miner",
+          "town": "frontier"
+        },
+        {
+          "age": 9,
+          "arrived": true,
+          "frames": 208,
+          "job": "farmer",
+          "layout": "farm_site",
+          "town": "frontier"
+        },
+        {
+          "age": 28,
+          "arrived": true,
+          "frames": 208,
+          "job": "farmer",
+          "layout": "farm_site",
+          "town": "frontier"
+        },
+        {
+          "age": 70,
+          "arrived": true,
+          "frames": 208,
+          "job": "farmer",
+          "layout": "farm_site",
+          "town": "frontier"
+        },
+        {
+          "age": 9,
+          "arrived": true,
+          "frames": 151,
+          "job": "farmer",
+          "layout": "farm_legacy",
+          "town": "frontier"
+        },
+        {
+          "age": 28,
+          "arrived": true,
+          "frames": 151,
+          "job": "farmer",
+          "layout": "farm_legacy",
+          "town": "frontier"
+        },
+        {
+          "age": 70,
+          "arrived": true,
+          "frames": 151,
+          "job": "farmer",
+          "layout": "farm_legacy",
+          "town": "frontier"
+        },
+        {
+          "age": 9,
+          "arrived": true,
+          "frames": 141,
+          "job": "miner",
+          "layout": "miner",
+          "town": "harbor"
+        },
+        {
+          "age": 28,
+          "arrived": true,
+          "frames": 141,
+          "job": "miner",
+          "layout": "miner",
+          "town": "harbor"
+        },
+        {
+          "age": 70,
+          "arrived": true,
+          "frames": 141,
+          "job": "miner",
+          "layout": "miner",
+          "town": "harbor"
+        },
+        {
+          "age": 9,
+          "arrived": true,
+          "frames": 208,
+          "job": "farmer",
+          "layout": "farm_site",
+          "town": "harbor"
+        },
+        {
+          "age": 28,
+          "arrived": true,
+          "frames": 208,
+          "job": "farmer",
+          "layout": "farm_site",
+          "town": "harbor"
+        },
+        {
+          "age": 70,
+          "arrived": true,
+          "frames": 208,
+          "job": "farmer",
+          "layout": "farm_site",
+          "town": "harbor"
+        },
+        {
+          "age": 9,
+          "arrived": true,
+          "frames": 151,
+          "job": "farmer",
+          "layout": "farm_legacy",
+          "town": "harbor"
+        },
+        {
+          "age": 28,
+          "arrived": true,
+          "frames": 151,
+          "job": "farmer",
+          "layout": "farm_legacy",
+          "town": "harbor"
+        },
+        {
+          "age": 70,
+          "arrived": true,
+          "frames": 151,
+          "job": "farmer",
+          "layout": "farm_legacy",
+          "town": "harbor"
+        }
+      ],
+      "checks": 10645,
+      "failures": [],
+      "maximum_step": 0.90191650390625,
+      "scope": "controlled jobs/ages and legacy or placed farms; collision arrival; tool geometry, work interrupts, pure stock/crop/motion state, pause and reload; no new production"
+    },
+    "tail": ""
+  },
+  {
+    "test": "outdoor_farm_integration",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 25,
+      "failures": [],
+      "maximum_step": 0.983600914478302,
+      "scope": "controlled elected-player and material fixture, compressed midnight construction ticks with original costs/work, then normal physical walking; actual app completion geometry, mobile agenda, AI prompt only and native reload; controlled construction and actual farmer animation, not full economic balance",
+      "site": [
+        32,
+        34
+      ],
+      "trace": [
+        {
+          "activity": "working",
+          "actual": "",
+          "tick": 4
+        },
+        {
+          "activity": "working",
+          "actual": "",
+          "tick": 5
+        },
+        {
+          "activity": "working",
+          "actual": "",
+          "tick": 6
+        },
+        {
+          "activity": "working",
+          "actual": "farm",
+          "tick": 7
+        }
+      ],
+      "work_done": 12,
+      "work_observed": true
+    },
+    "tail": ""
+  },
+  {
+    "test": "farm_workplace",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 24,
+      "failures": [],
+      "maximum_step": 0.983600914478302,
+      "scope": "controlled elected-player and material fixture, compressed midnight construction ticks with original costs/work, then normal physical walking; actual app completion geometry, mobile agenda, AI prompt only and native reload; no full economic balance or crop-tending animation claim",
+      "site": [
+        32,
+        34
+      ],
+      "trace": [
+        {
+          "activity": "working",
+          "actual": "",
+          "tick": 4
+        },
+        {
+          "activity": "working",
+          "actual": "",
+          "tick": 5
+        },
+        {
+          "activity": "working",
+          "actual": "",
+          "tick": 6
+        },
+        {
+          "activity": "working",
+          "actual": "farm",
+          "tick": 7
+        }
+      ],
+      "work_done": 12
+    },
+    "tail": ""
+  },
+  {
+    "test": "resident_workstation",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "cases": [
+        {
+          "arrived": true,
+          "commute_frames": 5397,
+          "job": "carpenter",
+          "town": "frontier"
+        },
+        {
+          "arrived": true,
+          "commute_frames": 5397,
+          "job": "blacksmith",
+          "town": "frontier"
+        },
+        {
+          "arrived": true,
+          "commute_frames": 7059,
+          "job": "cook",
+          "town": "frontier"
+        },
+        {
+          "arrived": true,
+          "commute_frames": 5400,
+          "job": "tailor",
+          "town": "frontier"
+        },
+        {
+          "arrived": true,
+          "commute_frames": 5877,
+          "job": "researcher",
+          "town": "frontier"
+        },
+        {
+          "arrived": true,
+          "commute_frames": 4770,
+          "job": "cook",
+          "town": "harbor"
+        },
+        {
+          "arrived": true,
+          "commute_frames": 2741,
+          "job": "researcher",
+          "town": "harbor"
+        }
+      ],
+      "checks": 5021,
+      "failures": [],
+      "invalid_steps": [],
+      "maximum_npc_step": 0.999847412109375,
+      "scope": "controlled job assignments; real collision routes; no render rewards; social/service priority, contention, player yielding, off-shift"
+    },
+    "tail": ""
+  },
+  {
+    "test": "resident_gait",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 4860,
+      "contacts": 956,
+      "failures": [],
+      "scope": "controlled child/male/female/elder model variants in both towns, independent resident state, actual mesh floor and bone geometry, pure presentation, work stop, sleeping, stale sleep label, real pause and reload",
+      "variants": [
+        {
+          "age": 9,
+          "gender": "male",
+          "town": "frontier"
+        },
+        {
+          "age": 28,
+          "gender": "male",
+          "town": "frontier"
+        },
+        {
+          "age": 28,
+          "gender": "female",
+          "town": "frontier"
+        },
+        {
+          "age": 70,
+          "gender": "male",
+          "town": "frontier"
+        },
+        {
+          "age": 9,
+          "gender": "male",
+          "town": "harbor"
+        },
+        {
+          "age": 28,
+          "gender": "male",
+          "town": "harbor"
+        },
+        {
+          "age": 28,
+          "gender": "female",
+          "town": "harbor"
+        },
+        {
+          "age": 70,
+          "gender": "male",
+          "town": "harbor"
+        }
+      ]
+    },
+    "tail": ""
+  },
+  {
+    "test": "shift_sleep",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 80,
+      "failures": [],
+      "scope": "all original jobs x three sleep preferences, no shortened duration or shift overlap, shared activity/leisure/invitation constraints, live job removal, cache reload and overfull-day conflict; scheduled windows, not measured sleep quality"
+    },
+    "tail": ""
+  },
+  {
+    "test": "shift_sleep_reload",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 49,
+      "failures": [],
+      "scope": "two native JSON app round trips compare 24-hour sleep decisions for every NPC, unchanged resources, phone agenda, numeric normalization and real shift invalidation"
+    },
+    "tail": ""
+  },
+  {
+    "test": "ankle_pace",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 12667,
+      "failures": [],
+      "heel_samples": 376,
+      "scope": "two towns, flat collision fixture, 30/60/120Hz walking-fast-walking transitions, actual shoe vertices, heel/toe anchors, lean recovery, flat stop and no resource writes",
+      "support_contacts": 2514,
+      "toe_samples": 448
+    },
+    "tail": ""
+  },
+  {
+    "test": "foot_support",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 5812,
+      "failures": [],
+      "maximum_support_drift": 0.0,
+      "planted_samples": 759,
+      "scope": "flat collision fixture, walk/fast pace at 30/60/120Hz, world support stability, actual rendered shoe, fixed bone lengths, forward knees, 90/180 degree turns and stopping"
+    },
+    "tail": ""
+  },
+  {
+    "test": "traveler",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 55,
+      "failures": [],
+      "method": "pure collision checks plus Godot keyboard input dispatch",
+      "scope": "desktop keyboard control; mobile hardware not tested"
+    },
+    "tail": ""
+  },
+  {
+    "test": "traveler_gait",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 3194,
+      "failures": [],
+      "samples": 635,
+      "scope": "two-town real station walk, transformed shoe vertices and floor, stop, blocked intent, no resource writes, work ownership, reload, 30/60/120Hz distance phase; controlled fixture"
+    },
+    "tail": ""
+  },
+  {
+    "test": "career_readiness",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 26,
+      "failures": [],
+      "scope": "375px production/research readiness UI: reserve full, public inputs missing despite approval, no phantom workshop, no read-side world mutation, live tick refresh, no research and covered research demand"
+    },
+    "tail": ""
+  },
+  {
+    "test": "station_approach",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 2179,
+      "failures": [],
+      "motion_samples": 2064,
+      "scope": "five station roles across both towns where facilities exist; actual UI request, collision bounded route, explicit start only, keyboard takeover, mid-route reload, changed research need/job, stop button, already-at-goal control transfer and all-role midnight cancellation"
+    },
+    "tail": ""
+  },
+  {
+    "test": "desk_stations",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "bad_cells": 0,
+      "checks": 7484,
+      "failures": [],
+      "maximum_step": 0.400079697370529,
+      "scope": "three desk roles in both towns where facilities exist; actual entry and station walk, remote refusal, pure pose, complete, leave, cancel, reload, doorway, missing harbor workshop; controlled demand",
+      "walked_frames": 8410
+    },
+    "tail": ""
+  },
+  {
+    "test": "careers_expansion_ui",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 34,
+      "failures": [],
+      "scope": "375px six-career UI, three new registrations and real tick-based completions"
+    },
+    "tail": ""
+  },
+  {
+    "test": "workstation",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "bad_cells": 0,
+      "checks": 1815,
+      "failures": [],
+      "maximum_step": 0.40003690123558,
+      "scope": "two bench roles in frontier; actual entry and station walk, remote refusal, pure pose, complete, leave, cancel, reload, doorway, missing harbor workshop; controlled demand",
+      "walked_frames": 3608
+    },
+    "tail": ""
+  },
+  {
+    "test": "interior_furnishings",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "bad_cells": 0,
+      "checks": 6365,
+      "failures": [],
+      "maximum_step": 0.4000244140625,
+      "scope": "both towns, all rendered door-bearing rooms: solid-cell furniture AABB corners, room visibility, real collision entry/exit/threshold, reload, pure saved state; controlled fixture, not natural endurance",
+      "walked_frames": 17429
+    },
+    "tail": ""
+  },
+  {
+    "test": "indoor_service",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "bad_cells": 0,
+      "checks": 323,
+      "failures": [],
+      "maximum_step": 0.400024592876434,
+      "scope": "two towns, all existing houses and door-bearing public buildings entered and exited using manual collision movement; controlled patient needs and initial positions; doctor/priest indoor completion, departure cancellation, active and stationary threshold reload, stale entrance UI, 375px layout; controlled settlement clock, not natural multi-day simulation",
+      "walked_frames": 30965
+    },
+    "tail": ""
+  },
+  {
+    "test": "service_performance",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 216,
+      "failures": [],
+      "rendered_samples": false,
+      "scope": "two towns, two roles, actual start/completion/cancel/distance/need/reload; pure visual poses, pause, walking precedence, timed outcome; optional staged render capture"
+    },
+    "tail": ""
+  },
+  {
+    "test": "work_performance",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 376,
+      "failures": [],
+      "scope": "four tool roles; actual approvals/start/settlement in original facilities, both towns with harbor workshop exclusions; controlled demand and position; cancel, leave, filled demand, reload, no visual rewards, pause and movement"
+    },
+    "tail": ""
+  },
+  {
+    "test": "everyday_performance",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 530,
+      "failures": [],
+      "scope": "five everyday roles; actual approvals/start/settlement in original facilities, both towns with harbor tailor exclusion; controlled demand and position; cancel, leave, filled demand, reload, no visual rewards, pause and movement"
+    },
+    "tail": ""
+  },
+  {
+    "test": "career_facilities",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 97,
+      "failures": [],
+      "scope": "all eleven profession pages in two towns with controlled demand, original missing workshop and removed venue fixtures, no free facilities/resources, no broken destinations, core active-work cancellation on location removal; not natural all-career completion"
+    },
+    "tail": ""
+  },
+  {
+    "test": "service_stay",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 184,
+      "failures": [],
+      "scope": "two towns two service jobs; controlled unemployed awake resident and need state; real simulation ticks, fixed physical stay without frozen needs, completion, cancel, hunger, rest, work, raid, active reload, player departure, accepted appointment, midnight, sleep window and resumed walking; no natural multi-day claim"
+    },
+    "tail": ""
+  },
+  {
+    "test": "home_rest",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 13,
+      "failures": [],
+      "maximum_step": 0.999603271484375,
+      "scope": "controlled fixed bedtime, actual slow path home with per-tick needs checks, own-house identity, movement/door guards, restored observations, player and legacy compatibility; not a natural full-night duration test",
+      "travel_ticks_checked": 16
+    },
+    "tail": ""
+  },
+  {
+    "test": "home_return",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 20,
+      "failures": [],
+      "first_return_hour": 18,
+      "scope": "controlled route and schedule, early arrival hold, no early sleep/resources, leisure/outing conflict, snapshot, bedtime release and priority guards; not natural sleep-duration proof"
+    },
+    "tail": ""
+  },
+  {
+    "test": "commute",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 14,
+      "failures": [],
+      "scope": "controlled custom shift and route, four-hour cap, actual agent update, waiting after arrival, work start release, needs/sleep/raid/player priorities and no-observation fallback; not natural punctuality proof"
+    },
+    "tail": ""
+  },
+  {
+    "test": "commute_meal",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 22,
+      "failures": [],
+      "scope": "controlled actual-post meal, original recovery/resources, no position mutation, resume commute and twelve priority/boundary exclusions; natural walking tested separately"
+    },
+    "tail": ""
+  },
+  {
+    "test": "appointments",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 23,
+      "failures": [],
+      "scope": "offer/accept/decline/expiry, limits, conflicts and memory, save deterministic reload, chat structured invitation and no logical arrival shortcut; configured conflict fixtures"
+    },
+    "tail": ""
+  },
+  {
+    "test": "appointment_aftercare",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 27,
+      "failures": [],
+      "scope": "controlled physical presence and original home routes; missed and explicit cancellation return, stale arrival flag, declined/dead/shelter/unreachable exclusions, meal priority, no movement/spending/affinity/player control side effects, terminal idempotency"
+    },
+    "tail": ""
+  },
+  {
+    "test": "hangout_safety",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 20,
+      "failures": [],
+      "scope": "configured paired plans, work/sleep/commute/needs/other agenda priority, both-party expiry/death/shelter/missing destination/legacy cancellation, departure only, no resources, status reload and compatibility"
+    },
+    "tail": ""
+  },
+  {
+    "test": "leisure_endurance",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 4,
+      "failures": [],
+      "maximum_history": 7,
+      "motion_frames_per_tick": 120,
+      "outcomes": {
+        "completed": 129,
+        "missed": 31
+      },
+      "scope": "eight simulated days from original frontier world, normal world ticks and physical motion, no position/job/needs/resource changes, no app rendering/API; not whole-game natural playthrough",
+      "ticks": 768
+    },
+    "tail": ""
+  },
+  {
+    "test": "shared_leisure_endurance",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 7,
+      "failures": [],
+      "outcomes": {
+        "met": 3
+      },
+      "proposals": 5,
+      "reasons": {
+        "原本共同休閒安排已改變，取消這次同行。": 1,
+        "期限內未能開始外出，安排已到期。": 1
+      },
+      "visits": 3
+    },
+    "tail": "",
+    "runner_note": "Initial four-minute runner timeout at day six; standalone rerun completed all eight days."
+  },
+  {
+    "test": "daily_talk",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 25,
+      "failures": [],
+      "scope": "configured physical positions, needs/work/relationship gates, caps/cooldown/reload, topic variation, memories, no rewards/API/RNG and no-op rejection"
+    },
+    "tail": ""
+  },
+  {
+    "test": "talk_recall",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 16,
+      "failures": [],
+      "scope": "structured outcome writer and configured outcomes, day/age bounds, actual nearby talk hook, source attribution, no rewards, once-only reload, latest outcome, legacy and free-text safeguards"
+    },
+    "tail": ""
+  }
+]

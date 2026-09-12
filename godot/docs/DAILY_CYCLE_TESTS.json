@@ -1,0 +1,217 @@
+{
+  "cases": [
+    {
+      "id": "chen_wei",
+      "sleep_end": 6,
+      "sleep_start": 22,
+      "town": "frontier"
+    },
+    {
+      "id": "lin_mei",
+      "sleep_end": 7,
+      "sleep_start": 0,
+      "town": "frontier"
+    },
+    {
+      "id": "zhang_hao",
+      "sleep_end": 5,
+      "sleep_start": 21,
+      "town": "frontier"
+    },
+    {
+      "id": "wang_li",
+      "sleep_end": 3,
+      "sleep_start": 19,
+      "town": "frontier"
+    },
+    {
+      "id": "liu_jun",
+      "sleep_end": 5,
+      "sleep_start": 20,
+      "town": "frontier"
+    },
+    {
+      "id": "zhao_xia",
+      "sleep_end": 5,
+      "sleep_start": 21,
+      "town": "frontier"
+    },
+    {
+      "id": "yang_feng",
+      "sleep_end": 3,
+      "sleep_start": 19,
+      "town": "frontier"
+    },
+    {
+      "id": "sun_yu",
+      "sleep_end": 7,
+      "sleep_start": 0,
+      "town": "frontier"
+    },
+    {
+      "id": "wu_da",
+      "sleep_end": 4,
+      "sleep_start": 20,
+      "town": "frontier"
+    },
+    {
+      "id": "huang_li",
+      "sleep_end": 5,
+      "sleep_start": 21,
+      "town": "frontier"
+    },
+    {
+      "id": "ma_qiang",
+      "sleep_end": 5,
+      "sleep_start": 21,
+      "town": "frontier"
+    },
+    {
+      "id": "xu_ying",
+      "sleep_end": 5,
+      "sleep_start": 20,
+      "town": "frontier"
+    },
+    {
+      "id": "zhou_ming",
+      "sleep_end": 6,
+      "sleep_start": 22,
+      "town": "frontier"
+    },
+    {
+      "id": "he_chang",
+      "sleep_end": 4,
+      "sleep_start": 20,
+      "town": "frontier"
+    },
+    {
+      "id": "he_xiu",
+      "sleep_end": 3,
+      "sleep_start": 19,
+      "town": "frontier"
+    },
+    {
+      "id": "zheng_wei",
+      "sleep_end": 6,
+      "sleep_start": 22,
+      "town": "frontier"
+    },
+    {
+      "id": "su_qing",
+      "sleep_end": 3,
+      "sleep_start": 18,
+      "town": "frontier"
+    },
+    {
+      "id": "gao_lang",
+      "sleep_end": 16,
+      "sleep_start": 8,
+      "town": "frontier"
+    },
+    {
+      "id": "ke_wei",
+      "sleep_end": 6,
+      "sleep_start": 23,
+      "town": "frontier"
+    },
+    {
+      "id": "ling_bo",
+      "sleep_end": 6,
+      "sleep_start": 22,
+      "town": "frontier"
+    },
+    {
+      "id": "hb_haibo",
+      "sleep_end": 5,
+      "sleep_start": 20,
+      "town": "harbor"
+    },
+    {
+      "id": "hb_achao",
+      "sleep_end": 5,
+      "sleep_start": 20,
+      "town": "harbor"
+    },
+    {
+      "id": "hb_xiaoou",
+      "sleep_end": 3,
+      "sleep_start": 18,
+      "town": "harbor"
+    },
+    {
+      "id": "hb_langshu",
+      "sleep_end": 5,
+      "sleep_start": 21,
+      "town": "harbor"
+    },
+    {
+      "id": "hb_xiugu",
+      "sleep_end": 6,
+      "sleep_start": 22,
+      "town": "harbor"
+    },
+    {
+      "id": "hb_shishu",
+      "sleep_end": 5,
+      "sleep_start": 21,
+      "town": "harbor"
+    },
+    {
+      "id": "hb_dengye",
+      "sleep_end": 7,
+      "sleep_start": 0,
+      "town": "harbor"
+    },
+    {
+      "id": "hb_axi",
+      "sleep_end": 5,
+      "sleep_start": 20,
+      "town": "harbor"
+    },
+    {
+      "id": "hb_amao",
+      "sleep_end": 6,
+      "sleep_start": 22,
+      "town": "harbor"
+    },
+    {
+      "id": "hb_yunyi",
+      "sleep_end": 5,
+      "sleep_start": 21,
+      "town": "harbor"
+    },
+    {
+      "id": "hb_aduo",
+      "sleep_end": 3,
+      "sleep_start": 19,
+      "town": "harbor"
+    },
+    {
+      "id": "hb_muxia",
+      "sleep_end": 6,
+      "sleep_start": 22,
+      "town": "harbor"
+    },
+    {
+      "id": "hb_shanshan",
+      "sleep_end": 7,
+      "sleep_start": 0,
+      "town": "harbor"
+    },
+    {
+      "id": "hb_afu",
+      "sleep_end": 5,
+      "sleep_start": 20,
+      "town": "harbor"
+    },
+    {
+      "id": "hb_haima",
+      "sleep_end": 2,
+      "sleep_start": 18,
+      "town": "harbor"
+    }
+  ],
+  "checks": 537,
+  "failures": [],
+  "scope": "all original residents in both towns with original jobs/shifts; controlled at-home hour before sleep, real ticks/motion, reload, no early sleep reward, schedule entry/wake release and door threshold"
+}

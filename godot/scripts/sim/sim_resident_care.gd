@@ -145,7 +145,8 @@ static func recovery_stop(w: SimWorld,a: Dictionary) -> String:
 	if SimWorkSchedule.working(SimWorkSchedule.job(a,w.rules.jobs),int(w.data.clock.hour)): return "work"
 	if SimShiftSleep.asleep(a,w.rules.jobs,int(w.data.clock.hour)): return "sleep_schedule"
 	if not SimCommute.plan(w,a).is_empty(): return "commute"
-	if not SimHomeRest.plan(w,a).is_empty(): return "home_return"
+	var home_plan:=SimHomeRest.plan(w,a)
+	if not home_plan.is_empty() and not home_plan.get("settled",false): return "home_return"
 	if SimAppointments.directing(w,id): return "appointment"
 	if SimLeisurePlan.directing(w,id): return "leisure"
 	if SimHangoutVisits.directing(w,id): return "hangout"

@@ -164,7 +164,7 @@ func _update(id: String) -> void:
 	elif not meal_place.is_empty(): a.activity="eating"
 	elif not commute.is_empty(): a.activity="commuting"
 	elif SimAppointments.directing(self,id): a.activity="appointment_wait" if SimAppointments.current(self).state=="waiting" else "appointment_travel"
-	elif not home_return.is_empty(): a.activity="heading_home"
+	elif not home_return.is_empty(): a.activity=(recovery if not recovery.is_empty() else "idle") if home_return.get("settled",false) else "heading_home"
 	elif SimServiceStay.holding(self,id): a.activity="receiving_service"
 	elif SimLeisurePlan.directing(self,id): a.activity="planned_leisure"
 	elif SimHangoutVisits.directing(self,id): a.activity="hangout_travel"
@@ -205,7 +205,7 @@ func _update(id: String) -> void:
 	if SimAppointments.directing(self,id):
 		a.currentLocation=SimAppointments.current(self).place;a._appointmentDestination=a.currentLocation;run.targetLocation=null;a._locationStayRemaining=0
 		return
-	if not home_return.is_empty() and a.activity=="heading_home" and float(a.needs.hunger)>=15 and float(a.needs.rest)>=10:
+	if not home_return.is_empty() and (a.activity=="heading_home" or home_return.get("settled",false)) and float(a.needs.hunger)>=15 and float(a.needs.rest)>=10:
 		a._homeReturn=home_return;a.currentLocation=a.homeLocation;run.targetLocation=null;a._locationStayRemaining=0
 		return
 	if a.activity=="waiting_workplace":

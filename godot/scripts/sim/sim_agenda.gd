@@ -7,6 +7,7 @@ static func place_name(w: SimWorld,m: SimMotion,room: String) -> String:
 		return str(w.data.townMap.locations.get(parent,{}).get("name","住宅區"))+"（住家）"
 	return str(w.data.townMap.locations.get(room,{}).get("name","其他場所"))
 static func activity(a: Dictionary) -> String:
+	if a.activity=="idle" and a.get("_homeReturn",{}).get("settled",false): return "在家準備休息"
 	return {"heading_home":"慢走返家","care_travel":"前往尋求關懷","care_wait":"在現場接受關懷","receiving_service":"在現場接受服務","hangout_travel":"同行赴約／等候","planned_leisure":"休閒安排","appointment_travel":"赴約","appointment_wait":"等待見面"}.get(a.activity,SimTrace.activity_label(a))
 static func current(w: SimWorld,m: SimMotion,id: String) -> Dictionary:
 	if not w.data.agents.has(id): return {}
