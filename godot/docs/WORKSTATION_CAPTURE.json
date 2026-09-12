@@ -1,0 +1,17 @@
+{
+  "cases": [
+    {
+      "job": "carpenter",
+      "leave_cancelled": true,
+      "minimum_head_height": 0.919918715953827,
+      "walked_to_station": true
+    },
+    {
+      "job": "blacksmith",
+      "leave_cancelled": true,
+      "minimum_head_height": 0.919918715953827,
+      "walked_to_station": true
+    }
+  ],
+  "steps": 276
+}

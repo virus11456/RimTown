@@ -3,6 +3,11 @@ func stand(app: Node,loc: String) -> void:
 	app.motion.positions.player.doorPhase=null
 	var zone: Dictionary=app.motion.layout.buildings.get(loc,app.motion.layout.nature.get(loc,{}))
 	app.motion.positions.player.x=(zone.x+zone.w*.5)*16;app.motion.positions.player.y=(zone.y+zone.h*.5)*16;app.simulation.data.agents.player.currentLocation=loc
+	# Physical workstation setup for the UI fixture; movement is covered separately.
+	var job:=str(app.simulation.data.agents.player.get("jobKey",""))
+	if loc=="workshop" and job in SimWorkstation.JOBS:
+		var station:=SimWorkstation.resolve(app.motion.layout,job)
+		if not station.is_empty(): app.motion.positions.player.x=station.stand.x;app.motion.positions.player.y=station.stand.y
 func run() -> void:
 	var viewport:=SubViewport.new();viewport.size=Vector2i(375,812);viewport.own_world_3d=true;root.add_child(viewport)
 	var app: Node=load("res://scenes/main.tscn").instantiate();viewport.add_child(app);await process_frame;app.set_process(false)

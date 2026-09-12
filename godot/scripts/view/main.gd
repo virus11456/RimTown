@@ -2326,6 +2326,13 @@ func show_careers() -> void:
 			if task.job in ["doctor","priest"]:
 				_wrapped(SimCareerPresence.service_status(w,motion,task),12)
 				_button("查看"+str(w.data.agents[task.target].name)+"的目前行程",drawer_body,func(): show_service_target(str(task.target)))
+			if task.job in SimWorkstation.JOBS:
+				_wrapped("需走到工房工作台的圓形標記，開始後會轉身面向桌面；離開會中止。",12)
+				_button("查看工房工作台",drawer_body,func():
+					var station:=SimWorkstation.resolve(motion.layout,str(task.job))
+					if station.is_empty(): _wrapped("工作台目前不可用，請重新查看設施。");return
+					rig.follow_player=false;rig.position=Vector3(station.stand.x/16,0,station.stand.y/16)
+					status.text="鏡頭已定位工作台；請用 WASD 或方向鍵走到屋內圓形標記。")
 			_wrapped(str(task.label)+" · 地點："+str(w.data.townMap.locations[task.location].name),12)
 			_button("開始："+str(task.label),drawer_body,func():
 				var current_task: Dictionary=task

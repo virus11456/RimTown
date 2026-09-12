@@ -17,7 +17,7 @@ static func task_error(m: SimMotion,task: Dictionary) -> String:
 	# Headless simulation imports without observed positions retain legacy logic.
 	if m==null: return ""
 	if place(m,"player")!=str(task.location): return "請先操作旅人走到工作地點。"
-	if task.job not in ["doctor","priest"]: return ""
+	if task.job not in ["doctor","priest"]: return SimWorkstation.error(m,str(task.job))
 	var id:=str(task.target)
 	if at_threshold(m,"player") or at_threshold(m,id): return "請走過門檻，等雙方完成進出門後再開始服務。"
 	if not together(m,"player",id,str(task.location)): return "對方尚未在同一場所到場，請等待或重新查看工作。"

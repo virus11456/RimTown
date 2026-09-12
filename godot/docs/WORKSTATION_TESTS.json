@@ -1,0 +1,8 @@
+{
+  "bad_cells": 0,
+  "checks": 1815,
+  "failures": [],
+  "maximum_step": 1.200040102005,
+  "scope": "two bench roles in frontier; actual entry and station walk, remote refusal, pure pose, complete, leave, cancel, reload, doorway, missing harbor workshop; controlled demand",
+  "walked_frames": 1056
+}

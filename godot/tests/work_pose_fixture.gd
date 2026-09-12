@@ -27,6 +27,9 @@ static func prepare(app: Node,town: String,job: String) -> Dictionary:
 	var task: Dictionary=tasks[0]
 	var z: Dictionary=app.motion.layout.buildings.get(task.location,app.motion.layout.nature.get(task.location,{}))
 	app.motion.positions.player.x=(z.x+z.w*.5)*16;app.motion.positions.player.y=(z.y+z.h*.5)*16
+	if job in SimWorkstation.JOBS:
+		var station:=SimWorkstation.resolve(app.motion.layout,job)
+		if not station.is_empty(): app.motion.positions.player.x=station.stand.x;app.motion.positions.player.y=station.stand.y
 	app.motion.positions.player.walking=false;app.motion.positions.player.doorPhase=null
 	w.data.agents.player.currentLocation=task.location
 	return task

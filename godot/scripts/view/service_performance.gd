@@ -101,6 +101,7 @@ func update(town: TownView, w: SimWorld, m: SimMotion, delta: float) -> void:
 		var target: Dictionary = m.positions[str(task.target)]
 		var direction := Vector2(float(target.x)-float(m.positions.player.x), float(target.y)-float(m.positions.player.y))
 		if direction.length() > .1: actor.rotation.y = atan2(direction.x, direction.y)
+	if job in SimWorkstation.JOBS: actor.rotation.y=PI
 	var blend := smoothstep(0, .45, phase)
 	if task.job == "doctor":
 		actor.rotation.x = .07 * blend
@@ -130,6 +131,27 @@ func update(town: TownView, w: SimWorld, m: SimMotion, delta: float) -> void:
 			var cadence := 2.2 if job=="miner" else 3.0
 			right.rotation.x=(-.85+sin(phase*cadence)*.40)*blend
 			left.rotation.x=-.3*blend
+			if job in SimWorkstation.JOBS:
+				# Solve the hammer-head bottom against the actual .92-high work slab.
+				var low:=0.0;var high:=-1.6
+				for i in 12:
+					var angle: float=(low+high)*.5
+					right.rotation.x=angle
+					if hammer_bottom(tool)<.92: low=angle
+					else: high=angle
+				var impact: float=(low+high)*.5
+				right.rotation.x=lerpf(impact-.5,impact-.5*(.5+.5*sin(phase*3)),blend)
 
 	elif job in CareerProps.JOBS:
 		CareerProps.pose(job,right,left,phase,blend)
+
+static func hammer_bottom(tool: MeshInstance3D) -> float:
+	if not tool.has_meta("head_vertices"):
+		var points: Array[Vector3]=[]
+		for surface in tool.mesh.get_surface_count():
+			for v in tool.mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX]:
+				if v.y>.60: points.append(v)
+		tool.set_meta("head_vertices",points)
+	var bottom:=INF
+	for v in tool.get_meta("head_vertices"): bottom=minf(bottom,(tool.global_transform*v).y)
+	return bottom

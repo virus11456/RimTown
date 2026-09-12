@@ -13,22 +13,23 @@ func build(layout: TownLayout, parent: Node3D, shells: Dictionary) -> void:
 		room.visible=false;rooms[key]=room
 		# Back-wall units keep the door side and every navigable cell untouched.
 		var count := 0
-		var slots: Array = range(int(zone.x)+1,int(zone.x+zone.w)-1)
-		var center: float = float(zone.x)+float(zone.w)/2
-		slots.sort_custom(func(a,b):return absf(float(a)+.5-center)<absf(float(b)+.5-center))
 		var limit := 2 if key=="library" else 3
-		for x in slots:
-			var y := int(zone.y)
-			var point := Vector2((x+.5)*16,(y+.5)*16)
-			if layout._walkable(point): continue
-			if Vector2(zone.doorPixelX,zone.doorPixelY).distance_to(point)<32: continue
-			if count>=limit: break
+		for cell in SimWorkstation.slots(layout,zone,limit):
+			var x:=cell.x;var y:=cell.y
 			var unit := Node3D.new();unit.position=Vector3(x+.5,.12,y+.5);room.add_child(unit)
 			unit.set_meta("cell",Vector2i(x,y))
+			if key=="workshop" and count==0:
+				var station:=SimWorkstation.resolve(layout,"carpenter")
+				if not station.is_empty(): unit.position=Vector3(station.bench.x,.12,station.bench.y);unit.set_meta("cell",station.cell)
 			make_unit(unit,str(key),count);count+=1
+		if key=="workshop":
+			var station:=SimWorkstation.resolve(layout,"carpenter")
+			if not station.is_empty():
+				var mesh:=TorusMesh.new();mesh.inner_radius=.17;mesh.outer_radius=.21
+				CareerProps.part(room,mesh,Vector3(station.stand.x/16,.135,station.stand.y/16),Color("ebc477"))
 func make_unit(unit: Node3D,key: String,index: int) -> void:
 	CareerProps.box(unit,Vector3(.78,.62,.66),Vector3(0,.31,0),WOOD)
-	CareerProps.box(unit,Vector3(.84,.08,.72),Vector3(0,.66,0),TOP)
+	CareerProps.box(unit,Vector3(.94,.08,.96) if key=="workshop" and index==0 else Vector3(.84,.08,.72),Vector3(0,.66,0),TOP)
 	if key=="library" or key=="town_hall":
 		for i in 4:
 			CareerProps.box(unit,Vector3(.11,.25+.04*(i%2),.30),Vector3(-.24+i*.16,.84,0),[Color("765773"),Color("687b66"),Color("a87b54"),PAPER][i])
@@ -36,8 +37,8 @@ func make_unit(unit: Node3D,key: String,index: int) -> void:
 		CareerProps.tube(unit,.20,.12,Vector3(0,.77,0),Color("718b91"))
 		CareerProps.tube(unit,.17,.014,Vector3(0,.84,0),Color("caa261"))
 	elif key=="workshop":
-		CareerProps.box(unit,Vector3(.45,.10,.34),Vector3(0,.75,0),Color("718b91"))
-		CareerProps.box(unit,Vector3(.35,.055,.065),Vector3(0,.84,0),TOP)
+		CareerProps.box(unit,Vector3(.78,.10,.94) if index==0 else Vector3(.45,.10,.34),Vector3(0,.75,0),Color("718b91"))
+		if index>0: CareerProps.box(unit,Vector3(.35,.055,.065),Vector3(0,.84,0),TOP)
 	elif key=="clinic" or key=="chapel":
 		CareerProps.box(unit,Vector3(.45,.08,.35),Vector3(0,.74,0),PAPER)
 		CareerProps.tube(unit,.07,.19,Vector3(.20,.80,0),Color("7da4a1"))
