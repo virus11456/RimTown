@@ -1,6 +1,7 @@
 class_name SimResidentCare
 extends RefCounted
-# A bounded visit, not a medical outcome or a source of production/rewards.
+# Bounded fatigue care / supportive conversation; no goods or career rewards.
+const PROVIDER_DAILY_LIMIT := 3
 static func eligible(w: SimWorld,id: String) -> bool:
 	var a: Dictionary=w.data.agents.get(id,{})
 	if id=="player" or a.is_empty() or not SimServiceStay.priority(w,id).is_empty(): return false
@@ -19,7 +20,33 @@ static func provider_ready(w: SimWorld,m: SimMotion,id: String) -> bool:
 	return not p.is_empty() and not p.get("walking",true) and p.get("doorPhase")==null and SimCareerPresence.place(m,id)==a.currentLocation and w.data.townMap.locations.has(a.currentLocation)
 static func needed(a: Dictionary,job: String) -> bool:
 	return float(a.needs.rest)>=10 and float(a.needs.rest)<=40 if job=="doctor" else float(a.mood)<0
-static func clear(a: Dictionary,reason: String) -> void:
+static func allowance(w: SimWorld,a: Dictionary,provider: Dictionary,job: String) -> bool:
+	var b:=SimCareers.book(w)
+	var key:="treated" if job=="doctor" else "counseled"
+	var quota: Dictionary=provider.get("_careProvided",{})
+	return str(a.id) not in b.get(key,[]) and (int(quota.get("day",-1))!=SimClock.total_days(w.data.clock) or int(quota.get("used",0))<PROVIDER_DAILY_LIMIT)
+static func complete(w: SimWorld,a: Dictionary,provider: Dictionary) -> void:
+	var v: Dictionary=a._careVisit
+	if not allowance(w,a,provider,str(v.job)): clear(a,"今日同類照護或接待額度已用完。",w.data.tickCount);return
+	var b:=SimCareers.book(w);var key:="treated" if v.job=="doctor" else "counseled"
+	if not b.has(key): b[key]=[]
+	b[key].append(str(a.id))
+	var day:=SimClock.total_days(w.data.clock);var quota: Dictionary=provider.get("_careProvided",{})
+	provider._careProvided={"day":day,"used":int(quota.get("used",0))+1 if int(quota.get("day",-1))==day else 1}
+	var before: float=a.needs.rest if v.job=="doctor" else a.mood
+	if v.job=="doctor": a.needs.rest=minf(100,float(a.needs.rest)+15)
+	else:
+		SimFeuds._mood(a,w,8);a.mood=clampf(float(a.mood)+8,-100,100)
+	var amount: float=(float(a.needs.rest) if v.job=="doctor" else float(a.mood))-before
+	var notice:="完成疲憊照護，體力 +%.0f。"%amount if v.job=="doctor" else "完成談心陪伴，心情 +%.0f。"%amount
+	SimFeuds._memory(a,w,"care",str(provider.name)+"："+notice,5,[str(provider.id)])
+	clear(a,notice,w.data.tickCount,"completed",amount)
+static func clear(a: Dictionary,reason: String,tick: int=-1,state: String="cancelled",amount: float=0) -> void:
+	if a.has("_careVisit"):
+		var v: Dictionary=a._careVisit;var rows: Array=a.get("_careResults",[])
+		rows.append({"state":state,"tick":tick,"provider":v.get("provider",""),"job":v.get("job",""),"amount":amount,"reason":reason})
+		while rows.size()>8: rows.pop_front()
+		a._careResults=rows
 	a.erase("_careVisit");a.erase("_careDestination");a.erase("_careHolding")
 	a._careVisitNotice=reason
 	if a.activity in ["care_travel","care_wait"]: a.activity="wandering";a._locationStayRemaining=0
@@ -27,7 +54,7 @@ static func tick(w: SimWorld) -> void:
 	var m: SimMotion=w.social.observed_motion
 	if m==null or not m.stable_routes or not w.social_enabled:
 		for a in w.data.agents.values():
-			if a.has("_careVisit"): clear(a,"目前無法繼續關懷行程。")
+			if a.has("_careVisit"): clear(a,"目前無法繼續關懷行程。",w.data.tickCount)
 		return
 	var ids: Array=w.data.agents.keys();ids.sort();var used: Dictionary={}
 	for id in ids:
@@ -35,18 +62,19 @@ static func tick(w: SimWorld) -> void:
 		if not a.has("_careVisit"): continue
 		var v: Dictionary=a._careVisit;var provider: String=str(v.get("provider",""))
 		if not eligible(w,id) or not provider_ready(w,m,provider) or used.has(provider) or int(w.data.tickCount)>=int(v.get("until",0)):
-			clear(a,"求助中止：行程優先、服務者離開或等候逾時。");continue
+			clear(a,"求助中止：行程優先、服務者離開或等候逾時。",w.data.tickCount);continue
 		var b: Dictionary=w.data.agents[provider]
-		if b.jobKey!=v.job or b.currentLocation!=v.place or not needed(a,v.job): clear(a,"目前不再需要這次關懷。");continue
+		if b.jobKey!=v.job or b.currentLocation!=v.place or not needed(a,v.job): clear(a,"目前不再需要這次關懷。",w.data.tickCount);continue
+		if not allowance(w,a,b,v.job): clear(a,"今日同類照護或接待額度已用完。",w.data.tickCount);continue
 		used[provider]=true
 		var p: Dictionary=m.positions.get(id,{})
 		var q: Dictionary=m.positions[provider]
 		var arrived: bool=not p.is_empty() and not p.get("walking",true) and p.get("doorPhase")==null and SimCareerPresence.together(m,id,provider,v.place) and Vector2(p.x,p.y).distance_to(Vector2(q.x,q.y))<=48
-		if v.state=="visiting" and not arrived: clear(a,"雙方已離開，結束這次關懷。");continue
+		if v.state=="visiting" and not arrived: clear(a,"雙方已離開，結束這次關懷。",w.data.tickCount);continue
 		if arrived and v.state=="travel":
 			v.state="visiting";v.finish=int(w.data.tickCount)+2
 			w.social.converse(b,a,w.data,w.rng,w.rules.jobs);b._lastInteractionTick=w.data.tickCount
-		if v.state=="visiting" and int(w.data.tickCount)>=int(v.finish): clear(a,"已完成短暫關懷交談，繼續原本生活。");continue
+		if v.state=="visiting" and int(w.data.tickCount)>=int(v.finish): complete(w,a,b);continue
 		a._careHolding=v.state=="visiting"
 	for id in ids:
 		var a: Dictionary=w.data.agents[id]
@@ -54,7 +82,7 @@ static func tick(w: SimWorld) -> void:
 		for provider in ids:
 			if provider==id or used.has(provider) or not provider_ready(w,m,provider): continue
 			var b: Dictionary=w.data.agents[provider]
-			if not needed(a,b.jobKey): continue
+			if not needed(a,b.jobKey) or not allowance(w,a,b,b.jobKey): continue
 			var q: Dictionary=m.positions[provider];var goal:=Vector2.INF
 			for offset in [Vector2(24,0),Vector2(-24,0),Vector2(0,24),Vector2(0,-24),Vector2(12,0),Vector2(-12,0),Vector2(0,12),Vector2(0,-12)]:
 				var candidate: Vector2=Vector2(q.x,q.y)+offset
@@ -64,7 +92,7 @@ static func tick(w: SimWorld) -> void:
 			a._careVisitDay=SimClock.total_days(w.data.clock);a._careVisitNotice="前往尋求關懷。";used[provider]=true;break
 static func apply(w: SimWorld,a: Dictionary,run: Dictionary) -> bool:
 	if not a.has("_careVisit"): return false
-	if not eligible(w,str(a.id)): clear(a,"先處理必要行程。");return false
+	if not eligible(w,str(a.id)): clear(a,"先處理必要行程。",w.data.tickCount);return false
 	a.currentLocation=a._careVisit.place;a._careDestination=a.currentLocation
 	a.activity="care_wait" if a.get("_careHolding",false) else "care_travel"
 	run.targetLocation=null;a._locationStayRemaining=0

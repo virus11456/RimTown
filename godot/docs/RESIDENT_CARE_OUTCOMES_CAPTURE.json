@@ -1,0 +1,29 @@
+{
+  "cases": [
+    {
+      "actual_conversation": true,
+      "bounded_visit_completed": true,
+      "job": "doctor",
+      "town": "frontier"
+    },
+    {
+      "actual_conversation": true,
+      "bounded_visit_completed": true,
+      "job": "priest",
+      "town": "frontier"
+    },
+    {
+      "actual_conversation": true,
+      "bounded_visit_completed": true,
+      "job": "doctor",
+      "town": "harbor"
+    },
+    {
+      "actual_conversation": true,
+      "bounded_visit_completed": true,
+      "job": "priest",
+      "town": "harbor"
+    }
+  ],
+  "scope": "controlled needs and clinic; automatic request, real walking from square, actual arrival conversation and bounded completion; native render"
+}

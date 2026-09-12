@@ -1,0 +1,5 @@
+{
+  "checks": 18,
+  "failures": [],
+  "scope": "four distinct residents, two provider roles, three actual completed visits, fourth blocked, next-day admission; controlled demand and initial patient positions"
+}

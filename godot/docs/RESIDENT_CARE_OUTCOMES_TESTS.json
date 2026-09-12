@@ -1,0 +1,5 @@
+{
+  "checks": 74,
+  "failures": [],
+  "scope": "both towns and care roles, real collision arrival, delayed bounded effect, shared recipient cap, provider quota, replay/reload, cancellation, bounded history and agenda; controlled demand"
+}

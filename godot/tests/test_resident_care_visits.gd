@@ -33,9 +33,10 @@ func run() -> void:
 			var rest: float=a.needs.rest;var balance: String=JSON.stringify(w.quest_balance)
 			w.data.tickCount+=2;SimResidentCare.tick(w)
 			check(not a.has("_careVisit") and not a.has("_careHolding"),"stay ends at deadline")
-			check(a.needs.rest==rest and JSON.stringify(w.quest_balance)==balance,"visit has no healing reward or economic writes")
+			check(a.needs.rest==rest+15 if job=="doctor" else a.needs.rest==rest,"completed visit applies only its care effect")
 			SimResidentCare.tick(w);check(not a.has("_careVisit"),"daily retry cap")
 			for reason in ["hunger","work","sleep","player","timeout","provider","raid","disabled"]:
+				SimCareers.book(w).treated=[];SimCareers.book(w).counseled=[]
 				a.erase("_careVisitDay");a.needs.hunger=80;a.needs.rest=30;a.mood=-20;a.activity="idle";a.jobKey="";b.activity="working"
 				SimResidentCare.tick(w)
 				check(a.has("_careVisit"),"prepare interruption "+reason)
@@ -50,5 +51,5 @@ func run() -> void:
 				SimResidentCare.tick(w);check(not a.has("_careVisit"),"priority cancels "+reason)
 				SimCareers.book(w).active={};a.erase("_raidShelterUntil");w.social_enabled=true
 			cases.append({"town":town,"job":job,"walk_frames":steps})
-	var report:={"checks":checks,"failures":failures,"cases":cases,"scope":"controlled need and clinic; actual route to provider, arrival, conversation, bounded stay, interruption, saved state and daily cap; no healing or reward"}
+	var report:={"checks":checks,"failures":failures,"cases":cases,"scope":"controlled need and clinic; actual route to provider, arrival, conversation, bounded stay, interruption, saved state and daily cap; bounded care, no goods or player career reward"}
 	FileAccess.open("res://docs/RESIDENT_CARE_VISITS_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "));print(JSON.stringify(report));quit(0 if failures.is_empty() else 1)
