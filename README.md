@@ -1,5 +1,7 @@
 # RimTown - AI Town Simulation 邊境鎮
 
+室內新增不佔走道的牆邊矮櫃與職業用品，隨進出顯示／隱藏；固定工作站接觸仍待接入。見 [室內擺設](godot/docs/INTERIOR_FURNISHINGS.md)。
+
 旅人走入建築後，所在屋頂切成低牆剖面，離開恢復外觀；兩鎮室內值勤已原生驗證，2,353 項檢查通過。見 [室內可視性](godot/docs/INTERIOR_CUTAWAY.md)。
 
 農務、廚師、裁縫、守衛與商人已補上值勤姿勢；十一職業均有第一版表現，完整骨架與室內家具仍待完善。見 [日常職業動作](godot/docs/EVERYDAY_PERFORMANCE.md)。

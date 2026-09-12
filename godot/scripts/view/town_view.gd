@@ -12,6 +12,7 @@ var environment: WorldEnvironment
 var show_labels := true
 var dispute_bubbles: DisputeBubbles
 var service_performance := ServicePerformance.new()
+var furnishings: InteriorFurnishings
 var interior: InteriorCutaway
 
 func _ready() -> void:
@@ -84,6 +85,8 @@ func display_save(save: Dictionary) -> void:
 	var harbor: bool = save.get("townTheme", "frontier") == "harbor"
 	_build_terrain(winter)
 	_build_locations(harbor)
+	furnishings=InteriorFurnishings.new()
+	furnishings.build(layout,content,interior.shells)
 	_build_overlays(save)
 	_build_villagers(save)
 	_light_clock(save.get("clock",{}))
@@ -356,4 +359,6 @@ func animate_agents(positions: Dictionary) -> void:
 			actor.rotation.y=atan2(direction.x,direction.z)
 		actor.rotation.z=PI/2 if p.get("activity")=="sleeping" and not walking else 0.0
 
-	if interior!=null: interior.update(layout,positions,show_labels)
+	if interior!=null:
+		interior.update(layout,positions,show_labels)
+		if furnishings!=null: furnishings.update(interior.opened)

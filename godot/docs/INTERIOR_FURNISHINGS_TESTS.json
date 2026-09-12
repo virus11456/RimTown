@@ -1,0 +1,8 @@
+{
+  "bad_cells": 0,
+  "checks": 6485,
+  "failures": [],
+  "maximum_step": 1.20001220703125,
+  "scope": "both towns, all rendered door-bearing rooms: solid-cell furniture AABB corners, room visibility, real collision entry/exit/threshold, reload, pure saved state; controlled fixture, not natural endurance",
+  "walked_frames": 5159
+}

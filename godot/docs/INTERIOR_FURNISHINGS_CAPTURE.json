@@ -1,0 +1,54 @@
+{
+  "cases": [
+    {
+      "restored": true,
+      "role": "cook",
+      "room": "tavern",
+      "started": true,
+      "town": "frontier",
+      "walked_in_and_out": true
+    },
+    {
+      "restored": true,
+      "role": "researcher",
+      "room": "library",
+      "started": true,
+      "town": "frontier",
+      "walked_in_and_out": true
+    },
+    {
+      "restored": true,
+      "role": "home",
+      "room": "residential_north_0",
+      "started": true,
+      "town": "frontier",
+      "walked_in_and_out": true
+    },
+    {
+      "restored": true,
+      "role": "cook",
+      "room": "tavern",
+      "started": true,
+      "town": "harbor",
+      "walked_in_and_out": true
+    },
+    {
+      "restored": true,
+      "role": "researcher",
+      "room": "library",
+      "started": true,
+      "town": "harbor",
+      "walked_in_and_out": true
+    },
+    {
+      "restored": true,
+      "role": "home",
+      "room": "residential_north_0",
+      "started": true,
+      "town": "harbor",
+      "walked_in_and_out": true
+    }
+  ],
+  "scenery_hidden": false,
+  "steps": 682
+}
