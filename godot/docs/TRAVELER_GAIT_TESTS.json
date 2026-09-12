@@ -1,0 +1,6 @@
+{
+  "checks": 1114,
+  "failures": [],
+  "samples": 219,
+  "scope": "two-town real station walk, transformed shoe vertices and floor, stop, blocked intent, no resource writes, work ownership, reload, 30/60/120Hz distance phase; controlled fixture"
+}

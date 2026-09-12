@@ -12,6 +12,7 @@ var environment: WorldEnvironment
 var show_labels := true
 var dispute_bubbles: DisputeBubbles
 var service_performance := ServicePerformance.new()
+var traveler_gait := TravelerGait.new()
 var furnishings: InteriorFurnishings
 var interior: InteriorCutaway
 
@@ -261,6 +262,7 @@ func _build_villagers(save: Dictionary) -> void:
 		body.name="Body"
 		if id=="player":
 			ServicePerformance.articulate(body,age<16)
+			TravelerGait.articulate(body,age<16)
 			var service_label:=Label3D.new()
 			service_label.name="ServiceStatus"
 			service_label.font=load("res://assets/fonts/NotoSansTC.ttf")
@@ -352,7 +354,7 @@ func animate_agents(positions: Dictionary) -> void:
 		var actor: Node3D=actors[id]
 		var previous:=actor.position
 		var walking: bool=p.get("walking",false)
-		var bob:=sin(float(p.get("walkStep",0))*.18)*.045 if walking else 0.0
+		var bob:=sin(float(p.get("walkStep",0))*.18)*.045 if walking and id!="player" else 0.0
 		actor.position=Vector3(float(p.x)/16,.16+bob,float(p.y)/16)
 		var direction:=actor.position-previous
 		if walking and Vector2(direction.x,direction.z).length()>.0001:
