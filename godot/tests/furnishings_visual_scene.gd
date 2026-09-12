@@ -7,6 +7,7 @@ func travel(goal: Vector2) -> bool:
 	var p: Dictionary=motion.positions.player
 	var path:=motion.pathfinder.find_path(Vector2(p.x,p.y),goal)
 	if path.is_empty(): return false
+	path.append({"x":goal.x,"y":goal.y})
 	for point in path:
 		var target:=Vector2(point.x,point.y)
 		for i in 4000:
@@ -45,6 +46,8 @@ func capture_interiors() -> void:
 			hud.visible=false
 			var zone: Dictionary=motion.layout.buildings[key]
 			var inside: Vector2=motion.layout._nearest(motion.layout._center(key))
+			var station:=SimWorkstation.resolve(motion.layout,role)
+			if not station.is_empty(): inside=station.stand
 			if role=="home": inside=Vector2(motion.layout.houses[key].interiorX,motion.layout.houses[key].interiorY)
 			var outside:=Vector2(zone.doorPixelX,zone.doorPixelY)
 			motion.positions.player.x=outside.x;motion.positions.player.y=outside.y;motion.positions.player.doorPhase=null;motion.positions.player.walking=false

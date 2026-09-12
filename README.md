@@ -1,8 +1,10 @@
 # RimTown - AI Town Simulation 邊境鎮
 
+廚師、裁縫與研究員已接上料理台、裁縫台與研究桌，需實際到位才能值勤，離開中止；兩鎮可用場所與手持物對位已驗證。見 [三職業操作台](godot/docs/DESK_STATIONS.md)。
+
 木匠與鐵匠需親自走到工房工作台才能值勤，站定後面向桌面敲打，離開標記會中止；提供鏡頭定位入口。見 [工作台值勤](godot/docs/WORKSTATION.md)。
 
-室內新增不佔走道的牆邊矮櫃與職業用品，隨進出顯示／隱藏；木匠／鐵匠工作站已接入，其餘職業仍待擴充。見 [室內擺設](godot/docs/INTERIOR_FURNISHINGS.md)。
+室內新增不佔走道的牆邊矮櫃與職業用品，隨進出顯示／隱藏；五種操作台職業已接入，NPC 工作站使用仍待擴充。見 [室內擺設](godot/docs/INTERIOR_FURNISHINGS.md)。
 
 旅人走入建築後，所在屋頂切成低牆剖面，離開恢復外觀；兩鎮室內值勤已原生驗證，2,353 項檢查通過。見 [室內可視性](godot/docs/INTERIOR_CUTAWAY.md)。
 

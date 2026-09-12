@@ -1,0 +1,40 @@
+{
+  "cases": [
+    {
+      "job": "cook",
+      "leave_cancelled": true,
+      "minimum_material_height": 0.834930717945099,
+      "town": "frontier",
+      "walked_to_station": true
+    },
+    {
+      "job": "tailor",
+      "leave_cancelled": true,
+      "minimum_material_height": 0.834942162036896,
+      "town": "frontier",
+      "walked_to_station": true
+    },
+    {
+      "job": "researcher",
+      "leave_cancelled": true,
+      "minimum_material_height": 0.84613311290741,
+      "town": "frontier",
+      "walked_to_station": true
+    },
+    {
+      "job": "cook",
+      "leave_cancelled": true,
+      "minimum_material_height": 0.834930717945099,
+      "town": "harbor",
+      "walked_to_station": true
+    },
+    {
+      "job": "researcher",
+      "leave_cancelled": true,
+      "minimum_material_height": 0.84613311290741,
+      "town": "harbor",
+      "walked_to_station": true
+    }
+  ],
+  "steps": 666
+}

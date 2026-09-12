@@ -1,13 +1,14 @@
 extends "res://tests/interior_visual_scene.gd"
 func capture(name: String) -> void:
 	await get_tree().process_frame;await RenderingServer.frame_post_draw
-	get_viewport().get_texture().get_image().save_png("res://docs/workstation-"+name+".png")
+	get_viewport().get_texture().get_image().save_png("res://docs/desks-"+name+".png")
 func capture_interiors() -> void:
 	var records: Array=[]
-	for job in SimWorkstation.HAMMER_JOBS:
-		var task:=Fixture.prepare(self,"frontier",job)
+	for pair in [["frontier","cook"],["frontier","tailor"],["frontier","researcher"],["harbor","cook"],["harbor","researcher"]]:
+		var town: String=pair[0];var job: String=pair[1]
+		var task:=Fixture.prepare(self,town,job)
 		var station:=SimWorkstation.resolve(motion.layout,job)
-		var zone: Dictionary=motion.layout.buildings.workshop
+		var zone: Dictionary=motion.layout.buildings[task.location]
 		hud.visible=false
 		motion.positions.player.x=zone.doorPixelX;motion.positions.player.y=zone.doorPixelY
 		motion.positions.player.walking=false;motion.positions.player.doorPhase=null
@@ -25,12 +26,12 @@ func capture_interiors() -> void:
 		for i in 160:
 			world_view.animate_agents(motion.positions)
 			world_view.service_performance.update(world_view,simulation,motion,1.0/60)
-			var tool: MeshInstance3D=world_view.actors.player.get_node("Body/ServiceRight/acc_tool_hammer")
-			min_height=minf(min_height,ServicePerformance.hammer_bottom(tool))
+			var tool: Node3D=world_view.actors.player.get_node("Body/ServiceRight/acc_tool_book") if job=="researcher" else world_view.actors.player.get_node("Body/ServiceLeft/Duty_"+job+"_left")
+			min_height=minf(min_height,DeskPerformance.bounds(tool).position.y)
 			await get_tree().process_frame
-			if i in [45,93,130]: await capture(job+"-"+str(i))
-		assert(await travel(motion.layout._center("workshop")))
+			if i in [45,93,130]: await capture(town+"-"+job+"-"+str(i))
+		assert(await travel(motion.layout._center(task.location)))
 		assert(SimCareers.book(simulation).active.is_empty())
-		records.append({"job":job,"minimum_head_height":min_height,"walked_to_station":true,"leave_cancelled":true})
-	FileAccess.open("res://docs/WORKSTATION_CAPTURE.json",FileAccess.WRITE).store_string(JSON.stringify({"cases":records,"steps":steps},"  "))
-	print("WORKSTATION_CAPTURE_COMPLETE")
+		records.append({"town":town,"job":job,"minimum_material_height":min_height,"walked_to_station":true,"leave_cancelled":true})
+	FileAccess.open("res://docs/DESK_STATIONS_CAPTURE.json",FileAccess.WRITE).store_string(JSON.stringify({"cases":records,"steps":steps},"  "))
+	print("DESK_STATIONS_CAPTURE_COMPLETE")

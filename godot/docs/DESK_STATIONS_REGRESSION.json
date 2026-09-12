@@ -1,0 +1,125 @@
+[
+  {
+    "test": "desk_stations",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "bad_cells": 0,
+      "checks": 7484,
+      "failures": [],
+      "maximum_step": 1.20008325576782,
+      "scope": "three desk roles in both towns where facilities exist; actual entry and station walk, remote refusal, pure pose, complete, leave, cancel, reload, doorway, missing harbor workshop; controlled demand",
+      "walked_frames": 2473
+    },
+    "tail": ""
+  },
+  {
+    "test": "careers_expansion_ui",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 34,
+      "failures": [],
+      "scope": "375px six-career UI, three new registrations and real tick-based completions"
+    },
+    "tail": ""
+  },
+  {
+    "test": "workstation",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "bad_cells": 0,
+      "checks": 1815,
+      "failures": [],
+      "maximum_step": 1.200040102005,
+      "scope": "two bench roles in frontier; actual entry and station walk, remote refusal, pure pose, complete, leave, cancel, reload, doorway, missing harbor workshop; controlled demand",
+      "walked_frames": 1056
+    },
+    "tail": ""
+  },
+  {
+    "test": "interior_furnishings",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "bad_cells": 0,
+      "checks": 6365,
+      "failures": [],
+      "maximum_step": 1.20001220703125,
+      "scope": "both towns, all rendered door-bearing rooms: solid-cell furniture AABB corners, room visibility, real collision entry/exit/threshold, reload, pure saved state; controlled fixture, not natural endurance",
+      "walked_frames": 5159
+    },
+    "tail": ""
+  },
+  {
+    "test": "indoor_service",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "bad_cells": 0,
+      "checks": 323,
+      "failures": [],
+      "maximum_step": 1.20001482963562,
+      "scope": "two towns, all existing houses and door-bearing public buildings entered and exited using manual collision movement; controlled patient needs and initial positions; doctor/priest indoor completion, departure cancellation, active and stationary threshold reload, stale entrance UI, 375px layout; controlled settlement clock, not natural multi-day simulation",
+      "walked_frames": 8946
+    },
+    "tail": ""
+  },
+  {
+    "test": "service_performance",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 216,
+      "failures": [],
+      "rendered_samples": false,
+      "scope": "two towns, two roles, actual start/completion/cancel/distance/need/reload; pure visual poses, pause, walking precedence, timed outcome; optional staged render capture"
+    },
+    "tail": ""
+  },
+  {
+    "test": "work_performance",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 376,
+      "failures": [],
+      "scope": "four tool roles; actual approvals/start/settlement in original facilities, both towns with harbor workshop exclusions; controlled demand and position; cancel, leave, filled demand, reload, no visual rewards, pause and movement"
+    },
+    "tail": ""
+  },
+  {
+    "test": "everyday_performance",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 530,
+      "failures": [],
+      "scope": "five everyday roles; actual approvals/start/settlement in original facilities, both towns with harbor tailor exclusion; controlled demand and position; cancel, leave, filled demand, reload, no visual rewards, pause and movement"
+    },
+    "tail": ""
+  },
+  {
+    "test": "career_facilities",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 97,
+      "failures": [],
+      "scope": "all eleven profession pages in two towns with controlled demand, original missing workshop and removed venue fixtures, no free facilities/resources, no broken destinations, core active-work cancellation on location removal; not natural all-career completion"
+    },
+    "tail": ""
+  },
+  {
+    "test": "service_stay",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 184,
+      "failures": [],
+      "scope": "two towns two service jobs; controlled unemployed awake resident and need state; real simulation ticks, fixed physical stay without frozen needs, completion, cancel, hunger, rest, work, raid, active reload, player departure, accepted appointment, midnight, sleep window and resumed walking; no natural multi-day claim"
+    },
+    "tail": ""
+  }
+]

@@ -131,7 +131,7 @@ func update(town: TownView, w: SimWorld, m: SimMotion, delta: float) -> void:
 			var cadence := 2.2 if job=="miner" else 3.0
 			right.rotation.x=(-.85+sin(phase*cadence)*.40)*blend
 			left.rotation.x=-.3*blend
-			if job in SimWorkstation.JOBS:
+			if job in SimWorkstation.HAMMER_JOBS:
 				# Solve the hammer-head bottom against the actual .92-high work slab.
 				var low:=0.0;var high:=-1.6
 				for i in 12:
@@ -144,6 +144,9 @@ func update(town: TownView, w: SimWorld, m: SimMotion, delta: float) -> void:
 
 	elif job in CareerProps.JOBS:
 		CareerProps.pose(job,right,left,phase,blend)
+
+	if job in ["cook","tailor","researcher"]:
+		DeskPerformance.pose(job,right,left,phase)
 
 static func hammer_bottom(tool: MeshInstance3D) -> float:
 	if not tool.has_meta("head_vertices"):
