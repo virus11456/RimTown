@@ -11,6 +11,7 @@ var sun: DirectionalLight3D
 var environment: WorldEnvironment
 var show_labels := true
 var dispute_bubbles: DisputeBubbles
+var service_performance := ServicePerformance.new()
 
 func _ready() -> void:
 	dispute_bubbles=DisputeBubbles.new();dispute_bubbles.town=self;dispute_bubbles.layer=0;add_child(dispute_bubbles)
@@ -65,6 +66,7 @@ func _building(name: String,zone: Dictionary,height_scale := 1.2) -> MeshInstanc
 
 func display_save(save: Dictionary) -> void:
 	dispute_bubbles.clear()
+	service_performance = ServicePerformance.new()
 	current_save = save.duplicate(true)
 	layout.solid_projects=true
 	layout.separate_civic_buildings=true
@@ -249,6 +251,19 @@ func _build_villagers(save: Dictionary) -> void:
 		var body := _instance(body_name,Vector3.ZERO,Vector3.ONE,actor)
 		var job: String=str(agent.get("jobKey","default"))
 		body.mesh=_recolor(body.mesh,int(jobs.get(job,20)))
+		body.name="Body"
+		if id=="player":
+			ServicePerformance.articulate(body,age<16)
+			var service_label:=Label3D.new()
+			service_label.name="ServiceStatus"
+			service_label.font=load("res://assets/fonts/NotoSansTC.ttf")
+			service_label.font_size=28
+			service_label.pixel_size=.009
+			service_label.position.y=2.65
+			service_label.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+			service_label.modulate=Color("fff0c2")
+			service_label.visible=false
+			actor.add_child(service_label)
 		var head_y:=1.37 if age>=16 else 1.03
 		var traits: Array=agent.get("personality",{}).get("traits",[])
 		var variant := 1+posmod(str(id).hash()+traits.size(),6)

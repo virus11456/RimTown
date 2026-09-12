@@ -903,7 +903,9 @@ func _process(delta: float) -> void:
 	_process_traveler(delta)
 	_validate_career_presence()
 	_refresh_appointment_reminder()
-	if not running: return
+	if not running:
+		world_view.service_performance.update(world_view,simulation,motion,0)
+		return
 	frame_accumulator+=minf(delta,.25)*speed
 	while frame_accumulator>=1.0/60:
 		frame_accumulator-=1.0/60
@@ -916,6 +918,7 @@ func _process(delta: float) -> void:
 		SimLeisurePlan.observe(simulation,motion)
 		SimHangoutVisits.observe(simulation,motion)
 	world_view.animate_agents(motion.positions)
+	world_view.service_performance.update(world_view,simulation,motion,minf(delta,.1))
 
 func _activity_name(activity: String) -> String:
 	return {"receiving_service":"在現場接受服務","hangout_travel":"同行赴約／等候","planned_leisure":"依安排休閒","appointment_travel":"前往赴約","appointment_wait":"等待赴約者","idle":"休息","sleeping":"睡覺","eating":"進食","working":"工作","waiting_workplace":"工作設施未就緒，待命","socializing":"社交","wandering":"閒逛","recreation":"娛樂","stargazing":"看星星","night_stroll":"夜間散步","night_mischief":"夜間惡作劇","mourning":"弔念","commuting":"前往工作","heading_home":"回家"}.get(activity,activity)
