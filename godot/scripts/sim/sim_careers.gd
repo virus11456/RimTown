@@ -90,6 +90,7 @@ static func start(w: SimWorld,id: String) -> Dictionary:
 			if not SimCareerTrade.request(w,t.id): return {"ok":false,"message":"請先申請這份交易報價的公共資源用途。"}
 			if not SimBuildings.affordable(w,t.costs): return {"ok":false,"message":"公共資源不足，無法開始交接。"}
 		b.active=t.duplicate(true);b.active.finish=int(w.data.tickCount)+SimCareerProgress.ticks(w,t.job);b.notice=str(t.label)+"進行中。"
+		if t.job in ["doctor","priest"]: SimResidentCare.interrupt_for_player(w,str(t.target))
 		if t.job in ["doctor","priest"] and w.social.observed_motion!=null and SimServiceStay.priority(w,str(t.target)).is_empty():
 			b.active.stay=true;SimServiceStay.sync(w)
 		return {"ok":true,"message":"開始值勤，需停留 %d 遊戲分鐘；離開會取消。"%(SimCareerProgress.ticks(w,t.job)*15)}

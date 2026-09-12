@@ -4,7 +4,7 @@ extends RefCounted
 const JOBS := ["doctor","priest"]
 var pairs: Dictionary={}
 static func target(w: SimWorld,m: SimMotion,id: String) -> String:
-	if not OutdoorWorkPerformance.at_work(w,m,id,JOBS): return ""
+	if not OutdoorWorkPerformance.at_work(w,m,id,JOBS) or not SimResidentCare.provider_ready(w,m,id): return ""
 	var a: Dictionary=w.data.agents[id]
 	if float(a.needs.hunger)<20 or float(a.needs.rest)<10: return ""
 	if not SimWorkSchedule.working(SimWorkSchedule.job(a,w.rules.jobs),int(w.data.clock.hour)) or a.has("_raidShelterUntil"): return ""

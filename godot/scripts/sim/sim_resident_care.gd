@@ -10,6 +10,8 @@ static func eligible(w: SimWorld,id: String) -> bool:
 static func provider_ready(w: SimWorld,m: SimMotion,id: String) -> bool:
 	var a: Dictionary=w.data.agents.get(id,{})
 	if id=="player" or a.is_empty() or a.get("isDead",false): return false
+	if a.get("_serviceStay",false) or w.quest_balance.get("careers",{}).get("active",{}).get("target","")==id: return false
+	if SimAppointments.directing(w,id) or SimLeisurePlan.directing(w,id) or SimHangoutVisits.directing(w,id): return false
 	if a.get("jobKey","") not in ["doctor","priest"] or a.activity!="working": return false
 	if a.has("_raidShelterUntil") or float(a.needs.hunger)<20 or float(a.needs.rest)<10: return false
 	if not SimWorkSchedule.working(SimWorkSchedule.job(a,w.rules.jobs),int(w.data.clock.hour)): return false
@@ -50,12 +52,17 @@ static func clear(a: Dictionary,reason: String,tick: int=-1,state: String="cance
 	a.erase("_careVisit");a.erase("_careDestination");a.erase("_careHolding")
 	a._careVisitNotice=reason
 	if a.activity in ["care_travel","care_wait"]: a.activity="wandering";a._locationStayRemaining=0
+static func interrupt_for_player(w: SimWorld,target: String) -> void:
+	for a in w.data.agents.values():
+		if a.has("_careVisit") and (str(a.id)==target or str(a._careVisit.get("provider",""))==target):
+			clear(a,"玩家已開始照護，結束這次居民接待。",w.data.tickCount)
 static func tick(w: SimWorld) -> void:
 	var m: SimMotion=w.social.observed_motion
 	if m==null or not m.stable_routes or not w.social_enabled:
 		for a in w.data.agents.values():
 			if a.has("_careVisit"): clear(a,"目前無法繼續關懷行程。",w.data.tickCount)
 		return
+	SimCareers.book(w) # Expire yesterday's player reservation before checking NPC availability.
 	var ids: Array=w.data.agents.keys();ids.sort();var used: Dictionary={}
 	for id in ids:
 		var a: Dictionary=w.data.agents[id]

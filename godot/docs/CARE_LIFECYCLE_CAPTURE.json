@@ -1,0 +1,33 @@
+{
+  "cases": [
+    {
+      "actual_conversation": true,
+      "job": "doctor",
+      "npc_cancelled_immediately": true,
+      "player_started": true,
+      "town": "frontier"
+    },
+    {
+      "actual_conversation": true,
+      "job": "priest",
+      "npc_cancelled_immediately": true,
+      "player_started": true,
+      "town": "frontier"
+    },
+    {
+      "actual_conversation": true,
+      "job": "doctor",
+      "npc_cancelled_immediately": true,
+      "player_started": true,
+      "town": "harbor"
+    },
+    {
+      "actual_conversation": true,
+      "job": "priest",
+      "npc_cancelled_immediately": true,
+      "player_started": true,
+      "town": "harbor"
+    }
+  ],
+  "scope": "controlled needs and clinic; automatic request, real walking from square, actual arrival conversation followed by player start, immediate NPC cancellation and agenda result; native render"
+}

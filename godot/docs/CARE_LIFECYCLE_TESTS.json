@@ -1,0 +1,55 @@
+{
+  "cases": [
+    {
+      "mode": "player_patient",
+      "town": "frontier"
+    },
+    {
+      "mode": "player_provider",
+      "town": "frontier"
+    },
+    {
+      "mode": "provider_job",
+      "town": "frontier"
+    },
+    {
+      "mode": "patient_job",
+      "town": "frontier"
+    },
+    {
+      "mode": "removed_place",
+      "town": "frontier"
+    },
+    {
+      "mode": "midnight",
+      "town": "frontier"
+    },
+    {
+      "mode": "player_patient",
+      "town": "harbor"
+    },
+    {
+      "mode": "player_provider",
+      "town": "harbor"
+    },
+    {
+      "mode": "provider_job",
+      "town": "harbor"
+    },
+    {
+      "mode": "patient_job",
+      "town": "harbor"
+    },
+    {
+      "mode": "removed_place",
+      "town": "harbor"
+    },
+    {
+      "mode": "midnight",
+      "town": "harbor"
+    }
+  ],
+  "checks": 72,
+  "failures": [],
+  "scope": "controlled doctor demand, actual arrival and player start/complete APIs, provider/patient role change, facility removal, midnight and cancelled reload; no fabricated player task"
+}
