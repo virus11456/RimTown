@@ -131,7 +131,9 @@ func tick() -> Array[String]:
 	SimHangoutSafety.tick(self)
 	SimResidentCare.tick(self)
 	for id in data.agents:
-		if not data.agents[id].get("isDead",false): _update(id)
+		if not data.agents[id].get("isDead",false):
+			_update(id)
+			SimResidentCare.observe_recovery_followup(self,data.agents[id])
 	SimCareers.tick(self)
 	return events
 func _trait_sum(a: Dictionary, field: String) -> float:

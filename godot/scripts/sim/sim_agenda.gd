@@ -50,6 +50,7 @@ static func routine(w: SimWorld,id: String) -> Array:
 			rows.append("先返家恢復：剩餘 %d 分鐘抵達；走路時不恢復體力（遊戲時間）。"%(maxi(0,int(recovery.arrive_until)-int(w.data.tickCount))*15))
 	for result in a.get("_careRecoveryResults",[]):
 		rows.append("返家恢復紀錄："+str(result.reason)+"（在家用餐 %d 分鐘、休息 %d 分鐘；遊戲時間。）"%[int(result.get("meal_ticks",0))*15,int(result.get("rest_ticks",0))*15])
+		if result.has("followup"): rows.append("下一刻觀察：當時在"+str(result.followup.place)+"；當時意圖："+str(result.followup.intent)+"。")
 	for result in a.get("_careResults",[]):
 		rows.append(("照護完成：" if result.get("state","")=="completed" else "求助中止：")+str(w.data.agents.get(str(result.get("provider","")),{}).get("name","居民"))+"："+str(result.get("reason","")))
 	if a.has("_careVisit"):

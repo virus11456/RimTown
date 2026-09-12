@@ -34,4 +34,6 @@ static func pick(w: SimWorld,id: String,book: Dictionary) -> Dictionary:
 	if int(event.get("rest_ticks",0))>0: actions.append("在家休息了一會兒")
 	if not actions.is_empty(): text+="，我"+"，也".join(actions)
 	text+="，後來中止了。" if event.state=="cancelled" else "，時間到了就結束了。" if event.state=="time_limit" else "，已經結束了。"
-	return {"key":token,"text":text,"source":{"npc":id,"state":event.state,"resolved_tick":int(event.tick),"kind":"care_recovery","meal_ticks":int(event.get("meal_ticks",0)),"rest_ticks":int(event.get("rest_ticks",0))}}
+	var cause: String={"work":"那時需要上工。","commute":"那時要準備通勤。","appointment":"那時有已確認的見面安排。","sleep_schedule":"那時到了正常睡眠時間。","home_return":"那時要依正常作息返家。","home_changed":"那時住處變更了。","raid":"那時需要先避難。","hunger":"那時需要優先處理飢餓。","fatigue":"那時體力已經太低。","arrival_timeout":"那次沒能按時到家。","left_home":"那時已經離開住家。","deadline":"那次安排的總期限到了。","new_day":"那份安排到隔天就結束了。"}.get(str(event.get("code","")),"")
+	if event.state=="cancelled": text+=cause
+	return {"key":token,"text":text,"source":{"npc":id,"state":event.state,"resolved_tick":int(event.tick),"kind":"care_recovery","code":str(event.get("code","")),"meal_ticks":int(event.get("meal_ticks",0)),"rest_ticks":int(event.get("rest_ticks",0))}}

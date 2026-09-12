@@ -1,0 +1,101 @@
+{
+  "cases": [
+    {
+      "activity": "socializing",
+      "at_home": false,
+      "mode": "completed",
+      "results": [
+        {
+          "code": "",
+          "followup": {
+            "intent": "社交",
+            "place": "道路或場所之外",
+            "tick": 53,
+            "x": 192.51643371582,
+            "y": 751.477783203125
+          },
+          "home": "residential_north",
+          "meal_ticks": 1,
+          "reason": "已達到這次恢復目標，重新評估是否需要照護。",
+          "rest_ticks": 1,
+          "state": "recovered",
+          "tick": 52
+        }
+      ],
+      "town": "frontier"
+    },
+    {
+      "activity": "working",
+      "at_home": false,
+      "mode": "work",
+      "results": [
+        {
+          "code": "work",
+          "followup": {
+            "intent": "工作",
+            "place": "道路或場所之外",
+            "tick": 52,
+            "x": 192.728790283203,
+            "y": 751.265625
+          },
+          "home": "residential_north",
+          "meal_ticks": 1,
+          "reason": "需要上工，先結束短暫恢復。",
+          "rest_ticks": 0,
+          "state": "cancelled",
+          "tick": 51
+        }
+      ],
+      "town": "frontier"
+    },
+    {
+      "activity": "recreation",
+      "at_home": false,
+      "mode": "completed",
+      "results": [
+        {
+          "code": "",
+          "followup": {
+            "intent": "娛樂",
+            "place": "道路或場所之外",
+            "tick": 53,
+            "x": 341.203369140625,
+            "y": 936.0
+          },
+          "home": "residential_south",
+          "meal_ticks": 1,
+          "reason": "已達到這次恢復目標，重新評估是否需要照護。",
+          "rest_ticks": 1,
+          "state": "recovered",
+          "tick": 52
+        }
+      ],
+      "town": "harbor"
+    },
+    {
+      "activity": "working",
+      "at_home": false,
+      "mode": "work",
+      "results": [
+        {
+          "code": "work",
+          "followup": {
+            "intent": "工作",
+            "place": "道路或場所之外",
+            "tick": 52,
+            "x": 496.818939208984,
+            "y": 911.177490234375
+          },
+          "home": "residential_south",
+          "meal_ticks": 1,
+          "reason": "需要上工，先結束短暫恢復。",
+          "rest_ticks": 0,
+          "state": "cancelled",
+          "tick": 51
+        }
+      ],
+      "town": "harbor"
+    }
+  ],
+  "scope": "controlled near-home need deficit; regular tick, walking and actual at-home meal/rest with native agenda"
+}
