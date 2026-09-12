@@ -21,6 +21,7 @@ static func eligible(w: SimWorld,m: SimMotion,id: String) -> bool:
 	return Vector2(p.x,p.y).distance_to(Vector2(n.x,n.y))<=48
 static func observe(w: SimWorld,m: SimMotion) -> String:
 	if not enabled(w) or not w.data.agents.has("player"): return ""
+	if not w.quest_balance.get("careers",{}).get("active",{}).is_empty(): return ""
 	var player: Dictionary=w.data.agents.player;var hour:=int(w.data.clock.hour)
 	if player.get("isDead",false) or player.has("_raidShelterUntil") or player.activity=="sleeping" or hour<8 or hour>=21: return ""
 	if not w.event_comments.is_empty() or SimAppointments.LIVE.has(SimAppointments.current(w).get("state","")): return ""
@@ -48,6 +49,7 @@ static func observe(w: SimWorld,m: SimMotion) -> String:
 	if topics.get(id,"")==topic: topic="season"
 	var text: String={"mood":"今天心情有些悶，剛好碰到你，想打聲招呼。","familiar":"見到你真好。今天有什麼想聊的嗎？","greeting":"剛好在這裡碰到你，今天過得如何？","season":"已經是"+str(w.data.clock.season)+"了。你最近在鎮上過得還習慣嗎？"}[topic]
 	var recall:=SimTalkRecall.pick(w,id,book)
+	if recall.is_empty(): recall=SimServiceChat.recall(w,id,book)
 	if recall.is_empty(): recall=SimLeisureChat.recall(w,id,book)
 	if not recall.is_empty():
 		text=recall.text;topic="recall"

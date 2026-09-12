@@ -1,0 +1,25 @@
+{
+  "checks": 24,
+  "failures": [],
+  "scope": "two natural four-day archives actual picker; original jobs, completion count vs final run, exact medical XP from completed duties only, full world/position roundtrip, no effect replay and target navigation; no artificial mood archives delivered",
+  "towns": [
+    {
+      "finished": {
+        "doctor": 9.0,
+        "priest": 0.0
+      },
+      "medical_xp": 43.0,
+      "population": 21,
+      "town": "frontier"
+    },
+    {
+      "finished": {
+        "doctor": 3.0,
+        "priest": 0.0
+      },
+      "medical_xp": 30.0,
+      "population": 17,
+      "town": "harbor"
+    }
+  ]
+}

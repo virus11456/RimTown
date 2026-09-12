@@ -1,0 +1,186 @@
+{
+  "checks": 1120,
+  "failures": [],
+  "tests": [
+    {
+      "test": "careers",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 28,
+        "failures": [],
+        "scope": "three player jobs, attendance/time/reload/demand/shared cap, no new stock or wallet, direct mayor raid decision"
+      },
+      "tail": ""
+    },
+    {
+      "test": "careers_expansion",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 22,
+        "failures": [],
+        "scope": "three additional careers, real authority and progress, research demand and downstream use, mood, cap, midnight, old save compatibility"
+      },
+      "tail": ""
+    },
+    {
+      "test": "careers_expansion_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 34,
+        "failures": [],
+        "scope": "375px six-career UI, three new registrations and real tick-based completions"
+      },
+      "tail": ""
+    },
+    {
+      "test": "career_presence",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 13,
+        "failures": [],
+        "scope": "real app ticks, physical NPC attendance at start and during work, automatic countdown/completion/cancellation, residential mapping and distinct homes, dismissed panel and midnight; configured needs/positions, not whole-game natural progression"
+      },
+      "tail": ""
+    },
+    {
+      "test": "career_proximity",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 64,
+        "failures": [],
+        "scope": "two towns, doctor/priest core starts and settlements, actual same-venue distance and doorway checks, distant-target native reload, exact-once XP and daily quota, UI explanation; controlled needs, positions and settlement clock"
+      },
+      "tail": ""
+    },
+    {
+      "test": "career_facilities",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 97,
+        "failures": [],
+        "scope": "all eleven profession pages in two towns with controlled demand, original missing workshop and removed venue fixtures, no free facilities/resources, no broken destinations, core active-work cancellation on location removal; not natural all-career completion"
+      },
+      "tail": ""
+    },
+    {
+      "test": "career_reviews_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 28,
+        "failures": [],
+        "scope": "375px earned review UI, both branch buttons, player and NPC actual scene zone checks, response/history and saved choice; configured positions"
+      },
+      "tail": ""
+    },
+    {
+      "test": "agenda_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 13,
+        "failures": [],
+        "scope": "real agenda/trace navigation, normal app tick, deliberate unexecuted plan and legacy trace, adjusted sleep display and native reload, unaccepted appointment, 375px panels, compressed timeline reload and town isolation; no new AI scheduler"
+      },
+      "tail": ""
+    },
+    {
+      "test": "career_service_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 40,
+        "failures": [],
+        "scope": "two towns doctor/priest live task-to-agenda navigation, separate actual/destination labels, stale recovered-need cards, demand returning, settlement cancellation without XP/quota and phone width; controlled needs and colocated positions"
+      },
+      "tail": ""
+    },
+    {
+      "test": "indoor_service",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "bad_cells": 0,
+        "checks": 323,
+        "failures": [],
+        "maximum_step": 1.20001482963562,
+        "scope": "two towns, all existing houses and door-bearing public buildings entered and exited using manual collision movement; controlled patient needs and initial positions; doctor/priest indoor completion, departure cancellation, active and stationary threshold reload, stale entrance UI, 375px layout; controlled settlement clock, not natural multi-day simulation",
+        "walked_frames": 8946
+      },
+      "tail": ""
+    },
+    {
+      "test": "sleep_service",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 18,
+        "failures": [],
+        "scope": "two towns controlled sleepy and awake target, retained UI card, core eligibility, ongoing and restored support cancellation, unchanged sleep and skills, real SimNeeds sleep recovery cancelling doctor demand; no natural sleep scheduling claim"
+      },
+      "tail": ""
+    },
+    {
+      "test": "daily_talk",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 25,
+        "failures": [],
+        "scope": "configured physical positions, needs/work/relationship gates, caps/cooldown/reload, topic variation, memories, no rewards/API/RNG and no-op rejection"
+      },
+      "tail": ""
+    },
+    {
+      "test": "leisure_recall",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 14,
+        "failures": [],
+        "scope": "controlled structured outcomes and physical proximity, source attribution, one-hour/two-day bounds, personal not shared memory, caps/reload and no rewards; local rules not generative reflection"
+      },
+      "tail": ""
+    },
+    {
+      "test": "leisure_recall_ui",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 6,
+        "failures": [],
+        "resident": "he_xiu",
+        "scope": "prior actual-walk archive, controlled idle/work/needs/time encounter fixture, collision-based player approach, app daily-talk hook, phone chat and native archive; no production AI"
+      },
+      "tail": ""
+    },
+    {
+      "test": "service_chat",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 211,
+        "failures": [],
+        "scope": "two towns two jobs actual start/finish/cancel/midnight core calls with controlled actor needs/position and settlement clock; local UI, source preservation, dedup, old-save non-inference, no reward on cancellation, full save roundtrip, resident isolation, bounded history and 375px; no production AI"
+      },
+      "tail": ""
+    },
+    {
+      "test": "service_stay",
+      "exit": 0,
+      "script_error": false,
+      "report": {
+        "checks": 184,
+        "failures": [],
+        "scope": "two towns two service jobs; controlled unemployed awake resident and need state; real simulation ticks, fixed physical stay without frozen needs, completion, cancel, hunger, rest, work, raid, active reload, player departure, accepted appointment, midnight, sleep window and resumed walking; no natural multi-day claim"
+      },
+      "tail": ""
+    }
+  ]
+}

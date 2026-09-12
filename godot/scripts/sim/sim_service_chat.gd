@@ -54,3 +54,16 @@ static func ask(w: SimWorld,id: String) -> bool:
 	rows.append({"speaker":npc.name,"target":player.name,"text":reply(w,id),"time":SimSocial.time_string(w.data.clock),"_godotOffline":true,"_godotService":facts,"_godotServiceNpc":id})
 	player.chatHistory=rows.slice(-10000)
 	return true
+
+static func recall(w: SimWorld,id: String,book: Dictionary) -> Dictionary:
+	var facts:=context(w,id)
+	if not facts.current.is_empty() or facts.recentOutcomes.is_empty(): return {}
+	var last: Dictionary=facts.recentOutcomes.back()
+	if not last.has("tick") or last.get("state","") not in ["completed","cancelled"] or last.get("job","") not in ["doctor","priest"]: return {}
+	var age:=int(w.data.tickCount)-int(last.tick)
+	if age<4 or age>192: return {}
+	# Older verified records lack a serial; their normalized factual fields are stable across saves.
+	var identity:=str(int(last.serial)) if last.has("serial") else "legacy:"+JSON.stringify([id,str(last.job),str(last.state),int(last.tick),str(last.get("reason","")),str(last.get("time","")),str(last.get("place","")),bool(last.get("stay",false))]).sha256_text()
+	var key:="service|"+id+"|"+identity
+	if key in book.get("recalled",[]): return {}
+	return {"key":key,"text":reply(w,id)+"剛好碰到你，想打聲招呼。","source":{"kind":"service","npc":id,"state":str(last.state),"job":str(last.job),"resolved_tick":int(last.tick),"reason":str(last.get("reason","")).left(240),"identity":identity}}
