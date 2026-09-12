@@ -1,0 +1,91 @@
+[
+  {
+    "test": "service_performance",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 216,
+      "failures": [],
+      "rendered_samples": false,
+      "scope": "two towns, two roles, actual start/completion/cancel/distance/need/reload; pure visual poses, pause, walking precedence, timed outcome; optional staged render capture"
+    },
+    "tail": ""
+  },
+  {
+    "test": "work_performance",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 376,
+      "failures": [],
+      "scope": "four tool roles; actual approvals/start/settlement in original facilities, both towns with harbor workshop exclusions; controlled demand and position; cancel, leave, filled demand, reload, no visual rewards, pause and movement"
+    },
+    "tail": ""
+  },
+  {
+    "test": "careers",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 28,
+      "failures": [],
+      "scope": "three player jobs, attendance/time/reload/demand/shared cap, no new stock or wallet, direct mayor raid decision"
+    },
+    "tail": ""
+  },
+  {
+    "test": "career_production",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 173,
+      "failures": [],
+      "scope": "four production jobs, single-use public authorization, attendance, save/reload, exact ledger, dynamic demand/material/mayor cancellation, 120-day repeated-attempt stock bound (isolated fixture)"
+    },
+    "tail": ""
+  },
+  {
+    "test": "career_production_ui",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 145,
+      "failures": [],
+      "scope": "four job registrations, 375px UI, material proposal, approval display, onsite timed batch, public stock and consumed grant; fixture positions"
+    },
+    "tail": ""
+  },
+  {
+    "test": "career_trader",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 39,
+      "failures": [],
+      "scope": "trader buy/sell real quote approval and public ledger, onsite timed work, save/reload, changed quote/merchant/authority/demand/funds, reserves and shared market cap"
+    },
+    "tail": ""
+  },
+  {
+    "test": "career_trader_ui",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 68,
+      "failures": [],
+      "scope": "375px merchant registration, readable quote, proposal/approval, physical attendance gate, real timed buy/sell and public money; fixture locations"
+    },
+    "tail": ""
+  },
+  {
+    "test": "career_facilities",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 97,
+      "failures": [],
+      "scope": "all eleven profession pages in two towns with controlled demand, original missing workshop and removed venue fixtures, no free facilities/resources, no broken destinations, core active-work cancellation on location removal; not natural all-career completion"
+    },
+    "tail": ""
+  }
+]

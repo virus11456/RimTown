@@ -9,7 +9,7 @@ var remaining := 0.0
 var previous_completed := 0
 var previous_job := ""
 const TOOLS := {"miner":"acc_tool_pickaxe", "carpenter":"acc_tool_hammer", "blacksmith":"acc_tool_hammer", "researcher":"acc_tool_book"}
-const LABELS := {"doctor":"照護中", "priest":"談心陪伴中", "miner":"採集原料中", "carpenter":"製備構件中", "blacksmith":"打造工具中", "researcher":"整理資料中"}
+const LABELS := {"doctor":"照護中", "priest":"談心陪伴中", "miner":"採集原料中", "carpenter":"製備構件中", "blacksmith":"打造工具中", "researcher":"整理資料中", "farmer":"澆灌農田中", "cook":"製作餐食中", "tailor":"縫製衣物中", "guard":"觀察巡查點", "trader":"核對交易中"}
 
 static func articulate(body: MeshInstance3D, child: bool) -> void:
 	var h := .78 if child else 1.0
@@ -54,13 +54,14 @@ func update(town: TownView, w: SimWorld, m: SimMotion, delta: float) -> void:
 	var left: Node3D = body.get_node("ServiceLeft")
 	var label: Label3D = actor.get_node("ServiceStatus")
 	var marker: Label3D = actor.get_node("TravelerMarker")
-	for tool in right.get_children():
-		if tool.has_meta("career_tool"): tool.visible=false
+	for arm in [right,left]:
+		for tool in arm.get_children():
+			if tool.has_meta("career_tool"): tool.visible=false
 	right.rotation = Vector3.ZERO; left.rotation = Vector3.ZERO
 	actor.rotation.x = 0
 	var book: Dictionary = w.quest_balance.get("careers", {})
 	var task: Dictionary = book.get("active", {})
-	if not observed.is_empty() and TOOLS.has(previous_job) and task.is_empty():
+	if not observed.is_empty() and previous_job not in ["doctor","priest"] and task.is_empty():
 		message = "值勤完成" if int(book.get("completed",0)) > previous_completed else "值勤中止"
 		remaining = 2.5
 	var serial := int(w.quest_balance.get("service_outcome_serial", 0))
@@ -129,3 +130,6 @@ func update(town: TownView, w: SimWorld, m: SimMotion, delta: float) -> void:
 			var cadence := 2.2 if job=="miner" else 3.0
 			right.rotation.x=(-.85+sin(phase*cadence)*.40)*blend
 			left.rotation.x=-.3*blend
+
+	elif job in CareerProps.JOBS:
+		CareerProps.pose(job,right,left,phase,blend)

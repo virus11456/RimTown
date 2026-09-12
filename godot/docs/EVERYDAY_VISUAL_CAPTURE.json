@@ -1,0 +1,98 @@
+[
+  {
+    "active": {
+      "finish": 4,
+      "id": "water:1",
+      "job": "farmer",
+      "label": "照料農田 #1",
+      "location": "meadow",
+      "target": "1"
+    },
+    "job": "farmer",
+    "scenery_hidden": true,
+    "started": {
+      "message": "開始值勤，需停留 60 遊戲分鐘；離開會取消。",
+      "ok": true
+    }
+  },
+  {
+    "active": {
+      "finish": 4,
+      "id": "produce:cook",
+      "job": "cook",
+      "label": "製作公共餐食",
+      "location": "tavern",
+      "target": "cook"
+    },
+    "job": "cook",
+    "scenery_hidden": true,
+    "started": {
+      "message": "開始值勤，需停留 60 遊戲分鐘；離開會取消。",
+      "ok": true
+    }
+  },
+  {
+    "active": {
+      "finish": 4,
+      "id": "produce:tailor",
+      "job": "tailor",
+      "label": "縫製公共衣物",
+      "location": "workshop",
+      "target": "tailor"
+    },
+    "job": "tailor",
+    "scenery_hidden": true,
+    "started": {
+      "message": "開始值勤，需停留 60 遊戲分鐘；離開會取消。",
+      "ok": true
+    }
+  },
+  {
+    "active": {
+      "finish": 4,
+      "id": "patrol:town_square",
+      "job": "guard",
+      "label": "巡查村莊綠地",
+      "location": "town_square",
+      "target": "town_square"
+    },
+    "job": "guard",
+    "scenery_hidden": true,
+    "started": {
+      "message": "開始值勤，需停留 60 遊戲分鐘；離開會取消。",
+      "ok": true
+    }
+  },
+  {
+    "active": {
+      "args": [
+        "受控報價商人",
+        {
+          "amount": 20,
+          "isBuying": false,
+          "price": 2.5,
+          "resource": "wood"
+        },
+        4.0
+      ],
+      "costs": {
+        "silver": 10.0
+      },
+      "finish": 4,
+      "id": "bd59f5d72ba1254dd5d3fb350435d91dedaecdf97b8b056300c0b7e8ed87fdce",
+      "job": "trader",
+      "label": "補給採購 · 報價 #1",
+      "location": "general_store",
+      "qty": 4.0,
+      "resource": "wood",
+      "target": "bd59f5d72ba1254dd5d3fb350435d91dedaecdf97b8b056300c0b7e8ed87fdce",
+      "total": 10.0
+    },
+    "job": "trader",
+    "scenery_hidden": true,
+    "started": {
+      "message": "開始值勤，需停留 60 遊戲分鐘；離開會取消。",
+      "ok": true
+    }
+  }
+]

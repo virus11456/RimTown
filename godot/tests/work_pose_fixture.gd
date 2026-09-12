@@ -9,6 +9,14 @@ static func prepare(app: Node,town: String,job: String) -> Dictionary:
 		w.data.research.current="fixture"
 		w.data.research.projects.fixture={"name":"受控研究","status":"researching","cost":100,"progress":0}
 		w.data.stockpile.resources.research_points=0
+	elif job=="farmer":
+		w.data.farm.plots=[{"id":1,"state":"growing","waterLevel":50}]
+	elif job=="guard": pass
+	elif job=="trader":
+		w.data.stockpile.resources.wood=0;w.data.stockpile.resources.silver=1000;w.data.stockpile.resources.food=200
+		w.data.trade.merchant={"name":"受控報價商人","offers":[{"resource":"wood","amount":20,"price":2.5,"isBuying":false}],"daysRemaining":3}
+		var trade_tasks:=SimCareers.available(w)
+		if not trade_tasks.is_empty(): SimCareerTrade.request(w,trade_tasks[0].id);SimGovernance.daily(w)
 	else:
 		for key in SimCareers.recipe(job).outputs: w.data.stockpile.resources[key]=0
 		w.data.stockpile.resources.food=200

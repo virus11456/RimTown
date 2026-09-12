@@ -1,5 +1,7 @@
 # RimTown - AI Town Simulation 邊境鎮
 
+農務、廚師、裁縫、守衛與商人已補上值勤姿勢；十一職業均有第一版表現，完整骨架與室內可視性仍待完善。見 [日常職業動作](godot/docs/EVERYDAY_PERFORMANCE.md)。
+
 礦工、木匠、鐵匠、研究員已接上值勤持具動作，走動／結束收起工具，保留原核准與產量限制。見 [四職業動作驗收](godot/docs/WORK_PERFORMANCE.md)。
 
 醫護／牧師現場動作：值勤時轉身、抬手，完成／中止依實際結果顯示；兩鎮桌面畫面已目視檢查，修正提示遮擋及重疊。見 [服務動作](godot/docs/SERVICE_PERFORMANCE.md)。
