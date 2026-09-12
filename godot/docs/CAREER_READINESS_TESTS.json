@@ -1,0 +1,5 @@
+{
+  "checks": 26,
+  "failures": [],
+  "scope": "375px production/research readiness UI: reserve full, public inputs missing despite approval, no phantom workshop, no read-side world mutation, live tick refresh, no research and covered research demand"
+}

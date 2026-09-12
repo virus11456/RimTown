@@ -853,7 +853,7 @@ func _tick_simulation() -> void:
 		status.text="居民提出改約 · 居民 → 見面約定 · 待回覆"
 		if active_tab=="居民" and selected_agent.is_empty() and drawer.visible: show_tab("居民",true)
 	if career_was_active and SimCareers.book(simulation).active.is_empty(): status.text=str(SimCareers.book(simulation).get("notice",""))
-	if career_page and drawer.visible and active_tab=="小鎮" and career_was_active: show_careers()
+	if career_page and drawer.visible and active_tab=="小鎮": show_careers()
 	physical_trace.record(simulation,motion)
 	var clock_data: Dictionary=simulation.data.clock
 	summary.text="%s %d日 %02d:%02d · %d人"%[clock_data.season,clock_data.day,clock_data.hour,clock_data.minute,simulation.data.agents.size()]
@@ -2298,8 +2298,22 @@ func show_careers() -> void:
 		for key in r.outputs: outputs.append(_resource_name(key)+" × "+str(r.outputs[key]))
 		_wrapped("材料："+"、".join(inputs)+"\n成品："+"、".join(outputs),12)
 		_wrapped("每批材料需核准，完成才扣料。中途庫存已滿、材料不足或核准失效會取消，不發獎勵。",12)
-		_wrapped("材料用途："+("已核准，可到場開始" if SimCareers.material_permit(w,job) else "尚未核准"),12)
+		_wrapped("材料用途："+("已核准；開始時仍需符合需求、材料與到位條件" if SimCareers.material_permit(w,job) else "尚未核准"),12)
 		_button("申請本次材料用途",drawer_body,func(): SimCareers.request_materials(w,job);has_simulated=true;show_careers())
+		for key in r.outputs:
+			_wrapped("備貨（含工廠倉庫）：%s %.1f / %.1f · 每批 %.1f"%[_resource_name(key),SimSupply.total(w,key),SimSupply.reserve(w,key),float(r.outputs[key])],12)
+		if facility_notice.is_empty() and not SimCareers.production_needed(w,job):
+			_wrapped("備貨空間不足一整批，暫停這項生產；等待消耗或需求改變，不會為了值勤增加產量。",12)
+		for key in r.inputs:
+			if SimEconomy.amount(w,key)<float(r.inputs[key]):
+				_wrapped("公共材料不足：%s 現有 %.1f，這批需要 %.1f。"%[_resource_name(key),SimEconomy.amount(w,key),float(r.inputs[key])],12)
+	if job=="researcher":
+		var project: Dictionary=w.data.research.projects.get(str(w.data.research.get("current","")),{})
+		if project.get("status","")!="researching": _wrapped("目前沒有進行中的研究，暫無資料整理工作。",12)
+		else:
+			_wrapped("研究：%s · 進度 %.1f / %.1f"%[str(project.name),float(project.progress),float(project.cost)],12)
+			_wrapped("資料備貨（含工廠倉庫）：%.1f · 可追加資料需求：%.1f"%[SimSupply.total(w,"research_points"),SimCareers.research_room(w,project)],12)
+			if SimCareers.research_room(w,project)<=0: _wrapped("目前沒有可追加的資料需求，等待研究進度或備貨變化後再查看。",12)
 	_wrapped("今日完成 %d / 3 · 累計 %d 次"%[b.used,b.completed])
 	if job in ["doctor","priest"]: _wrapped("服務時請與對方保持三格以內，並在同一場所或同一間屋內；離開範圍會取消，不發放獎勵。",12)
 	if SimCareers.JOBS.has(job):

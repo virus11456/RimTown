@@ -1,0 +1,98 @@
+{
+  "attempts": {
+    "blacksmith": 0,
+    "cook": 4,
+    "researcher": 4,
+    "tailor": 0
+  },
+  "bad_sleep": [],
+  "checks": 399,
+  "completed": {
+    "blacksmith": 0,
+    "cook": 4,
+    "researcher": 4.0,
+    "tailor": 0
+  },
+  "daily_used": {
+    "0": 0,
+    "1": 3.0,
+    "2": 3.0,
+    "3": 1,
+    "4": 1
+  },
+  "failures": [],
+  "invalid_steps": [],
+  "maximum_npc_step": 0.999847412109375,
+  "maximum_player_step": 1.2000732421875,
+  "motion_frames": 184320,
+  "negative_stock": [],
+  "reloads": 2,
+  "scope": "original town resources, natural demand and NPC routines, player rotates least-completed eligible cooking/craft/research roles, normal permit requests and daily approval, actual station approach, active/day reload; no forced stock/needs/projects/facilities",
+  "sleepers": [
+    "hb_dengye",
+    "hb_shanshan",
+    "hb_xiaoou",
+    "hb_haima",
+    "hb_axi",
+    "hb_achao",
+    "hb_shishu",
+    "hb_afu",
+    "hb_haibo",
+    "hb_langshu",
+    "hb_amao",
+    "hb_aduo",
+    "hb_yunyi",
+    "hb_muxia",
+    "hb_xiugu"
+  ],
+  "starts": [
+    {
+      "job": "cook",
+      "tick": 73,
+      "used": 0
+    },
+    {
+      "job": "researcher",
+      "tick": 79,
+      "used": 1.0
+    },
+    {
+      "job": "researcher",
+      "tick": 83,
+      "used": 2.0
+    },
+    {
+      "job": "cook",
+      "tick": 170,
+      "used": 0
+    },
+    {
+      "job": "researcher",
+      "tick": 176,
+      "used": 1
+    },
+    {
+      "job": "researcher",
+      "tick": 180,
+      "used": 2
+    },
+    {
+      "job": "cook",
+      "tick": 266,
+      "used": 0
+    },
+    {
+      "job": "cook",
+      "tick": 360,
+      "used": 0
+    }
+  ],
+  "ticks": 384,
+  "town": "harbor",
+  "unavailable_samples": {
+    "blacksmith": 189,
+    "cook": 185,
+    "researcher": 182,
+    "tailor": 189
+  }
+}
