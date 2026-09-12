@@ -13,6 +13,7 @@ var show_labels := true
 var dispute_bubbles: DisputeBubbles
 var service_performance := ServicePerformance.new()
 var traveler_gait := TravelerGait.new()
+var resident_gaits: Dictionary={}
 var furnishings: InteriorFurnishings
 var interior: InteriorCutaway
 
@@ -75,7 +76,7 @@ func display_save(save: Dictionary) -> void:
 	layout.solid_projects=true
 	layout.separate_civic_buildings=true
 	layout.rebuild(save)
-	actors.clear()
+	actors.clear();resident_gaits.clear()
 	if content != null:
 		remove_child(content)
 		content.queue_free()
@@ -260,9 +261,12 @@ func _build_villagers(save: Dictionary) -> void:
 		var job: String=str(agent.get("jobKey","default"))
 		body.mesh=_recolor(body.mesh,int(jobs.get(job,20)))
 		body.name="Body"
+		ServicePerformance.articulate(body,age<16)
+		TravelerGait.articulate(body,age<16)
+		if id!="player":
+			resident_gaits[id]=TravelerGait.new()
+			body.set_meta("gait_energy",.75 if age>=60 else 1.05 if age<16 else 1.0)
 		if id=="player":
-			ServicePerformance.articulate(body,age<16)
-			TravelerGait.articulate(body,age<16)
 			var service_label:=Label3D.new()
 			service_label.name="ServiceStatus"
 			service_label.font=load("res://assets/fonts/NotoSansTC.ttf")
@@ -354,7 +358,7 @@ func animate_agents(positions: Dictionary) -> void:
 		var actor: Node3D=actors[id]
 		var previous:=actor.position
 		var walking: bool=p.get("walking",false)
-		var bob:=sin(float(p.get("walkStep",0))*.18)*.045 if walking and id!="player" else 0.0
+		var bob:=0.0
 		actor.position=Vector3(float(p.x)/16,.16+bob,float(p.y)/16)
 		var direction:=actor.position-previous
 		if walking and Vector2(direction.x,direction.z).length()>.0001:
@@ -364,3 +368,7 @@ func animate_agents(positions: Dictionary) -> void:
 	if interior!=null:
 		interior.update(layout,positions,show_labels)
 		if furnishings!=null: furnishings.update(interior.opened)
+
+func animate_resident_gaits(positions: Dictionary,delta: float) -> void:
+	for id in resident_gaits:
+		if actors.has(id) and positions.has(id): resident_gaits[id].update(self,positions,delta,str(id))

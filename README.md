@@ -1,5 +1,7 @@
 # RimTown - AI Town Simulation 邊境鎮
 
+居民已加入獨立腿部、支撐腳與擺臂；孩童依身高調整步頻，長者動作幅度較小，停步與睡眠會回復。兩鎮各一日自然返家／工作追蹤通過。見 [居民步態](godot/docs/RESIDENT_GAIT.md)。
+
 旅人新增腳跟落地／腳尖離地，使用鞋子實際邊界保持接地；Shift 快速移動有較高抬腳、較大擺臂與前傾，停步恢復站姿。見 [腳踝與快速步態](godot/docs/ANKLE_PACE.md)。
 
 旅人已加入膝蓋關節與世界座標支撐腳，落地時減少滑步。一般 WASD／方向鍵改為步行，按住 Shift 保留快速移動；操作台路線使用步行。見 [膝蓋與支撐腳](godot/docs/FOOT_SUPPORT.md)。

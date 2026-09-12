@@ -103,11 +103,14 @@ func solve(body: Node3D,side: int,point: Vector3,yaw: float,height: float,pitch:
 	rod_pose(body.get_node(name+"Lower"),knee,ankle,height)
 	shoe.set_meta("hip",hip);shoe.set_meta("knee",knee);shoe.set_meta("ankle",ankle)
 
-func update(town: TownView,positions: Dictionary,delta: float) -> void:
-	if not town.actors.has("player") or not positions.has("player"): return
-	var actor: Node3D=town.actors.player;var body: Node3D=actor.get_node("Body")
+func update(town: TownView,positions: Dictionary,delta: float,id: String="player") -> void:
+	if not town.actors.has(id) or not positions.has(id): return
+	var actor: Node3D=town.actors[id];var body: Node3D=actor.get_node("Body")
 	var h: float=body.get_meta("gait_height",1.0)
-	var p: Dictionary=positions.player;var now:=Vector2(p.x,p.y)/16
+	var energy: float=body.get_meta("gait_energy",1.0)
+	if id!="player":
+		for arm in ["ServiceRight","ServiceLeft"]: body.get_node(arm).rotation=Vector3.ZERO
+	var p: Dictionary=positions[id];var now:=Vector2(p.x,p.y)/16
 	var changed:=actor_id!=actor.get_instance_id()
 	if changed:
 		initialized=false;weight=0;fast_blend=0;actor_id=actor.get_instance_id();facing=actor.rotation.y;target_facing=facing;feet.clear()
@@ -128,9 +131,9 @@ func update(town: TownView,positions: Dictionary,delta: float) -> void:
 	if weight>.001:
 		facing=lerp_angle(facing,target_facing,1-exp(-18*dt));actor.rotation.y=facing
 	else: facing=actor.rotation.y
-	if weight>.001: actor.rotation.x=fast_blend*.10*weight
-	elif town.service_performance.observed.is_empty(): actor.rotation.x=0
-	if p.get("activity","")=="sleeping":
+	if weight>.001: actor.rotation.x=fast_blend*.10*weight*energy
+	elif id!="player" or town.service_performance.observed.is_empty(): actor.rotation.x=0
+	if p.get("activity","")=="sleeping" and not p.get("walking",false):
 		weight=0;fast_blend=0;actor.rotation.x=0;feet.clear()
 		for name in ["GaitRight","GaitLeft"]:
 			for part in ["","Upper","Lower"]:
@@ -153,7 +156,7 @@ func update(town: TownView,positions: Dictionary,delta: float) -> void:
 			var t:=fmod(phase/PI,1.0)
 			var target:=neutral(actor,body,side,town)+forward*.24*h
 			target.y=floor_height(town.layout,Vector2(target.x,target.z))
-			feet[side].point=Vector3(feet[side].start).lerp(target,smoothstep(0,1,t))+Vector3.UP*sin(t*PI)*lerpf(.10,.16,fast_blend)*h
+			feet[side].point=Vector3(feet[side].start).lerp(target,smoothstep(0,1,t))+Vector3.UP*sin(t*PI)*lerpf(.10,.16,fast_blend)*h*energy
 			feet[side].yaw=facing
 	else:
 		for side in 2:
@@ -174,5 +177,5 @@ func update(town: TownView,positions: Dictionary,delta: float) -> void:
 		feet[side].pitch=move_toward(float(feet[side].get("pitch",0)),pitch*weight,dt*5)
 		solve(body,side,feet[side].point,feet[side].yaw,h,feet[side].pitch)
 	if weight>.001:
-		var swing:=sin(phase)*lerpf(.27,.48,fast_blend)*weight
+		var swing:=sin(phase)*lerpf(.27,.48,fast_blend)*weight*energy
 		body.get_node("ServiceRight").rotation.x=-swing;body.get_node("ServiceLeft").rotation.x=swing

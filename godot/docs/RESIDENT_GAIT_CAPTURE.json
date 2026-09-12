@@ -1,0 +1,33 @@
+{
+  "cases": [
+    {
+      "age": 9,
+      "gender": "male",
+      "stopped_frames": 30,
+      "town": "frontier",
+      "walking_frames": 70
+    },
+    {
+      "age": 28,
+      "gender": "female",
+      "stopped_frames": 30,
+      "town": "frontier",
+      "walking_frames": 70
+    },
+    {
+      "age": 70,
+      "gender": "male",
+      "stopped_frames": 30,
+      "town": "harbor",
+      "walking_frames": 70
+    },
+    {
+      "age": 28,
+      "gender": "male",
+      "stopped_frames": 30,
+      "town": "harbor",
+      "walking_frames": 70
+    }
+  ],
+  "scope": "controlled NPC model variants and walkable plaza positions; no claim of natural travel or sleep screenshots"
+}

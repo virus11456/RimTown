@@ -1,0 +1,48 @@
+{
+  "checks": 4860,
+  "contacts": 956,
+  "failures": [],
+  "scope": "controlled child/male/female/elder model variants in both towns, independent resident state, actual mesh floor and bone geometry, pure presentation, work stop, sleeping, stale sleep label, real pause and reload",
+  "variants": [
+    {
+      "age": 9,
+      "gender": "male",
+      "town": "frontier"
+    },
+    {
+      "age": 28,
+      "gender": "male",
+      "town": "frontier"
+    },
+    {
+      "age": 28,
+      "gender": "female",
+      "town": "frontier"
+    },
+    {
+      "age": 70,
+      "gender": "male",
+      "town": "frontier"
+    },
+    {
+      "age": 9,
+      "gender": "male",
+      "town": "harbor"
+    },
+    {
+      "age": 28,
+      "gender": "male",
+      "town": "harbor"
+    },
+    {
+      "age": 28,
+      "gender": "female",
+      "town": "harbor"
+    },
+    {
+      "age": 70,
+      "gender": "male",
+      "town": "harbor"
+    }
+  ]
+}
