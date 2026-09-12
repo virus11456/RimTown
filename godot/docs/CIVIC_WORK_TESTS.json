@@ -1,0 +1,176 @@
+{
+  "cases": [
+    {
+      "age": 9,
+      "arrived": true,
+      "frames": 290,
+      "kind": "day",
+      "town": "frontier"
+    },
+    {
+      "age": 28,
+      "arrived": true,
+      "frames": 290,
+      "kind": "day",
+      "town": "frontier"
+    },
+    {
+      "age": 70,
+      "arrived": true,
+      "frames": 290,
+      "kind": "day",
+      "town": "frontier"
+    },
+    {
+      "age": 9,
+      "arrived": true,
+      "frames": 290,
+      "kind": "night",
+      "town": "frontier"
+    },
+    {
+      "age": 28,
+      "arrived": true,
+      "frames": 290,
+      "kind": "night",
+      "town": "frontier"
+    },
+    {
+      "age": 70,
+      "arrived": true,
+      "frames": 290,
+      "kind": "night",
+      "town": "frontier"
+    },
+    {
+      "age": 9,
+      "arrived": true,
+      "frames": 208,
+      "kind": "post",
+      "town": "frontier"
+    },
+    {
+      "age": 28,
+      "arrived": true,
+      "frames": 208,
+      "kind": "post",
+      "town": "frontier"
+    },
+    {
+      "age": 70,
+      "arrived": true,
+      "frames": 208,
+      "kind": "post",
+      "town": "frontier"
+    },
+    {
+      "age": 9,
+      "arrived": true,
+      "frames": 405,
+      "kind": "trader",
+      "town": "frontier"
+    },
+    {
+      "age": 28,
+      "arrived": true,
+      "frames": 405,
+      "kind": "trader",
+      "town": "frontier"
+    },
+    {
+      "age": 70,
+      "arrived": true,
+      "frames": 405,
+      "kind": "trader",
+      "town": "frontier"
+    },
+    {
+      "age": 9,
+      "arrived": true,
+      "frames": 338,
+      "kind": "day",
+      "town": "harbor"
+    },
+    {
+      "age": 28,
+      "arrived": true,
+      "frames": 338,
+      "kind": "day",
+      "town": "harbor"
+    },
+    {
+      "age": 70,
+      "arrived": true,
+      "frames": 338,
+      "kind": "day",
+      "town": "harbor"
+    },
+    {
+      "age": 9,
+      "arrived": true,
+      "frames": 338,
+      "kind": "night",
+      "town": "harbor"
+    },
+    {
+      "age": 28,
+      "arrived": true,
+      "frames": 338,
+      "kind": "night",
+      "town": "harbor"
+    },
+    {
+      "age": 70,
+      "arrived": true,
+      "frames": 338,
+      "kind": "night",
+      "town": "harbor"
+    },
+    {
+      "age": 9,
+      "arrived": true,
+      "frames": 208,
+      "kind": "post",
+      "town": "harbor"
+    },
+    {
+      "age": 28,
+      "arrived": true,
+      "frames": 208,
+      "kind": "post",
+      "town": "harbor"
+    },
+    {
+      "age": 70,
+      "arrived": true,
+      "frames": 208,
+      "kind": "post",
+      "town": "harbor"
+    },
+    {
+      "age": 9,
+      "arrived": true,
+      "frames": 405,
+      "kind": "trader",
+      "town": "harbor"
+    },
+    {
+      "age": 28,
+      "arrived": true,
+      "frames": 405,
+      "kind": "trader",
+      "town": "harbor"
+    },
+    {
+      "age": 70,
+      "arrived": true,
+      "frames": 405,
+      "kind": "trader",
+      "town": "harbor"
+    }
+  ],
+  "checks": 33349,
+  "failures": [],
+  "maximum_step": 0.999847412109375,
+  "scope": "controlled duty clock, age and tower work point; normal routes, geometry, priority, pause and reload; no economic or roster writes"
+}

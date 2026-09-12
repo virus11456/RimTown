@@ -2,9 +2,12 @@ class_name OutdoorWorkPerformance
 extends RefCounted
 const JOBS := ["farmer","miner"]
 static func ready(w: SimWorld,m: SimMotion,id: String) -> bool:
+	return at_work(w,m,id,JOBS)
+
+static func at_work(w: SimWorld,m: SimMotion,id: String,supported: Array) -> bool:
 	var a: Dictionary=w.data.agents.get(id,{})
 	var p: Dictionary=m.positions.get(id,{})
-	if id=="player" or a.get("jobKey","") not in JOBS or p.is_empty(): return false
+	if id=="player" or a.get("jobKey","") not in supported or p.is_empty(): return false
 	if a.get("activity","")!="working" or a.get("_serviceStay",false) or a.get("isDead",false): return false
 	var job:=SimWorkSchedule.job(a,w.rules.jobs)
 	var location: String=job.get("workplace","")

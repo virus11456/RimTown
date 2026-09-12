@@ -1,0 +1,47 @@
+{
+  "cases": [
+    {
+      "arrived": true,
+      "gesture_stops_on_leaving": true,
+      "kind": "day",
+      "town": "frontier"
+    },
+    {
+      "arrived": true,
+      "gesture_stops_on_leaving": true,
+      "kind": "night",
+      "town": "frontier"
+    },
+    {
+      "arrived": true,
+      "gesture_stops_on_leaving": true,
+      "kind": "post",
+      "town": "frontier"
+    },
+    {
+      "arrived": true,
+      "gesture_stops_on_leaving": true,
+      "kind": "trader",
+      "town": "frontier"
+    },
+    {
+      "arrived": true,
+      "gesture_stops_on_leaving": true,
+      "kind": "day",
+      "town": "harbor"
+    },
+    {
+      "arrived": true,
+      "gesture_stops_on_leaving": true,
+      "kind": "night",
+      "town": "harbor"
+    },
+    {
+      "arrived": true,
+      "gesture_stops_on_leaving": true,
+      "kind": "trader",
+      "town": "harbor"
+    }
+  ],
+  "scope": "controlled duty clock, tower work point, nearby NPC starting point and player room position; real collision arrival; actual day/night lighting"
+}
