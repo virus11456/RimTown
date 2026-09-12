@@ -1,0 +1,80 @@
+[
+  {
+    "test": "service_performance",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 216,
+      "failures": [],
+      "rendered_samples": false,
+      "scope": "two towns, two roles, actual start/completion/cancel/distance/need/reload; pure visual poses, pause, walking precedence, timed outcome; optional staged render capture"
+    },
+    "tail": ""
+  },
+  {
+    "test": "career_production",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 173,
+      "failures": [],
+      "scope": "four production jobs, single-use public authorization, attendance, save/reload, exact ledger, dynamic demand/material/mayor cancellation, 120-day repeated-attempt stock bound (isolated fixture)"
+    },
+    "tail": ""
+  },
+  {
+    "test": "career_production_ui",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 145,
+      "failures": [],
+      "scope": "four job registrations, 375px UI, material proposal, approval display, onsite timed batch, public stock and consumed grant; fixture positions"
+    },
+    "tail": ""
+  },
+  {
+    "test": "careers_expansion",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 22,
+      "failures": [],
+      "scope": "three additional careers, real authority and progress, research demand and downstream use, mood, cap, midnight, old save compatibility"
+    },
+    "tail": ""
+  },
+  {
+    "test": "careers_expansion_ui",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 34,
+      "failures": [],
+      "scope": "375px six-career UI, three new registrations and real tick-based completions"
+    },
+    "tail": ""
+  },
+  {
+    "test": "career_facilities",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 97,
+      "failures": [],
+      "scope": "all eleven profession pages in two towns with controlled demand, original missing workshop and removed venue fixtures, no free facilities/resources, no broken destinations, core active-work cancellation on location removal; not natural all-career completion"
+    },
+    "tail": ""
+  },
+  {
+    "test": "service_stay",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 184,
+      "failures": [],
+      "scope": "two towns two service jobs; controlled unemployed awake resident and need state; real simulation ticks, fixed physical stay without frozen needs, completion, cancel, hunger, rest, work, raid, active reload, player departure, accepted appointment, midnight, sleep window and resumed walking; no natural multi-day claim"
+    },
+    "tail": ""
+  }
+]

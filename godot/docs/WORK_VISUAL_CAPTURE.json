@@ -1,0 +1,66 @@
+[
+  {
+    "active": {
+      "finish": 4,
+      "id": "produce:miner",
+      "job": "miner",
+      "label": "採集石材與金屬",
+      "location": "quarry",
+      "target": "miner"
+    },
+    "job": "miner",
+    "scenery_hidden": true,
+    "started": {
+      "message": "開始值勤，需停留 60 遊戲分鐘；離開會取消。",
+      "ok": true
+    }
+  },
+  {
+    "active": {
+      "finish": 4,
+      "id": "build:build_1",
+      "job": "carpenter",
+      "label": "製備工程構件：瞭望塔",
+      "location": "workshop",
+      "target": "build_1"
+    },
+    "job": "carpenter",
+    "scenery_hidden": true,
+    "started": {
+      "message": "開始值勤，需停留 60 遊戲分鐘；離開會取消。",
+      "ok": true
+    }
+  },
+  {
+    "active": {
+      "finish": 4,
+      "id": "produce:blacksmith",
+      "job": "blacksmith",
+      "label": "打造公共工具",
+      "location": "workshop",
+      "target": "blacksmith"
+    },
+    "job": "blacksmith",
+    "scenery_hidden": true,
+    "started": {
+      "message": "開始值勤，需停留 60 遊戲分鐘；離開會取消。",
+      "ok": true
+    }
+  },
+  {
+    "active": {
+      "finish": 4,
+      "id": "research:fixture",
+      "job": "researcher",
+      "label": "整理研究資料：受控研究",
+      "location": "library",
+      "target": "fixture"
+    },
+    "job": "researcher",
+    "scenery_hidden": true,
+    "started": {
+      "message": "開始值勤，需停留 60 遊戲分鐘；離開會取消。",
+      "ok": true
+    }
+  }
+]
