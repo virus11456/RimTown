@@ -1,0 +1,7 @@
+{
+  "checks": 5812,
+  "failures": [],
+  "maximum_support_drift": 0.0,
+  "planted_samples": 759,
+  "scope": "flat collision fixture, walk/fast pace at 30/60/120Hz, world support stability, actual rendered shoe, fixed bone lengths, forward knees, 90/180 degree turns and stopping"
+}

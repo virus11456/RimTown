@@ -30,24 +30,28 @@ func run() -> void:
 		for direction in [Vector2.RIGHT,Vector2.LEFT,Vector2.UP,Vector2.DOWN,Vector2(1,1)]:
 			var m:=flat_motion()
 			for frame in fps: m.move_player(direction,1.0/fps)
-			check(absf(point(m).distance_to(Vector2(640,480))-72)<.001,"72 px/s at %d fps direction %s"%[fps,direction])
+			check(absf(point(m).distance_to(Vector2(640,480))-SimMotion.PLAYER_WALK_SPEED)<.001,"24 px/s at %d fps direction %s"%[fps,direction])
+	for fps in [30,60,120]:
+		var fast_motion:=flat_motion()
+		for frame in fps: fast_motion.move_player(Vector2(1,1),1.0/fps,true)
+		check(absf(point(fast_motion).distance_to(Vector2(640,480))-72)<.001,"fast pace retains old normalized speed")
 	var wall:=flat_motion()
 	for tile in [5,6,41,15,16,17,18]:
 		wall.layout.grid[10][11]=tile
-		wall.positions.player.x=175; wall.positions.player.y=168
+		wall.positions.player.x=175.75; wall.positions.player.y=168
 		wall.move_player(Vector2.RIGHT,.05)
-		check(wall.positions.player.x==175,"blocks wall/roof/fence tile %d"%tile)
+		check(wall.positions.player.x==175.75,"blocks wall/roof/fence tile %d"%tile)
 	wall.move_player(Vector2(1,1),.05)
-	check(wall.positions.player.x==175 and wall.positions.player.y>168,"slides along wall")
+	check(wall.positions.player.x==175.75 and wall.positions.player.y>168,"slides along wall")
 	wall.layout.grid[11][10]=5
-	wall.positions.player.x=175; wall.positions.player.y=175
+	wall.positions.player.x=175.75; wall.positions.player.y=175.75
 	wall.move_player(Vector2(1,1),.05)
-	check(point(wall)==Vector2(175,175),"blocked corner cannot be crossed")
+	check(point(wall)==Vector2(175.75,175.75),"blocked corner cannot be crossed")
 	var border:=flat_motion()
-	border.positions.player.x=1275; border.positions.player.y=955
+	border.positions.player.x=1275.5; border.positions.player.y=955.5
 	border.move_player(Vector2(1,1),.05)
 	check(point(border)==Vector2(1276,956),"map maximum margin")
-	border.positions.player.x=5; border.positions.player.y=5
+	border.positions.player.x=4.5; border.positions.player.y=4.5
 	border.move_player(Vector2(-1,-1),.05)
 	check(point(border)==Vector2(4,4),"map minimum margin")
 	border.move_player(Vector2.ZERO,.05)
@@ -66,10 +70,10 @@ func run() -> void:
 	await send_key(KEY_W,true)
 	for i in 60: app._process(1.0/60)
 	await send_key(KEY_W,false)
-	check(absf(point(app.motion).y-408)<.001 and not app.running,"W moves traveler while world paused")
+	check(absf(point(app.motion).y-456)<.001 and not app.running,"W moves traveler while world paused")
 	check(app.simulation.data.tickCount==0,"walking does not advance paused clock")
 	check(app.simulation.data.agents.player.currentLocation=="town_square","walking updates logical player location")
-	check(app.rig.follow_player and app.rig.position.z<27,"camera follows traveler")
+	check(app.rig.follow_player and app.rig.position.z<29,"camera follows traveler")
 	check(app.document.serialize()==original,"walking preserves original save bytes")
 	var stopped:=point(app.motion)
 	for i in 60: app._process(1.0/60)
@@ -114,10 +118,17 @@ func run() -> void:
 	stopped=point(app.motion)
 	for i in 60: app._process(1.0/60)
 	await send_key(KEY_D,false)
-	check(absf(point(app.motion).distance_to(stopped)-72)<.01,"16x world still moves traveler at real-time 4.5 tiles/s")
+	check(absf(point(app.motion).distance_to(stopped)-SimMotion.PLAYER_WALK_SPEED)<.01,"16x world still moves traveler at real-time 1.5 tiles/s")
 	app.running=false
+	await send_key(KEY_SHIFT,true);await send_key(KEY_D,true)
+	var fast_start:=point(app.motion)
+	for i in 60: app._process(1.0/60)
+	await send_key(KEY_D,false);await send_key(KEY_SHIFT,false)
+	check(absf(point(app.motion).distance_to(fast_start)-72)<.01 and not app.traveler.fast(),"Shift fast movement and release through actual input")
+	await send_key(KEY_SHIFT,true);app.get_window().focus_exited.emit()
+	check(not app.traveler.fast(),"focus loss clears fast modifier")
 	app.motion.update(app.simulation.data.agents)
-	check(point(app.motion).distance_to(stopped)>71,"NPC routing does not override manual traveler")
+	check(point(app.motion).distance_to(stopped)>23,"NPC routing does not override manual traveler")
 	# Save the real layout so the restored location checks use the same map geometry.
 	app.motion.layout=app.world_view.layout
 	app.motion.pathfinder.grid=app.motion.layout.grid

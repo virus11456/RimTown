@@ -1,0 +1,18 @@
+{
+  "cases": [
+    {
+      "arrived_without_starting": true,
+      "frames": 317,
+      "job": "cook",
+      "maximum_step": 0.400024831295013,
+      "town": "frontier"
+    },
+    {
+      "arrived_without_starting": true,
+      "frames": 245,
+      "job": "researcher",
+      "maximum_step": 0.400081485509872,
+      "town": "harbor"
+    }
+  ]
+}

@@ -215,7 +215,7 @@ func _build_ui() -> void:
 	speed_button = _button("1×",playback,func(): speed={1:4,4:16,16:1}[speed]; speed_button.text="%d×"%speed)
 	speed_button.tooltip_text="1×：每 8 秒經過 15 分鐘；4×／16× 同時加快時間與居民行走。"
 	var locate:=_button("找旅人",playback,focus_traveler)
-	locate.tooltip_text="WASD／方向鍵移動旅人；Q／E 轉向相機。"
+	locate.tooltip_text="WASD／方向鍵步行；Shift 快速移動；Q／E 轉向相機。"
 	drawer = PanelContainer.new()
 	drawer.add_theme_stylebox_override("panel",_panel(Color("172e2ef7")))
 	hud.add_child(drawer)
@@ -319,7 +319,7 @@ func _load_document(text: String, source: String) -> bool:
 	heading.text = str(data.get("townName","小鎮"))
 	var clock_data: Dictionary = data.clock
 	summary.text = "%s %d日 %02d:%02d · %d人" % [clock_data.get("season",""),clock_data.get("day",1),clock_data.get("hour",6),clock_data.get("minute",0),data.agents.size()]
-	status.text = "%s · 時間暫停 · WASD 移動旅人" % source
+	status.text = "%s · 時間暫停 · WASD 步行／Shift 快速移動" % source
 	if world_view != null:
 		world_view.call("display_save",data)
 	if world_view != null:
@@ -960,7 +960,7 @@ func focus_traveler() -> void:
 	var p: Dictionary=motion.positions.player
 	rig.follow_player=true
 	rig.position=Vector3(float(p.x)/16,0,float(p.y)/16)
-	status.text="WASD／方向鍵移動 · F 與附近居民互動"
+	status.text="WASD／方向鍵步行 · Shift 快速移動 · F 互動"
 
 func _process_traveler(delta: float) -> void:
 	if traveler==null or not motion.positions.has("player"): return
@@ -970,7 +970,7 @@ func _process_traveler(delta: float) -> void:
 	if dialog.visible or chat_busy or get_viewport().gui_get_focus_owner() is LineEdit or get_viewport().gui_get_focus_owner() is TextEdit:
 		station_approach.clear()
 	var was_approaching:=not station_approach.job.is_empty()
-	var moved:=station_approach.step(simulation,motion,Vector2(world_direction.x,world_direction.z),delta)
+	var moved:=station_approach.step(simulation,motion,Vector2(world_direction.x,world_direction.z),delta,traveler.fast())
 	if not station_approach.notice.is_empty():
 		status.text=station_approach.notice;station_approach.notice=""
 		if was_approaching and station_approach.job.is_empty(): show_careers()

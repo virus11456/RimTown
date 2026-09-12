@@ -27,8 +27,8 @@ func begin(w: SimWorld,m: SimMotion,id: String,role: String) -> bool:
 	route.append({"x":goal.x,"y":goal.y});job=role;task_id=id
 	m.manual_player=true
 	return true
-func step(w: SimWorld,m: SimMotion,manual: Vector2,delta: float) -> bool:
-	if not manual.is_zero_approx(): clear();return m.move_player(manual,delta)
+func step(w: SimWorld,m: SimMotion,manual: Vector2,delta: float,fast: bool=false) -> bool:
+	if not manual.is_zero_approx(): clear();return m.move_player(manual,delta,fast)
 	if job.is_empty(): return m.move_player(Vector2.ZERO,delta)
 	var station:=SimWorkstation.resolve(m.layout,job)
 	if str(w.data.agents.player.get("jobKey",""))!=job or not SimCareers.book(w).active.is_empty() or not SimCareers.available(w).any(func(t):return t.id==task_id and t.job==job) or station.is_empty() or station.stand!=goal:
@@ -40,7 +40,7 @@ func step(w: SimWorld,m: SimMotion,manual: Vector2,delta: float) -> bool:
 	while index<route.size() and point.distance_to(Vector2(route[index].x,route[index].y))<.15: index+=1
 	if index>=route.size(): clear("路線已結束，請重新選擇操作台。");return m.move_player(Vector2.ZERO,delta)
 	var offset:=Vector2(route[index].x,route[index].y)-point
-	var moved:=m.move_player(offset.limit_length(),minf(delta,offset.length()/72))
+	var moved:=m.move_player(offset.limit_length(),minf(delta,offset.length()/SimMotion.PLAYER_WALK_SPEED))
 	stalled=0.0 if moved else stalled+maxf(0,delta)
 	if stalled>2: clear("前方無法通行，已停止前往操作台。")
 	return moved

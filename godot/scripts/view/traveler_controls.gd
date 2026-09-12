@@ -13,6 +13,8 @@ func blocked() -> bool:
 	if modal_open.is_valid() and modal_open.call(): return true
 	var focus := get_viewport().gui_get_focus_owner()
 	return focus is LineEdit or focus is TextEdit
+func fast() -> bool:
+	return not blocked() and held.has(KEY_SHIFT)
 func direction() -> Vector2:
 	if blocked():
 		clear()
@@ -25,7 +27,7 @@ func _input(event: InputEvent) -> void:
 	var code: int = event.physical_keycode if event.physical_keycode!=0 else event.keycode
 	if code==KEY_F and event.pressed and not event.echo and not event.ctrl_pressed and not event.meta_pressed and not event.alt_pressed and not blocked():
 		clear();interact_requested.emit();get_viewport().set_input_as_handled();return
-	if code not in MOVEMENT_KEYS: return
+	if code not in MOVEMENT_KEYS and code!=KEY_SHIFT: return
 	# Release always clears, including releases over a text field or file dialog.
 	if not event.pressed:
 		held.erase(code)

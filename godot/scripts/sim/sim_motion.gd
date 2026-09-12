@@ -202,14 +202,16 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 	for id in positions.keys():
 		if not agents.has(id): positions.erase(id)
 
-func move_player(direction: Vector2,delta: float) -> bool:
+const PLAYER_WALK_SPEED := 24.0
+const PLAYER_FAST_SPEED := 72.0
+func move_player(direction: Vector2,delta: float,fast: bool=false) -> bool:
 	if not positions.has("player"): return false
 	var p: Dictionary=positions.player
 	if direction.is_zero_approx():
 		if manual_player: p.walking=false; p.walkStep=0
 		return false
 	manual_player=true
-	var movement:=direction.limit_length()*72.0*clampf(delta,0,.05)
+	var movement:=direction.limit_length()*(PLAYER_FAST_SPEED if fast else PLAYER_WALK_SPEED)*clampf(delta,0,.05)
 	var previous:=Vector2(p.x,p.y)
 	# Axis-separated collision allows sliding along walls. Step <= 3.6 px < one tile.
 	var nx:=clampf(float(p.x)+movement.x,4,1276)
