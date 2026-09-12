@@ -1,0 +1,35 @@
+{
+  "cases": [
+    {
+      "activity": "recreation",
+      "at_home": true,
+      "results": [
+        {
+          "home": "residential_north",
+          "meal_ticks": 1,
+          "reason": "已達到這次恢復目標，重新評估是否需要照護。",
+          "rest_ticks": 1,
+          "state": "recovered",
+          "tick": 52
+        }
+      ],
+      "town": "frontier"
+    },
+    {
+      "activity": "wandering",
+      "at_home": true,
+      "results": [
+        {
+          "home": "residential_south",
+          "meal_ticks": 1,
+          "reason": "已達到這次恢復目標，重新評估是否需要照護。",
+          "rest_ticks": 1,
+          "state": "recovered",
+          "tick": 52
+        }
+      ],
+      "town": "harbor"
+    }
+  ],
+  "scope": "controlled near-home need deficit; regular tick, walking and actual at-home meal/rest with native agenda"
+}

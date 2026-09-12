@@ -1,0 +1,39 @@
+{
+  "cases": [
+    {
+      "job": "doctor",
+      "max_step": 0.899520874023438,
+      "meal": true,
+      "rest": true,
+      "town": "frontier",
+      "walk": true
+    },
+    {
+      "job": "priest",
+      "max_step": 0.899520874023438,
+      "meal": true,
+      "rest": true,
+      "town": "frontier",
+      "walk": true
+    },
+    {
+      "job": "doctor",
+      "max_step": 0.941872239112854,
+      "meal": true,
+      "rest": true,
+      "town": "harbor",
+      "walk": true
+    },
+    {
+      "job": "priest",
+      "max_step": 0.941872239112854,
+      "meal": true,
+      "rest": true,
+      "town": "harbor",
+      "walk": true
+    }
+  ],
+  "checks": 160,
+  "failures": [],
+  "scope": "actual recovery receipts, memory, recall, interruption without invented actions, resolved reload; controlled preflight nutrition deficit, near-home start, real ticks and movement, actual reload, physical meals/rest, bounded recovery and no care quota/reward"
+}

@@ -170,6 +170,7 @@ func _update(id: String) -> void:
 	else: _activity(a,hour)
 	SimHomeRest.apply(self,a)
 	SimNeeds.decay(a.needs,a.activity,hour)
+	SimResidentCare.record_recovery(self,a)
 	if not commute.is_empty() and (float(a.needs.hunger)<15 or float(a.needs.rest)<10):
 		commute={};_activity(a,hour);SimHomeRest.apply(self,a)
 	if a.get("isPlayer",false):

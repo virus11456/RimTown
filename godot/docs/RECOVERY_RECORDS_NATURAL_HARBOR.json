@@ -1,0 +1,326 @@
+{
+  "bad_sleep": [],
+  "care_errors": [],
+  "care_pairs_observed": [],
+  "care_results": {},
+  "checks": 11,
+  "civic_hours": {
+    "hb_aduo": [
+      7.0,
+      8.0,
+      9.0,
+      10.0,
+      11.0,
+      12.0,
+      13.0,
+      14.0,
+      15.0,
+      16.0,
+      17.0,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      6.0
+    ],
+    "hb_langshu": [
+      8.0,
+      9.0,
+      10.0,
+      11.0,
+      12.0,
+      13.0,
+      14.0,
+      15.0,
+      16.0,
+      17.0,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ]
+  },
+  "deferred": {
+    "hb_achao:1": {
+      "day": 1.0,
+      "reason": "完成前可能需要先吃飯或休息。",
+      "tick": 142.0
+    },
+    "hb_achao:2": {
+      "day": 2,
+      "reason": "完成前可能需要先吃飯或休息。",
+      "tick": 239
+    },
+    "hb_afu:1": {
+      "day": 1,
+      "reason": "完成前可能需要先吃飯或休息。",
+      "tick": 139
+    },
+    "hb_afu:2": {
+      "day": 2,
+      "reason": "完成前可能需要先吃飯或休息。",
+      "tick": 236
+    },
+    "hb_afu:3": {
+      "day": 3,
+      "reason": "完成前可能需要先吃飯或休息。",
+      "tick": 335
+    },
+    "hb_muxia:1": {
+      "day": 1,
+      "reason": "完成前可能需要先吃飯或休息。",
+      "tick": 143
+    },
+    "hb_muxia:2": {
+      "day": 2,
+      "reason": "完成前可能需要先吃飯或休息。",
+      "tick": 239
+    },
+    "hb_muxia:3": {
+      "day": 3,
+      "reason": "完成前可能需要先吃飯或休息。",
+      "tick": 334
+    },
+    "hb_shishu:2": {
+      "day": 2,
+      "reason": "完成前可能需要先吃飯或休息。",
+      "tick": 239
+    },
+    "hb_shishu:3": {
+      "day": 3,
+      "reason": "完成前可能需要先吃飯或休息。",
+      "tick": 334
+    },
+    "imm_何芳_72:1": {
+      "day": 1,
+      "reason": "完成前可能需要先吃飯或休息。",
+      "tick": 139
+    },
+    "imm_何芳_72:2": {
+      "day": 2,
+      "reason": "完成前可能需要先吃飯或休息。",
+      "tick": 237
+    },
+    "imm_何芳_72:3": {
+      "day": 3,
+      "reason": "完成前可能需要先吃飯或休息。",
+      "tick": 331
+    }
+  },
+  "failures": [],
+  "ground_errors": [],
+  "heading_home": [
+    "hb_dengye",
+    "hb_shanshan",
+    "hb_haima",
+    "hb_xiaoou",
+    "hb_achao",
+    "hb_haibo",
+    "hb_langshu",
+    "hb_xiugu",
+    "hb_shishu",
+    "hb_axi",
+    "hb_amao",
+    "hb_yunyi",
+    "hb_aduo",
+    "hb_muxia",
+    "hb_afu"
+  ],
+  "invalid_duty": [],
+  "invalid_steps": [],
+  "maximum_npc_step": 0.999914765357971,
+  "motion_frames": 184320,
+  "outdoor_workers": [
+    "hb_shishu",
+    "hb_afu",
+    "hb_achao"
+  ],
+  "quota_errors": [],
+  "recoveries": {
+    "hb_afu:1": [
+      "heading_home",
+      "eating",
+      "sleeping"
+    ],
+    "hb_afu:2": [
+      "heading_home",
+      "eating",
+      "sleeping"
+    ],
+    "hb_afu:3": [
+      "eating",
+      "sleeping"
+    ],
+    "hb_muxia:1": [
+      "heading_home",
+      "eating",
+      "sleeping"
+    ],
+    "hb_muxia:3": [
+      "heading_home",
+      "eating",
+      "sleeping"
+    ],
+    "hb_shishu:3": [
+      "heading_home",
+      "eating",
+      "sleeping"
+    ],
+    "imm_何芳_72:1": [
+      "heading_home",
+      "eating",
+      "sleeping"
+    ],
+    "imm_何芳_72:2": [
+      "heading_home",
+      "eating",
+      "sleeping"
+    ]
+  },
+  "recovery_results": {
+    "hb_afu:146": {
+      "home": "residential_east",
+      "meal_ticks": 1.0,
+      "reason": "已達到這次恢復目標，重新評估是否需要照護。",
+      "rest_ticks": 1.0,
+      "state": "recovered",
+      "tick": 146.0
+    },
+    "hb_afu:242": {
+      "home": "residential_east",
+      "meal_ticks": 2,
+      "reason": "已達到這次恢復目標，重新評估是否需要照護。",
+      "rest_ticks": 1,
+      "state": "recovered",
+      "tick": 242
+    },
+    "hb_afu:337": {
+      "home": "residential_east",
+      "meal_ticks": 1,
+      "reason": "已達到這次恢復目標，重新評估是否需要照護。",
+      "rest_ticks": 1,
+      "state": "recovered",
+      "tick": 337
+    },
+    "hb_muxia:151": {
+      "home": "residential_south",
+      "meal_ticks": 1.0,
+      "reason": "已達到這次恢復目標，重新評估是否需要照護。",
+      "rest_ticks": 1.0,
+      "state": "recovered",
+      "tick": 151.0
+    },
+    "hb_muxia:346": {
+      "home": "residential_south",
+      "meal_ticks": 2,
+      "reason": "已達到這次恢復目標，重新評估是否需要照護。",
+      "rest_ticks": 2,
+      "state": "recovered",
+      "tick": 346
+    },
+    "hb_shishu:341": {
+      "home": "residential_south",
+      "meal_ticks": 1,
+      "reason": "已達到這次恢復目標，重新評估是否需要照護。",
+      "rest_ticks": 1,
+      "state": "recovered",
+      "tick": 341
+    },
+    "imm_何芳_72:144": {
+      "home": "residential_east",
+      "meal_ticks": 2.0,
+      "reason": "返家恢復安排已結束，先處理目前必要行程。",
+      "rest_ticks": 1.0,
+      "state": "cancelled",
+      "tick": 144.0
+    },
+    "imm_何芳_72:240": {
+      "home": "residential_east",
+      "meal_ticks": 1,
+      "reason": "返家恢復安排已結束，先處理目前必要行程。",
+      "rest_ticks": 1,
+      "state": "cancelled",
+      "tick": 240
+    }
+  },
+  "render_samples": 46080,
+  "requests_observed": [],
+  "scope": "original town resources, jobs, shifts and needs; four natural days, every collision frame audited, resident poses updated at 15Hz, shoe geometry checked each tick, mid-run reload; no forced resident positions/needs",
+  "slept": [
+    "hb_dengye",
+    "hb_shanshan",
+    "hb_xiaoou",
+    "hb_haima",
+    "hb_axi",
+    "hb_achao",
+    "hb_shishu",
+    "hb_afu",
+    "hb_haibo",
+    "hb_langshu",
+    "hb_amao",
+    "hb_aduo",
+    "hb_yunyi",
+    "hb_muxia",
+    "hb_xiugu"
+  ],
+  "stacked_farmers": [],
+  "station_work": {
+    "hb_achao": "farmer",
+    "hb_aduo": "guard",
+    "hb_afu": "farmer",
+    "hb_dengye": "researcher",
+    "hb_haima": "cook",
+    "hb_langshu": "trader",
+    "hb_shanshan": "researcher",
+    "hb_shishu": "miner",
+    "hb_xiaoou": "cook",
+    "imm_何芳_72": "cook"
+  },
+  "ticks": 384,
+  "town": "harbor",
+  "walked": [
+    "hb_haibo",
+    "hb_achao",
+    "hb_xiaoou",
+    "hb_langshu",
+    "hb_xiugu",
+    "hb_shishu",
+    "hb_axi",
+    "hb_amao",
+    "hb_yunyi",
+    "hb_aduo",
+    "hb_muxia",
+    "hb_afu",
+    "hb_haima",
+    "hb_dengye",
+    "hb_shanshan"
+  ],
+  "worked": [
+    "hb_achao",
+    "hb_xiaoou",
+    "hb_aduo",
+    "hb_afu",
+    "hb_haima",
+    "hb_shishu",
+    "hb_yunyi",
+    "hb_langshu",
+    "hb_axi",
+    "hb_haibo",
+    "hb_dengye",
+    "hb_shanshan"
+  ]
+}
