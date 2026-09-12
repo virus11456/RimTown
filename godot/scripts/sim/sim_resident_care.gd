@@ -52,16 +52,31 @@ static func clear(a: Dictionary,reason: String,tick: int=-1,state: String="cance
 	a.erase("_careVisit");a.erase("_careDestination");a.erase("_careHolding")
 	a._careVisitNotice=reason
 	if a.activity in ["care_travel","care_wait"]: a.activity="wandering";a._locationStayRemaining=0
+static func route_distance(m: SimMotion,id: String,place: String,goal: Vector2) -> float:
+	var p: Dictionary=m.positions.get(id,{})
+	if p.is_empty(): return INF
+	var start:=Vector2(p.x,p.y)
+	# Match SimMotion's actual exit -> destination door -> exact care position.
+	var destination: Variant=m.door(place,id)
+	if m.inside(start)==place or destination==null: return SimHangoutRoute.segment(m,start,goal)
+	var length:=0.0
+	var exit_door: Variant=m.door(m.inside(start),id)
+	if exit_door!=null:
+		var exit_point:=Vector2(exit_door.x,exit_door.y)
+		length+=SimHangoutRoute.segment(m,start,exit_point);start=exit_point
+	var door_point:=Vector2(destination.x,destination.y)
+	return length+SimHangoutRoute.segment(m,start,door_point)+SimHangoutRoute.segment(m,door_point,goal)
+static func queue_order(w: SimWorld,ids: Array) -> Array:
+	var result:=ids.duplicate()
+	result.sort_custom(func(left,right):
+		var a: int=int(w.data.agents[left].get("_careQueue",{}).get("since",2147483647))
+		var b: int=int(w.data.agents[right].get("_careQueue",{}).get("since",2147483647))
+		return str(left)<str(right) if a==b else a<b)
+	return result
 static func feasibility(w: SimWorld,a: Dictionary,b: Dictionary,goal: Vector2) -> String:
 	var m: SimMotion=w.social.observed_motion
 	if m==null or not m.positions.has(str(a.id)): return "尚未取得位置。"
-	var position: Dictionary=m.positions[str(a.id)]
-	var length: float
-	if SimCareerPresence.place(m,str(a.id))==str(b.currentLocation):
-		length=SimHangoutRoute.segment(m,Vector2(position.x,position.y),goal)
-	else:
-		length=SimHangoutRoute.distance(m,str(a.id),str(b.currentLocation))
-		length+=SimHangoutRoute.segment(m,m.layout._nearest(m.layout._center(str(b.currentLocation))),goal)
+	var length:=route_distance(m,str(a.id),str(b.currentLocation),goal)
 	if is_inf(length): return "目前沒有可通行的接待路線。"
 	var duration:=ceili(length/m.travel_budget())+3 # Arrival observation + two service ticks.
 	if duration>=8: return "步行與照護時間超過接待期限。"
@@ -86,9 +101,15 @@ static func tick(w: SimWorld) -> void:
 	if m==null or not m.stable_routes or not w.social_enabled:
 		for a in w.data.agents.values():
 			if a.has("_careVisit"): clear(a,"目前無法繼續關懷行程。",w.data.tickCount)
+			a.erase("_careQueue")
 		return
 	SimCareers.book(w) # Expire yesterday's player reservation before checking NPC availability.
 	var ids: Array=w.data.agents.keys();ids.sort();var used: Dictionary={}
+	for a in w.data.agents.values():
+		var queued: Dictionary=a.get("_careQueue",{})
+		if not queued.is_empty() and (int(queued.day)!=SimClock.total_days(w.data.clock) or not eligible(w,str(a.id)) or not needed(a,str(queued.job))):
+			a.erase("_careQueue");a._careVisitNotice="候補已結束，先依目前需要安排生活。"
+
 	for id in ids:
 		var a: Dictionary=w.data.agents[id]
 		if not a.has("_careVisit"): continue
@@ -108,11 +129,11 @@ static func tick(w: SimWorld) -> void:
 			w.social.converse(b,a,w.data,w.rng,w.rules.jobs);b._lastInteractionTick=w.data.tickCount
 		if v.state=="visiting" and int(w.data.tickCount)>=int(v.finish): complete(w,a,b);continue
 		a._careHolding=v.state=="visiting"
-	for id in ids:
+	for id in queue_order(w,ids):
 		var a: Dictionary=w.data.agents[id]
 		if a.has("_careVisit") or not eligible(w,id) or int(a.get("_careVisitDay",-1))==SimClock.total_days(w.data.clock): continue
 		for provider in ids:
-			if provider==id or used.has(provider) or not provider_ready(w,m,provider): continue
+			if provider==id or not provider_ready(w,m,provider): continue
 			var b: Dictionary=w.data.agents[provider]
 			if not needed(a,b.jobKey) or not allowance(w,a,b,b.jobKey): continue
 			var q: Dictionary=m.positions[provider];var goal:=Vector2.INF
@@ -124,6 +145,11 @@ static func tick(w: SimWorld) -> void:
 			if not reason.is_empty():
 				a._careDeferred={"day":SimClock.total_days(w.data.clock),"tick":int(w.data.tickCount),"reason":reason};a._careVisitNotice="暫緩求助："+reason
 				continue
+			if used.has(provider):
+				if not a.has("_careQueue"): a._careQueue={"day":SimClock.total_days(w.data.clock),"since":int(w.data.tickCount),"job":str(b.jobKey)}
+				a._careVisitNotice="候補求助：目前有人接受照護，空檔出現後會重新確認行程。"
+				continue
+			a.erase("_careQueue")
 			a.erase("_careDeferred")
 			a._careVisit={"provider":provider,"job":b.jobKey,"place":b.currentLocation,"x":goal.x,"y":goal.y,"state":"travel","until":int(w.data.tickCount)+8}
 			a._careVisitDay=SimClock.total_days(w.data.clock);a._careVisitNotice="前往尋求關懷。";used[provider]=true;break

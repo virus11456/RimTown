@@ -1,0 +1,5 @@
+{
+  "checks": 55,
+  "failures": [],
+  "scope": "two towns/two roles: busy provider, queue seniority, no quota or movement, actual reload, release/admission/completion without replay, day/sleep/disable cleanup and exact door route"
+}

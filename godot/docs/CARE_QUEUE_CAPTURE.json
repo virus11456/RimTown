@@ -1,0 +1,29 @@
+{
+  "cases": [
+    {
+      "job": "doctor",
+      "no_departure": true,
+      "reason": "候補求助：目前有人接受照護，空檔出現後會重新確認行程。",
+      "town": "frontier"
+    },
+    {
+      "job": "priest",
+      "no_departure": true,
+      "reason": "候補求助：目前有人接受照護，空檔出現後會重新確認行程。",
+      "town": "frontier"
+    },
+    {
+      "job": "doctor",
+      "no_departure": true,
+      "reason": "候補求助：目前有人接受照護，空檔出現後會重新確認行程。",
+      "town": "harbor"
+    },
+    {
+      "job": "priest",
+      "no_departure": true,
+      "reason": "候補求助：目前有人接受照護，空檔出現後會重新確認行程。",
+      "town": "harbor"
+    }
+  ],
+  "scope": "controlled busy provider and need; real queue admission, no position change, native agenda"
+}
