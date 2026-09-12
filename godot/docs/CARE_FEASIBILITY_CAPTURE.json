@@ -1,0 +1,29 @@
+{
+  "cases": [
+    {
+      "job": "doctor",
+      "no_departure": true,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "town": "frontier"
+    },
+    {
+      "job": "priest",
+      "no_departure": true,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "town": "frontier"
+    },
+    {
+      "job": "doctor",
+      "no_departure": true,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "town": "harbor"
+    },
+    {
+      "job": "priest",
+      "no_departure": true,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "town": "harbor"
+    }
+  ],
+  "scope": "controlled near-closing clock and need; real preflight deferral, no position change, native agenda"
+}

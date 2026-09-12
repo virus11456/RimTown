@@ -52,6 +52,31 @@ static func clear(a: Dictionary,reason: String,tick: int=-1,state: String="cance
 	a.erase("_careVisit");a.erase("_careDestination");a.erase("_careHolding")
 	a._careVisitNotice=reason
 	if a.activity in ["care_travel","care_wait"]: a.activity="wandering";a._locationStayRemaining=0
+static func feasibility(w: SimWorld,a: Dictionary,b: Dictionary,goal: Vector2) -> String:
+	var m: SimMotion=w.social.observed_motion
+	if m==null or not m.positions.has(str(a.id)): return "尚未取得位置。"
+	var position: Dictionary=m.positions[str(a.id)]
+	var length: float
+	if SimCareerPresence.place(m,str(a.id))==str(b.currentLocation):
+		length=SimHangoutRoute.segment(m,Vector2(position.x,position.y),goal)
+	else:
+		length=SimHangoutRoute.distance(m,str(a.id),str(b.currentLocation))
+		length+=SimHangoutRoute.segment(m,m.layout._nearest(m.layout._center(str(b.currentLocation))),goal)
+	if is_inf(length): return "目前沒有可通行的接待路線。"
+	var duration:=ceili(length/m.travel_budget())+3 # Arrival observation + two service ticks.
+	if duration>=8: return "步行與照護時間超過接待期限。"
+	if float(a.needs.hunger)-duration*2<20 or float(a.needs.rest)-duration*1.5<10: return "完成前可能需要先吃飯或休息。"
+	if float(b.needs.hunger)-duration*2<20 or float(b.needs.rest)-duration*1.5<10: return "服務者需要先用餐或休息。"
+	var job:=SimWorkSchedule.job(b,w.rules.jobs)
+	for offset in range(duration+1):
+		var hour:=posmod(floori((int(w.data.clock.hour)*60+int(w.data.clock.minute)+offset*15)/60.0),24)
+		if not SimWorkSchedule.working(job,hour): return "抵達並完成前，服務者就要下班。"
+		if not SimLeisurePlan.person_available(a,w.rules.jobs,hour): return "照護會擠到上工準備或睡眠時段。"
+	var now:=int(w.data.tickCount)
+	for id in [str(a.id),str(b.id)]:
+		if SimAppointments.overlaps(w,id,now,now+duration+1) or SimHangoutRoute.leisure_conflict(w,id,now,now+duration+1): return "已有約定或休閒安排，先保留原行程。"
+	if not SimHangoutRoute.return_fits(m,a,w.data.clock,w.rules.jobs,str(b.currentLocation),duration): return "照護後沒有足夠時間慢走返家。"
+	return ""
 static func interrupt_for_player(w: SimWorld,target: String) -> void:
 	for a in w.data.agents.values():
 		if a.has("_careVisit") and (str(a.id)==target or str(a._careVisit.get("provider",""))==target):
@@ -95,6 +120,11 @@ static func tick(w: SimWorld) -> void:
 				var candidate: Vector2=Vector2(q.x,q.y)+offset
 				if m.layout._walkable(candidate) and m.location_at(candidate)==b.currentLocation: goal=candidate;break
 			if not goal.is_finite(): continue
+			var reason:=feasibility(w,a,b,goal)
+			if not reason.is_empty():
+				a._careDeferred={"day":SimClock.total_days(w.data.clock),"tick":int(w.data.tickCount),"reason":reason};a._careVisitNotice="暫緩求助："+reason
+				continue
+			a.erase("_careDeferred")
 			a._careVisit={"provider":provider,"job":b.jobKey,"place":b.currentLocation,"x":goal.x,"y":goal.y,"state":"travel","until":int(w.data.tickCount)+8}
 			a._careVisitDay=SimClock.total_days(w.data.clock);a._careVisitNotice="前往尋求關懷。";used[provider]=true;break
 static func apply(w: SimWorld,a: Dictionary,run: Dictionary) -> bool:

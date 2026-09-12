@@ -1,0 +1,213 @@
+{
+  "bad_sleep": [],
+  "care_errors": [],
+  "care_pairs_observed": [],
+  "care_results": {},
+  "checks": 11,
+  "civic_hours": {
+    "hb_aduo": [
+      7.0,
+      8.0,
+      9.0,
+      10.0,
+      11.0,
+      12.0,
+      13.0,
+      14.0,
+      15.0,
+      16.0,
+      17.0,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      6.0
+    ],
+    "hb_langshu": [
+      8.0,
+      9.0,
+      10.0,
+      11.0,
+      12.0,
+      13.0,
+      14.0,
+      15.0,
+      16.0,
+      17.0,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ]
+  },
+  "deferred": {
+    "hb_achao:1": {
+      "day": 1.0,
+      "reason": "步行與照護時間超過接待期限。",
+      "tick": 143.0
+    },
+    "hb_achao:3": {
+      "day": 3,
+      "reason": "步行與照護時間超過接待期限。",
+      "tick": 335
+    },
+    "hb_afu:1": {
+      "day": 1.0,
+      "reason": "步行與照護時間超過接待期限。",
+      "tick": 143.0
+    },
+    "hb_afu:2": {
+      "day": 2,
+      "reason": "步行與照護時間超過接待期限。",
+      "tick": 239
+    },
+    "hb_afu:3": {
+      "day": 3,
+      "reason": "步行與照護時間超過接待期限。",
+      "tick": 335
+    },
+    "hb_muxia:1": {
+      "day": 1.0,
+      "reason": "步行與照護時間超過接待期限。",
+      "tick": 143.0
+    },
+    "hb_muxia:2": {
+      "day": 2,
+      "reason": "步行與照護時間超過接待期限。",
+      "tick": 239
+    },
+    "hb_muxia:3": {
+      "day": 3,
+      "reason": "步行與照護時間超過接待期限。",
+      "tick": 335
+    },
+    "hb_shishu:2": {
+      "day": 2,
+      "reason": "步行與照護時間超過接待期限。",
+      "tick": 239
+    },
+    "imm_何芳_72:1": {
+      "day": 1.0,
+      "reason": "步行與照護時間超過接待期限。",
+      "tick": 142.0
+    },
+    "imm_何芳_72:2": {
+      "day": 2,
+      "reason": "步行與照護時間超過接待期限。",
+      "tick": 239
+    },
+    "imm_何芳_72:3": {
+      "day": 3,
+      "reason": "步行與照護時間超過接待期限。",
+      "tick": 335
+    }
+  },
+  "failures": [],
+  "ground_errors": [],
+  "heading_home": [
+    "hb_dengye",
+    "hb_shanshan",
+    "hb_haima",
+    "hb_xiaoou",
+    "hb_achao",
+    "hb_haibo",
+    "hb_langshu",
+    "hb_xiugu",
+    "hb_shishu",
+    "hb_axi",
+    "hb_amao",
+    "hb_yunyi",
+    "hb_aduo",
+    "hb_muxia",
+    "hb_afu"
+  ],
+  "invalid_duty": [],
+  "invalid_steps": [],
+  "maximum_npc_step": 0.999914765357971,
+  "motion_frames": 184320,
+  "outdoor_workers": [
+    "hb_shishu",
+    "hb_afu",
+    "hb_achao"
+  ],
+  "quota_errors": [],
+  "render_samples": 46080,
+  "requests_observed": [],
+  "scope": "original town resources, jobs, shifts and needs; four natural days, every collision frame audited, resident poses updated at 15Hz, shoe geometry checked each tick, mid-run reload; no forced resident positions/needs",
+  "slept": [
+    "hb_dengye",
+    "hb_shanshan",
+    "hb_xiaoou",
+    "hb_haima",
+    "hb_axi",
+    "hb_achao",
+    "hb_shishu",
+    "hb_afu",
+    "hb_haibo",
+    "hb_langshu",
+    "hb_amao",
+    "hb_aduo",
+    "hb_yunyi",
+    "hb_muxia",
+    "hb_xiugu"
+  ],
+  "stacked_farmers": [],
+  "station_work": {
+    "hb_achao": "farmer",
+    "hb_aduo": "guard",
+    "hb_afu": "farmer",
+    "hb_dengye": "researcher",
+    "hb_haima": "cook",
+    "hb_langshu": "trader",
+    "hb_shanshan": "researcher",
+    "hb_shishu": "miner",
+    "hb_xiaoou": "cook"
+  },
+  "ticks": 384,
+  "town": "harbor",
+  "walked": [
+    "hb_haibo",
+    "hb_achao",
+    "hb_xiaoou",
+    "hb_langshu",
+    "hb_xiugu",
+    "hb_shishu",
+    "hb_axi",
+    "hb_amao",
+    "hb_yunyi",
+    "hb_aduo",
+    "hb_muxia",
+    "hb_afu",
+    "hb_haima",
+    "hb_dengye",
+    "hb_shanshan"
+  ],
+  "worked": [
+    "hb_achao",
+    "hb_xiaoou",
+    "hb_aduo",
+    "hb_afu",
+    "hb_haima",
+    "hb_shishu",
+    "hb_yunyi",
+    "hb_langshu",
+    "hb_axi",
+    "hb_haibo",
+    "hb_dengye",
+    "hb_shanshan"
+  ]
+}

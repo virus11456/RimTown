@@ -3,25 +3,25 @@
     {
       "job": "doctor",
       "town": "frontier",
-      "walk_frames": 277
+      "walk_frames": 66
     },
     {
       "job": "priest",
       "town": "frontier",
-      "walk_frames": 672
+      "walk_frames": 161
     },
     {
       "job": "doctor",
       "town": "harbor",
-      "walk_frames": 876
+      "walk_frames": 162
     },
     {
       "job": "priest",
       "town": "harbor",
-      "walk_frames": 672
+      "walk_frames": 161
     }
   ],
-  "checks": 2597,
+  "checks": 650,
   "failures": [],
-  "scope": "controlled need and clinic; actual route to provider, arrival, conversation, bounded stay, interruption, saved state and daily cap; no healing or reward"
+  "scope": "controlled need and clinic; actual route to provider, arrival, conversation, bounded stay, interruption, saved state and daily cap; bounded care, no goods or player career reward"
 }

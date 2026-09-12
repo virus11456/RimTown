@@ -11,7 +11,8 @@ func run() -> void:
 		for id in w.data.agents:
 			if id!=pair.recipient: w.data.agents[id]._careVisitDay=SimClock.total_days(w.data.clock)
 		if job=="priest": w.runtime[pair.recipient].moodModifier=-100
-		var start: Vector2=m.layout._nearest(m.layout._center("town_square"))
+		var entrance: Variant=m.door(w.data.agents[pair.provider].currentLocation,pair.provider)
+		var start: Vector2=m.layout._nearest(Vector2(entrance.x,entrance.y+16)) if entrance!=null else m.layout._nearest(m.layout._center(w.data.agents[pair.provider].currentLocation)+Vector2(0,32))
 		m.positions[pair.recipient].x=start.x;m.positions[pair.recipient].y=start.y
 		var travel:=false;var visit:=false;var ended:=false
 		for tick in 8:
