@@ -1,5 +1,6 @@
 extends Node3D
 var document := SaveDocument.new()
+var station_approach := StationApproach.new()
 var api: ApiClient
 var rig: TownCamera
 var world_view: Node3D
@@ -265,6 +266,7 @@ func _load_document(text: String, source: String) -> bool:
 	if not incoming.parse(text):
 		status.text = incoming.error
 		return false
+	station_approach.clear()
 	chat_epoch+=1;chat_busy=false;event_comment_busy=false;chat_drafts.clear();chat_notice.clear();whisper_drafts.clear()
 	running=false
 	if traveler!=null: traveler.clear()
@@ -963,7 +965,13 @@ func _process_traveler(delta: float) -> void:
 	var input:=traveler.direction()
 	# Screen-relative movement remains intuitive after each 90-degree camera rotation.
 	var world_direction:=rig.global_transform.basis.x*input.x+rig.global_transform.basis.z*input.y
-	var moved:=motion.move_player(Vector2(world_direction.x,world_direction.z),delta)
+	if dialog.visible or chat_busy or get_viewport().gui_get_focus_owner() is LineEdit or get_viewport().gui_get_focus_owner() is TextEdit:
+		station_approach.clear()
+	var was_approaching:=not station_approach.job.is_empty()
+	var moved:=station_approach.step(simulation,motion,Vector2(world_direction.x,world_direction.z),delta)
+	if not station_approach.notice.is_empty():
+		status.text=station_approach.notice;station_approach.notice=""
+		if was_approaching and station_approach.job.is_empty(): show_careers()
 	if not input.is_zero_approx(): rig.follow_player=true
 	if moved:
 		has_simulated=true
@@ -2272,6 +2280,7 @@ func show_raids() -> void:
 
 func show_careers() -> void:
 	active_tab="小鎮";drawer.show();_clear_drawer();career_page=true;_wrapped("職業與值勤",22)
+	if not station_approach.job.is_empty(): _button("停止前往操作台",drawer_body,func(): station_approach.clear();motion.move_player(Vector2.ZERO,0);show_careers())
 	var w: SimWorld=simulation;var b:=SimCareers.book(w)
 	if not str(b.get("notice","")).is_empty(): _wrapped(str(b.notice),12)
 	var job: String=str(w.data.agents.get("player",{}).get("jobKey",""))
@@ -2328,6 +2337,10 @@ func show_careers() -> void:
 				_button("查看"+str(w.data.agents[task.target].name)+"的目前行程",drawer_body,func(): show_service_target(str(task.target)))
 			if task.job in SimWorkstation.JOBS:
 				_wrapped("需走到"+SimWorkstation.label(str(task.job))+"的圓形標記，開始後會轉身面向桌面；離開會中止。",12)
+				_button("走到"+SimWorkstation.label(str(task.job)),drawer_body,func():
+					if station_approach.begin(w,motion,str(task.id),str(task.job)):
+						drawer.hide();focus_traveler();status.text="正在步行前往操作台；方向鍵／WASD 可隨時接手，到達不會自動開工。"
+					else: _wrapped(station_approach.notice))
 				_button("查看"+SimWorkstation.label(str(task.job)),drawer_body,func():
 					var station:=SimWorkstation.resolve(motion.layout,str(task.job))
 					if station.is_empty(): _wrapped("工作台目前不可用，請重新查看設施。");return

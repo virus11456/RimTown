@@ -1,0 +1,6 @@
+{
+  "checks": 878,
+  "failures": [],
+  "motion_samples": 763,
+  "scope": "five station roles across both towns where facilities exist; actual UI request, collision bounded route, explicit start only, keyboard takeover, mid-route reload, changed research need/job, stop button, already-at-goal control transfer and all-role midnight cancellation"
+}

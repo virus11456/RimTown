@@ -1,0 +1,25 @@
+{
+  "cases": [
+    {
+      "arrived_without_starting": true,
+      "frames": 93,
+      "job": "carpenter",
+      "maximum_step": 1.20002913475037,
+      "town": "frontier"
+    },
+    {
+      "arrived_without_starting": true,
+      "frames": 85,
+      "job": "tailor",
+      "maximum_step": 1.20001220703125,
+      "town": "frontier"
+    },
+    {
+      "arrived_without_starting": true,
+      "frames": 81,
+      "job": "researcher",
+      "maximum_step": 1.20006632804871,
+      "town": "harbor"
+    }
+  ]
+}
