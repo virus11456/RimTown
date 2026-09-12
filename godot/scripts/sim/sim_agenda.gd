@@ -47,6 +47,11 @@ static func routine(w: SimWorld,id: String) -> Array:
 	if a.has("_careVisit"):
 		var provider: Dictionary=w.data.agents.get(str(a._careVisit.provider),{})
 		rows.append("關懷對象："+str(provider.get("name","居民"))+"；到場並完成停留後才結算照護。")
+		var visit: Dictionary=a._careVisit
+		if visit.state=="travel" and visit.has("travel_until"):
+			rows.append("步行赴診：剩餘 %d 分鐘抵達；實際到場後才開始照護（遊戲時間）。"%(maxi(0,int(visit.travel_until)-int(w.data.tickCount))*15))
+		elif visit.state=="visiting":
+			rows.append("正在照護：剩餘 %d 分鐘；必要行程或雙方離開會中止（遊戲時間）。"%(maxi(0,int(visit.get("finish",w.data.tickCount))-int(w.data.tickCount))*15))
 	if a.has("_shiftSleep") and sleep_window.get("facility_available",true):
 		rows.append("依班表保留 %d 小時睡眠時段，預留 %d 小時通勤。"%[sleep_window.duration,sleep_window.lead])
 		if sleep_window.get("conflict",false): rows.append("班表空檔不足以容納估計通勤；保留完整睡眠，仍可能遲到。")

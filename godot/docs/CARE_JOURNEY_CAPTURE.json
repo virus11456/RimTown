@@ -1,0 +1,129 @@
+{
+  "cases": [
+    {
+      "job": "doctor",
+      "state": "travel",
+      "town": "frontier",
+      "visit": {
+        "job": "doctor",
+        "place": "clinic",
+        "provider": "chen_wei",
+        "state": "travel",
+        "travel_until": 55,
+        "until": 58,
+        "x": 540.0,
+        "y": 584.0
+      }
+    },
+    {
+      "job": "doctor",
+      "state": "visiting",
+      "town": "frontier",
+      "visit": {
+        "finish": 51,
+        "job": "doctor",
+        "place": "clinic",
+        "provider": "chen_wei",
+        "state": "visiting",
+        "travel_until": 55,
+        "until": 58,
+        "x": 540.0,
+        "y": 584.0
+      }
+    },
+    {
+      "job": "priest",
+      "state": "travel",
+      "town": "frontier",
+      "visit": {
+        "job": "priest",
+        "place": "chapel",
+        "provider": "chen_wei",
+        "state": "travel",
+        "travel_until": 56,
+        "until": 59,
+        "x": 864.0,
+        "y": 280.0
+      }
+    },
+    {
+      "job": "priest",
+      "state": "visiting",
+      "town": "frontier",
+      "visit": {
+        "finish": 51,
+        "job": "priest",
+        "place": "chapel",
+        "provider": "chen_wei",
+        "state": "visiting",
+        "travel_until": 56,
+        "until": 59,
+        "x": 864.0,
+        "y": 280.0
+      }
+    },
+    {
+      "job": "doctor",
+      "state": "travel",
+      "town": "harbor",
+      "visit": {
+        "job": "doctor",
+        "place": "clinic",
+        "provider": "hb_achao",
+        "state": "travel",
+        "travel_until": 54,
+        "until": 57,
+        "x": 832.0,
+        "y": 664.0
+      }
+    },
+    {
+      "job": "doctor",
+      "state": "visiting",
+      "town": "harbor",
+      "visit": {
+        "finish": 51,
+        "job": "doctor",
+        "place": "clinic",
+        "provider": "hb_achao",
+        "state": "visiting",
+        "travel_until": 54,
+        "until": 57,
+        "x": 832.0,
+        "y": 664.0
+      }
+    },
+    {
+      "job": "priest",
+      "state": "travel",
+      "town": "harbor",
+      "visit": {
+        "job": "priest",
+        "place": "chapel",
+        "provider": "hb_achao",
+        "state": "travel",
+        "travel_until": 56,
+        "until": 59,
+        "x": 864.0,
+        "y": 280.0
+      }
+    },
+    {
+      "job": "priest",
+      "state": "visiting",
+      "town": "harbor",
+      "visit": {
+        "finish": 51,
+        "job": "priest",
+        "place": "chapel",
+        "provider": "hb_achao",
+        "state": "visiting",
+        "travel_until": 56,
+        "until": 59,
+        "x": 864.0,
+        "y": 280.0
+      }
+    }
+  ],
+  "scope": "controlled needs and long-route start; actual departure, collision movement and arrival, native agenda phase/time text; no natural-play claim"
+}

@@ -1,0 +1,35 @@
+{
+  "cases": [
+    {
+      "completed": true,
+      "job": "doctor",
+      "maximum_step": 0.999465942382812,
+      "town": "frontier",
+      "travel_budget_ticks": 7
+    },
+    {
+      "completed": true,
+      "job": "priest",
+      "maximum_step": 0.850910484790802,
+      "town": "frontier",
+      "travel_budget_ticks": 8
+    },
+    {
+      "completed": true,
+      "job": "doctor",
+      "maximum_step": 0.80517578125,
+      "town": "harbor",
+      "travel_budget_ticks": 6
+    },
+    {
+      "completed": true,
+      "job": "priest",
+      "maximum_step": 0.850910484790802,
+      "town": "harbor",
+      "travel_budget_ticks": 8
+    }
+  ],
+  "checks": 94,
+  "failures": [],
+  "scope": "two towns two roles, controlled fatigue and provider needs, real long map routes beyond old eight-tick total, actual simulation ticks/collision frames, mid-route reload, fixed deadlines, arrival-only care and single outcome; inclusive arrival boundary, missed arrival without reward and legacy deadline reload"
+}

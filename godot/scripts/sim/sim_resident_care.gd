@@ -2,6 +2,8 @@ class_name SimResidentCare
 extends RefCounted
 # Bounded fatigue care / supportive conversation; no goods or career rewards.
 const PROVIDER_DAILY_LIMIT := 3
+const MAX_TRAVEL_TICKS := 16 # At most four in-game hours, including arrival observation.
+const SERVICE_TICKS := 2
 static func eligible(w: SimWorld,id: String) -> bool:
 	var a: Dictionary=w.data.agents.get(id,{})
 	if id=="player" or a.is_empty() or not SimServiceStay.priority(w,id).is_empty(): return false
@@ -73,13 +75,18 @@ static func queue_order(w: SimWorld,ids: Array) -> Array:
 		var b: int=int(w.data.agents[right].get("_careQueue",{}).get("since",2147483647))
 		return str(left)<str(right) if a==b else a<b)
 	return result
+static func travel_ticks(m: SimMotion,id: String,place: String,goal: Vector2) -> int:
+	var length:=route_distance(m,id,place,goal)
+	if not is_finite(length) or m.travel_budget()<=0: return MAX_TRAVEL_TICKS+1
+	return ceili(length/m.travel_budget())+1
 static func feasibility(w: SimWorld,a: Dictionary,b: Dictionary,goal: Vector2) -> String:
 	var m: SimMotion=w.social.observed_motion
 	if m==null or not m.positions.has(str(a.id)): return "尚未取得位置。"
 	var length:=route_distance(m,str(a.id),str(b.currentLocation),goal)
 	if is_inf(length): return "目前沒有可通行的接待路線。"
-	var duration:=ceili(length/m.travel_budget())+3 # Arrival observation + two service ticks.
-	if duration>=8: return "步行與照護時間超過接待期限。"
+	var travel:=travel_ticks(m,str(a.id),str(b.currentLocation),goal)
+	if travel>MAX_TRAVEL_TICKS: return "步行超過四小時的赴診上限，先保留必要作息。"
+	var duration:=travel+SERVICE_TICKS
 	if float(a.needs.hunger)-duration*2<20 or float(a.needs.rest)-duration*1.5<10: return "完成前可能需要先吃飯或休息。"
 	if float(b.needs.hunger)-duration*2<20 or float(b.needs.rest)-duration*1.5<10: return "服務者需要先用餐或休息。"
 	var job:=SimWorkSchedule.job(b,w.rules.jobs)
@@ -116,6 +123,8 @@ static func tick(w: SimWorld) -> void:
 		var v: Dictionary=a._careVisit;var provider: String=str(v.get("provider",""))
 		if not eligible(w,id) or not provider_ready(w,m,provider) or used.has(provider) or int(w.data.tickCount)>=int(v.get("until",0)):
 			clear(a,"求助中止：行程優先、服務者離開或等候逾時。",w.data.tickCount);continue
+		if v.state=="travel" and v.has("travel_until") and int(w.data.tickCount)>int(v.travel_until):
+			clear(a,"未能在預留步行時間內抵達，結束這次赴診。",w.data.tickCount);continue
 		var b: Dictionary=w.data.agents[provider]
 		if b.jobKey!=v.job or b.currentLocation!=v.place or not needed(a,v.job): clear(a,"目前不再需要這次關懷。",w.data.tickCount);continue
 		if not allowance(w,a,b,v.job): clear(a,"今日同類照護或接待額度已用完。",w.data.tickCount);continue
@@ -125,7 +134,8 @@ static func tick(w: SimWorld) -> void:
 		var arrived: bool=not p.is_empty() and not p.get("walking",true) and p.get("doorPhase")==null and SimCareerPresence.together(m,id,provider,v.place) and Vector2(p.x,p.y).distance_to(Vector2(q.x,q.y))<=48
 		if v.state=="visiting" and not arrived: clear(a,"雙方已離開，結束這次關懷。",w.data.tickCount);continue
 		if arrived and v.state=="travel":
-			v.state="visiting";v.finish=int(w.data.tickCount)+2
+			v.state="visiting";v.finish=int(w.data.tickCount)+SERVICE_TICKS
+			a._careVisitNotice="已實際到場，開始約三十分鐘的關懷照護（遊戲時間）。"
 			w.social.converse(b,a,w.data,w.rng,w.rules.jobs);b._lastInteractionTick=w.data.tickCount
 		if v.state=="visiting" and int(w.data.tickCount)>=int(v.finish): complete(w,a,b);continue
 		a._careHolding=v.state=="visiting"
@@ -151,8 +161,9 @@ static func tick(w: SimWorld) -> void:
 				continue
 			a.erase("_careQueue")
 			a.erase("_careDeferred")
-			a._careVisit={"provider":provider,"job":b.jobKey,"place":b.currentLocation,"x":goal.x,"y":goal.y,"state":"travel","until":int(w.data.tickCount)+8}
-			a._careVisitDay=SimClock.total_days(w.data.clock);a._careVisitNotice="前往尋求關懷。";used[provider]=true;break
+			var travel:=travel_ticks(m,id,str(b.currentLocation),goal)
+			a._careVisit={"provider":provider,"job":b.jobKey,"place":b.currentLocation,"x":goal.x,"y":goal.y,"state":"travel","travel_until":int(w.data.tickCount)+travel,"until":int(w.data.tickCount)+travel+SERVICE_TICKS+1}
+			a._careVisitDay=SimClock.total_days(w.data.clock);a._careVisitNotice="步行赴診，預留最多 %d 分鐘；到場後照護三十分鐘（遊戲時間）。"%(travel*15);used[provider]=true;break
 static func apply(w: SimWorld,a: Dictionary,run: Dictionary) -> bool:
 	if not a.has("_careVisit"): return false
 	if not eligible(w,str(a.id)): clear(a,"先處理必要行程。",w.data.tickCount);return false
