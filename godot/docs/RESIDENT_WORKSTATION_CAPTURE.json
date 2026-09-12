@@ -1,0 +1,47 @@
+{
+  "cases": [
+    {
+      "arrived": true,
+      "job": "carpenter",
+      "town": "frontier",
+      "working": true
+    },
+    {
+      "arrived": true,
+      "job": "blacksmith",
+      "town": "frontier",
+      "working": true
+    },
+    {
+      "arrived": true,
+      "job": "cook",
+      "town": "frontier",
+      "working": true
+    },
+    {
+      "arrived": true,
+      "job": "tailor",
+      "town": "frontier",
+      "working": true
+    },
+    {
+      "arrived": true,
+      "job": "researcher",
+      "town": "frontier",
+      "working": true
+    },
+    {
+      "arrived": true,
+      "job": "cook",
+      "town": "harbor",
+      "working": true
+    },
+    {
+      "arrived": true,
+      "job": "researcher",
+      "town": "harbor",
+      "working": true
+    }
+  ],
+  "scope": "controlled adult job and player room positions; NPC follows real collision route from door; 2 native work poses per station"
+}

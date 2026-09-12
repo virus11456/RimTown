@@ -60,6 +60,7 @@ func obstruction(id: String) -> String:
 			return "前方受阻，目前找不到可通行路線；暫停移動並定期重新找路。"
 	return ""
 func update(agents: Dictionary,chat_target: String="") -> void:
+	var stations: Dictionary=SimResidentWorkstation.assignments(layout,agents,positions) if stable_routes else {}
 	for id in agents:
 		if id=="player" and manual_player: continue
 		var a: Dictionary=agents[id]
@@ -89,6 +90,8 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 		if stable_routes and not appointment and existing.get("route_key","")==route_key and existing.get("appointment")==false:
 			target=Vector2(existing.x,existing.y)
 		if appointment: target=layout._center(location) # Stable meeting point: crowds must not keep replanning the route.
+		if stations.has(id):
+			target=stations[id].target;route_key=stations[id].key
 		target=layout._nearest(target)
 		var activity: String=a.get("activity","")
 		if not positions.has(id):
@@ -129,7 +132,9 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 			var dest: Variant=door(location,id)
 			var building:=inside(Vector2(p.x,p.y))
 			var current_door: Variant=door(building,id) if not building.is_empty() else null
-			if current_door!=null and dest!=null:
+			if stations.has(id) and building==location:
+				p.doorPhase=null;p.targetX=target.x;p.targetY=target.y
+			elif current_door!=null and dest!=null:
 				p.doorPhase="exiting"; p.doorWaypoint=current_door; p.finalTarget={"x":target.x,"y":target.y}; p.destDoor=dest
 				p.targetX=current_door.x; p.targetY=current_door.y
 			elif dest!=null:

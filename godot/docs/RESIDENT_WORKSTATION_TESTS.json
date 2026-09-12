@@ -1,0 +1,51 @@
+{
+  "cases": [
+    {
+      "arrived": true,
+      "commute_frames": 5397,
+      "job": "carpenter",
+      "town": "frontier"
+    },
+    {
+      "arrived": true,
+      "commute_frames": 5397,
+      "job": "blacksmith",
+      "town": "frontier"
+    },
+    {
+      "arrived": true,
+      "commute_frames": 7059,
+      "job": "cook",
+      "town": "frontier"
+    },
+    {
+      "arrived": true,
+      "commute_frames": 5400,
+      "job": "tailor",
+      "town": "frontier"
+    },
+    {
+      "arrived": true,
+      "commute_frames": 5877,
+      "job": "researcher",
+      "town": "frontier"
+    },
+    {
+      "arrived": true,
+      "commute_frames": 4770,
+      "job": "cook",
+      "town": "harbor"
+    },
+    {
+      "arrived": true,
+      "commute_frames": 2741,
+      "job": "researcher",
+      "town": "harbor"
+    }
+  ],
+  "checks": 5021,
+  "failures": [],
+  "invalid_steps": [],
+  "maximum_npc_step": 0.999847412109375,
+  "scope": "controlled job assignments; real collision routes; no render rewards; social/service priority, contention, player yielding, off-shift"
+}

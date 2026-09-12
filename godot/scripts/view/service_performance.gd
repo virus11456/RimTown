@@ -112,7 +112,15 @@ func update(town: TownView, w: SimWorld, m: SimMotion, delta: float) -> void:
 		right.rotation.z = -.15 * blend
 		left.rotation.x = -.25 * blend
 
-	elif TOOLS.has(job):
+	if TOOLS.has(job) or job in CareerProps.JOBS:
+		work_pose(town,actor,job,phase)
+
+static func work_pose(town: TownView,actor: Node3D,job: String,phase: float) -> void:
+	var body: Node3D=actor.get_node("Body")
+	var right: Node3D=body.get_node("ServiceRight")
+	var left: Node3D=body.get_node("ServiceLeft")
+	var blend:=smoothstep(0,.45,phase)
+	if TOOLS.has(job):
 		var tool_name: String = TOOLS[job]
 		var tool: MeshInstance3D = right.get_node_or_null(tool_name)
 		if tool == null:

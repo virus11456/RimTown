@@ -14,6 +14,7 @@ var dispute_bubbles: DisputeBubbles
 var service_performance := ServicePerformance.new()
 var traveler_gait := TravelerGait.new()
 var resident_gaits: Dictionary={}
+var resident_work:=ResidentWorkPerformance.new()
 var furnishings: InteriorFurnishings
 var interior: InteriorCutaway
 
@@ -76,7 +77,7 @@ func display_save(save: Dictionary) -> void:
 	layout.solid_projects=true
 	layout.separate_civic_buildings=true
 	layout.rebuild(save)
-	actors.clear();resident_gaits.clear()
+	actors.clear();resident_gaits.clear();resident_work=ResidentWorkPerformance.new()
 	if content != null:
 		remove_child(content)
 		content.queue_free()
@@ -285,7 +286,7 @@ func _build_villagers(save: Dictionary) -> void:
 		if hats.has(job): _instance(hats[job],Vector3(0,head_y+.1,0),Vector3.ONE,actor)
 		if "shy" in traits: actor.rotation_degrees.y=-18
 		elif "charismatic" in traits: actor.rotation_degrees.y=18
-		if id!="player" and job in ["miner","blacksmith","farmer","researcher"]:
+		if id!="player" and job in ["miner","farmer"]:
 			var tool: String={"miner":"acc_tool_pickaxe","blacksmith":"acc_tool_hammer","farmer":"acc_tool_hoe","researcher":"acc_tool_book"}[job]
 			_instance(tool,Vector3(.4,.35,0),Vector3.ONE*.7,actor)
 
