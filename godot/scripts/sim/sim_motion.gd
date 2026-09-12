@@ -64,8 +64,8 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 	for id in agents:
 		if id=="player" and manual_player: continue
 		var a: Dictionary=agents[id]
-		if a.get("_serviceStay",false) and positions.has(id):
-			positions[id].walking=false;positions[id].walkStep=0;positions[id].activity="receiving_service"
+		if (a.get("_serviceStay",false) or a.get("_careHolding",false)) and positions.has(id):
+			positions[id].walking=false;positions[id].walkStep=0;positions[id].activity="care_wait" if a.get("_careHolding",false) else "receiving_service"
 			continue
 		var location: String=a.currentLocation
 		var target: Vector2
@@ -83,7 +83,7 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 				if absf(p.targetX-target.x)<48 and absf(p.targetY-target.y)<48: count+=1
 			target+=Vector2((count%4-1.5)*16,(floori(count/4.0)-.5)*16)
 		if layout.work_sites.has(location): target=layout._center(location)
-		var appointment: bool=a.get("_appointmentDestination","")==location or a.get("_leisureDestination","")==location or a.get("_hangoutDestination","")==location
+		var appointment: bool=a.get("_careDestination","")==location or a.get("_appointmentDestination","")==location or a.get("_leisureDestination","")==location or a.get("_hangoutDestination","")==location
 		var strict_route: bool=appointment or stable_routes
 		var route_key:=layout._house_id(id,location) if location.begins_with("residential_") else location
 		var existing: Dictionary=positions.get(id,{}).get("_directedGoal",{})
@@ -94,6 +94,8 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 		if not field.is_empty(): target=field.target;route_key=field.key
 		if stations.has(id):
 			target=stations[id].target;route_key=stations[id].key
+		if a.has("_careVisit") and a.get("_careDestination","")==location:
+			target=Vector2(a._careVisit.x,a._careVisit.y);route_key="care:"+str(a._careVisit.provider)
 		target=layout._nearest(target)
 		var activity: String=a.get("activity","")
 		if not positions.has(id):
@@ -134,7 +136,7 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 			var dest: Variant=door(location,id)
 			var building:=inside(Vector2(p.x,p.y))
 			var current_door: Variant=door(building,id) if not building.is_empty() else null
-			if stations.has(id) and building==location:
+			if (stations.has(id) or a.has("_careVisit")) and building==location:
 				p.doorPhase=null;p.targetX=target.x;p.targetY=target.y
 			elif current_door!=null and dest!=null:
 				p.doorPhase="exiting"; p.doorWaypoint=current_door; p.finalTarget={"x":target.x,"y":target.y}; p.destDoor=dest

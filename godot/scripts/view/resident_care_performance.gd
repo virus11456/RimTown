@@ -8,6 +8,13 @@ static func target(w: SimWorld,m: SimMotion,id: String) -> String:
 	var a: Dictionary=w.data.agents[id]
 	if float(a.needs.hunger)<20 or float(a.needs.rest)<10: return ""
 	if not SimWorkSchedule.working(SimWorkSchedule.job(a,w.rules.jobs),int(w.data.clock.hour)) or a.has("_raidShelterUntil"): return ""
+	for candidate in w.data.agents:
+		var visitor: Dictionary=w.data.agents[candidate]
+		var visit: Dictionary=visitor.get("_careVisit",{})
+		if visit.get("provider","")==id and visit.get("state","")=="visiting" and visitor.get("_careHolding",false) and SimResidentCare.eligible(w,str(candidate)):
+			var position: Dictionary=m.positions.get(candidate,{})
+			var origin: Dictionary=m.positions[id]
+			if not position.is_empty() and not position.get("walking",true) and position.get("doorPhase")==null and SimCareerPresence.together(m,id,candidate,a.currentLocation) and Vector2(position.x,position.y).distance_to(Vector2(origin.x,origin.y))<=48: return str(candidate)
 	if int(a.get("_lastInteractionTick",-1))!=int(w.data.tickCount): return ""
 	# The last conversation initiated by this resident must belong to this tick.
 	var rows: Array=w.data.get("npcConversationLog",[])

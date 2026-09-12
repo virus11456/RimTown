@@ -7,7 +7,7 @@ static func place_name(w: SimWorld,m: SimMotion,room: String) -> String:
 		return str(w.data.townMap.locations.get(parent,{}).get("name","住宅區"))+"（住家）"
 	return str(w.data.townMap.locations.get(room,{}).get("name","其他場所"))
 static func activity(a: Dictionary) -> String:
-	return {"receiving_service":"在現場接受服務","hangout_travel":"同行赴約／等候","planned_leisure":"休閒安排","appointment_travel":"赴約","appointment_wait":"等待見面"}.get(a.activity,SimTrace.activity_label(a))
+	return {"care_travel":"前往尋求關懷","care_wait":"在現場接受關懷","receiving_service":"在現場接受服務","hangout_travel":"同行赴約／等候","planned_leisure":"休閒安排","appointment_travel":"赴約","appointment_wait":"等待見面"}.get(a.activity,SimTrace.activity_label(a))
 static func current(w: SimWorld,m: SimMotion,id: String) -> Dictionary:
 	if not w.data.agents.has(id): return {}
 	var a: Dictionary=w.data.agents[id]
@@ -41,6 +41,10 @@ static func routine(w: SimWorld,id: String) -> Array:
 	var sleep_window:=SimShiftSleep.window(a,w.rules.jobs)
 	var start:=int(sleep_window.start);var end:=int(sleep_window.end)
 	var rows: Array=["平常睡眠：%02d:00–%02d:00"%[start,end]]
+	if a.has("_careVisitNotice"): rows.append("最近求助："+str(a._careVisitNotice))
+	if a.has("_careVisit"):
+		var provider: Dictionary=w.data.agents.get(str(a._careVisit.provider),{})
+		rows.append("關懷對象："+str(provider.get("name","居民"))+"；到場後短暫交談，不代表完成治療。")
 	if a.has("_shiftSleep") and sleep_window.get("facility_available",true):
 		rows.append("依班表保留 %d 小時睡眠時段，預留 %d 小時通勤。"%[sleep_window.duration,sleep_window.lead])
 		if sleep_window.get("conflict",false): rows.append("班表空檔不足以容納估計通勤；保留完整睡眠，仍可能遲到。")

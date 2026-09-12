@@ -1,0 +1,35 @@
+{
+  "cases": [
+    {
+      "ended": true,
+      "job": "doctor",
+      "town": "frontier",
+      "travel": true,
+      "visit": true
+    },
+    {
+      "ended": true,
+      "job": "doctor",
+      "town": "harbor",
+      "travel": true,
+      "visit": true
+    },
+    {
+      "ended": true,
+      "job": "priest",
+      "town": "frontier",
+      "travel": true,
+      "visit": true
+    },
+    {
+      "ended": true,
+      "job": "priest",
+      "town": "harbor",
+      "travel": true,
+      "visit": true
+    }
+  ],
+  "checks": 16,
+  "failures": [],
+  "scope": "controlled fatigue/low mood demand and clinic, real simulation ticks and collision frames, mid-route save/load, arrival, bounded stay and continuation"
+}

@@ -129,6 +129,7 @@ func tick() -> Array[String]:
 	SimAppointments.tick(self)
 	SimLeisurePlan.tick(self)
 	SimHangoutSafety.tick(self)
+	SimResidentCare.tick(self)
 	for id in data.agents:
 		if not data.agents[id].get("isDead",false): _update(id)
 	SimCareers.tick(self)
@@ -206,6 +207,7 @@ func _update(id: String) -> void:
 		if not data.townMap.locations.has(a.currentLocation): a.currentLocation=a.homeLocation
 		run.targetLocation=null;a._locationStayRemaining=0
 		return
+	if SimResidentCare.apply(self,a,run): return
 	if SimLeisurePlan.directing(self,id):
 		a.activity="planned_leisure";a.currentLocation=SimLeisurePlan.plans(self)[id].place;a._leisureDestination=a.currentLocation;run.targetLocation=null;a._locationStayRemaining=0
 		if social_enabled and social.observed_motion!=null and SimLeisurePlan.plans(self)[id].state=="attending": social.try_interaction(a,data,rng,rules.jobs,gossip_enabled,self)
