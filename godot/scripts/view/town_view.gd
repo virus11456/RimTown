@@ -12,6 +12,7 @@ var environment: WorldEnvironment
 var show_labels := true
 var dispute_bubbles: DisputeBubbles
 var service_performance := ServicePerformance.new()
+var interior: InteriorCutaway
 
 func _ready() -> void:
 	dispute_bubbles=DisputeBubbles.new();dispute_bubbles.town=self;dispute_bubbles.layer=0;add_child(dispute_bubbles)
@@ -67,6 +68,7 @@ func _building(name: String,zone: Dictionary,height_scale := 1.2) -> MeshInstanc
 func display_save(save: Dictionary) -> void:
 	dispute_bubbles.clear()
 	service_performance = ServicePerformance.new()
+	interior=InteriorCutaway.new(shared_material.albedo_texture)
 	current_save = save.duplicate(true)
 	layout.solid_projects=true
 	layout.separate_civic_buildings=true
@@ -149,11 +151,12 @@ func _build_locations(harbor: bool) -> void:
 	for id in layout.buildings:
 		var zone: Dictionary = layout.buildings[id]
 		if layout.houses.has(id):
-			_building(["bld_house_a","bld_house_b","bld_house_c"][posmod(str(id).hash(),3)],zone,1.5)
+			interior.register_shell(id,_building(["bld_house_a","bld_house_b","bld_house_c"][posmod(str(id).hash(),3)],zone,1.5))
 		elif mapping.has(id):
 			var footprint := zone.duplicate()
 			if id == "farm": footprint.w=6; footprint.h=5
-			_building(mapping[id],footprint)
+			var shell:=_building(mapping[id],footprint)
+			if zone.has("doorPixelX"): interior.register_shell(id,shell)
 		elif id == "well": _instance("prop_well",Vector3(zone.x+2,.12,zone.y+2),Vector3.ONE*1.5)
 		elif id == "town_square":
 			_instance("prop_well",Vector3(zone.x+5,.12,zone.y+4),Vector3.ONE*1.8)
@@ -177,6 +180,7 @@ func _build_locations(harbor: bool) -> void:
 		label.position = Vector3(float(info.x)/16,4.7,float(info.y)/16)
 		label.visible = show_labels
 		content.add_child(label)
+		interior.labels[id]=label
 
 func _build_overlays(save: Dictionary) -> void:
 	var factories: Dictionary=save.get("processing",{}).get("builtFactories",{})
@@ -351,3 +355,5 @@ func animate_agents(positions: Dictionary) -> void:
 		if walking and Vector2(direction.x,direction.z).length()>.0001:
 			actor.rotation.y=atan2(direction.x,direction.z)
 		actor.rotation.z=PI/2 if p.get("activity")=="sleeping" and not walking else 0.0
+
+	if interior!=null: interior.update(layout,positions,show_labels)
