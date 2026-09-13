@@ -1,4 +1,5 @@
 extends Node3D
+const CAREER_DUTIES: Dictionary={"farmer":"照料缺水作物，水位 +30；不額外產生商品。", "guard":"走完三處巡查，當日守備 +2。", "doctor":"照護疲憊居民，體力 +15；尚非疾病診療。", "carpenter":"在工房為核准工程製備構件，工量 +2，午夜驗收。", "researcher":"依目前研究缺口整理最多 3 點公共資料，午夜投入研究。", "priest":"到場陪伴低落居民，心情 +8；同一居民每天一次。", "miner":"依備貨缺口採集石材與金屬，消耗少量公共工具。", "cook":"將公共食材製成餐食，備足後停止。", "blacksmith":"使用公共金屬與木材打造工具，備足後停止。", "tailor":"使用公共布料縫製衣物，備足後停止。", "trader":"到交易站交接核准報價：低於半數備貨時採購，高於四分之三備貨時才交售。每日共四件貨品，收入進公共銀庫。"}
 var document := SaveDocument.new()
 var station_approach := StationApproach.new()
 var api: ApiClient
@@ -651,6 +652,7 @@ func set_clock_pace(pace: String) -> void:
 	has_simulated=true
 
 func _settings_ui() -> void:
+	_button("職業玩法與任務指南",drawer_body,show_career_guide)
 	_button("照護與生活節奏指南",drawer_body,func(): show_care_guide())
 	_button("生活節奏："+("從容" if clock_pace()=="relaxed" else "原有"),drawer_body,func(): set_clock_pace("original" if clock_pace()=="relaxed" else "relaxed");show_tab("設定",true))
 	_wrapped("從容節奏讓遊戲時鐘放慢一半，角色保持原本步行速度，有更多時間通勤、赴約與返家。已約定的遊戲時間與每日限量保留；此設定會隨進度存檔。",12)
@@ -2308,12 +2310,12 @@ func show_careers() -> void:
 	if not str(b.get("notice","")).is_empty(): _wrapped(str(b.notice),12)
 	var job: String=str(w.data.agents.get("player",{}).get("jobKey",""))
 	_wrapped("目前："+str(SimCareers.JOBS.get(job,{"name":"鎮長" if job=="mayor" else "旅人"}).name))
+	_button("職業玩法與任務指南",drawer_body,func(): show_career_guide(job))
 	_button("職涯回饋交流",drawer_body,show_career_reviews)
 	_wrapped("每日共三次值勤，轉職不重置。每次需到場停留 30–60 遊戲分鐘，依熟練階段決定；暫停時不計時。成果歸小鎮，不發個人銀幣，也不增加鎮務權限。",12)
-	var duties: Dictionary={"farmer":"照料缺水作物，水位 +30；不額外產生商品。", "guard":"走完三處巡查，當日守備 +2。", "doctor":"照護疲憊居民，體力 +15；尚非疾病診療。", "carpenter":"在工房為核准工程製備構件，工量 +2，午夜驗收。", "researcher":"依目前研究缺口整理最多 3 點公共資料，午夜投入研究。", "priest":"到場陪伴低落居民，心情 +8；同一居民每天一次。", "miner":"依備貨缺口採集石材與金屬，消耗少量公共工具。", "cook":"將公共食材製成餐食，備足後停止。", "blacksmith":"使用公共金屬與木材打造工具，備足後停止。", "tailor":"使用公共布料縫製衣物，備足後停止。", "trader":"到交易站交接核准報價：低於半數備貨時採購，高於四分之三備貨時才交售。每日共四件貨品，收入進公共銀庫。"}
 	var facility_notice:=SimCareers.facility_notice(w,job)
 	if not facility_notice.is_empty(): _wrapped(facility_notice,12)
-	_wrapped(str(duties.get(job,"選擇職業後查看專屬工作；沒有需求時不發放空白委託。")),12)
+	_wrapped(str(CAREER_DUTIES.get(job,"選擇職業後查看專屬工作；沒有需求時不發放空白委託。")),12)
 	if job=="trader": _wrapped("今日可經手貨量：%d / 4"%SimCareerTrade.remaining(w),12)
 	if SimCareers.PRODUCTION.has(job):
 		var r:=SimCareers.recipe(job);var inputs: Array=[];var outputs: Array=[]
@@ -2351,11 +2353,6 @@ func show_careers() -> void:
 			elif job in ["doctor","priest","farmer","carpenter","researcher"]: _wrapped("不同服務對象／項目：%d"%p.targets.size(),12)
 		else: _wrapped("本職業三階段任務完成。仍遵守每日額度、需求與核准規則。",12)
 
-	if job!="mayor":
-		for key in SimCareers.JOBS:
-			if key!=job: _button("登記："+str(SimCareers.JOBS[key].name),drawer_body,func():
-				var r:=SimCareers.enroll(w,key);has_simulated=true;show_careers();_wrapped(r.message))
-	else: _wrapped("鎮長可直接決定鎮務，無需 NPC 核准。")
 	if not b.active.is_empty():
 		if b.active.get("stay",false): _wrapped("對方同意短暫留在現場；吃飯、休息、上工或見面行程仍會中斷服務。",12)
 		elif b.active.job in ["doctor","priest"]: _wrapped("對方仍依原本行程活動；這次服務不會要求他停下工作、睡眠或其他安排。",12)
@@ -2392,6 +2389,12 @@ func show_careers() -> void:
 				var error:=_career_presence_error(current_task)
 				if not error.is_empty(): _wrapped(error);return
 				var r:=SimCareers.start(w,task.id);has_simulated=true;show_careers();_wrapped(r.message))
+	if job!="mayor":
+		_wrapped("登記其他職業",18)
+		for key in SimCareers.JOBS:
+			if key!=job: _button("登記："+str(SimCareers.JOBS[key].name),drawer_body,func():
+				var r:=SimCareers.enroll(w,key);has_simulated=true;show_careers();_wrapped(r.message))
+	else: _wrapped("鎮長可直接決定鎮務，無需 NPC 核准。")
 	for item in b.history: _wrapped(str(item),12)
 	_button("重新整理",drawer_body,show_careers)
 	_button("返回小鎮",drawer_body,func(): show_tab("小鎮",true))
@@ -2638,3 +2641,37 @@ func show_care_guide(id: String="") -> void:
 		_button("核對作息與完成紀錄",drawer_body,func(): show_agenda(id))
 	_button("前往生活節奏設定",drawer_body,func(): show_tab("設定",true))
 	_button("查看職業與值勤",drawer_body,func(): show_tab("小鎮",true);show_careers())
+
+func show_career_guide(job: String="") -> void:
+	active_tab="小鎮";drawer.show();_clear_drawer()
+	_wrapped("職業玩法與任務指南",22)
+	var current: String=str(simulation.data.agents.get("player",{}).get("jobKey",""))
+	_wrapped("目前職務："+str(SimCareers.JOBS.get(current,{"name":"鎮長" if current=="mayor" else "旅人"}).name),13)
+	_wrapped("可以先看玩法再決定是否登記。此頁不轉職、不領取工作、不申請公共材料。",13)
+	if SimCareers.JOBS.has(job):
+		_wrapped(str(SimCareers.JOBS[job].name)+" · 玩法",18)
+		_wrapped(str(CAREER_DUTIES[job]),13)
+		var notice:=SimCareers.facility_notice(simulation,job)
+		if not notice.is_empty(): _wrapped(notice,13)
+		_wrapped("如何開始",18)
+		if job in ["doctor","priest"]:
+			_wrapped("在值勤頁選擇有需求的居民，親自走到對方身邊，保持三格內且在同一場所或屋內，再按開始。對方有必要行程時，服務可能中止。",13)
+		elif SimCareers.PRODUCTION.has(job) or job=="trader":
+			_wrapped("先在值勤頁查看實際需求及公共資源用途，取得核准後前往指定工作地點，再按開始。庫存備足就停止，沒有個人錢包，也不為刷職涯多生產。",13)
+		else:
+			_wrapped("先在值勤頁查看目前符合需求的工作，親自前往列出的地點；有操作台的工作須走到台前，再按開始。沒有缺水作物、已開工工程或研究缺口時，不會製造空白任務。",13)
+		var progress:=SimCareerProgress.progress(simulation,job);var stage:=int(progress.stage)
+		_wrapped("已記錄職涯："+str(SimCareerProgress.STAGES[stage]),18)
+		if stage<3:
+			var next:=stage+1
+			_wrapped("下一階段：%s · 有效值勤 %d / %d · 不同日期 %d / %d"%[SimCareerProgress.STAGES[next],int(progress.completed),[0,1,6,15][next],progress.days.size(),[0,1,3,5][next]],13)
+			_wrapped(SimCareerProgress.detail(job,next),13)
+		else: _wrapped("本職業三階段已完成，仍遵守每日額度與實際需求。",13)
+		_wrapped("每次需在現場停留 %d 遊戲分鐘；完成才計入職涯，離開或條件失效會取消。不同職業共用每日三次完成額度，轉職不重置。"%(SimCareerProgress.ticks(simulation,job)*15),13)
+	if current=="mayor": _wrapped("你已是鎮長，可以直接決定鎮務；不能透過登記其他職業卸除民選職務。",13)
+	_button("前往目前職務與可做工作",drawer_body,show_careers)
+	if current=="mayor": _button("處理鎮務",drawer_body,show_governance)
+	_wrapped("查看其他職業玩法",18)
+	for key in SimCareers.JOBS:
+		_button("了解："+str(SimCareers.JOBS[key].name),drawer_body,func(): show_career_guide(key))
+	_button("返回設定",drawer_body,func(): show_tab("設定",true))

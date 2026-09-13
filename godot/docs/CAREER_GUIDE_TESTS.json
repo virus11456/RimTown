@@ -1,0 +1,5 @@
+{
+  "checks": 98,
+  "failures": [],
+  "scope": "11 job previews at mobile/desktop sizes, no mutation, real task ordering, current-job links, live ticks and mayor preview"
+}

@@ -1,0 +1,83 @@
+[
+  {
+    "test": "career_guide",
+    "passed": true,
+    "report": {
+      "checks": 98,
+      "failures": [],
+      "scope": "11 job previews at mobile/desktop sizes, no mutation, real task ordering, current-job links, live ticks and mayor preview"
+    }
+  },
+  {
+    "test": "careers",
+    "passed": true,
+    "report": {
+      "checks": 28,
+      "failures": [],
+      "scope": "three player jobs, attendance/time/reload/demand/shared cap, no new stock or wallet, direct mayor raid decision"
+    }
+  },
+  {
+    "test": "careers_ui",
+    "passed": true,
+    "report": {
+      "checks": 36,
+      "failures": [],
+      "scope": "375px UI registration, physical-position gate, three real tick-based patrols and completion"
+    }
+  },
+  {
+    "test": "careers_expansion",
+    "passed": true,
+    "report": {
+      "checks": 22,
+      "failures": [],
+      "scope": "three additional careers, real authority and progress, research demand and downstream use, mood, cap, midnight, old save compatibility"
+    }
+  },
+  {
+    "test": "career_progress",
+    "passed": true,
+    "report": {
+      "checks": 70,
+      "failures": [],
+      "scope": "five-day real duty settlement fixture, all eleven tailored rule tracks, shortened work completion boundary, no resource reward, reload, cross-job limits, distinct days/targets, legacy saves and cancellation; rule fixtures are not natural playthrough"
+    }
+  },
+  {
+    "test": "career_progress_ui",
+    "passed": true,
+    "report": {
+      "checks": 43,
+      "failures": [],
+      "scope": "375px UI starts fifteen actual patrol duties over a five-day fixture, stage checklist/completion and shortened duration display, separate profession track"
+    }
+  },
+  {
+    "test": "career_production_ui",
+    "passed": true,
+    "report": {
+      "checks": 167,
+      "failures": [],
+      "scope": "four job registrations, 375px UI, material proposal, approval display, onsite timed batch, public stock and consumed grant; fixture positions"
+    }
+  },
+  {
+    "test": "career_trader",
+    "passed": true,
+    "report": {
+      "checks": 39,
+      "failures": [],
+      "scope": "trader buy/sell real quote approval and public ledger, onsite timed work, save/reload, changed quote/merchant/authority/demand/funds, reserves and shared market cap"
+    }
+  },
+  {
+    "test": "care_guide",
+    "passed": true,
+    "report": {
+      "checks": 20,
+      "failures": [],
+      "scope": "desktop/mobile real controls, natural progress, read-only guide, live tick retention, actual agenda links and explicit settings change"
+    }
+  }
+]

@@ -12,7 +12,7 @@ func run() -> void:
 		press(app.drawer_body,"申請本次材料用途");await settle()
 		check(has_text(app.drawer_body,"鎮務提案與權限"),job+" opens mayor review")
 		check(equal(stock,w.data.stockpile),job+" proposal no spending")
-		SimGovernance.daily(w);app.show_careers();await settle();check(has_text(app.drawer_body,"已核准，可到場開始"),job+" approval displayed")
+		SimGovernance.daily(w);app.show_careers();await settle();check(has_text(app.drawer_body,"已核准；開始時仍需符合需求、材料與到位條件") and SimCareers.material_permit(w,job),job+" approval displayed")
 		stand(app,str(SimCareers.PRODUCTION[job].location));app.show_careers();await settle()
 		press(app.drawer_body,"開始："+str(SimCareers.PRODUCTION[job].label));await settle()
 		check(not SimCareers.book(w).active.is_empty(),job+" onsite production starts")
