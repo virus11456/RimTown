@@ -137,6 +137,10 @@ static func schedule_reason(w: SimWorld,a: Dictionary,b: Dictionary,duration: in
 	for id in [str(a.id),str(b.id)]:
 		if SimAppointments.overlaps(w,id,now,now+duration+1) or SimHangoutRoute.leisure_conflict(w,id,now,now+duration+1): return "已有約定或休閒安排，先保留原行程。"
 	if not SimHangoutRoute.return_fits(w.social.observed_motion,a,w.data.clock,w.rules.jobs,str(b.currentLocation),duration,goal): return "照護後沒有足夠時間慢走返家。"
+	var m: SimMotion=w.social.observed_motion
+	var returning:=ceili(SimHangoutRoute.home_distance(m,a,str(b.currentLocation),goal)/m.travel_budget())+1
+	# The recipient needs the return leg free too; the provider is released after care.
+	if SimAppointments.overlaps(w,str(a.id),now+duration,now+duration+returning+1) or SimHangoutRoute.leisure_conflict(w,str(a.id),now+duration,now+duration+returning+1): return "照護後步行返家會與已確認的約定或休閒安排重疊。"
 	return ""
 static func recovery_access(w: SimWorld,a: Dictionary,b: Dictionary,goal: Vector2) -> Dictionary:
 	var m: SimMotion=w.social.observed_motion

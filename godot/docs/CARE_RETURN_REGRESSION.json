@@ -1,0 +1,548 @@
+[
+  {
+    "test": "care_return_schedule",
+    "args": [],
+    "passed": true,
+    "reports": [
+      {
+        "checks": 72,
+        "failures": [],
+        "scope": "two towns, both care roles and clock paces; appointment and leisure return conflict, reload, provider release, cancellation, read-only rejection and real availability panel"
+      }
+    ]
+  },
+  {
+    "test": "care_access",
+    "args": [],
+    "passed": true,
+    "reports": [
+      {
+        "checks": 64,
+        "failures": [],
+        "scope": "two towns and both care roles; closure before nutrition, full home preparation and onward route, provider needs, appointment, travel cap, read-only estimates and no wasted attempts"
+      }
+    ]
+  },
+  {
+    "test": "care_itinerary",
+    "args": [],
+    "passed": true,
+    "reports": [
+      {
+        "checks": 60,
+        "failures": [],
+        "scope": "two towns and both care roles; exact reception-to-home route, shared travel/service budget, default route compatibility, read-only estimates, mobile wording and actual reload"
+      }
+    ]
+  },
+  {
+    "test": "care_reception",
+    "args": [],
+    "passed": true,
+    "reports": [
+      {
+        "checks": 86,
+        "failures": [],
+        "scope": "controlled two-town doctor/priest full simulation, physical provider station, travel and care reload, original deadlines, no free meals, once-only outcomes, ten interruption and stale-load cases"
+      }
+    ]
+  },
+  {
+    "test": "care_followup",
+    "args": [],
+    "passed": true,
+    "reports": [
+      {
+        "checks": 64,
+        "failures": [],
+        "scope": "two towns and both care roles; real controlled care completion and physical walks to work/home, intent versus arrival, same-tick idempotence, fixed deadline, active/finished reload, no extra effects, old/cancelled receipts and unavailable observations"
+      }
+    ]
+  },
+  {
+    "test": "care_chat",
+    "args": [],
+    "passed": true,
+    "reports": [
+      {
+        "checks": 22,
+        "failures": []
+      }
+    ]
+  },
+  {
+    "test": "appointments",
+    "args": [],
+    "passed": true,
+    "reports": [
+      {
+        "checks": 23,
+        "failures": [],
+        "scope": "offer/accept/decline/expiry, limits, conflicts and memory, save deterministic reload, chat structured invitation and no logical arrival shortcut; configured conflict fixtures"
+      }
+    ]
+  },
+  {
+    "test": "guard_roster",
+    "args": [],
+    "passed": true,
+    "reports": [
+      {
+        "checks": 20,
+        "failures": [],
+        "night_sleep": {
+          "conflict": false,
+          "duration": 8,
+          "end": 16,
+          "estimated_lead": 2,
+          "facility_available": true,
+          "hours": [
+            18,
+            6
+          ],
+          "job": "guard",
+          "lead": 2,
+          "return_lead": 2,
+          "signature": "[0,\"guard\",[18,6],\"town_square\",\"residential_extra_5\",[\"hardworking\",\"stoic\",\"abrasive\"],8.0,true]",
+          "start": 8,
+          "traits": [
+            "hardworking",
+            "stoic",
+            "abrasive"
+          ],
+          "workplace": "town_square"
+        },
+        "scope": "original two guards, job identity, cyclic hours, daytime sleep and homeward margin, actual night update, mobile agenda, save reload; controlled one/zero guard and new facility cases, no hiring or resource production"
+      }
+    ]
+  },
+  {
+    "test": "clock_pace",
+    "args": [],
+    "passed": true,
+    "reports": [
+      {
+        "checks": 36,
+        "failures": [],
+        "scope": "both towns; mode switching with unchanged physical movement, clock phase, needs/resources/jobs/appointments; sleep duration, explicit progress restore, legacy and malformed modes, mobile settings"
+      }
+    ]
+  },
+  {
+    "test": "care_reception_natural",
+    "args": [
+      "--",
+      "--original"
+    ],
+    "passed": true,
+    "reports": [
+      {
+        "bad_sleep": [],
+        "care_errors": [],
+        "care_pairs_observed": [],
+        "care_results": {},
+        "checks": 14,
+        "civic_hours": {
+          "gao_lang": [
+            18.0,
+            19.0,
+            20.0,
+            21.0,
+            22.0,
+            23.0,
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "yang_feng": [
+            6.0,
+            7.0,
+            8.0,
+            9.0,
+            10.0,
+            11.0,
+            12.0,
+            13.0,
+            14.0,
+            15.0,
+            16.0,
+            17.0,
+            6
+          ],
+          "zhao_xia": [
+            8.0,
+            9.0,
+            10.0,
+            11.0,
+            12.0,
+            13.0,
+            14.0,
+            15.0,
+            16.0,
+            17.0
+          ],
+          "zhou_ming": [
+            8.0,
+            9.0,
+            10.0,
+            11.0,
+            12.0,
+            13.0,
+            14.0,
+            15.0,
+            16.0,
+            17.0
+          ]
+        },
+        "clock_pace": "original",
+        "deferred": {},
+        "failures": [],
+        "ground_errors": [],
+        "heading_home": [
+          "lin_mei",
+          "sun_yu",
+          "gao_lang",
+          "su_qing",
+          "liu_jun",
+          "he_xiu",
+          "wang_li",
+          "xu_ying",
+          "chen_wei",
+          "zhang_hao",
+          "zhao_xia",
+          "yang_feng",
+          "wu_da",
+          "huang_li",
+          "ma_qiang",
+          "zhou_ming",
+          "he_chang",
+          "zheng_wei",
+          "ke_wei",
+          "ling_bo"
+        ],
+        "invalid_duty": [],
+        "invalid_steps": [],
+        "maximum_npc_step": 0.999847412109375,
+        "motion_frames": 92160,
+        "outdoor_workers": [
+          "wu_da"
+        ],
+        "quota_errors": [],
+        "recoveries": {},
+        "recovery_results": {},
+        "render_samples": 23040,
+        "requests_observed": [],
+        "scope": "original town resources, jobs and needs; afternoon NPC doctor shift with unchanged ten-hour duration; guards unchanged; two natural days at selected clock pace, every collision frame audited, resident poses updated at 15Hz, shoe geometry checked each tick, mid-run reload; no forced resident positions/needs",
+        "settled_residents": [
+          "gao_lang",
+          "su_qing",
+          "zhao_xia",
+          "zhang_hao",
+          "huang_li",
+          "ma_qiang",
+          "zheng_wei",
+          "ling_bo",
+          "sun_yu",
+          "lin_mei",
+          "he_xiu",
+          "wang_li",
+          "yang_feng",
+          "wu_da",
+          "liu_jun",
+          "ke_wei"
+        ],
+        "slept": [
+          "lin_mei",
+          "sun_yu",
+          "gao_lang",
+          "su_qing",
+          "wang_li",
+          "yang_feng",
+          "chen_wei",
+          "zhang_hao",
+          "he_xiu",
+          "wu_da",
+          "he_chang",
+          "ke_wei",
+          "liu_jun",
+          "zhao_xia",
+          "huang_li",
+          "ma_qiang",
+          "xu_ying",
+          "zhou_ming",
+          "zheng_wei",
+          "ling_bo"
+        ],
+        "stacked_farmers": [],
+        "station_work": {
+          "gao_lang": "guard",
+          "he_chang": "carpenter",
+          "he_xiu": "cook",
+          "ke_wei": "tailor",
+          "ling_bo": "researcher",
+          "ma_qiang": "carpenter",
+          "su_qing": "cook",
+          "sun_yu": "researcher",
+          "wang_li": "cook",
+          "wu_da": "miner",
+          "xu_ying": "tailor",
+          "yang_feng": "guard",
+          "zhang_hao": "blacksmith",
+          "zhao_xia": "trader",
+          "zhou_ming": "trader"
+        },
+        "ticks": 192,
+        "town": "frontier",
+        "walked": [
+          "chen_wei",
+          "zhang_hao",
+          "wang_li",
+          "zhao_xia",
+          "yang_feng",
+          "wu_da",
+          "huang_li",
+          "ma_qiang",
+          "xu_ying",
+          "zhou_ming",
+          "he_chang",
+          "he_xiu",
+          "zheng_wei",
+          "su_qing",
+          "gao_lang",
+          "ke_wei",
+          "ling_bo",
+          "sun_yu",
+          "lin_mei",
+          "liu_jun"
+        ],
+        "worked": [
+          "wang_li",
+          "yang_feng",
+          "he_xiu",
+          "su_qing",
+          "wu_da",
+          "huang_li",
+          "ma_qiang",
+          "he_chang",
+          "zhang_hao",
+          "zhao_xia",
+          "xu_ying",
+          "zhou_ming",
+          "ke_wei",
+          "chen_wei",
+          "sun_yu",
+          "zheng_wei",
+          "ling_bo",
+          "gao_lang"
+        ]
+      }
+    ]
+  },
+  {
+    "test": "care_reception_natural",
+    "args": [
+      "--",
+      "--original",
+      "--harbor"
+    ],
+    "passed": true,
+    "reports": [
+      {
+        "bad_sleep": [],
+        "care_errors": [],
+        "care_pairs_observed": [],
+        "care_results": {},
+        "checks": 11,
+        "civic_hours": {
+          "hb_aduo": [
+            7.0,
+            8.0,
+            9.0,
+            10.0,
+            11.0,
+            12.0,
+            13.0,
+            14.0,
+            15.0,
+            16.0,
+            17.0,
+            6,
+            6.0
+          ],
+          "hb_langshu": [
+            8.0,
+            9.0,
+            10.0,
+            11.0,
+            12.0,
+            13.0,
+            14.0,
+            15.0,
+            16.0,
+            17.0
+          ]
+        },
+        "clock_pace": "original",
+        "deferred": {
+          "hb_afu:1": {
+            "day": 1,
+            "reason": "照護會擠到上工準備或睡眠時段。",
+            "tick": 147
+          },
+          "hb_amao:0": {
+            "day": 0.0,
+            "reason": "抵達並完成前，服務者就要下班。",
+            "tick": 59.0
+          },
+          "hb_dengye:0": {
+            "day": 0.0,
+            "reason": "抵達並完成前，服務者就要下班。",
+            "tick": 59.0
+          },
+          "hb_dengye:1": {
+            "day": 1,
+            "reason": "抵達並完成前，服務者就要下班。",
+            "tick": 159
+          },
+          "hb_muxia:1": {
+            "day": 1,
+            "reason": "抵達並完成前，服務者就要下班。",
+            "tick": 153
+          },
+          "hb_shanshan:0": {
+            "day": 0.0,
+            "reason": "抵達並完成前，服務者就要下班。",
+            "tick": 59.0
+          },
+          "hb_shanshan:1": {
+            "day": 1,
+            "reason": "抵達並完成前，服務者就要下班。",
+            "tick": 159
+          },
+          "hb_shishu:1": {
+            "day": 1,
+            "reason": "照護會擠到上工準備或睡眠時段。",
+            "tick": 149
+          },
+          "imm_邱雅_72:1": {
+            "day": 1,
+            "reason": "照護後沒有足夠時間慢走返家。",
+            "tick": 150
+          }
+        },
+        "failures": [],
+        "ground_errors": [],
+        "heading_home": [
+          "hb_dengye",
+          "hb_axi",
+          "hb_shanshan",
+          "hb_haima",
+          "hb_xiaoou",
+          "hb_achao",
+          "hb_haibo",
+          "hb_langshu",
+          "hb_xiugu",
+          "hb_shishu",
+          "hb_amao",
+          "hb_yunyi",
+          "hb_aduo",
+          "hb_muxia",
+          "hb_afu"
+        ],
+        "invalid_duty": [],
+        "invalid_steps": [],
+        "maximum_npc_step": 0.999847412109375,
+        "motion_frames": 92160,
+        "outdoor_workers": [
+          "hb_shishu",
+          "hb_afu",
+          "hb_achao"
+        ],
+        "quota_errors": [],
+        "recoveries": {},
+        "recovery_results": {},
+        "render_samples": 23040,
+        "requests_observed": [],
+        "scope": "original town resources, jobs and needs; afternoon NPC doctor shift with unchanged ten-hour duration; guards unchanged; two natural days at selected clock pace, every collision frame audited, resident poses updated at 15Hz, shoe geometry checked each tick, mid-run reload; no forced resident positions/needs",
+        "settled_residents": [
+          "hb_xiaoou",
+          "hb_shishu",
+          "hb_langshu",
+          "hb_yunyi",
+          "hb_muxia",
+          "hb_xiugu",
+          "hb_shanshan",
+          "hb_dengye",
+          "hb_achao",
+          "hb_afu",
+          "imm_邱雅_72"
+        ],
+        "slept": [
+          "hb_dengye",
+          "hb_axi",
+          "hb_shanshan",
+          "hb_xiaoou",
+          "hb_haima",
+          "hb_achao",
+          "hb_shishu",
+          "hb_afu",
+          "hb_haibo",
+          "hb_langshu",
+          "hb_amao",
+          "hb_aduo",
+          "hb_yunyi",
+          "hb_muxia",
+          "hb_xiugu"
+        ],
+        "stacked_farmers": [],
+        "station_work": {
+          "hb_achao": "farmer",
+          "hb_aduo": "guard",
+          "hb_afu": "farmer",
+          "hb_dengye": "researcher",
+          "hb_haima": "cook",
+          "hb_langshu": "trader",
+          "hb_shanshan": "researcher",
+          "hb_shishu": "miner",
+          "hb_xiaoou": "cook"
+        },
+        "ticks": 192,
+        "town": "harbor",
+        "walked": [
+          "hb_haibo",
+          "hb_achao",
+          "hb_xiaoou",
+          "hb_langshu",
+          "hb_xiugu",
+          "hb_shishu",
+          "hb_amao",
+          "hb_yunyi",
+          "hb_aduo",
+          "hb_muxia",
+          "hb_afu",
+          "hb_haima",
+          "hb_dengye",
+          "hb_axi",
+          "hb_shanshan"
+        ],
+        "worked": [
+          "hb_achao",
+          "hb_xiaoou",
+          "hb_aduo",
+          "hb_afu",
+          "hb_haima",
+          "hb_shishu",
+          "hb_yunyi",
+          "hb_langshu",
+          "hb_haibo",
+          "hb_dengye",
+          "hb_shanshan",
+          "hb_axi"
+        ]
+      }
+    ]
+  }
+]
