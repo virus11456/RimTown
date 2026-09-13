@@ -651,6 +651,7 @@ func set_clock_pace(pace: String) -> void:
 	has_simulated=true
 
 func _settings_ui() -> void:
+	_button("照護與生活節奏指南",drawer_body,func(): show_care_guide())
 	_button("生活節奏："+("從容" if clock_pace()=="relaxed" else "原有"),drawer_body,func(): set_clock_pace("original" if clock_pace()=="relaxed" else "relaxed");show_tab("設定",true))
 	_wrapped("從容節奏讓遊戲時鐘放慢一半，角色保持原本步行速度，有更多時間通勤、赴約與返家。已約定的遊戲時間與每日限量保留；此設定會隨進度存檔。",12)
 	_button("居民自主休閒安排："+("開啟" if SimLeisurePlan.enabled(simulation) else "關閉"),drawer_body,func(): simulation.quest_balance.leisure_plans_enabled=not SimLeisurePlan.enabled(simulation);SimLeisurePlan.tick(simulation);has_simulated=true;show_tab("設定",true))
@@ -886,7 +887,7 @@ func _tick_simulation() -> void:
 		else: show_tab("故事",true)
 	if active_tab=="居民" and not selected_agent.is_empty():
 		match resident_page:
-			"chat", "whisper", "rumor", "heart": pass # Preserve draft, focus and scroll while the world ticks.
+			"chat", "whisper", "rumor", "heart", "care_guide": pass # Preserve draft, focus and scroll while the world ticks.
 			"appointment": show_appointment(selected_agent)
 			"gift": show_player_gift(selected_agent)
 			"interaction": show_player_interaction(selected_agent)
@@ -2602,6 +2603,7 @@ func show_care_availability(id: String) -> void:
 	selected_agent=id;resident_page="care_availability";_clear_drawer()
 	if not simulation.data.agents.has(id): _wrapped("找不到居民。");return
 	_wrapped(str(simulation.data.agents[id].name)+" · 照護接待",22)
+	_button("看懂照護與赴診",drawer_body,func(): show_care_guide(id))
 	_wrapped("查看目前接待狀態；居民仍依自己的需求與行程決定是否出發。",12)
 	var rows:=SimCareAvailability.rows(simulation,motion,id)
 	if rows.is_empty(): _wrapped("本鎮目前沒有醫護或牧師居民。")
@@ -2617,3 +2619,22 @@ func show_care_availability(id: String) -> void:
 			_wrapped("步行估算：赴診 %d 分鐘、照護 %d 分鐘、返家 %d 分鐘（遊戲時間）。"%[int(estimate.travel_ticks)*15,int(estimate.service_ticks)*15,int(estimate.return_ticks)*15],12)
 			_wrapped("若現在出發，估計 %s 抵達、%s 完成、%s 到家；仍須符合上方接待與作息條件。"%[estimate.arrival,estimate.finish,estimate.home],12)
 	_button("返回作息與行程",drawer_body,func(): show_agenda(id))
+
+func show_care_guide(id: String="") -> void:
+	selected_agent=id;resident_page="care_guide";_clear_drawer()
+	_wrapped("照護與生活節奏指南",22)
+	_wrapped("先查看接待，再觀察居民行程",18)
+	_wrapped("在居民的「作息與行程」打開「查看照護接待」，可看到服務者班表、實際位置、剩餘額度及這位居民暫緩的原因。查看不會預約或強迫居民出發。",13)
+	_wrapped("為什麼沒有去？",18)
+	_wrapped("需要照護也要有完整空檔：慢走赴診、到場照護三十分鐘，再慢走回家。下班、睡眠、用餐、上工及已確認的約定都可能使這次行程暫緩；先依接待頁的原因觀察。",13)
+	_wrapped("時間不夠時，可以選擇從容節奏",18)
+	_wrapped("到設定切換「生活節奏：從容」，遊戲時鐘放慢一半，角色維持原本步速。設定隨進度保存；既有約定時間與每日限量不變，也不保證每次都能赴診。",13)
+	_wrapped("怎樣才算完成？",18)
+	_wrapped("有赴診安排或抵達接待點，仍不代表完成。實際到場並完成三十分鐘照護後才結算；到「作息與行程」核對結果，再查看有日期的返家或上工紀錄。準備吃飯只是意圖，過去到場也不是目前位置。",13)
+	_wrapped("額度與旅人的角色",18)
+	_wrapped("居民每天最多使用一次自主求助機會，每位照護者每天最多完成三次居民接待。行程暫緩不消耗機會；已出發後中止，當日求助機會不會退回。旅人由你操作，若擔任醫護或牧師，可從「職業與值勤」進行服務。",13)
+	if simulation.data.agents.has(id):
+		_button("查看這位居民的照護接待",drawer_body,func(): show_care_availability(id))
+		_button("核對作息與完成紀錄",drawer_body,func(): show_agenda(id))
+	_button("前往生活節奏設定",drawer_body,func(): show_tab("設定",true))
+	_button("查看職業與值勤",drawer_body,func(): show_tab("小鎮",true);show_careers())

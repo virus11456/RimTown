@@ -1,0 +1,69 @@
+[
+  {
+    "test": "care_guide",
+    "passed": true,
+    "report": {
+      "checks": 20,
+      "failures": [],
+      "scope": "desktop/mobile real controls, natural progress, read-only guide, live tick retention, actual agenda links and explicit settings change"
+    }
+  },
+  {
+    "test": "care_return_schedule",
+    "passed": true,
+    "report": {
+      "checks": 72,
+      "failures": [],
+      "scope": "two towns, both care roles and clock paces; appointment and leisure return conflict, reload, provider release, cancellation, read-only rejection and real availability panel"
+    }
+  },
+  {
+    "test": "care_itinerary",
+    "passed": true,
+    "report": {
+      "checks": 60,
+      "failures": [],
+      "scope": "two towns and both care roles; exact reception-to-home route, shared travel/service budget, default route compatibility, read-only estimates, mobile wording and actual reload"
+    }
+  },
+  {
+    "test": "care_followup_delivery",
+    "passed": true,
+    "report": {
+      "archive_bytes": 55908,
+      "checks": 8,
+      "failures": [],
+      "residents": [
+        "hb_shishu"
+      ],
+      "scope": "three-day unforced harbor progress, archive checksum, real file-selection import, saved physical positions, finished care/home/work evidence, no replay and mobile agenda text"
+    }
+  },
+  {
+    "test": "care_chat_ui",
+    "passed": true,
+    "report": {
+      "checks": 9,
+      "failures": [],
+      "scope": "natural care evidence with controlled encounter time/needs, collision walking, app greeting, mobile conversation and archive; no live AI"
+    }
+  },
+  {
+    "test": "clock_pace",
+    "passed": true,
+    "report": {
+      "checks": 36,
+      "failures": [],
+      "scope": "both towns; mode switching with unchanged physical movement, clock phase, needs/resources/jobs/appointments; sleep duration, explicit progress restore, legacy and malformed modes, mobile settings"
+    }
+  },
+  {
+    "test": "care_reception",
+    "passed": true,
+    "report": {
+      "checks": 86,
+      "failures": [],
+      "scope": "controlled two-town doctor/priest full simulation, physical provider station, travel and care reload, original deadlines, no free meals, once-only outcomes, ten interruption and stale-load cases"
+    }
+  }
+]
