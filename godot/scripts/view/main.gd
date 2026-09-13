@@ -890,7 +890,7 @@ func _tick_simulation() -> void:
 		else: show_tab("故事",true)
 	if active_tab=="居民" and not selected_agent.is_empty():
 		match resident_page:
-			"chat", "whisper", "rumor", "heart", "care_guide": pass # Preserve draft, focus and scroll while the world ticks.
+			"chat", "whisper", "rumor", "heart", "care_guide", "review_source": pass # Preserve draft, focus and scroll while the world ticks.
 			"appointment": show_appointment(selected_agent)
 			"gift": show_player_gift(selected_agent)
 			"interaction": show_player_interaction(selected_agent)
@@ -907,7 +907,7 @@ func _tick_simulation() -> void:
 
 func _process_daily_talk() -> void:
 	if chat_busy or event_comment_busy or dialog.visible: return
-	if drawer.visible and active_tab=="居民" and resident_page in ["chat","whisper","rumor","gift","heart","appointment","interaction"]: return
+	if drawer.visible and active_tab=="居民" and resident_page in ["chat","whisper","rumor","gift","heart","appointment","interaction","review_source"]: return
 	if simulation.quest_balance.has("careers") and not SimCareers.book(simulation).active.is_empty(): return
 	var id:=SimDailyTalk.observe(simulation,motion)
 	if id.is_empty(): return
@@ -1358,6 +1358,10 @@ func show_player_chat(id: String) -> void:
 	if history.is_empty(): _wrapped("還沒有對話，說聲你好吧。")
 	for entry in history.slice(maxi(0,history.size()-20)):
 		_wrapped(str(entry.speaker)+("（離線台詞）：" if entry.get("_godotOffline",false) else "：")+str(entry.text))
+		var source: Dictionary=entry.get("_godotRecall",{})
+		if source.get("kind","")=="career_review" and str(source.get("npc",""))==id:
+			var source_button:=_button("查看這段職涯交流紀錄",drawer_body,func(): show_review_source(id,source.duplicate(true)))
+			source_button.disabled=chat_busy
 	if chat_notice.has(id): _wrapped(chat_notice[id])
 	if chat_busy: _wrapped("等待回覆中…")
 	var input:=LineEdit.new();input.placeholder_text="想對他說什麼？";input.max_length=1200;input.editable=not chat_busy;input.text=str(chat_drafts.get(id,""));input.custom_minimum_size.y=42;drawer_body.add_child(input)
@@ -2731,3 +2735,19 @@ func show_career_outcomes() -> void:
 		_wrapped("舊紀錄沒有完整時間與中止資訊，不補造明細。",12)
 		for text in book.history: _wrapped(str(text),12)
 	_button("返回目前職務與工作",drawer_body,show_careers)
+
+func show_review_source(id: String,source: Dictionary) -> void:
+	active_tab="居民";selected_agent=id;resident_page="review_source";drawer.show();_clear_drawer()
+	_wrapped("這段回憶的交流紀錄",22)
+	var record:=SimCareerReviews.recall_source(simulation,id,source)
+	if record.is_empty():
+		_wrapped("目前找不到與這段回憶一致的原始交流紀錄，無法核對；不補造內容或重新發放回饋。",13)
+	else:
+		_wrapped(str(record.role)+" · "+str(record.stage),18)
+		_wrapped("當時交流對象："+str(record.name),13)
+		_wrapped("交流時間："+str(record.time) if not str(record.time).is_empty() else "舊紀錄未保存完整交流時間。",13)
+		_wrapped("已完成："+("討論工作方法" if record.choice=="practice" else "分享合作經驗"),13)
+		_wrapped("當時回覆："+str(record.reply),13)
+		_wrapped("這是過去已完成的交流，不代表目前職務、位置或新的約定。查看不會再次給予技能或好感回饋。",13)
+		_button("查看這個職業目前進度",drawer_body,func(): show_career_guide(str(record.job)))
+	_button("返回原對話",drawer_body,func(): show_player_chat(id))

@@ -1,0 +1,73 @@
+[
+  {
+    "test": "review_source",
+    "passed": true,
+    "report": {
+      "checks": 14,
+      "failures": []
+    }
+  },
+  {
+    "test": "review_source_ui",
+    "passed": true,
+    "report": {
+      "checks": 76,
+      "failures": [],
+      "scope": "375px earned review UI, both branch buttons, player and NPC actual scene zone checks, response/history and saved choice; configured positions"
+    }
+  },
+  {
+    "test": "career_review_chat",
+    "passed": true,
+    "report": {
+      "checks": 32,
+      "failures": [],
+      "scope": "real patrol and both review branches, proximity greeting, historical role, participant-only source, no repeated rewards, prompt facts, age window and reload"
+    }
+  },
+  {
+    "test": "career_review_journey",
+    "passed": true,
+    "report": {
+      "checks": 42,
+      "failures": [],
+      "scope": "375px earned review UI, both branch buttons, player and NPC actual scene zone checks, response/history and saved choice; configured positions"
+    }
+  },
+  {
+    "test": "player_chat_ui",
+    "passed": true,
+    "report": {
+      "checks": 35,
+      "failures": [],
+      "scope": "mock transport only: context, draft preservation, double submit, success, quota/invalid failures, stale town response, mobile UI and save resume; no production API"
+    }
+  },
+  {
+    "test": "daily_talk_ui",
+    "passed": true,
+    "report": {
+      "checks": 11,
+      "failures": [],
+      "scope": "controlled idle NPC scene, player collision movement, actual app tick local greeting, draft/in-flight/modal guards, no forced panel, recent-speaker button, 375px view, archive and off switch; no AI service"
+    }
+  },
+  {
+    "test": "career_review_chat_ui",
+    "passed": true,
+    "report": {
+      "checks": 64,
+      "failures": [],
+      "scope": "375px earned review UI, both branch buttons, player and NPC actual scene zone checks, response/history and saved choice; configured positions"
+    }
+  },
+  {
+    "test": "career_evidence_ui",
+    "passed": true,
+    "report": {
+      "checks": 18,
+      "failures": [],
+      "scope": "actual buttons start/cancel/restart/complete cook duty, desktop/mobile results, read-only display and app reload, legacy text"
+    }
+  }
+]

@@ -1,5 +1,7 @@
 # RimTown - AI Town Simulation 邊境鎮
 
+職涯回憶訊息新增來源按鈕，可核對原始交流時間、對象與回覆；紀錄缺失時不補造，返回對話保留草稿。見 [回憶來源查看](godot/docs/REVIEW_SOURCE.md)。
+
 參與過職涯交流的居民可回憶真正完成的討論，並將相同事實提供給自由交談；達標不當成已交流，回憶不重發回饋。見 [職涯交流回憶](godot/docs/CAREER_REVIEW_CHAT.md)。
 
 職涯指南新增待交流入口，可查看同行行程與到場條件；完成後保留時間與回覆，讀檔不重領階段回饋。見 [職涯交流流程](godot/docs/CAREER_REVIEW_JOURNEY.md)。

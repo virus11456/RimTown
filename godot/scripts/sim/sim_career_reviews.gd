@@ -72,3 +72,13 @@ static func recall(w: SimWorld,id: String,book: Dictionary) -> Dictionary:
 		var text:="前陣子你達到「%s · %s」後，我們聊過%s。今天碰到你，最近還好嗎？"%[fact.role,fact.milestone,"工作方法" if fact.choice=="practice" else "合作經驗"]
 		return {"key":key,"text":text,"source":{"kind":"career_review","npc":id,"facts":fact.duplicate(true)}}
 	return {}
+
+static func recall_source(w: SimWorld,id: String,source: Dictionary) -> Dictionary:
+	if source.get("kind","")!="career_review" or str(source.get("npc",""))!=id: return {}
+	if not (source.get("facts",{}) is Dictionary): return {}
+	var fact: Dictionary=source.get("facts",{});var job:=str(fact.get("job",""));var stage:=int(fact.get("stage",0))
+	if not TOPICS.has(job) or stage<1 or stage>3: return {}
+	var record: Dictionary=w.quest_balance.get("career_reviews",{}).get(job,{}).get(str(stage),{})
+	if str(record.get("npc",""))!=id or not record.has("tick") or int(record.tick)!=int(fact.get("tick",-1)) or record.get("choice","")!=fact.get("choice",""): return {}
+	if record.get("choice","") not in ["practice","cooperate"] or int(record.tick)<0 or int(record.tick)>int(w.data.tickCount): return {}
+	return {"name":str(record.get("name",id)).left(80),"role":str(SimCareers.JOBS[job].name),"stage":str(SimCareerProgress.STAGES[stage]),"job":job,"choice":str(record.choice),"time":str(record.get("time","")).left(60),"reply":str(record.get("reply","")).left(500)}
