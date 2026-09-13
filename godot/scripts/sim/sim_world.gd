@@ -135,6 +135,7 @@ func tick() -> Array[String]:
 			_update(id)
 			SimResidentCare.observe_recovery_followup(self,data.agents[id])
 	SimCareers.tick(self)
+	SimResidentCare.sync_receptions(self)
 	return events
 func _trait_sum(a: Dictionary, field: String) -> float:
 	var value := 0.0
@@ -156,6 +157,7 @@ func _update(id: String) -> void:
 	var home_return:=SimHomeRest.plan(self,a)
 	a.erase("_homeReturn")
 	a.erase("_commuteDestination")
+	var reception:=SimResidentCare.reception(self,id)
 	var recovery:=SimResidentCare.recovery_activity(self,a)
 	var previous: String=a.activity
 	if a.get("isPlayer",false): _player_activity(a,hour)
@@ -166,6 +168,7 @@ func _update(id: String) -> void:
 	elif SimAppointments.directing(self,id): a.activity="appointment_wait" if SimAppointments.current(self).state=="waiting" else "appointment_travel"
 	elif not home_return.is_empty(): a.activity=(recovery if not recovery.is_empty() else "idle") if home_return.get("settled",false) else "heading_home"
 	elif SimServiceStay.holding(self,id): a.activity="receiving_service"
+	elif not reception.is_empty(): a.activity="working"
 	elif SimLeisurePlan.directing(self,id): a.activity="planned_leisure"
 	elif SimHangoutVisits.directing(self,id): a.activity="hangout_travel"
 	elif not recovery.is_empty(): a.activity=recovery
@@ -214,6 +217,9 @@ func _update(id: String) -> void:
 		return
 	if not recovery.is_empty():
 		a.currentLocation=a.homeLocation;run.targetLocation=null;a._locationStayRemaining=0
+		return
+	if not reception.is_empty() and a.activity=="working":
+		run.targetLocation=null;a._locationStayRemaining=0
 		return
 	if SimResidentCare.apply(self,a,run): return
 	if SimLeisurePlan.directing(self,id):
@@ -274,7 +280,7 @@ func _activity(a: Dictionary,hour: int) -> void:
 	if n.rest<10: a.activity="sleeping"; return
 	if SimHomeRest.physical(self) and SimShiftSleep.asleep(a,rules.jobs,hour): a.activity="sleeping"; return
 	if SimHomeRest.physical(self) and not job.is_empty() and not data.townMap.locations.has(job.workplace) and _work(job,hour): a.activity="waiting_workplace";return
-	if a.has("_guardShift") and _work(job,hour):
+	if (a.has("_guardShift") or a.has("_careShift")) and _work(job,hour):
 		a.activity="eating" if n.hunger<30 and rng.next_float()<.3 else "working";return
 	if hour==posmod(start-1,24) and n.rest<90 and a.currentLocation!=a.homeLocation:
 		a.activity="heading_home"; return

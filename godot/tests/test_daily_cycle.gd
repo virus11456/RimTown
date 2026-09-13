@@ -16,6 +16,13 @@ func run() -> void:
 			var goal:=m.layout._nearest(Vector2(house.interiorX+(offset%2-.5)*16,house.interiorY+(floori(offset/2.0)-.5)*16))
 			m.positions[id]={"x":goal.x,"y":goal.y,"targetX":goal.x,"targetY":goal.y,"walking":false,"doorPhase":null,"activity":"idle","walkStep":0}
 			check(SimHomeRest.remaining_distance(m,a)==0,"already home has no fictitious outward return trip")
+			if SimWorkSchedule.working(SimWorkSchedule.job(a,w.rules.jobs),int(w.data.clock.hour)):
+				check(not SimHomeRest.plan(w,a).get("settled",false),"late shift does not become pre-bed idle "+town+id)
+				w._update(id);check(a.activity in ["working","waiting_workplace"],"late shift or missing facility retains priority")
+				w.data.clock.hour=int(window.start);a.currentLocation=a.homeLocation
+				w._update(id);check(a.activity=="sleeping" and SimHomeRest.arrived(w,a),"late worker sleeps at actual home on sleep boundary")
+				cases.append({"town":town,"id":id,"sleep_start":window.start,"sleep_end":window.end,"pre_bed":"on_duty"})
+				continue
 			check(SimHomeRest.plan(w,a).get("settled",false),"at-home plan is settled "+town+id)
 			var initial: float=a.needs.rest
 			for tick in 3:
@@ -26,7 +33,7 @@ func run() -> void:
 				check(SimHomeRest.arrived(w,a),"does not leave home while preparing sleep")
 				if tick==0:
 					var save: Dictionary=app.progress_snapshot();app._load_document(JSON.stringify(save),"at-home pre-bed reload");w=app.simulation;m=app.motion;a=w.data.agents[id]
-					check(a._homeReturn.get("settled",false) and SimHomeRest.arrived(w,a),"reload preserves settled phase and actual home")
+					check(a.get("_homeReturn",{}).get("settled",false) and SimHomeRest.arrived(w,a),"reload preserves settled phase and actual home")
 			app._tick_simulation();check(a.activity=="sleeping" and SimHomeRest.arrived(w,a),"enters actual sleep on own schedule")
 			w.data.clock.hour=int(window.end);w.data.clock.minute=0;a.needs.hunger=100;a.needs.rest=100
 			app._tick_simulation();check(not a.get("_homeReturn",{}).get("settled",false),"wake time releases settled phase")
@@ -54,5 +61,5 @@ func run() -> void:
 		var before: Dictionary=m.positions[id].duplicate(true);w._update(id)
 		check(a.activity=="appointment_wait" and a.currentLocation=="town_square" and not a.has("_homeReturn"),"confirmed appointment retains priority over pre-bed idle")
 		check(equal(before,m.positions[id]),"new appointment intention does not teleport")
-	var report:={"checks":checks,"failures":failures,"cases":cases,"scope":"all original residents in both towns with original jobs/shifts; controlled at-home hour before sleep, real ticks/motion, reload, no early sleep reward, schedule entry/wake release and door threshold"}
+	var report:={"checks":checks,"failures":failures,"cases":cases,"scope":"all original residents in both towns with current jobs/shifts; late duty before sleep and controlled at-home hour before sleep, real ticks/motion, reload, no early sleep reward, schedule entry/wake release and door threshold"}
 	FileAccess.open("res://docs/DAILY_CYCLE_TESTS.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "));print(JSON.stringify(report));quit(0 if failures.is_empty() else 1)

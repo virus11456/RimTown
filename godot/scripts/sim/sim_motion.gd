@@ -4,6 +4,8 @@ extends RefCounted
 var layout: TownLayout
 var pathfinder:=SimPath.new()
 var positions: Dictionary={}
+# Runtime-only reservations, rebuilt from validated visits after load and each tick.
+var care_receptions: Dictionary={}
 var manual_player := false
 var stable_routes := false
 # Legacy source simulation keeps two seconds; the 3D app selects eight.
@@ -16,6 +18,7 @@ func configure(value: TownLayout) -> void:
 	layout=value
 	pathfinder.grid=layout.grid
 	positions.clear()
+	care_receptions.clear()
 	manual_player=false
 func door(location: String,id: String) -> Variant:
 	var zone: Dictionary=layout.houses.get(location,{})
@@ -64,6 +67,10 @@ func update(agents: Dictionary,chat_target: String="") -> void:
 	for id in agents:
 		if id=="player" and manual_player: continue
 		var a: Dictionary=agents[id]
+		var reception: Dictionary=agents.get(str(care_receptions.get(id,"")),{}).get("_careVisit",{})
+		if reception.get("provider","")==id and reception.get("job","")==a.get("jobKey","") and reception.get("place","")==a.currentLocation and a.activity=="working" and positions.has(id) and not positions[id].get("walking",true) and positions[id].get("doorPhase")==null:
+			positions[id].walkStep=0;positions[id].activity="working"
+			continue
 		if (a.get("_serviceStay",false) or a.get("_careHolding",false)) and positions.has(id):
 			positions[id].walking=false;positions[id].walkStep=0;positions[id].activity="care_wait" if a.get("_careHolding",false) else "receiving_service"
 			continue

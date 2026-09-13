@@ -1,0 +1,5 @@
+{
+  "checks": 86,
+  "failures": [],
+  "scope": "controlled two-town doctor/priest full simulation, physical provider station, travel and care reload, original deadlines, no free meals, once-only outcomes, ten interruption and stale-load cases"
+}

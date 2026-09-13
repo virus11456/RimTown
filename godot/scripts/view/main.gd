@@ -345,6 +345,7 @@ func _load_document(text: String, source: String) -> bool:
 		SimShiftSleep.refresh(simulation,motion)
 		simulation.social.observe_positions(motion)
 		SimServiceStay.sync(simulation)
+		SimResidentCare.sync_receptions(simulation)
 		world_view.animate_agents(motion.positions)
 	if not active_tab.is_empty(): show_tab(active_tab,true)
 	return true

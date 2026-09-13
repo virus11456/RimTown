@@ -18,6 +18,8 @@ static func current(w: SimWorld,m: SimMotion,id: String) -> Dictionary:
 	var moving: bool=m.positions.get(id,{}).get("walking",false)
 	var blocked:=m.obstruction(id)
 	var text:=activity(a)
+	var reception:=SimResidentCare.reception(w,id)
+	if not reception.is_empty(): text="留在接待點，等待"+str(w.data.agents[reception].name)+"赴診" if w.data.agents[reception]._careVisit.state=="travel" else "留在接待點照護"+str(w.data.agents[reception].name)
 	if a.get("isDead",false): text="已過世"
 	elif not m.positions.has(id): text="位置尚未取得"
 	elif not blocked.is_empty(): text=blocked+"（預定："+text+"）"

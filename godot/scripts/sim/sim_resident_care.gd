@@ -16,13 +16,38 @@ static func provider_ready(w: SimWorld,m: SimMotion,id: String) -> bool:
 	if a.get("_serviceStay",false) or w.quest_balance.get("careers",{}).get("active",{}).get("target","")==id: return false
 	if SimAppointments.directing(w,id) or SimLeisurePlan.directing(w,id) or SimHangoutVisits.directing(w,id): return false
 	if a.get("jobKey","") not in ["doctor","priest"] or a.activity!="working": return false
-	if a.has("_raidShelterUntil") or float(a.needs.hunger)<20 or float(a.needs.rest)<10: return false
+	if a.has("_raidShelterUntil") or float(a.needs.hunger)<20 or float(a.needs.rest)<10 or SimShiftSleep.asleep(a,w.rules.jobs,int(w.data.clock.hour)): return false
 	if not SimWorkSchedule.working(SimWorkSchedule.job(a,w.rules.jobs),int(w.data.clock.hour)): return false
 	for key in ["_appointmentDestination","_leisureDestination","_hangoutDestination"]:
 		if not str(a.get(key,"")).is_empty(): return false
 	if str(SimWorkSchedule.job(a,w.rules.jobs).get("workplace",""))!=a.currentLocation: return false
 	var p: Dictionary=m.positions.get(id,{})
 	return not p.is_empty() and not p.get("walking",true) and p.get("doorPhase")==null and SimCareerPresence.place(m,id)==a.currentLocation and w.data.townMap.locations.has(a.currentLocation)
+# A reception reservation is derived from a live visit; never saved as a second plan.
+static func reception(w: SimWorld,id: String) -> String:
+	var m: SimMotion=w.social.observed_motion
+	if not w.social_enabled or m==null or not m.stable_routes or not provider_ready(w,m,id): return ""
+	var b: Dictionary=w.data.agents[id]
+	var day:=SimClock.total_days(w.data.clock);var quota: Dictionary=b.get("_careProvided",{})
+	if int(quota.get("day",-1))==day and int(quota.get("used",0))>=PROVIDER_DAILY_LIMIT: return ""
+	if SimShiftSleep.asleep(b,w.rules.jobs,int(w.data.clock.hour)): return ""
+	for recipient in w.data.agents:
+		var a: Dictionary=w.data.agents[recipient];var v: Dictionary=a.get("_careVisit",{})
+		if v.get("provider","")!=id or v.get("job","")!=b.jobKey or v.get("place","")!=b.currentLocation: continue
+		if v.get("state","") not in ["travel","visiting"] or int(v.get("until",0))<=int(w.data.tickCount): continue
+		if v.state=="travel" and int(v.get("travel_until",v.until))<int(w.data.tickCount): continue
+		var ledger: Dictionary=w.quest_balance.get("careers",{})
+		if int(ledger.get("day",-1))==day and str(recipient) in ledger.get("treated" if b.jobKey=="doctor" else "counseled",[]): continue
+		if eligible(w,str(recipient)) and needed(a,str(b.jobKey)): return str(recipient)
+	return ""
+static func sync_receptions(w: SimWorld) -> void:
+	var m: SimMotion=w.social.observed_motion
+	if m==null: return
+	m.care_receptions.clear()
+	for id in w.data.agents:
+		if w.data.agents[id].get("jobKey","") not in ["doctor","priest"]: continue
+		var recipient:=reception(w,str(id))
+		if not recipient.is_empty(): m.care_receptions[id]=recipient
 static func needed(a: Dictionary,job: String) -> bool:
 	return float(a.needs.rest)>=10 and float(a.needs.rest)<=40 if job=="doctor" else float(a.mood)<0
 static func allowance(w: SimWorld,a: Dictionary,provider: Dictionary,job: String) -> bool:
@@ -231,8 +256,10 @@ static func interrupt_for_player(w: SimWorld,target: String) -> void:
 	for a in w.data.agents.values():
 		if a.has("_careVisit") and (str(a.id)==target or str(a._careVisit.get("provider",""))==target):
 			clear(a,"玩家已開始照護，結束這次居民接待。",w.data.tickCount)
+	sync_receptions(w)
 static func tick(w: SimWorld) -> void:
 	var m: SimMotion=w.social.observed_motion
+	if m!=null: m.care_receptions.clear()
 	if m==null or not m.stable_routes or not w.social_enabled:
 		for a in w.data.agents.values():
 			if a.has("_careVisit"): clear(a,"目前無法繼續關懷行程。",w.data.tickCount)
@@ -301,6 +328,7 @@ static func tick(w: SimWorld) -> void:
 			var travel:=travel_ticks(m,id,str(b.currentLocation),goal)
 			a._careVisit={"provider":provider,"job":b.jobKey,"place":b.currentLocation,"x":goal.x,"y":goal.y,"state":"travel","travel_until":int(w.data.tickCount)+travel,"until":int(w.data.tickCount)+travel+SERVICE_TICKS+1}
 			a._careVisitDay=SimClock.total_days(w.data.clock);a._careVisitNotice="步行赴診，預留最多 %d 分鐘；到場後照護三十分鐘（遊戲時間）。"%(travel*15);used[provider]=true;break
+	sync_receptions(w)
 static func apply(w: SimWorld,a: Dictionary,run: Dictionary) -> bool:
 	if not a.has("_careVisit"): return false
 	if not eligible(w,str(a.id)): clear(a,"先處理必要行程。",w.data.tickCount);return false

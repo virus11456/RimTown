@@ -2,6 +2,8 @@ class_name SimWorkSchedule
 extends RefCounted
 static func job(a: Dictionary,jobs: Dictionary) -> Dictionary:
 	var value: Dictionary=jobs.get(str(a.get("jobKey","")),{})
+	if a.get("jobKey")=="doctor" and not a.get("isPlayer",false) and a.get("_careShift","")=="afternoon" and SimShiftSleep.same_hours(value.get("work_hours"),[8,18]):
+		var afternoon:=value.duplicate(true);afternoon.work_hours=[12,22];return afternoon
 	if a.get("jobKey")!="guard" or not a.has("_guardShift"): return value
 	var result:=value.duplicate(true)
 	result.work_hours=[18,6] if a._guardShift=="night" else [6,18]
@@ -13,6 +15,10 @@ static func working(job: Dictionary,hour: int,lead: int=0) -> bool:
 	return duration>0 and posmod(hour-start+lead,24)<duration+lead
 static func refresh(w: SimWorld,m: SimMotion) -> void:
 	if m==null or not m.stable_routes: return
+	# Same ten-hour clinic shift, moved to include after-work care. No player schedule override.
+	for a in w.data.agents.values():
+		if a.get("jobKey")=="doctor" and not a.get("isPlayer",false) and not a.get("isDead",false): a._careShift="afternoon"
+		else: a.erase("_careShift")
 	var guards: Array=[]
 	for a in w.data.agents.values():
 		if a.get("jobKey")=="guard" and not a.get("isPlayer",false) and not a.get("isDead",false): guards.append(a)
