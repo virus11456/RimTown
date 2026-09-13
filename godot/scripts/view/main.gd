@@ -2381,6 +2381,7 @@ func show_careers() -> void:
 					rig.follow_player=false;rig.position=Vector3(station.stand.x/16,0,station.stand.y/16)
 					status.text="鏡頭已定位工作台；請用 WASD 或方向鍵走到屋內圓形標記。")
 			_wrapped(str(task.label)+" · 地點："+str(w.data.townMap.locations[task.location].name),12)
+			_wrapped("下一步："+_career_next_step(task,int(b.used)),13)
 			_button("開始："+str(task.label),drawer_body,func():
 				var current_task: Dictionary=task
 				if task.job in ["doctor","priest"]:
@@ -2442,6 +2443,19 @@ func show_service_entrance(id: String) -> void:
 		rig.follow_player=false
 		rig.position=Vector3(float(guidance.entrance.x)/16,0,float(guidance.entrance.y)/16)
 	else: _wrapped("對方目前沒有可查看的室內入口，請查看居民目前位置。")
+
+func _career_next_step(task: Dictionary,used: int) -> String:
+	if used>=3: return "今日三次值勤已完成，明天再來；轉職不會重置額度。"
+	var role:=str(task.job)
+	if SimCareers.PRODUCTION.has(role):
+		if not SimCareers.material_permit(simulation,role): return "先申請這批公共材料用途，取得鎮長核准後再開始。"
+		if not SimBuildings.affordable(simulation,SimCareers.recipe(role).inputs): return "公共材料不足，等待材料補足後再開始。"
+	if role=="trader":
+		if not SimCareerTrade.approved(simulation,task): return "先申請這份交易報價的公共資源用途，取得核准後再交接。"
+		if not SimBuildings.affordable(simulation,task.costs): return "公共資源不足，等待補足後再交接。"
+	var error:=_career_presence_error(task)
+	if not error.is_empty(): return error
+	return "目前已到位，可按開始值勤；開始時仍會重新確認需求與條件。"
 
 func _career_presence_error(task: Dictionary) -> String:
 	if task.get("stay",false):

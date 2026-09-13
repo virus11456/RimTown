@@ -1,0 +1,5 @@
+{
+  "checks": 77,
+  "failures": [],
+  "scope": "available station roles in both towns: controlled work demand and initial doorstep, real UI walk/start, collision, active reload and timed completion; public approval and shared cap"
+}
