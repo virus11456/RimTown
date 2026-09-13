@@ -1,0 +1,5 @@
+{
+  "checks": 12,
+  "failures": [],
+  "scope": "actual buttons start/cancel/restart/complete cook duty, desktop/mobile results, read-only display and app reload, legacy text"
+}

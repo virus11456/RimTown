@@ -2311,6 +2311,7 @@ func show_careers() -> void:
 	var job: String=str(w.data.agents.get("player",{}).get("jobKey",""))
 	_wrapped("目前："+str(SimCareers.JOBS.get(job,{"name":"鎮長" if job=="mayor" else "旅人"}).name))
 	_button("職業玩法與任務指南",drawer_body,func(): show_career_guide(job))
+	_button("最近值勤結果",drawer_body,show_career_outcomes)
 	_button("職涯回饋交流",drawer_body,show_career_reviews)
 	_wrapped("每日共三次值勤，轉職不重置。每次需到場停留 30–60 遊戲分鐘，依熟練階段決定；暫停時不計時。成果歸小鎮，不發個人銀幣，也不增加鎮務權限。",12)
 	var facility_notice:=SimCareers.facility_notice(w,job)
@@ -2689,3 +2690,23 @@ func show_career_guide(job: String="") -> void:
 	for key in SimCareers.JOBS:
 		_button("了解："+str(SimCareers.JOBS[key].name),drawer_body,func(): show_career_guide(key))
 	_button("返回設定",drawer_body,func(): show_tab("設定",true))
+
+func show_career_outcomes() -> void:
+	active_tab="小鎮";drawer.show();_clear_drawer()
+	_wrapped("最近值勤結果",22)
+	_wrapped("保留最近十次已結束的值勤。查看不會重新結算；過去結果不代表目前仍有工作需求。",13)
+	var book: Dictionary=simulation.quest_balance.get("careers",{})
+	var rows: Array=book.get("outcomes",[]).duplicate(true);rows.reverse()
+	if rows.is_empty(): _wrapped("目前沒有新版值勤結果。尚未開始或仍在進行的工作，不列為已完成。",13)
+	for row in rows:
+		_wrapped(str(row.get("label","值勤")),18)
+		_wrapped(str(row.get("time",""))+" · "+str(SimCareers.JOBS.get(str(row.get("job","")),{"name":"值勤"}).name),12)
+		var completed: bool=row.get("state","")=="completed" and row.get("settled",false)
+		_wrapped("已完成並結算；已計入有效值勤與技能經驗。" if completed else "已中止、未結算；未計入完成次數與技能經驗。",13)
+		_wrapped(str(row.get("reason","")),13)
+		if not completed: _wrapped("先處理以上原因，再回到目前工作重新確認需求、核准與位置；本頁不自動重試。",12)
+	if rows.is_empty() and not book.get("history",[]).is_empty():
+		_wrapped("舊版完成文字紀錄",18)
+		_wrapped("舊紀錄沒有完整時間與中止資訊，不補造明細。",12)
+		for text in book.history: _wrapped(str(text),12)
+	_button("返回目前職務與工作",drawer_body,show_careers)

@@ -12,6 +12,7 @@ static func book(w: SimWorld) -> Dictionary:
 		if not b.active.is_empty():
 			b.notice="午夜已換日，未完成值勤已取消，未給予獎勵。"
 			SimServiceChat.outcome(w,b.active,"cancelled",b.notice)
+			record_outcome(w,b,b.active,"cancelled",str(b.notice))
 		b.day=day;b.used=0;b.visits=[];b.treated=[];b.counseled=[];b.traded=0;b.active={}
 	return b
 static func enroll(w: SimWorld,key: String) -> Dictionary:
@@ -101,6 +102,7 @@ static func cancel(w: SimWorld,reason: String="值勤已取消，未給予獎勵
 	if not b.active.is_empty():
 		b.notice=reason
 		SimServiceChat.outcome(w,b.active,"cancelled",reason)
+		record_outcome(w,b,b.active,"cancelled",reason)
 	b.active={}
 static func tick(w: SimWorld) -> void:
 	if not w.quest_balance.has("careers"): return
@@ -152,6 +154,7 @@ static func tick(w: SimWorld) -> void:
 	SimCareerProgress.record(w,t)
 	b.notice=str(t.label)+"完成。"
 	SimServiceChat.outcome(w,t,"completed",b.notice)
+	record_outcome(w,b,t,"completed",str(b.notice))
 	b.history.append(str(t.label)+"完成");b.history=b.history.slice(-10)
 	SimSocial.log_message(w.data,"career",str(t.label)+"完成。",str(player.name),"")
 	SimServiceStay.clear(w)
@@ -160,3 +163,10 @@ static func defense_bonus(w: SimWorld) -> float:
 	if not w.quest_balance.has("careers"): return 0
 	var b:=book(w)
 	return 2.0 if b.visits.size()==PATROL.size() else 0.0
+
+static func record_outcome(w: SimWorld,b: Dictionary,t: Dictionary,state: String,reason: String) -> void:
+	# Called only at resolution; never replay historical settlement while displaying or loading.
+	if t.is_empty() or state not in ["completed","cancelled"]: return
+	var rows: Array=b.get("outcomes",[])
+	rows.append({"job":str(t.get("job","")),"task":str(t.get("id","")),"label":str(t.get("label","值勤")).left(160),"state":state,"reason":reason.left(300),"tick":int(w.data.tickCount),"time":SimSocial.time_string(w.data.clock),"settled":state=="completed"})
+	b.outcomes=rows.slice(-10)

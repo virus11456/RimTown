@@ -1,0 +1,91 @@
+[
+  {
+    "test": "career_outcomes",
+    "passed": true,
+    "report": {
+      "checks": 27,
+      "failures": []
+    }
+  },
+  {
+    "test": "career_outcomes_ui",
+    "passed": true,
+    "report": {
+      "checks": 12,
+      "failures": [],
+      "scope": "actual buttons start/cancel/restart/complete cook duty, desktop/mobile results, read-only display and app reload, legacy text"
+    }
+  },
+  {
+    "test": "career_onboarding",
+    "passed": true,
+    "report": {
+      "checks": 77,
+      "failures": [],
+      "scope": "available station roles in both towns: controlled work demand and initial doorstep, real UI walk/start, collision, active reload and timed completion; public approval and shared cap"
+    }
+  },
+  {
+    "test": "careers",
+    "passed": true,
+    "report": {
+      "checks": 28,
+      "failures": [],
+      "scope": "three player jobs, attendance/time/reload/demand/shared cap, no new stock or wallet, direct mayor raid decision"
+    }
+  },
+  {
+    "test": "careers_ui",
+    "passed": true,
+    "report": {
+      "checks": 37,
+      "failures": [],
+      "scope": "375px UI registration, physical-position gate, three real tick-based patrols and completion"
+    }
+  },
+  {
+    "test": "career_production_ui",
+    "passed": true,
+    "report": {
+      "checks": 175,
+      "failures": [],
+      "scope": "four job registrations, 375px UI, material proposal, approval display, onsite timed batch, public stock and consumed grant; fixture positions"
+    }
+  },
+  {
+    "test": "career_service_ui",
+    "passed": true,
+    "report": {
+      "checks": 40,
+      "failures": [],
+      "scope": "two towns doctor/priest live task-to-agenda navigation, separate actual/destination labels, stale recovered-need cards, demand returning, settlement cancellation without XP/quota and phone width; controlled needs and colocated positions"
+    }
+  },
+  {
+    "test": "career_trader",
+    "passed": true,
+    "report": {
+      "checks": 39,
+      "failures": [],
+      "scope": "trader buy/sell real quote approval and public ledger, onsite timed work, save/reload, changed quote/merchant/authority/demand/funds, reserves and shared market cap"
+    }
+  },
+  {
+    "test": "service_chat",
+    "passed": true,
+    "report": {
+      "checks": 211,
+      "failures": [],
+      "scope": "two towns two jobs actual start/finish/cancel/midnight core calls with controlled actor needs/position and settlement clock; local UI, source preservation, dedup, old-save non-inference, no reward on cancellation, full save roundtrip, resident isolation, bounded history and 375px; no production AI"
+    }
+  },
+  {
+    "test": "career_progress",
+    "passed": true,
+    "report": {
+      "checks": 70,
+      "failures": [],
+      "scope": "five-day real duty settlement fixture, all eleven tailored rule tracks, shortened work completion boundary, no resource reward, reload, cross-job limits, distinct days/targets, legacy saves and cancellation; rule fixtures are not natural playthrough"
+    }
+  }
+]
