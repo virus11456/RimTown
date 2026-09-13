@@ -47,6 +47,8 @@ static func reason(w: SimWorld,m: SimMotion,a: Dictionary,b: Dictionary,state: S
  if why==SimResidentCare.RECOVERY_REASON:
   var access:=SimResidentCare.recovery_access(w,a,b,goal)
   if not str(access.reason).is_empty():return str(access.reason)
+  var plan:=SimResidentCare.recovery_plan(w,a,int(access.duration))
+  if not str(plan.reason).is_empty():return str(plan.reason)
   return "需要先回家準備；出發時仍會重新確認。"
  return "目前行程初步可行，居民會依需求自行決定。" if why.is_empty() else why
 static func rows(w: SimWorld,m: SimMotion,id: String) -> Array:

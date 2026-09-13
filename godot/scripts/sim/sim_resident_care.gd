@@ -139,18 +139,29 @@ static func end_recovery(w: SimWorld,a: Dictionary,reason: String,state: String=
 	rows.append(event);a._careRecoveryResults=rows.slice(-8)
 	SimFeuds._memory(a,w,"care_recovery",reason+"（已記錄在家用餐 %d 分鐘、休息 %d 分鐘；遊戲時間。）"%[event.meal_ticks*15,event.rest_ticks*15],3,[])
 	a.erase("_careRecovery");a.erase("_careDeferred");a._careVisitNotice=reason
-static func begin_recovery(w: SimWorld,a: Dictionary,duration: int) -> void:
+static func recovery_plan(w: SimWorld,a: Dictionary,duration: int) -> Dictionary:
 	var m: SimMotion=w.social.observed_motion;var now:=int(w.data.tickCount)
-	if a.has("_careRecovery") or int(a.get("_careRecoveryDay",-1))==SimClock.total_days(w.data.clock): return
+	if a.has("_careRecovery"): return {"reason":"已在進行返家準備，先完成目前安排。"}
+	if int(a.get("_careRecoveryDay",-1))==SimClock.total_days(w.data.clock): return {"reason":"今天已用過一次赴診前的返家恢復，先依正常作息用餐或休息。"}
+	if m==null or not m.stable_routes or m.travel_budget()<=0: return {"reason":"尚無可確認的返家步行資料。"}
 	var distance:=SimHomeRest.remaining_distance(m,a)
-	if not is_finite(distance): return
+	if not is_finite(distance): return {"reason":"目前沒有可確認的返家路線。"}
 	var travel:=ceili(distance/m.travel_budget())+1
-	if travel>16 or float(a.needs.hunger)-travel*2<15 or float(a.needs.rest)-travel*1.5<10: return
+	if travel>16: return {"reason":"返家準備的路程超過四小時上限。"}
+	if float(a.needs.hunger)-travel*2<15: return {"reason":"目前飲食不足以走回家準備，需要先處理飢餓。"}
+	if float(a.needs.rest)-travel*1.5<10: return {"reason":"目前體力不足以走回家準備，需要先休息。"}
 	for offset in range(travel+5):
 		var hour:=posmod(floori((int(w.data.clock.hour)*60+int(w.data.clock.minute)+offset*15)/60.0),24)
-		if not SimLeisurePlan.person_available(a,w.rules.jobs,hour): return
-	if SimAppointments.overlaps(w,str(a.id),now,now+travel+5) or SimHangoutRoute.leisure_conflict(w,str(a.id),now,now+travel+5): return
-	a._careRecovery={"home":str(a.homeLocation),"day":SimClock.total_days(w.data.clock),"arrive_until":now+travel,"until":now+travel+5,"hunger_target":20+duration*2,"rest_target":10+duration*1.5}
+		if not SimLeisurePlan.person_available(a,w.rules.jobs,hour): return {"reason":"返家準備會擠到上工或睡眠時段。"}
+	if SimAppointments.overlaps(w,str(a.id),now,now+travel+5) or SimHangoutRoute.leisure_conflict(w,str(a.id),now,now+travel+5): return {"reason":"返家準備與已確認的約定或休閒安排重疊。"}
+	return {"reason":"","task":{"home":str(a.homeLocation),"day":SimClock.total_days(w.data.clock),"arrive_until":now+travel,"until":now+travel+5,"hunger_target":20+duration*2,"rest_target":10+duration*1.5}}
+static func begin_recovery(w: SimWorld,a: Dictionary,duration: int) -> void:
+	var plan:=recovery_plan(w,a,duration)
+	if not str(plan.reason).is_empty():
+		a._careVisitNotice="暫緩求助："+str(plan.reason)
+		if a.has("_careDeferred"): a._careDeferred.reason=plan.reason
+		return
+	a._careRecovery=plan.task
 	a._careRecoveryDay=SimClock.total_days(w.data.clock);a.erase("_careQueue")
 	a._careVisitNotice="先慢走返家，到家後用餐或短暫休息，再確認是否仍需要照護。"
 const RECOVERY_STOPS := {

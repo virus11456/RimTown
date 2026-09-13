@@ -1,0 +1,95 @@
+{
+  "cases": [
+    {
+      "file": "care-preparation-frontier-desktop.png",
+      "height": 800,
+      "mobile": false,
+      "rows": [
+        {
+          "actual": "受控醫護作業點",
+          "hours": "08:00–18:00",
+          "id": "chen_wei",
+          "name": "陳偉",
+          "next": "目前在工時內；接待仍以實際到場及狀態為準。",
+          "place": "受控醫護作業點",
+          "reason": "今天已用過一次赴診前的返家恢復，先依正常作息用餐或休息。",
+          "remaining": 3,
+          "role": "疲憊照護",
+          "status": "在現場，可重新評估接待"
+        },
+        {
+          "actual": "上城區（住家）",
+          "hours": "07:00–19:00",
+          "id": "huang_li",
+          "name": "黃莉",
+          "next": "目前在工時內；接待仍以實際到場及狀態為準。",
+          "place": "和諧聖壇",
+          "reason": "暫時無法接待：閒置。",
+          "remaining": 3,
+          "role": "談心陪伴",
+          "status": "暫時無法接待：閒置"
+        },
+        {
+          "actual": "上城區（住家）",
+          "hours": "08:00–18:00",
+          "id": "lin_mei",
+          "name": "林美",
+          "next": "目前在工時內；接待仍以實際到場及狀態為準。",
+          "place": "受控醫護作業點",
+          "reason": "暫時無法接待：閒置。",
+          "remaining": 3,
+          "role": "疲憊照護",
+          "status": "暫時無法接待：閒置"
+        }
+      ],
+      "town": "frontier",
+      "width": 1280
+    },
+    {
+      "file": "care-preparation-harbor-mobile.png",
+      "height": 812,
+      "mobile": true,
+      "rows": [
+        {
+          "actual": "海風診療所",
+          "hours": "08:00–18:00",
+          "id": "hb_achao",
+          "name": "阿潮",
+          "next": "目前在工時內；接待仍以實際到場及狀態為準。",
+          "place": "海風診療所",
+          "reason": "今天已用過一次赴診前的返家恢復，先依正常作息用餐或休息。",
+          "remaining": 3,
+          "role": "疲憊照護",
+          "status": "在現場，可重新評估接待"
+        },
+        {
+          "actual": "崖上人家（住家）",
+          "hours": "08:00–18:00",
+          "id": "hb_axi",
+          "name": "阿汐",
+          "next": "目前在工時內；接待仍以實際到場及狀態為準。",
+          "place": "海風診療所",
+          "reason": "暫時無法接待：閒置。",
+          "remaining": 3,
+          "role": "疲憊照護",
+          "status": "暫時無法接待：閒置"
+        },
+        {
+          "actual": "崖上人家（住家）",
+          "hours": "07:00–19:00",
+          "id": "hb_yunyi",
+          "name": "雲姨",
+          "next": "目前在工時內；接待仍以實際到場及狀態為準。",
+          "place": "海神小廟",
+          "reason": "暫時無法接待：閒置。",
+          "remaining": 3,
+          "role": "談心陪伴",
+          "status": "暫時無法接待：閒置"
+        }
+      ],
+      "town": "harbor",
+      "width": 375
+    }
+  ],
+  "scope": "controlled at-home resident with used daily preparation and doctor at work, native SubViewport drawer at 1280x800 and 375x812; no natural care completion claim"
+}
