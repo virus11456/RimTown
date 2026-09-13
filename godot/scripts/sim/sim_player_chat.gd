@@ -26,6 +26,7 @@ static func prompt(w: SimWorld,id: String,message: String) -> String:
 	context.appointment={"current":SimAppointments.current(w),"rule":"若想邀約，在 EFFECTS 加上 invitation:true。系統會提供明天的合法空檔與地點，玩家接受後才排入行程；回覆只問要不要見面，不自行捏造時間、地點或已到場。沒有邀約卡的口頭承諾不會排程。"}
 	context.service=SimServiceChat.context(w,id)
 	context.residentCare=SimCareChat.context(w,id)
+	context.careerReviews=SimCareerReviews.chat_context(w,id)
 	context.leisure=SimLeisureChat.context(w,id)
 	context.workplace=SimWorkplaces.context(w,id)
 	context.hangout=SimConversationSchedule.context(w,id)

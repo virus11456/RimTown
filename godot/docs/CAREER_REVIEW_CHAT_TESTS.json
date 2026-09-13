@@ -1,0 +1,5 @@
+{
+  "checks": 32,
+  "failures": [],
+  "scope": "real patrol and both review branches, proximity greeting, historical role, participant-only source, no repeated rewards, prompt facts, age window and reload"
+}

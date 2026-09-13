@@ -51,6 +51,7 @@ static func observe(w: SimWorld,m: SimMotion) -> String:
 	var recall:=SimTalkRecall.pick(w,id,book)
 	if recall.is_empty(): recall=SimServiceChat.recall(w,id,book)
 	if recall.is_empty(): recall=SimCareChat.recall(w,id,book)
+	if recall.is_empty(): recall=SimCareerReviews.recall(w,id,book)
 	if recall.is_empty(): recall=SimLeisureChat.recall(w,id,book)
 	if not recall.is_empty():
 		text=recall.text;topic="recall"

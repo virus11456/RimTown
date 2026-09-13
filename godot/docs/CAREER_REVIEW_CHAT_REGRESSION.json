@@ -1,0 +1,91 @@
+[
+  {
+    "test": "career_review_chat",
+    "passed": true,
+    "report": {
+      "checks": 32,
+      "failures": [],
+      "scope": "real patrol and both review branches, proximity greeting, historical role, participant-only source, no repeated rewards, prompt facts, age window and reload"
+    }
+  },
+  {
+    "test": "career_review_journey",
+    "passed": true,
+    "report": {
+      "checks": 42,
+      "failures": [],
+      "scope": "375px earned review UI, both branch buttons, player and NPC actual scene zone checks, response/history and saved choice; configured positions"
+    }
+  },
+  {
+    "test": "career_reviews",
+    "passed": true,
+    "report": {
+      "checks": 28,
+      "failures": [],
+      "scope": "earned-stage local dialogue branches, actual XP/affinity, one-use/reload, both memories/chat, attendance/availability, no money, legacy and career-change support"
+    }
+  },
+  {
+    "test": "daily_talk",
+    "passed": true,
+    "report": {
+      "checks": 25,
+      "failures": [],
+      "scope": "configured physical positions, needs/work/relationship gates, caps/cooldown/reload, topic variation, memories, no rewards/API/RNG and no-op rejection"
+    }
+  },
+  {
+    "test": "daily_talk_ui",
+    "passed": true,
+    "report": {
+      "checks": 11,
+      "failures": [],
+      "scope": "controlled idle NPC scene, player collision movement, actual app tick local greeting, draft/in-flight/modal guards, no forced panel, recent-speaker button, 375px view, archive and off switch; no AI service"
+    }
+  },
+  {
+    "test": "talk_recall",
+    "passed": true,
+    "report": {
+      "checks": 16,
+      "failures": [],
+      "scope": "structured outcome writer and configured outcomes, day/age bounds, actual nearby talk hook, source attribution, no rewards, once-only reload, latest outcome, legacy and free-text safeguards"
+    }
+  },
+  {
+    "test": "care_chat",
+    "passed": true,
+    "report": {
+      "checks": 22,
+      "failures": []
+    }
+  },
+  {
+    "test": "player_chat",
+    "passed": true,
+    "report": {
+      "checks": 165,
+      "failures": [],
+      "scope": "32 source parser/core-effects scenarios, memories/history/dedupe/RNG; invalid reply rejection and bounded effect safety; replan/heart events excluded"
+    }
+  },
+  {
+    "test": "career_reviews_ui",
+    "passed": true,
+    "report": {
+      "checks": 30,
+      "failures": [],
+      "scope": "375px earned review UI, both branch buttons, player and NPC actual scene zone checks, response/history and saved choice; configured positions"
+    }
+  },
+  {
+    "test": "career_review_chat_ui",
+    "passed": true,
+    "report": {
+      "checks": 62,
+      "failures": [],
+      "scope": "375px earned review UI, both branch buttons, player and NPC actual scene zone checks, response/history and saved choice; configured positions"
+    }
+  }
+]
