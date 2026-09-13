@@ -445,6 +445,7 @@ func show_agent(id: String,focus_camera := true) -> void:
 	if not agent.get("isPlayer",false): _button("與他互動",drawer_body,func(): show_player_interaction(id))
 	_button("今日作息與行程",drawer_body,func(): show_agenda(id))
 	if simulation.data.agents.get("player",{}).get("jobKey","") in ["doctor","priest"]: _button("返回職業與值勤",drawer_body,show_careers)
+	_button("查看職涯回饋交流",drawer_body,show_career_reviews)
 	_button("今日足跡",drawer_body,func(): show_trace(id))
 	_button("近期記憶",drawer_body,func(): show_memories(id))
 	_button("目前想法",drawer_body,func(): show_thoughts(id))
@@ -2413,17 +2414,20 @@ func show_career_reviews() -> void:
 		if people.is_empty(): _wrapped("目前沒有能交流的同行或鎮長，進度保留，稍後再來。",12)
 		for id in people:
 			var a: Dictionary=simulation.data.agents[id]
-			_wrapped(str(a.name)+" · "+str(simulation.data.townMap.locations[a.currentLocation].name),12)
+			_wrapped(str(a.name),16)
+			var readiness:=SimCareerReviews.readiness(simulation,job,stage,str(id),motion)
+			_wrapped("交流狀態："+("雙方目前已到場，可選擇交流方式。" if readiness.is_empty() else readiness),12)
+			_button("查看"+str(a.name)+"的交流行程",drawer_body,func(): show_service_target(str(id)))
 			for choice in ["practice","cooperate"]:
 				_button(str(a.name)+"："+("討論方法（技能 +3）" if choice=="practice" else "分享經驗（對方好感 +1）"),drawer_body,func():
-					if not SimCareerPresence.together(motion,"player",id,simulation.data.agents[id].currentLocation): _wrapped("請等雙方到達同一工作場所或同一住家，再交流。");return
-					var r:=SimCareerReviews.choose(simulation,job,stage,id,choice);has_simulated=true;show_career_reviews();_wrapped(str(r.message)))
+					var r:=SimCareerReviews.choose(simulation,job,stage,id,choice,motion);has_simulated=true;show_career_reviews();_wrapped(str(r.message)))
 	if not found: _wrapped("目前沒有待交流的階段。完成值勤、達成職涯任務後再來。")
 	for job in simulation.quest_balance.get("career_reviews",{}):
 		for stage in simulation.quest_balance.career_reviews[job]:
 			var record: Dictionary=simulation.quest_balance.career_reviews[job][stage]
 			_wrapped(str(SimCareers.JOBS[job].name)+" · "+str(SimCareerProgress.STAGES[int(stage)])+" · "+str(record.name),16)
 			_wrapped(str(record.reply),12)
+			_wrapped("已完成交流 · "+str(record.time) if record.has("time") else "已完成交流；舊紀錄未保存完整時間。",12)
 	_button("重新整理",drawer_body,show_career_reviews)
 	_button("返回職業與值勤",drawer_body,show_careers)
 
@@ -2613,6 +2617,7 @@ func show_agenda(id: String) -> void:
 		for block in plan.blocks.slice(0,12):
 			if block is Dictionary: _wrapped(str(block.get("time",""))+" · "+str(block.get("text","")),12)
 	if simulation.data.agents.get("player",{}).get("jobKey","") in ["doctor","priest"]: _button("返回職業與值勤",drawer_body,show_careers)
+	_button("查看職涯回饋交流",drawer_body,show_career_reviews)
 	_button("今日足跡",drawer_body,func(): show_trace(id))
 	if not a.get("isPlayer",false): _button("回到自由交談",drawer_body,func(): show_player_chat(id))
 	_button("返回居民資料",drawer_body,func(): show_agent(id,false))
@@ -2675,6 +2680,11 @@ func show_career_guide(job: String="") -> void:
 			_wrapped("先在值勤頁查看實際需求及公共資源用途，取得核准後前往指定工作地點，再按開始。庫存備足就停止，沒有個人錢包，也不為刷職涯多生產。",13)
 		else:
 			_wrapped("先在值勤頁查看目前符合需求的工作，親自前往列出的地點；有操作台的工作須走到台前，再按開始。沒有缺水作物、已開工工程或研究缺口時，不會製造空白任務。",13)
+		var pending:=SimCareerReviews.next_stage(simulation,job)
+		if pending>0:
+			_wrapped("待交流階段："+str(SimCareerProgress.STAGES[pending])+"；達標不代表已交流。",13)
+			_button("前往職涯回饋交流",drawer_body,show_career_reviews)
+		elif int(SimCareerProgress.progress(simulation,job).stage)>0: _wrapped("目前已取得階段的交流皆已完成。",13)
 		var progress:=SimCareerProgress.progress(simulation,job);var stage:=int(progress.stage)
 		_wrapped("已記錄職涯："+str(SimCareerProgress.STAGES[stage]),18)
 		if stage<3:

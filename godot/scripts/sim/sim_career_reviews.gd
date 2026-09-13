@@ -17,11 +17,21 @@ static func people(w: SimWorld,job: String) -> Array:
 static func reply(job: String,stage: int,choice: String) -> String:
 	var milestone: String=SimCareerProgress.STAGES[stage]
 	return "你已經達到「"+milestone+"」了。"+(str(TOPICS[job]) if choice=="practice" else "謝謝你願意分享工作經驗，讓大家更了解彼此的付出。")
-static func choose(w: SimWorld,job: String,stage: int,id: String,choice: String) -> Dictionary:
-	if not TOPICS.has(job) or choice not in ["practice","cooperate"] or stage<=0 or next_stage(w,job)!=stage: return {"ok":false,"message":"這段交流尚未開放，或已完成。"}
-	if not id in people(w,job): return {"ok":false,"message":"對方目前無法交流，請稍後重新查看。"}
+static func readiness(w: SimWorld,job: String,stage: int,id: String,m: SimMotion=null) -> String:
+	if not TOPICS.has(job) or stage<=0 or next_stage(w,job)!=stage: return "這段交流尚未開放，或已完成。"
+	if not id in people(w,job): return "對方目前無法交流，請稍後重新查看。"
+	if not w.quest_balance.get("careers",{}).get("active",{}).is_empty(): return "請先完成或取消正在進行的值勤。"
+	var a: Dictionary=w.data.agents[id]
+	if w.data.agents.player.currentLocation!=a.currentLocation: return "請先親自前往對方所在場所。"
+	var observed: SimMotion=m if m!=null else w.social.observed_motion
+	if observed!=null and not SimCareerPresence.together(observed,"player",id,str(a.currentLocation)): return "請等雙方到達同一工作場所或同一住家，再交流。"
+	return ""
+static func choose(w: SimWorld,job: String,stage: int,id: String,choice: String,m: SimMotion=null) -> Dictionary:
+	if choice not in ["practice","cooperate"]: return {"ok":false,"message":"請選擇交流方式。"}
+	var error:=readiness(w,job,stage,id,m)
+	if not error.is_empty(): return {"ok":false,"message":error}
 	var a: Dictionary=w.data.agents[id];var player: Dictionary=w.data.agents.player
-	if player.currentLocation!=a.currentLocation: return {"ok":false,"message":"請先親自前往對方所在場所。"}
+	# Keep the shared daily duty ledger synchronized only when committing the interaction.
 	if not SimCareers.book(w).active.is_empty(): return {"ok":false,"message":"請先完成或取消正在進行的值勤。"}
 	var skill: String=SimCareers.JOBS[job].skill
 	if choice=="practice":
@@ -31,7 +41,7 @@ static func choose(w: SimWorld,job: String,stage: int,id: String,choice: String)
 	var words:=reply(job,stage,choice);var subject: String=SimCareers.JOBS[job].name+" · "+SimCareerProgress.STAGES[stage]
 	if not w.quest_balance.has("career_reviews"): w.quest_balance.career_reviews={}
 	if not w.quest_balance.career_reviews.has(job): w.quest_balance.career_reviews[job]={}
-	w.quest_balance.career_reviews[job][str(stage)]={"npc":id,"name":a.name,"choice":choice,"reply":words,"tick":w.data.tickCount}
+	w.quest_balance.career_reviews[job][str(stage)]={"npc":id,"name":a.name,"choice":choice,"reply":words,"tick":w.data.tickCount,"time":SimSocial.time_string(w.data.clock)}
 	SimFeuds._memory(a,w,"career",str(player.name)+"完成了"+subject+"，我們"+("一起討論工作方法。" if choice=="practice" else "交流了合作經驗。"),6,["player"])
 	SimFeuds._memory(player,w,"career","與"+str(a.name)+"回顧"+subject+"："+words,6,[id])
 	var chat: Array=player.get("chatHistory",[])
