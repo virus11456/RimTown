@@ -1,0 +1,133 @@
+[
+  {
+    "test": "care_chat",
+    "passed": true,
+    "reports": [
+      {
+        "checks": 22,
+        "failures": []
+      }
+    ]
+  },
+  {
+    "test": "daily_talk",
+    "passed": true,
+    "reports": [
+      {
+        "checks": 25,
+        "failures": [],
+        "scope": "configured physical positions, needs/work/relationship gates, caps/cooldown/reload, topic variation, memories, no rewards/API/RNG and no-op rejection"
+      }
+    ]
+  },
+  {
+    "test": "talk_recall",
+    "passed": true,
+    "reports": [
+      {
+        "checks": 16,
+        "failures": [],
+        "scope": "structured outcome writer and configured outcomes, day/age bounds, actual nearby talk hook, source attribution, no rewards, once-only reload, latest outcome, legacy and free-text safeguards"
+      }
+    ]
+  },
+  {
+    "test": "service_chat",
+    "passed": true,
+    "reports": [
+      {
+        "checks": 211,
+        "failures": [],
+        "scope": "two towns two jobs actual start/finish/cancel/midnight core calls with controlled actor needs/position and settlement clock; local UI, source preservation, dedup, old-save non-inference, no reward on cancellation, full save roundtrip, resident isolation, bounded history and 375px; no production AI"
+      }
+    ]
+  },
+  {
+    "test": "service_chat_freshness",
+    "passed": true,
+    "reports": [
+      {
+        "checks": 256,
+        "failures": [],
+        "scope": "two towns, three actual await channels with mock transport; service start/cancel/complete changes isolated from other schedule categories; stable time and other resident outcome accepted, stale free effects wholly rejected and draft retained, proactive fallback/no invitation, local busy guard, no retry; no production AI"
+      }
+    ]
+  },
+  {
+    "test": "service_recall",
+    "passed": true,
+    "reports": [
+      {
+        "checks": 48,
+        "failures": [],
+        "scope": "controlled completed/cancelled doctor/priest records, actual proximity gating, one-hour to two-day age, source and mutual memories, no rewards or RNG, caps/cooldown, newer outcome, JSON and legacy serial-free reload, active-work blocking; no production AI"
+      }
+    ]
+  },
+  {
+    "test": "leisure_chat",
+    "passed": true,
+    "reports": [
+      {
+        "checks": 22,
+        "failures": [],
+        "scope": "all plan states, source prompt context, no memo execution, only history mutation, duplicate/reload and stale/dead/disabled guards; no real model output verification"
+      }
+    ]
+  },
+  {
+    "test": "leisure_recall",
+    "passed": true,
+    "reports": [
+      {
+        "checks": 14,
+        "failures": [],
+        "scope": "controlled structured outcomes and physical proximity, source attribution, one-hour/two-day bounds, personal not shared memory, caps/reload and no rewards; local rules not generative reflection"
+      }
+    ]
+  },
+  {
+    "test": "player_chat",
+    "passed": true,
+    "reports": [
+      {
+        "checks": 165,
+        "failures": [],
+        "scope": "32 source parser/core-effects scenarios, memories/history/dedupe/RNG; invalid reply rejection and bounded effect safety; replan/heart events excluded"
+      }
+    ]
+  },
+  {
+    "test": "care_followup",
+    "passed": true,
+    "reports": [
+      {
+        "checks": 64,
+        "failures": [],
+        "scope": "two towns and both care roles; real controlled care completion and physical walks to work/home, intent versus arrival, same-tick idempotence, fixed deadline, active/finished reload, no extra effects, old/cancelled receipts and unavailable observations"
+      }
+    ]
+  },
+  {
+    "test": "daily_talk_ui",
+    "passed": true,
+    "reports": [
+      {
+        "checks": 11,
+        "failures": [],
+        "scope": "controlled idle NPC scene, player collision movement, actual app tick local greeting, draft/in-flight/modal guards, no forced panel, recent-speaker button, 375px view, archive and off switch; no AI service"
+      }
+    ]
+  },
+  {
+    "test": "care_chat_ui",
+    "passed": true,
+    "reports": [
+      {
+        "checks": 9,
+        "failures": [],
+        "scope": "natural care evidence with controlled encounter time/needs, collision walking, app greeting, mobile conversation and archive; no live AI"
+      }
+    ]
+  }
+]

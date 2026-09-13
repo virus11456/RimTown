@@ -26,7 +26,7 @@ func run() -> void:
 	for child in app.drawer_body.get_children():
 		if child is Control and child.size.x>app.drawer.size.x: fits=false
 	check(fits,"375px local greeting fits")
-	var path:=ProjectSettings.globalize_path("res://../../../outputs/居民日常搭話.rimtown")
+	var path:=ProjectSettings.globalize_path("res://docs/DAILY_TALK_PROGRESS.rimtown")
 	var f:=FileAccess.open(path,FileAccess.WRITE);f.store_buffer(SaveArchive.encode(JSON.stringify(app.progress_snapshot())));f.close()
 	app.dialog.file_selected.emit(path);await settle()
 	var before: int=w.data.agents.player.chatHistory.size();app.drawer.hide();app._process_daily_talk()
