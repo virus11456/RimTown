@@ -1,0 +1,183 @@
+[
+  {
+    "test": "care_availability",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 84,
+      "failures": [],
+      "scope": "both towns and care roles; read-only availability, real presence, opening hours, quota day boundaries, busy provider, shared treatment limits, missing facilities/observations, manual player and mobile page with actual reload"
+    },
+    "tail": ""
+  },
+  {
+    "test": "care_access",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 64,
+      "failures": [],
+      "scope": "two towns and both care roles; closure before nutrition, full home preparation and onward route, provider needs, appointment, travel cap, read-only estimates and no wasted attempts"
+    },
+    "tail": ""
+  },
+  {
+    "test": "care_feasibility",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 40,
+      "failures": [],
+      "scope": "two towns and care roles, close-time forecast, hunger/rest reserve, travel deadline, deferral without quota use and later admission; controlled needs"
+    },
+    "tail": ""
+  },
+  {
+    "test": "care_journey",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "cases": [
+        {
+          "completed": true,
+          "job": "doctor",
+          "maximum_step": 0.999465942382812,
+          "town": "frontier",
+          "travel_budget_ticks": 7
+        },
+        {
+          "completed": true,
+          "job": "priest",
+          "maximum_step": 0.850910484790802,
+          "town": "frontier",
+          "travel_budget_ticks": 8
+        },
+        {
+          "completed": true,
+          "job": "doctor",
+          "maximum_step": 0.80517578125,
+          "town": "harbor",
+          "travel_budget_ticks": 6
+        },
+        {
+          "completed": true,
+          "job": "priest",
+          "maximum_step": 0.850910484790802,
+          "town": "harbor",
+          "travel_budget_ticks": 8
+        }
+      ],
+      "checks": 94,
+      "failures": [],
+      "scope": "two towns two roles, controlled fatigue and provider needs, real long map routes beyond old eight-tick total, actual simulation ticks/collision frames, mid-route reload, fixed deadlines, arrival-only care and single outcome; inclusive arrival boundary, missed arrival without reward and legacy deadline reload"
+    },
+    "tail": ""
+  },
+  {
+    "test": "care_queue",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 55,
+      "failures": [],
+      "scope": "two towns/two roles: busy provider, queue seniority, no quota or movement, actual reload, release/admission/completion without replay, day/sleep/disable cleanup and exact door route"
+    },
+    "tail": ""
+  },
+  {
+    "test": "resident_care_quota",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 18,
+      "failures": [],
+      "scope": "four distinct residents, two provider roles, three actual completed visits, fourth blocked, next-day admission; controlled demand and initial patient positions"
+    },
+    "tail": ""
+  },
+  {
+    "test": "resident_care_visits_integration",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "cases": [
+        {
+          "ended": true,
+          "job": "doctor",
+          "town": "frontier",
+          "travel": true,
+          "visit": true
+        },
+        {
+          "ended": true,
+          "job": "doctor",
+          "town": "harbor",
+          "travel": true,
+          "visit": true
+        },
+        {
+          "ended": true,
+          "job": "priest",
+          "town": "frontier",
+          "travel": true,
+          "visit": true
+        },
+        {
+          "ended": true,
+          "job": "priest",
+          "town": "harbor",
+          "travel": true,
+          "visit": true
+        }
+      ],
+      "checks": 16,
+      "failures": [],
+      "scope": "controlled fatigue/low mood demand and clinic, real simulation ticks and collision frames, mid-route save/load, arrival, bounded stay and continuation"
+    },
+    "tail": ""
+  },
+  {
+    "test": "agenda",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 14,
+      "failures": [],
+      "scope": "configured real position vs destination, home distinction, imported prose isolation, actual trace dedup/reload/day/cap/disable, job and sleep display, no simulation mutation"
+    },
+    "tail": ""
+  },
+  {
+    "test": "player_chat_ui",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 35,
+      "failures": [],
+      "scope": "mock transport only: context, draft preservation, double submit, success, quota/invalid failures, stale town response, mobile UI and save resume; no production API"
+    },
+    "tail": ""
+  },
+  {
+    "test": "shift_sleep",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 80,
+      "failures": [],
+      "scope": "all original jobs x three sleep preferences, no shortened duration or shift overlap, shared activity/leisure/invitation constraints, live job removal, cache reload and overfull-day conflict; scheduled windows, not measured sleep quality"
+    },
+    "tail": ""
+  },
+  {
+    "test": "care_availability_delivery",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 22,
+      "failures": [],
+      "scope": "both natural four-day delivery archives, checksum, file picker import, physical motion, career progress, no queued approach on load"
+    },
+    "tail": ""
+  }
+]

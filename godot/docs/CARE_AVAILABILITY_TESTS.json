@@ -1,0 +1,5 @@
+{
+  "checks": 84,
+  "failures": [],
+  "scope": "both towns and care roles; read-only availability, real presence, opening hours, quota day boundaries, busy provider, shared treatment limits, missing facilities/observations, manual player and mobile page with actual reload"
+}

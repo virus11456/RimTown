@@ -875,6 +875,7 @@ func _tick_simulation() -> void:
 			"gift": show_player_gift(selected_agent)
 			"interaction": show_player_interaction(selected_agent)
 			"agenda": show_agenda(selected_agent)
+			"care_availability": show_care_availability(selected_agent)
 			"trace": show_trace(selected_agent)
 			"thoughts": show_thoughts(selected_agent)
 			"memory": show_memories(selected_agent,memory_target)
@@ -2528,6 +2529,7 @@ func show_agenda(id: String) -> void:
 	_wrapped("實際位置："+str(actual.actual))
 	_wrapped("目的地："+str(actual.target)+" · "+("已抵達" if actual.arrived else "尚未抵達"))
 	_wrapped("目前："+str(actual.text))
+	_button("查看照護接待",drawer_body,func(): show_care_availability(id))
 	if id!="player" and simulation.data.agents.get("player",{}).get("jobKey","") in ["doctor","priest"]:
 		_wrapped("拜訪與服務",18)
 		var guidance:=SimCareerPresence.visit(motion,id)
@@ -2579,3 +2581,19 @@ func show_agenda(id: String) -> void:
 	_button("今日足跡",drawer_body,func(): show_trace(id))
 	if not a.get("isPlayer",false): _button("回到自由交談",drawer_body,func(): show_player_chat(id))
 	_button("返回居民資料",drawer_body,func(): show_agent(id,false))
+
+func show_care_availability(id: String) -> void:
+	selected_agent=id;resident_page="care_availability";_clear_drawer()
+	if not simulation.data.agents.has(id): _wrapped("找不到居民。");return
+	_wrapped(str(simulation.data.agents[id].name)+" · 照護接待",22)
+	_wrapped("查看目前接待狀態；居民仍依自己的需求與行程決定是否出發。",12)
+	var rows:=SimCareAvailability.rows(simulation,motion,id)
+	if rows.is_empty(): _wrapped("本鎮目前沒有醫護或牧師居民。")
+	for row in rows:
+		_wrapped(str(row.name)+" · "+str(row.role),18)
+		_wrapped(str(row.hours)+" · "+str(row.place),12)
+		_wrapped("實際位置："+str(row.actual),12)
+		_wrapped(str(row.status)+" · 今日剩餘 %d 次居民接待"%int(row.remaining),12)
+		_wrapped(str(row.next),12)
+		_wrapped("這位居民："+str(row.reason),12)
+	_button("返回作息與行程",drawer_body,func(): show_agenda(id))

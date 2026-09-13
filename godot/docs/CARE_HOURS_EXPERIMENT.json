@@ -1,0 +1,98 @@
+{
+  "deferred": {
+    "hb_achao:1": {
+      "day": 1,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 145
+    },
+    "hb_achao:3": {
+      "day": 3,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 335
+    },
+    "hb_afu:1": {
+      "day": 1,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 145
+    },
+    "hb_afu:3": {
+      "day": 3,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 339
+    },
+    "hb_dengye:1": {
+      "day": 1,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 148
+    },
+    "hb_dengye:3": {
+      "day": 3,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 340
+    },
+    "hb_muxia:1": {
+      "day": 1,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 148
+    },
+    "hb_muxia:2": {
+      "day": 2,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 244
+    },
+    "hb_muxia:3": {
+      "day": 3,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 340
+    },
+    "hb_shanshan:1": {
+      "day": 1,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 148
+    },
+    "hb_shanshan:3": {
+      "day": 3,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 340
+    },
+    "hb_shishu:1": {
+      "day": 1,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 148
+    },
+    "hb_shishu:2": {
+      "day": 2,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 244
+    },
+    "hb_shishu:3": {
+      "day": 3,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 340
+    },
+    "hb_xiugu:3": {
+      "day": 3,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 340
+    },
+    "imm_蕭瑜_72:1": {
+      "day": 1,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 148
+    },
+    "imm_蕭瑜_72:2": {
+      "day": 2,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 244
+    },
+    "imm_蕭瑜_72:3": {
+      "day": 3,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 340
+    }
+  },
+  "recoveries": {},
+  "requests": {},
+  "results": {},
+  "scope": "Exploratory harbor four days, doctor shift 10-20 only in memory; original needs/jobs/positions otherwise; no success and not adopted into production."
+}

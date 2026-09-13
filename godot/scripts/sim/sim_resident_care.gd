@@ -77,6 +77,13 @@ static func queue_order(w: SimWorld,ids: Array) -> Array:
 		var b: int=int(w.data.agents[right].get("_careQueue",{}).get("since",2147483647))
 		return str(left)<str(right) if a==b else a<b)
 	return result
+static func meeting_goal(m: SimMotion,b: Dictionary) -> Vector2:
+	var q: Dictionary=m.positions.get(str(b.id),{})
+	if q.is_empty(): return Vector2.INF
+	for offset in [Vector2(24,0),Vector2(-24,0),Vector2(0,24),Vector2(0,-24),Vector2(12,0),Vector2(-12,0),Vector2(0,12),Vector2(0,-12)]:
+		var candidate: Vector2=Vector2(q.x,q.y)+offset
+		if m.layout._walkable(candidate) and m.location_at(candidate)==b.currentLocation: return candidate
+	return Vector2.INF
 static func travel_ticks(m: SimMotion,id: String,place: String,goal: Vector2) -> int:
 	var length:=route_distance(m,id,place,goal)
 	if not is_finite(length) or m.travel_budget()<=0: return MAX_TRAVEL_TICKS+1
@@ -261,10 +268,7 @@ static func tick(w: SimWorld) -> void:
 			if provider==id or not provider_ready(w,m,provider): continue
 			var b: Dictionary=w.data.agents[provider]
 			if not needed(a,b.jobKey) or not allowance(w,a,b,b.jobKey): continue
-			var q: Dictionary=m.positions[provider];var goal:=Vector2.INF
-			for offset in [Vector2(24,0),Vector2(-24,0),Vector2(0,24),Vector2(0,-24),Vector2(12,0),Vector2(-12,0),Vector2(0,12),Vector2(0,-12)]:
-				var candidate: Vector2=Vector2(q.x,q.y)+offset
-				if m.layout._walkable(candidate) and m.location_at(candidate)==b.currentLocation: goal=candidate;break
+			var goal:=meeting_goal(m,b)
 			if not goal.is_finite(): continue
 			var reason:=feasibility(w,a,b,goal)
 			if not reason.is_empty():
