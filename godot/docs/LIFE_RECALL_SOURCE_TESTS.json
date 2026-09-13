@@ -1,0 +1,5 @@
+{
+  "checks": 282,
+  "failures": [],
+  "scope": "Controlled canonical ledger fixtures; five source categories and terminal outcomes; headless 375px UI, not native visual acceptance"
+}

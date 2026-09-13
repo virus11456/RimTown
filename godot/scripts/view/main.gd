@@ -1,4 +1,5 @@
 extends Node3D
+const RecallSource=preload("res://scripts/sim/sim_recall_source.gd")
 const CAREER_DUTIES: Dictionary={"farmer":"照料缺水作物，水位 +30；不額外產生商品。", "guard":"走完三處巡查，當日守備 +2。", "doctor":"照護疲憊居民，體力 +15；尚非疾病診療。", "carpenter":"在工房為核准工程製備構件，工量 +2，午夜驗收。", "researcher":"依目前研究缺口整理最多 3 點公共資料，午夜投入研究。", "priest":"到場陪伴低落居民，心情 +8；同一居民每天一次。", "miner":"依備貨缺口採集石材與金屬，消耗少量公共工具。", "cook":"將公共食材製成餐食，備足後停止。", "blacksmith":"使用公共金屬與木材打造工具，備足後停止。", "tailor":"使用公共布料縫製衣物，備足後停止。", "trader":"到交易站交接核准報價：低於半數備貨時採購，高於四分之三備貨時才交售。每日共四件貨品，收入進公共銀庫。"}
 var document := SaveDocument.new()
 var station_approach := StationApproach.new()
@@ -1361,6 +1362,9 @@ func show_player_chat(id: String) -> void:
 		var source: Dictionary=entry.get("_godotRecall",{})
 		if source.get("kind","")=="career_review" and str(source.get("npc",""))==id:
 			var source_button:=_button("查看這段職涯交流紀錄",drawer_body,func(): show_review_source(id,source.duplicate(true)))
+			source_button.disabled=chat_busy
+		elif RecallSource.supported(source) and str(source.get("npc",""))==id:
+			var source_button:=_button("查看這段生活回憶紀錄",drawer_body,func(): show_life_recall_source(id,source.duplicate(true)))
 			source_button.disabled=chat_busy
 	if chat_notice.has(id): _wrapped(chat_notice[id])
 	if chat_busy: _wrapped("等待回覆中…")
@@ -2750,4 +2754,17 @@ func show_review_source(id: String,source: Dictionary) -> void:
 		_wrapped("當時回覆："+str(record.reply),13)
 		_wrapped("這是過去已完成的交流，不代表目前職務、位置或新的約定。查看不會再次給予技能或好感回饋。",13)
 		_button("查看這個職業目前進度",drawer_body,func(): show_career_guide(str(record.job)))
+	_button("返回原對話",drawer_body,func(): show_player_chat(id))
+
+func show_life_recall_source(id: String,source: Dictionary) -> void:
+	active_tab="居民";selected_agent=id;resident_page="review_source";drawer.show();_clear_drawer()
+	_wrapped("這段生活回憶的紀錄",22)
+	var record:=RecallSource.resolve(simulation,id,source)
+	if record.is_empty():
+		_wrapped("目前找不到唯一且一致的原始紀錄，無法核對。舊紀錄可能已超出保存筆數；不補造結果或重發效果。",13)
+	else:
+		_wrapped(str(record.title),18)
+		for line in record.lines: _wrapped(str(line),13)
+		_wrapped("這是歷史紀錄，不代表目前位置或新的安排。原約定時間、行程日期不等於實際完成時間；查看不會重試或發放效果。",12)
+	_button("查看居民目前行程",drawer_body,func(): show_agenda(id))
 	_button("返回原對話",drawer_body,func(): show_player_chat(id))

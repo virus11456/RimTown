@@ -1,5 +1,7 @@
 # RimTown - AI Town Simulation 邊境鎮
 
+五類生活回憶新增來源查看，可核對見面、照護、返家恢復與休閒的實際紀錄；未完成不冒充完成，缺失不補造。見 [生活回憶來源](godot/docs/LIFE_RECALL_SOURCES.md)。
+
 職涯回憶訊息新增來源按鈕，可核對原始交流時間、對象與回覆；紀錄缺失時不補造，返回對話保留草稿。見 [回憶來源查看](godot/docs/REVIEW_SOURCE.md)。
 
 參與過職涯交流的居民可回憶真正完成的討論，並將相同事實提供給自由交談；達標不當成已交流，回憶不重發回饋。見 [職涯交流回憶](godot/docs/CAREER_REVIEW_CHAT.md)。

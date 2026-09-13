@@ -1,0 +1,81 @@
+[
+  {
+    "test": "life_recall_source",
+    "passed": true,
+    "report": {
+      "checks": 282,
+      "failures": [],
+      "scope": "Controlled canonical ledger fixtures; five source categories and terminal outcomes; headless 375px UI, not native visual acceptance"
+    }
+  },
+  {
+    "test": "review_source",
+    "passed": true,
+    "report": {
+      "checks": 14,
+      "failures": []
+    }
+  },
+  {
+    "test": "review_source_ui",
+    "passed": true,
+    "report": {
+      "checks": 76,
+      "failures": [],
+      "scope": "375px earned review UI, both branch buttons, player and NPC actual scene zone checks, response/history and saved choice; configured positions"
+    }
+  },
+  {
+    "test": "talk_recall",
+    "passed": true,
+    "report": {
+      "checks": 16,
+      "failures": [],
+      "scope": "structured outcome writer and configured outcomes, day/age bounds, actual nearby talk hook, source attribution, no rewards, once-only reload, latest outcome, legacy and free-text safeguards"
+    }
+  },
+  {
+    "test": "service_recall",
+    "passed": true,
+    "report": {
+      "checks": 48,
+      "failures": [],
+      "scope": "controlled completed/cancelled doctor/priest records, actual proximity gating, one-hour to two-day age, source and mutual memories, no rewards or RNG, caps/cooldown, newer outcome, JSON and legacy serial-free reload, active-work blocking; no production AI"
+    }
+  },
+  {
+    "test": "care_chat",
+    "passed": true,
+    "report": {
+      "checks": 22,
+      "failures": []
+    }
+  },
+  {
+    "test": "leisure_recall",
+    "passed": true,
+    "report": {
+      "checks": 14,
+      "failures": [],
+      "scope": "controlled structured outcomes and physical proximity, source attribution, one-hour/two-day bounds, personal not shared memory, caps/reload and no rewards; local rules not generative reflection"
+    }
+  },
+  {
+    "test": "player_chat_ui",
+    "passed": true,
+    "report": {
+      "checks": 35,
+      "failures": [],
+      "scope": "mock transport only: context, draft preservation, double submit, success, quota/invalid failures, stale town response, mobile UI and save resume; no production API"
+    }
+  },
+  {
+    "test": "daily_talk_ui",
+    "passed": true,
+    "report": {
+      "checks": 11,
+      "failures": [],
+      "scope": "controlled idle NPC scene, player collision movement, actual app tick local greeting, draft/in-flight/modal guards, no forced panel, recent-speaker button, 375px view, archive and off switch; no AI service"
+    }
+  }
+]
