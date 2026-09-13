@@ -1,0 +1,33 @@
+{
+  "cases": [
+    {
+      "file": "care-followup-waiting.png",
+      "height": 800,
+      "mode": "waiting",
+      "provider_text": "留在接待點，等待阿舵赴診",
+      "width": 1280
+    },
+    {
+      "file": "care-followup-serving.png",
+      "height": 812,
+      "mode": "serving",
+      "provider_text": "留在接待點照護阿舵",
+      "width": 375
+    },
+    {
+      "file": "care-followup-hours.png",
+      "height": 800,
+      "mode": "hours",
+      "provider_text": "工作",
+      "width": 1280
+    },
+    {
+      "file": "care-followup-followup.png",
+      "height": 812,
+      "mode": "followup",
+      "provider_text": "前往目的地（預定：趕著去上工）",
+      "width": 375
+    }
+  ],
+  "scope": "native desktop/mobile rendering; controlled reception cases plus imported unforced three-day followup"
+}

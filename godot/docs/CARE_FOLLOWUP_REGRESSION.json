@@ -1,0 +1,453 @@
+[
+  {
+    "test": "care_followup",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 64,
+      "failures": [],
+      "scope": "two towns and both care roles; real controlled care completion and physical walks to work/home, intent versus arrival, same-tick idempotence, fixed deadline, active/finished reload, no extra effects, old/cancelled receipts and unavailable observations"
+    },
+    "tail": ""
+  },
+  {
+    "test": "care_reception",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 86,
+      "failures": [],
+      "scope": "controlled two-town doctor/priest full simulation, physical provider station, travel and care reload, original deadlines, no free meals, once-only outcomes, ten interruption and stale-load cases"
+    },
+    "tail": ""
+  },
+  {
+    "test": "care_shift",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 54,
+      "failures": [],
+      "scope": "two towns at both clock paces; ten-hour afternoon NPC doctor shift, full sleep, late duty with urgent-rest priority, custom hours and player untouched, job cleanup, guard rosters and reload"
+    },
+    "tail": ""
+  },
+  {
+    "test": "resident_care_outcomes",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 74,
+      "failures": [],
+      "scope": "both towns and care roles, real collision arrival, delayed bounded effect, shared recipient cap, provider quota, replay/reload, cancellation, bounded history and agenda; controlled demand"
+    },
+    "tail": ""
+  },
+  {
+    "test": "care_lifecycle",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "cases": [
+        {
+          "mode": "player_patient",
+          "town": "frontier"
+        },
+        {
+          "mode": "player_provider",
+          "town": "frontier"
+        },
+        {
+          "mode": "provider_job",
+          "town": "frontier"
+        },
+        {
+          "mode": "patient_job",
+          "town": "frontier"
+        },
+        {
+          "mode": "removed_place",
+          "town": "frontier"
+        },
+        {
+          "mode": "midnight",
+          "town": "frontier"
+        },
+        {
+          "mode": "player_patient",
+          "town": "harbor"
+        },
+        {
+          "mode": "player_provider",
+          "town": "harbor"
+        },
+        {
+          "mode": "provider_job",
+          "town": "harbor"
+        },
+        {
+          "mode": "patient_job",
+          "town": "harbor"
+        },
+        {
+          "mode": "removed_place",
+          "town": "harbor"
+        },
+        {
+          "mode": "midnight",
+          "town": "harbor"
+        }
+      ],
+      "checks": 72,
+      "failures": [],
+      "scope": "controlled doctor demand, actual arrival and player start/complete APIs, provider/patient role change, facility removal, midnight and cancelled reload; no fabricated player task"
+    },
+    "tail": ""
+  },
+  {
+    "test": "recovery_reasons",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "cases": [
+        {
+          "job": "doctor",
+          "max_step": 0.899520874023438,
+          "meal": true,
+          "rest": true,
+          "town": "frontier",
+          "walk": true
+        },
+        {
+          "job": "priest",
+          "max_step": 0.899520874023438,
+          "meal": true,
+          "rest": true,
+          "town": "frontier",
+          "walk": true
+        },
+        {
+          "job": "doctor",
+          "max_step": 0.941872239112854,
+          "meal": true,
+          "rest": true,
+          "town": "harbor",
+          "walk": true
+        },
+        {
+          "job": "priest",
+          "max_step": 0.941872239112854,
+          "meal": true,
+          "rest": true,
+          "town": "harbor",
+          "walk": true
+        }
+      ],
+      "checks": 318,
+      "failures": [],
+      "scope": "specific cancellation causes, observed follow-up position versus intent; actual recovery receipts, memory, recall, interruption without invented actions, resolved reload; controlled preflight nutrition deficit, near-home start, real ticks and movement, actual reload, physical meals/rest, bounded recovery and no care quota/reward"
+    },
+    "tail": ""
+  },
+  {
+    "test": "care_itinerary",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 60,
+      "failures": [],
+      "scope": "two towns and both care roles; exact reception-to-home route, shared travel/service budget, default route compatibility, read-only estimates, mobile wording and actual reload"
+    },
+    "tail": ""
+  },
+  {
+    "test": "daily_cycle",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "cases": [
+        {
+          "id": "chen_wei",
+          "sleep_end": 6,
+          "sleep_start": 22,
+          "town": "frontier"
+        },
+        {
+          "id": "lin_mei",
+          "sleep_end": 9,
+          "sleep_start": 2,
+          "town": "frontier"
+        },
+        {
+          "id": "zhang_hao",
+          "sleep_end": 5,
+          "sleep_start": 21,
+          "town": "frontier"
+        },
+        {
+          "id": "wang_li",
+          "sleep_end": 3,
+          "sleep_start": 19,
+          "town": "frontier"
+        },
+        {
+          "id": "liu_jun",
+          "sleep_end": 5,
+          "sleep_start": 20,
+          "town": "frontier"
+        },
+        {
+          "id": "zhao_xia",
+          "sleep_end": 5,
+          "sleep_start": 21,
+          "town": "frontier"
+        },
+        {
+          "id": "yang_feng",
+          "sleep_end": 3,
+          "sleep_start": 19,
+          "town": "frontier"
+        },
+        {
+          "id": "sun_yu",
+          "sleep_end": 7,
+          "sleep_start": 0,
+          "town": "frontier"
+        },
+        {
+          "id": "wu_da",
+          "sleep_end": 4,
+          "sleep_start": 20,
+          "town": "frontier"
+        },
+        {
+          "id": "huang_li",
+          "sleep_end": 5,
+          "sleep_start": 21,
+          "town": "frontier"
+        },
+        {
+          "id": "ma_qiang",
+          "sleep_end": 5,
+          "sleep_start": 21,
+          "town": "frontier"
+        },
+        {
+          "id": "xu_ying",
+          "sleep_end": 5,
+          "sleep_start": 20,
+          "town": "frontier"
+        },
+        {
+          "id": "zhou_ming",
+          "sleep_end": 6,
+          "sleep_start": 22,
+          "town": "frontier"
+        },
+        {
+          "id": "he_chang",
+          "sleep_end": 4,
+          "sleep_start": 20,
+          "town": "frontier"
+        },
+        {
+          "id": "he_xiu",
+          "sleep_end": 3,
+          "sleep_start": 19,
+          "town": "frontier"
+        },
+        {
+          "id": "zheng_wei",
+          "sleep_end": 6,
+          "sleep_start": 22,
+          "town": "frontier"
+        },
+        {
+          "id": "su_qing",
+          "sleep_end": 3,
+          "sleep_start": 18,
+          "town": "frontier"
+        },
+        {
+          "id": "gao_lang",
+          "sleep_end": 16,
+          "sleep_start": 8,
+          "town": "frontier"
+        },
+        {
+          "id": "ke_wei",
+          "sleep_end": 6,
+          "sleep_start": 23,
+          "town": "frontier"
+        },
+        {
+          "id": "ling_bo",
+          "sleep_end": 6,
+          "sleep_start": 22,
+          "town": "frontier"
+        },
+        {
+          "id": "hb_haibo",
+          "sleep_end": 5,
+          "sleep_start": 20,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_achao",
+          "sleep_end": 5,
+          "sleep_start": 20,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_xiaoou",
+          "sleep_end": 3,
+          "sleep_start": 18,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_langshu",
+          "sleep_end": 5,
+          "sleep_start": 21,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_xiugu",
+          "sleep_end": 6,
+          "sleep_start": 22,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_shishu",
+          "sleep_end": 5,
+          "sleep_start": 21,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_dengye",
+          "sleep_end": 7,
+          "sleep_start": 0,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_axi",
+          "pre_bed": "on_duty",
+          "sleep_end": 7,
+          "sleep_start": 22,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_amao",
+          "sleep_end": 6,
+          "sleep_start": 22,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_yunyi",
+          "sleep_end": 5,
+          "sleep_start": 21,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_aduo",
+          "sleep_end": 3,
+          "sleep_start": 19,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_muxia",
+          "sleep_end": 6,
+          "sleep_start": 22,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_shanshan",
+          "sleep_end": 7,
+          "sleep_start": 0,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_afu",
+          "sleep_end": 5,
+          "sleep_start": 20,
+          "town": "harbor"
+        },
+        {
+          "id": "hb_haima",
+          "sleep_end": 2,
+          "sleep_start": 18,
+          "town": "harbor"
+        }
+      ],
+      "checks": 526,
+      "failures": [],
+      "scope": "all original residents in both towns with current jobs/shifts; late duty before sleep and controlled at-home hour before sleep, real ticks/motion, reload, no early sleep reward, schedule entry/wake release and door threshold"
+    },
+    "tail": ""
+  },
+  {
+    "test": "shift_sleep_reload",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 49,
+      "failures": [],
+      "scope": "two native JSON app round trips compare 24-hour sleep decisions for every NPC, unchanged resources, phone agenda, numeric normalization and real shift invalidation"
+    },
+    "tail": ""
+  },
+  {
+    "test": "guard_roster",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 20,
+      "failures": [],
+      "night_sleep": {
+        "conflict": false,
+        "duration": 8,
+        "end": 16,
+        "estimated_lead": 2,
+        "facility_available": true,
+        "hours": [
+          18,
+          6
+        ],
+        "job": "guard",
+        "lead": 2,
+        "return_lead": 2,
+        "signature": "[0,\"guard\",[18,6],\"town_square\",\"residential_extra_5\",[\"hardworking\",\"stoic\",\"abrasive\"],8.0,true]",
+        "start": 8,
+        "traits": [
+          "hardworking",
+          "stoic",
+          "abrasive"
+        ],
+        "workplace": "town_square"
+      },
+      "scope": "original two guards, job identity, cyclic hours, daytime sleep and homeward margin, actual night update, mobile agenda, save reload; controlled one/zero guard and new facility cases, no hiring or resource production"
+    },
+    "tail": ""
+  },
+  {
+    "test": "appointments",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 23,
+      "failures": [],
+      "scope": "offer/accept/decline/expiry, limits, conflicts and memory, save deterministic reload, chat structured invitation and no logical arrival shortcut; configured conflict fixtures"
+    },
+    "tail": ""
+  },
+  {
+    "test": "care_availability_delivery",
+    "exit": 0,
+    "script_error": false,
+    "report": {
+      "checks": 22,
+      "failures": [],
+      "scope": "both natural four-day delivery archives, checksum, file picker import, physical motion, career progress, no queued approach on load"
+    },
+    "tail": ""
+  }
+]

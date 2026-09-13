@@ -71,6 +71,7 @@ static func complete(w: SimWorld,a: Dictionary,provider: Dictionary) -> void:
 	var notice:="完成疲憊照護，體力 +%.0f。"%amount if v.job=="doctor" else "完成談心陪伴，心情 +%.0f。"%amount
 	SimFeuds._memory(a,w,"care",str(provider.name)+"："+notice,5,[str(provider.id)])
 	clear(a,notice,w.data.tickCount,"completed",amount)
+	a._careResults.back().followup={"state":"observing","until":int(w.data.tickCount)+96,"expects_work":not SimWorkSchedule.job(a,w.rules.jobs).is_empty()}
 static func clear(a: Dictionary,reason: String,tick: int=-1,state: String="cancelled",amount: float=0) -> void:
 	if a.has("_careVisit"):
 		var v: Dictionary=a._careVisit;var rows: Array=a.get("_careResults",[])
@@ -228,6 +229,30 @@ static func observe_recovery_followup(w: SimWorld,a: Dictionary) -> void:
 	if event.has("followup") or int(w.data.tickCount)!=int(event.tick)+1: return
 	var p: Dictionary=m.positions[str(a.id)]
 	event.followup={"tick":int(w.data.tickCount),"intent":SimAgenda.activity(a),"place":SimAgenda.place_name(w,m,SimCareerPresence.room(m,str(a.id))),"x":float(p.x),"y":float(p.y)}
+# Record subsequent life without issuing destinations or granting any effects.
+static func followup_point(w: SimWorld,a: Dictionary) -> Dictionary:
+	var m: SimMotion=w.social.observed_motion;var p: Dictionary=m.positions[str(a.id)]
+	return {"tick":int(w.data.tickCount),"when":"%s %d 日 %02d:%02d"%[w.data.clock.season,int(w.data.clock.day),int(w.data.clock.hour),int(w.data.clock.minute)],"intent":SimAgenda.activity(a),"place":SimAgenda.place_name(w,m,SimCareerPresence.room(m,str(a.id))),"x":float(p.x),"y":float(p.y)}
+static func observe_care_followup(w: SimWorld,a: Dictionary) -> void:
+	var m: SimMotion=w.social.observed_motion;var now:=int(w.data.tickCount)
+	for event in a.get("_careResults",[]):
+		var f: Dictionary=event.get("followup",{})
+		# Old receipts have no observation start; never fill their history by guessing.
+		if event.get("state","")!="completed" or f.get("state","")!="observing" or now<=int(event.tick): continue
+		if a.get("isDead",false) or a.get("isPlayer",false):
+			f.state="unavailable";f.closed_tick=now;continue
+		if now>int(f.until): f.state="expired";f.closed_tick=now;continue
+		if m==null or not m.stable_routes or not m.positions.has(str(a.id)) or int(f.get("observed_tick",-1))==now: continue
+		f.observed_tick=now
+		if now==int(event.tick)+1 and not f.has("next"): f.next=followup_point(w,a)
+		if not f.has("home") and SimHomeRest.arrived(w,a): f.home=followup_point(w,a)
+		var job:=SimWorkSchedule.job(a,w.rules.jobs);var p: Dictionary=m.positions[str(a.id)]
+		var goal: Dictionary=p.get("_directedGoal",{})
+		var place:=str(job.get("workplace",""))
+		var at_goal: bool=goal.get("location","")==place and Vector2(p.x,p.y).distance_to(Vector2(goal.get("x",-9999),goal.get("y",-9999)))<=2
+		if not f.has("work") and not job.is_empty() and SimWorkSchedule.working(job,int(w.data.clock.hour)) and a.activity=="working" and p.get("activity","")=="working" and not p.get("walking",true) and p.get("doorPhase")==null and at_goal and m.layout._walkable(Vector2(p.x,p.y)) and w.data.townMap.locations.has(place) and SimCareerPresence.place(m,str(a.id))==place:
+			f.work=followup_point(w,a);f.work.job=str(a.jobKey)
+		if f.has("home") and (f.has("work") or not f.get("expects_work",false)): f.state="finished";f.closed_tick=now
 static func recovery_activity(w: SimWorld,a: Dictionary) -> String:
 	if not a.has("_careRecovery"): return ""
 	var task: Dictionary=a._careRecovery;var now:=int(w.data.tickCount);var id:=str(a.id)

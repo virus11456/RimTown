@@ -56,6 +56,13 @@ static func routine(w: SimWorld,id: String) -> Array:
 		if result.has("followup"): rows.append("下一刻觀察：當時在"+str(result.followup.place)+"；當時意圖："+str(result.followup.intent)+"。")
 	for result in a.get("_careResults",[]):
 		rows.append(("照護完成：" if result.get("state","")=="completed" else "求助中止：")+str(w.data.agents.get(str(result.get("provider","")),{}).get("name","居民"))+"："+str(result.get("reason","")))
+		var followup: Dictionary=result.get("followup",{}) if result.get("state","")=="completed" else {}
+		if followup.has("next"): rows.append("照護後首次觀察：當時在"+str(followup.next.place)+"；意圖："+str(followup.next.intent)+"。")
+		if followup.has("home"): rows.append("照護後已觀察到實際到家（"+str(followup.home.get("when","時間未記錄"))+"）。")
+		if followup.has("work"): rows.append("照護後已觀察到在"+str(followup.work.place)+"到場工作（"+str(followup.work.get("when","時間未記錄"))+"）。")
+		if followup.get("state","")=="observing": rows.append("後續仍在觀察：最多追蹤一個遊戲日，不代表已到家或上工。")
+		elif followup.get("state","")=="expired": rows.append("後續觀察已到期；未記錄的到家／上工不能視為已完成。")
+		elif followup.get("state","")=="unavailable": rows.append("居民狀態已改變，停止後續觀察。")
 	if a.has("_careVisit"):
 		var provider: Dictionary=w.data.agents.get(str(a._careVisit.provider),{})
 		rows.append("關懷對象："+str(provider.get("name","居民"))+"；到場並完成停留後才結算照護。")

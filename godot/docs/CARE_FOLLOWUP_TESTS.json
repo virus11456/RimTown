@@ -1,0 +1,5 @@
+{
+  "checks": 64,
+  "failures": [],
+  "scope": "two towns and both care roles; real controlled care completion and physical walks to work/home, intent versus arrival, same-tick idempotence, fixed deadline, active/finished reload, no extra effects, old/cancelled receipts and unavailable observations"
+}

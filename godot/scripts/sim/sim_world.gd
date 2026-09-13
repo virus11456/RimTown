@@ -134,6 +134,7 @@ func tick() -> Array[String]:
 		if not data.agents[id].get("isDead",false):
 			_update(id)
 			SimResidentCare.observe_recovery_followup(self,data.agents[id])
+		SimResidentCare.observe_care_followup(self,data.agents[id])
 	SimCareers.tick(self)
 	SimResidentCare.sync_receptions(self)
 	return events
