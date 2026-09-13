@@ -2704,6 +2704,17 @@ func show_career_outcomes() -> void:
 		var completed: bool=row.get("state","")=="completed" and row.get("settled",false)
 		_wrapped("已完成並結算；已計入有效值勤與技能經驗。" if completed else "已中止、未結算；未計入完成次數與技能經驗。",13)
 		_wrapped(str(row.get("reason","")),13)
+		var role:=str(row.get("job",""));var career: Dictionary=row.get("career",{})
+		if completed and not career.is_empty():
+			var prior: Dictionary=career.before;var after: Dictionary=career.after
+			_wrapped("本次職涯紀錄（完成當時）",16)
+			_wrapped("%s → %s · 有效值勤 %d → %d · 不同日期 %d → %d"%[SimCareerProgress.STAGES[int(prior.stage)],SimCareerProgress.STAGES[int(after.stage)],int(prior.completed),int(after.completed),int(prior.days),int(after.days)],12)
+			if role=="guard": _wrapped("完整巡邏天數：%d → %d"%[int(prior.routes),int(after.routes)],12)
+			elif role=="trader": _wrapped("交接種類：%d → %d"%[int(prior.directions),int(after.directions)],12)
+			elif role in ["doctor","priest","farmer","carpenter","researcher"]: _wrapped("不同服務對象／項目：%d → %d"%[int(prior.targets),int(after.targets)],12)
+			_wrapped("本次 %s經驗 +%d。職涯追蹤最多保留 15 次有效值勤、5 個日期，達上限後不再增加該計數。"%[str(career.skill),int(career.xp)],12)
+		elif completed: _wrapped("此筆舊結果沒有職涯變化明細，不用現在的進度補算過去。",12)
+		if SimCareers.JOBS.has(role): _button("查看"+str(SimCareers.JOBS[role].name)+"目前職涯",drawer_body,func(): show_career_guide(role))
 		if not completed: _wrapped("先處理以上原因，再回到目前工作重新確認需求、核准與位置；本頁不自動重試。",12)
 	if rows.is_empty() and not book.get("history",[]).is_empty():
 		_wrapped("舊版完成文字紀錄",18)

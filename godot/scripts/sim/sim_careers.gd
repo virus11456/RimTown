@@ -151,10 +151,11 @@ static func tick(w: SimWorld) -> void:
 	var skill: String=JOBS[t.job].skill
 	if not player.skills.has(skill): player.skills[skill]={"xp":0,"passion":"無"}
 	player.skills[skill].xp+=3;b.used+=1;b.completed+=1
+	var career_before:=progress_counts(w,str(t.job))
 	SimCareerProgress.record(w,t)
 	b.notice=str(t.label)+"完成。"
 	SimServiceChat.outcome(w,t,"completed",b.notice)
-	record_outcome(w,b,t,"completed",str(b.notice))
+	record_outcome(w,b,t,"completed",str(b.notice),{"before":career_before,"after":progress_counts(w,str(t.job)),"skill":skill,"xp":3})
 	b.history.append(str(t.label)+"完成");b.history=b.history.slice(-10)
 	SimSocial.log_message(w.data,"career",str(t.label)+"完成。",str(player.name),"")
 	SimServiceStay.clear(w)
@@ -164,9 +165,14 @@ static func defense_bonus(w: SimWorld) -> float:
 	var b:=book(w)
 	return 2.0 if b.visits.size()==PATROL.size() else 0.0
 
-static func record_outcome(w: SimWorld,b: Dictionary,t: Dictionary,state: String,reason: String) -> void:
+static func record_outcome(w: SimWorld,b: Dictionary,t: Dictionary,state: String,reason: String,career: Dictionary={}) -> void:
 	# Called only at resolution; never replay historical settlement while displaying or loading.
 	if t.is_empty() or state not in ["completed","cancelled"]: return
 	var rows: Array=b.get("outcomes",[])
 	rows.append({"job":str(t.get("job","")),"task":str(t.get("id","")),"label":str(t.get("label","值勤")).left(160),"state":state,"reason":reason.left(300),"tick":int(w.data.tickCount),"time":SimSocial.time_string(w.data.clock),"settled":state=="completed"})
+	if state=="completed" and not career.is_empty(): rows.back().career=career.duplicate(true)
 	b.outcomes=rows.slice(-10)
+
+static func progress_counts(w: SimWorld,job: String) -> Dictionary:
+	var p:=SimCareerProgress.progress(w,job)
+	return {"stage":int(p.stage),"completed":int(p.completed),"days":p.days.size(),"targets":p.targets.size(),"routes":p.routes.size(),"directions":p.directions.size()}
