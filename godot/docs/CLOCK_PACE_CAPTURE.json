@@ -1,0 +1,21 @@
+{
+  "cases": [
+    {
+      "file": "clock-pace-desktop.png",
+      "height": 800,
+      "mobile": false,
+      "mode": "relaxed",
+      "tick_seconds": 16.0,
+      "width": 1280
+    },
+    {
+      "file": "clock-pace-mobile.png",
+      "height": 812,
+      "mobile": true,
+      "mode": "relaxed",
+      "tick_seconds": 16.0,
+      "width": 375
+    }
+  ],
+  "scope": "native desktop/mobile settings; user-selected relaxed clock, original demo"
+}

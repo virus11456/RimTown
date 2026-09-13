@@ -1,0 +1,5 @@
+{
+  "checks": 36,
+  "failures": [],
+  "scope": "both towns; mode switching with unchanged physical movement, clock phase, needs/resources/jobs/appointments; sleep duration, explicit progress restore, legacy and malformed modes, mobile settings"
+}

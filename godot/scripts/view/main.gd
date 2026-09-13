@@ -325,8 +325,8 @@ func _load_document(text: String, source: String) -> bool:
 	if world_view != null:
 		motion.configure(world_view.layout)
 		motion.stable_routes=true
-		motion.tick_seconds=8.0
 		var saved: Dictionary=document.data.get("_godot4a",{})
+		motion.tick_seconds=16.0 if saved.get("clock_pace") is String and saved.clock_pace=="relaxed" else 8.0
 		SimLeisurePlan.restore_observations(simulation,saved.motion if saved.get("motion") is Dictionary else {})
 		SimHangoutVisits.restore_observations(simulation,saved.motion if saved.get("motion") is Dictionary else {})
 		if saved.has("motion") and saved.motion is Dictionary:
@@ -637,7 +637,21 @@ func _line(placeholder: String, secret := false) -> LineEdit:
 	drawer_body.add_child(field)
 	return field
 
+func clock_pace() -> String:
+	return "relaxed" if motion.tick_seconds==16.0 else "original"
+
+func set_clock_pace(pace: String) -> void:
+	if pace not in ["original","relaxed"]: return
+	var seconds:=16.0 if pace=="relaxed" else 8.0
+	if motion.tick_seconds==seconds: return
+	var fraction:=clampf(tick_accumulator/maxf(.001,motion.tick_seconds),0.0,.999999)
+	motion.tick_seconds=seconds;tick_accumulator=fraction*seconds
+	SimShiftSleep.refresh(simulation,motion)
+	has_simulated=true
+
 func _settings_ui() -> void:
+	_button("生活節奏："+("從容" if clock_pace()=="relaxed" else "原有"),drawer_body,func(): set_clock_pace("original" if clock_pace()=="relaxed" else "relaxed");show_tab("設定",true))
+	_wrapped("從容節奏讓遊戲時鐘放慢一半，角色保持原本步行速度，有更多時間通勤、赴約與返家。已約定的遊戲時間與每日限量保留；此設定會隨進度存檔。",12)
 	_button("居民自主休閒安排："+("開啟" if SimLeisurePlan.enabled(simulation) else "關閉"),drawer_body,func(): simulation.quest_balance.leisure_plans_enabled=not SimLeisurePlan.enabled(simulation);SimLeisurePlan.tick(simulation);has_simulated=true;show_tab("設定",true))
 	_wrapped("居民每天自行找一段工時之外的空檔；走到場所並停留才完成。工作、需求、睡眠與約定優先，不生產商品或銀幣。",12)
 	_button("日常主動搭話："+("開啟" if SimDailyTalk.enabled(simulation) else "關閉"),drawer_body,func(): simulation.quest_balance.daily_talk_enabled=not SimDailyTalk.enabled(simulation);has_simulated=true;show_tab("設定",true))
@@ -754,6 +768,7 @@ func progress_snapshot() -> Dictionary:
 	progress._godot4a.house_map=motion.layout.agent_house.duplicate(true)
 	progress._godot4a.tick_accumulator=tick_accumulator
 	progress._godot4a.tick_seconds=motion.tick_seconds
+	progress._godot4a.clock_pace=clock_pace()
 	progress._godot4a.manual_player=motion.manual_player
 	return progress
 
