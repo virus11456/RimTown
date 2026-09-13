@@ -96,12 +96,12 @@ static func feasibility(w: SimWorld,a: Dictionary,b: Dictionary,goal: Vector2) -
 	var travel:=travel_ticks(m,str(a.id),str(b.currentLocation),goal)
 	if travel>MAX_TRAVEL_TICKS: return "步行超過四小時的赴診上限，先保留必要作息。"
 	var duration:=travel+SERVICE_TICKS
-	var schedule:=schedule_reason(w,a,b,duration)
+	var schedule:=schedule_reason(w,a,b,duration,goal)
 	if not schedule.is_empty(): return schedule
 	if float(a.needs.hunger)-duration*2<20 or float(a.needs.rest)-duration*1.5<10: return RECOVERY_REASON
 	if float(b.needs.hunger)-duration*2<20 or float(b.needs.rest)-duration*1.5<10: return "服務者需要先用餐或休息。"
 	return ""
-static func schedule_reason(w: SimWorld,a: Dictionary,b: Dictionary,duration: int) -> String:
+static func schedule_reason(w: SimWorld,a: Dictionary,b: Dictionary,duration: int,goal: Variant=null) -> String:
 	var job:=SimWorkSchedule.job(b,w.rules.jobs)
 	for offset in range(duration+1):
 		var hour:=posmod(floori((int(w.data.clock.hour)*60+int(w.data.clock.minute)+offset*15)/60.0),24)
@@ -110,7 +110,7 @@ static func schedule_reason(w: SimWorld,a: Dictionary,b: Dictionary,duration: in
 	var now:=int(w.data.tickCount)
 	for id in [str(a.id),str(b.id)]:
 		if SimAppointments.overlaps(w,id,now,now+duration+1) or SimHangoutRoute.leisure_conflict(w,id,now,now+duration+1): return "已有約定或休閒安排，先保留原行程。"
-	if not SimHangoutRoute.return_fits(w.social.observed_motion,a,w.data.clock,w.rules.jobs,str(b.currentLocation),duration): return "照護後沒有足夠時間慢走返家。"
+	if not SimHangoutRoute.return_fits(w.social.observed_motion,a,w.data.clock,w.rules.jobs,str(b.currentLocation),duration,goal): return "照護後沒有足夠時間慢走返家。"
 	return ""
 static func recovery_access(w: SimWorld,a: Dictionary,b: Dictionary,goal: Vector2) -> Dictionary:
 	var m: SimMotion=w.social.observed_motion
@@ -127,7 +127,7 @@ static func recovery_access(w: SimWorld,a: Dictionary,b: Dictionary,goal: Vector
 	# Reserve the full bounded home recovery, plus the tick that releases its plan.
 	var preparation:=ceili(returning/m.travel_budget())+1+4+1
 	var duration:=preparation+onward+SERVICE_TICKS
-	var reason:=schedule_reason(w,a,b,duration)
+	var reason:=schedule_reason(w,a,b,duration,goal)
 	if not reason.is_empty(): return {"reason":"返家準備後，"+reason}
 	if float(b.needs.hunger)-duration*2<20 or float(b.needs.rest)-duration*1.5<10: return {"reason":"返家準備後，服務者可能需要先用餐或休息。"}
 	return {"reason":"","duration":onward+SERVICE_TICKS}

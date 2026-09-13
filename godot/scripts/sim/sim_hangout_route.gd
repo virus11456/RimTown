@@ -39,12 +39,12 @@ static func feasible(m: SimMotion,a: Dictionary,b: Dictionary,clock: Dictionary,
 		if fits: result.append(place)
 	return result
 
-static func home_distance(m: SimMotion,a: Dictionary,place: String) -> float:
+static func home_distance(m: SimMotion,a: Dictionary,place: String,origin: Variant=null) -> float:
 	if m==null or (not m.layout.buildings.has(place) and not m.layout.nature.has(place)): return INF
 	var home:=m.layout._house_id(str(a.id),str(a.get("homeLocation","")))
 	var house: Dictionary=m.layout.houses.get(home,{})
 	if house.is_empty(): return INF # Assigned overflow housing may belong to residential_extra.
-	var start:=m.layout._nearest(m.layout._center(place));var length:=0.0
+	var start: Vector2=m.layout._nearest(m.layout._center(place)) if origin==null else origin;var length:=0.0
 	var exit_door: Variant=m.door(place,str(a.id))
 	if exit_door!=null:
 		var exit_point:=Vector2(exit_door.x,exit_door.y)
@@ -53,8 +53,8 @@ static func home_distance(m: SimMotion,a: Dictionary,place: String) -> float:
 	var offset:=str(a.id).unicode_at(0)%4
 	var goal:=m.layout._nearest(Vector2(house.interiorX+(offset%2-.5)*16,house.interiorY+(floori(offset/2.0)-.5)*16))
 	return length+segment(m,start,entry)+segment(m,entry,goal)
-static func return_fits(m: SimMotion,a: Dictionary,clock: Dictionary,jobs: Dictionary,place: String,after_ticks: int) -> bool:
-	var length:=home_distance(m,a,place)
+static func return_fits(m: SimMotion,a: Dictionary,clock: Dictionary,jobs: Dictionary,place: String,after_ticks: int,origin: Variant=null) -> bool:
+	var length:=home_distance(m,a,place,origin)
 	if is_inf(length) or after_ticks<0: return false
 	# Return travel uses ordinary 0.3 px/frame walking, not the faster meeting approach.
 	var ticks:=ceili(length/m.travel_budget())+1

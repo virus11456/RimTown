@@ -51,6 +51,20 @@ static func reason(w: SimWorld,m: SimMotion,a: Dictionary,b: Dictionary,state: S
   if not str(plan.reason).is_empty():return str(plan.reason)
   return "需要先回家準備；出發時仍會重新確認。"
  return "目前行程初步可行，居民會依需求自行決定。" if why.is_empty() else why
+static func time_label(w: SimWorld,ticks: int) -> String:
+ var minutes:=int(w.data.clock.hour)*60+int(w.data.clock.minute)+ticks*15
+ return ("明天 " if minutes>=1440 else "")+"%02d:%02d"%[posmod(floori(minutes/60.0),24),posmod(minutes,60)]
+static func timing(w: SimWorld,m: SimMotion,a: Dictionary,b: Dictionary) -> Dictionary:
+ if a.is_empty() or a.get("isDead",false) or a.get("id")==b.get("id") or a.has("_careVisit") or a.has("_careRecovery") or m==null or not m.stable_routes or not SimResidentCare.provider_ready(w,m,str(b.id)):return {}
+ var goal:=SimResidentCare.meeting_goal(m,b)
+ if not goal.is_finite() or m.travel_budget()<=0:return {}
+ var outward:=SimResidentCare.route_distance(m,str(a.id),str(b.currentLocation),goal)
+ var homeward:=SimHangoutRoute.home_distance(m,a,str(b.currentLocation),goal)
+ if not is_finite(outward) or not is_finite(homeward):return {}
+ var travel:=ceili(outward/m.travel_budget())+1
+ var returning:=ceili(homeward/m.travel_budget())+1
+ var finish:=travel+SimResidentCare.SERVICE_TICKS
+ return {"travel_ticks":travel,"service_ticks":SimResidentCare.SERVICE_TICKS,"return_ticks":returning,"arrival":time_label(w,travel),"finish":time_label(w,finish),"home":time_label(w,finish+returning),"outward_distance":outward,"return_distance":homeward}
 static func rows(w: SimWorld,m: SimMotion,id: String) -> Array:
  var result: Array=[];var ids: Array=w.data.agents.keys();ids.sort()
  for provider in ids:
@@ -59,5 +73,5 @@ static func rows(w: SimWorld,m: SimMotion,id: String) -> Array:
   var job:=SimWorkSchedule.job(b,w.rules.jobs);var state:=status(w,m,b)
   var actual:="位置尚未取得"
   if m!=null and m.positions.has(str(provider)):actual=SimAgenda.place_name(w,m,SimCareerPresence.room(m,str(provider)))
-  result.append({"id":provider,"name":str(b.name),"role":"疲憊照護" if b.jobKey=="doctor" else "談心陪伴","hours":"%02d:00–%02d:00"%[int(job.work_hours[0]),int(job.work_hours[1])],"place":str(w.data.townMap.locations.get(str(job.workplace),{}).get("name","接待設施尚未建成")),"actual":actual,"status":state,"remaining":remaining(w,b),"next":next_shift(w,job),"reason":reason(w,m,w.data.agents.get(id,{}),b,state)})
+  result.append({"id":provider,"name":str(b.name),"role":"疲憊照護" if b.jobKey=="doctor" else "談心陪伴","hours":"%02d:00–%02d:00"%[int(job.work_hours[0]),int(job.work_hours[1])],"place":str(w.data.townMap.locations.get(str(job.workplace),{}).get("name","接待設施尚未建成")),"actual":actual,"status":state,"remaining":remaining(w,b),"next":next_shift(w,job),"reason":reason(w,m,w.data.agents.get(id,{}),b,state),"timing":timing(w,m,w.data.agents.get(id,{}),b)})
  return result

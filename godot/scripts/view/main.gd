@@ -2596,4 +2596,8 @@ func show_care_availability(id: String) -> void:
 		_wrapped(str(row.status)+" · 今日剩餘 %d 次居民接待"%int(row.remaining),12)
 		_wrapped(str(row.next),12)
 		_wrapped("這位居民："+str(row.reason),12)
+		var estimate: Dictionary=row.get("timing",{})
+		if not estimate.is_empty():
+			_wrapped("步行估算：赴診 %d 分鐘、照護 %d 分鐘、返家 %d 分鐘（遊戲時間）。"%[int(estimate.travel_ticks)*15,int(estimate.service_ticks)*15,int(estimate.return_ticks)*15],12)
+			_wrapped("若現在出發，估計 %s 抵達、%s 完成、%s 到家；仍須符合上方接待與作息條件。"%[estimate.arrival,estimate.finish,estimate.home],12)
 	_button("返回作息與行程",drawer_body,func(): show_agenda(id))
