@@ -1,0 +1,301 @@
+{
+  "bad_sleep": [],
+  "care_errors": [],
+  "care_pairs_observed": [],
+  "care_results": {},
+  "checks": 11,
+  "civic_hours": {
+    "hb_aduo": [
+      7.0,
+      8.0,
+      9.0,
+      10.0,
+      11.0,
+      12.0,
+      13.0,
+      14.0,
+      15.0,
+      16.0,
+      17.0,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ],
+    "hb_langshu": [
+      8.0,
+      9.0,
+      10.0,
+      11.0,
+      12.0,
+      13.0,
+      14.0,
+      15.0,
+      16.0,
+      17.0,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ]
+  },
+  "deferred": {
+    "hb_achao:1": {
+      "day": 1,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 143
+    },
+    "hb_achao:2": {
+      "day": 2.0,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 237.0
+    },
+    "hb_achao:4": {
+      "day": 4,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 430
+    },
+    "hb_achao:5": {
+      "day": 5,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 527
+    },
+    "hb_achao:6": {
+      "day": 6,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 623
+    },
+    "hb_afu:1": {
+      "day": 1,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 143
+    },
+    "hb_afu:2": {
+      "day": 2,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 237
+    },
+    "hb_afu:3": {
+      "day": 3.0,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 335.0
+    },
+    "hb_afu:4": {
+      "day": 4,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 431
+    },
+    "hb_afu:5": {
+      "day": 5,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 527
+    },
+    "hb_afu:6": {
+      "day": 6,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 623
+    },
+    "hb_muxia:1": {
+      "day": 1,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 143
+    },
+    "hb_muxia:2": {
+      "day": 2,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 237
+    },
+    "hb_muxia:3": {
+      "day": 3.0,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 335.0
+    },
+    "hb_muxia:4": {
+      "day": 4,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 431
+    },
+    "hb_muxia:5": {
+      "day": 5,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 527
+    },
+    "hb_muxia:6": {
+      "day": 6,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 623
+    },
+    "hb_shishu:3": {
+      "day": 3.0,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 335.0
+    },
+    "hb_shishu:4": {
+      "day": 4,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 431
+    },
+    "hb_shishu:5": {
+      "day": 5,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 527
+    },
+    "hb_shishu:6": {
+      "day": 6,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 623
+    },
+    "imm_何芳_72:1": {
+      "day": 1,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 142
+    },
+    "imm_何芳_72:2": {
+      "day": 2,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 237
+    },
+    "imm_何芳_72:3": {
+      "day": 3.0,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 335.0
+    },
+    "imm_何芳_72:4": {
+      "day": 4,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 430
+    },
+    "imm_何芳_72:6": {
+      "day": 6,
+      "reason": "抵達並完成前，服務者就要下班。",
+      "tick": 622
+    }
+  },
+  "failures": [],
+  "ground_errors": [],
+  "heading_home": [
+    "hb_dengye",
+    "hb_shanshan",
+    "hb_haima",
+    "hb_xiaoou",
+    "hb_achao",
+    "hb_haibo",
+    "hb_langshu",
+    "hb_xiugu",
+    "hb_shishu",
+    "hb_axi",
+    "hb_amao",
+    "hb_yunyi",
+    "hb_aduo",
+    "hb_muxia",
+    "hb_afu"
+  ],
+  "invalid_duty": [],
+  "invalid_steps": [],
+  "maximum_npc_step": 0.999914765357971,
+  "motion_frames": 322560,
+  "outdoor_workers": [
+    "hb_shishu",
+    "hb_afu",
+    "hb_achao"
+  ],
+  "quota_errors": [],
+  "recoveries": {},
+  "recovery_results": {},
+  "render_samples": 80640,
+  "requests_observed": [],
+  "scope": "original town resources, jobs, shifts and needs; seven natural days, every collision frame audited, resident poses updated at 15Hz, shoe geometry checked each tick, mid-run reload; no forced resident positions/needs",
+  "settled_residents": [
+    "hb_xiaoou",
+    "hb_shishu",
+    "hb_langshu",
+    "hb_yunyi",
+    "hb_muxia",
+    "hb_xiugu",
+    "hb_shanshan",
+    "hb_dengye",
+    "imm_何芳_72",
+    "hb_achao",
+    "hb_axi",
+    "hb_afu",
+    "hb_amao",
+    "hb_haibo"
+  ],
+  "slept": [
+    "hb_dengye",
+    "hb_shanshan",
+    "hb_xiaoou",
+    "hb_haima",
+    "hb_axi",
+    "hb_achao",
+    "hb_shishu",
+    "hb_afu",
+    "hb_haibo",
+    "hb_langshu",
+    "hb_amao",
+    "hb_aduo",
+    "hb_yunyi",
+    "hb_muxia",
+    "hb_xiugu"
+  ],
+  "stacked_farmers": [],
+  "station_work": {
+    "hb_achao": "farmer",
+    "hb_aduo": "guard",
+    "hb_afu": "farmer",
+    "hb_dengye": "researcher",
+    "hb_haima": "cook",
+    "hb_langshu": "trader",
+    "hb_shanshan": "researcher",
+    "hb_shishu": "miner",
+    "hb_xiaoou": "cook",
+    "imm_何芳_72": "cook"
+  },
+  "ticks": 672,
+  "town": "harbor",
+  "walked": [
+    "hb_haibo",
+    "hb_achao",
+    "hb_xiaoou",
+    "hb_langshu",
+    "hb_xiugu",
+    "hb_shishu",
+    "hb_axi",
+    "hb_amao",
+    "hb_yunyi",
+    "hb_aduo",
+    "hb_muxia",
+    "hb_afu",
+    "hb_haima",
+    "hb_dengye",
+    "hb_shanshan"
+  ],
+  "worked": [
+    "hb_achao",
+    "hb_xiaoou",
+    "hb_aduo",
+    "hb_afu",
+    "hb_haima",
+    "hb_shishu",
+    "hb_yunyi",
+    "hb_langshu",
+    "hb_axi",
+    "hb_haibo",
+    "hb_dengye",
+    "hb_shanshan"
+  ]
+}

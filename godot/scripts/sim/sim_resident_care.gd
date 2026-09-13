@@ -58,7 +58,8 @@ static func clear(a: Dictionary,reason: String,tick: int=-1,state: String="cance
 static func route_distance(m: SimMotion,id: String,place: String,goal: Vector2) -> float:
 	var p: Dictionary=m.positions.get(id,{})
 	if p.is_empty(): return INF
-	var start:=Vector2(p.x,p.y)
+	return route_from(m,id,place,goal,Vector2(p.x,p.y))
+static func route_from(m: SimMotion,id: String,place: String,goal: Vector2,start: Vector2) -> float:
 	# Match SimMotion's actual exit -> destination door -> exact care position.
 	var destination: Variant=m.door(place,id)
 	if m.inside(start)==place or destination==null: return SimHangoutRoute.segment(m,start,goal)
@@ -88,8 +89,12 @@ static func feasibility(w: SimWorld,a: Dictionary,b: Dictionary,goal: Vector2) -
 	var travel:=travel_ticks(m,str(a.id),str(b.currentLocation),goal)
 	if travel>MAX_TRAVEL_TICKS: return "步行超過四小時的赴診上限，先保留必要作息。"
 	var duration:=travel+SERVICE_TICKS
+	var schedule:=schedule_reason(w,a,b,duration)
+	if not schedule.is_empty(): return schedule
 	if float(a.needs.hunger)-duration*2<20 or float(a.needs.rest)-duration*1.5<10: return RECOVERY_REASON
 	if float(b.needs.hunger)-duration*2<20 or float(b.needs.rest)-duration*1.5<10: return "服務者需要先用餐或休息。"
+	return ""
+static func schedule_reason(w: SimWorld,a: Dictionary,b: Dictionary,duration: int) -> String:
 	var job:=SimWorkSchedule.job(b,w.rules.jobs)
 	for offset in range(duration+1):
 		var hour:=posmod(floori((int(w.data.clock.hour)*60+int(w.data.clock.minute)+offset*15)/60.0),24)
@@ -98,8 +103,27 @@ static func feasibility(w: SimWorld,a: Dictionary,b: Dictionary,goal: Vector2) -
 	var now:=int(w.data.tickCount)
 	for id in [str(a.id),str(b.id)]:
 		if SimAppointments.overlaps(w,id,now,now+duration+1) or SimHangoutRoute.leisure_conflict(w,id,now,now+duration+1): return "已有約定或休閒安排，先保留原行程。"
-	if not SimHangoutRoute.return_fits(m,a,w.data.clock,w.rules.jobs,str(b.currentLocation),duration): return "照護後沒有足夠時間慢走返家。"
+	if not SimHangoutRoute.return_fits(w.social.observed_motion,a,w.data.clock,w.rules.jobs,str(b.currentLocation),duration): return "照護後沒有足夠時間慢走返家。"
 	return ""
+static func recovery_access(w: SimWorld,a: Dictionary,b: Dictionary,goal: Vector2) -> Dictionary:
+	var m: SimMotion=w.social.observed_motion
+	var home:=m.layout._house_id(str(a.id),str(a.homeLocation))
+	var house: Dictionary=m.layout.houses.get(home,{})
+	if house.is_empty() or m.travel_budget()<=0: return {"reason":"無法確認返家準備後的赴診路線。"}
+	var offset:=str(a.id).unicode_at(0)%4
+	var start:=m.layout._nearest(Vector2(house.interiorX+(offset%2-.5)*16,house.interiorY+(floori(offset/2.0)-.5)*16))
+	var distance:=route_from(m,str(a.id),str(b.currentLocation),goal,start)
+	var returning:=SimHomeRest.remaining_distance(m,a)
+	if not is_finite(distance) or not is_finite(returning): return {"reason":"無法確認返家準備後的赴診路線。"}
+	var onward:=ceili(distance/m.travel_budget())+1
+	if onward>MAX_TRAVEL_TICKS: return {"reason":"從家出發的赴診路程超過四小時上限。"}
+	# Reserve the full bounded home recovery, plus the tick that releases its plan.
+	var preparation:=ceili(returning/m.travel_budget())+1+4+1
+	var duration:=preparation+onward+SERVICE_TICKS
+	var reason:=schedule_reason(w,a,b,duration)
+	if not reason.is_empty(): return {"reason":"返家準備後，"+reason}
+	if float(b.needs.hunger)-duration*2<20 or float(b.needs.rest)-duration*1.5<10: return {"reason":"返家準備後，服務者可能需要先用餐或休息。"}
+	return {"reason":"","duration":onward+SERVICE_TICKS}
 static func end_recovery(w: SimWorld,a: Dictionary,reason: String,state: String="cancelled",code: String="") -> void:
 	if not a.has("_careRecovery"): return
 	var task: Dictionary=a._careRecovery
@@ -246,7 +270,11 @@ static func tick(w: SimWorld) -> void:
 			if not reason.is_empty():
 				a._careDeferred={"day":SimClock.total_days(w.data.clock),"tick":int(w.data.tickCount),"reason":reason};a._careVisitNotice="暫緩求助："+reason
 				if reason==RECOVERY_REASON:
-					begin_recovery(w,a,travel_ticks(m,id,str(b.currentLocation),goal)+SERVICE_TICKS)
+					var access:=recovery_access(w,a,b,goal)
+					if not str(access.reason).is_empty():
+						a._careDeferred.reason=access.reason;a._careVisitNotice="暫緩求助："+str(access.reason)
+						continue
+					begin_recovery(w,a,int(access.duration))
 					if a.has("_careRecovery"): break
 				continue
 			if used.has(provider):
