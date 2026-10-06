@@ -1,5 +1,19 @@
-// RimTown - Frontend App (WordPress Plugin) v5.75.0
-const RIMTOWN_APP_VERSION = '5.75.0';
+// RimTown - Frontend App (WordPress Plugin) v5.76.0
+const RIMTOWN_APP_VERSION = '5.76.0';
+// v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
+const NEIGHBOR_TOWNS = [
+    { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
+      log: () => t('📯 沿海道路修復完成，往海風鎮的馬車恢復通行！'), title: () => t('道路重通！'),
+      desc: () => t('通往漁村「海風鎮」的沿海道路修好了——去東邊的馬車站就能搭車拜訪，兩鎮的村民也會開始互相作客') },
+    { theme: 'mountain', name: '礦山鎮', prosperity: 40, key: 'rimtown_mountain_unlocked', match: /礦山鎮|Mine Ridge/i, icon: '⛏️',
+      log: () => t('📯 山道來信：礦山鎮的吊橋修好了，往山上的馬車開通！'), title: () => t('山道來信！'),
+      desc: () => t('山上的礦業小鎮「礦山鎮」捎信來：吊橋修好了，馬車可以上山。那裡石材金屬多、糧食布料缺，正好和邊境鎮互補') },
+];
+// v5.76.0 主題鎮的任務分頁占位(主線任務只屬於邊境鎮)
+const TOWN_STORY_BLURBS = {
+    harbor: { icon: '🌊', title: '海風鎮的故事', text: '這座漁村沒有既定的劇本——阿潮的暗戀、石叔與燈爺的舊怨、雲姨未說完的往事，都在日常裡自己發生。多跟大家聊聊，故事會找上你。' },
+    mountain: { icon: '⛏️', title: '礦山鎮的故事', text: '這座礦業小鎮沒有既定的劇本——阿岩算出的金脈、老錘與牛叔的塌方舊怨、白姑想寄出去的那封信、牛叔盤算的接班，都在日常裡自己發生。多跟大家聊聊，故事會找上你。' },
+};
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1419,7 +1433,7 @@ class RimTownApp {
         // Don't show if user explicitly dismissed all guidance
         if (localStorage.getItem('rimtown_guidance_off')) { el.classList.add('hidden'); return; }
         // v5.59.0 TC-03:邊境鎮主線任務不在海風鎮顯示(卡司是邊境鎮居民,海風鎮主題任務鏈待做)
-        if (this.world?.townTheme === 'harbor') { el.classList.add('hidden'); return; }
+        if ((this.world?.townTheme || 'frontier') !== 'frontier') { el.classList.add('hidden'); return; } // v5.76.0 主題鎮都沒有邊境鎮主線
 
         const qs = this.world?.questSystem;
         if (!qs) return;
@@ -1574,12 +1588,12 @@ class RimTownApp {
         const features = [
             ['🧠', t('會記得你的村民'), t('二十多位村民各有性格、記憶與人際關係。你說過的話、送過的禮，他們都記得，也會拿去跟別人八卦。')],
             ['💬', t('真的在聊天'), t('對話由內建 AI 生成，不用填任何金鑰。安慰、打聽、說服、調解、示好、威脅，每一句都會改變關係。')],
-            ['🐎', t('雙城往返'), t('邊境鎮之外還有漁村海風鎮。搭馬車過去作客，村民也會跨鎮互訪，把另一座鎮的故事帶回來。')],
+            ['🐎', t('多鎮往返'), t('邊境鎮之外還有漁村海風鎮、山上的礦山鎮，各有自己的地圖、卡司與故事。搭馬車過去作客，村民也會跨鎮互訪，把別鎮的故事帶回來。')],
             ['📖', t('任務與多重結局'), t('五章主線、村民個人任務、每日目標、劇情名場面。你可以參選鎮長，也可以只當個看戲的旅人。')],
         ];
         const roadmap = [
-            [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證'), t('第三座城鎮：礦山鎮（多城鎮計畫）'), t('海風鎮專屬任務鏈（漁村主線）')]],
-            [t('規劃中'), '#fbbf24', [t('林間村與市集城'), t('村民擴編（每鎮 +5 人）'), t('村民自訂外觀'), t('跨鎮貿易與商隊')]],
+            [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證'), t('第四座城鎮：林間村（多城鎮計畫）'), t('海風鎮專屬任務鏈（漁村主線）')]],
+            [t('規劃中'), '#fbbf24', [t('第五座城鎮：市集城'), t('村民擴編（每鎮 +5 人）'), t('村民自訂外觀'), t('跨鎮貿易與商隊')]],
             [t('構想'), '#60a5fa', [t('玩家之間互訪城鎮'), t('手機 App 版')]],
         ];
         const log = (typeof RIMTOWN_CHANGELOG !== 'undefined' && Array.isArray(RIMTOWN_CHANGELOG)) ? RIMTOWN_CHANGELOG : [];
@@ -2752,11 +2766,14 @@ class RimTownApp {
 
         // v5.55.0 海風鎮劇情解鎖,v5.58.0 改為「道路重通」:海風鎮本來就存在,
         // 只是沿海道路一直封著;小鎮發展起來(繁榮 20)後修路隊打通道路,馬車通車
-        if ((this.state?.prosperity?.prosperity || 0) >= 20 && localStorage.getItem('rimtown_harbor_unlocked') !== '1') {
-            localStorage.setItem('rimtown_harbor_unlocked', '1');
-            this._ensureNeighborTown();
-            this.world?.logMessage?.('system', t('📯 沿海道路修復完成，往海風鎮的馬車恢復通行！'));
-            this._showCornerNotice({ icon: '🛤️', title: t('道路重通！'), name: '', desc: t('通往漁村「海風鎮」的沿海道路修好了——去東邊的馬車站就能搭車拜訪，兩鎮的村民也會開始互相作客') });
+        // v5.76.0 鄰鎮解鎖改成表驅動:海風鎮(繁榮 20)、礦山鎮(繁榮 40),之後的林間村/市集城照表加
+        const prosNow = this.state?.prosperity?.prosperity || 0;
+        for (const def of NEIGHBOR_TOWNS) {
+            if (prosNow < def.prosperity || localStorage.getItem(def.key) === '1') continue;
+            localStorage.setItem(def.key, '1');
+            this._ensureNeighborTown(def.theme);
+            this.world?.logMessage?.('system', def.log());
+            this._showCornerNotice({ icon: def.icon, title: def.title(), name: '', desc: def.desc() });
         }
 
         // Multi-town
@@ -3398,41 +3415,45 @@ class RimTownApp {
     }
     // v5.58.0 海風鎮本來就存在:道路重通(繁榮20)後在背景生成它的存檔——
     // 不用手動建立,馬車直達、兩鎮村民互訪立即可用
-    async _ensureNeighborTown() {
-        if (this._neighborEnsured) return;
-        this._neighborEnsured = true;
-        const harborName = '海風鎮';
+    // v5.76.0 泛化成任一主題鄰鎮(海風鎮/礦山鎮…),每個主題只生成一次、絕不自動刪任何存檔
+    async _ensureNeighborTown(themeKey = 'harbor') {
+        const def = NEIGHBOR_TOWNS.find(d => d.theme === themeKey);
+        if (!def) return;
+        this._neighborEnsured = this._neighborEnsured && typeof this._neighborEnsured === 'object' ? this._neighborEnsured : {};
+        if (this._neighborEnsured[themeKey]) return;
+        this._neighborEnsured[themeKey] = true;
+        const townName = def.name;
         try {
             let exists = false;
             // v5.74.2 雲端清單沒載到(開機雲端讀取失敗)時先重新拉一次,不然會在已經有海風鎮的帳號再生一個
             if (this.auth.loggedIn && !Array.isArray(this._cloudSaves)) { try { this._cloudSaves = await this.auth.listSaves(); } catch (e) {} }
-            if (this.auth.loggedIn && Array.isArray(this._cloudSaves)) exists = this._cloudSaves.some(s => /海風鎮|Seabreeze/i.test(s.town_name || ''));
-            if (!exists) exists = this._getTownList().some(tw => /海風鎮|Seabreeze/i.test(tw.name || ''));
-            if (exists || (this.world?.townTheme === 'harbor')) return;
+            if (this.auth.loggedIn && Array.isArray(this._cloudSaves)) exists = this._cloudSaves.some(s => def.match.test(s.town_name || ''));
+            if (!exists) exists = this._getTownList().some(tw => def.match.test(tw.name || ''));
+            if (exists || (this.world?.townTheme === themeKey)) return;
             const nw = new World();
-            nw.townTheme = 'harbor';
-            nw.townName = harborName;
+            nw.townTheme = themeKey;
+            nw.townName = townName;
             nw.rosterMode = 'scripted';
             nw.reset();
             const blob = nw.serialize();
-            const tid = this._generateTownId(harborName);
+            const tid = this._generateTownId(townName);
             const list = this._getTownList();
             if (!list.some(tw => tw.id === tid)) {
-                list.push({ id: tid, name: harborName, savedAt: new Date().toISOString(), season: blob.clock?.season || '春季', year: 1, day: 1, population: Object.keys(blob.agents || {}).length });
+                list.push({ id: tid, name: townName, savedAt: new Date().toISOString(), season: blob.clock?.season || '春季', year: 1, day: 1, population: Object.keys(blob.agents || {}).length });
                 this._saveTownList(list);
             }
             try { localStorage.setItem('rimtown_town_' + tid, JSON.stringify(blob)); } catch (e) {}
             if (this.auth.loggedIn) {
-                try { await this.auth.cloudSave(tid, harborName, blob, { season: blob.clock?.season, year: 1, day: 1, population: Object.keys(blob.agents || {}).length }); } catch (e) {}
+                try { await this.auth.cloudSave(tid, townName, blob, { season: blob.clock?.season, year: 1, day: 1, population: Object.keys(blob.agents || {}).length }); } catch (e) {}
             }
             this._otherTownsAt = 0; // 立即讓互訪/馬車看見新鄰鎮
-        } catch (e) { console.warn('[RimTown] neighbor town gen failed', e); this._neighborEnsured = false; }
+        } catch (e) { console.warn('[RimTown] neighbor town gen failed', e); this._neighborEnsured[themeKey] = false; }
     }
 
     _visitorMailboxTick() {
         const w = this.world; if (!w || !this.currentTownId) return;
         // 道路已通(含老玩家補生成):確保海風鎮存在
-        if (localStorage.getItem('rimtown_harbor_unlocked') === '1' && !this._neighborEnsured) this._ensureNeighborTown();
+        for (const def of NEIGHBOR_TOWNS) { if (localStorage.getItem(def.key) === '1' && !this._neighborEnsured?.[def.theme]) this._ensureNeighborTown(def.theme); } // v5.76.0
         // 掛鉤(冪等,換鎮/換世界後自動指向新世界)
         w.onSendVisitor = (agentData, town, stayDays) => this._pushMailbox(this._visitorMailboxKey(town.id),
             { agentData, stayDays, fromTownId: this.currentTownId, fromTownName: this._getCurrentTownName() });
@@ -9446,10 +9467,11 @@ class RimTownApp {
     renderQuest(container) {
         if (!this.state) return;
         // v5.59.0 TC-03:海風鎮沒有邊境鎮的主線(卡司不同),顯示佔位而非「落腳邊境」
-        if (this.world?.townTheme === 'harbor') {
+        const themeStory = TOWN_STORY_BLURBS[this.world?.townTheme || 'frontier'];
+        if (themeStory) {
             container.innerHTML = `<div class="economy-panel"><div class="econ-section">
-                <h3>🌊 ${t('海風鎮的故事')}</h3>
-                <p class="muted-text" style="line-height:1.7">${t('這座漁村沒有既定的劇本——阿潮的暗戀、石叔與燈爺的舊怨、雲姨未說完的往事，都在日常裡自己發生。多跟大家聊聊，故事會找上你。')}</p>
+                <h3>${themeStory.icon} ${t(themeStory.title)}</h3>
+                <p class="muted-text" style="line-height:1.7">${t(themeStory.text)}</p>
             </div></div>`;
             return;
         }

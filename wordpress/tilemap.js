@@ -18,6 +18,8 @@ const T = {
     WINDOW:41, DARK_FLOOR:42, RUG:43, CAULDRON:44,
     // v5.75.0 海風鎮海岸主題:棧橋木板、鹽田、曬網架
     PIER:45, SALT:46, NET:47,
+    // v5.76.0 礦山鎮:碎石路、裂谷、礦車軌道、雪頂
+    GRAVEL:48, CHASM:49, RAIL:50, SNOW:51,
 };
 
 // Color palette for each tile [primary, secondary, highlight, accent]
@@ -71,6 +73,10 @@ const TILE_COLORS = {
     [T.PIER]:     ['#a07c58','#7c5c40','#b89470','#5a3e2a'],
     [T.SALT]:     ['#eef0ee','#d6dad8','#ffffff','#b9c2c4'],
     [T.NET]:      ['#5eb34a','#6b5a3a','#c9b48a','#4a3a24'],
+    [T.GRAVEL]:   ['#a8a39a','#948f86','#bcb7ae','#7e7970'],
+    [T.CHASM]:    ['#1b1626','#120f1a','#3a3048','#0a080e'],
+    [T.RAIL]:     ['#8d7a62','#5a4a38','#b5b5b5','#3a3028'],
+    [T.SNOW]:     ['#eef4fa','#d6e2ee','#ffffff','#b9c9da'],
 };
 
 // Building templates: [name, width, height, 2D array of tile IDs, doorX, doorY]
@@ -642,7 +648,7 @@ class PixelTileMap {
             sctx.filter = 'none';
         } catch (e) { /* filter 不支援就跳過,不影響遊戲 */ }
         // 地面顆粒:草/土/沙上撒確定性明暗噪點(不用亂數,存讀檔一致)
-        const GROUND = new Set([T.GRASS, T.GRASS2, T.GRASS3, T.DIRT, T.SAND, T.STONE_PATH, T.SALT]);
+        const GROUND = new Set([T.GRASS, T.GRASS2, T.GRASS3, T.DIRT, T.SAND, T.STONE_PATH, T.SALT, T.GRAVEL]);
         for (let y = 0; y < this.rows; y++) {
             for (let x = 0; x < this.cols; x++) {
                 if (!GROUND.has(this.grid[y][x])) continue;
@@ -804,7 +810,7 @@ class PixelTileMap {
         const up = at(tx, ty - 1), dn = at(tx, ty + 1), lf = at(tx - 1, ty), rt = at(tx + 1, ty);
 
         // --- 1. 草地鑲邊:泥土/石路遇到草,邊緣長出草鬚(去掉生硬直角) ---
-        if (tile === T.DIRT || tile === T.STONE_PATH || tile === T.SAND) {
+        if (tile === T.DIRT || tile === T.STONE_PATH || tile === T.SAND || tile === T.GRAVEL) {
             const fr = '#5cad42', frDk = '#3f8f2e';
             if (isGrass(up)) {
                 ctx.fillStyle = fr; ctx.fillRect(px, py, TILE, 2);
@@ -871,7 +877,13 @@ class PixelTileMap {
 
         // --- v5.7.0 植被落影:植物/樹在上方 → 下方地面承接柔影,讓草木落地不飄浮 ---
         const isVeg = t => t === T.BUSH || t === T.TREE_TOP || t === T.TREE_TOP2 || t === T.TREE_TRUNK || t === T.ROCK;
-        const isGround = t => isGrass(t) || t === T.DIRT || t === T.STONE_PATH || t === T.SAND;
+        const isGround = t => isGrass(t) || t === T.DIRT || t === T.STONE_PATH || t === T.SAND || t === T.GRAVEL;
+        // v5.76.0 裂谷邊緣:上緣受光岩棱、兩側暗影,讓裂谷看起來往下凹
+        if (tile === T.CHASM) {
+            if (up !== T.CHASM && up !== -1) { ctx.fillStyle = '#8c8478'; ctx.fillRect(px, py, TILE, 2); ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(px, py + 2, TILE, 4); }
+            if (lf !== T.CHASM && lf !== -1) { ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(px, py, 3, TILE); }
+            if (rt !== T.CHASM && rt !== -1) { ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(px + TILE - 3, py, 3, TILE); }
+        }
         if (isGround(tile) && isVeg(up)) {
             ctx.fillStyle = 'rgba(18,28,14,0.22)'; ctx.fillRect(px + 2, py, TILE - 4, 3);
             ctx.fillStyle = 'rgba(18,28,14,0.11)'; ctx.fillRect(px + 1, py + 3, TILE - 2, 2);
@@ -1503,6 +1515,39 @@ class PixelTileMap {
                 ctx.fillRect(5,2,1,9); ctx.fillRect(8,2,1,9); ctx.fillRect(11,2,1,9);
                 ctx.fillStyle = '#e8dcb8'; ctx.fillRect(4,10,1,1); ctx.fillRect(9,7,1,1);
                 break;
+
+            // v5.76.0 碎石路:灰色碎石與深淺顆粒
+            case T.GRAVEL:
+                ctx.fillStyle = c1; ctx.fillRect(0,0,S,S);
+                ctx.fillStyle = c2; ctx.fillRect(2,3,2,2); ctx.fillRect(9,1,3,2); ctx.fillRect(12,9,2,2); ctx.fillRect(5,12,2,1);
+                ctx.fillStyle = c3; ctx.fillRect(6,6,2,2); ctx.fillRect(13,4,1,1); ctx.fillRect(1,10,2,1); ctx.fillRect(10,13,2,2);
+                ctx.fillStyle = c4; ctx.fillRect(3,8,1,1); ctx.fillRect(14,13,1,1); ctx.fillRect(8,2,1,1);
+                break;
+
+            // v5.76.0 裂谷:深不見底,邊緣有一道岩棱
+            case T.CHASM:
+                ctx.fillStyle = c1; ctx.fillRect(0,0,S,S);
+                ctx.fillStyle = c2; ctx.fillRect(3,5,10,8);
+                ctx.fillStyle = c4; ctx.fillRect(5,8,6,6);
+                ctx.fillStyle = c3; ctx.fillRect(1,2,2,1); ctx.fillRect(12,3,2,1); ctx.fillRect(7,1,1,1);
+                break;
+
+            // v5.76.0 礦車軌道:兩條鐵軌 + 枕木(碎石底)
+            case T.RAIL:
+                ctx.fillStyle = '#a8a39a'; ctx.fillRect(0,0,S,S);
+                ctx.fillStyle = c2; ctx.fillRect(1,2,14,2); ctx.fillRect(1,7,14,2); ctx.fillRect(1,12,14,2);
+                ctx.fillStyle = c1; ctx.fillRect(1,2,14,1); ctx.fillRect(1,7,14,1); ctx.fillRect(1,12,14,1);
+                ctx.fillStyle = c4; ctx.fillRect(4,0,2,S); ctx.fillRect(10,0,2,S);
+                ctx.fillStyle = c3; ctx.fillRect(4,0,1,S); ctx.fillRect(10,0,1,S);
+                break;
+
+            // v5.76.0 雪頂:岩石上的積雪
+            case T.SNOW:
+                ctx.fillStyle = c1; ctx.fillRect(0,0,S,S);
+                ctx.fillStyle = c2; ctx.fillRect(0,13,S,3); ctx.fillRect(10,6,4,2);
+                ctx.fillStyle = c3; ctx.fillRect(2,2,5,2); ctx.fillRect(9,9,3,1);
+                ctx.fillStyle = c4; ctx.fillRect(1,14,3,1); ctx.fillRect(12,15,3,1);
+                break;
         }
     }
 
@@ -1512,6 +1557,7 @@ class PixelTileMap {
         this.themeKey = theme || 'frontier';
         this._blockWater = this.themeKey === 'harbor';
         this._boats = null; this._lighthouse = null; this._pier = null;
+        this._rails = null; this._chimneys = null; this._hotSpring = null; this._ropeBridges = null; // v5.76.0
         // Fill with varied grass types for natural look
         this.grid = Array.from({length: this.rows}, (_, y) =>
             Array.from({length: this.cols}, (_, x) => {
@@ -1538,6 +1584,7 @@ class PixelTileMap {
             }
         }
         if (this.themeKey === 'harbor') { this._layoutHarbor(locations); return; }
+        if (this.themeKey === 'mountain') { this._layoutMountain(locations); return; } // v5.76.0
 
         // Add border trees
         for (let x = 0; x < this.cols; x++) {
@@ -1991,6 +2038,219 @@ class PixelTileMap {
     }
 
     // ============================================================
+    // v5.76.0 礦山鎮山地版面:北側整片山壁(雪頂),主礦坑鑿在山壁裡、礦車軌道一路鋪到礦車廣場;
+    // 東側一道裂谷、兩座吊橋把工頭街接上;碎石路、山泉浴場(冒蒸氣)、熔爐煙囪冒煙
+    // ============================================================
+    _layoutMountain(locations) {
+        const cols = this.cols, rows = this.rows;
+        const WALL_H = 7; // 山壁佔 0..6 列
+        // 山壁:岩石,頂上兩列積雪,底緣零星碎岩
+        for (let y = 0; y < WALL_H; y++) {
+            for (let x = 0; x < cols; x++) {
+                const h = ((x * 31 + y * 17) % 7);
+                this.grid[y][x] = (y <= 1 || (y === 2 && h < 3)) ? T.SNOW : T.ROCK;
+            }
+        }
+        for (let x = 0; x < cols; x += 1) {
+            const h = (x * 13) % 5;
+            if (h === 0) this.grid[WALL_H][x] = T.ROCK;
+            else if (h === 2) this.grid[WALL_H][x] = T.BUSH;
+        }
+        // 左右與南側邊界樹
+        for (let y = WALL_H; y < rows; y++) {
+            for (let dx = 0; dx < 2; dx++) {
+                this.grid[y][dx] = (y + dx) % 2 === 0 ? T.TREE_TOP : T.TREE_TOP2;
+                this.grid[y][cols - 1 - dx] = (y + dx) % 2 === 0 ? T.TREE_TOP : T.TREE_TOP2;
+            }
+        }
+        for (let x = 0; x < cols; x++) {
+            for (let dy = 0; dy < 3; dy++) this.grid[rows - 1 - dy][x] = ((x + dy) % 2 === 0) ? T.TREE_TOP2 : T.TREE_TOP;
+        }
+        // 碎石路(座標與邊境鎮相同,_connectToRoad 共用)
+        const roadY1 = 20, roadY2 = 38, roadX1 = 26, roadX2 = 46;
+        for (let x = 3; x < cols - 2; x++) {
+            this.grid[roadY1][x] = T.GRAVEL; this.grid[roadY1 + 1][x] = T.GRAVEL;
+            this.grid[roadY2][x] = T.GRAVEL; this.grid[roadY2 + 1][x] = T.GRAVEL;
+        }
+        for (let y = WALL_H + 1; y < rows - 3; y++) {
+            this.grid[y][roadX1] = T.GRAVEL; this.grid[y][roadX1 + 1] = T.GRAVEL;
+            this.grid[y][roadX2] = T.GRAVEL; this.grid[y][roadX2 + 1] = T.GRAVEL;
+        }
+        // 礦車廣場石板
+        for (let y = 22; y < 30; y++) for (let x = 30; x < 40; x++) this.grid[y][x] = T.STONE_PATH;
+        // 裂谷:x 60–62,從山壁底一路到南邊界;兩條大路上架吊橋
+        const CH_X0 = 60, CH_X1 = 62;
+        for (let y = WALL_H; y < rows - 3; y++) for (let x = CH_X0; x <= CH_X1; x++) this.grid[y][x] = T.CHASM;
+        for (const ry of [roadY1, roadY2]) for (let x = CH_X0; x <= CH_X1; x++) { this.grid[ry][x] = T.BRIDGE; this.grid[ry + 1][x] = T.BRIDGE; }
+        this._ropeBridges = [{ x: CH_X0, y: roadY1, w: 3, h: 2 }, { x: CH_X0, y: roadY2, w: 3, h: 2 }];
+        // 固定地標:主礦坑鑿進山壁 + 軌道鋪到廣場旁(不論 quarry 地點是否存在都畫)
+        this._placeMineEntrance(38, 2);
+        this._rails = { x: 41, y0: WALL_H, y1: 31 };
+        for (let y = WALL_H; y <= 31; y++) { this.grid[y][41] = T.RAIL; this.grid[y][42] = T.RAIL; }
+        this.grid[32][41] = T.CRATE; this.grid[32][42] = T.BARREL; // 礦車終點的卸礦區
+
+        const POS = {
+            town_square:  { x:32, y:24, type:'square' },
+            tavern:       { x:18, y:22, type:'building' },
+            chapel:       { x:34, y:40, type:'building' },
+            park:         { x:6,  y:22, type:'hotspring' },
+            well:         { x:36, y:32, type:'well' },
+            town_hall:    { x:28, y:10, type:'building' },
+            farm:         { x:6,  y:40, type:'farm' },
+            quarry:       { x:38, y:2,  type:'mine_zone' },
+            workshop:     { x:50, y:28, type:'building' },
+            general_store:{ x:50, y:11, type:'building' },
+            clinic:       { x:6,  y:30, type:'building' },
+            library:      { x:64, y:10, type:'building' },
+            guardpost:    { x:64, y:42, type:'building' },
+            residential_north:{ x:5,  y:8,  type:'house_row' },
+            residential_south:{ x:16, y:42, type:'house_cluster' },
+            residential_east: { x:64, y:24, type:'house_cluster' },
+            forest:  { x:52, y:40, type:'forest' },
+            river:   { x:36, y:50, type:'river' },
+            hill:    { x:71, y:42, type:'hill' },
+            cave:    { x:70, y:49, type:'cave' },
+            lake:    { x:48, y:48, type:'lake' },
+            meadow:  { x:28, y:50, type:'meadow' },
+        };
+        for (const [locId, loc] of Object.entries(locations)) {
+            const fp = POS[locId];
+            if (!fp) continue;
+            const bx = fp.x, by = fp.y, name = loc.name;
+            switch (fp.type) {
+                case 'building': this._placeBuilding(locId, bx, by, name); break;
+                case 'house_cluster': this._placeHouseCluster(locId, bx, by, name); break;
+                case 'house_row': this._placeHouseRow(locId, bx, by, name, 3); break;
+                case 'farm': this._placeFarm(locId, bx, by, name); break;
+                case 'square': this._placeSquare(locId, bx, by, name); break;
+                case 'well': this._placeWell(locId, bx, by, name); break;
+                case 'hotspring': this._placeHotSpring(locId, bx, by, name); break;
+                case 'forest': this._placeForest(locId, bx, by, name); break;
+                case 'river': this._placeRiver(locId, bx, by, name); break;
+                case 'hill': this._placeHill(locId, bx, by, name); break;
+                case 'cave': this._placeCave(locId, bx, by, name); break;
+                case 'lake': this._placeLake(locId, bx, by, name); break;
+                case 'meadow': this._placeMeadow(locId, bx, by, name); break;
+                case 'mine_zone':
+                    this.buildingZones[locId] = { x: 38, y: 1, w: 8, h: 6, doorPixelX: 41.5 * TILE + 8, doorPixelY: (WALL_H + 0.5) * TILE };
+                    this.labelPositions[locId] = { x: 42 * TILE, y: 1 * TILE + 10, name };
+                    break;
+            }
+        }
+        // 熔爐鍛坊與礦燈酒館的煙囪(動態冒煙)
+        this._chimneys = [];
+        const ws = this.buildingZones['workshop'], tv = this.buildingZones['tavern'];
+        if (ws) this._chimneys.push({ x: (ws.x + ws.w - 2) * TILE + 4, y: ws.y * TILE + 2, hot: true });
+        if (tv) this._chimneys.push({ x: (tv.x + 2) * TILE + 4, y: tv.y * TILE + 2, hot: false });
+        // 馬車站:東側大路盡頭(吊橋過去)
+        this.coachStation = { x: this.cols - 7, y: 18, w: 5, h: 5 };
+        // 草地點綴(山地多石少花)
+        for (let i = 0; i < 30; i++) {
+            const x = 3 + ((i * 17 + 7) % (cols - 6));
+            const y = WALL_H + 2 + ((i * 13 + 11) % (rows - WALL_H - 6));
+            const g = this.grid[y][x];
+            if (g === T.GRASS || g === T.GRASS2 || g === T.GRASS3) this.grid[y][x] = [T.ROCK, T.BUSH, T.ROCK, T.FLOWER2][i % 4];
+        }
+    }
+
+    // 主礦坑:山壁上鑿出的黑洞,木框門楣與礦燈在 render 時動態畫
+    _placeMineEntrance(x, y) {
+        for (let yy = y + 1; yy <= 6; yy++) for (let xx = x + 1; xx <= x + 6; xx++) this.grid[yy][xx] = T.DARK_FLOOR;
+        for (let xx = x; xx <= x + 7; xx++) this.grid[y][xx] = T.ROCK;
+        this.grid[6][x + 1] = T.ROCK; this.grid[6][x + 6] = T.ROCK;
+        this._mine = { x, y, w: 8, h: 6 };
+    }
+
+    // 山泉浴場:岩石圍成的溫泉池,池邊木桶與長凳,蒸氣在 render 時動態畫
+    _placeHotSpring(locId, x, y, name) {
+        const W = 7, H = 6;
+        for (let dy = 0; dy < H; dy++) for (let dx = 0; dx < W; dx++) {
+            if (y + dy >= this.rows || x + dx >= this.cols) continue;
+            const edge = dx === 0 || dy === 0 || dx === W - 1 || dy === H - 1;
+            if (edge) this.grid[y + dy][x + dx] = ((dx + dy) % 3 === 0) ? T.ROCK : T.STONE_PATH;
+            else this.grid[y + dy][x + dx] = ((dx + dy) % 2 === 0) ? T.WATER : T.WATER2;
+        }
+        this.grid[y + H - 1][x + 1] = T.BARREL; this.grid[y + H - 1][x + W - 2] = T.CHAIR;
+        this.grid[y + H - 1][x + 3] = T.STONE_PATH; // 入口
+        this._hotSpring = { x: x + 1, y: y + 1, w: W - 2, h: H - 2 };
+        this.natureZones[locId] = { x, y, w: W, h: H };
+        this.labelPositions[locId] = { x: (x + W / 2) * TILE, y: y * TILE - 4, name };
+    }
+
+    // v5.76.0 山地道具:礦坑門楣與礦燈、來回跑的礦車、煙囪炊煙、溫泉蒸氣、吊橋繩索
+    _drawMountainProps(ctx) {
+        if (this.themeKey !== 'mountain') return;
+        const frame = this.animFrame || 0;
+        const mine = this._mine;
+        if (mine) {
+            const mx = (mine.x + 1) * TILE, my = (mine.y + 1) * TILE;
+            // 木框門楣
+            ctx.fillStyle = '#5a3e2a'; ctx.fillRect(mx - 3, my - 6, 6 * TILE + 6, 6);
+            ctx.fillRect(mx - 3, my - 6, 4, 5 * TILE + 6); ctx.fillRect(mx + 6 * TILE - 1, my - 6, 4, 5 * TILE + 6);
+            ctx.fillStyle = '#7c5c40'; ctx.fillRect(mx - 3, my - 6, 6 * TILE + 6, 2);
+            // 礦燈(左右各一,微閃)
+            const fl = 0.75 + 0.25 * Math.sin(frame / 7);
+            ctx.fillStyle = `rgba(255,190,80,${fl.toFixed(2)})`;
+            ctx.fillRect(mx + 2, my + 6, 4, 5); ctx.fillRect(mx + 6 * TILE - 6, my + 6, 4, 5);
+            ctx.fillStyle = `rgba(255,170,60,${(fl * 0.18).toFixed(2)})`;
+            ctx.fillRect(mx - 6, my - 2, 16, 22); ctx.fillRect(mx + 6 * TILE - 10, my - 2, 16, 22);
+        }
+        const r = this._rails;
+        if (r) {
+            // 礦車:在軌道上來回,到底卸礦停一下
+            const span = (r.y1 - r.y0) * TILE;
+            const period = 900;
+            const ph = frame % period;
+            let d;
+            if (ph < 380) d = ph / 380; else if (ph < 450) d = 1; else if (ph < 830) d = 1 - (ph - 450) / 380; else d = 0;
+            const cx = r.x * TILE + 16, cy = r.y0 * TILE + 6 + d * span;
+            ctx.fillStyle = '#3a2716'; ctx.fillRect(cx - 7, cy + 9, 4, 4); ctx.fillRect(cx + 3, cy + 9, 4, 4); // 輪
+            ctx.fillStyle = '#5c4a3a'; ctx.fillRect(cx - 9, cy - 2, 18, 11); // 車身
+            ctx.fillStyle = '#8a6a44'; ctx.fillRect(cx - 9, cy - 2, 18, 2);
+            ctx.fillStyle = '#3a2716'; ctx.fillRect(cx - 9, cy + 7, 18, 2);
+            // 礦石(去程滿載、回程空車)
+            if (d > 0.02 && ph < 450) {
+                ctx.fillStyle = '#9aa0a6'; ctx.fillRect(cx - 7, cy - 6, 14, 5);
+                ctx.fillStyle = '#c9cfd4'; ctx.fillRect(cx - 5, cy - 8, 4, 3); ctx.fillRect(cx + 1, cy - 7, 5, 3);
+                ctx.fillStyle = '#e0b84a'; ctx.fillRect(cx - 1, cy - 5, 2, 2); // 一點金光
+            }
+        }
+        for (const c of (this._chimneys || [])) {
+            // 煙囪本體
+            ctx.fillStyle = '#5a4a44'; ctx.fillRect(c.x, c.y - 8, 6, 10);
+            ctx.fillStyle = '#7a6a64'; ctx.fillRect(c.x - 1, c.y - 9, 8, 2);
+            if (c.hot) { ctx.fillStyle = `rgba(255,120,40,${(0.5 + 0.3 * Math.sin(frame / 5)).toFixed(2)})`; ctx.fillRect(c.x + 2, c.y - 7, 2, 2); }
+            // 煙:四團往上飄、越飄越淡越散
+            for (let i = 0; i < 4; i++) {
+                const tt = ((frame / 3 + i * 14) % 56) / 56;
+                const sx = c.x + 3 + Math.sin(tt * 6 + i) * 4 + tt * 6, sy = c.y - 10 - tt * 34;
+                const sz = 3 + tt * 7;
+                ctx.fillStyle = `rgba(${c.hot ? '120,110,110' : '220,220,225'},${(0.45 * (1 - tt)).toFixed(2)})`;
+                ctx.fillRect(sx - sz / 2, sy - sz / 2, sz, sz);
+            }
+        }
+        const hs = this._hotSpring;
+        if (hs) {
+            for (let i = 0; i < 6; i++) {
+                const tt = ((frame / 2 + i * 23) % 70) / 70;
+                const sx = (hs.x + 0.5 + (i % 3) * 1.6) * TILE + Math.sin(tt * 5 + i) * 5;
+                const sy = (hs.y + 1 + Math.floor(i / 3) * 1.5) * TILE - tt * 28;
+                const sz = 4 + tt * 8;
+                ctx.fillStyle = `rgba(255,255,255,${(0.35 * (1 - tt)).toFixed(2)})`;
+                ctx.fillRect(sx - sz / 2, sy - sz / 2, sz, sz);
+            }
+        }
+        for (const b of (this._ropeBridges || [])) {
+            // 吊橋繩索與木樁
+            const x0 = b.x * TILE, x1 = (b.x + b.w) * TILE, y0 = b.y * TILE, y1 = (b.y + b.h) * TILE;
+            ctx.fillStyle = '#4a3222';
+            ctx.fillRect(x0 - 3, y0 - 6, 3, 8); ctx.fillRect(x1, y0 - 6, 3, 8); ctx.fillRect(x0 - 3, y1 - 2, 3, 8); ctx.fillRect(x1, y1 - 2, 3, 8);
+            ctx.fillStyle = '#b89a6a';
+            for (let x = x0; x < x1; x += 2) { const sag = Math.round(Math.sin(((x - x0) / (x1 - x0)) * Math.PI) * 2); ctx.fillRect(x, y0 - 4 + sag, 1, 1); ctx.fillRect(x, y1 + 1 + sag, 1, 1); }
+        }
+    }
+
+    // ============================================================
     // v5.75.0 海風鎮海岸版面:南側整排海面與沙灘、東南角燈塔岬、碼頭棧橋伸進海裡停漁船、
     // 西岸海蝕洞、潟湖、鹽場/鹽灘、曬網場、沙灘木屋一整排;馬車站移到西側沿海道路盡頭(通往邊境鎮)
     // ============================================================
@@ -2073,7 +2333,7 @@ class PixelTileMap {
             switch (fp.type) {
                 case 'building': this._placeBuilding(locId, bx, by, name); break;
                 case 'house_cluster': this._placeHouseCluster(locId, bx, by, name); break;
-                case 'house_row': this._placeHouseRow(locId, bx, by, name, 4); break;
+                case 'house_row': this._placeHouseRow(locId, bx, by, name, 4, false); break; // 沙灘木屋面海,不另闢小路
                 case 'farm': this._placeFarm(locId, bx, by, name); break;
                 case 'saltworks': this._placeSaltworks(locId, bx, by, name); break;
                 case 'square': this._placeSquare(locId, bx, by, name); break;
@@ -2141,7 +2401,7 @@ class PixelTileMap {
     }
 
     // 一整排沙灘木屋(門朝南、面向大海),每戶註冊成子區與 house_cluster 相同
-    _placeHouseRow(locId, x, y, name, count) {
+    _placeHouseRow(locId, x, y, name, count, connect = true) {
         const house = TILE_BUILDING_TEMPLATES.house;
         const gapX = 1;
         this._houseSubZones = this._houseSubZones || {};
@@ -2158,6 +2418,7 @@ class PixelTileMap {
                 const tt = this.grid[cy][cx];
                 if (tt === T.GRASS || tt === T.GRASS2 || tt === T.GRASS3) this.grid[cy][cx] = T.DIRT;
             }
+            if (connect) this._connectToRoad(doorTX, doorTY);
             const subId = `${locId}_${houseIdx}`;
             const doorPxX = (doorTX + 0.5) * TILE, doorPxY = (doorTY + 0.5) * TILE;
             const interiorX = (hx + house.w / 2) * TILE, interiorY = (hy + house.h / 2 + 1) * TILE;
@@ -2403,7 +2664,7 @@ class PixelTileMap {
             ...(this.decorations || []).map(d => ({ x: d.x, y: d.y, w: 1, h: 1 })),
         ];
         if (this.coachStation) rects.push(this.coachStation);
-        if (this.themeKey === 'harbor') for (const z of Object.values(this.natureZones || {})) rects.push(z); // v5.75.0 海岸地標不蓋房
+        if (this.themeKey !== 'frontier') for (const z of Object.values(this.natureZones || {})) rects.push(z); // v5.75.0 主題鎮地標不蓋房
         const blockedRect = (px, py) => rects.some(z =>
             px + HW + 1 > z.x && px - 1 < z.x + z.w && py + HH + 1 > z.y && py - 1 < z.y + z.h);
         const tilesClear = (px, py) => {
@@ -2411,7 +2672,7 @@ class PixelTileMap {
                 for (let x = px - 1; x < px + HW + 1; x++) {
                     if (y < 1 || x < 1 || y >= this.rows - 1 || x >= this.cols - 1) return false;
                     const tt = this.grid[y][x];
-                    if (tt === T.DIRT || tt === T.WATER || tt === T.WATER2 || tt === T.PIER || tt === T.SALT || tt === T.NET) return false;
+                    if (tt === T.DIRT || tt === T.WATER || tt === T.WATER2 || tt === T.PIER || tt === T.SALT || tt === T.NET || tt === T.GRAVEL || tt === T.CHASM || tt === T.RAIL) return false;
                 }
             }
             return true;
@@ -3012,7 +3273,7 @@ class PixelTileMap {
         const zones = Object.values(this.buildingZones || {}).map(z => ({ x: z.x, y: z.y, w: z.w || 4, h: z.h || 4 }));
         // v5.60.1 地基也避開馬車站、玩家選址建築(施工中+完工)、裝飾——不再蓋在別人頭上
         if (this.coachStation) zones.push({ x: this.coachStation.x, y: this.coachStation.y, w: this.coachStation.w, h: this.coachStation.h });
-        if (this.themeKey === 'harbor') for (const z of Object.values(this.natureZones || {})) zones.push(z); // v5.75.0
+        if (this.themeKey !== 'frontier') for (const z of Object.values(this.natureZones || {})) zones.push(z); // v5.75.0
         for (const p of (this.constructionSites || [])) zones.push({ x: p.siteX, y: p.siteY, w: 2, h: 2 });
         for (const b of (this.sitedCompleted || [])) zones.push({ x: b.siteX, y: b.siteY, w: 2, h: 2 });
         for (const d of (this.decorations || [])) zones.push({ x: d.x, y: d.y, w: 1, h: 1 });
@@ -3023,7 +3284,7 @@ class PixelTileMap {
                 for (let x = px - 1; x < px + PW + 1; x++) {
                     if (y < 1 || x < 1 || y >= H - 1 || x >= W - 1) return false;
                     const tt = this.grid[y][x];
-                    if (tt === T.DIRT || tt === T.WATER || tt === T.WATER2 || tt === T.PIER || tt === T.SALT || tt === T.NET) return false;
+                    if (tt === T.DIRT || tt === T.WATER || tt === T.WATER2 || tt === T.PIER || tt === T.SALT || tt === T.NET || tt === T.GRAVEL || tt === T.CHASM || tt === T.RAIL) return false;
                 }
             }
             return true;
@@ -3238,6 +3499,7 @@ class PixelTileMap {
         const tile = this.grid[ty][tx];
         // v5.75.0 海岸鎮:海面不可走(棧橋可以),村民不再在海裡散步
         if (this._blockWater && (tile === T.WATER || tile === T.WATER2)) return false;
+        if (tile === T.CHASM) return false; // v5.76.0 裂谷
         // Wall, roof, window, and fence tiles are not walkable
         return tile !== T.WALL_TOP && tile !== T.WALL_FRONT && tile !== T.WINDOW
             && tile !== T.ROOF && tile !== T.ROOF2
@@ -3267,6 +3529,7 @@ class PixelTileMap {
         if (tx < 0 || tx >= this.cols || ty < 0 || ty >= this.rows) return false;
         const tile = this.grid[ty][tx];
         if (this._blockWater && (tile === T.WATER || tile === T.WATER2)) return false;
+        if (tile === T.CHASM) return false;
         return tile !== T.WALL_TOP && tile !== T.WALL_FRONT && tile !== T.WINDOW
             && tile !== T.ROOF && tile !== T.ROOF2
             && tile !== T.FENCE_H && tile !== T.FENCE_V;
@@ -3995,7 +4258,9 @@ class PixelTileMap {
         {
             ctx.font = 'bold 7px monospace';
             ctx.textAlign = 'center';
-            const nameShort = name.split('(')[0].trim();
+            // v5.76.0 英文介面:地圖上的人名卡也用英文名(Boone/Hank…),不再中英夾雜
+            const _en = typeof I18N !== 'undefined' && I18N.getLang?.() === 'en';
+            const nameShort = _en ? I18N.localizeNames(name.split('(')[0].trim()) : name.split('(')[0].trim();
             const jobLabel = jobTitle || '';
             const cardText = jobLabel ? nameShort + ' · ' + jobLabel : nameShort;
             const tw = ctx.measureText(cardText).width;
@@ -4374,6 +4639,7 @@ class PixelTileMap {
         this._drawCoachStation(ctx);
         // v5.75.0 海岸道具:棧橋木樁、漁船、燈塔
         this._drawHarborProps(ctx);
+        this._drawMountainProps(ctx); // v5.76.0 礦山鎮道具
         // Draw factory icons near workshop/tavern
         if (extraData?.processing?.builtFactories) {
             this._drawFactoryOverlay(ctx, extraData.processing);
@@ -4400,10 +4666,12 @@ class PixelTileMap {
         // Draw location labels
         ctx.font = 'bold 9px monospace';
         ctx.textAlign = 'center';
+        const _lblEn = typeof I18N !== 'undefined' && I18N.getLang?.() === 'en';
         for (const [locId, lbl] of Object.entries(this.labelPositions)) {
             const isPlayerHere = locId === playerLoc;
+            const lblName = _lblEn ? I18N.t(lbl.name) : lbl.name; // v5.76.0 英文介面地名標籤翻譯
             // Background
-            const tw = ctx.measureText(lbl.name).width;
+            const tw = ctx.measureText(lblName).width;
             ctx.fillStyle = isPlayerHere ? 'rgba(0,229,255,0.85)' : 'rgba(0,0,0,0.7)';
             const bgX = lbl.x - tw/2 - 4;
             const bgY = lbl.y - 9;
@@ -4414,7 +4682,7 @@ class PixelTileMap {
             ctx.strokeRect(bgX, bgY, tw + 8, 13);
             // Text
             ctx.fillStyle = isPlayerHere ? '#000' : '#fff';
-            ctx.fillText(lbl.name, lbl.x, lbl.y);
+            ctx.fillText(lblName, lbl.x, lbl.y);
         }
 
         // Draw move indicator (pulsing circle at click destination)
