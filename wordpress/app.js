@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.78.0
-const RIMTOWN_APP_VERSION = '5.78.0';
+// RimTown - Frontend App (WordPress Plugin) v5.79.0
+const RIMTOWN_APP_VERSION = '5.79.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1594,14 +1594,14 @@ class RimTownApp {
             : `<button class="landing-btn primary" id="landing-register">✨ ${t('註冊')}</button>
                <button class="landing-btn secondary" id="landing-login">🔑 ${t('登入')}</button>`;
         const features = [
-            ['🧠', t('會記得你的村民'), t('二十多位村民各有性格、記憶與人際關係。你說過的話、送過的禮，他們都記得，也會拿去跟別人八卦。')],
+            ['🧠', t('會記得你的村民'), t('五座城鎮、近百位村民各有性格、記憶與人際關係。你說過的話、送過的禮，他們都記得，也會拿去跟別人八卦。')],
             ['💬', t('真的在聊天'), t('對話由內建 AI 生成，不用填任何金鑰。安慰、打聽、說服、調解、示好、威脅，每一句都會改變關係。')],
             ['🐎', t('多鎮往返'), t('邊境鎮之外還有漁村海風鎮、山上的礦山鎮、密林裡的林間村、平原樞紐市集城，五座城鎮各有自己的地圖、卡司與故事。搭馬車過去作客，村民也會跨鎮互訪，把別鎮的故事帶回來。')],
             ['📖', t('任務與多重結局'), t('五章主線、村民個人任務、每日目標、劇情名場面。你可以參選鎮長，也可以只當個看戲的旅人。')],
         ];
         const roadmap = [
             [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證'), t('海風鎮專屬任務鏈（漁村主線）'), t('跨鎮貿易與商隊')]],
-            [t('規劃中'), '#fbbf24', [t('村民擴編（每鎮 +5 人）'), t('村民自訂外觀'), t('五鎮互訪與商隊貿易')]],
+            [t('規劃中'), '#fbbf24', [t('村民自訂外觀'), t('五鎮互訪與商隊貿易')]],
             [t('構想'), '#60a5fa', [t('玩家之間互訪城鎮'), t('手機 App 版')]],
         ];
         const log = (typeof RIMTOWN_CHANGELOG !== 'undefined' && Array.isArray(RIMTOWN_CHANGELOG)) ? RIMTOWN_CHANGELOG : [];

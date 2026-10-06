@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.78.0
+ * Version: 5.79.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.78.0');
+define('RIMTOWN_VERSION', '5.79.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,24 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.79.0',
+            'date'    => '2026-10-06',
+            'changes' => array(
+                '👥 邊境鎮卡司 20→25:養雞的寡婦杜鵑(市集城嫁來)、吳達的徒弟石磊(在意鄭薇、跟護衛隊吵礦場安全)、林美的學徒白露(偷偷把楊鋒送的花插進診所花瓶)、退休老守衛老謝(鎮上最會下棋、和何秀的姐姐有過婚約)、張豪的話癆徒弟小滿(把師父的詩抄給黃莉)——各自帶 2–3 條關係鉤子進來',
+                '🌊 海風鎮卡司 15→20:望潮哨的年輕哨兵阿帆(和阿浮搶珊珊的窗台)、阿浮的母親蚵嫂、想把鹽賣到礦山鎮的鹽工阿鹽、秀姑捨不得放走的徒弟阿蓉、船難那夜也在船上的老漁(他知道石叔和燈爺之間發生了什麼)',
+                '🏠 住房自動加蓋驗證:25 人的邊境鎮開局自動補到 18–19 戶、20 人的海風鎮 14–15 戶,每個人都分得到床位;人口上限維持繁榮度分級(20/40/60/80 → 14/17/22/30 人),新開局不會被擠爆',
+                '🎲 隨機卡司名字池:姓 26→40、名每性別 24→60(共 40×120 組合),英文對照同步;五鎮劇本卡司與移民池共 101 個名字列入保留名單,隨機卡司不會再抽到跟別鎮村民一樣的名字',
+                '🌐 新增 10 位村民的英文名與背景翻譯;首頁「會記得你的村民」改為「五座城鎮、近百位村民」',
+            ),
+            'changes_en' => array(
+                '👥 Frontier Town cast 20→25: hen-keeping widow Juniper (married in from Market City), Duncan\'s apprentice Garrick (soft on Vivian, argues mine safety with the guards), Mia\'s apprentice Bailey (who quietly put Felix\'s flowers in the clinic vase), retired guard Gideon (the best chess player in town, once engaged to Sandra\'s sister) and Hugo\'s chatty apprentice Wren (who slipped her master\'s poems to Hazel), each arriving with two or three relationship hooks',
+                '🌊 Seabreeze Harbor cast 15→20: young Tidewatch sentry Sully (competing with Finn for Coral\'s windowsill), Finn\'s mother Opal, saltworker Saul who wants to sell salt to Mine Ridge, Shirley\'s apprentice Rosa she cannot bear to let go, and old fisherman Fisher who was aboard the night of the shipwreck and knows what happened between Stan and Lou',
+                '🏠 Housing auto-build verified: a 25-person Frontier Town starts with 18–19 houses and a 20-person Seabreeze with 14–15, everyone gets a bed; the population target keeps its prosperity tiers (20/40/60/80 → 14/17/22/30), so new games are not overcrowded',
+                '🎲 Random cast name pools: surnames 26→40 and given names 24→60 per gender (40 × 120 combinations) with matching English names; the 101 names of the five scripted casts and the immigrant pool are now reserved, so a random cast never shares a name with another town\'s villager',
+                '🌐 English names and background translations for the 10 new villagers; the landing card "Villagers who remember you" now says "five towns, nearly a hundred villagers"',
+            ),
+        ),
         array(
             'version' => '5.78.0',
             'date'    => '2026-10-06',
