@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.77.0
+ * Version: 5.78.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.77.0');
+define('RIMTOWN_VERSION', '5.78.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.78.0',
+            'date'    => '2026-10-06',
+            'changes' => array(
+                '🏛️ 第五座城鎮「市集城」登場:邊境鎮繁榮度到 80 收到「商會來函」,五鎮馬車全線通車。平原上的交通樞紐有自己的地圖——一圈城牆與八座城門(門樓紅旗)、14×10 的大市集廣場(兩排攤棚、中央噴泉水花、兩串隨風飄的彩旗)、商會大樓、書院、財神廟、磚窯(窯火冒煙)、東南角商隊營地四頂帳篷',
+                '💰 市集城 15 人專屬卡司:怕老婆的商會會長金老爺與握著半個市集租約的鳳姨、發現一筆不該存在款項的老帳房、背完整本算經的攤主阿算與書院講師書儀、等人的戲班裁縫綵姑與多看兩眼的城門衛隊長門叔、嫌所有事的窯叔、跑遍五鎮的商隊領隊駝姐…與邊境鎮的陳偉、劉俊、周明,海風鎮的浪叔、秀姑,礦山鎮的礦爺、白姑都有跨鎮親緣',
+                '🪙 市集城物資:銀幣 600、布料 150、工具 40 多;木石金屬原料缺——五座城鎮各有所長(漁獲帆布／石材金屬／木材草藥／銀幣布料),跨鎮貿易的底子齊了',
+                '📣 首頁:特色文案改為五座城鎮,路線圖把「五鎮互訪與商隊貿易」列入規劃;多城鎮企劃 P0–P3 全數上線,接下來是 P4 村民擴編與 P5 多鎮連通',
+            ),
+            'changes_en' => array(
+                '🏛️ The fifth town, Market City, is here: at prosperity 80 Frontier Town receives a letter from the guild and the coach runs between all five towns. The crossroads of the plains has its own map: a ring of city walls with eight gates (gate towers and red banners), a 14 by 10 Grand Market Square with two rows of stalls, a splashing fountain and two strings of pennants in the wind, the Guild Hall, the Academy, the Wealth God Temple, a smoking Brick Kiln and a caravan camp with four tents in the south-east corner',
+                '💰 A cast of 15 unique to Market City: guild president Magnus who fears only his wife Freya, holder of half the market leases; bookkeeper Lester who found a sum that should not exist; stallholder Abe who memorised the whole Book of Reckoning for lecturer Sophie; costume tailor Scarlett who is waiting for someone and gate captain Gates who looks twice; Kyle who complains about everything; caravan leader Carmen who travels all five towns; with cross-town ties to Victor, Leo and Milo in Frontier Town, Wade and Shirley in Seabreeze Harbor and Boone and Blanche in Mine Ridge',
+                '🪙 Market City stockpile: rich in silver (600), cloth (150) and tools (40), short on wood, stone and metal; the five towns now each have their own strengths (fish and sailcloth, stone and metal, wood and herbs, silver and cloth), the foundation for inter-town trade',
+                '📣 Landing page: the feature copy now covers five towns and the roadmap lists "Five-town visits and caravan trade"; multi-town plan P0 to P3 are all live, next up P4 bigger casts and P5 multi-town connectivity',
+            ),
+        ),
         array(
             'version' => '5.77.0',
             'date'    => '2026-10-06',

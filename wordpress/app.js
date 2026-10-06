@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.77.0
-const RIMTOWN_APP_VERSION = '5.77.0';
+// RimTown - Frontend App (WordPress Plugin) v5.78.0
+const RIMTOWN_APP_VERSION = '5.78.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -11,12 +11,16 @@ const NEIGHBOR_TOWNS = [
     { theme: 'forest', name: '林間村', prosperity: 60, key: 'rimtown_forest_unlocked', match: /林間村|Greenwood/i, icon: '🌲',
       log: () => t('📯 林道開通：獵戶把林間村的密林小徑清出來了，馬車可以進林子！'), title: () => t('林道開通！'),
       desc: () => t('密林裡的「林間村」獵戶清出一條馬車道：那裡木材草藥多、石材金屬缺，古樹祭壇與篝火場等你去看看') },
+    { theme: 'market', name: '市集城', prosperity: 80, key: 'rimtown_market_unlocked', match: /市集城|Market City/i, icon: '🏛️',
+      log: () => t('📯 商會來函：市集城向邊境鎮開放城門，五鎮馬車全線通車！'), title: () => t('商會來函！'),
+      desc: () => t('平原上的交通樞紐「市集城」向你開放城門：商會、書院、大市集廣場與商隊營地都在那裡，銀幣布料多、原料缺，是五鎮貿易的中心') },
 ];
 // v5.76.0 主題鎮的任務分頁占位(主線任務只屬於邊境鎮)
 const TOWN_STORY_BLURBS = {
     harbor: { icon: '🌊', title: '海風鎮的故事', text: '這座漁村沒有既定的劇本——阿潮的暗戀、石叔與燈爺的舊怨、雲姨未說完的往事，都在日常裡自己發生。多跟大家聊聊，故事會找上你。' },
     mountain: { icon: '⛏️', title: '礦山鎮的故事', text: '這座礦業小鎮沒有既定的劇本——阿岩算出的金脈、老錘與牛叔的塌方舊怨、白姑想寄出去的那封信、牛叔盤算的接班，都在日常裡自己發生。多跟大家聊聊，故事會找上你。' },
     forest: { icon: '🌲', title: '林間村的故事', text: '這座林間小村沒有既定的劇本——阿松送出的第十四隻木雕、守林人與伐木場的拉扯、老樵口中那棵不能砍的樹、林姥年輕時進林子的原因，都在日常裡自己發生。多跟大家聊聊，故事會找上你。' },
+    market: { icon: '🏛️', title: '市集城的故事', text: '這座商城沒有既定的劇本——老帳發現的那筆不該存在的款項、綵姑等的那個人、阿算背完的整本算經、窯叔與商會的壓價之爭、駝姐帶回來的五鎮消息，都在日常裡自己發生。多跟大家聊聊，故事會找上你。' },
 };
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
@@ -1592,12 +1596,12 @@ class RimTownApp {
         const features = [
             ['🧠', t('會記得你的村民'), t('二十多位村民各有性格、記憶與人際關係。你說過的話、送過的禮，他們都記得，也會拿去跟別人八卦。')],
             ['💬', t('真的在聊天'), t('對話由內建 AI 生成，不用填任何金鑰。安慰、打聽、說服、調解、示好、威脅，每一句都會改變關係。')],
-            ['🐎', t('多鎮往返'), t('邊境鎮之外還有漁村海風鎮、山上的礦山鎮、密林裡的林間村，各有自己的地圖、卡司與故事。搭馬車過去作客，村民也會跨鎮互訪，把別鎮的故事帶回來。')],
+            ['🐎', t('多鎮往返'), t('邊境鎮之外還有漁村海風鎮、山上的礦山鎮、密林裡的林間村、平原樞紐市集城，五座城鎮各有自己的地圖、卡司與故事。搭馬車過去作客，村民也會跨鎮互訪，把別鎮的故事帶回來。')],
             ['📖', t('任務與多重結局'), t('五章主線、村民個人任務、每日目標、劇情名場面。你可以參選鎮長，也可以只當個看戲的旅人。')],
         ];
         const roadmap = [
-            [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證'), t('第五座城鎮：市集城（多城鎮計畫）'), t('海風鎮專屬任務鏈（漁村主線）')]],
-            [t('規劃中'), '#fbbf24', [t('村民擴編（每鎮 +5 人）'), t('村民自訂外觀'), t('跨鎮貿易與商隊')]],
+            [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證'), t('海風鎮專屬任務鏈（漁村主線）'), t('跨鎮貿易與商隊')]],
+            [t('規劃中'), '#fbbf24', [t('村民擴編（每鎮 +5 人）'), t('村民自訂外觀'), t('五鎮互訪與商隊貿易')]],
             [t('構想'), '#60a5fa', [t('玩家之間互訪城鎮'), t('手機 App 版')]],
         ];
         const log = (typeof RIMTOWN_CHANGELOG !== 'undefined' && Array.isArray(RIMTOWN_CHANGELOG)) ? RIMTOWN_CHANGELOG : [];
