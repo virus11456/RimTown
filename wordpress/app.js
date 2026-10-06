@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.79.0
-const RIMTOWN_APP_VERSION = '5.79.0';
+// RimTown - Frontend App (WordPress Plugin) v5.80.0
+const RIMTOWN_APP_VERSION = '5.80.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1600,8 +1600,8 @@ class RimTownApp {
             ['📖', t('任務與多重結局'), t('五章主線、村民個人任務、每日目標、劇情名場面。你可以參選鎮長，也可以只當個看戲的旅人。')],
         ];
         const roadmap = [
-            [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證'), t('海風鎮專屬任務鏈（漁村主線）'), t('跨鎮貿易與商隊')]],
-            [t('規劃中'), '#fbbf24', [t('村民自訂外觀'), t('五鎮互訪與商隊貿易')]],
+            [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證'), t('海風鎮專屬任務鏈（漁村主線）')]],
+            [t('規劃中'), '#fbbf24', [t('村民自訂外觀'), t('跨鎮戀愛搬家'), t('日報跨鎮專欄')]],
             [t('構想'), '#60a5fa', [t('玩家之間互訪城鎮'), t('手機 App 版')]],
         ];
         const log = (typeof RIMTOWN_CHANGELOG !== 'undefined' && Array.isArray(RIMTOWN_CHANGELOG)) ? RIMTOWN_CHANGELOG : [];
@@ -3467,6 +3467,12 @@ class RimTownApp {
             { agentData, stayDays, fromTownId: this.currentTownId, fromTownName: this._getCurrentTownName() });
         w.onVisitorReturn = (meta) => this._pushMailbox(this._returnMailboxKey(meta.fromTownId),
             { origId: meta.origId, origName: meta.origName, notes: meta.notes || [], visitedTownName: this._getCurrentTownName() });
+        // v5.80.0 跨鎮商隊:角落通知 + 地圖上馬車進城動畫
+        w.onCaravan = (info) => {
+            const label = (rs) => (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[rs]?.name) ? SHOP_ITEMS[rs].name() : (rs === 'silver' ? t('銀幣') : rs);
+            this._showCornerNotice({ icon: '🐪', title: t('跨鎮商隊'), name: t(info.fromName), desc: `${info.giveAmt} ${label(info.give)} → ${info.recvAmt} ${label(info.recv)}${info.hub ? t('（市集城經手，多兩成）') : ''}` });
+            try { this.tileMap?.showCaravan?.(`${t(info.fromName)}${t('的商隊')}`); } catch (e) {}
+        };
         // 其他城鎮清單(出訪目的地),60 秒更新一次
         // v5.59.0 TC-01 修復:雲端+本地合併(雲端寫入失敗時本地仍可導航)、
         // 排除與當前鎮同名的重複 meta(訪客時期/登入後的殘留)、只列載得到存檔的鎮

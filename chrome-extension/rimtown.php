@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.79.0
+ * Version: 5.80.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.79.0');
+define('RIMTOWN_VERSION', '5.80.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,24 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.80.0',
+            'date'    => '2026-10-06',
+            'changes' => array(
+                '🐪 跨鎮商隊貿易:每 3 天會有一隊商隊從某個已通車的鎮來到你所在的鎮,用本鎮多的東西換對方多的東西——邊境鎮賣糧食木材、海風鎮賣漁獲帆布、礦山鎮賣石材金屬、林間村賣木材草藥、市集城賣銀幣布料,各鎮缺什麼就換什麼(一次最多 40,取本鎮庫存的 12%);市集城經手的交易多兩成',
+                '🛒 商隊來的時候:地圖上一輛貨車從馬車站那頭沿大路駛到廣場旁停一會兒再離開(車上有麻袋木箱、馬腿會動),角落通知寫明換了什麼,日誌記一筆「🐪 礦山鎮的商隊來了：用 25 食物換到 25 石材」,村民之間也會聊起商隊帶來的貨',
+                '🗺️ 多鎮連通收尾:馬車站列出所有已通車的城鎮、村民互訪可來自任一鎮、跨鎮親緣網已涵蓋五鎮(這三項在 v5.76–v5.78 逐步完成),本版補上最後一塊「商隊貿易」;多城鎮企劃 P0–P5 全數上線',
+                '💾 商隊紀錄(上次來的日子)存進存檔,讀檔後不會同一天來兩次;舊檔鎮名存成英文(Seabreeze Harbor)也認得出主題',
+                '📣 首頁路線圖:跨鎮貿易與商隊移出開發中,規劃中新增「跨鎮戀愛搬家」「日報跨鎮專欄」',
+            ),
+            'changes_en' => array(
+                '🐪 Inter-town caravan trade: every three days a caravan arrives from one of the towns the coach reaches and trades your town\'s surplus for theirs. Frontier Town sells food and wood, Seabreeze Harbor fish and sailcloth, Mine Ridge stone and metal, Greenwood wood and herbs, Market City silver and cloth, and each town buys what it lacks (up to 40 per trade, 12% of your stock); trades handled through Market City pay 20% more',
+                '🛒 When the caravan comes, a wagon drives in along the main road from the coach station side, pauses by the square and leaves (sacks and crates on board, the horse\'s legs move), a corner notice says what was traded, the log records "🐪 Mine Ridge\'s caravan has arrived: traded 25 Food for 25 Stone", and villagers talk about the goods it brought',
+                '🗺️ Multi-town connectivity complete: the coach station lists every connected town, visiting villagers can come from any town and the cross-town kinship web covers all five (those three landed gradually in v5.76–v5.78); this release adds the last piece, caravan trade, so multi-town plan P0 to P5 is now fully live',
+                '💾 The caravan\'s last visit day is saved, so a loaded game never gets two caravans on the same day; towns saved under English names (Seabreeze Harbor) are recognised by theme too',
+                '📣 Landing-page roadmap: caravan trade moved out of "in development"; "Cross-town romance and moving" and "Cross-town column in the daily news" added to planned',
+            ),
+        ),
         array(
             'version' => '5.79.0',
             'date'    => '2026-10-06',

@@ -3714,11 +3714,12 @@ const TERRAIN_TYPES = [
 // v5.55.0 主題城鎮:每個主題有自己的地點皮膚、開局物資性格與專屬名冊
 // frontier = 邊境鎮(現況,一切照舊);harbor = 海風鎮(漁村:討海文化、鹽場、燈塔)
 const TOWN_THEMES = {
-    frontier: { key: 'frontier', townName: '邊境鎮' },
+    frontier: { key: 'frontier', townName: '邊境鎮', exports: ['food', 'wood'], imports: ['stone', 'metal'] },
     harbor: {
         key: 'harbor',
         townName: '海風鎮',
         terrain: 'coastal',
+        exports: ['food', 'cloth'], imports: ['wood', 'herbs'], // v5.80.0 跨鎮商隊:賣漁獲帆布、買木材草藥
         locationNames: {
             town_hall: t('港務所'), tavern: t('海味居'), clinic: t('海風診療所'), workshop: t('修船工房'),
             farm: t('蚵田菜畦'), quarry: t('鹽場'), general_store: t('南北雜貨行'), library: t('燈塔書房'),
@@ -3735,6 +3736,7 @@ const TOWN_THEMES = {
         key: 'mountain',
         townName: '礦山鎮',
         terrain: 'mountain',
+        exports: ['stone', 'metal'], imports: ['food', 'cloth'],
         unlockProsperity: 40,
         locationNames: {
             town_hall: '礦務所', tavern: '礦燈酒館', clinic: '坑口醫站', workshop: '熔爐鍛坊',
@@ -3751,6 +3753,7 @@ const TOWN_THEMES = {
         key: 'forest',
         townName: '林間村',
         terrain: 'forest',
+        exports: ['wood', 'herbs'], imports: ['stone', 'metal'],
         unlockProsperity: 60,
         locationNames: {
             town_hall: '村長木屋', tavern: '松脂酒館', clinic: '藥草小屋', workshop: '木工坊',
@@ -3767,6 +3770,7 @@ const TOWN_THEMES = {
         key: 'market',
         townName: '市集城',
         terrain: 'plains',
+        exports: ['silver', 'cloth'], imports: ['wood', 'stone', 'food'],
         unlockProsperity: 80,
         locationNames: {
             town_hall: '商會大樓', tavern: '金馬車客棧', clinic: '杏林藥堂', workshop: '百工坊',
@@ -3779,6 +3783,17 @@ const TOWN_THEMES = {
         stockpile: { silver: 600, cloth: 150, tools: 40, food: 120, wood: 40, stone: 40, metal: 30, herbs: 30 },
     },
 };
+
+// v5.80.0 鎮名 → 主題(舊檔可能把鎮名存成英文,一併認得)
+const TOWN_NAME_THEME = [
+    ['harbor', /海風鎮|Seabreeze/i], ['mountain', /礦山鎮|Mine Ridge/i], ['forest', /林間村|Greenwood/i],
+    ['market', /市集城|Market City/i], ['frontier', /邊境鎮|Frontier Town/i],
+];
+function themeKeyOfTownName(name) {
+    const n = String(name || '');
+    const hit = TOWN_NAME_THEME.find(([, re]) => re.test(n));
+    return hit ? hit[0] : null;
+}
 
 // v5.58.0 跨鎮親緣網:兩鎮從第一天就織在同一張關係網裡,只是沿海道路還沒通
 // 邊境鎮居民會想起海那頭的親友,海風鎮的人也記掛著這頭——世界觀在通車前就開始呼吸
@@ -6653,6 +6668,7 @@ class World {
             // v5.49.0 戲劇導演:小鎮太平靜時在後台輕推一把,確保戲一直有得看
             try { this._dramaDirector(); } catch (e) { console.warn('[RimTown] director error:', e); }
             try { this._visitorDaily(); } catch (e) { console.warn('[RimTown] visitor error:', e); } // v5.56.0 跨鎮互訪
+            try { this._caravanDaily(); } catch (e) { console.warn('[RimTown] caravan error:', e); } // v5.80.0 跨鎮商隊
             // Daily news (before economy/events so modifiers apply)
             this.news.dailyUpdate(this);
             // Daily economy
@@ -6738,6 +6754,35 @@ class World {
         const si = ['春季','夏季','秋季','冬季'].indexOf(this.clock.season);
         return ((this.clock.year - 1) * 4 + Math.max(0, si)) * 15 + this.clock.day;
     }
+    // v5.80.0 跨鎮商隊:每 3 天從某個已通車的鎮來一隊商隊,用本鎮多的東西換對方多的東西
+    // (五鎮各有所長:漁獲帆布／石材金屬／木材草藥／銀幣布料),市集城經手的交易多兩成
+    _caravanDaily() {
+        if (!Array.isArray(this.otherTowns) || !this.otherTowns.length) return;
+        const day = this._absDay();
+        if (this.lastCaravanDay != null && day - this.lastCaravanDay < 3) return;
+        const myKey = this.townTheme || 'frontier';
+        const mine = TOWN_THEMES[myKey] || TOWN_THEMES.frontier;
+        const cands = this.otherTowns.map(tw => ({ tw, key: themeKeyOfTownName(tw.name) })).filter(c => c.key && c.key !== myKey && TOWN_THEMES[c.key]);
+        if (!cands.length) return;
+        const pick = pickRandom(cands);
+        const other = TOWN_THEMES[pick.key];
+        const give = (mine.exports || []).find(rs => (other.imports || []).includes(rs)) || (mine.exports || [])[0];
+        const recv = (other.exports || []).find(rs => (mine.imports || []).includes(rs)) || (other.exports || [])[0];
+        if (!give || !recv) return;
+        const giveAmt = Math.min(40, Math.floor((this.stockpile.get(give) || 0) * 0.12));
+        if (giveAmt < 5) return; // 本鎮也沒餘貨,商隊空手而回,過兩天再試
+        const hub = (myKey === 'market' || pick.key === 'market') ? Math.ceil(giveAmt * 0.2) : 0;
+        const recvAmt = giveAmt + hub;
+        this.stockpile.add(give, -giveAmt, this.tickCount, t('跨鎮商隊'), pick.tw.name);
+        this.stockpile.add(recv, recvAmt, this.tickCount, t('跨鎮商隊'), pick.tw.name);
+        this.lastCaravanDay = day;
+        const label = (rs) => (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[rs]?.name) ? SHOP_ITEMS[rs].name() : (rs === 'silver' ? t('銀幣') : rs);
+        const msg = `${t(pick.tw.name)}${t('的商隊來了：用')} ${giveAmt} ${label(give)} ${t('換到')} ${recvAmt} ${label(recv)}${hub ? t('（市集城經手，多兩成）') : ''}`;
+        this.logMessage('trade', `🐪 ${msg}`);
+        if (this.events?.conversationTopics) this.events.conversationTopics.push(`${t(pick.tw.name)}${t('的商隊帶來了')}${label(recv)}`);
+        this.onCaravan?.({ fromName: pick.tw.name, fromTheme: pick.key, give, giveAmt, recv, recvAmt, hub });
+    }
+
     _visitorDaily() {
         this.visitors = this.visitors || {};
         const today = this._absDay();
@@ -8163,6 +8208,7 @@ class World {
             townTheme: this.townTheme || 'frontier', // v5.55.0 主題城鎮
             visitors: JSON.parse(JSON.stringify(this.visitors || {})), // v5.56.0 在鎮訪客名單
             townName: this.townName || '', // v5.58.0 鎮名
+            lastCaravanDay: this.lastCaravanDay ?? null, // v5.80.0 跨鎮商隊
 
             playerActions: (this.playerActions || []).slice(-60).map(a => ({ ...a })), // v5.45.0 蝴蝶效應
             dailyEcho: [...(this.dailyEcho || [])], // v5.45.0 昨日回響
@@ -8356,6 +8402,7 @@ class World {
             this.workPolicy = data.workPolicy || {}; // v5.51.0
             this.townTheme = data.townTheme || 'frontier'; // v5.55.0 主題城鎮
             this.visitors = data.visitors || {}; // v5.56.0 在鎮訪客
+            this.lastCaravanDay = data.lastCaravanDay ?? null; // v5.80.0
             this.townName = data.townName || (TOWN_THEMES[this.townTheme]?.townName) || '邊境鎮'; // v5.59.5 舊檔沒鎮名時依主題補上,不再殘留上一鎮的名字
             this._chronicleChatIdx = (this.agents['player']?.chatHistory || []).length; // v5.43.0 讀檔後從當下開始記
             this.playerActions = data.playerActions || []; // v5.45.0
