@@ -63,7 +63,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 | # | 項目 | 狀態 | 備註 |
 |---|---|---|---|
-| A1 | 生成更多城鎮與村民 | 進行中（P0 海風鎮地圖、P1 礦山鎮已上線，接著 P2 林間村） | 目前只有邊境鎮、海風鎮兩種主題；每鎮固定卡司 20／15 人 |
+| A1 | 生成更多城鎮與村民 | 進行中（P0 海風鎮地圖、P1 礦山鎮、P2 林間村已上線，接著 P3 市集城） | 目前只有邊境鎮、海風鎮兩種主題；每鎮固定卡司 20／15 人 |
 | A2 | 海風鎮地圖要有海邊、燈塔、港口 | ✅ v5.75.0 已上線 | `generateLayout(locations, theme)` 海岸版面：海面／沙灘／棧橋＋漁船／燈塔（夜間光束）／曬網場／鹽場／海蝕洞／潟湖 |
 | A3 | 每座城鎮特色要不一樣 | 進行中（海風鎮已有專屬地形；新鎮依 D-P1～P3 做） | 需要「主題地形＋主題建築圖示＋主題卡司＋主題經濟」四層一起做 |
 | A4 | 首頁放 3D low-poly 截圖（`img/lowpoly-preview.jpg`） | 等附件 | 使用者的截圖未以附件送達；Cowork 另放了 4 張 Godot 測試截圖（v5.74.1 後） |
@@ -124,7 +124,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 - 卡司 15 人（礦工、鐵匠、工程師、酒保、礦坑醫生…）自帶三角戀與舊怨；經濟多金屬石材、缺食物布料。
 - 解鎖：繁榮 40 時「山道來信」事件，馬車可達。
 
-**D-P2 第四座城鎮：林間村（forest）**
+**D-P2 第四座城鎮：林間村（forest）— ✅ v5.77.0 已上線**
 - 地形：四周密林、林中空地、獵人小屋、木柵；卡司 15 人（獵人、藥草師、木匠、守林人…）；經濟多木材草藥、缺石材金屬。
 - 解鎖：繁榮 60。
 
@@ -152,7 +152,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.76.0.zip` from Releases
+1. Download `rimtown-v5.77.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -187,6 +187,13 @@ node scripts/gen-changelog.js   # 從 rimtown.php 產生首頁更新紀錄 chang
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.77.0 (2026-10-06)
+
+- 🌲 第四座城鎮「林間村」登場:邊境鎮繁榮度到 60 收到「林道開通」，獵戶清出馬車道。密林裡的獵戶與樵夫村有自己的地圖——四周厚厚的林帶、村子只在林中空地裡;篝火場取代石板廣場(夜裡篝火＋螢火蟲)、古樹祭壇是一棵掛滿祈福布條的巨木、伐木場堆原木、守林哨塔立一座高塔、林中空地有鹿、白天落葉飄
+- 🏹 林間村 15 人專屬卡司:聽得懂樹說話的村長林姥、打獵的大熊與護鹿的鹿娘這對吵了十年的夫妻、送了十四隻木雕的阿松與藥草師阿葉、守林人阿哨與伐木工頭鋸哥的護林／伐木之爭、老樵口中那棵不能砍的樹、五十年手帕交林姥與樹婆…與邊境鎮的趙霞、林美、楊鋒、何昌、凌波，海風鎮的海嬤、木蝦都有跨鎮親緣
+- 🪵 林間村物資:木材 340、草藥 120 多;石材 20、金屬 10 缺——三座鄰鎮各有所長，為跨鎮貿易鋪路
+- 📣 首頁:特色文案加入林間村，路線圖更新(市集城開發中)
 
 ### v5.76.0 (2026-10-06)
 
