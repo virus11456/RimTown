@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.74.1
-const RIMTOWN_APP_VERSION = '5.74.1';
+// RimTown - Frontend App (WordPress Plugin) v5.74.2
+const RIMTOWN_APP_VERSION = '5.74.2';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -400,8 +400,8 @@ class RimTownApp {
                     this._syncToCloud().catch(() => {});
                 } else {
                     // v5.62.1 沿用既有同名條目的 id(覆寫同一 slot),沒有才產新 id
-                    const orphan = this._getTownList().find(tw => tw.name === t('邊境鎮'));
-                    this.currentTownId = orphan?.id || this._generateTownId(t('邊境鎮'));
+                    const orphan = this._getTownList().find(tw => tw.name === '邊境鎮');
+                    this.currentTownId = orphan?.id || this._generateTownId('邊境鎮');
                 }
             }
         } else {
@@ -420,14 +420,14 @@ class RimTownApp {
             }
             if (!loaded) {
                 const legacyLoaded = await this.tryLoadGame();
-                const orphan = this._getTownList().find(tw => tw.name === t('邊境鎮'));
+                const orphan = this._getTownList().find(tw => tw.name === '邊境鎮');
                 if (legacyLoaded) {
-                    this.currentTownId = orphan?.id || this._generateTownId(t('邊境鎮'));
-                    this._saveCurrentTown(t('邊境鎮'));
+                    this.currentTownId = orphan?.id || this._generateTownId('邊境鎮');
+                    this._saveCurrentTown('邊境鎮');
                 } else {
                     this.world.reset();
-                    this.currentTownId = orphan?.id || this._generateTownId(t('邊境鎮'));
-                    this._saveCurrentTown(t('邊境鎮'));
+                    this.currentTownId = orphan?.id || this._generateTownId('邊境鎮');
+                    this._saveCurrentTown('邊境鎮');
                 }
             }
         }
@@ -1112,7 +1112,7 @@ class RimTownApp {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + this.auth._nonce },
                 body: JSON.stringify({
-                    town_name: this.state?.town_name || t('邊境鎮'),
+                    town_name: this.state?.town_name || '邊境鎮',
                     prosperity: Math.round(pr.prosperity || 0),
                     level: pr.level || '',
                     population: Object.keys(this.state?.agents || {}).length,
@@ -1202,7 +1202,7 @@ class RimTownApp {
                 // v5.68.0 首頁註冊:清掉本機其他帳號殘留,標記新城鎮名,重載走正規登入流程(會顯示教學)
                 this._getTownList().forEach(_tw => { localStorage.removeItem('rimtown_town_' + _tw.id); localStorage.removeItem('rimtown_town_' + _tw.id + '_archives'); });
                 ['rimtown_town_list', 'rimtown_last_town', 'rimtown_achievements', 'rimtown_raid_count', 'rimtown_tutorial_done'].forEach(k => localStorage.removeItem(k));
-                localStorage.setItem('rimtown_pending_town_name', `${user}${t('的邊境鎮')}`);
+                localStorage.setItem('rimtown_pending_town_name', `${user}的邊境鎮`);
                 try { sessionStorage.setItem('rimtown_enter_now', '1'); } catch (e) {}
                 location.reload(); return;
             }
@@ -1224,7 +1224,7 @@ class RimTownApp {
             localStorage.removeItem('rimtown_raid_count');
             this.world.reset();
             if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
-            const townName = `${user}${t('的邊境鎮')}`;
+            const townName = `${user}的邊境鎮`;
             this.currentTownId = this._generateTownId(townName);
             this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
             this.state = this.world.getState();
@@ -1682,7 +1682,7 @@ class RimTownApp {
         const ladder = [
             ['≥ 61', t('摯友')], ['21 ~ 60', t('朋友')], ['−19 ~ 20', t('認識 / 陌生人')], ['−59 ~ −20', t('對手')], ['≤ −60', t('敵人')],
         ].map(([r, l]) => `<div class="landing-ladder-row"><span>${r}</span><b>${l}</b></div>`).join('');
-        return `<section class="landing-section landing-brain" id="landing-brain"><h2>${t('村民的大腦：他們是怎麼社交的')}</h2>
+        return `<section class="landing-section landing-brain" id="landing-brain"><details class="landing-fold"><summary><h2>${t('村民的大腦：他們是怎麼社交的')}</h2><span class="landing-fold-hint">${t('點開看完整的運作方式')}</span></summary>
             <p class="landing-brain-intro">${t('沒有劇本。每位村民每 15 分鐘做一次決定，靠的是自己的記憶、性格和跟對方的關係。下面是一輪社交的完整流程，數字都是遊戲裡實際用的參數。')}</p>
             <div class="landing-steps">${steps.map((s, i) => `<div class="landing-step"><div class="landing-step-no">${i + 1}</div><div class="landing-step-ic">${s[0]}</div><h3>${s[1]}</h3><p>${s[2]}</p></div>`).join('')}</div>
 
@@ -1733,7 +1733,7 @@ class RimTownApp {
             </div>
             <p class="landing-muted landing-brain-foot">${t('成本閘門：只有玩家附近的對話與每日額度內的行程／反思會呼叫 AI，其餘一律規則式運算，所以一整鎮 20 多人同時「活著」也不會燒錢。')}</p>
             ${this._renderTechDetails()}
-        </section>`;
+        </details></section>`;
     }
     // v5.70.0 首頁「技術細節」摺疊區:一次 AI 請求的旅程、兩個 AI 怎麼協作
     _renderTechDetails() {
@@ -2022,7 +2022,7 @@ class RimTownApp {
                 this._generateTileMapLayout();
                 if (this.tileMap) this.tileMap.agentPositions = {};
                 this.render();
-                this.world.logMessage('system', `${t('已從雲端同步最新存檔（')}${cloudMatch.town_name}）。`);
+                this.world.logMessage('system', `${t('已從雲端同步最新存檔（')}${t(cloudMatch.town_name)}）。`);
             }
         } catch (e) {
             console.error('[RimTown] Cloud load error:', e);
@@ -2972,8 +2972,8 @@ class RimTownApp {
                 const date = new Date(s.updated_at).toLocaleString();
                 html += `<div class="town-item">
                     <div class="town-info" data-action="load-cloud-save" data-val="${s.town_id}">
-                        <div class="town-name">☁️ ${s.town_name}</div>
-                        <div class="town-meta">${s.season}${t(' 第')}${s.year}${t('年 第')}${s.day}${t('天 | 人口')}${s.population} | ${date}</div>
+                        <div class="town-name">☁️ ${t(s.town_name)}</div>
+                        <div class="town-meta">${t(s.season)}${t(' 第')}${s.year}${t('年 第')}${s.day}${t('天 | 人口')}${s.population} | ${date}</div>
                     </div>
                     <div class="town-actions">
                         <button data-action="delete-cloud-save" data-val="${s.town_id}" class="btn-danger" title="${t('刪除雲端存檔')}">🗑️</button>
@@ -3282,7 +3282,7 @@ class RimTownApp {
                 this.tileMap._centeredOnPlayer = false;
             }
             this._updateQuestGuidance?.(); // v5.59.0 TC-02:抵達後任務/教學橫幅立即依新鎮重繪,不殘留上一鎮的目標
-            this._showCornerNotice({ icon: '🐎', title: `${t('抵達')}${townName}`, name: '', desc: t('下車活動活動筋骨，去鎮上走走吧') });
+            this._showCornerNotice({ icon: '🐎', title: `${t('抵達')}${t(townName)}`, name: '', desc: t('下車活動活動筋骨，去鎮上走走吧') });
         } catch (e) {
             this._gameAlert?.(t('旅途出了點問題：') + e.message, '❌');
         }
@@ -3401,11 +3401,13 @@ class RimTownApp {
     async _ensureNeighborTown() {
         if (this._neighborEnsured) return;
         this._neighborEnsured = true;
-        const harborName = t('海風鎮');
+        const harborName = '海風鎮';
         try {
             let exists = false;
-            if (this.auth.loggedIn && Array.isArray(this._cloudSaves)) exists = this._cloudSaves.some(s => (s.town_name || '').includes(harborName));
-            if (!exists) exists = this._getTownList().some(tw => (tw.name || '').includes(harborName));
+            // v5.74.2 雲端清單沒載到(開機雲端讀取失敗)時先重新拉一次,不然會在已經有海風鎮的帳號再生一個
+            if (this.auth.loggedIn && !Array.isArray(this._cloudSaves)) { try { this._cloudSaves = await this.auth.listSaves(); } catch (e) {} }
+            if (this.auth.loggedIn && Array.isArray(this._cloudSaves)) exists = this._cloudSaves.some(s => /海風鎮|Seabreeze/i.test(s.town_name || ''));
+            if (!exists) exists = this._getTownList().some(tw => /海風鎮|Seabreeze/i.test(tw.name || ''));
             if (exists || (this.world?.townTheme === 'harbor')) return;
             const nw = new World();
             nw.townTheme = 'harbor';
@@ -3416,7 +3418,7 @@ class RimTownApp {
             const tid = this._generateTownId(harborName);
             const list = this._getTownList();
             if (!list.some(tw => tw.id === tid)) {
-                list.push({ id: tid, name: harborName, savedAt: new Date().toISOString(), season: blob.clock?.season || t('春季'), year: 1, day: 1, population: Object.keys(blob.agents || {}).length });
+                list.push({ id: tid, name: harborName, savedAt: new Date().toISOString(), season: blob.clock?.season || '春季', year: 1, day: 1, population: Object.keys(blob.agents || {}).length });
                 this._saveTownList(list);
             }
             try { localStorage.setItem('rimtown_town_' + tid, JSON.stringify(blob)); } catch (e) {}
@@ -3524,7 +3526,7 @@ class RimTownApp {
                 try {
                     const d = JSON.parse(localStorage.getItem('rimtown_town_' + id) || 'null');
                     if (!d) return 0;
-                    const si = [t('春季'), t('夏季'), t('秋季'), t('冬季')].indexOf(d?.clock?.season);
+                    const si = ['春季', '夏季', '秋季', '冬季'].indexOf(d?.clock?.season);
                     return ((d?.clock?.year || 1) - 1) * 60 + Math.max(0, si) * 15 + (d?.clock?.day || 1);
                 } catch (e) { return 0; }
             };
@@ -3560,7 +3562,7 @@ class RimTownApp {
         if (!cloudData || !localData) return cloudData || localData || null;
         const tc = Number(cloudData.tickCount), tl = Number(localData.tickCount);
         if (Number.isFinite(tc) && Number.isFinite(tl) && tc !== tl) return tl > tc ? localData : cloudData;
-        const absDay = d => { const si = [t('春季'), t('夏季'), t('秋季'), t('冬季')].indexOf(d?.clock?.season); return ((d?.clock?.year || 1) - 1) * 60 + Math.max(0, si) * 15 + (d?.clock?.day || 1); };
+        const absDay = d => { const si = ['春季', '夏季', '秋季', '冬季'].indexOf(d?.clock?.season); return ((d?.clock?.year || 1) - 1) * 60 + Math.max(0, si) * 15 + (d?.clock?.day || 1); };
         return absDay(localData) > absDay(cloudData) ? localData : cloudData;
     }
 
@@ -3586,9 +3588,9 @@ class RimTownApp {
             id: this.currentTownId,
             // v5.59.5 名字優先序:呼叫方指定 > 世界自己的鎮名 > 舊 meta。原本沒條目又沒傳名字時
             // 一律寫「邊境鎮」,海風鎮的存檔就這樣被掛錯名,馬車回程名單跟著壞;世界名也能修復舊的錯名 meta
-            name: name || this.world?.townName || existing?.name || t('邊境鎮'),
+            name: name || this.world?.townName || existing?.name || '邊境鎮',
             savedAt: new Date().toISOString(),
-            season: clock.season || t('春季'),
+            season: clock.season || '春季',
             year: clock.year || 1,
             day: clock.day || 1,
             population: Object.keys(saveData.agents || {}).length,
@@ -3675,7 +3677,7 @@ class RimTownApp {
                 html += `<div class="town-item ${isActive?'active':''}">
                     <div class="town-info" data-action="switch-town" data-val="${_tw.id}">
                         <div class="town-name">${t(_tw.name)} ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
-                        <div class="town-meta">${_tw.season}${t(' 第')}${_tw.year}${t('年 第')}${_tw.day}${t('天 | 人口')}${_tw.population} | ${date}</div>
+                        <div class="town-meta">${t(_tw.season)}${t(' 第')}${_tw.year}${t('年 第')}${_tw.day}${t('天 | 人口')}${_tw.population} | ${date}</div>
                     </div>
                     <div class="town-actions">
                         <button data-action="rename-town" data-val="${_tw.id}" title="${t('重新命名')}">✏️</button>
@@ -3710,7 +3712,7 @@ class RimTownApp {
                     const date = _tw.updated_at ? new Date(_tw.updated_at).toLocaleString() : '';
                     html += `<div class="town-item ${isActive?'active':''}">
                         <div class="town-info" data-action="switch-town" data-val="${_tw.town_id}">
-                            <div class="town-name">${_tw.town_name} ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
+                            <div class="town-name">${t(_tw.town_name)} ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
                             <div class="town-meta">${_tw.season||''}${t(' 第')}${_tw.year||1}${t('年 第')}${_tw.day||1}${t('天 | 人口')}${_tw.population||0} | ${date}</div>
                         </div>
                         <div class="town-actions">
@@ -3877,7 +3879,7 @@ class RimTownApp {
     }
     _hideBusyOverlay() { document.getElementById('busy-overlay')?.remove(); }
     async renameTownPrompt(townId) {
-        let currentName = t('邊境鎮');
+        let currentName = '邊境鎮';
         if (this.auth.loggedIn && this._cloudSaves) {
             const cloud = this._cloudSaves.find(s => s.town_id === townId);
             if (cloud) currentName = cloud.town_name;
@@ -3970,11 +3972,11 @@ class RimTownApp {
 
     // v5.58.0 鎮名同步到全部三處標題(桌面 h1/手機標題/側欄標),不再永遠寫死邊境鎮
     _updateHeaderTownName(name) {
-        const n = name || this.world?.townName || t('邊境鎮');
+        const n = name || this.world?.townName || '邊境鎮';
         const title = document.querySelector('.mobile-title');
         if (title) title.textContent = n;
         const h1 = document.querySelector('.rimtown-container h1[data-i18n], .rimtown-container header h1, #rimtown-header h1');
-        if (h1) h1.textContent = n;
+        if (h1) h1.textContent = t(n);
         document.querySelectorAll('.rt-title-zh').forEach(el => { el.textContent = n; });
     }
 
@@ -4979,7 +4981,7 @@ class RimTownApp {
         const archive = {
             id: Date.now(),
             savedAt: new Date().toISOString(),
-            gameClock: `${clock.season || t('春季')}${t(' 第')}${clock.year || 1}${t('年 第')}${clock.day || 1}${t('天')}`,
+            gameClock: `${t(clock.season || '春季')}${t(' 第')}${clock.year || 1}${t('年 第')}${clock.day || 1}${t('天')}`,
             townId: this.currentTownId,
             playerName: player.name,
             messageCount: player.chatHistory.length,
@@ -5442,7 +5444,7 @@ class RimTownApp {
         if (mobileClock) {
             const h = String(clock.hour || 0).padStart(2, '0');
             const m = String(clock.minute || 0).padStart(2, '0');
-            mobileClock.textContent = `Y${clock.year} ${clock.season} D${clock.day} ${this._dayPhaseIcon(clock.hour || 12)}${h}:${m}`;
+            mobileClock.textContent = `Y${clock.year} ${t(clock.season)} D${clock.day} ${this._dayPhaseIcon(clock.hour || 12)}${h}:${m}`;
         }
         const mobilePop = document.getElementById('mobile-population');
         if (mobilePop) mobilePop.textContent = `${agentCount}${t('人')}`;
@@ -7409,7 +7411,7 @@ class RimTownApp {
         const gen = this.world._legacyGeneration || 1;
         const genText = gen > 1 ? `${t(' <span style="font-size:10px;color:#f0c040;margin-left:4px">第')}${gen}${t('代</span>')}` : '';
         html += `<div class="town-info-bar">
-            <span class="town-info-name">${townName}${genText}</span>
+            <span class="town-info-name">${t(townName)}${genText}</span>
             <span class="town-info-pop">👤 ${popCount}${travelText}</span>
             <span class="town-info-clock">${clock.time_str || ''}</span>
         </div>`;
@@ -8901,7 +8903,7 @@ class RimTownApp {
             if (log.length > 0) {
                 html += t('<div class="econ-section"><h3>收穫紀錄</h3>');
                 log.slice(-5).reverse().forEach(h => {
-                    html += `<div style="font-size:0.75rem;margin:2px 0">${h.cropName} x${h.amount}（${h.quality}）— ${h.season}${t(' 第')}${h.day}${t('天</div>')}`;
+                    html += `<div style="font-size:0.75rem;margin:2px 0">${h.cropName} x${h.amount}（${h.quality}）— ${t(h.season)}${t(' 第')}${h.day}${t('天</div>')}`;
                 });
                 html += '</div>';
             }
@@ -9248,7 +9250,7 @@ class RimTownApp {
         return this._chronicleDbPromise;
     }
     _chronicleSeq(arc) {
-        const sIdx = Math.max(0, [t('春季'), t('夏季'), t('秋季'), t('冬季')].indexOf(t(arc.season)));
+        const sIdx = Math.max(0, ['春季', '夏季', '秋季', '冬季'].indexOf(arc.season));
         return ((arc.year - 1) * 4 + sIdx) * 15 + (arc.day - 1);
     }
     _chronicleLabel(arc) { return `${t('第')}${arc.year}${t('年 ')}${t(arc.season)} ${t('第')}${arc.day}${t('天')}`; }

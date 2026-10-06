@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.74.1
+ * Version: 5.74.2
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.74.1');
+define('RIMTOWN_VERSION', '5.74.2');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,42 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.74.2',
+            'date'    => '2026-10-06',
+            'changes' => array(
+                '🏘️ 修正「城鎮多做了一個」:介面切到 English 後,海風鎮自動生成的「已存在」判斷比對的是翻譯後的名字(Seabreeze Harbor),找不到既有的「海風鎮」就再生一座;開新局的預設鎮名也會存成英文。現在鎮名、季節這類資料一律存中文、只在顯示時翻譯,既有的英文名城鎮也會被視為同一座;雲端清單沒載到時會先重拉一次再決定要不要生成',
+                '🧹 已經多出來的那座請在「城鎮列表」手動刪除(程式不會自動刪任何雲端存檔);通常是名字叫 Seabreeze Harbor 或 Frontier Town、第 1 天的那一筆',
+                '📂 首頁「村民的大腦」整區改為預設收合,點標題才展開,首頁不再一路拉到底',
+                '🌐 季節比對(事件季節、作物、封存)原本在英文介面下全部對不上,一併改為存中文比中文;標頭鎮名與城鎮列表改在顯示時翻譯',
+            ),
+            'changes_en' => array(
+                '🏘️ Fixed "an extra town appeared": with the interface in English, the auto-generation check for Seabreeze Harbor compared against the translated name, failed to find the existing 海風鎮 and generated a second one; new-game default town names were also saved in English. Town names and seasons are now always stored in Chinese and translated only for display, towns already saved under English names count as the same town, and the cloud list is refreshed before deciding to generate',
+                '🧹 Please delete the extra town manually from the town list (the code never auto-deletes cloud saves); it is usually the Day-1 entry named Seabreeze Harbor or Frontier Town',
+                '📂 The landing page\'s "Inside a villager\'s head" section is now collapsed by default and expands on tap, so the page no longer runs on forever',
+                '🌐 Season comparisons (event seasons, crops, archives) all failed under the English interface; they now compare Chinese against Chinese, and the header town name and town list translate at display time',
+            ),
+        ),
+        array(
+            'version' => 'Godot 3D · 2026.09.10',
+            'date' => '2026-09-10',
+            'changes' => array(
+                'Godot 3D 開發進度：旅人移動、近身互動、聊天／送禮、心動事件、建築選址與加工農業已接入。以下是獨立 3D 測試版進度，並非網頁版新增玩法。',
+                '任務核心已接入 12 主線、11 支線、24 居民任務、13 日常、六類人生目標及四種結局；所有路線自然通關驗收仍在進行。',
+                '人口與家庭：每兩日檢查出生、每日最多一位居民移入；住宅每棟完工增加 3 位 NPC 容量，最多八棟、總容量 40，住宅不增加產量。',
+                '平衡與驗證：保留備貨與市場需求限制；原始新局資源、正常付費施工，伐木起步的經濟路線在 40 日達到 37 人、18 棟及 Lv7。預設原料補給有開啟，並非封閉自給或全結局通關。',
+                '行為一致性限制：3D 版自由聊天提到邀約，尚不會自動建立赴約行程；居民間系統邀約已有延遲選址，但準時赴約、等待與失約原因尚待補齊。',
+                '官網新增四張實際 Godot 測試截圖：建設選址、居民任務、人口家庭與友情心動。畫面含測試情境，並非目前網頁遊戲畫面。',
+            ),
+            'changes_en' => array(
+                'Godot 3D development: traveler movement, nearby interactions, chat and gifts, heart events, construction placement, processing and farming are integrated. These are updates to the separate 3D test build, not new browser gameplay.',
+                'Quest core: 12 main quests, 11 side quests, 24 resident quests, 13 daily objectives, six life goals and four endings are integrated. Full natural playthrough validation across all routes is still ongoing.',
+                'Population and families: birth checks every two days and at most one immigrant per day. Each completed residence adds three NPC slots; up to eight residences and 40 total NPC slots. Housing provides no production bonus.',
+                'Balance and validation: stock targets and market demand limits remain active. Starting with demo resources and normal paid construction, a lumber-first economic route reached 37 residents, 18 buildings and town Lv7 in 40 days. Default material relief was enabled; this was not a closed economy or full ending playthrough.',
+                'Behavior consistency limit: free-form 3D dialogue invitations do not yet create appointments. System invitations between NPCs can influence later destinations, but punctual arrival, waiting and missed-appointment explanations remain unfinished.',
+                'The website now includes four real Godot test screenshots: construction placement, resident quests, population and families, and friendship milestones. They include test scenarios and do not show the current browser game.',
+            ),
+        ),
         array(
             'version' => '5.74.1',
             'date'    => '2026-09-09',

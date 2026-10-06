@@ -4436,6 +4436,8 @@ const I18N = (() => {
         '蝗災正在侵襲小鎮，農作物受到嚴重威脅。大家都很擔心糧食問題。': 'Locusts are ravaging the town and the crops are in serious danger. Everyone is worried about food.',
         '盜匪在小鎮附近出沒，安全受到威脅。居民們人心惶惶。': 'Bandits prowl near the town and safety is at risk. Residents are on edge.',
         '一種神秘的疾病在小鎮蔓延，已有多人生病。大家急需醫療資源。': 'A mysterious illness is spreading through town and several people are sick. Medical supplies are urgently needed.',
+        // v5.74.2 首頁大腦區摺疊
+        '點開看完整的運作方式': 'Expand to see how it all works',
         // v5.73.0 AI 對話語言設定
         'AI 對話語言': 'AI dialogue language',
         '跟隨介面語言': 'Follow interface language',
