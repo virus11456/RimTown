@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.74.2
+ * Version: 5.75.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.74.2');
+define('RIMTOWN_VERSION', '5.75.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,24 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.75.0',
+            'date'    => '2026-10-06',
+            'changes' => array(
+                '🌊 海風鎮終於有海了：南側整排海面與沙灘、東岸斜切成海灣,碼頭棧橋從沙灘伸進海裡、末端 T 字碼頭停了四艘漁船(隨浪起伏);東南角燈塔岬立著紅白燈塔,夜裡旋轉光束掃過海面',
+                '🏖️ 海風鎮地點全部換成海岸版面:沙灘木屋一整排面海、崖上人家四戶全露出(不再被港務所壓住)、曬網場有木樁與漁網、鹽場是工寮加一片片結晶鹽池、鹽灘、潟湖、西岸海蝕洞;馬車站搬到西側沿海道路盡頭,馬頭朝邊境鎮',
+                '🧭 海面不可行走(棧橋可以),村民不會再在海裡散步;加蓋的房子與工廠地基也不會蓋到棧橋、鹽田、燈塔岬上',
+                '🗺️ 地圖依城鎮主題產生(tilemap 新增 theme 參數),邊境鎮版面一格都沒動;舊的海風鎮存檔不用重開,切過去就是海岸地圖',
+                '📣 首頁路線圖同步更新:礦山鎮進入開發中,林間村／市集城與村民擴編列入規劃',
+            ),
+            'changes_en' => array(
+                '🌊 Seabreeze Harbor finally has a sea: a full band of water and beach along the south, the east shore cut into a bay, a wooden pier running from the beach out to a T-shaped dock with four fishing boats bobbing on the waves, and a red-and-white lighthouse on the south-east point whose beam sweeps the water at night',
+                '🏖️ Every Seabreeze location now uses the coastal layout: a row of beach cabins facing the sea, all four Cliffside Homes visible (no longer buried under the Harbor Office), a net-drying yard with poles and nets, saltworks with a shed and crystallised salt pans, salt flats, a lagoon and a sea cave on the west shore; the coach station moved to the west end of the coast road, horse facing Frontier Town',
+                '🧭 Sea tiles are no longer walkable (the pier is), so villagers stop strolling through the ocean; extra houses and factory plots also keep off the pier, salt pans and lighthouse point',
+                '🗺️ Maps are generated per town theme (tilemap gained a theme parameter); the Frontier Town layout is untouched tile for tile, and old Seabreeze saves get the coastal map the moment you switch to them, no restart needed',
+                '📣 Landing-page roadmap updated: Mine Ridge is now in development, Forest Village / Market City and bigger casts are planned',
+            ),
+        ),
         array(
             'version' => '5.74.2',
             'date'    => '2026-10-06',

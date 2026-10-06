@@ -63,9 +63,9 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 | # | 項目 | 狀態 | 備註 |
 |---|---|---|---|
-| A1 | 生成更多城鎮與村民 | 企劃中（見 D） | 目前只有邊境鎮、海風鎮兩種主題；每鎮固定卡司 20／15 人 |
-| A2 | 海風鎮地圖要有海邊、燈塔、港口 | 企劃中（見 D-P0） | `tilemap.js` 的 `generateLayout()` 不認得主題，海風鎮只換了地名與物資，地形畫法跟邊境鎮一模一樣 |
-| A3 | 每座城鎮特色要不一樣 | 企劃中（見 D） | 需要「主題地形＋主題建築圖示＋主題卡司＋主題經濟」四層一起做 |
+| A1 | 生成更多城鎮與村民 | 進行中（D-P0 完成，接著 P1 礦山鎮） | 目前只有邊境鎮、海風鎮兩種主題；每鎮固定卡司 20／15 人 |
+| A2 | 海風鎮地圖要有海邊、燈塔、港口 | ✅ v5.75.0 已上線 | `generateLayout(locations, theme)` 海岸版面：海面／沙灘／棧橋＋漁船／燈塔（夜間光束）／曬網場／鹽場／海蝕洞／潟湖 |
+| A3 | 每座城鎮特色要不一樣 | 進行中（海風鎮已有專屬地形；新鎮依 D-P1～P3 做） | 需要「主題地形＋主題建築圖示＋主題卡司＋主題經濟」四層一起做 |
 | A4 | 首頁放 3D low-poly 截圖（`img/lowpoly-preview.jpg`） | 等附件 | 使用者的截圖未以附件送達；Cowork 另放了 4 張 Godot 測試截圖（v5.74.1 後） |
 | A5 | 海風鎮專屬任務鏈（漁村主線） | 未做 | `app.js` 註記 TC-03：海風鎮目前只顯示「漁村故事頁」占位，無主線／支線 |
 | A6 | 已多出來的重複城鎮 | 需玩家手動刪 | v5.74.2 已堵住成因；程式規範「絕不自動刪雲端存檔」，請到城鎮列表刪 Seabreeze Harbor／Frontier Town 那筆 |
@@ -112,7 +112,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 **目標**：每座城鎮一眼就看得出不一樣——地形、建築、卡司、經濟、故事都不同；城鎮數從 2 擴到 5；村民總數從 35 擴到 100 左右。
 
-**D-P0 地圖主題化（先把海風鎮做對）**
+**D-P0 地圖主題化（先把海風鎮做對）— ✅ v5.75.0 已上線**
 - `tilemap.generateLayout(locations, theme)` 接收主題：
   - 海風鎮：地圖東側與南側整排海面（水＋白浪＋沙灘線），碼頭棧橋伸進海裡、停 2–3 艘漁船；`hill` 區改畫燈塔（夜晚旋轉光束）；`park` 畫曬網場；住宅改沙灘木屋／崖上人家。
   - 邊境鎮：維持現況（草原、河、森林）。
@@ -141,7 +141,9 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 **估計**：P0 一版、P1～P3 各一版、P4 一版、P5 一版，共六個版本。每一版都可單獨上線。
 
-**待你拍板的問題**
+**拍板結果（2026-10-06 使用者說「繼續」，依預設值進行）**：順序礦山鎮→林間村→市集城；每鎮 15 人；到繁榮度自動出現；地圖維持 80×60；先做 P0 上線再逐鎮做。
+
+**原先提問（已依上列預設值決定）**
 1. 新主題的名稱與順序：礦山鎮 → 林間村 → 市集城，可以嗎？要改名或換主題（例如沙漠綠洲、雪原）請說。
 2. 每鎮卡司 15 人還是 20 人？人越多 AI 行程與反思的每日額度分攤越薄。
 3. 新鎮是「到繁榮度自動出現」（像海風鎮），還是「玩家建立新城鎮時選主題」？也可以兩者都要。
@@ -150,7 +152,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.74.2.zip` from Releases
+1. Download `rimtown-v5.75.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -185,6 +187,14 @@ node scripts/gen-changelog.js   # 從 rimtown.php 產生首頁更新紀錄 chang
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.75.0 (2026-10-06)
+
+- 🌊 海風鎮終於有海了：南側整排海面與沙灘、東岸斜切成海灣，碼頭棧橋從沙灘伸進海裡、末端 T 字碼頭停了四艘漁船(隨浪起伏);東南角燈塔岬立著紅白燈塔，夜裡旋轉光束掃過海面
+- 🏖️ 海風鎮地點全部換成海岸版面:沙灘木屋一整排面海、崖上人家四戶全露出(不再被港務所壓住)、曬網場有木樁與漁網、鹽場是工寮加一片片結晶鹽池、鹽灘、潟湖、西岸海蝕洞;馬車站搬到西側沿海道路盡頭，馬頭朝邊境鎮
+- 🧭 海面不可行走(棧橋可以)，村民不會再在海裡散步;加蓋的房子與工廠地基也不會蓋到棧橋、鹽田、燈塔岬上
+- 🗺️ 地圖依城鎮主題產生(tilemap 新增 theme 參數)，邊境鎮版面一格都沒動;舊的海風鎮存檔不用重開，切過去就是海岸地圖
+- 📣 首頁路線圖同步更新:礦山鎮進入開發中，林間村／市集城與村民擴編列入規劃
 
 ### v5.74.2 (2026-10-06)
 
