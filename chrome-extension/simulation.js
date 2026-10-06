@@ -5865,9 +5865,11 @@ const BABY_NAMES_MALE = ['小龍','天明','子軒','浩宇','嘉禾','承恩','
 const BABY_NAMES_FEMALE = ['小鳳','曉月','詩涵','雨桐','美琪','欣怡','佳穎','思琪','夢瑤','婉清','紫萱','若蘭'];
 
 // v5.27.0 肉鴿:隨機開局用的名字/背景池
-const RANDOM_SURNAMES = ['陳','林','黃','張','李','王','吳','劉','蔡','楊','許','鄭','謝','郭','洪','曾','廖','賴','徐','周','葉','蘇','高','呂','潘','簡'];
-const RANDOM_GIVEN_MALE = ['志明','建宏','俊傑','家豪','承翰','冠廷','宗翰','柏翰','彥廷','子墨','宇軒','澤','思成','岳','峰','昊','翔','睿','浩然','立','風','岩','洲','霆'];
-const RANDOM_GIVEN_FEMALE = ['淑芬','美玲','雅婷','怡君','佳蓉','曉薇','子晴','語彤','欣妍','佩珊','宛柔','思妤','詠晴','若曦','芷若','靜宜','采薇','韻如','婉婷','晴','嵐','薇','蕎','菱'];
+const RANDOM_SURNAMES = ['陳','林','黃','張','李','王','吳','劉','蔡','楊','許','鄭','謝','郭','洪','曾','廖','賴','徐','周','葉','蘇','高','呂','潘','簡','何','羅','梁','宋','唐','趙','馬','柯','凌','韓','董','魏','方','石']; // v5.79.0 26→40 姓
+const RANDOM_GIVEN_MALE = ['志明','建宏','俊傑','家豪','承翰','冠廷','宗翰','柏翰','彥廷','子墨','宇軒','澤','思成','岳','峰','昊','翔','睿','浩然','立','風','岩','洲','霆','文傑','俊宏','明哲','柏宇','承佑','冠宇','奕辰','子恆','景行','允文','懷安','一帆','兆宏','俊宇','廷威','冠霖','哲瑋','少軒','季恆','紹文','嘉祥','弘毅','子安','辰','宸','曜','朗','寬','鈞','楷','恆','邦','泰','燁','川','勳']; // v5.79.0 24→60 名
+const RANDOM_GIVEN_FEMALE = ['淑芬','美玲','雅婷','怡君','佳蓉','曉薇','子晴','語彤','欣妍','佩珊','宛柔','思妤','詠晴','若曦','芷若','靜宜','采薇','韻如','婉婷','晴','嵐','薇','蕎','菱','雨彤','芷晴','怡萱','沛珊','佳琪','宜庭','雅雯','庭瑄','品妍','語嫣','嘉欣','予涵','舒婷','恩綺','靜怡','心瑜','依婷','柔安','昕妤','貝兒','安琪','語珊','若瑄','婕','妍','瑄','彤','霏','綺','恩','棠','芊','語','寧','曦','芸']; // v5.79.0 24→60 名
+// v5.79.0 五鎮劇本卡司與移民池的名字,隨機卡司不再抽到(避免兩鎮撞名)
+const RESERVED_NAMES = new Set(['丁傑','何昌','何秀','何芳','凌波','劉俊','吳達','呂嵐','周明','唐琳','大熊','孫雨','小滿','小鑽','小鷗','張豪','書儀','曹峰','木叔','木根','木蝦','李雪','杏姑','杜鵑','林姥','林美','柯薇','桂嬸','楊鋒','樹婆','油伯','浪叔','海伯','海嬤','燈爺','牛叔','王麗','珊珊','白姑','白露','皮姑','石叔','石磊','礦爺','祠婆','秀姑','窯叔','綵姑','繡姑','老帳','老樵','老漁','老謝','老錘','肥叔','范浩','蔡文','蕭瑜','蘇晴','蚵嫂','許瑩','財叔','趙霞','邱雅','鄭強','鄭薇','金老爺','鋸哥','鐵柱','門叔','阿哨','阿岩','阿帆','阿晴','阿杏','阿松','阿梯','阿榫','阿汐','阿浮','阿潮','阿狐','阿矢','阿算','阿舵','阿苔','阿苗','阿葉','阿蓉','阿鈴','阿鋼','阿錨','阿鹽','陳偉','雲姨','馬強','駝姐','高朗','鳳姨','鹿娘','黃莉']);
 const RANDOM_BG = () => [
     '帶著一身故事來到邊境鎮,想在這裡重新開始。',
     '土生土長的鎮民,對這片土地有說不完的感情。',
@@ -7559,6 +7561,12 @@ class World {
             {id:'gao_lang',name:'高朗',age:31,gender:'male',job:'guard',home:'residential_north',traits:['hardworking','stoic','abrasive'],values:['權力','社群'],background:'吳達的舊袍澤，退伍後追隨老友來到邊境鎮。剛硬耿直,看不慣楊鋒的作風,卻對禮拜堂的歌聲莫名心軟。'},
             {id:'ke_wei',name:'柯薇',age:27,gender:'female',job:'tailor',home:'residential_south',traits:['creative','romantic','night_owl'],values:['藝術','自由'],background:'遊歷各地的繡藝師，指尖有星光。愛自由不受拘束，卻在遇見一位安靜的星象學者後,第一次想為誰停下腳步。'},
             {id:'ling_bo',name:'凌波',age:25,gender:'female',job:'researcher',home:'residential_south',traits:['shy','creative','perfectionist'],values:['知識','自然'],background:'沉靜的星象研究者，總在夜裡觀測。話不多,但每次抬頭看見那位繡藝師,筆記本上的星圖就會多幾筆走神的線條。'},
+            // v5.79.0 邊境鎮擴編 +5:新人各自帶著關係鉤子進來(師徒、寡婦、老棋手、話癆學徒)
+            {id:'du_juan',name:'杜鵑',age:30,gender:'female',job:'farmer',home:'residential_south',traits:['hardworking','kind','stoic'],values:['家庭','自然'],background:'從市集城嫁過來的農婦，一手養雞的本事讓邊境鎮的早餐多了雞蛋。嫁的那個人三年前走了，她留了下來，雞圈越養越大。'},
+            {id:'shi_lei',name:'石磊',age:36,gender:'male',job:'miner',home:'residential_south',traits:['hardworking','optimist','abrasive'],values:['財富','權力'],background:'吳達帶出來的徒弟，現在礦場一半的活是他扛的。崇拜師父也想超越師父，常為了礦場的安全跟護衛隊吵架。對埋首書堆的鄭薇，有說不出口的在意。'},
+            {id:'bai_lu',name:'白露',age:21,gender:'female',job:'doctor',home:'residential_north',traits:['shy','perfectionist','kind'],values:['知識','社群'],background:'林美從城裡帶回來的學徒，膽子小但針扎得準。偷偷把楊鋒送給林美的花插進了診所的花瓶，自己卻假裝沒看見。'},
+            {id:'lao_xie',name:'老謝',age:62,gender:'male',job:'guard',home:'residential_north',traits:['stoic','gossip','perfectionist'],values:['社群','和平'],background:'退休的老守衛，鎮上最會下棋的人。嘴上說不管事，鎮公所每一條決議他都有意見。年輕時和何秀的姐姐有過婚約，沒人敢問後來怎麼了。'},
+            {id:'xiao_man',name:'小滿',age:24,gender:'female',job:'blacksmith',home:'residential_south',traits:['charismatic','gossip','hardworking'],values:['藝術','冒險'],background:'張豪收的徒弟，打鐵的聲音比師父還響。愛熱鬧、愛講話，跟沉默的師父剛好是兩個極端。偷偷把師父寫的詩抄了一份，塞給了禮拜堂的黃莉。'},
         ];
         residents.forEach(r => {
             const personality = new Personality(r.traits, r.background, r.values);
@@ -7597,6 +7605,12 @@ class World {
             {id:'hb_shanshan',name:'珊珊',age:24,gender:'female',job:'researcher',home:'residential_east',traits:['creative','neurotic','night_owl'],values:['知識','自然'],background:'研究潮汐與洋流的年輕學者，筆記本永遠算不完。緊張起來會語無倫次，只有看海的時候是平靜的。'},
             {id:'hb_afu',name:'阿浮',age:21,gender:'male',job:'farmer',home:'residential_east',traits:['shy','early_bird','kind'],values:['自然','家庭'],background:'蚵田的少年，話少得像蚵殼。每天默默把最好的海菜留在珊珊的窗台上，從來不敢署名。'},
             {id:'hb_haima',name:'海嬤',age:66,gender:'female',job:'cook',home:'residential_south',traits:['kind','gossip','optimist'],values:['家庭','社群'],background:'鎮上最老的海女退休後在海味居幫廚，醃的魚乾是傳家手藝。誰家的曾祖父年輕時暗戀過誰，她都記得。'},
+            // v5.79.0 海風鎮擴編 +5
+            {id:'hb_afan',name:'阿帆',age:25,gender:'male',job:'guard',home:'residential_south',traits:['early_bird','optimist','romantic'],values:['冒險','社群'],background:'望潮哨的年輕哨兵，阿舵帶出來的。眼睛好，颱風來之前總是他第一個看見。喜歡珊珊，可惜阿浮的海菜天天在她窗台上。'},
+            {id:'hb_kesao',name:'蚵嫂',age:46,gender:'female',job:'farmer',home:'residential_east',traits:['gossip','kind','abrasive'],values:['家庭','社群'],background:'蚵田的大嬸，阿浮的母親，嗓門比海浪大。覺得兒子太悶，天天替他找話題，反而把他嚇得更不敢開口。'},
+            {id:'hb_ayan',name:'阿鹽',age:31,gender:'male',job:'miner',home:'residential_south',traits:['hardworking','creative','pessimist'],values:['財富','自由'],background:'鹽場的年輕鹽工，石叔的徒弟。一心想把海風鎮的鹽賣到礦山鎮去，石叔只說一句「鹽不過山」。'},
+            {id:'hb_arong',name:'阿蓉',age:23,gender:'female',job:'tailor',home:'residential_east',traits:['creative','perfectionist','shy'],values:['藝術','自由'],background:'秀姑的徒弟，補帆之外還會繡花。想去市集城開繡坊，秀姑說走了就別回來，其實比誰都捨不得。'},
+            {id:'hb_laoyu',name:'老漁',age:67,gender:'male',job:'trader',home:'residential_north',traits:['gossip','stoic','night_owl'],values:['和平','社群'],background:'退休的老漁夫，現在在碼頭賣魚乾和故事。海伯的老船員，當年那場船難他也在船上——他比誰都清楚石叔和燈爺之間發生了什麼，只是從來不說。'},
         ];
         residents.forEach(r => {
             const personality = new Personality(r.traits, r.background, r.values);
@@ -7622,6 +7636,18 @@ class World {
         pair('hb_axi', 'hb_xiaoou', { aff: 58, rom: 0, trust: 52 }, { aff: 56, rom: 0, trust: 50 }); // 手帕交
         pair('hb_yunyi', 'hb_haibo', { aff: 34, rom: 26, status: 'ex' }, { aff: 30, rom: 22, status: 'ex' }); // 未完的舊情
         pair('hb_aduo', 'hb_axi', { aff: 26, rom: 34 }, { aff: 18, rom: 6 }); // 哨長的佔有慾
+        // v5.79.0 擴編新人的鉤子
+        pair('hb_afan', 'hb_aduo', { aff: 40, rom: 0, trust: 34 }, { aff: 36, rom: 0, trust: 30 }); // 哨長帶出來的兵
+        pair('hb_afan', 'hb_shanshan', { aff: 32, rom: 36 }, { aff: 18, rom: 6 }); // 窗台之爭的第二人
+        pair('hb_afan', 'hb_afu', { aff: -10, rom: 0, trust: -8 }, { aff: -6, rom: 0, trust: -4 }); // 情敵
+        pair('hb_kesao', 'hb_afu', { aff: 62, rom: 0, trust: 50 }, { aff: 48, rom: 0, trust: 40 }); // 母子
+        pair('hb_kesao', 'hb_haima', { aff: 52, rom: 0, trust: 46 }, { aff: 50, rom: 0, trust: 44 }); // 蚵田與灶腳的老姐妹
+        pair('hb_ayan', 'hb_shishu', { aff: 38, rom: 0, trust: 30 }, { aff: 30, rom: 0, trust: 24 }); // 鹽不過山
+        pair('hb_arong', 'hb_xiugu', { aff: 48, rom: 0, trust: 42 }, { aff: 46, rom: 0, trust: 40 }); // 捨不得的師徒
+        pair('hb_muxia', 'hb_arong', { aff: 28, rom: 26 }, { aff: 16, rom: 4 }); // 船木匠的心事
+        pair('hb_laoyu', 'hb_haibo', { aff: 54, rom: 0, trust: 48 }, { aff: 50, rom: 0, trust: 44 }); // 老船長與老船員
+        pair('hb_laoyu', 'hb_shishu', { aff: 30, rom: 0, trust: 22 }, { aff: 24, rom: 0, trust: 16 }); // 船難那夜的另一個人
+        pair('hb_laoyu', 'hb_dengye', { aff: 30, rom: 0, trust: 20 }, { aff: 22, rom: 0, trust: 14 });
         this._seedCrossTownMemories(); // v5.58.0 海風鎮這頭也記掛著邊境鎮的親友
     }
 
@@ -7778,7 +7804,7 @@ class World {
             const givens = gender === 'male' ? RANDOM_GIVEN_MALE : RANDOM_GIVEN_FEMALE;
             for (let tryN = 0; tryN < 40; tryN++) {
                 const nm = pickRandom(RANDOM_SURNAMES) + pickRandom(givens);
-                if (!usedNames.has(nm)) { usedNames.add(nm); return nm; }
+                if (!usedNames.has(nm) && !RESERVED_NAMES.has(nm)) { usedNames.add(nm); return nm; } // v5.79.0 避開五鎮既有人名
             }
             return pickRandom(RANDOM_SURNAMES) + pickRandom(givens) + randInt(1, 9);
         };
@@ -7903,6 +7929,18 @@ class World {
         pair('gao_lang', 'huang_li', { x: { aff: 34, rom: 40 }, y: { aff: 20, rom: 4 } });
         // 🌌 柯薇 & 凌波 互相傾心(繡藝師與星象學者,夜裡最懂彼此)——雙向漸濃,likely 成雙
         pair('ke_wei', 'ling_bo', { x: { aff: 42, rom: 46 }, y: { aff: 38, rom: 40 } });
+        // v5.79.0 擴編新人的鉤子
+        pair('shi_lei', 'wu_da', { x: { aff: 52, trust: 44 }, y: { aff: 46, trust: 40 } });      // ⛏️ 師徒
+        pair('shi_lei', 'zheng_wei', { x: { aff: 30, rom: 34 }, y: { aff: 14, rom: 2 } });      // 💭 礦工對學者的在意
+        pair('shi_lei', 'gao_lang', { x: { aff: -18, trust: -10 }, y: { aff: -12, trust: -8 } }); // ⚔️ 礦場安全之爭
+        pair('bai_lu', 'lin_mei', { x: { aff: 50, trust: 46 }, y: { aff: 44, trust: 40 } });    // 🩺 師徒
+        pair('bai_lu', 'sun_yu', { x: { aff: 36, trust: 24 }, y: { aff: 32, trust: 20 } });     // 🌙 兩個怕事的年輕人
+        pair('lao_xie', 'chen_wei', { x: { aff: 40, trust: 44 }, y: { aff: 38, trust: 36 } });  // ♟️ 老守衛與鎮長
+        pair('lao_xie', 'he_xiu', { x: { aff: 30, rom: 0, trust: 20 }, y: { aff: 26, trust: 18 } }); // 🕰️ 沒人敢問的往事
+        pair('xiao_man', 'zhang_hao', { x: { aff: 46, trust: 40 }, y: { aff: 40, trust: 34 } }); // 🔨 師徒
+        pair('xiao_man', 'su_qing', { x: { aff: 44 }, y: { aff: 42 } });                          // 🧁 話癆與陽光
+        pair('du_juan', 'wu_da', { x: { aff: 34, trust: 30 }, y: { aff: 40, trust: 28 } });     // 🐔 老礦工照看寡婦
+        pair('ma_qiang', 'du_juan', { x: { aff: 24, rom: 22 }, y: { aff: 12, rom: 0 } });       // 😏 懶鬼的新目標
         // 開局八卦頭條:讓玩家一進來就嗅到戲
         if (this.gossipNetwork) {
             this.gossipNetwork.activeGossip.push(
