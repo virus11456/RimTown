@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.74.2
-const RIMTOWN_APP_VERSION = '5.74.2';
+// RimTown - Frontend App (WordPress Plugin) v5.75.0
+const RIMTOWN_APP_VERSION = '5.75.0';
 const ELECTION_POLICIES_LABELS = {economy:t('經濟發展'),welfare:t('社會福利'),defense:t('軍事防禦'),culture:t('文化教育'),nature:t('自然保育'),freedom:t('個人自由')};
 
 // =====================================================
@@ -1578,8 +1578,8 @@ class RimTownApp {
             ['📖', t('任務與多重結局'), t('五章主線、村民個人任務、每日目標、劇情名場面。你可以參選鎮長，也可以只當個看戲的旅人。')],
         ];
         const roadmap = [
-            [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證'), t('海風鎮專屬任務鏈（漁村主線）')]],
-            [t('規劃中'), '#fbbf24', [t('第三座城鎮'), t('村民自訂外觀'), t('跨鎮貿易與商隊')]],
+            [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證'), t('第三座城鎮：礦山鎮（多城鎮計畫）'), t('海風鎮專屬任務鏈（漁村主線）')]],
+            [t('規劃中'), '#fbbf24', [t('林間村與市集城'), t('村民擴編（每鎮 +5 人）'), t('村民自訂外觀'), t('跨鎮貿易與商隊')]],
             [t('構想'), '#60a5fa', [t('玩家之間互訪城鎮'), t('手機 App 版')]],
         ];
         const log = (typeof RIMTOWN_CHANGELOG !== 'undefined' && Array.isArray(RIMTOWN_CHANGELOG)) ? RIMTOWN_CHANGELOG : [];
@@ -3983,7 +3983,9 @@ class RimTownApp {
     _generateTileMapLayout() {
         const locations = this.state.locations?.locations || {};
         console.log('[RimTown] _generateTileMapLayout: locationCount=', Object.keys(locations).length);
-        this.tileMap.generateLayout(locations);
+        // v5.75.0 依城鎮主題產圖(海風鎮=海岸版面:海面、沙灘、棧橋、燈塔)
+        const theme = this.world?.townTheme || this.state?.townTheme || 'frontier';
+        this.tileMap.generateLayout(locations, theme);
         this._mapGenerated = true;
     }
 
