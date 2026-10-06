@@ -57,7 +57,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.74.1.zip` from Releases
+1. Download `rimtown-v5.74.2.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -92,6 +92,13 @@ node scripts/gen-changelog.js   # 從 rimtown.php 產生首頁更新紀錄 chang
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.74.2 (2026-10-06)
+
+- 🏘️ 修正「城鎮多做了一個」：介面切到 English 後，`_ensureNeighborTown` 的「已存在」判斷比對的是 `t('海風鎮')`＝Seabreeze Harbor，找不到既有的「海風鎮」就再生一座；開新局的預設鎮名也會存成英文。現在鎮名、季節一律存中文、只在顯示時 `t()`，既有英文名城鎮也視為同一座（`/海風鎮|Seabreeze/`），雲端清單沒載到時先重拉再決定
+- 🧹 已多出來的那座請在「城鎮列表」手動刪除（程式不自動刪任何雲端存檔）；通常是 Seabreeze Harbor／Frontier Town、第 1 天那筆
+- 📂 首頁「村民的大腦」整區改為 `<details>` 預設收合
+- 🌐 `t('春季')` 等 43 處季節比對在英文介面下全部對不上（事件季節、作物、封存、去重 absDay），改為存中文比中文；標頭鎮名、城鎮列表、手機時鐘改顯示時翻譯。Playwright：英文模式遊戲內 0 中文、中文模式 0 英文外漏
 
 ### v5.74.1 (2026-09-09)
 

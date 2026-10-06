@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.74.1
+ * Version: 5.74.2
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.74.1');
+define('RIMTOWN_VERSION', '5.74.2');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.74.2',
+            'date'    => '2026-10-06',
+            'changes' => array(
+                '🏘️ 修正「城鎮多做了一個」:介面切到 English 後,海風鎮自動生成的「已存在」判斷比對的是翻譯後的名字(Seabreeze Harbor),找不到既有的「海風鎮」就再生一座;開新局的預設鎮名也會存成英文。現在鎮名、季節這類資料一律存中文、只在顯示時翻譯,既有的英文名城鎮也會被視為同一座;雲端清單沒載到時會先重拉一次再決定要不要生成',
+                '🧹 已經多出來的那座請在「城鎮列表」手動刪除(程式不會自動刪任何雲端存檔);通常是名字叫 Seabreeze Harbor 或 Frontier Town、第 1 天的那一筆',
+                '📂 首頁「村民的大腦」整區改為預設收合,點標題才展開,首頁不再一路拉到底',
+                '🌐 季節比對(事件季節、作物、封存)原本在英文介面下全部對不上,一併改為存中文比中文;標頭鎮名與城鎮列表改在顯示時翻譯',
+            ),
+            'changes_en' => array(
+                '🏘️ Fixed "an extra town appeared": with the interface in English, the auto-generation check for Seabreeze Harbor compared against the translated name, failed to find the existing 海風鎮 and generated a second one; new-game default town names were also saved in English. Town names and seasons are now always stored in Chinese and translated only for display, towns already saved under English names count as the same town, and the cloud list is refreshed before deciding to generate',
+                '🧹 Please delete the extra town manually from the town list (the code never auto-deletes cloud saves); it is usually the Day-1 entry named Seabreeze Harbor or Frontier Town',
+                '📂 The landing page\'s "Inside a villager\'s head" section is now collapsed by default and expands on tap, so the page no longer runs on forever',
+                '🌐 Season comparisons (event seasons, crops, archives) all failed under the English interface; they now compare Chinese against Chinese, and the header town name and town list translate at display time',
+            ),
+        ),
         array(
             'version' => 'Godot 3D · 2026.09.10',
             'date' => '2026-09-10',

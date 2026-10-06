@@ -3828,7 +3828,7 @@ function placeLocations(locations, width, height, rng) {
 // --- Event System (raids, chains, travel, immigration) ---
 const EVENT_CHAINS = {
     drought_famine_riot: [
-        {name:t('乾旱'),description:t('水井乾涸，作物枯萎。'),severity:'moderate',effects:{mood_all:-8,conversation_topic:t('可怕的乾旱')},seasons:[t('夏季')],duration_days:3},
+        {name:t('乾旱'),description:t('水井乾涸，作物枯萎。'),severity:'moderate',effects:{mood_all:-8,conversation_topic:t('可怕的乾旱')},seasons:['夏季'],duration_days:3},
         {name:t('饑荒'),description:t('糧食供應嚴重不足。'),severity:'major',effects:{mood_all:-15,conversation_topic:t('惡化的饑荒')},delay_days:3,duration_days:4},
         {name:t('暴動'),description:t('絕望的居民為了物資大打出手！'),severity:'major',effects:{mood_all:-20,conversation_topic:t('暴動')},delay_days:4,duration_days:2},
     ],
@@ -3838,7 +3838,7 @@ const EVENT_CHAINS = {
         {name:t('康復'),description:t('疾病已經過去！大家一起慶祝。'),severity:'minor',effects:{mood_all:15,conversation_topic:t('康復')},delay_days:3,duration_days:1},
     ],
     storm_damage_rebuild: [
-        {name:t('大風暴'),description:t('可怕的風暴正在侵襲小鎮！'),severity:'major',effects:{mood_all:-12,conversation_topic:t('毀滅性的風暴')},seasons:[t('秋季'),t('冬季')],duration_days:1},
+        {name:t('大風暴'),description:t('可怕的風暴正在侵襲小鎮！'),severity:'major',effects:{mood_all:-12,conversation_topic:t('毀滅性的風暴')},seasons:['秋季','冬季'],duration_days:1},
         {name:t('風暴損害'),description:t('風暴造成了嚴重的損壞。'),severity:'moderate',effects:{mood_all:-8,conversation_topic:t('風暴損害')},delay_days:1,duration_days:3},
         {name:t('社區重建'),description:t('大家齊心協力重建。'),severity:'minor',effects:{mood_all:10,conversation_topic:t('重建工作')},delay_days:3,duration_days:2},
     ],
@@ -3850,20 +3850,20 @@ const RAID_POOL = [
     {name:t('野豬暴走'),description:t('暴怒的野豬衝進鎮上！'),severity:'moderate',threat_level:2,attacker:t('野豬'),effects:{mood_all:-8,conversation_topic:t('野豬暴走')}},
 ];
 const EVENT_POOL = [
-    {name:t('豐收'),description:t('作物長得特別好！'),severity:'minor',effects:{mood_all:5},seasons:[t('春季'),t('夏季')]},
-    {name:t('寒流'),description:t('突如其來的寒流襲擊小鎮。'),severity:'moderate',effects:{mood_all:-10},seasons:[t('冬季'),t('秋季')]},
+    {name:t('豐收'),description:t('作物長得特別好！'),severity:'minor',effects:{mood_all:5},seasons:['春季','夏季']},
+    {name:t('寒流'),description:t('突如其來的寒流襲擊小鎮。'),severity:'moderate',effects:{mood_all:-10},seasons:['冬季','秋季']},
     {name:t('慶典日'),description:t('小鎮舉辦慶典！大家一起慶祝。'),severity:'minor',effects:{mood_all:15}},
     {name:t('物資短缺'),description:t('貿易路線中斷，物資不足。'),severity:'moderate',effects:{mood_all:-5}},
     {name:t('奇異光芒'),description:t('天空出現奇怪的光。'),severity:'minor',effects:{mood_all:-3,conversation_topic:t('奇異光芒')}},
     {name:t('旅行商人'),description:t('一位商人帶著稀有貨物到來。'),severity:'minor',effects:{mood_all:5,conversation_topic:t('商人的異國貨品')}},
-    {name:t('美麗極光'),description:t('壯麗的極光照亮夜空。'),severity:'minor',effects:{mood_all:10},seasons:[t('冬季')]},
-    {name:t('熱浪'),description:t('酷熱讓戶外工作難以忍受。'),severity:'moderate',effects:{mood_all:-8},seasons:[t('夏季')]},
+    {name:t('美麗極光'),description:t('壯麗的極光照亮夜空。'),severity:'minor',effects:{mood_all:10},seasons:['冬季']},
+    {name:t('熱浪'),description:t('酷熱讓戶外工作難以忍受。'),severity:'moderate',effects:{mood_all:-8},seasons:['夏季']},
     {name:t('幸運發現'),description:t('有人發現了珍貴的材料！'),severity:'minor',effects:{mood_all:8,conversation_topic:t('幸運的發現')}},
     {name:t('觀星之夜'),description:t('今晚的星空特別清澈，許多居民出門看星星。'),severity:'minor',effects:{mood_all:8,conversation_topic:t('美麗的星空')},night_event:true},
     {name:t('月蝕'),description:t('罕見的月蝕！月亮變成了血紅色。'),severity:'minor',effects:{mood_all:-3,conversation_topic:t('血色月蝕')},night_event:true},
-    {name:t('螢火蟲之夜'),description:t('成千上萬的螢火蟲在鎮上飛舞！'),severity:'minor',effects:{mood_all:12,conversation_topic:t('螢火蟲奇觀')},seasons:[t('夏季'),t('春季')],night_event:true},
+    {name:t('螢火蟲之夜'),description:t('成千上萬的螢火蟲在鎮上飛舞！'),severity:'minor',effects:{mood_all:12,conversation_topic:t('螢火蟲奇觀')},seasons:['夏季','春季'],night_event:true},
     {name:t('夜間竊盜'),description:t('有人趁夜偷走了倉庫的物資。'),severity:'moderate',effects:{mood_all:-8,conversation_topic:t('神秘竊賊')},night_event:true},
-    {name:t('極光出現'),description:t('天空中出現了壯麗的極光！'),severity:'minor',effects:{mood_all:15,conversation_topic:t('不可思議的極光')},seasons:[t('冬季'),t('秋季')],night_event:true},
+    {name:t('極光出現'),description:t('天空中出現了壯麗的極光！'),severity:'minor',effects:{mood_all:15,conversation_topic:t('不可思議的極光')},seasons:['冬季','秋季'],night_event:true},
     {name:t('夜半歌聲'),description:t('深夜從森林傳來神秘的歌聲。'),severity:'minor',effects:{mood_all:-2,conversation_topic:t('森林裡的歌聲')},night_event:true},
 ];
 const DEPARTURE_REASONS = [
@@ -4949,16 +4949,16 @@ const NEWS_TEMPLATES = [
 
     // Weather/Nature related
     {headline:t('農夫預測：近日天氣適宜耕作'),headline_en:'Farmers predict: good weather for crops',category:'weather',
-     conditions:w=>[t('春季'),t('夏季')].includes(w.clock.season), weight:3, severity:'good',
+     conditions:w=>['春季','夏季'].includes(w.clock.season), weight:3, severity:'good',
      modifiers:{farm_bonus:0.2,mood_modifier:3}, duration:2, flavor:[t('預計晴空萬里並有微雨。'),t('完美的播種條件。')]},
     {headline:t('異常天象：暴風雨可能來襲'),headline_en:'Unusual signs: storms may approach',category:'weather',
-     conditions:w=>[t('秋季'),t('冬季')].includes(w.clock.season), weight:3, severity:'warning',
+     conditions:w=>['秋季','冬季'].includes(w.clock.season), weight:3, severity:'warning',
      modifiers:{storm_chance:0.2,farm_bonus:-0.15,mood_modifier:-3}, duration:3, flavor:[t('地平線上烏雲聚集。'),t('動物舉止異常。')]},
     {headline:t('乾旱警報：水源開始減少'),headline_en:'Drought warning: water sources declining',category:'weather',
-     conditions:w=>w.clock.season===t('夏季'), weight:2, severity:'danger',
+     conditions:w=>w.clock.season==='夏季', weight:2, severity:'danger',
      modifiers:{drought_chance:0.25,farm_bonus:-0.3,mood_modifier:-5}, duration:4, flavor:[t('河水水位下降很快。'),t('水井比平時更低。')]},
     {headline:t('豐沛雨水帶來好收成的希望'),headline_en:'Abundant rain brings hope for harvest',category:'weather',
-     conditions:w=>[t('春季'),t('夏季')].includes(w.clock.season), weight:3, severity:'good',
+     conditions:w=>['春季','夏季'].includes(w.clock.season), weight:3, severity:'good',
      modifiers:{farm_bonus:0.3}, duration:2, flavor:[t('這個季節的雨量恰到好處。')]},
 
     // Social/Political
@@ -5000,7 +5000,7 @@ class NewsSystem {
 
     dailyUpdate(world) {
         // Expire old bulletins
-        const currentDay = world.clock.year * 60 + (([t('春季'),t('夏季'),t('秋季'),t('冬季')].indexOf(world.clock.season)) * 15) + world.clock.day;
+        const currentDay = world.clock.year * 60 + ((['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15) + world.clock.day;
         this.bulletins = this.bulletins.filter(b => b.expiresDay > currentDay);
 
         // Publish 1-2 new bulletins per day
@@ -6131,7 +6131,7 @@ class ExplorationSystem {
     _autoDiscoverZones(world) {
         // Gradually discover zones based on town development
         const npcCount = Object.values(world.agents).filter(a => !a.isPlayer).length;
-        const dayCount = world.clock.year * 60 + ([t('春季'),t('夏季'),t('秋季'),t('冬季')].indexOf(world.clock.season)) * 15 + world.clock.day;
+        const dayCount = world.clock.year * 60 + (['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15 + world.clock.day;
 
         for (const zone of EXPLORATION_ZONES) {
             if (this.discoveredZones[zone.id]) continue;
@@ -7165,7 +7165,7 @@ class World {
         this.townTheme = this.townTheme || 'frontier';
         const theme = TOWN_THEMES[this.townTheme] || TOWN_THEMES.frontier;
         // v5.58.0 鎮名跟著世界走(序列化保存),UI 標題不再永遠寫死邊境鎮
-        this.townName = this.townName || (this.townTheme === 'harbor' ? t('海風鎮') : t('邊境鎮'));
+        this.townName = this.townName || (this.townTheme === 'harbor' ? '海風鎮' : '邊境鎮');
         this.townMap = generateRandomTown(seed, this.townTheme);
         if (theme.stockpile) Object.assign(this.stockpile.resources, theme.stockpile);
         // v5.27.0 肉鴿:隨機開局模式(rosterMode='random')抽全新村民,否則用劇本卡司
@@ -8096,7 +8096,7 @@ class World {
             this.workPolicy = data.workPolicy || {}; // v5.51.0
             this.townTheme = data.townTheme || 'frontier'; // v5.55.0 主題城鎮
             this.visitors = data.visitors || {}; // v5.56.0 在鎮訪客
-            this.townName = data.townName || (this.townTheme === 'harbor' ? t('海風鎮') : t('邊境鎮')); // v5.59.5 舊檔沒鎮名時依主題補上,不再殘留上一鎮的名字
+            this.townName = data.townName || (this.townTheme === 'harbor' ? '海風鎮' : '邊境鎮'); // v5.59.5 舊檔沒鎮名時依主題補上,不再殘留上一鎮的名字
             this._chronicleChatIdx = (this.agents['player']?.chatHistory || []).length; // v5.43.0 讀檔後從當下開始記
             this.playerActions = data.playerActions || []; // v5.45.0
             this.dailyEcho = data.dailyEcho || []; // v5.45.0
