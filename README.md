@@ -63,7 +63,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 | # | 項目 | 狀態 | 備註 |
 |---|---|---|---|
-| A1 | 生成更多城鎮與村民 | 進行中（P0 海風鎮地圖、P1 礦山鎮、P2 林間村已上線，接著 P3 市集城） | 目前只有邊境鎮、海風鎮兩種主題；每鎮固定卡司 20／15 人 |
+| A1 | 生成更多城鎮與村民 | 進行中（P0–P3 五座城鎮全部上線，接著 P4 村民擴編、P5 多鎮連通） | 目前只有邊境鎮、海風鎮兩種主題；每鎮固定卡司 20／15 人 |
 | A2 | 海風鎮地圖要有海邊、燈塔、港口 | ✅ v5.75.0 已上線 | `generateLayout(locations, theme)` 海岸版面：海面／沙灘／棧橋＋漁船／燈塔（夜間光束）／曬網場／鹽場／海蝕洞／潟湖 |
 | A3 | 每座城鎮特色要不一樣 | 進行中（海風鎮已有專屬地形；新鎮依 D-P1～P3 做） | 需要「主題地形＋主題建築圖示＋主題卡司＋主題經濟」四層一起做 |
 | A4 | 首頁放 3D low-poly 截圖（`img/lowpoly-preview.jpg`） | 等附件 | 使用者的截圖未以附件送達；Cowork 另放了 4 張 Godot 測試截圖（v5.74.1 後） |
@@ -128,7 +128,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 - 地形：四周密林、林中空地、獵人小屋、木柵；卡司 15 人（獵人、藥草師、木匠、守林人…）；經濟多木材草藥、缺石材金屬。
 - 解鎖：繁榮 60。
 
-**D-P3 第五座城鎮：市集城（market）**
+**D-P3 第五座城鎮：市集城（market）— ✅ v5.78.0 已上線**
 - 地形：平原交通樞紐、石板大廣場、城門、商隊營地；卡司 15 人（商會、書院、戲班…）；經濟多銀幣、缺原料；是跨鎮貿易的中心。
 - 解鎖：繁榮 80。
 
@@ -152,7 +152,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.77.0.zip` from Releases
+1. Download `rimtown-v5.78.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -187,6 +187,13 @@ node scripts/gen-changelog.js   # 從 rimtown.php 產生首頁更新紀錄 chang
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.78.0 (2026-10-06)
+
+- 🏛️ 第五座城鎮「市集城」登場:邊境鎮繁榮度到 80 收到「商會來函」，五鎮馬車全線通車。平原上的交通樞紐有自己的地圖——一圈城牆與八座城門(門樓紅旗)、14×10 的大市集廣場(兩排攤棚、中央噴泉水花、兩串隨風飄的彩旗)、商會大樓、書院、財神廟、磚窯(窯火冒煙)、東南角商隊營地四頂帳篷
+- 💰 市集城 15 人專屬卡司:怕老婆的商會會長金老爺與握著半個市集租約的鳳姨、發現一筆不該存在款項的老帳房、背完整本算經的攤主阿算與書院講師書儀、等人的戲班裁縫綵姑與多看兩眼的城門衛隊長門叔、嫌所有事的窯叔、跑遍五鎮的商隊領隊駝姐…與邊境鎮的陳偉、劉俊、周明，海風鎮的浪叔、秀姑，礦山鎮的礦爺、白姑都有跨鎮親緣
+- 🪙 市集城物資:銀幣 600、布料 150、工具 40 多;木石金屬原料缺——五座城鎮各有所長(漁獲帆布／石材金屬／木材草藥／銀幣布料)，跨鎮貿易的底子齊了
+- 📣 首頁:特色文案改為五座城鎮，路線圖把「五鎮互訪與商隊貿易」列入規劃;多城鎮企劃 P0–P3 全數上線，接下來是 P4 村民擴編與 P5 多鎮連通
 
 ### v5.77.0 (2026-10-06)
 

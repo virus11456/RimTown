@@ -3762,6 +3762,22 @@ const TOWN_THEMES = {
         },
         stockpile: { wood: 340, herbs: 120, food: 150, stone: 20, metal: 10, cloth: 30 },
     },
+    // v5.78.0 市集城:平原交通樞紐——城牆城門、大市集廣場、商會、書院、商隊營地;銀幣布料多、原料缺,跨鎮貿易的中心
+    market: {
+        key: 'market',
+        townName: '市集城',
+        terrain: 'plains',
+        unlockProsperity: 80,
+        locationNames: {
+            town_hall: '商會大樓', tavern: '金馬車客棧', clinic: '杏林藥堂', workshop: '百工坊',
+            farm: '城郊農莊', quarry: '磚窯', general_store: '大市集', library: '書院',
+            guardpost: '城門衛所', chapel: '財神廟', park: '噴泉花園', well: '大噴泉',
+            town_square: '大市集廣場',
+            residential_north: '商賈宅邸', residential_south: '工匠巷', residential_east: '商隊客棧街',
+            forest: '城郊小林', river: '運河', hill: '城外高地', meadow: '牧場草地', cave: '舊地窖', lake: '荷塘',
+        },
+        stockpile: { silver: 600, cloth: 150, tools: 40, food: 120, wood: 40, stone: 40, metal: 30, herbs: 30 },
+    },
 };
 
 // v5.58.0 跨鎮親緣網:兩鎮從第一天就織在同一張關係網裡,只是沿海道路還沒通
@@ -3797,6 +3813,14 @@ const CROSS_TOWN_TIES = {
     fv_daxiong: { other: '楊鋒', thoughts: [t('邊境鎮的楊鋒上回進林子打獵，差點被我當成熊射了。')] },
     he_chang:   { other: '阿狐', thoughts: [t('林間村那個賣皮毛的阿狐，嘴甜得很，但他的皮毛確實好。')] },
     ling_bo:    { other: '阿苔', thoughts: [t('林間村的阿苔寄來她畫的蘑菇圖譜，夜裡觀星之餘翻一翻，倒也有趣。')] },
+    // v5.78.0 市集城 ↔ 四鎮
+    mk_tuojie:  { other: '浪叔', thoughts: [t('海風鎮浪叔的船貨這批又晚了，他的船到底是跑貨還是跑酒館。'), t('跑了五個鎮，還是邊境鎮的路最難走。')] },
+    mk_jinlaoye:{ other: '礦爺', thoughts: [t('礦山鎮那個礦爺又來信壓價，石材金屬他有，但銀子在我手上。')] },
+    mk_feishu:  { other: '周明', thoughts: [t('那個彈吉他的周明上回在我店裡唱了一整夜，酒錢到現在還欠著。')] },
+    mk_xinggu:  { other: '白姑', thoughts: [t('礦山鎮的白醫師信裡說塵肺的事，市集城也該有間像樣的醫館了。')] },
+    mk_caigu:   { other: '秀姑', thoughts: [t('海風鎮的秀姑補帆的針法跟我做戲服的是同一路，她的信裡總夾著一小塊布。')] },
+    chen_wei:   { other: '金老爺', thoughts: [t('市集城那個金會長排場大得很，不過他的商會確實把五個鎮的貨都接起來了。')] },
+    liu_jun:    { other: '門叔', thoughts: [t('市集城城門那個門叔，盤問起商隊來比我還兇。')] },
 };
 
 class TownMap {
@@ -7221,6 +7245,7 @@ class World {
         if (this.townTheme === 'harbor') this._loadHarborResidents();
         else if (this.townTheme === 'mountain') this._loadMountainResidents(); // v5.76.0
         else if (this.townTheme === 'forest') this._loadForestResidents(); // v5.77.0
+        else if (this.townTheme === 'market') this._loadMarketResidents(); // v5.78.0
         else if (this.rosterMode === 'random') this._loadRandomResidents(15);
         else this._loadDefaultResidents();
         const player = new PlayerAgent();
@@ -7694,6 +7719,55 @@ class World {
         pair('fv_ashi', 'fv_daxiong', { aff: 36, rom: 0, trust: 30 }, { aff: 34, rom: 0, trust: 24 }); // 獵人師徒
         pair('fv_juge', 'fv_guishen', { aff: 46, rom: 8, trust: 40 }, { aff: 40, rom: 0, trust: 36 }); // 三人份的帳
         pair('fv_pigu', 'fv_asong', { aff: 34, rom: 0, trust: 26 }, { aff: 30, rom: 0, trust: 22 }); // 幫忙打聽的裁縫
+        this._seedCrossTownMemories();
+    }
+
+    // v5.78.0 市集城名冊:商會與市集的人——金錢、排場、帳本裡的秘密、等人的裁縫、跑遍五鎮的商隊領隊
+    _loadMarketResidents() {
+        const residents = [
+            {id:'mk_jinlaoye',name:'金老爺',age:57,gender:'male',job:'mayor',home:'residential_north',traits:['charismatic','perfectionist','glutton'],values:['財富','權力'],background:'商會會長兼市集城的市長，一句話能讓整座城的物價漲三成。排場大、胃口也大，但真正怕的只有夫人鳳姨。'},
+            {id:'mk_fengyi',name:'鳳姨',age:52,gender:'female',job:'trader',home:'residential_north',traits:['gossip','charismatic','jealous'],values:['財富','家庭'],background:'金老爺的夫人，大市集一半的攤位租約在她手裡。笑裡藏刀，誰家的生意她都要分一杯羹。'},
+            {id:'mk_laozhang',name:'老帳',age:60,gender:'male',job:'researcher',home:'residential_north',traits:['perfectionist','stoic','night_owl'],values:['知識','和平'],background:'商會的老帳房，四十年來一分錢沒算錯。夜裡對帳時發現了一筆不該存在的款項，還不知道該不該說。'},
+            {id:'mk_asuan',name:'阿算',age:23,gender:'male',job:'trader',home:'residential_south',traits:['optimist','creative','early_bird'],values:['財富','冒險'],background:'大市集最年輕的攤主，什麼都賣、什麼都想試。暗戀書院的書儀，為了跟她說上話把整本《算經》背了一遍。'},
+            {id:'mk_shuyi',name:'書儀',age:25,gender:'female',job:'researcher',home:'residential_north',traits:['shy','perfectionist','kind'],values:['知識','藝術'],background:'書院的講師，教商人子弟讀書寫字。嘴上嫌阿算吵，但他交來的算題總是第一個批。'},
+            {id:'mk_caishu',name:'財叔',age:55,gender:'male',job:'priest',home:'residential_south',traits:['optimist','gossip','kind'],values:['財富','和平'],background:'財神廟的廟祝，香火錢比商會的稅還多。誰來求財他都笑著說「會發會發」，自己卻窮得只剩一件長衫。'},
+            {id:'mk_caigu',name:'綵姑',age:36,gender:'female',job:'tailor',home:'residential_south',traits:['creative','romantic','charismatic'],values:['藝術','自由'],background:'戲班出身的裁縫，戲服、嫁衣都是她的手筆。戲班散了之後她留在市集城，等一個說好要回來的人。'},
+            {id:'mk_menshu',name:'門叔',age:44,gender:'male',job:'guard',home:'residential_east',traits:['stoic','hardworking','abrasive'],values:['權力','社群'],background:'城門衛所的衛隊長，每一支進城的商隊都要經他盤問。鐵面無私，但經過綵姑的戲服攤總是多看兩眼。'},
+            {id:'mk_yaoshu',name:'窯叔',age:48,gender:'male',job:'miner',home:'residential_east',traits:['hardworking','pessimist','glutton'],values:['財富','家庭'],background:'磚窯的窯主，市集城每一棟樓的磚都出自他的窯。嫌金老爺壓價、嫌阿算吵、嫌所有事，但窯火從沒熄過。'},
+            {id:'mk_agang',name:'阿鋼',age:30,gender:'male',job:'blacksmith',home:'residential_south',traits:['hardworking','shy','perfectionist'],values:['藝術','財富'],background:'百工坊的鐵匠，做的秤砣全城公認最準。話少、秤準，連鳳姨都挑不出毛病。'},
+            {id:'mk_xinggu',name:'杏姑',age:39,gender:'female',job:'doctor',home:'residential_north',traits:['kind','perfectionist','neurotic'],values:['知識','社群'],background:'杏林藥堂的大夫，商隊帶進城的怪病她都見過。擔心市集城人多病多，一直想勸商會蓋一間像樣的醫館。'},
+            {id:'mk_feishu',name:'肥叔',age:50,gender:'male',job:'cook',home:'residential_east',traits:['glutton','charismatic','lazy'],values:['社群','財富'],background:'金馬車客棧的老闆，商隊的消息都在他的酒桌上流轉。胖、懶、好客，欠他酒錢的人比他的客人還多。'},
+            {id:'mk_amiao',name:'阿苗',age:27,gender:'female',job:'farmer',home:'residential_east',traits:['early_bird','kind','hardworking'],values:['自然','家庭'],background:'城郊農莊的農婦，一個人供應半個市集的菜。覺得城裡人什麼都用買的，不懂一顆菜要長多久。'},
+            {id:'mk_asun',name:'阿榫',age:34,gender:'male',job:'carpenter',home:'residential_south',traits:['perfectionist','optimist','gossip'],values:['藝術','社群'],background:'百工坊的木匠，大市集的攤棚全是他搭的。愛打聽，攤主們的八卦他比鳳姨還早知道。'},
+            {id:'mk_tuojie',name:'駝姐',age:41,gender:'female',job:'trader',home:'residential_east',traits:['charismatic','abrasive','early_bird'],values:['冒險','自由'],background:'商隊的領隊，一年有大半在路上，跑遍邊境鎮、海風鎮、礦山鎮、林間村。嘴硬，但每個鎮的人都記得她帶來的貨。'},
+        ];
+        residents.forEach(r => {
+            const personality = new Personality(r.traits, r.background, r.values);
+            const job = r.job ? new Job(r.job) : null;
+            const agent = new Agent(r.id, r.name, r.age, personality, job, r.home, r.gender);
+            this.addAgent(agent);
+        });
+        const A = this.agents;
+        const set = (from, to, { aff = 0, rom = 0, trust = 0, status = null } = {}) => {
+            const f = A[from], t2 = A[to]; if (!f || !t2) return;
+            const r = f.relationships.getOrCreate(t2.agentId, t2.name);
+            r.affinity = aff; r.romanticInterest = rom; r.trust = trust;
+            if (status) { r.status = status; r.statusSince = 0; }
+            r.interactionCount = Math.max(r.interactionCount, 6); r.lastInteractionTick = 0;
+        };
+        const pair = (x, y, ox, oy) => { set(x, y, ox); set(y, x, oy); };
+        pair('mk_jinlaoye', 'mk_fengyi', { aff: 50, rom: 30, trust: 38, status: 'married' }, { aff: 54, rom: 32, trust: 44, status: 'married' }); // 怕老婆的會長
+        pair('mk_asuan', 'mk_shuyi', { aff: 40, rom: 50 }, { aff: 24, rom: 12 }); // 背了整本算經
+        pair('mk_menshu', 'mk_caigu', { aff: 28, rom: 30 }, { aff: 16, rom: 4 }); // 多看兩眼的衛隊長
+        pair('mk_laozhang', 'mk_jinlaoye', { aff: 20, rom: 0, trust: -14 }, { aff: 36, rom: 0, trust: 40 }); // 帳本裡的秘密
+        pair('mk_yaoshu', 'mk_jinlaoye', { aff: -34, rom: 0, trust: -20 }, { aff: -12, rom: 0, trust: 6 }); // 壓價之怨
+        pair('mk_fengyi', 'mk_xinggu', { aff: -22, rom: 0, trust: -10 }, { aff: -18, rom: 0, trust: -6 }); // 醫館該不該蓋
+        pair('mk_feishu', 'mk_tuojie', { aff: 52, rom: 0, trust: 46 }, { aff: 48, rom: 0, trust: 42 }); // 酒桌上的消息
+        pair('mk_asun', 'mk_asuan', { aff: 50, rom: 0, trust: 44 }, { aff: 48, rom: 0, trust: 40 }); // 攤棚與攤主
+        pair('mk_caishu', 'mk_feishu', { aff: 30, rom: 0, trust: -8 }, { aff: 26, rom: 0, trust: -12 }); // 欠著的酒錢
+        pair('mk_xinggu', 'mk_shuyi', { aff: 42, rom: 0, trust: 36 }, { aff: 40, rom: 0, trust: 34 }); // 書院與藥堂
+        pair('mk_tuojie', 'mk_menshu', { aff: 30, rom: 16 }, { aff: 22, rom: 6 }); // 進城盤問三十次
+        pair('mk_amiao', 'mk_asuan', { aff: 26, rom: 0, trust: 20 }, { aff: 28, rom: 8, trust: 18 }); // 菜攤的供貨
         this._seedCrossTownMemories();
     }
 
