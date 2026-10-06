@@ -3533,6 +3533,49 @@ class PixelTileMap {
     }
 
     // v5.57.0 馬車站:東側大路盡頭的小站——木平台+馬車+站牌,點擊開啟跨鎮旅行
+    // v5.80.0 跨鎮商隊:從馬車站那一側沿大路駛到廣場旁,停一會兒再淡出
+    showCaravan(label) { this._caravanAnim = { t0: this.animFrame || 0, label: label || '' }; }
+    _drawCaravanAnim(ctx) {
+        const an = this._caravanAnim; if (!an) return;
+        const DUR = 520, el = (this.animFrame || 0) - an.t0;
+        if (el > DUR) { this._caravanAnim = null; return; }
+        const cs = this.coachStation || { x: this.cols - 7 };
+        const startX = (cs.x + 2) * TILE, endX = 41 * TILE, y = 21 * TILE;
+        const p = Math.min(1, el / (DUR * 0.55));
+        const ease = 1 - Math.pow(1 - p, 2);
+        const x = startX + (endX - startX) * ease;
+        const facingLeft = endX < startX;
+        const alpha = el > DUR * 0.85 ? 1 - (el - DUR * 0.85) / (DUR * 0.15) : 1;
+        const bob = p < 1 ? Math.sin(el / 4) * 1.2 : 0;
+        ctx.save(); ctx.globalAlpha = Math.max(0, alpha);
+        ctx.translate(x, y + bob); if (!facingLeft) ctx.scale(-1, 1);
+        // 車廂、頂篷、輪、馬(面向左)
+        ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillRect(-26, 8, 52, 4);
+        ctx.fillStyle = '#7a5236'; ctx.fillRect(-4, -14, 24, 14);
+        ctx.fillStyle = '#c9a86a'; ctx.fillRect(-6, -20, 28, 7); ctx.fillStyle = '#b08858'; ctx.fillRect(-6, -14, 28, 1);
+        ctx.fillStyle = '#2e1f12'; ctx.fillRect(2, -10, 5, 5); ctx.fillRect(11, -10, 5, 5);
+        const wheel = (wx, wy) => { ctx.fillStyle = '#3a2716'; ctx.fillRect(wx - 3, wy - 4, 6, 8); ctx.fillRect(wx - 4, wy - 3, 8, 6); ctx.fillStyle = '#8a6a44'; ctx.fillRect(wx - 1, wy - 1, 2, 2); };
+        wheel(2, 2); wheel(14, 2);
+        ctx.fillStyle = '#4a3020'; ctx.fillRect(-12, -4, 9, 2);
+        const hx = -26, hy = -12;
+        ctx.fillStyle = '#8a5a34'; ctx.fillRect(hx + 4, hy + 6, 12, 6); ctx.fillRect(hx + 3, hy + 2, 5, 6);
+        ctx.fillStyle = '#7a4c2a'; ctx.fillRect(hx, hy, 6, 4); ctx.fillRect(hx - 2, hy + 2, 3, 2);
+        ctx.fillStyle = '#3a2716'; ctx.fillRect(hx + 4, hy - 2, 2, 2); ctx.fillRect(hx + 6, hy, 2, 7); ctx.fillRect(hx + 16, hy + 6, 2, 7);
+        ctx.fillStyle = '#6b4222'; const leg = Math.round(Math.sin(el / 3)) * (p < 1 ? 1 : 0);
+        ctx.fillRect(hx + 5, hy + 12, 2, 5 + leg); ctx.fillRect(hx + 8, hy + 12, 2, 5 - leg); ctx.fillRect(hx + 12, hy + 12, 2, 5 - leg); ctx.fillRect(hx + 14, hy + 12, 2, 5 + leg);
+        // 貨物(麻袋與木箱)
+        ctx.fillStyle = '#a1887f'; ctx.fillRect(-2, -26, 8, 6); ctx.fillStyle = '#8d6e63'; ctx.fillRect(8, -25, 9, 5);
+        ctx.restore();
+        if (an.label) {
+            ctx.save(); ctx.globalAlpha = Math.max(0, alpha);
+            ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+            const tw = ctx.measureText(an.label).width;
+            ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(x - tw / 2 - 4, y - 42, tw + 8, 12);
+            ctx.fillStyle = '#ffe082'; ctx.fillText(an.label, x, y - 33);
+            ctx.restore();
+        }
+    }
+
     _drawCoachStation(ctx) {
         const cs = this.coachStation;
         if (!cs) return;
@@ -5033,6 +5076,7 @@ class PixelTileMap {
         }
         // v5.57.0 馬車站
         this._drawCoachStation(ctx);
+        this._drawCaravanAnim(ctx); // v5.80.0 跨鎮商隊進城
         // v5.75.0 海岸道具:棧橋木樁、漁船、燈塔
         this._drawHarborProps(ctx);
         this._drawMountainProps(ctx); // v5.76.0 礦山鎮道具
