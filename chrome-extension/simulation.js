@@ -3746,6 +3746,22 @@ const TOWN_THEMES = {
         },
         stockpile: { stone: 320, metal: 140, food: 60, cloth: 15, wood: 60, herbs: 8 },
     },
+    // v5.77.0 林間村:密林裡的獵戶與樵夫村——古樹祭壇、篝火場、伐木場、藥草小屋;木材草藥多、石材金屬缺
+    forest: {
+        key: 'forest',
+        townName: '林間村',
+        terrain: 'forest',
+        unlockProsperity: 60,
+        locationNames: {
+            town_hall: '村長木屋', tavern: '松脂酒館', clinic: '藥草小屋', workshop: '木工坊',
+            farm: '林間菜園', quarry: '伐木場', general_store: '獵戶雜貨', library: '林語書屋',
+            guardpost: '守林哨塔', chapel: '古樹祭壇', park: '林中空地', well: '苔泉',
+            town_square: '篝火場',
+            residential_north: '樹冠木屋', residential_south: '獵人小屋', residential_east: '伐木工寮',
+            forest: '千年古林', river: '清溪', hill: '鹿角丘', meadow: '蕨原', cave: '熊洞', lake: '鏡池',
+        },
+        stockpile: { wood: 340, herbs: 120, food: 150, stone: 20, metal: 10, cloth: 30 },
+    },
 };
 
 // v5.58.0 跨鎮親緣網:兩鎮從第一天就織在同一張關係網裡,只是沿海道路還沒通
@@ -3773,6 +3789,14 @@ const CROSS_TOWN_TIES = {
     mt_ayan:    { other: '珊珊', thoughts: [t('海風鎮研究潮汐的珊珊是我書信往來的同行，她的洋流圖和我的礦脈圖竟然對得上。')] },
     zhang_hao:  { other: '鐵柱', thoughts: [t('礦山鎮的鐵柱打的鎬頭最耐用，下次商隊來一定要買一把。')] },
     ma_qiang:   { other: '牛叔', thoughts: [t('礦山鎮那個工頭牛叔，當年跟我在同一支護衛隊，脾氣一樣臭。')] },
+    // v5.77.0 林間村 ↔ 邊境鎮／海風鎮
+    fv_linlao:  { other: '海嬤', thoughts: [t('海風鎮的海嬤，年輕時我們一起在邊境鎮的市集賣過草藥和魚乾，她的信每年春天都到。')] },
+    fv_ahu:     { other: '趙霞', thoughts: [t('邊境鎮趙老闆娘又來要皮毛了，這批貂皮她肯出多少，得好好談。')] },
+    fv_mushu:   { other: '木蝦', thoughts: [t('海風鎮那個船木匠木蝦，當年是我這裡學的徒，手藝不錯就是懶。')] },
+    fv_aye:     { other: '林美', thoughts: [t('邊境鎮的林醫師寫信問我林子裡的止血草，我寄了一包過去。')] },
+    fv_daxiong: { other: '楊鋒', thoughts: [t('邊境鎮的楊鋒上回進林子打獵，差點被我當成熊射了。')] },
+    he_chang:   { other: '阿狐', thoughts: [t('林間村那個賣皮毛的阿狐，嘴甜得很，但他的皮毛確實好。')] },
+    ling_bo:    { other: '阿苔', thoughts: [t('林間村的阿苔寄來她畫的蘑菇圖譜，夜裡觀星之餘翻一翻，倒也有趣。')] },
 };
 
 class TownMap {
@@ -7196,6 +7220,7 @@ class World {
         // v5.27.0 肉鴿:隨機開局模式(rosterMode='random')抽全新村民,否則用劇本卡司
         if (this.townTheme === 'harbor') this._loadHarborResidents();
         else if (this.townTheme === 'mountain') this._loadMountainResidents(); // v5.76.0
+        else if (this.townTheme === 'forest') this._loadForestResidents(); // v5.77.0
         else if (this.rosterMode === 'random') this._loadRandomResidents(15);
         else this._loadDefaultResidents();
         const player = new PlayerAgent();
@@ -7620,6 +7645,55 @@ class World {
         pair('mt_aqing', 'mt_xiugu', { aff: 60, rom: 0, trust: 54 }, { aff: 58, rom: 0, trust: 52 }); // 茶友
         pair('mt_youbo', 'mt_laochui', { aff: 52, rom: 0, trust: 48 }, { aff: 50, rom: 0, trust: 46 }); // 同坑老兄弟
         pair('mt_ati', 'mt_axing', { aff: 30, rom: 18 }, { aff: 26, rom: 0 }); // 送蘿蔔的農夫
+        this._seedCrossTownMemories();
+    }
+
+    // v5.77.0 林間村名冊:獵戶、樵夫、藥草師、守林人——護林與伐木的拉扯、古樹的傳說、林子深處的舊事
+    _loadForestResidents() {
+        const residents = [
+            {id:'fv_linlao',name:'林姥',age:64,gender:'female',job:'mayor',home:'residential_north',traits:['kind','stoic','early_bird'],values:['社群','自然'],background:'林間村的村長，據說能聽懂樹說話。年輕時一個人在林子深處住了十年，村裡每一棵樹都是她看著長大的。'},
+            {id:'fv_daxiong',name:'大熊',age:42,gender:'male',job:'guard',home:'residential_south',traits:['stoic','hardworking','abrasive'],values:['家庭','自由'],background:'村裡最好的獵人，背上有熊爪留下的三道疤。話少，但雪夜裡迷路的人，都是他找回來的。'},
+            {id:'fv_aye',name:'阿葉',age:26,gender:'female',job:'doctor',home:'residential_north',traits:['kind','creative','neurotic'],values:['知識','自然'],background:'藥草小屋的藥草師，林子裡每一株草她都叫得出名字。總擔心哪天認錯一株就害死人，所以夜裡還在對圖譜。'},
+            {id:'fv_mushu',name:'木叔',age:50,gender:'male',job:'carpenter',home:'residential_east',traits:['perfectionist','stoic','hardworking'],values:['藝術','財富'],background:'木工坊的老木匠，一把斧頭用了三十年。嫌年輕人砍樹不看紋理，但徒弟阿松的手藝已經快追上他了。'},
+            {id:'fv_asong',name:'阿松',age:24,gender:'male',job:'carpenter',home:'residential_east',traits:['optimist','romantic','charismatic'],values:['冒險','藝術'],background:'木叔的徒弟，雕的木雕在村裡搶手。暗戀藥草師阿葉，每個月送她一隻新雕的小動物，已經送了十四隻。'},
+            {id:'fv_juge',name:'鋸哥',age:36,gender:'male',job:'miner',home:'residential_east',traits:['hardworking','glutton','gossip'],values:['財富','社群'],background:'伐木場的工頭，嗓門能震落松針。一頓能吃三人份，村裡誰家煮了什麼他都知道。'},
+            {id:'fv_luniang',name:'鹿娘',age:33,gender:'female',job:'farmer',home:'residential_south',traits:['early_bird','kind','shy'],values:['自然','家庭'],background:'林間菜園的農婦，養了一群半野的鹿。丈夫大熊打獵、她護鹿，兩人為此吵了十年還是沒分開。'},
+            {id:'fv_laoqiao',name:'老樵',age:59,gender:'male',job:'miner',home:'residential_south',traits:['pessimist','stoic','night_owl'],values:['自由','和平'],background:'退了休的老樵夫，說林子深處有一棵不能砍的樹。年輕時砍倒過一棵千年古木，從此每晚做同一個夢。'},
+            {id:'fv_atai',name:'阿苔',age:22,gender:'female',job:'researcher',home:'residential_north',traits:['creative','night_owl','shy'],values:['知識','藝術'],background:'林語書屋的年輕抄書人，記錄林子裡的每一種蘑菇。她懷疑老樵說的那棵樹真的存在，想找到它。'},
+            {id:'fv_guishen',name:'桂嬸',age:48,gender:'female',job:'cook',home:'residential_south',traits:['optimist','gossip','charismatic'],values:['社群','家庭'],background:'松脂酒館的老闆娘，一鍋蘑菇湯是全村的靈魂。鋸哥的每一頓三人份都是她煮的，帳一次也沒收過。'},
+            {id:'fv_ashao',name:'阿哨',age:29,gender:'male',job:'guard',home:'residential_north',traits:['perfectionist','jealous','early_bird'],values:['權力','自然'],background:'守林哨塔的守林人，誰砍了哪棵樹他都記在本子上。看鋸哥不順眼，覺得伐木場砍得太多了。'},
+            {id:'fv_shupo',name:'樹婆',age:61,gender:'female',job:'priest',home:'residential_north',traits:['kind','romantic','stoic'],values:['和平','自然'],background:'古樹祭壇的祭司，每年春天帶全村繞古樹走一圈。和林姥是五十年的手帕交，也是唯一知道林姥年輕時為什麼進林子的人。'},
+            {id:'fv_ahu',name:'阿狐',age:38,gender:'male',job:'trader',home:'residential_east',traits:['charismatic','gossip','lazy'],values:['財富','冒險'],background:'獵戶雜貨的老闆，皮毛和藥草換銀子的門路全靠他。常跑邊境鎮，嘴上說要搬去城裡，十年了還沒搬。'},
+            {id:'fv_pigu',name:'皮姑',age:45,gender:'female',job:'tailor',home:'residential_south',traits:['perfectionist','kind','gossip'],values:['家庭','藝術'],background:'鞣皮做衣的裁縫，大熊帶回來的每一張皮都經她的手。總在替阿松打聽阿葉的心意。'},
+            {id:'fv_ashi',name:'阿矢',age:19,gender:'male',job:'guard',home:'residential_south',traits:['early_bird','optimist','abrasive'],values:['冒險','權力'],background:'大熊的獵人學徒，箭法已經比師父準，脾氣也比師父衝。一心想獵到老樵口中那頭不該獵的巨鹿。'},
+        ];
+        residents.forEach(r => {
+            const personality = new Personality(r.traits, r.background, r.values);
+            const job = r.job ? new Job(r.job) : null;
+            const agent = new Agent(r.id, r.name, r.age, personality, job, r.home, r.gender);
+            this.addAgent(agent);
+        });
+        const A = this.agents;
+        const set = (from, to, { aff = 0, rom = 0, trust = 0, status = null } = {}) => {
+            const f = A[from], t2 = A[to]; if (!f || !t2) return;
+            const r = f.relationships.getOrCreate(t2.agentId, t2.name);
+            r.affinity = aff; r.romanticInterest = rom; r.trust = trust;
+            if (status) { r.status = status; r.statusSince = 0; }
+            r.interactionCount = Math.max(r.interactionCount, 6); r.lastInteractionTick = 0;
+        };
+        const pair = (x, y, ox, oy) => { set(x, y, ox); set(y, x, oy); };
+        pair('fv_daxiong', 'fv_luniang', { aff: 56, rom: 40, trust: 32, status: 'married' }, { aff: 54, rom: 38, trust: 30, status: 'married' }); // 打獵與護鹿的夫妻
+        pair('fv_asong', 'fv_aye', { aff: 40, rom: 50 }, { aff: 26, rom: 10 }); // 十四隻木雕
+        pair('fv_aye', 'fv_ashao', { aff: 22, rom: 14 }, { aff: 18, rom: 6 }); // 藥草師其實多看了守林人一眼
+        pair('fv_ashao', 'fv_juge', { aff: -42, rom: 0, trust: -26 }, { aff: -30, rom: 0, trust: -14 }); // 護林 vs 伐木
+        pair('fv_linlao', 'fv_shupo', { aff: 68, rom: 0, trust: 66 }, { aff: 66, rom: 0, trust: 64 }); // 五十年手帕交
+        pair('fv_mushu', 'fv_asong', { aff: 48, rom: 0, trust: 42 }, { aff: 44, rom: 0, trust: 36 }); // 師徒
+        pair('fv_laoqiao', 'fv_atai', { aff: 28, rom: 0, trust: 16 }, { aff: 20, rom: 0, trust: 8 }); // 傳說與懷疑
+        pair('fv_laoqiao', 'fv_linlao', { aff: 32, rom: 20, status: 'ex' }, { aff: 26, rom: 14, status: 'ex' }); // 林子深處的舊事
+        pair('fv_ahu', 'fv_guishen', { aff: 30, rom: 24 }, { aff: 24, rom: 10 }); // 商人對老闆娘的嘴甜
+        pair('fv_ashi', 'fv_daxiong', { aff: 36, rom: 0, trust: 30 }, { aff: 34, rom: 0, trust: 24 }); // 獵人師徒
+        pair('fv_juge', 'fv_guishen', { aff: 46, rom: 8, trust: 40 }, { aff: 40, rom: 0, trust: 36 }); // 三人份的帳
+        pair('fv_pigu', 'fv_asong', { aff: 34, rom: 0, trust: 26 }, { aff: 30, rom: 0, trust: 22 }); // 幫忙打聽的裁縫
         this._seedCrossTownMemories();
     }
 

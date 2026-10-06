@@ -1558,6 +1558,7 @@ class PixelTileMap {
         this._blockWater = this.themeKey === 'harbor';
         this._boats = null; this._lighthouse = null; this._pier = null;
         this._rails = null; this._chimneys = null; this._hotSpring = null; this._ropeBridges = null; // v5.76.0
+        this._firePit = null; this._elderTree = null; this._watchtower = null; this._deer = null; this._fireflySpots = null; // v5.77.0
         // Fill with varied grass types for natural look
         this.grid = Array.from({length: this.rows}, (_, y) =>
             Array.from({length: this.cols}, (_, x) => {
@@ -1585,6 +1586,7 @@ class PixelTileMap {
         }
         if (this.themeKey === 'harbor') { this._layoutHarbor(locations); return; }
         if (this.themeKey === 'mountain') { this._layoutMountain(locations); return; } // v5.76.0
+        if (this.themeKey === 'forest') { this._layoutForest(locations); return; } // v5.77.0
 
         // Add border trees
         for (let x = 0; x < this.cols; x++) {
@@ -2035,6 +2037,224 @@ class PixelTileMap {
 
         this.natureZones[locId] = { x, y, w: W, h: H };
         this.labelPositions[locId] = { x: (x + W/2) * TILE, y: y * TILE - 4, name };
+    }
+
+    // ============================================================
+    // v5.77.0 林間村密林版面:四周厚厚的林帶、村子只在林中空地裡;篝火場取代石板廣場、
+    // 古樹祭壇是一棵巨木、伐木場堆原木、守林哨塔立一座高塔;夜裡螢火蟲、白天落葉與林間的鹿
+    // ============================================================
+    _layoutForest(locations) {
+        const cols = this.cols, rows = this.rows;
+        // 邊界林帶(四邊各 3 格)
+        for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+            if (y < 3 || y >= rows - 3 || x < 3 || x >= cols - 3) this.grid[y][x] = ((x + y) % 2 === 0) ? T.TREE_TOP : T.TREE_TOP2;
+        }
+        // 道路(土路,座標與邊境鎮相同)
+        const roadY1 = 20, roadY2 = 38, roadX1 = 26, roadX2 = 46;
+        for (let x = 3; x < cols - 3; x++) { this.grid[roadY1][x] = T.DIRT; this.grid[roadY1 + 1][x] = T.DIRT; this.grid[roadY2][x] = T.DIRT; this.grid[roadY2 + 1][x] = T.DIRT; }
+        for (let y = 3; y < rows - 3; y++) { this.grid[y][roadX1] = T.DIRT; this.grid[y][roadX1 + 1] = T.DIRT; this.grid[y][roadX2] = T.DIRT; this.grid[y][roadX2 + 1] = T.DIRT; }
+
+        const POS = {
+            town_square:  { x:32, y:24, type:'campcircle' },
+            tavern:       { x:18, y:22, type:'building' },
+            chapel:       { x:50, y:11, type:'eldertree' },
+            park:         { x:6,  y:22, type:'nature' },
+            well:         { x:36, y:32, type:'well' },
+            town_hall:    { x:36, y:11, type:'building' },
+            farm:         { x:6,  y:40, type:'farm' },
+            quarry:       { x:62, y:42, type:'lumberyard' },
+            workshop:     { x:50, y:28, type:'building' },
+            general_store:{ x:28, y:3,  type:'building' },
+            clinic:       { x:6,  y:30, type:'building' },
+            library:      { x:62, y:14, type:'building' },
+            guardpost:    { x:70, y:5,  type:'watchtower' },
+            residential_north:{ x:6,  y:3,  type:'house_cluster' },
+            residential_south:{ x:16, y:42, type:'house_cluster' },
+            residential_east: { x:62, y:26, type:'house_cluster' },
+            forest:  { x:48, y:46, type:'forest' },
+            river:   { x:38, y:42, type:'river' },
+            hill:    { x:71, y:42, type:'hill' },
+            cave:    { x:70, y:50, type:'cave' },
+            lake:    { x:30, y:48, type:'lake' },
+            meadow:  { x:10, y:52, type:'meadow' },
+        };
+        const placedRects = [];
+        for (const [locId, loc] of Object.entries(locations)) {
+            const fp = POS[locId];
+            if (!fp) continue;
+            const bx = fp.x, by = fp.y, name = loc.name;
+            switch (fp.type) {
+                case 'building': this._placeBuilding(locId, bx, by, name); break;
+                case 'house_cluster': this._placeHouseCluster(locId, bx, by, name); break;
+                case 'farm': this._placeFarm(locId, bx, by, name); break;
+                case 'well': this._placeWell(locId, bx, by, name); break;
+                case 'nature': this._placeNatureArea(locId, bx, by, name); break;
+                case 'forest': this._placeForest(locId, bx, by, name); break;
+                case 'river': this._placeRiver(locId, bx, by, name); break;
+                case 'hill': this._placeHill(locId, bx, by, name); break;
+                case 'cave': this._placeCave(locId, bx, by, name); break;
+                case 'lake': this._placeLake(locId, bx, by, name); break;
+                case 'meadow': this._placeMeadow(locId, bx, by, name); break;
+                case 'campcircle': this._placeCampCircle(locId, bx, by, name); break;
+                case 'eldertree': this._placeElderTree(locId, bx, by, name); break;
+                case 'lumberyard': this._placeLumberYard(locId, bx, by, name); break;
+                case 'watchtower': this._placeBuilding(locId, bx, by, name); this._watchtower = { x: bx + 6, y: by }; break;
+            }
+            const z = this.buildingZones[locId] || this.natureZones[locId];
+            if (z) placedRects.push(z);
+        }
+        // 密林填充:不在道路兩側 1 格、不在任何地點外圍 1 格的草地,依雜湊種成樹(六成)/灌木/花
+        const nearRoad = (x, y) => {
+            for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+                const yy = y + dy, xx = x + dx;
+                if (yy < 0 || yy >= rows || xx < 0 || xx >= cols) continue;
+                const t = this.grid[yy][xx];
+                if (t === T.DIRT || t === T.STONE_PATH || t === T.BRIDGE) return true;
+            }
+            return false;
+        };
+        const inZone = (x, y) => placedRects.some(z => x >= z.x - 1 && x < z.x + z.w + 1 && y >= z.y - 1 && y < z.y + z.h + 1)
+            || (this.coachStation && x >= this.coachStation.x - 1 && x < this.coachStation.x + this.coachStation.w + 1 && y >= this.coachStation.y - 1 && y < this.coachStation.y + this.coachStation.h + 1);
+        for (let y = 3; y < rows - 3; y++) for (let x = 3; x < cols - 3; x++) {
+            const g = this.grid[y][x];
+            if (g !== T.GRASS && g !== T.GRASS2 && g !== T.GRASS3) continue;
+            if (nearRoad(x, y) || inZone(x, y)) continue;
+            const h = ((x * 73856093) ^ (y * 19349663)) >>> 0;
+            const r = h % 100;
+            if (r < 42) this.grid[y][x] = T.TREE_TOP;
+            else if (r < 60) this.grid[y][x] = T.TREE_TOP2;
+            else if (r < 68) this.grid[y][x] = T.BUSH;
+            else if (r < 72) this.grid[y][x] = T.FLOWER1;
+            else if (r < 75) this.grid[y][x] = T.TREE_TRUNK;
+        }
+        // 林間的鹿(菜園旁)與螢火蟲聚集點(篝火場、古樹、苔泉)
+        const pz = this.natureZones['park'];
+        this._deer = pz ? [{ x: pz.x + 3.5, y: pz.y + 3.6, flip: false }, { x: pz.x + 5.4, y: pz.y + 2.3, flip: true }] : [];
+        this._fireflySpots = [];
+        for (const id of ['town_square', 'chapel', 'well', 'park']) {
+            const z = this.buildingZones[id] || this.natureZones[id];
+            if (z) this._fireflySpots.push({ x: (z.x + z.w / 2) * TILE, y: (z.y + z.h / 2) * TILE, r: Math.max(z.w, z.h) * TILE * 0.7 });
+        }
+    }
+
+    // 篝火場:土地圓圈、周圍一圈木樁長凳,中央火堆(白天畫柴堆,夜裡 _renderCampfires 會燒起來)
+    _placeCampCircle(locId, x, y, name) {
+        const W = 10, H = 8, cx = x + 4.5, cy = y + 3.5;
+        for (let dy = 0; dy < H; dy++) for (let dx = 0; dx < W; dx++) {
+            const d = ((dx - 4.5) * (dx - 4.5)) / 20 + ((dy - 3.5) * (dy - 3.5)) / 12;
+            if (d < 1) this.grid[y + dy][x + dx] = (dx + dy) % 3 === 0 ? T.DIRT : T.STONE_PATH;
+            else if (d < 1.5) this.grid[y + dy][x + dx] = T.GRASS2;
+        }
+        const seats = [[1, 2], [8, 2], [1, 5], [8, 5], [4, 0], [5, 7]];
+        for (const [sx, sy] of seats) this.grid[y + sy][x + sx] = T.CHAIR;
+        this.grid[y + 3][x + 4] = T.DIRT; this.grid[y + 3][x + 5] = T.DIRT; this.grid[y + 4][x + 4] = T.DIRT; this.grid[y + 4][x + 5] = T.DIRT;
+        this._firePit = { x: (x + 5) * TILE, y: (y + 4) * TILE };
+        this.buildingZones[locId] = { x, y, w: W, h: H };
+        this.labelPositions[locId] = { x: cx * TILE + 8, y: y * TILE - 4, name };
+    }
+
+    // 古樹祭壇:一棵佔 7x7 的巨木,樹前祭壇與一圈花
+    _placeElderTree(locId, x, y, name) {
+        const W = 7, H = 7;
+        for (let dy = 0; dy < H; dy++) for (let dx = 0; dx < W; dx++) {
+            if (y + dy >= this.rows || x + dx >= this.cols) continue;
+            const d = Math.abs(dx - 3) + Math.abs(dy - 2.5);
+            if (dy <= 4 && d <= 4.5) this.grid[y + dy][x + dx] = ((dx + dy) % 2 === 0) ? T.TREE_TOP : T.TREE_TOP2;
+            else if (dy === 5 && dx >= 2 && dx <= 4) this.grid[y + dy][x + dx] = T.TREE_TRUNK;
+            else this.grid[y + dy][x + dx] = ((dx * 3 + dy) % 3 === 0) ? T.FLOWER2 : T.GRASS2;
+        }
+        this.grid[y + H - 1][x + 3] = T.ALTAR;
+        this.grid[y + H - 1][x + 2] = T.STONE_PATH; this.grid[y + H - 1][x + 4] = T.STONE_PATH;
+        this._elderTree = { x: (x + 3.5) * TILE, y: (y + 5) * TILE };
+        this._connectToRoad(x + 3, y + H);
+        this.natureZones[locId] = { x, y, w: W, h: H };
+        this.labelPositions[locId] = { x: (x + W / 2) * TILE, y: y * TILE - 4, name };
+    }
+
+    // 伐木場:樹樁、堆起來的原木(用木桶格表現)、木箱與一間工寮
+    _placeLumberYard(locId, x, y, name) {
+        const shed = TILE_BUILDING_TEMPLATES.farm_building;
+        for (let rx = 0; rx < shed.w; rx++) this.grid[y][x + rx] = T.ROOF2;
+        for (let ty = 0; ty < shed.h; ty++) for (let tx = 0; tx < shed.w; tx++) {
+            if (y + ty + 1 < this.rows) this.grid[y + ty + 1][x + tx] = shed.tiles[ty][tx];
+        }
+        const yy = y + shed.h + 1;
+        for (let dx = 0; dx < 8; dx++) {
+            if (yy + 1 < this.rows) this.grid[yy + 1][x + dx] = (dx % 3 === 1) ? T.TREE_TRUNK : T.GRASS3;
+            if (yy + 2 < this.rows) this.grid[yy + 2][x + dx] = (dx < 5) ? T.BARREL : (dx === 6 ? T.CRATE : T.GRASS2);
+        }
+        this.grid[y + 1][x + 6] = T.CRATE; this.grid[y + 2][x + 6] = T.BARREL; this.grid[y + 2][x + 7] = T.BARREL;
+        this._connectToRoad(x + shed.doorX, yy);
+        this.buildingZones[locId] = { x, y, w: 8, h: shed.h + 4, doorPixelX: (x + shed.doorX + 0.5) * TILE, doorPixelY: (yy + 0.5) * TILE };
+        this.labelPositions[locId] = { x: (x + 4) * TILE, y: y * TILE - 4, name };
+    }
+
+    // v5.77.0 林間道具:篝火柴堆、古樹氣根與樹洞、守林高塔、林間的鹿、飄落的葉子
+    _drawForestProps(ctx) {
+        if (this.themeKey !== 'forest') return;
+        const frame = this.animFrame || 0;
+        const fp = this._firePit;
+        if (fp) {
+            ctx.fillStyle = '#6e6a62'; for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; ctx.fillRect(fp.x + Math.cos(a) * 13 - 2, fp.y + Math.sin(a) * 9 - 1, 4, 3); }
+            ctx.fillStyle = '#5a3a20'; ctx.fillRect(fp.x - 6, fp.y - 1, 12, 3); ctx.fillRect(fp.x - 2, fp.y - 5, 3, 10);
+            ctx.fillStyle = '#3a2412'; ctx.fillRect(fp.x - 6, fp.y + 1, 12, 1);
+        }
+        const et = this._elderTree;
+        if (et) {
+            ctx.fillStyle = '#4a2e18'; ctx.fillRect(et.x - 18, et.y + 2, 10, 4); ctx.fillRect(et.x + 8, et.y + 4, 10, 4); ctx.fillRect(et.x - 26, et.y + 6, 8, 3);
+            ctx.fillStyle = '#2a1a0c'; ctx.fillRect(et.x - 4, et.y - 10, 8, 10);
+            ctx.fillStyle = '#e8c46a'; ctx.fillRect(et.x - 2, et.y - 6, 1, 1); ctx.fillRect(et.x + 1, et.y - 4, 1, 1);
+            for (let i = 0; i < 5; i++) { ctx.fillStyle = (i % 2) ? '#c8402e' : '#f0c040'; ctx.fillRect(et.x - 14 + i * 7, et.y - 18, 3, 4); } // 祈福布條
+        }
+        const wt = this._watchtower;
+        if (wt) {
+            const bx = wt.x * TILE, by = wt.y * TILE;
+            ctx.fillStyle = '#6b4a2e'; ctx.fillRect(bx + 2, by - 30, 3, 34); ctx.fillRect(bx + 13, by - 30, 3, 34);
+            ctx.fillStyle = '#8b6a44'; ctx.fillRect(bx, by - 36, 18, 8);
+            ctx.fillStyle = '#5a3e2a'; ctx.fillRect(bx - 1, by - 40, 20, 4);
+            ctx.fillStyle = '#3a2716'; ctx.fillRect(bx + 1, by - 29, 15, 1); ctx.fillRect(bx + 1, by - 18, 15, 1); ctx.fillRect(bx + 1, by - 7, 15, 1);
+            ctx.fillStyle = '#ffd54f'; ctx.fillRect(bx + 7, by - 34, 4, 4);
+        }
+        for (const d of (this._deer || [])) {
+            const dx = d.x * TILE, dy = d.y * TILE + (Math.sin(frame / 40 + d.x) > 0.95 ? -1 : 0);
+            const f = d.flip ? -1 : 1;
+            ctx.fillStyle = '#a0724a';
+            ctx.fillRect(dx - 7, dy - 6, 14, 7);
+            ctx.fillRect(dx + f * 5, dy - 12, 5, 7);
+            ctx.fillStyle = '#7a5232';
+            ctx.fillRect(dx - 6, dy + 1, 2, 5); ctx.fillRect(dx - 2, dy + 1, 2, 5); ctx.fillRect(dx + 2, dy + 1, 2, 5); ctx.fillRect(dx + 5, dy + 1, 2, 5);
+            ctx.fillRect(dx + f * 7, dy - 14, 1, 3); ctx.fillRect(dx + f * 9, dy - 15, 1, 4);
+            ctx.fillStyle = '#f4ead8'; ctx.fillRect(dx - 2, dy - 3, 4, 2);
+            ctx.fillStyle = '#151515'; ctx.fillRect(dx + f * 8, dy - 10, 1, 1);
+        }
+        // 飄落的葉子(白天也有)
+        for (let i = 0; i < 10; i++) {
+            const tt = ((frame / 2 + i * 37) % 160) / 160;
+            const lx = ((i * 211 + 40) % (this.mapWidth - 80)) + 40 + Math.sin(tt * 9 + i) * 10;
+            const ly = ((i * 97) % (this.mapHeight - 200)) + 60 + tt * 120;
+            ctx.fillStyle = (i % 3 === 0) ? 'rgba(220,150,60,0.8)' : (i % 3 === 1 ? 'rgba(120,170,60,0.8)' : 'rgba(190,100,50,0.8)');
+            ctx.fillRect(lx, ly, 2, 2);
+        }
+    }
+
+    // v5.77.0 夜裡的螢火蟲:在篝火場、古樹、苔泉、空地附近漂浮閃爍
+    _drawFireflies(ctx, nightAmount) {
+        if (this.themeKey !== 'forest' || !this._fireflySpots || nightAmount <= 0.3) return;
+        const frame = this.animFrame || 0;
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        this._fireflySpots.forEach((sp, si) => {
+            for (let i = 0; i < 9; i++) {
+                const ph = frame / 30 + i * 1.7 + si;
+                const fx = sp.x + Math.cos(ph) * sp.r * (0.4 + (i % 3) * 0.2) + Math.sin(ph * 1.7 + i) * 6;
+                const fy = sp.y + Math.sin(ph * 0.8) * sp.r * 0.5 - 8 + Math.cos(ph * 2.3) * 4;
+                const blink = Math.max(0, Math.sin(ph * 3 + i)) * nightAmount;
+                if (blink < 0.15) continue;
+                ctx.fillStyle = `rgba(200,255,120,${(blink * 0.9).toFixed(2)})`; ctx.fillRect(fx, fy, 2, 2);
+                ctx.fillStyle = `rgba(200,255,120,${(blink * 0.25).toFixed(2)})`; ctx.fillRect(fx - 2, fy - 2, 6, 6);
+            }
+        });
+        ctx.restore();
     }
 
     // ============================================================
@@ -4640,6 +4860,7 @@ class PixelTileMap {
         // v5.75.0 海岸道具:棧橋木樁、漁船、燈塔
         this._drawHarborProps(ctx);
         this._drawMountainProps(ctx); // v5.76.0 礦山鎮道具
+        this._drawForestProps(ctx); // v5.77.0 林間村道具
         // Draw factory icons near workshop/tavern
         if (extraData?.processing?.builtFactories) {
             this._drawFactoryOverlay(ctx, extraData.processing);
@@ -5338,6 +5559,7 @@ class PixelTileMap {
         this._renderCampfires(ctx, nightAmount);
         // v5.75.0 燈塔夜間旋轉光束
         this._drawLighthouseBeam(ctx, nightAmount);
+        this._drawFireflies(ctx, nightAmount); // v5.77.0 林間村螢火蟲
 
         // Window lights at night
         if (nightAmount > 0.15) {

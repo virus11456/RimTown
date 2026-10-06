@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.76.0
+ * Version: 5.77.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.76.0');
+define('RIMTOWN_VERSION', '5.77.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.77.0',
+            'date'    => '2026-10-06',
+            'changes' => array(
+                '🌲 第四座城鎮「林間村」登場:邊境鎮繁榮度到 60 收到「林道開通」,獵戶清出馬車道。密林裡的獵戶與樵夫村有自己的地圖——四周厚厚的林帶、村子只在林中空地裡;篝火場取代石板廣場(夜裡篝火＋螢火蟲)、古樹祭壇是一棵掛滿祈福布條的巨木、伐木場堆原木、守林哨塔立一座高塔、林中空地有鹿、白天落葉飄',
+                '🏹 林間村 15 人專屬卡司:聽得懂樹說話的村長林姥、打獵的大熊與護鹿的鹿娘這對吵了十年的夫妻、送了十四隻木雕的阿松與藥草師阿葉、守林人阿哨與伐木工頭鋸哥的護林／伐木之爭、老樵口中那棵不能砍的樹、五十年手帕交林姥與樹婆…與邊境鎮的趙霞、林美、楊鋒、何昌、凌波,海風鎮的海嬤、木蝦都有跨鎮親緣',
+                '🪵 林間村物資:木材 340、草藥 120 多;石材 20、金屬 10 缺——三座鄰鎮各有所長,為跨鎮貿易鋪路',
+                '📣 首頁:特色文案加入林間村,路線圖更新(市集城開發中)',
+            ),
+            'changes_en' => array(
+                '🌲 The fourth town, Greenwood, is here: at prosperity 60 Frontier Town gets "Forest road open" as the hunters clear a coach trail. The hunters\' and woodcutters\' village deep in the forest has its own map: thick woods on every side with the village in a clearing; a Bonfire Circle instead of a stone square (bonfire and fireflies at night), an Elder Tree Altar that is a giant tree hung with prayer ribbons, a Lumber Yard stacked with logs, a tall Ranger Watchtower, deer in the Forest Clearing and leaves drifting by day',
+                '🏹 A cast of 15 unique to Greenwood: elder Thora who understands the trees, hunter Bjorn and deer-keeper Dora who have argued for ten years, Pete with his fourteen carvings and herbalist Fern, ranger Rafe versus lumber foreman Sawyer over the woods, the tree Woodrow says must never be felled, fifty-year friends Thora and Willa, and more; with cross-town ties to Zoe, Mia, Felix, Charles and Luna in Frontier Town and Granny Mae and Woody in Seabreeze Harbor',
+                '🪵 Greenwood stockpile: rich in wood (340) and herbs (120), short on stone (20) and metal (10); each of the three neighbour towns now has its own strengths, paving the way for inter-town trade',
+                '📣 Landing page: the feature copy mentions Greenwood and the roadmap is updated (Market City in development)',
+            ),
+        ),
         array(
             'version' => '5.76.0',
             'date'    => '2026-10-06',
