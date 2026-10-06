@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.75.0
+ * Version: 5.76.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.75.0');
+define('RIMTOWN_VERSION', '5.76.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,26 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.76.0',
+            'date'    => '2026-10-06',
+            'changes' => array(
+                '⛏️ 第三座城鎮「礦山鎮」登場:邊境鎮繁榮度到 40 會收到「山道來信」,吊橋修好、馬車可上山。山壁下的礦業小鎮有自己的地圖——北側整片雪頂山壁、主礦坑鑿在山壁裡、礦車沿軌道來回運礦到礦車廣場、東側一道裂谷架兩座吊橋、山泉浴場冒蒸氣、熔爐鍛坊煙囪冒煙',
+                '👷 礦山鎮 15 人專屬卡司:礦務長礦爺、鐵匠鐵柱與酒館老闆娘阿杏這對爐火夫妻、塌方倖存的老礦工老錘與守祠人祠婆的舊情、工頭牛叔的接班盤算、地質學者阿岩算出的金脈、坑口醫師白姑想寄出的那封信、第一個女礦工阿鈴…自帶三角戀、舊怨與暗流;與邊境鎮的吳達、趙霞、林美、張豪、馬強,以及海風鎮的海伯、珊珊都有跨鎮親緣',
+                '🪨 礦山鎮物資:石材 320、金屬 140 多;糧食 60、布料 15 缺——和邊境鎮、海風鎮天然互補,為跨鎮貿易鋪路',
+                '🧭 鄰鎮解鎖改為表驅動(海風鎮繁榮 20、礦山鎮繁榮 40),之後的林間村、市集城照表加;每鎮只在背景生成一次,絕不自動刪任何存檔;主線任務分頁在所有主題鎮都顯示該鎮的故事占位',
+                '🌐 英文介面:地圖上的地名標籤與村民名牌改用英文(Boone、Hank、Main Shaft…),不再中英夾雜;礦山鎮全部地名、人名、背景與跨鎮心事都有英文版',
+                '📣 首頁:特色改為「多鎮往返」,路線圖更新(林間村開發中、市集城規劃中)',
+            ),
+            'changes_en' => array(
+                '⛏️ The third town, Mine Ridge, is here: when Frontier Town reaches prosperity 40 a letter arrives from the mountain road, the rope bridge is repaired and the coach can go up. The mining town under the cliffs has its own map: a snow-capped rock wall across the north, the Main Shaft cut into the cliff, an ore cart running up and down the rails to Ore-cart Square, a chasm on the east side crossed by two rope bridges, steaming hot-spring baths and a smoking furnace chimney',
+                '👷 A cast of 15 unique to Mine Ridge: mining director Boone, blacksmith Brock and tavern keeper Ginger the furnace couple, collapse survivor Hank and shrine keeper Ada with their old flame, foreman Bruno scheming for succession, geologist Petra and her calculated gold vein, pithead doctor Blanche and the letter she means to send, first woman miner Belle and more; triangles, grudges and undercurrents built in, with cross-town ties to Duncan, Zoe, Mia, Hugo and Max in Frontier Town and Hal and Coral in Seabreeze Harbor',
+                '🪨 Mine Ridge stockpile: rich in stone (320) and metal (140), short on food (60) and cloth (15), a natural complement to Frontier Town and Seabreeze Harbor that paves the way for inter-town trade',
+                '🧭 Neighbour-town unlocking is now table-driven (Seabreeze at prosperity 20, Mine Ridge at 40), so Forest Village and Market City can be added the same way; each town is generated in the background exactly once and no save is ever deleted automatically; the quest tab shows a story placeholder for every themed town',
+                '🌐 English interface: map location labels and villager name tags now use English names (Boone, Hank, Main Shaft and so on) instead of mixing scripts; every Mine Ridge place name, villager name, background and cross-town thought has an English version',
+                '📣 Landing page: the feature card is now "Many towns" and the roadmap is updated (Forest Village in development, Market City planned)',
+            ),
+        ),
         array(
             'version' => '5.75.0',
             'date'    => '2026-10-06',

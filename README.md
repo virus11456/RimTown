@@ -63,7 +63,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 | # | 項目 | 狀態 | 備註 |
 |---|---|---|---|
-| A1 | 生成更多城鎮與村民 | 進行中（D-P0 完成，接著 P1 礦山鎮） | 目前只有邊境鎮、海風鎮兩種主題；每鎮固定卡司 20／15 人 |
+| A1 | 生成更多城鎮與村民 | 進行中（P0 海風鎮地圖、P1 礦山鎮已上線，接著 P2 林間村） | 目前只有邊境鎮、海風鎮兩種主題；每鎮固定卡司 20／15 人 |
 | A2 | 海風鎮地圖要有海邊、燈塔、港口 | ✅ v5.75.0 已上線 | `generateLayout(locations, theme)` 海岸版面：海面／沙灘／棧橋＋漁船／燈塔（夜間光束）／曬網場／鹽場／海蝕洞／潟湖 |
 | A3 | 每座城鎮特色要不一樣 | 進行中（海風鎮已有專屬地形；新鎮依 D-P1～P3 做） | 需要「主題地形＋主題建築圖示＋主題卡司＋主題經濟」四層一起做 |
 | A4 | 首頁放 3D low-poly 截圖（`img/lowpoly-preview.jpg`） | 等附件 | 使用者的截圖未以附件送達；Cowork 另放了 4 張 Godot 測試截圖（v5.74.1 後） |
@@ -119,7 +119,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 - 新增地磚：沙灘、礁岩、棧橋、懸崖；新增建築圖示：燈塔、碼頭、漁船、鹽田。
 - 地圖由 `locations` 重新生成，不改存檔格式；舊海風鎮存檔重開就會變成海岸地圖。
 
-**D-P1 第三座城鎮：礦山鎮（mountain）**
+**D-P1 第三座城鎮：礦山鎮（mountain）— ✅ v5.76.0 已上線**
 - 地形：北側整片山壁與礦坑入口、吊橋、碎石路；建築：鍛造坊、礦工宿舍、熔爐。
 - 卡司 15 人（礦工、鐵匠、工程師、酒保、礦坑醫生…）自帶三角戀與舊怨；經濟多金屬石材、缺食物布料。
 - 解鎖：繁榮 40 時「山道來信」事件，馬車可達。
@@ -152,7 +152,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.75.0.zip` from Releases
+1. Download `rimtown-v5.76.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -187,6 +187,15 @@ node scripts/gen-changelog.js   # 從 rimtown.php 產生首頁更新紀錄 chang
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.76.0 (2026-10-06)
+
+- ⛏️ 第三座城鎮「礦山鎮」登場:邊境鎮繁榮度到 40 會收到「山道來信」，吊橋修好、馬車可上山。山壁下的礦業小鎮有自己的地圖——北側整片雪頂山壁、主礦坑鑿在山壁裡、礦車沿軌道來回運礦到礦車廣場、東側一道裂谷架兩座吊橋、山泉浴場冒蒸氣、熔爐鍛坊煙囪冒煙
+- 👷 礦山鎮 15 人專屬卡司:礦務長礦爺、鐵匠鐵柱與酒館老闆娘阿杏這對爐火夫妻、塌方倖存的老礦工老錘與守祠人祠婆的舊情、工頭牛叔的接班盤算、地質學者阿岩算出的金脈、坑口醫師白姑想寄出的那封信、第一個女礦工阿鈴…自帶三角戀、舊怨與暗流;與邊境鎮的吳達、趙霞、林美、張豪、馬強，以及海風鎮的海伯、珊珊都有跨鎮親緣
+- 🪨 礦山鎮物資:石材 320、金屬 140 多;糧食 60、布料 15 缺——和邊境鎮、海風鎮天然互補，為跨鎮貿易鋪路
+- 🧭 鄰鎮解鎖改為表驅動(海風鎮繁榮 20、礦山鎮繁榮 40)，之後的林間村、市集城照表加;每鎮只在背景生成一次，絕不自動刪任何存檔;主線任務分頁在所有主題鎮都顯示該鎮的故事占位
+- 🌐 英文介面:地圖上的地名標籤與村民名牌改用英文(Boone、Hank、Main Shaft…)，不再中英夾雜;礦山鎮全部地名、人名、背景與跨鎮心事都有英文版
+- 📣 首頁:特色改為「多鎮往返」，路線圖更新(林間村開發中、市集城規劃中)
 
 ### v5.75.0 (2026-10-06)
 

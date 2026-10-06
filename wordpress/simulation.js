@@ -3714,9 +3714,10 @@ const TERRAIN_TYPES = [
 // v5.55.0 主題城鎮:每個主題有自己的地點皮膚、開局物資性格與專屬名冊
 // frontier = 邊境鎮(現況,一切照舊);harbor = 海風鎮(漁村:討海文化、鹽場、燈塔)
 const TOWN_THEMES = {
-    frontier: { key: 'frontier' },
+    frontier: { key: 'frontier', townName: '邊境鎮' },
     harbor: {
         key: 'harbor',
+        townName: '海風鎮',
         terrain: 'coastal',
         locationNames: {
             town_hall: t('港務所'), tavern: t('海味居'), clinic: t('海風診療所'), workshop: t('修船工房'),
@@ -3728,6 +3729,22 @@ const TOWN_THEMES = {
         },
         // 漁獲豐、帆布多;無林缺木、草藥少——與邊境鎮天然互補,為跨鎮貿易鋪路
         stockpile: { food: 320, cloth: 90, wood: 45, herbs: 10 },
+    },
+    // v5.76.0 礦山鎮:山壁下的礦業小鎮——礦坑、熔爐、吊橋、山泉;石材金屬多、食物布料缺
+    mountain: {
+        key: 'mountain',
+        townName: '礦山鎮',
+        terrain: 'mountain',
+        unlockProsperity: 40,
+        locationNames: {
+            town_hall: '礦務所', tavern: '礦燈酒館', clinic: '坑口醫站', workshop: '熔爐鍛坊',
+            farm: '山腰梯田', quarry: '主礦坑', general_store: '礦山雜貨', library: '礦圖室',
+            guardpost: '坑道哨', chapel: '山神祠', park: '山泉浴場', well: '山泉井',
+            town_square: '礦車廣場',
+            residential_north: '山腰宿舍', residential_south: '礦工村', residential_east: '工頭街',
+            forest: '針葉林', river: '冰溪', hill: '鷹嘴峰', meadow: '高山草甸', cave: '廢礦坑', lake: '礦湖',
+        },
+        stockpile: { stone: 320, metal: 140, food: 60, cloth: 15, wood: 60, herbs: 8 },
     },
 };
 
@@ -3748,6 +3765,14 @@ const CROSS_TOWN_TIES = {
     hb_xiaoou: { other: '周明', thoughts: [t('那個彈吉他的流浪商人，唱的那首海歌我現在還會哼。')] },
     hb_dengye: { other: '孫雨', thoughts: [t('邊境鎮那位孫姑娘的信又到了，她問的遺跡我日誌裡正好有記載。')] },
     hb_axi:    { other: '林美', thoughts: [t('同期的林美在邊境鎮行醫，她的信裡總夾著新藥方。')] },
+    // v5.76.0 礦山鎮 ↔ 邊境鎮／海風鎮
+    mt_laochui: { other: '吳達', thoughts: [t('邊境鎮的吳達當年跟我同一條坑道，他的腰現在還好嗎。'), t('塌方那天要不是吳達拉我一把，我早埋在第三層了。')] },
+    mt_aqing:   { other: '趙霞', thoughts: [t('邊境鎮趙老闆娘的訂單又來了，礦石換布料，這條線我跑了五年。')] },
+    mt_baigu:   { other: '林美', thoughts: [t('邊境鎮的林醫師回信了，她說願意幫忙看那些塵肺的病例。')] },
+    mt_kuangye: { other: '海伯', thoughts: [t('海風鎮那個老船長海伯，年輕時我們在同一家礦業公司跑過貨，現在一個管港一個管坑。')] },
+    mt_ayan:    { other: '珊珊', thoughts: [t('海風鎮研究潮汐的珊珊是我書信往來的同行，她的洋流圖和我的礦脈圖竟然對得上。')] },
+    zhang_hao:  { other: '鐵柱', thoughts: [t('礦山鎮的鐵柱打的鎬頭最耐用，下次商隊來一定要買一把。')] },
+    ma_qiang:   { other: '牛叔', thoughts: [t('礦山鎮那個工頭牛叔，當年跟我在同一支護衛隊，脾氣一樣臭。')] },
 };
 
 class TownMap {
@@ -6618,7 +6643,7 @@ class World {
             if (this.npcQuests) this.npcQuests.dailyUpdate(this);
             if (this.lifeGoals) this.lifeGoals.dailyUpdate(this); // v5.4.0
             // v5.58.0 邊境鎮主線任務不在海風鎮跑(任務卡司是邊境鎮居民;海風鎮主題任務鏈待後續)
-            if (this.questSystem && this.townTheme !== 'harbor') this.questSystem.checkProgress(this);
+            if (this.questSystem && (this.townTheme || 'frontier') === 'frontier') this.questSystem.checkProgress(this); // v5.76.0 主線只屬於邊境鎮
             // v4.0 systems
             // v5.32.0 章節門檻:互動卡片第二章(繁榮 20)起、議會第四章(繁榮 70)起才啟動
             const chapterPros = this.prosperity?.prosperity || 0;
@@ -7165,11 +7190,12 @@ class World {
         this.townTheme = this.townTheme || 'frontier';
         const theme = TOWN_THEMES[this.townTheme] || TOWN_THEMES.frontier;
         // v5.58.0 鎮名跟著世界走(序列化保存),UI 標題不再永遠寫死邊境鎮
-        this.townName = this.townName || (this.townTheme === 'harbor' ? '海風鎮' : '邊境鎮');
+        this.townName = this.townName || theme.townName || '邊境鎮';
         this.townMap = generateRandomTown(seed, this.townTheme);
         if (theme.stockpile) Object.assign(this.stockpile.resources, theme.stockpile);
         // v5.27.0 肉鴿:隨機開局模式(rosterMode='random')抽全新村民,否則用劇本卡司
         if (this.townTheme === 'harbor') this._loadHarborResidents();
+        else if (this.townTheme === 'mountain') this._loadMountainResidents(); // v5.76.0
         else if (this.rosterMode === 'random') this._loadRandomResidents(15);
         else this._loadDefaultResidents();
         const player = new PlayerAgent();
@@ -7547,6 +7573,54 @@ class World {
         pair('hb_yunyi', 'hb_haibo', { aff: 34, rom: 26, status: 'ex' }, { aff: 30, rom: 22, status: 'ex' }); // 未完的舊情
         pair('hb_aduo', 'hb_axi', { aff: 26, rom: 34 }, { aff: 18, rom: 6 }); // 哨長的佔有慾
         this._seedCrossTownMemories(); // v5.58.0 海風鎮這頭也記掛著邊境鎮的親友
+    }
+
+    // v5.76.0 礦山鎮名冊:礦業小鎮的粗獷人名、下坑文化、塌方舊事與接班暗流
+    _loadMountainResidents() {
+        const residents = [
+            {id:'mt_kuangye',name:'礦爺',age:61,gender:'male',job:'mayor',home:'residential_north',traits:['charismatic','stoic','hardworking'],values:['權力','社群'],background:'礦山鎮的礦務長，當年第一鏟挖開主礦坑的人。說一不二，全鎮的工資都經他的手。膝蓋在坑裡壞了，雨天走路一瘸一瘸，但沒人敢扶。'},
+            {id:'mt_tiezhu',name:'鐵柱',age:38,gender:'male',job:'blacksmith',home:'residential_south',traits:['hardworking','abrasive','stoic'],values:['財富','家庭'],background:'熔爐鍛坊的鐵匠，手臂比別人大腿還粗。脾氣跟爐火一樣旺，但打出來的鎬頭全鎮最耐用。和妻子阿杏是在坑口定情的。'},
+            {id:'mt_axing',name:'阿杏',age:34,gender:'female',job:'cook',home:'residential_south',traits:['kind','optimist','gossip'],values:['家庭','社群'],background:'礦燈酒館的老闆娘，一鍋熱湯撐起全礦山的早班。嘴快心熱，鐵柱的脾氣只有她壓得住。'},
+            {id:'mt_laochui',name:'老錘',age:55,gender:'male',job:'miner',home:'residential_south',traits:['stoic','pessimist','hardworking'],values:['自由','財富'],background:'下了三十年坑的老礦工，肺不好但從不請假。二十年前坑道塌方時他是最後一個爬出來的，從此不信任何人嘴裡的「安全」。'},
+            {id:'mt_xiaozuan',name:'小鑽',age:23,gender:'male',job:'miner',home:'residential_south',traits:['optimist','romantic','early_bird'],values:['冒險','財富'],background:'礦山最年輕的礦工，堅信坑道深處一定有金脈。愛上了礦圖室的阿岩，可惜她眼裡只有地圖。'},
+            {id:'mt_ayan',name:'阿岩',age:27,gender:'female',job:'researcher',home:'residential_north',traits:['perfectionist','neurotic','creative'],values:['知識','自然'],background:'礦圖室的地質學者，畫礦脈圖比畫自己還熟。她算出主礦坑第七層有金，但礦爺不肯批准往下挖。'},
+            {id:'mt_baigu',name:'白姑',age:44,gender:'female',job:'doctor',home:'residential_north',traits:['kind','perfectionist','night_owl'],values:['知識','和平'],background:'坑口醫站的醫師，救過的礦工比全鎮人口還多。夜裡總在整理塵肺病例，想寫一封信把礦山的真相寄出去。'},
+            {id:'mt_niushu',name:'牛叔',age:47,gender:'male',job:'guard',home:'residential_east',traits:['abrasive','jealous','hardworking'],values:['權力','財富'],background:'坑道哨的工頭，礦爺的左右手。嗓門大、手段硬，暗地裡盤算著礦爺退了之後誰來接班。'},
+            {id:'mt_aqing',name:'阿晴',age:29,gender:'female',job:'trader',home:'residential_east',traits:['charismatic','gossip','glutton'],values:['財富','冒險'],background:'礦山雜貨的老闆，礦石換銀子的門路全靠她。常跑邊境鎮進貨，鎮上的八卦也是她一併捎回來的。'},
+            {id:'mt_mugen',name:'木根',age:40,gender:'male',job:'carpenter',home:'residential_east',traits:['hardworking','shy','stoic'],values:['藝術','家庭'],background:'專做坑道支架的木匠，坑裡每一根撐木都是他量的。不說話的時候就在刻木頭小礦車，送給鎮上的小孩。'},
+            {id:'mt_cipo',name:'祠婆',age:63,gender:'female',job:'priest',home:'residential_north',traits:['kind','stoic','romantic'],values:['和平','社群'],background:'山神祠的守祠人，每次下坑前礦工都來她這兒摸一下護身符。年輕時和老錘有過一段，塌方那年斷了。'},
+            {id:'mt_ati',name:'阿梯',age:31,gender:'male',job:'farmer',home:'residential_east',traits:['early_bird','kind','hardworking'],values:['自然','家庭'],background:'守著山腰梯田的農夫，山上長不出什麼，他硬是種出了全鎮的蘿蔔。每天把最醜的那顆留給自己。'},
+            {id:'mt_xiugu',name:'繡姑',age:50,gender:'female',job:'tailor',home:'residential_east',traits:['perfectionist','gossip','kind'],values:['家庭','藝術'],background:'縫礦工工裝的裁縫，補過的膝蓋補丁數不清。和阿晴是茶友，鎮上沒有她們兩個不知道的事。'},
+            {id:'mt_aling',name:'阿鈴',age:20,gender:'female',job:'miner',home:'residential_south',traits:['shy','creative','early_bird'],values:['自由','知識'],background:'礦山第一個女礦工，進坑那天全鎮都在看。白天挖礦，夜裡偷偷跟阿岩學看礦脈圖。'},
+            {id:'mt_youbo',name:'油伯',age:58,gender:'male',job:'miner',home:'residential_south',traits:['night_owl','gossip','optimist'],values:['社群','自由'],background:'坑道燈伕，每天提早一小時進坑把油燈點亮。礦山所有的故事，都是他在燈光下講給新人聽的。'},
+        ];
+        residents.forEach(r => {
+            const personality = new Personality(r.traits, r.background, r.values);
+            const job = r.job ? new Job(r.job) : null;
+            const agent = new Agent(r.id, r.name, r.age, personality, job, r.home, r.gender);
+            this.addAgent(agent);
+        });
+        const A = this.agents;
+        const set = (from, to, { aff = 0, rom = 0, trust = 0, status = null } = {}) => {
+            const f = A[from], t2 = A[to]; if (!f || !t2) return;
+            const r = f.relationships.getOrCreate(t2.agentId, t2.name);
+            r.affinity = aff; r.romanticInterest = rom; r.trust = trust;
+            if (status) { r.status = status; r.statusSince = 0; }
+            r.interactionCount = Math.max(r.interactionCount, 6); r.lastInteractionTick = 0;
+        };
+        const pair = (x, y, ox, oy) => { set(x, y, ox); set(y, x, oy); };
+        pair('mt_tiezhu', 'mt_axing', { aff: 70, rom: 52, trust: 62, status: 'married' }, { aff: 72, rom: 50, trust: 64, status: 'married' }); // 爐火夫妻
+        pair('mt_laochui', 'mt_cipo', { aff: 36, rom: 28, status: 'ex' }, { aff: 40, rom: 30, status: 'ex' }); // 塌方那年斷掉的舊情
+        pair('mt_laochui', 'mt_niushu', { aff: -50, rom: 0, trust: -30 }, { aff: -40, rom: 0, trust: -22 }); // 老錘怪工頭催工釀成塌方
+        pair('mt_xiaozuan', 'mt_ayan', { aff: 38, rom: 48 }, { aff: 20, rom: 6 }); // 小鑽的單戀
+        pair('mt_aling', 'mt_ayan', { aff: 44, rom: 0, trust: 40 }, { aff: 34, rom: 0, trust: 30 }); // 師徒
+        pair('mt_mugen', 'mt_aling', { aff: 26, rom: 32 }, { aff: 14, rom: 4 }); // 木匠的靦腆心事
+        pair('mt_niushu', 'mt_kuangye', { aff: 30, rom: 0, trust: -12 }, { aff: 42, rom: 0, trust: 26 }); // 左右手的野心
+        pair('mt_baigu', 'mt_kuangye', { aff: -22, rom: 0, trust: -16 }, { aff: -10, rom: 0, trust: 8 }); // 塵肺真相之爭
+        pair('mt_aqing', 'mt_xiugu', { aff: 60, rom: 0, trust: 54 }, { aff: 58, rom: 0, trust: 52 }); // 茶友
+        pair('mt_youbo', 'mt_laochui', { aff: 52, rom: 0, trust: 48 }, { aff: 50, rom: 0, trust: 46 }); // 同坑老兄弟
+        pair('mt_ati', 'mt_axing', { aff: 30, rom: 18 }, { aff: 26, rom: 0 }); // 送蘿蔔的農夫
+        this._seedCrossTownMemories();
     }
 
     // v5.27.0 肉鴿:隨機開局 —— 每一局抽一批全新村民 + 隨機愛恨關係網
@@ -8096,7 +8170,7 @@ class World {
             this.workPolicy = data.workPolicy || {}; // v5.51.0
             this.townTheme = data.townTheme || 'frontier'; // v5.55.0 主題城鎮
             this.visitors = data.visitors || {}; // v5.56.0 在鎮訪客
-            this.townName = data.townName || (this.townTheme === 'harbor' ? '海風鎮' : '邊境鎮'); // v5.59.5 舊檔沒鎮名時依主題補上,不再殘留上一鎮的名字
+            this.townName = data.townName || (TOWN_THEMES[this.townTheme]?.townName) || '邊境鎮'; // v5.59.5 舊檔沒鎮名時依主題補上,不再殘留上一鎮的名字
             this._chronicleChatIdx = (this.agents['player']?.chatHistory || []).length; // v5.43.0 讀檔後從當下開始記
             this.playerActions = data.playerActions || []; // v5.45.0
             this.dailyEcho = data.dailyEcho || []; // v5.45.0
