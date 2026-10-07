@@ -112,7 +112,6 @@ const I18N = (() => {
 
         // ── Buttons ──
         '建造': 'Build',
-        '研究': 'Research',
         '選擇': 'Choose',
         '關閉': 'Close',
         '完成': 'Complete',
@@ -124,7 +123,6 @@ const I18N = (() => {
         '對話': 'Chat',
         '前往對話': 'Go Chat',
         '調情': 'Flirt',
-        '告白': 'Confess',
         '求婚': 'Propose',
         '辭職': 'Resign',
         '投票給': 'Vote for',
@@ -179,7 +177,6 @@ const I18N = (() => {
         '確定刪除雲端存檔？': 'Delete cloud save?',
         '刪除失敗：': 'Delete failed: ',
         '雲端沒有存檔。請先上傳存檔。': 'No cloud saves. Please upload first.',
-        '雲端存檔': 'Cloud Saves',
         '匯出存檔': 'Export Save',
         '匯入存檔': 'Import Save',
         '儲存遊戲': 'Save Game',
@@ -204,7 +201,6 @@ const I18N = (() => {
         '感情狀態': 'Love Status',
         '已婚': 'Married',
         '交往中': 'Dating',
-        '前任': 'Ex',
         '秘密關係': 'Secret Relationship',
         '暗戀': 'Crushing',
         '單身': 'Single',
@@ -256,7 +252,6 @@ const I18N = (() => {
         '研究中：': 'Researching: ',
         '可研究：': 'Available: ',
         '已完成：': 'Completed: ',
-        '建築': 'Buildings',
         '建造：': 'Build: ',
 
         // ── Industry / Factory ──
@@ -312,7 +307,6 @@ const I18N = (() => {
         '進行中的探險：': 'Active Expeditions: ',
         '天後返回': 'days until return',
         '已探索': 'Explored ',
-        '次': ' times',
         '難度：': 'Difficulty: ',
         '探險進行中...': 'Expedition in progress...',
         '派遣探險': 'Send Expedition',
@@ -344,7 +338,6 @@ const I18N = (() => {
         '天氣': 'Weather',
         '社會': 'Social',
         '健康': 'Health',
-        '發現': 'Discovery',
         '自然': 'Nature',
         '政治': 'Political',
         '剩餘': 'Remaining',
@@ -376,7 +369,6 @@ const I18N = (() => {
         '安裝到主畫面，享受全螢幕體驗': 'Install to home screen for fullscreen experience',
         '安裝': 'Install',
         '派系': 'Factions',
-        '團結度：': 'Cohesion: ',
         '敵對：': 'Rival: ',
         '結盟：': 'Allied: ',
 
@@ -396,7 +388,6 @@ const I18N = (() => {
         '生長中': 'Growing',
         '可收穫': 'Ready',
         '枯萎': 'Withered',
-        '田地 #': 'Plot #',
         '水分：': 'Water: ',
         '本季無可種作物': 'No crops available this season',
         '收穫紀錄': 'Harvest Log',
@@ -464,7 +455,6 @@ const I18N = (() => {
         '蘑菇': 'Mushrooms',
         '甘蔗': 'Sugarcane',
         '茶葉': 'Tea',
-        '葡萄': 'Grapes',
         '金色小麥': 'Golden Wheat',
         '火龍果': 'Dragon Fruit',
         '麵包': 'Bread',
@@ -546,7 +536,6 @@ const I18N = (() => {
         '悲觀': 'Pessimist',
         '神經質': 'Neurotic',
         '沉穩': 'Stoic',
-        '浪漫': 'Romantic',
         '嫉妒': 'Jealous',
         '夜貓子': 'Night Owl',
         '早起鳥': 'Early Bird',
@@ -558,7 +547,6 @@ const I18N = (() => {
         '飢餓': 'Hunger',
         '休息': 'Rest',
         '社交': 'Social',
-        '舒適': 'Comfort',
         '娛樂': 'Recreation',
 
         // ── Values ──
@@ -626,7 +614,6 @@ const I18N = (() => {
         '大理石開採': 'Marble mining',
         '石材帝國': 'Stone Empire',
         '出口石材': 'Export Stone',
-        '農業': 'Agriculture',
         '種植作物，生產食物和經濟作物。養活全鎮的基礎。': 'Plant crops, produce food and cash crops.',
         '小農田': 'Small Farm',
         '基礎作物': 'Basic Crops',
@@ -780,9 +767,7 @@ const I18N = (() => {
         '八卦消息': 'Gossip',
         '沒什麼特別的': 'Nothing special',
         '居民動態速寫': 'Resident Activity Snapshot',
-        '正在': 'Currently ',
         '閒逛': 'wandering',
-        '好友': 'Friend',
         '不合': 'Incompatible',
         '有浪漫火花': 'Romantic spark',
         '已結束': 'Ended',
@@ -884,7 +869,6 @@ const I18N = (() => {
         '為人父母': 'Parent',
         '二周目': 'New Game Plus',
         '三代傳承': 'Three Generations',
-        '知己': 'Best Friend',
         '早起的鳥': 'Early Bird',
 
         // ── Custom NPC Endings ──
@@ -915,12 +899,10 @@ const I18N = (() => {
         // ── Simulation / NPC Activities ──
         '睡覺': 'Sleeping',
         '吃飯': 'Eating',
-        '工作': 'Working',
         '散步': 'Walking',
         '巡邏': 'Patrolling',
         '看診': 'Consulting',
         '治療': 'Treating',
-        '烹飪': 'Cooking',
         '釀酒': 'Brewing',
         '打鐵': 'Smithing',
         '禱告': 'Praying',
@@ -944,10 +926,8 @@ const I18N = (() => {
 
         // ── Relationships ──
         '好友': 'Friend',
-        '摯友': 'Close Friend',
         '知己': 'Best Friend',
         '點頭之交': 'Acquaintance',
-        '陌生人': 'Stranger',
         '仇人': 'Enemy',
         '死對頭': 'Nemesis',
         '情侶': 'Couple',
@@ -1012,7 +992,6 @@ const I18N = (() => {
         '手工藝': 'Crafting',
 
         // ── Misc UI ──
-        '遊戲控制': 'Game Control',
         'AI 供應商': 'AI Provider',
         '模擬對話': 'Simulated Chat',
         'AI 已連接：': 'AI Connected: ',
@@ -1050,10 +1029,6 @@ const I18N = (() => {
         '沒有近期記憶。': 'No recent memories.',
         '陌生人': 'Stranger',
         '認識': 'Acquaintance',
-        '朋友': 'Friend',
-        '摯友': 'Close Friend',
-        '對手': 'Rival',
-        '敵人': 'Enemy',
         '天生善良且富有同理心': 'Naturally kind and empathetic',
         '容易得罪別人': 'Easily offends others',
         '在社交場合感到不自在': 'Feels uncomfortable in social situations',
@@ -1157,11 +1132,8 @@ const I18N = (() => {
         // ── Relationship Map (v4.5.0) ──
         '全鎮關係網': 'Town Relationship Map',
         '戀愛/婚姻': 'Romance/Marriage',
-        '單戀': 'Crush',
-        '敵對': 'Hostile',
         '與': ' & ',
         '和': ' and ',
-        '是夫妻': '(married)',
         '是前任': '(ex)',
         '是死對頭': '(nemesis)',
         '對你的好感': 'Affinity toward you',
@@ -1213,18 +1185,17 @@ const I18N = (() => {
         '吳達和楊鋒又在酒館互看不順眼了,他們的樑子結很久了。': 'Wu Da and Yang Feng were glaring at each other in the tavern again — that grudge goes way back.',
 
         // ── Life Goal Storylines (v5.4.0) ──
-        '尋覓真愛': 'Seeking True Love', '憧憬愛情': 'Longing for Love', '怦然心動': 'A Fluttering Heart', '兩情相悅': 'Mutual Affection', '步入婚姻': 'Into Marriage',
-        '開店創業': 'Start a Business', '胸懷創業夢': 'A Dream of One\'s Own Shop', '攢下第一桶金': 'Saved the First Fortune', '盤下店面': 'Secured a Storefront', '開張大吉': 'Grand Opening',
-        '技藝登峰': 'Master the Craft', '拜師苦練': 'Training Under a Master', '小有名氣': 'Gaining a Name', '獨當一面': 'Standing on Their Own', '一代宗師': 'A True Grandmaster',
-        '浪跡天涯': 'Wander the World', '嚮往遠方': 'Yearning for Distant Lands', '打點行裝': 'Packing for the Journey', '踏上旅程': 'Setting Off', '滿載而歸': 'Home, Fulfilled',
-        '闔家團圓': 'A Happy Family', '渴望有個家': 'Longing for a Family', '遇見對的人': 'Met the Right One', '開枝散葉': 'Starting a Family', '兒孫繞膝': 'Surrounded by Family',
-        '名留青史': 'A Lasting Legacy', '胸懷大志': 'Great Ambitions', '嶄露頭角': 'Making a Mark', '舉足輕重': 'A Person of Influence',
+        '尋覓真愛': 'Seeking True Love',
+        '開店創業': 'Start a Business',
+        '技藝登峰': 'Master the Craft',
+        '浪跡天涯': 'Wander the World',
+        '闔家團圓': 'A Happy Family',
+        '名留青史': 'A Lasting Legacy',
         '榮譽': 'Honor',
         '已實現': 'Achieved',
         '助夢': 'Support Dream',
         '夢想進行中': 'Dreams in Motion',
         '正在追逐「': ' is chasing "',
-        '」:': '": ',
         '夢想成真': 'A Dream Come True',
         '心情來源': 'Mood Sources',
         '收到禮物': 'Received a gift',
@@ -1358,7 +1329,6 @@ const I18N = (() => {
         '恩怨情仇,暗流洶湧': 'Grudges and passions; undercurrents run deep',
         '小鎮的樣貌轉變了,如今成為「': 'The town has transformed — it is now a "',
         '小鎮的樣貌逐漸成形——「': 'The town is taking shape — a "',
-        '」:': '": ',
         '小鎮轉型為:': 'Town transformed into: ',
         '小鎮成形為:': 'Town took shape as: ',
         '商業': 'Commerce',
@@ -1620,7 +1590,7 @@ const I18N = (() => {
         '紅公雞,綠尾巴,身體鑽到地底下。(猜一蔬菜)': 'A red rooster with a green tail, its body burrowed underground. (A vegetable)',
         '紅蘿蔔': 'Carrot', '番茄': 'Tomato', '辣椒': 'Chili pepper',
         '屋子方方,有門沒窗,屋外熱烘,屋裡冰霜。(猜一設施)': "A square little house with a door but no windows — warm outside, frost within. (A facility)",
-        '火爐': 'Stove', '冰窖': 'Ice cellar', '穀倉': 'Granary',
+        '火爐': 'Stove', '冰窖': 'Ice cellar',
 
         // ── Heart Events + Festival AI (v5.0.0) ──
         '初識之誼': 'Budding Friendship',
@@ -1803,53 +1773,28 @@ const I18N = (() => {
         '/3 位居民交談。繼續點擊居民聊天吧！': '/3 residents. Keep tapping residents to chat!',
         ' | 📖 支線：': ' | 📖 Side quest: ',
         '每 15 分鐘（1 tick）看一次同地點還醒著的人。睡覺的人不會主動搭話。': 'Every 15 minutes (1 tick) they look at who is awake at the same spot. Sleepers never start a chat.',
-        '挑對象': 'Pick someone',
         '權重 = 5 ＋ 好感÷10 ＋ 心動÷10；好感低於 −30 的人權重大減。互動後冷卻 6 tick。': 'Weight = 5 + affinity÷10 + attraction÷10; anyone below −30 affinity is heavily discounted. 6-tick cooldown after each interaction.',
         '30% 機率先講一則八卦。八卦性格的人一定講，其他人 30%。傳到第 2 手有 40% 會被誇大，20% 的八卦本來就是假的。': '30% chance to open with gossip. Gossipy types always do, others 30%. Second-hand gossip is exaggerated 40% of the time, and 20% of it was false to begin with.',
-        '約出去': 'Hang out',
         '好感 ≥ 30 時 12% 機率相約去酒館、公園、廣場、教堂、森林或圖書館；心動 > 40 就算約會。': 'At affinity ≥ 30 there is a 12% chance to head to the tavern, park, square, church, forest or library; attraction > 40 makes it a date.',
         '玩家附近的對話由內建 AI 生成（受每日額度限制）；遠處的對話走規則式模板，但同樣寫進記憶。': 'Chats near the player are generated by the built-in AI (within a daily budget); distant ones use rule-based templates but are still written to memory.',
-        '效果': 'Effects',
         '對話改變雙方好感（−2 到 +5）與心動；正向增幅乘上性格相容度 0.2 到 1.6。約定會寫成「計畫」記憶，情緒波動大就當場改寫今天剩下的行程。': 'A chat shifts both sides\' affinity (−2 to +5) and attraction; positive gains are multiplied by personality compatibility 0.2 to 1.6. Promises become "plan" memories, and a big mood swing rewrites the rest of today\'s schedule on the spot.',
-        '記憶': 'Memory',
         '每人 500 條記憶流。對話寫進「他會記住的那句話」，重要度 4 到 8。': 'Each villager keeps a 500-entry memory stream. A chat stores "the line they would remember", importance 4 to 8.',
-        '反思與計畫': 'Reflect and plan',
         '每晚合成 1 到 2 條想法（跟誰走得近、暗戀、夢想）；每天最多 3 位由 AI 深度反思。清晨依記憶排今日行程。': 'Every night 1 to 2 insights are synthesized (who they are close to, crushes, dreams); at most 3 villagers a day get AI deep reflection. At dawn the schedule is built from memory.',
-        '情緒敏感': 'Emotional sensitivity',
-        '晚睡': 'Night owl',
-        '早起': 'Early riser',
-        '食量': 'Appetite',
-        '認識 / 陌生人': 'Acquaintance / stranger',
         '每條記憶有時間、類別、內容、重要度（1 到 10）、涉及的人。要說話或做計畫時，不是翻全部，而是用三個分數挑出最該想起的幾條：': 'Every memory has a time, a type, content, importance (1 to 10) and the people involved. When speaking or planning they do not read everything; three scores pick the few most worth recalling:',
-        '時近': 'Recency',
-        '相關': 'Relevance',
-        '重要度': 'Importance',
-        '已過天數': 'Days ago',
         '，一週前的事只剩三成份量。': ', so a week-old event keeps only 30% of its weight.',
         '內容與當下話題的字元重疊度，加上「有沒有提到眼前這個人」。': 'character overlap between the content and the current topic, plus whether it mentions the person in front of them.',
         '表白、絕交、劈腿這類事件是 8 到 10；日常觀察只有 2。': 'confessions, fallouts and cheating score 8 to 10; everyday observations only 2.',
-        '相關程度': 'Relevance',
-        '性格參數': 'Personality parameters',
         '每人出生時抽 3 個特質（互斥的不會同時出現），加上 1 到 3 個價值觀。特質決定社交加成、工作效率、基礎心情、情緒敏感度與戀愛傾向。': 'Everyone is born with 3 traits (mutually exclusive ones never co-occur) plus 1 to 3 values. Traits set social bonuses, work efficiency, baseline mood, emotional sensitivity and romantic tendency.',
-        '價值觀': 'Values',
-        '相容度': 'Compatibility',
         '善良配善良、魅力配害羞、沉穩配神經質會加分；刻薄配害羞、樂觀配悲觀、懶惰配勤勞會扣分。換算成 0.2 到 1.6 的倍率，乘在每次好感增幅上。': 'Kind with kind, charming with shy, calm with neurotic score bonus points; mean with shy, optimist with pessimist, lazy with diligent lose points. It becomes a 0.2 to 1.6 multiplier on every affinity gain.',
-        '六項需求': 'Six needs',
         '飢餓、休息、社交、舒適、娛樂、美感。白天每 tick 飢餓 −2、休息 −1.5、社交 −1；夜裡衰減放慢。任一項見底就拖累心情，心情又決定他今天想不想理人。': 'Hunger, rest, social, comfort, fun, beauty. By day each tick costs hunger −2, rest −1.5, social −1; decay slows at night. Any need hitting bottom drags mood down, and mood decides whether they feel like talking today.',
-        '關係階梯': 'Relationship ladder',
         '對每個人各記三個數：好感（−100 到 100）、信任、心動（0 到 100）。好感決定稱呼，心動超過 50 就是暗戀。': 'Three numbers per person: affinity (−100 to 100), trust and attraction (0 to 100). Affinity sets the label; attraction above 50 is a crush.',
         '50 tick 沒互動，好感每天往 0 漂 0.8；情侶夫妻只漂 0.3。': 'After 50 ticks without contact, affinity drifts toward 0 by 0.8 a day; couples and spouses only 0.3.',
         '好感 > 20 且互動超過 3 次，相配的人每天 45% 機率心動 +1 到 +5；高好感高相配還有 6% 的「來電火花」+8 到 +16。': 'Above 20 affinity and 3+ interactions, compatible pairs have a 45% daily chance of +1 to +5 attraction; high affinity plus high compatibility adds a 6% "spark" of +8 to +16.',
         '雙方好感 ≤ −35：每隔 5 天 15% 機率在廣場對嗆；雙方 ≤ −60：正式絕交，觸發劇情名場面。': 'Mutual affinity ≤ −35: every 5 days a 15% chance of a shouting match in the square; ≤ −60: an official fallout that triggers a drama scene.',
         '聽到自己被造謠會當面對質，造謠者好感 −12；紅娘式八卦會讓兩位當事人開始注意彼此。': 'Hearing a rumor about yourself leads to a confrontation and −12 affinity for the gossip; matchmaking gossip makes the two people notice each other.',
         '戲劇導演每天看一眼全鎮：太平靜就悄悄推一把暗戀、舊帳或吃醋。': 'A drama director checks the whole town daily: if things are too quiet it nudges a crush, an old grudge or some jealousy.',
-        '想法與心情': 'Thoughts and mood',
         '事件會留下有期限的「想法」，直接加減心情，有些還會改變對當事人的看法：': 'Events leave time-limited "thoughts" that add to or subtract from mood, and some change how they see the people involved:',
-        '持續天數': 'Days',
-        '對人看法': 'Opinion',
         '成本閘門：只有玩家附近的對話與每日額度內的行程／反思會呼叫 AI，其餘一律規則式運算，所以一整鎮 20 多人同時「活著」也不會燒錢。': 'Cost gate: only chats near the player and schedules/reflection within the daily budget call the AI; everything else is rule-based, so a whole town of 20+ villagers stays "alive" without burning money.',
-        '→ 有機會被想起': '→ likely to be recalled',
-        '→ 大概忘了': '→ probably forgotten',
         '已從雲端同步最新存檔（': 'Synced the latest save from the cloud (',
         '確認': 'Confirm',
         '<h3 style="margin-bottom:8px">雲端存檔</h3>': '<h3 style="margin-bottom:8px">Cloud saves</h3>',
@@ -4612,9 +4557,9 @@ const I18N = (() => {
         '自己調調看：一條記憶會被想起來嗎？': 'Try it: will this memory be recalled?',
         '→ 幾乎一定會想起來': '→ almost certainly recalled', '→ 有機會被想起': '→ might be recalled', '→ 大概忘了': '→ probably forgotten',
         '互斥：': 'Mutually exclusive: ', '價值觀': 'Values', '相容度': 'Compatibility', '六項需求': 'Six needs',
-        '想法': 'Thought', '心情': 'Mood', '持續天數': 'Days', '對人看法': 'Opinion',
-        '摯友': 'Close friend', '朋友': 'Friend', '認識 / 陌生人': 'Acquaintance / stranger', '對手': 'Rival', '敵人': 'Enemy',
-        '基礎心情': 'base mood', '情緒敏感': 'mood sensitivity', '戀愛': 'romance', '晚睡': 'night owl', '早起': 'early bird', '食量': 'appetite', '舒適': 'comfort',
+        '想法': 'Thought', '持續天數': 'Days', '對人看法': 'Opinion',
+        '朋友': 'Friend', '認識 / 陌生人': 'Acquaintance / stranger', '對手': 'Rival', '敵人': 'Enemy',
+        '基礎心情': 'base mood', '情緒敏感': 'mood sensitivity', '晚睡': 'night owl', '早起': 'early bird', '食量': 'appetite', '舒適': 'comfort',
         // v5.68.0 首頁 + 推薦碼
         '一座由 AI 村民自己過日子的小鎮。你是剛到的旅人。': 'A town where AI villagers live their own lives. You are the traveler who just arrived.',
         '村民有記憶、有個性、有人際關係；他們會工作、戀愛、吵架、選鎮長。你可以聊天、送禮、耳語、蓋房子、開產業，甚至參選。': 'Villagers have memories, personalities and relationships. They work, fall in love, quarrel and elect a mayor. You can chat, give gifts, whisper, build, run industries, even run for office.',
@@ -5306,6 +5251,8 @@ const I18N = (() => {
         '本機': 'local',
         ' 訪客）': ' visiting)',
         '海風鎮的故事': 'Stories of Seabreeze',
+        '英文名（選填，英文介面顯示用）': 'English name (optional, shown in the English UI)',
+        'English name (optional)': 'English name (optional)',
         '跨鎮商隊': 'Inter-town caravan',
         '的商隊來了：用': '\'s caravan has arrived: traded',
         '換到': 'for',
@@ -6031,6 +5978,14 @@ const I18N = (() => {
         const sn = Object.keys(_revSurname).sort((a, b) => b.length - a.length).map(esc).join('|');
         _revRe = new RegExp('\\b(?:(' + gv + ') (' + sn + ')|(' + fixed + '))\\b', 'g');
     }
+    // v5.81.0 玩家自訂村民可登記英文名:進固定名對照表,正反向對照都重建
+    function registerName(zh, en) {
+        if (!zh || !en || typeof zh !== 'string' || typeof en !== 'string') return;
+        zh = zh.trim(); en = en.trim();
+        if (!zh || !en || NAME_FIXED[zh] === en) return;
+        NAME_FIXED[zh] = en;
+        _nameRe = null; _revRe = null;
+    }
     function delocalizeNames(str) {
         if (!str || typeof str !== 'string' || !/[A-Za-z]/.test(str)) return str;
         if (!_revRe) _buildRev();
@@ -6124,8 +6079,8 @@ const I18N = (() => {
 
     // Expose globally
     window.t = t;
-    window.I18N = { t, setLang, getLang, toggleLang, translations: en, localizeName, localizeNames, localizeTree, delocalizeNames };
+    window.I18N = { t, setLang, getLang, toggleLang, translations: en, localizeName, localizeNames, localizeTree, delocalizeNames, registerName };
     if (typeof document !== 'undefined') { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _syncNameObserver); else _syncNameObserver(); }
 
-    return { t, setLang, getLang, toggleLang, translations: en, localizeName, localizeNames, localizeTree, delocalizeNames };
+    return { t, setLang, getLang, toggleLang, translations: en, localizeName, localizeNames, localizeTree, delocalizeNames, registerName };
 })();

@@ -3081,6 +3081,40 @@ class PixelTileMap {
                 have++;
             }
         }
+        // v5.81.0 第二輪:嚴格掃描補不夠(主題鎮地圖密、地標多)就放寬——不留外圍邊距、逐格掃、
+        // 只避開道路/水/地標地磚/建築/牆/作物,樹與草可以蓋(視為清出一塊地)
+        if (have < needed) {
+            const HW2 = house.w + 1, HH2 = house.h + 3;
+            const BAD2 = new Set([T.DIRT, T.WATER, T.WATER2, T.PIER, T.SALT, T.NET, T.GRAVEL, T.CHASM, T.RAIL, T.SNOW, T.ROCK, T.DARK_FLOOR,
+                T.WALL_TOP, T.WALL_FRONT, T.ROOF, T.ROOF2, T.FLOOR, T.FLOOR2, T.DOOR, T.WINDOW, T.STONE_PATH, T.BRIDGE, T.SAND,
+                T.CROP1, T.CROP2, T.CROP3, T.FENCE_H, T.FENCE_V, T.WELL, T.ALTAR, T.STALL, T.BARREL, T.CRATE, T.CHAIR, T.TABLE, T.FURNACE]);
+            // 工廠地基只有前 N 塊(N = 工廠種類數)會真的蓋工廠,後面的預留地基可以讓給房子
+            const maxFactories = (typeof FACTORIES !== 'undefined') ? Object.keys(FACTORIES).length : 7;
+            const reservedPlots = new Set(plots.slice(0, maxFactories));
+            const rects2 = rects.filter(z => !plots.includes(z) || reservedPlots.has(z));
+            const blocked2 = (px, py) => rects2.some(z => px + HW2 > z.x && px < z.x + z.w && py + HH2 > z.y && py < z.y + z.h);
+            const clear2 = (px, py) => {
+                for (let y = py; y < py + HH2; y++) for (let x = px; x < px + HW2; x++) {
+                    if (y < 1 || x < 1 || y >= this.rows - 1 || x >= this.cols - 1) return false;
+                    if (BAD2.has(this.grid[y][x])) return false;
+                }
+                return true;
+            };
+            for (let y = 2; y < this.rows - HH2 - 1 && have < needed; y++) {
+                for (let x = 2; x < this.cols - HW2 - 1 && have < needed; x++) {
+                    if (blocked2(x, y) || !clear2(x, y)) continue;
+                    this._placeExtraHouse(x, y);
+                    const hr = { x, y, w: HW2, h: HH2 };
+                    rects.push(hr); rects2.push(hr);
+                    have++;
+                }
+            }
+            // 被房子佔掉的預留地基從清單移除(只會是後段、永遠不會蓋工廠的那幾塊),空地基虛線框不再畫在房子底下
+            if (Array.isArray(this._factoryPlots)) {
+                const houses = Object.values(this._houseSubZones || {});
+                this._factoryPlots = this._factoryPlots.filter(pl => !houses.some(h => pl.x < h.x + h.w && pl.x + pl.w > h.x && pl.y < h.y + h.h && pl.y + pl.h > h.y));
+            }
+        }
     }
 
     _placeExtraHouse(hx, hy) {

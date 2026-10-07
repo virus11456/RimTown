@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.80.0
-const RIMTOWN_APP_VERSION = '5.80.0';
+// RimTown - Frontend App (WordPress Plugin) v5.81.0
+const RIMTOWN_APP_VERSION = '5.81.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1604,6 +1604,14 @@ class RimTownApp {
             [t('規劃中'), '#fbbf24', [t('村民自訂外觀'), t('跨鎮戀愛搬家'), t('日報跨鎮專欄')]],
             [t('構想'), '#60a5fa', [t('玩家之間互訪城鎮'), t('手機 App 版')]],
         ];
+        // v5.81.0 更新紀錄(240KB)不再隨頁面載入:首頁第一次畫時才動態載 changelog.js,載完重畫一次;直接進遊戲的人完全不載
+        if (typeof RIMTOWN_CHANGELOG === 'undefined' && !this._changelogLoading) {
+            this._changelogLoading = true;
+            const sc = document.createElement('script');
+            sc.src = 'changelog.js?v=' + encodeURIComponent(RIMTOWN_APP_VERSION);
+            sc.onload = () => { if (this._landingActive) { try { this._renderLanding(); } catch (e) {} } };
+            document.head.appendChild(sc);
+        }
         const log = (typeof RIMTOWN_CHANGELOG !== 'undefined' && Array.isArray(RIMTOWN_CHANGELOG)) ? RIMTOWN_CHANGELOG : [];
         const logHtml = log.map((e, i) => `<div class="landing-log-item${i >= 5 ? ' extra' : ''}">
                 <div class="landing-log-head"><span>${String(e.version).startsWith('Godot') ? '' : 'v'}${esc(e.version)}</span><time>${esc(e.date || '')}</time></div>
@@ -6965,6 +6973,8 @@ class RimTownApp {
         // Name
         html += t('<div class="setting-group"><label>名字</label>');
         html += t('<input type="text" id="custom-npc-name" maxlength="10" placeholder="輸入名字（最多10字）" style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:inherit"></div>');
+        // v5.81.0 選填英文名:英文介面的地圖名牌、對話與日誌都用它,不填就顯示原名
+        html += `<input type="text" id="custom-npc-name-en" maxlength="20" placeholder="${t('英文名（選填，英文介面顯示用）')}" style="width:100%;margin-top:6px;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:var(--bg-primary);color:var(--text-primary);font-size:0.85rem">`;
 
         // Gender
         html += t('<div class="setting-group"><label>性別</label>');
@@ -7031,7 +7041,8 @@ class RimTownApp {
         const traits = Array.from(document.querySelectorAll('.custom-npc-trait:checked')).map(cb => cb.value);
         const values = Array.from(document.querySelectorAll('.custom-npc-value:checked')).map(cb => cb.value);
 
-        const config = { name, gender, age, job, traits, values, background };
+        const nameEn = (document.getElementById('custom-npc-name-en')?.value || '').trim().replace(/[^A-Za-z .'-]/g, '').slice(0, 20); // v5.81.0
+        const config = { name, gender, age, job, traits, values, background, nameEn };
         const result = this.world.customNPC.createCustomNPC(config, this.world);
 
         if (!result.success) {

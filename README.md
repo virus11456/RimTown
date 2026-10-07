@@ -67,7 +67,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 | A2 | 海風鎮地圖要有海邊、燈塔、港口 | ✅ v5.75.0 已上線 | `generateLayout(locations, theme)` 海岸版面：海面／沙灘／棧橋＋漁船／燈塔（夜間光束）／曬網場／鹽場／海蝕洞／潟湖 |
 | A3 | 每座城鎮特色要不一樣 | ✅ 五鎮各有專屬地形、建築、卡司、物資與商隊角色 | 需要「主題地形＋主題建築圖示＋主題卡司＋主題經濟」四層一起做 |
 | A4 | 首頁放 3D low-poly 截圖（`img/lowpoly-preview.jpg`） | 等附件 | 使用者的截圖未以附件送達；Cowork 另放了 4 張 Godot 測試截圖（v5.74.1 後） |
-| A5 | 海風鎮專屬任務鏈（漁村主線） | 未做 | `app.js` 註記 TC-03：海風鎮目前只顯示「漁村故事頁」占位，無主線／支線 |
+| A5 | 海風鎮專屬任務鏈（漁村主線） | 企劃已寫（見 E），待拍板 | `app.js` 註記 TC-03：海風鎮目前只顯示「漁村故事頁」占位，無主線／支線 |
 | A6 | 已多出來的重複城鎮 | 需玩家手動刪 | v5.74.2 已堵住成因；程式規範「絕不自動刪雲端存檔」，請到城鎮列表刪 Seabreeze Harbor／Frontier Town 那筆 |
 
 ### B. 已知問題與可優化（程式裡看到的）
@@ -75,10 +75,10 @@ English: the separate Godot test build now includes traveler controls, interacti
 **語言／雙語**
 - B1 記憶、對話紀錄、行程文字在「建立當下」依介面語言存進存檔（`t()` at creation），切換語言後舊內容語言混雜。根治要把這類模板改成「key＋參數」存檔、顯示時再翻，屬大工程；目前只保證顯示層與人名一致。
 - B2 LLM 提示詞本體仍是中文（125 條刻意保留），英文對話模式靠英文規則行與英文系統指示；若要更道地，可為主要提示詞寫英文版本。
-- B3 `changelog.js` 已 216KB，首頁每次整份載入；可拆成 zh／en 兩檔依語言載入，或改為點「顯示全部」才載。
+- B3 ~~`changelog.js` 首頁每次整份載入~~ v5.81.0 改為首頁第一次渲染才動態載入，直接進遊戲不載。
 - B4 ~~隨機卡司英文名由 26 姓 × 48 名組合~~ v5.79.0 已擴為 40 姓 × 120 名，並保留五鎮劇本人名不抽。
-- B5 玩家自訂村民的名字沒有英文對照（顯示原名），可在建立時讓玩家一併填英文名。
-- B6 `i18n.js` 有 23 筆重複 key（歷史基準），可清掉後把稽核門檻降為 0。
+- B5 ~~玩家自訂村民的名字沒有英文對照~~ v5.81.0 建立村民時可填英文名（`I18N.registerName`，存檔記住）。
+- B6 ~~`i18n.js` 有重複 key~~ v5.81.0 清掉 56 筆（含同列多鍵），`scripts/i18n-audit.js` 門檻 0。
 
 **AI 與成本**
 - B7 AI 日報 v5.73.0 才真正接上 `llm.chat()`，需觀察一週的品質、長度與每日額度占用。
@@ -93,13 +93,13 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 **程式結構與測試**
 - B14 `app.js` 9.8K 行、`simulation.js` 9.9K 行、`tilemap.js` 5K 行皆為單檔，可依功能拆模組（landing、settings、towns、economy…）。
-- B15 Playwright 掃描腳本（英文模式 0 中文、重複城鎮、首頁摺疊）目前只在工作區，應收進 `scripts/` 並加進「發版前必跑」。
-- B16 `method-audit.js` 只檢查 `this._xxx()`；可擴充檢查 `t('…')` 的英文對照缺口（目前靠手動 Python 檢查）。
+- B15 ~~Playwright 掃描腳本只在工作區~~ v5.81.0 收進 `scripts/smoke_playwright.js`（選跑）與 `scripts/map_ascii.js`（版面快照，必跑）。
+- B16 ~~`t('…')` 英文對照缺口靠手動檢查~~ v5.81.0 `scripts/i18n-audit.js`：新字串缺英文即失敗；歷史欠帳 232 筆在 `scripts/i18n_missing_baseline.json`，補一筆就 `--update` 縮基準。
 - B17 WordPress 版（`rimtown.php` 短碼）沒有 `/api/chat`，村民只有規則式對話；若要在 WordPress 也用內建 AI，要另寫 PHP 代理。
 
 **玩法**
 - B18 ~~跨鎮互訪只在兩鎮之間~~ v5.76–v5.80 已支援五鎮（出訪名單／馬車目的地／親緣網／商隊）。
-- B19 住房自動加蓋有上限（依人口動態），人口超過 30 時需驗證地圖空地夠不夠。
+- B19 ~~住房自動加蓋在主題鎮補不出房~~ v5.81.0 第二輪放寬掃描＋讓出多餘工廠地基；五鎮開局人人有床，礦山鎮最緊（15 戶），超過才合住。
 - B20 際遇卡已停抽（v5.49.0），程式仍在；可決定移除或改成可選開關。
 
 ### C. 路線圖（與首頁一致）
@@ -107,6 +107,28 @@ English: the separate Godot test build now includes traveler controls, interacti
 - 開發中：3D low-poly 版（Blender＋Godot，獨立分支 `codex/godot-*`）；海風鎮專屬任務鏈
 - 規劃中：第三座城鎮；村民自訂外觀；跨鎮貿易與商隊
 - 構想：玩家之間互訪城鎮；手機 App 版
+
+### E. 企劃草案：海風鎮專屬任務鏈「潮聲」（待拍板，A5）
+
+**目標**：海風鎮有自己的五章主線＋六條支線，和邊境鎮「落腳邊境」平行；全部中英文。
+
+**主線五章**
+1. 「上岸」：搭馬車抵達、認識 3 位居民、在海味居吃一頓（小鷗）、拜海神小廟（雲姨）。
+2. 「鹽與燈」：石叔與燈爺的船難舊怨——向老漁問出那一夜、分別送信／對話；分支：和解（兩人同席燈塔）或各自沉默（關係維持）。
+3. 「海菜與窗台」：阿浮／阿帆／珊珊三角——幫阿浮署名或替阿帆傳話；選擇影響日後婚配。
+4. 「颱風夜」：秋季颱風事件——加固（木材 60、帆布 30）、守哨（阿舵／阿帆）、把漁船拖上岸；成功→繁榮＋10、燈塔光束升級；失敗→漁船損失、食物減。
+5. 「出海」：修船（阿錨、木蝦）、備貨、首航市集城→開通海運商隊（商隊頻率 ×2、海風鎮專屬貿易加成）。
+
+**支線六條**：雲姨與海伯的舊情（廟前經文）；阿鹽的「鹽不過山」（賣鹽到礦山鎮，需礦山鎮已解鎖）；阿蓉的繡坊夢（市集城）；海嬤的傳家魚乾（食譜任務）；蚵嫂替兒子找話題；木蝦的人魚故事（釣到…）。
+
+**技術**：`quest-system.js` 的任務鏈目前只有邊境鎮；改成依主題查表（`QUEST_CHAINS_BY_THEME`），`checkProgress` 在主題鎮跑對應鏈；條件型別沿用（talkTo／gift／visitLocation／stockpile／season／relationship）；獎勵銀幣／聲望／專屬稱號；任務分頁的占位文字改為真正的章節。估計 2 版（第 1–3 章一版、第 4–5 章＋支線一版）。
+
+**待你拍板**
+1. 五章＋六支線的規模可以嗎？要縮成三章也行。
+2. 颱風事件要不要推廣成「每鎮一個主題災難」：礦山鎮塌方、林間村山火、市集城商隊劫案？
+3. 礦山鎮／林間村／市集城的任務鏈要同一批做，還是先做海風鎮看反應？
+4. B20 際遇卡（已停抽但程式還在）：直接移除，還是做成設定裡的開關？
+5. B10 後端 `api/_lib.js` 的 Vercel Blob 回退與「搬資料到資料庫」按鈕已無用途：要我移除嗎（只動後端，存檔路徑不變）？
 
 ### D. 企劃草案：多城鎮、多村民、主題地圖（待拍板）
 
@@ -152,7 +174,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.80.0.zip` from Releases
+1. Download `rimtown-v5.81.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -176,6 +198,9 @@ node scripts/scrub_test.js     # 存檔深度清理 AI 助理漏出內容(v5.67.
 node scripts/invite_test.js    # 推薦碼註冊與管理(v5.68.0 起)
 node scripts/lang_test.js      # /api/chat 對話語言:lang=en 英文系統指示/不轉繁體(v5.73.0 起)
 node scripts/gen-changelog.js   # 從 rimtown.php 產生首頁更新紀錄 changelog.js(v5.68.0 起改版必跑);v5.74.0 起每版必須同時有 changes 與 changes_en,缺英文會失敗
+node scripts/i18n-audit.js     # i18n 重複鍵=0、新 t('…') 字串必須有英文(v5.81.0 起)
+node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改版面才 --update(v5.81.0 起)
+# 選跑:cd wordpress && python3 -m http.server 8126 & ; node scripts/smoke_playwright.js  # 五鎮世界/英文標籤/鄰鎮/住房/商隊冒煙
 ```
 
 ## 存檔保護規範（每次改版必讀）
@@ -187,6 +212,15 @@ node scripts/gen-changelog.js   # 從 rimtown.php 產生首頁更新紀錄 chang
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.81.0 (2026-10-07)
+
+- 🏠 住房加蓋第二輪:主題鎮地圖密、地標多，原本的嚴格掃描補不出房(礦山鎮 15 人只有 11 戶、林間村／市集城 12 戶)，現在不夠時改用放寬掃描(不留邊距、逐格找、樹與草視為可清出的地)，工廠永遠用不到的後段預留地基也讓給房子——五鎮開局人人有床:邊境鎮 25 人 25 戶、海風鎮 20 人 18–19 戶、礦山鎮／林間村／市集城 15 人 15 戶;真的客滿才合住
+- 🏷️ 玩家自訂村民可填英文名(選填):建立村民時多一欄「英文名」，英文介面的地圖名牌、對話與日誌都用它，存檔會記住;不填就顯示原名
+- 🧹 i18n 清掉 56 筆重複鍵(JS 物件後者悄悄蓋前者，實際譯文以最後一筆為準，行為不變)，重複鍵稽核門檻降為 0
+- 🔍 新增三支發版前稽核:scripts/i18n-audit.js(重複鍵=0、新字串沒英文就失敗，歷史欠帳 232 筆記在基準檔)、scripts/map_ascii.js(五種主題版面 ASCII 快照比對，產圖邏輯一改就擋下)、scripts/smoke_playwright.js(五鎮世界生成／英文標籤／鄰鎮不重複／住房／商隊，選跑)
+- ⚡ 首頁更新紀錄(240KB)不再隨頁面載入:第一次畫首頁時才動態載入，直接進遊戲的人完全不載
+- 📋 README 新增「E. 海風鎮專屬任務鏈企劃」草案(五章主線＋六條支線＋颱風事件)與待拍板問題
 
 ### v5.80.0 (2026-10-06)
 
