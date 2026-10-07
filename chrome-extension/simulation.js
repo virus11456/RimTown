@@ -8164,6 +8164,7 @@ class World {
             id:a.agentId, name:a.name, age:a.age, gender:a.gender, isPlayer:a.isPlayer,
             _isPlayerChild: a._isPlayerChild || false, _parentNames: a._parentNames || null,
             jobKey: a.job?.key || null,
+            nameEn: a.nameEn || undefined, // v5.81.0 自訂村民英文名
             homeLocation: a.homeLocation, currentLocation: a.currentLocation,
             mood: a.mood, activity: a.activity, currentThought: a.currentThought,
             personality: { traits:a.personality.traits, background:a.personality.background, values:a.personality.values },
@@ -8348,6 +8349,7 @@ class World {
                     agent = new Agent(id, ad.name, ad.age, personality, job, ad.homeLocation);
                 }
                 agent.currentLocation = ad.currentLocation;
+                if (ad.nameEn) { agent.nameEn = ad.nameEn; if (typeof I18N !== 'undefined' && I18N.registerName) I18N.registerName(ad.name, ad.nameEn); } // v5.81.0
                 if (ad.gender) agent.gender = ad.gender;
                 if (ad._isPlayerChild) { agent._isPlayerChild = true; agent._parentNames = ad._parentNames; }
                 agent.mood = ad.mood; agent.activity = ad.activity;

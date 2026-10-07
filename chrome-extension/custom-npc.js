@@ -88,12 +88,14 @@ class CustomNPCSystem {
 
         const agent = new Agent(agentId, config.name, config.age || 25, personality, job, home, config.gender || 'male');
         agent.isCustom = true;
+        if (config.nameEn) { agent.nameEn = String(config.nameEn).trim().slice(0, 20); if (typeof I18N !== 'undefined' && I18N.registerName) I18N.registerName(config.name, agent.nameEn); } // v5.81.0 英文名
         world.addAgent(agent);
 
         // Record
         this.customNPCs.push({
             id: agentId,
             name: config.name,
+            nameEn: config.nameEn || '',
             age: config.age || 25,
             gender: config.gender || 'male',
             job: config.job,

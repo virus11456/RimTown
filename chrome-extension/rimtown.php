@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.80.0
+ * Version: 5.81.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.80.0');
+define('RIMTOWN_VERSION', '5.81.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,26 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.81.0',
+            'date'    => '2026-10-07',
+            'changes' => array(
+                '🏠 住房加蓋第二輪:主題鎮地圖密、地標多,原本的嚴格掃描補不出房(礦山鎮 15 人只有 11 戶、林間村／市集城 12 戶),現在不夠時改用放寬掃描(不留邊距、逐格找、樹與草視為可清出的地),工廠永遠用不到的後段預留地基也讓給房子——五鎮開局人人有床:邊境鎮 25 人 25 戶、海風鎮 20 人 18–19 戶、礦山鎮／林間村／市集城 15 人 15 戶;真的客滿才合住',
+                '🏷️ 玩家自訂村民可填英文名(選填):建立村民時多一欄「英文名」,英文介面的地圖名牌、對話與日誌都用它,存檔會記住;不填就顯示原名',
+                '🧹 i18n 清掉 56 筆重複鍵(JS 物件後者悄悄蓋前者,實際譯文以最後一筆為準,行為不變),重複鍵稽核門檻降為 0',
+                '🔍 新增三支發版前稽核:scripts/i18n-audit.js(重複鍵=0、新字串沒英文就失敗,歷史欠帳 232 筆記在基準檔)、scripts/map_ascii.js(五種主題版面 ASCII 快照比對,產圖邏輯一改就擋下)、scripts/smoke_playwright.js(五鎮世界生成／英文標籤／鄰鎮不重複／住房／商隊,選跑)',
+                '⚡ 首頁更新紀錄(240KB)不再隨頁面載入:第一次畫首頁時才動態載入,直接進遊戲的人完全不載',
+                '📋 README 新增「E. 海風鎮專屬任務鏈企劃」草案(五章主線＋六條支線＋颱風事件)與待拍板問題',
+            ),
+            'changes_en' => array(
+                '🏠 Second housing pass: themed-town maps are dense and full of landmarks, so the strict scan could not add houses (15-person Mine Ridge had 11, Greenwood and Market City 12). When short, a relaxed scan now runs (no outer margin, tile by tile, trees and grass count as clearable) and the trailing factory plots that can never host a factory are given to houses. Every town now starts with a bed for everyone: Frontier Town 25 people 25 houses, Seabreeze 20 people 18–19, Mine Ridge / Greenwood / Market City 15 people 15 houses; sharing only happens when truly full',
+                '🏷️ Custom villagers can have an English name (optional): the create-villager form has a new "English name" field used by map name tags, dialogue and the log in the English UI, saved with the game; left blank, the original name is shown',
+                '🧹 Removed 56 duplicate i18n keys (in a JS object the later entry silently overrides the earlier, so the effective translation was always the last one; behaviour unchanged) and the duplicate-key audit threshold is now 0',
+                '🔍 Three new pre-release audits: scripts/i18n-audit.js (duplicate keys must be 0 and new strings without English fail; the 232 historical gaps are recorded in a baseline file), scripts/map_ascii.js (ASCII snapshot diff of all five map themes, catching any layout change) and scripts/smoke_playwright.js (five-town world generation, English labels, neighbour-town dedupe, housing, caravan; optional)',
+                '⚡ The landing-page changelog (240KB) no longer loads with the page: it is fetched the first time the landing page renders, and players who go straight into the game never load it',
+                '📋 README gains "E. Seabreeze quest chain plan" (five main chapters, six side quests, a typhoon event) with questions awaiting your decision',
+            ),
+        ),
         array(
             'version' => '5.80.0',
             'date'    => '2026-10-06',
