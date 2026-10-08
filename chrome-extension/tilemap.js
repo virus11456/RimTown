@@ -2952,13 +2952,13 @@ class PixelTileMap {
         const lh = this._lighthouse;
         const cx = lh.tx * TILE + 8, cy = lh.ty * TILE + 8 - 46;
         const ang = ((this.animFrame || 0) * 0.012) % (Math.PI * 2);
-        const len = 230, half = 0.16;
+        const len = this.lighthouseUpgraded ? 330 : 230, half = this.lighthouseUpgraded ? 0.2 : 0.16; // v5.84.0 颱風夜後燈更亮更遠
         ctx.save();
         ctx.globalCompositeOperation = 'lighter';
         for (let k = 0; k < 2; k++) {
             const a = ang + k * Math.PI;
             const g = ctx.createLinearGradient(cx, cy, cx + Math.cos(a) * len, cy + Math.sin(a) * len);
-            g.addColorStop(0, `rgba(255,240,170,${(0.42 * nightAmount).toFixed(3)})`);
+            g.addColorStop(0, `rgba(255,240,170,${((this.lighthouseUpgraded ? 0.6 : 0.42) * nightAmount).toFixed(3)})`);
             g.addColorStop(1, 'rgba(255,240,170,0)');
             ctx.fillStyle = g;
             ctx.beginPath();

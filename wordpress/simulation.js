@@ -6758,7 +6758,8 @@ class World {
     _caravanDaily() {
         if (!Array.isArray(this.otherTowns) || !this.otherTowns.length) return;
         const day = this._absDay();
-        if (this.lastCaravanDay != null && day - this.lastCaravanDay < 3) return;
+        const every = this.harborFlags?.seaRoute ? 2 : 3; // v5.84.0 海路開通:兩天一趟
+        if (this.lastCaravanDay != null && day - this.lastCaravanDay < every) return;
         const myKey = this.townTheme || 'frontier';
         const mine = TOWN_THEMES[myKey] || TOWN_THEMES.frontier;
         const cands = this.otherTowns.map(tw => ({ tw, key: themeKeyOfTownName(tw.name) })).filter(c => c.key && c.key !== myKey && TOWN_THEMES[c.key]);
@@ -6770,11 +6771,12 @@ class World {
         if (!give || !recv) return;
         const giveAmt = Math.min(40, Math.floor((this.stockpile.get(give) || 0) * 0.12));
         if (giveAmt < 5) return; // 本鎮也沒餘貨,商隊空手而回,過兩天再試
-        const hub = (myKey === 'market' || pick.key === 'market') ? Math.ceil(giveAmt * 0.2) : 0;
+        const hub = ((myKey === 'market' || pick.key === 'market') ? Math.ceil(giveAmt * 0.2) : 0) + (this.harborFlags?.seaRoute ? Math.ceil(giveAmt * 0.2) : 0); // v5.84.0 海路加成
         const recvAmt = giveAmt + hub;
         this.stockpile.add(give, -giveAmt, this.tickCount, t('跨鎮商隊'), pick.tw.name);
         this.stockpile.add(recv, recvAmt, this.tickCount, t('跨鎮商隊'), pick.tw.name);
         this.lastCaravanDay = day;
+        this.caravanCount = (this.caravanCount || 0) + 1; // v5.84.0 任務條件
         const label = (rs) => (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[rs]?.name) ? SHOP_ITEMS[rs].name() : (rs === 'silver' ? t('銀幣') : rs);
         const msg = `${t(pick.tw.name)}${t('的商隊來了：用')} ${giveAmt} ${label(give)} ${t('換到')} ${recvAmt} ${label(recv)}${hub ? t('（市集城經手，多兩成）') : ''}`;
         this.logMessage('trade', `🐪 ${msg}`);
@@ -8199,6 +8201,7 @@ class World {
             visitors: JSON.parse(JSON.stringify(this.visitors || {})), // v5.56.0 在鎮訪客名單
             townName: this.townName || '', // v5.58.0 鎮名
             lastCaravanDay: this.lastCaravanDay ?? null, // v5.80.0 跨鎮商隊
+            caravanCount: this.caravanCount || 0, harborFlags: { ...(this.harborFlags || {}) }, // v5.84.0
 
             playerActions: (this.playerActions || []).slice(-60).map(a => ({ ...a })), // v5.45.0 蝴蝶效應
             dailyEcho: [...(this.dailyEcho || [])], // v5.45.0 昨日回響
@@ -8393,6 +8396,7 @@ class World {
             this.townTheme = data.townTheme || 'frontier'; // v5.55.0 主題城鎮
             this.visitors = data.visitors || {}; // v5.56.0 在鎮訪客
             this.lastCaravanDay = data.lastCaravanDay ?? null; // v5.80.0
+            this.caravanCount = data.caravanCount || 0; this.harborFlags = data.harborFlags || {}; // v5.84.0
             this.townName = data.townName || (TOWN_THEMES[this.townTheme]?.townName) || '邊境鎮'; // v5.59.5 舊檔沒鎮名時依主題補上,不再殘留上一鎮的名字
             this._chronicleChatIdx = (this.agents['player']?.chatHistory || []).length; // v5.43.0 讀檔後從當下開始記
             this.playerActions = data.playerActions || []; // v5.45.0

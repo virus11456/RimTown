@@ -853,9 +853,159 @@ const HARBOR_MAIN_QUESTS = [
             hb_shanshan: { minAffinity: 10, hint: t('窗台上的海菜，每天都有。我其實…有點想知道是誰。') },
         },
     },
+    {
+        id: 'hb4_typhoon', chapter: 4,
+        title: t('颱風夜'),
+        description: t('阿帆從哨塔跑下來：颱風三天內登陸。整個鎮只有兩條路——把房子釘牢、把船拖上岸，或者祈禱。'),
+        hint: t('囤木材 60、帆布 30 並跟哨長阿舵把守哨排好（加固路線），或靠阿帆與阿錨把漁船拖上岸避風（避風路線）。'),
+        routes: [
+            {
+                id: 'brace', label: t('加固路線'), icon: '🪵',
+                description: t('全鎮加固：木材釘窗、帆布蓋艙、守哨徹夜。'),
+                conditions: [
+                    { type: 'resource', resource: 'wood', target: 60, label: t('儲備 60 木材') },
+                    { type: 'resource', resource: 'cloth', target: 30, label: t('儲備 30 帆布') },
+                    { type: 'npc_affinity', npcId: 'hb_aduo', target: 25, label: t('阿舵好感度達到 25') },
+                ],
+                effects: { stockpile: { wood: -60, cloth: -30 }, prosperity: 10, flags: { lighthouseUpgraded: true }, playerAffinity: [['hb_aduo', 10], ['hb_dengye', 8]] },
+                onComplete: t('風在半夜最大，整個鎮沒有一盞燈滅。天亮時燈爺把燈塔的燈換上了更亮的燈芯——「颱風夜守得住的鎮，燈就該更亮。」'),
+            },
+            {
+                id: 'shelter', label: t('避風路線'), icon: '⛵',
+                description: t('來不及加固，先把人和船拖上岸。'),
+                conditions: [
+                    { type: 'npc_affinity', npcId: 'hb_afan', target: 25, label: t('阿帆好感度達到 25') },
+                    { type: 'npc_affinity', npcId: 'hb_amao', target: 20, label: t('阿錨好感度達到 20') },
+                    { type: 'chat_count', target: 25, label: t('與居民交談 25 次') },
+                ],
+                effects: { stockpile: { food: -40 }, prosperity: 3, playerAffinity: [['hb_afan', 10], ['hb_amao', 8]] },
+                onComplete: t('兩艘船沒拖上來，漁獲損失了一些；但沒有人受傷。海嬤說：「船可以再造，人不行。」'),
+            },
+        ],
+        rewards: { silver: 80, reputation: 15 },
+        unlocks: ['hb5_voyage'],
+        onComplete: t('颱風過去了，海風鎮還在。'),
+        npcHints: {
+            hb_afan: { minAffinity: 0, hint: t('颱風三天內登陸，我在塔上看得清清楚楚。') },
+            hb_aduo: { minAffinity: 10, hint: t('木材帆布備夠，守哨的事交給我。') },
+            hb_amao: { minAffinity: 10, hint: t('船拖上岸要人手，你肯幫忙的話…') },
+        },
+    },
+    {
+        id: 'hb5_voyage', chapter: 5,
+        title: t('出海'),
+        description: t('颱風之後，海伯說該有一條自己的海路了。修好船、備好貨，首航市集城——海風鎮的名字要靠自己的帆送出去。'),
+        hint: t('請阿錨修船、木蝦補板，備足 120 食物與 40 帆布，等商隊來過一次確認航路，就能出海。'),
+        objectives: [
+            { id: 'amao', type: 'npc_affinity', npcId: 'hb_amao', target: 30, label: t('阿錨好感度達到 30（修船）') },
+            { id: 'muxia', type: 'npc_affinity', npcId: 'hb_muxia', target: 25, label: t('木蝦好感度達到 25（補板）') },
+            { id: 'food', type: 'resource', resource: 'food', target: 120, label: t('備貨 120 食物') },
+            { id: 'cloth', type: 'resource', resource: 'cloth', target: 40, label: t('備帆 40 帆布') },
+            { id: 'caravan', type: 'caravan_count', target: 1, label: t('商隊來過至少 1 次（航路確認）') },
+        ],
+        rewards: { silver: 150, reputation: 25 },
+        effects: { flags: { seaRoute: true }, prosperity: 5, playerAffinity: [['hb_haibo', 15], ['hb_langshu', 10]] },
+        isFinale: false,
+        onComplete: t('首航那天全鎮都在棧橋上。海伯親自掌舵，浪叔在船頭喊得比海浪還大聲。從此商隊兩天就來一趟，海風鎮的魚乾和帆布有了自己的航線。'),
+        npcHints: {
+            hb_haibo: { minAffinity: 10, hint: t('老骨頭還掌得了舵。你把船和貨備好，我帶你出海。') },
+            hb_langshu: { minAffinity: 10, hint: t('市集城那邊我熟，首航我押船。') },
+        },
+    },
 ];
 
-const HARBOR_SIDE_QUESTS = []; // v5.84.0 六條支線
+const HARBOR_SIDE_QUESTS = [
+    {
+        id: 'side_hb_haima_recipe', chapter: 1, type: 'side',
+        title: t('傳家魚乾'),
+        trigger: { mainQuest: 'hb1_arrive', npcAffinity: { hb_haima: 10 } },
+        story: t('海嬤在海味居後廚翻出一本油漬斑斑的本子：「這是我阿嬤的醃法。你幫我備些魚，我做一批給你帶著。」'),
+        description: t('幫海嬤備足魚獲，學她的傳家醃法。'),
+        objectives: [
+            { id: 'food', type: 'resource', resource: 'food', target: 80, label: t('儲備 80 食物') },
+            { id: 'talk', type: 'talk_to', npcId: 'hb_haima', target: 2, label: t('跟海嬤聊 2 次') },
+        ],
+        rewards: { food: 30, silver: 15, reputation: 3 },
+        onComplete: t('海嬤把一包魚乾塞進你懷裡：「鹽要三指、風要北風。這本子…以後也抄一份給你。」'),
+        npcHints: { hb_haima: { minAffinity: 5, hint: t('我阿嬤的醃法快沒人會了，你想學嗎？') } },
+    },
+    {
+        id: 'side_hb_yunyi_haibo', chapter: 1, type: 'side',
+        title: t('廟前的經文'),
+        trigger: { mainQuest: 'hb1_explore', npcAffinity: { hb_yunyi: 20 } },
+        story: t('雲姨念經念到一半忽然停住——海伯剛好從廟前走過。她把那段經文又念了一遍，念錯了兩個字。'),
+        description: t('聽聽雲姨沒說完的往事，再替她把海伯請到廟前。'),
+        objectives: [
+            { id: 'yunyi', type: 'talk_to', npcId: 'hb_yunyi', target: 2, label: t('跟雲姨聊 2 次') },
+            { id: 'haibo', type: 'npc_affinity', npcId: 'hb_haibo', target: 25, label: t('海伯好感度達到 25') },
+        ],
+        rewards: { silver: 25, reputation: 5 },
+        effects: { pairRomance: [['hb_yunyi', 'hb_haibo', 15], ['hb_haibo', 'hb_yunyi', 15]], pairAffinity: [['hb_yunyi', 'hb_haibo', 10], ['hb_haibo', 'hb_yunyi', 10]] },
+        onComplete: t('海伯在廟前站了很久，雲姨那段經文終於一個字都沒念錯。「四十年了，」他說，「你念得還是比我記得的好聽。」'),
+        npcHints: { hb_yunyi: { minAffinity: 15, hint: t('海伯年輕時…算了，經文還沒念完。') }, hb_haibo: { minAffinity: 15, hint: t('廟前那段經我聽過幾百遍了，每次她都在同一個地方停。') } },
+    },
+    {
+        id: 'side_hb_kesao_topic', chapter: 1, type: 'side',
+        title: t('蚵嫂的話題'),
+        trigger: { mainQuest: 'hb1_explore', npcAffinity: { hb_kesao: 10 } },
+        story: t('蚵嫂攔住你：「我家阿浮一天講不到三句話，你去跟他聊聊，看他到底在想什麼！」'),
+        description: t('替蚵嫂去探探阿浮的心事。'),
+        objectives: [
+            { id: 'afu', type: 'talk_to', npcId: 'hb_afu', target: 2, label: t('跟阿浮聊 2 次') },
+            { id: 'kesao', type: 'npc_affinity', npcId: 'hb_kesao', target: 25, label: t('蚵嫂好感度達到 25') },
+        ],
+        rewards: { silver: 20, reputation: 3 },
+        effects: { pairAffinity: [['hb_afu', 'hb_kesao', 10], ['hb_kesao', 'hb_afu', 10]] },
+        onComplete: t('你告訴蚵嫂：阿浮不是不想說，是說不出口。她愣了一下，那天晚上沒再追問兒子，只多煮了一碗湯。'),
+        npcHints: { hb_kesao: { minAffinity: 5, hint: t('那孩子悶得我頭疼，你幫我問問。') } },
+    },
+    {
+        id: 'side_hb_muxia_mermaid', chapter: 2, type: 'side',
+        title: t('人魚的故事'),
+        trigger: { mainQuest: 'hb2_wreck', npcAffinity: { hb_muxia: 15 } },
+        story: t('木蝦躺在曬網場，第四次講他「差點抓到人魚」的故事。「不信？你到曬網場來，我證明給你看。」'),
+        description: t('聽完木蝦的人魚故事，到曬網場看他的「證據」。'),
+        objectives: [
+            { id: 'talk', type: 'talk_to', npcId: 'hb_muxia', target: 3, label: t('聽木蝦講 3 次') },
+            { id: 'park', type: 'visit_location', location: 'park', target: 1, label: t('到曬網場') },
+        ],
+        rewards: { silver: 20, reputation: 3 },
+        onComplete: t('「證據」是一片會發光的鱗片——後來阿汐說那是深海魚的。木蝦不在乎：「人魚的鱗片當然像魚的鱗片。」'),
+        npcHints: { hb_muxia: { minAffinity: 10, hint: t('人魚的事我只跟信的人講。你信嗎？') } },
+    },
+    {
+        id: 'side_hb_ayan_salt', chapter: 2, type: 'side',
+        title: t('鹽不過山'),
+        trigger: { mainQuest: 'hb2_wreck', npcAffinity: { hb_ayan: 15 } },
+        story: t('阿鹽把一袋鹽拍在桌上：「礦山鎮缺鹽，我們多的是鹽。石叔說鹽不過山——我偏要過。」'),
+        description: t('等礦山鎮通車、商隊來過，幫阿鹽把海風鎮的鹽送上山。'),
+        objectives: [
+            { id: 'mt', type: 'neighbor_town', theme: 'mountain', target: 1, label: t('礦山鎮已通車') },
+            { id: 'caravan', type: 'caravan_count', target: 1, label: t('商隊來過至少 1 次') },
+            { id: 'ayan', type: 'npc_affinity', npcId: 'hb_ayan', target: 30, label: t('阿鹽好感度達到 30') },
+        ],
+        rewards: { silver: 40, reputation: 5 },
+        effects: { playerAffinity: [['hb_shishu', 5]], pairAffinity: [['hb_shishu', 'hb_ayan', 10]] },
+        onComplete: t('第一袋海風鎮的鹽上了山。石叔什麼都沒說，只把自己的鹽耙借給了阿鹽。'),
+        npcHints: { hb_ayan: { minAffinity: 10, hint: t('山上的人吃鹽也要錢，為什麼不是我們賣？') } },
+    },
+    {
+        id: 'side_hb_arong_dream', chapter: 3, type: 'side',
+        title: t('繡坊夢'),
+        trigger: { mainQuest: 'hb3_window', npcAffinity: { hb_arong: 15 } },
+        story: t('阿蓉偷偷給你看一塊繡了整片海的帆布：「市集城有人要收。師父說我走了就別回來…你覺得呢？」'),
+        description: t('幫阿蓉備齊布料，也幫她和秀姑把話說開。'),
+        objectives: [
+            { id: 'cloth', type: 'resource', resource: 'cloth', target: 50, label: t('儲備 50 布料') },
+            { id: 'xiugu', type: 'npc_affinity', npcId: 'hb_xiugu', target: 25, label: t('秀姑好感度達到 25') },
+            { id: 'arong', type: 'npc_affinity', npcId: 'hb_arong', target: 30, label: t('阿蓉好感度達到 30') },
+        ],
+        rewards: { silver: 30, reputation: 5 },
+        effects: { pairAffinity: [['hb_xiugu', 'hb_arong', 15], ['hb_arong', 'hb_xiugu', 15]], pairTrust: [['hb_xiugu', 'hb_arong', 10]] },
+        onComplete: t('秀姑把一整捆最好的帆布塞給阿蓉：「去。繡壞了再回來補帆。」她轉過身去，很久沒轉回來。'),
+        npcHints: { hb_arong: { minAffinity: 10, hint: t('那塊繡了海的帆布…你覺得市集城的人會喜歡嗎？') }, hb_xiugu: { minAffinity: 15, hint: t('走了就別回來。…誰讓她針法比我好。') } },
+    },
+];
 
 const HARBOR_STORY_EVENTS = [
     {
@@ -867,6 +1017,21 @@ const HARBOR_STORY_EVENTS = [
         id: 'hb_story_lighthouse', trigger: { storyFlag: 'hb2_wreck' },
         title: t('燈塔之夜'), icon: '🗼',
         text: t('那晚之後，燈塔的燈好像比以前亮了一點。出海的人說，海風鎮的燈從來沒有這麼好認過。'),
+    },
+    {
+        id: 'hb_story_typhoon_warning', trigger: { storyFlag: 'hb3_window' },
+        title: t('颱風警報'), icon: '🌀',
+        text: t('阿帆從望潮哨一路跑下來，臉色發白：「東南方的雲…三天內會登陸。」海伯把全鎮叫到碼頭廣場，沒有人說話，只有浪聲變大了。'),
+    },
+    {
+        id: 'hb_story_typhoon_night', trigger: { storyFlag: 'hb4_typhoon' },
+        title: t('颱風夜'), icon: '⛈️',
+        text: t('那一夜浪打上了棧橋，雨橫著下。你和全鎮擠在海味居裡，小鷗不停地煮麵，雲姨一直念經。天亮時風停了，有人哭了，更多人笑了。'),
+    },
+    {
+        id: 'hb_story_first_voyage', trigger: { storyFlag: 'hb5_voyage' },
+        title: t('首航'), icon: '⛵',
+        text: t('船離開棧橋的時候，燈爺在燈塔上把燈點亮了——大白天的。「讓他們回頭看得見家。」'),
     },
 ];
 
@@ -1093,6 +1258,7 @@ class QuestSystem {
                 }
             }
         }
+        try { this._applyEffects(sqDef.effects, world); } catch (e) {} // v5.84.0
         world.logMessage?.('quest', `✨ ${t('支線任務完成')}：「${sqDef.title}」！`);
         if (sqDef.onComplete) {
             world.logMessage?.('quest', `📖 ${sqDef.onComplete}`);
@@ -1262,6 +1428,10 @@ class QuestSystem {
                 return world.clock?.season === cond.season ? 1 : 0;
             case 'prosperity':
                 return world.prosperity?.prosperity || 0;
+            case 'caravan_count':
+                return world.caravanCount || 0;
+            case 'neighbor_town':
+                return (Array.isArray(world.otherTowns) && typeof themeKeyOfTownName === 'function' && world.otherTowns.some(tw => themeKeyOfTownName(tw.name) === cond.theme)) ? 1 : 0;
             case 'npc_pair_affinity': {
                 const a = world.agents?.[cond.a];
                 const rel = a?.relationships?.relationships?.[cond.b];
@@ -1356,6 +1526,14 @@ class QuestSystem {
         for (const [a, b, d] of (effects.pairTrust || [])) { const r = relOf(a, b); if (r) r.trust = Math.max(-100, Math.min(100, (r.trust || 0) + d)); }
         for (const [a, b, d] of (effects.pairRomance || [])) { const r = relOf(a, b); if (r) r.romanticInterest = Math.max(0, Math.min(100, (r.romanticInterest || 0) + d)); }
         for (const [npcId, d] of (effects.playerAffinity || [])) { const r = relOf(npcId, 'player'); if (r) r.affinity = Math.max(-100, Math.min(100, (r.affinity || 0) + d)); }
+        // v5.84.0 物資增減、繁榮度加成(持久、進存檔)、世界旗標(燈塔升級、海路開通…)
+        for (const [res, d] of Object.entries(effects.stockpile || {})) {
+            if (!world.stockpile) break;
+            if (d >= 0) world.stockpile.add(res, d, world.tickCount, t('任務'));
+            else world.stockpile.consume?.(res, Math.min(world.stockpile.get(res) || 0, -d), world.tickCount, t('任務'));
+        }
+        if (effects.prosperity && world.prosperity) world.prosperity.questBonus = (world.prosperity.questBonus || 0) + effects.prosperity;
+        if (effects.flags) { world.harborFlags = world.harborFlags || {}; Object.assign(world.harborFlags, effects.flags); }
     }
 
     // ============================================================
