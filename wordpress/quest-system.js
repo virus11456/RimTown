@@ -731,8 +731,157 @@ const STORY_EVENTS = [
 // QuestSystem Class — 多路線引擎（含支線 + 每日目標 + 故事事件）
 // ============================================================
 
+
+// ============================================================
+// v5.83.0 海風鎮專屬任務鏈「潮聲」(第 1–3 章;第 4–5 章與支線 v5.84.0)
+// 任務鏈依城鎮主題查表:QUEST_CHAINS_BY_THEME[theme];沒有表的鎮不跑主線(任務分頁顯示占位)
+// ============================================================
+const HARBOR_CHAPTER_NAMES = {
+    1: t('第一章：上岸'),
+    2: t('第二章：鹽與燈'),
+    3: t('第三章：海菜與窗台'),
+    4: t('第四章：颱風夜'),
+    5: t('第五章：出海'),
+};
+
+const HARBOR_MAIN_QUESTS = [
+    {
+        id: 'hb1_arrive', chapter: 1,
+        title: t('潮聲初聞'),
+        description: t('你搭馬車來到海風鎮。先到海味居吃一頓，認識幾位討海人。'),
+        hint: t('走到海味居坐一坐，跟掌杓的小鷗說上話，再找兩三位居民聊聊。'),
+        objectives: [
+            { id: 'talk_3', type: 'chat_count', target: 3, label: t('和 3 位居民交談') },
+            { id: 'visit_tavern', type: 'visit_location', location: 'tavern', target: 1, label: t('到海味居坐一坐') },
+            { id: 'talk_xiaoou', type: 'talk_to', npcId: 'hb_xiaoou', target: 1, label: t('和小鷗說上話') },
+        ],
+        rewards: { silver: 20, reputation: 5 },
+        unlocks: ['hb1_explore'],
+        onComplete: t('小鷗端上一碗熱騰騰的海鮮麵：「吃吧，海風鎮的規矩，新來的第一碗免費。」'),
+        npcHints: {
+            hb_xiaoou: { minAffinity: 0, hint: t('新來的？坐吧，我先給你下碗麵。') },
+            hb_haibo: { minAffinity: 0, hint: t('海風鎮不大，走一圈就認識了。先去海味居，小鷗會照顧你。') },
+        },
+    },
+    {
+        id: 'hb1_explore', chapter: 1,
+        title: t('走一圈海風鎮'),
+        description: t('沿著海岸走一圈，看看鹽場、小廟和工房；順便向雲姨求一炷平安香。'),
+        hint: t('在地圖上走訪三處地點（鹽場、海神小廟、曬網場、修船工房…），再去找廟祝雲姨聊聊。'),
+        objectives: [
+            { id: 'visit_3', type: 'visited', locations: ['quarry', 'chapel', 'park', 'well', 'workshop', 'library', 'clinic', 'general_store'], target: 3, label: t('走訪 3 處地點') },
+            { id: 'yunyi', type: 'npc_affinity', npcId: 'hb_yunyi', target: 10, label: t('雲姨好感度達到 10') },
+        ],
+        rewards: { silver: 30, reputation: 5 },
+        unlocks: ['hb2_wreck'],
+        onComplete: t('雲姨把平安符塞進你手裡：「出海的人都帶一個，你也帶著吧。」'),
+        npcHints: {
+            hb_yunyi: { minAffinity: 0, hint: t('初來的人都該來小廟上一炷香，海神會記得你的名字。') },
+        },
+    },
+    {
+        id: 'hb2_wreck', chapter: 2,
+        title: t('船難那一夜'),
+        description: t('石叔和燈爺二十年沒說過一句話，鎮上沒人知道那晚發生了什麼。老漁當年也在船上——他比誰都清楚。'),
+        hint: t('先去碼頭找老漁喝一杯問出那一夜，再決定要讓兩個老人和解，還是讓往事留在海裡。'),
+        routes: [
+            {
+                id: 'reconcile', label: t('和解路線'), icon: '🕯️',
+                description: t('問出真相，再把兩個老人拉到同一盞燈下。'),
+                conditions: [
+                    { type: 'talk_to', npcId: 'hb_laoyu', target: 2, label: t('向老漁問出那一夜（交談 2 次）') },
+                    { type: 'npc_affinity', npcId: 'hb_shishu', target: 30, label: t('石叔好感度達到 30') },
+                    { type: 'npc_affinity', npcId: 'hb_dengye', target: 30, label: t('燈爺好感度達到 30') },
+                ],
+                effects: { pairAffinity: [['hb_shishu', 'hb_dengye', 45], ['hb_dengye', 'hb_shishu', 45]], pairTrust: [['hb_shishu', 'hb_dengye', 30], ['hb_dengye', 'hb_shishu', 30]] },
+                onComplete: t('石叔提著一壺酒走上燈塔崖，燈爺把燈芯撥亮了些。二十年的沉默，就在那盞燈下化掉了。'),
+            },
+            {
+                id: 'silence', label: t('沉默路線'), icon: '🌊',
+                description: t('有些事不必揭開，陪他們各自把日子過下去。'),
+                conditions: [
+                    { type: 'chat_count', target: 15, label: t('與居民交談 15 次') },
+                    { type: 'npc_affinity', npcId: 'hb_laoyu', target: 25, label: t('老漁好感度達到 25') },
+                    { type: 'npc_affinity', npcId: 'hb_shishu', target: 20, label: t('石叔好感度達到 20') },
+                ],
+                effects: { playerAffinity: [['hb_shishu', 10], ['hb_dengye', 10], ['hb_laoyu', 10]] },
+                onComplete: t('老漁拍拍你的肩：「不是每個結都要解開。」海風照舊吹，兩個老人照舊各過各的，但你知道了那晚的事。'),
+            },
+        ],
+        rewards: { silver: 60, reputation: 12 },
+        unlocks: ['hb3_window'],
+        onComplete: t('燈塔的燈那晚特別亮。'),
+        npcHints: {
+            hb_laoyu: { minAffinity: 10, hint: t('那晚的事…你真想知道？先讓我喝一杯。') },
+            hb_shishu: { minAffinity: 20, hint: t('燈塔那老頭…哼。別跟我提他。') },
+            hb_dengye: { minAffinity: 20, hint: t('石叔的事，我不想談。燈還得有人守。') },
+        },
+    },
+    {
+        id: 'hb3_window', chapter: 3,
+        title: t('窗台上的海菜'),
+        description: t('阿浮每天把最好的海菜放在珊珊窗台，從來不署名；望潮哨的阿帆也喜歡珊珊。你要幫誰？'),
+        hint: t('和阿浮或阿帆混熟，替其中一個把心意送到珊珊那裡——送禮或傳話都行，但只能選一邊。'),
+        routes: [
+            {
+                id: 'afu', label: t('替阿浮署名'), icon: '🌿',
+                description: t('讓珊珊知道海菜是誰放的。'),
+                conditions: [
+                    { type: 'npc_affinity', npcId: 'hb_afu', target: 30, label: t('阿浮好感度達到 30') },
+                    { type: 'gift_to', npcId: 'hb_shanshan', target: 1, label: t('替阿浮送一份禮給珊珊') },
+                ],
+                effects: { pairRomance: [['hb_shanshan', 'hb_afu', 30], ['hb_afu', 'hb_shanshan', 10]], pairAffinity: [['hb_shanshan', 'hb_afu', 20]], playerAffinity: [['hb_afan', -8]] },
+                onComplete: t('珊珊終於知道海菜是誰放的。那天晚上，阿浮第一次在她窗前站了超過三秒。'),
+            },
+            {
+                id: 'afan', label: t('替阿帆傳話'), icon: '🔭',
+                description: t('把哨塔上那個人的心意帶到珊珊面前。'),
+                conditions: [
+                    { type: 'npc_affinity', npcId: 'hb_afan', target: 30, label: t('阿帆好感度達到 30') },
+                    { type: 'talk_to', npcId: 'hb_shanshan', target: 2, label: t('替阿帆跟珊珊說上話（交談 2 次）') },
+                ],
+                effects: { pairRomance: [['hb_shanshan', 'hb_afan', 30], ['hb_afan', 'hb_shanshan', 10]], pairAffinity: [['hb_shanshan', 'hb_afan', 20]], playerAffinity: [['hb_afu', -8]] },
+                onComplete: t('阿帆用望潮哨的望遠鏡讓珊珊看了一次颱風前的海——她記住了那片海，也記住了他。'),
+            },
+        ],
+        rewards: { silver: 60, reputation: 12 },
+        unlocks: ['hb4_typhoon'],
+        onComplete: t('窗台上的海菜，從此有了名字。'),
+        npcHints: {
+            hb_afu: { minAffinity: 15, hint: t('海菜…不是我放的。（他的耳朵紅了）') },
+            hb_afan: { minAffinity: 15, hint: t('你能幫我跟珊珊說句話嗎？我在哨塔上看她看了一年。') },
+            hb_shanshan: { minAffinity: 10, hint: t('窗台上的海菜，每天都有。我其實…有點想知道是誰。') },
+        },
+    },
+];
+
+const HARBOR_SIDE_QUESTS = []; // v5.84.0 六條支線
+
+const HARBOR_STORY_EVENTS = [
+    {
+        id: 'hb_story_first_night', trigger: { tickCount: 96 },
+        title: t('棧橋上的第一夜'), icon: '🌙',
+        text: t('你坐在棧橋盡頭，燈塔的光每隔幾秒掃過海面。海嬤端來一碗魚湯：「海風鎮的夜晚只有浪聲，聽久了就睡得著。」'),
+    },
+    {
+        id: 'hb_story_lighthouse', trigger: { storyFlag: 'hb2_wreck' },
+        title: t('燈塔之夜'), icon: '🗼',
+        text: t('那晚之後，燈塔的燈好像比以前亮了一點。出海的人說，海風鎮的燈從來沒有這麼好認過。'),
+    },
+];
+
+const QUEST_CHAINS_BY_THEME = {
+    frontier: { chapters: CHAPTER_NAMES, main: MAIN_QUESTS, side: SIDE_QUESTS, daily: DAILY_OBJECTIVES, story: STORY_EVENTS, startQuest: 'ch1_settle' },
+    harbor: { chapters: HARBOR_CHAPTER_NAMES, main: HARBOR_MAIN_QUESTS, side: HARBOR_SIDE_QUESTS, daily: DAILY_OBJECTIVES, story: HARBOR_STORY_EVENTS, startQuest: 'hb1_arrive' },
+};
+function questChainFor(theme) { return QUEST_CHAINS_BY_THEME[theme || 'frontier'] || null; }
+
 class QuestSystem {
     constructor() {
+        this.theme = 'frontier';   // v5.83.0 任務鏈主題(依 world.townTheme)
+        this.chatWith = {};        // v5.83.0 {npcId: 次數}
+        this.giftsTo = {};         // v5.83.0 {npcId: 次數}
+        this.visitedLocations = []; // v5.83.0 玩家到過的地點 id
         this.quests = {};           // { questId: { status, objectives, routes, completedRoute } }
         this.completedOrder = [];
         this.tradeCount = 0;
@@ -753,13 +902,21 @@ class QuestSystem {
         this._pendingStoryEvent = null; // Event waiting to be displayed
     }
 
+    // v5.83.0 依主題取任務表(沒有表就退回邊境鎮的,避免舊呼叫點爆掉)
+    _chain() { return questChainFor(this.theme) || QUEST_CHAINS_BY_THEME.frontier; }
+    _main() { return this._chain().main; }
+    _side() { return this._chain().side; }
+    _daily() { return this._chain().daily; }
+    _story() { return this._chain().story; }
+    chapterNames() { return this._chain().chapters; }
+
     init() {
         if (this._initialized) return;
         this._initialized = true;
-        for (const q of MAIN_QUESTS) {
+        for (const q of this._main()) {
             if (this.quests[q.id]) continue;
             const state = {
-                status: q.id === 'ch1_settle' ? 'active' : 'locked',
+                status: q.id === this._chain().startQuest ? 'active' : 'locked',
                 completedRoute: null,
             };
             // Old-style objectives
@@ -783,7 +940,7 @@ class QuestSystem {
             this.quests[q.id] = state;
         }
         // Initialize side quests (all start as 'locked')
-        for (const sq of SIDE_QUESTS) {
+        for (const sq of this._side()) {
             if (this.sideQuests[sq.id]) continue;
             const state = { status: 'locked', objectives: {} };
             if (sq.objectives) {
@@ -800,7 +957,7 @@ class QuestSystem {
     // ============================================================
     checkProgress(world) {
         this.init();
-        for (const questDef of MAIN_QUESTS) {
+        for (const questDef of this._main()) {
             const quest = this.quests[questDef.id];
             if (!quest || quest.status !== 'active') continue;
 
@@ -865,7 +1022,7 @@ class QuestSystem {
     // Side quest management
     // ============================================================
     _checkSideQuests(world) {
-        for (const sqDef of SIDE_QUESTS) {
+        for (const sqDef of this._side()) {
             const sq = this.sideQuests[sqDef.id];
             if (!sq) continue;
 
@@ -958,7 +1115,7 @@ class QuestSystem {
         }
 
         // Check current daily objective progress
-        const objDef = DAILY_OBJECTIVES.find(d => d.id === this.dailyObjective.id);
+        const objDef = this._daily().find(d => d.id === this.dailyObjective.id);
         if (!objDef) return;
 
         const current = this._evaluateCondition(objDef.condition, world);
@@ -982,7 +1139,7 @@ class QuestSystem {
 
     _assignDailyObjective(world, chapter) {
         // Find objectives matching current chapter (or earlier)
-        const candidates = DAILY_OBJECTIVES.filter(d =>
+        const candidates = this._daily().filter(d =>
             d.chapter <= chapter && !this.dailyCompletedIds.includes(d.id)
         );
         if (candidates.length === 0) {
@@ -999,7 +1156,7 @@ class QuestSystem {
     // Story event management
     // ============================================================
     _checkStoryEvents(world) {
-        for (const event of STORY_EVENTS) {
+        for (const event of this._story()) {
             if (this.triggeredStoryEvents.includes(event.id)) continue;
             if (this._checkStoryEventTrigger(event, world)) {
                 this.triggeredStoryEvents.push(event.id);
@@ -1092,6 +1249,24 @@ class QuestSystem {
                 if (!player?.relationships?.relationships) return 0;
                 return Object.values(player.relationships.relationships).filter(r => (r.affinity || 0) > 20).length;
             }
+            // v5.83.0 主題任務鏈用的條件
+            case 'talk_to':
+                return this.chatWith?.[cond.npcId] || 0;
+            case 'gift_to':
+                return this.giftsTo?.[cond.npcId] || 0;
+            case 'visit_location':
+                return (this.visitedLocations || []).includes(cond.location) ? 1 : 0;
+            case 'visited':
+                return (cond.locations || []).filter(l => (this.visitedLocations || []).includes(l)).length;
+            case 'season':
+                return world.clock?.season === cond.season ? 1 : 0;
+            case 'prosperity':
+                return world.prosperity?.prosperity || 0;
+            case 'npc_pair_affinity': {
+                const a = world.agents?.[cond.a];
+                const rel = a?.relationships?.relationships?.[cond.b];
+                return rel?.affinity || 0;
+            }
             default:
                 return 0;
         }
@@ -1124,11 +1299,15 @@ class QuestSystem {
             year: world.clock.year,
         };
 
+        // v5.83.0 路線/任務的劇情後果(改村民之間的好感/信任/心動、玩家好感)
+        try { this._applyEffects(completedRoute?.effects, world); this._applyEffects(questDef.effects, world); } catch (e) {}
+        const doneText = completedRoute?.onComplete || questDef.onComplete || '';
+
         // Log
         const routeMsg = completedRoute ? `（${completedRoute.label}）` : '';
-        world.logMessage?.('quest', `⚔️ ${t('主線任務完成')}：「${questDef.title}」${routeMsg}！${questDef.onComplete}`);
+        world.logMessage?.('quest', `⚔️ ${t('主線任務完成')}：「${questDef.title}」${routeMsg}！${doneText}`);
         if (world.dailyNews) {
-            world.dailyNews.collectEvent?.('quest', `${t('主線任務')}「${questDef.title}」${routeMsg}${t('完成')}！${questDef.onComplete}`, 8);
+            world.dailyNews.collectEvent?.('quest', `${t('主線任務')}「${questDef.title}」${routeMsg}${t('完成')}！${doneText}`, 8);
         }
 
         // Multi-ending trigger (when finale quest completes)
@@ -1145,7 +1324,7 @@ class QuestSystem {
                 const next = this.quests[nextId];
                 if (next && next.status === 'locked') {
                     next.status = 'active';
-                    const nextDef = MAIN_QUESTS.find(q => q.id === nextId);
+                    const nextDef = this._main().find(q => q.id === nextId);
                     if (nextDef) {
                         world.logMessage?.('quest', `📜 ${t('新任務解鎖')}：「${nextDef.title}」`);
                     }
@@ -1165,12 +1344,26 @@ class QuestSystem {
         }
     }
 
+    // v5.83.0 任務後果:pairAffinity/pairTrust/pairRomance [[from, to, delta]]、playerAffinity [[npc, delta]]
+    _applyEffects(effects, world) {
+        if (!effects || !world?.agents) return;
+        const relOf = (fromId, toId) => {
+            const a = world.agents[fromId], b = world.agents[toId];
+            if (!a || !b || !a.relationships?.getOrCreate) return null;
+            return a.relationships.getOrCreate(b.agentId, b.name);
+        };
+        for (const [a, b, d] of (effects.pairAffinity || [])) { const r = relOf(a, b); if (r) r.affinity = Math.max(-100, Math.min(100, (r.affinity || 0) + d)); }
+        for (const [a, b, d] of (effects.pairTrust || [])) { const r = relOf(a, b); if (r) r.trust = Math.max(-100, Math.min(100, (r.trust || 0) + d)); }
+        for (const [a, b, d] of (effects.pairRomance || [])) { const r = relOf(a, b); if (r) r.romanticInterest = Math.max(0, Math.min(100, (r.romanticInterest || 0) + d)); }
+        for (const [npcId, d] of (effects.playerAffinity || [])) { const r = relOf(npcId, 'player'); if (r) r.affinity = Math.max(-100, Math.min(100, (r.affinity || 0) + d)); }
+    }
+
     // ============================================================
     // NPC 對話提示 — 供 ConversationEngine 使用
     // ============================================================
     getQuestHintsForNPC(npcId, playerAffinity) {
         const hints = [];
-        for (const questDef of MAIN_QUESTS) {
+        for (const questDef of this._main()) {
             const quest = this.quests[questDef.id];
             if (!quest || quest.status !== 'active') continue;
             if (!questDef.npcHints || !questDef.npcHints[npcId]) continue;
@@ -1183,7 +1376,7 @@ class QuestSystem {
             }
         }
         // Also check side quest hints
-        for (const sqDef of SIDE_QUESTS) {
+        for (const sqDef of this._side()) {
             const sq = this.sideQuests[sqDef.id];
             if (!sq || sq.status !== 'active') continue;
             if (!sqDef.npcHints || !sqDef.npcHints[npcId]) continue;
@@ -1227,7 +1420,9 @@ class QuestSystem {
     // ============================================================
     // Event hooks
     // ============================================================
-    onChat() { this.chatCount++; }
+    onChat(npcId) { this.chatCount++; if (npcId) this.chatWith[npcId] = (this.chatWith[npcId] || 0) + 1; } // v5.83.0 記下跟誰聊
+    onGift(npcId) { if (npcId) this.giftsTo[npcId] = (this.giftsTo[npcId] || 0) + 1; } // v5.83.0
+    onVisit(locId) { if (locId && !this.visitedLocations.includes(locId)) this.visitedLocations.push(locId); } // v5.83.0
     onTrade() { this.tradeCount++; }
     onHarvest() { this.harvestCount++; }
     onRaidSurvived() { this.raidsSurvived++; }
@@ -1237,11 +1432,11 @@ class QuestSystem {
     // Getters
     // ============================================================
     getActiveQuests() {
-        return MAIN_QUESTS.filter(q => this.quests[q.id]?.status === 'active');
+        return this._main().filter(q => this.quests[q.id]?.status === 'active');
     }
 
     getCompletedQuests() {
-        return this.completedOrder.map(id => MAIN_QUESTS.find(q => q.id === id)).filter(Boolean);
+        return this.completedOrder.map(id => this._main().find(q => q.id === id)).filter(Boolean);
     }
 
     getCurrentChapter() {
@@ -1262,11 +1457,13 @@ class QuestSystem {
             currentChapter: this.getCurrentChapter(),
             activeCount: active.length,
             completedCount: this.completedOrder.length,
-            totalCount: MAIN_QUESTS.length,
+            totalCount: this._main().length,
             reputation: this.reputation,
             activeCrisis: this.activeCrisis,
+            theme: this.theme, // v5.83.0
+            chapterNames: this.chapterNames(),
         };
-        for (const questDef of MAIN_QUESTS) {
+        for (const questDef of this._main()) {
             const quest = this.quests[questDef.id];
             if (!quest) continue;
 
@@ -1316,7 +1513,7 @@ class QuestSystem {
 
         // Side quests
         result.sideQuests = {};
-        for (const sqDef of SIDE_QUESTS) {
+        for (const sqDef of this._side()) {
             const sq = this.sideQuests[sqDef.id];
             if (!sq || sq.status === 'locked') continue; // Only show active/completed
             result.sideQuests[sqDef.id] = {
@@ -1340,7 +1537,7 @@ class QuestSystem {
 
         // Daily objective
         if (this.dailyObjective && !this.dailyObjective.completed) {
-            const objDef = DAILY_OBJECTIVES.find(d => d.id === this.dailyObjective.id);
+            const objDef = this._daily().find(d => d.id === this.dailyObjective.id);
             if (objDef) {
                 result.dailyObjective = {
                     text: objDef.text,
@@ -1374,6 +1571,7 @@ class QuestSystem {
             dailyObjective: this.dailyObjective ? { ...this.dailyObjective } : null,
             dailyCompletedIds: [...this.dailyCompletedIds],
             triggeredStoryEvents: [...this.triggeredStoryEvents],
+            chatWith: { ...this.chatWith }, giftsTo: { ...this.giftsTo }, visitedLocations: [...this.visitedLocations], // v5.83.0
         };
     }
 
@@ -1395,6 +1593,7 @@ class QuestSystem {
         this.dailyObjective = data.dailyObjective || null;
         this.dailyCompletedIds = data.dailyCompletedIds || [];
         this.triggeredStoryEvents = data.triggeredStoryEvents || [];
+        this.chatWith = data.chatWith || {}; this.giftsTo = data.giftsTo || {}; this.visitedLocations = data.visitedLocations || []; // v5.83.0
         this._initialized = Object.keys(this.quests).length > 0;
 
         // Migrate: if old save has quests but no routes, reinitialize new quests
@@ -1403,7 +1602,7 @@ class QuestSystem {
 
     _migrateIfNeeded() {
         // Add any new quests that don't exist in save data
-        for (const q of MAIN_QUESTS) {
+        for (const q of this._main()) {
             if (this.quests[q.id]) {
                 // Ensure routes exist for multi-route quests
                 if (q.routes && !this.quests[q.id].routes) {
@@ -1439,6 +1638,13 @@ class QuestSystem {
             }
         }
 
+        // v5.83.0 主題鏈:只保證起始任務至少是 active
+        if (this.theme !== 'frontier') {
+            const st = this._chain().startQuest;
+            const anyStarted = this._main().some(q => this.quests[q.id] && this.quests[q.id].status !== 'locked');
+            if (this.quests[st] && !anyStarted) this.quests[st].status = 'active';
+            return;
+        }
         // Migrate old quest IDs to new structure
         // Old: ch1_food → merged into ch1_survive
         // Old: ch2_build, ch2_pop → merged into ch2_economy, ch2_community
