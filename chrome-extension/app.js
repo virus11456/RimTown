@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.82.0
-const RIMTOWN_APP_VERSION = '5.82.0';
+// RimTown - Frontend App (WordPress Plugin) v5.83.0
+const RIMTOWN_APP_VERSION = '5.83.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1097,6 +1097,7 @@ class RimTownApp {
         const rel = npc.relationships.getOrCreate('player', this.world.agents['player']?.name || t('旅人'));
         rel.modifyAffinity(gain);
         if (isFav) rel.modifyRomantic(2);
+        this.world.questSystem?.onGift?.(this.chatTarget); // v5.83.0 任務條件:送禮給誰
         npc.addThought?.(isFav ? 'fav_gift' : 'gift_received', this.world, 'player', this.world.agents['player']?.name || t('旅人')); // v5.15.0 收禮記憶
         this._firstDayMark?.('mark'); // v5.18.0 第一天:留下你的選擇
         npc.memory.add(this.world.tickCount, this.world.clock.timeStr, 'gift',
@@ -1441,14 +1442,14 @@ class RimTownApp {
         // Don't show if user explicitly dismissed all guidance
         if (localStorage.getItem('rimtown_guidance_off')) { el.classList.add('hidden'); return; }
         // v5.59.0 TC-03:邊境鎮主線任務不在海風鎮顯示(卡司是邊境鎮居民,海風鎮主題任務鏈待做)
-        if ((this.world?.townTheme || 'frontier') !== 'frontier') { el.classList.add('hidden'); return; } // v5.76.0 主題鎮都沒有邊境鎮主線
+        if (typeof questChainFor === 'function' && !questChainFor(this.world?.townTheme)) { el.classList.add('hidden'); return; } // v5.83.0 沒有任務鏈的主題鎮才隱藏
 
         const qs = this.world?.questSystem;
         if (!qs) return;
         qs.init();
 
         // Find current active quest
-        const activeQuest = (typeof MAIN_QUESTS !== 'undefined' ? MAIN_QUESTS : []).find(q => qs.quests[q.id]?.status === 'active');
+        const activeQuest = (qs._main ? qs._main() : (typeof MAIN_QUESTS !== 'undefined' ? MAIN_QUESTS : [])).find(q => qs.quests[q.id]?.status === 'active');
         if (!activeQuest) { el.classList.add('hidden'); return; }
 
         const questState = qs.quests[activeQuest.id];
@@ -1483,11 +1484,11 @@ class RimTownApp {
             icon = '⚔️';
             hint = t('危機即將到來，做好準備！開啟「任務」（手機:☰選單）了解詳情。');
         } else {
-            hint = activeQuest.description;
+            hint = activeQuest.hint || activeQuest.description; // v5.83.0 主題鏈的任務自帶引導提示
         }
 
         // If there are active side quests, mention them
-        const activeSides = (typeof SIDE_QUESTS !== 'undefined' ? SIDE_QUESTS : [])
+        const activeSides = (qs._side ? qs._side() : (typeof SIDE_QUESTS !== 'undefined' ? SIDE_QUESTS : []))
             .filter(sq => qs.sideQuests?.[sq.id]?.status === 'active');
         if (activeSides.length > 0) {
             hint += `${t(' | 📖 支線：')}${activeSides[0].title}`;
@@ -3956,7 +3957,7 @@ class RimTownApp {
             this._locSyncAt = now;
             const loc = this.tileMap.getLocationAt(x, y);
             const player = this.world?.agents?.['player'];
-            if (loc && player && player.currentLocation !== loc) player.currentLocation = loc;
+            if (loc && player && player.currentLocation !== loc) { player.currentLocation = loc; this.world?.questSystem?.onVisit?.(loc); } // v5.83.0 任務條件:到過哪
         };
         this._setupTownOverlays();
         this._generateTileMapLayout();
@@ -5198,7 +5199,7 @@ class RimTownApp {
                 this.world.conversationEngine.generatePlayerReply(player, npc, trimmedMsg, this.world),
                 new Promise(r => setTimeout(r, typingDelay))
             ]);
-            if (this.world.questSystem) this.world.questSystem.onChat();
+            if (this.world.questSystem) this.world.questSystem.onChat(targetId); // v5.83.0 記下對象
             // Clear unread for this NPC
             if (this._chatUnread) this._chatUnread.delete(targetId);
             // v5.16.0 意圖的額外機械後果(獨立於 LLM,永遠可見)
@@ -9441,7 +9442,7 @@ class RimTownApp {
         if (!this.state) return;
         // v5.59.0 TC-03:海風鎮沒有邊境鎮的主線(卡司不同),顯示佔位而非「落腳邊境」
         const themeStory = TOWN_STORY_BLURBS[this.world?.townTheme || 'frontier'];
-        if (themeStory) {
+        if (themeStory && !(typeof questChainFor === 'function' && questChainFor(this.world?.townTheme))) { // v5.83.0 有任務鏈的鎮顯示真正章節
             container.innerHTML = `<div class="economy-panel"><div class="econ-section">
                 <h3>${themeStory.icon} ${t(themeStory.title)}</h3>
                 <p class="muted-text" style="line-height:1.7">${t(themeStory.text)}</p>
@@ -9457,7 +9458,7 @@ class RimTownApp {
             return;
         }
 
-        const chapterNames = typeof CHAPTER_NAMES !== 'undefined' ? CHAPTER_NAMES : {};
+        const chapterNames = qs.chapterNames || (typeof CHAPTER_NAMES !== 'undefined' ? CHAPTER_NAMES : {}); // v5.83.0 依主題
         const rewardLabels = { silver: '💰', food: '🍖', wood: '🪵', stone: '🪨', metal: '⛓️', reputation: '⭐' };
         let html = '<div class="economy-panel">';
 

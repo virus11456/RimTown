@@ -6708,7 +6708,7 @@ class World {
             if (this.npcQuests) this.npcQuests.dailyUpdate(this);
             if (this.lifeGoals) this.lifeGoals.dailyUpdate(this); // v5.4.0
             // v5.58.0 邊境鎮主線任務不在海風鎮跑(任務卡司是邊境鎮居民;海風鎮主題任務鏈待後續)
-            if (this.questSystem && (this.townTheme || 'frontier') === 'frontier') this.questSystem.checkProgress(this); // v5.76.0 主線只屬於邊境鎮
+            if (this.questSystem && typeof questChainFor === 'function' && questChainFor(this.townTheme)) { this.questSystem.theme = this.townTheme || 'frontier'; this.questSystem.checkProgress(this); } // v5.83.0 依主題跑對應任務鏈
             // v4.0 systems
             // v5.32.0 章節門檻:互動卡片第二章(繁榮 20)起、議會第四章(繁榮 70)起才啟動
             const chapterPros = this.prosperity?.prosperity || 0;
@@ -7277,6 +7277,7 @@ class World {
         this.townMap = generateRandomTown(seed, this.townTheme);
         if (theme.stockpile) Object.assign(this.stockpile.resources, theme.stockpile);
         // v5.27.0 肉鴿:隨機開局模式(rosterMode='random')抽全新村民,否則用劇本卡司
+        if (this.questSystem) this.questSystem.theme = this.townTheme || 'frontier'; // v5.83.0
         if (this.townTheme === 'harbor') this._loadHarborResidents();
         else if (this.townTheme === 'mountain') this._loadMountainResidents(); // v5.76.0
         else if (this.townTheme === 'forest') this._loadForestResidents(); // v5.77.0
@@ -8550,6 +8551,7 @@ class World {
             if (data.npcEvents) this.npcEvents.loadFrom(data.npcEvents);
             // v5.63.0 任務系統一律重建再讀:存檔沒任務資料時不再殘留上一鎮的任務狀態
             if (typeof QuestSystem !== 'undefined') this.questSystem = new QuestSystem();
+            if (this.questSystem) this.questSystem.theme = this.townTheme || 'frontier'; // v5.83.0 先定主題再讀進度
             if (this.questSystem && data.questSystem) this.questSystem.loadFrom(data.questSystem);
             if (this.prosperity && data.prosperity) this.prosperity.loadFrom(data.prosperity);
             if (this.npcQuests && data.npcQuests) this.npcQuests.loadFrom(data.npcQuests);

@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.82.0
+ * Version: 5.83.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.82.0');
+define('RIMTOWN_VERSION', '5.83.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,24 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.83.0',
+            'date'    => '2026-10-08',
+            'changes' => array(
+                '🌊 海風鎮專屬任務鏈「潮聲」第 1–3 章上線:第一章「上岸」(潮聲初聞：海味居吃一頓、認識討海人；走一圈海風鎮：走訪三處地點、向雲姨求平安香)、第二章「鹽與燈」(船難那一夜：向老漁問出真相後選「和解」讓石叔與燈爺二十年的沉默在燈下化掉，或選「沉默」讓往事留在海裡——兩條路線結局不同、真的會改變兩人的關係)、第三章「海菜與窗台」(替阿浮署名，或替阿帆傳話——你幫誰，珊珊的心就往誰那邊走)',
+                '📜 任務系統改成依城鎮主題查表:每個主題有自己的章節名、主線、支線、故事事件；海風鎮有了真正的任務分頁與引導橫幅(不再是占位文字)，邊境鎮主線一字不動；礦山鎮／林間村／市集城暫時仍顯示占位，之後照表加',
+                '🎯 新任務條件:跟特定村民交談次數、送禮給特定村民、走訪特定地點、季節、繁榮度、村民之間的好感；任務完成可帶「劇情後果」(改村民之間的好感／信任／心動、玩家好感)；主線完成文案可依路線不同',
+                '📖 海風鎮故事事件:棧橋上的第一夜(海嬤的魚湯)、燈塔之夜(船難任務完成後)；全部任務文案中英文',
+                '⏭️ 下一版：第四章「颱風夜」、第五章「出海」與六條支線',
+            ),
+            'changes_en' => array(
+                '🌊 Seabreeze Harbor\'s own quest chain "Tide Voices", chapters 1–3: Chapter 1 "Ashore" (First Sound of the Tide: a meal at the tavern and meeting the fisherfolk; A Walk around Seabreeze: visit three places and ask Claudia for a charm), Chapter 2 "Salt and Lamp" (The Night of the Wreck: learn the truth from Fisher, then choose Reconciliation to melt twenty years of silence between Stan and Lou under the lamp, or Silence to leave the past in the sea; the two routes end differently and really change the two men\'s relationship), Chapter 3 "Seaweed on the Sill" (sign for Finn or speak for Sully; whoever you help is where Coral\'s heart goes)',
+                '📜 The quest system is now looked up per town theme: each theme has its own chapter names, main quests, side quests and story events; Seabreeze has a real quest tab and guidance banner instead of placeholder text, the Frontier Town storyline is untouched, and Mine Ridge / Greenwood / Market City still show the placeholder until their chains are added',
+                '🎯 New quest conditions: talks with a specific villager, gifts to a specific villager, visiting specific places, season, prosperity and affinity between two villagers; completing a quest can carry story consequences (affinity, trust and romance between villagers, player affinity), and completion text can differ per route',
+                '📖 Seabreeze story events: First Night on the Pier (Granny Mae\'s fish soup) and Lighthouse Night (after the wreck quest); every quest text is bilingual',
+                '⏭️ Next release: Chapter 4 "Typhoon Night", Chapter 5 "Out to Sea" and six side quests',
+            ),
+        ),
         array(
             'version' => '5.82.0',
             'date'    => '2026-10-08',

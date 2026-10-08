@@ -67,7 +67,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 | A2 | 海風鎮地圖要有海邊、燈塔、港口 | ✅ v5.75.0 已上線 | `generateLayout(locations, theme)` 海岸版面：海面／沙灘／棧橋＋漁船／燈塔（夜間光束）／曬網場／鹽場／海蝕洞／潟湖 |
 | A3 | 每座城鎮特色要不一樣 | ✅ 五鎮各有專屬地形、建築、卡司、物資與商隊角色 | 需要「主題地形＋主題建築圖示＋主題卡司＋主題經濟」四層一起做 |
 | A4 | 首頁放 3D low-poly 截圖（`img/lowpoly-preview.jpg`） | 等附件 | 使用者的截圖未以附件送達；Cowork 另放了 4 張 Godot 測試截圖（v5.74.1 後） |
-| A5 | 海風鎮專屬任務鏈（漁村主線） | 企劃已寫（見 E），待拍板 | `app.js` 註記 TC-03：海風鎮目前只顯示「漁村故事頁」占位，無主線／支線 |
+| A5 | 海風鎮專屬任務鏈（漁村主線） | 進行中（v5.83.0 第 1–3 章上線，第 4–5 章＋支線下一版） | `app.js` 註記 TC-03：海風鎮目前只顯示「漁村故事頁」占位，無主線／支線 |
 | A6 | 已多出來的重複城鎮 | 需玩家手動刪 | v5.74.2 已堵住成因；程式規範「絕不自動刪雲端存檔」，請到城鎮列表刪 Seabreeze Harbor／Frontier Town 那筆 |
 
 ### B. 已知問題與可優化（程式裡看到的）
@@ -108,7 +108,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 - 規劃中：第三座城鎮；村民自訂外觀；跨鎮貿易與商隊
 - 構想：玩家之間互訪城鎮；手機 App 版
 
-### E. 企劃草案：海風鎮專屬任務鏈「潮聲」（待拍板，A5）
+### E. 企劃：海風鎮專屬任務鏈「潮聲」（A5）— v5.83.0 第 1–3 章已上線
 
 **目標**：海風鎮有自己的五章主線＋六條支線，和邊境鎮「落腳邊境」平行；全部中英文。
 
@@ -121,7 +121,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 **支線六條**：雲姨與海伯的舊情（廟前經文）；阿鹽的「鹽不過山」（賣鹽到礦山鎮，需礦山鎮已解鎖）；阿蓉的繡坊夢（市集城）；海嬤的傳家魚乾（食譜任務）；蚵嫂替兒子找話題；木蝦的人魚故事（釣到…）。
 
-**技術**：`quest-system.js` 的任務鏈目前只有邊境鎮；改成依主題查表（`QUEST_CHAINS_BY_THEME`），`checkProgress` 在主題鎮跑對應鏈；條件型別沿用（talkTo／gift／visitLocation／stockpile／season／relationship）；獎勵銀幣／聲望／專屬稱號；任務分頁的占位文字改為真正的章節。估計 2 版（第 1–3 章一版、第 4–5 章＋支線一版）。
+**技術**：v5.83.0 已改成依主題查表（`QUEST_CHAINS_BY_THEME`，`questSystem.theme`）；`checkProgress` 在主題鎮跑對應鏈；條件型別沿用（talkTo／gift／visitLocation／stockpile／season／relationship）；獎勵銀幣／聲望／專屬稱號；任務分頁的占位文字改為真正的章節。估計 2 版（第 1–3 章一版、第 4–5 章＋支線一版）。
 
 **拍板結果（2026-10-08 使用者：「按照你的建議來執行」）**
 1. 規模：五章＋六支線，分兩版（第 1–3 章一版、第 4–5 章＋支線一版）。
@@ -174,7 +174,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.82.0.zip` from Releases
+1. Download `rimtown-v5.83.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -212,6 +212,14 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.83.0 (2026-10-08)
+
+- 🌊 海風鎮專屬任務鏈「潮聲」第 1–3 章上線:第一章「上岸」(潮聲初聞：海味居吃一頓、認識討海人；走一圈海風鎮：走訪三處地點、向雲姨求平安香)、第二章「鹽與燈」(船難那一夜：向老漁問出真相後選「和解」讓石叔與燈爺二十年的沉默在燈下化掉，或選「沉默」讓往事留在海裡——兩條路線結局不同、真的會改變兩人的關係)、第三章「海菜與窗台」(替阿浮署名，或替阿帆傳話——你幫誰，珊珊的心就往誰那邊走)
+- 📜 任務系統改成依城鎮主題查表:每個主題有自己的章節名、主線、支線、故事事件；海風鎮有了真正的任務分頁與引導橫幅(不再是占位文字)，邊境鎮主線一字不動；礦山鎮／林間村／市集城暫時仍顯示占位，之後照表加
+- 🎯 新任務條件:跟特定村民交談次數、送禮給特定村民、走訪特定地點、季節、繁榮度、村民之間的好感；任務完成可帶「劇情後果」(改村民之間的好感／信任／心動、玩家好感)；主線完成文案可依路線不同
+- 📖 海風鎮故事事件:棧橋上的第一夜(海嬤的魚湯)、燈塔之夜(船難任務完成後)；全部任務文案中英文
+- ⏭️ 下一版：第四章「颱風夜」、第五章「出海」與六條支線
 
 ### v5.82.0 (2026-10-08)
 
