@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.83.0
+ * Version: 5.84.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.83.0');
+define('RIMTOWN_VERSION', '5.84.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.84.0',
+            'date'    => '2026-10-08',
+            'changes' => array(
+                '⛈️ 海風鎮任務鏈「潮聲」完結:第四章「颱風夜」——阿帆從哨塔跑下來報颱風，選「加固」(木材 60、帆布 30、跟阿舵把守哨排好)守住全鎮：繁榮 +10、燈爺把燈塔換上更亮的燈芯(夜間光束更亮更遠，永久)；或選「避風」(阿帆、阿錨拖船上岸)：沒人受傷但漁獲損失 40；第五章「出海」——阿錨修船、木蝦補板、備貨 120 食物與 40 帆布、商隊來過一次確認航路，首航市集城後開通海路：商隊兩天一趟、換到的貨 +20%',
+                '📖 六條支線:傳家魚乾(海嬤)、廟前的經文(雲姨與海伯的舊情，完成後兩人心動 +15)、蚵嫂的話題(替她探阿浮的心事)、人魚的故事(木蝦的「證據」)、鹽不過山(礦山鎮通車後把鹽送上山，石叔借出鹽耙)、繡坊夢(阿蓉與秀姑把話說開)——各帶劇情後果與中英文文案',
+                '📜 三個新故事事件:颱風警報(第三章完成後)、颱風夜、首航(燈爺大白天點燈)；任務條件新增「商隊來過幾次」「某鎮已通車」；任務後果新增物資增減、持久繁榮加成(進存檔，不會被每日重算蓋掉)、世界旗標(燈塔升級／海路開通)；支線完成也會套用後果',
+                '📣 首頁路線圖：海風鎮任務鏈移出開發中；「礦山鎮／林間村／市集城任務鏈與各鎮主題災難」列入規劃',
+            ),
+            'changes_en' => array(
+                '⛈️ Seabreeze\'s "Tide Voices" chain is complete: Chapter 4 "Typhoon Night" — Sully runs down from the tower with the warning; choose Brace (60 wood, 30 sailcloth, set the watch with Rudy) to hold the whole town for prosperity +10 and a permanently brighter, longer lighthouse beam fitted by Lou, or Shelter (Sully and Andre haul the boats ashore) where nobody is hurt but 40 food of catch is lost; Chapter 5 "Out to Sea" — Andre repairs the hull, Woody patches the planks, load 120 food and 40 sailcloth and wait for one caravan to confirm the route, then the maiden voyage to Market City opens a sea route: caravans every two days and 20% more goods',
+                '📖 Six side quests: Heirloom Dried Fish (Granny Mae), The Sutra at the Shrine (Claudia and Hal\'s old flame, romance +15 on completion), Opal\'s Conversation (sounding out Finn), The Mermaid Story (Woody\'s "evidence"), Salt Does Not Cross the Mountain (once Mine Ridge is connected, Stan lends his rake) and The Embroidery Dream (Rosa and Shirley clear the air), each with story consequences and bilingual text',
+                '📜 Three new story events: Typhoon Warning (after chapter 3), Typhoon Night and Maiden Voyage (Lou lights the lighthouse in daylight); new quest conditions "caravan visits" and "town connected"; new quest consequences: stockpile changes, a persistent prosperity bonus (saved, not overwritten by the daily recalculation) and world flags (lighthouse upgrade / sea route); side quests apply consequences too',
+                '📣 Landing roadmap: the Seabreeze quest chain leaves "in development"; "quest chains for Mine Ridge / Greenwood / Market City and a themed disaster per town" is now planned',
+            ),
+        ),
         array(
             'version' => '5.83.0',
             'date'    => '2026-10-08',

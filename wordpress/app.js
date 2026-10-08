@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.83.0
-const RIMTOWN_APP_VERSION = '5.83.0';
+// RimTown - Frontend App (WordPress Plugin) v5.84.0
+const RIMTOWN_APP_VERSION = '5.84.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1601,8 +1601,8 @@ class RimTownApp {
             ['📖', t('任務與多重結局'), t('五章主線、村民個人任務、每日目標、劇情名場面。你可以參選鎮長，也可以只當個看戲的旅人。')],
         ];
         const roadmap = [
-            [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證'), t('海風鎮專屬任務鏈（漁村主線）')]],
-            [t('規劃中'), '#fbbf24', [t('村民自訂外觀'), t('跨鎮戀愛搬家'), t('日報跨鎮專欄')]],
+            [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證')]],
+            [t('規劃中'), '#fbbf24', [t('礦山鎮／林間村／市集城任務鏈與各鎮主題災難'), t('村民自訂外觀'), t('跨鎮戀愛搬家'), t('日報跨鎮專欄')]],
             [t('構想'), '#60a5fa', [t('玩家之間互訪城鎮'), t('手機 App 版')]],
         ];
         // v5.81.0 更新紀錄(240KB)不再隨頁面載入:首頁第一次畫時才動態載 changelog.js,載完重畫一次;直接進遊戲的人完全不載
@@ -4046,6 +4046,7 @@ class RimTownApp {
                 // Pass time to tilemap for day/night cycle
                 if (this.state.clock) {
                     this.tileMap.timeHour = this.state.clock.hour ?? 12;
+                    this.tileMap.lighthouseUpgraded = !!this.world?.harborFlags?.lighthouseUpgraded; // v5.84.0
                     this.tileMap.timeMinute = this.state.clock.minute ?? 0;
                     this.tileMap.dayCount = this.world?.clock?.totalDays ?? 0; // v5.23.0 月相
                 }
