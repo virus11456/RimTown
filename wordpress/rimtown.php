@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.81.0
+ * Version: 5.82.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.81.0');
+define('RIMTOWN_VERSION', '5.82.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.82.0',
+            'date'    => '2026-10-08',
+            'changes' => array(
+                '🗄️ 後端存取層只剩 Postgres:移除 Vercel Blob 回退、lazy 搬遷、「搬資料到資料庫」按鈕與 @vercel/blob 套件(Blob 早已停權、資料全在 Neon);路徑規範(users/、saves/、savemeta/…)與 API 合約一字不改,舊的加密值仍認得',
+                '🃏 移除際遇卡系統(v5.49.0 起已停抽的死碼):World、存檔序列化、前端卡片 UI 一併拿掉;舊存檔裡的 rogueCards 欄位讀檔時直接忽略,不影響任何進度',
+                '🧪 驗證:冒煙測試 22 項全過、含 rogueCards 的舊存檔讀取正常、管理員面板顯示「儲存：Postgres」',
+                '📋 README E 節五個待拍板問題依建議拍板:海風鎮任務鏈五章＋六支線分兩版做、先做海風鎮、各鎮主題災難列為後續,下一版起實作',
+            ),
+            'changes_en' => array(
+                '🗄️ The storage layer is Postgres only: removed the Vercel Blob fallback, lazy migration, the "move data to database" button and the @vercel/blob package (Blob was suspended long ago and all data lives in Neon); storage paths (users/, saves/, savemeta/ …) and the API contract are unchanged, and legacy encrypted values are still readable',
+                '🃏 Removed the dormant fate-card system (dead code since v5.49.0): World state, save serialisation and the card UI are gone; a rogueCards field in an old save is simply ignored on load and no progress is affected',
+                '🧪 Verified: 22 smoke checks pass, an old save carrying rogueCards loads cleanly, the admin panel shows "Storage: Postgres"',
+                '📋 The five open questions in README section E are settled as recommended: the Seabreeze quest chain ships as five chapters plus six side quests over two releases, Seabreeze first, per-town disasters queued as a follow-up; implementation starts next release',
+            ),
+        ),
         array(
             'version' => '5.81.0',
             'date'    => '2026-10-07',

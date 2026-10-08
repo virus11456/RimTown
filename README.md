@@ -86,7 +86,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 - B9 `/api/chat` 的拒答偵測（Kiro 類中繼）仍是正規表示式，若中繼換模型需重新驗證 `refusal_test`。
 
 **存檔與後端**
-- B10 Vercel Blob 已停權、Neon Postgres 為主，Blob 回退與「搬資料到資料庫」按鈕已無用途，可移除簡化 `_lib.js`。
+- B10 ~~Blob 回退與搬遷按鈕~~ v5.82.0 已移除，`_lib.js` 純 Postgres。
 - B11 Vercel Hobby 12 個 Serverless Function 已用滿，任何新 API 都必須塞進既有檔案（如 `admin.js` 的 action）。
 - B12 手機 localStorage 約 5MB，多鎮本機備份仍可能吃滿（v5.69.3 已自動瘦身，但三鎮以上要再驗）。
 - B13 城鎮列表「雲端＋本機聯集」在多裝置、多鎮時的同名判斷只靠名字，建議改以 town_id 為主鍵、名字只做顯示。
@@ -100,7 +100,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 **玩法**
 - B18 ~~跨鎮互訪只在兩鎮之間~~ v5.76–v5.80 已支援五鎮（出訪名單／馬車目的地／親緣網／商隊）。
 - B19 ~~住房自動加蓋在主題鎮補不出房~~ v5.81.0 第二輪放寬掃描＋讓出多餘工廠地基；五鎮開局人人有床，礦山鎮最緊（15 戶），超過才合住。
-- B20 際遇卡已停抽（v5.49.0），程式仍在；可決定移除或改成可選開關。
+- B20 ~~際遇卡死碼~~ v5.82.0 已移除，舊檔欄位忽略。
 
 ### C. 路線圖（與首頁一致）
 
@@ -123,12 +123,12 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 **技術**：`quest-system.js` 的任務鏈目前只有邊境鎮；改成依主題查表（`QUEST_CHAINS_BY_THEME`），`checkProgress` 在主題鎮跑對應鏈；條件型別沿用（talkTo／gift／visitLocation／stockpile／season／relationship）；獎勵銀幣／聲望／專屬稱號；任務分頁的占位文字改為真正的章節。估計 2 版（第 1–3 章一版、第 4–5 章＋支線一版）。
 
-**待你拍板**
-1. 五章＋六支線的規模可以嗎？要縮成三章也行。
-2. 颱風事件要不要推廣成「每鎮一個主題災難」：礦山鎮塌方、林間村山火、市集城商隊劫案？
-3. 礦山鎮／林間村／市集城的任務鏈要同一批做，還是先做海風鎮看反應？
-4. B20 際遇卡（已停抽但程式還在）：直接移除，還是做成設定裡的開關？
-5. B10 後端 `api/_lib.js` 的 Vercel Blob 回退與「搬資料到資料庫」按鈕已無用途：要我移除嗎（只動後端，存檔路徑不變）？
+**拍板結果（2026-10-08 使用者：「按照你的建議來執行」）**
+1. 規模：五章＋六支線，分兩版（第 1–3 章一版、第 4–5 章＋支線一版）。
+2. 各鎮主題災難（礦山鎮塌方、林間村山火、市集城商隊劫案）：先做海風鎮颱風，其餘列為後續。
+3. 先做海風鎮看反應，其他三鎮的任務鏈之後再排。
+4. B20 際遇卡：v5.82.0 已移除。
+5. B10 Blob 回退：v5.82.0 已移除。
 
 ### D. 企劃草案：多城鎮、多村民、主題地圖（待拍板）
 
@@ -174,7 +174,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.81.0.zip` from Releases
+1. Download `rimtown-v5.82.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -212,6 +212,13 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.82.0 (2026-10-08)
+
+- 🗄️ 後端存取層只剩 Postgres:移除 Vercel Blob 回退、lazy 搬遷、「搬資料到資料庫」按鈕與 @vercel/blob 套件(Blob 早已停權、資料全在 Neon);路徑規範(users/、saves/、savemeta/…)與 API 合約一字不改，舊的加密值仍認得
+- 🃏 移除際遇卡系統(v5.49.0 起已停抽的死碼):World、存檔序列化、前端卡片 UI 一併拿掉;舊存檔裡的 rogueCards 欄位讀檔時直接忽略，不影響任何進度
+- 🧪 驗證:冒煙測試 22 項全過、含 rogueCards 的舊存檔讀取正常、管理員面板顯示「儲存：Postgres」
+- 📋 README E 節五個待拍板問題依建議拍板:海風鎮任務鏈五章＋六支線分兩版做、先做海風鎮、各鎮主題災難列為後續，下一版起實作
 
 ### v5.81.0 (2026-10-07)
 
