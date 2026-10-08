@@ -5251,6 +5251,8 @@ const I18N = (() => {
         '本機': 'local',
         ' 訪客）': ' visiting)',
         '海風鎮的故事': 'Stories of Seabreeze',
+        '💾 儲存：Postgres': '💾 Storage: Postgres',
+        '💾 儲存：未設定資料庫（DATABASE_URL）': '💾 Storage: no database configured (DATABASE_URL)',
         '英文名（選填，英文介面顯示用）': 'English name (optional, shown in the English UI)',
         'English name (optional)': 'English name (optional)',
         '跨鎮商隊': 'Inter-town caravan',

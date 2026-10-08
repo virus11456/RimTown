@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.81.0
-const RIMTOWN_APP_VERSION = '5.81.0';
+// RimTown - Frontend App (WordPress Plugin) v5.82.0
+const RIMTOWN_APP_VERSION = '5.82.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -2200,15 +2200,6 @@ class RimTownApp {
             this._shownEventChoiceId = null;
         }
 
-        // v5.28.0 肉鴿際遇卡
-        const rc = this.world.rogueCards;
-        if (rc?.pending && this._shownRogueStamp !== rc.pending.stamp) {
-            this._shownRogueStamp = rc.pending.stamp;
-            this._showRogueCard(rc.pending);
-        } else if (!rc?.pending && this._shownRogueStamp && !rc?.pending) {
-            // keep stamp until a new card arrives
-        }
-
         // NPC help
         const nh = this.world.npcHelp;
         if (nh?.pendingRequest && !this._shownHelpId) {
@@ -2348,29 +2339,6 @@ class RimTownApp {
                 }},
             ],
             stillValid: () => this.world.dailyDecision?.pendingDecision === decision, // v5.42.1 逾時代選後丟棄
-        });
-    }
-
-    // v5.28.0 肉鴿際遇卡:二/三選一,選擇永久改變這一局
-    _showRogueCard(card) {
-        const buttons = card.choices.map((choice, i) => ({
-            label: `${choice.icon || '🃏'} ${choice.label}`,
-            desc: choice.desc,
-            action: () => {
-                const res = this.world.rogueCards.resolve(i, this.world);
-                this.state = this.world.getState();
-                this.renderSidebar();
-                if (res && res.resultText) {
-                    setTimeout(() => this._showCenterNotification({ icon: card.icon, title: card.title, name: res.choice, desc: res.resultText, autoDismiss: 0 }), 260);
-                }
-            }
-        }));
-        this._showInteractiveNotification({
-            icon: `🃏 ${card.icon}`,
-            title: card.title,
-            desc: card.flavor,
-            buttons,
-            stillValid: () => this.world.rogueCards?.pending?.id === card.id, // v5.42.1
         });
     }
 
@@ -3356,13 +3324,7 @@ class RimTownApp {
             // v5.64.0 儲存後端狀態 + 一鍵搬遷按鈕
             let storageHtml = '';
             if (storage) {
-                if (storage.backend === 'postgres') {
-                    storageHtml = storage.migrated
-                        ? `<div style="color:#34d399;margin-bottom:6px">${t('💾 儲存：Postgres（已搬遷）')}</div>`
-                        : `<div style="margin-bottom:6px"><span style="color:#fb923c">${t('💾 儲存：Postgres（尚未搬遷）')}</span> <button class="trade-btn btn-accent" data-action="admin-migrate" style="padding:3px 8px;font-size:0.7rem">${t('📦 搬資料到資料庫')}</button></div>`;
-                } else {
-                    storageHtml = `<div style="color:var(--text-muted);margin-bottom:6px">${t('💾 儲存：Blob（尚未設定資料庫）')}</div>`;
-                }
+                storageHtml = storage.backend === 'postgres' ? `<div style="color:#34d399;margin-bottom:6px">${t('💾 儲存：Postgres')}</div>` : `<div style="color:#f87171;margin-bottom:6px">${t('💾 儲存：未設定資料庫（DATABASE_URL）')}</div>`; // v5.82.0 只剩 Postgres
             }
             this._adminUsersHtml = storageHtml + (rows.length ? `<div style="color:var(--text-secondary);margin-bottom:4px">${t('共')} ${users.length} ${t('個帳號')}</div>${rows.join('')}` : `<span style="color:var(--text-muted)">${t('目前沒有其他玩家')}</span>`);
         } catch (e) {
@@ -3371,19 +3333,6 @@ class RimTownApp {
         if (box) box.innerHTML = this._adminUsersHtml;
     }
 
-    // v5.64.0 一鍵把 Blob 玩家資料搬進 Postgres
-    async _adminMigrate() {
-        if (!window.confirm(t('確定要把雲端資料搬到資料庫嗎？可重複執行，不會覆蓋較新的資料。'))) return;
-        const box = document.getElementById('admin-user-list');
-        if (box) box.innerHTML = `<span style="color:var(--text-muted)">${t('搬遷中…可能需要數十秒，請勿關閉')}</span>`;
-        try {
-            const r = await this.auth.adminAction('migrate');
-            this._showCornerNotice({ icon: '📦', title: t('搬遷完成'), desc: `${t('複製')} ${r.copied || 0}・${t('略過')} ${r.skipped || 0}・${t('失敗')} ${r.failed || 0}` });
-        } catch (e) {
-            this._gameAlert?.(`${t('搬遷失敗：')}${e.message}`, '❌');
-        }
-        await this._adminLoadUsers();
-    }
 
     async _adminDo(action, username, confirmText) {
         if (!username) return;
@@ -4604,7 +4553,6 @@ class RimTownApp {
                 case 'admin-invite-create': this._adminInviteCreate(); break;
                 case 'admin-invite-toggle': this._adminInviteToggle(val); break;
                 case 'admin-invite-delete': this._adminInviteDelete(val); break;
-                case 'admin-migrate': this._adminMigrate(); break;
                 case 'admin-ban-user': this._adminDo('ban', val, t('確定要封鎖')); break;
                 case 'admin-unban-user': this._adminDo('unban', val, t('確定要解除封鎖')); break;
                 case 'admin-delete-user': this._adminDo('delete', val, t('⚠️ 確定要刪除帳號？會連同所有雲端存檔一起刪除且無法復原：')); break;
