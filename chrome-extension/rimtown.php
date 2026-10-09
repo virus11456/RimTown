@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.86.0
+ * Version: 5.87.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.86.0');
+define('RIMTOWN_VERSION', '5.87.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,24 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.87.0',
+            'date'    => '2026-10-09',
+            'changes' => array(
+                '🏛️ 市集城專屬任務鏈「銀聲」五章全部上線:第一章「進城」(肥叔的酒桌、財神廟一炷香)；第二章「老帳的那筆帳」——老帳對出一筆流向金老爺私帳的款項:「揭發」(老帳、窯叔好感)款項退回公帳、銀幣 +80、繁榮 +3、窯叔對金老爺怨氣消、金老爺鳳姨對你 −12／−8；或「壓下」(金老爺、鳳姨好感)拿到大市集最好的攤位、銀幣 +120、老帳對你 −10；第三章「綵姑等的人」——託駝姐跑五鎮找人(40 銀幣，答案是那個人沒從礦坑出來)或替門叔說話(送禮給綵姑，兩人心動 +30)',
+                '🚨 第四章「商隊劫案」是市集城的主題災難:第三章完成當晚駝姐的商隊沒按時進城，隔天「商隊劫案」來襲(士氣 −12、舒適 −6、每天少 6% 銀幣與 5% 布料、城門緊閉商隊停擺，三天)，照樣可以事前防災；選「加強守衛」(80 銀幣、門叔、阿鋼)衛隊出城清路、災害立刻結束、繁榮 +10；或「贖回」(150 銀幣、駝姐、肥叔)人全回來、貨少三車；第五章「五鎮商會」——金老爺主持、駝姐帶路、80 布料 100 食物、商隊來過一次:銀幣 +150、開通商路(商隊兩天一趟、換到的貨 +20%)',
+                '📖 四條支線:阿算的算經(替他送禮給書儀)、窯叔的磚價(80 石材燒一窯磚繞過商會，銀幣 +60)、駝姐的五鎮消息(聽完五鎮八卦再等商隊進城一次)、杏姑的醫館(80 木材 40 草藥蓋醫館，繁榮 +3、鳳姨與杏姑和解)；四個故事事件:金馬車的第一夜、路上的消息、劫案之後、五鎮的旗——全部中英文',
+                '🌫️ 市集城起霧時有兩成機率出現劫案預警(其他鎮不變)；商隊劫案期間城門緊閉，跨鎮商隊不會進城',
+                '🎉 五鎮任務鏈全部完成:邊境鎮「落腳邊境」、海風鎮「潮聲」、礦山鎮「礦脈」、林間村「林語」、市集城「銀聲」各五章，四座主題鎮各有專屬災難與商路終章；首頁路線圖移除「各鎮任務鏈」開發中項目，特色介紹改寫',
+            ),
+            'changes_en' => array(
+                '🏛️ Market City\'s own quest chain "Sound of Silver" is live, all five chapters: Chapter 1 "Into the City" (Feishu\'s bar, incense at the Temple of Fortune); Chapter 2 "Laozhang\'s Entry" — Laozhang finds a sum flowing into Jin\'s private account: Expose (Laozhang and Yaoshu affinity) returns the money to the public books for silver +80, prosperity +3, Yaoshu\'s grudge against Jin eases and Jin / Fengyi drop −12 / −8 toward you, or Bury (Jin and Fengyi affinity) earns the best stall in the Grand Market, silver +120 and −10 with Laozhang; Chapter 3 "The One Caigu Waits For" — send Tuojie across five towns (40 silver; the answer is that he never came out of the pit) or speak for Menshu (a gift to Caigu, romance +30)',
+                '🚨 Chapter 4 "The Caravan Raid" is Market City\'s themed disaster: the night Chapter 3 completes Tuojie\'s caravan fails to arrive, and the next day the raid hits (mood −12, comfort −6, 6% silver and 5% cloth lost per day, gate shut and caravans halted for three days) — the usual pre-disaster prep still applies; choose Reinforce the Guard (80 silver, Menshu, Agang) to clear the road, end the disaster at once and gain prosperity +10, or Pay the Ransom (150 silver, Tuojie, Feishu) to get everyone back three carts short; Chapter 5 "The Five-Town Guild" — Jin chairs, Tuojie leads, 80 cloth, 100 food and one caravan visit: silver +150 and a trade route opens (caravans every two days, 20% more goods)',
+                '📖 Four side quests: Asuan\'s Arithmetic (deliver his gift to Shuyi), Yaoshu\'s Brick Price (80 stone for a kiln of brick sold around the guild, silver +60), Tuojie\'s News from Five Towns (hear the gossip, then wait for one caravan), Xinggu\'s Infirmary (80 wood and 40 herbs to build it, prosperity +3 and Fengyi reconciles with Xinggu); four story events: First Night at the Golden Carriage, Word from the Road, After the Raid, Five Flags — all bilingual',
+                '🌫️ Fog in Market City now carries a 20% chance of a raid warning (other towns unchanged); while a raid is active the gate stays shut and no cross-town caravan arrives',
+                '🎉 All five town quest chains are complete: Frontier "Settling the Frontier", Seabreeze "Tide Voices", Mine Ridge "The Vein", Greenwood "Forest Whispers" and Market City "Sound of Silver", five chapters each, with a signature disaster and a trade-route finale in every themed town; the landing roadmap drops the "town quest chains" in-development item and the feature blurb is rewritten',
+            ),
+        ),
         array(
             'version' => '5.86.0',
             'date'    => '2026-10-09',

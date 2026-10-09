@@ -1327,9 +1327,156 @@ const FV_STORY_EVENTS = [
     { id: 'fv_story_tree', trigger: {"storyFlag": "fv5_tree"}, title: t('那棵樹'), icon: '🌳', text: t('它比老樵說的還大。阿苔的畫紙不夠，林姥撿種子撿到天黑。老樵坐在樹根上，說了一句誰也沒聽清的話——樹婆說，那是道歉。') },
 ];
 
+
+// ============================================================
+// market 專屬任務鏈(由 scripts 外的 chainbuild 產生;文案中英文都在 i18n)
+// ============================================================
+const MK_CHAPTER_NAMES = {
+    1: t('第一章：進城'),
+    2: t('第二章：老帳的那筆帳'),
+    3: t('第三章：綵姑等的人'),
+    4: t('第四章：商隊劫案'),
+    5: t('第五章：五鎮商會'),
+};
+const MK_MAIN_QUESTS = [
+    {
+        id: 'mk1_arrive', chapter: 1,
+        title: t('金馬車的第一夜'),
+        description: t('城門衛所盤問了你三遍才放行。金馬車客棧的肥叔隔著酒桌喊：「新來的？先坐，酒錢記帳。」'),
+        hint: t('先去金馬車客棧找肥叔，再跟城裡人聊聊；商隊的消息都在他的酒桌上。'),
+        objectives: [{ id: 'o1', type: 'chat_count', target: 3, label: t('與居民交談 3 次') }, { id: 'o2', type: 'visit_location', location: 'tavern', label: t('走訪金馬車客棧'), target: 1 }, { id: 'o3', type: 'talk_to', npcId: 'mk_feishu', target: 1, label: t('跟肥叔聊一次') }],
+        rewards: {"silver": 20, "reputation": 3},
+        unlocks: ["mk1_explore"],
+        onComplete: t('肥叔在帳本上寫下你的名字：「市集城的規矩，第一杯免費，第二杯記著。」'),
+        npcHints: { mk_feishu: { minAffinity: 0, hint: t('新來的？坐，第一杯我請。') }, mk_asun: { minAffinity: 0, hint: t('城裡攤主的事我都知道，你想問誰？') } },
+    },
+    {
+        id: 'mk1_explore', chapter: 1,
+        title: t('求一炷財香'),
+        description: t('財叔說進城做生意的人都要到財神廟上一炷香。走一圈大市集，再去廟裡見他。'),
+        hint: t('在地圖上走訪三處地點（磚窯、財神廟、噴泉花園、百工坊…），再去找廟祝財叔聊聊。'),
+        objectives: [{ id: 'o1', type: 'visited', locations: ["quarry", "chapel", "park", "well", "workshop", "library", "clinic", "general_store"], target: 3, label: t('走訪 3 處地點') }, { id: 'o2', type: 'npc_affinity', npcId: 'mk_caishu', target: 10, label: t('財叔好感度達到 10') }],
+        rewards: {"silver": 30, "reputation": 5},
+        unlocks: ["mk2_ledger"],
+        onComplete: t('財叔笑得見牙不見眼：「會發會發。」他自己的長衫袖口破了個洞。'),
+        npcHints: { mk_caishu: { minAffinity: 0, hint: t('做生意的先來上炷香，會發會發。') } },
+    },
+    {
+        id: 'mk2_ledger', chapter: 2,
+        title: t('老帳的那筆帳'),
+        description: t('老帳四十年沒算錯一分錢，夜裡對帳卻對出一筆不該存在的款項——流向金老爺的私帳。窯叔說那是全城磚價被壓的錢。'),
+        hint: t('揭發：和老帳、窯叔混熟，聽完那筆帳，把帳攤到商會桌上；壓下：和金老爺、鳳姨混熟，讓帳本翻過去。'),
+        routes: [
+            { id: 'expose', label: t('揭發'), icon: '📒', description: t('把那筆帳攤在商會大樓的桌上，讓全城知道。'), conditions: [{ type: 'npc_affinity', npcId: 'mk_laozhang', target: 30, label: t('老帳好感度達到 30') }, { type: 'talk_to', npcId: 'mk_laozhang', target: 2, label: t('聽完那筆帳（交談 2 次）') }, { type: 'npc_affinity', npcId: 'mk_yaoshu', target: 25, label: t('窯叔好感度達到 25') }], effects: {"flags": {"ledgerExposed": true}, "stockpile": {"silver": 80}, "prosperity": 3, "pairAffinity": [["mk_yaoshu", "mk_jinlaoye", 12], ["mk_laozhang", "mk_jinlaoye", -10]], "playerAffinity": [["mk_laozhang", 12], ["mk_yaoshu", 10], ["mk_jinlaoye", -12], ["mk_fengyi", -8]]}, onComplete: t('商會開了一整夜的會。天亮時那筆款項退回了公帳，窯叔的磚價漲回三成。金老爺沒看你，鳳姨看了你很久。') },
+            { id: 'bury', label: t('壓下'), icon: '🤫', description: t('有些帳翻過去就好，城裡的生意還要做。'), conditions: [{ type: 'npc_affinity', npcId: 'mk_jinlaoye', target: 30, label: t('金老爺好感度達到 30') }, { type: 'npc_affinity', npcId: 'mk_fengyi', target: 25, label: t('鳳姨好感度達到 25') }, { type: 'chat_count', target: 15, label: t('與居民交談 15 次') }], effects: {"stockpile": {"silver": 120}, "playerAffinity": [["mk_jinlaoye", 12], ["mk_fengyi", 10], ["mk_laozhang", -10], ["mk_yaoshu", -8]], "pairTrust": [["mk_laozhang", "mk_jinlaoye", -10]]}, onComplete: t('鳳姨把大市集最好位置的攤位租約放在你手裡：「聰明人才留得住攤位。」老帳那晚把帳本合上，沒再翻開那一頁。') }
+        ],
+        rewards: {"silver": 60, "reputation": 12},
+        unlocks: ["mk3_wait"],
+        onComplete: t('那筆帳，全城都有了自己的說法。'),
+        npcHints: { mk_laozhang: { minAffinity: 10, hint: t('四十年沒算錯一分錢…這筆，我該說嗎？') }, mk_yaoshu: { minAffinity: 10, hint: t('磚價被壓了十年，錢去哪了你問老帳。') }, mk_jinlaoye: { minAffinity: 15, hint: t('帳本的事…城裡的生意要做，有些頁翻過去就好。') } },
+    },
+    {
+        id: 'mk3_wait', chapter: 3,
+        title: t('綵姑等的人'),
+        description: t('戲班散了十年，綵姑還在等一個說好要回來的人；城門的門叔每天經過她的攤子多看兩眼。你要幫她找，還是幫她放下？'),
+        hint: t('找人：和綵姑混熟，託駝姐跑五鎮打聽（跟駝姐聊兩次、40 銀幣路費）；替門叔說話：和門叔混熟，替他送一份禮給綵姑。'),
+        routes: [
+            { id: 'search', label: t('託駝姐找人'), icon: '🐪', description: t('五個鎮總有人見過那個人。'), conditions: [{ type: 'npc_affinity', npcId: 'mk_caigu', target: 30, label: t('綵姑好感度達到 30') }, { type: 'talk_to', npcId: 'mk_tuojie', target: 2, label: t('託駝姐打聽（交談 2 次）') }, { type: 'resource', resource: 'silver', target: 40, label: t('準備 40 銀幣路費') }], effects: {"stockpile": {"silver": -40}, "playerAffinity": [["mk_caigu", 15], ["mk_tuojie", 8]], "pairAffinity": [["mk_caigu", "mk_tuojie", 12]]}, onComplete: t('駝姐從礦山鎮帶回消息：那個人三年前在坑裡沒出來。綵姑把嫁衣收進箱底，第二天攤子照開。「等到答案了，」她說，「也算等到了。」') },
+            { id: 'menshu', label: t('替門叔說話'), icon: '🛡️', description: t('城門那個鐵面的人，看了她的攤子十年。'), conditions: [{ type: 'npc_affinity', npcId: 'mk_menshu', target: 30, label: t('門叔好感度達到 30') }, { type: 'gift_to', npcId: 'mk_caigu', target: 1, label: t('替門叔送一份禮給綵姑') }], effects: {"pairRomance": [["mk_caigu", "mk_menshu", 30], ["mk_menshu", "mk_caigu", 10]], "pairAffinity": [["mk_caigu", "mk_menshu", 20]]}, onComplete: t('綵姑收下禮物，隔天給門叔的衛隊做了一套新的戲服——不，是新的制服。門叔那天盤問商隊只問了一遍。') }
+        ],
+        rewards: {"silver": 60, "reputation": 12},
+        effects: {"disaster": {"type": "caravan_raid", "daysUntil": 1}},
+        unlocks: ["mk4_raid"],
+        onComplete: t('城外十里，駝姐的商隊沒按時進城。'),
+        npcHints: { mk_caigu: { minAffinity: 10, hint: t('他說好要回來的。十年了，我還在等。') }, mk_menshu: { minAffinity: 15, hint: t('她的攤子…我看了十年。你能替我說句話嗎？') }, mk_tuojie: { minAffinity: 10, hint: t('找人？五個鎮我都跑，路費照算。') } },
+    },
+    {
+        id: 'mk4_raid', chapter: 4,
+        title: t('商隊劫案'),
+        description: t('駝姐的商隊在城外被馬賊劫了，城門緊閉，市集停擺。門叔要銀子加強守衛，肥叔說馬賊要的只是贖金。'),
+        hint: t('加強守衛：備 80 銀幣，門叔帶衛隊、阿鋼打兵器出城清剿（災害立刻結束）；贖回：付 150 銀幣，靠駝姐和肥叔的酒桌把貨和人贖回來。'),
+        routes: [
+            { id: 'guard', label: t('加強守衛'), icon: '⚔️', description: t('衛隊出城，把路清乾淨。'), conditions: [{ type: 'resource', resource: 'silver', target: 80, label: t('準備 80 銀幣') }, { type: 'npc_affinity', npcId: 'mk_menshu', target: 25, label: t('門叔好感度達到 25') }, { type: 'npc_affinity', npcId: 'mk_agang', target: 25, label: t('阿鋼好感度達到 25') }], effects: {"stockpile": {"silver": -80}, "prosperity": 10, "flags": {"cityGuard": true}, "endDisaster": "caravan_raid", "playerAffinity": [["mk_menshu", 10], ["mk_agang", 8]]}, onComplete: t('阿鋼三天沒合眼，打出來的刀每一把都一樣重。門叔帶衛隊出城，天亮前路清了，駝姐的貨一件沒少。從此城門的衛隊多了一班。') },
+            { id: 'ransom', label: t('贖回'), icon: '💰', description: t('人和貨要緊，銀子再賺。'), conditions: [{ type: 'resource', resource: 'silver', target: 150, label: t('準備 150 銀幣') }, { type: 'npc_affinity', npcId: 'mk_tuojie', target: 25, label: t('駝姐好感度達到 25') }, { type: 'npc_affinity', npcId: 'mk_feishu', target: 20, label: t('肥叔好感度達到 20') }], effects: {"stockpile": {"silver": -150}, "prosperity": 3, "playerAffinity": [["mk_tuojie", 12], ["mk_feishu", 8]]}, onComplete: t('肥叔的酒桌上談成了贖金。駝姐和人全回來了，貨少了三車；她罵了一路，進城門時聲音啞了。') }
+        ],
+        rewards: {"silver": 80, "reputation": 15},
+        unlocks: ["mk5_guild"],
+        onComplete: t('劫案過去了，市集城的城門又開了。'),
+        npcHints: { mk_menshu: { minAffinity: 10, hint: t('給我銀子和兵器，衛隊出城把路清了。') }, mk_agang: { minAffinity: 10, hint: t('兵器我來打，一把一把都要一樣重。') }, mk_feishu: { minAffinity: 10, hint: t('馬賊要的是銀子，不是命。我認識能談的人。') } },
+    },
+    {
+        id: 'mk5_guild', chapter: 5,
+        title: t('五鎮商會'),
+        description: t('劫案之後，金老爺終於肯坐下談：五鎮聯手開一條有守衛的商路。要駝姐帶路、備足布料和糧，還要商隊來過一次。'),
+        hint: t('和金老爺、駝姐熟到他們肯同桌，備 80 布料與 100 食物，等商隊來過一次確認路線，五鎮商會就能成立。'),
+        objectives: [{ id: 'o1', type: 'npc_affinity', npcId: 'mk_jinlaoye', target: 35, label: t('金老爺好感度達到 35（主持）') }, { id: 'o2', type: 'npc_affinity', npcId: 'mk_tuojie', target: 30, label: t('駝姐好感度達到 30（帶路）') }, { id: 'o3', type: 'resource', resource: 'cloth', target: 80, label: t('備 80 布料') }, { id: 'o4', type: 'resource', resource: 'food', target: 100, label: t('備糧 100 食物') }, { id: 'o5', type: 'caravan_count', target: 1, label: t('商隊來過至少 1 次（路線確認）') }],
+        rewards: {"silver": 200, "reputation": 25},
+        effects: {"flags": {"tradeRoute": true}, "prosperity": 5, "stockpile": {"silver": 150}, "playerAffinity": [["mk_jinlaoye", 15], ["mk_tuojie", 10], ["mk_laozhang", 8]]},
+        onComplete: t('五鎮的旗插在商會大樓門口。金老爺的排場這次沒人嫌，老帳記下第一筆五鎮的帳，一分不差。從此商隊兩天就來一趟，市集城的銀幣和布料有了自己的商路。'),
+        npcHints: { mk_jinlaoye: { minAffinity: 15, hint: t('五鎮商會？你把人和貨備好，我來主持。') }, mk_tuojie: { minAffinity: 10, hint: t('五個鎮的路我都熟，有守衛的話我帶頭跑。') } },
+    },
+];
+const MK_SIDE_QUESTS = [
+    {
+        id: 'side_mk_asuan_sutra', chapter: 1, type: 'side',
+        title: t('阿算的算經'),
+        trigger: { mainQuest: 'mk1_arrive', npcAffinity: {"mk_asuan": 10} },
+        story: t('阿算把一本翻爛的《算經》塞給你：「我整本背完了，她還是嫌我吵。你幫我送點東西給書儀，別說是我。」'),
+        description: t('替阿算把一份心意送到書院的書儀那裡。'),
+        objectives: [{ id: 'o1', type: 'talk_to', npcId: 'mk_asuan', target: 2, label: t('跟阿算聊 2 次') }, { id: 'o2', type: 'gift_to', npcId: 'mk_shuyi', target: 1, label: t('替阿算送一份禮給書儀') }],
+        rewards: {"silver": 20, "reputation": 3},
+        effects: {"pairAffinity": [["mk_shuyi", "mk_asuan", 15]], "pairRomance": [["mk_shuyi", "mk_asuan", 8]]},
+        onComplete: t('書儀收下禮物時什麼都沒說，隔天批阿算的算題，第一次在旁邊寫了「甚好」兩個字。'),
+        npcHints: { mk_asuan: { minAffinity: 5, hint: t('你幫我送東西給書儀好不好？我自己送她會以為是算題。') } },
+    },
+    {
+        id: 'side_mk_yaoshu_price', chapter: 1, type: 'side',
+        title: t('窯叔的磚價'),
+        trigger: { mainQuest: 'mk1_explore', npcAffinity: {"mk_yaoshu": 15} },
+        story: t('窯叔一腳踢開一塊裂磚：「商會壓價十年。你幫我湊一批石料，我燒一窯好磚直接賣給邊境鎮，看他們還壓不壓。」'),
+        description: t('替窯叔湊齊石料，燒一窯磚繞過商會賣出去。'),
+        objectives: [{ id: 'o1', type: 'resource', resource: 'stone', target: 80, label: t('儲備 80 石材') }, { id: 'o2', type: 'talk_to', npcId: 'mk_yaoshu', target: 2, label: t('跟窯叔聊 2 次') }],
+        rewards: {"reputation": 4},
+        effects: {"stockpile": {"stone": -50, "silver": 60}, "pairAffinity": [["mk_yaoshu", "mk_jinlaoye", 8]]},
+        onComplete: t('一窯磚跟著駝姐的車出了城，回來的銀子比商會給的多三成。窯叔頭一次沒嫌東嫌西，只嫌窯太小。'),
+        npcHints: { mk_yaoshu: { minAffinity: 10, hint: t('石料湊夠我就開窯，這批磚不經商會。') } },
+    },
+    {
+        id: 'side_mk_tuojie_news', chapter: 2, type: 'side',
+        title: t('駝姐的五鎮消息'),
+        trigger: { mainQuest: 'mk2_ledger', npcAffinity: {"mk_tuojie": 15} },
+        story: t('駝姐把鞭子往桌上一放：「海風鎮的浪叔又晚了，礦山鎮的礦爺又壓價，林間村的阿狐又說要搬城裡。你想聽哪一鎮的？」'),
+        description: t('聽駝姐講完五鎮的消息，再等她的商隊進一次城。'),
+        objectives: [{ id: 'o1', type: 'talk_to', npcId: 'mk_tuojie', target: 2, label: t('跟駝姐聊 2 次') }, { id: 'o2', type: 'caravan_count', target: 1, label: t('商隊來過至少 1 次') }],
+        rewards: {"silver": 30, "reputation": 5},
+        effects: {"playerAffinity": [["mk_tuojie", 8], ["mk_feishu", 5]]},
+        onComplete: t('商隊進城那天，駝姐把一包海風鎮的魚乾丟給你：「浪叔託帶的，他說欠你的。」你不記得他欠你什麼。'),
+        npcHints: { mk_tuojie: { minAffinity: 10, hint: t('五個鎮的消息我都有，坐下來聽。') } },
+    },
+    {
+        id: 'side_mk_xinggu_clinic', chapter: 3, type: 'side',
+        title: t('杏姑的醫館'),
+        trigger: { mainQuest: 'mk3_wait', npcAffinity: {"mk_xinggu": 15} },
+        story: t('杏姑指著藥堂門口排到街角的隊伍：「商會不肯蓋醫館，我自己蓋。你幫我備木料和藥材，鳳姨那邊…我去談。」'),
+        description: t('替杏姑備足木料和草藥，把醫館蓋起來。'),
+        objectives: [{ id: 'o1', type: 'resource', resource: 'wood', target: 80, label: t('儲備 80 木材') }, { id: 'o2', type: 'resource', resource: 'herbs', target: 40, label: t('儲備 40 草藥') }, { id: 'o3', type: 'talk_to', npcId: 'mk_xinggu', target: 2, label: t('跟杏姑聊 2 次') }],
+        rewards: {"silver": 20, "reputation": 6},
+        effects: {"stockpile": {"wood": -80, "herbs": -40}, "prosperity": 3, "pairAffinity": [["mk_fengyi", "mk_xinggu", 15], ["mk_xinggu", "mk_fengyi", 15]]},
+        onComplete: t('醫館開在藥堂隔壁。開張那天鳳姨送了一塊匾，匾上四個字是她自己寫的。杏姑看了很久，把匾掛在最高的地方。'),
+        npcHints: { mk_xinggu: { minAffinity: 10, hint: t('木料藥材備夠，醫館我自己蓋。') } },
+    },
+];
+const MK_STORY_EVENTS = [
+    { id: 'mk_story_first_night', trigger: {"tickCount": 96}, title: t('金馬車的第一夜'), icon: '🏮', text: t('大市集的燈到半夜才熄。肥叔的酒桌上，駝姐講五個鎮的路，財叔對每個人說「會發會發」，阿算在角落背算經。') },
+    { id: 'mk_story_road', trigger: {"storyFlag": "mk3_wait"}, title: t('路上的消息'), icon: '🐎', text: t('肥叔的酒桌上來了個渾身是土的騎手：城外十里，駝姐的商隊被馬賊圍了。門叔聽完，把城門關上了。') },
+    { id: 'mk_story_raid_night', trigger: {"storyFlag": "mk4_raid"}, title: t('劫案之後'), icon: '🏙️', text: t('城門重開那天，綵姑在攤子前掛了一盞燈，整條街跟著掛。財叔說這叫招財，門叔說這叫照路。') },
+    { id: 'mk_story_guild', trigger: {"storyFlag": "mk5_guild"}, title: t('五鎮的旗'), icon: '🚩', text: t('商會大樓門口五面旗：邊境鎮的麥、海風鎮的浪、礦山鎮的鎬、林間村的樹、市集城的秤。阿鋼說秤是他打的；沒人懷疑。') },
+];
+
 const QUEST_CHAINS_BY_THEME = {
     frontier: { chapters: CHAPTER_NAMES, main: MAIN_QUESTS, side: SIDE_QUESTS, daily: DAILY_OBJECTIVES, story: STORY_EVENTS, startQuest: 'ch1_settle' },
     harbor: { chapters: HARBOR_CHAPTER_NAMES, main: HARBOR_MAIN_QUESTS, side: HARBOR_SIDE_QUESTS, daily: DAILY_OBJECTIVES, story: HARBOR_STORY_EVENTS, startQuest: 'hb1_arrive' },
+    market: { chapters: MK_CHAPTER_NAMES, main: MK_MAIN_QUESTS, side: MK_SIDE_QUESTS, daily: DAILY_OBJECTIVES, story: MK_STORY_EVENTS, startQuest: 'mk1_arrive' },
     forest: { chapters: FV_CHAPTER_NAMES, main: FV_MAIN_QUESTS, side: FV_SIDE_QUESTS, daily: DAILY_OBJECTIVES, story: FV_STORY_EVENTS, startQuest: 'fv1_arrive' },
     mountain: { chapters: MT_CHAPTER_NAMES, main: MT_MAIN_QUESTS, side: MT_SIDE_QUESTS, daily: DAILY_OBJECTIVES, story: MT_STORY_EVENTS, startQuest: 'mt1_arrive' },
 };
