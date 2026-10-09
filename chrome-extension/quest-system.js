@@ -1035,9 +1035,156 @@ const HARBOR_STORY_EVENTS = [
     },
 ];
 
+
+// ============================================================
+// mountain 專屬任務鏈(由 scripts 外的 chainbuild 產生;文案中英文都在 i18n)
+// ============================================================
+const MT_CHAPTER_NAMES = {
+    1: t('第一章：下坑'),
+    2: t('第二章：金脈的算式'),
+    3: t('第三章：白姑的信'),
+    4: t('第四章：塌方'),
+    5: t('第五章：第七層'),
+};
+const MT_MAIN_QUESTS = [
+    {
+        id: 'mt1_arrive', chapter: 1,
+        title: t('下坑第一天'),
+        description: t('你跟著礦車上了山。礦燈酒館的阿杏說：「新來的先喝碗湯，礦山的規矩。」'),
+        hint: t('先去礦燈酒館找阿杏，再跟礦工們聊聊；油伯那裡有礦山所有的故事。'),
+        objectives: [{ id: 'o1', type: 'chat_count', target: 3, label: t('與居民交談 3 次') }, { id: 'o2', type: 'visit_location', location: 'tavern', label: t('走訪礦燈酒館'), target: 1 }, { id: 'o3', type: 'talk_to', npcId: 'mt_axing', target: 1, label: t('跟阿杏聊一次') }],
+        rewards: {"silver": 20, "reputation": 3},
+        unlocks: ["mt1_explore"],
+        onComplete: t('阿杏把一碗蘿蔔湯推到你面前：「阿梯種的，醜是醜，甜。」'),
+        npcHints: { mt_axing: { minAffinity: 0, hint: t('新來的？坐，湯先喝。') }, mt_youbo: { minAffinity: 0, hint: t('礦山的事你問我就對了，油燈底下什麼都聽得到。') } },
+    },
+    {
+        id: 'mt1_explore', chapter: 1,
+        title: t('摸一下護身符'),
+        description: t('下坑前每個礦工都要去山神祠摸一下祠婆的護身符。走一圈礦山，再去祠裡見見她。'),
+        hint: t('在地圖上走訪三處地點（主礦坑、山神祠、山泉浴場、熔爐鍛坊…），再去找守祠人祠婆聊聊。'),
+        objectives: [{ id: 'o1', type: 'visited', locations: ["quarry", "chapel", "park", "well", "workshop", "library", "clinic", "general_store"], target: 3, label: t('走訪 3 處地點') }, { id: 'o2', type: 'npc_affinity', npcId: 'mt_cipo', target: 10, label: t('祠婆好感度達到 10') }],
+        rewards: {"silver": 30, "reputation": 5},
+        unlocks: ["mt2_vein"],
+        onComplete: t('祠婆把一枚磨得發亮的銅牌掛在你脖子上：「進去的，都要出來。」'),
+        npcHints: { mt_cipo: { minAffinity: 0, hint: t('下坑前來摸一下，山神會記得你的名字。') } },
+    },
+    {
+        id: 'mt2_vein', chapter: 2,
+        title: t('金脈的算式'),
+        description: t('阿岩算出主礦坑第七層有金，礦爺卻不肯批准往下挖。小鑽說：批不批，我們自己下去看。'),
+        hint: t('說服路線：和阿岩、礦爺混熟，替她把算式送到礦務所；下探路線：跟小鑽、阿鈴偷偷下去看一眼。'),
+        routes: [
+            { id: 'persuade', label: t('說服礦爺'), icon: '📐', description: t('把阿岩的礦脈圖攤在礦爺桌上，讓他親眼看。'), conditions: [{ type: 'npc_affinity', npcId: 'mt_ayan', target: 30, label: t('阿岩好感度達到 30') }, { type: 'npc_affinity', npcId: 'mt_kuangye', target: 30, label: t('礦爺好感度達到 30') }, { type: 'talk_to', npcId: 'mt_ayan', target: 2, label: t('聽阿岩講完算式（交談 2 次）') }], effects: {"flags": {"veinApproved": true}, "pairAffinity": [["mt_kuangye", "mt_ayan", 20], ["mt_ayan", "mt_kuangye", 15]], "playerAffinity": [["mt_ayan", 10]]}, onComplete: t('礦爺盯著那張圖看了半個鐘頭，最後只說了一句：「支架先補。」阿岩當晚把圖重畫了一遍，署上自己的名字。') },
+            { id: 'sneak', label: t('偷偷下探'), icon: '🔦', description: t('夜裡跟小鑽和阿鈴提一盞燈，自己下去看第七層。'), conditions: [{ type: 'npc_affinity', npcId: 'mt_xiaozuan', target: 30, label: t('小鑽好感度達到 30') }, { type: 'npc_affinity', npcId: 'mt_aling', target: 25, label: t('阿鈴好感度達到 25') }, { type: 'chat_count', target: 15, label: t('與居民交談 15 次') }], effects: {"stockpile": {"metal": 40}, "playerAffinity": [["mt_kuangye", -8], ["mt_xiaozuan", 10]], "pairAffinity": [["mt_xiaozuan", "mt_ayan", 10]]}, onComplete: t('你們帶回一袋礦石和一身泥。阿鈴在燈下看了很久：「阿岩算得對。」第二天礦爺什麼都沒說，但看你的眼神變了。') }
+        ],
+        rewards: {"silver": 60, "reputation": 12},
+        unlocks: ["mt3_truth"],
+        onComplete: t('第七層有金，整座礦山都知道了。'),
+        npcHints: { mt_ayan: { minAffinity: 10, hint: t('我的算式沒錯，錯的是沒人肯看。') }, mt_kuangye: { minAffinity: 15, hint: t('往下挖？支架撐不撐得住你問過木根沒有？') }, mt_xiaozuan: { minAffinity: 10, hint: t('批不批有什麼差，今晚我們自己下去。') } },
+    },
+    {
+        id: 'mt3_truth', chapter: 3,
+        title: t('白姑的信'),
+        description: t('坑口醫站的白姑整理了十年的塵肺病例，想寫一封信把礦山的真相寄出去。礦爺不想讓那封信離開這座山。'),
+        hint: t('寄出去：和白姑熟到她肯把信交給你，付 60 銀子託阿晴的車送下山；先治人：備 30 草藥，陪她先把人治好。'),
+        routes: [
+            { id: 'send', label: t('寄出去'), icon: '✉️', description: t('真相該離開這座山，不管礦爺高不高興。'), conditions: [{ type: 'npc_affinity', npcId: 'mt_baigu', target: 30, label: t('白姑好感度達到 30') }, { type: 'talk_to', npcId: 'mt_baigu', target: 2, label: t('讀完白姑的病例（交談 2 次）') }, { type: 'resource', resource: 'silver', target: 60, label: t('準備 60 銀子（託車下山）') }], effects: {"stockpile": {"silver": -60}, "prosperity": 3, "playerAffinity": [["mt_baigu", 15], ["mt_kuangye", -10]], "pairAffinity": [["mt_kuangye", "mt_baigu", -10]]}, onComplete: t('信跟著阿晴的車下了山。一個月後邊境鎮的林醫師帶著兩箱藥上來——礦爺站在礦務所門口，沒攔，也沒迎。') },
+            { id: 'heal', label: t('先治人'), icon: '🌿', description: t('信可以晚點寄，咳血的人等不了。'), conditions: [{ type: 'npc_affinity', npcId: 'mt_baigu', target: 25, label: t('白姑好感度達到 25') }, { type: 'resource', resource: 'herbs', target: 30, label: t('儲備 30 草藥') }], effects: {"stockpile": {"herbs": -30}, "playerAffinity": [["mt_laochui", 10], ["mt_youbo", 10], ["mt_baigu", 8]]}, onComplete: t('老錘和油伯咳得輕了些。白姑把信收進抽屜：「等坑裡的人都能喘氣了，再寄。」') }
+        ],
+        rewards: {"silver": 60, "reputation": 12},
+        effects: {"disaster": {"type": "tunnel_collapse", "daysUntil": 1}},
+        unlocks: ["mt4_collapse"],
+        onComplete: t('那天夜裡，主礦坑第三層傳來木頭斷裂的聲音。'),
+        npcHints: { mt_baigu: { minAffinity: 10, hint: t('這些病例…十年了。我想把它寄出去，但礦爺不會讓這封信下山。') }, mt_aqing: { minAffinity: 10, hint: t('下山的車我每週跑一趟，帶信也行——銀子照算。') } },
+    },
+    {
+        id: 'mt4_collapse', chapter: 4,
+        title: t('塌方'),
+        description: t('主礦坑的支架斷了，第三層正在往下塌。木根說還來得及加固，牛叔說先把人撤出來。'),
+        hint: t('加固坑道：備 80 木材，請木根量撐木、老錘帶路下去（災害提早結束）；緊急撤離：靠牛叔和油伯把人叫出來，礦石損失一些。'),
+        routes: [
+            { id: 'brace', label: t('加固坑道'), icon: '🪵', description: t('趁第三層還撐得住，把新支架打進去。'), conditions: [{ type: 'resource', resource: 'wood', target: 80, label: t('儲備 80 木材') }, { type: 'npc_affinity', npcId: 'mt_mugen', target: 25, label: t('木根好感度達到 25') }, { type: 'npc_affinity', npcId: 'mt_laochui', target: 25, label: t('老錘好感度達到 25') }], effects: {"stockpile": {"wood": -80}, "prosperity": 10, "flags": {"tunnelBraced": true}, "endDisaster": "tunnel_collapse", "playerAffinity": [["mt_mugen", 10], ["mt_laochui", 8]]}, onComplete: t('老錘提著燈走在最前面，木根每走十步就敲一根撐木。天亮時第三層撐住了。二十年來老錘第一次說：「這回的安全，我信。」') },
+            { id: 'evacuate', label: t('緊急撤離'), icon: '🚨', description: t('來不及了，先把人全部叫出坑。'), conditions: [{ type: 'npc_affinity', npcId: 'mt_niushu', target: 25, label: t('牛叔好感度達到 25') }, { type: 'npc_affinity', npcId: 'mt_youbo', target: 20, label: t('油伯好感度達到 20') }, { type: 'chat_count', target: 25, label: t('與居民交談 25 次') }], effects: {"stockpile": {"stone": -40, "metal": -20}, "prosperity": 3, "playerAffinity": [["mt_niushu", 10], ["mt_youbo", 8]]}, onComplete: t('牛叔的嗓門這次救了人。第三層埋了，兩車礦石沒了；但點名的時候，一個都沒少。') }
+        ],
+        rewards: {"silver": 80, "reputation": 15},
+        unlocks: ["mt5_seventh"],
+        onComplete: t('塌方過去了，礦山鎮還在。'),
+        npcHints: { mt_mugen: { minAffinity: 10, hint: t('木材夠的話，我量得出每一根撐木該打在哪。') }, mt_laochui: { minAffinity: 15, hint: t('二十年前我是最後一個爬出來的。這次…我帶路。') }, mt_niushu: { minAffinity: 10, hint: t('別跟我講支架，先把人叫出來！') } },
+    },
+    {
+        id: 'mt5_seventh', chapter: 5,
+        title: t('第七層'),
+        description: t('塌方之後，礦爺終於點了頭：往第七層挖。要阿岩的圖、鐵柱的鎬、足夠的工具和糧，還要一條把金礦運下山的商路。'),
+        hint: t('和阿岩、鐵柱熟到他們肯一起下坑，備 20 工具與 100 食物，等商隊來過一次確認運路，就能開挖第七層。'),
+        objectives: [{ id: 'o1', type: 'npc_affinity', npcId: 'mt_ayan', target: 35, label: t('阿岩好感度達到 35（礦脈圖）') }, { id: 'o2', type: 'npc_affinity', npcId: 'mt_tiezhu', target: 30, label: t('鐵柱好感度達到 30（鎬頭）') }, { id: 'o3', type: 'resource', resource: 'tools', target: 20, label: t('備 20 工具') }, { id: 'o4', type: 'resource', resource: 'food', target: 100, label: t('備糧 100 食物') }, { id: 'o5', type: 'caravan_count', target: 1, label: t('商隊來過至少 1 次（運路確認）') }],
+        rewards: {"silver": 200, "reputation": 25},
+        effects: {"flags": {"tradeRoute": true}, "prosperity": 5, "stockpile": {"metal": 60}, "playerAffinity": [["mt_kuangye", 15], ["mt_ayan", 10], ["mt_xiaozuan", 8]]},
+        onComplete: t('第七層的第一鎬是礦爺親手下的，膝蓋跪在泥裡也沒人敢扶。金光照出來的時候，小鑽哭了，阿岩沒有——她在改圖。從此商隊兩天就來一趟，礦山鎮的礦石有了自己的商路。'),
+        npcHints: { mt_kuangye: { minAffinity: 15, hint: t('第七層。你把人和東西備好，第一鎬我來。') }, mt_tiezhu: { minAffinity: 10, hint: t('第七層的石頭硬，我得重打一批鎬頭。') } },
+    },
+];
+const MT_SIDE_QUESTS = [
+    {
+        id: 'side_mt_tiezhu_pick', chapter: 1, type: 'side',
+        title: t('鐵柱的鎬頭'),
+        trigger: { mainQuest: 'mt1_arrive', npcAffinity: {"mt_tiezhu": 10} },
+        story: t('鐵柱把一把斷了頭的鎬扔在砧上：「坑裡的鎬一半是我十年前打的，該換了。你幫我弄些金屬來。」'),
+        description: t('替鐵柱備足金屬，換一批新鎬頭。'),
+        objectives: [{ id: 'o1', type: 'resource', resource: 'metal', target: 60, label: t('儲備 60 金屬') }, { id: 'o2', type: 'talk_to', npcId: 'mt_tiezhu', target: 2, label: t('跟鐵柱聊 2 次') }],
+        rewards: {"silver": 15, "reputation": 3},
+        effects: {"stockpile": {"metal": -30, "tools": 10}},
+        onComplete: t('爐火燒了一整夜。天亮時砧上排著十把新鎬，鐵柱把最亮的那把遞給你：「別弄斷。」'),
+        npcHints: { mt_tiezhu: { minAffinity: 5, hint: t('坑裡的鎬頭該換了，金屬夠我就開爐。') } },
+    },
+    {
+        id: 'side_mt_cipo_charm', chapter: 1, type: 'side',
+        title: t('祠婆的護身符'),
+        trigger: { mainQuest: 'mt1_explore', npcAffinity: {"mt_cipo": 20} },
+        story: t('祠婆擦著一枚沒人來領的護身符。「這枚是給老錘的，」她說，「他二十年沒來摸過了。」'),
+        description: t('聽祠婆說完塌方那年的事，再把老錘請回山神祠。'),
+        objectives: [{ id: 'o1', type: 'talk_to', npcId: 'mt_cipo', target: 2, label: t('跟祠婆聊 2 次') }, { id: 'o2', type: 'npc_affinity', npcId: 'mt_laochui', target: 25, label: t('老錘好感度達到 25') }],
+        rewards: {"silver": 25, "reputation": 5},
+        effects: {"pairRomance": [["mt_cipo", "mt_laochui", 15], ["mt_laochui", "mt_cipo", 15]], "pairAffinity": [["mt_cipo", "mt_laochui", 10], ["mt_laochui", "mt_cipo", 10]]},
+        onComplete: t('老錘在祠門口站了很久才進去。他摸了那枚護身符，祠婆沒說話，只是把燈撥亮了些。'),
+        npcHints: { mt_cipo: { minAffinity: 15, hint: t('那枚護身符…是他的。你要是見到老錘，跟他說燈還亮著。') }, mt_laochui: { minAffinity: 15, hint: t('山神祠？二十年沒去了。護身符沒保住那三個人。') } },
+    },
+    {
+        id: 'side_mt_xiaozuan_dream', chapter: 2, type: 'side',
+        title: t('小鑽的金脈夢'),
+        trigger: { mainQuest: 'mt2_vein', npcAffinity: {"mt_xiaozuan": 15} },
+        story: t('小鑽蹲在礦圖室窗外：「她看圖的時候不看我。你幫我送點東西給她，讓她知道我也懂一點礦脈。」'),
+        description: t('替小鑽把一份心意送到阿岩那裡。'),
+        objectives: [{ id: 'o1', type: 'talk_to', npcId: 'mt_xiaozuan', target: 2, label: t('跟小鑽聊 2 次') }, { id: 'o2', type: 'gift_to', npcId: 'mt_ayan', target: 1, label: t('替小鑽送一份禮給阿岩') }],
+        rewards: {"silver": 20, "reputation": 3},
+        effects: {"pairAffinity": [["mt_ayan", "mt_xiaozuan", 15]], "pairRomance": [["mt_ayan", "mt_xiaozuan", 8]]},
+        onComplete: t('阿岩收下禮物時眉頭皺了一下，然後在礦脈圖的角落寫了一行小字：「小鑽說第五層偏東。」'),
+        npcHints: { mt_xiaozuan: { minAffinity: 10, hint: t('你幫我送東西給阿岩好不好？我自己送她會以為是礦石。') } },
+    },
+    {
+        id: 'side_mt_aqing_order', chapter: 3, type: 'side',
+        title: t('阿晴的訂單'),
+        trigger: { mainQuest: 'mt3_truth', npcAffinity: {"mt_aqing": 15} },
+        story: t('阿晴拍著一張皺巴巴的單子：「邊境鎮趙老闆娘要一車石料換布料，這條線我跑了五年。你幫我湊夠貨，利潤分你。」'),
+        description: t('替阿晴湊齊一車石料，換回布料和銀子。'),
+        objectives: [{ id: 'o1', type: 'resource', resource: 'stone', target: 120, label: t('儲備 120 石材') }, { id: 'o2', type: 'talk_to', npcId: 'mt_aqing', target: 2, label: t('跟阿晴聊 2 次') }],
+        rewards: {"reputation": 5},
+        effects: {"stockpile": {"stone": -80, "cloth": 30, "silver": 40}},
+        onComplete: t('車下山、車上山，阿晴把一疊布和一袋銀子丟在櫃台上：「趙老闆娘說下次要兩車。」繡姑已經在挑布了。'),
+        npcHints: { mt_aqing: { minAffinity: 10, hint: t('石料湊夠一車我就下山，布料銀子分你一份。') } },
+    },
+];
+const MT_STORY_EVENTS = [
+    { id: 'mt_story_first_night', trigger: {"tickCount": 96}, title: t('礦燈初夜'), icon: '🪔', text: t('油伯提早一小時把坑口的油燈全點亮。你坐在礦車廣場，聽他講二十年前的塌方——「三個人沒出來。老錘是最後一個爬出來的。」') },
+    { id: 'mt_story_rumble', trigger: {"storyFlag": "mt3_truth"}, title: t('坑道異響'), icon: '⚠️', text: t('夜裡主礦坑第三層傳來木頭斷裂的悶響。木根提著燈下去看了一眼，上來時臉色發白：「撐木裂了，明天就撐不住。」') },
+    { id: 'mt_story_collapse_night', trigger: {"storyFlag": "mt4_collapse"}, title: t('塌方之夜'), icon: '⛏️', text: t('整座礦山一夜沒睡。天亮時祠婆在山神祠前點了一排燈，每一盞都對著坑口。老錘站在最後一盞燈旁邊，沒走。') },
+    { id: 'mt_story_gold', trigger: {"storyFlag": "mt5_seventh"}, title: t('金光'), icon: '✨', text: t('第七層的燈照在礦壁上，金色一條一條像阿岩圖上畫的那樣。礦爺把第一塊礦石放進你手裡：「礦山鎮的第一塊金，你拿著。」') },
+];
+
 const QUEST_CHAINS_BY_THEME = {
     frontier: { chapters: CHAPTER_NAMES, main: MAIN_QUESTS, side: SIDE_QUESTS, daily: DAILY_OBJECTIVES, story: STORY_EVENTS, startQuest: 'ch1_settle' },
     harbor: { chapters: HARBOR_CHAPTER_NAMES, main: HARBOR_MAIN_QUESTS, side: HARBOR_SIDE_QUESTS, daily: DAILY_OBJECTIVES, story: HARBOR_STORY_EVENTS, startQuest: 'hb1_arrive' },
+    mountain: { chapters: MT_CHAPTER_NAMES, main: MT_MAIN_QUESTS, side: MT_SIDE_QUESTS, daily: DAILY_OBJECTIVES, story: MT_STORY_EVENTS, startQuest: 'mt1_arrive' },
 };
 function questChainFor(theme) { return QUEST_CHAINS_BY_THEME[theme || 'frontier'] || null; }
 
@@ -1534,6 +1681,9 @@ class QuestSystem {
         }
         if (effects.prosperity && world.prosperity) world.prosperity.questBonus = (world.prosperity.questBonus || 0) + effects.prosperity;
         if (effects.flags) { world.harborFlags = world.harborFlags || {}; Object.assign(world.harborFlags, effects.flags); }
+        // v5.85.0 主題災難:劇情排程災害(明天來襲)/路線化解災害
+        if (effects.disaster && world.weather?.scheduleDisaster) world.weather.scheduleDisaster(effects.disaster.type, effects.disaster.daysUntil ?? 1, world);
+        if (effects.endDisaster && world.weather?.resolveDisaster) world.weather.resolveDisaster(effects.endDisaster, world);
     }
 
     // ============================================================

@@ -6758,7 +6758,8 @@ class World {
     _caravanDaily() {
         if (!Array.isArray(this.otherTowns) || !this.otherTowns.length) return;
         const day = this._absDay();
-        const every = this.harborFlags?.seaRoute ? 2 : 3; // v5.84.0 海路開通:兩天一趟
+        const route = !!(this.harborFlags?.seaRoute || this.harborFlags?.tradeRoute); // v5.85.0 海路／商路(各鎮任務鏈終章)
+        const every = route ? 2 : 3; // v5.84.0 海路開通:兩天一趟
         if (this.lastCaravanDay != null && day - this.lastCaravanDay < every) return;
         const myKey = this.townTheme || 'frontier';
         const mine = TOWN_THEMES[myKey] || TOWN_THEMES.frontier;
@@ -6771,7 +6772,7 @@ class World {
         if (!give || !recv) return;
         const giveAmt = Math.min(40, Math.floor((this.stockpile.get(give) || 0) * 0.12));
         if (giveAmt < 5) return; // 本鎮也沒餘貨,商隊空手而回,過兩天再試
-        const hub = ((myKey === 'market' || pick.key === 'market') ? Math.ceil(giveAmt * 0.2) : 0) + (this.harborFlags?.seaRoute ? Math.ceil(giveAmt * 0.2) : 0); // v5.84.0 海路加成
+        const hub = ((myKey === 'market' || pick.key === 'market') ? Math.ceil(giveAmt * 0.2) : 0) + (route ? Math.ceil(giveAmt * 0.2) : 0); // v5.84.0 海路加成
         const recvAmt = giveAmt + hub;
         this.stockpile.add(give, -giveAmt, this.tickCount, t('跨鎮商隊'), pick.tw.name);
         this.stockpile.add(recv, recvAmt, this.tickCount, t('跨鎮商隊'), pick.tw.name);
@@ -8786,6 +8787,10 @@ const SEASON_WEATHER = {
     '冬季': [['clear',1],['cloudy',3],['snow',3],['blizzard',1],['fog',2],['wind',2],['storm',0.5]],
 };
 
+// v5.85.0 災難名稱表(任務鏈 scheduleDisaster 用)與資源中文名(損失訊息用)
+const DISASTER_LABELS = { drought_severe: () => t('嚴重乾旱'), blizzard_severe: () => t('極端暴風雪'), flood: () => t('洪水'), tunnel_collapse: () => t('坑道塌方') };
+const RESOURCE_NAMES_ZH = { food: '食物', wood: '木材', stone: '石材', metal: '金屬', cloth: '布料', herbs: '草藥', silver: '銀幣', tools: '工具' };
+
 class WeatherSystem {
     constructor() {
         this.current = 'clear';       // Current weather type key
@@ -8904,8 +8909,14 @@ class WeatherSystem {
         }
         // Storm escalation chance
         if (this.current === 'storm' && Math.random() < 0.3 && !this.activeDisaster && this._daysSinceDisaster > 6) {
-            this.disasterWarning = { type: 'flood', severity: 'major', daysUntil: 0 };
-            world.logMessage('weather', `⚠️ ${t('洪水警報：暴風雨導致河水暴漲！')}`);
+            if (world.townTheme === 'mountain') { // v5.85.0 礦山鎮:暴雨滲水→坑道塌方
+                this.disasterWarning = { type: 'tunnel_collapse', severity: 'major', daysUntil: 1 };
+                world.logMessage('weather', `⚠️ ${t('塌方警報：暴雨滲進坑道，支架開始吃水！')}`);
+                this._offerPrepChoice(world, t('坑道塌方'));
+            } else {
+                this.disasterWarning = { type: 'flood', severity: 'major', daysUntil: 0 };
+                world.logMessage('weather', `⚠️ ${t('洪水警報：暴風雨導致河水暴漲！')}`);
+            }
         }
 
         // Trigger disaster from warning
@@ -8915,6 +8926,21 @@ class WeatherSystem {
         } else if (this.disasterWarning) {
             this.disasterWarning.daysUntil--;
         }
+    }
+
+    // v5.85.0 任務鏈劇情觸發的主題災難:排進預警(明天來襲),一樣可以事前防災
+    scheduleDisaster(type, daysUntil, world) {
+        if (this.activeDisaster || !DISASTER_LABELS[type]) return false;
+        this.disasterWarning = { type, severity: 'major', daysUntil: Math.max(0, daysUntil | 0) };
+        world.logMessage('weather', `⚠️ ${t('災害預警：')}${DISASTER_LABELS[type]()}`);
+        this._offerPrepChoice(world, DISASTER_LABELS[type]());
+        return true;
+    }
+    // v5.85.0 任務路線化解災難:災害進行中就提前結束;還在預警就視為全面防災
+    resolveDisaster(type, world) {
+        if (this.activeDisaster?.type === type) { this._endDisaster(world); return true; }
+        if (this.disasterWarning?.type === type) { this._prepLevel = 2; return true; }
+        return false;
     }
 
     // v4.5.0 災害預警:給玩家防災準備選擇(明天災害來襲前)
@@ -8953,6 +8979,12 @@ class WeatherSystem {
                 name: ()=>t('洪水'), severity:'major', daysLeft:3,
                 effects: { farm:-0.4, mood:-12, food_loss:0.1 },
                 desc: ()=>t('河水氾濫，部分農田被淹，儲備糧食受損。'),
+            },
+            // v5.85.0 礦山鎮主題災難
+            tunnel_collapse: {
+                name: ()=>t('坑道塌方'), severity:'major', daysLeft:3,
+                effects: { mood:-14, comfort:-12, resource_loss: { stone: 0.08, metal: 0.06 } },
+                desc: ()=>t('主礦坑第三層支架斷裂，礦車進不去，堆在坑口的礦石一車車埋進土裡。'),
             },
         };
         const d = disasters[type];
@@ -9029,6 +9061,17 @@ class WeatherSystem {
             if (foodLost > 0) {
                 world.stockpile.consume('food', foodLost, world.tickCount, this.activeDisaster.name);
                 world.logMessage('weather', `🍖 ${t('洪水沖走了')} ${foodLost} ${t('食物！')}`);
+            }
+        }
+
+        // v5.85.0 Disaster-specific: themed resource loss (cave-in buries ore, …)
+        if (this.activeDisaster?.effects?.resource_loss) {
+            for (const [res, frac] of Object.entries(this.activeDisaster.effects.resource_loss)) {
+                const lost = Math.floor((world.stockpile.get(res) || 0) * frac);
+                if (lost > 0) {
+                    world.stockpile.consume(res, lost, world.tickCount, this.activeDisaster.name);
+                    world.logMessage('weather', `📉 ${this.activeDisaster.name}${t('損失了')} ${lost} ${t(RESOURCE_NAMES_ZH[res] || res)}`);
+                }
             }
         }
 
