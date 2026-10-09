@@ -6757,6 +6757,7 @@ class World {
     // (五鎮各有所長:漁獲帆布／石材金屬／木材草藥／銀幣布料),市集城經手的交易多兩成
     _caravanDaily() {
         if (!Array.isArray(this.otherTowns) || !this.otherTowns.length) return;
+        if (this.weather?.activeDisaster?.effects?.caravan_halt) return; // v5.87.0 商隊劫案期間城門緊閉,商隊不來
         const day = this._absDay();
         const route = !!(this.harborFlags?.seaRoute || this.harborFlags?.tradeRoute); // v5.85.0 海路／商路(各鎮任務鏈終章)
         const every = route ? 2 : 3; // v5.84.0 海路開通:兩天一趟
@@ -8788,7 +8789,7 @@ const SEASON_WEATHER = {
 };
 
 // v5.85.0 災難名稱表(任務鏈 scheduleDisaster 用)與資源中文名(損失訊息用)
-const DISASTER_LABELS = { drought_severe: () => t('嚴重乾旱'), blizzard_severe: () => t('極端暴風雪'), flood: () => t('洪水'), tunnel_collapse: () => t('坑道塌方'), wildfire: () => t('山火') };
+const DISASTER_LABELS = { drought_severe: () => t('嚴重乾旱'), blizzard_severe: () => t('極端暴風雪'), flood: () => t('洪水'), tunnel_collapse: () => t('坑道塌方'), wildfire: () => t('山火'), caravan_raid: () => t('商隊劫案') };
 const RESOURCE_NAMES_ZH = { food: '食物', wood: '木材', stone: '石材', metal: '金屬', cloth: '布料', herbs: '草藥', silver: '銀幣', tools: '工具' };
 
 class WeatherSystem {
@@ -8925,6 +8926,13 @@ class WeatherSystem {
             }
         }
 
+        // v5.87.0 市集城:濃霧藏馬賊→商隊劫案
+        if (this.current === 'fog' && world.townTheme === 'market' && Math.random() < 0.2 && !this.activeDisaster && !this.disasterWarning && this._daysSinceDisaster > 8) {
+            this.disasterWarning = { type: 'caravan_raid', severity: 'major', daysUntil: 1 };
+            world.logMessage('weather', `⚠️ ${t('劫案警報：濃霧裡有馬賊出沒，城外的商隊危險！')}`);
+            this._offerPrepChoice(world, t('商隊劫案'));
+        }
+
         // Trigger disaster from warning
         if (this.disasterWarning && this.disasterWarning.daysUntil <= 0) {
             this._startDisaster(this.disasterWarning.type, world);
@@ -8985,6 +8993,12 @@ class WeatherSystem {
                 name: ()=>t('洪水'), severity:'major', daysLeft:3,
                 effects: { farm:-0.4, mood:-12, food_loss:0.1 },
                 desc: ()=>t('河水氾濫，部分農田被淹，儲備糧食受損。'),
+            },
+            // v5.87.0 市集城主題災難(商隊停擺見 _caravanDaily)
+            caravan_raid: {
+                name: ()=>t('商隊劫案'), severity:'major', daysLeft:3,
+                effects: { mood:-12, comfort:-6, resource_loss: { silver: 0.06, cloth: 0.05 }, caravan_halt: 1 },
+                desc: ()=>t('駝隊在城外十里被馬賊劫了，城門緊閉、商隊停擺，市集的銀貨一天天少。'),
             },
             // v5.86.0 林間村主題災難
             wildfire: {
