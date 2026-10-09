@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.84.0
+ * Version: 5.85.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.84.0');
+define('RIMTOWN_VERSION', '5.85.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,24 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.85.0',
+            'date'    => '2026-10-09',
+            'changes' => array(
+                '⛏️ 礦山鎮專屬任務鏈「礦脈」五章全部上線:第一章「下坑」(阿杏的蘿蔔湯、祠婆的護身符)；第二章「金脈的算式」——阿岩算出第七層有金、礦爺不批:選「說服礦爺」(阿岩、礦爺好感 30、聽完算式)礦爺終於看圖、兩人關係 +20；或「偷偷下探」(小鑽、阿鈴)帶回 40 金屬但礦爺對你 −8；第三章「白姑的信」——塵肺真相:「寄出去」(付 60 銀幣託阿晴的車)繁榮 +3、礦爺 −10；或「先治人」(30 草藥)老錘、油伯好感 +10',
+                '🚨 第四章「塌方」是礦山鎮的主題災難:第三章完成當晚坑道傳來異響，隔天「坑道塌方」來襲(士氣 −14、舒適 −12、每天埋掉 8% 石材與 6% 金屬，三天)，照樣可以事前防災；選「加固坑道」(80 木材、木根、老錘)災害立刻結束、繁榮 +10、坑道永久加固；或「緊急撤離」(牛叔、油伯)沒人少、但損失 40 石材 20 金屬；第五章「第七層」——阿岩的圖、鐵柱的鎬、20 工具 100 食物、商隊來過一次，礦爺親手下第一鎬:金屬 +60、開通商路(商隊兩天一趟、換到的貨 +20%)',
+                '📖 四條支線:鐵柱的鎬頭(60 金屬換 10 工具)、祠婆的護身符(老錘二十年後回山神祠，兩人心動 +15)、小鑽的金脈夢(替他送禮給阿岩)、阿晴的訂單(120 石材換布料 30、銀幣 40)；四個故事事件:礦燈初夜、坑道異響、塌方之夜、金光——全部中英文',
+                '🌧️ 礦山鎮的暴風雨升級災害從洪水改成「坑道塌方」(其他鎮不變)；任務後果新增「排程災難」與「化解災難」(災害進行中提前結束、還在預警就視為全面防災)；商隊海路加成改成通用「商路」旗標(海風鎮海路、礦山鎮商路都適用)；災害損失訊息會寫出資源名',
+                '📣 首頁路線圖：「各鎮任務鏈與主題災難」列入開發中(礦山鎮已上線，林間村、市集城接續)',
+            ),
+            'changes_en' => array(
+                '⛏️ Mine Ridge\'s own quest chain "The Vein" is live, all five chapters: Chapter 1 "Into the Pit" (Axing\'s radish soup, Cipo\'s charm); Chapter 2 "The Gold Vein Equation" — Ayan has calculated gold on the seventh level and Kuangye won\'t approve: choose Persuade (Ayan and Kuangye affinity 30, hear out the equation) so Kuangye finally reads the map and their bond rises +20, or Sneak Down (Xiaozuan, Aling) to bring back 40 metal at −8 with Kuangye; Chapter 3 "Baigu\'s Letter" — the black-lung truth: Send It (60 silver for Aqing\'s cart) for prosperity +3 and Kuangye −10, or Heal First (30 herbs) for +10 with Laochui and Youbo',
+                '🚨 Chapter 4 "Cave-in" is Mine Ridge\'s themed disaster: the night Chapter 3 completes the tunnel groans, and the next day a Tunnel Cave-in hits (mood −14, comfort −12, 8% stone and 6% metal buried per day for three days) — the usual pre-disaster prep still applies; choose Brace the Tunnel (80 wood, Mugen, Laochui) to end the disaster at once, prosperity +10 and a permanently braced tunnel, or Evacuate (Niushu, Youbo) where nobody is lost but 40 stone and 20 metal are; Chapter 5 "The Seventh Level" — Ayan\'s map, Tiezhu\'s picks, 20 tools, 100 food and one caravan visit, then Kuangye swings the first pick himself: metal +60 and a trade route opens (caravans every two days, 20% more goods)',
+                '📖 Four side quests: Tiezhu\'s Picks (60 metal for 10 tools), Cipo\'s Charm (Laochui returns to the shrine after twenty years, romance +15 both ways), Xiaozuan\'s Gold Dream (deliver his gift to Ayan), Aqing\'s Order (120 stone for 30 cloth and 40 silver); four story events: First Night by Lamplight, Sounds in the Tunnel, The Night of the Cave-in, Gold Light — all bilingual',
+                '🌧️ On Mine Ridge the storm escalation disaster is now a Tunnel Cave-in instead of a flood (other towns unchanged); quest consequences can now schedule a disaster and resolve one (an active disaster ends early, a pending warning counts as full preparation); the caravan sea-route bonus is now a generic trade-route flag (Seabreeze\'s sea route and Mine Ridge\'s trade route both qualify); disaster loss messages name the resource',
+                '📣 Landing roadmap: "Quest chains and themed disasters for every town" moved into development (Mine Ridge live; Greenwood and Market City next)',
+            ),
+        ),
         array(
             'version' => '5.84.0',
             'date'    => '2026-10-08',
