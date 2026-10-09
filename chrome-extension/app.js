@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.85.0
-const RIMTOWN_APP_VERSION = '5.85.0';
+// RimTown - Frontend App (WordPress Plugin) v5.86.0
+const RIMTOWN_APP_VERSION = '5.86.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1602,7 +1602,7 @@ class RimTownApp {
         ];
         const roadmap = [
             [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證')]],
-            [t('開發中'), '#38bdf8', [t('各鎮任務鏈與主題災難') + ' · ' + t('礦山鎮「礦脈」已上線，林間村「林語」、市集城「銀聲」接續')]],
+            [t('開發中'), '#38bdf8', [t('各鎮任務鏈與主題災難') + ' · ' + t('礦山鎮「礦脈」、林間村「林語」已上線，市集城「銀聲」接續')]],
             [t('規劃中'), '#fbbf24', [t('村民自訂外觀'), t('跨鎮戀愛搬家'), t('日報跨鎮專欄')]],
             [t('構想'), '#60a5fa', [t('玩家之間互訪城鎮'), t('手機 App 版')]],
         ];
