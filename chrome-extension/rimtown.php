@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.85.0
+ * Version: 5.86.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.85.0');
+define('RIMTOWN_VERSION', '5.86.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,24 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.86.0',
+            'date'    => '2026-10-09',
+            'changes' => array(
+                '🌲 林間村專屬任務鏈「林語」五章全部上線:第一章「進林」(桂嬸的蘑菇湯、繞古樹一圈見樹婆)；第二章「第十四隻木雕」——阿松／阿哨／阿葉三角:替阿松送第十五隻(送禮給阿葉)或替阿哨傳話(跟阿葉聊兩次)，選邊影響日後婚配；第三章「護林與伐木」——阿哨的本子對上鋸哥的伐木場:「禁伐令」(阿哨、林姥好感 30)古林以東不許下斧、繁榮 +3、鋸哥帶人去種樹；或「擴產」(鋸哥、桂嬸)木材 +80、阿哨對你 −10',
+                '🔥 第四章「山火」是林間村的主題災難:第三章完成當晚伐木場冒煙，隔天「山火」來襲(士氣 −15、舒適 −10、農作 −30%、每天燒掉 10% 木材與 8% 草藥，三天)，照樣可以事前防災；選「開防火線」(60 木材、大熊、木叔)火停在隔離帶前、災害立刻結束、繁榮 +10；或「疏散」(鹿娘、阿矢)人和鹿一個都沒少、但損失 40 草藥 20 食物；第五章「那棵樹」——老樵帶路、阿苔記錄、80 草藥 100 食物、商隊來過一次:草藥 +60、開通商路(商隊兩天一趟、換到的貨 +20%)',
+                '📖 四條支線:阿松的木雕(60 木材刻一批去賣，銀幣 +25)、林姥進林子的原因(樹婆說出五十年前的事，林姥與老樵心動 +10)、大熊的陷阱(替他跟鹿娘說清楚，夫妻信任 +10)、藥草小屋的配方(100 草藥配止血藥賣去邊境鎮，銀幣 +50)；四個故事事件:篝火初夜、林子裡的煙、山火之夜、那棵樹——全部中英文',
+                '☀️ 林間村的夏季連日高溫升級災害從乾旱改成「山火」(其他鎮不變)',
+                '📣 首頁路線圖：礦山鎮、林間村任務鏈已上線，市集城「銀聲」接續',
+            ),
+            'changes_en' => array(
+                '🌲 Greenwood\'s own quest chain "Forest Whispers" is live, all five chapters: Chapter 1 "Into the Woods" (Guishen\'s mushroom soup, a circle round the old tree to meet Shupo); Chapter 2 "The Fourteenth Carving" — the Asong / Ashao / Aye triangle: deliver the fifteenth carving for Asong (gift to Aye) or speak for Ashao (talk to Aye twice), and the side you pick shapes who she ends up with; Chapter 3 "Rangers and Loggers" — Ashao\'s notebook against Juge\'s logging camp: Logging Ban (Ashao and Linlao affinity 30) means no axe east of the old forest, prosperity +3 and Juge takes his crew planting, or Expand (Juge, Guishen) for +80 wood at −10 with Ashao',
+                '🔥 Chapter 4 "Wildfire" is Greenwood\'s themed disaster: the evening Chapter 3 completes smoke rises over the logging camp, and the next day a Wildfire hits (mood −15, comfort −10, farming −30%, 10% wood and 8% herbs burned per day for three days) — the usual pre-disaster prep still applies; choose Cut a Firebreak (60 wood, Daxiong, Mushu) to stop the fire at the break, end the disaster at once and gain prosperity +10, or Evacuate (Luniang, Ashi) where no person or deer is lost but 40 herbs and 20 food are; Chapter 5 "That Tree" — Laoqiao guides, Atai records, 80 herbs, 100 food and one caravan visit: herbs +60 and a trade route opens (caravans every two days, 20% more goods)',
+                '📖 Four side quests: Asong\'s Carvings (60 wood for a batch to sell, silver +25), Why Linlao Went Into the Woods (Shupo tells the story from fifty years ago, Linlao and Laoqiao romance +10), Daxiong\'s Traps (set things straight with Luniang, couple trust +10), The Herb Hut Recipe (100 herbs into styptic for Frontier Town, silver +50); four story events: First Night by the Bonfire, Smoke in the Woods, The Night of the Fire, That Tree — all bilingual',
+                '☀️ On Greenwood the summer heat-streak disaster is now a Wildfire instead of a drought (other towns unchanged)',
+                '📣 Landing roadmap: Mine Ridge and Greenwood chains are live; Market City "Sound of Silver" follows',
+            ),
+        ),
         array(
             'version' => '5.85.0',
             'date'    => '2026-10-09',

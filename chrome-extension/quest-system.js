@@ -1181,9 +1181,156 @@ const MT_STORY_EVENTS = [
     { id: 'mt_story_gold', trigger: {"storyFlag": "mt5_seventh"}, title: t('金光'), icon: '✨', text: t('第七層的燈照在礦壁上，金色一條一條像阿岩圖上畫的那樣。礦爺把第一塊礦石放進你手裡：「礦山鎮的第一塊金，你拿著。」') },
 ];
 
+
+// ============================================================
+// forest 專屬任務鏈(由 scripts 外的 chainbuild 產生;文案中英文都在 i18n)
+// ============================================================
+const FV_CHAPTER_NAMES = {
+    1: t('第一章：進林'),
+    2: t('第二章：第十四隻木雕'),
+    3: t('第三章：護林與伐木'),
+    4: t('第四章：山火'),
+    5: t('第五章：那棵樹'),
+};
+const FV_MAIN_QUESTS = [
+    {
+        id: 'fv1_arrive', chapter: 1,
+        title: t('篝火旁的第一碗湯'),
+        description: t('馬車在林子口就停了，剩下的路得走。篝火場上桂嬸正在攪一鍋蘑菇湯：「新來的？先喝，再說話。」'),
+        hint: t('先去松脂酒館找桂嬸，再跟村裡人聊聊；鋸哥知道誰家煮了什麼。'),
+        objectives: [{ id: 'o1', type: 'chat_count', target: 3, label: t('與居民交談 3 次') }, { id: 'o2', type: 'visit_location', location: 'tavern', label: t('走訪松脂酒館'), target: 1 }, { id: 'o3', type: 'talk_to', npcId: 'fv_guishen', target: 1, label: t('跟桂嬸聊一次') }],
+        rewards: {"silver": 20, "reputation": 3},
+        unlocks: ["fv1_explore"],
+        onComplete: t('桂嬸把湯碗收走：「帳不用算，這村裡沒人算帳。」鋸哥在旁邊吃第三碗。'),
+        npcHints: { fv_guishen: { minAffinity: 0, hint: t('新來的？坐，湯快好了。') }, fv_juge: { minAffinity: 0, hint: t('村裡誰家煮了什麼我都知道，你想吃哪家？') } },
+    },
+    {
+        id: 'fv1_explore', chapter: 1,
+        title: t('繞古樹一圈'),
+        description: t('樹婆說進村的人都要繞古樹走一圈，樹才認得你。走一圈林間村，再到古樹祭壇見她。'),
+        hint: t('在地圖上走訪三處地點（伐木場、古樹祭壇、林中空地、木工坊…），再去找祭司樹婆聊聊。'),
+        objectives: [{ id: 'o1', type: 'visited', locations: ["quarry", "chapel", "park", "well", "workshop", "library", "clinic", "general_store"], target: 3, label: t('走訪 3 處地點') }, { id: 'o2', type: 'npc_affinity', npcId: 'fv_shupo', target: 10, label: t('樹婆好感度達到 10') }],
+        rewards: {"silver": 30, "reputation": 5},
+        unlocks: ["fv2_carving"],
+        onComplete: t('樹婆把一片古樹的葉子夾進你的衣領：「它記住你了。」'),
+        npcHints: { fv_shupo: { minAffinity: 0, hint: t('繞古樹走一圈再來找我，樹才認得你。') } },
+    },
+    {
+        id: 'fv2_carving', chapter: 2,
+        title: t('第十四隻木雕'),
+        description: t('阿松每個月送阿葉一隻木雕小動物，已經十四隻了，一句話也沒說過；守林人阿哨也在看阿葉。皮姑拉著你：「你去幫阿松問問。」'),
+        hint: t('替阿松送禮（和阿松混熟、替他送一份禮給阿葉），或替阿哨傳話（和阿哨混熟、跟阿葉聊兩次）——只能選一邊。'),
+        routes: [
+            { id: 'asong', label: t('替阿松送第十五隻'), icon: '🪵', description: t('讓阿葉知道十四隻木雕是誰刻的、為什麼刻。'), conditions: [{ type: 'npc_affinity', npcId: 'fv_asong', target: 30, label: t('阿松好感度達到 30') }, { type: 'gift_to', npcId: 'fv_aye', target: 1, label: t('替阿松送一份禮給阿葉') }], effects: {"pairRomance": [["fv_aye", "fv_asong", 30], ["fv_asong", "fv_aye", 10]], "pairAffinity": [["fv_aye", "fv_asong", 20]], "playerAffinity": [["fv_ashao", -8]]}, onComplete: t('第十五隻是一隻鹿，底下刻了一行字。阿葉把十五隻排在藥草小屋的窗台上，那天晚上第一次主動去了木工坊。') },
+            { id: 'ashao', label: t('替阿哨傳話'), icon: '🗼', description: t('把哨塔上那個人的心意帶到藥草小屋。'), conditions: [{ type: 'npc_affinity', npcId: 'fv_ashao', target: 30, label: t('阿哨好感度達到 30') }, { type: 'talk_to', npcId: 'fv_aye', target: 2, label: t('替阿哨跟阿葉說上話（交談 2 次）') }], effects: {"pairRomance": [["fv_aye", "fv_ashao", 30], ["fv_ashao", "fv_aye", 10]], "pairAffinity": [["fv_aye", "fv_ashao", 20]], "playerAffinity": [["fv_asong", -8]]}, onComplete: t('阿哨帶阿葉上了哨塔，讓她看了一次整片林子的日出。她後來說，從那上面，每一株草都看得到。') }
+        ],
+        rewards: {"silver": 60, "reputation": 12},
+        unlocks: ["fv3_forest"],
+        onComplete: t('窗台上的木雕，從此有了故事。'),
+        npcHints: { fv_asong: { minAffinity: 15, hint: t('十四隻了…她應該知道是我吧？應該吧？') }, fv_ashao: { minAffinity: 15, hint: t('你能幫我跟阿葉說句話嗎？我在塔上看她採藥看了一年。') }, fv_aye: { minAffinity: 10, hint: t('窗台上那些小動物…我其實一直想知道是誰刻的。') } },
+    },
+    {
+        id: 'fv3_forest', chapter: 3,
+        title: t('護林與伐木'),
+        description: t('阿哨的本子記滿了伐木場砍掉的樹，他要林姥下禁伐令；鋸哥說不砍樹全村吃什麼。你站哪邊？'),
+        hint: t('禁伐令：和阿哨、林姥混熟，聽完阿哨的本子；擴產：和鋸哥、桂嬸混熟，陪伐木場多砍一季（木材 +80）。'),
+        routes: [
+            { id: 'ban', label: t('禁伐令'), icon: '🌲', description: t('把阿哨的本子攤在林姥面前，讓古林喘口氣。'), conditions: [{ type: 'npc_affinity', npcId: 'fv_ashao', target: 30, label: t('阿哨好感度達到 30') }, { type: 'npc_affinity', npcId: 'fv_linlao', target: 30, label: t('林姥好感度達到 30') }, { type: 'talk_to', npcId: 'fv_ashao', target: 2, label: t('聽完阿哨的本子（交談 2 次）') }], effects: {"flags": {"loggingBan": true}, "prosperity": 3, "pairAffinity": [["fv_linlao", "fv_ashao", 15], ["fv_ashao", "fv_juge", 12], ["fv_juge", "fv_ashao", 8]], "playerAffinity": [["fv_juge", -8], ["fv_ashao", 10]]}, onComplete: t('林姥在篝火場宣布：古林以東不許下斧。鋸哥罵了三天，第四天帶人去東邊種樹——「砍不了就種，反正手閒不下來。」') },
+            { id: 'expand', label: t('擴產'), icon: '🪓', description: t('村裡要過冬，伐木場再砍一季。'), conditions: [{ type: 'npc_affinity', npcId: 'fv_juge', target: 30, label: t('鋸哥好感度達到 30') }, { type: 'npc_affinity', npcId: 'fv_guishen', target: 25, label: t('桂嬸好感度達到 25') }, { type: 'chat_count', target: 15, label: t('與居民交談 15 次') }], effects: {"stockpile": {"wood": 80}, "playerAffinity": [["fv_ashao", -10], ["fv_juge", 10]], "pairAffinity": [["fv_ashao", "fv_juge", -8]]}, onComplete: t('伐木場多砍了一季，木料堆到篝火場邊。阿哨的本子又多了兩頁，他把本子合上，沒再說話。') }
+        ],
+        rewards: {"silver": 60, "reputation": 12},
+        effects: {"disaster": {"type": "wildfire", "daysUntil": 1}},
+        unlocks: ["fv4_fire"],
+        onComplete: t('那天傍晚，伐木場那頭的天空是橘色的。'),
+        npcHints: { fv_ashao: { minAffinity: 10, hint: t('本子上每一棵都是我親手記的。你要看嗎？') }, fv_juge: { minAffinity: 10, hint: t('不砍樹？那你告訴我冬天燒什麼。') }, fv_linlao: { minAffinity: 15, hint: t('樹跟人一樣，都要留一口氣。') } },
+    },
+    {
+        id: 'fv4_fire', chapter: 4,
+        title: t('山火'),
+        description: t('伐木場的乾枝燒起來了，風往千年古林吹。大熊說開防火線還來得及，鹿娘說先把人和鹿趕出去。'),
+        hint: t('開防火線：備 60 木材，大熊帶路、木叔砍出隔離帶（災害立刻結束）；疏散：靠鹿娘和阿矢把人和鹿趕到鏡池邊，藥草損失一些。'),
+        routes: [
+            { id: 'firebreak', label: t('開防火線'), icon: '🔥', description: t('在火頭前面砍出一條空地，讓火燒到這裡就停。'), conditions: [{ type: 'resource', resource: 'wood', target: 60, label: t('儲備 60 木材') }, { type: 'npc_affinity', npcId: 'fv_daxiong', target: 25, label: t('大熊好感度達到 25') }, { type: 'npc_affinity', npcId: 'fv_mushu', target: 25, label: t('木叔好感度達到 25') }], effects: {"stockpile": {"wood": -60}, "prosperity": 10, "flags": {"firebreak": true}, "endDisaster": "wildfire", "playerAffinity": [["fv_daxiong", 10], ["fv_mushu", 8]]}, onComplete: t('大熊走在最前面，木叔的斧頭一夜沒停。天亮時火停在隔離帶前三步。古林一棵也沒少。') },
+            { id: 'evacuate', label: t('疏散'), icon: '🦌', description: t('來不及了，先把人和鹿趕到水邊。'), conditions: [{ type: 'npc_affinity', npcId: 'fv_luniang', target: 25, label: t('鹿娘好感度達到 25') }, { type: 'npc_affinity', npcId: 'fv_ashi', target: 20, label: t('阿矢好感度達到 20') }, { type: 'chat_count', target: 25, label: t('與居民交談 25 次') }], effects: {"stockpile": {"herbs": -40, "food": -20}, "prosperity": 3, "playerAffinity": [["fv_luniang", 10], ["fv_ashi", 8]]}, onComplete: t('鹿娘的鹿群跑在最前面，全村跟著鹿走到鏡池邊。藥草小屋燒掉了半邊；但點名的時候，人和鹿一個都沒少。') }
+        ],
+        rewards: {"silver": 80, "reputation": 15},
+        unlocks: ["fv5_tree"],
+        onComplete: t('山火過去了，林間村還在。'),
+        npcHints: { fv_daxiong: { minAffinity: 10, hint: t('木材備夠，防火線我來開。') }, fv_luniang: { minAffinity: 10, hint: t('鹿知道往哪跑，跟著鹿走。') }, fv_mushu: { minAffinity: 10, hint: t('砍隔離帶要看紋理，我來。') } },
+    },
+    {
+        id: 'fv5_tree', chapter: 5,
+        title: t('那棵樹'),
+        description: t('火之後，老樵終於肯帶路去找那棵不能砍的樹。阿苔想記下它，林姥想用它的種子換一條通往外面的路。備好糧和藥草，等商隊來過一次。'),
+        hint: t('和老樵、阿苔熟到他們肯帶路，備 80 草藥與 100 食物，等商隊來過一次確認路線，就能進林子深處。'),
+        objectives: [{ id: 'o1', type: 'npc_affinity', npcId: 'fv_laoqiao', target: 35, label: t('老樵好感度達到 35（帶路）') }, { id: 'o2', type: 'npc_affinity', npcId: 'fv_atai', target: 30, label: t('阿苔好感度達到 30（記錄）') }, { id: 'o3', type: 'resource', resource: 'herbs', target: 80, label: t('備 80 草藥') }, { id: 'o4', type: 'resource', resource: 'food', target: 100, label: t('備糧 100 食物') }, { id: 'o5', type: 'caravan_count', target: 1, label: t('商隊來過至少 1 次（路線確認）') }],
+        rewards: {"silver": 200, "reputation": 25},
+        effects: {"flags": {"tradeRoute": true}, "prosperity": 5, "stockpile": {"herbs": 60}, "playerAffinity": [["fv_linlao", 15], ["fv_laoqiao", 10], ["fv_atai", 8]]},
+        onComplete: t('那棵樹真的在。老樵在樹下站了很久，說從今晚起不會再做那個夢了。阿苔畫了三天，林姥撿了一袋種子。從此商隊兩天就來一趟，林間村的木料和藥草有了自己的商路。'),
+        npcHints: { fv_laoqiao: { minAffinity: 15, hint: t('那棵樹…好，我帶你去。你把糧備好，路很長。') }, fv_atai: { minAffinity: 10, hint: t('如果那棵樹真的在，我要把它畫下來。') } },
+    },
+];
+const FV_SIDE_QUESTS = [
+    {
+        id: 'side_fv_asong_carving', chapter: 1, type: 'side',
+        title: t('阿松的木雕'),
+        trigger: { mainQuest: 'fv1_arrive', npcAffinity: {"fv_asong": 10} },
+        story: t('阿松把一塊沒紋理的木頭丟到一邊：「好木料都給伐木場賣了。你幫我弄些木材來，我刻一批小動物，阿狐說城裡搶著要。」'),
+        description: t('替阿松備足木材，讓他刻一批木雕去賣。'),
+        objectives: [{ id: 'o1', type: 'resource', resource: 'wood', target: 60, label: t('儲備 60 木材') }, { id: 'o2', type: 'talk_to', npcId: 'fv_asong', target: 2, label: t('跟阿松聊 2 次') }],
+        rewards: {"reputation": 3},
+        effects: {"stockpile": {"wood": -30, "silver": 25}},
+        onComplete: t('一批小鹿小熊跟著阿狐的車下了山，回來的是一袋銀子。阿松留了一隻沒賣——「這隻是給她的。」'),
+        npcHints: { fv_asong: { minAffinity: 5, hint: t('木材夠的話我能刻一批去賣，你幫我弄些來？') } },
+    },
+    {
+        id: 'side_fv_linlao_reason', chapter: 1, type: 'side',
+        title: t('林姥進林子的原因'),
+        trigger: { mainQuest: 'fv1_explore', npcAffinity: {"fv_shupo": 20} },
+        story: t('樹婆擦著祭壇，忽然說：「你知道林姥年輕時為什麼一個人進林子住了十年嗎？全村只有我知道。」'),
+        description: t('聽樹婆說完五十年前的事，再去看看林姥。'),
+        objectives: [{ id: 'o1', type: 'talk_to', npcId: 'fv_shupo', target: 2, label: t('跟樹婆聊 2 次') }, { id: 'o2', type: 'npc_affinity', npcId: 'fv_linlao', target: 25, label: t('林姥好感度達到 25') }],
+        rewards: {"silver": 25, "reputation": 5},
+        effects: {"pairAffinity": [["fv_linlao", "fv_laoqiao", 10], ["fv_laoqiao", "fv_linlao", 10]], "pairRomance": [["fv_linlao", "fv_laoqiao", 10], ["fv_laoqiao", "fv_linlao", 10]]},
+        onComplete: t('原來那十年，是在等一個砍倒千年古木之後不敢回村的人。林姥聽你說完，只是笑了笑：「樹婆嘴還是這麼碎。」那天晚上老樵的木屋多了一盞燈。'),
+        npcHints: { fv_shupo: { minAffinity: 15, hint: t('林姥那十年…你想聽嗎？別跟她說是我講的。') }, fv_linlao: { minAffinity: 15, hint: t('樹婆跟你說了什麼？她嘴碎了五十年了。') } },
+    },
+    {
+        id: 'side_fv_daxiong_trap', chapter: 2, type: 'side',
+        title: t('大熊的陷阱'),
+        trigger: { mainQuest: 'fv2_carving', npcAffinity: {"fv_daxiong": 15} },
+        story: t('大熊蹲在獵人小屋門口修陷阱，鹿娘在菜園那頭瞪他。「十年了，」他說，「她還是覺得我會打她的鹿。你幫我跟她說，陷阱都避開鹿道的。」'),
+        description: t('聽大熊說完陷阱的事，替他跟鹿娘說清楚。'),
+        objectives: [{ id: 'o1', type: 'talk_to', npcId: 'fv_daxiong', target: 2, label: t('跟大熊聊 2 次') }, { id: 'o2', type: 'npc_affinity', npcId: 'fv_luniang', target: 20, label: t('鹿娘好感度達到 20') }],
+        rewards: {"food": 30, "silver": 15, "reputation": 3},
+        effects: {"pairAffinity": [["fv_daxiong", "fv_luniang", 12], ["fv_luniang", "fv_daxiong", 12]], "pairTrust": [["fv_daxiong", "fv_luniang", 10], ["fv_luniang", "fv_daxiong", 10]]},
+        onComplete: t('鹿娘聽完，走到陷阱邊看了一圈，真的都避開了鹿道。她沒說話，那天晚上大熊的碗裡多了一塊肉。'),
+        npcHints: { fv_daxiong: { minAffinity: 10, hint: t('陷阱都避開鹿道的，她就是不信。你幫我說。') } },
+    },
+    {
+        id: 'side_fv_aye_recipe', chapter: 3, type: 'side',
+        title: t('藥草小屋的配方'),
+        trigger: { mainQuest: 'fv3_forest', npcAffinity: {"fv_aye": 15} },
+        story: t('阿葉把一張配方攤在桌上：「邊境鎮的林醫師要一批止血藥。我一個人配不完，你幫我備草藥，賣的錢分你。」'),
+        description: t('替阿葉備足草藥，配一批止血藥賣去邊境鎮。'),
+        objectives: [{ id: 'o1', type: 'resource', resource: 'herbs', target: 100, label: t('儲備 100 草藥') }, { id: 'o2', type: 'talk_to', npcId: 'fv_aye', target: 2, label: t('跟阿葉聊 2 次') }],
+        rewards: {"reputation": 5},
+        effects: {"stockpile": {"herbs": -60, "silver": 50}},
+        onComplete: t('一批止血藥跟著阿狐的車下了山。阿葉把配方抄了一份給你：「下次認錯一株草，記得翻這個。」'),
+        npcHints: { fv_aye: { minAffinity: 10, hint: t('草藥夠的話我能配一批止血藥，你幫我備？') } },
+    },
+];
+const FV_STORY_EVENTS = [
+    { id: 'fv_story_first_night', trigger: {"tickCount": 96}, title: t('篝火初夜'), icon: '🔥', text: t('篝火場的火燒到半夜，老樵坐在最外圈，說林子深處有一棵不能砍的樹。阿矢說他不信，阿苔說她要去找。') },
+    { id: 'fv_story_smoke', trigger: {"storyFlag": "fv3_forest"}, title: t('林子裡的煙'), icon: '💨', text: t('傍晚阿哨從哨塔上看到伐木場那頭冒煙。他跑下塔的時候，鋸哥已經提著水桶往那邊去了。') },
+    { id: 'fv_story_fire_night', trigger: {"storyFlag": "fv4_fire"}, title: t('山火之夜'), icon: '🔥', text: t('整個林間村一夜沒睡。天亮時樹婆帶全村繞古樹走了一圈，比春天那一圈走得慢很多。林姥走在最後，摸了每一棵樹。') },
+    { id: 'fv_story_tree', trigger: {"storyFlag": "fv5_tree"}, title: t('那棵樹'), icon: '🌳', text: t('它比老樵說的還大。阿苔的畫紙不夠，林姥撿種子撿到天黑。老樵坐在樹根上，說了一句誰也沒聽清的話——樹婆說，那是道歉。') },
+];
+
 const QUEST_CHAINS_BY_THEME = {
     frontier: { chapters: CHAPTER_NAMES, main: MAIN_QUESTS, side: SIDE_QUESTS, daily: DAILY_OBJECTIVES, story: STORY_EVENTS, startQuest: 'ch1_settle' },
     harbor: { chapters: HARBOR_CHAPTER_NAMES, main: HARBOR_MAIN_QUESTS, side: HARBOR_SIDE_QUESTS, daily: DAILY_OBJECTIVES, story: HARBOR_STORY_EVENTS, startQuest: 'hb1_arrive' },
+    forest: { chapters: FV_CHAPTER_NAMES, main: FV_MAIN_QUESTS, side: FV_SIDE_QUESTS, daily: DAILY_OBJECTIVES, story: FV_STORY_EVENTS, startQuest: 'fv1_arrive' },
     mountain: { chapters: MT_CHAPTER_NAMES, main: MT_MAIN_QUESTS, side: MT_SIDE_QUESTS, daily: DAILY_OBJECTIVES, story: MT_STORY_EVENTS, startQuest: 'mt1_arrive' },
 };
 function questChainFor(theme) { return QUEST_CHAINS_BY_THEME[theme || 'frontier'] || null; }

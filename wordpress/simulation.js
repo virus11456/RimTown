@@ -8788,7 +8788,7 @@ const SEASON_WEATHER = {
 };
 
 // v5.85.0 災難名稱表(任務鏈 scheduleDisaster 用)與資源中文名(損失訊息用)
-const DISASTER_LABELS = { drought_severe: () => t('嚴重乾旱'), blizzard_severe: () => t('極端暴風雪'), flood: () => t('洪水'), tunnel_collapse: () => t('坑道塌方') };
+const DISASTER_LABELS = { drought_severe: () => t('嚴重乾旱'), blizzard_severe: () => t('極端暴風雪'), flood: () => t('洪水'), tunnel_collapse: () => t('坑道塌方'), wildfire: () => t('山火') };
 const RESOURCE_NAMES_ZH = { food: '食物', wood: '木材', stone: '石材', metal: '金屬', cloth: '布料', herbs: '草藥', silver: '銀幣', tools: '工具' };
 
 class WeatherSystem {
@@ -8897,9 +8897,15 @@ class WeatherSystem {
     _checkDisasterEscalation(world) {
         // Drought escalation: 3+ consecutive hot days in summer
         if (this.streak >= 3 && this._isHot(this.current) && world.clock.season === '夏季' && !this.activeDisaster && this._daysSinceDisaster > 8) {
-            this.disasterWarning = { type: 'drought_severe', severity: 'major', daysUntil: 1 };
-            world.logMessage('weather', `⚠️ ${t('乾旱警報：連續高溫，水源告急！')}`);
-            this._offerPrepChoice(world, t('嚴重乾旱'));
+            if (world.townTheme === 'forest') { // v5.86.0 林間村:連日高溫→山火
+                this.disasterWarning = { type: 'wildfire', severity: 'major', daysUntil: 1 };
+                world.logMessage('weather', `⚠️ ${t('山火警報：連日高溫，伐木場的乾枝一點就著！')}`);
+                this._offerPrepChoice(world, t('山火'));
+            } else {
+                this.disasterWarning = { type: 'drought_severe', severity: 'major', daysUntil: 1 };
+                world.logMessage('weather', `⚠️ ${t('乾旱警報：連續高溫，水源告急！')}`);
+                this._offerPrepChoice(world, t('嚴重乾旱'));
+            }
         }
         // Blizzard escalation: extended cold in winter
         if (this.streak >= 2 && this.current === 'snow' && world.clock.season === '冬季' && !this.activeDisaster && this._daysSinceDisaster > 8) {
@@ -8979,6 +8985,12 @@ class WeatherSystem {
                 name: ()=>t('洪水'), severity:'major', daysLeft:3,
                 effects: { farm:-0.4, mood:-12, food_loss:0.1 },
                 desc: ()=>t('河水氾濫，部分農田被淹，儲備糧食受損。'),
+            },
+            // v5.86.0 林間村主題災難
+            wildfire: {
+                name: ()=>t('山火'), severity:'major', daysLeft:3,
+                effects: { farm:-0.3, mood:-15, comfort:-10, resource_loss: { wood: 0.10, herbs: 0.08 } },
+                desc: ()=>t('火從伐木場的乾枝燒起，風一吹就往千年古林去，木料和藥草一天天燒掉。'),
             },
             // v5.85.0 礦山鎮主題災難
             tunnel_collapse: {
