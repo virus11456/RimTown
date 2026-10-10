@@ -112,7 +112,7 @@ class MemoryEntry {
 }
 
 class Memory {
-    constructor(capacity = 500) { this.entries = []; this.capacity = capacity; }
+    constructor(capacity = 120) { this.entries = []; this.capacity = capacity; } // v5.99.0 500→120(B12 存檔體積;讀取端最多只取最近 10–20 筆)
     add(tick, timeStr, category, content, importance = 5, relatedAgents = []) {
         this.entries.push(new MemoryEntry(tick, timeStr, category, content, importance, relatedAgents));
         if (this.entries.length > this.capacity) this.entries = this.entries.slice(-this.capacity);
@@ -159,7 +159,7 @@ class Memory {
         if (!recent.length) return t('沒有近期記憶。');
         return recent.map(m => `- [${m.timeStr}] ${m.content}`).join('\n');
     }
-    toDict() { return this.entries.slice(-10000).map(e => e.toDict()); }
+    toDict() { return this.entries.slice(-this.capacity).map(e => e.toDict()); }
 }
 
 // --- Relationships ---
@@ -198,11 +198,11 @@ class Relationship {
     recordInteraction(tick, summary) {
         this.interactionCount++; this.lastInteractionTick = tick;
         this.sharedMemories.push(summary);
-        if (this.sharedMemories.length > 150) this.sharedMemories = this.sharedMemories.slice(-150);
+        if (this.sharedMemories.length > 30) this.sharedMemories = this.sharedMemories.slice(-30); // v5.99.0 150→30
     }
     addSharedMemory(text) {
         this.sharedMemories.push(text);
-        if (this.sharedMemories.length > 150) this.sharedMemories = this.sharedMemories.slice(-150);
+        if (this.sharedMemories.length > 30) this.sharedMemories = this.sharedMemories.slice(-30);
     }
     toDict() {
         return { target_id:this.targetId, target_name:this.targetName, type:this.type,
@@ -2500,7 +2500,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
         // Store NPC conversation for sidebar viewing
         if (dialogue.length) {
             this.npcConversationLog.push({ time:world.clock.timeStr, dayTag:`${world.clock.year}-${world.clock.season}-${world.clock.day}`, location:agentA.currentLocation, dialogue, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.agentId, agentBId:agentB.agentId, llm:true });
-            if (this.npcConversationLog.length > 10000) this.npcConversationLog = this.npcConversationLog.slice(-10000);
+            if (this.npcConversationLog.length > 400) this.npcConversationLog = this.npcConversationLog.slice(-400); // v5.99.0 B12
             // Notify UI for map speech bubbles
             if (this.onConversation) {
                 const textA = dialogue[0]?.text || summary;
@@ -2532,7 +2532,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
         const lines = dialogue.lines;
         if (lines.length) {
             this.npcConversationLog.push({ time:world.clock.timeStr, dayTag:`${world.clock.year}-${world.clock.season}-${world.clock.day}`, location:agentA.currentLocation, dialogue:lines, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.agentId, agentBId:agentB.agentId });
-            if (this.npcConversationLog.length > 10000) this.npcConversationLog = this.npcConversationLog.slice(-10000);
+            if (this.npcConversationLog.length > 400) this.npcConversationLog = this.npcConversationLog.slice(-400); // v5.99.0 B12
             if (this.onConversation) {
                 const textA = lines[0]?.text || summary;
                 const textB = lines[1]?.text || '';
@@ -4553,13 +4553,13 @@ class Stockpile {
     add(r, amount, tick=0, reason='', source='') {
         this.resources[r] = (this.resources[r]||0) + amount;
         this.history.push({tick,resource:r,amount,reason,source});
-        if (this.history.length > 10000) this.history = this.history.slice(-10000);
+        if (this.history.length > 600) this.history = this.history.slice(-600); // v5.99.0 B12(讀取端只用最近 50 筆)
     }
     consume(r, amount, tick=0, reason='', source='') {
         if ((this.resources[r]||0) < amount) return false;
         this.resources[r] -= amount;
         this.history.push({tick,resource:r,amount:-amount,reason,source});
-        if (this.history.length > 10000) this.history = this.history.slice(-10000);
+        if (this.history.length > 600) this.history = this.history.slice(-600); // v5.99.0 B12(讀取端只用最近 50 筆)
         return true;
     }
     has(r, amount) { return (this.resources[r]||0) >= amount; }
@@ -6641,7 +6641,7 @@ class World {
     getAgentsAtLocation(locId) { return Object.values(this.agents).filter(a => a.currentLocation === locId); }
     logMessage(type, content, agentName = '', targetName = '') {
         this.messageLog.push({ time:this.clock.timeStr, tick:this.tickCount, type, content, agent:agentName, target:targetName });
-        if (this.messageLog.length > 10000) this.messageLog = this.messageLog.slice(-10000);
+        if (this.messageLog.length > 1000) this.messageLog = this.messageLog.slice(-1000); // v5.99.0 B12
     }
     tick() {
         if (this.paused) return;
@@ -7402,7 +7402,7 @@ class World {
             agents: Object.fromEntries(Object.entries(this.agents).map(([id,a]) => [id, a.toDict()])),
             locations: this.townMap?.toDict() || {},
             recent_events: this.events.getRecentEvents().map(([t,e]) => ({time:t, name:e.name, description:e.description, severity:e.severity, event_type:e.event_type})),
-            recent_messages: this.messageLog.slice(-10000),
+            recent_messages: this.messageLog.slice(-500), // v5.99.0 紀錄分頁只畫最近 500 條
             travelling_agents: this.events.getTravellingAgents(),
             active_chains: this.events.getActiveChains(),
             stockpile: this.stockpile.toDict(),
@@ -7411,7 +7411,7 @@ class World {
             research: this.research.toDict(),
             work_orders: this.workOrders.toDict(),
             news: this.news.toDict(),
-            npc_conversations: this.conversationEngine.npcConversationLog.slice(-10000),
+            npc_conversations: this.conversationEngine.npcConversationLog.slice(-250), // v5.99.0 介面只顯示最近的(成就 gossip_200 仍可達)
             election: this.election.toDict(),
             factions: this.factions.toDict(),
             festivals: this.festivals.toDict(),
@@ -8416,12 +8416,12 @@ class World {
             clock: { day:this.clock.day, hour:this.clock.hour, minute:this.clock.minute, season:this.clock.season, year:this.clock.year },
             tickCount: this.tickCount,
             paused: this.paused,
-            messageLog: this.messageLog.slice(-10000),
+            messageLog: this.messageLog.slice(-1000),
             townMap: this.townMap ? { seed:this.townMap.seed, terrain:this.townMap.terrain, width:this.townMap.width, height:this.townMap.height,
                 locations: Object.fromEntries(Object.entries(this.townMap.locations).map(([k,v])=>[k,{id:v.id,name:v.name,description:v.description,x:v.x,y:v.y,category:v.category,capacity:v.capacity}])) } : null,
             agents: Object.fromEntries(Object.entries(this.agents).map(([k,a])=>[k,serializeAgent(a)])),
             // v5.29.0 AI 對話紀錄以文字形式持久化(含每則對話全文),反思則隨 agent.memory 一起存
-            npcConversationLog: this.conversationEngine.npcConversationLog.slice(-10000).map(c => ({ ...c, dialogue: (c.dialogue || []).map(d => ({ ...d })) })),
+            npcConversationLog: this.conversationEngine.npcConversationLog.slice(-400).map(c => ({ ...c, dialogue: (c.dialogue || []).map(d => ({ ...d })) })),
             npcLlmUsedToday: this.npcLlmUsedToday || 0,
             feudCooldown: { ...(this._feudCooldown || {}) }, // v5.42.0 對嗆冷卻
             mediations: JSON.parse(JSON.stringify(this.mediations || {})), // v5.42.0 和解進度
@@ -8450,7 +8450,7 @@ class World {
                 _daysSinceDeparture: this.events._daysSinceDeparture,
                 _usedImmigrantNames: [...this.events._usedImmigrantNames],
             },
-            stockpile: { resources:{...this.stockpile.resources}, history:this.stockpile.history.slice(-10000) },
+            stockpile: { resources:{...this.stockpile.resources}, history:this.stockpile.history.slice(-600) },
             buildings: { projects:this.buildings.projects.map(p=>({...p})), completed:this.buildings.completed.map(p=>({...p})), activeEffects:{...this.buildings.activeEffects}, _counter:this.buildings._counter },
             trade: { merchant:this.trade.merchant?{...this.trade.merchant,offers:this.trade.merchant.offers.map(o=>({...o}))}:null, _daysSince:this.trade._daysSince, tradeHistory:this.trade.tradeHistory.slice(-10) },
             research: { projects:Object.fromEntries(Object.entries(this.research.projects).map(([k,p])=>[k,{...p}])), current:this.research.current },
@@ -8551,7 +8551,7 @@ class World {
             this.tickCount = data.tickCount;
             this._legacyGeneration = data._legacyGeneration || 1;
             this.paused = data.paused || false;
-            this.messageLog = data.messageLog || [];
+            this.messageLog = (data.messageLog || []).slice(-1000); // v5.99.0
 
             // Town map
             if (data.townMap) {
@@ -8625,7 +8625,7 @@ class World {
             }
 
             // v5.29.0 AI 對話紀錄還原(文字形式持久化)
-            if (Array.isArray(data.npcConversationLog)) this.conversationEngine.npcConversationLog = data.npcConversationLog;
+            if (Array.isArray(data.npcConversationLog)) this.conversationEngine.npcConversationLog = data.npcConversationLog.slice(-400); // v5.99.0 舊檔讀入即收斂
             this.npcLlmUsedToday = data.npcLlmUsedToday || 0;
             this._feudCooldown = data.feudCooldown || {}; // v5.42.0
             this.mediations = data.mediations || {}; // v5.42.0
@@ -8675,7 +8675,7 @@ class World {
 
             // Stockpile
             this.stockpile = new Stockpile();
-            if (data.stockpile) { this.stockpile.resources = {...data.stockpile.resources}; this.stockpile.history = data.stockpile.history || []; }
+            if (data.stockpile) { this.stockpile.resources = {...data.stockpile.resources}; this.stockpile.history = (data.stockpile.history || []).slice(-600); }
 
             // Buildings
             this.buildings = new BuildingManager();

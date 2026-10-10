@@ -88,7 +88,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 **存檔與後端**
 - B10 ~~Blob 回退與搬遷按鈕~~ v5.82.0 已移除，`_lib.js` 純 Postgres。
 - B11 Vercel Hobby 12 個 Serverless Function 已用滿，任何新 API 都必須塞進既有檔案（如 `admin.js` 的 action）。
-- B12 手機 localStorage 約 5MB，多鎮本機備份仍可能吃滿（v5.69.3 已自動瘦身，但三鎮以上要再驗）。
+- B12 ~~手機 localStorage 約 5MB，多鎮本機備份仍可能吃滿~~ v5.99.0 從源頭收斂：日誌 1000 筆、對話紀錄 400 則、記憶每人 120 筆、共同回憶 30 筆、倉庫流水 600 筆；35 天存檔 2.6MB→約 1MB（`scripts/soak_test.js` 有「存檔體積 < 1.5MB」檢查），三鎮本機備份約 3MB 仍在 5MB 內；配額不足時的自動瘦身（v5.69.3）保留。
 - B13 ~~城鎮列表同名判斷只靠名字~~ v5.96.0 以 town_id 為主鍵：雲端沒有的 id 一律列為「📱 本機」，同名只標註「與雲端同名」不再隱藏，並可刪本機副本（不碰雲端）；馬車站出訪名單仍以名字去重（同一個鎮的分身不該出現兩次）。
 
 **程式結構與測試**
@@ -229,7 +229,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.98.0.zip` from Releases
+1. Download `rimtown-v5.99.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -269,6 +269,11 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.99.0 (2026-10-10)
+- 📦 存檔體積收斂（B12）：全鎮日誌一萬筆→一千筆、村民對話紀錄一萬筆→四百筆、村民記憶每人 500→120 筆、兩人共同回憶 150→30 筆、倉庫流水一萬筆→六百筆（介面與 AI 提示最多只讀最近幾十筆）；35 天的存檔從 2.6MB 降到約 1MB，自動存檔上傳與手機 localStorage 壓力都減半以上；舊檔讀入即收斂
+- 📱 手機版面：「第一天」引導卡層級降到彈窗與角落通知之下（不再壓住押商隊／季末回顧彈窗），故事／小鎮浮動卡或聊天抽屜打開時引導卡自動讓位；角落通知改為浮在引導卡上方不重疊
+- 🧪 浸泡測試新增「存檔體積 < 1.5MB」檢查；紀錄分頁只畫最近 500 條、對話封存最近 250 則，getState 體積減半
 
 ### v5.98.0 (2026-10-10)
 - 📜 季末回顧：換季那天彈一頁回顧——考驗撐過沒、委託完成／過期／最佳連勝、商隊趟數／進帳／遇劫、經驗與等級、銀幣／人口／聲望／繁榮變化、完成的任務、好感升最多的三人、搬走與新住民，並給 S／A／B／C 評等；最多留四季，故事分頁考驗區塊可重看上一季，日報也報一行
