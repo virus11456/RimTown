@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.96.0
-const RIMTOWN_APP_VERSION = '5.96.0';
+// RimTown - Frontend App (WordPress Plugin) v5.97.0
+const RIMTOWN_APP_VERSION = '5.97.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1315,7 +1315,7 @@ class RimTownApp {
         if (!this.auth?.loggedIn && !this.guestMode) return;
         overlay.classList.remove('hidden');
         this._tutorialStep = 0;
-        this._tutorialTotalSteps = 5;
+        this._tutorialTotalSteps = 6; // v5.97.0 加「每天要做的事」
         const dotsEl = document.getElementById('tutorial-dots');
         if (dotsEl) {
             dotsEl.innerHTML = '';
@@ -3629,6 +3629,16 @@ class RimTownApp {
     // ============================================================
     // v5.91.0 委託板(README H1):故事分頁區塊、按鈕動作、徽章與早上通知
     // ============================================================
+    // v5.97.0 昨日結算一句話:委託完成/失敗、經驗、商隊回報、考驗進度
+    _daySummaryText() {
+        const w = this.world; const rb = w?.requests; const ld = rb?.lastDay; if (!ld) return '';
+        const parts = [`${t('委託')} ${ld.done}/${ld.total}${ld.failed ? `（${t('過期')} ${ld.failed}）` : ''}`];
+        const yday = (w.clock.day > 1 ? w.clock.day - 1 : (w.clock.DAYS_PER_SEASON || 15));
+        const xp = (w.growth?.log || []).filter(e => e.day === yday).reduce((a, e) => a + (e.n || 0), 0); if (xp) parts.push(`${t('經驗')} +${xp}`);
+        const abs = w._absDay?.() || 0; const cv = (w.playerCaravan?.history || []).find(h => h.resolvedAbsDay === abs - 1); if (cv) parts.push(cv.raided ? t('商隊遇劫') : `${t('商隊')} +${cv.silver}`);
+        const tr = w.trials?.current; if (tr && w.trials.value) { const v = w.trials.value(tr.type, w); parts.push(`${t('考驗')} ${Math.min(100, Math.round(v / Math.max(1, tr.target) * 100))}%`); }
+        return parts.join(' · ');
+    }
     _renderRequestBoard() {
         const rb = this.world?.requests; if (!rb) return '';
         const d = rb.toDict(this.world);
@@ -3636,6 +3646,7 @@ class RimTownApp {
         let html = `<div class="econ-section"><h3>📋 ${t('今日委託')} <span style="font-size:0.7rem;color:var(--text-secondary);font-weight:400">${t('連續全數完成')} ${d.stats.streak} ${t('天')}</span></h3>`;
         html += `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px"><div><span style="font-size:0.75rem;color:var(--text-secondary)">${t('行動點')} ${d.ap.left}/${d.ap.max}</span><div style="margin-top:3px">${pips}</div></div>
             <button class="trade-btn" data-action="req-buy-ap" style="font-size:0.7rem" ${d.ap.bought >= 2 ? 'disabled' : ''}>💰 ${t('買 1 點')}（30）</button></div>`;
+        const sum = this._daySummaryText(); if (sum) html += `<div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:6px">🌙 ${t('昨日結算')}：${this._escapeHtml(sum)}</div>`; // v5.97.0
         if (!d.board.length) html += `<p class="muted-text" style="font-size:0.78rem">${t('今天還沒有委託，明天早上村民會來找你。')}</p>`;
         for (const r of d.board) {
             const dim = r.status !== 'open';
@@ -3700,13 +3711,19 @@ class RimTownApp {
     }
     _updateRequestBadge() {
         const rb = this.world?.requests; if (!rb) return;
+        try { rb.checkPassive(this.world); } catch (e) {} // v5.97.0 考驗衝刺被動達標
         const n = rb.openCount();
         document.querySelectorAll('[data-tab="quest"]').forEach(tab => {
             let badge = tab.querySelector('.chat-badge');
             if (n > 0) { if (!badge) { badge = document.createElement('span'); badge.className = 'chat-badge'; tab.style.position = 'relative'; tab.appendChild(badge); } badge.textContent = n > 9 ? '9+' : n; }
             else if (badge) badge.remove();
         });
-        if (rb.dayKey && rb._lastNoticeDay !== rb.dayKey && n > 0) { rb._lastNoticeDay = rb.dayKey; this._showCornerNotice({ icon: '📋', title: t('今日委託'), name: `${n} ${t('件')}`, desc: `${t('行動點')} ${rb.ap.left}/${rb.ap.max} · ${t('到「故事」分頁查看')}` }); }
+        if (rb.dayKey && rb._lastNoticeDay !== rb.dayKey && n > 0) {
+            rb._lastNoticeDay = rb.dayKey;
+            // v5.97.0 昨日結算:先報昨天,再報今天
+            const sum = this._daySummaryText(); if (sum) this._showCornerNotice({ icon: '🌙', title: t('昨日結算'), name: '', desc: sum });
+            this._showCornerNotice({ icon: '📋', title: t('今日委託'), name: `${n} ${t('件')}`, desc: `${t('行動點')} ${rb.ap.left}/${rb.ap.max} · ${t('到「故事」分頁查看')}` });
+        }
     }
     // v5.90.0 搬家提案:村民作客回來後,和對方鎮某人兩情相悅→事件選擇(讓對方搬來/讓他搬過去/不干涉);三天不選就依兩人意願自動定案
     _offerRelocation(w, ag, e) {
@@ -6934,7 +6951,7 @@ class RimTownApp {
             world.recordPlayerAction?.(key, '', npc, null);
             return lines;
         }
-        if (outcome?.ok) { fx(`🎲 ${t('說到點上')}（${t('成功率')} ${Math.round(outcome.p * 100)}%）`, '#7fc4ff'); try { world.growth?.addXp(3, 'chat', world); } catch (e) {} }
+        if (outcome?.ok) { fx(`🎲 ${t('說到點上')}（${t('成功率')} ${Math.round(outcome.p * 100)}%）`, '#7fc4ff'); try { world.growth?.addXp(3, 'chat', world); world.requests?.onIntent?.(npc.agentId, key, true, world); } catch (e) {} } // v5.97.0 委託:打聽/拉票
         switch (key) {
             // v5.95.0 求助:對方從本行勻物資給鎮上(每人每天一次)
             case 'help': {
