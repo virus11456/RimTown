@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const dir = path.join(__dirname, '..', 'chrome-extension');
-const files = ['app.js', 'simulation.js', 'tilemap.js'].map(f => path.join(dir, f));
+const files = fs.readdirSync(dir).filter(f => /^(app(-[a-z]+)?|simulation|tilemap)\.js$/.test(f)).map(f => path.join(dir, f)); // v6.0.0 app.js 分檔一併掃
 const src = files.map(f => fs.readFileSync(f, 'utf8')).join('\n');
 const defined = new Set();
 for (const m of src.matchAll(/^\s+(?:async\s+)?(?:static\s+)?(?:get\s+|set\s+)?([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{/gm)) defined.add(m[1]);
