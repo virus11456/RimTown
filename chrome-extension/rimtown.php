@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.0.0
+ * Version: 6.1.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.0.0');
+define('RIMTOWN_VERSION', '6.1.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -834,10 +834,53 @@ function rimtown_enqueue_assets() {
         true
     );
 
+    // v6.1.0 B14：simulation.js 拆檔——五個前置分檔依序串聯，simulation(World) 依賴最後一個，sim-systems 在 World 之後
+    wp_enqueue_script(
+        'rimtown-sim-agent',
+        RIMTOWN_URL . 'sim-agent.js',
+        array('rimtown-industry', 'rimtown-farm', 'rimtown-processing', 'rimtown-daily-news', 'rimtown-npc-events', 'rimtown-npc-quests', 'rimtown-custom-npc', 'rimtown-prosperity', 'rimtown-quest'),
+        RIMTOWN_VERSION,
+        true
+    );
+    wp_enqueue_script(
+        'rimtown-sim-conversation',
+        RIMTOWN_URL . 'sim-conversation.js',
+        array('rimtown-sim-agent'),
+        RIMTOWN_VERSION,
+        true
+    );
+    wp_enqueue_script(
+        'rimtown-sim-town',
+        RIMTOWN_URL . 'sim-town.js',
+        array('rimtown-sim-conversation'),
+        RIMTOWN_VERSION,
+        true
+    );
+    wp_enqueue_script(
+        'rimtown-sim-economy',
+        RIMTOWN_URL . 'sim-economy.js',
+        array('rimtown-sim-town'),
+        RIMTOWN_VERSION,
+        true
+    );
+    wp_enqueue_script(
+        'rimtown-sim-society',
+        RIMTOWN_URL . 'sim-society.js',
+        array('rimtown-sim-economy'),
+        RIMTOWN_VERSION,
+        true
+    );
     wp_enqueue_script(
         'rimtown-simulation',
         RIMTOWN_URL . 'simulation.js',
-        array('rimtown-industry', 'rimtown-farm', 'rimtown-processing', 'rimtown-daily-news', 'rimtown-npc-events', 'rimtown-npc-quests', 'rimtown-custom-npc', 'rimtown-prosperity', 'rimtown-quest'),
+        array('rimtown-sim-society'),
+        RIMTOWN_VERSION,
+        true
+    );
+    wp_enqueue_script(
+        'rimtown-sim-systems',
+        RIMTOWN_URL . 'sim-systems.js',
+        array('rimtown-simulation'),
         RIMTOWN_VERSION,
         true
     );
@@ -853,7 +896,7 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-tilemap',
         RIMTOWN_URL . 'tilemap.js',
-        array('rimtown-simulation'),
+        array('rimtown-simulation', 'rimtown-sim-systems'),
         RIMTOWN_VERSION,
         true
     );
@@ -861,7 +904,7 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-app',
         RIMTOWN_URL . 'app.js',
-        array('rimtown-simulation', 'rimtown-chiptune', 'rimtown-tilemap'),
+        array('rimtown-simulation', 'rimtown-sim-systems', 'rimtown-chiptune', 'rimtown-tilemap'),
         RIMTOWN_VERSION,
         true
     );
@@ -1276,6 +1319,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.1.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '🧱 simulation.js 拆模組（B14 第二步）：10360 行拆成核心 simulation.js（2297 行：World 與工具函式）＋六個分檔——sim-agent（時鐘／需求／記憶／關係／性格／技能／職業／村民）、sim-conversation（鎮民動態／八卦網／對話引擎／LLM 客戶端）、sim-town（地點與主題／跨鎮親緣／TownMap／事件／選舉）、sim-economy（倉庫／生產／建築／貿易／科技／工單／新聞）、sim-society（派系／節慶／人生目標／城鎮身分／生老病死／探險／傳承）、sim-systems（聲望／天氣災難／議會／每日決策／商店／事件選擇／求助）；頂層宣告逐字搬移、載入順序不變，行為不變',
+                '📦 index.html、WordPress 短碼（分檔依序串聯依賴）、PWA 快取、method-audit 都已列入六個新檔；app.js 與 simulation.js 兩輪拆檔後，最大單檔從 10K 行降到 2.4K 行',
+                '🧪 全部檢查、任務鏈、浸泡（礦山鎮 20 天）、冒煙、十四支 Playwright 情境、未登入首頁、手機截圖在拆檔後全數通過',
+            ),
+            'changes_en' => array(
+                '🧱 simulation.js split into modules (B14 step two): the 10,360-line file becomes a core simulation.js (2,297 lines: World and utilities) plus six files — sim-agent (clock / needs / memory / relationships / personality / skills / jobs / villagers), sim-conversation (town feed / gossip / conversation engine / LLM client), sim-town (locations and themes / cross-town ties / TownMap / events / elections), sim-economy (stockpile / production / buildings / trade / research / work orders / news), sim-society (factions / festivals / life goals / town identity / lifecycle / exploration / legacy), sim-systems (reputation / weather and disasters / council / daily decisions / shop / event choices / NPC help); top-level declarations moved verbatim in the same load order, no behaviour change',
+                '📦 index.html, the WordPress shortcode (chained dependencies), the PWA cache and method-audit list the six new files; after both splits the largest single file drops from 10K lines to 2.4K',
+                '🧪 Every check, quest chains, soak (mountain town 20 days), smoke, fourteen Playwright scenarios, logged-out landing and mobile screenshots pass after the split',
+            ),
+        ),
         array(
             'version' => '6.0.0',
             'date'    => '2026-10-10',
