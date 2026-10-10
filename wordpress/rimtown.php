@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.87.0
+ * Version: 5.88.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.87.0');
+define('RIMTOWN_VERSION', '5.88.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.88.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '📰 日報跨鎮專欄:每期 AI 日報末尾新增「🐎 跨鎮專欄」，收錄其他城鎮(本機存檔)最新一期日報的前兩則要聞、最多三鎮，附該鎮記者名；日報分頁展開每期可見專欄區塊；第一則要聞也成為本鎮村民的聊天話題；鎮名與人名依介面語言顯示；存檔隨日報一併保留',
+                '🧪 四座主題鎮任務鏈端到端回歸收進 scripts/quest_chain_test.js(選跑):起始任務、五章各走一條路線、第三章排程災難與第四章化解、劫案期間商隊停擺、商路開通後兩天一趟、支線全部完成、存檔往返、任務分頁章節、英文介面全英文——海風鎮／礦山鎮／林間村／市集城 50 項檢查全過',
+                '📋 README:A 表 A1／A5 備註更新為現況；路線圖「日報跨鎮專欄」完成；新增 G 節企劃「村民自訂外觀」「跨鎮戀愛搬家」(建議做法與待拍板問題)；首頁路線圖同步',
+            ),
+            'changes_en' => array(
+                '📰 Cross-town column in the daily paper: every AI daily now ends with a "🐎 Cross-town Column" carrying the top two items from the latest paper of up to three other towns (from local saves), with that town\'s reporter named; the expanded issue in the Daily tab shows the column block; the first item also becomes a conversation topic for local villagers; town and villager names follow the UI language; saved along with the paper',
+                '🧪 The four themed towns\' quest chains now have an end-to-end regression in scripts/quest_chain_test.js (optional): start quest, five chapters one route each, Chapter 3 scheduling the disaster and Chapter 4 resolving it, caravans halted during the raid, caravans every two days after the trade route opens, all side quests completed, save round-trip, quest tab chapter titles, English UI fully English — 50 checks across Seabreeze / Mine Ridge / Greenwood / Market City, all passing',
+                '📋 README: A-table notes for A1 / A5 refreshed; roadmap marks the cross-town column done; new section G plans "custom villager looks" and "cross-town romance and relocation" (recommended approach plus open questions); landing roadmap synced',
+            ),
+        ),
         array(
             'version' => '5.87.0',
             'date'    => '2026-10-09',

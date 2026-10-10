@@ -55,6 +55,17 @@ class DailyNewsEngine {
             content = this._generateTemplate(reporter, events, world);
         }
 
+        // v5.88.0 跨鎮專欄:其他鎮最新一期日報的要聞(app 從本機存檔收集到 world.crossTownNews),最多三鎮、每鎮兩則
+        const crossTown = (Array.isArray(world.crossTownNews) ? world.crossTownNews : []).slice(0, 3)
+            .map(ct => ({ town: ct.town, reporter: ct.reporter, items: (ct.items || []).slice(0, 2) })).filter(ct => ct.items.length);
+        if (crossTown.length) {
+            const lines = [`\n\n${t('🐎 跨鎮專欄')}`];
+            crossTown.forEach(ct => ct.items.forEach(line => lines.push(`· ${t(ct.town)}｜${t(line)}${ct.reporter ? `（${t('記者')}：${t(ct.reporter)}）` : ''}`)));
+            content = (content || '') + lines.join('\n');
+            const first = crossTown[0];
+            if (world.events?.conversationTopics) world.events.conversationTopics.push(`${t(first.town)}${t('的日報說：')}${t(first.items[0])}`);
+        }
+
         const newspaper = {
             id: this.newspapers.length + 1,
             day: world.clock.day,
@@ -66,6 +77,7 @@ class DailyNewsEngine {
             content: content,
             events: events.map(e => ({ category: e.category, content: e.content, importance: e.importance, agents: e.agents || [] })), // v5.17.0 保留關聯人物,供情境入口點擊跳轉
             publishedAt: world.tickCount,
+            crossTown, // v5.88.0
         };
 
         this.newspapers.push(newspaper);
