@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.88.0
+ * Version: 5.89.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.88.0');
+define('RIMTOWN_VERSION', '5.89.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.89.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '🎨 村民自訂外觀:村民資訊卡新增像素大頭像與「改外觀」按鈕，可選膚色 6 種、髮型 6 種(短髮／長髮／馬尾／齊瀏海／平頭／捲髮)、髮色 9 種、上衣 8 色(或職業預設)、配件(帽子／眼鏡／圍巾)，面板即時預覽、可隨機、可恢復預設；地圖小人、聊天聯絡人頭像、資訊卡同步更新',
+                '👤 建立新居民表單同一組外觀選項；外觀進存檔(agent.look)、跨鎮作客時跟著出門、對方鎮也看得到；沒改過的村民照舊依名字雜湊出預設外觀，舊存檔完全不變；職業帽子(廚師帽、草帽、頭盔…)在自訂髮型上照戴',
+                '📋 README G1 完成、路線圖「村民自訂外觀」移出規劃中；下一項為 G2 跨鎮戀愛搬家',
+            ),
+            'changes_en' => array(
+                '🎨 Custom villager looks: the villager card now shows a pixel portrait and a "Change Look" button with 6 skin tones, 6 hairstyles (short / long / ponytail / bob / buzz cut / curly), 9 hair colors, 8 shirt colors (or the job default) and accessories (hat / glasses / scarf), with live preview, random and reset; the map sprite, chat contact avatar and card update together',
+                '👤 The new-resident form offers the same look options; looks are saved (agent.look), travel with villagers visiting other towns and show there too; villagers you haven\'t changed keep their name-hashed default look so old saves render exactly as before; job hats (chef hat, straw hat, helmet…) still sit on custom hairstyles',
+                '📋 README G1 done; "custom villager looks" leaves the landing roadmap\'s planned list; next up is G2 cross-town romance and relocation',
+            ),
+        ),
         array(
             'version' => '5.88.0',
             'date'    => '2026-10-10',

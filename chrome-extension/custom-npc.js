@@ -88,6 +88,7 @@ class CustomNPCSystem {
 
         const agent = new Agent(agentId, config.name, config.age || 25, personality, job, home, config.gender || 'male');
         agent.isCustom = true;
+        if (config.look && typeof config.look === 'object' && Object.keys(config.look).length) agent.look = { ...config.look }; // v5.89.0 自訂外觀
         if (config.nameEn) { agent.nameEn = String(config.nameEn).trim().slice(0, 20); if (typeof I18N !== 'undefined' && I18N.registerName) I18N.registerName(config.name, agent.nameEn); } // v5.81.0 英文名
         world.addAgent(agent);
 

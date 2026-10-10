@@ -448,6 +448,7 @@ class Agent {
         this.attributes = Agent.rollAttributes(this.personality, job); // v5.26.0 肉鴿:核心屬性(每村民不同)
         this._lastInteractionTick = 0; this._interactionCooldown = 6;
         this.currentThought = ''; this.isPlayer = false;
+        this.look = null; // v5.89.0 自訂外觀 { skin, hair, hairColor, shirt, acc }(null = 依名字雜湊的預設)
         this.thoughts = []; // v5.15.0 記憶想法(RimWorld thoughts):{kind,label,mood,opinion,targetId,targetName,start,days}
         this._locationStayTicks = 0; // how many ticks to stay at current location
         this._locationStayRemaining = 0; // countdown
@@ -1203,6 +1204,7 @@ class Agent {
             relationships:this.relationships.toDict(), recent_memories:this.memory.toDict(),
             thoughts: (this.thoughts || []).map(t2 => ({ ...t2 })), // v5.15.0 記憶想法(供 UI 顯示心情來源)
             attributes: { ...(this.attributes || {}) }, // v5.26.0 核心屬性
+            look: this.look ? { ...this.look } : null, // v5.89.0 自訂外觀(地圖/頭像用)
         };
     }
 }
@@ -6817,7 +6819,7 @@ class World {
         if (!agent || agent.isPlayer || agent.agentId.startsWith('visit_') || !town?.id) return false;
         const data = { agentId: agent.agentId, name: agent.name, age: agent.age, jobKey: agent.job?.key,
             traits: agent.personality.traits, values: agent.personality.values, background: agent.personality.background,
-            homeLocation: agent.homeLocation, gender: agent.gender,
+            homeLocation: agent.homeLocation, gender: agent.gender, look: agent.look || null, // v5.89.0 外觀跟著出門
             skills: agent.skills.toDict(), relationships: agent.relationships.toDict(),
             memories: agent.memory.toDict(), mood: agent.mood, moodModifier: agent.moodModifier || 0 };
         this.onSendVisitor?.(data, town, stayDays);
@@ -6834,6 +6836,7 @@ class World {
         const personality = new Personality(d.traits || [], d.background || '', d.values || []);
         const agent = new Agent(vid, `${d.name}（${entry.fromTownName}）`, d.age || 30, personality, null, 'residential_north', d.gender);
         agent.mood = d.mood ?? 60;
+        if (d.look && typeof d.look === 'object') agent.look = { ...d.look }; // v5.89.0
         if (Array.isArray(d.memories)) d.memories.forEach(m => agent.memory.add(m.tick, m.time, m.category, m.content ?? '', m.importance, m.related_agents || []));
         agent.currently = t('從') + entry.fromTownName + t('來作客的旅人');
         this.addAgent(agent);
@@ -8158,6 +8161,7 @@ class World {
             _isPlayerChild: a._isPlayerChild || false, _parentNames: a._parentNames || null,
             jobKey: a.job?.key || null,
             nameEn: a.nameEn || undefined, // v5.81.0 自訂村民英文名
+            look: a.look || undefined, // v5.89.0 自訂外觀
             homeLocation: a.homeLocation, currentLocation: a.currentLocation,
             mood: a.mood, activity: a.activity, currentThought: a.currentThought,
             personality: { traits:a.personality.traits, background:a.personality.background, values:a.personality.values },
@@ -8343,6 +8347,7 @@ class World {
                 }
                 agent.currentLocation = ad.currentLocation;
                 if (ad.nameEn) { agent.nameEn = ad.nameEn; if (typeof I18N !== 'undefined' && I18N.registerName) I18N.registerName(ad.name, ad.nameEn); } // v5.81.0
+                if (ad.look && typeof ad.look === 'object') agent.look = { ...ad.look }; // v5.89.0
                 if (ad.gender) agent.gender = ad.gender;
                 if (ad._isPlayerChild) { agent._isPlayerChild = true; agent._parentNames = ad._parentNames; }
                 agent.mood = ad.mood; agent.activity = ad.activity;

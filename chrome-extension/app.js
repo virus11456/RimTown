@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.88.0
-const RIMTOWN_APP_VERSION = '5.88.0';
+// RimTown - Frontend App (WordPress Plugin) v5.89.0
+const RIMTOWN_APP_VERSION = '5.89.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1602,7 +1602,7 @@ class RimTownApp {
         ];
         const roadmap = [
             [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證')]],
-            [t('規劃中'), '#fbbf24', [t('村民自訂外觀'), t('跨鎮戀愛搬家')]],
+            [t('規劃中'), '#fbbf24', [t('跨鎮戀愛搬家')]],
             [t('構想'), '#60a5fa', [t('玩家之間互訪城鎮'), t('手機 App 版')]],
         ];
         // v5.81.0 更新紀錄(240KB)不再隨頁面載入:首頁第一次畫時才動態載 changelog.js,載完重畫一次;直接進遊戲的人完全不載
@@ -4426,6 +4426,12 @@ class RimTownApp {
                 case 'close-town-modal': document.getElementById('town-modal')?.classList.add('hidden'); this.world.paused = !!this._pausedBeforeTownModal; break;
                 // Chat
                 case 'start-chat': this.startChatWith(val); break;
+                case 'edit-look': this._openLookEditor(val); break; // v5.89.0
+                case 'look-set': this._setLookDraft(val); break;
+                case 'look-random': this._randomLookDraft(); break;
+                case 'look-reset': this._applyLookDraft('reset'); break;
+                case 'look-save': this._applyLookDraft('save'); break;
+                case 'look-cancel': document.getElementById('look-modal')?.remove(); break;
                 case 'send-chat': this._sendFromInput(); break;
                 case 'chat-intent': this._sendIntent(val); break;
                 case 'open-gift': this._showGiftPicker(); break;
@@ -6258,7 +6264,7 @@ class RimTownApp {
             const lastText = npc.lastMsg ? (npc.lastMsg.speaker === player.name ? `${t('你')}：${npc.lastMsg.text}` : npc.lastMsg.text) : t('尚未對話');
             const truncated = lastText.length > 20 ? lastText.slice(0, 20) + '...' : lastText;
             let avatarDataUrl = null;
-            try { if (this.tileMap?.renderAvatarDataURL) avatarDataUrl = this.tileMap.renderAvatarDataURL(npc.jobKey, npc.gender, npc.name); } catch(e) {}
+            try { if (this.tileMap?.renderAvatarDataURL) avatarDataUrl = this.tileMap.renderAvatarDataURL(npc.jobKey, npc.gender, npc.name, this.world?.agents?.[npc.id]?.look || null); } catch(e) {}
             const thoughtText = npc.currentThought ? this._escapeHtml(npc.currentThought.length > 18 ? npc.currentThought.slice(0, 18) + '...' : npc.currentThought) : '';
             contactsHtml += `<button class="chat-contact ${isActive ? 'active' : ''}" data-action="start-chat" data-val="${npc.id}">
                 <div class="chat-contact-avatar chat-contact-avatar-pixel" style="background:${npc.avatarColor}">${avatarDataUrl ? `<img src="${avatarDataUrl}" class="avatar-pixel-art" alt="${t(npc.name)}">` : `<span class="avatar-initial" style="color:#fff;font-weight:bold;font-size:1rem;text-shadow:0 1px 2px rgba(0,0,0,0.4)">${npc.name.charAt(0)}</span>`}<span class="mood-indicator mood-${npc.mood}"></span></div>
@@ -6938,6 +6944,7 @@ class RimTownApp {
         const jobs = typeof CUSTOM_NPC_JOBS !== 'undefined' ? CUSTOM_NPC_JOBS : [];
         const values = typeof CUSTOM_NPC_VALUES !== 'undefined' ? CUSTOM_NPC_VALUES : [];
 
+        this._lookDraft = {}; this._lookTarget = null; // v5.89.0 外觀草稿
         let html = `<div id="custom-npc-modal" class="modal" style="display:flex;align-items:center;justify-content:center;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999">`;
         html += `<div class="modal-content" style="max-width:450px;width:90%;max-height:85vh;overflow-y:auto;padding:24px">`;
         html += t('<h2>👤 創建新居民</h2>');
@@ -6958,6 +6965,8 @@ class RimTownApp {
         // Age
         html += t('<div class="setting-group"><label>年齡 <span id="custom-npc-age-display" style="color:var(--accent)">25</span></label>');
         html += `<input type="range" id="custom-npc-age" min="16" max="60" value="25" style="width:100%" oninput="document.getElementById('custom-npc-age-display').textContent=this.value"></div>`;
+        // v5.89.0 外觀
+        html += `<div class="setting-group"><label>🎨 ${t('外觀')}</label><div id="look-body">${this._lookEditorBody()}</div></div>`;
 
         // Traits (checkboxes, max 3)
         html += t('<div class="setting-group"><label>性格特質（選 1-3 個）</label>');
@@ -7001,6 +7010,78 @@ class RimTownApp {
         document.body.insertAdjacentHTML('beforeend', html);
     }
 
+    // ============================================================
+    // v5.89.0 村民自訂外觀:資訊卡頭像、改外觀面板(也給建立村民表單用)
+    // ============================================================
+    _agentAvatarImg(agentId, agentState) {
+        try {
+            const live = this.world?.agents?.[agentId];
+            const url = this.tileMap?.renderAvatarDataURL?.(agentState?.job?.key || live?.job?.key, agentState?.gender || live?.gender, agentState?.name || live?.name, live?.look || null);
+            return url ? `<img src="${url}" alt="" style="width:32px;height:56px;image-rendering:pixelated;flex:none">` : '';
+        } catch (e) { return ''; }
+    }
+    _lookPreviewArgs() {
+        if (this._lookTarget) { const ag = this.world?.agents?.[this._lookTarget]; return ag ? [ag.job?.key, ag.gender, ag.name] : ['farmer', 'male', 'x']; }
+        const job = document.getElementById('custom-npc-job')?.value || 'farmer';
+        const gender = document.querySelector('input[name="custom-npc-gender"]:checked')?.value || 'male';
+        return [job, gender, document.getElementById('custom-npc-name')?.value || 'new'];
+    }
+    _lookEditorBody() {
+        const d = this._lookDraft || {};
+        const look = Object.keys(d).length ? d : null;
+        const [job, gender, name] = this._lookPreviewArgs();
+        let url = ''; try { url = this.tileMap?.renderAvatarDataURL?.(job, gender, name, look) || ''; } catch (e) {}
+        const sw = (k, i, color, cur) => `<button type="button" class="look-opt" data-action="look-set" data-val="${k}:${i}" title="${i}" style="width:24px;height:24px;border-radius:50%;background:${color};border:2px solid ${cur ? '#fff' : 'rgba(255,255,255,0.15)'};cursor:pointer;padding:0"></button>`;
+        const chip = (k, i, label, cur) => `<button type="button" class="look-opt" data-action="look-set" data-val="${k}:${i}" style="font-size:0.72rem;padding:3px 8px;border-radius:12px;border:1px solid ${cur ? 'var(--accent)' : 'rgba(255,255,255,0.15)'};background:${cur ? 'var(--accent)' : 'transparent'};color:${cur ? '#fff' : 'var(--text-primary)'};cursor:pointer">${label}</button>`;
+        const row = (label, inner) => `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:6px 0"><span style="font-size:0.75rem;color:var(--text-secondary);width:40px;flex:none">${label}</span>${inner}</div>`;
+        const skins = (typeof LOOK_SKINS !== 'undefined' ? LOOK_SKINS : []).map((c, i) => sw('skin', i, c, d.skin === i)).join('');
+        const hairs = [t('短髮'), t('長髮'), t('馬尾'), t('齊瀏海'), t('平頭'), t('捲髮')].map((l, i) => chip('hair', i, l, d.hair === i)).join('');
+        const hcs = (typeof LOOK_HAIR_COLORS !== 'undefined' ? LOOK_HAIR_COLORS : []).map((c, i) => sw('hairColor', i, c, d.hairColor === i)).join('');
+        const shirts = chip('shirt', 'null', t('職業預設'), d.shirt == null) + (typeof LOOK_SHIRTS !== 'undefined' ? LOOK_SHIRTS : []).map((c, i) => sw('shirt', i, c, d.shirt === i)).join('');
+        const accs = [t('無'), t('帽子'), t('眼鏡'), t('圍巾')].map((l, i) => chip('acc', i, l, (d.acc || 0) === i)).join('');
+        return `<div style="display:flex;gap:12px;align-items:flex-start"><div style="flex:none;background:rgba(0,0,0,0.25);border-radius:8px;padding:6px">${url ? `<img src="${url}" alt="" style="width:48px;height:84px;image-rendering:pixelated;display:block">` : ''}</div>
+            <div style="flex:1;min-width:0">${row(t('膚色'), skins)}${row(t('髮型'), hairs)}${row(t('髮色'), hcs)}${row(t('上衣'), shirts)}${row(t('配件'), accs)}</div></div>`;
+    }
+    _openLookEditor(agentId) {
+        const ag = this.world?.agents?.[agentId]; if (!ag || ag.isPlayer) return;
+        document.getElementById('look-modal')?.remove();
+        this._lookDraft = ag.look ? { ...ag.look } : {}; this._lookTarget = agentId;
+        const html = `<div id="look-modal" class="modal" style="display:flex;align-items:center;justify-content:center;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:10000">
+            <div class="modal-content" style="max-width:440px;width:92%;max-height:85vh;overflow-y:auto;padding:20px">
+            <h2 style="margin-top:0">🎨 ${t('改外觀')} — ${t(ag.name)}</h2>
+            <div id="look-body">${this._lookEditorBody()}</div>
+            <div class="modal-buttons" style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
+                <button data-action="look-random">🎲 ${t('隨機')}</button>
+                <button data-action="look-reset">${t('恢復預設')}</button>
+                <button class="btn-accent" data-action="look-save">${t('儲存外觀')}</button>
+                <button data-action="look-cancel">${t('取消')}</button>
+            </div></div></div>`;
+        document.body.insertAdjacentHTML('beforeend', html);
+    }
+    _setLookDraft(val) {
+        const [k, v] = String(val || '').split(':'); if (!k) return;
+        this._lookDraft = this._lookDraft || {};
+        if (v === 'null' || v === undefined) delete this._lookDraft[k]; else this._lookDraft[k] = parseInt(v, 10) || 0;
+        const body = document.getElementById('look-body'); if (body) body.innerHTML = this._lookEditorBody();
+    }
+    _randomLookDraft() {
+        const r = (n) => Math.floor(Math.random() * n);
+        this._lookDraft = { skin: r(6), hair: r(6), hairColor: r(9), acc: r(4) };
+        if (Math.random() < 0.6) this._lookDraft.shirt = r(8);
+        const body = document.getElementById('look-body'); if (body) body.innerHTML = this._lookEditorBody();
+    }
+    _applyLookDraft(mode) {
+        const ag = this.world?.agents?.[this._lookTarget];
+        if (ag) {
+            ag.look = mode === 'reset' ? null : (this._lookDraft && Object.keys(this._lookDraft).length ? { ...this._lookDraft } : null);
+            if (this.tileMap) { this.tileMap._colorCache = {}; this.tileMap._avatarCache = {}; }
+            this.state = this.world.getState();
+            this._showCornerNotice?.({ icon: '🎨', title: t('外觀已更新'), name: t(ag.name), desc: '' });
+            try { this.renderSidebar(); } catch (e) {}
+        } else if (mode === 'reset') { this._lookDraft = {}; const body = document.getElementById('look-body'); if (body) body.innerHTML = this._lookEditorBody(); return; }
+        document.getElementById('look-modal')?.remove();
+    }
+
     _createCustomNPC() {
         if (!this.world.customNPC) return;
 
@@ -7014,7 +7095,8 @@ class RimTownApp {
         const values = Array.from(document.querySelectorAll('.custom-npc-value:checked')).map(cb => cb.value);
 
         const nameEn = (document.getElementById('custom-npc-name-en')?.value || '').trim().replace(/[^A-Za-z .'-]/g, '').slice(0, 20); // v5.81.0
-        const config = { name, gender, age, job, traits, values, background, nameEn };
+        const look = this._lookDraft && Object.keys(this._lookDraft).length ? { ...this._lookDraft } : null; // v5.89.0
+        const config = { name, gender, age, job, traits, values, background, nameEn, look };
         const result = this.world.customNPC.createCustomNPC(config, this.world);
 
         if (!result.success) {
@@ -7619,7 +7701,7 @@ class RimTownApp {
             } catch (e) { console.warn('[RimTown] persona state render failed:', e); }
         }
         container.innerHTML = `<div class="detail-panel visible">
-            <div class="detail-section"><h3>${t(agent.name)}（${agent.gender_label === t('男') ? '♂' : agent.gender_label === t('女') ? '♀' : ''}${agent.gender_label} · ${agent.age}${t('歲）')}</h3>
+            <div class="detail-section"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">${this._agentAvatarImg(this.selectedAgent, agent)}<h3 style="margin:0;flex:1">${t(agent.name)}（${agent.gender_label === t('男') ? '♂' : agent.gender_label === t('女') ? '♀' : ''}${agent.gender_label} · ${agent.age}${t('歲）')}</h3>${this.selectedAgent !== 'player' ? `<button class="trade-btn" data-action="edit-look" data-val="${this.selectedAgent}" style="font-size:0.7rem">🎨 ${t('改外觀')}</button>` : ''}</div>
                 <p style="font-size:0.8rem;color:var(--text-secondary)">${agent.job?.title||(this.selectedAgent==='player'?t('旅人'):t('無業'))} | ${agent.mood_label||agent.mood_description}</p>
                 <p style="font-size:0.75rem;margin-top:6px">${t(personality.background||'')}</p>${chatBtn}</div>
             <div class="detail-section"><h3>${t('性格')}</h3>
