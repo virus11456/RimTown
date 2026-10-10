@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.87.0
-const RIMTOWN_APP_VERSION = '5.87.0';
+// RimTown - Frontend App (WordPress Plugin) v5.88.0
+const RIMTOWN_APP_VERSION = '5.88.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1602,7 +1602,7 @@ class RimTownApp {
         ];
         const roadmap = [
             [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證')]],
-            [t('規劃中'), '#fbbf24', [t('村民自訂外觀'), t('跨鎮戀愛搬家'), t('日報跨鎮專欄')]],
+            [t('規劃中'), '#fbbf24', [t('村民自訂外觀'), t('跨鎮戀愛搬家')]],
             [t('構想'), '#60a5fa', [t('玩家之間互訪城鎮'), t('手機 App 版')]],
         ];
         // v5.81.0 更新紀錄(240KB)不再隨頁面載入:首頁第一次畫時才動態載 changelog.js,載完重畫一次;直接進遊戲的人完全不載
@@ -3376,6 +3376,27 @@ class RimTownApp {
 
     _visitorMailboxKey(townId) { return 'rimtown_visitors_' + townId; }
     _returnMailboxKey(townId) { return 'rimtown_returns_' + townId; }
+    // v5.88.0 日報跨鎮專欄:從其他鎮的本機存檔撈最新一期日報的前兩則要聞(每鎮存檔只在長度改變時重新解析)
+    _collectCrossTownNews(towns) {
+        const out = [];
+        const cache = this._crossNewsCache || (this._crossNewsCache = {});
+        for (const tw of towns || []) {
+            try {
+                const raw = localStorage.getItem('rimtown_town_' + tw.id);
+                if (!raw) continue;
+                const c = cache[tw.id];
+                if (!c || c.len !== raw.length) {
+                    const blob = JSON.parse(raw);
+                    const papers = blob?.dailyNews?.newspapers || [];
+                    const last = papers[papers.length - 1];
+                    const items = last ? (last.events || []).slice().sort((a, b) => (b.importance || 0) - (a.importance || 0)).slice(0, 2).map(e => e.content).filter(Boolean) : [];
+                    cache[tw.id] = { len: raw.length, entry: last && items.length ? { town: blob.townName || tw.name, reporter: last.reporter, year: last.year, season: last.season, day: last.day, items } : null };
+                }
+                if (cache[tw.id].entry) out.push(cache[tw.id].entry);
+            } catch (e) {}
+        }
+        return out;
+    }
     _pushMailbox(key, entry) {
         try { const arr = JSON.parse(localStorage.getItem(key) || '[]'); arr.push(entry); localStorage.setItem(key, JSON.stringify(arr.slice(-10))); } catch (e) {}
     }
@@ -3463,6 +3484,7 @@ class RimTownApp {
                 this._getTownList().forEach(tw => push(tw.id, tw.name));
             } catch (e) {}
             w.otherTowns = towns;
+            w.crossTownNews = this._collectCrossTownNews(towns); // v5.88.0 日報跨鎮專欄素材
         }
         // 收訪客信箱:對方鎮派來的村民實體化
         try {
@@ -8135,6 +8157,12 @@ class RimTownApp {
                                 <span class="headline-text">${this._escapeHtml(e.content)}</span>
                                 <span class="headline-go">›</span></button>`;
                         });
+                        html += `</div>`;
+                    }
+                    // v5.88.0 跨鎮專欄:其他鎮日報的要聞
+                    if (Array.isArray(paper.crossTown) && paper.crossTown.length) {
+                        html += `<div class="news-card-events" style="margin-top:8px"><div class="muted-text" style="font-size:0.72rem;margin-bottom:4px">🐎 ${t('跨鎮專欄')}</div>`;
+                        paper.crossTown.forEach(ct => { (ct.items || []).forEach(line => { html += `<div class="headline-row" style="cursor:default"><span class="headline-ic">📰</span><span class="headline-text"><b>${this._escapeHtml(t(ct.town))}</b>｜${this._escapeHtml(t(line))}</span></div>`; }); });
                         html += `</div>`;
                     }
                     // v4.0: Interactive newspaper reaction buttons (only for latest)
