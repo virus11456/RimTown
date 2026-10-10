@@ -2529,3 +2529,109 @@ class RequestBoard {
     serialize() { return { board: this.board, dayKey: this.dayKey, ap: this.ap, stats: this.stats, _seq: this._seq }; }
     loadFrom(d) { if (!d) return; this.board = Array.isArray(d.board) ? d.board : []; this.dayKey = d.dayKey || null; this.ap = { left: REQUEST_AP_BASE, max: REQUEST_AP_BASE, bought: 0, ...(d.ap || {}) }; this.stats = { done: 0, failed: 0, streak: 0, bestStreak: 0, days: 0, ...(d.stats || {}) }; this._seq = d._seq || 0; }
 }
+
+
+// ============================================================
+// v5.93.0 季度考驗與軟性失敗(README H3):每季第 5 天公布一個鎮級考驗,季末結算
+// 撐過→永久加成(世界旗標);失敗→2–3 名村民搬走、繁榮 −10、士氣 −10;連續兩季失敗→衰敗結局(可繼續玩)
+// ============================================================
+const TRIAL_TYPES = {
+    famine:   { icon: '🌾', title: '糧荒', perk: 'granary', perkName: '大糧倉', perkDesc: '農田產量 +20%、之後的糧荒目標 −20%', weights: { mountain: 3, market: 3, frontier: 1, harbor: 1, forest: 1 } },
+    plague:   { icon: '🤒', title: '瘟疫', perk: 'apothecary', perkName: '藥局', perkDesc: '全鎮心情 +10、之後的瘟疫目標 −30%', weights: { market: 3, mountain: 2, frontier: 2, harbor: 1, forest: 1 } },
+    bandits:  { icon: '🏴', title: '匪患', perk: 'watchtower', perkName: '守望塔', perkDesc: '襲擊機率 −30%', weights: { frontier: 3, market: 2, mountain: 2, harbor: 1, forest: 2 } },
+    pricewar: { icon: '📉', title: '商會壓價', perk: 'guildSeal', perkName: '商會印信', perkDesc: '押商隊利潤 +10%', weights: { market: 3, harbor: 3, forest: 1, frontier: 1, mountain: 1 } },
+};
+class SeasonTrials {
+    constructor() { this.current = null; this.failStreak = 0; this.history = []; this.lastType = null; }
+    _npcs(w) { return Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_')); }
+    _seasonKey(w) { return `${w.clock.year}-${w.clock.season}`; }
+    _flags(w) { return w.harborFlags || (w.harborFlags = {}); }
+    target(type, w) {
+        const n = Math.max(8, this._npcs(w).length); const f = this._flags(w);
+        if (type === 'famine') return Math.round(n * 8 * (f.granary ? 0.8 : 1));
+        if (type === 'plague') return Math.round(n * 2 * (f.apothecary ? 0.7 : 1));
+        if (type === 'bandits') return 6;
+        return 150;
+    }
+    value(type, w) {
+        const sp = w.stockpile;
+        if (type === 'famine') return sp?.get?.('food') || 0;
+        if (type === 'plague') return (sp?.get?.('herbs') || 0) + (sp?.get?.('medicine') || 0) * 3;
+        if (type === 'bandits') { const guards = this._npcs(w).filter(a => a.job?.key === 'guard').length; return guards * 2 + Math.round(w.buildings?.getEffect?.('defense_bonus', 0) || 0) + (this._flags(w).cityGuard ? 3 : 0) + (this._flags(w).watchtower ? 2 : 0); }
+        if (type === 'pricewar') return Math.max(0, (sp?.get?.('silver') || 0) - (this.current?.silverAtStart || 0));
+        return 0;
+    }
+    unit(type) { return { famine: t('食物'), plague: t('草藥（藥品算 3）'), bandits: t('防衛值'), pricewar: t('銀幣') }[type] || ''; }
+    goalText(type, target) {
+        const fill = (s, m) => Object.entries(m).reduce((acc, [k, v]) => acc.split('{' + k + '}').join(v), s);
+        const tpl = { famine: t('季末前把食物存到 {n} 以上'), plague: t('季末前備齊 {n} 份草藥（藥品一份算三份）'), bandits: t('季末前把防衛值撐到 {n}（守衛每人 2、防禦建築、市集城加強守衛 3）'), pricewar: t('這一季銀幣要比開季時多 {n}（押商隊、賣貨、委託都算）') }[type];
+        return fill(tpl, { n: target });
+    }
+    _pick(w) {
+        const theme = w.townTheme || 'frontier';
+        const pool = Object.entries(TRIAL_TYPES).filter(([k]) => k !== this.lastType).map(([k, d]) => [k, d.weights[theme] || 1]);
+        let total = pool.reduce((a, [, wgt]) => a + wgt, 0), r = Math.random() * total;
+        for (const [k, wgt] of pool) { r -= wgt; if (r <= 0) return k; }
+        return pool[0][0];
+    }
+    daily(world) {
+        const key = this._seasonKey(world); const day = world.clock.day; const last = world.clock.DAYS_PER_SEASON || 15;
+        // 跨季還掛著(錯過季末那天):先結算
+        if (this.current && this.current.status === 'active' && this.current.seasonKey !== key) this._resolve(world, false);
+        if (!this.current && day >= 5 && day < last && this.lastSeasonKey !== key) this._announce(world, key);
+        if (this.current && this.current.status === 'active' && this.current.seasonKey === key && day >= last) this._resolve(world, true);
+    }
+    _announce(world, key) {
+        const type = this._pick(world); const d = TRIAL_TYPES[type];
+        this.lastSeasonKey = key; this.lastType = type;
+        this.current = { type, seasonKey: key, status: 'active', target: this.target(type, world), startAbsDay: world._absDay?.() || 0, dueDay: world.clock.DAYS_PER_SEASON || 15, silverAtStart: world.stockpile?.get?.('silver') || 0 };
+        if (type === 'pricewar') this.current.target = 150;
+        const text = `${t('本季考驗')}「${t(d.title)}」：${this.goalText(type, this.current.target)}`;
+        world.logMessage?.('event', `⚖️ ${text}`);
+        world.dailyNews?.collectEvent?.('event', text, 9);
+        world.events?.conversationTopics?.push(`${t('這一季的考驗是')}${t(d.title)}`);
+        world.onTrialEvent?.('announce', `${d.icon} ${t('本季考驗')}：${t(d.title)}`, this.goalText(type, this.current.target));
+    }
+    _resolve(world, onTime) {
+        const c = this.current; if (!c || c.status !== 'active') return;
+        const d = TRIAL_TYPES[c.type]; const v = this.value(c.type, world); const passed = v >= c.target;
+        c.status = passed ? 'passed' : 'failed'; c.finalValue = v;
+        const f = this._flags(world);
+        if (passed) {
+            this.failStreak = 0; f[d.perk] = true;
+            if (c.type === 'plague') Object.values(world.agents).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) + 10; });
+            Object.values(world.agents).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) + 5; });
+            if (world.questSystem) world.questSystem.reputation = (world.questSystem.reputation || 0) + 10;
+            if (world.prosperity) world.prosperity.questBonus = (world.prosperity.questBonus || 0) + 5;
+            const text = `${t('撐過了')}「${t(d.title)}」${t('的考驗！全鎮得到')}「${t(d.perkName)}」：${t(d.perkDesc)}`;
+            world.logMessage?.('event', `🏅 ${text}`); world.dailyNews?.collectEvent?.('event', text, 10);
+            world.onTrialEvent?.('passed', `🏅 ${t('考驗通過')}：${t(d.title)}`, `${t(d.perkName)} — ${t(d.perkDesc)}`);
+        } else {
+            this.failStreak++;
+            const leavers = this._npcs(world).filter(a => a.job?.key !== 'mayor' && !(a.relationships?.relationships?.player?.status === 'married')).sort((a, b) => (a.mood || 50) - (b.mood || 50)).slice(0, 2 + (this.failStreak >= 2 ? 1 : 0));
+            const names = leavers.map(a => a.name);
+            leavers.forEach(a => world.leaveTown?.(a.agentId, t('鎮上的日子過不下去')));
+            Object.values(world.agents).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) - 10; });
+            if (world.prosperity) world.prosperity.questBonus = (world.prosperity.questBonus || 0) - 10;
+            const text = `${t('沒撐過')}「${t(d.title)}」${t('的考驗：')}${names.join('、')}${t('搬走了，繁榮 −10、全鎮士氣低落')}`;
+            world.logMessage?.('event', `💔 ${text}`); world.dailyNews?.collectEvent?.('event', text, 10, names);
+            world.onTrialEvent?.('failed', `💔 ${t('考驗失敗')}：${t(d.title)}`, text);
+            if (this.failStreak >= 2) world.multiEnding?.triggerDecline?.(world);
+        }
+        this.history = this.history.concat([{ type: c.type, seasonKey: c.seasonKey, status: c.status, value: v, target: c.target }]).slice(-8);
+        this.current = null;
+    }
+    toDict(world) {
+        const c = this.current; const d = c ? TRIAL_TYPES[c.type] : null;
+        const f = this._flags(world);
+        return {
+            current: c ? { ...c, icon: d.icon, title: t(d.title), goal: this.goalText(c.type, c.target), value: this.value(c.type, world), unit: this.unit(c.type), pct: Math.min(100, Math.round(this.value(c.type, world) / Math.max(1, c.target) * 100)), daysLeft: Math.max(0, (c.dueDay || 15) - world.clock.day), perkName: t(d.perkName), perkDesc: t(d.perkDesc) } : null,
+            failStreak: this.failStreak,
+            perks: Object.values(TRIAL_TYPES).filter(x => f[x.perk]).map(x => ({ name: t(x.perkName), desc: t(x.perkDesc) })),
+            history: this.history.slice(-4).reverse().map(h => ({ ...h, title: t(TRIAL_TYPES[h.type]?.title || h.type), icon: TRIAL_TYPES[h.type]?.icon || '⚖️' })),
+            nextAnnounceDay: c ? null : 5,
+        };
+    }
+    serialize() { return { current: this.current, failStreak: this.failStreak, history: this.history, lastType: this.lastType, lastSeasonKey: this.lastSeasonKey || null }; }
+    loadFrom(d) { if (!d) return; this.current = d.current || null; this.failStreak = d.failStreak || 0; this.history = Array.isArray(d.history) ? d.history : []; this.lastType = d.lastType || null; this.lastSeasonKey = d.lastSeasonKey || null; }
+}
