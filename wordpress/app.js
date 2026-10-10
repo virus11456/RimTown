@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.90.0
-const RIMTOWN_APP_VERSION = '5.90.0';
+// RimTown - Frontend App (WordPress Plugin) v5.91.0
+const RIMTOWN_APP_VERSION = '5.91.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1098,6 +1098,7 @@ class RimTownApp {
         rel.modifyAffinity(gain);
         if (isFav) rel.modifyRomantic(2);
         this.world.questSystem?.onGift?.(this.chatTarget); // v5.83.0 任務條件:送禮給誰
+        try { this.world.requests?.onGift(this.chatTarget, this.world); this._updateRequestBadge(); } catch (e) {} // v5.91.0 委託:送禮
         npc.addThought?.(isFav ? 'fav_gift' : 'gift_received', this.world, 'player', this.world.agents['player']?.name || t('旅人')); // v5.15.0 收禮記憶
         this._firstDayMark?.('mark'); // v5.18.0 第一天:留下你的選擇
         npc.memory.add(this.world.tickCount, this.world.clock.timeStr, 'gift',
@@ -1450,7 +1451,12 @@ class RimTownApp {
 
         // Find current active quest
         const activeQuest = (qs._main ? qs._main() : (typeof MAIN_QUESTS !== 'undefined' ? MAIN_QUESTS : [])).find(q => qs.quests[q.id]?.status === 'active');
-        if (!activeQuest) { el.classList.add('hidden'); return; }
+        this._updateRequestBadge(); // v5.91.0 委託徽章 + 早上通知
+        if (!activeQuest) { // v5.91.0 主線跑完後,橫幅改提示第一件委託
+            const rq = this.world?.requests?.firstOpen?.();
+            if (rq) { el.classList.remove('hidden'); el.querySelector('.quest-guidance-icon').textContent = this.world.requests.icon(rq); el.querySelector('.quest-guidance-title').textContent = `${t('今日委託：')}${this.world.requests.describe(rq)}`; el.querySelector('.quest-guidance-hint').textContent = `${this.world.requests.progress(rq, this.world)} · ${t('行動點')} ${this.world.requests.ap.left}/${this.world.requests.ap.max}`; return; }
+            el.classList.add('hidden'); return;
+        }
 
         const questState = qs.quests[activeQuest.id];
         let icon = '📋';
@@ -1602,6 +1608,7 @@ class RimTownApp {
         ];
         const roadmap = [
             [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證')]],
+            [t('開發中'), '#f472b6', [t('核心玩法迴圈') + ' · ' + t('委託板與行動點已上線，押商隊、季度考驗接續')]],
             [t('構想'), '#60a5fa', [t('玩家之間互訪城鎮'), t('手機 App 版')]],
         ];
         // v5.81.0 更新紀錄(240KB)不再隨頁面載入:首頁第一次畫時才動態載 changelog.js,載完重畫一次;直接進遊戲的人完全不載
@@ -3543,6 +3550,53 @@ class RimTownApp {
         } catch (e) {}
     }
     _movesMailboxKey(townId) { return 'rimtown_moves_' + townId; }
+    // ============================================================
+    // v5.91.0 委託板(README H1):故事分頁區塊、按鈕動作、徽章與早上通知
+    // ============================================================
+    _renderRequestBoard() {
+        const rb = this.world?.requests; if (!rb) return '';
+        const d = rb.toDict(this.world);
+        const pips = Array.from({ length: d.ap.max }, (_, i) => `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:3px;background:${i < d.ap.left ? 'var(--accent)' : 'rgba(255,255,255,0.12)'}"></span>`).join('');
+        let html = `<div class="econ-section"><h3>📋 ${t('今日委託')} <span style="font-size:0.7rem;color:var(--text-secondary);font-weight:400">${t('連續全數完成')} ${d.stats.streak} ${t('天')}</span></h3>`;
+        html += `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px"><div><span style="font-size:0.75rem;color:var(--text-secondary)">${t('行動點')} ${d.ap.left}/${d.ap.max}</span><div style="margin-top:3px">${pips}</div></div>
+            <button class="trade-btn" data-action="req-buy-ap" style="font-size:0.7rem" ${d.ap.bought >= 2 ? 'disabled' : ''}>💰 ${t('買 1 點')}（30）</button></div>`;
+        if (!d.board.length) html += `<p class="muted-text" style="font-size:0.78rem">${t('今天還沒有委託，明天早上村民會來找你。')}</p>`;
+        for (const r of d.board) {
+            const dim = r.status !== 'open';
+            const rw = r.reward || {};
+            const rwText = [rw.silver ? `💰${rw.silver}` : '', rw.pack ? `${t(REQUEST_RES_NAMES[rw.pack.res] || rw.pack.res)}+${rw.pack.amount}` : '', rw.aff ? `❤️+${rw.aff}` : '', rw.rep ? `⭐+${rw.rep}` : ''].filter(Boolean).join(' ');
+            html += `<div class="news-card" style="margin-bottom:6px;${dim ? 'opacity:0.55' : ''}"><div style="display:flex;gap:8px;align-items:flex-start">
+                <span style="font-size:1.1rem;flex:none">${r.icon}</span>
+                <div style="flex:1;min-width:0"><div style="font-size:0.82rem">${this._escapeHtml(r.text)}</div>
+                    <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px">${this._escapeHtml(r.progress || '')}${r.progress ? ' · ' : ''}${rwText} · ${t('耗')} ${r.apCost} ${t('點')}</div></div>
+                ${rb.needsButton(r) ? `<button class="trade-btn" data-action="req-act" data-val="${r.id}" style="font-size:0.7rem;flex:none" ${r.can?.ok ? '' : 'disabled'} title="${this._escapeHtml(r.can?.reason || '')}">${r.type === 'mediate' ? `🤝 ${t('調解')}` : `📦 ${t('交付')}`}</button>` : (r.status === 'done' ? '<span style="flex:none">✅</span>' : r.status === 'failed' ? '<span style="flex:none">⌛</span>' : '')}
+            </div>${rb.needsButton(r) && !r.can?.ok && r.can?.reason ? `<div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px">↳ ${this._escapeHtml(r.can.reason)}</div>` : ''}</div>`;
+        }
+        html += '</div>';
+        return html;
+    }
+    _requestAct(id) {
+        const rb = this.world?.requests; if (!rb) return;
+        const r = rb.act(id, this.world);
+        this._showCornerNotice({ icon: r.ok ? '✅' : '⚠️', title: r.ok ? t('委託') : t('還不能交付'), name: '', desc: r.msg || '' });
+        this.state = this.world.getState(); try { this.renderSidebar(); } catch (e) {} this._updateRequestBadge();
+    }
+    _requestBuyAP() {
+        const rb = this.world?.requests; if (!rb) return;
+        const r = rb.buyAP(this.world);
+        this._showCornerNotice({ icon: r.ok ? '💰' : '⚠️', title: t('行動點'), name: '', desc: r.msg || '' });
+        this.state = this.world.getState(); try { this.renderSidebar(); } catch (e) {}
+    }
+    _updateRequestBadge() {
+        const rb = this.world?.requests; if (!rb) return;
+        const n = rb.openCount();
+        document.querySelectorAll('[data-tab="quest"]').forEach(tab => {
+            let badge = tab.querySelector('.chat-badge');
+            if (n > 0) { if (!badge) { badge = document.createElement('span'); badge.className = 'chat-badge'; tab.style.position = 'relative'; tab.appendChild(badge); } badge.textContent = n > 9 ? '9+' : n; }
+            else if (badge) badge.remove();
+        });
+        if (rb.dayKey && rb._lastNoticeDay !== rb.dayKey && n > 0) { rb._lastNoticeDay = rb.dayKey; this._showCornerNotice({ icon: '📋', title: t('今日委託'), name: `${n} ${t('件')}`, desc: `${t('行動點')} ${rb.ap.left}/${rb.ap.max} · ${t('到「故事」分頁查看')}` }); }
+    }
     // v5.90.0 搬家提案:村民作客回來後,和對方鎮某人兩情相悅→事件選擇(讓對方搬來/讓他搬過去/不干涉);三天不選就依兩人意願自動定案
     _offerRelocation(w, ag, e) {
         const r = e.romance; if (!r || !r.localData) return true;
@@ -4041,7 +4095,7 @@ class RimTownApp {
             this._locSyncAt = now;
             const loc = this.tileMap.getLocationAt(x, y);
             const player = this.world?.agents?.['player'];
-            if (loc && player && player.currentLocation !== loc) { player.currentLocation = loc; this.world?.questSystem?.onVisit?.(loc); } // v5.83.0 任務條件:到過哪
+            if (loc && player && player.currentLocation !== loc) { player.currentLocation = loc; this.world?.questSystem?.onVisit?.(loc); try { this.world?.requests?.onVisit(loc, this.world); } catch (e) {} } // v5.83.0 任務條件:到過哪;v5.91.0 委託跑腿
         };
         this._setupTownOverlays();
         this._generateTileMapLayout();
@@ -4489,6 +4543,8 @@ class RimTownApp {
                 // Chat
                 case 'start-chat': this.startChatWith(val); break;
                 case 'edit-look': this._openLookEditor(val); break; // v5.89.0
+                case 'req-act': this._requestAct(val); break; // v5.91.0 委託板
+                case 'req-buy-ap': this._requestBuyAP(); break;
                 case 'look-set': this._setLookDraft(val); break;
                 case 'look-random': this._randomLookDraft(); break;
                 case 'look-reset': this._applyLookDraft('reset'); break;
@@ -5291,6 +5347,7 @@ class RimTownApp {
                 new Promise(r => setTimeout(r, typingDelay))
             ]);
             if (this.world.questSystem) this.world.questSystem.onChat(targetId); // v5.83.0 記下對象
+            try { this.world.requests?.onChat(targetId, this.world); this._updateRequestBadge(); } catch (e) {} // v5.91.0 委託:陪伴/調解
             // Clear unread for this NPC
             if (this._chatUnread) this._chatUnread.delete(targetId);
             // v5.16.0 意圖的額外機械後果(獨立於 LLM,永遠可見)
@@ -9636,6 +9693,7 @@ class RimTownApp {
         let html = '<div class="economy-panel">';
 
         // Header with reputation
+        html += this._renderRequestBoard(); // v5.91.0 今日委託
         html += t('<div class="econ-section"><h3>⚔️ 主線任務</h3>');
         html += `<div style="display:flex;justify-content:space-between;align-items:center">`;
         html += `${t('<div style="font-size:0.75rem;color:var(--text-secondary)">進度：')}${qs.completedCount}/${qs.totalCount}${t(' 完成')}`;

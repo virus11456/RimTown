@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.90.0
+ * Version: 5.91.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.90.0');
+define('RIMTOWN_VERSION', '5.91.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.91.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '📋 委託板(核心玩法迴圈第一步):每天早上村民發 3–5 件有時限的具體委託——送貨(把 N 份資源送到某人手上，要走到他身邊按「交付」)、陪伴(心情差的人，跟他聊一次即完成、對方心情 +8)、調解(互看不順眼的兩人，先各聊一次再按「調解」，成功率看魅力／機智與你和兩人的交情，成功兩人好感 +15、沒成只各退一步)、跑腿(先到指定地點再回去交給他，獎勵多一包資源)、送禮(用既有送禮完成)；當天沒做完就過期：委託人對你好感 −4、會記得「拜託的事沒有下文」',
+                '⚡ 行動點:每天 5 點(體力 ≥7 多 1 點、連續三天全數完成再多 1 點)，只有委託的完成動作扣點，聊天送禮本身不扣；可用 30 銀幣買 1 點、每天最多 2 點；獎勵銀幣 15–60、委託人好感 +6～+10、聲望 +2～+4，委託人會記得、日報會寫、村民會聊',
+                '🧭 介面:「故事」分頁最上方新增「今日委託」區塊(行動點、每件委託的進度與交付／調解按鈕、買行動點)，故事分頁按鈕顯示未完成件數徽章，每天早上角落通知；主線跑完後引導橫幅改提示第一件委託；委託進存檔',
+                '📋 README 新增 H 節「核心玩法迴圈」企劃(H1 委託板 ✅、H2 押商隊、H3 季度考驗與軟性失敗、H4 旅人成長、H5 有目的的對話)；首頁路線圖新增「核心玩法迴圈」開發中',
+            ),
+            'changes_en' => array(
+                '📋 Request board (first step of the core gameplay loop): every morning villagers post 3–5 concrete, time-limited requests — deliveries (bring N of a resource to someone; walk up to them and press Deliver), company (cheer up someone feeling low; one chat completes it, their mood +8), mediation (two people at odds; talk to each once, then press Mediate; the odds depend on charm / wit and your standing with both, success gives +15 affinity between them, failure only an inch each), errands (go to a place first, then bring it back; extra resource pack), gifts (completed through the existing gift flow); unfinished requests expire at day\'s end: the requester drops −4 toward you and remembers that nothing came of it',
+                '⚡ Action points: 5 per day (+1 with vigor ≥7, +1 after three clean-sweep days), spent only by request completions — chatting and gifting cost nothing; buy 1 AP for 30 silver, at most 2 per day; rewards are 15–60 silver, +6 to +10 affinity with the requester, +2 to +4 reputation, plus a memory, a daily-paper item and a conversation topic',
+                '🧭 UI: a "Today\'s requests" block at the top of the Story tab (action points, each request\'s progress with Deliver / Mediate buttons, buy AP), an open-count badge on the Story tab button, a morning corner notice; once the main story is finished the guidance banner shows the first open request; requests are saved',
+                '📋 README gains section H, the core-loop plan (H1 request board ✅, H2 player caravans, H3 seasonal trials with soft failure, H4 traveller growth, H5 purposeful conversations); the landing roadmap adds "Core gameplay loop" in development',
+            ),
+        ),
         array(
             'version' => '5.90.0',
             'date'    => '2026-10-10',
