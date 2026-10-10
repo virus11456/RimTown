@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.98.0
+ * Version: 5.99.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.98.0');
+define('RIMTOWN_VERSION', '5.99.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.99.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '📦 存檔體積收斂（B12）：全鎮日誌一萬筆→一千筆、村民對話紀錄一萬筆→四百筆、村民記憶每人 500→120 筆、兩人共同回憶 150→30 筆、倉庫流水一萬筆→六百筆（介面與 AI 提示最多只讀最近幾十筆）；35 天的存檔從 2.6MB 降到約 1MB，自動存檔上傳與手機 localStorage 壓力都減半以上；舊檔讀入即收斂',
+                '📱 手機版面：「第一天」引導卡層級降到彈窗與角落通知之下（不再壓住押商隊／季末回顧彈窗），故事／小鎮浮動卡或聊天抽屜打開時引導卡自動讓位；角落通知改為浮在引導卡上方不重疊',
+                '🧪 浸泡測試新增「存檔體積 < 1.5MB」檢查；紀錄分頁只畫最近 500 條、對話封存最近 250 則，getState 體積減半',
+            ),
+            'changes_en' => array(
+                '📦 Save size trimmed (B12): town log 10,000→1,000 entries, villager conversation log 10,000→400, per-villager memory 500→120, shared memories per pair 150→30, stockpile ledger 10,000→600 (the UI and AI prompts only read the last few dozen anyway); a 35-day save drops from 2.6MB to about 1MB, halving autosave uploads and phone localStorage pressure; old saves are trimmed on load',
+                '📱 Mobile layout: the "Day one" guide card now sits below dialogs and corner notices (it no longer covers the caravan / season-recap dialogs) and hides itself while the Story / Town floating card or the chat drawer is open; corner notices float above the guide card instead of overlapping it',
+                '🧪 Soak test gains a "save size < 1.5MB" check; the Records tab renders only the last 500 lines and conversation archives the last 250, halving getState',
+            ),
+        ),
         array(
             'version' => '5.98.0',
             'date'    => '2026-10-10',

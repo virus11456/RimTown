@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.98.0
-const RIMTOWN_APP_VERSION = '5.98.0';
+// RimTown - Frontend App (WordPress Plugin) v5.99.0
+const RIMTOWN_APP_VERSION = '5.99.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -2595,7 +2595,8 @@ class RimTownApp {
             document.body.appendChild(host);
         }
         // 手機版避開底部 tab bar
-        host.style.bottom = window.innerWidth <= 768 ? '64px' : '14px';
+        const fd = document.getElementById('firstday-guide'); const fdH = (fd && fd.offsetParent !== null) ? fd.getBoundingClientRect().height : 0; // v5.99.0 避開第一天引導卡
+        host.style.bottom = window.innerWidth <= 768 ? `${64 + (fdH ? fdH + 18 : 0)}px` : `${14 + (fdH ? fdH + 14 : 0)}px`;
         // v5.34.1 同時最多 3 張,多的擠掉最舊的,避免洗版
         while (host.childElementCount >= 3) host.firstElementChild.remove();
         const el = document.createElement('div');

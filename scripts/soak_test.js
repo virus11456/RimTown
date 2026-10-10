@@ -72,7 +72,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       }
       out.days = d + 1;
     }
-    out.stats = { ...stats, trialsSeen: [...stats.trialsSeen], trialHistory: w.trials?.history?.length || 0, recaps: w.recap?.history?.length || 0, recapGrades: (w.recap?.history || []).map(h => h.grade), perksOwned: w.growth?.perks?.length || 0, level: w.growth?.level, caravanHistory: w.playerCaravan?.history?.length || 0, requestsStats: w.requests?.stats, movedOut: (w.movedOut || []).length, population: Object.values(w.agents).filter(a => !a.isPlayer).length, prosperity: w.prosperity?.prosperity, clock: `${w.clock.year}-${w.clock.season}-${w.clock.day}`, ending: w.multiEnding?.endingTriggered || null };
+    out.stats = { ...stats, trialsSeen: [...stats.trialsSeen], trialHistory: w.trials?.history?.length || 0, recaps: w.recap?.history?.length || 0, saveBytes: JSON.stringify(w.serialize()).length, stateBytes: JSON.stringify(w.getState()).length, recapGrades: (w.recap?.history || []).map(h => h.grade), perksOwned: w.growth?.perks?.length || 0, level: w.growth?.level, caravanHistory: w.playerCaravan?.history?.length || 0, requestsStats: w.requests?.stats, movedOut: (w.movedOut || []).length, population: Object.values(w.agents).filter(a => !a.isPlayer).length, prosperity: w.prosperity?.prosperity, clock: `${w.clock.year}-${w.clock.season}-${w.clock.day}`, ending: w.multiEnding?.endingTriggered || null };
     return out;
   }, { DAYS, THEME });
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
@@ -90,6 +90,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
   check(DAYS < 16 || r.stats.recaps >= Math.floor((DAYS - 1) / 15), `季末回顧有結算 (${r.stats.recaps} 季：${(r.stats.recapGrades || []).join(' ')})`); // v5.98.0
   check(r.stats.roundTrips >= Math.floor(DAYS / 10), `存檔讀檔接著跑 ${r.stats.roundTrips} 次`);
   check(r.stats.population >= 5, `人口 ${r.stats.population}`);
+  check(r.stats.saveBytes < 1500000, `存檔體積 ${(r.stats.saveBytes / 1024).toFixed(0)} KB（getState ${(r.stats.stateBytes / 1024).toFixed(0)} KB；手機 localStorage 約 5MB）`); // v5.99.0 B12
   if (consoleErrs.length) console.log('  (console errors)', consoleErrs.slice(0, 5));
   await browser.close();
   console.log(failed ? `\n${failed} FAILED` : '\nALL OK'); process.exit(failed ? 1 : 0);
