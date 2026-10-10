@@ -55,6 +55,13 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       // 聊天意圖(直接套後果)
       const npcs = Object.values(w.agents).filter(a => !a.isPlayer); const keys = ['comfort', 'gossip', 'persuade', 'mediate', 'flirt', 'request', 'help', 'bargain'];
       for (let i = 0; i < (MODE === 'casual' ? 1 : 2) && npcs.length; i++) { const npc = npcs[Math.floor(Math.random() * npcs.length)]; const k = keys[Math.floor(Math.random() * keys.length)]; const o = w.chatOdds(npc, k); app._applyChatIntent(npc, P, k, { ok: Math.random() < o.p, p: o.p }); stats.chats++; }
+      // v6.2.0 為本季考驗出力(像玩家會做的事):糧荒→跟務農/廚子求助;瘟疫→跟醫生/學者/牧師求助;匪患→蓋訓練場/瞭望塔;壓價→押商隊(上面已做)
+      const tr = w.trials?.current; if (tr && tr.status === 'active') {
+        const K = MODE === 'casual' ? 1 : 3; const dayKey = `${w.clock.year}-${w.clock.season}-${w.clock.day}`;
+        const askJobs = tr.type === 'famine' ? (a) => !['miner', 'blacksmith', 'carpenter', 'doctor', 'researcher', 'priest', 'tailor', 'trader', 'guard', 'mayor'].includes(a.job?.key) : tr.type === 'plague' ? (a) => ['doctor', 'researcher', 'priest'].includes(a.job?.key) : null;
+        if (askJobs) { const cands = npcs.filter(a => askJobs(a) && a._lastHelpDay !== dayKey).slice(0, K); for (const npc of cands) { const o = w.chatOdds(npc, 'help'); app._applyChatIntent(npc, P, 'help', { ok: Math.random() < o.p, p: o.p }); stats.chats++; } }
+        if (tr.type === 'bandits' && w.trials.value('bandits', w) < tr.target) { for (const key of ['training_ground', 'watchtower']) { const tpl = BUILDING_TEMPLATES[key]; if (!tpl || w.buildings.projects.some(p => p.key === key) || w.buildings.completed.includes(key)) continue; if (Object.entries(tpl.costs).every(([r, n]) => (w.stockpile.get(r) || 0) >= n)) { try { w.buildings.startProject(key, w, { x: 10, y: 10 }); stats.built = (stats.built || 0) + 1; } catch (e) {} break; } } }
+      }
       // 選天賦
       while (w.growth?.pending?.length) { w.growth.choose(w.growth.pending[0], w); stats.perks++; }
       stats.maxLevel = Math.max(stats.maxLevel, w.growth?.level || 1);

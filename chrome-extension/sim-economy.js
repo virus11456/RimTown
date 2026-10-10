@@ -17,6 +17,7 @@ class Stockpile {
         this.resources[r] = (this.resources[r]||0) + amount;
         this.history.push({tick,resource:r,amount,reason,source});
         if (this.history.length > 600) this.history = this.history.slice(-600); // v5.99.0 B12(讀取端只用最近 50 筆)
+        if (amount > 0 && (source === 'player' || source === 'farm') && this._world?.trials?.onPlayerGain) { try { this._world.trials.onPlayerGain(r, amount); } catch (e) {} } // v6.2.0 季度考驗只算玩家親手帶進的
     }
     consume(r, amount, tick=0, reason='', source='') {
         if ((this.resources[r]||0) < amount) return false;
@@ -390,11 +391,11 @@ class TradeManager {
         if(offer.isBuying) {
             if(!world.stockpile.has(offer.resource,qty)) return {error:`${offer.resource}${t('不足')}`};
             world.stockpile.consume(offer.resource,qty,world.tickCount,`${t('賣給')}${this.merchant.name}`);
-            world.stockpile.add('silver',total,world.tickCount,`${t('與')}${this.merchant.name}${t('交易')}`);
+            world.stockpile.add('silver',total,world.tickCount,`${t('與')}${this.merchant.name}${t('交易')}`,'player');
         } else {
             if(!world.stockpile.has('silver',total)) return {error:t('銀幣不足')};
             world.stockpile.consume('silver',total,world.tickCount,`${t('向')}${this.merchant.name}${t('購買')}`);
-            world.stockpile.add(offer.resource,qty,world.tickCount,`${t('與')}${this.merchant.name}${t('交易')}`);
+            world.stockpile.add(offer.resource,qty,world.tickCount,`${t('與')}${this.merchant.name}${t('交易')}`,'player');
         }
         offer.amount-=qty;
         this.merchant.offers=this.merchant.offers.filter(o=>o.amount>0.5);
