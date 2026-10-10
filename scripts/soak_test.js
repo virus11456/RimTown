@@ -6,6 +6,7 @@
 const BASE = process.argv[2] || 'http://127.0.0.1:8126';
 const DAYS = parseInt(process.argv[3] || '35', 10);
 const THEME = process.argv[4] || 'frontier';
+const MODE = process.argv[5] || 'full'; // v6.2.0 full=機器人全做(上限) / casual=每天最多 2 件委託、不作弊補貨、4 天一趟商隊、1 次對話 / idle=只看不玩(觀察者)
 let chromium; try { ({ chromium } = require('playwright')); } catch (e) { console.log('playwright 未安裝:npm i playwright@1 後再跑'); process.exit(0); }
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';
@@ -21,21 +22,26 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
   await page.waitForFunction(() => window.rimtownApp && typeof World === 'function', null, { timeout: 20000 });
   await page.waitForTimeout(1500);
   const t0 = Date.now();
-  const r = await page.evaluate(async ({ DAYS, THEME }) => {
+  const r = await page.evaluate(async ({ DAYS, THEME, MODE }) => {
     const app = window.rimtownApp; const out = { days: 0, errors: [], warn: [] };
     const NAMES = { frontier: '邊境鎮', harbor: '海風鎮', mountain: '礦山鎮', forest: '林間村', market: '市集城' };
     let w = new World(); w.townTheme = THEME; w.townName = NAMES[THEME]; w.rosterMode = 'scripted'; w.reset();
     app.world = w; app.currentTownId = 'soak'; app.state = w.getState(); app._generateTileMapLayout(); app._visitorMailboxTick();
     w.otherTowns = [{ id: 'o1', name: THEME === 'market' ? '礦山鎮' : '市集城' }, { id: 'o2', name: THEME === 'harbor' ? '礦山鎮' : '海風鎮' }];
     w.paused = false;
+    const start = { silver: w.stockpile.get('silver') || 0, pop: Object.values(w.agents).filter(a => !a.isPlayer).length };
     const stats = { requestsDone: 0, caravans: 0, chats: 0, perks: 0, trialsSeen: new Set(), maxLevel: 1, visitorsSeen: 0, roundTrips: 0 };
     const finite = (o) => Object.values(o || {}).every(v => typeof v !== 'number' || Number.isFinite(v));
     const RES = ['food', 'wood', 'stone', 'metal', 'cloth', 'herbs', 'tools', 'silver'];
-    const playDay = () => {
+    const playDay = (d) => {
       const P = w.agents.player; const rb = w.requests;
-      // 委託:能做的都做
+      if (MODE === 'idle') { stats.maxLevel = Math.max(stats.maxLevel, w.growth?.level || 1); if (w.trials?.current) stats.trialsSeen.add(w.trials.current.type); return; }
+      // 委託:full 能做的都做;casual 每天最多 2 件、不作弊補貨
+      let budget = MODE === 'casual' ? 2 : 99;
       for (const rq of (rb?.board || [])) {
-        if (rq.status !== 'open') continue;
+        if (rq.status !== 'open') continue; if (budget <= 0) break;
+        if (MODE === 'casual' && rq.type === 'deliver' && (w.stockpile.get(rq.res) || 0) < rq.amount) continue;
+        budget--;
         const npc = w.agents[rq.npcId]; if (!npc) continue;
         if (rq.type === 'visit') rb.onChat(rq.npcId, w);
         else if (rq.type === 'gift') rb.onGift(rq.npcId, w);
@@ -45,10 +51,10 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       }
       stats.requestsDone += (rb?.board || []).filter(r => r.status === 'done' && r.type !== 'fetch' && r.type !== 'deliver' && r.type !== 'mediate').length;
       // 押商隊
-      if (!w.playerCaravan?.active) { const res = RES.find(r => r !== 'silver' && (w.stockpile.get(r) || 0) >= 30); if (res) { const g = w.availableGuards()[0]; const r = w.launchPlayerCaravan({ toTownId: 'o1', toTownName: w.otherTowns[0].name, toTheme: typeof themeKeyOfTownName === 'function' ? themeKeyOfTownName(w.otherTowns[0].name) : 'market', res, amount: 20, guardId: Math.random() < 0.5 && g ? g.agentId : null, route: Math.random() < 0.5 ? 'road' : 'mountain' }); if (r.ok) stats.caravans++; } }
+      if (!w.playerCaravan?.active && (MODE !== 'casual' || d % 4 === 0)) { const res = RES.find(r => r !== 'silver' && (w.stockpile.get(r) || 0) >= 30); if (res) { const g = w.availableGuards()[0]; const r = w.launchPlayerCaravan({ toTownId: 'o1', toTownName: w.otherTowns[0].name, toTheme: typeof themeKeyOfTownName === 'function' ? themeKeyOfTownName(w.otherTowns[0].name) : 'market', res, amount: 20, guardId: Math.random() < 0.5 && g ? g.agentId : null, route: Math.random() < 0.5 ? 'road' : 'mountain' }); if (r.ok) stats.caravans++; } }
       // 聊天意圖(直接套後果)
       const npcs = Object.values(w.agents).filter(a => !a.isPlayer); const keys = ['comfort', 'gossip', 'persuade', 'mediate', 'flirt', 'request', 'help', 'bargain'];
-      for (let i = 0; i < 2 && npcs.length; i++) { const npc = npcs[Math.floor(Math.random() * npcs.length)]; const k = keys[Math.floor(Math.random() * keys.length)]; const o = w.chatOdds(npc, k); app._applyChatIntent(npc, P, k, { ok: Math.random() < o.p, p: o.p }); stats.chats++; }
+      for (let i = 0; i < (MODE === 'casual' ? 1 : 2) && npcs.length; i++) { const npc = npcs[Math.floor(Math.random() * npcs.length)]; const k = keys[Math.floor(Math.random() * keys.length)]; const o = w.chatOdds(npc, k); app._applyChatIntent(npc, P, k, { ok: Math.random() < o.p, p: o.p }); stats.chats++; }
       // 選天賦
       while (w.growth?.pending?.length) { w.growth.choose(w.growth.pending[0], w); stats.perks++; }
       stats.maxLevel = Math.max(stats.maxLevel, w.growth?.level || 1);
@@ -57,7 +63,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     };
     for (let d = 0; d < DAYS; d++) {
       for (let k = 0; k < 96; k++) { try { w.tick(); } catch (e) { out.errors.push(`day${d} tick: ${e.message}`); break; } }
-      try { playDay(); } catch (e) { out.errors.push(`day${d} play: ${e.message}`); }
+      try { playDay(d); } catch (e) { out.errors.push(`day${d} play: ${e.message}`); }
       try {
         app.state = w.getState(); JSON.stringify(app.state);
         for (const fn of ['renderQuest', 'renderEconomy', 'renderNewspaper']) { const div = document.createElement('div'); app[fn](div); }
@@ -72,9 +78,9 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       }
       out.days = d + 1;
     }
-    out.stats = { ...stats, trialsSeen: [...stats.trialsSeen], trialHistory: w.trials?.history?.length || 0, recaps: w.recap?.history?.length || 0, saveBytes: JSON.stringify(w.serialize()).length, stateBytes: JSON.stringify(w.getState()).length, recapGrades: (w.recap?.history || []).map(h => h.grade), perksOwned: w.growth?.perks?.length || 0, level: w.growth?.level, caravanHistory: w.playerCaravan?.history?.length || 0, requestsStats: w.requests?.stats, movedOut: (w.movedOut || []).length, population: Object.values(w.agents).filter(a => !a.isPlayer).length, prosperity: w.prosperity?.prosperity, clock: `${w.clock.year}-${w.clock.season}-${w.clock.day}`, ending: w.multiEnding?.endingTriggered || null };
+    out.stats = { ...stats, trialsSeen: [...stats.trialsSeen], trialHistory: w.trials?.history?.length || 0, recaps: w.recap?.history?.length || 0, saveBytes: JSON.stringify(w.serialize()).length, stateBytes: JSON.stringify(w.getState()).length, recapGrades: (w.recap?.history || []).map(h => h.grade), trials: (w.trials?.history || []).map(h => `${h.type}:${h.status}:${h.value}/${h.target}`), silver: [start.silver, w.stockpile.get('silver') || 0], pop: [start.pop, Object.values(w.agents).filter(a => !a.isPlayer).length], reqExpired: w.requests?.stats?.failed || 0, movedOut: (w.movedOut || []).length, mode: MODE, perksOwned: w.growth?.perks?.length || 0, level: w.growth?.level, caravanHistory: w.playerCaravan?.history?.length || 0, requestsStats: w.requests?.stats, movedOut: (w.movedOut || []).length, population: Object.values(w.agents).filter(a => !a.isPlayer).length, prosperity: w.prosperity?.prosperity, clock: `${w.clock.year}-${w.clock.season}-${w.clock.day}`, ending: w.multiEnding?.endingTriggered || null };
     return out;
-  }, { DAYS, THEME });
+  }, { DAYS, THEME, MODE });
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
   console.log(`[soak ${THEME}] ${r.days} days in ${secs}s`);
   console.log(JSON.stringify(r.stats));
@@ -83,10 +89,10 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
   check(r.days === DAYS, `跑滿 ${DAYS} 天`);
   check(r.errors.length === 0, `無模擬/渲染/狀態錯誤 ${JSON.stringify(r.errors.slice(0, 5))}`);
   check(errs.length === 0, `無 page error ${JSON.stringify(errs.slice(0, 3))}`);
-  check(r.stats.requestsStats && r.stats.requestsStats.done > 0, `委託有完成 (${r.stats.requestsStats?.done})`);
-  check(r.stats.caravanHistory > 0, `商隊有回報 (${r.stats.caravanHistory})`);
+  if (MODE !== 'idle') check(r.stats.requestsStats && r.stats.requestsStats.done > 0, `委託有完成 (${r.stats.requestsStats?.done})`);
+  if (MODE !== 'idle') check(r.stats.caravanHistory > 0, `商隊有回報 (${r.stats.caravanHistory})`);
   check(r.stats.trialHistory > 0 || r.stats.trialsSeen.length > 0, `季度考驗有公布/結算 (${r.stats.trialHistory})`);
-  check(r.stats.level > 1, `旅人有升級 (Lv.${r.stats.level})`);
+  if (MODE !== 'idle') check(r.stats.level > 1, `旅人有升級 (Lv.${r.stats.level})`);
   check(DAYS < 16 || r.stats.recaps >= Math.floor((DAYS - 1) / 15), `季末回顧有結算 (${r.stats.recaps} 季：${(r.stats.recapGrades || []).join(' ')})`); // v5.98.0
   check(r.stats.roundTrips >= Math.floor(DAYS / 10), `存檔讀檔接著跑 ${r.stats.roundTrips} 次`);
   check(r.stats.population >= 5, `人口 ${r.stats.population}`);
