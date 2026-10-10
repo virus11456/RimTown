@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.97.0
+ * Version: 5.98.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.97.0');
+define('RIMTOWN_VERSION', '5.98.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.98.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '📜 季末回顧：換季那天彈一頁回顧——考驗撐過沒、委託完成／過期／最佳連勝、商隊趟數／進帳／遇劫、經驗與等級、銀幣／人口／聲望／繁榮變化、完成的任務、好感升最多的三人、搬走與新住民，並給 S／A／B／C 評等；最多留四季，故事分頁考驗區塊可重看上一季，日報也報一行',
+                '🧾 讀檔回來還沒看過的季末回顧，會在下一次每日通知時補彈；旅人成長與押商隊新增累計計數（經驗總量、商隊趟數／進帳／遇劫），舊檔自動從零開始',
+                '🧪 浸泡測試新增「季末回顧有結算」檢查',
+            ),
+            'changes_en' => array(
+                '📜 Season recap: on the first day of a new season a recap page pops up — trial survived or not, requests done / expired / best streak, caravan runs / earnings / raids, XP and level, silver / population / reputation / prosperity change, quests completed, the three biggest affinity gains, who moved away and who arrived — with an S / A / B / C grade; the last four seasons are kept, the Story tab\'s trial section can reopen last season\'s recap, and the daily paper runs a line on it',
+                '🧾 A recap you haven\'t seen yet when loading a save is shown at the next daily notice; traveller growth and caravans now keep running totals (total XP, caravan runs / earnings / raids), old saves start from zero',
+                '🧪 Soak test gains a "season recap settled" check',
+            ),
+        ),
         array(
             'version' => '5.97.0',
             'date'    => '2026-10-10',
