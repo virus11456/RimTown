@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.1.0
+ * Version: 6.2.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.1.0');
+define('RIMTOWN_VERSION', '6.2.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.2.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '⚖️ 季度考驗改看「你親手帶進多少」：平衡矩陣（只看不玩／輕度／全力 × 五鎮 × 45 天）發現舊目標只看倉庫存量，倉庫自然膨脹到目標的 2–10 倍，只看不玩也 15 戰全勝；現在糧荒＝親手為鎮上帶進 人口×5 份食物、瘟疫＝帶進 人口×1.5 份草藥（藥品算三份）、商會壓價＝親手賺進 150＋人口×8 銀幣（求助、收成、買進、委託與任務報酬、押商隊、賣貨、事件決策都算），匪患＝防衛值比公布時再高 2（蓋到一半的防禦建築按進度計）；只看不玩全敗、每天動手一兩件就過得了',
+                '🏘️ 考驗失敗搬走的人數上限為人口 12%（15 人的小鎮一次最多走 2 人，不再連三季走掉一半）；委託過期改為同一天第一件 −3 好感（硬頸 −2）、其餘每件 −1 且不記在心上；委託板 3 件起跳，連續全數完成才多一件（繁榮 50 另加一件）',
+                '🧪 scripts/soak_test.js 第五個參數 mode：full／casual（每天最多 2 件委託、不作弊補貨、4 天一趟商隊、1 次對話）／idle（只看不玩），並會為本季考驗出力（求助、蓋防禦）；輸出考驗結果、評等、銀幣／人口起訖、過期委託、搬走人數。調校後：idle 全 C、casual 9 戰 7 勝 A／B、full 全 A',
+            ),
+            'changes_en' => array(
+                '⚖️ Seasonal trials now measure what you bring in yourself: the balance matrix (idle / casual / full × five towns × 45 days) showed the old targets only looked at the stockpile, which naturally balloons to 2–10× the target, so even an idle player passed 15 of 15. Now famine = bring in population×5 food yourself, plague = population×1.5 herbs (medicine counts three), price war = earn 150 + population×8 silver yourself (asking for help, harvests, purchases, request and quest rewards, caravans, sales and event choices all count); bandits = defence 2 above the value at announcement (half-built defence buildings count by progress). Idle fails everything, a couple of actions a day passes',
+                '🏘️ Villagers leaving after a failed trial are capped at 12% of the population (a 15-person town loses at most 2, no more losing half the town over three seasons); expired requests now cost −3 affinity for the first one of the day (grit −2) and −1 for the rest with no memory entry; the request board starts at 3 and only grows when you clear it on consecutive days (prosperity 50 adds one)',
+                '🧪 scripts/soak_test.js takes a fifth argument mode: full / casual (max 2 requests a day, no cheating stock, a caravan every 4 days, 1 chat) / idle (watch only), and works on the current trial (asking for help, building defences); it reports trial outcomes, grades, silver / population, expired requests and leavers. After tuning: idle all C, casual 7 of 9 trials passed with A / B, full all A',
+            ),
+        ),
         array(
             'version' => '6.1.0',
             'date'    => '2026-10-10',

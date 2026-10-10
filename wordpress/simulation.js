@@ -19,7 +19,7 @@ class World {
         this.townFeed = new TownFeedSystem(); // v5.2.0 鎮民動態
         this.conversationEngine = new ConversationEngine();
         // Economy
-        this.stockpile = new Stockpile();
+        this.stockpile = new Stockpile(); this.stockpile._world = this; // v6.2.0 考驗計玩家貢獻用
         this.buildings = new BuildingManager();
         this.decorations = this.decorations || []; // v4.8.0 玩家擺放的裝飾 [{type,x,y}]
         this.combosFound = this.combosFound || []; // v4.9.0 已發現的相鄰組合 id
@@ -311,7 +311,7 @@ class World {
             silver = Math.round((a.amount - lost) * (q.base / a.amount) * 1.2);
             if (a.guardId) pc.pendingInjury = a.guardId;
         } else silver = q.value;
-        if (silver > 0) this.stockpile.add('silver', silver, this.tickCount, `${t('商隊回報')}：${t(a.toTownName)}`);
+        if (silver > 0) this.stockpile.add('silver', silver, this.tickCount, `${t('商隊回報')}：${t(a.toTownName)}`, 'player');
         const result = { ...a, raided, lost, silver, resolvedAbsDay: this._absDay() };
         this.growth?.addXp(raided ? 5 : 15, 'caravan', this); // v5.94.0 經驗
         pc.history = (pc.history || []).concat([result]).slice(-10); pc.active = null;
@@ -876,7 +876,7 @@ class World {
         this.agents = {}; this.tickCount = 0; this.paused = false; this.messageLog = [];
         this.gossipNetwork = new GossipNetwork();
         this.townFeed = new TownFeedSystem(); // v5.2.0 鎮民動態
-        this.stockpile = new Stockpile();
+        this.stockpile = new Stockpile(); this.stockpile._world = this; // v6.2.0 考驗計玩家貢獻用
         this.buildings = new BuildingManager();
         this.decorations = this.decorations || []; // v4.8.0 玩家擺放的裝飾 [{type,x,y}]
         this.combosFound = this.combosFound || []; // v4.9.0 已發現的相鄰組合 id
@@ -2100,7 +2100,7 @@ class World {
             }
 
             // Stockpile
-            this.stockpile = new Stockpile();
+            this.stockpile = new Stockpile(); this.stockpile._world = this; // v6.2.0 考驗計玩家貢獻用
             if (data.stockpile) { this.stockpile.resources = {...data.stockpile.resources}; this.stockpile.history = (data.stockpile.history || []).slice(-600); }
 
             // Buildings

@@ -1077,7 +1077,7 @@ class DailyDecisionSystem {
         this.followups = this.followups.filter(f => {
             if (world.tickCount < f.dueTick) return true;
             if (f.good) {
-                world.stockpile.add('silver', 15, world.tickCount, t('村民答謝'));
+                world.stockpile.add('silver', 15, world.tickCount, t('村民答謝'), 'player');
                 if (world.reputationSystem) world.reputationSystem.addReputation(2, 'decisions', world);
                 world.logMessage('relationship', `💝 ${f.npc}${t('特地回來道謝：「上次「')}${f.title}${t('」的事，多虧你決定「')}${f.choiceLabel}${t('」，現在順利多了！」(+15 銀幣、+2 聲望)')}`, f.npc);
                 if (world.dailyNews) world.dailyNews.collectEvent('social', `${f.npc}${t('公開感謝')}${playerTitle(world)}${t('當初的決定')}`, 6, [f.npc]);
@@ -1160,7 +1160,7 @@ class ShopSystem {
         const totalCost = discountedPrice * amount;
         if (!world.stockpile.has('silver', totalCost)) return { success: false, msg: t('銀幣不足') };
         world.stockpile.consume('silver', totalCost, world.tickCount, `${t('購買')}${item.name()}`);
-        world.stockpile.add(itemKey, amount, world.tickCount, `${t('商店購買')}`);
+        world.stockpile.add(itemKey, amount, world.tickCount, `${t('商店購買')}`, 'player');
         this.transactionLog.push({ type: 'buy', item: itemKey, amount, cost: totalCost, tick: world.tickCount });
         const discountText = discount > 0 ? ` (${t('聲望折扣')} ${Math.round(discount*100)}%)` : '';
         world.logMessage('economy', `🛒 ${t('購買了')} ${amount} ${item.name()}${t('，花費')} ${totalCost} ${t('銀幣')}${discountText}`);
@@ -1173,7 +1173,7 @@ class ShopSystem {
         if (!world.stockpile.has(itemKey, amount)) return { success: false, msg: t('庫存不足') };
         const totalIncome = item.sellPrice * amount;
         world.stockpile.consume(itemKey, amount, world.tickCount, `${t('出售')}${item.name()}`);
-        world.stockpile.add('silver', totalIncome, world.tickCount, `${t('商店出售')}`);
+        world.stockpile.add('silver', totalIncome, world.tickCount, `${t('商店出售')}`, 'player');
         this.transactionLog.push({ type: 'sell', item: itemKey, amount, income: totalIncome, tick: world.tickCount });
         world.logMessage('economy', `💰 ${t('出售了')} ${amount} ${item.name()}${t('，獲得')} ${totalIncome} ${t('銀幣')}`);
         return { success: true, msg: `${t('出售成功')}！` };
@@ -1275,13 +1275,13 @@ class EventChoiceSystem {
             Object.values(world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + effects.mood_all; });
         }
         if (effects.silver) {
-            if (effects.silver > 0) world.stockpile.add('silver', effects.silver, world.tickCount, t('事件決策'));
+            if (effects.silver > 0) world.stockpile.add('silver', effects.silver, world.tickCount, t('事件決策'), 'player');
             else world.stockpile.consume('silver', Math.abs(effects.silver), world.tickCount, t('事件決策'));
         }
         // v4.5.0 一般資源消耗/獲得 + 防災準備等級
         for (const rk of ['food','wood','stone','metal','tools','herbs','cloth']) {
             if (effects[rk]) {
-                if (effects[rk] > 0) world.stockpile.add(rk, effects[rk], world.tickCount, t('事件決策'));
+                if (effects[rk] > 0) world.stockpile.add(rk, effects[rk], world.tickCount, t('事件決策'), 'player');
                 else world.stockpile.consume(rk, Math.abs(effects[rk]), world.tickCount, t('事件決策'));
             }
         }

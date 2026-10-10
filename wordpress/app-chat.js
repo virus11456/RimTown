@@ -671,7 +671,7 @@ Object.assign(RimTownApp.prototype, {
                 if (npc._lastHelpDay === dayKey) { fx(`📦 ${t(npc.name)}${t('說今天已經勻過了，明天再說')}`, '#9aa'); break; }
                 const amount = 10 + Math.floor(Math.random() * 11);
                 npc._lastHelpDay = dayKey;
-                world.stockpile.add(res, amount, world.tickCount, `${t('求助')}：${t(npc.name)}`);
+                world.stockpile.add(res, amount, world.tickCount, `${t('求助')}：${t(npc.name)}`, 'player');
                 rel.trust = Math.max(-100, (rel.trust || 0) - 2);
                 npc.memory?.add?.(world.tickCount, world.clock.timeStr, 'social', `${t('勻了')}${amount}${t('份東西給')}${t(player.name)}`, 5, ['player']);
                 const label = (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[res]?.name) ? SHOP_ITEMS[res].name() : res;

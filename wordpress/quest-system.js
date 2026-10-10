@@ -1972,7 +1972,7 @@ class QuestSystem {
         // v5.84.0 物資增減、繁榮度加成(持久、進存檔)、世界旗標(燈塔升級、海路開通…)
         for (const [res, d] of Object.entries(effects.stockpile || {})) {
             if (!world.stockpile) break;
-            if (d >= 0) world.stockpile.add(res, d, world.tickCount, t('任務'));
+            if (d >= 0) world.stockpile.add(res, d, world.tickCount, t('任務'), 'player');
             else world.stockpile.consume?.(res, Math.min(world.stockpile.get(res) || 0, -d), world.tickCount, t('任務'));
         }
         if (effects.prosperity && world.prosperity) world.prosperity.questBonus = (world.prosperity.questBonus || 0) + effects.prosperity;
@@ -2338,8 +2338,9 @@ class RequestBoard {
         const today = this._absDay(world);
         // 昨天沒完成的到期委託 → 失敗(調解有兩天)
         let allDone = this.board.length > 0;
+        let expired = 0;
         for (const r of this.board) {
-            if (r.status === 'open' && today >= r.expiresAbsDay) this._fail(r, world);
+            if (r.status === 'open' && today >= r.expiresAbsDay) this._fail(r, world, expired++);
             if (r.status !== 'done') allDone = false;
         }
         if (this.dayKey) { // 不是第一天
@@ -2361,7 +2362,7 @@ class RequestBoard {
         const vs = this._villagers(world); if (vs.length < 3) return;
         const used = new Set(this.board.map(r => r.npcId));
         const prosperity = world.prosperity?.prosperity || 0;
-        const want = Math.min(5, 3 + (prosperity >= 50 ? 1 : 0) + (Math.random() < 0.5 ? 1 : 0)) - this.board.length;
+        const want = Math.min(5, 3 + (prosperity >= 50 ? 1 : 0) + ((this.stats?.streak || 0) >= 2 ? 1 : (Math.random() < 0.25 ? 1 : 0))) - this.board.length; // v6.2.0 連續全數完成才多一件
         const today = this._absDay(world);
         const makers = [
             () => { // 送貨
@@ -2561,8 +2562,8 @@ class RequestBoard {
     }
     _reward(r, world, rw) {
         const npc = world.agents[r.npcId]; const pname = this._playerName(world);
-        if (rw.silver) world.stockpile?.add?.('silver', rw.silver, world.tickCount, `${t('委託獎勵')}：${t(r.npcName)}`);
-        if (rw.pack) world.stockpile?.add?.(rw.pack.res, rw.pack.amount, world.tickCount, `${t('委託獎勵')}：${t(r.npcName)}`);
+        if (rw.silver) world.stockpile?.add?.('silver', rw.silver, world.tickCount, `${t('委託獎勵')}：${t(r.npcName)}`, 'player');
+        if (rw.pack) world.stockpile?.add?.(rw.pack.res, rw.pack.amount, world.tickCount, `${t('委託獎勵')}：${t(r.npcName)}`, 'player');
         if (rw.rep && world.questSystem) world.questSystem.reputation = (world.questSystem.reputation || 0) + rw.rep;
         if (npc && rw.aff) { const rel = npc.relationships.getOrCreate('player', pname); rel.modifyAffinity?.(rw.aff + (world.growth?.has('charmer') ? 3 : 0)); } // v5.94.0 天賦:人緣
     }
@@ -2576,10 +2577,10 @@ class RequestBoard {
         world.dailyNews?.collectEvent?.('social', `${pname}${t('替')}${t(r.npcName)}${t('辦妥了一件事：')}${desc}`, 6, [r.npcName]);
         world.events?.conversationTopics?.push(`${pname}${t('幫')}${t(r.npcName)}${t('的忙')}`);
     }
-    _fail(r, world) {
+    _fail(r, world, idx = 0) { // v6.2.0 同一天第一件過期 −3(硬頸 −2),其餘每件 −1、不另記在心上
         r.status = 'failed'; this.stats.failed++;
         const npc = world.agents[r.npcId]; const pname = this._playerName(world);
-        if (npc) { const rel = npc.relationships.getOrCreate('player', pname); rel.modifyAffinity?.(world.growth?.has('grit') ? -2 : -4); npc.memory?.add?.(world.tickCount, world.clock.timeStr, 'neglect', `${t('拜託')}${pname}${t('的事沒有下文：')}${this.describe(r)}`, 5, [pname]); }
+        if (npc) { const rel = npc.relationships.getOrCreate('player', pname); rel.modifyAffinity?.(idx > 0 ? -1 : (world.growth?.has('grit') ? -2 : -3)); if (idx === 0) npc.memory?.add?.(world.tickCount, world.clock.timeStr, 'neglect', `${t('拜託')}${pname}${t('的事沒有下文：')}${this.describe(r)}`, 5, [pname]); }
         world.logMessage?.('quest', `⌛ ${t('委託過期')}：${this.describe(r)}`);
     }
     openCount() { return this.board.filter(r => r.status === 'open').length; }
@@ -2605,26 +2606,33 @@ class SeasonTrials {
     _npcs(w) { return Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_')); }
     _seasonKey(w) { return `${w.clock.year}-${w.clock.season}`; }
     _flags(w) { return w.harborFlags || (w.harborFlags = {}); }
+    // v6.2.0 糧荒/瘟疫/壓價的目標與進度都只算「玩家親手帶進」的量(求助、收成、買進、委託與任務報酬、押商隊、賣貨、事件決策):
+    // 只看不玩一定過不了,動手就過得了,也不受倉庫自然膨脹影響;匪患仍看防衛值(守衛、防禦建築)
+    onPlayerGain(res, amount) {
+        const c = this.current; if (!c || c.status !== 'active') return;
+        c.contrib = c.contrib || { food: 0, herb: 0, silver: 0 };
+        if (res === 'food') c.contrib.food += amount; else if (res === 'herbs') c.contrib.herb += amount; else if (res === 'medicine') c.contrib.herb += amount * 3; else if (res === 'silver') c.contrib.silver += amount;
+    }
     target(type, w) {
         const n = Math.max(8, this._npcs(w).length); const f = this._flags(w);
         const pv = w.growth?.has('provident') ? 0.9 : 1; // v5.94.0 天賦:未雨
-        if (type === 'famine') return Math.round(n * 8 * (f.granary ? 0.8 : 1) * pv);
-        if (type === 'plague') return Math.round(n * 2 * (f.apothecary ? 0.7 : 1) * pv);
-        if (type === 'bandits') return pv < 1 ? 5 : 6;
-        return Math.round(150 * pv);
+        if (type === 'famine') return Math.round(n * 5 * (f.granary ? 0.8 : 1) * pv);
+        if (type === 'plague') return Math.round(n * 1.5 * (f.apothecary ? 0.7 : 1) * pv);
+        if (type === 'bandits') return Math.max(4, this.value('bandits', w) + (pv < 1 ? 1 : 2));
+        return Math.round((150 + n * 8) * pv);
     }
     value(type, w) {
-        const sp = w.stockpile;
-        if (type === 'famine') return sp?.get?.('food') || 0;
-        if (type === 'plague') return (sp?.get?.('herbs') || 0) + (sp?.get?.('medicine') || 0) * 3;
-        if (type === 'bandits') { const guards = this._npcs(w).filter(a => a.job?.key === 'guard').length; return guards * 2 + Math.round(w.buildings?.getEffect?.('defense_bonus', 0) || 0) + (this._flags(w).cityGuard ? 3 : 0) + (this._flags(w).watchtower ? 2 : 0); }
-        if (type === 'pricewar') return Math.max(0, (sp?.get?.('silver') || 0) - (this.current?.silverAtStart || 0));
+        const c = this.current; const k = (c && c.type === type && c.contrib) ? c.contrib : { food: 0, herb: 0, silver: 0 };
+        if (type === 'famine') return Math.round(k.food);
+        if (type === 'plague') return Math.round(k.herb);
+        if (type === 'bandits') { const guards = this._npcs(w).filter(a => a.job?.key === 'guard').length; const building = (w.buildings?.projects || []).reduce((acc, p) => acc + (p.effects?.defense_bonus || 0) * Math.min(1, (p.workDone || 0) / Math.max(1, p.workRequired || 1)), 0); return guards * 2 + Math.round((w.buildings?.getEffect?.('defense_bonus', 0) || 0) + building) + (this._flags(w).cityGuard ? 3 : 0) + (this._flags(w).watchtower ? 2 : 0); } // v6.2.0 蓋到一半的防禦建築按進度計
+        if (type === 'pricewar') return Math.round(k.silver);
         return 0;
     }
-    unit(type) { return { famine: t('食物'), plague: t('草藥（藥品算 3）'), bandits: t('防衛值'), pricewar: t('銀幣') }[type] || ''; }
+    unit(type) { return { famine: t('帶進的食物'), plague: t('帶進的草藥（藥品算 3）'), bandits: t('防衛值'), pricewar: t('賺進的銀幣') }[type] || ''; }
     goalText(type, target) {
         const fill = (s, m) => Object.entries(m).reduce((acc, [k, v]) => acc.split('{' + k + '}').join(v), s);
-        const tpl = { famine: t('季末前把食物存到 {n} 以上'), plague: t('季末前備齊 {n} 份草藥（藥品一份算三份）'), bandits: t('季末前把防衛值撐到 {n}（守衛每人 2、防禦建築、市集城加強守衛 3）'), pricewar: t('這一季銀幣要比開季時多 {n}（押商隊、賣貨、委託都算）') }[type];
+        const tpl = { famine: t('季末前親手為鎮上帶進 {n} 份食物（求助、收成、買進、委託報酬都算）'), plague: t('季末前親手帶進 {n} 份草藥（藥品一份算三份；求助、買進、委託報酬都算）'), bandits: t('季末前把防衛值撐到 {n}（守衛每人 2、防禦建築、市集城加強守衛 3）'), pricewar: t('季末前親手賺進 {n} 銀幣（委託報酬、押商隊、賣貨都算）') }[type];
         return fill(tpl, { n: target });
     }
     _pick(w) {
@@ -2645,7 +2653,6 @@ class SeasonTrials {
         const type = this._pick(world); const d = TRIAL_TYPES[type];
         this.lastSeasonKey = key; this.lastType = type;
         this.current = { type, seasonKey: key, status: 'active', target: this.target(type, world), startAbsDay: world._absDay?.() || 0, dueDay: world.clock.DAYS_PER_SEASON || 15, silverAtStart: world.stockpile?.get?.('silver') || 0 };
-        if (type === 'pricewar') this.current.target = 150;
         const text = `${t('本季考驗')}「${t(d.title)}」：${this.goalText(type, this.current.target)}`;
         world.logMessage?.('event', `⚖️ ${text}`);
         world.dailyNews?.collectEvent?.('event', text, 9);
@@ -2669,7 +2676,7 @@ class SeasonTrials {
             world.onTrialEvent?.('passed', `🏅 ${t('考驗通過')}：${t(d.title)}`, `${t(d.perkName)} — ${t(d.perkDesc)}`);
         } else {
             this.failStreak++;
-            const leavers = this._npcs(world).filter(a => a.job?.key !== 'mayor' && !(a.relationships?.relationships?.player?.status === 'married')).sort((a, b) => (a.mood || 50) - (b.mood || 50)).slice(0, Math.max(1, 2 + (this.failStreak >= 2 ? 1 : 0) - (world.growth?.has('grit') ? 1 : 0))); // v5.94.0 天賦:硬頸
+            const leavers = this._npcs(world).filter(a => a.job?.key !== 'mayor' && !(a.relationships?.relationships?.player?.status === 'married')).sort((a, b) => (a.mood || 50) - (b.mood || 50)).slice(0, Math.min(Math.max(1, Math.round(this._npcs(world).length * 0.12)), Math.max(1, 2 + (this.failStreak >= 2 ? 1 : 0) - (world.growth?.has('grit') ? 1 : 0)))); // v5.94.0 天賦:硬頸;v6.2.0 小鎮最多走 12%
             const names = leavers.map(a => a.name);
             leavers.forEach(a => world.leaveTown?.(a.agentId, t('鎮上的日子過不下去')));
             Object.values(world.agents).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) - 10; });
@@ -2693,7 +2700,7 @@ class SeasonTrials {
             nextAnnounceDay: c ? null : 5,
         };
     }
-    serialize() { return { current: this.current, failStreak: this.failStreak, history: this.history, lastType: this.lastType, lastSeasonKey: this.lastSeasonKey || null }; }
+    serialize() { return { current: this.current, failStreak: this.failStreak, history: this.history, lastType: this.lastType, lastSeasonKey: this.lastSeasonKey || null, }; }
     loadFrom(d) { if (!d) return; this.current = d.current || null; this.failStreak = d.failStreak || 0; this.history = Array.isArray(d.history) ? d.history : []; this.lastType = d.lastType || null; this.lastSeasonKey = d.lastSeasonKey || null; }
 }
 

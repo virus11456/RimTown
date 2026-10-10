@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.1.0
-const RIMTOWN_APP_VERSION = '6.1.0';
+// RimTown - Frontend App (WordPress Plugin) v6.2.0
+const RIMTOWN_APP_VERSION = '6.2.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -699,8 +699,8 @@ class RimTownApp {
             const day = Math.min(streak, 7);
             const silver = 10 + day * 10;
             const food = 5 + day * 5;
-            this.world.stockpile.add('silver', silver, this.world.tickCount, t('每日登入獎勵'));
-            this.world.stockpile.add('food', food, this.world.tickCount, t('每日登入獎勵'));
+            this.world.stockpile.add('silver', silver, this.world.tickCount, t('每日登入獎勵'), 'player');
+            this.world.stockpile.add('food', food, this.world.tickCount, t('每日登入獎勵'), 'player');
             this.world.logMessage('system', `🎁 ${t('每日登入獎勵(連續')} ${streak} ${t('天):+')}${silver} ${t('銀幣、+')}${food} ${t('食物')}`);
             this.bgm?.sfx?.('coin');
             this.tileMap?.spawnFxOnAgent?.('player', `💰 +${silver}`, { color: '#ffd166', burst: '🪙', burstCount: 6 });
