@@ -2712,14 +2712,14 @@ const GROWTH_PERKS = {
     earlybird:   { icon: '🌅', name: '早起', desc: '每天第一件委託不扣行動點', attr: {} },
 };
 class TravellerGrowth {
-    constructor() { this.xp = 0; this.level = 1; this.perks = []; this.pending = null; this.log = []; }
+    constructor() { this.xp = 0; this.level = 1; this.perks = []; this.pending = null; this.log = []; this.total = 0; }
     xpToNext() { return 60 + this.level * 45; } // v5.96.0 浸泡測試 35 天就 Lv.10 學完八種天賦,放慢
     has(perk) { return this.perks.includes(perk); }
     attrBonus() { const b = { charm: 0, vigor: 0, wit: 0, grit: 0 }; for (const k of this.perks) for (const [a, v] of Object.entries(GROWTH_PERKS[k]?.attr || {})) b[a] += v; return b; }
     attr(world, key) { return ((world?.agents?.player?.attributes || {})[key] || 5) + this.attrBonus()[key]; }
     addXp(n, reason, world) {
         if (!n) return;
-        this.xp += n; this.log = this.log.concat([{ n, reason, day: world?.clock?.day }]).slice(-20);
+        this.xp += n; this.total = (this.total || 0) + n; this.log = this.log.concat([{ n, reason, day: world?.clock?.day }]).slice(-20);
         let leveled = false;
         while (this.xp >= this.xpToNext()) { this.xp -= this.xpToNext(); this.level++; leveled = true; }
         if (leveled && !this.pending) this._offer();
@@ -2751,6 +2751,87 @@ class TravellerGrowth {
             pendingLevels: this.pendingLevels(),
             attrs: ['charm', 'vigor', 'wit', 'grit'].map(k => ({ key: k, base: base[k] || 5, bonus: b[k] })), log: this.log.slice(-5).reverse() };
     }
-    serialize() { return { xp: this.xp, level: this.level, perks: this.perks, pending: this.pending, log: this.log }; }
-    loadFrom(d) { if (!d) return; this.xp = d.xp || 0; this.level = d.level || 1; this.perks = Array.isArray(d.perks) ? d.perks : []; this.pending = Array.isArray(d.pending) ? d.pending : null; this.log = Array.isArray(d.log) ? d.log : []; if (!this.pending && this.pendingLevels() > 0) this._offer(); }
+    serialize() { return { xp: this.xp, level: this.level, perks: this.perks, pending: this.pending, log: this.log, total: this.total || 0 }; }
+    loadFrom(d) { if (!d) return; this.xp = d.xp || 0; this.total = d.total || 0; this.level = d.level || 1; this.perks = Array.isArray(d.perks) ? d.perks : []; this.pending = Array.isArray(d.pending) ? d.pending : null; this.log = Array.isArray(d.log) ? d.log : []; if (!this.pending && this.pendingLevels() > 0) this._offer(); }
+}
+
+// v5.98.0 季末回顧:季初快照、季末差分,換季那天彈一頁回顧;最多留 4 季
+class SeasonRecap {
+    constructor() { this.start = null; this.last = null; this.history = []; this.pendingShow = false; }
+    _key(w) { return `${w.clock.year}-${w.clock.season}`; }
+    _npcs(w) { return Object.values(w.agents || {}).filter(a => !a.isPlayer); }
+    _snap(w) {
+        const aff = {}; for (const a of this._npcs(w)) aff[a.agentId] = a.relationships?.relationships?.player?.affinity || 0;
+        return {
+            key: this._key(w), year: w.clock.year, season: w.clock.season, absDay: w._absDay?.() || 0,
+            silver: w.stockpile?.get?.('silver') || 0, pop: this._npcs(w).length, level: w.growth?.level || 1, xpTotal: w.growth?.total || 0,
+            reqDone: w.requests?.stats?.done || 0, reqFailed: w.requests?.stats?.failed || 0, bestStreak: w.requests?.stats?.bestStreak || 0,
+            carRuns: w.playerCaravan?.totals?.runs || 0, carSilver: w.playerCaravan?.totals?.silver || 0, carRaids: w.playerCaravan?.totals?.raids || 0,
+            rep: w.questSystem?.reputation || 0, prosperity: w.prosperity?.prosperity || 0,
+            questsDone: Object.values(w.questSystem?.quests || {}).filter(q => q.status === 'completed').length, aff,
+        };
+    }
+    // 每天叫一次(在 trials.daily 之後):第一次只拍快照;換季就結算上一季
+    daily(w) {
+        if (!w?.clock) return;
+        const key = this._key(w);
+        if (!this.start) { this.start = this._snap(w); return; }
+        if (this.start.key === key) return;
+        const s = this.start, now = this._snap(w);
+        const gains = this._npcs(w).map(a => ({ id: a.agentId, name: a.name, delta: (now.aff[a.agentId] || 0) - (a.agentId in s.aff ? s.aff[a.agentId] : (now.aff[a.agentId] || 0)) })).filter(x => x.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, 3);
+        const left = (w.movedOut || []).filter(m => m.absDay >= s.absDay && m.absDay < now.absDay).map(m => m.name);
+        const joined = this._npcs(w).filter(a => !(a.agentId in s.aff)).map(a => a.name);
+        const tr = w.trials?.current; const trial = (tr && tr.seasonKey === s.key && tr.status !== 'active') ? { type: tr.type, status: tr.status, value: tr.finalValue ?? 0, target: tr.target } : null;
+        const r = {
+            key: s.key, year: s.year, season: s.season, trial,
+            reqDone: now.reqDone - s.reqDone, reqFailed: now.reqFailed - s.reqFailed, bestStreak: now.bestStreak,
+            carRuns: now.carRuns - s.carRuns, carSilver: now.carSilver - s.carSilver, carRaids: now.carRaids - s.carRaids,
+            xp: now.xpTotal - s.xpTotal, levelFrom: s.level, levelTo: now.level,
+            silverFrom: s.silver, silverTo: now.silver, popFrom: s.pop, popTo: now.pop, rep: now.rep - s.rep, prosperity: now.prosperity - s.prosperity, questsDone: now.questsDone - s.questsDone,
+            gains, left, joined, grade: '',
+        };
+        r.grade = this._grade(r);
+        this.last = r; this.history = this.history.concat([r]).slice(-4); this.start = now; this.pendingShow = true;
+        const line = this.headline(r);
+        w.logMessage?.('event', `📜 ${line}`); w.dailyNews?.collectEvent?.('event', line, 9);
+        if (typeof w.onSeasonRecap === 'function') { this.pendingShow = false; try { w.onSeasonRecap(r); } catch (e) {} }
+    }
+    _grade(r) {
+        let s = 0;
+        if (r.trial?.status === 'passed') s += 2; else if (r.trial?.status === 'failed') s -= 2;
+        s += Math.min(2, Math.floor(r.reqDone / 10)); if (r.reqFailed > r.reqDone) s -= 1;
+        if (r.silverTo > r.silverFrom) s += 1; if (r.popTo < r.popFrom) s -= 1; if (r.carSilver >= 100) s += 1; if (r.questsDone > 0) s += 1;
+        return s >= 5 ? 'S' : s >= 3 ? 'A' : s >= 0 ? 'B' : 'C';
+    }
+    _fill(tpl, m) { return Object.entries(m).reduce((acc, [k, v]) => acc.split('{' + k + '}').join(String(v)), tpl); }
+    title(r) { return this._fill(t('第 {y} 年{s}'), { y: r.year, s: t(r.season) }); }
+    gradeText(g) { return { S: t('這一季漂亮'), A: t('穩穩的一季'), B: t('平平的一季'), C: t('難熬的一季') }[g] || ''; }
+    headline(r) {
+        const tr = r.trial ? (r.trial.status === 'passed' ? t('撐過了考驗') : t('考驗沒撐過')) : t('沒有考驗');
+        return this._fill(t('{name}回顧：{tr}，委託完成 {n} 件，商隊 {c} 趟，評等 {g}'), { name: this.title(r), tr, n: r.reqDone, c: r.carRuns, g: r.grade });
+    }
+    // 給介面用的文字版(顯示時才翻譯)
+    lines(r) {
+        if (!r) return [];
+        const T = (typeof TRIAL_TYPES !== 'undefined') ? TRIAL_TYPES : {};
+        const out = [];
+        if (r.trial) { const d = T[r.trial.type] || {}; out.push({ icon: r.trial.status === 'passed' ? '🏅' : '💔', text: `${this._fill(r.trial.status === 'passed' ? t('撐過了「{t}」') : t('沒撐過「{t}」'), { t: t(d.title || r.trial.type) })} ${r.trial.value}/${r.trial.target}` }); }
+        else out.push({ icon: '⚖️', text: t('本季沒有考驗') });
+        out.push({ icon: '📋', text: this._fill(t('完成 {a} 件、過期 {b} 件、最佳連勝 {c} 天'), { a: r.reqDone, b: r.reqFailed, c: r.bestStreak }) });
+        if (r.carRuns) out.push({ icon: '🐪', text: this._fill(t('{n} 趟、賺 {s} 銀幣、遇劫 {r} 次'), { n: r.carRuns, s: r.carSilver, r: r.carRaids }) });
+        out.push({ icon: '🧭', text: this._fill(t('經驗 +{x}，Lv.{a} → Lv.{b}'), { x: r.xp, a: r.levelFrom, b: r.levelTo }) });
+        out.push({ icon: '💰', text: this._fill(t('銀幣 {a} → {b}'), { a: r.silverFrom, b: r.silverTo }) + `（${r.silverTo - r.silverFrom >= 0 ? '+' : ''}${r.silverTo - r.silverFrom}）` });
+        out.push({ icon: '👥', text: this._fill(t('人口 {a} → {b}'), { a: r.popFrom, b: r.popTo }) + ` · ${this._fill(t('聲望 {d}'), { d: (r.rep >= 0 ? '+' : '') + r.rep })} · ${this._fill(t('繁榮 {d}'), { d: (r.prosperity >= 0 ? '+' : '') + r.prosperity })}` });
+        if (r.questsDone) out.push({ icon: '⚔️', text: this._fill(t('任務完成 {n} 件'), { n: r.questsDone }) });
+        if (r.gains?.length) out.push({ icon: '💞', text: `${t('好感升最多')}：${r.gains.map(g => `${t(g.name)} +${g.delta}`).join('、')}` });
+        if (r.left?.length) out.push({ icon: '🚪', text: `${t('搬走了')}：${r.left.map(n => t(n)).join('、')}` });
+        if (r.joined?.length) out.push({ icon: '🏠', text: `${t('新住民')}：${r.joined.map(n => t(n)).join('、')}` });
+        return out;
+    }
+    toDict(w) {
+        const fmt = (r) => r ? { key: r.key, grade: r.grade, title: this.title(r), gradeText: this.gradeText(r.grade), headline: this.headline(r), lines: this.lines(r) } : null;
+        return { last: fmt(this.last), history: this.history.slice().reverse().map(fmt), pendingShow: this.pendingShow };
+    }
+    serialize() { return { start: this.start, last: this.last, history: this.history, pendingShow: this.pendingShow }; }
+    loadFrom(d) { if (!d) return; this.start = d.start || null; this.last = d.last || null; this.history = Array.isArray(d.history) ? d.history : []; this.pendingShow = !!d.pendingShow; }
 }

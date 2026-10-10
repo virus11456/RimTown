@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.97.0
-const RIMTOWN_APP_VERSION = '5.97.0';
+// RimTown - Frontend App (WordPress Plugin) v5.98.0
+const RIMTOWN_APP_VERSION = '5.98.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -3270,6 +3270,25 @@ class RimTownApp {
     // ============================================================
     // v5.92.0 押商隊(README H2):選貨/目的鎮/護衛/路線,即時報價,出發;小鎮分頁顯示進度與戰績
     // ============================================================
+    // v5.98.0 季末回顧彈窗:換季那天自動彈,故事分頁也可重看;最多留 4 季
+    _showSeasonRecap() {
+        const w = this.world; const d = w?.recap?.toDict?.(w); const r = d?.last; if (!r) return;
+        document.getElementById('season-recap')?.remove();
+        const esc = (x) => this._escapeHtml(String(x));
+        const ov = document.createElement('div'); ov.id = 'season-recap';
+        ov.style.cssText = 'position:fixed;inset:0;background:rgba(6,10,24,0.72);z-index:9999;display:flex;align-items:center;justify-content:center';
+        const card = document.createElement('div');
+        card.style.cssText = 'background:var(--bg-secondary);border:1px solid var(--border);border-radius:14px;padding:18px;max-width:380px;width:90%;max-height:85vh;overflow-y:auto';
+        const gradeCol = { S: '#ffd166', A: 'var(--positive, #4ade80)', B: 'var(--accent)', C: 'var(--negative, #f87171)' }[r.grade] || 'var(--accent)';
+        let inner = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div style="font-weight:bold;font-size:1rem">📜 ${t('季末回顧')}</div><div style="font-size:1.4rem;font-weight:bold;color:${gradeCol}">${esc(r.grade)}</div></div>`;
+        inner += `<div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:10px">${esc(r.title)} · ${esc(r.gradeText)}</div>`;
+        inner += r.lines.map(l => `<div style="font-size:0.82rem;margin:5px 0;line-height:1.4">${l.icon} ${esc(l.text)}</div>`).join('');
+        if (d.history.length > 1) inner += `<div style="font-size:0.7rem;color:var(--text-secondary);margin-top:10px;border-top:1px solid var(--border);padding-top:6px">${t('之前幾季')}：${d.history.slice(1).map(h => `${esc(h.title)} ${esc(h.grade)}`).join(' · ')}</div>`;
+        inner += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:8px">${t('下一季：第 5 天公布新考驗，委託每天早上更新')}</div>`;
+        inner += `<button class="trade-btn" data-action="recap-close" style="width:100%;padding:8px;margin-top:12px">${t('關閉')}</button>`;
+        card.innerHTML = inner; ov.appendChild(card); document.body.appendChild(ov);
+        ov.addEventListener('click', (e) => { if (e.target === ov || e.target.closest('[data-action="recap-close"]')) ov.remove(); });
+    }
     _showCaravanDialog() {
         const w = this.world; if (!w) return;
         document.getElementById('caravan-dialog')?.remove();
@@ -3526,6 +3545,7 @@ class RimTownApp {
         w.onVisitorReturn = (meta) => this._pushMailbox(this._returnMailboxKey(meta.fromTownId),
             { origId: meta.origId, origName: meta.origName, notes: meta.notes || [], visitedTownName: this._getCurrentTownName(), visitedTownId: this.currentTownId, romance: meta.romance || null }); // v5.90.0 帶回戀情
         w.onRelocate = (data) => this._doRelocate(data); // v5.90.0 搬家提案的決定
+        w.onSeasonRecap = () => { try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} this._showSeasonRecap(); }; // v5.98.0 季末回顧
         w.onGrowthEvent = (kind, v) => { if (kind === 'level') this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${v} ${t('級')}`, name: '', desc: t('到「故事」分頁選一個天賦') }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.94.0
         w.onTrialEvent = (kind, title, desc) => { this._showCornerNotice({ icon: kind === 'passed' ? '🏅' : kind === 'failed' ? '💔' : '⚖️', title, name: '', desc }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.93.0
         w.onPlayerCaravanReturn = (result, line) => { this._showCornerNotice({ icon: result.raided ? '🏴' : '💰', title: t('商隊回報'), name: t(result.toTownName), desc: line }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.92.0
@@ -3695,6 +3715,7 @@ class RimTownApp {
         }
         if (tr.perks.length) html += `<div style="font-size:0.72rem;margin-top:6px">🏅 ${t('已得到')}：${tr.perks.map(p => `<b>${esc(p.name)}</b>`).join('、')}</div>`;
         if (tr.history.length) html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px">${tr.history.map(h => `${h.status === 'passed' ? '✅' : '❌'} ${esc(h.title)} ${h.value}/${h.target}`).join(' · ')}</div>`;
+        if (this.state?.recap?.last) html += `<button class="trade-btn" data-action="recap-open" style="width:100%;padding:6px;margin-top:8px;font-size:0.78rem">📜 ${t('上一季回顧')}：${esc(this.state.recap.last.title)} · ${t('評等')} ${esc(this.state.recap.last.grade)}</button>`; // v5.98.0
         return html + '</div>';
     }
     _requestAct(id) {
@@ -3712,6 +3733,7 @@ class RimTownApp {
     _updateRequestBadge() {
         const rb = this.world?.requests; if (!rb) return;
         try { rb.checkPassive(this.world); } catch (e) {} // v5.97.0 考驗衝刺被動達標
+        if (this.world?.recap?.pendingShow) { this.world.recap.pendingShow = false; try { this._showSeasonRecap(); } catch (e) {} } // v5.98.0 讀檔回來還沒看過的季末回顧
         const n = rb.openCount();
         document.querySelectorAll('[data-tab="quest"]').forEach(tab => {
             let badge = tab.querySelector('.chat-badge');
@@ -4688,6 +4710,8 @@ class RimTownApp {
                 case 'req-act': this._requestAct(val); break; // v5.91.0 委託板
                 case 'req-buy-ap': this._requestBuyAP(); break;
                 case 'open-caravan': this._showCaravanDialog(); break; // v5.92.0
+                case 'recap-open': this._showSeasonRecap(); break; // v5.98.0
+                case 'recap-close': document.getElementById('season-recap')?.remove(); break;
                 case 'perk-pick': { const r = this.world?.growth?.choose(val, this.world); if (r?.ok) { this.state = this.world.getState(); try { this.renderSidebar(); } catch (e) {} } break; } // v5.94.0
                 case 'look-set': this._setLookDraft(val); break;
                 case 'look-random': this._randomLookDraft(); break;
