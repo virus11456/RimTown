@@ -2343,6 +2343,7 @@ class RequestBoard {
             if (r.status !== 'done') allDone = false;
         }
         if (this.dayKey) { // 不是第一天
+            this.lastDay = { dayKey: this.dayKey, done: this.board.filter(r => r.status === 'done').length, failed: this.board.filter(r => r.status === 'failed').length, total: this.board.length }; // v5.97.0 昨日結算
             this.stats.days++;
             if (allDone) { this.stats.streak++; this.stats.bestStreak = Math.max(this.stats.bestStreak, this.stats.streak); }
             else if (this.board.some(r => r.status === 'failed')) this.stats.streak = 0;
@@ -2398,10 +2399,34 @@ class RequestBoard {
                 const npc = this._pick(cands); if (!npc) return null;
                 return { type: 'gift', npcId: npc.agentId, npcName: npc.name, apCost: 1, reward: { silver: 20, aff: 6, rep: 2 } };
             },
+            // v5.97.0 接通其他系統的委託
+            () => { // 押商隊(商人/鎮長發):有鄰鎮、沒有商隊在路上
+                if (!Array.isArray(world.otherTowns) || !world.otherTowns.length || world.playerCaravan?.active) return null;
+                const npc = this._pick(vs.filter(a => !used.has(a.agentId) && (a.job?.key === 'trader' || a.job?.key === 'mayor'))); if (!npc) return null;
+                return { type: 'caravan', npcId: npc.agentId, npcName: npc.name, apCost: 1, reward: { silver: 30, aff: 6, rep: 3 } };
+            },
+            () => { // 打聽(愛八卦的人發):去跟某人打聽
+                const npc = this._pick(vs.filter(a => !used.has(a.agentId) && (a.personality?.traits || []).includes('gossip'))); if (!npc) return null;
+                const target = this._pick(vs.filter(a => a.agentId !== npc.agentId)); if (!target) return null;
+                return { type: 'rumor', npcId: npc.agentId, npcName: npc.name, targetId: target.agentId, targetName: target.name, apCost: 1, reward: { silver: 20, aff: 6, rep: 2 } };
+            },
+            () => { // 考驗衝刺(鎮長發):本季考驗還沒達標時,把指標再推高一截
+                const tr = world.trials?.current; if (!tr || tr.status !== 'active') return null;
+                const value = world.trials.value(tr.type, world); if (value >= tr.target) return null;
+                const npc = this._pick(vs.filter(a => !used.has(a.agentId) && a.job?.key === 'mayor')) || this._pick(vs.filter(a => !used.has(a.agentId))); if (!npc) return null;
+                const delta = Math.max(5, Math.round((tr.target - value) * 0.3));
+                return { type: 'trial', npcId: npc.agentId, npcName: npc.name, trialType: tr.type, baseValue: value, delta, apCost: 0, reward: { silver: 40, aff: 4, rep: 4 } };
+            },
+            () => { // 拉票(選舉期間、候選人發):替他去說服某人
+                const el = world.election; if (!el?.active || (el.phase !== 'campaign' && el.phase !== 'voting')) return null;
+                const cands = (el.candidates || []).filter(c => c.agentId !== 'player' && world.agents[c.agentId] && !used.has(c.agentId)); const c = this._pick(cands); if (!c) return null;
+                const target = this._pick(vs.filter(a => a.agentId !== c.agentId)); if (!target) return null;
+                return { type: 'canvass', npcId: c.agentId, npcName: world.agents[c.agentId].name, targetId: target.agentId, targetName: target.name, apCost: 1, reward: { silver: 25, aff: 8, rep: 3 } };
+            },
         ];
-        const order = [0, 1, 3, 2, 4].sort(() => Math.random() - 0.5);
+        const order = [0, 1, 3, 2, 4, 5, 6, 7, 8].sort(() => Math.random() - 0.5);
         let made = 0, guard = 0;
-        while (made < want && guard++ < 20) {
+        while (made < want && guard++ < 30) {
             const mk = makers[order[guard % order.length]];
             const r = mk(); if (!r) continue;
             if (used.has(r.npcId)) continue;
@@ -2419,10 +2444,15 @@ class RequestBoard {
             case 'mediate': return fill(t('勸 {a} 和 {b} 和好（先各聊一次，再按「調解」）'), { a: t(r.npcName), b: t(r.otherName) });
             case 'fetch': return fill(t('幫 {npc} 去 {loc} 拿東西回來'), { npc: t(r.npcName), loc: t(r.locName || r.loc) });
             case 'gift': return fill(t('{npc} 今天過得不好，送他一份禮'), { npc: t(r.npcName) });
+            case 'caravan': return fill(t('{npc} 想看鎮上的貨出去走走：押一趟商隊去鄰鎮'), { npc: t(r.npcName) });
+            case 'rumor': return fill(t('{npc} 想知道 {target} 的近況：去跟他打聽（用「打聽」）'), { npc: t(r.npcName), target: t(r.targetName) });
+            case 'trial': return fill(t('{npc} 請你為本季考驗出力：把{unit}再推高 {n}'), { npc: t(r.npcName), unit: (typeof TRIAL_TYPES !== 'undefined' && this._trialUnit) ? this._trialUnit(r.trialType) : '', n: r.delta });
+            case 'canvass': return fill(t('{npc} 請你替他拉票：去說服 {target}（用「說服」）'), { npc: t(r.npcName), target: t(r.targetName) });
         }
         return r.type;
     }
-    icon(r) { return { deliver: '📦', visit: '🫂', mediate: '🤝', fetch: '🏃', gift: '🎁' }[r.type] || '📋'; }
+    icon(r) { return { deliver: '📦', visit: '🫂', mediate: '🤝', fetch: '🏃', gift: '🎁', caravan: '🐪', rumor: '👂', trial: '⚖️', canvass: '🗳️' }[r.type] || '📋'; }
+    _trialUnit(type) { return { famine: t('食物'), plague: t('草藥'), bandits: t('防衛值'), pricewar: t('銀幣') }[type] || ''; }
     // 進度說明(給 UI)
     progress(r, world) {
         if (r.status === 'done') return r.outcome === 'partial' ? t('已嘗試（沒完全成功）') : t('已完成');
@@ -2430,6 +2460,8 @@ class RequestBoard {
         if (r.type === 'mediate') { const n = (r.talked || []).length; return n < 2 ? `${t('已聊過')} ${n}/2` : t('兩人都聊過了，去找其中一位按「調解」'); }
         if (r.type === 'fetch') return r.visited ? t('東西拿到了，回去交給他') : t('先到指定地點');
         if (r.type === 'deliver') { const have = world?.stockpile?.get?.(r.res) || 0; return `${t('倉庫')} ${have}/${r.amount}`; }
+        if (r.type === 'trial' && world?.trials) { const v = world.trials.value(r.trialType, world) - (r.baseValue || 0); return `${t('已推高')} ${Math.max(0, v)}/${r.delta}`; }
+        if (r.type === 'caravan') return world?.playerCaravan?.active ? t('商隊在路上了，回報就算') : t('到馬車站押一隊');
         return '';
     }
     // 哪些需要「同地點」按鈕
@@ -2459,6 +2491,25 @@ class RequestBoard {
     // v5.94.0 行動點花費(天賦「早起」:每天第一件免費)
     _cost(r) { return this.ap.freeFirst ? 0 : r.apCost; }
     _spend(r) { const c = this._cost(r); if (this.ap.freeFirst) this.ap.freeFirst = false; return c; }
+    // v5.97.0 其他系統的掛鉤:聊天意圖成功、押商隊出發、考驗指標被動達標
+    onIntent(npcId, key, ok, world) {
+        if (!ok) return;
+        for (const r of this.board) {
+            if (r.status !== 'open') continue;
+            if (r.type === 'rumor' && key === 'gossip' && r.targetId === npcId && this.ap.left >= this._cost(r)) { this.ap.left -= this._spend(r); this._complete(r, world); }
+            if (r.type === 'canvass' && key === 'persuade' && r.targetId === npcId && this.ap.left >= this._cost(r)) { this.ap.left -= this._spend(r); this._complete(r, world); }
+        }
+    }
+    onCaravanLaunch(world) {
+        for (const r of this.board) { if (r.status === 'open' && r.type === 'caravan' && this.ap.left >= this._cost(r)) { this.ap.left -= this._spend(r); this._complete(r, world); } }
+    }
+    checkPassive(world) {
+        for (const r of this.board) {
+            if (r.status !== 'open' || r.type !== 'trial' || !world?.trials) continue;
+            const v = world.trials.value(r.trialType, world) - (r.baseValue || 0);
+            if (v >= r.delta) this._complete(r, world);
+        }
+    }
     // --- 掛鉤 ---
     onChat(npcId, world) {
         for (const r of this.board) {
@@ -2533,9 +2584,9 @@ class RequestBoard {
     }
     openCount() { return this.board.filter(r => r.status === 'open').length; }
     firstOpen() { return this.board.find(r => r.status === 'open') || null; }
-    toDict(world) { return { board: this.board.map(r => ({ ...r, text: this.describe(r), icon: this.icon(r), progress: this.progress(r, world), can: this.canAct(r, world) })), ap: { ...this.ap }, stats: { ...this.stats }, dayKey: this.dayKey }; }
-    serialize() { return { board: this.board, dayKey: this.dayKey, ap: this.ap, stats: this.stats, _seq: this._seq }; }
-    loadFrom(d) { if (!d) return; this.board = Array.isArray(d.board) ? d.board : []; this.dayKey = d.dayKey || null; this.ap = { left: REQUEST_AP_BASE, max: REQUEST_AP_BASE, bought: 0, ...(d.ap || {}) }; this.stats = { done: 0, failed: 0, streak: 0, bestStreak: 0, days: 0, ...(d.stats || {}) }; this._seq = d._seq || 0; }
+    toDict(world) { return { board: this.board.map(r => ({ ...r, text: this.describe(r), icon: this.icon(r), progress: this.progress(r, world), can: this.canAct(r, world) })), ap: { ...this.ap }, stats: { ...this.stats }, dayKey: this.dayKey, lastDay: this.lastDay || null }; }
+    serialize() { return { board: this.board, dayKey: this.dayKey, ap: this.ap, stats: this.stats, _seq: this._seq, lastDay: this.lastDay || null }; }
+    loadFrom(d) { if (!d) return; this.board = Array.isArray(d.board) ? d.board : []; this.dayKey = d.dayKey || null; this.ap = { left: REQUEST_AP_BASE, max: REQUEST_AP_BASE, bought: 0, ...(d.ap || {}) }; this.stats = { done: 0, failed: 0, streak: 0, bestStreak: 0, days: 0, ...(d.stats || {}) }; this._seq = d._seq || 0; this.lastDay = d.lastDay || null; }
 }
 
 

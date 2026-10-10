@@ -6867,6 +6867,7 @@ class World {
         const label = (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[res]?.name) ? SHOP_ITEMS[res].name() : res;
         this.logMessage('trade', `🐪 ${t('你的商隊出發了：')}${amount} ${label} → ${t(opt.toTownName)}${guard ? `（${guard.name}${t('押車')}）` : ''}`);
         this.events?.conversationTopics?.push(`${t('旅人押了一隊商隊去')}${t(opt.toTownName)}`);
+        try { this.requests?.onCaravanLaunch?.(this); } catch (e) {} // v5.97.0 委託:押商隊
         return { ok: true, msg: `${t('商隊出發，預計')} ${q.days} ${t('天後回報')}` };
     }
     _playerCaravanDaily() {

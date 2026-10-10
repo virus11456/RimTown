@@ -104,7 +104,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ### C. 路線圖（與首頁一致）
 
-- 開發中：3D low-poly 版（Blender＋Godot，獨立分支 `codex/godot-*`）；核心玩法迴圈 ✅ 全部上線（H 節：H1 委託板 v5.91.0、H2 押商隊 v5.92.0、H3 季度考驗 v5.93.0、H4 旅人成長 v5.94.0、H5 有目的的對話 v5.95.0；下一步看玩測回饋調數字）
+- 開發中：3D low-poly 版（Blender＋Godot，獨立分支 `codex/godot-*`）；核心玩法迴圈 ✅ 全部上線（H 節：H1 委託板 v5.91.0、H2 押商隊 v5.92.0、H3 季度考驗 v5.93.0、H4 旅人成長 v5.94.0、H5 有目的的對話 v5.95.0；v5.97.0 迴圈打磨：昨日結算、四種跨系統委託、教學「每天要做的事」；下一步看玩測回饋調數字）
 - ✅ 日報跨鎮專欄 v5.88.0、村民自訂外觀 v5.89.0、跨鎮戀愛搬家 v5.90.0（規劃中項目已清空；下一批待拍板）
 - 構想：玩家之間互訪城鎮；手機 App 版
 
@@ -226,7 +226,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.96.0.zip` from Releases
+1. Download `rimtown-v5.97.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -266,6 +266,11 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.97.0 (2026-10-10)
+- 🌙 昨日結算：每天早上第一次打開遊戲會跳「昨日結算」——昨天委託完成幾件／過期幾件、賺到多少經驗、商隊回報或遇劫、本季考驗進度百分比；故事分頁委託板上方也常駐一行摘要，接著才是「今日委託」
+- 📋 四種新委託把各系統串起來：押商隊（商人／鎮長發，去馬車站押一趟就算完成）、打聽（愛八卦的人要你去跟某人用「打聽」）、考驗衝刺（鎮長要你把本季考驗指標再推高一截，囤到就自動完成、不花行動點）、拉票（選舉期間候選人要你去用「說服」）；對話意圖擲骰成功時會順手結案
+- 🎓 新手教學加一頁「每天要做的事」：委託板與行動點、押商隊、季度考驗，六頁說完
 
 ### v5.96.0 (2026-10-10)
 - 🧪 核心玩法迴圈浸泡測試 scripts/soak_test.js：用真正的 world.tick() 跑 35 天，每天像玩家一樣做委託、押商隊、聊天意圖、選天賦，每 10 天存檔讀檔接著跑；五座城鎮都跑過——無錯誤、物資皆有限數、委託／商隊／考驗／成長都在動；列入發版前選跑

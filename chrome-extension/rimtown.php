@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.96.0
+ * Version: 5.97.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.96.0');
+define('RIMTOWN_VERSION', '5.97.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.97.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '🌙 昨日結算：每天早上第一次打開遊戲會跳「昨日結算」——昨天委託完成幾件／過期幾件、賺到多少經驗、商隊回報或遇劫、本季考驗進度百分比；故事分頁委託板上方也常駐一行摘要，接著才是「今日委託」',
+                '📋 四種新委託把各系統串起來：押商隊（商人／鎮長發，去馬車站押一趟就算完成）、打聽（愛八卦的人要你去跟某人用「打聽」）、考驗衝刺（鎮長要你把本季考驗指標再推高一截，囤到就自動完成、不花行動點）、拉票（選舉期間候選人要你去用「說服」）；對話意圖擲骰成功時會順手結案',
+                '🎓 新手教學加一頁「每天要做的事」：委託板與行動點、押商隊、季度考驗，六頁說完',
+            ),
+            'changes_en' => array(
+                '🌙 Yesterday\'s tally: the first time you open the game each morning it shows how many requests you finished / let expire, XP earned, caravan returns or raids and this season\'s trial progress; the same summary line sits above the request board in the Story tab, followed by today\'s requests',
+                '📋 Four new request types tie the systems together: caravan (traders / the mayor ask you to run one from the coach station), ask around (gossips want you to "Ask around" with someone), trial sprint (the mayor asks you to push the seasonal trial metric higher; completes on its own and costs no AP) and canvass (during elections a candidate asks you to "Persuade" someone); a successful chat-intent roll closes the matching request',
+                '🎓 Tutorial gains a page "Things to do every day": request board and action points, caravans, seasonal trials — six pages in all',
+            ),
+        ),
         array(
             'version' => '5.96.0',
             'date'    => '2026-10-10',
