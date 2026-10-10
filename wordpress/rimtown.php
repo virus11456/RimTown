@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.95.0
+ * Version: 5.96.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.95.0');
+define('RIMTOWN_VERSION', '5.96.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.96.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '🧪 核心玩法迴圈浸泡測試 scripts/soak_test.js：用真正的 world.tick() 跑 35 天，每天像玩家一樣做委託、押商隊、聊天意圖、選天賦，每 10 天存檔讀檔接著跑；五座城鎮都跑過——無錯誤、物資皆有限數、委託／商隊／考驗／成長都在動；列入發版前選跑',
+                '📈 經驗曲線放慢：浸泡測試裡機器人 35 天就升到 Lv.10 學完八種天賦，升級門檻從 50 + 等級×30 改為 60 + 等級×45',
+                '🗂️ 城鎮列表改以 town_id 為主鍵（B13）：登入時雲端沒有的 id 一律列為「📱 本機」，同名只標註「與雲端同名」不再隱藏，並可一鍵刪除本機副本（不碰雲端存檔）；多裝置、分身城鎮一眼可見',
+                '🤖 管理員面板新增最近七天 AI 用量（B8）：/api/chat 每日記錄 Groq 次數、付費中繼次數、退回次數、額度滿次數（usage/<day>.json），面板一眼看出免費額度什麼時候被打滿',
+            ),
+            'changes_en' => array(
+                '🧪 Core-loop soak test scripts/soak_test.js: runs 35 days on the real world.tick(), plays like a player every day (requests, caravans, chat intents, perks) and saves/loads every 10 days to keep going; all five towns pass — no errors, finite stock, requests / caravans / trials / growth all moving; listed as an optional pre-release check',
+                '📈 Slower XP curve: in the soak test the bot hit Lv.10 with all eight perks in 35 days, so levels now need 60 + level×45 instead of 50 + level×30',
+                '🗂️ Town list keyed by town_id (B13): when signed in, any id the cloud doesn\'t have is listed as "📱 local", a same-name local copy is labelled instead of hidden, and the local copy can be deleted with one click (cloud saves untouched); multi-device duplicates are visible at a glance',
+                '🤖 Admin panel shows the last seven days of AI usage (B8): /api/chat records Groq calls, paid-relay calls, fallbacks and quota hits per day (usage/<day>.json), so you can see when the free tier runs out',
+            ),
+        ),
         array(
             'version' => '5.95.0',
             'date'    => '2026-10-10',

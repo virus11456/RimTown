@@ -82,14 +82,14 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 **AI 與成本**
 - B7 AI 日報 v5.73.0 才真正接上 `llm.chat()`，需觀察一週的品質、長度與每日額度占用。
-- B8 Groq 免費額度整把金鑰共用（30 RPM／1K RPD），高峰期會全部改走付費 Claude；可加「每日 Groq 用量」到管理員面板。
+- B8 ~~可加「每日 Groq 用量」到管理員面板~~ v5.96.0 `/api/chat` 每日寫 `usage/<day>.json`（groq／relay／fallbacks／blocked），管理員面板顯示最近七天；Groq 免費額度整把金鑰共用（30 RPM／1K RPD）的限制本身不變。
 - B9 `/api/chat` 的拒答偵測（Kiro 類中繼）仍是正規表示式，若中繼換模型需重新驗證 `refusal_test`。
 
 **存檔與後端**
 - B10 ~~Blob 回退與搬遷按鈕~~ v5.82.0 已移除，`_lib.js` 純 Postgres。
 - B11 Vercel Hobby 12 個 Serverless Function 已用滿，任何新 API 都必須塞進既有檔案（如 `admin.js` 的 action）。
 - B12 手機 localStorage 約 5MB，多鎮本機備份仍可能吃滿（v5.69.3 已自動瘦身，但三鎮以上要再驗）。
-- B13 城鎮列表「雲端＋本機聯集」在多裝置、多鎮時的同名判斷只靠名字，建議改以 town_id 為主鍵、名字只做顯示。
+- B13 ~~城鎮列表同名判斷只靠名字~~ v5.96.0 以 town_id 為主鍵：雲端沒有的 id 一律列為「📱 本機」，同名只標註「與雲端同名」不再隱藏，並可刪本機副本（不碰雲端）；馬車站出訪名單仍以名字去重（同一個鎮的分身不該出現兩次）。
 
 **程式結構與測試**
 - B14 `app.js` 9.8K 行、`simulation.js` 9.9K 行、`tilemap.js` 5K 行皆為單檔，可依功能拆模組（landing、settings、towns、economy…）。
@@ -226,7 +226,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.95.0.zip` from Releases
+1. Download `rimtown-v5.96.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -254,6 +254,7 @@ node scripts/i18n-audit.js     # i18n 重複鍵=0、新 t('…') 字串必須有
 node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改版面才 --update(v5.81.0 起)
 # 選跑:cd wordpress && python3 -m http.server 8126 & ; node scripts/smoke_playwright.js  # 五鎮世界/英文標籤/鄰鎮/住房/商隊冒煙
 # 選跑:node scripts/quest_chain_test.js   # 四座主題鎮任務鏈端到端(五章/災難/商路/支線/存檔/英文)(v5.88.0 起;改任務鏈或災難必跑)
+# 選跑:node scripts/soak_test.js [url] [days] [theme]   # 核心玩法迴圈浸泡:真 tick 跑 35 天、每天像玩家做委託/商隊/對話/天賦、每 10 天存檔讀檔接著跑(v5.96.0 起;改核心迴圈必跑五主題)
 ```
 
 ## 存檔保護規範（每次改版必讀）
@@ -265,6 +266,12 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v5.96.0 (2026-10-10)
+- 🧪 核心玩法迴圈浸泡測試 scripts/soak_test.js：用真正的 world.tick() 跑 35 天，每天像玩家一樣做委託、押商隊、聊天意圖、選天賦，每 10 天存檔讀檔接著跑；五座城鎮都跑過——無錯誤、物資皆有限數、委託／商隊／考驗／成長都在動；列入發版前選跑
+- 📈 經驗曲線放慢：浸泡測試裡機器人 35 天就升到 Lv.10 學完八種天賦，升級門檻從 50 + 等級×30 改為 60 + 等級×45
+- 🗂️ 城鎮列表改以 town_id 為主鍵（B13）：登入時雲端沒有的 id 一律列為「📱 本機」，同名只標註「與雲端同名」不再隱藏，並可一鍵刪除本機副本（不碰雲端存檔）；多裝置、分身城鎮一眼可見
+- 🤖 管理員面板新增最近七天 AI 用量（B8）：/api/chat 每日記錄 Groq 次數、付費中繼次數、退回次數、額度滿次數（usage/<day>.json），面板一眼看出免費額度什麼時候被打滿
 
 ### v5.95.0 (2026-10-10)
 - 🎲 有目的的對話(核心玩法迴圈第五步):聊天的意圖鈕(安慰／打聽／說服／調解／示好／威脅／委託／邀去鄰鎮)現在每個都有成功率——依意圖基礎值、相關屬性(魅力／機智／毅力，含天賦加成)、好感(±25%)、信任(求助／委託／談條件／邀約 ±15%)與對方性格(害羞、愛八卦、刻薄、善良、堅忍、有主見、浪漫、善妒、樂觀、悲觀)算出 10–95%，按鈕直接顯示 %、滑過看每個因子；按下去擲骰：過了套用原本的後果並得 3 經驗，沒過只扣 1 好感、結果卡寫「沒說進心裡」

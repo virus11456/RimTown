@@ -2662,7 +2662,7 @@ const GROWTH_PERKS = {
 };
 class TravellerGrowth {
     constructor() { this.xp = 0; this.level = 1; this.perks = []; this.pending = null; this.log = []; }
-    xpToNext() { return 50 + this.level * 30; }
+    xpToNext() { return 60 + this.level * 45; } // v5.96.0 浸泡測試 35 天就 Lv.10 學完八種天賦,放慢
     has(perk) { return this.perks.includes(perk); }
     attrBonus() { const b = { charm: 0, vigor: 0, wit: 0, grit: 0 }; for (const k of this.perks) for (const [a, v] of Object.entries(GROWTH_PERKS[k]?.attr || {})) b[a] += v; return b; }
     attr(world, key) { return ((world?.agents?.player?.attributes || {})[key] || 5) + this.attrBonus()[key]; }

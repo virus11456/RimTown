@@ -203,7 +203,10 @@ module.exports = async (req, res) => {
     const quotaPath = `quota/${day}/${who}.json`;
 
     const q = (await L.readJson(quotaPath)) || { count: 0 };
+    // v5.96.0 B8:每日 AI 用量(全站):usage/<day>.json {groq, relay, fallbacks, blocked}
+    const bump = async (field) => { try { const up = `usage/${day}.json`; const u = (await L.readJson(up)) || {}; u[field] = (u[field] || 0) + 1; await L.writeJson(up, u); } catch {} };
     if (q.count >= limit) {
+        await bump('blocked');
         return L.err(res, 429, 'quota_exceeded',
             payload ? '今日 AI 對話額度已用完,明天再來吧!' : '訪客今日 AI 額度已用完,註冊登入可獲得更高額度!');
     }
@@ -259,6 +262,7 @@ module.exports = async (req, res) => {
     if (lang !== 'en' && _toTW !== false) reply = toTraditional(reply); // v5.67.5 簡→繁(v5.73.0 英文對話不轉)
     q.count += 1;
     await L.writeJson(quotaPath, q).catch(() => {}); // 額度寫入失敗不阻擋回覆
+    await bump(provider === 'groq' ? 'groq' : 'relay'); if (failed.length) await bump('fallbacks'); // v5.96.0 B8
 
     const out = { reply, remaining: Math.max(0, limit - q.count), provider, lane, lang, model: provider === 'groq' ? _lastGroqModel : RELAY_MODEL };
     if (failed.length) out.fallback_from = failed;
