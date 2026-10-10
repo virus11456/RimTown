@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.93.0
+ * Version: 5.94.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.93.0');
+define('RIMTOWN_VERSION', '5.94.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.94.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '🧭 旅人成長(核心玩法迴圈第四步):完成委託 +10 經驗(調解 +15、沒成 +5)、季度考驗撐過 +40／失敗 +10、押商隊回報 +15／遇劫 +5、主線章節 +30、支線 +15；升級門檻 50 + 等級×30；每升一級從八種天賦隨機三選一(可累積多次待選)，「故事」分頁旅人區塊顯示等級、經驗條、四項屬性(含天賦加成)、已學天賦與三選一卡片，升級有角落通知',
+                '✨ 八種天賦都接進既有系統:健步(行動點 +1)、巧舌(調解成功率 +8%、魅力 +2)、精算(押商隊利潤 +5%、機智 +2)、硬頸(委託過期只扣一半好感、考驗失敗少走一人、毅力 +2)、人緣(委託好感再 +3)、識途(遇劫率 ×0.8)、未雨(季度考驗目標 −10%)、早起(每天第一件委託不扣行動點)；屬性加成不改村民屬性本體，由成長系統在公式裡疊加；進存檔，讀檔時若有未選的升級會重新開三選一',
+                '📋 README H4 完成；路線圖改為「有目的的對話接續」',
+            ),
+            'changes_en' => array(
+                '🧭 Traveller growth (fourth step of the core loop): XP from completed requests +10 (mediation +15, partial +5), seasonal trials +40 survived / +10 failed, caravan reports +15 / +5 raided, main chapters +30, side quests +15; each level needs 50 + level×30; every level offers a random three of eight perks (unspent levels queue up); the Story tab\'s Traveller block shows level, XP bar, the four attributes with perk bonuses, learned perks and the pick cards, with a corner notice on level up',
+                '✨ All eight perks plug into existing systems: Strider (+1 action point), Silver Tongue (mediation +8%, charm +2), Shrewd (caravan margin +5%, wit +2), Grit (expired requests cost half the affinity, one fewer villager leaves on a failed trial, grit +2), Well-liked (+3 request affinity), Pathfinder (raid risk ×0.8), Provident (trial targets −10%), Early Riser (the day\'s first request is free); attribute bonuses stack inside the formulas without touching the villager attribute itself; saved, and a load with unspent levels reopens the pick',
+                '📋 README H4 done; the roadmap now reads "purposeful conversations follow"',
+            ),
+        ),
         array(
             'version' => '5.93.0',
             'date'    => '2026-10-10',

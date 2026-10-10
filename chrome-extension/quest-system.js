@@ -1700,6 +1700,7 @@ class QuestSystem {
             }
         }
         try { this._applyEffects(sqDef.effects, world); } catch (e) {} // v5.84.0
+        try { world.growth?.addXp(15, 'side_quest', world); } catch (e) {} // v5.94.0 經驗
         world.logMessage?.('quest', `✨ ${t('支線任務完成')}：「${sqDef.title}」！`);
         if (sqDef.onComplete) {
             world.logMessage?.('quest', `📖 ${sqDef.onComplete}`);
@@ -1912,6 +1913,7 @@ class QuestSystem {
 
         // v5.83.0 路線/任務的劇情後果(改村民之間的好感/信任/心動、玩家好感)
         try { this._applyEffects(completedRoute?.effects, world); this._applyEffects(questDef.effects, world); } catch (e) {}
+        try { world.growth?.addXp(30, 'quest', world); } catch (e) {} // v5.94.0 經驗
         const doneText = completedRoute?.onComplete || questDef.onComplete || '';
 
         // Log
@@ -2347,8 +2349,9 @@ class RequestBoard {
         }
         this.board = this.board.filter(r => r.status === 'open'); // 只留還沒到期的(調解)
         this.dayKey = key;
-        const vigor = this._player(world)?.attributes?.vigor || 5;
-        this.ap.max = REQUEST_AP_BASE + (vigor >= 7 ? 1 : 0) + (this.stats.streak >= 3 ? 1 : 0);
+        const g = world.growth; const vigor = g ? g.attr(world, 'vigor') : (this._player(world)?.attributes?.vigor || 5);
+        this.ap.max = REQUEST_AP_BASE + (vigor >= 7 ? 1 : 0) + (this.stats.streak >= 3 ? 1 : 0) + (g?.has('stride') ? 1 : 0); // v5.94.0 天賦:健步
+        this.ap.freeFirst = !!g?.has('earlybird'); // v5.94.0 天賦:早起
         this.ap.left = this.ap.max; this.ap.bought = 0;
         this._generate(world);
         world.logMessage?.('quest', `📋 ${t('今日委託')}：${this.board.filter(r => r.status === 'open').length} ${t('件')}，${t('行動點')} ${this.ap.left}`);
@@ -2433,7 +2436,7 @@ class RequestBoard {
     needsButton(r) { return r.status === 'open' && (r.type === 'deliver' || r.type === 'mediate' || r.type === 'fetch'); }
     canAct(r, world) {
         if (!r || r.status !== 'open') return { ok: false, reason: '' };
-        if (this.ap.left < r.apCost) return { ok: false, reason: t('行動點不足') };
+        if (this.ap.left < this._cost(r)) return { ok: false, reason: t('行動點不足') };
         const player = this._player(world);
         if (r.type === 'deliver') {
             if ((world.stockpile?.get?.(r.res) || 0) < r.amount) return { ok: false, reason: t('物資不足') };
@@ -2453,17 +2456,20 @@ class RequestBoard {
         }
         return { ok: false, reason: '' };
     }
+    // v5.94.0 行動點花費(天賦「早起」:每天第一件免費)
+    _cost(r) { return this.ap.freeFirst ? 0 : r.apCost; }
+    _spend(r) { const c = this._cost(r); if (this.ap.freeFirst) this.ap.freeFirst = false; return c; }
     // --- 掛鉤 ---
     onChat(npcId, world) {
         for (const r of this.board) {
             if (r.status !== 'open') continue;
-            if (r.type === 'visit' && r.npcId === npcId) { if (this.ap.left >= r.apCost) { this.ap.left -= r.apCost; const npc = world.agents[npcId]; if (npc) npc.moodModifier = (npc.moodModifier || 0) + 8; this._complete(r, world); } }
+            if (r.type === 'visit' && r.npcId === npcId) { if (this.ap.left >= this._cost(r)) { this.ap.left -= this._spend(r); const npc = world.agents[npcId]; if (npc) npc.moodModifier = (npc.moodModifier || 0) + 8; this._complete(r, world); } }
             if (r.type === 'mediate' && (r.npcId === npcId || r.otherId === npcId)) { r.talked = r.talked || []; if (!r.talked.includes(npcId)) r.talked.push(npcId); }
         }
     }
     onGift(npcId, world) {
         for (const r of this.board) {
-            if (r.status === 'open' && r.type === 'gift' && r.npcId === npcId && this.ap.left >= r.apCost) { this.ap.left -= r.apCost; this._complete(r, world); }
+            if (r.status === 'open' && r.type === 'gift' && r.npcId === npcId && this.ap.left >= this._cost(r)) { this.ap.left -= this._spend(r); this._complete(r, world); }
         }
     }
     onVisit(locId, world) {
@@ -2472,7 +2478,7 @@ class RequestBoard {
     act(reqId, world) {
         const r = this.board.find(x => x.id === reqId); if (!r) return { ok: false, msg: '' };
         const c = this.canAct(r, world); if (!c.ok) return { ok: false, msg: c.reason };
-        this.ap.left -= r.apCost;
+        this.ap.left -= this._spend(r);
         if (r.type === 'deliver') {
             world.stockpile.consume?.(r.res, r.amount, world.tickCount, `${t('委託')}：${t(r.npcName)}`);
             this._complete(r, world); return { ok: true, msg: `${t('交付完成')}：${this.describe(r)}` };
@@ -2481,13 +2487,14 @@ class RequestBoard {
         if (r.type === 'mediate') {
             const a = world.agents[r.npcId], b = world.agents[r.otherId]; const pl = this._player(world);
             const at = pl?.attributes || {}; const affA = a?.relationships?.relationships?.player?.affinity || 0, affB = b?.relationships?.relationships?.player?.affinity || 0;
-            const pSucc = Math.max(0.2, Math.min(0.95, 0.5 + (at.charm || 5) * 0.04 + (at.wit || 5) * 0.02 + (affA + affB) / 400));
+            const g = world.growth; const charm = g ? g.attr(world, 'charm') : (at.charm || 5), wit = g ? g.attr(world, 'wit') : (at.wit || 5);
+            const pSucc = Math.max(0.2, Math.min(0.95, 0.5 + charm * 0.04 + wit * 0.02 + (affA + affB) / 400 + (g?.has('silvertongue') ? 0.08 : 0))); // v5.94.0 天賦:巧舌
             const ok = Math.random() < pSucc;
             const bump = (x, y, d) => { if (!x || !y) return; const rel = x.relationships.getOrCreate(y.agentId, y.name); rel.affinity = Math.max(-100, Math.min(100, (rel.affinity || 0) + d)); if (ok) rel.trust = Math.min(100, (rel.trust || 0) + 5); };
             bump(a, b, ok ? 15 : 3); bump(b, a, ok ? 15 : 3);
             if (ok) { this._complete(r, world); return { ok: true, msg: `${t('調解成功')}：${t(r.npcName)} ${t('與')} ${t(r.otherName)} ${t('握手言和')}` }; }
             const loser = Math.random() < 0.5 ? a : b; if (loser) { const rel = loser.relationships.getOrCreate('player', this._playerName(world)); rel.modifyAffinity?.(-3); }
-            r.status = 'done'; r.outcome = 'partial'; this.stats.done++;
+            r.status = 'done'; r.outcome = 'partial'; this.stats.done++; world.growth?.addXp(5, 'request_partial', world);
             const half = { silver: Math.round(r.reward.silver / 2), aff: 0, rep: 1 }; this._reward(r, world, half);
             world.logMessage?.('quest', `🤝 ${t('調解沒成')}：${t(r.npcName)} ${t('與')} ${t(r.otherName)} ${t('只肯各退一步')}`);
             return { ok: true, msg: `${t('調解沒成')}（${Math.round(pSucc * 100)}%）：${t('兩人只肯各退一步')}` };
@@ -2506,10 +2513,11 @@ class RequestBoard {
         if (rw.silver) world.stockpile?.add?.('silver', rw.silver, world.tickCount, `${t('委託獎勵')}：${t(r.npcName)}`);
         if (rw.pack) world.stockpile?.add?.(rw.pack.res, rw.pack.amount, world.tickCount, `${t('委託獎勵')}：${t(r.npcName)}`);
         if (rw.rep && world.questSystem) world.questSystem.reputation = (world.questSystem.reputation || 0) + rw.rep;
-        if (npc && rw.aff) { const rel = npc.relationships.getOrCreate('player', pname); rel.modifyAffinity?.(rw.aff); }
+        if (npc && rw.aff) { const rel = npc.relationships.getOrCreate('player', pname); rel.modifyAffinity?.(rw.aff + (world.growth?.has('charmer') ? 3 : 0)); } // v5.94.0 天賦:人緣
     }
     _complete(r, world) {
         r.status = 'done'; r.outcome = 'ok'; this.stats.done++;
+        world.growth?.addXp(r.type === 'mediate' ? 15 : 10, 'request', world); // v5.94.0 經驗
         this._reward(r, world, r.reward || {});
         const npc = world.agents[r.npcId]; const pname = this._playerName(world); const desc = this.describe(r);
         npc?.memory?.add?.(world.tickCount, world.clock.timeStr, 'help', `${pname}${t('幫了我：')}${desc}`, 7, [pname]);
@@ -2520,7 +2528,7 @@ class RequestBoard {
     _fail(r, world) {
         r.status = 'failed'; this.stats.failed++;
         const npc = world.agents[r.npcId]; const pname = this._playerName(world);
-        if (npc) { const rel = npc.relationships.getOrCreate('player', pname); rel.modifyAffinity?.(-4); npc.memory?.add?.(world.tickCount, world.clock.timeStr, 'neglect', `${t('拜託')}${pname}${t('的事沒有下文：')}${this.describe(r)}`, 5, [pname]); }
+        if (npc) { const rel = npc.relationships.getOrCreate('player', pname); rel.modifyAffinity?.(world.growth?.has('grit') ? -2 : -4); npc.memory?.add?.(world.tickCount, world.clock.timeStr, 'neglect', `${t('拜託')}${pname}${t('的事沒有下文：')}${this.describe(r)}`, 5, [pname]); }
         world.logMessage?.('quest', `⌛ ${t('委託過期')}：${this.describe(r)}`);
     }
     openCount() { return this.board.filter(r => r.status === 'open').length; }
@@ -2548,10 +2556,11 @@ class SeasonTrials {
     _flags(w) { return w.harborFlags || (w.harborFlags = {}); }
     target(type, w) {
         const n = Math.max(8, this._npcs(w).length); const f = this._flags(w);
-        if (type === 'famine') return Math.round(n * 8 * (f.granary ? 0.8 : 1));
-        if (type === 'plague') return Math.round(n * 2 * (f.apothecary ? 0.7 : 1));
-        if (type === 'bandits') return 6;
-        return 150;
+        const pv = w.growth?.has('provident') ? 0.9 : 1; // v5.94.0 天賦:未雨
+        if (type === 'famine') return Math.round(n * 8 * (f.granary ? 0.8 : 1) * pv);
+        if (type === 'plague') return Math.round(n * 2 * (f.apothecary ? 0.7 : 1) * pv);
+        if (type === 'bandits') return pv < 1 ? 5 : 6;
+        return Math.round(150 * pv);
     }
     value(type, w) {
         const sp = w.stockpile;
@@ -2596,6 +2605,7 @@ class SeasonTrials {
         const c = this.current; if (!c || c.status !== 'active') return;
         const d = TRIAL_TYPES[c.type]; const v = this.value(c.type, world); const passed = v >= c.target;
         c.status = passed ? 'passed' : 'failed'; c.finalValue = v;
+        world.growth?.addXp(passed ? 40 : 10, 'trial', world); // v5.94.0 經驗
         const f = this._flags(world);
         if (passed) {
             this.failStreak = 0; f[d.perk] = true;
@@ -2608,7 +2618,7 @@ class SeasonTrials {
             world.onTrialEvent?.('passed', `🏅 ${t('考驗通過')}：${t(d.title)}`, `${t(d.perkName)} — ${t(d.perkDesc)}`);
         } else {
             this.failStreak++;
-            const leavers = this._npcs(world).filter(a => a.job?.key !== 'mayor' && !(a.relationships?.relationships?.player?.status === 'married')).sort((a, b) => (a.mood || 50) - (b.mood || 50)).slice(0, 2 + (this.failStreak >= 2 ? 1 : 0));
+            const leavers = this._npcs(world).filter(a => a.job?.key !== 'mayor' && !(a.relationships?.relationships?.player?.status === 'married')).sort((a, b) => (a.mood || 50) - (b.mood || 50)).slice(0, Math.max(1, 2 + (this.failStreak >= 2 ? 1 : 0) - (world.growth?.has('grit') ? 1 : 0))); // v5.94.0 天賦:硬頸
             const names = leavers.map(a => a.name);
             leavers.forEach(a => world.leaveTown?.(a.agentId, t('鎮上的日子過不下去')));
             Object.values(world.agents).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) - 10; });
@@ -2634,4 +2644,62 @@ class SeasonTrials {
     }
     serialize() { return { current: this.current, failStreak: this.failStreak, history: this.history, lastType: this.lastType, lastSeasonKey: this.lastSeasonKey || null }; }
     loadFrom(d) { if (!d) return; this.current = d.current || null; this.failStreak = d.failStreak || 0; this.history = Array.isArray(d.history) ? d.history : []; this.lastType = d.lastType || null; this.lastSeasonKey = d.lastSeasonKey || null; }
+}
+
+
+// ============================================================
+// v5.94.0 旅人成長(README H4):委託/考驗/商隊/任務給經驗,升級三選一天賦;天賦接進既有系統
+// ============================================================
+const GROWTH_PERKS = {
+    stride:      { icon: '🥾', name: '健步', desc: '每天行動點 +1', attr: { vigor: 1 } },
+    silvertongue:{ icon: '🗣️', name: '巧舌', desc: '調解成功率 +8%，魅力 +2', attr: { charm: 2 } },
+    shrewd:      { icon: '🧮', name: '精算', desc: '押商隊利潤 +5%，機智 +2', attr: { wit: 2 } },
+    grit:        { icon: '🪨', name: '硬頸', desc: '委託過期只扣一半好感；考驗失敗少走一人，毅力 +2', attr: { grit: 2 } },
+    charmer:     { icon: '🤝', name: '人緣', desc: '完成委託時委託人好感再 +3', attr: {} },
+    pathfinder:  { icon: '🧭', name: '識途', desc: '押商隊遇劫率 ×0.8', attr: {} },
+    provident:   { icon: '🌾', name: '未雨', desc: '季度考驗目標 −10%', attr: {} },
+    earlybird:   { icon: '🌅', name: '早起', desc: '每天第一件委託不扣行動點', attr: {} },
+};
+class TravellerGrowth {
+    constructor() { this.xp = 0; this.level = 1; this.perks = []; this.pending = null; this.log = []; }
+    xpToNext() { return 50 + this.level * 30; }
+    has(perk) { return this.perks.includes(perk); }
+    attrBonus() { const b = { charm: 0, vigor: 0, wit: 0, grit: 0 }; for (const k of this.perks) for (const [a, v] of Object.entries(GROWTH_PERKS[k]?.attr || {})) b[a] += v; return b; }
+    attr(world, key) { return ((world?.agents?.player?.attributes || {})[key] || 5) + this.attrBonus()[key]; }
+    addXp(n, reason, world) {
+        if (!n) return;
+        this.xp += n; this.log = this.log.concat([{ n, reason, day: world?.clock?.day }]).slice(-20);
+        let leveled = false;
+        while (this.xp >= this.xpToNext()) { this.xp -= this.xpToNext(); this.level++; leveled = true; }
+        if (leveled && !this.pending) this._offer();
+        if (leveled) { world?.logMessage?.('quest', `⬆️ ${t('旅人升到')} ${this.level} ${t('級，去「故事」分頁選一個天賦')}`); world?.onGrowthEvent?.('level', this.level); }
+    }
+    _offer() {
+        const pool = Object.keys(GROWTH_PERKS).filter(k => !this.has(k));
+        if (!pool.length) { this.pending = null; return; }
+        const pick = []; while (pick.length < Math.min(3, pool.length)) { const k = pool[Math.floor(Math.random() * pool.length)]; if (!pick.includes(k)) pick.push(k); }
+        this.pending = pick;
+    }
+    pendingLevels() { // 升了幾級還沒選
+        return Math.max(0, this.level - 1 - this.perks.length);
+    }
+    choose(perk, world) {
+        if (!this.pending || !this.pending.includes(perk) || this.has(perk)) return { ok: false };
+        this.perks.push(perk); this.pending = null;
+        if (this.pendingLevels() > 0) this._offer();
+        const d = GROWTH_PERKS[perk];
+        world?.logMessage?.('quest', `✨ ${t('旅人學會了')}「${t(d.name)}」：${t(d.desc)}`);
+        world?.onGrowthEvent?.('perk', perk);
+        return { ok: true, perk };
+    }
+    toDict(world) {
+        const b = this.attrBonus(); const base = (world?.agents?.player?.attributes) || { charm: 5, vigor: 5, wit: 5, grit: 5 };
+        return { xp: this.xp, level: this.level, next: this.xpToNext(), pct: Math.round(this.xp / this.xpToNext() * 100),
+            perks: this.perks.map(k => ({ id: k, icon: GROWTH_PERKS[k].icon, name: t(GROWTH_PERKS[k].name), desc: t(GROWTH_PERKS[k].desc) })),
+            pending: (this.pending || []).map(k => ({ id: k, icon: GROWTH_PERKS[k].icon, name: t(GROWTH_PERKS[k].name), desc: t(GROWTH_PERKS[k].desc) })),
+            pendingLevels: this.pendingLevels(),
+            attrs: ['charm', 'vigor', 'wit', 'grit'].map(k => ({ key: k, base: base[k] || 5, bonus: b[k] })), log: this.log.slice(-5).reverse() };
+    }
+    serialize() { return { xp: this.xp, level: this.level, perks: this.perks, pending: this.pending, log: this.log }; }
+    loadFrom(d) { if (!d) return; this.xp = d.xp || 0; this.level = d.level || 1; this.perks = Array.isArray(d.perks) ? d.perks : []; this.pending = Array.isArray(d.pending) ? d.pending : null; this.log = Array.isArray(d.log) ? d.log : []; if (!this.pending && this.pendingLevels() > 0) this._offer(); }
 }

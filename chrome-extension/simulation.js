@@ -6615,6 +6615,7 @@ class World {
         this.requests = (typeof RequestBoard !== 'undefined') ? new RequestBoard() : null; // v5.91.0 委託板
         this.playerCaravan = { active: null, history: [], pendingInjury: null }; // v5.92.0 押商隊
         this.trials = (typeof SeasonTrials !== 'undefined') ? new SeasonTrials() : null; // v5.93.0 季度考驗
+        this.growth = (typeof TravellerGrowth !== 'undefined') ? new TravellerGrowth() : null; // v5.94.0 旅人成長
         this.townIdentity = new TownIdentitySystem(); // v5.19.0 城鎮身分/路線
         this.npcEvents = new NPCEventSystem();
         this.questSystem = typeof QuestSystem !== 'undefined' ? new QuestSystem() : null;
@@ -6806,11 +6807,13 @@ class World {
         if (dest && (dest.imports || []).includes(res)) margin += 0.2;        // 對方缺的貨
         if (this.harborFlags?.tradeRoute || this.harborFlags?.seaRoute) margin += 0.2; // 本鎮開通商路
         if (this.harborFlags?.guildSeal) margin += 0.1; // v5.93.0 商會印信
+        if (this.growth?.has('shrewd')) margin += 0.05; // v5.94.0 天賦:精算
         const base = unit * amount;
         const value = Math.round(base * (1 + margin));
         let risk = route === 'mountain' ? 0.25 : 0.10;
         if (guard) risk *= 0.5;
         if (this.harborFlags?.cityGuard) risk *= 0.7;
+        if (this.growth?.has('pathfinder')) risk *= 0.8; // v5.94.0 天賦:識途
         const days = route === 'mountain' ? 1 : 2;
         return { base, value, margin, risk, days, fee: guard ? 20 : 0, wanted: !!(dest && (dest.imports || []).includes(res)) };
     }
@@ -6854,6 +6857,7 @@ class World {
         } else silver = q.value;
         if (silver > 0) this.stockpile.add('silver', silver, this.tickCount, `${t('商隊回報')}：${t(a.toTownName)}`);
         const result = { ...a, raided, lost, silver, resolvedAbsDay: this._absDay() };
+        this.growth?.addXp(raided ? 5 : 15, 'caravan', this); // v5.94.0 經驗
         pc.history = (pc.history || []).concat([result]).slice(-10); pc.active = null;
         const line = raided
             ? `${t('你的商隊在去')}${t(a.toTownName)}${t('的路上遇劫，損失')} ${lost} ${label}${silver ? `${t('，剩下的賣了')} ${silver} ${t('銀幣')}` : ''}${a.guardName ? `${t('；')}${a.guardName}${t('受了傷')}` : ''}`
@@ -7393,6 +7397,7 @@ class World {
             requests: this.requests ? this.requests.toDict(this) : null, // v5.91.0
             playerCaravan: this.playerCaravanState(), // v5.92.0
             trials: this.trials ? this.trials.toDict(this) : null, // v5.93.0
+            growth: this.growth ? this.growth.toDict(this) : null, // v5.94.0
             prosperity: this.prosperity ? this.prosperity.toDict() : null,
             npcQuests: this.npcQuests ? this.npcQuests.toDict() : null,
             customNPC: this.customNPC ? this.customNPC.toDict() : null,
@@ -7433,6 +7438,7 @@ class World {
         this.requests = (typeof RequestBoard !== 'undefined') ? new RequestBoard() : null; // v5.91.0 委託板
         this.playerCaravan = { active: null, history: [], pendingInjury: null }; // v5.92.0 押商隊
         this.trials = (typeof SeasonTrials !== 'undefined') ? new SeasonTrials() : null; // v5.93.0 季度考驗
+        this.growth = (typeof TravellerGrowth !== 'undefined') ? new TravellerGrowth() : null; // v5.94.0 旅人成長
         this.townIdentity = new TownIdentitySystem(); // v5.19.0 城鎮身分/路線
         this.npcEvents = new NPCEventSystem();
         this.questSystem = typeof QuestSystem !== 'undefined' ? new QuestSystem() : null;
@@ -8435,6 +8441,7 @@ class World {
             requests: this.requests ? this.requests.serialize() : null, // v5.91.0
             playerCaravan: this.playerCaravan ? { active: this.playerCaravan.active, history: (this.playerCaravan.history || []).slice(-10), pendingInjury: this.playerCaravan.pendingInjury || null } : null, // v5.92.0
             trials: this.trials ? this.trials.serialize() : null, // v5.93.0
+            growth: this.growth ? this.growth.serialize() : null, // v5.94.0
             prosperity: this.prosperity ? this.prosperity.serialize() : null,
             npcQuests: this.npcQuests ? this.npcQuests.serialize() : null,
             lifeGoals: this.lifeGoals ? this.lifeGoals.serialize() : null,
@@ -8746,6 +8753,7 @@ class World {
             this.requests = (typeof RequestBoard !== 'undefined') ? new RequestBoard() : null; // v5.91.0 委託板
             this.playerCaravan = { active: null, history: [], pendingInjury: null }; // v5.92.0 押商隊
             this.trials = (typeof SeasonTrials !== 'undefined') ? new SeasonTrials() : null; // v5.93.0 季度考驗
+            this.growth = (typeof TravellerGrowth !== 'undefined') ? new TravellerGrowth() : null; // v5.94.0 旅人成長
             this.townIdentity = new TownIdentitySystem(); // v5.19.0 城鎮身分/路線
             if (data.dailyNews) this.dailyNews.loadFrom(data.dailyNews);
             if (data.townIdentity) this.townIdentity.load(data.townIdentity);
@@ -8758,6 +8766,7 @@ class World {
             if (this.questSystem && data.questSystem) this.questSystem.loadFrom(data.questSystem);
             if (this.requests && data.requests) this.requests.loadFrom(data.requests); // v5.91.0
             if (this.trials && data.trials) this.trials.loadFrom(data.trials); // v5.93.0
+            if (this.growth && data.growth) this.growth.loadFrom(data.growth); // v5.94.0
             if (data.playerCaravan) this.playerCaravan = { active: data.playerCaravan.active || null, history: Array.isArray(data.playerCaravan.history) ? data.playerCaravan.history : [], pendingInjury: data.playerCaravan.pendingInjury || null }; // v5.92.0
             if (this.prosperity && data.prosperity) this.prosperity.loadFrom(data.prosperity);
             if (this.npcQuests && data.npcQuests) this.npcQuests.loadFrom(data.npcQuests);
