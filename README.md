@@ -92,7 +92,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 - B13 ~~城鎮列表同名判斷只靠名字~~ v5.96.0 以 town_id 為主鍵：雲端沒有的 id 一律列為「📱 本機」，同名只標註「與雲端同名」不再隱藏，並可刪本機副本（不碰雲端）；馬車站出訪名單仍以名字去重（同一個鎮的分身不該出現兩次）。
 
 **程式結構與測試**
-- B14 `app.js` 9.8K 行、`simulation.js` 9.9K 行、`tilemap.js` 5K 行皆為單檔，可依功能拆模組（landing、settings、towns、economy…）。
+- B14 ~~`app.js` 9.8K 行單檔~~ v6.0.0 拆成核心 `app.js`（3.3K 行）＋九個分檔 `app-landing/notify/loop/towns/chat/mobile/panels/economy/records.js`（`Object.assign(RimTownApp.prototype, {…})`，逐字搬移；新增檔案要同步列入 `index.html`、`rimtown.php`、`sw.js`、發版鏡像清單）。`simulation.js` 10.3K 行、`tilemap.js` 6.2K 行仍為單檔，之後可比照拆（World 的系統類已多半在 quest-system／custom-npc／daily-news 等獨立檔）。
 - B15 ~~Playwright 掃描腳本只在工作區~~ v5.81.0 收進 `scripts/smoke_playwright.js`（選跑）與 `scripts/map_ascii.js`（版面快照，必跑）。
 - B16 ~~`t('…')` 英文對照缺口靠手動檢查~~ v5.81.0 `scripts/i18n-audit.js`：新字串缺英文即失敗；歷史欠帳 232 筆在 `scripts/i18n_missing_baseline.json`，補一筆就 `--update` 縮基準。
 - B17 WordPress 版（`rimtown.php` 短碼）沒有 `/api/chat`，村民只有規則式對話；若要在 WordPress 也用內建 AI，要另寫 PHP 代理。
@@ -229,7 +229,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v5.99.0.zip` from Releases
+1. Download `rimtown-v6.0.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -246,7 +246,8 @@ English: the separate Godot test build now includes traveler controls, interacti
 ## 發版前必跑
 
 ```
-node scripts/method-audit.js   # 前端 this._xxx() 呼叫都有定義(v5.66.6 起)
+node scripts/method-audit.js   # 前端 this._xxx() 呼叫都有定義(v5.66.6 起;v6.0.0 起連同 app-*.js 分檔一起掃)
+# 鏡像:chrome-extension/{app.js,app-*.js,i18n.js,sw.js,tilemap.js,simulation.js,quest-system.js,prosperity.js,custom-npc.js,index.html,changelog.js,daily-news.js,style.css} → wordpress/;wordpress/rimtown.php → chrome-extension/
 node scripts/lane_test.js      # /api/chat 分流、冷卻、逾時、額度感知(v5.67.0 起)
 node scripts/refusal_test.js   # /api/chat 拒絕扮演偵測與退回(v5.67.2 起)
 node scripts/scrub_test.js     # 存檔深度清理 AI 助理漏出內容(v5.67.4 起)
@@ -269,6 +270,11 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.0.0 (2026-10-10)
+- 🧱 app.js 拆模組（B14）：10292 行的 app.js 拆成核心 app.js（3336 行：常數、登入、建構／初始化、分頁與事件派發、存檔、鍵盤移動、主畫面）與九個分檔——app-landing（教學／首頁／帳號）、app-notify（管理員邀請碼／雲端設定／成就／通知卡）、app-loop（季末回顧／押商隊／跨鎮信箱／委託板／考驗／旅人／搬家）、app-towns（城鎮列表與存檔管理）、app-chat（聊天／意圖／小鎮動態／封存）、app-mobile（手機開羅模式）、app-panels（居民／詳情／設定／日誌／事件／自訂村民）、app-economy（經濟／產業／農田／工廠）、app-records（編年史／日報／故事分頁）；分檔用 Object.assign 掛回 RimTownApp.prototype，程式碼逐字搬移、行為不變
+- 📦 index.html、WordPress 短碼（rimtown.php）、PWA 快取（sw.js）、method-audit 都已列入九個新檔；開機時若分檔沒載到會在主控台報錯提示清單
+- 🧪 全部測試（method／i18n／map／scrub／invite／lang／lane／refusal、quest_chain、soak、smoke、十二支 Playwright 情境、首頁未登入流程、手機截圖）在拆檔後全數通過
 
 ### v5.99.0 (2026-10-10)
 - 📦 存檔體積收斂（B12）：全鎮日誌一萬筆→一千筆、村民對話紀錄一萬筆→四百筆、村民記憶每人 500→120 筆、兩人共同回憶 150→30 筆、倉庫流水一萬筆→六百筆（介面與 AI 提示最多只讀最近幾十筆）；35 天的存檔從 2.6MB 降到約 1MB，自動存檔上傳與手機 localStorage 壓力都減半以上；舊檔讀入即收斂

@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.99.0
+ * Version: 6.0.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.99.0');
+define('RIMTOWN_VERSION', '6.0.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -865,6 +865,70 @@ function rimtown_enqueue_assets() {
         RIMTOWN_VERSION,
         true
     );
+    // v6.0.0 B14：app.js 拆成九個分檔（Object.assign 到 RimTownApp.prototype），都依賴 rimtown-app，在 DOMContentLoaded 前載入
+    wp_enqueue_script(
+        'rimtown-app-landing',
+        RIMTOWN_URL . 'app-landing.js',
+        array('rimtown-app'),
+        RIMTOWN_VERSION,
+        true
+    );
+    wp_enqueue_script(
+        'rimtown-app-notify',
+        RIMTOWN_URL . 'app-notify.js',
+        array('rimtown-app'),
+        RIMTOWN_VERSION,
+        true
+    );
+    wp_enqueue_script(
+        'rimtown-app-loop',
+        RIMTOWN_URL . 'app-loop.js',
+        array('rimtown-app'),
+        RIMTOWN_VERSION,
+        true
+    );
+    wp_enqueue_script(
+        'rimtown-app-towns',
+        RIMTOWN_URL . 'app-towns.js',
+        array('rimtown-app'),
+        RIMTOWN_VERSION,
+        true
+    );
+    wp_enqueue_script(
+        'rimtown-app-chat',
+        RIMTOWN_URL . 'app-chat.js',
+        array('rimtown-app'),
+        RIMTOWN_VERSION,
+        true
+    );
+    wp_enqueue_script(
+        'rimtown-app-mobile',
+        RIMTOWN_URL . 'app-mobile.js',
+        array('rimtown-app'),
+        RIMTOWN_VERSION,
+        true
+    );
+    wp_enqueue_script(
+        'rimtown-app-panels',
+        RIMTOWN_URL . 'app-panels.js',
+        array('rimtown-app'),
+        RIMTOWN_VERSION,
+        true
+    );
+    wp_enqueue_script(
+        'rimtown-app-economy',
+        RIMTOWN_URL . 'app-economy.js',
+        array('rimtown-app'),
+        RIMTOWN_VERSION,
+        true
+    );
+    wp_enqueue_script(
+        'rimtown-app-records',
+        RIMTOWN_URL . 'app-records.js',
+        array('rimtown-app'),
+        RIMTOWN_VERSION,
+        true
+    );
 
     // Inject auth data for the frontend
     wp_localize_script('rimtown-app', 'rimtownAuth', array(
@@ -1212,6 +1276,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.0.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '🧱 app.js 拆模組（B14）：10292 行的 app.js 拆成核心 app.js（3336 行：常數、登入、建構／初始化、分頁與事件派發、存檔、鍵盤移動、主畫面）與九個分檔——app-landing（教學／首頁／帳號）、app-notify（管理員邀請碼／雲端設定／成就／通知卡）、app-loop（季末回顧／押商隊／跨鎮信箱／委託板／考驗／旅人／搬家）、app-towns（城鎮列表與存檔管理）、app-chat（聊天／意圖／小鎮動態／封存）、app-mobile（手機開羅模式）、app-panels（居民／詳情／設定／日誌／事件／自訂村民）、app-economy（經濟／產業／農田／工廠）、app-records（編年史／日報／故事分頁）；分檔用 Object.assign 掛回 RimTownApp.prototype，程式碼逐字搬移、行為不變',
+                '📦 index.html、WordPress 短碼（rimtown.php）、PWA 快取（sw.js）、method-audit 都已列入九個新檔；開機時若分檔沒載到會在主控台報錯提示清單',
+                '🧪 全部測試（method／i18n／map／scrub／invite／lang／lane／refusal、quest_chain、soak、smoke、十二支 Playwright 情境、首頁未登入流程、手機截圖）在拆檔後全數通過',
+            ),
+            'changes_en' => array(
+                '🧱 app.js split into modules (B14): the 10,292-line app.js becomes a core app.js (3,336 lines: constants, auth, constructor / init, tabs and event dispatch, saves, keyboard movement, main render) plus nine files — app-landing (tutorial / landing / account), app-notify (admin invites / cloud settings / achievements / notification cards), app-loop (season recap / caravans / cross-town mailbox / request board / trials / traveller / relocation), app-towns (town list and save management), app-chat (chat / intents / town feed / archives), app-mobile (phone Kairo mode), app-panels (residents / detail / settings / log / events / custom villagers), app-economy (economy / industry / farm / factory), app-records (chronicle / newspaper / story tab); each file re-attaches to RimTownApp.prototype via Object.assign, code moved verbatim with no behaviour change',
+                '📦 index.html, the WordPress shortcode (rimtown.php), the PWA cache (sw.js) and method-audit all list the nine new files; if a part fails to load the console names the required list at boot',
+                '🧪 Every check (method / i18n / map / scrub / invite / lang / lane / refusal, quest_chain, soak, smoke, twelve Playwright scenarios, logged-out landing flow, mobile screenshots) passes after the split',
+            ),
+        ),
         array(
             'version' => '5.99.0',
             'date'    => '2026-10-10',
