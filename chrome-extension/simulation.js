@@ -6612,6 +6612,7 @@ class World {
         this.farm = new FarmSystem();
         this.processing = new ProcessingSystem();
         this.dailyNews = new DailyNewsEngine();
+        this.requests = (typeof RequestBoard !== 'undefined') ? new RequestBoard() : null; // v5.91.0 委託板
         this.townIdentity = new TownIdentitySystem(); // v5.19.0 城鎮身分/路線
         this.npcEvents = new NPCEventSystem();
         this.questSystem = typeof QuestSystem !== 'undefined' ? new QuestSystem() : null;
@@ -6671,6 +6672,7 @@ class World {
             try { this._dramaDirector(); } catch (e) { console.warn('[RimTown] director error:', e); }
             try { this._visitorDaily(); } catch (e) { console.warn('[RimTown] visitor error:', e); } // v5.56.0 跨鎮互訪
             try { this._caravanDaily(); } catch (e) { console.warn('[RimTown] caravan error:', e); } // v5.80.0 跨鎮商隊
+            try { this.requests?.dailyRoll(this); } catch (e) { console.warn('[RimTown] request error:', e); } // v5.91.0 委託板:結算昨天、發今天
             // Daily news (before economy/events so modifiers apply)
             this.news.dailyUpdate(this);
             // Daily economy
@@ -7296,6 +7298,7 @@ class World {
             dramaArchive: (this.dramaArchive || []).slice(-40),
             npcEvents: this.npcEvents.toDict(),
             questSystem: this.questSystem ? this.questSystem.toDict() : null,
+            requests: this.requests ? this.requests.toDict(this) : null, // v5.91.0
             prosperity: this.prosperity ? this.prosperity.toDict() : null,
             npcQuests: this.npcQuests ? this.npcQuests.toDict() : null,
             customNPC: this.customNPC ? this.customNPC.toDict() : null,
@@ -7333,6 +7336,7 @@ class World {
         this.farm = new FarmSystem();
         this.processing = new ProcessingSystem();
         this.dailyNews = new DailyNewsEngine();
+        this.requests = (typeof RequestBoard !== 'undefined') ? new RequestBoard() : null; // v5.91.0 委託板
         this.townIdentity = new TownIdentitySystem(); // v5.19.0 城鎮身分/路線
         this.npcEvents = new NPCEventSystem();
         this.questSystem = typeof QuestSystem !== 'undefined' ? new QuestSystem() : null;
@@ -8332,6 +8336,7 @@ class World {
             dramaArchive: (this.dramaArchive || []).slice(-40),
             npcEvents: this.npcEvents.serialize(),
             questSystem: this.questSystem ? this.questSystem.serialize() : null,
+            requests: this.requests ? this.requests.serialize() : null, // v5.91.0
             prosperity: this.prosperity ? this.prosperity.serialize() : null,
             npcQuests: this.npcQuests ? this.npcQuests.serialize() : null,
             lifeGoals: this.lifeGoals ? this.lifeGoals.serialize() : null,
@@ -8640,6 +8645,7 @@ class World {
             this.processing = new ProcessingSystem();
             if (data.processing) this.processing.loadFrom(data.processing);
             this.dailyNews = new DailyNewsEngine();
+            this.requests = (typeof RequestBoard !== 'undefined') ? new RequestBoard() : null; // v5.91.0 委託板
             this.townIdentity = new TownIdentitySystem(); // v5.19.0 城鎮身分/路線
             if (data.dailyNews) this.dailyNews.loadFrom(data.dailyNews);
             if (data.townIdentity) this.townIdentity.load(data.townIdentity);
@@ -8650,6 +8656,7 @@ class World {
             if (typeof QuestSystem !== 'undefined') this.questSystem = new QuestSystem();
             if (this.questSystem) this.questSystem.theme = this.townTheme || 'frontier'; // v5.83.0 先定主題再讀進度
             if (this.questSystem && data.questSystem) this.questSystem.loadFrom(data.questSystem);
+            if (this.requests && data.requests) this.requests.loadFrom(data.requests); // v5.91.0
             if (this.prosperity && data.prosperity) this.prosperity.loadFrom(data.prosperity);
             if (this.npcQuests && data.npcQuests) this.npcQuests.loadFrom(data.npcQuests);
             if (this.lifeGoals && data.lifeGoals) this.lifeGoals.load(data.lifeGoals);

@@ -2301,3 +2301,231 @@ class QuestSystem {
         }
     }
 }
+
+
+// ============================================================
+// v5.91.0 委託板與行動點(README H1):村民每天發出有時限的具體委託,旅人每天只有幾點行動
+// 掛在既有 questSystem.onChat/onGift/onVisit 的呼叫點旁;交付/調解要走到委託人身邊(同地點)
+// ============================================================
+const REQUEST_AP_BASE = 5, REQUEST_AP_BUY_COST = 30, REQUEST_AP_BUY_MAX = 2;
+const REQUEST_JOB_RES = { farmer: 'tools', miner: 'tools', carpenter: 'wood', blacksmith: 'metal', cook: 'food', doctor: 'herbs', researcher: 'herbs', priest: 'herbs', tailor: 'cloth', guard: 'food', trader: 'cloth', mayor: 'food' };
+const REQUEST_FETCH_LOCS = ['tavern', 'well', 'chapel', 'park', 'library', 'general_store', 'quarry', 'farm', 'workshop', 'clinic', 'guardpost', 'town_square'];
+const REQUEST_LOC_FALLBACK = { tavern: '酒館', well: '水井', chapel: '教堂', park: '公園', library: '圖書館', general_store: '雜貨店', quarry: '採石場', farm: '農場', workshop: '工坊', clinic: '診所', guardpost: '哨站', town_square: '鎮中心廣場' };
+const REQUEST_RES_NAMES = { food: '食物', wood: '木材', stone: '石材', metal: '金屬', cloth: '布料', herbs: '草藥', tools: '工具', silver: '銀幣' };
+class RequestBoard {
+    constructor() {
+        this.board = [];                 // 今日(含未到期)委託
+        this.dayKey = null;              // 最近一次 roll 的日期鍵
+        this.ap = { left: REQUEST_AP_BASE, max: REQUEST_AP_BASE, bought: 0 };
+        this.stats = { done: 0, failed: 0, streak: 0, bestStreak: 0, days: 0 };
+        this._seq = 0;
+        this._lastNoticeDay = null;      // app 用:今天的「新委託」通知發過沒
+    }
+    _dayKey(w) { return `${w.clock.year}-${w.clock.season}-${w.clock.day}`; }
+    _absDay(w) { return typeof w._absDay === 'function' ? w._absDay() : (w.clock.year * 1000 + w.clock.day); }
+    _rand(n) { return Math.floor(Math.random() * n); }
+    _pick(arr) { return arr.length ? arr[this._rand(arr.length)] : null; }
+    _player(w) { return w.agents?.player || null; }
+    _playerName(w) { return this._player(w)?.name || t('旅人'); }
+    _villagers(w) { return Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_')); }
+    resName(res) { return t(REQUEST_RES_NAMES[res] || res); }
+    // --- 每天早上:結算昨天、重設行動點、發新委託 ---
+    dailyRoll(world) {
+        const key = this._dayKey(world);
+        if (this.dayKey === key) return;
+        const today = this._absDay(world);
+        // 昨天沒完成的到期委託 → 失敗(調解有兩天)
+        let allDone = this.board.length > 0;
+        for (const r of this.board) {
+            if (r.status === 'open' && today >= r.expiresAbsDay) this._fail(r, world);
+            if (r.status !== 'done') allDone = false;
+        }
+        if (this.dayKey) { // 不是第一天
+            this.stats.days++;
+            if (allDone) { this.stats.streak++; this.stats.bestStreak = Math.max(this.stats.bestStreak, this.stats.streak); }
+            else if (this.board.some(r => r.status === 'failed')) this.stats.streak = 0;
+        }
+        this.board = this.board.filter(r => r.status === 'open'); // 只留還沒到期的(調解)
+        this.dayKey = key;
+        const vigor = this._player(world)?.attributes?.vigor || 5;
+        this.ap.max = REQUEST_AP_BASE + (vigor >= 7 ? 1 : 0) + (this.stats.streak >= 3 ? 1 : 0);
+        this.ap.left = this.ap.max; this.ap.bought = 0;
+        this._generate(world);
+        world.logMessage?.('quest', `📋 ${t('今日委託')}：${this.board.filter(r => r.status === 'open').length} ${t('件')}，${t('行動點')} ${this.ap.left}`);
+    }
+    _generate(world) {
+        const vs = this._villagers(world); if (vs.length < 3) return;
+        const used = new Set(this.board.map(r => r.npcId));
+        const prosperity = world.prosperity?.prosperity || 0;
+        const want = Math.min(5, 3 + (prosperity >= 50 ? 1 : 0) + (Math.random() < 0.5 ? 1 : 0)) - this.board.length;
+        const today = this._absDay(world);
+        const makers = [
+            () => { // 送貨
+                const cands = vs.filter(a => !used.has(a.agentId) && REQUEST_JOB_RES[a.job?.key]);
+                const npc = this._pick(cands); if (!npc) return null;
+                const res = REQUEST_JOB_RES[npc.job.key]; const stock = world.stockpile?.get?.(res) || 0;
+                const amount = Math.max(10, Math.min(30, 10 + this._rand(21), Math.floor(stock * 0.5)));
+                return { type: 'deliver', npcId: npc.agentId, npcName: npc.name, res, amount, apCost: 1, reward: { silver: amount * 2, aff: 8, rep: 2 } };
+            },
+            () => { // 陪伴
+                const cands = vs.filter(a => !used.has(a.agentId) && ((a.mood || 50) < 45 || (a.needs?.social ?? 60) < 40));
+                const npc = this._pick(cands.length ? cands : vs.filter(a => !used.has(a.agentId))); if (!npc) return null;
+                return { type: 'visit', npcId: npc.agentId, npcName: npc.name, apCost: 1, reward: { silver: 15, aff: 6, rep: 2 } };
+            },
+            () => { // 調解
+                const pairs = [];
+                for (const a of vs) for (const b of vs) {
+                    if (a.agentId >= b.agentId || used.has(a.agentId) || used.has(b.agentId)) continue;
+                    const ra = a.relationships?.relationships?.[b.agentId], rb = b.relationships?.relationships?.[a.agentId];
+                    if (ra && rb && (ra.affinity || 0) < -20 && (rb.affinity || 0) < -20) pairs.push([a, b]);
+                }
+                const pr = this._pick(pairs); if (!pr) return null;
+                return { type: 'mediate', npcId: pr[0].agentId, npcName: pr[0].name, otherId: pr[1].agentId, otherName: pr[1].name, talked: [], apCost: 2, reward: { silver: 40, aff: 8, rep: 4 }, days: 2 };
+            },
+            () => { // 跑腿
+                const npc = this._pick(vs.filter(a => !used.has(a.agentId))); if (!npc) return null;
+                const locs = REQUEST_FETCH_LOCS.filter(l => l !== npc.currentLocation && l !== npc.homeLocation);
+                const loc = this._pick(locs); if (!loc) return null;
+                const packRes = this._pick(['food', 'wood', 'herbs', 'cloth', 'stone']);
+                const locName = (typeof TOWN_THEMES !== 'undefined' && TOWN_THEMES[world.townTheme || 'frontier']?.locationNames?.[loc]) || REQUEST_LOC_FALLBACK[loc] || loc;
+                return { type: 'fetch', npcId: npc.agentId, npcName: npc.name, loc, locName, visited: false, apCost: 2, reward: { silver: 30, aff: 8, rep: 3, pack: { res: packRes, amount: 10 + this._rand(11) } } };
+            },
+            () => { // 送禮
+                const cands = vs.filter(a => !used.has(a.agentId) && (a.mood || 50) < 50);
+                const npc = this._pick(cands); if (!npc) return null;
+                return { type: 'gift', npcId: npc.agentId, npcName: npc.name, apCost: 1, reward: { silver: 20, aff: 6, rep: 2 } };
+            },
+        ];
+        const order = [0, 1, 3, 2, 4].sort(() => Math.random() - 0.5);
+        let made = 0, guard = 0;
+        while (made < want && guard++ < 20) {
+            const mk = makers[order[guard % order.length]];
+            const r = mk(); if (!r) continue;
+            if (used.has(r.npcId)) continue;
+            used.add(r.npcId); if (r.otherId) used.add(r.otherId);
+            this.board.push({ id: 'rq' + (++this._seq) + '_' + today, status: 'open', createdAbsDay: today, expiresAbsDay: today + (r.days || 1), ...r });
+            made++;
+        }
+    }
+    // --- 文案(顯示時才翻譯,存檔只存結構) ---
+    describe(r) {
+        const fill = (s, m) => Object.entries(m).reduce((acc, [k, v]) => acc.split('{' + k + '}').join(v), s);
+        switch (r.type) {
+            case 'deliver': return fill(t('把 {n} {res} 送到 {npc} 手上'), { n: r.amount, res: this.resName(r.res), npc: t(r.npcName) });
+            case 'visit': return fill(t('{npc} 今天心情差，去陪他聊聊'), { npc: t(r.npcName) });
+            case 'mediate': return fill(t('勸 {a} 和 {b} 和好（先各聊一次，再按「調解」）'), { a: t(r.npcName), b: t(r.otherName) });
+            case 'fetch': return fill(t('幫 {npc} 去 {loc} 拿東西回來'), { npc: t(r.npcName), loc: t(r.locName || r.loc) });
+            case 'gift': return fill(t('{npc} 今天過得不好，送他一份禮'), { npc: t(r.npcName) });
+        }
+        return r.type;
+    }
+    icon(r) { return { deliver: '📦', visit: '🫂', mediate: '🤝', fetch: '🏃', gift: '🎁' }[r.type] || '📋'; }
+    // 進度說明(給 UI)
+    progress(r, world) {
+        if (r.status === 'done') return r.outcome === 'partial' ? t('已嘗試（沒完全成功）') : t('已完成');
+        if (r.status === 'failed') return t('已過期');
+        if (r.type === 'mediate') { const n = (r.talked || []).length; return n < 2 ? `${t('已聊過')} ${n}/2` : t('兩人都聊過了，去找其中一位按「調解」'); }
+        if (r.type === 'fetch') return r.visited ? t('東西拿到了，回去交給他') : t('先到指定地點');
+        if (r.type === 'deliver') { const have = world?.stockpile?.get?.(r.res) || 0; return `${t('倉庫')} ${have}/${r.amount}`; }
+        return '';
+    }
+    // 哪些需要「同地點」按鈕
+    needsButton(r) { return r.status === 'open' && (r.type === 'deliver' || r.type === 'mediate' || r.type === 'fetch'); }
+    canAct(r, world) {
+        if (!r || r.status !== 'open') return { ok: false, reason: '' };
+        if (this.ap.left < r.apCost) return { ok: false, reason: t('行動點不足') };
+        const player = this._player(world);
+        if (r.type === 'deliver') {
+            if ((world.stockpile?.get?.(r.res) || 0) < r.amount) return { ok: false, reason: t('物資不足') };
+            const npc = world.agents[r.npcId]; if (!npc || npc.currentLocation !== player?.currentLocation) return { ok: false, reason: `${t('走到')} ${t(r.npcName)} ${t('身邊')}` };
+            return { ok: true };
+        }
+        if (r.type === 'fetch') {
+            if (!r.visited) return { ok: false, reason: t('先到指定地點') };
+            const npc = world.agents[r.npcId]; if (!npc || npc.currentLocation !== player?.currentLocation) return { ok: false, reason: `${t('走到')} ${t(r.npcName)} ${t('身邊')}` };
+            return { ok: true };
+        }
+        if (r.type === 'mediate') {
+            if ((r.talked || []).length < 2) return { ok: false, reason: t('先跟兩人各聊一次') };
+            const a = world.agents[r.npcId], b = world.agents[r.otherId];
+            if (!(a && a.currentLocation === player?.currentLocation) && !(b && b.currentLocation === player?.currentLocation)) return { ok: false, reason: `${t('走到')} ${t(r.npcName)} ${t('或')} ${t(r.otherName)} ${t('身邊')}` };
+            return { ok: true };
+        }
+        return { ok: false, reason: '' };
+    }
+    // --- 掛鉤 ---
+    onChat(npcId, world) {
+        for (const r of this.board) {
+            if (r.status !== 'open') continue;
+            if (r.type === 'visit' && r.npcId === npcId) { if (this.ap.left >= r.apCost) { this.ap.left -= r.apCost; const npc = world.agents[npcId]; if (npc) npc.moodModifier = (npc.moodModifier || 0) + 8; this._complete(r, world); } }
+            if (r.type === 'mediate' && (r.npcId === npcId || r.otherId === npcId)) { r.talked = r.talked || []; if (!r.talked.includes(npcId)) r.talked.push(npcId); }
+        }
+    }
+    onGift(npcId, world) {
+        for (const r of this.board) {
+            if (r.status === 'open' && r.type === 'gift' && r.npcId === npcId && this.ap.left >= r.apCost) { this.ap.left -= r.apCost; this._complete(r, world); }
+        }
+    }
+    onVisit(locId, world) {
+        for (const r of this.board) { if (r.status === 'open' && r.type === 'fetch' && r.loc === locId && !r.visited) { r.visited = true; world.logMessage?.('quest', `🏃 ${t('拿到了')} ${t(r.npcName)} ${t('要的東西，回去交給他')}`); } }
+    }
+    act(reqId, world) {
+        const r = this.board.find(x => x.id === reqId); if (!r) return { ok: false, msg: '' };
+        const c = this.canAct(r, world); if (!c.ok) return { ok: false, msg: c.reason };
+        this.ap.left -= r.apCost;
+        if (r.type === 'deliver') {
+            world.stockpile.consume?.(r.res, r.amount, world.tickCount, `${t('委託')}：${t(r.npcName)}`);
+            this._complete(r, world); return { ok: true, msg: `${t('交付完成')}：${this.describe(r)}` };
+        }
+        if (r.type === 'fetch') { this._complete(r, world); return { ok: true, msg: `${t('交付完成')}：${this.describe(r)}` }; }
+        if (r.type === 'mediate') {
+            const a = world.agents[r.npcId], b = world.agents[r.otherId]; const pl = this._player(world);
+            const at = pl?.attributes || {}; const affA = a?.relationships?.relationships?.player?.affinity || 0, affB = b?.relationships?.relationships?.player?.affinity || 0;
+            const pSucc = Math.max(0.2, Math.min(0.95, 0.5 + (at.charm || 5) * 0.04 + (at.wit || 5) * 0.02 + (affA + affB) / 400));
+            const ok = Math.random() < pSucc;
+            const bump = (x, y, d) => { if (!x || !y) return; const rel = x.relationships.getOrCreate(y.agentId, y.name); rel.affinity = Math.max(-100, Math.min(100, (rel.affinity || 0) + d)); if (ok) rel.trust = Math.min(100, (rel.trust || 0) + 5); };
+            bump(a, b, ok ? 15 : 3); bump(b, a, ok ? 15 : 3);
+            if (ok) { this._complete(r, world); return { ok: true, msg: `${t('調解成功')}：${t(r.npcName)} ${t('與')} ${t(r.otherName)} ${t('握手言和')}` }; }
+            const loser = Math.random() < 0.5 ? a : b; if (loser) { const rel = loser.relationships.getOrCreate('player', this._playerName(world)); rel.modifyAffinity?.(-3); }
+            r.status = 'done'; r.outcome = 'partial'; this.stats.done++;
+            const half = { silver: Math.round(r.reward.silver / 2), aff: 0, rep: 1 }; this._reward(r, world, half);
+            world.logMessage?.('quest', `🤝 ${t('調解沒成')}：${t(r.npcName)} ${t('與')} ${t(r.otherName)} ${t('只肯各退一步')}`);
+            return { ok: true, msg: `${t('調解沒成')}（${Math.round(pSucc * 100)}%）：${t('兩人只肯各退一步')}` };
+        }
+        return { ok: false, msg: '' };
+    }
+    buyAP(world) {
+        if (this.ap.bought >= REQUEST_AP_BUY_MAX) return { ok: false, msg: t('今天買的行動點已達上限') };
+        if ((world.stockpile?.get?.('silver') || 0) < REQUEST_AP_BUY_COST) return { ok: false, msg: t('銀幣不足') };
+        world.stockpile.consume?.('silver', REQUEST_AP_BUY_COST, world.tickCount, t('買行動點'));
+        this.ap.bought++; this.ap.left++; this.ap.max++;
+        return { ok: true, msg: `${t('行動點')} +1` };
+    }
+    _reward(r, world, rw) {
+        const npc = world.agents[r.npcId]; const pname = this._playerName(world);
+        if (rw.silver) world.stockpile?.add?.('silver', rw.silver, world.tickCount, `${t('委託獎勵')}：${t(r.npcName)}`);
+        if (rw.pack) world.stockpile?.add?.(rw.pack.res, rw.pack.amount, world.tickCount, `${t('委託獎勵')}：${t(r.npcName)}`);
+        if (rw.rep && world.questSystem) world.questSystem.reputation = (world.questSystem.reputation || 0) + rw.rep;
+        if (npc && rw.aff) { const rel = npc.relationships.getOrCreate('player', pname); rel.modifyAffinity?.(rw.aff); }
+    }
+    _complete(r, world) {
+        r.status = 'done'; r.outcome = 'ok'; this.stats.done++;
+        this._reward(r, world, r.reward || {});
+        const npc = world.agents[r.npcId]; const pname = this._playerName(world); const desc = this.describe(r);
+        npc?.memory?.add?.(world.tickCount, world.clock.timeStr, 'help', `${pname}${t('幫了我：')}${desc}`, 7, [pname]);
+        world.logMessage?.('quest', `✅ ${t('委託完成')}：${desc}（${t('行動點剩')} ${this.ap.left}）`);
+        world.dailyNews?.collectEvent?.('social', `${pname}${t('替')}${t(r.npcName)}${t('辦妥了一件事：')}${desc}`, 6, [r.npcName]);
+        world.events?.conversationTopics?.push(`${pname}${t('幫')}${t(r.npcName)}${t('的忙')}`);
+    }
+    _fail(r, world) {
+        r.status = 'failed'; this.stats.failed++;
+        const npc = world.agents[r.npcId]; const pname = this._playerName(world);
+        if (npc) { const rel = npc.relationships.getOrCreate('player', pname); rel.modifyAffinity?.(-4); npc.memory?.add?.(world.tickCount, world.clock.timeStr, 'neglect', `${t('拜託')}${pname}${t('的事沒有下文：')}${this.describe(r)}`, 5, [pname]); }
+        world.logMessage?.('quest', `⌛ ${t('委託過期')}：${this.describe(r)}`);
+    }
+    openCount() { return this.board.filter(r => r.status === 'open').length; }
+    firstOpen() { return this.board.find(r => r.status === 'open') || null; }
+    toDict(world) { return { board: this.board.map(r => ({ ...r, text: this.describe(r), icon: this.icon(r), progress: this.progress(r, world), can: this.canAct(r, world) })), ap: { ...this.ap }, stats: { ...this.stats }, dayKey: this.dayKey }; }
+    serialize() { return { board: this.board, dayKey: this.dayKey, ap: this.ap, stats: this.stats, _seq: this._seq }; }
+    loadFrom(d) { if (!d) return; this.board = Array.isArray(d.board) ? d.board : []; this.dayKey = d.dayKey || null; this.ap = { left: REQUEST_AP_BASE, max: REQUEST_AP_BASE, bought: 0, ...(d.ap || {}) }; this.stats = { done: 0, failed: 0, streak: 0, bestStreak: 0, days: 0, ...(d.stats || {}) }; this._seq = d._seq || 0; }
+}
