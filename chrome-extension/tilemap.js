@@ -216,6 +216,14 @@ const LOCATION_BUILDING = {
 
 // Agent sprite colors by job — chibi style palette
 // {body, bodyDk, accent, hair, hairDk, hairLt, pants, boots, skin}
+// v5.89.0 村民自訂外觀選項(agent.look = { skin, hair, hairColor, shirt, acc };沒設定就照名字雜湊的預設)
+const LOOK_SKINS = ['#fce4c8', '#f6ddbe', '#eecca4', '#e0bc98', '#cda074', '#b88458'];
+const LOOK_HAIR_COLORS = ['#241812', '#3f2810', '#5a3a1a', '#754824', '#9a6a2a', '#c8a860', '#8c8c92', '#33263f', '#6a2a1a'];
+const LOOK_SHIRTS = ['#c62828', '#ef6c00', '#f9a825', '#2e7d32', '#00838f', '#1565c0', '#6a1b9a', '#eceff1'];
+const LOOK_HAIR_STYLES = 6; // 0 短髮 1 長髮 2 馬尾 3 齊瀏海 4 平頭 5 捲髮
+const LOOK_ACCS = 4;        // 0 無 1 帽子 2 眼鏡 3 圍巾
+function lookSig(look) { return look ? `${look.skin ?? ''}.${look.hair ?? ''}.${look.hairColor ?? ''}.${look.shirt ?? ''}.${look.acc ?? ''}` : ''; }
+
 const JOB_COLORS = {
     mayor:     { body:'#c83040', bodyDk:'#a02030', accent:'#ffd700', hair:'#4a3530', hairDk:'#352520', hairLt:'#6a5550', pants:'#b89060', boots:'#6b4226', skin:'#fce4c8' },
     doctor:    { body:'#e8e8f0', bodyDk:'#c8c8d8', accent:'#e53935', hair:'#5a3a1a', hairDk:'#3a2510', hairLt:'#7a5a3a', pants:'#ddd', boots:'#a88a8a', skin:'#fce4c8' },
@@ -4536,28 +4544,30 @@ class PixelTileMap {
         return '#' + [cl(r), cl(g), cl(b)].map(v => v.toString(16).padStart(2, '0')).join('');
     }
     // v5.10.0 每位村民依名字給不同膚色/髮色/服裝深淺,同職業也能一眼分辨
-    _variedColors(base, name, jobKey) {
+    _variedColors(base, name, jobKey, look) {
         this._colorCache = this._colorCache || {};
-        const key = jobKey + '|' + name;
+        const key = jobKey + '|' + name + '|' + lookSig(look);
         if (this._colorCache[key]) return this._colorCache[key];
         let h = 2166136261;
         for (let i = 0; i < name.length; i++) { h ^= name.charCodeAt(i); h = (h * 16777619) >>> 0; }
         const SKINS = ['#fce4c8', '#f6ddbe', '#eecca4', '#e0bc98', '#cda074', '#b88458'];
         const HAIRS = ['#241812', '#3f2810', '#5a3a1a', '#754824', '#9a6a2a', '#c8a860', '#8c8c92', '#33263f', '#6a2a1a'];
-        const skin = SKINS[h % SKINS.length];
-        const hair = HAIRS[(h >>> 3) % HAIRS.length];
+        // v5.89.0 自訂外觀優先:膚色/髮色/上衣色
+        const skin = (look && look.skin != null && LOOK_SKINS[look.skin]) || SKINS[h % SKINS.length];
+        const hair = (look && look.hairColor != null && LOOK_HAIR_COLORS[look.hairColor]) || HAIRS[(h >>> 3) % HAIRS.length];
         const bJit = (((h >>> 6) % 5) - 2) * 0.05;
         const pJit = (((h >>> 10) % 3) - 1) * 0.06;
+        const shirt = look && look.shirt != null ? LOOK_SHIRTS[look.shirt] : null;
         const c = { ...base, skin,
             hair, hairDk: this._shadeHex(hair, -0.38), hairLt: this._shadeHex(hair, 0.32),
-            body: this._shadeHex(base.body, bJit), bodyDk: this._shadeHex(base.bodyDk, bJit),
+            body: shirt || this._shadeHex(base.body, bJit), bodyDk: shirt ? this._shadeHex(shirt, -0.3) : this._shadeHex(base.bodyDk, bJit),
             pants: this._shadeHex(base.pants, pJit) };
         this._colorCache[key] = c;
         return c;
     }
 
-    _drawAgent(ctx, x, y, jobKey, isPlayer, isSelected, name, walking, walkStep, gender, jobTitle, dir4) {
-        const c = isPlayer ? JOB_COLORS.player : this._variedColors(JOB_COLORS[jobKey] || JOB_COLORS.default, name || '', jobKey);
+    _drawAgent(ctx, x, y, jobKey, isPlayer, isSelected, name, walking, walkStep, gender, jobTitle, dir4, look) {
+        const c = isPlayer ? JOB_COLORS.player : this._variedColors(JOB_COLORS[jobKey] || JOB_COLORS.default, name || '', jobKey, look);
         const isFemale = gender === 'female';
         const sx = Math.floor(x - 8);  // center 16px wide sprite
         const bob = walking ? Math.sin((walkStep || 0) * 0.35) * 1.5 : 0;
@@ -4661,7 +4671,9 @@ class PixelTileMap {
         ctx.fillRect(sx + 10, sy + 3, 3, 8);
 
         // === Hair ===
-        this._drawChibiHair(ctx, sx, sy, c, jobKey, isPlayer, isFemale);
+        if (look && look.hair != null) this._drawLookHair(ctx, sx, sy, c, look.hair | 0, isFemale); // v5.89.0 自訂髮型
+        else this._drawChibiHair(ctx, sx, sy, c, jobKey, isPlayer, isFemale);
+        this._drawJobHat(ctx, sx, sy, c, jobKey, isPlayer);
 
         // v4.5.0 四向:背面(往上走)頭髮蓋住臉,不畫五官;側面五官朝行進方向偏移
         if (dir4 === 'up') {
@@ -4705,6 +4717,7 @@ class PixelTileMap {
 
         // === Job-specific accessory ===
         this._drawJobAccessory(ctx, sx, sy, jobKey, isPlayer);
+        if (look && look.acc) this._drawLookAccessory(ctx, sx, sy, c, look.acc | 0, dir4); // v5.89.0 自訂配件
 
         // === Selection indicator ===
         if (isSelected) {
@@ -4853,6 +4866,10 @@ class PixelTileMap {
             ctx.fillRect(sx + 7, sy + 2, 2, 2);
         }
 
+    }
+    // v5.89.0 職業帽子(從 _drawChibiHair 拆出,自訂髮型也要戴)
+    _drawJobHat(ctx, sx, sy, c, jobKey, isPlayer) {
+        const h = c.hair, hd = c.hairDk, hl = c.hairLt; void h; void hd; void hl;
         // Job-specific hair details
         switch (jobKey) {
             case 'cook':
@@ -4921,6 +4938,61 @@ class PixelTileMap {
                 ctx.fillStyle = '#e0d8c0';
                 ctx.fillRect(sx + 3, sy - 2, 10, 2);
                 break;
+        }
+    }
+    // v5.89.0 自訂髮型:0 短髮(原男)、1 長髮(原女)、2 馬尾、3 齊瀏海、4 平頭、5 捲髮
+    _drawLookHair(ctx, sx, sy, c, style, isFemale) {
+        const h = c.hair, hd = c.hairDk, hl = c.hairLt;
+        switch (style) {
+            case 1: this._drawChibiHair(ctx, sx, sy, c, '', false, true); break;
+            case 2: // 馬尾:短頂+後腦一束
+                ctx.fillStyle = hd; ctx.fillRect(sx + 2, sy - 1, 12, 5);
+                ctx.fillStyle = h; ctx.fillRect(sx + 3, sy - 2, 10, 4); ctx.fillRect(sx + 4, sy - 3, 8, 2);
+                ctx.fillStyle = hl; ctx.fillRect(sx + 5, sy - 2, 4, 1);
+                ctx.fillStyle = h; ctx.fillRect(sx + 4, sy + 1, 8, 2); ctx.fillStyle = hl; ctx.fillRect(sx + 4, sy + 1, 3, 1);
+                ctx.fillStyle = c.skin; ctx.fillRect(sx + 8, sy + 2, 2, 1);
+                ctx.fillStyle = hd; ctx.fillRect(sx + 12, sy + 1, 3, 9); ctx.fillStyle = h; ctx.fillRect(sx + 13, sy + 2, 1, 6);
+                ctx.fillStyle = c.accent || '#c62828'; ctx.fillRect(sx + 12, sy + 2, 3, 1);
+                break;
+            case 3: // 齊瀏海鮑伯
+                ctx.fillStyle = hd; ctx.fillRect(sx + 1, sy - 1, 14, 12);
+                ctx.fillStyle = h; ctx.fillRect(sx + 2, sy - 2, 12, 5); ctx.fillRect(sx + 4, sy - 3, 8, 2);
+                ctx.fillStyle = hl; ctx.fillRect(sx + 5, sy - 2, 5, 1);
+                ctx.fillStyle = h; ctx.fillRect(sx + 3, sy + 1, 10, 3); ctx.fillRect(sx + 2, sy + 2, 1, 9); ctx.fillRect(sx + 13, sy + 2, 1, 9);
+                ctx.fillStyle = hl; ctx.fillRect(sx + 4, sy + 1, 8, 1);
+                break;
+            case 4: // 平頭
+                ctx.fillStyle = hd; ctx.fillRect(sx + 3, sy - 1, 10, 3);
+                ctx.fillStyle = h; ctx.fillRect(sx + 4, sy - 1, 8, 2); ctx.fillRect(sx + 3, sy + 1, 1, 2); ctx.fillRect(sx + 12, sy + 1, 1, 2);
+                ctx.fillStyle = hl; ctx.fillRect(sx + 5, sy - 1, 3, 1);
+                break;
+            case 5: // 捲髮
+                ctx.fillStyle = hd; ctx.fillRect(sx + 1, sy - 2, 14, 6); ctx.fillRect(sx + 1, sy + 2, 2, 6); ctx.fillRect(sx + 13, sy + 2, 2, 6);
+                ctx.fillStyle = h; ctx.fillRect(sx + 2, sy - 3, 12, 5); ctx.fillRect(sx + 4, sy - 4, 3, 2); ctx.fillRect(sx + 9, sy - 4, 3, 2); ctx.fillRect(sx + 1, sy - 1, 2, 2); ctx.fillRect(sx + 13, sy - 1, 2, 2);
+                ctx.fillRect(sx + 3, sy + 1, 10, 2);
+                ctx.fillStyle = hl; ctx.fillRect(sx + 4, sy - 3, 2, 1); ctx.fillRect(sx + 9, sy - 3, 2, 1); ctx.fillRect(sx + 2, sy + 3, 1, 2); ctx.fillRect(sx + 13, sy + 3, 1, 2);
+                break;
+            default: this._drawChibiHair(ctx, sx, sy, c, '', false, false); break;
+        }
+    }
+    // v5.89.0 自訂配件:1 帽子 2 眼鏡 3 圍巾
+    _drawLookAccessory(ctx, sx, sy, c, acc, dir4) {
+        const off = dir4 === 'right' ? 2 : dir4 === 'left' ? -2 : 0;
+        if (acc === 1) {
+            const cap = c.accent || '#37474f';
+            ctx.fillStyle = this._shadeHex(cap, -0.25); ctx.fillRect(sx + 2, sy - 4, 12, 4);
+            ctx.fillStyle = cap; ctx.fillRect(sx + 3, sy - 5, 10, 4);
+            ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(sx + 4, sy - 5, 4, 1);
+            if (dir4 !== 'up') { ctx.fillStyle = this._shadeHex(cap, -0.4); ctx.fillRect(sx + 1 + off, sy - 1, 14, 1); }
+        } else if (acc === 2 && dir4 !== 'up') {
+            ctx.fillStyle = '#1b1b1b';
+            ctx.fillRect(sx + 3 + off, sy + 4, 5, 1); ctx.fillRect(sx + 3 + off, sy + 8, 5, 1); ctx.fillRect(sx + 3 + off, sy + 4, 1, 5); ctx.fillRect(sx + 7 + off, sy + 4, 1, 5);
+            ctx.fillRect(sx + 8 + off, sy + 4, 5, 1); ctx.fillRect(sx + 8 + off, sy + 8, 5, 1); ctx.fillRect(sx + 12 + off, sy + 4, 1, 5); ctx.fillRect(sx + 8 + off, sy + 4, 1, 5);
+            ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(sx + 4 + off, sy + 5, 1, 1); ctx.fillRect(sx + 9 + off, sy + 5, 1, 1);
+        } else if (acc === 3) {
+            ctx.fillStyle = '#c62828'; ctx.fillRect(sx + 3, sy + 11, 10, 2); ctx.fillRect(sx + 10, sy + 13, 3, 4);
+            ctx.fillStyle = '#e57373'; ctx.fillRect(sx + 4, sy + 11, 3, 1); ctx.fillRect(sx + 11, sy + 14, 1, 2);
+            ctx.fillStyle = '#8e1c1c'; ctx.fillRect(sx + 10, sy + 16, 3, 1);
         }
     }
 
@@ -5185,7 +5257,7 @@ class PixelTileMap {
             if (!agent) continue;
             const isPlayer = aid === 'player';
             const isSelected = aid === selectedAgent;
-            this._drawAgent(ctx, pos.x, pos.y, pos.job, isPlayer, isSelected, agent.name || 'You', pos.walking, pos.walkStep, pos.gender, agent.job?.title || '', pos.dir4 || 'down');
+            this._drawAgent(ctx, pos.x, pos.y, pos.job, isPlayer, isSelected, agent.name || 'You', pos.walking, pos.walkStep, pos.gender, agent.job?.title || '', pos.dir4 || 'down', agent.look || null); // v5.89.0 自訂外觀
             // Action animation overlay for farming NPCs
             if (!pos.walking && pos.atFarm && (pos.job === 'farmer' || pos.activity === 'working') && !isPlayer) {
                 this._drawFarmAction(ctx, pos.x, pos.y, this.animFrame, aid);
@@ -6098,9 +6170,9 @@ class PixelTileMap {
 
     // Render NPC pixel art avatar to a data URL for use in contact list etc.
     // Returns a cached data URL string of the NPC's sprite.
-    renderAvatarDataURL(jobKey, gender, name) {
-        // v5.10.0 帶入名字讓聯絡人頭像與地圖上的村民配色一致(同職業也能分辨)
-        const cacheKey = `${jobKey}_${gender}_${name || ''}`;
+    renderAvatarDataURL(jobKey, gender, name, look) {
+        // v5.10.0 帶入名字讓聯絡人頭像與地圖上的村民配色一致(同職業也能分辨);v5.89.0 帶入自訂外觀
+        const cacheKey = `${jobKey}_${gender}_${name || ''}_${lookSig(look)}`;
         if (!this._avatarCache) this._avatarCache = {};
         if (this._avatarCache[cacheKey]) return this._avatarCache[cacheKey];
 
@@ -6119,7 +6191,7 @@ class PixelTileMap {
         // Draw the agent at a fixed position (centered in the sprite area)
         // _drawAgent expects center-bottom x,y — sprite is 16w x 24h drawn from (x-8, y-20)
         // We place center at x=8, bottom at y=spriteH-2 so sprite fits nicely
-        this._drawAgent(ctx, 8, spriteH - 4, jobKey, false, false, name || '', false, 0, gender, '');
+        this._drawAgent(ctx, 8, spriteH - 4, jobKey, false, false, name || '', false, 0, gender, '', 'down', look || null);
 
         const dataUrl = offscreen.toDataURL('image/png');
         this._avatarCache[cacheKey] = dataUrl;
