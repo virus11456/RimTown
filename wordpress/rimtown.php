@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.91.0
+ * Version: 5.92.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.91.0');
+define('RIMTOWN_VERSION', '5.92.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.92.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '🐪 押商隊(核心玩法迴圈第二步):馬車站與「小鎮」分頁都能押一隊自己的商隊——選目的鎮、貨物(倉庫 ≥10 的食物／木材／石材／金屬／布料／草藥／工具)、數量 10–200、要不要派一名守衛押車(20 銀幣，他會離鎮 1–2 天)、走大路(2 天)或山路(1 天)；面板即時報價:預估賣價、利潤率、遇劫風險、天數',
+                '💰 利潤與風險:基本 +20%，對方鎮缺這種貨再 +20%，本鎮開通商路(海風鎮海路／其他鎮商路)再 +20%；遇劫率大路 10%、山路 25%，有護衛減半，市集城加強守衛後再打七折；遇劫損失六到十成貨物、剩下的只賣成本價加兩成、押車的守衛受傷(心情 −15、體力掉、會記得)；一次只能有一隊在路上，回報進日報、成為聊天話題、角落通知',
+                '📋 「小鎮」分頁新增「押商隊」區塊(在路上的進度、最近五次戰績)；馬車站對話多一個「押商隊」按鈕；商隊狀態進存檔；README H2 完成',
+            ),
+            'changes_en' => array(
+                '🐪 Player caravans (second step of the core loop): from the coach station or the Town tab, send your own caravan — pick the destination, the goods (food / wood / stone / metal / cloth / herbs / tools with at least 10 in stock), 10–200 units, whether a guard rides escort (20 silver; they leave town for 1–2 days), and the main road (2 days) or the mountain road (1 day); the panel quotes expected sale, margin, raid risk and days live',
+                '💰 Profit and risk: +20% base, +20% more when the destination needs that good, +20% more once your town has a trade route (Seabreeze\'s sea route or the other towns\' trade routes); raid risk 10% on the main road and 25% on the mountain road, halved with an escort, and ×0.7 after Market City reinforces its guard; a raid costs 60–100% of the goods, the remainder sells at cost +20%, and the escorting guard is hurt (mood −15, rest drained, remembers it); one caravan at a time, results go to the daily paper, conversation topics and a corner notice',
+                '📋 Town tab gains a "Send a caravan" block (progress on the road, last five runs); the coach station dialog gets a caravan button; caravan state is saved; README H2 done',
+            ),
+        ),
         array(
             'version' => '5.91.0',
             'date'    => '2026-10-10',

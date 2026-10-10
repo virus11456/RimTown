@@ -6613,6 +6613,7 @@ class World {
         this.processing = new ProcessingSystem();
         this.dailyNews = new DailyNewsEngine();
         this.requests = (typeof RequestBoard !== 'undefined') ? new RequestBoard() : null; // v5.91.0 委託板
+        this.playerCaravan = { active: null, history: [], pendingInjury: null }; // v5.92.0 押商隊
         this.townIdentity = new TownIdentitySystem(); // v5.19.0 城鎮身分/路線
         this.npcEvents = new NPCEventSystem();
         this.questSystem = typeof QuestSystem !== 'undefined' ? new QuestSystem() : null;
@@ -6673,6 +6674,7 @@ class World {
             try { this._visitorDaily(); } catch (e) { console.warn('[RimTown] visitor error:', e); } // v5.56.0 跨鎮互訪
             try { this._caravanDaily(); } catch (e) { console.warn('[RimTown] caravan error:', e); } // v5.80.0 跨鎮商隊
             try { this.requests?.dailyRoll(this); } catch (e) { console.warn('[RimTown] request error:', e); } // v5.91.0 委託板:結算昨天、發今天
+            try { this._playerCaravanDaily(); } catch (e) { console.warn('[RimTown] player caravan error:', e); } // v5.92.0 押商隊回報
             // Daily news (before economy/events so modifiers apply)
             this.news.dailyUpdate(this);
             // Daily economy
@@ -6789,6 +6791,79 @@ class World {
         this.logMessage('trade', `🐪 ${msg}`);
         if (this.events?.conversationTopics) this.events.conversationTopics.push(`${t(pick.tw.name)}${t('的商隊帶來了')}${label(recv)}`);
         this.onCaravan?.({ fromName: pick.tw.name, fromTheme: pick.key, give, giveAmt, recv, recvAmt, hub });
+    }
+
+    // ============================================================
+    // v5.92.0 押商隊(README H2):自己選貨、目的鎮、護衛、路線;兩天後回報賺或遇劫
+    // ============================================================
+    playerCaravanQuote(toTheme, res, amount, guard, route) {
+        const item = (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[res]) || null;
+        const unit = res === 'silver' ? 1 : (item?.sellPrice || 2);
+        const dest = (typeof TOWN_THEMES !== 'undefined' && TOWN_THEMES[toTheme]) || null;
+        let margin = 0.2;
+        if (dest && (dest.imports || []).includes(res)) margin += 0.2;        // 對方缺的貨
+        if (this.harborFlags?.tradeRoute || this.harborFlags?.seaRoute) margin += 0.2; // 本鎮開通商路
+        const base = unit * amount;
+        const value = Math.round(base * (1 + margin));
+        let risk = route === 'mountain' ? 0.25 : 0.10;
+        if (guard) risk *= 0.5;
+        if (this.harborFlags?.cityGuard) risk *= 0.7;
+        const days = route === 'mountain' ? 1 : 2;
+        return { base, value, margin, risk, days, fee: guard ? 20 : 0, wanted: !!(dest && (dest.imports || []).includes(res)) };
+    }
+    availableGuards() {
+        return Object.values(this.agents).filter(a => !a.isPlayer && !a.isDead && a.job?.key === 'guard' && !String(a.agentId).startsWith('visit_'));
+    }
+    launchPlayerCaravan(opt) {
+        const pc = this.playerCaravan || (this.playerCaravan = { active: null, history: [], pendingInjury: null });
+        if (pc.active) return { ok: false, msg: t('已經有一隊商隊在路上') };
+        const res = opt.res, amount = Math.floor(opt.amount || 0);
+        if (!res || amount < 10) return { ok: false, msg: t('至少要押 10 份貨') };
+        if ((this.stockpile.get(res) || 0) < amount) return { ok: false, msg: t('物資不足') };
+        const guard = opt.guardId ? this.agents[opt.guardId] : null;
+        if (opt.guardId && (!guard || guard.job?.key !== 'guard')) return { ok: false, msg: t('這位守衛現在不在鎮上') };
+        const q = this.playerCaravanQuote(opt.toTheme, res, amount, !!guard, opt.route);
+        if (guard && (this.stockpile.get('silver') || 0) < q.fee) return { ok: false, msg: t('銀幣不足，付不出護衛費') };
+        this.stockpile.consume(res, amount, this.tickCount, `${t('押商隊去')}${t(opt.toTownName)}`);
+        if (guard) {
+            this.stockpile.consume('silver', q.fee, this.tickCount, t('護衛費'));
+            this.events._sendAgentTravelling(this, guard, `${t('押商隊去')}${opt.toTownName}`, q.days);
+        }
+        pc.active = { id: 'pc' + Date.now(), toTownId: opt.toTownId, toTownName: opt.toTownName, toTheme: opt.toTheme, res, amount, guardId: guard?.agentId || null, guardName: guard?.name || '',
+            route: opt.route === 'mountain' ? 'mountain' : 'road', departAbsDay: this._absDay(), returnAbsDay: this._absDay() + q.days, quote: q };
+        const label = (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[res]?.name) ? SHOP_ITEMS[res].name() : res;
+        this.logMessage('trade', `🐪 ${t('你的商隊出發了：')}${amount} ${label} → ${t(opt.toTownName)}${guard ? `（${guard.name}${t('押車')}）` : ''}`);
+        this.events?.conversationTopics?.push(`${t('旅人押了一隊商隊去')}${t(opt.toTownName)}`);
+        return { ok: true, msg: `${t('商隊出發，預計')} ${q.days} ${t('天後回報')}` };
+    }
+    _playerCaravanDaily() {
+        const pc = this.playerCaravan; if (!pc) return;
+        if (pc.pendingInjury) { const g = this.agents[pc.pendingInjury]; if (g) { g.moodModifier = (g.moodModifier || 0) - 15; if (g.needs) g.needs.rest = Math.max(0, (g.needs.rest || 50) - 30); g.memory?.add?.(this.tickCount, this.clock.timeStr, 'incident', t('押車時遇上馬賊，挨了一棍。'), 8, []); pc.pendingInjury = null; } }
+        const a = pc.active; if (!a || this._absDay() < a.returnAbsDay) return;
+        const q = a.quote || this.playerCaravanQuote(a.toTheme, a.res, a.amount, !!a.guardId, a.route);
+        const raided = Math.random() < q.risk;
+        const label = (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[a.res]?.name) ? SHOP_ITEMS[a.res].name() : a.res;
+        let silver = 0, lost = 0;
+        if (raided) {
+            const lostFrac = 0.6 + Math.random() * 0.4; lost = Math.round(a.amount * lostFrac);
+            silver = Math.round((a.amount - lost) * (q.base / a.amount) * 1.2);
+            if (a.guardId) pc.pendingInjury = a.guardId;
+        } else silver = q.value;
+        if (silver > 0) this.stockpile.add('silver', silver, this.tickCount, `${t('商隊回報')}：${t(a.toTownName)}`);
+        const result = { ...a, raided, lost, silver, resolvedAbsDay: this._absDay() };
+        pc.history = (pc.history || []).concat([result]).slice(-10); pc.active = null;
+        const line = raided
+            ? `${t('你的商隊在去')}${t(a.toTownName)}${t('的路上遇劫，損失')} ${lost} ${label}${silver ? `${t('，剩下的賣了')} ${silver} ${t('銀幣')}` : ''}${a.guardName ? `${t('；')}${a.guardName}${t('受了傷')}` : ''}`
+            : `${t('你的商隊從')}${t(a.toTownName)}${t('回來了：')}${a.amount} ${label} ${t('賣了')} ${silver} ${t('銀幣')}（+${Math.round(q.margin * 100)}%）`;
+        this.logMessage('trade', `${raided ? '🏴' : '💰'} ${line}`);
+        this.dailyNews?.collectEvent?.('economy', line, raided ? 9 : 7, a.guardName ? [a.guardName] : []);
+        this.events?.conversationTopics?.push(raided ? t('旅人的商隊遇劫了') : t('旅人的商隊賺了一筆'));
+        this.onPlayerCaravanReturn?.(result, line);
+    }
+    playerCaravanState() {
+        const pc = this.playerCaravan; if (!pc) return null;
+        const a = pc.active ? { ...pc.active, daysLeft: Math.max(0, pc.active.returnAbsDay - this._absDay()) } : null;
+        return { active: a, history: (pc.history || []).slice(-5).reverse() };
     }
 
     _visitorDaily() {
@@ -7299,6 +7374,7 @@ class World {
             npcEvents: this.npcEvents.toDict(),
             questSystem: this.questSystem ? this.questSystem.toDict() : null,
             requests: this.requests ? this.requests.toDict(this) : null, // v5.91.0
+            playerCaravan: this.playerCaravanState(), // v5.92.0
             prosperity: this.prosperity ? this.prosperity.toDict() : null,
             npcQuests: this.npcQuests ? this.npcQuests.toDict() : null,
             customNPC: this.customNPC ? this.customNPC.toDict() : null,
@@ -7337,6 +7413,7 @@ class World {
         this.processing = new ProcessingSystem();
         this.dailyNews = new DailyNewsEngine();
         this.requests = (typeof RequestBoard !== 'undefined') ? new RequestBoard() : null; // v5.91.0 委託板
+        this.playerCaravan = { active: null, history: [], pendingInjury: null }; // v5.92.0 押商隊
         this.townIdentity = new TownIdentitySystem(); // v5.19.0 城鎮身分/路線
         this.npcEvents = new NPCEventSystem();
         this.questSystem = typeof QuestSystem !== 'undefined' ? new QuestSystem() : null;
@@ -8337,6 +8414,7 @@ class World {
             npcEvents: this.npcEvents.serialize(),
             questSystem: this.questSystem ? this.questSystem.serialize() : null,
             requests: this.requests ? this.requests.serialize() : null, // v5.91.0
+            playerCaravan: this.playerCaravan ? { active: this.playerCaravan.active, history: (this.playerCaravan.history || []).slice(-10), pendingInjury: this.playerCaravan.pendingInjury || null } : null, // v5.92.0
             prosperity: this.prosperity ? this.prosperity.serialize() : null,
             npcQuests: this.npcQuests ? this.npcQuests.serialize() : null,
             lifeGoals: this.lifeGoals ? this.lifeGoals.serialize() : null,
@@ -8646,6 +8724,7 @@ class World {
             if (data.processing) this.processing.loadFrom(data.processing);
             this.dailyNews = new DailyNewsEngine();
             this.requests = (typeof RequestBoard !== 'undefined') ? new RequestBoard() : null; // v5.91.0 委託板
+            this.playerCaravan = { active: null, history: [], pendingInjury: null }; // v5.92.0 押商隊
             this.townIdentity = new TownIdentitySystem(); // v5.19.0 城鎮身分/路線
             if (data.dailyNews) this.dailyNews.loadFrom(data.dailyNews);
             if (data.townIdentity) this.townIdentity.load(data.townIdentity);
@@ -8657,6 +8736,7 @@ class World {
             if (this.questSystem) this.questSystem.theme = this.townTheme || 'frontier'; // v5.83.0 先定主題再讀進度
             if (this.questSystem && data.questSystem) this.questSystem.loadFrom(data.questSystem);
             if (this.requests && data.requests) this.requests.loadFrom(data.requests); // v5.91.0
+            if (data.playerCaravan) this.playerCaravan = { active: data.playerCaravan.active || null, history: Array.isArray(data.playerCaravan.history) ? data.playerCaravan.history : [], pendingInjury: data.playerCaravan.pendingInjury || null }; // v5.92.0
             if (this.prosperity && data.prosperity) this.prosperity.loadFrom(data.prosperity);
             if (this.npcQuests && data.npcQuests) this.npcQuests.loadFrom(data.npcQuests);
             if (this.lifeGoals && data.lifeGoals) this.lifeGoals.load(data.lifeGoals);

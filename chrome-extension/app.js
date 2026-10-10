@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.91.0
-const RIMTOWN_APP_VERSION = '5.91.0';
+// RimTown - Frontend App (WordPress Plugin) v5.92.0
+const RIMTOWN_APP_VERSION = '5.92.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1608,7 +1608,7 @@ class RimTownApp {
         ];
         const roadmap = [
             [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證')]],
-            [t('開發中'), '#f472b6', [t('核心玩法迴圈') + ' · ' + t('委託板與行動點已上線，押商隊、季度考驗接續')]],
+            [t('開發中'), '#f472b6', [t('核心玩法迴圈') + ' · ' + t('委託板與行動點、押商隊已上線，季度考驗接續')]],
             [t('構想'), '#60a5fa', [t('玩家之間互訪城鎮'), t('手機 App 版')]],
         ];
         // v5.81.0 更新紀錄(240KB)不再隨頁面載入:首頁第一次畫時才動態載 changelog.js,載完重畫一次;直接進遊戲的人完全不載
@@ -3255,6 +3255,7 @@ class RimTownApp {
                 inner += `<button class="trade-btn coach-go" data-idx="${i}" style="width:100%;margin:3px 0;padding:9px;display:flex;align-items:center;justify-content:center;gap:7px">${this._coachPixelSvg(0.75)}<span>${t('前往')} ${esc(twn.name)}</span></button>`;
             });
         }
+        if (towns.length) inner += `<button class="trade-btn coach-caravan" style="width:100%;margin-top:8px;padding:9px">🐪 ${t('押商隊')}${this.world?.playerCaravan?.active ? `（${t('在路上')}）` : ''}</button>`; // v5.92.0
         inner += `<button class="trade-btn coach-close" style="width:100%;margin-top:8px;padding:8px;opacity:0.8">${t('下次再說')}</button>`;
         card.innerHTML = inner;
         ov.appendChild(card);
@@ -3262,8 +3263,75 @@ class RimTownApp {
         ov.addEventListener('click', (e) => {
             const go = e.target.closest?.('.coach-go');
             if (go) { const twn = towns[parseInt(go.dataset.idx, 10)]; ov.remove(); if (twn) this._coachTravelTo(twn.id, twn.name); return; }
+            if (e.target.closest?.('.coach-caravan')) { ov.remove(); this._showCaravanDialog(); return; } // v5.92.0
             if (e.target.closest?.('.coach-close') || e.target === ov) ov.remove();
         });
+    }
+    // ============================================================
+    // v5.92.0 押商隊(README H2):選貨/目的鎮/護衛/路線,即時報價,出發;小鎮分頁顯示進度與戰績
+    // ============================================================
+    _showCaravanDialog() {
+        const w = this.world; if (!w) return;
+        document.getElementById('caravan-dialog')?.remove();
+        const towns = (w.otherTowns || []).filter(tw => tw.id !== this.currentTownId && tw.name !== w.townName).map(tw => ({ ...tw, theme: (typeof themeKeyOfTownName === 'function' ? themeKeyOfTownName(tw.name) : null) || 'frontier' }));
+        const esc = (x) => this._escapeHtml(String(x));
+        const resList = ['food', 'wood', 'stone', 'metal', 'cloth', 'herbs', 'tools'].filter(r => (w.stockpile.get(r) || 0) >= 10);
+        const guards = w.availableGuards();
+        const ov = document.createElement('div'); ov.id = 'caravan-dialog';
+        ov.style.cssText = 'position:fixed;inset:0;background:rgba(6,10,24,0.72);z-index:9999;display:flex;align-items:center;justify-content:center';
+        const card = document.createElement('div');
+        card.style.cssText = 'background:var(--bg-secondary);border:1px solid var(--border);border-radius:14px;padding:18px;max-width:360px;width:90%;max-height:85vh;overflow-y:auto';
+        const a = w.playerCaravan?.active;
+        let inner = `<div style="font-weight:bold;font-size:1rem;margin-bottom:6px">🐪 ${t('押商隊')}</div>`;
+        if (a) {
+            inner += `<div style="font-size:0.8rem;line-height:1.7">${t('商隊在路上：')}${a.amount} ${this._resLabel(a.res)} → ${esc(t(a.toTownName))}${a.guardName ? `（${esc(t(a.guardName))}${t('押車')}）` : ''}<br>${t('預計')} ${Math.max(0, a.returnAbsDay - w._absDay())} ${t('天後回報')}</div>`;
+        } else if (!towns.length || !resList.length) {
+            inner += `<div style="font-size:0.8rem;color:var(--text-secondary)">${!towns.length ? t('還沒有通車的鄰鎮。') : t('倉庫裡沒有夠的貨（至少 10 份）。')}</div>`;
+        } else {
+            const sel = (id, opts) => `<select id="${id}" style="width:100%;padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--bg-primary);color:var(--text-primary);font-size:0.85rem">${opts}</select>`;
+            inner += `<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px">${t('車伕掂掂貨：「要押什麼去哪？山路快一天，但不太平。」')}</div>`;
+            inner += `<label style="font-size:0.75rem">${t('目的鎮')}</label>${sel('pc-town', towns.map((tw, i) => `<option value="${i}">${esc(t(tw.name))}</option>`).join(''))}`;
+            inner += `<label style="font-size:0.75rem;margin-top:6px;display:block">${t('貨物')}</label>${sel('pc-res', resList.map(r => `<option value="${r}">${this._resLabel(r)}（${t('倉庫')} ${w.stockpile.get(r)}）</option>`).join(''))}`;
+            inner += `<label style="font-size:0.75rem;margin-top:6px;display:block">${t('數量')} <span id="pc-amt-v">20</span></label><input type="range" id="pc-amt" min="10" max="200" step="10" value="20" style="width:100%">`;
+            inner += `<label style="font-size:0.75rem;margin-top:6px;display:block">${t('護衛')}</label>${sel('pc-guard', `<option value="">${t('不派（省 20 銀幣）')}</option>` + guards.map(g => `<option value="${g.agentId}">${esc(t(g.name))}（${t('離鎮')} 1–2 ${t('天')}）</option>`).join(''))}`;
+            inner += `<div style="margin-top:6px;font-size:0.8rem;display:flex;gap:12px"><label><input type="radio" name="pc-route" value="road" checked> ${t('大路（2 天）')}</label><label><input type="radio" name="pc-route" value="mountain"> ${t('山路（1 天）')}</label></div>`;
+            inner += `<div id="pc-quote" style="margin-top:8px;font-size:0.78rem;line-height:1.7;background:rgba(255,255,255,0.05);border-radius:8px;padding:8px"></div>`;
+            inner += `<button class="trade-btn btn-accent pc-go" style="width:100%;margin-top:8px;padding:9px">🐪 ${t('出發')}</button>`;
+        }
+        inner += `<button class="trade-btn pc-close" style="width:100%;margin-top:8px;padding:8px;opacity:0.8">${t('關閉')}</button>`;
+        card.innerHTML = inner; ov.appendChild(card); document.body.appendChild(ov);
+        const read = () => { const ti = parseInt(card.querySelector('#pc-town')?.value || '0', 10); const tw = towns[ti] || towns[0]; return { tw, res: card.querySelector('#pc-res')?.value, amount: parseInt(card.querySelector('#pc-amt')?.value || '20', 10), guardId: card.querySelector('#pc-guard')?.value || '', route: card.querySelector('input[name="pc-route"]:checked')?.value || 'road' }; };
+        const quote = () => {
+            const o = read(); if (!o.tw || !o.res) return;
+            const amtEl = card.querySelector('#pc-amt'); const stock = w.stockpile.get(o.res) || 0; if (amtEl) { amtEl.max = Math.max(10, Math.min(200, Math.floor(stock / 10) * 10)); if (o.amount > +amtEl.max) { amtEl.value = amtEl.max; o.amount = +amtEl.max; } }
+            card.querySelector('#pc-amt-v').textContent = o.amount;
+            const q = w.playerCaravanQuote(o.tw.theme, o.res, o.amount, !!o.guardId, o.route);
+            card.querySelector('#pc-quote').innerHTML = `${t('預估賣價')} <b>${q.value}</b> ${t('銀幣')}（${t('成本價')} ${q.base}，+${Math.round(q.margin * 100)}%${q.wanted ? ` · ${t('對方缺這個')}` : ''}）<br>${t('遇劫風險')} <b>${Math.round(q.risk * 100)}%</b> · ${q.days} ${t('天')}${q.fee ? ` · ${t('護衛費')} ${q.fee}` : ''}`;
+        };
+        card.querySelectorAll('select, input').forEach(el => el.addEventListener('input', quote)); quote();
+        ov.addEventListener('click', (e) => {
+            if (e.target.closest?.('.pc-go')) {
+                const o = read(); if (!o.tw) return;
+                const r = w.launchPlayerCaravan({ toTownId: o.tw.id, toTownName: o.tw.name, toTheme: o.tw.theme, res: o.res, amount: o.amount, guardId: o.guardId || null, route: o.route });
+                this._showCornerNotice({ icon: r.ok ? '🐪' : '⚠️', title: t('押商隊'), name: '', desc: r.msg });
+                if (r.ok) { ov.remove(); this.state = w.getState(); try { this.renderSidebar(); } catch (err) {} }
+                return;
+            }
+            if (e.target.closest?.('.pc-close') || e.target === ov) ov.remove();
+        });
+    }
+    _resLabel(res) { return (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[res]?.name) ? SHOP_ITEMS[res].name() : (res === 'silver' ? t('銀幣') : res); }
+    _renderPlayerCaravan() {
+        const pc = this.state?.playerCaravan; if (!pc) return '';
+        const esc = (x) => this._escapeHtml(String(x));
+        let html = `<div class="econ-section"><h3>🐪 ${t('押商隊')}</h3>`;
+        if (pc.active) html += `<div style="font-size:0.8rem;line-height:1.7">${pc.active.amount} ${this._resLabel(pc.active.res)} → ${esc(t(pc.active.toTownName))}${pc.active.guardName ? `（${esc(t(pc.active.guardName))}${t('押車')}）` : ''} · ${t('預計')} ${pc.active.daysLeft} ${t('天後回報')}</div>`;
+        else html += `<button class="trade-btn" data-action="open-caravan" style="width:100%;padding:8px">🐪 ${t('押一隊商隊去鄰鎮')}</button>`;
+        if (pc.history.length) {
+            html += `<div style="margin-top:6px;font-size:0.72rem;color:var(--text-secondary)">${t('最近戰績')}</div>`;
+            pc.history.forEach(h => { html += `<div style="font-size:0.74rem">${h.raided ? '🏴' : '💰'} ${h.amount} ${this._resLabel(h.res)} → ${esc(t(h.toTownName))}：${h.raided ? `${t('遇劫，損失')} ${h.lost}` : `+${h.silver} ${t('銀幣')}`}</div>`; });
+        }
+        return html + '</div>';
     }
     async _coachTravelTo(townId, townName) {
         const esc = s => this._escapeHtml ? this._escapeHtml(String(s)) : String(s);
@@ -3453,6 +3521,7 @@ class RimTownApp {
         w.onVisitorReturn = (meta) => this._pushMailbox(this._returnMailboxKey(meta.fromTownId),
             { origId: meta.origId, origName: meta.origName, notes: meta.notes || [], visitedTownName: this._getCurrentTownName(), visitedTownId: this.currentTownId, romance: meta.romance || null }); // v5.90.0 帶回戀情
         w.onRelocate = (data) => this._doRelocate(data); // v5.90.0 搬家提案的決定
+        w.onPlayerCaravanReturn = (result, line) => { this._showCornerNotice({ icon: result.raided ? '🏴' : '💰', title: t('商隊回報'), name: t(result.toTownName), desc: line }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.92.0
         // v5.80.0 跨鎮商隊:角落通知 + 地圖上馬車進城動畫
         w.onCaravan = (info) => {
             const label = (rs) => (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[rs]?.name) ? SHOP_ITEMS[rs].name() : (rs === 'silver' ? t('銀幣') : rs);
@@ -4545,6 +4614,7 @@ class RimTownApp {
                 case 'edit-look': this._openLookEditor(val); break; // v5.89.0
                 case 'req-act': this._requestAct(val); break; // v5.91.0 委託板
                 case 'req-buy-ap': this._requestBuyAP(); break;
+                case 'open-caravan': this._showCaravanDialog(); break; // v5.92.0
                 case 'look-set': this._setLookDraft(val); break;
                 case 'look-random': this._randomLookDraft(); break;
                 case 'look-reset': this._applyLookDraft('reset'); break;
@@ -8558,6 +8628,7 @@ class RimTownApp {
         if (!this._economySubTab) this._economySubTab = 'resources';
 
         let html = '<div class="economy-panel">';
+        html += this._renderPlayerCaravan(); // v5.92.0 押商隊
 
         // Prosperity summary
         const prosp = this.state.prosperity;
