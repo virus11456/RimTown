@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.94.0
-const RIMTOWN_APP_VERSION = '5.94.0';
+// RimTown - Frontend App (WordPress Plugin) v5.95.0
+const RIMTOWN_APP_VERSION = '5.95.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1604,11 +1604,10 @@ class RimTownApp {
             ['🧠', t('會記得你的村民'), t('五座城鎮、近百位村民各有性格、記憶與人際關係。你說過的話、送過的禮，他們都記得，也會拿去跟別人八卦。')],
             ['💬', t('真的在聊天'), t('對話由內建 AI 生成，不用填任何金鑰。安慰、打聽、說服、調解、示好、威脅，每一句都會改變關係。')],
             ['🐎', t('多鎮往返'), t('邊境鎮之外還有漁村海風鎮、山上的礦山鎮、密林裡的林間村、平原樞紐市集城，五座城鎮各有自己的地圖、卡司與故事。搭馬車過去作客，村民也會跨鎮互訪，把別鎮的故事帶回來。')],
-            ['📖', t('任務與多重結局'), t('五座城鎮各有五章主線與專屬災難——海風鎮颱風、礦山鎮塌方、林間村山火、市集城商隊劫案；每章兩條路線、各自結局。你可以參選鎮長，也可以只當個看戲的旅人。')],
+            ['📖', t('任務與多重結局'), t('每天有委託要排、商隊要押、季度考驗要撐；五座城鎮各有五章主線與專屬災難，每章兩條路線。旅人會升級選天賦，每句話都有成功率。你可以參選鎮長，也可以只當個看戲的旅人。')],
         ];
         const roadmap = [
             [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證')]],
-            [t('開發中'), '#f472b6', [t('核心玩法迴圈') + ' · ' + t('委託板、押商隊、季度考驗、旅人成長已上線，有目的的對話接續')]],
             [t('構想'), '#60a5fa', [t('玩家之間互訪城鎮'), t('手機 App 版')]],
         ];
         // v5.81.0 更新紀錄(240KB)不再隨頁面載入:首頁第一次畫時才動態載 changelog.js,載完重畫一次;直接進遊戲的人完全不載
@@ -5427,7 +5426,7 @@ class RimTownApp {
         return best;
     }
 
-    async playerSendMessage(targetId, message, intent) {
+    async playerSendMessage(targetId, message, intent, outcome) {
         if (this.chatSending || !message.trim()) return;
         this.chatSending = true;
         const player = this.world.agents['player'];
@@ -5459,7 +5458,7 @@ class RimTownApp {
             // Clear unread for this NPC
             if (this._chatUnread) this._chatUnread.delete(targetId);
             // v5.16.0 意圖的額外機械後果(獨立於 LLM,永遠可見)
-            const intentLines = intent ? this._applyChatIntent(npc, player, intent) : [];
+            const intentLines = intent ? this._applyChatIntent(npc, player, intent, outcome) : [];
             this.state = this.world.getState();
             this._hideTypingIndicator();
             if (this.activeTab === 'chat') { this._renderChatMessages(); this._scrollChatToBottom(); }
@@ -6538,9 +6537,13 @@ class RimTownApp {
             chatAreaHtml += '</div>';
 
             // v5.16.0 意圖化交談鈕:讓玩家一眼看懂「這場對話我能做什麼」(自由輸入照樣保留)
-            const intentBar = this._chatIntents().map(it =>
-                `<button class="chat-intent-btn" data-action="chat-intent" data-val="${it.key}" title="${it.hint}" ${this.chatSending ? 'disabled' : ''}>${it.icon} ${it.label}</button>`
-            ).join('');
+            const oddsNpc = this.world?.agents?.[this.chatTarget]; // v5.95.0 按鈕上顯示成功率
+            const intentBar = this._chatIntents().map(it => {
+                const o = (it.key !== 'whisper' && oddsNpc && this.world?.chatOdds) ? this.world.chatOdds(oddsNpc, it.key) : null;
+                const pct = o ? Math.round(o.p * 100) : null;
+                const ttl = o ? `${it.hint} · ${t('成功率')} ${pct}%${o.factors.length ? '（' + o.factors.map(f => `${f.label}${f.v > 0 ? '+' : ''}${Math.round(f.v * 100)}`).join('、') + '）' : ''}` : it.hint;
+                return `<button class="chat-intent-btn" data-action="chat-intent" data-val="${it.key}" title="${this._escapeHtml(ttl)}" ${this.chatSending ? 'disabled' : ''}>${it.icon} ${it.label}${pct !== null ? ` <span style="opacity:0.65;font-size:0.85em">${pct}%</span>` : ''}</button>`;
+            }).join('');
             chatAreaHtml += `<div class="chat-intent-bar">${intentBar}</div>`;
             // Input — always available
             chatAreaHtml += `<div class="chat-input-area">
@@ -6869,6 +6872,9 @@ class RimTownApp {
             { key: 'flirt',    icon: '💗', label: t('示好'),   hint: t('增進浪漫好感(關係太差會尷尬)'), opener: t('跟你在一起總是特別開心。') },
             { key: 'threaten', icon: '😠', label: t('威脅'),   hint: t('讓對方畏懼,但信任與好感重挫'),   opener: t('你最好識相點,別逼我出手。') },
             { key: 'request',  icon: '📌', label: t('委託'),   hint: t('請對方幫忙(信任夠才會答應)'),   opener: t('有件事想拜託你幫個忙。') },
+            // v5.95.0 有目的的對話:求助(拿對方本行的物資)、談條件(談成後押商隊兩天內 +5%)
+            { key: 'help',     icon: '📦', label: t('求助'),   hint: t('請對方從本行勻一些物資給鎮上(每人每天一次,信任越高越肯)'), opener: t('鎮上缺東西，你那邊能勻一些嗎？') },
+            { key: 'bargain',  icon: '🧾', label: t('談條件'), hint: t('談成後兩天內押商隊利潤 +5%(商人最好談)'), opener: t('我們來談個條件，對你我都划算。') },
             { key: 'whisper',  icon: '🤫', label: t('耳語'),   hint: t('在他心裡種下一個念頭——他會當成自己的想法,影響之後的言行'), opener: '' },
             // v5.56.0 雙城:有別的鎮才出現
             ...(this.world?.otherTowns?.length ? [{ key: 'invite-town', icon: '🚌', label: t('邀去鄰鎮'), hint: t('邀請對方去另一個城鎮作客幾天(要夠熟才會答應)'), opener: t('要不要跟我去別的鎮走走？') }] : []),
@@ -6888,16 +6894,52 @@ class RimTownApp {
         }
         this._firstDayMark?.('interact'); // v5.18.0 第一天:出手互動
         if (key === 'comfort' || key === 'mediate') this._firstDayMark?.('mark'); // 這兩種也算「為某人做點事」
-        this.playerSendMessage(this.chatTarget, it.opener, key);
+        // v5.95.0 擲骰:先算成功率再送出,結果傳給後果函式
+        let outcome = null;
+        try { const npc = this.world?.agents?.[this.chatTarget]; if (npc && this.world.chatOdds) { const o = this.world.chatOdds(npc, key); outcome = { ok: Math.random() < o.p, p: o.p }; } } catch (e) {}
+        this.playerSendMessage(this.chatTarget, it.opener, key, outcome);
     }
 
     // 套用意圖的確定性後果,回傳給結果卡顯示的文字行(直接操作世界狀態,存進存檔)
-    _applyChatIntent(npc, player, key) {
+    _applyChatIntent(npc, player, key, outcome) {
         const rel = npc.relationships.getOrCreate('player', player.name);
         const world = this.world;
         const lines = [];
         const fx = (txt, color) => lines.push({ txt, color });
+        // v5.95.0 擲骰沒過:這句話沒說進心裡,原本的機械後果不套用
+        if (outcome && !outcome.ok) {
+            rel.modifyAffinity(-1);
+            fx(`🎲 ${t('沒說進心裡')}（${t('成功率')} ${Math.round(outcome.p * 100)}%）`, '#9aa');
+            fx(`${t('好感')} -1`, '#e0b07a');
+            world.recordPlayerAction?.(key, '', npc, null);
+            return lines;
+        }
+        if (outcome?.ok) { fx(`🎲 ${t('說到點上')}（${t('成功率')} ${Math.round(outcome.p * 100)}%）`, '#7fc4ff'); try { world.growth?.addXp(3, 'chat', world); } catch (e) {} }
         switch (key) {
+            // v5.95.0 求助:對方從本行勻物資給鎮上(每人每天一次)
+            case 'help': {
+                const JOB_RES = { farmer: 'food', cook: 'food', miner: 'stone', blacksmith: 'metal', carpenter: 'wood', doctor: 'herbs', researcher: 'herbs', priest: 'herbs', tailor: 'cloth', trader: 'cloth', guard: 'tools', mayor: 'silver' };
+                const res = JOB_RES[npc.job?.key] || 'food';
+                const dayKey = `${world.clock.year}-${world.clock.season}-${world.clock.day}`;
+                if (npc._lastHelpDay === dayKey) { fx(`📦 ${t(npc.name)}${t('說今天已經勻過了，明天再說')}`, '#9aa'); break; }
+                const amount = 10 + Math.floor(Math.random() * 11);
+                npc._lastHelpDay = dayKey;
+                world.stockpile.add(res, amount, world.tickCount, `${t('求助')}：${t(npc.name)}`);
+                rel.trust = Math.max(-100, (rel.trust || 0) - 2);
+                npc.memory?.add?.(world.tickCount, world.clock.timeStr, 'social', `${t('勻了')}${amount}${t('份東西給')}${t(player.name)}`, 5, ['player']);
+                const label = (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[res]?.name) ? SHOP_ITEMS[res].name() : res;
+                fx(`📦 ${t(npc.name)}${t('勻了')} ${amount} ${label} ${t('給鎮上')}`, '#5cc98f');
+                fx(`${t('信任')} -2（${t('人情總要還')}）`, '#e0b07a');
+                break;
+            }
+            // v5.95.0 談條件:談成後兩天內押商隊利潤 +5%
+            case 'bargain': {
+                world.bargainUntilAbsDay = world._absDay() + 2;
+                rel.modifyAffinity(1);
+                npc.memory?.add?.(world.tickCount, world.clock.timeStr, 'social', `${t('和')}${t(player.name)}${t('談成了一筆條件')}`, 5, ['player']);
+                fx(`🧾 ${t(npc.name)}${t('點頭答應：兩天內押商隊利潤 +5%')}`, '#5cc98f');
+                break;
+            }
             // v5.56.0 雙城:邀請村民去另一個鎮作客
             case 'invite-town': {
                 const towns = world.otherTowns || [];

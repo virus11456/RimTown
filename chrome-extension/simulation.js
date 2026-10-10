@@ -6797,6 +6797,32 @@ class World {
     }
 
     // ============================================================
+    // v5.95.0 有目的的對話(README H5):每種意圖先用規則算成功率(屬性+好感+對方性格),按下去擲骰
+    // ============================================================
+    chatOdds(npc, key) {
+        const player = this.agents?.player; if (!npc || !player) return { p: 0.5, factors: [] };
+        const rel = npc.relationships?.relationships?.player || { affinity: 0, trust: 0 };
+        const g = this.growth; const at = (k) => g ? g.attr(this, k) : ((player.attributes || {})[k] || 5);
+        const traits = npc.personality?.traits || [];
+        const BASE = { comfort: 0.8, gossip: 0.7, persuade: 0.55, mediate: 0.5, flirt: 0.5, threaten: 0.6, request: 0.5, help: 0.5, bargain: 0.5, 'invite-town': 0.6 };
+        let p = BASE[key] ?? 0.6; const f = [];
+        const add = (v, label) => { if (!v) return; p += v; f.push({ v, label }); };
+        if (['comfort', 'flirt', 'persuade', 'invite-town', 'request'].includes(key)) add((at('charm') - 5) * 0.03, t('魅力'));
+        if (['gossip', 'bargain', 'mediate'].includes(key)) add((at('wit') - 5) * 0.03, t('機智'));
+        if (['threaten', 'help'].includes(key)) add((at('grit') - 5) * 0.03, t('毅力'));
+        add(Math.max(-0.25, Math.min(0.25, (rel.affinity || 0) / 200)), t('好感'));
+        if (['request', 'help', 'bargain', 'invite-town'].includes(key)) add(Math.max(-0.15, Math.min(0.15, (rel.trust || 0) / 300)), t('信任'));
+        const T = (tr, keys, v, label) => { if (traits.includes(tr) && keys.includes(key)) add(v, label); };
+        T('shy', ['gossip', 'flirt', 'invite-town'], -0.1, t('害羞')); T('gossip', ['gossip'], 0.15, t('愛八卦')); T('abrasive', ['persuade', 'mediate', 'comfort'], -0.1, t('刻薄'));
+        T('kind', ['help', 'request', 'comfort'], 0.1, t('善良')); T('stoic', ['comfort', 'threaten'], -0.1, t('堅忍')); T('charismatic', ['persuade', 'bargain'], -0.05, t('有主見'));
+        T('romantic', ['flirt'], 0.1, t('浪漫')); T('jealous', ['flirt'], -0.1, t('善妒')); T('optimist', ['invite-town', 'help'], 0.05, t('樂觀')); T('pessimist', ['comfort'], -0.05, t('悲觀'));
+        if (key === 'bargain') add(npc.job?.key === 'trader' ? 0.15 : (npc.job?.key === 'mayor' || npc.job?.key === 'cook') ? 0.05 : -0.15, t('職業'));
+        if (key === 'help' && npc._lastHelpDay === `${this.clock.year}-${this.clock.season}-${this.clock.day}`) add(-0.3, t('今天幫過了'));
+        if (g?.has('silvertongue') && ['persuade', 'mediate'].includes(key)) add(0.08, t('巧舌'));
+        p = Math.max(0.1, Math.min(0.95, p));
+        return { p, factors: f };
+    }
+    // ============================================================
     // v5.92.0 押商隊(README H2):自己選貨、目的鎮、護衛、路線;兩天後回報賺或遇劫
     // ============================================================
     playerCaravanQuote(toTheme, res, amount, guard, route) {
@@ -6808,6 +6834,7 @@ class World {
         if (this.harborFlags?.tradeRoute || this.harborFlags?.seaRoute) margin += 0.2; // 本鎮開通商路
         if (this.harborFlags?.guildSeal) margin += 0.1; // v5.93.0 商會印信
         if (this.growth?.has('shrewd')) margin += 0.05; // v5.94.0 天賦:精算
+        if (this.bargainUntilAbsDay && this._absDay() <= this.bargainUntilAbsDay) margin += 0.05; // v5.95.0 談條件:談成後兩天內 +5%
         const base = unit * amount;
         const value = Math.round(base * (1 + margin));
         let risk = route === 'mountain' ? 0.25 : 0.10;
@@ -8399,6 +8426,7 @@ class World {
             lastCaravanDay: this.lastCaravanDay ?? null, // v5.80.0 跨鎮商隊
             caravanCount: this.caravanCount || 0, harborFlags: { ...(this.harborFlags || {}) }, // v5.84.0
             visitCounts: { ...(this.visitCounts || {}) }, movedOut: (this.movedOut || []).slice(-20), // v5.90.0
+            bargainUntilAbsDay: this.bargainUntilAbsDay || 0, // v5.95.0
 
             playerActions: (this.playerActions || []).slice(-60).map(a => ({ ...a })), // v5.45.0 蝴蝶效應
             dailyEcho: [...(this.dailyEcho || [])], // v5.45.0 昨日回響
@@ -8600,6 +8628,7 @@ class World {
             this.lastCaravanDay = data.lastCaravanDay ?? null; // v5.80.0
             this.caravanCount = data.caravanCount || 0; this.harborFlags = data.harborFlags || {}; // v5.84.0
             this.visitCounts = data.visitCounts || {}; this.movedOut = Array.isArray(data.movedOut) ? data.movedOut : []; // v5.90.0
+            this.bargainUntilAbsDay = data.bargainUntilAbsDay || 0; // v5.95.0
             this.townName = data.townName || (TOWN_THEMES[this.townTheme]?.townName) || '邊境鎮'; // v5.59.5 舊檔沒鎮名時依主題補上,不再殘留上一鎮的名字
             this._chronicleChatIdx = (this.agents['player']?.chatHistory || []).length; // v5.43.0 讀檔後從當下開始記
             this.playerActions = data.playerActions || []; // v5.45.0

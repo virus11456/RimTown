@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.94.0
+ * Version: 5.95.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.94.0');
+define('RIMTOWN_VERSION', '5.95.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.95.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '🎲 有目的的對話(核心玩法迴圈第五步):聊天的意圖鈕(安慰／打聽／說服／調解／示好／威脅／委託／邀去鄰鎮)現在每個都有成功率——依意圖基礎值、相關屬性(魅力／機智／毅力，含天賦加成)、好感(±25%)、信任(求助／委託／談條件／邀約 ±15%)與對方性格(害羞、愛八卦、刻薄、善良、堅忍、有主見、浪漫、善妒、樂觀、悲觀)算出 10–95%，按鈕直接顯示 %、滑過看每個因子；按下去擲骰：過了套用原本的後果並得 3 經驗，沒過只扣 1 好感、結果卡寫「沒說進心裡」',
+                '📦🧾 兩個新目的:「求助」請對方從本行勻 10–20 份物資給鎮上(農夫食物、木匠木材、鐵匠金屬、醫師草藥、裁縫布料…；每人每天一次、信任 −2，補季度考驗的糧與藥)；「談條件」談成後兩天內押商隊利潤 +5%(商人最好談、有主見的難談)；談成的期限進存檔',
+                '🏁 核心玩法迴圈 H1–H5 全部上線(委託板、押商隊、季度考驗、旅人成長、有目的的對話)；首頁路線圖移除開發中項目、特色介紹改寫；README H5 完成',
+            ),
+            'changes_en' => array(
+                '🎲 Purposeful conversations (fifth step of the core loop): every chat intent button (comfort / ask around / persuade / mediate / flirt / threaten / request / invite to a town) now has odds — from the intent\'s base, the relevant attribute (charm / wit / grit with perk bonuses), affinity (±25%), trust (±15% for help / request / bargain / invite) and the other person\'s traits (shy, loves gossip, abrasive, kind, stoic, strong-willed, romantic, jealous, optimist, pessimist), clamped to 10–95%; the button shows the % and hovering lists each factor; pressing rolls the dice: a hit applies the usual consequences and gives 3 XP, a miss costs 1 affinity and the result card says it didn\'t land',
+                '📦🧾 Two new goals: Ask for help (they spare 10–20 units from their trade — farmers food, carpenters wood, smiths metal, doctors herbs, tailors cloth…; once per person per day, trust −2; feeds the seasonal trials) and Bargain (a deal gives caravan margin +5% for two days; traders are easiest, the strong-willed hardest); the bargain window is saved',
+                '🏁 Core loop H1–H5 complete (request board, player caravans, seasonal trials, traveller growth, purposeful conversations); the landing roadmap drops the in-development row and the feature blurb is rewritten; README H5 done',
+            ),
+        ),
         array(
             'version' => '5.94.0',
             'date'    => '2026-10-10',
