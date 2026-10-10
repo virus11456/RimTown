@@ -45,6 +45,17 @@ module.exports = async (req, res) => {
         return res.status(200).json({ users, storage: await L.storageInfo() });
     }
 
+    // v5.96.0 B8:最近七天 AI 用量
+    if (req.method === 'GET' && action === 'usage') {
+        const days = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+            let u = null; try { u = await L.readJson(`usage/${d}.json`); } catch {}
+            days.push({ day: d, groq: u?.groq || 0, relay: u?.relay || 0, fallbacks: u?.fallbacks || 0, blocked: u?.blocked || 0 });
+        }
+        return res.status(200).json({ days });
+    }
+
     // v5.82.0 移除「搬資料到資料庫」:Blob 已停權,資料早在 Postgres
 
     // v5.68.0 推薦碼管理:列出 / 建立 / 停用啟用 / 刪除

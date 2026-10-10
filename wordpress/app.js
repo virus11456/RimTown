@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.95.0
-const RIMTOWN_APP_VERSION = '5.95.0';
+// RimTown - Frontend App (WordPress Plugin) v5.96.0
+const RIMTOWN_APP_VERSION = '5.96.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -258,6 +258,7 @@ class RimTownAuth {
 
     // v5.63.0 管理員操作(僅 serverless 站;身分由伺服器 ADMIN_USERS 判定)
     async adminListUsers() { const d = await this._fetch('admin?action=users'); return { users: d.users || [], storage: d.storage || null }; }
+    async adminUsage() { const d = await this._fetch('admin?action=usage'); return d.days || []; } // v5.96.0 B8 AI 用量
     async adminAction(action, username, extra = {}) { return this._fetch('admin', 'POST', { action, username, ...extra }); }
     // v5.68.0 推薦碼管理
     async adminInvites() { const d = await this._fetch('admin?action=invites'); return d.invites || []; }
@@ -3397,8 +3398,13 @@ class RimTownApp {
             });
             // v5.64.0 儲存後端狀態 + 一鍵搬遷按鈕
             let storageHtml = '';
+            // v5.96.0 B8:最近七天 AI 用量(Groq / 付費中繼 / 退回次數)
+            try {
+                const days = await this.auth.adminUsage();
+                if (days.length) storageHtml += `<div style="margin-bottom:6px"><div style="color:var(--text-secondary);font-size:0.72rem">${t('🤖 AI 用量（7 天）')}</div>${days.map(d => `<div style="font-size:0.7rem;display:flex;gap:8px"><span style="color:var(--text-muted);width:78px">${d.day}</span><span>Groq ${d.groq || 0}</span><span>${t('中繼')} ${d.relay || 0}</span><span style="color:${(d.fallbacks || 0) ? '#fb923c' : 'var(--text-muted)'}">${t('退回')} ${d.fallbacks || 0}</span><span style="color:${(d.blocked || 0) ? '#f87171' : 'var(--text-muted)'}">${t('額度滿')} ${d.blocked || 0}</span></div>`).join('')}</div>`;
+            } catch (e) {}
             if (storage) {
-                storageHtml = storage.backend === 'postgres' ? `<div style="color:#34d399;margin-bottom:6px">${t('💾 儲存：Postgres')}</div>` : `<div style="color:#f87171;margin-bottom:6px">${t('💾 儲存：未設定資料庫（DATABASE_URL）')}</div>`; // v5.82.0 只剩 Postgres
+                storageHtml = storageHtml + (storage.backend === 'postgres' ? `<div style="color:#34d399;margin-bottom:6px">${t('💾 儲存：Postgres')}</div>` : `<div style="color:#f87171;margin-bottom:6px">${t('💾 儲存：未設定資料庫（DATABASE_URL）')}</div>`); // v5.82.0 只剩 Postgres
             }
             this._adminUsersHtml = storageHtml + (rows.length ? `<div style="color:var(--text-secondary);margin-bottom:4px">${t('共')} ${users.length} ${t('個帳號')}</div>${rows.join('')}` : `<span style="color:var(--text-muted)">${t('目前沒有其他玩家')}</span>`);
         } catch (e) {
@@ -3935,10 +3941,10 @@ class RimTownApp {
             this._cloudSaves = saves;
             // v5.59.0 TC-01:雲端寫入失敗時本地存檔仍在——併入「只存在本機」的城鎮,
             // 不再誤報「雲端尚無城鎮存檔」把玩家鎖死
+            // v5.96.0 B13:以 town_id 為主鍵——只要雲端沒有這個 id 就列為「本機」,同名只標註不再隱藏(多裝置/分身一眼可見、可刪本機副本)
             const cloudIds = new Set(saves.map(s => s.town_id));
             const cloudNames = new Set(saves.map(s => s.town_name));
-            const localOnly = this._getTownList().filter(tw =>
-                !cloudIds.has(tw.id) && !cloudNames.has(tw.name) && localStorage.getItem('rimtown_town_' + tw.id));
+            const localOnly = this._getTownList().filter(tw => !cloudIds.has(tw.id) && localStorage.getItem('rimtown_town_' + tw.id));
             let html = '';
             if (!saves.length && !localOnly.length) {
                 html = t('<p class="muted-text">尚無城鎮存檔。</p>');
@@ -3962,9 +3968,10 @@ class RimTownApp {
                 const isActive = _tw.id === this.currentTownId;
                 html += `<div class="town-item ${isActive?'active':''}">
                     <div class="town-info" data-action="switch-town" data-val="${_tw.id}">
-                        <div class="town-name">${t(_tw.name)} <span style="font-size:0.65rem;color:var(--text-muted)">📱 ${t('本機')}</span> ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
+                        <div class="town-name">${t(_tw.name)} <span style="font-size:0.65rem;color:var(--text-muted)">📱 ${t('本機')}${cloudNames.has(_tw.name) ? `（${t('與雲端同名')}）` : ''}</span> ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
                         <div class="town-meta">${_tw.season||''}${t(' 第')}${_tw.year||1}${t('年 第')}${_tw.day||1}${t('天 | 人口')}${_tw.population||0}</div>
                     </div>
+                    <div class="town-actions">${!isActive ? `<button data-action="delete-local-town" data-val="${_tw.id}" title="${t('刪除本機副本')}" class="btn-danger">🗑️</button>` : ''}</div>
                 </div>`;
             });
             html += `<div class="town-modal-actions">
@@ -4175,6 +4182,18 @@ class RimTownApp {
             localStorage.removeItem('rimtown_town_' + townId);
             localStorage.removeItem('rimtown_town_' + townId + '_archives');
         }
+        this._renderTownList();
+    }
+
+    // v5.96.0 B13:登入狀態下刪除「只在本機」的城鎮副本(不碰雲端)
+    async deleteLocalTownConfirm(townId) {
+        if (!townId || townId === this.currentTownId) return;
+        if (!await this._gameConfirm(t('只刪除這份本機副本（雲端存檔不受影響）？'), '🗑️')) return;
+        const list = this._getTownList().filter(tw => tw.id !== townId);
+        this._saveTownList(list);
+        localStorage.removeItem('rimtown_town_' + townId);
+        localStorage.removeItem('rimtown_town_' + townId + '_archives');
+        this._blobNameCache = {}; this._otherTownsAt = 0;
         this._renderTownList();
     }
 
@@ -4643,6 +4662,7 @@ class RimTownApp {
                 case 'switch-town': this.switchTown(val); break;
                 case 'rename-town': this.renameTownPrompt(val); break;
                 case 'delete-town': this.deleteTownConfirm(val); break;
+                case 'delete-local-town': this.deleteLocalTownConfirm(val); break; // v5.96.0 B13
                 case 'create-town': this.createNewTown(); break;
                 case 'close-town-modal': document.getElementById('town-modal')?.classList.add('hidden'); this.world.paused = !!this._pausedBeforeTownModal; break;
                 // Chat
