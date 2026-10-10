@@ -4128,7 +4128,7 @@ class EventSystem {
         if (agent.agentId && agent.agentId.startsWith('visit_')) return;
         const data = { agentId:agent.agentId, name:agent.name, age:agent.age, jobKey:agent.job?.key,
             traits:agent.personality.traits, values:agent.personality.values, background:agent.personality.background,
-            homeLocation:agent.homeLocation, gender:agent.gender,
+            homeLocation:agent.homeLocation, gender:agent.gender, look:agent.look||null, // v5.90.0 外觀跟著旅行
             skills:agent.skills.toDict(), relationships:agent.relationships.toDict(),
             memories:agent.memory.toDict(), mood:agent.mood, moodModifier:agent.moodModifier||0 };
         this._travellingAgents.push({agentData:data, returnTick:world.tickCount+(travelDays*96), reason});
@@ -4154,6 +4154,7 @@ class EventSystem {
         const job = d.jobKey ? new Job(d.jobKey) : null;
         const agent = new Agent(d.agentId, d.name, d.age, personality, job, d.homeLocation || 'residential_north');
         if (d.gender) agent.gender = d.gender;
+        if (d.look && typeof d.look === 'object') agent.look = { ...d.look }; // v5.90.0
         agent.mood = d.mood ?? agent.mood;
         agent.moodModifier = d.moodModifier || 0;
         // Restore skills
@@ -6791,6 +6792,9 @@ class World {
     _visitorDaily() {
         this.visitors = this.visitors || {};
         const today = this._absDay();
+        // v5.90.0 搬家提案三天沒選就依兩人意願自動定案
+        const pe = this.eventChoice?.pendingEvent;
+        if (pe?.autoResolve && today >= pe.autoResolve.absDay) { try { this.eventChoice.resolveChoice(pe.autoResolve.choice, this); } catch (e) {} }
         // 1) 到期訪客返鄉,帶走在本鎮最重要的三則見聞
         for (const [aid, meta] of Object.entries(this.visitors)) {
             const ag = this.agents[aid];
@@ -6798,7 +6802,8 @@ class World {
             if (today >= meta.expireAbsDay) {
                 const notes = (ag.memory?.entries || []).filter(m => m.tick >= meta.arriveTick)
                     .sort((a, b) => (b.importance || 0) - (a.importance || 0)).slice(0, 3).map(m => m.content);
-                this.onVisitorReturn?.({ ...meta, notes });
+                const romance = this._visitorRomance(ag, meta); // v5.90.0 作客期間的戀情→回鄉後觸發搬家提案
+                this.onVisitorReturn?.({ ...meta, notes, romance });
                 this.logMessage('departure', `${ag.name}${t('搭上回程的車，返回')}${meta.fromTownName}${t('了。')}`);
                 Object.values(this.agents).forEach(o => { if (o.agentId !== aid && !o.isPlayer) o.memory?.add?.(this.tickCount, this.clock.timeStr, 'departure', `${ag.name}${t('回家鄉去了，說好還會再來。')}`, 4, [ag.name]); });
                 delete this.visitors[aid];
@@ -6828,6 +6833,84 @@ class World {
         if (tr) tr.visitTownId = town.id;
         return true;
     }
+    // v5.90.0 村民快照(出訪/旅行/搬家共用一種格式)
+    _agentSnapshot(agent) {
+        return { agentId: agent.agentId, name: agent.name, age: agent.age, jobKey: agent.job?.key, nameEn: agent.nameEn || undefined,
+            traits: agent.personality.traits, values: agent.personality.values, background: agent.personality.background,
+            homeLocation: agent.homeLocation, gender: agent.gender, look: agent.look || null,
+            skills: agent.skills.toDict(), relationships: agent.relationships.toDict(),
+            memories: agent.memory.toDict(), mood: agent.mood, moodModifier: agent.moodModifier || 0 };
+    }
+    // v5.90.0 訪客到期時檢查:和本鎮某位居民兩情相悅(雙方心動 ≥60、好感 ≥50)且至少來作客過 2 次→回鄉後由對方鎮發「搬家提案」
+    _visitorRomance(visitor, meta) {
+        try {
+            const key = `${meta.fromTownId}:${meta.origId}`;
+            if (((this.visitCounts || {})[key] || 0) < 2) return null;
+            let best = null;
+            for (const loc of Object.values(this.agents)) {
+                if (loc.isPlayer || loc.agentId === visitor.agentId || loc.agentId.startsWith('visit_') || loc.isDead) continue;
+                const rv = visitor.relationships?.relationships?.[loc.agentId], rl = loc.relationships?.relationships?.[visitor.agentId];
+                if (!rv || !rl) continue;
+                if ((rv.romanticInterest || 0) < 60 || (rl.romanticInterest || 0) < 60 || (rv.affinity || 0) < 50 || (rl.affinity || 0) < 50) continue;
+                const partner = Object.values(loc.relationships.relationships).find(r => r.status === 'married' || r.status === 'dating');
+                if (partner) continue; // 有伴的不拆
+                const score = rv.romanticInterest + rl.romanticInterest;
+                if (!best || score > best.score) best = { score, loc, rv, rl };
+            }
+            if (!best) return null;
+            const loc = best.loc;
+            loc.memory?.add?.(this.tickCount, this.clock.timeStr, 'romance', `${visitor.name}${t('回鄉了，心裡空了一塊。')}`, 8, [visitor.name]);
+            this.logMessage('romance', `💌 ${visitor.name}${t('與')}${loc.name}${t('在作客期間互生情愫，分別時依依不捨。')}`);
+            return { localId: loc.agentId, localName: loc.name, localData: this._agentSnapshot(loc), townName: this.townName,
+                visitorOrigId: meta.origId, visitorName: meta.origName, romance: Math.round(best.score / 2) };
+        } catch (e) { return null; }
+    }
+    // v5.90.0 從快照建立常住居民(跨鎮搬來):新 id、與伴侶直接成為交往狀態
+    spawnResident(d, opts = {}) {
+        if (!d || !d.name) return null;
+        const id = opts.newId || `mv_${opts.fromTownId || 'x'}_${d.agentId || Date.now()}`;
+        if (this.agents[id]) return this.agents[id];
+        if (Object.values(this.agents).filter(a => !a.isPlayer).length >= 30) return null; // 人口上限 30(v5.79.0)
+        const personality = new Personality(d.traits || [], d.background || '', d.values || []);
+        const job = d.jobKey ? new Job(d.jobKey) : null;
+        const homes = ['residential_north', 'residential_south', 'residential_east'];
+        const agent = new Agent(id, d.name, d.age || 30, personality, job, homes.includes(d.homeLocation) ? d.homeLocation : pickRandom(homes), d.gender);
+        if (d.nameEn) { agent.nameEn = d.nameEn; if (typeof I18N !== 'undefined' && I18N.registerName) I18N.registerName(d.name, d.nameEn); }
+        if (d.look && typeof d.look === 'object') agent.look = { ...d.look };
+        agent.mood = Math.max(60, d.mood ?? 60);
+        if (d.skills) for (const [sk, sv] of Object.entries(d.skills)) { const sl = agent.skills.get(sk); if (sl && sv) { sl.xp = sv.xp; sl.passion = sv.passion; } }
+        if (Array.isArray(d.memories)) d.memories.slice(-40).forEach(m => agent.memory.add(m.tick, m.time, m.category, m.content ?? '', m.importance, m.related_agents || []));
+        agent.movedFrom = opts.fromTownName || '';
+        this.addAgent(agent);
+        const partner = opts.partnerId ? this.agents[opts.partnerId] : null;
+        if (partner) {
+            const a = agent.relationships.getOrCreate(partner.agentId, partner.name), b = partner.relationships.getOrCreate(agent.agentId, agent.name);
+            for (const r of [a, b]) { r.affinity = Math.max(r.affinity || 0, 70); r.romanticInterest = Math.max(r.romanticInterest || 0, 70); r.trust = Math.max(r.trust || 0, 50); r.status = 'dating'; r.statusSince = this.tickCount; r.interactionCount = Math.max(r.interactionCount || 0, 8); }
+            partner.memory?.add?.(this.tickCount, this.clock.timeStr, 'romance', `${agent.name}${t('為了我從')}${opts.fromTownName || ''}${t('搬來了。')}`, 10, [agent.name]);
+        }
+        const line = `${agent.name}${t('從')}${opts.fromTownName || ''}${t('搬來定居')}${partner ? `${t('，和')}${partner.name}${t('在一起了')}` : ''}${t('。')}`;
+        this.logMessage('arrival', `🏡 ${line}`);
+        this.dailyNews?.collectEvent?.('relationship', line, 9, partner ? [agent.name, partner.name] : [agent.name]);
+        this.events?.conversationTopics?.push(`${agent.name}${t('為了愛情搬來鎮上')}`);
+        Object.values(this.agents).forEach(o => { if (o.agentId !== id && !o.isPlayer) o.memory?.add?.(this.tickCount, this.clock.timeStr, 'arrival', line, 5, [agent.name]); });
+        return agent;
+    }
+    // v5.90.0 村民搬去別的鎮:留下快照、從本鎮移除、記在 movedOut(日報與聊天會提到)
+    relocateOut(agentId, opts = {}) {
+        const agent = this.agents[agentId];
+        if (!agent || agent.isPlayer) return null;
+        const snap = this._agentSnapshot(agent);
+        delete this.agents[agentId];
+        this.movedOut = this.movedOut || [];
+        this.movedOut.push({ id: agentId, name: agent.name, toTownName: opts.toTownName || '', partnerName: opts.partnerName || '', absDay: this._absDay() });
+        if (this.movedOut.length > 20) this.movedOut = this.movedOut.slice(-20);
+        const line = `${agent.name}${t('為了')}${opts.partnerName || t('愛情')}${t('搬去')}${opts.toTownName || ''}${t('了。')}`;
+        this.logMessage('departure', `🧳 ${line}`);
+        this.dailyNews?.collectEvent?.('relationship', line, 9, [agent.name]);
+        this.events?.conversationTopics?.push(`${agent.name}${t('搬去')}${opts.toTownName || ''}${t('了')}`);
+        Object.values(this.agents).forEach(o => { if (!o.isPlayer) o.memory?.add?.(this.tickCount, this.clock.timeStr, 'departure', line, 6, [agent.name]); });
+        return snap;
+    }
     spawnVisitor(entry) {
         const d = entry?.agentData || {};
         if (!d.agentId || !d.name) return null;
@@ -6841,6 +6924,7 @@ class World {
         agent.currently = t('從') + entry.fromTownName + t('來作客的旅人');
         this.addAgent(agent);
         this.visitors = this.visitors || {};
+        this.visitCounts = this.visitCounts || {}; this.visitCounts[`${entry.fromTownId}:${d.agentId}`] = (this.visitCounts[`${entry.fromTownId}:${d.agentId}`] || 0) + 1; // v5.90.0 來過幾次
         this.visitors[vid] = { fromTownId: entry.fromTownId, fromTownName: entry.fromTownName,
             origId: d.agentId, origName: d.name, arriveTick: this.tickCount,
             expireAbsDay: this._absDay() + (entry.stayDays || 4) };
@@ -8208,6 +8292,7 @@ class World {
             townName: this.townName || '', // v5.58.0 鎮名
             lastCaravanDay: this.lastCaravanDay ?? null, // v5.80.0 跨鎮商隊
             caravanCount: this.caravanCount || 0, harborFlags: { ...(this.harborFlags || {}) }, // v5.84.0
+            visitCounts: { ...(this.visitCounts || {}) }, movedOut: (this.movedOut || []).slice(-20), // v5.90.0
 
             playerActions: (this.playerActions || []).slice(-60).map(a => ({ ...a })), // v5.45.0 蝴蝶效應
             dailyEcho: [...(this.dailyEcho || [])], // v5.45.0 昨日回響
@@ -8404,6 +8489,7 @@ class World {
             this.visitors = data.visitors || {}; // v5.56.0 在鎮訪客
             this.lastCaravanDay = data.lastCaravanDay ?? null; // v5.80.0
             this.caravanCount = data.caravanCount || 0; this.harborFlags = data.harborFlags || {}; // v5.84.0
+            this.visitCounts = data.visitCounts || {}; this.movedOut = Array.isArray(data.movedOut) ? data.movedOut : []; // v5.90.0
             this.townName = data.townName || (TOWN_THEMES[this.townTheme]?.townName) || '邊境鎮'; // v5.59.5 舊檔沒鎮名時依主題補上,不再殘留上一鎮的名字
             this._chronicleChatIdx = (this.agents['player']?.chatHistory || []).length; // v5.43.0 讀檔後從當下開始記
             this.playerActions = data.playerActions || []; // v5.45.0
@@ -9899,6 +9985,8 @@ class EventChoiceSystem {
                 if (loss > 0) world.stockpile.consume(r, loss, world.tickCount, t('入侵損失'));
             });
         }
+
+        if (effects.relocate) { try { world.onRelocate?.(effects.relocate, world); } catch (e) { console.warn('[relocate]', e); } } // v5.90.0 跨鎮搬家(由 app 處理信箱)
 
         world.logMessage('event_choice', `⚡ ${t('你選擇了')}「${choice.label}」${t('來應對')}${this.pendingEvent.eventName}`);
         if (world.dailyNews) {

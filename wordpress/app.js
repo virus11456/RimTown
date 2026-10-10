@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.89.0
-const RIMTOWN_APP_VERSION = '5.89.0';
+// RimTown - Frontend App (WordPress Plugin) v5.90.0
+const RIMTOWN_APP_VERSION = '5.90.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1602,7 +1602,6 @@ class RimTownApp {
         ];
         const roadmap = [
             [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證')]],
-            [t('規劃中'), '#fbbf24', [t('跨鎮戀愛搬家')]],
             [t('構想'), '#60a5fa', [t('玩家之間互訪城鎮'), t('手機 App 版')]],
         ];
         // v5.81.0 更新紀錄(240KB)不再隨頁面載入:首頁第一次畫時才動態載 changelog.js,載完重畫一次;直接進遊戲的人完全不載
@@ -3445,7 +3444,8 @@ class RimTownApp {
         w.onSendVisitor = (agentData, town, stayDays) => this._pushMailbox(this._visitorMailboxKey(town.id),
             { agentData, stayDays, fromTownId: this.currentTownId, fromTownName: this._getCurrentTownName() });
         w.onVisitorReturn = (meta) => this._pushMailbox(this._returnMailboxKey(meta.fromTownId),
-            { origId: meta.origId, origName: meta.origName, notes: meta.notes || [], visitedTownName: this._getCurrentTownName() });
+            { origId: meta.origId, origName: meta.origName, notes: meta.notes || [], visitedTownName: this._getCurrentTownName(), visitedTownId: this.currentTownId, romance: meta.romance || null }); // v5.90.0 帶回戀情
+        w.onRelocate = (data) => this._doRelocate(data); // v5.90.0 搬家提案的決定
         // v5.80.0 跨鎮商隊:角落通知 + 地圖上馬車進城動畫
         w.onCaravan = (info) => {
             const label = (rs) => (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[rs]?.name) ? SHOP_ITEMS[rs].name() : (rs === 'silver' ? t('銀幣') : rs);
@@ -3516,10 +3516,72 @@ class RimTownApp {
                     if (!ag) { keep.push(e); return; }
                     (e.notes || []).slice(0, 3).forEach(nt => ag.memory?.add?.(w.tickCount, w.clock.timeStr, 'travel', `${t('在')}${e.visitedTownName}${t('時：')}${nt}`, 6, []));
                     w.logMessage('arrival', `${t(ag.name)}${t('從')}${e.visitedTownName}${t('回來了，帶回一肚子見聞。')}`);
+                    if (e.romance) { if (!this._offerRelocation(w, ag, e)) { /* 另一個事件還掛著:下次再提 */ if (w.eventChoice?.pendingEvent && !w.eventChoice.pendingEvent.autoResolve) keep.push({ ...e, notes: [] }); } } // v5.90.0
                 });
                 if (keep.length) localStorage.setItem(rk, JSON.stringify(keep)); else localStorage.removeItem(rk);
             }
         } catch (e) {}
+        // v5.90.0 收搬家信箱:別的鎮決定了搬家——有人搬來(in)或本鎮的人被接走(out)
+        try {
+            const mk = this._movesMailboxKey(this.currentTownId);
+            const marr = JSON.parse(localStorage.getItem(mk) || '[]');
+            if (marr.length) {
+                localStorage.removeItem(mk);
+                marr.forEach(e => {
+                    try {
+                        if (e.kind === 'in' && e.agentData) {
+                            const ag = w.spawnResident(e.agentData, { fromTownId: e.fromTownId, fromTownName: e.fromTownName, partnerId: e.partnerId, partnerName: e.partnerName });
+                            if (ag) this._showCornerNotice({ icon: '🏡', title: t('新居民搬來'), name: t(ag.name), desc: `${t('從')}${t(e.fromTownName || '')}${t('搬來，和')}${t(e.partnerName || '')}${t('在一起了')}` });
+                        } else if (e.kind === 'out' && e.agentId) {
+                            const snap = w.relocateOut(e.agentId, { toTownName: e.toTownName, partnerName: e.partnerName });
+                            if (snap) this._showCornerNotice({ icon: '🧳', title: t('居民搬走了'), name: t(snap.name), desc: `${t('為了')}${t(e.partnerName || '')}${t('搬去')}${t(e.toTownName || '')}` });
+                        }
+                    } catch (err) {}
+                });
+                this.state = w.getState(); try { this._syncHousing?.(); } catch (err) {}
+            }
+        } catch (e) {}
+    }
+    _movesMailboxKey(townId) { return 'rimtown_moves_' + townId; }
+    // v5.90.0 搬家提案:村民作客回來後,和對方鎮某人兩情相悅→事件選擇(讓對方搬來/讓他搬過去/不干涉);三天不選就依兩人意願自動定案
+    _offerRelocation(w, ag, e) {
+        const r = e.romance; if (!r || !r.localData) return true;
+        if (!localStorage.getItem('rimtown_town_' + e.visitedTownId)) return true; // 對方鎮不在本機:不提案(對方存檔改不到)
+        if (w.eventChoice?.pendingEvent) return false;
+        const full = Object.values(w.agents).filter(a => !a.isPlayer).length >= 30;
+        const base = { romance: r, otherTownId: e.visitedTownId, otherTownName: e.visitedTownName, residentId: ag.agentId, residentName: ag.name };
+        const choices = [];
+        if (!full) choices.push({ label: t('讓對方搬來'), icon: '🏡', desc: `${t(r.localName)}${t('搬來本鎮，兩人在這裡交往')}`, effects: { relocate: { ...base, mode: 'in' } } });
+        choices.push({ label: t('讓他搬過去'), icon: '🧳', desc: t('{a} 搬去 {b}，和 {c} 在一起').replace(/\{a\}/g, t(ag.name)).replace(/\{b\}/g, t(e.visitedTownName)).replace(/\{c\}/g, t(r.localName)), effects: { relocate: { ...base, mode: 'out' } } });
+        choices.push({ label: t('不干涉'), icon: '🤷', desc: t('順其自然，兩人隔著一條路想念彼此'), effects: { relocate: { ...base, mode: 'none' } } });
+        w.eventChoice.pendingEvent = {
+            eventName: `${t('搬家提案：')}${t(ag.name)}${t('與')}${t(r.localName)}`,
+            description: t('{a} 從 {b} 回來後魂不守舍——作客那幾天他和 {c} 走得很近，兩人都捨不得分開。要怎麼辦？（三天內不決定，就依兩人的意思自己安排）').replace(/\{a\}/g, t(ag.name)).replace(/\{b\}/g, t(e.visitedTownName)).replace(/\{c\}/g, t(r.localName)),
+            severity: 'minor', choices, timestamp: w.tickCount,
+            autoResolve: { absDay: w._absDay() + 3, choice: Math.random() < 0.5 ? 0 : Math.min(1, choices.length - 2) },
+        };
+        w.logMessage('event_choice', `💌 ${t('搬家提案：')}${t(ag.name)}${t('與')}${t(r.localName)}${t('想住在同一個鎮上，等你決定。')}`);
+        this._showCornerNotice({ icon: '💌', title: t('搬家提案'), name: `${t(ag.name)} ♥ ${t(r.localName)}`, desc: t('到「事件」決定讓誰搬家') });
+        return true;
+    }
+    _doRelocate(data) {
+        const w = this.world; if (!w || !data) return;
+        const r = data.romance || {};
+        try {
+            if (data.mode === 'in') {
+                const ag = w.spawnResident(r.localData, { fromTownId: data.otherTownId, fromTownName: data.otherTownName, partnerId: data.residentId, partnerName: data.residentName });
+                if (ag) this._pushMailbox(this._movesMailboxKey(data.otherTownId), { kind: 'out', agentId: r.localId, toTownName: this._getCurrentTownName(), partnerName: data.residentName });
+                else { w.logMessage('event_choice', `⚠️ ${t('鎮上人口已滿，')}${t(r.localName)}${t('暫時搬不過來。')}`); }
+            } else if (data.mode === 'out') {
+                const snap = w.relocateOut(data.residentId, { toTownName: data.otherTownName, partnerName: r.localName });
+                if (snap) this._pushMailbox(this._movesMailboxKey(data.otherTownId), { kind: 'in', agentData: snap, fromTownId: this.currentTownId, fromTownName: this._getCurrentTownName(), partnerId: r.localId, partnerName: r.localName });
+            } else {
+                const ag = w.agents[data.residentId];
+                ag?.memory?.add?.(w.tickCount, w.clock.timeStr, 'romance', `${t('鎮長沒有插手，我和')}${r.localName}${t('只能隔著一條路想念彼此。')}`, 7, [r.localName]);
+                w.logMessage('event_choice', `🤷 ${t('你決定不干涉')}${t(data.residentName)}${t('與')}${t(r.localName)}${t('的事。')}`);
+            }
+        } catch (e) { console.warn('[relocate]', e); }
+        this.state = w.getState(); try { this._syncHousing?.(); } catch (e) {} try { this.renderSidebar(); } catch (e) {}
     }
 
     _getTownList() {

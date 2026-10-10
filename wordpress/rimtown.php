@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.89.0
+ * Version: 5.90.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.89.0');
+define('RIMTOWN_VERSION', '5.90.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.90.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '💌 跨鎮戀愛搬家:村民去別的鎮作客時若和那邊某位單身居民兩情相悅(雙方心動 ≥60、好感 ≥50，且至少來作客過兩次)，回鄉後觸發「搬家提案」事件:讓對方搬來／讓他搬過去／不干涉；三天內不決定就依兩人的意思自動安排；人口已滿(30)時不提供「搬來」；對方鎮的存檔不在本機時不提案',
+                '🏡 搬家走城鎮信箱(rimtown_moves_*):搬來的人帶著技能、記憶、外觀與英文名成為常住居民，和伴侶直接進入交往；搬走的人記在 movedOut，全鎮記得、日報(含跨鎮專欄)會報導、成為聊天話題；兩鎮各自在下次打開時完成搬遷',
+                '🧳 修正:村民出遠門旅行回來後自訂外觀會遺失(v5.89.0 起的 look 現在跟著旅行快照)；村民快照格式統一(出訪／旅行／搬家共用)',
+                '📋 README G2 完成，三個規劃中項目(日報跨鎮專欄、村民自訂外觀、跨鎮戀愛搬家)全部上線；首頁路線圖只剩 3D 開發中與構想',
+            ),
+            'changes_en' => array(
+                '💌 Cross-town romance and relocation: when a villager visiting another town falls for a single resident there (both romance ≥60 and affinity ≥50, after at least two visits), a "Relocation proposal" event fires once they are home: bring them here / let them move there / stay out of it; undecided after three days, the couple arranges it themselves; "bring them here" is hidden when the town is full (30); no proposal when the other town\'s save is not on this device',
+                '🏡 Moves travel through town mailboxes (rimtown_moves_*): the newcomer arrives with skills, memories, look and English name as a permanent resident and starts dating their partner; the one who leaves is recorded in movedOut, remembered by everyone, reported by the daily paper (and the cross-town column) and becomes a conversation topic; each town completes the move the next time it is opened',
+                '🧳 Fix: custom looks were lost when a villager came back from a trip (the v5.89.0 look now rides the travel snapshot); villager snapshots share one format (visits / trips / moves)',
+                '📋 README G2 done; all three planned items (cross-town column, custom looks, cross-town relocation) are live; the landing roadmap now lists only 3D in development and the ideas row',
+            ),
+        ),
         array(
             'version' => '5.89.0',
             'date'    => '2026-10-10',
