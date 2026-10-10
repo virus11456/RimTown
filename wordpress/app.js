@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.93.0
-const RIMTOWN_APP_VERSION = '5.93.0';
+// RimTown - Frontend App (WordPress Plugin) v5.94.0
+const RIMTOWN_APP_VERSION = '5.94.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1608,7 +1608,7 @@ class RimTownApp {
         ];
         const roadmap = [
             [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證')]],
-            [t('開發中'), '#f472b6', [t('核心玩法迴圈') + ' · ' + t('委託板、押商隊、季度考驗已上線，旅人成長接續')]],
+            [t('開發中'), '#f472b6', [t('核心玩法迴圈') + ' · ' + t('委託板、押商隊、季度考驗、旅人成長已上線，有目的的對話接續')]],
             [t('構想'), '#60a5fa', [t('玩家之間互訪城鎮'), t('手機 App 版')]],
         ];
         // v5.81.0 更新紀錄(240KB)不再隨頁面載入:首頁第一次畫時才動態載 changelog.js,載完重畫一次;直接進遊戲的人完全不載
@@ -3521,6 +3521,7 @@ class RimTownApp {
         w.onVisitorReturn = (meta) => this._pushMailbox(this._returnMailboxKey(meta.fromTownId),
             { origId: meta.origId, origName: meta.origName, notes: meta.notes || [], visitedTownName: this._getCurrentTownName(), visitedTownId: this.currentTownId, romance: meta.romance || null }); // v5.90.0 帶回戀情
         w.onRelocate = (data) => this._doRelocate(data); // v5.90.0 搬家提案的決定
+        w.onGrowthEvent = (kind, v) => { if (kind === 'level') this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${v} ${t('級')}`, name: '', desc: t('到「故事」分頁選一個天賦') }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.94.0
         w.onTrialEvent = (kind, title, desc) => { this._showCornerNotice({ icon: kind === 'passed' ? '🏅' : kind === 'failed' ? '💔' : '⚖️', title, name: '', desc }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.93.0
         w.onPlayerCaravanReturn = (result, line) => { this._showCornerNotice({ icon: result.raided ? '🏴' : '💰', title: t('商隊回報'), name: t(result.toTownName), desc: line }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.92.0
         // v5.80.0 跨鎮商隊:角落通知 + 地圖上馬車進城動畫
@@ -3644,6 +3645,23 @@ class RimTownApp {
         }
         html += '</div>';
         return html;
+    }
+    // v5.94.0 旅人成長區塊:等級/經驗/屬性/天賦,升級後三選一
+    _renderGrowth() {
+        const g = this.state?.growth; if (!g) return '';
+        const esc = (x) => this._escapeHtml(String(x));
+        const AT = { charm: t('魅力值'), vigor: t('體力值'), wit: t('機智值'), grit: t('毅力值') };
+        let html = `<div class="econ-section"><h3>🧭 ${t('旅人')} · Lv.${g.level}</h3>
+            <div class="bar" style="height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden"><div style="width:${g.pct}%;height:100%;background:var(--accent)"></div></div>
+            <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:3px">${t('經驗')} ${g.xp}/${g.next} · ${g.attrs.map(a => `${AT[a.key]} ${a.base}${a.bonus ? `<span style="color:var(--positive,#4ade80)">+${a.bonus}</span>` : ''}`).join(' · ')}</div>`;
+        if (g.pending.length) {
+            html += `<div style="font-size:0.8rem;margin-top:8px">⬆️ ${t('升級了！選一個天賦')}${g.pendingLevels > 1 ? `（${t('還有 {n} 次').replace('{n}', g.pendingLevels)}）` : ''}</div><div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">`;
+            g.pending.forEach(p => { html += `<button class="trade-btn" data-action="perk-pick" data-val="${p.id}" style="flex:1;min-width:90px;text-align:left;padding:6px 8px;font-size:0.72rem;line-height:1.4">${p.icon} <b>${esc(p.name)}</b><br><span style="color:var(--text-secondary)">${esc(p.desc)}</span></button>`; });
+            html += '</div>';
+        }
+        if (g.perks.length) html += `<div style="font-size:0.74rem;margin-top:6px">${g.perks.map(p => `<span title="${esc(p.desc)}">${p.icon} ${esc(p.name)}</span>`).join(' · ')}</div>`;
+        else if (!g.pending.length) html += `<div class="muted-text" style="font-size:0.72rem;margin-top:4px">${t('完成委託、撐過考驗、押商隊、推進故事都會累積經驗；每升一級選一個天賦。')}</div>`;
+        return html + '</div>';
     }
     // v5.93.0 季度考驗區塊
     _renderSeasonTrial() {
@@ -4634,6 +4652,7 @@ class RimTownApp {
                 case 'req-act': this._requestAct(val); break; // v5.91.0 委託板
                 case 'req-buy-ap': this._requestBuyAP(); break;
                 case 'open-caravan': this._showCaravanDialog(); break; // v5.92.0
+                case 'perk-pick': { const r = this.world?.growth?.choose(val, this.world); if (r?.ok) { this.state = this.world.getState(); try { this.renderSidebar(); } catch (e) {} } break; } // v5.94.0
                 case 'look-set': this._setLookDraft(val); break;
                 case 'look-random': this._randomLookDraft(); break;
                 case 'look-reset': this._applyLookDraft('reset'); break;
@@ -9785,6 +9804,7 @@ class RimTownApp {
         // Header with reputation
         html += this._renderRequestBoard(); // v5.91.0 今日委託
         html += this._renderSeasonTrial(); // v5.93.0 本季考驗
+        html += this._renderGrowth(); // v5.94.0 旅人成長
         html += t('<div class="econ-section"><h3>⚔️ 主線任務</h3>');
         html += `<div style="display:flex;justify-content:space-between;align-items:center">`;
         html += `${t('<div style="font-size:0.75rem;color:var(--text-secondary)">進度：')}${qs.completedCount}/${qs.totalCount}${t(' 完成')}`;
