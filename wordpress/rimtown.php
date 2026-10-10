@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 5.92.0
+ * Version: 5.93.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '5.92.0');
+define('RIMTOWN_VERSION', '5.93.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1212,6 +1212,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '5.93.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '⚖️ 季度考驗(核心玩法迴圈第三步):每季第 5 天公布一個鎮級考驗，季末(第 15 天)結算——糧荒(食物存到人口 ×8)、瘟疫(草藥備到人口 ×2，藥品一份算三份)、匪患(防衛值 6：守衛每人 2、防禦建築、市集城加強守衛 3)、商會壓價(這一季銀幣要比開季多 150)；依城鎮主題加權抽、不連續抽同一種；「故事」分頁有進度條、剩餘天數與撐過的獎勵，公布與結算都有角落通知、進日報、成為聊天話題',
+                '🏅 撐過：永久加成進世界旗標——大糧倉(農田 +20%、之後糧荒目標 −20%)、藥局(全鎮心情 +10、之後瘟疫目標 −30%)、守望塔(襲擊機率 −30%)、商會印信(押商隊利潤 +10%)，另加聲望 +10、繁榮 +5、全鎮心情 +5',
+                '💔 沒撐過：心情最低的 2 名村民(第二次起 3 名)收拾行李離開鎮上(全鎮記得、記在 movedOut)、繁榮 −10、全鎮心情 −10；連續兩季失敗觸發新的「衰敗結局」(結局畫面後可以繼續玩、要重建)',
+                '📋 README H3 完成，核心玩法迴圈三步(委託板、押商隊、季度考驗)全部上線；路線圖改為「旅人成長接續」',
+            ),
+            'changes_en' => array(
+                '⚖️ Seasonal trials (third step of the core loop): on day 5 of each season a town-wide trial is announced and settled at season end (day 15) — Famine (stock food to population ×8), Plague (herbs to population ×2, each medicine counts as three), Banditry (defence 6: 2 per guard, defensive buildings, Market City reinforced guard 3), Guild Price Squeeze (end the season 150 silver richer); weighted by town theme and never the same type twice in a row; the Story tab shows a progress bar, days left and the reward, with corner notices, daily-paper items and conversation topics on announcement and settlement',
+                '🏅 Survive it: a permanent perk stored as a world flag — Great Granary (farms +20%, later famine targets −20%), Apothecary (town mood +10, later plague targets −30%), Watchtower (raid chance −30%), Guild Seal (caravan margin +10%) — plus reputation +10, prosperity +5 and town mood +5',
+                '💔 Fail it: the two lowest-mood villagers (three from the second failure on) pack up and leave (everyone remembers, recorded in movedOut), prosperity −10, town mood −10; two failed seasons in a row trigger the new "Decline Ending" (play continues after the ending screen; the town must be rebuilt)',
+                '📋 README H3 done; all three core-loop steps (request board, player caravans, seasonal trials) are live; the roadmap now reads "traveller growth follows"',
+            ),
+        ),
         array(
             'version' => '5.92.0',
             'date'    => '2026-10-10',

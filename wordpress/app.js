@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v5.92.0
-const RIMTOWN_APP_VERSION = '5.92.0';
+// RimTown - Frontend App (WordPress Plugin) v5.93.0
+const RIMTOWN_APP_VERSION = '5.93.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1608,7 +1608,7 @@ class RimTownApp {
         ];
         const roadmap = [
             [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證')]],
-            [t('開發中'), '#f472b6', [t('核心玩法迴圈') + ' · ' + t('委託板與行動點、押商隊已上線，季度考驗接續')]],
+            [t('開發中'), '#f472b6', [t('核心玩法迴圈') + ' · ' + t('委託板、押商隊、季度考驗已上線，旅人成長接續')]],
             [t('構想'), '#60a5fa', [t('玩家之間互訪城鎮'), t('手機 App 版')]],
         ];
         // v5.81.0 更新紀錄(240KB)不再隨頁面載入:首頁第一次畫時才動態載 changelog.js,載完重畫一次;直接進遊戲的人完全不載
@@ -3521,6 +3521,7 @@ class RimTownApp {
         w.onVisitorReturn = (meta) => this._pushMailbox(this._returnMailboxKey(meta.fromTownId),
             { origId: meta.origId, origName: meta.origName, notes: meta.notes || [], visitedTownName: this._getCurrentTownName(), visitedTownId: this.currentTownId, romance: meta.romance || null }); // v5.90.0 帶回戀情
         w.onRelocate = (data) => this._doRelocate(data); // v5.90.0 搬家提案的決定
+        w.onTrialEvent = (kind, title, desc) => { this._showCornerNotice({ icon: kind === 'passed' ? '🏅' : kind === 'failed' ? '💔' : '⚖️', title, name: '', desc }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.93.0
         w.onPlayerCaravanReturn = (result, line) => { this._showCornerNotice({ icon: result.raided ? '🏴' : '💰', title: t('商隊回報'), name: t(result.toTownName), desc: line }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.92.0
         // v5.80.0 跨鎮商隊:角落通知 + 地圖上馬車進城動畫
         w.onCaravan = (info) => {
@@ -3643,6 +3644,24 @@ class RimTownApp {
         }
         html += '</div>';
         return html;
+    }
+    // v5.93.0 季度考驗區塊
+    _renderSeasonTrial() {
+        const tr = this.state?.trials; if (!tr) return '';
+        const esc = (x) => this._escapeHtml(String(x));
+        let html = `<div class="econ-section"><h3>⚖️ ${t('本季考驗')}${tr.failStreak ? ` <span style="font-size:0.7rem;color:var(--negative);font-weight:400">${t('已連續失敗')} ${tr.failStreak} ${t('季')}</span>` : ''}</h3>`;
+        if (tr.current) {
+            const c = tr.current; const col = c.pct >= 100 ? 'var(--positive, #4ade80)' : c.pct >= 60 ? 'var(--accent)' : 'var(--negative, #f87171)';
+            html += `<div style="font-size:0.82rem">${c.icon} <b>${esc(c.title)}</b> · ${t('剩')} ${c.daysLeft} ${t('天')}</div>
+                <div style="font-size:0.75rem;color:var(--text-secondary);margin:3px 0">${esc(c.goal)}</div>
+                <div class="bar" style="height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden"><div style="width:${c.pct}%;height:100%;background:${col}"></div></div>
+                <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:3px">${c.value} / ${c.target} ${esc(c.unit)} · ${t('撐過可得')}「${esc(c.perkName)}」：${esc(c.perkDesc)}</div>`;
+        } else {
+            html += `<div class="muted-text" style="font-size:0.78rem">${t('每季第 5 天公布這一季的考驗，季末結算：撐過有永久加成，沒撐過會有人搬走。')}</div>`;
+        }
+        if (tr.perks.length) html += `<div style="font-size:0.72rem;margin-top:6px">🏅 ${t('已得到')}：${tr.perks.map(p => `<b>${esc(p.name)}</b>`).join('、')}</div>`;
+        if (tr.history.length) html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px">${tr.history.map(h => `${h.status === 'passed' ? '✅' : '❌'} ${esc(h.title)} ${h.value}/${h.target}`).join(' · ')}</div>`;
+        return html + '</div>';
     }
     _requestAct(id) {
         const rb = this.world?.requests; if (!rb) return;
@@ -9765,6 +9784,7 @@ class RimTownApp {
 
         // Header with reputation
         html += this._renderRequestBoard(); // v5.91.0 今日委託
+        html += this._renderSeasonTrial(); // v5.93.0 本季考驗
         html += t('<div class="econ-section"><h3>⚔️ 主線任務</h3>');
         html += `<div style="display:flex;justify-content:space-between;align-items:center">`;
         html += `${t('<div style="font-size:0.75rem;color:var(--text-secondary)">進度：')}${qs.completedCount}/${qs.totalCount}${t(' 完成')}`;

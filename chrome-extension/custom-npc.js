@@ -240,6 +240,14 @@ const ENDING_TYPES = {
         color: '#FF6347',
         description: t('你征服了每一個挑戰，開創了所有產業，建立了深厚的人際關係。你的名字將被世世代代傳頌。'),
     },
+    decline: { // v5.93.0 季度考驗連續兩季失敗:軟性失敗結局(可繼續玩,要重建)
+        id: 'decline',
+        title: t('衰敗結局'),
+        subtitle: t('連續兩季撐不住，人走了一半'),
+        icon: '🍂',
+        color: '#8d99ae',
+        description: t('接連兩季的考驗沒有撐過去。糧倉見底、街上冷清，一戶戶人家搬去了別的鎮。留下來的人還在，爐火還沒熄——這座鎮是否能再站起來，要看你接下來怎麼做。'),
+    },
     personal: {
         id: 'personal',
         title: t('個人結局'),
@@ -291,6 +299,15 @@ class MultiEndingSystem {
 
         world.logMessage?.('system', `🎊 ${t('恭喜')}！${t('達成')}「${ENDING_TYPES[finalEnding].title}」！`);
 
+        return this.endingData;
+    }
+
+    // v5.93.0 軟性失敗結局:不經由主線,由季度考驗直接觸發;之後仍可繼續玩
+    triggerDecline(world) {
+        if (this.endingTriggered) return null;
+        this.endingTriggered = 'decline';
+        this.endingData = { type: ENDING_TYPES.decline, triggeredDay: world.clock.day, triggeredYear: world.clock.year, triggeredSeason: world.clock.season, stats: this._collectStats(world), history: this._buildTownHistory(world) };
+        world.logMessage?.('system', `🍂 ${t('小鎮衰敗了——連續兩季的考驗都沒撐過去。還能重建，但得從頭來。')}`);
         return this.endingData;
     }
 

@@ -3998,7 +3998,7 @@ class EventSystem {
         const nm = world.news ? world.news : {getModifier:(k,d)=>d};
         // 聲望事件護盾:高聲望降低負面事件(襲擊/事件鏈)機率
         const eventShield = world.reputationSystem ? world.reputationSystem.getModifier('event_shield') : 0;
-        const raidChance = Math.max(0, Math.min(0.5, (0.10 + nm.getModifier('raid_chance', 0)) * (1 - eventShield)));
+        const raidChance = Math.max(0, Math.min(0.5, (0.10 + nm.getModifier('raid_chance', 0)) * (1 - eventShield) * (world.harborFlags?.watchtower ? 0.7 : 1))); // v5.93.0 守望塔 −30%
         const chainChance = Math.max(0, Math.min(0.4, (0.08 + nm.getModifier('chain_chance', 0)) * (1 - eventShield)));
         const festivalBoost = nm.getModifier('festival_chance', 0);
         const departureBoost = nm.getModifier('departure_chance', 0);
@@ -4636,7 +4636,7 @@ function processDailyProduction(world) {
                 world.logMessage('economy', `${t('銀庫不足，付不出')}${agent.name}${t('的加班津貼，今日照常排班。')}`);
             }
         }
-        if (agent.job.key === 'farmer') { eff *= SEASON_FARM_MOD[world.clock.season] || 1; eff *= 1 + (world.news?world.news.getModifier('farm_bonus',0):0) + (world.weather?world.weather.farmModifier:0); }
+        if (agent.job.key === 'farmer') { eff *= SEASON_FARM_MOD[world.clock.season] || 1; eff *= 1 + (world.news?world.news.getModifier('farm_bonus',0):0) + (world.weather?world.weather.farmModifier:0) + (world.harborFlags?.granary ? 0.2 : 0); } // v5.93.0 大糧倉 +20%
         if (agent.job.key === 'miner') eff *= 1 + (world.news?world.news.getModifier('mining_bonus',0):0);
         eff *= 1 + (agent.mood - 50)/500;
         eff *= 0.9 + Math.random()*0.2;
@@ -6614,6 +6614,7 @@ class World {
         this.dailyNews = new DailyNewsEngine();
         this.requests = (typeof RequestBoard !== 'undefined') ? new RequestBoard() : null; // v5.91.0 委託板
         this.playerCaravan = { active: null, history: [], pendingInjury: null }; // v5.92.0 押商隊
+        this.trials = (typeof SeasonTrials !== 'undefined') ? new SeasonTrials() : null; // v5.93.0 季度考驗
         this.townIdentity = new TownIdentitySystem(); // v5.19.0 城鎮身分/路線
         this.npcEvents = new NPCEventSystem();
         this.questSystem = typeof QuestSystem !== 'undefined' ? new QuestSystem() : null;
@@ -6675,6 +6676,7 @@ class World {
             try { this._caravanDaily(); } catch (e) { console.warn('[RimTown] caravan error:', e); } // v5.80.0 跨鎮商隊
             try { this.requests?.dailyRoll(this); } catch (e) { console.warn('[RimTown] request error:', e); } // v5.91.0 委託板:結算昨天、發今天
             try { this._playerCaravanDaily(); } catch (e) { console.warn('[RimTown] player caravan error:', e); } // v5.92.0 押商隊回報
+            try { this.trials?.daily(this); } catch (e) { console.warn('[RimTown] trial error:', e); } // v5.93.0 季度考驗:第 5 天公布、季末結算
             // Daily news (before economy/events so modifiers apply)
             this.news.dailyUpdate(this);
             // Daily economy
@@ -6803,6 +6805,7 @@ class World {
         let margin = 0.2;
         if (dest && (dest.imports || []).includes(res)) margin += 0.2;        // 對方缺的貨
         if (this.harborFlags?.tradeRoute || this.harborFlags?.seaRoute) margin += 0.2; // 本鎮開通商路
+        if (this.harborFlags?.guildSeal) margin += 0.1; // v5.93.0 商會印信
         const base = unit * amount;
         const value = Math.round(base * (1 + margin));
         let risk = route === 'mountain' ? 0.25 : 0.10;
@@ -6971,6 +6974,20 @@ class World {
         this.events?.conversationTopics?.push(`${agent.name}${t('為了愛情搬來鎮上')}`);
         Object.values(this.agents).forEach(o => { if (o.agentId !== id && !o.isPlayer) o.memory?.add?.(this.tickCount, this.clock.timeStr, 'arrival', line, 5, [agent.name]); });
         return agent;
+    }
+    // v5.93.0 村民因為日子過不下去離開(季度考驗失敗):移除、記在 movedOut、全鎮記得
+    leaveTown(agentId, reason = '') {
+        const agent = this.agents[agentId];
+        if (!agent || agent.isPlayer) return false;
+        delete this.agents[agentId];
+        this.movedOut = this.movedOut || [];
+        this.movedOut.push({ id: agentId, name: agent.name, toTownName: t('外地'), partnerName: '', reason, absDay: this._absDay() });
+        if (this.movedOut.length > 20) this.movedOut = this.movedOut.slice(-20);
+        const line = `${agent.name}${t('收拾行李離開了鎮上')}${reason ? `（${reason}）` : ''}${t('。')}`;
+        this.logMessage('departure', `🧳 ${line}`);
+        Object.values(this.agents).forEach(o => { if (!o.isPlayer) o.memory?.add?.(this.tickCount, this.clock.timeStr, 'departure', line, 7, [agent.name]); });
+        this.events?.conversationTopics?.push(`${agent.name}${t('離開鎮上了')}`);
+        return true;
     }
     // v5.90.0 村民搬去別的鎮:留下快照、從本鎮移除、記在 movedOut(日報與聊天會提到)
     relocateOut(agentId, opts = {}) {
@@ -7375,6 +7392,7 @@ class World {
             questSystem: this.questSystem ? this.questSystem.toDict() : null,
             requests: this.requests ? this.requests.toDict(this) : null, // v5.91.0
             playerCaravan: this.playerCaravanState(), // v5.92.0
+            trials: this.trials ? this.trials.toDict(this) : null, // v5.93.0
             prosperity: this.prosperity ? this.prosperity.toDict() : null,
             npcQuests: this.npcQuests ? this.npcQuests.toDict() : null,
             customNPC: this.customNPC ? this.customNPC.toDict() : null,
@@ -7414,6 +7432,7 @@ class World {
         this.dailyNews = new DailyNewsEngine();
         this.requests = (typeof RequestBoard !== 'undefined') ? new RequestBoard() : null; // v5.91.0 委託板
         this.playerCaravan = { active: null, history: [], pendingInjury: null }; // v5.92.0 押商隊
+        this.trials = (typeof SeasonTrials !== 'undefined') ? new SeasonTrials() : null; // v5.93.0 季度考驗
         this.townIdentity = new TownIdentitySystem(); // v5.19.0 城鎮身分/路線
         this.npcEvents = new NPCEventSystem();
         this.questSystem = typeof QuestSystem !== 'undefined' ? new QuestSystem() : null;
@@ -8415,6 +8434,7 @@ class World {
             questSystem: this.questSystem ? this.questSystem.serialize() : null,
             requests: this.requests ? this.requests.serialize() : null, // v5.91.0
             playerCaravan: this.playerCaravan ? { active: this.playerCaravan.active, history: (this.playerCaravan.history || []).slice(-10), pendingInjury: this.playerCaravan.pendingInjury || null } : null, // v5.92.0
+            trials: this.trials ? this.trials.serialize() : null, // v5.93.0
             prosperity: this.prosperity ? this.prosperity.serialize() : null,
             npcQuests: this.npcQuests ? this.npcQuests.serialize() : null,
             lifeGoals: this.lifeGoals ? this.lifeGoals.serialize() : null,
@@ -8725,6 +8745,7 @@ class World {
             this.dailyNews = new DailyNewsEngine();
             this.requests = (typeof RequestBoard !== 'undefined') ? new RequestBoard() : null; // v5.91.0 委託板
             this.playerCaravan = { active: null, history: [], pendingInjury: null }; // v5.92.0 押商隊
+            this.trials = (typeof SeasonTrials !== 'undefined') ? new SeasonTrials() : null; // v5.93.0 季度考驗
             this.townIdentity = new TownIdentitySystem(); // v5.19.0 城鎮身分/路線
             if (data.dailyNews) this.dailyNews.loadFrom(data.dailyNews);
             if (data.townIdentity) this.townIdentity.load(data.townIdentity);
@@ -8736,6 +8757,7 @@ class World {
             if (this.questSystem) this.questSystem.theme = this.townTheme || 'frontier'; // v5.83.0 先定主題再讀進度
             if (this.questSystem && data.questSystem) this.questSystem.loadFrom(data.questSystem);
             if (this.requests && data.requests) this.requests.loadFrom(data.requests); // v5.91.0
+            if (this.trials && data.trials) this.trials.loadFrom(data.trials); // v5.93.0
             if (data.playerCaravan) this.playerCaravan = { active: data.playerCaravan.active || null, history: Array.isArray(data.playerCaravan.history) ? data.playerCaravan.history : [], pendingInjury: data.playerCaravan.pendingInjury || null }; // v5.92.0
             if (this.prosperity && data.prosperity) this.prosperity.loadFrom(data.prosperity);
             if (this.npcQuests && data.npcQuests) this.npcQuests.loadFrom(data.npcQuests);
