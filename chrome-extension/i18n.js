@@ -5251,6 +5251,7 @@ const I18N = (() => {
         '本機': 'local',
         ' 訪客）': ' visiting)',
         '海風鎮的故事': 'Stories of Seabreeze',
+        '第 {d} 天': 'Day {d}',
         '早安': 'Good morning',
         '第 5 天公布本季考驗': 'The season trial is announced on day 5',
         '找 {name} 聊': 'Talk to {name}',
