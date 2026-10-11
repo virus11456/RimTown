@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.3.0
+ * Version: 6.4.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.3.0');
+define('RIMTOWN_VERSION', '6.4.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.4.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '🧭 季末回顧加「下一季怎麼打」：依上一季的弱項給最多三條具體行動——考驗沒過就對症（糧荒找務農求助／瘟疫找醫生／匪患蓋訓練場／壓價多押商隊）、委託過期多就教你挑一次對話能完成的、沒押過商隊就給一個安全的首單、沒人好感上升就提醒「用你的話說」、人口流失、沒升級各有一條，打得好則給連清挑戰；故事分頁考驗區塊也顯示第一條',
+            ),
+            'changes_en' => array(
+                '🧭 Season recap gains "How to play next season": up to three concrete actions based on last season\'s weak spots — a failed trial gets a targeted fix (ask farmers for food / the doctor for herbs / build a training ground / run more caravans), too many expired requests get the one-chat picks, no caravan yet gets a safe first run, no affinity gains gets the "in your own words" reminder, with lines for population loss and no level-up, and a clear-the-board challenge after a good season; the Story tab\'s trial section shows the first tip',
+            ),
+        ),
         array(
             'version' => '6.3.0',
             'date'    => '2026-10-10',
