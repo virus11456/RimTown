@@ -683,8 +683,8 @@ Object.assign(RimTownApp.prototype, {
         const fd = document.getElementById('firstday-guide'); const fdH = (fd && fd.offsetParent !== null) ? fd.getBoundingClientRect().height : 0; // v5.99.0 避開第一天引導卡
         host.style.bottom = window.innerWidth <= 768 ? `${64 + (fdH ? fdH + 18 : 0)}px` : `${14 + (fdH ? fdH + 14 : 0)}px`;
         // v5.34.1 同時最多 3 張,多的擠掉最舊的,避免洗版
-        while (host.childElementCount >= 3) host.firstElementChild.remove();
-        const el = document.createElement('div');
+        while (host.querySelectorAll('.rt-toast:not(.morning)').length >= 3) host.querySelector('.rt-toast:not(.morning)').remove(); // v6.7.0 早安卡不算在三張內
+        const el = document.createElement('div'); el.className = 'rt-toast';
         el.style.cssText = 'display:flex;align-items:center;gap:10px;background:rgba(22,22,32,0.95);border:1px solid rgba(255,255,255,0.22);border-radius:10px;padding:10px 14px;max-width:min(320px,calc(100vw - 28px));box-shadow:0 4px 16px rgba(0,0,0,0.4);opacity:0;transform:translateY(8px);transition:opacity 0.3s,transform 0.3s;pointer-events:auto;cursor:pointer';
         el.innerHTML = `<span style="font-size:1.5rem">${icon || '🔔'}</span><span><span style="display:block;color:var(--accent,#e94560);font-size:0.72rem;font-weight:bold">${title || ''}</span>${name ? `<span style="display:block;color:#fff;font-size:0.85rem;font-weight:bold">${name}</span>` : ''}${desc ? `<span style="display:block;color:rgba(255,255,255,0.65);font-size:0.68rem">${desc}</span>` : ''}</span>`;
         host.appendChild(el);
@@ -748,6 +748,8 @@ Object.assign(RimTownApp.prototype, {
         if (this._lastShownNewspaperId === latest.id) return;
         this._lastShownNewspaperId = latest.id;
         this._newsReacted = false; // Reset reaction for new newspaper
+        // v6.7.0 早安卡還在的話,日報出刊併成卡上一行,不再另跳一張
+        const mc = document.getElementById('morning-card'); if (mc && !mc.querySelector('.mc-paper')) { const row = document.createElement('div'); row.className = 'mc-paper'; row.style.cssText = 'font-size:0.74rem;margin-top:3px'; row.textContent = `📰 ${t('AI 日報出刊')}：${t('第')}${latest.id}${t('期')}`; mc.querySelector('.mc-body')?.appendChild(row); return; }
         // v5.44.0 日報出刊改角落通知,不再全螢幕打斷;全文在「日報」分頁隨時可讀
         this._showCornerNotice({
             icon: '📰',

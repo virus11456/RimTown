@@ -410,6 +410,28 @@ Object.assign(RimTownApp.prototype, {
         const tr = w.trials?.current; if (tr && w.trials.value) { const v = w.trials.value(tr.type, w); parts.push(`${t('考驗')} ${Math.min(100, Math.round(v / Math.max(1, tr.target) * 100))}%`); }
         return parts.join(' · ');
     },
+    // v6.7.0 早安卡:每個遊戲日第一次看到新的一天,把「昨日結算、今日委託、委託鏈進度、本季考驗、日報」合成一張留在角落(不自動消失,點 ✕ 或「看委託板」收起)
+    _showMorningCard(rb, openCount) {
+        const w = this.world; if (!w) return;
+        let host = document.getElementById('achv-toast-host');
+        if (!host) { this._showCornerNotice({ icon: '📋', title: t('今日委託'), name: '', desc: '' }); host = document.getElementById('achv-toast-host'); host?.querySelector('.rt-toast:not(.morning)')?.remove(); if (!host) return; }
+        document.getElementById('morning-card')?.remove();
+        const esc = (x) => this._escapeHtml(String(x));
+        const rows = [];
+        const sum = this._daySummaryText(); if (sum) rows.push(`🌙 ${t('昨日結算')}：${esc(sum)}`);
+        rows.push(`📋 ${t('今日委託')} ${openCount} ${t('件')} · ${t('行動點')} ${rb.ap.left}/${rb.ap.max}`);
+        const d = rb.toDict(w); if (d.chain) rows.push(`📖 ${esc(d.chain.title)} ${d.chain.step + 1}/${d.chain.total} · ${esc(d.chain.npcName)}`);
+        const tr = w.trials?.current; if (tr && tr.status === 'active' && w.trials.value) { const v = w.trials.value(tr.type, w); const d2 = (typeof TRIAL_TYPES !== 'undefined' && TRIAL_TYPES[tr.type]) || {}; rows.push(`⚖️ ${esc(t(d2.title || tr.type))} ${v}/${tr.target} · ${t('剩')} ${Math.max(0, (tr.dueDay || 15) - w.clock.day)} ${t('天')}`); }
+        else if (!tr && w.clock.day < 5) rows.push(`⚖️ ${t('第 5 天公布本季考驗')}`);
+        const el = document.createElement('div'); el.id = 'morning-card'; el.className = 'rt-toast morning';
+        el.style.cssText = 'background:rgba(22,22,32,0.96);border:1px solid var(--accent,#e94560);border-radius:12px;padding:10px 12px;max-width:min(360px,calc(100vw - 28px));pointer-events:auto;box-shadow:0 6px 24px rgba(0,0,0,0.45);opacity:0;transform:translateY(8px);transition:all .3s';
+        el.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:1.2rem">☀️</span><span style="flex:1;color:var(--accent,#e94560);font-size:0.78rem;font-weight:bold">${t('早安')} · ${esc(t('第 {y} 年{s}').split('{y}').join(w.clock.year).split('{s}').join(t(w.clock.season)))} · ${t('第')}${w.clock.day}${t('天')}</span><button data-mc="close" style="background:none;border:none;color:var(--text-muted,#999);font-size:1rem;cursor:pointer;line-height:1">✕</button></div><div class="mc-body" style="font-size:0.76rem;line-height:1.5;color:var(--text-secondary,#ccc)">${rows.map(r => `<div>${r}</div>`).join('')}</div><button data-mc="go" class="trade-btn" style="width:100%;margin-top:8px;padding:6px;font-size:0.76rem">📋 ${t('看委託板')}</button>`;
+        el.addEventListener('click', (e) => { const b = e.target.closest('[data-mc]'); if (!b) return; if (b.dataset.mc === 'go') this._goTab('quest'); el.remove(); });
+        host.appendChild(el);
+        requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
+        this._morningCardDay = rb.dayKey;
+        setTimeout(() => { if (el.isConnected) { el.style.opacity = '0'; setTimeout(() => el.remove(), 350); } }, 45000);
+    },
     _renderRequestBoard() {
         const rb = this.world?.requests; if (!rb) return '';
         const d = rb.toDict(this.world);
@@ -493,9 +515,7 @@ Object.assign(RimTownApp.prototype, {
         });
         if (rb.dayKey && rb._lastNoticeDay !== rb.dayKey && n > 0) {
             rb._lastNoticeDay = rb.dayKey;
-            // v5.97.0 昨日結算:先報昨天,再報今天
-            const sum = this._daySummaryText(); if (sum) this._showCornerNotice({ icon: '🌙', title: t('昨日結算'), name: '', desc: sum });
-            this._showCornerNotice({ icon: '📋', title: t('今日委託'), name: `${n} ${t('件')}`, desc: `${t('行動點')} ${rb.ap.left}/${rb.ap.max} · ${t('到「故事」分頁查看')}` });
+            this._showMorningCard(rb, n); // v6.7.0 早安卡:昨日結算＋今日委託＋委託鏈＋考驗合成一張(取代連跳的角落通知)
         }
     },
     // v5.90.0 搬家提案:村民作客回來後,和對方鎮某人兩情相悅→事件選擇(讓對方搬來/讓他搬過去/不干涉);三天不選就依兩人意願自動定案

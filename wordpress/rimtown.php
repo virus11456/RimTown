@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.6.0
+ * Version: 6.7.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.6.0');
+define('RIMTOWN_VERSION', '6.7.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.7.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '☀️ 早安卡：每個遊戲日第一次看到新的一天，昨日結算、今日委託與行動點、委託鏈進度、本季考驗進度（或「第 5 天公布」）、日報出刊合成一張卡留在角落，取代原本早上連跳的三四張通知；不自動被其他通知擠掉、45 秒後淡出，點 ✕ 或「看委託板」收起',
+            ),
+            'changes_en' => array(
+                '☀️ Morning card: the first time you see a new day, yesterday\'s tally, today\'s requests and action points, request-chain progress, the season trial (or "announced on day 5") and the newspaper issue are combined into one card in the corner, replacing the three or four notices that used to stack up every morning; other notices don\'t push it out, it fades after 45 seconds, and ✕ or "Request board" dismisses it',
+            ),
+        ),
         array(
             'version' => '6.6.0',
             'date'    => '2026-10-10',
