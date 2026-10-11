@@ -10,7 +10,8 @@ const [lang = 'zh', vp = 'desktop', OUT = '/tmp/walk', THEME = '', SEASONS = '1'
 fs.mkdirSync(OUT, { recursive: true });
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 (async () => {
-  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const exe = process.env.PLAYWRIGHT_CHROMIUM || (fs.existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined);
+  const browser = await chromium.launch(exe ? { executablePath: exe } : {});
   const errs = []; const chatCalls = []; const shots = [];
   const ctx = await browser.newContext(vp === 'mobile' ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true } : { viewport: { width: 1280, height: 800 } });
   const page = await ctx.newPage(); page.on('pageerror', e => errs.push(e.message));

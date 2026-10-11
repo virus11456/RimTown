@@ -109,7 +109,7 @@ class CustomNPCSystem {
 
         world.logMessage?.('system', `🎉 ${t('新居民')}「${config.name}」${t('加入了')}${t(world.townName || '邊境鎮')}！`); // v6.11.0 用實際鎮名
         if (world.dailyNews) {
-            world.dailyNews.collectEvent('lifecycle', `${t('新居民')}「${config.name}」${t('從遠方來到了邊境鎮')}！`, 7, [config.name]);
+            world.dailyNews.collectEvent('lifecycle', `${t('新居民')}「${config.name}」${t('從遠方來到了')}${t(world.townName || '邊境鎮')}！`, 7, [config.name]);
         }
 
         return { success: true, agentId };
@@ -484,7 +484,8 @@ class MultiEndingSystem {
     _generateLifeSummary(s, et) {
         let story = '';
         // Opening
-        story += t('{name}在{town}度過了 {d} 天的歲月').replace('{name}', s.playerName).replace('{town}', s.townName || t('邊境鎮')).replace('{d}', s.totalDays);
+        const fill = (tpl, m) => Object.entries(m).reduce((acc, [k, v]) => acc.split('{' + k + '}').join(String(v)), tpl); // split/join:名字含 $& 或 {town} 也不會被 replace 吃掉
+        story += fill(t('{name}在{town}度過了 {d} 天的歲月'), { name: s.playerName, town: s.townName || t('邊境鎮'), d: s.totalDays });
         if (s.playerJob !== t('無業')) {
             story += `${t('，以')}${s.playerJob}${t('的身份')}`;
         }
@@ -539,7 +540,7 @@ class MultiEndingSystem {
         }
 
         // Closing
-        story += t('這就是{name}在{town}的故事——').replace('{name}', s.playerName).replace('{town}', s.townName || t('邊境鎮')) + et.subtitle;
+        story += Object.entries({ name: s.playerName, town: s.townName || t('邊境鎮') }).reduce((acc, [k, v]) => acc.split('{' + k + '}').join(String(v)), t('這就是{name}在{town}的故事——')) + et.subtitle;
 
         return story;
     }

@@ -674,13 +674,22 @@ Object.assign(RimTownApp.prototype, {
             host.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:9500;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none';
             document.body.appendChild(host);
         }
+        this._placeToastHost(host);
+        if (!this._toastHostWatched) { // v6.11.0 側欄變寬(聊天 .chat-wide)或視窗縮放時,已顯示的通知也跟著移位
+            this._toastHostWatched = true;
+            const re = () => { const h = document.getElementById('achv-toast-host'); if (h) this._placeToastHost(h); };
+            window.addEventListener('resize', re);
+            try { const sb = document.getElementById('rimtown-sidebar'); if (sb && window.ResizeObserver) new ResizeObserver(re).observe(sb); } catch (e) {}
+        }
+        return host;
+    },
+    _placeToastHost(host) {
         const fd = document.getElementById('firstday-guide'); const fdH = (fd && fd.getClientRects().length) ? fd.getBoundingClientRect().height : 0; // v5.99.0 避開第一天引導卡(v6.11.0 引導卡是 position:fixed,offsetParent 永遠是 null,改用 getClientRects)
         host.style.bottom = window.innerWidth <= 768 ? `${64 + (fdH ? fdH + 18 : 0)}px` : `${14 + (fdH ? fdH + 14 : 0)}px`;
         // v6.11.0 桌機側欄在右邊時,通知改貼在地圖右下(側欄左側),不再蓋住聊天輸入框、委託按鈕與天賦選項
         let right = 14;
         if (window.innerWidth > 768) { const sb = document.getElementById('rimtown-sidebar'); if (sb && sb.offsetParent !== null) { const r = sb.getBoundingClientRect(); if (r.width > 0 && r.width < window.innerWidth * 0.8 && r.left > 300) right = Math.round(window.innerWidth - r.left + 12); } }
         host.style.right = right + 'px';
-        return host;
     },
     _showCornerNotice({ icon, title, name, desc }) {
         const host = this._toastHost();

@@ -40,6 +40,18 @@ Object.assign(RimTownApp.prototype, {
             if (b && this._judgeAvailable?.() && this._judgeGoal?.(b)) setTimeout(() => { try { if (this.chatTarget === c && !this._intentArmed) this._sendIntent(b); } catch (e) {} }, 80);
         }
     },
+    // v6.11.0 下一座還沒通車的鄰鎮(依解鎖表與目前鎮主題;全部已解鎖或表不存在就回 null)
+    _nextLockedNeighbor() {
+        if (typeof NEIGHBOR_TOWNS === 'undefined') return null;
+        const theme = this.world?.townTheme || 'frontier';
+        let flag = () => false; try { flag = (k) => localStorage.getItem(k) === '1'; } catch (e) {}
+        return NEIGHBOR_TOWNS.find(d => d.theme !== theme && !flag(d.key)) || null;
+    },
+    _noNeighborText() {
+        const w = this.world; const nx = this._nextLockedNeighbor();
+        if (!nx) return t('鄰鎮的存檔不在這台裝置上：到「城鎮列表」打開它，或再建一座城鎮，馬車站就會通車。');
+        return t('還沒有通車的鄰鎮：小鎮繁榮到 {p} 就會修好往{town}的路（目前 {c}），之後可以押商隊、互訪、跨鎮戀愛；也可以到「城鎮列表」自己再建一座。').split('{p}').join(String(nx.prosperity)).split('{town}').join(t(nx.name)).split('{c}').join(String(Math.round(w?.prosperity?.prosperity || 0)));
+    },
     _showCaravanDialog() {
         const w = this.world; if (!w) return;
         document.getElementById('caravan-dialog')?.remove();
@@ -56,7 +68,7 @@ Object.assign(RimTownApp.prototype, {
         if (a) {
             inner += `<div style="font-size:0.8rem;line-height:1.7">${t('商隊在路上：')}${a.amount} ${this._resLabel(a.res)} → ${esc(t(a.toTownName))}${a.guardName ? `（${esc(t(a.guardName))}${t('押車')}）` : ''}<br>${t('預計')} ${Math.max(0, a.returnAbsDay - w._absDay())} ${t('天後回報')}</div>`;
         } else if (!towns.length || !resList.length) {
-            inner += `<div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.6">${!towns.length ? t('還沒有通車的鄰鎮：小鎮繁榮到 {p} 就會修好往海風鎮的路（目前 {c}），之後可以押商隊、互訪、跨鎮戀愛；也可以到「城鎮列表」自己再建一座。').replace('{p}', String((typeof NEIGHBOR_TOWNS !== 'undefined' && NEIGHBOR_TOWNS[0]?.prosperity) || 20)).replace('{c}', String(Math.round(w.prosperity?.prosperity || 0))) : t('倉庫裡沒有夠的貨（至少 10 份）。')}</div>`;
+            inner += `<div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.6">${!towns.length ? this._noNeighborText() : t('倉庫裡沒有夠的貨（至少 10 份）。')}</div>`;
             if (!towns.length) inner += `<button class="trade-btn pc-towns" style="width:100%;margin-top:10px;padding:8px;font-size:0.82rem">🏘️ ${t('城鎮列表')}</button>`; // v6.11.0 不再是死路:說清楚解鎖條件,附城鎮列表入口
         } else {
             const sel = (id, opts) => `<select id="${id}" style="width:100%;padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--bg-primary);color:var(--text-primary);font-size:0.85rem">${opts}</select>`;
@@ -455,7 +467,7 @@ Object.assign(RimTownApp.prototype, {
         host.appendChild(el);
         requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
         setTimeout(() => { if (el.isConnected) { el.dataset.fading = '1'; el.style.opacity = '0'; setTimeout(() => el.remove(), 350); } }, window.innerWidth <= 768 ? 22000 : 45000); // v6.11.0 手機沒有空位,早安卡 22 秒就收(桌機 45 秒)
-        if ((w._absDay?.() ?? 0) >= 3) document.getElementById('firstday-guide')?.remove(); // v6.11.0 第 4 天起收掉「第一天」引導
+        try { this._renderFirstDayGuide?.(); } catch (e) {} // v6.11.0 換日重算引導卡(第 4 天起 _firstDayActive 回 false 就會收掉)
     },
     _renderRequestBoard() {
         const rb = this.world?.requests; if (!rb) return '';

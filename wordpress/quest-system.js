@@ -2947,9 +2947,14 @@ class SeasonRecap {
             if (by[r.trial.type]) tips.push({ icon: '⚖️', ...by[r.trial.type] });
         } else if (!r.trial) tips.push({ icon: '⚖️', text: t('每季第 5 天公布考驗，前四天先囤好感和物資，公布後再對症下手'), go: 'tab:quest', goLabel: t('看委託板') });
         if (r.reqFailed > r.reqDone) tips.push({ icon: '📋', text: t('委託先挑一次對話就能完成的（陪伴、送禮），同一天第一件過期扣 3 好感、其餘每件扣 1'), go: 'tab:quest', goLabel: t('看委託板') });
-        const hasTowns = !!(w && Array.isArray(w.otherTowns) && w.otherTowns.length); // v6.11.0 還沒有第二座鎮就不推押商隊(馬車站會說「還沒有通車的鄰鎮」)
+        // v6.11.0 有沒有鄰鎮:先看 app 同步的 otherTowns,沒有就看解鎖旗標(存檔剛載入 otherTowns 可能還沒算)
+        const theme = w?.townTheme || 'frontier'; let flag = () => false; try { flag = (k) => localStorage.getItem(k) === '1'; } catch (e) {}
+        const NT = (typeof NEIGHBOR_TOWNS !== 'undefined') ? NEIGHBOR_TOWNS : [];
+        const hasTowns = !!(w && ((Array.isArray(w.otherTowns) && w.otherTowns.length) || NT.some(d => d.theme !== theme && flag(d.key))));
+        const nx = NT.find(d => d.theme !== theme && !flag(d.key)) || null;
         if (!r.carRuns && hasTowns) tips.push({ icon: '🐪', text: t('到馬車站押一趟商隊試試：30 份木材走大路，風險約一成、賣價多兩成'), go: 'caravan', goLabel: t('去馬車站') });
-        else if (!r.carRuns && w) tips.push({ icon: '🏘️', text: t('把小鎮繁榮推到 20，往海風鎮的路就通了：可以押商隊、互訪、跨鎮戀愛；也可以到城鎮列表自己再建一座'), go: 'towns', goLabel: t('城鎮列表') });
+        else if (!r.carRuns && w && nx) tips.push({ icon: '🏘️', text: this._fill(t('把小鎮繁榮推到 {p}，往{town}的路就通了：可以押商隊、互訪、跨鎮戀愛；也可以到城鎮列表自己再建一座'), { p: nx.prosperity, town: t(nx.name) }), go: 'towns', goLabel: t('城鎮列表') });
+        else if (!r.carRuns && w) tips.push({ icon: '🏘️', text: t('鄰鎮的存檔不在這台裝置上：到「城鎮列表」打開它，或再建一座城鎮，馬車站就會通車。'), go: 'towns', goLabel: t('城鎮列表') });
         if (!(r.gains || []).length) { const npc = vs.slice().sort((a, b) => ((b.relationships?.relationships?.player?.affinity || 0) - (a.relationships?.relationships?.player?.affinity || 0)))[0]; tips.push({ icon: '💬', text: t('每天用「用你的話說」跟一位村民聊，說到他在乎的事成功率 +16%，好感跟著漲'), ...chatGo('persuade', npc) }); }
         if (r.popTo < r.popFrom) { const low = vs.slice().sort((a, b) => (a.mood || 50) - (b.mood || 50))[0]; tips.push({ icon: '👥', text: t('人口在流失：撐過考驗，心情低的人多去「安慰」，有空房就留得住人'), ...chatGo('comfort', low) }); }
         if (r.levelTo <= r.levelFrom && r.xp < 60) tips.push({ icon: '🧭', text: t('經驗來自委託、考驗、商隊和主線任務；推進一章主線的經驗最多'), go: 'tab:quest', goLabel: t('看任務') });
