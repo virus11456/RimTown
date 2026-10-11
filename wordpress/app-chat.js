@@ -289,7 +289,7 @@ Object.assign(RimTownApp.prototype, {
                 const o = (it.key !== 'whisper' && oddsNpc && this.world?.chatOdds) ? this.world.chatOdds(oddsNpc, it.key) : null;
                 const pct = o ? Math.round(o.p * 100) : null;
                 const ttl = o ? `${it.hint} · ${t('成功率')} ${pct}%${o.factors.length ? '（' + o.factors.map(f => `${f.label}${f.v > 0 ? '+' : ''}${Math.round(f.v * 100)}`).join('、') + '）' : ''}` : it.hint;
-                return `<button class="chat-intent-btn" data-action="chat-intent" data-val="${it.key}" title="${this._escapeHtml(ttl)}" ${this.chatSending ? 'disabled' : ''}>${it.icon} ${it.label}${pct !== null ? ` <span style="opacity:0.65;font-size:0.85em">${pct}%</span>` : ''}</button>`;
+                return `<button class="chat-intent-btn${this._intentArmed?.key === it.key ? ' armed' : ''}" data-action="chat-intent" data-val="${it.key}" title="${this._escapeHtml(ttl)}" ${this.chatSending ? 'disabled' : ''}>${it.icon} ${it.label}${pct !== null ? ` <span style="opacity:0.65;font-size:0.85em">${pct}%</span>` : ''}</button>`;
             }).join('');
             chatAreaHtml += `<div class="chat-intent-bar">${intentBar}</div>`;
             // Input — always available
@@ -580,7 +580,14 @@ Object.assign(RimTownApp.prototype, {
     _sendFromInput() {
         const input = document.getElementById('chat-input');
         if (!input || !this.chatTarget) return;
-        const msg = input.value.trim(); if (!msg) return;
+        const msg = input.value.trim();
+        // v6.3.0 用你的話說:送出時先請 AI 判定這句話對這個人有多有說服力,再擲骰;空白 → 預設台詞
+        if (this._intentArmed) {
+            const a = this._intentArmed; this._disarmIntent(); input.value = '';
+            if (!msg) { this._sendCannedIntent(a.key, a.it); return; }
+            this._sendJudgedIntent(a.key, a.it, msg); return;
+        }
+        if (!msg) return;
         input.value = '';
         // v5.35.0 耳語模式:這句話植入對方內心,不走一般對話
         if (this._whisperArmed) {
@@ -639,6 +646,21 @@ Object.assign(RimTownApp.prototype, {
             if (input) { input.placeholder = t('🤫 低聲說出你要植入的念頭...'); input.focus(); }
             return;
         }
+        // v6.3.0 AI 判定:有 AI 時,可判定的意圖先進入「用你的話說」模式;再按一次同鍵或直接送出空白 → 用預設台詞與規則機率
+        if (this._judgeAvailable() && this._judgeGoal(key)) {
+            if (this._intentArmed?.key === key) { this._disarmIntent(); }
+            else {
+                this._intentArmed = { key, it };
+                const input = document.getElementById('chat-input');
+                if (input) { input.placeholder = `${it.icon} ${t('用你的話')}${it.label}${t('…（直接送出＝用預設台詞）')}`; input.focus(); }
+                document.querySelectorAll('.chat-intent-btn').forEach(b => b.classList.toggle('armed', b.dataset.val === key)); // 不重畫整個聊天面板,免得輸入框內容與焦點被洗掉
+                return;
+            }
+        }
+        this._sendCannedIntent(key, it);
+    },
+    // v6.3.0 預設台詞＋規則機率(原本的流程)
+    _sendCannedIntent(key, it) {
         this._firstDayMark?.('interact'); // v5.18.0 第一天:出手互動
         if (key === 'comfort' || key === 'mediate') this._firstDayMark?.('mark'); // 這兩種也算「為某人做點事」
         // v5.95.0 擲骰:先算成功率再送出,結果傳給後果函式
@@ -647,12 +669,58 @@ Object.assign(RimTownApp.prototype, {
         this.playerSendMessage(this.chatTarget, it.opener, key, outcome);
     },
 
+    // ===== v6.3.0 AI 判定對話(H5b):玩家用自己的話說,AI 以村民性格/心情/關係評 -2..+2,每級 ±8% 成功率 =====
+    _judgeAvailable() { try { if (localStorage.getItem('rimtown_ai_judge') === '0') return false; } catch (e) {} return !!this.llmClient; },
+    _judgeGoal(key) { return { comfort: t('安慰他'), gossip: t('向他打聽消息'), persuade: t('說服他改變想法'), mediate: t('勸他與人和解'), flirt: t('向他示好'), threaten: t('威脅他'), request: t('請他幫忙'), help: t('請他勻一些物資給鎮上'), bargain: t('跟他談條件'), 'invite-town': t('邀他去鄰鎮作客') }[key] || ''; },
+    _disarmIntent() {
+        this._intentArmed = null;
+        const input = document.getElementById('chat-input'); if (input) input.placeholder = t('輸入訊息') + '...';
+        document.querySelectorAll('.chat-intent-btn.armed').forEach(b => b.classList.remove('armed'));
+    },
+    _judgeDayKey() { return 'rimtown_judge_' + new Date().toISOString().slice(0, 10); },
+    _judgeCount(delta) { let n = 0; try { n = parseInt(localStorage.getItem(this._judgeDayKey()) || '0', 10) || 0; if (delta) { n += delta; localStorage.setItem(this._judgeDayKey(), String(n)); } } catch (e) {} return n; },
+    async _sendJudgedIntent(key, it, msg) {
+        const npc = this.world?.agents?.[this.chatTarget]; if (!npc) return;
+        this._firstDayMark?.('interact'); if (key === 'comfort' || key === 'mediate') this._firstDayMark?.('mark');
+        const input = document.getElementById('chat-input'); const ph = input ? input.placeholder : '';
+        if (input) { input.placeholder = `🧠 ${t('判定中…')}`; input.disabled = true; }
+        let o = { p: 0.5 }; try { o = this.world.chatOdds(npc, key); } catch (e) {}
+        let judge = null; try { judge = await this._judgeIntent(npc, key, msg); } catch (e) { judge = null; }
+        if (input) { input.disabled = false; input.placeholder = ph || (t('輸入訊息') + '...'); }
+        const p = judge ? Math.max(0.05, Math.min(0.97, o.p + judge.s * 0.08)) : o.p;
+        const outcome = { ok: Math.random() < p, p, base: o.p, judge };
+        this.playerSendMessage(this.chatTarget, msg, key, outcome);
+    },
+    async _judgeIntent(npc, key, text) {
+        const llm = this.llmClient; if (!llm || !text || text.length < 2) return null;
+        const JUDGE_DAILY_CAP = 30; // 每人每天最多 30 次,保護整站共用的免費額度
+        if (this._judgeCount(0) >= JUDGE_DAILY_CAP) { if (!this._judgeCapNoticed) { this._judgeCapNoticed = true; this._showCornerNotice({ icon: '🧠', title: t('AI 判定'), name: '', desc: t('今天的 AI 判定次數用完了，改用規則判定') }); } return null; }
+        const lang = (typeof LLM_LANG !== 'undefined') ? LLM_LANG.get() : 'zh';
+        const rel = npc.relationships?.relationships?.player || { affinity: 0, trust: 0 };
+        const traits = (npc.personality?.traits || []).map(x => lang === 'en' ? x : ((typeof TRAIT_POOL !== 'undefined' && TRAIT_POOL[x]?.label) || x)).join(lang === 'en' ? ', ' : '、');
+        const goal = this._judgeGoal(key);
+        const name = lang === 'en' ? (typeof I18N !== 'undefined' ? I18N.localizeNames(npc.name, true) : npc.name) : npc.name;
+        const job = npc.job?.name ? (typeof npc.job.name === 'function' ? npc.job.name() : npc.job.name) : (npc.job?.key || '');
+        const prompt = lang === 'en'
+            ? `You are the referee of a village game. The player says one line to villager "${name}" (${job}; traits: ${traits}; mood ${Math.round(npc.mood || 50)}/100; affinity to player ${Math.round(rel.affinity || 0)}, trust ${Math.round(rel.trust || 0)}). The player's goal: ${goal}.\nPlayer's line: "${text}"\nJudge how persuasive / touching this line is for THIS person. Output JSON only: {"s":score,"r":"reason in 8 words or fewer"} where score is -2 (backfires), -1, 0, 1 or 2 (hits home).`
+            : `你是小鎮遊戲的裁判。玩家對村民「${name}」（${job}；性格：${traits}；心情 ${Math.round(npc.mood || 50)}/100；對玩家好感 ${Math.round(rel.affinity || 0)}、信任 ${Math.round(rel.trust || 0)}）說了一句話，目的是「${goal}」。\n玩家的話：「${text}」\n請判斷這句話對這個人有多有說服力、多能打動他。只輸出 JSON：{"s":分數,"r":"十字以內的理由"}，分數只能是 -2（反效果）、-1、0、1、2（正中下懷）。`;
+        const timeout = new Promise(r => setTimeout(() => r(null), 7000));
+        const raw = await Promise.race([llm.generate(prompt, 60, 0.2, true), timeout]);
+        if (!raw || raw === '__ERROR__' || raw === '__RATE_LIMITED__') return null;
+        const m = String(raw).match(/\{[\s\S]*?\}/); if (!m) return null;
+        let j = null; try { j = JSON.parse(m[0]); } catch (e) { const sm = m[0].match(/"s"\s*:\s*(-?\d)/); if (sm) j = { s: parseInt(sm[1], 10), r: '' }; }
+        if (!j || !Number.isFinite(Number(j.s))) return null;
+        this._judgeCount(1);
+        return { s: Math.max(-2, Math.min(2, Math.round(Number(j.s)))), r: String(j.r || '').slice(0, 24) };
+    },
+
     // 套用意圖的確定性後果,回傳給結果卡顯示的文字行(直接操作世界狀態,存進存檔)
     _applyChatIntent(npc, player, key, outcome) {
         const rel = npc.relationships.getOrCreate('player', player.name);
         const world = this.world;
         const lines = [];
         const fx = (txt, color) => lines.push({ txt, color });
+        if (outcome?.judge) { const j = outcome.judge; fx(`🧠 ${t('AI 判定')}：${j.r || t('沒特別感覺')}（${j.s > 0 ? '+' : ''}${j.s * 8}%）`, j.s > 0 ? '#7fc4ff' : j.s < 0 ? '#e0b07a' : '#9aa'); } // v6.3.0
         // v5.95.0 擲骰沒過:這句話沒說進心裡,原本的機械後果不套用
         if (outcome && !outcome.ok) {
             rel.modifyAffinity(-1);

@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.2.0
+ * Version: 6.3.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.2.0');
+define('RIMTOWN_VERSION', '6.3.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.3.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '🧠 對話 AI 判定（H5b）：有內建 AI 時，按「說服／安慰／打聽／調解／示好／威脅／委託／求助／談條件／邀去鄰鎮」會先進入「用你的話說」——你打的那句話會連同對方的職業、性格、心情、好感與信任交給 AI 評 −2 到 +2，每級 ±8% 成功率，再擲骰；結果卡顯示「🧠 AI 判定：理由（±%）」。再按一次同鍵或直接送出空白＝原本的預設台詞與規則機率',
+                '🛡️ 額度與退路：每人每天最多 30 次 AI 判定（超過自動改用規則判定並提示一次）；走 chat 分流、60 token、7 秒逾時；逾時、限流、解析失敗都靜默退回規則機率，不會卡住對話；WordPress 無 AI 的版本不出現此模式',
+            ),
+            'changes_en' => array(
+                '🧠 AI-judged dialogue (H5b): when the built-in AI is available, pressing Persuade / Comfort / Ask around / Mediate / Flirt / Threaten / Request / Ask for help / Bargain / Invite first switches to "in your own words" — the line you type is sent to the AI together with the villager\'s job, traits, mood, affinity and trust and scored −2 to +2, ±8% odds per step, then the dice roll; the result card shows "🧠 AI verdict: reason (±%)". Pressing the same button again or sending an empty line uses the old default line and rule-based odds',
+                '🛡️ Quota and fallbacks: at most 30 AI verdicts per player per day (then rule-based odds with a one-time notice); chat lane, 60 tokens, 7-second timeout; timeouts, rate limits and parse failures silently fall back to the rule-based odds so chat never stalls; the WordPress build without AI never shows this mode',
+            ),
+        ),
         array(
             'version' => '6.2.0',
             'date'    => '2026-10-10',
