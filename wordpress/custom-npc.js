@@ -322,7 +322,7 @@ class MultiEndingSystem {
         if (world.questSystem) world.questSystem.reputation = (world.questSystem.reputation || 0) + 15;
         const text = t('小鎮復興了！連續兩季撐過考驗，街上又熱鬧起來：全鎮士氣 +12、繁榮 +15、聲望 +15');
         world.logMessage?.('system', `🌅 ${text}`); world.dailyNews?.collectEvent?.('event', text, 10);
-        world.onTrialEvent?.('revived', `🌅 ${t('小鎮復興')}`, text);
+        world.onEndingEvent?.('revived', `🌅 ${t('小鎮復興')}`, text); // v6.12.1 結局系統自己的事件(不走考驗通知)
         return this.lastRevival;
     }
 
