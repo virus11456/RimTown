@@ -2629,6 +2629,7 @@ class RequestBoard {
         world.logMessage?.('quest', `📖 ${t(npc.name)}${t('欲言又止，好像還有件事想拜託你——明天再來看看委託板')}`);
         world.onChainEvent?.('start', npc.name, t(REQUEST_CHAINS[key].title));
     }
+    chainScript(c, world) { const tpl = REQUEST_CHAINS[c?.key]; if (!tpl) return null; const locName = (loc) => (typeof TOWN_THEMES !== 'undefined' && TOWN_THEMES[world?.townTheme || 'frontier']?.locationNames?.[loc]) || REQUEST_LOC_FALLBACK[loc] || loc || ''; const fill = (x, st) => Object.entries({ npc: t(c.npcName), target: t(c.targetName || ''), loc: st?.loc ? locName(st.loc) : '', n: st?.amount || '' }).reduce((acc, [k, v]) => acc.split('{' + k + '}').join(v), t(x)); return { title: t(tpl.title), steps: tpl.steps.map(st => fill(st.text, st)), finale: fill(tpl.finale) }; } // v6.8.0 給 AI 改寫口吻用
     _pushChainStep(world, today, used) {
         const c = this.chain; if (!c) return;
         const tpl = REQUEST_CHAINS[c.key]; const st = tpl?.steps?.[c.step]; if (!st) { this.chain = null; return; }
@@ -2636,7 +2637,7 @@ class RequestBoard {
         const npc = world.agents[c.npcId]; if (!npc) { this.chain = null; return; }
         const target = c.targetId ? world.agents[c.targetId] : null;
         if (tpl.needsEnemy && !target) { this.chain = null; return; }
-        const base = { chainKey: c.key, chainStep: c.step, chainTitle: tpl.title, chainText: st.text, chainNpcName: c.npcName, npcId: c.npcId, npcName: c.npcName, apCost: 1, reward: { silver: 20, aff: 6, rep: 2 }, days: 1 };
+        const base = { chainKey: c.key, chainStep: c.step, chainTitle: tpl.title, chainText: st.text, chainNpcName: c.npcName, chainQuote: (c.quotes && c.quotes[c.step]) || '', npcId: c.npcId, npcName: c.npcName, apCost: 1, reward: { silver: 20, aff: 6, rep: 2 }, days: 1 };
         let r = null;
         if (st.type === 'deliver') r = { ...base, type: 'deliver', res: st.res, amount: st.amount };
         else if (st.type === 'fetch') { const loc = st.loc; const locName = (typeof TOWN_THEMES !== 'undefined' && TOWN_THEMES[world.townTheme || 'frontier']?.locationNames?.[loc]) || REQUEST_LOC_FALLBACK[loc] || loc; r = { ...base, type: 'fetch', loc, locName, visited: false, apCost: 2, reward: { silver: 25, aff: 6, rep: 2, pack: st.pack || null } }; }
@@ -2655,7 +2656,7 @@ class RequestBoard {
         if (c.step < tpl.steps.length) { world.logMessage?.('quest', `📖 ${t(tpl.title)}（${c.step}/${tpl.steps.length}）${t('——明天還有下一步')}`); return; }
         // 結局
         const fill = (s, m) => Object.entries(m).reduce((acc, [k, v]) => acc.split('{' + k + '}').join(v), s);
-        const text = fill(t(tpl.finale), { npc: t(c.npcName), target: t(c.targetName || '') });
+        const text = fill(t(tpl.finale), { npc: t(c.npcName), target: t(c.targetName || '') }) + ((c.quotes && c.quotes[3]) ? `「${c.quotes[3]}」` : ''); // v6.8.0 AI 口吻
         const rw = tpl.reward || {}; this.stats.chainsDone++;
         this._reward({ npcId: c.npcId, npcName: c.npcName }, world, rw);
         if (c.targetId && world.agents[c.targetId]) { const rel2 = world.agents[c.targetId].relationships?.getOrCreate?.('player', this._playerName(world)); rel2?.modifyAffinity?.(10); const n1 = world.agents[c.npcId], n2 = world.agents[c.targetId]; if (n1 && n2) { n1.relationships?.getOrCreate?.(n2.agentId, n2.name)?.modifyAffinity?.(25); n2.relationships?.getOrCreate?.(n1.agentId, n1.name)?.modifyAffinity?.(25); } }

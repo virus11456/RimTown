@@ -296,7 +296,7 @@ Object.assign(RimTownApp.prototype, {
             { origId: meta.origId, origName: meta.origName, notes: meta.notes || [], visitedTownName: this._getCurrentTownName(), visitedTownId: this.currentTownId, romance: meta.romance || null }); // v5.90.0 帶回戀情
         w.onRelocate = (data) => this._doRelocate(data); // v5.90.0 搬家提案的決定
         w.onSeasonRecap = () => { try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} this._showSeasonRecap(); }; // v5.98.0 季末回顧
-        w.onChainEvent = (kind, npcName, title, text) => { this._showCornerNotice({ icon: kind === 'done' ? '🏅' : kind === 'broken' ? '💔' : '📖', title: kind === 'done' ? t('委託鏈完成') : kind === 'broken' ? t('委託鏈中斷') : t('有人想拜託你'), name: `${t(npcName)} · ${title}`, desc: text || (kind === 'start' ? t('明天的委託板會多一件他的事，連做三天') : '') }); }; // v6.5.0
+        w.onChainEvent = (kind, npcName, title, text) => { if (kind === 'start') { try { this._aiChainQuotes(w); } catch (e) {} } this._showCornerNotice({ icon: kind === 'done' ? '🏅' : kind === 'broken' ? '💔' : '📖', title: kind === 'done' ? t('委託鏈完成') : kind === 'broken' ? t('委託鏈中斷') : t('有人想拜託你'), name: `${t(npcName)} · ${title}`, desc: text || (kind === 'start' ? t('明天的委託板會多一件他的事，連做三天') : '') }); }; // v6.5.0
         w.onGrowthEvent = (kind, v) => { if (kind === 'level') this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${v} ${t('級')}`, name: '', desc: t('到「故事」分頁選一個天賦') }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.94.0
         w.onTrialEvent = (kind, title, desc) => { this._showCornerNotice({ icon: kind === 'passed' ? '🏅' : kind === 'failed' ? '💔' : '⚖️', title, name: '', desc }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.93.0
         w.onPlayerCaravanReturn = (result, line) => { this._showCornerNotice({ icon: result.raided ? '🏴' : '💰', title: t('商隊回報'), name: t(result.toTownName), desc: line }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.92.0
@@ -410,6 +410,28 @@ Object.assign(RimTownApp.prototype, {
         const tr = w.trials?.current; if (tr && w.trials.value) { const v = w.trials.value(tr.type, w); parts.push(`${t('考驗')} ${Math.min(100, Math.round(v / Math.max(1, tr.target) * 100))}%`); }
         return parts.join(' · ');
     },
+    // v6.8.0 委託鏈 AI 口吻:鏈開始時請 AI 用該村民的口吻寫三步各一句親口說的話＋結局一句(規則文案不動,只多一行引言;失敗就沒有這行)
+    async _aiChainQuotes(w) {
+        const llm = this.llmClient; const rb = w?.requests; const c = rb?.chain; if (!llm || !c || c.quotes) return;
+        const npc = w.agents[c.npcId]; const script = rb.chainScript?.(c, w); if (!npc || !script) return;
+        const lang = (typeof LLM_LANG !== 'undefined') ? LLM_LANG.get() : 'zh';
+        const traits = (npc.personality?.traits || []).map(x => lang === 'en' ? x : ((typeof TRAIT_POOL !== 'undefined' && TRAIT_POOL[x]?.label) || x)).join(lang === 'en' ? ', ' : '、');
+        const name = lang === 'en' ? (typeof I18N !== 'undefined' ? I18N.localizeNames(npc.name, true) : npc.name) : npc.name;
+        const job = npc.job?.name ? (typeof npc.job.name === 'function' ? npc.job.name() : npc.job.name) : (npc.job?.key || '');
+        const prompt = lang === 'en'
+            ? `You write dialogue for a village game. Villager "${name}" (${job}; traits: ${traits}; mood ${Math.round(npc.mood || 50)}/100) is asking the player for help over three days: "${script.title}". Step 1: ${script.steps[0]} Step 2: ${script.steps[1]} Step 3: ${script.steps[2]} Ending: ${script.finale}\nIn this villager's own voice, write one spoken line for each step (8–22 words, do not repeat the task, do not name the player) and one line they say at the ending. Output JSON only: {"q":["step1","step2","step3","ending"]}`
+            : `你在寫小鎮遊戲的台詞。村民「${name}」（${job}；性格：${traits}；心情 ${Math.round(npc.mood || 50)}/100）要拜託玩家一段三天的小事「${script.title}」。第一步：${script.steps[0]} 第二步：${script.steps[1]} 第三步：${script.steps[2]} 結局：${script.finale}\n請用這個人的口吻，為三步各寫一句他親口說的話（每句 12–30 字，不要重複任務說明，不要出現玩家名字），再寫一句結局時他說的話。只輸出 JSON：{"q":["第一步","第二步","第三步","結局"]}`;
+        const timeout = new Promise(r => setTimeout(() => r(null), 9000));
+        let raw = null; try { raw = await Promise.race([llm.generate(prompt, 220, 0.8, true), timeout]); } catch (e) { raw = null; }
+        if (!raw || raw === '__ERROR__' || raw === '__RATE_LIMITED__') return;
+        const m = String(raw).match(/\{[\s\S]*\}/); if (!m) return;
+        let j = null; try { j = JSON.parse(m[0]); } catch (e) { return; }
+        const q = Array.isArray(j?.q) ? j.q.map(x => String(x || '').replace(/^[「『"“]+|[」』"”]+$/g, '').trim().slice(0, 60)).filter(Boolean) : [];
+        if (q.length < 4 || rb.chain !== c) return;
+        c.quotes = q.slice(0, 4);
+        for (const r of rb.board) if (r.chainKey === c.key && r.npcId === c.npcId && r.status === 'open' && !r.chainQuote) r.chainQuote = c.quotes[r.chainStep] || '';
+        try { this.state = w.getState(); if (this.activeTab === 'quest') this.renderSidebar(); } catch (e) {}
+    },
     // v6.7.0 早安卡:每個遊戲日第一次看到新的一天,把「昨日結算、今日委託、委託鏈進度、本季考驗、日報」合成一張留在角落(不自動消失,點 ✕ 或「看委託板」收起)
     _showMorningCard(rb, openCount) {
         const w = this.world; if (!w) return;
@@ -447,7 +469,7 @@ Object.assign(RimTownApp.prototype, {
             const rwText = [rw.silver ? `💰${rw.silver}` : '', rw.pack ? `${t(REQUEST_RES_NAMES[rw.pack.res] || rw.pack.res)}+${rw.pack.amount}` : '', rw.aff ? `❤️+${rw.aff}` : '', rw.rep ? `⭐+${rw.rep}` : ''].filter(Boolean).join(' ');
             html += `<div class="news-card" style="margin-bottom:6px;${dim ? 'opacity:0.55' : ''}"><div style="display:flex;gap:8px;align-items:flex-start">
                 <span style="font-size:1.1rem;flex:none">${r.icon}</span>
-                <div style="flex:1;min-width:0">${r.chainLabel ? `<div style="font-size:0.68rem;color:var(--accent);margin-bottom:1px">📖 ${this._escapeHtml(r.chainLabel)}</div>` : ''}<div style="font-size:0.82rem">${this._escapeHtml(r.text)}</div>
+                <div style="flex:1;min-width:0">${r.chainLabel ? `<div style="font-size:0.68rem;color:var(--accent);margin-bottom:1px">📖 ${this._escapeHtml(r.chainLabel)}</div>` : ''}<div style="font-size:0.82rem">${this._escapeHtml(r.text)}</div>${r.chainQuote ? `<div style="font-size:0.74rem;font-style:italic;color:var(--text-secondary);margin-top:2px">「${this._escapeHtml(r.chainQuote)}」</div>` : ''}
                     <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px">${this._escapeHtml(r.progress || '')}${r.progress ? ' · ' : ''}${rwText} · ${t('耗')} ${r.apCost} ${t('點')}</div></div>
                 ${rb.needsButton(r) ? `<button class="trade-btn" data-action="req-act" data-val="${r.id}" style="font-size:0.7rem;flex:none" ${r.can?.ok ? '' : 'disabled'} title="${this._escapeHtml(r.can?.reason || '')}">${r.type === 'mediate' ? `🤝 ${t('調解')}` : `📦 ${t('交付')}`}</button>` : (r.status === 'done' ? '<span style="flex:none">✅</span>' : r.status === 'failed' ? '<span style="flex:none">⌛</span>' : '')}
             </div>${rb.needsButton(r) && !r.can?.ok && r.can?.reason ? `<div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px">↳ ${this._escapeHtml(r.can.reason)}</div>` : ''}</div>`;

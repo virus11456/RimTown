@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.7.0
+ * Version: 6.8.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.7.0');
+define('RIMTOWN_VERSION', '6.8.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.8.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '🗣️ 委託鏈有了村民自己的口吻：小故事開始時，AI 依這位村民的職業、性格、心情，為三步各寫一句他親口說的話，再寫一句結局時說的話——委託板上以引言顯示在任務說明下方，結局通知也會附上；每條鏈只問一次 AI（走玩家對話的分流），失敗或 WordPress 無 AI 版就維持原本文案',
+            ),
+            'changes_en' => array(
+                '🗣️ Request chains now speak in the villager\'s own voice: when a story starts, the AI writes one spoken line per step and one for the ending based on that villager\'s job, traits and mood — shown as a quote under the task on the board and attached to the ending notice; one AI call per chain (same lane as player chat), and on failure or the AI-less WordPress build the plain text stays',
+            ),
+        ),
         array(
             'version' => '6.7.0',
             'date'    => '2026-10-10',
