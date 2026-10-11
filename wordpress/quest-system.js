@@ -2620,7 +2620,7 @@ class RequestBoard {
         const today = this._absDay(world);
         if ((this._chainCooldown[r.npcId] || 0) > today) return;
         const aff = npc.relationships?.relationships?.player?.affinity || 0;
-        if (aff < 15 || Math.random() > 0.3) return;
+        if (aff < 15 || Math.random() > (world.growth?.has('storyteller') ? 0.5 : 0.3)) return; // v6.9.0 天賦:說書
         const enemy = this._villagers(world).find(b => b.agentId !== npc.agentId && (npc.relationships?.relationships?.[b.agentId]?.affinity || 0) < -20);
         const keys = Object.keys(REQUEST_CHAINS).filter(k => !REQUEST_CHAINS[k].needsEnemy || enemy);
         const key = this._pick(keys); if (!key) return;
@@ -2657,7 +2657,7 @@ class RequestBoard {
         // 結局
         const fill = (s, m) => Object.entries(m).reduce((acc, [k, v]) => acc.split('{' + k + '}').join(v), s);
         const text = fill(t(tpl.finale), { npc: t(c.npcName), target: t(c.targetName || '') }) + ((c.quotes && c.quotes[3]) ? `「${c.quotes[3]}」` : ''); // v6.8.0 AI 口吻
-        const rw = tpl.reward || {}; this.stats.chainsDone++;
+        const rw0 = tpl.reward || {}; const rw = world.growth?.has('storyteller') ? { ...rw0, silver: Math.round((rw0.silver || 0) * 1.25), aff: Math.round((rw0.aff || 0) * 1.25) } : rw0; this.stats.chainsDone++; // v6.9.0 天賦:說書
         this._reward({ npcId: c.npcId, npcName: c.npcName }, world, rw);
         if (c.targetId && world.agents[c.targetId]) { const rel2 = world.agents[c.targetId].relationships?.getOrCreate?.('player', this._playerName(world)); rel2?.modifyAffinity?.(10); const n1 = world.agents[c.npcId], n2 = world.agents[c.targetId]; if (n1 && n2) { n1.relationships?.getOrCreate?.(n2.agentId, n2.name)?.modifyAffinity?.(25); n2.relationships?.getOrCreate?.(n1.agentId, n1.name)?.modifyAffinity?.(25); } }
         const npc = world.agents[c.npcId]; const pname = this._playerName(world);
@@ -2811,6 +2811,8 @@ const GROWTH_PERKS = {
     pathfinder:  { icon: '🧭', name: '識途', desc: '押商隊遇劫率 ×0.8', attr: {} },
     provident:   { icon: '🌾', name: '未雨', desc: '季度考驗目標 −10%', attr: {} },
     earlybird:   { icon: '🌅', name: '早起', desc: '每天第一件委託不扣行動點', attr: {} },
+    storyteller: { icon: '📖', name: '說書', desc: '村民更常找你走小故事（三成→五成），走完的獎勵 +25%', attr: {} }, // v6.9.0
+    empath:      { icon: '💞', name: '知心', desc: '「用你的話說」AI 判定每級 ±12%、每天多 10 次，魅力 +1', attr: { charm: 1 } }, // v6.9.0
 };
 class TravellerGrowth {
     constructor() { this.xp = 0; this.level = 1; this.perks = []; this.pending = null; this.log = []; this.total = 0; }

@@ -687,13 +687,14 @@ Object.assign(RimTownApp.prototype, {
         let o = { p: 0.5 }; try { o = this.world.chatOdds(npc, key); } catch (e) {}
         let judge = null; try { judge = await this._judgeIntent(npc, key, msg); } catch (e) { judge = null; }
         if (input) { input.disabled = false; input.placeholder = ph || (t('輸入訊息') + '...'); }
-        const p = judge ? Math.max(0.05, Math.min(0.97, o.p + judge.s * 0.08)) : o.p;
+        const per = this.world?.growth?.has('empath') ? 0.12 : 0.08; // v6.9.0 天賦:知心
+        const p = judge ? Math.max(0.05, Math.min(0.97, o.p + judge.s * per)) : o.p;
         const outcome = { ok: Math.random() < p, p, base: o.p, judge };
         this.playerSendMessage(this.chatTarget, msg, key, outcome);
     },
     async _judgeIntent(npc, key, text) {
         const llm = this.llmClient; if (!llm || !text || text.length < 2) return null;
-        const JUDGE_DAILY_CAP = 30; // 每人每天最多 30 次,保護整站共用的免費額度
+        const JUDGE_DAILY_CAP = this.world?.growth?.has('empath') ? 40 : 30; // 每人每天最多 30 次(知心 40),保護整站共用的免費額度
         if (this._judgeCount(0) >= JUDGE_DAILY_CAP) { if (!this._judgeCapNoticed) { this._judgeCapNoticed = true; this._showCornerNotice({ icon: '🧠', title: t('AI 判定'), name: '', desc: t('今天的 AI 判定次數用完了，改用規則判定') }); } return null; }
         const lang = (typeof LLM_LANG !== 'undefined') ? LLM_LANG.get() : 'zh';
         const rel = npc.relationships?.relationships?.player || { affinity: 0, trust: 0 };
@@ -720,7 +721,7 @@ Object.assign(RimTownApp.prototype, {
         const world = this.world;
         const lines = [];
         const fx = (txt, color) => lines.push({ txt, color });
-        if (outcome?.judge) { const j = outcome.judge; fx(`🧠 ${t('AI 判定')}：${j.r || t('沒特別感覺')}（${j.s > 0 ? '+' : ''}${j.s * 8}%）`, j.s > 0 ? '#7fc4ff' : j.s < 0 ? '#e0b07a' : '#9aa'); } // v6.3.0
+        if (outcome?.judge) { const j = outcome.judge; const per = world.growth?.has('empath') ? 12 : 8; fx(`🧠 ${t('AI 判定')}：${j.r || t('沒特別感覺')}（${j.s > 0 ? '+' : ''}${j.s * per}%）`, j.s > 0 ? '#7fc4ff' : j.s < 0 ? '#e0b07a' : '#9aa'); } // v6.3.0
         // v5.95.0 擲骰沒過:這句話沒說進心裡,原本的機械後果不套用
         if (outcome && !outcome.ok) {
             rel.modifyAffinity(-1);
