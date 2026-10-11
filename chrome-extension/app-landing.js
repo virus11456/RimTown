@@ -92,6 +92,7 @@ Object.assign(RimTownApp.prototype, {
         this._initFirstDay();
         // 只在介紹教學跑完後、且尚未完成/略過時顯示
         if (!localStorage.getItem('rimtown_tutorial_done')) return false;
+        if (this.world?._absDay && this.world._absDay() >= 3) return false; // v6.11.0 第 4 天起不再掛著「第一天」引導(早安卡與委託板接手)
         return !this._firstDay.done && !this._firstDay.dismissed;
     },
     _renderFirstDayGuide() {

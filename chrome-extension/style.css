@@ -1501,6 +1501,7 @@ body.rimtown-page .wp-block-post-title {
     border: 1px solid var(--accent);
     border-radius: 10px;
     padding: 8px 16px;
+    width: max-content; /* v6.11.0 固定定位+left:50% 時,手機上可用寬只剩半個螢幕,文字會被擠成一條;明確要 max-content 再用 max-width 夾住 */
     max-width: min(500px, calc(100vw - 32px));
     box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 10px rgba(0,229,255,0.15);
     animation: guidanceSlideIn 0.5s ease;

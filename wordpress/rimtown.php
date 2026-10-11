@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.10.1
+ * Version: 6.11.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.10.1');
+define('RIMTOWN_VERSION', '6.11.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,26 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.11.0',
+            'date'    => '2026-10-11',
+            'changes' => array(
+                '🧪 新手走一遍 QA（桌機＋手機各真跑一季）找到並修掉：桌機角落通知與早安卡改貼在地圖右下、側欄左側，不再蓋住聊天輸入框、委託按鈕與天賦選項',
+                '📜 季末回顧修正：考驗結算後回顧現在會寫出本季考驗結果並算進評等（之前永遠顯示「本季沒有考驗」）；銀幣取整，不再出現一長串小數',
+                '🐪 馬車站還沒有鄰鎮時改為說明解鎖條件（繁榮 20 修好往海風鎮的路，顯示目前繁榮）並附城鎮列表入口；季末建議不再推沒路可走的押商隊',
+                '☀️ 早安卡：升級還沒選天賦會每天提醒；手機版早安卡 22 秒收起（桌機 45 秒）；第 4 天起不再掛著「第一天」引導',
+                '📱 手機「目前目標」橫幅修正：聊天時不再被擠成一條窄長條',
+                '🧪 走流程截圖腳本收進 scripts/walkthrough.js（選跑）',
+            ),
+            'changes_en' => array(
+                '🧪 First-week walkthrough QA (a full season on desktop and mobile) found and fixed: desktop corner notices and the morning card now sit at the map\'s bottom-right, left of the sidebar, so they never cover the chat input, request buttons or perk choices',
+                '📜 Season recap fix: after a trial is settled the recap now reports it and counts it in the grade (it always said "no trial this season" before); silver is rounded',
+                '🐪 Coach station without a neighbouring town now explains the unlock (prosperity 20 repairs the road to Seabreeze, current value shown) with a Towns button; recap advice no longer suggests a caravan with no road',
+                '☀️ Morning card reminds you of unpicked perks; it fades after 22 s on mobile (45 s on desktop); the first-day guide no longer lingers past day 3',
+                '📱 Mobile goal banner fix: no longer squeezed into a narrow column while chatting',
+                '🧪 Walkthrough screenshot script added as scripts/walkthrough.js (optional)',
+            ),
+        ),
         array(
             'version' => '6.10.1',
             'date'    => '2026-10-11',

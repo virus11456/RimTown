@@ -33,6 +33,7 @@ Object.assign(RimTownApp.prototype, {
         document.getElementById('season-recap')?.remove();
         const [kind, b, c] = String(val || '').split(':');
         if (kind === 'caravan') { this._showCaravanDialog(); return; }
+        if (kind === 'towns') { try { this.showTownManager(); } catch (e) {} return; } // v6.11.0
         if (kind === 'tab') { this._goTab(b); return; }
         if (kind === 'chat' && c && this.world?.agents?.[c]) {
             this.startChatWith(c);
@@ -55,7 +56,8 @@ Object.assign(RimTownApp.prototype, {
         if (a) {
             inner += `<div style="font-size:0.8rem;line-height:1.7">${t('商隊在路上：')}${a.amount} ${this._resLabel(a.res)} → ${esc(t(a.toTownName))}${a.guardName ? `（${esc(t(a.guardName))}${t('押車')}）` : ''}<br>${t('預計')} ${Math.max(0, a.returnAbsDay - w._absDay())} ${t('天後回報')}</div>`;
         } else if (!towns.length || !resList.length) {
-            inner += `<div style="font-size:0.8rem;color:var(--text-secondary)">${!towns.length ? t('還沒有通車的鄰鎮。') : t('倉庫裡沒有夠的貨（至少 10 份）。')}</div>`;
+            inner += `<div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.6">${!towns.length ? t('還沒有通車的鄰鎮：小鎮繁榮到 {p} 就會修好往海風鎮的路（目前 {c}），之後可以押商隊、互訪、跨鎮戀愛；也可以到「城鎮列表」自己再建一座。').replace('{p}', String((typeof NEIGHBOR_TOWNS !== 'undefined' && NEIGHBOR_TOWNS[0]?.prosperity) || 20)).replace('{c}', String(Math.round(w.prosperity?.prosperity || 0))) : t('倉庫裡沒有夠的貨（至少 10 份）。')}</div>`;
+            if (!towns.length) inner += `<button class="trade-btn pc-towns" style="width:100%;margin-top:10px;padding:8px;font-size:0.82rem">🏘️ ${t('城鎮列表')}</button>`; // v6.11.0 不再是死路:說清楚解鎖條件,附城鎮列表入口
         } else {
             const sel = (id, opts) => `<select id="${id}" style="width:100%;padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--bg-primary);color:var(--text-primary);font-size:0.85rem">${opts}</select>`;
             inner += `<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px">${t('車伕掂掂貨：「要押什麼去哪？山路快一天，但不太平。」')}</div>`;
@@ -86,6 +88,7 @@ Object.assign(RimTownApp.prototype, {
                 if (r.ok) { ov.remove(); this.state = w.getState(); try { this.renderSidebar(); } catch (err) {} }
                 return;
             }
+            if (e.target.closest?.('.pc-towns')) { ov.remove(); try { this.showTownManager(); } catch (err) {} return; }
             if (e.target.closest?.('.pc-close') || e.target === ov) ov.remove();
         });
     },
@@ -444,13 +447,15 @@ Object.assign(RimTownApp.prototype, {
         const d = rb.toDict(w); if (d.chain) rows.push(`📖 ${esc(d.chain.title)} ${d.chain.step + 1}/${d.chain.total} · ${esc(d.chain.npcName)}`);
         const tr = w.trials?.current; if (tr && tr.status === 'active' && w.trials.value) { const v = w.trials.value(tr.type, w); const d2 = (typeof TRIAL_TYPES !== 'undefined' && TRIAL_TYPES[tr.type]) || {}; rows.push(`⚖️ ${esc(t(d2.title || tr.type))} ${v}/${tr.target} · ${t('剩')} ${Math.max(0, (tr.dueDay || 15) - w.clock.day)} ${t('天')}`); }
         else if (!tr && w.clock.day < 5) rows.push(`⚖️ ${t('第 5 天公布本季考驗')}`);
+        const pl = w.growth?.pendingLevels?.() || 0; if (pl > 0 && w.growth?.pending?.length) rows.push(`⬆️ ${t('升級了！選一個天賦')}${pl > 1 ? `（${t('還有 {n} 次').replace('{n}', pl)}）` : ''}`); // v6.11.0 天賦還沒選就每天提醒
         const el = document.createElement('div'); el.id = 'morning-card'; el.className = 'rt-toast morning';
         el.style.cssText = 'background:rgba(22,22,32,0.96);border:1px solid var(--accent,#e94560);border-radius:12px;padding:10px 12px;max-width:min(360px,calc(100vw - 28px));pointer-events:auto;box-shadow:0 6px 24px rgba(0,0,0,0.45);opacity:0;transform:translateY(8px);transition:all .3s';
         el.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:1.2rem">☀️</span><span style="flex:1;color:var(--accent,#e94560);font-size:0.78rem;font-weight:bold">${t('早安')} · ${esc(t('第 {y} 年{s}').split('{y}').join(w.clock.year).split('{s}').join(t(w.clock.season)))} · ${t('第 {d} 天').split('{d}').join(w.clock.day)}</span><button data-mc="close" style="background:none;border:none;color:var(--text-muted,#999);font-size:1rem;cursor:pointer;line-height:1">✕</button></div><div class="mc-body" style="font-size:0.76rem;line-height:1.5;color:var(--text-secondary,#ccc)">${rows.map(r => `<div>${r}</div>`).join('')}</div><button data-mc="go" class="trade-btn" style="width:100%;margin-top:8px;padding:6px;font-size:0.76rem">📋 ${t('看委託板')}</button>`;
         el.addEventListener('click', (e) => { const b = e.target.closest('[data-mc]'); if (!b) return; if (b.dataset.mc === 'go') this._goTab('quest'); el.remove(); });
         host.appendChild(el);
         requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
-        setTimeout(() => { if (el.isConnected) { el.dataset.fading = '1'; el.style.opacity = '0'; setTimeout(() => el.remove(), 350); } }, 45000);
+        setTimeout(() => { if (el.isConnected) { el.dataset.fading = '1'; el.style.opacity = '0'; setTimeout(() => el.remove(), 350); } }, window.innerWidth <= 768 ? 22000 : 45000); // v6.11.0 手機沒有空位,早安卡 22 秒就收(桌機 45 秒)
+        if ((w._absDay?.() ?? 0) >= 3) document.getElementById('firstday-guide')?.remove(); // v6.11.0 第 4 天起收掉「第一天」引導
     },
     _renderRequestBoard() {
         const rb = this.world?.requests; if (!rb) return '';

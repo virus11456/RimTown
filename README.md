@@ -230,7 +230,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.10.1.zip` from Releases
+1. Download `rimtown-v6.11.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -261,6 +261,7 @@ node scripts/i18n-audit.js     # i18n 重複鍵=0、新 t('…') 字串必須有
 node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改版面才 --update(v5.81.0 起)
 # 選跑:cd wordpress && python3 -m http.server 8126 & ; node scripts/smoke_playwright.js  # 五鎮世界/英文標籤/鄰鎮/住房/商隊冒煙
 # 選跑:node scripts/quest_chain_test.js   # 四座主題鎮任務鏈端到端(五章/災難/商路/支線/存檔/英文)(v5.88.0 起;改任務鏈或災難必跑)
+# 選跑:node scripts/walkthrough.js <zh|en> <desktop|mobile> <outdir>   # v6.11.0 新手走一遍:用 app 自己的迴圈真跑一季、關鍵時刻截圖,看圖抓版面/文案問題
 # 選跑:node scripts/soak_test.js [url] [days] [theme] [mode]   # mode=full|casual|idle(v6.2.0 平衡矩陣用);核心玩法迴圈浸泡:真 tick 跑 35 天、每天像玩家做委託/商隊/對話/天賦、每 10 天存檔讀檔接著跑(v5.96.0 起;改核心迴圈必跑五主題)
 ```
 
@@ -273,6 +274,14 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.11.0 (2026-10-11)
+- 🧪 新手走一遍 QA（桌機＋手機各真跑一季）找到並修掉：桌機角落通知與早安卡改貼在地圖右下、側欄左側，不再蓋住聊天輸入框、委託按鈕與天賦選項
+- 📜 季末回顧修正：考驗結算後回顧現在會寫出本季考驗結果並算進評等（之前永遠顯示「本季沒有考驗」）；銀幣取整，不再出現一長串小數
+- 🐪 馬車站還沒有鄰鎮時改為說明解鎖條件（繁榮 20 修好往海風鎮的路，顯示目前繁榮）並附城鎮列表入口；季末建議不再推沒路可走的押商隊
+- ☀️ 早安卡：升級還沒選天賦會每天提醒；手機版早安卡 22 秒收起（桌機 45 秒）；第 4 天起不再掛著「第一天」引導
+- 📱 手機「目前目標」橫幅修正：聊天時不再被擠成一條窄長條
+- 🧪 走流程截圖腳本收進 scripts/walkthrough.js（選跑）
 
 ### v6.10.1 (2026-10-11)
 - 🛠️ 程式審查修正：故事鏈最後一步到期時正確中斷、調解「各退一步」的部分成功也能推進故事鏈、故事鏈不再重複找同一位村民

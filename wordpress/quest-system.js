@@ -2885,13 +2885,15 @@ class SeasonRecap {
         const gains = this._npcs(w).map(a => ({ id: a.agentId, name: a.name, delta: (now.aff[a.agentId] || 0) - (a.agentId in s.aff ? s.aff[a.agentId] : (now.aff[a.agentId] || 0)) })).filter(x => x.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, 3);
         const left = (w.movedOut || []).filter(m => m.absDay >= s.absDay && m.absDay < now.absDay).map(m => m.name);
         const joined = this._npcs(w).filter(a => !(a.agentId in s.aff)).map(a => a.name);
-        const tr = w.trials?.current; const trial = (tr && tr.seasonKey === s.key && tr.status !== 'active') ? { type: tr.type, status: tr.status, value: tr.finalValue ?? 0, target: tr.target } : null;
+        // v6.11.0 考驗結算後 trials.current 會清空,要從 history 找本季那筆(之前永遠顯示「本季沒有考驗」、評等也少算)
+        const tr = w.trials?.current; const th = (w.trials?.history || []).slice().reverse().find(h => h.seasonKey === s.key);
+        const trial = (tr && tr.seasonKey === s.key && tr.status !== 'active') ? { type: tr.type, status: tr.status, value: tr.finalValue ?? 0, target: tr.target } : th ? { type: th.type, status: th.status, value: th.value ?? 0, target: th.target } : null;
         const r = {
             key: s.key, year: s.year, season: s.season, trial,
             chainsDone: now.chainsDone - (s.chainsDone || 0), reqDone: now.reqDone - s.reqDone, reqFailed: now.reqFailed - s.reqFailed, bestStreak: now.bestStreak,
             carRuns: now.carRuns - s.carRuns, carSilver: now.carSilver - s.carSilver, carRaids: now.carRaids - s.carRaids,
             xp: now.xpTotal - s.xpTotal, levelFrom: s.level, levelTo: now.level,
-            silverFrom: s.silver, silverTo: now.silver, popFrom: s.pop, popTo: now.pop, rep: now.rep - s.rep, prosperity: now.prosperity - s.prosperity, questsDone: now.questsDone - s.questsDone,
+            silverFrom: Math.round(s.silver), silverTo: Math.round(now.silver), popFrom: s.pop, popTo: now.pop, rep: now.rep - s.rep, prosperity: now.prosperity - s.prosperity, questsDone: now.questsDone - s.questsDone,
             gains, left, joined, grade: '',
         };
         r.grade = this._grade(r);
@@ -2924,7 +2926,7 @@ class SeasonRecap {
         out.push({ icon: '📋', text: this._fill(t('完成 {a} 件、過期 {b} 件、最佳連勝 {c} 天'), { a: r.reqDone, b: r.reqFailed, c: r.bestStreak }) });
         if (r.carRuns) out.push({ icon: '🐪', text: this._fill(t('{n} 趟、賺 {s} 銀幣、遇劫 {r} 次'), { n: r.carRuns, s: r.carSilver, r: r.carRaids }) });
         out.push({ icon: '🧭', text: this._fill(t('經驗 +{x}，Lv.{a} → Lv.{b}'), { x: r.xp, a: r.levelFrom, b: r.levelTo }) });
-        out.push({ icon: '💰', text: this._fill(t('銀幣 {a} → {b}'), { a: r.silverFrom, b: r.silverTo }) + `（${r.silverTo - r.silverFrom >= 0 ? '+' : ''}${r.silverTo - r.silverFrom}）` });
+        { const a = Math.round(r.silverFrom), b = Math.round(r.silverTo); out.push({ icon: '💰', text: this._fill(t('銀幣 {a} → {b}'), { a, b }) + `（${b - a >= 0 ? '+' : ''}${b - a}）` }); } // v6.11.0 取整,不再出現 895.5999999
         out.push({ icon: '👥', text: this._fill(t('人口 {a} → {b}'), { a: r.popFrom, b: r.popTo }) + ` · ${this._fill(t('聲望 {d}'), { d: (r.rep >= 0 ? '+' : '') + r.rep })} · ${this._fill(t('繁榮 {d}'), { d: (r.prosperity >= 0 ? '+' : '') + r.prosperity })}` });
         if (r.chainsDone) out.push({ icon: '📖', text: this._fill(t('走完 {n} 段村民的小故事'), { n: r.chainsDone }) });
         if (r.questsDone) out.push({ icon: '⚔️', text: this._fill(t('任務完成 {n} 件'), { n: r.questsDone }) });
@@ -2945,7 +2947,9 @@ class SeasonRecap {
             if (by[r.trial.type]) tips.push({ icon: '⚖️', ...by[r.trial.type] });
         } else if (!r.trial) tips.push({ icon: '⚖️', text: t('每季第 5 天公布考驗，前四天先囤好感和物資，公布後再對症下手'), go: 'tab:quest', goLabel: t('看委託板') });
         if (r.reqFailed > r.reqDone) tips.push({ icon: '📋', text: t('委託先挑一次對話就能完成的（陪伴、送禮），同一天第一件過期扣 3 好感、其餘每件扣 1'), go: 'tab:quest', goLabel: t('看委託板') });
-        if (!r.carRuns) tips.push({ icon: '🐪', text: t('到馬車站押一趟商隊試試：30 份木材走大路，風險約一成、賣價多兩成'), go: 'caravan', goLabel: t('去馬車站') });
+        const hasTowns = !!(w && Array.isArray(w.otherTowns) && w.otherTowns.length); // v6.11.0 還沒有第二座鎮就不推押商隊(馬車站會說「還沒有通車的鄰鎮」)
+        if (!r.carRuns && hasTowns) tips.push({ icon: '🐪', text: t('到馬車站押一趟商隊試試：30 份木材走大路，風險約一成、賣價多兩成'), go: 'caravan', goLabel: t('去馬車站') });
+        else if (!r.carRuns && w) tips.push({ icon: '🏘️', text: t('把小鎮繁榮推到 20，往海風鎮的路就通了：可以押商隊、互訪、跨鎮戀愛；也可以到城鎮列表自己再建一座'), go: 'towns', goLabel: t('城鎮列表') });
         if (!(r.gains || []).length) { const npc = vs.slice().sort((a, b) => ((b.relationships?.relationships?.player?.affinity || 0) - (a.relationships?.relationships?.player?.affinity || 0)))[0]; tips.push({ icon: '💬', text: t('每天用「用你的話說」跟一位村民聊，說到他在乎的事成功率 +16%，好感跟著漲'), ...chatGo('persuade', npc) }); }
         if (r.popTo < r.popFrom) { const low = vs.slice().sort((a, b) => (a.mood || 50) - (b.mood || 50))[0]; tips.push({ icon: '👥', text: t('人口在流失：撐過考驗，心情低的人多去「安慰」，有空房就留得住人'), ...chatGo('comfort', low) }); }
         if (r.levelTo <= r.levelFrom && r.xp < 60) tips.push({ icon: '🧭', text: t('經驗來自委託、考驗、商隊和主線任務；推進一章主線的經驗最多'), go: 'tab:quest', goLabel: t('看任務') });
