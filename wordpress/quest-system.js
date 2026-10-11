@@ -2816,18 +2816,26 @@ const GROWTH_PERKS = {
     empath:      { icon: '💞', name: '知心', desc: '「用你的話說」AI 判定每級 ±12%、每天多 10 次，魅力 +1', attr: { charm: 1 } }, // v6.9.0
 };
 class TravellerGrowth {
-    constructor() { this.xp = 0; this.level = 1; this.perks = []; this.pending = null; this.log = []; this.total = 0; }
+    constructor() { this.xp = 0; this.level = 1; this.perks = []; this.pending = null; this.log = []; this.total = 0; this.extra = { charm: 0, vigor: 0, wit: 0, grit: 0 }; } // v6.12.0 extra:十種天賦學完後每升一級 +1 隨機屬性
     xpToNext() { return 60 + this.level * 45; } // v5.96.0 浸泡測試 35 天就 Lv.10 學完八種天賦,放慢
     has(perk) { return this.perks.includes(perk); }
-    attrBonus() { const b = { charm: 0, vigor: 0, wit: 0, grit: 0 }; for (const k of this.perks) for (const [a, v] of Object.entries(GROWTH_PERKS[k]?.attr || {})) b[a] += v; return b; }
+    attrBonus() { const b = { charm: 0, vigor: 0, wit: 0, grit: 0 }; for (const k of this.perks) for (const [a, v] of Object.entries(GROWTH_PERKS[k]?.attr || {})) b[a] += v; for (const a of Object.keys(b)) b[a] += (this.extra?.[a] || 0); return b; }
     attr(world, key) { return ((world?.agents?.player?.attributes || {})[key] || 5) + this.attrBonus()[key]; }
     addXp(n, reason, world) {
         if (!n) return;
         this.xp += n; this.total = (this.total || 0) + n; this.log = this.log.concat([{ n, reason, day: world?.clock?.day }]).slice(-20);
         let leveled = false;
         while (this.xp >= this.xpToNext()) { this.xp -= this.xpToNext(); this.level++; leveled = true; }
-        if (leveled && !this.pending) this._offer();
-        if (leveled) { world?.logMessage?.('quest', `⬆️ ${t('旅人升到')} ${this.level} ${t('級，去「故事」分頁選一個天賦')}`); world?.onGrowthEvent?.('level', this.level); }
+        if (!leveled) return;
+        const pool = Object.keys(GROWTH_PERKS).filter(k => !this.has(k));
+        if (pool.length) {
+            if (!this.pending) this._offer();
+            world?.logMessage?.('quest', `⬆️ ${t('旅人升到')} ${this.level} ${t('級，去「故事」分頁選一個天賦')}`); world?.onGrowthEvent?.('level', this.level);
+        } else { // v6.12.0 天賦學完:每升一級隨機一項屬性 +1(進 extra,存檔保留)
+            const keys = ['charm', 'vigor', 'wit', 'grit']; const k = keys[Math.floor(Math.random() * keys.length)]; this.extra = this.extra || { charm: 0, vigor: 0, wit: 0, grit: 0 }; this.extra[k] = (this.extra[k] || 0) + 1;
+            const AT = { charm: t('魅力值'), vigor: t('體力值'), wit: t('機智值'), grit: t('毅力值') };
+            world?.logMessage?.('quest', `⬆️ ${t('旅人升到')} ${this.level} ${t('級，天賦都學完了：')}${AT[k]} +1`); world?.onGrowthEvent?.('attr', k);
+        }
     }
     _offer() {
         const pool = Object.keys(GROWTH_PERKS).filter(k => !this.has(k));
@@ -2835,8 +2843,9 @@ class TravellerGrowth {
         const pick = []; while (pick.length < Math.min(3, pool.length)) { const k = pool[Math.floor(Math.random() * pool.length)]; if (!pick.includes(k)) pick.push(k); }
         this.pending = pick;
     }
-    pendingLevels() { // 升了幾級還沒選
-        return Math.max(0, this.level - 1 - this.perks.length);
+    pendingLevels() { // 升了幾級還沒選(天賦學完後的升級不算)
+        const extra = Object.values(this.extra || {}).reduce((a, b) => a + b, 0);
+        return Math.max(0, this.level - 1 - this.perks.length - extra);
     }
     choose(perk, world) {
         if (!this.pending || !this.pending.includes(perk) || this.has(perk)) return { ok: false };
@@ -2855,8 +2864,8 @@ class TravellerGrowth {
             pendingLevels: this.pendingLevels(),
             attrs: ['charm', 'vigor', 'wit', 'grit'].map(k => ({ key: k, base: base[k] || 5, bonus: b[k] })), log: this.log.slice(-5).reverse() };
     }
-    serialize() { return { xp: this.xp, level: this.level, perks: this.perks, pending: this.pending, log: this.log, total: this.total || 0 }; }
-    loadFrom(d) { if (!d) return; this.xp = d.xp || 0; this.total = d.total || 0; this.level = d.level || 1; this.perks = Array.isArray(d.perks) ? d.perks : []; this.pending = Array.isArray(d.pending) ? d.pending : null; this.log = Array.isArray(d.log) ? d.log : []; if (!this.pending && this.pendingLevels() > 0) this._offer(); }
+    serialize() { return { xp: this.xp, level: this.level, perks: this.perks, pending: this.pending, log: this.log, total: this.total || 0, extra: this.extra || null }; }
+    loadFrom(d) { if (!d) return; this.xp = d.xp || 0; this.total = d.total || 0; this.level = d.level || 1; this.perks = Array.isArray(d.perks) ? d.perks : []; this.pending = Array.isArray(d.pending) ? d.pending : null; this.log = Array.isArray(d.log) ? d.log : []; this.extra = (d.extra && typeof d.extra === 'object') ? { charm: 0, vigor: 0, wit: 0, grit: 0, ...d.extra } : { charm: 0, vigor: 0, wit: 0, grit: 0 }; if (!this.pending && this.pendingLevels() > 0) this._offer(); }
 }
 
 // v5.98.0 季末回顧:季初快照、季末差分,換季那天彈一頁回顧;最多留 4 季

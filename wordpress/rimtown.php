@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.11.0
+ * Version: 6.12.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.11.0');
+define('RIMTOWN_VERSION', '6.12.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.12.0',
+            'date'    => '2026-10-11',
+            'changes' => array(
+                '🧭 旅人後期成長：十種天賦都學完後，之後每升一級隨機一項屬性（魅力／體力／機智／毅力）+1，角落通知與故事分頁都會寫出來；存檔保留',
+                '👋 新手前三天：第一天引導卡還在時，上方「目前目標」橫幅先收起（兩邊講的是同一件事），第 4 天起由橫幅接手',
+                '📱 手機角落通知最多兩張（桌機三張），少蓋一點分頁內容',
+            ),
+            'changes_en' => array(
+                '🧭 Late-game growth: once all ten perks are learned, each further level adds +1 to a random attribute (charm / vigor / wit / grit), shown in the corner notice and the Story tab; saved with the game',
+                '👋 First three days: while the first-day guide card is up, the "current goal" banner stays hidden (they said the same thing); the banner takes over from day 4',
+                '📱 At most two corner notices on mobile (three on desktop) so less of the sheet is covered',
+            ),
+        ),
         array(
             'version' => '6.11.0',
             'date'    => '2026-10-11',

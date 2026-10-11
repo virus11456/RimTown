@@ -139,6 +139,7 @@ Object.assign(RimTownApp.prototype, {
         if (!el) return;
         // Don't show if user explicitly dismissed all guidance
         if (localStorage.getItem('rimtown_guidance_off')) { el.classList.add('hidden'); return; }
+        if (this._firstDayActive?.()) { el.classList.add('hidden'); return; } // v6.12.0 第一天引導卡還在時不疊上方目標橫幅(兩邊講同一件事)
         // v5.59.0 TC-03:邊境鎮主線任務不在海風鎮顯示(卡司是邊境鎮居民,海風鎮主題任務鏈待做)
         if (typeof questChainFor === 'function' && !questChainFor(this.world?.townTheme)) { el.classList.add('hidden'); return; } // v5.83.0 沒有任務鏈的主題鎮才隱藏
 

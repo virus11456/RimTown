@@ -230,7 +230,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.11.0.zip` from Releases
+1. Download `rimtown-v6.12.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -274,6 +274,11 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.12.0 (2026-10-11)
+- 🧭 旅人後期成長：十種天賦都學完後，之後每升一級隨機一項屬性（魅力／體力／機智／毅力）+1，角落通知與故事分頁都會寫出來；存檔保留
+- 👋 新手前三天：第一天引導卡還在時，上方「目前目標」橫幅先收起（兩邊講的是同一件事），第 4 天起由橫幅接手
+- 📱 手機角落通知最多兩張（桌機三張），少蓋一點分頁內容
 
 ### v6.11.0 (2026-10-11)
 - 🧪 新手走一遍 QA（桌機＋手機各真跑一季）找到並修掉：桌機角落通知與早安卡改貼在地圖右下、側欄左側，不再蓋住聊天輸入框、委託按鈕與天賦選項

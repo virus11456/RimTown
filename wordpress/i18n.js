@@ -5245,6 +5245,8 @@ const I18N = (() => {
         '本機': 'local',
         ' 訪客）': ' visiting)',
         '海風鎮的故事': 'Stories of Seabreeze',
+        '天賦都學完了，之後每升一級隨機一項屬性 +1': 'All perks learned; from now on each level adds +1 to a random attribute',
+        '級，天賦都學完了：': ', all perks learned: ',
         '從遠方來到了': ' came from afar to ',
         '把小鎮繁榮推到 {p}，往{town}的路就通了：可以押商隊、互訪、跨鎮戀愛；也可以到城鎮列表自己再建一座': 'Push prosperity to {p} and the road to {town} opens: caravans, visits and cross-town romance. You can also found another town from the town list',
         '還沒有通車的鄰鎮：小鎮繁榮到 {p} 就會修好往{town}的路（目前 {c}），之後可以押商隊、互訪、跨鎮戀愛；也可以到「城鎮列表」自己再建一座。': 'No neighbouring town yet. At prosperity {p} the road to {town} gets repaired (now {c}); then you can run caravans, visit and romance across towns. You can also found another town from the town list.',

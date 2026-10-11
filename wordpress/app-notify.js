@@ -694,7 +694,8 @@ Object.assign(RimTownApp.prototype, {
     _showCornerNotice({ icon, title, name, desc }) {
         const host = this._toastHost();
         // v5.34.1 同時最多 3 張,多的擠掉最舊的,避免洗版
-        while (host.querySelectorAll('.rt-toast:not(.morning)').length >= 3) host.querySelector('.rt-toast:not(.morning)').remove(); // v6.7.0 早安卡不算在三張內
+        const cap = window.innerWidth <= 768 ? 2 : 3; // v6.12.0 手機最多兩張,少蓋一點內容
+        while (host.querySelectorAll('.rt-toast:not(.morning)').length >= cap) host.querySelector('.rt-toast:not(.morning)').remove(); // v6.7.0 早安卡不算在三張內
         const el = document.createElement('div'); el.className = 'rt-toast';
         el.style.cssText = 'display:flex;align-items:center;gap:10px;background:rgba(22,22,32,0.95);border:1px solid rgba(255,255,255,0.22);border-radius:10px;padding:10px 14px;max-width:min(320px,calc(100vw - 28px));box-shadow:0 4px 16px rgba(0,0,0,0.4);opacity:0;transform:translateY(8px);transition:opacity 0.3s,transform 0.3s;pointer-events:auto;cursor:pointer';
         el.innerHTML = `<span style="font-size:1.5rem">${icon || '🔔'}</span><span><span style="display:block;color:var(--accent,#e94560);font-size:0.72rem;font-weight:bold">${title || ''}</span>${name ? `<span style="display:block;color:#fff;font-size:0.85rem;font-weight:bold">${name}</span>` : ''}${desc ? `<span style="display:block;color:rgba(255,255,255,0.65);font-size:0.68rem">${desc}</span>` : ''}</span>`;
