@@ -230,7 +230,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.10.0.zip` from Releases
+1. Download `rimtown-v6.10.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -273,6 +273,11 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.10.1 (2026-10-11)
+- 🛠️ 程式審查修正：故事鏈最後一步到期時正確中斷、調解「各退一步」的部分成功也能推進故事鏈、故事鏈不再重複找同一位村民
+- 🛠️ 季末回顧的建議只在最新一季顯示，且不再點名已離世或路過的旅人；回到提示的分頁前會先刷新畫面資料
+- 🛠️ 通知區統一：成就通知與角落提示共用同一個容器，早安卡不會被成就通知擠掉；AI 日報只在早安卡還顯示時併入，淡出中改用一般提示
 
 ### v6.10.0 (2026-10-10)
 - 🏠 首頁特色介紹改寫：新增「每天有事做」（早安卡、三天小故事、押商隊、親手撐考驗、季末回顧與建議），「真的在聊天」改寫成「用你的話說、AI 判定」，任務卡改為五章主線與十種天賦

@@ -27,7 +27,7 @@ Object.assign(RimTownApp.prototype, {
         if (this._kairoReady) { this._openKairoTab(tab); return; }
         this.activeTab = tab; this._updateTabHighlight?.(tab);
         const sidebar = document.getElementById('rimtown-sidebar'); if (sidebar && window.innerWidth <= 768) sidebar.classList.remove('mobile-collapsed');
-        try { this.renderSidebar(); } catch (e) {}
+        try { this.state = this.world.getState(); this.renderSidebar(); } catch (e) {} // v6.10.1 先刷新狀態再畫
     },
     _recapGo(val) {
         document.getElementById('season-recap')?.remove();
@@ -423,7 +423,7 @@ Object.assign(RimTownApp.prototype, {
             : `你在寫小鎮遊戲的台詞。村民「${name}」（${job}；性格：${traits}；心情 ${Math.round(npc.mood || 50)}/100）要拜託玩家一段三天的小事「${script.title}」。第一步：${script.steps[0]} 第二步：${script.steps[1]} 第三步：${script.steps[2]} 結局：${script.finale}\n請用這個人的口吻，為三步各寫一句他親口說的話（每句 12–30 字，不要重複任務說明，不要出現玩家名字），再寫一句結局時他說的話。只輸出 JSON：{"q":["第一步","第二步","第三步","結局"]}`;
         const timeout = new Promise(r => setTimeout(() => r(null), 9000));
         let raw = null; try { raw = await Promise.race([llm.generate(prompt, 220, 0.8, true), timeout]); } catch (e) { raw = null; }
-        if (!raw || raw === '__ERROR__' || raw === '__RATE_LIMITED__') return;
+        if (!raw || raw === '__ERROR__' || raw === '__RATE_LIMITED__' || this.world !== w) return; // v6.10.1 等待期間換了鎮就作廢
         const m = String(raw).match(/\{[\s\S]*\}/); if (!m) return;
         let j = null; try { j = JSON.parse(m[0]); } catch (e) { return; }
         const q = Array.isArray(j?.q) ? j.q.map(x => String(x || '').replace(/^[「『"“]+|[」』"”]+$/g, '').trim().slice(0, 60)).filter(Boolean) : [];
@@ -435,8 +435,7 @@ Object.assign(RimTownApp.prototype, {
     // v6.7.0 早安卡:每個遊戲日第一次看到新的一天,把「昨日結算、今日委託、委託鏈進度、本季考驗、日報」合成一張留在角落(不自動消失,點 ✕ 或「看委託板」收起)
     _showMorningCard(rb, openCount) {
         const w = this.world; if (!w) return;
-        let host = document.getElementById('achv-toast-host');
-        if (!host) { this._showCornerNotice({ icon: '📋', title: t('今日委託'), name: '', desc: '' }); host = document.getElementById('achv-toast-host'); host?.querySelector('.rt-toast:not(.morning)')?.remove(); if (!host) return; }
+        const host = this._toastHost(); // v6.10.1 共用容器
         document.getElementById('morning-card')?.remove();
         const esc = (x) => this._escapeHtml(String(x));
         const rows = [];
@@ -451,8 +450,7 @@ Object.assign(RimTownApp.prototype, {
         el.addEventListener('click', (e) => { const b = e.target.closest('[data-mc]'); if (!b) return; if (b.dataset.mc === 'go') this._goTab('quest'); el.remove(); });
         host.appendChild(el);
         requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
-        this._morningCardDay = rb.dayKey;
-        setTimeout(() => { if (el.isConnected) { el.style.opacity = '0'; setTimeout(() => el.remove(), 350); } }, 45000);
+        setTimeout(() => { if (el.isConnected) { el.dataset.fading = '1'; el.style.opacity = '0'; setTimeout(() => el.remove(), 350); } }, 45000);
     },
     _renderRequestBoard() {
         const rb = this.world?.requests; if (!rb) return '';

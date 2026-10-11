@@ -2575,6 +2575,7 @@ class RequestBoard {
             if (ok) { this._complete(r, world); return { ok: true, msg: `${t('調解成功')}：${t(r.npcName)} ${t('與')} ${t(r.otherName)} ${t('握手言和')}` }; }
             const loser = Math.random() < 0.5 ? a : b; if (loser) { const rel = loser.relationships.getOrCreate('player', this._playerName(world)); rel.modifyAffinity?.(-3); }
             r.status = 'done'; r.outcome = 'partial'; this.stats.done++; world.growth?.addXp(5, 'request_partial', world);
+            if (r.chainKey) this._chainAdvance(r, world); // v6.10.1 半成功也算走完這一步,鏈不會卡住
             const half = { silver: Math.round(r.reward.silver / 2), aff: 0, rep: 1 }; this._reward(r, world, half);
             world.logMessage?.('quest', `🤝 ${t('調解沒成')}：${t(r.npcName)} ${t('與')} ${t(r.otherName)} ${t('只肯各退一步')}`);
             return { ok: true, msg: `${t('調解沒成')}（${Math.round(pSucc * 100)}%）：${t('兩人只肯各退一步')}` };
@@ -2611,7 +2612,7 @@ class RequestBoard {
         const npc = world.agents[r.npcId]; const pname = this._playerName(world);
         if (npc) { const rel = npc.relationships.getOrCreate('player', pname); rel.modifyAffinity?.(idx > 0 ? -1 : (world.growth?.has('grit') ? -2 : -3)); if (idx === 0) npc.memory?.add?.(world.tickCount, world.clock.timeStr, 'neglect', `${t('拜託')}${pname}${t('的事沒有下文：')}${this.describe(r)}`, 5, [pname]); }
         world.logMessage?.('quest', `⌛ ${t('委託過期')}：${this.describe(r)}`);
-        if (r.chainKey && this.chain && this.chain.key === r.chainKey && this.chain.npcId === r.npcId) this._chainBreak(world); // v6.5.0
+        if (r.chainKey && this.chain && this.chain.key === r.chainKey && (r.chainStep ?? this.chain.step) === this.chain.step) this._chainBreak(world); // v6.5.0;v6.10.1 心結鏈第三步的 npcId 是對方,改比 key＋step
     }
     // ===== v6.5.0 委託鏈 =====
     _maybeStartChain(r, world) {
@@ -2648,7 +2649,7 @@ class RequestBoard {
         if (!r) return;
         if (r.reward && !r.reward.pack) delete r.reward.pack;
         this.board.unshift({ id: 'rq' + (++this._seq) + '_' + today, status: 'open', createdAbsDay: today, expiresAbsDay: today + (r.days || 1), ...r });
-        used.add(r.npcId);
+        used.add(r.npcId); used.add(c.npcId); if (r.otherId) used.add(r.otherId); if (r.targetId) used.add(r.targetId); // v6.10.1 鏈裡牽涉到的人當天不再接別的委託
     }
     _chainAdvance(r, world) {
         const c = this.chain; if (!c || c.key !== r.chainKey) return;
@@ -2936,7 +2937,7 @@ class SeasonRecap {
     advice(r, w) {
         if (!r) return [];
         const tips = [];
-        const vs = Object.values(w?.agents || {}).filter(a => !a.isPlayer);
+        const vs = w ? this._npcs(w).filter(a => !a.isDead && !String(a.agentId).startsWith('visit_')) : []; // v6.10.1 不推薦死者與訪客
         const byJob = (jobs) => vs.find(a => jobs.includes(a.job?.key)) || vs[0];
         const chatGo = (key, npc) => npc ? { go: `chat:${key}:${npc.agentId}`, goLabel: this._fill(t('找 {name} 聊'), { name: t(npc.name) }) } : {};
         if (r.trial && r.trial.status === 'failed') {
@@ -2952,8 +2953,8 @@ class SeasonRecap {
         return tips.slice(0, 3);
     }
     toDict(w) {
-        const fmt = (r) => r ? { key: r.key, grade: r.grade, title: this.title(r), gradeText: this.gradeText(r.grade), headline: this.headline(r), lines: this.lines(r), advice: this.advice(r, w) } : null;
-        return { last: fmt(this.last), history: this.history.slice().reverse().map(fmt), pendingShow: this.pendingShow };
+        const fmt = (r, withAdvice) => r ? { key: r.key, grade: r.grade, title: this.title(r), gradeText: this.gradeText(r.grade), headline: this.headline(r), lines: this.lines(r), advice: withAdvice ? this.advice(r, w) : [] } : null;
+        return { last: fmt(this.last, true), history: this.history.slice().reverse().map(r => fmt(r, false)), pendingShow: this.pendingShow }; // v6.10.1 建議只算 last
     }
     serialize() { return { start: this.start, last: this.last, history: this.history, pendingShow: this.pendingShow }; }
     loadFrom(d) { if (!d) return; this.start = d.start || null; this.last = d.last || null; this.history = Array.isArray(d.history) ? d.history : []; this.pendingShow = !!d.pendingShow; }

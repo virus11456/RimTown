@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.10.0
+ * Version: 6.10.1
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.10.0');
+define('RIMTOWN_VERSION', '6.10.1');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.10.1',
+            'date'    => '2026-10-11',
+            'changes' => array(
+                '🛠️ 程式審查修正：故事鏈最後一步到期時正確中斷、調解「各退一步」的部分成功也能推進故事鏈、故事鏈不再重複找同一位村民',
+                '🛠️ 季末回顧的建議只在最新一季顯示，且不再點名已離世或路過的旅人；回到提示的分頁前會先刷新畫面資料',
+                '🛠️ 通知區統一：成就通知與角落提示共用同一個容器，早安卡不會被成就通知擠掉；AI 日報只在早安卡還顯示時併入，淡出中改用一般提示',
+            ),
+            'changes_en' => array(
+                '🛠️ Code-review fixes: a story chain now breaks correctly when its final step expires, a partial "meet halfway" mediation still advances the chain, and chains no longer pick the same villager twice',
+                '🛠️ Season recap advice shows only for the latest season and no longer names deceased or passing travellers; jumping to a suggested tab refreshes the view first',
+                '🛠️ Unified notification area: achievement toasts and corner notices share one host so the morning card is never evicted; the AI newspaper folds into the morning card only while it is still visible, otherwise it falls back to a toast',
+            ),
+        ),
         array(
             'version' => '6.10.0',
             'date'    => '2026-10-10',
