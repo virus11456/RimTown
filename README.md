@@ -230,7 +230,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.9.0.zip` from Releases
+1. Download `rimtown-v6.10.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -273,6 +273,9 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.10.0 (2026-10-10)
+- 🏠 首頁特色介紹改寫：新增「每天有事做」（早安卡、三天小故事、押商隊、親手撐考驗、季末回顧與建議），「真的在聊天」改寫成「用你的話說、AI 判定」，任務卡改為五章主線與十種天賦
 
 ### v6.9.0 (2026-10-10)
 - 🧭 旅人天賦加兩種（共十種）：「說書」——村民更常找你走小故事（三成→五成），走完的獎勵 +25%；「知心」——「用你的話說」的 AI 判定每級 ±12%、每天多 10 次，魅力 +1
