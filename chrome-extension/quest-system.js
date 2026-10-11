@@ -2697,7 +2697,7 @@ const TRIAL_TYPES = {
     pricewar: { icon: '📉', title: '商會壓價', perk: 'guildSeal', perkName: '商會印信', perkDesc: '押商隊利潤 +10%', weights: { market: 3, harbor: 3, forest: 1, frontier: 1, mountain: 1 } },
 };
 class SeasonTrials {
-    constructor() { this.current = null; this.failStreak = 0; this.history = []; this.lastType = null; }
+    constructor() { this.current = null; this.failStreak = 0; this.passStreak = 0; this.history = []; this.lastType = null; } // v6.13.0 passStreak:衰敗後連續撐過兩季就復興
     _npcs(w) { return Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_')); }
     _seasonKey(w) { return `${w.clock.year}-${w.clock.season}`; }
     _flags(w) { return w.harborFlags || (w.harborFlags = {}); }
@@ -2761,7 +2761,7 @@ class SeasonTrials {
         world.growth?.addXp(passed ? 40 : 10, 'trial', world); // v5.94.0 經驗
         const f = this._flags(world);
         if (passed) {
-            this.failStreak = 0; f[d.perk] = true;
+            this.failStreak = 0; this.passStreak = (this.passStreak || 0) + 1; f[d.perk] = true;
             if (c.type === 'plague') Object.values(world.agents).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) + 10; });
             Object.values(world.agents).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) + 5; });
             if (world.questSystem) world.questSystem.reputation = (world.questSystem.reputation || 0) + 10;
@@ -2769,8 +2769,9 @@ class SeasonTrials {
             const text = `${t('撐過了')}「${t(d.title)}」${t('的考驗！全鎮得到')}「${t(d.perkName)}」：${t(d.perkDesc)}`;
             world.logMessage?.('event', `🏅 ${text}`); world.dailyNews?.collectEvent?.('event', text, 10);
             world.onTrialEvent?.('passed', `🏅 ${t('考驗通過')}：${t(d.title)}`, `${t(d.perkName)} — ${t(d.perkDesc)}`);
+            if (world.multiEnding?.endingTriggered === 'decline' && this.passStreak >= 2) world.multiEnding.revive?.(world); // v6.13.0 復興
         } else {
-            this.failStreak++;
+            this.failStreak++; this.passStreak = 0;
             const leavers = this._npcs(world).filter(a => a.job?.key !== 'mayor' && !(a.relationships?.relationships?.player?.status === 'married')).sort((a, b) => (a.mood || 50) - (b.mood || 50)).slice(0, Math.min(Math.max(1, Math.round(this._npcs(world).length * 0.12)), Math.max(1, 2 + (this.failStreak >= 2 ? 1 : 0) - (world.growth?.has('grit') ? 1 : 0)))); // v5.94.0 天賦:硬頸;v6.2.0 小鎮最多走 12%
             const names = leavers.map(a => a.name);
             leavers.forEach(a => world.leaveTown?.(a.agentId, t('鎮上的日子過不下去')));
@@ -2789,14 +2790,14 @@ class SeasonTrials {
         const f = this._flags(world);
         return {
             current: c ? { ...c, icon: d.icon, title: t(d.title), goal: this.goalText(c.type, c.target), value: this.value(c.type, world), unit: this.unit(c.type), pct: Math.min(100, Math.round(this.value(c.type, world) / Math.max(1, c.target) * 100)), daysLeft: Math.max(0, (c.dueDay || 15) - world.clock.day), perkName: t(d.perkName), perkDesc: t(d.perkDesc) } : null,
-            failStreak: this.failStreak,
+            failStreak: this.failStreak, passStreak: this.passStreak || 0, declined: world?.multiEnding?.endingTriggered === 'decline', revivals: world?.multiEnding?.revivals || 0, // v6.13.0
             perks: Object.values(TRIAL_TYPES).filter(x => f[x.perk]).map(x => ({ name: t(x.perkName), desc: t(x.perkDesc) })),
             history: this.history.slice(-4).reverse().map(h => ({ ...h, title: t(TRIAL_TYPES[h.type]?.title || h.type), icon: TRIAL_TYPES[h.type]?.icon || '⚖️' })),
             nextAnnounceDay: c ? null : 5,
         };
     }
-    serialize() { return { current: this.current, failStreak: this.failStreak, history: this.history, lastType: this.lastType, lastSeasonKey: this.lastSeasonKey || null, }; }
-    loadFrom(d) { if (!d) return; this.current = d.current || null; this.failStreak = d.failStreak || 0; this.history = Array.isArray(d.history) ? d.history : []; this.lastType = d.lastType || null; this.lastSeasonKey = d.lastSeasonKey || null; }
+    serialize() { return { current: this.current, failStreak: this.failStreak, passStreak: this.passStreak || 0, history: this.history, lastType: this.lastType, lastSeasonKey: this.lastSeasonKey || null, }; }
+    loadFrom(d) { if (!d) return; this.current = d.current || null; this.failStreak = d.failStreak || 0; this.passStreak = d.passStreak || 0; this.history = Array.isArray(d.history) ? d.history : []; this.lastType = d.lastType || null; this.lastSeasonKey = d.lastSeasonKey || null; }
 }
 
 
@@ -2880,7 +2881,7 @@ class SeasonRecap {
             silver: w.stockpile?.get?.('silver') || 0, pop: this._npcs(w).length, level: w.growth?.level || 1, xpTotal: w.growth?.total || 0,
             chainsDone: w.requests?.stats?.chainsDone || 0, reqDone: w.requests?.stats?.done || 0, reqFailed: w.requests?.stats?.failed || 0, bestStreak: w.requests?.stats?.bestStreak || 0,
             carRuns: w.playerCaravan?.totals?.runs || 0, carSilver: w.playerCaravan?.totals?.silver || 0, carRaids: w.playerCaravan?.totals?.raids || 0,
-            rep: w.questSystem?.reputation || 0, prosperity: w.prosperity?.prosperity || 0,
+            rep: w.questSystem?.reputation || 0, prosperity: w.prosperity?.prosperity || 0, revivals: w.multiEnding?.revivals || 0, // v6.13.0
             questsDone: Object.values(w.questSystem?.quests || {}).filter(q => q.status === 'completed').length, aff,
         };
     }
@@ -2903,7 +2904,7 @@ class SeasonRecap {
             carRuns: now.carRuns - s.carRuns, carSilver: now.carSilver - s.carSilver, carRaids: now.carRaids - s.carRaids,
             xp: now.xpTotal - s.xpTotal, levelFrom: s.level, levelTo: now.level,
             silverFrom: Math.round(s.silver), silverTo: Math.round(now.silver), popFrom: s.pop, popTo: now.pop, rep: now.rep - s.rep, prosperity: now.prosperity - s.prosperity, questsDone: now.questsDone - s.questsDone,
-            gains, left, joined, grade: '',
+            gains, left, joined, revived: (now.revivals || 0) > (s.revivals || 0), grade: '', // v6.13.0 這季復興了
         };
         r.grade = this._grade(r);
         this.last = r; this.history = this.history.concat([r]).slice(-4); this.start = now; this.pendingShow = true;
@@ -2914,6 +2915,7 @@ class SeasonRecap {
     _grade(r) {
         let s = 0;
         if (r.trial?.status === 'passed') s += 2; else if (r.trial?.status === 'failed') s -= 2;
+        if (r.revived) s += 2; // v6.13.0
         s += Math.min(2, Math.floor(r.reqDone / 10)); if (r.reqFailed > r.reqDone) s -= 1;
         if (r.silverTo > r.silverFrom) s += 1; if (r.popTo < r.popFrom) s -= 1; if (r.carSilver >= 100) s += 1; if (r.questsDone > 0) s += 1;
         return s >= 5 ? 'S' : s >= 3 ? 'A' : s >= 0 ? 'B' : 'C';
@@ -2937,6 +2939,7 @@ class SeasonRecap {
         out.push({ icon: '🧭', text: this._fill(t('經驗 +{x}，Lv.{a} → Lv.{b}'), { x: r.xp, a: r.levelFrom, b: r.levelTo }) });
         { const a = Math.round(r.silverFrom), b = Math.round(r.silverTo); out.push({ icon: '💰', text: this._fill(t('銀幣 {a} → {b}'), { a, b }) + `（${b - a >= 0 ? '+' : ''}${b - a}）` }); } // v6.11.0 取整,不再出現 895.5999999
         out.push({ icon: '👥', text: this._fill(t('人口 {a} → {b}'), { a: r.popFrom, b: r.popTo }) + ` · ${this._fill(t('聲望 {d}'), { d: (r.rep >= 0 ? '+' : '') + r.rep })} · ${this._fill(t('繁榮 {d}'), { d: (r.prosperity >= 0 ? '+' : '') + r.prosperity })}` });
+        if (r.revived) out.push({ icon: '🌅', text: t('小鎮復興了：連續撐過兩季考驗，搬走的人開始回望這裡') }); // v6.13.0
         if (r.chainsDone) out.push({ icon: '📖', text: this._fill(t('走完 {n} 段村民的小故事'), { n: r.chainsDone }) });
         if (r.questsDone) out.push({ icon: '⚔️', text: this._fill(t('任務完成 {n} 件'), { n: r.questsDone }) });
         if (r.gains?.length) out.push({ icon: '💞', text: `${t('好感升最多')}：${r.gains.map(g => `${t(g.name)} +${g.delta}`).join('、')}` });

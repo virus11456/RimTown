@@ -311,6 +311,21 @@ class MultiEndingSystem {
         return this.endingData;
     }
 
+    // v6.13.0 復興:衰敗後連續撐過兩季考驗,解除衰敗(之後主線結局可再觸發),全鎮士氣與繁榮回升
+    revive(world) {
+        if (this.endingTriggered !== 'decline') return null;
+        this.endingTriggered = null; this.endingData = null;
+        this.revivals = (this.revivals || 0) + 1;
+        this.lastRevival = { year: world.clock.year, season: world.clock.season, day: world.clock.day };
+        Object.values(world.agents || {}).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) + 12; });
+        if (world.prosperity) world.prosperity.questBonus = (world.prosperity.questBonus || 0) + 15;
+        if (world.questSystem) world.questSystem.reputation = (world.questSystem.reputation || 0) + 15;
+        const text = t('小鎮復興了！連續兩季撐過考驗，街上又熱鬧起來：全鎮士氣 +12、繁榮 +15、聲望 +15');
+        world.logMessage?.('system', `🌅 ${text}`); world.dailyNews?.collectEvent?.('event', text, 10);
+        world.onTrialEvent?.('revived', `🌅 ${t('小鎮復興')}`, text);
+        return this.lastRevival;
+    }
+
     // ============================================================
     // 收集結局統計
     // ============================================================
@@ -706,6 +721,7 @@ class MultiEndingSystem {
         return {
             endingTriggered: this.endingTriggered,
             hasEnding: !!this.endingTriggered,
+            revivals: this.revivals || 0,
         };
     }
 
@@ -713,6 +729,7 @@ class MultiEndingSystem {
         return {
             endingTriggered: this.endingTriggered,
             endingData: this.endingData ? JSON.parse(JSON.stringify(this.endingData)) : null,
+            revivals: this.revivals || 0, lastRevival: this.lastRevival || null,
         };
     }
 
@@ -720,5 +737,6 @@ class MultiEndingSystem {
         if (!data) return;
         this.endingTriggered = data.endingTriggered || null;
         this.endingData = data.endingData || null;
+        this.revivals = data.revivals || 0; this.lastRevival = data.lastRevival || null;
     }
 }

@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.12.0
+ * Version: 6.13.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.12.0');
+define('RIMTOWN_VERSION', '6.13.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.13.0',
+            'date'    => '2026-10-11',
+            'changes' => array(
+                '🌅 小鎮復興：衰敗結局後連續撐過兩季考驗就復興——解除衰敗（之後主線結局仍可達成）、全鎮士氣 +12、繁榮 +15、聲望 +15，中央卡與日報報導；故事分頁考驗區塊顯示「衰敗中 n/2」、早安卡每天提醒、季末回顧記一筆並加評等',
+            ),
+            'changes_en' => array(
+                '🌅 Town revival: after the decline ending, surviving two trials in a row revives the town. The decline is lifted (story endings become reachable again), the whole town gets morale +12, prosperity +15 and reputation +15, with a centre card and a newspaper story; the Story tab\'s trial block shows "in decline n/2", the morning card reminds you daily, and the season recap records it with a grade bonus',
+            ),
+        ),
         array(
             'version' => '6.12.0',
             'date'    => '2026-10-11',

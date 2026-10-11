@@ -313,7 +313,7 @@ Object.assign(RimTownApp.prototype, {
         w.onSeasonRecap = () => { try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} this._showSeasonRecap(); }; // v5.98.0 季末回顧
         w.onChainEvent = (kind, npcName, title, text) => { if (kind === 'start') { try { this._aiChainQuotes(w); } catch (e) {} } this._showCornerNotice({ icon: kind === 'done' ? '🏅' : kind === 'broken' ? '💔' : '📖', title: kind === 'done' ? t('委託鏈完成') : kind === 'broken' ? t('委託鏈中斷') : t('有人想拜託你'), name: `${t(npcName)} · ${title}`, desc: text || (kind === 'start' ? t('明天的委託板會多一件他的事，連做三天') : '') }); }; // v6.5.0
         w.onGrowthEvent = (kind, v) => { if (kind === 'level') this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${v} ${t('級')}`, name: '', desc: t('到「故事」分頁選一個天賦') }); else if (kind === 'attr') { const AT = { charm: t('魅力值'), vigor: t('體力值'), wit: t('機智值'), grit: t('毅力值') }; this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${w.growth?.level || ''} ${t('級')}`, name: `${AT[v] || v} +1`, desc: t('天賦都學完了，之後每升一級隨機一項屬性 +1') }); } try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.94.0
-        w.onTrialEvent = (kind, title, desc) => { this._showCornerNotice({ icon: kind === 'passed' ? '🏅' : kind === 'failed' ? '💔' : '⚖️', title, name: '', desc }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.93.0
+        w.onTrialEvent = (kind, title, desc) => { if (kind === 'revived') { this._endingShown = false; try { this._showCenterNotification({ icon: '🌅', title, name: t(w.townName || '邊境鎮'), desc, autoDismiss: 0 }); } catch (e) { this._showCornerNotice({ icon: '🌅', title, name: '', desc }); } } else this._showCornerNotice({ icon: kind === 'passed' ? '🏅' : kind === 'failed' ? '💔' : '⚖️', title, name: '', desc }); /* v6.13.0 復興用中央卡,並讓之後的結局還能彈 */ try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.93.0
         w.onPlayerCaravanReturn = (result, line) => { this._showCornerNotice({ icon: result.raided ? '🏴' : '💰', title: t('商隊回報'), name: t(result.toTownName), desc: line }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.92.0
         // v5.80.0 跨鎮商隊:角落通知 + 地圖上馬車進城動畫
         w.onCaravan = (info) => {
@@ -459,6 +459,7 @@ Object.assign(RimTownApp.prototype, {
         const d = rb.toDict(w); if (d.chain) rows.push(`📖 ${esc(d.chain.title)} ${d.chain.step + 1}/${d.chain.total} · ${esc(d.chain.npcName)}`);
         const tr = w.trials?.current; if (tr && tr.status === 'active' && w.trials.value) { const v = w.trials.value(tr.type, w); const d2 = (typeof TRIAL_TYPES !== 'undefined' && TRIAL_TYPES[tr.type]) || {}; rows.push(`⚖️ ${esc(t(d2.title || tr.type))} ${v}/${tr.target} · ${t('剩')} ${Math.max(0, (tr.dueDay || 15) - w.clock.day)} ${t('天')}`); }
         else if (!tr && w.clock.day < 5) rows.push(`⚖️ ${t('第 5 天公布本季考驗')}`);
+        if (w.multiEnding?.endingTriggered === 'decline') rows.push(`🍂 ${t('衰敗中')} · ${t('連續撐過兩季考驗就能復興')}（${w.trials?.passStreak || 0}/2）`); // v6.13.0
         const pl = w.growth?.pendingLevels?.() || 0; if (pl > 0 && w.growth?.pending?.length) rows.push(`⬆️ ${t('升級了！選一個天賦')}${pl > 1 ? `（${t('還有 {n} 次').replace('{n}', pl)}）` : ''}`); // v6.11.0 天賦還沒選就每天提醒
         const el = document.createElement('div'); el.id = 'morning-card'; el.className = 'rt-toast morning';
         el.style.cssText = 'background:rgba(22,22,32,0.96);border:1px solid var(--accent,#e94560);border-radius:12px;padding:10px 12px;max-width:min(360px,calc(100vw - 28px));pointer-events:auto;box-shadow:0 6px 24px rgba(0,0,0,0.45);opacity:0;transform:translateY(8px);transition:all .3s';
@@ -514,6 +515,8 @@ Object.assign(RimTownApp.prototype, {
         const tr = this.state?.trials; if (!tr) return '';
         const esc = (x) => this._escapeHtml(String(x));
         let html = `<div class="econ-section"><h3>⚖️ ${t('本季考驗')}${tr.failStreak ? ` <span style="font-size:0.7rem;color:var(--negative);font-weight:400">${t('已連續失敗')} ${tr.failStreak} ${t('季')}</span>` : ''}</h3>`;
+        if (tr.declined) html += `<div style="font-size:0.78rem;color:#f0b35a;margin-bottom:6px">🍂 <b>${t('衰敗中')}</b>：${t('連續撐過兩季考驗就能復興')}（${tr.passStreak || 0}/2）</div>`; // v6.13.0
+        else if (tr.revivals) html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:4px">🌅 ${t('復興過 {n} 次').replace('{n}', tr.revivals)}</div>`;
         if (tr.current) {
             const c = tr.current; const col = c.pct >= 100 ? 'var(--positive, #4ade80)' : c.pct >= 60 ? 'var(--accent)' : 'var(--negative, #f87171)';
             html += `<div style="font-size:0.82rem">${c.icon} <b>${esc(c.title)}</b> · ${t('剩')} ${c.daysLeft} ${t('天')}</div>
