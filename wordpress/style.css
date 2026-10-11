@@ -1213,6 +1213,7 @@ body.rimtown-page .wp-block-post-title {
     scrollbar-width: none;
 }
 .chat-intent-bar::-webkit-scrollbar { display: none; }
+.chat-intent-btn.armed { outline: 2px solid var(--accent); box-shadow: 0 0 8px rgba(0,229,255,0.35); } /* v6.3.0 用你的話說 */
 .chat-intent-btn {
     flex: 0 0 auto;
     padding: 6px 11px;
