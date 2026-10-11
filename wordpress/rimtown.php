@@ -1324,9 +1324,11 @@ function rimtown_get_changelog() {
             'date'    => '2026-10-11',
             'changes' => array(
                 '🌅 小鎮復興：衰敗結局後連續撐過兩季考驗就復興——解除衰敗（之後主線結局仍可達成）、全鎮士氣 +12、繁榮 +15、聲望 +15，中央卡與日報報導；故事分頁考驗區塊顯示「衰敗中 n/2」、早安卡每天提醒、季末回顧記一筆並加評等',
+                '📱 手機長文角落通知（章節故事等）先夾成兩行，點一下展開、再點收掉，不再整段蓋住委託列',
             ),
             'changes_en' => array(
                 '🌅 Town revival: after the decline ending, surviving two trials in a row revives the town. The decline is lifted (story endings become reachable again), the whole town gets morale +12, prosperity +15 and reputation +15, with a centre card and a newspaper story; the Story tab\'s trial block shows "in decline n/2", the morning card reminds you daily, and the season recap records it with a grade bonus',
+                '📱 Long corner notices on mobile (chapter stories etc.) are clamped to two lines; tap to expand, tap again to dismiss, so they no longer cover the request list',
             ),
         ),
         array(

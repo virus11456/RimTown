@@ -1147,8 +1147,11 @@ body.rimtown-page .wp-block-post-title {
 }
 .firstday-guide .fd-pip.active { opacity: 1; border-color: var(--accent); background: rgba(0,229,255,0.12); }
 .firstday-guide .fd-pip.done { opacity: 1; color: #5cc98f; background: rgba(92,201,143,0.12); }
+.rt-toast-desc { display: block; } /* v6.13.0 通知說明文字(手機版在下方媒體查詢夾兩行) */
 @media (max-width: 768px) {
     .firstday-guide { bottom: 74px; } /* 避開開羅底部列 */
+    .rt-toast .rt-toast-desc { display: -webkit-box !important; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; } /* v6.13.0 手機長文通知先夾兩行,點一下展開 */
+    .rt-toast.expanded .rt-toast-desc { -webkit-line-clamp: unset; display: block !important; }
     /* v5.99.0 手機版故事/小鎮浮動卡或聊天抽屜打開時,第一天引導卡讓位(不再蓋住卡片底部) */
     .kairo-mode:has(#kairo-card:not(.hidden)) .firstday-guide, .kairo-mode:has(.rt-sidebar.chat-open) .firstday-guide { display: none !important; }
 }
