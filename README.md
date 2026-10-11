@@ -245,6 +245,8 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## 發版前必跑
 
+> **部署節奏（2026-10-11 起）**：Vercel Hobby 每天 100 次部署整個帳號共用，所以開發分支 `claude/llm-dialogue-memory-port-u8lf0x` 在 `vercel.json` 的 `git.deploymentEnabled` 設為 false（推送不產生預覽部署）；合併到 `claude/ai-town-simulation-EOWZ8`（＝正式部署）固定每天兩次：台北時間早上 08:52 與晚上 20:52，期間的版本先累積在分支；使用者明說「馬上部署」才例外。
+
 ```
 node scripts/method-audit.js   # 前端 this._xxx() 呼叫都有定義(v5.66.6 起;v6.0.0 起連同 app-*.js 分檔一起掃)
 # 鏡像:chrome-extension/{app.js,app-*.js,i18n.js,sw.js,tilemap.js,simulation.js,sim-*.js,quest-system.js,prosperity.js,custom-npc.js,index.html,changelog.js,daily-news.js,style.css} → wordpress/;wordpress/rimtown.php → chrome-extension/
