@@ -2933,16 +2933,19 @@ class SeasonRecap {
     advice(r, w) {
         if (!r) return [];
         const tips = [];
+        const vs = Object.values(w?.agents || {}).filter(a => !a.isPlayer);
+        const byJob = (jobs) => vs.find(a => jobs.includes(a.job?.key)) || vs[0];
+        const chatGo = (key, npc) => npc ? { go: `chat:${key}:${npc.agentId}`, goLabel: this._fill(t('找 {name} 聊'), { name: t(npc.name) }) } : {};
         if (r.trial && r.trial.status === 'failed') {
-            const by = { famine: t('糧荒靠親手帶進食物：每天跟一兩位務農或廚子「求助」，或到田裡收成、向商人買進'), plague: t('瘟疫找醫生、學者、牧師「求助」，藥品一份算三份；委託報酬的草藥也算'), bandits: t('匪患要蓋防禦：訓練場（木 20、石 10、工具 2）或瞭望塔，蓋到一半也按進度計'), pricewar: t('商會壓價靠自己賺：多押幾趟商隊、交付委託拿銀幣、把多的貨賣掉') };
-            if (by[r.trial.type]) tips.push({ icon: '⚖️', text: by[r.trial.type] });
-        } else if (!r.trial) tips.push({ icon: '⚖️', text: t('每季第 5 天公布考驗，前四天先囤好感和物資，公布後再對症下手') });
-        if (r.reqFailed > r.reqDone) tips.push({ icon: '📋', text: t('委託先挑一次對話就能完成的（陪伴、送禮），同一天第一件過期扣 3 好感、其餘每件扣 1') });
-        if (!r.carRuns) tips.push({ icon: '🐪', text: t('到馬車站押一趟商隊試試：30 份木材走大路，風險約一成、賣價多兩成') });
-        if (!(r.gains || []).length) tips.push({ icon: '💬', text: t('每天用「用你的話說」跟一位村民聊，說到他在乎的事成功率 +16%，好感跟著漲') });
-        if (r.popTo < r.popFrom) tips.push({ icon: '👥', text: t('人口在流失：撐過考驗，心情低的人多去「安慰」，有空房就留得住人') });
-        if (r.levelTo <= r.levelFrom && r.xp < 60) tips.push({ icon: '🧭', text: t('經驗來自委託、考驗、商隊和主線任務；推進一章主線的經驗最多') });
-        if (r.grade === 'S' || r.grade === 'A') tips.push({ icon: '🏅', text: t('這季打得不錯：下一季試著連續全清委託板，連清兩天每天會多一件') });
+            const by = { famine: { text: t('糧荒靠親手帶進食物：每天跟一兩位務農或廚子「求助」，或到田裡收成、向商人買進'), ...chatGo('help', byJob(['farmer', 'cook'])) }, plague: { text: t('瘟疫找醫生、學者、牧師「求助」，藥品一份算三份；委託報酬的草藥也算'), ...chatGo('help', byJob(['doctor', 'researcher', 'priest'])) }, bandits: { text: t('匪患要蓋防禦：訓練場（木 20、石 10、工具 2）或瞭望塔，蓋到一半也按進度計'), go: 'tab:economy', goLabel: t('去蓋防禦') }, pricewar: { text: t('商會壓價靠自己賺：多押幾趟商隊、交付委託拿銀幣、把多的貨賣掉'), go: 'caravan', goLabel: t('去馬車站') } };
+            if (by[r.trial.type]) tips.push({ icon: '⚖️', ...by[r.trial.type] });
+        } else if (!r.trial) tips.push({ icon: '⚖️', text: t('每季第 5 天公布考驗，前四天先囤好感和物資，公布後再對症下手'), go: 'tab:quest', goLabel: t('看委託板') });
+        if (r.reqFailed > r.reqDone) tips.push({ icon: '📋', text: t('委託先挑一次對話就能完成的（陪伴、送禮），同一天第一件過期扣 3 好感、其餘每件扣 1'), go: 'tab:quest', goLabel: t('看委託板') });
+        if (!r.carRuns) tips.push({ icon: '🐪', text: t('到馬車站押一趟商隊試試：30 份木材走大路，風險約一成、賣價多兩成'), go: 'caravan', goLabel: t('去馬車站') });
+        if (!(r.gains || []).length) { const npc = vs.slice().sort((a, b) => ((b.relationships?.relationships?.player?.affinity || 0) - (a.relationships?.relationships?.player?.affinity || 0)))[0]; tips.push({ icon: '💬', text: t('每天用「用你的話說」跟一位村民聊，說到他在乎的事成功率 +16%，好感跟著漲'), ...chatGo('persuade', npc) }); }
+        if (r.popTo < r.popFrom) { const low = vs.slice().sort((a, b) => (a.mood || 50) - (b.mood || 50))[0]; tips.push({ icon: '👥', text: t('人口在流失：撐過考驗，心情低的人多去「安慰」，有空房就留得住人'), ...chatGo('comfort', low) }); }
+        if (r.levelTo <= r.levelFrom && r.xp < 60) tips.push({ icon: '🧭', text: t('經驗來自委託、考驗、商隊和主線任務；推進一章主線的經驗最多'), go: 'tab:quest', goLabel: t('看任務') });
+        if (r.grade === 'S' || r.grade === 'A') tips.push({ icon: '🏅', text: t('這季打得不錯：下一季試著連續全清委託板，連清兩天每天會多一件'), go: 'tab:quest', goLabel: t('看委託板') });
         return tips.slice(0, 3);
     }
     toDict(w) {

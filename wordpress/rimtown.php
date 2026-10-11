@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.5.0
+ * Version: 6.6.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.5.0');
+define('RIMTOWN_VERSION', '6.6.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.6.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '🧭 季末回顧的建議可以直接點了：每條「下一季怎麼打」旁多一顆按鈕——「去馬車站」直接開押商隊、「去蓋防禦」跳到經濟分頁、「看委託板」跳到故事分頁、「找某某聊」開那位村民的聊天（糧荒找務農、瘟疫找醫生、人口流失找心情最差的人、沒人好感上升找最熟的人），有 AI 的站會順便進入「用你的話說」；故事分頁考驗區塊的第一條建議也有同樣的按鈕',
+            ),
+            'changes_en' => array(
+                '🧭 Season-recap advice is now clickable: each "How to play next season" line gets a button — "Coach station" opens the caravan dialog, "Build defences" jumps to the Economy tab, "Request board" to the Story tab, and "Talk to X" opens that villager\'s chat (a farmer for famine, the doctor for plague, the lowest-mood villager for population loss, your closest friend when nobody\'s affinity rose), switching straight into "in your own words" where AI is available; the first tip in the Story tab\'s trial section has the same button',
+            ),
+        ),
         array(
             'version' => '6.5.0',
             'date'    => '2026-10-10',

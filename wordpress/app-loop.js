@@ -14,12 +14,30 @@ Object.assign(RimTownApp.prototype, {
         let inner = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div style="font-weight:bold;font-size:1rem">📜 ${t('季末回顧')}</div><div style="font-size:1.4rem;font-weight:bold;color:${gradeCol}">${esc(r.grade)}</div></div>`;
         inner += `<div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:10px">${esc(r.title)} · ${esc(r.gradeText)}</div>`;
         inner += r.lines.map(l => `<div style="font-size:0.82rem;margin:5px 0;line-height:1.4">${l.icon} ${esc(l.text)}</div>`).join('');
-        if (r.advice && r.advice.length) inner += `<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px"><div style="font-size:0.8rem;font-weight:bold;margin-bottom:4px">🧭 ${t('下一季怎麼打')}</div>${r.advice.map(a => `<div style="font-size:0.78rem;margin:4px 0;line-height:1.4;color:var(--text-secondary)">${a.icon} ${esc(a.text)}</div>`).join('')}</div>`; // v6.4.0
+        if (r.advice && r.advice.length) inner += `<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px"><div style="font-size:0.8rem;font-weight:bold;margin-bottom:4px">🧭 ${t('下一季怎麼打')}</div>${r.advice.map(a => `<div style="display:flex;gap:8px;align-items:flex-start;margin:5px 0"><div style="flex:1;font-size:0.78rem;line-height:1.4;color:var(--text-secondary)">${a.icon} ${esc(a.text)}</div>${a.go ? `<button class="trade-btn" data-action="recap-go" data-val="${esc(a.go)}" style="flex:none;padding:4px 8px;font-size:0.72rem;white-space:nowrap">${esc(a.goLabel || t('去做'))}</button>` : ''}</div>`).join('')}</div>`; // v6.4.0 / v6.6.0 可點
         if (d.history.length > 1) inner += `<div style="font-size:0.7rem;color:var(--text-secondary);margin-top:10px;border-top:1px solid var(--border);padding-top:6px">${t('之前幾季')}：${d.history.slice(1).map(h => `${esc(h.title)} ${esc(h.grade)}`).join(' · ')}</div>`;
         inner += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:8px">${t('下一季：第 5 天公布新考驗，委託每天早上更新')}</div>`;
         inner += `<button class="trade-btn" data-action="recap-close" style="width:100%;padding:8px;margin-top:12px">${t('關閉')}</button>`;
         card.innerHTML = inner; ov.appendChild(card); document.body.appendChild(ov);
-        ov.addEventListener('click', (e) => { if (e.target === ov || e.target.closest('[data-action="recap-close"]')) ov.remove(); });
+        ov.addEventListener('click', (e) => { const go = e.target.closest('[data-action="recap-go"]'); if (go) { e.stopPropagation(); this._recapGo(go.dataset.val); return; } if (e.target === ov || e.target.closest('[data-action="recap-close"]')) ov.remove(); }); // 彈窗掛在 body 外,事件委派收不到,這裡自己接
+    },
+    // v6.6.0 回顧建議的「去做」:直接開押商隊 / 切分頁 / 找該村民聊(有 AI 時順便進入「用你的話說」)
+    _goTab(tab) {
+        if (this._isTabLocked?.(tab)) { this._lockedAlert?.(tab); return; }
+        if (this._kairoReady) { this._openKairoTab(tab); return; }
+        this.activeTab = tab; this._updateTabHighlight?.(tab);
+        const sidebar = document.getElementById('rimtown-sidebar'); if (sidebar && window.innerWidth <= 768) sidebar.classList.remove('mobile-collapsed');
+        try { this.renderSidebar(); } catch (e) {}
+    },
+    _recapGo(val) {
+        document.getElementById('season-recap')?.remove();
+        const [kind, b, c] = String(val || '').split(':');
+        if (kind === 'caravan') { this._showCaravanDialog(); return; }
+        if (kind === 'tab') { this._goTab(b); return; }
+        if (kind === 'chat' && c && this.world?.agents?.[c]) {
+            this.startChatWith(c);
+            if (b && this._judgeAvailable?.() && this._judgeGoal?.(b)) setTimeout(() => { try { if (this.chatTarget === c && !this._intentArmed) this._sendIntent(b); } catch (e) {} }, 80);
+        }
     },
     _showCaravanDialog() {
         const w = this.world; if (!w) return;
@@ -448,7 +466,7 @@ Object.assign(RimTownApp.prototype, {
         }
         if (tr.perks.length) html += `<div style="font-size:0.72rem;margin-top:6px">🏅 ${t('已得到')}：${tr.perks.map(p => `<b>${esc(p.name)}</b>`).join('、')}</div>`;
         if (tr.history.length) html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px">${tr.history.map(h => `${h.status === 'passed' ? '✅' : '❌'} ${esc(h.title)} ${h.value}/${h.target}`).join(' · ')}</div>`;
-        if (this.state?.recap?.last) { const rl = this.state.recap.last; html += `<button class="trade-btn" data-action="recap-open" style="width:100%;padding:6px;margin-top:8px;font-size:0.78rem">📜 ${t('上一季回顧')}：${esc(rl.title)} · ${t('評等')} ${esc(rl.grade)}</button>`; if (rl.advice?.[0]) html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px">🧭 ${esc(rl.advice[0].text)}</div>`; } // v5.98.0 / v6.4.0 第一條建議
+        if (this.state?.recap?.last) { const rl = this.state.recap.last; html += `<button class="trade-btn" data-action="recap-open" style="width:100%;padding:6px;margin-top:8px;font-size:0.78rem">📜 ${t('上一季回顧')}：${esc(rl.title)} · ${t('評等')} ${esc(rl.grade)}</button>`; if (rl.advice?.[0]) { const a0 = rl.advice[0]; html += `<div style="display:flex;gap:6px;align-items:center;margin-top:4px"><div style="flex:1;font-size:0.72rem;color:var(--text-secondary)">🧭 ${esc(a0.text)}</div>${a0.go ? `<button class="trade-btn" data-action="recap-go" data-val="${esc(a0.go)}" style="flex:none;padding:3px 8px;font-size:0.7rem;white-space:nowrap">${esc(a0.goLabel || t('去做'))}</button>` : ''}</div>`; } } // v5.98.0 / v6.4.0 第一條建議
         return html + '</div>';
     },
     _requestAct(id) {
