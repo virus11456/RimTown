@@ -1329,6 +1329,8 @@ function rimtown_get_changelog() {
                 '☀️ 早安卡：升級還沒選天賦會每天提醒；手機版早安卡 22 秒收起（桌機 45 秒）；第 4 天起不再掛著「第一天」引導',
                 '📱 手機「目前目標」橫幅修正：聊天時不再被擠成一條窄長條',
                 '🧪 走流程截圖腳本收進 scripts/walkthrough.js（選跑）',
+                '🔢 倉庫數字取整：馬車站貨物選單與送貨委託不再出現 161.50000000000006 這種小數',
+                '🌐 英文版不再把每座鎮都叫 Frontier Town：新居民加入、人生總結、個人結局副標、本週頭條改用實際鎮名或中性說法',
             ),
             'changes_en' => array(
                 '🧪 First-week walkthrough QA (a full season on desktop and mobile) found and fixed: desktop corner notices and the morning card now sit at the map\'s bottom-right, left of the sidebar, so they never cover the chat input, request buttons or perk choices',
@@ -1337,6 +1339,8 @@ function rimtown_get_changelog() {
                 '☀️ Morning card reminds you of unpicked perks; it fades after 22 s on mobile (45 s on desktop); the first-day guide no longer lingers past day 3',
                 '📱 Mobile goal banner fix: no longer squeezed into a narrow column while chatting',
                 '🧪 Walkthrough screenshot script added as scripts/walkthrough.js (optional)',
+                '🔢 Warehouse numbers are rounded: the coach station goods list and delivery requests no longer show 161.50000000000006',
+                '🌐 English no longer calls every town Frontier Town: new-resident log, life summary, personal-ending subtitle and the weekly headline use the real town name or a neutral phrase',
             ),
         ),
         array(

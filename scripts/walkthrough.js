@@ -1,12 +1,12 @@
 // v6.11.0 新手走一遍:用 app 自己的遊戲迴圈真跑一季,在關鍵時刻截圖(早安卡/委託板/意圖判定/馬車站/考驗/選天賦/委託鏈/季末回顧/事件卡)。
-// 用法:node scripts/walkthrough.js <zh|en> <desktop|mobile> <outdir>   需本機 http://127.0.0.1:8126 服務 wordpress/,且 NODE_PATH 指到有 playwright 的 node_modules。
+// 用法:node scripts/walkthrough.js <zh|en> <desktop|mobile> <outdir> [theme] [seasons]   需本機 http://127.0.0.1:8126 服務 wordpress/,且 NODE_PATH 指到有 playwright 的 node_modules。
 // 選跑、不進發版檢查;看截圖找版面與文案問題(v6.11.0 就是這樣抓到通知蓋側欄、回顧漏考驗、手機橫幅擠成一條)。
 // node walk_test.js <lang> <desktop|mobile> <outdir>
 const { chromium } = require('playwright');
 const fs = require('fs');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';
-const [lang = 'zh', vp = 'desktop', OUT = '/tmp/walk'] = process.argv.slice(2);
+const [lang = 'zh', vp = 'desktop', OUT = '/tmp/walk', THEME = '', SEASONS = '1'] = process.argv.slice(2); // 第 4 參數主題(harbor/mountain/forest/market),第 5 參數跑幾季
 fs.mkdirSync(OUT, { recursive: true });
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 (async () => {
@@ -39,11 +39,12 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   const pause = (v) => ev((v) => { window.rimtownApp.world.paused = v; }, v);
   const status = () => ev(() => { const app = window.rimtownApp; const w = app.world; const ov = document.getElementById('center-notification-overlay'); return { card: !!(ov && !ov.classList.contains('hidden')), cardTitle: (ov && !ov.classList.contains('hidden')) ? (ov.querySelector('.center-notif-title')?.textContent || '').slice(0, 30) : '', day: w.clock.day, season: w.clock.season, hour: w.clock.hour, pending: w.growth?.pending?.length || 0, trial: w.trials?.current?.type || null, chain: w.requests?.chain?.key || null, recap: !!document.getElementById('season-recap'), mc: !!document.getElementById('morning-card'), guide: !!document.querySelector('.firstday-guide'), ev: !!w.eventChoice?.pendingEvent, open: w.requests?.openCount?.() || 0, ap: w.requests?.ap?.left, lvl: w.growth?.level, silver: w.stockpile.get('silver') }; });
   // 起手：確認是全新邊境鎮，接上 AI
+  if (THEME) await ev((theme) => { const app = window.rimtownApp; const w = new World(); w.townTheme = theme; w.rosterMode = 'scripted'; w.reset(); app.world = w; app.state = w.getState(); app._generateTileMapLayout(); app._visitorMailboxTick(); app.startSimulation(); app.render(); }, THEME);
   const boot = await ev(() => { const app = window.rimtownApp; const w = app.world; if (!app.llmClient) app.llmClient = new LLMClient('server', 'server'); w.conversationEngine = app._makeConversationEngine(); app._updateLLMStatus?.(); return { theme: w.townTheme, name: w.townName, day: w.clock.day, pop: Object.values(w.agents).filter(a => !a.isPlayer).length, paused: w.paused, landing: !!document.querySelector('.landing:not(.hidden)') }; });
   console.log('boot', JSON.stringify(boot));
   await shot('00_start'); await sleep(2500); await shot('01_firstday');
   await ev(() => { const app = window.rimtownApp; app.simSpeed = 10; app.restartSimulation(); });
-  const done = new Set(); let cards = 0; let iters = 0; const season0 = (await status()).season; let lastDay = boot.day; let idle = 0; const t0 = Date.now();
+  const done = new Set(); let seasonsSeen = 0; let lastSeason = null; let cards = 0; let iters = 0; const season0 = (await status()).season; let lastDay = boot.day; let idle = 0; const t0 = Date.now();
   const playBot = () => ev(() => { // 像玩家一樣完成兩件委託（讓委託鏈有機會開）
     const app = window.rimtownApp; const w = app.world; const rb = w.requests; const P = w.agents.player; let n = 0;
     for (const rq of rb.board) { if (rq.status !== 'open' || n >= 2) continue; const npc = w.agents[rq.npcId]; if (!npc) continue; n++;
@@ -53,11 +54,12 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
       else if (rq.type === 'mediate') { rb.onChat(rq.npcId, w); rb.onChat(rq.otherId, w); P.currentLocation = npc.currentLocation; rb.act(rq.id, w); }
       const rel = npc.relationships.getOrCreate('player', 'P'); rel.affinity = Math.max(rel.affinity, 20);
     }
+    const tr = w.trials?.current; if (tr && tr.status === 'active' && tr.type === 'bandits') { for (const key of ['training_ground', 'watchtower']) { const tpl = BUILDING_TEMPLATES[key]; if (!tpl || w.buildings.projects.some(p => p.key === key) || w.buildings.completed.includes(key)) continue; if (Object.entries(tpl.costs).every(([r, k]) => (w.stockpile.get(r) || 0) >= k)) { try { w.buildings.startProject(key, w, { x: 10, y: 10 }); } catch (e) {} } } }
     w.growth.addXp(18, 'request', w); return n; });
   while (Date.now() - t0 < (+process.env.BUDGET || 240000)) {
     await sleep(250); const s = await status(); iters++;
     if (s.card) { cards++; if (cards <= 4) { await sleep(400); await shot(`13_card_${cards}`); console.log('card', cards, s.cardTitle); } await ev(() => { const ov = document.getElementById('center-notification-overlay'); const b = ov.querySelector('.decision-btn') || ov.querySelector('.center-notif-dismiss'); if (b) b.click(); else { ov.classList.add('hidden'); window.rimtownApp._notifCardOpen = false; window.rimtownApp.world.paused = false; } }); await sleep(300); continue; }
-    if (s.recap && !done.has('recap')) { done.add('recap'); await sleep(600); await shot('09_recap'); const go = await ev(() => { const b = document.querySelector('#season-recap [data-action="recap-go"]'); if (!b) return null; const v = b.dataset.val; b.click(); return v; }); console.log('recap-go', go); await sleep(900); await shot('10_recap_go'); await ev(() => { document.getElementById('season-recap')?.remove(); document.getElementById('caravan-dialog')?.remove(); }); }
+    if (s.recap && !done.has('recap' + s.season)) { done.add('recap' + s.season); const sp = s.season === season0 ? '' : 's2_'; await sleep(600); await shot(sp + '09_recap'); const go = await ev(() => { const b = document.querySelector('#season-recap [data-action="recap-go"]'); if (!b) return null; const v = b.dataset.val; b.click(); return v; }); console.log('recap-go', go); await sleep(900); await shot(sp + '10_recap_go'); await ev(() => { document.getElementById('season-recap')?.remove(); document.getElementById('caravan-dialog')?.remove(); }); }
     if (s.pending && !done.has('perk')) { done.add('perk'); await pause(true); await openQuest(); await sleep(500); await shot('08_perk_offer'); await ev(() => { const b = document.querySelector('[data-action="perk-pick"]'); if (b) b.click(); }); await sleep(500); await shot('08b_perk_picked'); await pause(false); }
     if (s.chain && !done.has('chain')) { done.add('chain'); await sleep(2500); await pause(true); await openQuest(); await sleep(500); await shot('11_chain_board'); await pause(false); }
     if (s.ev && !done.has('event')) { done.add('event'); await sleep(500); await shot('12_event_choice'); }
@@ -73,9 +75,12 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
       if (s.day === 3 && !done.has('caravan')) { done.add('caravan'); await pause(true); await ev(() => window.rimtownApp._showCaravanDialog()); await sleep(500); await shot('05_caravan');
         const r = await ev(() => { const d = document.getElementById('caravan-dialog'); const btn = d?.querySelector('.pc-go'); if (!btn) return 'no-go:' + (d?.textContent || '').slice(0, 60); const txt = btn?.textContent; btn?.click(); return txt; }); console.log('caravan launch btn', r, 'otherTowns', await ev(() => JSON.stringify((window.rimtownApp.world.otherTowns || []).map(x => x.name)) + ' list=' + JSON.stringify(window.rimtownApp._getTownList().map(x => x.name)))); await sleep(600); await shot('05b_caravan_after'); await ev(() => document.getElementById('caravan-dialog')?.remove()); await pause(false); }
       if (s.day === 9 && !done.has('towns9')) { done.add('towns9'); console.log('day9 otherTowns', await ev(() => JSON.stringify((window.rimtownApp.world.otherTowns || []).map(x => x.name)) + ' list=' + JSON.stringify(window.rimtownApp._getTownList().map(x => x.name)))); }
-      if (s.day === 5 && !done.has('trial')) { done.add('trial'); await sleep(1500); await shot('06_trial_notice'); await pause(true); await openQuest(); await sleep(500); await shot('07_trial_block'); await pause(false); }
+      if (s.day === 5 && !done.has('trial' + s.season)) { done.add('trial' + s.season); const sp = s.season === season0 ? '' : 's2_'; await sleep(1500); await shot(sp + '06_trial_notice'); await pause(true); await openQuest(); await sleep(500); await shot(sp + '07_trial_block'); await pause(false); }
       if (s.day >= 2) { const n = await playBot(); if (s.day === 2) console.log('bot did', n); }
-      if (s.season !== season0 && s.day >= 2) break; // 第二季第 2 天收工
+      if (s.day >= 3 && !done.has('caravan_go')) { const can = await ev(() => { const w = window.rimtownApp.world; return !!(w.otherTowns && w.otherTowns.length) && !w.playerCaravan?.active && ['food', 'wood', 'stone', 'metal', 'cloth', 'herbs', 'tools'].some(r => (w.stockpile.get(r) || 0) >= 10); });
+        if (can) { done.add('caravan_go'); await pause(true); await ev(() => window.rimtownApp._showCaravanDialog()); await sleep(500); await shot('05c_caravan_ready'); const r = await ev(() => { const d = document.getElementById('caravan-dialog'); const b = d?.querySelector('.pc-go'); const q = d?.querySelector('#pc-quote')?.textContent; b?.click(); return { quote: (q || '').slice(0, 80), active: !!window.rimtownApp.world.playerCaravan?.active }; }); console.log('caravan launched', JSON.stringify(r)); await sleep(500); await shot('05d_caravan_launched'); await ev(() => document.getElementById('caravan-dialog')?.remove()); await pause(false); } }
+      if (s.season !== lastSeason) { lastSeason = s.season; seasonsSeen++; }
+      if (seasonsSeen > +SEASONS && s.day >= 2) break; // 跑完指定季數,下一季第 2 天收工
     } else if (++idle > 120) { console.log('stalled at', JSON.stringify(s)); break; }
   }
   const fin = await status(); console.log('final', JSON.stringify(fin));

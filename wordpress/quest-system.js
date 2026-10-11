@@ -2488,7 +2488,7 @@ class RequestBoard {
         if (r.status === 'failed') return t('已過期');
         if (r.type === 'mediate') { const n = (r.talked || []).length; return n < 2 ? `${t('已聊過')} ${n}/2` : t('兩人都聊過了，去找其中一位按「調解」'); }
         if (r.type === 'fetch') return r.visited ? t('東西拿到了，回去交給他') : t('先到指定地點');
-        if (r.type === 'deliver') { const have = world?.stockpile?.get?.(r.res) || 0; return `${t('倉庫')} ${have}/${r.amount}`; }
+        if (r.type === 'deliver') { const have = Math.floor(world?.stockpile?.get?.(r.res) || 0); return `${t('倉庫')} ${have}/${r.amount}`; } // v6.11.0 取整(之前會出現 161.50000000000006)
         if (r.type === 'trial' && world?.trials) { const v = world.trials.value(r.trialType, world) - (r.baseValue || 0); return `${t('已推高')} ${Math.max(0, v)}/${r.delta}`; }
         if (r.type === 'caravan') return world?.playerCaravan?.active ? t('商隊在路上了，回報就算') : t('到馬車站押一隊');
         return '';

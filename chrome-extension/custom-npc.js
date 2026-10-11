@@ -107,7 +107,7 @@ class CustomNPCSystem {
             createdYear: world.clock.year,
         });
 
-        world.logMessage?.('system', `🎉 ${t('新居民')}「${config.name}」${t('加入了邊境鎮')}！`);
+        world.logMessage?.('system', `🎉 ${t('新居民')}「${config.name}」${t('加入了')}${t(world.townName || '邊境鎮')}！`); // v6.11.0 用實際鎮名
         if (world.dailyNews) {
             world.dailyNews.collectEvent('lifecycle', `${t('新居民')}「${config.name}」${t('從遠方來到了邊境鎮')}！`, 7, [config.name]);
         }
@@ -251,7 +251,7 @@ const ENDING_TYPES = {
     personal: {
         id: 'personal',
         title: t('個人結局'),
-        subtitle: t('在邊境鎮找到了屬於自己的幸福'),
+        subtitle: t('在這座小鎮找到了屬於自己的幸福'), // v6.11.0 不再寫死邊境鎮
         icon: '💕',
         color: '#FF69B4',
         description: t('你在這片土地上找到了真愛，組建了家庭。這就是你的歸宿。'),
@@ -357,6 +357,7 @@ class MultiEndingSystem {
             .map(r => ({ name: r.targetName, affinity: r.affinity, status: r.status, romantic: r.romanticInterest }));
 
         return {
+            townName: t(world.townName || '邊境鎮'), // v6.11.0 結局總結用實際鎮名
             totalDays: (world.clock.year - 1) * 60 + (Math.max(0, ['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15) + world.clock.day,
             year: world.clock.year,
             season: world.clock.season,
@@ -483,7 +484,7 @@ class MultiEndingSystem {
     _generateLifeSummary(s, et) {
         let story = '';
         // Opening
-        story += `${s.playerName}${t('在邊境鎮度過了')}${s.totalDays}${t('天的歲月')}`;
+        story += t('{name}在{town}度過了 {d} 天的歲月').replace('{name}', s.playerName).replace('{town}', s.townName || t('邊境鎮')).replace('{d}', s.totalDays);
         if (s.playerJob !== t('無業')) {
             story += `${t('，以')}${s.playerJob}${t('的身份')}`;
         }
@@ -538,7 +539,7 @@ class MultiEndingSystem {
         }
 
         // Closing
-        story += `${t('這就是')}${s.playerName}${t('在邊境鎮的故事——')}${et.subtitle}`;
+        story += t('這就是{name}在{town}的故事——').replace('{name}', s.playerName).replace('{town}', s.townName || t('邊境鎮')) + et.subtitle;
 
         return story;
     }
