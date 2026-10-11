@@ -206,16 +206,10 @@ Object.assign(RimTownApp.prototype, {
         this.bgm?.sfx?.('coin');
         // v5.33.1 桌面版:成就改右下角非阻擋 toast,不再硬控整個畫面;手機版暫維持中央卡
         if (window.innerWidth > 768) {
-            let host = document.getElementById('achv-toast-host');
-            if (!host) {
-                host = document.createElement('div');
-                host.id = 'achv-toast-host';
-                host.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:9500;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none';
-                document.body.appendChild(host);
-            }
-            // v5.34.1 同時最多 3 張,多的擠掉最舊的
-            while (host.childElementCount >= 3) host.firstElementChild.remove();
-            const el = document.createElement('div');
+            const host = this._toastHost();
+            // v5.34.1 同時最多 3 張,多的擠掉最舊的;v6.10.1 早安卡不算、成就也算一張
+            while (host.querySelectorAll('.rt-toast:not(.morning)').length >= 3) host.querySelector('.rt-toast:not(.morning)').remove();
+            const el = document.createElement('div'); el.className = 'rt-toast';
             el.style.cssText = 'display:flex;align-items:center;gap:10px;background:rgba(22,22,32,0.95);border:1px solid rgba(245,197,66,0.45);border-radius:10px;padding:10px 14px;max-width:320px;box-shadow:0 4px 16px rgba(0,0,0,0.4);opacity:0;transform:translateY(8px);transition:opacity 0.3s,transform 0.3s;pointer-events:auto;cursor:pointer';
             el.innerHTML = `<span style="font-size:1.6rem">${def.icon}</span><span><span style="display:block;color:#f5c542;font-size:0.72rem;font-weight:bold">🏆 ${t('成就解鎖！')}</span><span style="display:block;color:#fff;font-size:0.85rem;font-weight:bold">${t(def.name)}</span><span style="display:block;color:rgba(255,255,255,0.65);font-size:0.68rem">${def.desc}</span></span>`;
             host.appendChild(el);
@@ -671,7 +665,8 @@ Object.assign(RimTownApp.prototype, {
     },
 
     // v5.34.0 角落通知:純資訊(無長內容)不再佔用整個版面,改右下角小卡堆疊
-    _showCornerNotice({ icon, title, name, desc }) {
+    // v6.10.1 角落通知容器(角落通知/成就/早安卡共用):建立＋依手機底部列與第一天引導卡調整位置
+    _toastHost() {
         let host = document.getElementById('achv-toast-host');
         if (!host) {
             host = document.createElement('div');
@@ -679,12 +674,15 @@ Object.assign(RimTownApp.prototype, {
             host.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:9500;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none';
             document.body.appendChild(host);
         }
-        // 手機版避開底部 tab bar
         const fd = document.getElementById('firstday-guide'); const fdH = (fd && fd.offsetParent !== null) ? fd.getBoundingClientRect().height : 0; // v5.99.0 避開第一天引導卡
         host.style.bottom = window.innerWidth <= 768 ? `${64 + (fdH ? fdH + 18 : 0)}px` : `${14 + (fdH ? fdH + 14 : 0)}px`;
+        return host;
+    },
+    _showCornerNotice({ icon, title, name, desc }) {
+        const host = this._toastHost();
         // v5.34.1 同時最多 3 張,多的擠掉最舊的,避免洗版
-        while (host.childElementCount >= 3) host.firstElementChild.remove();
-        const el = document.createElement('div');
+        while (host.querySelectorAll('.rt-toast:not(.morning)').length >= 3) host.querySelector('.rt-toast:not(.morning)').remove(); // v6.7.0 早安卡不算在三張內
+        const el = document.createElement('div'); el.className = 'rt-toast';
         el.style.cssText = 'display:flex;align-items:center;gap:10px;background:rgba(22,22,32,0.95);border:1px solid rgba(255,255,255,0.22);border-radius:10px;padding:10px 14px;max-width:min(320px,calc(100vw - 28px));box-shadow:0 4px 16px rgba(0,0,0,0.4);opacity:0;transform:translateY(8px);transition:opacity 0.3s,transform 0.3s;pointer-events:auto;cursor:pointer';
         el.innerHTML = `<span style="font-size:1.5rem">${icon || '🔔'}</span><span><span style="display:block;color:var(--accent,#e94560);font-size:0.72rem;font-weight:bold">${title || ''}</span>${name ? `<span style="display:block;color:#fff;font-size:0.85rem;font-weight:bold">${name}</span>` : ''}${desc ? `<span style="display:block;color:rgba(255,255,255,0.65);font-size:0.68rem">${desc}</span>` : ''}</span>`;
         host.appendChild(el);
@@ -748,6 +746,8 @@ Object.assign(RimTownApp.prototype, {
         if (this._lastShownNewspaperId === latest.id) return;
         this._lastShownNewspaperId = latest.id;
         this._newsReacted = false; // Reset reaction for new newspaper
+        // v6.7.0 早安卡還在的話,日報出刊併成卡上一行,不再另跳一張
+        const mc = document.getElementById('morning-card'); if (mc && !mc.dataset.fading && !mc.querySelector('.mc-paper')) { const row = document.createElement('div'); row.className = 'mc-paper'; row.style.cssText = 'font-size:0.74rem;margin-top:3px'; row.textContent = `📰 ${t('AI 日報出刊')}：${t('第')}${latest.id}${t('期')} — ${t('記者')}：${latest.reporter || ''}`; mc.querySelector('.mc-body')?.appendChild(row); return; } // v6.10.1 淡出中不併
         // v5.44.0 日報出刊改角落通知,不再全螢幕打斷;全文在「日報」分頁隨時可讀
         this._showCornerNotice({
             icon: '📰',

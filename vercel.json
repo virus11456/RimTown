@@ -1,7 +1,9 @@
 {
   "outputDirectory": "public",
   "functions": {
-    "api/chat.js": { "maxDuration": 30 }
+    "api/chat.js": {
+      "maxDuration": 30
+    }
   },
   "rewrites": [
     {
@@ -12,5 +14,10 @@
       "source": "/api/logout",
       "destination": "/api/me"
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "claude/llm-dialogue-memory-port-u8lf0x": false
+    }
+  }
 }

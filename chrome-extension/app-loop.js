@@ -14,12 +14,30 @@ Object.assign(RimTownApp.prototype, {
         let inner = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div style="font-weight:bold;font-size:1rem">📜 ${t('季末回顧')}</div><div style="font-size:1.4rem;font-weight:bold;color:${gradeCol}">${esc(r.grade)}</div></div>`;
         inner += `<div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:10px">${esc(r.title)} · ${esc(r.gradeText)}</div>`;
         inner += r.lines.map(l => `<div style="font-size:0.82rem;margin:5px 0;line-height:1.4">${l.icon} ${esc(l.text)}</div>`).join('');
-        if (r.advice && r.advice.length) inner += `<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px"><div style="font-size:0.8rem;font-weight:bold;margin-bottom:4px">🧭 ${t('下一季怎麼打')}</div>${r.advice.map(a => `<div style="font-size:0.78rem;margin:4px 0;line-height:1.4;color:var(--text-secondary)">${a.icon} ${esc(a.text)}</div>`).join('')}</div>`; // v6.4.0
+        if (r.advice && r.advice.length) inner += `<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px"><div style="font-size:0.8rem;font-weight:bold;margin-bottom:4px">🧭 ${t('下一季怎麼打')}</div>${r.advice.map(a => `<div style="display:flex;gap:8px;align-items:flex-start;margin:5px 0"><div style="flex:1;font-size:0.78rem;line-height:1.4;color:var(--text-secondary)">${a.icon} ${esc(a.text)}</div>${a.go ? `<button class="trade-btn" data-action="recap-go" data-val="${esc(a.go)}" style="flex:none;padding:4px 8px;font-size:0.72rem;white-space:nowrap">${esc(a.goLabel || t('去做'))}</button>` : ''}</div>`).join('')}</div>`; // v6.4.0 / v6.6.0 可點
         if (d.history.length > 1) inner += `<div style="font-size:0.7rem;color:var(--text-secondary);margin-top:10px;border-top:1px solid var(--border);padding-top:6px">${t('之前幾季')}：${d.history.slice(1).map(h => `${esc(h.title)} ${esc(h.grade)}`).join(' · ')}</div>`;
         inner += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:8px">${t('下一季：第 5 天公布新考驗，委託每天早上更新')}</div>`;
         inner += `<button class="trade-btn" data-action="recap-close" style="width:100%;padding:8px;margin-top:12px">${t('關閉')}</button>`;
         card.innerHTML = inner; ov.appendChild(card); document.body.appendChild(ov);
-        ov.addEventListener('click', (e) => { if (e.target === ov || e.target.closest('[data-action="recap-close"]')) ov.remove(); });
+        ov.addEventListener('click', (e) => { const go = e.target.closest('[data-action="recap-go"]'); if (go) { e.stopPropagation(); this._recapGo(go.dataset.val); return; } if (e.target === ov || e.target.closest('[data-action="recap-close"]')) ov.remove(); }); // 彈窗掛在 body 外,事件委派收不到,這裡自己接
+    },
+    // v6.6.0 回顧建議的「去做」:直接開押商隊 / 切分頁 / 找該村民聊(有 AI 時順便進入「用你的話說」)
+    _goTab(tab) {
+        if (this._isTabLocked?.(tab)) { this._lockedAlert?.(tab); return; }
+        if (this._kairoReady) { this._openKairoTab(tab); return; }
+        this.activeTab = tab; this._updateTabHighlight?.(tab);
+        const sidebar = document.getElementById('rimtown-sidebar'); if (sidebar && window.innerWidth <= 768) sidebar.classList.remove('mobile-collapsed');
+        try { this.state = this.world.getState(); this.renderSidebar(); } catch (e) {} // v6.10.1 先刷新狀態再畫
+    },
+    _recapGo(val) {
+        document.getElementById('season-recap')?.remove();
+        const [kind, b, c] = String(val || '').split(':');
+        if (kind === 'caravan') { this._showCaravanDialog(); return; }
+        if (kind === 'tab') { this._goTab(b); return; }
+        if (kind === 'chat' && c && this.world?.agents?.[c]) {
+            this.startChatWith(c);
+            if (b && this._judgeAvailable?.() && this._judgeGoal?.(b)) setTimeout(() => { try { if (this.chatTarget === c && !this._intentArmed) this._sendIntent(b); } catch (e) {} }, 80);
+        }
     },
     _showCaravanDialog() {
         const w = this.world; if (!w) return;
@@ -278,6 +296,7 @@ Object.assign(RimTownApp.prototype, {
             { origId: meta.origId, origName: meta.origName, notes: meta.notes || [], visitedTownName: this._getCurrentTownName(), visitedTownId: this.currentTownId, romance: meta.romance || null }); // v5.90.0 帶回戀情
         w.onRelocate = (data) => this._doRelocate(data); // v5.90.0 搬家提案的決定
         w.onSeasonRecap = () => { try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} this._showSeasonRecap(); }; // v5.98.0 季末回顧
+        w.onChainEvent = (kind, npcName, title, text) => { if (kind === 'start') { try { this._aiChainQuotes(w); } catch (e) {} } this._showCornerNotice({ icon: kind === 'done' ? '🏅' : kind === 'broken' ? '💔' : '📖', title: kind === 'done' ? t('委託鏈完成') : kind === 'broken' ? t('委託鏈中斷') : t('有人想拜託你'), name: `${t(npcName)} · ${title}`, desc: text || (kind === 'start' ? t('明天的委託板會多一件他的事，連做三天') : '') }); }; // v6.5.0
         w.onGrowthEvent = (kind, v) => { if (kind === 'level') this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${v} ${t('級')}`, name: '', desc: t('到「故事」分頁選一個天賦') }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.94.0
         w.onTrialEvent = (kind, title, desc) => { this._showCornerNotice({ icon: kind === 'passed' ? '🏅' : kind === 'failed' ? '💔' : '⚖️', title, name: '', desc }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.93.0
         w.onPlayerCaravanReturn = (result, line) => { this._showCornerNotice({ icon: result.raided ? '🏴' : '💰', title: t('商隊回報'), name: t(result.toTownName), desc: line }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.92.0
@@ -391,6 +410,48 @@ Object.assign(RimTownApp.prototype, {
         const tr = w.trials?.current; if (tr && w.trials.value) { const v = w.trials.value(tr.type, w); parts.push(`${t('考驗')} ${Math.min(100, Math.round(v / Math.max(1, tr.target) * 100))}%`); }
         return parts.join(' · ');
     },
+    // v6.8.0 委託鏈 AI 口吻:鏈開始時請 AI 用該村民的口吻寫三步各一句親口說的話＋結局一句(規則文案不動,只多一行引言;失敗就沒有這行)
+    async _aiChainQuotes(w) {
+        const llm = this.llmClient; const rb = w?.requests; const c = rb?.chain; if (!llm || !c || c.quotes) return;
+        const npc = w.agents[c.npcId]; const script = rb.chainScript?.(c, w); if (!npc || !script) return;
+        const lang = (typeof LLM_LANG !== 'undefined') ? LLM_LANG.get() : 'zh';
+        const traits = (npc.personality?.traits || []).map(x => lang === 'en' ? x : ((typeof TRAIT_POOL !== 'undefined' && TRAIT_POOL[x]?.label) || x)).join(lang === 'en' ? ', ' : '、');
+        const name = lang === 'en' ? (typeof I18N !== 'undefined' ? I18N.localizeNames(npc.name, true) : npc.name) : npc.name;
+        const job = npc.job?.name ? (typeof npc.job.name === 'function' ? npc.job.name() : npc.job.name) : (npc.job?.key || '');
+        const prompt = lang === 'en'
+            ? `You write dialogue for a village game. Villager "${name}" (${job}; traits: ${traits}; mood ${Math.round(npc.mood || 50)}/100) is asking the player for help over three days: "${script.title}". Step 1: ${script.steps[0]} Step 2: ${script.steps[1]} Step 3: ${script.steps[2]} Ending: ${script.finale}\nIn this villager's own voice, write one spoken line for each step (8–22 words, do not repeat the task, do not name the player) and one line they say at the ending. Output JSON only: {"q":["step1","step2","step3","ending"]}`
+            : `你在寫小鎮遊戲的台詞。村民「${name}」（${job}；性格：${traits}；心情 ${Math.round(npc.mood || 50)}/100）要拜託玩家一段三天的小事「${script.title}」。第一步：${script.steps[0]} 第二步：${script.steps[1]} 第三步：${script.steps[2]} 結局：${script.finale}\n請用這個人的口吻，為三步各寫一句他親口說的話（每句 12–30 字，不要重複任務說明，不要出現玩家名字），再寫一句結局時他說的話。只輸出 JSON：{"q":["第一步","第二步","第三步","結局"]}`;
+        const timeout = new Promise(r => setTimeout(() => r(null), 9000));
+        let raw = null; try { raw = await Promise.race([llm.generate(prompt, 220, 0.8, true), timeout]); } catch (e) { raw = null; }
+        if (!raw || raw === '__ERROR__' || raw === '__RATE_LIMITED__' || this.world !== w) return; // v6.10.1 等待期間換了鎮就作廢
+        const m = String(raw).match(/\{[\s\S]*\}/); if (!m) return;
+        let j = null; try { j = JSON.parse(m[0]); } catch (e) { return; }
+        const q = Array.isArray(j?.q) ? j.q.map(x => String(x || '').replace(/^[「『"“]+|[」』"”]+$/g, '').trim().slice(0, 60)).filter(Boolean) : [];
+        if (q.length < 4 || rb.chain !== c) return;
+        c.quotes = q.slice(0, 4);
+        for (const r of rb.board) if (r.chainKey === c.key && r.npcId === c.npcId && r.status === 'open' && !r.chainQuote) r.chainQuote = c.quotes[r.chainStep] || '';
+        try { this.state = w.getState(); if (this.activeTab === 'quest') this.renderSidebar(); } catch (e) {}
+    },
+    // v6.7.0 早安卡:每個遊戲日第一次看到新的一天,把「昨日結算、今日委託、委託鏈進度、本季考驗、日報」合成一張留在角落(不自動消失,點 ✕ 或「看委託板」收起)
+    _showMorningCard(rb, openCount) {
+        const w = this.world; if (!w) return;
+        const host = this._toastHost(); // v6.10.1 共用容器
+        document.getElementById('morning-card')?.remove();
+        const esc = (x) => this._escapeHtml(String(x));
+        const rows = [];
+        const sum = this._daySummaryText(); if (sum) rows.push(`🌙 ${t('昨日結算')}：${esc(sum)}`);
+        rows.push(`📋 ${t('今日委託')} ${openCount} ${t('件')} · ${t('行動點')} ${rb.ap.left}/${rb.ap.max}`);
+        const d = rb.toDict(w); if (d.chain) rows.push(`📖 ${esc(d.chain.title)} ${d.chain.step + 1}/${d.chain.total} · ${esc(d.chain.npcName)}`);
+        const tr = w.trials?.current; if (tr && tr.status === 'active' && w.trials.value) { const v = w.trials.value(tr.type, w); const d2 = (typeof TRIAL_TYPES !== 'undefined' && TRIAL_TYPES[tr.type]) || {}; rows.push(`⚖️ ${esc(t(d2.title || tr.type))} ${v}/${tr.target} · ${t('剩')} ${Math.max(0, (tr.dueDay || 15) - w.clock.day)} ${t('天')}`); }
+        else if (!tr && w.clock.day < 5) rows.push(`⚖️ ${t('第 5 天公布本季考驗')}`);
+        const el = document.createElement('div'); el.id = 'morning-card'; el.className = 'rt-toast morning';
+        el.style.cssText = 'background:rgba(22,22,32,0.96);border:1px solid var(--accent,#e94560);border-radius:12px;padding:10px 12px;max-width:min(360px,calc(100vw - 28px));pointer-events:auto;box-shadow:0 6px 24px rgba(0,0,0,0.45);opacity:0;transform:translateY(8px);transition:all .3s';
+        el.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:1.2rem">☀️</span><span style="flex:1;color:var(--accent,#e94560);font-size:0.78rem;font-weight:bold">${t('早安')} · ${esc(t('第 {y} 年{s}').split('{y}').join(w.clock.year).split('{s}').join(t(w.clock.season)))} · ${t('第 {d} 天').split('{d}').join(w.clock.day)}</span><button data-mc="close" style="background:none;border:none;color:var(--text-muted,#999);font-size:1rem;cursor:pointer;line-height:1">✕</button></div><div class="mc-body" style="font-size:0.76rem;line-height:1.5;color:var(--text-secondary,#ccc)">${rows.map(r => `<div>${r}</div>`).join('')}</div><button data-mc="go" class="trade-btn" style="width:100%;margin-top:8px;padding:6px;font-size:0.76rem">📋 ${t('看委託板')}</button>`;
+        el.addEventListener('click', (e) => { const b = e.target.closest('[data-mc]'); if (!b) return; if (b.dataset.mc === 'go') this._goTab('quest'); el.remove(); });
+        host.appendChild(el);
+        requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
+        setTimeout(() => { if (el.isConnected) { el.dataset.fading = '1'; el.style.opacity = '0'; setTimeout(() => el.remove(), 350); } }, 45000);
+    },
     _renderRequestBoard() {
         const rb = this.world?.requests; if (!rb) return '';
         const d = rb.toDict(this.world);
@@ -406,7 +467,7 @@ Object.assign(RimTownApp.prototype, {
             const rwText = [rw.silver ? `💰${rw.silver}` : '', rw.pack ? `${t(REQUEST_RES_NAMES[rw.pack.res] || rw.pack.res)}+${rw.pack.amount}` : '', rw.aff ? `❤️+${rw.aff}` : '', rw.rep ? `⭐+${rw.rep}` : ''].filter(Boolean).join(' ');
             html += `<div class="news-card" style="margin-bottom:6px;${dim ? 'opacity:0.55' : ''}"><div style="display:flex;gap:8px;align-items:flex-start">
                 <span style="font-size:1.1rem;flex:none">${r.icon}</span>
-                <div style="flex:1;min-width:0"><div style="font-size:0.82rem">${this._escapeHtml(r.text)}</div>
+                <div style="flex:1;min-width:0">${r.chainLabel ? `<div style="font-size:0.68rem;color:var(--accent);margin-bottom:1px">📖 ${this._escapeHtml(r.chainLabel)}</div>` : ''}<div style="font-size:0.82rem">${this._escapeHtml(r.text)}</div>${r.chainQuote ? `<div style="font-size:0.74rem;font-style:italic;color:var(--text-secondary);margin-top:2px">「${this._escapeHtml(r.chainQuote)}」</div>` : ''}
                     <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px">${this._escapeHtml(r.progress || '')}${r.progress ? ' · ' : ''}${rwText} · ${t('耗')} ${r.apCost} ${t('點')}</div></div>
                 ${rb.needsButton(r) ? `<button class="trade-btn" data-action="req-act" data-val="${r.id}" style="font-size:0.7rem;flex:none" ${r.can?.ok ? '' : 'disabled'} title="${this._escapeHtml(r.can?.reason || '')}">${r.type === 'mediate' ? `🤝 ${t('調解')}` : `📦 ${t('交付')}`}</button>` : (r.status === 'done' ? '<span style="flex:none">✅</span>' : r.status === 'failed' ? '<span style="flex:none">⌛</span>' : '')}
             </div>${rb.needsButton(r) && !r.can?.ok && r.can?.reason ? `<div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px">↳ ${this._escapeHtml(r.can.reason)}</div>` : ''}</div>`;
@@ -447,7 +508,7 @@ Object.assign(RimTownApp.prototype, {
         }
         if (tr.perks.length) html += `<div style="font-size:0.72rem;margin-top:6px">🏅 ${t('已得到')}：${tr.perks.map(p => `<b>${esc(p.name)}</b>`).join('、')}</div>`;
         if (tr.history.length) html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px">${tr.history.map(h => `${h.status === 'passed' ? '✅' : '❌'} ${esc(h.title)} ${h.value}/${h.target}`).join(' · ')}</div>`;
-        if (this.state?.recap?.last) { const rl = this.state.recap.last; html += `<button class="trade-btn" data-action="recap-open" style="width:100%;padding:6px;margin-top:8px;font-size:0.78rem">📜 ${t('上一季回顧')}：${esc(rl.title)} · ${t('評等')} ${esc(rl.grade)}</button>`; if (rl.advice?.[0]) html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px">🧭 ${esc(rl.advice[0].text)}</div>`; } // v5.98.0 / v6.4.0 第一條建議
+        if (this.state?.recap?.last) { const rl = this.state.recap.last; html += `<button class="trade-btn" data-action="recap-open" style="width:100%;padding:6px;margin-top:8px;font-size:0.78rem">📜 ${t('上一季回顧')}：${esc(rl.title)} · ${t('評等')} ${esc(rl.grade)}</button>`; if (rl.advice?.[0]) { const a0 = rl.advice[0]; html += `<div style="display:flex;gap:6px;align-items:center;margin-top:4px"><div style="flex:1;font-size:0.72rem;color:var(--text-secondary)">🧭 ${esc(a0.text)}</div>${a0.go ? `<button class="trade-btn" data-action="recap-go" data-val="${esc(a0.go)}" style="flex:none;padding:3px 8px;font-size:0.7rem;white-space:nowrap">${esc(a0.goLabel || t('去做'))}</button>` : ''}</div>`; } } // v5.98.0 / v6.4.0 第一條建議
         return html + '</div>';
     },
     _requestAct(id) {
@@ -474,9 +535,7 @@ Object.assign(RimTownApp.prototype, {
         });
         if (rb.dayKey && rb._lastNoticeDay !== rb.dayKey && n > 0) {
             rb._lastNoticeDay = rb.dayKey;
-            // v5.97.0 昨日結算:先報昨天,再報今天
-            const sum = this._daySummaryText(); if (sum) this._showCornerNotice({ icon: '🌙', title: t('昨日結算'), name: '', desc: sum });
-            this._showCornerNotice({ icon: '📋', title: t('今日委託'), name: `${n} ${t('件')}`, desc: `${t('行動點')} ${rb.ap.left}/${rb.ap.max} · ${t('到「故事」分頁查看')}` });
+            this._showMorningCard(rb, n); // v6.7.0 早安卡:昨日結算＋今日委託＋委託鏈＋考驗合成一張(取代連跳的角落通知)
         }
     },
     // v5.90.0 搬家提案:村民作客回來後,和對方鎮某人兩情相悅→事件選擇(讓對方搬來/讓他搬過去/不干涉);三天不選就依兩人意願自動定案

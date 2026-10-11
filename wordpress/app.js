@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.4.0
-const RIMTOWN_APP_VERSION = '6.4.0';
+// RimTown - Frontend App (WordPress Plugin) v6.10.1
+const RIMTOWN_APP_VERSION = '6.10.1';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -2148,6 +2148,7 @@ class RimTownApp {
                 case 'req-buy-ap': this._requestBuyAP(); break;
                 case 'open-caravan': this._showCaravanDialog(); break; // v5.92.0
                 case 'recap-open': this._showSeasonRecap(); break; // v5.98.0
+                case 'recap-go': this._recapGo(val); break; // v6.6.0
                 case 'recap-close': document.getElementById('season-recap')?.remove(); break;
                 case 'perk-pick': { const r = this.world?.growth?.choose(val, this.world); if (r?.ok) { this.state = this.world.getState(); try { this.renderSidebar(); } catch (e) {} } break; } // v5.94.0
                 case 'look-set': this._setLookDraft(val); break;

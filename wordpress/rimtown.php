@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.4.0
+ * Version: 6.10.1
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.4.0');
+define('RIMTOWN_VERSION', '6.10.1');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,80 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.10.1',
+            'date'    => '2026-10-11',
+            'changes' => array(
+                '🛠️ 程式審查修正：故事鏈最後一步到期時正確中斷、調解「各退一步」的部分成功也能推進故事鏈、故事鏈不再重複找同一位村民',
+                '🛠️ 季末回顧的建議只在最新一季顯示，且不再點名已離世或路過的旅人；回到提示的分頁前會先刷新畫面資料',
+                '🛠️ 通知區統一：成就通知與角落提示共用同一個容器，早安卡不會被成就通知擠掉；AI 日報只在早安卡還顯示時併入，淡出中改用一般提示',
+            ),
+            'changes_en' => array(
+                '🛠️ Code-review fixes: a story chain now breaks correctly when its final step expires, a partial "meet halfway" mediation still advances the chain, and chains no longer pick the same villager twice',
+                '🛠️ Season recap advice shows only for the latest season and no longer names deceased or passing travellers; jumping to a suggested tab refreshes the view first',
+                '🛠️ Unified notification area: achievement toasts and corner notices share one host so the morning card is never evicted; the AI newspaper folds into the morning card only while it is still visible, otherwise it falls back to a toast',
+            ),
+        ),
+        array(
+            'version' => '6.10.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '🏠 首頁特色介紹改寫：新增「每天有事做」（早安卡、三天小故事、押商隊、親手撐考驗、季末回顧與建議），「真的在聊天」改寫成「用你的話說、AI 判定」，任務卡改為五章主線與十種天賦',
+            ),
+            'changes_en' => array(
+                '🏠 Landing page features rewritten: a new "Something to do every day" card (morning card, three-day stories, caravans, trials you carry yourself, season recap and advice), "Really chatting" now describes "in your own words" AI verdicts, and the quest card mentions five chapters and ten perks',
+            ),
+        ),
+        array(
+            'version' => '6.9.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '🧭 旅人天賦加兩種（共十種）：「說書」——村民更常找你走小故事（三成→五成），走完的獎勵 +25%；「知心」——「用你的話說」的 AI 判定每級 ±12%、每天多 10 次，魅力 +1',
+            ),
+            'changes_en' => array(
+                '🧭 Two new traveller perks (ten in all): "Storyteller" — villagers start stories with you more often (30%→50%) and finishing one pays +25%; "Empath" — "in your own words" AI verdicts swing ±12% per step with 10 more a day, charm +1',
+            ),
+        ),
+        array(
+            'version' => '6.8.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '🗣️ 委託鏈有了村民自己的口吻：小故事開始時，AI 依這位村民的職業、性格、心情，為三步各寫一句他親口說的話，再寫一句結局時說的話——委託板上以引言顯示在任務說明下方，結局通知也會附上；每條鏈只問一次 AI（走玩家對話的分流），失敗或 WordPress 無 AI 版就維持原本文案',
+            ),
+            'changes_en' => array(
+                '🗣️ Request chains now speak in the villager\'s own voice: when a story starts, the AI writes one spoken line per step and one for the ending based on that villager\'s job, traits and mood — shown as a quote under the task on the board and attached to the ending notice; one AI call per chain (same lane as player chat), and on failure or the AI-less WordPress build the plain text stays',
+            ),
+        ),
+        array(
+            'version' => '6.7.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '☀️ 早安卡：每個遊戲日第一次看到新的一天，昨日結算、今日委託與行動點、委託鏈進度、本季考驗進度（或「第 5 天公布」）、日報出刊合成一張卡留在角落，取代原本早上連跳的三四張通知；不自動被其他通知擠掉、45 秒後淡出，點 ✕ 或「看委託板」收起',
+            ),
+            'changes_en' => array(
+                '☀️ Morning card: the first time you see a new day, yesterday\'s tally, today\'s requests and action points, request-chain progress, the season trial (or "announced on day 5") and the newspaper issue are combined into one card in the corner, replacing the three or four notices that used to stack up every morning; other notices don\'t push it out, it fades after 45 seconds, and ✕ or "Request board" dismisses it',
+            ),
+        ),
+        array(
+            'version' => '6.6.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '🧭 季末回顧的建議可以直接點了：每條「下一季怎麼打」旁多一顆按鈕——「去馬車站」直接開押商隊、「去蓋防禦」跳到經濟分頁、「看委託板」跳到故事分頁、「找某某聊」開那位村民的聊天（糧荒找務農、瘟疫找醫生、人口流失找心情最差的人、沒人好感上升找最熟的人），有 AI 的站會順便進入「用你的話說」；故事分頁考驗區塊的第一條建議也有同樣的按鈕',
+            ),
+            'changes_en' => array(
+                '🧭 Season-recap advice is now clickable: each "How to play next season" line gets a button — "Coach station" opens the caravan dialog, "Build defences" jumps to the Economy tab, "Request board" to the Story tab, and "Talk to X" opens that villager\'s chat (a farmer for famine, the doctor for plague, the lowest-mood villager for population loss, your closest friend when nobody\'s affinity rose), switching straight into "in your own words" where AI is available; the first tip in the Story tab\'s trial section has the same button',
+            ),
+        ),
+        array(
+            'version' => '6.5.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '📖 委託鏈：完成一件委託後，好感夠的村民有機會開一段三天的小故事——「一封舊信」「漏水的屋頂」「偷偷準備的生日」，有仇人的還有「放不下的心結」；每天板上多一件他的事（標 📖 標題 n/3），三步全完成有大獎（銀幣、好感、聲望、25 經驗、一段記憶、日報一則；心結鏈還會讓兩人和好）；任何一步過期就中斷，他會記得；同時只跑一條、每人 30 天一次；季末回顧會算你走完了幾段',
+            ),
+            'changes_en' => array(
+                '📖 Request chains: after you finish a request, a villager who likes you enough may open a three-day story — "An old letter", "The leaking roof", "A secret birthday", and "A grudge that will not let go" for someone with an enemy; each day adds one of their requests to the board (tagged 📖 title n/3), finishing all three pays out big (silver, affinity, reputation, 25 XP, a memory and a newspaper item; the grudge chain also reconciles the pair); letting any step expire drops the story and they remember; one chain at a time, one per villager every 30 days; the season recap counts stories seen through',
+            ),
+        ),
         array(
             'version' => '6.4.0',
             'date'    => '2026-10-10',
