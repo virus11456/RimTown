@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.4.0
+ * Version: 6.5.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.4.0');
+define('RIMTOWN_VERSION', '6.5.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.5.0',
+            'date'    => '2026-10-10',
+            'changes' => array(
+                '📖 委託鏈：完成一件委託後，好感夠的村民有機會開一段三天的小故事——「一封舊信」「漏水的屋頂」「偷偷準備的生日」，有仇人的還有「放不下的心結」；每天板上多一件他的事（標 📖 標題 n/3），三步全完成有大獎（銀幣、好感、聲望、25 經驗、一段記憶、日報一則；心結鏈還會讓兩人和好）；任何一步過期就中斷，他會記得；同時只跑一條、每人 30 天一次；季末回顧會算你走完了幾段',
+            ),
+            'changes_en' => array(
+                '📖 Request chains: after you finish a request, a villager who likes you enough may open a three-day story — "An old letter", "The leaking roof", "A secret birthday", and "A grudge that will not let go" for someone with an enemy; each day adds one of their requests to the board (tagged 📖 title n/3), finishing all three pays out big (silver, affinity, reputation, 25 XP, a memory and a newspaper item; the grudge chain also reconciles the pair); letting any step expire drops the story and they remember; one chain at a time, one per villager every 30 days; the season recap counts stories seen through',
+            ),
+        ),
         array(
             'version' => '6.4.0',
             'date'    => '2026-10-10',
