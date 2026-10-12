@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.14.0
+ * Version: 6.14.1
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.14.0');
+define('RIMTOWN_VERSION', '6.14.1');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.14.1',
+            'date'    => '2026-10-12',
+            'changes' => array(
+                '🛠️ 經濟分頁：「捐給鎮公所」那一列之前被塞進繁榮度的維度格子裡（桌機英文版文字擠成一條），改放在格子下方',
+                '🌐 英文版日期：上方時鐘與事件／頭條／日報的日期原本顯示成「Ch.1 Year Spring Ch.1 days」，改用模板顯示「Year 1 Spring Day 1」',
+            ),
+            'changes_en' => array(
+                '🛠️ Economy tab: the "Donate to the town hall" row had been placed inside the prosperity dimension grid (its text was squeezed into one narrow column on desktop); it now sits below the grid',
+                '🌐 English dates: the top clock and the event / headline / newspaper dates used to read "Ch.1 Year Spring Ch.1 days"; they now use templates and read "Year 1 Spring Day 1"',
+            ),
+        ),
         array(
             'version' => '6.14.0',
             'date'    => '2026-10-12',

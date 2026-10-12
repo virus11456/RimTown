@@ -346,7 +346,7 @@ Object.assign(RimTownApp.prototype, {
         }
         (w.dramaArchive || []).forEach((s, i) => {
             if ((s.aName === a.name && s.bName === b.name) || (s.aName === b.name && s.bName === a.name)) {
-                rows.push({ tick: s.tick || 0, time: `${t('第')}${s.year}${t('年 ')}${t(s.season)} ${t('第')}${s.day}${t('天')}`, who: '', text: `${s.icon || '🎭'} ${s.title}`, drama: i });
+                rows.push({ tick: s.tick || 0, time: `${t('第 {y} 年{s}').split('{y}').join(s.year).split('{s}').join(t(s.season))} ${t('第 {d} 天').split('{d}').join(s.day)}`, who: '', text: `${s.icon || '🎭'} ${s.title}`, drama: i });
             }
         });
         rows.sort((x, y) => x.tick - y.tick);
@@ -566,7 +566,7 @@ Object.assign(RimTownApp.prototype, {
             </button>`).join('');
         return `<div class="town-headlines">
             <div class="headlines-title">
-                <span>🗞️ ${t('今日頭條')} <span class="headlines-sub">${t('第')}${latest.year}${t('年 ')}${latest.season}${t(' 第')}${latest.day}${t('天')}</span></span>
+                <span>🗞️ ${t('今日頭條')} <span class="headlines-sub">${t('第 {y} 年{s}').split('{y}').join(latest.year).split('{s}').join(t(latest.season))} ${t('第 {d} 天').split('{d}').join(latest.day)}</span></span>
                 <button class="headlines-more" data-action="goto-tab" data-val="events">${t('完整日報')} ›</button>
             </div>
             ${rows}
@@ -1030,7 +1030,7 @@ Object.assign(RimTownApp.prototype, {
                     <span class="dt-ic">${s.icon}</span>
                     <span class="dt-body"><span class="dt-title">${this._escapeHtml(s.title)}</span>
                     <span class="dt-who">${this._escapeHtml(s.aName)} × ${this._escapeHtml(s.bName)}</span></span>
-                    <span class="dt-date">${t('第')}${s.year}${t('年')}${s.season}${s.day}${t('天')}</span>
+                    <span class="dt-date">${t('第 {y} 年{s}').split('{y}').join(s.year).split('{s}').join(t(s.season))} ${t('第 {d} 天').split('{d}').join(s.day)}</span>
                     <span class="dt-play">▶</span></button>`;
             });
             html += '</div>';
@@ -1307,7 +1307,7 @@ Object.assign(RimTownApp.prototype, {
                 html += `<div class="news-card-header">`;
                 html += `<div class="news-card-issue">#${paper.id}</div>`;
                 html += `<div class="news-card-meta">`;
-                html += `${t('<div class="news-card-date">第')}${paper.year}${t('年 ')}${paper.season}${t(' 第')}${paper.day}${t('天</div>')}`;
+                html += `<div class="news-card-date">${t('第 {y} 年{s}').split('{y}').join(paper.year).split('{s}').join(t(paper.season))} ${t('第 {d} 天').split('{d}').join(paper.day)}</div>`;
                 html += `<div class="news-card-reporter">✍️ ${paper.reporter}（${paper.reporterJob}）</div>`;
                 html += `</div>`;
                 html += `<div class="news-card-toggle">${isExpanded ? '▲' : '▼'}</div>`;

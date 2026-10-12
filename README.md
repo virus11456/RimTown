@@ -235,7 +235,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.14.0.zip` from Releases
+1. Download `rimtown-v6.14.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -281,6 +281,10 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.14.1 (2026-10-12)
+- 🛠️ 經濟分頁：「捐給鎮公所」那一列之前被塞進繁榮度的維度格子裡（桌機英文版文字擠成一條），改放在格子下方
+- 🌐 英文版日期：上方時鐘與事件／頭條／日報的日期原本顯示成「Ch.1 Year Spring Ch.1 days」，改用模板顯示「Year 1 Spring Day 1」
 
 ### v6.14.0 (2026-10-12)
 - 💰 銀幣有去處了（B22）：經濟分頁「建築」裡每個在建工程多一顆「捐 40」——花 40 銀幣讓工匠加班、進度 +20%，每個工程每天一次；繁榮度卡片下方多「捐給鎮公所 100」——繁榮 +1（持久、累計最多 +10，數字立即更新）、全鎮當天心情 +2（最多 +6）、聲望 +2，每天最多三次，累計金額會顯示；兩者都進日誌與日報、存檔保留
