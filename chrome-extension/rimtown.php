@@ -1323,10 +1323,10 @@ function rimtown_get_changelog() {
             'version' => '6.14.0',
             'date'    => '2026-10-12',
             'changes' => array(
-                '💰 銀幣有去處了（B22）：經濟分頁「建築」裡每個在建工程多一顆「捐 40」——花 40 銀幣讓工匠加班、進度 +20%，每個工程每天一次；繁榮度卡片下方多「捐給鎮公所 100」——繁榮 +1（持久）、全鎮心情 +2、聲望 +2，每天最多三次，累計金額會顯示；兩者都進日誌與日報、存檔保留',
+                '💰 銀幣有去處了（B22）：經濟分頁「建築」裡每個在建工程多一顆「捐 40」——花 40 銀幣讓工匠加班、進度 +20%，每個工程每天一次；繁榮度卡片下方多「捐給鎮公所 100」——繁榮 +1（持久、累計最多 +10，數字立即更新）、全鎮當天心情 +2（最多 +6）、聲望 +2，每天最多三次，累計金額會顯示；兩者都進日誌與日報、存檔保留',
             ),
             'changes_en' => array(
-                '💰 Silver now has somewhere to go (B22): in the Economy tab\'s Buildings section every project in progress gets a "Donate 40" button that pays for overtime (+20% progress, once per project per day); under the prosperity card you can "Donate 100" to the town hall for prosperity +1 (permanent), town mood +2 and reputation +2, up to three times a day, with the running total shown. Both are logged, reported in the newspaper and saved',
+                '💰 Silver now has somewhere to go (B22): in the Economy tab\'s Buildings section every project in progress gets a "Donate 40" button that pays for overtime (+20% progress, once per project per day); under the prosperity card you can "Donate 100" to the town hall for prosperity +1 (permanent, capped at +10 in total, the number updates at once), town mood +2 for the day (up to +6) and reputation +2, up to three times a day, with the running total shown. Both are logged, reported in the newspaper and saved',
             ),
         ),
         array(

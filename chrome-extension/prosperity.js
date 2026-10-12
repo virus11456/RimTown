@@ -25,6 +25,17 @@ class ProsperityEngine {
     // ============================================================
     // 每日更新（在 World.tick() 的 new_day 區塊呼叫）
     // ============================================================
+    // v6.14.0 由目前各維度重算總繁榮度(每日更新用;捐款後也立即重算,卡片不用等到隔天)
+    recalcTotal() {
+        let total = 0;
+        for (const dim of Object.values(this.dimensions)) total += dim.value * dim.weight;
+        this.prosperity = Math.round(Math.max(0, Math.min(100, total + (this.questBonus || 0))));
+        // v5.54.0 早期爬坡上限:繁榮度是「現狀快照」,新鎮第一晚就會反映 ~40 的底子,
+        // 導致第 1 章(門檻 20)只活一天。前 5 天封頂在 天數×8(8/16/24/32/40),
+        // 讓「先和村民相處」的第一章真的有 2-3 天可玩;第 6 天起完全解封。
+        if ((this._townAgeDays || 0) <= 5) this.prosperity = Math.min(this.prosperity, (this._townAgeDays || 0) * 8);
+        this.level = this._getLevel();
+    }
     dailyUpdate(world) {
         if (this._lastUpdateDay === world.clock.day && this._lastUpdateYear === world.clock.year) return;
         this._lastUpdateDay = world.clock.day;
@@ -39,19 +50,7 @@ class ProsperityEngine {
         this._calcDefense(world);
         this._calcBeauty(world);
 
-        // 計算總繁榮度（加權平均）
-        let total = 0;
-        for (const dim of Object.values(this.dimensions)) {
-            total += dim.value * dim.weight;
-        }
-        this.prosperity = Math.round(Math.max(0, Math.min(100, total + (this.questBonus || 0))));
-        // v5.54.0 早期爬坡上限:繁榮度是「現狀快照」,新鎮第一晚就會反映 ~40 的底子,
-        // 導致第 1 章(門檻 20)只活一天。前 5 天封頂在 天數×8(8/16/24/32/40),
-        // 讓「先和村民相處」的第一章真的有 2-3 天可玩;第 6 天起完全解封。
-        if (this._townAgeDays <= 5) {
-            this.prosperity = Math.min(this.prosperity, this._townAgeDays * 8);
-        }
-        this.level = this._getLevel();
+        this.recalcTotal();
 
         // 繁榮度效果
         this._applyEffects(world);

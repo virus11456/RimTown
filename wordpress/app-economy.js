@@ -87,8 +87,8 @@ Object.assign(RimTownApp.prototype, {
                 html += `</div>`;
             }
             // v6.14.0 鎮公所捐款:銀幣的去處之一(繁榮 +1、全鎮心情 +2、聲望 +2,每天三次)
-            const bd = this.state.buildings || {}; const left = this.world?.buildings?.donationsLeft ? this.world.buildings.donationsLeft(this.world) : 3; const dcost = bd.donate_cost || 100; const silverNow = this.state.stockpile?.resources?.silver || 0;
-            html += `<div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:0.72rem;color:var(--text-secondary)"><span style="flex:1">${t('捐給鎮公所：繁榮 +1、全鎮心情 +2、聲望 +2')}${bd.donations?.total ? ` · ${t('累計')} ${bd.donations.total}` : ''}</span><button class="trade-btn" data-action="donate-town" ${left > 0 && silverNow >= dcost ? '' : 'disabled'} style="padding:3px 10px;font-size:0.72rem;white-space:nowrap">🏛️ ${t('捐')} ${dcost}${left > 0 ? `（${t('今天還可 {n} 次').replace('{n}', left)}）` : `（${t('明天再來')}）`}</button></div>`;
+            const bd = this.state.buildings || {}; const left = Number.isFinite(bd.donations_left) ? bd.donations_left : (bd.donate_per_day || 3); const dcost = bd.donate_cost || 100; const silverNow = this.state.stockpile?.resources?.silver || 0;
+            html += `<div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:0.72rem;color:var(--text-secondary)"><span style="flex:1">${t('捐給鎮公所：繁榮 +1、全鎮今天心情 +2、聲望 +2')}${bd.donations?.total ? ` · ${t('累計')} ${bd.donations.total}` : ''}${(bd.donations?.bonus || 0) >= (bd.donate_prosperity_cap || 10) ? ` · ${t('繁榮加成已滿')}` : ''}</span><button class="trade-btn" data-action="donate-town" ${left > 0 && silverNow >= dcost ? '' : 'disabled'} style="padding:3px 10px;font-size:0.72rem;white-space:nowrap">🏛️ ${t('捐')} ${dcost}${left > 0 ? `（${t('今天還可 {n} 次').replace('{n}', left)}）` : `（${t('明天再來')}）`}</button></div>`;
             html += `</div></div>`;
         }
 
@@ -282,10 +282,10 @@ Object.assign(RimTownApp.prototype, {
             html += t('<div class="econ-section"><h3>建築</h3>');
             if (buildings.in_progress?.length) {
                 html += '<div class="building-progress">';
-                const dayKey = this.world ? `${this.world.clock.year}-${this.world.clock.season}-${this.world.clock.day}` : ''; const silver = this.state.stockpile?.resources?.silver || 0; const fundCost = buildings.fund_cost || 40;
+                const silver = this.state.stockpile?.resources?.silver || 0; const fundCost = buildings.fund_cost || 40;
                 buildings.in_progress.forEach(p => {
                     const pct = Math.round((p.workDone / p.workRequired) * 100);
-                    const fundedToday = p.fundedDay === dayKey; const can = !fundedToday && silver >= fundCost && p.status === 'building';
+                    const fundedToday = p.status === 'building' && p.can_fund_today === false; const can = !!p.can_fund_today && silver >= fundCost;
                     html += `<div class="building-item"><span>${t(p.name)}</span>
                         <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
                         <span class="progress-text">${pct}%</span>

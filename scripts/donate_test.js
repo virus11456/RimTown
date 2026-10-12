@@ -1,4 +1,4 @@
-// 選跑:node scripts/donate_test.js   v6.14.0 捐建/捐款回歸(需本機 8126 服務 wordpress/ 與 NODE_PATH 指到有 playwright 的 node_modules)
+// 選跑:node scripts/donate_test.js   v6.14.0 捐建/捐款回歸(有斷言,失敗 exit 1;需本機 8126 服務 wordpress/ 與 NODE_PATH 指到有 playwright 的 node_modules)
 // v6.14.0 捐建/捐款:工程進度 +20%、每天一次;鎮公所每天三次、繁榮/心情/聲望;存讀檔;經濟分頁按鈕可點
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
@@ -12,13 +12,19 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     await page.goto('http://127.0.0.1:8126/index.html', { waitUntil: 'domcontentloaded' }); await page.waitForTimeout(2500);
     const out = await page.evaluate(async () => {
       const app = window.rimtownApp; const w = app.world; app._visitorMailboxTick(); w.paused = true; const o = {};
-      w.stockpile.add('silver', 1000); for (const [k, n] of Object.entries(BUILDING_TEMPLATES.training_ground.costs)) w.stockpile.add(k, n);
+      w.stockpile.add('silver', 6000); for (const [k, n] of Object.entries(BUILDING_TEMPLATES.training_ground.costs)) w.stockpile.add(k, n);
       const p = w.buildings.startProject('training_ground', w, { x: 10, y: 10 }); o.started = !!p;
       const s0 = w.stockpile.get('silver'); const r1 = w.buildings.fund(p.id, w); const r2 = w.buildings.fund(p.id, w);
       o.fund = { ok1: r1.ok, pct1: r1.pct, ok2: r2.ok, msg2: r2.msg, silverSpent: s0 - w.stockpile.get('silver'), workDone: p.workDone, expect: Math.ceil(p.workRequired * 0.2) };
       const qb0 = w.prosperity.questBonus || 0; const rep0 = w.questSystem.reputation || 0; const mood0 = Object.values(w.agents).find(a => !a.isPlayer).moodModifier || 0;
-      const ds = [1, 2, 3, 4].map(() => w.buildings.donate(w).ok);
+      const pros0 = w.prosperity.prosperity; w.prosperity._townAgeDays = 10; w.prosperity.recalcTotal(); const prosBase = w.prosperity.prosperity;
+      const first = w.buildings.donate(w); const ds = [first.ok].concat([2, 3, 4].map(() => w.buildings.donate(w).ok)); o.firstMsg = first.msg;
+      o.prosImmediate = w.prosperity.prosperity - prosBase; o.townMood = w.townMoodBonus;
+      const npc0 = Object.values(w.agents).find(a => !a.isPlayer); const mBefore = npc0.mood; npc0.update(w); o.moodAfterUpdate = npc0.mood - mBefore;
+
       o.donate = { oks: ds, left: w.buildings.donationsLeft(w), qbDelta: (w.prosperity.questBonus || 0) - qb0, repDelta: (w.questSystem.reputation || 0) - rep0, moodDelta: (Object.values(w.agents).find(a => !a.isPlayer).moodModifier || 0) - mood0, total: w.buildings.donations.total };
+      // cap: 12 more days of 3 donations → bonus stops at cap
+      for (let d = 0; d < 12; d++) { w.clock.day += 1; for (let i = 0; i < 3; i++) w.buildings.donate(w); } w.clock.day += 1; o.cap = { bonus: w.buildings.donations.bonus, qb: w.prosperity.questBonus, capMsg: w.buildings.donate(w).msg }; w.clock.day -= 13;
       // next day resets
       w.clock.day += 1; o.nextDay = { left: w.buildings.donationsLeft(w), fundOk: w.buildings.fund(p.id, w).ok }; w.clock.day -= 1;
       // save/load
@@ -30,10 +36,23 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       w.clock.day += 1; app.state = w.getState(); app.renderSidebar(); await new Promise(r => setTimeout(r, 100));
       const sBefore = w.stockpile.get('silver'); sc.querySelector('[data-action="donate-town"]').click(); await new Promise(r => setTimeout(r, 150));
       o.click = { silverDelta: sBefore - w.stockpile.get('silver'), toast: !!document.querySelector('#achv-toast-host .rt-toast') };
-      return o;
+      // assertions
+      const fails = [];
+      const ck = (c, m) => { if (!c) fails.push(m); };
+      ck(o.fund.ok1 && !o.fund.ok2 && o.fund.silverSpent === 40 && o.fund.workDone === o.fund.expect, 'fund');
+      ck(JSON.stringify(o.donate.oks) === '[true,true,true,false]' && o.donate.repDelta === 6, 'donate oks/rep');
+      ck(o.prosImmediate >= 1, 'prosperity immediate');
+      ck(o.townMood && o.townMood.value === 6 && o.moodAfterUpdate >= 5, 'town mood');
+      ck(o.cap.bonus === 10 && /上限|capped/.test(o.cap.capMsg || ''), 'prosperity cap');
+      ck(o.nextDay.left === 3 && o.nextDay.fundOk, 'next day reset');
+      ck(o.reload.donations && o.reload.donations.total >= 300 && o.reload.funded >= 40, 'reload');
+      ck(o.ui.fundBtn && o.ui.donateBtn, 'ui buttons');
+      ck(o.click.silverDelta === 100 && o.click.toast, 'click');
+      ck(!/  /.test(o.firstMsg || ''), 'no double spaces: ' + o.firstMsg);
+      o.fails = fails; return o;
     });
-    console.log(lang, JSON.stringify(out));
+    console.log(lang, JSON.stringify(out)); if (out.fails.length) { console.log('FAIL', lang, out.fails); process.exitCode = 1; }
     await page.close();
   }
-  console.log('errors', errs); await browser.close();
+  console.log('errors', errs); if (errs.length) process.exitCode = 1; await browser.close();
 })();
