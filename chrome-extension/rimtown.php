@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.13.0
+ * Version: 6.14.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.13.0');
+define('RIMTOWN_VERSION', '6.14.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.14.0',
+            'date'    => '2026-10-12',
+            'changes' => array(
+                '💰 銀幣有去處了（B22）：經濟分頁「建築」裡每個在建工程多一顆「捐 40」——花 40 銀幣讓工匠加班、進度 +20%，每個工程每天一次；繁榮度卡片下方多「捐給鎮公所 100」——繁榮 +1（持久）、全鎮心情 +2、聲望 +2，每天最多三次，累計金額會顯示；兩者都進日誌與日報、存檔保留',
+            ),
+            'changes_en' => array(
+                '💰 Silver now has somewhere to go (B22): in the Economy tab\'s Buildings section every project in progress gets a "Donate 40" button that pays for overtime (+20% progress, once per project per day); under the prosperity card you can "Donate 100" to the town hall for prosperity +1 (permanent), town mood +2 and reputation +2, up to three times a day, with the running total shown. Both are logged, reported in the newspaper and saved',
+            ),
+        ),
         array(
             'version' => '6.13.0',
             'date'    => '2026-10-11',

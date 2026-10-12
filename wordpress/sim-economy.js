@@ -255,7 +255,37 @@ const HEART_EVENTS = [
 ];
 
 class BuildingManager {
-    constructor() { this.projects=[]; this.completed=[]; this.activeEffects={}; this._counter=0; }
+    constructor() { this.projects=[]; this.completed=[]; this.activeEffects={}; this._counter=0; this.donations={ day:null, n:0, total:0 }; } // v6.14.0 donations:鎮公所捐款(今天幾次、累計)
+    // v6.14.0 工程捐款:花 40 銀幣讓一個在建工程進度 +20%(每個工程每天一次);完工仍在隔天早上結算
+    static get FUND_COST() { return 40; }
+    static get DONATE_COST() { return 100; }
+    static get DONATE_PER_DAY() { return 3; }
+    _dayKey(world) { return `${world.clock.year}-${world.clock.season}-${world.clock.day}`; }
+    fund(projectId, world) {
+        const p=this.projects.find(x=>x.id===projectId && x.status==='building'); if(!p) return { ok:false, msg:t('沒有這個工程') };
+        const dk=this._dayKey(world); if(p.fundedDay===dk) return { ok:false, msg:t('這個工程今天已經捐過了，明天再來') };
+        const cost=BuildingManager.FUND_COST; if(!world.stockpile.has('silver',cost)) return { ok:false, msg:t('銀幣不足') };
+        world.stockpile.consume('silver',cost,world.tickCount,`${t('捐建')}：${t(p.name)}`,'player');
+        const gain=Math.max(1,Math.ceil(p.workRequired*0.2)); p.workDone=Math.min(p.workRequired,p.workDone+gain); p.fundedDay=dk; p.funded=(p.funded||0)+cost;
+        const text=`${t('你捐了')} ${cost} ${t('銀幣給')}「${t(p.name)}」${t('的工程，工匠們加班趕工')}（${Math.round(p.workDone/p.workRequired*100)}%）`;
+        world.logMessage?.('building',`🔨 ${text}`); world.dailyNews?.collectEvent?.('economy',text,5);
+        return { ok:true, msg:text, pct:Math.round(p.workDone/p.workRequired*100) };
+    }
+    // v6.14.0 鎮公所捐款:100 銀幣 → 繁榮 +1(持久)、全鎮心情 +2、聲望 +2;每天最多三次
+    donate(world) {
+        const dk=this._dayKey(world); if(this.donations.day!==dk) this.donations={ day:dk, n:0, total:this.donations?.total||0 };
+        if(this.donations.n>=BuildingManager.DONATE_PER_DAY) return { ok:false, msg:t('鎮公所今天收的捐款夠了，明天再來') };
+        const cost=BuildingManager.DONATE_COST; if(!world.stockpile.has('silver',cost)) return { ok:false, msg:t('銀幣不足') };
+        world.stockpile.consume('silver',cost,world.tickCount,t('捐給鎮公所'),'player');
+        this.donations.n++; this.donations.total+=cost;
+        if(world.prosperity) world.prosperity.questBonus=(world.prosperity.questBonus||0)+1;
+        Object.values(world.agents||{}).forEach(a=>{ if(!a.isPlayer) a.moodModifier=(a.moodModifier||0)+2; });
+        if(world.questSystem) world.questSystem.reputation=(world.questSystem.reputation||0)+2;
+        const text=`${t('你捐了')} ${cost} ${t('銀幣給鎮公所：繁榮 +1、全鎮心情 +2、聲望 +2')}`;
+        world.logMessage?.('economy',`🏛️ ${text}`); world.dailyNews?.collectEvent?.('economy',text,6);
+        return { ok:true, msg:text, left:BuildingManager.DONATE_PER_DAY-this.donations.n };
+    }
+    donationsLeft(world) { const dk=this._dayKey(world); return this.donations?.day===dk ? Math.max(0,BuildingManager.DONATE_PER_DAY-(this.donations.n||0)) : BuildingManager.DONATE_PER_DAY; }
     getAvailable(world) {
         const done=new Set(this.completed.map(p=>p.name)), prog=new Set(this.projects.map(p=>p.name));
         return Object.entries(BUILDING_TEMPLATES).filter(([,t])=>!done.has(t.name)&&!prog.has(t.name)).map(([key,t])=>({key,...t,can_afford:world.stockpile.canAfford(t.costs)}));
@@ -342,7 +372,7 @@ class BuildingManager {
         });
     }
     getEffect(key, def=0) { return this.activeEffects[key]??def; }
-    toDict() { return {in_progress:this.projects,completed:this.completed,active_effects:{...this.activeEffects},completed_count:this.completed.length,_counter:this._counter}; }
+    toDict() { return {in_progress:this.projects,completed:this.completed,active_effects:{...this.activeEffects},completed_count:this.completed.length,_counter:this._counter,donations:{...(this.donations||{})},fund_cost:BuildingManager.FUND_COST,donate_cost:BuildingManager.DONATE_COST}; }
 }
 
 // --- Economy: Trade ---

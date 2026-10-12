@@ -1877,7 +1877,7 @@ class World {
                 _usedImmigrantNames: [...this.events._usedImmigrantNames],
             },
             stockpile: { resources:{...this.stockpile.resources}, history:this.stockpile.history.slice(-600) },
-            buildings: { projects:this.buildings.projects.map(p=>({...p})), completed:this.buildings.completed.map(p=>({...p})), activeEffects:{...this.buildings.activeEffects}, _counter:this.buildings._counter },
+            buildings: { projects:this.buildings.projects.map(p=>({...p})), completed:this.buildings.completed.map(p=>({...p})), activeEffects:{...this.buildings.activeEffects}, _counter:this.buildings._counter, donations:{...(this.buildings.donations||{})} },
             trade: { merchant:this.trade.merchant?{...this.trade.merchant,offers:this.trade.merchant.offers.map(o=>({...o}))}:null, _daysSince:this.trade._daysSince, tradeHistory:this.trade.tradeHistory.slice(-10) },
             research: { projects:Object.fromEntries(Object.entries(this.research.projects).map(([k,p])=>[k,{...p}])), current:this.research.current },
             workOrders: { orders:this.workOrders.orders.map(o=>({...o})), _counter:this.workOrders._counter },
@@ -2110,6 +2110,7 @@ class World {
         this.heartEventsFired = this.heartEventsFired || {}; // v5.0.0 已觸發的心動事件 {npcId:[eventId]}
             if (data.buildings) {
                 this.buildings.projects = data.buildings.projects || [];
+                this.buildings.donations = (data.buildings.donations && typeof data.buildings.donations === 'object') ? { day: null, n: 0, total: 0, ...data.buildings.donations } : { day: null, n: 0, total: 0 }; // v6.14.0
                 this.buildings.completed = (data.buildings.completed || []).map(b => {
                     if (!b.buildingKey) {
                         // Legacy save: resolve buildingKey from name
