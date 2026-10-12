@@ -102,7 +102,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 - B19 ~~住房自動加蓋在主題鎮補不出房~~ v5.81.0 第二輪放寬掃描＋讓出多餘工廠地基；五鎮開局人人有床，礦山鎮最緊（15 戶），超過才合住。
 - B20 ~~際遇卡死碼~~ v5.82.0 已移除，舊檔欄位忽略。
 - B21 ~~手機角落通知仍會蓋住分頁底部內容~~ v6.12.0 上限兩張、早安卡 22 秒收起；v6.13.0 長文通知在手機先夾兩行、點一下展開。
-- B22 後期銀幣沒有去處：走流程四季後銀幣 4000+，只有買行動點（30）與護衛（20）會花錢；候選銀幣去處（待拍板）：捐建公共建設加繁榮、贊助節慶加全鎮心情、向鄰鎮買進缺的物資撐考驗。
+- B22 ~~後期銀幣沒有去處~~ v6.14.0 加兩個去處：在建工程「捐 40 趕工」（進度 +20%、每工程每天一次）與「捐給鎮公所 100」（繁榮 +1、全鎮心情 +2、聲望 +2、每天三次）；其餘候選（贊助節慶、向鄰鎮買物資）看玩測回饋再說。
 - B23 純觀察（idle）玩家的衰敗節奏：60 天不玩人口 25→17、第二到三季就衰敗（v6.13.0 起連撐兩季可復興）；設計上是「不做有後果」，但要看玩測回饋決定要不要把 idle 的考驗目標再放寬。
 - B24 效能量測（v6.13.0，Chromium 桌機／手機視口）：60 天後 world.tick 0.1ms、getState 0.9–1.3ms、render 0.4–1.4ms、存檔 1.6MB／getState 0.7MB；目前不是瓶頸，存檔體積靠 B12 的上限壓著。
 - B25 LLM 提示詞中文本體（B2）維持：英文模式靠英文規則行與系統指示，走流程英文截圖的對話與判定文案正常，不另寫英文提示詞。
@@ -235,7 +235,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.13.0.zip` from Releases
+1. Download `rimtown-v6.14.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -266,6 +266,7 @@ node scripts/i18n-audit.js     # i18n 重複鍵=0、新 t('…') 字串必須有
 node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改版面才 --update(v5.81.0 起)
 # 選跑:cd wordpress && python3 -m http.server 8126 & ; node scripts/smoke_playwright.js  # 五鎮世界/英文標籤/鄰鎮/住房/商隊冒煙
 # 選跑:node scripts/quest_chain_test.js   # 四座主題鎮任務鏈端到端(五章/災難/商路/支線/存檔/英文)(v5.88.0 起;改任務鏈或災難必跑)
+# 選跑:node scripts/donate_test.js   # v6.14.0 捐建/捐款(進度 +20%、每日上限、繁榮上限、當天心情、存讀檔、按鈕;有斷言,失敗 exit 1)
 # 選跑:node scripts/growth2_test.js ; node scripts/revival_test.js   # v6.12.0/v6.13.0 旅人後期成長(天賦學完→屬性、最後一個天賦邊界、舊檔遷移)與小鎮復興(衰敗→連撐兩季→中央卡/回顧/存讀檔)
 # 選跑:node scripts/walkthrough.js <zh|en> <desktop|mobile> <outdir>   # v6.11.0 新手走一遍:用 app 自己的迴圈真跑一季、關鍵時刻截圖,看圖抓版面/文案問題
 # 選跑:node scripts/soak_test.js [url] [days] [theme] [mode]   # mode=full|casual|idle(v6.2.0 平衡矩陣用);核心玩法迴圈浸泡:真 tick 跑 35 天、每天像玩家做委託/商隊/對話/天賦、每 10 天存檔讀檔接著跑(v5.96.0 起;改核心迴圈必跑五主題)
@@ -280,6 +281,9 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.14.0 (2026-10-12)
+- 💰 銀幣有去處了（B22）：經濟分頁「建築」裡每個在建工程多一顆「捐 40」——花 40 銀幣讓工匠加班、進度 +20%，每個工程每天一次；繁榮度卡片下方多「捐給鎮公所 100」——繁榮 +1（持久、累計最多 +10，數字立即更新）、全鎮當天心情 +2（最多 +6）、聲望 +2，每天最多三次，累計金額會顯示；兩者都進日誌與日報、存檔保留
 
 ### v6.13.0 (2026-10-11)
 - 🌅 小鎮復興：衰敗結局後連續撐過兩季考驗就復興——解除衰敗（之後主線結局仍可達成）、全鎮士氣 +12、繁榮 +15、聲望 +15，中央卡與日報報導；故事分頁考驗區塊顯示「衰敗中 n/2」、早安卡每天提醒、季末回顧記一筆並加評等

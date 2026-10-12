@@ -41,6 +41,19 @@ Object.assign(RimTownApp.prototype, {
         return out;
     },
 
+    // v6.14.0 工程捐款 / 鎮公所捐款
+    _fundProject(id) {
+        const w = this.world; if (!w?.buildings?.fund) return;
+        const r = w.buildings.fund(id, w);
+        this._showCornerNotice({ icon: r.ok ? '🔨' : '⚠️', title: t('捐建'), name: '', desc: r.msg || '' });
+        this.state = w.getState(); try { this.renderSidebar(); } catch (e) {}
+    },
+    _donateTown() {
+        const w = this.world; if (!w?.buildings?.donate) return;
+        const r = w.buildings.donate(w);
+        this._showCornerNotice({ icon: r.ok ? '🏛️' : '⚠️', title: t('捐給鎮公所'), name: '', desc: r.msg || '' });
+        this.state = w.getState(); try { this.renderSidebar(); } catch (e) {}
+    },
     renderEconomy(container) {
         if (!this.state) return;
         if (!this._economySubTab) this._economySubTab = 'resources';
@@ -73,6 +86,9 @@ Object.assign(RimTownApp.prototype, {
                 html += `<span style="width:20px;text-align:right;color:var(--text-muted)">${dim.value}</span>`;
                 html += `</div>`;
             }
+            // v6.14.0 鎮公所捐款:銀幣的去處之一(繁榮 +1、全鎮心情 +2、聲望 +2,每天三次)
+            const bd = this.state.buildings || {}; const left = Number.isFinite(bd.donations_left) ? bd.donations_left : (bd.donate_per_day || 3); const dcost = bd.donate_cost || 100; const silverNow = this.state.stockpile?.resources?.silver || 0;
+            html += `<div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:0.72rem;color:var(--text-secondary)"><span style="flex:1">${t('捐給鎮公所：繁榮 +1、全鎮今天心情 +2、聲望 +2')}${bd.donations?.total ? ` · ${t('累計')} ${bd.donations.total}` : ''}${(bd.donations?.bonus || 0) >= (bd.donate_prosperity_cap || 10) ? ` · ${t('繁榮加成已滿')}` : ''}</span><button class="trade-btn" data-action="donate-town" ${left > 0 && silverNow >= dcost ? '' : 'disabled'} style="padding:3px 10px;font-size:0.72rem;white-space:nowrap">🏛️ ${t('捐')} ${dcost}${left > 0 ? `（${t('今天還可 {n} 次').replace('{n}', left)}）` : `（${t('明天再來')}）`}</button></div>`;
             html += `</div></div>`;
         }
 
@@ -266,11 +282,14 @@ Object.assign(RimTownApp.prototype, {
             html += t('<div class="econ-section"><h3>建築</h3>');
             if (buildings.in_progress?.length) {
                 html += '<div class="building-progress">';
+                const silver = this.state.stockpile?.resources?.silver || 0; const fundCost = buildings.fund_cost || 40;
                 buildings.in_progress.forEach(p => {
                     const pct = Math.round((p.workDone / p.workRequired) * 100);
+                    const fundedToday = p.status === 'building' && p.can_fund_today === false; const can = !!p.can_fund_today && silver >= fundCost;
                     html += `<div class="building-item"><span>${t(p.name)}</span>
                         <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-                        <span class="progress-text">${pct}%</span></div>`;
+                        <span class="progress-text">${pct}%</span>
+                        <button class="trade-btn" data-action="fund-project" data-val="${p.id}" ${can ? '' : 'disabled'} title="${fundedToday ? t('這個工程今天已經捐過了，明天再來') : t('花銀幣讓工匠加班：進度 +20%，每個工程每天一次')}" style="padding:2px 8px;font-size:0.7rem;margin-left:6px">💰 ${fundedToday ? t('今天捐過') : `${t('捐')} ${fundCost}`}</button></div>`; // v6.14.0 工程捐款
                 });
                 html += '</div>';
             }
