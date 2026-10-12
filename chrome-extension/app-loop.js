@@ -33,11 +33,24 @@ Object.assign(RimTownApp.prototype, {
         document.getElementById('season-recap')?.remove();
         const [kind, b, c] = String(val || '').split(':');
         if (kind === 'caravan') { this._showCaravanDialog(); return; }
+        if (kind === 'towns') { try { this.showTownManager(); } catch (e) {} return; } // v6.11.0
         if (kind === 'tab') { this._goTab(b); return; }
         if (kind === 'chat' && c && this.world?.agents?.[c]) {
             this.startChatWith(c);
             if (b && this._judgeAvailable?.() && this._judgeGoal?.(b)) setTimeout(() => { try { if (this.chatTarget === c && !this._intentArmed) this._sendIntent(b); } catch (e) {} }, 80);
         }
+    },
+    // v6.11.0 下一座還沒通車的鄰鎮(依解鎖表與目前鎮主題;全部已解鎖或表不存在就回 null)
+    _nextLockedNeighbor() {
+        if (typeof NEIGHBOR_TOWNS === 'undefined') return null;
+        const theme = this.world?.townTheme || 'frontier';
+        let flag = () => false; try { flag = (k) => localStorage.getItem(k) === '1'; } catch (e) {}
+        return NEIGHBOR_TOWNS.find(d => d.theme !== theme && !flag(d.key)) || null;
+    },
+    _noNeighborText() {
+        const w = this.world; const nx = this._nextLockedNeighbor();
+        if (!nx) return t('鄰鎮的存檔不在這台裝置上：到「城鎮列表」打開它，或再建一座城鎮，馬車站就會通車。');
+        return t('還沒有通車的鄰鎮：小鎮繁榮到 {p} 就會修好往{town}的路（目前 {c}），之後可以押商隊、互訪、跨鎮戀愛；也可以到「城鎮列表」自己再建一座。').split('{p}').join(String(nx.prosperity)).split('{town}').join(t(nx.name)).split('{c}').join(String(Math.round(w?.prosperity?.prosperity || 0)));
     },
     _showCaravanDialog() {
         const w = this.world; if (!w) return;
@@ -55,12 +68,13 @@ Object.assign(RimTownApp.prototype, {
         if (a) {
             inner += `<div style="font-size:0.8rem;line-height:1.7">${t('商隊在路上：')}${a.amount} ${this._resLabel(a.res)} → ${esc(t(a.toTownName))}${a.guardName ? `（${esc(t(a.guardName))}${t('押車')}）` : ''}<br>${t('預計')} ${Math.max(0, a.returnAbsDay - w._absDay())} ${t('天後回報')}</div>`;
         } else if (!towns.length || !resList.length) {
-            inner += `<div style="font-size:0.8rem;color:var(--text-secondary)">${!towns.length ? t('還沒有通車的鄰鎮。') : t('倉庫裡沒有夠的貨（至少 10 份）。')}</div>`;
+            inner += `<div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.6">${!towns.length ? this._noNeighborText() : t('倉庫裡沒有夠的貨（至少 10 份）。')}</div>`;
+            if (!towns.length) inner += `<button class="trade-btn pc-towns" style="width:100%;margin-top:10px;padding:8px;font-size:0.82rem">🏘️ ${t('城鎮列表')}</button>`; // v6.11.0 不再是死路:說清楚解鎖條件,附城鎮列表入口
         } else {
             const sel = (id, opts) => `<select id="${id}" style="width:100%;padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--bg-primary);color:var(--text-primary);font-size:0.85rem">${opts}</select>`;
             inner += `<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px">${t('車伕掂掂貨：「要押什麼去哪？山路快一天，但不太平。」')}</div>`;
             inner += `<label style="font-size:0.75rem">${t('目的鎮')}</label>${sel('pc-town', towns.map((tw, i) => `<option value="${i}">${esc(t(tw.name))}</option>`).join(''))}`;
-            inner += `<label style="font-size:0.75rem;margin-top:6px;display:block">${t('貨物')}</label>${sel('pc-res', resList.map(r => `<option value="${r}">${this._resLabel(r)}（${t('倉庫')} ${w.stockpile.get(r)}）</option>`).join(''))}`;
+            inner += `<label style="font-size:0.75rem;margin-top:6px;display:block">${t('貨物')}</label>${sel('pc-res', resList.map(r => `<option value="${r}">${this._resLabel(r)}（${t('倉庫')} ${Math.floor(w.stockpile.get(r))}）</option>`).join(''))}`;
             inner += `<label style="font-size:0.75rem;margin-top:6px;display:block">${t('數量')} <span id="pc-amt-v">20</span></label><input type="range" id="pc-amt" min="10" max="200" step="10" value="20" style="width:100%">`;
             inner += `<label style="font-size:0.75rem;margin-top:6px;display:block">${t('護衛')}</label>${sel('pc-guard', `<option value="">${t('不派（省 20 銀幣）')}</option>` + guards.map(g => `<option value="${g.agentId}">${esc(t(g.name))}（${t('離鎮')} 1–2 ${t('天')}）</option>`).join(''))}`;
             inner += `<div style="margin-top:6px;font-size:0.8rem;display:flex;gap:12px"><label><input type="radio" name="pc-route" value="road" checked> ${t('大路（2 天）')}</label><label><input type="radio" name="pc-route" value="mountain"> ${t('山路（1 天）')}</label></div>`;
@@ -86,6 +100,7 @@ Object.assign(RimTownApp.prototype, {
                 if (r.ok) { ov.remove(); this.state = w.getState(); try { this.renderSidebar(); } catch (err) {} }
                 return;
             }
+            if (e.target.closest?.('.pc-towns')) { ov.remove(); try { this.showTownManager(); } catch (err) {} return; }
             if (e.target.closest?.('.pc-close') || e.target === ov) ov.remove();
         });
     },
@@ -297,8 +312,12 @@ Object.assign(RimTownApp.prototype, {
         w.onRelocate = (data) => this._doRelocate(data); // v5.90.0 搬家提案的決定
         w.onSeasonRecap = () => { try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} this._showSeasonRecap(); }; // v5.98.0 季末回顧
         w.onChainEvent = (kind, npcName, title, text) => { if (kind === 'start') { try { this._aiChainQuotes(w); } catch (e) {} } this._showCornerNotice({ icon: kind === 'done' ? '🏅' : kind === 'broken' ? '💔' : '📖', title: kind === 'done' ? t('委託鏈完成') : kind === 'broken' ? t('委託鏈中斷') : t('有人想拜託你'), name: `${t(npcName)} · ${title}`, desc: text || (kind === 'start' ? t('明天的委託板會多一件他的事，連做三天') : '') }); }; // v6.5.0
-        w.onGrowthEvent = (kind, v) => { if (kind === 'level') this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${v} ${t('級')}`, name: '', desc: t('到「故事」分頁選一個天賦') }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.94.0
+        w.onGrowthEvent = (kind, v) => { if (kind === 'level') this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${v} ${t('級')}`, name: '', desc: t('到「故事」分頁選一個天賦') }); else if (kind === 'attr') { this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${w.growth?.level || ''} ${t('級')}`, name: `${(typeof growthAttrLabel === 'function' ? growthAttrLabel(v) : v)} +1`, desc: t('天賦都學完了，之後每升一級隨機一項屬性 +1') }); } try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.94.0
         w.onTrialEvent = (kind, title, desc) => { this._showCornerNotice({ icon: kind === 'passed' ? '🏅' : kind === 'failed' ? '💔' : '⚖️', title, name: '', desc }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.93.0
+        w.onEndingEvent = (kind, title, desc) => { // v6.13.0 復興:中央卡(要給 content 才會是中央卡),並讓之後的結局還能彈
+            if (kind === 'revived') { this._endingShown = false; this._showCenterNotification({ icon: '🌅', title, name: t(w.townName || '邊境鎮'), desc: '', content: `<div style="font-size:0.9rem;line-height:1.7">${this._escapeHtml(desc || '')}</div>`, autoDismiss: 0 }); }
+            try { this.state = w.getState(); this.renderSidebar(); } catch (e) {}
+        };
         w.onPlayerCaravanReturn = (result, line) => { this._showCornerNotice({ icon: result.raided ? '🏴' : '💰', title: t('商隊回報'), name: t(result.toTownName), desc: line }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.92.0
         // v5.80.0 跨鎮商隊:角落通知 + 地圖上馬車進城動畫
         w.onCaravan = (info) => {
@@ -444,13 +463,16 @@ Object.assign(RimTownApp.prototype, {
         const d = rb.toDict(w); if (d.chain) rows.push(`📖 ${esc(d.chain.title)} ${d.chain.step + 1}/${d.chain.total} · ${esc(d.chain.npcName)}`);
         const tr = w.trials?.current; if (tr && tr.status === 'active' && w.trials.value) { const v = w.trials.value(tr.type, w); const d2 = (typeof TRIAL_TYPES !== 'undefined' && TRIAL_TYPES[tr.type]) || {}; rows.push(`⚖️ ${esc(t(d2.title || tr.type))} ${v}/${tr.target} · ${t('剩')} ${Math.max(0, (tr.dueDay || 15) - w.clock.day)} ${t('天')}`); }
         else if (!tr && w.clock.day < 5) rows.push(`⚖️ ${t('第 5 天公布本季考驗')}`);
+        const td = w.trials?.toDict ? w.trials.toDict(w) : null; if (td?.declined) rows.push(`🍂 ${t('衰敗中')} · ${t('連續撐過兩季考驗就能復興')}（${td.passStreak || 0}/2）`); // v6.13.0 與故事分頁同一份資料
+        const pl = w.growth?.pendingLevels?.() || 0; if (pl > 0 && w.growth?.pending?.length) rows.push(`⬆️ ${t('升級了！選一個天賦')}${pl > 1 ? `（${t('還有 {n} 次').replace('{n}', pl)}）` : ''}`); // v6.11.0 天賦還沒選就每天提醒
         const el = document.createElement('div'); el.id = 'morning-card'; el.className = 'rt-toast morning';
         el.style.cssText = 'background:rgba(22,22,32,0.96);border:1px solid var(--accent,#e94560);border-radius:12px;padding:10px 12px;max-width:min(360px,calc(100vw - 28px));pointer-events:auto;box-shadow:0 6px 24px rgba(0,0,0,0.45);opacity:0;transform:translateY(8px);transition:all .3s';
         el.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:1.2rem">☀️</span><span style="flex:1;color:var(--accent,#e94560);font-size:0.78rem;font-weight:bold">${t('早安')} · ${esc(t('第 {y} 年{s}').split('{y}').join(w.clock.year).split('{s}').join(t(w.clock.season)))} · ${t('第 {d} 天').split('{d}').join(w.clock.day)}</span><button data-mc="close" style="background:none;border:none;color:var(--text-muted,#999);font-size:1rem;cursor:pointer;line-height:1">✕</button></div><div class="mc-body" style="font-size:0.76rem;line-height:1.5;color:var(--text-secondary,#ccc)">${rows.map(r => `<div>${r}</div>`).join('')}</div><button data-mc="go" class="trade-btn" style="width:100%;margin-top:8px;padding:6px;font-size:0.76rem">📋 ${t('看委託板')}</button>`;
         el.addEventListener('click', (e) => { const b = e.target.closest('[data-mc]'); if (!b) return; if (b.dataset.mc === 'go') this._goTab('quest'); el.remove(); });
         host.appendChild(el);
         requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
-        setTimeout(() => { if (el.isConnected) { el.dataset.fading = '1'; el.style.opacity = '0'; setTimeout(() => el.remove(), 350); } }, 45000);
+        setTimeout(() => { if (el.isConnected) { el.dataset.fading = '1'; el.style.opacity = '0'; setTimeout(() => el.remove(), 350); } }, window.innerWidth <= 768 ? 22000 : 45000); // v6.11.0 手機沒有空位,早安卡 22 秒就收(桌機 45 秒)
+        try { this._renderFirstDayGuide?.(); } catch (e) {} // v6.11.0 換日重算引導卡(第 4 天起 _firstDayActive 回 false 就會收掉)
     },
     _renderRequestBoard() {
         const rb = this.world?.requests; if (!rb) return '';
@@ -479,7 +501,7 @@ Object.assign(RimTownApp.prototype, {
     _renderGrowth() {
         const g = this.state?.growth; if (!g) return '';
         const esc = (x) => this._escapeHtml(String(x));
-        const AT = { charm: t('魅力值'), vigor: t('體力值'), wit: t('機智值'), grit: t('毅力值') };
+        const AT = (typeof GROWTH_ATTR_LABEL !== 'undefined') ? Object.fromEntries(Object.entries(GROWTH_ATTR_LABEL).map(([k, v]) => [k, t(v)])) : { charm: t('魅力值'), vigor: t('體力值'), wit: t('機智值'), grit: t('毅力值') };
         let html = `<div class="econ-section"><h3>🧭 ${t('旅人')} · Lv.${g.level}</h3>
             <div class="bar" style="height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden"><div style="width:${g.pct}%;height:100%;background:var(--accent)"></div></div>
             <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:3px">${t('經驗')} ${g.xp}/${g.next} · ${g.attrs.map(a => `${AT[a.key]} ${a.base}${a.bonus ? `<span style="color:var(--positive,#4ade80)">+${a.bonus}</span>` : ''}`).join(' · ')}</div>`;
@@ -497,6 +519,8 @@ Object.assign(RimTownApp.prototype, {
         const tr = this.state?.trials; if (!tr) return '';
         const esc = (x) => this._escapeHtml(String(x));
         let html = `<div class="econ-section"><h3>⚖️ ${t('本季考驗')}${tr.failStreak ? ` <span style="font-size:0.7rem;color:var(--negative);font-weight:400">${t('已連續失敗')} ${tr.failStreak} ${t('季')}</span>` : ''}</h3>`;
+        if (tr.declined) html += `<div style="font-size:0.78rem;color:#f0b35a;margin-bottom:6px">🍂 <b>${t('衰敗中')}</b>：${t('連續撐過兩季考驗就能復興')}（${tr.passStreak || 0}/2）</div>`; // v6.13.0
+        else if (tr.revivals) html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:4px">🌅 ${t('復興過 {n} 次').replace('{n}', tr.revivals)}</div>`;
         if (tr.current) {
             const c = tr.current; const col = c.pct >= 100 ? 'var(--positive, #4ade80)' : c.pct >= 60 ? 'var(--accent)' : 'var(--negative, #f87171)';
             html += `<div style="font-size:0.82rem">${c.icon} <b>${esc(c.title)}</b> · ${t('剩')} ${c.daysLeft} ${t('天')}</div>

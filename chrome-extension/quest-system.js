@@ -2488,7 +2488,7 @@ class RequestBoard {
         if (r.status === 'failed') return t('已過期');
         if (r.type === 'mediate') { const n = (r.talked || []).length; return n < 2 ? `${t('已聊過')} ${n}/2` : t('兩人都聊過了，去找其中一位按「調解」'); }
         if (r.type === 'fetch') return r.visited ? t('東西拿到了，回去交給他') : t('先到指定地點');
-        if (r.type === 'deliver') { const have = world?.stockpile?.get?.(r.res) || 0; return `${t('倉庫')} ${have}/${r.amount}`; }
+        if (r.type === 'deliver') { const have = Math.floor(world?.stockpile?.get?.(r.res) || 0); return `${t('倉庫')} ${have}/${r.amount}`; } // v6.11.0 取整(之前會出現 161.50000000000006)
         if (r.type === 'trial' && world?.trials) { const v = world.trials.value(r.trialType, world) - (r.baseValue || 0); return `${t('已推高')} ${Math.max(0, v)}/${r.delta}`; }
         if (r.type === 'caravan') return world?.playerCaravan?.active ? t('商隊在路上了，回報就算') : t('到馬車站押一隊');
         return '';
@@ -2697,7 +2697,7 @@ const TRIAL_TYPES = {
     pricewar: { icon: '📉', title: '商會壓價', perk: 'guildSeal', perkName: '商會印信', perkDesc: '押商隊利潤 +10%', weights: { market: 3, harbor: 3, forest: 1, frontier: 1, mountain: 1 } },
 };
 class SeasonTrials {
-    constructor() { this.current = null; this.failStreak = 0; this.history = []; this.lastType = null; }
+    constructor() { this.current = null; this.failStreak = 0; this.passStreak = 0; this.history = []; this.lastType = null; } // v6.13.0 passStreak:衰敗後連續撐過兩季就復興
     _npcs(w) { return Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_')); }
     _seasonKey(w) { return `${w.clock.year}-${w.clock.season}`; }
     _flags(w) { return w.harborFlags || (w.harborFlags = {}); }
@@ -2761,7 +2761,7 @@ class SeasonTrials {
         world.growth?.addXp(passed ? 40 : 10, 'trial', world); // v5.94.0 經驗
         const f = this._flags(world);
         if (passed) {
-            this.failStreak = 0; f[d.perk] = true;
+            this.failStreak = 0; this.passStreak = (this.passStreak || 0) + 1; f[d.perk] = true;
             if (c.type === 'plague') Object.values(world.agents).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) + 10; });
             Object.values(world.agents).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) + 5; });
             if (world.questSystem) world.questSystem.reputation = (world.questSystem.reputation || 0) + 10;
@@ -2769,8 +2769,9 @@ class SeasonTrials {
             const text = `${t('撐過了')}「${t(d.title)}」${t('的考驗！全鎮得到')}「${t(d.perkName)}」：${t(d.perkDesc)}`;
             world.logMessage?.('event', `🏅 ${text}`); world.dailyNews?.collectEvent?.('event', text, 10);
             world.onTrialEvent?.('passed', `🏅 ${t('考驗通過')}：${t(d.title)}`, `${t(d.perkName)} — ${t(d.perkDesc)}`);
+            if (world.multiEnding?.endingTriggered === 'decline' && this.passStreak >= 2) world.multiEnding.revive?.(world); // v6.13.0 復興
         } else {
-            this.failStreak++;
+            this.failStreak++; this.passStreak = 0;
             const leavers = this._npcs(world).filter(a => a.job?.key !== 'mayor' && !(a.relationships?.relationships?.player?.status === 'married')).sort((a, b) => (a.mood || 50) - (b.mood || 50)).slice(0, Math.min(Math.max(1, Math.round(this._npcs(world).length * 0.12)), Math.max(1, 2 + (this.failStreak >= 2 ? 1 : 0) - (world.growth?.has('grit') ? 1 : 0)))); // v5.94.0 天賦:硬頸;v6.2.0 小鎮最多走 12%
             const names = leavers.map(a => a.name);
             leavers.forEach(a => world.leaveTown?.(a.agentId, t('鎮上的日子過不下去')));
@@ -2789,20 +2790,25 @@ class SeasonTrials {
         const f = this._flags(world);
         return {
             current: c ? { ...c, icon: d.icon, title: t(d.title), goal: this.goalText(c.type, c.target), value: this.value(c.type, world), unit: this.unit(c.type), pct: Math.min(100, Math.round(this.value(c.type, world) / Math.max(1, c.target) * 100)), daysLeft: Math.max(0, (c.dueDay || 15) - world.clock.day), perkName: t(d.perkName), perkDesc: t(d.perkDesc) } : null,
-            failStreak: this.failStreak,
+            failStreak: this.failStreak, passStreak: this.passStreak || 0, declined: world?.multiEnding?.endingTriggered === 'decline', revivals: world?.multiEnding?.revivals || 0, // v6.13.0
             perks: Object.values(TRIAL_TYPES).filter(x => f[x.perk]).map(x => ({ name: t(x.perkName), desc: t(x.perkDesc) })),
             history: this.history.slice(-4).reverse().map(h => ({ ...h, title: t(TRIAL_TYPES[h.type]?.title || h.type), icon: TRIAL_TYPES[h.type]?.icon || '⚖️' })),
             nextAnnounceDay: c ? null : 5,
         };
     }
-    serialize() { return { current: this.current, failStreak: this.failStreak, history: this.history, lastType: this.lastType, lastSeasonKey: this.lastSeasonKey || null, }; }
-    loadFrom(d) { if (!d) return; this.current = d.current || null; this.failStreak = d.failStreak || 0; this.history = Array.isArray(d.history) ? d.history : []; this.lastType = d.lastType || null; this.lastSeasonKey = d.lastSeasonKey || null; }
+    serialize() { return { current: this.current, failStreak: this.failStreak, passStreak: this.passStreak || 0, history: this.history, lastType: this.lastType, lastSeasonKey: this.lastSeasonKey || null, }; }
+    loadFrom(d) { if (!d) return; this.current = d.current || null; this.failStreak = d.failStreak || 0; this.passStreak = d.passStreak || 0; this.history = Array.isArray(d.history) ? d.history : []; this.lastType = d.lastType || null; this.lastSeasonKey = d.lastSeasonKey || null; }
 }
 
 
 // ============================================================
 // v5.94.0 旅人成長(README H4):委託/考驗/商隊/任務給經驗,升級三選一天賦;天賦接進既有系統
 // ============================================================
+// v6.12.1 四項屬性與顯示名,成長系統與介面共用
+const GROWTH_ATTRS = ['charm', 'vigor', 'wit', 'grit'];
+const GROWTH_ATTR_LABEL = { charm: '魅力值', vigor: '體力值', wit: '機智值', grit: '毅力值' };
+function growthAttrLabel(k) { return t(GROWTH_ATTR_LABEL[k] || k); }
+function growthZeroAttrs() { return Object.fromEntries(GROWTH_ATTRS.map(k => [k, 0])); }
 const GROWTH_PERKS = {
     stride:      { icon: '🥾', name: '健步', desc: '每天行動點 +1', attr: { vigor: 1 } },
     silvertongue:{ icon: '🗣️', name: '巧舌', desc: '調解成功率 +8%，魅力 +2', attr: { charm: 2 } },
@@ -2816,35 +2822,49 @@ const GROWTH_PERKS = {
     empath:      { icon: '💞', name: '知心', desc: '「用你的話說」AI 判定每級 ±12%、每天多 10 次，魅力 +1', attr: { charm: 1 } }, // v6.9.0
 };
 class TravellerGrowth {
-    constructor() { this.xp = 0; this.level = 1; this.perks = []; this.pending = null; this.log = []; this.total = 0; }
+    // v6.12.1 每升一級恰好得到一份獎勵:池裡還有天賦就排一次三選一,學完就 +1 隨機屬性;unspent 記還沒兌現的升級數
+    constructor() { this.xp = 0; this.level = 1; this.perks = []; this.pending = null; this.log = []; this.total = 0; this.extra = growthZeroAttrs(); this.unspent = 0; }
     xpToNext() { return 60 + this.level * 45; } // v5.96.0 浸泡測試 35 天就 Lv.10 學完八種天賦,放慢
     has(perk) { return this.perks.includes(perk); }
-    attrBonus() { const b = { charm: 0, vigor: 0, wit: 0, grit: 0 }; for (const k of this.perks) for (const [a, v] of Object.entries(GROWTH_PERKS[k]?.attr || {})) b[a] += v; return b; }
+    attrBonus() { const b = growthZeroAttrs(); for (const k of this.perks) for (const [a, v] of Object.entries(GROWTH_PERKS[k]?.attr || {})) b[a] += v; for (const a of GROWTH_ATTRS) b[a] += (this.extra?.[a] || 0); return b; }
     attr(world, key) { return ((world?.agents?.player?.attributes || {})[key] || 5) + this.attrBonus()[key]; }
+    _pool() { return Object.keys(GROWTH_PERKS).filter(k => !this.has(k)); }
     addXp(n, reason, world) {
         if (!n) return;
         this.xp += n; this.total = (this.total || 0) + n; this.log = this.log.concat([{ n, reason, day: world?.clock?.day }]).slice(-20);
-        let leveled = false;
-        while (this.xp >= this.xpToNext()) { this.xp -= this.xpToNext(); this.level++; leveled = true; }
-        if (leveled && !this.pending) this._offer();
-        if (leveled) { world?.logMessage?.('quest', `⬆️ ${t('旅人升到')} ${this.level} ${t('級，去「故事」分頁選一個天賦')}`); world?.onGrowthEvent?.('level', this.level); }
+        let gained = 0;
+        while (this.xp >= this.xpToNext()) { this.xp -= this.xpToNext(); this.level++; gained++; }
+        if (!gained) return;
+        this.unspent = (this.unspent || 0) + gained;
+        this._settle(world, true);
+    }
+    // 把還沒兌現的升級換成獎勵:有天賦可學就開一次三選一等玩家挑(一次只開一份),池空了就直接 +1 隨機屬性
+    _settle(world, announce) {
+        let guard = 0;
+        while ((this.unspent || 0) > 0 && guard++ < 50) {
+            if (this._pool().length) {
+                if (!this.pending) this._offer();
+                if (announce) { world?.logMessage?.('quest', `⬆️ ${t('旅人升到')} ${this.level} ${t('級，去「故事」分頁選一個天賦')}`); world?.onGrowthEvent?.('level', this.level); }
+                return; // 等玩家選完(choose 會再呼叫 _settle)
+            }
+            const k = GROWTH_ATTRS[Math.floor(Math.random() * GROWTH_ATTRS.length)]; this.extra = this.extra || growthZeroAttrs(); this.extra[k] = (this.extra[k] || 0) + 1; this.unspent--;
+            if (announce) { world?.logMessage?.('quest', `⬆️ ${t('旅人升到')} ${this.level} ${t('級，天賦都學完了：')}${growthAttrLabel(k)} +1`); world?.onGrowthEvent?.('attr', k); }
+        }
     }
     _offer() {
-        const pool = Object.keys(GROWTH_PERKS).filter(k => !this.has(k));
+        const pool = this._pool();
         if (!pool.length) { this.pending = null; return; }
         const pick = []; while (pick.length < Math.min(3, pool.length)) { const k = pool[Math.floor(Math.random() * pool.length)]; if (!pick.includes(k)) pick.push(k); }
         this.pending = pick;
     }
-    pendingLevels() { // 升了幾級還沒選
-        return Math.max(0, this.level - 1 - this.perks.length);
-    }
+    pendingLevels() { return this.pending ? Math.max(0, this.unspent || 0) : 0; } // 還有幾級等著選天賦
     choose(perk, world) {
         if (!this.pending || !this.pending.includes(perk) || this.has(perk)) return { ok: false };
-        this.perks.push(perk); this.pending = null;
-        if (this.pendingLevels() > 0) this._offer();
+        this.perks.push(perk); this.pending = null; this.unspent = Math.max(0, (this.unspent || 0) - 1);
         const d = GROWTH_PERKS[perk];
         world?.logMessage?.('quest', `✨ ${t('旅人學會了')}「${t(d.name)}」：${t(d.desc)}`);
         world?.onGrowthEvent?.('perk', perk);
+        this._settle(world, false);
         return { ok: true, perk };
     }
     toDict(world) {
@@ -2855,8 +2875,16 @@ class TravellerGrowth {
             pendingLevels: this.pendingLevels(),
             attrs: ['charm', 'vigor', 'wit', 'grit'].map(k => ({ key: k, base: base[k] || 5, bonus: b[k] })), log: this.log.slice(-5).reverse() };
     }
-    serialize() { return { xp: this.xp, level: this.level, perks: this.perks, pending: this.pending, log: this.log, total: this.total || 0 }; }
-    loadFrom(d) { if (!d) return; this.xp = d.xp || 0; this.total = d.total || 0; this.level = d.level || 1; this.perks = Array.isArray(d.perks) ? d.perks : []; this.pending = Array.isArray(d.pending) ? d.pending : null; this.log = Array.isArray(d.log) ? d.log : []; if (!this.pending && this.pendingLevels() > 0) this._offer(); }
+    serialize() { return { xp: this.xp, level: this.level, perks: this.perks, pending: this.pending, log: this.log, total: this.total || 0, extra: this.extra || null, unspent: this.unspent || 0 }; }
+    loadFrom(d) {
+        if (!d) return; this.xp = d.xp || 0; this.total = d.total || 0; this.level = d.level || 1; this.perks = Array.isArray(d.perks) ? d.perks : []; this.pending = Array.isArray(d.pending) ? d.pending : null; this.log = Array.isArray(d.log) ? d.log : [];
+        this.extra = (d.extra && typeof d.extra === 'object') ? { ...growthZeroAttrs(), ...d.extra } : growthZeroAttrs();
+        // 舊檔沒有 unspent:用等級推回還沒兌現的升級數(含 6.12 前就超過 Lv.11 的檔),再靜默結算
+        const extraSum = GROWTH_ATTRS.reduce((a, k) => a + (this.extra[k] || 0), 0);
+        this.unspent = (typeof d.unspent === 'number') ? d.unspent : Math.max(0, this.level - 1 - this.perks.length - extraSum);
+        if (this.pending && !this.pending.every(k => GROWTH_PERKS[k] && !this.has(k))) this.pending = null;
+        this._settle(null, false);
+    }
 }
 
 // v5.98.0 季末回顧:季初快照、季末差分,換季那天彈一頁回顧;最多留 4 季
@@ -2871,7 +2899,7 @@ class SeasonRecap {
             silver: w.stockpile?.get?.('silver') || 0, pop: this._npcs(w).length, level: w.growth?.level || 1, xpTotal: w.growth?.total || 0,
             chainsDone: w.requests?.stats?.chainsDone || 0, reqDone: w.requests?.stats?.done || 0, reqFailed: w.requests?.stats?.failed || 0, bestStreak: w.requests?.stats?.bestStreak || 0,
             carRuns: w.playerCaravan?.totals?.runs || 0, carSilver: w.playerCaravan?.totals?.silver || 0, carRaids: w.playerCaravan?.totals?.raids || 0,
-            rep: w.questSystem?.reputation || 0, prosperity: w.prosperity?.prosperity || 0,
+            rep: w.questSystem?.reputation || 0, prosperity: w.prosperity?.prosperity || 0, revivals: w.multiEnding?.revivals || 0, // v6.13.0
             questsDone: Object.values(w.questSystem?.quests || {}).filter(q => q.status === 'completed').length, aff,
         };
     }
@@ -2885,14 +2913,16 @@ class SeasonRecap {
         const gains = this._npcs(w).map(a => ({ id: a.agentId, name: a.name, delta: (now.aff[a.agentId] || 0) - (a.agentId in s.aff ? s.aff[a.agentId] : (now.aff[a.agentId] || 0)) })).filter(x => x.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, 3);
         const left = (w.movedOut || []).filter(m => m.absDay >= s.absDay && m.absDay < now.absDay).map(m => m.name);
         const joined = this._npcs(w).filter(a => !(a.agentId in s.aff)).map(a => a.name);
-        const tr = w.trials?.current; const trial = (tr && tr.seasonKey === s.key && tr.status !== 'active') ? { type: tr.type, status: tr.status, value: tr.finalValue ?? 0, target: tr.target } : null;
+        // v6.11.0 考驗結算後 trials.current 會清空,要從 history 找本季那筆(之前永遠顯示「本季沒有考驗」、評等也少算)
+        const tr = w.trials?.current; const th = (w.trials?.history || []).slice().reverse().find(h => h.seasonKey === s.key);
+        const trial = (tr && tr.seasonKey === s.key && tr.status !== 'active') ? { type: tr.type, status: tr.status, value: tr.finalValue ?? 0, target: tr.target } : th ? { type: th.type, status: th.status, value: th.value ?? 0, target: th.target } : null;
         const r = {
             key: s.key, year: s.year, season: s.season, trial,
             chainsDone: now.chainsDone - (s.chainsDone || 0), reqDone: now.reqDone - s.reqDone, reqFailed: now.reqFailed - s.reqFailed, bestStreak: now.bestStreak,
             carRuns: now.carRuns - s.carRuns, carSilver: now.carSilver - s.carSilver, carRaids: now.carRaids - s.carRaids,
             xp: now.xpTotal - s.xpTotal, levelFrom: s.level, levelTo: now.level,
-            silverFrom: s.silver, silverTo: now.silver, popFrom: s.pop, popTo: now.pop, rep: now.rep - s.rep, prosperity: now.prosperity - s.prosperity, questsDone: now.questsDone - s.questsDone,
-            gains, left, joined, grade: '',
+            silverFrom: Math.round(s.silver), silverTo: Math.round(now.silver), popFrom: s.pop, popTo: now.pop, rep: now.rep - s.rep, prosperity: now.prosperity - s.prosperity, questsDone: now.questsDone - s.questsDone,
+            gains, left, joined, revived: (now.revivals || 0) > (s.revivals || 0), grade: '', // v6.13.0 這季復興了
         };
         r.grade = this._grade(r);
         this.last = r; this.history = this.history.concat([r]).slice(-4); this.start = now; this.pendingShow = true;
@@ -2903,6 +2933,7 @@ class SeasonRecap {
     _grade(r) {
         let s = 0;
         if (r.trial?.status === 'passed') s += 2; else if (r.trial?.status === 'failed') s -= 2;
+        if (r.revived) s += 2; // v6.13.0
         s += Math.min(2, Math.floor(r.reqDone / 10)); if (r.reqFailed > r.reqDone) s -= 1;
         if (r.silverTo > r.silverFrom) s += 1; if (r.popTo < r.popFrom) s -= 1; if (r.carSilver >= 100) s += 1; if (r.questsDone > 0) s += 1;
         return s >= 5 ? 'S' : s >= 3 ? 'A' : s >= 0 ? 'B' : 'C';
@@ -2924,8 +2955,9 @@ class SeasonRecap {
         out.push({ icon: '📋', text: this._fill(t('完成 {a} 件、過期 {b} 件、最佳連勝 {c} 天'), { a: r.reqDone, b: r.reqFailed, c: r.bestStreak }) });
         if (r.carRuns) out.push({ icon: '🐪', text: this._fill(t('{n} 趟、賺 {s} 銀幣、遇劫 {r} 次'), { n: r.carRuns, s: r.carSilver, r: r.carRaids }) });
         out.push({ icon: '🧭', text: this._fill(t('經驗 +{x}，Lv.{a} → Lv.{b}'), { x: r.xp, a: r.levelFrom, b: r.levelTo }) });
-        out.push({ icon: '💰', text: this._fill(t('銀幣 {a} → {b}'), { a: r.silverFrom, b: r.silverTo }) + `（${r.silverTo - r.silverFrom >= 0 ? '+' : ''}${r.silverTo - r.silverFrom}）` });
+        { const a = Math.round(r.silverFrom), b = Math.round(r.silverTo); out.push({ icon: '💰', text: this._fill(t('銀幣 {a} → {b}'), { a, b }) + `（${b - a >= 0 ? '+' : ''}${b - a}）` }); } // v6.11.0 取整,不再出現 895.5999999
         out.push({ icon: '👥', text: this._fill(t('人口 {a} → {b}'), { a: r.popFrom, b: r.popTo }) + ` · ${this._fill(t('聲望 {d}'), { d: (r.rep >= 0 ? '+' : '') + r.rep })} · ${this._fill(t('繁榮 {d}'), { d: (r.prosperity >= 0 ? '+' : '') + r.prosperity })}` });
+        if (r.revived) out.push({ icon: '🌅', text: t('小鎮復興了：連續撐過兩季考驗，搬走的人開始回望這裡') }); // v6.13.0
         if (r.chainsDone) out.push({ icon: '📖', text: this._fill(t('走完 {n} 段村民的小故事'), { n: r.chainsDone }) });
         if (r.questsDone) out.push({ icon: '⚔️', text: this._fill(t('任務完成 {n} 件'), { n: r.questsDone }) });
         if (r.gains?.length) out.push({ icon: '💞', text: `${t('好感升最多')}：${r.gains.map(g => `${t(g.name)} +${g.delta}`).join('、')}` });
@@ -2945,7 +2977,14 @@ class SeasonRecap {
             if (by[r.trial.type]) tips.push({ icon: '⚖️', ...by[r.trial.type] });
         } else if (!r.trial) tips.push({ icon: '⚖️', text: t('每季第 5 天公布考驗，前四天先囤好感和物資，公布後再對症下手'), go: 'tab:quest', goLabel: t('看委託板') });
         if (r.reqFailed > r.reqDone) tips.push({ icon: '📋', text: t('委託先挑一次對話就能完成的（陪伴、送禮），同一天第一件過期扣 3 好感、其餘每件扣 1'), go: 'tab:quest', goLabel: t('看委託板') });
-        if (!r.carRuns) tips.push({ icon: '🐪', text: t('到馬車站押一趟商隊試試：30 份木材走大路，風險約一成、賣價多兩成'), go: 'caravan', goLabel: t('去馬車站') });
+        // v6.11.0 有沒有鄰鎮:先看 app 同步的 otherTowns,沒有就看解鎖旗標(存檔剛載入 otherTowns 可能還沒算)
+        const theme = w?.townTheme || 'frontier'; let flag = () => false; try { flag = (k) => localStorage.getItem(k) === '1'; } catch (e) {}
+        const NT = (typeof NEIGHBOR_TOWNS !== 'undefined') ? NEIGHBOR_TOWNS : [];
+        const hasTowns = !!(w && ((Array.isArray(w.otherTowns) && w.otherTowns.length) || NT.some(d => d.theme !== theme && flag(d.key))));
+        const nx = NT.find(d => d.theme !== theme && !flag(d.key)) || null;
+        if (!r.carRuns && hasTowns) tips.push({ icon: '🐪', text: t('到馬車站押一趟商隊試試：30 份木材走大路，風險約一成、賣價多兩成'), go: 'caravan', goLabel: t('去馬車站') });
+        else if (!r.carRuns && w && nx) tips.push({ icon: '🏘️', text: this._fill(t('把小鎮繁榮推到 {p}，往{town}的路就通了：可以押商隊、互訪、跨鎮戀愛；也可以到城鎮列表自己再建一座'), { p: nx.prosperity, town: t(nx.name) }), go: 'towns', goLabel: t('城鎮列表') });
+        else if (!r.carRuns && w) tips.push({ icon: '🏘️', text: t('鄰鎮的存檔不在這台裝置上：到「城鎮列表」打開它，或再建一座城鎮，馬車站就會通車。'), go: 'towns', goLabel: t('城鎮列表') });
         if (!(r.gains || []).length) { const npc = vs.slice().sort((a, b) => ((b.relationships?.relationships?.player?.affinity || 0) - (a.relationships?.relationships?.player?.affinity || 0)))[0]; tips.push({ icon: '💬', text: t('每天用「用你的話說」跟一位村民聊，說到他在乎的事成功率 +16%，好感跟著漲'), ...chatGo('persuade', npc) }); }
         if (r.popTo < r.popFrom) { const low = vs.slice().sort((a, b) => (a.mood || 50) - (b.mood || 50))[0]; tips.push({ icon: '👥', text: t('人口在流失：撐過考驗，心情低的人多去「安慰」，有空房就留得住人'), ...chatGo('comfort', low) }); }
         if (r.levelTo <= r.levelFrom && r.xp < 60) tips.push({ icon: '🧭', text: t('經驗來自委託、考驗、商隊和主線任務；推進一章主線的經驗最多'), go: 'tab:quest', goLabel: t('看任務') });

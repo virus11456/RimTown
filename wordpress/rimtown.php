@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.10.1
+ * Version: 6.13.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.10.1');
+define('RIMTOWN_VERSION', '6.13.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,56 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.13.0',
+            'date'    => '2026-10-11',
+            'changes' => array(
+                '🌅 小鎮復興：衰敗結局後連續撐過兩季考驗就復興——解除衰敗（之後主線結局仍可達成）、全鎮士氣 +12、繁榮 +15、聲望 +15，中央卡與日報報導；故事分頁考驗區塊顯示「衰敗中 n/2」、早安卡每天提醒、季末回顧記一筆並加評等',
+                '📱 手機長文角落通知（章節故事等）先夾成兩行，點一下展開、再點收掉，不再整段蓋住委託列',
+            ),
+            'changes_en' => array(
+                '🌅 Town revival: after the decline ending, surviving two trials in a row revives the town. The decline is lifted (story endings become reachable again), the whole town gets morale +12, prosperity +15 and reputation +15, with a centre card and a newspaper story; the Story tab\'s trial block shows "in decline n/2", the morning card reminds you daily, and the season recap records it with a grade bonus',
+                '📱 Long corner notices on mobile (chapter stories etc.) are clamped to two lines; tap to expand, tap again to dismiss, so they no longer cover the request list',
+            ),
+        ),
+        array(
+            'version' => '6.12.0',
+            'date'    => '2026-10-11',
+            'changes' => array(
+                '🧭 旅人後期成長：十種天賦都學完後，之後每升一級隨機一項屬性（魅力／體力／機智／毅力）+1，角落通知與故事分頁都會寫出來；存檔保留',
+                '👋 新手前三天：第一天引導卡還在時，上方「目前目標」橫幅先收起（兩邊講的是同一件事），第 4 天起由橫幅接手',
+                '📱 手機角落通知最多兩張（桌機三張），少蓋一點分頁內容',
+            ),
+            'changes_en' => array(
+                '🧭 Late-game growth: once all ten perks are learned, each further level adds +1 to a random attribute (charm / vigor / wit / grit), shown in the corner notice and the Story tab; saved with the game',
+                '👋 First three days: while the first-day guide card is up, the "current goal" banner stays hidden (they said the same thing); the banner takes over from day 4',
+                '📱 At most two corner notices on mobile (three on desktop) so less of the sheet is covered',
+            ),
+        ),
+        array(
+            'version' => '6.11.0',
+            'date'    => '2026-10-11',
+            'changes' => array(
+                '🧪 新手走一遍 QA（桌機＋手機各真跑一季）找到並修掉：桌機角落通知與早安卡改貼在地圖右下、側欄左側，不再蓋住聊天輸入框、委託按鈕與天賦選項',
+                '📜 季末回顧修正：考驗結算後回顧現在會寫出本季考驗結果並算進評等（之前永遠顯示「本季沒有考驗」）；銀幣取整，不再出現一長串小數',
+                '🐪 馬車站還沒有鄰鎮時改為說明解鎖條件（繁榮 20 修好往海風鎮的路，顯示目前繁榮）並附城鎮列表入口；季末建議不再推沒路可走的押商隊',
+                '☀️ 早安卡：升級還沒選天賦會每天提醒；手機版早安卡 22 秒收起（桌機 45 秒）；第 4 天起不再掛著「第一天」引導',
+                '📱 手機「目前目標」橫幅修正：聊天時不再被擠成一條窄長條',
+                '🧪 走流程截圖腳本收進 scripts/walkthrough.js（選跑）',
+                '🔢 倉庫數字取整：馬車站貨物選單與送貨委託不再出現 161.50000000000006 這種小數',
+                '🌐 英文版不再把每座鎮都叫 Frontier Town：新居民加入、人生總結、個人結局副標、本週頭條改用實際鎮名或中性說法',
+            ),
+            'changes_en' => array(
+                '🧪 First-week walkthrough QA (a full season on desktop and mobile) found and fixed: desktop corner notices and the morning card now sit at the map\'s bottom-right, left of the sidebar, so they never cover the chat input, request buttons or perk choices',
+                '📜 Season recap fix: after a trial is settled the recap now reports it and counts it in the grade (it always said "no trial this season" before); silver is rounded',
+                '🐪 Coach station without a neighbouring town now explains the unlock (prosperity 20 repairs the road to Seabreeze, current value shown) with a Towns button; recap advice no longer suggests a caravan with no road',
+                '☀️ Morning card reminds you of unpicked perks; it fades after 22 s on mobile (45 s on desktop); the first-day guide no longer lingers past day 3',
+                '📱 Mobile goal banner fix: no longer squeezed into a narrow column while chatting',
+                '🧪 Walkthrough screenshot script added as scripts/walkthrough.js (optional)',
+                '🔢 Warehouse numbers are rounded: the coach station goods list and delivery requests no longer show 161.50000000000006',
+                '🌐 English no longer calls every town Frontier Town: new-resident log, life summary, personal-ending subtitle and the weekly headline use the real town name or a neutral phrase',
+            ),
+        ),
         array(
             'version' => '6.10.1',
             'date'    => '2026-10-11',

@@ -674,22 +674,37 @@ Object.assign(RimTownApp.prototype, {
             host.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:9500;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none';
             document.body.appendChild(host);
         }
-        const fd = document.getElementById('firstday-guide'); const fdH = (fd && fd.offsetParent !== null) ? fd.getBoundingClientRect().height : 0; // v5.99.0 避開第一天引導卡
-        host.style.bottom = window.innerWidth <= 768 ? `${64 + (fdH ? fdH + 18 : 0)}px` : `${14 + (fdH ? fdH + 14 : 0)}px`;
+        this._placeToastHost(host);
+        if (!this._toastHostWatched) { // v6.11.0 側欄變寬(聊天 .chat-wide)或視窗縮放時,已顯示的通知也跟著移位
+            this._toastHostWatched = true;
+            const re = () => { const h = document.getElementById('achv-toast-host'); if (h) this._placeToastHost(h); };
+            window.addEventListener('resize', re);
+            try { const sb = document.getElementById('rimtown-sidebar'); if (sb && window.ResizeObserver) new ResizeObserver(re).observe(sb); } catch (e) {}
+        }
         return host;
+    },
+    _placeToastHost(host) {
+        const fd = document.getElementById('firstday-guide'); const fdH = (fd && fd.getClientRects().length) ? fd.getBoundingClientRect().height : 0; // v5.99.0 避開第一天引導卡(v6.11.0 引導卡是 position:fixed,offsetParent 永遠是 null,改用 getClientRects)
+        host.style.bottom = window.innerWidth <= 768 ? `${64 + (fdH ? fdH + 18 : 0)}px` : `${14 + (fdH ? fdH + 14 : 0)}px`;
+        // v6.11.0 桌機側欄在右邊時,通知改貼在地圖右下(側欄左側),不再蓋住聊天輸入框、委託按鈕與天賦選項
+        let right = 14;
+        if (window.innerWidth > 768) { const sb = document.getElementById('rimtown-sidebar'); if (sb && sb.offsetParent !== null) { const r = sb.getBoundingClientRect(); if (r.width > 0 && r.width < window.innerWidth * 0.8 && r.left > 300) right = Math.round(window.innerWidth - r.left + 12); } }
+        host.style.right = right + 'px';
     },
     _showCornerNotice({ icon, title, name, desc }) {
         const host = this._toastHost();
         // v5.34.1 同時最多 3 張,多的擠掉最舊的,避免洗版
-        while (host.querySelectorAll('.rt-toast:not(.morning)').length >= 3) host.querySelector('.rt-toast:not(.morning)').remove(); // v6.7.0 早安卡不算在三張內
+        const cap = window.innerWidth <= 768 ? 2 : 3; // v6.12.0 手機最多兩張,少蓋一點內容
+        while (host.querySelectorAll('.rt-toast:not(.morning)').length >= cap) host.querySelector('.rt-toast:not(.morning)').remove(); // v6.7.0 早安卡不算在三張內
         const el = document.createElement('div'); el.className = 'rt-toast';
         el.style.cssText = 'display:flex;align-items:center;gap:10px;background:rgba(22,22,32,0.95);border:1px solid rgba(255,255,255,0.22);border-radius:10px;padding:10px 14px;max-width:min(320px,calc(100vw - 28px));box-shadow:0 4px 16px rgba(0,0,0,0.4);opacity:0;transform:translateY(8px);transition:opacity 0.3s,transform 0.3s;pointer-events:auto;cursor:pointer';
-        el.innerHTML = `<span style="font-size:1.5rem">${icon || '🔔'}</span><span><span style="display:block;color:var(--accent,#e94560);font-size:0.72rem;font-weight:bold">${title || ''}</span>${name ? `<span style="display:block;color:#fff;font-size:0.85rem;font-weight:bold">${name}</span>` : ''}${desc ? `<span style="display:block;color:rgba(255,255,255,0.65);font-size:0.68rem">${desc}</span>` : ''}</span>`;
+        el.innerHTML = `<span style="font-size:1.5rem">${icon || '🔔'}</span><span><span style="display:block;color:var(--accent,#e94560);font-size:0.72rem;font-weight:bold">${title || ''}</span>${name ? `<span style="display:block;color:#fff;font-size:0.85rem;font-weight:bold">${name}</span>` : ''}${desc ? `<span class="rt-toast-desc" style="color:rgba(255,255,255,0.65);font-size:0.68rem">${desc}</span>` : ''}</span>`;
         host.appendChild(el);
         requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
         const remove = () => { el.style.opacity = '0'; el.style.transform = 'translateY(8px)'; setTimeout(() => el.remove(), 350); };
-        el.addEventListener('click', remove);
-        setTimeout(remove, 8000);
+        // v6.13.0 手機長文(章節故事等)先夾成兩行,點一下展開再點收掉;桌機維持點一下收掉
+        let timer = setTimeout(remove, 8000);
+        el.addEventListener('click', () => { const d = el.querySelector('.rt-toast-desc'); if (window.innerWidth <= 768 && d && !el.classList.contains('expanded') && d.scrollHeight > d.clientHeight + 2) { el.classList.add('expanded'); clearTimeout(timer); timer = setTimeout(remove, 12000); return; } remove(); });
     },
 
     // Center-screen notification card (like tutorial cards)

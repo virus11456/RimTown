@@ -107,9 +107,9 @@ class CustomNPCSystem {
             createdYear: world.clock.year,
         });
 
-        world.logMessage?.('system', `🎉 ${t('新居民')}「${config.name}」${t('加入了邊境鎮')}！`);
+        world.logMessage?.('system', `🎉 ${t('新居民')}「${config.name}」${t('加入了')}${t(world.townName || '邊境鎮')}！`); // v6.11.0 用實際鎮名
         if (world.dailyNews) {
-            world.dailyNews.collectEvent('lifecycle', `${t('新居民')}「${config.name}」${t('從遠方來到了邊境鎮')}！`, 7, [config.name]);
+            world.dailyNews.collectEvent('lifecycle', `${t('新居民')}「${config.name}」${t('從遠方來到了')}${t(world.townName || '邊境鎮')}！`, 7, [config.name]);
         }
 
         return { success: true, agentId };
@@ -251,7 +251,7 @@ const ENDING_TYPES = {
     personal: {
         id: 'personal',
         title: t('個人結局'),
-        subtitle: t('在邊境鎮找到了屬於自己的幸福'),
+        subtitle: t('在這座小鎮找到了屬於自己的幸福'), // v6.11.0 不再寫死邊境鎮
         icon: '💕',
         color: '#FF69B4',
         description: t('你在這片土地上找到了真愛，組建了家庭。這就是你的歸宿。'),
@@ -311,6 +311,21 @@ class MultiEndingSystem {
         return this.endingData;
     }
 
+    // v6.13.0 復興:衰敗後連續撐過兩季考驗,解除衰敗(之後主線結局可再觸發),全鎮士氣與繁榮回升
+    revive(world) {
+        if (this.endingTriggered !== 'decline') return null;
+        this.endingTriggered = null; this.endingData = null;
+        this.revivals = (this.revivals || 0) + 1;
+        this.lastRevival = { year: world.clock.year, season: world.clock.season, day: world.clock.day };
+        Object.values(world.agents || {}).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) + 12; });
+        if (world.prosperity) world.prosperity.questBonus = (world.prosperity.questBonus || 0) + 15;
+        if (world.questSystem) world.questSystem.reputation = (world.questSystem.reputation || 0) + 15;
+        const text = t('小鎮復興了！連續兩季撐過考驗，街上又熱鬧起來：全鎮士氣 +12、繁榮 +15、聲望 +15');
+        world.logMessage?.('system', `🌅 ${text}`); world.dailyNews?.collectEvent?.('event', text, 10);
+        world.onEndingEvent?.('revived', `🌅 ${t('小鎮復興')}`, text); // v6.12.1 結局系統自己的事件(不走考驗通知)
+        return this.lastRevival;
+    }
+
     // ============================================================
     // 收集結局統計
     // ============================================================
@@ -357,6 +372,7 @@ class MultiEndingSystem {
             .map(r => ({ name: r.targetName, affinity: r.affinity, status: r.status, romantic: r.romanticInterest }));
 
         return {
+            townName: t(world.townName || '邊境鎮'), // v6.11.0 結局總結用實際鎮名
             totalDays: (world.clock.year - 1) * 60 + (Math.max(0, ['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15) + world.clock.day,
             year: world.clock.year,
             season: world.clock.season,
@@ -483,7 +499,8 @@ class MultiEndingSystem {
     _generateLifeSummary(s, et) {
         let story = '';
         // Opening
-        story += `${s.playerName}${t('在邊境鎮度過了')}${s.totalDays}${t('天的歲月')}`;
+        const fill = (tpl, m) => Object.entries(m).reduce((acc, [k, v]) => acc.split('{' + k + '}').join(String(v)), tpl); // split/join:名字含 $& 或 {town} 也不會被 replace 吃掉
+        story += fill(t('{name}在{town}度過了 {d} 天的歲月'), { name: s.playerName, town: s.townName || t('邊境鎮'), d: s.totalDays });
         if (s.playerJob !== t('無業')) {
             story += `${t('，以')}${s.playerJob}${t('的身份')}`;
         }
@@ -538,7 +555,7 @@ class MultiEndingSystem {
         }
 
         // Closing
-        story += `${t('這就是')}${s.playerName}${t('在邊境鎮的故事——')}${et.subtitle}`;
+        story += Object.entries({ name: s.playerName, town: s.townName || t('邊境鎮') }).reduce((acc, [k, v]) => acc.split('{' + k + '}').join(String(v)), t('這就是{name}在{town}的故事——')) + et.subtitle;
 
         return story;
     }
@@ -704,6 +721,7 @@ class MultiEndingSystem {
         return {
             endingTriggered: this.endingTriggered,
             hasEnding: !!this.endingTriggered,
+            revivals: this.revivals || 0,
         };
     }
 
@@ -711,6 +729,7 @@ class MultiEndingSystem {
         return {
             endingTriggered: this.endingTriggered,
             endingData: this.endingData ? JSON.parse(JSON.stringify(this.endingData)) : null,
+            revivals: this.revivals || 0, lastRevival: this.lastRevival || null,
         };
     }
 
@@ -718,5 +737,6 @@ class MultiEndingSystem {
         if (!data) return;
         this.endingTriggered = data.endingTriggered || null;
         this.endingData = data.endingData || null;
+        this.revivals = data.revivals || 0; this.lastRevival = data.lastRevival || null;
     }
 }
