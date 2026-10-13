@@ -102,7 +102,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 - B19 ~~住房自動加蓋在主題鎮補不出房~~ v5.81.0 第二輪放寬掃描＋讓出多餘工廠地基；五鎮開局人人有床，礦山鎮最緊（15 戶），超過才合住。
 - B20 ~~際遇卡死碼~~ v5.82.0 已移除，舊檔欄位忽略。
 - B21 ~~手機角落通知仍會蓋住分頁底部內容~~ v6.12.0 上限兩張、早安卡 22 秒收起；v6.13.0 長文通知在手機先夾兩行、點一下展開。
-- B22 ~~後期銀幣沒有去處~~ v6.14.0 加兩個去處：在建工程「捐 40 趕工」（進度 +20%、每工程每天一次）與「捐給鎮公所 100」（繁榮 +1、全鎮心情 +2、聲望 +2、每天三次）；其餘候選（贊助節慶、向鄰鎮買物資）看玩測回饋再說。
+- B22 ~~後期銀幣沒有去處~~ v6.14.0 加兩個去處：在建工程「捐 40 趕工」（進度 +20%、每工程每天一次）與「捐給鎮公所 100」（繁榮 +1、全鎮心情 +2、聲望 +2、每天三次）；v6.15.0 再加「贊助節慶 150」（節慶前夕到結束一次：籌備 +50／心情 ×1.5／好感機率提高、聲望 +10、繁榮 +3）；剩下的候選（向鄰鎮買物資）看玩測回饋再說。
 - B23 純觀察（idle）玩家的衰敗節奏：60 天不玩人口 25→17、第二到三季就衰敗（v6.13.0 起連撐兩季可復興）；設計上是「不做有後果」，但要看玩測回饋決定要不要把 idle 的考驗目標再放寬。
 - B24 效能量測（v6.13.0，Chromium 桌機／手機視口）：60 天後 world.tick 0.1ms、getState 0.9–1.3ms、render 0.4–1.4ms、存檔 1.6MB／getState 0.7MB；目前不是瓶頸，存檔體積靠 B12 的上限壓著。
 - B25 LLM 提示詞中文本體（B2）維持：英文模式靠英文規則行與系統指示，走流程英文截圖的對話與判定文案正常，不另寫英文提示詞。
@@ -235,7 +235,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.14.1.zip` from Releases
+1. Download `rimtown-v6.15.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -267,6 +267,7 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 # 選跑:cd wordpress && python3 -m http.server 8126 & ; node scripts/smoke_playwright.js  # 五鎮世界/英文標籤/鄰鎮/住房/商隊冒煙
 # 選跑:node scripts/quest_chain_test.js   # 四座主題鎮任務鏈端到端(五章/災難/商路/支線/存檔/英文)(v5.88.0 起;改任務鏈或災難必跑)
 # 選跑:node scripts/donate_test.js   # v6.14.0 捐建/捐款(進度 +20%、每日上限、繁榮上限、當天心情、存讀檔、按鈕;有斷言,失敗 exit 1)
+# 選跑:node scripts/sponsor_test.js  # v6.15.0 贊助節慶(窗口、前夕/節慶中效果、只能一次、節慶日 ×1.5、存讀檔、按鈕、早安卡;有斷言,失敗 exit 1)
 # 選跑:node scripts/growth2_test.js ; node scripts/revival_test.js   # v6.12.0/v6.13.0 旅人後期成長(天賦學完→屬性、最後一個天賦邊界、舊檔遷移)與小鎮復興(衰敗→連撐兩季→中央卡/回顧/存讀檔)
 # 選跑:node scripts/walkthrough.js <zh|en> <desktop|mobile> <outdir>   # v6.11.0 新手走一遍:用 app 自己的迴圈真跑一季、關鍵時刻截圖,看圖抓版面/文案問題
 # 選跑:node scripts/soak_test.js [url] [days] [theme] [mode]   # mode=full|casual|idle(v6.2.0 平衡矩陣用);核心玩法迴圈浸泡:真 tick 跑 35 天、每天像玩家做委託/商隊/對話/天賦、每 10 天存檔讀檔接著跑(v5.96.0 起;改核心迴圈必跑五主題)
@@ -281,6 +282,11 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.15.0 (2026-10-13)
+- 🎪 贊助節慶（B22 第二個銀幣去處）：節慶前一天公布起到節慶結束，經濟分頁繁榮卡片下方與事件分頁的節慶區塊多一列「贊助 150」，每屆一次——前夕贊助：籌備進度 +50、全鎮心情 +5，節慶當天村民心情加成 ×1.5、互相加好感的機率 0.3→0.5；節慶中贊助：全鎮心情 +8、再來一輪好感；兩種都給聲望 +10、繁榮 +3（持久）、全鎮對你好感 +2，村民會記得「你贊助的春祭」、話題與八卦都會提到、進日誌與日報、存檔保留
+- ☀️ 早安卡：節慶前夕與節慶中多一行提醒「春祭明天開始 · 可贊助 150 銀幣讓它更熱鬧」，贊助過就不再提
+- 🧪 新增回歸測試 scripts/sponsor_test.js（窗口外不可贊助、前夕／節慶中效果、只能一次、節慶日 ×1.5、存讀檔、兩個分頁的按鈕與點擊、早安卡列；中英各跑一次）
 
 ### v6.14.1 (2026-10-12)
 - 🛠️ 經濟分頁：「捐給鎮公所」那一列之前被塞進繁榮度的維度格子裡（桌機英文版文字擠成一條），改放在格子下方

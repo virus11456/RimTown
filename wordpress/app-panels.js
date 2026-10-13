@@ -1380,14 +1380,14 @@ Object.assign(RimTownApp.prototype, {
         if (festivals.activeFestival) {
             const f = festivals.activeFestival;
             html += `<div class="festival-section"><h4>${f.icon} ${t(f.name)}${t('進行中！')}</h4>
-                <div style="padding:4px 8px;color:var(--text-secondary)">${f.description}</div></div>`;
+                <div style="padding:4px 8px;color:var(--text-secondary)">${f.description}</div>${this._festivalSponsorHtml()}</div>`; // v6.15.0 贊助列
         }
         if (festivals.activeQuest) {
             const q = festivals.activeQuest;
             const pct = Math.round((q.progress / q.goal) * 100);
             html += `${t('<div class="quest-section"><h4>🎯 節日任務：')}${t(q.name)}</h4>
                 <div style="padding:4px 8px">${q.desc}</div>
-                <div class="quest-progress"><div class="quest-bar" style="width:${pct}%"></div><span>${pct}%</span></div></div>`;
+                <div class="quest-progress"><div class="quest-bar" style="width:${pct}%"></div><span>${pct}%</span></div>${festivals.activeFestival ? '' : this._festivalSponsorHtml()}</div>`; // v6.15.0 前夕的贊助列(節慶開始後只在上面那塊顯示)
         }
 
         // === Factions ===

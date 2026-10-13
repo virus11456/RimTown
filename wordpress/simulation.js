@@ -840,7 +840,7 @@ class World {
             npc_conversations: this.conversationEngine.npcConversationLog.slice(-250), // v5.99.0 介面只顯示最近的(成就 gossip_200 仍可達)
             election: this.election.toDict(),
             factions: this.factions.toDict(),
-            festivals: this.festivals.toDict(),
+            festivals: this.festivals.toDict(this), // v6.15.0 帶 world 以算贊助狀態
             lifecycle: this.lifecycle.toDict(),
             exploration: this.exploration.toDict(),
             industry: this.industry.toDict(),
@@ -2187,6 +2187,7 @@ class World {
                 this.festivals.activeQuest = data.festivals.activeQuest || null;
                 this.festivals._lastFestivalSeason = data.festivals._lastFestivalSeason || null;
                 this.festivals._gameRewardKey = data.festivals._gameRewardKey || null;
+                this.festivals.sponsorship = data.festivals.sponsorship || null; // v6.15.0 (欄位叫 sponsorship,避免和 sponsor() 方法同名)
             }
 
             // Lifecycle

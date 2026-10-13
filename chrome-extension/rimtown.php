@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.14.1
+ * Version: 6.15.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.14.1');
+define('RIMTOWN_VERSION', '6.15.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.15.0',
+            'date'    => '2026-10-13',
+            'changes' => array(
+                '🎪 贊助節慶（B22 第二個銀幣去處）：節慶前一天公布起到節慶結束，經濟分頁繁榮卡片下方與事件分頁的節慶區塊多一列「贊助 150」，每屆一次——前夕贊助：籌備進度 +50、全鎮心情 +5，節慶當天村民心情加成 ×1.5、互相加好感的機率 0.3→0.5；節慶中贊助：全鎮心情 +8、再來一輪好感；兩種都給聲望 +10、繁榮 +3（持久）、全鎮對你好感 +2，村民會記得「你贊助的春祭」、話題與八卦都會提到、進日誌與日報、存檔保留',
+                '☀️ 早安卡：節慶前夕與節慶中多一行提醒「春祭明天開始 · 可贊助 150 銀幣讓它更熱鬧」，贊助過就不再提',
+                '🧪 新增回歸測試 scripts/sponsor_test.js（窗口外不可贊助、前夕／節慶中效果、只能一次、節慶日 ×1.5、存讀檔、兩個分頁的按鈕與點擊、早安卡列；中英各跑一次）',
+            ),
+            'changes_en' => array(
+                '🎪 Festival sponsorship (second silver sink for B22): from the day the festival is announced until it ends, the Economy tab (under the prosperity card) and the festival block in the Events tab show a "Sponsor 150" row, once per festival. Sponsoring on the eve: preparations +50, town mood +5, and on the day villagers\' festival mood ×1.5 with the chance of warming to each other raised from 0.3 to 0.5. Sponsoring during the festival: town mood +8 plus another round of affinity. Both give reputation +10, prosperity +3 (permanent) and +2 affinity toward you from everyone; villagers remember "the Spring Festival you sponsored", it shows up in topics, gossip, the log and the newspaper, and it is saved',
+                '☀️ Morning card: on the eve and during the festival it adds a line like "Spring Festival starts tomorrow · sponsor it for 150 silver to make it livelier"; it disappears once you have sponsored',
+                '🧪 New regression test scripts/sponsor_test.js (no sponsoring outside the window, eve / during-festival effects, once only, ×1.5 on the day, save & load, buttons and clicks on both tabs, morning card line; runs in zh and en)',
+            ),
+        ),
         array(
             'version' => '6.14.1',
             'date'    => '2026-10-12',

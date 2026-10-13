@@ -54,6 +54,22 @@ Object.assign(RimTownApp.prototype, {
         this._showCornerNotice({ icon: r.ok ? '🏛️' : '⚠️', title: t('捐給鎮公所'), name: '', desc: r.msg || '' });
         this.state = w.getState(); try { this.renderSidebar(); } catch (e) {}
     },
+    // v6.15.0 贊助節慶(節慶前夕到結束之間一次 150 銀幣);經濟分頁與事件分頁共用同一列
+    _sponsorFestival() {
+        const w = this.world; if (!w?.festivals?.sponsor) return;
+        const r = w.festivals.sponsor(w);
+        this._showCornerNotice({ icon: r.ok ? '🎪' : '⚠️', title: t('贊助節慶'), name: '', desc: r.msg || '' });
+        this.state = w.getState(); try { this.renderSidebar(); } catch (e) {}
+    },
+    _festivalSponsorHtml() {
+        const st = this.state?.festivals?.sponsor_status; if (!st?.open) return '';
+        const silverNow = this.state?.stockpile?.resources?.silver || 0;
+        const when = st.phase === 'eve' ? t('明天開始') : t('進行中');
+        const desc = st.sponsored ? t('你已贊助這屆節慶，村民都記得你的大方') : (st.phase === 'eve' ? t('贊助：籌備進度 +50、節慶心情 ×1.5、村民更常聊開、聲望 +10、繁榮 +3') : t('贊助：全鎮心情 +8、村民更常聊開、聲望 +10、繁榮 +3'));
+        const btn = st.sponsored ? `<button class="trade-btn" disabled style="padding:3px 10px;font-size:0.72rem;white-space:nowrap">🎪 ${t('已贊助')}</button>`
+            : `<button class="trade-btn" data-action="sponsor-festival" ${silverNow >= st.cost ? '' : 'disabled'} style="padding:3px 10px;font-size:0.72rem;white-space:nowrap">🎪 ${t('贊助')} ${st.cost}</button>`;
+        return `<div class="festival-sponsor-row" style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:0.72rem;color:var(--text-secondary)"><span style="flex:1">${st.icon || '🎪'} ${t(st.name)}（${when}）· ${desc}</span>${btn}</div>`;
+    },
     renderEconomy(container) {
         if (!this.state) return;
         if (!this._economySubTab) this._economySubTab = 'resources';
@@ -89,6 +105,7 @@ Object.assign(RimTownApp.prototype, {
             html += `</div>`; // 關掉維度格子,捐款列放在格子下方(v6.14.1:之前被塞進格子裡)
             // v6.14.0 鎮公所捐款:銀幣的去處之一(繁榮 +1、全鎮心情 +2、聲望 +2,每天三次)
             const bd = this.state.buildings || {}; const left = Number.isFinite(bd.donations_left) ? bd.donations_left : (bd.donate_per_day || 3); const dcost = bd.donate_cost || 100; const silverNow = this.state.stockpile?.resources?.silver || 0;
+            html += this._festivalSponsorHtml(); // v6.15.0 節慶前夕到結束之間才出現
             html += `<div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:0.72rem;color:var(--text-secondary)"><span style="flex:1">${t('捐給鎮公所：繁榮 +1、全鎮今天心情 +2、聲望 +2')}${bd.donations?.total ? ` · ${t('累計')} ${bd.donations.total}` : ''}${(bd.donations?.bonus || 0) >= (bd.donate_prosperity_cap || 10) ? ` · ${t('繁榮加成已滿')}` : ''}</span><button class="trade-btn" data-action="donate-town" ${left > 0 && silverNow >= dcost ? '' : 'disabled'} style="padding:3px 10px;font-size:0.72rem;white-space:nowrap">🏛️ ${t('捐')} ${dcost}${left > 0 ? `（${t('今天還可 {n} 次').replace('{n}', left)}）` : `（${t('明天再來')}）`}</button></div>`;
             html += `</div>`;
         }
