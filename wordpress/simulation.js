@@ -275,6 +275,49 @@ class World {
     availableGuards() {
         return Object.values(this.agents).filter(a => !a.isPlayer && !a.isDead && a.job?.key === 'guard' && !String(a.agentId).startsWith('visit_'));
     }
+    // v6.16.0 向鄰鎮採買:派商隊帶銀幣去買對方「輸出」的物資,幾天後運回來;和押商隊共用同一隊(一次只能一隊)、同樣的路線風險
+    purchaseGoods(toTheme) {
+        const dest = (typeof TOWN_THEMES !== 'undefined' && TOWN_THEMES[toTheme]) || null;
+        return (dest?.exports || []).filter(r => r !== 'silver' && typeof BASE_PRICES !== 'undefined' && BASE_PRICES[r]);
+    }
+    playerPurchaseQuote(toTheme, res, amount, guard, route) {
+        const base = (typeof BASE_PRICES !== 'undefined' && BASE_PRICES[res]) || 2;
+        const offered = this.purchaseGoods(toTheme).includes(res);
+        let markup = offered ? 0.4 : 1.0; // 對方盛產的貨才划算
+        if (this.harborFlags?.tradeRoute || this.harborFlags?.seaRoute) markup -= 0.15;
+        if (this.harborFlags?.guildSeal) markup -= 0.1;
+        if (this.growth?.has('shrewd')) markup -= 0.05;
+        if (this.bargainUntilAbsDay && this._absDay() <= this.bargainUntilAbsDay) markup -= 0.05;
+        markup = Math.max(0.05, markup);
+        const unit = Math.round(base * (1 + markup) * 10) / 10;
+        const cost = Math.max(1, Math.round(unit * amount));
+        const shop = (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[res]?.buyPrice) || null; // 鎮上商店的買價,給玩家比較
+        const q = this.playerCaravanQuote(toTheme, res, amount, guard, route);
+        return { unit, cost, markup, offered, shopUnit: shop, risk: q.risk, days: q.days, fee: q.fee };
+    }
+    launchPlayerPurchase(opt) {
+        const pc = this.playerCaravan || (this.playerCaravan = { active: null, history: [], pendingInjury: null });
+        if (pc.active) return { ok: false, msg: t('已經有一隊商隊在路上') };
+        const res = opt.res, amount = Math.floor(opt.amount || 0);
+        if (!res || amount < 10) return { ok: false, msg: t('至少要買 10 份') };
+        if (!this.purchaseGoods(opt.toTheme).includes(res)) return { ok: false, msg: t('對方不賣這個') };
+        const guard = opt.guardId ? this.agents[opt.guardId] : null;
+        if (opt.guardId && (!guard || guard.job?.key !== 'guard')) return { ok: false, msg: t('這位守衛現在不在鎮上') };
+        const q = this.playerPurchaseQuote(opt.toTheme, res, amount, !!guard, opt.route);
+        if ((this.stockpile.get('silver') || 0) < q.cost + q.fee) return { ok: false, msg: t('銀幣不足') };
+        this.stockpile.consume('silver', q.cost, this.tickCount, t('向{town}採買').replace('{town}', t(opt.toTownName)), 'player');
+        if (guard) {
+            this.stockpile.consume('silver', q.fee, this.tickCount, t('護衛費'));
+            this.events._sendAgentTravelling(this, guard, `${t('押商隊去')}${opt.toTownName}`, q.days);
+        }
+        pc.active = { id: 'pc' + Date.now(), mode: 'buy', toTownId: opt.toTownId, toTownName: opt.toTownName, toTheme: opt.toTheme, res, amount, cost: q.cost, guardId: guard?.agentId || null, guardName: guard?.name || '',
+            route: opt.route === 'mountain' ? 'mountain' : 'road', departAbsDay: this._absDay(), returnAbsDay: this._absDay() + q.days, quote: q };
+        const label = (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[res]?.name) ? SHOP_ITEMS[res].name() : res;
+        this.logMessage('trade', `🧺 ${t('你的商隊帶著 {n} 銀幣去{town}採買 {amt} {res}').replace('{n}', q.cost).replace('{town}', t(opt.toTownName)).replace('{amt}', amount).replace('{res}', label)}${guard ? `（${guard.name}${t('押車')}）` : ''}`);
+        this.events?.conversationTopics?.push(t('旅人派商隊去{town}採買').replace('{town}', t(opt.toTownName)));
+        try { this.requests?.onCaravanLaunch?.(this); } catch (e) {}
+        return { ok: true, msg: `${t('商隊出發，預計')} ${q.days} ${t('天後回報')}`, cost: q.cost };
+    }
     launchPlayerCaravan(opt) {
         const pc = this.playerCaravan || (this.playerCaravan = { active: null, history: [], pendingInjury: null });
         if (pc.active) return { ok: false, msg: t('已經有一隊商隊在路上') };
@@ -302,6 +345,7 @@ class World {
         const pc = this.playerCaravan; if (!pc) return;
         if (pc.pendingInjury) { const g = this.agents[pc.pendingInjury]; if (g) { g.moodModifier = (g.moodModifier || 0) - 15; if (g.needs) g.needs.rest = Math.max(0, (g.needs.rest || 50) - 30); g.memory?.add?.(this.tickCount, this.clock.timeStr, 'incident', t('押車時遇上馬賊，挨了一棍。'), 8, []); pc.pendingInjury = null; } }
         const a = pc.active; if (!a || this._absDay() < a.returnAbsDay) return;
+        if (a.mode === 'buy') return this._playerPurchaseReturn(pc, a); // v6.16.0 採買的商隊:運貨回來
         const q = a.quote || this.playerCaravanQuote(a.toTheme, a.res, a.amount, !!a.guardId, a.route);
         const raided = Math.random() < q.risk;
         const label = (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[a.res]?.name) ? SHOP_ITEMS[a.res].name() : a.res;
@@ -322,6 +366,26 @@ class World {
         this.logMessage('trade', `${raided ? '🏴' : '💰'} ${line}`);
         this.dailyNews?.collectEvent?.('economy', line, raided ? 9 : 7, a.guardName ? [a.guardName] : []);
         this.events?.conversationTopics?.push(raided ? t('旅人的商隊遇劫了') : t('旅人的商隊賺了一筆'));
+        this.onPlayerCaravanReturn?.(result, line);
+    }
+    _playerPurchaseReturn(pc, a) {
+        const q = a.quote || this.playerPurchaseQuote(a.toTheme, a.res, a.amount, !!a.guardId, a.route);
+        const raided = Math.random() < q.risk;
+        const label = (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[a.res]?.name) ? SHOP_ITEMS[a.res].name() : a.res;
+        let lost = 0;
+        if (raided) { lost = Math.round(a.amount * (0.6 + Math.random() * 0.4)); if (a.guardId) pc.pendingInjury = a.guardId; }
+        const got = Math.max(0, a.amount - lost);
+        if (got > 0) this.stockpile.add(a.res, got, this.tickCount, t('向{town}採買').replace('{town}', t(a.toTownName)), 'player');
+        const result = { ...a, raided, lost, got, silver: 0, resolvedAbsDay: this._absDay() };
+        this.growth?.addXp(raided ? 5 : 15, 'caravan', this);
+        pc.history = (pc.history || []).concat([result]).slice(-10); pc.active = null;
+        pc.totals = pc.totals || { runs: 0, silver: 0, raids: 0 }; pc.totals.runs++; pc.totals.buys = (pc.totals.buys || 0) + 1; if (raided) pc.totals.raids++;
+        const line = raided
+            ? `${t('你的採買商隊在回程遇劫，{n} {res}只運回 {got} 份').replace('{n}', a.amount).replace('{res}', label).replace('{got}', got)}${a.guardName ? `${t('；')}${a.guardName}${t('受了傷')}` : ''}`
+            : t('你的商隊從{town}運回 {n} {res}，花了 {cost} 銀幣').replace('{town}', t(a.toTownName)).replace('{n}', got).replace('{res}', label).replace('{cost}', a.cost || q.cost);
+        this.logMessage('trade', `${raided ? '🏴' : '🧺'} ${line}`);
+        this.dailyNews?.collectEvent?.('economy', line, raided ? 9 : 6, a.guardName ? [a.guardName] : []);
+        this.events?.conversationTopics?.push(raided ? t('旅人的商隊遇劫了') : t('旅人從鄰鎮運了一批貨回來'));
         this.onPlayerCaravanReturn?.(result, line);
     }
     playerCaravanState() {

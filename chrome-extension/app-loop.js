@@ -64,15 +64,20 @@ Object.assign(RimTownApp.prototype, {
         const card = document.createElement('div');
         card.style.cssText = 'background:var(--bg-secondary);border:1px solid var(--border);border-radius:14px;padding:18px;max-width:360px;width:90%;max-height:85vh;overflow-y:auto';
         const a = w.playerCaravan?.active;
+        const canBuy = towns.some(tw => (w.purchaseGoods?.(tw.theme) || []).length); // v6.16.0 採買:只要有鄰鎮就能帶銀幣去買對方盛產的貨
+        let mode = (resList.length || !canBuy) ? 'sell' : 'buy';
         let inner = `<div style="font-weight:bold;font-size:1rem;margin-bottom:6px">🐪 ${t('押商隊')}</div>`;
         if (a) {
-            inner += `<div style="font-size:0.8rem;line-height:1.7">${t('商隊在路上：')}${a.amount} ${this._resLabel(a.res)} → ${esc(t(a.toTownName))}${a.guardName ? `（${esc(t(a.guardName))}${t('押車')}）` : ''}<br>${t('預計')} ${Math.max(0, a.returnAbsDay - w._absDay())} ${t('天後回報')}</div>`;
-        } else if (!towns.length || !resList.length) {
+            inner += a.mode === 'buy'
+                ? `<div style="font-size:0.8rem;line-height:1.7">${t('商隊在路上：')}${t('去{town}採買 {n} {res}').replace('{town}', esc(t(a.toTownName))).replace('{n}', a.amount).replace('{res}', this._resLabel(a.res))}${a.guardName ? `（${esc(t(a.guardName))}${t('押車')}）` : ''}<br>${t('預計')} ${Math.max(0, a.returnAbsDay - w._absDay())} ${t('天後回報')}</div>`
+                : `<div style="font-size:0.8rem;line-height:1.7">${t('商隊在路上：')}${a.amount} ${this._resLabel(a.res)} → ${esc(t(a.toTownName))}${a.guardName ? `（${esc(t(a.guardName))}${t('押車')}）` : ''}<br>${t('預計')} ${Math.max(0, a.returnAbsDay - w._absDay())} ${t('天後回報')}</div>`;
+        } else if (!towns.length || (!resList.length && !canBuy)) {
             inner += `<div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.6">${!towns.length ? this._noNeighborText() : t('倉庫裡沒有夠的貨（至少 10 份）。')}</div>`;
             if (!towns.length) inner += `<button class="trade-btn pc-towns" style="width:100%;margin-top:10px;padding:8px;font-size:0.82rem">🏘️ ${t('城鎮列表')}</button>`; // v6.11.0 不再是死路:說清楚解鎖條件,附城鎮列表入口
         } else {
             const sel = (id, opts) => `<select id="${id}" style="width:100%;padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--bg-primary);color:var(--text-primary);font-size:0.85rem">${opts}</select>`;
-            inner += `<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px">${t('車伕掂掂貨：「要押什麼去哪？山路快一天，但不太平。」')}</div>`;
+            if (canBuy) inner += `<div class="pc-mode-bar" style="display:flex;gap:6px;margin-bottom:8px"><button class="trade-btn pc-mode" data-mode="sell" style="flex:1;padding:6px;font-size:0.8rem" ${resList.length ? '' : 'disabled'}>💰 ${t('賣貨')}</button><button class="trade-btn pc-mode" data-mode="buy" style="flex:1;padding:6px;font-size:0.8rem">🧺 ${t('採買')}</button></div>`;
+            inner += `<div id="pc-hint" style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px">${t('車伕掂掂貨：「要押什麼去哪？山路快一天，但不太平。」')}</div>`;
             inner += `<label style="font-size:0.75rem">${t('目的鎮')}</label>${sel('pc-town', towns.map((tw, i) => `<option value="${i}">${esc(t(tw.name))}</option>`).join(''))}`;
             inner += `<label style="font-size:0.75rem;margin-top:6px;display:block">${t('貨物')}</label>${sel('pc-res', resList.map(r => `<option value="${r}">${this._resLabel(r)}（${t('倉庫')} ${Math.floor(w.stockpile.get(r))}）</option>`).join(''))}`;
             inner += `<label style="font-size:0.75rem;margin-top:6px;display:block">${t('數量')} <span id="pc-amt-v">20</span></label><input type="range" id="pc-amt" min="10" max="200" step="10" value="20" style="width:100%">`;
@@ -84,19 +89,40 @@ Object.assign(RimTownApp.prototype, {
         inner += `<button class="trade-btn pc-close" style="width:100%;margin-top:8px;padding:8px;opacity:0.8">${t('關閉')}</button>`;
         card.innerHTML = inner; ov.appendChild(card); document.body.appendChild(ov);
         const read = () => { const ti = parseInt(card.querySelector('#pc-town')?.value || '0', 10); const tw = towns[ti] || towns[0]; return { tw, res: card.querySelector('#pc-res')?.value, amount: parseInt(card.querySelector('#pc-amt')?.value || '20', 10), guardId: card.querySelector('#pc-guard')?.value || '', route: card.querySelector('input[name="pc-route"]:checked')?.value || 'road' }; };
-        const quote = () => {
-            const o = read(); if (!o.tw || !o.res) return;
-            const amtEl = card.querySelector('#pc-amt'); const stock = w.stockpile.get(o.res) || 0; if (amtEl) { amtEl.max = Math.max(10, Math.min(200, Math.floor(stock / 10) * 10)); if (o.amount > +amtEl.max) { amtEl.value = amtEl.max; o.amount = +amtEl.max; } }
-            card.querySelector('#pc-amt-v').textContent = o.amount;
-            const q = w.playerCaravanQuote(o.tw.theme, o.res, o.amount, !!o.guardId, o.route);
-            card.querySelector('#pc-quote').innerHTML = `${t('預估賣價')} <b>${q.value}</b> ${t('銀幣')}（${t('成本價')} ${q.base}，+${Math.round(q.margin * 100)}%${q.wanted ? ` · ${t('對方缺這個')}` : ''}）<br>${t('遇劫風險')} <b>${Math.round(q.risk * 100)}%</b> · ${q.days} ${t('天')}${q.fee ? ` · ${t('護衛費')} ${q.fee}` : ''}`;
+        // v6.16.0 採買模式:貨物選單換成目的鎮盛產的貨,數量不受倉庫限制,報價是花費
+        const fillRes = () => {
+            const resEl = card.querySelector('#pc-res'); if (!resEl) return;
+            if (mode === 'buy') { const tw = read().tw; const goods = w.purchaseGoods?.(tw?.theme) || []; resEl.innerHTML = goods.map(r => `<option value="${r}">${this._resLabel(r)}（${t('倉庫')} ${Math.floor(w.stockpile.get(r) || 0)}）</option>`).join(''); }
+            else resEl.innerHTML = resList.map(r => `<option value="${r}">${this._resLabel(r)}（${t('倉庫')} ${Math.floor(w.stockpile.get(r))}）</option>`).join('');
+            const hint = card.querySelector('#pc-hint'); if (hint) hint.textContent = mode === 'buy' ? t('車伕數數銀幣：「要去哪買什麼？對方盛產的貨才便宜，路上照樣可能遇劫。」') : t('車伕掂掂貨：「要押什麼去哪？山路快一天，但不太平。」');
+            const go = card.querySelector('.pc-go'); if (go) go.textContent = mode === 'buy' ? `🧺 ${t('去採買')}` : `🐪 ${t('出發')}`;
+            card.querySelectorAll('.pc-mode').forEach(b => b.classList.toggle('btn-accent', b.dataset.mode === mode));
         };
-        card.querySelectorAll('select, input').forEach(el => el.addEventListener('input', quote)); quote();
+        const quote = () => {
+            const o = read(); if (!o.tw || !o.res) { const qe = card.querySelector('#pc-quote'); if (qe) qe.innerHTML = t('對方沒有可以買的貨'); return; }
+            const amtEl = card.querySelector('#pc-amt');
+            if (mode === 'buy') { if (amtEl) amtEl.max = 200; }
+            else { const stock = w.stockpile.get(o.res) || 0; if (amtEl) { amtEl.max = Math.max(10, Math.min(200, Math.floor(stock / 10) * 10)); if (o.amount > +amtEl.max) { amtEl.value = amtEl.max; o.amount = +amtEl.max; } } }
+            card.querySelector('#pc-amt-v').textContent = o.amount;
+            if (mode === 'buy') {
+                const q = w.playerPurchaseQuote(o.tw.theme, o.res, o.amount, !!o.guardId, o.route); const silver = Math.floor(w.stockpile.get('silver') || 0);
+                card.querySelector('#pc-quote').innerHTML = `${(q.shopUnit ? t('花費 <b>{cost}</b> 銀幣（每份 {unit}，鎮上商店 {shop}）· 身上 {silver}') : t('花費 <b>{cost}</b> 銀幣（每份 {unit}）· 身上 {silver}')).replace('{cost}', q.cost).replace('{unit}', q.unit).replace('{shop}', q.shopUnit).replace('{silver}', silver)}<br>${t('遇劫風險')} <b>${Math.round(q.risk * 100)}%</b> · ${q.days} ${t('天')}${q.fee ? ` · ${t('護衛費')} ${q.fee}` : ''}`;
+                return;
+            }
+            const q = w.playerCaravanQuote(o.tw.theme, o.res, o.amount, !!o.guardId, o.route);
+            card.querySelector('#pc-quote').innerHTML = `${t('預估賣價 <b>{value}</b> 銀幣（成本價 {base}，+{m}%{wanted}）').replace('{value}', q.value).replace('{base}', q.base).replace('{m}', Math.round(q.margin * 100)).replace('{wanted}', q.wanted ? ` · ${t('對方缺這個')}` : '')}<br>${t('遇劫風險')} <b>${Math.round(q.risk * 100)}%</b> · ${q.days} ${t('天')}${q.fee ? ` · ${t('護衛費')} ${q.fee}` : ''}`; // v6.16.0 模板:英文用半形括號
+        };
+        card.querySelectorAll('select, input').forEach(el => el.addEventListener('input', quote));
+        card.querySelector('#pc-town')?.addEventListener('change', () => { if (mode === 'buy') { fillRes(); quote(); } });
+        fillRes(); quote();
         ov.addEventListener('click', (e) => {
+            const mb = e.target.closest?.('.pc-mode'); if (mb) { if (!mb.disabled) { mode = mb.dataset.mode; fillRes(); quote(); } return; }
             if (e.target.closest?.('.pc-go')) {
                 const o = read(); if (!o.tw) return;
-                const r = w.launchPlayerCaravan({ toTownId: o.tw.id, toTownName: o.tw.name, toTheme: o.tw.theme, res: o.res, amount: o.amount, guardId: o.guardId || null, route: o.route });
-                this._showCornerNotice({ icon: r.ok ? '🐪' : '⚠️', title: t('押商隊'), name: '', desc: r.msg });
+                const r = mode === 'buy'
+                    ? w.launchPlayerPurchase({ toTownId: o.tw.id, toTownName: o.tw.name, toTheme: o.tw.theme, res: o.res, amount: o.amount, guardId: o.guardId || null, route: o.route })
+                    : w.launchPlayerCaravan({ toTownId: o.tw.id, toTownName: o.tw.name, toTheme: o.tw.theme, res: o.res, amount: o.amount, guardId: o.guardId || null, route: o.route });
+                this._showCornerNotice({ icon: r.ok ? (mode === 'buy' ? '🧺' : '🐪') : '⚠️', title: mode === 'buy' ? t('採買') : t('押商隊'), name: '', desc: r.msg });
                 if (r.ok) { ov.remove(); this.state = w.getState(); try { this.renderSidebar(); } catch (err) {} }
                 return;
             }
@@ -109,11 +135,16 @@ Object.assign(RimTownApp.prototype, {
         const pc = this.state?.playerCaravan; if (!pc) return '';
         const esc = (x) => this._escapeHtml(String(x));
         let html = `<div class="econ-section"><h3>🐪 ${t('押商隊')}</h3>`;
-        if (pc.active) html += `<div style="font-size:0.8rem;line-height:1.7">${pc.active.amount} ${this._resLabel(pc.active.res)} → ${esc(t(pc.active.toTownName))}${pc.active.guardName ? `（${esc(t(pc.active.guardName))}${t('押車')}）` : ''} · ${t('預計')} ${pc.active.daysLeft} ${t('天後回報')}</div>`;
-        else html += `<button class="trade-btn" data-action="open-caravan" style="width:100%;padding:8px">🐪 ${t('押一隊商隊去鄰鎮')}</button>`;
+        if (pc.active) html += pc.active.mode === 'buy'
+            ? `<div style="font-size:0.8rem;line-height:1.7">🧺 ${t('去{town}採買 {n} {res}').replace('{town}', esc(t(pc.active.toTownName))).replace('{n}', pc.active.amount).replace('{res}', this._resLabel(pc.active.res))}${pc.active.guardName ? `（${esc(t(pc.active.guardName))}${t('押車')}）` : ''} · ${t('預計')} ${pc.active.daysLeft} ${t('天後回報')}</div>` // v6.16.0
+            : `<div style="font-size:0.8rem;line-height:1.7">${pc.active.amount} ${this._resLabel(pc.active.res)} → ${esc(t(pc.active.toTownName))}${pc.active.guardName ? `（${esc(t(pc.active.guardName))}${t('押車')}）` : ''} · ${t('預計')} ${pc.active.daysLeft} ${t('天後回報')}</div>`;
+        else html += `<button class="trade-btn" data-action="open-caravan" style="width:100%;padding:8px">🐪 ${t('押一隊商隊去鄰鎮賣貨或採買')}</button>`;
         if (pc.history.length) {
             html += `<div style="margin-top:6px;font-size:0.72rem;color:var(--text-secondary)">${t('最近戰績')}</div>`;
-            pc.history.forEach(h => { html += `<div style="font-size:0.74rem">${h.raided ? '🏴' : '💰'} ${h.amount} ${this._resLabel(h.res)} → ${esc(t(h.toTownName))}：${h.raided ? `${t('遇劫，損失')} ${h.lost}` : `+${h.silver} ${t('銀幣')}`}</div>`; });
+            pc.history.forEach(h => {
+                if (h.mode === 'buy') { html += `<div style="font-size:0.74rem">${h.raided ? '🏴' : '🧺'} ${this._resLabel(h.res)} ${h.got ?? h.amount} ← ${esc(t(h.toTownName))}：${h.raided ? `${t('遇劫，損失')} ${h.lost}` : `−${h.cost || 0} ${t('銀幣')}`}</div>`; return; } // v6.16.0
+                html += `<div style="font-size:0.74rem">${h.raided ? '🏴' : '💰'} ${h.amount} ${this._resLabel(h.res)} → ${esc(t(h.toTownName))}：${h.raided ? `${t('遇劫，損失')} ${h.lost}` : `+${h.silver} ${t('銀幣')}`}</div>`;
+            });
         }
         return html + '</div>';
     },

@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.15.0
+ * Version: 6.16.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.15.0');
+define('RIMTOWN_VERSION', '6.16.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.16.0',
+            'date'    => '2026-10-13',
+            'changes' => array(
+                '🧺 向鄰鎮採買（B22 最後一個銀幣去處）：押商隊彈窗多了「賣貨／採買」切換——採買是帶銀幣去買目的鎮盛產的貨（礦山鎮石材金屬、海風鎮食物布料、林間村木材草藥、市集城布料、邊境鎮食物木材），每份約基礎價 ×1.4（非盛產 ×2，商路／商會印信／精算／談條件各再便宜一點），報價會列出鎮上商店的買價給你比較；大路 2 天／山路 1 天、護衛與遇劫風險和賣貨一樣，遇劫就只運回一部分；和押商隊共用同一隊（一次一隊）、進日誌／日報／話題／經驗，經濟分頁的商隊區塊會顯示「去礦山鎮採買 50 石材」與戰績（🧺 到貨／🏴 損失）；倉庫沒貨時不再是死路，直接開在採買模式',
+                '🌐 英文版商隊報價與「預計 X 天後回報」改用模板：半形括號、不再多一個空格',
+                '🧪 新增回歸測試 scripts/purchase_test.js（報價盛產 vs 非盛產、拒絕條件、出發扣款、中途存讀檔、到期運回與遇劫、戰績、彈窗採買模式與點擊；中英各跑一次）；soak 的 full 模式每五天派一次採買',
+            ),
+            'changes_en' => array(
+                '🧺 Buy from neighboring towns (the last silver sink for B22): the caravan dialog now has a Sell / Buying trip switch. A buying trip sends silver to buy what the destination produces (Mine Ridge: stone and metal; Seabreeze: food and cloth; Greenwood: wood and herbs; Market City: cloth; Frontier Town: food and wood) at about base price ×1.4 (×2 for goods they do not produce; the trade route, guild seal, Shrewd perk and a successful bargain each shave a little more), and the quote lists the town shop price for comparison. Main road 2 days / mountain road 1 day, escort and raid risk work exactly like selling, and a raid means only part of the load makes it home. It shares the one caravan slot with selling trips, goes into the log, newspaper, topics and XP, and the caravan block on the Economy tab shows "buying 50 stone in Mine Ridge" plus the record (🧺 delivered / 🏴 lost). An empty warehouse is no longer a dead end: the dialog opens straight in buying mode',
+                '🌐 English caravan quotes and "back in X days" now use templates: ASCII parentheses and no stray double space',
+                '🧪 New regression test scripts/purchase_test.js (quotes for produced vs. non-produced goods, rejections, silver deducted on departure, save & load mid-trip, delivery and raid on return, record lines, dialog buying mode and clicks; runs in zh and en); the soak test\'s full mode now sends a buying trip every five days',
+            ),
+        ),
         array(
             'version' => '6.15.0',
             'date'    => '2026-10-13',
