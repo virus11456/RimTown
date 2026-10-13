@@ -390,7 +390,7 @@ Object.assign(RimTownApp.prototype, {
             if (rom) relNpc.modifyRomantic(rom);
             relNpc.addSharedMemory(`${h.evName}${t('：')}${reply}`);
             player.chatHistory.push({ speaker: player.name, target: npc.name, text: reply, time: world.clock.timeStr });
-            npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t(player.name)}${t('回應了我的真心話：')}${reply}`, 8, [player.name]);
+            npc.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '{player}回應了我的真心話：{reply}', { player: player.name, reply }, 8, [player.name]);
             world.logMessage('player_chat', `${t(player.name)} → ${t(npc.name)}: ${reply}`, player.name, npc.name);
             this.bgm?.sfx?.('send');
             this.state = world.getState();

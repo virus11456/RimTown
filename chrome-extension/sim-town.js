@@ -385,7 +385,7 @@ class EventSystem {
         if (defense >= rd.threat_level) {
             world.logMessage('raid', `${t('小鎮成功抵禦了')}${rd.attacker}${t('！')}`);
             if (world.questSystem) world.questSystem.onRaidSurvived();
-            guards.forEach(g => { g.moodModifier = (g.moodModifier || 0) + 10; g.memory.add(world.tickCount, world.clock.timeStr,'raid',`${t('協助抵禦了')}${rd.attacker}${t('！')}`,8); });
+            guards.forEach(g => { g.moodModifier = (g.moodModifier || 0) + 10; g.memory.addT(world.tickCount, world.clock.timeStr, 'raid', '協助抵禦了{attacker}！', { attacker: rd.attacker }, 8); });
         } else {
             world.logMessage('raid', `${rd.attacker}${t('突破了我們的防線！')}`);
             if (world.stockpile) {
@@ -465,7 +465,7 @@ class EventSystem {
         this.eventLog.push([world.clock.timeStr, event]);
         this.conversationTopics.push(`${agent.name}${t('離開了小鎮')}`);
         Object.values(world.agents).forEach(o => {
-            if(o.agentId!==agent.agentId) o.memory.add(world.tickCount,world.clock.timeStr,'departure',`${agent.name}${reason}。`,5,[agent.name]);
+            if(o.agentId!==agent.agentId) o.memory.addT(world.tickCount, world.clock.timeStr, 'departure', '{agent}{reason}。', { agent: agent.name, reason }, 5, [agent.name]);
         });
         delete world.agents[agent.agentId];
     }
@@ -511,14 +511,14 @@ class EventSystem {
         }
         // Restore memories
         if (d.memories && Array.isArray(d.memories)) {
-            d.memories.forEach(m => agent.memory.add(m.tick, m.time, m.category, m.content ?? m.text ?? '', m.importance, m.related_agents || m.relatedAgents || []));
+            d.memories.forEach(m => agent.memory.add(m.tick, m.time, m.category, m.content ?? m.text ?? '', m.importance, m.related_agents || m.relatedAgents || [], m.k || null, m.p || null));
         }
         world.agents[agent.agentId] = agent;
         world.logMessage('arrival', `${agent.name}${t('旅行歸來了！')}`, agent.name);
         const event = {name:t('居民歸來'),description:`${agent.name}${t('帶著故事回來了！')}`,severity:'minor',effects:{mood_all:3,conversation_topic:`${agent.name}${t('的旅行故事')}`},event_type:'arrival'};
         this.eventLog.push([world.clock.timeStr, event]);
         Object.values(world.agents).forEach(o => {
-            if(o.agentId!==agent.agentId) o.memory.add(world.tickCount,world.clock.timeStr,'arrival',`${agent.name}${t('旅行回來了！')}`,4,[agent.name]);
+            if(o.agentId!==agent.agentId) o.memory.addT(world.tickCount, world.clock.timeStr, 'arrival', '{agent}旅行回來了！', { agent: agent.name }, 4, [agent.name]);
         });
     }
     _managePopulation(world) {
@@ -566,7 +566,7 @@ class EventSystem {
         this.eventLog.push([world.clock.timeStr, event]);
         this.conversationTopics.push(`${t('新居民')}${agent.name}`);
         Object.values(world.agents).forEach(o => {
-            if(o.agentId!==agent.agentId) o.memory.add(world.tickCount,world.clock.timeStr,'immigration',`${t('新居民')}${agent.name}${t('到來了！')}`,5,[agent.name]);
+            if(o.agentId!==agent.agentId) o.memory.addT(world.tickCount, world.clock.timeStr, 'immigration', '新居民{agent}到來了！', { agent: agent.name }, 5, [agent.name]);
         });
         if (world.dailyNews) world.dailyNews.collectEvent('lifecycle', `${t('新居民')}${agent.name}${t('以')}${job.title}${t('身分來到鎮上！')}`, 6, [agent.name]);
     }
@@ -711,7 +711,7 @@ class ElectionSystem {
         world.logMessage('event', `📋 ${t('競選期間為')} ${this.campaignDaysLeft} ${t('天，之後進行投票')}`);
         this.candidates.forEach(c => {
             const agent = world.agents[c.agentId];
-            if (agent?.memory) agent.memory.add(world.tickCount, world.clock.timeStr, 'election', `${t('我宣布參選鎮長，主張')}${c.policyLabel}`, 8, []);
+            if (agent?.memory) agent.memory.addT(world.tickCount, world.clock.timeStr, 'election', '我宣布參選鎮長，主張{policyLabel}', { policyLabel: c.policyLabel }, 8, []);
         });
     }
 

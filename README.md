@@ -74,6 +74,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 **語言／雙語**
 - B1 記憶、對話紀錄、行程文字在「建立當下」依介面語言存進存檔（`t()` at creation），切換語言後舊內容語言混雜。根治要把這類模板改成「key＋參數」存檔、顯示時再翻，屬大工程；目前只保證顯示層與人名一致。
+  - v6.17.0 第一步：村民記憶（`Memory.addT` 存 `k`＋`p`，`text()` 依當下語言渲染並快取；`toDict`／關係史／人生摘要都走它）已轉 63 處規則式呼叫點（`scratchpad/mem_convert.js` 自動轉換＋英文校對）；AI 提示詞與檢索仍用建立當下的 `content`。還沒做：對話紀錄（chatHistory）、行程文字、日誌（logMessage）、共同回憶（sharedMemories）、兩處含三元運算的呼叫點（遺產、送禮）。
 - B2 LLM 提示詞本體仍是中文（125 條刻意保留），英文對話模式靠英文規則行與英文系統指示；若要更道地，可為主要提示詞寫英文版本。
 - B3 ~~`changelog.js` 首頁每次整份載入~~ v5.81.0 改為首頁第一次渲染才動態載入，直接進遊戲不載。
 - B4 ~~隨機卡司英文名由 26 姓 × 48 名組合~~ v5.79.0 已擴為 40 姓 × 120 名，並保留五鎮劇本人名不抽。
@@ -235,7 +236,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.16.0.zip` from Releases
+1. Download `rimtown-v6.17.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -269,6 +270,7 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 # 選跑:node scripts/donate_test.js   # v6.14.0 捐建/捐款(進度 +20%、每日上限、繁榮上限、當天心情、存讀檔、按鈕;有斷言,失敗 exit 1)
 # 選跑:node scripts/sponsor_test.js  # v6.15.0 贊助節慶(窗口、前夕/節慶中效果、只能一次、節慶日 ×1.5、存讀檔、按鈕、早安卡;有斷言,失敗 exit 1)
 # 選跑:node scripts/purchase_test.js # v6.16.0 向鄰鎮採買(報價、拒絕、扣款、存讀檔、運回/遇劫、戰績、彈窗;有斷言,失敗 exit 1)
+# 選跑:node scripts/memory_i18n_test.js # v6.17.0 記憶模板化(中英切換渲染、舊式記憶、存讀檔、舊存檔、效能;有斷言,失敗 exit 1)
 # 選跑:node scripts/growth2_test.js ; node scripts/revival_test.js   # v6.12.0/v6.13.0 旅人後期成長(天賦學完→屬性、最後一個天賦邊界、舊檔遷移)與小鎮復興(衰敗→連撐兩季→中央卡/回顧/存讀檔)
 # 選跑:node scripts/walkthrough.js <zh|en> <desktop|mobile> <outdir>   # v6.11.0 新手走一遍:用 app 自己的迴圈真跑一季、關鍵時刻截圖,看圖抓版面/文案問題
 # 選跑:node scripts/soak_test.js [url] [days] [theme] [mode]   # mode=full|casual|idle(v6.2.0 平衡矩陣用);核心玩法迴圈浸泡:真 tick 跑 35 天、每天像玩家做委託/商隊/對話/天賦、每 10 天存檔讀檔接著跑(v5.96.0 起;改核心迴圈必跑五主題)
@@ -283,6 +285,10 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.17.0 (2026-10-13)
+- 🌐 B1 第一步：村民的規則式記憶改成「模板 key＋參數」存檔（戀愛／結婚／分手／鬧翻／看星星／弔念／派系／探險／婚禮／新居民／對話摘要等 63 處），顯示時依當下介面語言重新翻譯——切換語言後，資訊卡最近記憶、關係史與人生摘要不再中英混雜；建立當下的文字仍存一份給 AI 提示詞與舊存檔用，舊存檔照常讀
+- 🧪 新增回歸測試 scripts/memory_i18n_test.js（中→英→中渲染、舊式記憶維持、存讀檔保留模板、舊存檔相容、getState 效能）
 
 ### v6.16.0 (2026-10-13)
 - 🧺 向鄰鎮採買（B22 最後一個銀幣去處）：押商隊彈窗多了「賣貨／採買」切換——採買是帶銀幣去買目的鎮盛產的貨（礦山鎮石材金屬、海風鎮食物布料、林間村木材草藥、市集城布料、邊境鎮食物木材），每份約基礎價 ×1.4（非盛產 ×2，商路／商會印信／精算／談條件各再便宜一點），報價會列出鎮上商店的買價給你比較；大路 2 天／山路 1 天、護衛與遇劫風險和賣貨一樣，遇劫就只運回一部分；和押商隊共用同一隊（一次一隊）、進日誌／日報／話題／經驗，經濟分頁的商隊區塊會顯示「去礦山鎮採買 50 石材」與戰績（🧺 到貨／🏴 損失）；倉庫沒貨時不再是死路，直接開在採買模式

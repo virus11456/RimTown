@@ -467,7 +467,7 @@ Object.assign(RimTownApp.prototype, {
         rel.modifyAffinity(4);
         const d = this.world.lifeGoals.describe(agentId);
         this.world.logMessage('milestone', `✨ ${playerTitle(this.world)}${t('為')}${t(npc.name)}${t('的夢想「')}${d?.name || ''}${t('」加了一把勁!')}`, npc.name);
-        npc.memory.add(this.world.tickCount, this.world.clock.timeStr, 'social', `${playerTitle(this.world)}${t('支持我的夢想,好感動!')}`, 6, ['player']);
+        npc.memory.addT(this.world.tickCount, this.world.clock.timeStr, 'social', '{v}支持我的夢想,好感動!', { v: playerTitle(this.world) }, 6, ['player']);
         this.bgm?.sfx?.('coin');
         this.tileMap?.spawnFxOnAgent?.(agentId, '✨', { color: '#6bd5a0', burst: '⭐', burstCount: 6 });
         this._gameAlert(`✨ ${t('你鼓勵了')}${t(npc.name)}${t('追逐「')}${d?.name || ''}${t('」的夢想!')}`, npc.icon || '✨');

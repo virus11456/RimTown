@@ -442,7 +442,7 @@ class MultiEndingSystem {
                 history.push({
                     type: 'memory',
                     time: mem.timeStr,
-                    content: mem.content,
+                    content: mem.text ? mem.text() : mem.content, // v6.17.0 依當下語言
                 });
             }
         }

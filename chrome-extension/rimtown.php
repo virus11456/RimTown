@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.16.0
+ * Version: 6.17.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.16.0');
+define('RIMTOWN_VERSION', '6.17.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.17.0',
+            'date'    => '2026-10-13',
+            'changes' => array(
+                '🌐 B1 第一步：村民的規則式記憶改成「模板 key＋參數」存檔（戀愛／結婚／分手／鬧翻／看星星／弔念／派系／探險／婚禮／新居民／對話摘要等 63 處），顯示時依當下介面語言重新翻譯——切換語言後，資訊卡最近記憶、關係史與人生摘要不再中英混雜；建立當下的文字仍存一份給 AI 提示詞與舊存檔用，舊存檔照常讀',
+                '🧪 新增回歸測試 scripts/memory_i18n_test.js（中→英→中渲染、舊式記憶維持、存讀檔保留模板、舊存檔相容、getState 效能）',
+            ),
+            'changes_en' => array(
+                '🌐 B1 step one: villagers\' rule-based memories are now stored as a template key plus parameters (63 call sites: dating, marriage, break-ups, feuds, stargazing, mourning, factions, expeditions, weddings, newcomers, conversation summaries and more) and rendered in the current interface language on display. After switching languages the recent memories on the info card, the relationship history and the life summary no longer mix Chinese and English. The text as written at creation is still kept for AI prompts and old saves, and old saves load as before',
+                '🧪 New regression test scripts/memory_i18n_test.js (zh → en → zh rendering, legacy memories unchanged, templates survive save & load, old-save compatibility, getState performance)',
+            ),
+        ),
         array(
             'version' => '6.16.0',
             'date'    => '2026-10-13',

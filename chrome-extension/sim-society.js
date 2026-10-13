@@ -126,7 +126,7 @@ class FactionSystem {
                     const memberNames = filtered.map(a => a.name).join(t('、'));
                     world.logMessage('faction', `${faction.icon} ${memberNames}${t('組成了「')}${faction.name}${t('」！')}`, filtered[0].name);
                     filtered.forEach(a => {
-                        a.memory.add(world.tickCount, world.clock.timeStr, 'social', `${t('我加入了「')}${faction.name}${t('」，成員有')}${memberNames}${t('。')}`, 6, filtered.map(x => x.name));
+                        a.memory.addT(world.tickCount, world.clock.timeStr, 'social', '我加入了「{faction}」，成員有{memberNames}。', { faction: faction.name, memberNames }, 6, filtered.map(x => x.name));
                         // Boost mutual affinity (scaled by personality compatibility)
                         filtered.forEach(b => {
                             if (a.agentId !== b.agentId) {
@@ -175,7 +175,7 @@ class FactionSystem {
                 if (avgAff < -30 && Math.random() < 0.2) {
                     faction.removeMember(memberId);
                     world.logMessage('faction', `${agent.name}${t('退出了「')}${faction.name}${t('」。')}`, agent.name);
-                    agent.memory.add(world.tickCount, world.clock.timeStr, 'social', `${t('我退出了「')}${faction.name}${t('」，我受不了他們了。')}`, 5, []);
+                    agent.memory.addT(world.tickCount, world.clock.timeStr, 'social', '我退出了「{faction}」，我受不了他們了。', { faction: faction.name }, 5, []);
                 }
             }
         }
@@ -868,8 +868,7 @@ class LifecycleSystem {
                 if (npc._parentNames && npc._parentNames.includes(a.name)) isFamily = true;
                 a.moodModifier = (a.moodModifier || 0) + grief;
                 if (isFamily || rel.affinity > 50) a.addThought('lost_loved_one', world, npc.agentId, npc.name); // v5.15.0 痛失至親
-                a.memory.add(world.tickCount, world.clock.timeStr, 'social',
-                    `${npc.name}${t('去世了...我很難過。')}`, 9, [npc.name]);
+                a.memory.addT(world.tickCount, world.clock.timeStr, 'social', '{npc}去世了...我很難過。', { npc: npc.name }, 9, [npc.name]);
                 // Add mourning target — everyone with a relationship will visit graveyard
                 if (!a.isPlayer && a._mourningTargets) {
                     a._mourningTargets.push({ name: npc.name, deathTick: world.tickCount, isFamily });
@@ -995,10 +994,8 @@ class LifecycleSystem {
         // Parents get mood boost
         parentA.moodModifier = (parentA.moodModifier || 0) + 25;
         parentB.moodModifier = (parentB.moodModifier || 0) + 25;
-        parentA.memory.add(world.tickCount, world.clock.timeStr, 'relationship',
-            `${t('我們的孩子')}${name}${t('出生了！')}`, 10, [parentB.name, name]);
-        parentB.memory.add(world.tickCount, world.clock.timeStr, 'relationship',
-            `${t('我們的孩子')}${name}${t('出生了！')}`, 10, [parentA.name, name]);
+        parentA.memory.addT(world.tickCount, world.clock.timeStr, 'relationship', '我們的孩子{name}出生了！', { name }, 10, [parentB.name, name]);
+        parentB.memory.addT(world.tickCount, world.clock.timeStr, 'relationship', '我們的孩子{name}出生了！', { name }, 10, [parentA.name, name]);
 
         // Set up parent-child relationships
         const relA = agent.relationships.getOrCreate(parentA.agentId, parentA.name);
@@ -1152,8 +1149,7 @@ class ExplorationSystem {
         agents.forEach(a => {
             a.currentLocation = 'exploration';
             a.activity = 'exploring';
-            a.memory.add(world.tickCount, world.clock.timeStr, 'discovery',
-                `${t('出發前往')}${zone.name}${t('探險！')}`, 7, agents.map(x => x.name));
+            a.memory.addT(world.tickCount, world.clock.timeStr, 'discovery', '出發前往{zone}探險！', { zone: zone.name }, 7, agents.map(x => x.name));
         });
 
         const names = agents.map(a => a.name).join(t('、'));
@@ -1195,8 +1191,7 @@ class ExplorationSystem {
                     a.moodModifier = (a.moodModifier || 0) + 10;
                     a.currentLocation = a.homeLocation;
                     a.activity = 'idle';
-                    a.memory.add(world.tickCount, world.clock.timeStr, 'discovery',
-                        `${t('從')}${zone.name}${t('探險歸來！')}${event}`, 8, agents.map(x => x.name));
+                    a.memory.addT(world.tickCount, world.clock.timeStr, 'discovery', '從{zone}探險歸來！{event}', { zone: zone.name, event }, 8, agents.map(x => x.name));
                 });
 
                 resultMsg = `${zone.icon} ${t('探險隊從')}${zone.name}${t('凱旋歸來！')}${event}`;
@@ -1209,8 +1204,7 @@ class ExplorationSystem {
                     a.needs.hunger = Math.max(0, a.needs.hunger - 20);
                     a.currentLocation = a.homeLocation;
                     a.activity = 'idle';
-                    a.memory.add(world.tickCount, world.clock.timeStr, 'discovery',
-                        `${t('從')}${zone.name}${t('探險失敗返回...')}${event}`, 7, agents.map(x => x.name));
+                    a.memory.addT(world.tickCount, world.clock.timeStr, 'discovery', '從{zone}探險失敗返回...{event}', { zone: zone.name, event }, 7, agents.map(x => x.name));
                 });
                 // Some resources still found
                 for (const [resource, amount] of Object.entries(zone.rewards.resources)) {

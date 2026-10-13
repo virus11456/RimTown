@@ -87,8 +87,7 @@ class GossipNetwork {
             ];
             gossip.content = pickRandom(wraps)(gossip.content);
         }
-        listener.memory.add(world.tickCount, world.clock.timeStr, 'social',
-            `${speaker.name}${t('告訴我：「')}${gossip.content}${t('」')}`, 4, [speaker.name, gossip.about]);
+        listener.memory.addT(world.tickCount, world.clock.timeStr, 'social', '{speaker}告訴我：「{content}」', { speaker: speaker.name, content: gossip.content }, 4, [speaker.name, gossip.about]);
         // v5.3.0 只有「有內容」且還算新鮮(傳不到 3 手)的八卦才進頭條,避免同一則洗版
         if (gossip.juicy && gossip.spreadCount <= 3) {
             world.logMessage('gossip', `🗣️ ${speaker.name}${t('偷偷說：「')}${gossip.content}${t('」')}`, speaker.name, listener.name);
@@ -114,13 +113,13 @@ class GossipNetwork {
             if (positive) {
                 relToPlayer.modifyAffinity(6);
                 subject.addThought('praised', world, source.agentId, source.name); // v5.15.0 被公開稱讚
-                subject.memory.add(world.tickCount, world.clock.timeStr, 'social', `${t('聽說')}${source.name}${t('到處誇我,真開心!')}`, 6, [source.name]);
+                subject.memory.addT(world.tickCount, world.clock.timeStr, 'social', '聽說{source}到處誇我,真開心!', { source: source.name }, 6, [source.name]);
                 source.chatHistory?.push?.({ speaker: subject.name, target: source.name, text: t('欸,我聽說你到處跟人誇我?哈哈,謝啦,請你喝一杯!'), time: world.clock.timeStr });
                 world.logMessage('gossip', `💐 ${subject.name}${t('聽到了')}${playerTitle(world)}${t('的美言,好感大增!')}`, subject.name);
             } else if (negative) {
                 relToPlayer.modifyAffinity(-12); relToPlayer.modifyTrust(-10);
                 subject.addThought('slandered', world, source.agentId, source.name); // v5.15.0 被說壞話
-                subject.memory.add(world.tickCount, world.clock.timeStr, 'social', `${t('居然是')}${source.name}${t('在背後說我壞話...太過分了。')}`, 8, [source.name]);
+                subject.memory.addT(world.tickCount, world.clock.timeStr, 'social', '居然是{source}在背後說我壞話...太過分了。', { source: source.name }, 8, [source.name]);
                 source.chatHistory?.push?.({ speaker: subject.name, target: source.name, text: t('我都聽說了。你在背後那樣說我?虧我還這麼信任你。'), time: world.clock.timeStr });
                 world.logMessage('gossip', `💢 ${subject.name}${t('發現')}${source.name}${t('在背後說他壞話,關係惡化!')}`, subject.name);
             }
@@ -164,7 +163,7 @@ class GossipNetwork {
         };
         this.activeGossip.push(gossip);
         if (this.activeGossip.length > 10000) this.activeGossip = this.activeGossip.slice(-10000);
-        listener.memory.add(world.tickCount, world.clock.timeStr, 'social', `${player.name}${t('偷偷跟我說:「')}${content}${t('」')}`, 5, [player.name, about.name]);
+        listener.memory.addT(world.tickCount, world.clock.timeStr, 'social', '{player}偷偷跟我說:「{content}」', { player: player.name, content }, 5, [player.name, about.name]);
         world.logMessage('gossip', `🗣️ ${playerTitle(world)}${t('偷偷向')}${listener.name}${t('爆料了')}${about.name}${t('的事...')}`, player.name, listener.name);
         return gossip;
     }
@@ -364,7 +363,7 @@ ${LLM_LANG.rule(t('【規則】繁體中文(台灣用語)。只輸出 JSON,不�
             const key = `${world.clock.year}-${world.clock.season}-${world.clock.day}`;
             const merged = [...past, ...fresh];
             npc.dailyPlan = { key, goals: merged.map(b => `${b.time} ${b.text}`), blocks: merged, llm: true, replanned: true };
-            npc.memory.add(world.tickCount, world.clock.timeStr, 'plan', `${t('因為「')}${shortReason.slice(0, 40)}${t('」,我改變了今天接下來的安排。')}`, 5, []);
+            npc.memory.addT(world.tickCount, world.clock.timeStr, 'plan', '因為「{v}」,我改變了今天接下來的安排。', { v: shortReason.slice(0, 40) }, 5, []);
             world.logMessage('thought', `📝 ${npc.name}${t('臨時改變了今天的安排')}`, npc.name);
         } catch (e) { console.warn('[RimTown] replan failed:', e); }
     }
@@ -618,7 +617,7 @@ ${t('- 直接寫訊息內容就好')}`;
         // Record in chat history
         player.chatHistory.push({ speaker: npc.name, target: player.name, text: npcText, time: world.clock.timeStr });
         // Record in memory
-        npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('主動傳訊息給')}${player.name}${t('：')}${npcText}`, 3, [player.name]);
+        npc.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '主動傳訊息給{player}：{npcText}', { player: player.name, npcText }, 3, [player.name]);
         // Log
         world.logMessage('player_chat', `${npc.name} → ${player.name}: ${npcText}`, npc.name, player.name);
         // Notify UI
@@ -652,7 +651,7 @@ ${LLM_LANG.rule(t('【格式】只寫一句貼文,表達此刻的心情與這個
             }
             npc.addThought(isDone ? 'dream_achieved' : 'dream_progress', world); // v5.15.0 夢想推進的喜悅
             if (world.townFeed) world.townFeed.addPost(world, npc, text);
-            npc.memory.add(world.tickCount, world.clock.timeStr, 'milestone', `${t('人生里程碑:')}${stageName}(${def.name})`, isDone ? 10 : 7, []);
+            npc.memory.addT(world.tickCount, world.clock.timeStr, 'milestone', '人生里程碑:{stageName}({def})', { stageName, def: def.name }, isDone ? 10 : 7, []);
             world.logMessage('milestone', `${def.icon} ${npc.name}${t('的夢想「')}${def.name}${t('」邁入:')}${stageName}${isDone ? t('(達成!)') : ''}`, npc.name);
             if (world.dailyNews) world.dailyNews.collectEvent('milestone', `${npc.name}${isDone ? t('實現了畢生夢想「') : t('朝夢想邁進:「')}${isDone ? def.name : stageName}${t('」')}`, isDone ? 8 : 5, [npc.name]);
             if (isDone) {
@@ -913,7 +912,7 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
                 else if (traits.includes('abrasive')) text = `${text}${t('...講完了,不准笑。')}`;
             }
             player.chatHistory.push({ speaker: npc.name, target: player.name, text, time: world.clock.timeStr });
-            npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('我對')}${player.name}${t('說出了真心話：')}${text}`, 9, [player.name]);
+            npc.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '我對{player}說出了真心話：{text}', { player: player.name, text }, 9, [player.name]);
             rel.addSharedMemory(`${ev.name}${t('：')}${text}`);
             world.logMessage('player_chat', `${ev.icon} ${npc.name} → ${player.name}: ${text}`, npc.name, player.name);
             if (this.onNpcMessage) this.onNpcMessage(npc.agentId);
@@ -962,7 +961,7 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
                 text = pickRandom(fallbacks);
             }
             player.chatHistory.push({ speaker: npc.name, target: player.name, text, time: world.clock.timeStr });
-            npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('跟')}${player.name}${t('聊到：')}${text}`, 3, [player.name]);
+            npc.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '跟{player}聊到：{text}', { player: player.name, text }, 3, [player.name]);
             world.logMessage('player_chat', `${npc.name} → ${player.name}: ${text}`, npc.name, player.name);
             if (this.onNpcMessage) this.onNpcMessage(npc.agentId);
         } catch (e) { console.error('[RimTown] sendEventComment failed:', e); }
@@ -1253,8 +1252,8 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
         const summary = dialogue._summary || `${agentA.name}${t('和')}${agentB.name}${t('聊了天。')}`;
         relA.modifyAffinity(affA); relA.modifyRomantic(romA); relA.recordInteraction(world.tickCount, summary);
         relB.modifyAffinity(affB); relB.modifyRomantic(romB); relB.recordInteraction(world.tickCount, summary);
-        agentA.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('與')}${agentB.name}${t('交談：')}${summary}`, Math.min(6,3+Math.abs(affA)), [agentB.name]);
-        agentB.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('與')}${agentA.name}${t('交談：')}${summary}`, Math.min(6,3+Math.abs(affB)), [agentA.name]);
+        agentA.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '與{agentB}交談：{summary}', { agentB: agentB.name, summary }, Math.min(6,3+Math.abs(affA)), [agentB.name]);
+        agentB.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '與{agentA}交談：{summary}', { agentA: agentA.name, summary }, Math.min(6,3+Math.abs(affB)), [agentA.name]);
         world.logMessage('conversation', summary, agentA.name, agentB.name);
         if (world.dailyNews && (Math.abs(affA) >= 4 || Math.abs(affB) >= 4)) {
             world.dailyNews.collectEvent('social', summary, 4, [agentA.name, agentB.name]);
@@ -1805,8 +1804,8 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
         const summary = effects.summary || `${npc.name}${t('回應了')}${player.name}${t('。')}`;
         relNpc.modifyAffinity(affChange); relNpc.modifyRomantic(romChange); relNpc.recordInteraction(world.tickCount, summary);
         relPlayer.modifyAffinity(Math.max(0, affChange-1)); relPlayer.recordInteraction(world.tickCount, summary);
-        npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${player.name}${t('說：「')}${playerMessage}${t('」— ')}${summary}`, 5, [player.name]);
-        player.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('與')}${npc.name}${t('交談：')}${summary}`, 4, [npc.name]);
+        npc.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '{player}說：「{playerMessage}」— {summary}', { player: player.name, playerMessage, summary }, 5, [player.name]);
+        player.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '與{npc}交談：{summary}', { npc: npc.name, summary }, 4, [npc.name]);
         // Only push NPC reply (player message already added by playerSendMessage)
         // 去重不比對時間戳:AI 回覆期間遊戲時間會前進,舊檢查因時間不同而重複寫入玩家訊息(重複留言 bug)
         if (!player.chatHistory.slice(-6).some(m => m.speaker === player.name && m.target === npc.name && m.text === playerMessage)) {
@@ -2081,8 +2080,8 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
 
         relNpc.modifyAffinity(affChange); relNpc.modifyRomantic(romChange); relNpc.recordInteraction(world.tickCount, summary);
         relPlayer.modifyAffinity(Math.max(-3,affChange-1)); relPlayer.recordInteraction(world.tickCount, summary);
-        npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${player.name}${t('說：「')}${playerMessage.slice(0,30)}${t('」— ')}${summary}`, 4+Math.abs(affChange), [player.name]);
-        player.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('與')}${npc.name}${t('：')}${summary}`, 3+Math.abs(affChange), [npc.name]);
+        npc.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '{player}說：「{v}」— {summary}', { player: player.name, v: playerMessage.slice(0,30), summary }, 4+Math.abs(affChange), [player.name]);
+        player.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '與{npc}：{summary}', { npc: npc.name, summary }, 3+Math.abs(affChange), [npc.name]);
         // Only push NPC reply (player message already added by playerSendMessage)
         // 去重不比對時間戳:AI 回覆期間遊戲時間會前進,舊檢查因時間不同而重複寫入玩家訊息(重複留言 bug)
         if (!player.chatHistory.slice(-6).some(m => m.speaker === player.name && m.target === npc.name && m.text === playerMessage)) {

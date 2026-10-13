@@ -376,7 +376,7 @@ Object.assign(RimTownApp.prototype, {
         if (author && !author.isPlayer) {
             const rel = author.relationships.getOrCreate('player', player.name);
             rel.modifyAffinity(2);
-            author.memory.add(this.world.tickCount, this.world.clock.timeStr, 'social', `${t(player.name)}${t('在我的動態下留言:')}${text}`, 4, [player.name]);
+            author.memory.addT(this.world.tickCount, this.world.clock.timeStr, 'social', '{player}在我的動態下留言:{text}', { player: player.name, text }, 4, [player.name]);
             // 作者回覆留言
             setTimeout(() => {
                 const aff = rel.affinity;
@@ -865,7 +865,7 @@ Object.assign(RimTownApp.prototype, {
                     }
                     rec.sides[npc.agentId] = true;
                     foe.modifyAffinity(6);
-                    npc.memory.add(world.tickCount, world.clock.timeStr, 'plan', `${t(player.name)}${t('苦口婆心勸我和')}${foe.targetName}${t('和好...也許,是該放下了。')}`, 7, [foe.targetName]);
+                    npc.memory.addT(world.tickCount, world.clock.timeStr, 'plan', '{player}苦口婆心勸我和{targetName}和好...也許,是該放下了。', { player: player.name, targetName: foe.targetName }, 7, [foe.targetName]);
                     const bothDone = rec.sides[npc.agentId] && rec.sides[other.agentId];
                     if (bothDone) {
                         // 兩邊都勸過了 → 世紀大和解
@@ -877,8 +877,8 @@ Object.assign(RimTownApp.prototype, {
                         relAB.isFeud = false; relBA.isFeud = false;
                         npc.moodModifier = (npc.moodModifier || 0) + 10;
                         other.moodModifier = (other.moodModifier || 0) + 10;
-                        npc.memory.add(world.tickCount, world.clock.timeStr, 'relationship', `${t('在')}${t(player.name)}${t('的調解下,我和')}${t(other.name)}${t('和解了。心裡一塊石頭落了地。')}`, 9, [other.name, player.name]);
-                        other.memory.add(world.tickCount, world.clock.timeStr, 'relationship', `${t('在')}${t(player.name)}${t('的調解下,我和')}${t(npc.name)}${t('和解了。心裡一塊石頭落了地。')}`, 9, [npc.name, player.name]);
+                        npc.memory.addT(world.tickCount, world.clock.timeStr, 'relationship', '在{player}的調解下,我和{other}和解了。心裡一塊石頭落了地。', { player: player.name, other: other.name }, 9, [other.name, player.name]);
+                        other.memory.addT(world.tickCount, world.clock.timeStr, 'relationship', '在{player}的調解下,我和{npc}和解了。心裡一塊石頭落了地。', { player: player.name, npc: npc.name }, 9, [npc.name, player.name]);
                         npc.relationships.getOrCreate('player', player.name).modifyAffinity(8);
                         other.relationships.getOrCreate('player', player.name).modifyAffinity(8);
                         world.reputationSystem?.addReputation?.(15, 'help', world);
