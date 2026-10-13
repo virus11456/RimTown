@@ -86,10 +86,11 @@ Object.assign(RimTownApp.prototype, {
                 html += `<span style="width:20px;text-align:right;color:var(--text-muted)">${dim.value}</span>`;
                 html += `</div>`;
             }
+            html += `</div>`; // 關掉維度格子,捐款列放在格子下方(v6.14.1:之前被塞進格子裡)
             // v6.14.0 鎮公所捐款:銀幣的去處之一(繁榮 +1、全鎮心情 +2、聲望 +2,每天三次)
             const bd = this.state.buildings || {}; const left = Number.isFinite(bd.donations_left) ? bd.donations_left : (bd.donate_per_day || 3); const dcost = bd.donate_cost || 100; const silverNow = this.state.stockpile?.resources?.silver || 0;
             html += `<div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:0.72rem;color:var(--text-secondary)"><span style="flex:1">${t('捐給鎮公所：繁榮 +1、全鎮今天心情 +2、聲望 +2')}${bd.donations?.total ? ` · ${t('累計')} ${bd.donations.total}` : ''}${(bd.donations?.bonus || 0) >= (bd.donate_prosperity_cap || 10) ? ` · ${t('繁榮加成已滿')}` : ''}</span><button class="trade-btn" data-action="donate-town" ${left > 0 && silverNow >= dcost ? '' : 'disabled'} style="padding:3px 10px;font-size:0.72rem;white-space:nowrap">🏛️ ${t('捐')} ${dcost}${left > 0 ? `（${t('今天還可 {n} 次').replace('{n}', left)}）` : `（${t('明天再來')}）`}</button></div>`;
-            html += `</div></div>`;
+            html += `</div>`;
         }
 
         // Sub-tab navigation

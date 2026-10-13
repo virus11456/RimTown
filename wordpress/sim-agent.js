@@ -36,7 +36,7 @@ class GameClock {
     get timeStr() {
         const h = String(this.hour).padStart(2,'0');
         const m = String(this.minute).padStart(2,'0');
-        return `${t('第')}${this.year}${t('年 ')}${t(this.season)} ${t('第')}${this.day}${t('天')} ${h}:${m}`;
+        return `${t('第 {y} 年{s}').split('{y}').join(this.year).split('{s}').join(t(this.season))} ${t('第 {d} 天').split('{d}').join(this.day)} ${h}:${m}`; // v6.14.1 用模板,英文不再變成 Ch.1 Year Spring Ch.1 days
     }
     get shortTime() {
         return `${String(this.hour).padStart(2,'0')}:${String(this.minute).padStart(2,'0')}`;
