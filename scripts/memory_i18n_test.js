@@ -68,6 +68,13 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     const memConv = []; for (const ag of Object.values(w.agents)) for (const e of ag.memory.entries) if (e.category === 'conversation' && e.k && cjk.test(e.text())) memConv.push(e.text().slice(0, 40));
     o.dayConv = { total: conv.length, zh: convZh, memZh: memConv.length, sample: memConv.slice(0, 3) }; ck(conv.length > 0 && convZh === 0 && memConv.length === 0, 'day conversation en ' + JSON.stringify(o.dayConv));
     I18N.setLang('zh');
+    // 9) v6.20.0 八卦內容與委託描述模板
+    const g = w.gossipNetwork.createRelGossip(w, 'newCouple', a, b); ck(g && g.contentT && g.contentT.k && typeof g.content === 'string', 'rel gossip contentT');
+    const listener = npcs[2]; w.gossipNetwork.spreadGossip ? null : null; const spreadFn = ['spreadGossip', 'spread', '_spreadTo'].find(n => typeof w.gossipNetwork[n] === 'function'); o.spreadFn = spreadFn;
+    g.spreadCount = 2; g._mutated = false; const rnd2 = Math.random; Math.random = () => 0.1; try { w.gossipNetwork.activeGossip = [g]; if (!a.personality.traits.includes('gossip')) a.personality.traits.push('gossip'); w.gossipNetwork.spreadGossip(a, listener, w); } catch (e) { o.spreadErr = String(e); } Math.random = rnd2;
+    const gm = listener.memory.entries.filter(e => e.category === 'social' && e.k === '{speaker}告訴我：「{content}」').slice(-1)[0]; o.gossipMem = gm ? gm.text() : null;
+    if (gm) { I18N.setLang('en'); o.gossipMemEn = gm.text(); ck(!cjk.test(o.gossipMemEn) && /together|couple|match/.test(o.gossipMemEn) && /telling you|absolutely true|whole street/.test(o.gossipMemEn), 'gossip memory en (nested wrap) ' + o.gossipMemEn); I18N.setLang('zh'); }
+    const rq = (w.requests?.board || []).find(r => r.status === 'open'); if (rq) { const d = w.requests.describeT(rq); ck(d && d.k, 'describeT'); I18N.setLang('en'); o.descEn = Memory.render(d.k, d.p); ck(!cjk.test(o.descEn.replace(/「|」/g, '')), 'describe en ' + o.descEn); ck(w.requests.describe(rq) === o.descEn, 'describe == render'); I18N.setLang('zh'); }
     o.fails = fails; return o;
   });
   console.log(JSON.stringify(out)); if (out.fails.length) { console.log('FAIL', out.fails); process.exitCode = 1; }

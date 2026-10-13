@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.19.0
+ * Version: 6.20.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.19.0');
+define('RIMTOWN_VERSION', '6.20.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.20.0',
+            'date'    => '2026-10-13',
+            'changes' => array(
+                '🌐 B1 第四步：八卦內容（戀愛／吃醋／新情侶／鬧翻／結婚／劈腿／分手／離婚／生子／去世／節慶／玩家放話等 30 多條）、傳話誇張化的包裝句、委託描述（委託過期／完成／沒有下文）、親緣故事池也改成模板——切語言後紀錄分頁與村民記憶幾乎全翻：中文玩四天再切英文，紀錄分頁殘留中文 21/500 → 5/500、村民記憶 53/1080 → 4/1044，剩下的是鄰鎮商隊到貨、考驗公告與個別 AI 文字',
+                '📦 存檔體積（B12）再收：日報素材沒出報時會無限累積（35 天 1700 筆、210KB）改最多 120 筆；共同回憶每對 30→8 筆（提示詞只用 3 筆）；村民對話紀錄 400→300 則；記憶上限改為對話 30／社交 30／觀察 15／感想 20／出行 10。35 天 full 模式 1345–1355KB、casual 1111KB、idle 20 天 1076KB（門檻 1.5MB）；soak 報告多印體積拆解',
+                '🧪 memory_i18n_test 加八卦（巢狀包裝句）與委託描述段',
+            ),
+            'changes_en' => array(
+                '🌐 B1 step four: gossip content (30-odd lines: crushes, jealousy, new couples, fallings-out, marriage, cheating, break-ups, divorce, births, deaths, festivals, player-seeded rumors), the exaggeration wrappers added as gossip spreads, request descriptions (expired / completed / neglected) and the kinship story pool are templates now too. After a language switch the Records tab and villager memories follow almost completely: four days in Chinese then English leaves 5/500 Chinese lines in Records (was 21) and 4/1044 in memories (was 53); what remains is caravan arrivals, trial announcements and individual AI text',
+                '📦 Save size (B12) trimmed further: newspaper material no longer piles up when no issue is published (1700 items, 210 KB after 35 days), capped at 120; shared memories per pair 30 → 8 (prompts use 3); NPC conversation log 400 → 300; memory caps are now conversation 30 / social 30 / observation 15 / reflection 20 / departure 10. A 35-day full-mode save is 1345–1355 KB, casual 1111 KB, 20-day idle 1076 KB (threshold 1.5 MB); the soak report prints a size breakdown',
+                '🧪 memory_i18n_test gains gossip (nested wrapper) and request-description sections',
+            ),
+        ),
         array(
             'version' => '6.19.0',
             'date'    => '2026-10-13',

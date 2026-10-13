@@ -16,6 +16,7 @@ class DailyNewsEngine {
             category, content, importance, agents,
             time: '',
         });
+        if (this.todayEvents.length > 120) this.todayEvents = this.todayEvents.slice(-120); // v6.20.0 B12:沒出報(AI 關閉/額度用完)時素材會無限累積(35 天 1700 筆、210KB),最多留 120 筆
     }
 
     async generateNewspaper(world) {

@@ -74,7 +74,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 **語言／雙語**
 - B1 記憶、對話紀錄、行程文字在「建立當下」依介面語言存進存檔（`t()` at creation），切換語言後舊內容語言混雜。根治要把這類模板改成「key＋參數」存檔、顯示時再翻，屬大工程；目前只保證顯示層與人名一致。
-  - v6.17.0 第一步：村民記憶（`Memory.addT` 存 `k`＋`p`，`text()` 依當下語言渲染並快取；`toDict`／關係史／人生摘要都走它）已轉 63 處規則式呼叫點（`scratchpad/mem_convert.js` 自動轉換＋英文校對）；AI 提示詞與檢索仍用建立當下的 `content`。v6.18.0 第二步：日誌（`World.logMessageT` 存 `k`＋`p`，`World.logText` 渲染並快取，`getState().recent_messages` 依當下語言；`scratchpad/log_convert.js` 轉 147 處）。v6.19.0 第三步：規則式對話摘要（`tpl()` 物件、`Memory.render` 巢狀）、感想／觀察池、約會、旅行理由、委託板與任務日誌；切語言 QA（`scratchpad/lang_switch_qa.js`）：紀錄分頁殘留 21/500、記憶 53/1080。還沒做：八卦內容（gossipNetwork 規則模板）、委託描述（`requests.describe`）、親緣故事池、對話紀錄（chatHistory）、行程文字（schedule goals，含地點 id）、共同回憶（sharedMemories）。
+  - v6.17.0 第一步：村民記憶（`Memory.addT` 存 `k`＋`p`，`text()` 依當下語言渲染並快取；`toDict`／關係史／人生摘要都走它）已轉 63 處規則式呼叫點（`scratchpad/mem_convert.js` 自動轉換＋英文校對）；AI 提示詞與檢索仍用建立當下的 `content`。v6.18.0 第二步：日誌（`World.logMessageT` 存 `k`＋`p`，`World.logText` 渲染並快取，`getState().recent_messages` 依當下語言；`scratchpad/log_convert.js` 轉 147 處）。v6.19.0 第三步：規則式對話摘要（`tpl()` 物件、`Memory.render` 巢狀）、感想／觀察池、約會、旅行理由、委託板與任務日誌；切語言 QA（`scratchpad/lang_switch_qa.js`）：紀錄分頁殘留 21/500、記憶 53/1080。v6.20.0 第四步：八卦內容（`contentT`，傳話包裝句巢狀）、委託描述（`describeT`）、親緣故事池；QA 殘留 5/500、4/1044。還沒做：對話紀錄（chatHistory）、行程文字（schedule goals，含地點 id）、共同回憶（sharedMemories，每對 8 筆字串）、鄰鎮商隊到貨與考驗公告的日誌、AI 生成文字（本來就是單一語言）。
 - B2 LLM 提示詞本體仍是中文（125 條刻意保留），英文對話模式靠英文規則行與英文系統指示；若要更道地，可為主要提示詞寫英文版本。
 - B3 ~~`changelog.js` 首頁每次整份載入~~ v5.81.0 改為首頁第一次渲染才動態載入，直接進遊戲不載。
 - B4 ~~隨機卡司英文名由 26 姓 × 48 名組合~~ v5.79.0 已擴為 40 姓 × 120 名，並保留五鎮劇本人名不抽。
@@ -89,7 +89,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 **存檔與後端**
 - B10 ~~Blob 回退與搬遷按鈕~~ v5.82.0 已移除，`_lib.js` 純 Postgres。
 - B11 Vercel Hobby 12 個 Serverless Function 已用滿，任何新 API 都必須塞進既有檔案（如 `admin.js` 的 action）。
-- B12 ~~手機 localStorage 約 5MB，多鎮本機備份仍可能吃滿~~ v5.99.0 從源頭收斂：日誌 1000 筆、對話紀錄 400 則、記憶每人 120 筆、共同回憶 30 筆、倉庫流水 600 筆；35 天存檔 2.6MB→約 1MB（`scripts/soak_test.js` 有「存檔體積 < 1.5MB」檢查），三鎮本機備份約 3MB 仍在 5MB 內；配額不足時的自動瘦身（v5.69.3）保留。v6.19.0 記憶／日誌模板化後存檔只存 key＋參數（不另存文字），對話記憶每人 40 筆、觀察 20 筆、日誌 800 條：35 天 full 1454KB／casual 1212KB／idle 20 天 1197KB。
+- B12 ~~手機 localStorage 約 5MB，多鎮本機備份仍可能吃滿~~ v5.99.0 從源頭收斂：日誌 1000 筆、對話紀錄 400 則、記憶每人 120 筆、共同回憶 30 筆、倉庫流水 600 筆；35 天存檔 2.6MB→約 1MB（`scripts/soak_test.js` 有「存檔體積 < 1.5MB」檢查），三鎮本機備份約 3MB 仍在 5MB 內；配額不足時的自動瘦身（v5.69.3）保留。v6.19.0 記憶／日誌模板化後存檔只存 key＋參數（不另存文字）、日誌 800 條；v6.20.0 日報素材上限 120、共同回憶每對 8、村民對話紀錄 300、記憶上限對話 30／社交 30／觀察 15／感想 20／出行 10：35 天 full 1345–1355KB／casual 1111KB／idle 20 天 1076KB（soak 報告印體積拆解 `saveParts`）。
 - B13 ~~城鎮列表同名判斷只靠名字~~ v5.96.0 以 town_id 為主鍵：雲端沒有的 id 一律列為「📱 本機」，同名只標註「與雲端同名」不再隱藏，並可刪本機副本（不碰雲端）；馬車站出訪名單仍以名字去重（同一個鎮的分身不該出現兩次）。
 
 **程式結構與測試**
@@ -236,7 +236,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.19.0.zip` from Releases
+1. Download `rimtown-v6.20.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -285,6 +285,11 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.20.0 (2026-10-13)
+- 🌐 B1 第四步：八卦內容（戀愛／吃醋／新情侶／鬧翻／結婚／劈腿／分手／離婚／生子／去世／節慶／玩家放話等 30 多條）、傳話誇張化的包裝句、委託描述（委託過期／完成／沒有下文）、親緣故事池也改成模板——切語言後紀錄分頁與村民記憶幾乎全翻：中文玩四天再切英文，紀錄分頁殘留中文 21/500 → 5/500、村民記憶 53/1080 → 4/1044，剩下的是鄰鎮商隊到貨、考驗公告與個別 AI 文字
+- 📦 存檔體積（B12）再收：日報素材沒出報時會無限累積（35 天 1700 筆、210KB）改最多 120 筆；共同回憶每對 30→8 筆（提示詞只用 3 筆）；村民對話紀錄 400→300 則；記憶上限改為對話 30／社交 30／觀察 15／感想 20／出行 10。35 天 full 模式 1345–1355KB、casual 1111KB、idle 20 天 1076KB（門檻 1.5MB）；soak 報告多印體積拆解
+- 🧪 memory_i18n_test 加八卦（巢狀包裝句）與委託描述段
 
 ### v6.19.0 (2026-10-13)
 - 🌐 B1 第三步：規則式對話摘要（45 條「X和Y在酒館……」）、每日感想與觀察（夢想／暗戀／天氣／節慶／昨天在哪忙）、「約了誰去哪」、旅行理由、委託板與任務日誌也改成模板——模板參數可以巢狀（「與X交談：{摘要}」裡的摘要本身也是模板），切語言後資訊卡記憶與紀錄分頁幾乎整份跟著翻：中文玩四天再切英文，紀錄分頁殘留中文從 265/500 降到 21/500、村民記憶從 826/1111 降到 53/1080，剩下的是八卦內容、委託描述與親緣故事

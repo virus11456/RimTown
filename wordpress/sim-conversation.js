@@ -25,47 +25,43 @@ class GossipNetwork {
     constructor() { this.activeGossip = []; }
     // v5.3.0 針對真實關係事件生成「有內容」的八卦(取代空泛的「八卦了全鎮的事」)
     createRelGossip(world, kind, a, b, extra) {
+        const P = { a: a.name, b: b.name }; // v6.20.0 八卦內容存模板(contentT),切語言後記憶/日誌跟著翻;content 仍存建立當下的文字
         const templates = {
-            crush:   [`${t('欸你有沒有發現,')}${a.name}${t('看')}${b.name}${t('的眼神不太一樣...')}`,
-                      `${t('我猜')}${a.name}${t('對')}${b.name}${t('有意思,不然幹嘛老是找藉口靠近!')}`],
-            jealous: [`${t('聽說')}${a.name}${t('最近超針對')}${b.name}${t('的,好像是為了')}${extra || t('某個人')}${t('...')}`,
-                      `${a.name}${t('跟')}${b.name}${t('之間氣氛好僵,是在吃醋吧?')}`],
-            newCouple:[`${t('天大的消息!')}${a.name}${t('和')}${b.name}${t('在一起了!')}`,
-                      `${a.name}${t('跟')}${b.name}${t('湊成一對了,大家都說很配!')}`],
-            rivalry: [`${a.name}${t('和')}${b.name}${t('鬧翻了,見面都不講話...')}`,
-                      `${t('你敢信嗎?')}${a.name}${t('跟')}${b.name}${t('現在是死對頭了。')}`],
+            crush:   [tpl('欸你有沒有發現,{a}看{b}的眼神不太一樣...', P), tpl('我猜{a}對{b}有意思,不然幹嘛老是找藉口靠近!', P)],
+            jealous: [tpl('聽說{a}最近超針對{b}的,好像是為了{x}...', { ...P, x: extra || '某個人' }), tpl('{a}跟{b}之間氣氛好僵,是在吃醋吧?', P)],
+            newCouple:[tpl('天大的消息!{a}和{b}在一起了!', P), tpl('{a}跟{b}湊成一對了,大家都說很配!', P)],
+            rivalry: [tpl('{a}和{b}鬧翻了,見面都不講話...', P), tpl('你敢信嗎?{a}跟{b}現在是死對頭了。', P)],
         };
         const pool = templates[kind]; if (!pool) return null;
-        const content = pickRandom(pool);
-        const gossip = { about: a.name, content, source: t('鎮民'), spreadCount: 0, tickCreated: world.tickCount, isTrue: true, kind, juicy: true };
+        const contentT = pickRandom(pool); const content = Memory.render(contentT.k, contentT.p);
+        const gossip = { about: a.name, content, contentT, source: t('鎮民'), spreadCount: 0, tickCreated: world.tickCount, isTrue: true, kind, juicy: true };
         this.activeGossip.push(gossip);
         if (this.activeGossip.length > 10000) this.activeGossip = this.activeGossip.slice(-10000);
         // 直接進八卦頭條 & 每日報
-        world.logMessageT('gossip', '🗞️ {content}', { content }, a.name, b.name);
+        world.logMessageT('gossip', '🗞️ {content}', { content: contentT }, a.name, b.name); // v6.20.0 模板
         if (world.dailyNews) world.dailyNews.collectEvent('gossip', content, kind === 'newCouple' ? 7 : 5, [a.name, b.name]);
         return gossip;
     }
     createGossip(source, about, world) {
         const rel = source.relationships.getOrCreate(about.agentId, about.name);
-        const templates = [];
-        if (rel.romanticInterest > 40) templates.push(`${t('你不覺得')}${about.name}${t('挺有魅力的嗎？')}`);
-        if (rel.affinity < -10) templates.push(`${t('說真的，')}${about.name}${t('最近行為很奇怪。')}`);
-        if (about.mood < -20) templates.push(`${t('你有注意到')}${about.name}${t('最近看起來很低落嗎？')}`);
-        if (about.mood > 50) templates.push(`${about.name}${t('最近心情超好的！')}`);
+        const templates = []; const P = { who: about.name }; // v6.20.0 模板
+        if (rel.romanticInterest > 40) templates.push(tpl('你不覺得{who}挺有魅力的嗎？', P));
+        if (rel.affinity < -10) templates.push(tpl('說真的，{who}最近行為很奇怪。', P));
+        if (about.mood < -20) templates.push(tpl('你有注意到{who}最近看起來很低落嗎？', P));
+        if (about.mood > 50) templates.push(tpl('{who}最近心情超好的！', P));
         const ri = about.relationships.getRomanticInterests();
-        if (ri.length) templates.push(`${t('聽說')}${about.name}${t('好像對')}${pickRandom(ri).targetName}${t('有意思！')}`);
+        if (ri.length) templates.push(tpl('聽說{who}好像對{other}有意思！', { ...P, other: pickRandom(ri).targetName }));
         const partner = about.relationships.getPartner();
         if (partner) {
-            if (partner.status === 'dating') templates.push(`${about.name}${t('和')}${partner.targetName}${t('在交往呢，你知道嗎？')}`);
-            if (partner.status === 'married') templates.push(`${about.name}${t('和')}${partner.targetName}${t('的婚姻生活不知道怎麼樣？')}`);
-            if (partner.isCheating) templates.push(`${t('我好像看到')}${about.name}${t('背著')}${partner.targetName}${t('跟別人在一起⋯⋯')}`);
+            if (partner.status === 'dating') templates.push(tpl('{who}和{other}在交往呢，你知道嗎？', { ...P, other: partner.targetName }));
+            if (partner.status === 'married') templates.push(tpl('{who}和{other}的婚姻生活不知道怎麼樣？', { ...P, other: partner.targetName }));
+            if (partner.isCheating) templates.push(tpl('我好像看到{who}背著{other}跟別人在一起⋯⋯', { ...P, other: partner.targetName }));
         }
-        const aboutPartner = about.relationships.getPartner();
         const cheatingRels = Object.values(about.relationships.relationships).filter(r => r.isCheating);
-        if (cheatingRels.length) templates.push(`${t('你聽說了嗎？')}${about.name}${t('好像在劈腿⋯⋯')}`);
-        if (!templates.length) templates.push(`${t('你聽說')}${about.name}${t('昨天在做什麼嗎？')}`);
-        const content = pickRandom(templates);
-        const gossip = { about:about.name, content, source:source.name, spreadCount:0, tickCreated:world.tickCount, isTrue:Math.random()>0.2 };
+        if (cheatingRels.length) templates.push(tpl('你聽說了嗎？{who}好像在劈腿⋯⋯', P));
+        if (!templates.length) templates.push(tpl('你聽說{who}昨天在做什麼嗎？', P));
+        const contentT = pickRandom(templates); const content = Memory.render(contentT.k, contentT.p);
+        const gossip = { about:about.name, content, contentT, source:source.name, spreadCount:0, tickCreated:world.tickCount, isTrue:Math.random()>0.2 };
         this.activeGossip.push(gossip);
         if (this.activeGossip.length > 10000) this.activeGossip = this.activeGossip.slice(-10000);
         return gossip;
@@ -80,17 +76,15 @@ class GossipNetwork {
         // v5.2.0/5.3.0 傳話遊戲:謠言誇張化只做一次,不重複堆疊
         if (!gossip._mutated && gossip.spreadCount >= 2 && Math.random() < 0.4) {
             gossip._mutated = true;
-            const wraps = [
-                (c) => `${t('我跟你說,')}${c}${t('而且好像不只這樣...')}`,
-                (c) => `${t('千真萬確!')}${c}`,
-                (c) => `${c}${t('聽說整條街都知道了!')}`,
-            ];
-            gossip.content = pickRandom(wraps)(gossip.content);
+            const wrapKey = pickRandom(['我跟你說,{c}而且好像不只這樣...', '千真萬確!{c}', '{c}聽說整條街都知道了!']); // v6.20.0 巢狀模板
+            if (gossip.contentT) { gossip.contentT = tpl(wrapKey, { c: gossip.contentT }); gossip.content = Memory.render(gossip.contentT.k, gossip.contentT.p); }
+            else gossip.content = Memory.render(wrapKey, { c: gossip.content });
         }
-        listener.memory.addT(world.tickCount, world.clock.timeStr, 'social', '{speaker}告訴我：「{content}」', { speaker: speaker.name, content: gossip.content }, 4, [speaker.name, gossip.about]);
+        const gc = gossip.contentT || gossip.content; // v6.20.0 有模板就塞模板
+        listener.memory.addT(world.tickCount, world.clock.timeStr, 'social', '{speaker}告訴我：「{content}」', { speaker: speaker.name, content: gc }, 4, [speaker.name, gossip.about]);
         // v5.3.0 只有「有內容」且還算新鮮(傳不到 3 手)的八卦才進頭條,避免同一則洗版
         if (gossip.juicy && gossip.spreadCount <= 3) {
-            world.logMessageT('gossip', '🗣️ {speaker}偷偷說：「{content}」', { speaker: speaker.name, content: gossip.content }, speaker.name, listener.name);
+            world.logMessageT('gossip', '🗣️ {speaker}偷偷說：「{content}」', { speaker: speaker.name, content: gc }, speaker.name, listener.name);
         }
         // v5.2.0 傳到第 4 手,當事人聽到了 → 對質
         if (gossip.spreadCount >= 4 && !gossip._confronted) {
@@ -105,7 +99,7 @@ class GossipNetwork {
         const subject = Object.values(world.agents).find(a => a.name === gossip.about);
         if (!subject || subject.isPlayer) return;
         const source = Object.values(world.agents).find(a => a.name === gossip.source);
-        const negative = gossip.tone === 'diss' || !gossip.isTrue || /奇怪|劈腿|背著|懶散/.test(gossip.content);
+        const negative = gossip.tone === 'diss' || !gossip.isTrue || /奇怪|劈腿|背著|懶散/.test(gossip.contentT ? JSON.stringify(gossip.contentT) : gossip.content); // v6.20.0 英文模式也看得到中文 key
         const positive = gossip.tone === 'praise';
         if (source && source.isPlayer) {
             // 玩家是造謠源頭!
@@ -150,20 +144,21 @@ class GossipNetwork {
 
     // v5.2.0 玩家放話:把八卦丟進謠言網路
     playerSeedGossip(world, player, listener, about, tone, shipWith) {
+        const P = { who: about.name }; // v6.20.0 模板
         const templates = {
-            praise: [`${about.name}${t('最近超罩的,大家都該學學!')}`, `${t('我覺得')}${about.name}${t('是鎮上最可靠的人。')}`],
-            diss: [`${about.name}${t('最近很懶散,大家小心點...')}`, `${t('說真的,')}${about.name}${t('私底下跟表面不太一樣喔...')}`],
-            ship: [`${about.name}${t('和')}${shipWith || ''}${t('是不是有什麼?我看他們常常眉來眼去...')}`],
+            praise: [tpl('{who}最近超罩的,大家都該學學!', P), tpl('我覺得{who}是鎮上最可靠的人。', P)],
+            diss: [tpl('{who}最近很懶散,大家小心點...', P), tpl('說真的,{who}私底下跟表面不太一樣喔...', P)],
+            ship: [tpl('{who}和{other}是不是有什麼?我看他們常常眉來眼去...', { ...P, other: shipWith || '' })],
         };
-        const content = pickRandom(templates[tone] || templates.praise);
+        const contentT = pickRandom(templates[tone] || templates.praise); const content = Memory.render(contentT.k, contentT.p);
         const gossip = {
-            about: about.name, content, source: player.name, spreadCount: 1,
+            about: about.name, content, contentT, source: player.name, spreadCount: 1,
             tickCreated: world.tickCount, isTrue: tone === 'praise', tone,
             shipWith: shipWith || null,
         };
         this.activeGossip.push(gossip);
         if (this.activeGossip.length > 10000) this.activeGossip = this.activeGossip.slice(-10000);
-        listener.memory.addT(world.tickCount, world.clock.timeStr, 'social', '{player}偷偷跟我說:「{content}」', { player: player.name, content }, 5, [player.name, about.name]);
+        listener.memory.addT(world.tickCount, world.clock.timeStr, 'social', '{player}偷偷跟我說:「{content}」', { player: player.name, content: contentT }, 5, [player.name, about.name]);
         world.logMessageT('gossip', '🗣️ {v}偷偷向{listener}爆料了{about}的事...', { v: playerTitle(world), listener: listener.name, about: about.name }, player.name, listener.name);
         return gossip;
     }
@@ -1229,7 +1224,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
         // Store NPC conversation for sidebar viewing
         if (dialogue.length) {
             this.npcConversationLog.push({ time:world.clock.timeStr, dayTag:`${world.clock.year}-${world.clock.season}-${world.clock.day}`, location:agentA.currentLocation, dialogue, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.agentId, agentBId:agentB.agentId, llm:true });
-            if (this.npcConversationLog.length > 400) this.npcConversationLog = this.npcConversationLog.slice(-400); // v5.99.0 B12
+            if (this.npcConversationLog.length > 300) this.npcConversationLog = this.npcConversationLog.slice(-300); // v5.99.0 B12;v6.20.0 400→300(介面只畫 250)
             // Notify UI for map speech bubbles
             if (this.onConversation) {
                 const textA = dialogue[0]?.text || summary;
@@ -1261,7 +1256,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
         const lines = dialogue.lines;
         if (lines.length) {
             this.npcConversationLog.push({ time:world.clock.timeStr, dayTag:`${world.clock.year}-${world.clock.season}-${world.clock.day}`, location:agentA.currentLocation, dialogue:lines, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.agentId, agentBId:agentB.agentId });
-            if (this.npcConversationLog.length > 400) this.npcConversationLog = this.npcConversationLog.slice(-400); // v5.99.0 B12
+            if (this.npcConversationLog.length > 300) this.npcConversationLog = this.npcConversationLog.slice(-300); // v5.99.0 B12;v6.20.0 400→300(介面只畫 250)
             if (this.onConversation) {
                 const textA = lines[0]?.text || summary;
                 const textB = lines[1]?.text || '';

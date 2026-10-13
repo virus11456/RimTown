@@ -602,7 +602,7 @@ class FestivalSystem {
         }
         if (player) npcs.forEach(a => { const rel = a.relationships.getOrCreate(player.agentId, player.name); rel.modifyAffinity(2); });
         world.events?.conversationTopics?.push(t('{who}贊助的{fest}').split('{who}').join(who).split('{fest}').join(win.festival.name));
-        world.gossipNetwork?.activeGossip?.push({ about: who, content: t('{who}出錢贊助{fest}，真大方！').split('{who}').join(who).split('{fest}').join(win.festival.name), source: t('鎮民'), spreadCount: 0, tickCreated: world.tickCount, isTrue: true });
+        world.gossipNetwork?.activeGossip?.push({ about: who, content: t('{who}出錢贊助{fest}，真大方！').split('{who}').join(who).split('{fest}').join(win.festival.name), contentT: tpl('{who}出錢贊助{fest}，真大方！', { who, fest: win.festival.name }), source: t('鎮民'), spreadCount: 0, tickCreated: world.tickCount, isTrue: true });
         world.logMessage?.('festival', `${win.festival.icon} ${text}`); world.dailyNews?.collectEvent?.('festival', text, 7);
         return { ok: true, msg: text };
     }
@@ -700,7 +700,7 @@ class FestivalSystem {
 
             // Special festival dialogue templates
             world.gossipNetwork.activeGossip.push({
-                about: t('全鎮'), content: `${festival.name}${t('好熱鬧！')}${pickRandom(festival.activities)}${t('太棒了！')}`,
+                about: t('全鎮'), content: `${festival.name}${t('好熱鬧！')}${pickRandom(festival.activities)}${t('太棒了！')}`, contentT: tpl('{fest}好熱鬧！{act}太棒了！', { fest: festival.name, act: pickRandom(festival.activities) }),
                 source: t('鎮民'), spreadCount: 0, tickCreated: world.tickCount, isTrue: true
             });
         }
@@ -896,7 +896,7 @@ class LifecycleSystem {
         });
 
         world.gossipNetwork.activeGossip.push({
-            about: npc.name, content: `${npc.name}${t('去世了...願他安息。')}`,
+            about: npc.name, content: `${npc.name}${t('去世了...願他安息。')}`, contentT: tpl('{npc}去世了...願他安息。', { npc: npc.name }),
             source: t('鎮民'), spreadCount: 0, tickCreated: world.tickCount, isTrue: true
         });
         if (world.dailyNews) world.dailyNews.collectEvent('lifecycle', `${npc.name}${t('（')}${npc.age}${t('歲）因')}${cause}${t('離世了。')}${epitaph}`, 10, [npc.name]);
@@ -1023,7 +1023,7 @@ class LifecycleSystem {
 
         world.logMessageT('birth', '🎒 {parentA}和{parentB}的孩子{name}出生了！全鎮慶祝！', { parentA: parentA.name, parentB: parentB.name, name }, name);
         world.gossipNetwork.activeGossip.push({
-            about: name, content: `${parentA.name}${t('和')}${parentB.name}${t('生了個')}${gender==='male'?t('男'):t('女')}${t('孩，取名')}${name}${t('！')}`,
+            about: name, content: `${parentA.name}${t('和')}${parentB.name}${t('生了個')}${gender==='male'?t('男'):t('女')}${t('孩，取名')}${name}${t('！')}`, contentT: tpl(gender==='male' ? '{a}和{b}生了個男孩，取名{name}！' : '{a}和{b}生了個女孩，取名{name}！', { a: parentA.name, b: parentB.name, name }),
             source: t('鎮民'), spreadCount: 0, tickCreated: world.tickCount, isTrue: true
         });
         if (world.dailyNews) world.dailyNews.collectEvent('lifecycle', `${parentA.name}${t('和')}${parentB.name}${t('的孩子')}${name}${t('出生了！')}`, 9, [parentA.name, parentB.name, name]);

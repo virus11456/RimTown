@@ -1192,7 +1192,7 @@ class World {
                                 a.memory.addT(this.tickCount, this.clock.timeStr, 'social', '參加了{agent}和{other}的婚禮！', { agent: agent.name, other: other.name }, 6, [agent.name, other.name]);
                             }
                         });
-                        this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}${t('和')}${other.name}${t('結婚了！婚禮好浪漫！')}`, source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+                        this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}${t('和')}${other.name}${t('結婚了！婚禮好浪漫！')}`, contentT: tpl('{a}和{b}結婚了！婚禮好浪漫！', { a: agent.name, b: other.name }), source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
                         if (this.dailyNews) this.dailyNews.collectEvent('relationship', `${agent.name}${t('和')}${other.name}${t('結婚了！全鎮舉辦了盛大的婚禮！')}`, 10, [agent.name, other.name]);
                     }
                 }
@@ -1214,7 +1214,7 @@ class World {
                             this.logMessageT('relationship', '{agent}背著{other}和{third}有了秘密關係⋯⋯', { agent: agent.name, other: other.name, third: third.name }, agent.name, third.name);
                             agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我背著{other}和{third}在一起了⋯⋯我知道這不對。', { other: other.name, third: third.name }, 9, [other.name, third.name]);
                             third.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{agent}開始了秘密關係。', { agent: agent.name }, 8, [agent.name]);
-                            this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${t('有人看到')}${agent.name}${t('和')}${third.name}${t('偷偷在一起⋯⋯')}`, source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+                            this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${t('有人看到')}${agent.name}${t('和')}${third.name}${t('偷偷在一起⋯⋯')}`, contentT: tpl('有人看到{a}和{b}偷偷在一起⋯⋯', { a: agent.name, b: third.name }), source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
                             if (this.dailyNews) this.dailyNews.collectEvent('drama', `${t('有人看到')}${agent.name}${t('和')}${third.name}${t('偷偷在一起⋯⋯')}`, 8, [agent.name, third.name]);
                             break; // Only one affair at a time
                         }
@@ -1248,7 +1248,7 @@ class World {
                         other.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '{agent}發現了我的事情。我們{action}了。', { agent: agent.name, action }, 10, [agent.name]);
                         agent.moodModifier = (agent.moodModifier || 0) - 30;
                         other.moodModifier = (other.moodModifier || 0) - 15;
-                        this.gossipNetwork.activeGossip.push({ about:other.name, content:`${other.name}${t('劈腿被')}${agent.name}${t('發現了！兩人')}${action}${t('了！')}`, source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+                        this.gossipNetwork.activeGossip.push({ about:other.name, content:`${other.name}${t('劈腿被')}${agent.name}${t('發現了！兩人')}${action}${t('了！')}`, contentT: tpl('{a}劈腿被{b}發現了！兩人{action}了！', { a: other.name, b: agent.name, action }), source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
                         if (this.dailyNews) this.dailyNews.collectEvent('drama', `${other.name}${t('劈腿被')}${agent.name}${t('發現！兩人')}${action}${t('了！')}`, 10, [agent.name, other.name, thirdName]);
                         // Trigger NPC event chain for cheating discovery
                         if (this.npcEvents && thirdParty) this.npcEvents.handleCheatingDiscovery(this, other, agent, thirdParty);
@@ -1269,7 +1269,7 @@ class World {
                         other.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{agent}分手了。', { agent: agent.name }, 8, [agent.name]);
                         agent.moodModifier = (agent.moodModifier || 0) - 15;
                         other.moodModifier = (other.moodModifier || 0) - 15;
-                        this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}${t('和')}${other.name}${t('分手了⋯⋯')}`, source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+                        this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}${t('和')}${other.name}${t('分手了⋯⋯')}`, contentT: tpl('{a}和{b}分手了⋯⋯', { a: agent.name, b: other.name }), source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
                         if (this.dailyNews) this.dailyNews.collectEvent('relationship', `${agent.name}${t('和')}${other.name}${t('分手了⋯⋯')}`, 6, [agent.name, other.name]);
                     }
                 }
@@ -1293,7 +1293,7 @@ class World {
                                 a.moodModifier = (a.moodModifier || 0) - 3;
                             }
                         });
-                        this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}${t('和')}${other.name}${t('離婚了⋯⋯好可惜。')}`, source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+                        this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}${t('和')}${other.name}${t('離婚了⋯⋯好可惜。')}`, contentT: tpl('{a}和{b}離婚了⋯⋯好可惜。', { a: agent.name, b: other.name }), source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
                         if (this.dailyNews) this.dailyNews.collectEvent('drama', `${agent.name}${t('和')}${other.name}${t('離婚了⋯⋯全鎮不勝唏噓。')}`, 9, [agent.name, other.name]);
                     }
                 }
@@ -1347,7 +1347,7 @@ class World {
         if (typeof CROSS_TOWN_TIES === 'undefined') return;
         for (const [aid, tie] of Object.entries(CROSS_TOWN_TIES)) {
             const ag = this.agents[aid];
-            if (ag && tie.thoughts?.length) ag.memory.add(0, '08:00', 'family', tie.thoughts[0], 6, [tie.other]);
+            if (ag && tie.thoughts?.length) ag.memory.addT(0, '08:00', 'family', tie.thoughts[0], {}, 6, [tie.other]); // v6.20.0 原文 key
         }
     }
 
@@ -1639,7 +1639,7 @@ class World {
         // 開局八卦頭條
         if (this.gossipNetwork) {
             for (const g of gossips.slice(0, 3)) {
-                this.gossipNetwork.activeGossip.push({ about: g.about, content: g.content, source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: g.kind });
+                this.gossipNetwork.activeGossip.push({ about: g.about, content: g.content, contentT: g.contentT || null, source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: g.kind });
             }
         }
     }
@@ -1708,11 +1708,11 @@ class World {
         // 開局八卦頭條:讓玩家一進來就嗅到戲
         if (this.gossipNetwork) {
             this.gossipNetwork.activeGossip.push(
-                { about: A['zhou_ming']?.name, content: t('聽說新來的周明,好像跟趙霞走得很近...而馬強的臉色可不太好看。'), source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: 'crush' },
-                { about: A['wu_da']?.name, content: t('吳達和楊鋒又在酒館互看不順眼了,他們的樑子結很久了。'), source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: 'rivalry' },
-                { about: A['lin_mei']?.name, content: t('聽說孫雨最近老往診所跑,林美醫生好像也不排斥她的陪伴...倒是守衛楊鋒的臉色越來越難看。'), source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: 'crush' },
-                { about: A['gao_lang']?.name, content: t('新來的高朗是吳達的老袍澤,一來就跟楊鋒針鋒相對...酒館的火藥味濃得化不開。'), source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: 'rivalry' },
-                { about: A['su_qing']?.name, content: t('糕點師傅蘇晴的早餐總幫劉俊多留一份,可劉俊的心思好像還在許瑩身上...這下有得瞧了。'), source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: 'crush' },
+                { about: A['zhou_ming']?.name, content: t('聽說新來的周明,好像跟趙霞走得很近...而馬強的臉色可不太好看。'), contentT: tpl('聽說新來的周明,好像跟趙霞走得很近...而馬強的臉色可不太好看。'), source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: 'crush' },
+                { about: A['wu_da']?.name, content: t('吳達和楊鋒又在酒館互看不順眼了,他們的樑子結很久了。'), contentT: tpl('吳達和楊鋒又在酒館互看不順眼了,他們的樑子結很久了。'), source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: 'rivalry' },
+                { about: A['lin_mei']?.name, content: t('聽說孫雨最近老往診所跑,林美醫生好像也不排斥她的陪伴...倒是守衛楊鋒的臉色越來越難看。'), contentT: tpl('聽說孫雨最近老往診所跑,林美醫生好像也不排斥她的陪伴...倒是守衛楊鋒的臉色越來越難看。'), source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: 'crush' },
+                { about: A['gao_lang']?.name, content: t('新來的高朗是吳達的老袍澤,一來就跟楊鋒針鋒相對...酒館的火藥味濃得化不開。'), contentT: tpl('新來的高朗是吳達的老袍澤,一來就跟楊鋒針鋒相對...酒館的火藥味濃得化不開。'), source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: 'rivalry' },
+                { about: A['su_qing']?.name, content: t('糕點師傅蘇晴的早餐總幫劉俊多留一份,可劉俊的心思好像還在許瑩身上...這下有得瞧了。'), contentT: tpl('糕點師傅蘇晴的早餐總幫劉俊多留一份,可劉俊的心思好像還在許瑩身上...這下有得瞧了。'), source: t('鎮民'), spreadCount: 0, tickCreated: 0, isTrue: true, juicy: true, kind: 'crush' },
             );
         }
     }
@@ -1921,7 +1921,7 @@ class World {
                 locations: Object.fromEntries(Object.entries(this.townMap.locations).map(([k,v])=>[k,{id:v.id,name:v.name,description:v.description,x:v.x,y:v.y,category:v.category,capacity:v.capacity}])) } : null,
             agents: Object.fromEntries(Object.entries(this.agents).map(([k,a])=>[k,serializeAgent(a)])),
             // v5.29.0 AI 對話紀錄以文字形式持久化(含每則對話全文),反思則隨 agent.memory 一起存
-            npcConversationLog: this.conversationEngine.npcConversationLog.slice(-400).map(c => ({ ...c, dialogue: (c.dialogue || []).map(d => ({ ...d })) })),
+            npcConversationLog: this.conversationEngine.npcConversationLog.slice(-300).map(c => ({ ...c, dialogue: (c.dialogue || []).map(d => ({ ...d })) })),
             npcLlmUsedToday: this.npcLlmUsedToday || 0,
             feudCooldown: { ...(this._feudCooldown || {}) }, // v5.42.0 對嗆冷卻
             mediations: JSON.parse(JSON.stringify(this.mediations || {})), // v5.42.0 和解進度
@@ -2126,7 +2126,7 @@ class World {
             }
 
             // v5.29.0 AI 對話紀錄還原(文字形式持久化)
-            if (Array.isArray(data.npcConversationLog)) this.conversationEngine.npcConversationLog = data.npcConversationLog.slice(-400); // v5.99.0 舊檔讀入即收斂
+            if (Array.isArray(data.npcConversationLog)) this.conversationEngine.npcConversationLog = data.npcConversationLog.slice(-300); // v5.99.0 舊檔讀入即收斂
             this.npcLlmUsedToday = data.npcLlmUsedToday || 0;
             this._feudCooldown = data.feudCooldown || {}; // v5.42.0
             this.mediations = data.mediations || {}; // v5.42.0

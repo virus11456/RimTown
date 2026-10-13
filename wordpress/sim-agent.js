@@ -142,7 +142,7 @@ class Memory {
         const cap = Memory.CATEGORY_CAP[category]; // v6.19.0 B12:對話摘要/觀察這類低重要度、量又大的記憶各自設上限(存檔體積;讀取端只取最近 10–20 筆)
         if (cap) { let n = 0; for (let i = this.entries.length - 1; i >= 0; i--) { if (this.entries[i].category === category && ++n > cap) { this.entries.splice(i, 1); } } }
     }
-    static CATEGORY_CAP = { conversation: 40, observation: 20 };
+    static CATEGORY_CAP = { conversation: 30, observation: 15, departure: 10, social: 30, reflection: 20 }; // v6.20.0 full 模式 35 天存檔 1.5MB 邊緣,再收:介面只看最近 10 筆、AI 只讀最近 10–20 筆
     addT(tick, timeStr, category, k, p, importance = 5, relatedAgents = []) { // v6.17.0 模板版:content 用當下語言算一次,k/p 一起存
         this.add(tick, timeStr, category, Memory.render(k, p), importance, relatedAgents, k, p);
     }
@@ -227,11 +227,11 @@ class Relationship {
     recordInteraction(tick, summary) {
         this.interactionCount++; this.lastInteractionTick = tick;
         this.sharedMemories.push(summary);
-        if (this.sharedMemories.length > 30) this.sharedMemories = this.sharedMemories.slice(-30); // v5.99.0 150→30
+        if (this.sharedMemories.length > 8) this.sharedMemories = this.sharedMemories.slice(-8); // v5.99.0 150→30;v6.20.0 →12(提示詞只用最近 3 筆;存檔 178KB→約 70KB)
     }
     addSharedMemory(text) {
         this.sharedMemories.push(text);
-        if (this.sharedMemories.length > 30) this.sharedMemories = this.sharedMemories.slice(-30);
+        if (this.sharedMemories.length > 8) this.sharedMemories = this.sharedMemories.slice(-8); // v6.20.0
     }
     toDict() {
         return { target_id:this.targetId, target_name:this.targetName, type:this.type,
@@ -1091,7 +1091,7 @@ class Agent {
         }
         // v5.58.0 跨鎮親緣:偶爾想起海那頭的親友——路通不通,人都在心上
         const tie = typeof CROSS_TOWN_TIES !== 'undefined' ? CROSS_TOWN_TIES[this.agentId] : null;
-        if (tie && Math.random() < 0.3) thoughts.push(pickRandom(tie.thoughts));
+        if (tie && Math.random() < 0.3) thoughts.push(t(pickRandom(tie.thoughts))); // v6.20.0 親緣故事池改原文 key,這裡顯示用再翻
         // v5.47.0 BUG-01 防護:名字是純數字的斷掉引用(舊檔殘留)不進閒置意圖
         const bf = this.relationships.getBestFriend();
         if (bf && bf.targetName && !/^\d+$/.test(String(bf.targetName))) thoughts.push(`${t('該去找')}${bf.targetName}${t('敘敘舊了。')}`);
