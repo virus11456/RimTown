@@ -65,9 +65,19 @@ class World {
     getAgent(id) { return this.agents[id] || null; }
     getAgentByName(name) { return Object.values(this.agents).find(a => a.name === name) || null; }
     getAgentsAtLocation(locId) { return Object.values(this.agents).filter(a => a.currentLocation === locId); }
-    logMessage(type, content, agentName = '', targetName = '') {
-        this.messageLog.push({ time:this.clock.timeStr, tick:this.tickCount, type, content, agent:agentName, target:targetName });
+    logMessage(type, content, agentName = '', targetName = '', k = null, p = null) {
+        this.messageLog.push({ time:this.clock.timeStr, tick:this.tickCount, type, content, agent:agentName, target:targetName, ...(k ? { k, p: p || {} } : {}) });
         if (this.messageLog.length > 1000) this.messageLog = this.messageLog.slice(-1000); // v5.99.0 B12
+    }
+    // v6.18.0 B1 第二步:日誌也存「模板 key＋參數」,紀錄分頁依當下語言渲染;content 仍照建立當下語言存一份(舊存檔、跑馬燈、編年史照舊)
+    logMessageT(type, k, p, agentName = '', targetName = '') {
+        this.logMessage(type, Memory.render(k, p), agentName, targetName, k, p);
+    }
+    static logText(m) {
+        if (!m || !m.k) return m ? m.content : '';
+        const L = (typeof I18N !== 'undefined' && I18N.getLang) ? I18N.getLang() : 'zh';
+        if (m._tl !== L) { m._tx = Memory.render(m.k, m.p); m._tl = L; }
+        return m._tx;
     }
     tick() {
         if (this.paused) return;
@@ -82,7 +92,7 @@ class World {
             this._autoResolveStaleChoices();
             const event = this.events.dailyUpdate(this);
             if (event) {
-                this.logMessage('event', `[${event.severity.toUpperCase()}] ${event.name}: ${event.description}`);
+                this.logMessageT('event', '[{v}] {event}: {description}', { v: event.severity.toUpperCase(), event: event.name, description: event.description });
                 // v4.0: Offer player a choice for significant events
                 // v5.32.0 第二章(繁榮 20)起才把事件應對交給玩家,第一章自動結算不打擾
                 if (event.severity !== 'minor' && this.eventChoice && (this.prosperity?.prosperity || 0) >= 20) {
@@ -118,7 +128,7 @@ class World {
             // Election system
             const electionEvent = this.election.dailyUpdate(this);
             if (electionEvent) {
-                this.logMessage('event', `[${electionEvent.severity.toUpperCase()}] ${electionEvent.name}: ${electionEvent.description}`);
+                this.logMessageT('event', '[{v}] {electionEvent}: {description}', { v: electionEvent.severity.toUpperCase(), electionEvent: electionEvent.name, description: electionEvent.description });
                 if (this.dailyNews) this.dailyNews.collectEvent('politics', `${electionEvent.name}${t('：')}${electionEvent.description}`, 8);
             }
             // New systems daily updates
@@ -219,7 +229,7 @@ class World {
         this.caravanCount = (this.caravanCount || 0) + 1; // v5.84.0 任務條件
         const label = (rs) => (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[rs]?.name) ? SHOP_ITEMS[rs].name() : (rs === 'silver' ? t('銀幣') : rs);
         const msg = `${t(pick.tw.name)}${t('的商隊來了：用')} ${giveAmt} ${label(give)} ${t('換到')} ${recvAmt} ${label(recv)}${hub ? t('（市集城經手，多兩成）') : ''}`;
-        this.logMessage('trade', `🐪 ${msg}`);
+        this.logMessageT('trade', '🐪 {msg}', { msg });
         if (this.events?.conversationTopics) this.events.conversationTopics.push(`${t(pick.tw.name)}${t('的商隊帶來了')}${label(recv)}`);
         this.onCaravan?.({ fromName: pick.tw.name, fromTheme: pick.key, give, giveAmt, recv, recvAmt, hub });
     }
@@ -409,7 +419,7 @@ class World {
                     .sort((a, b) => (b.importance || 0) - (a.importance || 0)).slice(0, 3).map(m => m.content);
                 const romance = this._visitorRomance(ag, meta); // v5.90.0 作客期間的戀情→回鄉後觸發搬家提案
                 this.onVisitorReturn?.({ ...meta, notes, romance });
-                this.logMessage('departure', `${ag.name}${t('搭上回程的車，返回')}${meta.fromTownName}${t('了。')}`);
+                this.logMessageT('departure', '{ag}搭上回程的車，返回{fromTownName}了。', { ag: ag.name, fromTownName: meta.fromTownName });
                 Object.values(this.agents).forEach(o => { if (o.agentId !== aid && !o.isPlayer) o.memory?.add?.(this.tickCount, this.clock.timeStr, 'departure', `${ag.name}${t('回家鄉去了，說好還會再來。')}`, 4, [ag.name]); });
                 delete this.visitors[aid];
                 delete this.agents[aid];
@@ -465,7 +475,7 @@ class World {
             if (!best) return null;
             const loc = best.loc;
             loc.memory?.add?.(this.tickCount, this.clock.timeStr, 'romance', `${visitor.name}${t('回鄉了，心裡空了一塊。')}`, 8, [visitor.name]);
-            this.logMessage('romance', `💌 ${visitor.name}${t('與')}${loc.name}${t('在作客期間互生情愫，分別時依依不捨。')}`);
+            this.logMessageT('romance', '💌 {visitor}與{loc}在作客期間互生情愫，分別時依依不捨。', { visitor: visitor.name, loc: loc.name });
             return { localId: loc.agentId, localName: loc.name, localData: this._agentSnapshot(loc), townName: this.townName,
                 visitorOrigId: meta.origId, visitorName: meta.origName, romance: Math.round(best.score / 2) };
         } catch (e) { return null; }
@@ -494,7 +504,7 @@ class World {
             partner.memory?.add?.(this.tickCount, this.clock.timeStr, 'romance', `${agent.name}${t('為了我從')}${opts.fromTownName || ''}${t('搬來了。')}`, 10, [agent.name]);
         }
         const line = `${agent.name}${t('從')}${opts.fromTownName || ''}${t('搬來定居')}${partner ? `${t('，和')}${partner.name}${t('在一起了')}` : ''}${t('。')}`;
-        this.logMessage('arrival', `🏡 ${line}`);
+        this.logMessageT('arrival', '🏡 {line}', { line });
         this.dailyNews?.collectEvent?.('relationship', line, 9, partner ? [agent.name, partner.name] : [agent.name]);
         this.events?.conversationTopics?.push(`${agent.name}${t('為了愛情搬來鎮上')}`);
         Object.values(this.agents).forEach(o => { if (o.agentId !== id && !o.isPlayer) o.memory?.add?.(this.tickCount, this.clock.timeStr, 'arrival', line, 5, [agent.name]); });
@@ -509,7 +519,7 @@ class World {
         this.movedOut.push({ id: agentId, name: agent.name, toTownName: t('外地'), partnerName: '', reason, absDay: this._absDay() });
         if (this.movedOut.length > 20) this.movedOut = this.movedOut.slice(-20);
         const line = `${agent.name}${t('收拾行李離開了鎮上')}${reason ? `（${reason}）` : ''}${t('。')}`;
-        this.logMessage('departure', `🧳 ${line}`);
+        this.logMessageT('departure', '🧳 {line}', { line });
         Object.values(this.agents).forEach(o => { if (!o.isPlayer) o.memory?.add?.(this.tickCount, this.clock.timeStr, 'departure', line, 7, [agent.name]); });
         this.events?.conversationTopics?.push(`${agent.name}${t('離開鎮上了')}`);
         return true;
@@ -524,7 +534,7 @@ class World {
         this.movedOut.push({ id: agentId, name: agent.name, toTownName: opts.toTownName || '', partnerName: opts.partnerName || '', absDay: this._absDay() });
         if (this.movedOut.length > 20) this.movedOut = this.movedOut.slice(-20);
         const line = `${agent.name}${t('為了')}${opts.partnerName || t('愛情')}${t('搬去')}${opts.toTownName || ''}${t('了。')}`;
-        this.logMessage('departure', `🧳 ${line}`);
+        this.logMessageT('departure', '🧳 {line}', { line });
         this.dailyNews?.collectEvent?.('relationship', line, 9, [agent.name]);
         this.events?.conversationTopics?.push(`${agent.name}${t('搬去')}${opts.toTownName || ''}${t('了')}`);
         Object.values(this.agents).forEach(o => { if (!o.isPlayer) o.memory?.add?.(this.tickCount, this.clock.timeStr, 'departure', line, 6, [agent.name]); });
@@ -547,7 +557,7 @@ class World {
         this.visitors[vid] = { fromTownId: entry.fromTownId, fromTownName: entry.fromTownName,
             origId: d.agentId, origName: d.name, arriveTick: this.tickCount,
             expireAbsDay: this._absDay() + (entry.stayDays || 4) };
-        this.logMessage('arrival', `🚌 ${d.name}${t('（')}${entry.fromTownName}${t('）來到鎮上作客，會住上幾天。')}`);
+        this.logMessageT('arrival', '🚌 {d}（{fromTownName}）來到鎮上作客，會住上幾天。', { d: d.name, fromTownName: entry.fromTownName });
         Object.values(this.agents).forEach(o => { if (o.agentId !== vid && !o.isPlayer) o.memory?.add?.(this.tickCount, this.clock.timeStr, 'arrival', `${entry.fromTownName}${t('來的')}${d.name}${t('到鎮上作客了，聽說那裡的事真新鮮。')}`, 5, [agent.name]); });
         this.events.conversationTopics.push(`${entry.fromTownName}${t('來的訪客')}${d.name}`);
         return agent;
@@ -653,7 +663,7 @@ class World {
                     b.moodModifier = (b.moodModifier || 0) - 10;
                     a.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{b}徹底鬧翻,絕交了。這口氣嚥不下去。', { b: b.name }, 9, [b.name]);
                     b.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{a}徹底鬧翻,絕交了。這口氣嚥不下去。', { a: a.name }, 9, [a.name]);
-                    this.logMessage('event', `💢 ${a.name}${t('和')}${b.name}${t('積怨徹底爆發,當眾撂下重話,正式絕交!')}`);
+                    this.logMessageT('event', '💢 {a}和{b}積怨徹底爆發,當眾撂下重話,正式絕交!', { a: a.name, b: b.name });
                     this.dailyNews?.collectEvent('social', `${a.name}${t('與')}${b.name}${t('公開絕交,兩人再不相往來')}`, 8, [a.name, b.name]);
                     this.queueDramaScene('severance', a, b);
                     continue;
@@ -665,7 +675,7 @@ class World {
                     rel.modifyAffinity(-4); relB.modifyAffinity(-4);
                     a.moodModifier = (a.moodModifier || 0) - 6;
                     b.moodModifier = (b.moodModifier || 0) - 6;
-                    this.logMessage('event', `🗯️ ${a.name}${t('和')}${b.name}${t('在眾目睽睽下大吵一架,火藥味十足!')}`);
+                    this.logMessageT('event', '🗯️ {a}和{b}在眾目睽睽下大吵一架,火藥味十足!', { a: a.name, b: b.name });
                     this.dailyNews?.collectEvent('social', `${a.name}${t('與')}${b.name}${t('當眾對嗆,鎮上議論紛紛')}`, 7, [a.name, b.name]);
                     // 圍觀選邊站:交情好的替朋友抱不平,對另一方觀感變差
                     for (const w of npcs) {
@@ -758,7 +768,7 @@ class World {
     // v5.34.0 逾時代選:pending 的互動選擇滿一個遊戲日(96 ticks)沒人處理就隨機結算
     _autoResolveStaleChoices() {
         const DAY = 96;
-        const pickLog = (what, label) => this.logMessage('event_choice', `⏳ ${t('你遲遲沒有決定,小鎮自行處理了「')}${what}${t('」:')}${label}`);
+        const pickLog = (what, label) => this.logMessageT('event_choice', '⏳ 你遲遲沒有決定,小鎮自行處理了「{what}」:{label}', { what, label });
         try {
             const ev = this.eventChoice?.pendingEvent;
             if (ev && this.tickCount - (ev.timestamp || 0) >= DAY) {
@@ -892,7 +902,7 @@ class World {
             agents: Object.fromEntries(Object.entries(this.agents).map(([id,a]) => [id, a.toDict()])),
             locations: this.townMap?.toDict() || {},
             recent_events: this.events.getRecentEvents().map(([t,e]) => ({time:t, name:e.name, description:e.description, severity:e.severity, event_type:e.event_type})),
-            recent_messages: this.messageLog.slice(-500), // v5.99.0 紀錄分頁只畫最近 500 條
+            recent_messages: this.messageLog.slice(-500).map(m => m.k ? { ...m, content: World.logText(m), _tx: undefined, _tl: undefined } : m), // v5.99.0 紀錄分頁只畫最近 500 條;v6.18.0 依當下語言
             travelling_agents: this.events.getTravellingAgents(),
             active_chains: this.events.getActiveChains(),
             stockpile: this.stockpile.toDict(),
@@ -1064,7 +1074,7 @@ class World {
                     if (rel.affinity > 45 && compat >= 3 && rel.romanticInterest > 15 && Math.random() < 0.06) {
                         const spark = randInt(8, 16);
                         rel.modifyRomantic(spark);
-                        this.logMessage('relationship', `💓 ${agent.name}${t('對')}${other.name}${t('的心動,好像悄悄加深了...')}`, agent.name, other.name);
+                        this.logMessageT('relationship', '💓 {agent}對{other}的心動,好像悄悄加深了...', { agent: agent.name, other: other.name }, agent.name, other.name);
                         if (this.gossipNetwork) this.gossipNetwork.createRelGossip(this, 'crush', agent, other);
                     }
                     // v5.3.0 日久生情的回應:agent 對 other 明顯有意,若 other 對 agent 也親近且沒別的對象,
@@ -1093,7 +1103,7 @@ class World {
                             agent.addThought('jealous', this, luckyOne.agentId, luckyOne.name); // v5.15.0 嫉妒的煎熬
                             agent.moodModifier = (agent.moodModifier || 0) - 6;
                             rel.modifyRomantic(-randInt(2, 5)); // 慢慢死心
-                            this.logMessage('relationship', `💔 ${agent.name}${t('看著')}${other.name}${t('和')}${luckyOne.name}${t(',心裡很不是滋味...')}`, agent.name, luckyOne.name);
+                            this.logMessageT('relationship', '💔 {agent}看著{other}和{luckyOne},心裡很不是滋味...', { agent: agent.name, other: other.name, luckyOne: luckyOne.name }, agent.name, luckyOne.name);
                             if (this.gossipNetwork && Math.random() < 0.4) this.gossipNetwork.createRelGossip(this, 'jealous', agent, luckyOne, other.name);
                         }
                     } else {
@@ -1112,7 +1122,7 @@ class World {
                                     feud._rivalGossiped = true;
                                     agent.addThought('rival_formed', this, rival.agentId, rival.name); // v5.15.0 結了樑子
                                     rival.addThought('rival_formed', this, agent.agentId, agent.name);
-                                    this.logMessage('relationship', `⚡ ${agent.name}${t('和')}${rival.name}${t('為了')}${other.name}${t('暗自較勁,關係越來越僵...')}`, agent.name, rival.name);
+                                    this.logMessageT('relationship', '⚡ {agent}和{rival}為了{other}暗自較勁,關係越來越僵...', { agent: agent.name, rival: rival.name, other: other.name }, agent.name, rival.name);
                                     if (this.gossipNetwork) this.gossipNetwork.createRelGossip(this, 'rivalry', agent, rival);
                                 }
                                 break;
@@ -1153,7 +1163,7 @@ class World {
                         otherRel.status = 'dating'; otherRel.statusSince = this.tickCount;
                         this.queueDramaScene('confession', agent, other); // v5.1.0 名場面
                         agent.addThought('got_together', this, other.agentId, other.name); other.addThought('got_together', this, agent.agentId, agent.name);
-                        this.logMessage('relationship', `${agent.name}${t('和')}${other.name}${t('開始交往了！')}`, agent.name, other.name);
+                        this.logMessageT('relationship', '{agent}和{other}開始交往了！', { agent: agent.name, other: other.name }, agent.name, other.name);
                         agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{other}開始交往了！', { other: other.name }, 9, [other.name]);
                         other.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{agent}開始交往了！', { agent: agent.name }, 9, [agent.name]);
                         agent.moodModifier = (agent.moodModifier || 0) + 20;
@@ -1172,7 +1182,7 @@ class World {
                         otherRel.status = 'married'; otherRel.statusSince = this.tickCount;
                         this.queueDramaScene('wedding', agent, other); // v5.1.0 名場面
                         agent.addThought('married', this, other.agentId, other.name); other.addThought('married', this, agent.agentId, agent.name);
-                        this.logMessage('relationship', `${agent.name}${t('和')}${other.name}${t('結婚了！全鎮舉辦了盛大的婚禮！')}`, agent.name, other.name);
+                        this.logMessageT('relationship', '{agent}和{other}結婚了！全鎮舉辦了盛大的婚禮！', { agent: agent.name, other: other.name }, agent.name, other.name);
                         agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{other}結婚了！這是我人生中最幸福的一天。', { other: other.name }, 10, [other.name]);
                         other.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{agent}結婚了！太開心了。', { agent: agent.name }, 10, [agent.name]);
                         // Wedding boosts mood for everyone
@@ -1201,7 +1211,7 @@ class World {
                             otherRel2.affinity > 30 && Math.random() < 0.06) { // v5.22.0 加溫:偷情更容易發生(修羅場的火種)
                             otherRel2.isCheating = true;
                             thirdRel.isCheating = true;
-                            this.logMessage('relationship', `${agent.name}${t('背著')}${other.name}${t('和')}${third.name}${t('有了秘密關係⋯⋯')}`, agent.name, third.name);
+                            this.logMessageT('relationship', '{agent}背著{other}和{third}有了秘密關係⋯⋯', { agent: agent.name, other: other.name, third: third.name }, agent.name, third.name);
                             agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我背著{other}和{third}在一起了⋯⋯我知道這不對。', { other: other.name, third: third.name }, 9, [other.name, third.name]);
                             third.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{agent}開始了秘密關係。', { agent: agent.name }, 8, [agent.name]);
                             this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${t('有人看到')}${agent.name}${t('和')}${third.name}${t('偷偷在一起⋯⋯')}`, source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
@@ -1233,7 +1243,7 @@ class World {
                         const action = wasMariage ? t('離婚') : t('分手');
                         this.queueDramaScene('busted', agent, other, thirdName); // v5.1.0 名場面
                         agent.addThought('betrayed', this, other.agentId, other.name);
-                        this.logMessage('relationship', `${agent.name}${t('發現')}${other.name}${t('劈腿')}${thirdName}${t('，兩人')}${action}${t('了！')}`, agent.name, other.name);
+                        this.logMessageT('relationship', '{agent}發現{other}劈腿{thirdName}，兩人{action}了！', { agent: agent.name, other: other.name, thirdName, action }, agent.name, other.name);
                         agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '發現{other}背著我和{thirdName}在一起。我們{action}了。', { other: other.name, thirdName, action }, 10, [other.name, thirdName]);
                         other.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '{agent}發現了我的事情。我們{action}了。', { agent: agent.name, action }, 10, [agent.name]);
                         agent.moodModifier = (agent.moodModifier || 0) - 30;
@@ -1254,7 +1264,7 @@ class World {
                         rel.modifyAffinity(-10); otherRel.modifyAffinity(-10);
                         this.queueDramaScene('breakup', agent, other); // v5.1.0 名場面
                         agent.addThought('broke_up', this); other.addThought('broke_up', this);
-                        this.logMessage('relationship', `${agent.name}${t('和')}${other.name}${t('分手了。')}`, agent.name, other.name);
+                        this.logMessageT('relationship', '{agent}和{other}分手了。', { agent: agent.name, other: other.name }, agent.name, other.name);
                         agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{other}分手了。', { other: other.name }, 8, [other.name]);
                         other.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{agent}分手了。', { agent: agent.name }, 8, [agent.name]);
                         agent.moodModifier = (agent.moodModifier || 0) - 15;
@@ -1273,7 +1283,7 @@ class World {
                         rel.modifyAffinity(-15); otherRel.modifyAffinity(-15);
                         this.queueDramaScene('divorce', agent, other); // v5.1.0 名場面
                         agent.addThought('divorced', this); other.addThought('divorced', this);
-                        this.logMessage('relationship', `${agent.name}${t('和')}${other.name}${t('離婚了。')}`, agent.name, other.name);
+                        this.logMessageT('relationship', '{agent}和{other}離婚了。', { agent: agent.name, other: other.name }, agent.name, other.name);
                         agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{other}離婚了。', { other: other.name }, 10, [other.name]);
                         other.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{agent}離婚了。', { agent: agent.name }, 10, [agent.name]);
                         agent.moodModifier = (agent.moodModifier || 0) - 25;
@@ -1725,7 +1735,7 @@ class World {
         const newly = this.getActiveCombos().filter(c => !this.combosFound.includes(c.id));
         for (const c of newly) {
             this.combosFound.push(c.id);
-            this.logMessage('building', `✨ ${t('發現相鄰組合：')}${c.icon}${c.name}(${c.desc})${t('！全鎮心情大好')}`);
+            this.logMessageT('building', '✨ 發現相鄰組合：{icon}{c}({desc})！全鎮心情大好', { icon: c.icon, c: c.name, desc: c.desc });
             this.dailyNews?.collectEvent('building', `${t('小鎮出現了「')}${c.name}${t('」組合！')}`, 7);
             Object.values(this.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + 6; });
             this.conversationEngine?.sendEventComment?.(this, `${t('小鎮出現了新組合「')}${c.name}${t('」(')}${c.desc})`);
@@ -1906,7 +1916,7 @@ class World {
             clock: { day:this.clock.day, hour:this.clock.hour, minute:this.clock.minute, season:this.clock.season, year:this.clock.year },
             tickCount: this.tickCount,
             paused: this.paused,
-            messageLog: this.messageLog.slice(-1000),
+            messageLog: this.messageLog.slice(-1000).map(m => ({ time:m.time, tick:m.tick, type:m.type, content:m.content, agent:m.agent, target:m.target, ...(m.k ? { k:m.k, p:m.p } : {}) })), // v6.18.0 帶 k/p、不帶快取
             townMap: this.townMap ? { seed:this.townMap.seed, terrain:this.townMap.terrain, width:this.townMap.width, height:this.townMap.height,
                 locations: Object.fromEntries(Object.entries(this.townMap.locations).map(([k,v])=>[k,{id:v.id,name:v.name,description:v.description,x:v.x,y:v.y,category:v.category,capacity:v.capacity}])) } : null,
             agents: Object.fromEntries(Object.entries(this.agents).map(([k,a])=>[k,serializeAgent(a)])),

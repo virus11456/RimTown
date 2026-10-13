@@ -74,7 +74,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 **語言／雙語**
 - B1 記憶、對話紀錄、行程文字在「建立當下」依介面語言存進存檔（`t()` at creation），切換語言後舊內容語言混雜。根治要把這類模板改成「key＋參數」存檔、顯示時再翻，屬大工程；目前只保證顯示層與人名一致。
-  - v6.17.0 第一步：村民記憶（`Memory.addT` 存 `k`＋`p`，`text()` 依當下語言渲染並快取；`toDict`／關係史／人生摘要都走它）已轉 63 處規則式呼叫點（`scratchpad/mem_convert.js` 自動轉換＋英文校對）；AI 提示詞與檢索仍用建立當下的 `content`。還沒做：對話紀錄（chatHistory）、行程文字、日誌（logMessage）、共同回憶（sharedMemories）、兩處含三元運算的呼叫點（遺產、送禮）。
+  - v6.17.0 第一步：村民記憶（`Memory.addT` 存 `k`＋`p`，`text()` 依當下語言渲染並快取；`toDict`／關係史／人生摘要都走它）已轉 63 處規則式呼叫點（`scratchpad/mem_convert.js` 自動轉換＋英文校對）；AI 提示詞與檢索仍用建立當下的 `content`。v6.18.0 第二步：日誌（`World.logMessageT` 存 `k`＋`p`，`World.logText` 渲染並快取，`getState().recent_messages` 依當下語言；`scratchpad/log_convert.js` 轉 147 處）。還沒做：對話紀錄（chatHistory）、行程文字、共同回憶（sharedMemories）、含三元運算的呼叫點（記憶 2 處、日誌 28 處含無參數的純字串，純字串顯示時走 `t()` 即可）。
 - B2 LLM 提示詞本體仍是中文（125 條刻意保留），英文對話模式靠英文規則行與英文系統指示；若要更道地，可為主要提示詞寫英文版本。
 - B3 ~~`changelog.js` 首頁每次整份載入~~ v5.81.0 改為首頁第一次渲染才動態載入，直接進遊戲不載。
 - B4 ~~隨機卡司英文名由 26 姓 × 48 名組合~~ v5.79.0 已擴為 40 姓 × 120 名，並保留五鎮劇本人名不抽。
@@ -236,7 +236,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.17.0.zip` from Releases
+1. Download `rimtown-v6.18.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -285,6 +285,10 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.18.0 (2026-10-13)
+- 🌐 B1 第二步：小鎮日誌（紀錄分頁）也改成「模板 key＋參數」存檔——戀愛／結婚／分手／鬧翻、節慶、出生／離世、探險、選舉、議會、交易／訂單、建造／升級、商隊、八卦、互訪等 147 處日誌，切換語言後紀錄分頁整份跟著翻（含人名）；建立當下的文字仍存一份給跑馬燈、編年史與舊存檔，舊存檔照常讀；順手把自動拼出的英文校對了 60 句（半形括號、空格、語序）
+- 🧪 scripts/memory_i18n_test.js 加日誌段（中→英→中、舊式日誌維持、存檔帶模板不帶快取、讀檔後渲染）；i18n 基準從 232 筆縮到 227 筆
 
 ### v6.17.0 (2026-10-13)
 - 🌐 B1 第一步：村民的規則式記憶改成「模板 key＋參數」存檔（戀愛／結婚／分手／鬧翻／看星星／弔念／派系／探險／婚禮／新居民／對話摘要等 63 處），顯示時依當下介面語言重新翻譯——切換語言後，資訊卡最近記憶、關係史與人生摘要不再中英混雜；建立當下的文字仍存一份給 AI 提示詞與舊存檔用，舊存檔照常讀

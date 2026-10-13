@@ -383,17 +383,17 @@ class EventSystem {
         const buildingDefense = world.buildings ? (world.buildings.getEffect('defense_bonus',0)||0) : 0;
         const defense = guards.length * 2 + randInt(1,3) + buildingDefense;
         if (defense >= rd.threat_level) {
-            world.logMessage('raid', `${t('小鎮成功抵禦了')}${rd.attacker}${t('！')}`);
+            world.logMessageT('raid', '小鎮成功抵禦了{attacker}！', { attacker: rd.attacker });
             if (world.questSystem) world.questSystem.onRaidSurvived();
             guards.forEach(g => { g.moodModifier = (g.moodModifier || 0) + 10; g.memory.addT(world.tickCount, world.clock.timeStr, 'raid', '協助抵禦了{attacker}！', { attacker: rd.attacker }, 8); });
         } else {
-            world.logMessage('raid', `${rd.attacker}${t('突破了我們的防線！')}`);
+            world.logMessageT('raid', '{attacker}突破了我們的防線！', { attacker: rd.attacker });
             if (world.stockpile) {
                 const stolenFood = Math.min(world.stockpile.get('food'), randInt(10,30));
                 const stolenSilver = Math.min(world.stockpile.get('silver'), randInt(5,20));
                 if(stolenFood>0) world.stockpile.consume('food',stolenFood,world.tickCount,`${t('被')}${rd.attacker}${t('搶走')}`);
                 if(stolenSilver>0) world.stockpile.consume('silver',stolenSilver,world.tickCount,`${t('被')}${rd.attacker}${t('搶走')}`);
-                world.logMessage('raid',`${rd.attacker}${t('搶走了')}${stolenFood}${t('食物和')}${stolenSilver}${t('銀幣！')}`);
+                world.logMessageT('raid', '{attacker}搶走了{stolenFood}食物和{stolenSilver}銀幣！', { attacker: rd.attacker, stolenFood, stolenSilver });
             }
             const npcs = Object.values(world.agents).filter(a => !a.isPlayer && a.job?.key !== 'guard');
             if (npcs.length && Math.random() < 0.4) {
@@ -421,7 +421,7 @@ class EventSystem {
         const event = {name:first.name,description:first.description,severity:first.severity,effects:first.effects||{},event_type:'chain'};
         this.eventLog.push([world.clock.timeStr, event]);
         this._applyEffects(event, world);
-        world.logMessage('chain_event', `${t('事件鏈開始：')}${first.name}`);
+        world.logMessageT('chain_event', '事件鏈開始：{first}', { first: first.name });
         return event;
     }
     _progressChains(world) {
@@ -431,14 +431,14 @@ class EventSystem {
             if (chain.daysUntilNext <= 0) {
                 const stages = EVENT_CHAINS[chain.chainId];
                 const nextIdx = chain.stage + 1;
-                if (nextIdx >= stages.length) { completed.push(chain); world.logMessage('chain_event',`${t('事件鏈「')}${chain.chainId}${t('」已結束。')}`); }
+                if (nextIdx >= stages.length) { completed.push(chain); world.logMessageT('chain_event', '事件鏈「{chainId}」已結束。', { chainId: chain.chainId }); }
                 else {
                     const stage = stages[nextIdx];
                     chain.stage = nextIdx; chain.daysUntilNext = stage.duration_days || 2;
                     const event = {name:stage.name,description:stage.description,severity:stage.severity,effects:stage.effects||{},event_type:'chain'};
                     this.eventLog.push([world.clock.timeStr, event]);
                     this._applyEffects(event, world);
-                    world.logMessage('chain_event', `[${event.severity.toUpperCase()}] ${event.name}${t('：')}${event.description}`);
+                    world.logMessageT('chain_event', '[{v}] {event}：{description}', { v: event.severity.toUpperCase(), event: event.name, description: event.description });
                 }
             }
         });
@@ -460,7 +460,7 @@ class EventSystem {
             skills:agent.skills.toDict(), relationships:agent.relationships.toDict(),
             memories:agent.memory.toDict(), mood:agent.mood, moodModifier:agent.moodModifier||0 };
         this._travellingAgents.push({agentData:data, returnTick:world.tickCount+(travelDays*96), reason});
-        world.logMessage('departure', `${agent.name}${reason}。${t('過幾天就會回來。')}`, agent.name);
+        world.logMessageT('departure', '{agent}{reason}。過幾天就會回來。', { agent: agent.name, reason }, agent.name);
         const event = {name:t('居民出行'),description:`${agent.name}${reason}。`,severity:'minor',effects:{conversation_topic:`${agent.name}${t('離開了小鎮')}`},event_type:'departure'};
         this.eventLog.push([world.clock.timeStr, event]);
         this.conversationTopics.push(`${agent.name}${t('離開了小鎮')}`);
@@ -514,7 +514,7 @@ class EventSystem {
             d.memories.forEach(m => agent.memory.add(m.tick, m.time, m.category, m.content ?? m.text ?? '', m.importance, m.related_agents || m.relatedAgents || [], m.k || null, m.p || null));
         }
         world.agents[agent.agentId] = agent;
-        world.logMessage('arrival', `${agent.name}${t('旅行歸來了！')}`, agent.name);
+        world.logMessageT('arrival', '{agent}旅行歸來了！', { agent: agent.name }, agent.name);
         const event = {name:t('居民歸來'),description:`${agent.name}${t('帶著故事回來了！')}`,severity:'minor',effects:{mood_all:3,conversation_topic:`${agent.name}${t('的旅行故事')}`},event_type:'arrival'};
         this.eventLog.push([world.clock.timeStr, event]);
         Object.values(world.agents).forEach(o => {
@@ -561,7 +561,7 @@ class EventSystem {
                 rel.affinity += Math.round(initTrust / 2);
             }
         }
-        world.logMessage('immigration', `${t('新居民到來：')}${agent.name}${t('，')}${job.title}${t('！')}`, agent.name);
+        world.logMessageT('immigration', '新居民到來：{agent}，{title}！', { agent: agent.name, title: job.title }, agent.name);
         const event = {name:t('新居民'),description:`${agent.name}${t('以')}${job.title}${t('身分到來！')}`,severity:'minor',effects:{mood_all:5,conversation_topic:`${t('新居民')}${agent.name}`},event_type:'arrival'};
         this.eventLog.push([world.clock.timeStr, event]);
         this.conversationTopics.push(`${t('新居民')}${agent.name}`);
@@ -665,7 +665,7 @@ class ElectionSystem {
         const policy = ELECTION_POLICIES.find(p => p.id === policyId) || ELECTION_POLICIES[1];
         this.candidates.push({ agentId: 'player', name: player.name, policy: policy.id, policyLabel: policy.label, policyIcon: policy.icon, votes: 0, speech: `${t('我雖是旅人,但這裡早已是我的家。我主張')}${policy.label}${t(',請把你的一票交給我!')}`, isPlayer: true });
         this.playerCanvassed = {};
-        world.logMessage('event', `📢 ${t('旅人')} ${player.name} ${t('宣布參選鎮長!主張')}${policy.icon}${policy.label}`);
+        world.logMessageT('event', '📢 旅人 {player} 宣布參選鎮長!主張{icon}{label}', { player: player.name, icon: policy.icon, label: policy.label });
         player.memory?.add(world.tickCount, world.clock.timeStr, 'election', `${t('我登記參選鎮長,主張')}${policy.label}${t('。聯署的朋友們都在為我加油。')}`, 9, []);
         // 全鎮都會知道旅人出馬了——寫進每個人的記憶流,之後的對話會自然聊到
         Object.values(world.agents).forEach(a => {
@@ -708,7 +708,7 @@ class ElectionSystem {
             return { agentId: agent.agentId, name: agent.name, policy: policy.id, policyLabel: policy.label, policyIcon: policy.icon, votes: 0, speech: this._generateSpeech(agent, policy) };
         });
         world.logMessage('event', `📢 ${t('選舉開始！')}${this.candidates.map(c => c.name).join(t('、'))} ${t('宣布參選鎮長')}`);
-        world.logMessage('event', `📋 ${t('競選期間為')} ${this.campaignDaysLeft} ${t('天，之後進行投票')}`);
+        world.logMessageT('event', '📋 競選期間為 {campaignDaysLeft} 天，之後進行投票', { campaignDaysLeft: this.campaignDaysLeft });
         this.candidates.forEach(c => {
             const agent = world.agents[c.agentId];
             if (agent?.memory) agent.memory.addT(world.tickCount, world.clock.timeStr, 'election', '我宣布參選鎮長，主張{policyLabel}', { policyLabel: c.policyLabel }, 8, []);
@@ -804,8 +804,8 @@ class ElectionSystem {
             newMayorAgent.memory?.add(world.tickCount, world.clock.timeStr, 'election', `${t('我贏得了鎮長選舉！得到')} ${winner.votes} ${t('票')}`, 10, []);
         }
         const resultMsg = this.candidates.map(c => `${c.name}${t('（')}${c.policyIcon}${c.policyLabel}${t('）：')}${c.votes} ${t('票')}`).join(t('、'));
-        world.logMessage('event', `🏆 ${t('選舉結果：')}${winner.name} ${t('當選新鎮長！主張：')}${winner.policyIcon}${winner.policyLabel}`);
-        world.logMessage('event', `📊 ${t('得票：')}${resultMsg}${t('（共')} ${totalVotes} ${t('票）')}`);
+        world.logMessageT('event', '🏆 選舉結果：{winner} 當選新鎮長！主張：{policyIcon}{policyLabel}', { winner: winner.name, policyIcon: winner.policyIcon, policyLabel: winner.policyLabel });
+        world.logMessageT('event', '📊 得票：{resultMsg}（共 {totalVotes} 票）', { resultMsg, totalVotes });
         if (world.questSystem) world.questSystem.onElection();
         this._applyPolicyEffects(winner.policy, world);
         const day = world.clock.day + (world.clock.year - 1) * 60;
@@ -825,7 +825,7 @@ class ElectionSystem {
                 world.logMessage('event', `👑 ${t('你當選鎮長了!從今天起,全鎮大小事都等你拿主意。')}`);
                 playerA?.memory?.add(world.tickCount, world.clock.timeStr, 'election', `${t('我贏得鎮長選舉(')}${playerCand.votes}${t('票),旅人成了邊境鎮的鎮長!')}`, 10, []);
             } else {
-                world.logMessage('event', `🗳️ ${t('你以')} ${playerCand.votes} ${t('票落選,雖敗猶榮——村民記住了你的名字,下屆秋季再來!')}`);
+                world.logMessageT('event', '🗳️ 你以 {votes} 票落選,雖敗猶榮——村民記住了你的名字,下屆秋季再來!', { votes: playerCand.votes });
                 playerA?.memory?.add(world.tickCount, world.clock.timeStr, 'election', `${t('我在鎮長選舉中落敗(')}${playerCand.votes}${t('票)。')}${winner.name}${t('當選了,但我不會就此放棄。')}`, 8, [winner.name]);
             }
         }

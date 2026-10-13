@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.17.0
+ * Version: 6.18.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.17.0');
+define('RIMTOWN_VERSION', '6.18.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.18.0',
+            'date'    => '2026-10-13',
+            'changes' => array(
+                '🌐 B1 第二步：小鎮日誌（紀錄分頁）也改成「模板 key＋參數」存檔——戀愛／結婚／分手／鬧翻、節慶、出生／離世、探險、選舉、議會、交易／訂單、建造／升級、商隊、八卦、互訪等 147 處日誌，切換語言後紀錄分頁整份跟著翻（含人名）；建立當下的文字仍存一份給跑馬燈、編年史與舊存檔，舊存檔照常讀；順手把自動拼出的英文校對了 60 句（半形括號、空格、語序）',
+                '🧪 scripts/memory_i18n_test.js 加日誌段（中→英→中、舊式日誌維持、存檔帶模板不帶快取、讀檔後渲染）；i18n 基準從 232 筆縮到 227 筆',
+            ),
+            'changes_en' => array(
+                '🌐 B1 step two: the town log (Records tab) is now stored as template keys plus parameters too. 147 log sites (dating, marriage, break-ups, feuds, festivals, births and deaths, expeditions, elections, council, trades and orders, construction and upgrades, caravans, gossip, visits and more) follow the interface language after a switch, names included. The text as written at creation is still kept for the ticker, the chronicle and old saves, and old saves load as before. 60 of the auto-assembled English lines were proofread (ASCII brackets, spacing, word order)',
+                '🧪 scripts/memory_i18n_test.js gains a log section (zh → en → zh, legacy entries unchanged, saves carry templates but not caches, rendering after load); the i18n baseline shrinks from 232 to 227',
+            ),
+        ),
         array(
             'version' => '6.17.0',
             'date'    => '2026-10-13',

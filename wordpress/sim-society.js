@@ -124,7 +124,7 @@ class FactionSystem {
                     filtered.forEach(a => faction.addMember(a.agentId));
                     this.factions[faction.id] = faction;
                     const memberNames = filtered.map(a => a.name).join(t('、'));
-                    world.logMessage('faction', `${faction.icon} ${memberNames}${t('組成了「')}${faction.name}${t('」！')}`, filtered[0].name);
+                    world.logMessageT('faction', '{icon} {memberNames}組成了「{faction}」！', { icon: faction.icon, memberNames, faction: faction.name }, filtered[0].name);
                     filtered.forEach(a => {
                         a.memory.addT(world.tickCount, world.clock.timeStr, 'social', '我加入了「{faction}」，成員有{memberNames}。', { faction: faction.name, memberNames }, 6, filtered.map(x => x.name));
                         // Boost mutual affinity (scaled by personality compatibility)
@@ -174,7 +174,7 @@ class FactionSystem {
                 }, 0) / Math.max(1, otherMembers.length);
                 if (avgAff < -30 && Math.random() < 0.2) {
                     faction.removeMember(memberId);
-                    world.logMessage('faction', `${agent.name}${t('退出了「')}${faction.name}${t('」。')}`, agent.name);
+                    world.logMessageT('faction', '{agent}退出了「{faction}」。', { agent: agent.name, faction: faction.name }, agent.name);
                     agent.memory.addT(world.tickCount, world.clock.timeStr, 'social', '我退出了「{faction}」，我受不了他們了。', { faction: faction.name }, 5, []);
                 }
             }
@@ -268,7 +268,7 @@ class FactionSystem {
                 if (faction.size === 1) {
                     const lastAgent = world.agents[faction.members[0]];
                     if (lastAgent) {
-                        world.logMessage('faction', `${t('「')}${faction.name}${t('」因人數不足而解散。')}`, lastAgent.name);
+                        world.logMessageT('faction', '「{faction}」因人數不足而解散。', { faction: faction.name }, lastAgent.name);
                     }
                 }
                 delete this.factions[id];
@@ -628,7 +628,7 @@ class FestivalSystem {
 
         // Festival announcement (1 day before)
         if (day === festival.day - 1 && this._lastFestivalSeason !== season) {
-            world.logMessage('festival', `${festival.icon} ${t('明天就是')}${festival.name}${t('了！全城都在準備中。')}`);
+            world.logMessageT('festival', '{icon} 明天就是{festival}了！全城都在準備中。', { icon: festival.icon, festival: festival.name });
             world.events.conversationTopics.push(`${t('即將到來的')}${festival.name}`);
             // Start quest
             this.activeQuest = {
@@ -667,7 +667,7 @@ class FestivalSystem {
                 world.stockpile.add('meals', Math.floor(festival.effects.food_bonus / 2));
             }
 
-            world.logMessage('festival', `${festival.icon} ${festival.name}${t('開始了！')}${festival.description}`);
+            world.logMessageT('festival', '{icon} {festival}開始了！{description}', { icon: festival.icon, festival: festival.name, description: festival.description });
             world.events.conversationTopics.push(festival.effects.conversation_topic);
 
             // Boost relationships during festival
@@ -707,7 +707,7 @@ class FestivalSystem {
 
         // End festival
         if (this.activeFestival && world.tickCount > this.activeFestival.endTick) {
-            world.logMessage('festival', `${this.activeFestival.icon} ${this.activeFestival.name}${t('結束了，大家帶著美好的回憶回到日常。')}`);
+            world.logMessageT('festival', '{icon} {activeFestival}結束了，大家帶著美好的回憶回到日常。', { icon: this.activeFestival.icon, activeFestival: this.activeFestival.name });
             this.activeFestival = null;
         }
 
@@ -717,7 +717,7 @@ class FestivalSystem {
             this.activeQuest.progress = Math.min(this.activeQuest.goal,
                 this.activeQuest.progress + workers.length * randInt(2, 5));
             if (this.activeQuest.progress >= this.activeQuest.goal) {
-                world.logMessage('festival', `🎉 ${t('節日任務「')}${this.activeQuest.name}${t('」完成！獲得獎勵！')}`);
+                world.logMessageT('festival', '🎉 節日任務「{activeQuest}」完成！獲得獎勵！', { activeQuest: this.activeQuest.name });
                 if (this.activeQuest.rewards.resources) {
                     for (const [r, amt] of Object.entries(this.activeQuest.rewards.resources)) {
                         world.stockpile.add(r, amt);
@@ -851,7 +851,7 @@ class LifecycleSystem {
         });
 
         // Notify the world
-        world.logMessage('death', `⚰️ ${npc.name}${t('（')}${npc.age}${t('歲）因')}${cause}${t('離世了。')}${epitaph}`, npc.name);
+        world.logMessageT('death', '⚰️ {npc}（{age}歲）因{cause}離世了。{epitaph}', { npc: npc.name, age: npc.age, cause, epitaph }, npc.name);
 
         // Grief for related NPCs + mourning behavior
         Object.values(world.agents).forEach(a => {
@@ -1011,7 +1011,7 @@ class LifecycleSystem {
             agent._parentNames = [parentA.name, parentB.name];
             if (!this.playerChildren) this.playerChildren = [];
             this.playerChildren.push({ agentId: agent.agentId, name, parentNames: [parentA.name, parentB.name], birthTick: world.tickCount });
-            world.logMessage('system', `🎉 ${t('你的孩子')}${name}${t('出生了！將來可以繼承你的一切。')}`);
+            world.logMessageT('system', '🎉 你的孩子{name}出生了！將來可以繼承你的一切。', { name });
         }
 
         // Town celebration
@@ -1021,7 +1021,7 @@ class LifecycleSystem {
             }
         });
 
-        world.logMessage('birth', `🎒 ${parentA.name}${t('和')}${parentB.name}${t('的孩子')}${name}${t('出生了！全鎮慶祝！')}`, name);
+        world.logMessageT('birth', '🎒 {parentA}和{parentB}的孩子{name}出生了！全鎮慶祝！', { parentA: parentA.name, parentB: parentB.name, name }, name);
         world.gossipNetwork.activeGossip.push({
             about: name, content: `${parentA.name}${t('和')}${parentB.name}${t('生了個')}${gender==='male'?t('男'):t('女')}${t('孩，取名')}${name}${t('！')}`,
             source: t('鎮民'), spreadCount: 0, tickCreated: world.tickCount, isTrue: true
@@ -1111,7 +1111,7 @@ class ExplorationSystem {
 
             if (Math.random() < discoverChance) {
                 this.discoveredZones[zone.id] = { discovered: true, timesExplored: 0, lastExploredTick: 0 };
-                world.logMessage('exploration', `🗺️ ${t('發現了新的探索區域：')}${zone.icon} ${zone.name}${t('！')}${zone.description}`);
+                world.logMessageT('exploration', '🗺️ 發現了新的探索區域：{icon} {zone}！{description}', { icon: zone.icon, zone: zone.name, description: zone.description });
                 world.events.conversationTopics.push(`${t('新發現的')}${zone.name}`);
                 if (world.dailyNews) world.dailyNews.collectEvent('exploration', `${t('發現了新的探索區域：')}${zone.name}${t('！')}`, 7);
             }
@@ -1153,7 +1153,7 @@ class ExplorationSystem {
         });
 
         const names = agents.map(a => a.name).join(t('、'));
-        world.logMessage('exploration', `${zone.icon} ${names}${t('出發前往')}${zone.name}${t('探險了！預計')}${zone.distance}${t('天後返回。')}`);
+        world.logMessageT('exploration', '{icon} {names}出發前往{zone}探險了！預計{distance}天後返回。', { icon: zone.icon, names, zone: zone.name, distance: zone.distance });
 
         return expedition;
     }
@@ -1437,10 +1437,10 @@ class LegacySystem {
 
         // --- Log the inheritance ---
         const heirName = legacy.heir?.name || t('新旅人');
-        world.logMessage('system', `📜 ${t('第')}${world._legacyGeneration}${t('代開始！')}${heirName}${t('繼承了')}${legacy.previousPlayerName}${t('的遺產。')}`);
-        world.logMessage('system', `💰 ${t('繼承銀幣')} ${legacy.silver}${t('，已建建築')} ${legacy.buildings?.length || 0} ${t('棟，產業')} ${Object.keys(legacy.industries || {}).length} ${t('個。')}`);
+        world.logMessageT('system', '📜 第{_legacyGeneration}代開始！{heirName}繼承了{previousPlayerName}的遺產。', { _legacyGeneration: world._legacyGeneration, heirName, previousPlayerName: legacy.previousPlayerName });
+        world.logMessageT('system', '💰 繼承銀幣 {silver}，已建建築 {v} 棟，產業 {length} 個。', { silver: legacy.silver, v: legacy.buildings?.length || 0, length: Object.keys(legacy.industries || {}).length });
         if (legacy.endingType) {
-            world.logMessage('system', `📖 ${t('上一代結局：')}${legacy.endingType}${t('。鎮民們仍然記得')}${legacy.previousPlayerName}${t('的故事。')}`);
+            world.logMessageT('system', '📖 上一代結局：{endingType}。鎮民們仍然記得{previousPlayerName}的故事。', { endingType: legacy.endingType, previousPlayerName: legacy.previousPlayerName });
         }
     }
 }

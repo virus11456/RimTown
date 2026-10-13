@@ -355,7 +355,7 @@ Object.assign(RimTownApp.prototype, {
         document.getElementById('town-modal')?.classList.add('hidden');
         this.world.paused = !!this._pausedBeforeTownModal;
         this._updateHeaderTownName(name);
-        this.world.logMessage('system', `${t('🏘️ 新城鎮「')}${name}${t('」已建立！')}`);
+        this.world.logMessageT('system', '🏘️ 新城鎮「{name}」已建立！', { name });
         this._hideBusyOverlay();
         this._showCornerNotice({ icon: '🏘️', title: `${name}${t('已建立')}`, name: '', desc: t('原本的城鎮已自動儲存，「城鎮列表」隨時可切換，兩鎮並存') });
         this.render();

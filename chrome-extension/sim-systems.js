@@ -360,7 +360,7 @@ class WeatherSystem {
     scheduleDisaster(type, daysUntil, world) {
         if (this.activeDisaster || !DISASTER_LABELS[type]) return false;
         this.disasterWarning = { type, severity: 'major', daysUntil: Math.max(0, daysUntil | 0) };
-        world.logMessage('weather', `⚠️ ${t('災害預警：')}${DISASTER_LABELS[type]()}`);
+        world.logMessageT('weather', '⚠️ 災害預警：{v}', { v: DISASTER_LABELS[type]() });
         this._offerPrepChoice(world, DISASTER_LABELS[type]());
         return true;
     }
@@ -431,7 +431,7 @@ class WeatherSystem {
         if (!d) return;
         this.activeDisaster = { type, name: d.name(), severity: d.severity, daysLeft: d.daysLeft, effects: d.effects, desc: d.desc() };
         this._daysSinceDisaster = 0;
-        world.logMessage('weather', `🚨 ${t('天災發生！')}${d.name()}：${d.desc()}`);
+        world.logMessageT('weather', '🚨 天災發生！{v}：{v2}', { v: d.name(), v2: d.desc() });
         if (world.dailyNews) {
             world.dailyNews.collectEvent('disaster', `${d.name()}${t('來襲')}：${d.desc()}`, 10);
         }
@@ -458,7 +458,7 @@ class WeatherSystem {
 
     _endDisaster(world) {
         const name = this.activeDisaster.name;
-        world.logMessage('weather', `✅ ${name}${t('已經結束，小鎮開始恢復。')}`);
+        world.logMessageT('weather', '✅ {name}已經結束，小鎮開始恢復。', { name });
         if (world.dailyNews) {
             world.dailyNews.collectEvent('recovery', `${name}${t('結束，開始重建')}`, 7);
         }
@@ -490,7 +490,7 @@ class WeatherSystem {
             const npcCount = Object.values(world.agents).filter(a => !a.isPlayer).length;
             const extraWood = Math.ceil(npcCount * this.activeDisaster.effects.wood_consumption);
             if (!world.stockpile.consume('wood', extraWood, world.tickCount, this.activeDisaster.name)) {
-                world.logMessage('weather', `🪵 ${t('木材嚴重不足！')}${this.activeDisaster.name}${t('讓居民受凍。')}`);
+                world.logMessageT('weather', '🪵 木材嚴重不足！{activeDisaster}讓居民受凍。', { activeDisaster: this.activeDisaster.name });
                 Object.values(world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) - 5; });
             }
         }
@@ -500,7 +500,7 @@ class WeatherSystem {
             const foodLost = Math.floor(world.stockpile.get('food') * this.activeDisaster.effects.food_loss);
             if (foodLost > 0) {
                 world.stockpile.consume('food', foodLost, world.tickCount, this.activeDisaster.name);
-                world.logMessage('weather', `🍖 ${t('洪水沖走了')} ${foodLost} ${t('食物！')}`);
+                world.logMessageT('weather', '🍖 洪水沖走了 {foodLost} 食物！', { foodLost });
             }
         }
 
@@ -510,7 +510,7 @@ class WeatherSystem {
                 const lost = Math.floor((world.stockpile.get(res) || 0) * frac);
                 if (lost > 0) {
                     world.stockpile.consume(res, lost, world.tickCount, this.activeDisaster.name);
-                    world.logMessage('weather', `📉 ${this.activeDisaster.name}${t('損失了')} ${lost} ${t(RESOURCE_NAMES_ZH[res] || res)}`);
+                    world.logMessageT('weather', '📉 {activeDisaster}損失了 {lost} {res}', { activeDisaster: this.activeDisaster.name, lost, res: RESOURCE_NAMES_ZH[res] || res });
                 }
             }
         }
@@ -710,7 +710,7 @@ class CouncilSystem {
         this._formed = true;
 
         const names = this.members.map(id => world.agents[id]?.name).filter(Boolean).join(t('、'));
-        world.logMessage('council', `🏛️ ${t('議會成立！成員：')}${names}`);
+        world.logMessageT('council', '🏛️ 議會成立！成員：{names}', { names });
         if (world.dailyNews) {
             world.dailyNews.collectEvent('politics', `${t('小鎮議會正式成立，成員有')}${names}`, 8);
         }
@@ -833,9 +833,9 @@ class CouncilSystem {
             // Reputation gain for passing proposals
             if (world.reputationSystem) world.reputationSystem.addReputation(3, 'council', world);
 
-            world.logMessage('council', `✅ ${t('議會通過：')}${p.title}（${forVotes}${t(' 票贊成 / ')}${againstVotes}${t(' 票反對）')}`);
+            world.logMessageT('council', '✅ 議會通過：{title}（{forVotes} 票贊成 / {againstVotes} 票反對）', { title: p.title, forVotes, againstVotes });
         } else {
-            world.logMessage('council', `❌ ${t('議會否決：')}${p.title}（${forVotes}${t(' 票贊成 / ')}${againstVotes}${t(' 票反對）')}`);
+            world.logMessageT('council', '❌ 議會否決：{title}（{forVotes} 票贊成 / {againstVotes} 票反對）', { title: p.title, forVotes, againstVotes });
         }
 
         if (world.dailyNews) {
@@ -995,7 +995,7 @@ class DailyDecisionSystem {
             dayKey: dayKey,
         };
 
-        world.logMessage('decision', `💬 ${t('有人找你商量')}：${this.pendingDecision.title}`);
+        world.logMessageT('decision', '💬 有人找你商量：{title}', { title: this.pendingDecision.title });
     }
 
     resolveDecision(choice, world) {
@@ -1032,7 +1032,7 @@ class DailyDecisionSystem {
             const rewards = [{r:'metal',a:15},{r:'cloth',a:10},{r:'herbs',a:10},{r:'silver',a:40},{r:'tools',a:8}];
             const reward = rewards[Math.floor(Math.random() * rewards.length)];
             sp.add(reward.r, reward.a, world.tickCount, t('商人交易'));
-            world.logMessage('decision', `💰 ${t('交易獲得了')} ${reward.a} ${t(reward.r)}！`);
+            world.logMessageT('decision', '💰 交易獲得了 {a} {r}！', { a: reward.a, r: reward.r });
         }
 
         // Social boost
@@ -1045,7 +1045,7 @@ class DailyDecisionSystem {
             world.reputationSystem.addReputation(effects.reputation, 'decisions', world);
         }
 
-        world.logMessage('decision', `💬 ${t('你決定')}「${label}」`);
+        world.logMessageT('decision', '💬 你決定「{label}」', { label });
         if (world.dailyNews) {
             world.dailyNews.collectEvent('social', `${decision.title} → ${label}`, 4);
         }
@@ -1079,11 +1079,11 @@ class DailyDecisionSystem {
             if (f.good) {
                 world.stockpile.add('silver', 15, world.tickCount, t('村民答謝'), 'player');
                 if (world.reputationSystem) world.reputationSystem.addReputation(2, 'decisions', world);
-                world.logMessage('relationship', `💝 ${f.npc}${t('特地回來道謝：「上次「')}${f.title}${t('」的事，多虧你決定「')}${f.choiceLabel}${t('」，現在順利多了！」(+15 銀幣、+2 聲望)')}`, f.npc);
+                world.logMessageT('relationship', '💝 {npc}特地回來道謝：「上次「{title}」的事，多虧你決定「{choiceLabel}」，現在順利多了！」(+15 銀幣、+2 聲望)', { npc: f.npc, title: f.title, choiceLabel: f.choiceLabel }, f.npc);
                 if (world.dailyNews) world.dailyNews.collectEvent('social', `${f.npc}${t('公開感謝')}${playerTitle(world)}${t('當初的決定')}`, 6, [f.npc]);
             } else {
                 Object.values(world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) - 2; });
-                world.logMessage('drama', `😤 ${f.npc}${t('抱怨：「上次「')}${f.title}${t('」你決定「')}${f.choiceLabel}${t('」，結果根本沒解決問題…」(全鎮心情 -2)')}`, f.npc);
+                world.logMessageT('drama', '😤 {npc}抱怨：「上次「{title}」你決定「{choiceLabel}」，結果根本沒解決問題…」(全鎮心情 -2)', { npc: f.npc, title: f.title, choiceLabel: f.choiceLabel }, f.npc);
                 if (world.dailyNews) world.dailyNews.collectEvent('social', `${f.npc}${t('對')}${playerTitle(world)}${t('先前的決策表達不滿')}`, 5, [f.npc]);
             }
             return false;
@@ -1163,7 +1163,7 @@ class ShopSystem {
         world.stockpile.add(itemKey, amount, world.tickCount, `${t('商店購買')}`, 'player');
         this.transactionLog.push({ type: 'buy', item: itemKey, amount, cost: totalCost, tick: world.tickCount });
         const discountText = discount > 0 ? ` (${t('聲望折扣')} ${Math.round(discount*100)}%)` : '';
-        world.logMessage('economy', `🛒 ${t('購買了')} ${amount} ${item.name()}${t('，花費')} ${totalCost} ${t('銀幣')}${discountText}`);
+        world.logMessageT('economy', '🛒 購買了 {amount} {v}，花費 {totalCost} 銀幣{discountText}', { amount, v: item.name(), totalCost, discountText });
         return { success: true, msg: `${t('購買成功')}！` };
     }
 
@@ -1175,7 +1175,7 @@ class ShopSystem {
         world.stockpile.consume(itemKey, amount, world.tickCount, `${t('出售')}${item.name()}`);
         world.stockpile.add('silver', totalIncome, world.tickCount, `${t('商店出售')}`, 'player');
         this.transactionLog.push({ type: 'sell', item: itemKey, amount, income: totalIncome, tick: world.tickCount });
-        world.logMessage('economy', `💰 ${t('出售了')} ${amount} ${item.name()}${t('，獲得')} ${totalIncome} ${t('銀幣')}`);
+        world.logMessageT('economy', '💰 出售了 {amount} {v}，獲得 {totalIncome} 銀幣', { amount, v: item.name(), totalIncome });
         return { success: true, msg: `${t('出售成功')}！` };
     }
 
@@ -1214,7 +1214,7 @@ class EventChoiceSystem {
                 choices: choices,
                 timestamp: world.tickCount,
             };
-            world.logMessage('event_choice', `⚡ ${event.name}${t('——鎮民都在等鎮長的決定!')}`);
+            world.logMessageT('event_choice', '⚡ {event}——鎮民都在等鎮長的決定!', { event: event.name });
             return;
         }
         const mayor = Object.values(world.agents).find(a => !a.isPlayer && !a.isDead && a.job?.key === 'mayor');
@@ -1233,7 +1233,7 @@ class EventChoiceSystem {
             choices: choices,
             timestamp: world.tickCount,
         };
-        world.logMessage('event_choice', `⚡ ${event.name}${t('——')}${asker}${t('來徵詢你的意見！')}`);
+        world.logMessageT('event_choice', '⚡ {event}——{asker}來徵詢你的意見！', { event: event.name, asker });
     }
 
     _generateChoices(event, world) {
@@ -1311,7 +1311,7 @@ class EventChoiceSystem {
 
         if (effects.relocate) { try { world.onRelocate?.(effects.relocate, world); } catch (e) { console.warn('[relocate]', e); } } // v5.90.0 跨鎮搬家(由 app 處理信箱)
 
-        world.logMessage('event_choice', `⚡ ${t('你選擇了')}「${choice.label}」${t('來應對')}${this.pendingEvent.eventName}`);
+        world.logMessageT('event_choice', '⚡ 你選擇了「{label}」來應對{eventName}', { label: choice.label, eventName: this.pendingEvent.eventName });
         if (world.dailyNews) {
             world.dailyNews.collectEvent('event', `${t('面對')}${this.pendingEvent.eventName}${t('，')}${playerTitle(world)}${t('選擇了')}「${choice.label}」`, 7);
         }
@@ -1419,7 +1419,7 @@ class NPCHelpSystem {
             timestamp: world.tickCount,
         };
 
-        world.logMessage('npc_help', `💬 ${chosen.npc.name}${t('需要你的幫助！')}`);
+        world.logMessageT('npc_help', '💬 {npc}需要你的幫助！', { npc: chosen.npc.name });
     }
 
     resolveRequest(choice, world) {
@@ -1464,7 +1464,7 @@ class NPCHelpSystem {
             world.reputationSystem.addReputation(2, 'help', world);
         }
 
-        world.logMessage('npc_help', `💬 ${t('你對')}${req.npcName}${t('說')}：「${label}」`);
+        world.logMessageT('npc_help', '💬 你對{npcName}說：「{label}」', { npcName: req.npcName, label });
 
         this.requestLog.push({ npcName: req.npcName, type: req.type, choice: label, tick: world.tickCount });
         if (this.requestLog.length > 50) this.requestLog = this.requestLog.slice(-50);

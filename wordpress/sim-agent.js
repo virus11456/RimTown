@@ -715,7 +715,7 @@ class Agent {
             if (map) {
                 (map.primary||[]).forEach(n => {
                     if(this.skills.addXp(n, xp*2)) {
-                        world.logMessage('skill_up', `${this.name}${t('的')}${t(n)}${t('達到等級')}${this.skills.get(n).level}${t('！')}`, this.name);
+                        world.logMessageT('skill_up', '{me}的{n}達到等級{level}！', { me: this.name, n, level: this.skills.get(n).level }, this.name);
                         this.currentThought = `${t(n)}${t('技能進步了！')}`;
                     }
                 });
@@ -723,7 +723,7 @@ class Agent {
             }
         } else {
             const actMap = ACTIVITY_SKILL_MAP[this.activity] || [];
-            actMap.forEach(n => { if(this.skills.addXp(n, xp)) world.logMessage('skill_up', `${this.name}${t('的')}${t(n)}${t('達到等級')}${this.skills.get(n).level}${t('！')}`, this.name); });
+            actMap.forEach(n => { if(this.skills.addXp(n, xp)) world.logMessageT('skill_up', '{me}的{n}達到等級{level}！', { me: this.name, n, level: this.skills.get(n).level }, this.name); });
         }
     }
     _decideActivity(hour) {
@@ -967,7 +967,7 @@ class Agent {
                 otherRel.modifyAffinity(Math.round(randInt(1, 4) * starCompat));
                 if (otherRel.affinity > 20) otherRel.modifyRomantic(Math.round(randInt(0, 2) * starCompat));
                 otherRel.addSharedMemory(`${t('一起在')}${this.currentLocation.replace(/_/g,' ')}${t('看星星')}`);
-                world.logMessage('social', `${this.name}${t('和')}${companion.name}${t('一起看星星，感情升溫了。')}`, this.name, companion.name);
+                world.logMessageT('social', '{me}和{companion}一起看星星，感情升溫了。', { me: this.name, companion: companion.name }, this.name, companion.name);
                 this.memory.addT(world.tickCount, world.clock.timeStr, 'social', '和{companion}一起看星星，很浪漫。', { companion: companion.name }, 7, [companion.name]);
                 companion.memory.addT(world.tickCount, world.clock.timeStr, 'social', '和{me}一起看星星，很浪漫。', { me: this.name }, 7, [this.name]);
             }
@@ -983,7 +983,7 @@ class Agent {
             const disc = pickRandom(discoveries);
             this.moodModifier = (this.moodModifier || 0) + disc.mood;
             this.currentThought = disc.text;
-            world.logMessage('discovery', `${this.name}${disc.text}`, this.name);
+            world.logMessageT('discovery', '{me}{text}', { me: this.name, text: disc.text }, this.name);
             this.memory.add(world.tickCount, world.clock.timeStr, 'discovery', disc.text, 8, []);
             if (disc.topic) world.events.conversationTopics.push(disc.topic);
         }
@@ -1000,7 +1000,7 @@ class Agent {
         ];
         const mischief = pickRandom(mischiefTypes);
         this.moodModifier = (this.moodModifier || 0) + mischief.mood_self;
-        world.logMessage('mischief', `${this.name}${t('趁著夜色')}${mischief.text}${t('！')}`, this.name);
+        world.logMessageT('mischief', '{me}趁著夜色{text}！', { me: this.name, text: mischief.text }, this.name);
         this.memory.addT(world.tickCount, world.clock.timeStr, 'mischief', '我趁夜裡{text}', { text: mischief.text }, 6, []);
         this.currentThought = t('嘿嘿...成功了。');
         world.events.conversationTopics.push(`${t('有人在夜裡')}${mischief.text}`);
@@ -1010,7 +1010,7 @@ class Agent {
             const witness = pickRandom(awakeAgents);
             const rel = witness.relationships.getOrCreate(this.agentId, this.name);
             rel.modifyAffinity(-5);
-            world.logMessage('mischief', `${witness.name}${t('撞見了')}${this.name}${t('的惡作劇！')}`, witness.name, this.name);
+            world.logMessageT('mischief', '{witness}撞見了{me}的惡作劇！', { witness: witness.name, me: this.name }, witness.name, this.name);
             witness.memory.addT(world.tickCount, world.clock.timeStr, 'witness', '撞見{me}在{text}', { me: this.name, text: mischief.text }, 7, [this.name]);
             this.moodModifier = (this.moodModifier || 0) - 5;
             this.currentThought = `${t('糟糕，被')}${witness.name}${t('看到了...')}`;
@@ -1026,7 +1026,7 @@ class Agent {
             this.needs.social = Math.min(100, this.needs.social + 0.5);
             this.moodModifier = (this.moodModifier || 0) + 0.3; // Slight comfort from paying respects
             this.memory.addT(world.tickCount, world.clock.timeStr, 'mourning', '前往墓園弔念{target}。', { target: target.name }, 7, [target.name]);
-            world.logMessage('mourning', `🕯️ ${this.name}${t('前往墓園弔念')}${target.name}${t('。')}`, this.name);
+            world.logMessageT('mourning', '🕯️ {me}前往墓園弔念{target}。', { me: this.name, target: target.name }, this.name);
             // If family, add to annual mourning list
             if (target.isFamily && !this._annualMourning.find(m => m.name === target.name)) {
                 this._annualMourning.push({ name: target.name, lastVisitYear: year });
@@ -1042,7 +1042,7 @@ class Agent {
             this.moodModifier = (this.moodModifier || 0) - 2;
             this.needs.social = Math.min(100, this.needs.social + 1);
             this.memory.addT(world.tickCount, world.clock.timeStr, 'mourning', '每年都會來墓園看望{unvisited}。', { unvisited: unvisited.name }, 6, [unvisited.name]);
-            world.logMessage('mourning', `🕯️ ${this.name}${t('來到墓園，緬懷已故的親人')}${unvisited.name}${t('。')}`, this.name);
+            world.logMessageT('mourning', '🕯️ {me}來到墓園，緬懷已故的親人{unvisited}。', { me: this.name, unvisited: unvisited.name }, this.name);
         }
     }
     _generateThought(world) {

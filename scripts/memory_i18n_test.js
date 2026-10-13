@@ -44,6 +44,18 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     // 6) 效能:getState 100 次
     const t0 = performance.now(); for (let i = 0; i < 100; i++) w.getState(); o.getStateMs = Math.round((performance.now() - t0) / 100 * 100) / 100; ck(o.getStateMs < 8, 'getState perf ' + o.getStateMs);
     I18N.setLang('zh');
+    // 7) v6.18.0 日誌模板化:logMessageT 存 k/p,recent_messages 依當下語言,序列化不帶快取,舊式日誌照舊
+    w.logMessageT('relationship', '{agent}和{other}開始交往了！', { agent: a.name, other: b.name }, a.name, b.name);
+    w.logMessage('event', `${a.name}今天心情不錯。`); // 舊式
+    const lz = w.getState().recent_messages.slice(-2).map(m => m.content); o.logZh = lz;
+    ck(lz[0] === `${a.name}和${b.name}開始交往了！` && lz[1] === `${a.name}今天心情不錯。`, 'log zh ' + JSON.stringify(lz));
+    I18N.setLang('en'); const le = w.getState().recent_messages.slice(-2); o.logEn = le.map(m => m.content);
+    ck(le[0].content === `${I18N.localizeName(a.name)} and ${enName} started dating!` && le[1].content === lz[1] && le[0]._tx === undefined && le[0].k, 'log en ' + JSON.stringify(o.logEn));
+    const save2 = JSON.parse(JSON.stringify(w.serialize())); const ml = save2.messageLog.slice(-2); ck(ml[0].k && ml[0].p && ml[0].p.agent === a.name && !('_tx' in ml[0]) && !ml[1].k, 'log serialize k/p');
+    const W4 = new World(); W4.loadSave(save2); const m4 = W4.messageLog.filter(m => m.k && m.p && m.p.agent === a.name).slice(-1)[0]; o.m4 = m4; ck(m4 && World.logText(m4) === le[0].content, 'log reload renders en ' + JSON.stringify(m4));
+    I18N.setLang('zh'); ck(m4 && World.logText(m4) === lz[0], 'log reload renders zh');
+    // 真實系統路徑:看星星(sim-agent)走 logMessageT
+    const before2 = w.messageLog.length; try { a._stargaze?.(w, b); } catch (e) {}
     o.fails = fails; return o;
   });
   console.log(JSON.stringify(out)); if (out.fails.length) { console.log('FAIL', out.fails); process.exitCode = 1; }

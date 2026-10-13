@@ -41,7 +41,7 @@ class GossipNetwork {
         this.activeGossip.push(gossip);
         if (this.activeGossip.length > 10000) this.activeGossip = this.activeGossip.slice(-10000);
         // 直接進八卦頭條 & 每日報
-        world.logMessage('gossip', `🗞️ ${content}`, a.name, b.name);
+        world.logMessageT('gossip', '🗞️ {content}', { content }, a.name, b.name);
         if (world.dailyNews) world.dailyNews.collectEvent('gossip', content, kind === 'newCouple' ? 7 : 5, [a.name, b.name]);
         return gossip;
     }
@@ -90,7 +90,7 @@ class GossipNetwork {
         listener.memory.addT(world.tickCount, world.clock.timeStr, 'social', '{speaker}告訴我：「{content}」', { speaker: speaker.name, content: gossip.content }, 4, [speaker.name, gossip.about]);
         // v5.3.0 只有「有內容」且還算新鮮(傳不到 3 手)的八卦才進頭條,避免同一則洗版
         if (gossip.juicy && gossip.spreadCount <= 3) {
-            world.logMessage('gossip', `🗣️ ${speaker.name}${t('偷偷說：「')}${gossip.content}${t('」')}`, speaker.name, listener.name);
+            world.logMessageT('gossip', '🗣️ {speaker}偷偷說：「{content}」', { speaker: speaker.name, content: gossip.content }, speaker.name, listener.name);
         }
         // v5.2.0 傳到第 4 手,當事人聽到了 → 對質
         if (gossip.spreadCount >= 4 && !gossip._confronted) {
@@ -115,20 +115,20 @@ class GossipNetwork {
                 subject.addThought('praised', world, source.agentId, source.name); // v5.15.0 被公開稱讚
                 subject.memory.addT(world.tickCount, world.clock.timeStr, 'social', '聽說{source}到處誇我,真開心!', { source: source.name }, 6, [source.name]);
                 source.chatHistory?.push?.({ speaker: subject.name, target: source.name, text: t('欸,我聽說你到處跟人誇我?哈哈,謝啦,請你喝一杯!'), time: world.clock.timeStr });
-                world.logMessage('gossip', `💐 ${subject.name}${t('聽到了')}${playerTitle(world)}${t('的美言,好感大增!')}`, subject.name);
+                world.logMessageT('gossip', '💐 {subject}聽到了{v}的美言,好感大增!', { subject: subject.name, v: playerTitle(world) }, subject.name);
             } else if (negative) {
                 relToPlayer.modifyAffinity(-12); relToPlayer.modifyTrust(-10);
                 subject.addThought('slandered', world, source.agentId, source.name); // v5.15.0 被說壞話
                 subject.memory.addT(world.tickCount, world.clock.timeStr, 'social', '居然是{source}在背後說我壞話...太過分了。', { source: source.name }, 8, [source.name]);
                 source.chatHistory?.push?.({ speaker: subject.name, target: source.name, text: t('我都聽說了。你在背後那樣說我?虧我還這麼信任你。'), time: world.clock.timeStr });
-                world.logMessage('gossip', `💢 ${subject.name}${t('發現')}${source.name}${t('在背後說他壞話,關係惡化!')}`, subject.name);
+                world.logMessageT('gossip', '💢 {subject}發現{source}在背後說他壞話,關係惡化!', { subject: subject.name, source: source.name }, subject.name);
             }
             if (world.conversationEngine?.onNpcMessage) world.conversationEngine.onNpcMessage(subject.agentId);
         } else if (source && negative && source !== subject) {
             const relA = subject.relationships.getOrCreate(source.agentId, source.name);
             const relB = source.relationships.getOrCreate(subject.agentId, subject.name);
             relA.modifyAffinity(-12); relB.modifyAffinity(-8);
-            world.logMessage('gossip', `💢 ${subject.name}${t('聽到了')}${source.name}${t('散布的謠言,當面對質!兩人關係惡化')}`, subject.name, source.name);
+            world.logMessageT('gossip', '💢 {subject}聽到了{source}散布的謠言,當面對質!兩人關係惡化', { subject: subject.name, source: source.name }, subject.name, source.name);
             if (world.dailyNews) world.dailyNews.collectEvent('drama', `${subject.name}${t('為了謠言找')}${source.name}${t('對質!')}`, 7, [subject.name, source.name]);
             // 當事人在鎮民動態發文澄清
             world.townFeed?.addPost(world, subject, pickRandom([
@@ -143,7 +143,7 @@ class GossipNetwork {
             if (other && !subject.isPlayer && !other.isPlayer && !subject.relationships.getPartner() && !other.relationships.getPartner()) {
                 subject.relationships.getOrCreate(other.agentId, other.name).modifyRomantic(randInt(3, 6));
                 other.relationships.getOrCreate(subject.agentId, subject.name).modifyRomantic(randInt(3, 6));
-                world.logMessage('gossip', `💘 ${t('被大家起鬨之後,')}${subject.name}${t('和')}${gossip.shipWith}${t('好像真的開始注意彼此了...')}`, subject.name);
+                world.logMessageT('gossip', '💘 被大家起鬨之後,{subject}和{shipWith}好像真的開始注意彼此了...', { subject: subject.name, shipWith: gossip.shipWith }, subject.name);
             }
         }
     }
@@ -164,7 +164,7 @@ class GossipNetwork {
         this.activeGossip.push(gossip);
         if (this.activeGossip.length > 10000) this.activeGossip = this.activeGossip.slice(-10000);
         listener.memory.addT(world.tickCount, world.clock.timeStr, 'social', '{player}偷偷跟我說:「{content}」', { player: player.name, content }, 5, [player.name, about.name]);
-        world.logMessage('gossip', `🗣️ ${playerTitle(world)}${t('偷偷向')}${listener.name}${t('爆料了')}${about.name}${t('的事...')}`, player.name, listener.name);
+        world.logMessageT('gossip', '🗣️ {v}偷偷向{listener}爆料了{about}的事...', { v: playerTitle(world), listener: listener.name, about: about.name }, player.name, listener.name);
         return gossip;
     }
 }
@@ -364,7 +364,7 @@ ${LLM_LANG.rule(t('【規則】繁體中文(台灣用語)。只輸出 JSON,不�
             const merged = [...past, ...fresh];
             npc.dailyPlan = { key, goals: merged.map(b => `${b.time} ${b.text}`), blocks: merged, llm: true, replanned: true };
             npc.memory.addT(world.tickCount, world.clock.timeStr, 'plan', '因為「{v}」,我改變了今天接下來的安排。', { v: shortReason.slice(0, 40) }, 5, []);
-            world.logMessage('thought', `📝 ${npc.name}${t('臨時改變了今天的安排')}`, npc.name);
+            world.logMessageT('thought', '📝 {npc}臨時改變了今天的安排', { npc: npc.name }, npc.name);
         } catch (e) { console.warn('[RimTown] replan failed:', e); }
     }
 
@@ -461,7 +461,7 @@ ${LLM_LANG.rule(t('【規則】繁體中文（台灣用語），只寫一句話�
                     if (text) {
                         const related = [...new Set(recent.flatMap(m => m.relatedAgents || []))].slice(0, 3);
                         npc.memory.add(world.tickCount, world.clock.timeStr, 'reflection', text, 8, related);
-                        world.logMessage('thought', `💭 ${npc.name}${t('的內心：')}${text}`, npc.name);
+                        world.logMessageT('thought', '💭 {npc}的內心：{text}', { npc: npc.name, text }, npc.name);
                     }
                 }
             } catch (e) { console.error('[RimTown] dailyReflection LLM failed:', e); }
@@ -512,7 +512,7 @@ ${t('最後一行：')}EFFECTS: {"target": "${t('若念頭涉及某位村民寫�
         }
         // v5.45.0 蝴蝶效應:記錄耳語+對第三者的態度快照(機械漂移後),隔天回響告訴你「後續」發酵了什麼
         world.recordPlayerAction?.('whisper', thought, npc, tgt || null);
-        world.logMessage('whisper', `🤫 ${t('你在')}${npc.name}${t('耳邊低語...一個念頭在他心裡生根了。')}`, player?.name, npc.name);
+        world.logMessageT('whisper', '🤫 你在{npc}耳邊低語...一個念頭在他心裡生根了。', { npc: npc.name }, player?.name, npc.name);
         return { thought };
     }
 
@@ -619,7 +619,7 @@ ${t('- 直接寫訊息內容就好')}`;
         // Record in memory
         npc.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '主動傳訊息給{player}：{npcText}', { player: player.name, npcText }, 3, [player.name]);
         // Log
-        world.logMessage('player_chat', `${npc.name} → ${player.name}: ${npcText}`, npc.name, player.name);
+        world.logMessageT('player_chat', '{npc} → {player}: {npcText}', { npc: npc.name, player: player.name, npcText }, npc.name, player.name);
         // Notify UI
         if (this.onNpcMessage) this.onNpcMessage(npc.agentId);
     }
@@ -914,7 +914,7 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
             player.chatHistory.push({ speaker: npc.name, target: player.name, text, time: world.clock.timeStr });
             npc.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '我對{player}說出了真心話：{text}', { player: player.name, text }, 9, [player.name]);
             rel.addSharedMemory(`${ev.name}${t('：')}${text}`);
-            world.logMessage('player_chat', `${ev.icon} ${npc.name} → ${player.name}: ${text}`, npc.name, player.name);
+            world.logMessageT('player_chat', '{icon} {npc} → {player}: {text}', { icon: ev.icon, npc: npc.name, player: player.name, text }, npc.name, player.name);
             if (this.onNpcMessage) this.onNpcMessage(npc.agentId);
             world._pendingHeartEvents = world._pendingHeartEvents || [];
             world._pendingHeartEvents.push({ npcId: npc.agentId, npcName: npc.name, icon: ev.icon, evName: ev.name, text, romance: !!ev.romance });
@@ -962,7 +962,7 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
             }
             player.chatHistory.push({ speaker: npc.name, target: player.name, text, time: world.clock.timeStr });
             npc.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '跟{player}聊到：{text}', { player: player.name, text }, 3, [player.name]);
-            world.logMessage('player_chat', `${npc.name} → ${player.name}: ${text}`, npc.name, player.name);
+            world.logMessageT('player_chat', '{npc} → {player}: {text}', { npc: npc.name, player: player.name, text }, npc.name, player.name);
             if (this.onNpcMessage) this.onNpcMessage(npc.agentId);
         } catch (e) { console.error('[RimTown] sendEventComment failed:', e); }
     }
@@ -1813,7 +1813,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
         }
         player.chatHistory.push({speaker:npc.name, target:player.name, text:npcReply, time:world.clock.timeStr});
         player._recentChatTick = world.tickCount; // Mark for social need recovery
-        world.logMessage('player_chat', `${player.name} → ${npc.name}: ${summary}`, player.name, npc.name);
+        world.logMessageT('player_chat', '{player} → {npc}: {summary}', { player: player.name, npc: npc.name, summary }, player.name, npc.name);
         // v5.41.0 跟玩家聊出強烈反應(好感大變/心動) → NPC 即時改寫今天剩餘行程
         if (Math.abs(affChange) >= 4 || romChange >= 2) {
             this.replanRestOfDay(npc, world, `${t('和')}${player.name}${t('聊了之後：')}${summary}`).catch(() => {});

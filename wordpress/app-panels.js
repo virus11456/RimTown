@@ -263,7 +263,7 @@ Object.assign(RimTownApp.prototype, {
 
         setTimeout(() => {
             this.world.logMessage('system', `🌅 ═══════════════════════════`);
-            this.world.logMessage('system', `🔄 ${msg}`);
+            this.world.logMessageT('system', '🔄 {msg}', { msg });
             this.world.logMessage('system', `🌅 ═══════════════════════════`);
             this.state = this.world.getState();
             this.render();

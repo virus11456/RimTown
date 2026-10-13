@@ -557,7 +557,7 @@ Object.assign(RimTownApp.prototype, {
     async manualArchiveChat() {
         const result = await this.archiveChatHistory();
         if (result) {
-            this.world.logMessage('system', `${t('聊天已存檔（')}${result.messageCount}${t('則訊息）。')}`);
+            this.world.logMessageT('system', '聊天已存檔（{messageCount}則訊息）。', { messageCount: result.messageCount });
         } else {
             this.world.logMessage('system', t('沒有聊天訊息可存檔。'));
         }
@@ -882,7 +882,7 @@ Object.assign(RimTownApp.prototype, {
                         npc.relationships.getOrCreate('player', player.name).modifyAffinity(8);
                         other.relationships.getOrCreate('player', player.name).modifyAffinity(8);
                         world.reputationSystem?.addReputation?.(15, 'help', world);
-                        world.logMessage('event', `🕊️ ${t('在')}${t(player.name)}${t('的奔走下,')}${t(npc.name)}${t('和')}${t(other.name)}${t('當眾和解!全鎮傳為佳話')}`);
+                        world.logMessageT('event', '🕊️ 在{player}的奔走下,{npc}和{other}當眾和解!全鎮傳為佳話', { player: player.name, npc: npc.name, other: other.name });
                         world.dailyNews?.collectEvent('social', `${t(npc.name)}${t('與')}${t(other.name)}${t('在旅人調解下世紀大和解')}`, 9, [npc.name, other.name]);
                         world.queueDramaScene?.('reconcile', npc, other, player.name);
                         this._unlockAchievement('peacemaker');
