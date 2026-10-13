@@ -285,10 +285,10 @@ const EVENT_POOL = [
     {name:t('夜半歌聲'),description:t('深夜從森林傳來神秘的歌聲。'),severity:'minor',effects:{mood_all:-2,conversation_topic:t('森林裡的歌聲')},night_event:true},
 ];
 const DEPARTURE_REASONS = [
-    t('決定出發去進行貿易遠征'),t('離開去城裡探望家人'),t('踏上朝聖之旅'),
-    t('出發去探索荒野'),t('離開去遠方的學院進修'),
-    t('前往首都尋求發展'),t('出門旅行增廣見聞'),
-];
+    '決定出發去進行貿易遠征','離開去城裡探望家人','踏上朝聖之旅',
+    '出發去探索荒野','離開去遠方的學院進修',
+    '前往首都尋求發展','出門旅行增廣見聞',
+]; // v6.19.0 原文 key,顯示時再翻
 const IMMIGRANT_POOL = [
     {name:'周明',age:27,gender:'male',traits:['hardworking','optimist'],job:'farmer',background:'來自鄰村的開朗年輕農夫。'},
     {name:'李雪',age:31,gender:'female',traits:['kind','perfectionist'],job:'tailor',background:'聽說邊境鎮需要她的手藝的熟練裁縫。'},
@@ -398,7 +398,7 @@ class EventSystem {
             const npcs = Object.values(world.agents).filter(a => !a.isPlayer && a.job?.key !== 'guard');
             if (npcs.length && Math.random() < 0.4) {
                 const fleeing = pickRandom(npcs);
-                this._sendAgentTravelling(world, fleeing, `${t('在')}${rd.attacker}${t('襲擊後逃離')}`, 3);
+                this._sendAgentTravelling(world, fleeing, tpl('在{attacker}襲擊後逃離', { attacker: rd.attacker }), 3);
             }
         }
         return event;
@@ -454,14 +454,16 @@ class EventSystem {
     _sendAgentTravelling(world, agent, reason, travelDays) {
         // v5.56.0 外鎮訪客不會被抽去「旅行」——他們的家在別的鎮,期滿自然返鄉
         if (agent.agentId && agent.agentId.startsWith('visit_')) return;
+        if (reason && !reason.k) reason = tpl(String(reason)); // v6.19.0 理由存模板(原文 key),日誌/記憶/旅行中名單依當下語言翻
+        const reasonText = Memory.render(reason.k, reason.p);
         const data = { agentId:agent.agentId, name:agent.name, age:agent.age, jobKey:agent.job?.key,
             traits:agent.personality.traits, values:agent.personality.values, background:agent.personality.background,
             homeLocation:agent.homeLocation, gender:agent.gender, look:agent.look||null, // v5.90.0 外觀跟著旅行
             skills:agent.skills.toDict(), relationships:agent.relationships.toDict(),
-            memories:agent.memory.toDict(), mood:agent.mood, moodModifier:agent.moodModifier||0 };
+            memories:agent.memory.toDict(true), mood:agent.mood, moodModifier:agent.moodModifier||0 }; // v6.19.0 存檔版
         this._travellingAgents.push({agentData:data, returnTick:world.tickCount+(travelDays*96), reason});
         world.logMessageT('departure', '{agent}{reason}。過幾天就會回來。', { agent: agent.name, reason }, agent.name);
-        const event = {name:t('居民出行'),description:`${agent.name}${reason}。`,severity:'minor',effects:{conversation_topic:`${agent.name}${t('離開了小鎮')}`},event_type:'departure'};
+        const event = {name:t('居民出行'),description:`${agent.name}${reasonText}。`,severity:'minor',effects:{conversation_topic:`${agent.name}${t('離開了小鎮')}`},event_type:'departure'};
         this.eventLog.push([world.clock.timeStr, event]);
         this.conversationTopics.push(`${agent.name}${t('離開了小鎮')}`);
         Object.values(world.agents).forEach(o => {
@@ -583,7 +585,7 @@ class EventSystem {
         this.eventLog.slice(-3).forEach(([,e]) => topics.push(e.description));
         return topics;
     }
-    getTravellingAgents() { return this._travellingAgents.map(t => ({agentId:t.agentData.agentId,name:t.agentData.name,reason:t.reason,return_tick:t.returnTick})); }
+    getTravellingAgents() { return this._travellingAgents.map(t => ({agentId:t.agentData.agentId,name:t.agentData.name,reason:(t.reason && t.reason.k) ? Memory.render(t.reason.k, t.reason.p) : t.reason,return_tick:t.returnTick})); }
     getActiveChains() {
         return this._activeChains.map(c => {
             const stages = EVENT_CHAINS[c.chainId]; const cur = stages[c.stage];

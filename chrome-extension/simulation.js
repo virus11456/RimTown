@@ -67,7 +67,7 @@ class World {
     getAgentsAtLocation(locId) { return Object.values(this.agents).filter(a => a.currentLocation === locId); }
     logMessage(type, content, agentName = '', targetName = '', k = null, p = null) {
         this.messageLog.push({ time:this.clock.timeStr, tick:this.tickCount, type, content, agent:agentName, target:targetName, ...(k ? { k, p: p || {} } : {}) });
-        if (this.messageLog.length > 1000) this.messageLog = this.messageLog.slice(-1000); // v5.99.0 B12
+        if (this.messageLog.length > 800) this.messageLog = this.messageLog.slice(-800); // v5.99.0 B12;v6.19.0 1000→800(紀錄分頁只畫最近 500 條)
     }
     // v6.18.0 B1 第二步:日誌也存「模板 key＋參數」,紀錄分頁依當下語言渲染;content 仍照建立當下語言存一份(舊存檔、跑馬燈、編年史照舊)
     logMessageT(type, k, p, agentName = '', targetName = '') {
@@ -318,7 +318,7 @@ class World {
         this.stockpile.consume('silver', q.cost, this.tickCount, t('向{town}採買').replace('{town}', t(opt.toTownName)), 'player');
         if (guard) {
             this.stockpile.consume('silver', q.fee, this.tickCount, t('護衛費'));
-            this.events._sendAgentTravelling(this, guard, `${t('押商隊去')}${opt.toTownName}`, q.days);
+            this.events._sendAgentTravelling(this, guard, tpl('押商隊去{town}', { town: opt.toTownName }), q.days);
         }
         pc.active = { id: 'pc' + Date.now(), mode: 'buy', toTownId: opt.toTownId, toTownName: opt.toTownName, toTheme: opt.toTheme, res, amount, cost: q.cost, guardId: guard?.agentId || null, guardName: guard?.name || '',
             route: opt.route === 'mountain' ? 'mountain' : 'road', departAbsDay: this._absDay(), returnAbsDay: this._absDay() + q.days, quote: q };
@@ -341,7 +341,7 @@ class World {
         this.stockpile.consume(res, amount, this.tickCount, `${t('押商隊去')}${t(opt.toTownName)}`);
         if (guard) {
             this.stockpile.consume('silver', q.fee, this.tickCount, t('護衛費'));
-            this.events._sendAgentTravelling(this, guard, `${t('押商隊去')}${opt.toTownName}`, q.days);
+            this.events._sendAgentTravelling(this, guard, tpl('押商隊去{town}', { town: opt.toTownName }), q.days);
         }
         pc.active = { id: 'pc' + Date.now(), toTownId: opt.toTownId, toTownName: opt.toTownName, toTheme: opt.toTheme, res, amount, guardId: guard?.agentId || null, guardName: guard?.name || '',
             route: opt.route === 'mountain' ? 'mountain' : 'road', departAbsDay: this._absDay(), returnAbsDay: this._absDay() + q.days, quote: q };
@@ -441,9 +441,9 @@ class World {
             traits: agent.personality.traits, values: agent.personality.values, background: agent.personality.background,
             homeLocation: agent.homeLocation, gender: agent.gender, look: agent.look || null, // v5.89.0 外觀跟著出門
             skills: agent.skills.toDict(), relationships: agent.relationships.toDict(),
-            memories: agent.memory.toDict(), mood: agent.mood, moodModifier: agent.moodModifier || 0 };
+            memories: agent.memory.toDict(true), mood: agent.mood, moodModifier: agent.moodModifier || 0 };
         this.onSendVisitor?.(data, town, stayDays);
-        this.events._sendAgentTravelling(this, agent, `${t('去')}${town.name}${t('作客')}`, stayDays + 2);
+        this.events._sendAgentTravelling(this, agent, tpl('去{town}作客', { town: town.name }), stayDays + 2);
         const tr = this.events._travellingAgents[this.events._travellingAgents.length - 1];
         if (tr) tr.visitTownId = town.id;
         return true;
@@ -454,7 +454,7 @@ class World {
             traits: agent.personality.traits, values: agent.personality.values, background: agent.personality.background,
             homeLocation: agent.homeLocation, gender: agent.gender, look: agent.look || null,
             skills: agent.skills.toDict(), relationships: agent.relationships.toDict(),
-            memories: agent.memory.toDict(), mood: agent.mood, moodModifier: agent.moodModifier || 0 };
+            memories: agent.memory.toDict(true), mood: agent.mood, moodModifier: agent.moodModifier || 0 };
     }
     // v5.90.0 訪客到期時檢查:和本鎮某位居民兩情相悅(雙方心動 ≥60、好感 ≥50)且至少來作客過 2 次→回鄉後由對方鎮發「搬家提案」
     _visitorRomance(visitor, meta) {
@@ -902,7 +902,7 @@ class World {
             agents: Object.fromEntries(Object.entries(this.agents).map(([id,a]) => [id, a.toDict()])),
             locations: this.townMap?.toDict() || {},
             recent_events: this.events.getRecentEvents().map(([t,e]) => ({time:t, name:e.name, description:e.description, severity:e.severity, event_type:e.event_type})),
-            recent_messages: this.messageLog.slice(-500).map(m => m.k ? { ...m, content: World.logText(m), _tx: undefined, _tl: undefined } : m), // v5.99.0 紀錄分頁只畫最近 500 條;v6.18.0 依當下語言
+            recent_messages: this.messageLog.slice(-500).map(m => m.k ? { time:m.time, tick:m.tick, type:m.type, content:World.logText(m), agent:m.agent, target:m.target } : m), // v5.99.0 紀錄分頁只畫最近 500 條;v6.18.0 依當下語言;v6.19.0 不帶 k/p
             travelling_agents: this.events.getTravellingAgents(),
             active_chains: this.events.getActiveChains(),
             stockpile: this.stockpile.toDict(),
@@ -1896,7 +1896,7 @@ class World {
                 lastInteractionTick:r.lastInteractionTick, sharedMemories:r.sharedMemories.slice(-10000),
                 status:r.status, statusSince:r.statusSince, isCheating:r.isCheating, isFeud:r.isFeud || undefined
             }])),
-            memory: a.memory.entries.slice(-10000).map(m=>({tick:m.tick,timeStr:m.timeStr,category:m.category,content:m.content,importance:m.importance,relatedAgents:m.relatedAgents,...(m.k?{k:m.k,p:m.p}:{})})), // v6.17.0 k/p
+            memory: a.memory.entries.slice(-10000).map(m=>({tick:m.tick,timeStr:m.timeStr,category:m.category,importance:m.importance,relatedAgents:m.relatedAgents,...(m.k?{k:m.k,p:m.p}:{content:m.content})})), // v6.17.0 k/p;v6.19.0 有模板就不存 content
             chatHistory: a.isPlayer ? (a.chatHistory||[]).slice(-10000) : undefined,
             _lastInteractionTick: a._lastInteractionTick,
             _locationStayRemaining: a._locationStayRemaining || 0,
@@ -1916,7 +1916,7 @@ class World {
             clock: { day:this.clock.day, hour:this.clock.hour, minute:this.clock.minute, season:this.clock.season, year:this.clock.year },
             tickCount: this.tickCount,
             paused: this.paused,
-            messageLog: this.messageLog.slice(-1000).map(m => ({ time:m.time, tick:m.tick, type:m.type, content:m.content, agent:m.agent, target:m.target, ...(m.k ? { k:m.k, p:m.p } : {}) })), // v6.18.0 帶 k/p、不帶快取
+            messageLog: this.messageLog.slice(-800).map(m => ({ time:m.time, tick:m.tick, type:m.type, agent:m.agent, target:m.target, ...(m.k ? { k:m.k, p:m.p } : { content:m.content }) })), // v6.18.0 帶 k/p、不帶快取;v6.19.0 有模板就不存 content
             townMap: this.townMap ? { seed:this.townMap.seed, terrain:this.townMap.terrain, width:this.townMap.width, height:this.townMap.height,
                 locations: Object.fromEntries(Object.entries(this.townMap.locations).map(([k,v])=>[k,{id:v.id,name:v.name,description:v.description,x:v.x,y:v.y,category:v.category,capacity:v.capacity}])) } : null,
             agents: Object.fromEntries(Object.entries(this.agents).map(([k,a])=>[k,serializeAgent(a)])),
@@ -2052,7 +2052,7 @@ class World {
             this.tickCount = data.tickCount;
             this._legacyGeneration = data._legacyGeneration || 1;
             this.paused = data.paused || false;
-            this.messageLog = (data.messageLog || []).slice(-1000); // v5.99.0
+            this.messageLog = (data.messageLog || []).slice(-800).map(m => (m && m.k && !m.content) ? { ...m, content: World.logText(m) } : m); // v5.99.0;v6.19.0 模板日誌讀檔時算 content
 
             // Town map
             if (data.townMap) {

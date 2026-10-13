@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.18.0
+ * Version: 6.19.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.18.0');
+define('RIMTOWN_VERSION', '6.19.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.19.0',
+            'date'    => '2026-10-13',
+            'changes' => array(
+                '🌐 B1 第三步：規則式對話摘要（45 條「X和Y在酒館……」）、每日感想與觀察（夢想／暗戀／天氣／節慶／昨天在哪忙）、「約了誰去哪」、旅行理由、委託板與任務日誌也改成模板——模板參數可以巢狀（「與X交談：{摘要}」裡的摘要本身也是模板），切語言後資訊卡記憶與紀錄分頁幾乎整份跟著翻：中文玩四天再切英文，紀錄分頁殘留中文從 265/500 降到 21/500、村民記憶從 826/1111 降到 53/1080，剩下的是八卦內容、委託描述與親緣故事',
+                '🛠️ 對話摘要與「約了誰去哪」裡的地點改用顯示名（之前是地點 id，中文句子裡會出現「在chapel」「去forest」）；旅行中名單的理由依當下語言顯示',
+                '🧪 memory_i18n_test 加對話摘要段（巢狀模板、英文無中文、中文無地點 id、跑一天後英文模式 conversation 類日誌與記憶零中文）',
+                '📦 存檔體積（B12）：模板化後存檔只存 key＋參數、不再另存一份文字（讀檔時依當下語言算）、畫面狀態不帶 key；對話摘要記憶每人最多 40 筆、觀察 20 筆（AI 只讀最近 10–20 筆）、日誌 1000→800 條；35 天 full 模式存檔 1454 KB、casual 1212 KB，仍在 1.5MB 門檻內',
+            ),
+            'changes_en' => array(
+                '🌐 B1 step three: rule-based conversation summaries (45 lines of "X and Y at the tavern..."), daily reflections and observations (dreams, crushes, weather, festivals, where you worked yesterday), "invited whom to where", travel reasons, request-board and quest logs are templates now too. Template parameters can nest (the summary inside "Talked with X: {summary}" is itself a template), so after a language switch the info-card memories and the Records tab follow almost entirely: after four days in Chinese and a switch to English, leftover Chinese lines in Records drop from 265/500 to 21/500 and in villager memories from 826/1111 to 53/1080; what remains is gossip content, request descriptions and kinship stories',
+                '🛠️ Locations in conversation summaries and "invited whom to where" now use display names (they used to be location ids, so Chinese sentences showed "at chapel" or "to forest"); travel reasons in the away list follow the current language',
+                '🧪 memory_i18n_test gains a conversation-summary section (nested templates, no Chinese in English, no raw location ids in Chinese, zero Chinese in conversation logs and memories after a day in English mode)',
+                '📦 Save size (B12): templated entries now store only key plus parameters, no second copy of the text (rendered on load in the current language), and UI state carries no keys; conversation memories are capped at 40 per villager and observations at 20 (the AI only reads the latest 10–20), the log at 800 lines instead of 1000; a 35-day full-mode save is 1454 KB and casual 1212 KB, still under the 1.5 MB threshold',
+            ),
+        ),
         array(
             'version' => '6.18.0',
             'date'    => '2026-10-13',

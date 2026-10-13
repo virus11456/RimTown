@@ -99,6 +99,15 @@ class Needs {
 }
 
 // --- Memory ---
+// v6.19.0 模板物件:{k, p},給 Memory.addT／logMessageT 當巢狀參數用;建立當下的文字用 Memory.render 算
+function tpl(k, p = {}) { return { k, p }; }
+// v6.19.0 地點顯示名(中文原文,顯示時再 t()):主題鎮專屬名 → 通用對照表 → id 去底線
+const LOC_LABELS = { town_hall:'鎮公所', clinic:'診所', workshop:'工坊', farm:'農場', tavern:'酒館', guardpost:'哨站', chapel:'教堂', library:'圖書館', general_store:'雜貨店', market:'市集', park:'公園', mine:'礦場', residential_east:'東區住宅', residential_west:'西區住宅', residential_north:'北區住宅', residential_south:'南區住宅', warehouse:'倉庫', school:'學堂', blacksmith:'鐵匠鋪', bakery:'麵包坊', dock:'碼頭', lighthouse:'燈塔', plaza:'廣場' };
+function locName(world, id) {
+    if (!id) return '';
+    const themed = (typeof TOWN_THEMES !== 'undefined' && TOWN_THEMES[world?.townTheme || 'frontier']?.locationNames?.[id]);
+    return themed || world?.townMap?.locations?.[id]?.name || LOC_LABELS[id] || String(id).replace(/_/g, ' ');
+}
 // v6.17.0 B1 第一步:規則式記憶改成「模板 key + 參數」存檔(k/p),顯示時依當下語言重新翻譯;
 // content 仍照建立當下的語言存一份(舊存檔、LLM 提示詞與檢索的 bigram 都照舊用它)
 class MemoryEntry {
@@ -113,9 +122,9 @@ class MemoryEntry {
         if (this._tl !== L) { this._tx = Memory.render(this.k, this.p); this._tl = L; }
         return this._tx;
     }
-    toDict() {
-        return { tick:this.tick, time:this.timeStr, category:this.category, content:this.text(),
-                 importance:this.importance, related_agents:this.relatedAgents, ...(this.k ? { k:this.k, p:this.p } : {}) };
+    toDict(forSave = false) { // v6.19.0 存檔版只存 k/p(content 讀檔時再算),UI 版只給當下語言的 content;避免存檔與 getState 存兩份
+        if (forSave) return { tick:this.tick, time:this.timeStr, category:this.category, importance:this.importance, related_agents:this.relatedAgents, ...(this.k ? { k:this.k, p:this.p } : { content:this.content }) };
+        return { tick:this.tick, time:this.timeStr, category:this.category, content:this.text(), importance:this.importance, related_agents:this.relatedAgents };
     }
 }
 
@@ -123,13 +132,17 @@ class Memory {
     constructor(capacity = 120) { this.entries = []; this.capacity = capacity; } // v5.99.0 500→120(B12 存檔體積;讀取端最多只取最近 10–20 筆)
     static render(k, p) {
         let s = t(k);
-        for (const [name, v] of Object.entries(p || {})) s = s.split('{' + name + '}').join(typeof v === 'string' ? t(v) : String(v ?? ''));
-        return s;
+        for (const [name, v] of Object.entries(p || {})) s = s.split('{' + name + '}').join(v && typeof v === 'object' && v.k ? Memory.render(v.k, v.p) : (typeof v === 'string' ? t(v) : String(v ?? '')));
+        return s; // v6.19.0 參數可以是巢狀模板 {k,p}(規則式對話摘要塞進「與X交談：{summary}」)
     }
     add(tick, timeStr, category, content, importance = 5, relatedAgents = [], k = null, p = null) {
+        if (k && !content) content = Memory.render(k, p); // v6.19.0 存檔不帶 content,讀檔時依當下語言算一次
         this.entries.push(new MemoryEntry(tick, timeStr, category, content, importance, relatedAgents, k, p));
         if (this.entries.length > this.capacity) this.entries = this.entries.slice(-this.capacity);
+        const cap = Memory.CATEGORY_CAP[category]; // v6.19.0 B12:對話摘要/觀察這類低重要度、量又大的記憶各自設上限(存檔體積;讀取端只取最近 10–20 筆)
+        if (cap) { let n = 0; for (let i = this.entries.length - 1; i >= 0; i--) { if (this.entries[i].category === category && ++n > cap) { this.entries.splice(i, 1); } } }
     }
+    static CATEGORY_CAP = { conversation: 40, observation: 20 };
     addT(tick, timeStr, category, k, p, importance = 5, relatedAgents = []) { // v6.17.0 模板版:content 用當下語言算一次,k/p 一起存
         this.add(tick, timeStr, category, Memory.render(k, p), importance, relatedAgents, k, p);
     }
@@ -175,7 +188,7 @@ class Memory {
         if (!recent.length) return t('沒有近期記憶。');
         return recent.map(m => `- [${m.timeStr}] ${m.content}`).join('\n');
     }
-    toDict() { return this.entries.slice(-this.capacity).map(e => e.toDict()); }
+    toDict(forSave = false) { return this.entries.slice(-this.capacity).map(e => e.toDict(forSave)); } // v6.19.0 forSave=true 只存 k/p
 }
 
 // --- Relationships ---
@@ -939,10 +952,10 @@ class Agent {
             const delay = randInt(2, 5);
             this._pendingHangout = { location: spot, activity: hangoutActivity, tick: delay, withAgent: target.name };
             target._pendingHangout = { location: spot, activity: hangoutActivity, tick: delay, withAgent: this.name };
-            const desc = `${this.name}${t('約了')}${target.name}${t('一起去')}${spot.replace(/_/g,' ')}`;
-            world.logMessage('social', desc, this.name, target.name);
-            this.memory.add(world.tickCount, world.clock.timeStr, 'social', desc, 5, [target.name]);
-            target.memory.add(world.tickCount, world.clock.timeStr, 'social', desc, 5, [this.name]);
+            const descT = tpl('{me}約了{target}一起去{spot}', { me: this.name, target: target.name, spot: locName(world, spot) }); // v6.19.0 模板＋地點顯示名
+            world.logMessageT('social', '{d}', { d: descT }, this.name, target.name);
+            this.memory.addT(world.tickCount, world.clock.timeStr, 'social', descT.k, descT.p, 5, [target.name]);
+            target.memory.addT(world.tickCount, world.clock.timeStr, 'social', descT.k, descT.p, 5, [this.name]);
         }
 
         // Conversation

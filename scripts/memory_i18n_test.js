@@ -21,7 +21,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     const before = a.memory.entries.length; try { w._feudTick?.(); } catch (e) {}
     const zh = a.memory.toDict().slice(-3).map(m => m.content); o.zh = zh;
     ck(zh[0] === `和${b.name}一起看星星，很浫漫。`.replace('浫', '浪') && zh[1] === `我和${b.name}開始交往了！` && zh[2] === `${b.name}請我吃了一碗麵。`, 'zh render ' + JSON.stringify(zh));
-    const dict = a.memory.toDict().slice(-3); ck(dict[0].k === '和{companion}一起看星星，很浪漫。' && dict[0].p.companion === b.name && !dict[2].k, 'toDict k/p');
+    const dict = a.memory.toDict(true).slice(-3); o.dict = dict; ck(dict[0].k === '和{companion}一起看星星，很浪漫。' && dict[0].p.companion === b.name && !dict[0].content && !dict[2].k && dict[2].content, 'toDict(true) k/p'); ck(!('k' in a.memory.toDict().slice(-1)[0]), 'toDict() UI has no k');
     // 2) 切英文:同一批記憶要變英文,舊式的維持中文
     I18N.setLang('en'); const enName = I18N.localizeName(b.name);
     const en = a.memory.toDict().slice(-3).map(m => m.content); o.en = en; o.enName = enName;
@@ -32,7 +32,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     I18N.setLang('zh'); o.backZh = enMade.text(); ck(o.backZh === `我和${a.name}分手了。` && enMade.content !== o.backZh, 'back to zh ' + o.backZh);
     // 4) 存讀檔保留 k/p;舊存檔(拿掉 k/p)照舊顯示 content
     const save = JSON.parse(JSON.stringify(w.serialize())); const W = new World(); W.loadSave(save); const A2 = W.agents[a.agentId];
-    const e2 = A2.memory.entries.filter(e => e.k); o.reloadK = e2.length; ck(e2.length >= 2 && e2[0].p && A2.memory.entries.some(e => !e.k), 'reload k/p');
+    const e2 = A2.memory.entries.filter(e => e.k); o.reloadK = e2.length; ck(e2.length >= 2 && e2[0].p && e2[0].content && A2.memory.entries.some(e => !e.k), 'reload k/p');
     I18N.setLang('en'); ck(A2.memory.toDict().some(m => m.content === `Watched the stars with ${enName}. Very romantic.`), 'reload renders en'); I18N.setLang('zh');
     const legacy = JSON.parse(JSON.stringify(save)); Object.values(legacy.agents || {}).forEach(ad => (ad.memory || []).forEach(m => { delete m.k; delete m.p; })); const W3 = new World(); W3.loadSave(legacy);
     ck(W3.agents[a.agentId].memory.entries.every(e => !e.k) && W3.agents[a.agentId].memory.entries.slice(-1)[0].content === zh[2], 'legacy save');
@@ -50,12 +50,24 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     const lz = w.getState().recent_messages.slice(-2).map(m => m.content); o.logZh = lz;
     ck(lz[0] === `${a.name}和${b.name}開始交往了！` && lz[1] === `${a.name}今天心情不錯。`, 'log zh ' + JSON.stringify(lz));
     I18N.setLang('en'); const le = w.getState().recent_messages.slice(-2); o.logEn = le.map(m => m.content);
-    ck(le[0].content === `${I18N.localizeName(a.name)} and ${enName} started dating!` && le[1].content === lz[1] && le[0]._tx === undefined && le[0].k, 'log en ' + JSON.stringify(o.logEn));
-    const save2 = JSON.parse(JSON.stringify(w.serialize())); const ml = save2.messageLog.slice(-2); ck(ml[0].k && ml[0].p && ml[0].p.agent === a.name && !('_tx' in ml[0]) && !ml[1].k, 'log serialize k/p');
+    ck(le[0].content === `${I18N.localizeName(a.name)} and ${enName} started dating!` && le[1].content === lz[1] && le[0]._tx === undefined && !('k' in le[0]), 'log en ' + JSON.stringify(o.logEn));
+    const save2 = JSON.parse(JSON.stringify(w.serialize())); const ml = save2.messageLog.slice(-2); ck(ml[0].k && ml[0].p && ml[0].p.agent === a.name && !('_tx' in ml[0]) && !('content' in ml[0]) && !ml[1].k && ml[1].content, 'log serialize k/p');
     const W4 = new World(); W4.loadSave(save2); const m4 = W4.messageLog.filter(m => m.k && m.p && m.p.agent === a.name).slice(-1)[0]; o.m4 = m4; ck(m4 && World.logText(m4) === le[0].content, 'log reload renders en ' + JSON.stringify(m4));
     I18N.setLang('zh'); ck(m4 && World.logText(m4) === lz[0], 'log reload renders zh');
-    // 真實系統路徑:看星星(sim-agent)走 logMessageT
-    const before2 = w.messageLog.length; try { a._stargaze?.(w, b); } catch (e) {}
+    // 8) v6.19.0 規則式對話摘要:巢狀模板,中英都不混
+    const cjk = /[\u4e00-\u9fff]/;
+    const rA = a.relationships.getOrCreate(b.agentId, b.name), rB = b.relationships.getOrCreate(a.agentId, a.name); rA.affinity = 30; rB.affinity = 30;
+    const dlg = w.conversationEngine._generatePersonalityDialogue(a, b, w, rA, rB);
+    o.summaryT = dlg._summaryT; o.summary = dlg._summary;
+    ck(dlg._summaryT && dlg._summaryT.k && typeof dlg._summary === 'string' && dlg._summary.length > 0, 'rule summary tpl ' + JSON.stringify(dlg._summaryT));
+    I18N.setLang('en'); const enSum = Memory.render(dlg._summaryT.k, dlg._summaryT.p); o.enSum = enSum; ck(!cjk.test(enSum) && enSum.length > 10, 'rule summary en ' + enSum); I18N.setLang('zh');
+    ck(!/[a-z]{3,}/.test(dlg._summary) || /[\u4e00-\u9fff]/.test(dlg._summary), 'zh summary has no raw location id ' + dlg._summary);
+    // 跑一天,英文模式下 conversation 類日誌與記憶不該有中文(規則式;無 LLM)
+    w.paused = false; for (let i = 0; i < 96; i++) { try { w.tick(); } catch (e) {} } w.paused = true;
+    I18N.setLang('en'); const conv = w.getState().recent_messages.filter(m => m.type === 'conversation'); const convZh = conv.filter(m => cjk.test(m.content)).length;
+    const memConv = []; for (const ag of Object.values(w.agents)) for (const e of ag.memory.entries) if (e.category === 'conversation' && e.k && cjk.test(e.text())) memConv.push(e.text().slice(0, 40));
+    o.dayConv = { total: conv.length, zh: convZh, memZh: memConv.length, sample: memConv.slice(0, 3) }; ck(conv.length > 0 && convZh === 0 && memConv.length === 0, 'day conversation en ' + JSON.stringify(o.dayConv));
+    I18N.setLang('zh');
     o.fails = fails; return o;
   });
   console.log(JSON.stringify(out)); if (out.fails.length) { console.log('FAIL', out.fails); process.exitCode = 1; }

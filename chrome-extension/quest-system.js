@@ -1636,7 +1636,7 @@ class QuestSystem {
             if (sq.status === 'locked') {
                 if (this._checkSideQuestTrigger(sqDef, world)) {
                     sq.status = 'active';
-                    world.logMessage?.('quest', `📜 ${t('支線任務解鎖')}：「${sqDef.title}」`);
+                    world.logMessageT?.('quest', '📜 支線任務解鎖：「{title}」', { title: sqDef.title });
                     if (sqDef.story) {
                         world.logMessage?.('quest', `📖 ${sqDef.story}`);
                     }
@@ -1701,7 +1701,7 @@ class QuestSystem {
         }
         try { this._applyEffects(sqDef.effects, world); } catch (e) {} // v5.84.0
         try { world.growth?.addXp(15, 'side_quest', world); } catch (e) {} // v5.94.0 經驗
-        world.logMessage?.('quest', `✨ ${t('支線任務完成')}：「${sqDef.title}」！`);
+        world.logMessageT?.('quest', '✨ 支線任務完成：「{title}」！', { title: sqDef.title });
         if (sqDef.onComplete) {
             world.logMessage?.('quest', `📖 ${sqDef.onComplete}`);
         }
@@ -1741,7 +1741,7 @@ class QuestSystem {
                     }
                 }
             }
-            world.logMessage?.('quest', `⭐ ${t('每日目標完成')}：${objDef.icon} ${objDef.text}！`);
+            world.logMessageT?.('quest', '⭐ 每日目標完成：{icon} {text}！', { icon: objDef.icon, text: objDef.text });
         }
     }
 
@@ -1769,7 +1769,7 @@ class QuestSystem {
             if (this._checkStoryEventTrigger(event, world)) {
                 this.triggeredStoryEvents.push(event.id);
                 this._pendingStoryEvent = event;
-                world.logMessage?.('event', `${event.icon} 【${event.title}】${event.text}`);
+                world.logMessageT?.('event', '{icon} 【{title}】{text}', { icon: event.icon, title: event.title, text: event.text });
                 break; // Only one story event per tick
             }
         }
@@ -1939,7 +1939,7 @@ class QuestSystem {
                     next.status = 'active';
                     const nextDef = this._main().find(q => q.id === nextId);
                     if (nextDef) {
-                        world.logMessage?.('quest', `📜 ${t('新任務解鎖')}：「${nextDef.title}」`);
+                        world.logMessageT?.('quest', '📜 新任務解鎖：「{title}」', { title: nextDef.title });
                     }
 
                     // If crisis quest, roll crisis type
@@ -2382,7 +2382,7 @@ class RequestBoard {
         this.ap.freeFirst = !!g?.has('earlybird'); // v5.94.0 天賦:早起
         this.ap.left = this.ap.max; this.ap.bought = 0;
         this._generate(world);
-        world.logMessage?.('quest', `📋 ${t('今日委託')}：${this.board.filter(r => r.status === 'open').length} ${t('件')}，${t('行動點')} ${this.ap.left}`);
+        world.logMessageT?.('quest', '📋 今日委託：{n} 件，行動點 {ap}', { n: this.board.filter(r => r.status === 'open').length, ap: this.ap.left }); // v6.19.0
     }
     _generate(world) {
         const vs = this._villagers(world); if (vs.length < 3) return;
@@ -2611,7 +2611,7 @@ class RequestBoard {
         r.status = 'failed'; this.stats.failed++;
         const npc = world.agents[r.npcId]; const pname = this._playerName(world);
         if (npc) { const rel = npc.relationships.getOrCreate('player', pname); rel.modifyAffinity?.(idx > 0 ? -1 : (world.growth?.has('grit') ? -2 : -3)); if (idx === 0) npc.memory?.add?.(world.tickCount, world.clock.timeStr, 'neglect', `${t('拜託')}${pname}${t('的事沒有下文：')}${this.describe(r)}`, 5, [pname]); }
-        world.logMessage?.('quest', `⌛ ${t('委託過期')}：${this.describe(r)}`);
+        world.logMessageT?.('quest', '⌛ 委託過期：{d}', { d: this.describe(r) }); // v6.19.0
         if (r.chainKey && this.chain && this.chain.key === r.chainKey && (r.chainStep ?? this.chain.step) === this.chain.step) this._chainBreak(world); // v6.5.0;v6.10.1 心結鏈第三步的 npcId 是對方,改比 key＋step
     }
     // ===== v6.5.0 委託鏈 =====
