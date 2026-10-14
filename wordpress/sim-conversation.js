@@ -25,47 +25,43 @@ class GossipNetwork {
     constructor() { this.activeGossip = []; }
     // v5.3.0 針對真實關係事件生成「有內容」的八卦(取代空泛的「八卦了全鎮的事」)
     createRelGossip(world, kind, a, b, extra) {
+        const P = { a: a.name, b: b.name }; // v6.20.0 八卦內容存模板(contentT),切語言後記憶/日誌跟著翻;content 仍存建立當下的文字
         const templates = {
-            crush:   [`${t('欸你有沒有發現,')}${a.name}${t('看')}${b.name}${t('的眼神不太一樣...')}`,
-                      `${t('我猜')}${a.name}${t('對')}${b.name}${t('有意思,不然幹嘛老是找藉口靠近!')}`],
-            jealous: [`${t('聽說')}${a.name}${t('最近超針對')}${b.name}${t('的,好像是為了')}${extra || t('某個人')}${t('...')}`,
-                      `${a.name}${t('跟')}${b.name}${t('之間氣氛好僵,是在吃醋吧?')}`],
-            newCouple:[`${t('天大的消息!')}${a.name}${t('和')}${b.name}${t('在一起了!')}`,
-                      `${a.name}${t('跟')}${b.name}${t('湊成一對了,大家都說很配!')}`],
-            rivalry: [`${a.name}${t('和')}${b.name}${t('鬧翻了,見面都不講話...')}`,
-                      `${t('你敢信嗎?')}${a.name}${t('跟')}${b.name}${t('現在是死對頭了。')}`],
+            crush:   [tpl('欸你有沒有發現,{a}看{b}的眼神不太一樣...', P), tpl('我猜{a}對{b}有意思,不然幹嘛老是找藉口靠近!', P)],
+            jealous: [tpl('聽說{a}最近超針對{b}的,好像是為了{x}...', { ...P, x: extra || '某個人' }), tpl('{a}跟{b}之間氣氛好僵,是在吃醋吧?', P)],
+            newCouple:[tpl('天大的消息!{a}和{b}在一起了!', P), tpl('{a}跟{b}湊成一對了,大家都說很配!', P)],
+            rivalry: [tpl('{a}和{b}鬧翻了,見面都不講話...', P), tpl('你敢信嗎?{a}跟{b}現在是死對頭了。', P)],
         };
         const pool = templates[kind]; if (!pool) return null;
-        const content = pickRandom(pool);
-        const gossip = { about: a.name, content, source: t('鎮民'), spreadCount: 0, tickCreated: world.tickCount, isTrue: true, kind, juicy: true };
+        const contentT = pickRandom(pool); const content = Memory.render(contentT.k, contentT.p);
+        const gossip = { about: a.name, content, contentT, source: t('鎮民'), spreadCount: 0, tickCreated: world.tickCount, isTrue: true, kind, juicy: true };
         this.activeGossip.push(gossip);
         if (this.activeGossip.length > 10000) this.activeGossip = this.activeGossip.slice(-10000);
         // 直接進八卦頭條 & 每日報
-        world.logMessage('gossip', `🗞️ ${content}`, a.name, b.name);
+        world.logMessageT('gossip', '🗞️ {content}', { content: contentT }, a.name, b.name); // v6.20.0 模板
         if (world.dailyNews) world.dailyNews.collectEvent('gossip', content, kind === 'newCouple' ? 7 : 5, [a.name, b.name]);
         return gossip;
     }
     createGossip(source, about, world) {
         const rel = source.relationships.getOrCreate(about.agentId, about.name);
-        const templates = [];
-        if (rel.romanticInterest > 40) templates.push(`${t('你不覺得')}${about.name}${t('挺有魅力的嗎？')}`);
-        if (rel.affinity < -10) templates.push(`${t('說真的，')}${about.name}${t('最近行為很奇怪。')}`);
-        if (about.mood < -20) templates.push(`${t('你有注意到')}${about.name}${t('最近看起來很低落嗎？')}`);
-        if (about.mood > 50) templates.push(`${about.name}${t('最近心情超好的！')}`);
+        const templates = []; const P = { who: about.name }; // v6.20.0 模板
+        if (rel.romanticInterest > 40) templates.push(tpl('你不覺得{who}挺有魅力的嗎？', P));
+        if (rel.affinity < -10) templates.push(tpl('說真的，{who}最近行為很奇怪。', P));
+        if (about.mood < -20) templates.push(tpl('你有注意到{who}最近看起來很低落嗎？', P));
+        if (about.mood > 50) templates.push(tpl('{who}最近心情超好的！', P));
         const ri = about.relationships.getRomanticInterests();
-        if (ri.length) templates.push(`${t('聽說')}${about.name}${t('好像對')}${pickRandom(ri).targetName}${t('有意思！')}`);
+        if (ri.length) templates.push(tpl('聽說{who}好像對{other}有意思！', { ...P, other: pickRandom(ri).targetName }));
         const partner = about.relationships.getPartner();
         if (partner) {
-            if (partner.status === 'dating') templates.push(`${about.name}${t('和')}${partner.targetName}${t('在交往呢，你知道嗎？')}`);
-            if (partner.status === 'married') templates.push(`${about.name}${t('和')}${partner.targetName}${t('的婚姻生活不知道怎麼樣？')}`);
-            if (partner.isCheating) templates.push(`${t('我好像看到')}${about.name}${t('背著')}${partner.targetName}${t('跟別人在一起⋯⋯')}`);
+            if (partner.status === 'dating') templates.push(tpl('{who}和{other}在交往呢，你知道嗎？', { ...P, other: partner.targetName }));
+            if (partner.status === 'married') templates.push(tpl('{who}和{other}的婚姻生活不知道怎麼樣？', { ...P, other: partner.targetName }));
+            if (partner.isCheating) templates.push(tpl('我好像看到{who}背著{other}跟別人在一起⋯⋯', { ...P, other: partner.targetName }));
         }
-        const aboutPartner = about.relationships.getPartner();
         const cheatingRels = Object.values(about.relationships.relationships).filter(r => r.isCheating);
-        if (cheatingRels.length) templates.push(`${t('你聽說了嗎？')}${about.name}${t('好像在劈腿⋯⋯')}`);
-        if (!templates.length) templates.push(`${t('你聽說')}${about.name}${t('昨天在做什麼嗎？')}`);
-        const content = pickRandom(templates);
-        const gossip = { about:about.name, content, source:source.name, spreadCount:0, tickCreated:world.tickCount, isTrue:Math.random()>0.2 };
+        if (cheatingRels.length) templates.push(tpl('你聽說了嗎？{who}好像在劈腿⋯⋯', P));
+        if (!templates.length) templates.push(tpl('你聽說{who}昨天在做什麼嗎？', P));
+        const contentT = pickRandom(templates); const content = Memory.render(contentT.k, contentT.p);
+        const gossip = { about:about.name, content, contentT, source:source.name, spreadCount:0, tickCreated:world.tickCount, isTrue:Math.random()>0.2 };
         this.activeGossip.push(gossip);
         if (this.activeGossip.length > 10000) this.activeGossip = this.activeGossip.slice(-10000);
         return gossip;
@@ -80,18 +76,15 @@ class GossipNetwork {
         // v5.2.0/5.3.0 傳話遊戲:謠言誇張化只做一次,不重複堆疊
         if (!gossip._mutated && gossip.spreadCount >= 2 && Math.random() < 0.4) {
             gossip._mutated = true;
-            const wraps = [
-                (c) => `${t('我跟你說,')}${c}${t('而且好像不只這樣...')}`,
-                (c) => `${t('千真萬確!')}${c}`,
-                (c) => `${c}${t('聽說整條街都知道了!')}`,
-            ];
-            gossip.content = pickRandom(wraps)(gossip.content);
+            const wrapKey = pickRandom(['我跟你說,{c}而且好像不只這樣...', '千真萬確!{c}', '{c}聽說整條街都知道了!']); // v6.20.0 巢狀模板
+            if (gossip.contentT) { gossip.contentT = tpl(wrapKey, { c: gossip.contentT }); gossip.content = Memory.render(gossip.contentT.k, gossip.contentT.p); }
+            else gossip.content = Memory.render(wrapKey, { c: gossip.content });
         }
-        listener.memory.add(world.tickCount, world.clock.timeStr, 'social',
-            `${speaker.name}${t('告訴我：「')}${gossip.content}${t('」')}`, 4, [speaker.name, gossip.about]);
+        const gc = gossip.contentT || gossip.content; // v6.20.0 有模板就塞模板
+        listener.memory.addT(world.tickCount, world.clock.timeStr, 'social', '{speaker}告訴我：「{content}」', { speaker: speaker.name, content: gc }, 4, [speaker.name, gossip.about]);
         // v5.3.0 只有「有內容」且還算新鮮(傳不到 3 手)的八卦才進頭條,避免同一則洗版
         if (gossip.juicy && gossip.spreadCount <= 3) {
-            world.logMessage('gossip', `🗣️ ${speaker.name}${t('偷偷說：「')}${gossip.content}${t('」')}`, speaker.name, listener.name);
+            world.logMessageT('gossip', '🗣️ {speaker}偷偷說：「{content}」', { speaker: speaker.name, content: gc }, speaker.name, listener.name);
         }
         // v5.2.0 傳到第 4 手,當事人聽到了 → 對質
         if (gossip.spreadCount >= 4 && !gossip._confronted) {
@@ -106,7 +99,7 @@ class GossipNetwork {
         const subject = Object.values(world.agents).find(a => a.name === gossip.about);
         if (!subject || subject.isPlayer) return;
         const source = Object.values(world.agents).find(a => a.name === gossip.source);
-        const negative = gossip.tone === 'diss' || !gossip.isTrue || /奇怪|劈腿|背著|懶散/.test(gossip.content);
+        const negative = gossip.tone === 'diss' || !gossip.isTrue || /奇怪|劈腿|背著|懶散/.test(gossip.contentT ? JSON.stringify(gossip.contentT) : gossip.content); // v6.20.0 英文模式也看得到中文 key
         const positive = gossip.tone === 'praise';
         if (source && source.isPlayer) {
             // 玩家是造謠源頭!
@@ -114,22 +107,22 @@ class GossipNetwork {
             if (positive) {
                 relToPlayer.modifyAffinity(6);
                 subject.addThought('praised', world, source.agentId, source.name); // v5.15.0 被公開稱讚
-                subject.memory.add(world.tickCount, world.clock.timeStr, 'social', `${t('聽說')}${source.name}${t('到處誇我,真開心!')}`, 6, [source.name]);
+                subject.memory.addT(world.tickCount, world.clock.timeStr, 'social', '聽說{source}到處誇我,真開心!', { source: source.name }, 6, [source.name]);
                 source.chatHistory?.push?.({ speaker: subject.name, target: source.name, text: t('欸,我聽說你到處跟人誇我?哈哈,謝啦,請你喝一杯!'), time: world.clock.timeStr });
-                world.logMessage('gossip', `💐 ${subject.name}${t('聽到了')}${playerTitle(world)}${t('的美言,好感大增!')}`, subject.name);
+                world.logMessageT('gossip', '💐 {subject}聽到了{v}的美言,好感大增!', { subject: subject.name, v: playerTitle(world) }, subject.name);
             } else if (negative) {
                 relToPlayer.modifyAffinity(-12); relToPlayer.modifyTrust(-10);
                 subject.addThought('slandered', world, source.agentId, source.name); // v5.15.0 被說壞話
-                subject.memory.add(world.tickCount, world.clock.timeStr, 'social', `${t('居然是')}${source.name}${t('在背後說我壞話...太過分了。')}`, 8, [source.name]);
+                subject.memory.addT(world.tickCount, world.clock.timeStr, 'social', '居然是{source}在背後說我壞話...太過分了。', { source: source.name }, 8, [source.name]);
                 source.chatHistory?.push?.({ speaker: subject.name, target: source.name, text: t('我都聽說了。你在背後那樣說我?虧我還這麼信任你。'), time: world.clock.timeStr });
-                world.logMessage('gossip', `💢 ${subject.name}${t('發現')}${source.name}${t('在背後說他壞話,關係惡化!')}`, subject.name);
+                world.logMessageT('gossip', '💢 {subject}發現{source}在背後說他壞話,關係惡化!', { subject: subject.name, source: source.name }, subject.name);
             }
             if (world.conversationEngine?.onNpcMessage) world.conversationEngine.onNpcMessage(subject.agentId);
         } else if (source && negative && source !== subject) {
             const relA = subject.relationships.getOrCreate(source.agentId, source.name);
             const relB = source.relationships.getOrCreate(subject.agentId, subject.name);
             relA.modifyAffinity(-12); relB.modifyAffinity(-8);
-            world.logMessage('gossip', `💢 ${subject.name}${t('聽到了')}${source.name}${t('散布的謠言,當面對質!兩人關係惡化')}`, subject.name, source.name);
+            world.logMessageT('gossip', '💢 {subject}聽到了{source}散布的謠言,當面對質!兩人關係惡化', { subject: subject.name, source: source.name }, subject.name, source.name);
             if (world.dailyNews) world.dailyNews.collectEvent('drama', `${subject.name}${t('為了謠言找')}${source.name}${t('對質!')}`, 7, [subject.name, source.name]);
             // 當事人在鎮民動態發文澄清
             world.townFeed?.addPost(world, subject, pickRandom([
@@ -144,28 +137,29 @@ class GossipNetwork {
             if (other && !subject.isPlayer && !other.isPlayer && !subject.relationships.getPartner() && !other.relationships.getPartner()) {
                 subject.relationships.getOrCreate(other.agentId, other.name).modifyRomantic(randInt(3, 6));
                 other.relationships.getOrCreate(subject.agentId, subject.name).modifyRomantic(randInt(3, 6));
-                world.logMessage('gossip', `💘 ${t('被大家起鬨之後,')}${subject.name}${t('和')}${gossip.shipWith}${t('好像真的開始注意彼此了...')}`, subject.name);
+                world.logMessageT('gossip', '💘 被大家起鬨之後,{subject}和{shipWith}好像真的開始注意彼此了...', { subject: subject.name, shipWith: gossip.shipWith }, subject.name);
             }
         }
     }
 
     // v5.2.0 玩家放話:把八卦丟進謠言網路
     playerSeedGossip(world, player, listener, about, tone, shipWith) {
+        const P = { who: about.name }; // v6.20.0 模板
         const templates = {
-            praise: [`${about.name}${t('最近超罩的,大家都該學學!')}`, `${t('我覺得')}${about.name}${t('是鎮上最可靠的人。')}`],
-            diss: [`${about.name}${t('最近很懶散,大家小心點...')}`, `${t('說真的,')}${about.name}${t('私底下跟表面不太一樣喔...')}`],
-            ship: [`${about.name}${t('和')}${shipWith || ''}${t('是不是有什麼?我看他們常常眉來眼去...')}`],
+            praise: [tpl('{who}最近超罩的,大家都該學學!', P), tpl('我覺得{who}是鎮上最可靠的人。', P)],
+            diss: [tpl('{who}最近很懶散,大家小心點...', P), tpl('說真的,{who}私底下跟表面不太一樣喔...', P)],
+            ship: [tpl('{who}和{other}是不是有什麼?我看他們常常眉來眼去...', { ...P, other: shipWith || '' })],
         };
-        const content = pickRandom(templates[tone] || templates.praise);
+        const contentT = pickRandom(templates[tone] || templates.praise); const content = Memory.render(contentT.k, contentT.p);
         const gossip = {
-            about: about.name, content, source: player.name, spreadCount: 1,
+            about: about.name, content, contentT, source: player.name, spreadCount: 1,
             tickCreated: world.tickCount, isTrue: tone === 'praise', tone,
             shipWith: shipWith || null,
         };
         this.activeGossip.push(gossip);
         if (this.activeGossip.length > 10000) this.activeGossip = this.activeGossip.slice(-10000);
-        listener.memory.add(world.tickCount, world.clock.timeStr, 'social', `${player.name}${t('偷偷跟我說:「')}${content}${t('」')}`, 5, [player.name, about.name]);
-        world.logMessage('gossip', `🗣️ ${playerTitle(world)}${t('偷偷向')}${listener.name}${t('爆料了')}${about.name}${t('的事...')}`, player.name, listener.name);
+        listener.memory.addT(world.tickCount, world.clock.timeStr, 'social', '{player}偷偷跟我說:「{content}」', { player: player.name, content: contentT }, 5, [player.name, about.name]);
+        world.logMessageT('gossip', '🗣️ {v}偷偷向{listener}爆料了{about}的事...', { v: playerTitle(world), listener: listener.name, about: about.name }, player.name, listener.name);
         return gossip;
     }
 }
@@ -364,8 +358,8 @@ ${LLM_LANG.rule(t('【規則】繁體中文(台灣用語)。只輸出 JSON,不�
             const key = `${world.clock.year}-${world.clock.season}-${world.clock.day}`;
             const merged = [...past, ...fresh];
             npc.dailyPlan = { key, goals: merged.map(b => `${b.time} ${b.text}`), blocks: merged, llm: true, replanned: true };
-            npc.memory.add(world.tickCount, world.clock.timeStr, 'plan', `${t('因為「')}${shortReason.slice(0, 40)}${t('」,我改變了今天接下來的安排。')}`, 5, []);
-            world.logMessage('thought', `📝 ${npc.name}${t('臨時改變了今天的安排')}`, npc.name);
+            npc.memory.addT(world.tickCount, world.clock.timeStr, 'plan', '因為「{v}」,我改變了今天接下來的安排。', { v: shortReason.slice(0, 40) }, 5, []);
+            world.logMessageT('thought', '📝 {npc}臨時改變了今天的安排', { npc: npc.name }, npc.name);
         } catch (e) { console.warn('[RimTown] replan failed:', e); }
     }
 
@@ -402,40 +396,40 @@ ${LLM_LANG.rule(t('【規則】繁體中文(台灣用語)。只輸出 JSON,不�
                 const [topName] = top;
                 const rel = Object.values(npc.relationships.relationships).find(r => r.targetName === topName);
                 const aff = rel ? rel.affinity : 0;
-                let text;
-                if (rel && (rel.status === 'dating' || rel.status === 'married')) text = pickRandom([`${t('最近和')}${topName}${t('的感情越來越深了。')}`, `${t('有')}${topName}${t('在身邊的日子,連工作都不覺得累。')}`]);
-                else if (aff > 40) text = pickRandom([`${t('我最近跟')}${topName}${t('走得很近，有這樣的朋友真好。')}`, `${topName}${t('這個人,值得深交。')}`]);
-                else if (aff < -20) text = pickRandom([`${topName}${t('最近老是跟我過不去，想到就煩。')}`, `${t('再讓')}${topName}${t('這樣下去,我遲早要跟他攤牌。')}`]);
-                else text = `${t('最近常碰到')}${topName}${t('，這人比我想的有意思。')}`;
+                let text; // v6.19.0 模板:切語言後跟著翻
+                if (rel && (rel.status === 'dating' || rel.status === 'married')) text = pickRandom([tpl('最近和{who}的感情越來越深了。', { who: topName }), tpl('有{who}在身邊的日子,連工作都不覺得累。', { who: topName })]);
+                else if (aff > 40) text = pickRandom([tpl('我最近跟{who}走得很近，有這樣的朋友真好。', { who: topName }), tpl('{who}這個人,值得深交。', { who: topName })]);
+                else if (aff < -20) text = pickRandom([tpl('{who}最近老是跟我過不去，想到就煩。', { who: topName }), tpl('再讓{who}這樣下去,我遲早要跟他攤牌。', { who: topName })]);
+                else text = tpl('最近常碰到{who}，這人比我想的有意思。', { who: topName });
                 const dup = npc.memory.entries.some(e => e.category === 'reflection' && e.tick >= since && e.relatedAgents.includes(topName));
-                if (!dup) npc.memory.add(world.tickCount, world.clock.timeStr, 'reflection', text, 6, [topName]);
+                if (!dup) npc.memory.addT(world.tickCount, world.clock.timeStr, 'reflection', text.k, text.p, 6, [topName]);
             }
             // v5.35.0 規則式想法 2:生活面(夢想/暗戀/需求/天氣/祭典),每天最多一條
             try {
                 const lifePool = [];
                 const goal = world.lifeGoals?.getGoal?.(npc.agentId);
                 const def = goal && !goal.done && typeof LIFE_GOALS !== 'undefined' ? LIFE_GOALS[goal.goalId] : null;
-                if (def) lifePool.push(`${t('離「')}${def.name}${t('」還有多遠呢...但我不會停下來的。')}`, `${t('夜裡想起我的夢想:')}${def.stages[goal.stage] || ''}${t('。明天再往前一步吧。')}`);
+                if (def) lifePool.push(tpl('離「{def}」還有多遠呢...但我不會停下來的。', { def: def.name }), tpl('夜裡想起我的夢想:{stage}。明天再往前一步吧。', { stage: def.stages[goal.stage] || '' })); // v6.19.0 模板
                 const crush = npc.relationships.getRomanticInterests().filter(r => !r.status)[0];
-                if (crush) lifePool.push(`${t('今天又想起')}${crush.targetName}${t('...我到底在期待什麼呢。')}`, `${t('要是能跟')}${crush.targetName}${t('多說上幾句話就好了。')}`);
-                if (npc.needs.social < 35) lifePool.push(t('好久沒跟人好好說話了,心裡悶悶的。'));
-                if (world.weather?.current?.type === 'rain' || world.weather?.current?.type === 'storm') lifePool.push(t('聽著雨聲,思緒飄得很遠。'));
-                if (world.festivals?.activeFestival) lifePool.push(`${world.festivals.activeFestival.name}${t('的熱鬧還在耳邊,好日子總是過得快。')}`);
-                if (npc.personality.traits.includes('gossip')) lifePool.push(t('今天聽到的八卦,不知道是真是假...明天再打聽打聽。'));
+                if (crush) lifePool.push(tpl('今天又想起{who}...我到底在期待什麼呢。', { who: crush.targetName }), tpl('要是能跟{who}多說上幾句話就好了。', { who: crush.targetName }));
+                if (npc.needs.social < 35) lifePool.push(tpl('好久沒跟人好好說話了,心裡悶悶的。'));
+                if (world.weather?.current?.type === 'rain' || world.weather?.current?.type === 'storm') lifePool.push(tpl('聽著雨聲,思緒飄得很遠。'));
+                if (world.festivals?.activeFestival) lifePool.push(tpl('{fest}的熱鬧還在耳邊,好日子總是過得快。', { fest: world.festivals.activeFestival.name }));
+                if (npc.personality.traits.includes('gossip')) lifePool.push(tpl('今天聽到的八卦,不知道是真是假...明天再打聽打聽。'));
                 if (lifePool.length && Math.random() < 0.5) {
-                    npc.memory.add(world.tickCount, world.clock.timeStr, 'reflection', pickRandom(lifePool), 4, []);
+                    const x = pickRandom(lifePool); npc.memory.addT(world.tickCount, world.clock.timeStr, 'reflection', x.k, x.p, 4, []);
                 }
             } catch (e) {}
             // v5.35.0 昨日印象:一條低重要度的觀察記憶,讓今日足跡/檢索有生活質感
             try {
                 const wType = world.weather?.current?.type || 'clear';
-                const obsPool = [
-                    `${t('在')}${(npc.job?.workplace || npc.homeLocation).replace(/_/g, ' ')}${t('忙了一整天,手都酸了。')}`,
-                    wType === 'rain' ? t('昨天雨下個不停,路上都是泥。') : wType === 'snow' ? t('昨天雪景很美,屋簷都白了。') : t('昨天天色不錯,鎮上人來人往。'),
-                    `${t('路過廣場時聞到烤麵包的香味,肚子咕嚕叫了。')}`,
-                    `${t('聽見酒館傳來笑聲,小鎮的日子就是這樣熱熱鬧鬧的。')}`,
+                const obsPool = [ // v6.19.0 模板;地點用顯示名
+                    tpl('在{loc}忙了一整天,手都酸了。', { loc: locName(world, npc.job?.workplace || npc.homeLocation) }),
+                    tpl(wType === 'rain' ? '昨天雨下個不停,路上都是泥。' : wType === 'snow' ? '昨天雪景很美,屋簷都白了。' : '昨天天色不錯,鎮上人來人往。'),
+                    tpl('路過廣場時聞到烤麵包的香味,肚子咕嚕叫了。'),
+                    tpl('聽見酒館傳來笑聲,小鎮的日子就是這樣熱熱鬧鬧的。'),
                 ];
-                npc.memory.add(world.tickCount, world.clock.timeStr, 'observation', pickRandom(obsPool), 2, []);
+                const ob = pickRandom(obsPool); npc.memory.addT(world.tickCount, world.clock.timeStr, 'observation', ob.k, ob.p, 2, []);
             } catch (e) {}
             const score = recent.reduce((s, e) => s + (e.importance || 5), 0);
             if (score >= 40) scored.push({ npc, recent, score });
@@ -462,7 +456,7 @@ ${LLM_LANG.rule(t('【規則】繁體中文（台灣用語），只寫一句話�
                     if (text) {
                         const related = [...new Set(recent.flatMap(m => m.relatedAgents || []))].slice(0, 3);
                         npc.memory.add(world.tickCount, world.clock.timeStr, 'reflection', text, 8, related);
-                        world.logMessage('thought', `💭 ${npc.name}${t('的內心：')}${text}`, npc.name);
+                        world.logMessageT('thought', '💭 {npc}的內心：{text}', { npc: npc.name, text }, npc.name);
                     }
                 }
             } catch (e) { console.error('[RimTown] dailyReflection LLM failed:', e); }
@@ -513,7 +507,7 @@ ${t('最後一行：')}EFFECTS: {"target": "${t('若念頭涉及某位村民寫�
         }
         // v5.45.0 蝴蝶效應:記錄耳語+對第三者的態度快照(機械漂移後),隔天回響告訴你「後續」發酵了什麼
         world.recordPlayerAction?.('whisper', thought, npc, tgt || null);
-        world.logMessage('whisper', `🤫 ${t('你在')}${npc.name}${t('耳邊低語...一個念頭在他心裡生根了。')}`, player?.name, npc.name);
+        world.logMessageT('whisper', '🤫 你在{npc}耳邊低語...一個念頭在他心裡生根了。', { npc: npc.name }, player?.name, npc.name);
         return { thought };
     }
 
@@ -618,9 +612,9 @@ ${t('- 直接寫訊息內容就好')}`;
         // Record in chat history
         player.chatHistory.push({ speaker: npc.name, target: player.name, text: npcText, time: world.clock.timeStr });
         // Record in memory
-        npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('主動傳訊息給')}${player.name}${t('：')}${npcText}`, 3, [player.name]);
+        npc.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '主動傳訊息給{player}：{npcText}', { player: player.name, npcText }, 3, [player.name]);
         // Log
-        world.logMessage('player_chat', `${npc.name} → ${player.name}: ${npcText}`, npc.name, player.name);
+        world.logMessageT('player_chat', '{npc} → {player}: {npcText}', { npc: npc.name, player: player.name, npcText }, npc.name, player.name);
         // Notify UI
         if (this.onNpcMessage) this.onNpcMessage(npc.agentId);
     }
@@ -652,7 +646,7 @@ ${LLM_LANG.rule(t('【格式】只寫一句貼文,表達此刻的心情與這個
             }
             npc.addThought(isDone ? 'dream_achieved' : 'dream_progress', world); // v5.15.0 夢想推進的喜悅
             if (world.townFeed) world.townFeed.addPost(world, npc, text);
-            npc.memory.add(world.tickCount, world.clock.timeStr, 'milestone', `${t('人生里程碑:')}${stageName}(${def.name})`, isDone ? 10 : 7, []);
+            npc.memory.addT(world.tickCount, world.clock.timeStr, 'milestone', '人生里程碑:{stageName}({def})', { stageName, def: def.name }, isDone ? 10 : 7, []);
             world.logMessage('milestone', `${def.icon} ${npc.name}${t('的夢想「')}${def.name}${t('」邁入:')}${stageName}${isDone ? t('(達成!)') : ''}`, npc.name);
             if (world.dailyNews) world.dailyNews.collectEvent('milestone', `${npc.name}${isDone ? t('實現了畢生夢想「') : t('朝夢想邁進:「')}${isDone ? def.name : stageName}${t('」')}`, isDone ? 8 : 5, [npc.name]);
             if (isDone) {
@@ -913,9 +907,9 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
                 else if (traits.includes('abrasive')) text = `${text}${t('...講完了,不准笑。')}`;
             }
             player.chatHistory.push({ speaker: npc.name, target: player.name, text, time: world.clock.timeStr });
-            npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('我對')}${player.name}${t('說出了真心話：')}${text}`, 9, [player.name]);
+            npc.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '我對{player}說出了真心話：{text}', { player: player.name, text }, 9, [player.name]);
             rel.addSharedMemory(`${ev.name}${t('：')}${text}`);
-            world.logMessage('player_chat', `${ev.icon} ${npc.name} → ${player.name}: ${text}`, npc.name, player.name);
+            world.logMessageT('player_chat', '{icon} {npc} → {player}: {text}', { icon: ev.icon, npc: npc.name, player: player.name, text }, npc.name, player.name);
             if (this.onNpcMessage) this.onNpcMessage(npc.agentId);
             world._pendingHeartEvents = world._pendingHeartEvents || [];
             world._pendingHeartEvents.push({ npcId: npc.agentId, npcName: npc.name, icon: ev.icon, evName: ev.name, text, romance: !!ev.romance });
@@ -962,8 +956,8 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
                 text = pickRandom(fallbacks);
             }
             player.chatHistory.push({ speaker: npc.name, target: player.name, text, time: world.clock.timeStr });
-            npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('跟')}${player.name}${t('聊到：')}${text}`, 3, [player.name]);
-            world.logMessage('player_chat', `${npc.name} → ${player.name}: ${text}`, npc.name, player.name);
+            npc.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '跟{player}聊到：{text}', { player: player.name, text }, 3, [player.name]);
+            world.logMessageT('player_chat', '{npc} → {player}: {text}', { npc: npc.name, player: player.name, text }, npc.name, player.name);
             if (this.onNpcMessage) this.onNpcMessage(npc.agentId);
         } catch (e) { console.error('[RimTown] sendEventComment failed:', e); }
     }
@@ -1230,7 +1224,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
         // Store NPC conversation for sidebar viewing
         if (dialogue.length) {
             this.npcConversationLog.push({ time:world.clock.timeStr, dayTag:`${world.clock.year}-${world.clock.season}-${world.clock.day}`, location:agentA.currentLocation, dialogue, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.agentId, agentBId:agentB.agentId, llm:true });
-            if (this.npcConversationLog.length > 400) this.npcConversationLog = this.npcConversationLog.slice(-400); // v5.99.0 B12
+            if (this.npcConversationLog.length > 300) this.npcConversationLog = this.npcConversationLog.slice(-300); // v5.99.0 B12;v6.20.0 400→300(介面只畫 250)
             // Notify UI for map speech bubbles
             if (this.onConversation) {
                 const textA = dialogue[0]?.text || summary;
@@ -1250,19 +1244,19 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
         if (affB > 0) affB = Math.round(affB * compatFb);
         const romA = dialogue._romA ?? 0;
         const romB = dialogue._romB ?? 0;
-        const summary = dialogue._summary || `${agentA.name}${t('和')}${agentB.name}${t('聊了天。')}`;
+        const summaryT = dialogue._summaryT || tpl('{a}和{b}聊了天。', { a: agentA.name, b: agentB.name }); const summary = Memory.render(summaryT.k, summaryT.p); // v6.19.0
         relA.modifyAffinity(affA); relA.modifyRomantic(romA); relA.recordInteraction(world.tickCount, summary);
         relB.modifyAffinity(affB); relB.modifyRomantic(romB); relB.recordInteraction(world.tickCount, summary);
-        agentA.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('與')}${agentB.name}${t('交談：')}${summary}`, Math.min(6,3+Math.abs(affA)), [agentB.name]);
-        agentB.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('與')}${agentA.name}${t('交談：')}${summary}`, Math.min(6,3+Math.abs(affB)), [agentA.name]);
-        world.logMessage('conversation', summary, agentA.name, agentB.name);
+        agentA.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '與{agentB}交談：{summary}', { agentB: agentB.name, summary: summaryT }, Math.min(6,3+Math.abs(affA)), [agentB.name]);
+        agentB.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '與{agentA}交談：{summary}', { agentA: agentA.name, summary: summaryT }, Math.min(6,3+Math.abs(affB)), [agentA.name]);
+        world.logMessageT('conversation', '{summary}', { summary: summaryT }, agentA.name, agentB.name); // v6.19.0 巢狀模板,切語言後紀錄分頁跟著翻
         if (world.dailyNews && (Math.abs(affA) >= 4 || Math.abs(affB) >= 4)) {
             world.dailyNews.collectEvent('social', summary, 4, [agentA.name, agentB.name]);
         }
         const lines = dialogue.lines;
         if (lines.length) {
             this.npcConversationLog.push({ time:world.clock.timeStr, dayTag:`${world.clock.year}-${world.clock.season}-${world.clock.day}`, location:agentA.currentLocation, dialogue:lines, summary, agentA:agentA.name, agentB:agentB.name, agentAId:agentA.agentId, agentBId:agentB.agentId });
-            if (this.npcConversationLog.length > 400) this.npcConversationLog = this.npcConversationLog.slice(-400); // v5.99.0 B12
+            if (this.npcConversationLog.length > 300) this.npcConversationLog = this.npcConversationLog.slice(-300); // v5.99.0 B12;v6.20.0 400→300(介面只畫 250)
             if (this.onConversation) {
                 const textA = lines[0]?.text || summary;
                 const textB = lines[1]?.text || '';
@@ -1277,12 +1271,12 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
         const tB = agentB.personality.traits;
         const jobA = agentA.job?.title || t('無業');
         const jobB = agentB.job?.title || t('無業');
-        const loc = agentA.currentLocation.replace(/_/g,' ');
+        const locZh = locName(world, agentA.currentLocation); const loc = t(locZh); // v6.19.0 地點用顯示名(之前是 id 去底線,中文句子裡會出現「在chapel」)
         const timeOfDay = world.clock.timeOfDay;
         const season = world.clock.season;
         const lines = [];
         let affA = 0, affB = 0, romA = 0, romB = 0;
-        let summary = '';
+        let summary = null; // v6.19.0 模板物件 {k,p},消費端用 Memory.render 算文字
 
         // --- Rich detail pools for vivid dialogue ---
         const foods = { '春季':[t('野菜煎餅'),t('花瓣蜜茶'),t('春筍燉肉'),t('桂花糕'),t('薺菜餛飩')], '夏季':[t('冰鎮酸梅湯'),t('西瓜'),t('涼拌黃瓜'),t('綠豆湯'),t('荷葉飯')], '秋季':[t('烤地瓜'),t('桂花釀'),t('栗子燒雞'),t('蘋果派'),t('南瓜濃湯')], '冬季':[t('薑母茶'),t('熱騰騰的羊肉鍋'),t('烤紅薯'),t('熱奶酒'),t('麻辣火鍋')] };
@@ -1310,7 +1304,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     lines.push({speaker:agentB.name, text:tB.includes('romantic')?t('你做什麼我都喜歡，因為是你做的。'):t('哈哈，那我先準備好腸胃藥！')});
                     lines.push({speaker:agentA.name, text:t('你！過分！...不過我真的很幸福。')});
                     affA = randInt(3,6); affB = randInt(3,6); romA = randInt(2,4); romB = randInt(2,4);
-                    summary = `${loc}${t('裡，')}${agentA.name}${t('讚美了')}${agentB.name}${t('親手做的')}${food}${t('，兩人甜蜜地打鬧著，笑聲讓路過的人都忍不住微笑。')}`;
+                    summary = tpl('{loc}裡，{agentA}讚美了{agentB}親手做的{food}，兩人甜蜜地打鬧著，笑聲讓路過的人都忍不住微笑。', { loc: locZh, agentA: agentA.name, agentB: agentB.name, food });
                 },
                 () => {
                     const jealousA = tA.includes('jealous');
@@ -1324,14 +1318,14 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                         lines.push({speaker:o.name, text:o.personality.traits.includes('kind')?t('傻瓜，我心裡只有你一個人啊。來，把手給我。'):t('你能不能信任我一點？每次都這樣我也很累的。')});
                         lines.push({speaker:j.name, text:t('...對不起。我就是太害怕失去你了。')});
                         affA = randInt(-1,2); affB = randInt(-1,2); romA = randInt(0,1); romB = randInt(0,1);
-                        summary = `${j.name}${t('因為看到')}${o.name}${t('和別人說笑而醋意大發，兩人經歷了一場小風波，最終在')}${loc}${t('和好。')}`;
+                        summary = tpl('{j}因為看到{o}和別人說笑而醋意大發，兩人經歷了一場小風波，最終在{loc}和好。', { j: j.name, o: o.name, loc: locZh });
                     } else {
                         lines.push({speaker:agentA.name, text:`${t(season)}${t('的夜晚真美...你看那邊，')}${scene}${t('。要不要一起去走走？')}`});
                         lines.push({speaker:agentB.name, text:tB.includes('shy')?t('好...牽著我的手好嗎？'):t('走啊！我還想帶你去看一個秘密地點，保證你沒去過！')});
                         lines.push({speaker:agentA.name, text:t('和你在一起的時候，覺得這個小鎮是全世界最美的地方。')});
                         lines.push({speaker:agentB.name, text:t('笨蛋...突然說這種話，我都不知道該怎麼回了。')});
                         affA = randInt(3,5); affB = randInt(3,5); romA = randInt(2,4); romB = randInt(2,4);
-                        summary = `${t(season)}${t('的')}${loc}${t('裡，')}${agentA.name}${t('和')}${agentB.name}${t('手牽手散步，分享著')}${scene}${t('的浪漫景色，氣氛溫馨而甜蜜。')}`;
+                        summary = tpl('{season}的{loc}裡，{agentA}和{agentB}手牽手散步，分享著{scene}的浪漫景色，氣氛溫馨而甜蜜。', { season, loc: locZh, agentA: agentA.name, agentB: agentB.name, scene });
                     }
                 },
                 () => {
@@ -1341,7 +1335,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     lines.push({speaker:agentA.name, text:`${t('好了，睜開！噹噹——')}${gift}${t('！看到的時候就想到你了。')}`});
                     lines.push({speaker:agentB.name, text:tB.includes('stoic')?t('......謝謝。我會好好珍藏的。'):t('天啊！這也太可愛了吧！你怎麼知道我一直想要這個？！')});
                     affA = randInt(3,6); affB = randInt(4,7); romA = randInt(2,3); romB = randInt(2,4);
-                    summary = `${agentA.name}${t('在')}${loc}${t('送了')}${agentB.name}${gift}${t('作為驚喜，')}${agentB.name}${tB.includes('stoic')?t('雖然表面平靜但眼眶微紅'):t('感動得差點飛撲上去')}${t('，兩人的感情更加深厚了。')}`;
+                    summary = tpl('{agentA}在{loc}送了{agentB}{gift}作為驚喜，{agentB2}{react}，兩人的感情更加深厚了。', { agentA: agentA.name, loc: locZh, agentB: agentB.name, gift, agentB2: agentB.name, react: tpl(tB.includes('stoic') ? '雖然表面平靜但眼眶微紅' : '感動得差點飛撲上去') });
                 },
             ];
             pickRandom(coupleTopics)();
@@ -1353,7 +1347,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     lines.push({speaker:agentA.name, text:`${t('別裝可憐了，你做過什麼你自己心裡清楚。上次')}${pickRandom([t('倉庫的事'),t('選舉那件事'),t('你在背後說的那些話')])}${t('，全鎮都知道。')}`});
                     lines.push({speaker:agentB.name, text:tB.includes('stoic')?t('信不信由你。我問心無愧。'):t('你！——好，你記住今天說的話。遲早你會後悔的。')});
                     affA = randInt(-5,-2); affB = randInt(-5,-2);
-                    summary = `${agentA.name}${t('和')}${agentB.name}${t('在')}${loc}${t('正面交鋒，針鋒相對的言語讓空氣彷彿凝結，周圍的居民紛紛側目。')}`;
+                    summary = tpl('{agentA}和{agentB}在{loc}正面交鋒，針鋒相對的言語讓空氣彷彿凝結，周圍的居民紛紛側目。', { agentA: agentA.name, agentB: agentB.name, loc: locZh });
                 },
                 () => {
                     lines.push({speaker:agentA.name, text:`${t('聽說你最近又在到處說我')}${pickRandom([t('壞話'),t('是非'),t('不是')])}${t('？有種當面說啊。')}`});
@@ -1362,7 +1356,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     lines.push({speaker:agentB.name, text:tB.includes('charismatic')?t('好了，我不想在這種地方吵。但你最好反省一下自己。'):t('哼，走著瞧。')});
                     lines.push({speaker:agentA.name, text:t('你才該好好反省！')});
                     affA = randInt(-6,-3); affB = randInt(-6,-3);
-                    summary = `${agentA.name}${t('當面質問')}${agentB.name}${t('散播流言蜚語的事，兩人在')}${loc}${t('爆發了激烈口角，怒氣沖天，場面一度失控。')}`;
+                    summary = tpl('{agentA}當面質問{agentB}散播流言蜚語的事，兩人在{loc}爆發了激烈口角，怒氣沖天，場面一度失控。', { agentA: agentA.name, agentB: agentB.name, loc: locZh });
                 },
                 () => {
                     lines.push({speaker:agentA.name, text:`${agentB.name}${t('，我們需要談談。不是為了吵架，是為了把話說開。')}`});
@@ -1370,7 +1364,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     lines.push({speaker:agentA.name, text:t('我知道我們之間有很多誤會，但至少在鎮上要做到基本的尊重，你說呢？')});
                     lines.push({speaker:agentB.name, text:tB.includes('stoic')?t('......我會考慮的。'):t('尊重是互相的。你先做到再來要求我。')});
                     affA = randInt(-2,1); affB = randInt(-2,1);
-                    summary = `${agentA.name}${t('在')}${loc}${t('試圖與')}${agentB.name}${t('和解，但雙方仍帶著心結，氣氛雖有緩和卻依然充滿張力。')}`;
+                    summary = tpl('{agentA}在{loc}試圖與{agentB}和解，但雙方仍帶著心結，氣氛雖有緩和卻依然充滿張力。', { agentA: agentA.name, loc: locZh, agentB: agentB.name });
                 },
             ];
             pickRandom(hostileTemplates)();
@@ -1386,7 +1380,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     romA = crushA ? randInt(3,6) : randInt(0,2); romB = crushB ? randInt(3,6) : randInt(0,2);
                     affA = randInt(2,5); affB = randInt(2,5);
                     const who = (crushA && crushB) ? t('兩人') : (crushA ? agentA.name : agentB.name);
-                    summary = `${agentA.name}${t('幫')}${agentB.name}${t('拿掉頭上的落葉時兩人靠得很近，')}${who}${t('的臉頰微微泛紅，')}${loc}${t('的空氣中瀰漫著微妙的心動氣息。')}`;
+                    summary = tpl('{agentA}幫{agentB}拿掉頭上的落葉時兩人靠得很近，{who}的臉頰微微泛紅，{loc}的空氣中瀰漫著微妙的心動氣息。', { agentA: agentA.name, agentB: agentB.name, who, loc: locZh });
                 },
                 () => {
                     lines.push({speaker:agentA.name, text:`${agentB.name}${t('，你知道嗎？我昨晚看到了')}${scene}${t('，第一個想到的人就是你。')}`});
@@ -1395,7 +1389,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     lines.push({speaker:agentB.name, text: crushB ? t('...好。一定要說到做到哦。') : tB.includes('kind')?t('你真會說話！好啊，到時候再說。'):t('嗯...好啊。')});
                     romA = crushA ? randInt(2,5) : randInt(1,2); romB = crushB ? randInt(2,5) : randInt(1,2);
                     affA = randInt(2,5); affB = randInt(2,4);
-                    summary = `${agentA.name}${t('在')}${loc}${t('和')}${agentB.name}${t('分享了')}${scene}${t('的美景，話語間暗藏著告白的勇氣，')}${agentB.name}${crushB?t('也悄悄地紅了耳朵'):t('禮貌地微笑回應')}${t('。')}`;
+                    summary = tpl('{agentA}在{loc}和{agentB}分享了{scene}的美景，話語間暗藏著告白的勇氣，{agentB2}{react}。', { agentA: agentA.name, loc: locZh, agentB: agentB.name, scene, agentB2: agentB.name, react: tpl(crushB ? '也悄悄地紅了耳朵' : '禮貌地微笑回應') });
                 },
             ];
             pickRandom(crushTopics)();
@@ -1408,7 +1402,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     lines.push({speaker:agentA.name, text:`${t('千真萬確！好幾個人都這麼說。要不要找個時間一起去')}${pickRandom([t('看看'),t('調查'),t('確認')])}${t('？')}`});
                     lines.push({speaker:agentB.name, text:tB.includes('kind')?t('嗯...小心為上，但如果是真的就太刺激了！'):`${t('走啊！怕什麼！帶上')}${food}${t('我們來場冒險！')}`});
                     affA = randInt(3,5); affB = randInt(3,5);
-                    summary = `${agentA.name}${t('興沖沖地在')}${loc}${t('和摯友')}${agentB.name}${t('分享了一個驚天八卦，兩人越聊越起勁，甚至約好了一起去探個究竟，氣氛既神秘又興奮。')}`;
+                    summary = tpl('{agentA}興沖沖地在{loc}和摯友{agentB}分享了一個驚天八卦，兩人越聊越起勁，甚至約好了一起去探個究竟，氣氛既神秘又興奮。', { agentA: agentA.name, loc: locZh, agentB: agentB.name });
                 },
                 () => {
                     lines.push({speaker:agentA.name, text:`${t('唉...')}${agentB.name}${t('，你能不能幫我出出主意？最近')}${pickRandom([`${jobA}${t('的工作壓力大到快喘不過氣')}`,t('跟隔壁的鄰居鬧了點不愉快'),t('一直在做同一個奇怪的夢')])}...`});
@@ -1416,7 +1410,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     lines.push({speaker:agentA.name, text:t('你真的是全鎮最了解我的人...每次跟你聊完心裡就踏實多了。')});
                     lines.push({speaker:agentB.name, text:`${t('別肉麻了！不過...有你當朋友我也很慶幸啦。來，我請你吃')}${pickRandom([t('剛烤好的麵包'),t('酒館的招牌菜'),t('剛摘的水果')])}${t('。')}`});
                     affA = randInt(3,6); affB = randInt(3,5);
-                    summary = `${agentA.name}${t('在')}${loc}${t('向摯友')}${agentB.name}${t('傾訴了最近的煩惱，')}${agentB.name}${t('耐心傾聽並貼心地準備了')}${food}${t('，兩人之間的友誼更加堅定了。')}`;
+                    summary = tpl('{agentA}在{loc}向摯友{agentB}傾訴了最近的煩惱，{agentB2}耐心傾聽並貼心地準備了{food}，兩人之間的友誼更加堅定了。', { agentA: agentA.name, loc: locZh, agentB: agentB.name, agentB2: agentB.name, food });
                 },
                 () => {
                     lines.push({speaker:agentA.name, text:`${agentB.name}${t('，還記得我們剛來邊境鎮那天嗎？什麼都沒有，就兩個人站在空蕩蕩的廣場上。')}`});
@@ -1425,7 +1419,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     lines.push({speaker:agentB.name, text:t('好了好了，我們扯平。不過認真的...能跟你一起在這裡打拼，我覺得這輩子值了。')});
                     lines.push({speaker:agentA.name, text:t('...你今天不準再說催淚的話了，我眼眶已經紅了。')});
                     affA = randInt(4,7); affB = randInt(4,7);
-                    summary = `${agentA.name}${t('和')}${agentB.name}${t('在')}${loc}${t('回憶起初來邊境鎮的趣事，笑淚交織之間，深厚的友情讓旁人都為之動容。')}`;
+                    summary = tpl('{agentA}和{agentB}在{loc}回憶起初來邊境鎮的趣事，笑淚交織之間，深厚的友情讓旁人都為之動容。', { agentA: agentA.name, agentB: agentB.name, loc: locZh });
                 },
             ];
             pickRandom(friendTopics)();
@@ -1437,7 +1431,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     lines.push({speaker:agentA.name, text:`${loc}${t('是鎮上最')}${pickRandom([t('熱鬧'),t('有意思'),t('舒服')])}${t('的地方！對了，如果你想吃好料的，推薦你去試試酒館的')}${food}${t('，絕對不會後悔。')}`});
                     lines.push({speaker:agentB.name, text:`${t('真的嗎！那我一定要去試試。謝謝你，')}${agentA.name}${t('！')}`});
                     affA = randInt(2,5); affB = randInt(2,5);
-                    summary = `${agentA.name}${t('在')}${loc}${t('熱情地招呼了新來的')}${agentB.name}${t('，推薦了鎮上的美食')}${food}${t('，給')}${agentB.name}${t('留下了溫暖的第一印象。')}`;
+                    summary = tpl('{agentA}在{loc}熱情地招呼了新來的{agentB}，推薦了鎮上的美食{food}，給{agentB2}留下了溫暖的第一印象。', { agentA: agentA.name, loc: locZh, agentB: agentB.name, food, agentB2: agentB.name });
                 },
                 () => {
                     lines.push({speaker:agentA.name, text:`${agentB.name}${t('對吧？我聽說你是做')}${jobB}${t('的——正好，我一直想認識做這行的人！')}`});
@@ -1445,7 +1439,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     lines.push({speaker:agentA.name, text:`${t('哈哈，邊境鎮就是這樣，新人來的消息半天就全鎮都知道了。改天聊聊')}${pickRandom([t('工作心得'),t('鎮上的事'),t('生活經驗')])}${t('吧？')}`});
                     lines.push({speaker:agentB.name, text:t('好啊！期待跟你多認識。')});
                     affA = randInt(2,4); affB = randInt(2,4);
-                    summary = `${agentA.name}${t('和')}${agentB.name}${t('在')}${loc}${t('初次交談，兩人相談甚歡，約好了改天再深入聊聊，邊境鎮又多了一段新的緣分。')}`;
+                    summary = tpl('{agentA}和{agentB}在{loc}初次交談，兩人相談甚歡，約好了改天再深入聊聊，邊境鎮又多了一段新的緣分。', { agentA: agentA.name, agentB: agentB.name, loc: locZh });
                 },
                 // v5.13.0 更多樣的初次見面:尷尬的、八卦的、被東西吸引的、毒舌的、一見如故的
                 () => { // 尷尬撞見
@@ -1454,7 +1448,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     lines.push({speaker:agentA.name, text:t('對啊,我幾乎天天來這。你也是這一帶的人?')});
                     lines.push({speaker:agentB.name, text:tB.includes('shy')?t('嗯...算是吧。那個...改天見。'):t('是啊,以後常會碰到,多多關照囉!')});
                     affA = randInt(1,3); affB = randInt(1,3);
-                    summary = `${agentA.name}${t('和')}${agentB.name}${t('在')}${loc}${t('不小心撞在一起,尷尬又好笑地認識了彼此。')}`;
+                    summary = tpl('{agentA}和{agentB}在{loc}不小心撞在一起,尷尬又好笑地認識了彼此。', { agentA: agentA.name, agentB: agentB.name, loc: locZh });
                 },
                 () => { // 被八卦拉近
                     const r = pickRandom(rumors);
@@ -1463,7 +1457,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     lines.push({speaker:agentA.name, text:t('哈哈,我就是喜歡到處打聽。對了,我還沒問你叫什麼名字呢?')});
                     lines.push({speaker:agentB.name, text:`${t('我是')}${agentB.name}${t('。看來以後鎮上有什麼風吹草動,找你就對了!')}`});
                     affA = randInt(2,4); affB = randInt(2,4);
-                    summary = `${agentA.name}${t('用一則八卦成功勾起')}${agentB.name}${t('的興趣,兩人在')}${loc}${t('越聊越起勁。')}`;
+                    summary = tpl('{agentA}用一則八卦成功勾起{agentB}的興趣,兩人在{loc}越聊越起勁。', { agentA: agentA.name, agentB: agentB.name, loc: locZh });
                 },
                 () => { // 被手上的東西吸引
                     const item = pickRandom(gifts);
@@ -1472,7 +1466,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     lines.push({speaker:agentB.name, text:t('真的可以嗎!那我就不客氣了。我還不知道你名字呢。')});
                     lines.push({speaker:agentA.name, text:`${t('我叫')}${agentA.name}${t('。以後想要就來找我,別客氣。')}`});
                     affA = randInt(2,4); affB = randInt(3,5);
-                    summary = `${agentB.name}${t('被')}${agentA.name}${t('手上的')}${item}${t('吸引,兩人就這麼聊開了,約好改天再見。')}`;
+                    summary = tpl('{agentB}被{agentA}手上的{item}吸引,兩人就這麼聊開了,約好改天再見。', { agentB: agentB.name, agentA: agentA.name, item });
                 },
                 () => { // 毒舌/慢熱的初遇
                     const grump = tA.includes('abrasive') || tA.includes('pessimist') ? agentA : (tB.includes('abrasive') || tB.includes('pessimist') ? agentB : agentA);
@@ -1482,7 +1476,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     lines.push({speaker:grump.name, text:`${t('...算了,你要真遇到麻煩,來找我。我叫')}${grump.name}${t('。')}`});
                     lines.push({speaker:other.name, text:t('嘴硬心軟嘛,我懂。多謝啦!')});
                     affA = randInt(0,3); affB = randInt(0,3);
-                    summary = `${grump.name}${t('嘴上潑冷水,卻還是對新認識的')}${other.name}${t('伸出了援手,反差讓人莞爾。')}`;
+                    summary = tpl('{grump}嘴上潑冷水,卻還是對新認識的{other}伸出了援手,反差讓人莞爾。', { grump: grump.name, other: other.name });
                 },
                 () => { // 一見如故
                     lines.push({speaker:agentA.name, text:`${t('奇怪,我總覺得跟你特別聊得來,明明才剛認識。')}`});
@@ -1491,7 +1485,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     lines.push({speaker:agentB.name, text:t('一言為定!能認識你真好。')});
                     affA = randInt(3,6); affB = randInt(3,6);
                     if (Personality.compatibility(tA, tB) > 1) { romA = randInt(0,2); romB = randInt(0,2); }
-                    summary = `${agentA.name}${t('和')}${agentB.name}${t('在')}${loc}${t('一見如故,相談甚歡,彷彿認識了很久的老友。')}`;
+                    summary = tpl('{agentA}和{agentB}在{loc}一見如故,相談甚歡,彷彿認識了很久的老友。', { agentA: agentA.name, agentB: agentB.name, loc: locZh });
                 },
             ];
             pickRandom(strangerTopics)();
@@ -1510,7 +1504,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     lines.push({speaker:agentA.name, text:t('我騙你幹嘛！千真萬確，下次遇到我馬上叫你！')});
                     lines.push({speaker:agentB.name, text:tB.includes('pessimist')?t('好吧好吧...不過要是什麼危險的東西你可要負責。'):`${t('一言為定！記得帶上')}${food}${t('，探險可不能餓肚子！')}`});
                     affA = randInt(2,4); affB = randInt(2,4);
-                    summary = `${agentA.name}${t('興奮地和')}${agentB.name}${t('分享了一個神奇的發現，兩人在')}${loc}${t('聊得眉飛色舞，約好下次一起去探索。')}`;
+                    summary = tpl('{agentA}興奮地和{agentB}分享了一個神奇的發現，兩人在{loc}聊得眉飛色舞，約好下次一起去探索。', { agentA: agentA.name, agentB: agentB.name, loc: locZh });
                 },
                 // Season + food + life detail
                 () => {
@@ -1519,7 +1513,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     lines.push({speaker:agentA.name, text:`${t('被你看穿了！其實是想問你')}${pickRandom([t('鎮上最近有什麼新鮮事'),t('知不知道哪裡可以買到好木材'),t('有沒有認識會修屋頂的人')])}${t('。')}`});
                     lines.push({speaker:agentB.name, text:tB.includes('charismatic')?t('哈哈！先吃東西再說正事！來來來，坐下聊。'):t('嗯...讓我想想，我好像聽說過一些消息。')});
                     affA = randInt(2,4); affB = randInt(2,4);
-                    summary = `${agentA.name}${t('帶了')}${food}${t('到')}${loc}${t('和')}${agentB.name}${t('邊吃邊聊，')}${t(season)}${t('的暖意讓兩人的對話格外愜意。')}`;
+                    summary = tpl('{agentA}帶了{food}到{loc}和{agentB}邊吃邊聊，{season}的暖意讓兩人的對話格外愜意。', { agentA: agentA.name, food, loc: locZh, agentB: agentB.name, season });
                 },
                 // Work + dramatic story
                 () => {
@@ -1533,7 +1527,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     lines.push({speaker:agentA.name, text:t('我發誓是真的！當場所有人都傻眼了！')});
                     lines.push({speaker:agentB.name, text:t('這件事我要跟全鎮的人說！太精彩了！')});
                     affA = randInt(2,5); affB = randInt(2,5);
-                    summary = `${agentA.name}${t('在')}${loc}${t('向')}${agentB.name}${workStory.sum}${t('，兩人笑得前仰後合，')}${loc}${t('裡充滿了歡樂的氣氛。')}`;
+                    summary = tpl('{agentA}在{loc}向{agentB}{sum}，兩人笑得前仰後合，{loc2}裡充滿了歡樂的氣氛。', { agentA: agentA.name, loc: locZh, agentB: agentB.name, sum: workStory.sum, loc2: loc });
                 },
                 // Gift giving
                 () => {
@@ -1543,7 +1537,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     lines.push({speaker:agentA.name, text:t('喜歡就好！以後有什麼需要幫忙的儘管開口。')});
                     lines.push({speaker:agentB.name, text:t('一定！你也是！...今天真的心情變好了。')});
                     affA = randInt(3,5); affB = randInt(4,6);
-                    summary = `${agentA.name}${t('在')}${loc}${t('送了')}${agentB.name}${gift}${t('作為感謝，')}${agentB.name}${t('感動之餘兩人的友誼又更進了一步，')}${t(season)}${t('的空氣裡充滿了溫暖。')}`;
+                    summary = tpl('{agentA}在{loc}送了{agentB}{gift}作為感謝，{agentB2}感動之餘兩人的友誼又更進了一步，{season}的空氣裡充滿了溫暖。', { agentA: agentA.name, loc: locZh, agentB: agentB.name, gift, agentB2: agentB.name, season });
                 },
                 // Rumors and gossip
                 () => {
@@ -1553,7 +1547,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     lines.push({speaker:agentA.name, text:`${t('好幾個人都這麼說呢！而且昨天夜裡好像真的有人看到')}${pickRandom([t('可疑的影子'),t('奇怪的燈火'),t('一群穿斗篷的人')])}${t('。')}`});
                     lines.push({speaker:agentB.name, text:tB.includes('kind')?t('嗯...希望不是什麼壞事。不過有你一起我就安心多了。'):t('哼，我倒要看看到底是怎麼回事。明天一起去打聽！')});
                     affA = randInt(2,4); affB = randInt(2,4);
-                    summary = `${agentA.name}${t('和')}${agentB.name}${t('在')}${loc}${t('低聲討論著鎮上的神秘傳聞，越聊越覺得事情不簡單，兩人的表情既好奇又緊張。')}`;
+                    summary = tpl('{agentA}和{agentB}在{loc}低聲討論著鎮上的神秘傳聞，越聊越覺得事情不簡單，兩人的表情既好奇又緊張。', { agentA: agentA.name, agentB: agentB.name, loc: locZh });
                 },
                 // Mood-driven dramatic scene
                 () => {
@@ -1563,21 +1557,21 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                         lines.push({speaker:agentB.name, text:tB.includes('kind')?`${t('你聽我說——你是這個鎮上不可或缺的人。我們都需要你。來，先喝口')}${food}${t('暖暖身子。')}`:`${t('你少來了，沒有你誰來做')}${jobA}${t('？鎮上離了你可不行。')}`});
                         lines.push({speaker:agentA.name, text:`${t('......謝謝你，')}${agentB.name}${t('。有你在真好。')}`});
                         affA = randInt(3,6); affB = randInt(2,4);
-                        summary = `${agentB.name}${t('在')}${loc}${t('發現了獨自落寞的')}${agentA.name}${t('，溫柔地遞上一杯')}${food}${t('，用真摯的話語驅散了陰霾，')}${agentA.name}${t('眼眶泛紅地笑了。')}`;
+                        summary = tpl('{agentB}在{loc}發現了獨自落寞的{agentA}，溫柔地遞上一杯{food}，用真摯的話語驅散了陰霾，{agentA2}眼眶泛紅地笑了。', { agentB: agentB.name, loc: locZh, agentA: agentA.name, food, agentA2: agentA.name });
                     } else if (agentA.mood > 70) {
                         lines.push({speaker:agentA.name, text:`${agentB.name}${t('！你猜怎麼著！今天是我這輩子最好的一天——')}${pickRandom([t('工作順利到不可思議'),t('發現了一個超棒的地方'),t('有人跟我說了一句讓我開心到飛起來的話')])}${t('！')}`});
                         lines.push({speaker:agentB.name, text:tB.includes('pessimist')?t('你也太浮誇了...不過看你這麼開心我也忍不住笑了。'):`${t('太好了！快跟我說！今天我請你喝')}${food}${t('慶祝！')}`});
                         lines.push({speaker:agentA.name, text:`${t('我現在覺得什麼困難都打不倒我！連')}${t(season)}${t('的天氣都特別配合！')}`});
                         lines.push({speaker:agentB.name, text:t('哈哈哈，你也太誇張了！不過...你開心我也開心，畢竟你笑起來真的很有感染力。')});
                         affA = randInt(2,5); affB = randInt(2,5);
-                        summary = `${t('心情大好的')}${agentA.name}${t('在')}${loc}${t('拉著')}${agentB.name}${t('分享喜悅，開懷大笑的聲音感染了整個')}${loc}${t('，連路過的人都忍不住嘴角上揚。')}`;
+                        summary = tpl('心情大好的{agentA}在{loc}拉著{agentB}分享喜悅，開懷大笑的聲音感染了整個{loc2}，連路過的人都忍不住嘴角上揚。', { agentA: agentA.name, loc: locZh, agentB: agentB.name, loc2: loc });
                     } else {
                         lines.push({speaker:agentA.name, text:`${agentB.name}${t('，你有沒有想過...如果當初沒來邊境鎮，現在會在哪裡？')}`});
                         lines.push({speaker:agentB.name, text:tB.includes('creative')?`${t('我有時候會想呢。也許在某個大城市裡迷失方向吧...但這裡有')}${scene}${t('，有你們這些朋友，我不後悔。')}`:`${t('想那麼多幹嘛？現在過得不錯就好了。走，去弄點')}${food}${t('來吃。')}`});
                         lines.push({speaker:agentA.name, text:t('說得也是。有時候覺得命運把我們送到這裡，一定有它的道理。')});
                         lines.push({speaker:agentB.name, text:`${t('少在那邊感慨了！')}${food}${t('可不等人，走走走！')}`});
                         affA = randInt(2,4); affB = randInt(2,4);
-                        summary = `${agentA.name}${t('和')}${agentB.name}${t('在')}${loc}${t('感慨起命運的安排，聊起了')}${scene}${t('的美好，最後被')}${food}${t('的香氣拉回了現實，氣氛輕鬆溫馨。')}`;
+                        summary = tpl('{agentA}和{agentB}在{loc}感慨起命運的安排，聊起了{scene}的美好，最後被{food}的香氣拉回了現實，氣氛輕鬆溫馨。', { agentA: agentA.name, agentB: agentB.name, loc: locZh, scene, food });
                     }
                 },
             ];
@@ -1587,7 +1581,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                 this._addConflictEscalation(lines, agentA, agentB, world, tA, tB);
                 affA = Math.min(affA, randInt(-4, -1));
                 affB = Math.min(affB, randInt(-4, -1));
-                summary += t('但後來氣氛突然變得微妙，兩人不歡而散。');
+                summary = tpl('{base}但後來氣氛突然變得微妙，兩人不歡而散。', { base: summary || tpl('{a}和{b}聊了天。', { a: agentA.name, b: agentB.name }) }); // v6.19.0 巢狀
             }
         }
 
@@ -1604,7 +1598,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
             }
         }
 
-        return { lines, _affA:affA, _affB:affB, _romA:romA, _romB:romB, _summary:summary };
+        return { lines, _affA:affA, _affB:affB, _romA:romA, _romB:romB, _summary: summary ? Memory.render(summary.k, summary.p) : '', _summaryT: summary }; // v6.19.0 同時回模板
     }
 
     _personalityGreeting(agent, other, rel) {
@@ -1805,8 +1799,8 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
         const summary = effects.summary || `${npc.name}${t('回應了')}${player.name}${t('。')}`;
         relNpc.modifyAffinity(affChange); relNpc.modifyRomantic(romChange); relNpc.recordInteraction(world.tickCount, summary);
         relPlayer.modifyAffinity(Math.max(0, affChange-1)); relPlayer.recordInteraction(world.tickCount, summary);
-        npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${player.name}${t('說：「')}${playerMessage}${t('」— ')}${summary}`, 5, [player.name]);
-        player.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('與')}${npc.name}${t('交談：')}${summary}`, 4, [npc.name]);
+        npc.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '{player}說：「{playerMessage}」— {summary}', { player: player.name, playerMessage, summary }, 5, [player.name]);
+        player.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '與{npc}交談：{summary}', { npc: npc.name, summary }, 4, [npc.name]);
         // Only push NPC reply (player message already added by playerSendMessage)
         // 去重不比對時間戳:AI 回覆期間遊戲時間會前進,舊檢查因時間不同而重複寫入玩家訊息(重複留言 bug)
         if (!player.chatHistory.slice(-6).some(m => m.speaker === player.name && m.target === npc.name && m.text === playerMessage)) {
@@ -1814,7 +1808,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
         }
         player.chatHistory.push({speaker:npc.name, target:player.name, text:npcReply, time:world.clock.timeStr});
         player._recentChatTick = world.tickCount; // Mark for social need recovery
-        world.logMessage('player_chat', `${player.name} → ${npc.name}: ${summary}`, player.name, npc.name);
+        world.logMessageT('player_chat', '{player} → {npc}: {summary}', { player: player.name, npc: npc.name, summary }, player.name, npc.name);
         // v5.41.0 跟玩家聊出強烈反應(好感大變/心動) → NPC 即時改寫今天剩餘行程
         if (Math.abs(affChange) >= 4 || romChange >= 2) {
             this.replanRestOfDay(npc, world, `${t('和')}${player.name}${t('聊了之後：')}${summary}`).catch(() => {});
@@ -1838,7 +1832,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
         let npcReply = '';
         let affChange = 0;
         let romChange = 0;
-        let summary = '';
+        let summary = null; // v6.19.0 模板物件
 
         // Detect message intent via keyword matching
         const isGreeting = /你好|嗨|哈囉|hello|hi|早安|晚安|嘿/.test(msg);
@@ -1874,7 +1868,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
             else if (kind) npcReply = pickRandom([t('這樣說話很傷人的...'),t('你是不是心情不好？不然怎麼會這樣。'),t('我...不知道你為什麼要這樣。')]);
             else npcReply = pickRandom([t('你這話說得太過分了。'),t('......我沒必要跟你計較。'),t('你認真的嗎？')]);
             affChange = randInt(-6,-3);
-            summary = `${player.name}${t('言語冒犯了')}${npc.name}${t('。')}`;
+            summary = tpl('{player}言語冒犯了{npc}。', { player: player.name, npc: npc.name });
         } else if (isFlirt) {
             if (isCouple) {
                 npcReply = pickRandom([t('你啊...每次都這樣，不過我就是吃這套。'),t('哈哈，老夫老妻了還這麼會講。'),t('你真的很會撩人，我都不好意思了。')]);
@@ -1890,7 +1884,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
                 npcReply = shy ? t('...什麼？（不知所措）') : pickRandom([t('哈？你認真的嗎？'),t('嗯...謝謝？'),t('你還挺有趣的。')]);
                 affChange = randInt(0,2); romChange = randInt(0,2);
             }
-            summary = `${player.name}${t('對')}${npc.name}${t('說了甜言蜜語。')}`;
+            summary = tpl('{player}對{npc}說了甜言蜜語。', { player: player.name, npc: npc.name });
         } else if (isGreeting) {
             if (isCouple) npcReply = pickRandom([`${t('嗨親愛的，我一直在等你呢。')}`,`${t('你來了！好想你。')}`,`${t('嘿~今天怎麼這麼晚來找我？')}`]);
             else if (aff > 50) npcReply = charismatic ? `${player.name}${t('！太好了你來了！')}`
@@ -1900,7 +1894,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
             else if (aff > -10) npcReply = abrasive ? t('嗯？怎麼了。') : pickRandom([`${t('嗯，你好。')}`,`${t('哦，是你啊。')}`,`${t('哈囉。')}`]);
             else npcReply = pickRandom([`...${t('有事嗎？')}`,`${t('你又來了。')}`,`${t('嗯。')}`]);
             affChange = aff > -10 ? randInt(0,2) : randInt(-1,0);
-            summary = `${player.name}${t('和')}${npc.name}${t('打了招呼。')}`;
+            summary = tpl('{player}和{npc}打了招呼。', { player: player.name, npc: npc.name });
         } else if (isAskName) {
             npcReply = pickRandom([
                 `${t('我叫')}${npc.name}${t('，')}${npc.age}${t('歲，在鎮上當')}${jobTitle}。`,
@@ -1908,7 +1902,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
                 shy ? `${t('我...我叫')}${npc.name}...` : `${t('我是')}${npc.name}${t('，認識一下！')}`,
             ]);
             affChange = randInt(0,2);
-            summary = `${npc.name}${t('自我介紹了。')}`;
+            summary = tpl('{npc}自我介紹了。', { npc: npc.name });
         } else if (isAskJob) {
             const jobReplies = {
                 farmer: [`${t('我是農夫啊，每天日出就到田裡去了。')}${season}${t('是')}${pickRandom([t('播種'),t('收穫'),t('準備'),t('整地')])}${t('的季節。')}`,`${t('種田很辛苦，但看到作物長大就很有成就感。')}`],
@@ -1927,7 +1921,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
             const pool = jobReplies[jobKey] || [`${t('我在鎮上當')}${jobTitle}${t('，還過得去吧。')}`,`${jobTitle}${t('的工作有好有壞，但至少有事做。')}`];
             npcReply = pickRandom(pool);
             affChange = randInt(0,2);
-            summary = `${npc.name}${t('聊了自己的工作。')}`;
+            summary = tpl('{npc}聊了自己的工作。', { npc: npc.name });
         } else if (isAskMood) {
             if (npc.mood > 60) npcReply = pickRandom([`${t('我很好啊！')}${optimist?t('今天特別開心！'):t('最近一切都挺順利的。')}`,`${t('心情不錯！有什麼好事就是會開心嘛。')}`,`${t('挺好的，謝謝你關心。')}`]);
             else if (npc.mood > 30) npcReply = pickRandom([`${t('還行吧，普普通通。')}`,`${t('馬馬虎虎，')}${pessimist?t('不過總覺得少了什麼。'):t('就是平常的日子。')}`,`${t('沒什麼特別的，過一天算一天。')}`]);
@@ -1937,7 +1931,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
                 pessimist ? t('一如既往地糟。') : t('有點不順，但會過去的。'),
             ]);
             affChange = randInt(1,3);
-            summary = `${npc.name}${t('分享了自己的心情。')}`;
+            summary = tpl('{npc}分享了自己的心情。', { npc: npc.name });
         } else if (isAskLove) {
             if (isCouple) {
                 const partnerName = relNpc.status === 'married' ? t('老公/老婆') : t('對象');
@@ -1952,7 +1946,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
                     : pickRandom([`${t('這種事順其自然吧。')}`,`${t('目前沒什麼想法，工作比較重要。')}`,abrasive?t('關你什麼事。'):t('哈哈，你怎麼突然問這個？')]);
             }
             affChange = randInt(0,2);
-            summary = `${player.name}${t('問了')}${npc.name}${t('感情的事。')}`;
+            summary = tpl('{player}問了{npc}感情的事。', { player: player.name, npc: npc.name });
         } else if (isAskStory) {
             npcReply = pickRandom([
                 `${t('我的故事啊...')}${npc.personality.background}`,
@@ -1960,7 +1954,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
                 `${t('你想知道我的過去？好吧...')}${npc.personality.background.slice(0,50)}`,
             ]);
             affChange = randInt(1,4);
-            summary = `${npc.name}${t('分享了自己的故事。')}`;
+            summary = tpl('{npc}分享了自己的故事。', { npc: npc.name });
         } else if (isAskTown) {
             const gossipTopics = world.events?.conversationTopics || [];
             const gossip_s = world.gossipNetwork?.activeGossip || [];
@@ -1977,39 +1971,39 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
                 ]);
             }
             affChange = randInt(0,3);
-            summary = `${npc.name}${t('跟')}${player.name}${t('聊了鎮上的近況。')}`;
+            summary = tpl('{npc}跟{player}聊了鎮上的近況。', { npc: npc.name, player: player.name });
         } else if (isAskFood) {
             if (jobKey === 'cook') npcReply = pickRandom([`${t('你來對人了！我最近做了')}${pickRandom([t('燉肉'),t('烤魚'),t('蔬菜湯'),t('肉包子')])}${t('，要不要嚐嚐？')}`,`${t('吃的是我的專業！等著，我去給你弄點好吃的。')}`]);
             else if (npc.needs.hunger < 30) npcReply = `${t('別說了，我自己都快餓死了...一起去酒館吧？')}`;
             else npcReply = pickRandom([`${t('酒館的飯菜不錯，推薦你去試試。')}`,`${t('王麗煮的菜最好吃了，你應該去嚐嚐。')}`,`${t('肚子餓了嗎？吃飽了心情才會好。')}`]);
             affChange = randInt(0,2);
-            summary = `${player.name}${t('和')}${npc.name}${t('聊了吃的。')}`;
+            summary = tpl('{player}和{npc}聊了吃的。', { player: player.name, npc: npc.name });
         } else if (isAskWeather) {
             const weatherMap = {'春季':t('春天暖洋洋的'),'夏季':t('夏天好熱'),'秋季':t('秋天涼爽'),'冬季':t('冬天好冷')};
             if (isNight) npcReply = pickRandom([`${t('今晚的')}${pickRandom([t('星空'),t('月色'),t('夜風')])}${t('真不錯。')}`,`${t('夜裡出來')}${pickRandom([t('看星星'),t('散步'),t('吹風')])}${t('？我也覺得很舒服。')}`,tr.includes('night_owl')?t('夜晚最棒了，安安靜靜的。'):t('這麼晚了，小心著涼。')]);
             else npcReply = pickRandom([`${weatherMap[season]||t('天氣還好')}${t('，')}${optimist?t('不過我很享受！'):t('希望別變天。')}`,`${season}${t('到了，')}${pickRandom([t('時間過得真快'),t('又是新的季節'),t('風景挺美的')])}${t('。')}`]);
             affChange = randInt(0,2);
-            summary = `${player.name}${t('和')}${npc.name}${t('聊了天氣。')}`;
+            summary = tpl('{player}和{npc}聊了天氣。', { player: player.name, npc: npc.name });
         } else if (isCompliment) {
             if (shy) npcReply = pickRandom([`${t('啊...謝、謝謝你...（臉紅）')}`,`${t('不、不會啦...你過獎了。')}`,`...${t('真的嗎？（開心但不好意思）')}`]);
             else if (abrasive) npcReply = pickRandom([`${t('哼，不用奉承我。')}`,`...${t('你有什麼目的？')}`,`${t('嗯，我知道。')}`]);
             else npcReply = pickRandom([`${t('哈哈，謝謝！你這麼說我很開心。')}`,`${t('你真會說話！')}`,`${t('被你這樣誇，有點不好意思呢。')}`]);
             affChange = randInt(2,5);
             if (romantic) romChange = randInt(0,2);
-            summary = `${player.name}${t('讚美了')}${npc.name}。`;
+            summary = tpl('{player}讚美了{npc}。', { player: player.name, npc: npc.name });
         } else if (isAskHelp) {
             if (kind) npcReply = pickRandom([`${t('需要幫忙嗎？儘管說！')}`,`${t('我能做的一定幫！你說吧。')}`,`${t('別客氣，鄰居互相幫忙是應該的。')}`]);
             else if (lazy) npcReply = pickRandom([`${t('嗯...看是什麼事吧。我今天有點懶...')}`,`${t('幫忙可以，但別太累的。')}`]);
             else if (abrasive) npcReply = pickRandom([`${t('看什麼事吧。')}`,`${t('我不是慈善機構。')}`,`${t('你自己不能解決嗎？')}`]);
             else npcReply = pickRandom([`${t('什麼事？看我能不能幫上忙。')}`,`${t('好吧，你說說看。')}`,`${t('我盡量吧。')}`]);
             affChange = kind ? randInt(1,3) : randInt(-1,2);
-            summary = `${player.name}${t('向')}${npc.name}${t('求助。')}`;
+            summary = tpl('{player}向{npc}求助。', { player: player.name, npc: npc.name });
         } else if (isFarewell) {
             if (isCouple) npcReply = pickRandom([`${t('這麼快就走？路上小心。想你。')}`,`${t('嗯...早點回來。')}`,`${t('下次再來找我。')}`]);
             else if (aff > 30) npcReply = pickRandom([`${t('再見！下次再聊！')}`,`${t('掰掰，保重啊！')}`,`${t('好的，有空再來找我！')}`]);
             else npcReply = pickRandom([`${t('嗯，再見。')}`,`${t('好的。')}`,abrasive?t('終於要走了。'):t('拜拜。')]);
             affChange = randInt(0,1);
-            summary = `${player.name}${t('和')}${npc.name}${t('道別了。')}`;
+            summary = tpl('{player}和{npc}道別了。', { player: player.name, npc: npc.name });
         } else {
             // Detect if player is asking a question
             const isQuestion = /[？?]/.test(msg) || /嗎$|呢$|吧$/.test(msg.trim()) || /^(誰|什麼|哪|為什麼|怎麼|有沒有|是不是|知不知|你知道|你覺得|你認為|你有|可以|能不能|會不會|要不要)/.test(msg);
@@ -2032,7 +2026,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
                     ]);
                 }
                 affChange = randInt(0,2);
-                summary = `${player.name}${t('問了')}${npc.name}${t('關於其他人的事。')}`;
+                summary = tpl('{player}問了{npc}關於其他人的事。', { player: player.name, npc: npc.name });
             } else if (isQuestion && isAboutOpinion) {
                 // Asking for NPC's opinion
                 npcReply = pickRandom([
@@ -2041,7 +2035,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
                     `${charismatic?t('哦？你想聽我的看法？'):t('嗯...')}${pickRandom([t('我個人是覺得還好啦。'),t('說真的，我也沒什麼特別的想法。'),t('這個嘛...要我說的話...算了，我也不太確定。')])}`,
                 ]);
                 affChange = randInt(0,3);
-                summary = `${player.name}${t('詢問了')}${npc.name}${t('的看法。')}`;
+                summary = tpl('{player}詢問了{npc}的看法。', { player: player.name, npc: npc.name });
             } else if (isQuestion && isAboutKnowledge) {
                 // Asking if NPC knows something
                 npcReply = pickRandom([
@@ -2051,7 +2045,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
                     `${charismatic?t('有趣的問題！'):t('嗯...')}${pickRandom([t('讓我想想...不，我真的不知道。'),t('我也想知道呢。'),t('你去圖書館查查看？')])}`,
                 ]);
                 affChange = randInt(0,2);
-                summary = `${player.name}${t('問了')}${npc.name}${t('一些事。')}`;
+                summary = tpl('{player}問了{npc}一些事。', { player: player.name, npc: npc.name });
             } else if (isQuestion) {
                 // Generic question
                 npcReply = pickRandom([
@@ -2060,7 +2054,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
                     `${optimist?t('嗯，我覺得答案應該是正面的！'):pessimist?t('我不確定，但大概不會太好吧...'):t('我沒有什麼特別的想法欸。')}`,
                 ]);
                 affChange = randInt(0,2);
-                summary = `${player.name}${t('問了')}${npc.name}${t('一個問題。')}`;
+                summary = tpl('{player}問了{npc}一個問題。', { player: player.name, npc: npc.name });
             } else {
                 // Statement / generic chat — respond based on relationship
                 if (isCouple) npcReply = pickRandom([`${t('嗯嗯，我在聽。你繼續說。')}`,`${t('你說的我都聽進去了。')}`,`${t('是嗎？跟我說更多。')}`]);
@@ -2070,7 +2064,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
                 else npcReply = pickRandom([`...${t('隨便你怎麼說吧。')}`,`${t('嗯哼。')}`,`${t('我不太感興趣。')}`,`${t('你說完了嗎？')}`]);
                 affChange = aff > 0 ? randInt(0,2) : randInt(-1,1);
             }
-            summary = summary || `${player.name}${t('和')}${npc.name}${t('聊了天。')}`;
+            summary = summary || tpl('{player}和{npc}聊了天。', { player: player.name, npc: npc.name });
         }
 
         // Add context-sensitive follow-up based on NPC state (natural phrasing)
@@ -2079,10 +2073,11 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
         if (isNight && !tr.includes('night_owl') && Math.random() < 0.2) npcReply += pickRandom([t(' 好了，夜深了，明天再聊吧。'),t(' 啊，都這個時間了？我得回去了。')]);
         if (npc.activity === 'stargazing' && Math.random() < 0.3) npcReply += pickRandom([t(' 欸你看！那邊那顆星特別亮！'),t(' 今晚的星空真美，你不覺得嗎？')]);
 
+        const summaryT = (summary && summary.k) ? summary : tpl('{player}和{npc}聊了天。', { player: player.name, npc: npc.name }); summary = Memory.render(summaryT.k, summaryT.p); // v6.19.0 字串給關係紀錄/回傳,模板給記憶與日誌
         relNpc.modifyAffinity(affChange); relNpc.modifyRomantic(romChange); relNpc.recordInteraction(world.tickCount, summary);
         relPlayer.modifyAffinity(Math.max(-3,affChange-1)); relPlayer.recordInteraction(world.tickCount, summary);
-        npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${player.name}${t('說：「')}${playerMessage.slice(0,30)}${t('」— ')}${summary}`, 4+Math.abs(affChange), [player.name]);
-        player.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t('與')}${npc.name}${t('：')}${summary}`, 3+Math.abs(affChange), [npc.name]);
+        npc.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '{player}說：「{v}」— {summary}', { player: player.name, v: playerMessage.slice(0,30), summary: summaryT }, 4+Math.abs(affChange), [player.name]);
+        player.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '與{npc}：{summary}', { npc: npc.name, summary: summaryT }, 3+Math.abs(affChange), [npc.name]);
         // Only push NPC reply (player message already added by playerSendMessage)
         // 去重不比對時間戳:AI 回覆期間遊戲時間會前進,舊檢查因時間不同而重複寫入玩家訊息(重複留言 bug)
         if (!player.chatHistory.slice(-6).some(m => m.speaker === player.name && m.target === npc.name && m.text === playerMessage)) {
@@ -2090,7 +2085,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
         }
         player.chatHistory.push({speaker:npc.name, target:player.name, text:npcReply, time:world.clock.timeStr});
         player._recentChatTick = world.tickCount; // Mark for social need recovery
-        world.logMessage('player_chat', summary, player.name, npc.name);
+        world.logMessageT('player_chat', '{summary}', { summary: summaryT }, player.name, npc.name); // v6.19.0
         world.checkHeartEvents?.(); // v5.0.0 聊天後檢查心動事件
         return { npc_name:npc.name, npc_reply:npcReply, player_message:playerMessage, effects:{affinity_change:affChange,romantic_change:romChange}, summary };
     }

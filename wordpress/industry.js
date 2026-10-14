@@ -102,7 +102,7 @@ class IndustryManager {
         this._updateSynergies();
         const def = INDUSTRIES[key];
         if (world) {
-            world.logMessage('industry', `${def.icon} ${t('開啟了')}${def.name}！`);
+            world.logMessageT('industry', '{icon} 開啟了{def}！', { icon: def.icon, def: def.name });
             if (world.dailyNews) world.dailyNews.collectEvent('industry', `${t('城鎮開啟了新產業')}：${def.name}！`, 7);
         }
         return { ok: true };
@@ -117,7 +117,7 @@ class IndustryManager {
         if (!world.stockpile.canAfford(nextLevelDef.cost)) return { ok: false, error: t('資源不足') };
         world.stockpile.pay(nextLevelDef.cost, world.tickCount, `${def.name}${t('升級到')} Lv${nextLevelDef.lv}`);
         ind.level = nextLevelDef.lv;
-        world.logMessage('industry', `${def.icon} ${def.name}${t('升級到')} Lv${nextLevelDef.lv}「${nextLevelDef.name}」！`);
+        world.logMessageT('industry', '{icon} {def}升級到 Lv{lv}「{nextLevelDef}」！', { icon: def.icon, def: def.name, lv: nextLevelDef.lv, nextLevelDef: nextLevelDef.name });
 
         // Notify daily news if available
         if (world.dailyNews) {
@@ -193,11 +193,11 @@ class IndustryManager {
                 this.townLevel = tl.lv;
                 this.townLevelName = tl.name;
                 this.maxIndustries = tl.unlockSlots;
-                world.logMessage('town', `🎉 ${t('城鎮升級為')}「${tl.name}」！(Lv${tl.lv})`);
+                world.logMessageT('town', '🎉 城鎮升級為「{tl}」！(Lv{lv})', { tl: tl.name, lv: tl.lv });
 
                 if (this.canUnlockNew()) {
                     this._pendingUnlock = true;
-                    world.logMessage('town', `💡 ${t('可以開啟新產業了')}！(${Object.keys(this.industries).length}/${this.maxIndustries})`);
+                    world.logMessageT('town', '💡 可以開啟新產業了！({length}/{maxIndustries})', { length: Object.keys(this.industries).length, maxIndustries: this.maxIndustries });
                 }
 
                 if (world.dailyNews) {

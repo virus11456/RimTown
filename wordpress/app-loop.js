@@ -419,7 +419,7 @@ Object.assign(RimTownApp.prototype, {
                     const ag = w.agents[e.origId];
                     if (!ag) { keep.push(e); return; }
                     (e.notes || []).slice(0, 3).forEach(nt => ag.memory?.add?.(w.tickCount, w.clock.timeStr, 'travel', `${t('在')}${e.visitedTownName}${t('時：')}${nt}`, 6, []));
-                    w.logMessage('arrival', `${t(ag.name)}${t('從')}${e.visitedTownName}${t('回來了，帶回一肚子見聞。')}`);
+                    w.logMessageT('arrival', '{ag}從{visitedTownName}回來了，帶回一肚子見聞。', { ag: ag.name, visitedTownName: e.visitedTownName });
                     if (e.romance) { if (!this._offerRelocation(w, ag, e)) { /* 另一個事件還掛著:下次再提 */ if (w.eventChoice?.pendingEvent && !w.eventChoice.pendingEvent.autoResolve) keep.push({ ...e, notes: [] }); } } // v5.90.0
                 });
                 if (keep.length) localStorage.setItem(rk, JSON.stringify(keep)); else localStorage.removeItem(rk);
@@ -611,7 +611,7 @@ Object.assign(RimTownApp.prototype, {
             severity: 'minor', choices, timestamp: w.tickCount,
             autoResolve: { absDay: w._absDay() + 3, choice: Math.random() < 0.5 ? 0 : Math.min(1, choices.length - 2) },
         };
-        w.logMessage('event_choice', `💌 ${t('搬家提案：')}${t(ag.name)}${t('與')}${t(r.localName)}${t('想住在同一個鎮上，等你決定。')}`);
+        w.logMessageT('event_choice', '💌 搬家提案：{ag}與{localName}想住在同一個鎮上，等你決定。', { ag: ag.name, localName: r.localName });
         this._showCornerNotice({ icon: '💌', title: t('搬家提案'), name: `${t(ag.name)} ♥ ${t(r.localName)}`, desc: t('到「事件」決定讓誰搬家') });
         return true;
     },
@@ -622,14 +622,14 @@ Object.assign(RimTownApp.prototype, {
             if (data.mode === 'in') {
                 const ag = w.spawnResident(r.localData, { fromTownId: data.otherTownId, fromTownName: data.otherTownName, partnerId: data.residentId, partnerName: data.residentName });
                 if (ag) this._pushMailbox(this._movesMailboxKey(data.otherTownId), { kind: 'out', agentId: r.localId, toTownName: this._getCurrentTownName(), partnerName: data.residentName });
-                else { w.logMessage('event_choice', `⚠️ ${t('鎮上人口已滿，')}${t(r.localName)}${t('暫時搬不過來。')}`); }
+                else { w.logMessageT('event_choice', '⚠️ 鎮上人口已滿，{localName}暫時搬不過來。', { localName: r.localName }); }
             } else if (data.mode === 'out') {
                 const snap = w.relocateOut(data.residentId, { toTownName: data.otherTownName, partnerName: r.localName });
                 if (snap) this._pushMailbox(this._movesMailboxKey(data.otherTownId), { kind: 'in', agentData: snap, fromTownId: this.currentTownId, fromTownName: this._getCurrentTownName(), partnerId: r.localId, partnerName: r.localName });
             } else {
                 const ag = w.agents[data.residentId];
                 ag?.memory?.add?.(w.tickCount, w.clock.timeStr, 'romance', `${t('鎮長沒有插手，我和')}${r.localName}${t('只能隔著一條路想念彼此。')}`, 7, [r.localName]);
-                w.logMessage('event_choice', `🤷 ${t('你決定不干涉')}${t(data.residentName)}${t('與')}${t(r.localName)}${t('的事。')}`);
+                w.logMessageT('event_choice', '🤷 你決定不干涉{residentName}與{localName}的事。', { residentName: data.residentName, localName: r.localName });
             }
         } catch (e) { console.warn('[relocate]', e); }
         this.state = w.getState(); try { this._syncHousing?.(); } catch (e) {} try { this.renderSidebar(); } catch (e) {}

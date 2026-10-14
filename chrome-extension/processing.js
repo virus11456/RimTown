@@ -97,7 +97,7 @@ class ProcessingSystem {
             recipe: null, productionProgress: 0,
             workers: [], warehouse: {},
         };
-        world.logMessage('factory', `${def.icon} ${t('開始建造')}${def.name}${t('！')}`);
+        world.logMessageT('factory', '{icon} 開始建造{def}！', { icon: def.icon, def: def.name });
         return { ok: true };
     }
 
@@ -165,7 +165,7 @@ class ProcessingSystem {
         if (factory.warehouse[resource] <= 0) delete factory.warehouse[resource];
         const silver = Math.round(sell * price);
         world.stockpile.add('silver', silver, world.tickCount, `${t('賣出')}${resource}`, def.name);
-        world.logMessage('factory', `${def.icon} ${t('賣出')} ${sell} ${resource}${t('，獲得')} ${silver} ${t('銀幣')}`);
+        world.logMessageT('factory', '{icon} 賣出 {sell} {resource}，獲得 {silver} 銀幣', { icon: def.icon, sell, resource, silver });
         return true;
     }
 
@@ -191,7 +191,7 @@ class ProcessingSystem {
                 const pick = candidates[0];
                 factory.workers.push(pick.agentId);
                 taken.add(pick.agentId);
-                world.logMessage('factory', `${pick.name}${t('主動到')}${def.name}${t('上工了。')}`);
+                world.logMessageT('factory', '{pick}主動到{def}上工了。', { pick: pick.name, def: def.name });
                 pick.memory?.add?.(world.tickCount, world.clock.timeStr, 'daily', `${t('我開始在')}${def.name}${t('幫忙了，多一份收入也多認識些人。')}`, 4, []);
             }
             // 沒選配方就自動開第一個(玩家改過就尊重玩家的選擇)
@@ -212,7 +212,7 @@ class ProcessingSystem {
                 if (factory.buildProgress >= factory.buildRequired) {
                     factory.status = 'active';
                     const def = FACTORIES[key];
-                    world.logMessage('factory', `${def.icon} ${def.name}${t('建造完成！')}`);
+                    world.logMessageT('factory', '{icon} {def}建造完成！', { icon: def.icon, def: def.name });
                 }
                 continue;
             }
@@ -317,7 +317,7 @@ class ProcessingSystem {
             description: `${t('需要')} ${amount} ${t('個')}${product}`,
             status: 'active',
         });
-        world.logMessage('order', `📋 ${t('新訂單')}：${t('需要')} ${amount} ${t('個')}${product}！（${Math.round(priceMult * 100)}% ${t('價格')}）`);
+        world.logMessageT('order', '📋 新訂單：需要 {amount} 個{product}！（{v}% 價格）', { amount, product, v: Math.round(priceMult * 100) });
     }
 
     fulfillOrder(orderId, world) {
@@ -333,7 +333,7 @@ class ProcessingSystem {
         factory.warehouse[order.product] -= order.amount;
         world.stockpile.add('silver', order.reward, world.tickCount, `${t('訂單完成')}：${order.product}`);
         order.status = 'completed';
-        world.logMessage('order', `✅ ${t('訂單完成')}！${t('獲得')} ${order.reward} ${t('銀幣')}`);
+        world.logMessageT('order', '✅ 訂單完成！獲得 {reward} 銀幣', { reward: order.reward });
         return { ok: true };
     }
 
@@ -343,7 +343,7 @@ class ProcessingSystem {
             order.daysLeft--;
             if (order.daysLeft <= 0) {
                 order.status = 'expired';
-                world.logMessage('order', `❌ ${t('訂單過期')}：${order.description}`);
+                world.logMessageT('order', '❌ 訂單過期：{description}', { description: order.description });
             }
         }
         // Clean old orders

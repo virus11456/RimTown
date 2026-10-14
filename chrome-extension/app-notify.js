@@ -60,8 +60,8 @@ Object.assign(RimTownApp.prototype, {
         if (!n && !c) return;
         if (this.world) { this.world._scrubbedLeaks = 0; this.world._s2tFixed = 0; }
         try {
-            if (n) this.world.logMessage('system', `🧹 ${t('已清除')} ${n} ${t('則 AI 服務誤回的英文/自報身分內容，存檔已修正。')}`);
-            if (c) this.world.logMessage('system', `🈶 ${t('已把')} ${c} ${t('段簡體字台詞轉成繁體，存檔已修正。')}`);
+            if (n) this.world.logMessageT('system', '🧹 已清除 {n} 則 AI 服務誤回的英文/自報身分內容，存檔已修正。', { n });
+            if (c) this.world.logMessageT('system', '🈶 已把 {c} 段簡體字台詞轉成繁體，存檔已修正。', { c });
         } catch (e) {}
         this.saveGame().catch(() => {});
     },
@@ -144,7 +144,7 @@ Object.assign(RimTownApp.prototype, {
                 this._generateTileMapLayout();
                 if (this.tileMap) this.tileMap.agentPositions = {};
                 this.render();
-                this.world.logMessage('system', `${t('已從雲端同步最新存檔（')}${t(cloudMatch.town_name)}）。`);
+                this.world.logMessageT('system', '已從雲端同步最新存檔（{town_name}）。', { town_name: cloudMatch.town_name });
             }
         } catch (e) {
             console.error('[RimTown] Cloud load error:', e);
@@ -199,7 +199,7 @@ Object.assign(RimTownApp.prototype, {
 
         // v5.34.1 開局第一輪判定的成就靜默入袋(新地圖開場就達標的一批不洗版),之後的才彈通知
         if (this._achFirstCheckDone) this._showAchievementToast(def);
-        this.world.logMessage('system', `${t('成就解鎖：')}${def.icon} ${t(def.name)}`);
+        this.world.logMessageT('system', '成就解鎖：{icon} {def}', { icon: def.icon, def: def.name });
     },
 
     _showAchievementToast(def) {
@@ -390,8 +390,8 @@ Object.assign(RimTownApp.prototype, {
             if (rom) relNpc.modifyRomantic(rom);
             relNpc.addSharedMemory(`${h.evName}${t('：')}${reply}`);
             player.chatHistory.push({ speaker: player.name, target: npc.name, text: reply, time: world.clock.timeStr });
-            npc.memory.add(world.tickCount, world.clock.timeStr, 'conversation', `${t(player.name)}${t('回應了我的真心話：')}${reply}`, 8, [player.name]);
-            world.logMessage('player_chat', `${t(player.name)} → ${t(npc.name)}: ${reply}`, player.name, npc.name);
+            npc.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '{player}回應了我的真心話：{reply}', { player: player.name, reply }, 8, [player.name]);
+            world.logMessageT('player_chat', '{player} → {npc}: {reply}', { player: player.name, npc: npc.name, reply }, player.name, npc.name);
             this.bgm?.sfx?.('send');
             this.state = world.getState();
             this.renderSidebar();

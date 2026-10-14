@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.16.0
+ * Version: 6.20.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.16.0');
+define('RIMTOWN_VERSION', '6.20.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,60 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.20.0',
+            'date'    => '2026-10-13',
+            'changes' => array(
+                '🌐 B1 第四步：八卦內容（戀愛／吃醋／新情侶／鬧翻／結婚／劈腿／分手／離婚／生子／去世／節慶／玩家放話等 30 多條）、傳話誇張化的包裝句、委託描述（委託過期／完成／沒有下文）、親緣故事池也改成模板——切語言後紀錄分頁與村民記憶幾乎全翻：中文玩四天再切英文，紀錄分頁殘留中文 21/500 → 5/500、村民記憶 53/1080 → 4/1044，剩下的是鄰鎮商隊到貨、考驗公告與個別 AI 文字',
+                '📦 存檔體積（B12）再收：日報素材沒出報時會無限累積（35 天 1700 筆、210KB）改最多 120 筆；共同回憶每對 30→8 筆（提示詞只用 3 筆）；村民對話紀錄 400→300 則；記憶上限改為對話 30／社交 30／觀察 15／感想 20／出行 10。35 天 full 模式 1345–1355KB、casual 1111KB、idle 20 天 1076KB（門檻 1.5MB）；soak 報告多印體積拆解',
+                '🧪 memory_i18n_test 加八卦（巢狀包裝句）與委託描述段',
+            ),
+            'changes_en' => array(
+                '🌐 B1 step four: gossip content (30-odd lines: crushes, jealousy, new couples, fallings-out, marriage, cheating, break-ups, divorce, births, deaths, festivals, player-seeded rumors), the exaggeration wrappers added as gossip spreads, request descriptions (expired / completed / neglected) and the kinship story pool are templates now too. After a language switch the Records tab and villager memories follow almost completely: four days in Chinese then English leaves 5/500 Chinese lines in Records (was 21) and 4/1044 in memories (was 53); what remains is caravan arrivals, trial announcements and individual AI text',
+                '📦 Save size (B12) trimmed further: newspaper material no longer piles up when no issue is published (1700 items, 210 KB after 35 days), capped at 120; shared memories per pair 30 → 8 (prompts use 3); NPC conversation log 400 → 300; memory caps are now conversation 30 / social 30 / observation 15 / reflection 20 / departure 10. A 35-day full-mode save is 1345–1355 KB, casual 1111 KB, 20-day idle 1076 KB (threshold 1.5 MB); the soak report prints a size breakdown',
+                '🧪 memory_i18n_test gains gossip (nested wrapper) and request-description sections',
+            ),
+        ),
+        array(
+            'version' => '6.19.0',
+            'date'    => '2026-10-13',
+            'changes' => array(
+                '🌐 B1 第三步：規則式對話摘要（45 條「X和Y在酒館……」）、每日感想與觀察（夢想／暗戀／天氣／節慶／昨天在哪忙）、「約了誰去哪」、旅行理由、委託板與任務日誌也改成模板——模板參數可以巢狀（「與X交談：{摘要}」裡的摘要本身也是模板），切語言後資訊卡記憶與紀錄分頁幾乎整份跟著翻：中文玩四天再切英文，紀錄分頁殘留中文從 265/500 降到 21/500、村民記憶從 826/1111 降到 53/1080，剩下的是八卦內容、委託描述與親緣故事',
+                '🛠️ 對話摘要與「約了誰去哪」裡的地點改用顯示名（之前是地點 id，中文句子裡會出現「在chapel」「去forest」）；旅行中名單的理由依當下語言顯示',
+                '🧪 memory_i18n_test 加對話摘要段（巢狀模板、英文無中文、中文無地點 id、跑一天後英文模式 conversation 類日誌與記憶零中文）',
+                '📦 存檔體積（B12）：模板化後存檔只存 key＋參數、不再另存一份文字（讀檔時依當下語言算）、畫面狀態不帶 key；對話摘要記憶每人最多 40 筆、觀察 20 筆（AI 只讀最近 10–20 筆）、日誌 1000→800 條；35 天 full 模式存檔 1454 KB、casual 1212 KB，仍在 1.5MB 門檻內',
+            ),
+            'changes_en' => array(
+                '🌐 B1 step three: rule-based conversation summaries (45 lines of "X and Y at the tavern..."), daily reflections and observations (dreams, crushes, weather, festivals, where you worked yesterday), "invited whom to where", travel reasons, request-board and quest logs are templates now too. Template parameters can nest (the summary inside "Talked with X: {summary}" is itself a template), so after a language switch the info-card memories and the Records tab follow almost entirely: after four days in Chinese and a switch to English, leftover Chinese lines in Records drop from 265/500 to 21/500 and in villager memories from 826/1111 to 53/1080; what remains is gossip content, request descriptions and kinship stories',
+                '🛠️ Locations in conversation summaries and "invited whom to where" now use display names (they used to be location ids, so Chinese sentences showed "at chapel" or "to forest"); travel reasons in the away list follow the current language',
+                '🧪 memory_i18n_test gains a conversation-summary section (nested templates, no Chinese in English, no raw location ids in Chinese, zero Chinese in conversation logs and memories after a day in English mode)',
+                '📦 Save size (B12): templated entries now store only key plus parameters, no second copy of the text (rendered on load in the current language), and UI state carries no keys; conversation memories are capped at 40 per villager and observations at 20 (the AI only reads the latest 10–20), the log at 800 lines instead of 1000; a 35-day full-mode save is 1454 KB and casual 1212 KB, still under the 1.5 MB threshold',
+            ),
+        ),
+        array(
+            'version' => '6.18.0',
+            'date'    => '2026-10-13',
+            'changes' => array(
+                '🌐 B1 第二步：小鎮日誌（紀錄分頁）也改成「模板 key＋參數」存檔——戀愛／結婚／分手／鬧翻、節慶、出生／離世、探險、選舉、議會、交易／訂單、建造／升級、商隊、八卦、互訪等 147 處日誌，切換語言後紀錄分頁整份跟著翻（含人名）；建立當下的文字仍存一份給跑馬燈、編年史與舊存檔，舊存檔照常讀；順手把自動拼出的英文校對了 60 句（半形括號、空格、語序）',
+                '🧪 scripts/memory_i18n_test.js 加日誌段（中→英→中、舊式日誌維持、存檔帶模板不帶快取、讀檔後渲染）；i18n 基準從 232 筆縮到 227 筆',
+            ),
+            'changes_en' => array(
+                '🌐 B1 step two: the town log (Records tab) is now stored as template keys plus parameters too. 147 log sites (dating, marriage, break-ups, feuds, festivals, births and deaths, expeditions, elections, council, trades and orders, construction and upgrades, caravans, gossip, visits and more) follow the interface language after a switch, names included. The text as written at creation is still kept for the ticker, the chronicle and old saves, and old saves load as before. 60 of the auto-assembled English lines were proofread (ASCII brackets, spacing, word order)',
+                '🧪 scripts/memory_i18n_test.js gains a log section (zh → en → zh, legacy entries unchanged, saves carry templates but not caches, rendering after load); the i18n baseline shrinks from 232 to 227',
+            ),
+        ),
+        array(
+            'version' => '6.17.0',
+            'date'    => '2026-10-13',
+            'changes' => array(
+                '🌐 B1 第一步：村民的規則式記憶改成「模板 key＋參數」存檔（戀愛／結婚／分手／鬧翻／看星星／弔念／派系／探險／婚禮／新居民／對話摘要等 63 處），顯示時依當下介面語言重新翻譯——切換語言後，資訊卡最近記憶、關係史與人生摘要不再中英混雜；建立當下的文字仍存一份給 AI 提示詞與舊存檔用，舊存檔照常讀',
+                '🧪 新增回歸測試 scripts/memory_i18n_test.js（中→英→中渲染、舊式記憶維持、存讀檔保留模板、舊存檔相容、getState 效能）',
+            ),
+            'changes_en' => array(
+                '🌐 B1 step one: villagers\' rule-based memories are now stored as a template key plus parameters (63 call sites: dating, marriage, break-ups, feuds, stargazing, mourning, factions, expeditions, weddings, newcomers, conversation summaries and more) and rendered in the current interface language on display. After switching languages the recent memories on the info card, the relationship history and the life summary no longer mix Chinese and English. The text as written at creation is still kept for AI prompts and old saves, and old saves load as before',
+                '🧪 New regression test scripts/memory_i18n_test.js (zh → en → zh rendering, legacy memories unchanged, templates survive save & load, old-save compatibility, getState performance)',
+            ),
+        ),
         array(
             'version' => '6.16.0',
             'date'    => '2026-10-13',

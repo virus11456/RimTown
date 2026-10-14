@@ -97,7 +97,7 @@ function processDailyProduction(world) {
                 agent.moodModifier = (agent.moodModifier || 0) - 3;
                 if (Math.random() < 0.3) agent.memory?.add?.(world.tickCount, world.clock.timeStr, 'daily', t('連日加班，身體有點吃不消，但訂單堆著總得有人做。'), 4, []);
             } else {
-                world.logMessage('economy', `${t('銀庫不足，付不出')}${agent.name}${t('的加班津貼，今日照常排班。')}`);
+                world.logMessageT('economy', '銀庫不足，付不出{agent}的加班津貼，今日照常排班。', { agent: agent.name });
             }
         }
         if (agent.job.key === 'farmer') { eff *= SEASON_FARM_MOD[world.clock.season] || 1; eff *= 1 + (world.news?world.news.getModifier('farm_bonus',0):0) + (world.weather?world.weather.farmModifier:0) + (world.harborFlags?.granary ? 0.2 : 0); } // v5.93.0 大糧倉 +20%
@@ -109,7 +109,7 @@ function processDailyProduction(world) {
         for (const [r,a] of Object.entries(recipe.inputs)) { if (!sp.has(r,a)) { canProduce=false; break; } }
         if (!canProduce) {
             eff *= 0.4;
-            world.logMessage('economy',`${agent.name}${t('材料短缺，用邊角料將就趕工。')}`,agent.name);
+            world.logMessageT('economy', '{agent}材料短缺，用邊角料將就趕工。', { agent: agent.name }, agent.name);
         } else {
             for (const [r,a] of Object.entries(recipe.inputs)) sp.consume(r,a,world.tickCount,`${agent.name}${t('的生產')}`,agent.name);
         }
@@ -150,7 +150,7 @@ function processDailyProduction(world) {
         const wasted = Math.floor(excessMeals * 0.08);
         if (wasted > 0) {
             sp.consume('meals', wasted, world.tickCount, t('餐食放到過期'));
-            world.logMessage('economy', `${wasted}${t('份餐食放到過期倒掉了——考慮讓廚房排休。')}`);
+            world.logMessageT('economy', '{wasted}份餐食放到過期倒掉了——考慮讓廚房排休。', { wasted });
         }
     }
     // v5.52.0 食物稀缺曲線:超過糧倉容量的存糧會腐壞(穀倉擴容、冷藏穀庫減緩腐壞),避免食物爆量失去取捨
@@ -161,7 +161,7 @@ function processDailyProduction(world) {
         const spoiled = Math.floor(excessFood * 0.05 * decayMod);
         if (spoiled > 0) {
             sp.consume('food', spoiled, world.tickCount, t('存糧過多腐壞'));
-            world.logMessage('economy', `${t('糧倉滿了，')}${spoiled}${t('份食物腐壞——可辦慶典或賣給商人消化存糧。')}`);
+            world.logMessageT('economy', '糧倉滿了，{spoiled}份食物腐壞——可辦慶典或賣給商人消化存糧。', { spoiled });
         }
     }
 }
@@ -321,7 +321,7 @@ class BuildingManager {
         this._counter++;
         const p={id:`build_${this._counter}`,name:upg.name,description:upg.description,costs:upg.costs,workRequired:upg.work,workDone:0,effects:upg.effects||{},status:'building',upgradeKey:buildingKey,targetLevel:lvl+1};
         this.projects.push(p);
-        world.logMessage('building',`${t('開始升級：')}${upg.name}${t('！')}`);
+        world.logMessageT('building', '開始升級：{upg}！', { upg: upg.name });
         return p;
     }
     startProject(key, world, site) {
@@ -332,7 +332,7 @@ class BuildingManager {
         this._counter++;
         const p={id:`build_${this._counter}`,name:tmpl.name,description:tmpl.description,costs:tmpl.costs,workRequired:tmpl.work,workDone:0,effects:tmpl.effects||{},status:'building',buildingKey:key};
         if (site && Number.isFinite(site.x)) { p.siteX = site.x; p.siteY = site.y; }
-        this.projects.push(p); world.logMessage('building',`${t('開始建造：')}${tmpl.name}${t('！')}`); return p;
+        this.projects.push(p); world.logMessageT('building', '開始建造：{tmpl}！', { tmpl: tmpl.name }); return p;
     }
     dailyConstruction(world) {
         const done=[];
@@ -355,7 +355,7 @@ class BuildingManager {
                     existing.description=p.description;
                 }
                 Object.entries(p.effects).forEach(([k,v])=>{ this.activeEffects[k]=(this.activeEffects[k]||0)+(typeof v==='number'?v:0); if(typeof v!=='number') this.activeEffects[k]=v; });
-                world.logMessage('building',`${t('升級完成：')}${p.name}${t('！')}`);
+                world.logMessageT('building', '升級完成：{p}！', { p: p.name });
                 if (world.dailyNews) world.dailyNews.collectEvent('building', `${p.name}${t('升級完成了！')}`, 7);
                 Object.values(world.agents).forEach(a=>{ a.moodModifier=(a.moodModifier||0)+8; });
             } else {
@@ -364,7 +364,7 @@ class BuildingManager {
                 p.level=1;
                 this.completed.push(p);
                 Object.entries(p.effects).forEach(([k,v])=>{ this.activeEffects[k]=(this.activeEffects[k]||0)+(typeof v==='number'?v:0); if(typeof v!=='number') this.activeEffects[k]=v; });
-                world.logMessage('building',`${t('建造完成：')}${p.name}${t('！')}`);
+                world.logMessageT('building', '建造完成：{p}！', { p: p.name });
                 if (world.dailyNews) world.dailyNews.collectEvent('building', `${p.name}${t('建造完成了！')}`, 6);
                 Object.values(world.agents).forEach(a=>{ a.moodModifier=(a.moodModifier||0)+5; });
                 // v4.9.0: 建築完工 → 檢查相鄰組合 + 相關職業 NPC 發表 AI 評論
@@ -401,7 +401,7 @@ class TradeManager {
     constructor() { this.merchant=null; this._daysSince=0; this.tradeHistory=[]; }
     dailyUpdate(world) {
         this._daysSince++;
-        if (this.merchant) { this.merchant.daysRemaining--; if(this.merchant.daysRemaining<=0){ world.logMessage('trade',`${t('商人')}${this.merchant.name}${t('已離開。')}`); this.merchant=null; } return; }
+        if (this.merchant) { this.merchant.daysRemaining--; if(this.merchant.daysRemaining<=0){ world.logMessageT('trade', '商人{merchant}已離開。', { merchant: this.merchant.name }); this.merchant=null; } return; }
         const freq=world.buildings.getEffect('merchant_frequency',1);
         const newsBoost=world.news?world.news.getModifier('merchant_chance',0):0;
         const chance=Math.min(0.6, 0.15*freq+(this._daysSince-3)*0.05+newsBoost);
@@ -418,7 +418,7 @@ class TradeManager {
         mt.sells.forEach(r=>{ const bp=BASE_PRICES[r]||5; offers.push({resource:r,amount:randInt(10,30),price:Math.round(bp*(1.2+Math.random()*0.6)*(1-tradeBonus-buyBonus-repTradeBonus)*10)/10,isBuying:false}); });
         mt.buys.forEach(r=>{ const bp=BASE_PRICES[r]||5; offers.push({resource:r,amount:randInt(15,40),price:Math.round(bp*(0.5+Math.random()*0.3)*(1+tradeBonus+sellBonus+repTradeBonus)*10)/10,isBuying:true}); });
         this.merchant={name:pickRandom(mt.names),specialty:mt.specialty,offers,daysRemaining:randInt(2,4)};
-        world.logMessage('trade',`${t('商人')}${this.merchant.name}${t('到了！專長：')}${mt.specialty}。`);
+        world.logMessageT('trade', '商人{merchant}到了！專長：{specialty}。', { merchant: this.merchant.name, specialty: mt.specialty });
     }
     executeTrade(offerIdx, qty, world) {
         if(!this.merchant) return {error:t('沒有商人')};
@@ -486,7 +486,7 @@ class ResearchManager {
             for(const op of Object.values(this.projects)) {
                 if(op.status==='locked'&&op.prerequisites.every(pre=>this.projects[pre]?.status==='complete')) op.status='available';
             }
-            world.logMessage('research',`${t('研究完成：')}${p.name}${t('！')}`);
+            world.logMessageT('research', '研究完成：{p}！', { p: p.name });
             Object.values(world.agents).forEach(a=>{ a.moodModifier=(a.moodModifier||0)+3; });
         }
     }
@@ -601,7 +601,7 @@ class NewsSystem {
             const bulletin = this._generateBulletin(world, currentDay);
             if (bulletin) {
                 this.bulletins.push(bulletin);
-                world.logMessage('news', `📰 ${bulletin.headline}`, '', '');
+                world.logMessageT('news', '📰 {headline}', { headline: bulletin.headline }, '', '');
                 // News also becomes gossip topic
                 world.events.conversationTopics.push(bulletin.headline);
                 if (world.events.conversationTopics.length > 8) world.events.conversationTopics = world.events.conversationTopics.slice(-8);

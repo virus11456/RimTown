@@ -263,7 +263,7 @@ Object.assign(RimTownApp.prototype, {
 
         setTimeout(() => {
             this.world.logMessage('system', `🌅 ═══════════════════════════`);
-            this.world.logMessage('system', `🔄 ${msg}`);
+            this.world.logMessageT('system', '🔄 {msg}', { msg });
             this.world.logMessage('system', `🌅 ═══════════════════════════`);
             this.state = this.world.getState();
             this.render();
@@ -340,7 +340,7 @@ Object.assign(RimTownApp.prototype, {
         for (const [own, other] of [[a, b], [b, a]]) {
             for (const m of own.memory.entries) {
                 if ((m.relatedAgents || []).includes(other.name)) {
-                    rows.push({ tick: m.tick || 0, time: m.timeStr || '', who: own.name, text: m.content, cat: m.category });
+                    rows.push({ tick: m.tick || 0, time: m.timeStr || '', who: own.name, text: m.text ? m.text() : m.content, cat: m.category }); // v6.17.0 依當下語言
                 }
             }
         }

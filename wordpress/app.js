@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.16.0
-const RIMTOWN_APP_VERSION = '6.16.0';
+// RimTown - Frontend App (WordPress Plugin) v6.20.0
+const RIMTOWN_APP_VERSION = '6.20.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -630,7 +630,7 @@ class RimTownApp {
             this._hideGuestBanner();
             this._closeAuthModal();
             this._updateAccountButton();
-            this.world.logMessage('system', `${t('歡迎回來，')}${this.auth.username}！`);
+            this.world.logMessageT('system', '歡迎回來，{username}！', { username: this.auth.username });
             // v5.33.0 登入後同步帳號的 AI 設定(金鑰/供應商/額度);雲端沒有就把本機的推上去
             this._pullCloudSettings().then(changed => {
                 if (changed) return this._applySettingsFromStorage();
@@ -701,7 +701,7 @@ class RimTownApp {
             const food = 5 + day * 5;
             this.world.stockpile.add('silver', silver, this.world.tickCount, t('每日登入獎勵'), 'player');
             this.world.stockpile.add('food', food, this.world.tickCount, t('每日登入獎勵'), 'player');
-            this.world.logMessage('system', `🎁 ${t('每日登入獎勵(連續')} ${streak} ${t('天):+')}${silver} ${t('銀幣、+')}${food} ${t('食物')}`);
+            this.world.logMessageT('system', '🎁 每日登入獎勵(連續 {streak} 天):+{silver} 銀幣、+{food} 食物', { streak, silver, food });
             this.bgm?.sfx?.('coin');
             this.tileMap?.spawnFxOnAgent?.('player', `💰 +${silver}`, { color: '#ffd166', burst: '🪙', burstCount: 6 });
             this._showCenterNotification({
@@ -749,7 +749,7 @@ class RimTownApp {
                 desc: `${t('小鎮繼續運轉了')} ${Math.round(ticks / 96 * 10) / 10} ${t('天')}:${t('銀幣')} ${dSil >= 0 ? '+' : ''}${dSil}、${t('食物')} ${dFood >= 0 ? '+' : ''}${dFood}、${events} ${t('件大小事(見紀錄)')}`,
                 autoDismiss: 9000,
             });
-            this.world.logMessage('system', `🌙 ${t('離線結算:小鎮在你離開時模擬了')} ${ticks} ${t('個時段')}`);
+            this.world.logMessageT('system', '🌙 離線結算:小鎮在你離開時模擬了 {ticks} 個時段', { ticks });
         } catch (e) { console.warn('[RimTown] offline progress error', e); }
     }
 
@@ -923,7 +923,7 @@ class RimTownApp {
         }
         decos.push({ type: def.type, x: tx, y: ty });
         this.tileMap.decorations = decos;
-        this.world.logMessage('building', `${def.icon} ${t('你在小鎮擺放了')}${t(def.name)}(${t('美觀')}+${def.beauty})`);
+        this.world.logMessageT('building', '{icon} 你在小鎮擺放了{def}(美觀+{beauty})', { icon: def.icon, def: def.name, beauty: def.beauty });
         this.bgm?.sfx?.('coin');
         this.world.checkCombos?.(); // v4.9.0 擺放後偵測相鄰組合
         return true;
@@ -1258,7 +1258,7 @@ class RimTownApp {
             this._saveCurrentTown(townName);
             this.render();
             this._renderTownList();
-            this.world.logMessage('system', `${t('註冊成功！歡迎，')}${this.auth.username}${t('！你的全新城鎮已建立。')}`);
+            this.world.logMessageT('system', '註冊成功！歡迎，{username}！你的全新城鎮已建立。', { username: this.auth.username });
             this._syncToCloud();
             // Show tutorial for new players after registration
             if (!localStorage.getItem('rimtown_tutorial_done')) {
@@ -1451,13 +1451,13 @@ class RimTownApp {
     // v4.0: Shop buy/sell
     _shopBuy(itemKey, amount) {
         const result = this.world.shop.buy(itemKey, amount, this.world);
-        if (!result.success) this.world.logMessage('economy', `❌ ${result.msg}`);
+        if (!result.success) this.world.logMessageT('economy', '❌ {msg}', { msg: result.msg });
         this.state = this.world.getState(); this.renderSidebar();
     }
 
     _shopSell(itemKey, amount) {
         const result = this.world.shop.sell(itemKey, amount, this.world);
-        if (!result.success) this.world.logMessage('economy', `❌ ${result.msg}`);
+        if (!result.success) this.world.logMessageT('economy', '❌ {msg}', { msg: result.msg });
         this.state = this.world.getState(); this.renderSidebar();
     }
 
@@ -1471,7 +1471,7 @@ class RimTownApp {
         };
         const eff = effects[reaction] || {};
         if (eff.mood_all) Object.values(this.world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + eff.mood_all; });
-        this.world.logMessage('player_action', `📰 ${t('你對今日新聞選擇了「')}${labels[reaction] || reaction}${t('」')}`);
+        this.world.logMessageT('player_action', '📰 你對今日新聞選擇了「{reaction}」', { reaction: labels[reaction] || reaction });
         this._newsReacted = true;
         this.state = this.world.getState(); this.renderSidebar();
     }
@@ -1538,7 +1538,7 @@ class RimTownApp {
         candidate.votes = (candidate.votes || 0) + 1;
         election._playerVoted = true;
         this._unlockAchievement('voted');
-        this.world.logMessage('player_action', `${t('你投票給了 ')}${t(candidate.name)}。`, 'player');
+        this.world.logMessageT('player_action', '你投票給了 {candidate}。', { candidate: candidate.name }, 'player');
         this.state = this.world.getState();
         this.renderSidebar();
     }
@@ -1565,7 +1565,7 @@ class RimTownApp {
                 npcRel.modifyAffinity(1);
             }
             this._flirtCount = (this._flirtCount || 0) + 1;
-            this.world.logMessage('player_action', `${t('你對')}${t(npc.name)}${t('調情。')}`, player.name, npc.name);
+            this.world.logMessageT('player_action', '你對{npc}調情。', { npc: npc.name }, player.name, npc.name);
             player.memory?.add?.(this.world.tickCount, this.world.clock.timeStr, 'social', `${t('對')}${t(npc.name)}${t('調情')}`, 3, [npc.name]);
         }
         this.state = this.world.getState();
@@ -1590,16 +1590,16 @@ class RimTownApp {
             if (rel.status === 'dating') {
                 rel.status = 'married';
                 if (npcRel) npcRel.status = 'married';
-                this.world.logMessage('event', `${t(player.name)}${t('與')}${t(npc.name)}${t('結婚了！')}`, player.name, npc.name);
+                this.world.logMessageT('event', '{player}與{npc}結婚了！', { player: player.name, npc: npc.name }, player.name, npc.name);
                 this._unlockAchievement('first_marriage');
             } else {
                 rel.status = 'dating';
                 if (npcRel) npcRel.status = 'dating';
-                this.world.logMessage('event', `${t(player.name)}${t('與')}${t(npc.name)}${t('開始交往！')}`, player.name, npc.name);
+                this.world.logMessageT('event', '{player}與{npc}開始交往！', { player: player.name, npc: npc.name }, player.name, npc.name);
                 this._unlockAchievement('first_dating');
             }
         } else {
-            this.world.logMessage('event', `${t(npc.name)}${t('拒絕了你的告白。')}`, player.name, npc.name);
+            this.world.logMessageT('event', '{npc}拒絕了你的告白。', { npc: npc.name }, player.name, npc.name);
             this._unlockAchievement('rejected');
         }
         this.state = this.world.getState();
@@ -2230,7 +2230,7 @@ class RimTownApp {
                         if (!this.world.workPolicy) this.world.workPolicy = {};
                         this.world.workPolicy[good] = mode;
                         const modeLabel = mode === 'off' ? t('休工') : mode === 'extra' ? t('加班') : t('正常排班');
-                        this.world.logMessage('economy', `${playerTitle(this.world)}${t('下令：')}${modeLabel}（${t('明日生效')}）`);
+                        this.world.logMessageT('economy', '{v}下令：{modeLabel}（明日生效）', { v: playerTitle(this.world), modeLabel });
                         this.renderSidebar();
                     }
                     break;
@@ -2342,7 +2342,7 @@ class RimTownApp {
                     this._generateTileMapLayout();
                     if (this.tileMap) this.tileMap.agentPositions = {};
                     this._updateHeaderTownName(name);
-                    this.world.logMessage('system', `${t('🏘️ 新城鎮「')}${name}${t('」已建立！')}`);
+                    this.world.logMessageT('system', '🏘️ 新城鎮「{name}」已建立！', { name });
                     this.render();
                     break;
                 }

@@ -1636,7 +1636,7 @@ class QuestSystem {
             if (sq.status === 'locked') {
                 if (this._checkSideQuestTrigger(sqDef, world)) {
                     sq.status = 'active';
-                    world.logMessage?.('quest', `📜 ${t('支線任務解鎖')}：「${sqDef.title}」`);
+                    world.logMessageT?.('quest', '📜 支線任務解鎖：「{title}」', { title: sqDef.title });
                     if (sqDef.story) {
                         world.logMessage?.('quest', `📖 ${sqDef.story}`);
                     }
@@ -1701,7 +1701,7 @@ class QuestSystem {
         }
         try { this._applyEffects(sqDef.effects, world); } catch (e) {} // v5.84.0
         try { world.growth?.addXp(15, 'side_quest', world); } catch (e) {} // v5.94.0 經驗
-        world.logMessage?.('quest', `✨ ${t('支線任務完成')}：「${sqDef.title}」！`);
+        world.logMessageT?.('quest', '✨ 支線任務完成：「{title}」！', { title: sqDef.title });
         if (sqDef.onComplete) {
             world.logMessage?.('quest', `📖 ${sqDef.onComplete}`);
         }
@@ -1741,7 +1741,7 @@ class QuestSystem {
                     }
                 }
             }
-            world.logMessage?.('quest', `⭐ ${t('每日目標完成')}：${objDef.icon} ${objDef.text}！`);
+            world.logMessageT?.('quest', '⭐ 每日目標完成：{icon} {text}！', { icon: objDef.icon, text: objDef.text });
         }
     }
 
@@ -1769,7 +1769,7 @@ class QuestSystem {
             if (this._checkStoryEventTrigger(event, world)) {
                 this.triggeredStoryEvents.push(event.id);
                 this._pendingStoryEvent = event;
-                world.logMessage?.('event', `${event.icon} 【${event.title}】${event.text}`);
+                world.logMessageT?.('event', '{icon} 【{title}】{text}', { icon: event.icon, title: event.title, text: event.text });
                 break; // Only one story event per tick
             }
         }
@@ -1939,7 +1939,7 @@ class QuestSystem {
                     next.status = 'active';
                     const nextDef = this._main().find(q => q.id === nextId);
                     if (nextDef) {
-                        world.logMessage?.('quest', `📜 ${t('新任務解鎖')}：「${nextDef.title}」`);
+                        world.logMessageT?.('quest', '📜 新任務解鎖：「{title}」', { title: nextDef.title });
                     }
 
                     // If crisis quest, roll crisis type
@@ -2382,7 +2382,7 @@ class RequestBoard {
         this.ap.freeFirst = !!g?.has('earlybird'); // v5.94.0 天賦:早起
         this.ap.left = this.ap.max; this.ap.bought = 0;
         this._generate(world);
-        world.logMessage?.('quest', `📋 ${t('今日委託')}：${this.board.filter(r => r.status === 'open').length} ${t('件')}，${t('行動點')} ${this.ap.left}`);
+        world.logMessageT?.('quest', '📋 今日委託：{n} 件，行動點 {ap}', { n: this.board.filter(r => r.status === 'open').length, ap: this.ap.left }); // v6.19.0
     }
     _generate(world) {
         const vs = this._villagers(world); if (vs.length < 3) return;
@@ -2464,21 +2464,21 @@ class RequestBoard {
         }
     }
     // --- 文案(顯示時才翻譯,存檔只存結構) ---
-    describe(r) {
-        const fill = (s, m) => Object.entries(m).reduce((acc, [k, v]) => acc.split('{' + k + '}').join(v), s);
-        if (r.chainText) return fill(t(r.chainText), { npc: t(r.chainNpcName || r.npcName), target: t(r.targetName || r.otherName || ''), loc: r.locName || '', n: r.amount || '' }); // v6.5.0
+    describe(r) { const d = this.describeT(r); return Memory.render(d.k, d.p); } // v6.20.0 字串版(UI/通知);模板版給日誌與記憶
+    describeT(r) {
+        if (r.chainText) return tpl(r.chainText, { npc: r.chainNpcName || r.npcName, target: r.targetName || r.otherName || '', loc: r.locName || '', n: r.amount || '' }); // v6.5.0
         switch (r.type) {
-            case 'deliver': return fill(t('把 {n} {res} 送到 {npc} 手上'), { n: r.amount, res: this.resName(r.res), npc: t(r.npcName) });
-            case 'visit': return fill(t('{npc} 今天心情差，去陪他聊聊'), { npc: t(r.npcName) });
-            case 'mediate': return fill(t('勸 {a} 和 {b} 和好（先各聊一次，再按「調解」）'), { a: t(r.npcName), b: t(r.otherName) });
-            case 'fetch': return fill(t('幫 {npc} 去 {loc} 拿東西回來'), { npc: t(r.npcName), loc: t(r.locName || r.loc) });
-            case 'gift': return fill(t('{npc} 今天過得不好，送他一份禮'), { npc: t(r.npcName) });
-            case 'caravan': return fill(t('{npc} 想看鎮上的貨出去走走：押一趟商隊去鄰鎮'), { npc: t(r.npcName) });
-            case 'rumor': return fill(t('{npc} 想知道 {target} 的近況：去跟他打聽（用「打聽」）'), { npc: t(r.npcName), target: t(r.targetName) });
-            case 'trial': return fill(t('{npc} 請你為本季考驗出力：把{unit}再推高 {n}'), { npc: t(r.npcName), unit: (typeof TRIAL_TYPES !== 'undefined' && this._trialUnit) ? this._trialUnit(r.trialType) : '', n: r.delta });
-            case 'canvass': return fill(t('{npc} 請你替他拉票：去說服 {target}（用「說服」）'), { npc: t(r.npcName), target: t(r.targetName) });
+            case 'deliver': return tpl('把 {n} {res} 送到 {npc} 手上', { n: r.amount, res: this.resName(r.res), npc: r.npcName });
+            case 'visit': return tpl('{npc} 今天心情差，去陪他聊聊', { npc: r.npcName });
+            case 'mediate': return tpl('勸 {a} 和 {b} 和好（先各聊一次，再按「調解」）', { a: r.npcName, b: r.otherName });
+            case 'fetch': return tpl('幫 {npc} 去 {loc} 拿東西回來', { npc: r.npcName, loc: r.locName || r.loc });
+            case 'gift': return tpl('{npc} 今天過得不好，送他一份禮', { npc: r.npcName });
+            case 'caravan': return tpl('{npc} 想看鎮上的貨出去走走：押一趟商隊去鄰鎮', { npc: r.npcName });
+            case 'rumor': return tpl('{npc} 想知道 {target} 的近況：去跟他打聽（用「打聽」）', { npc: r.npcName, target: r.targetName });
+            case 'trial': return tpl('{npc} 請你為本季考驗出力：把{unit}再推高 {n}', { npc: r.npcName, unit: { famine: '食物', plague: '草藥', bandits: '防衛值', pricewar: '銀幣' }[r.trialType] || '', n: r.delta });
+            case 'canvass': return tpl('{npc} 請你替他拉票：去說服 {target}（用「說服」）', { npc: r.npcName, target: r.targetName });
         }
-        return r.type;
+        return tpl(r.type);
     }
     icon(r) { return { deliver: '📦', visit: '🫂', mediate: '🤝', fetch: '🏃', gift: '🎁', caravan: '🐪', rumor: '👂', trial: '⚖️', canvass: '🗳️' }[r.type] || '📋'; }
     _trialUnit(type) { return { famine: t('食物'), plague: t('草藥'), bandits: t('防衛值'), pricewar: t('銀幣') }[type] || ''; }
@@ -2601,8 +2601,8 @@ class RequestBoard {
         world.growth?.addXp(r.type === 'mediate' ? 15 : 10, 'request', world); // v5.94.0 經驗
         this._reward(r, world, r.reward || {});
         const npc = world.agents[r.npcId]; const pname = this._playerName(world); const desc = this.describe(r);
-        npc?.memory?.add?.(world.tickCount, world.clock.timeStr, 'help', `${pname}${t('幫了我：')}${desc}`, 7, [pname]);
-        world.logMessage?.('quest', `✅ ${t('委託完成')}：${desc}（${t('行動點剩')} ${this.ap.left}）`);
+        npc?.memory?.addT?.(world.tickCount, world.clock.timeStr, 'help', '{p}幫了我：{d}', { p: pname, d: this.describeT(r) }, 7, [pname]); // v6.20.0 模板
+        world.logMessageT?.('quest', '✅ 委託完成：{d}（行動點剩 {ap}）', { d: this.describeT(r), ap: this.ap.left });
         world.dailyNews?.collectEvent?.('social', `${pname}${t('替')}${t(r.npcName)}${t('辦妥了一件事：')}${desc}`, 6, [r.npcName]);
         world.events?.conversationTopics?.push(`${pname}${t('幫')}${t(r.npcName)}${t('的忙')}`);
         if (r.chainKey) this._chainAdvance(r, world); else this._maybeStartChain(r, world); // v6.5.0
@@ -2610,8 +2610,8 @@ class RequestBoard {
     _fail(r, world, idx = 0) { // v6.2.0 同一天第一件過期 −3(硬頸 −2),其餘每件 −1、不另記在心上
         r.status = 'failed'; this.stats.failed++;
         const npc = world.agents[r.npcId]; const pname = this._playerName(world);
-        if (npc) { const rel = npc.relationships.getOrCreate('player', pname); rel.modifyAffinity?.(idx > 0 ? -1 : (world.growth?.has('grit') ? -2 : -3)); if (idx === 0) npc.memory?.add?.(world.tickCount, world.clock.timeStr, 'neglect', `${t('拜託')}${pname}${t('的事沒有下文：')}${this.describe(r)}`, 5, [pname]); }
-        world.logMessage?.('quest', `⌛ ${t('委託過期')}：${this.describe(r)}`);
+        if (npc) { const rel = npc.relationships.getOrCreate('player', pname); rel.modifyAffinity?.(idx > 0 ? -1 : (world.growth?.has('grit') ? -2 : -3)); if (idx === 0) npc.memory?.addT?.(world.tickCount, world.clock.timeStr, 'neglect', '拜託{p}的事沒有下文：{d}', { p: pname, d: this.describeT(r) }, 5, [pname]); }
+        world.logMessageT?.('quest', '⌛ 委託過期：{d}', { d: this.describeT(r) }); // v6.19.0;v6.20.0 模板
         if (r.chainKey && this.chain && this.chain.key === r.chainKey && (r.chainStep ?? this.chain.step) === this.chain.step) this._chainBreak(world); // v6.5.0;v6.10.1 心結鏈第三步的 npcId 是對方,改比 key＋step
     }
     // ===== v6.5.0 委託鏈 =====

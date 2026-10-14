@@ -99,22 +99,52 @@ class Needs {
 }
 
 // --- Memory ---
+// v6.19.0 模板物件:{k, p},給 Memory.addT／logMessageT 當巢狀參數用;建立當下的文字用 Memory.render 算
+function tpl(k, p = {}) { return { k, p }; }
+// v6.19.0 地點顯示名(中文原文,顯示時再 t()):主題鎮專屬名 → 通用對照表 → id 去底線
+const LOC_LABELS = { town_hall:'鎮公所', clinic:'診所', workshop:'工坊', farm:'農場', tavern:'酒館', guardpost:'哨站', chapel:'教堂', library:'圖書館', general_store:'雜貨店', market:'市集', park:'公園', mine:'礦場', residential_east:'東區住宅', residential_west:'西區住宅', residential_north:'北區住宅', residential_south:'南區住宅', warehouse:'倉庫', school:'學堂', blacksmith:'鐵匠鋪', bakery:'麵包坊', dock:'碼頭', lighthouse:'燈塔', plaza:'廣場' };
+function locName(world, id) {
+    if (!id) return '';
+    const themed = (typeof TOWN_THEMES !== 'undefined' && TOWN_THEMES[world?.townTheme || 'frontier']?.locationNames?.[id]);
+    return themed || world?.townMap?.locations?.[id]?.name || LOC_LABELS[id] || String(id).replace(/_/g, ' ');
+}
+// v6.17.0 B1 第一步:規則式記憶改成「模板 key + 參數」存檔(k/p),顯示時依當下語言重新翻譯;
+// content 仍照建立當下的語言存一份(舊存檔、LLM 提示詞與檢索的 bigram 都照舊用它)
 class MemoryEntry {
-    constructor(tick, timeStr, category, content, importance = 5, relatedAgents = []) {
+    constructor(tick, timeStr, category, content, importance = 5, relatedAgents = [], k = null, p = null) {
         this.tick = tick; this.timeStr = timeStr; this.category = category;
         this.content = content; this.importance = importance; this.relatedAgents = relatedAgents;
+        if (k) { this.k = k; this.p = p || {}; }
     }
-    toDict() {
-        return { tick:this.tick, time:this.timeStr, category:this.category, content:this.content,
-                 importance:this.importance, related_agents:this.relatedAgents };
+    text() { // 依當下介面語言;同語言下快取,getState 每格都會叫到
+        if (!this.k) return this.content;
+        const L = (typeof I18N !== 'undefined' && I18N.getLang) ? I18N.getLang() : 'zh';
+        if (this._tl !== L) { this._tx = Memory.render(this.k, this.p); this._tl = L; }
+        return this._tx;
+    }
+    toDict(forSave = false) { // v6.19.0 存檔版只存 k/p(content 讀檔時再算),UI 版只給當下語言的 content;避免存檔與 getState 存兩份
+        if (forSave) return { tick:this.tick, time:this.timeStr, category:this.category, importance:this.importance, related_agents:this.relatedAgents, ...(this.k ? { k:this.k, p:this.p } : { content:this.content }) };
+        return { tick:this.tick, time:this.timeStr, category:this.category, content:this.text(), importance:this.importance, related_agents:this.relatedAgents };
     }
 }
 
 class Memory {
     constructor(capacity = 120) { this.entries = []; this.capacity = capacity; } // v5.99.0 500→120(B12 存檔體積;讀取端最多只取最近 10–20 筆)
-    add(tick, timeStr, category, content, importance = 5, relatedAgents = []) {
-        this.entries.push(new MemoryEntry(tick, timeStr, category, content, importance, relatedAgents));
+    static render(k, p) {
+        let s = t(k);
+        for (const [name, v] of Object.entries(p || {})) s = s.split('{' + name + '}').join(v && typeof v === 'object' && v.k ? Memory.render(v.k, v.p) : (typeof v === 'string' ? t(v) : String(v ?? '')));
+        return s; // v6.19.0 參數可以是巢狀模板 {k,p}(規則式對話摘要塞進「與X交談：{summary}」)
+    }
+    add(tick, timeStr, category, content, importance = 5, relatedAgents = [], k = null, p = null) {
+        if (k && !content) content = Memory.render(k, p); // v6.19.0 存檔不帶 content,讀檔時依當下語言算一次
+        this.entries.push(new MemoryEntry(tick, timeStr, category, content, importance, relatedAgents, k, p));
         if (this.entries.length > this.capacity) this.entries = this.entries.slice(-this.capacity);
+        const cap = Memory.CATEGORY_CAP[category]; // v6.19.0 B12:對話摘要/觀察這類低重要度、量又大的記憶各自設上限(存檔體積;讀取端只取最近 10–20 筆)
+        if (cap) { let n = 0; for (let i = this.entries.length - 1; i >= 0; i--) { if (this.entries[i].category === category && ++n > cap) { this.entries.splice(i, 1); } } }
+    }
+    static CATEGORY_CAP = { conversation: 30, observation: 15, departure: 10, social: 30, reflection: 20 }; // v6.20.0 full 模式 35 天存檔 1.5MB 邊緣,再收:介面只看最近 10 筆、AI 只讀最近 10–20 筆
+    addT(tick, timeStr, category, k, p, importance = 5, relatedAgents = []) { // v6.17.0 模板版:content 用當下語言算一次,k/p 一起存
+        this.add(tick, timeStr, category, Memory.render(k, p), importance, relatedAgents, k, p);
     }
     getRecent(n = 10) { return this.entries.slice(-n); }
     getAboutAgent(name, n = 5) { return this.entries.filter(e => e.relatedAgents.includes(name)).slice(-n); }
@@ -158,7 +188,7 @@ class Memory {
         if (!recent.length) return t('沒有近期記憶。');
         return recent.map(m => `- [${m.timeStr}] ${m.content}`).join('\n');
     }
-    toDict() { return this.entries.slice(-this.capacity).map(e => e.toDict()); }
+    toDict(forSave = false) { return this.entries.slice(-this.capacity).map(e => e.toDict(forSave)); } // v6.19.0 forSave=true 只存 k/p
 }
 
 // --- Relationships ---
@@ -197,11 +227,11 @@ class Relationship {
     recordInteraction(tick, summary) {
         this.interactionCount++; this.lastInteractionTick = tick;
         this.sharedMemories.push(summary);
-        if (this.sharedMemories.length > 30) this.sharedMemories = this.sharedMemories.slice(-30); // v5.99.0 150→30
+        if (this.sharedMemories.length > 8) this.sharedMemories = this.sharedMemories.slice(-8); // v5.99.0 150→30;v6.20.0 →12(提示詞只用最近 3 筆;存檔 178KB→約 70KB)
     }
     addSharedMemory(text) {
         this.sharedMemories.push(text);
-        if (this.sharedMemories.length > 30) this.sharedMemories = this.sharedMemories.slice(-30);
+        if (this.sharedMemories.length > 8) this.sharedMemories = this.sharedMemories.slice(-8); // v6.20.0
     }
     toDict() {
         return { target_id:this.targetId, target_name:this.targetName, type:this.type,
@@ -671,7 +701,7 @@ class Agent {
             const oStep = o.getCurrentPlanStep ? o.getCurrentPlanStep(world) : null;
             const doing = (oStep && oStep.step) ? oStep.step : o.activityLabel;
             this._obsCount++;
-            this.memory.add(world.tickCount, world.clock.timeStr, 'observation', `${t('看到')}${o.name}${t('正忙著')}${doing}`, 2, [o.name]);
+            this.memory.addT(world.tickCount, world.clock.timeStr, 'observation', '看到{o}正忙著{doing}', { o: o.name, doing }, 2, [o.name]);
         } catch (e) {}
     }
     _getStayDuration() {
@@ -698,7 +728,7 @@ class Agent {
             if (map) {
                 (map.primary||[]).forEach(n => {
                     if(this.skills.addXp(n, xp*2)) {
-                        world.logMessage('skill_up', `${this.name}${t('的')}${t(n)}${t('達到等級')}${this.skills.get(n).level}${t('！')}`, this.name);
+                        world.logMessageT('skill_up', '{me}的{n}達到等級{level}！', { me: this.name, n, level: this.skills.get(n).level }, this.name);
                         this.currentThought = `${t(n)}${t('技能進步了！')}`;
                     }
                 });
@@ -706,7 +736,7 @@ class Agent {
             }
         } else {
             const actMap = ACTIVITY_SKILL_MAP[this.activity] || [];
-            actMap.forEach(n => { if(this.skills.addXp(n, xp)) world.logMessage('skill_up', `${this.name}${t('的')}${t(n)}${t('達到等級')}${this.skills.get(n).level}${t('！')}`, this.name); });
+            actMap.forEach(n => { if(this.skills.addXp(n, xp)) world.logMessageT('skill_up', '{me}的{n}達到等級{level}！', { me: this.name, n, level: this.skills.get(n).level }, this.name); });
         }
     }
     _decideActivity(hour) {
@@ -922,10 +952,10 @@ class Agent {
             const delay = randInt(2, 5);
             this._pendingHangout = { location: spot, activity: hangoutActivity, tick: delay, withAgent: target.name };
             target._pendingHangout = { location: spot, activity: hangoutActivity, tick: delay, withAgent: this.name };
-            const desc = `${this.name}${t('約了')}${target.name}${t('一起去')}${spot.replace(/_/g,' ')}`;
-            world.logMessage('social', desc, this.name, target.name);
-            this.memory.add(world.tickCount, world.clock.timeStr, 'social', desc, 5, [target.name]);
-            target.memory.add(world.tickCount, world.clock.timeStr, 'social', desc, 5, [this.name]);
+            const descT = tpl('{me}約了{target}一起去{spot}', { me: this.name, target: target.name, spot: locName(world, spot) }); // v6.19.0 模板＋地點顯示名
+            world.logMessageT('social', '{d}', { d: descT }, this.name, target.name);
+            this.memory.addT(world.tickCount, world.clock.timeStr, 'social', descT.k, descT.p, 5, [target.name]);
+            target.memory.addT(world.tickCount, world.clock.timeStr, 'social', descT.k, descT.p, 5, [this.name]);
         }
 
         // Conversation
@@ -950,9 +980,9 @@ class Agent {
                 otherRel.modifyAffinity(Math.round(randInt(1, 4) * starCompat));
                 if (otherRel.affinity > 20) otherRel.modifyRomantic(Math.round(randInt(0, 2) * starCompat));
                 otherRel.addSharedMemory(`${t('一起在')}${this.currentLocation.replace(/_/g,' ')}${t('看星星')}`);
-                world.logMessage('social', `${this.name}${t('和')}${companion.name}${t('一起看星星，感情升溫了。')}`, this.name, companion.name);
-                this.memory.add(world.tickCount, world.clock.timeStr, 'social', `${t('和')}${companion.name}${t('一起看星星，很浪漫。')}`, 7, [companion.name]);
-                companion.memory.add(world.tickCount, world.clock.timeStr, 'social', `${t('和')}${this.name}${t('一起看星星，很浪漫。')}`, 7, [this.name]);
+                world.logMessageT('social', '{me}和{companion}一起看星星，感情升溫了。', { me: this.name, companion: companion.name }, this.name, companion.name);
+                this.memory.addT(world.tickCount, world.clock.timeStr, 'social', '和{companion}一起看星星，很浪漫。', { companion: companion.name }, 7, [companion.name]);
+                companion.memory.addT(world.tickCount, world.clock.timeStr, 'social', '和{me}一起看星星，很浪漫。', { me: this.name }, 7, [this.name]);
             }
         }
         // Rare special discovery while stargazing
@@ -966,7 +996,7 @@ class Agent {
             const disc = pickRandom(discoveries);
             this.moodModifier = (this.moodModifier || 0) + disc.mood;
             this.currentThought = disc.text;
-            world.logMessage('discovery', `${this.name}${disc.text}`, this.name);
+            world.logMessageT('discovery', '{me}{text}', { me: this.name, text: disc.text }, this.name);
             this.memory.add(world.tickCount, world.clock.timeStr, 'discovery', disc.text, 8, []);
             if (disc.topic) world.events.conversationTopics.push(disc.topic);
         }
@@ -983,8 +1013,8 @@ class Agent {
         ];
         const mischief = pickRandom(mischiefTypes);
         this.moodModifier = (this.moodModifier || 0) + mischief.mood_self;
-        world.logMessage('mischief', `${this.name}${t('趁著夜色')}${mischief.text}${t('！')}`, this.name);
-        this.memory.add(world.tickCount, world.clock.timeStr, 'mischief', `${t('我趁夜裡')}${mischief.text}`, 6, []);
+        world.logMessageT('mischief', '{me}趁著夜色{text}！', { me: this.name, text: mischief.text }, this.name);
+        this.memory.addT(world.tickCount, world.clock.timeStr, 'mischief', '我趁夜裡{text}', { text: mischief.text }, 6, []);
         this.currentThought = t('嘿嘿...成功了。');
         world.events.conversationTopics.push(`${t('有人在夜裡')}${mischief.text}`);
         // Chance to get caught by guards or night owls
@@ -993,8 +1023,8 @@ class Agent {
             const witness = pickRandom(awakeAgents);
             const rel = witness.relationships.getOrCreate(this.agentId, this.name);
             rel.modifyAffinity(-5);
-            world.logMessage('mischief', `${witness.name}${t('撞見了')}${this.name}${t('的惡作劇！')}`, witness.name, this.name);
-            witness.memory.add(world.tickCount, world.clock.timeStr, 'witness', `${t('撞見')}${this.name}${t('在')}${mischief.text}`, 7, [this.name]);
+            world.logMessageT('mischief', '{witness}撞見了{me}的惡作劇！', { witness: witness.name, me: this.name }, witness.name, this.name);
+            witness.memory.addT(world.tickCount, world.clock.timeStr, 'witness', '撞見{me}在{text}', { me: this.name, text: mischief.text }, 7, [this.name]);
             this.moodModifier = (this.moodModifier || 0) - 5;
             this.currentThought = `${t('糟糕，被')}${witness.name}${t('看到了...')}`;
         }
@@ -1008,9 +1038,8 @@ class Agent {
             this.currentThought = `${target.name}${t('...我會記得你的。')}`;
             this.needs.social = Math.min(100, this.needs.social + 0.5);
             this.moodModifier = (this.moodModifier || 0) + 0.3; // Slight comfort from paying respects
-            this.memory.add(world.tickCount, world.clock.timeStr, 'mourning',
-                `${t('前往墓園弔念')}${target.name}${t('。')}`, 7, [target.name]);
-            world.logMessage('mourning', `🕯️ ${this.name}${t('前往墓園弔念')}${target.name}${t('。')}`, this.name);
+            this.memory.addT(world.tickCount, world.clock.timeStr, 'mourning', '前往墓園弔念{target}。', { target: target.name }, 7, [target.name]);
+            world.logMessageT('mourning', '🕯️ {me}前往墓園弔念{target}。', { me: this.name, target: target.name }, this.name);
             // If family, add to annual mourning list
             if (target.isFamily && !this._annualMourning.find(m => m.name === target.name)) {
                 this._annualMourning.push({ name: target.name, lastVisitYear: year });
@@ -1025,9 +1054,8 @@ class Agent {
             this.currentThought = `${t('又到了一年...去看看')}${unvisited.name}${t('吧。')}`;
             this.moodModifier = (this.moodModifier || 0) - 2;
             this.needs.social = Math.min(100, this.needs.social + 1);
-            this.memory.add(world.tickCount, world.clock.timeStr, 'mourning',
-                `${t('每年都會來墓園看望')}${unvisited.name}${t('。')}`, 6, [unvisited.name]);
-            world.logMessage('mourning', `🕯️ ${this.name}${t('來到墓園，緬懷已故的親人')}${unvisited.name}${t('。')}`, this.name);
+            this.memory.addT(world.tickCount, world.clock.timeStr, 'mourning', '每年都會來墓園看望{unvisited}。', { unvisited: unvisited.name }, 6, [unvisited.name]);
+            world.logMessageT('mourning', '🕯️ {me}來到墓園，緬懷已故的親人{unvisited}。', { me: this.name, unvisited: unvisited.name }, this.name);
         }
     }
     _generateThought(world) {
@@ -1063,7 +1091,7 @@ class Agent {
         }
         // v5.58.0 跨鎮親緣:偶爾想起海那頭的親友——路通不通,人都在心上
         const tie = typeof CROSS_TOWN_TIES !== 'undefined' ? CROSS_TOWN_TIES[this.agentId] : null;
-        if (tie && Math.random() < 0.3) thoughts.push(pickRandom(tie.thoughts));
+        if (tie && Math.random() < 0.3) thoughts.push(t(pickRandom(tie.thoughts))); // v6.20.0 親緣故事池改原文 key,這裡顯示用再翻
         // v5.47.0 BUG-01 防護:名字是純數字的斷掉引用(舊檔殘留)不進閒置意圖
         const bf = this.relationships.getBestFriend();
         if (bf && bf.targetName && !/^\d+$/.test(String(bf.targetName))) thoughts.push(`${t('該去找')}${bf.targetName}${t('敘敘舊了。')}`);

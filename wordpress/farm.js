@@ -194,7 +194,7 @@ class FarmSystem {
             // Check season
             if (!crop.seasons.includes(world.clock.season)) {
                 plot.state = 'withered';
-                world.logMessage('farm', `${crop.icon} ${crop.name}${t('因為季節不對而枯萎了')}！`);
+                world.logMessageT('farm', '{icon} {crop}因為季節不對而枯萎了！', { icon: crop.icon, crop: crop.name });
                 continue;
             }
 
@@ -220,7 +220,7 @@ class FarmSystem {
 
             if (plot.growthProgress >= 100) {
                 plot.state = 'ready';
-                world.logMessage('farm', `${crop.icon} ${crop.name}${t('成熟了！可以收穫。')}`);
+                world.logMessageT('farm', '{icon} {crop}成熟了！可以收穫。', { icon: crop.icon, crop: crop.name });
             }
         }
 

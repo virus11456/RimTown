@@ -129,43 +129,43 @@ function themeKeyOfTownName(name) {
 // 邊境鎮居民會想起海那頭的親友,海風鎮的人也記掛著這頭——世界觀在通車前就開始呼吸
 const CROSS_TOWN_TIES = {
     // 邊境鎮 → 海風鎮
-    wang_li:   { other: '海嬤', thoughts: [t('姑婆又從海風鎮寄魚乾來了，她醃的魚誰都比不上。'), t('我這手醃魚的功夫，是海風鎮的姑婆海嬤教的。')] },
-    wu_da:     { other: '石叔', thoughts: [t('老石那傢伙去海邊曬鹽也二十年了，礦上的日子他還記得嗎。'), t('當年跟老石同一條坑道，現在一個挖礦一個曬鹽。')] },
-    zhao_xia:  { other: '浪叔', thoughts: [t('浪叔的船這批貨怎麼還沒到，別又在哪個港口喝茫了。'), t('我店裡的異國貨，一半是海風鎮浪叔的船捎回來的。')] },
-    zhou_ming: { other: '小鷗', thoughts: [t('在海味居駐唱那陣子，掌杓姑娘的海鮮麵配我的歌，絕了。'), t('那首關於海的歌，是在海風鎮寫的。')] },
-    sun_yu:    { other: '燈爺', thoughts: [t('燈爺的信裡說，航海日誌裡有段記載跟遺跡對得上…'), t('海風鎮的燈爺是我通信多年的筆友，他懂的比書還多。')] },
-    lin_mei:   { other: '阿汐', thoughts: [t('同期的阿汐在海風鎮當醫師，海女出身的她潛得比誰都深。'), t('好想跟阿汐當面討論那個病例，可惜路還封著，只能寫信。')] },
+    wang_li:   { other: '海嬤', thoughts: ['姑婆又從海風鎮寄魚乾來了，她醃的魚誰都比不上。', '我這手醃魚的功夫，是海風鎮的姑婆海嬤教的。'] },
+    wu_da:     { other: '石叔', thoughts: ['老石那傢伙去海邊曬鹽也二十年了，礦上的日子他還記得嗎。', '當年跟老石同一條坑道，現在一個挖礦一個曬鹽。'] },
+    zhao_xia:  { other: '浪叔', thoughts: ['浪叔的船這批貨怎麼還沒到，別又在哪個港口喝茫了。', '我店裡的異國貨，一半是海風鎮浪叔的船捎回來的。'] },
+    zhou_ming: { other: '小鷗', thoughts: ['在海味居駐唱那陣子，掌杓姑娘的海鮮麵配我的歌，絕了。', '那首關於海的歌，是在海風鎮寫的。'] },
+    sun_yu:    { other: '燈爺', thoughts: ['燈爺的信裡說，航海日誌裡有段記載跟遺跡對得上…', '海風鎮的燈爺是我通信多年的筆友，他懂的比書還多。'] },
+    lin_mei:   { other: '阿汐', thoughts: ['同期的阿汐在海風鎮當醫師，海女出身的她潛得比誰都深。', '好想跟阿汐當面討論那個病例，可惜路還封著，只能寫信。'] },
     // 海風鎮 → 邊境鎮
-    hb_haima:  { other: '王麗', thoughts: [t('邊境鎮的姪孫女王麗，醃魚的手藝是我教的，不知道長進了沒。')] },
-    hb_shishu: { other: '吳達', thoughts: [t('礦上的老吳還在挖嗎…當年說好老了一起釣魚的。')] },
-    hb_langshu:{ other: '趙霞', thoughts: [t('邊境鎮的趙老闆娘又下了一批訂單，這趟得跑快點。')] },
-    hb_xiaoou: { other: '周明', thoughts: [t('那個彈吉他的流浪商人，唱的那首海歌我現在還會哼。')] },
-    hb_dengye: { other: '孫雨', thoughts: [t('邊境鎮那位孫姑娘的信又到了，她問的遺跡我日誌裡正好有記載。')] },
-    hb_axi:    { other: '林美', thoughts: [t('同期的林美在邊境鎮行醫，她的信裡總夾著新藥方。')] },
+    hb_haima:  { other: '王麗', thoughts: ['邊境鎮的姪孫女王麗，醃魚的手藝是我教的，不知道長進了沒。'] },
+    hb_shishu: { other: '吳達', thoughts: ['礦上的老吳還在挖嗎…當年說好老了一起釣魚的。'] },
+    hb_langshu:{ other: '趙霞', thoughts: ['邊境鎮的趙老闆娘又下了一批訂單，這趟得跑快點。'] },
+    hb_xiaoou: { other: '周明', thoughts: ['那個彈吉他的流浪商人，唱的那首海歌我現在還會哼。'] },
+    hb_dengye: { other: '孫雨', thoughts: ['邊境鎮那位孫姑娘的信又到了，她問的遺跡我日誌裡正好有記載。'] },
+    hb_axi:    { other: '林美', thoughts: ['同期的林美在邊境鎮行醫，她的信裡總夾著新藥方。'] },
     // v5.76.0 礦山鎮 ↔ 邊境鎮／海風鎮
-    mt_laochui: { other: '吳達', thoughts: [t('邊境鎮的吳達當年跟我同一條坑道，他的腰現在還好嗎。'), t('塌方那天要不是吳達拉我一把，我早埋在第三層了。')] },
-    mt_aqing:   { other: '趙霞', thoughts: [t('邊境鎮趙老闆娘的訂單又來了，礦石換布料，這條線我跑了五年。')] },
-    mt_baigu:   { other: '林美', thoughts: [t('邊境鎮的林醫師回信了，她說願意幫忙看那些塵肺的病例。')] },
-    mt_kuangye: { other: '海伯', thoughts: [t('海風鎮那個老船長海伯，年輕時我們在同一家礦業公司跑過貨，現在一個管港一個管坑。')] },
-    mt_ayan:    { other: '珊珊', thoughts: [t('海風鎮研究潮汐的珊珊是我書信往來的同行，她的洋流圖和我的礦脈圖竟然對得上。')] },
-    zhang_hao:  { other: '鐵柱', thoughts: [t('礦山鎮的鐵柱打的鎬頭最耐用，下次商隊來一定要買一把。')] },
-    ma_qiang:   { other: '牛叔', thoughts: [t('礦山鎮那個工頭牛叔，當年跟我在同一支護衛隊，脾氣一樣臭。')] },
+    mt_laochui: { other: '吳達', thoughts: ['邊境鎮的吳達當年跟我同一條坑道，他的腰現在還好嗎。', '塌方那天要不是吳達拉我一把，我早埋在第三層了。'] },
+    mt_aqing:   { other: '趙霞', thoughts: ['邊境鎮趙老闆娘的訂單又來了，礦石換布料，這條線我跑了五年。'] },
+    mt_baigu:   { other: '林美', thoughts: ['邊境鎮的林醫師回信了，她說願意幫忙看那些塵肺的病例。'] },
+    mt_kuangye: { other: '海伯', thoughts: ['海風鎮那個老船長海伯，年輕時我們在同一家礦業公司跑過貨，現在一個管港一個管坑。'] },
+    mt_ayan:    { other: '珊珊', thoughts: ['海風鎮研究潮汐的珊珊是我書信往來的同行，她的洋流圖和我的礦脈圖竟然對得上。'] },
+    zhang_hao:  { other: '鐵柱', thoughts: ['礦山鎮的鐵柱打的鎬頭最耐用，下次商隊來一定要買一把。'] },
+    ma_qiang:   { other: '牛叔', thoughts: ['礦山鎮那個工頭牛叔，當年跟我在同一支護衛隊，脾氣一樣臭。'] },
     // v5.77.0 林間村 ↔ 邊境鎮／海風鎮
-    fv_linlao:  { other: '海嬤', thoughts: [t('海風鎮的海嬤，年輕時我們一起在邊境鎮的市集賣過草藥和魚乾，她的信每年春天都到。')] },
-    fv_ahu:     { other: '趙霞', thoughts: [t('邊境鎮趙老闆娘又來要皮毛了，這批貂皮她肯出多少，得好好談。')] },
-    fv_mushu:   { other: '木蝦', thoughts: [t('海風鎮那個船木匠木蝦，當年是我這裡學的徒，手藝不錯就是懶。')] },
-    fv_aye:     { other: '林美', thoughts: [t('邊境鎮的林醫師寫信問我林子裡的止血草，我寄了一包過去。')] },
-    fv_daxiong: { other: '楊鋒', thoughts: [t('邊境鎮的楊鋒上回進林子打獵，差點被我當成熊射了。')] },
-    he_chang:   { other: '阿狐', thoughts: [t('林間村那個賣皮毛的阿狐，嘴甜得很，但他的皮毛確實好。')] },
-    ling_bo:    { other: '阿苔', thoughts: [t('林間村的阿苔寄來她畫的蘑菇圖譜，夜裡觀星之餘翻一翻，倒也有趣。')] },
+    fv_linlao:  { other: '海嬤', thoughts: ['海風鎮的海嬤，年輕時我們一起在邊境鎮的市集賣過草藥和魚乾，她的信每年春天都到。'] },
+    fv_ahu:     { other: '趙霞', thoughts: ['邊境鎮趙老闆娘又來要皮毛了，這批貂皮她肯出多少，得好好談。'] },
+    fv_mushu:   { other: '木蝦', thoughts: ['海風鎮那個船木匠木蝦，當年是我這裡學的徒，手藝不錯就是懶。'] },
+    fv_aye:     { other: '林美', thoughts: ['邊境鎮的林醫師寫信問我林子裡的止血草，我寄了一包過去。'] },
+    fv_daxiong: { other: '楊鋒', thoughts: ['邊境鎮的楊鋒上回進林子打獵，差點被我當成熊射了。'] },
+    he_chang:   { other: '阿狐', thoughts: ['林間村那個賣皮毛的阿狐，嘴甜得很，但他的皮毛確實好。'] },
+    ling_bo:    { other: '阿苔', thoughts: ['林間村的阿苔寄來她畫的蘑菇圖譜，夜裡觀星之餘翻一翻，倒也有趣。'] },
     // v5.78.0 市集城 ↔ 四鎮
-    mk_tuojie:  { other: '浪叔', thoughts: [t('海風鎮浪叔的船貨這批又晚了，他的船到底是跑貨還是跑酒館。'), t('跑了五個鎮，還是邊境鎮的路最難走。')] },
-    mk_jinlaoye:{ other: '礦爺', thoughts: [t('礦山鎮那個礦爺又來信壓價，石材金屬他有，但銀子在我手上。')] },
-    mk_feishu:  { other: '周明', thoughts: [t('那個彈吉他的周明上回在我店裡唱了一整夜，酒錢到現在還欠著。')] },
-    mk_xinggu:  { other: '白姑', thoughts: [t('礦山鎮的白醫師信裡說塵肺的事，市集城也該有間像樣的醫館了。')] },
-    mk_caigu:   { other: '秀姑', thoughts: [t('海風鎮的秀姑補帆的針法跟我做戲服的是同一路，她的信裡總夾著一小塊布。')] },
-    chen_wei:   { other: '金老爺', thoughts: [t('市集城那個金會長排場大得很，不過他的商會確實把五個鎮的貨都接起來了。')] },
-    liu_jun:    { other: '門叔', thoughts: [t('市集城城門那個門叔，盤問起商隊來比我還兇。')] },
+    mk_tuojie:  { other: '浪叔', thoughts: ['海風鎮浪叔的船貨這批又晚了，他的船到底是跑貨還是跑酒館。', '跑了五個鎮，還是邊境鎮的路最難走。'] },
+    mk_jinlaoye:{ other: '礦爺', thoughts: ['礦山鎮那個礦爺又來信壓價，石材金屬他有，但銀子在我手上。'] },
+    mk_feishu:  { other: '周明', thoughts: ['那個彈吉他的周明上回在我店裡唱了一整夜，酒錢到現在還欠著。'] },
+    mk_xinggu:  { other: '白姑', thoughts: ['礦山鎮的白醫師信裡說塵肺的事，市集城也該有間像樣的醫館了。'] },
+    mk_caigu:   { other: '秀姑', thoughts: ['海風鎮的秀姑補帆的針法跟我做戲服的是同一路，她的信裡總夾著一小塊布。'] },
+    chen_wei:   { other: '金老爺', thoughts: ['市集城那個金會長排場大得很，不過他的商會確實把五個鎮的貨都接起來了。'] },
+    liu_jun:    { other: '門叔', thoughts: ['市集城城門那個門叔，盤問起商隊來比我還兇。'] },
 };
 
 class TownMap {
@@ -285,10 +285,10 @@ const EVENT_POOL = [
     {name:t('夜半歌聲'),description:t('深夜從森林傳來神秘的歌聲。'),severity:'minor',effects:{mood_all:-2,conversation_topic:t('森林裡的歌聲')},night_event:true},
 ];
 const DEPARTURE_REASONS = [
-    t('決定出發去進行貿易遠征'),t('離開去城裡探望家人'),t('踏上朝聖之旅'),
-    t('出發去探索荒野'),t('離開去遠方的學院進修'),
-    t('前往首都尋求發展'),t('出門旅行增廣見聞'),
-];
+    '決定出發去進行貿易遠征','離開去城裡探望家人','踏上朝聖之旅',
+    '出發去探索荒野','離開去遠方的學院進修',
+    '前往首都尋求發展','出門旅行增廣見聞',
+]; // v6.19.0 原文 key,顯示時再翻
 const IMMIGRANT_POOL = [
     {name:'周明',age:27,gender:'male',traits:['hardworking','optimist'],job:'farmer',background:'來自鄰村的開朗年輕農夫。'},
     {name:'李雪',age:31,gender:'female',traits:['kind','perfectionist'],job:'tailor',background:'聽說邊境鎮需要她的手藝的熟練裁縫。'},
@@ -383,22 +383,22 @@ class EventSystem {
         const buildingDefense = world.buildings ? (world.buildings.getEffect('defense_bonus',0)||0) : 0;
         const defense = guards.length * 2 + randInt(1,3) + buildingDefense;
         if (defense >= rd.threat_level) {
-            world.logMessage('raid', `${t('小鎮成功抵禦了')}${rd.attacker}${t('！')}`);
+            world.logMessageT('raid', '小鎮成功抵禦了{attacker}！', { attacker: rd.attacker });
             if (world.questSystem) world.questSystem.onRaidSurvived();
-            guards.forEach(g => { g.moodModifier = (g.moodModifier || 0) + 10; g.memory.add(world.tickCount, world.clock.timeStr,'raid',`${t('協助抵禦了')}${rd.attacker}${t('！')}`,8); });
+            guards.forEach(g => { g.moodModifier = (g.moodModifier || 0) + 10; g.memory.addT(world.tickCount, world.clock.timeStr, 'raid', '協助抵禦了{attacker}！', { attacker: rd.attacker }, 8); });
         } else {
-            world.logMessage('raid', `${rd.attacker}${t('突破了我們的防線！')}`);
+            world.logMessageT('raid', '{attacker}突破了我們的防線！', { attacker: rd.attacker });
             if (world.stockpile) {
                 const stolenFood = Math.min(world.stockpile.get('food'), randInt(10,30));
                 const stolenSilver = Math.min(world.stockpile.get('silver'), randInt(5,20));
                 if(stolenFood>0) world.stockpile.consume('food',stolenFood,world.tickCount,`${t('被')}${rd.attacker}${t('搶走')}`);
                 if(stolenSilver>0) world.stockpile.consume('silver',stolenSilver,world.tickCount,`${t('被')}${rd.attacker}${t('搶走')}`);
-                world.logMessage('raid',`${rd.attacker}${t('搶走了')}${stolenFood}${t('食物和')}${stolenSilver}${t('銀幣！')}`);
+                world.logMessageT('raid', '{attacker}搶走了{stolenFood}食物和{stolenSilver}銀幣！', { attacker: rd.attacker, stolenFood, stolenSilver });
             }
             const npcs = Object.values(world.agents).filter(a => !a.isPlayer && a.job?.key !== 'guard');
             if (npcs.length && Math.random() < 0.4) {
                 const fleeing = pickRandom(npcs);
-                this._sendAgentTravelling(world, fleeing, `${t('在')}${rd.attacker}${t('襲擊後逃離')}`, 3);
+                this._sendAgentTravelling(world, fleeing, tpl('在{attacker}襲擊後逃離', { attacker: rd.attacker }), 3);
             }
         }
         return event;
@@ -421,7 +421,7 @@ class EventSystem {
         const event = {name:first.name,description:first.description,severity:first.severity,effects:first.effects||{},event_type:'chain'};
         this.eventLog.push([world.clock.timeStr, event]);
         this._applyEffects(event, world);
-        world.logMessage('chain_event', `${t('事件鏈開始：')}${first.name}`);
+        world.logMessageT('chain_event', '事件鏈開始：{first}', { first: first.name });
         return event;
     }
     _progressChains(world) {
@@ -431,14 +431,14 @@ class EventSystem {
             if (chain.daysUntilNext <= 0) {
                 const stages = EVENT_CHAINS[chain.chainId];
                 const nextIdx = chain.stage + 1;
-                if (nextIdx >= stages.length) { completed.push(chain); world.logMessage('chain_event',`${t('事件鏈「')}${chain.chainId}${t('」已結束。')}`); }
+                if (nextIdx >= stages.length) { completed.push(chain); world.logMessageT('chain_event', '事件鏈「{chainId}」已結束。', { chainId: chain.chainId }); }
                 else {
                     const stage = stages[nextIdx];
                     chain.stage = nextIdx; chain.daysUntilNext = stage.duration_days || 2;
                     const event = {name:stage.name,description:stage.description,severity:stage.severity,effects:stage.effects||{},event_type:'chain'};
                     this.eventLog.push([world.clock.timeStr, event]);
                     this._applyEffects(event, world);
-                    world.logMessage('chain_event', `[${event.severity.toUpperCase()}] ${event.name}${t('：')}${event.description}`);
+                    world.logMessageT('chain_event', '[{v}] {event}：{description}', { v: event.severity.toUpperCase(), event: event.name, description: event.description });
                 }
             }
         });
@@ -454,18 +454,20 @@ class EventSystem {
     _sendAgentTravelling(world, agent, reason, travelDays) {
         // v5.56.0 外鎮訪客不會被抽去「旅行」——他們的家在別的鎮,期滿自然返鄉
         if (agent.agentId && agent.agentId.startsWith('visit_')) return;
+        if (reason && !reason.k) reason = tpl(String(reason)); // v6.19.0 理由存模板(原文 key),日誌/記憶/旅行中名單依當下語言翻
+        const reasonText = Memory.render(reason.k, reason.p);
         const data = { agentId:agent.agentId, name:agent.name, age:agent.age, jobKey:agent.job?.key,
             traits:agent.personality.traits, values:agent.personality.values, background:agent.personality.background,
             homeLocation:agent.homeLocation, gender:agent.gender, look:agent.look||null, // v5.90.0 外觀跟著旅行
             skills:agent.skills.toDict(), relationships:agent.relationships.toDict(),
-            memories:agent.memory.toDict(), mood:agent.mood, moodModifier:agent.moodModifier||0 };
+            memories:agent.memory.toDict(true), mood:agent.mood, moodModifier:agent.moodModifier||0 }; // v6.19.0 存檔版
         this._travellingAgents.push({agentData:data, returnTick:world.tickCount+(travelDays*96), reason});
-        world.logMessage('departure', `${agent.name}${reason}。${t('過幾天就會回來。')}`, agent.name);
-        const event = {name:t('居民出行'),description:`${agent.name}${reason}。`,severity:'minor',effects:{conversation_topic:`${agent.name}${t('離開了小鎮')}`},event_type:'departure'};
+        world.logMessageT('departure', '{agent}{reason}。過幾天就會回來。', { agent: agent.name, reason }, agent.name);
+        const event = {name:t('居民出行'),description:`${agent.name}${reasonText}。`,severity:'minor',effects:{conversation_topic:`${agent.name}${t('離開了小鎮')}`},event_type:'departure'};
         this.eventLog.push([world.clock.timeStr, event]);
         this.conversationTopics.push(`${agent.name}${t('離開了小鎮')}`);
         Object.values(world.agents).forEach(o => {
-            if(o.agentId!==agent.agentId) o.memory.add(world.tickCount,world.clock.timeStr,'departure',`${agent.name}${reason}。`,5,[agent.name]);
+            if(o.agentId!==agent.agentId) o.memory.addT(world.tickCount, world.clock.timeStr, 'departure', '{agent}{reason}。', { agent: agent.name, reason }, 5, [agent.name]);
         });
         delete world.agents[agent.agentId];
     }
@@ -511,14 +513,14 @@ class EventSystem {
         }
         // Restore memories
         if (d.memories && Array.isArray(d.memories)) {
-            d.memories.forEach(m => agent.memory.add(m.tick, m.time, m.category, m.content ?? m.text ?? '', m.importance, m.related_agents || m.relatedAgents || []));
+            d.memories.forEach(m => agent.memory.add(m.tick, m.time, m.category, m.content ?? m.text ?? '', m.importance, m.related_agents || m.relatedAgents || [], m.k || null, m.p || null));
         }
         world.agents[agent.agentId] = agent;
-        world.logMessage('arrival', `${agent.name}${t('旅行歸來了！')}`, agent.name);
+        world.logMessageT('arrival', '{agent}旅行歸來了！', { agent: agent.name }, agent.name);
         const event = {name:t('居民歸來'),description:`${agent.name}${t('帶著故事回來了！')}`,severity:'minor',effects:{mood_all:3,conversation_topic:`${agent.name}${t('的旅行故事')}`},event_type:'arrival'};
         this.eventLog.push([world.clock.timeStr, event]);
         Object.values(world.agents).forEach(o => {
-            if(o.agentId!==agent.agentId) o.memory.add(world.tickCount,world.clock.timeStr,'arrival',`${agent.name}${t('旅行回來了！')}`,4,[agent.name]);
+            if(o.agentId!==agent.agentId) o.memory.addT(world.tickCount, world.clock.timeStr, 'arrival', '{agent}旅行回來了！', { agent: agent.name }, 4, [agent.name]);
         });
     }
     _managePopulation(world) {
@@ -561,12 +563,12 @@ class EventSystem {
                 rel.affinity += Math.round(initTrust / 2);
             }
         }
-        world.logMessage('immigration', `${t('新居民到來：')}${agent.name}${t('，')}${job.title}${t('！')}`, agent.name);
+        world.logMessageT('immigration', '新居民到來：{agent}，{title}！', { agent: agent.name, title: job.title }, agent.name);
         const event = {name:t('新居民'),description:`${agent.name}${t('以')}${job.title}${t('身分到來！')}`,severity:'minor',effects:{mood_all:5,conversation_topic:`${t('新居民')}${agent.name}`},event_type:'arrival'};
         this.eventLog.push([world.clock.timeStr, event]);
         this.conversationTopics.push(`${t('新居民')}${agent.name}`);
         Object.values(world.agents).forEach(o => {
-            if(o.agentId!==agent.agentId) o.memory.add(world.tickCount,world.clock.timeStr,'immigration',`${t('新居民')}${agent.name}${t('到來了！')}`,5,[agent.name]);
+            if(o.agentId!==agent.agentId) o.memory.addT(world.tickCount, world.clock.timeStr, 'immigration', '新居民{agent}到來了！', { agent: agent.name }, 5, [agent.name]);
         });
         if (world.dailyNews) world.dailyNews.collectEvent('lifecycle', `${t('新居民')}${agent.name}${t('以')}${job.title}${t('身分來到鎮上！')}`, 6, [agent.name]);
     }
@@ -583,7 +585,7 @@ class EventSystem {
         this.eventLog.slice(-3).forEach(([,e]) => topics.push(e.description));
         return topics;
     }
-    getTravellingAgents() { return this._travellingAgents.map(t => ({agentId:t.agentData.agentId,name:t.agentData.name,reason:t.reason,return_tick:t.returnTick})); }
+    getTravellingAgents() { return this._travellingAgents.map(t => ({agentId:t.agentData.agentId,name:t.agentData.name,reason:(t.reason && t.reason.k) ? Memory.render(t.reason.k, t.reason.p) : t.reason,return_tick:t.returnTick})); }
     getActiveChains() {
         return this._activeChains.map(c => {
             const stages = EVENT_CHAINS[c.chainId]; const cur = stages[c.stage];
@@ -665,7 +667,7 @@ class ElectionSystem {
         const policy = ELECTION_POLICIES.find(p => p.id === policyId) || ELECTION_POLICIES[1];
         this.candidates.push({ agentId: 'player', name: player.name, policy: policy.id, policyLabel: policy.label, policyIcon: policy.icon, votes: 0, speech: `${t('我雖是旅人,但這裡早已是我的家。我主張')}${policy.label}${t(',請把你的一票交給我!')}`, isPlayer: true });
         this.playerCanvassed = {};
-        world.logMessage('event', `📢 ${t('旅人')} ${player.name} ${t('宣布參選鎮長!主張')}${policy.icon}${policy.label}`);
+        world.logMessageT('event', '📢 旅人 {player} 宣布參選鎮長!主張{icon}{label}', { player: player.name, icon: policy.icon, label: policy.label });
         player.memory?.add(world.tickCount, world.clock.timeStr, 'election', `${t('我登記參選鎮長,主張')}${policy.label}${t('。聯署的朋友們都在為我加油。')}`, 9, []);
         // 全鎮都會知道旅人出馬了——寫進每個人的記憶流,之後的對話會自然聊到
         Object.values(world.agents).forEach(a => {
@@ -708,10 +710,10 @@ class ElectionSystem {
             return { agentId: agent.agentId, name: agent.name, policy: policy.id, policyLabel: policy.label, policyIcon: policy.icon, votes: 0, speech: this._generateSpeech(agent, policy) };
         });
         world.logMessage('event', `📢 ${t('選舉開始！')}${this.candidates.map(c => c.name).join(t('、'))} ${t('宣布參選鎮長')}`);
-        world.logMessage('event', `📋 ${t('競選期間為')} ${this.campaignDaysLeft} ${t('天，之後進行投票')}`);
+        world.logMessageT('event', '📋 競選期間為 {campaignDaysLeft} 天，之後進行投票', { campaignDaysLeft: this.campaignDaysLeft });
         this.candidates.forEach(c => {
             const agent = world.agents[c.agentId];
-            if (agent?.memory) agent.memory.add(world.tickCount, world.clock.timeStr, 'election', `${t('我宣布參選鎮長，主張')}${c.policyLabel}`, 8, []);
+            if (agent?.memory) agent.memory.addT(world.tickCount, world.clock.timeStr, 'election', '我宣布參選鎮長，主張{policyLabel}', { policyLabel: c.policyLabel }, 8, []);
         });
     }
 
@@ -804,8 +806,8 @@ class ElectionSystem {
             newMayorAgent.memory?.add(world.tickCount, world.clock.timeStr, 'election', `${t('我贏得了鎮長選舉！得到')} ${winner.votes} ${t('票')}`, 10, []);
         }
         const resultMsg = this.candidates.map(c => `${c.name}${t('（')}${c.policyIcon}${c.policyLabel}${t('）：')}${c.votes} ${t('票')}`).join(t('、'));
-        world.logMessage('event', `🏆 ${t('選舉結果：')}${winner.name} ${t('當選新鎮長！主張：')}${winner.policyIcon}${winner.policyLabel}`);
-        world.logMessage('event', `📊 ${t('得票：')}${resultMsg}${t('（共')} ${totalVotes} ${t('票）')}`);
+        world.logMessageT('event', '🏆 選舉結果：{winner} 當選新鎮長！主張：{policyIcon}{policyLabel}', { winner: winner.name, policyIcon: winner.policyIcon, policyLabel: winner.policyLabel });
+        world.logMessageT('event', '📊 得票：{resultMsg}（共 {totalVotes} 票）', { resultMsg, totalVotes });
         if (world.questSystem) world.questSystem.onElection();
         this._applyPolicyEffects(winner.policy, world);
         const day = world.clock.day + (world.clock.year - 1) * 60;
@@ -825,7 +827,7 @@ class ElectionSystem {
                 world.logMessage('event', `👑 ${t('你當選鎮長了!從今天起,全鎮大小事都等你拿主意。')}`);
                 playerA?.memory?.add(world.tickCount, world.clock.timeStr, 'election', `${t('我贏得鎮長選舉(')}${playerCand.votes}${t('票),旅人成了邊境鎮的鎮長!')}`, 10, []);
             } else {
-                world.logMessage('event', `🗳️ ${t('你以')} ${playerCand.votes} ${t('票落選,雖敗猶榮——村民記住了你的名字,下屆秋季再來!')}`);
+                world.logMessageT('event', '🗳️ 你以 {votes} 票落選,雖敗猶榮——村民記住了你的名字,下屆秋季再來!', { votes: playerCand.votes });
                 playerA?.memory?.add(world.tickCount, world.clock.timeStr, 'election', `${t('我在鎮長選舉中落敗(')}${playerCand.votes}${t('票)。')}${winner.name}${t('當選了,但我不會就此放棄。')}`, 8, [winner.name]);
             }
         }
