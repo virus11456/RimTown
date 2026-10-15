@@ -228,8 +228,10 @@ class World {
         this.lastCaravanDay = day;
         this.caravanCount = (this.caravanCount || 0) + 1; // v5.84.0 任務條件
         const label = (rs) => (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[rs]?.name) ? SHOP_ITEMS[rs].name() : (rs === 'silver' ? t('銀幣') : rs);
-        const msg = `${t(pick.tw.name)}${t('的商隊來了：用')} ${giveAmt} ${label(give)} ${t('換到')} ${recvAmt} ${label(recv)}${hub ? t('（市集城經手，多兩成）') : ''}`;
-        this.logMessageT('trade', '🐪 {msg}', { msg });
+        const RES_ZH = { food: '食物', meals: '餐食', wood: '木材', stone: '石材', metal: '金屬', tools: '工具', herbs: '草藥', cloth: '布料', medicine: '藥品', silver: '銀幣' }; // v6.22.0 模板參數用原文,顯示時再翻
+        const msgT = tpl(hub ? '{town}的商隊來了：用 {ga} {g} 換到 {ra} {r}（市集城經手，多兩成）' : '{town}的商隊來了：用 {ga} {g} 換到 {ra} {r}', { town: pick.tw.name, ga: giveAmt, g: RES_ZH[give] || give, ra: recvAmt, r: RES_ZH[recv] || recv });
+        const msg = Memory.render(msgT.k, msgT.p);
+        this.logMessageT('trade', '🐪 {msg}', { msg: msgT });
         if (this.events?.conversationTopics) this.events.conversationTopics.push(`${t(pick.tw.name)}${t('的商隊帶來了')}${label(recv)}`);
         this.onCaravan?.({ fromName: pick.tw.name, fromTheme: pick.key, give, giveAmt, recv, recvAmt, hub });
     }

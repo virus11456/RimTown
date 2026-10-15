@@ -236,7 +236,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.22.0.zip` from Releases
+1. Download `rimtown-v6.22.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -286,6 +286,10 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.22.1 (2026-10-15)
+- 🧹 新手走流程 QA（中文桌機／英文手機，第 1–15 天＋季末）修正：英文版的「昨日結算」「委託過期數」「買 1 點（30）」「AI 日報出刊：第 N 期」「季末回顧銀幣（+N）」「好感升最多／搬走了／新住民」與章節解鎖卡的分隔符改用半形標點與英文語序（之前出現 Ch.4 issues、全形括號、頓號）；委託鏈引言與結局的「」在英文改直引號；手機上方鎮名在英文模式也翻譯；商人名字中文不再夾英文括號（老趙商隊 (Old Zhao's Caravan) → 老趙商隊，英文仍為 Old Zhao's Caravan）；押商隊貨物選單的「（倉庫 N）」英文改半形
+- 🌐 B1 收尾：鄰鎮商隊到貨與本季考驗公告兩條日誌也改模板；切語言 QA 紀錄分頁殘留 4/500 → 2/500
 
 ### v6.22.0 (2026-10-15)
 - ⚖️ B23 考驗失敗的節奏：繁榮扣分累計有底（最多 −20；之前每季 −10 無底，只看不玩四季就把繁榮扣到 0，回來玩也補不回來）、撐過一季先補回最多 10 再 +5、衰敗後每季最多再走 1 人、人口剩 8 人就不再有人搬走；「不做有後果」維持（第二季仍會衰敗），但回來玩補得回來。實測 60 天只看不玩：邊境鎮人口 25→18（之前 →14）、繁榮 29（之前 0）；海風鎮 20→15（之前 →11）、繁榮 21（之前 0）

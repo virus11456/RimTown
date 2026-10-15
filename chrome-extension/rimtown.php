@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.22.0
+ * Version: 6.22.1
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.22.0');
+define('RIMTOWN_VERSION', '6.22.1');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.22.1',
+            'date'    => '2026-10-15',
+            'changes' => array(
+                '🧹 新手走流程 QA（中文桌機／英文手機，第 1–15 天＋季末）修正：英文版的「昨日結算」「委託過期數」「買 1 點（30）」「AI 日報出刊：第 N 期」「季末回顧銀幣（+N）」「好感升最多／搬走了／新住民」與章節解鎖卡的分隔符改用半形標點與英文語序（之前出現 Ch.4 issues、全形括號、頓號）；委託鏈引言與結局的「」在英文改直引號；手機上方鎮名在英文模式也翻譯；商人名字中文不再夾英文括號（老趙商隊 (Old Zhao\'s Caravan) → 老趙商隊，英文仍為 Old Zhao\'s Caravan）；押商隊貨物選單的「（倉庫 N）」英文改半形',
+                '🌐 B1 收尾：鄰鎮商隊到貨與本季考驗公告兩條日誌也改模板；切語言 QA 紀錄分頁殘留 4/500 → 2/500',
+            ),
+            'changes_en' => array(
+                '🧹 Newcomer walkthrough QA fixes (Chinese desktop / English mobile, days 1–15 plus season end): in English the yesterday tally, expired-request count, "Buy 1 AP (30)", "AI Daily published: issue N", the recap silver (+N), biggest affinity gains / moved away / new residents and the chapter-unlock card separators now use ASCII punctuation and English word order (they used to show "Ch.4 issues", fullwidth brackets and the Chinese enumeration comma); chain intro and finale quotes use straight quotes in English; the mobile header town name is translated in English mode; merchant names no longer carry an English parenthetical in Chinese (老趙商隊 (Old Zhao\'s Caravan) → 老趙商隊, still Old Zhao\'s Caravan in English); the caravan goods list shows "(warehouse N)" in English',
+                '🌐 B1 wrap-up: the neighboring-caravan arrival and the season-trial announcement logs are templates too; language-switch QA leaves 2/500 Chinese lines in Records (was 4)',
+            ),
+        ),
         array(
             'version' => '6.22.0',
             'date'    => '2026-10-15',

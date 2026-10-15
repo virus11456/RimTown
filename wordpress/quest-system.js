@@ -2657,7 +2657,7 @@ class RequestBoard {
         if (c.step < tpl.steps.length) { world.logMessage?.('quest', `📖 ${t(tpl.title)}（${c.step}/${tpl.steps.length}）${t('——明天還有下一步')}`); return; }
         // 結局
         const fill = (s, m) => Object.entries(m).reduce((acc, [k, v]) => acc.split('{' + k + '}').join(v), s);
-        const text = fill(t(tpl.finale), { npc: t(c.npcName), target: t(c.targetName || '') }) + ((c.quotes && c.quotes[3]) ? `「${c.quotes[3]}」` : ''); // v6.8.0 AI 口吻
+        const text = fill(t(tpl.finale), { npc: t(c.npcName), target: t(c.targetName || '') }) + ((c.quotes && c.quotes[3]) ? t('「{q}」').replace('{q}', c.quotes[3]) : ''); // v6.8.0 AI 口吻;v6.22.0 英文用直引號
         const rw0 = tpl.reward || {}; const rw = world.growth?.has('storyteller') ? { ...rw0, silver: Math.round((rw0.silver || 0) * 1.25), aff: Math.round((rw0.aff || 0) * 1.25) } : rw0; this.stats.chainsDone++; // v6.9.0 天賦:說書
         this._reward({ npcId: c.npcId, npcName: c.npcName }, world, rw);
         if (c.targetId && world.agents[c.targetId]) { const rel2 = world.agents[c.targetId].relationships?.getOrCreate?.('player', this._playerName(world)); rel2?.modifyAffinity?.(10); const n1 = world.agents[c.npcId], n2 = world.agents[c.targetId]; if (n1 && n2) { n1.relationships?.getOrCreate?.(n2.agentId, n2.name)?.modifyAffinity?.(25); n2.relationships?.getOrCreate?.(n1.agentId, n1.name)?.modifyAffinity?.(25); } }
@@ -2728,11 +2728,11 @@ class SeasonTrials {
         return 0;
     }
     unit(type) { return { famine: t('帶進的食物'), plague: t('帶進的草藥（藥品算 3）'), bandits: t('防衛值'), pricewar: t('賺進的銀幣') }[type] || ''; }
-    goalText(type, target) {
-        const fill = (s, m) => Object.entries(m).reduce((acc, [k, v]) => acc.split('{' + k + '}').join(v), s);
-        const tpl = { famine: t('季末前親手為鎮上帶進 {n} 份食物（求助、收成、買進、委託報酬都算）'), plague: t('季末前親手帶進 {n} 份草藥（藥品一份算三份；求助、買進、委託報酬都算）'), bandits: t('季末前把防衛值撐到 {n}（守衛每人 2、防禦建築、市集城加強守衛 3）'), pricewar: t('季末前親手賺進 {n} 銀幣（委託報酬、押商隊、賣貨都算）') }[type];
-        return fill(tpl, { n: target });
+    goalTextT(type, target) { // v6.22.0 模板版(日誌用)
+        const k = { famine: '季末前親手為鎮上帶進 {n} 份食物（求助、收成、買進、委託報酬都算）', plague: '季末前親手帶進 {n} 份草藥（藥品一份算三份；求助、買進、委託報酬都算）', bandits: '季末前把防衛值撐到 {n}（守衛每人 2、防禦建築、市集城加強守衛 3）', pricewar: '季末前親手賺進 {n} 銀幣（委託報酬、押商隊、賣貨都算）' }[type] || '{n}';
+        return tpl(k, { n: target });
     }
+    goalText(type, target) { const g = this.goalTextT(type, target); return Memory.render(g.k, g.p); }
     _pick(w) {
         const theme = w.townTheme || 'frontier';
         const pool = Object.entries(TRIAL_TYPES).filter(([k]) => k !== this.lastType).map(([k, d]) => [k, d.weights[theme] || 1]);
@@ -2752,7 +2752,7 @@ class SeasonTrials {
         this.lastSeasonKey = key; this.lastType = type;
         this.current = { type, seasonKey: key, status: 'active', target: this.target(type, world), startAbsDay: world._absDay?.() || 0, dueDay: world.clock.DAYS_PER_SEASON || 15, silverAtStart: world.stockpile?.get?.('silver') || 0 };
         const text = `${t('本季考驗')}「${t(d.title)}」：${this.goalText(type, this.current.target)}`;
-        world.logMessage?.('event', `⚖️ ${text}`);
+        world.logMessageT?.('event', '⚖️ 本季考驗「{title}」：{goal}', { title: d.title, goal: this.goalTextT(type, this.current.target) }); // v6.22.0 模板
         world.dailyNews?.collectEvent?.('event', text, 9);
         world.events?.conversationTopics?.push(`${t('這一季的考驗是')}${t(d.title)}`);
         world.onTrialEvent?.('announce', `${d.icon} ${t('本季考驗')}：${t(d.title)}`, this.goalText(type, this.current.target));
@@ -2785,7 +2785,7 @@ class SeasonTrials {
             const cut = Math.max(SeasonTrials.PENALTY_FLOOR - (this.penalty || 0), -10); this.penalty = (this.penalty || 0) + cut; // v6.22.0 扣分有底:累計最多 −20
             if (world.prosperity && cut < 0) { world.prosperity.questBonus = (world.prosperity.questBonus || 0) + cut; world.prosperity.recalcTotal?.(); }
             const text = names.length
-                ? `${t('沒撐過')}「${t(d.title)}」${t('的考驗：')}${names.join('、')}${cut < 0 ? t('搬走了，繁榮 −10、全鎮士氣低落') : t('搬走了，全鎮士氣低落')}`
+                ? `${t('沒撐過')}「${t(d.title)}」${t('的考驗：')}${names.join(t('、'))}${cut < 0 ? t('搬走了，繁榮 −10、全鎮士氣低落') : t('搬走了，全鎮士氣低落')}`
                 : `${t('沒撐過')}「${t(d.title)}」${t('的考驗：')}${cut < 0 ? t('繁榮 −10、全鎮士氣低落') : t('全鎮士氣低落')}`;
             world.logMessage?.('event', `💔 ${text}`); world.dailyNews?.collectEvent?.('event', text, 10, names);
             world.onTrialEvent?.('failed', `💔 ${t('考驗失敗')}：${t(d.title)}`, text);
@@ -2964,14 +2964,14 @@ class SeasonRecap {
         out.push({ icon: '📋', text: this._fill(t('完成 {a} 件、過期 {b} 件、最佳連勝 {c} 天'), { a: r.reqDone, b: r.reqFailed, c: r.bestStreak }) });
         if (r.carRuns) out.push({ icon: '🐪', text: this._fill(t('{n} 趟、賺 {s} 銀幣、遇劫 {r} 次'), { n: r.carRuns, s: r.carSilver, r: r.carRaids }) });
         out.push({ icon: '🧭', text: this._fill(t('經驗 +{x}，Lv.{a} → Lv.{b}'), { x: r.xp, a: r.levelFrom, b: r.levelTo }) });
-        { const a = Math.round(r.silverFrom), b = Math.round(r.silverTo); out.push({ icon: '💰', text: this._fill(t('銀幣 {a} → {b}'), { a, b }) + `（${b - a >= 0 ? '+' : ''}${b - a}）` }); } // v6.11.0 取整,不再出現 895.5999999
+        { const a = Math.round(r.silverFrom), b = Math.round(r.silverTo); out.push({ icon: '💰', text: this._fill(t('銀幣 {a} → {b}（{d}）'), { a, b, d: (b - a >= 0 ? '+' : '') + (b - a) }) }); } // v6.22.0 英文半形括號 // v6.11.0 取整,不再出現 895.5999999
         out.push({ icon: '👥', text: this._fill(t('人口 {a} → {b}'), { a: r.popFrom, b: r.popTo }) + ` · ${this._fill(t('聲望 {d}'), { d: (r.rep >= 0 ? '+' : '') + r.rep })} · ${this._fill(t('繁榮 {d}'), { d: (r.prosperity >= 0 ? '+' : '') + r.prosperity })}` });
         if (r.revived) out.push({ icon: '🌅', text: t('小鎮復興了：連續撐過兩季考驗，搬走的人開始回望這裡') }); // v6.13.0
         if (r.chainsDone) out.push({ icon: '📖', text: this._fill(t('走完 {n} 段村民的小故事'), { n: r.chainsDone }) });
         if (r.questsDone) out.push({ icon: '⚔️', text: this._fill(t('任務完成 {n} 件'), { n: r.questsDone }) });
-        if (r.gains?.length) out.push({ icon: '💞', text: `${t('好感升最多')}：${r.gains.map(g => `${t(g.name)} +${g.delta}`).join('、')}` });
-        if (r.left?.length) out.push({ icon: '🚪', text: `${t('搬走了')}：${r.left.map(n => t(n)).join('、')}` });
-        if (r.joined?.length) out.push({ icon: '🏠', text: `${t('新住民')}：${r.joined.map(n => t(n)).join('、')}` });
+        if (r.gains?.length) out.push({ icon: '💞', text: `${t('好感升最多：')}${r.gains.map(g => `${t(g.name)} +${g.delta}`).join(t('、'))}` });
+        if (r.left?.length) out.push({ icon: '🚪', text: `${t('搬走了：')}${r.left.map(n => t(n)).join(t('、'))}` });
+        if (r.joined?.length) out.push({ icon: '🏠', text: `${t('新住民：')}${r.joined.map(n => t(n)).join(t('、'))}` });
         return out;
     }
     // v6.4.0 下一季怎麼打:依上一季的弱項挑最多三條具體行動(考驗失敗 → 對症;委託過期多;沒押過商隊;沒人好感上升;人口流失;沒升級)

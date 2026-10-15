@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.22.0
-const RIMTOWN_APP_VERSION = '6.22.0';
+// RimTown - Frontend App (WordPress Plugin) v6.22.1
+const RIMTOWN_APP_VERSION = '6.22.1';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -814,7 +814,7 @@ class RimTownApp {
             this._showCenterNotification({
                 icon: curCh.icon,
                 title: `${t('第')}${curCh.n}${t('章:')}${t(curCh.name)}`,
-                name: newly.length ? newly.map(d => `${d.icon} ${d.label}`).join('、') : '',
+                name: newly.length ? newly.map(d => `${d.icon} ${d.label}`).join(t('、')) : '',
                 desc: curCh.desc,
                 autoDismiss: 0,
             });
@@ -1705,7 +1705,7 @@ class RimTownApp {
     _updateHeaderTownName(name) {
         const n = name || this.world?.townName || '邊境鎮';
         const title = document.querySelector('.mobile-title');
-        if (title) title.textContent = n;
+        if (title) title.textContent = t(n); // v6.22.0 手機標題也翻(英文模式之前仍顯示「邊境鎮」)
         const h1 = document.querySelector('.rimtown-container h1[data-i18n], .rimtown-container header h1, #rimtown-header h1');
         if (h1) h1.textContent = t(n);
         document.querySelectorAll('.rt-title-zh').forEach(el => { el.textContent = n; });

@@ -762,7 +762,7 @@ Object.assign(RimTownApp.prototype, {
         this._lastShownNewspaperId = latest.id;
         this._newsReacted = false; // Reset reaction for new newspaper
         // v6.7.0 早安卡還在的話,日報出刊併成卡上一行,不再另跳一張
-        const mc = document.getElementById('morning-card'); if (mc && !mc.dataset.fading && !mc.querySelector('.mc-paper')) { const row = document.createElement('div'); row.className = 'mc-paper'; row.style.cssText = 'font-size:0.74rem;margin-top:3px'; row.textContent = `📰 ${t('AI 日報出刊')}：${t('第')}${latest.id}${t('期')} — ${t('記者')}：${latest.reporter || ''}`; mc.querySelector('.mc-body')?.appendChild(row); return; } // v6.10.1 淡出中不併
+        const mc = document.getElementById('morning-card'); if (mc && !mc.dataset.fading && !mc.querySelector('.mc-paper')) { const row = document.createElement('div'); row.className = 'mc-paper'; row.style.cssText = 'font-size:0.74rem;margin-top:3px'; row.textContent = `📰 ${t('AI 日報出刊：第{n}期 — 記者：{r}').replace('{n}', latest.id).replace('{r}', latest.reporter || '')}`; /* v6.22.0 模板(英文之前是 Ch.4 issues) */ mc.querySelector('.mc-body')?.appendChild(row); return; } // v6.10.1 淡出中不併
         // v5.44.0 日報出刊改角落通知,不再全螢幕打斷;全文在「日報」分頁隨時可讀
         this._showCornerNotice({
             icon: '📰',
