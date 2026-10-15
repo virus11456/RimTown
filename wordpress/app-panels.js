@@ -766,7 +766,7 @@ Object.assign(RimTownApp.prototype, {
             <div class="detail-section"><h3>📅 ${t('今日目標')}</h3>
                 <ol style="font-size:0.75rem;padding-left:18px;margin:2px 0;line-height:1.6">${plan.blocks?.length
                     ? plan.blocks.map(b => `<li>${this._escapeHtml(b.time)} ${this._escapeHtml(b.text)}${(b.steps || []).length ? `<div style="font-size:0.68rem;color:var(--text-secondary);line-height:1.5">${b.steps.map(s => `· ${this._escapeHtml(s)}`).join('　')}</div>` : ''}</li>`).join('')
-                    : plan.goals.map(g => `<li>${g}</li>`).join('')}</ol>
+                    : Agent.planGoalTexts(plan).map(g => `<li>${g}</li>`).join('')}</ol>
                 ${plan.llm ? `<div style="font-size:0.62rem;color:var(--text-muted)">🤖 ${t('由 AI 依他的性格與昨日經歷生成')}${plan.replanned ? `　📝 ${t('已因今天的際遇臨時調整')}` : ''}</div>` : ''}</div>
             <div class="detail-section"><h3>🕐 ${t('今日足跡')}</h3>
                 ${nowLine}${(() => {

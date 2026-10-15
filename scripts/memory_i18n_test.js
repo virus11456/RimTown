@@ -75,6 +75,12 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     const gm = listener.memory.entries.filter(e => e.category === 'social' && e.k === '{speaker}告訴我：「{content}」').slice(-1)[0]; o.gossipMem = gm ? gm.text() : null;
     if (gm) { I18N.setLang('en'); o.gossipMemEn = gm.text(); ck(!cjk.test(o.gossipMemEn) && /together|couple|match/.test(o.gossipMemEn) && /telling you|absolutely true|whole street/.test(o.gossipMemEn), 'gossip memory en (nested wrap) ' + o.gossipMemEn); I18N.setLang('zh'); }
     const rq = (w.requests?.board || []).find(r => r.status === 'open'); if (rq) { const d = w.requests.describeT(rq); ck(d && d.k, 'describeT'); I18N.setLang('en'); o.descEn = Memory.render(d.k, d.p); ck(!cjk.test(o.descEn.replace(/「|」/g, '')), 'describe en ' + o.descEn); ck(w.requests.describe(rq) === o.descEn, 'describe == render'); I18N.setLang('zh'); }
+    // 10) v6.21.0 今日目標模板
+    const npcJ = npcs.find(x => x.job) || a; npcJ.dailyPlan = null; const plan = npcJ.generateDailyPlan(w); o.planZh = Agent.planGoalTexts(plan);
+    ck(plan.goalsT && plan.goalsT.length === plan.goals.length && plan.goals.every(g => typeof g === 'string'), 'plan goalsT');
+    ck(!o.planZh.some(g => /[a-z]{3,}/.test(g)), 'zh plan has no raw location id ' + JSON.stringify(o.planZh));
+    I18N.setLang('en'); o.planEn = Agent.planGoalTexts(plan); ck(o.planEn.length === plan.goals.length && !o.planEn.some(g => cjk.test(g)), 'en plan ' + JSON.stringify(o.planEn)); I18N.setLang('zh');
+    const sv3 = JSON.parse(JSON.stringify(w.serialize())); const ad3 = sv3.agents[npcJ.agentId]; ck(ad3.dailyPlan && Array.isArray(ad3.dailyPlan.goalsT) && ad3.dailyPlan.goalsT[0].k, 'plan goalsT saved');
     o.fails = fails; return o;
   });
   console.log(JSON.stringify(out)); if (out.fails.length) { console.log('FAIL', out.fails); process.exitCode = 1; }

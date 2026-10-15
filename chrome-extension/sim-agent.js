@@ -1160,38 +1160,44 @@ class Agent {
         const isEarlyBird = traits.includes('early_bird');
         const sleepStart = isNightOwl ? 2 : (isEarlyBird ? 20 : 22);
         const sleepEnd = isNightOwl ? 9 : (isEarlyBird ? 5 : 6);
-        const goals = [];
-        goals.push(`${sleepEnd}:00 ${t('起床,展開新的一天')}`);
+        const goalsT = []; // v6.21.0 B1 第五步:今日目標存模板(goalsT),資訊卡依當下語言渲染;goals 仍存建立當下的文字給提示詞/編年史/舊版讀取
+        goalsT.push(tpl('{h}:00 起床,展開新的一天', { h: sleepEnd }));
         if (this.job) {
-            const flavor = traits.includes('lazy') ? t('(能摸魚就摸魚)') : traits.includes('hardworking') ? t('(打算多做一點)') : traits.includes('perfectionist') ? t('(每件事都要做到位)') : '';
-            goals.push(`${this.job.workHours[0]}:00 ${t('到')}${this.job.workplace.replace(/_/g,' ')}${t('上工,做')}${this.job.title}${t('的活')}${flavor}`);
+            const flavor = traits.includes('lazy') ? '(能摸魚就摸魚)' : traits.includes('hardworking') ? '(打算多做一點)' : traits.includes('perfectionist') ? '(每件事都要做到位)' : '';
+            goalsT.push(tpl('{h}:00 到{loc}上工,做{job}的活{flavor}', { h: this.job.workHours[0], loc: locName(world, this.job.workplace), job: this.job.title, flavor: flavor ? tpl(flavor) : '' })); // 地點用顯示名(之前中文裡會出現「到town hall上工」)
         }
         // 動態目標:依今天的人際/夢想/祭典/選舉
         const fest = world.festivals?.activeFestival;
-        if (fest) goals.push(`${t('抽空去逛')}${fest.name}${t(',看看')}${pickRandom(fest.activities)}`);
+        if (fest) goalsT.push(tpl('抽空去逛{fest},看看{act}', { fest: fest.name, act: pickRandom(fest.activities) }));
         const partner = this.relationships.getPartner();
         const crushes = this.relationships.getRomanticInterests().filter(r => !r.status);
-        if (partner) goals.push(`${t('傍晚想跟')}${partner.targetName}${t('一起吃飯聊聊今天')}`);
-        else if (crushes.length) goals.push(`${t('想找機會跟')}${crushes[0].targetName}${t('多說幾句話')}`);
+        if (partner) goalsT.push(tpl('傍晚想跟{who}一起吃飯聊聊今天', { who: partner.targetName }));
+        else if (crushes.length) goalsT.push(tpl('想找機會跟{who}多說幾句話', { who: crushes[0].targetName }));
         const enemy = Object.values(this.relationships.relationships).filter(r => r.affinity < -30).sort((a,b)=>a.affinity-b.affinity)[0];
-        if (enemy) goals.push(`${t('盡量避開')}${enemy.targetName}${t(',免得又吵起來')}`);
+        if (enemy) goalsT.push(tpl('盡量避開{who},免得又吵起來', { who: enemy.targetName }));
         const goal = world?.lifeGoals?.getGoal?.(this.agentId);
         if (goal && !goal.done) {
             const def = (typeof LIFE_GOALS !== 'undefined') ? LIFE_GOALS[goal.goalId] : null;
-            if (def) goals.push(`${t('為夢想「')}${def.name}${t('」再努力一點:')}${def.stages[goal.stage] || ''}`);
+            if (def) goalsT.push(tpl('為夢想「{dream}」再努力一點:{stage}', { dream: def.name, stage: def.stages[goal.stage] || '' }));
         }
-        if (world.election?.phase && world.election.phase !== 'none') goals.push(t('跟人聊聊鎮長選舉,想想要投給誰'));
-        if (this.needs.social < 35) goals.push(t('好一陣子沒跟人好好聊天了,今天想找人說說話'));
+        if (world.election?.phase && world.election.phase !== 'none') goalsT.push(tpl('跟人聊聊鎮長選舉,想想要投給誰'));
+        if (this.needs.social < 35) goalsT.push(tpl('好一陣子沒跟人好好聊天了,今天想找人說說話'));
         // 晚間安排依性格
-        if (traits.includes('gossip')) goals.push(t('晚上去酒館打聽今天的八卦'));
-        else if (traits.includes('shy')) goals.push(t('晚上想一個人安靜待著'));
-        else if (traits.includes('curious')) goals.push(t('晚上去圖書館翻翻書'));
-        else goals.push(t('晚上找朋友放鬆一下'));
-        goals.push(`${sleepStart}:00 ${t('回家睡覺')}`);
-        this.dailyPlan = { key, goals };
+        if (traits.includes('gossip')) goalsT.push(tpl('晚上去酒館打聽今天的八卦'));
+        else if (traits.includes('shy')) goalsT.push(tpl('晚上想一個人安靜待著'));
+        else if (traits.includes('curious')) goalsT.push(tpl('晚上去圖書館翻翻書'));
+        else goalsT.push(tpl('晚上找朋友放鬆一下'));
+        goalsT.push(tpl('{h}:00 回家睡覺', { h: sleepStart }));
+        const goals = goalsT.map(g => Memory.render(g.k, g.p));
+        this.dailyPlan = { key, goals, goalsT };
         return this.dailyPlan;
     }
 
+    static planGoalTexts(plan) { // v6.21.0 給介面:有模板就依當下語言渲染,否則用建立當下的文字
+        if (!plan) return [];
+        if (Array.isArray(plan.goalsT) && plan.goalsT.length) return plan.goalsT.map(g => (g && g.k) ? Memory.render(g.k, g.p) : String(g));
+        return plan.goals || [];
+    }
     // v5.37.0 目前行程步驟:LLM 分解式行程(blocks)中,找出「此刻正在做的子步驟」
     // 對應 generative_agents 的 task decomposition——行程不只是標籤,而是 5 分鐘級的生活片段
     getCurrentPlanStep(world) {

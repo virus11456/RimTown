@@ -1904,7 +1904,7 @@ class World {
             _annualMourning: a._annualMourning || [],
             thoughts: (a.thoughts || []).map(t2 => ({ ...t2 })), // v5.15.0 記憶想法
             attributes: { ...(a.attributes || {}) }, // v5.26.0 核心屬性
-            dailyPlan: a.dailyPlan ? { key: a.dailyPlan.key, goals: [...a.dailyPlan.goals], blocks: a.dailyPlan.blocks ? a.dailyPlan.blocks.map(b => ({ time: b.time, text: b.text, steps: [...(b.steps || [])] })) : undefined, llm: a.dailyPlan.llm || undefined } : null, // v5.30.0 今日目標 / v5.37.0 LLM 分解行程
+            dailyPlan: a.dailyPlan ? { key: a.dailyPlan.key, goals: [...a.dailyPlan.goals], goalsT: a.dailyPlan.goalsT ? a.dailyPlan.goalsT.map(g => ({ ...g })) : undefined, blocks: a.dailyPlan.blocks ? a.dailyPlan.blocks.map(b => ({ time: b.time, text: b.text, steps: [...(b.steps || [])] })) : undefined, llm: a.dailyPlan.llm || undefined } : null, // v5.30.0 今日目標 / v5.37.0 LLM 分解行程
             currently: a.currently || undefined, // v5.37.0 LLM 每日修訂的近況
             todayTrace: (a.todayTrace && a.todayTrace.length) ? a.todayTrace.slice(-160).map(e => ({ ...e })) : undefined, // v5.40.0 今日足跡
             _traceDay: a._traceDay || undefined,

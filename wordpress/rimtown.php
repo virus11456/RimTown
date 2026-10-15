@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.20.0
+ * Version: 6.21.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.20.0');
+define('RIMTOWN_VERSION', '6.21.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.21.0',
+            'date'    => '2026-10-15',
+            'changes' => array(
+                '🌐 B1 第五步：村民「今日目標」（起床／上工／逛節慶／約伴侶吃飯／避開仇人／為夢想努力／晚間安排／睡覺）改成模板存檔，資訊卡與手機小卡依當下語言顯示；上工地點改用顯示名（之前中文裡會出現「到town hall上工」）；AI 分解式行程與提示詞仍用建立當下的文字',
+                '🧪 memory_i18n_test 加今日目標段（模板數量、中文無地點 id、英文無中文、存檔帶模板）',
+            ),
+            'changes_en' => array(
+                '🌐 B1 step five: villagers\' daily goals (wake up, go to work, visit the festival, dinner with a partner, avoid a rival, work toward a dream, evening plans, bedtime) are stored as templates and shown in the current language on the info card and the mobile mini-card; the workplace now uses its display name (Chinese used to show "head to town hall" with the raw id); AI-generated schedules and prompts still use the text as written',
+                '🧪 memory_i18n_test gains a daily-goals section (template count, no raw location ids in Chinese, no Chinese in English, templates saved)',
+            ),
+        ),
         array(
             'version' => '6.20.0',
             'date'    => '2026-10-13',

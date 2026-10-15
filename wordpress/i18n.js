@@ -5280,6 +5280,15 @@ const I18N = (() => {
         '鎮上商店': 'town shop',
         '身上': 'you have',
         '押一隊商隊去鄰鎮賣貨或採買': 'Send a caravan to sell or buy in a neighboring town',
+        // v6.21.0 今日目標模板 key
+        '{h}:00 起床,展開新的一天': '{h}:00 Get up and start the day',
+        '{h}:00 到{loc}上工,做{job}的活{flavor}': '{h}:00 Head to {loc} and work as {job}{flavor}',
+        '抽空去逛{fest},看看{act}': 'Find time for {fest} and see {act}',
+        '傍晚想跟{who}一起吃飯聊聊今天': 'Have dinner with {who} this evening and talk about the day',
+        '想找機會跟{who}多說幾句話': 'Find a chance to talk a little more with {who}',
+        '盡量避開{who},免得又吵起來': 'Steer clear of {who} to avoid another argument',
+        '為夢想「{dream}」再努力一點:{stage}': 'Work a bit harder toward the dream "{dream}": {stage}',
+        '{h}:00 回家睡覺': '{h}:00 Go home and sleep',
         '拜託{p}的事沒有下文：{d}': 'Asked {p} for help and nothing came of it: {d}',
         '拜託旅人的事沒有下文：{d}': 'Asked the traveler and nothing came of it: {d}',
         // v6.20.0 八卦內容／委託完成模板 key
