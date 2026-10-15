@@ -155,7 +155,7 @@ class FarmSystem {
 
         // Notify daily news
         if (world.dailyNews) {
-            world.dailyNews.collectEvent('farm', `${t('收穫了')} ${amount} ${t('單位')}${crop.name}（${QUALITY_NAMES[quality]}${t('品質')}）！`, 5);
+            world.dailyNews.collectEvent('farm', `${t('收穫了')} ${amount} ${t('單位')}${crop.name}${t('（')}${QUALITY_NAMES[quality]}${t('品質')}${t('）')}${t('！')}`, 5);
         }
 
         // Reset plot

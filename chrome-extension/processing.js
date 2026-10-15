@@ -328,10 +328,10 @@ class ProcessingSystem {
         const factory = this.builtFactories[order.factoryKey];
         if (!factory) return { ok: false, error: t('工廠不存在') };
         const available = factory.warehouse[order.product] || 0;
-        if (available < order.amount) return { ok: false, error: `${t('庫存不足')}（${t('需要')}${order.amount}，${t('有')}${available}）` };
+        if (available < order.amount) return { ok: false, error: `${t('庫存不足')}${t('（')}${t('需要')}${order.amount}${t('，')}${t('有')}${available}${t('）')}` };
 
         factory.warehouse[order.product] -= order.amount;
-        world.stockpile.add('silver', order.reward, world.tickCount, `${t('訂單完成')}：${order.product}`);
+        world.stockpile.add('silver', order.reward, world.tickCount, `${t('訂單完成')}${t('：')}${order.product}`);
         order.status = 'completed';
         world.logMessageT('order', '✅ 訂單完成！獲得 {reward} 銀幣', { reward: order.reward });
         return { ok: true };

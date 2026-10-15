@@ -67,12 +67,12 @@ class CustomNPCSystem {
         // Deduct resources (pre-validated, consume atomically)
         const consumed = [];
         for (const [res, amount] of Object.entries(this.creationCost)) {
-            if (!world.stockpile?.consume(res, amount, world.tickCount, `${t('招募新居民')}：${config.name}`)) {
+            if (!world.stockpile?.consume(res, amount, world.tickCount, `${t('招募新居民')}${t('：')}${config.name}`)) {
                 // Rollback already consumed resources
                 for (const [rRes, rAmt] of consumed) {
-                    world.stockpile?.add(rRes, rAmt, world.tickCount, `${t('退還')}：${t('招募取消')}`);
+                    world.stockpile?.add(rRes, rAmt, world.tickCount, `${t('退還')}${t('：')}${t('招募取消')}`);
                 }
-                return { success: false, error: `${t('資源不足')}：${t('需要')} ${amount} ${res}` };
+                return { success: false, error: `${t('資源不足')}${t('：')}${t('需要')} ${amount} ${res}` };
             }
             consumed.push([res, amount]);
         }
@@ -107,9 +107,9 @@ class CustomNPCSystem {
             createdYear: world.clock.year,
         });
 
-        world.logMessage?.('system', `🎉 ${t('新居民')}「${config.name}」${t('加入了')}${t(world.townName || '邊境鎮')}！`); // v6.11.0 用實際鎮名
+        world.logMessage?.('system', `🎉 ${t('新居民')}${t('「')}${config.name}${t('」')}${t('加入了')}${t(world.townName || '邊境鎮')}${t('！')}`); // v6.11.0 用實際鎮名
         if (world.dailyNews) {
-            world.dailyNews.collectEvent('lifecycle', `${t('新居民')}「${config.name}」${t('從遠方來到了')}${t(world.townName || '邊境鎮')}！`, 7, [config.name]);
+            world.dailyNews.collectEvent('lifecycle', `${t('新居民')}${t('「')}${config.name}${t('」')}${t('從遠方來到了')}${t(world.townName || '邊境鎮')}${t('！')}`, 7, [config.name]);
         }
 
         return { success: true, agentId };
@@ -129,7 +129,7 @@ class CustomNPCSystem {
         // Check duplicate name
         const existingNames = Object.values(world.agents || {}).map(a => a.name);
         if (existingNames.includes(config.name.trim())) {
-            return `「${config.name}」${t('已經有人使用了')}`;
+            return `${t('「')}${config.name}${t('」')}${t('已經有人使用了')}`;
         }
 
         // Max custom NPCs
@@ -150,7 +150,7 @@ class CustomNPCSystem {
             if (config.traits.includes(a) && config.traits.includes(b)) {
                 const labelA = CUSTOM_NPC_TRAITS.find(t => t.key === a)?.label || a;
                 const labelB = CUSTOM_NPC_TRAITS.find(t => t.key === b)?.label || b;
-                return `「${labelA}」${t('和')}「${labelB}」${t('不能同時選擇')}`;
+                return `${t('「')}${labelA}${t('」')}${t('和')}${t('「')}${labelB}${t('」')}${t('不能同時選擇')}`;
             }
         }
 
@@ -168,7 +168,7 @@ class CustomNPCSystem {
         // Resource check
         for (const [res, amount] of Object.entries(this.creationCost)) {
             if ((world.stockpile?.get(res) || 0) < amount) {
-                return `${t('資源不足')}：${t('需要')} ${amount} ${res === 'silver' ? t('銀幣') : res === 'food' ? t('食物') : res}`;
+                return `${t('資源不足')}${t('：')}${t('需要')} ${amount} ${res === 'silver' ? t('銀幣') : res === 'food' ? t('食物') : res}`;
             }
         }
 
@@ -297,7 +297,7 @@ class MultiEndingSystem {
             history: this._buildTownHistory(world),
         };
 
-        world.logMessage?.('system', `🎊 ${t('恭喜')}！${t('達成')}「${ENDING_TYPES[finalEnding].title}」！`);
+        world.logMessage?.('system', `🎊 ${t('恭喜')}${t('！')}${t('達成')}${t('「')}${ENDING_TYPES[finalEnding].title}${t('」')}${t('！')}`);
 
         return this.endingData;
     }
@@ -455,7 +455,7 @@ class MultiEndingSystem {
                 history.push({
                     type: 'quest',
                     time: '',
-                    content: `${t('完成任務')}：${q.title}`,
+                    content: `${t('完成任務')}${t('：')}${q.title}`,
                 });
             }
         }
@@ -511,7 +511,7 @@ class MultiEndingSystem {
             story += `${t('在這段旅途中，與')}${s.spouse.name}${t('結為連理')}`;
             if (s.childrenCount > 0) {
                 story += `${t('，養育了')}${s.childrenCount}${t('個孩子')}`;
-                if (s.childrenNames.length > 0) story += `（${s.childrenNames.join(t('、'))}）`;
+                if (s.childrenNames.length > 0) story += `${t('（')}${s.childrenNames.join(t('、'))}${t('）')}`;
             }
             story += `${t('，建立了溫暖的家庭。')}`;
         } else if (s.romanceCount > 0) {
@@ -645,7 +645,7 @@ class MultiEndingSystem {
         // ===== Skills Chart =====
         if (s.playerSkills && s.playerSkills.length > 0) {
             html += `<div style="${cardStyle};margin-bottom:24px">`;
-            html += `<h3 style="font-size:14px;color:${et.color};margin-bottom:10px">🎯 ${t('技能')}（${t('總計：')}${s.totalSkillLevel}）</h3>`;
+            html += `<h3 style="font-size:14px;color:${et.color};margin-bottom:10px">🎯 ${t('技能')}${t('（')}${t('總計：')}${s.totalSkillLevel}${t('）')}</h3>`;
             const skillColors = ['#4fc3f7','#81c784','#ffb74d','#e57373','#ba68c8','#4dd0e1','#fff176','#a1887f','#90a4ae','#f48fb1','#aed581','#ce93d8'];
             const maxSkill = Math.max(...s.playerSkills.map(sk => sk.level), 1);
             s.playerSkills.forEach((sk, i) => {

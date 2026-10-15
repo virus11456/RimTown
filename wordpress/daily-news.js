@@ -61,7 +61,7 @@ class DailyNewsEngine {
             .map(ct => ({ town: ct.town, reporter: ct.reporter, items: (ct.items || []).slice(0, 2) })).filter(ct => ct.items.length);
         if (crossTown.length) {
             const lines = [`\n\n${t('🐎 跨鎮專欄')}`];
-            crossTown.forEach(ct => ct.items.forEach(line => lines.push(`· ${t(ct.town)}｜${t(line)}${ct.reporter ? `（${t('記者')}：${t(ct.reporter)}）` : ''}`)));
+            crossTown.forEach(ct => ct.items.forEach(line => lines.push(`· ${t(ct.town)}｜${t(line)}${ct.reporter ? `${t('（')}${t('記者')}${t('：')}${t(ct.reporter)}${t('）')}` : ''}`)));
             content = (content || '') + lines.join('\n');
             const first = crossTown[0];
             if (world.events?.conversationTopics) world.events.conversationTopics.push(`${t(first.town)}${t('的日報說：')}${t(first.items[0])}`);
@@ -97,7 +97,7 @@ class DailyNewsEngine {
 
         // Get previous newspaper summary for continuity
         const prevPaper = this.newspapers.length > 0 ? this.newspapers[this.newspapers.length - 1] : null;
-        const prevRef = prevPaper ? `${t('上一期日報')}（${t('記者')}：${prevPaper.reporter}）${t('的摘要')}：${(prevPaper.content || '').substring(0, 100)}...` : '';
+        const prevRef = prevPaper ? `${t('上一期日報')}${t('（')}${t('記者')}${t('：')}${prevPaper.reporter}${t('）')}${t('的摘要')}${t('：')}${(prevPaper.content || '').substring(0, 100)}...` : '';
 
         // Build richer NPC interaction context
         const agentList = Object.values(world.agents).filter(a => !a.isPlayer);
@@ -109,7 +109,7 @@ class DailyNewsEngine {
                     const target = world.agents[targetId];
                     if (target && rel.affinity !== undefined) {
                         const status = rel.status || (rel.affinity > 60 ? t('好友') : rel.affinity < -20 ? t('不合') : t('普通'));
-                        relationshipSnippets.push(`${agent.name}${t('與')}${target.name}：${status}（${t('好感度')}${rel.affinity}${rel.romanticInterest > 30 ? t('，有浪漫火花💕') : ''}）`);
+                        relationshipSnippets.push(`${agent.name}${t('與')}${target.name}${t('：')}${status}${t('（')}${t('好感度')}${rel.affinity}${rel.romanticInterest > 30 ? t('，有浪漫火花💕') : ''}${t('）')}`);
                     }
                 }
             }

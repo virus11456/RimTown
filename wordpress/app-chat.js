@@ -126,7 +126,7 @@ Object.assign(RimTownApp.prototype, {
             const lastMsg = msgs.length ? msgs[msgs.length - 1] : null;
             const previewEl = btn.querySelector('.chat-contact-preview');
             if (previewEl && lastMsg) {
-                const lastText = lastMsg.speaker === player.name ? `${t('你')}：${lastMsg.text}` : lastMsg.text;
+                const lastText = lastMsg.speaker === player.name ? `${t('你')}${t('：')}${lastMsg.text}` : lastMsg.text;
                 const truncated = lastText.length > 20 ? lastText.slice(0, 20) + '...' : lastText;
                 previewEl.textContent = truncated;
             }
@@ -234,7 +234,7 @@ Object.assign(RimTownApp.prototype, {
         contactsHtml += '<div class="chat-contacts-list chat-contacts-full">';
         allNpcs.forEach(npc => {
             const isActive = this.chatTarget === npc.id;
-            const lastText = npc.lastMsg ? (npc.lastMsg.speaker === player.name ? `${t('你')}：${npc.lastMsg.text}` : npc.lastMsg.text) : t('尚未對話');
+            const lastText = npc.lastMsg ? (npc.lastMsg.speaker === player.name ? `${t('你')}${t('：')}${npc.lastMsg.text}` : npc.lastMsg.text) : t('尚未對話');
             const truncated = lastText.length > 20 ? lastText.slice(0, 20) + '...' : lastText;
             let avatarDataUrl = null;
             try { if (this.tileMap?.renderAvatarDataURL) avatarDataUrl = this.tileMap.renderAvatarDataURL(npc.jobKey, npc.gender, npc.name, this.world?.agents?.[npc.id]?.look || null); } catch(e) {}
@@ -288,7 +288,7 @@ Object.assign(RimTownApp.prototype, {
             const intentBar = this._chatIntents().map(it => {
                 const o = (it.key !== 'whisper' && oddsNpc && this.world?.chatOdds) ? this.world.chatOdds(oddsNpc, it.key) : null;
                 const pct = o ? Math.round(o.p * 100) : null;
-                const ttl = o ? `${it.hint} · ${t('成功率')} ${pct}%${o.factors.length ? '（' + o.factors.map(f => `${f.label}${f.v > 0 ? '+' : ''}${Math.round(f.v * 100)}`).join('、') + '）' : ''}` : it.hint;
+                const ttl = o ? `${it.hint} · ${t('成功率')} ${pct}%${o.factors.length ? t('（') + o.factors.map(f => `${f.label}${f.v > 0 ? '+' : ''}${Math.round(f.v * 100)}`).join(t('、')) + t('）') : ''}` : it.hint;
                 return `<button class="chat-intent-btn${this._intentArmed?.key === it.key ? ' armed' : ''}" data-action="chat-intent" data-val="${it.key}" title="${this._escapeHtml(ttl)}" ${this.chatSending ? 'disabled' : ''}>${it.icon} ${it.label}${pct !== null ? ` <span style="opacity:0.65;font-size:0.85em">${pct}%</span>` : ''}</button>`;
             }).join('');
             chatAreaHtml += `<div class="chat-intent-bar">${intentBar}</div>`;
@@ -330,7 +330,7 @@ Object.assign(RimTownApp.prototype, {
         for (const p of posts) {
             const liked = p.likes.includes(playerName);
             const cmts = (p.comments || []).map(c =>
-                `<div style="font-size:0.75rem;margin:4px 0 0 10px;line-height:1.4"><b style="color:var(--accent)">${esc(c.speaker)}</b><span style="opacity:0.6">：</span>${esc(c.text)}</div>`).join('');
+                `<div style="font-size:0.75rem;margin:4px 0 0 10px;line-height:1.4"><b style="color:var(--accent)">${esc(c.speaker)}</b><span style="opacity:0.6">${t('：')}</span>${esc(c.text)}</div>`).join('');
             html += `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px">
                 <div style="display:flex;justify-content:space-between;align-items:center">
                     <b style="font-size:0.85rem">${esc(p.authorName)}</b>
@@ -721,16 +721,16 @@ Object.assign(RimTownApp.prototype, {
         const world = this.world;
         const lines = [];
         const fx = (txt, color) => lines.push({ txt, color });
-        if (outcome?.judge) { const j = outcome.judge; const per = world.growth?.has('empath') ? 12 : 8; fx(`🧠 ${t('AI 判定')}：${j.r || t('沒特別感覺')}（${j.s > 0 ? '+' : ''}${j.s * per}%）`, j.s > 0 ? '#7fc4ff' : j.s < 0 ? '#e0b07a' : '#9aa'); } // v6.3.0
+        if (outcome?.judge) { const j = outcome.judge; const per = world.growth?.has('empath') ? 12 : 8; fx(`🧠 ${t('AI 判定')}${t('：')}${j.r || t('沒特別感覺')}${t('（')}${j.s > 0 ? '+' : ''}${j.s * per}%${t('）')}`, j.s > 0 ? '#7fc4ff' : j.s < 0 ? '#e0b07a' : '#9aa'); } // v6.3.0
         // v5.95.0 擲骰沒過:這句話沒說進心裡,原本的機械後果不套用
         if (outcome && !outcome.ok) {
             rel.modifyAffinity(-1);
-            fx(`🎲 ${t('沒說進心裡')}（${t('成功率')} ${Math.round(outcome.p * 100)}%）`, '#9aa');
+            fx(`🎲 ${t('沒說進心裡')}${t('（')}${t('成功率')} ${Math.round(outcome.p * 100)}%${t('）')}`, '#9aa');
             fx(`${t('好感')} -1`, '#e0b07a');
             world.recordPlayerAction?.(key, '', npc, null);
             return lines;
         }
-        if (outcome?.ok) { fx(`🎲 ${t('說到點上')}（${t('成功率')} ${Math.round(outcome.p * 100)}%）`, '#7fc4ff'); try { world.growth?.addXp(3, 'chat', world); world.requests?.onIntent?.(npc.agentId, key, true, world); } catch (e) {} } // v5.97.0 委託:打聽/拉票
+        if (outcome?.ok) { fx(`🎲 ${t('說到點上')}${t('（')}${t('成功率')} ${Math.round(outcome.p * 100)}%${t('）')}`, '#7fc4ff'); try { world.growth?.addXp(3, 'chat', world); world.requests?.onIntent?.(npc.agentId, key, true, world); } catch (e) {} } // v5.97.0 委託:打聽/拉票
         switch (key) {
             // v5.95.0 求助:對方從本行勻物資給鎮上(每人每天一次)
             case 'help': {
@@ -740,12 +740,12 @@ Object.assign(RimTownApp.prototype, {
                 if (npc._lastHelpDay === dayKey) { fx(`📦 ${t(npc.name)}${t('說今天已經勻過了，明天再說')}`, '#9aa'); break; }
                 const amount = 10 + Math.floor(Math.random() * 11);
                 npc._lastHelpDay = dayKey;
-                world.stockpile.add(res, amount, world.tickCount, `${t('求助')}：${t(npc.name)}`, 'player');
+                world.stockpile.add(res, amount, world.tickCount, `${t('求助')}${t('：')}${t(npc.name)}`, 'player');
                 rel.trust = Math.max(-100, (rel.trust || 0) - 2);
                 npc.memory?.add?.(world.tickCount, world.clock.timeStr, 'social', `${t('勻了')}${amount}${t('份東西給')}${t(player.name)}`, 5, ['player']);
                 const label = (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[res]?.name) ? SHOP_ITEMS[res].name() : res;
                 fx(`📦 ${t(npc.name)}${t('勻了')} ${amount} ${label} ${t('給鎮上')}`, '#5cc98f');
-                fx(`${t('信任')} -2（${t('人情總要還')}）`, '#e0b07a');
+                fx(`${t('信任')} -2${t('（')}${t('人情總要還')}${t('）')}`, '#e0b07a');
                 break;
             }
             // v5.95.0 談條件:談成後兩天內押商隊利潤 +5%

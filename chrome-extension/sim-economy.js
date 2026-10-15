@@ -267,7 +267,7 @@ class BuildingManager {
         const p=this.projects.find(x=>x.id===projectId && x.status==='building'); if(!p) return { ok:false, msg:t('沒有這個工程') };
         const dk=this._dayKey(world); if(p.fundedDay===dk) return { ok:false, msg:t('這個工程今天已經捐過了，明天再來') };
         const cost=BuildingManager.FUND_COST; if(!world.stockpile.has('silver',cost)) return { ok:false, msg:t('銀幣不足') };
-        world.stockpile.consume('silver',cost,world.tickCount,`${t('捐建')}：${t(p.name)}`,'player');
+        world.stockpile.consume('silver',cost,world.tickCount,`${t('捐建')}${t('：')}${t(p.name)}`,'player');
         const gain=Math.max(1,Math.ceil(p.workRequired*0.2)); p.workDone=Math.min(p.workRequired,p.workDone+gain); p.fundedDay=dk; p.funded=(p.funded||0)+cost;
         const text=t('你捐了 {n} 銀幣給「{name}」的工程，工匠們加班趕工（{pct}%）').split('{n}').join(cost).split('{name}').join(t(p.name)).split('{pct}').join(Math.round(p.workDone/p.workRequired*100));
         world.logMessage?.('building',`🔨 ${text}`); world.dailyNews?.collectEvent?.('economy',text,5);
@@ -390,11 +390,11 @@ const BASE_PRICES = {food:1,wood:1.5,stone:2,metal:4,cloth:3,herbs:3.5,meals:2.5
 };
 // v5.52.0 經濟C波:商人改以「收購加工品」為主(價值層 sink)——原料有自動補給,買賣原料已無意義
 const MERCHANT_TYPES = [
-    {names:[t('張商人 (Zhang the Trader)'),t('老趙商隊 (Old Zhao\'s Caravan)')],specialty:'general',sells:['food','herbs'],buys:['meals','furniture','clothing','tools']},
-    {names:[t('礦商老李 (Li the Ore Dealer)')],specialty:'metals',sells:['metal','tools'],buys:['meals','medicine']},
-    {names:[t('藥師小雪 (Xue the Herbalist)')],specialty:'medicine',sells:['herbs','medicine'],buys:['meals','clothing']},
-    {names:[t('絲綢商人 (The Silk Trader)')],specialty:'textiles',sells:['cloth','clothing'],buys:['furniture','medicine','meals']},
-    {names:[t('異國商隊 (Exotic Caravan)')],specialty:'exotic',sells:['herbs','food'],buys:['meals','clothing','furniture','tools','medicine']},
+    {names:[t('張商人') /* v6.22.0 中文不再夾英文括號 */,t('老趙商隊')],specialty:'general',sells:['food','herbs'],buys:['meals','furniture','clothing','tools']},
+    {names:[t('礦商老李')],specialty:'metals',sells:['metal','tools'],buys:['meals','medicine']},
+    {names:[t('藥師小雪')],specialty:'medicine',sells:['herbs','medicine'],buys:['meals','clothing']},
+    {names:[t('絲綢商人')],specialty:'textiles',sells:['cloth','clothing'],buys:['furniture','medicine','meals']},
+    {names:[t('異國商隊')],specialty:'exotic',sells:['herbs','food'],buys:['meals','clothing','furniture','tools','medicine']},
 ];
 
 class TradeManager {

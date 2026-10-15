@@ -228,8 +228,10 @@ class World {
         this.lastCaravanDay = day;
         this.caravanCount = (this.caravanCount || 0) + 1; // v5.84.0 任務條件
         const label = (rs) => (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[rs]?.name) ? SHOP_ITEMS[rs].name() : (rs === 'silver' ? t('銀幣') : rs);
-        const msg = `${t(pick.tw.name)}${t('的商隊來了：用')} ${giveAmt} ${label(give)} ${t('換到')} ${recvAmt} ${label(recv)}${hub ? t('（市集城經手，多兩成）') : ''}`;
-        this.logMessageT('trade', '🐪 {msg}', { msg });
+        const RES_ZH = { food: '食物', meals: '餐食', wood: '木材', stone: '石材', metal: '金屬', tools: '工具', herbs: '草藥', cloth: '布料', medicine: '藥品', silver: '銀幣' }; // v6.22.0 模板參數用原文,顯示時再翻
+        const msgT = tpl(hub ? '{town}的商隊來了：用 {ga} {g} 換到 {ra} {r}（市集城經手，多兩成）' : '{town}的商隊來了：用 {ga} {g} 換到 {ra} {r}', { town: pick.tw.name, ga: giveAmt, g: RES_ZH[give] || give, ra: recvAmt, r: RES_ZH[recv] || recv });
+        const msg = Memory.render(msgT.k, msgT.p);
+        this.logMessageT('trade', '🐪 {msg}', { msg: msgT });
         if (this.events?.conversationTopics) this.events.conversationTopics.push(`${t(pick.tw.name)}${t('的商隊帶來了')}${label(recv)}`);
         this.onCaravan?.({ fromName: pick.tw.name, fromTheme: pick.key, give, giveAmt, recv, recvAmt, hub });
     }
@@ -323,7 +325,7 @@ class World {
         pc.active = { id: 'pc' + Date.now(), mode: 'buy', toTownId: opt.toTownId, toTownName: opt.toTownName, toTheme: opt.toTheme, res, amount, cost: q.cost, guardId: guard?.agentId || null, guardName: guard?.name || '',
             route: opt.route === 'mountain' ? 'mountain' : 'road', departAbsDay: this._absDay(), returnAbsDay: this._absDay() + q.days, quote: q };
         const label = (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[res]?.name) ? SHOP_ITEMS[res].name() : res;
-        this.logMessage('trade', `🧺 ${t('你的商隊帶著 {n} 銀幣去{town}採買 {amt} {res}').replace('{n}', q.cost).replace('{town}', t(opt.toTownName)).replace('{amt}', amount).replace('{res}', label)}${guard ? `（${guard.name}${t('押車')}）` : ''}`);
+        this.logMessage('trade', `🧺 ${t('你的商隊帶著 {n} 銀幣去{town}採買 {amt} {res}').replace('{n}', q.cost).replace('{town}', t(opt.toTownName)).replace('{amt}', amount).replace('{res}', label)}${guard ? `${t('（')}${guard.name}${t('押車')}${t('）')}` : ''}`);
         this.events?.conversationTopics?.push(t('旅人派商隊去{town}採買').replace('{town}', t(opt.toTownName)));
         try { this.requests?.onCaravanLaunch?.(this); } catch (e) {}
         return { ok: true, msg: `${t('商隊出發，預計')} ${q.days} ${t('天後回報')}`, cost: q.cost };
@@ -346,7 +348,7 @@ class World {
         pc.active = { id: 'pc' + Date.now(), toTownId: opt.toTownId, toTownName: opt.toTownName, toTheme: opt.toTheme, res, amount, guardId: guard?.agentId || null, guardName: guard?.name || '',
             route: opt.route === 'mountain' ? 'mountain' : 'road', departAbsDay: this._absDay(), returnAbsDay: this._absDay() + q.days, quote: q };
         const label = (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[res]?.name) ? SHOP_ITEMS[res].name() : res;
-        this.logMessage('trade', `🐪 ${t('你的商隊出發了：')}${amount} ${label} → ${t(opt.toTownName)}${guard ? `（${guard.name}${t('押車')}）` : ''}`);
+        this.logMessage('trade', `🐪 ${t('你的商隊出發了：')}${amount} ${label} → ${t(opt.toTownName)}${guard ? `${t('（')}${guard.name}${t('押車')}${t('）')}` : ''}`);
         this.events?.conversationTopics?.push(`${t('旅人押了一隊商隊去')}${t(opt.toTownName)}`);
         try { this.requests?.onCaravanLaunch?.(this); } catch (e) {} // v5.97.0 委託:押商隊
         return { ok: true, msg: `${t('商隊出發，預計')} ${q.days} ${t('天後回報')}` };
@@ -365,14 +367,14 @@ class World {
             silver = Math.round((a.amount - lost) * (q.base / a.amount) * 1.2);
             if (a.guardId) pc.pendingInjury = a.guardId;
         } else silver = q.value;
-        if (silver > 0) this.stockpile.add('silver', silver, this.tickCount, `${t('商隊回報')}：${t(a.toTownName)}`, 'player');
+        if (silver > 0) this.stockpile.add('silver', silver, this.tickCount, `${t('商隊回報')}${t('：')}${t(a.toTownName)}`, 'player');
         const result = { ...a, raided, lost, silver, resolvedAbsDay: this._absDay() };
         this.growth?.addXp(raided ? 5 : 15, 'caravan', this); // v5.94.0 經驗
         pc.history = (pc.history || []).concat([result]).slice(-10); pc.active = null;
         pc.totals = pc.totals || { runs: 0, silver: 0, raids: 0 }; pc.totals.runs++; pc.totals.silver += silver; if (raided) pc.totals.raids++; // v5.98.0 季末回顧用的累計
         const line = raided
             ? `${t('你的商隊在去')}${t(a.toTownName)}${t('的路上遇劫，損失')} ${lost} ${label}${silver ? `${t('，剩下的賣了')} ${silver} ${t('銀幣')}` : ''}${a.guardName ? `${t('；')}${a.guardName}${t('受了傷')}` : ''}`
-            : `${t('你的商隊從')}${t(a.toTownName)}${t('回來了：')}${a.amount} ${label} ${t('賣了')} ${silver} ${t('銀幣')}（+${Math.round(q.margin * 100)}%）`;
+            : `${t('你的商隊從')}${t(a.toTownName)}${t('回來了：')}${a.amount} ${label} ${t('賣了')} ${silver} ${t('銀幣')}${t('（')}+${Math.round(q.margin * 100)}%${t('）')}`;
         this.logMessage('trade', `${raided ? '🏴' : '💰'} ${line}`);
         this.dailyNews?.collectEvent?.('economy', line, raided ? 9 : 7, a.guardName ? [a.guardName] : []);
         this.events?.conversationTopics?.push(raided ? t('旅人的商隊遇劫了') : t('旅人的商隊賺了一筆'));
@@ -518,7 +520,7 @@ class World {
         this.movedOut = this.movedOut || [];
         this.movedOut.push({ id: agentId, name: agent.name, toTownName: t('外地'), partnerName: '', reason, absDay: this._absDay() });
         if (this.movedOut.length > 20) this.movedOut = this.movedOut.slice(-20);
-        const line = `${agent.name}${t('收拾行李離開了鎮上')}${reason ? `（${reason}）` : ''}${t('。')}`;
+        const line = `${agent.name}${t('收拾行李離開了鎮上')}${reason ? `${t('（')}${reason}${t('）')}` : ''}${t('。')}`;
         this.logMessageT('departure', '🧳 {line}', { line });
         Object.values(this.agents).forEach(o => { if (!o.isPlayer) o.memory?.add?.(this.tickCount, this.clock.timeStr, 'departure', line, 7, [agent.name]); });
         this.events?.conversationTopics?.push(`${agent.name}${t('離開鎮上了')}`);
@@ -1778,13 +1780,13 @@ class World {
                     if (!seen.has(key)) {
                         seen.add(key);
                         const icon = rel.status === 'married' ? '💍' : '💗';
-                        const line = `${icon} ${a.name} × ${other.name}`;
+                        const line = `${icon} ${t(a.name)} × ${t(other.name)}`; // v6.22.2 名字也翻
                         if (!prevCouples.has(key)) newCouples.push(line); else couples.push(line);
                     }
                 } else if (rel.romanticInterest > 45 && a.agentId < tid) {
-                    crushes.push(`💘 ${a.name} ${t('暗戀著')} ${other.name}`);
+                    crushes.push(`💘 ${t('{a} 暗戀著 {b}').replace('{a}', t(a.name)).replace('{b}', t(other.name))}`); // v6.22.2 模板:英文不多空格
                 } else if (rel.affinity <= -25 && a.agentId < tid) {
-                    rivals.push(`⚔️ ${a.name} ${t('與')} ${other.name} ${t('勢不兩立')}`);
+                    rivals.push(`⚔️ ${t('{a} 與 {b} 勢不兩立').replace('{a}', t(a.name)).replace('{b}', t(other.name))}`);
                 }
             }
         }
@@ -1799,7 +1801,7 @@ class World {
         for (const [tid, admirers] of Object.entries(crushMap)) {
             if (admirers.length >= 2) {
                 const target = this.agents[tid];
-                if (target && !target.isPlayer) triangles.push(`🔺 ${admirers.slice(0,3).join(t('、'))} ${t('都喜歡')} ${target.name}`);
+                if (target && !target.isPlayer) triangles.push(`🔺 ${t('{who} 都喜歡 {b}').replace('{who}', admirers.slice(0,3).map(n => t(n)).join(t('、'))).replace('{b}', t(target.name))}`);
             }
         }
         this._lastDigestCouples = [...nowCouples];
@@ -1904,7 +1906,7 @@ class World {
             _annualMourning: a._annualMourning || [],
             thoughts: (a.thoughts || []).map(t2 => ({ ...t2 })), // v5.15.0 記憶想法
             attributes: { ...(a.attributes || {}) }, // v5.26.0 核心屬性
-            dailyPlan: a.dailyPlan ? { key: a.dailyPlan.key, goals: [...a.dailyPlan.goals], blocks: a.dailyPlan.blocks ? a.dailyPlan.blocks.map(b => ({ time: b.time, text: b.text, steps: [...(b.steps || [])] })) : undefined, llm: a.dailyPlan.llm || undefined } : null, // v5.30.0 今日目標 / v5.37.0 LLM 分解行程
+            dailyPlan: a.dailyPlan ? { key: a.dailyPlan.key, goals: [...a.dailyPlan.goals], goalsT: a.dailyPlan.goalsT ? a.dailyPlan.goalsT.map(g => ({ ...g })) : undefined, blocks: a.dailyPlan.blocks ? a.dailyPlan.blocks.map(b => ({ time: b.time, text: b.text, steps: [...(b.steps || [])] })) : undefined, llm: a.dailyPlan.llm || undefined } : null, // v5.30.0 今日目標 / v5.37.0 LLM 分解行程
             currently: a.currently || undefined, // v5.37.0 LLM 每日修訂的近況
             todayTrace: (a.todayTrace && a.todayTrace.length) ? a.todayTrace.slice(-160).map(e => ({ ...e })) : undefined, // v5.40.0 今日足跡
             _traceDay: a._traceDay || undefined,

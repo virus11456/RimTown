@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.20.0
-const RIMTOWN_APP_VERSION = '6.20.0';
+// RimTown - Frontend App (WordPress Plugin) v6.22.4
+const RIMTOWN_APP_VERSION = '6.22.4';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -708,7 +708,7 @@ class RimTownApp {
                 icon: '🎁',
                 title: t('每日登入獎勵'),
                 name: `${t('連續登入')} ${streak} ${t('天')}`,
-                desc: `+${silver} ${t('銀幣')}、+${food} ${t('食物')}${streak < 7 ? t('(連續 7 天獎勵最高!)') : ''}`,
+                desc: `+${silver} ${t('銀幣')}${t('、')}+${food} ${t('食物')}${streak < 7 ? t('(連續 7 天獎勵最高!)') : ''}`,
                 autoDismiss: 6000,
             });
         } catch (e) { console.warn('[RimTown] daily reward error', e); }
@@ -746,7 +746,7 @@ class RimTownApp {
                 icon: '🌙',
                 title: t('離線進度結算'),
                 name: `${t('你離開了')} ${hours} ${t('小時')}`,
-                desc: `${t('小鎮繼續運轉了')} ${Math.round(ticks / 96 * 10) / 10} ${t('天')}:${t('銀幣')} ${dSil >= 0 ? '+' : ''}${dSil}、${t('食物')} ${dFood >= 0 ? '+' : ''}${dFood}、${events} ${t('件大小事(見紀錄)')}`,
+                desc: `${t('小鎮繼續運轉了')} ${Math.round(ticks / 96 * 10) / 10} ${t('天')}:${t('銀幣')} ${dSil >= 0 ? '+' : ''}${dSil}${t('、')}${t('食物')} ${dFood >= 0 ? '+' : ''}${dFood}${t('、')}${events} ${t('件大小事(見紀錄)')}`,
                 autoDismiss: 9000,
             });
             this.world.logMessageT('system', '🌙 離線結算:小鎮在你離開時模擬了 {ticks} 個時段', { ticks });
@@ -814,7 +814,7 @@ class RimTownApp {
             this._showCenterNotification({
                 icon: curCh.icon,
                 title: `${t('第')}${curCh.n}${t('章:')}${t(curCh.name)}`,
-                name: newly.length ? newly.map(d => `${d.icon} ${d.label}`).join('、') : '',
+                name: newly.length ? newly.map(d => `${d.icon} ${d.label}`).join(t('、')) : '',
                 desc: curCh.desc,
                 autoDismiss: 0,
             });
@@ -833,7 +833,7 @@ class RimTownApp {
         const def = this._unlockDefs().find(d => d.key === key);
         if (!def) return;
         const ch = this._chapterDefs().find(c => c.need === def.need);
-        this._gameAlert(`${def.icon}「${def.label}」${t('會在')}${ch ? `${t('第')}${ch.n}${t('章「')}${t(ch.name)}${t('」')}` : ''}${t('開啟。先專心和村民相處吧——關係好了,小鎮自然會成長。')}`, '🔒');
+        this._gameAlert(`${t('{icon}「{label}」會在').replace('{icon}', def.icon).replace('{label}', def.label)}${ch ? `${t('第')}${ch.n}${t('章「')}${t(ch.name)}${t('」')}` : ''}${t('開啟。先專心和村民相處吧——關係好了,小鎮自然會成長。')}`, '🔒');
     }
 
     // =====================================================
@@ -1653,7 +1653,7 @@ class RimTownApp {
                 inner += `<button class="trade-btn coach-go" data-idx="${i}" style="width:100%;margin:3px 0;padding:9px;display:flex;align-items:center;justify-content:center;gap:7px">${this._coachPixelSvg(0.75)}<span>${t('前往')} ${esc(twn.name)}</span></button>`;
             });
         }
-        if (towns.length) inner += `<button class="trade-btn coach-caravan" style="width:100%;margin-top:8px;padding:9px">🐪 ${t('押商隊')}${this.world?.playerCaravan?.active ? `（${t('在路上')}）` : ''}</button>`; // v5.92.0
+        if (towns.length) inner += `<button class="trade-btn coach-caravan" style="width:100%;margin-top:8px;padding:9px">🐪 ${t('押商隊')}${this.world?.playerCaravan?.active ? `${t('（')}${t('在路上')}${t('）')}` : ''}</button>`; // v5.92.0
         inner += `<button class="trade-btn coach-close" style="width:100%;margin-top:8px;padding:8px;opacity:0.8">${t('下次再說')}</button>`;
         card.innerHTML = inner;
         ov.appendChild(card);
@@ -1705,7 +1705,7 @@ class RimTownApp {
     _updateHeaderTownName(name) {
         const n = name || this.world?.townName || '邊境鎮';
         const title = document.querySelector('.mobile-title');
-        if (title) title.textContent = n;
+        if (title) title.textContent = t(n); // v6.22.0 手機標題也翻(英文模式之前仍顯示「邊境鎮」)
         const h1 = document.querySelector('.rimtown-container h1[data-i18n], .rimtown-container header h1, #rimtown-header h1');
         if (h1) h1.textContent = t(n);
         document.querySelectorAll('.rt-title-zh').forEach(el => { el.textContent = n; });
@@ -1726,6 +1726,7 @@ class RimTownApp {
         const loop = () => {
             // Update quest guidance banner every ~300 frames (~5 seconds)
             if (++_guidanceFrameCount % 300 === 0) this._updateQuestGuidance();
+            if (_guidanceFrameCount % 60 === 0) { try { this._updateRequestBadge?.(); } catch (e) {} } // v6.22.4 委託徽章與早安卡每秒自己檢查,不再綁在 5 秒一次且會提早 return 的引導橫幅更新裡(換日後早安卡最慢 1 秒出現)
             if (this.tileMap && this._mapGenerated) {
                 if (_renderLogCount < 3) {
                     const parent = this.tileMap.canvas?.parentElement;
@@ -2761,7 +2762,7 @@ class RimTownApp {
         lines.push(`${t('遊戲進度：')}${archive.gameClock}`);
         lines.push(`${t('玩家：')}${archive.playerName}`);
         lines.push(`${t('存檔時間：')}${archive.savedAt}`);
-        lines.push(`NPC：${archive.npcNames.join('、')}`);
+        lines.push(`NPC${t('：')}${archive.npcNames.join(t('、'))}`);
         lines.push(`${t('訊息數：')}${archive.messageCount}`);
         lines.push('');
         archive.messages.forEach(m => {
@@ -2983,11 +2984,11 @@ class RimTownApp {
         else { pauseBtn?.classList.remove('active'); resumeBtn?.classList.add('active'); }
         const agentCount = Object.keys(this.state.agents).length;
         const travelCount = (this.state.travelling_agents || []).length;
-        const travelText = travelCount > 0 ? `（+${travelCount}${t(' 外出）')}` : '';
+        const travelText = travelCount > 0 ? `${t('（')}+${travelCount}${t(' 外出）')}` : '';
         // v5.59.0 TC-05:跨鎮訪客不灌水常住人口,分開顯示
         const visitorCount = Object.keys(this.world?.visitors || {}).length;
         const residentCount = Math.max(0, agentCount - visitorCount);
-        const visitorText = visitorCount > 0 ? `（+${visitorCount}${t(' 訪客）')}` : '';
+        const visitorText = visitorCount > 0 ? `${t('（')}+${visitorCount}${t(' 訪客）')}` : '';
         const popEl = document.getElementById('population-count');
         if (popEl) popEl.textContent = `${t('人口：')}${residentCount}${visitorText}${travelText}`;
 

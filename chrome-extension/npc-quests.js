@@ -777,7 +777,7 @@ class NPCQuestSystem {
                     triggeredYear: world.clock.year,
                 };
 
-                world.logMessage?.('quest', `💫 ${npcData.name}${t('的個人任務')}「${quest.title}」${t('已觸發')}！`);
+                world.logMessage?.('quest', `💫 ${npcData.name}${t('的個人任務')}${t('「')}${quest.title}${t('」')}${t('已觸發')}${t('！')}`);
                 if (world.dailyNews) {
                     world.dailyNews.collectEvent('quest', `${npcData.name}${t('似乎有事情想找人幫忙')}...`, 6, [npcData.name]);
                 }
@@ -939,7 +939,7 @@ class NPCQuestSystem {
                         world.questSystem.reputation = (world.questSystem.reputation || 0) + amount;
                     }
                 } else {
-                    world.stockpile?.add(resource, amount, world.tickCount, `${t('任務獎勵')}：${questDef.title}`);
+                    world.stockpile?.add(resource, amount, world.tickCount, `${t('任務獎勵')}${t('：')}${questDef.title}`);
                 }
             }
         }
@@ -956,12 +956,12 @@ class NPCQuestSystem {
         const npcName = npcData?.name || questState.npcId;
         const route = questState.routes.find(r => r.id === routeId);
 
-        world.logMessage?.('quest', `🎉 ${t('完成了')}${npcName}${t('的個人任務')}「${questDef.title}」！（${route?.icon || ''} ${route?.label || routeId}）`);
+        world.logMessage?.('quest', `🎉 ${t('完成了')}${npcName}${t('的個人任務')}${t('「')}${questDef.title}${t('」')}${t('！')}${t('（')}${route?.icon || ''} ${route?.label || routeId}${t('）')}`);
         if (questDef.onComplete) {
             world.logMessage?.('quest', `📖 ${questDef.onComplete}`);
         }
         if (world.dailyNews) {
-            world.dailyNews.collectEvent('quest', `${npcName}${t('的心願')}「${questDef.title}」${t('達成了')}！`, 8, [npcName]);
+            world.dailyNews.collectEvent('quest', `${npcName}${t('的心願')}${t('「')}${questDef.title}${t('」')}${t('達成了')}${t('！')}`, 8, [npcName]);
         }
     }
 
@@ -986,7 +986,7 @@ class NPCQuestSystem {
                         this.industryBonuses[binding.industry] = (this.industryBonuses[binding.industry] || 0) + tier.bonus;
 
                         const npcName = NPC_PERSONAL_QUESTS[npcId]?.name || npcId;
-                        world.logMessage?.('industry', `📈 ${npcName}${t('的好感度效果')}：${tier.desc}`);
+                        world.logMessage?.('industry', `📈 ${npcName}${t('的好感度效果')}${t('：')}${tier.desc}`);
                     }
                 }
             }
@@ -1021,7 +1021,7 @@ class NPCQuestSystem {
             if (this.quests[quest.id]?.status === 'active') {
                 hints.push({
                     questTitle: quest.title,
-                    hint: `${t('你目前有一個未完成的心願')}：「${quest.title}」——${quest.description}`,
+                    hint: `${t('你目前有一個未完成的心願')}${t('：')}${t('「')}${quest.title}${t('」')}${t('——')}${quest.description}`,
                     type: 'active',
                 });
             }
@@ -1064,7 +1064,7 @@ class NPCQuestSystem {
         if (unlockedTiers.length === 0) return '';
 
         const latest = unlockedTiers[unlockedTiers.length - 1];
-        return `${t('你因為和玩家的關係好')}，${latest.desc}。`;
+        return `${t('你因為和玩家的關係好')}${t('，')}${latest.desc}${t('。')}`;
     }
 
     // ============================================================

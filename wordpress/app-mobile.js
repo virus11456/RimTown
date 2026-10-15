@@ -411,7 +411,7 @@ Object.assign(RimTownApp.prototype, {
                     if (next) rows.push(`<div class="nqc-mood-row"><span>⏭ ${this._escapeHtml(next.time)} ${this._escapeHtml(next.text)}</span></div>`);
                     bits.push(`<div class="nqc-mood-title">📅 ${t('今天想做')}</div>` + rows.join(''));
                 } else {
-                    const goals = (plan?.goals || []).filter(g => !/^\d/.test(g)).slice(0, 2); // 挑非例行(不以時間開頭)的目標
+                    const goals = (typeof Agent !== 'undefined' && Agent.planGoalTexts ? Agent.planGoalTexts(plan) : (plan?.goals || [])).filter(g => !/^\d/.test(g)).slice(0, 2); // 挑非例行(不以時間開頭)的目標;v6.21.0 依當下語言
                     if (goals.length) bits.push(`<div class="nqc-mood-title">📅 ${t('今天想做')}</div>` + goals.map(g => `<div class="nqc-mood-row"><span>${this._escapeHtml(g)}</span></div>`).join(''));
                 }
                 if (refl) bits.push(`<div class="nqc-mood-title" style="margin-top:3px">💭 ${t('心裡的話')}</div><div class="nqc-mood-row"><span>${this._escapeHtml(refl.content)}</span></div>`);

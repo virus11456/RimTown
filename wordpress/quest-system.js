@@ -1695,7 +1695,7 @@ class QuestSystem {
                 if (res === 'reputation') {
                     this.reputation += amount;
                 } else {
-                    world.stockpile?.add?.(res, amount, world.tickCount, `${t('支線獎勵')}：${sqDef.title}`);
+                    world.stockpile?.add?.(res, amount, world.tickCount, `${t('支線獎勵')}${t('：')}${sqDef.title}`);
                 }
             }
         }
@@ -1706,7 +1706,7 @@ class QuestSystem {
             world.logMessage?.('quest', `📖 ${sqDef.onComplete}`);
         }
         if (world.dailyNews) {
-            world.dailyNews.collectEvent?.('quest', `${t('支線任務')}「${sqDef.title}」${t('完成')}！`, 6);
+            world.dailyNews.collectEvent?.('quest', `${t('支線任務')}${t('「')}${sqDef.title}${t('」')}${t('完成')}${t('！')}`, 6);
         }
     }
 
@@ -1898,7 +1898,7 @@ class QuestSystem {
                 if (res === 'reputation') {
                     this.reputation += amount;
                 } else {
-                    world.stockpile?.add?.(res, amount, world.tickCount, `${t('任務獎勵')}：${questDef.title}`);
+                    world.stockpile?.add?.(res, amount, world.tickCount, `${t('任務獎勵')}${t('：')}${questDef.title}`);
                 }
             }
         }
@@ -1917,10 +1917,10 @@ class QuestSystem {
         const doneText = completedRoute?.onComplete || questDef.onComplete || '';
 
         // Log
-        const routeMsg = completedRoute ? `（${completedRoute.label}）` : '';
-        world.logMessage?.('quest', `⚔️ ${t('主線任務完成')}：「${questDef.title}」${routeMsg}！${doneText}`);
+        const routeMsg = completedRoute ? `${t('（')}${completedRoute.label}${t('）')}` : '';
+        world.logMessage?.('quest', `⚔️ ${t('主線任務完成')}${t('：')}${t('「')}${questDef.title}${t('」')}${routeMsg}${t('！')}${doneText}`);
         if (world.dailyNews) {
-            world.dailyNews.collectEvent?.('quest', `${t('主線任務')}「${questDef.title}」${routeMsg}${t('完成')}！${doneText}`, 8);
+            world.dailyNews.collectEvent?.('quest', `${t('主線任務')}${t('「')}${questDef.title}${t('」')}${routeMsg}${t('完成')}${t('！')}${doneText}`, 8);
         }
 
         // Multi-ending trigger (when finale quest completes)
@@ -1947,9 +1947,9 @@ class QuestSystem {
                         const types = nextDef.crisisTypes || ['locust', 'bandit', 'plague'];
                         this.activeCrisis = types[Math.floor(Math.random() * types.length)];
                         const crisisNames = { locust: t('蝗災'), bandit: t('盜匪圍城'), plague: t('瘟疫') };
-                        world.logMessage?.('quest', `⚠️ ${t('危機降臨')}：${crisisNames[this.activeCrisis] || this.activeCrisis}！`);
+                        world.logMessage?.('quest', `⚠️ ${t('危機降臨')}${t('：')}${crisisNames[this.activeCrisis] || this.activeCrisis}${t('！')}`);
                         if (world.dailyNews) {
-                            world.dailyNews.collectEvent?.('crisis', `${t('重大危機')}！${crisisNames[this.activeCrisis]}${t('威脅著小鎮的生存')}！`, 10);
+                            world.dailyNews.collectEvent?.('crisis', `${t('重大危機')}${t('！')}${crisisNames[this.activeCrisis]}${t('威脅著小鎮的生存')}${t('！')}`, 10);
                         }
                     }
                 }
@@ -2020,14 +2020,14 @@ class QuestSystem {
         const active = this.getActiveQuests();
         if (active.length === 0) return '';
         const parts = active.map(q => {
-            let s = `${t('任務')}「${q.title}」：${q.description}`;
+            let s = `${t('任務')}${t('「')}${q.title}${t('」')}${t('：')}${q.description}`;
             if (q.routes) {
                 const routeLabels = q.routes.map(r => r.label).join(t('、'));
-                s += `（${t('可選路線')}：${routeLabels}）`;
+                s += `${t('（')}${t('可選路線')}${t('：')}${routeLabels}${t('）')}`;
             }
             return s;
         });
-        return `${t('玩家正在進行的任務')}：${parts.join('；')}`;
+        return `${t('玩家正在進行的任務')}${t('：')}${parts.join('；')}`;
     }
 
     // Get crisis description for prompt injection
@@ -2560,10 +2560,10 @@ class RequestBoard {
         const c = this.canAct(r, world); if (!c.ok) return { ok: false, msg: c.reason };
         this.ap.left -= this._spend(r);
         if (r.type === 'deliver') {
-            world.stockpile.consume?.(r.res, r.amount, world.tickCount, `${t('委託')}：${t(r.npcName)}`);
-            this._complete(r, world); return { ok: true, msg: `${t('交付完成')}：${this.describe(r)}` };
+            world.stockpile.consume?.(r.res, r.amount, world.tickCount, `${t('委託')}${t('：')}${t(r.npcName)}`);
+            this._complete(r, world); return { ok: true, msg: `${t('交付完成')}${t('：')}${this.describe(r)}` };
         }
-        if (r.type === 'fetch') { this._complete(r, world); return { ok: true, msg: `${t('交付完成')}：${this.describe(r)}` }; }
+        if (r.type === 'fetch') { this._complete(r, world); return { ok: true, msg: `${t('交付完成')}${t('：')}${this.describe(r)}` }; }
         if (r.type === 'mediate') {
             const a = world.agents[r.npcId], b = world.agents[r.otherId]; const pl = this._player(world);
             const at = pl?.attributes || {}; const affA = a?.relationships?.relationships?.player?.affinity || 0, affB = b?.relationships?.relationships?.player?.affinity || 0;
@@ -2572,13 +2572,13 @@ class RequestBoard {
             const ok = Math.random() < pSucc;
             const bump = (x, y, d) => { if (!x || !y) return; const rel = x.relationships.getOrCreate(y.agentId, y.name); rel.affinity = Math.max(-100, Math.min(100, (rel.affinity || 0) + d)); if (ok) rel.trust = Math.min(100, (rel.trust || 0) + 5); };
             bump(a, b, ok ? 15 : 3); bump(b, a, ok ? 15 : 3);
-            if (ok) { this._complete(r, world); return { ok: true, msg: `${t('調解成功')}：${t(r.npcName)} ${t('與')} ${t(r.otherName)} ${t('握手言和')}` }; }
+            if (ok) { this._complete(r, world); return { ok: true, msg: `${t('調解成功')}${t('：')}${t(r.npcName)} ${t('與')} ${t(r.otherName)} ${t('握手言和')}` }; }
             const loser = Math.random() < 0.5 ? a : b; if (loser) { const rel = loser.relationships.getOrCreate('player', this._playerName(world)); rel.modifyAffinity?.(-3); }
             r.status = 'done'; r.outcome = 'partial'; this.stats.done++; world.growth?.addXp(5, 'request_partial', world);
             if (r.chainKey) this._chainAdvance(r, world); // v6.10.1 半成功也算走完這一步,鏈不會卡住
             const half = { silver: Math.round(r.reward.silver / 2), aff: 0, rep: 1 }; this._reward(r, world, half);
-            world.logMessage?.('quest', `🤝 ${t('調解沒成')}：${t(r.npcName)} ${t('與')} ${t(r.otherName)} ${t('只肯各退一步')}`);
-            return { ok: true, msg: `${t('調解沒成')}（${Math.round(pSucc * 100)}%）：${t('兩人只肯各退一步')}` };
+            world.logMessage?.('quest', `🤝 ${t('調解沒成')}${t('：')}${t(r.npcName)} ${t('與')} ${t(r.otherName)} ${t('只肯各退一步')}`);
+            return { ok: true, msg: `${t('調解沒成')}${t('（')}${Math.round(pSucc * 100)}%${t('）')}${t('：')}${t('兩人只肯各退一步')}` };
         }
         return { ok: false, msg: '' };
     }
@@ -2591,8 +2591,8 @@ class RequestBoard {
     }
     _reward(r, world, rw) {
         const npc = world.agents[r.npcId]; const pname = this._playerName(world);
-        if (rw.silver) world.stockpile?.add?.('silver', rw.silver, world.tickCount, `${t('委託獎勵')}：${t(r.npcName)}`, 'player');
-        if (rw.pack) world.stockpile?.add?.(rw.pack.res, rw.pack.amount, world.tickCount, `${t('委託獎勵')}：${t(r.npcName)}`, 'player');
+        if (rw.silver) world.stockpile?.add?.('silver', rw.silver, world.tickCount, `${t('委託獎勵')}${t('：')}${t(r.npcName)}`, 'player');
+        if (rw.pack) world.stockpile?.add?.(rw.pack.res, rw.pack.amount, world.tickCount, `${t('委託獎勵')}${t('：')}${t(r.npcName)}`, 'player');
         if (rw.rep && world.questSystem) world.questSystem.reputation = (world.questSystem.reputation || 0) + rw.rep;
         if (npc && rw.aff) { const rel = npc.relationships.getOrCreate('player', pname); rel.modifyAffinity?.(rw.aff + (world.growth?.has('charmer') ? 3 : 0)); } // v5.94.0 天賦:人緣
     }
@@ -2654,17 +2654,17 @@ class RequestBoard {
     _chainAdvance(r, world) {
         const c = this.chain; if (!c || c.key !== r.chainKey) return;
         const tpl = REQUEST_CHAINS[c.key]; c.step++;
-        if (c.step < tpl.steps.length) { world.logMessage?.('quest', `📖 ${t(tpl.title)}（${c.step}/${tpl.steps.length}）${t('——明天還有下一步')}`); return; }
+        if (c.step < tpl.steps.length) { world.logMessage?.('quest', `📖 ${t(tpl.title)}${t('（')}${c.step}/${tpl.steps.length}${t('）')}${t('——明天還有下一步')}`); return; }
         // 結局
         const fill = (s, m) => Object.entries(m).reduce((acc, [k, v]) => acc.split('{' + k + '}').join(v), s);
-        const text = fill(t(tpl.finale), { npc: t(c.npcName), target: t(c.targetName || '') }) + ((c.quotes && c.quotes[3]) ? `「${c.quotes[3]}」` : ''); // v6.8.0 AI 口吻
+        const text = fill(t(tpl.finale), { npc: t(c.npcName), target: t(c.targetName || '') }) + ((c.quotes && c.quotes[3]) ? t('「{q}」').replace('{q}', c.quotes[3]) : ''); // v6.8.0 AI 口吻;v6.22.0 英文用直引號
         const rw0 = tpl.reward || {}; const rw = world.growth?.has('storyteller') ? { ...rw0, silver: Math.round((rw0.silver || 0) * 1.25), aff: Math.round((rw0.aff || 0) * 1.25) } : rw0; this.stats.chainsDone++; // v6.9.0 天賦:說書
         this._reward({ npcId: c.npcId, npcName: c.npcName }, world, rw);
         if (c.targetId && world.agents[c.targetId]) { const rel2 = world.agents[c.targetId].relationships?.getOrCreate?.('player', this._playerName(world)); rel2?.modifyAffinity?.(10); const n1 = world.agents[c.npcId], n2 = world.agents[c.targetId]; if (n1 && n2) { n1.relationships?.getOrCreate?.(n2.agentId, n2.name)?.modifyAffinity?.(25); n2.relationships?.getOrCreate?.(n1.agentId, n1.name)?.modifyAffinity?.(25); } }
         const npc = world.agents[c.npcId]; const pname = this._playerName(world);
-        npc?.memory?.add?.(world.tickCount, world.clock.timeStr, 'help', `${pname}${t('陪我走完了')}「${t(tpl.title)}」`, 9, [pname]);
+        npc?.memory?.add?.(world.tickCount, world.clock.timeStr, 'help', `${pname}${t('陪我走完了')}${t('「')}${t(tpl.title)}${t('」')}`, 9, [pname]);
         world.growth?.addXp(25, 'chain', world);
-        world.logMessage?.('quest', `🏅 ${t('委託鏈完成')}「${t(tpl.title)}」：${text}`);
+        world.logMessage?.('quest', `🏅 ${t('委託鏈完成')}${t('「')}${t(tpl.title)}${t('」')}${t('：')}${text}`);
         world.dailyNews?.collectEvent?.('social', text, 9, [c.npcName].concat(c.targetName ? [c.targetName] : []));
         world.onChainEvent?.('done', c.npcName, t(tpl.title), text);
         this.chain = null;
@@ -2672,8 +2672,8 @@ class RequestBoard {
     _chainBreak(world) {
         const c = this.chain; if (!c) return; const tpl = REQUEST_CHAINS[c.key];
         const npc = world.agents[c.npcId]; const pname = this._playerName(world);
-        npc?.memory?.add?.(world.tickCount, world.clock.timeStr, 'neglect', `${pname}${t('沒把')}「${t(tpl.title)}」${t('的事放在心上')}`, 7, [pname]);
-        world.logMessage?.('quest', `💔 ${t('委託鏈中斷')}「${t(tpl.title)}」：${t(c.npcName)}${t('沒再提起這件事')}`);
+        npc?.memory?.add?.(world.tickCount, world.clock.timeStr, 'neglect', `${pname}${t('沒把')}${t('「')}${t(tpl.title)}${t('」')}${t('的事放在心上')}`, 7, [pname]);
+        world.logMessage?.('quest', `💔 ${t('委託鏈中斷')}${t('「')}${t(tpl.title)}${t('」')}${t('：')}${t(c.npcName)}${t('沒再提起這件事')}`);
         world.onChainEvent?.('broken', c.npcName, t(tpl.title));
         this._chainCooldown[c.npcId] = this._absDay(world) + 15;
         this.chain = null;
@@ -2697,7 +2697,10 @@ const TRIAL_TYPES = {
     pricewar: { icon: '📉', title: '商會壓價', perk: 'guildSeal', perkName: '商會印信', perkDesc: '押商隊利潤 +10%', weights: { market: 3, harbor: 3, forest: 1, frontier: 1, mountain: 1 } },
 };
 class SeasonTrials {
-    constructor() { this.current = null; this.failStreak = 0; this.passStreak = 0; this.history = []; this.lastType = null; } // v6.13.0 passStreak:衰敗後連續撐過兩季就復興
+    constructor() { this.current = null; this.failStreak = 0; this.passStreak = 0; this.history = []; this.lastType = null; this.penalty = 0; } // v6.13.0 passStreak:衰敗後連續撐過兩季就復興;v6.22.0 penalty:考驗失敗累計扣的繁榮(有底)
+    static PENALTY_FLOOR = -20; // v6.22.0 B23:連續失敗的繁榮扣分最多累計 −20(之前每季 −10 無底,idle 四季就把繁榮扣到 0,回來玩也補不回來)
+    static POP_FLOOR = 8;       // v6.22.0 B23:人口剩 8 人就不再有人搬走
+    static DECLINED_LEAVERS = 1; // v6.22.0 B23:已經衰敗後每季最多再走 1 人(之前照 12% 走,60 天 idle 25→14)
     _npcs(w) { return Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_')); }
     _seasonKey(w) { return `${w.clock.year}-${w.clock.season}`; }
     _flags(w) { return w.harborFlags || (w.harborFlags = {}); }
@@ -2725,11 +2728,11 @@ class SeasonTrials {
         return 0;
     }
     unit(type) { return { famine: t('帶進的食物'), plague: t('帶進的草藥（藥品算 3）'), bandits: t('防衛值'), pricewar: t('賺進的銀幣') }[type] || ''; }
-    goalText(type, target) {
-        const fill = (s, m) => Object.entries(m).reduce((acc, [k, v]) => acc.split('{' + k + '}').join(v), s);
-        const tpl = { famine: t('季末前親手為鎮上帶進 {n} 份食物（求助、收成、買進、委託報酬都算）'), plague: t('季末前親手帶進 {n} 份草藥（藥品一份算三份；求助、買進、委託報酬都算）'), bandits: t('季末前把防衛值撐到 {n}（守衛每人 2、防禦建築、市集城加強守衛 3）'), pricewar: t('季末前親手賺進 {n} 銀幣（委託報酬、押商隊、賣貨都算）') }[type];
-        return fill(tpl, { n: target });
+    goalTextT(type, target) { // v6.22.0 模板版(日誌用)
+        const k = { famine: '季末前親手為鎮上帶進 {n} 份食物（求助、收成、買進、委託報酬都算）', plague: '季末前親手帶進 {n} 份草藥（藥品一份算三份；求助、買進、委託報酬都算）', bandits: '季末前把防衛值撐到 {n}（守衛每人 2、防禦建築、市集城加強守衛 3）', pricewar: '季末前親手賺進 {n} 銀幣（委託報酬、押商隊、賣貨都算）' }[type] || '{n}';
+        return tpl(k, { n: target });
     }
+    goalText(type, target) { const g = this.goalTextT(type, target); return Memory.render(g.k, g.p); }
     _pick(w) {
         const theme = w.townTheme || 'frontier';
         const pool = Object.entries(TRIAL_TYPES).filter(([k]) => k !== this.lastType).map(([k, d]) => [k, d.weights[theme] || 1]);
@@ -2748,11 +2751,11 @@ class SeasonTrials {
         const type = this._pick(world); const d = TRIAL_TYPES[type];
         this.lastSeasonKey = key; this.lastType = type;
         this.current = { type, seasonKey: key, status: 'active', target: this.target(type, world), startAbsDay: world._absDay?.() || 0, dueDay: world.clock.DAYS_PER_SEASON || 15, silverAtStart: world.stockpile?.get?.('silver') || 0 };
-        const text = `${t('本季考驗')}「${t(d.title)}」：${this.goalText(type, this.current.target)}`;
-        world.logMessage?.('event', `⚖️ ${text}`);
+        const text = `${t('本季考驗')}${t('「')}${t(d.title)}${t('」')}${t('：')}${this.goalText(type, this.current.target)}`;
+        world.logMessageT?.('event', '⚖️ 本季考驗「{title}」：{goal}', { title: d.title, goal: this.goalTextT(type, this.current.target) }); // v6.22.0 模板
         world.dailyNews?.collectEvent?.('event', text, 9);
         world.events?.conversationTopics?.push(`${t('這一季的考驗是')}${t(d.title)}`);
-        world.onTrialEvent?.('announce', `${d.icon} ${t('本季考驗')}：${t(d.title)}`, this.goalText(type, this.current.target));
+        world.onTrialEvent?.('announce', `${d.icon} ${t('本季考驗')}${t('：')}${t(d.title)}`, this.goalText(type, this.current.target));
     }
     _resolve(world, onTime) {
         const c = this.current; if (!c || c.status !== 'active') return;
@@ -2765,21 +2768,27 @@ class SeasonTrials {
             if (c.type === 'plague') Object.values(world.agents).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) + 10; });
             Object.values(world.agents).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) + 5; });
             if (world.questSystem) world.questSystem.reputation = (world.questSystem.reputation || 0) + 10;
-            if (world.prosperity) world.prosperity.questBonus = (world.prosperity.questBonus || 0) + 5;
-            const text = `${t('撐過了')}「${t(d.title)}」${t('的考驗！全鎮得到')}「${t(d.perkName)}」：${t(d.perkDesc)}`;
+            const back = Math.min(10, -(this.penalty || 0)); this.penalty = (this.penalty || 0) + back; // v6.22.0 撐過一季:先補回最多 10 的考驗扣分,再 +5
+            if (world.prosperity) { world.prosperity.questBonus = (world.prosperity.questBonus || 0) + 5 + back; world.prosperity.recalcTotal?.(); }
+            const text = `${t('撐過了')}${t('「')}${t(d.title)}${t('」')}${t('的考驗！全鎮得到')}${t('「')}${t(d.perkName)}${t('」')}${t('：')}${t(d.perkDesc)}`;
             world.logMessage?.('event', `🏅 ${text}`); world.dailyNews?.collectEvent?.('event', text, 10);
-            world.onTrialEvent?.('passed', `🏅 ${t('考驗通過')}：${t(d.title)}`, `${t(d.perkName)} — ${t(d.perkDesc)}`);
+            world.onTrialEvent?.('passed', `🏅 ${t('考驗通過')}${t('：')}${t(d.title)}`, `${t(d.perkName)} — ${t(d.perkDesc)}`);
             if (world.multiEnding?.endingTriggered === 'decline' && this.passStreak >= 2) world.multiEnding.revive?.(world); // v6.13.0 復興
         } else {
             this.failStreak++; this.passStreak = 0;
-            const leavers = this._npcs(world).filter(a => a.job?.key !== 'mayor' && !(a.relationships?.relationships?.player?.status === 'married')).sort((a, b) => (a.mood || 50) - (b.mood || 50)).slice(0, Math.min(Math.max(1, Math.round(this._npcs(world).length * 0.12)), Math.max(1, 2 + (this.failStreak >= 2 ? 1 : 0) - (world.growth?.has('grit') ? 1 : 0)))); // v5.94.0 天賦:硬頸;v6.2.0 小鎮最多走 12%
+            const declinedNow = world.multiEnding?.endingTriggered === 'decline'; const popNow = this._npcs(world).length; // v6.22.0 B23
+            const maxLeave = popNow <= SeasonTrials.POP_FLOOR ? 0 : declinedNow ? SeasonTrials.DECLINED_LEAVERS : Math.min(Math.max(1, Math.round(popNow * 0.12)), Math.max(1, 2 + (this.failStreak >= 2 ? 1 : 0) - (world.growth?.has('grit') ? 1 : 0))); // v5.94.0 天賦:硬頸;v6.2.0 小鎮最多走 12%;v6.22.0 人口下限 8、衰敗後每季最多 1 人
+            const leavers = this._npcs(world).filter(a => a.job?.key !== 'mayor' && !(a.relationships?.relationships?.player?.status === 'married')).sort((a, b) => (a.mood || 50) - (b.mood || 50)).slice(0, Math.min(maxLeave, popNow - SeasonTrials.POP_FLOOR));
             const names = leavers.map(a => a.name);
             leavers.forEach(a => world.leaveTown?.(a.agentId, t('鎮上的日子過不下去')));
             Object.values(world.agents).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) - 10; });
-            if (world.prosperity) world.prosperity.questBonus = (world.prosperity.questBonus || 0) - 10;
-            const text = `${t('沒撐過')}「${t(d.title)}」${t('的考驗：')}${names.join('、')}${t('搬走了，繁榮 −10、全鎮士氣低落')}`;
+            const cut = Math.max(SeasonTrials.PENALTY_FLOOR - (this.penalty || 0), -10); this.penalty = (this.penalty || 0) + cut; // v6.22.0 扣分有底:累計最多 −20
+            if (world.prosperity && cut < 0) { world.prosperity.questBonus = (world.prosperity.questBonus || 0) + cut; world.prosperity.recalcTotal?.(); }
+            const text = names.length
+                ? `${t('沒撐過「{t}」的考驗：').replace('{t}', t(d.title))}${names.join(t('、'))}${cut < 0 ? t('搬走了，繁榮 −10、全鎮士氣低落') : t('搬走了，全鎮士氣低落')}`
+                : `${t('沒撐過「{t}」的考驗：').replace('{t}', t(d.title))}${cut < 0 ? t('繁榮 −10、全鎮士氣低落') : t('全鎮士氣低落')}`;
             world.logMessage?.('event', `💔 ${text}`); world.dailyNews?.collectEvent?.('event', text, 10, names);
-            world.onTrialEvent?.('failed', `💔 ${t('考驗失敗')}：${t(d.title)}`, text);
+            world.onTrialEvent?.('failed', `💔 ${t('考驗失敗')}${t('：')}${t(d.title)}`, text); // v6.22.2 英文冒號
             if (this.failStreak >= 2) world.multiEnding?.triggerDecline?.(world);
         }
         this.history = this.history.concat([{ type: c.type, seasonKey: c.seasonKey, status: c.status, value: v, target: c.target }]).slice(-8);
@@ -2796,8 +2805,8 @@ class SeasonTrials {
             nextAnnounceDay: c ? null : 5,
         };
     }
-    serialize() { return { current: this.current, failStreak: this.failStreak, passStreak: this.passStreak || 0, history: this.history, lastType: this.lastType, lastSeasonKey: this.lastSeasonKey || null, }; }
-    loadFrom(d) { if (!d) return; this.current = d.current || null; this.failStreak = d.failStreak || 0; this.passStreak = d.passStreak || 0; this.history = Array.isArray(d.history) ? d.history : []; this.lastType = d.lastType || null; this.lastSeasonKey = d.lastSeasonKey || null; }
+    serialize() { return { current: this.current, failStreak: this.failStreak, passStreak: this.passStreak || 0, penalty: this.penalty || 0, history: this.history, lastType: this.lastType, lastSeasonKey: this.lastSeasonKey || null, }; }
+    loadFrom(d) { if (!d) return; this.current = d.current || null; this.failStreak = d.failStreak || 0; this.passStreak = d.passStreak || 0; this.penalty = d.penalty || 0; this.history = Array.isArray(d.history) ? d.history : []; this.lastType = d.lastType || null; this.lastSeasonKey = d.lastSeasonKey || null; }
 }
 
 
@@ -2862,7 +2871,7 @@ class TravellerGrowth {
         if (!this.pending || !this.pending.includes(perk) || this.has(perk)) return { ok: false };
         this.perks.push(perk); this.pending = null; this.unspent = Math.max(0, (this.unspent || 0) - 1);
         const d = GROWTH_PERKS[perk];
-        world?.logMessage?.('quest', `✨ ${t('旅人學會了')}「${t(d.name)}」：${t(d.desc)}`);
+        world?.logMessage?.('quest', `✨ ${t('旅人學會了')}${t('「')}${t(d.name)}${t('」')}${t('：')}${t(d.desc)}`);
         world?.onGrowthEvent?.('perk', perk);
         this._settle(world, false);
         return { ok: true, perk };
@@ -2955,14 +2964,14 @@ class SeasonRecap {
         out.push({ icon: '📋', text: this._fill(t('完成 {a} 件、過期 {b} 件、最佳連勝 {c} 天'), { a: r.reqDone, b: r.reqFailed, c: r.bestStreak }) });
         if (r.carRuns) out.push({ icon: '🐪', text: this._fill(t('{n} 趟、賺 {s} 銀幣、遇劫 {r} 次'), { n: r.carRuns, s: r.carSilver, r: r.carRaids }) });
         out.push({ icon: '🧭', text: this._fill(t('經驗 +{x}，Lv.{a} → Lv.{b}'), { x: r.xp, a: r.levelFrom, b: r.levelTo }) });
-        { const a = Math.round(r.silverFrom), b = Math.round(r.silverTo); out.push({ icon: '💰', text: this._fill(t('銀幣 {a} → {b}'), { a, b }) + `（${b - a >= 0 ? '+' : ''}${b - a}）` }); } // v6.11.0 取整,不再出現 895.5999999
+        { const a = Math.round(r.silverFrom), b = Math.round(r.silverTo); out.push({ icon: '💰', text: this._fill(t('銀幣 {a} → {b}（{d}）'), { a, b, d: (b - a >= 0 ? '+' : '') + (b - a) }) }); } // v6.22.0 英文半形括號 // v6.11.0 取整,不再出現 895.5999999
         out.push({ icon: '👥', text: this._fill(t('人口 {a} → {b}'), { a: r.popFrom, b: r.popTo }) + ` · ${this._fill(t('聲望 {d}'), { d: (r.rep >= 0 ? '+' : '') + r.rep })} · ${this._fill(t('繁榮 {d}'), { d: (r.prosperity >= 0 ? '+' : '') + r.prosperity })}` });
         if (r.revived) out.push({ icon: '🌅', text: t('小鎮復興了：連續撐過兩季考驗，搬走的人開始回望這裡') }); // v6.13.0
         if (r.chainsDone) out.push({ icon: '📖', text: this._fill(t('走完 {n} 段村民的小故事'), { n: r.chainsDone }) });
         if (r.questsDone) out.push({ icon: '⚔️', text: this._fill(t('任務完成 {n} 件'), { n: r.questsDone }) });
-        if (r.gains?.length) out.push({ icon: '💞', text: `${t('好感升最多')}：${r.gains.map(g => `${t(g.name)} +${g.delta}`).join('、')}` });
-        if (r.left?.length) out.push({ icon: '🚪', text: `${t('搬走了')}：${r.left.map(n => t(n)).join('、')}` });
-        if (r.joined?.length) out.push({ icon: '🏠', text: `${t('新住民')}：${r.joined.map(n => t(n)).join('、')}` });
+        if (r.gains?.length) out.push({ icon: '💞', text: `${t('好感升最多：')}${r.gains.map(g => `${t(g.name)} +${g.delta}`).join(t('、'))}` });
+        if (r.left?.length) out.push({ icon: '🚪', text: `${t('搬走了：')}${r.left.map(n => t(n)).join(t('、'))}` });
+        if (r.joined?.length) out.push({ icon: '🏠', text: `${t('新住民：')}${r.joined.map(n => t(n)).join(t('、'))}` });
         return out;
     }
     // v6.4.0 下一季怎麼打:依上一季的弱項挑最多三條具體行動(考驗失敗 → 對症;委託過期多;沒押過商隊;沒人好感上升;人口流失;沒升級)

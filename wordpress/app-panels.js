@@ -362,7 +362,7 @@ Object.assign(RimTownApp.prototype, {
         const items = rows.slice(-40).map(r => {
             const tm = (String(r.time).match(/(\d{2}:\d{2})$/) || [])[1] || r.time;
             const body = r.drama != null
-                ? `<button data-rt-drama="${r.drama}" style="background:none;border:none;color:#ffd166;cursor:pointer;padding:0;font-size:0.74rem;text-align:left">📺 ${this._escapeHtml(r.text)}（${t('點我重播')}）</button>`
+                ? `<button data-rt-drama="${r.drama}" style="background:none;border:none;color:#ffd166;cursor:pointer;padding:0;font-size:0.74rem;text-align:left">📺 ${this._escapeHtml(r.text)}${t('（')}${t('點我重播')}${t('）')}</button>`
                 : `${catIc[r.cat] || '·'} <b>${this._escapeHtml(r.who)}</b>${t('：')}${this._escapeHtml(r.text)}`;
             return `<div style="margin:7px 0;font-size:0.72rem;line-height:1.5"><span style="color:var(--text-muted);font-size:0.6rem">${this._escapeHtml(r.time)}</span><br>${body}</div>`;
         }).join('');
@@ -506,7 +506,7 @@ Object.assign(RimTownApp.prototype, {
                     seen.add(key);
                     const med = w.mediations?.[key]?.sides;
                     const medN = med ? Object.keys(med).length : 0;
-                    out.push({ icon: '💢', text: `${t(a.name)} × ${t(b.name)} — ${t('絕交中')}${medN ? `（${t('你調停到')} ${medN}/2）` : ''}`, val: key });
+                    out.push({ icon: '💢', text: `${t(a.name)} × ${t(b.name)} — ${t('絕交中')}${medN ? `${t('（')}${t('你調停到')} ${medN}/2${t('）')}` : ''}`, val: key });
                 }
             }
         }
@@ -598,7 +598,7 @@ Object.assign(RimTownApp.prototype, {
         const clock = this.state.clock || {};
         const popCount = Object.keys(this.state.agents || {}).length;
         const travelCount = (this.state.travelling_agents || []).length;
-        const travelText = travelCount > 0 ? `（+${travelCount}${t(' 外出）')}` : '';
+        const travelText = travelCount > 0 ? `${t('（')}+${travelCount}${t(' 外出）')}` : '';
         const townName = this._getCurrentTownName() || t('邊境鎮');
         const gen = this.world._legacyGeneration || 1;
         const genText = gen > 1 ? `${t(' <span style="font-size:10px;color:#f0c040;margin-left:4px">第')}${gen}${t('代</span>')}` : '';
@@ -658,7 +658,7 @@ Object.assign(RimTownApp.prototype, {
                     <span class="resident-name"><span class="mood-indicator mood-${agent.mood_description}"></span>${genderIcon} ${t(agent.name)}${sameLoc?t('<span class="nearby-badge">附近</span>'):''}</span>
                     <span class="resident-job">${agent.job?.title||t('無業')}</span></div>
                 <div class="resident-status"><span>${agent.activity_label||agent.activity} @ ${this._locationLabel(agent.current_location)}</span><span>${agent.mood_label||agent.mood_description} (${agent.mood})</span></div>
-                ${agent.current_thought?`<div style="font-size:0.7rem;color:#aaa;margin-top:4px;font-style:italic">「${agent.current_thought}」</div>`:''}
+                ${agent.current_thought?`<div style="font-size:0.7rem;color:#aaa;margin-top:4px;font-style:italic">${t('「')}${agent.current_thought}${t('」')}</div>`:''}
                 <button class="chat-with-btn" data-action="start-chat" data-val="${aid}">${sameLoc?t('對話'):t('前往對話')}</button></div>`;
         }
 
@@ -729,13 +729,13 @@ Object.assign(RimTownApp.prototype, {
                 : `${t('正在與<b>')}${partner.target_name}${t('</b>交往')}`;
         }
         if (cheating.length) {
-            loveStatus += `${t(' <span style="color:var(--negative)">（同時與')}${cheating.map(c=>c.target_name).join('、')}${t('有秘密關係）</span>')}`;
+            loveStatus += `${t(' <span style="color:var(--negative)">（同時與')}${cheating.map(c=>c.target_name).join(t('、'))}${t('有秘密關係）</span>')}`;
         }
         if (crushes.length && !partner) {
-            loveStatus += `${t('，暗戀')}${crushes.map(c=>`<b>${c.target_name}</b>`).join('、')}`;
+            loveStatus += `${t('，暗戀')}${crushes.map(c=>`<b>${c.target_name}</b>`).join(t('、'))}`;
         }
         if (exes.length) {
-            loveStatus += `${t('（前任：')}${exes.map(e=>e.target_name).join('、')}）`;
+            loveStatus += `${t('（前任：')}${exes.map(e=>e.target_name).join(t('、'))}${t('）')}`;
         }
 
         // Sort relationships: partners first, then by affinity
@@ -766,7 +766,7 @@ Object.assign(RimTownApp.prototype, {
             <div class="detail-section"><h3>📅 ${t('今日目標')}</h3>
                 <ol style="font-size:0.75rem;padding-left:18px;margin:2px 0;line-height:1.6">${plan.blocks?.length
                     ? plan.blocks.map(b => `<li>${this._escapeHtml(b.time)} ${this._escapeHtml(b.text)}${(b.steps || []).length ? `<div style="font-size:0.68rem;color:var(--text-secondary);line-height:1.5">${b.steps.map(s => `· ${this._escapeHtml(s)}`).join('　')}</div>` : ''}</li>`).join('')
-                    : plan.goals.map(g => `<li>${g}</li>`).join('')}</ol>
+                    : Agent.planGoalTexts(plan).map(g => `<li>${g}</li>`).join('')}</ol>
                 ${plan.llm ? `<div style="font-size:0.62rem;color:var(--text-muted)">🤖 ${t('由 AI 依他的性格與昨日經歷生成')}${plan.replanned ? `　📝 ${t('已因今天的際遇臨時調整')}` : ''}</div>` : ''}</div>
             <div class="detail-section"><h3>🕐 ${t('今日足跡')}</h3>
                 ${nowLine}${(() => {
@@ -845,7 +845,7 @@ Object.assign(RimTownApp.prototype, {
         const houseNum = sub.houseIndex + 1;
         let html = `<div class="detail-panel visible">`;
         html += `<div class="detail-section"><h3>🏠 ${areaName} - ${t('房屋')} #${houseNum}</h3></div>`;
-        html += `<div class="detail-section"><h3>${t('住戶')}（${residents.length}）</h3>`;
+        html += `<div class="detail-section"><h3>${t('住戶')}${t('（')}${residents.length}${t('）')}</h3>`;
         if (residents.length === 0) {
             html += `<p style="font-size:0.8rem;color:var(--text-secondary)">${t('這間房子目前沒有住戶。')}</p>`;
         } else {
@@ -1150,7 +1150,7 @@ Object.assign(RimTownApp.prototype, {
         const weather = this.state.weather;
         if (weather) {
             html += '<div class="weather-section" style="margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px">';
-            html += `<h4>${weather.icon} ${t('天氣')}：${t(weather.name)}</h4>`;
+            html += `<h4>${weather.icon} ${t('天氣')}${t('：')}${t(weather.name)}</h4>`;
             html += `<div style="font-size:0.8rem;color:var(--text-secondary);margin:4px 0">${weather.desc}</div>`;
             html += `<div style="display:flex;gap:12px;font-size:0.75rem;margin:6px 0">`;
             html += `<span>🌡️ ${weather.temperature}°C</span>`;
@@ -1167,21 +1167,21 @@ Object.assign(RimTownApp.prototype, {
             // Forecast
             if (weather.forecast?.length) {
                 html += `<div style="display:flex;gap:8px;margin-top:6px;font-size:0.72rem;color:var(--text-muted)">`;
-                html += `<span>${t('預報')}：</span>`;
+                html += `<span>${t('預報')}${t('：')}</span>`;
                 weather.forecast.forEach(f => { html += `<span title="${t(f.name)}">${f.icon}</span>`; });
                 html += `</div>`;
             }
             // Disaster warning
             if (weather.disasterWarning) {
                 html += `<div style="margin-top:6px;padding:4px 8px;background:rgba(255,80,80,0.1);border-left:3px solid var(--negative);border-radius:4px;font-size:0.75rem">`;
-                html += `⚠️ ${t('災害預警')}：${weather.disasterWarning.type === 'drought_severe' ? t('嚴重乾旱') : weather.disasterWarning.type === 'blizzard_severe' ? t('極端暴風雪') : t('洪水')}`;
+                html += `⚠️ ${t('災害預警')}${t('：')}${weather.disasterWarning.type === 'drought_severe' ? t('嚴重乾旱') : weather.disasterWarning.type === 'blizzard_severe' ? t('極端暴風雪') : t('洪水')}`;
                 if (weather.disasterWarning.daysUntil > 0) html += ` (${weather.disasterWarning.daysUntil} ${t('天後')})`;
                 html += `</div>`;
             }
             // Active disaster
             if (weather.activeDisaster) {
                 html += `<div style="margin-top:6px;padding:6px 8px;background:rgba(255,40,40,0.15);border-left:3px solid var(--negative);border-radius:4px;font-size:0.8rem;font-weight:bold">`;
-                html += `🚨 ${t(weather.activeDisaster.name)}（${t('剩餘')} ${weather.activeDisaster.daysLeft} ${t('天')}）`;
+                html += `🚨 ${t(weather.activeDisaster.name)}${t('（')}${t('剩餘')} ${weather.activeDisaster.daysLeft} ${t('天')}${t('）')}`;
                 html += `<div style="font-weight:normal;font-size:0.72rem;margin-top:2px">${weather.activeDisaster.desc}</div>`;
                 html += `</div>`;
             }
@@ -1193,14 +1193,14 @@ Object.assign(RimTownApp.prototype, {
         if (council && council.formed) {
             html += '<div class="council-section" style="margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px">';
             html += `<h4>🏛️ ${t('小鎮議會')}</h4>`;
-            html += `<div style="font-size:0.75rem;color:var(--text-secondary);margin:4px 0">${t('成員')}：${council.memberNames.join(t('、'))}</div>`;
+            html += `<div style="font-size:0.75rem;color:var(--text-secondary);margin:4px 0">${t('成員')}${t('：')}${council.memberNames.join(t('、'))}</div>`;
             // Pending proposal
             if (council.pendingProposal) {
                 const p = council.pendingProposal;
                 html += `<div style="margin-top:8px;padding:8px;background:rgba(255,200,60,0.08);border:1px solid rgba(255,200,60,0.2);border-radius:6px">`;
                 html += `<div style="font-weight:bold;font-size:0.85rem">📜 ${p.title}</div>`;
                 html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin:4px 0">${p.desc}</div>`;
-                html += `<div style="font-size:0.72rem;color:var(--text-muted)">${t('提案者')}：${p.proposerName} | ${t('剩餘')} ${p.daysLeft} ${t('天投票')}</div>`;
+                html += `<div style="font-size:0.72rem;color:var(--text-muted)">${t('提案者')}${t('：')}${p.proposerName} | ${t('剩餘')} ${p.daysLeft} ${t('天投票')}</div>`;
                 html += `<div style="display:flex;gap:8px;margin-top:4px;font-size:0.75rem">`;
                 html += `<span style="color:var(--positive)">👍 ${p.forCount} ${t('贊成')}</span>`;
                 html += `<span style="color:var(--negative)">👎 ${p.againstCount} ${t('反對')}</span>`;
@@ -1220,7 +1220,7 @@ Object.assign(RimTownApp.prototype, {
             // Active decrees
             if (council.activeDecrees?.length) {
                 html += `<div style="margin-top:8px;font-size:0.75rem">`;
-                html += `<div style="font-weight:bold;margin-bottom:4px">${t('生效中的政令')}：</div>`;
+                html += `<div style="font-weight:bold;margin-bottom:4px">${t('生效中的政令')}${t('：')}</div>`;
                 council.activeDecrees.forEach(d => {
                     html += `<div style="padding:2px 0;color:var(--text-secondary)">📋 ${d.title}</div>`;
                 });
@@ -1229,7 +1229,7 @@ Object.assign(RimTownApp.prototype, {
             // Proposal log
             if (council.proposalLog?.length) {
                 html += `<div style="margin-top:8px;font-size:0.7rem;color:var(--text-muted)">`;
-                html += `${t('近期決議')}：`;
+                html += `${t('近期決議')}${t('：')}`;
                 council.proposalLog.slice(-5).reverse().forEach(p => {
                     html += `<span style="color:${p.passed ? 'var(--positive)' : 'var(--negative)'}"> ${p.passed ? '✅' : '❌'} ${p.title}(${p.forVotes}:${p.againstVotes})</span>`;
                 });
@@ -1308,7 +1308,7 @@ Object.assign(RimTownApp.prototype, {
                 html += `<div class="news-card-issue">#${paper.id}</div>`;
                 html += `<div class="news-card-meta">`;
                 html += `<div class="news-card-date">${t('第 {y} 年{s}').split('{y}').join(paper.year).split('{s}').join(t(paper.season))} ${t('第 {d} 天').split('{d}').join(paper.day)}</div>`;
-                html += `<div class="news-card-reporter">✍️ ${paper.reporter}（${paper.reporterJob}）</div>`;
+                html += `<div class="news-card-reporter">✍️ ${paper.reporter}${t('（')}${paper.reporterJob}${t('）')}</div>`;
                 html += `</div>`;
                 html += `<div class="news-card-toggle">${isExpanded ? '▲' : '▼'}</div>`;
                 html += `</div>`;
@@ -1357,7 +1357,7 @@ Object.assign(RimTownApp.prototype, {
         const chains = this.state.active_chains || [];
         if (chains.length) {
             html += t('<div class="chain-section"><h4>進行中的事件鏈</h4>');
-            chains.forEach(c => { html += `<div>${c.current_event}${t('（階段 ')}${c.stage}/${c.total_stages}）</div>`; });
+            chains.forEach(c => { html += `<div>${c.current_event}${t('（階段 ')}${c.stage}/${c.total_stages}${t('）')}</div>`; });
             html += '</div>';
         }
         const travelling = this.state.travelling_agents || [];
@@ -1430,7 +1430,7 @@ Object.assign(RimTownApp.prototype, {
                 expeditions.forEach(e => {
                     const ticksLeft = Math.max(0, e.returnTick - (this.state.tick || 0));
                     const daysLeft = Math.ceil(ticksLeft / 96);
-                    html += `<div class="expedition-item">${e.zoneIcon} ${e.zoneName} — ${e.agentNames.join('、')} (${daysLeft}${t('天後返回)</div>')}`;
+                    html += `<div class="expedition-item">${e.zoneIcon} ${e.zoneName} — ${e.agentNames.join(t('、'))} (${daysLeft}${t('天後返回)</div>')}`;
                 });
                 html += '</div>';
             }

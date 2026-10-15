@@ -48,7 +48,7 @@ Object.assign(RimTownApp.prototype, {
         catch (e) { this._gameAlert(t('操作失敗：') + (e.message || ''), '❌'); }
     },
     async _adminInviteDelete(code) {
-        if (!await this._gameConfirm(`${t('確定刪除推薦碼')} ${code}？`, '🗑️')) return;
+        if (!await this._gameConfirm(`${t('確定刪除推薦碼')} ${code}${t('？')}`, '🗑️')) return;
         try { await this.auth.adminInvite('invite_delete', { code }); await this._adminLoadInvites(); }
         catch (e) { this._gameAlert(t('操作失敗：') + (e.message || ''), '❌'); }
     },
@@ -363,7 +363,7 @@ Object.assign(RimTownApp.prototype, {
         let ci = 0;
         const linesHtml = s.lines.map(l => {
             if (!colors[l.speaker]) colors[l.speaker] = palette[ci++ % palette.length];
-            return `<div style="margin:7px 0;text-align:left;line-height:1.5"><span style="color:${colors[l.speaker]};font-weight:bold">${esc(l.speaker)}</span><span style="opacity:0.6">：</span>${esc(l.text)}</div>`;
+            return `<div style="margin:7px 0;text-align:left;line-height:1.5"><span style="color:${colors[l.speaker]};font-weight:bold">${esc(l.speaker)}</span><span style="opacity:0.6">${t('：')}</span>${esc(l.text)}</div>`;
         }).join('');
         this._showCenterNotification({
             icon: s.icon,
@@ -400,7 +400,7 @@ Object.assign(RimTownApp.prototype, {
         const optB = h.romance ? t('謝謝你...可以讓我想一想嗎?') : t('哈哈,突然這麼肉麻我會不好意思啦!');
         this._showInteractiveNotification({
             icon: h.icon,
-            title: `${h.icon} ${t('心動事件')}——${h.evName}`,
+            title: `${h.icon} ${t('心動事件')}${t('——')}${h.evName}`, // v6.22.2 英文破折號
             desc: `${h.npcName}${t('：「')}${h.text}${t('」')}`,
             buttons: [
                 { label: `💬 ${optA}`, action: () => respond(optA, 6, h.romance ? 8 : 0) },
@@ -468,7 +468,7 @@ Object.assign(RimTownApp.prototype, {
     _showCouncilCard(proposal) {
         this._showInteractiveNotification({
             icon: '🏛️',
-            title: `${t('議會提案')}：${proposal.title}`,
+            title: `${t('議會提案')}${t('：')}${proposal.title}`,
             desc: proposal.desc,
             buttons: [
                 { label: `👍 ${t('贊成')}`, action: () => {
@@ -762,12 +762,12 @@ Object.assign(RimTownApp.prototype, {
         this._lastShownNewspaperId = latest.id;
         this._newsReacted = false; // Reset reaction for new newspaper
         // v6.7.0 早安卡還在的話,日報出刊併成卡上一行,不再另跳一張
-        const mc = document.getElementById('morning-card'); if (mc && !mc.dataset.fading && !mc.querySelector('.mc-paper')) { const row = document.createElement('div'); row.className = 'mc-paper'; row.style.cssText = 'font-size:0.74rem;margin-top:3px'; row.textContent = `📰 ${t('AI 日報出刊')}：${t('第')}${latest.id}${t('期')} — ${t('記者')}：${latest.reporter || ''}`; mc.querySelector('.mc-body')?.appendChild(row); return; } // v6.10.1 淡出中不併
+        const mc = document.getElementById('morning-card'); if (mc && !mc.dataset.fading && !mc.querySelector('.mc-paper')) { const row = document.createElement('div'); row.className = 'mc-paper'; row.style.cssText = 'font-size:0.74rem;margin-top:3px'; row.textContent = `📰 ${t('AI 日報出刊：第{n}期 — 記者：{r}').replace('{n}', latest.id).replace('{r}', latest.reporter || '')}`; /* v6.22.0 模板(英文之前是 Ch.4 issues) */ mc.querySelector('.mc-body')?.appendChild(row); return; } // v6.10.1 淡出中不併
         // v5.44.0 日報出刊改角落通知,不再全螢幕打斷;全文在「日報」分頁隨時可讀
         this._showCornerNotice({
             icon: '📰',
             title: t('AI 日報出刊'),
-            name: `${t('第')}${latest.id}${t('期')} — ${t('記者')}：${latest.reporter}`,
+            name: `${t('第')}${latest.id}${t('期')} — ${t('記者')}${t('：')}${latest.reporter}`,
             desc: t('到「日報」分頁閱讀全文'),
         });
     },

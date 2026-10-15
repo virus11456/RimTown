@@ -68,7 +68,7 @@ Object.assign(RimTownApp.prototype, {
         const desc = st.sponsored ? t('你已贊助這屆節慶，村民都記得你的大方') : (st.phase === 'eve' ? t('贊助：籌備進度 +50、節慶心情 ×1.5、村民更常聊開、聲望 +10、繁榮 +3') : t('贊助：全鎮心情 +8、村民更常聊開、聲望 +10、繁榮 +3'));
         const btn = st.sponsored ? `<button class="trade-btn" disabled style="padding:3px 10px;font-size:0.72rem;white-space:nowrap">🎪 ${t('已贊助')}</button>`
             : `<button class="trade-btn" data-action="sponsor-festival" ${silverNow >= st.cost ? '' : 'disabled'} style="padding:3px 10px;font-size:0.72rem;white-space:nowrap">🎪 ${t('贊助')} ${st.cost}</button>`;
-        return `<div class="festival-sponsor-row" style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:0.72rem;color:var(--text-secondary)"><span style="flex:1">${st.icon || '🎪'} ${t(st.name)}（${when}）· ${desc}</span>${btn}</div>`;
+        return `<div class="festival-sponsor-row" style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:0.72rem;color:var(--text-secondary)"><span style="flex:1">${st.icon || '🎪'} ${t(st.name)}${t('（')}${when}${t('）')}· ${desc}</span>${btn}</div>`;
     },
     renderEconomy(container) {
         if (!this.state) return;
@@ -106,7 +106,7 @@ Object.assign(RimTownApp.prototype, {
             // v6.14.0 鎮公所捐款:銀幣的去處之一(繁榮 +1、全鎮心情 +2、聲望 +2,每天三次)
             const bd = this.state.buildings || {}; const left = Number.isFinite(bd.donations_left) ? bd.donations_left : (bd.donate_per_day || 3); const dcost = bd.donate_cost || 100; const silverNow = this.state.stockpile?.resources?.silver || 0;
             html += this._festivalSponsorHtml(); // v6.15.0 節慶前夕到結束之間才出現
-            html += `<div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:0.72rem;color:var(--text-secondary)"><span style="flex:1">${t('捐給鎮公所：繁榮 +1、全鎮今天心情 +2、聲望 +2')}${bd.donations?.total ? ` · ${t('累計')} ${bd.donations.total}` : ''}${(bd.donations?.bonus || 0) >= (bd.donate_prosperity_cap || 10) ? ` · ${t('繁榮加成已滿')}` : ''}</span><button class="trade-btn" data-action="donate-town" ${left > 0 && silverNow >= dcost ? '' : 'disabled'} style="padding:3px 10px;font-size:0.72rem;white-space:nowrap">🏛️ ${t('捐')} ${dcost}${left > 0 ? `（${t('今天還可 {n} 次').replace('{n}', left)}）` : `（${t('明天再來')}）`}</button></div>`;
+            html += `<div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:0.72rem;color:var(--text-secondary)"><span style="flex:1">${t('捐給鎮公所：繁榮 +1、全鎮今天心情 +2、聲望 +2')}${bd.donations?.total ? ` · ${t('累計')} ${bd.donations.total}` : ''}${(bd.donations?.bonus || 0) >= (bd.donate_prosperity_cap || 10) ? ` · ${t('繁榮加成已滿')}` : ''}</span><button class="trade-btn" data-action="donate-town" ${left > 0 && silverNow >= dcost ? '' : 'disabled'} style="padding:3px 10px;font-size:0.72rem;white-space:nowrap">🏛️ ${t('捐')} ${dcost}${left > 0 ? `${t('（')}${t('今天還可 {n} 次').replace('{n}', left)}${t('）')}` : `${t('（')}${t('明天再來')}${t('）')}`}</button></div>`;
             html += `</div>`;
         }
 
@@ -180,7 +180,7 @@ Object.assign(RimTownApp.prototype, {
                 // v5.53.0 產出在午夜結算,白天顯示「預估日產」避免 +0 被誤讀成排班沒生效
                 const RECIPE_OUT = { meals: 9, tools: 3, clothing: 2, medicine: 2, furniture: 2 };
                 const est = Math.round(makers.length * (RECIPE_OUT[k] || 0) * (policy === 'off' ? 0 : policy === 'extra' ? 1.5 : 1));
-                const prodHtml = prod > 0 ? `＋${prod}` : `${t('預估日產')} ＋${est}<span style="color:var(--text-muted)">（${t('午夜結算')}）</span>`;
+                const prodHtml = prod > 0 ? `＋${prod}` : `${t('預估日產')} ＋${est}<span style="color:var(--text-muted)">${t('（')}${t('午夜結算')}${t('）')}</span>`;
                 const polBtn = (mode, icon, tip) => `<button data-action="work-policy" data-val="${k},${mode}" title="${tip}" style="width:26px;height:22px;border-radius:5px;border:1px solid var(--border);cursor:pointer;font-size:0.7rem;line-height:1;${policy === mode ? 'background:var(--accent);color:#fff' : 'background:var(--bg-card);color:var(--text-secondary)'}">${icon}</button>`;
                 html += `<div style="padding:6px 2px;border-bottom:1px solid var(--border);font-size:0.78rem">
                     <div style="display:flex;align-items:center;gap:6px">
@@ -202,8 +202,8 @@ Object.assign(RimTownApp.prototype, {
             const short = RAWS.filter(k => (res[k] || 0) < 10);
             const tight = RAWS.filter(k => (res[k] || 0) >= 10 && (res[k] || 0) < 40);
             const light = short.length ? '🔴' : tight.length ? '🟡' : '🟢';
-            const lightText = short.length ? `${t('短缺')}：${short.map(k => labels[k]).join('、')}`
-                : tight.length ? `${t('吃緊')}：${tight.map(k => labels[k]).join('、')}`
+            const lightText = short.length ? `${t('短缺')}${t('：')}${short.map(k => labels[k]).join(t('、'))}`
+                : tight.length ? `${t('吃緊')}${t('：')}${tight.map(k => labels[k]).join(t('、'))}`
                 : t('原料充足，工坊無虞');
             const detailKeys = Object.keys(res).filter(k => !PROCESSED.includes(k) && k !== 'food' && k !== 'silver' && k !== 'research_points' && Math.round(res[k]) > 0);
             html += `<div class="econ-section"><h3>📦 ${t('原料倉庫')}</h3>
@@ -267,7 +267,7 @@ Object.assign(RimTownApp.prototype, {
             }
             const completedResearch = Object.values(projects).filter(p => p.status === 'complete');
             if (completedResearch.length) {
-                html += `${t('<div class="completed-buildings">已完成：')}${completedResearch.map(p => p.name).join('、')}</div>`;
+                html += `${t('<div class="completed-buildings">已完成：')}${completedResearch.map(p => p.name).join(t('、'))}</div>`;
             }
             html += '</div>';
         } else if (this._economySubTab === 'shop') {
@@ -656,7 +656,7 @@ Object.assign(RimTownApp.prototype, {
             if (log.length > 0) {
                 html += t('<div class="econ-section"><h3>收穫紀錄</h3>');
                 log.slice(-5).reverse().forEach(h => {
-                    html += `<div style="font-size:0.75rem;margin:2px 0">${h.cropName} x${h.amount}（${h.quality}）— ${t(h.season)}${t(' 第')}${h.day}${t('天</div>')}`;
+                    html += `<div style="font-size:0.75rem;margin:2px 0">${h.cropName} x${h.amount}${t('（')}${h.quality}${t('）')}— ${t(h.season)}${t(' 第')}${h.day}${t('天</div>')}`;
                 });
                 html += '</div>';
             }
@@ -807,7 +807,7 @@ Object.assign(RimTownApp.prototype, {
         if (log.length > 0) {
             html += t('<div class="econ-section"><h3>收穫紀錄</h3>');
             log.slice(-5).reverse().forEach(h => {
-                html += `<div style="font-size:0.75rem;margin:2px 0">${h.cropName} x${h.amount}（${h.quality}）— ${h.season}${t(' 第')}${h.day}${t('天</div>')}`;
+                html += `<div style="font-size:0.75rem;margin:2px 0">${h.cropName} x${h.amount}${t('（')}${h.quality}${t('）')}— ${h.season}${t(' 第')}${h.day}${t('天</div>')}`;
             });
             html += '</div>';
         }

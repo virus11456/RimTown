@@ -60,9 +60,9 @@ class ReputationSystem {
         const newTierIdx = this.tierIndex;
         if (newTierIdx > this._lastEffectTier && this._lastEffectTier >= 0) {
             const tier = this.tier;
-            world?.logMessage?.('reputation', `⭐ ${t('聲望提升！你現在是')}「${tier.icon} ${tier.name()}」— ${tier.desc()}`);
+            world?.logMessage?.('reputation', `⭐ ${t('聲望提升！你現在是')}${t('「')}${tier.icon} ${tier.name()}${t('」')}— ${tier.desc()}`);
             if (world?.dailyNews) {
-                world.dailyNews.collectEvent('social', `${playerTitle(world)}${t('的聲望提升為')}「${tier.name()}」！`, 7);
+                world.dailyNews.collectEvent('social', `${playerTitle(world)}${t('的聲望提升為')}${t('「')}${tier.name()}${t('」')}${t('！')}`, 7);
             }
             // Tier-up mood boost
             Object.values(world?.agents || {}).forEach(a => {
@@ -433,7 +433,7 @@ class WeatherSystem {
         this._daysSinceDisaster = 0;
         world.logMessageT('weather', '🚨 天災發生！{v}：{v2}', { v: d.name(), v2: d.desc() });
         if (world.dailyNews) {
-            world.dailyNews.collectEvent('disaster', `${d.name()}${t('來襲')}：${d.desc()}`, 10);
+            world.dailyNews.collectEvent('disaster', `${d.name()}${t('來襲')}${t('：')}${d.desc()}`, 10);
         }
         // 深井/淨水系統的 drought_resistance 效果:依累積抗旱值減輕乾旱(Lv1 深井 0.5 → +0.2,Lv2 淨水再 +0.3 → +0.3)
         const droughtRes = world.buildings?.getEffect?.('drought_resistance', 0) || 0;
@@ -531,7 +531,7 @@ class WeatherSystem {
         // Only report significant weather changes to news
         if (['storm','blizzard','heatwave','drought','snow'].includes(this.current)) {
             if (world.dailyNews) {
-                world.dailyNews.collectEvent('weather', `${w.icon} ${w.name()}：${w.desc()}`, 6);
+                world.dailyNews.collectEvent('weather', `${w.icon} ${w.name()}${t('：')}${w.desc()}`, 6);
             }
         }
     }
@@ -811,13 +811,13 @@ class CouncilSystem {
         if (passed) {
             // Apply immediate resource effects
             const sp = world.stockpile;
-            if (p.effects.silver && p.effects.silver > 0) sp.add('silver', p.effects.silver, world.tickCount, `${t('議會決議')}：${p.title}`);
-            if (p.effects.silver && p.effects.silver < 0) sp.consume('silver', Math.abs(p.effects.silver), world.tickCount, `${t('議會決議')}：${p.title}`);
+            if (p.effects.silver && p.effects.silver > 0) sp.add('silver', p.effects.silver, world.tickCount, `${t('議會決議')}${t('：')}${p.title}`);
+            if (p.effects.silver && p.effects.silver < 0) sp.consume('silver', Math.abs(p.effects.silver), world.tickCount, `${t('議會決議')}${t('：')}${p.title}`);
             if (p.effects.food_save) { /* passive effect via decree */ }
-            if (p.effects.herbs) sp.add('herbs', p.effects.herbs, world.tickCount, `${t('議會決議')}：${p.title}`);
-            if (p.effects.tools) sp.add('tools', p.effects.tools, world.tickCount, `${t('議會決議')}：${p.title}`);
-            if (p.effects.wood && p.effects.wood < 0) sp.consume('wood', Math.abs(p.effects.wood), world.tickCount, `${t('議會決議')}：${p.title}`);
-            if (p.effects.stone && p.effects.stone < 0) sp.consume('stone', Math.abs(p.effects.stone), world.tickCount, `${t('議會決議')}：${p.title}`);
+            if (p.effects.herbs) sp.add('herbs', p.effects.herbs, world.tickCount, `${t('議會決議')}${t('：')}${p.title}`);
+            if (p.effects.tools) sp.add('tools', p.effects.tools, world.tickCount, `${t('議會決議')}${t('：')}${p.title}`);
+            if (p.effects.wood && p.effects.wood < 0) sp.consume('wood', Math.abs(p.effects.wood), world.tickCount, `${t('議會決議')}${t('：')}${p.title}`);
+            if (p.effects.stone && p.effects.stone < 0) sp.consume('stone', Math.abs(p.effects.stone), world.tickCount, `${t('議會決議')}${t('：')}${p.title}`);
 
             // Mood effects
             if (p.effects.mood_all) {
@@ -839,7 +839,7 @@ class CouncilSystem {
         }
 
         if (world.dailyNews) {
-            world.dailyNews.collectEvent('politics', `${t('議會')}${passed ? t('通過') : t('否決')}${t('了')}「${p.title}」（${forVotes}:${againstVotes}）`, 7);
+            world.dailyNews.collectEvent('politics', `${t('議會')}${passed ? t('通過') : t('否決')}${t('了')}${t('「')}${p.title}${t('」')}${t('（')}${forVotes}:${againstVotes}${t('）')}`, 7);
         }
 
         this.proposalLog.push({ id: p.id, title: p.title, passed, forVotes, againstVotes, totalVotes });
@@ -1009,8 +1009,8 @@ class DailyDecisionSystem {
         const resourceKeys = ['food','wood','stone','metal','silver','tools','herbs','cloth','research_points'];
         for (const key of resourceKeys) {
             if (effects[key]) {
-                if (effects[key] > 0) sp.add(key, effects[key], world.tickCount, `${t('決策')}：${decision.title}`);
-                else sp.consume(key, Math.abs(effects[key]), world.tickCount, `${t('決策')}：${decision.title}`);
+                if (effects[key] > 0) sp.add(key, effects[key], world.tickCount, `${t('決策')}${t('：')}${decision.title}`);
+                else sp.consume(key, Math.abs(effects[key]), world.tickCount, `${t('決策')}${t('：')}${decision.title}`);
             }
         }
 
@@ -1164,7 +1164,7 @@ class ShopSystem {
         this.transactionLog.push({ type: 'buy', item: itemKey, amount, cost: totalCost, tick: world.tickCount });
         const discountText = discount > 0 ? ` (${t('聲望折扣')} ${Math.round(discount*100)}%)` : '';
         world.logMessageT('economy', '🛒 購買了 {amount} {v}，花費 {totalCost} 銀幣{discountText}', { amount, v: item.name(), totalCost, discountText });
-        return { success: true, msg: `${t('購買成功')}！` };
+        return { success: true, msg: `${t('購買成功')}${t('！')}` };
     }
 
     sell(itemKey, amount, world) {
@@ -1176,7 +1176,7 @@ class ShopSystem {
         world.stockpile.add('silver', totalIncome, world.tickCount, `${t('商店出售')}`, 'player');
         this.transactionLog.push({ type: 'sell', item: itemKey, amount, income: totalIncome, tick: world.tickCount });
         world.logMessageT('economy', '💰 出售了 {amount} {v}，獲得 {totalIncome} 銀幣', { amount, v: item.name(), totalIncome });
-        return { success: true, msg: `${t('出售成功')}！` };
+        return { success: true, msg: `${t('出售成功')}${t('！')}` };
     }
 
     toDict() {
@@ -1313,7 +1313,7 @@ class EventChoiceSystem {
 
         world.logMessageT('event_choice', '⚡ 你選擇了「{label}」來應對{eventName}', { label: choice.label, eventName: this.pendingEvent.eventName });
         if (world.dailyNews) {
-            world.dailyNews.collectEvent('event', `${t('面對')}${this.pendingEvent.eventName}${t('，')}${playerTitle(world)}${t('選擇了')}「${choice.label}」`, 7);
+            world.dailyNews.collectEvent('event', `${t('面對')}${this.pendingEvent.eventName}${t('，')}${playerTitle(world)}${t('選擇了')}${t('「')}${choice.label}${t('」')}`, 7);
         }
 
         this.eventLog.push({ event: this.pendingEvent.eventName, choice: choice.label, tick: world.tickCount });

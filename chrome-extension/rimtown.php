@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.20.0
+ * Version: 6.22.4
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.20.0');
+define('RIMTOWN_VERSION', '6.22.4');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,78 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.22.4',
+            'date'    => '2026-10-15',
+            'changes' => array(
+                '🐛 早安卡與委託徽章改由渲染迴圈每秒自己檢查：之前只掛在「任務引導橫幅」每 5 秒一次的更新裡，而那個更新遇到引導卡期間／橫幅隱藏就提早結束，換日後早安卡最慢要等 5 秒、手機中文走流程（礦山鎮）截到第 5 天的卡一路停到第 7 天都沒換；現在換日後最慢 1 秒出新卡（礦山鎮手機走流程第 6／7／9／11 天逐日對上）',
+                '🧪 手機中文走流程（礦山鎮一季 37 張截圖）其餘版面與文案無問題',
+            ),
+            'changes_en' => array(
+                '🐛 The morning card and request badge now refresh from the render loop once a second: they used to piggyback on the quest-guidance banner update, which runs every 5 seconds and returns early while the first-day guide is up or the banner is hidden, so after a day change the morning card could lag 5 seconds and the Chinese mobile walkthrough (Mine Ridge) caught the day-5 card still showing on day 7; now a new card appears within a second (mobile walkthrough days 6 / 7 / 9 / 11 each show their own card)',
+                '🧪 Chinese mobile walkthrough (Mine Ridge, one season, 37 screenshots): no other layout or copy issues',
+            ),
+        ),
+        array(
+            'version' => '6.22.3',
+            'date'    => '2026-10-15',
+            'changes' => array(
+                '🌐 英文標點全面掃描：寫了稽核腳本 `scripts/cjk-punct-audit.js`，找出模板字串裡沒包進 t() 的 CJK 標點（「」：、（）！？，。——）共 166 處，自動改寫 156 行（21 個檔案：委託／任務／考驗／議會／天氣／日報／商隊／農田／產業／記錄分頁等的冒號、括號、書名號、驚嘆號、頓號），英文模式不再露出全形標點；中文顯示不變。剩 10 處是 AI 提示詞與訪客村民名字，列為基準，新增就失敗',
+                '🔧 訪客村民名字維持「名字（來處鎮）」原樣（名字是資料不翻）；登入獎勵／商隊報價的「N 天」英文仍是 \'N days\' 字樣，下次一併改',
+            ),
+            'changes_en' => array(
+                '🌐 Full sweep for Chinese punctuation leaking into English: new audit script scripts/cjk-punct-audit.js finds CJK punctuation (「」：、（）！？，。——) inside template literals that is not wrapped in t(); 166 hits, 156 lines auto-rewritten across 21 files (colons, brackets, title quotes, exclamation marks and enumeration commas in requests, quests, trials, council, weather, daily news, caravans, farm, industry and the Records tab), so English mode no longer shows fullwidth punctuation; Chinese output unchanged. The remaining 10 (AI prompts and visitor names) form the baseline; any new hit fails the audit',
+                '🔧 Visitor names keep the original "Name（home town）" form (names are data, not translated); the login-reward and caravan-quote "N days" wording is unchanged for now',
+            ),
+        ),
+        array(
+            'version' => '6.22.2',
+            'date'    => '2026-10-15',
+            'changes' => array(
+                '🧹 英文桌機走流程 QA（海風鎮第 1–15 天＋季末）修正：AI 提示詞的鎮名不再寫死「邊境鎮」，八處（每日行程規劃／即時改行程／感情戲／對話劇本／扮演村民四段）改帶當前鎮名；考驗公告與失敗通知、「撐過可得」「沒撐過」、上一季回顧標籤在英文改半形冒號與直引號；本週小鎮頭條的暗戀／三角／死對頭三句改模板（英文不再多空格，名字也翻譯）；心動事件標題破折號、分頁鎖定卡「X 將在第 N 章開啟」在英文改半形',
+                '🔧 走流程腳本以主題開新鎮時同步更新頁首鎮名（之前截圖頁首一直是邊境鎮）',
+            ),
+            'changes_en' => array(
+                '🧹 English desktop walkthrough QA fixes (Seabreeze Harbor days 1–15 plus season end): AI prompts no longer hardcode the town as Frontier Town; eight prompt sites (daily planning, re-planning, drama scene, dialogue script and the four role-play intros) now carry the current town name; the trial announcement and failure notices, "Survive for" / "Failed", and the last-season recap label use ASCII colons and straight quotes in English; the weekly digest crush / triangle / rivalry lines are templates (no stray spaces in English, names translated); the heart-event title dash and the tab-lock card "X opens in Ch.N" use ASCII punctuation in English',
+                '🔧 The walkthrough script updates the header town name when it starts a themed town (screenshots used to show Frontier Town)',
+            ),
+        ),
+        array(
+            'version' => '6.22.1',
+            'date'    => '2026-10-15',
+            'changes' => array(
+                '🧹 新手走流程 QA（中文桌機／英文手機，第 1–15 天＋季末）修正：英文版的「昨日結算」「委託過期數」「買 1 點（30）」「AI 日報出刊：第 N 期」「季末回顧銀幣（+N）」「好感升最多／搬走了／新住民」與章節解鎖卡的分隔符改用半形標點與英文語序（之前出現 Ch.4 issues、全形括號、頓號）；委託鏈引言與結局的「」在英文改直引號；手機上方鎮名在英文模式也翻譯；商人名字中文不再夾英文括號（老趙商隊 (Old Zhao\'s Caravan) → 老趙商隊，英文仍為 Old Zhao\'s Caravan）；押商隊貨物選單的「（倉庫 N）」英文改半形',
+                '🌐 B1 收尾：鄰鎮商隊到貨與本季考驗公告兩條日誌也改模板；切語言 QA 紀錄分頁殘留 4/500 → 2/500',
+            ),
+            'changes_en' => array(
+                '🧹 Newcomer walkthrough QA fixes (Chinese desktop / English mobile, days 1–15 plus season end): in English the yesterday tally, expired-request count, "Buy 1 AP (30)", "AI Daily published: issue N", the recap silver (+N), biggest affinity gains / moved away / new residents and the chapter-unlock card separators now use ASCII punctuation and English word order (they used to show "Ch.4 issues", fullwidth brackets and the Chinese enumeration comma); chain intro and finale quotes use straight quotes in English; the mobile header town name is translated in English mode; merchant names no longer carry an English parenthetical in Chinese (老趙商隊 (Old Zhao\'s Caravan) → 老趙商隊, still Old Zhao\'s Caravan in English); the caravan goods list shows "(warehouse N)" in English',
+                '🌐 B1 wrap-up: the neighboring-caravan arrival and the season-trial announcement logs are templates too; language-switch QA leaves 2/500 Chinese lines in Records (was 4)',
+            ),
+        ),
+        array(
+            'version' => '6.22.0',
+            'date'    => '2026-10-15',
+            'changes' => array(
+                '⚖️ B23 考驗失敗的節奏：繁榮扣分累計有底（最多 −20；之前每季 −10 無底，只看不玩四季就把繁榮扣到 0，回來玩也補不回來）、撐過一季先補回最多 10 再 +5、衰敗後每季最多再走 1 人、人口剩 8 人就不再有人搬走；「不做有後果」維持（第二季仍會衰敗），但回來玩補得回來。實測 60 天只看不玩：邊境鎮人口 25→18（之前 →14）、繁榮 29（之前 0）；海風鎮 20→15（之前 →11）、繁榮 21（之前 0）',
+                '🧪 新增回歸測試 scripts/trial_pacing_test.js（連續六次失敗的扣分與搬走人數、人口下限、撐過補回、復興、存讀檔）',
+            ),
+            'changes_en' => array(
+                '⚖️ B23 pacing of failed trials: the prosperity penalty now has a floor (−20 in total; it used to be −10 per season with no floor, so four idle seasons pinned prosperity at 0 and coming back could not recover it), surviving a season first refunds up to 10 then adds 5, at most one villager leaves per season once the town has declined, and nobody leaves once the population is down to 8. "Doing nothing has consequences" stays (the town still declines in season two), but it is recoverable. Measured over 60 idle days: Frontier Town 25 → 18 villagers (was 14) with prosperity 29 (was 0); Seabreeze 20 → 15 (was 11) with prosperity 21 (was 0)',
+                '🧪 New regression test scripts/trial_pacing_test.js (penalty and leavers over six straight failures, population floor, refund on passing, revival, save & load)',
+            ),
+        ),
+        array(
+            'version' => '6.21.0',
+            'date'    => '2026-10-15',
+            'changes' => array(
+                '🌐 B1 第五步：村民「今日目標」（起床／上工／逛節慶／約伴侶吃飯／避開仇人／為夢想努力／晚間安排／睡覺）改成模板存檔，資訊卡與手機小卡依當下語言顯示；上工地點改用顯示名（之前中文裡會出現「到town hall上工」）；AI 分解式行程與提示詞仍用建立當下的文字',
+                '🧪 memory_i18n_test 加今日目標段（模板數量、中文無地點 id、英文無中文、存檔帶模板）',
+            ),
+            'changes_en' => array(
+                '🌐 B1 step five: villagers\' daily goals (wake up, go to work, visit the festival, dinner with a partner, avoid a rival, work toward a dream, evening plans, bedtime) are stored as templates and shown in the current language on the info card and the mobile mini-card; the workplace now uses its display name (Chinese used to show "head to town hall" with the raw id); AI-generated schedules and prompts still use the text as written',
+                '🧪 memory_i18n_test gains a daily-goals section (template count, no raw location ids in Chinese, no Chinese in English, templates saved)',
+            ),
+        ),
         array(
             'version' => '6.20.0',
             'date'    => '2026-10-13',

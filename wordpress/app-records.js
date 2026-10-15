@@ -128,11 +128,11 @@ Object.assign(RimTownApp.prototype, {
             const fmtM = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
             viewHtml += `<div style="margin-top:8px;font-weight:700;font-size:0.82rem">📖 ${v.label}</div>`;
             if ((v.convos || []).length) {
-                viewHtml += `<details style="margin-top:6px"><summary style="cursor:pointer;font-size:0.78rem">💬 ${t('對話')}（${v.convos.length}）</summary>` +
+                viewHtml += `<details style="margin-top:6px"><summary style="cursor:pointer;font-size:0.78rem">💬 ${t('對話')}${t('（')}${v.convos.length}${t('）')}</summary>` +
                     v.convos.map(c => `<details style="margin:4px 0 4px 10px"><summary style="cursor:pointer;font-size:0.72rem">${c.time.split(' ').pop()} ${c.a} × ${c.b}${c.llm ? ' 🤖' : ''} — ${this._escapeHtml(c.summary)}</summary><div style="font-size:0.7rem;padding:4px 0 4px 12px;line-height:1.6">${(c.dialogue || []).map(l => this._escapeHtml(l)).join('<br>')}</div></details>`).join('') + '</details>';
             }
             if ((v.playerChats || []).length) {
-                viewHtml += `<details style="margin-top:6px"><summary style="cursor:pointer;font-size:0.78rem">🧑 ${t('你的對話')}（${v.playerChats.length}）</summary><div style="font-size:0.7rem;padding:4px 0 4px 12px;line-height:1.6">${v.playerChats.map(p => `${this._escapeHtml(p.speaker)} → ${this._escapeHtml(p.target)}: ${this._escapeHtml(p.text)}`).join('<br>')}</div></details>`;
+                viewHtml += `<details style="margin-top:6px"><summary style="cursor:pointer;font-size:0.78rem">🧑 ${t('你的對話')}${t('（')}${v.playerChats.length}${t('）')}</summary><div style="font-size:0.7rem;padding:4px 0 4px 12px;line-height:1.6">${v.playerChats.map(p => `${this._escapeHtml(p.speaker)} → ${this._escapeHtml(p.target)}: ${this._escapeHtml(p.text)}`).join('<br>')}</div></details>`;
             }
             viewHtml += (v.npcs || []).map(n => `<details style="margin-top:4px"><summary style="cursor:pointer;font-size:0.75rem">👤 ${t(n.name)}${n.job ? `（${n.job}）` : ''}${n.planLlm ? ' 🤖' : ''}${n.replanned ? ' 📝' : ''}</summary>
                 <div style="font-size:0.7rem;padding:4px 0 4px 12px;line-height:1.6">
@@ -180,7 +180,7 @@ Object.assign(RimTownApp.prototype, {
             html += `<div class="news-card-issue">#${paper.id}</div>`;
             html += `<div class="news-card-meta">`;
             html += `${t('<div class="news-card-date">第')}${paper.year}${t('年 ')}${paper.season}${t(' 第')}${paper.day}${t('天</div>')}`;
-            html += `<div class="news-card-reporter">✍️ ${paper.reporter}（${paper.reporterJob}）</div>`;
+            html += `<div class="news-card-reporter">✍️ ${paper.reporter}${t('（')}${paper.reporterJob}${t('）')}</div>`;
             html += `</div>`;
             html += `<div class="news-card-toggle">${isExpanded ? '▲' : '▼'}</div>`;
             html += `</div>`;
@@ -333,7 +333,7 @@ Object.assign(RimTownApp.prototype, {
                     const completedRoute = quest.routes.find(r => r.id === quest.completedRoute);
                     if (completedRoute) {
                         html += `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">`;
-                        html += `${t('其他路線：')}${quest.routes.filter(r => r.id !== quest.completedRoute).map(r => `${r.icon || ''} ${r.label}`).join('、') || t('無')}`;
+                        html += `${t('其他路線：')}${quest.routes.filter(r => r.id !== quest.completedRoute).map(r => `${r.icon || ''} ${r.label}`).join(t('、')) || t('無')}`;
                         html += `</div>`;
                     }
                 }
@@ -518,7 +518,7 @@ Object.assign(RimTownApp.prototype, {
                 html += t('<div class="econ-section"><h3>📈 NPC 產業加成</h3>');
                 for (const [ind, bonus] of bonusEntries) {
                     const pct = Math.round(bonus * 100);
-                    html += `<div style="font-size:0.8rem;margin:2px 0">${indLabels[ind] || ind}：+${pct}%</div>`;
+                    html += `<div style="font-size:0.8rem;margin:2px 0">${indLabels[ind] || ind}${t('：')}+${pct}%</div>`;
                 }
                 html += '</div>';
             }
@@ -573,7 +573,7 @@ Object.assign(RimTownApp.prototype, {
             if (sourceEntries.length > 0) {
                 const sourceLabels = { quests: t('任務'), decisions: t('決策'), help: t('幫助NPC'), daily: t('日常'), trade: t('交易'), events: t('事件') };
                 html += `<div style="margin-top:6px;font-size:0.7rem;color:var(--text-secondary)">`;
-                html += `${t('聲望來源')}：`;
+                html += `${t('聲望來源')}${t('：')}`;
                 html += sourceEntries.map(([k, v]) => `${sourceLabels[k] || k} ${v}`).join(' · ');
                 html += `</div>`;
             }

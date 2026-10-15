@@ -221,7 +221,7 @@ Object.assign(RimTownApp.prototype, {
                 const isActive = _tw.id === this.currentTownId;
                 html += `<div class="town-item ${isActive?'active':''}">
                     <div class="town-info" data-action="switch-town" data-val="${_tw.id}">
-                        <div class="town-name">${t(_tw.name)} <span style="font-size:0.65rem;color:var(--text-muted)">📱 ${t('本機')}${cloudNames.has(_tw.name) ? `（${t('與雲端同名')}）` : ''}</span> ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
+                        <div class="town-name">${t(_tw.name)} <span style="font-size:0.65rem;color:var(--text-muted)">📱 ${t('本機')}${cloudNames.has(_tw.name) ? `${t('（')}${t('與雲端同名')}${t('）')}` : ''}</span> ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
                         <div class="town-meta">${_tw.season||''}${t(' 第')}${_tw.year||1}${t('年 第')}${_tw.day||1}${t('天 | 人口')}${_tw.population||0}</div>
                     </div>
                     <div class="town-actions">${!isActive ? `<button data-action="delete-local-town" data-val="${_tw.id}" title="${t('刪除本機副本')}" class="btn-danger">🗑️</button>` : ''}</div>
