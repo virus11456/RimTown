@@ -1780,13 +1780,13 @@ class World {
                     if (!seen.has(key)) {
                         seen.add(key);
                         const icon = rel.status === 'married' ? '💍' : '💗';
-                        const line = `${icon} ${a.name} × ${other.name}`;
+                        const line = `${icon} ${t(a.name)} × ${t(other.name)}`; // v6.22.2 名字也翻
                         if (!prevCouples.has(key)) newCouples.push(line); else couples.push(line);
                     }
                 } else if (rel.romanticInterest > 45 && a.agentId < tid) {
-                    crushes.push(`💘 ${a.name} ${t('暗戀著')} ${other.name}`);
+                    crushes.push(`💘 ${t('{a} 暗戀著 {b}').replace('{a}', t(a.name)).replace('{b}', t(other.name))}`); // v6.22.2 模板:英文不多空格
                 } else if (rel.affinity <= -25 && a.agentId < tid) {
-                    rivals.push(`⚔️ ${a.name} ${t('與')} ${other.name} ${t('勢不兩立')}`);
+                    rivals.push(`⚔️ ${t('{a} 與 {b} 勢不兩立').replace('{a}', t(a.name)).replace('{b}', t(other.name))}`);
                 }
             }
         }
@@ -1801,7 +1801,7 @@ class World {
         for (const [tid, admirers] of Object.entries(crushMap)) {
             if (admirers.length >= 2) {
                 const target = this.agents[tid];
-                if (target && !target.isPlayer) triangles.push(`🔺 ${admirers.slice(0,3).join(t('、'))} ${t('都喜歡')} ${target.name}`);
+                if (target && !target.isPlayer) triangles.push(`🔺 ${t('{who} 都喜歡 {b}').replace('{who}', admirers.slice(0,3).map(n => t(n)).join(t('、'))).replace('{b}', t(target.name))}`);
             }
         }
         this._lastDigestCouples = [...nowCouples];

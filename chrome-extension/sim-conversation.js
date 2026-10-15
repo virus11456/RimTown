@@ -270,7 +270,7 @@ ${memos ? `${t('【昨天的約定/待辦】')}\n${memos}` : ''}
 ${topMem ? `${t('【昨天印象最深的事】')}\n${topMem}` : ''}
 ${thought ? `${t('【心裡的體悟】')}- ${thought}` : ''}`;
         }).join('\n\n');
-        const prompt = `${t('你在為模擬小鎮「邊境鎮」的居民規劃真實的一天。像寫小說一樣,讓行程反映每個人的性格、人際與心事。')}
+        const prompt = `${t('你在為模擬小鎮「{town}」的居民規劃真實的一天。像寫小說一樣,讓行程反映每個人的性格、人際與心事。').replace('{town}', t(world.townName || '邊境鎮'))}
 ${ctx.length ? `${t('【今日環境】')}${ctx.join(t('；'))}` : ''}
 
 ${sections}
@@ -332,7 +332,7 @@ ${LLM_LANG.rule(t('【規則】繁體中文(台灣用語)。只輸出 JSON,不�
             const p = this._buildCharacterProfile(npc);
             const planText = blocks.length ? blocks.map(b => `${b.time} ${b.text}`).join(t('；')) : (npc.dailyPlan?.goals || []).join(t('；'));
             const shortReason = String(reason || '').slice(0, 80);
-            const prompt = `${t('你在為模擬小鎮「邊境鎮」的居民「即時調整」今天的行程——他剛遇到一件事,接下來的安排要跟著變。')}
+            const prompt = `${t('你在為模擬小鎮「{town}」的居民「即時調整」今天的行程——他剛遇到一件事,接下來的安排要跟著變。').replace('{town}', t(world.townName || '邊境鎮'))}
 ${t('【居民】')}${p.name}${t('，')}${p.age}${t('歲')}${p.job}${t('，性格')}${p.traits}${t('。')}${p.status}
 ${t('【現在時刻】')}${nowStr}
 ${planText ? `${t('【今天原本的安排】')}${planText}` : ''}
@@ -570,7 +570,7 @@ ${t('最後一行：')}EFFECTS: {"target": "${t('若念頭涉及某位村民寫�
                 }
                 const scenario = pickRandom(scenarios);
 
-                const prompt = `${t('你正在扮演「')}${npc.name}${t('」——邊境鎮的居民。你想主動傳一則訊息給')}${player.name}${t('。')}
+                const prompt = `${t('你正在扮演「')}${npc.name}${t('」——{town}的居民。你想主動傳一則訊息給').replace('{town}', t(world.townName || '邊境鎮'))}${player.name}${t('。')}
 ${t('情境：')}${scenario}
 
 ${t('【你是誰】')}
@@ -744,7 +744,7 @@ ${LLM_LANG.rule(t('繁體中文(台灣用語),不要有其他任何文字。'), 
                         severance: `${a.name}${t('和')}${b.name}${t('的積怨徹底爆發,當眾撂下重話,正式絕交')}`,
                         reconcile: `${t('在')}${thirdName || t('旅人')}${t('的奔走調解下,')}${a.name}${t('和')}${b.name}${t('終於放下多年心結,當眾握手言和,圍觀的鎮民鼓掌')}`,
                     }[kind];
-                    const prompt = `${t('你是一位才華橫溢的小說家，正在為奇幻小鎮「邊境鎮」寫一場關鍵感情戲。')}
+                    const prompt = `${t('你是一位才華橫溢的小說家，正在為奇幻小鎮「{town}」寫一場關鍵感情戲。').replace('{town}', t(world.townName || '邊境鎮'))}
 ${t('場面：')}${sceneDesc}${t('。')}
 
 ${t('【')}${pA.name}${t('】')}${pA.age}${t('歲')}${pA.job}${t('，性格')}${pA.traits}
@@ -863,7 +863,7 @@ ${t('- 格式：每行「名字: 對話內容」,不要有其他任何東西')}`
                 try {
                     const pN = this._buildCharacterProfile(npc);
                     const mems = (rel.sharedMemories || []).slice(-3).join(t('；'));
-                    const prompt = `${t('你正在扮演「')}${npc.name}${t('」——邊境鎮的居民。這是一個重要的感情時刻。')}
+                    const prompt = `${t('你正在扮演「')}${npc.name}${t('」——{town}的居民。這是一個重要的感情時刻。').replace('{town}', t(world.townName || '邊境鎮'))}
 ${t('情境：')}${ev.scenario}${t('。對象是')}${player.name}${t('。')}
 
 ${t('【你是誰】')}
@@ -931,7 +931,7 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
             if (this.llm && this.llm._canMakeRequest(false)) {
                 try {
                     const pN = this._buildCharacterProfile(npc);
-                    const prompt = `${t('你正在扮演「')}${npc.name}${t('」——邊境鎮的居民。剛剛發生了一件事：')}${eventText}${t('。你想傳一則訊息給')}${playerTitle(world)}${player.name}${t('聊聊這件事。')}${playerTitle(world) === t('旅人') ? t('（他是旅人，不是鎮長，別叫他鎮長。）') : ''}
+                    const prompt = `${t('你正在扮演「')}${npc.name}${t('」——{town}的居民。剛剛發生了一件事：').replace('{town}', t(world.townName || '邊境鎮'))}${eventText}${t('。你想傳一則訊息給')}${playerTitle(world)}${player.name}${t('聊聊這件事。')}${playerTitle(world) === t('旅人') ? t('（他是旅人，不是鎮長，別叫他鎮長。）') : ''}
 
 ${t('【你是誰】')}
 ${pN.name}${t('，')}${pN.age}${t('歲，')}${pN.job}${t('。性格：')}${pN.traits}${t('。')}
@@ -1120,7 +1120,7 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
         }
         const festCtx = fest ? `${t('【今天是')}${fest.name}${t('!】')}${fest.description}${t('鎮上到處都是祭典活動:')}${fest.activities.join(t('、'))}${t('。對話請自然融入祭典氣氛。')}\n` : '';
 
-        const prompt = `${t('你是一位才華橫溢的小說家，正在為奇幻小鎮「邊境鎮」寫角色對話劇本。')}
+        const prompt = `${t('你是一位才華橫溢的小說家，正在為奇幻小鎮「{town}」寫角色對話劇本。').replace('{town}', t(world.townName || '邊境鎮'))}
 ${t('這是兩位小鎮居民偶然碰面的場景。請寫出生動、自然、有溫度的對話——就像真實的鄰居閒聊一樣。')}
 
 ${t('【重要規則】')}
@@ -1686,7 +1686,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                 const memNpc = npc.memory.retrieve(`${player.name} ${playerMessage}`, [player.name], 5, world.tickCount);
                 const npcThoughts = npc.memory.getThoughts(2);
                 const pN = this._buildCharacterProfile(npc);
-                const prompt = `${t('你正在扮演「')}${npc.name}${t('」——邊境鎮的一位真實居民。有個叫')}${player.name}${t('的人正在跟你說話。')}${playerTitle(world) === t('鎮長') ? t('他是現任鎮長。') : `${t('他是來到鎮上的旅人，不是鎮長，不要叫他鎮長。')}${mayorNameOf(world) ? `${t('現任鎮長是')}${mayorNameOf(world)}${t('。')}` : ''}`}
+                const prompt = `${t('你正在扮演「')}${npc.name}${t('」——{town}的一位真實居民。有個叫').replace('{town}', t(world.townName || '邊境鎮'))}${player.name}${t('的人正在跟你說話。')}${playerTitle(world) === t('鎮長') ? t('他是現任鎮長。') : `${t('他是來到鎮上的旅人，不是鎮長，不要叫他鎮長。')}${mayorNameOf(world) ? `${t('現任鎮長是')}${mayorNameOf(world)}${t('。')}` : ''}`}
 ${t('你要完全入戲，像真人一樣自然地回應。')}
 
 ${t('【你是誰】')}

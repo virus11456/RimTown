@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.22.1
+ * Version: 6.22.2
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.22.1');
+define('RIMTOWN_VERSION', '6.22.2');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.22.2',
+            'date'    => '2026-10-15',
+            'changes' => array(
+                '🧹 英文桌機走流程 QA（海風鎮第 1–15 天＋季末）修正：AI 提示詞的鎮名不再寫死「邊境鎮」，八處（每日行程規劃／即時改行程／感情戲／對話劇本／扮演村民四段）改帶當前鎮名；考驗公告與失敗通知、「撐過可得」「沒撐過」、上一季回顧標籤在英文改半形冒號與直引號；本週小鎮頭條的暗戀／三角／死對頭三句改模板（英文不再多空格，名字也翻譯）；心動事件標題破折號、分頁鎖定卡「X 將在第 N 章開啟」在英文改半形',
+                '🔧 走流程腳本以主題開新鎮時同步更新頁首鎮名（之前截圖頁首一直是邊境鎮）',
+            ),
+            'changes_en' => array(
+                '🧹 English desktop walkthrough QA fixes (Seabreeze Harbor days 1–15 plus season end): AI prompts no longer hardcode the town as Frontier Town; eight prompt sites (daily planning, re-planning, drama scene, dialogue script and the four role-play intros) now carry the current town name; the trial announcement and failure notices, "Survive for" / "Failed", and the last-season recap label use ASCII colons and straight quotes in English; the weekly digest crush / triangle / rivalry lines are templates (no stray spaces in English, names translated); the heart-event title dash and the tab-lock card "X opens in Ch.N" use ASCII punctuation in English',
+                '🔧 The walkthrough script updates the header town name when it starts a themed town (screenshots used to show Frontier Town)',
+            ),
+        ),
         array(
             'version' => '6.22.1',
             'date'    => '2026-10-15',

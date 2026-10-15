@@ -558,13 +558,13 @@ Object.assign(RimTownApp.prototype, {
             html += `<div style="font-size:0.82rem">${c.icon} <b>${esc(c.title)}</b> · ${t('剩')} ${c.daysLeft} ${t('天')}</div>
                 <div style="font-size:0.75rem;color:var(--text-secondary);margin:3px 0">${esc(c.goal)}</div>
                 <div class="bar" style="height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden"><div style="width:${c.pct}%;height:100%;background:${col}"></div></div>
-                <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:3px">${c.value} / ${c.target} ${esc(c.unit)} · ${t('撐過可得')}「${esc(c.perkName)}」：${esc(c.perkDesc)}</div>`;
+                <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:3px">${c.value} / ${c.target} ${esc(c.unit)} · ${t('撐過可得「{t}」：').replace('{t}', esc(c.perkName))}${esc(c.perkDesc)}</div>`;
         } else {
             html += `<div class="muted-text" style="font-size:0.78rem">${t('每季第 5 天公布這一季的考驗，季末結算：撐過有永久加成，沒撐過會有人搬走。')}</div>`;
         }
         if (tr.perks.length) html += `<div style="font-size:0.72rem;margin-top:6px">🏅 ${t('已得到：')}${tr.perks.map(p => `<b>${esc(p.name)}</b>`).join(t('、'))}</div>`;
         if (tr.history.length) html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px">${tr.history.map(h => `${h.status === 'passed' ? '✅' : '❌'} ${esc(h.title)} ${h.value}/${h.target}`).join(' · ')}</div>`;
-        if (this.state?.recap?.last) { const rl = this.state.recap.last; html += `<button class="trade-btn" data-action="recap-open" style="width:100%;padding:6px;margin-top:8px;font-size:0.78rem">📜 ${t('上一季回顧')}：${esc(rl.title)} · ${t('評等')} ${esc(rl.grade)}</button>`; if (rl.advice?.[0]) { const a0 = rl.advice[0]; html += `<div style="display:flex;gap:6px;align-items:center;margin-top:4px"><div style="flex:1;font-size:0.72rem;color:var(--text-secondary)">🧭 ${esc(a0.text)}</div>${a0.go ? `<button class="trade-btn" data-action="recap-go" data-val="${esc(a0.go)}" style="flex:none;padding:3px 8px;font-size:0.7rem;white-space:nowrap">${esc(a0.goLabel || t('去做'))}</button>` : ''}</div>`; } } // v5.98.0 / v6.4.0 第一條建議
+        if (this.state?.recap?.last) { const rl = this.state.recap.last; html += `<button class="trade-btn" data-action="recap-open" style="width:100%;padding:6px;margin-top:8px;font-size:0.78rem">📜 ${t('上一季回顧')}${t('：')}${esc(rl.title)} · ${t('評等')} ${esc(rl.grade)}</button>`; if (rl.advice?.[0]) { const a0 = rl.advice[0]; html += `<div style="display:flex;gap:6px;align-items:center;margin-top:4px"><div style="flex:1;font-size:0.72rem;color:var(--text-secondary)">🧭 ${esc(a0.text)}</div>${a0.go ? `<button class="trade-btn" data-action="recap-go" data-val="${esc(a0.go)}" style="flex:none;padding:3px 8px;font-size:0.7rem;white-space:nowrap">${esc(a0.goLabel || t('去做'))}</button>` : ''}</div>`; } } // v5.98.0 / v6.4.0 第一條建議
         return html + '</div>';
     },
     _requestAct(id) {

@@ -74,7 +74,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 **語言／雙語**
 - B1 記憶、對話紀錄、行程文字在「建立當下」依介面語言存進存檔（`t()` at creation），切換語言後舊內容語言混雜。根治要把這類模板改成「key＋參數」存檔、顯示時再翻，屬大工程；目前只保證顯示層與人名一致。
-  - v6.17.0 第一步：村民記憶（`Memory.addT` 存 `k`＋`p`，`text()` 依當下語言渲染並快取；`toDict`／關係史／人生摘要都走它）已轉 63 處規則式呼叫點（`scratchpad/mem_convert.js` 自動轉換＋英文校對）；AI 提示詞與檢索仍用建立當下的 `content`。v6.18.0 第二步：日誌（`World.logMessageT` 存 `k`＋`p`，`World.logText` 渲染並快取，`getState().recent_messages` 依當下語言；`scratchpad/log_convert.js` 轉 147 處）。v6.19.0 第三步：規則式對話摘要（`tpl()` 物件、`Memory.render` 巢狀）、感想／觀察池、約會、旅行理由、委託板與任務日誌；切語言 QA（`scratchpad/lang_switch_qa.js`）：紀錄分頁殘留 21/500、記憶 53/1080。v6.20.0 第四步：八卦內容（`contentT`，傳話包裝句巢狀）、委託描述（`describeT`）、親緣故事池；QA 殘留 5/500、4/1044。v6.21.0 第五步：今日目標（`dailyPlan.goalsT`、`Agent.planGoalTexts`）。還沒做：對話紀錄（chatHistory）、共同回憶（sharedMemories，每對 8 筆字串）、鄰鎮商隊到貨與考驗公告的日誌、AI 生成文字（本來就是單一語言）。
+  - v6.17.0 第一步：村民記憶（`Memory.addT` 存 `k`＋`p`，`text()` 依當下語言渲染並快取；`toDict`／關係史／人生摘要都走它）已轉 63 處規則式呼叫點（`scratchpad/mem_convert.js` 自動轉換＋英文校對）；AI 提示詞與檢索仍用建立當下的 `content`。v6.18.0 第二步：日誌（`World.logMessageT` 存 `k`＋`p`，`World.logText` 渲染並快取，`getState().recent_messages` 依當下語言；`scratchpad/log_convert.js` 轉 147 處）。v6.19.0 第三步：規則式對話摘要（`tpl()` 物件、`Memory.render` 巢狀）、感想／觀察池、約會、旅行理由、委託板與任務日誌；切語言 QA（`scratchpad/lang_switch_qa.js`）：紀錄分頁殘留 21/500、記憶 53/1080。v6.20.0 第四步：八卦內容（`contentT`，傳話包裝句巢狀）、委託描述（`describeT`）、親緣故事池；QA 殘留 5/500、4/1044。v6.21.0 第五步：今日目標（`dailyPlan.goalsT`、`Agent.planGoalTexts`）。v6.22.2：AI 提示詞的鎮名改帶當前鎮（八處不再寫死邊境鎮）、本週頭條三句改模板。還沒做：對話紀錄（chatHistory）、共同回憶（sharedMemories，每對 8 筆字串）、鄰鎮商隊到貨與考驗公告的日誌、AI 生成文字（本來就是單一語言）。
 - B2 LLM 提示詞本體仍是中文（125 條刻意保留），英文對話模式靠英文規則行與英文系統指示；若要更道地，可為主要提示詞寫英文版本。
 - B3 ~~`changelog.js` 首頁每次整份載入~~ v5.81.0 改為首頁第一次渲染才動態載入，直接進遊戲不載。
 - B4 ~~隨機卡司英文名由 26 姓 × 48 名組合~~ v5.79.0 已擴為 40 姓 × 120 名，並保留五鎮劇本人名不抽。
@@ -236,7 +236,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.22.1.zip` from Releases
+1. Download `rimtown-v6.22.2.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -286,6 +286,10 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.22.2 (2026-10-15)
+- 🧹 英文桌機走流程 QA（海風鎮第 1–15 天＋季末）修正：AI 提示詞的鎮名不再寫死「邊境鎮」，八處（每日行程規劃／即時改行程／感情戲／對話劇本／扮演村民四段）改帶當前鎮名；考驗公告與失敗通知、「撐過可得」「沒撐過」、上一季回顧標籤在英文改半形冒號與直引號；本週小鎮頭條的暗戀／三角／死對頭三句改模板（英文不再多空格，名字也翻譯）；心動事件標題破折號、分頁鎖定卡「X 將在第 N 章開啟」在英文改半形
+- 🔧 走流程腳本以主題開新鎮時同步更新頁首鎮名（之前截圖頁首一直是邊境鎮）
 
 ### v6.22.1 (2026-10-15)
 - 🧹 新手走流程 QA（中文桌機／英文手機，第 1–15 天＋季末）修正：英文版的「昨日結算」「委託過期數」「買 1 點（30）」「AI 日報出刊：第 N 期」「季末回顧銀幣（+N）」「好感升最多／搬走了／新住民」與章節解鎖卡的分隔符改用半形標點與英文語序（之前出現 Ch.4 issues、全形括號、頓號）；委託鏈引言與結局的「」在英文改直引號；手機上方鎮名在英文模式也翻譯；商人名字中文不再夾英文括號（老趙商隊 (Old Zhao's Caravan) → 老趙商隊，英文仍為 Old Zhao's Caravan）；押商隊貨物選單的「（倉庫 N）」英文改半形

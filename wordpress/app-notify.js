@@ -400,7 +400,7 @@ Object.assign(RimTownApp.prototype, {
         const optB = h.romance ? t('謝謝你...可以讓我想一想嗎?') : t('哈哈,突然這麼肉麻我會不好意思啦!');
         this._showInteractiveNotification({
             icon: h.icon,
-            title: `${h.icon} ${t('心動事件')}——${h.evName}`,
+            title: `${h.icon} ${t('心動事件')}${t('——')}${h.evName}`, // v6.22.2 英文破折號
             desc: `${h.npcName}${t('：「')}${h.text}${t('」')}`,
             buttons: [
                 { label: `💬 ${optA}`, action: () => respond(optA, 6, h.romance ? 8 : 0) },

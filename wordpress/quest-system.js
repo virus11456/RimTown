@@ -2755,7 +2755,7 @@ class SeasonTrials {
         world.logMessageT?.('event', '⚖️ 本季考驗「{title}」：{goal}', { title: d.title, goal: this.goalTextT(type, this.current.target) }); // v6.22.0 模板
         world.dailyNews?.collectEvent?.('event', text, 9);
         world.events?.conversationTopics?.push(`${t('這一季的考驗是')}${t(d.title)}`);
-        world.onTrialEvent?.('announce', `${d.icon} ${t('本季考驗')}：${t(d.title)}`, this.goalText(type, this.current.target));
+        world.onTrialEvent?.('announce', `${d.icon} ${t('本季考驗')}${t('：')}${t(d.title)}`, this.goalText(type, this.current.target));
     }
     _resolve(world, onTime) {
         const c = this.current; if (!c || c.status !== 'active') return;
@@ -2785,10 +2785,10 @@ class SeasonTrials {
             const cut = Math.max(SeasonTrials.PENALTY_FLOOR - (this.penalty || 0), -10); this.penalty = (this.penalty || 0) + cut; // v6.22.0 扣分有底:累計最多 −20
             if (world.prosperity && cut < 0) { world.prosperity.questBonus = (world.prosperity.questBonus || 0) + cut; world.prosperity.recalcTotal?.(); }
             const text = names.length
-                ? `${t('沒撐過')}「${t(d.title)}」${t('的考驗：')}${names.join(t('、'))}${cut < 0 ? t('搬走了，繁榮 −10、全鎮士氣低落') : t('搬走了，全鎮士氣低落')}`
-                : `${t('沒撐過')}「${t(d.title)}」${t('的考驗：')}${cut < 0 ? t('繁榮 −10、全鎮士氣低落') : t('全鎮士氣低落')}`;
+                ? `${t('沒撐過「{t}」的考驗：').replace('{t}', t(d.title))}${names.join(t('、'))}${cut < 0 ? t('搬走了，繁榮 −10、全鎮士氣低落') : t('搬走了，全鎮士氣低落')}`
+                : `${t('沒撐過「{t}」的考驗：').replace('{t}', t(d.title))}${cut < 0 ? t('繁榮 −10、全鎮士氣低落') : t('全鎮士氣低落')}`;
             world.logMessage?.('event', `💔 ${text}`); world.dailyNews?.collectEvent?.('event', text, 10, names);
-            world.onTrialEvent?.('failed', `💔 ${t('考驗失敗')}：${t(d.title)}`, text);
+            world.onTrialEvent?.('failed', `💔 ${t('考驗失敗')}${t('：')}${t(d.title)}`, text); // v6.22.2 英文冒號
             if (this.failStreak >= 2) world.multiEnding?.triggerDecline?.(world);
         }
         this.history = this.history.concat([{ type: c.type, seasonKey: c.seasonKey, status: c.status, value: v, target: c.target }]).slice(-8);
