@@ -267,7 +267,7 @@ class BuildingManager {
         const p=this.projects.find(x=>x.id===projectId && x.status==='building'); if(!p) return { ok:false, msg:t('沒有這個工程') };
         const dk=this._dayKey(world); if(p.fundedDay===dk) return { ok:false, msg:t('這個工程今天已經捐過了，明天再來') };
         const cost=BuildingManager.FUND_COST; if(!world.stockpile.has('silver',cost)) return { ok:false, msg:t('銀幣不足') };
-        world.stockpile.consume('silver',cost,world.tickCount,`${t('捐建')}：${t(p.name)}`,'player');
+        world.stockpile.consume('silver',cost,world.tickCount,`${t('捐建')}${t('：')}${t(p.name)}`,'player');
         const gain=Math.max(1,Math.ceil(p.workRequired*0.2)); p.workDone=Math.min(p.workRequired,p.workDone+gain); p.fundedDay=dk; p.funded=(p.funded||0)+cost;
         const text=t('你捐了 {n} 銀幣給「{name}」的工程，工匠們加班趕工（{pct}%）').split('{n}').join(cost).split('{name}').join(t(p.name)).split('{pct}').join(Math.round(p.workDone/p.workRequired*100));
         world.logMessage?.('building',`🔨 ${text}`); world.dailyNews?.collectEvent?.('economy',text,5);

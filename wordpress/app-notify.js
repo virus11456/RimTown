@@ -48,7 +48,7 @@ Object.assign(RimTownApp.prototype, {
         catch (e) { this._gameAlert(t('操作失敗：') + (e.message || ''), '❌'); }
     },
     async _adminInviteDelete(code) {
-        if (!await this._gameConfirm(`${t('確定刪除推薦碼')} ${code}？`, '🗑️')) return;
+        if (!await this._gameConfirm(`${t('確定刪除推薦碼')} ${code}${t('？')}`, '🗑️')) return;
         try { await this.auth.adminInvite('invite_delete', { code }); await this._adminLoadInvites(); }
         catch (e) { this._gameAlert(t('操作失敗：') + (e.message || ''), '❌'); }
     },
@@ -363,7 +363,7 @@ Object.assign(RimTownApp.prototype, {
         let ci = 0;
         const linesHtml = s.lines.map(l => {
             if (!colors[l.speaker]) colors[l.speaker] = palette[ci++ % palette.length];
-            return `<div style="margin:7px 0;text-align:left;line-height:1.5"><span style="color:${colors[l.speaker]};font-weight:bold">${esc(l.speaker)}</span><span style="opacity:0.6">：</span>${esc(l.text)}</div>`;
+            return `<div style="margin:7px 0;text-align:left;line-height:1.5"><span style="color:${colors[l.speaker]};font-weight:bold">${esc(l.speaker)}</span><span style="opacity:0.6">${t('：')}</span>${esc(l.text)}</div>`;
         }).join('');
         this._showCenterNotification({
             icon: s.icon,
@@ -468,7 +468,7 @@ Object.assign(RimTownApp.prototype, {
     _showCouncilCard(proposal) {
         this._showInteractiveNotification({
             icon: '🏛️',
-            title: `${t('議會提案')}：${proposal.title}`,
+            title: `${t('議會提案')}${t('：')}${proposal.title}`,
             desc: proposal.desc,
             buttons: [
                 { label: `👍 ${t('贊成')}`, action: () => {
@@ -767,7 +767,7 @@ Object.assign(RimTownApp.prototype, {
         this._showCornerNotice({
             icon: '📰',
             title: t('AI 日報出刊'),
-            name: `${t('第')}${latest.id}${t('期')} — ${t('記者')}：${latest.reporter}`,
+            name: `${t('第')}${latest.id}${t('期')} — ${t('記者')}${t('：')}${latest.reporter}`,
             desc: t('到「日報」分頁閱讀全文'),
         });
     },

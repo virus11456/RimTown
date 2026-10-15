@@ -39,9 +39,9 @@ class NPCEventSystem {
                 agent.status = 'normal';
                 agent._hospitalDays = 0;
                 agent.moodModifier = (agent.moodModifier || 0) + 10;
-                world.logMessage?.('incident', `${agent.name}${t('出院了')}！`);
+                world.logMessage?.('incident', `${agent.name}${t('出院了')}${t('！')}`);
                 if (world.dailyNews) {
-                    world.dailyNews.collectEvent('lifecycle', `${agent.name}${t('康復出院了')}！`, 5, [agent.name]);
+                    world.dailyNews.collectEvent('lifecycle', `${agent.name}${t('康復出院了')}${t('！')}`, 5, [agent.name]);
                 }
             } else {
                 // Friends mood penalty
@@ -103,7 +103,7 @@ class NPCEventSystem {
                 // Remove from factory work
                 if (world.processing) world.processing.removeWorker(other.agentId);
 
-                world.logMessage?.('incident', `⚠️ ${agent.name}${t('和')}${other.name}${t('大打出手')}！${other.name}${t('被送進診所')}！`);
+                world.logMessage?.('incident', `⚠️ ${agent.name}${t('和')}${other.name}${t('大打出手')}${t('！')}${other.name}${t('被送進診所')}${t('！')}`);
 
                 // Others' reaction
                 for (const npc of npcs) {
@@ -118,13 +118,13 @@ class NPCEventSystem {
                 // Gossip
                 world.gossipNetwork?.activeGossip?.push({
                     about: agent.name,
-                    content: `${agent.name}${t('把')}${other.name}${t('打進了診所')}！`,
+                    content: `${agent.name}${t('把')}${other.name}${t('打進了診所')}${t('！')}`,
                     source: t('目擊者'), spreadCount: 0,
                     tickCreated: world.tickCount, isTrue: true,
                 });
 
                 if (world.dailyNews) {
-                    world.dailyNews.collectEvent('incident', `${agent.name}${t('把')}${other.name}${t('打進了診所')}！`, 9, [agent.name, other.name]);
+                    world.dailyNews.collectEvent('incident', `${agent.name}${t('把')}${other.name}${t('打進了診所')}${t('！')}`, 9, [agent.name, other.name]);
                 }
 
                 this.incidentLog.push({
@@ -191,7 +191,7 @@ class NPCEventSystem {
                         if (factory.workers.includes(agent.agentId) && factory.workers.includes(rel.targetId)) {
                             agent.moodModifier = (agent.moodModifier || 0) + 3;
                             other.moodModifier = (other.moodModifier || 0) + 3;
-                            world.logMessage?.('social', `${agent.name}${t('和')}${other.name}${t('配合得越來越默契了')}！`);
+                            world.logMessage?.('social', `${agent.name}${t('和')}${other.name}${t('配合得越來越默契了')}${t('！')}`);
                             return;
                         }
                     }
@@ -210,7 +210,7 @@ class NPCEventSystem {
             cheater.status = 'hospitalized';
             cheater._hospitalDays = 0;
             if (world.processing) world.processing.removeWorker(cheater.agentId);
-            world.logMessage?.('drama', `${partner.name}${t('發現')}${cheater.name}${t('劈腿，當街痛打了一頓')}！`);
+            world.logMessage?.('drama', `${partner.name}${t('發現')}${cheater.name}${t('劈腿，當街痛打了一頓')}${t('！')}`);
         }
 
         // Everyone's reaction
@@ -235,12 +235,12 @@ class NPCEventSystem {
         const thirdPartyName = thirdParty?.name || t('某人');
         world.gossipNetwork?.activeGossip?.push({
             about: cheater.name,
-            content: `${cheater.name}${t('劈腿被')}${partner.name}${t('抓到了！對象是')}${thirdPartyName}！`,
+            content: `${cheater.name}${t('劈腿被')}${partner.name}${t('抓到了！對象是')}${thirdPartyName}${t('！')}`,
             source: t('鎮民'), spreadCount: 0, tickCreated: world.tickCount, isTrue: true,
         });
 
         if (world.dailyNews) {
-            world.dailyNews.collectEvent('drama', `${t('轟動全鎮')}！${cheater.name}${t('的秘密關係被揭穿了')}！`, 10,
+            world.dailyNews.collectEvent('drama', `${t('轟動全鎮')}${t('！')}${cheater.name}${t('的秘密關係被揭穿了')}${t('！')}`, 10,
                 [cheater.name, partner.name, thirdPartyName]);
         }
     }

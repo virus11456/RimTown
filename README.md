@@ -74,7 +74,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 **語言／雙語**
 - B1 記憶、對話紀錄、行程文字在「建立當下」依介面語言存進存檔（`t()` at creation），切換語言後舊內容語言混雜。根治要把這類模板改成「key＋參數」存檔、顯示時再翻，屬大工程；目前只保證顯示層與人名一致。
-  - v6.17.0 第一步：村民記憶（`Memory.addT` 存 `k`＋`p`，`text()` 依當下語言渲染並快取；`toDict`／關係史／人生摘要都走它）已轉 63 處規則式呼叫點（`scratchpad/mem_convert.js` 自動轉換＋英文校對）；AI 提示詞與檢索仍用建立當下的 `content`。v6.18.0 第二步：日誌（`World.logMessageT` 存 `k`＋`p`，`World.logText` 渲染並快取，`getState().recent_messages` 依當下語言；`scratchpad/log_convert.js` 轉 147 處）。v6.19.0 第三步：規則式對話摘要（`tpl()` 物件、`Memory.render` 巢狀）、感想／觀察池、約會、旅行理由、委託板與任務日誌；切語言 QA（`scratchpad/lang_switch_qa.js`）：紀錄分頁殘留 21/500、記憶 53/1080。v6.20.0 第四步：八卦內容（`contentT`，傳話包裝句巢狀）、委託描述（`describeT`）、親緣故事池；QA 殘留 5/500、4/1044。v6.21.0 第五步：今日目標（`dailyPlan.goalsT`、`Agent.planGoalTexts`）。v6.22.2：AI 提示詞的鎮名改帶當前鎮（八處不再寫死邊境鎮）、本週頭條三句改模板。還沒做：對話紀錄（chatHistory）、共同回憶（sharedMemories，每對 8 筆字串）、鄰鎮商隊到貨與考驗公告的日誌、AI 生成文字（本來就是單一語言）。
+  - v6.17.0 第一步：村民記憶（`Memory.addT` 存 `k`＋`p`，`text()` 依當下語言渲染並快取；`toDict`／關係史／人生摘要都走它）已轉 63 處規則式呼叫點（`scratchpad/mem_convert.js` 自動轉換＋英文校對）；AI 提示詞與檢索仍用建立當下的 `content`。v6.18.0 第二步：日誌（`World.logMessageT` 存 `k`＋`p`，`World.logText` 渲染並快取，`getState().recent_messages` 依當下語言；`scratchpad/log_convert.js` 轉 147 處）。v6.19.0 第三步：規則式對話摘要（`tpl()` 物件、`Memory.render` 巢狀）、感想／觀察池、約會、旅行理由、委託板與任務日誌；切語言 QA（`scratchpad/lang_switch_qa.js`）：紀錄分頁殘留 21/500、記憶 53/1080。v6.20.0 第四步：八卦內容（`contentT`，傳話包裝句巢狀）、委託描述（`describeT`）、親緣故事池；QA 殘留 5/500、4/1044。v6.21.0 第五步：今日目標（`dailyPlan.goalsT`、`Agent.planGoalTexts`）。v6.22.2：AI 提示詞的鎮名改帶當前鎮（八處不再寫死邊境鎮）、本週頭條三句改模板。v6.22.3：`scripts/cjk-punct-audit.js` 掃模板字串裡沒包 t() 的 CJK 標點，156 行自動改寫，英文不再露出全形標點。還沒做：對話紀錄（chatHistory）、共同回憶（sharedMemories，每對 8 筆字串）、鄰鎮商隊到貨與考驗公告的日誌、AI 生成文字（本來就是單一語言）。
 - B2 LLM 提示詞本體仍是中文（125 條刻意保留），英文對話模式靠英文規則行與英文系統指示；若要更道地，可為主要提示詞寫英文版本。
 - B3 ~~`changelog.js` 首頁每次整份載入~~ v5.81.0 改為首頁第一次渲染才動態載入，直接進遊戲不載。
 - B4 ~~隨機卡司英文名由 26 姓 × 48 名組合~~ v5.79.0 已擴為 40 姓 × 120 名，並保留五鎮劇本人名不抽。
@@ -236,7 +236,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.22.2.zip` from Releases
+1. Download `rimtown-v6.22.3.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -264,6 +264,7 @@ node scripts/invite_test.js    # 推薦碼註冊與管理(v5.68.0 起)
 node scripts/lang_test.js      # /api/chat 對話語言:lang=en 英文系統指示/不轉繁體(v5.73.0 起)
 node scripts/gen-changelog.js   # 從 rimtown.php 產生首頁更新紀錄 changelog.js(v5.68.0 起改版必跑);v5.74.0 起每版必須同時有 changes 與 changes_en,缺英文會失敗
 node scripts/i18n-audit.js     # i18n 重複鍵=0、新 t('…') 字串必須有英文(v5.81.0 起)
+node scripts/cjk-punct-audit.js # 模板字串裡沒包 t() 的 CJK 標點,基準 10(AI 提示詞與訪客名),新增就失敗;--list 列全部(v6.22.3 起)
 node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改版面才 --update(v5.81.0 起)
 # 選跑:cd wordpress && python3 -m http.server 8126 & ; node scripts/smoke_playwright.js  # 五鎮世界/英文標籤/鄰鎮/住房/商隊冒煙
 # 選跑:node scripts/quest_chain_test.js   # 四座主題鎮任務鏈端到端(五章/災難/商路/支線/存檔/英文)(v5.88.0 起;改任務鏈或災難必跑)
@@ -286,6 +287,10 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.22.3 (2026-10-15)
+- 🌐 英文標點全面掃描：寫了稽核腳本 `scripts/cjk-punct-audit.js`，找出模板字串裡沒包進 t() 的 CJK 標點（「」：、（）！？，。——）共 166 處，自動改寫 156 行（21 個檔案：委託／任務／考驗／議會／天氣／日報／商隊／農田／產業／記錄分頁等的冒號、括號、書名號、驚嘆號、頓號），英文模式不再露出全形標點；中文顯示不變。剩 10 處是 AI 提示詞與訪客村民名字，列為基準，新增就失敗
+- 🔧 訪客村民名字維持「名字（來處鎮）」原樣（名字是資料不翻）；登入獎勵／商隊報價的「N 天」英文仍是 'N days' 字樣，下次一併改
 
 ### v6.22.2 (2026-10-15)
 - 🧹 英文桌機走流程 QA（海風鎮第 1–15 天＋季末）修正：AI 提示詞的鎮名不再寫死「邊境鎮」，八處（每日行程規劃／即時改行程／感情戲／對話劇本／扮演村民四段）改帶當前鎮名；考驗公告與失敗通知、「撐過可得」「沒撐過」、上一季回顧標籤在英文改半形冒號與直引號；本週小鎮頭條的暗戀／三角／死對頭三句改模板（英文不再多空格，名字也翻譯）；心動事件標題破折號、分頁鎖定卡「X 將在第 N 章開啟」在英文改半形

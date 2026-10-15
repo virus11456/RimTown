@@ -103,7 +103,7 @@ class IndustryManager {
         const def = INDUSTRIES[key];
         if (world) {
             world.logMessageT('industry', '{icon} 開啟了{def}！', { icon: def.icon, def: def.name });
-            if (world.dailyNews) world.dailyNews.collectEvent('industry', `${t('城鎮開啟了新產業')}：${def.name}！`, 7);
+            if (world.dailyNews) world.dailyNews.collectEvent('industry', `${t('城鎮開啟了新產業')}${t('：')}${def.name}${t('！')}`, 7);
         }
         return { ok: true };
     }
@@ -121,7 +121,7 @@ class IndustryManager {
 
         // Notify daily news if available
         if (world.dailyNews) {
-            world.dailyNews.collectEvent('industry', `${def.name}${t('升級到了')}「${nextLevelDef.name}」！`, 6);
+            world.dailyNews.collectEvent('industry', `${def.name}${t('升級到了')}${t('「')}${nextLevelDef.name}${t('」')}${t('！')}`, 6);
         }
         return { ok: true };
     }
@@ -201,7 +201,7 @@ class IndustryManager {
                 }
 
                 if (world.dailyNews) {
-                    world.dailyNews.collectEvent('town', `${t('城鎮升級為')}「${tl.name}」！`, 8);
+                    world.dailyNews.collectEvent('town', `${t('城鎮升級為')}${t('「')}${tl.name}${t('」')}${t('！')}`, 8);
                 }
             }
         }

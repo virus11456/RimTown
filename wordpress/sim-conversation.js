@@ -642,7 +642,7 @@ ${LLM_LANG.rule(t('【格式】只寫一句貼文,表達此刻的心情與這個
             if (!text) {
                 text = isDone
                     ? pickRandom([`${def.icon} ${t('我做到了!「')}${def.name}${t('」——這一路走來,值得了。')}`, `${def.icon} ${t('夢想成真的這一刻,我會記得一輩子。')}${stageName}!`])
-                    : pickRandom([`${def.icon} ${t('離夢想又近了一步:')}${stageName}。${t('繼續加油!')}`, `${t('今天達成了「')}${stageName}${t('」,朝著')}${def.name}${t('前進中 💪')}`]);
+                    : pickRandom([`${def.icon} ${t('離夢想又近了一步:')}${stageName}${t('。')}${t('繼續加油!')}`, `${t('今天達成了「')}${stageName}${t('」,朝著')}${def.name}${t('前進中 💪')}`]);
             }
             npc.addThought(isDone ? 'dream_achieved' : 'dream_progress', world); // v5.15.0 夢想推進的喜悅
             if (world.townFeed) world.townFeed.addPost(world, npc, text);
@@ -1897,7 +1897,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
             summary = tpl('{player}和{npc}打了招呼。', { player: player.name, npc: npc.name });
         } else if (isAskName) {
             npcReply = pickRandom([
-                `${t('我叫')}${npc.name}${t('，')}${npc.age}${t('歲，在鎮上當')}${jobTitle}。`,
+                `${t('我叫')}${npc.name}${t('，')}${npc.age}${t('歲，在鎮上當')}${jobTitle}${t('。')}`,
                 `${npc.name}${t('啊，怎麼？你忘了我嗎？')}`,
                 shy ? `${t('我...我叫')}${npc.name}...` : `${t('我是')}${npc.name}${t('，認識一下！')}`,
             ]);

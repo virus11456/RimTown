@@ -463,7 +463,7 @@ class EventSystem {
             memories:agent.memory.toDict(true), mood:agent.mood, moodModifier:agent.moodModifier||0 }; // v6.19.0 存檔版
         this._travellingAgents.push({agentData:data, returnTick:world.tickCount+(travelDays*96), reason});
         world.logMessageT('departure', '{agent}{reason}。過幾天就會回來。', { agent: agent.name, reason }, agent.name);
-        const event = {name:t('居民出行'),description:`${agent.name}${reasonText}。`,severity:'minor',effects:{conversation_topic:`${agent.name}${t('離開了小鎮')}`},event_type:'departure'};
+        const event = {name:t('居民出行'),description:`${agent.name}${reasonText}${t('。')}`,severity:'minor',effects:{conversation_topic:`${agent.name}${t('離開了小鎮')}`},event_type:'departure'};
         this.eventLog.push([world.clock.timeStr, event]);
         this.conversationTopics.push(`${agent.name}${t('離開了小鎮')}`);
         Object.values(world.agents).forEach(o => {

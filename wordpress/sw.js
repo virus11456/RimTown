@@ -1,5 +1,5 @@
 // RimTown Service Worker - PWA Offline Support
-const CACHE_NAME = 'rimtown-v6.22.2';
+const CACHE_NAME = 'rimtown-v6.22.3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

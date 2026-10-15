@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.22.2
-const RIMTOWN_APP_VERSION = '6.22.2';
+// RimTown - Frontend App (WordPress Plugin) v6.22.3
+const RIMTOWN_APP_VERSION = '6.22.3';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -708,7 +708,7 @@ class RimTownApp {
                 icon: '🎁',
                 title: t('每日登入獎勵'),
                 name: `${t('連續登入')} ${streak} ${t('天')}`,
-                desc: `+${silver} ${t('銀幣')}、+${food} ${t('食物')}${streak < 7 ? t('(連續 7 天獎勵最高!)') : ''}`,
+                desc: `+${silver} ${t('銀幣')}${t('、')}+${food} ${t('食物')}${streak < 7 ? t('(連續 7 天獎勵最高!)') : ''}`,
                 autoDismiss: 6000,
             });
         } catch (e) { console.warn('[RimTown] daily reward error', e); }
@@ -746,7 +746,7 @@ class RimTownApp {
                 icon: '🌙',
                 title: t('離線進度結算'),
                 name: `${t('你離開了')} ${hours} ${t('小時')}`,
-                desc: `${t('小鎮繼續運轉了')} ${Math.round(ticks / 96 * 10) / 10} ${t('天')}:${t('銀幣')} ${dSil >= 0 ? '+' : ''}${dSil}、${t('食物')} ${dFood >= 0 ? '+' : ''}${dFood}、${events} ${t('件大小事(見紀錄)')}`,
+                desc: `${t('小鎮繼續運轉了')} ${Math.round(ticks / 96 * 10) / 10} ${t('天')}:${t('銀幣')} ${dSil >= 0 ? '+' : ''}${dSil}${t('、')}${t('食物')} ${dFood >= 0 ? '+' : ''}${dFood}${t('、')}${events} ${t('件大小事(見紀錄)')}`,
                 autoDismiss: 9000,
             });
             this.world.logMessageT('system', '🌙 離線結算:小鎮在你離開時模擬了 {ticks} 個時段', { ticks });
@@ -1653,7 +1653,7 @@ class RimTownApp {
                 inner += `<button class="trade-btn coach-go" data-idx="${i}" style="width:100%;margin:3px 0;padding:9px;display:flex;align-items:center;justify-content:center;gap:7px">${this._coachPixelSvg(0.75)}<span>${t('前往')} ${esc(twn.name)}</span></button>`;
             });
         }
-        if (towns.length) inner += `<button class="trade-btn coach-caravan" style="width:100%;margin-top:8px;padding:9px">🐪 ${t('押商隊')}${this.world?.playerCaravan?.active ? `（${t('在路上')}）` : ''}</button>`; // v5.92.0
+        if (towns.length) inner += `<button class="trade-btn coach-caravan" style="width:100%;margin-top:8px;padding:9px">🐪 ${t('押商隊')}${this.world?.playerCaravan?.active ? `${t('（')}${t('在路上')}${t('）')}` : ''}</button>`; // v5.92.0
         inner += `<button class="trade-btn coach-close" style="width:100%;margin-top:8px;padding:8px;opacity:0.8">${t('下次再說')}</button>`;
         card.innerHTML = inner;
         ov.appendChild(card);
@@ -2761,7 +2761,7 @@ class RimTownApp {
         lines.push(`${t('遊戲進度：')}${archive.gameClock}`);
         lines.push(`${t('玩家：')}${archive.playerName}`);
         lines.push(`${t('存檔時間：')}${archive.savedAt}`);
-        lines.push(`NPC：${archive.npcNames.join('、')}`);
+        lines.push(`NPC${t('：')}${archive.npcNames.join(t('、'))}`);
         lines.push(`${t('訊息數：')}${archive.messageCount}`);
         lines.push('');
         archive.messages.forEach(m => {
@@ -2983,11 +2983,11 @@ class RimTownApp {
         else { pauseBtn?.classList.remove('active'); resumeBtn?.classList.add('active'); }
         const agentCount = Object.keys(this.state.agents).length;
         const travelCount = (this.state.travelling_agents || []).length;
-        const travelText = travelCount > 0 ? `（+${travelCount}${t(' 外出）')}` : '';
+        const travelText = travelCount > 0 ? `${t('（')}+${travelCount}${t(' 外出）')}` : '';
         // v5.59.0 TC-05:跨鎮訪客不灌水常住人口,分開顯示
         const visitorCount = Object.keys(this.world?.visitors || {}).length;
         const residentCount = Math.max(0, agentCount - visitorCount);
-        const visitorText = visitorCount > 0 ? `（+${visitorCount}${t(' 訪客）')}` : '';
+        const visitorText = visitorCount > 0 ? `${t('（')}+${visitorCount}${t(' 訪客）')}` : '';
         const popEl = document.getElementById('population-count');
         if (popEl) popEl.textContent = `${t('人口：')}${residentCount}${visitorText}${travelText}`;
 

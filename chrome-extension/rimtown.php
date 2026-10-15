@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.22.2
+ * Version: 6.22.3
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.22.2');
+define('RIMTOWN_VERSION', '6.22.3');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.22.3',
+            'date'    => '2026-10-15',
+            'changes' => array(
+                '🌐 英文標點全面掃描：寫了稽核腳本 `scripts/cjk-punct-audit.js`，找出模板字串裡沒包進 t() 的 CJK 標點（「」：、（）！？，。——）共 166 處，自動改寫 156 行（21 個檔案：委託／任務／考驗／議會／天氣／日報／商隊／農田／產業／記錄分頁等的冒號、括號、書名號、驚嘆號、頓號），英文模式不再露出全形標點；中文顯示不變。剩 10 處是 AI 提示詞與訪客村民名字，列為基準，新增就失敗',
+                '🔧 訪客村民名字維持「名字（來處鎮）」原樣（名字是資料不翻）；登入獎勵／商隊報價的「N 天」英文仍是 \'N days\' 字樣，下次一併改',
+            ),
+            'changes_en' => array(
+                '🌐 Full sweep for Chinese punctuation leaking into English: new audit script scripts/cjk-punct-audit.js finds CJK punctuation (「」：、（）！？，。——) inside template literals that is not wrapped in t(); 166 hits, 156 lines auto-rewritten across 21 files (colons, brackets, title quotes, exclamation marks and enumeration commas in requests, quests, trials, council, weather, daily news, caravans, farm, industry and the Records tab), so English mode no longer shows fullwidth punctuation; Chinese output unchanged. The remaining 10 (AI prompts and visitor names) form the baseline; any new hit fails the audit',
+                '🔧 Visitor names keep the original "Name（home town）" form (names are data, not translated); the login-reward and caravan-quote "N days" wording is unchanged for now',
+            ),
+        ),
         array(
             'version' => '6.22.2',
             'date'    => '2026-10-15',

@@ -325,7 +325,7 @@ class World {
         pc.active = { id: 'pc' + Date.now(), mode: 'buy', toTownId: opt.toTownId, toTownName: opt.toTownName, toTheme: opt.toTheme, res, amount, cost: q.cost, guardId: guard?.agentId || null, guardName: guard?.name || '',
             route: opt.route === 'mountain' ? 'mountain' : 'road', departAbsDay: this._absDay(), returnAbsDay: this._absDay() + q.days, quote: q };
         const label = (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[res]?.name) ? SHOP_ITEMS[res].name() : res;
-        this.logMessage('trade', `🧺 ${t('你的商隊帶著 {n} 銀幣去{town}採買 {amt} {res}').replace('{n}', q.cost).replace('{town}', t(opt.toTownName)).replace('{amt}', amount).replace('{res}', label)}${guard ? `（${guard.name}${t('押車')}）` : ''}`);
+        this.logMessage('trade', `🧺 ${t('你的商隊帶著 {n} 銀幣去{town}採買 {amt} {res}').replace('{n}', q.cost).replace('{town}', t(opt.toTownName)).replace('{amt}', amount).replace('{res}', label)}${guard ? `${t('（')}${guard.name}${t('押車')}${t('）')}` : ''}`);
         this.events?.conversationTopics?.push(t('旅人派商隊去{town}採買').replace('{town}', t(opt.toTownName)));
         try { this.requests?.onCaravanLaunch?.(this); } catch (e) {}
         return { ok: true, msg: `${t('商隊出發，預計')} ${q.days} ${t('天後回報')}`, cost: q.cost };
@@ -348,7 +348,7 @@ class World {
         pc.active = { id: 'pc' + Date.now(), toTownId: opt.toTownId, toTownName: opt.toTownName, toTheme: opt.toTheme, res, amount, guardId: guard?.agentId || null, guardName: guard?.name || '',
             route: opt.route === 'mountain' ? 'mountain' : 'road', departAbsDay: this._absDay(), returnAbsDay: this._absDay() + q.days, quote: q };
         const label = (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[res]?.name) ? SHOP_ITEMS[res].name() : res;
-        this.logMessage('trade', `🐪 ${t('你的商隊出發了：')}${amount} ${label} → ${t(opt.toTownName)}${guard ? `（${guard.name}${t('押車')}）` : ''}`);
+        this.logMessage('trade', `🐪 ${t('你的商隊出發了：')}${amount} ${label} → ${t(opt.toTownName)}${guard ? `${t('（')}${guard.name}${t('押車')}${t('）')}` : ''}`);
         this.events?.conversationTopics?.push(`${t('旅人押了一隊商隊去')}${t(opt.toTownName)}`);
         try { this.requests?.onCaravanLaunch?.(this); } catch (e) {} // v5.97.0 委託:押商隊
         return { ok: true, msg: `${t('商隊出發，預計')} ${q.days} ${t('天後回報')}` };
@@ -367,14 +367,14 @@ class World {
             silver = Math.round((a.amount - lost) * (q.base / a.amount) * 1.2);
             if (a.guardId) pc.pendingInjury = a.guardId;
         } else silver = q.value;
-        if (silver > 0) this.stockpile.add('silver', silver, this.tickCount, `${t('商隊回報')}：${t(a.toTownName)}`, 'player');
+        if (silver > 0) this.stockpile.add('silver', silver, this.tickCount, `${t('商隊回報')}${t('：')}${t(a.toTownName)}`, 'player');
         const result = { ...a, raided, lost, silver, resolvedAbsDay: this._absDay() };
         this.growth?.addXp(raided ? 5 : 15, 'caravan', this); // v5.94.0 經驗
         pc.history = (pc.history || []).concat([result]).slice(-10); pc.active = null;
         pc.totals = pc.totals || { runs: 0, silver: 0, raids: 0 }; pc.totals.runs++; pc.totals.silver += silver; if (raided) pc.totals.raids++; // v5.98.0 季末回顧用的累計
         const line = raided
             ? `${t('你的商隊在去')}${t(a.toTownName)}${t('的路上遇劫，損失')} ${lost} ${label}${silver ? `${t('，剩下的賣了')} ${silver} ${t('銀幣')}` : ''}${a.guardName ? `${t('；')}${a.guardName}${t('受了傷')}` : ''}`
-            : `${t('你的商隊從')}${t(a.toTownName)}${t('回來了：')}${a.amount} ${label} ${t('賣了')} ${silver} ${t('銀幣')}（+${Math.round(q.margin * 100)}%）`;
+            : `${t('你的商隊從')}${t(a.toTownName)}${t('回來了：')}${a.amount} ${label} ${t('賣了')} ${silver} ${t('銀幣')}${t('（')}+${Math.round(q.margin * 100)}%${t('）')}`;
         this.logMessage('trade', `${raided ? '🏴' : '💰'} ${line}`);
         this.dailyNews?.collectEvent?.('economy', line, raided ? 9 : 7, a.guardName ? [a.guardName] : []);
         this.events?.conversationTopics?.push(raided ? t('旅人的商隊遇劫了') : t('旅人的商隊賺了一筆'));
@@ -520,7 +520,7 @@ class World {
         this.movedOut = this.movedOut || [];
         this.movedOut.push({ id: agentId, name: agent.name, toTownName: t('外地'), partnerName: '', reason, absDay: this._absDay() });
         if (this.movedOut.length > 20) this.movedOut = this.movedOut.slice(-20);
-        const line = `${agent.name}${t('收拾行李離開了鎮上')}${reason ? `（${reason}）` : ''}${t('。')}`;
+        const line = `${agent.name}${t('收拾行李離開了鎮上')}${reason ? `${t('（')}${reason}${t('）')}` : ''}${t('。')}`;
         this.logMessageT('departure', '🧳 {line}', { line });
         Object.values(this.agents).forEach(o => { if (!o.isPlayer) o.memory?.add?.(this.tickCount, this.clock.timeStr, 'departure', line, 7, [agent.name]); });
         this.events?.conversationTopics?.push(`${agent.name}${t('離開鎮上了')}`);
