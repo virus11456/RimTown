@@ -5280,6 +5280,10 @@ const I18N = (() => {
         '鎮上商店': 'town shop',
         '身上': 'you have',
         '押一隊商隊去鄰鎮賣貨或採買': 'Send a caravan to sell or buy in a neighboring town',
+        // v6.22.0 B23 考驗失敗文案變體
+        '搬走了，全鎮士氣低落': ' moved away; town morale is low',
+        '繁榮 −10、全鎮士氣低落': 'prosperity −10, town morale is low',
+        '全鎮士氣低落': 'town morale is low',
         // v6.21.0 今日目標模板 key
         '{h}:00 起床,展開新的一天': '{h}:00 Get up and start the day',
         '{h}:00 到{loc}上工,做{job}的活{flavor}': '{h}:00 Head to {loc} and work as {job}{flavor}',

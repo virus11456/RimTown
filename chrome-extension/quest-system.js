@@ -2697,7 +2697,10 @@ const TRIAL_TYPES = {
     pricewar: { icon: '📉', title: '商會壓價', perk: 'guildSeal', perkName: '商會印信', perkDesc: '押商隊利潤 +10%', weights: { market: 3, harbor: 3, forest: 1, frontier: 1, mountain: 1 } },
 };
 class SeasonTrials {
-    constructor() { this.current = null; this.failStreak = 0; this.passStreak = 0; this.history = []; this.lastType = null; } // v6.13.0 passStreak:衰敗後連續撐過兩季就復興
+    constructor() { this.current = null; this.failStreak = 0; this.passStreak = 0; this.history = []; this.lastType = null; this.penalty = 0; } // v6.13.0 passStreak:衰敗後連續撐過兩季就復興;v6.22.0 penalty:考驗失敗累計扣的繁榮(有底)
+    static PENALTY_FLOOR = -20; // v6.22.0 B23:連續失敗的繁榮扣分最多累計 −20(之前每季 −10 無底,idle 四季就把繁榮扣到 0,回來玩也補不回來)
+    static POP_FLOOR = 8;       // v6.22.0 B23:人口剩 8 人就不再有人搬走
+    static DECLINED_LEAVERS = 1; // v6.22.0 B23:已經衰敗後每季最多再走 1 人(之前照 12% 走,60 天 idle 25→14)
     _npcs(w) { return Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_')); }
     _seasonKey(w) { return `${w.clock.year}-${w.clock.season}`; }
     _flags(w) { return w.harborFlags || (w.harborFlags = {}); }
@@ -2765,19 +2768,25 @@ class SeasonTrials {
             if (c.type === 'plague') Object.values(world.agents).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) + 10; });
             Object.values(world.agents).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) + 5; });
             if (world.questSystem) world.questSystem.reputation = (world.questSystem.reputation || 0) + 10;
-            if (world.prosperity) world.prosperity.questBonus = (world.prosperity.questBonus || 0) + 5;
+            const back = Math.min(10, -(this.penalty || 0)); this.penalty = (this.penalty || 0) + back; // v6.22.0 撐過一季:先補回最多 10 的考驗扣分,再 +5
+            if (world.prosperity) { world.prosperity.questBonus = (world.prosperity.questBonus || 0) + 5 + back; world.prosperity.recalcTotal?.(); }
             const text = `${t('撐過了')}「${t(d.title)}」${t('的考驗！全鎮得到')}「${t(d.perkName)}」：${t(d.perkDesc)}`;
             world.logMessage?.('event', `🏅 ${text}`); world.dailyNews?.collectEvent?.('event', text, 10);
             world.onTrialEvent?.('passed', `🏅 ${t('考驗通過')}：${t(d.title)}`, `${t(d.perkName)} — ${t(d.perkDesc)}`);
             if (world.multiEnding?.endingTriggered === 'decline' && this.passStreak >= 2) world.multiEnding.revive?.(world); // v6.13.0 復興
         } else {
             this.failStreak++; this.passStreak = 0;
-            const leavers = this._npcs(world).filter(a => a.job?.key !== 'mayor' && !(a.relationships?.relationships?.player?.status === 'married')).sort((a, b) => (a.mood || 50) - (b.mood || 50)).slice(0, Math.min(Math.max(1, Math.round(this._npcs(world).length * 0.12)), Math.max(1, 2 + (this.failStreak >= 2 ? 1 : 0) - (world.growth?.has('grit') ? 1 : 0)))); // v5.94.0 天賦:硬頸;v6.2.0 小鎮最多走 12%
+            const declinedNow = world.multiEnding?.endingTriggered === 'decline'; const popNow = this._npcs(world).length; // v6.22.0 B23
+            const maxLeave = popNow <= SeasonTrials.POP_FLOOR ? 0 : declinedNow ? SeasonTrials.DECLINED_LEAVERS : Math.min(Math.max(1, Math.round(popNow * 0.12)), Math.max(1, 2 + (this.failStreak >= 2 ? 1 : 0) - (world.growth?.has('grit') ? 1 : 0))); // v5.94.0 天賦:硬頸;v6.2.0 小鎮最多走 12%;v6.22.0 人口下限 8、衰敗後每季最多 1 人
+            const leavers = this._npcs(world).filter(a => a.job?.key !== 'mayor' && !(a.relationships?.relationships?.player?.status === 'married')).sort((a, b) => (a.mood || 50) - (b.mood || 50)).slice(0, Math.min(maxLeave, popNow - SeasonTrials.POP_FLOOR));
             const names = leavers.map(a => a.name);
             leavers.forEach(a => world.leaveTown?.(a.agentId, t('鎮上的日子過不下去')));
             Object.values(world.agents).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) - 10; });
-            if (world.prosperity) world.prosperity.questBonus = (world.prosperity.questBonus || 0) - 10;
-            const text = `${t('沒撐過')}「${t(d.title)}」${t('的考驗：')}${names.join('、')}${t('搬走了，繁榮 −10、全鎮士氣低落')}`;
+            const cut = Math.max(SeasonTrials.PENALTY_FLOOR - (this.penalty || 0), -10); this.penalty = (this.penalty || 0) + cut; // v6.22.0 扣分有底:累計最多 −20
+            if (world.prosperity && cut < 0) { world.prosperity.questBonus = (world.prosperity.questBonus || 0) + cut; world.prosperity.recalcTotal?.(); }
+            const text = names.length
+                ? `${t('沒撐過')}「${t(d.title)}」${t('的考驗：')}${names.join('、')}${cut < 0 ? t('搬走了，繁榮 −10、全鎮士氣低落') : t('搬走了，全鎮士氣低落')}`
+                : `${t('沒撐過')}「${t(d.title)}」${t('的考驗：')}${cut < 0 ? t('繁榮 −10、全鎮士氣低落') : t('全鎮士氣低落')}`;
             world.logMessage?.('event', `💔 ${text}`); world.dailyNews?.collectEvent?.('event', text, 10, names);
             world.onTrialEvent?.('failed', `💔 ${t('考驗失敗')}：${t(d.title)}`, text);
             if (this.failStreak >= 2) world.multiEnding?.triggerDecline?.(world);
@@ -2796,8 +2805,8 @@ class SeasonTrials {
             nextAnnounceDay: c ? null : 5,
         };
     }
-    serialize() { return { current: this.current, failStreak: this.failStreak, passStreak: this.passStreak || 0, history: this.history, lastType: this.lastType, lastSeasonKey: this.lastSeasonKey || null, }; }
-    loadFrom(d) { if (!d) return; this.current = d.current || null; this.failStreak = d.failStreak || 0; this.passStreak = d.passStreak || 0; this.history = Array.isArray(d.history) ? d.history : []; this.lastType = d.lastType || null; this.lastSeasonKey = d.lastSeasonKey || null; }
+    serialize() { return { current: this.current, failStreak: this.failStreak, passStreak: this.passStreak || 0, penalty: this.penalty || 0, history: this.history, lastType: this.lastType, lastSeasonKey: this.lastSeasonKey || null, }; }
+    loadFrom(d) { if (!d) return; this.current = d.current || null; this.failStreak = d.failStreak || 0; this.passStreak = d.passStreak || 0; this.penalty = d.penalty || 0; this.history = Array.isArray(d.history) ? d.history : []; this.lastType = d.lastType || null; this.lastSeasonKey = d.lastSeasonKey || null; }
 }
 
 

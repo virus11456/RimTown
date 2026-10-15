@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.21.0
+ * Version: 6.22.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.21.0');
+define('RIMTOWN_VERSION', '6.22.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.22.0',
+            'date'    => '2026-10-15',
+            'changes' => array(
+                '⚖️ B23 考驗失敗的節奏：繁榮扣分累計有底（最多 −20；之前每季 −10 無底，只看不玩四季就把繁榮扣到 0，回來玩也補不回來）、撐過一季先補回最多 10 再 +5、衰敗後每季最多再走 1 人、人口剩 8 人就不再有人搬走；「不做有後果」維持（第二季仍會衰敗），但回來玩補得回來。實測 60 天只看不玩：邊境鎮人口 25→18（之前 →14）、繁榮 29（之前 0）；海風鎮 20→15（之前 →11）、繁榮 21（之前 0）',
+                '🧪 新增回歸測試 scripts/trial_pacing_test.js（連續六次失敗的扣分與搬走人數、人口下限、撐過補回、復興、存讀檔）',
+            ),
+            'changes_en' => array(
+                '⚖️ B23 pacing of failed trials: the prosperity penalty now has a floor (−20 in total; it used to be −10 per season with no floor, so four idle seasons pinned prosperity at 0 and coming back could not recover it), surviving a season first refunds up to 10 then adds 5, at most one villager leaves per season once the town has declined, and nobody leaves once the population is down to 8. "Doing nothing has consequences" stays (the town still declines in season two), but it is recoverable. Measured over 60 idle days: Frontier Town 25 → 18 villagers (was 14) with prosperity 29 (was 0); Seabreeze 20 → 15 (was 11) with prosperity 21 (was 0)',
+                '🧪 New regression test scripts/trial_pacing_test.js (penalty and leavers over six straight failures, population floor, refund on passing, revival, save & load)',
+            ),
+        ),
         array(
             'version' => '6.21.0',
             'date'    => '2026-10-15',

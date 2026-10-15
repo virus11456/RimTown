@@ -104,7 +104,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 - B20 ~~際遇卡死碼~~ v5.82.0 已移除，舊檔欄位忽略。
 - B21 ~~手機角落通知仍會蓋住分頁底部內容~~ v6.12.0 上限兩張、早安卡 22 秒收起；v6.13.0 長文通知在手機先夾兩行、點一下展開。
 - B22 ~~後期銀幣沒有去處~~ v6.14.0 加兩個去處：在建工程「捐 40 趕工」（進度 +20%、每工程每天一次）與「捐給鎮公所 100」（繁榮 +1、全鎮心情 +2、聲望 +2、每天三次）；v6.15.0 再加「贊助節慶 150」（節慶前夕到結束一次：籌備 +50／心情 ×1.5／好感機率提高、聲望 +10、繁榮 +3）；v6.16.0 再加「向鄰鎮採買」（押商隊彈窗切到採買：帶銀幣買對方盛產的貨，基礎價 ×1.4，2 天運回，同樣遇劫風險）。三個候選都做完了。
-- B23 純觀察（idle）玩家的衰敗節奏：60 天不玩人口 25→17、第二到三季就衰敗（v6.13.0 起連撐兩季可復興）；設計上是「不做有後果」，但要看玩測回饋決定要不要把 idle 的考驗目標再放寬。
+- B23 純觀察（idle）玩家的衰敗節奏：v6.21.0 實測 60 天 idle（邊境／海風／市集）四季考驗全失敗（糧荒／瘟疫／壓價只算玩家親手帶進，idle 恆為 0）、第二季衰敗、繁榮扣到 0、人口 25→14／20→11／15→10；casual 四季過兩季。v6.22.0 調整：考驗失敗的繁榮扣分累計有底（最多 −20，撐過一季先補回 10 再 +5）、衰敗後每季最多再走 1 人、人口 8 人以下不再有人搬走；「不做有後果」維持，但回來玩補得回來。
 - B24 效能量測（v6.13.0，Chromium 桌機／手機視口）：60 天後 world.tick 0.1ms、getState 0.9–1.3ms、render 0.4–1.4ms、存檔 1.6MB／getState 0.7MB；目前不是瓶頸，存檔體積靠 B12 的上限壓著。
 - B25 LLM 提示詞中文本體（B2）維持：英文模式靠英文規則行與系統指示，走流程英文截圖的對話與判定文案正常，不另寫英文提示詞。
 
@@ -236,7 +236,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.21.0.zip` from Releases
+1. Download `rimtown-v6.22.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -271,6 +271,7 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 # 選跑:node scripts/sponsor_test.js  # v6.15.0 贊助節慶(窗口、前夕/節慶中效果、只能一次、節慶日 ×1.5、存讀檔、按鈕、早安卡;有斷言,失敗 exit 1)
 # 選跑:node scripts/purchase_test.js # v6.16.0 向鄰鎮採買(報價、拒絕、扣款、存讀檔、運回/遇劫、戰績、彈窗;有斷言,失敗 exit 1)
 # 選跑:node scripts/memory_i18n_test.js # v6.17.0 記憶模板化(中英切換渲染、舊式記憶、存讀檔、舊存檔、效能;有斷言,失敗 exit 1)
+# 選跑:node scripts/trial_pacing_test.js # v6.22.0 B23 考驗失敗節奏(扣分有底、衰敗後搬走放緩、人口下限、撐過補回、復興、存讀檔;有斷言,失敗 exit 1)
 # 選跑:node scripts/growth2_test.js ; node scripts/revival_test.js   # v6.12.0/v6.13.0 旅人後期成長(天賦學完→屬性、最後一個天賦邊界、舊檔遷移)與小鎮復興(衰敗→連撐兩季→中央卡/回顧/存讀檔)
 # 選跑:node scripts/walkthrough.js <zh|en> <desktop|mobile> <outdir>   # v6.11.0 新手走一遍:用 app 自己的迴圈真跑一季、關鍵時刻截圖,看圖抓版面/文案問題
 # 選跑:node scripts/soak_test.js [url] [days] [theme] [mode]   # mode=full|casual|idle(v6.2.0 平衡矩陣用);核心玩法迴圈浸泡:真 tick 跑 35 天、每天像玩家做委託/商隊/對話/天賦、每 10 天存檔讀檔接著跑(v5.96.0 起;改核心迴圈必跑五主題)
@@ -285,6 +286,10 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.22.0 (2026-10-15)
+- ⚖️ B23 考驗失敗的節奏：繁榮扣分累計有底（最多 −20；之前每季 −10 無底，只看不玩四季就把繁榮扣到 0，回來玩也補不回來）、撐過一季先補回最多 10 再 +5、衰敗後每季最多再走 1 人、人口剩 8 人就不再有人搬走；「不做有後果」維持（第二季仍會衰敗），但回來玩補得回來。實測 60 天只看不玩：邊境鎮人口 25→18（之前 →14）、繁榮 29（之前 0）；海風鎮 20→15（之前 →11）、繁榮 21（之前 0）
+- 🧪 新增回歸測試 scripts/trial_pacing_test.js（連續六次失敗的扣分與搬走人數、人口下限、撐過補回、復興、存讀檔）
 
 ### v6.21.0 (2026-10-15)
 - 🌐 B1 第五步：村民「今日目標」（起床／上工／逛節慶／約伴侶吃飯／避開仇人／為夢想努力／晚間安排／睡覺）改成模板存檔，資訊卡與手機小卡依當下語言顯示；上工地點改用顯示名（之前中文裡會出現「到town hall上工」）；AI 分解式行程與提示詞仍用建立當下的文字
