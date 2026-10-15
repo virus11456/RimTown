@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.22.3
-const RIMTOWN_APP_VERSION = '6.22.3';
+// RimTown - Frontend App (WordPress Plugin) v6.22.4
+const RIMTOWN_APP_VERSION = '6.22.4';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1726,6 +1726,7 @@ class RimTownApp {
         const loop = () => {
             // Update quest guidance banner every ~300 frames (~5 seconds)
             if (++_guidanceFrameCount % 300 === 0) this._updateQuestGuidance();
+            if (_guidanceFrameCount % 60 === 0) { try { this._updateRequestBadge?.(); } catch (e) {} } // v6.22.4 委託徽章與早安卡每秒自己檢查,不再綁在 5 秒一次且會提早 return 的引導橫幅更新裡(換日後早安卡最慢 1 秒出現)
             if (this.tileMap && this._mapGenerated) {
                 if (_renderLogCount < 3) {
                     const parent = this.tileMap.canvas?.parentElement;

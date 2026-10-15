@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.22.3
+ * Version: 6.22.4
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.22.3');
+define('RIMTOWN_VERSION', '6.22.4');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1319,6 +1319,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.22.4',
+            'date'    => '2026-10-15',
+            'changes' => array(
+                '🐛 早安卡與委託徽章改由渲染迴圈每秒自己檢查：之前只掛在「任務引導橫幅」每 5 秒一次的更新裡，而那個更新遇到引導卡期間／橫幅隱藏就提早結束，換日後早安卡最慢要等 5 秒、手機中文走流程（礦山鎮）截到第 5 天的卡一路停到第 7 天都沒換；現在換日後最慢 1 秒出新卡（礦山鎮手機走流程第 6／7／9／11 天逐日對上）',
+                '🧪 手機中文走流程（礦山鎮一季 37 張截圖）其餘版面與文案無問題',
+            ),
+            'changes_en' => array(
+                '🐛 The morning card and request badge now refresh from the render loop once a second: they used to piggyback on the quest-guidance banner update, which runs every 5 seconds and returns early while the first-day guide is up or the banner is hidden, so after a day change the morning card could lag 5 seconds and the Chinese mobile walkthrough (Mine Ridge) caught the day-5 card still showing on day 7; now a new card appears within a second (mobile walkthrough days 6 / 7 / 9 / 11 each show their own card)',
+                '🧪 Chinese mobile walkthrough (Mine Ridge, one season, 37 screenshots): no other layout or copy issues',
+            ),
+        ),
         array(
             'version' => '6.22.3',
             'date'    => '2026-10-15',

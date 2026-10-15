@@ -236,7 +236,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.22.3.zip` from Releases
+1. Download `rimtown-v6.22.4.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -287,6 +287,10 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.22.4 (2026-10-15)
+- 🐛 早安卡與委託徽章改由渲染迴圈每秒自己檢查：之前只掛在「任務引導橫幅」每 5 秒一次的更新裡，而那個更新遇到引導卡期間／橫幅隱藏就提早結束，換日後早安卡最慢要等 5 秒、手機中文走流程（礦山鎮）截到第 5 天的卡一路停到第 7 天都沒換；現在換日後最慢 1 秒出新卡（礦山鎮手機走流程第 6／7／9／11 天逐日對上）
+- 🧪 手機中文走流程（礦山鎮一季 37 張截圖）其餘版面與文案無問題
 
 ### v6.22.3 (2026-10-15)
 - 🌐 英文標點全面掃描：寫了稽核腳本 `scripts/cjk-punct-audit.js`，找出模板字串裡沒包進 t() 的 CJK 標點（「」：、（）！？，。——）共 166 處，自動改寫 156 行（21 個檔案：委託／任務／考驗／議會／天氣／日報／商隊／農田／產業／記錄分頁等的冒號、括號、書名號、驚嘆號、頓號），英文模式不再露出全形標點；中文顯示不變。剩 10 處是 AI 提示詞與訪客村民名字，列為基準，新增就失敗
