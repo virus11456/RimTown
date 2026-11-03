@@ -870,9 +870,48 @@ Object.assign(RimTownApp.prototype, {
     // =====================================================
     // SETTINGS TAB (consolidated AI + Account + Game settings)
     // =====================================================
-    // v6.25.0 提案分頁(v6.26 村民主動提案系統在此落地)
+    // v6.26.0 提案分頁:待決定／擱置中／進行中／已定案
     renderProposals(container) {
-        container.innerHTML = `<div class="ob-empty"><span class="ob-empty-icon">📜</span><b>${t('村民的提案會出現在這裡')}</b>${t('村民會依性格、職業與小鎮近況主動提出提案，大家投票，由你批准、否決或擱置；三天沒處理就依票數自動定案。')}<br><span style="color:var(--text-muted)">${t('提案系統將於 v6.26 上線。')}</span></div>`;
+        const d = this.state?.proposals;
+        const esc = (x) => this._escapeHtml(String(x ?? ''));
+        if (!d) { container.innerHTML = `<div class="ob-empty"><span class="ob-empty-icon">📜</span><b>${t('村民的提案會出現在這裡')}</b>${t('村民會依性格、職業與小鎮近況主動提出提案，大家投票，由你批准、否決或擱置；三天沒處理就依票數自動定案。')}</div>`; return; }
+        const resLabel = (r) => this._resLabel ? this._resLabel(r) : r;
+        const costText = (c) => Object.entries(c || {}).map(([r, n]) => `${resLabel(r)} ${n}`).join(t('、'));
+        const avatar = (id) => { const a = this.state.agents?.[id]; if (!a) return ''; let url = ''; try { if (this.tileMap?.renderAvatarDataURL) url = this.tileMap.renderAvatarDataURL(a.job?.key || a.jobKey, a.gender, a.name, this.world?.agents?.[id]?.look || null); } catch (e) {} return `<div class="pp-avatar">${url ? `<img src="${url}" alt="">` : '👤'}</div>`; };
+        const card = (p, mode) => {
+            const total = p.forCount + p.againstCount; const pct = total ? Math.round(p.forCount / total * 100) : 0;
+            const st = { open: t('待決定'), shelved: t('擱置中'), approved: t('進行中'), done: t('已完成'), failed: t('失敗'), rejected: t('已否決'), expired: t('已收回') }[p.status] || p.status;
+            let html = `<div class="pp-card pp-${p.status}" data-pid="${p.id}">
+                <div class="pp-head"><span class="pp-id">${esc(p.id)}</span><span class="pp-kind">${p.icon} ${esc(p.kindLabel)}</span><span class="pp-status">${st}</span></div>
+                <div class="pp-title">${esc(p.title)}</div>
+                <div class="pp-by">${avatar(p.proposerId)}<span><b>${esc(t(p.proposerName))}</b> <small>${esc(p.proposerJob)}</small></span></div>
+                <div class="pp-desc">${esc(p.pitch || p.desc)}</div>`;
+            if (p.cost && Object.keys(p.cost).length) html += `<div class="pp-cost ${p.affordable ? '' : 'short'}">💰 ${t('需要')}${t('：')}${esc(costText(p.cost))}${p.affordable ? '' : ` · ${t('公庫目前不夠')}`}</div>`;
+            html += `<div class="pp-votes" title="${esc(t('贊成：') + (p.forNames || []).map(n => t(n)).join(t('、')))}&#10;${esc(t('反對：') + (p.againstNames || []).map(n => t(n)).join(t('、')))}"><span class="pp-for">👍 ${p.forCount}</span><i><b style="width:${pct}%"></b></i><span class="pp-against">👎 ${p.againstCount}</span></div>`;
+            if (mode === 'decide') {
+                html += `<div class="pp-deadline">${p.status === 'open' ? t('還有 {n} 天沒處理就依票數自動定案').replace('{n}', p.daysLeft) : t('擱置中，{n} 天後提案人會收回').replace('{n}', p.daysLeft)}</div>
+                <div class="pp-actions">
+                    <button class="pp-btn approve" data-action="proposal-decide" data-val="${p.id}:approve">✅ ${t('批准')}</button>
+                    <button class="pp-btn reject" data-action="proposal-decide" data-val="${p.id}:reject">❌ ${t('否決')}</button>
+                    ${p.status === 'open' ? `<button class="pp-btn shelve" data-action="proposal-decide" data-val="${p.id}:shelve">📥 ${t('擱置')}</button>` : ''}
+                </div>`;
+            } else if (p.status === 'approved') {
+                html += `<div class="pp-deadline">${p.affordable ? t('已批准，等待執行') : t('已批准，等公庫湊齊資源（{n}/7 天）').replace('{n}', p.waitDays)}</div>`;
+            } else if (p.result) {
+                html += `<div class="pp-result">${esc(p.result)}${p.decidedBy === 'auto' ? ` · ${t('依票數自動定案')}` : ''}</div>`;
+            }
+            return html + '</div>';
+        };
+        let html = `<div class="proposals-panel">`;
+        html += `<div class="pp-summary">${t('提出')} ${d.stats.made} · ${t('批准')} ${d.stats.approved} · ${t('否決')} ${d.stats.rejected} · ${t('完成')} ${d.stats.done}</div>`;
+        html += `<h4 class="pp-h">📬 ${t('待你決定')} <span class="pp-count">${d.open.length}</span></h4>`;
+        if (!d.open.length) html += `<div class="ob-empty" style="margin:10px 4px"><span class="ob-empty-icon">☕</span>${t('現在沒有待決定的提案。村民會依鎮上的情況陸續提出，通常每天一兩件。')}</div>`;
+        else d.open.forEach(p => { html += card(p, 'decide'); });
+        if (d.shelved.length) { html += `<h4 class="pp-h">📥 ${t('擱置中')} <span class="pp-count">${d.shelved.length}</span></h4>`; d.shelved.forEach(p => { html += card(p, 'decide'); }); }
+        if (d.active.length) { html += `<h4 class="pp-h">🔨 ${t('進行中')}</h4>`; d.active.forEach(p => { html += card(p, 'view'); }); }
+        if (d.history.length) { html += `<h4 class="pp-h">📚 ${t('已定案')}</h4>`; d.history.forEach(p => { html += card(p, 'view'); }); }
+        html += '</div>';
+        container.innerHTML = html;
     },
 
     renderSettings(container) {

@@ -203,7 +203,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 | v6.23.0 | 3D 底層：three.js 入庫、`town3d.js`（繼承 `PixelTileMap`，只換畫面層）、地形／植物／程序化建築／主題道具／相機／HTML 標籤層／日夜光照、方塊小人初版、隱藏開關、設計系統文件 | ✅ 上線 |
 | v6.24.0 | 3D 村民細修（look 對應、動作、表情）、天氣粒子、節慶／墓園／探索標記、農田與工廠標示、低畫質模式 | ✅ 上線 |
 | v6.25.0 | 去主角＋新觀察者 UI 殼：玩家不在地圖上；移除委託板／行動點／意圖判定／押商隊／旅人成長；聊天改面板純聊天；新 HUD（左上城鎮卡、上方控制列、右側動態面板：動態／村民／提案／日報）；舊檔相容 | ✅ 上線 |
-| v6.26.0 | 村民主動提案：規則式提案生成（性格／職業／鎮況）、村民投票、鎮長批准／否決／擱置（三天自動定案）、執行與結算、L 編號列表、日報報導、AI 文案 | 待做 |
+| v6.26.0 | 村民主動提案：規則式提案生成（性格／職業／鎮況）、村民投票、鎮長批准／否決／擱置（三天自動定案）、執行與結算、L 編號列表、日報報導、AI 文案 | ✅ 上線 |
 | v6.27.0 | 手機與效能收尾、觸控手勢、走流程 QA 腳本改 3D、移除 2D tilemap.js | 待做 |
 
 設計規格在 `design-system/rimtown-3d/MASTER.md`。3D 版開法：設定「小鎮畫面」或網址 `?r=3d`。
@@ -252,7 +252,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.25.0.zip` from Releases
+1. Download `rimtown-v6.26.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -278,6 +278,7 @@ node scripts/refusal_test.js   # /api/chat 拒絕扮演偵測與退回(v5.67.2 �
 node scripts/scrub_test.js     # 存檔深度清理 AI 助理漏出內容(v5.67.4 起)
 node scripts/invite_test.js    # 推薦碼註冊與管理(v5.68.0 起)
 node scripts/lang_test.js      # /api/chat 對話語言:lang=en 英文系統指示/不轉繁體(v5.73.0 起)
+node scripts/proposal_test.js  # 村民主動提案:生成/投票/批准執行/自動定案/存檔往返(v6.26.0 起;需本機 8126 服務 wordpress/)
 node scripts/gen-changelog.js   # 從 rimtown.php 產生首頁更新紀錄 changelog.js(v5.68.0 起改版必跑);v5.74.0 起每版必須同時有 changes 與 changes_en,缺英文會失敗
 node scripts/i18n-audit.js     # i18n 重複鍵=0、新 t('…') 字串必須有英文(v5.81.0 起)
 node scripts/cjk-punct-audit.js # 模板字串裡沒包 t() 的 CJK 標點,基準 10(AI 提示詞與訪客名),新增就失敗;--list 列全部(v6.22.3 起)
@@ -303,6 +304,13 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.26.0 (2026-11-04)
+- 📜 村民主動提案（新檔 sim-proposals.js，掛在 world.proposals）：村民依性格、職業與小鎮近況提出 L 編號提案，每天一兩件、最多四件待決——蓋建築（守衛想蓋瞭望塔、農夫想蓋穀倉、缺糧時穀倉加權）、開工廠、政令（沿用議會提案表）、贊助節慶、選產業（遊戲在等人選產業時由村民提）、組隊探險、全鎮宴席（糧多心情低）、救濟金（有人心情很差）、考驗對策（糧荒加班下田／瘟疫採藥隊／壓價聯合定價／匪患夜巡）
+- 🗳️ 全鎮投票當參考：每位村民依價值觀、性格、職業、跟提案人的交情與公庫夠不夠投贊成或反對；你在「提案」分頁批准／否決／擱置，三天沒處理就依票數自動定案；擱置十天提案人會收回；批准後公庫不夠就等，等滿七天作罷
+- 🏁 批准即執行並結算：建設動工、工廠動工、政令生效 20 天、贊助節慶、產業開張、探險隊出發、宴席（全鎮心情 +6、關係拉近）、救濟（當事人心情 +15、感激提案人）、考驗對策（政令或補給）；提案人與投贊成的人心情會跟著漲跌，記憶、日誌與 AI 日報都會寫；聲望 +2
+- 🗣️ AI 文案：提案出現時用提案人的口吻生成一兩句自白（每天最多 4 次，失敗就用規則版說明）；角落通知、提案分頁徽章、早安卡「待你決定的提案 N 件」
+- 🧪 新增 scripts/proposal_test.js（生成／投票／批准執行／否決／擱置／自動定案／資源不足作罷／擱置收回／存檔往返／英文標題）
 
 ### v6.25.0 (2026-11-04)
 - 👁️ 觀察者沙盒：主角旅人不再出現在地圖上，遊戲變成純粹看 AI 村民自己過日子的小鎮。委託板、行動點、意圖判定（成功率）、押商隊、旅人成長（經驗／等級／天賦）、心動事件、調情／告白／送禮／耳語／助夢、參選鎮長、搖桿與鍵盤移動、第一天任務卡、今日焦點與昨日回響全部移除；舊存檔照常讀取（玩家物件仍隱藏保留，聊天紀錄與成就掛在上面）

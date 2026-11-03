@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.25.0
+ * Version: 6.26.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.25.0');
+define('RIMTOWN_VERSION', '6.26.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -874,6 +874,7 @@ function rimtown_enqueue_assets() {
         RIMTOWN_VERSION,
         true
     );
+    wp_enqueue_script('rimtown-sim-proposals', RIMTOWN_URL . 'sim-proposals.js', array('rimtown-sim-society'), RIMTOWN_VERSION, true); // v6.26.0 村民提案
     wp_enqueue_script(
         'rimtown-simulation',
         RIMTOWN_URL . 'simulation.js',
@@ -1327,6 +1328,24 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.26.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '📜 村民主動提案（新檔 sim-proposals.js，掛在 world.proposals）：村民依性格、職業與小鎮近況提出 L 編號提案，每天一兩件、最多四件待決——蓋建築（守衛想蓋瞭望塔、農夫想蓋穀倉、缺糧時穀倉加權）、開工廠、政令（沿用議會提案表）、贊助節慶、選產業（遊戲在等人選產業時由村民提）、組隊探險、全鎮宴席（糧多心情低）、救濟金（有人心情很差）、考驗對策（糧荒加班下田／瘟疫採藥隊／壓價聯合定價／匪患夜巡）',
+                '🗳️ 全鎮投票當參考：每位村民依價值觀、性格、職業、跟提案人的交情與公庫夠不夠投贊成或反對；你在「提案」分頁批准／否決／擱置，三天沒處理就依票數自動定案；擱置十天提案人會收回；批准後公庫不夠就等，等滿七天作罷',
+                '🏁 批准即執行並結算：建設動工、工廠動工、政令生效 20 天、贊助節慶、產業開張、探險隊出發、宴席（全鎮心情 +6、關係拉近）、救濟（當事人心情 +15、感激提案人）、考驗對策（政令或補給）；提案人與投贊成的人心情會跟著漲跌，記憶、日誌與 AI 日報都會寫；聲望 +2',
+                '🗣️ AI 文案：提案出現時用提案人的口吻生成一兩句自白（每天最多 4 次，失敗就用規則版說明）；角落通知、提案分頁徽章、早安卡「待你決定的提案 N 件」',
+                '🧪 新增 scripts/proposal_test.js（生成／投票／批准執行／否決／擱置／自動定案／資源不足作罷／擱置收回／存檔往返／英文標題）',
+            ),
+            'changes_en' => array(
+                '📜 Villager proposals (new sim-proposals.js on world.proposals): villagers raise L-numbered proposals from their personality, job and the state of the town, one or two a day and at most four pending — buildings (guards want a watchtower, farmers a granary, weighted up when food is short), factories, decrees (reusing the council table), festival sponsorship, choosing an industry (when the game is waiting for one), expeditions, a town feast (lots of food, low moods), relief money (someone is miserable) and trial responses (famine: all hands to the fields / plague: herb party / price war: joint pricing / bandits: night patrols)',
+                '🗳️ The whole town votes as a reference: each villager votes by values, traits, job, how they feel about the proposer and whether the treasury can afford it; you approve, reject or shelve in the Proposals tab, anything left three days is decided by the vote; shelved proposals are withdrawn after ten days; an approved proposal waits for the treasury and lapses after seven days',
+                '🏁 Approval executes and settles: construction starts, factory starts, decree for 20 days, festival sponsorship, industry opens, expedition departs, feast (mood +6 for all, closer ties), relief (recipient mood +15, grateful to the proposer), trial responses (decree or supplies); the proposer and supporters feel it, memories, the log and the AI daily all record it; reputation +2',
+                '🗣️ AI copy: when a proposal appears the proposer pitches it in their own voice, one or two sentences (up to 4 a day, falling back to the rule-based text); corner notices, a badge on the Proposals tab and a morning-card line "N proposals awaiting you"',
+                '🧪 New scripts/proposal_test.js (generate / vote / approve-execute / reject / shelve / auto-decide / lapse when unaffordable / withdraw when shelved / save round-trip / English titles)',
+            ),
+        ),
         array(
             'version' => '6.25.0',
             'date'    => '2026-11-04',
