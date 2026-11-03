@@ -204,9 +204,9 @@ English: the separate Godot test build now includes traveler controls, interacti
 | v6.24.0 | 3D 村民細修（look 對應、動作、表情）、天氣粒子、節慶／墓園／探索標記、農田與工廠標示、低畫質模式 | ✅ 上線 |
 | v6.25.0 | 去主角＋新觀察者 UI 殼：玩家不在地圖上；移除委託板／行動點／意圖判定／押商隊／旅人成長；聊天改面板純聊天；新 HUD（左上城鎮卡、上方控制列、右側動態面板：動態／村民／提案／日報）；舊檔相容 | ✅ 上線 |
 | v6.26.0 | 村民主動提案：規則式提案生成（性格／職業／鎮況）、村民投票、鎮長批准／否決／擱置（三天自動定案）、執行與結算、L 編號列表、日報報導、AI 文案 | ✅ 上線 |
-| v6.27.0 | 手機與效能收尾、觸控手勢、走流程 QA 腳本改 3D、移除 2D tilemap.js | 待做 |
+| v6.27.0 | 手機與效能收尾（3D 畫質自動／高／低、小螢幕陰影減半）、操作提示、走流程 QA 腳本改 3D 觀察者版、2D 開關移除（tilemap.js 保留為版面／尋路基底，WebGL 不可用時自動退回） | ✅ 上線 |
 
-設計規格在 `design-system/rimtown-3d/MASTER.md`。3D 版開法：設定「小鎮畫面」或網址 `?r=3d`。
+設計規格在 `design-system/rimtown-3d/MASTER.md`。v6.27 起 3D 是唯一畫面（WebGL 不可用時自動退回 2D；`?r=2d` 僅供除錯）。還沒做：日間淺色票（MASTER.md 的 day tokens）、鍵盤快捷鍵（F／空白鍵／1–3／Esc）、2D 繪圖碼瘦身。
 
 ### D. 企劃草案：多城鎮、多村民、主題地圖（待拍板）
 
@@ -252,7 +252,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.26.0.zip` from Releases
+1. Download `rimtown-v6.27.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -304,6 +304,12 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.27.0 (2026-11-04)
+- 📱 手機與效能收尾：設定分頁的「小鎮畫面」2D 開關移除，改成「3D 畫質」自動／高／低（自動＝卡頓就降；高／低鎖定不自動變）；小螢幕陰影貼圖減半；低畫質時標籤層隔幀更新；2D 像素版只在 WebGL 不可用時自動退回（網址 ?r=2d 僅供除錯），tilemap.js 保留為地圖版面與尋路的基底
+- 🖐️ 左下操作提示：第一次進 3D 顯示 25 秒、之後每次 8 秒（桌機：拖曳平移／滾輪縮放／右鍵旋轉／點兩下拉近；手機：一指平移／雙指旋轉縮放／點兩下拉近）
+- 🧪 走流程 QA 腳本改成 3D 觀察者版（scripts/walkthrough.js）：每天早上截圖、第 2 天起批准／否決提案、第 3 天聊天、第 4 天四大分頁、第 5 天考驗公告、第 8 天夜景、季末回顧與事件卡
+- 📐 v6.23–v6.27 五版「3D 觀察者沙盒小鎮」計畫完成：README I 節全部打勾；日間淺色票與鍵盤快捷鍵留作下一輪
 
 ### v6.26.0 (2026-11-04)
 - 📜 村民主動提案（新檔 sim-proposals.js，掛在 world.proposals）：村民依性格、職業與小鎮近況提出 L 編號提案，每天一兩件、最多四件待決——蓋建築（守衛想蓋瞭望塔、農夫想蓋穀倉、缺糧時穀倉加權）、開工廠、政令（沿用議會提案表）、贊助節慶、選產業（遊戲在等人選產業時由村民提）、組隊探險、全鎮宴席（糧多心情低）、救濟金（有人心情很差）、考驗對策（糧荒加班下田／瘟疫採藥隊／壓價聯合定價／匪患夜巡）

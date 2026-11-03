@@ -45,7 +45,7 @@ class Town3D extends PixelTileMap {
         this._dpr = Math.min(window.devicePixelRatio || 1, 2);
         this._viewW = 0; this._viewH = 0; this._needsResize = true;
         this.isMobile = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-        try { this.lowQuality = localStorage.getItem('rimtown_3d_quality') === 'low'; } catch (e) { this.lowQuality = false; }
+        try { const q = localStorage.getItem('rimtown_3d_quality'); this.lowQuality = q === 'low'; this.lockQuality = q === 'high' || q === 'low'; } catch (e) { this.lowQuality = false; } // v6.27.0 high/low 鎖定,auto 才自動降級
         if (this.lowQuality) this._dpr = 1;
         // 軌道相機:看向 target(地圖座標,1 格 = 1 單位),yaw/pitch/dist
         this.target = new THREE.Vector3(this.cols / 2, 0, this.rows / 2);
@@ -71,7 +71,7 @@ class Town3D extends PixelTileMap {
         this.sun = new THREE.DirectionalLight('#FFF4DC', 1.6);
         this.sun.castShadow = !this.isMobile && !this.lowQuality;
         const sc = this.sun.shadow.camera; sc.left = -56; sc.right = 56; sc.top = 56; sc.bottom = -56; sc.near = 1; sc.far = 260;
-        this.sun.shadow.mapSize.set(2048, 2048); this.sun.shadow.bias = -0.0008; this.sun.shadow.normalBias = 0.03;
+        this.sun.shadow.mapSize.set(window.innerWidth <= 820 ? 1024 : 2048, window.innerWidth <= 820 ? 1024 : 2048); // v6.27.0 小螢幕陰影貼圖減半 this.sun.shadow.bias = -0.0008; this.sun.shadow.normalBias = 0.03;
         this.sun.target.position.set(this.cols / 2, 0, this.rows / 2);
         this.scene.add(this.sun); this.scene.add(this.sun.target);
         this._static = new THREE.Group(); this.scene.add(this._static);
@@ -1127,7 +1127,7 @@ class Town3D extends PixelTileMap {
     }
     // 效能自動降級:連續 3 秒平均幀長 > 40ms → 關陰影、降解析度
     _updateQuality(now) {
-        if (this.lowQuality || !this.renderer) return;
+        if (this.lowQuality || this.lockQuality || !this.renderer) return;
         if (!this._qt0) { this._qt0 = now; this._qn = 0; return; }
         this._qn++;
         if (now - this._qt0 >= 3000) {
@@ -1169,7 +1169,7 @@ class Town3D extends PixelTileMap {
         this._updateCaravan();
         this._updateAgents3D(agents || {}, selectedAgent);
         this.renderer.render(this.scene, this.camera);
-        this._updateOverlays(agents || {}, selectedAgent);
+        if (!this.lowQuality || this.animFrame % 2 === 0) this._updateOverlays(agents || {}, selectedAgent); // v6.27.0 低畫質:標籤層隔幀更新
         this._updateQuality(performance.now());
     }
     // 2D 專用的即時重繪入口在 3D 不需要;保留以免外部呼叫報錯

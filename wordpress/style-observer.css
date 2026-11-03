@@ -228,3 +228,8 @@
 .rimtown-container .pp-btn.approve { background: var(--positive); color: #1E1B2A; border-color: transparent; }
 .rimtown-container .pp-btn.reject { background: rgba(229,115,107,0.18); border-color: rgba(229,115,107,0.5); }
 .rimtown-container .pp-btn:active { transform: scale(0.97); }
+
+/* v6.27.0 左下操作提示 */
+.rimtown-container .map-hint { position: absolute; left: 14px; bottom: 14px; z-index: 12; padding: 6px 12px; border-radius: 999px; background: var(--ob-card, rgba(30,27,42,0.92)); border: 1px solid var(--border, #3A3550); color: var(--text-secondary, #B7AE9F); font-size: 0.72rem; pointer-events: none; transition: opacity 0.8s; backdrop-filter: blur(6px); }
+.rimtown-container .map-hint.fade { opacity: 0; }
+@media (max-width: 768px) { .rimtown-container .map-hint { bottom: calc(90px + env(safe-area-inset-bottom, 0px)); font-size: 0.66rem; left: 10px; right: 10px; text-align: center; } }

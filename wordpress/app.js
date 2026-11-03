@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.26.0
-const RIMTOWN_APP_VERSION = '6.26.0';
+// RimTown - Frontend App (WordPress Plugin) v6.27.0
+const RIMTOWN_APP_VERSION = '6.27.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -759,10 +759,10 @@ class RimTownApp {
     // =====================================================
     _chapterDefs() {
         return [
-            { n: 1, need: 0,  icon: '🌱', name: t('初來乍到'),   desc: t('認識村民,聊天,看見他們的愛恨與記憶。這座小鎮會記得你做過的事。') },
-            { n: 2, need: 20, icon: '🤝', name: t('小鎮的一份子'), desc: t('村民開始信任你:任務、事件應對、村民請託與每日決策向你敞開。') },
-            { n: 3, need: 45, icon: '🏡', name: t('安家立業'),   desc: t('你有能力參與小鎮的經濟了:商店、農場、產業。') },
-            { n: 4, need: 70, icon: '🏛️', name: t('小鎮的支柱'),  desc: t('小鎮的未來由你塑造:工廠、研究、建築升級、議會。') },
+            { n: 1, need: 0,  icon: '🌱', name: t('初來乍到'),   desc: t('認識村民、聽他們聊天，看見他們的愛恨與記憶。村民很快就會開始提案。') },
+            { n: 2, need: 20, icon: '🤝', name: t('小鎮的一份子'), desc: t('村民開始信任你的決定：事件應對、每日決策與更多提案向你敞開。') },
+            { n: 3, need: 45, icon: '🏡', name: t('安家立業'),   desc: t('小鎮的經濟長起來了：商店、農場、產業，村民會提更大的案子。') },
+            { n: 4, need: 70, icon: '🏛️', name: t('小鎮的支柱'),  desc: t('小鎮的未來由大家一起塑造：工廠、研究、建築升級、議會。') },
         ];
     }
     currentChapter() {
@@ -1688,7 +1688,7 @@ class RimTownApp {
         // v6.23.0 3D 渲染器(three.js)隱藏開關:localStorage rimtown_renderer=3d 或網址 ?r=3d;WebGL 失敗時退回 2D
         let use3d = false;
         // v6.25.0 3D 成為預設;rimtown_renderer=2d 或 ?r=2d 才用 2D(v6.27 移除)
-        try { const pref = localStorage.getItem('rimtown_renderer'); const q = /[?&]r=(2d|3d)(&|$)/.exec(location.search); const want2d = q ? q[1] === '2d' : pref === '2d'; use3d = !want2d && typeof Town3D !== 'undefined' && typeof THREE !== 'undefined'; } catch (e) {}
+        try { use3d = !/[?&]r=2d(&|$)/.test(location.search) && typeof Town3D !== 'undefined' && typeof THREE !== 'undefined'; } catch (e) {} // v6.27.0 2D 開關移除:只剩 ?r=2d 除錯用與 WebGL 失敗自動退回
         if (use3d) {
             try { this.tileMap = new Town3D(canvas); if (!this.tileMap.renderer) throw new Error('no WebGL'); this.renderer3d = true; }
             catch (e) { console.warn('[RimTown] 3D 渲染器啟動失敗,改用 2D', e); this.tileMap = null; }
@@ -1696,6 +1696,18 @@ class RimTownApp {
         if (!this.tileMap) this.tileMap = new PixelTileMap(canvas);
         document.querySelector('.rimtown-container')?.classList.toggle('is-3d', !!this.renderer3d);
         document.querySelector('.rimtown-container')?.classList.add('observer'); // v6.25.0 觀察者沙盒 UI 殼
+        // v6.27.0 左下操作提示:第一次進 3D 顯示 25 秒,之後每次 8 秒
+        try {
+            const panel = canvas.parentElement; if (panel && this.renderer3d && !document.getElementById('map-hint')) {
+                const hint = document.createElement('div'); hint.id = 'map-hint'; hint.className = 'map-hint';
+                const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+                hint.innerHTML = coarse ? `👆 ${t('一指拖曳平移')} · ✌️ ${t('雙指旋轉／縮放')} · ${t('點兩下拉近')}` : `🖱️ ${t('拖曳平移')} · ${t('滾輪縮放')} · ${t('右鍵旋轉')} · ${t('點兩下拉近')}`;
+                panel.appendChild(hint);
+                const seen = localStorage.getItem('rimtown_hint_seen') === '1';
+                setTimeout(() => hint.classList.add('fade'), seen ? 8000 : 25000);
+                localStorage.setItem('rimtown_hint_seen', '1');
+            }
+        } catch (e) {}
         this.tileMap.hidePlayer = true; // v6.25.0 觀察者不在地圖上
         this.tileMap.onClick = (locId) => { this._hideNpcCard(); if (this.world?.observerMode !== false) { this.tileMap.focusLocation?.(locId); this.bgm?.sfx?.('click'); } else this.playerMoveTo(locId); };
         this.tileMap.onAgentClick = (agentId) => this.onAgentClick(agentId);

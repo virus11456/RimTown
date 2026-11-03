@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.26.0
+ * Version: 6.27.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.26.0');
+define('RIMTOWN_VERSION', '6.27.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1328,6 +1328,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.27.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '📱 手機與效能收尾：設定分頁的「小鎮畫面」2D 開關移除，改成「3D 畫質」自動／高／低（自動＝卡頓就降；高／低鎖定不自動變）；小螢幕陰影貼圖減半；低畫質時標籤層隔幀更新；2D 像素版只在 WebGL 不可用時自動退回（網址 ?r=2d 僅供除錯），tilemap.js 保留為地圖版面與尋路的基底',
+                '🖐️ 左下操作提示：第一次進 3D 顯示 25 秒、之後每次 8 秒（桌機：拖曳平移／滾輪縮放／右鍵旋轉／點兩下拉近；手機：一指平移／雙指旋轉縮放／點兩下拉近）',
+                '🧪 走流程 QA 腳本改成 3D 觀察者版（scripts/walkthrough.js）：每天早上截圖、第 2 天起批准／否決提案、第 3 天聊天、第 4 天四大分頁、第 5 天考驗公告、第 8 天夜景、季末回顧與事件卡',
+                '📐 v6.23–v6.27 五版「3D 觀察者沙盒小鎮」計畫完成：README I 節全部打勾；日間淺色票與鍵盤快捷鍵留作下一輪',
+            ),
+            'changes_en' => array(
+                '📱 Mobile and performance wrap-up: the 2D "Town view" switch is gone, replaced by a "3D quality" setting Auto / High / Low (Auto drops when it stutters; High and Low stay fixed); shadow maps halved on small screens; the label layer updates every other frame in Low; the 2D pixel view only kicks in automatically when WebGL is unavailable (?r=2d is debug-only), and tilemap.js stays as the layout and pathfinding base',
+                '🖐️ Bottom-left control hint: 25 seconds the first time you enter 3D, 8 seconds afterwards (desktop: drag to pan / scroll to zoom / right-drag to rotate / double-click to zoom in; phone: one finger to pan / two fingers to rotate and zoom / double-tap to zoom in)',
+                '🧪 The walkthrough QA script is now the 3D observer version (scripts/walkthrough.js): a screenshot every morning, approving and rejecting proposals from day 2, chatting on day 3, the four panels on day 4, the trial notice on day 5, the night view on day 8, the season recap and event cards',
+                '📐 The five-release "3D observer sandbox town" plan (v6.23–v6.27) is complete: README section I is fully ticked; the daytime light palette and keyboard shortcuts are left for the next round',
+            ),
+        ),
         array(
             'version' => '6.26.0',
             'date'    => '2026-11-04',

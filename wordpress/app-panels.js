@@ -891,9 +891,9 @@ Object.assign(RimTownApp.prototype, {
             if (mode === 'decide') {
                 html += `<div class="pp-deadline">${p.status === 'open' ? t('還有 {n} 天沒處理就依票數自動定案').replace('{n}', p.daysLeft) : t('擱置中，{n} 天後提案人會收回').replace('{n}', p.daysLeft)}</div>
                 <div class="pp-actions">
-                    <button class="pp-btn approve" data-action="proposal-decide" data-val="${p.id}:approve">✅ ${t('批准')}</button>
-                    <button class="pp-btn reject" data-action="proposal-decide" data-val="${p.id}:reject">❌ ${t('否決')}</button>
-                    ${p.status === 'open' ? `<button class="pp-btn shelve" data-action="proposal-decide" data-val="${p.id}:shelve">📥 ${t('擱置')}</button>` : ''}
+                    <button class="pp-btn approve" data-action="proposal-decide" data-val="${p.id}:approve">${t('✅ 批准')}</button>
+                    <button class="pp-btn reject" data-action="proposal-decide" data-val="${p.id}:reject">${t('❌ 否決')}</button>
+                    ${p.status === 'open' ? `<button class="pp-btn shelve" data-action="proposal-decide" data-val="${p.id}:shelve">${t('📥 擱置')}</button>` : ''}
                 </div>`;
             } else if (p.status === 'approved') {
                 html += `<div class="pp-deadline">${p.affordable ? t('已批准，等待執行') : t('已批准，等公庫湊齊資源（{n}/7 天）').replace('{n}', p.waitDays)}</div>`;
@@ -903,7 +903,7 @@ Object.assign(RimTownApp.prototype, {
             return html + '</div>';
         };
         let html = `<div class="proposals-panel">`;
-        html += `<div class="pp-summary">${t('提出')} ${d.stats.made} · ${t('批准')} ${d.stats.approved} · ${t('否決')} ${d.stats.rejected} · ${t('完成')} ${d.stats.done}</div>`;
+        html += `<div class="pp-summary">${t('提出')} ${d.stats.made} · ${t('已批准')} ${d.stats.approved} · ${t('已否決')} ${d.stats.rejected} · ${t('已完成')} ${d.stats.done}</div>`;
         html += `<h4 class="pp-h">📬 ${t('待你決定')} <span class="pp-count">${d.open.length}</span></h4>`;
         if (!d.open.length) html += `<div class="ob-empty" style="margin:10px 4px"><span class="ob-empty-icon">☕</span>${t('現在沒有待決定的提案。村民會依鎮上的情況陸續提出，通常每天一兩件。')}</div>`;
         else d.open.forEach(p => { html += card(p, 'decide'); });
@@ -948,15 +948,16 @@ Object.assign(RimTownApp.prototype, {
                 <option value="500"${speed==='500'?' selected':''}>${t('極快（0.5秒）')}</option>
             </select>
         </div>`;
-        // v6.23.0 3D 小鎮(實驗):切換後重新整理生效
-        let rendererPref = '3d'; try { rendererPref = localStorage.getItem('rimtown_renderer') === '2d' ? '2d' : '3d'; } catch (e) {} // v6.25.0 3D 為預設
+        // v6.27.0 3D 畫質:自動(卡頓就降)／高／低;2D 開關已移除(WebGL 不可用時自動退回)
+        let qPref = 'auto'; try { qPref = localStorage.getItem('rimtown_3d_quality') || 'auto'; } catch (e) {}
         html += `<div class="setting-group" style="margin-bottom:8px">
-            <label style="font-size:0.82rem;color:var(--text-secondary)">${t('小鎮畫面')}</label>
-            <select id="settings-renderer" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem" onchange="try{localStorage.setItem('rimtown_renderer',this.value)}catch(e){};location.reload()">
-                <option value="3d"${rendererPref==='3d'?' selected':''}>${t('3D 小鎮（預設）')}</option>
-                <option value="2d"${rendererPref==='2d'?' selected':''}>${t('2D 像素（舊版，v6.27 移除）')}</option>
+            <label style="font-size:0.82rem;color:var(--text-secondary)">${t('3D 畫質')}</label>
+            <select id="settings-quality" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem" onchange="try{if(this.value==='auto')localStorage.removeItem('rimtown_3d_quality');else localStorage.setItem('rimtown_3d_quality',this.value)}catch(e){};location.reload()">
+                <option value="auto"${qPref==='auto'?' selected':''}>${t('自動（卡頓就自動降低）')}</option>
+                <option value="high"${qPref==='high'?' selected':''}>${t('高（陰影、抗鋸齒、原生解析度）')}</option>
+                <option value="low"${qPref==='low'?' selected':''}>${t('低（無陰影、1x 解析度，省電）')}</option>
             </select>
-            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('3D 版用 three.js 重畫整座小鎮，切換後會重新整理頁面；存檔與進度不受影響。')}</div>
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('切換後會重新整理頁面；手機預設不開陰影。')}</div>
         </div>`;
         html += `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
             <label style="font-size:0.82rem;color:var(--text-secondary)">${t('速度倍率')}</label>
