@@ -5280,6 +5280,11 @@ const I18N = (() => {
         '鎮上商店': 'town shop',
         '身上': 'you have',
         '押一隊商隊去鄰鎮賣貨或採買': 'Send a caravan to sell or buy in a neighboring town',
+        // v6.23.0 3D 小鎮(實驗)開關
+        '小鎮畫面': 'Town view',
+        '2D 像素（目前）': '2D pixel art (current)',
+        '3D 小鎮（實驗中）': '3D town (experimental)',
+        '3D 版用 three.js 重畫整座小鎮，切換後會重新整理頁面；存檔與進度不受影響。': 'The 3D view redraws the whole town with three.js. Switching reloads the page; saves and progress are untouched.',
         // v6.22.2 AI 提示詞鎮名用當前鎮;考驗文案英文標點
         '你在為模擬小鎮「{town}」的居民規劃真實的一天。像寫小說一樣,讓行程反映每個人的性格、人際與心事。': 'You are planning a realistic day for the residents of the simulated town "{town}". Write it like a novel: let each schedule reflect personality, relationships and private worries.',
         '你在為模擬小鎮「{town}」的居民「即時調整」今天的行程——他剛遇到一件事,接下來的安排要跟著變。': 'You are "re-planning on the fly" the rest of today for a resident of the simulated town "{town}": something just happened to them and the remaining schedule must change accordingly.',

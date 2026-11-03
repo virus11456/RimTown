@@ -903,6 +903,16 @@ Object.assign(RimTownApp.prototype, {
                 <option value="500"${speed==='500'?' selected':''}>${t('極快（0.5秒）')}</option>
             </select>
         </div>`;
+        // v6.23.0 3D 小鎮(實驗):切換後重新整理生效
+        let rendererPref = '2d'; try { rendererPref = localStorage.getItem('rimtown_renderer') === '3d' ? '3d' : '2d'; } catch (e) {}
+        html += `<div class="setting-group" style="margin-bottom:8px">
+            <label style="font-size:0.82rem;color:var(--text-secondary)">${t('小鎮畫面')}</label>
+            <select id="settings-renderer" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem" onchange="try{localStorage.setItem('rimtown_renderer',this.value)}catch(e){};location.reload()">
+                <option value="2d"${rendererPref==='2d'?' selected':''}>${t('2D 像素（目前）')}</option>
+                <option value="3d"${rendererPref==='3d'?' selected':''}>${t('3D 小鎮（實驗中）')}</option>
+            </select>
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('3D 版用 three.js 重畫整座小鎮，切換後會重新整理頁面；存檔與進度不受影響。')}</div>
+        </div>`;
         html += `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
             <label style="font-size:0.82rem;color:var(--text-secondary)">${t('速度倍率')}</label>
             <div class="speed-controls">

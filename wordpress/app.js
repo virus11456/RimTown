@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.22.4
-const RIMTOWN_APP_VERSION = '6.22.4';
+// RimTown - Frontend App (WordPress Plugin) v6.23.0
+const RIMTOWN_APP_VERSION = '6.23.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1684,7 +1684,15 @@ class RimTownApp {
             const rect = mapPanel.getBoundingClientRect();
             console.log('[RimTown] mapPanel rect:', JSON.stringify({top:rect.top,left:rect.left,width:rect.width,height:rect.height}));
         }
-        this.tileMap = new PixelTileMap(canvas);
+        // v6.23.0 3D 渲染器(three.js)隱藏開關:localStorage rimtown_renderer=3d 或網址 ?r=3d;WebGL 失敗時退回 2D
+        let use3d = false;
+        try { use3d = (localStorage.getItem('rimtown_renderer') === '3d' || /[?&]r=3d(&|$)/.test(location.search)) && typeof Town3D !== 'undefined' && typeof THREE !== 'undefined'; } catch (e) {}
+        if (use3d) {
+            try { this.tileMap = new Town3D(canvas); if (!this.tileMap.renderer) throw new Error('no WebGL'); this.renderer3d = true; }
+            catch (e) { console.warn('[RimTown] 3D 渲染器啟動失敗,改用 2D', e); this.tileMap = null; }
+        }
+        if (!this.tileMap) this.tileMap = new PixelTileMap(canvas);
+        document.querySelector('.rimtown-container')?.classList.toggle('is-3d', !!this.renderer3d);
         this.tileMap.onClick = (locId) => { this._hideNpcCard(); this.playerMoveTo(locId); };
         this.tileMap.onAgentClick = (agentId) => this.onAgentClick(agentId);
         this.tileMap.onCoachClick = () => this._showCoachDialog(); // v5.57.0 馬車站

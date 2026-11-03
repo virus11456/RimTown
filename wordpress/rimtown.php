@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.22.4
+ * Version: 6.23.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.22.4');
+define('RIMTOWN_VERSION', '6.23.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -901,10 +901,14 @@ function rimtown_enqueue_assets() {
         true
     );
 
+    // v6.23.0 three.js + 3D 小鎮渲染器(隱藏開關 rimtown_renderer=3d)
+    wp_enqueue_script('rimtown-three', RIMTOWN_URL . 'vendor/three.min.js', array(), RIMTOWN_VERSION, true);
+    wp_enqueue_script('rimtown-town3d', RIMTOWN_URL . 'town3d.js', array('rimtown-tilemap', 'rimtown-three'), RIMTOWN_VERSION, true);
+
     wp_enqueue_script(
         'rimtown-app',
         RIMTOWN_URL . 'app.js',
-        array('rimtown-simulation', 'rimtown-sim-systems', 'rimtown-chiptune', 'rimtown-tilemap'),
+        array('rimtown-simulation', 'rimtown-sim-systems', 'rimtown-chiptune', 'rimtown-tilemap', 'rimtown-town3d'),
         RIMTOWN_VERSION,
         true
     );
@@ -1319,6 +1323,24 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.23.0',
+            'date'    => '2026-11-03',
+            'changes' => array(
+                '🧊 3D 小鎮（實驗版，隱藏開關）：用 three.js r159 重畫整座小鎮——低多邊形地形（草地／泥路／石板／河湖／峽谷有坡岸）、樹木（闊葉與針葉、隨季節變色）、灌木、岩石、花叢、農作物、柵欄、棧橋；每棟建築依原本的地圖版面程序化生成（牆、四坡屋頂、門、窗、煙囪，教堂尖塔／守衛塔／鎮公所旗桿／酒館與雜貨店雨棚）；五鎮主題道具（燈塔、漁船、碼頭木樁、噴泉、篝火、古樹、瞭望塔、溫泉、帳篷、城門、礦車軌道、吊橋）與馬車站；建成建築、工地、裝飾也都有 3D 版本',
+                '🧊 3D 村民先用方塊小人（膚色／髮色／髮型／上衣／配件對應自訂外觀，職業帽與道具），有走路擺動與轉向、睡覺躺平；名牌、對話泡泡、表情、zzz、浮動特效改成 HTML 標籤層跟著 3D 位置走；在建築裡的村民不顯示（進出門口才看得到）',
+                '🧊 3D 相機：拖曳平移（抓著地面拖）、右鍵或雙指旋轉與俯仰、滾輪或捏合縮放、雙擊拉近；點村民開對話、點建築名牌定位並前往；日夜光照跟著遊戲時間（黃昏橙光、夜晚月光＋窗燈、燈塔與路燈發光），天氣會改天空與霧',
+                '⚙️ 開法：設定分頁「小鎮畫面」選「3D 小鎮（實驗中）」，或網址加 ?r=3d；WebGL 失敗自動退回 2D；沿用同一套地圖版面、尋路與村民移動邏輯，存檔不變',
+                '📐 設計系統文件 design-system/rimtown-3d/MASTER.md：觀察者沙盒小鎮的版面、色票（日／夜）、字體、元件、互動與 3D 場景規格，之後 v6.24–v6.27 的 UI 重做照這份走',
+            ),
+            'changes_en' => array(
+                '🧊 3D town (experimental, hidden toggle): the whole town is redrawn with three.js r159 — low-poly terrain (grass, dirt roads, stone paths, rivers and lakes with sloped banks, chasms), trees (broadleaf and pine, seasonal colours), bushes, rocks, flowers, crops, fences and piers; every building is generated procedurally from the existing map layout (walls, hip roofs, doors, windows, chimneys, chapel spire, guard tower, town-hall flag, tavern and store awnings); theme props for all five towns (lighthouse, boats, pier posts, fountain, fire pit, elder tree, watchtower, hot spring, tents, gates, mine rails, rope bridges) plus the coach station; completed buildings, construction sites and decorations also get 3D versions',
+                '🧊 3D villagers start as block figures (skin, hair colour, hairstyle, shirt and accessory follow custom looks, with job hats and tools), with walk swing, turning and lying down to sleep; name tags, speech bubbles, emotes, zzz and floating effects moved to an HTML label layer that tracks 3D positions; villagers inside buildings are hidden until they come to the door',
+                '🧊 3D camera: drag to pan (grab the ground), right-button or two-finger rotate and tilt, wheel or pinch to zoom, double-tap to zoom in; tap a villager to talk, tap a building pill to focus and walk there; lighting follows game time (orange dusk, moonlit night with glowing windows, lighthouse and lamps), weather tints the sky and fog',
+                '⚙️ How to enable: Settings → "Town view" → "3D town (experimental)", or add ?r=3d to the URL; falls back to 2D if WebGL fails; it reuses the same map layout, pathfinding and villager movement, so saves are unchanged',
+                '📐 Design system doc design-system/rimtown-3d/MASTER.md: layout, day/night palette, type, components, interaction and 3D scene spec for the observer sandbox town; the v6.24–v6.27 UI rebuild follows it',
+            ),
+        ),
         array(
             'version' => '6.22.4',
             'date'    => '2026-10-15',
