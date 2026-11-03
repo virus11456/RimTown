@@ -1797,8 +1797,8 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
         const affChange = effects.affinity_change ?? randInt(0,2);
         const romChange = effects.romantic_change ?? 0;
         const summary = effects.summary || `${npc.name}${t('回應了')}${player.name}${t('。')}`;
-        relNpc.modifyAffinity(affChange); relNpc.modifyRomantic(romChange); relNpc.recordInteraction(world.tickCount, summary);
-        relPlayer.modifyAffinity(Math.max(0, affChange-1)); relPlayer.recordInteraction(world.tickCount, summary);
+        if (!world.observerMode) { relNpc.modifyAffinity(affChange); relNpc.modifyRomantic(romChange); relPlayer.modifyAffinity(Math.max(0, affChange-1)); } // v6.25.0 觀察者純聊天:不改好感
+        relNpc.recordInteraction(world.tickCount, summary); relPlayer.recordInteraction(world.tickCount, summary);
         npc.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '{player}說：「{playerMessage}」— {summary}', { player: player.name, playerMessage, summary }, 5, [player.name]);
         player.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '與{npc}交談：{summary}', { npc: npc.name, summary }, 4, [npc.name]);
         // Only push NPC reply (player message already added by playerSendMessage)
@@ -2074,8 +2074,8 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
         if (npc.activity === 'stargazing' && Math.random() < 0.3) npcReply += pickRandom([t(' 欸你看！那邊那顆星特別亮！'),t(' 今晚的星空真美，你不覺得嗎？')]);
 
         const summaryT = (summary && summary.k) ? summary : tpl('{player}和{npc}聊了天。', { player: player.name, npc: npc.name }); summary = Memory.render(summaryT.k, summaryT.p); // v6.19.0 字串給關係紀錄/回傳,模板給記憶與日誌
-        relNpc.modifyAffinity(affChange); relNpc.modifyRomantic(romChange); relNpc.recordInteraction(world.tickCount, summary);
-        relPlayer.modifyAffinity(Math.max(-3,affChange-1)); relPlayer.recordInteraction(world.tickCount, summary);
+        if (!world.observerMode) { relNpc.modifyAffinity(affChange); relNpc.modifyRomantic(romChange); relPlayer.modifyAffinity(Math.max(-3,affChange-1)); } // v6.25.0 觀察者純聊天:不改好感
+        relNpc.recordInteraction(world.tickCount, summary); relPlayer.recordInteraction(world.tickCount, summary);
         npc.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '{player}說：「{v}」— {summary}', { player: player.name, v: playerMessage.slice(0,30), summary: summaryT }, 4+Math.abs(affChange), [player.name]);
         player.memory.addT(world.tickCount, world.clock.timeStr, 'conversation', '與{npc}：{summary}', { npc: npc.name, summary: summaryT }, 3+Math.abs(affChange), [npc.name]);
         // Only push NPC reply (player message already added by playerSendMessage)

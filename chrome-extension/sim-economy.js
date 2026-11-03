@@ -17,7 +17,7 @@ class Stockpile {
         this.resources[r] = (this.resources[r]||0) + amount;
         this.history.push({tick,resource:r,amount,reason,source});
         if (this.history.length > 600) this.history = this.history.slice(-600); // v5.99.0 B12(讀取端只用最近 50 筆)
-        if (amount > 0 && (source === 'player' || source === 'farm') && this._world?.trials?.onPlayerGain) { try { this._world.trials.onPlayerGain(r, amount); } catch (e) {} } // v6.2.0 季度考驗只算玩家親手帶進的
+        if (amount > 0 && (source === 'player' || source === 'farm' || this._world?.observerMode) && this._world?.trials?.onPlayerGain) { try { this._world.trials.onPlayerGain(r, amount); } catch (e) {} } // v6.2.0 季度考驗只算玩家親手帶進的
     }
     consume(r, amount, tick=0, reason='', source='') {
         if ((this.resources[r]||0) < amount) return false;

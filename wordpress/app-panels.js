@@ -596,7 +596,7 @@ Object.assign(RimTownApp.prototype, {
         let html = '';
         // Town info bar (moved from header)
         const clock = this.state.clock || {};
-        const popCount = Object.keys(this.state.agents || {}).length;
+        const popCount = Object.keys(this.state.agents || {}).filter(id => id !== 'player').length; // v6.25.0
         const travelCount = (this.state.travelling_agents || []).length;
         const travelText = travelCount > 0 ? `${t('（')}+${travelCount}${t(' 外出）')}` : '';
         const townName = this._getCurrentTownName() || t('邊境鎮');
@@ -625,9 +625,9 @@ Object.assign(RimTownApp.prototype, {
             </div>`;
         }
         // v5.31.0 今日焦點:先回答「我現在該做什麼」,再看故事與頭條
-        html += this._renderDailyFocus();
+        if (!this.world?.observerMode) html += this._renderDailyFocus(); // v6.25.0 觀察者沒有「該去找誰」
         // v5.45.0 昨日回響:你昨天的舉動在小鎮發酵了什麼(蝴蝶效應回饋)
-        html += this._renderDailyEcho();
+        if (!this.world?.observerMode) html += this._renderDailyEcho();
         // v5.45.0 首頁分階段減壓:剛開村只看焦點+回響+居民;故事流(成長10)與頭條(成長20)隨小鎮成長逐步展開
         const prosHome = this.state?.prosperity?.prosperity || 0;
         // v5.31.0 今天的故事:記憶流/反思/名場面/AI 對話的精華,首頁第一層
@@ -636,7 +636,7 @@ Object.assign(RimTownApp.prototype, {
         if (prosHome >= 20) html += this._renderTownHeadlines();
         // Player card at top
         const playerAgent = this.state.agents['player'];
-        if (playerAgent) {
+        if (playerAgent && !this.world?.observerMode) { // v6.25.0 觀察者不列在居民裡
             const isSelected = this.selectedAgent === 'player';
             // v5.61.0 職業選擇系統已移除:玩家身分固定為「旅人」,當選鎮長時顯示鎮長頭銜
             const playerJobTitle = playerAgent.job?.title || t('旅人');
@@ -651,7 +651,7 @@ Object.assign(RimTownApp.prototype, {
             if (aid === 'player') continue;
             const isSelected = this.selectedAgent === aid;
             const player = this.state.agents['player'];
-            const sameLoc = player && player.current_location === agent.current_location;
+            const sameLoc = !this.world?.observerMode && player && player.current_location === agent.current_location;
             const genderIcon = agent.gender_label === t('男') ? '♂' : agent.gender_label === t('女') ? '♀' : '';
             html += `<div class="resident-card ${isSelected?'selected':''}" data-action="select-agent" data-val="${aid}">
                 <div class="resident-header">
@@ -659,7 +659,7 @@ Object.assign(RimTownApp.prototype, {
                     <span class="resident-job">${agent.job?.title||t('無業')}</span></div>
                 <div class="resident-status"><span>${agent.activity_label||agent.activity} @ ${this._locationLabel(agent.current_location)}</span><span>${agent.mood_label||agent.mood_description} (${agent.mood})</span></div>
                 ${agent.current_thought?`<div style="font-size:0.7rem;color:#aaa;margin-top:4px;font-style:italic">${t('「')}${agent.current_thought}${t('」')}</div>`:''}
-                <button class="chat-with-btn" data-action="start-chat" data-val="${aid}">${sameLoc?t('對話'):t('前往對話')}</button></div>`;
+                <button class="chat-with-btn" data-action="start-chat" data-val="${aid}">${(sameLoc || this.world?.observerMode)?t('對話'):t('前往對話')}</button></div>`;
         }
 
         // Custom NPC creation button
@@ -700,7 +700,8 @@ Object.assign(RimTownApp.prototype, {
         const player = this.state.agents['player'];
         const sameLoc = player && player.current_location === agent.current_location && this.selectedAgent !== 'player';
         let interactionBtns = '';
-        if (sameLoc) {
+        if (this.world?.observerMode) { if (this.selectedAgent !== 'player') interactionBtns += `<button class="chat-with-btn" data-action="start-chat" data-val="${this.selectedAgent}${t('">對話</button>')}`; } // v6.25.0 觀察者只有聊天
+        else if (sameLoc) {
             interactionBtns += `<button class="chat-with-btn" data-action="start-chat" data-val="${this.selectedAgent}${t('">對話</button>')}`;
             // Flirt / Propose buttons
             const playerRel = player.relationships?.find(r => r.target_id === this.selectedAgent || r.target_name === agent.name);

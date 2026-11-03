@@ -133,6 +133,7 @@ class Town3D extends PixelTileMap {
         if (!this.followPlayer || !this._viewW) return;
         this._focusTo = { x: pos.x / TILE, z: pos.y / TILE };
     }
+    getViewCenter() { return { x: this.target.x * TILE, y: this.target.z * TILE }; }
     focusMap(px, py, dist) { this._focusTo = { x: px / TILE, z: py / TILE, dist: dist || null }; }
     focusLocation(locId) {
         const z = this.buildingZones[locId] || this.natureZones[locId];

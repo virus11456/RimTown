@@ -111,7 +111,7 @@ class ProsperityEngine {
 
     _calcPopulation(world) {
         let score = 0;
-        const pop = Object.keys(world.agents || {}).length;
+        const pop = Object.values(world.agents || {}).filter(a => !a.isPlayer).length; // v6.25.0 不算隱藏的觀察者
 
         // 人口數 (0-70)
         score += Math.min(70, pop * 3);           // 23人 ≈ 70
@@ -142,7 +142,12 @@ class ProsperityEngine {
 
         // 全鎮平均好感度加成
         const player = world.agents?.player;
-        if (player?.relationships?.relationships) {
+        if (world.observerMode) {
+            // v6.25.0 觀察者沙盒:加成改看村民彼此的平均好感
+            let sum = 0, n = 0;
+            for (const a of npcs) for (const [tid, r] of Object.entries(a.relationships?.relationships || {})) { if (tid === 'player') continue; sum += r.affinity || 0; n++; }
+            if (n) score += Math.min(20, Math.max(0, (sum / n) * 0.8));
+        } else if (player?.relationships?.relationships) {
             const rels = Object.values(player.relationships.relationships);
             if (rels.length > 0) {
                 const avgAff = rels.reduce((s, r) => s + (r.affinity || 0), 0) / rels.length;

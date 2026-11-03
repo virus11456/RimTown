@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.24.0
+ * Version: 6.25.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.24.0');
+define('RIMTOWN_VERSION', '6.25.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1327,6 +1327,26 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.25.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '👁️ 觀察者沙盒：主角旅人不再出現在地圖上，遊戲變成純粹看 AI 村民自己過日子的小鎮。委託板、行動點、意圖判定（成功率）、押商隊、旅人成長（經驗／等級／天賦）、心動事件、調情／告白／送禮／耳語／助夢、參選鎮長、搖桿與鍵盤移動、第一天任務卡、今日焦點與昨日回響全部移除；舊存檔照常讀取（玩家物件仍隱藏保留，聊天紀錄與成就掛在上面）',
+                '💬 聊天改成純聊天：隨時跟任何村民聊，AI 依個性、心情與記憶回覆並記住你說過的話，但不再改變好感或關係；聊天面板沒有意圖鈕、成功率與結果卡',
+                '⚖️ 季度考驗改算全鎮：糧荒／瘟疫／壓價的進度算全鎮的收成、交易與補給，不再只算「玩家親手帶進」；主線任務裡的「好感／拜訪／送禮」條件改看村民之間的關係與行蹤；聲望與繁榮的好感加成改看村民彼此的平均好感；季末回顧去掉委託、商隊、經驗的行與「下一季怎麼打」（v6.26 由提案系統接手）',
+                '🧊 3D 成為預設畫面（設定「小鎮畫面」仍可切回 2D，v6.27 移除）；點建築名牌或地圖上的建築會把鏡頭帶過去，不再移動角色；對話泡泡與村民 AI 對話的距離判定改看鏡頭中心',
+                '🎨 新 UI 殼（design-system/rimtown-3d/MASTER.md）：地圖全幅、頂部透明控制列、右側浮動面板；四大入口 動態／村民／提案／日報（設定走齒輪鈕）；手機底部直接放四大入口＋聊天＋設定，面板改成底部抽屜；面板不再依繁榮度上鎖；提案分頁先放說明（v6.26 上線）',
+                '📝 新手教學、首頁文案與早安卡改寫成觀察者版本；早安卡每天早上照出（昨日結算、本季考驗、節慶）',
+            ),
+            'changes_en' => array(
+                '👁️ Observer sandbox: the traveller is no longer on the map and the game becomes a town of AI villagers living on their own. Removed: request board, action points, chat intents with success rates, player caravans, traveller growth (XP / levels / perks), heart events, flirt / confess / gift / whisper / dream nudges, running for mayor, joystick and keyboard movement, first-day guide, daily focus and yesterday echo; old saves still load (the player object is kept hidden to hold chat history and achievements)',
+                '💬 Chat is now plain chat: talk to any villager any time, the AI answers from personality, mood and memory and remembers what you said, but affinity and relationships no longer change; no intent buttons, success rates or effect cards',
+                '⚖️ Seasonal trials count the whole town: famine / plague / price-war progress now counts every harvest, trade and supply instead of only what the player brought in; main-quest conditions about affinity / visits / gifts now read villager-to-villager relationships and whereabouts; reputation and prosperity affinity bonuses use the villagers\' average affinity for each other; the season recap drops the request, caravan and XP lines and the "next season" advice (the proposal system takes over in v6.26)',
+                '🧊 3D is now the default view (Settings → "Town view" can still switch back to 2D until v6.27); tapping a building pill or a building on the map flies the camera there instead of moving a character; speech bubbles and villager AI dialogue range are judged from the camera centre',
+                '🎨 New UI shell (design-system/rimtown-3d/MASTER.md): full-bleed map, transparent top control bar, floating right panel; four entries Town / Villagers / Proposals / Daily (settings behind the gear); on phones the bottom bar holds the four entries plus Chat and Settings, and panels open as a bottom drawer; panels no longer lock behind prosperity; the Proposals tab shows an explainer until v6.26',
+                '📝 Tutorial, landing copy and the morning card rewritten for observers; the morning card still appears every morning (yesterday\'s summary, current trial, festivals)',
+            ),
+        ),
         array(
             'version' => '6.24.0',
             'date'    => '2026-11-03',

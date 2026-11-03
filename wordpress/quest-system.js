@@ -1784,8 +1784,9 @@ class QuestSystem {
             if (pop >= trigger.population) return true;
         }
         if (trigger.max_affinity) {
+            if (world.observerMode) { if (this._obsRel(world).max >= trigger.max_affinity) return true; } // v6.25.0 觀察者:看村民之間
             const player = world.agents?.player;
-            if (player?.relationships?.relationships) {
+            if (!world.observerMode && player?.relationships?.relationships) {
                 const max = Math.max(0, ...Object.values(player.relationships.relationships).map(r => r.affinity || 0));
                 if (max >= trigger.max_affinity) return true;
             }
@@ -1804,7 +1805,37 @@ class QuestSystem {
     // ============================================================
     // Condition evaluation — 統一評估各種條件
     // ============================================================
+    // v6.25.0 觀察者沙盒:主線條件裡「玩家好感／拜訪／送禮」改看村民之間的關係與行蹤
+    _obsRel(world) {
+        const per = {}; let sum = 0, n = 0, max = 0, friends = 0;
+        for (const a of Object.values(world.agents || {})) {
+            if (a.isPlayer || a.isDead) continue;
+            let s = 0, k = 0, hasFriend = false;
+            for (const [tid, r] of Object.entries(a.relationships?.relationships || {})) {
+                if (tid === 'player') continue;
+                const v = r.affinity || 0; s += v; k++; sum += v; n++; if (v > max) max = v; if (v > 20) hasFriend = true;
+            }
+            per[a.agentId] = k ? Math.round(s / k) : 0; if (hasFriend) friends++;
+        }
+        return { per, avg: n ? Math.round(sum / n) : 0, max, friends };
+    }
+    _obsVisited(world) {
+        this.visitedLocations = this.visitedLocations || [];
+        for (const a of Object.values(world.agents || {})) { if (a.isPlayer || !a.currentLocation) continue; if (!this.visitedLocations.includes(a.currentLocation)) this.visitedLocations.push(a.currentLocation); }
+        return this.visitedLocations;
+    }
     _evaluateCondition(cond, world) {
+        if (world?.observerMode) {
+            switch (cond.type) {
+                case 'max_affinity': return this._obsRel(world).max;
+                case 'npc_affinity': return this._obsRel(world).per[cond.npcId] || 0;
+                case 'avg_affinity': return this._obsRel(world).avg;
+                case 'friends_count': return this._obsRel(world).friends;
+                case 'gift_to': return this.chatWith?.[cond.npcId] || 0;
+                case 'visit_location': return this._obsVisited(world).includes(cond.location) ? 1 : 0;
+                case 'visited': { const v = this._obsVisited(world); return (cond.locations || []).filter(l => v.includes(l)).length; }
+            }
+        }
         switch (cond.type) {
             case 'chat_count':
                 return this.chatCount;
@@ -2914,6 +2945,7 @@ class SeasonRecap {
     }
     // 每天叫一次(在 trials.daily 之後):第一次只拍快照;換季就結算上一季
     daily(w) {
+        this._obs = !!w.observerMode; // v6.25.0
         if (!w?.clock) return;
         const key = this._key(w);
         if (!this.start) { this.start = this._snap(w); return; }
@@ -2943,8 +2975,9 @@ class SeasonRecap {
         let s = 0;
         if (r.trial?.status === 'passed') s += 2; else if (r.trial?.status === 'failed') s -= 2;
         if (r.revived) s += 2; // v6.13.0
-        s += Math.min(2, Math.floor(r.reqDone / 10)); if (r.reqFailed > r.reqDone) s -= 1;
-        if (r.silverTo > r.silverFrom) s += 1; if (r.popTo < r.popFrom) s -= 1; if (r.carSilver >= 100) s += 1; if (r.questsDone > 0) s += 1;
+        if (!this._obs) { s += Math.min(2, Math.floor(r.reqDone / 10)); if (r.reqFailed > r.reqDone) s -= 1; }
+        if (r.silverTo > r.silverFrom) s += 1; if (r.popTo < r.popFrom) s -= 1; if (!this._obs && r.carSilver >= 100) s += 1; if (r.questsDone > 0) s += 1;
+        if (this._obs && r.popTo > r.popFrom) s += 1; // v6.25.0 觀察者:人口成長加分
         return s >= 5 ? 'S' : s >= 3 ? 'A' : s >= 0 ? 'B' : 'C';
     }
     _fill(tpl, m) { return Object.entries(m).reduce((acc, [k, v]) => acc.split('{' + k + '}').join(String(v)), tpl); }
@@ -2952,6 +2985,7 @@ class SeasonRecap {
     gradeText(g) { return { S: t('這一季漂亮'), A: t('穩穩的一季'), B: t('平平的一季'), C: t('難熬的一季') }[g] || ''; }
     headline(r) {
         const tr = r.trial ? (r.trial.status === 'passed' ? t('撐過了考驗') : t('考驗沒撐過')) : t('沒有考驗');
+        if (this._obs) return this._fill(t('{name}回顧：{tr}，評等 {g}'), { name: this.title(r), tr, g: r.grade }); // v6.25.0
         return this._fill(t('{name}回顧：{tr}，委託完成 {n} 件，商隊 {c} 趟，評等 {g}'), { name: this.title(r), tr, n: r.reqDone, c: r.carRuns, g: r.grade });
     }
     // 給介面用的文字版(顯示時才翻譯)
@@ -2961,9 +2995,9 @@ class SeasonRecap {
         const out = [];
         if (r.trial) { const d = T[r.trial.type] || {}; out.push({ icon: r.trial.status === 'passed' ? '🏅' : '💔', text: `${this._fill(r.trial.status === 'passed' ? t('撐過了「{t}」') : t('沒撐過「{t}」'), { t: t(d.title || r.trial.type) })} ${r.trial.value}/${r.trial.target}` }); }
         else out.push({ icon: '⚖️', text: t('本季沒有考驗') });
-        out.push({ icon: '📋', text: this._fill(t('完成 {a} 件、過期 {b} 件、最佳連勝 {c} 天'), { a: r.reqDone, b: r.reqFailed, c: r.bestStreak }) });
-        if (r.carRuns) out.push({ icon: '🐪', text: this._fill(t('{n} 趟、賺 {s} 銀幣、遇劫 {r} 次'), { n: r.carRuns, s: r.carSilver, r: r.carRaids }) });
-        out.push({ icon: '🧭', text: this._fill(t('經驗 +{x}，Lv.{a} → Lv.{b}'), { x: r.xp, a: r.levelFrom, b: r.levelTo }) });
+        if (!this._obs) out.push({ icon: '📋', text: this._fill(t('完成 {a} 件、過期 {b} 件、最佳連勝 {c} 天'), { a: r.reqDone, b: r.reqFailed, c: r.bestStreak }) });
+        if (r.carRuns && !this._obs) out.push({ icon: '🐪', text: this._fill(t('{n} 趟、賺 {s} 銀幣、遇劫 {r} 次'), { n: r.carRuns, s: r.carSilver, r: r.carRaids }) });
+        if (!this._obs) out.push({ icon: '🧭', text: this._fill(t('經驗 +{x}，Lv.{a} → Lv.{b}'), { x: r.xp, a: r.levelFrom, b: r.levelTo }) });
         { const a = Math.round(r.silverFrom), b = Math.round(r.silverTo); out.push({ icon: '💰', text: this._fill(t('銀幣 {a} → {b}（{d}）'), { a, b, d: (b - a >= 0 ? '+' : '') + (b - a) }) }); } // v6.22.0 英文半形括號 // v6.11.0 取整,不再出現 895.5999999
         out.push({ icon: '👥', text: this._fill(t('人口 {a} → {b}'), { a: r.popFrom, b: r.popTo }) + ` · ${this._fill(t('聲望 {d}'), { d: (r.rep >= 0 ? '+' : '') + r.rep })} · ${this._fill(t('繁榮 {d}'), { d: (r.prosperity >= 0 ? '+' : '') + r.prosperity })}` });
         if (r.revived) out.push({ icon: '🌅', text: t('小鎮復興了：連續撐過兩季考驗，搬走的人開始回望這裡') }); // v6.13.0
@@ -2976,7 +3010,7 @@ class SeasonRecap {
     }
     // v6.4.0 下一季怎麼打:依上一季的弱項挑最多三條具體行動(考驗失敗 → 對症;委託過期多;沒押過商隊;沒人好感上升;人口流失;沒升級)
     advice(r, w) {
-        if (!r) return [];
+        if (!r || w?.observerMode) return []; // v6.25.0 觀察者沒有「下一季怎麼打」(v6.26 由提案系統接手)
         const tips = [];
         const vs = w ? this._npcs(w).filter(a => !a.isDead && !String(a.agentId).startsWith('visit_')) : []; // v6.10.1 不推薦死者與訪客
         const byJob = (jobs) => vs.find(a => jobs.includes(a.job?.key)) || vs[0];
@@ -3001,6 +3035,7 @@ class SeasonRecap {
         return tips.slice(0, 3);
     }
     toDict(w) {
+        this._obs = !!w?.observerMode;
         const fmt = (r, withAdvice) => r ? { key: r.key, grade: r.grade, title: this.title(r), gradeText: this.gradeText(r.grade), headline: this.headline(r), lines: this.lines(r), advice: withAdvice ? this.advice(r, w) : [] } : null;
         return { last: fmt(this.last, true), history: this.history.slice().reverse().map(r => fmt(r, false)), pendingShow: this.pendingShow }; // v6.10.1 建議只算 last
     }

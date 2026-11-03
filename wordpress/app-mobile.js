@@ -187,7 +187,7 @@ Object.assign(RimTownApp.prototype, {
         panel.appendChild(card);
 
         // 手機虛擬搖桿(僅觸控裝置)
-        if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
+        if (this.world?.observerMode === false && window.matchMedia && window.matchMedia('(pointer: coarse)').matches) { // v6.25.0 觀察者沒有搖桿
             this._setupVirtualJoystick(panel);
         }
     },
@@ -263,7 +263,7 @@ Object.assign(RimTownApp.prototype, {
         this._kairoStatusAt = now;
         const pr = this.state.prosperity || {};
         const res = this.state.stockpile?.resources || {};
-        const pop = Object.keys(this.state.agents || {}).length;
+        const pop = Object.keys(this.state.agents || {}).filter(id => id !== 'player').length; // v6.25.0
         el.innerHTML = `
             <span>🏆 ${pr.level || '--'} ${Math.round(pr.prosperity || 0)}</span>
             <span>💰 ${Math.round(res.silver || 0)}</span>
@@ -274,6 +274,7 @@ Object.assign(RimTownApp.prototype, {
     _updateInteractPrompt() {
         const el = document.getElementById('interact-prompt');
         if (!el || !this.tileMap) return;
+        if (this.world?.observerMode !== false) { el.classList.add('hidden'); return; } // v6.25.0
         const near = this.tileMap.getNearbyNPC ? this.tileMap.getNearbyNPC() : null;
         if (!near || this.chatTarget === near.agentId) { el.classList.add('hidden'); return; }
         const npc = this.state?.agents?.[near.agentId];
@@ -422,7 +423,7 @@ Object.assign(RimTownApp.prototype, {
         card.innerHTML = `
             <button class="nqc-close" data-nqc="close">✕</button>
             <div class="nqc-name">${t(a.name)} <span class="nqc-job">${a.job?.title || ''}</span></div>
-            <div class="nqc-hearts" title="${t('對你的好感')}">${hearts} <span class="nqc-lv">${lv}/10</span></div>
+            ${this.world?.observerMode ? '' : `<div class="nqc-hearts" title="${t('對你的好感')}">${hearts} <span class="nqc-lv">${lv}/10</span></div>`}
             ${intentHtml}
             ${attrHtml}
             ${relHtml}
@@ -430,7 +431,7 @@ Object.assign(RimTownApp.prototype, {
             ${goalHtml}
             <div class="nqc-btns">
                 <button class="nqc-chat" data-nqc="chat">💬 ${t('交談')}</button>
-                ${goal && !goal.done ? `<button class="nqc-detail" data-nqc="nudge" ${nudged ? 'disabled style="opacity:0.4"' : ''}>✨ ${t('助夢')}</button>` : ''}
+                ${goal && !goal.done && !this.world?.observerMode ? `<button class="nqc-detail" data-nqc="nudge" ${nudged ? 'disabled style="opacity:0.4"' : ''}>✨ ${t('助夢')}</button>` : ''}
                 <button class="nqc-detail" data-nqc="follow">${this._followSet().has(agentId) ? '🔕 ' + t('追蹤中') : '🔔 ' + t('追蹤')}</button>
                 <button class="nqc-detail" data-nqc="detail">📋 ${t('詳情')}</button>
             </div>`;

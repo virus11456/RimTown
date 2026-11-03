@@ -4189,6 +4189,8 @@ class PixelTileMap {
     }
 
     // 鏡頭平滑跟隨玩家(手動平移地圖會關閉,再次輸入方向重新開啟)
+    // v6.25.0 觀察者:鏡頭中心(地圖像素),取代「玩家位置」做距離判定
+    getViewCenter() { return { x: this.camX + (this._viewW / this.zoom) / 2, y: this.camY + (this._viewH / this.zoom) / 2 }; }
     _followCamera(pos) {
         if (!this.followPlayer || !this._viewW) return;
         const vw = this._viewW / this.zoom;
@@ -5256,6 +5258,7 @@ class PixelTileMap {
             const agent = agents[aid];
             if (!agent) continue;
             const isPlayer = aid === 'player';
+            if (isPlayer && this.hidePlayer) continue; // v6.25.0 觀察者不在地圖上
             const isSelected = aid === selectedAgent;
             this._drawAgent(ctx, pos.x, pos.y, pos.job, isPlayer, isSelected, agent.name || 'You', pos.walking, pos.walkStep, pos.gender, agent.job?.title || '', pos.dir4 || 'down', agent.look || null); // v5.89.0 自訂外觀
             // Action animation overlay for farming NPCs
@@ -5298,8 +5301,8 @@ class PixelTileMap {
         const now = Date.now();
         const activeConvos = this._activeConvoBubbles || [];
         const shownBubbleAgents = new Set();
-        const playerPos = this.agentPositions['player'];
-        const BUBBLE_RANGE = TILE * 8; // Only show bubbles within 8 tiles of player
+        const playerPos = this.hidePlayer ? this.getViewCenter() : this.agentPositions['player']; // v6.25.0 觀察者:看鏡頭中心
+        const BUBBLE_RANGE = TILE * (this.hidePlayer ? 14 : 8); // Only show bubbles within 8 tiles of player
         for (const convo of activeConvos) {
             if (now > convo.expiry) continue;
             const fadeAlpha = Math.min(1, (convo.expiry - now) / 2000); // Fade in last 2s

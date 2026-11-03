@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.24.0
-const RIMTOWN_APP_VERSION = '6.24.0';
+// RimTown - Frontend App (WordPress Plugin) v6.25.0
+const RIMTOWN_APP_VERSION = '6.25.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1342,9 +1342,9 @@ class RimTownApp {
                 this.world.conversationEngine.isNearPlayer = (agentId) => {
                     const positions = this.tileMap?.agentPositions;
                     if (!positions) return false;
-                    const p = positions['player'], a = positions[agentId];
+                    const p = this.tileMap.getViewCenter?.() || positions['player'], a = positions[agentId]; // v6.25.0 觀察者:看鏡頭中心附近
                     if (!p || !a) return false;
-                    const range = TILE * 8;
+                    const range = TILE * (this.tileMap.getViewCenter ? 12 : 8);
                     return (a.x - p.x) * (a.x - p.x) + (a.y - p.y) * (a.y - p.y) <= range * range;
                 };
             }
@@ -1654,7 +1654,7 @@ class RimTownApp {
                 inner += `<button class="trade-btn coach-go" data-idx="${i}" style="width:100%;margin:3px 0;padding:9px;display:flex;align-items:center;justify-content:center;gap:7px">${this._coachPixelSvg(0.75)}<span>${t('前往')} ${esc(twn.name)}</span></button>`;
             });
         }
-        if (towns.length) inner += `<button class="trade-btn coach-caravan" style="width:100%;margin-top:8px;padding:9px">🐪 ${t('押商隊')}${this.world?.playerCaravan?.active ? `${t('（')}${t('在路上')}${t('）')}` : ''}</button>`; // v5.92.0
+        if (towns.length && !this.world?.observerMode) inner += `<button class="trade-btn coach-caravan" style="width:100%;margin-top:8px;padding:9px">🐪 ${t('押商隊')}${this.world?.playerCaravan?.active ? `${t('（')}${t('在路上')}${t('）')}` : ''}</button>`; // v5.92.0
         inner += `<button class="trade-btn coach-close" style="width:100%;margin-top:8px;padding:8px;opacity:0.8">${t('下次再說')}</button>`;
         card.innerHTML = inner;
         ov.appendChild(card);
@@ -1696,7 +1696,8 @@ class RimTownApp {
         if (!this.tileMap) this.tileMap = new PixelTileMap(canvas);
         document.querySelector('.rimtown-container')?.classList.toggle('is-3d', !!this.renderer3d);
         document.querySelector('.rimtown-container')?.classList.add('observer'); // v6.25.0 觀察者沙盒 UI 殼
-        this.tileMap.onClick = (locId) => { this._hideNpcCard(); this.playerMoveTo(locId); };
+        this.tileMap.hidePlayer = true; // v6.25.0 觀察者不在地圖上
+        this.tileMap.onClick = (locId) => { this._hideNpcCard(); if (this.world?.observerMode !== false) { this.tileMap.focusLocation?.(locId); this.bgm?.sfx?.('click'); } else this.playerMoveTo(locId); };
         this.tileMap.onAgentClick = (agentId) => this.onAgentClick(agentId);
         this.tileMap.onCoachClick = () => this._showCoachDialog(); // v5.57.0 馬車站
         // v4.2.0 礦石鎮式操作:手動移動時同步玩家邏輯位置(節流 400ms)
@@ -2381,6 +2382,7 @@ class RimTownApp {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
             // Only handle keys when game container is visible
             if (!document.getElementById('rimtown-app')) return;
+            if (this.world?.observerMode) return; // v6.25.0 觀察者沒有角色可移動
             this._handleMovementKey(e);
         });
         // v4.2.0:keyup 釋放方向鍵;視窗失焦時清空避免卡鍵
@@ -2997,7 +2999,7 @@ class RimTownApp {
         const resumeBtn = document.getElementById('btn-resume');
         if (this.state.paused) { pauseBtn?.classList.add('active'); resumeBtn?.classList.remove('active'); }
         else { pauseBtn?.classList.remove('active'); resumeBtn?.classList.add('active'); }
-        const agentCount = Object.keys(this.state.agents).length;
+        const agentCount = Object.keys(this.state.agents).filter(id => id !== 'player').length; // v6.25.0 不算觀察者
         const travelCount = (this.state.travelling_agents || []).length;
         const travelText = travelCount > 0 ? `${t('（')}+${travelCount}${t(' 外出）')}` : '';
         // v5.59.0 TC-05:跨鎮訪客不灌水常住人口,分開顯示
@@ -3060,7 +3062,7 @@ class RimTownApp {
         const player = this.state?.agents?.['player'];
         const target = this.state?.agents?.[agentId];
         if (!player || !target) return;
-        if (player.current_location !== target.current_location) {
+        if (!this.world?.observerMode && player.current_location !== target.current_location) {
             this.playerMoveTo(target.current_location);
         }
         this.startChatWith(agentId);
@@ -3175,7 +3177,7 @@ class RimTownApp {
     _drawRelationMap() {
         const canvas = document.getElementById('relmap-canvas');
         if (!canvas || !this.state?.agents) return;
-        const npcs = Object.entries(this.state.agents);
+        const npcs = Object.entries(this.state.agents).filter(([id]) => id !== 'player' || !this.world?.observerMode);
         const W = canvas.clientWidth || 320;
         const H = Math.max(300, Math.min(430, W));
         const dpr = window.devicePixelRatio || 1;

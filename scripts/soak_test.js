@@ -97,10 +97,9 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
   check(r.days === DAYS, `跑滿 ${DAYS} 天`);
   check(r.errors.length === 0, `無模擬/渲染/狀態錯誤 ${JSON.stringify(r.errors.slice(0, 5))}`);
   check(errs.length === 0, `無 page error ${JSON.stringify(errs.slice(0, 3))}`);
-  if (MODE !== 'idle') check(r.stats.requestsStats && r.stats.requestsStats.done > 0, `委託有完成 (${r.stats.requestsStats?.done})`);
-  if (MODE !== 'idle') check(r.stats.caravanHistory > 0, `商隊有回報 (${r.stats.caravanHistory})`);
+  if (MODE !== 'idle') check((r.stats.chats || 0) > 0, `村民有對話 (${r.stats.chats})`); // v6.25.0 觀察者沙盒:沒有委託與押商隊,改看村民對話與建設
+  if (MODE !== 'idle') check((r.stats.built || 0) > 0, `有建設完成 (${r.stats.built})`);
   check(r.stats.trialHistory > 0 || r.stats.trialsSeen.length > 0, `季度考驗有公布/結算 (${r.stats.trialHistory})`);
-  if (MODE !== 'idle') check(r.stats.level > 1, `旅人有升級 (Lv.${r.stats.level})`);
   check(DAYS < 16 || r.stats.recaps >= Math.floor((DAYS - 1) / 15), `季末回顧有結算 (${r.stats.recaps} 季：${(r.stats.recapGrades || []).join(' ')})`); // v5.98.0
   check(r.stats.roundTrips >= Math.floor(DAYS / 10), `存檔讀檔接著跑 ${r.stats.roundTrips} 次`);
   check(r.stats.population >= 5, `人口 ${r.stats.population}`);
