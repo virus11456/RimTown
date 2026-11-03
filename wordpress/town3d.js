@@ -45,19 +45,21 @@ class Town3D extends PixelTileMap {
         this._dpr = Math.min(window.devicePixelRatio || 1, 2);
         this._viewW = 0; this._viewH = 0; this._needsResize = true;
         this.isMobile = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+        try { this.lowQuality = localStorage.getItem('rimtown_3d_quality') === 'low'; } catch (e) { this.lowQuality = false; }
+        if (this.lowQuality) this._dpr = 1;
         // 軌道相機:看向 target(地圖座標,1 格 = 1 單位),yaw/pitch/dist
         this.target = new THREE.Vector3(this.cols / 2, 0, this.rows / 2);
         this.yaw = -0.45; this.pitch = 0.95; this.dist = this.isMobile ? 58 : 50;
         this.minPitch = 0.38; this.maxPitch = 1.35; this.minDist = 9; this.maxDist = 95;
 
         try {
-            this.renderer = new THREE.WebGLRenderer({ canvas: this.glCanvas, antialias: !this.isMobile, alpha: false, powerPreference: 'high-performance' });
+            this.renderer = new THREE.WebGLRenderer({ canvas: this.glCanvas, antialias: !this.isMobile && !this.lowQuality, alpha: false, powerPreference: 'high-performance' });
         } catch (e) { console.warn('[Town3D] WebGL 初始化失敗', e); this.renderer = null; return; }
         this.renderer.setPixelRatio(this._dpr);
         this.renderer.outputColorSpace = THREE.SRGBColorSpace;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
         this.renderer.toneMappingExposure = 1.05;
-        this.renderer.shadowMap.enabled = !this.isMobile;
+        this.renderer.shadowMap.enabled = !this.isMobile && !this.lowQuality;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
         this.scene = new THREE.Scene();
@@ -67,7 +69,7 @@ class Town3D extends PixelTileMap {
         this.hemi = new THREE.HemisphereLight('#CFE9FF', '#8C7A5A', 0.9);
         this.scene.add(this.hemi);
         this.sun = new THREE.DirectionalLight('#FFF4DC', 1.6);
-        this.sun.castShadow = !this.isMobile;
+        this.sun.castShadow = !this.isMobile && !this.lowQuality;
         const sc = this.sun.shadow.camera; sc.left = -56; sc.right = 56; sc.top = 56; sc.bottom = -56; sc.near = 1; sc.far = 260;
         this.sun.shadow.mapSize.set(2048, 2048); this.sun.shadow.bias = -0.0008; this.sun.shadow.normalBias = 0.03;
         this.sun.target.position.set(this.cols / 2, 0, this.rows / 2);
@@ -99,7 +101,7 @@ class Town3D extends PixelTileMap {
         const rect = parent.getBoundingClientRect();
         const w = rect.width, h = rect.height;
         if (w < 1 || h < 1) { this._needsResize = true; return; }
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const dpr = this.lowQuality ? 1 : Math.min(window.devicePixelRatio || 1, 2);
         if (!this._needsResize && Math.abs(this._viewW - w) <= 1 && Math.abs(this._viewH - h) <= 1 && dpr === this._dpr) return;
         this._needsResize = false; this._dpr = dpr; this._viewW = w; this._viewH = h;
         this.renderer.setPixelRatio(dpr);
@@ -741,12 +743,13 @@ class Town3D extends PixelTileMap {
         const box = (w, h, d, hex, x, y, z, name) => { const b = this._box(w, h, d, hex, x, y, z, m); b.name = name || ''; return b; };
         const female = (pos.gender || agent.gender) === 'female';
         // 腿、身體、手臂、頭、頭髮、眼睛
-        box(0.17, 0.36, 0.18, c.pants, -0.11, 0.18, 0, 'legL'); box(0.17, 0.36, 0.18, c.pants, 0.11, 0.18, 0, 'legR');
-        box(0.2, 0.1, 0.22, c.boots, -0.11, 0.05, 0.01); box(0.2, 0.1, 0.22, c.boots, 0.11, 0.05, 0.01);
+        const limb = (w, h, d, hex, x, pivotY, z, name) => { const g = new THREE.Group(); g.position.set(x, pivotY, z); g.name = name; m.add(g); this._box(w, h, d, hex, 0, -h / 2, 0, g); return g; };
+        const legL = limb(0.17, 0.36, 0.18, c.pants, -0.11, 0.36, 0, 'legL'), legR = limb(0.17, 0.36, 0.18, c.pants, 0.11, 0.36, 0, 'legR');
+        this._box(0.2, 0.1, 0.22, c.boots, 0, -0.31, 0.01, legL); this._box(0.2, 0.1, 0.22, c.boots, 0, -0.31, 0.01, legR);
         box(0.46, 0.5, 0.28, c.body, 0, 0.61, 0, 'body');
         box(0.46, 0.08, 0.3, c.bodyDk, 0, 0.4, 0);
-        box(0.13, 0.42, 0.14, c.body, -0.3, 0.62, 0, 'armL'); box(0.13, 0.42, 0.14, c.body, 0.3, 0.62, 0, 'armR');
-        box(0.11, 0.1, 0.12, c.skin, -0.3, 0.38, 0); box(0.11, 0.1, 0.12, c.skin, 0.3, 0.38, 0);
+        const armL = limb(0.13, 0.42, 0.14, c.body, -0.3, 0.83, 0, 'armL'), armR = limb(0.13, 0.42, 0.14, c.body, 0.3, 0.83, 0, 'armR');
+        this._box(0.11, 0.1, 0.12, c.skin, 0, -0.45, 0, armL); this._box(0.11, 0.1, 0.12, c.skin, 0, -0.45, 0, armR);
         box(0.42, 0.4, 0.4, c.skin, 0, 1.08, 0, 'head');
         const hairStyle = agent.look?.hair ?? (female ? 1 : 0);
         box(0.46, 0.14, 0.44, c.hair, 0, 1.3, 0, 'hair');
@@ -767,6 +770,9 @@ class Town3D extends PixelTileMap {
         if (acc === 2) { box(0.14, 0.1, 0.03, '#2B2118', -0.1, 1.1, 0.22); box(0.14, 0.1, 0.03, '#2B2118', 0.1, 1.1, 0.22); }
         if (acc === 3) box(0.5, 0.12, 0.34, c.accent, 0, 0.86, 0.02);
         if (jobKey === 'blacksmith') box(0.3, 0.42, 0.04, '#5A4A3A', 0, 0.6, 0.15);
+        const tool = new THREE.Group(); tool.name = 'tool'; tool.visible = false; tool.position.set(0, -0.45, 0.12); armR.add(tool);
+        this._box(0.06, 0.95, 0.06, '#8B6914', 0, 0.2, 0, tool); this._box(0.22, 0.06, 0.08, '#8A8A8A', 0, 0.66, 0.04, tool);
+        m.userData.tool = tool;
         if (jobKey === 'trader') box(0.2, 0.22, 0.16, '#8C5A3C', 0.34, 0.5, 0);
         m.scale.setScalar(1.3);
         this._agentGroup.add(m); this._agentMeshes[aid] = m;
@@ -793,8 +799,15 @@ class Town3D extends PixelTileMap {
             m.rotation.y += ((((rot - m.rotation.y) + Math.PI * 3) % (Math.PI * 2)) - Math.PI) * 0.25;
             const sleeping = agent.activity === 'sleeping';
             for (const ch of m.children) {
-                if (ch.name === 'legL') ch.rotation.x = ws * 0.6; else if (ch.name === 'legR') ch.rotation.x = -ws * 0.6;
-                else if (ch.name === 'armL') ch.rotation.x = -ws * 0.5; else if (ch.name === 'armR') ch.rotation.x = ws * 0.5;
+                if (ch.name === 'legL') ch.rotation.x = ws * 0.7; else if (ch.name === 'legR') ch.rotation.x = -ws * 0.7;
+                else if (ch.name === 'armL') ch.rotation.x = -ws * 0.6; else if (ch.name === 'armR') ch.rotation.x = ws * 0.6;
+            }
+            const farming = !walking && pos.atFarm && (pos.job === 'farmer' || pos.activity === 'working') && aid !== 'player';
+            if (farming || m.userData.farming) {
+                const sw = farming ? Math.max(0, Math.sin(this.animFrame * 0.15 + (aid.charCodeAt(0) || 0))) : 0;
+                for (const ch of m.children) if (ch.name === 'armR') ch.rotation.x = -2.2 + sw * 1.4;
+                if (m.userData.tool) m.userData.tool.visible = farming;
+                m.userData.farming = farming;
             }
             m.rotation.x = sleeping && !walking ? -Math.PI / 2 * 0.9 : 0;
             if (sleeping && !walking) m.position.y = gy + 0.32;
@@ -840,7 +853,8 @@ class Town3D extends PixelTileMap {
             if (!el._bound) { el._bound = true; el.addEventListener('click', (e) => { e.stopPropagation(); this.focusLocation(locId); if (this.onClick) this.onClick(locId); }); }
             this._place(el, cx, top + 0.3, cz);
         }
-        for (const d of (this._dynLabels || [])) { const el = this._ov(d.key, d.cls, d.html); this._place(el, d.x, d.y, d.z); }
+        const extraLabels = [].concat(this._dynLabels || [], this._factLabels || [], this._expLabels || [], this._industryLabels(), this._graveLabel ? [this._graveLabel] : [], this._festLabel ? [this._festLabel] : [], this._caravanLabel ? [this._caravanLabel] : []);
+        for (const d of extraLabels) { const el = this._ov(d.key, d.cls, d.html); this._place(el, d.x, d.y, d.z); }
         // 村民名牌、表情、睡眠
         const shownBubble = new Set();
         const convos = (this._activeConvoBubbles || []).filter(c => now < c.expiry);
@@ -884,7 +898,253 @@ class Town3D extends PixelTileMap {
             const mi = this._moveIndicator; const el = this._ov('mi', 't3d-move', '◎');
             this._place(el, mi.x / TILE, 0.4, mi.y / TILE, { noScale: true });
         }
-        for (const [key, el] of this._ovPool) if (!this._ovUsed.has(key)) { if (key.startsWith('fx:') || key.startsWith('bb:') || key.startsWith('cb:') || key.startsWith('cs:')) { el.remove(); this._ovPool.delete(key); } else el.style.display = 'none'; }
+        for (const [key, el] of this._ovPool) if (!this._ovUsed.has(key)) { if (/^(fx|bb|cb|cs|fac|exp|ind|carav|fest|grave):?/.test(key)) { el.remove(); this._ovPool.delete(key); } else el.style.display = 'none'; }
+    }
+
+    // ---------- v6.24.0 粒子(雨／雪／煙／螢火蟲／節慶彩紙)----------
+    _fxInit() {
+        if (this._fx) return;
+        const mk = (n, mat, lines) => {
+            const g = new THREE.BufferGeometry();
+            g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3 * (lines ? 2 : 1)), 3));
+            g.setDrawRange(0, 0);
+            const m = lines ? new THREE.LineSegments(g, mat) : new THREE.Points(g, mat);
+            m.frustumCulled = false; m.renderOrder = 5; this.scene.add(m);
+            return { mesh: m, cap: n, list: [] };
+        };
+        this._fx = {
+            rain: mk(this.lowQuality ? 500 : 1400, new THREE.LineBasicMaterial({ color: new THREE.Color('#BFD6F2'), transparent: true, opacity: 0.45 }), true),
+            snow: mk(this.lowQuality ? 400 : 1000, new THREE.PointsMaterial({ color: new THREE.Color('#FFFFFF'), size: 0.18, transparent: true, opacity: 0.9, depthWrite: false })),
+            smoke: mk(300, new THREE.PointsMaterial({ color: new THREE.Color('#C9C4BC'), size: 0.5, transparent: true, opacity: 0.35, depthWrite: false })),
+            firefly: mk(200, new THREE.PointsMaterial({ color: new THREE.Color('#D9FF7A'), size: 0.22, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending })),
+            fest: mk(400, new THREE.PointsMaterial({ color: new THREE.Color('#FFD54F'), size: 0.22, transparent: true, opacity: 0.95, depthWrite: false, vertexColors: false })),
+            leaf: mk(150, new THREE.PointsMaterial({ color: new THREE.Color('#C98A3A'), size: 0.16, transparent: true, opacity: 0.8, depthWrite: false })),
+        };
+        // 星空:夜晚才看得到
+        const n = 420, pos = new Float32Array(n * 3);
+        for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, e = 0.15 + Math.random() * 1.3, r = 260; pos[i * 3] = this.cols / 2 + Math.cos(a) * Math.cos(e) * r; pos[i * 3 + 1] = Math.sin(e) * r; pos[i * 3 + 2] = this.rows / 2 + Math.sin(a) * Math.cos(e) * r; }
+        const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        this._stars = new THREE.Points(sg, new THREE.PointsMaterial({ color: new THREE.Color('#FFFFFF'), size: 1.6, transparent: true, opacity: 0, depthWrite: false, fog: false }));
+        this._stars.frustumCulled = false; this.scene.add(this._stars);
+    }
+    _fxSpawn(type, p) { const f = this._fx[type]; if (f.list.length < f.cap) f.list.push(p); }
+    _updateParticles() {
+        this._fxInit();
+        const f = this._fx, frame = this.animFrame, night = this._nightAmount();
+        const tx = this.target.x, tz = this.target.z, R = Math.min(30, this.dist * 0.8);
+        const wt = this.weatherType || 'clear';
+        const heavy = wt === 'storm' || wt === 'blizzard';
+        const q = this.lowQuality ? 0.45 : 1;
+        if (wt === 'rain' || wt === 'storm') for (let i = 0; i < Math.round((heavy ? 26 : 14) * q); i++) this._fxSpawn('rain', { x: tx + (Math.random() - 0.5) * R * 2, y: 10 + Math.random() * 8, z: tz + (Math.random() - 0.5) * R * 2, vx: heavy ? 0.12 : 0.03, vy: -0.55 - Math.random() * 0.2, vz: 0, life: 60 });
+        if (wt === 'snow' || wt === 'blizzard') for (let i = 0; i < Math.round((heavy ? 12 : 5) * q); i++) this._fxSpawn('snow', { x: tx + (Math.random() - 0.5) * R * 2, y: 9 + Math.random() * 6, z: tz + (Math.random() - 0.5) * R * 2, vx: heavy ? 0.06 : 0.01, vy: -0.06 - Math.random() * 0.04, vz: 0, life: 400, ph: Math.random() * 6.28 });
+        if (frame % 10 === 0 && this._chimneyTops) for (const c of this._chimneyTops) if (Math.random() < 0.6) this._fxSpawn('smoke', { x: c.x + (Math.random() - 0.5) * 0.2, y: c.y, z: c.z + (Math.random() - 0.5) * 0.2, vx: (Math.random() - 0.5) * 0.01 + 0.012, vy: 0.025 + Math.random() * 0.012, vz: (Math.random() - 0.5) * 0.01, life: 90 + Math.random() * 40, maxLife: 130 });
+        if (night > 0.6 && frame % 6 === 0) for (const z of Object.values(this.natureZones)) if (Math.random() < 0.25 * q) this._fxSpawn('firefly', { x: z.x + Math.random() * z.w, y: 0.4 + Math.random() * 1.4, z: z.y + Math.random() * z.h, vx: (Math.random() - 0.5) * 0.02, vy: (Math.random() - 0.5) * 0.01, vz: (Math.random() - 0.5) * 0.02, life: 120 + Math.random() * 100, ph: Math.random() * 6.28 });
+        if (this.season === '秋季' && frame % 12 === 0) { const fz = this.natureZones['forest']; if (fz && Math.random() < 0.6) this._fxSpawn('leaf', { x: fz.x + Math.random() * fz.w, y: 2.5 + Math.random(), z: fz.y + Math.random() * fz.h, vx: 0.015 + Math.random() * 0.01, vy: -0.018, vz: 0.01, life: 160, ph: Math.random() * 6.28 }); }
+        const fest = this.festivalData?.activeFestival;
+        if (fest && frame % 4 === 0) { const sq = this.buildingZones['town_square'] || this.natureZones['town_square']; if (sq) for (let i = 0; i < 3; i++) this._fxSpawn('fest', { x: sq.x + Math.random() * sq.w, y: 4 + Math.random() * 3, z: sq.y + Math.random() * sq.h, vx: (Math.random() - 0.5) * 0.02, vy: -0.02 - Math.random() * 0.02, vz: (Math.random() - 0.5) * 0.02, life: 150, ph: Math.random() * 6.28 }); }
+        for (const [type, fx] of Object.entries(f)) {
+            const arr = fx.mesh.geometry.attributes.position.array; let n = 0;
+            for (let i = fx.list.length - 1; i >= 0; i--) {
+                const p = fx.list[i]; p.life--;
+                p.x += p.vx; p.y += p.vy; p.z += p.vz;
+                if (type === 'snow' || type === 'leaf') p.x += Math.sin(frame * 0.05 + p.ph) * 0.01;
+                if (type === 'firefly') { p.vx += (Math.random() - 0.5) * 0.004; p.vz += (Math.random() - 0.5) * 0.004; p.vx *= 0.97; p.vz *= 0.97; }
+                if (type === 'fest') { p.x += Math.sin(frame * 0.1 + p.ph) * 0.02; }
+                if (p.life <= 0 || p.y < -0.3 || (type === 'smoke' && p.y > 12)) { fx.list.splice(i, 1); continue; }
+                if (type === 'rain') { arr[n * 6] = p.x; arr[n * 6 + 1] = p.y; arr[n * 6 + 2] = p.z; arr[n * 6 + 3] = p.x - p.vx * 1.2; arr[n * 6 + 4] = p.y - p.vy * 1.2; arr[n * 6 + 5] = p.z; }
+                else { arr[n * 3] = p.x; arr[n * 3 + 1] = p.y; arr[n * 3 + 2] = p.z; }
+                n++;
+            }
+            fx.mesh.geometry.setDrawRange(0, type === 'rain' ? n * 2 : n);
+            fx.mesh.geometry.attributes.position.needsUpdate = true;
+            fx.mesh.visible = n > 0;
+        }
+        if (f.firefly.mesh.visible) f.firefly.mesh.material.opacity = 0.55 + Math.sin(frame * 0.12) * 0.35;
+        if (this._stars) { this._stars.material.opacity = clamp((night - 0.5) * 2, 0, 1) * 0.9; this._stars.visible = this._stars.material.opacity > 0.02; }
+        // 燈塔夜間光束
+        if (this._lighthouse) {
+            if (!this._beam) {
+                const g = new THREE.ConeGeometry(2.2, 34, 12, 1, true); g.rotateX(-Math.PI / 2); g.translate(0, 0, 17);
+                this._beam = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: new THREE.Color('#FFE9A8'), transparent: true, opacity: 0.16, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
+                this._beam.position.set(this._lighthouse.tx + 0.5, 5.6, this._lighthouse.ty + 0.5); this.scene.add(this._beam);
+            }
+            const on = night > 0.5 || this.lighthouseUpgraded && night > 0.2;
+            this._beam.visible = on; if (on) { this._beam.rotation.y = frame * 0.012; this._beam.material.opacity = 0.1 + night * 0.1; }
+        }
+    }
+
+    // ---------- v6.24.0 農田、工廠、墓園、探索標記、節慶 ----------
+    _syncExtras(extraData) {
+        const farm = extraData?.farm, proc = extraData?.processing;
+        const plots = farm?.plots || [];
+        const fz = this.buildingZones['farm'] || this.natureZones['farm'];
+        const fsig = fz ? plots.map(p => p.state + (p.crop || '') + Math.round((p.growthProgress || 0) * 5)).join(',') : '';
+        if (fsig !== this._farmSig) {
+            this._farmSig = fsig;
+            if (!this._farmGroup) { this._farmGroup = new THREE.Group(); this.scene.add(this._farmGroup); }
+            this._farmGroup.clear();
+            if (fz) {
+                const CROP = { wheat: '#E8C840', potato: '#8B7355', rice: '#B8D860', corn: '#C8A830', cotton: '#E0D8D0', flowers: '#F080A0', herbs: '#389830', mushroom: '#C0A878', sugarcane: '#90C870', tea: '#407830', grapes: '#8060A0', golden_wheat: '#FFD700', dragon_fruit: '#E83860' };
+                const sx = fz.x - 3, sz = fz.y + fz.h + 1, ps = 14 / TILE, gap = 2 / TILE;
+                plots.forEach((plot, i) => {
+                    const cx = sx + (i % 4) * (ps + gap) + ps / 2, cz = sz + Math.floor(i / 4) * (ps + gap) + ps / 2, gy = this.groundY(cx, cz);
+                    const soil = plot.state === 'empty' ? '#8B7355' : '#5A3A20';
+                    this._box(ps, 0.1, ps, soil, cx, gy + 0.05, cz, this._farmGroup);
+                    if (plot.state === 'tilled') for (let r = 0; r < 3; r++) this._box(ps * 0.9, 0.04, 0.08, '#4A2A15', cx, gy + 0.12, cz - ps / 3 + r * ps / 3, this._farmGroup);
+                    if (plot.state === 'growing' || plot.state === 'ready') {
+                        const pr = plot.state === 'ready' ? 1 : (plot.growthProgress || 0);
+                        const h = 0.12 + pr * 0.5, col = pr < 0.35 ? '#7EC850' : pr < 0.7 ? '#5CAD42' : (CROP[plot.crop] || '#8BC34A');
+                        for (let k = 0; k < 4; k++) this._box(0.14, h, 0.14, col, cx - ps / 4 + (k % 2) * ps / 2, gy + 0.1 + h / 2, cz - ps / 4 + Math.floor(k / 2) * ps / 2, this._farmGroup);
+                        if (plot.state === 'ready') this._box(ps * 0.5, 0.14, ps * 0.5, '#FFD700', cx, gy + 0.2 + h, cz, this._farmGroup).material = this._mat('#FFD700', { emissive: new THREE.Color('#FFB300'), emissiveIntensity: 0.4 });
+                    }
+                });
+            }
+        }
+        // 工廠地塊
+        const fplots = this._getFactoryPlots ? this._getFactoryPlots() : [];
+        const facts = proc?.builtFactories || {};
+        const fkeys = Object.keys(facts);
+        const psig = fplots.length ? fkeys.map(k => k + (facts[k].status || '') + Math.round((facts[k].buildProgress || 0) / (facts[k].buildRequired || 1) * 10)).join(',') + '|' + fplots.length : '';
+        if (psig !== this._factSig) {
+            this._factSig = psig; this._factLabels = [];
+            if (!this._factGroup) { this._factGroup = new THREE.Group(); this.scene.add(this._factGroup); }
+            this._factGroup.clear();
+            const ROOFS = ['#C85040', '#4878B8', '#8858A8', '#3A8A58', '#C88030', '#B84878', '#607890'];
+            fplots.forEach((pl, i) => {
+                const cx = pl.x + pl.w / 2, cz = pl.y + pl.h / 2, gy = this.groundY(cx, cz);
+                const key = fkeys[i], fac = key ? facts[key] : null, def = fac && typeof FACTORIES !== 'undefined' ? FACTORIES[key] : null;
+                if (!fac || !def) { this._box(pl.w, 0.08, pl.h, '#A9A196', cx, gy + 0.04, cz, this._factGroup); this._box(0.9, 0.2, 0.4, '#C8A060', cx, gy + 0.18, cz, this._factGroup); this._box(0.9, 0.2, 0.4, '#A0522D', cx, gy + 0.38, cz, this._factGroup); return; }
+                if (fac.status === 'building') {
+                    this._box(pl.w, 0.1, pl.h, '#9B7B52', cx, gy + 0.05, cz, this._factGroup);
+                    for (const [ox, oz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) this._box(0.1, 1.8, 0.1, '#8B5A2B', cx + ox * (pl.w / 2 - 0.3), gy + 0.9, cz + oz * (pl.h / 2 - 0.3), this._factGroup);
+                    const pr = Math.min(1, (fac.buildProgress || 0) / (fac.buildRequired || 1));
+                    this._factLabels.push({ key: 'fac:' + key, x: cx, y: gy + 2.4, z: cz, cls: 't3d-label t3d-site', html: `<span class="t3d-name">🚧 ${this._esc(t3(def.name))}</span><i class="t3d-bar"><b style="width:${Math.round(pr * 100)}%"></b></i>` });
+                    return;
+                }
+                const wallH = 1.6;
+                this._box(pl.w - 0.3, wallH, pl.h - 0.3, '#D9C3A5', cx, gy + wallH / 2, cz, this._factGroup);
+                this._box(pl.w, 0.12, pl.h, ROOFS[i % ROOFS.length], cx, gy + wallH + 0.06, cz, this._factGroup);
+                const r = this._cone(1, 0.7, 4, ROOFS[i % ROOFS.length], cx, gy + wallH + 0.45, cz, this._factGroup); r.rotation.y = Math.PI / 4; r.scale.set(pl.w * 0.72, 0.7, pl.h * 0.72);
+                this._box(0.3, 0.9, 0.3, '#8A6A5A', cx + pl.w / 2 - 0.5, gy + wallH + 0.6, cz - pl.h / 2 + 0.5, this._factGroup);
+                this._chimneyTops = this._chimneyTops || []; if (!this._chimneyTops.some(c => c.key === key)) this._chimneyTops.push({ key, x: cx + pl.w / 2 - 0.5, y: gy + wallH + 1.1, z: cz - pl.h / 2 + 0.5 });
+                this._factLabels.push({ key: 'fac:' + key, x: cx, y: gy + wallH + 1.3, z: cz, cls: 't3d-label t3d-mini' + (fac.status === 'active' ? ' is-active' : ''), html: `<span class="t3d-name">${this._esc(def.icon || '')}${this._esc(t3(def.name))}</span>` });
+            });
+        }
+        // 墓園(教堂旁)
+        const graves = this.graveyardData || [];
+        if ((graves.length || 0) !== this._graveN) {
+            this._graveN = graves.length;
+            if (!this._graveGroup) { this._graveGroup = new THREE.Group(); this.scene.add(this._graveGroup); }
+            this._graveGroup.clear(); this._graveLabel = null;
+            if (graves.length) {
+                const ch = this.buildingZones['chapel'] || this.natureZones['chapel'];
+                const bx = ch ? ch.x + ch.w + 1 : this.cols - 8, bz = ch ? ch.y : this.rows - 8;
+                graves.slice(-10).forEach((g, i) => {
+                    const x = bx + (i % 5) * 0.875 + 0.4, z = bz + Math.floor(i / 5) * 1.1 + 0.4, gy = this.groundY(x, z);
+                    this._box(0.4, 0.55, 0.14, '#7A8898', x, gy + 0.27, z, this._graveGroup);
+                    const top = this._cyl(0.2, 0.2, 0.14, 10, '#7A8898', x, gy + 0.55, z, this._graveGroup); top.rotation.x = Math.PI / 2;
+                    this._box(0.05, 0.25, 0.03, '#C9D2DA', x, gy + 0.4, z + 0.08, this._graveGroup); this._box(0.16, 0.05, 0.03, '#C9D2DA', x, gy + 0.46, z + 0.08, this._graveGroup);
+                });
+                this._graveLabel = { key: 'grave', x: bx + 2.2, y: 1.4, z: bz + 0.4, cls: 't3d-label t3d-mini', html: `<span class="t3d-name">🪦 ${this._esc(t3('墓園'))}</span>` };
+            }
+        }
+        // 探索據點(地圖邊緣旗幟)
+        const ex = this.explorationData;
+        const zones = ex?.discoveredZones ? Object.keys(ex.discoveredZones) : [];
+        const active = new Set((ex?.activeExpeditions || []).map(e => e.zoneId));
+        const esig = zones.join(',') + '|' + [...active].join(',');
+        if (esig !== this._expSig) {
+            this._expSig = esig; this._expLabels = [];
+            if (!this._expGroup) { this._expGroup = new THREE.Group(); this.scene.add(this._expGroup); }
+            this._expGroup.clear();
+            const icons = { deep_forest: '🌲', ancient_ruins: '🏛', abandoned_mine: '⛏', mountain_pass: '⛰', riverside_cave: '🕳', cursed_swamp: '🌿' };
+            const names = { deep_forest: '幽深森林', ancient_ruins: '古代遺跡', abandoned_mine: '廢棄礦坑', mountain_pass: '山間隘口', riverside_cave: '河畔洞窟', cursed_swamp: '詛咒沼澤' };
+            const spots = [[2, 2], [this.cols - 4, 2], [2, this.rows - 3], [this.cols - 4, this.rows - 3], [Math.floor(this.cols / 2), 1], [Math.floor(this.cols / 2), this.rows - 2]];
+            zones.forEach((zid, i) => {
+                if (i >= spots.length) return;
+                const [x, z] = spots[i], gy = this.groundY(x + 0.5, z + 0.5), isA = active.has(zid);
+                this._box(0.1, 2.2, 0.1, '#7A4E2E', x + 0.5, gy + 1.1, z + 0.5, this._expGroup);
+                this._box(0.9, 0.5, 0.05, isA ? '#FFB300' : '#8FB8E8', x + 0.95, gy + 1.9, z + 0.5, this._expGroup);
+                this._expLabels.push({ key: 'exp:' + zid, x: x + 0.5, y: gy + 2.6, z: z + 0.5, cls: 't3d-label t3d-mini' + (isA ? ' is-active' : ''), html: `<span class="t3d-name">${icons[zid] || '?'} ${this._esc(t3(names[zid] || zid))}</span>` });
+            });
+        }
+        // 節慶:廣場彩旗
+        const fest = this.festivalData?.activeFestival;
+        const fid = fest ? (fest.id || fest.name || 'f') : '';
+        if (fid !== this._festId) {
+            this._festId = fid;
+            if (!this._festGroup) { this._festGroup = new THREE.Group(); this.scene.add(this._festGroup); }
+            this._festGroup.clear(); this._festLabel = null;
+            const sq = this.buildingZones['town_square'] || this.natureZones['town_square'];
+            if (fest && sq) {
+                const cols = ['#FFD54F', '#FF69B4', '#00CED1', '#FF6347', '#98FB98'];
+                const corners = [[sq.x, sq.y], [sq.x + sq.w, sq.y], [sq.x + sq.w, sq.y + sq.h], [sq.x, sq.y + sq.h]];
+                for (const [cx, cz] of corners) this._box(0.12, 2.6, 0.12, '#7A4E2E', cx, 1.3, cz, this._festGroup);
+                for (let e = 0; e < 4; e++) {
+                    const [x0, z0] = corners[e], [x1, z1] = corners[(e + 1) % 4], n = Math.max(3, Math.round(Math.hypot(x1 - x0, z1 - z0) / 1.1));
+                    for (let k = 1; k < n; k++) { const tt = k / n, sag = Math.sin(tt * Math.PI) * 0.35; const fl = this._box(0.32, 0.4, 0.04, cols[(e * 7 + k) % cols.length], x0 + (x1 - x0) * tt, 2.4 - sag, z0 + (z1 - z0) * tt, this._festGroup); fl.rotation.y = (e % 2) ? 0 : Math.PI / 2; }
+                }
+                this._festLabel = { key: 'fest', x: sq.x + sq.w / 2, y: 3.6, z: sq.y + sq.h / 2, cls: 't3d-label t3d-fest', html: `<span class="t3d-name">${this._esc(fest.icon || '🎉')} ${this._esc(t3(fest.name || ''))}</span>` };
+            }
+        }
+        this._industryData = extraData?.industry || null;
+    }
+    _industryLabels() {
+        const out = []; const inds = this._industryData?.industries; if (!inds) return out;
+        const LOC = { lumber: 'workshop', quarry: 'workshop', farming: 'farm', mining: 'workshop' };
+        let idx = 0;
+        for (const [key, ind] of Object.entries(inds)) {
+            const z = this.buildingZones[LOC[key] || 'town_square'] || this.natureZones[LOC[key] || 'town_square']; if (!z) continue;
+            const def = typeof INDUSTRIES !== 'undefined' ? INDUSTRIES[key] : null; if (!def) continue;
+            out.push({ key: 'ind:' + key, x: z.x + 0.8 + idx * 1.8, y: (this._buildingTops?.[LOC[key]] ?? 1.2) + 0.1, z: z.y + z.h, cls: 't3d-label t3d-mini t3d-ind' + (ind.level >= 4 ? ' lv4' : ind.level >= 2 ? ' lv2' : ''), html: `<span class="t3d-name">${this._esc(def.icon || '')}Lv${ind.level}</span>` });
+            idx++;
+        }
+        return out;
+    }
+    // 商隊進城動畫(showCaravan 由 app 呼叫)
+    _updateCaravan() {
+        const an = this._caravanAnim;
+        if (!an) { if (this._caravanMesh) this._caravanMesh.visible = false; return; }
+        const DUR = 520, el = this.animFrame - an.t0;
+        if (el > DUR) { this._caravanAnim = null; if (this._caravanMesh) this._caravanMesh.visible = false; return; }
+        if (!this._caravanMesh) {
+            const g = new THREE.Group(); this.scene.add(g); this._caravanMesh = g;
+            this._box(1.6, 1.0, 1.0, '#7A5236', 0, 0.85, 0, g); this._box(1.7, 0.1, 1.1, '#C9A86A', 0, 1.4, 0, g);
+            this._box(0.5, 0.35, 0.5, '#A1887F', -0.3, 1.6, 0, g); this._box(0.5, 0.3, 0.4, '#8D6E63', 0.35, 1.58, 0.1, g);
+            for (const [wx, wz] of [[-0.55, 0.55], [0.55, 0.55], [-0.55, -0.55], [0.55, -0.55]]) { const w = this._cyl(0.28, 0.28, 0.12, 8, '#3A2A1A', wx, 0.28, wz, g); w.rotation.x = Math.PI / 2; }
+            this._box(1.1, 0.6, 0.5, '#8A6A4A', -1.7, 0.75, 0, g); this._box(0.4, 0.5, 0.4, '#8A6A4A', -2.35, 1.0, 0, g);
+            for (const lx of [-1.4, -2.0]) for (const lz of [-0.18, 0.18]) this._box(0.12, 0.5, 0.12, '#6A4A2A', lx, 0.25, lz, g);
+        }
+        const cs = this.coachStation || { x: this.cols - 7 };
+        const startX = cs.x + 2, endX = 41, z = 21.5;
+        const p = Math.min(1, el / (DUR * 0.55)), ease = 1 - Math.pow(1 - p, 2);
+        const x = startX + (endX - startX) * ease;
+        const g = this._caravanMesh; g.visible = el < DUR * 0.9;
+        g.position.set(x, this.groundY(x, z) + (p < 1 ? Math.abs(Math.sin(el / 4)) * 0.05 : 0), z);
+        g.rotation.y = endX < startX ? 0 : Math.PI;
+        this._caravanLabel = an.label && g.visible ? { key: 'carav', x, y: 2.6, z, cls: 't3d-label t3d-mini', html: `<span class="t3d-name">${this._esc(an.label)}</span>` } : null;
+    }
+    // 效能自動降級:連續 3 秒平均幀長 > 40ms → 關陰影、降解析度
+    _updateQuality(now) {
+        if (this.lowQuality || !this.renderer) return;
+        if (!this._qt0) { this._qt0 = now; this._qn = 0; return; }
+        this._qn++;
+        if (now - this._qt0 >= 3000) {
+            const avg = (now - this._qt0) / this._qn;
+            if (avg > 40 && this._qn > 20) this.setLowQuality(true);
+            this._qt0 = now; this._qn = 0;
+        }
+    }
+    setLowQuality(on) {
+        this.lowQuality = !!on;
+        if (!this.renderer) return;
+        this.renderer.shadowMap.enabled = !on && !this.isMobile;
+        this.sun.castShadow = !on && !this.isMobile;
+        this._dpr = on ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+        this.renderer.setPixelRatio(this._dpr); this._needsResize = true;
+        this.scene.traverse((o) => { if (o.material && o.material.needsUpdate !== undefined) o.material.needsUpdate = true; });
+        try { localStorage.setItem('rimtown_3d_quality', on ? 'low' : 'high'); } catch (e) {}
+        console.log('[Town3D] quality', on ? 'low' : 'high');
     }
 
     // ---------- 主渲染 ----------
@@ -900,12 +1160,16 @@ class Town3D extends PixelTileMap {
         this.animFrame++;
         if (this._sceneSrc !== this.grid || this._sceneSeason !== (this.season || '')) this._buildScene();
         this._syncDynamic(completedBuildings);
+        this._syncExtras(extraData);
         this._updateCamera();
         this._updateLighting();
         this._updateWater();
+        this._updateParticles();
+        this._updateCaravan();
         this._updateAgents3D(agents || {}, selectedAgent);
         this.renderer.render(this.scene, this.camera);
         this._updateOverlays(agents || {}, selectedAgent);
+        this._updateQuality(performance.now());
     }
     // 2D 專用的即時重繪入口在 3D 不需要;保留以免外部呼叫報錯
     _buildStaticLayer() {} _postProcessArt() {} _drawSitePreview() {}

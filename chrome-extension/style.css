@@ -4321,3 +4321,10 @@ body.landing-open { overflow: hidden; }
     .rimtown-container .t3d-tag { font-size: 10px; }
     .rimtown-container .t3d-bubble { max-width: 160px; font-size: 11px; }
 }
+/* v6.24.0 3D 標記：節慶橫幅、產業徽章、探索旗、工廠 */
+.rimtown-container .t3d-label.t3d-mini.is-active { background: rgba(232,115,42,0.9); color: #fff; }
+.rimtown-container .t3d-label.t3d-fest { background: rgba(255,213,79,0.95); color: #5A3A10; border-color: #E8A020; font-size: 12px; animation: t3dFest 1.6s ease-in-out infinite; pointer-events: none; }
+@keyframes t3dFest { 0%,100% { transform-origin: 50% 100%; } 50% { box-shadow: 0 0 12px rgba(255,180,0,0.8); } }
+.rimtown-container .t3d-label.t3d-ind { font-size: 9px; padding: 1px 6px; border: 1px solid #888; }
+.rimtown-container .t3d-label.t3d-ind.lv2 { border-color: #4fc3f7; }
+.rimtown-container .t3d-label.t3d-ind.lv4 { border-color: #ffd700; color: #ffd700; }

@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.23.0
+ * Version: 6.24.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.23.0');
+define('RIMTOWN_VERSION', '6.24.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1323,6 +1323,24 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.24.0',
+            'date'    => '2026-11-03',
+            'changes' => array(
+                '🧊 3D 天氣與氛圍：雨（斜線雨絲）、雪（飄落雪片）、煙囪炊煙、夜間螢火蟲（林地與公園）、秋天落葉、節慶彩紙；夜空有星星，海風鎮燈塔夜裡轉光束',
+                '🧊 3D 村民細修：四肢改在肩膀／髖部轉動（走路不再像鐘擺）、農夫在田裡揮鋤頭、工作中的手部動作；選中村民腳下的橘圈',
+                '🧊 3D 農田、工廠、產業：農田依每塊地的狀態長作物（空地／翻土／成長中／可收成會發金光）；工廠地塊有空地基、施工鷹架＋進度、建成後的廠房與煙囪；產業等級徽章掛在對應建築旁',
+                '🧊 3D 墓園（教堂旁墓碑）、探索據點（地圖邊緣旗幟，出隊中亮橘）、節慶（廣場四角旗杆拉彩旗＋橫幅＋彩紙）、商隊進城（馬車從馬車站駛向廣場，帶標籤）',
+                '⚙️ 3D 效能自動降級：連續 3 秒平均每幀超過 40ms 就關陰影、降到 1x 解析度並記住（localStorage rimtown_3d_quality）；手機預設不開陰影',
+            ),
+            'changes_en' => array(
+                '🧊 3D weather and ambience: rain streaks, drifting snow, chimney smoke, fireflies at night over woods and parks, autumn leaves, festival confetti; stars at night and a rotating lighthouse beam in Seabreeze Harbor',
+                '🧊 3D villager polish: limbs now hinge at the shoulders and hips (no more pendulum walk), farmers swing a hoe in the fields, working poses; an orange ring under the selected villager',
+                '🧊 3D farm, factories and industries: farm plots grow crops by state (empty / tilled / growing / ready glows gold); factory plots show an empty foundation, scaffolding with progress, then the built hall with chimney; industry level badges sit next to their building',
+                '🧊 3D graveyard (headstones beside the chapel), exploration sites (flags at the map edge, orange while an expedition is out), festivals (bunting on four poles around the square, a banner and confetti), caravan arrival (a cart rolls from the coach station to the square with a label)',
+                '⚙️ 3D auto quality: if the average frame takes over 40ms for 3 seconds, shadows turn off and the resolution drops to 1x and the choice is remembered (localStorage rimtown_3d_quality); phones start without shadows',
+            ),
+        ),
         array(
             'version' => '6.23.0',
             'date'    => '2026-11-03',
