@@ -5289,8 +5289,6 @@ const I18N = (() => {
         '動態': 'Town',
         '村民': 'Villagers',
         '提案': 'Proposals',
-        '日報': 'Daily',
-        '日誌': 'Log',
         '村民的提案會出現在這裡': 'Villager proposals will show up here',
         '村民會依性格、職業與小鎮近況主動提出提案，大家投票，由你批准、否決或擱置；三天沒處理就依票數自動定案。': 'Villagers propose ideas based on their personality, job and what the town is going through. Everyone votes, and you approve, reject or shelve each one; anything left for three days is decided by the vote.',
         '提案系統將於 v6.26 上線。': 'The proposal system arrives in v6.26.',
