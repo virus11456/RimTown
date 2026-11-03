@@ -869,6 +869,11 @@ Object.assign(RimTownApp.prototype, {
     // =====================================================
     // SETTINGS TAB (consolidated AI + Account + Game settings)
     // =====================================================
+    // v6.25.0 提案分頁(v6.26 村民主動提案系統在此落地)
+    renderProposals(container) {
+        container.innerHTML = `<div class="ob-empty"><span class="ob-empty-icon">📜</span><b>${t('村民的提案會出現在這裡')}</b>${t('村民會依性格、職業與小鎮近況主動提出提案，大家投票，由你批准、否決或擱置；三天沒處理就依票數自動定案。')}<br><span style="color:var(--text-muted)">${t('提案系統將於 v6.26 上線。')}</span></div>`;
+    },
+
     renderSettings(container) {
         // Preserve unsaved form values from existing DOM inputs (prevents
         // renderSidebar() calls from wiping user-typed/pasted API keys)
@@ -904,12 +909,12 @@ Object.assign(RimTownApp.prototype, {
             </select>
         </div>`;
         // v6.23.0 3D 小鎮(實驗):切換後重新整理生效
-        let rendererPref = '2d'; try { rendererPref = localStorage.getItem('rimtown_renderer') === '3d' ? '3d' : '2d'; } catch (e) {}
+        let rendererPref = '3d'; try { rendererPref = localStorage.getItem('rimtown_renderer') === '2d' ? '2d' : '3d'; } catch (e) {} // v6.25.0 3D 為預設
         html += `<div class="setting-group" style="margin-bottom:8px">
             <label style="font-size:0.82rem;color:var(--text-secondary)">${t('小鎮畫面')}</label>
             <select id="settings-renderer" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem" onchange="try{localStorage.setItem('rimtown_renderer',this.value)}catch(e){};location.reload()">
-                <option value="2d"${rendererPref==='2d'?' selected':''}>${t('2D 像素（目前）')}</option>
-                <option value="3d"${rendererPref==='3d'?' selected':''}>${t('3D 小鎮（實驗中）')}</option>
+                <option value="3d"${rendererPref==='3d'?' selected':''}>${t('3D 小鎮（預設）')}</option>
+                <option value="2d"${rendererPref==='2d'?' selected':''}>${t('2D 像素（舊版，v6.27 移除）')}</option>
             </select>
             <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('3D 版用 three.js 重畫整座小鎮，切換後會重新整理頁面；存檔與進度不受影響。')}</div>
         </div>`;

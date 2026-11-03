@@ -782,6 +782,7 @@ class RimTownApp {
     }
 
     _isTabLocked(key) {
+        if (this.observerMode !== false) return false; // v6.25.0 觀察者沙盒:面板不再依繁榮度上鎖
         const def = this._unlockDefs().find(d => d.key === key);
         if (!def) return false;
         return !(this._unlockCache && this._unlockCache[key]);
@@ -1686,13 +1687,15 @@ class RimTownApp {
         }
         // v6.23.0 3D 渲染器(three.js)隱藏開關:localStorage rimtown_renderer=3d 或網址 ?r=3d;WebGL 失敗時退回 2D
         let use3d = false;
-        try { use3d = (localStorage.getItem('rimtown_renderer') === '3d' || /[?&]r=3d(&|$)/.test(location.search)) && typeof Town3D !== 'undefined' && typeof THREE !== 'undefined'; } catch (e) {}
+        // v6.25.0 3D 成為預設;rimtown_renderer=2d 或 ?r=2d 才用 2D(v6.27 移除)
+        try { const pref = localStorage.getItem('rimtown_renderer'); const q = /[?&]r=(2d|3d)(&|$)/.exec(location.search); const want2d = q ? q[1] === '2d' : pref === '2d'; use3d = !want2d && typeof Town3D !== 'undefined' && typeof THREE !== 'undefined'; } catch (e) {}
         if (use3d) {
             try { this.tileMap = new Town3D(canvas); if (!this.tileMap.renderer) throw new Error('no WebGL'); this.renderer3d = true; }
             catch (e) { console.warn('[RimTown] 3D 渲染器啟動失敗,改用 2D', e); this.tileMap = null; }
         }
         if (!this.tileMap) this.tileMap = new PixelTileMap(canvas);
         document.querySelector('.rimtown-container')?.classList.toggle('is-3d', !!this.renderer3d);
+        document.querySelector('.rimtown-container')?.classList.add('observer'); // v6.25.0 觀察者沙盒 UI 殼
         this.tileMap.onClick = (locId) => { this._hideNpcCard(); this.playerMoveTo(locId); };
         this.tileMap.onAgentClick = (agentId) => this.onAgentClick(agentId);
         this.tileMap.onCoachClick = () => this._showCoachDialog(); // v5.57.0 馬車站
@@ -1937,20 +1940,24 @@ class RimTownApp {
 
     setupTabListeners() {
         // v5.20.0 三大入口收束:小鎮 / 居民 / 故事(+設定)。主鍵即該組的「頭」分頁。
+        // v6.25.0 觀察者沙盒四大入口:動態／村民／提案／日報(設定走齒輪鈕)
         this._mobileTabGroups = {
-            economy: [ // 小鎮
-                { key: 'economy', label: t('經濟'), icon: '💰' },
+            economy: [ // 動態
+                { key: 'economy', label: t('小鎮'), icon: '🏙️' },
+                { key: 'events', label: t('事件'), icon: '📰' },
                 { key: 'industry', label: t('產業'), icon: '🏭' },
             ],
-            residents: [ // 居民
-                { key: 'residents', label: t('居民'), icon: '👥' },
+            residents: [ // 村民
+                { key: 'residents', label: t('村民'), icon: '👥' },
                 { key: 'chat', label: t('聊天'), icon: '💬' },
                 { key: 'relmap', label: t('關係'), icon: '💞' },
             ],
-            quest: [ // 故事
-                { key: 'quest', label: t('任務'), icon: '⚔️' },
-                { key: 'events', label: t('事件'), icon: '📰' },
-                { key: 'records', label: t('紀錄'), icon: '📋' },
+            proposals: [ // 提案
+                { key: 'proposals', label: t('提案'), icon: '📜' },
+            ],
+            records: [ // 日報
+                { key: 'records', label: t('日誌'), icon: '📋' },
+                { key: 'quest', label: t('故事'), icon: '📖' },
                 { key: 'achievements', label: t('成就'), icon: '🏆' },
             ],
         };
@@ -3109,6 +3116,7 @@ class RimTownApp {
             case 'achievements': this.renderAchievements(content); break;
             case 'industry': this.renderIndustryAndFarm(content); break;
             case 'quest': this.renderQuest(content); break;
+            case 'proposals': this.renderProposals(content); break; // v6.25.0 佔位,v6.26 填提案系統
             case 'settings': this.renderSettings(content); break;
             case 'relmap': this.renderRelationMap(content); break;
         }

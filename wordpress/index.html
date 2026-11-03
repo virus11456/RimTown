@@ -17,7 +17,11 @@
     /* 獨立版關鍵樣式:深色底 + 滿版鎖定,避免 Safari 上下留白/彈跳(style.css 載入前就生效) */
     html, body { background: #1a1a2e; margin: 0; padding: 0; height: 100%; overscroll-behavior: none; }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Nunito:wght@400;600;700;800&display=swap">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style-observer.css">
 </head>
 <body class="rimtown-page" style="background:#1a1a2e;margin:0;overscroll-behavior:none">
 <!-- PWA Install Banner -->
@@ -333,9 +337,10 @@
         <div class="rt-sidebar" id="rimtown-sidebar">
             <button class="mobile-back-to-map" id="mobile-back-to-map" data-i18n-html="&#9650; 返回地圖">&#9650; 返回地圖</button>
             <div class="rt-sidebar-tabs">
-                <button data-tab="economy"><span class="tab-icon">🏙️</span><span class="tab-label" data-i18n="小鎮">小鎮</span></button>
-                <button data-tab="residents" data-tab-badge="chat" class="active"><span class="tab-icon">👥</span><span class="tab-label" data-i18n="居民">居民</span></button>
-                <button data-tab="quest"><span class="tab-icon">📖</span><span class="tab-label" data-i18n="故事">故事</span></button>
+                <button data-tab="economy"><span class="tab-icon">🏙️</span><span class="tab-label" data-i18n="動態">動態</span></button>
+                <button data-tab="residents" data-tab-badge="chat" class="active"><span class="tab-icon">👥</span><span class="tab-label" data-i18n="村民">村民</span></button>
+                <button data-tab="proposals" data-tab-badge="proposals"><span class="tab-icon">📜</span><span class="tab-label" data-i18n="提案">提案</span></button>
+                <button data-tab="records"><span class="tab-icon">📰</span><span class="tab-label" data-i18n="日報">日報</span></button>
                 <button data-tab="settings"><span class="tab-icon">⚙️</span><span class="tab-label" data-i18n="設定">設定</span></button>
             </div>
             <div class="rt-sidebar-content" id="sidebar-content">

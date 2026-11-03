@@ -4,6 +4,7 @@ const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './style.css',
+  './style-observer.css',
   './pwa-manifest.json',
   './s2t.js',
   './changelog.js',

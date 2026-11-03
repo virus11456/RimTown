@@ -5285,6 +5285,17 @@ const I18N = (() => {
         '2D 像素（目前）': '2D pixel art (current)',
         '3D 小鎮（實驗中）': '3D town (experimental)',
         '3D 版用 three.js 重畫整座小鎮，切換後會重新整理頁面；存檔與進度不受影響。': 'The 3D view redraws the whole town with three.js. Switching reloads the page; saves and progress are untouched.',
+        // v6.25.0 觀察者沙盒 UI 殼
+        '動態': 'Town',
+        '村民': 'Villagers',
+        '提案': 'Proposals',
+        '日報': 'Daily',
+        '日誌': 'Log',
+        '村民的提案會出現在這裡': 'Villager proposals will show up here',
+        '村民會依性格、職業與小鎮近況主動提出提案，大家投票，由你批准、否決或擱置；三天沒處理就依票數自動定案。': 'Villagers propose ideas based on their personality, job and what the town is going through. Everyone votes, and you approve, reject or shelve each one; anything left for three days is decided by the vote.',
+        '提案系統將於 v6.26 上線。': 'The proposal system arrives in v6.26.',
+        '3D 小鎮（預設）': '3D town (default)',
+        '2D 像素（舊版，v6.27 移除）': '2D pixel art (legacy, removed in v6.27)',
         // v6.22.2 AI 提示詞鎮名用當前鎮;考驗文案英文標點
         '你在為模擬小鎮「{town}」的居民規劃真實的一天。像寫小說一樣,讓行程反映每個人的性格、人際與心事。': 'You are planning a realistic day for the residents of the simulated town "{town}". Write it like a novel: let each schedule reflect personality, relationships and private worries.',
         '你在為模擬小鎮「{town}」的居民「即時調整」今天的行程——他剛遇到一件事,接下來的安排要跟著變。': 'You are "re-planning on the fly" the rest of today for a resident of the simulated town "{town}": something just happened to them and the remaining schedule must change accordingly.',

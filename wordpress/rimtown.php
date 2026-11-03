@@ -143,9 +143,10 @@ function rimtown_shortcode($atts) {
             <div class="rt-sidebar" id="rimtown-sidebar">
                 <button class="mobile-back-to-map" id="mobile-back-to-map">&#9650; 返回地圖</button>
                 <div class="rt-sidebar-tabs">
-                    <button data-tab="economy"><span class="tab-icon">🏙️</span><span class="tab-label">小鎮</span></button>
-                    <button data-tab="residents" data-tab-badge="chat" class="active"><span class="tab-icon">👥</span><span class="tab-label">居民</span></button>
-                    <button data-tab="quest"><span class="tab-icon">📖</span><span class="tab-label">故事</span></button>
+                    <button data-tab="economy"><span class="tab-icon">🏙️</span><span class="tab-label">動態</span></button>
+                    <button data-tab="residents" data-tab-badge="chat" class="active"><span class="tab-icon">👥</span><span class="tab-label">村民</span></button>
+                    <button data-tab="proposals" data-tab-badge="proposals"><span class="tab-icon">📜</span><span class="tab-label">提案</span></button>
+                    <button data-tab="records"><span class="tab-icon">📰</span><span class="tab-label">日報</span></button>
                     <button data-tab="settings"><span class="tab-icon">⚙️</span><span class="tab-label">設定</span></button>
                 </div>
                 <div class="rt-sidebar-content" id="sidebar-content"></div>
@@ -742,6 +743,9 @@ function rimtown_enqueue_assets() {
         array(),
         RIMTOWN_VERSION
     );
+    // v6.25.0 觀察者沙盒 UI 殼 + 字體
+    wp_enqueue_style('rimtown-fonts', 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Nunito:wght@400;600;700;800&display=swap', array(), null);
+    wp_enqueue_style('rimtown-style-observer', RIMTOWN_URL . 'style-observer.css', array('rimtown-style'), RIMTOWN_VERSION);
 
     // i18n must load FIRST — all other scripts depend on t()
     wp_enqueue_script(
