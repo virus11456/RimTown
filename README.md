@@ -2,20 +2,6 @@
 
 A RimWorld-inspired AI town simulation where every resident is an autonomous AI agent with unique personality, background, job, relationships, and daily life. Available as a WordPress plugin.
 
-## Godot 3D 開發進度（2026-09-10）
-
-獨立的 Godot 3D 測試版已可操作旅人；官網目前仍提供 2D 網頁版。3D 尚未正式發行，不能將下方原版功能清單視作全部已移植。
-
-- Godot 3D 開發進度：旅人移動、近身互動、聊天／送禮、心動事件、建築選址與加工農業已接入。以下是獨立 3D 測試版進度，並非網頁版新增玩法。
-- 任務核心已接入 12 主線、11 支線、24 居民任務、13 日常、六類人生目標及四種結局；所有路線自然通關驗收仍在進行。
-- 人口與家庭：每兩日檢查出生、每日最多一位居民移入；住宅每棟完工增加 3 位 NPC 容量，最多八棟、總容量 40，住宅不增加產量。
-- 平衡與驗證：保留備貨與市場需求限制；原始新局資源、正常付費施工，伐木起步的經濟路線在 40 日達到 37 人、18 棟及 Lv7。預設原料補給有開啟，並非封閉自給或全結局通關。
-- 行為一致性限制：3D 版自由聊天提到邀約，尚不會自動建立赴約行程；居民間系統邀約已有延遲選址，但準時赴約、等待與失約原因尚待補齊。
-
-實際測試畫面見[官網 3D 圖集](https://rimtown.vercel.app/#landing-preview)。[3D 開發原始碼](https://github.com/virus11456/RimTown/tree/codex/godot-viewer/godot)與[人口／住宅驗收說明](https://github.com/virus11456/RimTown/blob/codex/godot-viewer/godot/docs/POPULATION_PACKAGE.md)。後續仍有選舉／防禦世界事件、完整自然通關、AI 邀約與行程一致性、動畫音效及雲端驗收。核心玩法與 3D 體驗穩定後，另安排官網整體視覺評估，決定是否全面改版。
-
-English: the separate Godot test build now includes traveler controls, interactions, construction, economy, quests and population growth. The public browser game remains 2D. Free-form invitations do not yet guarantee attendance; full ending playthroughs and other world systems are still being validated. The gallery contains real test scenes, including prepared fixtures.
-
 ## Features
 
 - **Autonomous AI Agents**: 25+ residents with unique personality, memory, moods, and psychological needs
@@ -66,7 +52,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 | A1 | 生成更多城鎮與村民 | ✅ v5.75.0–v5.80.0 全部上線（五座主題城鎮、邊境鎮 25 人／海風鎮 20 人／其餘各 15 人、跨鎮商隊） | 五座主題鎮；邊境鎮 25、海風鎮 20、其餘各 15 人；隨機卡司名字池 40 姓 × 120 名；人口上限 30 |
 | A2 | 海風鎮地圖要有海邊、燈塔、港口 | ✅ v5.75.0 已上線 | `generateLayout(locations, theme)` 海岸版面：海面／沙灘／棧橋＋漁船／燈塔（夜間光束）／曬網場／鹽場／海蝕洞／潟湖 |
 | A3 | 每座城鎮特色要不一樣 | ✅ 五鎮各有專屬地形、建築、卡司、物資與商隊角色 | 需要「主題地形＋主題建築圖示＋主題卡司＋主題經濟」四層一起做 |
-| A4 | 首頁放 3D low-poly 截圖（`img/lowpoly-preview.jpg`） | 等附件 | 使用者的截圖未以附件送達；Cowork 另放了 4 張 Godot 測試截圖（v5.74.1 後） |
+| A4 | 首頁放 3D 截圖 | ✅ 改由 three.js 版本身呈現（v6.23 起首頁即 3D 小鎮）；Godot 時期的測試圖集與文件已於 v6.39.1 移除 |
 | A5 | 海風鎮專屬任務鏈（漁村主線） | ✅ v5.83.0–v5.84.0 五章＋六支線全部上線 | 五鎮任務鏈 v5.83.0–v5.87.0 全部上線，四座主題鎮各有主題災難與商路終章（見 E／F 節）；回歸測試 `scripts/quest_chain_test.js` |
 | A6 | 已多出來的重複城鎮 | 需玩家手動刪 | v5.74.2 已堵住成因；程式規範「絕不自動刪雲端存檔」，請到城鎮列表刪 Seabreeze Harbor／Frontier Town 那筆 |
 
@@ -110,7 +96,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ### C. 路線圖（與首頁一致）
 
-- 開發中：3D low-poly 版（Blender＋Godot，獨立分支 `codex/godot-*`）；核心玩法迴圈 ✅ 全部上線（H 節：H1 委託板 v5.91.0、H2 押商隊 v5.92.0、H3 季度考驗 v5.93.0、H4 旅人成長 v5.94.0、H5 有目的的對話 v5.95.0；v5.97.0 迴圈打磨、v5.98.0 季末回顧；下一步看玩測回饋調數字）
+- ✅ 3D：three.js 版 v6.23–v6.34 全部上線（Godot 試作已廢棄並於 v6.39.1 自 repo 移除）；核心玩法迴圈 ✅ 全部上線（H 節：H1 委託板 v5.91.0、H2 押商隊 v5.92.0、H3 季度考驗 v5.93.0、H4 旅人成長 v5.94.0、H5 有目的的對話 v5.95.0；v5.97.0 迴圈打磨、v5.98.0 季末回顧；下一步看玩測回饋調數字）
 - ✅ 日報跨鎮專欄 v5.88.0、村民自訂外觀 v5.89.0、跨鎮戀愛搬家 v5.90.0（規劃中項目已清空；下一批待拍板）
 - 構想：玩家之間互訪城鎮；手機 App 版
 
@@ -227,7 +213,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 | v6.37.0 | 村民全自主＋經濟儀表板：資源／科技／商店／建築／工廠／產業／農田七頁改唯讀儀表板，拿掉 28 種玩家操作鈕、捐款、贊助節慶、排班；研究與買賣改村民提案（新類別 🔬 研究、🛒 買賣）；農夫自動種收、工廠自動配方派工收貨、商人自動與行商交易；提案由村民投票＋NPC 鎮長裁決並附理由，觀察者不再按批准／否決；舊存檔不動 | ✅ 分支，待部署 |
 | v6.38.0 | 事件卡（上帝視角）：「事件」分頁改手牌區，30 張卡分天災／人禍／機運／人際四類（卡面圖示、類別色、一句效果、影響對象），點開看說明與預估影響、按「打出」才觸發（同卡冷卻）；落地後鏡頭飛現場、事件標記，相關村民 LLM 第一反應寫進記憶、後續對話與反思帶著事件、對策提案、日報、季末統計；「反應追蹤卡」記錄誰說了什麼、提了什麼案、幾天後結果。第二階段：自由輸入一句話當事件，由 LLM 轉成效果 | ✅ 分支，待部署（第二階段自由輸入未做） |
 | v6.39.0 | 完整智能體模式：設定頁開關；開啟後村民投票、要不要提案與提什麼、鎮長裁決、事件反應都由 LLM 依記憶／性格／關係推理並附理由；規則版保留為關閉時與 LLM 失敗時的退路；自備金鑰預設開，內建 AI 可開但提醒每日額度 | ✅ 分支，待部署 |
-| v6.40.0 | 科技樹擴充：現有 10 節點／12 建築／7 工廠／4 產業對長期觀察太快到頂，擴成三個時代（拓荒→手工→工坊）約 25～30 節點並連動新建築與工廠 | 📋 待做 |
+| v6.40.0 | 科技樹擴充：現有 10 節點／12 建築／7 工廠／4 產業對長期觀察太快到頂，擴成三個時代（拓荒→手工→工坊）28 節點、21 種新建築、3 座新工坊，建築與工坊依研究解鎖 | ✅ 分支，待部署 |
 
 設計規格在 `design-system/rimtown-3d/MASTER.md`。v6.27 起 3D 是唯一畫面（WebGL 不可用時自動退回 2D；`?r=2d` 僅供除錯）。日間色票與鍵盤快捷鍵 v6.29、提案深化 v6.30、玩家殘留文案清理 v6.31、畫面細節 v6.32 已上線。2D 繪圖碼 v6.34 已移除（tilemap.js 只剩版面／尋路／移動／頭像）。
 
@@ -275,7 +261,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.39.0.zip` from Releases
+1. Download `rimtown-v6.40.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -328,6 +314,16 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.40.0 (2026-11-04)
+- 🔬 科技樹擴成三個時代 28 節點（原本 10）：拓荒 8（進階農業、冶金、草藥醫學、防禦工事、商業、木工、陶藝、文字記錄）→ 手工 10（建築學、釀造、後勤、石匠、教育、紡織、藥劑、磨坊、鍛造、製圖）→ 工坊 10（工程學、印刷、銀行業、外科、市政、天文、藝術、衛生、城防工程、商路）。時代一研究完一半就進入下一時代；「科技」分頁改成三段式樹狀圖，每個節點看狀態、前置、解鎖什麼
+- 🏗️ 新建築 21 種（12 → 33）：文書房、倉庫、石板路、講堂、染坊、浴場、風車磨坊、軍械庫、地圖室；時代三的鐘樓、水道、印刷坊、銀行、醫院、議事廳、天文台、劇場、雕像廣場、下水道、兵營、商隊驛站（要用木板／磚／鋼）。新工坊 3 座：鋸木廠（木材→木板／硬木）、磚窯（石材→磚／大理石）、煉鋼坊（金屬→鋼→工具）。3D 地圖有對應位置與造型（高塔、風車、地面類）
+- 🔒 建築與工坊要先研究到才蓋得了（穀倉、深井除外）：建造清單、工坊清單與村民提案都照解鎖判定；舊存檔讀入時新節點依前置自動開放／上鎖，已蓋的照舊。研究提案低時代優先
+- ⚙️ 研究效果真的有用了：研究加成（文書房／印刷坊／天文台）加快研究點；常駐心情（浴場／鐘樓／劇場等）進全鎮心情；兵營等降低襲擊機率；銀行每天生利息；地圖室更常發現探索區；文化與美觀維度改用 buildingKey 判斷（舊寫法用 b.key 永遠對不到）並加計新建築與加成
+
+### v6.39.1 (2026-11-04)
+- 🧹 移除 Godot 3D 試作的所有殘留：首頁「3D 測試圖集」區塊與四張 Godot 截圖、docs/GODOT_LOWPOLY_BRIEF.md、更新紀錄裡的「Godot 3D · 2026.09.10」假版本條目、README 的 Godot 進度段落與路線圖字句。3D 只剩現役的 three.js 版
+- 🆕 新版自動套用：Service Worker 換新版接管後，還停在首頁就自動重新整理拿到最新版；已經在遊戲裡則只跳一張「有新版本，重新整理即可更新」通知，不打斷進度。之前第一次重新整理只會在背景裝新版，畫面上的版本號還是舊的
 
 ### v6.39.0 (2026-11-04)
 - 🧠 完整智能體模式（設定頁「🤖 AI 語言模型」新開關，自備金鑰預設開、小鎮內建 AI 預設關並提醒額度）：開啟後村民的決定交給 LLM 用記憶＋性格推理——投票（一次問一批最多六人，每人贊成／反對＋一句自己口吻的理由，依性格、在乎的價值、跟提案人的交情、最近記憶與鎮況判斷）、要不要提案與提什麼（今天輪到發言的人從幾個可行點子裡挑一個或今天不提，順便說出向全鎮的說明當提案稿）、鎮長裁決（批准／否決／擱置＋一句話理由）。規則版只在 AI 失敗、逾時或速率受限時墊底，提案與裁決永遠會有結果

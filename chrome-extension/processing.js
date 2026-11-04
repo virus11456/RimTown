@@ -57,6 +57,34 @@ const FACTORIES = {
         ],
         workerSlots: 1, preferredJob: 'cook',
     },
+    // ---- v6.40.0 科技樹新工坊:原料加工成木板／磚／鋼,時代三的建築要用 ----
+    sawmill: {
+        name: t('鋸木廠'), icon: '🪚', requires: 'carpentry',
+        cost: { wood:25, stone:10, silver:70 }, buildDays: 5,
+        recipes: [
+            { id:'plank',    input:{wood:6},  output:{plank:5},    time:1, outputPrice:3, label:t('木材→木板') },
+            { id:'hardwood', input:{wood:10}, output:{hardwood:3}, time:2, outputPrice:5, label:t('木材→硬木') },
+        ],
+        workerSlots: 1, preferredJob: 'carpenter',
+    },
+    brickworks: {
+        name: t('磚窯'), icon: '🧱', requires: 'pottery',
+        cost: { stone:30, wood:15, silver:80 }, buildDays: 6,
+        recipes: [
+            { id:'brick',  input:{stone:6},  output:{brick:5},  time:1, outputPrice:5, label:t('石材→磚塊') },
+            { id:'marble', input:{stone:12}, output:{marble:2}, time:3, outputPrice:8, label:t('石材→大理石') },
+        ],
+        workerSlots: 1, preferredJob: 'miner',
+    },
+    steelworks: {
+        name: t('煉鋼坊'), icon: '⚒️', requires: 'smithing',
+        cost: { stone:25, metal:20, tools:4, silver:120 }, buildDays: 7,
+        recipes: [
+            { id:'steel', input:{metal:4, wood:2}, output:{steel:2}, time:2, outputPrice:10, label:t('金屬→鋼鐵') },
+            { id:'tools', input:{steel:1, wood:2}, output:{tools:3}, time:1, outputPrice:8,  label:t('鋼鐵→工具') },
+        ],
+        workerSlots: 2, preferredJob: 'blacksmith',
+    },
     furniture_workshop: {
         name: t('家具工坊'), icon: '🪑',
         cost: { wood:30, metal:10, tools:5, silver:150 }, buildDays: 8,
@@ -78,7 +106,7 @@ class ProcessingSystem {
 
     getAvailableFactories(world) {
         return Object.entries(FACTORIES)
-            .filter(([key]) => !this.builtFactories[key])
+            .filter(([key]) => !this.builtFactories[key] && (world.research?.isFactoryUnlocked?.(key) ?? true)) // v6.40.0 要先研究到
             .map(([key, f]) => ({
                 key, ...f,
                 canAfford: world.stockpile.canAfford(f.cost),
@@ -89,6 +117,7 @@ class ProcessingSystem {
         if (this.builtFactories[key]) return { ok: false, error: t('已建造') };
         const def = FACTORIES[key];
         if (!def) return { ok: false, error: t('未知工廠') };
+        if (world.research?.isFactoryUnlocked && !world.research.isFactoryUnlocked(key)) return { ok: false, error: t('還沒研究到') }; // v6.40.0
         if (!world.stockpile.pay(def.cost, world.tickCount, `${t('建造')}${def.name}`)) return { ok: false, error: t('資源不足') };
 
         this.builtFactories[key] = {

@@ -634,7 +634,7 @@ class Agent {
         const weatherMoodBonus = world.weather ? Math.round(world.weather.moodModifier * 0.3) : 0;
         const thoughtMood = Math.round(this.thoughtMoodTotal(world.clock.totalDays || 0)); // v5.15.0 記憶想法心情
         const gritMood = Math.round((this.attr('grit') - 5) * 0.8); // v5.26.0 膽識→心情韌性(穩得住)
-        const tmb = world.townMoodBonus; const townMood = (tmb && tmb.day === `${world.clock.year}-${world.clock.season}-${world.clock.day}`) ? (tmb.value || 0) : 0; // v6.14.0 鎮公所捐款:全鎮當天心情加成
+        const tmb = world.townMoodBonus; const townMood = ((tmb && tmb.day === `${world.clock.year}-${world.clock.season}-${world.clock.day}`) ? (tmb.value || 0) : 0) + Math.min(12, world.buildings?.getEffect?.('mood_bonus', 0) || 0); // v6.14.0 鎮公所捐款:全鎮當天心情加成;v6.40.0 浴場／鐘樓／劇場等建築的常駐心情
         this.mood = Math.max(-100, Math.min(100, 50 + this.personality.moodBase + Math.floor(this.needs.moodContribution) + this.moodModifier + repMoodBonus + weatherMoodBonus + thoughtMood + gritMood + townMood));
         this._gainSkillXp(world);
         // Only re-pick location if activity changed or stay duration expired

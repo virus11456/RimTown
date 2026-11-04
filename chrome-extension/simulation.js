@@ -2234,6 +2234,7 @@ class World {
                     if (this.research.projects[k]) Object.assign(this.research.projects[k], p);
                 }
                 this.research.current = data.research.current;
+                this.research.refreshLocks?.(); // v6.40.0 樹擴充後:舊檔多出的新節點依前置開放／上鎖
             }
 
             // Work orders

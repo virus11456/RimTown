@@ -46,7 +46,18 @@ const PROPOSAL_JOB_BUILDINGS = {
     trader: ['marketplace'], blacksmith: ['forge_bellows'], researcher: ['school'], cook: ['brewery', 'granary'], carpenter: ['school', 'marketplace'],
     priest: ['well_upgrade', 'garden'], mayor: ['town_walls', 'marketplace', 'school'], miner: ['forge_bellows', 'well_upgrade'], tailor: ['marketplace', 'clinic_upgrade'],
 };
-const PROPOSAL_JOB_FACTORIES = { cook: ['bakery', 'tea_house'], tailor: ['textile_mill'], trader: ['brewery', 'sugar_refinery', 'tea_house'], doctor: ['herbal_workshop'], carpenter: ['furniture_workshop'], farmer: ['bakery', 'sugar_refinery'] };
+// v6.40.0 科技樹新建築／工坊的提案人偏好
+Object.assign(PROPOSAL_JOB_BUILDINGS, {
+    researcher: ['school', 'archive', 'lecture_hall', 'press', 'observatory', 'map_room'],
+    doctor: ['clinic_upgrade', 'bathhouse', 'hospital', 'sewers'],
+    trader: ['marketplace', 'bank', 'caravanserai', 'dye_works', 'warehouse'],
+    guard: ['watchtower', 'training_ground', 'town_walls', 'armory', 'barracks'],
+    farmer: ['granary', 'farm_irrigation', 'windmill', 'aqueduct'],
+    carpenter: ['school', 'marketplace', 'clock_tower', 'theater', 'paved_roads'],
+    mayor: ['town_walls', 'marketplace', 'school', 'council_hall', 'clock_tower', 'statue_plaza'],
+    priest: ['well_upgrade', 'garden', 'statue_plaza', 'theater', 'bathhouse'],
+});
+const PROPOSAL_JOB_FACTORIES = { cook: ['bakery', 'tea_house'], tailor: ['textile_mill'], trader: ['brewery', 'sugar_refinery', 'tea_house'], doctor: ['herbal_workshop'], carpenter: ['furniture_workshop', 'sawmill'], farmer: ['bakery', 'sugar_refinery'], miner: ['brickworks'], blacksmith: ['steelworks'] };
 const PROPOSAL_POLICY_VALUES = { economy: ['財富', '冒險'], welfare: ['家庭', '社群', '和平'], defense: ['權力', '冒險'], culture: ['知識', '藝術'], nature: ['自然', '和平'], freedom: ['自由', '冒險'] };
 
 class ProposalSystem {
@@ -243,6 +254,7 @@ class ProposalSystem {
         // 建設
         for (const [key, tm] of Object.entries(BT)) {
             if (built.has(key) || builtNames.has(tm.name) || !this._cool(day, 'build:' + key)) continue;
+            if (w.research?.isUnlocked && !w.research.isUnlocked(key)) continue; // v6.40.0 還沒研究到的建築不會被提
             const jobs = Object.entries(PROPOSAL_JOB_BUILDINGS).filter(([, ks]) => ks.includes(key)).map(([j]) => j);
             let weight = 1;
             if (key === 'granary' && food < 120) weight += 2; if (key === 'farm_irrigation' && food < 150) weight += 1.5;
@@ -257,6 +269,7 @@ class ProposalSystem {
         const FT = (typeof FACTORIES !== 'undefined') ? FACTORIES : {};
         if (w.processing) for (const [key, def] of Object.entries(FT)) {
             if (w.processing.builtFactories?.[key] || !this._cool(day, 'factory:' + key, 15)) continue;
+            if (w.research?.isFactoryUnlocked && !w.research.isFactoryUnlocked(key)) continue; // v6.40.0
             const jobs = Object.entries(PROPOSAL_JOB_FACTORIES).filter(([, ks]) => ks.includes(key)).map(([j]) => j);
             const afford = Object.entries(def.cost || {}).every(([r, n]) => (sp?.get?.(r) || 0) >= n * 0.6);
             out.push({ kind: 'factory', key: 'factory:' + key, weight: afford ? 0.8 : 0.25, jobs, make: (a) => ({ kind: 'factory', key: 'factory:' + key, refKey: key, tk: '開一間{name}', tp: { name: def.name }, dk: '{desc}', dp: { desc: def.description || def.desc || '' }, cost: { ...(def.cost || {}) }, category: 'economy', jobBias: jobs }) });
@@ -353,11 +366,11 @@ class ProposalSystem {
         // ---------- v6.37.0 村民全自主:研究／買賣／升級 ----------
         // 研究:沒在研究時，學者／相關行業提「研究某項」(三天沒人提，學者會自己挑)
         if (w.research && !w.research.current) {
-            const REL = { agriculture: ['farmer'], metallurgy: ['blacksmith', 'miner'], medicine_research: ['doctor'], fortification: ['guard'], commerce: ['trader'], architecture: ['carpenter'], brewing: ['cook'], logistics: ['trader'], education: ['researcher'], masonry: ['miner', 'carpenter'] };
+            const REL = { agriculture: ['farmer'], metallurgy: ['blacksmith', 'miner'], medicine_research: ['doctor'], fortification: ['guard'], commerce: ['trader'], architecture: ['carpenter'], brewing: ['cook'], logistics: ['trader'], education: ['researcher'], masonry: ['miner', 'carpenter'], carpentry: ['carpenter'], pottery: ['miner', 'carpenter'], writing: ['researcher', 'priest'], textiles: ['tailor'], herbalism: ['doctor'], milling: ['cook', 'farmer'], smithing: ['blacksmith'], cartography: ['guard', 'trader'], engineering: ['carpenter', 'blacksmith'], printing: ['researcher'], banking: ['trader', 'mayor'], surgery: ['doctor'], civics: ['mayor'], astronomy: ['researcher'], fine_arts: ['priest', 'tailor'], sanitation: ['doctor', 'carpenter'], siegecraft: ['guard'], trade_routes: ['trader'] }; // v6.40.0
             for (const pr of (w.research.getAvailable?.() || [])) {
                 if (!this._cool(day, 'research:' + pr.key, 6)) continue;
                 const jobs = ['researcher', ...(REL[pr.key] || [])];
-                let weight = 1.2; if (pr.key === 'agriculture' && food < 150) weight += 1; if (pr.key === 'medicine_research' && npcs.some(x => x.isSick || (x.health ?? 100) < 50)) weight += 1; if (pr.key === 'fortification' && w.trials?.current?.type === 'bandits') weight += 1;
+                let weight = 1.2 + (3 - (pr.era || 1)) * 0.3; if (pr.key === 'agriculture' && food < 150) weight += 1; // v6.40.0 低時代先 if (pr.key === 'medicine_research' && npcs.some(x => x.isSick || (x.health ?? 100) < 50)) weight += 1; if (pr.key === 'fortification' && w.trials?.current?.type === 'bandits') weight += 1;
                 out.push({ kind: 'research', key: 'research:' + pr.key, weight, jobs, make: (a) => ({ kind: 'research', key: 'research:' + pr.key, refKey: pr.key, tk: '研究「{name}」', tp: { name: pr.name }, dk: '{who}覺得鎮上該把{name}研究出來：{desc}（要累積 {cost} 點研究進度）。', dp: { who: a.name, name: pr.name, desc: pr.description, cost: pr.cost }, cost: {}, category: 'culture', jobBias: jobs }) });
             }
         }

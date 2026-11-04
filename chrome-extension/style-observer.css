@@ -360,3 +360,17 @@
 
 /* v6.39.0 完整智能體標記 */
 .rimtown-container .pp-llm { font-size: 0.75rem; margin-left: 2px; }
+
+/* v6.40.0 科技樹 */
+.rimtown-container .tech-era { margin-top: 10px; }
+.rimtown-container .tech-era-head { display: flex; justify-content: space-between; font-weight: 800; font-size: 0.84rem; margin-bottom: 6px; color: var(--text-primary); }
+.rimtown-container .tech-era-head span { color: var(--text-muted); font-weight: 600; font-size: 0.74rem; }
+.rimtown-container .tech-node { padding: 6px 8px; margin-bottom: 5px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); }
+.rimtown-container .tech-node-head { display: flex; justify-content: space-between; font-size: 0.8rem; }
+.rimtown-container .tech-cost { font-size: 0.7rem; color: var(--text-muted); }
+.rimtown-container .tech-desc { font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px; }
+.rimtown-container .tech-unlocks { font-size: 0.68rem; color: var(--accent); margin-top: 3px; }
+.rimtown-container .tech-need { font-size: 0.66rem; color: var(--text-muted); margin-top: 2px; }
+.rimtown-container .tech-done { opacity: 0.75; }
+.rimtown-container .tech-now { border-color: var(--accent); }
+.rimtown-container .tech-locked { opacity: 0.6; }

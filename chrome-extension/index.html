@@ -388,6 +388,15 @@
     (function() {
         // Only register SW in web context (not Chrome Extension)
         if ('serviceWorker' in navigator && (typeof chrome === 'undefined' || !chrome.runtime?.id)) {
+            // v6.39.1 新版 Service Worker 接管後:還在首頁就直接重新整理拿新版;已經在遊戲裡就只提示,不打斷進度
+            const hadController = !!navigator.serviceWorker.controller;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!hadController || window.__rtSwReloaded) return;
+                window.__rtSwReloaded = true;
+                const app = window.rimtownApp;
+                if (!app || !app.world) { location.reload(); return; }
+                try { app._showCornerNotice?.({ icon: '🆕', title: (typeof t === 'function') ? t('有新版本') : 'Update ready', name: '', desc: (typeof t === 'function') ? t('重新整理頁面就會更新到最新版。') : 'Reload the page to get the latest version.' }); } catch (e) {}
+            });
             navigator.serviceWorker.register('./sw.js').catch(() => {});
         }
 
