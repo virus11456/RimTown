@@ -237,11 +237,11 @@ class Relationship {
     recordInteraction(tick, summary) {
         this.interactionCount++; this.lastInteractionTick = tick;
         this.sharedMemories.push(summary);
-        if (this.sharedMemories.length > 4) this.sharedMemories = this.sharedMemories.slice(-4); // v5.99.0 150→30;v6.20.0 →8;v6.43.5 →4(提示詞只用最近 3 筆;英文存檔 35 天超過 1.5MB)
+        if (this.sharedMemories.length > 3) this.sharedMemories = this.sharedMemories.slice(-3); // v5.99.0 150→30;v6.20.0 →8;v6.43.5 →3(v6.43.7 跟存檔一致,存讀檔前後完全相同)(提示詞只用最近 3 筆;英文存檔 35 天超過 1.5MB)
     }
     addSharedMemory(text) {
         this.sharedMemories.push(text);
-        if (this.sharedMemories.length > 4) this.sharedMemories = this.sharedMemories.slice(-4); // v6.20.0;v6.43.5 →4
+        if (this.sharedMemories.length > 3) this.sharedMemories = this.sharedMemories.slice(-3); // v6.20.0;v6.43.5 →3(v6.43.7 跟存檔一致,存讀檔前後完全相同)
     }
     toDict() {
         return { target_id:this.targetId, target_name:this.targetName, type:this.type,

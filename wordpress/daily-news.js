@@ -252,8 +252,10 @@ ${(typeof LLM_LANG !== 'undefined') ? LLM_LANG.rule('- 繁體中文（台灣口�
     }
 
     serialize() {
+        // v6.43.7 報紙一期都不刪;只是最近 30 期以前的舊報不再存「當天素材清單」(events／跨鎮專欄,只有最近幾期點開才用得到),正文、日期、記者都保留
+        const keepFull = 30, n = this.newspapers.length;
         return {
-            newspapers: this.newspapers,
+            newspapers: this.newspapers.map((p, i) => (i >= n - keepFull || !p) ? p : (({ events, crossTown, ...rest }) => rest)(p)),
             todayEvents: this.todayEvents,
             _lastPublishDay: this._lastPublishDay,
             _enabled: this._enabled,
