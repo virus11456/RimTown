@@ -938,7 +938,7 @@ ${t('- 不要加任何前綴、名字標籤、引號、旁白')}`;
             if (!response || response === '__ERROR__' || response === '__RATE_LIMITED__') return '';
             let text = response.trim().replace(/^["「『]|["」』]$/g, '').trim();
             text = text.replace(new RegExp(`^${npc.name}[：:]\\s*`), '').trim();
-            return text.slice(0, 120);
+            return text.slice(0, this._cap(120, 360));
         } catch (e) { console.warn('[RimTown] reactToEvent failed:', e); return ''; }
     }
 
@@ -1013,6 +1013,8 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
         const m = String(raw).match(/\[[\s\S]*\]|\{[\s\S]*\}/); if (!m) return null;
         try { return JSON.parse(m[0]); } catch (e) { return null; }
     }
+    // v6.41.1 長度上限依對話語言:英文同樣一句話字元數約是中文的 3 倍,舊上限會把英文理由切在半個字
+    _cap(zh, en) { return (typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en') ? en : zh; }
     _costText(cost) { const parts = Object.entries(cost || {}).map(([r, n]) => `${(typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[r]) ? SHOP_ITEMS[r].name() : t(r)} ${n}`); return parts.length ? parts.join(t('、')) : t('不用花公庫的錢'); }
     // 投票:一次問一批村民(最多 6 人),每人回 for/against + 一句自己口吻的理由
     async decideVotes(world, p, voters, proposer) {
@@ -1029,7 +1031,7 @@ ${t('只輸出 JSON 陣列，每個元素 {"n":序號,"vote":"for"或"against","
         const j = await this._askJson(prompt, 80 + voters.length * 70);
         if (!Array.isArray(j)) return null;
         const out = {};
-        for (const row of j) { const i = parseInt(row?.n, 10) - 1; const a = voters[i]; if (!a) continue; const v = String(row.vote || '').toLowerCase(); if (v !== 'for' && v !== 'against') continue; out[a.agentId] = { vote: v, why: String(row.why || '').trim().replace(/^[「『"“]+|[」』"”]+$/g, '').slice(0, 40) }; }
+        for (const row of j) { const i = parseInt(row?.n, 10) - 1; const a = voters[i]; if (!a) continue; const v = String(row.vote || '').toLowerCase(); if (v !== 'for' && v !== 'against') continue; out[a.agentId] = { vote: v, why: String(row.why || '').trim().replace(/^[「『"“]+|[」』"”]+$/g, '').slice(0, this._cap(40, 140)) }; }
         return Object.keys(out).length ? out : null;
     }
     // 鎮長裁決:批准／否決／擱置 + 一句理由
@@ -1045,7 +1047,7 @@ ${b.mem.length ? `${t('【你最近記得的事】')}${b.mem.join('／')}\n` : '
         this._countNpcLlmUse(world);
         const j = await this._askJson(prompt, 140);
         const act = String(j?.action || '').toLowerCase(); if (!['approve', 'reject', 'shelve'].includes(act)) return null;
-        return { action: act, why: String(j.why || '').trim().replace(/^[「『"“]+|[」』"”]+$/g, '').slice(0, 50) };
+        return { action: act, why: String(j.why || '').trim().replace(/^[「『"“]+|[」』"”]+$/g, '').slice(0, this._cap(50, 180)) };
     }
     // 要不要提案、提什麼:今天輪到發言的人,從幾個可行的點子裡挑一個(或都不提),順便說出向全鎮的說明
     async chooseProposal(world, proposer, cands) {
@@ -1060,7 +1062,7 @@ ${t('依你的身分與處境決定：挑一個最想提的（回序號），或
         this._countNpcLlmUse(world);
         const j = await this._askJson(prompt, 180);
         const n = parseInt(j?.choice, 10); if (!j || !Number.isFinite(n)) return null;
-        return { choice: n, pitch: String(j.pitch || '').trim().replace(/^[「『"“]+|[」』"”]+$/g, '').slice(0, 120) };
+        return { choice: n, pitch: String(j.pitch || '').trim().replace(/^[「『"“]+|[」』"”]+$/g, '').slice(0, this._cap(120, 360)) };
     }
 
     _buildCharacterProfile(agent) {
@@ -2328,7 +2330,10 @@ class LLMClient {
 
         // If primary failed and we have fallback, try Groq
         if (result === '__RATE_LIMITED__' || result === '__ERROR__') {
-            this._handleRateLimit();
+            // v6.41.1 小鎮內建 AI 的一般失敗(伺服器已經自己換過渠道、也有自己的冷卻)只暫停 10 秒;
+            // 以前一律停 60 秒,完整智能體的投票／裁決剛好撞上就全退回規則版。真的 429 照舊停 60 秒
+            if (this.provider === 'server' && result === '__ERROR__') this._rateLimitedUntil = Math.max(this._rateLimitedUntil, Date.now() + 10000);
+            else this._handleRateLimit();
             if (this.fallbackGroqKey && this.provider !== 'groq') {
                 console.log(`[RimTown LLM] Primary ${this.provider} failed (${result}) — switching to Groq fallback`);
                 this._primaryFailCount++;

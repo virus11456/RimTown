@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.41.0
+ * Version: 6.41.1
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.41.0');
+define('RIMTOWN_VERSION', '6.41.1');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1330,6 +1330,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.41.1',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🧪 線上實測完整智能體（官方 Claude、中英文各一輪）：選提案、六位村民投票、鎮長裁決、事件反應全部回出可解析的 JSON 與符合性格的台詞，投票有贊成有反對、理由各自從職業與在乎的事出發，每次 1～5 秒',
+                '🔤 修「支持」被改成「支援」：伺服器的簡轉繁用台灣詞彙模式，會把 Claude 本來就寫對的「蘇晴的提案我支持！」改成「我支援」。現在回覆已經是繁體就原樣保留，真的有簡體才轉，而且「支持」不再被替換',
+                '⏱️ 小鎮內建 AI 偶爾失敗一次，不再讓全部 AI 暫停 60 秒：伺服器本來就會自己換渠道、自己冷卻，前端改成只暫停 10 秒（真的被限流 429 才停 60 秒），完整智能體的投票與裁決不會因為前一個背景呼叫失敗就全退回規則版',
+                '🌐 英文模式的投票理由、鎮長裁決、提案說明與事件反應不再被切在半個字：長度上限依對話語言調整（英文約為中文的 3 倍）',
+            ),
+            'changes_en' => array(
+                '🧪 Live test of full agent mode (official Claude, one Chinese and one English round): choosing a proposal, six villagers voting, the mayor ruling and event reactions all came back as parseable JSON and in-character lines; votes split for and against with reasons drawn from each villager\'s job and values, 1–5 seconds per call',
+                '🔤 Fixed "支持" turning into "支援": the server\'s Simplified→Traditional step used Taiwan phrase mode, which rewrote lines Claude had already written correctly. Replies already in Traditional Chinese are now left untouched, conversion only runs when Simplified text is present, and "支持" is no longer replaced',
+                '⏱️ One failed built-in AI call no longer pauses all AI for 60 seconds: the server already switches lanes and cools them down itself, so the client now pauses only 10 seconds (a real 429 still pauses 60), and full-agent votes and rulings no longer fall back to rules just because a background call failed',
+                '🌐 English vote reasons, mayor rulings, proposal pitches and event reactions are no longer cut off mid-word: length caps now follow the dialogue language (English allows about three times the Chinese length)',
+            ),
+        ),
         array(
             'version' => '6.41.0',
             'date'    => '2026-11-04',
