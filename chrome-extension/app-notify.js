@@ -157,11 +157,11 @@ Object.assign(RimTownApp.prototype, {
         if (this.world?.townName) return this.world.townName;
         if (this.auth.loggedIn && this._cloudSaves) {
             const cloud = this._cloudSaves.find(s => s.town_id === this.currentTownId);
-            if (cloud) return cloud.town_name || t('邊境鎮');
+            if (cloud) return cloud.town_name || '邊境鎮';
         }
         const list = this._getTownList();
         const town = list.find(t => t.id === this.currentTownId);
-        return town?.name || t('邊境鎮');
+        return town?.name || '邊境鎮'; // v6.34.1 存檔用的鎮名一律中文正名(之前英文介面下會存成 Frontier Town,產生另一個 id)
     },
 
     // =====================================================

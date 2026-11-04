@@ -1736,7 +1736,7 @@ class RimTownApp {
     _updateHeaderTownName(name) {
         const n = name || this.world?.townName || '邊境鎮';
         const title = document.querySelector('.mobile-title');
-        if (title) title.textContent = t(n); // v6.22.0 手機標題也翻(英文模式之前仍顯示「邊境鎮」)
+        if (title) title.textContent = this._townDisplayName ? this._townDisplayName(n) : t(n); // v6.22.0 手機標題也翻;v6.34.1 英文存的鎮名在中文介面翻回中文
         const h1 = document.querySelector('.rimtown-container h1[data-i18n], .rimtown-container header h1, #rimtown-header h1');
         if (h1) h1.textContent = t(n);
         document.querySelectorAll('.rt-title-zh').forEach(el => { el.textContent = n; });
@@ -2462,7 +2462,9 @@ class RimTownApp {
             });
         });
         document.getElementById('btn-new-game')?.addEventListener('click', async () => {
-            const name = prompt(t('為新城鎮命名：'), t('邊境鎮 ') + (this._getTownList().length + 1));
+            // v6.34.1 「新城鎮」會另開一座、目前這座保留在城鎮列表(之前叫「新地圖」,常被當成重畫地圖,按幾次就多幾座)
+            if (!confirm(t('這會另外開一座新城鎮，目前這座會保留在「城鎮列表」裡，可以隨時切回來。確定要新開嗎？'))) return;
+            const name = prompt(t('為新城鎮命名：'), '邊境鎮 ' + (this._getTownList().length + 1));
             if (!name) return;
             await this.archiveChatHistory();
             this._saveCurrentTown();

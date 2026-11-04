@@ -153,6 +153,15 @@ Object.assign(RimTownApp.prototype, {
         modal.classList.remove('hidden');
         this._renderTownList();
     },
+    // v6.34.1 之前英文介面建立的鎮會把「Frontier Town／Seabreeze Harbor…」存成鎮名;中文介面顯示時翻回中文(資料不動)
+    _townDisplayName(name) {
+        const s = String(name || '');
+        const lang = (typeof I18N !== 'undefined' && I18N.getLang) ? I18N.getLang() : 'zh';
+        if (lang !== 'zh') return t(s);
+        const EN2ZH = [['Frontier Town', '邊境鎮'], ['Seabreeze Harbor', '海風鎮'], ['Mine Ridge', '礦山鎮'], ['Greenwood', '林間村'], ['Market City', '市集城']];
+        for (const [en, zh] of EN2ZH) if (s.startsWith(en)) return zh + s.slice(en.length);
+        return s;
+    },
     _renderTownList() {
         const container = document.getElementById('town-list-content');
         if (!container) return;
@@ -171,7 +180,7 @@ Object.assign(RimTownApp.prototype, {
                 const date = new Date(_tw.savedAt).toLocaleString();
                 html += `<div class="town-item ${isActive?'active':''}">
                     <div class="town-info" data-action="switch-town" data-val="${_tw.id}">
-                        <div class="town-name">${t(_tw.name)} ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
+                        <div class="town-name">${this._townDisplayName(_tw.name)} ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
                         <div class="town-meta">${t(_tw.season)}${t(' 第')}${_tw.year}${t('年 第')}${_tw.day}${t('天 | 人口')}${_tw.population} | ${date}</div>
                     </div>
                     <div class="town-actions">
@@ -207,7 +216,7 @@ Object.assign(RimTownApp.prototype, {
                     const date = _tw.updated_at ? new Date(_tw.updated_at).toLocaleString() : '';
                     html += `<div class="town-item ${isActive?'active':''}">
                         <div class="town-info" data-action="switch-town" data-val="${_tw.town_id}">
-                            <div class="town-name">${t(_tw.town_name)} ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
+                            <div class="town-name">${this._townDisplayName(_tw.town_name)} ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
                             <div class="town-meta">${_tw.season||''}${t(' 第')}${_tw.year||1}${t('年 第')}${_tw.day||1}${t('天 | 人口')}${_tw.population||0} | ${date}</div>
                         </div>
                         <div class="town-actions">
@@ -221,7 +230,7 @@ Object.assign(RimTownApp.prototype, {
                 const isActive = _tw.id === this.currentTownId;
                 html += `<div class="town-item ${isActive?'active':''}">
                     <div class="town-info" data-action="switch-town" data-val="${_tw.id}">
-                        <div class="town-name">${t(_tw.name)} <span style="font-size:0.65rem;color:var(--text-muted)">📱 ${t('本機')}${cloudNames.has(_tw.name) ? `${t('（')}${t('與雲端同名')}${t('）')}` : ''}</span> ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
+                        <div class="town-name">${this._townDisplayName(_tw.name)} <span style="font-size:0.65rem;color:var(--text-muted)">📱 ${t('本機')}${cloudNames.has(_tw.name) ? `${t('（')}${t('與雲端同名')}${t('）')}` : ''}</span> ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
                         <div class="town-meta">${_tw.season||''}${t(' 第')}${_tw.year||1}${t('年 第')}${_tw.day||1}${t('天 | 人口')}${_tw.population||0}</div>
                     </div>
                     <div class="town-actions">${!isActive ? `<button data-action="delete-local-town" data-val="${_tw.id}" title="${t('刪除本機副本')}" class="btn-danger">🗑️</button>` : ''}</div>
@@ -325,7 +334,7 @@ Object.assign(RimTownApp.prototype, {
             ? ((this._cloudSaves?.length || 0) + 1)
             : (this._getTownList().length + 1);
         // v5.58.0 建立新城鎮恢復原行為(邊境鎮);海風鎮不用建立——它本來就存在,搭馬車去即可
-        const name = prompt(t('為新城鎮命名：'), t('邊境鎮 ') + defaultSuffix);
+        const name = prompt(t('為新城鎮命名：'), '邊境鎮 ' + defaultSuffix); // v6.34.1 預設名存中文正名,顯示時再翻
         if (!name) return;
         this._showBusyOverlay(`🏗️ ${t('新城鎮建立中，原本的城鎮會先自動儲存…')}`);
         if (this.auth.loggedIn) {

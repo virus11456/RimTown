@@ -580,7 +580,7 @@ Object.assign(RimTownApp.prototype, {
         if (!btn) return;
         if (!this._initReady) { btn.disabled = true; btn.innerHTML = `▶ ${t('載入中…')}`; return; }
         const meta = this._getTownList().find(tw => tw.id === this.currentTownId);
-        const name = (meta && meta.name) || this._getCurrentTownName?.() || t('邊境鎮');
+        const name = (meta && meta.name) || this._getCurrentTownName?.() || '邊境鎮';
         const c = this.world?.clock;
         const when = c ? `${t('第')}${c.year}${t('年')} ${c.season} ${t('第')}${c.day}${t('天')}` : '';
         const esc = s => this._escapeHtml ? this._escapeHtml(String(s)) : String(s);
