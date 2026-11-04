@@ -261,7 +261,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.43.5.zip` from Releases
+1. Download `rimtown-v6.43.6.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -314,6 +314,12 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.43.6 (2026-11-04)
+- 🏛️ 修代理鎮長提示：鎮長只是去探險，提案分頁卻寫「補選進行中」。現在出遠門、去探險、真的沒有鎮長各有各的說法，只有真的在補選才寫補選；鎮長一回到鎮上提示馬上消失（探險隊或旅人回來當下就交還，不等隔天）
+- 😀 修 emoji 被截壞：上一版存檔瘦身用字數截斷共同回憶，可能把 emoji 切成一半、讀檔後變亂碼。現在改成依「看得到的字」截斷（組合 emoji、國旗也不會被拆開），對話泡泡與預覽也一起改；上一版存檔裡已經切壞的半個字，讀檔時會自動清掉
+- 📜 修提案可能整批卡住：鎮長用 AI 裁決時，若回覆一直沒來，以前每天都重新問一次 AI 又繼續等，4 件提案卡住後全鎮就不再提新案。現在隔天還沒回就直接照規則裁決（35 天實測：提案 4 件／完成 0 → 34 件／完成 29）
+- 💾 存檔再瘦一點：記憶的時間文字能由遊戲時間推回來就不存（讀檔時自動補回，推不回來的照存），關係裡預設值的欄位也不存。35 天實測：英文全做 1.49MB → 1.31MB、英文只看 1.24MB、中文全做 1.08MB
 
 ### v6.43.5 (2026-11-04)
 - 💾 英文存檔瘦身：英文句子大約是中文的 3 倍長，35 天的英文存檔有 1.7MB，超過 1.5MB 的容量門檻。村民之間的共同回憶改成只存提示詞會用到的最近 3 筆（每筆最多 100 字），存檔只留最近 200 段村民對話與 500 條紀錄（紀錄分頁本來就只顯示 500 條）。35 天實測：英文 1.7MB → 1.3MB、全做模式 1.4MB，中文 1.3MB → 1.1MB
