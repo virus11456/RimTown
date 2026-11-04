@@ -1052,7 +1052,7 @@ class Town3D extends PixelTileMap {
         this._cloudMat = new THREE.MeshLambertMaterial({ color: new THREE.Color('#FFFFFF'), transparent: true, opacity: 0.88 });
         for (let i = 0; i < n; i++) {
             const k = 3 + Math.floor(Math.random() * 3), s = 2 + Math.random() * 3;
-            const g = { x: Math.random() * (this.cols + 30) - 15, y: 19 + Math.random() * 6, z: Math.random() * this.rows, v: 0.004 + Math.random() * 0.007, parts: [] };
+            const g = { x: Math.random() * (this.cols + 30) - 15, y: 62 + Math.random() * 8, /* v6.34.1 雲放到 62–70:手機預設俯瞰鏡頭高 47、最遠 93,之前 19–25 會卡在鏡頭與地面之間、整片畫面被雲蓋白 */ z: Math.random() * this.rows, v: 0.004 + Math.random() * 0.007, parts: [] };
             for (let j = 0; j < k; j++) { const sj = s * (0.7 + Math.random() * 0.6); g.parts.push({ ox: (j - (k - 1) / 2) * s * 0.9, oy: (Math.random() - 0.5) * 0.5, oz: (Math.random() - 0.5) * 1.6, sx: sj * 1.4, sy: sj * 0.42, sz: sj * 0.9 }); parts.push(g); }
             this._clouds.push(g);
         }
@@ -1071,7 +1071,8 @@ class Town3D extends PixelTileMap {
         const bad = wt === 'rain' || wt === 'storm' || wt === 'snow' || wt === 'blizzard';
         if (this._clouds) {
             const c = this._cloudMat.color.setRGB(1, 1, 1); c.lerp(this._lc?.skyNight || c, night * 0.75); if (bad || wt === 'fog') c.lerp(this._lc?.rain || c, 0.6);
-            this._cloudMat.opacity = wt === 'fog' ? 0.3 : bad ? 0.95 : 0.88;
+            const camY = this.camera ? this.camera.position.y : 0; const camFade = clamp((56 - camY) / 10, 0, 1); // v6.34.1 鏡頭爬到雲的高度就把雲淡掉,永遠不擋在鏡頭與地面之間
+            this._cloudMat.opacity = (wt === 'fog' ? 0.3 : bad ? 0.95 : 0.88) * camFade; this._cloudMesh.visible = camFade > 0.02;
             const span = this.cols + 30, sp = wt === 'storm' || wt === 'blizzard' ? 3 : 1; let idx = 0;
             for (const g of this._clouds) { g.x += g.v * sp; if (g.x > this.cols + 15) g.x -= span; for (const p of g.parts) { this._cloudM4.compose(this._cloudP.set(g.x + p.ox, g.y + p.oy, g.z + p.oz), this._cloudQ, this._cloudS.set(p.sx, p.sy, p.sz)); this._cloudMesh.setMatrixAt(idx++, this._cloudM4); } }
             this._cloudMesh.instanceMatrix.needsUpdate = true;

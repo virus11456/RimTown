@@ -259,7 +259,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.34.0.zip` from Releases
+1. Download `rimtown-v6.34.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -312,6 +312,9 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.34.1 (2026-11-04)
+- 🐛 修：手機俯瞰整片畫面霧白——v6.32 的低多邊形雲放在高度 19–25，手機預設鏡頭高 47（最遠 93），等於隔著雲看小鎮。雲改放 62–70，鏡頭爬到雲的高度就自動淡掉，永遠不會擋在鏡頭與地面之間
 
 ### v6.34.0 (2026-11-04)
 - ⚡ 載入瘦身：tilemap.js 裡不可達的 2D 繪圖碼全部移除（39 個方法、3 組貼圖常數，309KB → 153KB），只留版面生成、尋路、村民移動、互動與頭像繪製；啟動時也不再預先畫整套 2D 貼圖。3D 是唯一畫面，`?r=2d` 開關拿掉；WebGL 不可用時小鎮照跑，地圖區顯示提示

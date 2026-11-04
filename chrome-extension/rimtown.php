@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.34.0
+ * Version: 6.34.1
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.34.0');
+define('RIMTOWN_VERSION', '6.34.1');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1328,6 +1328,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.34.1',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🐛 修：手機俯瞰整片畫面霧白——v6.32 的低多邊形雲放在高度 19–25，手機預設鏡頭高 47（最遠 93），等於隔著雲看小鎮。雲改放 62–70，鏡頭爬到雲的高度就自動淡掉，永遠不會擋在鏡頭與地面之間',
+            ),
+            'changes_en' => array(
+                '🐛 Fixed the whole phone view looking washed-out white: the v6.32 low-poly clouds sat at height 19–25 while the default phone camera is at 47 (up to 93), so you were looking at the town through a cloud. Clouds now sit at 62–70 and fade out as the camera climbs to their height, so they never come between the camera and the ground',
+            ),
+        ),
         array(
             'version' => '6.34.0',
             'date'    => '2026-11-04',
