@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.33.0
+ * Version: 6.34.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.33.0');
+define('RIMTOWN_VERSION', '6.34.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1328,6 +1328,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.34.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '⚡ 載入瘦身：tilemap.js 裡不可達的 2D 繪圖碼全部移除（39 個方法、3 組貼圖常數，309KB → 153KB），只留版面生成、尋路、村民移動、互動與頭像繪製；啟動時也不再預先畫整套 2D 貼圖。3D 是唯一畫面，`?r=2d` 開關拿掉；WebGL 不可用時小鎮照跑，地圖區顯示提示',
+                '⚡ 五鎮任務鏈資料（章節名、主線、支線、故事事件，約 110KB）拆成 quest-data.js，觀察者模式不載（旅人主線本來就停用），quest-system.js 218KB → 107KB；日後非觀察者模式才動態插入',
+                '📏 中文介面啟動 JS 壓縮後 825KB → 758KB、未壓縮少約 270KB（手機解析／編譯時間跟著少）；量測 tick 4.3ms、getState 6.4ms（四倍節流），暫不需再動',
+            ),
+            'changes_en' => array(
+                '⚡ Smaller load: all unreachable 2D drawing code in tilemap.js removed (39 methods and 3 sprite tables, 309KB → 153KB), keeping only layout generation, pathfinding, villager movement, interaction and avatar drawing; the full 2D tile set is no longer pre-rendered at startup. 3D is the only view and the `?r=2d` switch is gone; without WebGL the town still runs and the map area shows a notice',
+                '⚡ The five towns\' quest chain data (chapter names, main and side quests, story events, about 110KB) moved to quest-data.js and is not loaded in observer mode (the traveller main quest was already off), quest-system.js 218KB → 107KB; non-observer mode would inject it on demand',
+                '📏 Chinese-UI startup JS 825KB → 758KB gzipped, about 270KB less uncompressed (less parse and compile time on phones); measured tick 4.3ms and getState 6.4ms under 4x throttling, nothing further needed there for now',
+            ),
+        ),
         array(
             'version' => '6.33.0',
             'date'    => '2026-11-04',
