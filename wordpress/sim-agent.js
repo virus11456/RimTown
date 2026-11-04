@@ -118,7 +118,9 @@ class MemoryEntry {
     }
     text() { // 依當下介面語言;同語言下快取,getState 每格都會叫到
         if (!this.k) return this.content;
-        const L = (typeof I18N !== 'undefined' && I18N.getLang) ? I18N.getLang() : 'zh';
+        // v6.43.1 快取鍵加上「英文字典載好了沒」:字典還沒到就先算出的中文,字典到了要重算(以前會一直卡在中文)
+        const L0 = (typeof I18N !== 'undefined' && I18N.getLang) ? I18N.getLang() : 'zh';
+        const L = L0 === 'en' && typeof I18N !== 'undefined' && I18N.dictReady && !I18N.dictReady() ? 'en:nodict' : L0;
         if (this._tl !== L) { this._tx = Memory.render(this.k, this.p); this._tl = L; }
         return this._tx;
     }

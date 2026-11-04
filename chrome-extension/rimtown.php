@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.43.0
+ * Version: 6.43.1
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.43.0');
+define('RIMTOWN_VERSION', '6.43.1');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1330,6 +1330,26 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.43.1',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '📱 修手機英文版右上選單被擠出畫面：390px 寬時英文鎮名、日期、人口太長，把 3x 與選單鈕推到畫面外。現在鎮名先縮成「…」，暫停／速度／選單固定留在畫面內',
+                '⏱️ 修 AI 冷卻失效：玩家聊天「最後 30 秒可插隊」原本只該用在 60 秒限流，v6.41.1 改成的 10 秒短暫停整段都落在這 30 秒裡，完整智能體決策失敗後可立刻重試。現在決策與事件反應冷卻中一律不放行，玩家聊天只在真正的限流最後 30 秒才能插隊',
+                '🌾 修進階農業沒效果：研究效果有加進效果表，但農夫產量與田地收成都沒讀；而且研究寫成倍率（1.3）、升級寫成增量（0.3），混在一起相加。現在效果表統一成增量，農夫產量與收成都吃得到（進階農業 +30%、灌溉、風車同理）',
+                '🪚 修木工沒效果：每日施工進度沒讀建造速度。現在木工 +10%、建築學 +30%、工程學 +20% 都會加快施工',
+                '📜 修舊存檔科技規則不同步：讀檔時以前把整筆研究資料蓋回去，舊的成本、前置與效果跟著存檔走。現在只帶回狀態與進度，其餘一律用目前版本；前置沒完成卻在研究中的會鎖回去（進度保留）；效果表讀檔時依完成的建築與研究重算，舊檔累加錯的數值一併校正',
+                '🌐 修英文記憶卡在中文：字典還沒載好時先算出的中文被當成英文快取，之後不會再翻譯。記憶與日誌的快取現在會記住「字典載好了沒」，字典一到就重新翻成英文',
+            ),
+            'changes_en' => array(
+                '📱 Fixed the top-right menu being pushed off screen on mobile in English: at 390px the longer English town name, date and population pushed the 3x and menu buttons off the edge. The town name now shrinks to "…" first and pause, speed and menu always stay on screen',
+                '⏱️ Fixed the AI cooldown not holding: the "player chat may jump the queue in the last 30 seconds" rule was meant for the 60-second rate limit, but the 10-second pause from v6.41.1 falls entirely inside those 30 seconds, so full-agent decisions retried immediately after a failure. Decisions and event reactions now wait out any cooldown, and player chat only jumps the queue in the last 30 seconds of a real rate limit',
+                '🌾 Fixed Advanced Agriculture having no effect: research effects were added to the effect table, but neither farmer output nor field harvests read it, and research used multipliers (1.3) while upgrades used increments (0.3), summed together. The table now stores increments and both farmer output and harvests use it (Advanced Agriculture +30%, irrigation and windmills likewise)',
+                '🪚 Fixed Carpentry having no effect: daily construction never read build speed. Carpentry +10%, Architecture +30% and Engineering +20% now speed up building',
+                '📜 Fixed old saves keeping old tech rules: loading used to copy the whole saved research record back, so old costs, prerequisites and effects travelled with the save. Only status and progress are restored now and everything else comes from the current tree; a node being researched without its new prerequisites is locked again (progress kept); the effect table is rebuilt from finished buildings and research on load, correcting values old saves had summed wrongly',
+                '🌐 Fixed English memories stuck in Chinese: text computed before the dictionary loaded was cached as English and never re-translated. Memory and log caches now remember whether the dictionary was ready and re-translate as soon as it arrives',
+            ),
+        ),
         array(
             'version' => '6.43.0',
             'date'    => '2026-11-04',
