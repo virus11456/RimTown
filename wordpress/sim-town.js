@@ -679,15 +679,18 @@ class ElectionSystem {
     }
 
     dailyUpdate(world) {
-        const day = world.clock.day + (world.clock.year - 1) * 60;
+        const day = world._absDay ? world._absDay() : world.clock.day + (world.clock.year - 1) * 60; // v6.43.2 用含季節的絕對天數(以前漏算季節,第一年秋季第 1 天算成第 1 天,選舉永遠不開)
         try { this._checkMayor(world); } catch (e) { console.warn('[Election] mayor check', e); } // v6.42.0
         if (this.phase === 'campaign') {
             this.campaignDaysLeft--;
             if (this.campaignDaysLeft <= 0) this._startVoting(world);
+            else if (world.fullAgentMode && !this._campPending && !this.candidates.some(c => c.llm) && world.conversationEngine?.decideCampaign) this._campaignLLM(world); // v6.43.2 第一次剛好遇到 AI 冷卻就隔天再問
             return null;
         }
         if (this.phase === 'voting') {
             this.votingDaysLeft--;
+            // v6.43.2 開票前一天:AI 第一輪沒回的選民再問一次(最後一天才交給規則版)
+            if (this.votingDaysLeft >= 1 && !this._voteRetried && world.fullAgentMode && world.conversationEngine?.decideElectionVotes && this.candidates.length >= 2) { this._voteRetried = true; this._voteLLMAll(world); }
             this._processVotes(world);
             if (this.votingDaysLeft <= 0) return this._announceResults(world);
             return null;
@@ -754,7 +757,7 @@ class ElectionSystem {
         const eligible = this._residents(world); // v6.42.0 排除外鎮訪客、出遠門的人
         if (eligible.length < 2) return;
         this.active = true; this.phase = 'campaign'; this.campaignDaysLeft = 3; this.votingDaysLeft = 0; this.votes = {};
-        this.byElection = !!opts.byElection; this.voteWhy = {}; this._llmPending = {};
+        this.byElection = !!opts.byElection; this.voteWhy = {}; this._llmPending = {}; this._campPending = false;
         const scored = eligible.map(a => {
             let score = (a.skills?.skills?.社交?.level || 0) * 2;
             score += (a.personality.socialModifier || 0) * 3;
@@ -782,8 +785,9 @@ class ElectionSystem {
     // v6.42.0 完整智能體:候選人自己挑施政方針、寫演說;失敗就保留規則版
     async _campaignLLM(world) {
         const cands = this.candidates.map(c => world.agents[c.agentId]).filter(Boolean);
-        let r = null;
+        let r = null; this._campPending = true;
         try { r = await world.conversationEngine.decideCampaign(world, cands, ELECTION_POLICIES, this.byElection); } catch (e) { console.warn('[Election] llm campaign', e); }
+        this._campPending = false;
         if (!r || this.phase !== 'campaign') return;
         for (const c of this.candidates) {
             const x = r[c.agentId]; if (!x) continue;
@@ -821,13 +825,14 @@ class ElectionSystem {
     }
 
     _startVoting(world) {
-        this.phase = 'voting'; this.votingDaysLeft = 2; this.votes = {}; this.voteWhy = {}; this._llmPending = {};
+        this.phase = 'voting'; this.votingDaysLeft = 2; this.votes = {}; this.voteWhy = {}; this._llmPending = {}; this._voteRetried = false;
         world.logMessage('event', `🗳️ ${t('投票開始！居民們正在投下神聖的一票')}`);
         if (world.fullAgentMode && world.conversationEngine?.decideElectionVotes && this.candidates.length >= 2) this._voteLLMAll(world); // v6.42.0
     }
     // v6.42.0 完整智能體:全鎮選民分批(每批 8 人)交給 AI;失敗的人留給規則版
     async _voteLLMAll(world) {
-        const voters = this._residents(world).filter(a => !this.votes[a.agentId]);
+        const voters = this._residents(world).filter(a => !this.votes[a.agentId] && !this._llmPending[a.agentId]);
+        if (!voters.length) return;
         for (const a of voters) this._llmPending[a.agentId] = true;
         const batches = []; for (let i = 0; i < voters.length; i += 8) batches.push(voters.slice(i, i + 8));
         for (const batch of batches) {
@@ -916,7 +921,7 @@ class ElectionSystem {
         world.logMessageT('event', '📊 得票：{resultMsg}（共 {totalVotes} 票）', { resultMsg, totalVotes });
         if (world.questSystem) world.questSystem.onElection();
         this._applyPolicyEffects(winner.policy, world);
-        const day = world.clock.day + (world.clock.year - 1) * 60;
+        const day = world._absDay ? world._absDay() : world.clock.day + (world.clock.year - 1) * 60; // v6.43.2 用含季節的絕對天數(以前漏算季節,第一年秋季第 1 天算成第 1 天,選舉永遠不開)
         this.lastElectionDay = day;
         this.electionHistory.push({ day, year: world.clock.year, season: world.clock.season, byElection: !!this.byElection, winner: { agentId: winner.agentId, name: winner.name, policy: winner.policy, votes: winner.votes, speech: winner.speech || '' }, candidates: this.candidates.map(c => ({ agentId: c.agentId, name: c.name, policy: c.policy, votes: c.votes, llm: !!c.llm, quotes: this.quotes(world, c.agentId) })), totalVotes });
         if (this.acting) { world.logMessageT('council', '🏛️ {acting}的代理鎮長任期結束，由新鎮長{mayor}接手。', { mayor: winner.name, acting: this.acting.name }); this.acting = null; } // v6.42.0
@@ -954,8 +959,9 @@ class ElectionSystem {
         };
         const effect = effects[policyId];
         if (effect && world.news) {
-            world.news.bulletins.push({ id: 'election_policy_' + Date.now(), headline: effect.headline, headline_en: '', category: t('政治'), severity: effect.severity, flavor: `${this.candidates[0]?.name || t('新鎮長')}${t('的施政方針開始影響小鎮')}`, modifiers: effect.modifiers, publishedDay: world.clock.day, expiresDay: world.clock.day + 30, daysRemaining: 30 });
-            world.news._rebuildModifiers(world.clock.day + (world.clock.year - 1) * 60);
+            const nd = world.clock.year * 60 + Math.max(0, ['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15 + world.clock.day; // v6.43.2 跟新聞系統同一套天數(以前用季內天數,新鎮長的施政效果隔天就被當成過期)
+            world.news.bulletins.push({ id: 'election_policy_' + Date.now(), headline: effect.headline, headline_en: '', category: t('政治'), severity: effect.severity, flavor: `${this.candidates[0]?.name || t('新鎮長')}${t('的施政方針開始影響小鎮')}`, modifiers: effect.modifiers, publishedDay: nd, expiresDay: nd + 30, daysRemaining: 30 });
+            world.news._rebuildModifiers(nd);
         }
     }
 

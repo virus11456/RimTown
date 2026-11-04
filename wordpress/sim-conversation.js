@@ -443,7 +443,7 @@ ${LLM_LANG.rule(t('【規則】繁體中文(台灣用語)。只輸出 JSON,不�
                 const topMem = recent.slice().sort((a, b) => (b.importance || 0) - (a.importance || 0)).slice(0, 6)
                     .map(m => `- ${m.content}`).join('\n');
                 const pN = this._buildCharacterProfile(npc);
-                const prompt = `${t('你正在扮演「')}${pN.name}${t('」——')}${pN.age}${t('歲的')}${pN.job}${t('，性格')}${pN.traits}${t('。')}
+                const prompt = `${t('你正在扮演「{name}」——{age}歲的{job}，性格{traits}。').replace('{name}', pN.name).replace('{age}', pN.age).replace('{job}', pN.job).replace('{traits}', pN.traits)}
 ${t('夜深了，你回想今天發生的事：')}
 ${topMem}
 

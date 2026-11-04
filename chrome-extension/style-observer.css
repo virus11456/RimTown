@@ -399,3 +399,12 @@
     .rimtown-container .mobile-header .mobile-clock { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .rimtown-container .mobile-header .mobile-population { flex: 0 2 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
+
+/* v6.43.2 掛在 body 下的通知／彈窗(不在 .rimtown-container 裡)也用介面字型;以前英文版會掉成瀏覽器預設的襯線字 */
+body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Microsoft JhengHei', system-ui, -apple-system, sans-serif; }
+/* v6.43.2 手機:通知改到上方(頂欄下面),最多同時顯示最新 2 則,不再疊在打開的面板抽屜上 */
+@media (max-width: 768px) {
+    #achv-toast-host { top: calc(env(safe-area-inset-top, 0px) + 52px) !important; bottom: auto !important; right: 8px !important; left: 8px !important; align-items: stretch !important; }
+    #achv-toast-host > * { max-width: none !important; }
+    #achv-toast-host > :not(:nth-last-child(-n+2)) { display: none !important; }
+}

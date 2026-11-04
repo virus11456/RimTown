@@ -17,7 +17,9 @@ const I18N = (() => {
     let _dictLoading = null;
     function _dictUrl() { try { const s = document.currentScript && document.currentScript.src; if (s) return s.replace(/i18n\.js(\?.*)?$/, 'i18n-en.js$1'); } catch (e) {} return 'i18n-en.js'; }
     const _DICT_URL = (typeof document !== 'undefined') ? _dictUrl() : 'i18n-en.js';
-    function dictReady() { return Object.keys(en).length > 0; }
+    // v6.43.2 載好就記住:以前每次都 Object.keys(7600 筆),記憶／日誌快取每筆都問一次,英文版 getState 一次要 1.8 秒
+    let _dictOk = false;
+    function dictReady() { if (_dictOk) return true; for (const k in en) { _dictOk = true; break; } return _dictOk; }
     // 英文介面:在解析階段同步插入字典腳本,保證後面的腳本跑到時 t() 已有翻譯
     if (typeof document !== 'undefined' && currentLang === 'en' && !dictReady() && document.readyState === 'loading') {
         try { document.write('<script src="' + _DICT_URL.replace(/"/g, '') + '"><\/script>'); } catch (e) {}

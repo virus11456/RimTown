@@ -499,7 +499,8 @@ class Agent {
     get activityLabel() {
         const map = { sleeping:t('睡覺'), eating:t('進食'), working:t('工作'), socializing:t('社交'), wandering:t('閒逛'), recreation:t('娛樂'), idle:t('閒置'), stargazing:t('看星星'), night_mischief:t('搞事'), night_stroll:t('夜間散步'), exploring:t('探險中'), mourning:t('弔念') };
         if (this.activity === 'commuting') return t('趕著去上工'); // v5.72.0 通勤原本漏標籤,中文介面直接露出 commuting
-        return map[this.activity] || this.activity;
+        if (this.activity === 'heading_home') return t('準備回家休息'); // v6.43.2 村民清單直接露出 heading_home
+        return map[this.activity] || (/^[a-z_]+$/.test(String(this.activity || '')) ? t('閒逛') : this.activity); // 沒對到的程式代碼不直接給人看
     }
     get genderLabel() {
         return this.gender === 'male' ? t('男') : this.gender === 'female' ? t('女') : t('不明');

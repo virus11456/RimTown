@@ -663,7 +663,10 @@ class CouncilSystem {
         }
 
         // Expire old decrees
-        const currentDay = world.clock.year * 60 + (['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15 + world.clock.day;
+        // v6.43.2 統一用 world._absDay()(提案政令也是用它);以前這裡多算 60 天,提案通過的政令隔天就被當成過期刪掉。
+        // 舊檔用舊算法存的到期日會比現在多 60 天,剩超過 60 天的就扣回來(政令最長 20 天)
+        const currentDay = world._absDay ? world._absDay() : world.clock.year * 60 + (['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15 + world.clock.day;
+        for (const d of this.activeDecrees) if (d.expiresDay - currentDay > 60) d.expiresDay -= 60;
         this.activeDecrees = this.activeDecrees.filter(d => d.expiresDay > currentDay);
 
         // Apply active decree effects
@@ -833,7 +836,7 @@ class CouncilSystem {
             }
 
             // Register as active decree (modifier effects last 20 days)
-            const currentDay = world.clock.year * 60 + (['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15 + world.clock.day;
+            const currentDay = world._absDay ? world._absDay() : world.clock.year * 60 + (['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15 + world.clock.day; // v6.43.2
             this.activeDecrees.push({
                 id: p.id, title: p.title, effects: p.effects, expiresDay: currentDay + 20,
             });

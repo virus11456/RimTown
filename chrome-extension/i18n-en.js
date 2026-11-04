@@ -7537,6 +7537,9 @@
 
         // ── v5.48.0 看戲三件組 ──
         '集': ' · Episode',
+        '第 {n} 集': 'Episode {n}',
+        '你正在扮演「{name}」——{age}歲的{job}，性格{traits}。': 'You are roleplaying "{name}", a {age}-year-old {job}. Personality: {traits}.',
+        '{town}日常': '{town} Daily',
         '邊境鎮日常': 'Frontier Town Daily',
         '本集看點': 'This episode\'s highlights',
         '進行中的劇情線': 'Ongoing storylines',

@@ -479,7 +479,7 @@ Object.assign(RimTownApp.prototype, {
             teasers.map(s => `<div class="headline-row" style="cursor:default"><span class="headline-ic">${s.icon}</span><span class="headline-text" style="font-style:italic">${this._escapeHtml(s.text)}</span></div>`).join('') : '';
         const day = this.world.clock;
         return `<div class="town-headlines">
-            <div class="headlines-title"><span>📺 ${t('第')}${(day.year - 1) * 60 + day.day}${t('集')}·${this.world?.townName || t('邊境鎮')}${t('日常')}</span>
+            <div class="headlines-title"><span>📺 ${t('第 {n} 集').replace('{n}', this.world._absDay ? this.world._absDay() : day.day)}·${t('{town}日常').replace('{town}', t(this.world?.townName || '邊境鎮'))}</span>
                 <button class="headlines-more" data-action="goto-tab" data-val="records">${t('更多')} ›</button></div>
             ${html ? `<div style="padding:5px 8px 2px;font-size:0.66rem;color:var(--text-secondary);font-weight:bold">🔥 ${t('本集看點')}</div>${html}` : ''}
             ${slHtml}${tsHtml}
