@@ -252,7 +252,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.27.0.zip` from Releases
+1. Download `rimtown-v6.27.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -304,6 +304,9 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.27.1 (2026-11-04)
+- 🐛 線上 3D 沒出現、服務工作者安裝失敗：Vercel 的 build.sh 只複製 wordpress/ 第一層，vendor/three.min.js 沒上線（404），3D 退回 2D 且快取清單裝不起來；build.sh 現在連子目錄一起複製，並換快取名稱讓瀏覽器重新安裝
 
 ### v6.27.0 (2026-11-04)
 - 📱 手機與效能收尾：設定分頁的「小鎮畫面」2D 開關移除，改成「3D 畫質」自動／高／低（自動＝卡頓就降；高／低鎖定不自動變）；小螢幕陰影貼圖減半；低畫質時標籤層隔幀更新；2D 像素版只在 WebGL 不可用時自動退回（網址 ?r=2d 僅供除錯），tilemap.js 保留為地圖版面與尋路的基底

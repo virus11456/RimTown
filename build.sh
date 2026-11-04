@@ -15,6 +15,8 @@ fi
 mkdir -p public
 cp "$SRC"/wordpress/*.js "$SRC"/wordpress/*.css "$SRC"/wordpress/*.html public/
 cp "$SRC"/wordpress/pwa-manifest.json public/
+# v6.27.1 子目錄(vendor/three.min.js)也要上:之前只複製第一層,3D 在線上 404、SW 安裝失敗
+if [ -d "$SRC"/wordpress/vendor ]; then mkdir -p public/vendor; cp -R "$SRC"/wordpress/vendor/. public/vendor/; fi
 cp -r "$SRC"/chrome-extension/icons public/icons
 # v5.69.1 首頁圖片(3D 搶先看等)
 if [ -d "$SRC"/chrome-extension/img ]; then
