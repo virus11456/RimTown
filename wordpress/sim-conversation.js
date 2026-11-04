@@ -518,7 +518,7 @@ ${t('最後一行：')}EFFECTS: {"target": "${t('若念頭涉及某位村民寫�
         const player = world.agents['player'];
         if (!player) return;
         const ticksSince = world.tickCount - this._lastNpcMsgTick;
-        if (ticksSince < this._npcMsgCooldownTicks) return;
+        if (ticksSince < this._npcMsgCooldownTicks * (world.observerMode ? 4 : 1)) return; // v6.40.1 觀察者模式:村民主動傳訊間隔拉長 4 倍(實測 15 天 25～30 則太吵)
         // ~5% chance per tick after cooldown
         if (Math.random() > 0.05) return;
 
@@ -822,7 +822,7 @@ ${t('- 格式：每行「名字: 對話內容」,不要有其他任何東西')}`
                 lines = FB;
             }
             if (!lines.length) return;
-            const scene = { kind, icon: meta.icon, title: meta.title, aName: a.name, bName: b.name, lines };
+            const scene = { kind, icon: meta.icon, title: meta.title, aName: a.name, bName: b.name, aId: a.agentId, bId: b.agentId, lines }; // v6.40.1 帶 id 給角落卡「去看」
             world._pendingDramaScenes = world._pendingDramaScenes || [];
             world._pendingDramaScenes.push(scene);
             // v5.21.0 小鎮劇場:名場面存進可回顧的檔案,加上時間戳
@@ -2422,6 +2422,7 @@ class LLMClient {
                     // v5.73.0 英文回覆:英文名換回中文名,讓行程/對話解析與存檔仍用中文名(顯示層再換成英文)
                     if (typeof I18N !== 'undefined') reply = I18N.delocalizeNames(reply);
                 } else if (typeof RIMTOWN_S2T !== 'undefined' && RIMTOWN_S2T.looksSimplified(reply)) reply = RIMTOWN_S2T.convert(reply);
+                if (lang !== 'en' && typeof zhPunct === 'function') reply = zhPunct(reply); // v6.40.1
                 return reply;
             } catch (err) {
                 console.warn('[RimTown LLM] server provider error:', err.message);
@@ -2447,6 +2448,7 @@ class LLMClient {
         if (lang === 'en') {
             if (typeof I18N !== 'undefined') reply = I18N.delocalizeNames(reply);
         } else if (typeof RIMTOWN_S2T !== 'undefined' && RIMTOWN_S2T.looksSimplified(reply)) reply = RIMTOWN_S2T.convert(reply);
+        if (lang !== 'en' && typeof zhPunct === 'function') reply = zhPunct(reply); // v6.40.1
         return reply;
     }
 

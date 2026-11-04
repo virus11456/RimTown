@@ -126,12 +126,14 @@ class VillagerAutonomy {
         const reserve = (r) => r === 'food' ? 150 + pop * VillagerAutonomy.FOOD_RESERVE_PER_NPC : r === 'medicine' ? 30 : r === 'tools' ? 25 : ['wood', 'stone', 'metal', 'cloth', 'herbs'].includes(r) ? VillagerAutonomy.RAW_RESERVE : VillagerAutonomy.GOOD_RESERVE; // 藥和工具多留一點
         const low = (r) => r === 'food' ? 100 : ['wood', 'stone', 'metal', 'cloth', 'herbs'].includes(r) ? 15 : 5;
         const deals = [];
-        // 先賣（進帳），再買
+        // 先賣（進帳），再買;v6.40.1 一天跟行商賣貨最多進帳 100 銀幣
+        let earned = 0;
         for (let i = m.offers.length - 1; i >= 0; i--) {
-            const o = m.offers[i]; if (!o || !o.isBuying) continue;
+            const o = m.offers[i]; if (!o || !o.isBuying || earned >= 100) continue;
             const surplus = w.stockpile.get(o.resource) - reserve(o.resource);
-            const qty = Math.min(Math.floor(o.amount), Math.floor(surplus));
-            if (qty >= 3) { const r = tr.executeTrade(i, qty, w); if (r?.ok) deals.push({ type: 'sell', r: o.resource, qty, silver: Math.round(qty * o.price) }); }
+            const qty = Math.min(Math.floor(o.amount), Math.floor(surplus * 0.5), 25); // v6.40.1 一次只賣多出來的一半、每樣最多 25 份(上線實測一趟行商進帳上千)
+            const q2 = Math.min(qty, Math.floor((100 - earned) / Math.max(0.1, o.price)));
+            if (q2 >= 3) { const r = tr.executeTrade(i, q2, w); if (r?.ok) { deals.push({ type: 'sell', r: o.resource, qty: q2, silver: Math.round(q2 * o.price) }); earned += q2 * o.price; } }
         }
         for (let i = m.offers.length - 1; i >= 0; i--) {
             const o = m.offers[i]; if (!o || o.isBuying) continue;
@@ -175,9 +177,9 @@ class VillagerAutonomy {
         }
         for (const b of buys) this._note(w, b.who, '🛒 鎮上{item}快沒了，{who}去商店補了 {n} 份（{cost} 銀幣）。', { who: b.who?.name || '', item: SI[b.r].name(), n: b.qty, cost: b.cost }, 4, 'economy', 4);
         // 賣：沒人用得上、堆太多的（酒、傢俱、麵包…）留 15 賣掉其餘，一天最多兩樣
-        const sellable = ['beer', 'wine', 'furniture', 'bread', 'clothing'].filter(r => SI[r] && w.stockpile.get(r) > 30).slice(0, 2);
+        const sellable = ['beer', 'wine', 'furniture', 'bread', 'clothing'].filter(r => SI[r] && w.stockpile.get(r) > 80).sort((a, b) => w.stockpile.get(b) - w.stockpile.get(a)).slice(0, 1); // v6.40.1 一天只賣一樣、存量 80 以上才賣
         for (const r of sellable) {
-            const qty = Math.floor(w.stockpile.get(r) - 15);
+            const qty = Math.min(6, Math.floor(w.stockpile.get(r) - 50)); // 留 50、一次最多 6 份
             const res = shop.sell(r, qty, w);
             if (res?.success) { const who = this._pick(this._byJob(w, 'trader')); this._note(w, who, '💰 {who}把倉裡多出來的{item} {n} 份拿去賣了，進帳 {gain} 銀幣。', { who: who?.name || '', item: SI[r].name(), n: qty, gain: qty * SI[r].sellPrice }, 4, 'economy', 3); }
         }

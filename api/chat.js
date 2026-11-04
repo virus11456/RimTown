@@ -16,6 +16,10 @@ const RELAY_BASE = process.env.LLM_BASE_URL || '';
 const RELAY_KEY = process.env.LLM_API_KEY || '';
 const RELAY_MODEL = process.env.LLM_MODEL || 'claude-haiku-4-5-20251001';
 const RELAY_FORMAT = (process.env.LLM_FORMAT || 'anthropic').toLowerCase() === 'openai' ? 'openai' : 'anthropic';
+// v6.40.1 直連 Anthropic 官方 API 時走正式寫法(system 欄位、關思考);第三方中繼維持舊寫法
+const RELAY_DIRECT = RELAY_FORMAT === 'anthropic' && /(^|\/\/)api\.anthropic\.com/i.test(RELAY_BASE);
+// 新款 Claude(4.6 以後、5 系列)送非預設 temperature 會 400
+const NO_SAMPLING_RE = /claude-(opus|sonnet|haiku|fable|mythos)-(5|4-[6-9])/i;
 
 // base URL 正規化:去尾端 /,若以 /v1 結尾也去掉,再接對應 endpoint
 function relayUrl(base, format) {
@@ -53,9 +57,13 @@ const GAME_SYSTEM_PROMPT_EN = [
 function systemPrompt(lang) { return lang === 'en' ? GAME_SYSTEM_PROMPT_EN : GAME_SYSTEM_PROMPT; }
 // 中繼的回覆若是「拒絕扮演/自報 AI 身分」就視同失敗,讓分流退回另一條渠道
 const REFUSAL_RE = /\b(I'?m|I am) (Kiro|Claude|ChatGPT|an AI|a language model|an assistant)\b|AI (development environment|assistant|language model)|not designed for (roleplay|role-play|fictional)|can'?t (take on|engage in|roleplay|role-play) |fictional character personas?|I can'?t do this|I'?m (here|designed) to help with (coding|software|technical)|我是(一個)?(AI|人工智慧|語言模型|程式開發)|無法(進行|扮演)角色|不能扮演|我不是(遊戲)?角色/i;
+// v6.40.1 補上中文自報身分:上線實測付費中繼回「我是 Claude Code，Anthropic 官方的命令列工具……不能假裝是遊戲引擎」,
+// 舊規則只認英文與「我是 AI／語言模型」,4 次漏掉 3 次。這些字眼村民台詞不會用到,出現就直接判拒絕,讓分流退回另一條渠道
+const IDENTITY_RE = /Claude Code|Anthropic|命令列工具|CLI 工具|(系統|系统)(指示|提示)|角色扮演模式|(隱瞞|隐瞒)[^。]{0,8}(身分|身份)|我是\s*(Claude|ChatGPT|GPT|Kiro|Gemini|Copilot|AI|人工智慧|人工智能|語言模型|语言模型|助理|助手|一個 ?AI|一个 ?AI)|核心設計原則|撰寫創意(文本|內容)|如果你對我的能力|(協助|幫助)其他(開發|專業|工作|寫作)/i;
 function looksLikeRefusal(text) {
     const t = String(text || '').trim();
     if (!t) return false;
+    if (IDENTITY_RE.test(t)) return true;
     if (!REFUSAL_RE.test(t)) return false;
     // 台詞裡偶爾會出現「我不是角色」之類的字眼,加一道保險:拒絕句通常是英文為主或很短的說教
     const ascii = (t.match(/[A-Za-z]/g) || []).length;
@@ -68,15 +76,26 @@ async function callRelay(prompt, maxTokens, temperature, deadline = Date.now() +
     if (RELAY_FORMAT === 'openai') {
         headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RELAY_KEY}` };
         body = { model: RELAY_MODEL, messages: [{ role: 'system', content: systemPrompt(lang) }, { role: 'user', content: prompt }], max_tokens: maxTokens, temperature };
+    } else if (RELAY_DIRECT) {
+        // v6.40.1 直連 Anthropic 官方 API(LLM_BASE_URL=https://api.anthropic.com):system 走正式欄位;
+        // 新款 Claude(4.6 以後)不收 temperature、預設會先思考 → 不送 temperature、先關思考,模型不收 thinking 欄位(400)就拿掉重送
+        headers = { 'Content-Type': 'application/json', 'x-api-key': RELAY_KEY, 'anthropic-version': '2023-06-01' };
+        body = { model: RELAY_MODEL, max_tokens: Math.max(64, maxTokens), system: systemPrompt(lang), messages: [{ role: 'user', content: prompt }], thinking: { type: 'disabled' } };
     } else {
         // 各家 CC 類渠道吃的認證 header 不同,x-api-key 與 Authorization 都送
         headers = { 'Content-Type': 'application/json', 'x-api-key': RELAY_KEY, 'Authorization': `Bearer ${RELAY_KEY}`, 'anthropic-version': '2023-06-01' };
         // v5.67.3 不送 system 欄位:Kiro 系代理收到 system 會卡到逾時(上線實測每次 15 秒被中止);改併進使用者訊息開頭
-        body = { model: RELAY_MODEL, max_tokens: maxTokens, temperature, messages: [{ role: 'user', content: (lang === 'en' ? '[System instructions] ' : '【系統指示】') + systemPrompt(lang) + '\n\n' + prompt }] };
+        body = { model: RELAY_MODEL, max_tokens: maxTokens, messages: [{ role: 'user', content: (lang === 'en' ? '[System instructions] ' : '【系統指示】') + systemPrompt(lang) + '\n\n' + prompt }] };
+        if (!NO_SAMPLING_RE.test(RELAY_MODEL)) body.temperature = temperature;
     }
-    const r = await fetchTimeout(url, { method: 'POST', headers, body: JSON.stringify(body) }, budget(deadline, 15000));
+    let r = await fetchTimeout(url, { method: 'POST', headers, body: JSON.stringify(body) }, budget(deadline, 15000));
+    if (r.status === 400 && RELAY_FORMAT === 'anthropic' && (body.thinking || body.temperature !== undefined) && deadline - Date.now() > 3000) {
+        let msg = ''; try { msg = JSON.stringify(await r.json()); } catch (e) {}
+        if (/thinking|temperature|sampling/i.test(msg)) { delete body.thinking; delete body.temperature; body.max_tokens = Math.max(400, body.max_tokens); r = await fetchTimeout(url, { method: 'POST', headers, body: JSON.stringify(body) }, budget(deadline, 15000)); }
+    }
     if (!r.ok) { const e = new Error('relay_http_' + r.status); e.status = r.status; throw e; }
     const data = await r.json();
+    if (data && data.stop_reason === 'refusal') { const e = new Error('relay_refusal'); e.status = 502; e.refusal = true; throw e; }
     const text = RELAY_FORMAT === 'openai'
         ? (data.choices?.[0]?.message?.content || '')
         : ((Array.isArray(data.content) ? data.content.filter(c => c && c.type === 'text').map(c => c.text).join('') : '') || '');

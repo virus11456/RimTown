@@ -4285,7 +4285,6 @@ body.landing-open { overflow: hidden; }
 
 /* v5.69.1 首頁 3D 搶先看 */
 
-/* Godot development gallery: consistent landscape previews. */
 
 /* ===== v6.23.0 3D 小鎮(three.js)===== */
 .rimtown-container #town-map-canvas.is-3d { image-rendering: auto; }

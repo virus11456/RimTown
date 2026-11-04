@@ -355,7 +355,14 @@ Object.assign(RimTownApp.prototype, {
     },
 
     // v5.1.0 名場面直播:NPC 感情大事件的 AI 對話劇
-    _showDramaScene(s) {
+    _showDramaScene(s, force) {
+        // v6.40.1 觀察者模式:名場面不再整個蓋住畫面,先在角落冒一張卡(第一句台詞),按「看全文」才開大卡;全文照樣收進「小鎮劇場」
+        if (!force && this.world?.observerMode !== false) {
+            const first = (s.lines || [])[0];
+            const ids = [s.aId, s.bId].filter(Boolean);
+            this._showCornerNotice({ icon: s.icon || '📺', title: `📺 ${t('名場面')}${t('：')}${s.title}`, name: `${s.aName} × ${s.bName}`, desc: first ? `${first.speaker}${t('：')}${first.text}` : '', go: ids.length ? { agentId: ids[0] } : null, open: () => this._showDramaScene(s, true), openLabel: t('看全文') });
+            return;
+        }
         this.bgm?.sfx?.('open');
         const esc = (x) => String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         const palette = ['#ff6b9d', '#6bc5ff', '#ffd166', '#95e06c'];
@@ -700,7 +707,7 @@ Object.assign(RimTownApp.prototype, {
         else if (go.coach && tm.coachStation) { const cs = tm.coachStation; tm.focusMap?.((cs.x + cs.w / 2) * 16, (cs.y + cs.h / 2) * 16, 22); }
     },
     _autoCamEnabled() { try { return localStorage.getItem('rimtown_autocam') === '1'; } catch (e) { return false; } },
-    _showCornerNotice({ icon, title, name, desc, go }) {
+    _showCornerNotice({ icon, title, name, desc, go, open, openLabel }) {
         const host = this._toastHost();
         if (go && this._autoCamEnabled() && !this._isPlayerBusy?.() && Date.now() - (this._lastAutoCam || 0) > 6000) { this._lastAutoCam = Date.now(); try { this._goLook(go); } catch (e) {} }
         // v5.34.1 同時最多 3 張,多的擠掉最舊的,避免洗版
@@ -711,6 +718,7 @@ Object.assign(RimTownApp.prototype, {
         el.innerHTML = `<span style="font-size:1.5rem">${icon || '🔔'}</span><span style="flex:1;min-width:0"><span style="display:block;color:var(--accent,#e94560);font-size:0.72rem;font-weight:bold">${title || ''}</span>${name ? `<span style="display:block;color:var(--text-primary,#fff);font-size:0.85rem;font-weight:bold">${name}</span>` : ''}${desc ? `<span class="rt-toast-desc" style="color:var(--text-secondary,rgba(255,255,255,0.65));font-size:0.68rem">${desc}</span>` : ''}</span>${go ? `<button class="rt-toast-go" data-go="1">🎥 ${t('去看')}</button>` : ''}`;
         host.appendChild(el);
         if (go) el.querySelector('.rt-toast-go')?.addEventListener('click', (e) => { e.stopPropagation(); try { this._goLook(go); } catch (err) {} el.remove(); });
+        if (open) { const b = document.createElement('button'); b.className = 'rt-toast-go rt-toast-open'; b.textContent = '📖 ' + (openLabel || t('看全文')); b.addEventListener('click', (e) => { e.stopPropagation(); el.remove(); try { open(); } catch (err) {} }); el.appendChild(b); } // v6.40.1
         requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
         const remove = () => { el.style.opacity = '0'; el.style.transform = 'translateY(8px)'; setTimeout(() => el.remove(), 350); };
         // v6.13.0 手機長文(章節故事等)先夾成兩行,點一下展開再點收掉;桌機維持點一下收掉
