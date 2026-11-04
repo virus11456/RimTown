@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.43.5
+ * Version: 6.43.6
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.43.5');
+define('RIMTOWN_VERSION', '6.43.6');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1330,6 +1330,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.43.6',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🏛️ 修代理鎮長提示：鎮長只是去探險，提案分頁卻寫「補選進行中」。現在出遠門、去探險、真的沒有鎮長各有各的說法，只有真的在補選才寫補選；鎮長一回到鎮上提示馬上消失（探險隊或旅人回來當下就交還，不等隔天）',
+                '😀 修 emoji 被截壞：上一版存檔瘦身用字數截斷共同回憶，可能把 emoji 切成一半、讀檔後變亂碼。現在改成依「看得到的字」截斷（組合 emoji、國旗也不會被拆開），對話泡泡與預覽也一起改；上一版存檔裡已經切壞的半個字，讀檔時會自動清掉',
+                '📜 修提案可能整批卡住：鎮長用 AI 裁決時，若回覆一直沒來，以前每天都重新問一次 AI 又繼續等，4 件提案卡住後全鎮就不再提新案。現在隔天還沒回就直接照規則裁決（35 天實測：提案 4 件／完成 0 → 34 件／完成 29）',
+                '💾 存檔再瘦一點：記憶的時間文字能由遊戲時間推回來就不存（讀檔時自動補回，推不回來的照存），關係裡預設值的欄位也不存。35 天實測：英文全做 1.49MB → 1.31MB、英文只看 1.24MB、中文全做 1.08MB',
+            ),
+            'changes_en' => array(
+                '🏛️ Fixed the acting-mayor notice: when the mayor was only exploring, the proposals tab said "by-election in progress". Travelling, exploring and having no mayor now each have their own wording, "by-election" only appears during an actual by-election, and the notice disappears as soon as the mayor is back (the role is handed back the moment an expedition or traveller returns, not the next day)',
+                '😀 Fixed emoji being cut in half: the last version shortened shared memories in saves by character count, which could split an emoji and leave garbled text after loading. Text is now cut on visible characters (combined emoji and flags stay whole), speech bubbles and previews too, and half-characters already in v6.43.5 saves are removed on load',
+                '📜 Fixed proposals getting stuck: when the mayor ruled with AI and the reply never came, the game asked the AI again every day and kept waiting, and once four proposals were stuck no new ones were made. A ruling still pending the next day is now decided by the rules (35-day run: 4 proposals / 0 done before, 34 / 29 now)',
+                '💾 Even smaller saves: memory time labels that can be recomputed from the game time are no longer stored (they are restored on load; any that cannot be recomputed are kept), and relationship fields still at their defaults are skipped. 35-day runs: English with every action 1.49 MB to 1.31 MB, English watch-only 1.24 MB, Chinese with every action 1.08 MB',
+            ),
+        ),
         array(
             'version' => '6.43.5',
             'date'    => '2026-11-04',
