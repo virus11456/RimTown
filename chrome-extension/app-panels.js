@@ -1043,13 +1043,66 @@ Object.assign(RimTownApp.prototype, {
         // --- AI Settings Section ---
         const aiConnected = !!(this.llmClient && this.world?.conversationEngine?.llm);
         const isServerAI = this.llmClient?.provider === 'server';
-        const aiLabel = isServerAI ? t('AI:小鎮內建') : (aiConnected ? 'AI:' + this.llmClient.provider : t('AI:未連接'));
+        const byokActive = this._byokGet?.() || null; // v6.36.0 玩家自備 AI
+        const aiLabel = isServerAI ? t('AI:小鎮內建') : (aiConnected ? t('AI:自備') + ' ' + this._byokLabel(this.llmClient.provider) : t('AI:未連接'));
         html += t('<div class="econ-section"><h3>🤖 AI 語言模型</h3>');
-        html += `<div style="margin-bottom:8px"><span class="llm-status ${aiConnected ? 'connected' : 'disconnected'}">${aiLabel}</span></div>`;
-        // v5.65.0 AI 全面內建:金鑰由伺服器統一保管,玩家端沒有任何可填的金鑰欄位
-        html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${isServerAI
+        html += `<div style="margin-bottom:8px"><span class="llm-status ${aiConnected ? 'connected' : 'disconnected'}${byokActive && aiConnected ? ' byok' : ''}">${aiLabel}</span></div>`;
+        // v5.65.0 AI 全面內建:金鑰由伺服器統一保管;v6.36.0 玩家可改填自己的金鑰(只存本機)
+        html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${byokActive && aiConnected
+            ? t('🔑 目前用你自己的金鑰與額度：村民對話、行程、反思全部直接從這個瀏覽器連到該服務，小鎮伺服器不經手，也不受每日 100 則限制。') + (this.llmClient.model ? ' ' + t('模型：') + this._escapeHtml(this.llmClient.model) : '')
+            : isServerAI
             ? t('🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 100 則）') + ' ' + t('所有 AI 金鑰由小鎮伺服器統一保管，你不需要、也不會看到任何金鑰欄位。') + ' ' + t('智慧分流：你與村民的對話、劇情名場面優先走 Groq 免費額度；行程／反思／背景對話走付費主渠道；任一邊故障自動切到另一邊。')
             : t('此站沒有內建 AI 代理端點，村民對話走內建模擬')}</div>`;
+        // v6.36.0 自備 AI(進階):Claude / OpenAI / Gemini / 自訂 OpenAI 相容端點;表單值在重繪時保留
+        {
+            const g = (id) => document.getElementById(id);
+            const cur = byokActive || {};
+            const prov = g('settings-byok-provider') ? g('settings-byok-provider').value : (cur.provider || 'server');
+            const key = g('settings-byok-key') ? g('settings-byok-key').value : (cur.key || '');
+            const model = g('settings-byok-model') ? g('settings-byok-model').value : (cur.model || '');
+            const url = g('settings-byok-url') ? g('settings-byok-url').value : (cur.baseUrl || '');
+            const sel = (v) => prov === v ? ' selected' : '';
+            const inp = 'width:100%;box-sizing:border-box;padding:7px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem;font-family:inherit';
+            const defModel = (typeof LLMClient !== 'undefined' && LLMClient.defaultModel) ? LLMClient.defaultModel(prov) : '';
+            html += `<details class="byok-box"${prov !== 'server' ? ' open' : ''} style="margin-bottom:8px;border:1px dashed var(--border);border-radius:6px;padding:6px 8px">
+            <summary style="cursor:pointer;font-size:0.8rem;color:var(--text-secondary)">🔑 ${t('自備 AI（進階）')}${byokActive ? ' <span style="color:var(--positive)">●</span>' : ''}</summary>
+            <div style="font-size:0.7rem;color:var(--text-muted);margin:6px 0 8px">${t('把你自己的 Claude、OpenAI 或 Gemini 金鑰填在這裡，村民就改用你的金鑰與額度。金鑰只存在這台裝置的瀏覽器，不會上傳、不進存檔、也不會送到小鎮伺服器；清除瀏覽器資料或換裝置要重填。')}</div>
+            <div class="setting-group" style="margin-bottom:6px">
+                <label for="settings-byok-provider" style="font-size:0.78rem;color:var(--text-secondary)">${t('AI 來源')}</label>
+                <select id="settings-byok-provider" style="${inp}" onchange="(function(s){var c=s.value!=='custom';var u=document.getElementById('settings-byok-url-row');if(u)u.style.display=c?'none':'';var m=document.getElementById('settings-byok-model');if(m&&typeof LLMClient!=='undefined'&&LLMClient.defaultModel)m.placeholder=LLMClient.defaultModel(s.value)||'';var k=document.getElementById('settings-byok-fields');if(k)k.style.display=s.value==='server'?'none':'';})(this)">
+                    <option value="server"${sel('server')}>${t('小鎮內建（預設，免金鑰）')}</option>
+                    <option value="anthropic"${sel('anthropic')}>Claude (Anthropic)</option>
+                    <option value="openai"${sel('openai')}>GPT (OpenAI)</option>
+                    <option value="gemini"${sel('gemini')}>Gemini (Google)</option>
+                    <option value="custom"${sel('custom')}>${t('自訂 OpenAI 相容端點')}</option>
+                </select>
+            </div>
+            <div id="settings-byok-fields" style="${prov === 'server' ? 'display:none' : ''}">
+                <div class="setting-group" style="margin-bottom:6px">
+                    <label for="settings-byok-key" style="font-size:0.78rem;color:var(--text-secondary)">${t('API 金鑰')}</label>
+                    <div style="display:flex;gap:6px;align-items:center">
+                        <input type="password" id="settings-byok-key" value="${this._escapeHtml(key)}" placeholder="sk-…" autocomplete="off" autocapitalize="off" spellcheck="false" style="${inp};flex:1">
+                        <button type="button" class="trade-btn" style="padding:6px 10px;flex:none" aria-label="${t('顯示或隱藏金鑰')}" onclick="var k=document.getElementById('settings-byok-key');if(k){k.type=k.type==='password'?'text':'password';this.textContent=k.type==='password'?'👁':'🙈';}">👁</button>
+                    </div>
+                </div>
+                <div class="setting-group" style="margin-bottom:6px">
+                    <label for="settings-byok-model" style="font-size:0.78rem;color:var(--text-secondary)">${t('模型（留空用預設）')}</label>
+                    <input type="text" id="settings-byok-model" value="${this._escapeHtml(model)}" placeholder="${this._escapeHtml(defModel)}" autocomplete="off" autocapitalize="off" spellcheck="false" style="${inp}">
+                </div>
+                <div class="setting-group" id="settings-byok-url-row" style="margin-bottom:6px;${prov === 'custom' ? '' : 'display:none'}">
+                    <label for="settings-byok-url" style="font-size:0.78rem;color:var(--text-secondary)">${t('基底網址（例如 https://主機/v1）')}</label>
+                    <input type="url" id="settings-byok-url" value="${this._escapeHtml(url)}" placeholder="https://api.example.com/v1" autocomplete="off" autocapitalize="off" spellcheck="false" style="${inp}">
+                </div>
+                <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:6px">${t('預設模型：Claude 用 claude-haiku-5-5、GPT 用 gpt-4o-mini、Gemini 用 gemini-2.5-flash（都是便宜款）。費用照各家牌價從你的帳戶扣；瀏覽器直連要該服務允許跨網域請求（Claude、OpenAI、Gemini 都可以）。')}</div>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                <button type="button" class="trade-btn" data-action="byok-test" style="padding:6px 12px">🔌 ${t('測試連線')}</button>
+                <button type="button" class="trade-btn btn-accent" data-action="byok-save" style="padding:6px 12px">💾 ${t('儲存並啟用')}</button>
+                ${byokActive ? `<button type="button" class="trade-btn" data-action="byok-clear" style="padding:6px 12px">🗑️ ${t('清除金鑰')}</button>` : ''}
+            </div>
+            <div id="settings-byok-result" role="status" aria-live="polite" style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;min-height:1em">${this._byokLastMsg || ''}</div>
+            </details>`;
+        }
         // v5.73.0 AI 對話語言:跟隨介面 / 繁體中文 / English(村民台詞、行程、反思、日報)
         {
             const existingDl = document.getElementById('settings-tab-dialoglang');

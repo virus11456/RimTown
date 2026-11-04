@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.35.0
-const RIMTOWN_APP_VERSION = '6.35.0';
+// RimTown - Frontend App (WordPress Plugin) v6.36.0
+const RIMTOWN_APP_VERSION = '6.36.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1849,16 +1849,98 @@ class RimTownApp {
                 localStorage.removeItem('llm_model');
                 if (typeof chrome !== 'undefined' && chrome.storage) chrome.storage.local.remove(['llm_provider', 'llm_api_key', 'fallback_groq_key']);
             } catch (e) {}
-            // 有 /api/chat 的站(rimtown.cc)走內建 AI;WordPress 版沒有代理端點 → 模擬對話
-            const provider = (typeof rimtownAuth === 'undefined' && location.protocol.startsWith('http')) ? 'server' : 'none';
-            localStorage.setItem('llm_provider', provider);
-            if (provider === 'server') {
-                this.llmClient = new LLMClient('server', 'server');
-                console.log('[RimTown] LLM client: 小鎮內建 AI(/api/chat)');
-            } else {
-                this.llmClient = null;
-            }
+            this._buildLLMClient();
         } catch(e) { console.log('[RimTown] Settings load error:', e); }
+    }
+
+    // v6.36.0 玩家自備 AI(BYOK):金鑰只存這台裝置的瀏覽器(localStorage rimtown_byok),
+    // 不推雲端設定、不進存檔、不經小鎮伺服器;沒填的玩家照走內建 AI
+    _byokGet() {
+        try {
+            const o = JSON.parse(localStorage.getItem('rimtown_byok') || 'null');
+            if (o && typeof o === 'object' && o.provider && o.key && o.provider !== 'server') return o;
+        } catch (e) {}
+        return null;
+    }
+    _byokSet(cfg) {
+        try {
+            if (cfg && cfg.provider && cfg.provider !== 'server' && cfg.key) localStorage.setItem('rimtown_byok', JSON.stringify({ provider: cfg.provider, key: cfg.key, model: cfg.model || '', baseUrl: cfg.baseUrl || '' }));
+            else localStorage.removeItem('rimtown_byok');
+        } catch (e) {}
+    }
+    _byokLabel(provider) {
+        return { anthropic: 'Claude', openai: 'GPT', gemini: 'Gemini', custom: t('自訂端點') }[provider] || provider || '';
+    }
+    _buildLLMClient() {
+        const byok = this._byokGet();
+        if (byok) {
+            this.llmClient = new LLMClient(byok.provider, byok.key, byok.model || null, byok.baseUrl || '');
+            try { localStorage.setItem('llm_provider', byok.provider); } catch (e) {}
+            console.log('[RimTown] LLM client: 玩家自備', byok.provider, byok.model || '(default model)');
+            return;
+        }
+        // 有 /api/chat 的站(rimtown.cc)走內建 AI;WordPress 版沒有代理端點 → 模擬對話
+        const provider = (typeof rimtownAuth === 'undefined' && location.protocol.startsWith('http')) ? 'server' : 'none';
+        try { localStorage.setItem('llm_provider', provider); } catch (e) {}
+        if (provider === 'server') {
+            this.llmClient = new LLMClient('server', 'server');
+            console.log('[RimTown] LLM client: 小鎮內建 AI(/api/chat)');
+        } else {
+            this.llmClient = null;
+        }
+    }
+    _byokReadForm() {
+        const g = (id) => document.getElementById(id);
+        return {
+            provider: g('settings-byok-provider')?.value || 'server',
+            key: String(g('settings-byok-key')?.value || '').trim(),
+            model: String(g('settings-byok-model')?.value || '').trim(),
+            baseUrl: String(g('settings-byok-url')?.value || '').trim(),
+        };
+    }
+    _byokMsg(text, ok) {
+        this._byokLastMsg = text; // 設定分頁重繪時保留最後一則結果
+        const el = document.getElementById('settings-byok-result');
+        if (!el) return;
+        el.textContent = text;
+        el.style.color = ok === true ? 'var(--positive)' : ok === false ? 'var(--negative)' : 'var(--text-muted)';
+    }
+    _byokApplyClient() {
+        this._buildLLMClient();
+        this.world.conversationEngine = this.llmClient ? this._makeConversationEngine() : new ConversationEngine();
+        this._updateLLMStatus(); // 泡泡掛勾由 _hookConversationBubbles 的定時檢查自動補上
+    }
+    async _byokTest() {
+        const cfg = this._byokReadForm();
+        if (cfg.provider === 'server') { this._byokMsg(t('目前選的是小鎮內建 AI，不需要測試。'), null); return; }
+        if (!cfg.key) { this._byokMsg(t('請先貼上 API 金鑰。'), false); return; }
+        if (cfg.provider === 'custom' && !cfg.baseUrl) { this._byokMsg(t('自訂端點要填基底網址。'), false); return; }
+        this._byokMsg(t('測試中…'), null);
+        const c = new LLMClient(cfg.provider, cfg.key, cfg.model || null, cfg.baseUrl);
+        const r = await c.testConnection(cfg.provider, cfg.key, cfg.model || null, cfg.baseUrl);
+        if (r.ok) this._byokMsg('✅ ' + t('連線成功，可以按「儲存並啟用」。'), true);
+        else this._byokMsg('❌ ' + t('連線失敗：') + (r.error || ''), false);
+    }
+    _byokSave(silent) {
+        const cfg = this._byokReadForm();
+        if (cfg.provider !== 'server' && !cfg.key) { if (!silent) this._byokMsg(t('請先貼上 API 金鑰。'), false); return false; }
+        if (cfg.provider === 'custom' && !cfg.baseUrl) { if (!silent) this._byokMsg(t('自訂端點要填基底網址。'), false); return false; }
+        this._byokSet(cfg.provider === 'server' ? null : cfg);
+        this._byokApplyClient();
+        if (!silent) {
+            const byok = this._byokGet();
+            this.world.logMessage('system', byok ? t('已改用你自備的 AI：') + this._byokLabel(byok.provider) + (byok.model ? ' / ' + byok.model : '') : t('已切回小鎮內建 AI。'));
+            this.renderSidebar();
+        }
+        return true;
+    }
+    _byokClear() {
+        if (!this._byokGet()) { this._byokMsg(t('目前沒有自備金鑰。'), null); return; }
+        if (!confirm(t('要清除這台裝置上的自備 AI 金鑰、切回小鎮內建 AI 嗎？'))) return;
+        this._byokSet(null);
+        this._byokApplyClient();
+        this.world.logMessage('system', t('已切回小鎮內建 AI。'));
+        this.renderSidebar();
     }
 
     // v5.65.0 AI 全面內建:設定只剩模擬速度(AI 由伺服器統一提供,玩家端沒有可填的金鑰)
@@ -1869,9 +1951,7 @@ class RimTownApp {
         document.querySelectorAll('.btn-speed').forEach(b => b.classList.remove('active'));
         const btn1x = document.querySelector('.btn-speed[data-speed="1"]');
         if (btn1x) btn1x.classList.add('active');
-        if (!this.llmClient && typeof rimtownAuth === 'undefined' && location.protocol.startsWith('http')) {
-            this.llmClient = new LLMClient('server', 'server');
-        }
+        this._buildLLMClient(); // v6.36.0 依本機設定決定:自備 AI / 小鎮內建 / 模擬
         this.world.conversationEngine = this.llmClient ? this._makeConversationEngine() : new ConversationEngine();
         this.restartSimulation();
         this._updateLLMStatus();
@@ -1905,6 +1985,11 @@ class RimTownApp {
         // v5.73.0 AI 對話語言
         const dlEl = document.getElementById('settings-tab-dialoglang');
         if (dlEl) this._setDialogueLang(dlEl.value);
+        // v6.36.0 「儲存設定」也一併收自備 AI 表單(有填金鑰才存;選回內建就清掉)
+        if (document.getElementById('settings-byok-provider')) {
+            const cfg = this._byokReadForm();
+            if (cfg.provider === 'server' || cfg.key) this._byokSet(cfg.provider === 'server' ? null : cfg);
+        }
         this.saveSettings(speed);
         const langSelect = document.getElementById('lang-select') || document.getElementById('settings-tab-lang');
         if (langSelect) {
@@ -1926,10 +2011,11 @@ class RimTownApp {
                 el.className = 'llm-status connected';
                 el.title = t('🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 100 則）');
             } else {
-                const providerLabel = this.llmClient.provider + (hasFallback ? t('+備用') : '');
-                el.textContent = 'AI:' + providerLabel;
-                el.className = 'llm-status connected';
-                el.title = t('AI 已連接：') + this.llmClient.provider + (hasFallback ? t('（備用：Groq）') : '');
+                // v6.36.0 玩家自備 AI:徽章顯示「AI:自備 Claude／GPT／Gemini／自訂端點」
+                const providerLabel = this._byokLabel(this.llmClient.provider) + (hasFallback ? t('+備用') : '');
+                el.textContent = t('AI:自備') + ' ' + providerLabel;
+                el.className = 'llm-status connected byok';
+                el.title = t('用你自己的金鑰與額度；金鑰只存在這台裝置的瀏覽器，不會送到小鎮伺服器。') + (this.llmClient.model ? ' ' + this.llmClient.model : '');
             }
         } else {
             el.textContent = t('AI:未連接');
@@ -2335,6 +2421,10 @@ class RimTownApp {
                 case 'proposal-decide': this._proposalDecide(val); break; // v6.26.0
                 // Settings tab actions
                 case 'settings-save-all': this._saveSettingsFromTab(); break;
+                // v6.36.0 玩家自備 AI
+                case 'byok-test': this._byokTest(); break;
+                case 'byok-save': this._byokSave(false); break;
+                case 'byok-clear': this._byokClear(); break;
                 case 'settings-login': document.getElementById('auth-modal')?.classList.remove('hidden'); break;
                 case 'settings-register': {
                     document.getElementById('auth-modal')?.classList.remove('hidden');
@@ -2495,6 +2585,14 @@ class RimTownApp {
 
     setupSettingsListeners() {
         document.getElementById('btn-settings')?.addEventListener('click', () => {
+            // v6.36.0 頂列「設定」改開完整設定分頁(3D 畫質/配色/城鎮/帳號/AI 與自備金鑰都在這);
+            // 觀察者殼把側欄的設定頁籤藏起來後,桌機原本只剩這顆鈕、卻只開舊的小彈窗(速度/語言),整頁設定到不了
+            if (this._kairoReady && window.innerWidth <= 768) { this._openKairoTab('settings'); return; }
+            if (this.world) {
+                this.activeTab = 'settings'; this._updateTabHighlight?.('settings'); this.renderSidebar();
+                const sc = document.getElementById('sidebar-content'); if (sc) sc.scrollTop = 0;
+                return;
+            }
             document.getElementById('settings-modal')?.classList.remove('hidden');
             const speed = localStorage.getItem('sim_speed');
             if (speed) document.getElementById('sim-speed').value = speed;

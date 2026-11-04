@@ -34,7 +34,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 - **Achievement System**: 50+ achievements across social, romance, economy, survival, faction, exploration, industry categories
 - **NPC Conversation Visualization**: Speech bubbles on map when NPCs talk to each other
 - **Player Interaction**: Choose jobs, vote in elections, flirt, propose, and marry NPCs
-- **Built-in Town AI**: every player talks to villagers through the server-side AI proxy (`/api/chat`); all keys live in Vercel env vars, nothing to configure on the client. Server-side smart routing: player chats and story scenes go to Groq's free tier (`GROQ_API_KEY`) first, schedules/reflections/background talk go to the paid channel (`LLM_*`), either side failing falls back to the other
+- **Built-in Town AI**: every player talks to villagers through the server-side AI proxy (`/api/chat`); all keys live in Vercel env vars, nothing to configure on the client. Server-side smart routing: player chats and story scenes go to Groq's free tier (`GROQ_API_KEY`) first, schedules/reflections/background talk go to the paid channel (`LLM_*`), either side failing falls back to the other. **Bring your own AI (v6.36.0)**: a player can instead enter their own Claude / OpenAI / Gemini / custom OpenAI-compatible key under Settings → AI; it stays in that device's browser only (never sent to the town server or cloud settings) and the browser calls the provider directly
 - **Pixel Art Map**: Animated tilemap with day/night cycle, campfires, particles
 - **Four Industries System**: Lumber, Quarry, Farming, Mining — choose your starting industry and unlock more as your town grows (v3)
 - **Farm & Crop System**: Plant crops, manage plots, seasonal planting, quality system, NPC farmer bonuses (v3)
@@ -259,7 +259,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.35.0.zip` from Releases
+1. Download `rimtown-v6.36.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -312,6 +312,11 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.36.0 (2026-11-04)
+- 🔑 玩家自備 AI（BYOK）：設定頁「🤖 AI 語言模型」多了「自備 AI（進階）」：可選 Claude（Anthropic）／GPT（OpenAI）／Gemini（Google）／自訂 OpenAI 相容端點，填自己的 API 金鑰、模型（留空用便宜款預設：claude-haiku-5-5／gpt-4o-mini／gemini-2.5-flash）與基底網址，有「測試連線」「儲存並啟用」「清除金鑰」。金鑰只存在這台裝置的瀏覽器（localStorage），不推雲端設定、不進存檔、不經小鎮伺服器；村民對話／行程／反思全部由瀏覽器直連該服務，不受每日 100 則限制。沒填的人照走小鎮內建 AI
+- 🔑 直連供應商時前端自己補上遊戲系統提示（原本只在伺服器端），英文模式人名互換、簡轉繁、「我是 AI」漏網攔截也一併在前端做；Claude 直連不送 temperature、先關思考（模型不收 thinking 欄位就自動重送）、把 refusal 當失敗；徽章顯示「AI:自備 Claude／GPT／Gemini／自訂端點」
+- ⚙️ 桌機頂列「設定」改開完整設定分頁（3D 畫質、介面配色、城鎮列表、帳號、AI 與自備金鑰都在這）：觀察者殼把側欄的設定頁籤藏起來後，桌機原本只剩這顆鈕、卻只開舊的小彈窗（速度／語言），整頁設定到不了；手機 ☰ 選單裡的「設定」同樣改開完整設定頁
 
 ### v6.35.0 (2026-11-04)
 - 🏘️ 城鎮身分重做：新城鎮一律用隨機 id（之前用「使用者＋鎮名」算，換語言或改名就變成另一座，英文介面下會長出 Frontier Town）；舊存檔 id 不動、照常可讀。存檔多記主題鍵與來源（自己建的／鄰鎮），顯示名依主題與語言翻，不管當初存的是中文還英文

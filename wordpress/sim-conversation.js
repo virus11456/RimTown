@@ -2107,8 +2107,10 @@ const LLM_LANG = {
 if (typeof window !== 'undefined') window.LLM_LANG = LLM_LANG;
 
 class LLMClient {
-    constructor(provider, apiKey, model) {
+    constructor(provider, apiKey, model, baseUrl) {
         this.provider = provider; this.apiKey = apiKey; this.model = model;
+        // v6.36.0 玩家自備 AI:custom = 任何 OpenAI 相容端點的基底網址(例如 https://host/v1)
+        this.baseUrl = baseUrl || '';
         // Rate limiting
         this._requestTimestamps = [];
         this._maxRequestsPerMinute = 20;
@@ -2121,6 +2123,24 @@ class LLMClient {
     }
 
     setFallbackGroqKey(key) { this.fallbackGroqKey = key; }
+    // v6.36.0 玩家自備 AI 直接從瀏覽器連供應商,伺服器那份遊戲系統提示(api/chat.js GAME_SYSTEM_PROMPT)
+    // 要在這裡自己送,不然 Claude/GPT 會用助理口吻、拒絕扮演或回英文
+    static systemPrompt(lang) {
+        if (lang === 'en') return [
+            'You are the roleplay and text-generation engine for the simulation game RimTown.',
+            'The user message is a game prompt: it names the villager you play, the scene and the required output format. Follow it exactly and output only what it asks for (villager lines, schedules, reflections, EFFECTS lines).',
+            'Rules: write only in natural English (never Chinese); never mention being an AI, an assistant, a model or a development environment; never refuse to roleplay; no disclaimers, preambles or analysis.',
+        ].join('\n');
+        return [
+            '你是模擬遊戲《RimTown》的角色扮演與文字生成引擎。',
+            '使用者訊息是遊戲提示詞:裡面會指定你扮演的村民、情境、輸出格式。你必須完全照做,只輸出提示詞要求的內容(村民台詞、行程、反思、EFFECTS 行等)。',
+            '規則:一律繁體中文(台灣用語);絕不提及自己是 AI、助理、模型或開發環境;絕不拒絕扮演;絕不加免責聲明、前言或分析;不要用英文回覆。',
+        ].join('\n');
+    }
+    // 自備 AI 的預設模型(玩家可在設定裡改)
+    static defaultModel(provider) {
+        return { anthropic: 'claude-haiku-5-5', openai: 'gpt-4o-mini', gemini: 'gemini-2.5-flash', custom: '' }[provider] || '';
+    }
     // v5.73.0 daily-news.js 用的 chat([{role,content}], {max_tokens}) 介面:合併成單一提示詞走 generate()
     async chat(messages, opts = {}) {
         const prompt = (messages || []).map(m => m && m.content ? String(m.content) : '').filter(Boolean).join('\n\n');
@@ -2133,15 +2153,20 @@ class LLMClient {
      * Test if the API key is valid by making a minimal request.
      * Returns { ok: true/false, error: string|null }
      */
-    async testConnection(provider, apiKey) {
+    async testConnection(provider, apiKey, model = null, baseUrl = null) {
         provider = provider || this.provider;
         apiKey = apiKey || this.apiKey;
         if (!provider || provider === 'none' || !apiKey) {
             return { ok: false, error: 'No provider or API key' };
         }
+        if (provider === 'custom' && !(baseUrl || this.baseUrl)) return { ok: false, error: 'No base URL' };
         try {
             this._lastError = '';
-            const result = await this._callProvider(provider, apiKey, null, 'Say "ok"', 5, 0);
+            const keepBase = this.baseUrl;
+            if (baseUrl) this.baseUrl = baseUrl;
+            let result;
+            try { result = await this._callDirect(provider, apiKey, model || null, 'Reply with the single word: ok', 16, 0, LLMClient.systemPrompt('en')); }
+            finally { this.baseUrl = keepBase; }
             if (result === '__RATE_LIMITED__') return { ok: true, error: null }; // rate limited means key is valid
             if (result === '__ERROR__') return { ok: false, error: this._lastError || 'API returned error — check your key' };
             return { ok: true, error: null };
@@ -2270,17 +2295,6 @@ class LLMClient {
     }
 
     async _callProvider(provider, apiKey, model, prompt, maxTokens, temperature, lane = 'background') {
-        const endpoints = {
-            anthropic: { url: 'https://api.anthropic.com/v1/messages', model: model || 'claude-haiku-4-5-20251001' },
-            // v5.29.1 OpenAI 鎖定 gpt-4o-mini(成本控制):忽略任何 model 覆寫,避免誤用到高價模型
-            openai: { url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o-mini' },
-            gemini: { url: `https://generativelanguage.googleapis.com/v1beta/models/${model||'gemini-2.5-flash'}:generateContent` },
-            deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: model || 'deepseek-chat' },
-            // v5.33.2 Groq 預設改用正式版模型(qwen3-32b 為 preview 已下架,舊預設會 404)
-            groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: model || 'llama-3.3-70b-versatile' },
-            together: { url: 'https://api.together.xyz/v1/chat/completions', model: model || 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo' },
-            minimax: { url: 'https://api.minimaxi.com/v1/text/chatcompletion_v2', model: model || 'MiniMax-M2.5' },
-        };
         // 小鎮伺服器 AI(免金鑰):走同網域 /api/chat,金鑰保管在伺服器
         if (provider === 'server') {
             try {
@@ -2315,33 +2329,87 @@ class LLMClient {
             }
         }
 
+        // v6.36.0 玩家自備 AI:直接從瀏覽器連供應商。遊戲系統提示、英文模式人名互換、
+        // 簡轉繁與「我是 AI」漏網攔截原本都在伺服器做,這裡要自己補齊
+        const lang = (typeof LLM_LANG !== 'undefined') ? LLM_LANG.get() : 'zh';
+        const sendPrompt = (lang === 'en' && typeof I18N !== 'undefined') ? I18N.localizeNames(prompt, true) : prompt;
+        const raw = await this._callDirect(provider, apiKey, model, sendPrompt, maxTokens, temperature, LLMClient.systemPrompt(lang));
+        if (raw === '__ERROR__' || raw === '__RATE_LIMITED__') return raw;
+        return this._postProcessDirect(raw, lang);
+    }
+
+    _postProcessDirect(reply, lang) {
+        reply = String(reply || '').trim();
+        if (typeof World !== 'undefined' && World.looksLikeAssistantLeak && World.looksLikeAssistantLeak(reply)) {
+            console.warn('[RimTown LLM] assistant leak blocked (direct provider)');
+            return '__ERROR__';
+        }
+        if (lang === 'en') {
+            if (typeof I18N !== 'undefined') reply = I18N.delocalizeNames(reply);
+        } else if (typeof RIMTOWN_S2T !== 'undefined' && RIMTOWN_S2T.looksSimplified(reply)) reply = RIMTOWN_S2T.convert(reply);
+        return reply;
+    }
+
+    // 自訂 OpenAI 相容端點:基底網址可填到 /v1、到主機、或整條 /chat/completions
+    _customUrl() {
+        const base = String(this.baseUrl || '').trim().replace(/\/+$/, '');
+        if (!base) return '';
+        if (/\/chat\/completions$/i.test(base)) return base;
+        return (/\/v\d+[a-z]*$/i.test(base) ? base : base + '/v1') + '/chat/completions';
+    }
+
+    async _callDirect(provider, apiKey, model, prompt, maxTokens, temperature, sys) {
+        const endpoints = {
+            anthropic: { url: 'https://api.anthropic.com/v1/messages', model: model || LLMClient.defaultModel('anthropic') },
+            // v6.36.0 自備金鑰由玩家自己付費,模型開放覆寫(預設仍是便宜的 gpt-4o-mini)
+            openai: { url: 'https://api.openai.com/v1/chat/completions', model: model || LLMClient.defaultModel('openai') },
+            gemini: { url: `https://generativelanguage.googleapis.com/v1beta/models/${model||'gemini-2.5-flash'}:generateContent` },
+            deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: model || 'deepseek-chat' },
+            // v5.33.2 Groq 預設改用正式版模型(qwen3-32b 為 preview 已下架,舊預設會 404)
+            groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: model || 'llama-3.3-70b-versatile' },
+            together: { url: 'https://api.together.xyz/v1/chat/completions', model: model || 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo' },
+            minimax: { url: 'https://api.minimaxi.com/v1/text/chatcompletion_v2', model: model || 'MiniMax-M2.5' },
+            custom: { url: this._customUrl(), model: model || '' },
+        };
         const cfg = endpoints[provider];
-        if (!cfg) return '__ERROR__';
+        if (!cfg || !cfg.url) { this._lastError = 'unknown provider or empty base URL'; return '__ERROR__'; }
         // v5.33.3 Groq 未指定模型時動態解析(可用清單快取)
         if (provider === 'groq' && !model) cfg.model = await this._resolveGroqModel(apiKey);
+        const sysMsgs = sys ? [{ role:'system', content: sys }] : [];
+        const recordErr = async (res) => {
+            try { const eb = await res.json(); this._lastError = `HTTP ${res.status}${eb?.error?.message ? ': ' + eb.error.message : ''}`; }
+            catch (e2) { this._lastError = 'HTTP ' + res.status; }
+            console.error('[RimTown LLM]', provider, this._lastError);
+        };
 
         try {
             if (provider === 'anthropic') {
-                const res = await fetch(cfg.url, {
-                    method:'POST',
-                    headers:{ 'Content-Type':'application/json', 'x-api-key':apiKey, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
-                    body: JSON.stringify({ model:cfg.model, max_tokens:maxTokens, temperature, messages:[{role:'user',content:prompt}] }),
-                });
+                // 新款 Claude 不收 temperature、預設會先思考;小台詞用不到思考,先關掉,
+                // 模型不接受 thinking 欄位(400)就拿掉再送一次
+                const body = { model:cfg.model, max_tokens:Math.max(16, maxTokens), system: sys || undefined, messages:[{role:'user',content:prompt}] };
+                const headers = { 'Content-Type':'application/json', 'x-api-key':apiKey, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' };
+                let res = await fetch(cfg.url, { method:'POST', headers, body: JSON.stringify({ ...body, thinking: { type: 'disabled' } }) });
+                if (res.status === 400) {
+                    await recordErr(res);
+                    if (/thinking/i.test(this._lastError)) res = await fetch(cfg.url, { method:'POST', headers, body: JSON.stringify(body) });
+                }
                 if (res.status === 429) return '__RATE_LIMITED__';
-                if (!res.ok) return '__ERROR__';
+                if (!res.ok) { if (res.status !== 400) await recordErr(res); return '__ERROR__'; }
                 const data = await res.json();
-                console.log('[RimTown LLM] Anthropic response:', res.status, data.content ? 'OK' : 'EMPTY', data.error?.message || '');
-                return data.content?.[0]?.text || '';
+                console.log('[RimTown LLM] Anthropic response:', res.status, data.content ? 'OK' : 'EMPTY', data.stop_reason || '');
+                if (data.stop_reason === 'refusal') { this._lastError = 'refusal'; return '__ERROR__'; }
+                return (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('') || '';
             } else if (provider === 'gemini') {
                 const res = await fetch(cfg.url, {
                     method:'POST', headers:{'Content-Type':'application/json', 'x-goog-api-key':apiKey},
                     body: JSON.stringify({
+                        ...(sys ? { systemInstruction: { parts: [{ text: sys }] } } : {}),
                         contents:[{parts:[{text:prompt}]}],
                         generationConfig:{maxOutputTokens:maxTokens, temperature},
                     }),
                 });
                 if (res.status === 429) return '__RATE_LIMITED__';
-                if (!res.ok) return '__ERROR__';
+                if (!res.ok) { await recordErr(res); return '__ERROR__'; }
                 const data = await res.json();
                 console.log('[RimTown LLM] Gemini response:', res.status, data.candidates ? 'OK' : 'EMPTY', data.error?.message || '');
                 const parts = data.candidates?.[0]?.content?.parts || [];
@@ -2351,10 +2419,10 @@ class LLMClient {
                 const res = await fetch(cfg.url, {
                     method:'POST',
                     headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
-                    body: JSON.stringify({ model:cfg.model, max_completion_tokens:maxTokens, temperature, messages:[{role:'user',content:prompt}] }),
+                    body: JSON.stringify({ model:cfg.model, max_completion_tokens:maxTokens, temperature, messages:[...sysMsgs, {role:'user',content:prompt}] }),
                 });
                 if (res.status === 429) return '__RATE_LIMITED__';
-                if (!res.ok) return '__ERROR__';
+                if (!res.ok) { await recordErr(res); return '__ERROR__'; }
                 const data = await res.json();
                 if (data.base_resp && data.base_resp.status_code !== 0) {
                     console.error('[RimTown LLM] MiniMax API error:', data.base_resp.status_code, data.base_resp.status_msg);
@@ -2364,24 +2432,24 @@ class LLMClient {
                 console.log('[RimTown LLM] MiniMax response:', res.status, '| content length:', content.length);
                 return content;
             } else {
-                // OpenAI-compatible (openai, deepseek, groq, together)
+                // OpenAI-compatible (openai, deepseek, groq, together, custom)
+                const body = { messages:[...sysMsgs, {role:'user',content:prompt}], max_tokens:maxTokens, temperature };
+                if (cfg.model) body.model = cfg.model;
                 const res = await fetch(cfg.url, {
                     method:'POST',
                     headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
-                    body: JSON.stringify({ model:cfg.model, max_tokens:maxTokens, temperature, messages:[{role:'user',content:prompt}] }),
+                    body: JSON.stringify(body),
                 });
                 if (res.status === 429) return '__RATE_LIMITED__';
                 // v5.33.2 記錄真實錯誤(HTTP 狀態 + API 訊息),測試連線時能顯示原因而非籠統「檢查金鑰」
                 if (!res.ok) {
-                    try { const eb = await res.json(); this._lastError = `HTTP ${res.status}${eb?.error?.message ? ': ' + eb.error.message : ''}`; }
-                    catch (e2) { this._lastError = 'HTTP ' + res.status; }
-                    console.error('[RimTown LLM]', provider, this._lastError);
+                    await recordErr(res);
                     // v5.33.3 Groq 快取的模型被下架 → 清快取強制重查清單,換一個模型重試一次
                     if (provider === 'groq' && res.status === 404 && !model) {
                         this._groqModelCache = null;
                         try { localStorage.removeItem('rimtown_groq_model'); } catch (e3) {}
                         const fresh = await this._resolveGroqModel(apiKey, true);
-                        if (fresh && fresh !== cfg.model) return this._callProvider('groq', apiKey, fresh, prompt, maxTokens, temperature);
+                        if (fresh && fresh !== cfg.model) return this._callDirect('groq', apiKey, fresh, prompt, maxTokens, temperature, sys);
                     }
                     return '__ERROR__';
                 }
@@ -2393,6 +2461,7 @@ class LLMClient {
             }
         } catch (err) {
             console.error('[RimTown LLM] Network/fetch error:', err.message);
+            this._lastError = this._lastError || ('network: ' + err.message);
             return '__ERROR__';
         }
     }
