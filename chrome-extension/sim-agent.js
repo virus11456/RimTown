@@ -229,11 +229,11 @@ class Relationship {
     recordInteraction(tick, summary) {
         this.interactionCount++; this.lastInteractionTick = tick;
         this.sharedMemories.push(summary);
-        if (this.sharedMemories.length > 8) this.sharedMemories = this.sharedMemories.slice(-8); // v5.99.0 150→30;v6.20.0 →12(提示詞只用最近 3 筆;存檔 178KB→約 70KB)
+        if (this.sharedMemories.length > 4) this.sharedMemories = this.sharedMemories.slice(-4); // v5.99.0 150→30;v6.20.0 →8;v6.43.5 →4(提示詞只用最近 3 筆;英文存檔 35 天超過 1.5MB)
     }
     addSharedMemory(text) {
         this.sharedMemories.push(text);
-        if (this.sharedMemories.length > 8) this.sharedMemories = this.sharedMemories.slice(-8); // v6.20.0
+        if (this.sharedMemories.length > 4) this.sharedMemories = this.sharedMemories.slice(-4); // v6.20.0;v6.43.5 →4
     }
     toDict() {
         return { target_id:this.targetId, target_name:this.targetName, type:this.type,

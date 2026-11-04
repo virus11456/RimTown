@@ -261,7 +261,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.43.3.zip` from Releases
+1. Download `rimtown-v6.43.5.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -314,6 +314,13 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.43.5 (2026-11-04)
+- 💾 英文存檔瘦身：英文句子大約是中文的 3 倍長，35 天的英文存檔有 1.7MB，超過 1.5MB 的容量門檻。村民之間的共同回憶改成只存提示詞會用到的最近 3 筆（每筆最多 100 字），存檔只留最近 200 段村民對話與 500 條紀錄（紀錄分頁本來就只顯示 500 條）。35 天實測：英文 1.7MB → 1.3MB、全做模式 1.4MB，中文 1.3MB → 1.1MB
+
+### v6.43.4 (2026-11-04)
+- 🧭 修代理鎮長自己離鎮：鎮長去探險後，如果代理鎮長也出發探險或出遠門，以前還會被當成拍板的人；現在會改由另一位在鎮上的村民代理
+- ⏱️ 鎮長白天臨時出發探險，當下就由代理拍板：以前要等到隔天的每日檢查才指派代理，這段時間的提案裁決與事件決策還在找不在鎮上的人
 
 ### v6.43.3 (2026-11-04)
 - 📱 手機卡頓：自動畫質以前一卡就把「低畫質」寫進設定，手機載入時慢個幾秒就永遠鎖在低畫質（30fps、名牌與對話泡泡每秒只動 10 次）。現在自動降級只在這次有效，剛載入的 8 秒與分頁在背景時不算，要連續 6 秒都太慢才降；以前自動降級留下的紀錄一律當成「自動」（玩家在設定裡親手選的低畫質照舊）
