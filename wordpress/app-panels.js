@@ -889,7 +889,7 @@ Object.assign(RimTownApp.prototype, {
             if (p.cost && Object.keys(p.cost).length) html += `<div class="pp-cost ${p.affordable ? '' : 'short'}">💰 ${t('需要')}${t('：')}${esc(costText(p.cost))}${p.affordable ? '' : ` · ${t('公庫目前不夠')}`}</div>`;
             html += `<div class="pp-votes" title="${esc(t('贊成：') + (p.forNames || []).map(n => t(n)).join(t('、')))}&#10;${esc(t('反對：') + (p.againstNames || []).map(n => t(n)).join(t('、')))}"><span class="pp-for">👍 ${p.forCount}</span><i><b style="width:${pct}%"></b></i><span class="pp-against">👎 ${p.againstCount}</span></div>`;
             // v6.30.0 投票理由(各取前兩名)
-            const whyText = (arr) => (arr || []).map(x => `${esc(x.why)} ×${x.n}`).join(t('、'));
+            const whyText = (arr) => (arr || []).map(x => x.llm ? `${x.who ? esc(t(x.who)) : ''}${t('「')}${esc(x.why)}${t('」')}` : `${esc(x.why)} ×${x.n}`).join(t('、')); // v6.41.2 村民自己說的話用引號＋名字
             if ((p.forWhy && p.forWhy.length) || (p.againstWhy && p.againstWhy.length)) html += `<div class="pp-why">${p.forWhy?.length ? `<span>👍 ${whyText(p.forWhy)}</span>` : ''}${p.againstWhy?.length ? `<span>👎 ${whyText(p.againstWhy)}</span>` : ''}</div>`;
             if (mode === 'decide') {
                 // v6.37.0 上帝視角:觀察者只看,投票兩天後由 NPC 鎮長裁決

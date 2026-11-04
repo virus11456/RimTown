@@ -5311,6 +5311,9 @@
         '💬 聊天 —— 隨時跟任何一位村民聊，他會記得你說過的話，但不會因此偏心': '💬 Chat — talk to any villager any time; they remember what you said but never play favourites',
         '🏗️ 建設 —— 在「動態」分頁開建設選單，由村民動手蓋': '🏗️ Building — open the build menu in the Town tab, and villagers do the work',
         '提案列表在「提案」分頁；每天早上的早安卡會提醒你昨天的結算與本季考驗。': 'Proposals live in the Proposals tab; every morning the morning card recaps yesterday and the current trial.',
+        // v6.41.2 事件反應交代鎮長
+        '- 鎮上的首長叫「鎮長」（不是村長），現任鎮長是': '- The town is led by the Mayor (never "village chief"); the current Mayor is ',
+        '- 你自己就是鎮長': '- You are the Mayor yourself',
         // v6.41.0 全部先問 Claude／完整智能體預設開
         '先問 Claude': 'Ask Claude first',
         '失敗依序換 GPT、Groq 接手': 'On failure GPT, then Groq takes over',
