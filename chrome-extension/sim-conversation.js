@@ -518,7 +518,7 @@ ${t('最後一行：')}EFFECTS: {"target": "${t('若念頭涉及某位村民寫�
         const player = world.agents['player'];
         if (!player) return;
         const ticksSince = world.tickCount - this._lastNpcMsgTick;
-        if (ticksSince < this._npcMsgCooldownTicks) return;
+        if (ticksSince < this._npcMsgCooldownTicks * (world.observerMode ? 4 : 1)) return; // v6.40.1 觀察者模式:村民主動傳訊間隔拉長 4 倍(實測 15 天 25～30 則太吵)
         // ~5% chance per tick after cooldown
         if (Math.random() > 0.05) return;
 
@@ -822,7 +822,7 @@ ${t('- 格式：每行「名字: 對話內容」,不要有其他任何東西')}`
                 lines = FB;
             }
             if (!lines.length) return;
-            const scene = { kind, icon: meta.icon, title: meta.title, aName: a.name, bName: b.name, lines };
+            const scene = { kind, icon: meta.icon, title: meta.title, aName: a.name, bName: b.name, aId: a.agentId, bId: b.agentId, lines }; // v6.40.1 帶 id 給角落卡「去看」
             world._pendingDramaScenes = world._pendingDramaScenes || [];
             world._pendingDramaScenes.push(scene);
             // v5.21.0 小鎮劇場:名場面存進可回顧的檔案,加上時間戳
@@ -2422,6 +2422,7 @@ class LLMClient {
                     // v5.73.0 英文回覆:英文名換回中文名,讓行程/對話解析與存檔仍用中文名(顯示層再換成英文)
                     if (typeof I18N !== 'undefined') reply = I18N.delocalizeNames(reply);
                 } else if (typeof RIMTOWN_S2T !== 'undefined' && RIMTOWN_S2T.looksSimplified(reply)) reply = RIMTOWN_S2T.convert(reply);
+                if (lang !== 'en' && typeof zhPunct === 'function') reply = zhPunct(reply); // v6.40.1
                 return reply;
             } catch (err) {
                 console.warn('[RimTown LLM] server provider error:', err.message);
@@ -2447,6 +2448,7 @@ class LLMClient {
         if (lang === 'en') {
             if (typeof I18N !== 'undefined') reply = I18N.delocalizeNames(reply);
         } else if (typeof RIMTOWN_S2T !== 'undefined' && RIMTOWN_S2T.looksSimplified(reply)) reply = RIMTOWN_S2T.convert(reply);
+        if (lang !== 'en' && typeof zhPunct === 'function') reply = zhPunct(reply); // v6.40.1
         return reply;
     }
 
@@ -2535,15 +2537,34 @@ class LLMClient {
                 // OpenAI-compatible (openai, deepseek, groq, together, custom)
                 const body = { messages:[...sysMsgs, {role:'user',content:prompt}], max_tokens:maxTokens, temperature };
                 if (cfg.model) body.model = cfg.model;
-                const res = await fetch(cfg.url, {
+                // v6.40.2 官方 OpenAI:新參數 max_completion_tokens;推理模型(o 系列、gpt-5)不收 temperature、思考調到最低並留足額度
+                if (provider === 'openai') {
+                    delete body.max_tokens;
+                    if (/^(o\d|gpt-5)(?!.*-chat)/i.test(cfg.model)) {
+                        delete body.temperature;
+                        body.max_completion_tokens = Math.max(1200, maxTokens * 4);
+                        body.reasoning_effort = /^gpt-5\.\d/i.test(cfg.model) ? 'none' : (/^gpt-5/i.test(cfg.model) ? 'minimal' : 'low');
+                    } else body.max_completion_tokens = maxTokens;
+                }
+                const send = () => fetch(cfg.url, {
                     method:'POST',
                     headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
                     body: JSON.stringify(body),
                 });
+                let res = await send(); let recorded = false;
+                // 400 點名某個參數不支援 → 拿掉/降級後重送(最多 2 次)
+                for (let i = 0; i < 2 && res.status === 400 && provider === 'openai'; i++) {
+                    await recordErr(res); recorded = true;
+                    const m = this._lastError || '';
+                    if (/temperature/i.test(m) && body.temperature !== undefined) delete body.temperature;
+                    else if (/reasoning/i.test(m) && body.reasoning_effort) { const nx = { none: 'minimal', minimal: 'low' }[body.reasoning_effort]; if (nx && /value/i.test(m)) body.reasoning_effort = nx; else delete body.reasoning_effort; }
+                    else break;
+                    res = await send(); recorded = false;
+                }
                 if (res.status === 429) return '__RATE_LIMITED__';
                 // v5.33.2 記錄真實錯誤(HTTP 狀態 + API 訊息),測試連線時能顯示原因而非籠統「檢查金鑰」
                 if (!res.ok) {
-                    await recordErr(res);
+                    if (!recorded) await recordErr(res);
                     // v5.33.3 Groq 快取的模型被下架 → 清快取強制重查清單,換一個模型重試一次
                     if (provider === 'groq' && res.status === 404 && !model) {
                         this._groqModelCache = null;
@@ -2554,6 +2575,7 @@ class LLMClient {
                     return '__ERROR__';
                 }
                 const data = await res.json();
+                if (data.choices?.[0]?.message?.refusal) { this._lastError = 'refusal'; return '__ERROR__'; }
                 const content = data.choices?.[0]?.message?.content || '';
                 console.log('[RimTown LLM] Response:', res.status, '| content length:', content.length, '| error:', data.error?.message || 'none');
                 if (data.error) { console.error('[RimTown LLM] API error:', data.error); return '__ERROR__'; }

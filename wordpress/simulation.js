@@ -2019,6 +2019,7 @@ class World {
         const s = String(text || '').trim();
         if (!s || s.length < 8) return false;
         const re = /\b(I'?m|I am) (Kiro|Claude|ChatGPT|an AI|a language model|an assistant)\b|AI (development environment|assistant|language model)|not designed for (roleplay|role-play|fictional)|can'?t (take on|engage in|roleplay|role-play) |fictional character personas?|I can'?t do this|I'?m (here|designed) to help with (coding|software|technical)|我是(一個)?(AI|人工智慧|語言模型|程式開發)|無法(進行|扮演)角色|不能扮演/i;
+        if (/Claude Code|Anthropic|命令列工具|CLI 工具|(系統|系统)(指示|提示)|角色扮演模式|(隱瞞|隐瞒)[^。]{0,8}(身分|身份)|我是\s*(Claude|ChatGPT|GPT|Kiro|Gemini|Copilot|AI|人工智慧|人工智能|語言模型|语言模型|助理|助手|一個 ?AI|一个 ?AI)|核心設計原則|撰寫創意(文本|內容)|如果你對我的能力|(協助|幫助)其他(開發|專業|工作|寫作)/i.test(s)) return true; // v6.40.1 中文自報身分(付費中繼實測漏網)
         if (!re.test(s)) return false;
         const ascii = (s.match(/[A-Za-z]/g) || []).length;
         return ascii / s.length > 0.5 || /Kiro|AI (development|assistant)|roleplay|role-play/i.test(s) || /我是(一個)?(AI|人工智慧|語言模型)/.test(s);

@@ -5,7 +5,6 @@
     const en = (window.RIMTOWN_I18N_EN = window.RIMTOWN_I18N_EN || {});
     Object.assign(en, {
         "3D 測試圖集・開發中": "3D test gallery · in development",
-        "實際 Godot 測試截圖，含預設測試情境。官網目前仍是 2D 版；以下功能屬於獨立 3D 測試版。": "Real Godot screenshots, including prepared test scenarios. The live browser game remains 2D; these features belong to the separate 3D test build.",
         "建設選址：確認空地後才扣料施工。": "Construction placement: materials are charged after confirming a clear site.",
         "居民任務：查看故事、好感與章節門檻。": "Resident quests: story progress, relationship and chapter requirements.",
         "人口與家庭：出生紀錄、移入及住宅容量。": "Population and families: birth records, arrivals and housing capacity.",
@@ -4531,7 +4530,6 @@
         // v5.69.1 首頁 3D 搶先看
         '3D low-poly 版搶先看': 'Sneak peek: the 3D low-poly edition',
         '邊境鎮 3D low-poly 版畫面': 'Frontier Town 3D low-poly screenshot',
-        '用 Blender 程序化建模與 Godot 4 重製的邊境鎮。同一份存檔、同一批村民，換一種角度看他們過日子。目前是觀賞模式，開發中。': 'Frontier Town rebuilt with procedural Blender models and Godot 4. Same save, same villagers, a new angle on their days. Currently view-only and in development.',
         '已有觀賞版畫面，見上方': 'view-only build shown above',
         // v5.69.0 首頁「村民的大腦」
         '村民的大腦：他們是怎麼社交的': 'Inside a villager\'s head: how they socialize',
@@ -4566,7 +4564,6 @@
         '開發中': 'In development',
         '規劃中': 'Planned',
         '構想': 'Ideas',
-        '3D low-poly 版（Blender + Godot 重製）': '3D low-poly edition (Blender + Godot remake)',
         '海風鎮專屬任務鏈（漁村主線）': 'Seabreeze quest chain (fishing-village storyline)',
         '第三座城鎮': 'A third town',
         '第三座城鎮：礦山鎮（多城鎮計畫）': 'Third town: Mine Ridge (multi-town plan)',
@@ -5314,6 +5311,25 @@
         '💬 聊天 —— 隨時跟任何一位村民聊，他會記得你說過的話，但不會因此偏心': '💬 Chat — talk to any villager any time; they remember what you said but never play favourites',
         '🏗️ 建設 —— 在「動態」分頁開建設選單，由村民動手蓋': '🏗️ Building — open the build menu in the Town tab, and villagers do the work',
         '提案列表在「提案」分頁；每天早上的早安卡會提醒你昨天的結算與本季考驗。': 'Proposals live in the Proposals tab; every morning the morning card recaps yesterday and the current trial.',
+        // v6.40.1 線上測試修正
+        '公共開支': 'Public expenses',
+        '村民自己治理小鎮': 'Villagers govern the town',
+        '村民依性格、職業與鎮況提案，全鎮投票，鎮長拍板並說明理由；種田、做工、跟行商談價、研究科技也都是他們自己來。你不花錢、不下令，只看小鎮怎麼長。': 'Villagers raise proposals from their personality, job and the state of the town; everyone votes and the mayor rules with a stated reason. Farming, crafting, haggling with merchants and research are all theirs too. You spend nothing and give no orders; you just watch the town grow.',
+        '上帝視角事件卡': 'God\'s-eye event cards',
+        '你唯一能做的，是從 30 張事件卡裡挑一張打出去：旱災、火災、流言、豐收、婚禮、鎮長醜聞……然後看每個村民怎麼反應、提了什麼案、七天後小鎮變成什麼樣。': 'The only thing you can do is play one of 30 event cards: drought, fire, rumour, bumper harvest, wedding, a mayor scandal… then watch how each villager reacts, what they propose and what the town looks like seven days later.',
+        '打開後，村民的投票、要不要提案、鎮長的裁決，全部交給 AI 依各自的記憶、性格與交情推理，並說出理由。也可以填自己的 Claude、GPT 或 Gemini 金鑰。': 'Switch it on and villagers\' votes, whether to propose, and the mayor\'s rulings are all reasoned by the AI from each one\'s memories, personality and relationships, with reasons given. You can also use your own Claude, GPT or Gemini key.',
+        '三個時代的科技樹': 'A three-era tech tree',
+        '拓荒、手工、工坊三個時代、28 項研究、33 種建築：從穀倉一路蓋到鐘樓、劇場、天文台，全看村民先研究什麼。': 'Pioneer, Craft and Workshop eras, 28 research topics and 33 buildings: from a granary all the way to a clock tower, theatre and observatory, depending on what the villagers research first.',
+        '整座小鎮用 three.js 程序化幾何重畫：低多邊形地形、建築與村民，日夜、雲、雨雪、節慶、墓園一眼看得到。': 'The whole town is redrawn in three.js procedural geometry: low-poly terrain, buildings and villagers, with day and night, clouds, rain and snow, festivals and the graveyard all in view.',
+        '已上線': 'Live now',
+        '上帝視角：村民全自主、事件卡、完整智能體模式': 'God\'s-eye view: self-governing villagers, event cards, full agent mode',
+        '三個時代科技樹與 33 種建築': 'Three-era tech tree and 33 buildings',
+        '自備 AI 金鑰（Claude／GPT／Gemini）': 'Bring your own AI key (Claude / GPT / Gemini)',
+        '自由輸入一句話當事件': 'Type any sentence as an event',
+        '村民有記憶、有個性、有人際關係；他們會工作、戀愛、吵架、選鎮長、提案、研究、蓋房子，全都自己來。你不花錢、不下令，只能跟他們聊天，或打出一張事件卡，看小鎮自己長出故事。': 'Villagers have memories, personalities and relationships; they work, fall in love, quarrel, elect a mayor, propose, research and build, all on their own. You spend nothing and give no orders: you can only chat with them or play an event card, and watch the town grow its own stories.',
+        '名場面': 'Drama scene',
+        '看全文': 'Read it all',
+        '建築維護': 'Building upkeep',
         // v6.40.0 科技樹擴充
         '現在的時代': 'Current era',
         '建築與工坊要先研究到才蓋得了（穀倉、深井除外）；哪一項先研究由村民提案、投票、鎮長裁決。': 'Buildings and workshops must be researched first (except the granary and deep well); which topic comes first is proposed by villagers, voted on and ruled by the mayor.',

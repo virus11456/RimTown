@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.40.0
+ * Version: 6.40.2
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.40.0');
+define('RIMTOWN_VERSION', '6.40.2');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1331,6 +1331,48 @@ add_action('admin_menu', 'rimtown_admin_menu');
 function rimtown_get_changelog() {
     return array(
         array(
+            'version' => '6.40.2',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🤖 伺服器 AI 新增官方 OpenAI（GPT）渠道：Vercel 設 OPENAI_API_KEY（可選 OPENAI_MODEL）就加入分流。背景線（行程／反思／日報／完整智能體決策）走 Claude → GPT → Groq，聊天線走 Groq → Claude → GPT；GPT 失敗會累進冷卻（60 秒×次數，最多 5 分鐘；429 照 retry-after），恢復即切回',
+                '⚙️ 新款 GPT 參數自動相容：官方 API 改用 max_completion_tokens；推理模型（gpt-5 系列、o 系列）不送 temperature、思考調到最低並保留足夠額度，避免回空字串；API 回 400 點名不支援的參數就自動拿掉或降級重送；沒指定模型時依序試 gpt-4.1-mini、gpt-5-mini、gpt-4o-mini，遇到模型不存在自動換下一個',
+                '🛡️ GPT 回覆也套用拒絕偵測：自報「我是 ChatGPT／AI 助理」或 API 標記拒絕都判失敗、改走下一條渠道；空回覆只退回這一次、不冷卻',
+                '🔑 自備 AI 選 OpenAI 時同步修正：瀏覽器直連也改用新參數（max_completion_tokens、推理模型不送 temperature），不支援的參數自動拿掉重送，測試連線顯示真正的錯誤原因',
+                '📊 管理員的 AI 用量（7 天）多一欄 GPT 次數；LLM_FORMAT=openai 搭配 LLM_BASE_URL=https://api.openai.com 也走同一套新參數',
+            ),
+            'changes_en' => array(
+                '🤖 Server AI gains an official OpenAI (GPT) lane: set OPENAI_API_KEY (and optionally OPENAI_MODEL) in Vercel and it joins the routing. The background lane (schedules, reflections, newspaper, full-agent decisions) goes Claude → GPT → Groq and the chat lane goes Groq → Claude → GPT; GPT failures cool down progressively (60s × failures, up to 5 minutes; 429 follows retry-after) and switch back on recovery',
+                '⚙️ Newer GPT parameters handled automatically: the official API now gets max_completion_tokens; reasoning models (gpt-5 family, o-series) get no temperature, minimal reasoning and enough token room so replies are not empty; a 400 naming an unsupported parameter is retried without it or with a lower setting; with no model set it tries gpt-4.1-mini, gpt-5-mini, then gpt-4o-mini, moving on when a model does not exist',
+                '🛡️ GPT replies go through the refusal filter too: "I am ChatGPT / an AI assistant" or an API refusal counts as a failure and the next lane is tried; an empty reply falls back once without cooling the lane down',
+                '🔑 Bring-your-own OpenAI fixed as well: browser-direct calls use the new parameters (max_completion_tokens, no temperature for reasoning models), retry without unsupported parameters and show the real error when testing the connection',
+                '📊 The admin AI usage (7 days) panel shows a GPT count; LLM_FORMAT=openai with LLM_BASE_URL=https://api.openai.com uses the same new parameters',
+            ),
+        ),
+        array(
+            'version' => '6.40.1',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🛡️ 背景 AI 拒絕扮演不再漏網：上線實測付費中繼 4 次有 3 次回「我是 Claude Code，Anthropic 官方的命令列工具……不能假裝是遊戲引擎」並直接當成村民的行程／反思／日報。伺服器與前端的攔截規則補上中文自報身分（Claude Code、Anthropic、命令列工具、系統指示、隱瞞身分、我是 AI／助理……），一出現就判拒絕、改走 Groq；正常台詞（「有什麼我可以幫忙的嗎？」等）不受影響',
+                '🔌 伺服器 AI 中繼支援直連 Anthropic 官方 API：LLM_BASE_URL 設成 https://api.anthropic.com 時，系統提示走正式 system 欄位、先關思考、不送新款 Claude 不收的 temperature（模型不吃就自動拿掉重送）、stop_reason 為 refusal 也退回 Groq',
+                '🌐 修英文介面整座鎮會餓肚子：生產公式用翻譯後的技能名（Planting、Cooking）查村民技能，但技能表以中文名為鍵，英文版每個職業都以 0 級生產。實測 15 天英文版食物從 210 掉到 20、25 人有 24 人挨餓；修正後與中文版一致（約 580～650、4～5 人）',
+                '💰 公庫不再暴漲：村民一天只賣一樣多出來的貨、一次最多 6 份；跟行商賣貨一天最多進帳 100 銀幣；新增建築維護費（每棟每天 2～4 銀幣）與公共開支（公庫超過 300 的部分每天 8%）。30 天實測公庫從約 4000 降到 1300～1400',
+                '📜 產業提案不再撞車：已有產業案在投票／擱置／待執行時，村民不會再提第二件搶同一個名額',
+                '📺 名場面不再擋畫面：觀察者模式下改成角落卡（第一句台詞＋「去看」「看全文」），按「看全文」才開大卡；全文照樣收進小鎮劇場。村民主動傳給觀察者的訊息間隔拉長 4 倍（15 天約 25～30 則降到 10～13 則）',
+                '✏️ 中文半形標點轉全形：內建台詞有上百句寫成「喲,這不是……嗎?」，AI 回覆也常混半形，現在緊接在中文字後的 , ? ! ; : 一律轉成全形',
+                '🏠 首頁文案更新成上帝視角：副標、功能卡（村民自己治理、事件卡、完整智能體模式、三個時代科技樹）與路線圖；更新紀錄與 README 裡殘留的舊 3D 引擎名稱改為「舊版 3D 試作」',
+            ),
+            'changes_en' => array(
+                '🛡️ Background AI refusals no longer slip through: in a live test the paid relay answered 3 of 4 times with "I am Claude Code, Anthropic\'s official CLI… I can\'t pretend to be a game engine", which went straight into villager schedules, reflections and the newspaper. The server and client filters now catch Chinese self-identification (Claude Code, Anthropic, CLI tool, system instructions, hiding identity, I am an AI / assistant…) and fall back to Groq; normal lines such as "Anything I can help with?" are unaffected',
+                '🔌 The server AI relay can talk to the official Anthropic API directly: with LLM_BASE_URL set to https://api.anthropic.com it sends the system prompt in the proper system field, disables thinking, omits the temperature that newer Claude models reject (retrying without it if needed) and falls back to Groq on a refusal stop reason',
+                '🌐 Fixed English towns starving: production looked up villager skills by translated name (Planting, Cooking) while the skill table is keyed in Chinese, so every job in the English UI produced at skill level 0. A 15-day test went from 210 food to 20 with 24 of 25 hungry; after the fix English matches Chinese (about 580–650 food, 4–5 hungry)',
+                '💰 The treasury no longer balloons: villagers sell only one surplus good a day, at most 6 units; merchant sales earn at most 100 silver a day; new building upkeep (2–4 silver per building a day) and public expenses (8% a day of anything above 300). A 30-day test now ends around 1,300–1,400 silver instead of about 4,000',
+                '📜 Industry proposals no longer collide: while one industry proposal is voting, shelved or awaiting execution, villagers will not raise a second one for the same slot',
+                '📺 Drama scenes no longer cover the screen: in observer mode they appear as a corner card (first line plus "Go look" and "Read it all"), opening the full card only on request; the full text still goes to the Town Theatre. Villagers message the observer four times less often (about 25–30 messages in 15 days down to 10–13)',
+                '✏️ Half-width punctuation in Chinese is converted to full-width: over a hundred built-in lines read like "喲,這不是……嗎?" and AI replies often mix them; any , ? ! ; : right after a Chinese character is now full-width',
+                '🏠 Landing page copy updated for the god\'s-eye view: subtitle, feature cards (self-governing villagers, event cards, full agent mode, three-era tech tree) and roadmap; leftover old 3D engine names in the changelog and README now read "earlier 3D prototype"',
+            ),
+        ),
+        array(
             'version' => '6.40.0',
             'date'    => '2026-11-04',
             'changes' => array(
@@ -1350,11 +1392,11 @@ function rimtown_get_changelog() {
             'version' => '6.39.1',
             'date'    => '2026-11-04',
             'changes' => array(
-                '🧹 移除 Godot 3D 試作的所有殘留：首頁「3D 測試圖集」區塊與四張 Godot 截圖、docs/GODOT_LOWPOLY_BRIEF.md、更新紀錄裡的「Godot 3D · 2026.09.10」假版本條目、README 的 Godot 進度段落與路線圖字句。3D 只剩現役的 three.js 版',
+                '🧹 移除舊版 3D 試作的所有殘留：首頁「3D 測試圖集」區塊與四張試作截圖、舊版 3D 企劃文件、更新紀錄裡的「3D 試作 2026.09.10」假版本條目、README 的舊 3D 進度段落與路線圖字句。3D 只剩現役的 three.js 版',
                 '🆕 新版自動套用：Service Worker 換新版接管後，還停在首頁就自動重新整理拿到最新版；已經在遊戲裡則只跳一張「有新版本，重新整理即可更新」通知，不打斷進度。之前第一次重新整理只會在背景裝新版，畫面上的版本號還是舊的',
             ),
             'changes_en' => array(
-                '🧹 Removed every leftover of the abandoned Godot 3D prototype: the landing page "3D test gallery" with its four Godot screenshots, docs/GODOT_LOWPOLY_BRIEF.md, the pseudo-version "Godot 3D · 2026.09.10" changelog entry and the Godot progress section and roadmap wording in the README. The only 3D left is the live three.js build',
+                '🧹 Removed every leftover of the abandoned earlier 3D prototype: the landing page "3D test gallery" with its four prototype screenshots, the old 3D design brief, the pseudo-version "3D prototype 2026.09.10" changelog entry and the old 3D progress section and roadmap wording in the README. The only 3D left is the live three.js build',
                 '🆕 Updates apply themselves: once a new Service Worker takes over, a tab still on the landing page reloads to the new version by itself; a tab already in the game only shows a "New version ready, reload to update" notice and never interrupts play. Previously the first reload only installed the new version in the background while the page kept showing the old version number',
             ),
         ),
@@ -2590,10 +2632,10 @@ function rimtown_get_changelog() {
             'version' => '5.69.1',
             'date'    => '2026-09-09',
             'changes' => array(
-                '🧊 首頁新增「3D low-poly 版搶先看」區塊:放上 Blender + Godot 4 重製版的觀賞模式畫面(img/lowpoly-preview.jpg),路線圖「開發中」同步標註;圖片尚未放進去時整區自動隱藏',
+                '🧊 首頁新增「3D low-poly 版搶先看」區塊:放上 Blender 低多邊形重製版的觀賞模式畫面(img/lowpoly-preview.jpg),路線圖「開發中」同步標註;圖片尚未放進去時整區自動隱藏',
             ),
             'changes_en' => array(
-                '🧊 Landing page gains a "3D low-poly sneak peek" section showing the Blender + Godot 4 remake in viewing mode (img/lowpoly-preview.jpg), and the roadmap marks it "in development"; the section hides itself until the image is in place',
+                '🧊 Landing page gains a "3D low-poly sneak peek" section showing the Blender low-poly remake in viewing mode (img/lowpoly-preview.jpg), and the roadmap marks it "in development"; the section hides itself until the image is in place',
             ),
         ),
         array(

@@ -289,7 +289,9 @@ class ProposalSystem {
         if (fs?.open && !fs.sponsored && this._cool(day, 'festival', 3)) out.push({ kind: 'festival', key: 'festival', weight: silver >= fs.cost ? 2.5 : 0.6, jobs: ['priest', 'cook', 'trader', 'mayor'], make: (a) => ({ kind: 'festival', key: 'festival', tk: '出錢把{fest}辦得更熱鬧', tp: { fest: fs.name }, dk: '從公庫撥 {n} 銀幣贊助{fest}：籌備更快、全鎮心情與聲望都會漲。', dp: { n: fs.cost, fest: fs.name }, cost: { silver: fs.cost }, category: 'culture', jobBias: ['priest', 'cook'] }) });
         // 產業(遊戲在等人選產業時,由村民提)
         const IND = (typeof INDUSTRIES !== 'undefined') ? INDUSTRIES : {};
-        if (w.industry && (w.industry.needsIndustryChoice || w.industry._pendingUnlock) && Object.keys(w.industry.industries || {}).length < (w.industry.maxIndustries || 1)) {
+        // v6.40.1 已經有一件產業案在等(投票中／擱置／已批准)就不再提第二件,避免兩案搶同一個名額、後者執行時才失敗
+        const indPending = this.items.some(p => p.kind === 'industry' && ['open', 'shelved', 'approved'].includes(p.status));
+        if (!indPending && w.industry && (w.industry.needsIndustryChoice || w.industry._pendingUnlock) && Object.keys(w.industry.industries || {}).length < (w.industry.maxIndustries || 1)) {
             for (const [key, def] of Object.entries(IND)) {
                 if (w.industry.industries?.[key] || !this._cool(day, 'industry:' + key, 6)) continue;
                 out.push({ kind: 'industry', key: 'industry:' + key, weight: 1.6, jobs: [def.npcJob].filter(Boolean), make: (a) => ({ kind: 'industry', key: 'industry:' + key, refKey: key, tk: '把{name}做成鎮上的主業', tp: { name: def.name }, dk: '{who}說自己這行做得來，想帶幾個人一起把它做大。', dp: { who: a.name }, cost: {}, category: 'economy', jobBias: [def.npcJob] }) });

@@ -37,19 +37,20 @@ class Stockpile {
 }
 
 // --- Economy: Production ---
+// v6.40.1 skill 用中文原名當鍵(村民的技能表以中文名為鍵);之前包 t() 在英文介面會變成 Planting/Cooking → 查不到 → 全鎮以 0 級生產、英文版會餓死
 const JOB_PRODUCTION = {
-    farmer: {inputs:{},outputs:{food:12},skill:t('種植')},
-    miner: {inputs:{tools:0.1},outputs:{stone:6,metal:3},skill:t('採礦')},
-    cook: {inputs:{food:8},outputs:{meals:9},skill:t('烹飪')}, // v5.53.0 12→9:預設3廚師產能3.3倍於需求,收斂
-    blacksmith: {inputs:{metal:3,wood:1},outputs:{tools:3},skill:t('工藝')},
-    carpenter: {inputs:{wood:4},outputs:{furniture:2},skill:t('建造')},
-    tailor: {inputs:{cloth:3},outputs:{clothing:2},skill:t('工藝')},
-    doctor: {inputs:{herbs:2},outputs:{medicine:2},skill:t('醫療')},
-    researcher: {inputs:{},outputs:{research_points:5},skill:t('智識')},
-    trader: {inputs:{},outputs:{silver:5},skill:t('社交')}, // v5.52.0 銀幣水龍頭收緊(8→5)
-    guard: {inputs:{},outputs:{},skill:t('射擊')},
-    priest: {inputs:{},outputs:{},skill:t('社交')},
-    mayor: {inputs:{},outputs:{silver:2},skill:t('社交')}, // v5.52.0 銀幣水龍頭收緊(3→2)
+    farmer: {inputs:{},outputs:{food:12},skill:'種植'},
+    miner: {inputs:{tools:0.1},outputs:{stone:6,metal:3},skill:'採礦'},
+    cook: {inputs:{food:8},outputs:{meals:9},skill:'烹飪'}, // v5.53.0 12→9:預設3廚師產能3.3倍於需求,收斂
+    blacksmith: {inputs:{metal:3,wood:1},outputs:{tools:3},skill:'工藝'},
+    carpenter: {inputs:{wood:4},outputs:{furniture:2},skill:'建造'},
+    tailor: {inputs:{cloth:3},outputs:{clothing:2},skill:'工藝'},
+    doctor: {inputs:{herbs:2},outputs:{medicine:2},skill:'醫療'},
+    researcher: {inputs:{},outputs:{research_points:5},skill:'智識'},
+    trader: {inputs:{},outputs:{silver:5},skill:'社交'}, // v5.52.0 銀幣水龍頭收緊(8→5)
+    guard: {inputs:{},outputs:{},skill:'射擊'},
+    priest: {inputs:{},outputs:{},skill:'社交'},
+    mayor: {inputs:{},outputs:{silver:2},skill:'社交'}, // v5.52.0 銀幣水龍頭收緊(3→2)
 };
 const SEASON_FARM_MOD = {'春季':1.2,'夏季':1.5,'秋季':0.8,'冬季':0.4};
 const NATURE_GATHERING = {forest:{wood:3},river:{food:2},meadow:{herbs:1,cloth:0.5},cave:{stone:2,metal:1},lake:{food:1.5}};
@@ -61,6 +62,13 @@ function processDailyProduction(world) {
     const sp = world.stockpile;
     // v6.40.0 銀行利息:每天照公庫銀幣的比例生一點(上限 20)
     { const ir = world.buildings?.getEffect?.('interest', 0) || 0; if (ir > 0) { const g = Math.min(20, Math.round(sp.get('silver') * ir)); if (g > 0) sp.add('silver', g, world.tickCount, t('銀行利息'), 'bank'); } }
+    // v6.40.1 建築維護費:觀察者不花錢後公庫只進不出(上線實測 15 天 170 → 2000+),每棟完成的建築每天 2 銀幣、大型建築 4 銀幣
+    { const BIG = ['town_walls', 'clock_tower', 'aqueduct', 'press', 'bank', 'hospital', 'council_hall', 'observatory', 'theater', 'sewers', 'barracks', 'caravanserai'];
+      const up = (world.buildings?.completed || []).reduce((s, b) => s + (BIG.includes(b.buildingKey) ? 4 : 2) * (b.level || 1), 0);
+      if (up > 0) sp.consume('silver', Math.min(up, Math.floor(sp.get('silver'))), world.tickCount, t('建築維護'), 'upkeep');
+      // 公共開支(守衛薪俸、道路修繕、學堂膳食):公庫超過 300 的部分每天花掉 8%,錢多花得多,不會無限堆(30 天實測約停在 1000～1500)
+      const extra = Math.floor(Math.max(0, sp.get('silver') - 300) * 0.08);
+      if (extra > 0) sp.consume('silver', extra, world.tickCount, t('公共開支'), 'upkeep'); }
     // v5.51.0 原料層自動供給,v5.53.0 改為「補滿到安全線」:
     // 固定 +12 補不上木材這種高需求原料(建築+家具線+冬季取暖),紅燈會卡死;直接補到 40
     RAW_MATERIALS.forEach(r => {
@@ -541,7 +549,8 @@ class ResearchManager {
         // v6.37.0 沒在研究時先空 3 天，讓村民有機會提「研究」提案；沒人提才由學者自己挑一個
         if(!this.current) { this._idle=(this._idle||0)+1; if(this._idle>=3){ const av=this.getAvailable(); if(av.length){ const pick=av[Math.floor(Math.random()*av.length)]; this.startResearch(pick.key); world.logMessageT?.('research', '🔬 沒人提議要研究什麼，學者們自己選了「{p}」開始研究。', { p: pick.name }); } } return; }
         let pts=0;
-        Object.values(world.agents).forEach(a=>{ if(!a.isPlayer&&a.job?.title===t('研究員')){ const sk=a.skills.get('智識'); pts+=3+(sk?sk.level:0)*0.5; } });
+        Object.values(world.agents).forEach(a=>{ if(!a.isPlayer&&a.job?.key==='researcher'){ // v6.40.1 用 job.key 判斷,不靠翻譯後的職稱
+             const sk=a.skills.get('智識'); pts+=3+(sk?sk.level:0)*0.5; } });
         pts *= 1 + (world.news?world.news.getModifier('research_bonus',0):0) + (world.buildings?.getEffect?.('research_bonus',0) || 0); // v6.40.0 文書房／印刷坊／天文台等加速研究
         const rp=world.stockpile.get('research_points'), bonus=Math.min(rp,5);
         if(bonus>0) world.stockpile.consume('research_points',bonus,world.tickCount,'research');

@@ -112,8 +112,14 @@ const I18N = (() => {
             localizeTree(document.body);
         } else if (_nameObserver) { _nameObserver.disconnect(); _nameObserver = null; }
     }
+    // v6.40.1 中文半形標點轉全形:內建台詞有上百句寫成「喲,這不是…嗎?」,AI 回覆也常混半形。只轉緊接在中文字後面的 , ? ! ; :
+    const _ZP = { ',': '，', '?': '？', '!': '！', ';': '；', ':': '：' };
+    const _ZP_TEST = /[\u3400-\u9fff\u3001-\u303f\uff01-\uff5e][,?!;:]/;
+    const _ZP_RE = /([\u3400-\u9fff\u3001-\u303f\uff01-\uff5e])([,?!;:])(?!\/\/)/g;
+    function zhPunct(s) { if (typeof s !== 'string' || !_ZP_TEST.test(s)) return s; return s.replace(_ZP_RE, (m, a, p) => a + _ZP[p]); }
+    window.zhPunct = zhPunct;
     function t(text) {
-        if (currentLang === 'zh') return text;
+        if (currentLang === 'zh') return zhPunct(text);
         if (!text || typeof text !== 'string') return text;
         return localizeNames(_t(text)); // v5.72.0 翻譯後再把夾在句子裡的中文人名換成英文名
     }
