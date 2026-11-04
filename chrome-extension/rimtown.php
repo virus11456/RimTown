@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.43.3
+ * Version: 6.43.4
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.43.3');
+define('RIMTOWN_VERSION', '6.43.4');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1330,6 +1330,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.43.4',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🧭 修代理鎮長自己離鎮：鎮長去探險後，如果代理鎮長也出發探險或出遠門，以前還會被當成拍板的人；現在會改由另一位在鎮上的村民代理',
+                '⏱️ 鎮長白天臨時出發探險，當下就由代理拍板：以前要等到隔天的每日檢查才指派代理，這段時間的提案裁決與事件決策還在找不在鎮上的人',
+            ),
+            'changes_en' => array(
+                '🧭 Fixed an acting mayor who leaves town: if the acting mayor also went exploring or travelling while the mayor was away, they were still treated as the decision-maker; another villager in town now takes over',
+                '⏱️ When the mayor sets off on an expedition mid-day, the acting mayor takes over right away: before, the acting mayor was only appointed at the next daily check, so proposal rulings and event decisions in between still went to someone out of town',
+            ),
+        ),
         array(
             'version' => '6.43.3',
             'date'    => '2026-11-04',
