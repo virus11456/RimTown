@@ -5314,6 +5314,15 @@
         '💬 聊天 —— 隨時跟任何一位村民聊，他會記得你說過的話，但不會因此偏心': '💬 Chat — talk to any villager any time; they remember what you said but never play favourites',
         '🏗️ 建設 —— 在「動態」分頁開建設選單，由村民動手蓋': '🏗️ Building — open the build menu in the Town tab, and villagers do the work',
         '提案列表在「提案」分頁；每天早上的早安卡會提醒你昨天的結算與本季考驗。': 'Proposals live in the Proposals tab; every morning the morning card recaps yesterday and the current trial.',
+        // v6.31.0 玩家殘留文案清理:觀察者身分、年表、成就
+        '觀察者': 'the observer',
+        '他是一直看顧著這座小鎮的觀察者：不住在鎮上、不是鎮長，但鎮上的提案都由他批准或否決，大家都認識他、用名字叫他就好。': 'They are the observer who has watched over this town all along: they do not live here and are not the mayor, but every proposal in town is approved or rejected by them; everyone knows them, so just use their name.',
+        '你想跟{name}分享今天工作的趣事': 'You want to share something funny from work today with {name}', '你想約{name}一起去做某件事': 'You want to invite {name} to do something together', '你突然想到一個問題想問{name}': 'A question just came to mind that you want to ask {name}',
+        '你發現了一件有趣的事想告訴{name}': 'You found something interesting you want to tell {name}', '你想關心{name}最近過得如何': 'You want to ask how {name} has been lately', '你想跟{name}聊聊最近鎮上的八卦': 'You want to chat with {name} about the latest town gossip',
+        '!你想邀{name}一起去': '! You want to invite {name} to ', '你在祭典會場看到超有趣的東西,想趕快告訴{name}': 'You saw something amazing at the festival grounds and want to tell {name} right away', '你想約{name}在祭典結束前一起去': 'You want to ask {name} to go together before the festival ends: ',
+        '村民開始信任你的決定：重大事件的應對與更多提案向你敞開。': 'The villagers begin to trust your decisions: responses to major events and more proposals open up.',
+        '小鎮年表': 'Town chronicle', '年表': 'Chronicle', '第一季結束後，這裡會留下每一季的回顧：考驗、人口、公庫、提案與搬進搬出的人。': 'After the first season ends, every season leaves a recap here: trials, population, treasury, proposals and who moved in or out.', '提案總覽': 'Proposals overview',
+        '「你是某某，對面是看顧小鎮的觀察者，不住鎮上也不是鎮長；現任鎮長是誰」——避免叫錯人': '"You are so-and-so; the person opposite is the observer who watches over the town, neither a resident nor the mayor; the current mayor is X", so nobody gets misnamed',
         // v6.30.0 提案深化:人際／對外提案、投票理由、成效追蹤、季末統計、考驗觀察者措辭
         '表揚': 'Commend', '帶徒弟': 'Apprentice', '外銷': 'Export', '結盟': 'Alliance', '招募': 'Recruit',
         '價值觀相合': 'shares the values', '看重財富': 'values wealth', '勤勞肯做': 'hardworking', '懶得折騰': 'can\'t be bothered', '愛熱鬧': 'loves a crowd', '不愛鋪張': 'dislikes extravagance', '不愛熱鬧': 'dislikes fuss', '愛出風頭': 'likes the limelight',

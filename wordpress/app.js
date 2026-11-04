@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.30.0
-const RIMTOWN_APP_VERSION = '6.30.0';
+// RimTown - Frontend App (WordPress Plugin) v6.31.0
+const RIMTOWN_APP_VERSION = '6.31.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -760,7 +760,7 @@ class RimTownApp {
     _chapterDefs() {
         return [
             { n: 1, need: 0,  icon: '🌱', name: t('初來乍到'),   desc: t('認識村民、聽他們聊天，看見他們的愛恨與記憶。村民很快就會開始提案。') },
-            { n: 2, need: 20, icon: '🤝', name: t('小鎮的一份子'), desc: t('村民開始信任你的決定：事件應對、每日決策與更多提案向你敞開。') },
+            { n: 2, need: 20, icon: '🤝', name: t('小鎮的一份子'), desc: t('村民開始信任你的決定：重大事件的應對與更多提案向你敞開。') },
             { n: 3, need: 45, icon: '🏡', name: t('安家立業'),   desc: t('小鎮的經濟長起來了：商店、農場、產業，村民會提更大的案子。') },
             { n: 4, need: 70, icon: '🏛️', name: t('小鎮的支柱'),  desc: t('小鎮的未來由大家一起塑造：工廠、研究、建築升級、議會。') },
         ];
@@ -1428,11 +1428,15 @@ class RimTownApp {
 
     renderAchievements(container) {
         const categories = { social: t('社交'), romance: t('愛情'), economy: t('經濟'), survival: t('生存'), town: t('城鎮'), player: t('玩家'), special: t('特殊') };
+        // v6.31.0 觀察者拿不到的成就(親手種田、參選、求婚、押商隊…)不列、也不算進總數;已解鎖的舊檔成就仍算
+        const OBS_HIDE = new Set(['ran_for_mayor', 'elected_mayor', 'peacemaker', 'voted', 'proposed', 'player_farmer', 'player_trader', 'player_explorer', 'speed_runner', 'first_child']);
+        const visible = (key, a) => !this.world?.observerMode || this._unlockedAchievements.has(key) || !(a.category === 'player' || a.category === 'legacy' || OBS_HIDE.has(key));
+        const all = Object.entries(ACHIEVEMENTS).filter(([k, a]) => visible(k, a));
         let html = t('<div class="achievements-panel"><h3>成就 <span class="ach-count">') +
-            this._unlockedAchievements.size + '/' + Object.keys(ACHIEVEMENTS).length + '</span></h3>';
+            this._unlockedAchievements.size + '/' + all.length + '</span></h3>';
 
         for (const [catKey, catName] of Object.entries(categories)) {
-            const achs = Object.entries(ACHIEVEMENTS).filter(([,a]) => a.category === catKey);
+            const achs = all.filter(([,a]) => a.category === catKey);
             if (!achs.length) continue;
             html += `<div class="ach-category"><h4>${catName}</h4><div class="ach-grid">`;
             achs.forEach(([key, def]) => {
@@ -1970,7 +1974,7 @@ class RimTownApp {
             ],
             records: [ // 日報
                 { key: 'records', label: t('日誌'), icon: '📋' },
-                { key: 'quest', label: t('故事'), icon: '📖' },
+                { key: 'quest', label: t('年表'), icon: '📜' }, // v6.31.0 觀察者:旅人主線 → 小鎮年表
                 { key: 'achievements', label: t('成就'), icon: '🏆' },
             ],
         };

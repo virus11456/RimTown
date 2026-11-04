@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.30.0
+ * Version: 6.31.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.30.0');
+define('RIMTOWN_VERSION', '6.31.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1328,6 +1328,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.31.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🧹 玩家殘留文案清理：觀察者模式不再跑「村民來找你商量」的每日決策卡與村民求助卡（分食物、陪聊、評理都是對住在鎮上的旅人說的；重大事件應對保留）；旅人主線任務停跑，「故事」分頁改成「年表」——本季考驗、歷季回顧（含提案統計）、衰敗／復興狀態、提案總覽',
+                '💬 聊天提示詞的身分行改寫：村民知道對面是「一直看顧小鎮的觀察者——不住鎮上、不是鎮長，提案都由他批」，用名字稱呼，不再叫旅人；村民主動傳訊的情境也改用名字',
+                '🏆 成就：觀察者拿不到的（親手種田、參選、求婚、押商隊、生子…）不再列出也不算進總數，舊檔已解鎖的仍保留；旅人升級的通知在觀察者模式不再跳出',
+                '📝 第二章說明改為「重大事件的應對與更多提案向你敞開」；首頁 AI 說明的身分行同步改成觀察者；Playwright 掃過所有分頁、卡片、早安卡與設定，沒有「旅人／委託／行動點／押商隊／親手」殘留',
+            ),
+            'changes_en' => array(
+                '🧹 Leftover player copy cleaned up: observer mode no longer runs the "a villager comes to you" daily decision cards or villager help requests (sharing food, keeping company, settling arguments were all addressed to a traveller living in town; major-event responses stay); the traveller main quest stops and the Story tab becomes Chronicle: the current trial, past season recaps (with proposal stats), decline / revival status and a proposals overview',
+                '💬 Chat identity line rewritten: villagers know the person opposite is "the observer who has watched over the town, neither a resident nor the mayor, who approves the proposals", and address them by name instead of "traveller"; proactive-message scenarios use the name too',
+                '🏆 Achievements the observer cannot earn (farming by hand, running for mayor, proposing marriage, caravans, children...) are no longer listed or counted, while ones unlocked in old saves stay; traveller level-up notices no longer appear in observer mode',
+                '📝 Chapter 2 text now reads "responses to major events and more proposals open up"; the landing page\'s AI explainer identity line says observer; a Playwright sweep of every tab, card, morning card and settings found no "traveller / request / action points / caravan / by hand" leftovers',
+            ),
+        ),
         array(
             'version' => '6.30.0',
             'date'    => '2026-11-04',
