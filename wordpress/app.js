@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.33.0
-const RIMTOWN_APP_VERSION = '6.33.0';
+// RimTown - Frontend App (WordPress Plugin) v6.34.0
+const RIMTOWN_APP_VERSION = '6.34.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1692,12 +1692,15 @@ class RimTownApp {
         // v6.23.0 3D 渲染器(three.js)隱藏開關:localStorage rimtown_renderer=3d 或網址 ?r=3d;WebGL 失敗時退回 2D
         let use3d = false;
         // v6.25.0 3D 成為預設;rimtown_renderer=2d 或 ?r=2d 才用 2D(v6.27 移除)
-        try { use3d = !/[?&]r=2d(&|$)/.test(location.search) && typeof Town3D !== 'undefined' && typeof THREE !== 'undefined'; } catch (e) {} // v6.27.0 2D 開關移除:只剩 ?r=2d 除錯用與 WebGL 失敗自動退回
+        try { use3d = typeof Town3D !== 'undefined' && typeof THREE !== 'undefined'; } catch (e) {} // v6.34.0 2D 繪圖層整個移除(?r=2d 也拿掉):WebGL 不可用時版面／尋路照跑,地圖區改顯示提示
         if (use3d) {
             try { this.tileMap = new Town3D(canvas); if (!this.tileMap.renderer) throw new Error('no WebGL'); this.renderer3d = true; }
-            catch (e) { console.warn('[RimTown] 3D 渲染器啟動失敗,改用 2D', e); this.tileMap = null; }
+            catch (e) { console.warn('[RimTown] 3D 渲染器啟動失敗(WebGL 不可用)', e); this.tileMap = null; }
         }
-        if (!this.tileMap) this.tileMap = new PixelTileMap(canvas);
+        if (!this.tileMap) {
+            this.tileMap = new PixelTileMap(canvas);
+            try { const panel = canvas.parentElement; if (panel && !document.getElementById('no-webgl-notice')) { const n = document.createElement('div'); n.id = 'no-webgl-notice'; n.className = 'map-hint'; n.style.cssText = 'left:50%;top:50%;bottom:auto;transform:translate(-50%,-50%);font-size:0.85rem;max-width:80%;text-align:center;line-height:1.5;pointer-events:auto'; n.innerHTML = `<b>${t('這個瀏覽器無法啟動 3D（WebGL）')}</b><br>${t('小鎮仍在背景運作，村民、提案與日報都看得到；要看地圖請換支援 WebGL 的瀏覽器，或關掉省電模式再重新整理。')}`; panel.appendChild(n); } } catch (e) {}
+        }
         document.querySelector('.rimtown-container')?.classList.toggle('is-3d', !!this.renderer3d);
         document.querySelector('.rimtown-container')?.classList.add('observer'); // v6.25.0 觀察者沙盒 UI 殼
         // v6.27.0 左下操作提示:第一次進 3D 顯示 25 秒,之後每次 8 秒
@@ -1933,8 +1936,15 @@ class RimTownApp {
         }
     }
 
+    // v6.34.0 任務鏈資料只有非觀察者模式才需要(目前一律觀察者,保留給日後):動態插入 quest-data.js
+    _loadQuestData() {
+        if (window.RIMTOWN_QUEST_CHAINS || this._questDataLoading) return this._questDataLoading || Promise.resolve();
+        this._questDataLoading = new Promise((res) => { const sc = document.createElement('script'); const base = (document.querySelector('script[src*="quest-system.js"]')?.src || 'quest-system.js').replace(/quest-system\.js.*$/, ''); sc.src = base + 'quest-data.js?v=' + RIMTOWN_APP_VERSION; /* WordPress 外掛路徑也對得到 */ sc.onload = () => { try { this.world?.questSystem?.init?.(); } catch (e) {} res(); }; sc.onerror = () => res(); document.head.appendChild(sc); });
+        return this._questDataLoading;
+    }
     startSimulation() {
         if (this.simInterval) clearInterval(this.simInterval);
+        if (this.world && !this.world.observerMode) this._loadQuestData();
         // v5.43.0 小鎮編年史:換日時把整天的作息/行程/足跡/對話歸檔進 IndexedDB
         if (this.world) this.world.onDayArchive = (arc) => this._chroniclePut(arc);
         this.simInterval = setInterval(() => {
