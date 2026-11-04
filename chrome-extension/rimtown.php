@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.43.7
+ * Version: 6.43.8
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.43.7');
+define('RIMTOWN_VERSION', '6.43.8');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1330,6 +1330,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.43.8',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '👤 修「帳號」按了沒反應：登入後的帳號選單（上傳／下載雲端存檔、成就、登出）完全沒有樣式，彈出來是排在頁面最下面、被 3D 地圖蓋住，手機和桌機都看不到。現在選單浮在頂欄下方、每個選項都好點，點外面或再按一次帳號就收起',
+                '🏆 帳號選單裡的「成就」在手機上也打得開：以前只畫在收起來的側欄裡，看起來沒反應；現在會打開面板抽屜',
+            ),
+            'changes_en' => array(
+                '👤 Fixed the Account button doing nothing: the signed-in account menu (upload / download cloud save, achievements, log out) had no styles at all, so it opened at the bottom of the page behind the 3D map on both mobile and desktop. It now floats under the top bar with easy-to-tap items and closes when you tap outside or press Account again',
+                '🏆 Achievements in the account menu now open on mobile too: they used to render into the collapsed side panel, which looked like nothing happened; the panel drawer now opens',
+            ),
+        ),
         array(
             'version' => '6.43.7',
             'date'    => '2026-11-04',

@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.43.7
-const RIMTOWN_APP_VERSION = '6.43.7';
+// RimTown - Frontend App (WordPress Plugin) v6.43.8
+const RIMTOWN_APP_VERSION = '6.43.8';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1424,6 +1424,9 @@ class RimTownApp {
 
     // === Achievements Tab ===
     _showAchievementsTab() {
+        // v6.43.8 走 _goTab:手機會打開面板抽屜(以前只畫在收起來的側欄裡,看起來沒反應)
+        if (this._kairoTitles && !this._kairoTitles.achievements) this._kairoTitles.achievements = `🏆 ${t('成就')}`;
+        if (this._goTab) { this._goTab('achievements'); return; }
         this.activeTab = 'achievements';
         if (this._updateTabHighlight) this._updateTabHighlight('achievements');
         this.renderSidebar();

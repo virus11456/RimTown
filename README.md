@@ -261,7 +261,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.43.7.zip` from Releases
+1. Download `rimtown-v6.43.8.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -314,6 +314,10 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.43.8 (2026-11-04)
+- 👤 修「帳號」按了沒反應：登入後的帳號選單（上傳／下載雲端存檔、成就、登出）完全沒有樣式，彈出來是排在頁面最下面、被 3D 地圖蓋住，手機和桌機都看不到。現在選單浮在頂欄下方、每個選項都好點，點外面或再按一次帳號就收起
+- 🏆 帳號選單裡的「成就」在手機上也打得開：以前只畫在收起來的側欄裡，看起來沒反應；現在會打開面板抽屜
 
 ### v6.43.7 (2026-11-04)
 - 🗳️ 修提案裁決競態：鎮長用 AI 裁決、隔天還沒回改用規則（例如擱置）後，遲到的舊回覆還會改寫結果，也會清掉新一輪的等待標記，造成重複請求、新回覆被吃掉。現在每次 AI 裁決都有編號，只認目前這一號的回覆，舊的直接作廢
