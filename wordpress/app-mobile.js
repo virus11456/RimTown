@@ -13,10 +13,16 @@ Object.assign(RimTownApp.prototype, {
         // 底部極簡列:☰ 選單 + 💬 聊天
         const bar = document.createElement('div');
         bar.id = 'kairo-bar';
+        // v6.25.0 觀察者沙盒:底部直接放四大入口 + 聊天(☰ 選單保留為設定入口)
         bar.innerHTML = `
-            <button id="kairo-menu-btn">☰ <span>${t('選單')}</span></button>
-            <button id="kairo-chat-btn" data-tab="chat">💬 <span>${t('聊天')}</span></button>`;
+            <button data-kairo-tab="economy">🏙️ <span>${t('動態')}</span></button>
+            <button data-kairo-tab="residents">👥 <span>${t('村民')}</span></button>
+            <button data-kairo-tab="proposals">📜 <span>${t('提案')}</span></button>
+            <button data-kairo-tab="records">📰 <span>${t('日報')}</span></button>
+            <button id="kairo-chat-btn" data-tab="chat">💬 <span>${t('聊天')}</span></button>
+            <button id="kairo-menu-btn">⚙️ <span>${t('設定')}</span></button>`;
         root.appendChild(bar);
+        bar.addEventListener('click', (e) => { const b = e.target.closest('[data-kairo-tab]'); if (b) { this._openKairoTab(b.dataset.kairoTab); bar.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b)); } });
 
         // 底部狀態帶(機場物語式:繁榮/銀幣/食物/人口)
         const status = document.createElement('div');
@@ -30,8 +36,8 @@ Object.assign(RimTownApp.prototype, {
         menu.className = 'hidden';
         // v5.20.0 三大入口:每組進去後,卡片頂部的次級分頁列可切換組內其他分頁
         const ITEMS = [
-            ['residents', '👥', t('居民')], ['quest', '📖', t('故事')],
-            ['economy', '🏙️', t('小鎮')], ['settings', '⚙️', t('設定')],
+            ['economy', '🏙️', t('動態')], ['residents', '👥', t('村民')],
+            ['proposals', '📜', t('提案')], ['records', '📰', t('日報')], ['settings', '⚙️', t('設定')],
         ];
         menu.innerHTML = ITEMS.map(([k, ic, lb]) => `<button data-kairo-tab="${k}"><span class="km-ic">${ic}</span>${lb}</button>`).join('');
         root.appendChild(menu);
@@ -54,13 +60,7 @@ Object.assign(RimTownApp.prototype, {
         });
 
         // 事件
-        document.getElementById('kairo-menu-btn').addEventListener('click', () => {
-            card.classList.add('hidden');
-            this._kairoCardOpen = false;
-            const willOpen = menu.classList.contains('hidden');
-            menu.classList.toggle('hidden');
-            this.bgm?.sfx?.(willOpen ? 'open' : 'close');
-        });
+        document.getElementById('kairo-menu-btn').addEventListener('click', () => { this._openKairoTab('settings'); }); // v6.25.0 直接開設定
         document.getElementById('kairo-chat-btn').addEventListener('click', () => {
             // v5.11.0 切換:聊天已開 → 再點一次收起
             if (sheet.classList.contains('chat-open')) { this._dismissKairoPanels(); return; }
@@ -187,7 +187,7 @@ Object.assign(RimTownApp.prototype, {
         panel.appendChild(card);
 
         // 手機虛擬搖桿(僅觸控裝置)
-        if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
+        if (this.world?.observerMode === false && window.matchMedia && window.matchMedia('(pointer: coarse)').matches) { // v6.25.0 觀察者沒有搖桿
             this._setupVirtualJoystick(panel);
         }
     },
@@ -263,7 +263,7 @@ Object.assign(RimTownApp.prototype, {
         this._kairoStatusAt = now;
         const pr = this.state.prosperity || {};
         const res = this.state.stockpile?.resources || {};
-        const pop = Object.keys(this.state.agents || {}).length;
+        const pop = Object.keys(this.state.agents || {}).filter(id => id !== 'player').length; // v6.25.0
         el.innerHTML = `
             <span>🏆 ${pr.level || '--'} ${Math.round(pr.prosperity || 0)}</span>
             <span>💰 ${Math.round(res.silver || 0)}</span>
@@ -274,6 +274,7 @@ Object.assign(RimTownApp.prototype, {
     _updateInteractPrompt() {
         const el = document.getElementById('interact-prompt');
         if (!el || !this.tileMap) return;
+        if (this.world?.observerMode !== false) { el.classList.add('hidden'); return; } // v6.25.0
         const near = this.tileMap.getNearbyNPC ? this.tileMap.getNearbyNPC() : null;
         if (!near || this.chatTarget === near.agentId) { el.classList.add('hidden'); return; }
         const npc = this.state?.agents?.[near.agentId];
@@ -422,7 +423,7 @@ Object.assign(RimTownApp.prototype, {
         card.innerHTML = `
             <button class="nqc-close" data-nqc="close">✕</button>
             <div class="nqc-name">${t(a.name)} <span class="nqc-job">${a.job?.title || ''}</span></div>
-            <div class="nqc-hearts" title="${t('對你的好感')}">${hearts} <span class="nqc-lv">${lv}/10</span></div>
+            ${this.world?.observerMode ? '' : `<div class="nqc-hearts" title="${t('對你的好感')}">${hearts} <span class="nqc-lv">${lv}/10</span></div>`}
             ${intentHtml}
             ${attrHtml}
             ${relHtml}
@@ -430,7 +431,7 @@ Object.assign(RimTownApp.prototype, {
             ${goalHtml}
             <div class="nqc-btns">
                 <button class="nqc-chat" data-nqc="chat">💬 ${t('交談')}</button>
-                ${goal && !goal.done ? `<button class="nqc-detail" data-nqc="nudge" ${nudged ? 'disabled style="opacity:0.4"' : ''}>✨ ${t('助夢')}</button>` : ''}
+                ${goal && !goal.done && !this.world?.observerMode ? `<button class="nqc-detail" data-nqc="nudge" ${nudged ? 'disabled style="opacity:0.4"' : ''}>✨ ${t('助夢')}</button>` : ''}
                 <button class="nqc-detail" data-nqc="follow">${this._followSet().has(agentId) ? '🔕 ' + t('追蹤中') : '🔔 ' + t('追蹤')}</button>
                 <button class="nqc-detail" data-nqc="detail">📋 ${t('詳情')}</button>
             </div>`;

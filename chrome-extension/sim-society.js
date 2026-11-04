@@ -578,13 +578,13 @@ class FestivalSystem {
         return { open: true, phase: win.phase, name: win.festival.name, icon: win.festival.icon, sponsored: !!(this.sponsorship && this.sponsorship.key === key),
                  cost: FestivalSystem.SPONSOR_COST, can_afford: !!world.stockpile?.has?.('silver', FestivalSystem.SPONSOR_COST) };
     }
-    sponsor(world) {
+    sponsor(world, whoName) { // v6.26.0 whoName:提案贊助時記提案人的名字
         const win = this.sponsorWindow(world); if (!win) return { ok: false, msg: t('現在沒有可以贊助的節慶') };
         const key = this._seasonKey(world);
         if (this.sponsorship && this.sponsorship.key === key) return { ok: false, msg: t('這屆節慶你已經贊助過了') };
         const cost = FestivalSystem.SPONSOR_COST; if (!world.stockpile.has('silver', cost)) return { ok: false, msg: t('銀幣不足') };
-        const player = Object.values(world.agents).find(a => a.isPlayer); const who = player?.name || t('旅人');
-        world.stockpile.consume('silver', cost, world.tickCount, t('贊助節慶'), 'player');
+        const player = Object.values(world.agents).find(a => a.isPlayer); const who = whoName || player?.name || t('旅人');
+        world.stockpile.consume('silver', cost, world.tickCount, t('贊助節慶'), whoName ? 'proposal' : 'player');
         this.sponsorship = { key, name: win.festival.name, icon: win.festival.icon, by: who, day: world.clock.day, phase: win.phase };
         if (world.questSystem) world.questSystem.reputation = (world.questSystem.reputation || 0) + FestivalSystem.SPONSOR_REP;
         if (world.prosperity) { world.prosperity.questBonus = (world.prosperity.questBonus || 0) + FestivalSystem.SPONSOR_PROSPERITY; world.prosperity.recalcTotal?.(); }

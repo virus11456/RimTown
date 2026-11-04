@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.22.4
+ * Version: 6.27.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.22.4');
+define('RIMTOWN_VERSION', '6.27.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -143,9 +143,10 @@ function rimtown_shortcode($atts) {
             <div class="rt-sidebar" id="rimtown-sidebar">
                 <button class="mobile-back-to-map" id="mobile-back-to-map">&#9650; 返回地圖</button>
                 <div class="rt-sidebar-tabs">
-                    <button data-tab="economy"><span class="tab-icon">🏙️</span><span class="tab-label">小鎮</span></button>
-                    <button data-tab="residents" data-tab-badge="chat" class="active"><span class="tab-icon">👥</span><span class="tab-label">居民</span></button>
-                    <button data-tab="quest"><span class="tab-icon">📖</span><span class="tab-label">故事</span></button>
+                    <button data-tab="economy"><span class="tab-icon">🏙️</span><span class="tab-label">動態</span></button>
+                    <button data-tab="residents" data-tab-badge="chat" class="active"><span class="tab-icon">👥</span><span class="tab-label">村民</span></button>
+                    <button data-tab="proposals" data-tab-badge="proposals"><span class="tab-icon">📜</span><span class="tab-label">提案</span></button>
+                    <button data-tab="records"><span class="tab-icon">📰</span><span class="tab-label">日報</span></button>
                     <button data-tab="settings"><span class="tab-icon">⚙️</span><span class="tab-label">設定</span></button>
                 </div>
                 <div class="rt-sidebar-content" id="sidebar-content"></div>
@@ -742,6 +743,9 @@ function rimtown_enqueue_assets() {
         array(),
         RIMTOWN_VERSION
     );
+    // v6.25.0 觀察者沙盒 UI 殼 + 字體
+    wp_enqueue_style('rimtown-fonts', 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Nunito:wght@400;600;700;800&display=swap', array(), null);
+    wp_enqueue_style('rimtown-style-observer', RIMTOWN_URL . 'style-observer.css', array('rimtown-style'), RIMTOWN_VERSION);
 
     // i18n must load FIRST — all other scripts depend on t()
     wp_enqueue_script(
@@ -870,6 +874,7 @@ function rimtown_enqueue_assets() {
         RIMTOWN_VERSION,
         true
     );
+    wp_enqueue_script('rimtown-sim-proposals', RIMTOWN_URL . 'sim-proposals.js', array('rimtown-sim-society'), RIMTOWN_VERSION, true); // v6.26.0 村民提案
     wp_enqueue_script(
         'rimtown-simulation',
         RIMTOWN_URL . 'simulation.js',
@@ -901,10 +906,14 @@ function rimtown_enqueue_assets() {
         true
     );
 
+    // v6.23.0 three.js + 3D 小鎮渲染器(隱藏開關 rimtown_renderer=3d)
+    wp_enqueue_script('rimtown-three', RIMTOWN_URL . 'vendor/three.min.js', array(), RIMTOWN_VERSION, true);
+    wp_enqueue_script('rimtown-town3d', RIMTOWN_URL . 'town3d.js', array('rimtown-tilemap', 'rimtown-three'), RIMTOWN_VERSION, true);
+
     wp_enqueue_script(
         'rimtown-app',
         RIMTOWN_URL . 'app.js',
-        array('rimtown-simulation', 'rimtown-sim-systems', 'rimtown-chiptune', 'rimtown-tilemap'),
+        array('rimtown-simulation', 'rimtown-sim-systems', 'rimtown-chiptune', 'rimtown-tilemap', 'rimtown-town3d'),
         RIMTOWN_VERSION,
         true
     );
@@ -1319,6 +1328,96 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.27.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '📱 手機與效能收尾：設定分頁的「小鎮畫面」2D 開關移除，改成「3D 畫質」自動／高／低（自動＝卡頓就降；高／低鎖定不自動變）；小螢幕陰影貼圖減半；低畫質時標籤層隔幀更新；2D 像素版只在 WebGL 不可用時自動退回（網址 ?r=2d 僅供除錯），tilemap.js 保留為地圖版面與尋路的基底',
+                '🖐️ 左下操作提示：第一次進 3D 顯示 25 秒、之後每次 8 秒（桌機：拖曳平移／滾輪縮放／右鍵旋轉／點兩下拉近；手機：一指平移／雙指旋轉縮放／點兩下拉近）',
+                '🧪 走流程 QA 腳本改成 3D 觀察者版（scripts/walkthrough.js）：每天早上截圖、第 2 天起批准／否決提案、第 3 天聊天、第 4 天四大分頁、第 5 天考驗公告、第 8 天夜景、季末回顧與事件卡',
+                '📐 v6.23–v6.27 五版「3D 觀察者沙盒小鎮」計畫完成：README I 節全部打勾；日間淺色票與鍵盤快捷鍵留作下一輪',
+            ),
+            'changes_en' => array(
+                '📱 Mobile and performance wrap-up: the 2D "Town view" switch is gone, replaced by a "3D quality" setting Auto / High / Low (Auto drops when it stutters; High and Low stay fixed); shadow maps halved on small screens; the label layer updates every other frame in Low; the 2D pixel view only kicks in automatically when WebGL is unavailable (?r=2d is debug-only), and tilemap.js stays as the layout and pathfinding base',
+                '🖐️ Bottom-left control hint: 25 seconds the first time you enter 3D, 8 seconds afterwards (desktop: drag to pan / scroll to zoom / right-drag to rotate / double-click to zoom in; phone: one finger to pan / two fingers to rotate and zoom / double-tap to zoom in)',
+                '🧪 The walkthrough QA script is now the 3D observer version (scripts/walkthrough.js): a screenshot every morning, approving and rejecting proposals from day 2, chatting on day 3, the four panels on day 4, the trial notice on day 5, the night view on day 8, the season recap and event cards',
+                '📐 The five-release "3D observer sandbox town" plan (v6.23–v6.27) is complete: README section I is fully ticked; the daytime light palette and keyboard shortcuts are left for the next round',
+            ),
+        ),
+        array(
+            'version' => '6.26.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '📜 村民主動提案（新檔 sim-proposals.js，掛在 world.proposals）：村民依性格、職業與小鎮近況提出 L 編號提案，每天一兩件、最多四件待決——蓋建築（守衛想蓋瞭望塔、農夫想蓋穀倉、缺糧時穀倉加權）、開工廠、政令（沿用議會提案表）、贊助節慶、選產業（遊戲在等人選產業時由村民提）、組隊探險、全鎮宴席（糧多心情低）、救濟金（有人心情很差）、考驗對策（糧荒加班下田／瘟疫採藥隊／壓價聯合定價／匪患夜巡）',
+                '🗳️ 全鎮投票當參考：每位村民依價值觀、性格、職業、跟提案人的交情與公庫夠不夠投贊成或反對；你在「提案」分頁批准／否決／擱置，三天沒處理就依票數自動定案；擱置十天提案人會收回；批准後公庫不夠就等，等滿七天作罷',
+                '🏁 批准即執行並結算：建設動工、工廠動工、政令生效 20 天、贊助節慶、產業開張、探險隊出發、宴席（全鎮心情 +6、關係拉近）、救濟（當事人心情 +15、感激提案人）、考驗對策（政令或補給）；提案人與投贊成的人心情會跟著漲跌，記憶、日誌與 AI 日報都會寫；聲望 +2',
+                '🗣️ AI 文案：提案出現時用提案人的口吻生成一兩句自白（每天最多 4 次，失敗就用規則版說明）；角落通知、提案分頁徽章、早安卡「待你決定的提案 N 件」',
+                '🧪 新增 scripts/proposal_test.js（生成／投票／批准執行／否決／擱置／自動定案／資源不足作罷／擱置收回／存檔往返／英文標題）',
+            ),
+            'changes_en' => array(
+                '📜 Villager proposals (new sim-proposals.js on world.proposals): villagers raise L-numbered proposals from their personality, job and the state of the town, one or two a day and at most four pending — buildings (guards want a watchtower, farmers a granary, weighted up when food is short), factories, decrees (reusing the council table), festival sponsorship, choosing an industry (when the game is waiting for one), expeditions, a town feast (lots of food, low moods), relief money (someone is miserable) and trial responses (famine: all hands to the fields / plague: herb party / price war: joint pricing / bandits: night patrols)',
+                '🗳️ The whole town votes as a reference: each villager votes by values, traits, job, how they feel about the proposer and whether the treasury can afford it; you approve, reject or shelve in the Proposals tab, anything left three days is decided by the vote; shelved proposals are withdrawn after ten days; an approved proposal waits for the treasury and lapses after seven days',
+                '🏁 Approval executes and settles: construction starts, factory starts, decree for 20 days, festival sponsorship, industry opens, expedition departs, feast (mood +6 for all, closer ties), relief (recipient mood +15, grateful to the proposer), trial responses (decree or supplies); the proposer and supporters feel it, memories, the log and the AI daily all record it; reputation +2',
+                '🗣️ AI copy: when a proposal appears the proposer pitches it in their own voice, one or two sentences (up to 4 a day, falling back to the rule-based text); corner notices, a badge on the Proposals tab and a morning-card line "N proposals awaiting you"',
+                '🧪 New scripts/proposal_test.js (generate / vote / approve-execute / reject / shelve / auto-decide / lapse when unaffordable / withdraw when shelved / save round-trip / English titles)',
+            ),
+        ),
+        array(
+            'version' => '6.25.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '👁️ 觀察者沙盒：主角旅人不再出現在地圖上，遊戲變成純粹看 AI 村民自己過日子的小鎮。委託板、行動點、意圖判定（成功率）、押商隊、旅人成長（經驗／等級／天賦）、心動事件、調情／告白／送禮／耳語／助夢、參選鎮長、搖桿與鍵盤移動、第一天任務卡、今日焦點與昨日回響全部移除；舊存檔照常讀取（玩家物件仍隱藏保留，聊天紀錄與成就掛在上面）',
+                '💬 聊天改成純聊天：隨時跟任何村民聊，AI 依個性、心情與記憶回覆並記住你說過的話，但不再改變好感或關係；聊天面板沒有意圖鈕、成功率與結果卡',
+                '⚖️ 季度考驗改算全鎮：糧荒／瘟疫／壓價的進度算全鎮的收成、交易與補給，不再只算「玩家親手帶進」；主線任務裡的「好感／拜訪／送禮」條件改看村民之間的關係與行蹤；聲望與繁榮的好感加成改看村民彼此的平均好感；季末回顧去掉委託、商隊、經驗的行與「下一季怎麼打」（v6.26 由提案系統接手）',
+                '🧊 3D 成為預設畫面（設定「小鎮畫面」仍可切回 2D，v6.27 移除）；點建築名牌或地圖上的建築會把鏡頭帶過去，不再移動角色；對話泡泡與村民 AI 對話的距離判定改看鏡頭中心',
+                '🎨 新 UI 殼（design-system/rimtown-3d/MASTER.md）：地圖全幅、頂部透明控制列、右側浮動面板；四大入口 動態／村民／提案／日報（設定走齒輪鈕）；手機底部直接放四大入口＋聊天＋設定，面板改成底部抽屜；面板不再依繁榮度上鎖；提案分頁先放說明（v6.26 上線）',
+                '📝 新手教學、首頁文案與早安卡改寫成觀察者版本；早安卡每天早上照出（昨日結算、本季考驗、節慶）',
+            ),
+            'changes_en' => array(
+                '👁️ Observer sandbox: the traveller is no longer on the map and the game becomes a town of AI villagers living on their own. Removed: request board, action points, chat intents with success rates, player caravans, traveller growth (XP / levels / perks), heart events, flirt / confess / gift / whisper / dream nudges, running for mayor, joystick and keyboard movement, first-day guide, daily focus and yesterday echo; old saves still load (the player object is kept hidden to hold chat history and achievements)',
+                '💬 Chat is now plain chat: talk to any villager any time, the AI answers from personality, mood and memory and remembers what you said, but affinity and relationships no longer change; no intent buttons, success rates or effect cards',
+                '⚖️ Seasonal trials count the whole town: famine / plague / price-war progress now counts every harvest, trade and supply instead of only what the player brought in; main-quest conditions about affinity / visits / gifts now read villager-to-villager relationships and whereabouts; reputation and prosperity affinity bonuses use the villagers\' average affinity for each other; the season recap drops the request, caravan and XP lines and the "next season" advice (the proposal system takes over in v6.26)',
+                '🧊 3D is now the default view (Settings → "Town view" can still switch back to 2D until v6.27); tapping a building pill or a building on the map flies the camera there instead of moving a character; speech bubbles and villager AI dialogue range are judged from the camera centre',
+                '🎨 New UI shell (design-system/rimtown-3d/MASTER.md): full-bleed map, transparent top control bar, floating right panel; four entries Town / Villagers / Proposals / Daily (settings behind the gear); on phones the bottom bar holds the four entries plus Chat and Settings, and panels open as a bottom drawer; panels no longer lock behind prosperity; the Proposals tab shows an explainer until v6.26',
+                '📝 Tutorial, landing copy and the morning card rewritten for observers; the morning card still appears every morning (yesterday\'s summary, current trial, festivals)',
+            ),
+        ),
+        array(
+            'version' => '6.24.0',
+            'date'    => '2026-11-03',
+            'changes' => array(
+                '🧊 3D 天氣與氛圍：雨（斜線雨絲）、雪（飄落雪片）、煙囪炊煙、夜間螢火蟲（林地與公園）、秋天落葉、節慶彩紙；夜空有星星，海風鎮燈塔夜裡轉光束',
+                '🧊 3D 村民細修：四肢改在肩膀／髖部轉動（走路不再像鐘擺）、農夫在田裡揮鋤頭、工作中的手部動作；選中村民腳下的橘圈',
+                '🧊 3D 農田、工廠、產業：農田依每塊地的狀態長作物（空地／翻土／成長中／可收成會發金光）；工廠地塊有空地基、施工鷹架＋進度、建成後的廠房與煙囪；產業等級徽章掛在對應建築旁',
+                '🧊 3D 墓園（教堂旁墓碑）、探索據點（地圖邊緣旗幟，出隊中亮橘）、節慶（廣場四角旗杆拉彩旗＋橫幅＋彩紙）、商隊進城（馬車從馬車站駛向廣場，帶標籤）',
+                '⚙️ 3D 效能自動降級：連續 3 秒平均每幀超過 40ms 就關陰影、降到 1x 解析度並記住（localStorage rimtown_3d_quality）；手機預設不開陰影',
+            ),
+            'changes_en' => array(
+                '🧊 3D weather and ambience: rain streaks, drifting snow, chimney smoke, fireflies at night over woods and parks, autumn leaves, festival confetti; stars at night and a rotating lighthouse beam in Seabreeze Harbor',
+                '🧊 3D villager polish: limbs now hinge at the shoulders and hips (no more pendulum walk), farmers swing a hoe in the fields, working poses; an orange ring under the selected villager',
+                '🧊 3D farm, factories and industries: farm plots grow crops by state (empty / tilled / growing / ready glows gold); factory plots show an empty foundation, scaffolding with progress, then the built hall with chimney; industry level badges sit next to their building',
+                '🧊 3D graveyard (headstones beside the chapel), exploration sites (flags at the map edge, orange while an expedition is out), festivals (bunting on four poles around the square, a banner and confetti), caravan arrival (a cart rolls from the coach station to the square with a label)',
+                '⚙️ 3D auto quality: if the average frame takes over 40ms for 3 seconds, shadows turn off and the resolution drops to 1x and the choice is remembered (localStorage rimtown_3d_quality); phones start without shadows',
+            ),
+        ),
+        array(
+            'version' => '6.23.0',
+            'date'    => '2026-11-03',
+            'changes' => array(
+                '🧊 3D 小鎮（實驗版，隱藏開關）：用 three.js r159 重畫整座小鎮——低多邊形地形（草地／泥路／石板／河湖／峽谷有坡岸）、樹木（闊葉與針葉、隨季節變色）、灌木、岩石、花叢、農作物、柵欄、棧橋；每棟建築依原本的地圖版面程序化生成（牆、四坡屋頂、門、窗、煙囪，教堂尖塔／守衛塔／鎮公所旗桿／酒館與雜貨店雨棚）；五鎮主題道具（燈塔、漁船、碼頭木樁、噴泉、篝火、古樹、瞭望塔、溫泉、帳篷、城門、礦車軌道、吊橋）與馬車站；建成建築、工地、裝飾也都有 3D 版本',
+                '🧊 3D 村民先用方塊小人（膚色／髮色／髮型／上衣／配件對應自訂外觀，職業帽與道具），有走路擺動與轉向、睡覺躺平；名牌、對話泡泡、表情、zzz、浮動特效改成 HTML 標籤層跟著 3D 位置走；在建築裡的村民不顯示（進出門口才看得到）',
+                '🧊 3D 相機：拖曳平移（抓著地面拖）、右鍵或雙指旋轉與俯仰、滾輪或捏合縮放、雙擊拉近；點村民開對話、點建築名牌定位並前往；日夜光照跟著遊戲時間（黃昏橙光、夜晚月光＋窗燈、燈塔與路燈發光），天氣會改天空與霧',
+                '⚙️ 開法：設定分頁「小鎮畫面」選「3D 小鎮（實驗中）」，或網址加 ?r=3d；WebGL 失敗自動退回 2D；沿用同一套地圖版面、尋路與村民移動邏輯，存檔不變',
+                '📐 設計系統文件 design-system/rimtown-3d/MASTER.md：觀察者沙盒小鎮的版面、色票（日／夜）、字體、元件、互動與 3D 場景規格，之後 v6.24–v6.27 的 UI 重做照這份走',
+            ),
+            'changes_en' => array(
+                '🧊 3D town (experimental, hidden toggle): the whole town is redrawn with three.js r159 — low-poly terrain (grass, dirt roads, stone paths, rivers and lakes with sloped banks, chasms), trees (broadleaf and pine, seasonal colours), bushes, rocks, flowers, crops, fences and piers; every building is generated procedurally from the existing map layout (walls, hip roofs, doors, windows, chimneys, chapel spire, guard tower, town-hall flag, tavern and store awnings); theme props for all five towns (lighthouse, boats, pier posts, fountain, fire pit, elder tree, watchtower, hot spring, tents, gates, mine rails, rope bridges) plus the coach station; completed buildings, construction sites and decorations also get 3D versions',
+                '🧊 3D villagers start as block figures (skin, hair colour, hairstyle, shirt and accessory follow custom looks, with job hats and tools), with walk swing, turning and lying down to sleep; name tags, speech bubbles, emotes, zzz and floating effects moved to an HTML label layer that tracks 3D positions; villagers inside buildings are hidden until they come to the door',
+                '🧊 3D camera: drag to pan (grab the ground), right-button or two-finger rotate and tilt, wheel or pinch to zoom, double-tap to zoom in; tap a villager to talk, tap a building pill to focus and walk there; lighting follows game time (orange dusk, moonlit night with glowing windows, lighthouse and lamps), weather tints the sky and fog',
+                '⚙️ How to enable: Settings → "Town view" → "3D town (experimental)", or add ?r=3d to the URL; falls back to 2D if WebGL fails; it reuses the same map layout, pathfinding and villager movement, so saves are unchanged',
+                '📐 Design system doc design-system/rimtown-3d/MASTER.md: layout, day/night palette, type, components, interaction and 3D scene spec for the observer sandbox town; the v6.24–v6.27 UI rebuild follows it',
+            ),
+        ),
         array(
             'version' => '6.22.4',
             'date'    => '2026-10-15',

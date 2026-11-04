@@ -16,7 +16,7 @@ Object.assign(RimTownApp.prototype, {
         inner += r.lines.map(l => `<div style="font-size:0.82rem;margin:5px 0;line-height:1.4">${l.icon} ${esc(l.text)}</div>`).join('');
         if (r.advice && r.advice.length) inner += `<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px"><div style="font-size:0.8rem;font-weight:bold;margin-bottom:4px">🧭 ${t('下一季怎麼打')}</div>${r.advice.map(a => `<div style="display:flex;gap:8px;align-items:flex-start;margin:5px 0"><div style="flex:1;font-size:0.78rem;line-height:1.4;color:var(--text-secondary)">${a.icon} ${esc(a.text)}</div>${a.go ? `<button class="trade-btn" data-action="recap-go" data-val="${esc(a.go)}" style="flex:none;padding:4px 8px;font-size:0.72rem;white-space:nowrap">${esc(a.goLabel || t('去做'))}</button>` : ''}</div>`).join('')}</div>`; // v6.4.0 / v6.6.0 可點
         if (d.history.length > 1) inner += `<div style="font-size:0.7rem;color:var(--text-secondary);margin-top:10px;border-top:1px solid var(--border);padding-top:6px">${t('之前幾季')}${t('：')}${d.history.slice(1).map(h => `${esc(h.title)} ${esc(h.grade)}`).join(' · ')}</div>`;
-        inner += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:8px">${t('下一季：第 5 天公布新考驗，委託每天早上更新')}</div>`;
+        inner += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:8px">${this.world?.observerMode ? t('下一季：第 5 天公布新考驗') : t('下一季：第 5 天公布新考驗，委託每天早上更新')}</div>`;
         inner += `<button class="trade-btn" data-action="recap-close" style="width:100%;padding:8px;margin-top:12px">${t('關閉')}</button>`;
         card.innerHTML = inner; ov.appendChild(card); document.body.appendChild(ov);
         ov.addEventListener('click', (e) => { const go = e.target.closest('[data-action="recap-go"]'); if (go) { e.stopPropagation(); this._recapGo(go.dataset.val); return; } if (e.target === ov || e.target.closest('[data-action="recap-close"]')) ov.remove(); }); // 彈窗掛在 body 外,事件委派收不到,這裡自己接
@@ -132,7 +132,7 @@ Object.assign(RimTownApp.prototype, {
     },
     _resLabel(res) { return (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[res]?.name) ? SHOP_ITEMS[res].name() : (res === 'silver' ? t('銀幣') : res); },
     _renderPlayerCaravan() {
-        const pc = this.state?.playerCaravan; if (!pc) return '';
+        const pc = this.state?.playerCaravan; if (!pc || this.world?.observerMode) return ''; // v6.25.0
         const esc = (x) => this._escapeHtml(String(x));
         let html = `<div class="econ-section"><h3>🐪 ${t('押商隊')}</h3>`;
         if (pc.active) html += pc.active.mode === 'buy'
@@ -341,6 +341,7 @@ Object.assign(RimTownApp.prototype, {
         w.onVisitorReturn = (meta) => this._pushMailbox(this._returnMailboxKey(meta.fromTownId),
             { origId: meta.origId, origName: meta.origName, notes: meta.notes || [], visitedTownName: this._getCurrentTownName(), visitedTownId: this.currentTownId, romance: meta.romance || null }); // v5.90.0 帶回戀情
         w.onRelocate = (data) => this._doRelocate(data); // v5.90.0 搬家提案的決定
+        w.onProposalEvent = (kind, p) => this._onProposalEvent(kind, p); // v6.26.0 村民提案事件
         w.onSeasonRecap = () => { try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} this._showSeasonRecap(); }; // v5.98.0 季末回顧
         w.onChainEvent = (kind, npcName, title, text) => { if (kind === 'start') { try { this._aiChainQuotes(w); } catch (e) {} } this._showCornerNotice({ icon: kind === 'done' ? '🏅' : kind === 'broken' ? '💔' : '📖', title: kind === 'done' ? t('委託鏈完成') : kind === 'broken' ? t('委託鏈中斷') : t('有人想拜託你'), name: `${t(npcName)} · ${title}`, desc: text || (kind === 'start' ? t('明天的委託板會多一件他的事，連做三天') : '') }); }; // v6.5.0
         w.onGrowthEvent = (kind, v) => { if (kind === 'level') this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${v} ${t('級')}`, name: '', desc: t('到「故事」分頁選一個天賦') }); else if (kind === 'attr') { this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${w.growth?.level || ''} ${t('級')}`, name: `${(typeof growthAttrLabel === 'function' ? growthAttrLabel(v) : v)} +1`, desc: t('天賦都學完了，之後每升一級隨機一項屬性 +1') }); } try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.94.0
@@ -490,24 +491,25 @@ Object.assign(RimTownApp.prototype, {
         const esc = (x) => this._escapeHtml(String(x));
         const rows = [];
         const sum = this._daySummaryText(); if (sum) rows.push(`🌙 ${t('昨日結算：')}${esc(sum)}`);
-        rows.push(`📋 ${t('今日委託')} ${openCount} ${t('件')} · ${t('行動點')} ${rb.ap.left}/${rb.ap.max}`);
-        const d = rb.toDict(w); if (d.chain) rows.push(`📖 ${esc(d.chain.title)} ${d.chain.step + 1}/${d.chain.total} · ${esc(d.chain.npcName)}`);
+        if (rb && !w.observerMode) rows.push(`📋 ${t('今日委託')} ${openCount} ${t('件')} · ${t('行動點')} ${rb.ap.left}/${rb.ap.max}`);
+        const d = (rb && !w.observerMode) ? rb.toDict(w) : {}; if (d.chain) rows.push(`📖 ${esc(d.chain.title)} ${d.chain.step + 1}/${d.chain.total} · ${esc(d.chain.npcName)}`);
         const tr = w.trials?.current; if (tr && tr.status === 'active' && w.trials.value) { const v = w.trials.value(tr.type, w); const d2 = (typeof TRIAL_TYPES !== 'undefined' && TRIAL_TYPES[tr.type]) || {}; rows.push(`⚖️ ${esc(t(d2.title || tr.type))} ${v}/${tr.target} · ${t('剩')} ${Math.max(0, (tr.dueDay || 15) - w.clock.day)} ${t('天')}`); }
         else if (!tr && w.clock.day < 5) rows.push(`⚖️ ${t('第 5 天公布本季考驗')}`);
+        const pd = w.proposals?.toDict?.(w); if (pd && pd.open.length) rows.push(`📜 ${t('待你決定的提案')} ${pd.open.length} ${t('件')}${pd.open.some(p => p.daysLeft <= 1) ? ` · ${t('有的今天就會自動定案')}` : ''}`); // v6.26.0
         const td = w.trials?.toDict ? w.trials.toDict(w) : null; if (td?.declined) rows.push(`🍂 ${t('衰敗中')} · ${t('連續撐過兩季考驗就能復興')}${t('（')}${td.passStreak || 0}/2${t('）')}`); // v6.13.0 與故事分頁同一份資料
         const fs = w.festivals?.sponsorStatus?.(w); if (fs?.open && !fs.sponsored) rows.push(`${fs.icon || '🎪'} ${esc((fs.phase === 'eve' ? t('{fest}明天開始') : t('{fest}進行中')).replace('{fest}', t(fs.name)))} · ${t('可贊助 {n} 銀幣讓它更熱鬧').replace('{n}', fs.cost)}`); // v6.15.0
-        const pl = w.growth?.pendingLevels?.() || 0; if (pl > 0 && w.growth?.pending?.length) rows.push(`⬆️ ${t('升級了！選一個天賦')}${pl > 1 ? `${t('（')}${t('還有 {n} 次').replace('{n}', pl)}${t('）')}` : ''}`); // v6.11.0 天賦還沒選就每天提醒
+        const pl = w.observerMode ? 0 : (w.growth?.pendingLevels?.() || 0); if (pl > 0 && w.growth?.pending?.length) rows.push(`⬆️ ${t('升級了！選一個天賦')}${pl > 1 ? `${t('（')}${t('還有 {n} 次').replace('{n}', pl)}${t('）')}` : ''}`); // v6.11.0 天賦還沒選就每天提醒
         const el = document.createElement('div'); el.id = 'morning-card'; el.className = 'rt-toast morning';
         el.style.cssText = 'background:rgba(22,22,32,0.96);border:1px solid var(--accent,#e94560);border-radius:12px;padding:10px 12px;max-width:min(360px,calc(100vw - 28px));pointer-events:auto;box-shadow:0 6px 24px rgba(0,0,0,0.45);opacity:0;transform:translateY(8px);transition:all .3s';
-        el.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:1.2rem">☀️</span><span style="flex:1;color:var(--accent,#e94560);font-size:0.78rem;font-weight:bold">${t('早安')} · ${esc(t('第 {y} 年{s}').split('{y}').join(w.clock.year).split('{s}').join(t(w.clock.season)))} · ${t('第 {d} 天').split('{d}').join(w.clock.day)}</span><button data-mc="close" style="background:none;border:none;color:var(--text-muted,#999);font-size:1rem;cursor:pointer;line-height:1">✕</button></div><div class="mc-body" style="font-size:0.76rem;line-height:1.5;color:var(--text-secondary,#ccc)">${rows.map(r => `<div>${r}</div>`).join('')}</div><button data-mc="go" class="trade-btn" style="width:100%;margin-top:8px;padding:6px;font-size:0.76rem">📋 ${t('看委託板')}</button>`;
-        el.addEventListener('click', (e) => { const b = e.target.closest('[data-mc]'); if (!b) return; if (b.dataset.mc === 'go') this._goTab('quest'); el.remove(); });
+        el.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:1.2rem">☀️</span><span style="flex:1;color:var(--accent,#e94560);font-size:0.78rem;font-weight:bold">${t('早安')} · ${esc(t('第 {y} 年{s}').split('{y}').join(w.clock.year).split('{s}').join(t(w.clock.season)))} · ${t('第 {d} 天').split('{d}').join(w.clock.day)}</span><button data-mc="close" style="background:none;border:none;color:var(--text-muted,#999);font-size:1rem;cursor:pointer;line-height:1">✕</button></div><div class="mc-body" style="font-size:0.76rem;line-height:1.5;color:var(--text-secondary,#ccc)">${rows.map(r => `<div>${r}</div>`).join('')}</div><button data-mc="go" class="trade-btn" style="width:100%;margin-top:8px;padding:6px;font-size:0.76rem">📋 ${(w.observerMode ? t('看小鎮') : t('看委託板'))}</button>`;
+        el.addEventListener('click', (e) => { const b = e.target.closest('[data-mc]'); if (!b) return; if (b.dataset.mc === 'go') this._goTab(w.observerMode ? 'economy' : 'quest'); el.remove(); });
         host.appendChild(el);
         requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
         setTimeout(() => { if (el.isConnected) { el.dataset.fading = '1'; el.style.opacity = '0'; setTimeout(() => el.remove(), 350); } }, window.innerWidth <= 768 ? 22000 : 45000); // v6.11.0 手機沒有空位,早安卡 22 秒就收(桌機 45 秒)
         try { this._renderFirstDayGuide?.(); } catch (e) {} // v6.11.0 換日重算引導卡(第 4 天起 _firstDayActive 回 false 就會收掉)
     },
     _renderRequestBoard() {
-        const rb = this.world?.requests; if (!rb) return '';
+        const rb = this.world?.requests; if (!rb || this.world?.observerMode) return ''; // v6.25.0 觀察者沒有委託板
         const d = rb.toDict(this.world);
         const pips = Array.from({ length: d.ap.max }, (_, i) => `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:3px;background:${i < d.ap.left ? 'var(--accent)' : 'rgba(255,255,255,0.12)'}"></span>`).join('');
         let html = `<div class="econ-section"><h3>📋 ${t('今日委託')} <span style="font-size:0.7rem;color:var(--text-secondary);font-weight:400">${t('連續全數完成')} ${d.stats.streak} ${t('天')}</span></h3>`;
@@ -531,7 +533,7 @@ Object.assign(RimTownApp.prototype, {
     },
     // v5.94.0 旅人成長區塊:等級/經驗/屬性/天賦,升級後三選一
     _renderGrowth() {
-        const g = this.state?.growth; if (!g) return '';
+        const g = this.state?.growth; if (!g || this.world?.observerMode) return ''; // v6.25.0
         const esc = (x) => this._escapeHtml(String(x));
         const AT = (typeof GROWTH_ATTR_LABEL !== 'undefined') ? Object.fromEntries(Object.entries(GROWTH_ATTR_LABEL).map(([k, v]) => [k, t(v)])) : { charm: t('魅力值'), vigor: t('體力值'), wit: t('機智值'), grit: t('毅力值') };
         let html = `<div class="econ-section"><h3>🧭 ${t('旅人')} · Lv.${g.level}</h3>
@@ -579,10 +581,70 @@ Object.assign(RimTownApp.prototype, {
         this._showCornerNotice({ icon: r.ok ? '💰' : '⚠️', title: t('行動點'), name: '', desc: r.msg || '' });
         this.state = this.world.getState(); try { this.renderSidebar(); } catch (e) {}
     },
+    // ===== v6.26.0 村民主動提案 =====
+    _onProposalEvent(kind, p) {
+        const w = this.world; if (!w || !p) return;
+        const ICON = { new: '📜', approved: '✅', rejected: '❌', shelved: '📥', done: '🏁', failed: '⚠️', expired: '🗑️' };
+        const TITLE = { new: t('{who}提出 {id}'), approved: t('{id} 批准'), rejected: t('{id} 否決'), shelved: t('{id} 擱置'), done: t('{id} 完成'), failed: t('{id} 失敗'), expired: t('{id} 收回') };
+        const title = (TITLE[kind] || '{id}').replace('{who}', t(p.proposerName)).replace('{id}', p.id);
+        const desc = kind === 'new' ? p.title : (p.result || p.title);
+        this._showCornerNotice({ icon: ICON[kind] || '📜', title, name: kind === 'new' ? '' : p.title, desc });
+        if (kind === 'new') { this.bgm?.sfx?.('open'); this._aiProposalPitch(w, p.id); }
+        try { this.state = w.getState(); if (this.activeTab === 'proposals') this.renderSidebar(); } catch (e) {}
+        this._updateProposalBadge();
+    },
+    _proposalDecide(val) {
+        const w = this.world; if (!w?.proposals) return;
+        const [id, action] = String(val || '').split(':');
+        const r = w.proposals.decide(w, id, action);
+        if (!r.ok) { this._showCornerNotice({ icon: '📜', title: t('提案'), name: id, desc: r.msg || '' }); return; }
+        this.bgm?.sfx?.(action === 'approve' ? 'coin' : 'click');
+        try { this.state = w.getState(); this.renderSidebar(); } catch (e) {}
+        this._updateProposalBadge();
+    },
+    _updateProposalBadge() {
+        const n = this.world?.proposals?.open?.().length || 0;
+        document.querySelectorAll('[data-tab="proposals"], [data-kairo-tab="proposals"], [data-tab-badge="proposals"]').forEach(tab => {
+            let badge = tab.querySelector('.chat-badge');
+            if (n > 0) { if (!badge) { badge = document.createElement('span'); badge.className = 'chat-badge'; tab.style.position = 'relative'; tab.appendChild(badge); } badge.textContent = n > 9 ? '9+' : n; }
+            else if (badge) badge.remove();
+        });
+    },
+    // 提案人的一句話(AI 文案,失敗就用規則版說明;每天最多 4 次)
+    async _aiProposalPitch(w, id) {
+        const llm = this.llmClient; const ps = w?.proposals; const p = ps?.byId?.(id); if (!llm || !p || p.pitch) return;
+        const dk = `${w.clock.year}-${w.clock.season}-${w.clock.day}`; if (this._pitchDay !== dk) { this._pitchDay = dk; this._pitchN = 0; }
+        if ((this._pitchN || 0) >= 4) return; this._pitchN = (this._pitchN || 0) + 1;
+        const npc = w.agents[p.proposerId]; if (!npc) return;
+        const lang = (typeof LLM_LANG !== 'undefined') ? LLM_LANG.get() : 'zh';
+        const traits = (npc.personality?.traits || []).map(x => lang === 'en' ? x : ((typeof TRAIT_POOL !== 'undefined' && TRAIT_POOL[x]?.label) || x)).join(lang === 'en' ? ', ' : '、');
+        const name = lang === 'en' ? (typeof I18N !== 'undefined' ? I18N.localizeNames(npc.name, true) : npc.name) : npc.name;
+        const job = npc.job?.title || '';
+        const title = ps.title(p), desc = ps.desc(p);
+        const prompt = lang === 'en'
+            ? `You write dialogue for a village sim. Villager "${name}" (${job}; traits: ${traits}; mood ${Math.round(npc.mood || 50)}/100) is pitching a proposal to the town: "${title}" — ${desc}. Write the pitch in their own voice, first person, 1-2 sentences, under 50 words, no quotes. Reply with JSON only: {"p":"..."}`
+            : `你在寫小鎮模擬遊戲的台詞。村民「${name}」（${job}；性格：${traits}；心情 ${Math.round(npc.mood || 50)}/100）要向全鎮說明自己的提案「${title}」——${desc}。用第一人稱、他的口吻寫一到兩句話（繁體中文，60 字內，不要引號）。只回 JSON：{"p":"..."}`;
+        const timeout = new Promise(r => setTimeout(() => r(null), 9000));
+        let raw = null; try { raw = await Promise.race([llm.generate(prompt, 160, 0.8, true), timeout]); } catch (e) { raw = null; }
+        if (!raw || raw === '__ERROR__' || raw === '__RATE_LIMITED__' || this.world !== w) return;
+        const m = String(raw).match(/\{[\s\S]*\}/); if (!m) return;
+        let j = null; try { j = JSON.parse(m[0]); } catch (e) { return; }
+        const text = String(j?.p || '').replace(/^[「『"“]+|[」』"”]+$/g, '').trim().slice(0, 120); if (!text) return;
+        p.pitch = (lang === 'zh' && typeof RIMTOWN_S2T !== 'undefined' && RIMTOWN_S2T.looksSimplified?.(text)) ? RIMTOWN_S2T.convert(text) : text;
+        try { this.state = w.getState(); if (this.activeTab === 'proposals') this.renderSidebar(); } catch (e) {}
+    },
     _updateRequestBadge() {
-        const rb = this.world?.requests; if (!rb) return;
-        try { rb.checkPassive(this.world); } catch (e) {} // v5.97.0 考驗衝刺被動達標
-        if (this.world?.recap?.pendingShow) { this.world.recap.pendingShow = false; try { this._showSeasonRecap(); } catch (e) {} } // v5.98.0 讀檔回來還沒看過的季末回顧
+        const w = this.world; if (!w) return;
+        if (w.recap?.pendingShow) { w.recap.pendingShow = false; try { this._showSeasonRecap(); } catch (e) {} } // v5.98.0 讀檔回來還沒看過的季末回顧
+        const rb = w.requests;
+        if (w.observerMode) { // v6.25.0 觀察者:沒有委託,但換日仍出早安卡(昨日結算＋考驗＋節慶)
+            const dk = `${w.clock?.year}-${w.clock?.season}-${w.clock?.day}`;
+            if (this._lastMorningDay !== dk) { const first = !this._lastMorningDay; this._lastMorningDay = dk; if (!first) this._showMorningCard(rb, 0); }
+            document.querySelectorAll('[data-tab="quest"] .chat-badge').forEach(b => b.remove());
+            return;
+        }
+        if (!rb) return;
+        try { rb.checkPassive(w); } catch (e) {} // v5.97.0 考驗衝刺被動達標
         const n = rb.openCount();
         document.querySelectorAll('[data-tab="quest"]').forEach(tab => {
             let badge = tab.querySelector('.chat-badge');

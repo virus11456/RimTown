@@ -651,7 +651,7 @@ class ElectionSystem {
     // 參選資格:第二章(繁榮 20)起,且至少 3 位村民好感 ≥ 40(有人願意聯署)
     playerEligibility(world) {
         const player = world.agents['player'];
-        if (!player) return { ok: false, msg: '' };
+        if (!player || world.observerMode) return { ok: false, msg: '' }; // v6.25.0 觀察者不參選
         if ((world.prosperity?.prosperity || 0) < 20) return { ok: false, msg: t('小鎮還不夠認識你——進入第二章(小鎮成長 20)後才能參選。') };
         const backers = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead && (a.relationships?.relationships?.['player']?.affinity || 0) >= 40);
         if (backers.length < 3) return { ok: false, msg: `${t('參選需要 3 位好感 40 以上的村民聯署(目前')} ${backers.length}/3${t(')。先去多交幾個朋友吧!')}` };

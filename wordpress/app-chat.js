@@ -30,16 +30,15 @@ Object.assign(RimTownApp.prototype, {
                 new Promise(r => setTimeout(r, typingDelay))
             ]);
             if (this.world.questSystem) this.world.questSystem.onChat(targetId); // v5.83.0 記下對象
-            try { this.world.requests?.onChat(targetId, this.world); this._updateRequestBadge(); } catch (e) {} // v5.91.0 委託:陪伴/調解
             // Clear unread for this NPC
             if (this._chatUnread) this._chatUnread.delete(targetId);
             // v5.16.0 意圖的額外機械後果(獨立於 LLM,永遠可見)
-            const intentLines = intent ? this._applyChatIntent(npc, player, intent, outcome) : [];
+            const intentLines = (intent && !this.world.observerMode) ? this._applyChatIntent(npc, player, intent, outcome) : []; // v6.25.0 觀察者純聊天:沒有意圖後果
             this.state = this.world.getState();
             this._hideTypingIndicator();
             if (this.activeTab === 'chat') { this._renderChatMessages(); this._scrollChatToBottom(); }
             // v5.16.0 對話可見機械後果:聊完跳一張小結果卡
-            this._showChatEffect(npc, reply, intentLines);
+            if (!this.world.observerMode) this._showChatEffect(npc, reply, intentLines); // v6.25.0 純聊天不跳結果卡
         } catch(e) {
             console.error('Chat error:', e);
             this._hideTypingIndicator();
@@ -283,6 +282,7 @@ Object.assign(RimTownApp.prototype, {
             });
             chatAreaHtml += '</div>';
 
+            if (!this.world?.observerMode) {
             // v5.16.0 意圖化交談鈕:讓玩家一眼看懂「這場對話我能做什麼」(自由輸入照樣保留)
             const oddsNpc = this.world?.agents?.[this.chatTarget]; // v5.95.0 按鈕上顯示成功率
             const intentBar = this._chatIntents().map(it => {
@@ -292,11 +292,12 @@ Object.assign(RimTownApp.prototype, {
                 return `<button class="chat-intent-btn${this._intentArmed?.key === it.key ? ' armed' : ''}" data-action="chat-intent" data-val="${it.key}" title="${this._escapeHtml(ttl)}" ${this.chatSending ? 'disabled' : ''}>${it.icon} ${it.label}${pct !== null ? ` <span style="opacity:0.65;font-size:0.85em">${pct}%</span>` : ''}</button>`;
             }).join('');
             chatAreaHtml += `<div class="chat-intent-bar">${intentBar}</div>`;
+            }
             // Input — always available
             chatAreaHtml += `<div class="chat-input-area">
                 <input type="text" id="chat-input" class="chat-input" placeholder="${t('輸入訊息')}..." ${this.chatSending ? 'disabled' : ''}>
-                <button class="chat-gift-btn" data-action="open-gift" title="${t('送禮')}" style="padding:0 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;font-size:1rem">🎁</button>
-                <button class="chat-gift-btn" data-action="open-rumor" title="${t('爆料八卦')}" style="padding:0 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;font-size:1rem">🗣️</button>
+                ${this.world?.observerMode ? '' : `<button class="chat-gift-btn" data-action="open-gift" title="${t('送禮')}" style="padding:0 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;font-size:1rem">🎁</button>
+                <button class="chat-gift-btn" data-action="open-rumor" title="${t('爆料八卦')}" style="padding:0 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;font-size:1rem">🗣️</button>`}
                 <button class="chat-send-btn" data-action="send-chat" ${this.chatSending ? 'disabled' : ''}>${this.chatSending ? '...' : t('送出')}</button></div>`;
         }
         // v5.49.2 未選人時不再渲染空白對話區佔位,清單直接撐滿

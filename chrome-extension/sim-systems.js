@@ -87,7 +87,15 @@ class ReputationSystem {
         // Passive reputation from daily good deeds
         this._dailyActionPoints = 0;
         const player = world.agents?.['player'];
-        if (player) {
+        if (world.observerMode) {
+            // v6.25.0 觀察者沙盒:聲望看村民之間的平均好感(沒有玩家可以討好)
+            let sum = 0, n = 0;
+            for (const a of Object.values(world.agents || {})) { if (a.isPlayer) continue; for (const [tid, r] of Object.entries(a.relationships?.relationships || {})) { if (tid === 'player') continue; sum += r.affinity || 0; n++; } }
+            const avg = n ? sum / n : 0;
+            this._dailyActionPoints += 1;
+            if (avg > 12) this._dailyActionPoints += 1;
+            if (avg > 30) this._dailyActionPoints += 1;
+        } else if (player) {
             // Working consistently
             if (player.job) this._dailyActionPoints += 1;
             // High average affinity

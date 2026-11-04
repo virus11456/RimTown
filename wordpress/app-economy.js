@@ -85,7 +85,7 @@ Object.assign(RimTownApp.prototype, {
             html += this._lbBtnHtml;
             const pColor = prosp.prosperity >= 80 ? '#ffd700' : prosp.prosperity >= 60 ? 'var(--positive)' : prosp.prosperity >= 40 ? 'var(--accent)' : prosp.prosperity >= 20 ? 'var(--text-secondary)' : 'var(--negative)';
             html += `<div class="econ-section" style="padding:8px 12px">`;
-            const popCount = Object.keys(this.state.agents || {}).length;
+            const popCount = Object.keys(this.state.agents || {}).filter(id => id !== 'player').length; // v6.25.0
             html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">`;
             html += `${t('<span style="font-weight:bold;font-size:0.85rem">🏛️ 繁榮度 <span style="font-weight:normal;font-size:0.75rem;color:var(--text-muted)">👤 ')}${popCount}${t(' 人</span></span>')}`;
             html += `<span style="color:${pColor};font-weight:bold">${prosp.prosperity} — ${prosp.level}</span>`;

@@ -43,6 +43,8 @@ class World {
         this.trials = (typeof SeasonTrials !== 'undefined') ? new SeasonTrials() : null; // v5.93.0 季度考驗
         this.growth = (typeof TravellerGrowth !== 'undefined') ? new TravellerGrowth() : null; // v5.94.0 旅人成長
         this.recap = (typeof SeasonRecap !== 'undefined') ? new SeasonRecap() : null; // v5.98.0 季末回顧
+        this.proposals = (typeof ProposalSystem !== 'undefined') ? new ProposalSystem() : null; // v6.26.0 村民主動提案
+        this.observerMode = true; // v6.25.0 觀察者沙盒:玩家不在地圖上,委託板／行動點／押商隊／旅人成長／心動事件全部停用(物件仍保留給舊檔)
         this.townIdentity = new TownIdentitySystem(); // v5.19.0 城鎮身分/路線
         this.npcEvents = new NPCEventSystem();
         this.questSystem = typeof QuestSystem !== 'undefined' ? new QuestSystem() : null;
@@ -112,8 +114,9 @@ class World {
             try { this._dramaDirector(); } catch (e) { console.warn('[RimTown] director error:', e); }
             try { this._visitorDaily(); } catch (e) { console.warn('[RimTown] visitor error:', e); } // v5.56.0 跨鎮互訪
             try { this._caravanDaily(); } catch (e) { console.warn('[RimTown] caravan error:', e); } // v5.80.0 跨鎮商隊
-            try { this.requests?.dailyRoll(this); } catch (e) { console.warn('[RimTown] request error:', e); } // v5.91.0 委託板:結算昨天、發今天
-            try { this._playerCaravanDaily(); } catch (e) { console.warn('[RimTown] player caravan error:', e); } // v5.92.0 押商隊回報
+            try { if (!this.observerMode) this.requests?.dailyRoll(this); } catch (e) { console.warn('[RimTown] request error:', e); } // v5.91.0 委託板:結算昨天、發今天
+            try { if (!this.observerMode) this._playerCaravanDaily(); } catch (e) { console.warn('[RimTown] player caravan error:', e); } // v5.92.0 押商隊回報
+            try { this.proposals?.daily(this); } catch (e) { console.warn('[RimTown] proposal error:', e); } // v6.26.0 村民提案:投票、定案、執行、新提案
             try { this.trials?.daily(this); } catch (e) { console.warn('[RimTown] trial error:', e); } // v5.93.0 季度考驗:第 5 天公布、季末結算
             try { this.recap?.daily(this); } catch (e) { console.warn('[RimTown] recap error:', e); } // v5.98.0 季末回顧:換季那天結算上一季
             // Daily news (before economy/events so modifiers apply)
@@ -170,9 +173,9 @@ class World {
             // AI Daily News (async, fire-and-forget)
             this.dailyNews.generateNewspaper(this).catch(e => console.warn('[DailyNews] Error:', e));
             // v5.31.0 今日焦點:回答「我現在該做什麼、為什麼」(放最後,讓它讀得到當日 pending 狀態)
-            try { this.generateDailyFocus(); } catch (e) { console.warn('[RimTown] daily focus error:', e); }
+            try { if (!this.observerMode) this.generateDailyFocus(); } catch (e) { console.warn('[RimTown] daily focus error:', e); }
             // v5.45.0 昨日回響:你昨天的舉動在小鎮發酵了什麼
-            try { this._generateDailyEcho(prevDayIds); } catch (e) { console.warn('[RimTown] daily echo error:', e); }
+            try { if (!this.observerMode) this._generateDailyEcho(prevDayIds); } catch (e) { console.warn('[RimTown] daily echo error:', e); }
         }
         Object.values(this.agents).forEach(agent => {
             if (agent.currentLocation === 'exploration') return; // Skip agents on expedition
@@ -943,6 +946,7 @@ class World {
             npcHelp: this.npcHelp.toDict(),
             reputationSystem: this.reputationSystem.toDict(),
             weather: this.weather.toDict(),
+            proposals: this.proposals ? this.proposals.toDict(this) : null, // v6.26.0
             council: (() => { const cd = this.council.toDict(); cd.memberNames = this.council.members.map(id => this.agents[id]?.name || '?'); return cd; })(),
             lifeGoals: (() => { const m = {}; if (this.lifeGoals) for (const a of Object.values(this.agents)) { if (a.isPlayer) continue; const d = this.lifeGoals.describe(a.agentId); if (d) m[a.agentId] = d; } return m; })(),
         };
@@ -990,6 +994,7 @@ class World {
         this.reputationSystem = new ReputationSystem();
         this.weather = new WeatherSystem();
         this.council = new CouncilSystem();
+        this.proposals = (typeof ProposalSystem !== 'undefined') ? new ProposalSystem() : null; // v6.26.0
         this.conversationEngine = new ConversationEngine(this.conversationEngine?.llm);
         // v5.58.0 清掉上一個世界的敘事殘留:換鎮後「今日焦點還在講陳偉」這類跨鎮鬼影的根源
         this.dailyFocus = null;
@@ -1856,7 +1861,7 @@ class World {
 
     // --- v5.0.0 心動事件:每個 NPC 每個門檻只觸發一次,一次只發一件 ---
     checkHeartEvents() {
-        if (this._heartEventBusy) return;
+        if (this._heartEventBusy || this.observerMode) return; // v6.25.0 觀察者沒有心動事件
         this.heartEventsFired = this.heartEventsFired || {};
         const player = Object.values(this.agents).find(a => a.isPlayer);
         if (!player || !this.conversationEngine?.fireHeartEvent) return;
@@ -1993,6 +1998,7 @@ class World {
             reputationSystem: this.reputationSystem.serialize(),
             weather: this.weather.serialize(),
             council: this.council.serialize(),
+            proposals: this.proposals ? this.proposals.serialize() : null, // v6.26.0
         };
     }
 
@@ -2292,6 +2298,7 @@ class World {
             this.processing = new ProcessingSystem();
             if (data.processing) this.processing.loadFrom(data.processing);
             this.dailyNews = new DailyNewsEngine();
+            if (!this.agents.player && typeof PlayerAgent !== 'undefined') { try { this.addAgent(new PlayerAgent()); } catch (e) {} } // v6.25.0 舊檔沒有玩家物件時補一個隱藏的(聊天紀錄與成就掛在它身上)
             this.requests = (typeof RequestBoard !== 'undefined') ? new RequestBoard() : null; // v5.91.0 委託板
             this.playerCaravan = { active: null, history: [], pendingInjury: null }; // v5.92.0 押商隊
             this.trials = (typeof SeasonTrials !== 'undefined') ? new SeasonTrials() : null; // v5.93.0 季度考驗
@@ -2329,6 +2336,7 @@ class World {
             if (data.reputationSystem) this.reputationSystem.loadFrom(data.reputationSystem);
             if (data.weather) this.weather.loadFrom(data.weather);
             if (data.council) this.council.loadFrom(data.council);
+            if (data.proposals && this.proposals) this.proposals.loadFrom(data.proposals); // v6.26.0
 
             this.logMessage('system', t('遊戲讀取成功！'));
             return true;

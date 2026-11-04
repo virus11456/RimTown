@@ -96,6 +96,7 @@ Object.assign(RimTownApp.prototype, {
         return !this._firstDay.done && !this._firstDay.dismissed;
     },
     _renderFirstDayGuide() {
+        if (this.world?.observerMode) { document.getElementById('firstday-guide')?.remove(); return; } // v6.25.0 觀察者沒有第一天任務卡
         if (!this._firstDayActive()) { document.getElementById('firstday-guide')?.remove(); return; }
         const steps = this._firstDaySteps();
         const cur = steps.find(s => !this._firstDay.steps[s.key]);
@@ -151,7 +152,7 @@ Object.assign(RimTownApp.prototype, {
         const activeQuest = (qs._main ? qs._main() : (typeof MAIN_QUESTS !== 'undefined' ? MAIN_QUESTS : [])).find(q => qs.quests[q.id]?.status === 'active');
         this._updateRequestBadge(); // v5.91.0 委託徽章 + 早上通知(v6.22.4 起主要由 app.js 渲染迴圈每秒呼叫,這裡保留給橫幅立即一致)
         if (!activeQuest) { // v5.91.0 主線跑完後,橫幅改提示第一件委託
-            const rq = this.world?.requests?.firstOpen?.();
+            const rq = this.world?.observerMode ? null : this.world?.requests?.firstOpen?.();
             if (rq) { el.classList.remove('hidden'); el.querySelector('.quest-guidance-icon').textContent = this.world.requests.icon(rq); el.querySelector('.quest-guidance-title').textContent = `${t('今日委託：')}${this.world.requests.describe(rq)}`; el.querySelector('.quest-guidance-hint').textContent = `${this.world.requests.progress(rq, this.world)} · ${t('行動點')} ${this.world.requests.ap.left}/${this.world.requests.ap.max}`; return; }
             el.classList.add('hidden'); return;
         }
@@ -299,14 +300,14 @@ Object.assign(RimTownApp.prototype, {
             : `<button class="landing-btn primary" id="landing-register">✨ ${t('註冊')}</button>
                <button class="landing-btn secondary" id="landing-login">🔑 ${t('登入')}</button>`;
         const features = [
-            ['🧠', t('會記得你的村民'), t('五座城鎮、近百位村民各有性格、記憶與人際關係。你說過的話、送過的禮，他們都記得，也會拿去跟別人八卦。')],
-            ['💬', t('真的在聊天'), t('對話由內建 AI 生成，不用填任何金鑰。按下說服、安慰、談條件之後用你自己的話說，AI 會依對方的個性與心情判定這句話打不打得動他，成功率跟著變。')],
-            ['🐎', t('多鎮往返'), t('邊境鎮之外還有漁村海風鎮、山上的礦山鎮、密林裡的林間村、平原樞紐市集城，五座城鎮各有自己的地圖、卡司與故事。搭馬車過去作客，村民也會跨鎮互訪，把別鎮的故事帶回來。')],
-            ['☀️', t('每天有事做'), t('早安卡告訴你昨天的結算與今天的委託；村民會開三天的小故事拜託你；商隊要押、季度考驗要親手撐；季末一頁回顧給你評等和下一季怎麼打的建議。')],
-            ['📖', t('任務與多重結局'), t('五座城鎮各有五章主線與專屬災難，每章兩條路線。旅人會升級選十種天賦。你可以參選鎮長，也可以只當個看戲的旅人。')],
+            ['🧠', t('會記得彼此的村民'), t('五座城鎮、近百位村民各有性格、記憶與人際關係。誰說過什麼、誰幫過誰，他們都記得，也會拿去跟別人八卦。')],
+            ['💬', t('真的在聊天'), t('對話由內建 AI 生成，不用填任何金鑰。村民之間會聊天、反思、寫日記；你也可以隨時跟任何一位村民聊，他會記得你說過的話。')],
+            ['🐎', t('多鎮往返'), t('邊境鎮之外還有漁村海風鎮、山上的礦山鎮、密林裡的林間村、平原樞紐市集城，五座城鎮各有自己的地圖、卡司與故事。村民會互訪、通商、跨鎮戀愛。')],
+            ['📜', t('村民會主動提案'), t('村民依性格、職業與小鎮近況提出提案，大家投票；你批准、否決或擱置，小鎮就照它自己的想法長。季度考驗與季末回顧照舊。')],
+            ['🧊', t('3D 小鎮'), t('整座小鎮用 three.js 程序化幾何重畫：低多邊形地形、建築與村民，日夜、天氣、節慶、墓園一眼看得到。')],
         ];
         const roadmap = [
-            [t('開發中'), '#34d399', [t('3D low-poly 版（Blender + Godot 重製）') + ' · ' + t('已可操作旅人，建設／任務／人口持續驗證')]],
+            [t('開發中'), '#34d399', [t('3D low-poly 版（three.js 程序化幾何）') + ' · ' + t('three.js 3D 小鎮已上線，觀察者模式與村民提案陸續補齊')]],
             [t('構想'), '#60a5fa', [t('玩家之間互訪城鎮'), t('手機 App 版')]],
         ];
         // v5.81.0 更新紀錄(240KB)不再隨頁面載入:首頁第一次畫時才動態載 changelog.js,載完重畫一次;直接進遊戲的人完全不載
@@ -330,8 +331,8 @@ Object.assign(RimTownApp.prototype, {
                 <div class="landing-hero-content">
                     <div class="landing-logo">🏘️</div>
                     <h1>${t('邊境鎮')}<span>RimTown</span></h1>
-                    <p class="landing-tagline">${t('一座由 AI 村民自己過日子的小鎮。你是剛到的旅人。')}</p>
-                    <p class="landing-sub">${t('村民有記憶、有個性、有人際關係；他們會工作、戀愛、吵架、選鎮長。你可以聊天、送禮、耳語、蓋房子、開產業，甚至參選。')}</p>
+                    <p class="landing-tagline">${t('一座由 AI 村民自己過日子的小鎮。你是看著它長大的觀察者。')}</p>
+                    <p class="landing-sub">${t('村民有記憶、有個性、有人際關係；他們會工作、戀愛、吵架、選鎮長，還會主動提案。你可以跟任何人聊天、批准或否決他們的提案、蓋房子、開產業，看小鎮自己長出故事。')}</p>
                     <div class="landing-cta">${cta}</div>
                     <div class="landing-version">v${esc(ver)} · ${t('免安裝，手機也能玩')}${loggedIn ? ` · ${esc(this.auth.username)}` : ''}</div>
                 </div>

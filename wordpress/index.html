@@ -17,7 +17,11 @@
     /* 獨立版關鍵樣式:深色底 + 滿版鎖定,避免 Safari 上下留白/彈跳(style.css 載入前就生效) */
     html, body { background: #1a1a2e; margin: 0; padding: 0; height: 100%; overscroll-behavior: none; }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Nunito:wght@400;600;700;800&display=swap">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style-observer.css">
 </head>
 <body class="rimtown-page" style="background:#1a1a2e;margin:0;overscroll-behavior:none">
 <!-- PWA Install Banner -->
@@ -126,19 +130,19 @@
                         <li data-i18n="🌙 日夜交替 —— 白天工作，傍晚社交，深夜休息">🌙 日夜交替 —— 白天工作，傍晚社交，深夜休息</li>
                         <li data-i18n="💬 對話氣泡 —— 居民之間正在進行的交談">💬 對話氣泡 —— 居民之間正在進行的交談</li>
                     </ul>
-                    <p>點擊地圖上的地點可以移動你的角色。</p>
+                    <p>拖曳可以平移、滾輪縮放、右鍵（手機雙指）旋轉視角；點建築名牌會把鏡頭帶過去。</p>
                 </div>
             </div>
             <div class="tutorial-step hidden" data-step="2">
                 <div class="tutorial-step-icon">👥</div>
                 <h3 data-i18n="居民與聊天">居民與聊天</h3>
                 <div class="tutorial-step-text">
-                    <p data-i18n-html="開啟 <strong>居民</strong>（電腦：右側面板／手機：☰ 選單）可以看到所有村民。點地圖上的村民會顯示好感度與八卦小卡。">開啟 <strong>居民</strong>（電腦：右側面板／手機：☰ 選單）可以看到所有村民。點地圖上的村民會顯示好感度與八卦小卡。</p>
-                    <p data-i18n-html="用方向鍵／搖桿走到村民身邊按「交談」，或開啟 <strong>聊天</strong>（手機：底部 💬）選人對話！他們會根據個性、心情和好感度回應。">用方向鍵／搖桿走到村民身邊按「交談」，或開啟 <strong>聊天</strong>（手機：底部 💬）選人對話！他們會根據個性、心情和好感度回應。</p>
+                    <p data-i18n-html="開啟 <strong>村民</strong>分頁可以看到所有村民；點地圖上的村民會顯示他現在在做什麼、心情從何而來、正在想什麼。">開啟 <strong>村民</strong>分頁可以看到所有村民；點地圖上的村民會顯示他現在在做什麼、心情從何而來、正在想什麼。</p>
+                    <p data-i18n-html="開啟 <strong>聊天</strong>（手機：底部 💬）選人對話！他們會根據個性、心情和記憶回應你，但不會因為你而改變對別人的態度。">開啟 <strong>聊天</strong>（手機：底部 💬）選人對話！他們會根據個性、心情和記憶回應你，但不會因為你而改變對別人的態度。</p>
                     <ul>
-                        <li data-i18n="💕 好感度高的居民會更友善">💕 好感度高的居民會更友善</li>
-                        <li data-i18n="💼 你可以選擇自己的職業">💼 你可以選擇自己的職業</li>
-                        <li data-i18n="💒 你甚至可以和居民約會、求婚！">💒 你甚至可以和居民約會、求婚！</li>
+                        <li data-i18n="💕 村民彼此的好感會影響他們的來往">💕 村民彼此的好感會影響他們的來往</li>
+                        <li data-i18n="📅 每位村民每天有自己的行程與反思">📅 每位村民每天有自己的行程與反思</li>
+                        <li data-i18n="💒 村民之間會約會、求婚、吵架、和好">💒 村民之間會約會、求婚、吵架、和好</li>
                     </ul>
                 </div>
             </div>
@@ -157,18 +161,17 @@
                 </div>
             </div>
             <div class="tutorial-step hidden" data-step="4">
-                <div class="tutorial-step-icon">📋</div>
-                <h3 data-i18n="每天要做的事">每天要做的事</h3>
+                <div class="tutorial-step-icon">📜</div>
+                <h3 data-i18n="村民會主動提案">村民會主動提案</h3>
                 <div class="tutorial-step-text">
-                    <p data-i18n-html="這不只是看戲——<strong>每天都有事要排</strong>：">這不只是看戲——<strong>每天都有事要排</strong>：</p>
+                    <p data-i18n-html="你不是鎮上的角色，而是<strong>看著小鎮長大的觀察者</strong>：">你不是鎮上的角色，而是<strong>看著小鎮長大的觀察者</strong>：</p>
                     <ul>
-                        <li data-i18n="📋 委託板 —— 村民每天早上發 3–5 件委託，行動點只有 5 點，挑著做；沒做完的會過期">📋 委託板 —— 村民每天早上發 3–5 件委託，行動點只有 5 點，挑著做；沒做完的會過期</li>
-                        <li data-i18n="🐪 押商隊 —— 在馬車站選貨、選鎮、要不要派護衛；可能賺四成，也可能遇劫">🐪 押商隊 —— 在馬車站選貨、選鎮、要不要派護衛；可能賺四成，也可能遇劫</li>
-                        <li data-i18n="⚖️ 季度考驗 —— 每季第 5 天公布，季末結算；撐過有永久加成，沒撐過會有人搬走">⚖️ 季度考驗 —— 每季第 5 天公布，季末結算；撐過有永久加成，沒撐過會有人搬走</li>
-                        <li data-i18n="🎲 每句話都有成功率 —— 聊天的意圖鈕會顯示 %，看對方性格和你的交情">🎲 每句話都有成功率 —— 聊天的意圖鈕會顯示 %，看對方性格和你的交情</li>
-                        <li data-i18n="🧭 旅人會升級 —— 完成委託、撐過考驗、押商隊都給經驗，每級選一個天賦">🧭 旅人會升級 —— 完成委託、撐過考驗、押商隊都給經驗，每級選一個天賦</li>
+                        <li data-i18n="📜 提案 —— 村民依性格、職業與小鎮近況提出提案，大家投票；你批准、否決或擱置，三天沒處理就依票數自動定案">📜 提案 —— 村民依性格、職業與小鎮近況提出提案，大家投票；你批准、否決或擱置，三天沒處理就依票數自動定案</li>
+                        <li data-i18n="⚖️ 季度考驗 —— 每季第 5 天公布，季末結算；全鎮的收成與交易都算進度，撐過有永久加成，沒撐過會有人搬走">⚖️ 季度考驗 —— 每季第 5 天公布，季末結算；全鎮的收成與交易都算進度，撐過有永久加成，沒撐過會有人搬走</li>
+                        <li data-i18n="💬 聊天 —— 隨時跟任何一位村民聊，他會記得你說過的話，但不會因此偏心">💬 聊天 —— 隨時跟任何一位村民聊，他會記得你說過的話，但不會因此偏心</li>
+                        <li data-i18n="🏗️ 建設 —— 在「動態」分頁開建設選單，由村民動手蓋">🏗️ 建設 —— 在「動態」分頁開建設選單，由村民動手蓋</li>
                     </ul>
-                    <p style="color:var(--text-muted);font-size:0.72rem;margin-top:10px" data-i18n="這些都在「故事」分頁的最上方；每天早上也會有通知提醒你。">這些都在「故事」分頁的最上方；每天早上也會有通知提醒你。</p>
+                    <p style="color:var(--text-muted);font-size:0.72rem;margin-top:10px" data-i18n="提案列表在「提案」分頁；每天早上的早安卡會提醒你昨天的結算與本季考驗。">提案列表在「提案」分頁；每天早上的早安卡會提醒你昨天的結算與本季考驗。</p>
                 </div>
             </div>
             <div class="tutorial-step hidden" data-step="5">
@@ -183,7 +186,7 @@
                         <li data-i18n="🗺️ 探索系統 —— 派遣探險隊探索鎮外區域">🗺️ 探索系統 —— 派遣探險隊探索鎮外區域</li>
                         <li data-i18n="🗞️ AI 日報 —— 村莊記者會報導鎮上的大小事">🗞️ AI 日報 —— 村莊記者會報導鎮上的大小事</li>
                     </ul>
-                    <p style="color:var(--text-muted);font-size:0.72rem;margin-top:10px" data-i18n="提示：村民對話由內建 AI 生成，不需要設定任何金鑰；走到村民身邊按「交談」就能開聊。">提示：村民對話由內建 AI 生成，不需要設定任何金鑰；走到村民身邊按「交談」就能開聊。</p>
+                    <p style="color:var(--text-muted);font-size:0.72rem;margin-top:10px" data-i18n="提示：村民對話由內建 AI 生成，不需要設定任何金鑰；點村民名牌或在「村民」分頁按「對話」就能聊。">提示：村民對話由內建 AI 生成，不需要設定任何金鑰；點村民名牌或在「村民」分頁按「對話」就能聊。</p>
                 </div>
             </div>
             <div class="tutorial-nav">
@@ -333,9 +336,10 @@
         <div class="rt-sidebar" id="rimtown-sidebar">
             <button class="mobile-back-to-map" id="mobile-back-to-map" data-i18n-html="&#9650; 返回地圖">&#9650; 返回地圖</button>
             <div class="rt-sidebar-tabs">
-                <button data-tab="economy"><span class="tab-icon">🏙️</span><span class="tab-label" data-i18n="小鎮">小鎮</span></button>
-                <button data-tab="residents" data-tab-badge="chat" class="active"><span class="tab-icon">👥</span><span class="tab-label" data-i18n="居民">居民</span></button>
-                <button data-tab="quest"><span class="tab-icon">📖</span><span class="tab-label" data-i18n="故事">故事</span></button>
+                <button data-tab="economy"><span class="tab-icon">🏙️</span><span class="tab-label" data-i18n="動態">動態</span></button>
+                <button data-tab="residents" data-tab-badge="chat" class="active"><span class="tab-icon">👥</span><span class="tab-label" data-i18n="村民">村民</span></button>
+                <button data-tab="proposals" data-tab-badge="proposals"><span class="tab-icon">📜</span><span class="tab-label" data-i18n="提案">提案</span></button>
+                <button data-tab="records"><span class="tab-icon">📰</span><span class="tab-label" data-i18n="日報">日報</span></button>
                 <button data-tab="settings"><span class="tab-icon">⚙️</span><span class="tab-label" data-i18n="設定">設定</span></button>
             </div>
             <div class="rt-sidebar-content" id="sidebar-content">
@@ -362,10 +366,13 @@
     <script src="sim-town.js"></script>
     <script src="sim-economy.js"></script>
     <script src="sim-society.js"></script>
+    <script src="sim-proposals.js"></script>
     <script src="simulation.js"></script>
     <script src="sim-systems.js"></script>
     <script src="chiptune.js"></script>
     <script src="tilemap.js"></script>
+    <script src="vendor/three.min.js"></script>
+    <script src="town3d.js"></script>
     <script src="app.js"></script>
     <script src="app-landing.js"></script>
     <script src="app-notify.js"></script>
