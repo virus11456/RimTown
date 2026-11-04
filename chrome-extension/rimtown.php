@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.28.0
+ * Version: 6.29.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.28.0');
+define('RIMTOWN_VERSION', '6.29.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1328,6 +1328,24 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.29.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🏠 建築資訊卡：點地圖上的建築或編號名牌，跳出這棟的資訊卡——誰現在在裡面、各自在做什麼（點一列就切到那位村民的卡）、住家的住戶、相關產業等級／已建成與施工中的建築／待決的建設提案；有「定位」與「看提案」鈕。點空地只收卡、不再亂跳',
+                '🎥 鏡頭跟拍：村民卡多一顆「跟拍」，鏡頭會一路跟著他走（拖曳地圖就取消）；桌機熱鍵：F 跟拍／停止選中的村民、空白鍵暫停／繼續、1–4 切分頁、Esc 收卡並停止跟拍',
+                '🔔 通知「去看」：新提案、搬來新居民、商隊進城、考驗公布、追蹤中的村民有動靜，右下通知多一顆「去看」直接飛過去並開卡；設定裡可開「事件發生時自動帶鏡頭」（6 秒內最多一次）',
+                '☀️ 日光配色：介面依遊戲時間 05–19 自動切成奶油色日光色票（設計規格 MASTER.md 的 day tokens），其餘時間夜色；設定可鎖定日光／夜色。3D 名牌、對話泡泡、通知、資訊卡一併吃色票變數',
+                '📱 手機抽屜可拖：抓著底部面板的把手上下拖就能調高度，拉過六成自動變高版（86vh），點兩下把手切換；通知改用面板色票，深淺主題都看得清',
+            ),
+            'changes_en' => array(
+                '🏠 Building info card: tap a building or its numbered tag on the map to open its card: who is inside right now and what each is doing (tap a row to jump to that villager\'s card), the residents of a house, related industry level / finished and in-progress buildings / pending build proposals, with "Locate" and "Proposals" buttons. Tapping empty ground only closes the card instead of jumping around',
+                '🎥 Camera follow: the villager card gains a "Follow" button and the camera tracks them as they walk (dragging the map cancels); desktop hotkeys: F follow/unfollow the selected villager, Space pause/resume, 1–4 switch tabs, Esc close cards and stop following',
+                '🔔 "Go look" on notices: new proposals, newcomers, caravans arriving, trial announcements and activity from followed villagers get a "Go look" button on the corner notice that flies the camera over and opens the card; settings can enable "Auto camera on events" (at most once per 6 seconds)',
+                '☀️ Daylight theme: the interface switches to the cream daylight palette (the day tokens in MASTER.md) between 05:00 and 19:00 game time and back to night otherwise; settings can lock daylight or night. 3D name tags, speech bubbles, notices and info cards all follow the palette variables',
+                '📱 Draggable phone drawer: drag the handle of the bottom panel to resize it, past 60% it snaps to the tall layout (86vh), double-tap the handle to toggle; notices now use the panel palette so they read well in both themes',
+            ),
+        ),
         array(
             'version' => '6.28.0',
             'date'    => '2026-11-04',

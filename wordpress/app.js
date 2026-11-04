@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.28.0
-const RIMTOWN_APP_VERSION = '6.28.0';
+// RimTown - Frontend App (WordPress Plugin) v6.29.0
+const RIMTOWN_APP_VERSION = '6.29.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1709,7 +1709,7 @@ class RimTownApp {
             }
         } catch (e) {}
         this.tileMap.hidePlayer = true; // v6.25.0 觀察者不在地圖上
-        this.tileMap.onClick = (locId) => { this._hideNpcCard(); if (this.world?.observerMode !== false) { this.tileMap.focusLocation?.(locId); this.bgm?.sfx?.('click'); } else this.playerMoveTo(locId); };
+        this.tileMap.onClick = (locId) => { this._hideNpcCard(); if (this.world?.observerMode !== false) { if (this.tileMap._lastTapExact === false) return; this.tileMap.focusLocation?.(locId); this.bgm?.sfx?.('click'); this._showLocationCard?.(locId); } else this.playerMoveTo(locId); }; // v6.29.0 點建築開資訊卡;點空地只收卡
         this.tileMap.onAgentClick = (agentId) => this.onAgentClick(agentId);
         this.tileMap.onCoachClick = () => this._showCoachDialog(); // v5.57.0 馬車站
         // v4.2.0 礦石鎮式操作:手動移動時同步玩家邏輯位置(節流 400ms)
@@ -1750,7 +1750,7 @@ class RimTownApp {
         const loop = () => {
             // Update quest guidance banner every ~300 frames (~5 seconds)
             if (++_guidanceFrameCount % 300 === 0) this._updateQuestGuidance();
-            if (_guidanceFrameCount % 60 === 0) { try { this._updateRequestBadge?.(); } catch (e) {} try { this._updateProposalBadge?.(); } catch (e) {} } // v6.22.4 委託徽章與早安卡每秒自己檢查,不再綁在 5 秒一次且會提早 return 的引導橫幅更新裡(換日後早安卡最慢 1 秒出現)
+            if (_guidanceFrameCount % 60 === 0) { try { this._updateRequestBadge?.(); } catch (e) {} try { this._updateProposalBadge?.(); } catch (e) {} try { this._applyTheme?.(); } catch (e) {} } // v6.22.4 委託徽章與早安卡每秒自己檢查,不再綁在 5 秒一次且會提早 return 的引導橫幅更新裡(換日後早安卡最慢 1 秒出現)
             if (this.tileMap && this._mapGenerated) {
                 if (_renderLogCount < 3) {
                     const parent = this.tileMap.canvas?.parentElement;
@@ -2395,7 +2395,7 @@ class RimTownApp {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
             // Only handle keys when game container is visible
             if (!document.getElementById('rimtown-app')) return;
-            if (this.world?.observerMode) return; // v6.25.0 觀察者沒有角色可移動
+            if (this.world?.observerMode) { this._observerHotkey(e); return; } // v6.29.0 觀察者快捷鍵
             this._handleMovementKey(e);
         });
         // v4.2.0:keyup 釋放方向鍵;視窗失焦時清空避免卡鍵
@@ -3330,6 +3330,23 @@ class RimTownApp {
     // ============================================================
     // v6.0.0 B14：renderRecords … 等方法移到 app-records.js
 
+    // v6.29.0 鍵盤:空白鍵 暫停／繼續、F 跟拍選中的村民、1–4 四大入口、Esc 收卡與停止跟拍
+    _observerHotkey(e) {
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
+        const k = e.key;
+        if (k === ' ') { e.preventDefault(); document.getElementById(this.world?.paused ? 'btn-resume' : 'btn-pause')?.click(); return; }
+        if (k === 'f' || k === 'F') { const id = this.selectedAgent || this.chatTarget; if (id && id !== 'player' && this.tileMap?.followAgent) { const on = this.tileMap.isFollowing?.(id); this.tileMap.followAgent(on ? null : id); this._showCornerNotice({ icon: '🎥', title: on ? t('停止跟拍') : t('跟拍'), name: t(this.world?.agents?.[id]?.name || ''), desc: on ? '' : t('拖曳地圖就會取消') }); } return; }
+        if (k >= '1' && k <= '4') { const tab = ['economy', 'residents', 'proposals', 'records'][+k - 1]; document.querySelector(`.rt-sidebar-tabs > button[data-tab="${tab}"]`)?.click(); return; }
+        if (k === 'Escape') { this._hideNpcCard?.(); this.tileMap?.followAgent?.(null); }
+    }
+    // v6.29.0 介面配色:自動(遊戲時間 05–19 日光、其餘夜色)／日光／夜色
+    _applyTheme() {
+        let pref = 'auto'; try { pref = localStorage.getItem('rimtown_theme') || 'auto'; } catch (e) {}
+        const h = this.state?.clock?.hour ?? 12;
+        const day = pref === 'day' || (pref === 'auto' && h >= 5 && h < 19);
+        const c = document.querySelector('.rimtown-container'); if (c && c.classList.contains('theme-day') !== day) c.classList.toggle('theme-day', day);
+        const th = document.getElementById('achv-toast-host'); if (th) { if (!th.classList.contains('observer')) th.classList.add('observer'); if (th.classList.contains('theme-day') !== day) th.classList.toggle('theme-day', day); } // 通知容器掛在 body 下,色票 class 要同步過去
+    }
     _locationLabel(locId) {
         if (!locId) return '';
         const labels = {

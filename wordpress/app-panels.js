@@ -412,7 +412,7 @@ Object.assign(RimTownApp.prototype, {
             this._followSeen[id] = w.tickCount;
             if (fresh && shown < 2) {
                 shown++;
-                this._showCornerNotice({ icon: '🔔', title: `${t('你追蹤的')}${t(npc.name)}`, name: '', desc: String(fresh.content).slice(0, 48) });
+                this._showCornerNotice({ go: { agentId: id }, icon: '🔔', title: `${t('你追蹤的')}${t(npc.name)}`, name: '', desc: String(fresh.content).slice(0, 48) });
             }
         }
     },
@@ -958,6 +958,21 @@ Object.assign(RimTownApp.prototype, {
                 <option value="low"${qPref==='low'?' selected':''}>${t('低（無陰影、1x 解析度，省電）')}</option>
             </select>
             <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('切換後會重新整理頁面；手機預設不開陰影。')}</div>
+        </div>`;
+        // v6.29.0 介面配色與自動帶鏡頭
+        let themePref = 'auto'; try { themePref = localStorage.getItem('rimtown_theme') || 'auto'; } catch (e) {}
+        let autocam = false; try { autocam = localStorage.getItem('rimtown_autocam') === '1'; } catch (e) {}
+        html += `<div class="setting-group" style="margin-bottom:8px">
+            <label style="font-size:0.82rem;color:var(--text-secondary)">${t('介面配色')}</label>
+            <select id="settings-theme" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem" onchange="try{localStorage.setItem('rimtown_theme',this.value)}catch(e){};window.rimtownApp?._applyTheme?.()">
+                <option value="auto"${themePref==='auto'?' selected':''}>${t('自動（白天日光、晚上夜色）')}</option>
+                <option value="day"${themePref==='day'?' selected':''}>${t('日光')}</option>
+                <option value="night"${themePref==='night'?' selected':''}>${t('夜色')}</option>
+            </select>
+        </div>
+        <div class="setting-group" style="margin-bottom:8px">
+            <label style="font-size:0.82rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px"><input type="checkbox" id="settings-autocam" ${autocam ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_autocam',this.checked?'1':'0')}catch(e){}"> ${t('事件發生時自動帶鏡頭')}</label>
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('新提案、搬來、商隊進城、考驗公布時鏡頭自動飛過去；關掉的話通知上仍有「去看」鈕。')}</div>
         </div>`;
         html += `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
             <label style="font-size:0.82rem;color:var(--text-secondary)">${t('速度倍率')}</label>

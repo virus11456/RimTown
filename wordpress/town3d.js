@@ -120,7 +120,8 @@ class Town3D extends PixelTileMap {
         this.zoom = clamp(40 / this.dist, 0.5, 4); // 供基底類別點擊判定用的假縮放
     }
     _updateCamera() {
-        if (this._focusTo) {
+        if (this._followAgent) { const p = this.agentPositions[this._followAgent]; if (p) { this.target.x = lerp(this.target.x, p.x / TILE, 0.1); this.target.z = lerp(this.target.z, p.y / TILE, 0.1); if (this._focusTo && this._focusTo.dist) { this.dist = lerp(this.dist, this._focusTo.dist, 0.08); if (Math.abs(this.dist - this._focusTo.dist) < 0.3) this._focusTo = null; } } else this._followAgent = null; }
+        else if (this._focusTo) {
             this.target.x = lerp(this.target.x, this._focusTo.x, 0.08);
             this.target.z = lerp(this.target.z, this._focusTo.z, 0.08);
             if (this._focusTo.dist) this.dist = lerp(this.dist, this._focusTo.dist, 0.08);
@@ -140,6 +141,9 @@ class Town3D extends PixelTileMap {
     // v6.28.0 給 AI 對話距離判定:拉遠時只算鏡頭中心附近,避免俯瞰全鎮時每對村民都觸發 LLM
     getLlmRadiusTiles() { return this.dist <= 24 ? 14 : this.dist <= 40 ? 10 : this.dist <= 60 ? 7 : 5; }
     focusMap(px, py, dist) { this._focusTo = { x: px / TILE, z: py / TILE, dist: dist || null }; }
+    // v6.29.0 跟拍村民:鏡頭每幀追著他;使用者拖曳就取消
+    followAgent(agentId) { this._followAgent = agentId || null; if (agentId) { this.followPlayer = false; this._focusTo = null; const p = this.agentPositions[agentId]; if (p && this.dist > 30) this._focusTo = { x: p.x / TILE, z: p.y / TILE, dist: 22 }; } }
+    isFollowing(agentId) { return !!this._followAgent && this._followAgent === agentId; }
     focusLocation(locId) {
         const z = this.buildingZones[locId] || this.natureZones[locId];
         if (!z) return;
@@ -173,7 +177,7 @@ class Town3D extends PixelTileMap {
         c.addEventListener('pointerdown', (e) => {
             c.setPointerCapture?.(e.pointerId);
             ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
-            this.followPlayer = false; this._focusTo = null;
+            this.followPlayer = false; this._focusTo = null; this._followAgent = null; // v6.29.0 拖曳就取消跟拍
             if (ptrs.size === 1) {
                 down = { x: e.clientX, y: e.clientY, t: Date.now() };
                 mode = (e.button === 2 || e.shiftKey || e.ctrlKey) ? 'rotate' : 'pan';
@@ -238,6 +242,7 @@ class Town3D extends PixelTileMap {
             if (d < bestD) { bestD = d; best = aid; }
         }
         if (best) { if (this.onAgentClick) this.onAgentClick(best); return; }
+        const mp = this._screenToMap(clientX, clientY); this._lastTapExact = !!this.getLocationAt(mp.x, mp.y); // v6.29.0 app 用來決定要不要開建築卡
         super._handleTap(clientX, clientY);
     }
 
@@ -895,7 +900,7 @@ class Town3D extends PixelTileMap {
             const cx = z ? z.x + z.w / 2 : lp.x / TILE, cz = z ? z.y + z.h / 2 : lp.y / TILE;
             const n = this._labelIndex?.[locId] || '';
             const el = this._ov('loc:' + locId, 't3d-label' + (locId === this._hoverLoc ? ' is-hot' : ''), `<span class="t3d-num">${n}</span><span class="t3d-name">${this._esc(t3(lp.name))}</span>`);
-            if (!el._bound) { el._bound = true; el.addEventListener('click', (e) => { e.stopPropagation(); this.focusLocation(locId); if (this.onClick) this.onClick(locId); }); }
+            if (!el._bound) { el._bound = true; el.addEventListener('click', (e) => { e.stopPropagation(); this._lastTapExact = true; this.focusLocation(locId); if (this.onClick) this.onClick(locId); }); }
             this._place(el, cx, top + 0.3, cz);
         }
         const extraLabels = [].concat(this._dynLabels || [], this._factLabels || [], this._expLabels || [], this._industryLabels(), this._graveLabel ? [this._graveLabel] : [], this._festLabel ? [this._festLabel] : [], this._caravanLabel ? [this._caravanLabel] : []);

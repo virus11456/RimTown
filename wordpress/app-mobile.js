@@ -86,6 +86,15 @@ Object.assign(RimTownApp.prototype, {
             const btn = e.target.closest('[data-kairo-tab]');
             if (btn) this._openKairoTab(btn.dataset.kairoTab);
         });
+        // v6.29.0 抽屜可拖:拉把手(標題列)上下拖,放開吸附 46vh／86vh;點兩下切換
+        (() => {
+            const hdr = document.getElementById('kairo-card-header'); if (!hdr) return;
+            let startY = 0, startH = 0, dragging = false, lastTap = 0;
+            hdr.addEventListener('pointerdown', (e) => { if (e.target.closest('button')) return; dragging = true; startY = e.clientY; startH = card.getBoundingClientRect().height; hdr.setPointerCapture?.(e.pointerId); });
+            hdr.addEventListener('pointermove', (e) => { if (!dragging) return; const h = Math.max(window.innerHeight * 0.25, Math.min(window.innerHeight * 0.92, startH + (startY - e.clientY))); card.style.height = h + 'px'; });
+            const end = (e) => { if (!dragging) return; dragging = false; const h = card.getBoundingClientRect().height; const moved = Math.abs(e.clientY - startY) > 6; card.style.height = ''; if (moved) card.classList.toggle('tall', h > window.innerHeight * 0.62); else { const now = Date.now(); if (now - lastTap < 350) card.classList.toggle('tall'); lastTap = now; } };
+            hdr.addEventListener('pointerup', end); hdr.addEventListener('pointercancel', end);
+        })();
         document.getElementById('kairo-card-back').addEventListener('click', () => {
             card.classList.add('hidden');
             this._kairoCardOpen = false;
@@ -432,6 +441,7 @@ Object.assign(RimTownApp.prototype, {
             <div class="nqc-btns">
                 <button class="nqc-chat" data-nqc="chat">💬 ${t('交談')}</button>
                 ${goal && !goal.done && !this.world?.observerMode ? `<button class="nqc-detail" data-nqc="nudge" ${nudged ? 'disabled style="opacity:0.4"' : ''}>✨ ${t('助夢')}</button>` : ''}
+                ${this.tileMap?.followAgent ? `<button class="nqc-detail" data-nqc="cam">${this.tileMap.isFollowing?.(agentId) ? '🎥 ' + t('停止跟拍') : '🎥 ' + t('跟拍')}</button>` : ''}
                 <button class="nqc-detail" data-nqc="follow">${this._followSet().has(agentId) ? '🔕 ' + t('追蹤中') : '🔔 ' + t('追蹤')}</button>
                 <button class="nqc-detail" data-nqc="detail">📋 ${t('詳情')}</button>
             </div>`;
@@ -441,6 +451,7 @@ Object.assign(RimTownApp.prototype, {
             else if (act === 'chat') { this._hideNpcCard(); this._walkToAndChat(agentId); }
             else if (act === 'nudge') { this._nudgeDream(agentId); }
             else if (act === 'follow') { this._toggleFollow(agentId); this._showNpcCard(agentId); } // v5.48.0 追蹤(重繪按鈕狀態)
+            else if (act === 'cam') { const on = this.tileMap?.isFollowing?.(agentId); this.tileMap?.followAgent?.(on ? null : agentId); this.bgm?.sfx?.('click'); this._showNpcCard(agentId); } // v6.29.0 跟拍
             else if (act === 'detail') {
                 this._hideNpcCard();
                 this.selectedAgent = agentId;
@@ -457,6 +468,64 @@ Object.assign(RimTownApp.prototype, {
 
     _hideNpcCard() {
         document.getElementById('npc-quick-card')?.classList.add('hidden');
+        document.getElementById('loc-quick-card')?.classList.add('hidden');
+    },
+
+    // v6.29.0 建築資訊卡:點地圖上的建築／名牌 → 誰在裡面、在做什麼、住戶、相關產業與提案
+    _showLocationCard(locId) {
+        const panel = document.querySelector('.map-panel'); const tm = this.tileMap; const w = this.world;
+        if (!panel || !tm || !w || !locId) return;
+        let card = document.getElementById('loc-quick-card');
+        if (!card) { card = document.createElement('div'); card.id = 'loc-quick-card'; card.className = 'npc-quick-card loc-quick-card hidden'; panel.appendChild(card); }
+        document.getElementById('npc-quick-card')?.classList.add('hidden');
+        if (this._kairoReady && window.innerWidth <= 768) this._dismissKairoPanels?.();
+        const esc = (x) => this._escapeHtml(String(x ?? ''));
+        const sub = tm._houseSubZones?.[locId];
+        const baseLoc = sub ? sub.parentLocId : locId;
+        const zone = tm.buildingZones[locId] || tm.natureZones[locId];
+        const lp = tm.labelPositions?.[baseLoc];
+        const title = sub ? `${lp?.name ? t(lp.name) : this._locationLabel(baseLoc)} · ${t('房屋')} #${sub.houseIndex + 1}` : (lp?.name ? t(lp.name) : this._locationLabel(locId));
+        const num = tm._labelIndex?.[baseLoc] || '';
+        const loc = w.townMap?.locations?.[baseLoc];
+        // 現在在這裡的人(以地圖上的實際位置判定,不是行程上的「去向」)
+        const inside = [];
+        for (const [aid, pos] of Object.entries(tm.agentPositions || {})) {
+            if (aid === 'player') continue;
+            const z = tm._isInsideBuilding?.(pos.x, pos.y);
+            let here = false;
+            if (sub) here = z === locId;
+            else if (z) here = z === locId || tm.buildingZones[z]?.parentLocId === locId;
+            else if (zone) here = pos.x >= zone.x * 16 && pos.x < (zone.x + zone.w) * 16 && pos.y >= zone.y * 16 && pos.y < (zone.y + zone.h) * 16;
+            if (here) inside.push(aid);
+        }
+        const residents = sub && tm.getHouseResidents ? tm.getHouseResidents(locId) : [];
+        const row = (aid) => { const a = this.state?.agents?.[aid]; if (!a) return ''; return `<div class="nqc-mood-row lqc-agent" data-lqc="agent" data-val="${aid}"><span>👤 ${esc(t(a.name))} <small>${esc(a.job?.title || '')}</small></span><span class="lqc-act">${esc(a.activity_label || a.activity || '')}</span></div>`; };
+        // 相關:產業等級、工廠、建成建築、進行中／待決的建設提案
+        const bits = [];
+        const IND_LOC = { lumber: 'workshop', quarry: 'workshop', farming: 'farm', mining: 'workshop' };
+        for (const [k, ind] of Object.entries(w.industry?.industries || {})) { const def = (typeof INDUSTRIES !== 'undefined') ? INDUSTRIES[k] : null; if (def && IND_LOC[k] === baseLoc) bits.push(`${def.icon} ${esc(t(def.name))} Lv${ind.level}`); }
+        const PLACE = { watchtower: 'guardpost', granary: 'farm', marketplace: 'town_square', well_upgrade: 'well', training_ground: 'guardpost', brewery: 'tavern', garden: 'clinic', school: 'library', farm_irrigation: 'farm', forge_bellows: 'workshop', clinic_upgrade: 'clinic', town_walls: 'town_square' };
+        for (const b of (w.buildings?.completed || [])) { const key = b.buildingKey || b.key; if (PLACE[key] === baseLoc) bits.push(`🏗️ ${esc(t(b.name))}`); }
+        for (const p of (w.buildings?.projects || [])) { if (p.status === 'building' && PLACE[p.buildingKey || p.key] === baseLoc) bits.push(`🚧 ${esc(t(p.name))} ${Math.round((p.workDone || 0) / (p.workRequired || 1) * 100)}%`); }
+        const props = (w.proposals?.items || []).filter(p => (p.status === 'open' || p.status === 'approved' || p.status === 'shelved') && p.kind === 'build' && PLACE[p.refKey] === baseLoc);
+        for (const p of props) bits.push(`📜 ${p.id} ${esc(w.proposals.title(p))}${p.status === 'open' ? ` · ${t('待你決定')}` : ''}`);
+        let html = `<button class="nqc-close" data-lqc="close">✕</button>
+            <div class="nqc-name">${num ? `<span class="lqc-num">${num}</span>` : ''}${esc(title)}${loc?.category ? ` <span class="nqc-job">${esc(({ social: t('社交'), work: t('工作場所'), residential: t('住宅'), nature: t('自然') })[loc.category] || loc.category)}</span>` : ''}</div>`;
+        if (loc?.description) html += `<div class="nqc-rel nqc-dim">${esc(t(loc.description))}</div>`;
+        html += `<div class="nqc-mood-title">📍 ${t('現在在這裡')} <span class="lqc-count">${inside.length}</span></div>`;
+        html += inside.length ? inside.slice(0, 8).map(row).join('') + (inside.length > 8 ? `<div class="nqc-rel nqc-dim">+${inside.length - 8}</div>` : '') : `<div class="nqc-rel nqc-dim">${t('這裡現在沒有人')}</div>`;
+        if (sub) { html += `<div class="nqc-mood-title" style="margin-top:4px">🏠 ${t('住戶')} <span class="lqc-count">${residents.length}</span></div>`; html += residents.length ? residents.map(row).join('') : `<div class="nqc-rel nqc-dim">${t('這間房子目前沒有住戶。')}</div>`; }
+        if (bits.length) html += `<div class="nqc-mood-title" style="margin-top:4px">${t('🔗 相關')}</div>` + bits.map(b => `<div class="nqc-rel">${b}</div>`).join('');
+        html += `<div class="nqc-btns"><button class="nqc-detail" data-lqc="focus">🎥 ${t('定位')}</button>${props.some(p => p.status === 'open') ? `<button class="nqc-detail" data-lqc="proposals">📜 ${t('看提案')}</button>` : ''}</div>`;
+        card.innerHTML = html;
+        card.onclick = (e) => {
+            const el = e.target.closest('[data-lqc]'); if (!el) return; const act = el.dataset.lqc;
+            if (act === 'close') this._hideNpcCard();
+            else if (act === 'agent') { this._hideNpcCard(); this._showNpcCard(el.dataset.val); }
+            else if (act === 'focus') { tm.focusLocation?.(locId); }
+            else if (act === 'proposals') { this._hideNpcCard(); this._goTab?.('proposals'); }
+        };
+        card.classList.remove('hidden');
     },
 
     // v5.4.0 助夢:替村民加速他的人生夢想,並加好感
