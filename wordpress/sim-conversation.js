@@ -918,6 +918,30 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
     }
 
     // v4.9.0: 建築完工/組合發現時,挑一位相關 NPC 用 AI 對玩家發表評論
+    // v6.38.0 事件卡:某位村民對剛發生的事件說一句第一反應(LLM;記憶裡最近兩件事當脈絡)。回傳純文字,失敗回空字串
+    async reactToEvent(world, npc, eventText, cat) {
+        if (!npc || !this.llm || !this.llm._canMakeRequest(true)) return '';
+        try {
+            const pN = this._buildCharacterProfile(npc);
+            const recent = (npc.memory?.entries || []).slice(-6).filter(e => e.category !== 'event').slice(-2).map(e => e.content).filter(Boolean);
+            const prompt = `${t('你正在扮演「')}${npc.name}${t('」——{town}的居民。鎮上剛剛發生了一件事：').replace('{town}', t(world.townName || '邊境鎮'))}${eventText}
+
+${t('【你是誰】')}
+${pN.name}${t('，')}${pN.age}${t('歲，')}${pN.job}${t('。性格：')}${pN.traits}${t('。')}
+${recent.length ? `${t('【你最近記得的事】')}\n${recent.map(x => '- ' + x).join('\n')}\n` : ''}
+${t('【規則】')}
+${LLM_LANG.rule(t('- 繁體中文（台灣用語），1-2 句，像當場脫口而出的話'), '- Natural English, 1-2 sentences, as if blurted out on the spot')}
+${t('- 從你的職業、性格和處境出發：害怕、生氣、興奮、幸災樂禍、盤算都可以，要有個人立場')}
+${t('- 可以順口說你打算怎麼做（例如要去提案、要去幫忙、要去找誰算帳）')}
+${t('- 不要加任何前綴、名字標籤、引號、旁白')}`;
+            const response = await this.llm.generate(prompt, 120, 0.95, true);
+            if (!response || response === '__ERROR__' || response === '__RATE_LIMITED__') return '';
+            let text = response.trim().replace(/^["「『]|["」』]$/g, '').trim();
+            text = text.replace(new RegExp(`^${npc.name}[：:]\\s*`), '').trim();
+            return text.slice(0, 120);
+        } catch (e) { console.warn('[RimTown] reactToEvent failed:', e); return ''; }
+    }
+
     async sendEventComment(world, eventText, preferJobs = [], preferIds = [], fallbackLines = null) {
         try {
             const player = Object.values(world.agents).find(a => a.isPlayer);
@@ -961,6 +985,82 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
             world.logMessageT('player_chat', '{npc} → {player}: {text}', { npc: npc.name, player: player.name, text }, npc.name, player.name);
             if (this.onNpcMessage) this.onNpcMessage(npc.agentId);
         } catch (e) { console.error('[RimTown] sendEventComment failed:', e); }
+    }
+
+    // ===== v6.39.0 完整智能體模式:投票／提案／鎮長裁決交給 LLM(用記憶＋性格推理);規則版是失敗時的退路 =====
+    _agentBrief(world, a, other) {
+        const lang = LLM_LANG.get(); const sep = lang === 'en' ? ', ' : '、';
+        const traits = (a.personality?.traits || []).map(x => lang === 'en' ? x : ((typeof TRAIT_POOL !== 'undefined' && TRAIT_POOL[x]?.label) || x)).join(sep);
+        const values = (a.personality?.values || []).map(v => t(v)).join(sep);
+        const mem = (a.memory?.entries || []).slice(-10).sort((x, y) => (y.importance || 0) - (x.importance || 0)).slice(0, 3).map(e => e.content).filter(Boolean);
+        let rel = '';
+        if (other && other.agentId !== a.agentId) { const r = a.relationships?.relationships?.[other.agentId]; if (r) rel = `${t('對')}${t(other.name)}${t('：好感')} ${Math.round(r.affinity || 0)}${t('、信任')} ${Math.round(r.trust || 0)}`; }
+        return { name: (lang === 'en' && typeof I18N !== 'undefined') ? I18N.localizeNames(a.name, true) : a.name, age: a.age, job: a.job?.title || '', traits, values, mood: Math.round(a.mood || 50), mem, rel };
+    }
+    _townBrief(world) {
+        const npcs = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead);
+        const avg = npcs.length ? Math.round(npcs.reduce((s, a) => s + (a.mood || 0), 0) / npcs.length) : 0;
+        const ev = [...(world.eventCards?.played || []).slice(-2).map(e => t(e.name)), ...(world.events?.eventLog || []).slice(-2).map(([, e]) => e.name)].slice(-3);
+        const trial = (world.trials?.current?.status === 'active' && typeof TRIAL_TYPES !== 'undefined') ? t(TRIAL_TYPES[world.trials.current.type]?.title || '') : '';
+        return `${t('季節')} ${t(world.clock.season)} ${t('第')} ${world.clock.day} ${t('天')}${t('；')}${t('人口')} ${npcs.length}${t('；')}${t('公庫銀幣')} ${Math.round(world.stockpile.get('silver'))}${t('；')}${t('食物')} ${Math.round(world.stockpile.get('food'))}${t('；')}${t('全鎮平均心情')} ${avg}/100${ev.length ? `${t('；')}${t('最近的事')}${t('：')}${ev.join(t('、'))}` : ''}${trial ? `${t('；')}${t('本季考驗')}${t('：')}${trial}` : ''}`;
+    }
+    // 決策呼叫不吃「NPC 每日 AI 額度」(那是背景閒聊的上限);只受供應商速率限制
+    fullAgentOk(world) { return !!world.fullAgentMode && !!this.llm && this.llm._canMakeRequest(true); } // 決策走 chat 道(額度較高、內建 AI 時 Groq 優先)
+    async _askJson(prompt, maxTokens) {
+        const timeout = new Promise(r => setTimeout(() => r(null), 14000));
+        let raw = null; try { raw = await Promise.race([this.llm.generate(prompt, maxTokens, 0.7, true), timeout]); } catch (e) { raw = null; }
+        if (!raw || raw === '__ERROR__' || raw === '__RATE_LIMITED__') return null;
+        const m = String(raw).match(/\[[\s\S]*\]|\{[\s\S]*\}/); if (!m) return null;
+        try { return JSON.parse(m[0]); } catch (e) { return null; }
+    }
+    _costText(cost) { const parts = Object.entries(cost || {}).map(([r, n]) => `${(typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[r]) ? SHOP_ITEMS[r].name() : t(r)} ${n}`); return parts.length ? parts.join(t('、')) : t('不用花公庫的錢'); }
+    // 投票:一次問一批村民(最多 6 人),每人回 for/against + 一句自己口吻的理由
+    async decideVotes(world, p, voters, proposer) {
+        if (!this.fullAgentOk(world) || !voters.length) return null;
+        const ps = world.proposals;
+        const lines = voters.map((a, i) => { const b = this._agentBrief(world, a, proposer); return `${i + 1}. ${b.name}${t('（')}${b.age}${t('歲')}${t('，')}${b.job}${t('；')}${t('性格')}${t('：')}${b.traits}${t('；')}${t('在乎')}${t('：')}${b.values}${t('；')}${t('心情')} ${b.mood}/100${b.rel ? `${t('；')}${b.rel}` : ''}${t('）')}${b.mem.length ? ` ${t('最近記得')}${t('：')}${b.mem.join('／')}` : ''}`; }).join('\n');
+        const prompt = `${t('你是模擬小鎮的村民決策引擎。鎮上有人提了一個提案，請替下面每位村民決定投贊成或反對，並用他自己的口吻給一句理由（20 字內）。要依每個人的性格、在乎的價值、跟提案人的交情、最近的記憶與鎮況判斷，不要全部一致。')}
+${t('【鎮況】')}${this._townBrief(world)}
+${t('【提案】')}${p.id}「${ps.title(p)}」${t('——')}${ps.desc(p)}${t('（')}${t('提案人')}${t('：')}${t(proposer?.name || p.proposerName)}${t('；')}${t('花費')}${t('：')}${this._costText(p.cost)}${t('）')}
+${t('【村民】')}
+${lines}
+${t('只輸出 JSON 陣列，每個元素 {"n":序號,"vote":"for"或"against","why":"理由"}，不要其他文字。')}`;
+        this._countNpcLlmUse(world);
+        const j = await this._askJson(prompt, 80 + voters.length * 70);
+        if (!Array.isArray(j)) return null;
+        const out = {};
+        for (const row of j) { const i = parseInt(row?.n, 10) - 1; const a = voters[i]; if (!a) continue; const v = String(row.vote || '').toLowerCase(); if (v !== 'for' && v !== 'against') continue; out[a.agentId] = { vote: v, why: String(row.why || '').trim().replace(/^[「『"“]+|[」』"”]+$/g, '').slice(0, 40) }; }
+        return Object.keys(out).length ? out : null;
+    }
+    // 鎮長裁決:批准／否決／擱置 + 一句理由
+    async decideMayor(world, p, mayor, tally) {
+        if (!this.fullAgentOk(world) || !mayor) return null;
+        const ps = world.proposals; const b = this._agentBrief(world, mayor, world.agents[p.proposerId]);
+        const whyFor = (tally.forWhy || []).join('／'), whyAg = (tally.againstWhy || []).join('／');
+        const prompt = `${t('你正在扮演鎮長「')}${b.name}${t('」（')}${b.age}${t('歲；性格')}${t('：')}${b.traits}${t('；')}${t('在乎')}${t('：')}${b.values}${t('；')}${t('心情')} ${b.mood}/100${b.rel ? `${t('；')}${b.rel}` : ''}${t('）。全鎮對一個提案投完票了，現在由你裁決。')}
+${t('【鎮況】')}${this._townBrief(world)}
+${t('【提案】')}${p.id}「${ps.title(p)}」${t('——')}${ps.desc(p)}${t('（')}${t('提案人')}${t('：')}${t(p.proposerName)}${t('；')}${t('花費')}${t('：')}${this._costText(p.cost)}${t('）')}
+${t('【票數】')}${t('贊成')} ${tally.f}${whyFor ? `${t('（')}${whyFor}${t('）')}` : ''}${t('；')}${t('反對')} ${tally.a}${whyAg ? `${t('（')}${whyAg}${t('）')}` : ''}
+${b.mem.length ? `${t('【你最近記得的事】')}${b.mem.join('／')}\n` : ''}${t('依你的性格、價值觀、跟提案人的交情、公庫狀況與票數決定：approve（批准）、reject（否決）或 shelve（先擱置幾天）。只輸出 JSON：{"action":"approve|reject|shelve","why":"一句話理由（25 字內，第一人稱）"}')}`;
+        this._countNpcLlmUse(world);
+        const j = await this._askJson(prompt, 140);
+        const act = String(j?.action || '').toLowerCase(); if (!['approve', 'reject', 'shelve'].includes(act)) return null;
+        return { action: act, why: String(j.why || '').trim().replace(/^[「『"“]+|[」』"”]+$/g, '').slice(0, 50) };
+    }
+    // 要不要提案、提什麼:今天輪到發言的人,從幾個可行的點子裡挑一個(或都不提),順便說出向全鎮的說明
+    async chooseProposal(world, proposer, cands) {
+        if (!this.fullAgentOk(world) || !proposer || !cands.length) return null;
+        const b = this._agentBrief(world, proposer);
+        const lines = cands.map((c, i) => `${i + 1}. ${c.title}${t('——')}${c.desc}${t('（')}${t('花費')}${t('：')}${this._costText(c.cost)}${t('）')}`).join('\n');
+        const prompt = `${t('你正在扮演「')}${b.name}${t('」（')}${b.age}${t('歲，')}${b.job}${t('；')}${t('性格')}${t('：')}${b.traits}${t('；')}${t('在乎')}${t('：')}${b.values}${t('；')}${t('心情')} ${b.mood}/100${t('）。今天鎮上輪到你可以向大家提一個提案。')}
+${t('【鎮況】')}${this._townBrief(world)}
+${b.mem.length ? `${t('【你最近記得的事】')}${b.mem.join('／')}\n` : ''}${t('【你想得到的幾個點子】')}
+${lines}
+${t('依你的身分與處境決定：挑一個最想提的（回序號），或者今天不提（回 0）。只輸出 JSON：{"choice":序號或0,"pitch":"你向全鎮說明的一兩句話（第一人稱，50 字內）"}')}`;
+        this._countNpcLlmUse(world);
+        const j = await this._askJson(prompt, 180);
+        const n = parseInt(j?.choice, 10); if (!j || !Number.isFinite(n)) return null;
+        return { choice: n, pitch: String(j.pitch || '').trim().replace(/^[「『"“]+|[」』"”]+$/g, '').slice(0, 120) };
     }
 
     _buildCharacterProfile(agent) {
@@ -2107,8 +2207,10 @@ const LLM_LANG = {
 if (typeof window !== 'undefined') window.LLM_LANG = LLM_LANG;
 
 class LLMClient {
-    constructor(provider, apiKey, model) {
+    constructor(provider, apiKey, model, baseUrl) {
         this.provider = provider; this.apiKey = apiKey; this.model = model;
+        // v6.36.0 玩家自備 AI:custom = 任何 OpenAI 相容端點的基底網址(例如 https://host/v1)
+        this.baseUrl = baseUrl || '';
         // Rate limiting
         this._requestTimestamps = [];
         this._maxRequestsPerMinute = 20;
@@ -2121,6 +2223,24 @@ class LLMClient {
     }
 
     setFallbackGroqKey(key) { this.fallbackGroqKey = key; }
+    // v6.36.0 玩家自備 AI 直接從瀏覽器連供應商,伺服器那份遊戲系統提示(api/chat.js GAME_SYSTEM_PROMPT)
+    // 要在這裡自己送,不然 Claude/GPT 會用助理口吻、拒絕扮演或回英文
+    static systemPrompt(lang) {
+        if (lang === 'en') return [
+            'You are the roleplay and text-generation engine for the simulation game RimTown.',
+            'The user message is a game prompt: it names the villager you play, the scene and the required output format. Follow it exactly and output only what it asks for (villager lines, schedules, reflections, EFFECTS lines).',
+            'Rules: write only in natural English (never Chinese); never mention being an AI, an assistant, a model or a development environment; never refuse to roleplay; no disclaimers, preambles or analysis.',
+        ].join('\n');
+        return [
+            '你是模擬遊戲《RimTown》的角色扮演與文字生成引擎。',
+            '使用者訊息是遊戲提示詞:裡面會指定你扮演的村民、情境、輸出格式。你必須完全照做,只輸出提示詞要求的內容(村民台詞、行程、反思、EFFECTS 行等)。',
+            '規則:一律繁體中文(台灣用語);絕不提及自己是 AI、助理、模型或開發環境;絕不拒絕扮演;絕不加免責聲明、前言或分析;不要用英文回覆。',
+        ].join('\n');
+    }
+    // 自備 AI 的預設模型(玩家可在設定裡改)
+    static defaultModel(provider) {
+        return { anthropic: 'claude-haiku-5-5', openai: 'gpt-4o-mini', gemini: 'gemini-2.5-flash', custom: '' }[provider] || '';
+    }
     // v5.73.0 daily-news.js 用的 chat([{role,content}], {max_tokens}) 介面:合併成單一提示詞走 generate()
     async chat(messages, opts = {}) {
         const prompt = (messages || []).map(m => m && m.content ? String(m.content) : '').filter(Boolean).join('\n\n');
@@ -2133,15 +2253,20 @@ class LLMClient {
      * Test if the API key is valid by making a minimal request.
      * Returns { ok: true/false, error: string|null }
      */
-    async testConnection(provider, apiKey) {
+    async testConnection(provider, apiKey, model = null, baseUrl = null) {
         provider = provider || this.provider;
         apiKey = apiKey || this.apiKey;
         if (!provider || provider === 'none' || !apiKey) {
             return { ok: false, error: 'No provider or API key' };
         }
+        if (provider === 'custom' && !(baseUrl || this.baseUrl)) return { ok: false, error: 'No base URL' };
         try {
             this._lastError = '';
-            const result = await this._callProvider(provider, apiKey, null, 'Say "ok"', 5, 0);
+            const keepBase = this.baseUrl;
+            if (baseUrl) this.baseUrl = baseUrl;
+            let result;
+            try { result = await this._callDirect(provider, apiKey, model || null, 'Reply with the single word: ok', 16, 0, LLMClient.systemPrompt('en')); }
+            finally { this.baseUrl = keepBase; }
             if (result === '__RATE_LIMITED__') return { ok: true, error: null }; // rate limited means key is valid
             if (result === '__ERROR__') return { ok: false, error: this._lastError || 'API returned error — check your key' };
             return { ok: true, error: null };
@@ -2270,17 +2395,6 @@ class LLMClient {
     }
 
     async _callProvider(provider, apiKey, model, prompt, maxTokens, temperature, lane = 'background') {
-        const endpoints = {
-            anthropic: { url: 'https://api.anthropic.com/v1/messages', model: model || 'claude-haiku-4-5-20251001' },
-            // v5.29.1 OpenAI 鎖定 gpt-4o-mini(成本控制):忽略任何 model 覆寫,避免誤用到高價模型
-            openai: { url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o-mini' },
-            gemini: { url: `https://generativelanguage.googleapis.com/v1beta/models/${model||'gemini-2.5-flash'}:generateContent` },
-            deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: model || 'deepseek-chat' },
-            // v5.33.2 Groq 預設改用正式版模型(qwen3-32b 為 preview 已下架,舊預設會 404)
-            groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: model || 'llama-3.3-70b-versatile' },
-            together: { url: 'https://api.together.xyz/v1/chat/completions', model: model || 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo' },
-            minimax: { url: 'https://api.minimaxi.com/v1/text/chatcompletion_v2', model: model || 'MiniMax-M2.5' },
-        };
         // 小鎮伺服器 AI(免金鑰):走同網域 /api/chat,金鑰保管在伺服器
         if (provider === 'server') {
             try {
@@ -2315,33 +2429,87 @@ class LLMClient {
             }
         }
 
+        // v6.36.0 玩家自備 AI:直接從瀏覽器連供應商。遊戲系統提示、英文模式人名互換、
+        // 簡轉繁與「我是 AI」漏網攔截原本都在伺服器做,這裡要自己補齊
+        const lang = (typeof LLM_LANG !== 'undefined') ? LLM_LANG.get() : 'zh';
+        const sendPrompt = (lang === 'en' && typeof I18N !== 'undefined') ? I18N.localizeNames(prompt, true) : prompt;
+        const raw = await this._callDirect(provider, apiKey, model, sendPrompt, maxTokens, temperature, LLMClient.systemPrompt(lang));
+        if (raw === '__ERROR__' || raw === '__RATE_LIMITED__') return raw;
+        return this._postProcessDirect(raw, lang);
+    }
+
+    _postProcessDirect(reply, lang) {
+        reply = String(reply || '').trim();
+        if (typeof World !== 'undefined' && World.looksLikeAssistantLeak && World.looksLikeAssistantLeak(reply)) {
+            console.warn('[RimTown LLM] assistant leak blocked (direct provider)');
+            return '__ERROR__';
+        }
+        if (lang === 'en') {
+            if (typeof I18N !== 'undefined') reply = I18N.delocalizeNames(reply);
+        } else if (typeof RIMTOWN_S2T !== 'undefined' && RIMTOWN_S2T.looksSimplified(reply)) reply = RIMTOWN_S2T.convert(reply);
+        return reply;
+    }
+
+    // 自訂 OpenAI 相容端點:基底網址可填到 /v1、到主機、或整條 /chat/completions
+    _customUrl() {
+        const base = String(this.baseUrl || '').trim().replace(/\/+$/, '');
+        if (!base) return '';
+        if (/\/chat\/completions$/i.test(base)) return base;
+        return (/\/v\d+[a-z]*$/i.test(base) ? base : base + '/v1') + '/chat/completions';
+    }
+
+    async _callDirect(provider, apiKey, model, prompt, maxTokens, temperature, sys) {
+        const endpoints = {
+            anthropic: { url: 'https://api.anthropic.com/v1/messages', model: model || LLMClient.defaultModel('anthropic') },
+            // v6.36.0 自備金鑰由玩家自己付費,模型開放覆寫(預設仍是便宜的 gpt-4o-mini)
+            openai: { url: 'https://api.openai.com/v1/chat/completions', model: model || LLMClient.defaultModel('openai') },
+            gemini: { url: `https://generativelanguage.googleapis.com/v1beta/models/${model||'gemini-2.5-flash'}:generateContent` },
+            deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: model || 'deepseek-chat' },
+            // v5.33.2 Groq 預設改用正式版模型(qwen3-32b 為 preview 已下架,舊預設會 404)
+            groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: model || 'llama-3.3-70b-versatile' },
+            together: { url: 'https://api.together.xyz/v1/chat/completions', model: model || 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo' },
+            minimax: { url: 'https://api.minimaxi.com/v1/text/chatcompletion_v2', model: model || 'MiniMax-M2.5' },
+            custom: { url: this._customUrl(), model: model || '' },
+        };
         const cfg = endpoints[provider];
-        if (!cfg) return '__ERROR__';
+        if (!cfg || !cfg.url) { this._lastError = 'unknown provider or empty base URL'; return '__ERROR__'; }
         // v5.33.3 Groq 未指定模型時動態解析(可用清單快取)
         if (provider === 'groq' && !model) cfg.model = await this._resolveGroqModel(apiKey);
+        const sysMsgs = sys ? [{ role:'system', content: sys }] : [];
+        const recordErr = async (res) => {
+            try { const eb = await res.json(); this._lastError = `HTTP ${res.status}${eb?.error?.message ? ': ' + eb.error.message : ''}`; }
+            catch (e2) { this._lastError = 'HTTP ' + res.status; }
+            console.error('[RimTown LLM]', provider, this._lastError);
+        };
 
         try {
             if (provider === 'anthropic') {
-                const res = await fetch(cfg.url, {
-                    method:'POST',
-                    headers:{ 'Content-Type':'application/json', 'x-api-key':apiKey, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
-                    body: JSON.stringify({ model:cfg.model, max_tokens:maxTokens, temperature, messages:[{role:'user',content:prompt}] }),
-                });
+                // 新款 Claude 不收 temperature、預設會先思考;小台詞用不到思考,先關掉,
+                // 模型不接受 thinking 欄位(400)就拿掉再送一次
+                const body = { model:cfg.model, max_tokens:Math.max(16, maxTokens), system: sys || undefined, messages:[{role:'user',content:prompt}] };
+                const headers = { 'Content-Type':'application/json', 'x-api-key':apiKey, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' };
+                let res = await fetch(cfg.url, { method:'POST', headers, body: JSON.stringify({ ...body, thinking: { type: 'disabled' } }) });
+                if (res.status === 400) {
+                    await recordErr(res);
+                    if (/thinking/i.test(this._lastError)) res = await fetch(cfg.url, { method:'POST', headers, body: JSON.stringify(body) });
+                }
                 if (res.status === 429) return '__RATE_LIMITED__';
-                if (!res.ok) return '__ERROR__';
+                if (!res.ok) { if (res.status !== 400) await recordErr(res); return '__ERROR__'; }
                 const data = await res.json();
-                console.log('[RimTown LLM] Anthropic response:', res.status, data.content ? 'OK' : 'EMPTY', data.error?.message || '');
-                return data.content?.[0]?.text || '';
+                console.log('[RimTown LLM] Anthropic response:', res.status, data.content ? 'OK' : 'EMPTY', data.stop_reason || '');
+                if (data.stop_reason === 'refusal') { this._lastError = 'refusal'; return '__ERROR__'; }
+                return (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('') || '';
             } else if (provider === 'gemini') {
                 const res = await fetch(cfg.url, {
                     method:'POST', headers:{'Content-Type':'application/json', 'x-goog-api-key':apiKey},
                     body: JSON.stringify({
+                        ...(sys ? { systemInstruction: { parts: [{ text: sys }] } } : {}),
                         contents:[{parts:[{text:prompt}]}],
                         generationConfig:{maxOutputTokens:maxTokens, temperature},
                     }),
                 });
                 if (res.status === 429) return '__RATE_LIMITED__';
-                if (!res.ok) return '__ERROR__';
+                if (!res.ok) { await recordErr(res); return '__ERROR__'; }
                 const data = await res.json();
                 console.log('[RimTown LLM] Gemini response:', res.status, data.candidates ? 'OK' : 'EMPTY', data.error?.message || '');
                 const parts = data.candidates?.[0]?.content?.parts || [];
@@ -2351,10 +2519,10 @@ class LLMClient {
                 const res = await fetch(cfg.url, {
                     method:'POST',
                     headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
-                    body: JSON.stringify({ model:cfg.model, max_completion_tokens:maxTokens, temperature, messages:[{role:'user',content:prompt}] }),
+                    body: JSON.stringify({ model:cfg.model, max_completion_tokens:maxTokens, temperature, messages:[...sysMsgs, {role:'user',content:prompt}] }),
                 });
                 if (res.status === 429) return '__RATE_LIMITED__';
-                if (!res.ok) return '__ERROR__';
+                if (!res.ok) { await recordErr(res); return '__ERROR__'; }
                 const data = await res.json();
                 if (data.base_resp && data.base_resp.status_code !== 0) {
                     console.error('[RimTown LLM] MiniMax API error:', data.base_resp.status_code, data.base_resp.status_msg);
@@ -2364,24 +2532,24 @@ class LLMClient {
                 console.log('[RimTown LLM] MiniMax response:', res.status, '| content length:', content.length);
                 return content;
             } else {
-                // OpenAI-compatible (openai, deepseek, groq, together)
+                // OpenAI-compatible (openai, deepseek, groq, together, custom)
+                const body = { messages:[...sysMsgs, {role:'user',content:prompt}], max_tokens:maxTokens, temperature };
+                if (cfg.model) body.model = cfg.model;
                 const res = await fetch(cfg.url, {
                     method:'POST',
                     headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
-                    body: JSON.stringify({ model:cfg.model, max_tokens:maxTokens, temperature, messages:[{role:'user',content:prompt}] }),
+                    body: JSON.stringify(body),
                 });
                 if (res.status === 429) return '__RATE_LIMITED__';
                 // v5.33.2 記錄真實錯誤(HTTP 狀態 + API 訊息),測試連線時能顯示原因而非籠統「檢查金鑰」
                 if (!res.ok) {
-                    try { const eb = await res.json(); this._lastError = `HTTP ${res.status}${eb?.error?.message ? ': ' + eb.error.message : ''}`; }
-                    catch (e2) { this._lastError = 'HTTP ' + res.status; }
-                    console.error('[RimTown LLM]', provider, this._lastError);
+                    await recordErr(res);
                     // v5.33.3 Groq 快取的模型被下架 → 清快取強制重查清單,換一個模型重試一次
                     if (provider === 'groq' && res.status === 404 && !model) {
                         this._groqModelCache = null;
                         try { localStorage.removeItem('rimtown_groq_model'); } catch (e3) {}
                         const fresh = await this._resolveGroqModel(apiKey, true);
-                        if (fresh && fresh !== cfg.model) return this._callProvider('groq', apiKey, fresh, prompt, maxTokens, temperature);
+                        if (fresh && fresh !== cfg.model) return this._callDirect('groq', apiKey, fresh, prompt, maxTokens, temperature, sys);
                     }
                     return '__ERROR__';
                 }
@@ -2393,6 +2561,7 @@ class LLMClient {
             }
         } catch (err) {
             console.error('[RimTown LLM] Network/fetch error:', err.message);
+            this._lastError = this._lastError || ('network: ' + err.message);
             return '__ERROR__';
         }
     }

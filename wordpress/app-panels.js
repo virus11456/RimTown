@@ -882,7 +882,7 @@ Object.assign(RimTownApp.prototype, {
             const total = p.forCount + p.againstCount; const pct = total ? Math.round(p.forCount / total * 100) : 0;
             const st = { open: t('待決定'), shelved: t('擱置中'), approved: t('進行中'), done: t('已完成'), failed: t('失敗'), rejected: t('已否決'), expired: t('已收回') }[p.status] || p.status;
             let html = `<div class="pp-card pp-${p.status}" data-pid="${p.id}">
-                <div class="pp-head"><span class="pp-id">${esc(p.id)}</span><span class="pp-kind">${p.icon} ${esc(p.kindLabel)}</span><span class="pp-status">${st}</span></div>
+                <div class="pp-head"><span class="pp-id">${esc(p.id)}</span><span class="pp-kind">${p.icon} ${esc(p.kindLabel)}</span>${p.llm ? `<span class="pp-llm" title="${t('這件案子的投票／裁決由 AI 依記憶與性格推理')}">🧠</span>` : ''}<span class="pp-status">${st}</span></div>
                 <div class="pp-title">${esc(p.title)}</div>
                 <div class="pp-by">${avatar(p.proposerId)}<span><b>${esc(t(p.proposerName))}</b> <small>${esc(p.proposerJob)}</small></span></div>
                 <div class="pp-desc">${esc(p.pitch || p.desc)}</div>`;
@@ -892,24 +892,22 @@ Object.assign(RimTownApp.prototype, {
             const whyText = (arr) => (arr || []).map(x => `${esc(x.why)} ×${x.n}`).join(t('、'));
             if ((p.forWhy && p.forWhy.length) || (p.againstWhy && p.againstWhy.length)) html += `<div class="pp-why">${p.forWhy?.length ? `<span>👍 ${whyText(p.forWhy)}</span>` : ''}${p.againstWhy?.length ? `<span>👎 ${whyText(p.againstWhy)}</span>` : ''}</div>`;
             if (mode === 'decide') {
-                html += `<div class="pp-deadline">${p.status === 'open' ? t('還有 {n} 天沒處理就依票數自動定案').replace('{n}', p.daysLeft) : t('擱置中，{n} 天後提案人會收回').replace('{n}', p.daysLeft)}</div>
-                <div class="pp-actions">
-                    <button class="pp-btn approve" data-action="proposal-decide" data-val="${p.id}:approve">${t('✅ 批准')}</button>
-                    <button class="pp-btn reject" data-action="proposal-decide" data-val="${p.id}:reject">${t('❌ 否決')}</button>
-                    ${p.status === 'open' ? `<button class="pp-btn shelve" data-action="proposal-decide" data-val="${p.id}:shelve">${t('📥 擱置')}</button>` : ''}
-                </div>`;
+                // v6.37.0 上帝視角:觀察者只看,投票兩天後由 NPC 鎮長裁決
+                html += `<div class="pp-deadline">${p.status === 'open' ? t('投票中，鎮長 {n} 天內裁決').replace('{n}', Math.max(1, p.daysLeft)) : t('鎮長先擱著，過幾天會重新拍板')}</div>`;
             } else if (p.status === 'approved') {
                 html += `<div class="pp-deadline">${p.affordable ? t('已批准，等待執行') : t('已批准，等公庫湊齊資源（{n}/7 天）').replace('{n}', p.waitDays)}</div>`;
             } else if (p.result) {
                 html += `<div class="pp-result">${esc(p.result)}${p.decidedBy === 'auto' ? ` · ${t('依票數自動定案')}` : ''}</div>`;
+                if (p.mayorName || p.mayorWhy) html += `<div class="pp-mayor">🏛️ ${t('鎮長')}${p.mayorName ? ' ' + esc(t(p.mayorName)) : ''}${t('：')}${esc(p.mayorWhy || '')}</div>`; // v6.37.0
                 if (p.outcomeText) html += `<div class="pp-outcome">📈 ${t('十天後')}${t('：')}${esc(p.outcomeText)}</div>`; // v6.30.0 成效
             }
             return html + '</div>';
         };
         let html = `<div class="proposals-panel">`;
         html += `<div class="pp-summary">${t('提出')} ${d.stats.made} · ${t('已批准')} ${d.stats.approved} · ${t('已否決')} ${d.stats.rejected} · ${t('已完成')} ${d.stats.done}</div>`;
-        html += `<h4 class="pp-h">📬 ${t('待你決定')} <span class="pp-count">${d.open.length}</span></h4>`;
-        if (!d.open.length) html += `<div class="ob-empty" style="margin:10px 4px"><span class="ob-empty-icon">☕</span>${t('現在沒有待決定的提案。村民會依鎮上的情況陸續提出，通常每天一兩件。')}</div>`;
+        html += `<div style="font-size:0.7rem;color:var(--text-muted);margin:0 0 6px">${t('村民自己提案、全鎮投票、鎮長裁決。你只看。')}</div>`; // v6.37.0
+        html += `<h4 class="pp-h">🗳️ ${t('投票中')} <span class="pp-count">${d.open.length}</span></h4>`;
+        if (!d.open.length) html += `<div class="ob-empty" style="margin:10px 4px"><span class="ob-empty-icon">☕</span>${t('現在沒有投票中的提案。村民會依鎮上的情況陸續提出，通常每天一兩件。')}</div>`;
         else d.open.forEach(p => { html += card(p, 'decide'); });
         if (d.shelved.length) { html += `<h4 class="pp-h">📥 ${t('擱置中')} <span class="pp-count">${d.shelved.length}</span></h4>`; d.shelved.forEach(p => { html += card(p, 'decide'); }); }
         if (d.active.length) { html += `<h4 class="pp-h">🔨 ${t('進行中')}</h4>`; d.active.forEach(p => { html += card(p, 'view'); }); }
@@ -1043,13 +1041,75 @@ Object.assign(RimTownApp.prototype, {
         // --- AI Settings Section ---
         const aiConnected = !!(this.llmClient && this.world?.conversationEngine?.llm);
         const isServerAI = this.llmClient?.provider === 'server';
-        const aiLabel = isServerAI ? t('AI:小鎮內建') : (aiConnected ? 'AI:' + this.llmClient.provider : t('AI:未連接'));
+        const byokActive = this._byokGet?.() || null; // v6.36.0 玩家自備 AI
+        const aiLabel = isServerAI ? t('AI:小鎮內建') : (aiConnected ? t('AI:自備') + ' ' + this._byokLabel(this.llmClient.provider) : t('AI:未連接'));
         html += t('<div class="econ-section"><h3>🤖 AI 語言模型</h3>');
-        html += `<div style="margin-bottom:8px"><span class="llm-status ${aiConnected ? 'connected' : 'disconnected'}">${aiLabel}</span></div>`;
-        // v5.65.0 AI 全面內建:金鑰由伺服器統一保管,玩家端沒有任何可填的金鑰欄位
-        html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${isServerAI
+        html += `<div style="margin-bottom:8px"><span class="llm-status ${aiConnected ? 'connected' : 'disconnected'}${byokActive && aiConnected ? ' byok' : ''}">${aiLabel}</span></div>`;
+        // v5.65.0 AI 全面內建:金鑰由伺服器統一保管;v6.36.0 玩家可改填自己的金鑰(只存本機)
+        html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${byokActive && aiConnected
+            ? t('🔑 目前用你自己的金鑰與額度：村民對話、行程、反思全部直接從這個瀏覽器連到該服務，小鎮伺服器不經手，也不受每日 100 則限制。') + (this.llmClient.model ? ' ' + t('模型：') + this._escapeHtml(this.llmClient.model) : '')
+            : isServerAI
             ? t('🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 100 則）') + ' ' + t('所有 AI 金鑰由小鎮伺服器統一保管，你不需要、也不會看到任何金鑰欄位。') + ' ' + t('智慧分流：你與村民的對話、劇情名場面優先走 Groq 免費額度；行程／反思／背景對話走付費主渠道；任一邊故障自動切到另一邊。')
             : t('此站沒有內建 AI 代理端點，村民對話走內建模擬')}</div>`;
+        // v6.36.0 自備 AI(進階):Claude / OpenAI / Gemini / 自訂 OpenAI 相容端點;表單值在重繪時保留
+        {
+            const g = (id) => document.getElementById(id);
+            const cur = byokActive || {};
+            const prov = g('settings-byok-provider') ? g('settings-byok-provider').value : (cur.provider || 'server');
+            const key = g('settings-byok-key') ? g('settings-byok-key').value : (cur.key || '');
+            const model = g('settings-byok-model') ? g('settings-byok-model').value : (cur.model || '');
+            const url = g('settings-byok-url') ? g('settings-byok-url').value : (cur.baseUrl || '');
+            const sel = (v) => prov === v ? ' selected' : '';
+            const inp = 'width:100%;box-sizing:border-box;padding:7px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem;font-family:inherit';
+            const defModel = (typeof LLMClient !== 'undefined' && LLMClient.defaultModel) ? LLMClient.defaultModel(prov) : '';
+            html += `<details class="byok-box"${prov !== 'server' ? ' open' : ''} style="margin-bottom:8px;border:1px dashed var(--border);border-radius:6px;padding:6px 8px">
+            <summary style="cursor:pointer;font-size:0.8rem;color:var(--text-secondary)">🔑 ${t('自備 AI（進階）')}${byokActive ? ' <span style="color:var(--positive)">●</span>' : ''}</summary>
+            <div style="font-size:0.7rem;color:var(--text-muted);margin:6px 0 8px">${t('把你自己的 Claude、OpenAI 或 Gemini 金鑰填在這裡，村民就改用你的金鑰與額度。金鑰只存在這台裝置的瀏覽器，不會上傳、不進存檔、也不會送到小鎮伺服器；清除瀏覽器資料或換裝置要重填。')}</div>
+            <div class="setting-group" style="margin-bottom:6px">
+                <label for="settings-byok-provider" style="font-size:0.78rem;color:var(--text-secondary)">${t('AI 來源')}</label>
+                <select id="settings-byok-provider" style="${inp}" onchange="(function(s){var c=s.value!=='custom';var u=document.getElementById('settings-byok-url-row');if(u)u.style.display=c?'none':'';var m=document.getElementById('settings-byok-model');if(m&&typeof LLMClient!=='undefined'&&LLMClient.defaultModel)m.placeholder=LLMClient.defaultModel(s.value)||'';var k=document.getElementById('settings-byok-fields');if(k)k.style.display=s.value==='server'?'none':'';})(this)">
+                    <option value="server"${sel('server')}>${t('小鎮內建（預設，免金鑰）')}</option>
+                    <option value="anthropic"${sel('anthropic')}>Claude (Anthropic)</option>
+                    <option value="openai"${sel('openai')}>GPT (OpenAI)</option>
+                    <option value="gemini"${sel('gemini')}>Gemini (Google)</option>
+                    <option value="custom"${sel('custom')}>${t('自訂 OpenAI 相容端點')}</option>
+                </select>
+            </div>
+            <div id="settings-byok-fields" style="${prov === 'server' ? 'display:none' : ''}">
+                <div class="setting-group" style="margin-bottom:6px">
+                    <label for="settings-byok-key" style="font-size:0.78rem;color:var(--text-secondary)">${t('API 金鑰')}</label>
+                    <div style="display:flex;gap:6px;align-items:center">
+                        <input type="password" id="settings-byok-key" value="${this._escapeHtml(key)}" placeholder="sk-…" autocomplete="off" autocapitalize="off" spellcheck="false" style="${inp};flex:1">
+                        <button type="button" class="trade-btn" style="padding:6px 10px;flex:none" aria-label="${t('顯示或隱藏金鑰')}" onclick="var k=document.getElementById('settings-byok-key');if(k){k.type=k.type==='password'?'text':'password';this.textContent=k.type==='password'?'👁':'🙈';}">👁</button>
+                    </div>
+                </div>
+                <div class="setting-group" style="margin-bottom:6px">
+                    <label for="settings-byok-model" style="font-size:0.78rem;color:var(--text-secondary)">${t('模型（留空用預設）')}</label>
+                    <input type="text" id="settings-byok-model" value="${this._escapeHtml(model)}" placeholder="${this._escapeHtml(defModel)}" autocomplete="off" autocapitalize="off" spellcheck="false" style="${inp}">
+                </div>
+                <div class="setting-group" id="settings-byok-url-row" style="margin-bottom:6px;${prov === 'custom' ? '' : 'display:none'}">
+                    <label for="settings-byok-url" style="font-size:0.78rem;color:var(--text-secondary)">${t('基底網址（例如 https://主機/v1）')}</label>
+                    <input type="url" id="settings-byok-url" value="${this._escapeHtml(url)}" placeholder="https://api.example.com/v1" autocomplete="off" autocapitalize="off" spellcheck="false" style="${inp}">
+                </div>
+                <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:6px">${t('預設模型：Claude 用 claude-haiku-5-5、GPT 用 gpt-4o-mini、Gemini 用 gemini-2.5-flash（都是便宜款）。費用照各家牌價從你的帳戶扣；瀏覽器直連要該服務允許跨網域請求（Claude、OpenAI、Gemini 都可以）。')}</div>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                <button type="button" class="trade-btn" data-action="byok-test" style="padding:6px 12px">🔌 ${t('測試連線')}</button>
+                <button type="button" class="trade-btn btn-accent" data-action="byok-save" style="padding:6px 12px">💾 ${t('儲存並啟用')}</button>
+                ${byokActive ? `<button type="button" class="trade-btn" data-action="byok-clear" style="padding:6px 12px">🗑️ ${t('清除金鑰')}</button>` : ''}
+            </div>
+            <div id="settings-byok-result" role="status" aria-live="polite" style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;min-height:1em">${this._byokLastMsg || ''}</div>
+            </details>`;
+        }
+        // v6.39.0 完整智能體模式
+        {
+            let fa = null; try { fa = localStorage.getItem('rimtown_full_agent'); } catch (e) {}
+            const on = this._fullAgentOn ? this._fullAgentOn() : false; const auto = fa !== '1' && fa !== '0';
+            html += `<div class="setting-group" style="margin-bottom:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px">
+            <label style="font-size:0.82rem;color:var(--text-primary);display:flex;align-items:center;gap:8px;font-weight:700"><input type="checkbox" id="settings-fullagent" ${on ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_full_agent',this.checked?'1':'0')}catch(e){};window.rimtownApp?._applyFullAgent?.()"> 🧠 ${t('完整智能體模式')}${auto ? ` <span style="font-weight:normal;font-size:0.68rem;color:var(--text-muted)">${on ? t('（自備金鑰，預設開）') : t('（小鎮內建 AI，預設關）')}</span>` : ''}</label>
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">${t('開啟後，村民投票、要不要提案與提什麼、鎮長批准與否，都由 AI 依各自的記憶、性格、交情與鎮況推理並附理由；規則版只在 AI 失敗時墊底。每件提案約多 2～4 次 AI 呼叫、每天多 1 次。')}${!byokActive ? ' ' + t('走小鎮內建 AI 的話，每日 100 則很快就會用完；建議搭配自備金鑰。') : ''}</div>
+            </div>`;
+        }
         // v5.73.0 AI 對話語言:跟隨介面 / 繁體中文 / English(村民台詞、行程、反思、日報)
         {
             const existingDl = document.getElementById('settings-tab-dialoglang');
@@ -1144,9 +1204,56 @@ Object.assign(RimTownApp.prototype, {
         container.innerHTML = html || t('<p class="muted-text" style="padding:20px">尚無訊息...</p>');
     },
 
+    // v6.38.0 事件卡(上帝視角):手牌、打出、反應追蹤
+    _renderEventCards() {
+        const d = this.state?.eventCards; if (!d) return '';
+        const esc = (x) => this._escapeHtml(String(x ?? ''));
+        const cats = (typeof EVENT_CARD_CATS !== 'undefined') ? EVENT_CARD_CATS : {};
+        const filter = this._ecFilter || 'all';
+        let html = `<div class="ec-panel">
+            <div class="ec-head"><h4>🃏 ${t('事件卡')}</h4><span class="ec-left">${t('今天還能打')} ${d.todayLeft}/${d.perDay}</span></div>
+            <div class="ec-hint">${t('你是上帝視角：不投錢、不下令，只能往小鎮丟事件，然後看村民怎麼反應、怎麼提案、鎮上怎麼變。點卡看說明，按「打出」才會發生；同一張打過要等冷卻。')}</div>
+            <div class="ec-filters"><button class="${filter === 'all' ? 'active' : ''}" data-action="event-filter" data-val="all">${t('全部')}</button>${Object.entries(cats).map(([k, c]) => `<button class="${filter === k ? 'active' : ''}" data-action="event-filter" data-val="${k}">${c.icon} ${t(c.label)}</button>`).join('')}<button class="ec-random" data-action="event-random">🎲 ${t('隨機一張')}</button></div>
+            <div class="ec-grid">`;
+        for (const c of d.hand) {
+            if (filter !== 'all' && c.cat !== filter) continue;
+            const open = this._ecOpen === c.id; const blocked = c.left > 0 || c.dailyFull;
+            html += `<div class="ec-card ec-${c.cat}${open ? ' open' : ''}${blocked ? ' blocked' : ''}" data-action="event-open" data-val="${c.id}" role="button" tabindex="0" aria-expanded="${open}">
+                <div class="ec-icon">${c.icon}</div><div class="ec-name">${esc(c.name)}</div>
+                <div class="ec-cat">${c.catIcon} ${esc(c.catLabel)}</div>
+                ${c.left > 0 ? `<div class="ec-cd">⏳ ${c.left}${t('天')}</div>` : ''}
+            </div>`;
+        }
+        html += '</div>';
+        const cur = d.hand.find(c => c.id === this._ecOpen);
+        if (cur) {
+            const blocked = cur.left > 0 || cur.dailyFull;
+            html += `<div class="ec-detail ec-${cur.cat}">
+                <div class="ec-detail-head"><span class="ec-icon">${cur.icon}</span><div><div class="ec-name">${esc(cur.name)}</div><div class="ec-cat">${cur.catIcon} ${esc(cur.catLabel)} · ${t('冷卻')} ${cur.cd} ${t('天')}</div></div></div>
+                <div class="ec-desc">${esc(cur.desc)}</div>
+                <div class="ec-effect">⚡ ${esc(cur.effect)}</div>
+                <div class="ec-actions"><button class="ec-play" data-action="event-play" data-val="${cur.id}" ${blocked ? 'disabled' : ''}>🃏 ${t('打出')}</button><span class="ec-note">${cur.left > 0 ? t('冷卻中，還要 {n} 天').replace('{n}', cur.left) : cur.dailyFull ? t('今天的兩張已經打完，明天再來') : t('打出後鏡頭會飛到現場，村民會依性格各自反應')}</span></div>
+            </div>`;
+        }
+        if (d.played?.length) {
+            html += `<h4 class="ec-h">📼 ${t('反應追蹤')}</h4>`;
+            for (const e of d.played) {
+                html += `<div class="ec-track ec-${e.cat}">
+                    <div class="ec-track-head"><span>${e.icon} <b>${esc(e.name)}</b></span><span class="ec-when">${e.daysAgo === 0 ? t('今天') : t('{n} 天前').replace('{n}', e.daysAgo)}</span></div>
+                    <div class="ec-track-detail">${esc(e.detail)}</div>
+                    ${e.reactions.length ? `<div class="ec-reacts">${e.reactions.map(r => `<div class="ec-react"><b data-action="select-agent" data-val="${r.agentId}">${esc(r.name)}</b>${t('：')}${esc(r.text)}</div>`).join('')}</div>` : `<div class="ec-reacts muted">${t('村民還在消化這件事…')}</div>`}
+                    ${e.proposals.length ? `<div class="ec-props">📜 ${t('事後三天內的提案')}${t('：')}${e.proposals.map(p => `<span class="ec-prop">${esc(p.id)} ${esc(p.title || '')}${p.proposer ? `${t('（')}${esc(p.proposer)}${t('）')}` : ''}</span>`).join('')}</div>` : ''}
+                    ${e.outcomeText ? `<div class="ec-outcome">📈 ${t('七天後')}${t('：')}${esc(e.outcomeText)}</div>` : ''}
+                </div>`;
+            }
+        }
+        return html + '</div>';
+    },
+
     renderEvents(container) {
         if (!this.state) return;
         let html = '';
+        html += this._renderEventCards(); // v6.38.0
 
         // --- Election ---
         const election = this.state.election;

@@ -696,7 +696,7 @@ class Town3D extends PixelTileMap {
         if (!this.renderer || !this.grid) return;
         this._sceneSrc = this.grid; this._sceneSeason = this.season || '';
         this._static.traverse((o) => { if (o.isMesh && o.geometry && !Object.values(this._geos).includes(o.geometry)) o.geometry.dispose(); });
-        this._static.clear(); this._waterMeshes = []; this._winMats = []; this._glowMats = []; this._boatMeshes = null; this._flame = null; this._chimneyTops = null;
+        this._static.clear(); this._waterMeshes = []; this._winMats = []; this._glowMats = []; this._boatMeshes = null; this._flame = null; this._chimneyTops = null; this._coach = null; this._coachHome = null; this._caravanAnim = null; // v6.34.1 換圖時馬車狀態歸零
         this._buildTerrain();
         this._buildVegetation();
         this._buildBuildings();
@@ -806,7 +806,8 @@ class Town3D extends PixelTileMap {
         if (wt === 'storm' && !(this._flash > 0.05) && Math.random() < 0.008) this._flash = 1;
         if (this._flash > 0.01) { if (!L.white) L.white = new THREE.Color('#FFFFFF'); sky.lerp(L.white, this._flash * 0.55); this._flash *= 0.78; } else this._flash = 0;
         this.scene.background.copy(sky); this.scene.fog.color.copy(sky);
-        this.scene.fog.density = (wt === 'fog' ? 0.016 : wt === 'rain' || wt === 'storm' ? 0.009 : 0.006) + night * 0.002;
+        // v6.36.0 天氣不再靠整片霧白表現:霧天／雨天的距離霧跟晴天一樣淡,霧由低而密的灰雲、雨雪由粒子呈現
+        this.scene.fog.density = 0.005 + night * 0.002;
         if (night < 1) {
             this.sun.position.set(cx + Math.cos(sunAng) * 90, Math.max(8, Math.sin(sunAng) * 90), cz + 40);
         } else {
@@ -992,7 +993,7 @@ class Town3D extends PixelTileMap {
             const pos = this.agentPositions[b.agentId]; const m = this._agentMeshes[b.agentId];
             if (!pos || !m || !m.visible) continue;
             shownBubble.add(b.agentId);
-            const text = String(b.text || '').substring(0, 40);
+            const full = String(b.text || ''); const text = full.length > 56 ? full.substring(0, 55) + '…' : full; // v6.36.0 截斷補省略號
             const el = this._ov('bb:' + b.agentId, 't3d-bubble', `<b>${this._esc(t3(b.speaker || ''))}</b>${this._esc(t3(text))}`);
             this._place(el, pos.x / TILE, m.position.y + 2.5, pos.y / TILE);
         }
@@ -1028,8 +1029,8 @@ class Town3D extends PixelTileMap {
             return { mesh: m, cap: n, list: [] };
         };
         this._fx = {
-            rain: mk(this.lowQuality ? 500 : 1400, new THREE.LineBasicMaterial({ color: new THREE.Color('#BFD6F2'), transparent: true, opacity: 0.45 }), true),
-            snow: mk(this.lowQuality ? 400 : 1000, new THREE.PointsMaterial({ color: new THREE.Color('#FFFFFF'), size: 0.18, transparent: true, opacity: 0.9, depthWrite: false })),
+            rain: mk(this.lowQuality ? 700 : 2200, new THREE.LineBasicMaterial({ color: new THREE.Color('#9FB8D8'), transparent: true, opacity: 0.7 }), true), // v6.36.0 雨更明顯:更多、更深、更長
+            snow: mk(this.lowQuality ? 500 : 1400, new THREE.PointsMaterial({ color: new THREE.Color('#FFFFFF'), size: 0.28, transparent: true, opacity: 0.95, depthWrite: false })),
             smoke: mk(300, new THREE.PointsMaterial({ color: new THREE.Color('#C9C4BC'), size: 0.5, transparent: true, opacity: 0.35, depthWrite: false })),
             firefly: mk(200, new THREE.PointsMaterial({ color: new THREE.Color('#D9FF7A'), size: 0.22, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending })),
             fest: mk(400, new THREE.PointsMaterial({ color: new THREE.Color('#FFD54F'), size: 0.22, transparent: true, opacity: 0.95, depthWrite: false, vertexColors: false })),
@@ -1049,15 +1050,31 @@ class Town3D extends PixelTileMap {
         this._sunDisc = disc('#FFE9A8', 9); this._moonDisc = disc('#F2F4F8', 6);
         // 雲:全部方塊放在一個 InstancedMesh 裡(一次繪製呼叫),每朵雲記自己的位置與速度,每幀重算矩陣
         const n = this.lowQuality ? 4 : this.isMobile ? 6 : 9; this._clouds = []; const parts = [];
-        this._cloudMat = new THREE.MeshLambertMaterial({ color: new THREE.Color('#FFFFFF'), transparent: true, opacity: 0.88 });
+        this._cloudMat = new THREE.MeshLambertMaterial({ color: new THREE.Color('#FFFFFF'), emissive: new THREE.Color('#FFFFFF'), emissiveIntensity: 0.35, transparent: true, opacity: 0.92 }); // 側面不要灰,看起來才蓬
+        // v6.34.1 一朵一朵的棉花雲:一顆大方塊 + 周圍 4–6 顆小方塊 + 頂上 1–2 顆,底部切齊、頂部蓬;每朵約 7–10 格寬、彼此至少隔 14 格
+        // 高度 13–16(屋頂上方一點)、每朵 5–7 格:俯瞰(鏡頭 40–93)看到一朵朵小雲帶著影子飄過;鏡頭降到雲層附近或以下就淡掉只留影子
+        const placed = [];
         for (let i = 0; i < n; i++) {
-            const k = 3 + Math.floor(Math.random() * 3), s = 2 + Math.random() * 3;
-            const g = { x: Math.random() * (this.cols + 30) - 15, y: 19 + Math.random() * 6, z: Math.random() * this.rows, v: 0.004 + Math.random() * 0.007, parts: [] };
-            for (let j = 0; j < k; j++) { const sj = s * (0.7 + Math.random() * 0.6); g.parts.push({ ox: (j - (k - 1) / 2) * s * 0.9, oy: (Math.random() - 0.5) * 0.5, oz: (Math.random() - 0.5) * 1.6, sx: sj * 1.4, sy: sj * 0.42, sz: sj * 0.9 }); parts.push(g); }
+            let gx = 0, gz = 0;
+            for (let tries = 0; tries < 20; tries++) { gx = Math.random() * (this.cols + 30) - 15; gz = Math.random() * this.rows; if (placed.every(p => Math.hypot(p[0] - gx, p[1] - gz) > 12)) break; }
+            placed.push([gx, gz]);
+            const S = 0.62 + Math.random() * 0.3; // 整朵的尺度(每朵約 5–7 格)
+            const g = { x: gx, y: 13 + Math.random() * 3, z: gz, v: 0.004 + Math.random() * 0.006, parts: [] };
+            const puff = (ox, oz, w, h, d, lift) => g.parts.push({ ox: ox * S, oz: oz * S, oy: (h * S) / 2 + (lift || 0) * S, sx: w * S, sy: h * S, sz: d * S });
+            puff(0, 0, 3.4, 1.7, 2.6, 0);                                   // 主體
+            const k = 4 + Math.floor(Math.random() * 3);
+            for (let j = 0; j < k; j++) { const a = j / k * Math.PI * 2 + Math.random() * 0.6, r = 1.6 + Math.random() * 0.9, w = 1.4 + Math.random() * 1.0; puff(Math.cos(a) * r, Math.sin(a) * r * 0.75, w, 0.8 + Math.random() * 0.5, w * 0.8, 0); }
+            puff((Math.random() - 0.5) * 1.2, (Math.random() - 0.5) * 0.8, 1.9, 1.1, 1.5, 1.1); // 頂上的蓬
+            if (Math.random() < 0.6) puff((Math.random() - 0.5) * 2.4, (Math.random() - 0.5) * 1.2, 1.2, 0.8, 1.0, 1.6);
+            for (const p of g.parts) parts.push(g);
             this._clouds.push(g);
         }
         this._cloudMesh = new THREE.InstancedMesh(this._geo('box', () => new THREE.BoxGeometry(1, 1, 1)), this._cloudMat, parts.length);
         this._cloudMesh.frustumCulled = false; this._cloudMesh.castShadow = false; this._cloudMesh.receiveShadow = false; this.scene.add(this._cloudMesh);
+        // 地面雲影:同樣一個 InstancedMesh,扁平深色方塊貼地,白天才看得到
+        this._cloudShadowMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#1E2A3A'), transparent: true, opacity: 0.12, depthWrite: false });
+        this._cloudShadow = new THREE.InstancedMesh(this._geo('box', () => new THREE.BoxGeometry(1, 1, 1)), this._cloudShadowMat, parts.length);
+        this._cloudShadow.frustumCulled = false; this._cloudShadow.renderOrder = 1; this.scene.add(this._cloudShadow);
         this._cloudM4 = new THREE.Matrix4(); this._cloudQ = new THREE.Quaternion(); this._cloudP = new THREE.Vector3(); this._cloudS = new THREE.Vector3();
         if (!this.lowQuality) {
             const nb = 7; const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(nb * 4 * 3), 3));
@@ -1071,10 +1088,23 @@ class Town3D extends PixelTileMap {
         const bad = wt === 'rain' || wt === 'storm' || wt === 'snow' || wt === 'blizzard';
         if (this._clouds) {
             const c = this._cloudMat.color.setRGB(1, 1, 1); c.lerp(this._lc?.skyNight || c, night * 0.75); if (bad || wt === 'fog') c.lerp(this._lc?.rain || c, 0.6);
-            this._cloudMat.opacity = wt === 'fog' ? 0.3 : bad ? 0.95 : 0.88;
+            // v6.34.1 雲本體只在鏡頭明顯高於雲層時顯示(俯瞰看一朵朵小雲帶影子飄過);鏡頭降到 28 以下開始淡、22 以下只剩雲影,不會再有整片霧白
+            const camY = this.camera ? this.camera.position.y : 0; const camFade = clamp((camY - 22) / 6, 0, 1);
+            this._cloudMat.opacity = (wt === 'fog' || bad ? 0.96 : 0.9) * camFade; this._cloudMesh.visible = camFade > 0.02;
+            this._cloudMat.emissiveIntensity = (wt === 'fog' || bad) ? 0.08 : 0.35; // 陰雨霧的雲不發亮,才像灰雲
+            // v6.36.0 霧天／陰雨雪:雲放大 1.4 倍、壓低 2 格,天空被一朵朵灰雲蓋住,地面不再霧白
+            const cs = (wt === 'fog') ? 1.45 : bad ? 1.3 : 1, cy = (wt === 'fog') ? -2 : bad ? -1 : 0;
+            const day = 1 - night; this._cloudShadowMat.opacity = 0.14 * day * (bad ? 0.4 : wt === 'fog' ? 0.3 : 1); this._cloudShadow.visible = this._cloudShadowMat.opacity > 0.01;
             const span = this.cols + 30, sp = wt === 'storm' || wt === 'blizzard' ? 3 : 1; let idx = 0;
-            for (const g of this._clouds) { g.x += g.v * sp; if (g.x > this.cols + 15) g.x -= span; for (const p of g.parts) { this._cloudM4.compose(this._cloudP.set(g.x + p.ox, g.y + p.oy, g.z + p.oz), this._cloudQ, this._cloudS.set(p.sx, p.sy, p.sz)); this._cloudMesh.setMatrixAt(idx++, this._cloudM4); } }
-            this._cloudMesh.instanceMatrix.needsUpdate = true;
+            for (const g of this._clouds) {
+                g.x += g.v * sp; if (g.x > this.cols + 15) g.x -= span;
+                for (const p of g.parts) {
+                    this._cloudM4.compose(this._cloudP.set(g.x + p.ox * cs, g.y + cy + p.oy * cs, g.z + p.oz * cs), this._cloudQ, this._cloudS.set(p.sx * cs, p.sy * cs, p.sz * cs)); this._cloudMesh.setMatrixAt(idx, this._cloudM4);
+                    this._cloudM4.compose(this._cloudP.set(g.x + p.ox * cs + 3, 0.04, g.z + p.oz * cs + 2), this._cloudQ, this._cloudS.set(p.sx * 0.9 * cs, 0.02, p.sz * 0.9 * cs)); this._cloudShadow.setMatrixAt(idx, this._cloudM4); // 雲影往太陽反方向偏一點
+                    idx++;
+                }
+            }
+            this._cloudMesh.instanceMatrix.needsUpdate = true; this._cloudShadow.instanceMatrix.needsUpdate = true;
         }
         if (this._birds) {
             const b = this._birds, u = b.userData; const show = night < 0.35 && !bad && wt !== 'fog'; b.visible = show;
@@ -1098,8 +1128,8 @@ class Town3D extends PixelTileMap {
         const wt = this.weatherType || 'clear';
         const heavy = wt === 'storm' || wt === 'blizzard';
         const q = this.lowQuality ? 0.45 : this.isMobile ? 0.6 : 1; // v6.28.0
-        if (wt === 'rain' || wt === 'storm') for (let i = 0; i < Math.round((heavy ? 26 : 14) * q); i++) this._fxSpawn('rain', { x: tx + (Math.random() - 0.5) * R * 2, y: 10 + Math.random() * 8, z: tz + (Math.random() - 0.5) * R * 2, vx: heavy ? 0.12 : 0.03, vy: -0.55 - Math.random() * 0.2, vz: 0, life: 60 });
-        if (wt === 'snow' || wt === 'blizzard') for (let i = 0; i < Math.round((heavy ? 12 : 5) * q); i++) this._fxSpawn('snow', { x: tx + (Math.random() - 0.5) * R * 2, y: 9 + Math.random() * 6, z: tz + (Math.random() - 0.5) * R * 2, vx: heavy ? 0.06 : 0.01, vy: -0.06 - Math.random() * 0.04, vz: 0, life: 400, ph: Math.random() * 6.28 });
+        if (wt === 'rain' || wt === 'storm') for (let i = 0; i < Math.round((heavy ? 40 : 24) * q); i++) this._fxSpawn('rain', { x: tx + (Math.random() - 0.5) * R * 2, y: 10 + Math.random() * 8, z: tz + (Math.random() - 0.5) * R * 2, vx: heavy ? 0.12 : 0.03, vy: -0.55 - Math.random() * 0.2, vz: 0, life: 60 });
+        if (wt === 'snow' || wt === 'blizzard') for (let i = 0; i < Math.round((heavy ? 18 : 9) * q); i++) this._fxSpawn('snow', { x: tx + (Math.random() - 0.5) * R * 2, y: 9 + Math.random() * 6, z: tz + (Math.random() - 0.5) * R * 2, vx: heavy ? 0.06 : 0.01, vy: -0.06 - Math.random() * 0.04, vz: 0, life: 400, ph: Math.random() * 6.28 });
         if (frame % 10 === 0 && this._chimneyTops) for (const c of this._chimneyTops) if (Math.random() < 0.6) this._fxSpawn('smoke', { x: c.x + (Math.random() - 0.5) * 0.2, y: c.y, z: c.z + (Math.random() - 0.5) * 0.2, vx: (Math.random() - 0.5) * 0.01 + 0.012, vy: 0.025 + Math.random() * 0.012, vz: (Math.random() - 0.5) * 0.01, life: 90 + Math.random() * 40, maxLife: 130 });
         if (night > 0.6 && frame % 6 === 0) for (const z of Object.values(this.natureZones)) if (Math.random() < 0.25 * q) this._fxSpawn('firefly', { x: z.x + Math.random() * z.w, y: 0.4 + Math.random() * 1.4, z: z.y + Math.random() * z.h, vx: (Math.random() - 0.5) * 0.02, vy: (Math.random() - 0.5) * 0.01, vz: (Math.random() - 0.5) * 0.02, life: 120 + Math.random() * 100, ph: Math.random() * 6.28 });
         if (this.season === '秋季' && frame % 12 === 0) { const fz = this.natureZones['forest']; if (fz && Math.random() < 0.6) this._fxSpawn('leaf', { x: fz.x + Math.random() * fz.w, y: 2.5 + Math.random(), z: fz.y + Math.random() * fz.h, vx: 0.015 + Math.random() * 0.01, vy: -0.018, vz: 0.01, life: 160, ph: Math.random() * 6.28 }); }
@@ -1114,7 +1144,7 @@ class Town3D extends PixelTileMap {
                 if (type === 'firefly') { p.vx += (Math.random() - 0.5) * 0.004; p.vz += (Math.random() - 0.5) * 0.004; p.vx *= 0.97; p.vz *= 0.97; }
                 if (type === 'fest') { p.x += Math.sin(frame * 0.1 + p.ph) * 0.02; }
                 if (p.life <= 0 || p.y < -0.3 || (type === 'smoke' && p.y > 12)) { fx.list.splice(i, 1); continue; }
-                if (type === 'rain') { arr[n * 6] = p.x; arr[n * 6 + 1] = p.y; arr[n * 6 + 2] = p.z; arr[n * 6 + 3] = p.x - p.vx * 1.2; arr[n * 6 + 4] = p.y - p.vy * 1.2; arr[n * 6 + 5] = p.z; }
+                if (type === 'rain') { arr[n * 6] = p.x; arr[n * 6 + 1] = p.y; arr[n * 6 + 2] = p.z; arr[n * 6 + 3] = p.x - p.vx * 2.2; arr[n * 6 + 4] = p.y - p.vy * 2.2; arr[n * 6 + 5] = p.z; }
                 else { arr[n * 3] = p.x; arr[n * 3 + 1] = p.y; arr[n * 3 + 2] = p.z; }
                 n++;
             }
@@ -1266,27 +1296,21 @@ class Town3D extends PixelTileMap {
         return out;
     }
     // 商隊進城動畫(showCaravan 由 app 呼叫)
+    // v6.34.1 只有一台馬車:之前另外造一台複製品從站裡開到廣場再消失,站裡那台還停著,動畫期間鎮上有兩台。
+    // 現在讓站裡那台自己動:從靠近馬車站的地圖邊緣開進來、停回站裡原位(帶著「某某的商隊」小標籤)。
     _updateCaravan() {
-        const an = this._caravanAnim;
-        if (!an) { if (this._caravanMesh) this._caravanMesh.visible = false; return; }
+        const an = this._caravanAnim, g = this._coach;
+        if (this._caravanMesh) { this.scene.remove(this._caravanMesh); this._caravanMesh = null; } // 舊的複製品(讀檔／重建殘留)
+        if (!an || !g) { if (g && this._coachHome) { g.position.x = this._coachHome.x; g.position.z = this._coachHome.z; g.rotation.y = 0; this._coachHome = null; } this._caravanLabel = null; if (an && !g) this._caravanAnim = null; return; }
         const DUR = 520, el = this.animFrame - an.t0;
-        if (el > DUR) { this._caravanAnim = null; if (this._caravanMesh) this._caravanMesh.visible = false; return; }
-        if (!this._caravanMesh) {
-            const g = new THREE.Group(); this.scene.add(g); this._caravanMesh = g;
-            this._box(1.6, 1.0, 1.0, '#7A5236', 0, 0.85, 0, g); this._box(1.7, 0.1, 1.1, '#C9A86A', 0, 1.4, 0, g);
-            this._box(0.5, 0.35, 0.5, '#A1887F', -0.3, 1.6, 0, g); this._box(0.5, 0.3, 0.4, '#8D6E63', 0.35, 1.58, 0.1, g);
-            for (const [wx, wz] of [[-0.55, 0.55], [0.55, 0.55], [-0.55, -0.55], [0.55, -0.55]]) { const w = this._cyl(0.28, 0.28, 0.12, 8, '#3A2A1A', wx, 0.28, wz, g); w.rotation.x = Math.PI / 2; }
-            this._box(1.1, 0.6, 0.5, '#8A6A4A', -1.7, 0.75, 0, g); this._box(0.4, 0.5, 0.4, '#8A6A4A', -2.35, 1.0, 0, g);
-            for (const lx of [-1.4, -2.0]) for (const lz of [-0.18, 0.18]) this._box(0.12, 0.5, 0.12, '#6A4A2A', lx, 0.25, lz, g);
-        }
-        const cs = this.coachStation || { x: this.cols - 7 };
-        const startX = cs.x + 2, endX = 41, z = 21.5;
-        const p = Math.min(1, el / (DUR * 0.55)), ease = 1 - Math.pow(1 - p, 2);
-        const x = startX + (endX - startX) * ease;
-        const g = this._caravanMesh; g.visible = el < DUR * 0.9;
-        g.position.set(x, this.groundY(x, z) + (p < 1 ? Math.abs(Math.sin(el / 4)) * 0.05 : 0), z);
-        g.rotation.y = endX < startX ? 0 : Math.PI;
-        this._caravanLabel = an.label && g.visible ? { key: 'carav', x, y: 2.6, z, cls: 't3d-label t3d-mini', html: `<span class="t3d-name">${this._esc(an.label)}</span>` } : null;
+        if (!this._coachHome) this._coachHome = { x: g.position.x, z: g.position.z };
+        const home = this._coachHome;
+        if (el > DUR) { this._caravanAnim = null; g.position.x = home.x; g.position.z = home.z; g.rotation.y = 0; this._coachHome = null; this._caravanLabel = null; return; }
+        const fromRight = home.x > this.cols / 2; const startX = fromRight ? this.cols + 5 : -5;
+        const p = Math.min(1, el / (DUR * 0.6)), ease = 1 - Math.pow(1 - p, 2);
+        const x = startX + (home.x - startX) * ease;
+        g.position.x = x; g.position.z = home.z; g.rotation.y = fromRight ? 0 : Math.PI; // 馬頭朝前進方向(站在右邊就往左開)
+        this._caravanLabel = an.label ? { key: 'carav', x, y: 2.6, z: home.z, cls: 't3d-label t3d-mini', html: `<span class="t3d-name">${this._esc(an.label)}</span>` } : null;
     }
     // 效能自動降級:連續 3 秒平均幀長 > 40ms → 關陰影、降解析度
     _updateQuality(now) {

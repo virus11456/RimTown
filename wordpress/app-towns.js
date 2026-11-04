@@ -89,6 +89,8 @@ Object.assign(RimTownApp.prototype, {
             year: clock.year || 1,
             day: clock.day || 1,
             population: Object.keys(saveData.agents || {}).length,
+            theme: this.world?.townTheme || existing?.theme || '', // v6.35.0 主題鍵
+            origin: existing?.origin || 'user',                   // v6.35.0 自己建的;鄰鎮由 _ensureNeighborTown 標 neighbor
         };
         if (existing) Object.assign(existing, meta);
         else list.push(meta);
@@ -153,33 +155,64 @@ Object.assign(RimTownApp.prototype, {
         modal.classList.remove('hidden');
         this._renderTownList();
     },
-    _renderTownList() {
-        const container = document.getElementById('town-list-content');
-        if (!container) return;
-        // When logged in, show cloud saves; otherwise show local saves
-        if (this.auth.loggedIn) {
-            this._renderCloudTownList(container);
-            return;
-        }
-        const towns = this._getTownList();
+    // v6.35.0 顯示名:知道主題就用主題的正名(依語言翻),不管當初存的是中文還英文;自訂名照原樣;舊的英文預設名翻回中文
+    _townDisplayName(name, theme) {
+        const s = String(name || '');
+        const TT = (typeof TOWN_THEMES !== 'undefined') ? TOWN_THEMES : {};
+        const EN2ZH = [['Frontier Town', '邊境鎮'], ['Seabreeze Harbor', '海風鎮'], ['Mine Ridge', '礦山鎮'], ['Greenwood', '林間村'], ['Market City', '市集城']];
+        let zh = s; for (const [en, z] of EN2ZH) if (s.startsWith(en)) { zh = z + s.slice(en.length); break; }
+        const def = theme && TT[theme]?.townName;
+        if (def && (zh === def || zh.replace(/\s+\d+$/, '') === def)) { const suffix = zh.slice(def.length); return t(def) + suffix; }
+        const lang = (typeof I18N !== 'undefined' && I18N.getLang) ? I18N.getLang() : 'zh';
+        return lang === 'zh' ? zh : t(zh);
+    },
+    // v6.35.0 城鎮列表資料:雲端＋只在本機的,補主題／來源,標鄰鎮與疑似重複
+    _isNeighborTown(e) {
+        if (e.origin === 'neighbor') return true; if (e.origin === 'user') return false;
+        return (typeof NEIGHBOR_TOWNS !== 'undefined') && NEIGHBOR_TOWNS.some(d => d.match.test(e.name || '')) && (!e.theme || e.theme !== 'frontier');
+    },
+    _guessTheme(name) {
+        if (typeof NEIGHBOR_TOWNS !== 'undefined') for (const d of NEIGHBOR_TOWNS) if (d.match.test(name || '')) return d.theme;
+        return /邊境鎮|Frontier Town/i.test(name || '') ? 'frontier' : '';
+    },
+    _townEntries(saves) {
+        const local = this._getTownList(); const entries = [];
+        if (saves) {
+            const cloudIds = new Set(saves.map(x => x.town_id));
+            for (const x of saves) { const lm = local.find(tw => tw.id === x.town_id); entries.push({ id: x.town_id, name: x.town_name || '', theme: x.town_theme || lm?.theme || '', origin: x.origin || lm?.origin || '', season: x.season || '', year: x.year || 1, day: x.day || 1, population: x.population || 0, at: x.updated_at || '', source: 'cloud' }); }
+            for (const tw of local) if (!cloudIds.has(tw.id) && localStorage.getItem('rimtown_town_' + tw.id)) entries.push({ id: tw.id, name: tw.name || '', theme: tw.theme || '', origin: tw.origin || '', season: tw.season || '', year: tw.year || 1, day: tw.day || 1, population: tw.population || 0, at: tw.savedAt || '', source: 'local', sameNameCloud: saves.some(x => x.town_name === tw.name) });
+        } else for (const tw of local) entries.push({ id: tw.id, name: tw.name || '', theme: tw.theme || '', origin: tw.origin || '', season: tw.season || '', year: tw.year || 1, day: tw.day || 1, population: tw.population || 0, at: tw.savedAt || '', source: 'local' });
+        for (const e of entries) { e.theme = e.theme || this._guessTheme(e.name); e.isNeighbor = this._isNeighborTown(e); e.isActive = e.id === this.currentTownId; e.display = this._townDisplayName(e.name, e.theme); }
+        const mine = entries.filter(e => !e.isNeighbor);
+        for (const e of mine) e.dup = e.year <= 1 && e.day <= 1 && mine.some(o => o !== e && o.year <= 1 && o.day <= 1 && (o.display === e.display || (o.theme && o.theme === e.theme)));
+        return entries;
+    },
+    _townRow(e) {
+        const icon = ({ frontier: '🏡', harbor: '🌊', mountain: '⛏️', forest: '🌲', market: '🏛️' })[e.theme] || '🏘️';
+        const esc = (x) => this._escapeHtml ? this._escapeHtml(String(x ?? '')) : String(x ?? '');
+        const tags = [];
+        if (e.source === 'local' && this.auth.loggedIn) tags.push(`📱 ${t('本機')}${e.sameNameCloud ? `${t('（')}${t('與雲端同名')}${t('）')}` : ''}`);
+        if (e.dup) tags.push(`⚠️ ${t('疑似重複：還在第 1 天')}`);
+        const date = e.at ? new Date(e.at).toLocaleString() : '';
+        const actions = (e.source === 'cloud' || !this.auth.loggedIn)
+            ? `<button data-action="rename-town" data-val="${e.id}" title="${t('重新命名')}">✏️</button>${!e.isActive ? `<button data-action="delete-town" data-val="${e.id}" title="${t('刪除')}" class="btn-danger">🗑️</button>` : ''}`
+            : (!e.isActive ? `<button data-action="delete-local-town" data-val="${e.id}" title="${t('刪除本機副本')}" class="btn-danger">🗑️</button>` : '');
+        return `<div class="town-item ${e.isActive ? 'active' : ''}${e.dup ? ' town-dup' : ''}">
+            <div class="town-info" data-action="switch-town" data-val="${e.id}">
+                <div class="town-name">${icon} ${esc(e.display)} ${e.isActive ? t('<span class="current-badge">目前</span>') : ''}${tags.map(x => ` <span class="town-tag">${x}</span>`).join('')}</div>
+                <div class="town-meta">${t(e.season)}${t(' 第')}${e.year}${t('年 第')}${e.day}${t('天 | 人口')}${e.population}${date ? ' | ' + date : ''}</div>
+            </div>
+            <div class="town-actions">${actions}</div>
+        </div>`;
+    },
+    _renderTownSections(container, entries) {
+        const mine = entries.filter(e => !e.isNeighbor), nb = entries.filter(e => e.isNeighbor);
         let html = '';
-        if (!towns.length) {
-            html = t('<p class="muted-text">尚無城鎮存檔。</p>');
-        } else {
-            towns.forEach(_tw => {
-                const isActive = _tw.id === this.currentTownId;
-                const date = new Date(_tw.savedAt).toLocaleString();
-                html += `<div class="town-item ${isActive?'active':''}">
-                    <div class="town-info" data-action="switch-town" data-val="${_tw.id}">
-                        <div class="town-name">${t(_tw.name)} ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
-                        <div class="town-meta">${t(_tw.season)}${t(' 第')}${_tw.year}${t('年 第')}${_tw.day}${t('天 | 人口')}${_tw.population} | ${date}</div>
-                    </div>
-                    <div class="town-actions">
-                        <button data-action="rename-town" data-val="${_tw.id}" title="${t('重新命名')}">✏️</button>
-                        ${!isActive?`<button data-action="delete-town" data-val="${_tw.id}" title="${t('刪除')}" class="btn-danger">🗑️</button>`:''}
-                    </div>
-                </div>`;
-            });
+        if (!entries.length) html = t('<p class="muted-text">尚無城鎮存檔。</p>');
+        else {
+            html += `<h4 class="town-section">🏡 ${t('我的城鎮')} <span class="pp-count">${mine.length}</span></h4>` + (mine.length ? mine.map(e => this._townRow(e)).join('') : `<p class="muted-text">${t('還沒有自己建立的城鎮。')}</p>`);
+            if (nb.length) html += `<h4 class="town-section">🛤️ ${t('鄰鎮（道路開通後自動生成）')} <span class="pp-count">${nb.length}</span></h4>` + nb.map(e => this._townRow(e)).join('');
+            if (mine.some(e => e.dup)) html += `<p class="muted-text town-hint">${t('⚠️ 標「疑似重複」的是兩座都還在第 1 天的同名或同主題城鎮，多半是以前按「新地圖」或切換語言時多建的；確定不要的那座按 🗑️ 刪掉。不會自動刪除任何存檔。')}</p>`;
         }
         html += `<div class="town-modal-actions">
             <button class="town-btn town-btn-primary" data-action="create-town">${t('新建城鎮')}</button>
@@ -187,51 +220,19 @@ Object.assign(RimTownApp.prototype, {
         </div>`;
         container.innerHTML = html;
     },
+    _renderTownList() {
+        const container = document.getElementById('town-list-content');
+        if (!container) return;
+        if (this.auth.loggedIn) { this._renderCloudTownList(container); return; }
+        this._renderTownSections(container, this._townEntries(null));
+    },
     async _renderCloudTownList(container) {
         container.innerHTML = `<p class="muted-text">${t('載入雲端存檔...')}</p>`;
         try {
             const saves = await this.auth.listSaves();
             this._cloudSaves = saves;
-            // v5.59.0 TC-01:雲端寫入失敗時本地存檔仍在——併入「只存在本機」的城鎮,
-            // 不再誤報「雲端尚無城鎮存檔」把玩家鎖死
-            // v5.96.0 B13:以 town_id 為主鍵——只要雲端沒有這個 id 就列為「本機」,同名只標註不再隱藏(多裝置/分身一眼可見、可刪本機副本)
-            const cloudIds = new Set(saves.map(s => s.town_id));
-            const cloudNames = new Set(saves.map(s => s.town_name));
-            const localOnly = this._getTownList().filter(tw => !cloudIds.has(tw.id) && localStorage.getItem('rimtown_town_' + tw.id));
-            let html = '';
-            if (!saves.length && !localOnly.length) {
-                html = t('<p class="muted-text">尚無城鎮存檔。</p>');
-            } else {
-                saves.forEach(_tw => {
-                    const isActive = _tw.town_id === this.currentTownId;
-                    const date = _tw.updated_at ? new Date(_tw.updated_at).toLocaleString() : '';
-                    html += `<div class="town-item ${isActive?'active':''}">
-                        <div class="town-info" data-action="switch-town" data-val="${_tw.town_id}">
-                            <div class="town-name">${t(_tw.town_name)} ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
-                            <div class="town-meta">${_tw.season||''}${t(' 第')}${_tw.year||1}${t('年 第')}${_tw.day||1}${t('天 | 人口')}${_tw.population||0} | ${date}</div>
-                        </div>
-                        <div class="town-actions">
-                            <button data-action="rename-town" data-val="${_tw.town_id}" title="${t('重新命名')}">✏️</button>
-                            ${!isActive?`<button data-action="delete-town" data-val="${_tw.town_id}" title="${t('刪除')}" class="btn-danger">🗑️</button>`:''}
-                        </div>
-                    </div>`;
-                });
-            }
-            localOnly.forEach(_tw => {
-                const isActive = _tw.id === this.currentTownId;
-                html += `<div class="town-item ${isActive?'active':''}">
-                    <div class="town-info" data-action="switch-town" data-val="${_tw.id}">
-                        <div class="town-name">${t(_tw.name)} <span style="font-size:0.65rem;color:var(--text-muted)">📱 ${t('本機')}${cloudNames.has(_tw.name) ? `${t('（')}${t('與雲端同名')}${t('）')}` : ''}</span> ${isActive?t('<span class="current-badge">目前</span>'):''}</div>
-                        <div class="town-meta">${_tw.season||''}${t(' 第')}${_tw.year||1}${t('年 第')}${_tw.day||1}${t('天 | 人口')}${_tw.population||0}</div>
-                    </div>
-                    <div class="town-actions">${!isActive ? `<button data-action="delete-local-town" data-val="${_tw.id}" title="${t('刪除本機副本')}" class="btn-danger">🗑️</button>` : ''}</div>
-                </div>`;
-            });
-            html += `<div class="town-modal-actions">
-                <button class="town-btn town-btn-primary" data-action="create-town">${t('新建城鎮')}</button>
-                <button class="town-btn town-btn-secondary" data-action="close-town-modal">${t('關閉')}</button>
-            </div>`;
-            container.innerHTML = html;
+            // v5.59.0 TC-01:雲端寫入失敗時本地存檔仍在——併入「只存在本機」的城鎮;v5.96.0 以 town_id 為主鍵;v6.35.0 分區＋主題＋疑似重複
+            this._renderTownSections(container, this._townEntries(saves));
         } catch (e) {
             console.error('[RimTown] Cloud town list error:', e);
             container.innerHTML = `<p class="muted-text">${t('載入雲端存檔失敗。')}</p>
@@ -298,34 +299,21 @@ Object.assign(RimTownApp.prototype, {
         try { if (this.world?.generateDailyFocus && !this.world.dailyFocus) this.world.generateDailyFocus(); } catch (e) {}
     },
     _generateTownId(name) {
-        // Generate stable town_id based on user_id + town name for cross-device sync
-        if (this.auth.loggedIn && this.auth.userId) {
-            // Simple hash from the name
-            let hash = 0;
-            const str = name || '';
-            for (let i = 0; i < str.length; i++) {
-                hash = ((hash << 5) - hash) + str.charCodeAt(i);
-                hash |= 0;
-            }
-            let baseId = 'town_u' + this.auth.userId + '_' + Math.abs(hash).toString(36);
-            // If this ID already exists locally (same-name town), add suffix
-            const existing = this._getTownList();
-            let id = baseId;
-            let suffix = 2;
-            while (existing.some(t => t.id === id)) {
-                id = baseId + '_' + suffix;
-                suffix++;
-            }
-            return id;
-        }
-        return 'town_' + Date.now();
+        // v6.35.0 城鎮身分改用隨機 id:之前用「使用者 id + 鎮名」雜湊,換語言或改名就變成另一座(英文介面下會長出 Frontier Town);
+        // 舊存檔的 id 不動、照常可讀;名字只是標籤
+        let rnd = '';
+        try { rnd = (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '') : Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, '0')).join('')).slice(0, 16); } catch (e) { rnd = Date.now().toString(36) + Math.random().toString(36).slice(2, 10); }
+        const existing = this._getTownList();
+        let id = 'town_' + rnd; while (existing.some(t => t.id === id)) id = 'town_' + rnd + '_' + Math.random().toString(36).slice(2, 5);
+        return id;
     },
     async createNewTown() {
         const defaultSuffix = this.auth.loggedIn
             ? ((this._cloudSaves?.length || 0) + 1)
             : (this._getTownList().length + 1);
         // v5.58.0 建立新城鎮恢復原行為(邊境鎮);海風鎮不用建立——它本來就存在,搭馬車去即可
-        const name = prompt(t('為新城鎮命名：'), t('邊境鎮 ') + defaultSuffix);
+        if (!confirm(t('這會另外開一座新城鎮，目前這座會保留在「城鎮列表」裡，可以隨時切回來。確定要新開嗎？'))) return; // v6.35.0
+        const name = prompt(t('為新城鎮命名：'), '邊境鎮 ' + defaultSuffix); // v6.34.1 預設名存中文正名,顯示時再翻
         if (!name) return;
         this._showBusyOverlay(`🏗️ ${t('新城鎮建立中，原本的城鎮會先自動儲存…')}`);
         if (this.auth.loggedIn) {

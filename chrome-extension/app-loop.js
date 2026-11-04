@@ -320,12 +320,12 @@ Object.assign(RimTownApp.prototype, {
             const tid = this._generateTownId(townName);
             const list = this._getTownList();
             if (!list.some(tw => tw.id === tid)) {
-                list.push({ id: tid, name: townName, savedAt: new Date().toISOString(), season: blob.clock?.season || '春季', year: 1, day: 1, population: Object.keys(blob.agents || {}).length });
+                list.push({ id: tid, name: townName, savedAt: new Date().toISOString(), season: blob.clock?.season || '春季', year: 1, day: 1, population: Object.keys(blob.agents || {}).length, theme: themeKey, origin: 'neighbor' }); // v6.35.0 標成鄰鎮
                 this._saveTownList(list);
             }
             try { localStorage.setItem('rimtown_town_' + tid, JSON.stringify(blob)); } catch (e) {}
             if (this.auth.loggedIn) {
-                try { await this.auth.cloudSave(tid, townName, blob, { season: blob.clock?.season, year: 1, day: 1, population: Object.keys(blob.agents || {}).length }); } catch (e) {}
+                try { await this.auth.cloudSave(tid, townName, blob, { season: blob.clock?.season, year: 1, day: 1, population: Object.keys(blob.agents || {}).length, theme: themeKey, origin: 'neighbor' }); } catch (e) {}
             }
             this._otherTownsAt = 0; // 立即讓互訪/馬車看見新鄰鎮
         } catch (e) { console.warn('[RimTown] neighbor town gen failed', e); this._neighborEnsured[themeKey] = false; }
@@ -342,6 +342,8 @@ Object.assign(RimTownApp.prototype, {
             { origId: meta.origId, origName: meta.origName, notes: meta.notes || [], visitedTownName: this._getCurrentTownName(), visitedTownId: this.currentTownId, romance: meta.romance || null }); // v5.90.0 帶回戀情
         w.onRelocate = (data) => this._doRelocate(data); // v5.90.0 搬家提案的決定
         w.onProposalEvent = (kind, p) => this._onProposalEvent(kind, p); // v6.26.0 村民提案事件
+        w.onEventCard = (kind, e, npc, text) => this._onEventCard(kind, e, npc, text); // v6.38.0 事件卡
+        w.fullAgentMode = this._fullAgentOn?.() || false; // v6.39.0 完整智能體模式
         w.onSeasonRecap = () => { try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} this._showSeasonRecap(); }; // v5.98.0 季末回顧
         w.onChainEvent = (kind, npcName, title, text) => { if (kind === 'start') { try { this._aiChainQuotes(w); } catch (e) {} } this._showCornerNotice({ icon: kind === 'done' ? '🏅' : kind === 'broken' ? '💔' : '📖', title: kind === 'done' ? t('委託鏈完成') : kind === 'broken' ? t('委託鏈中斷') : t('有人想拜託你'), name: `${t(npcName)} · ${title}`, desc: text || (kind === 'start' ? t('明天的委託板會多一件他的事，連做三天') : '') }); }; // v6.5.0
         w.onGrowthEvent = (kind, v) => { if (w.observerMode) return; if (kind === 'level') this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${v} ${t('級')}`, name: '', desc: t('到「故事」分頁選一個天賦') }); else if (kind === 'attr') { this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${w.growth?.level || ''} ${t('級')}`, name: `${(typeof growthAttrLabel === 'function' ? growthAttrLabel(v) : v)} +1`, desc: t('天賦都學完了，之後每升一級隨機一項屬性 +1') }); } try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.94.0
@@ -495,7 +497,7 @@ Object.assign(RimTownApp.prototype, {
         const d = (rb && !w.observerMode) ? rb.toDict(w) : {}; if (d.chain) rows.push(`📖 ${esc(d.chain.title)} ${d.chain.step + 1}/${d.chain.total} · ${esc(d.chain.npcName)}`);
         const tr = w.trials?.current; if (tr && tr.status === 'active' && w.trials.value) { const v = w.trials.value(tr.type, w); const d2 = (typeof TRIAL_TYPES !== 'undefined' && TRIAL_TYPES[tr.type]) || {}; rows.push(`⚖️ ${esc(t(d2.title || tr.type))} ${v}/${tr.target} · ${t('剩')} ${Math.max(0, (tr.dueDay || 15) - w.clock.day)} ${t('天')}`); }
         else if (!tr && w.clock.day < 5) rows.push(`⚖️ ${t('第 5 天公布本季考驗')}`);
-        const pd = w.proposals?.toDict?.(w); if (pd && pd.open.length) rows.push(`📜 ${t('待你決定的提案')} ${pd.open.length} ${t('件')}${pd.open.some(p => p.daysLeft <= 1) ? ` · ${t('有的今天就會自動定案')}` : ''}`); // v6.26.0
+        const pd = w.proposals?.toDict?.(w); if (pd && pd.open.length) rows.push(`📜 ${t('投票中的提案')} ${pd.open.length} ${t('件')}${pd.open.some(p => p.daysLeft <= 1) ? ` · ${t('有的今天鎮長就會裁決')}` : ''}`); // v6.26.0
         const td = w.trials?.toDict ? w.trials.toDict(w) : null; if (td?.declined) rows.push(`🍂 ${t('衰敗中')} · ${t('連續撐過兩季考驗就能復興')}${t('（')}${td.passStreak || 0}/2${t('）')}`); // v6.13.0 與故事分頁同一份資料
         const fs = w.festivals?.sponsorStatus?.(w); if (fs?.open && !fs.sponsored) rows.push(`${fs.icon || '🎪'} ${esc((fs.phase === 'eve' ? t('{fest}明天開始') : t('{fest}進行中')).replace('{fest}', t(fs.name)))} · ${t('可贊助 {n} 銀幣讓它更熱鬧').replace('{n}', fs.cost)}`); // v6.15.0
         const pl = w.observerMode ? 0 : (w.growth?.pendingLevels?.() || 0); if (pl > 0 && w.growth?.pending?.length) rows.push(`⬆️ ${t('升級了！選一個天賦')}${pl > 1 ? `${t('（')}${t('還有 {n} 次').replace('{n}', pl)}${t('）')}` : ''}`); // v6.11.0 天賦還沒選就每天提醒
@@ -592,6 +594,26 @@ Object.assign(RimTownApp.prototype, {
         if (kind === 'new') { this.bgm?.sfx?.('open'); this._aiProposalPitch(w, p.id); }
         try { this.state = w.getState(); if (this.activeTab === 'proposals') this.renderSidebar(); } catch (e) {}
         this._updateProposalBadge();
+    },
+    // v6.38.0 事件卡:打出 → 鏡頭飛現場 + 角落通知;反應 → 泡泡 + 重畫;七天後 → 通知
+    _playEventCard(id) {
+        const w = this.world; if (!w?.eventCards) return;
+        const r = w.eventCards.play(w, id);
+        if (!r.ok) { const why = r.why === 'cooldown' ? t('冷卻中，還要 {n} 天').replace('{n}', r.days || 0) : r.why === 'daily' ? t('今天的兩張已經打完，明天再來') : t('這張卡現在打不出去'); this._showCornerNotice({ icon: '🃏', title: t('事件卡'), name: '', desc: why }); return; }
+        this.bgm?.sfx?.('event');
+        try { this.state = w.getState(); this.renderSidebar(); } catch (e) {}
+    },
+    _onEventCard(kind, e, npc, text) {
+        if (kind === 'played') {
+            const go = e.affected?.length ? { agentId: e.affected[0] } : { locId: e.loc || 'town_square' };
+            try { this._goLook(go); } catch (err) {} // 上帝打出的卡一律帶鏡頭
+            this._showCornerNotice({ icon: e.icon, title: `${t('事件')}${t('：')}${e.name}`, name: '', desc: e.detail, go });
+        } else if (kind === 'reaction' && npc) {
+            try { this.tileMap?.addConversationBubble?.(npc.agentId, npc.agentId, npc.name, npc.name, text, ''); } catch (err) {}
+            try { this.state = this.world.getState(); if (this.activeTab === 'events') this.renderSidebar(); } catch (err) {}
+        } else if (kind === 'outcome') {
+            this._showCornerNotice({ icon: '📈', title: `${e.name} · ${t('七天後')}`, name: '', desc: e.outcomeText });
+        }
     },
     _proposalDecide(val) {
         const w = this.world; if (!w?.proposals) return;

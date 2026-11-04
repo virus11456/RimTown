@@ -1310,8 +1310,10 @@ class SeasonTrials {
         if (!this.current && day >= 5 && day < last && this.lastSeasonKey !== key) this._announce(world, key);
         if (this.current && this.current.status === 'active' && this.current.seasonKey === key && day >= last) this._resolve(world, true);
     }
-    _announce(world, key) {
-        const type = this._pick(world); const d = TRIAL_TYPES[type];
+    // v6.38.0 事件卡:直接開一場指定考驗(已有進行中的就不開)
+    force(world, type) { if (!TRIAL_TYPES[type] || (this.current && this.current.status === 'active')) return false; this._obsText = !!world.observerMode; this._announce(world, this._seasonKey(world), type); return true; }
+    _announce(world, key, forcedType = null) {
+        const type = forcedType || this._pick(world); const d = TRIAL_TYPES[type];
         this.lastSeasonKey = key; this.lastType = type;
         this.current = { type, seasonKey: key, status: 'active', target: this.target(type, world), startAbsDay: world._absDay?.() || 0, dueDay: world.clock.DAYS_PER_SEASON || 15, silverAtStart: world.stockpile?.get?.('silver') || 0 };
         const text = `${t('本季考驗')}${t('「')}${t(d.title)}${t('」')}${t('：')}${this.goalText(type, this.current.target)}`;

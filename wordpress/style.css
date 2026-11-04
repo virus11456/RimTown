@@ -4312,7 +4312,8 @@ body.landing-open { overflow: hidden; }
 .rimtown-container .t3d-tag.is-player { background: #3B7DD8; }
 .rimtown-container .t3d-tag .t3d-emo { font-style: normal; margin-left: 2px; }
 .rimtown-container .t3d-tag .t3d-zzz { font-style: normal; color: #9CC8E8; font-size: 10px; margin-left: 4px; letter-spacing: 1px; }
-.rimtown-container .t3d-bubble { max-width: 200px; white-space: normal; padding: 6px 10px; border-radius: 12px; border-bottom-left-radius: 3px; background: rgba(255,251,243,0.96); color: #2B2118; border: 1px solid #EADFCB; box-shadow: 0 3px 10px rgba(43,33,24,0.16); font-size: 12px; line-height: 1.4; }
+/* v6.36.0 權重要壓過上面 .town3d-overlay > div 的 nowrap,不然泡泡不換行、字會衝出框外 */
+.rimtown-container .town3d-overlay > .t3d-bubble { max-width: 220px; width: max-content; white-space: normal; overflow-wrap: anywhere; word-break: break-word; padding: 6px 10px; border-radius: 12px; border-bottom-left-radius: 3px; background: rgba(255,251,243,0.96); color: #2B2118; border: 1px solid #EADFCB; box-shadow: 0 3px 10px rgba(43,33,24,0.16); font-size: 12px; line-height: 1.4; }
 .rimtown-container .t3d-bubble b { display: block; color: #E8732A; font-size: 10px; margin-bottom: 1px; }
 .rimtown-container .t3d-fx { font-size: 12px; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
 .rimtown-container .t3d-move { color: #E8732A; font-size: 20px; animation: t3dPulse 0.8s ease-out infinite; }
@@ -4322,7 +4323,7 @@ body.landing-open { overflow: hidden; }
     .rimtown-container .t3d-label { font-size: 11px; padding: 2px 8px 2px 3px; }
     .rimtown-container .t3d-num { min-width: 18px; height: 18px; font-size: 10px; }
     .rimtown-container .t3d-tag { font-size: 10px; }
-    .rimtown-container .t3d-bubble { max-width: 160px; font-size: 11px; }
+    .rimtown-container .town3d-overlay > .t3d-bubble { max-width: 170px; font-size: 11px; }
 }
 /* v6.24.0 3D 標記：節慶橫幅、產業徽章、探索旗、工廠 */
 .rimtown-container .t3d-label.t3d-mini.is-active { background: rgba(232,115,42,0.9); color: #fff; }

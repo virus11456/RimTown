@@ -468,10 +468,11 @@ class ResearchManager {
     startResearch(key) {
         const p=this.projects[key]; if(!p||p.status!=='available') return false;
         if(this.current&&this.projects[this.current]?.status==='researching') this.projects[this.current].status='available';
-        p.status='researching'; this.current=key; return true;
+        p.status='researching'; this.current=key; this._idle=0; return true;
     }
     dailyUpdate(world) {
-        if(!this.current) { const av=this.getAvailable(); if(av.length) this.startResearch(av[0].key); return; }
+        // v6.37.0 沒在研究時先空 3 天，讓村民有機會提「研究」提案；沒人提才由學者自己挑一個
+        if(!this.current) { this._idle=(this._idle||0)+1; if(this._idle>=3){ const av=this.getAvailable(); if(av.length){ const pick=av[Math.floor(Math.random()*av.length)]; this.startResearch(pick.key); world.logMessageT?.('research', '🔬 沒人提議要研究什麼，學者們自己選了「{p}」開始研究。', { p: pick.name }); } } return; }
         let pts=0;
         Object.values(world.agents).forEach(a=>{ if(!a.isPlayer&&a.job?.title===t('研究員')){ const sk=a.skills.get('智識'); pts+=3+(sk?sk.level:0)*0.5; } });
         pts *= 1 + (world.news?world.news.getModifier('research_bonus',0):0);

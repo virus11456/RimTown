@@ -44,6 +44,8 @@ class World {
         this.growth = (typeof TravellerGrowth !== 'undefined') ? new TravellerGrowth() : null; // v5.94.0 旅人成長
         this.recap = (typeof SeasonRecap !== 'undefined') ? new SeasonRecap() : null; // v5.98.0 季末回顧
         this.proposals = (typeof ProposalSystem !== 'undefined') ? new ProposalSystem() : null; // v6.26.0 村民主動提案
+        this.autonomy = (typeof VillagerAutonomy !== 'undefined') ? new VillagerAutonomy() : null; // v6.37.0 村民全自主(農田/工坊/行商/商店)
+        this.eventCards = (typeof EventCardSystem !== 'undefined') ? new EventCardSystem() : null; // v6.38.0 事件卡(上帝視角)
         this.observerMode = true; // v6.25.0 觀察者沙盒:玩家不在地圖上,委託板／行動點／押商隊／旅人成長／心動事件全部停用(物件仍保留給舊檔)
         this.townIdentity = new TownIdentitySystem(); // v5.19.0 城鎮身分/路線
         this.npcEvents = new NPCEventSystem();
@@ -116,7 +118,8 @@ class World {
             try { this._caravanDaily(); } catch (e) { console.warn('[RimTown] caravan error:', e); } // v5.80.0 跨鎮商隊
             try { if (!this.observerMode) this.requests?.dailyRoll(this); } catch (e) { console.warn('[RimTown] request error:', e); } // v5.91.0 委託板:結算昨天、發今天
             try { if (!this.observerMode) this._playerCaravanDaily(); } catch (e) { console.warn('[RimTown] player caravan error:', e); } // v5.92.0 押商隊回報
-            try { this.proposals?.daily(this); } catch (e) { console.warn('[RimTown] proposal error:', e); } // v6.26.0 村民提案:投票、定案、執行、新提案
+            try { this.proposals?.daily(this); } catch (e) { console.warn('[RimTown] proposal error:', e); }
+            try { this.eventCards?.daily(this); } catch (e) { console.warn('[RimTown] event card error:', e); } // v6.38.0 接上後續提案/七天後變化 // v6.26.0 村民提案:投票、定案、執行、新提案
             try { this.trials?.daily(this); } catch (e) { console.warn('[RimTown] trial error:', e); } // v5.93.0 季度考驗:第 5 天公布、季末結算
             try { this.recap?.daily(this); } catch (e) { console.warn('[RimTown] recap error:', e); } // v5.98.0 季末回顧:換季那天結算上一季
             // Daily news (before economy/events so modifiers apply)
@@ -154,6 +157,7 @@ class World {
             this.industry.dailyUpdate(this);
             this.farm.dailyUpdate(this);
             this.processing.dailyUpdate(this);
+            try { this.autonomy?.daily(this); } catch (e) { console.warn('[RimTown] autonomy error:', e); } // v6.37.0 農夫種收、工坊出貨、商人談生意、缺貨補貨
             this.npcEvents.dailyUpdate(this);
             if (this.prosperity) this.prosperity.dailyUpdate(this);
             if (this.npcQuests) this.npcQuests.dailyUpdate(this);
@@ -947,6 +951,8 @@ class World {
             reputationSystem: this.reputationSystem.toDict(),
             weather: this.weather.toDict(),
             proposals: this.proposals ? this.proposals.toDict(this) : null, // v6.26.0
+            autonomy: this.autonomy ? this.autonomy.toDict() : null, // v6.37.0 村民自主日誌
+            eventCards: this.eventCards ? this.eventCards.toDict(this) : null, // v6.38.0 事件卡手牌與反應追蹤
             council: (() => { const cd = this.council.toDict(); cd.memberNames = this.council.members.map(id => this.agents[id]?.name || '?'); return cd; })(),
             lifeGoals: (() => { const m = {}; if (this.lifeGoals) for (const a of Object.values(this.agents)) { if (a.isPlayer) continue; const d = this.lifeGoals.describe(a.agentId); if (d) m[a.agentId] = d; } return m; })(),
         };
@@ -995,6 +1001,8 @@ class World {
         this.weather = new WeatherSystem();
         this.council = new CouncilSystem();
         this.proposals = (typeof ProposalSystem !== 'undefined') ? new ProposalSystem() : null; // v6.26.0
+        this.autonomy = (typeof VillagerAutonomy !== 'undefined') ? new VillagerAutonomy() : null; // v6.37.0
+        this.eventCards = (typeof EventCardSystem !== 'undefined') ? new EventCardSystem() : null; // v6.38.0
         this.conversationEngine = new ConversationEngine(this.conversationEngine?.llm);
         // v5.58.0 清掉上一個世界的敘事殘留:換鎮後「今日焦點還在講陳偉」這類跨鎮鬼影的根源
         this.dailyFocus = null;
@@ -1999,6 +2007,8 @@ class World {
             weather: this.weather.serialize(),
             council: this.council.serialize(),
             proposals: this.proposals ? this.proposals.serialize() : null, // v6.26.0
+            autonomy: this.autonomy ? this.autonomy.serialize() : null, // v6.37.0
+            eventCards: this.eventCards ? this.eventCards.serialize() : null, // v6.38.0
         };
     }
 
@@ -2337,6 +2347,8 @@ class World {
             if (data.weather) this.weather.loadFrom(data.weather);
             if (data.council) this.council.loadFrom(data.council);
             if (data.proposals && this.proposals) this.proposals.loadFrom(data.proposals); // v6.26.0
+            if (data.autonomy && this.autonomy) this.autonomy.loadFrom(data.autonomy); // v6.37.0
+            if (data.eventCards && this.eventCards) this.eventCards.loadFrom(data.eventCards); // v6.38.0
 
             this.logMessage('system', t('遊戲讀取成功！'));
             return true;

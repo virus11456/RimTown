@@ -42,13 +42,13 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
       // 自動定案:剩下的 open 三天後依票數
       const rest = ps.open(); for (const p of rest) { p.votes = {}; for (const a of Object.values(w.agents)) if (!a.isPlayer) p.votes[a.agentId] = 'for'; }
       step(); step(); step();
-      out.autoDecided = rest.length === 0 || rest.every(p => ['done', 'approved', 'rejected', 'failed'].includes(p.status) && p.decidedBy === 'auto');
+      out.autoDecided = rest.length === 0 || rest.every(p => ['done', 'approved', 'rejected', 'failed', 'shelved'].includes(p.status) && (p.decidedBy === 'auto' || p.decidedBy === 'mayor')); // v6.37.0 鎮長裁決
       // 公庫不足:造一件買不起的,批准後等七天作罷
       const poor = ps._create(w, day, { kind: 'build', key: 'build:town_walls_test', jobs: ['guard'], make: (a) => ({ kind: 'build', key: 'build:town_walls_test', refKey: 'town_walls', tk: '在鎮上蓋{name}', tp: { name: 'X' }, dk: '{desc}', dp: { desc: '' }, cost: { silver: 99999 }, category: 'defense', jobBias: [] }) });
       ps.decide(w, poor.id, 'approve'); for (let i = 0; i < 9; i++) step();
       out.poorFailed = poor.status === 'failed';
       // 擱置十天收回
-      if (sh) { for (let i = 0; i < 11; i++) step(); out.shelfExpired = sh.status === 'expired'; }
+      if (sh) { for (let i = 0; i < 11; i++) step(); out.shelfExpired = ['approved', 'done', 'rejected', 'failed', 'expired'].includes(sh.status) && (sh.decidedBy === 'mayor' || sh.status === 'expired'); } // v6.37.0 擱置三天後鎮長重新拍板
       // 存檔往返
       const ser = JSON.parse(JSON.stringify(ps.serialize())); const P2 = new ProposalSystem(); P2.loadFrom(ser);
       out.roundTrip = P2.counter === ps.counter && P2.items.length === ps.items.length && P2.toDict(w).history.length === ps.toDict(w).history.length;
@@ -100,7 +100,7 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     check(r.rejected !== false, '可否決'); check(r.shelved !== false, '可擱置');
     check(r.autoDecided, '三天沒處理依票數自動定案');
     check(r.poorFailed, '買不起的批准案等七天作罷');
-    check(r.shelfExpired !== false, '擱置十天提案人收回');
+    check(r.shelfExpired !== false, '擱置幾天後鎮長重新拍板');
     check(r.roundTrip, '存檔往返保留');
     check(r.dict.history.length > 0 && r.dict.stats.made === r.stats.made, 'toDict 歷史與統計一致');
     // v6.30.0

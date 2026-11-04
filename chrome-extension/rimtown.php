@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.34.0
+ * Version: 6.39.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.34.0');
+define('RIMTOWN_VERSION', '6.39.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -875,6 +875,8 @@ function rimtown_enqueue_assets() {
         true
     );
     wp_enqueue_script('rimtown-sim-proposals', RIMTOWN_URL . 'sim-proposals.js', array('rimtown-sim-society'), RIMTOWN_VERSION, true); // v6.26.0 村民提案
+    wp_enqueue_script('rimtown-sim-autonomy', RIMTOWN_URL . 'sim-autonomy.js', array('rimtown-sim-proposals'), RIMTOWN_VERSION, true); // v6.37.0 村民全自主
+    wp_enqueue_script('rimtown-sim-events', RIMTOWN_URL . 'sim-events.js', array('rimtown-sim-autonomy'), RIMTOWN_VERSION, true); // v6.38.0 事件卡
     wp_enqueue_script(
         'rimtown-simulation',
         RIMTOWN_URL . 'simulation.js',
@@ -1328,6 +1330,94 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.39.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🧠 完整智能體模式（設定頁「🤖 AI 語言模型」新開關，自備金鑰預設開、小鎮內建 AI 預設關並提醒額度）：開啟後村民的決定交給 LLM 用記憶＋性格推理——投票（一次問一批最多六人，每人贊成／反對＋一句自己口吻的理由，依性格、在乎的價值、跟提案人的交情、最近記憶與鎮況判斷）、要不要提案與提什麼（今天輪到發言的人從幾個可行點子裡挑一個或今天不提，順便說出向全鎮的說明當提案稿）、鎮長裁決（批准／否決／擱置＋一句話理由）。規則版只在 AI 失敗、逾時或速率受限時墊底，提案與裁決永遠會有結果',
+                '🧠 提案卡顯示 🧠 標記、村民自己說的投票理由（取代規則式的「看重財富」等標籤）與鎮長的第一人稱裁決理由；日誌記下「{who}想了想，今天沒什麼要跟大家提的」。決策呼叫不吃「NPC 每日 AI 額度」（那是背景閒聊的上限），只受供應商速率限制；LLM 回覆中的提案不會被重複裁決，存檔不帶中間狀態',
+            ),
+            'changes_en' => array(
+                '🧠 Full agent mode (new switch under Settings → "🤖 AI language model"; on by default with your own key, off by default on the built-in AI with a quota warning): when on, villagers\' decisions are reasoned by the LLM from memory and personality — votes (asked in batches of up to six, each giving for / against plus a one-line reason in their own voice, judged by traits, values, relationship with the proposer, recent memories and the state of the town), whether and what to propose (whoever has the floor today picks one of several feasible ideas or passes, and their pitch to the town becomes the proposal text) and the mayor\'s ruling (approve / reject / shelve with a one-line reason). The rule-based version only steps in when the AI fails, times out or is rate-limited, so proposals and rulings always resolve',
+                '🧠 Proposal cards show a 🧠 badge, the villagers\' own vote reasons (replacing rule labels such as "values wealth") and the mayor\'s first-person ruling; the log notes "{who} thought about it and has nothing to propose today". Decision calls do not consume the "NPC daily AI budget" (that caps background chatter) and are limited only by the provider\'s rate; a proposal awaiting an LLM ruling is never ruled twice, and that transient state is not saved',
+            ),
+        ),
+        array(
+            'version' => '6.38.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🃏 事件卡（上帝視角，新檔 sim-events.js 掛在 world.eventCards）：「動態 → 事件」分頁上方改成手牌區，30 張卡分四類——天災 8（旱災、暴風雨、寒流、火災、瘟疫、蝗災、地震、洪水）、人禍 8（商隊被劫、流言、竊案、稅吏上門、壞了的餐食、匪徒襲擊、物價崩盤、鎮長醜聞）、機運 7（豐收、金礦傳聞、神秘旅人、失散親人來信、行商大隊、慈善遺產、天降奇才）、人際 7（舊帳重翻、婚禮邀請、遺產之爭、英雄歸來、情書誤送、老友來訪、公開道歉）。卡面有圖示、類別色、冷卻天數；點卡展開說明與效果，按「打出」才發生；每張有冷卻、一天最多兩張；可依類別篩選或「隨機一張」',
+                '🃏 卡牌效果全走既有系統：天氣（乾旱／暴雨／雪／雨）、季度考驗（糧荒／瘟疫／匪患／商會壓價，新增 SeasonTrials.force）、襲擊、新居民、旅行、探索區發現、行商、關係好感、倉庫與工程進度。打出後鏡頭飛到現場（有當事人就跟人、沒有就到地點）、角落通知可「去看」',
+                '💬 村民反應：牽涉的人優先、相關職業其次、再隨機，最多三人各自用 LLM 說一句第一反應（新 ConversationEngine.reactToEvent：帶職業、性格與最近兩則記憶，可說打算怎麼做；失敗退回依性格的規則台詞），頭上冒泡泡、寫進記憶；全鎮都記得這件事、成為對話話題、日報頭條',
+                '📼 反應追蹤：每張打出的卡記下牽涉者、三位村民的話、事後三天內的提案（編號／標題／提案人）、七天後鎮上的變化（心情／公庫／食物／人口）；存檔往返保留，手機 390px 三欄卡格',
+            ),
+            'changes_en' => array(
+                '🃏 Event cards (god\'s-eye view; new sim-events.js on world.eventCards): the top of "Town → Events" is now a hand of 30 cards in four suits — 8 disasters (drought, storm, cold snap, fire, plague, locusts, earthquake, flood), 8 mishaps (caravan robbed, rumour, theft, tax collector, spoiled meals, bandit raid, price crash, mayor scandal), 7 fortunes (bumper harvest, gold rumour, mysterious traveller, letter from a lost relative, grand caravan, bequest, prodigy) and 7 people cards (old grudge, wedding invitation, inheritance dispute, hero\'s return, misdelivered love letter, old friend\'s visit, public apology). Each card shows its icon, suit colour and cooldown; tap for the description and effect, press "Play" to make it happen; every card cools down and at most two can be played per day; filter by suit or draw a random one',
+                '🃏 Card effects run through the existing systems: weather (drought / storm / snow / rain), season trials (famine / plague / bandits / price war via the new SeasonTrials.force), raids, new residents, travel, zone discovery, merchants, relationships, stores and construction progress. After playing, the camera flies to the scene (to the person involved if there is one, else the place) and the corner notice offers "Go look"',
+                '💬 Villager reactions: those involved first, then related trades, then random — up to three villagers each give a one-line first reaction through the LLM (new ConversationEngine.reactToEvent, fed their job, personality and two recent memories, allowed to say what they intend to do; falls back to personality-based lines), shown as a speech bubble and written to memory; the whole town remembers the event, it becomes a conversation topic and a newspaper headline',
+                '📼 Reaction log: every played card records who was involved, what three villagers said, the proposals raised in the following three days (id / title / proposer) and how the town changed seven days later (mood / treasury / food / population); survives save round-trips; three-column card grid at 390px',
+            ),
+        ),
+        array(
+            'version' => '6.37.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '👐 村民全自主（上帝視角第一步，新檔 sim-autonomy.js 掛在 world.autonomy）：原本留給玩家按的事全部交給村民每天自己做——農夫翻土／播種（缺糧先種糧、輪作、等級高的優先）／澆水／施肥／收成／清枯苗；工坊先交訂單再把成品入倉或拿去賣；商人（沒有就鎮長或其他人）每天跟來訪行商談，多的賣、缺的買（食物與藥、工具多留一點）；鎮上藥品／食物／工具／布料見底時有人去商店補，啤酒／葡萄酒／傢俱／麵包／衣物堆太多拿去賣。每件事都寫進日誌、當事人記憶與日報',
+                '📜 四種新提案類別：🔬 研究（沒在研究時學者或相關行業提「研究某項」，三天沒人提學者自己挑）、🛒 買賣（原料見底提大宗進貨、倉庫爆了提大宗拋售）、🔨 升級（既有建築升級）、📈 產業升級；研究不再一閒下來就自動挑第一個',
+                '🏛️ 提案改由村民投票＋NPC 鎮長裁決：投票兩天（七成的人投完、過了一天也會提早）後鎮長拍板，附理由（多數贊成／多數反對／公庫付不起／票數接近時看鎮長自己的價值觀、跟提案人的交情、是否小氣悲觀／沒人表態鎮長先做／擱置幾天後重新拍板）；觀察者的批准／否決／擱置鈕移除，提案分頁改「🗳️ 投票中」並顯示鎮長裁決列；鎮上沒鎮長時照票數',
+                '📊 經濟七頁改唯讀儀表板：資源／科技／商店／建築／工廠／產業／農場共 42 顆操作鈕（買賣、研究、蓋樓、升級、設配方、派工、翻土澆水收成、排班、捐建、擺裝飾…）全部拿掉，改顯示「村民自己做的事」日誌、商人成交紀錄、商店買賣帳、研究員名單、可建造／可升級清單標「等村民提案」；鎮公所捐款、贊助節慶、裝飾擺放目錄移除（觀察者不投錢）。舊存檔不動，所有模擬 API 保留',
+            ),
+            'changes_en' => array(
+                '👐 Villagers run everything themselves (first step of the god-view sandbox; new sim-autonomy.js on world.autonomy): everything that used to wait for a player click now happens daily on its own — farmers till / sow (food crops first when food is short, rotation, higher-tier crops preferred) / water / fertilise / harvest / clear withered plots; workshops fulfil orders first, then store or sell their output; the trader (or the mayor, or anyone) haggles with each visiting merchant, selling surplus and buying shortages (food, medicine and tools keep a reserve); someone restocks medicine / food / tools / cloth at the shop when they run out and sells off piles of beer / wine / furniture / bread / clothing. Each act is logged, remembered by the villager and reported in the paper',
+                '📜 Four new proposal kinds: 🔬 Research (when nothing is under research a scholar or related trade proposes a topic; after three days the scholars pick one themselves), 🛒 Trade (bulk buying when raw materials run out, bulk selling when the stores overflow), 🔨 Upgrade (existing buildings) and 📈 Industry upgrade; research no longer auto-picks the first project the moment it goes idle',
+                '🏛️ Proposals are now decided by the villagers\' vote plus the NPC mayor: after two days of voting (earlier once 70% have voted and a day has passed) the mayor rules with a stated reason (majority for / majority against / treasury cannot afford it / on a close vote the mayor\'s own values, relationship with the proposer and temperament / few votes so the mayor goes ahead / revisited after being shelved); the observer\'s approve / reject / shelve buttons are gone, the Proposals tab reads "🗳️ Voting" and shows the mayor\'s ruling line; with no mayor the vote decides',
+                '📊 The seven economy pages are read-only dashboards: all 42 action buttons across Resources / Tech / Shop / Buildings / Factory / Industry / Farm (buy, sell, research, build, upgrade, recipe, assign, till, water, harvest, shifts, fund, decorate…) are removed, replaced by a "what the villagers did" log, merchant deal history, shop ledger, researcher list and buildable / upgradable lists marked "awaiting a villager proposal"; town-hall donations, festival sponsorship and the decoration catalogue are gone (the observer spends nothing). Old saves untouched; every simulation API kept',
+            ),
+        ),
+        array(
+            'version' => '6.36.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🔑 玩家自備 AI（BYOK）：設定頁「🤖 AI 語言模型」多了「自備 AI（進階）」：可選 Claude（Anthropic）／GPT（OpenAI）／Gemini（Google）／自訂 OpenAI 相容端點，填自己的 API 金鑰、模型（留空用便宜款預設：claude-haiku-5-5／gpt-4o-mini／gemini-2.5-flash）與基底網址，有「測試連線」「儲存並啟用」「清除金鑰」。金鑰只存在這台裝置的瀏覽器（localStorage），不推雲端設定、不進存檔、不經小鎮伺服器；村民對話／行程／反思全部由瀏覽器直連該服務，不受每日 100 則限制。沒填的人照走小鎮內建 AI',
+                '🔑 直連供應商時前端自己補上遊戲系統提示（原本只在伺服器端），英文模式人名互換、簡轉繁、「我是 AI」漏網攔截也一併在前端做；Claude 直連不送 temperature、先關思考（模型不收 thinking 欄位就自動重送）、把 refusal 當失敗；徽章顯示「AI:自備 Claude／GPT／Gemini／自訂端點」',
+                '🌫️ 天氣不再霧白：霧天／雨天原本把整個畫面蒙一層白（距離霧加濃），遠處建築全糊掉；現在距離霧一律跟晴天一樣淡，霧天改用壓低、放大 1.45 倍的一朵朵灰雲蓋住天空，陰雨雪天雲放大 1.3 倍，雨就落雨、雪就飄雪',
+                '💬 3D 對話泡泡：外層覆蓋層的 nowrap 權重蓋過泡泡的換行設定，字會衝出泡泡框；改成一定換行（最寬 220px、手機 170px），句子過長截斷補「…」',
+                '⚙️ 桌機頂列「設定」改開完整設定分頁（3D 畫質、介面配色、城鎮列表、帳號、AI 與自備金鑰都在這）：觀察者殼把側欄的設定頁籤藏起來後，桌機原本只剩這顆鈕、卻只開舊的小彈窗（速度／語言），整頁設定到不了；手機 ☰ 選單裡的「設定」同樣改開完整設定頁',
+            ),
+            'changes_en' => array(
+                '🔑 Bring your own AI (BYOK): the "🤖 AI language model" settings section gains "Bring your own AI (advanced)": pick Claude (Anthropic) / GPT (OpenAI) / Gemini (Google) / a custom OpenAI-compatible endpoint, enter your own API key, model (blank = budget default: claude-haiku-5-5 / gpt-4o-mini / gemini-2.5-flash) and base URL, with "Test connection", "Save & enable" and "Clear key". The key lives only in this device\'s browser (localStorage): never pushed to cloud settings, never written into a save, never sent to the town server. Villager talk, schedules and reflections go straight from the browser to that service and skip the daily 100-message cap. Players without a key keep the built-in town AI',
+                '🔑 Direct provider calls now carry the game system prompt client-side (it used to exist only on the server); English-mode name swapping, Simplified→Traditional conversion and the "I am an AI" leak filter run client-side too. Direct Claude calls omit temperature, disable thinking first (and resend without the field if the model rejects it) and treat a refusal stop as a failure; the badge reads "AI: own key Claude / GPT / Gemini / Custom endpoint"',
+                '🌫️ No more whiteout weather: fog and rain used to thicken the distance fog over the whole scene, blurring every far building; distance fog now stays as light as on a clear day, foggy weather is shown by lower, 1.45× larger grey cloud puffs covering the sky (1.3× on rainy / snowy days), rain falls as rain and snow as snow',
+                '💬 3D speech bubbles: the overlay\'s nowrap rule outranked the bubble\'s wrapping, so text ran past the bubble edge; bubbles now always wrap (max 220px, 170px on phones) and over-long lines are cut with "…"',
+                '⚙️ The desktop header "Settings" button now opens the full settings tab (3D quality, theme, town list, account, AI and your own key all live there): after the observer shell hid the sidebar settings tab, desktop was left with only this button, which opened the old mini dialog (speed / language), so the full page was unreachable; "Settings" in the phone ☰ menu opens the full page as well',
+            ),
+        ),
+        array(
+            'version' => '6.35.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🏘️ 城鎮身分重做：新城鎮一律用隨機 id（之前用「使用者＋鎮名」算，換語言或改名就變成另一座，英文介面下會長出 Frontier Town）；舊存檔 id 不動、照常可讀。存檔多記主題鍵與來源（自己建的／鄰鎮），顯示名依主題與語言翻，不管當初存的是中文還英文',
+                '🏘️ 城鎮列表分成「我的城鎮」與「鄰鎮（道路開通後自動生成）」兩區，每座標主題圖示、季節天數、人口、最後儲存時間；兩座都還在第 1 天的同名或同主題城鎮標「⚠️ 疑似重複」讓你自己決定刪哪座（永遠不自動刪）。頂列與手機選單的「新城鎮」拿掉，建立只在列表裡並要確認',
+            ),
+            'changes_en' => array(
+                '🏘️ Town identity rebuilt: new towns get a random id (it used to be derived from user + town name, so a language switch or rename made a different town, and the English UI grew a "Frontier Town"); old save ids are untouched and load as before. Saves now carry the theme key and origin (yours / neighbour), and the display name follows theme and language whichever way it was stored',
+                '🏘️ The town list is split into "My towns" and "Neighbouring towns (generated when the road opens)", each with a theme icon, season and day, population and last save time; two same-name or same-theme towns both still on day 1 are flagged "⚠️ Possible duplicate" for you to decide (nothing is ever deleted automatically). The "New town" button leaves the header and phone menu; creation lives only in the list and asks for confirmation',
+            ),
+        ),
+        array(
+            'version' => '6.34.1',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🏘️ 城鎮列表：「新地圖」改名「新城鎮」並加確認——它是另開一座、原本那座保留在列表（之前常被當成重畫地圖，按幾次就多幾座）；英文介面時建立或自動補名的城鎮會以英文鎮名存檔（Frontier Town、Seabreeze Harbor…），現在程式補的名字一律中文正名，已存成英文的在中文介面顯示回中文（資料不動，兩座不同 id 的城鎮不會自動合併或刪除）',
+                '🐛 修：鎮上有兩台一模一樣的馬車——馬車站裡固定停一台，「商隊進城／回來」動畫又另外造一台從站裡開到廣場再消失。現在只有一台：商隊來時就是站裡那台從地圖邊緣開進來、停回站裡原位（標籤跟著走）；換圖時馬車狀態歸零',
+                '🐛 修：手機俯瞰整片畫面霧白——v6.32 的雲是幾條大白塊排在高度 19–25，手機預設鏡頭高 47，等於隔著雲看小鎮。雲重做成一朵一朵的棉花雲（一顆大方塊加周圍小方塊、底平頂蓬，每朵 5–7 格、彼此隔開），放在屋頂上方一點，俯瞰時看到一朵朵帶著地面雲影飄過；鏡頭降到雲層附近就淡掉只留雲影，不會再有霧白',
+            ),
+            'changes_en' => array(
+                '🏘️ Town list: the \"New map\" button is renamed \"New town\" with a confirmation, since it opens a separate town and keeps the current one in the list (it was often taken for a map redraw, growing the list by one per press); towns created or auto-named under the English UI were saved with English names (Frontier Town, Seabreeze Harbor...), so app-chosen names are now always the Chinese canonical form and already-English names display in Chinese in the Chinese UI (data untouched; two towns with different ids are never merged or deleted automatically)',
+                '🐛 Fixed two identical coaches in town: one parked at the coach station plus a copy the caravan animation drove from the station to the square before vanishing. Now there is one: on a caravan arrival the station\'s own coach drives in from the map edge and parks back in place (label follows); its state resets on map change',
+                '🐛 Fixed the whole phone view looking washed-out white: the v6.32 clouds were long white slabs at height 19–25 while the default phone camera is at 47, so you were looking at the town through a cloud. Clouds are rebuilt as distinct cotton puffs (one big block with smaller ones around it, flat base and fluffy top, 5–7 tiles each, spaced apart) just above the rooftops; from above you see individual clouds drifting with their shadows on the ground, and when the camera drops to cloud height they fade out leaving only the shadows, so no more white-out',
+            ),
+        ),
         array(
             'version' => '6.34.0',
             'date'    => '2026-11-04',

@@ -34,7 +34,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 - **Achievement System**: 50+ achievements across social, romance, economy, survival, faction, exploration, industry categories
 - **NPC Conversation Visualization**: Speech bubbles on map when NPCs talk to each other
 - **Player Interaction**: Choose jobs, vote in elections, flirt, propose, and marry NPCs
-- **Built-in Town AI**: every player talks to villagers through the server-side AI proxy (`/api/chat`); all keys live in Vercel env vars, nothing to configure on the client. Server-side smart routing: player chats and story scenes go to Groq's free tier (`GROQ_API_KEY`) first, schedules/reflections/background talk go to the paid channel (`LLM_*`), either side failing falls back to the other
+- **Built-in Town AI**: every player talks to villagers through the server-side AI proxy (`/api/chat`); all keys live in Vercel env vars, nothing to configure on the client. Server-side smart routing: player chats and story scenes go to Groq's free tier (`GROQ_API_KEY`) first, schedules/reflections/background talk go to the paid channel (`LLM_*`), either side failing falls back to the other. **Bring your own AI (v6.36.0)**: a player can instead enter their own Claude / OpenAI / Gemini / custom OpenAI-compatible key under Settings → AI; it stays in that device's browser only (never sent to the town server or cloud settings) and the browser calls the provider directly
 - **Pixel Art Map**: Animated tilemap with day/night cycle, campfires, particles
 - **Four Industries System**: Lumber, Quarry, Farming, Mining — choose your starting industry and unlock more as your town grows (v3)
 - **Farm & Crop System**: Plant crops, manage plots, seasonal planting, quality system, NPC farmer bonuses (v3)
@@ -213,6 +213,22 @@ English: the separate Godot test build now includes traveler controls, interacti
 | v6.33.0 | 效能（手機優先）：修過渡期每幀重跑 A* 的老 bug（村民更新 8.4ms → 2.2ms）、目的地快取、A* 型別陣列＋二元堆、手機自動畫質 1.5x、低畫質 30fps、抽屜關閉不畫側欄、靜態矩陣凍結 | ✅ 上線 |
 | v6.34.0 | 載入瘦身：tilemap.js 2D 繪圖碼移除（309KB → 153KB，WebGL 不可用改提示）、任務鏈資料拆 quest-data.js 觀察者不載（218KB → 107KB）；啟動 JS 壓縮後 825KB → 758KB | ✅ 上線 |
 
+| v6.35.0 | 城鎮身分重做：隨機 id、存主題鍵與來源、顯示名依主題與語言翻；城鎮列表分「我的城鎮／鄰鎮」、疑似重複標記 | ✅ 分支，待部署 |
+| v6.36.0 | 玩家自備 AI（BYOK）：設定頁填自己的 Claude／GPT／Gemini／自訂端點金鑰，只存本機瀏覽器、瀏覽器直連供應商；桌機「設定」改開完整設定頁；泡泡換行；天氣不再霧白 | ✅ 分支，待部署 |
+
+### J. 企劃：上帝視角沙盒（2026-11-04 拍板）
+
+**使用者需求（原話）**：「資源、科技、商店、建築、工廠等經濟社會元素應該不是讓我購買吧？這邊應該變成像是儀表板這樣顯示」「觀察者也不能投錢」「我是要觀察 agent 自己發展小鎮會發生什麼事情」「設計一些隨機事件看他們的反應」「隨機事件是讓我可以自己選擇是不是要發生，設計 30 個事件，我應該是要類似上帝視角」「隨機事件幫我設定類似卡牌樣式，讓我可以打出去然後觸發事件」「讓他們可以變成完整智能體模式」「把這些決定也交給 LLM（用記憶＋性格推理），代價是 AI 用量大幅上升是可以的」。
+
+**拍板結果**：玩家＝上帝視角旁觀者，唯一的手是「打事件卡」；不投錢、不下令、不批准。經濟與社會全部由村民自己推（提案 → 投票 → NPC 鎮長裁決 → 執行），經濟面板只顯示不操作。村民決策分兩檔：規則版（預設給走內建 AI 的人）與完整智能體版（LLM 用記憶＋性格推理，自備金鑰預設開）。
+
+| 版本 | 內容 | 狀態 |
+|---|---|---|
+| v6.37.0 | 村民全自主＋經濟儀表板：資源／科技／商店／建築／工廠／產業／農田七頁改唯讀儀表板，拿掉 28 種玩家操作鈕、捐款、贊助節慶、排班；研究與買賣改村民提案（新類別 🔬 研究、🛒 買賣）；農夫自動種收、工廠自動配方派工收貨、商人自動與行商交易；提案由村民投票＋NPC 鎮長裁決並附理由，觀察者不再按批准／否決；舊存檔不動 | ✅ 分支，待部署 |
+| v6.38.0 | 事件卡（上帝視角）：「事件」分頁改手牌區，30 張卡分天災／人禍／機運／人際四類（卡面圖示、類別色、一句效果、影響對象），點開看說明與預估影響、按「打出」才觸發（同卡冷卻）；落地後鏡頭飛現場、事件標記，相關村民 LLM 第一反應寫進記憶、後續對話與反思帶著事件、對策提案、日報、季末統計；「反應追蹤卡」記錄誰說了什麼、提了什麼案、幾天後結果。第二階段：自由輸入一句話當事件，由 LLM 轉成效果 | ✅ 分支，待部署（第二階段自由輸入未做） |
+| v6.39.0 | 完整智能體模式：設定頁開關；開啟後村民投票、要不要提案與提什麼、鎮長裁決、事件反應都由 LLM 依記憶／性格／關係推理並附理由；規則版保留為關閉時與 LLM 失敗時的退路；自備金鑰預設開，內建 AI 可開但提醒每日額度 | ✅ 分支，待部署 |
+| v6.40.0 | 科技樹擴充：現有 10 節點／12 建築／7 工廠／4 產業對長期觀察太快到頂，擴成三個時代（拓荒→手工→工坊）約 25～30 節點並連動新建築與工廠 | 📋 待做 |
+
 設計規格在 `design-system/rimtown-3d/MASTER.md`。v6.27 起 3D 是唯一畫面（WebGL 不可用時自動退回 2D；`?r=2d` 僅供除錯）。日間色票與鍵盤快捷鍵 v6.29、提案深化 v6.30、玩家殘留文案清理 v6.31、畫面細節 v6.32 已上線。2D 繪圖碼 v6.34 已移除（tilemap.js 只剩版面／尋路／移動／頭像）。
 
 ### D. 企劃草案：多城鎮、多村民、主題地圖（待拍板）
@@ -259,7 +275,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.34.0.zip` from Releases
+1. Download `rimtown-v6.39.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -312,6 +328,38 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.39.0 (2026-11-04)
+- 🧠 完整智能體模式（設定頁「🤖 AI 語言模型」新開關，自備金鑰預設開、小鎮內建 AI 預設關並提醒額度）：開啟後村民的決定交給 LLM 用記憶＋性格推理——投票（一次問一批最多六人，每人贊成／反對＋一句自己口吻的理由，依性格、在乎的價值、跟提案人的交情、最近記憶與鎮況判斷）、要不要提案與提什麼（今天輪到發言的人從幾個可行點子裡挑一個或今天不提，順便說出向全鎮的說明當提案稿）、鎮長裁決（批准／否決／擱置＋一句話理由）。規則版只在 AI 失敗、逾時或速率受限時墊底，提案與裁決永遠會有結果
+- 🧠 提案卡顯示 🧠 標記、村民自己說的投票理由（取代規則式的「看重財富」等標籤）與鎮長的第一人稱裁決理由；日誌記下「{who}想了想，今天沒什麼要跟大家提的」。決策呼叫不吃「NPC 每日 AI 額度」（那是背景閒聊的上限），只受供應商速率限制；LLM 回覆中的提案不會被重複裁決，存檔不帶中間狀態
+
+### v6.38.0 (2026-11-04)
+- 🃏 事件卡（上帝視角，新檔 sim-events.js 掛在 world.eventCards）：「動態 → 事件」分頁上方改成手牌區，30 張卡分四類——天災 8（旱災、暴風雨、寒流、火災、瘟疫、蝗災、地震、洪水）、人禍 8（商隊被劫、流言、竊案、稅吏上門、壞了的餐食、匪徒襲擊、物價崩盤、鎮長醜聞）、機運 7（豐收、金礦傳聞、神秘旅人、失散親人來信、行商大隊、慈善遺產、天降奇才）、人際 7（舊帳重翻、婚禮邀請、遺產之爭、英雄歸來、情書誤送、老友來訪、公開道歉）。卡面有圖示、類別色、冷卻天數；點卡展開說明與效果，按「打出」才發生；每張有冷卻、一天最多兩張；可依類別篩選或「隨機一張」
+- 🃏 卡牌效果全走既有系統：天氣（乾旱／暴雨／雪／雨）、季度考驗（糧荒／瘟疫／匪患／商會壓價，新增 SeasonTrials.force）、襲擊、新居民、旅行、探索區發現、行商、關係好感、倉庫與工程進度。打出後鏡頭飛到現場（有當事人就跟人、沒有就到地點）、角落通知可「去看」
+- 💬 村民反應：牽涉的人優先、相關職業其次、再隨機，最多三人各自用 LLM 說一句第一反應（新 ConversationEngine.reactToEvent：帶職業、性格與最近兩則記憶，可說打算怎麼做；失敗退回依性格的規則台詞），頭上冒泡泡、寫進記憶；全鎮都記得這件事、成為對話話題、日報頭條
+- 📼 反應追蹤：每張打出的卡記下牽涉者、三位村民的話、事後三天內的提案（編號／標題／提案人）、七天後鎮上的變化（心情／公庫／食物／人口）；存檔往返保留，手機 390px 三欄卡格
+
+### v6.37.0 (2026-11-04)
+- 👐 村民全自主（上帝視角第一步，新檔 sim-autonomy.js 掛在 world.autonomy）：原本留給玩家按的事全部交給村民每天自己做——農夫翻土／播種（缺糧先種糧、輪作、等級高的優先）／澆水／施肥／收成／清枯苗；工坊先交訂單再把成品入倉或拿去賣；商人（沒有就鎮長或其他人）每天跟來訪行商談，多的賣、缺的買（食物與藥、工具多留一點）；鎮上藥品／食物／工具／布料見底時有人去商店補，啤酒／葡萄酒／傢俱／麵包／衣物堆太多拿去賣。每件事都寫進日誌、當事人記憶與日報
+- 📜 四種新提案類別：🔬 研究（沒在研究時學者或相關行業提「研究某項」，三天沒人提學者自己挑）、🛒 買賣（原料見底提大宗進貨、倉庫爆了提大宗拋售）、🔨 升級（既有建築升級）、📈 產業升級；研究不再一閒下來就自動挑第一個
+- 🏛️ 提案改由村民投票＋NPC 鎮長裁決：投票兩天（七成的人投完、過了一天也會提早）後鎮長拍板，附理由（多數贊成／多數反對／公庫付不起／票數接近時看鎮長自己的價值觀、跟提案人的交情、是否小氣悲觀／沒人表態鎮長先做／擱置幾天後重新拍板）；觀察者的批准／否決／擱置鈕移除，提案分頁改「🗳️ 投票中」並顯示鎮長裁決列；鎮上沒鎮長時照票數
+- 📊 經濟七頁改唯讀儀表板：資源／科技／商店／建築／工廠／產業／農場共 42 顆操作鈕（買賣、研究、蓋樓、升級、設配方、派工、翻土澆水收成、排班、捐建、擺裝飾…）全部拿掉，改顯示「村民自己做的事」日誌、商人成交紀錄、商店買賣帳、研究員名單、可建造／可升級清單標「等村民提案」；鎮公所捐款、贊助節慶、裝飾擺放目錄移除（觀察者不投錢）。舊存檔不動，所有模擬 API 保留
+
+### v6.36.0 (2026-11-04)
+- 🔑 玩家自備 AI（BYOK）：設定頁「🤖 AI 語言模型」多了「自備 AI（進階）」：可選 Claude（Anthropic）／GPT（OpenAI）／Gemini（Google）／自訂 OpenAI 相容端點，填自己的 API 金鑰、模型（留空用便宜款預設：claude-haiku-5-5／gpt-4o-mini／gemini-2.5-flash）與基底網址，有「測試連線」「儲存並啟用」「清除金鑰」。金鑰只存在這台裝置的瀏覽器（localStorage），不推雲端設定、不進存檔、不經小鎮伺服器；村民對話／行程／反思全部由瀏覽器直連該服務，不受每日 100 則限制。沒填的人照走小鎮內建 AI
+- 🔑 直連供應商時前端自己補上遊戲系統提示（原本只在伺服器端），英文模式人名互換、簡轉繁、「我是 AI」漏網攔截也一併在前端做；Claude 直連不送 temperature、先關思考（模型不收 thinking 欄位就自動重送）、把 refusal 當失敗；徽章顯示「AI:自備 Claude／GPT／Gemini／自訂端點」
+- 🌫️ 天氣不再霧白：霧天／雨天原本把整個畫面蒙一層白（距離霧加濃），遠處建築全糊掉；現在距離霧一律跟晴天一樣淡，霧天改用壓低、放大 1.45 倍的一朵朵灰雲蓋住天空，陰雨雪天雲放大 1.3 倍，雨就落雨、雪就飄雪
+- 💬 3D 對話泡泡：外層覆蓋層的 nowrap 權重蓋過泡泡的換行設定，字會衝出泡泡框；改成一定換行（最寬 220px、手機 170px），句子過長截斷補「…」
+- ⚙️ 桌機頂列「設定」改開完整設定分頁（3D 畫質、介面配色、城鎮列表、帳號、AI 與自備金鑰都在這）：觀察者殼把側欄的設定頁籤藏起來後，桌機原本只剩這顆鈕、卻只開舊的小彈窗（速度／語言），整頁設定到不了；手機 ☰ 選單裡的「設定」同樣改開完整設定頁
+
+### v6.35.0 (2026-11-04)
+- 🏘️ 城鎮身分重做：新城鎮一律用隨機 id（之前用「使用者＋鎮名」算，換語言或改名就變成另一座，英文介面下會長出 Frontier Town）；舊存檔 id 不動、照常可讀。存檔多記主題鍵與來源（自己建的／鄰鎮），顯示名依主題與語言翻，不管當初存的是中文還英文
+- 🏘️ 城鎮列表分成「我的城鎮」與「鄰鎮（道路開通後自動生成）」兩區，每座標主題圖示、季節天數、人口、最後儲存時間；兩座都還在第 1 天的同名或同主題城鎮標「⚠️ 疑似重複」讓你自己決定刪哪座（永遠不自動刪）。頂列與手機選單的「新城鎮」拿掉，建立只在列表裡並要確認
+
+### v6.34.1 (2026-11-04)
+- 🏘️ 城鎮列表：「新地圖」改名「新城鎮」並加確認——它是另開一座、原本那座保留在列表（之前常被當成重畫地圖，按幾次就多幾座）；英文介面時建立或自動補名的城鎮會以英文鎮名存檔（Frontier Town、Seabreeze Harbor…），現在程式補的名字一律中文正名，已存成英文的在中文介面顯示回中文（資料不動，兩座不同 id 的城鎮不會自動合併或刪除）
+- 🐛 修：鎮上有兩台一模一樣的馬車——馬車站裡固定停一台，「商隊進城／回來」動畫又另外造一台從站裡開到廣場再消失。現在只有一台：商隊來時就是站裡那台從地圖邊緣開進來、停回站裡原位（標籤跟著走）；換圖時馬車狀態歸零
+- 🐛 修：手機俯瞰整片畫面霧白——v6.32 的雲是幾條大白塊排在高度 19–25，手機預設鏡頭高 47，等於隔著雲看小鎮。雲重做成一朵一朵的棉花雲（一顆大方塊加周圍小方塊、底平頂蓬，每朵 5–7 格、彼此隔開），放在屋頂上方一點，俯瞰時看到一朵朵帶著地面雲影飄過；鏡頭降到雲層附近就淡掉只留雲影，不會再有霧白
 
 ### v6.34.0 (2026-11-04)
 - ⚡ 載入瘦身：tilemap.js 裡不可達的 2D 繪圖碼全部移除（39 個方法、3 組貼圖常數，309KB → 153KB），只留版面生成、尋路、村民移動、互動與頭像繪製；啟動時也不再預先畫整套 2D 貼圖。3D 是唯一畫面，`?r=2d` 開關拿掉；WebGL 不可用時小鎮照跑，地圖區顯示提示
