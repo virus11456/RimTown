@@ -5314,6 +5314,9 @@
         '💬 聊天 —— 隨時跟任何一位村民聊，他會記得你說過的話，但不會因此偏心': '💬 Chat — talk to any villager any time; they remember what you said but never play favourites',
         '🏗️ 建設 —— 在「動態」分頁開建設選單，由村民動手蓋': '🏗️ Building — open the build menu in the Town tab, and villagers do the work',
         '提案列表在「提案」分頁；每天早上的早安卡會提醒你昨天的結算與本季考驗。': 'Proposals live in the Proposals tab; every morning the morning card recaps yesterday and the current trial.',
+        // v6.39.1 新版自動套用
+        '有新版本': 'New version ready',
+        '重新整理頁面就會更新到最新版。': 'Reload the page to get the latest version.',
         // v6.39.0 完整智能體模式
         '：好感': ': affinity',
         '、信任': ', trust',

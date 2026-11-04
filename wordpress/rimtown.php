@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.39.0
+ * Version: 6.39.1
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.39.0');
+define('RIMTOWN_VERSION', '6.39.1');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1331,6 +1331,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
 function rimtown_get_changelog() {
     return array(
         array(
+            'version' => '6.39.1',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🧹 移除 Godot 3D 試作的所有殘留：首頁「3D 測試圖集」區塊與四張 Godot 截圖、docs/GODOT_LOWPOLY_BRIEF.md、更新紀錄裡的「Godot 3D · 2026.09.10」假版本條目、README 的 Godot 進度段落與路線圖字句。3D 只剩現役的 three.js 版',
+                '🆕 新版自動套用：Service Worker 換新版接管後，還停在首頁就自動重新整理拿到最新版；已經在遊戲裡則只跳一張「有新版本，重新整理即可更新」通知，不打斷進度。之前第一次重新整理只會在背景裝新版，畫面上的版本號還是舊的',
+            ),
+            'changes_en' => array(
+                '🧹 Removed every leftover of the abandoned Godot 3D prototype: the landing page "3D test gallery" with its four Godot screenshots, docs/GODOT_LOWPOLY_BRIEF.md, the pseudo-version "Godot 3D · 2026.09.10" changelog entry and the Godot progress section and roadmap wording in the README. The only 3D left is the live three.js build',
+                '🆕 Updates apply themselves: once a new Service Worker takes over, a tab still on the landing page reloads to the new version by itself; a tab already in the game only shows a "New version ready, reload to update" notice and never interrupts play. Previously the first reload only installed the new version in the background while the page kept showing the old version number',
+            ),
+        ),
+        array(
             'version' => '6.39.0',
             'date'    => '2026-11-04',
             'changes' => array(
@@ -2440,26 +2452,6 @@ function rimtown_get_changelog() {
                 '🧹 Please delete the extra town manually from the town list (the code never auto-deletes cloud saves); it is usually the Day-1 entry named Seabreeze Harbor or Frontier Town',
                 '📂 The landing page\'s "Inside a villager\'s head" section is now collapsed by default and expands on tap, so the page no longer runs on forever',
                 '🌐 Season comparisons (event seasons, crops, archives) all failed under the English interface; they now compare Chinese against Chinese, and the header town name and town list translate at display time',
-            ),
-        ),
-        array(
-            'version' => 'Godot 3D · 2026.09.10',
-            'date' => '2026-09-10',
-            'changes' => array(
-                'Godot 3D 開發進度：旅人移動、近身互動、聊天／送禮、心動事件、建築選址與加工農業已接入。以下是獨立 3D 測試版進度，並非網頁版新增玩法。',
-                '任務核心已接入 12 主線、11 支線、24 居民任務、13 日常、六類人生目標及四種結局；所有路線自然通關驗收仍在進行。',
-                '人口與家庭：每兩日檢查出生、每日最多一位居民移入；住宅每棟完工增加 3 位 NPC 容量，最多八棟、總容量 40，住宅不增加產量。',
-                '平衡與驗證：保留備貨與市場需求限制；原始新局資源、正常付費施工，伐木起步的經濟路線在 40 日達到 37 人、18 棟及 Lv7。預設原料補給有開啟，並非封閉自給或全結局通關。',
-                '行為一致性限制：3D 版自由聊天提到邀約，尚不會自動建立赴約行程；居民間系統邀約已有延遲選址，但準時赴約、等待與失約原因尚待補齊。',
-                '官網新增四張實際 Godot 測試截圖：建設選址、居民任務、人口家庭與友情心動。畫面含測試情境，並非目前網頁遊戲畫面。',
-            ),
-            'changes_en' => array(
-                'Godot 3D development: traveler movement, nearby interactions, chat and gifts, heart events, construction placement, processing and farming are integrated. These are updates to the separate 3D test build, not new browser gameplay.',
-                'Quest core: 12 main quests, 11 side quests, 24 resident quests, 13 daily objectives, six life goals and four endings are integrated. Full natural playthrough validation across all routes is still ongoing.',
-                'Population and families: birth checks every two days and at most one immigrant per day. Each completed residence adds three NPC slots; up to eight residences and 40 total NPC slots. Housing provides no production bonus.',
-                'Balance and validation: stock targets and market demand limits remain active. Starting with demo resources and normal paid construction, a lumber-first economic route reached 37 residents, 18 buildings and town Lv7 in 40 days. Default material relief was enabled; this was not a closed economy or full ending playthrough.',
-                'Behavior consistency limit: free-form 3D dialogue invitations do not yet create appointments. System invitations between NPCs can influence later destinations, but punctual arrival, waiting and missed-appointment explanations remain unfinished.',
-                'The website now includes four real Godot test screenshots: construction placement, resident quests, population and families, and friendship milestones. They include test scenarios and do not show the current browser game.',
             ),
         ),
         array(

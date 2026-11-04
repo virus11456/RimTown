@@ -2,20 +2,6 @@
 
 A RimWorld-inspired AI town simulation where every resident is an autonomous AI agent with unique personality, background, job, relationships, and daily life. Available as a WordPress plugin.
 
-## Godot 3D 開發進度（2026-09-10）
-
-獨立的 Godot 3D 測試版已可操作旅人；官網目前仍提供 2D 網頁版。3D 尚未正式發行，不能將下方原版功能清單視作全部已移植。
-
-- Godot 3D 開發進度：旅人移動、近身互動、聊天／送禮、心動事件、建築選址與加工農業已接入。以下是獨立 3D 測試版進度，並非網頁版新增玩法。
-- 任務核心已接入 12 主線、11 支線、24 居民任務、13 日常、六類人生目標及四種結局；所有路線自然通關驗收仍在進行。
-- 人口與家庭：每兩日檢查出生、每日最多一位居民移入；住宅每棟完工增加 3 位 NPC 容量，最多八棟、總容量 40，住宅不增加產量。
-- 平衡與驗證：保留備貨與市場需求限制；原始新局資源、正常付費施工，伐木起步的經濟路線在 40 日達到 37 人、18 棟及 Lv7。預設原料補給有開啟，並非封閉自給或全結局通關。
-- 行為一致性限制：3D 版自由聊天提到邀約，尚不會自動建立赴約行程；居民間系統邀約已有延遲選址，但準時赴約、等待與失約原因尚待補齊。
-
-實際測試畫面見[官網 3D 圖集](https://rimtown.vercel.app/#landing-preview)。[3D 開發原始碼](https://github.com/virus11456/RimTown/tree/codex/godot-viewer/godot)與[人口／住宅驗收說明](https://github.com/virus11456/RimTown/blob/codex/godot-viewer/godot/docs/POPULATION_PACKAGE.md)。後續仍有選舉／防禦世界事件、完整自然通關、AI 邀約與行程一致性、動畫音效及雲端驗收。核心玩法與 3D 體驗穩定後，另安排官網整體視覺評估，決定是否全面改版。
-
-English: the separate Godot test build now includes traveler controls, interactions, construction, economy, quests and population growth. The public browser game remains 2D. Free-form invitations do not yet guarantee attendance; full ending playthroughs and other world systems are still being validated. The gallery contains real test scenes, including prepared fixtures.
-
 ## Features
 
 - **Autonomous AI Agents**: 25+ residents with unique personality, memory, moods, and psychological needs
@@ -66,7 +52,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 | A1 | 生成更多城鎮與村民 | ✅ v5.75.0–v5.80.0 全部上線（五座主題城鎮、邊境鎮 25 人／海風鎮 20 人／其餘各 15 人、跨鎮商隊） | 五座主題鎮；邊境鎮 25、海風鎮 20、其餘各 15 人；隨機卡司名字池 40 姓 × 120 名；人口上限 30 |
 | A2 | 海風鎮地圖要有海邊、燈塔、港口 | ✅ v5.75.0 已上線 | `generateLayout(locations, theme)` 海岸版面：海面／沙灘／棧橋＋漁船／燈塔（夜間光束）／曬網場／鹽場／海蝕洞／潟湖 |
 | A3 | 每座城鎮特色要不一樣 | ✅ 五鎮各有專屬地形、建築、卡司、物資與商隊角色 | 需要「主題地形＋主題建築圖示＋主題卡司＋主題經濟」四層一起做 |
-| A4 | 首頁放 3D low-poly 截圖（`img/lowpoly-preview.jpg`） | 等附件 | 使用者的截圖未以附件送達；Cowork 另放了 4 張 Godot 測試截圖（v5.74.1 後） |
+| A4 | 首頁放 3D 截圖 | ✅ 改由 three.js 版本身呈現（v6.23 起首頁即 3D 小鎮）；Godot 時期的測試圖集與文件已於 v6.39.1 移除 |
 | A5 | 海風鎮專屬任務鏈（漁村主線） | ✅ v5.83.0–v5.84.0 五章＋六支線全部上線 | 五鎮任務鏈 v5.83.0–v5.87.0 全部上線，四座主題鎮各有主題災難與商路終章（見 E／F 節）；回歸測試 `scripts/quest_chain_test.js` |
 | A6 | 已多出來的重複城鎮 | 需玩家手動刪 | v5.74.2 已堵住成因；程式規範「絕不自動刪雲端存檔」，請到城鎮列表刪 Seabreeze Harbor／Frontier Town 那筆 |
 
@@ -110,7 +96,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ### C. 路線圖（與首頁一致）
 
-- 開發中：3D low-poly 版（Blender＋Godot，獨立分支 `codex/godot-*`）；核心玩法迴圈 ✅ 全部上線（H 節：H1 委託板 v5.91.0、H2 押商隊 v5.92.0、H3 季度考驗 v5.93.0、H4 旅人成長 v5.94.0、H5 有目的的對話 v5.95.0；v5.97.0 迴圈打磨、v5.98.0 季末回顧；下一步看玩測回饋調數字）
+- ✅ 3D：three.js 版 v6.23–v6.34 全部上線（Godot 試作已廢棄並於 v6.39.1 自 repo 移除）；核心玩法迴圈 ✅ 全部上線（H 節：H1 委託板 v5.91.0、H2 押商隊 v5.92.0、H3 季度考驗 v5.93.0、H4 旅人成長 v5.94.0、H5 有目的的對話 v5.95.0；v5.97.0 迴圈打磨、v5.98.0 季末回顧；下一步看玩測回饋調數字）
 - ✅ 日報跨鎮專欄 v5.88.0、村民自訂外觀 v5.89.0、跨鎮戀愛搬家 v5.90.0（規劃中項目已清空；下一批待拍板）
 - 構想：玩家之間互訪城鎮；手機 App 版
 
@@ -275,7 +261,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.39.0.zip` from Releases
+1. Download `rimtown-v6.39.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -328,6 +314,10 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.39.1 (2026-11-04)
+- 🧹 移除 Godot 3D 試作的所有殘留：首頁「3D 測試圖集」區塊與四張 Godot 截圖、docs/GODOT_LOWPOLY_BRIEF.md、更新紀錄裡的「Godot 3D · 2026.09.10」假版本條目、README 的 Godot 進度段落與路線圖字句。3D 只剩現役的 three.js 版
+- 🆕 新版自動套用：Service Worker 換新版接管後，還停在首頁就自動重新整理拿到最新版；已經在遊戲裡則只跳一張「有新版本，重新整理即可更新」通知，不打斷進度。之前第一次重新整理只會在背景裝新版，畫面上的版本號還是舊的
 
 ### v6.39.0 (2026-11-04)
 - 🧠 完整智能體模式（設定頁「🤖 AI 語言模型」新開關，自備金鑰預設開、小鎮內建 AI 預設關並提醒額度）：開啟後村民的決定交給 LLM 用記憶＋性格推理——投票（一次問一批最多六人，每人贊成／反對＋一句自己口吻的理由，依性格、在乎的價值、跟提案人的交情、最近記憶與鎮況判斷）、要不要提案與提什麼（今天輪到發言的人從幾個可行點子裡挑一個或今天不提，順便說出向全鎮的說明當提案稿）、鎮長裁決（批准／否決／擱置＋一句話理由）。規則版只在 AI 失敗、逾時或速率受限時墊底，提案與裁決永遠會有結果
