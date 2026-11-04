@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.27.1
+ * Version: 6.27.2
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.27.1');
+define('RIMTOWN_VERSION', '6.27.2');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1328,6 +1328,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.27.2',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🐛 iPhone PWA 全螢幕：畫面上方多一塊空白、底部分頁列（動態／村民／提案／日報／聊天／設定）被推出螢幕——外層容器與手機標題列各加了一次瀏海安全區，容器又是固定 100vh；現在只留標題列那一次',
+            ),
+            'changes_en' => array(
+                '🐛 iPhone PWA full-screen: a blank band at the top and the bottom tab bar (Town / Villagers / Proposals / Daily / Chat / Settings) pushed off screen — the outer container and the mobile header each added the notch safe area while the container is a fixed 100vh; only the header keeps it now',
+            ),
+        ),
         array(
             'version' => '6.27.1',
             'date'    => '2026-11-04',
