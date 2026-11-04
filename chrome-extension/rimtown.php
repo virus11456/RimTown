@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.37.0
+ * Version: 6.38.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.37.0');
+define('RIMTOWN_VERSION', '6.38.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -876,6 +876,7 @@ function rimtown_enqueue_assets() {
     );
     wp_enqueue_script('rimtown-sim-proposals', RIMTOWN_URL . 'sim-proposals.js', array('rimtown-sim-society'), RIMTOWN_VERSION, true); // v6.26.0 村民提案
     wp_enqueue_script('rimtown-sim-autonomy', RIMTOWN_URL . 'sim-autonomy.js', array('rimtown-sim-proposals'), RIMTOWN_VERSION, true); // v6.37.0 村民全自主
+    wp_enqueue_script('rimtown-sim-events', RIMTOWN_URL . 'sim-events.js', array('rimtown-sim-autonomy'), RIMTOWN_VERSION, true); // v6.38.0 事件卡
     wp_enqueue_script(
         'rimtown-simulation',
         RIMTOWN_URL . 'simulation.js',
@@ -1329,6 +1330,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.38.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🃏 事件卡（上帝視角，新檔 sim-events.js 掛在 world.eventCards）：「動態 → 事件」分頁上方改成手牌區，30 張卡分四類——天災 8（旱災、暴風雨、寒流、火災、瘟疫、蝗災、地震、洪水）、人禍 8（商隊被劫、流言、竊案、稅吏上門、壞了的餐食、匪徒襲擊、物價崩盤、鎮長醜聞）、機運 7（豐收、金礦傳聞、神秘旅人、失散親人來信、行商大隊、慈善遺產、天降奇才）、人際 7（舊帳重翻、婚禮邀請、遺產之爭、英雄歸來、情書誤送、老友來訪、公開道歉）。卡面有圖示、類別色、冷卻天數；點卡展開說明與效果，按「打出」才發生；每張有冷卻、一天最多兩張；可依類別篩選或「隨機一張」',
+                '🃏 卡牌效果全走既有系統：天氣（乾旱／暴雨／雪／雨）、季度考驗（糧荒／瘟疫／匪患／商會壓價，新增 SeasonTrials.force）、襲擊、新居民、旅行、探索區發現、行商、關係好感、倉庫與工程進度。打出後鏡頭飛到現場（有當事人就跟人、沒有就到地點）、角落通知可「去看」',
+                '💬 村民反應：牽涉的人優先、相關職業其次、再隨機，最多三人各自用 LLM 說一句第一反應（新 ConversationEngine.reactToEvent：帶職業、性格與最近兩則記憶，可說打算怎麼做；失敗退回依性格的規則台詞），頭上冒泡泡、寫進記憶；全鎮都記得這件事、成為對話話題、日報頭條',
+                '📼 反應追蹤：每張打出的卡記下牽涉者、三位村民的話、事後三天內的提案（編號／標題／提案人）、七天後鎮上的變化（心情／公庫／食物／人口）；存檔往返保留，手機 390px 三欄卡格',
+            ),
+            'changes_en' => array(
+                '🃏 Event cards (god\'s-eye view; new sim-events.js on world.eventCards): the top of "Town → Events" is now a hand of 30 cards in four suits — 8 disasters (drought, storm, cold snap, fire, plague, locusts, earthquake, flood), 8 mishaps (caravan robbed, rumour, theft, tax collector, spoiled meals, bandit raid, price crash, mayor scandal), 7 fortunes (bumper harvest, gold rumour, mysterious traveller, letter from a lost relative, grand caravan, bequest, prodigy) and 7 people cards (old grudge, wedding invitation, inheritance dispute, hero\'s return, misdelivered love letter, old friend\'s visit, public apology). Each card shows its icon, suit colour and cooldown; tap for the description and effect, press "Play" to make it happen; every card cools down and at most two can be played per day; filter by suit or draw a random one',
+                '🃏 Card effects run through the existing systems: weather (drought / storm / snow / rain), season trials (famine / plague / bandits / price war via the new SeasonTrials.force), raids, new residents, travel, zone discovery, merchants, relationships, stores and construction progress. After playing, the camera flies to the scene (to the person involved if there is one, else the place) and the corner notice offers "Go look"',
+                '💬 Villager reactions: those involved first, then related trades, then random — up to three villagers each give a one-line first reaction through the LLM (new ConversationEngine.reactToEvent, fed their job, personality and two recent memories, allowed to say what they intend to do; falls back to personality-based lines), shown as a speech bubble and written to memory; the whole town remembers the event, it becomes a conversation topic and a newspaper headline',
+                '📼 Reaction log: every played card records who was involved, what three villagers said, the proposals raised in the following three days (id / title / proposer) and how the town changed seven days later (mood / treasury / food / population); survives save round-trips; three-column card grid at 390px',
+            ),
+        ),
         array(
             'version' => '6.37.0',
             'date'    => '2026-11-04',

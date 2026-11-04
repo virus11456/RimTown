@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.37.0
-const RIMTOWN_APP_VERSION = '6.37.0';
+// RimTown - Frontend App (WordPress Plugin) v6.38.0
+const RIMTOWN_APP_VERSION = '6.38.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -2422,6 +2422,11 @@ class RimTownApp {
                 // Settings tab actions
                 case 'settings-save-all': this._saveSettingsFromTab(); break;
                 // v6.36.0 玩家自備 AI
+                // v6.38.0 事件卡
+                case 'event-open': this._ecOpen = (this._ecOpen === val) ? null : val; this.renderSidebar(); break;
+                case 'event-filter': this._ecFilter = val; this.renderSidebar(); break;
+                case 'event-play': this._playEventCard(val); break;
+                case 'event-random': { const h = (this.state?.eventCards?.hand || []).filter(c => c.left <= 0 && !c.dailyFull); if (h.length) { const c = h[Math.floor(Math.random() * h.length)]; this._ecOpen = c.id; this._playEventCard(c.id); } else this._showCornerNotice({ icon: '🃏', title: t('事件卡'), name: '', desc: t('今天沒有可打的卡了') }); break; }
                 case 'byok-test': this._byokTest(); break;
                 case 'byok-save': this._byokSave(false); break;
                 case 'byok-clear': this._byokClear(); break;

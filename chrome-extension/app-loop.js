@@ -342,6 +342,7 @@ Object.assign(RimTownApp.prototype, {
             { origId: meta.origId, origName: meta.origName, notes: meta.notes || [], visitedTownName: this._getCurrentTownName(), visitedTownId: this.currentTownId, romance: meta.romance || null }); // v5.90.0 帶回戀情
         w.onRelocate = (data) => this._doRelocate(data); // v5.90.0 搬家提案的決定
         w.onProposalEvent = (kind, p) => this._onProposalEvent(kind, p); // v6.26.0 村民提案事件
+        w.onEventCard = (kind, e, npc, text) => this._onEventCard(kind, e, npc, text); // v6.38.0 事件卡
         w.onSeasonRecap = () => { try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} this._showSeasonRecap(); }; // v5.98.0 季末回顧
         w.onChainEvent = (kind, npcName, title, text) => { if (kind === 'start') { try { this._aiChainQuotes(w); } catch (e) {} } this._showCornerNotice({ icon: kind === 'done' ? '🏅' : kind === 'broken' ? '💔' : '📖', title: kind === 'done' ? t('委託鏈完成') : kind === 'broken' ? t('委託鏈中斷') : t('有人想拜託你'), name: `${t(npcName)} · ${title}`, desc: text || (kind === 'start' ? t('明天的委託板會多一件他的事，連做三天') : '') }); }; // v6.5.0
         w.onGrowthEvent = (kind, v) => { if (w.observerMode) return; if (kind === 'level') this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${v} ${t('級')}`, name: '', desc: t('到「故事」分頁選一個天賦') }); else if (kind === 'attr') { this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${w.growth?.level || ''} ${t('級')}`, name: `${(typeof growthAttrLabel === 'function' ? growthAttrLabel(v) : v)} +1`, desc: t('天賦都學完了，之後每升一級隨機一項屬性 +1') }); } try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.94.0
@@ -592,6 +593,26 @@ Object.assign(RimTownApp.prototype, {
         if (kind === 'new') { this.bgm?.sfx?.('open'); this._aiProposalPitch(w, p.id); }
         try { this.state = w.getState(); if (this.activeTab === 'proposals') this.renderSidebar(); } catch (e) {}
         this._updateProposalBadge();
+    },
+    // v6.38.0 事件卡:打出 → 鏡頭飛現場 + 角落通知;反應 → 泡泡 + 重畫;七天後 → 通知
+    _playEventCard(id) {
+        const w = this.world; if (!w?.eventCards) return;
+        const r = w.eventCards.play(w, id);
+        if (!r.ok) { const why = r.why === 'cooldown' ? t('冷卻中，還要 {n} 天').replace('{n}', r.days || 0) : r.why === 'daily' ? t('今天的兩張已經打完，明天再來') : t('這張卡現在打不出去'); this._showCornerNotice({ icon: '🃏', title: t('事件卡'), name: '', desc: why }); return; }
+        this.bgm?.sfx?.('event');
+        try { this.state = w.getState(); this.renderSidebar(); } catch (e) {}
+    },
+    _onEventCard(kind, e, npc, text) {
+        if (kind === 'played') {
+            const go = e.affected?.length ? { agentId: e.affected[0] } : { locId: e.loc || 'town_square' };
+            try { this._goLook(go); } catch (err) {} // 上帝打出的卡一律帶鏡頭
+            this._showCornerNotice({ icon: e.icon, title: `${t('事件')}${t('：')}${e.name}`, name: '', desc: e.detail, go });
+        } else if (kind === 'reaction' && npc) {
+            try { this.tileMap?.addConversationBubble?.(npc.agentId, npc.agentId, npc.name, npc.name, text, ''); } catch (err) {}
+            try { this.state = this.world.getState(); if (this.activeTab === 'events') this.renderSidebar(); } catch (err) {}
+        } else if (kind === 'outcome') {
+            this._showCornerNotice({ icon: '📈', title: `${e.name} · ${t('七天後')}`, name: '', desc: e.outcomeText });
+        }
     },
     _proposalDecide(val) {
         const w = this.world; if (!w?.proposals) return;

@@ -1195,9 +1195,56 @@ Object.assign(RimTownApp.prototype, {
         container.innerHTML = html || t('<p class="muted-text" style="padding:20px">尚無訊息...</p>');
     },
 
+    // v6.38.0 事件卡(上帝視角):手牌、打出、反應追蹤
+    _renderEventCards() {
+        const d = this.state?.eventCards; if (!d) return '';
+        const esc = (x) => this._escapeHtml(String(x ?? ''));
+        const cats = (typeof EVENT_CARD_CATS !== 'undefined') ? EVENT_CARD_CATS : {};
+        const filter = this._ecFilter || 'all';
+        let html = `<div class="ec-panel">
+            <div class="ec-head"><h4>🃏 ${t('事件卡')}</h4><span class="ec-left">${t('今天還能打')} ${d.todayLeft}/${d.perDay}</span></div>
+            <div class="ec-hint">${t('你是上帝視角：不投錢、不下令，只能往小鎮丟事件，然後看村民怎麼反應、怎麼提案、鎮上怎麼變。點卡看說明，按「打出」才會發生；同一張打過要等冷卻。')}</div>
+            <div class="ec-filters"><button class="${filter === 'all' ? 'active' : ''}" data-action="event-filter" data-val="all">${t('全部')}</button>${Object.entries(cats).map(([k, c]) => `<button class="${filter === k ? 'active' : ''}" data-action="event-filter" data-val="${k}">${c.icon} ${t(c.label)}</button>`).join('')}<button class="ec-random" data-action="event-random">🎲 ${t('隨機一張')}</button></div>
+            <div class="ec-grid">`;
+        for (const c of d.hand) {
+            if (filter !== 'all' && c.cat !== filter) continue;
+            const open = this._ecOpen === c.id; const blocked = c.left > 0 || c.dailyFull;
+            html += `<div class="ec-card ec-${c.cat}${open ? ' open' : ''}${blocked ? ' blocked' : ''}" data-action="event-open" data-val="${c.id}" role="button" tabindex="0" aria-expanded="${open}">
+                <div class="ec-icon">${c.icon}</div><div class="ec-name">${esc(c.name)}</div>
+                <div class="ec-cat">${c.catIcon} ${esc(c.catLabel)}</div>
+                ${c.left > 0 ? `<div class="ec-cd">⏳ ${c.left}${t('天')}</div>` : ''}
+            </div>`;
+        }
+        html += '</div>';
+        const cur = d.hand.find(c => c.id === this._ecOpen);
+        if (cur) {
+            const blocked = cur.left > 0 || cur.dailyFull;
+            html += `<div class="ec-detail ec-${cur.cat}">
+                <div class="ec-detail-head"><span class="ec-icon">${cur.icon}</span><div><div class="ec-name">${esc(cur.name)}</div><div class="ec-cat">${cur.catIcon} ${esc(cur.catLabel)} · ${t('冷卻')} ${cur.cd} ${t('天')}</div></div></div>
+                <div class="ec-desc">${esc(cur.desc)}</div>
+                <div class="ec-effect">⚡ ${esc(cur.effect)}</div>
+                <div class="ec-actions"><button class="ec-play" data-action="event-play" data-val="${cur.id}" ${blocked ? 'disabled' : ''}>🃏 ${t('打出')}</button><span class="ec-note">${cur.left > 0 ? t('冷卻中，還要 {n} 天').replace('{n}', cur.left) : cur.dailyFull ? t('今天的兩張已經打完，明天再來') : t('打出後鏡頭會飛到現場，村民會依性格各自反應')}</span></div>
+            </div>`;
+        }
+        if (d.played?.length) {
+            html += `<h4 class="ec-h">📼 ${t('反應追蹤')}</h4>`;
+            for (const e of d.played) {
+                html += `<div class="ec-track ec-${e.cat}">
+                    <div class="ec-track-head"><span>${e.icon} <b>${esc(e.name)}</b></span><span class="ec-when">${e.daysAgo === 0 ? t('今天') : t('{n} 天前').replace('{n}', e.daysAgo)}</span></div>
+                    <div class="ec-track-detail">${esc(e.detail)}</div>
+                    ${e.reactions.length ? `<div class="ec-reacts">${e.reactions.map(r => `<div class="ec-react"><b data-action="select-agent" data-val="${r.agentId}">${esc(r.name)}</b>${t('：')}${esc(r.text)}</div>`).join('')}</div>` : `<div class="ec-reacts muted">${t('村民還在消化這件事…')}</div>`}
+                    ${e.proposals.length ? `<div class="ec-props">📜 ${t('事後三天內的提案')}${t('：')}${e.proposals.map(p => `<span class="ec-prop">${esc(p.id)} ${esc(p.title || '')}${p.proposer ? `（${esc(p.proposer)}）` : ''}</span>`).join('')}</div>` : ''}
+                    ${e.outcomeText ? `<div class="ec-outcome">📈 ${t('七天後')}${t('：')}${esc(e.outcomeText)}</div>` : ''}
+                </div>`;
+            }
+        }
+        return html + '</div>';
+    },
+
     renderEvents(container) {
         if (!this.state) return;
         let html = '';
+        html += this._renderEventCards(); // v6.38.0
 
         // --- Election ---
         const election = this.state.election;

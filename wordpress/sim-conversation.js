@@ -918,6 +918,30 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
     }
 
     // v4.9.0: 建築完工/組合發現時,挑一位相關 NPC 用 AI 對玩家發表評論
+    // v6.38.0 事件卡:某位村民對剛發生的事件說一句第一反應(LLM;記憶裡最近兩件事當脈絡)。回傳純文字,失敗回空字串
+    async reactToEvent(world, npc, eventText, cat) {
+        if (!npc || !this.llm || !this.llm._canMakeRequest(true)) return '';
+        try {
+            const pN = this._buildCharacterProfile(npc);
+            const recent = (npc.memory?.entries || []).slice(-6).filter(e => e.category !== 'event').slice(-2).map(e => e.content).filter(Boolean);
+            const prompt = `${t('你正在扮演「')}${npc.name}${t('」——{town}的居民。鎮上剛剛發生了一件事：').replace('{town}', t(world.townName || '邊境鎮'))}${eventText}
+
+${t('【你是誰】')}
+${pN.name}${t('，')}${pN.age}${t('歲，')}${pN.job}${t('。性格：')}${pN.traits}${t('。')}
+${recent.length ? `${t('【你最近記得的事】')}\n${recent.map(x => '- ' + x).join('\n')}\n` : ''}
+${t('【規則】')}
+${LLM_LANG.rule(t('- 繁體中文（台灣用語），1-2 句，像當場脫口而出的話'), '- Natural English, 1-2 sentences, as if blurted out on the spot')}
+${t('- 從你的職業、性格和處境出發：害怕、生氣、興奮、幸災樂禍、盤算都可以，要有個人立場')}
+${t('- 可以順口說你打算怎麼做（例如要去提案、要去幫忙、要去找誰算帳）')}
+${t('- 不要加任何前綴、名字標籤、引號、旁白')}`;
+            const response = await this.llm.generate(prompt, 120, 0.95, true);
+            if (!response || response === '__ERROR__' || response === '__RATE_LIMITED__') return '';
+            let text = response.trim().replace(/^["「『]|["」』]$/g, '').trim();
+            text = text.replace(new RegExp(`^${npc.name}[：:]\\s*`), '').trim();
+            return text.slice(0, 120);
+        } catch (e) { console.warn('[RimTown] reactToEvent failed:', e); return ''; }
+    }
+
     async sendEventComment(world, eventText, preferJobs = [], preferIds = [], fallbackLines = null) {
         try {
             const player = Object.values(world.agents).find(a => a.isPlayer);
