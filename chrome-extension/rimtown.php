@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.40.2
+ * Version: 6.41.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.40.2');
+define('RIMTOWN_VERSION', '6.41.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1330,6 +1330,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.41.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🧠 所有 AI 一律先問 Claude：村民對話、劇情名場面、行程、反思、日報，以及完整智能體的投票、提案與鎮長裁決，全部先走官方 Claude；Claude 故障才依序換 GPT、Groq。以前聊天與決策走的那條線會先用 Groq 免費額度，品質跟 Claude 不一致',
+                '🤖 完整智能體模式預設開啟：用小鎮內建 AI 的玩家也一進遊戲就是完整智能體（以前只有自備金鑰才預設開）。想省額度可到「設定 → AI」取消勾選，已經手動關掉的人維持關閉',
+                '📈 登入玩家每日 AI 額度從 100 則提高到 300 則（Vercel 的 AI_USER_DAILY 仍可覆寫），用完改用規則版、隔天恢復；訪客維持 10 則',
+                '📝 設定頁與首頁技術細節同步更新：分流說明、車道表（先問 Claude，備援 GPT → Groq）、冷卻規則與額度數字',
+            ),
+            'changes_en' => array(
+                '🧠 Every AI call asks Claude first: villager dialogue, drama scenes, schedules, reflections, the newspaper and full-agent votes, proposals and mayor rulings all go to the official Claude first; only if Claude fails do GPT and then Groq step in. Previously the chat lane used for dialogue and decisions tried the Groq free tier first, so quality did not match Claude',
+                '🤖 Full agent mode is on by default: players on the built-in town AI now start in full agent mode too (before, only bring-your-own-key players did). Untick it under Settings → AI to save quota; anyone who already switched it off stays off',
+                '📈 The daily AI quota for logged-in players rises from 100 to 300 (AI_USER_DAILY in Vercel still overrides it); once used up the rule-based version takes over until the next day; guests stay at 10',
+                '📝 Settings and the landing page tech details updated to match: routing notes, the lane table (Claude first, GPT → Groq as backup), cooldown rules and quota numbers',
+            ),
+        ),
         array(
             'version' => '6.40.2',
             'date'    => '2026-11-04',

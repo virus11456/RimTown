@@ -1,6 +1,7 @@
 // 小鎮伺服器 AI 代理:金鑰保管在伺服器端,前端免填任何金鑰即可與村民對話。
 // v5.64.0 主渠道改為付費 AI 中繼(env LLM_*),保留 Groq(GROQ_API_KEY)為備援。
 // v5.66.0 智慧分流搬到伺服器(規則同 v5.39.0 前端版):
+// v6.41.0 起兩條車道都改成 Claude → GPT → Groq;以下為 v5.66.0 舊規則紀錄
 //   lane=chat(玩家與村民對話、劇情名場面)→ 優先 Groq 免費額度,Groq 限流/故障 → 退回付費中繼,5 分鐘後再試 Groq
 //   lane=background(行程/反思/背景對話)→ 付費中繼,失敗 → 退回 Groq,並對中繼累進冷卻(60s×次數,最多 5 分鐘),恢復即切回
 //   冷卻狀態存在 lambda 記憶體(每個實例各自判斷),兩邊都失敗才回 502。
@@ -9,7 +10,7 @@ const crypto = require('crypto');
 const L = require('./_lib');
 
 const GUEST_DAILY = parseInt(process.env.AI_GUEST_DAILY, 10) || 10;
-const USER_DAILY = parseInt(process.env.AI_USER_DAILY, 10) || 100;
+const USER_DAILY = parseInt(process.env.AI_USER_DAILY, 10) || 300; // v6.41.0 完整智能體模式預設開,登入額度 100 → 300
 
 // 主渠道(付費中繼):相容 Anthropic(CC 類)與 OpenAI 兩種格式
 const RELAY_BASE = process.env.LLM_BASE_URL || '';
@@ -326,15 +327,15 @@ module.exports = async (req, res) => {
     const deadline = now + 26000; // v5.66.5 兩條渠道共用 26 秒(函式上限 30 秒,留 4 秒給額度讀寫與回應)
     const candidates = [];
     const groqBlock = groqKey ? _groqBudgetBlock(prompt, maxTokens) : null; // v5.67.0 免費額度不夠 → 這次不優先用 Groq
-    // v6.40.2 三條渠道:relay(LLM_*,建議設官方 Claude)、openai(OPENAI_API_KEY,官方 GPT)、groq(免費額度)
-    //   chat:Groq → Claude → GPT;background:Claude → GPT → Groq。冷卻中/額度不足的渠道排到最後當備援
+    // v6.40.2 三條渠道:relay(LLM_*,官方 Claude)、openai(OPENAI_API_KEY,官方 GPT)、groq(免費額度)
+    // v6.41.0 全部先問 Claude:兩條車道都是 Claude → GPT → Groq(lane 只留作紀錄與診斷)。冷卻中/額度不足的渠道排到最後當備援
     const have = { relay: !!RELAY_KEY, openai: !!OPENAI_KEY, groq: !!groqKey };
     const ready = {
-        relay: lane === 'chat' || now >= _lane.relayCooldownUntil, // chat 線維持舊規則:付費主渠道不看冷卻
+        relay: now >= _lane.relayCooldownUntil,
         openai: now >= _lane.openaiCooldownUntil,
-        groq: lane !== 'chat' || (now >= _lane.groqCooldownUntil && !groqBlock), // background 線舊規則:Groq 是備援,不看冷卻
+        groq: now >= _lane.groqCooldownUntil && !groqBlock,
     };
-    const order = lane === 'chat' ? ['groq', 'relay', 'openai'] : ['relay', 'openai', 'groq'];
+    const order = ['relay', 'openai', 'groq'];
     for (const c of order) if (have[c] && ready[c]) candidates.push(c);
     for (const c of order) if (have[c] && !ready[c]) candidates.push(c);
 

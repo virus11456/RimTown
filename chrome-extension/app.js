@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.40.2
-const RIMTOWN_APP_VERSION = '6.40.2';
+// RimTown - Frontend App (WordPress Plugin) v6.41.0
+const RIMTOWN_APP_VERSION = '6.41.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1869,11 +1869,10 @@ class RimTownApp {
             else localStorage.removeItem('rimtown_byok');
         } catch (e) {}
     }
-    // v6.39.0 完整智能體模式:'1' 開 / '0' 關 / 未設定 = 自備金鑰時開
+    // v6.39.0 完整智能體模式:'1' 開 / '0' 關 / 未設定 = 開(v6.41.0 起內建 AI 也預設開)
     _fullAgentOn() {
         let v = null; try { v = localStorage.getItem('rimtown_full_agent'); } catch (e) {}
-        if (v === '1') return true; if (v === '0') return false;
-        return !!this._byokGet();
+        return v !== '0';
     }
     _applyFullAgent() {
         if (this.world) this.world.fullAgentMode = this._fullAgentOn();
@@ -2022,7 +2021,7 @@ class RimTownApp {
                 // v5.64.0 內建小鎮 AI:徽章顯示「AI:小鎮內建」
                 el.textContent = t('AI:小鎮內建');
                 el.className = 'llm-status connected';
-                el.title = t('🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 100 則）');
+                el.title = t('🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 300 則）');
             } else {
                 // v6.36.0 玩家自備 AI:徽章顯示「AI:自備 Claude／GPT／Gemini／自訂端點」
                 const providerLabel = this._byokLabel(this.llmClient.provider) + (hasFallback ? t('+備用') : '');
