@@ -898,7 +898,7 @@ Object.assign(RimTownApp.prototype, {
                 html += `<div class="pp-deadline">${p.affordable ? t('已批准，等待執行') : t('已批准，等公庫湊齊資源（{n}/7 天）').replace('{n}', p.waitDays)}</div>`;
             } else if (p.result) {
                 html += `<div class="pp-result">${esc(p.result)}${p.decidedBy === 'auto' ? ` · ${t('依票數自動定案')}` : ''}</div>`;
-                if (p.mayorName || p.mayorWhy) html += `<div class="pp-mayor">🏛️ ${t('鎮長')}${p.mayorName ? ' ' + esc(t(p.mayorName)) : ''}${t('：')}${esc(p.mayorWhy || '')}</div>`; // v6.37.0
+                if (p.mayorName || p.mayorWhy) html += `<div class="pp-mayor">🏛️ ${p.mayorActing ? t('代理鎮長') : t('鎮長')}${p.mayorName ? ' ' + esc(t(p.mayorName)) : ''}${t('：')}${esc(p.mayorWhy || '')}</div>`; // v6.37.0
                 if (p.outcomeText) html += `<div class="pp-outcome">📈 ${t('十天後')}${t('：')}${esc(p.outcomeText)}</div>`; // v6.30.0 成效
             }
             return html + '</div>';
@@ -906,6 +906,7 @@ Object.assign(RimTownApp.prototype, {
         let html = `<div class="proposals-panel">`;
         html += `<div class="pp-summary">${t('提出')} ${d.stats.made} · ${t('已批准')} ${d.stats.approved} · ${t('已否決')} ${d.stats.rejected} · ${t('已完成')} ${d.stats.done}</div>`;
         html += `<div style="font-size:0.7rem;color:var(--text-muted);margin:0 0 6px">${t('村民自己提案、全鎮投票、鎮長裁決。你只看。')}</div>`; // v6.37.0
+        html += this._electionCardHtml(); // v6.42.0 鎮長選舉／代理鎮長
         html += `<h4 class="pp-h">🗳️ ${t('投票中')} <span class="pp-count">${d.open.length}</span></h4>`;
         if (!d.open.length) html += `<div class="ob-empty" style="margin:10px 4px"><span class="ob-empty-icon">☕</span>${t('現在沒有投票中的提案。村民會依鎮上的情況陸續提出，通常每天一兩件。')}</div>`;
         else d.open.forEach(p => { html += card(p, 'decide'); });
@@ -914,6 +915,47 @@ Object.assign(RimTownApp.prototype, {
         if (d.history.length) { html += `<h4 class="pp-h">📚 ${t('已定案')}</h4>`; d.history.forEach(p => { html += card(p, 'view'); }); }
         html += '</div>';
         container.innerHTML = html;
+    },
+
+    // v6.42.0 提案分頁頂端的選舉卡:代理鎮長、選舉／補選進度(候選人政見與演說、得票、支持者說的話)、上一屆結果
+    _electionCardHtml() {
+        const el = this.state?.election; const W = this.world; if (!el || !W) return '';
+        const esc = (x) => this._escapeHtml(String(x ?? ''));
+        const nm = (n) => esc(t(n || ''));
+        let html = '';
+        if (el.acting) {
+            const msg = el.acting.reason === 'travel'
+                ? t('鎮長{mayor}出遠門，由{acting}代理鎮長。').replace('{mayor}', nm(el.acting.mayorName)).replace('{acting}', nm(el.acting.name))
+                : t('鎮上暫時沒有鎮長，由{acting}代理，補選進行中。').replace('{acting}', nm(el.acting.name));
+            html += `<div class="el-acting">🏛️ ${msg}</div>`;
+        }
+        if (el.active && el.candidates?.length) {
+            const title = el.byElection ? t('鎮長補選') : t('鎮長選舉');
+            const phase = el.phase === 'campaign' ? t('競選中，還有 {n} 天').replace('{n}', el.campaignDaysLeft)
+                : el.phase === 'voting' ? t('投票中，還有 {n} 天').replace('{n}', el.votingDaysLeft) : t('結果出爐');
+            const total = el.candidates.reduce((s, c) => s + (c.votes || 0), 0);
+            html += `<div class="el-card"><div class="el-head">🗳️ <b>${title}</b><span class="el-phase">${phase}</span></div>`;
+            const ranked = el.phase === 'results' ? el.candidates : el.candidates.slice();
+            ranked.forEach((c, i) => {
+                const pct = total ? Math.round((c.votes || 0) / total * 100) : 0;
+                const win = el.phase === 'results' && i === 0;
+                const quotes = (W.election?.quotes?.(W, c.agentId) || []).map(q => `<div class="el-quote">${nm(q.who)}${t('「')}${esc(q.why)}${t('」')}</div>`).join('');
+                html += `<div class="el-cand${win ? ' el-win' : ''}" data-action="select-agent" data-val="${esc(c.agentId)}">
+                    <div class="el-row"><span class="el-name">${win ? '👑 ' : ''}${nm(c.name)}</span><span class="el-pol">${c.policyIcon || ''} ${esc(t(c.policyLabel || ''))}</span>${c.llm ? `<span class="pp-llm" title="${t('政見與演說由 AI 依這位村民的性格與記憶寫成')}">🧠</span>` : ''}${el.phase !== 'campaign' ? `<span class="el-votes">${c.votes || 0}${t(' 票')}${total ? ` · ${pct}%` : ''}</span>` : ''}</div>
+                    ${c.speech ? `<div class="el-speech">${t('「')}${esc(c.speech)}${t('」')}</div>` : ''}
+                    ${el.phase !== 'campaign' ? `<div class="election-bar"><div class="election-bar-fill${win ? ' winner' : ''}" style="width:${pct}%"></div></div>` : ''}
+                    ${quotes}
+                </div>`;
+            });
+            html += '</div>';
+        } else if (el.electionHistory?.length) {
+            const last = el.electionHistory[el.electionHistory.length - 1];
+            const pol = (typeof ELECTION_POLICIES_LABELS !== 'undefined' && ELECTION_POLICIES_LABELS[last.winner.policy]) || last.winner.policy;
+            html += `<div class="el-last">🏛️ ${last.byElection ? t('上次補選') : t('上次選舉')}${t('：')}${nm(last.winner.name)} ${t('當選')}${t('（')}${esc(pol)}${t('，')}${last.winner.votes}/${last.totalVotes} ${t('票')}${t('）')}${t('。')}${t('下次選舉在秋季第 1 天。')}</div>`;
+        } else {
+            html += `<div class="el-last">🏛️ ${t('鎮長每年秋季第 1 天改選；鎮長永久離開小鎮會馬上補選。')}</div>`;
+        }
+        return html;
     },
 
     renderSettings(container) {

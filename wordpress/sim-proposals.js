@@ -424,7 +424,8 @@ class ProposalSystem {
     }
 
     // ---------- v6.37.0 鎮長裁決 ----------
-    _mayor(w) { return this._npcs(w).find(a => a.job?.key === 'mayor') || null; }
+    _mayor(w) { return this._npcs(w).find(a => a.job?.key === 'mayor') || w.election?.currentMayor?.(w) || null; } // v6.42.0 鎮長不在時由代理鎮長裁決
+    _isActing(w, m) { return !!(m && m.job?.key !== 'mayor' && w.election?.acting?.agentId === m.agentId); }
     _mayorLean(m, p) {
         if (!m) return 0;
         let s = 0;
@@ -456,7 +457,7 @@ class ProposalSystem {
             else { action = f >= a ? 'approve' : 'reject'; why = final ? 'revisit' : (f >= a ? 'majority' : 'minority'); }
         }
         if (action === 'shelve' && p.status === 'shelved') { action = f >= a ? 'approve' : 'reject'; why = 'revisit'; }
-        p.mayorName = m ? m.name : ''; p.mayorWhy = why;
+        p.mayorName = m ? m.name : ''; p.mayorWhy = why; p.mayorActing = this._isActing(w, m);
         this.stats.auto++;
         this._decide(w, p, action, 'mayor');
     }
@@ -471,7 +472,7 @@ class ProposalSystem {
         if (!r) { p._llmRuledDay = day; this._mayorRule(w, p, this._abs(w), final); return; }
         let action = r.action;
         if (action === 'shelve' && (final || p.status === 'shelved')) action = this._count(p, 'for') >= this._count(p, 'against') ? 'approve' : 'reject';
-        p.mayorName = m.name; p.mayorWhy = 'llm:' + (r.why || ''); p.llm = true;
+        p.mayorName = m.name; p.mayorWhy = 'llm:' + (r.why || ''); p.llm = true; p.mayorActing = this._isActing(w, m);
         this.stats.auto++;
         this._decide(w, p, action, 'mayor');
     }
@@ -657,7 +658,7 @@ class ProposalSystem {
             waitDays: p.waitDays || 0, createdDay: p.createdDay, resolvedDay: p.resolvedDay || null,
             forWhy: this._whyTop(p, 'for', w), againstWhy: this._whyTop(p, 'against', w), // v6.30.0 投票理由(前兩名)
             outcome: p.outcome || null, outcomeText: p.outcome ? this.outcomeText(p.outcome) : '', // v6.30.0 十天後成效
-            mayorName: p.mayorName || '', mayorWhy: this.mayorWhyText(p), // v6.37.0 鎮長裁決
+            mayorName: p.mayorName || '', mayorWhy: this.mayorWhyText(p), mayorActing: !!p.mayorActing, // v6.37.0 鎮長裁決(v6.42.0 代理)
             llm: !!(p.llm || String(p.mayorWhy || '').startsWith('llm:') || Object.values(p.why || {}).some(k => String(k).startsWith('llm:'))), // v6.39.0 這件案子有 AI 推理的決定
         };
     }

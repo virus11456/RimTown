@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.41.2
+ * Version: 6.42.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.41.2');
+define('RIMTOWN_VERSION', '6.42.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1330,6 +1330,26 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.42.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🗳️ 鎮長選舉交給 AI（完整智能體模式）：候選人依自己的性格、價值觀、職業與記憶挑施政方針、寫競選演說；全鎮村民分批（每批 8 人）由 AI 決定投給誰，各自附一句理由並記在記憶裡。線上用官方 Claude 實測：三位候選人挑了三種不同方針，演說都引用自己記得的事；8 位選民投出 5：2：1，理由各從自己在乎的事出發。AI 失敗的選民照舊用規則投票',
+                '🏛️ 代理鎮長：鎮長出遠門時，由上一屆第二名（不在就挑最會交際的人）代理，提案照樣有人裁決；鎮長回來就交還',
+                '📮 鎮長永久離開（季度考驗失敗搬走、為了戀情搬去別鎮）會馬上辦補選，不用等到秋天；補選期間由代理鎮長撐場',
+                '🚫 外鎮來作客的訪客不能參選、也不能投票；出遠門與探險中的人同樣不列入',
+                '👥 修鎮長出遠門期間改選、回來後鎮上同時有兩位鎮長：回來的前任會改做別的工作，並記得自己不在時鎮上換了鎮長',
+                '📜 提案分頁頂端多一張選舉卡：代理鎮長是誰、選舉／補選進度、每位候選人的方針與演說、得票、支持者說的話；沒在選舉時顯示上一屆結果與下次選舉時間。鎮長裁決的卡片會標出「代理鎮長」',
+            ),
+            'changes_en' => array(
+                '🗳️ Mayoral elections run on AI in full agent mode: candidates pick a platform and write a campaign speech from their own personality, values, job and memories; voters are asked in batches of 8 and each casts a ballot with a one-line reason they remember. In a live test on the official Claude, three candidates chose three different platforms with speeches drawing on what they remembered, and eight voters split 5:2:1 with reasons rooted in what each cares about. Voters the AI misses still vote by the rules',
+                '🏛️ Acting mayor: when the mayor goes travelling, last election\'s runner-up (or the most sociable villager) steps in so proposals still get ruled on, and hands the job back when the mayor returns',
+                '📮 If the mayor leaves for good (moving out after a failed seasonal trial, or moving to another town for love), a by-election starts right away instead of waiting for autumn, with an acting mayor in the meantime',
+                '🚫 Visitors from other towns can no longer run or vote; villagers who are travelling or exploring are left out too',
+                '👥 Fixed two mayors at once when the town re-elected while the mayor was away: the returning former mayor takes another job and remembers the town changed mayors while they were gone',
+                '📜 An election card now tops the Proposals tab: who is acting mayor, election or by-election progress, each candidate\'s platform and speech, vote counts and what supporters said; outside elections it shows the last result and when the next one is. Mayor rulings made by an acting mayor are labelled as such',
+            ),
+        ),
         array(
             'version' => '6.41.2',
             'date'    => '2026-11-04',
