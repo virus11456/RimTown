@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.38.0
+ * Version: 6.39.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.38.0');
+define('RIMTOWN_VERSION', '6.39.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1330,6 +1330,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.39.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🧠 完整智能體模式（設定頁「🤖 AI 語言模型」新開關，自備金鑰預設開、小鎮內建 AI 預設關並提醒額度）：開啟後村民的決定交給 LLM 用記憶＋性格推理——投票（一次問一批最多六人，每人贊成／反對＋一句自己口吻的理由，依性格、在乎的價值、跟提案人的交情、最近記憶與鎮況判斷）、要不要提案與提什麼（今天輪到發言的人從幾個可行點子裡挑一個或今天不提，順便說出向全鎮的說明當提案稿）、鎮長裁決（批准／否決／擱置＋一句話理由）。規則版只在 AI 失敗、逾時或速率受限時墊底，提案與裁決永遠會有結果',
+                '🧠 提案卡顯示 🧠 標記、村民自己說的投票理由（取代規則式的「看重財富」等標籤）與鎮長的第一人稱裁決理由；日誌記下「{who}想了想，今天沒什麼要跟大家提的」。決策呼叫不吃「NPC 每日 AI 額度」（那是背景閒聊的上限），只受供應商速率限制；LLM 回覆中的提案不會被重複裁決，存檔不帶中間狀態',
+            ),
+            'changes_en' => array(
+                '🧠 Full agent mode (new switch under Settings → "🤖 AI language model"; on by default with your own key, off by default on the built-in AI with a quota warning): when on, villagers\' decisions are reasoned by the LLM from memory and personality — votes (asked in batches of up to six, each giving for / against plus a one-line reason in their own voice, judged by traits, values, relationship with the proposer, recent memories and the state of the town), whether and what to propose (whoever has the floor today picks one of several feasible ideas or passes, and their pitch to the town becomes the proposal text) and the mayor\'s ruling (approve / reject / shelve with a one-line reason). The rule-based version only steps in when the AI fails, times out or is rate-limited, so proposals and rulings always resolve',
+                '🧠 Proposal cards show a 🧠 badge, the villagers\' own vote reasons (replacing rule labels such as "values wealth") and the mayor\'s first-person ruling; the log notes "{who} thought about it and has nothing to propose today". Decision calls do not consume the "NPC daily AI budget" (that caps background chatter) and are limited only by the provider\'s rate; a proposal awaiting an LLM ruling is never ruled twice, and that transient state is not saved',
+            ),
+        ),
         array(
             'version' => '6.38.0',
             'date'    => '2026-11-04',

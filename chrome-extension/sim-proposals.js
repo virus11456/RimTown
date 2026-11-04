@@ -112,6 +112,7 @@ class ProposalSystem {
     }
     _advance(w, day) {
         for (const p of this.items) {
+            if (p._ruling) continue; // v6.39.0 鎮長還在想(LLM 回覆中)
             if (p.status === 'open') {
                 // v6.37.0 上帝視角:觀察者不再批准／否決,由村民投票 + NPC 鎮長裁決
                 const voted = Object.keys(p.votes || {}).length, pop = Math.max(1, this._npcs(w).length - 1);
@@ -134,47 +135,89 @@ class ProposalSystem {
     // ---------- 投票(全鎮參考票) ----------
     _vote(w) {
         const open = this.open(); if (!open.length) return;
+        const eng = w.conversationEngine; const llmOn = !!(w.fullAgentMode && eng?.decideVotes);
         for (const p of open) {
+            const batch = [];
             for (const a of this._npcs(w)) {
                 if (a.agentId === p.proposerId || p.votes[a.agentId]) continue;
                 if (Math.random() > 0.6) continue;
-                let s = 0; const R = []; const add = (k, d) => { s += d; if (d) R.push([k, d]); }; // v6.30.0 記下每一分的理由
-                const vals = PROPOSAL_POLICY_VALUES[p.category] || [];
-                for (const v of vals) if (this._hasValue(a, v)) add('value', 2);
-                if (p.kind === 'research') { if (this._hasValue(a, '知識')) add('value', 2); if (a.job?.key === 'researcher' || a.job?.key === 'doctor') add('job', 1); if (this._hasTrait(a, 'lazy')) add('lazy', -1); }
-                if (p.kind === 'build' || p.kind === 'industry' || p.kind === 'factory' || p.kind === 'trade' || p.kind === 'upgrade' || p.kind === 'industry_up' || p.kind === 'market') { if (this._hasValue(a, '財富')) add('wealth', 1); if (this._hasTrait(a, 'hardworking')) add('work', 1); if (this._hasTrait(a, 'lazy')) add('lazy', -1); }
-                if (p.kind === 'festival' || p.kind === 'feast' || p.kind === 'honor') { if (this._hasValue(a, '社群') || this._hasValue(a, '藝術')) add('fun', 2); if (this._hasTrait(a, 'glutton') && p.kind !== 'honor') add('glutton', 2); if (this._hasTrait(a, 'ascetic')) add('ascetic', -2); if (this._hasTrait(a, 'stoic')) add('stoic', -1); if (this._hasTrait(a, 'charismatic')) add('charm', 1); }
-                if (p.kind === 'expedition' || p.kind === 'envoy') { if (this._hasValue(a, '冒險')) add('adventure', 3); if (this._hasValue(a, '家庭')) add('family', -1); if (this._hasTrait(a, 'shy')) add('shy', -1); }
-                if (p.kind === 'relief' || p.kind === 'mediate' || p.kind === 'mentor') { if (this._hasValue(a, '社群') || this._hasValue(a, '和平')) add('care', 2); if (this._hasTrait(a, 'kind')) add('kind', 2); if (this._hasValue(a, '財富') && p.kind === 'relief') add('greedy', -1); }
-                if (p.kind === 'mediate' && p.pair) { const r0 = a.relationships?.relationships?.[p.pair[0]], r1 = a.relationships?.relationships?.[p.pair[1]]; if ((r0?.affinity || 0) > 20 || (r1?.affinity || 0) > 20) add('feud', 2); if ((r0?.affinity || 0) < -30 || (r1?.affinity || 0) < -30) add('grudge', -2); }
-                if (p.kind === 'honor' && p.refKey) { const r0 = a.relationships?.relationships?.[p.refKey]; if ((r0?.affinity || 0) > 20) add('proud', 2); if ((r0?.affinity || 0) < -20) add('grudge', -3); if (this._hasTrait(a, 'jealous')) add('grudge', -1); }
-                if (p.kind === 'recruit') { if (this._hasValue(a, '社群') || this._hasTrait(a, 'optimist')) add('newcomer', 2); if (this._hasTrait(a, 'shy') || this._hasTrait(a, 'ascetic')) add('crowded', -2); }
-                if (p.kind === 'trial') add('trial', 2);
-                if (p.kind === 'policy' && p.effects) { if ((p.effects.mood_all || 0) < 0) add('mooddown', -2); if ((p.effects.mood_all || 0) > 0) add('moodup', 2); if ((p.effects.silver || 0) < 0) add('spend', -1); }
-                if (this._hasTrait(a, 'pessimist')) add('pessimist', -1); if (this._hasTrait(a, 'optimist')) add('optimist', 1);
-                if (a.job?.key && p.jobBias && p.jobBias.includes(a.job.key)) add('job', 2);
-                const rel = a.relationships?.relationships?.[p.proposerId]; if (rel) { const d = (rel.affinity || 0) / 100 * 4; add(d >= 0 ? 'relgood' : 'relbad', d); }
-                const silverCost = this._cost(p).silver || 0; if (silverCost && silverCost > (w.stockpile?.get?.('silver') || 0)) add('cost', -2);
-                s += (Math.random() - 0.5) * 4;
-                p.votes[a.agentId] = s >= 0 ? 'for' : 'against';
-                const side = s >= 0 ? 1 : -1; let best = null; for (const [k, d] of R) if (Math.sign(d) === side && Math.abs(d) >= 0.5 && (!best || Math.abs(d) > Math.abs(best[1]))) best = [k, d];
-                (p.why || (p.why = {}))[a.agentId] = best ? best[0] : 'gut';
+                if (llmOn && batch.length < 6 && !(p._llmAsked && p._llmAsked[a.agentId])) { batch.push(a); continue; }
+                this._ruleVote(w, p, a);
             }
+            if (batch.length) this._voteLLM(w, p, batch);
         }
+    }
+    // v6.39.0 完整智能體:一批村民交給 LLM 決定;失敗就退回規則
+    async _voteLLM(w, p, voters) {
+        p._llmAsked = p._llmAsked || {}; for (const a of voters) p._llmAsked[a.agentId] = true;
+        let res = null;
+        try { res = await w.conversationEngine.decideVotes(w, p, voters, w.agents[p.proposerId]); } catch (e) { console.warn('[Proposals] llm vote', e); }
+        if (p.status !== 'open' && p.status !== 'shelved') return;
+        for (const a of voters) {
+            if (p.votes[a.agentId]) continue;
+            const r = res && res[a.agentId];
+            if (r) { p.votes[a.agentId] = r.vote; (p.why || (p.why = {}))[a.agentId] = 'llm:' + (r.why || ''); p.llm = true; }
+            else this._ruleVote(w, p, a);
+        }
+        try { w.onProposalEvent?.('vote', this.toItem(w, p)); } catch (e) {}
+    }
+    _ruleVote(w, p, a) {
+        let s = 0; const R = []; const add = (k, d) => { s += d; if (d) R.push([k, d]); }; // v6.30.0 記下每一分的理由
+        const vals = PROPOSAL_POLICY_VALUES[p.category] || [];
+        for (const v of vals) if (this._hasValue(a, v)) add('value', 2);
+        if (p.kind === 'research') { if (this._hasValue(a, '知識')) add('value', 2); if (a.job?.key === 'researcher' || a.job?.key === 'doctor') add('job', 1); if (this._hasTrait(a, 'lazy')) add('lazy', -1); }
+        if (p.kind === 'build' || p.kind === 'industry' || p.kind === 'factory' || p.kind === 'trade' || p.kind === 'upgrade' || p.kind === 'industry_up' || p.kind === 'market') { if (this._hasValue(a, '財富')) add('wealth', 1); if (this._hasTrait(a, 'hardworking')) add('work', 1); if (this._hasTrait(a, 'lazy')) add('lazy', -1); }
+        if (p.kind === 'festival' || p.kind === 'feast' || p.kind === 'honor') { if (this._hasValue(a, '社群') || this._hasValue(a, '藝術')) add('fun', 2); if (this._hasTrait(a, 'glutton') && p.kind !== 'honor') add('glutton', 2); if (this._hasTrait(a, 'ascetic')) add('ascetic', -2); if (this._hasTrait(a, 'stoic')) add('stoic', -1); if (this._hasTrait(a, 'charismatic')) add('charm', 1); }
+        if (p.kind === 'expedition' || p.kind === 'envoy') { if (this._hasValue(a, '冒險')) add('adventure', 3); if (this._hasValue(a, '家庭')) add('family', -1); if (this._hasTrait(a, 'shy')) add('shy', -1); }
+        if (p.kind === 'relief' || p.kind === 'mediate' || p.kind === 'mentor') { if (this._hasValue(a, '社群') || this._hasValue(a, '和平')) add('care', 2); if (this._hasTrait(a, 'kind')) add('kind', 2); if (this._hasValue(a, '財富') && p.kind === 'relief') add('greedy', -1); }
+        if (p.kind === 'mediate' && p.pair) { const r0 = a.relationships?.relationships?.[p.pair[0]], r1 = a.relationships?.relationships?.[p.pair[1]]; if ((r0?.affinity || 0) > 20 || (r1?.affinity || 0) > 20) add('feud', 2); if ((r0?.affinity || 0) < -30 || (r1?.affinity || 0) < -30) add('grudge', -2); }
+        if (p.kind === 'honor' && p.refKey) { const r0 = a.relationships?.relationships?.[p.refKey]; if ((r0?.affinity || 0) > 20) add('proud', 2); if ((r0?.affinity || 0) < -20) add('grudge', -3); if (this._hasTrait(a, 'jealous')) add('grudge', -1); }
+        if (p.kind === 'recruit') { if (this._hasValue(a, '社群') || this._hasTrait(a, 'optimist')) add('newcomer', 2); if (this._hasTrait(a, 'shy') || this._hasTrait(a, 'ascetic')) add('crowded', -2); }
+        if (p.kind === 'trial') add('trial', 2);
+        if (p.kind === 'policy' && p.effects) { if ((p.effects.mood_all || 0) < 0) add('mooddown', -2); if ((p.effects.mood_all || 0) > 0) add('moodup', 2); if ((p.effects.silver || 0) < 0) add('spend', -1); }
+        if (this._hasTrait(a, 'pessimist')) add('pessimist', -1); if (this._hasTrait(a, 'optimist')) add('optimist', 1);
+        if (a.job?.key && p.jobBias && p.jobBias.includes(a.job.key)) add('job', 2);
+        const rel = a.relationships?.relationships?.[p.proposerId]; if (rel) { const d = (rel.affinity || 0) / 100 * 4; add(d >= 0 ? 'relgood' : 'relbad', d); }
+        const silverCost = this._cost(p).silver || 0; if (silverCost && silverCost > (w.stockpile?.get?.('silver') || 0)) add('cost', -2);
+        s += (Math.random() - 0.5) * 4;
+        p.votes[a.agentId] = s >= 0 ? 'for' : 'against';
+        const side = s >= 0 ? 1 : -1; let best = null; for (const [k, d] of R) if (Math.sign(d) === side && Math.abs(d) >= 0.5 && (!best || Math.abs(d) > Math.abs(best[1]))) best = [k, d];
+        (p.why || (p.why = {}))[a.agentId] = best ? best[0] : 'gut';
     }
 
     // ---------- 生成 ----------
     _generate(w, day) {
         const open = this.open();
         if (open.length >= ProposalSystem.MAX_OPEN) return;
+        const cands = this._candidates(w, day);
+        if (!cands.length) return;
+        const pickWeighted = (arr) => { const total = arr.reduce((s, c) => s + c.weight, 0); let r = Math.random() * total; for (const c of arr) { r -= c.weight; if (r <= 0) return c; } return arr[0]; };
+        // v6.39.0 完整智能體:今天輪到發言的人自己決定要不要提、提什麼(一天一次 LLM);失敗退回規則
+        const eng = w.conversationEngine;
+        if (w.fullAgentMode && eng?.chooseProposal && eng.fullAgentOk?.(w)) {
+            const pick = pickWeighted(cands);
+            const a = this._proposer(w, day, pick.jobs || [], pick.pred); if (!a) return;
+            const fits = (c) => !c.jobs || !c.jobs.length || c.jobs.includes(a.job?.key) || c === pick;
+            const alts = [pick, ...cands.filter(c => c !== pick && fits(c)).sort((x, y) => y.weight - x.weight)].slice(0, 5);
+            const summaries = alts.map(c => { const base = c.make(a); return { title: this._fill(base.tk, base.tp), desc: this._fill(base.dk, base.dp), cost: base.cost || {} }; });
+            this._generateLLM(w, day, a, alts, summaries, pick);
+            return;
+        }
         const n = Math.random() < 0.72 ? 1 : (Math.random() < 0.35 ? 2 : 0);
         for (let i = 0; i < n && this.open().length < ProposalSystem.MAX_OPEN; i++) {
-            const cands = this._candidates(w, day);
-            if (!cands.length) return;
-            const total = cands.reduce((s, c) => s + c.weight, 0); let r = Math.random() * total; let pick = cands[0];
-            for (const c of cands) { r -= c.weight; if (r <= 0) { pick = c; break; } }
-            this._create(w, day, pick);
+            const cs = this._candidates(w, day); if (!cs.length) return;
+            this._create(w, day, pickWeighted(cs));
         }
+    }
+    async _generateLLM(w, day, a, alts, summaries, pick) {
+        let r = null;
+        try { r = await w.conversationEngine.chooseProposal(w, a, summaries); } catch (e) { console.warn('[Proposals] llm choose', e); }
+        if (this.open().length >= ProposalSystem.MAX_OPEN) return;
+        if (!r) { this._create(w, day, pick); return; }
+        if (r.choice <= 0 || r.choice > alts.length) { this._lastPass = { day, who: a.name }; w.logMessageT?.('council', '🤔 {who}想了想，今天沒什麼要跟大家提的。', { who: a.name }, a.name); return; }
+        const cand = alts[r.choice - 1];
+        const p = this._createWith(w, day, cand, a);
+        if (p) { if (r.pitch) p.pitch = r.pitch; p.llm = true; try { w.onProposalEvent?.('vote', this.toItem(w, p)); } catch (e) {} }
     }
     _proposer(w, day, jobs, pred) {
         const npcs = this._npcs(w).filter(a => (day - (this.proposerCooldown[a.agentId] || -99)) >= 5);
@@ -350,6 +393,9 @@ class ProposalSystem {
     }
     _create(w, day, cand) {
         const a = this._proposer(w, day, cand.jobs || [], cand.pred); if (!a) return null;
+        return this._createWith(w, day, cand, a);
+    }
+    _createWith(w, day, cand, a) {
         const base = cand.make(a);
         this.counter++;
         const p = Object.assign({ id: 'L' + String(this.counter).padStart(3, '0'), n: this.counter, status: 'open', proposerId: a.agentId, proposerName: a.name, proposerJob: a.job?.key || '', createdDay: day, votes: {}, why: {}, decidedBy: null, result: '', pitch: '' }, base);
@@ -377,6 +423,8 @@ class ProposalSystem {
     }
     _mayorRule(w, p, day, final) {
         const m = this._mayor(w);
+        // v6.39.0 完整智能體:鎮長用 LLM 裁決(非同步);失敗退回下面的規則
+        if (m && w.fullAgentMode && w.conversationEngine?.decideMayor && !p._ruling && p._llmRuledDay !== day) { p._ruling = true; this._mayorRuleLLM(w, p, day, final, m); return; }
         const f = this._count(p, 'for'), a = this._count(p, 'against'), total = f + a;
         const silver = w.stockpile?.get?.('silver') || 0, cost = this._cost(p).silver || 0;
         let action, why;
@@ -397,7 +445,22 @@ class ProposalSystem {
         this.stats.auto++;
         this._decide(w, p, action, 'mayor');
     }
-    mayorWhyText(p) { return p.mayorWhy ? t(MAYOR_WHY[p.mayorWhy] || p.mayorWhy) : ''; }
+    async _mayorRuleLLM(w, p, day, final, m) {
+        let r = null;
+        try {
+            const tally = { f: this._count(p, 'for'), a: this._count(p, 'against'), forWhy: this._whyTop(p, 'for').map(x => x.why), againstWhy: this._whyTop(p, 'against').map(x => x.why) };
+            r = await w.conversationEngine.decideMayor(w, p, m, tally);
+        } catch (e) { console.warn('[Proposals] llm mayor', e); }
+        p._ruling = false;
+        if (p.status !== 'open' && p.status !== 'shelved') return;
+        if (!r) { p._llmRuledDay = day; this._mayorRule(w, p, this._abs(w), final); return; }
+        let action = r.action;
+        if (action === 'shelve' && (final || p.status === 'shelved')) action = this._count(p, 'for') >= this._count(p, 'against') ? 'approve' : 'reject';
+        p.mayorName = m.name; p.mayorWhy = 'llm:' + (r.why || ''); p.llm = true;
+        this.stats.auto++;
+        this._decide(w, p, action, 'mayor');
+    }
+    mayorWhyText(p) { if (!p.mayorWhy) return ''; if (String(p.mayorWhy).startsWith('llm:')) return String(p.mayorWhy).slice(4); return t(MAYOR_WHY[p.mayorWhy] || p.mayorWhy); }
 
     // ---------- 觀察者決定(v6.37.0 起介面不再提供,保留給測試與舊流程) ----------
     decide(w, id, action) {
@@ -580,11 +643,12 @@ class ProposalSystem {
             forWhy: this._whyTop(p, 'for'), againstWhy: this._whyTop(p, 'against'), // v6.30.0 投票理由(前兩名)
             outcome: p.outcome || null, outcomeText: p.outcome ? this.outcomeText(p.outcome) : '', // v6.30.0 十天後成效
             mayorName: p.mayorName || '', mayorWhy: this.mayorWhyText(p), // v6.37.0 鎮長裁決
+            llm: !!(p.llm || String(p.mayorWhy || '').startsWith('llm:') || Object.values(p.why || {}).some(k => String(k).startsWith('llm:'))), // v6.39.0 這件案子有 AI 推理的決定
         };
     }
     _whyTop(p, side) {
         const cnt = {}; for (const [aid, v] of Object.entries(p.votes || {})) { if (v !== side) continue; const k = p.why?.[aid] || 'gut'; cnt[k] = (cnt[k] || 0) + 1; }
-        return Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k, n]) => ({ why: t(VOTE_WHY[k] || VOTE_WHY.gut), n }));
+        return Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k, n]) => ({ why: k.startsWith('llm:') ? k.slice(4) : t(VOTE_WHY[k] || VOTE_WHY.gut), n })); // v6.39.0 llm: 開頭是村民自己說的理由
     }
     // v6.30.0 這一段期間(absDay 區間)的提案統計,季末回顧用
     periodStats(w, fromDay, toDay) {
@@ -606,6 +670,6 @@ class ProposalSystem {
         };
     }
     serialize() { return { counter: this.counter, items: this.items, cooldown: this.cooldown, proposerCooldown: this.proposerCooldown, stats: this.stats, track: this.track, _lastDay: this._lastDay }; }
-    loadFrom(d) { if (!d) return; this.counter = d.counter || 0; this.items = Array.isArray(d.items) ? d.items : []; this.cooldown = d.cooldown || {}; this.proposerCooldown = d.proposerCooldown || {}; this.track = d.track || {}; this.stats = Object.assign({ made: 0, approved: 0, rejected: 0, shelved: 0, done: 0, failed: 0, auto: 0 }, d.stats || {}); this._lastDay = d._lastDay ?? null; }
+    loadFrom(d) { if (!d) return; this.counter = d.counter || 0; this.items = Array.isArray(d.items) ? d.items : []; this.cooldown = d.cooldown || {}; this.proposerCooldown = d.proposerCooldown || {}; this.track = d.track || {}; this.stats = Object.assign({ made: 0, approved: 0, rejected: 0, shelved: 0, done: 0, failed: 0, auto: 0 }, d.stats || {}); this._lastDay = d._lastDay ?? null; for (const p of this.items) { delete p._ruling; } }
 }
 if (typeof window !== 'undefined') { window.ProposalSystem = ProposalSystem; window.PROPOSAL_KINDS = PROPOSAL_KINDS; window.VOTE_WHY = VOTE_WHY; }

@@ -357,3 +357,6 @@
 .rimtown-container .ec-prop { background: var(--ob-card-solid); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; }
 .rimtown-container .ec-outcome { font-size: 0.72rem; color: var(--positive); margin-top: 4px; }
 @media (max-width: 768px) { .rimtown-container .ec-grid { grid-template-columns: repeat(3, 1fr); } }
+
+/* v6.39.0 完整智能體標記 */
+.rimtown-container .pp-llm { font-size: 0.75rem; margin-left: 2px; }

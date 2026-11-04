@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.38.0
-const RIMTOWN_APP_VERSION = '6.38.0';
+// RimTown - Frontend App (WordPress Plugin) v6.39.0
+const RIMTOWN_APP_VERSION = '6.39.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1321,6 +1321,7 @@ class RimTownApp {
     _makeConversationEngine() {
         const prev = this.world?.conversationEngine;
         const eng = new ConversationEngine(this.llmClient);
+        if (this.world) this.world.fullAgentMode = this._fullAgentOn(); // v6.39.0 完整智能體模式旗標跟著引擎一起更新(初始化、讀檔、換鎮都會經過這裡)
         if (prev) {
             eng.npcConversationLog = prev.npcConversationLog;
             eng._lastNpcLlmTick = prev._lastNpcLlmTick;
@@ -1868,6 +1869,17 @@ class RimTownApp {
             else localStorage.removeItem('rimtown_byok');
         } catch (e) {}
     }
+    // v6.39.0 完整智能體模式:'1' 開 / '0' 關 / 未設定 = 自備金鑰時開
+    _fullAgentOn() {
+        let v = null; try { v = localStorage.getItem('rimtown_full_agent'); } catch (e) {}
+        if (v === '1') return true; if (v === '0') return false;
+        return !!this._byokGet();
+    }
+    _applyFullAgent() {
+        if (this.world) this.world.fullAgentMode = this._fullAgentOn();
+        this._updateLLMStatus?.();
+        try { this.renderSidebar(); } catch (e) {}
+    }
     _byokLabel(provider) {
         return { anthropic: 'Claude', openai: 'GPT', gemini: 'Gemini', custom: t('自訂端點') }[provider] || provider || '';
     }
@@ -1908,6 +1920,7 @@ class RimTownApp {
     _byokApplyClient() {
         this._buildLLMClient();
         this.world.conversationEngine = this.llmClient ? this._makeConversationEngine() : new ConversationEngine();
+        this.world.fullAgentMode = this._fullAgentOn(); // v6.39.0
         this._updateLLMStatus(); // 泡泡掛勾由 _hookConversationBubbles 的定時檢查自動補上
     }
     async _byokTest() {

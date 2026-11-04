@@ -882,7 +882,7 @@ Object.assign(RimTownApp.prototype, {
             const total = p.forCount + p.againstCount; const pct = total ? Math.round(p.forCount / total * 100) : 0;
             const st = { open: t('待決定'), shelved: t('擱置中'), approved: t('進行中'), done: t('已完成'), failed: t('失敗'), rejected: t('已否決'), expired: t('已收回') }[p.status] || p.status;
             let html = `<div class="pp-card pp-${p.status}" data-pid="${p.id}">
-                <div class="pp-head"><span class="pp-id">${esc(p.id)}</span><span class="pp-kind">${p.icon} ${esc(p.kindLabel)}</span><span class="pp-status">${st}</span></div>
+                <div class="pp-head"><span class="pp-id">${esc(p.id)}</span><span class="pp-kind">${p.icon} ${esc(p.kindLabel)}</span>${p.llm ? `<span class="pp-llm" title="${t('這件案子的投票／裁決由 AI 依記憶與性格推理')}">🧠</span>` : ''}<span class="pp-status">${st}</span></div>
                 <div class="pp-title">${esc(p.title)}</div>
                 <div class="pp-by">${avatar(p.proposerId)}<span><b>${esc(t(p.proposerName))}</b> <small>${esc(p.proposerJob)}</small></span></div>
                 <div class="pp-desc">${esc(p.pitch || p.desc)}</div>`;
@@ -1101,6 +1101,15 @@ Object.assign(RimTownApp.prototype, {
             <div id="settings-byok-result" role="status" aria-live="polite" style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;min-height:1em">${this._byokLastMsg || ''}</div>
             </details>`;
         }
+        // v6.39.0 完整智能體模式
+        {
+            let fa = null; try { fa = localStorage.getItem('rimtown_full_agent'); } catch (e) {}
+            const on = this._fullAgentOn ? this._fullAgentOn() : false; const auto = fa !== '1' && fa !== '0';
+            html += `<div class="setting-group" style="margin-bottom:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px">
+            <label style="font-size:0.82rem;color:var(--text-primary);display:flex;align-items:center;gap:8px;font-weight:700"><input type="checkbox" id="settings-fullagent" ${on ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_full_agent',this.checked?'1':'0')}catch(e){};window.rimtownApp?._applyFullAgent?.()"> 🧠 ${t('完整智能體模式')}${auto ? ` <span style="font-weight:normal;font-size:0.68rem;color:var(--text-muted)">${on ? t('（自備金鑰，預設開）') : t('（小鎮內建 AI，預設關）')}</span>` : ''}</label>
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">${t('開啟後，村民投票、要不要提案與提什麼、鎮長批准與否，都由 AI 依各自的記憶、性格、交情與鎮況推理並附理由；規則版只在 AI 失敗時墊底。每件提案約多 2～4 次 AI 呼叫、每天多 1 次。')}${!byokActive ? ' ' + t('走小鎮內建 AI 的話，每日 100 則很快就會用完；建議搭配自備金鑰。') : ''}</div>
+            </div>`;
+        }
         // v5.73.0 AI 對話語言:跟隨介面 / 繁體中文 / English(村民台詞、行程、反思、日報)
         {
             const existingDl = document.getElementById('settings-tab-dialoglang');
@@ -1233,7 +1242,7 @@ Object.assign(RimTownApp.prototype, {
                     <div class="ec-track-head"><span>${e.icon} <b>${esc(e.name)}</b></span><span class="ec-when">${e.daysAgo === 0 ? t('今天') : t('{n} 天前').replace('{n}', e.daysAgo)}</span></div>
                     <div class="ec-track-detail">${esc(e.detail)}</div>
                     ${e.reactions.length ? `<div class="ec-reacts">${e.reactions.map(r => `<div class="ec-react"><b data-action="select-agent" data-val="${r.agentId}">${esc(r.name)}</b>${t('：')}${esc(r.text)}</div>`).join('')}</div>` : `<div class="ec-reacts muted">${t('村民還在消化這件事…')}</div>`}
-                    ${e.proposals.length ? `<div class="ec-props">📜 ${t('事後三天內的提案')}${t('：')}${e.proposals.map(p => `<span class="ec-prop">${esc(p.id)} ${esc(p.title || '')}${p.proposer ? `（${esc(p.proposer)}）` : ''}</span>`).join('')}</div>` : ''}
+                    ${e.proposals.length ? `<div class="ec-props">📜 ${t('事後三天內的提案')}${t('：')}${e.proposals.map(p => `<span class="ec-prop">${esc(p.id)} ${esc(p.title || '')}${p.proposer ? `${t('（')}${esc(p.proposer)}${t('）')}` : ''}</span>`).join('')}</div>` : ''}
                     ${e.outcomeText ? `<div class="ec-outcome">📈 ${t('七天後')}${t('：')}${esc(e.outcomeText)}</div>` : ''}
                 </div>`;
             }

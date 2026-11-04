@@ -987,6 +987,82 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
         } catch (e) { console.error('[RimTown] sendEventComment failed:', e); }
     }
 
+    // ===== v6.39.0 完整智能體模式:投票／提案／鎮長裁決交給 LLM(用記憶＋性格推理);規則版是失敗時的退路 =====
+    _agentBrief(world, a, other) {
+        const lang = LLM_LANG.get(); const sep = lang === 'en' ? ', ' : '、';
+        const traits = (a.personality?.traits || []).map(x => lang === 'en' ? x : ((typeof TRAIT_POOL !== 'undefined' && TRAIT_POOL[x]?.label) || x)).join(sep);
+        const values = (a.personality?.values || []).map(v => t(v)).join(sep);
+        const mem = (a.memory?.entries || []).slice(-10).sort((x, y) => (y.importance || 0) - (x.importance || 0)).slice(0, 3).map(e => e.content).filter(Boolean);
+        let rel = '';
+        if (other && other.agentId !== a.agentId) { const r = a.relationships?.relationships?.[other.agentId]; if (r) rel = `${t('對')}${t(other.name)}${t('：好感')} ${Math.round(r.affinity || 0)}${t('、信任')} ${Math.round(r.trust || 0)}`; }
+        return { name: (lang === 'en' && typeof I18N !== 'undefined') ? I18N.localizeNames(a.name, true) : a.name, age: a.age, job: a.job?.title || '', traits, values, mood: Math.round(a.mood || 50), mem, rel };
+    }
+    _townBrief(world) {
+        const npcs = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead);
+        const avg = npcs.length ? Math.round(npcs.reduce((s, a) => s + (a.mood || 0), 0) / npcs.length) : 0;
+        const ev = [...(world.eventCards?.played || []).slice(-2).map(e => t(e.name)), ...(world.events?.eventLog || []).slice(-2).map(([, e]) => e.name)].slice(-3);
+        const trial = (world.trials?.current?.status === 'active' && typeof TRIAL_TYPES !== 'undefined') ? t(TRIAL_TYPES[world.trials.current.type]?.title || '') : '';
+        return `${t('季節')} ${t(world.clock.season)} ${t('第')} ${world.clock.day} ${t('天')}；${t('人口')} ${npcs.length}；${t('公庫銀幣')} ${Math.round(world.stockpile.get('silver'))}；${t('食物')} ${Math.round(world.stockpile.get('food'))}；${t('全鎮平均心情')} ${avg}/100${ev.length ? `；${t('最近的事')}${t('：')}${ev.join(t('、'))}` : ''}${trial ? `；${t('本季考驗')}${t('：')}${trial}` : ''}`;
+    }
+    // 決策呼叫不吃「NPC 每日 AI 額度」(那是背景閒聊的上限);只受供應商速率限制
+    fullAgentOk(world) { return !!world.fullAgentMode && !!this.llm && this.llm._canMakeRequest(true); } // 決策走 chat 道(額度較高、內建 AI 時 Groq 優先)
+    async _askJson(prompt, maxTokens) {
+        const timeout = new Promise(r => setTimeout(() => r(null), 14000));
+        let raw = null; try { raw = await Promise.race([this.llm.generate(prompt, maxTokens, 0.7, true), timeout]); } catch (e) { raw = null; }
+        if (!raw || raw === '__ERROR__' || raw === '__RATE_LIMITED__') return null;
+        const m = String(raw).match(/\[[\s\S]*\]|\{[\s\S]*\}/); if (!m) return null;
+        try { return JSON.parse(m[0]); } catch (e) { return null; }
+    }
+    _costText(cost) { const parts = Object.entries(cost || {}).map(([r, n]) => `${(typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[r]) ? SHOP_ITEMS[r].name() : t(r)} ${n}`); return parts.length ? parts.join(t('、')) : t('不用花公庫的錢'); }
+    // 投票:一次問一批村民(最多 6 人),每人回 for/against + 一句自己口吻的理由
+    async decideVotes(world, p, voters, proposer) {
+        if (!this.fullAgentOk(world) || !voters.length) return null;
+        const ps = world.proposals;
+        const lines = voters.map((a, i) => { const b = this._agentBrief(world, a, proposer); return `${i + 1}. ${b.name}（${b.age}${t('歲')}，${b.job}；${t('性格')}：${b.traits}；${t('在乎')}：${b.values}；${t('心情')} ${b.mood}/100${b.rel ? `；${b.rel}` : ''}）${b.mem.length ? ` ${t('最近記得')}：${b.mem.join('／')}` : ''}`; }).join('\n');
+        const prompt = `${t('你是模擬小鎮的村民決策引擎。鎮上有人提了一個提案，請替下面每位村民決定投贊成或反對，並用他自己的口吻給一句理由（20 字內）。要依每個人的性格、在乎的價值、跟提案人的交情、最近的記憶與鎮況判斷，不要全部一致。')}
+${t('【鎮況】')}${this._townBrief(world)}
+${t('【提案】')}${p.id}「${ps.title(p)}」${t('——')}${ps.desc(p)}（${t('提案人')}：${t(proposer?.name || p.proposerName)}；${t('花費')}：${this._costText(p.cost)}）
+${t('【村民】')}
+${lines}
+${t('只輸出 JSON 陣列，每個元素 {"n":序號,"vote":"for"或"against","why":"理由"}，不要其他文字。')}`;
+        this._countNpcLlmUse(world);
+        const j = await this._askJson(prompt, 80 + voters.length * 70);
+        if (!Array.isArray(j)) return null;
+        const out = {};
+        for (const row of j) { const i = parseInt(row?.n, 10) - 1; const a = voters[i]; if (!a) continue; const v = String(row.vote || '').toLowerCase(); if (v !== 'for' && v !== 'against') continue; out[a.agentId] = { vote: v, why: String(row.why || '').trim().replace(/^[「『"“]+|[」』"”]+$/g, '').slice(0, 40) }; }
+        return Object.keys(out).length ? out : null;
+    }
+    // 鎮長裁決:批准／否決／擱置 + 一句理由
+    async decideMayor(world, p, mayor, tally) {
+        if (!this.fullAgentOk(world) || !mayor) return null;
+        const ps = world.proposals; const b = this._agentBrief(world, mayor, world.agents[p.proposerId]);
+        const whyFor = (tally.forWhy || []).join('／'), whyAg = (tally.againstWhy || []).join('／');
+        const prompt = `${t('你正在扮演鎮長「')}${b.name}${t('」（')}${b.age}${t('歲；性格')}：${b.traits}；${t('在乎')}：${b.values}；${t('心情')} ${b.mood}/100${b.rel ? `；${b.rel}` : ''}${t('）。全鎮對一個提案投完票了，現在由你裁決。')}
+${t('【鎮況】')}${this._townBrief(world)}
+${t('【提案】')}${p.id}「${ps.title(p)}」${t('——')}${ps.desc(p)}（${t('提案人')}：${t(p.proposerName)}；${t('花費')}：${this._costText(p.cost)}）
+${t('【票數】')}${t('贊成')} ${tally.f}${whyFor ? `（${whyFor}）` : ''}；${t('反對')} ${tally.a}${whyAg ? `（${whyAg}）` : ''}
+${b.mem.length ? `${t('【你最近記得的事】')}${b.mem.join('／')}\n` : ''}${t('依你的性格、價值觀、跟提案人的交情、公庫狀況與票數決定：approve（批准）、reject（否決）或 shelve（先擱置幾天）。只輸出 JSON：{"action":"approve|reject|shelve","why":"一句話理由（25 字內，第一人稱）"}')}`;
+        this._countNpcLlmUse(world);
+        const j = await this._askJson(prompt, 140);
+        const act = String(j?.action || '').toLowerCase(); if (!['approve', 'reject', 'shelve'].includes(act)) return null;
+        return { action: act, why: String(j.why || '').trim().replace(/^[「『"“]+|[」』"”]+$/g, '').slice(0, 50) };
+    }
+    // 要不要提案、提什麼:今天輪到發言的人,從幾個可行的點子裡挑一個(或都不提),順便說出向全鎮的說明
+    async chooseProposal(world, proposer, cands) {
+        if (!this.fullAgentOk(world) || !proposer || !cands.length) return null;
+        const b = this._agentBrief(world, proposer);
+        const lines = cands.map((c, i) => `${i + 1}. ${c.title}${t('——')}${c.desc}（${t('花費')}：${this._costText(c.cost)}）`).join('\n');
+        const prompt = `${t('你正在扮演「')}${b.name}${t('」（')}${b.age}${t('歲，')}${b.job}；${t('性格')}：${b.traits}；${t('在乎')}：${b.values}；${t('心情')} ${b.mood}/100${t('）。今天鎮上輪到你可以向大家提一個提案。')}
+${t('【鎮況】')}${this._townBrief(world)}
+${b.mem.length ? `${t('【你最近記得的事】')}${b.mem.join('／')}\n` : ''}${t('【你想得到的幾個點子】')}
+${lines}
+${t('依你的身分與處境決定：挑一個最想提的（回序號），或者今天不提（回 0）。只輸出 JSON：{"choice":序號或0,"pitch":"你向全鎮說明的一兩句話（第一人稱，50 字內）"}')}`;
+        this._countNpcLlmUse(world);
+        const j = await this._askJson(prompt, 180);
+        const n = parseInt(j?.choice, 10); if (!j || !Number.isFinite(n)) return null;
+        return { choice: n, pitch: String(j.pitch || '').trim().replace(/^[「『"“]+|[」』"”]+$/g, '').slice(0, 120) };
+    }
+
     _buildCharacterProfile(agent) {
         const traitLabels = agent.personality.traits.map(t => TRAIT_POOL[t]?.label || t);
         const partner = agent.relationships.getPartner();
