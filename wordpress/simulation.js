@@ -1911,7 +1911,7 @@ class World {
             relationships: Object.fromEntries(Object.entries(a.relationships.relationships).map(([k,r])=>[k,{
                 targetId:r.targetId, targetName:r.targetName, affinity:r.affinity, trust:r.trust,
                 romanticInterest:r.romanticInterest, interactionCount:r.interactionCount,
-                lastInteractionTick:r.lastInteractionTick, sharedMemories:r.sharedMemories.slice(-10000),
+                lastInteractionTick:r.lastInteractionTick, sharedMemories:r.sharedMemories.slice(-3).map(x => typeof x === 'string' && x.length > 100 ? x.slice(0, 99) + '…' : x), // v6.43.5 存提示詞會用到的最近 3 筆;英文句子長,每筆最多 100 字
                 status:r.status, statusSince:r.statusSince, isCheating:r.isCheating, isFeud:r.isFeud || undefined
             }])),
             memory: a.memory.entries.slice(-10000).map(m=>({tick:m.tick,timeStr:m.timeStr,category:m.category,importance:m.importance,relatedAgents:m.relatedAgents,...(m.k?{k:m.k,p:m.p}:{content:m.content})})), // v6.17.0 k/p;v6.19.0 有模板就不存 content
@@ -1934,12 +1934,12 @@ class World {
             clock: { day:this.clock.day, hour:this.clock.hour, minute:this.clock.minute, season:this.clock.season, year:this.clock.year },
             tickCount: this.tickCount,
             paused: this.paused,
-            messageLog: this.messageLog.slice(-800).map(m => ({ time:m.time, tick:m.tick, type:m.type, agent:m.agent, target:m.target, ...(m.k ? { k:m.k, p:m.p } : { content:m.content }) })), // v6.18.0 帶 k/p、不帶快取;v6.19.0 有模板就不存 content
+            messageLog: this.messageLog.slice(-500).map(m => ({ time:m.time, tick:m.tick, type:m.type, agent:m.agent, target:m.target, ...(m.k ? { k:m.k, p:m.p } : { content:m.content }) })), // v6.18.0 帶 k/p、不帶快取;v6.19.0 有模板就不存 content
             townMap: this.townMap ? { seed:this.townMap.seed, terrain:this.townMap.terrain, width:this.townMap.width, height:this.townMap.height,
                 locations: Object.fromEntries(Object.entries(this.townMap.locations).map(([k,v])=>[k,{id:v.id,name:v.name,description:v.description,x:v.x,y:v.y,category:v.category,capacity:v.capacity}])) } : null,
             agents: Object.fromEntries(Object.entries(this.agents).map(([k,a])=>[k,serializeAgent(a)])),
             // v5.29.0 AI 對話紀錄以文字形式持久化(含每則對話全文),反思則隨 agent.memory 一起存
-            npcConversationLog: this.conversationEngine.npcConversationLog.slice(-300).map(c => ({ ...c, dialogue: (c.dialogue || []).map(d => ({ ...d })) })),
+            npcConversationLog: this.conversationEngine.npcConversationLog.slice(-200).map(c => ({ ...c, dialogue: (c.dialogue || []).map(d => ({ ...d })) })), // v6.43.5 300→200(英文存檔瘦身)
             npcLlmUsedToday: this.npcLlmUsedToday || 0,
             feudCooldown: { ...(this._feudCooldown || {}) }, // v5.42.0 對嗆冷卻
             mediations: JSON.parse(JSON.stringify(this.mediations || {})), // v5.42.0 和解進度
