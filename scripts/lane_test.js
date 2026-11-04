@@ -22,16 +22,17 @@ function mkRes() { const r = { code: 200, body: null, status(c) { r.code = c; re
 async function ask(lane) { calls.length = 0; const res = mkRes(); await chat({ method: 'POST', headers: {}, body: { prompt: 'hi', lane } }, res); return res; }
 let pass = 0, fail = 0; const ok = (c, m) => { if (c) pass++; else { fail++; console.log('FAIL ' + m, JSON.stringify(calls)); } };
 (async () => {
-  let r = await ask('chat'); ok(r.body.provider === 'groq' && calls[0] === 'groq' && r.body.reply === 'G', 'chat → groq first');
-  r = await ask('background'); ok(r.body.provider === 'relay' && calls[0] === 'relay', 'background → relay first');
-  r = await ask(undefined); ok(r.body.provider === 'relay', 'no lane → background');
-  groqMode = '429'; r = await ask('chat'); ok(r.body.provider === 'relay' && calls.join() === 'groq,relay', 'chat: groq 429 → relay');
-  groqMode = 'ok'; r = await ask('chat'); ok(r.body.provider === 'relay' && calls.join() === 'relay', 'chat: groq in 5-min cooldown → relay directly');
-  relayMode = 'fail'; r = await ask('chat'); ok(r.body.provider === 'groq' && calls.join() === 'relay,groq', 'chat: relay fails → groq still last resort');
-  r = await ask('background'); ok(r.body.provider === 'groq' && calls.join() === 'groq', 'background: relay in cooldown → groq directly');
-  relayMode = 'ok'; groqMode = 'fail'; r = await ask('background'); ok(r.body.provider === 'relay' && calls.join() === 'groq,relay', 'background: groq fails, relay tried as last resort even in cooldown');
-  r = await ask('background'); ok(r.body.provider === 'relay' && calls.join() === 'relay', 'relay recovered → cooldown cleared');
-  groqMode = '429'; relayMode = 'fail'; r = await ask('chat'); ok(r.code === 502 || r.code === 429, 'both fail → error ' + r.code);
+  // v6.41.0 兩條車道都是 Claude(relay)→ Groq
+  let r = await ask('chat'); ok(r.body.provider === 'relay' && calls.join() === 'relay' && r.body.reply === 'R', 'chat → Claude first');
+  r = await ask('background'); ok(r.body.provider === 'relay' && calls[0] === 'relay', 'background → Claude first');
+  r = await ask(undefined); ok(r.body.provider === 'relay' && r.body.lane === 'background', 'no lane → background');
+  relayMode = 'fail'; r = await ask('chat'); ok(r.body.provider === 'groq' && calls.join() === 'relay,groq', 'chat: Claude fails → Groq');
+  r = await ask('background'); ok(r.body.provider === 'groq' && calls.join() === 'groq', 'background: Claude cooling → Groq directly');
+  r = await ask('chat'); ok(r.body.provider === 'groq' && calls.join() === 'groq', 'chat: Claude cooling → Groq directly');
+  relayMode = 'ok'; groqMode = '429'; r = await ask('chat'); ok(r.body.provider === 'relay' && calls.join() === 'groq,relay', 'Groq 429, Claude tried as last resort even in cooldown');
+  r = await ask('background'); ok(r.body.provider === 'relay' && calls.join() === 'relay', 'Claude recovered → cooldown cleared');
+  groqMode = 'ok'; r = await ask('chat'); ok(r.body.provider === 'relay' && calls.join() === 'relay', 'Groq cooling does not matter while Claude works');
+  groqMode = 'fail'; relayMode = 'fail'; r = await ask('chat'); ok(r.code === 502 || r.code === 429, 'both fail → error ' + r.code);
   groqMode = 'ok'; relayMode = 'ok';
   delete process.env.GROQ_API_KEY; r = await ask('chat'); ok(r.body.provider === 'relay' && calls.join() === 'relay', 'no groq key → relay only');
   process.env.GROQ_API_KEY = 'gsk';

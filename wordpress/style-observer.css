@@ -1,7 +1,7 @@
 /* ============================================================
    RimTown v6.25.0 觀察者沙盒 UI 殼（design-system/rimtown-3d/MASTER.md 夜色票）
    疊在 style.css 之後，只在 .rimtown-container.observer 下生效；
-   v6.29.0 起加 .theme-day 日光色票（遊戲時間 05–19 自動切，設定可鎖定）。
+   v6.29.0 起加 .theme-day 日光色票；v6.41.1 起不再跟遊戲時間自動切，只在設定選「日光」時套用。
    ============================================================ */
 /* 色票變數同時掛在通知容器 #achv-toast-host 上（它在 body 下、不在容器裡；app._applyTheme 會同步 observer／theme-day class） */
 .rimtown-container.observer, #achv-toast-host.observer {

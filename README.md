@@ -20,7 +20,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 - **Achievement System**: 50+ achievements across social, romance, economy, survival, faction, exploration, industry categories
 - **NPC Conversation Visualization**: Speech bubbles on map when NPCs talk to each other
 - **Player Interaction**: Choose jobs, vote in elections, flirt, propose, and marry NPCs
-- **Built-in Town AI**: every player talks to villagers through the server-side AI proxy (`/api/chat`); all keys live in Vercel env vars, nothing to configure on the client. Server-side smart routing: player chats and story scenes go to Groq's free tier (`GROQ_API_KEY`) first, schedules/reflections/background talk go to the paid channel (`LLM_*`), either side failing falls back to the other. **Official OpenAI lane (v6.40.2)**: set `OPENAI_API_KEY` (optional `OPENAI_MODEL`) and GPT joins the routing — background Claude → GPT → Groq, chat Groq → Claude → GPT. **Bring your own AI (v6.36.0)**: a player can instead enter their own Claude / OpenAI / Gemini / custom OpenAI-compatible key under Settings → AI; it stays in that device's browser only (never sent to the town server or cloud settings) and the browser calls the provider directly
+- **Built-in Town AI**: every player talks to villagers through the server-side AI proxy (`/api/chat`); all keys live in Vercel env vars, nothing to configure on the client. Server-side routing (v6.41.0): every call (dialogue, schedules, reflections, full-agent decisions) goes to the main channel `LLM_*` (official Claude) first, then the official OpenAI lane (`OPENAI_API_KEY`, optional `OPENAI_MODEL`), then Groq's free tier (`GROQ_API_KEY`); failing lanes cool down and switch back on recovery. Full agent mode is on by default; logged-in players get 300 AI calls a day (`AI_USER_DAILY`). **Bring your own AI (v6.36.0)**: a player can instead enter their own Claude / OpenAI / Gemini / custom OpenAI-compatible key under Settings → AI; it stays in that device's browser only (never sent to the town server or cloud settings) and the browser calls the provider directly
 - **Pixel Art Map**: Animated tilemap with day/night cycle, campfires, particles
 - **Four Industries System**: Lumber, Quarry, Farming, Mining — choose your starting industry and unlock more as your town grows (v3)
 - **Farm & Crop System**: Plant crops, manage plots, seasonal planting, quality system, NPC farmer bonuses (v3)
@@ -261,7 +261,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.40.2.zip` from Releases
+1. Download `rimtown-v6.41.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -314,6 +314,13 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.41.0 (2026-11-04)
+- 🧠 所有 AI 一律先問 Claude：村民對話、劇情名場面、行程、反思、日報，以及完整智能體的投票、提案與鎮長裁決，全部先走官方 Claude；Claude 故障才依序換 GPT、Groq。以前聊天與決策走的那條線會先用 Groq 免費額度，品質跟 Claude 不一致
+- 🤖 完整智能體模式預設開啟：用小鎮內建 AI 的玩家也一進遊戲就是完整智能體（以前只有自備金鑰才預設開）。想省額度可到「設定 → AI」取消勾選，已經手動關掉的人維持關閉
+- 📈 登入玩家每日 AI 額度從 100 則提高到 300 則（Vercel 的 AI_USER_DAILY 仍可覆寫），用完改用規則版、隔天恢復；訪客維持 10 則
+- 📝 設定頁與首頁技術細節同步更新：分流說明、車道表（先問 Claude，備援 GPT → Groq）、冷卻規則與額度數字
+- 🎨 介面配色不再跟著遊戲裡的白天晚上變：面板、通知、名牌固定用夜色色票，想要亮色可到「設定 → 介面配色」選「日光」；原本的「自動」選項拿掉（存著「自動」的一律當夜色）。3D 小鎮本身的日夜光影照舊
 
 ### v6.40.2 (2026-11-04)
 - 🤖 伺服器 AI 新增官方 OpenAI（GPT）渠道：Vercel 設 OPENAI_API_KEY（可選 OPENAI_MODEL）就加入分流。背景線（行程／反思／日報／完整智能體決策）走 Claude → GPT → Groq，聊天線走 Groq → Claude → GPT；GPT 失敗會累進冷卻（60 秒×次數，最多 5 分鐘；429 照 retry-after），恢復即切回

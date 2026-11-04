@@ -468,8 +468,8 @@ Object.assign(RimTownApp.prototype, {
         const flow = [
             ['🗣️', t('玩家附近發生對話')],
             ['📝', t('組提示詞')],
-            ['⚡', t('快車道 Groq')],
-            ['🤝', t('失敗就換 Claude 接手')],
+            ['⚡', t('先問 Claude')],
+            ['🤝', t('失敗依序換 GPT、Groq 接手')],
             ['🛡️', t('守門：拒答／洩漏／簡體')],
             ['🧠', t('寫回記憶與關係')],
         ];
@@ -482,19 +482,19 @@ Object.assign(RimTownApp.prototype, {
             [t('輸出格式'), t('只准輸出台詞與 EFFECTS 行（好感／心動／記憶變動），不准前言、分析、免責聲明')],
         ];
         const lanes = [
-            [t('快車道 chat'), t('玩家附近的即時對話'), t('Groq（開源模型）'), t('Claude'), '12s → 15s'],
-            [t('慢車道 background'), t('每日行程、深度反思、八卦與劇情'), t('Claude'), t('Groq'), '15s → 12s'],
+            [t('快車道 chat'), t('玩家附近的即時對話、完整智能體決策'), t('Claude'), t('GPT → Groq'), '15s → 15s → 12s'],
+            [t('慢車道 background'), t('每日行程、深度反思、八卦與劇情'), t('Claude'), t('GPT → Groq'), '15s → 15s → 12s'],
         ];
         const handoff = [
-            t('兩條路共用一個 26 秒預算（無伺服器函式上限 30 秒），第一條用掉多少，第二條就只剩多少。'),
-            t('逾時、限流（429）、伺服器錯誤：那條路冷卻。Groq 依回傳的重試時間冷卻，最短 5 分鐘；Claude 每失敗一次冷卻多 60 秒，上限 5 分鐘，成功即解除。'),
+            t('所有渠道共用一個 26 秒預算（無伺服器函式上限 30 秒），前面用掉多少，後面就只剩多少。'),
+            t('逾時、限流（429）、伺服器錯誤：那條路冷卻。Groq 依回傳的重試時間冷卻，最短 5 分鐘；Claude 與 GPT 每失敗一次冷卻多 60 秒，上限 5 分鐘，成功即解除。'),
             t('回空白或拒絕扮演不算那條路壞掉，不冷卻，只是這一次換人。'),
             t('每次回應都帶著 provider、lane、model 與 fallback_from，出問題可以直接從紀錄看出是哪一段接手的。'),
         ];
         const quota = [
             t('每次 Groq 回應都會讀 x-ratelimit 標頭，記下剩餘 token、剩餘請求數與重置時間。'),
             t('下一次請求先估算要用多少：中文每字算 1 token，其他每 4 個字元算 1，再加輸出上限（至少 160）與 50 的緩衝。'),
-            t('估算超過剩餘額度就直接跳過 Groq 改走 Claude，不會撞到 429 才發現。'),
+            t('輪到 Groq 備援時，估算超過剩餘額度就排到最後，不會撞到 429 才發現。'),
             t('推理型模型（gpt-oss）固定輸出下限 160 token、推理強度 low、隱藏推理過程，避免它「想太久」回空白。'),
         ];
         const guard = [
@@ -506,7 +506,7 @@ Object.assign(RimTownApp.prototype, {
         const cost = [
             t('只有玩家附近的村民才會呼叫 AI 對話，遠處的走規則式模板，但一樣寫進記憶、一樣影響好感。'),
             t('每天有 AI 額度：行程一批打包成一次請求（每人約 450 token），深度反思每天最多 3 位。'),
-            t('Groq 免費層大約每分鐘 30 次、每天 1,000 次、每分鐘 8,000 token；超過就自動改走付費的 Claude，玩家不會感覺到斷線。'),
+            t('Groq 免費層大約每分鐘 30 次、每天 1,000 次、每分鐘 8,000 token；只在 Claude 與 GPT 都故障時才用到，玩家不會感覺到斷線。'),
         ];
         const esc = (x) => String(x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
         return `<details class="landing-tech" id="landing-tech">
@@ -518,7 +518,7 @@ Object.assign(RimTownApp.prototype, {
                 <dl class="landing-dl">${ingredients.map(x => `<dt>${esc(x[0])}</dt><dd>${esc(x[1])}</dd>`).join('')}</dl>
                 <h4>② ${t('兩條車道：誰先上')}</h4>
                 <div class="landing-table-wrap"><table class="landing-table"><thead><tr><th>${t('車道')}</th><th>${t('用在哪')}</th><th>${t('先問誰')}</th><th>${t('備援')}</th><th>${t('時限')}</th></tr></thead><tbody>${lanes.map(l => `<tr>${l.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
-                <p class="landing-muted">${t('即時對話要快，所以先問回應最快的 Groq；行程與反思要寫得細，所以先問 Claude。兩邊互為備援。')}</p>
+                <p class="landing-muted">${t('對話、行程、反思、投票與鎮長裁決一律先問 Claude，品質一致；Claude 故障才依序換 GPT、Groq，三邊互為備援。')}</p>
                 <h4>③ ${t('互相接手與冷卻')}</h4>
                 <ul class="landing-list">${handoff.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
                 <h4>④ ${t('免費額度保護')}</h4>

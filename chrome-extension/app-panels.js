@@ -962,15 +962,14 @@ Object.assign(RimTownApp.prototype, {
             <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('切換後會重新整理頁面；手機預設不開陰影。')}</div>
         </div>`;
         // v6.29.0 介面配色與自動帶鏡頭
-        let themePref = 'auto'; try { themePref = localStorage.getItem('rimtown_theme') || 'auto'; } catch (e) {}
+        let themePref = 'night'; try { themePref = localStorage.getItem('rimtown_theme') || 'night'; } catch (e) {} // v6.41.1 拿掉「自動」
         let autocam = false; try { autocam = localStorage.getItem('rimtown_autocam') === '1'; } catch (e) {}
         let idlecam = true; try { idlecam = localStorage.getItem('rimtown_idlecam') !== '0'; } catch (e) {} // v6.32.0
         html += `<div class="setting-group" style="margin-bottom:8px">
             <label style="font-size:0.82rem;color:var(--text-secondary)">${t('介面配色')}</label>
             <select id="settings-theme" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem" onchange="try{localStorage.setItem('rimtown_theme',this.value)}catch(e){};window.rimtownApp?._applyTheme?.()">
-                <option value="auto"${themePref==='auto'?' selected':''}>${t('自動（白天日光、晚上夜色）')}</option>
+                <option value="night"${themePref!=='day'?' selected':''}>${t('夜色')}</option>
                 <option value="day"${themePref==='day'?' selected':''}>${t('日光')}</option>
-                <option value="night"${themePref==='night'?' selected':''}>${t('夜色')}</option>
             </select>
         </div>
         <div class="setting-group" style="margin-bottom:8px">
@@ -1047,9 +1046,9 @@ Object.assign(RimTownApp.prototype, {
         html += `<div style="margin-bottom:8px"><span class="llm-status ${aiConnected ? 'connected' : 'disconnected'}${byokActive && aiConnected ? ' byok' : ''}">${aiLabel}</span></div>`;
         // v5.65.0 AI 全面內建:金鑰由伺服器統一保管;v6.36.0 玩家可改填自己的金鑰(只存本機)
         html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${byokActive && aiConnected
-            ? t('🔑 目前用你自己的金鑰與額度：村民對話、行程、反思全部直接從這個瀏覽器連到該服務，小鎮伺服器不經手，也不受每日 100 則限制。') + (this.llmClient.model ? ' ' + t('模型：') + this._escapeHtml(this.llmClient.model) : '')
+            ? t('🔑 目前用你自己的金鑰與額度：村民對話、行程、反思全部直接從這個瀏覽器連到該服務，小鎮伺服器不經手，也不受每日 300 則限制。') + (this.llmClient.model ? ' ' + t('模型：') + this._escapeHtml(this.llmClient.model) : '')
             : isServerAI
-            ? t('🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 100 則）') + ' ' + t('所有 AI 金鑰由小鎮伺服器統一保管，你不需要、也不會看到任何金鑰欄位。') + ' ' + t('智慧分流：你與村民的對話、劇情名場面優先走 Groq 免費額度；行程／反思／背景對話走付費主渠道；任一邊故障自動切到另一邊。')
+            ? t('🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 300 則）') + ' ' + t('所有 AI 金鑰由小鎮伺服器統一保管，你不需要、也不會看到任何金鑰欄位。') + ' ' + t('所有 AI 呼叫（對話、行程、反思、完整智能體決策）一律先走 Claude；Claude 故障時依序改用 GPT、Groq。')
             : t('此站沒有內建 AI 代理端點，村民對話走內建模擬')}</div>`;
         // v6.36.0 自備 AI(進階):Claude / OpenAI / Gemini / 自訂 OpenAI 相容端點;表單值在重繪時保留
         {
@@ -1106,8 +1105,8 @@ Object.assign(RimTownApp.prototype, {
             let fa = null; try { fa = localStorage.getItem('rimtown_full_agent'); } catch (e) {}
             const on = this._fullAgentOn ? this._fullAgentOn() : false; const auto = fa !== '1' && fa !== '0';
             html += `<div class="setting-group" style="margin-bottom:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px">
-            <label style="font-size:0.82rem;color:var(--text-primary);display:flex;align-items:center;gap:8px;font-weight:700"><input type="checkbox" id="settings-fullagent" ${on ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_full_agent',this.checked?'1':'0')}catch(e){};window.rimtownApp?._applyFullAgent?.()"> 🧠 ${t('完整智能體模式')}${auto ? ` <span style="font-weight:normal;font-size:0.68rem;color:var(--text-muted)">${on ? t('（自備金鑰，預設開）') : t('（小鎮內建 AI，預設關）')}</span>` : ''}</label>
-            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">${t('開啟後，村民投票、要不要提案與提什麼、鎮長批准與否，都由 AI 依各自的記憶、性格、交情與鎮況推理並附理由；規則版只在 AI 失敗時墊底。每件提案約多 2～4 次 AI 呼叫、每天多 1 次。')}${!byokActive ? ' ' + t('走小鎮內建 AI 的話，每日 100 則很快就會用完；建議搭配自備金鑰。') : ''}</div>
+            <label style="font-size:0.82rem;color:var(--text-primary);display:flex;align-items:center;gap:8px;font-weight:700"><input type="checkbox" id="settings-fullagent" ${on ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_full_agent',this.checked?'1':'0')}catch(e){};window.rimtownApp?._applyFullAgent?.()"> 🧠 ${t('完整智能體模式')}${auto ? ` <span style="font-weight:normal;font-size:0.68rem;color:var(--text-muted)">${t('（預設開）')}</span>` : ''}</label>
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">${t('開啟後，村民投票、要不要提案與提什麼、鎮長批准與否，都由 AI 依各自的記憶、性格、交情與鎮況推理並附理由；規則版只在 AI 失敗時墊底。每件提案約多 2～4 次 AI 呼叫、每天多 1 次。')}${!byokActive ? ' ' + t('走小鎮內建 AI 時，每日 300 則可能撐不滿一整天；用完會改用規則版，隔天恢復。') : ''}</div>
             </div>`;
         }
         // v5.73.0 AI 對話語言:跟隨介面 / 繁體中文 / English(村民台詞、行程、反思、日報)

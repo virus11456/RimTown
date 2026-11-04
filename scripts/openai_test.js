@@ -36,12 +36,12 @@ async function ask(lane) { calls.length = 0; bodies.length = 0; const res = mkRe
 let pass = 0, fail = 0; const ok = (c, m) => { if (c) pass++; else { fail++; console.log('FAIL ' + m, JSON.stringify(calls)); } };
 (async () => {
   let r = await ask('background'); ok(r.body.provider === 'relay' && calls.join() === 'relay', 'background → Claude first');
-  r = await ask('chat'); ok(r.body.provider === 'groq' && calls.join() === 'groq', 'chat → Groq first');
+  r = await ask('chat'); ok(r.body.provider === 'relay' && calls.join() === 'relay', 'chat → Claude first too');
   relayMode = 'fail';
   r = await ask('background'); ok(r.body.provider === 'openai' && calls.join() === 'relay,openai:gpt-4.1-mini' && r.body.reply === 'O' && r.body.model === 'gpt-4.1-mini', 'background: Claude fails → GPT');
   const b0 = bodies[0]; ok(b0 && b0.max_completion_tokens === 200 && b0.max_tokens === undefined && b0.temperature === 0.9 && b0.messages[0].role === 'system', 'gpt-4.1 body: max_completion_tokens + temperature + system');
   r = await ask('background'); ok(r.body.provider === 'openai' && calls.join() === 'openai:gpt-4.1-mini', 'background: Claude cooling → GPT directly');
-  groqMode = 'fail'; r = await ask('chat'); ok(r.body.provider === 'openai' && calls.join() === 'groq,relay,openai:gpt-4.1-mini', 'chat: Groq + Claude fail → GPT');
+  groqMode = 'fail'; r = await ask('chat'); ok(r.body.provider === 'openai' && calls.join() === 'openai:gpt-4.1-mini', 'chat: Claude cooling → GPT before Groq');
   groqMode = 'ok';
   openaiMode = 'refuse'; r = await ask('background'); ok(r.body.provider === 'groq' && calls.join() === 'openai:gpt-4.1-mini,groq', 'GPT identity reply rejected → Groq');
   openaiMode = 'empty'; r = await ask('background'); ok(r.body.provider === 'groq', 'GPT empty → Groq');
