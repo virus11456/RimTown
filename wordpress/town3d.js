@@ -100,6 +100,8 @@ class Town3D extends PixelTileMap {
     _setupInteraction() { /* 2D 版互動不掛;改用 _setupInteraction3D */ }
 
     // v6.33.0 解析度:低畫質 1x;手機「自動」1.5x(iPhone 原生 3x、安卓 2.6x 的填充率是手機 GPU 最大頭,1.5x 肉眼幾乎看不出差別、像素少四成);鎖「高」才用到 2x
+    // v6.43.0 精簡細節:手機或低畫質時,百葉、花槽、腰樑、側樹冠、草叢不畫(省三角形與記憶體)
+    _lite() { return !!(this.lowQuality || this.isMobile); }
     _targetDpr() { if (this.lowQuality) return 1; const d = window.devicePixelRatio || 1; return Math.min(d, this.isMobile && !this.lockQuality ? 1.5 : 2); }
     _checkResize() {
         const parent = this.glCanvas?.parentElement;
@@ -254,8 +256,24 @@ class Town3D extends PixelTileMap {
     // ---------- 材質 / 幾何快取 ----------
     _mat(hex, opts) {
         const key = hex + (opts ? JSON.stringify(opts) : '');
-        if (!this._mats[key]) this._mats[key] = new THREE.MeshLambertMaterial(Object.assign({ color: new THREE.Color(hex) }, opts || {}));
+        if (!this._mats[key]) { const m = new THREE.MeshLambertMaterial(Object.assign({ color: new THREE.Color(hex) }, opts || {})); m.userData.plain = !opts; this._mats[key] = m; } // v6.43.0 plain＝可併進頂點色大網格
         return this._mats[key];
+    }
+    // v6.43.0 頂點色共用材質:靜態場景與村民都用它,幾百種顏色一次畫完
+    _vcMat() { if (!this._vcm) this._vcm = new THREE.MeshLambertMaterial({ vertexColors: true }); return this._vcm; }
+    // v6.43.0 三角柱(山牆):底 1×1、高 1,沿 z 延伸
+    _prismGeo() {
+        return this._geo('prism', () => {
+            const A = [-0.5, -0.5, 0.5], B = [0.5, -0.5, 0.5], C = [0, 0.5, 0.5], A2 = [-0.5, -0.5, -0.5], B2 = [0.5, -0.5, -0.5], C2 = [0, 0.5, -0.5];
+            const tris = [A, B, C, A2, C2, B2, A, C, C2, A, C2, A2, B, C2, C, B, B2, C2, A, A2, B2, A, B2, B];
+            const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(tris.flat(), 3));
+            g.setIndex([...Array(tris.length).keys()]); return g;
+        });
+    }
+    _prism(w, h, d, hex, x, y, z, parent) {
+        const m = new THREE.Mesh(this._prismGeo(), this._mat(hex));
+        m.scale.set(w, h, d); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true;
+        (parent || this._static).add(m); return m;
     }
     // v6.32.0 樹冠風搖:頂點著色器依世界座標相位左右擺(零 CPU 成本;風力隨天氣)
     _canopyMat() {
@@ -334,11 +352,24 @@ class Town3D extends PixelTileMap {
         for (let z = 0; z < rows; z++) for (let x = 0; x < cols; x++) {
             const tile = this.grid[z][x];
             const y00 = this._vertexY(x, z), y10 = this._vertexY(x + 1, z), y01 = this._vertexY(x, z + 1), y11 = this._vertexY(x + 1, z + 1);
+            const c = this._groundColor(this._isWaterLike(tile) ? T.WATER : tile, x, z);
+            if (tile === T.STONE_PATH) {
+                // v6.43.0 路面切成 2×2 小格、每格深淺不同:石板路像一塊塊鋪石,泥土路有點斑駁(只多幾個三角形,不用貼圖)
+                const Y = (fx, fz) => (y00 * (1 - fx) + y10 * fx) * (1 - fz) + (y01 * (1 - fx) + y11 * fx) * fz;
+                const amp = 0.07;
+                for (let sz = 0; sz < 2; sz++) for (let sx = 0; sx < 2; sx++) {
+                    const fx0 = sx / 2, fx1 = (sx + 1) / 2, fz0 = sz / 2, fz1 = (sz + 1) / 2;
+                    push(pos, x + fx0, Y(fx0, fz0), z + fz0); push(pos, x + fx0, Y(fx0, fz1), z + fz1); push(pos, x + fx1, Y(fx1, fz0), z + fz0);
+                    push(pos, x + fx1, Y(fx1, fz0), z + fz0); push(pos, x + fx0, Y(fx0, fz1), z + fz1); push(pos, x + fx1, Y(fx1, fz1), z + fz1);
+                    const cc = c.clone().offsetHSL(0, 0, (hash2(x * 2 + sx, z * 2 + sz, 7) - 0.5) * 2 * amp);
+                    for (let i = 0; i < 6; i++) col.push(cc.r, cc.g, cc.b);
+                }
+            } else {
             // 兩個三角形(非索引 → 平面著色)
             push(pos, x, y00, z); push(pos, x, y01, z + 1); push(pos, x + 1, y10, z);
             push(pos, x + 1, y10, z); push(pos, x, y01, z + 1); push(pos, x + 1, y11, z + 1);
-            const c = this._groundColor(this._isWaterLike(tile) ? T.WATER : tile, x, z);
             for (let i = 0; i < 6; i++) col.push(c.r, c.g, c.b);
+            }
             if (this._isWaterLike(tile)) {
                 const wy = -0.22;
                 push(wpos, x, wy, z); push(wpos, x, wy, z + 1); push(wpos, x + 1, wy, z);
@@ -347,7 +378,7 @@ class Town3D extends PixelTileMap {
         }
         const g = new THREE.BufferGeometry();
         g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-        g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+        g.setAttribute('color', new THREE.BufferAttribute(Uint8Array.from(col, (v) => Math.round(v * 255)), 3, true)); // v6.43.0 顏色 Uint8
         g.computeVertexNormals();
         const terrain = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true }));
         terrain.receiveShadow = true; terrain.name = 'terrain';
@@ -406,15 +437,26 @@ class Town3D extends PixelTileMap {
         // 樹:樹幹(圓柱)+ 樹冠(二十面體 or 兩層圓錐)
         const nTree = lists.tree.length + lists.pine.length;
         if (nTree) {
-            const trunks = this._instanced(this._geo('trunk', () => new THREE.CylinderGeometry(0.12, 0.17, 1, 6)), '#7A4E2E', nTree);
+            // v6.43.0 樹幹與松樹層改開口(看不到的頂／底面不畫);森林深處的樹維持一團樹冠,只有看得見的樹才加側冠／第三層
+            const trunks = this._instanced(this._geo('trunkO', () => new THREE.CylinderGeometry(0.12, 0.17, 1, 6, 1, true)), '#7A4E2E', nTree);
             const blobs = this._instanced(this._geo('blob', () => new THREE.IcosahedronGeometry(1, 0)), '#ffffff', Math.max(1, lists.tree.length), false, this._canopyMat());
-            const cones = this._instanced(this._geo('cone6', () => new THREE.ConeGeometry(1, 1, 6)), '#ffffff', Math.max(1, lists.pine.length * 2), false, this._canopyMat());
+            const side = this._instanced(this._geo('blobS', () => new THREE.OctahedronGeometry(1, 0)), '#ffffff', Math.max(1, lists.tree.length * 2), false, this._canopyMat());
+            const cones = this._instanced(this._geo('cone6o', () => new THREE.ConeGeometry(1, 1, 6, 1, true)), '#ffffff', Math.max(1, lists.pine.length * 3), false, this._canopyMat());
+            const isTree = (x, z) => { const t = this.grid[z]?.[x]; return t === T.TREE_TOP || t === T.TREE_TOP2 || t === T.TREE_TRUNK; };
+            const dense = (x, z) => { let n = 0; for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if ((dx || dz) && isTree(x + dx, z + dz)) n++; return n >= 7; };
             for (const t of lists.tree) {
                 const ox = (hash2(t.x, t.z, 21) - 0.5) * 0.5, oz = (hash2(t.x, t.z, 22) - 0.5) * 0.5;
                 const gx = t.x + 0.5 + ox, gz = t.z + 0.5 + oz, gy = this.groundY(gx, gz);
                 const s = 0.85 + t.r * 0.5, th = 0.7 * s;
                 this._addInst(trunks, gx, gy + th / 2, gz, 1, th, 1);
-                this._addInst(blobs, gx, gy + th + 0.55 * s, gz, 0.62 * s, 0.7 * s, 0.62 * s, t.r * 6.28, canopyCol(t.r, false));
+                // v6.43.0 闊葉樹三團樹冠(主冠＋兩團側冠,深淺不同),同一個 instancing 網格,不增加繪製次數
+                const cc = canopyCol(t.r, false), ccL = cc.clone().offsetHSL(0, 0, 0.05), ccD = cc.clone().offsetHSL(0, 0, -0.05);
+                this._addInst(blobs, gx, gy + th + 0.55 * s, gz, 0.6 * s, 0.66 * s, 0.6 * s, t.r * 6.28, cc);
+                if (!dense(t.x, t.z) && !this._lite()) { // v6.43.0 手機／低畫質維持一團樹冠
+                    const a1 = t.r * 6.28;
+                    this._addInst(side, gx + Math.cos(a1) * 0.34 * s, gy + th + 0.42 * s, gz + Math.sin(a1) * 0.34 * s, 0.42 * s, 0.4 * s, 0.42 * s, a1 * 2, ccD);
+                    this._addInst(side, gx - Math.cos(a1 + 0.9) * 0.26 * s, gy + th + 0.86 * s, gz - Math.sin(a1 + 0.9) * 0.26 * s, 0.36 * s, 0.36 * s, 0.36 * s, a1 * 3, ccL);
+                }
             }
             for (const t of lists.pine) {
                 const ox = (hash2(t.x, t.z, 21) - 0.5) * 0.5, oz = (hash2(t.x, t.z, 22) - 0.5) * 0.5;
@@ -422,15 +464,22 @@ class Town3D extends PixelTileMap {
                 const s = 0.9 + t.r * 0.5, th = 0.5 * s;
                 this._addInst(trunks, gx, gy + th / 2, gz, 1, th, 1);
                 const c = canopyCol(t.r, true);
-                this._addInst(cones, gx, gy + th + 0.6 * s, gz, 0.58 * s, 1.2 * s, 0.58 * s, t.r * 3, c);
-                this._addInst(cones, gx, gy + th + 1.15 * s, gz, 0.42 * s, 0.9 * s, 0.42 * s, t.r * 3 + 0.5, c);
+                // v6.43.0 松樹三層,越上越小、越上越亮
+                if (dense(t.x, t.z)) {
+                    this._addInst(cones, gx, gy + th + 0.6 * s, gz, 0.58 * s, 1.2 * s, 0.58 * s, t.r * 3, c);
+                    this._addInst(cones, gx, gy + th + 1.15 * s, gz, 0.42 * s, 0.9 * s, 0.42 * s, t.r * 3 + 0.5, c);
+                } else {
+                    this._addInst(cones, gx, gy + th + 0.5 * s, gz, 0.62 * s, 1.0 * s, 0.62 * s, t.r * 3, c.clone().offsetHSL(0, 0, -0.04));
+                    this._addInst(cones, gx, gy + th + 0.95 * s, gz, 0.48 * s, 0.85 * s, 0.48 * s, t.r * 3 + 0.5, c);
+                    this._addInst(cones, gx, gy + th + 1.35 * s, gz, 0.32 * s, 0.7 * s, 0.32 * s, t.r * 3 + 1, c.clone().offsetHSL(0, 0, 0.05));
+                }
             }
-            trunks.instanceMatrix.needsUpdate = true; blobs.instanceMatrix.needsUpdate = true; cones.instanceMatrix.needsUpdate = true;
-            if (blobs.instanceColor) blobs.instanceColor.needsUpdate = true; if (cones.instanceColor) cones.instanceColor.needsUpdate = true;
+            trunks.instanceMatrix.needsUpdate = true; blobs.instanceMatrix.needsUpdate = true; cones.instanceMatrix.needsUpdate = true; side.instanceMatrix.needsUpdate = true;
+            if (blobs.instanceColor) blobs.instanceColor.needsUpdate = true; if (cones.instanceColor) cones.instanceColor.needsUpdate = true; if (side.instanceColor) side.instanceColor.needsUpdate = true;
         }
         if (lists.bush.length) {
-            const m = this._instanced(this._geo('blob', () => new THREE.IcosahedronGeometry(1, 0)), '#ffffff', lists.bush.length);
-            for (const b of lists.bush) { const s = 0.3 + b.r * 0.18; this._addInst(m, b.x + 0.5, this.groundY(b.x + 0.5, b.z + 0.5) + s * 0.6, b.z + 0.5, s * 1.2, s, s * 1.2, b.r * 6, canopyCol(b.r * 0.9, false)); }
+            const m = this._instanced(this._geo('blob', () => new THREE.IcosahedronGeometry(1, 0)), '#ffffff', lists.bush.length * 2);
+            for (const b of lists.bush) { const s = 0.3 + b.r * 0.18, gy = this.groundY(b.x + 0.5, b.z + 0.5), bc = canopyCol(b.r * 0.9, false); this._addInst(m, b.x + 0.5, gy + s * 0.6, b.z + 0.5, s * 1.2, s, s * 1.2, b.r * 6, bc); this._addInst(m, b.x + 0.5 + s * 0.6, gy + s * 0.45, b.z + 0.5 - s * 0.3, s * 0.75, s * 0.7, s * 0.75, b.r * 9, bc.clone().offsetHSL(0, 0, 0.05)); } // v6.43.0 兩團
             m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true;
         }
         if (lists.rock.length) {
@@ -494,6 +543,40 @@ class Town3D extends PixelTileMap {
             this._cone(0.65, 0.4, 4, '#8C5A3C', gx, gy + 1.5, gz).rotation.y = Math.PI / 4;
         }
     }
+    // v6.43.0 路邊石與草叢:石板路靠草地的那一邊排兩塊路緣石;草地上零星草叢(低畫質不畫)。各一個 instancing 網格
+    _buildGroundDetail() {
+        const cols = this.cols, rows = this.rows, season = this.season || '';
+        const grassy = (t) => t === T.GRASS || t === T.GRASS2 || t === T.GRASS3 || t === T.FLOWER1 || t === T.FLOWER2;
+        const curbs = [], tufts = [];
+        for (let z = 0; z < rows; z++) for (let x = 0; x < cols; x++) {
+            const tile = this.grid[z][x];
+            if (tile === T.STONE_PATH) {
+                for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+                    const nt = this.grid[z + dz]?.[x + dx]; if (nt === undefined || !grassy(nt)) continue;
+                    for (const k of [0.27, 0.73]) curbs.push({ x: dx ? x + 0.5 + dx * 0.44 : x + k, z: dz ? z + 0.5 + dz * 0.44 : z + k, along: dx ? 'z' : 'x', r: hash2(x * 4 + dx, z * 4 + dz, 60 + k * 10) });
+                }
+            } else if (grassy(tile) && !this._lite() && season !== '冬季' && hash2(x, z, 70) < 0.12) {
+                const n = 1;
+                for (let i = 0; i < n; i++) tufts.push({ x: x + 0.2 + hash2(x, z, 72 + i) * 0.6, z: z + 0.2 + hash2(x, z, 74 + i) * 0.6, r: hash2(x, z, 76 + i) });
+            }
+        }
+        if (curbs.length) {
+            const m = this._instanced(this._geo('box', () => new THREE.BoxGeometry(1, 1, 1)), '#ffffff', curbs.length);
+            const base = new THREE.Color('#A39A8C');
+            for (const c of curbs) { const gy = this.groundY(c.x, c.z); const col = base.clone().offsetHSL(0, 0, (c.r - 0.5) * 0.12); this._addInst(m, c.x, gy + 0.04, c.z, c.along === 'x' ? 0.42 : 0.14, 0.1, c.along === 'x' ? 0.14 : 0.42, (c.r - 0.5) * 0.2, col); }
+            m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true;
+        }
+        if (tufts.length) {
+            const m = this._instanced(this._geo('tuftO', () => new THREE.ConeGeometry(1, 1, 3, 1, true)), '#ffffff', tufts.length * 3, false, this._canopyMat());
+            m.castShadow = false;
+            for (const t of tufts) {
+                const gy = this.groundY(t.x, t.z), col = new THREE.Color(t.r < 0.5 ? '#5DA74C' : '#6FB956');
+                if (season === '秋季') col.lerp(new THREE.Color('#C9A84A'), 0.5);
+                for (let i = 0; i < 3; i++) { const a = t.r * 6.28 + i * 2.1; this._addInst(m, t.x + Math.cos(a) * 0.06, gy + 0.09, t.z + Math.sin(a) * 0.06, 0.05, 0.18 + (i === 1 ? 0.06 : 0), 0.05, a, col); }
+            }
+            m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true;
+        }
+    }
     _zoneAt(tx, tz, doorOnly) {
         for (const z of Object.values(this.buildingZones)) {
             if (doorOnly && z.doorPixelX === undefined) continue;
@@ -519,18 +602,61 @@ class Town3D extends PixelTileMap {
             const roof = roofs[(h >>> 4) % roofs.length];
             const g = new THREE.Group(); g.position.set(cx, 0, cz); this._static.add(g);
             this._box(w, wallH + 0.3, d, wall, 0, wallH / 2 - 0.15, 0, g);
-            // 屋頂:四角錐(矩形底)+ 屋簷
+            // v6.43.0 石砌地基
+            const stone = ['#9A9184', '#8C8478', '#A39A8C'][h % 3], wood = '#5A3E2B', roofDk = (() => { const k = new THREE.Color(roof); k.multiplyScalar(0.72); return '#' + k.getHexString(); })();
+            this._box(w + 0.14, 0.32, d + 0.14, stone, 0, 0.06, 0, g);
+            // v6.43.0 民宅木骨架:四角柱＋腰樑＋頂樑
+            if (tmpl === 'house') {
+                for (const [px, pz] of [[-w / 2, -d / 2], [w / 2, -d / 2], [-w / 2, d / 2], [w / 2, d / 2]]) this._box(0.14, wallH, 0.14, wood, px, wallH / 2, pz, g);
+                for (const yy of (this._lite() ? [wallH - 0.06] : [wallH * 0.48, wallH - 0.06])) { // v6.43.0 手機／低畫質只留頂樑
+                    this._box(w + 0.02, 0.1, 0.06, wood, 0, yy, d / 2 + 0.02, g); this._box(w + 0.02, 0.1, 0.06, wood, 0, yy, -d / 2 - 0.02, g);
+                    this._box(0.06, 0.1, d + 0.02, wood, w / 2 + 0.02, yy, 0, g); this._box(0.06, 0.1, d + 0.02, wood, -w / 2 - 0.02, yy, 0, g);
+                }
+            }
+            // 屋頂:教堂／崗哨仍是尖頂;其他改成人字形雙坡屋頂(兩片屋面＋山牆＋屋脊),屋脊順著長邊
             const roofH = tmpl === 'chapel' ? 1.8 : big ? 1.3 : 1.0;
-            const r = this._cone(1, roofH, 4, roof, 0, wallH + roofH / 2, 0, g); r.rotation.y = Math.PI / 4; r.scale.set((w + 0.5) * 0.707, roofH, (d + 0.5) * 0.707);
-            this._box(w + 0.5, 0.12, d + 0.5, roof, 0, wallH + 0.02, 0, g);
-            // 門(在 +z 面,對齊 doorPixelX)
+            if (tmpl === 'chapel' || tmpl === 'guardpost') {
+                const r = this._cone(1, roofH, 4, roof, 0, wallH + roofH / 2, 0, g); r.rotation.y = Math.PI / 4; r.scale.set((w + 0.5) * 0.707, roofH, (d + 0.5) * 0.707);
+                this._box(w + 0.5, 0.12, d + 0.5, roofDk, 0, wallH + 0.02, 0, g);
+            } else {
+                const along = d >= w; const span = along ? w : d, len = along ? d : w;
+                const rg = new THREE.Group(); rg.rotation.y = along ? 0 : Math.PI / 2; g.add(rg);
+                const eave = 0.32, half = span / 2 + eave, ang = Math.atan2(roofH, half), slab = Math.hypot(half, roofH) + 0.06;
+                const baseY = wallH - roofH * eave / half; // 屋面剛好壓在牆頂邊
+                for (const sgn of [-1, 1]) {
+                    const sl = this._box(slab, 0.12, len + 0.5, roof, sgn * half / 2, baseY + roofH / 2, 0, rg); sl.rotation.z = -sgn * ang;
+                    const fa = this._box(0.06, 0.16, len + 0.52, roofDk, sgn * (half - 0.02), baseY - 0.02, 0, rg); // 簷口
+                }
+                this._box(0.2, 0.14, len + 0.56, roofDk, 0, baseY + roofH + 0.02, 0, rg); // 屋脊
+                const gh = roofH * (span / 2) / half;
+                this._prism(span, gh, len, wall, 0, wallH + gh / 2, 0, rg); // 山牆
+                if (tmpl === 'house') this._box(0.08, gh * 0.9, 0.06, wood, 0, wallH + gh * 0.45, len / 2 + 0.01, rg);
+            }
+            // 門(在 +z 面,對齊 doorPixelX)+ 門框＋台階＋門把
             const doorX = z.doorPixelX / TILE - cx;
+            this._box(0.98, 1.5, 0.06, wood, doorX, 0.75, d / 2 + 0.01, g);
             this._box(0.8, 1.35, 0.1, '#6B4A2E', doorX, 0.67, d / 2 + 0.02, g);
+            this._box(0.06, 0.06, 0.06, '#D9B85C', doorX + 0.28, 0.7, d / 2 + 0.09, g);
+            this._box(1.1, 0.12, 0.36, stone, doorX, 0.06, d / 2 + 0.2, g);
             // 窗戶(夜間發光)
             if (!this._winMat) { this._winMat = new THREE.MeshLambertMaterial({ color: new THREE.Color('#9CC8E8'), emissive: new THREE.Color('#FFD27A'), emissiveIntensity: 0 }); } // v6.28.0 全鎮共用一個窗材質,合併後一次畫完
             const winMat = this._winMat; if (!this._winMats.includes(winMat)) this._winMats.push(winMat);
             const winGeo = this._geo('box', () => new THREE.BoxGeometry(1, 1, 1));
-            const addWin = (x, y, zz, rot) => { const m = new THREE.Mesh(winGeo, winMat); m.scale.set(0.42, 0.42, 0.08); m.position.set(x, y, zz); m.rotation.y = rot; g.add(m); };
+            const shutter = ['#3C7E71', '#4F6F93', '#8C5A3C', roof][h % 4];
+            const addWin = (x, y, zz, rot) => {
+                const m = new THREE.Mesh(winGeo, winMat); m.scale.set(0.42, 0.42, 0.08); m.position.set(x, y, zz); m.rotation.y = rot; g.add(m);
+                // v6.43.0 窗框、窗台;民宅加百葉、偶爾一個花槽
+                const out = rot === 0 ? Math.sign(zz) : 0, outX = rot !== 0 ? Math.sign(x) : 0;
+                const fr = this._box(0.56, 0.56, 0.05, wood, x - outX * 0.01, y, zz - out * 0.01, g); fr.rotation.y = rot;
+                const sill = this._box(0.62, 0.07, 0.16, stone, x + outX * 0.06, y - 0.3, zz + out * 0.06, g); sill.rotation.y = rot;
+                if (tmpl === 'house' && !this._lite()) { // v6.43.0 手機／低畫質不畫百葉與花槽
+                    for (const sd of [-1, 1]) { const sh = this._box(0.15, 0.48, 0.04, shutter, x + (rot === 0 ? sd * 0.37 : outX * 0.03), y, zz + (rot === 0 ? out * 0.03 : sd * 0.37), g); sh.rotation.y = rot; }
+                    if (((h >>> 3) + Math.round(x * 3 + zz * 5)) % 3 === 0) {
+                        const fb = this._box(0.5, 0.12, 0.14, '#8C5A3C', x + outX * 0.1, y - 0.38, zz + out * 0.1, g); fb.rotation.y = rot;
+                        for (let k = -1; k <= 1; k++) { const fl = this._box(0.1, 0.1, 0.1, ['#E85C8A', '#F2B13C', '#FFFFFF'][(k + 2 + h) % 3], x + (rot === 0 ? k * 0.15 : outX * 0.1), y - 0.28, zz + (rot === 0 ? out * 0.1 : k * 0.15), g); fl.rotation.y = rot; }
+                    }
+                }
+            };
             const wy = wallH * 0.62;
             for (let i = 0; i < Math.max(1, Math.floor(w / 2)); i++) {
                 const wx = -w / 2 + 1 + i * 2 + (w % 2 === 0 ? 0 : 0.5);
@@ -541,6 +667,7 @@ class Town3D extends PixelTileMap {
             // 煙囪 / 尖塔 / 招牌等職業特徵
             if (tmpl === 'workshop' || tmpl === 'tavern' || (tmpl === 'house' && h % 3 === 0)) {
                 const ch = this._box(0.4, 0.9, 0.4, '#8A6A5A', -w / 2 + 0.8, wallH + roofH * 0.6, -d / 2 + 0.8, g);
+                this._box(0.5, 0.08, 0.5, '#6E5446', -w / 2 + 0.8, wallH + roofH * 0.6 + 0.47, -d / 2 + 0.8, g); // v6.43.0 煙囪蓋
                 if (tmpl !== 'house') { this._chimneyTops = this._chimneyTops || []; this._chimneyTops.push({ x: cx - w / 2 + 0.8, y: wallH + roofH * 0.6 + 0.5, z: cz - d / 2 + 0.8 }); }
             }
             if (tmpl === 'chapel') { this._box(0.12, 0.9, 0.12, '#D9C3A5', 0, wallH + roofH + 0.4, 0, g); this._box(0.4, 0.12, 0.12, '#D9C3A5', 0, wallH + roofH + 0.6, 0, g); }
@@ -706,6 +833,7 @@ class Town3D extends PixelTileMap {
         this._static.clear(); this._waterMeshes = []; this._winMats = []; this._glowMats = []; this._boatMeshes = null; this._flame = null; this._chimneyTops = null; this._coach = null; this._coachHome = null; this._caravanAnim = null; // v6.34.1 換圖時馬車狀態歸零
         this._buildTerrain();
         this._buildVegetation();
+        this._buildGroundDetail();
         this._buildBuildings();
         this._buildProps();
         this._buildLamps();
@@ -746,12 +874,14 @@ class Town3D extends PixelTileMap {
     _mergeStatic() {
         const sharedGeos = new Set(Object.values(this._geos));
         const skipMat = new Set([...this._glowMats, this._waterMat].filter(Boolean));
-        const groups = new Map(); // material → { pos:[], nor:[], meshes:[] }
+        const groups = new Map(); // material(或 VC)→ { meshes:[] }
+        const VC = '__vc__'; // v6.43.0 一般純色材質全部併成一個頂點色網格(一次繪製)
         this._static.updateMatrixWorld(true);
         const collect = (o, inNoMerge) => {
             const nm = inNoMerge || !!o.userData?.noMerge;
             if (o.isMesh && !o.isInstancedMesh && !nm && sharedGeos.has(o.geometry) && !skipMat.has(o.material) && o !== this._flame && o.material.transparent !== true) {
-                let g = groups.get(o.material); if (!g) { g = { pos: [], nor: [], meshes: [] }; groups.set(o.material, g); }
+                const key = o.material.userData?.plain ? VC : o.material;
+                let g = groups.get(key); if (!g) { g = { meshes: [] }; groups.set(key, g); }
                 g.meshes.push(o);
             }
             for (const c of o.children) collect(c, nm);
@@ -760,19 +890,25 @@ class Town3D extends PixelTileMap {
         const nmat = new THREE.Matrix3(); const v = new THREE.Vector3();
         let merged = 0, removed = 0;
         for (const [mat, g] of groups) {
-            if (g.meshes.length < 3) continue;
+            const vc = mat === VC;
+            if (!vc && g.meshes.length < 3) continue;
             let total = 0; for (const m of g.meshes) total += m.geometry.attributes.position.count;
-            const pos = new Float32Array(total * 3), nor = new Float32Array(total * 3); let off = 0;
+            // v6.43.0 法向量存 Int8、顏色存 Uint8(正規化),同樣的畫面記憶體約省一半
+            const pos = new Float32Array(total * 3), nor = new Int8Array(total * 3), col = vc ? new Uint8Array(total * 3) : null; let off = 0;
             for (const m of g.meshes) {
                 const pa = m.geometry.attributes.position, na = m.geometry.attributes.normal; nmat.getNormalMatrix(m.matrixWorld);
+                const c = m.material.color;
                 for (let i = 0; i < pa.count; i++) {
                     v.fromBufferAttribute(pa, i).applyMatrix4(m.matrixWorld); pos[off] = v.x; pos[off + 1] = v.y; pos[off + 2] = v.z;
-                    v.fromBufferAttribute(na, i).applyMatrix3(nmat).normalize(); nor[off] = v.x; nor[off + 1] = v.y; nor[off + 2] = v.z; off += 3;
+                    v.fromBufferAttribute(na, i).applyMatrix3(nmat).normalize(); nor[off] = Math.round(v.x * 127); nor[off + 1] = Math.round(v.y * 127); nor[off + 2] = Math.round(v.z * 127);
+                    if (col) { col[off] = Math.round(c.r * 255); col[off + 1] = Math.round(c.g * 255); col[off + 2] = Math.round(c.b * 255); }
+                    off += 3;
                 }
                 m.parent?.remove(m); removed++;
             }
-            const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
-            const mesh = new THREE.Mesh(geo, mat); mesh.castShadow = true; mesh.receiveShadow = true; mesh.name = 'merged'; mesh.frustumCulled = false;
+            const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3, true));
+            if (col) geo.setAttribute('color', new THREE.BufferAttribute(col, 3, true));
+            const mesh = new THREE.Mesh(geo, vc ? this._vcMat() : mat); mesh.castShadow = true; mesh.receiveShadow = true; mesh.name = 'merged'; mesh.frustumCulled = false;
             this._static.add(mesh); merged++;
         }
         // 清掉只剩空殼的 Group
@@ -850,6 +986,27 @@ class Town3D extends PixelTileMap {
     }
 
     // ---------- 村民(方塊小人;v6.24 再細修) ----------
+    // v6.43.0 村民:每個部位(身體／四肢／工具)各自併成一個頂點色網格 —— 一人約 6 次繪製(以前約 18 次),
+    // 省下來的預算拿來加耳朵、鼻子、眉毛、嘴、衣領、腰帶扣、鞋底、袖口等細節
+    _partMesh(boxes) {
+        const unit = this._geo('box', () => new THREE.BoxGeometry(1, 1, 1));
+        const up = unit.attributes.position, un = unit.attributes.normal, n = up.count;
+        const pos = new Float32Array(boxes.length * n * 3), nor = new Int8Array(boxes.length * n * 3), col = new Uint8Array(boxes.length * n * 3);
+        const c = new THREE.Color(); let o = 0;
+        for (const b of boxes) {
+            c.set(b[3]);
+            for (let k = 0; k < n; k++) {
+                pos[o] = up.getX(k) * b[0] + b[4]; pos[o + 1] = up.getY(k) * b[1] + b[5]; pos[o + 2] = up.getZ(k) * b[2] + b[6];
+                nor[o] = Math.round(un.getX(k) * 127); nor[o + 1] = Math.round(un.getY(k) * 127); nor[o + 2] = Math.round(un.getZ(k) * 127);
+                col[o] = Math.round(c.r * 255); col[o + 1] = Math.round(c.g * 255); col[o + 2] = Math.round(c.b * 255); o += 3;
+            }
+        }
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3, true)); g.setAttribute('color', new THREE.BufferAttribute(col, 3, true));
+        const m = new THREE.Mesh(g, this._vcMat()); m.castShadow = true; m.receiveShadow = true; m.userData.ownGeo = true;
+        return m;
+    }
+    _disposeAgent(m) { if (!m) return; m.traverse(o => { if (o.isMesh && o.userData.ownGeo) o.geometry.dispose(); }); }
     _agentMesh(aid, agent, pos) {
         const jobKey = pos.job || agent.job?.key || 'default';
         const base = JOB_COLORS[jobKey] || JOB_COLORS.default;
@@ -857,42 +1014,59 @@ class Town3D extends PixelTileMap {
         const sig = jobKey + '|' + lookSig(agent.look) + '|' + (pos.gender || '');
         let m = this._agentMeshes[aid];
         if (m && m.userData.sig === sig) return m;
-        if (m) { this._agentGroup.remove(m); }
+        if (m) { this._agentGroup.remove(m); this._disposeAgent(m); }
         m = new THREE.Group(); m.userData = { sig, aid };
-        const box = (w, h, d, hex, x, y, z, name) => { const b = this._box(w, h, d, hex, x, y, z, m); b.name = name || ''; return b; };
         const female = (pos.gender || agent.gender) === 'female';
-        // 腿、身體、手臂、頭、頭髮、眼睛
-        const limb = (w, h, d, hex, x, pivotY, z, name) => { const g = new THREE.Group(); g.position.set(x, pivotY, z); g.name = name; m.add(g); this._box(w, h, d, hex, 0, -h / 2, 0, g); return g; };
-        const legL = limb(0.17, 0.36, 0.18, c.pants, -0.11, 0.36, 0, 'legL'), legR = limb(0.17, 0.36, 0.18, c.pants, 0.11, 0.36, 0, 'legR');
-        this._box(0.2, 0.1, 0.22, c.boots, 0, -0.31, 0.01, legL); this._box(0.2, 0.1, 0.22, c.boots, 0, -0.31, 0.01, legR);
-        box(0.46, 0.5, 0.28, c.body, 0, 0.61, 0, 'body');
-        box(0.46, 0.08, 0.3, c.bodyDk, 0, 0.4, 0);
-        const armL = limb(0.13, 0.42, 0.14, c.body, -0.3, 0.83, 0, 'armL'), armR = limb(0.13, 0.42, 0.14, c.body, 0.3, 0.83, 0, 'armR');
-        this._box(0.11, 0.1, 0.12, c.skin, 0, -0.45, 0, armL); this._box(0.11, 0.1, 0.12, c.skin, 0, -0.45, 0, armR);
-        box(0.42, 0.4, 0.4, c.skin, 0, 1.08, 0, 'head');
+        const shade = (hex, k) => { const x = new THREE.Color(hex); x.multiplyScalar(k); return '#' + x.getHexString(); };
+        const skinDk = shade(c.skin, 0.82), hairDk = shade(c.hair, 0.8), bodyLt = shade(c.body, 1.18);
+        const body = [];   // [w,h,d,hex,x,y,z]
+        const B = (w, h, d, hex, x, y, z) => body.push([w, h, d, hex, x, y, z]);
+        // 軀幹、衣領、腰帶與扣環
+        B(0.46, 0.5, 0.28, c.body, 0, 0.61, 0);
+        B(0.48, 0.08, 0.3, c.bodyDk, 0, 0.4, 0);
+        B(0.1, 0.07, 0.02, '#D9B85C', 0, 0.4, 0.155);
+        B(0.3, 0.06, 0.06, bodyLt, 0, 0.85, 0.13);
+        if (female) B(0.5, 0.16, 0.32, c.body, 0, 0.32, 0); // 裙擺
+        // 頭:臉、耳朵、眼睛、眉毛、鼻子、嘴
+        B(0.42, 0.4, 0.4, c.skin, 0, 1.08, 0);
+        B(0.06, 0.12, 0.1, skinDk, -0.23, 1.07, 0); B(0.06, 0.12, 0.1, skinDk, 0.23, 1.07, 0);
+        B(0.07, 0.07, 0.03, '#2B2118', -0.1, 1.1, 0.21); B(0.07, 0.07, 0.03, '#2B2118', 0.1, 1.1, 0.21);
+        B(0.1, 0.025, 0.02, hairDk, -0.1, 1.17, 0.21); B(0.1, 0.025, 0.02, hairDk, 0.1, 1.17, 0.21);
+        B(0.06, 0.07, 0.05, skinDk, 0, 1.03, 0.215);
+        B(0.1, 0.02, 0.02, '#8C4A3C', 0, 0.96, 0.21);
+        // 頭髮
         const hairStyle = agent.look?.hair ?? (female ? 1 : 0);
-        box(0.46, 0.14, 0.44, c.hair, 0, 1.3, 0, 'hair');
-        box(0.46, 0.2, 0.1, c.hair, 0, 1.2, -0.17); // 後腦
-        if (hairStyle === 1 || hairStyle === 2) box(0.4, 0.45, 0.12, c.hair, 0, 0.98, -0.22); // 長髮/馬尾
-        if (hairStyle === 3) box(0.46, 0.12, 0.08, c.hair, 0, 1.2, 0.18); // 齊瀏海
-        if (hairStyle === 5) { box(0.52, 0.2, 0.5, c.hair, 0, 1.33, 0); }
-        box(0.07, 0.07, 0.03, '#2B2118', -0.1, 1.1, 0.21); box(0.07, 0.07, 0.03, '#2B2118', 0.1, 1.1, 0.21);
-        // 職業帽 / 配件
+        B(0.46, 0.14, 0.44, c.hair, 0, 1.3, 0);
+        B(0.46, 0.2, 0.1, c.hair, 0, 1.2, -0.17);
+        if (hairStyle === 1 || hairStyle === 2) B(0.4, 0.45, 0.12, c.hair, 0, 0.98, -0.22);
+        if (hairStyle === 2) B(0.12, 0.2, 0.1, hairDk, 0, 0.8, -0.24);
+        if (hairStyle === 3) B(0.46, 0.12, 0.08, c.hair, 0, 1.2, 0.18);
+        if (hairStyle === 5) B(0.52, 0.2, 0.5, c.hair, 0, 1.33, 0);
+        // 職業帽／配件
         const acc = agent.look?.acc ?? 0;
-        if (acc === 1 || jobKey === 'farmer') { box(0.62, 0.05, 0.62, '#D9B36B', 0, 1.36, 0); box(0.4, 0.16, 0.4, '#D9B36B', 0, 1.45, 0); }
-        else if (jobKey === 'guard') box(0.46, 0.16, 0.46, '#90A4AE', 0, 1.4, 0);
-        else if (jobKey === 'miner') { box(0.46, 0.16, 0.46, '#D2B23D', 0, 1.4, 0); const l = box(0.12, 0.1, 0.06, '#FFE9A8', 0, 1.4, 0.24); l.material = this._mat('#FFE9A8', { emissive: new THREE.Color('#FFD27A'), emissiveIntensity: 0.6 }); }
-        else if (jobKey === 'cook') box(0.4, 0.26, 0.4, '#FFFFFF', 0, 1.46, 0);
-        else if (jobKey === 'mayor') { box(0.4, 0.08, 0.4, '#FFD700', 0, 1.36, 0); }
-        else if (jobKey === 'doctor') box(0.5, 0.06, 0.5, '#FFFFFF', 0, 1.36, 0);
-        else if (jobKey === 'priest') box(0.3, 0.3, 0.3, '#F0E070', 0, 1.46, 0);
-        if (acc === 2) { box(0.14, 0.1, 0.03, '#2B2118', -0.1, 1.1, 0.22); box(0.14, 0.1, 0.03, '#2B2118', 0.1, 1.1, 0.22); }
-        if (acc === 3) box(0.5, 0.12, 0.34, c.accent, 0, 0.86, 0.02);
-        if (jobKey === 'blacksmith') box(0.3, 0.42, 0.04, '#5A4A3A', 0, 0.6, 0.15);
+        let minerLamp = false;
+        if (acc === 1 || jobKey === 'farmer') { B(0.62, 0.05, 0.62, '#D9B36B', 0, 1.36, 0); B(0.4, 0.16, 0.4, '#D9B36B', 0, 1.45, 0); B(0.42, 0.04, 0.42, '#8C5A3C', 0, 1.39, 0); }
+        else if (jobKey === 'guard') { B(0.46, 0.16, 0.46, '#90A4AE', 0, 1.4, 0); B(0.06, 0.12, 0.06, '#C9533D', 0, 1.53, 0); }
+        else if (jobKey === 'miner') { B(0.46, 0.16, 0.46, '#D2B23D', 0, 1.4, 0); minerLamp = true; }
+        else if (jobKey === 'cook') { B(0.4, 0.26, 0.4, '#FFFFFF', 0, 1.46, 0); B(0.36, 0.3, 0.02, '#F4F4F4', 0, 0.58, 0.15); }
+        else if (jobKey === 'mayor') { B(0.4, 0.08, 0.4, '#FFD700', 0, 1.36, 0); B(0.08, 0.08, 0.02, '#E8732A', 0.12, 0.78, 0.15); }
+        else if (jobKey === 'doctor') { B(0.5, 0.06, 0.5, '#FFFFFF', 0, 1.36, 0); B(0.06, 0.18, 0.02, '#C9533D', 0.12, 0.68, 0.15); B(0.18, 0.06, 0.02, '#C9533D', 0.12, 0.68, 0.15); }
+        else if (jobKey === 'priest') B(0.3, 0.3, 0.3, '#F0E070', 0, 1.46, 0);
+        if (acc === 2) { B(0.14, 0.1, 0.03, '#2B2118', -0.1, 1.1, 0.22); B(0.14, 0.1, 0.03, '#2B2118', 0.1, 1.1, 0.22); B(0.08, 0.02, 0.02, '#2B2118', 0, 1.11, 0.22); }
+        if (acc === 3) B(0.5, 0.12, 0.34, c.accent, 0, 0.86, 0.02);
+        if (jobKey === 'blacksmith') B(0.3, 0.42, 0.04, '#5A4A3A', 0, 0.6, 0.15);
+        if (jobKey === 'trader') { B(0.2, 0.22, 0.16, '#8C5A3C', 0.34, 0.5, 0); B(0.04, 0.4, 0.02, '#5A3E2B', 0.12, 0.7, 0.15); }
+        m.add(this._partMesh(body));
+        // 四肢(各自一個網格,掛在樞紐上擺動):腿＋靴＋鞋底、手臂＋袖口＋手
+        const limb = (name, x, pivotY, boxes) => { const g = new THREE.Group(); g.position.set(x, pivotY, 0); g.name = name; g.add(this._partMesh(boxes)); m.add(g); return g; };
+        const leg = (x) => limb(x < 0 ? 'legL' : 'legR', x, 0.36, [[0.17, 0.36, 0.18, c.pants, 0, -0.18, 0], [0.2, 0.1, 0.22, c.boots, 0, -0.31, 0.01], [0.21, 0.03, 0.24, shade(c.boots, 0.6), 0, -0.36, 0.01]]);
+        leg(-0.11); leg(0.11);
+        const arm = (x) => limb(x < 0 ? 'armL' : 'armR', x, 0.83, [[0.13, 0.42, 0.14, c.body, 0, -0.21, 0], [0.145, 0.06, 0.155, c.bodyDk, 0, -0.38, 0], [0.11, 0.1, 0.12, c.skin, 0, -0.45, 0]]);
+        arm(-0.3); const armR = arm(0.3);
         const tool = new THREE.Group(); tool.name = 'tool'; tool.visible = false; tool.position.set(0, -0.45, 0.12); armR.add(tool);
-        this._box(0.06, 0.95, 0.06, '#8B6914', 0, 0.2, 0, tool); this._box(0.22, 0.06, 0.08, '#8A8A8A', 0, 0.66, 0.04, tool);
+        tool.add(this._partMesh([[0.06, 0.95, 0.06, '#8B6914', 0, 0.2, 0], [0.22, 0.06, 0.08, '#8A8A8A', 0, 0.66, 0.04]]));
         m.userData.tool = tool;
-        if (jobKey === 'trader') box(0.2, 0.22, 0.16, '#8C5A3C', 0.34, 0.5, 0);
+        if (minerLamp) { const l = new THREE.Mesh(this._geo('box', () => new THREE.BoxGeometry(1, 1, 1)), this._mat('#FFE9A8', { emissive: new THREE.Color('#FFD27A'), emissiveIntensity: 0.6 })); l.scale.set(0.12, 0.1, 0.06); l.position.set(0, 1.4, 0.24); m.add(l); }
         m.scale.setScalar(1.3);
         this._agentGroup.add(m); this._agentMeshes[aid] = m;
         return m;
@@ -941,7 +1115,7 @@ class Town3D extends PixelTileMap {
             }
         }
         if (this._selRing && (!selectedAgent || !seen.has(selectedAgent) || this._agentMeshes[selectedAgent]?.userData.hidden)) this._selRing.visible = false;
-        for (const aid of Object.keys(this._agentMeshes)) if (!seen.has(aid)) { this._agentGroup.remove(this._agentMeshes[aid]); delete this._agentMeshes[aid]; }
+        for (const aid of Object.keys(this._agentMeshes)) if (!seen.has(aid)) { this._agentGroup.remove(this._agentMeshes[aid]); this._disposeAgent(this._agentMeshes[aid]); delete this._agentMeshes[aid]; }
     }
 
     // ---------- HTML 標籤層 ----------
@@ -1331,8 +1505,10 @@ class Town3D extends PixelTileMap {
         }
     }
     setLowQuality(on) {
+        const wasLite = this._lite();
         this.lowQuality = !!on;
         if (!this.renderer) return;
+        if (wasLite !== this._lite() && this.grid && this._sceneSrc) { try { this._buildScene(); } catch (e) { console.warn('[Town3D] rebuild on quality change', e); } } // v6.43.0 細節等級跟著換
         this.renderer.shadowMap.enabled = !on && !this.isMobile;
         this.sun.castShadow = !on && !this.isMobile;
         this._dpr = this._targetDpr();

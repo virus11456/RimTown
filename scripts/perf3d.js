@@ -6,7 +6,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
 const BASE = process.env.BASE || 'http://localhost:8126/';
 const shot = process.argv[2] || '';
 (async () => {
-  const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--enable-precise-memory-info'] });
+  const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--enable-precise-memory-info', '--js-flags=--expose-gc'] });
   for (const [label, opts, q] of [['desktop', { viewport: { width: 1280, height: 800 } }, 'high'], ['mobile', { ...devices['iPhone 13'] }, 'auto']]) {
     const ctx = await browser.newContext({ ...opts, serviceWorkers: 'block' }); const page = await ctx.newPage(); const errs = [];
     page.on('pageerror', e => errs.push(e.message));
@@ -18,8 +18,10 @@ const shot = process.argv[2] || '';
       const tm = window.rimtownApp.tileMap, R = tm.renderer; tm.lockQuality = true;
       let calls = 0, tris = 0, n = 0; const t0 = performance.now(); let frames = 0;
       await new Promise(res => { const step = () => { const i = R.info.render; calls = Math.max(calls, i.calls); tris = Math.max(tris, i.triangles); frames++; if (performance.now() - t0 < 5000) requestAnimationFrame(step); else res(); }; requestAnimationFrame(step); });
+      if (window.gc) { window.gc(); window.gc(); }
+      let gpuBytes = 0; const seenG = new Set(); tm.scene.traverse(o => { const g = o.geometry; if (!g || seenG.has(g)) return; seenG.add(g); for (const a of Object.values(g.attributes)) gpuBytes += a.array?.byteLength || 0; if (g.index) gpuBytes += g.index.array.byteLength; if (o.isInstancedMesh) { gpuBytes += o.instanceMatrix.array.byteLength; if (o.instanceColor) gpuBytes += o.instanceColor.array.byteLength; } });
       let meshes = 0, agentMeshes = 0; tm.scene.traverse(o => { if (o.isMesh) meshes++; }); for (const m of Object.values(tm._agentMeshes || {})) m.traverse(o => { if (o.isMesh) agentMeshes++; });
-      return { calls, tris, geos: R.info.memory.geometries, tex: R.info.memory.textures, frameMs: +(5000 / frames).toFixed(1), meshes, agentMeshes, agents: Object.keys(tm._agentMeshes || {}).length, heapMB: performance.memory ? +(performance.memory.usedJSHeapSize / 1048576).toFixed(1) : null, low: tm.lowQuality, shadows: R.shadowMap.enabled };
+      return { calls, tris, geos: R.info.memory.geometries, tex: R.info.memory.textures, frameMs: +(5000 / frames).toFixed(1), meshes, agentMeshes, agents: Object.keys(tm._agentMeshes || {}).length, geoMB: +(gpuBytes / 1048576).toFixed(2), heapMB: performance.memory ? +(performance.memory.usedJSHeapSize / 1048576).toFixed(1) : null, low: tm.lowQuality, shadows: R.shadowMap.enabled };
     });
     console.log(label, JSON.stringify(r), errs.length ? 'ERR ' + errs.slice(0, 2).join(' | ') : '');
     if (shot) { await page.evaluate(() => { const tm = window.rimtownApp.tileMap; tm.dist = 16; }); await page.waitForTimeout(1500); await page.screenshot({ path: `${shot}_${label}.png` }); }

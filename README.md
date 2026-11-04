@@ -261,7 +261,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.42.1.zip` from Releases
+1. Download `rimtown-v6.43.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -314,6 +314,13 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.43.0 (2026-11-04)
+- 🏠 房屋更精緻：石砌地基、人字形雙坡屋頂（兩片屋面＋山牆＋屋脊＋簷口，教堂與崗哨維持尖頂）、窗框與窗台、民宅木骨架、百葉窗與花槽、門框＋石階＋門把、煙囪蓋
+- 🧑 人物更精緻：耳朵、鼻子、眉毛、嘴巴、衣領、腰帶扣、袖口、鞋底；女性有裙擺、馬尾有髮尾；廚師圍裙、醫生紅十字、鎮長徽章、農夫帽帶、商人背帶、守衛帽頂
+- 🌳 樹木與道路：闊葉樹改三團樹冠（深淺不同）、松樹三層、灌木兩團；石板路切成一塊塊鋪石並在靠草地那側排路緣石；草地多了零星草叢。森林深處的樹維持簡單造型，看得到的樹才加細節
+- ⚡ 效能反而更好：靜態場景所有純色物件併成一個頂點色網格一次畫完；每位村民從約 18 個網格併成 6 個。實測繪製呼叫桌機 235 → 約 110、手機 125 → 約 50；手機三角形 5.6 萬 → 6.6 萬、幾何資料 1.7 → 2.7 MB、JS 記憶體 13.7 → 14.3 MB（法向量與顏色改存 8 位元）
+- 📱 手機與低畫質自動精簡：百葉、花槽、腰樑、側樹冠、草叢不畫；畫質自動降級時場景會跟著重建成精簡版
 
 ### v6.42.1 (2026-11-04)
 - 🔐 金鑰安全檢查：前端原始碼、線上網站、伺服器回應與 git 全部歷史都掃過，沒有任何 API 金鑰；.env、伺服器程式、建置腳本在線上都讀不到（404／403）；上游錯誤訊息不會原樣傳回前端

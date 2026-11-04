@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.42.1
+ * Version: 6.43.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.42.1');
+define('RIMTOWN_VERSION', '6.43.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1330,6 +1330,24 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.43.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🏠 房屋更精緻：石砌地基、人字形雙坡屋頂（兩片屋面＋山牆＋屋脊＋簷口，教堂與崗哨維持尖頂）、窗框與窗台、民宅木骨架、百葉窗與花槽、門框＋石階＋門把、煙囪蓋',
+                '🧑 人物更精緻：耳朵、鼻子、眉毛、嘴巴、衣領、腰帶扣、袖口、鞋底；女性有裙擺、馬尾有髮尾；廚師圍裙、醫生紅十字、鎮長徽章、農夫帽帶、商人背帶、守衛帽頂',
+                '🌳 樹木與道路：闊葉樹改三團樹冠（深淺不同）、松樹三層、灌木兩團；石板路切成一塊塊鋪石並在靠草地那側排路緣石；草地多了零星草叢。森林深處的樹維持簡單造型，看得到的樹才加細節',
+                '⚡ 效能反而更好：靜態場景所有純色物件併成一個頂點色網格一次畫完；每位村民從約 18 個網格併成 6 個。實測繪製呼叫桌機 235 → 約 110、手機 125 → 約 50；手機三角形 5.6 萬 → 6.6 萬、幾何資料 1.7 → 2.7 MB、JS 記憶體 13.7 → 14.3 MB（法向量與顏色改存 8 位元）',
+                '📱 手機與低畫質自動精簡：百葉、花槽、腰樑、側樹冠、草叢不畫；畫質自動降級時場景會跟著重建成精簡版',
+            ),
+            'changes_en' => array(
+                '🏠 More detailed houses: stone foundations, gable roofs (two roof planes, gable wall, ridge and eaves; chapels and guard posts keep their spires), window frames and sills, timber framing, shutters and flower boxes on homes, door frames with stone steps and handles, chimney caps',
+                '🧑 More detailed people: ears, nose, eyebrows, mouth, collar, belt buckle, cuffs and boot soles; skirts for women and a tail for ponytails; a cook\'s apron, the doctor\'s red cross, the mayor\'s badge, a band on the farmer\'s hat, the trader\'s strap and a plume on the guard\'s helmet',
+                '🌳 Trees and roads: broadleaf trees have three canopy clumps in different shades, pines three tiers and bushes two clumps; stone paths are laid as individual paving stones with curb stones along the grass, and the grass has scattered tufts. Trees deep in a forest stay simple, only visible ones get the extra detail',
+                '⚡ Faster despite the detail: every plain-coloured static object is merged into one vertex-coloured mesh drawn at once, and each villager went from about 18 meshes to 6. Measured draw calls fell from 235 to about 110 on desktop and from 125 to about 50 on mobile; mobile triangles went from 56k to 66k, geometry data from 1.7 to 2.7 MB and JS memory from 13.7 to 14.3 MB (normals and colours now stored as 8-bit)',
+                '📱 Phones and low quality trim automatically: no shutters, flower boxes, middle beams, side canopies or grass tufts, and when quality drops automatically the scene is rebuilt in the lighter version',
+            ),
+        ),
         array(
             'version' => '6.42.1',
             'date'    => '2026-11-04',
