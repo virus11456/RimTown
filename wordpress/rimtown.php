@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.31.0
+ * Version: 6.32.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.31.0');
+define('RIMTOWN_VERSION', '6.32.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1328,6 +1328,26 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.32.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🌤️ 天空：太陽與月亮圓盤隨時間升落（月亮 18 點升、6 點落），壞天氣幾乎看不到；九朵低多邊形雲慢慢飄過小鎮（手機六朵、低畫質四朵），夜裡轉暗、下雨轉灰、暴風時飄得快',
+                '🐦 鳥群：白天沒下雨雪時，一小群鳥繞著鎮中心盤旋；🌳 樹冠風搖：頂點著色器依位置相位左右擺（零 CPU 成本），風力隨天氣——晴天微風、雨雪中等、暴風最大',
+                '⛈️ 暴風雨／暴風雪：天空更暗、陽光更弱、路燈提早亮，偶爾整片天空閃電亮一下',
+                '🪔 路燈：廣場四角與每棟有門的建築門口立路燈，入夜燈頭發光、地上一圈暖光暈（全部燈頭合併成一次繪製、光暈併成一個網格，繪製呼叫不增加）',
+                '🎥 閒置環繞：45 秒沒操作、也沒在跟拍或飛往某處，鏡頭就慢慢繞著目前焦點轉，動一下滑鼠或螢幕就停；設定可關（「閒置時鏡頭慢慢環繞小鎮」）',
+                '🗣️ 對話面對面：有對話泡泡的兩位村民站著時會轉身面對彼此',
+            ),
+            'changes_en' => array(
+                '🌤️ Sky: sun and moon discs rise and set with the clock (moon up at 18:00, down at 06:00), barely visible in bad weather; nine low-poly clouds drift over town (six on phones, four in Low quality), darkening at night, greying in rain and racing in storms',
+                '🐦 Birds: on dry days a small flock circles the town centre; 🌳 Canopy sway: a vertex shader rocks tree tops by position phase at zero CPU cost, with wind strength following the weather, light when clear, medium in rain and snow, strongest in storms',
+                '⛈️ Storms and blizzards: darker sky, weaker sunlight, street lamps come on early, and lightning occasionally flashes the whole sky',
+                '🪔 Street lamps at the four corners of the square and by every building door; heads glow after dusk with a warm pool of light on the ground (all heads merge into one draw and the pools into one mesh, so draw calls do not rise)',
+                '🎥 Idle orbit: after 45 seconds without input, and when not following or flying anywhere, the camera slowly circles the current focus; any mouse or touch stops it, and settings can turn it off ("Slowly orbit the town when idle")',
+                '🗣️ Face to face: two villagers with speech bubbles turn to face each other while standing',
+            ),
+        ),
         array(
             'version' => '6.31.0',
             'date'    => '2026-11-04',

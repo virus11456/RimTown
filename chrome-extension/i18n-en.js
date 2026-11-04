@@ -5314,6 +5314,8 @@
         '💬 聊天 —— 隨時跟任何一位村民聊，他會記得你說過的話，但不會因此偏心': '💬 Chat — talk to any villager any time; they remember what you said but never play favourites',
         '🏗️ 建設 —— 在「動態」分頁開建設選單，由村民動手蓋': '🏗️ Building — open the build menu in the Town tab, and villagers do the work',
         '提案列表在「提案」分頁；每天早上的早安卡會提醒你昨天的結算與本季考驗。': 'Proposals live in the Proposals tab; every morning the morning card recaps yesterday and the current trial.',
+        // v6.32.0 畫面細節:閒置環繞
+        '閒置時鏡頭慢慢環繞小鎮': 'Slowly orbit the town when idle', '45 秒沒操作就開始環繞，動一下滑鼠或螢幕就停。': 'Starts orbiting after 45 seconds without input; any mouse or touch stops it.',
         // v6.31.0 玩家殘留文案清理:觀察者身分、年表、成就
         '觀察者': 'the observer',
         '他是一直看顧著這座小鎮的觀察者：不住在鎮上、不是鎮長，但鎮上的提案都由他批准或否決，大家都認識他、用名字叫他就好。': 'They are the observer who has watched over this town all along: they do not live here and are not the mayor, but every proposal in town is approved or rejected by them; everyone knows them, so just use their name.',
