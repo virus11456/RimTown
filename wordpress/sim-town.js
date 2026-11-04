@@ -643,8 +643,11 @@ class ElectionSystem {
     // 目前在鎮上能拍板的人:正式鎮長;不在就由代理鎮長
     currentMayor(world) {
         const m = this._realMayor(world); if (m) return m;
-        const a = this.acting && world.agents[this.acting.agentId];
-        return (a && !a.isDead) ? a : null;
+        const ok = (a) => !!a && !a.isDead && !this._isExploring(a); // v6.43.3 代理鎮長自己也去探險／出遠門了就不算
+        let a = this.acting && world.agents[this.acting.agentId];
+        // 鎮長或代理是白天臨時出發的:不等到隔天,當下就重新檢查一次(換代理)
+        if (!ok(a) && !this._inCheck) { this._inCheck = true; try { this._checkMayor(world); } finally { this._inCheck = false; } a = this.acting && world.agents[this.acting.agentId]; }
+        return ok(a) ? a : null;
     }
     // 每天檢查:鎮長出遠門 → 指定代理;永久離開 → 代理＋馬上補選;回來 → 交還
     _checkMayor(world) {
@@ -660,7 +663,8 @@ class ElectionSystem {
         const tr = this._mayorTravelling(world);
         const ex = tr ? null : this._officeHolder(world); // v6.43.3 還掛著職位但不在鎮上 → 去探險了
         const reason = tr ? 'travel' : ex ? 'explore' : 'gone';
-        if (!this.acting || !world.agents[this.acting.agentId] || this.acting.reason !== reason) {
+        const actingHere = this.acting && this._residents(world).some(a => a.agentId === this.acting.agentId); // v6.43.3 代理人自己離鎮或去探險 → 換人
+        if (!this.acting || !actingHere || this.acting.reason !== reason) {
             const pick = this._pickActing(world);
             if (pick) {
                 this.acting = { agentId: pick.agentId, name: pick.name, since: world._absDay?.() || 0, reason, mayorId: tr?.agentData?.agentId || ex?.agentId || '', mayorName: tr?.agentData?.name || ex?.name || '' };

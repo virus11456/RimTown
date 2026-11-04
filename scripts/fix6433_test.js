@@ -58,6 +58,18 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
   ok(r.acting && r.acting.reason === 'explore' && r.acting.mayorId && r.cur === r.acting.name && r.cur !== r.mayor, '探險時指派代理鎮長,由代理拍板', r);
   ok(r.decider === r.acting?.name && !r.startedBy, '提案裁決找代理,而且不會開補選', r);
   ok(!r.after && r.back === r.mayor, '探險回來交還', r);
+  r = await ev(() => { const w = window.rimtownApp.world, el = w.election; const m = el._realMayor(w); el.acting = null;
+    const loc = m.currentLocation; m.currentLocation = 'exploration'; m.activity = 'exploring';
+    // 白天臨時出發:不跑每日檢查,直接問「現在誰拍板」
+    const d1 = w.proposals._mayor(w); const a1 = el.acting ? { ...el.acting } : null;
+    // 代理人自己也去探險
+    const ag = w.agents[a1?.agentId]; const aloc = ag?.currentLocation; if (ag) { ag.currentLocation = 'exploration'; ag.activity = 'exploring'; }
+    const d2 = el.currentMayor(w); const a2 = el.acting ? { ...el.acting } : null;
+    if (ag) { ag.currentLocation = aloc; ag.activity = 'idle'; } m.currentLocation = loc; m.activity = 'idle'; el._checkMayor(w);
+    return { mayor: m.name, d1: d1?.name, a1: a1?.name, d2: d2?.name, a2: a2?.name, a2explore: a2?.reason, after: el.acting, back: el.currentMayor(w)?.name }; });
+  ok(r.d1 && r.d1 === r.a1 && r.d1 !== r.mayor, '鎮長白天臨時去探險:當下就由代理拍板,不用等隔天', r);
+  ok(r.d2 && r.d2 === r.a2 && r.a2 !== r.a1 && r.a2explore === 'explore', '代理人自己也去探險:換另一位在鎮上的人代理', r);
+  ok(!r.after && r.back === r.mayor, '兩人回來後交還正式鎮長', r);
 
   console.log('3. 等 AI 回覆時選民離鎮');
   r = await ev(async () => { const w = window.rimtownApp.world, el = w.election, L = w.conversationEngine.llm; w.fullAgentMode = true; L._rateLimitedUntil = 0; L._requestTimestamps = [];
