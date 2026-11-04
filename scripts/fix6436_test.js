@@ -42,6 +42,31 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
   ok(r.sameDay === 0, '同一天照舊等 AI 回覆', r);
   ok(r.nextDay === 4 && r.ruling === 0, '隔天還沒回就照規則裁決', r);
 
+  console.log('跨日改用規則後,遲到的舊 AI 回覆');
+  r = await page.evaluate(async () => { const w = window.rimtownApp.world, P = w.proposals, E = w.conversationEngine; window.rimtownApp._setPaused?.(true);
+    w.fullAgentMode = true; E.decideVotes = async () => null;
+    const day = P._abs(w); const npc = P._npcs(w)[0];
+    const p = { id: 'L980', kind: 'policy', key: 'race', title: '競態', status: 'open', createdDay: day - 5, proposerId: npc.agentId, proposerName: npc.name, votes: {}, why: {}, effects: { mood_modifier: 1 } };
+    P.items = [p]; P._lastDay = -1;
+    // 第 1 天:AI 開始想(回覆被我們攔住,稍後才放)
+    const pending = []; let calls = 0; E.decideMayor = () => { calls++; return new Promise(res => pending.push(res)); };
+    P._advance(w, day); const t1 = p._rulingTicket;
+    // 第 2 天:還沒回 → 規則裁決;讓規則選擇擱置
+    const rs = Math.random; Math.random = () => 0.9; P._advance(w, day + 1); Math.random = rs; const afterRule = p.status;
+    // 第 3 天之後(擱置滿 3 天)鎮長重新裁決,開新一輪 AI
+    const dbg = { shelvedDay: p.shelvedDay, llmRuledDay: p._llmRuledDay, day }; P._advance(w, day + 4); const t2 = p._rulingTicket, ruling2 = p._ruling; dbg.after4 = { status: p.status, ruling: p._ruling, llm: p._llmRuledDay, calls };
+    // 舊回覆這時才到:想把它改成「批准」
+    pending[0]({ action: 'approve', why: '舊回覆' }); await new Promise(r => setTimeout(r, 50));
+    const afterLate = { status: p.status, ruling: p._ruling, why: p.mayorWhy };
+    // 新一輪照常:同一天不會重複送出請求
+    P._advance(w, day + 4); const callsSameDay = calls;
+    if (pending[1]) pending[1]({ action: 'reject', why: '新回覆' }); await new Promise(r => setTimeout(r, 50));
+    return { dbg, t1, t2, afterRule, ruling2, afterLate, callsSameDay, final: { status: p.status, why: p.mayorWhy, ruling: p._ruling } }; });
+  ok(r.afterRule === 'shelved' && r.ruling2 && r.t2 > r.t1, '前提:規則先擱置,之後開了新一輪 AI 裁決', r);
+  ok(r.afterLate.status === 'shelved' && r.afterLate.ruling === true && !/舊回覆/.test(r.afterLate.why || ''), '遲到的舊回覆不能改寫結果,也不會清掉新一輪的等待旗標', r.afterLate);
+  ok(r.callsSameDay === 2, '同一天不會重複送出請求', r);
+  ok(r.final.status === 'rejected' && /新回覆/.test(r.final.why || '') && !r.final.ruling, '新一輪的回覆照常生效', r.final);
+
   console.log('快轉多天、AI 一直沒回(中間不讓出執行緒)');
   r0 = await setup();
   r = await page.evaluate((r0) => { const w = window.rimtownApp.world, P = w.proposals; w.conversationEngine.decideMayor = () => new Promise(() => {});

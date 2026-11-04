@@ -1685,7 +1685,7 @@ Object.assign(RimTownApp.prototype, {
                         <select class="explore-select" id="explore-select-${zoneId}" multiple size="3">
                             ${availableNpcs.map(([id, a]) => `<option value="${id}">${t(a.name)} (${a.job?.title||t('無')})</option>`).join('')}
                         </select>
-                        <button class="explore-btn" data-action="send-expedition" data-val="${zoneId}">派遣探險</button>
+                        <button class="explore-btn" data-action="send-expedition" data-val="${zoneId}">${t('派遣探險')}</button>
                     </div>` : t('<div class="zone-busy">探險進行中...</div>')}
                 </div>`;
             });

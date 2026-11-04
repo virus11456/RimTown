@@ -5,12 +5,16 @@
 // Usage: t('Chinese string') → returns translation based on current language
 
 // v6.43.6 依「看得到的字」截斷(emoji、組合字、國旗不會被切成一半);以前用 .slice 可能把 emoji 的一半留下來變亂碼
+let _clipSeg = null; // v6.43.7 共用一個 Segmenter(以前每次 new,英文存檔時一次存檔多花 30ms 以上)
 function clipText(s, n, ell = '…') {
     s = String(s ?? ''); if (s.length <= n) return s;
+    const keep = Math.max(0, n - (ell ? 1 : 0));
+    // 快路徑:截斷點附近沒有 emoji／組合字元(代理對、ZWJ、變體選擇符、組合附加符號、國旗)就直接切
+    if (!/[\uD800-\uDFFF\u200D\uFE0E\uFE0F\u0300-\u036F\u20E3]/.test(s.slice(0, keep + 2))) return s.slice(0, keep) + ell;
     let parts;
-    try { parts = (typeof Intl !== 'undefined' && Intl.Segmenter) ? Array.from(new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(s), x => x.segment) : Array.from(s); } catch (e) { parts = Array.from(s); }
+    try { if (!_clipSeg && typeof Intl !== 'undefined' && Intl.Segmenter) _clipSeg = new Intl.Segmenter(undefined, { granularity: 'grapheme' }); parts = _clipSeg ? Array.from(_clipSeg.segment(s), x => x.segment) : Array.from(s); } catch (e) { parts = Array.from(s); }
     if (parts.length <= n) return s;
-    return parts.slice(0, Math.max(0, n - (ell ? 1 : 0))).join('') + ell;
+    return parts.slice(0, keep).join('') + ell;
 }
 // v6.43.6 清掉落單的半個 emoji(舊存檔被切壞的)
 function fixBrokenText(s) { return typeof s === 'string' ? s.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '') : s; }

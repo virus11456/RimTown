@@ -179,7 +179,7 @@ Object.assign(RimTownApp.prototype, {
             html += `<div class="news-card-header">`;
             html += `<div class="news-card-issue">#${paper.id}</div>`;
             html += `<div class="news-card-meta">`;
-            html += `${t('<div class="news-card-date">第')}${paper.year}${t('年 ')}${paper.season}${t(' 第')}${paper.day}${t('天</div>')}`;
+            html += `<div class="news-card-date">${t('第 {y} 年{s}').split('{y}').join(paper.year).split('{s}').join(t(paper.season))} ${t('第 {d} 天').split('{d}').join(paper.day)}</div>`;
             html += `<div class="news-card-reporter">✍️ ${paper.reporter}${t('（')}${paper.reporterJob}${t('）')}</div>`;
             html += `</div>`;
             html += `<div class="news-card-toggle">${isExpanded ? '▲' : '▼'}</div>`;
