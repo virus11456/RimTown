@@ -924,6 +924,11 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
         try {
             const pN = this._buildCharacterProfile(npc);
             const recent = (npc.memory?.entries || []).slice(-6).filter(e => e.category !== 'event').slice(-2).map(e => e.content).filter(Boolean);
+            // v6.41.2 線上實測:沒交代首長是誰,村民會說「去找村長」;這裡告訴它鎮上叫「鎮長」、現任是誰
+            const mayor = world.proposals?._mayor?.(world);
+            const mayorLine = mayor && mayor.agentId !== npc.agentId
+                ? LLM_LANG.rule(`${t('- 鎮上的首長叫「鎮長」（不是村長），現任鎮長是')}${mayor.name}\n`, `- The town is led by the Mayor (never "village chief"); the current Mayor is ${mayor.name}\n`)
+                : (mayor ? LLM_LANG.rule(`${t('- 你自己就是鎮長')}\n`, '- You are the Mayor yourself\n') : '');
             const prompt = `${t('你正在扮演「')}${npc.name}${t('」——{town}的居民。鎮上剛剛發生了一件事：').replace('{town}', t(world.townName || '邊境鎮'))}${eventText}
 
 ${t('【你是誰】')}
@@ -933,7 +938,7 @@ ${t('【規則】')}
 ${LLM_LANG.rule(t('- 繁體中文（台灣用語），1-2 句，像當場脫口而出的話'), '- Natural English, 1-2 sentences, as if blurted out on the spot')}
 ${t('- 從你的職業、性格和處境出發：害怕、生氣、興奮、幸災樂禍、盤算都可以，要有個人立場')}
 ${t('- 可以順口說你打算怎麼做（例如要去提案、要去幫忙、要去找誰算帳）')}
-${t('- 不要加任何前綴、名字標籤、引號、旁白')}`;
+${mayorLine}${t('- 不要加任何前綴、名字標籤、引號、旁白')}`;
             const response = await this.llm.generate(prompt, 120, 0.95, true);
             if (!response || response === '__ERROR__' || response === '__RATE_LIMITED__') return '';
             let text = response.trim().replace(/^["「『]|["」』]$/g, '').trim();

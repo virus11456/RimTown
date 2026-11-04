@@ -463,7 +463,7 @@ class ProposalSystem {
     async _mayorRuleLLM(w, p, day, final, m) {
         let r = null;
         try {
-            const tally = { f: this._count(p, 'for'), a: this._count(p, 'against'), forWhy: this._whyTop(p, 'for').map(x => x.why), againstWhy: this._whyTop(p, 'against').map(x => x.why) };
+            const tally = { f: this._count(p, 'for'), a: this._count(p, 'against'), forWhy: this._whyTop(p, 'for', w).map(x => x.who ? `${x.who}${t('：')}${x.why}` : x.why), againstWhy: this._whyTop(p, 'against', w).map(x => x.who ? `${x.who}${t('：')}${x.why}` : x.why) };
             r = await w.conversationEngine.decideMayor(w, p, m, tally);
         } catch (e) { console.warn('[Proposals] llm mayor', e); }
         p._ruling = false;
@@ -655,15 +655,24 @@ class ProposalSystem {
             cost: this._cost(p), affordable: this._affordable(w, p), decidedBy: p.decidedBy, result: p.result ? t(p.result) : '',
             daysLeft: p.status === 'open' ? Math.max(0, ProposalSystem.DECIDE_DAYS - (day - p.createdDay)) : p.status === 'shelved' ? Math.max(0, ProposalSystem.SHELF_DAYS - (day - (p.shelvedDay || p.createdDay))) : 0,
             waitDays: p.waitDays || 0, createdDay: p.createdDay, resolvedDay: p.resolvedDay || null,
-            forWhy: this._whyTop(p, 'for'), againstWhy: this._whyTop(p, 'against'), // v6.30.0 投票理由(前兩名)
+            forWhy: this._whyTop(p, 'for', w), againstWhy: this._whyTop(p, 'against', w), // v6.30.0 投票理由(前兩名)
             outcome: p.outcome || null, outcomeText: p.outcome ? this.outcomeText(p.outcome) : '', // v6.30.0 十天後成效
             mayorName: p.mayorName || '', mayorWhy: this.mayorWhyText(p), // v6.37.0 鎮長裁決
             llm: !!(p.llm || String(p.mayorWhy || '').startsWith('llm:') || Object.values(p.why || {}).some(k => String(k).startsWith('llm:'))), // v6.39.0 這件案子有 AI 推理的決定
         };
     }
-    _whyTop(p, side) {
-        const cnt = {}; for (const [aid, v] of Object.entries(p.votes || {})) { if (v !== side) continue; const k = p.why?.[aid] || 'gut'; cnt[k] = (cnt[k] || 0) + 1; }
-        return Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k, n]) => ({ why: k.startsWith('llm:') ? k.slice(4) : t(VOTE_WHY[k] || VOTE_WHY.gut), n })); // v6.39.0 llm: 開頭是村民自己說的理由
+    // v6.39.0 llm: 開頭是村民自己說的理由
+    // v6.41.2 線上實測:規則理由會累加成「價值觀相合 ×5」,村民用 AI 說的話每句只有 1 票,排名永遠輸,面板與鎮長都看不到。
+    // 改成村民自己說的話優先(附名字,最多 2 句),不夠再補規則理由的統計
+    _whyTop(p, side, w) {
+        const cnt = {}, quotes = [];
+        for (const [aid, v] of Object.entries(p.votes || {})) {
+            if (v !== side) continue; const k = p.why?.[aid] || 'gut';
+            if (k.startsWith('llm:')) { if (k.length > 4) quotes.push({ why: k.slice(4), n: 1, llm: true, who: w?.agents?.[aid]?.name || '' }); continue; }
+            cnt[k] = (cnt[k] || 0) + 1;
+        }
+        const rules = Object.entries(cnt).sort((a, b) => b[1] - a[1]).map(([k, n]) => ({ why: t(VOTE_WHY[k] || VOTE_WHY.gut), n }));
+        return [...quotes.slice(0, 2), ...rules].slice(0, 2);
     }
     // v6.30.0 這一段期間(absDay 區間)的提案統計,季末回顧用
     periodStats(w, fromDay, toDay) {

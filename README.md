@@ -261,7 +261,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.41.1.zip` from Releases
+1. Download `rimtown-v6.41.2.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -314,6 +314,12 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.41.2 (2026-11-04)
+- 🧪 線上整合實測完整智能體（真的跑遊戲 4 天、官方 Claude）：打出「旱災」後三位村民各自表態並接著提出 3 件提案，提案由村民自己挑、自己寫說明，投票與鎮長裁決都有 AI 理由，每次 1～7 秒、沒有錯誤；390px 手機版面不溢出
+- 🏛️ 事件反應不再說「去找村長」：提示詞補上「鎮上的首長叫鎮長、現任是誰」，實測三位村民都改說「去找鎮長陳偉」
+- 💬 提案面板看得到村民自己說的話：以前投票理由只顯示前兩名，規則理由會累加成「價值觀相合 ×5」，村民用 AI 說的話每句只有 1 票永遠排不上；現在村民的原話優先顯示（附名字、加引號），不夠才補規則統計。鎮長裁決時看到的也是村民原話
+- 🧰 提案規則測試改成明確關掉完整智能體（v6.41.0 預設開以後，鎮長裁決改成等 AI，規則版測試會誤判）；完整智能體另有自己的測試
 
 ### v6.41.1 (2026-11-04)
 - 🧪 線上實測完整智能體（官方 Claude、中英文各一輪）：選提案、六位村民投票、鎮長裁決、事件反應全部回出可解析的 JSON 與符合性格的台詞，投票有贊成有反對、理由各自從職業與在乎的事出發，每次 1～5 秒

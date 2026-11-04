@@ -17,7 +17,7 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } }); const page = await ctx.newPage();
     const errs = []; page.on('pageerror', e => errs.push(e.message));
     await page.route('**/api/**', (route) => { const u = route.request().url(); const json = (o, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(o) }); if (u.includes('/api/me')) return json({ logged_in: true, user: { id: 1, username: 'tester' }, is_admin: false }); if (u.includes('/api/saves')) return json({ saves: [] }); if (u.includes('/api/settings')) return json({ settings: {} }); return json({}); });
-    await page.addInitScript(({ jwt, lang }) => { localStorage.setItem('rimtown-lang', lang); localStorage.setItem('rimtown_jwt', jwt); localStorage.setItem('rimtown_tutorial_done', '1'); localStorage.setItem('rimtown_renderer', '2d'); sessionStorage.setItem('rimtown_enter_now', '1'); }, { jwt, lang });
+    await page.addInitScript(({ jwt, lang }) => { localStorage.setItem('rimtown-lang', lang); localStorage.setItem('rimtown_jwt', jwt); localStorage.setItem('rimtown_tutorial_done', '1'); localStorage.setItem('rimtown_renderer', '2d'); localStorage.setItem('rimtown_full_agent', '0'); /* v6.41.2 這支測規則版；完整智能體另有測試 */ sessionStorage.setItem('rimtown_enter_now', '1'); }, { jwt, lang });
     await page.goto(BASE + '/index.html', { waitUntil: 'domcontentloaded' }); await sleep(3000);
     const r = await page.evaluate(() => {
       const app = window.rimtownApp, w = app.world; w.paused = true; const ps = w.proposals; const out = { errs: [] };

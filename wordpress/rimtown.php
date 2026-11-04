@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.41.1
+ * Version: 6.41.2
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.41.1');
+define('RIMTOWN_VERSION', '6.41.2');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1330,6 +1330,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.41.2',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🧪 線上整合實測完整智能體（真的跑遊戲 4 天、官方 Claude）：打出「旱災」後三位村民各自表態並接著提出 3 件提案，提案由村民自己挑、自己寫說明，投票與鎮長裁決都有 AI 理由，每次 1～7 秒、沒有錯誤；390px 手機版面不溢出',
+                '🏛️ 事件反應不再說「去找村長」：提示詞補上「鎮上的首長叫鎮長、現任是誰」，實測三位村民都改說「去找鎮長陳偉」',
+                '💬 提案面板看得到村民自己說的話：以前投票理由只顯示前兩名，規則理由會累加成「價值觀相合 ×5」，村民用 AI 說的話每句只有 1 票永遠排不上；現在村民的原話優先顯示（附名字、加引號），不夠才補規則統計。鎮長裁決時看到的也是村民原話',
+                '🧰 提案規則測試改成明確關掉完整智能體（v6.41.0 預設開以後，鎮長裁決改成等 AI，規則版測試會誤判）；完整智能體另有自己的測試',
+            ),
+            'changes_en' => array(
+                '🧪 Live end-to-end test of full agent mode (4 in-game days on the official Claude): after playing Drought, three villagers each reacted and then raised 3 proposals, which villagers picked and pitched themselves; votes and mayor rulings carried AI reasons, 1–7 seconds per call, no errors; the 390px mobile layout does not overflow',
+                '🏛️ Event reactions no longer say "go see the village chief": the prompt now states that the town is led by the Mayor and who that is, and in the test all three villagers said they would go to Mayor Chen Wei',
+                '💬 The proposal panel now shows what villagers actually said: vote reasons used to show only the top two, rule reasons stacked up like "shared values ×5", and each AI-written reason had a single vote so it never made the cut; villagers\' own words now come first (with their name, in quotes), topped up with rule tallies. The mayor sees those same quotes when ruling',
+                '🧰 The proposal rule tests now switch full agent mode off explicitly (since v6.41.0 turned it on by default, the mayor waits for the AI and the rule tests misread that); full agent mode has its own test',
+            ),
+        ),
         array(
             'version' => '6.41.1',
             'date'    => '2026-11-04',
