@@ -320,12 +320,12 @@ Object.assign(RimTownApp.prototype, {
             const tid = this._generateTownId(townName);
             const list = this._getTownList();
             if (!list.some(tw => tw.id === tid)) {
-                list.push({ id: tid, name: townName, savedAt: new Date().toISOString(), season: blob.clock?.season || '春季', year: 1, day: 1, population: Object.keys(blob.agents || {}).length });
+                list.push({ id: tid, name: townName, savedAt: new Date().toISOString(), season: blob.clock?.season || '春季', year: 1, day: 1, population: Object.keys(blob.agents || {}).length, theme: themeKey, origin: 'neighbor' }); // v6.35.0 標成鄰鎮
                 this._saveTownList(list);
             }
             try { localStorage.setItem('rimtown_town_' + tid, JSON.stringify(blob)); } catch (e) {}
             if (this.auth.loggedIn) {
-                try { await this.auth.cloudSave(tid, townName, blob, { season: blob.clock?.season, year: 1, day: 1, population: Object.keys(blob.agents || {}).length }); } catch (e) {}
+                try { await this.auth.cloudSave(tid, townName, blob, { season: blob.clock?.season, year: 1, day: 1, population: Object.keys(blob.agents || {}).length, theme: themeKey, origin: 'neighbor' }); } catch (e) {}
             }
             this._otherTownsAt = 0; // 立即讓互訪/馬車看見新鄰鎮
         } catch (e) { console.warn('[RimTown] neighbor town gen failed', e); this._neighborEnsured[themeKey] = false; }

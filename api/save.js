@@ -28,6 +28,8 @@ module.exports = async (req, res) => {
         year: parseInt(b.year, 10) || 1,
         day: parseInt(b.day, 10) || 1,
         population: parseInt(b.population, 10) || 0,
+        town_theme: String(b.town_theme || '').slice(0, 20), // v6.35.0 主題鍵(frontier/harbor/…)
+        origin: String(b.origin || '').slice(0, 20),         // v6.35.0 'user' 自己建的 / 'neighbor' 道路開通後自動生成的鄰鎮
         updated_at: updatedAt,
     };
     const mainPath = `saves/${uname}/${townId}.json`;

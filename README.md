@@ -259,7 +259,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.34.1.zip` from Releases
+1. Download `rimtown-v6.35.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -312,6 +312,10 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.35.0 (2026-11-04)
+- 🏘️ 城鎮身分重做：新城鎮一律用隨機 id（之前用「使用者＋鎮名」算，換語言或改名就變成另一座，英文介面下會長出 Frontier Town）；舊存檔 id 不動、照常可讀。存檔多記主題鍵與來源（自己建的／鄰鎮），顯示名依主題與語言翻，不管當初存的是中文還英文
+- 🏘️ 城鎮列表分成「我的城鎮」與「鄰鎮（道路開通後自動生成）」兩區，每座標主題圖示、季節天數、人口、最後儲存時間；兩座都還在第 1 天的同名或同主題城鎮標「⚠️ 疑似重複」讓你自己決定刪哪座（永遠不自動刪）。頂列與手機選單的「新城鎮」拿掉，建立只在列表裡並要確認
 
 ### v6.34.1 (2026-11-04)
 - 🏘️ 城鎮列表：「新地圖」改名「新城鎮」並加確認——它是另開一座、原本那座保留在列表（之前常被當成重畫地圖，按幾次就多幾座）；英文介面時建立或自動補名的城鎮會以英文鎮名存檔（Frontier Town、Seabreeze Harbor…），現在程式補的名字一律中文正名，已存成英文的在中文介面顯示回中文（資料不動，兩座不同 id 的城鎮不會自動合併或刪除）

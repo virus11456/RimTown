@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.34.1
+ * Version: 6.35.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.34.1');
+define('RIMTOWN_VERSION', '6.35.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1328,6 +1328,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.35.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🏘️ 城鎮身分重做：新城鎮一律用隨機 id（之前用「使用者＋鎮名」算，換語言或改名就變成另一座，英文介面下會長出 Frontier Town）；舊存檔 id 不動、照常可讀。存檔多記主題鍵與來源（自己建的／鄰鎮），顯示名依主題與語言翻，不管當初存的是中文還英文',
+                '🏘️ 城鎮列表分成「我的城鎮」與「鄰鎮（道路開通後自動生成）」兩區，每座標主題圖示、季節天數、人口、最後儲存時間；兩座都還在第 1 天的同名或同主題城鎮標「⚠️ 疑似重複」讓你自己決定刪哪座（永遠不自動刪）。頂列與手機選單的「新城鎮」拿掉，建立只在列表裡並要確認',
+            ),
+            'changes_en' => array(
+                '🏘️ Town identity rebuilt: new towns get a random id (it used to be derived from user + town name, so a language switch or rename made a different town, and the English UI grew a "Frontier Town"); old save ids are untouched and load as before. Saves now carry the theme key and origin (yours / neighbour), and the display name follows theme and language whichever way it was stored',
+                '🏘️ The town list is split into "My towns" and "Neighbouring towns (generated when the road opens)", each with a theme icon, season and day, population and last save time; two same-name or same-theme towns both still on day 1 are flagged "⚠️ Possible duplicate" for you to decide (nothing is ever deleted automatically). The "New town" button leaves the header and phone menu; creation lives only in the list and asks for confirmation',
+            ),
+        ),
         array(
             'version' => '6.34.1',
             'date'    => '2026-11-04',

@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.34.1
-const RIMTOWN_APP_VERSION = '6.34.1';
+// RimTown - Frontend App (WordPress Plugin) v6.35.0
+const RIMTOWN_APP_VERSION = '6.35.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -279,6 +279,8 @@ class RimTownAuth {
             year: meta.year || 1,
             day: meta.day || 1,
             population: meta.population || 0,
+            town_theme: meta.theme || window.rimtownApp?.world?.townTheme || '', // v6.35.0
+            origin: meta.origin || window.rimtownApp?._getTownList?.().find(tw => tw.id === townId)?.origin || '',
         };
         // v5.64.1 玩家明確要用較舊的存檔(匯入)時強制覆寫;其餘情況伺服器會擋掉「舊蓋新」
         if (this.forceNextSave) { body.force = true; this.forceNextSave = false; }
@@ -1736,7 +1738,7 @@ class RimTownApp {
     _updateHeaderTownName(name) {
         const n = name || this.world?.townName || '邊境鎮';
         const title = document.querySelector('.mobile-title');
-        if (title) title.textContent = this._townDisplayName ? this._townDisplayName(n) : t(n); // v6.22.0 手機標題也翻;v6.34.1 英文存的鎮名在中文介面翻回中文
+        if (title) title.textContent = this._townDisplayName ? this._townDisplayName(n, this.world?.townTheme) : t(n); // v6.22.0 手機標題也翻;v6.34.1 英文存的鎮名在中文介面翻回中文
         const h1 = document.querySelector('.rimtown-container h1[data-i18n], .rimtown-container header h1, #rimtown-header h1');
         if (h1) h1.textContent = t(n);
         document.querySelectorAll('.rt-title-zh').forEach(el => { el.textContent = n; });
