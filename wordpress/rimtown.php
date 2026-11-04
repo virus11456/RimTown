@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.43.4
+ * Version: 6.43.5
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.43.4');
+define('RIMTOWN_VERSION', '6.43.5');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1330,6 +1330,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.43.5',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '💾 英文存檔瘦身：英文句子大約是中文的 3 倍長，35 天的英文存檔有 1.7MB，超過 1.5MB 的容量門檻。村民之間的共同回憶改成只存提示詞會用到的最近 3 筆（每筆最多 100 字），存檔只留最近 200 段村民對話與 500 條紀錄（紀錄分頁本來就只顯示 500 條）。35 天實測：英文 1.7MB → 1.3MB、全做模式 1.4MB，中文 1.3MB → 1.1MB',
+            ),
+            'changes_en' => array(
+                '💾 Smaller English saves: English sentences run about three times longer than Chinese, so a 35-day English save reached 1.7 MB, over the 1.5 MB limit. Shared memories between villagers now keep only the last 3 that prompts use (up to 100 characters each), and saves keep the last 200 villager conversations and 500 log lines (the log tab only ever showed 500). 35-day runs: English 1.7 MB to 1.3 MB (1.4 MB with every action used), Chinese 1.3 MB to 1.1 MB',
+            ),
+        ),
         array(
             'version' => '6.43.4',
             'date'    => '2026-11-04',
