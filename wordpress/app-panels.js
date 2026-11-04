@@ -412,7 +412,7 @@ Object.assign(RimTownApp.prototype, {
             this._followSeen[id] = w.tickCount;
             if (fresh && shown < 2) {
                 shown++;
-                this._showCornerNotice({ icon: '🔔', title: `${t('你追蹤的')}${t(npc.name)}`, name: '', desc: String(fresh.content).slice(0, 48) });
+                this._showCornerNotice({ go: { agentId: id }, icon: '🔔', title: `${t('你追蹤的')}${t(npc.name)}`, name: '', desc: String(fresh.content).slice(0, 48) });
             }
         }
     },
@@ -888,6 +888,9 @@ Object.assign(RimTownApp.prototype, {
                 <div class="pp-desc">${esc(p.pitch || p.desc)}</div>`;
             if (p.cost && Object.keys(p.cost).length) html += `<div class="pp-cost ${p.affordable ? '' : 'short'}">💰 ${t('需要')}${t('：')}${esc(costText(p.cost))}${p.affordable ? '' : ` · ${t('公庫目前不夠')}`}</div>`;
             html += `<div class="pp-votes" title="${esc(t('贊成：') + (p.forNames || []).map(n => t(n)).join(t('、')))}&#10;${esc(t('反對：') + (p.againstNames || []).map(n => t(n)).join(t('、')))}"><span class="pp-for">👍 ${p.forCount}</span><i><b style="width:${pct}%"></b></i><span class="pp-against">👎 ${p.againstCount}</span></div>`;
+            // v6.30.0 投票理由(各取前兩名)
+            const whyText = (arr) => (arr || []).map(x => `${esc(x.why)} ×${x.n}`).join(t('、'));
+            if ((p.forWhy && p.forWhy.length) || (p.againstWhy && p.againstWhy.length)) html += `<div class="pp-why">${p.forWhy?.length ? `<span>👍 ${whyText(p.forWhy)}</span>` : ''}${p.againstWhy?.length ? `<span>👎 ${whyText(p.againstWhy)}</span>` : ''}</div>`;
             if (mode === 'decide') {
                 html += `<div class="pp-deadline">${p.status === 'open' ? t('還有 {n} 天沒處理就依票數自動定案').replace('{n}', p.daysLeft) : t('擱置中，{n} 天後提案人會收回').replace('{n}', p.daysLeft)}</div>
                 <div class="pp-actions">
@@ -899,6 +902,7 @@ Object.assign(RimTownApp.prototype, {
                 html += `<div class="pp-deadline">${p.affordable ? t('已批准，等待執行') : t('已批准，等公庫湊齊資源（{n}/7 天）').replace('{n}', p.waitDays)}</div>`;
             } else if (p.result) {
                 html += `<div class="pp-result">${esc(p.result)}${p.decidedBy === 'auto' ? ` · ${t('依票數自動定案')}` : ''}</div>`;
+                if (p.outcomeText) html += `<div class="pp-outcome">📈 ${t('十天後')}${t('：')}${esc(p.outcomeText)}</div>`; // v6.30.0 成效
             }
             return html + '</div>';
         };
@@ -953,11 +957,31 @@ Object.assign(RimTownApp.prototype, {
         html += `<div class="setting-group" style="margin-bottom:8px">
             <label style="font-size:0.82rem;color:var(--text-secondary)">${t('3D 畫質')}</label>
             <select id="settings-quality" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem" onchange="try{if(this.value==='auto')localStorage.removeItem('rimtown_3d_quality');else localStorage.setItem('rimtown_3d_quality',this.value)}catch(e){};location.reload()">
-                <option value="auto"${qPref==='auto'?' selected':''}>${t('自動（卡頓就自動降低）')}</option>
+                <option value="auto"${qPref==='auto'?' selected':''}>${t('自動（手機 1.5 倍解析度，卡頓就自動降低）')}</option>
                 <option value="high"${qPref==='high'?' selected':''}>${t('高（陰影、抗鋸齒、原生解析度）')}</option>
                 <option value="low"${qPref==='low'?' selected':''}>${t('低（無陰影、1x 解析度，省電）')}</option>
             </select>
             <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('切換後會重新整理頁面；手機預設不開陰影。')}</div>
+        </div>`;
+        // v6.29.0 介面配色與自動帶鏡頭
+        let themePref = 'auto'; try { themePref = localStorage.getItem('rimtown_theme') || 'auto'; } catch (e) {}
+        let autocam = false; try { autocam = localStorage.getItem('rimtown_autocam') === '1'; } catch (e) {}
+        let idlecam = true; try { idlecam = localStorage.getItem('rimtown_idlecam') !== '0'; } catch (e) {} // v6.32.0
+        html += `<div class="setting-group" style="margin-bottom:8px">
+            <label style="font-size:0.82rem;color:var(--text-secondary)">${t('介面配色')}</label>
+            <select id="settings-theme" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem" onchange="try{localStorage.setItem('rimtown_theme',this.value)}catch(e){};window.rimtownApp?._applyTheme?.()">
+                <option value="auto"${themePref==='auto'?' selected':''}>${t('自動（白天日光、晚上夜色）')}</option>
+                <option value="day"${themePref==='day'?' selected':''}>${t('日光')}</option>
+                <option value="night"${themePref==='night'?' selected':''}>${t('夜色')}</option>
+            </select>
+        </div>
+        <div class="setting-group" style="margin-bottom:8px">
+            <label style="font-size:0.82rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px"><input type="checkbox" id="settings-autocam" ${autocam ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_autocam',this.checked?'1':'0')}catch(e){}"> ${t('事件發生時自動帶鏡頭')}</label>
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('新提案、搬來、商隊進城、考驗公布時鏡頭自動飛過去；關掉的話通知上仍有「去看」鈕。')}</div>
+        </div>
+        <div class="setting-group" style="margin-bottom:8px">
+            <label style="font-size:0.82rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px"><input type="checkbox" id="settings-idlecam" ${idlecam ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_idlecam',this.checked?'1':'0')}catch(e){};if(window.rimtownApp&&window.rimtownApp.tileMap){window.rimtownApp.tileMap.idleCam=this.checked;window.rimtownApp.tileMap._lastInputAt=Date.now();}"> ${t('閒置時鏡頭慢慢環繞小鎮')}</label>
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('45 秒沒操作就開始環繞，動一下滑鼠或螢幕就停。')}</div>
         </div>`;
         html += `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
             <label style="font-size:0.82rem;color:var(--text-secondary)">${t('速度倍率')}</label>

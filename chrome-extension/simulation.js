@@ -159,14 +159,14 @@ class World {
             if (this.npcQuests) this.npcQuests.dailyUpdate(this);
             if (this.lifeGoals) this.lifeGoals.dailyUpdate(this); // v5.4.0
             // v5.58.0 邊境鎮主線任務不在海風鎮跑(任務卡司是邊境鎮居民;海風鎮主題任務鏈待後續)
-            if (this.questSystem && typeof questChainFor === 'function' && questChainFor(this.townTheme)) { this.questSystem.theme = this.townTheme || 'frontier'; this.questSystem.checkProgress(this); } // v5.83.0 依主題跑對應任務鏈
+            if (this.questSystem && !this.observerMode && typeof questChainFor === 'function' && questChainFor(this.townTheme)) { this.questSystem.theme = this.townTheme || 'frontier'; this.questSystem.checkProgress(this); } // v6.31.0 觀察者不跑旅人主線(故事是「你來到鎮上」的第一人稱;故事分頁改成小鎮年表) // v5.83.0 依主題跑對應任務鏈
             // v4.0 systems
             // v5.32.0 章節門檻:互動卡片第二章(繁榮 20)起、議會第四章(繁榮 70)起才啟動
             const chapterPros = this.prosperity?.prosperity || 0;
-            if (chapterPros >= 20) this.dailyDecision.dailyUpdate(this);
+            if (chapterPros >= 20 && !this.observerMode) this.dailyDecision.dailyUpdate(this); // v6.31.0 觀察者沒有「村民來找你商量」的每日決策(文案都是住在鎮上的旅人視角;提案系統接手)
             // v5.49.0 際遇卡停止每日抽;v5.82.0 整個系統移除
             this.dailyDecision.processFollowups(this);
-            if (chapterPros >= 20) this.npcHelp.dailyUpdate(this);
+            if (chapterPros >= 20 && !this.observerMode) this.npcHelp.dailyUpdate(this); // v6.31.0 觀察者沒有村民求助卡(分食物、陪聊、評理都是對住在鎮上的人說的)
             this.reputationSystem.dailyUpdate(this);
             this.weather.dailyUpdate(this);
             if (chapterPros >= 70) this.council.dailyUpdate(this);
@@ -2354,6 +2354,7 @@ function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 // 不再寫死「鎮長」——寫死的句子進了村民記憶,AI 對話就會跟著叫旅人「鎮長」。
 function playerTitle(world) {
     const p = world && world.agents && (world.agents['player'] || Object.values(world.agents).find(a => a && a.isPlayer));
+    if (world && world.observerMode) return t('觀察者'); // v6.31.0
     return (p && p.job && p.job.key === 'mayor') ? t('鎮長') : t('旅人');
 }
 function mayorNameOf(world) {

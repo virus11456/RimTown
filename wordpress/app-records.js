@@ -214,8 +214,31 @@ Object.assign(RimTownApp.prototype, {
     // ============================================================
     // Quest Tab (主線任務)
     // ============================================================
+    // v6.31.0 小鎮年表:本季考驗、歷季回顧(含提案統計)、衰敗／復興狀態;取代觀察者模式下的旅人主線
+    _renderTownChronicle(container) {
+        const w = this.world; const esc = (x) => this._escapeHtml(String(x ?? ''));
+        let html = '<div class="economy-panel">';
+        html += this._renderSeasonTrial();
+        const td = w.trials?.toDict ? w.trials.toDict(w) : null;
+        if (td?.declined) html += `<div class="econ-section" style="border-left:3px solid var(--warning)"><h3>🍂 ${t('衰敗中')}</h3><p class="muted-text">${t('連續撐過兩季考驗就能復興')}${t('（')}${td.passStreak || 0}/2${t('）')}</p></div>`;
+        const rd = w.recap?.toDict?.(w); const hist = rd ? [rd.last, ...(rd.history || [])].filter(Boolean).filter((r, i, arr) => arr.findIndex(x => x && x.key === r.key) === i) : [];
+        html += `<div class="econ-section"><h3>📜 ${t('小鎮年表')}</h3>`;
+        if (!hist.length) html += `<p class="muted-text">${t('第一季結束後，這裡會留下每一季的回顧：考驗、人口、公庫、提案與搬進搬出的人。')}</p>`;
+        for (const r of hist) {
+            const col = { S: '#ffd166', A: 'var(--positive)', B: 'var(--accent)', C: 'var(--negative)' }[r.grade] || 'var(--accent)';
+            html += `<div class="quest-card quest-completed" style="margin-top:8px"><div class="quest-title" style="display:flex;justify-content:space-between;align-items:center"><span>${esc(r.title)}</span><b style="color:${col}">${esc(r.grade)} · ${esc(r.gradeText)}</b></div>`;
+            html += (r.lines || []).map(l => `<div class="quest-desc">${l.icon} ${esc(l.text)}</div>`).join('');
+            html += '</div>';
+        }
+        html += '</div>';
+        const ps = w.proposals?.toDict?.(w);
+        if (ps) html += `<div class="econ-section"><h3>🗳️ ${t('提案總覽')}</h3><p class="muted-text">${t('提出')} ${ps.stats.made} · ${t('已批准')} ${ps.stats.approved} · ${t('已否決')} ${ps.stats.rejected} · ${t('已完成')} ${ps.stats.done}${ps.stats.auto ? ` · ${t('依票數自動定案')} ${ps.stats.auto}` : ''}</p></div>`;
+        html += '</div>';
+        container.innerHTML = html;
+    },
     renderQuest(container) {
         if (!this.state) return;
+        if (this.world?.observerMode) { this._renderTownChronicle(container); return; } // v6.31.0 觀察者:沒有旅人主線,改成小鎮年表
         // v5.59.0 TC-03:海風鎮沒有邊境鎮的主線(卡司不同),顯示佔位而非「落腳邊境」
         const themeStory = TOWN_STORY_BLURBS[this.world?.townTheme || 'frontier'];
         if (themeStory && !(typeof questChainFor === 'function' && questChainFor(this.world?.townTheme))) { // v5.83.0 有任務鏈的鎮顯示真正章節

@@ -551,21 +551,22 @@ ${t('最後一行：')}EFFECTS: {"target": "${t('若念頭涉及某位村民寫�
                 // v5.29.0 記憶流:主動傳訊也帶著對玩家的記憶
                 const memNpc = npc.memory.retrieve(player.name, [player.name], 3, world.tickCount);
 
+                const pn = player.name; // v6.31.0 觀察者不是「旅人」,情境用名字
                 const scenarios = [
-                    t('你想跟旅人分享今天工作的趣事'),
-                    t('你想約旅人一起去做某件事'),
-                    t('你突然想到一個問題想問旅人'),
-                    t('你發現了一件有趣的事想告訴旅人'),
-                    t('你想關心旅人最近過得如何'),
-                    t('你想跟旅人聊聊最近鎮上的八卦'),
+                    t('你想跟{name}分享今天工作的趣事').replace('{name}', pn),
+                    t('你想約{name}一起去做某件事').replace('{name}', pn),
+                    t('你突然想到一個問題想問{name}').replace('{name}', pn),
+                    t('你發現了一件有趣的事想告訴{name}').replace('{name}', pn),
+                    t('你想關心{name}最近過得如何').replace('{name}', pn),
+                    t('你想跟{name}聊聊最近鎮上的八卦').replace('{name}', pn),
                 ];
                 // v5.0.0 祭典期間:NPC 更想邀玩家一起逛祭典
                 const pFest = world.festivals?.activeFestival;
                 if (pFest) {
                     scenarios.push(
-                        `${t('今天是')}${pFest.name}${t('!你想邀旅人一起去')}${pickRandom(pFest.activities)}`,
-                        t('你在祭典會場看到超有趣的東西,想趕快告訴旅人'),
-                        `${t('你想約旅人在祭典結束前一起去')}${pickRandom(pFest.activities)}`,
+                        `${t('今天是')}${pFest.name}${t('!你想邀{name}一起去').replace('{name}', pn)}${pickRandom(pFest.activities)}`,
+                        t('你在祭典會場看到超有趣的東西,想趕快告訴{name}').replace('{name}', pn),
+                        `${t('你想約{name}在祭典結束前一起去').replace('{name}', pn)}${pickRandom(pFest.activities)}`,
                     );
                 }
                 const scenario = pickRandom(scenarios);
@@ -1686,7 +1687,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                 const memNpc = npc.memory.retrieve(`${player.name} ${playerMessage}`, [player.name], 5, world.tickCount);
                 const npcThoughts = npc.memory.getThoughts(2);
                 const pN = this._buildCharacterProfile(npc);
-                const prompt = `${t('你正在扮演「')}${npc.name}${t('」——{town}的一位真實居民。有個叫').replace('{town}', t(world.townName || '邊境鎮'))}${player.name}${t('的人正在跟你說話。')}${playerTitle(world) === t('鎮長') ? t('他是現任鎮長。') : `${t('他是來到鎮上的旅人，不是鎮長，不要叫他鎮長。')}${mayorNameOf(world) ? `${t('現任鎮長是')}${mayorNameOf(world)}${t('。')}` : ''}`}
+                const prompt = `${t('你正在扮演「')}${npc.name}${t('」——{town}的一位真實居民。有個叫').replace('{town}', t(world.townName || '邊境鎮'))}${player.name}${t('的人正在跟你說話。')}${world.observerMode ? `${t('他是一直看顧著這座小鎮的觀察者：不住在鎮上、不是鎮長，但鎮上的提案都由他批准或否決，大家都認識他、用名字叫他就好。')}${mayorNameOf(world) ? `${t('現任鎮長是')}${mayorNameOf(world)}${t('。')}` : ''}` : playerTitle(world) === t('鎮長') ? t('他是現任鎮長。') : `${t('他是來到鎮上的旅人，不是鎮長，不要叫他鎮長。')}${mayorNameOf(world) ? `${t('現任鎮長是')}${mayorNameOf(world)}${t('。')}` : ''}`}
 ${t('你要完全入戲，像真人一樣自然地回應。')}
 
 ${t('【你是誰】')}

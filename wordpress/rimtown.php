@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.27.2
+ * Version: 6.33.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.27.2');
+define('RIMTOWN_VERSION', '6.33.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1328,6 +1328,120 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.33.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '⚡ 修了一個吃掉手機 CPU 的老 bug：村民在「出門→走到目的地門口→進屋」的過渡期間，每一幀都重新跑一次 A* 尋路（390px 四倍節流量測：71 幀跑了 1313 次，一幀 28ms）。現在只在真的換地點時重算，村民更新從每幀 8.4ms 降到 2.2ms',
+                '⚡ 村民目的地快取：地點中心、同地點重疊計數、可走點搜尋、住家查表只在地點或住家改變時算一次；「是否在建築內」改成按格子查表',
+                '⚡ A* 改寫：型別陣列＋二元堆＋世代戳記，不再每格配置 Map/Set、open 不再線性掃描；300 條隨機路徑驗證起終點與每格可走皆正確，單條平均 0.09ms',
+                '📱 手機解析度：「自動」畫質在手機用 1.5 倍（iPhone 原生 3 倍、安卓 2.6 倍的填充率是手機 GPU 最大頭，1.5 倍肉眼幾乎看不出差別、像素少四成）；鎖「高」才用 2 倍；低畫質 3D 只畫 30fps（村民移動不受影響）',
+                '📱 手機側欄：底部抽屜沒打開就不重畫側欄，打開著也最多每秒一次（之前每個 tick 整個 innerHTML 重建 8ms，3 倍速一秒 1.5 次）',
+                '⚡ 靜態場景物件算好世界矩陣後停用自動更新（three.js 每幀會走訪整棵樹重算矩陣；水面、船、篝火、馬車這些會動的保留）',
+            ),
+            'changes_en' => array(
+                '⚡ Fixed an old bug that was eating phone CPU: while a villager was in the leave-building → walk-to-door → enter transition, A* pathfinding re-ran every single frame (measured at 390px with 4x CPU throttling: 1313 plans in 71 frames, 28ms per frame). Plans now happen only on a real location change, and the per-frame villager update drops from 8.4ms to 2.2ms',
+                '⚡ Villager destination cache: location centre, same-spot crowding count, walkable-tile search and house lookup are computed once per location or home change; "inside a building" is now a per-tile lookup table',
+                '⚡ A* rewritten with typed arrays, a binary heap and generation stamps instead of per-node Map/Set and a linear open-list scan; 300 random paths verified for correct endpoints and walkable steps, 0.09ms on average',
+                '📱 Phone resolution: Auto quality renders at 1.5x on phones (fill rate at the native 3x of iPhones or 2.6x of Android is the biggest phone GPU cost; 1.5x is barely visible and uses 40% fewer pixels); only High locks 2x; Low quality renders 3D at 30fps (villager movement unaffected)',
+                '📱 Phone sidebar: not re-rendered while the bottom drawer is closed, and at most once per second while open (previously every tick rebuilt the whole innerHTML, 8ms, 1.5 times a second at 3x speed)',
+                '⚡ Static scene objects freeze their world matrices after build (three.js walks the whole tree every frame otherwise; water, boats, campfire and the coach keep animating)',
+            ),
+        ),
+        array(
+            'version' => '6.32.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🌤️ 天空：太陽與月亮圓盤隨時間升落（月亮 18 點升、6 點落），壞天氣幾乎看不到；九朵低多邊形雲慢慢飄過小鎮（手機六朵、低畫質四朵），夜裡轉暗、下雨轉灰、暴風時飄得快',
+                '🐦 鳥群：白天沒下雨雪時，一小群鳥繞著鎮中心盤旋；🌳 樹冠風搖：頂點著色器依位置相位左右擺（零 CPU 成本），風力隨天氣——晴天微風、雨雪中等、暴風最大',
+                '⛈️ 暴風雨／暴風雪：天空更暗、陽光更弱、路燈提早亮，偶爾整片天空閃電亮一下',
+                '🪔 路燈：廣場四角與每棟有門的建築門口立路燈，入夜燈頭發光、地上一圈暖光暈（全部燈頭合併成一次繪製、光暈併成一個網格，繪製呼叫不增加）',
+                '🎥 閒置環繞：45 秒沒操作、也沒在跟拍或飛往某處，鏡頭就慢慢繞著目前焦點轉，動一下滑鼠或螢幕就停；設定可關（「閒置時鏡頭慢慢環繞小鎮」）',
+                '🗣️ 對話面對面：有對話泡泡的兩位村民站著時會轉身面對彼此',
+            ),
+            'changes_en' => array(
+                '🌤️ Sky: sun and moon discs rise and set with the clock (moon up at 18:00, down at 06:00), barely visible in bad weather; nine low-poly clouds drift over town (six on phones, four in Low quality), darkening at night, greying in rain and racing in storms',
+                '🐦 Birds: on dry days a small flock circles the town centre; 🌳 Canopy sway: a vertex shader rocks tree tops by position phase at zero CPU cost, with wind strength following the weather, light when clear, medium in rain and snow, strongest in storms',
+                '⛈️ Storms and blizzards: darker sky, weaker sunlight, street lamps come on early, and lightning occasionally flashes the whole sky',
+                '🪔 Street lamps at the four corners of the square and by every building door; heads glow after dusk with a warm pool of light on the ground (all heads merge into one draw and the pools into one mesh, so draw calls do not rise)',
+                '🎥 Idle orbit: after 45 seconds without input, and when not following or flying anywhere, the camera slowly circles the current focus; any mouse or touch stops it, and settings can turn it off ("Slowly orbit the town when idle")',
+                '🗣️ Face to face: two villagers with speech bubbles turn to face each other while standing',
+            ),
+        ),
+        array(
+            'version' => '6.31.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🧹 玩家殘留文案清理：觀察者模式不再跑「村民來找你商量」的每日決策卡與村民求助卡（分食物、陪聊、評理都是對住在鎮上的旅人說的；重大事件應對保留）；旅人主線任務停跑，「故事」分頁改成「年表」——本季考驗、歷季回顧（含提案統計）、衰敗／復興狀態、提案總覽',
+                '💬 聊天提示詞的身分行改寫：村民知道對面是「一直看顧小鎮的觀察者——不住鎮上、不是鎮長，提案都由他批」，用名字稱呼，不再叫旅人；村民主動傳訊的情境也改用名字',
+                '🏆 成就：觀察者拿不到的（親手種田、參選、求婚、押商隊、生子…）不再列出也不算進總數，舊檔已解鎖的仍保留；旅人升級的通知在觀察者模式不再跳出',
+                '📝 第二章說明改為「重大事件的應對與更多提案向你敞開」；首頁 AI 說明的身分行同步改成觀察者；Playwright 掃過所有分頁、卡片、早安卡與設定，沒有「旅人／委託／行動點／押商隊／親手」殘留',
+            ),
+            'changes_en' => array(
+                '🧹 Leftover player copy cleaned up: observer mode no longer runs the "a villager comes to you" daily decision cards or villager help requests (sharing food, keeping company, settling arguments were all addressed to a traveller living in town; major-event responses stay); the traveller main quest stops and the Story tab becomes Chronicle: the current trial, past season recaps (with proposal stats), decline / revival status and a proposals overview',
+                '💬 Chat identity line rewritten: villagers know the person opposite is "the observer who has watched over the town, neither a resident nor the mayor, who approves the proposals", and address them by name instead of "traveller"; proactive-message scenarios use the name too',
+                '🏆 Achievements the observer cannot earn (farming by hand, running for mayor, proposing marriage, caravans, children...) are no longer listed or counted, while ones unlocked in old saves stay; traveller level-up notices no longer appear in observer mode',
+                '📝 Chapter 2 text now reads "responses to major events and more proposals open up"; the landing page\'s AI explainer identity line says observer; a Playwright sweep of every tab, card, morning card and settings found no "traveller / request / action points / caravan / by hand" leftovers',
+            ),
+        ),
+        array(
+            'version' => '6.30.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '📜 提案深化・人際類：🕊️ 調解（鎮上有結怨的兩人時，神父／鎮長／心軟的人出面擺一桌，八成機率關係回暖）、🏅 表揚（技藝最好或提案落實最多的人，在廣場公開表揚，大家更敬重他）、🎓 帶徒弟（同行師傅收學徒，徒弟技能至少升一級、兩人變熟）',
+                '📜 提案深化・對外類：🧭 外銷商隊（餘糧或木材載去鄰鎮換銀幣，15% 路上遇劫）、🤝 派使者結盟（花 25 銀幣換 20 天襲擊機率下降、更吸引人搬來）、📣 招募新居民（人手不夠時貼告示，真的會有一戶搬來）',
+                '🗳️ 投票理由：每一票都記下最主要的原因（價值觀相合、跟自己這行有關、跟提案人交情好／處不來、公庫不夠、貪吃、怕生…），提案卡上列出贊成與反對各自的前兩個理由',
+                '📈 成效追蹤：批准執行的案子記下當天的公庫、食物、平均心情、人口，十天後比一比，寫進日誌、日報與提案卡（「十天後：心情 +4、公庫 −30」）',
+                '📊 季末回顧多一行提案統計（提出／批准／否決／落實、最愛提案的人），一季落實三件以上評等加分；村民卡多一行「提案戰績」',
+                '🗳️ 選舉連結：提案落實多的村民更容易出來選鎮長、也更容易拿到票；被否決的案子是把柄（戰績隨存檔保留）',
+                '⚖️ 考驗目標重調：觀察者模式算的是全鎮進帳，不是玩家親手帶進的量，舊目標幾乎穩過（糧荒 737/125、瘟疫 646/36）。糧荒目標 ×3.5、瘟疫 ×10、壓價不變，讓健康的小鎮約 1.5–2 倍過關、衰退的小鎮會過不了；考驗說明改成「全鎮為公庫帶進…」，不再寫「親手」',
+            ),
+            'changes_en' => array(
+                '📜 Deeper proposals, interpersonal: 🕊️ Mediate (when two villagers are feuding, a priest, the mayor or a soft-hearted neighbour sets a table; 80% chance the ice breaks), 🏅 Commend (the best craftsperson or most-delivered proposer is honoured in the square and gains everyone\'s respect), 🎓 Apprentice (a master takes a novice in their trade; the apprentice gains at least one skill level and the two grow close)',
+                '📜 Deeper proposals, external: 🧭 Export caravan (surplus grain or wood hauled to the next town for silver, 15% chance of bandits), 🤝 Envoy (25 silver buys 20 days of fewer raids and more settlers), 📣 Recruit (when short-handed, notices go up and a real household moves in)',
+                '🗳️ Vote reasons: every vote records its main reason (shared values, own trade, likes or dislikes the proposer, treasury short, glutton, shy...), and the proposal card lists the top two reasons for and against',
+                '📈 Outcome tracking: an executed proposal snapshots treasury, food, average mood and population on the day, compares ten days later and reports it in the log, the paper and the card ("Ten days on: mood +4, treasury −30")',
+                '📊 Season recap gains a proposal line (proposed / approved / rejected / carried out, most active proposer); three or more delivered in a season lifts the grade; villager cards show a "Proposal record" line',
+                '🗳️ Election link: villagers who deliver proposals are likelier to run for mayor and to win votes; rejected proposals count against them (records persist in saves)',
+                '⚖️ Trial targets retuned: observer mode counts the whole town\'s intake rather than what a player brought in by hand, so the old targets were a near-certain pass (famine 737/125, plague 646/36). Famine target ×3.5, plague ×10, price war unchanged, so a healthy town passes by about 1.5–2x and a declining one fails; trial wording now says "the town brings in..." instead of "by hand"',
+            ),
+        ),
+        array(
+            'version' => '6.29.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🏠 建築資訊卡：點地圖上的建築或編號名牌，跳出這棟的資訊卡——誰現在在裡面、各自在做什麼（點一列就切到那位村民的卡）、住家的住戶、相關產業等級／已建成與施工中的建築／待決的建設提案；有「定位」與「看提案」鈕。點空地只收卡、不再亂跳',
+                '🎥 鏡頭跟拍：村民卡多一顆「跟拍」，鏡頭會一路跟著他走（拖曳地圖就取消）；桌機熱鍵：F 跟拍／停止選中的村民、空白鍵暫停／繼續、1–4 切分頁、Esc 收卡並停止跟拍',
+                '🔔 通知「去看」：新提案、搬來新居民、商隊進城、考驗公布、追蹤中的村民有動靜，右下通知多一顆「去看」直接飛過去並開卡；設定裡可開「事件發生時自動帶鏡頭」（6 秒內最多一次）',
+                '☀️ 日光配色：介面依遊戲時間 05–19 自動切成奶油色日光色票（設計規格 MASTER.md 的 day tokens），其餘時間夜色；設定可鎖定日光／夜色。3D 名牌、對話泡泡、通知、資訊卡一併吃色票變數',
+                '📱 手機抽屜可拖：抓著底部面板的把手上下拖就能調高度，拉過六成自動變高版（86vh），點兩下把手切換；通知改用面板色票，深淺主題都看得清',
+            ),
+            'changes_en' => array(
+                '🏠 Building info card: tap a building or its numbered tag on the map to open its card: who is inside right now and what each is doing (tap a row to jump to that villager\'s card), the residents of a house, related industry level / finished and in-progress buildings / pending build proposals, with "Locate" and "Proposals" buttons. Tapping empty ground only closes the card instead of jumping around',
+                '🎥 Camera follow: the villager card gains a "Follow" button and the camera tracks them as they walk (dragging the map cancels); desktop hotkeys: F follow/unfollow the selected villager, Space pause/resume, 1–4 switch tabs, Esc close cards and stop following',
+                '🔔 "Go look" on notices: new proposals, newcomers, caravans arriving, trial announcements and activity from followed villagers get a "Go look" button on the corner notice that flies the camera over and opens the card; settings can enable "Auto camera on events" (at most once per 6 seconds)',
+                '☀️ Daylight theme: the interface switches to the cream daylight palette (the day tokens in MASTER.md) between 05:00 and 19:00 game time and back to night otherwise; settings can lock daylight or night. 3D name tags, speech bubbles, notices and info cards all follow the palette variables',
+                '📱 Draggable phone drawer: drag the handle of the bottom panel to resize it, past 60% it snaps to the tall layout (86vh), double-tap the handle to toggle; notices now use the panel palette so they read well in both themes',
+            ),
+        ),
+        array(
+            'version' => '6.28.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '⚡ 啟動包瘦身：翻譯字典從 i18n.js 拆成 i18n-en.js（壓縮後 255KB，比 three.js 還大），只在英文介面載入；中文介面啟動少下載約四分之一（1.09MB → 0.84MB）。執行中切到英文會動態載完字典再翻；i18n.js 只剩 t()／setLang 等執行期，壓縮後 6KB',
+                '⚡ 3D 手機效能：靜態方塊依材質合併（幾百個小網格 → 每種顏色一個），繪製呼叫 250 → 77；全鎮窗戶共用一個材質；名牌層手機隔幀、低畫質每三幀更新，位置沒變就不寫 DOM；粒子在手機減量；光照不再每幀配置顏色物件。390px 加 4 倍 CPU 節流量測：每幀 18.6ms → 12.4ms（其中 CPU 端 JS 約 3ms）',
+                '🛡️ WebGL 失聯處理：iOS Safari 記憶體吃緊時 WebGL 會被收回，現在會攔下並在復原後自動重建場景，不再整片黑掉',
+                '🤖 村民 AI 對話觸發範圍隨鏡頭距離縮放（拉近 14 格、俯瞰全鎮 5 格），避免一拉遠就每對村民都打 AI、額度暴衝',
+                '📐 README 鏡像清單與翻譯鍵位置更新；存檔體積量測：35 天約 1.4MB，大頭是村民記憶 576KB 與關係互動紀錄 304KB（已各有上限，下一輪再收）',
+            ),
+            'changes_en' => array(
+                '⚡ Smaller startup bundle: the translation dictionary moves from i18n.js to i18n-en.js (255KB compressed, bigger than three.js) and only loads for the English UI; the Chinese UI downloads about a quarter less at startup (1.09MB → 0.84MB). Switching to English at runtime loads the dictionary first; i18n.js keeps only t()/setLang and friends, 6KB compressed',
+                '⚡ 3D phone performance: static blocks are merged per material (hundreds of small meshes → one per colour), draw calls 250 → 77; all windows share one material; the name-tag layer updates every other frame on phones and every third in Low quality, skipping DOM writes when nothing moved; fewer particles on phones; lighting no longer allocates colour objects every frame. Measured at 390px with 4x CPU throttling: 18.6ms → 12.4ms per frame (about 3ms of it CPU-side JS)',
+                '🛡️ WebGL context loss handling: iOS Safari reclaims WebGL under memory pressure; the renderer now intercepts it and rebuilds the scene on restore instead of going black',
+                '🤖 Villager AI dialogue range scales with camera distance (14 tiles up close, 5 tiles in overview) so zooming out no longer triggers an AI call for every pair of villagers',
+                '📐 README mirror list and translation-key location updated; save size measured: about 1.4MB after 35 days, dominated by villager memories (576KB) and relationship history (304KB), both already capped, to be tightened next round',
+            ),
+        ),
         array(
             'version' => '6.27.2',
             'date'    => '2026-11-04',

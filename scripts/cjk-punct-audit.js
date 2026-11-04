@@ -2,7 +2,7 @@
 // 用法:node scripts/cjk-punct-audit.js [--list]   超過基準（目前 10:AI 提示詞與 console.log）就失敗。自動改寫工具在 scratchpad cjk_punct_fix.js（逐字元走模板本文,跳過提示詞／正規式／new Agent 名字）。
 // 找程式碼字串裡「沒包在 t()/tpl()/logMessageT() 第一參數」的 CJK 標點（「」：、（）——！？，。），英文模式會原樣露出
 const fs = require('fs'); const path = require('path');
-const dir = 'chrome-extension'; const files = fs.readdirSync(dir).filter(f => f.endsWith('.js') && !/^(i18n|changelog|tilemap|sw)\.js$/.test(f));
+const dir = 'chrome-extension'; const files = fs.readdirSync(dir).filter(f => f.endsWith('.js') && !/^(i18n|i18n-en|changelog|tilemap|sw)\.js$/.test(f));
 const PUNCT = /[「」：、（）！？，。…]/; const BASELINE = 11; // v6.26.0 提案自白的中文 LLM 提示(與 _aiChainQuotes 同類)
 let total = 0; const byFile = {};
 for (const f of files) {

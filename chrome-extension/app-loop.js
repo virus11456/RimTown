@@ -344,8 +344,8 @@ Object.assign(RimTownApp.prototype, {
         w.onProposalEvent = (kind, p) => this._onProposalEvent(kind, p); // v6.26.0 村民提案事件
         w.onSeasonRecap = () => { try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} this._showSeasonRecap(); }; // v5.98.0 季末回顧
         w.onChainEvent = (kind, npcName, title, text) => { if (kind === 'start') { try { this._aiChainQuotes(w); } catch (e) {} } this._showCornerNotice({ icon: kind === 'done' ? '🏅' : kind === 'broken' ? '💔' : '📖', title: kind === 'done' ? t('委託鏈完成') : kind === 'broken' ? t('委託鏈中斷') : t('有人想拜託你'), name: `${t(npcName)} · ${title}`, desc: text || (kind === 'start' ? t('明天的委託板會多一件他的事，連做三天') : '') }); }; // v6.5.0
-        w.onGrowthEvent = (kind, v) => { if (kind === 'level') this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${v} ${t('級')}`, name: '', desc: t('到「故事」分頁選一個天賦') }); else if (kind === 'attr') { this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${w.growth?.level || ''} ${t('級')}`, name: `${(typeof growthAttrLabel === 'function' ? growthAttrLabel(v) : v)} +1`, desc: t('天賦都學完了，之後每升一級隨機一項屬性 +1') }); } try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.94.0
-        w.onTrialEvent = (kind, title, desc) => { this._showCornerNotice({ icon: kind === 'passed' ? '🏅' : kind === 'failed' ? '💔' : '⚖️', title, name: '', desc }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.93.0
+        w.onGrowthEvent = (kind, v) => { if (w.observerMode) return; if (kind === 'level') this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${v} ${t('級')}`, name: '', desc: t('到「故事」分頁選一個天賦') }); else if (kind === 'attr') { this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${w.growth?.level || ''} ${t('級')}`, name: `${(typeof growthAttrLabel === 'function' ? growthAttrLabel(v) : v)} +1`, desc: t('天賦都學完了，之後每升一級隨機一項屬性 +1') }); } try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.94.0
+        w.onTrialEvent = (kind, title, desc) => { this._showCornerNotice({ go: { locId: 'town_square' }, icon: kind === 'passed' ? '🏅' : kind === 'failed' ? '💔' : '⚖️', title, name: '', desc }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.93.0
         w.onEndingEvent = (kind, title, desc) => { // v6.13.0 復興:中央卡(要給 content 才會是中央卡),並讓之後的結局還能彈
             if (kind === 'revived') { this._endingShown = false; this._showCenterNotification({ icon: '🌅', title, name: t(w.townName || '邊境鎮'), desc: '', content: `<div style="font-size:0.9rem;line-height:1.7">${this._escapeHtml(desc || '')}</div>`, autoDismiss: 0 }); }
             try { this.state = w.getState(); this.renderSidebar(); } catch (e) {}
@@ -354,7 +354,7 @@ Object.assign(RimTownApp.prototype, {
         // v5.80.0 跨鎮商隊:角落通知 + 地圖上馬車進城動畫
         w.onCaravan = (info) => {
             const label = (rs) => (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[rs]?.name) ? SHOP_ITEMS[rs].name() : (rs === 'silver' ? t('銀幣') : rs);
-            this._showCornerNotice({ icon: '🐪', title: t('跨鎮商隊'), name: t(info.fromName), desc: `${info.giveAmt} ${label(info.give)} → ${info.recvAmt} ${label(info.recv)}${info.hub ? t('（市集城經手，多兩成）') : ''}` });
+            this._showCornerNotice({ go: { coach: true }, icon: '🐪', title: t('跨鎮商隊'), name: t(info.fromName), desc: `${info.giveAmt} ${label(info.give)} → ${info.recvAmt} ${label(info.recv)}${info.hub ? t('（市集城經手，多兩成）') : ''}` });
             try { this.tileMap?.showCaravan?.(`${t(info.fromName)}${t('的商隊')}`); } catch (e) {}
         };
         // 其他城鎮清單(出訪目的地),60 秒更新一次
@@ -436,7 +436,7 @@ Object.assign(RimTownApp.prototype, {
                     try {
                         if (e.kind === 'in' && e.agentData) {
                             const ag = w.spawnResident(e.agentData, { fromTownId: e.fromTownId, fromTownName: e.fromTownName, partnerId: e.partnerId, partnerName: e.partnerName });
-                            if (ag) this._showCornerNotice({ icon: '🏡', title: t('新居民搬來'), name: t(ag.name), desc: `${t('從')}${t(e.fromTownName || '')}${t('搬來，和')}${t(e.partnerName || '')}${t('在一起了')}` });
+                            if (ag) this._showCornerNotice({ go: { agentId: ag.agentId }, icon: '🏡', title: t('新居民搬來'), name: t(ag.name), desc: `${t('從')}${t(e.fromTownName || '')}${t('搬來，和')}${t(e.partnerName || '')}${t('在一起了')}` });
                         } else if (e.kind === 'out' && e.agentId) {
                             const snap = w.relocateOut(e.agentId, { toTownName: e.toTownName, partnerName: e.partnerName });
                             if (snap) this._showCornerNotice({ icon: '🧳', title: t('居民搬走了'), name: t(snap.name), desc: `${t('為了')}${t(e.partnerName || '')}${t('搬去')}${t(e.toTownName || '')}` });
@@ -584,11 +584,11 @@ Object.assign(RimTownApp.prototype, {
     // ===== v6.26.0 村民主動提案 =====
     _onProposalEvent(kind, p) {
         const w = this.world; if (!w || !p) return;
-        const ICON = { new: '📜', approved: '✅', rejected: '❌', shelved: '📥', done: '🏁', failed: '⚠️', expired: '🗑️' };
-        const TITLE = { new: t('{who}提出 {id}'), approved: t('{id} 批准'), rejected: t('{id} 否決'), shelved: t('{id} 擱置'), done: t('{id} 完成'), failed: t('{id} 失敗'), expired: t('{id} 收回') };
+        const ICON = { new: '📜', approved: '✅', rejected: '❌', shelved: '📥', done: '🏁', failed: '⚠️', expired: '🗑️', outcome: '📈' };
+        const TITLE = { new: t('{who}提出 {id}'), approved: t('{id} 批准'), rejected: t('{id} 否決'), shelved: t('{id} 擱置'), done: t('{id} 完成'), failed: t('{id} 失敗'), expired: t('{id} 收回'), outcome: t('{id} 十天後') }; // v6.30.0 outcome
         const title = (TITLE[kind] || '{id}').replace('{who}', t(p.proposerName)).replace('{id}', p.id);
-        const desc = kind === 'new' ? p.title : (p.result || p.title);
-        this._showCornerNotice({ icon: ICON[kind] || '📜', title, name: kind === 'new' ? '' : p.title, desc });
+        const desc = kind === 'new' ? p.title : kind === 'outcome' ? (p.outcomeText || p.title) : (p.result || p.title);
+        this._showCornerNotice({ icon: ICON[kind] || '📜', title, name: kind === 'new' ? '' : p.title, desc, go: { agentId: p.proposerId } }); // v6.29.0 去看提案人
         if (kind === 'new') { this.bgm?.sfx?.('open'); this._aiProposalPitch(w, p.id); }
         try { this.state = w.getState(); if (this.activeTab === 'proposals') this.renderSidebar(); } catch (e) {}
         this._updateProposalBadge();

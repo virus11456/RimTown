@@ -1,9 +1,10 @@
 /* ============================================================
    RimTown v6.25.0 觀察者沙盒 UI 殼（design-system/rimtown-3d/MASTER.md 夜色票）
    疊在 style.css 之後，只在 .rimtown-container.observer 下生效；
-   日間淺色票留到 v6.27。
+   v6.29.0 起加 .theme-day 日光色票（遊戲時間 05–19 自動切，設定可鎖定）。
    ============================================================ */
-.rimtown-container.observer {
+/* 色票變數同時掛在通知容器 #achv-toast-host 上（它在 body 下、不在容器裡；app._applyTheme 會同步 observer／theme-day class） */
+.rimtown-container.observer, #achv-toast-host.observer {
     --bg-primary: #1E1B2A;
     --bg-secondary: #26223A;
     --bg-card: #2E2A44;
@@ -19,8 +20,12 @@
     --info: #7FB3F5;
     --ob-card: rgba(30, 27, 42, 0.92);
     --ob-card-solid: #231F33;
+    --ob-bubble: rgba(46, 42, 68, 0.96);
+    --ob-on-accent: #1E1B2A;
     --ob-radius: 16px;
     --ob-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+.rimtown-container.observer {
     font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Microsoft JhengHei', system-ui, -apple-system, sans-serif;
     background: #1E1B2A;
 }
@@ -150,13 +155,13 @@
 .rimtown-container.observer .ob-empty .ob-empty-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
 .rimtown-container.observer .ob-empty b { color: var(--text-primary); display: block; margin-bottom: 4px; }
 
-/* 3D 標籤層套同一色票 */
-.rimtown-container.observer .t3d-label { background: rgba(30,27,42,0.92); color: #F3EDE2; border-color: #3A3550; }
-.rimtown-container.observer .t3d-label:hover { border-color: #F28C4A; background: #2E2A44; }
-.rimtown-container.observer .t3d-num { background: #F28C4A; color: #1E1B2A; }
-.rimtown-container.observer .t3d-bubble { background: rgba(46,42,68,0.96); color: #F3EDE2; border-color: #3A3550; }
-.rimtown-container.observer .t3d-bubble b { color: #F28C4A; }
-.rimtown-container.observer .t3d-tag.is-sel { background: #F28C4A; color: #1E1B2A; }
+/* 3D 標籤層套同一色票（v6.29.0 改吃變數，日光配色才跟得上） */
+.rimtown-container.observer .t3d-label { background: var(--ob-card); color: var(--text-primary); border-color: var(--border); }
+.rimtown-container.observer .t3d-label:hover { border-color: var(--accent); background: var(--bg-card); }
+.rimtown-container.observer .t3d-num { background: var(--accent); color: var(--ob-on-accent); }
+.rimtown-container.observer .t3d-bubble { background: var(--ob-bubble); color: var(--text-primary); border-color: var(--border); }
+.rimtown-container.observer .t3d-bubble b { color: var(--accent); }
+.rimtown-container.observer .t3d-tag.is-sel { background: var(--accent); color: var(--ob-on-accent); }
 
 /* ---------- 手機：頂欄保留、底部分頁列、抽屜式面板 ---------- */
 @media (max-width: 768px) {
@@ -233,3 +238,59 @@
 .rimtown-container .map-hint { position: absolute; left: 14px; bottom: 14px; z-index: 12; padding: 6px 12px; border-radius: 999px; background: var(--ob-card, rgba(30,27,42,0.92)); border: 1px solid var(--border, #3A3550); color: var(--text-secondary, #B7AE9F); font-size: 0.72rem; pointer-events: none; transition: opacity 0.8s; backdrop-filter: blur(6px); }
 .rimtown-container .map-hint.fade { opacity: 0; }
 @media (max-width: 768px) { .rimtown-container .map-hint { bottom: calc(90px + env(safe-area-inset-bottom, 0px)); font-size: 0.66rem; left: 10px; right: 10px; text-align: center; } }
+
+/* ---------- v6.29.0 日光色票（design-system/rimtown-3d/MASTER.md 日間） ---------- */
+.rimtown-container.observer.theme-day, #achv-toast-host.observer.theme-day {
+    --bg-primary: #FFF8EC;
+    --bg-secondary: #F6EBD6;
+    --bg-card: #FFFDF7;
+    --accent: #E8732A;
+    --accent-light: #F28C4A;
+    --text-primary: #2B2118;
+    --text-secondary: #6B5E52;
+    --text-muted: #8E8275;
+    --border: #EADFCB;
+    --positive: #3C8C6E;
+    --negative: #C9463D;
+    --warning: #D9A020;
+    --info: #3B7DD8;
+    --ob-card: rgba(255, 251, 243, 0.94);
+    --ob-card-solid: #FFF8EC;
+    --ob-bubble: rgba(255, 253, 247, 0.97);
+    --ob-on-accent: #FFF8EC;
+    --ob-shadow: 0 8px 24px rgba(74, 52, 30, 0.18);
+}
+.rimtown-container.observer.theme-day { background: #FFF8EC; }
+.rimtown-container.observer.theme-day .header .controls .speed-controls .btn-speed.active,
+.rimtown-container.observer.theme-day .pp-btn.primary,
+.rimtown-container.observer.theme-day .nqc-chat { color: #FFF8EC !important; }
+.rimtown-container.observer.theme-day .npc-quick-card,
+.rimtown-container.observer.theme-day .loc-quick-card { background: var(--ob-card-solid); box-shadow: var(--ob-shadow); }
+.rimtown-container.observer.theme-day .npc-quick-card .nqc-rel { color: var(--text-primary); }
+.rimtown-container.observer.theme-day .npc-quick-card .nqc-intent-v { color: var(--text-primary); }
+.rimtown-container.observer.theme-day .npc-quick-card .nqc-attr-bar { background: rgba(43, 33, 24, 0.1); }
+.rimtown-container.observer.theme-day .npc-quick-card .nqc-btns button { color: var(--text-primary); }
+.rimtown-container.observer.theme-day #kairo-card,
+.rimtown-container.observer.theme-day #kairo-status,
+.rimtown-container.observer.theme-day .mobile-header { color: var(--text-primary); }
+.rimtown-container.observer.theme-day .mobile-kairo-bar button.active { color: var(--accent); }
+
+/* ---------- v6.29.0 建築資訊卡（沿用 .npc-quick-card 外框） ---------- */
+.rimtown-container .loc-quick-card { max-height: min(60vh, 440px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.rimtown-container .loc-quick-card .lqc-num { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; margin-right: 6px; border-radius: 999px; background: var(--accent); color: var(--ob-on-accent, #1E1B2A); font-size: 0.72rem; font-weight: 800; vertical-align: middle; }
+.rimtown-container .loc-quick-card .lqc-count { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 4px; border-radius: 999px; background: var(--bg-secondary); color: var(--text-primary); font-size: 0.68rem; text-align: center; }
+.rimtown-container .loc-quick-card .lqc-agent { cursor: pointer; min-height: 32px; padding: 3px 6px; margin: 0 -6px; border-radius: 8px; }
+.rimtown-container .loc-quick-card .lqc-agent:hover { background: var(--bg-secondary); }
+.rimtown-container .loc-quick-card .lqc-agent small { color: var(--text-muted); font-size: 0.68rem; margin-left: 3px; }
+.rimtown-container .loc-quick-card .lqc-act { color: var(--text-secondary); font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 46%; }
+.rimtown-container.observer .npc-quick-card { background: var(--ob-card-solid); border-color: var(--border); box-shadow: var(--ob-shadow); }
+.rimtown-container.observer .npc-quick-card .nqc-rel { color: var(--text-primary); }
+.rimtown-container.observer .npc-quick-card .nqc-intent-v { color: var(--text-primary); }
+
+/* ---------- v6.29.0 通知上的「去看」鈕 ---------- */
+#achv-toast-host .rt-toast-go, .rimtown-container .rt-toast-go { flex: none; min-height: 32px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--accent, #F28C4A); background: transparent; color: var(--accent, #F28C4A); font-size: 0.72rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+#achv-toast-host .rt-toast-go:hover, .rimtown-container .rt-toast-go:hover { background: var(--accent, #F28C4A); color: var(--ob-on-accent, #1E1B2A); }
+
+/* ---------- v6.30.0 提案卡:投票理由與十天後成效 ---------- */
+.rimtown-container .pp-why { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 2px 0 4px; font-size: 0.68rem; color: var(--text-muted); }
+.rimtown-container .pp-outcome { margin-top: 4px; padding: 5px 8px; border-radius: 8px; background: var(--bg-primary); font-size: 0.74rem; color: var(--text-secondary); }
