@@ -1334,11 +1334,13 @@ function rimtown_get_changelog() {
             'changes' => array(
                 '🔑 玩家自備 AI（BYOK）：設定頁「🤖 AI 語言模型」多了「自備 AI（進階）」：可選 Claude（Anthropic）／GPT（OpenAI）／Gemini（Google）／自訂 OpenAI 相容端點，填自己的 API 金鑰、模型（留空用便宜款預設：claude-haiku-5-5／gpt-4o-mini／gemini-2.5-flash）與基底網址，有「測試連線」「儲存並啟用」「清除金鑰」。金鑰只存在這台裝置的瀏覽器（localStorage），不推雲端設定、不進存檔、不經小鎮伺服器；村民對話／行程／反思全部由瀏覽器直連該服務，不受每日 100 則限制。沒填的人照走小鎮內建 AI',
                 '🔑 直連供應商時前端自己補上遊戲系統提示（原本只在伺服器端），英文模式人名互換、簡轉繁、「我是 AI」漏網攔截也一併在前端做；Claude 直連不送 temperature、先關思考（模型不收 thinking 欄位就自動重送）、把 refusal 當失敗；徽章顯示「AI:自備 Claude／GPT／Gemini／自訂端點」',
+                '💬 3D 對話泡泡：外層覆蓋層的 nowrap 權重蓋過泡泡的換行設定，字會衝出泡泡框；改成一定換行（最寬 220px、手機 170px），句子過長截斷補「…」',
                 '⚙️ 桌機頂列「設定」改開完整設定分頁（3D 畫質、介面配色、城鎮列表、帳號、AI 與自備金鑰都在這）：觀察者殼把側欄的設定頁籤藏起來後，桌機原本只剩這顆鈕、卻只開舊的小彈窗（速度／語言），整頁設定到不了；手機 ☰ 選單裡的「設定」同樣改開完整設定頁',
             ),
             'changes_en' => array(
                 '🔑 Bring your own AI (BYOK): the "🤖 AI language model" settings section gains "Bring your own AI (advanced)": pick Claude (Anthropic) / GPT (OpenAI) / Gemini (Google) / a custom OpenAI-compatible endpoint, enter your own API key, model (blank = budget default: claude-haiku-5-5 / gpt-4o-mini / gemini-2.5-flash) and base URL, with "Test connection", "Save & enable" and "Clear key". The key lives only in this device\'s browser (localStorage): never pushed to cloud settings, never written into a save, never sent to the town server. Villager talk, schedules and reflections go straight from the browser to that service and skip the daily 100-message cap. Players without a key keep the built-in town AI',
                 '🔑 Direct provider calls now carry the game system prompt client-side (it used to exist only on the server); English-mode name swapping, Simplified→Traditional conversion and the "I am an AI" leak filter run client-side too. Direct Claude calls omit temperature, disable thinking first (and resend without the field if the model rejects it) and treat a refusal stop as a failure; the badge reads "AI: own key Claude / GPT / Gemini / Custom endpoint"',
+                '💬 3D speech bubbles: the overlay\'s nowrap rule outranked the bubble\'s wrapping, so text ran past the bubble edge; bubbles now always wrap (max 220px, 170px on phones) and over-long lines are cut with "…"',
                 '⚙️ The desktop header "Settings" button now opens the full settings tab (3D quality, theme, town list, account, AI and your own key all live there): after the observer shell hid the sidebar settings tab, desktop was left with only this button, which opened the old mini dialog (speed / language), so the full page was unreachable; "Settings" in the phone ☰ menu opens the full page as well',
             ),
         ),
