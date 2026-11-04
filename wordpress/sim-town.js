@@ -515,6 +515,12 @@ class EventSystem {
         if (d.memories && Array.isArray(d.memories)) {
             d.memories.forEach(m => agent.memory.add(m.tick, m.time, m.category, m.content ?? m.text ?? '', m.importance, m.related_agents || m.relatedAgents || [], m.k || null, m.p || null));
         }
+        // v6.42.0 出遠門期間鎮上已經選出(或補選出)新鎮長 → 回來的前任改做別的,不會同時有兩位鎮長
+        if (agent.job?.key === 'mayor' && Object.values(world.agents).some(a => a && !a.isPlayer && !a.isDead && a.job?.key === 'mayor')) {
+            const jobs = ['farmer', 'guard', 'trader', 'researcher']; const jk = jobs[Math.floor(Math.random() * jobs.length)];
+            agent.job = JOB_DEFINITIONS[jk] ? new Job(jk) : null;
+            agent.memory?.addT?.(world.tickCount, world.clock.timeStr, 'election', '我出遠門的時候，鎮上已經選出新鎮長了。', {}, 8, []);
+        }
         world.agents[agent.agentId] = agent;
         world.logMessageT('arrival', '{agent}旅行歸來了！', { agent: agent.name }, agent.name);
         const event = {name:t('居民歸來'),description:`${agent.name}${t('帶著故事回來了！')}`,severity:'minor',effects:{mood_all:3,conversation_topic:`${agent.name}${t('的旅行故事')}`},event_type:'arrival'};
@@ -617,10 +623,64 @@ class ElectionSystem {
         this.lastElectionDay = 0;
         this.electionHistory = [];
         this._electionCooldown = 60;
+        this.byElection = false;   // v6.42.0 鎮長離開小鎮 → 補選
+        this.voteWhy = {};         // v6.42.0 完整智能體:村民投票的理由(agentId → 一句話)
+        this.acting = null;        // v6.42.0 代理鎮長 { agentId, name, since, reason }
+        this._llmPending = {};     // v6.42.0 正在問 AI 的選民(不存檔)
+    }
+
+    // ---------- v6.42.0 誰能參選／投票:在鎮上的本鎮村民(排除旅人／觀察者、外鎮訪客、出遠門與探險中的人) ----------
+    _residents(world) {
+        const away = new Set(world.events.getTravellingAgents().map(t => t.agentId));
+        return Object.values(world.agents).filter(a => a && !a.isPlayer && a.agentId !== 'player' && !a.isDead
+            && !String(a.agentId).startsWith('visit_') && !away.has(a.agentId) && a.currentLocation !== 'exploration');
+    }
+    _realMayor(world) { return Object.values(world.agents).find(a => a && !a.isPlayer && !a.isDead && a.job?.key === 'mayor') || null; }
+    _mayorTravelling(world) { return (world.events?._travellingAgents || []).find(tr => tr.agentData?.jobKey === 'mayor') || null; }
+    // 目前在鎮上能拍板的人:正式鎮長;不在就由代理鎮長
+    currentMayor(world) {
+        const m = this._realMayor(world); if (m) return m;
+        const a = this.acting && world.agents[this.acting.agentId];
+        return (a && !a.isDead) ? a : null;
+    }
+    // 每天檢查:鎮長出遠門 → 指定代理;永久離開 → 代理＋馬上補選;回來 → 交還
+    _checkMayor(world) {
+        const real = this._realMayor(world);
+        if (real) {
+            if (this.acting) {
+                const back = this.acting.reason === 'travel' && this.acting.mayorId === real.agentId;
+                world.logMessageT('council', back ? '🏛️ 鎮長{mayor}回來了，{acting}把代理的工作交還。' : '🏛️ {acting}的代理鎮長任期結束，由新鎮長{mayor}接手。', { mayor: real.name, acting: this.acting.name });
+                this.acting = null;
+            }
+            return;
+        }
+        const tr = this._mayorTravelling(world);
+        const reason = tr ? 'travel' : 'gone';
+        if (!this.acting || !world.agents[this.acting.agentId] || this.acting.reason !== reason) {
+            const pick = this._pickActing(world);
+            if (pick) {
+                this.acting = { agentId: pick.agentId, name: pick.name, since: world._absDay?.() || 0, reason, mayorId: tr?.agentData?.agentId || '', mayorName: tr?.agentData?.name || '' };
+                if (tr) world.logMessageT('council', '🏛️ 鎮長{mayor}出遠門了，這幾天由{acting}代理鎮長。', { mayor: tr.agentData.name, acting: pick.name });
+                else world.logMessageT('council', '🏛️ 鎮上暫時沒有鎮長，由{acting}代理，馬上辦補選。', { acting: pick.name });
+                pick.memory?.addT?.(world.tickCount, world.clock.timeStr, 'election', tr ? '鎮長{mayor}出遠門，我暫時代理鎮長。' : '鎮上沒有鎮長，我先代理，等補選結果。', { mayor: tr?.agentData?.name || '' }, 7, []);
+            }
+        }
+        // 永久離開(不是出遠門)而且沒在辦選舉 → 補選
+        if (!tr && !this.active) this._startElection(world, { byElection: true });
+    }
+    // 代理人選:上一屆的第二名(還在鎮上的話),不然挑社交能力最好、最有魅力的人
+    _pickActing(world) {
+        const res = this._residents(world); if (!res.length) return null;
+        const last = this.electionHistory[this.electionHistory.length - 1];
+        const second = last?.candidates?.slice().sort((a, b) => b.votes - a.votes).find(c => c.agentId !== last.winner?.agentId && res.some(a => a.agentId === c.agentId));
+        if (second) return world.agents[second.agentId];
+        const score = (a) => (a.skills?.skills?.社交?.level || 0) * 2 + (a.personality?.traits?.includes('charismatic') ? 6 : 0) + (a.personality?.traits?.includes('shy') ? -4 : 0) + (a.age >= 25 ? 2 : 0);
+        return res.slice().sort((a, b) => score(b) - score(a))[0];
     }
 
     dailyUpdate(world) {
         const day = world.clock.day + (world.clock.year - 1) * 60;
+        try { this._checkMayor(world); } catch (e) { console.warn('[Election] mayor check', e); } // v6.42.0
         if (this.phase === 'campaign') {
             this.campaignDaysLeft--;
             if (this.campaignDaysLeft <= 0) this._startVoting(world);
@@ -690,10 +750,11 @@ class ElectionSystem {
         return { ok: true };
     }
 
-    _startElection(world) {
-        const eligible = Object.values(world.agents).filter(a => !a.isPlayer && a.agentId !== 'player' && !world.events.getTravellingAgents().some(t => t.agentId === a.agentId));
+    _startElection(world, opts = {}) {
+        const eligible = this._residents(world); // v6.42.0 排除外鎮訪客、出遠門的人
         if (eligible.length < 2) return;
         this.active = true; this.phase = 'campaign'; this.campaignDaysLeft = 3; this.votingDaysLeft = 0; this.votes = {};
+        this.byElection = !!opts.byElection; this.voteWhy = {}; this._llmPending = {};
         const scored = eligible.map(a => {
             let score = (a.skills?.skills?.社交?.level || 0) * 2;
             score += (a.personality.socialModifier || 0) * 3;
@@ -710,12 +771,29 @@ class ElectionSystem {
             const policy = this._pickPolicy(agent);
             return { agentId: agent.agentId, name: agent.name, policy: policy.id, policyLabel: policy.label, policyIcon: policy.icon, votes: 0, speech: this._generateSpeech(agent, policy) };
         });
-        world.logMessage('event', `📢 ${t('選舉開始！')}${this.candidates.map(c => c.name).join(t('、'))} ${t('宣布參選鎮長')}`);
+        world.logMessage('event', `📢 ${this.byElection ? t('鎮長補選開始！') : t('選舉開始！')}${this.candidates.map(c => c.name).join(t('、'))} ${t('宣布參選鎮長')}`);
         world.logMessageT('event', '📋 競選期間為 {campaignDaysLeft} 天，之後進行投票', { campaignDaysLeft: this.campaignDaysLeft });
         this.candidates.forEach(c => {
             const agent = world.agents[c.agentId];
             if (agent?.memory) agent.memory.addT(world.tickCount, world.clock.timeStr, 'election', '我宣布參選鎮長，主張{policyLabel}', { policyLabel: c.policyLabel }, 8, []);
         });
+        if (world.fullAgentMode && world.conversationEngine?.decideCampaign) this._campaignLLM(world); // v6.42.0
+    }
+    // v6.42.0 完整智能體:候選人自己挑施政方針、寫演說;失敗就保留規則版
+    async _campaignLLM(world) {
+        const cands = this.candidates.map(c => world.agents[c.agentId]).filter(Boolean);
+        let r = null;
+        try { r = await world.conversationEngine.decideCampaign(world, cands, ELECTION_POLICIES, this.byElection); } catch (e) { console.warn('[Election] llm campaign', e); }
+        if (!r || this.phase !== 'campaign') return;
+        for (const c of this.candidates) {
+            const x = r[c.agentId]; if (!x) continue;
+            const pol = ELECTION_POLICIES.find(p => p.id === x.policy); if (!pol) continue;
+            c.policy = pol.id; c.policyLabel = pol.label; c.policyIcon = pol.icon; c.speech = x.speech; c.llm = true;
+            world.logMessageT('council', '📢 {name}（{icon}{label}）：「{speech}」', { name: c.name, icon: pol.icon, label: pol.label, speech: x.speech }, c.name);
+            world.agents[c.agentId]?.memory?.addT?.(world.tickCount, world.clock.timeStr, 'election', '我的競選演說：「{speech}」', { speech: x.speech }, 8, []);
+            for (const o of this._residents(world)) if (o.agentId !== c.agentId) o.memory?.addT?.(world.tickCount, world.clock.timeStr, 'election', '{name}參選鎮長，主張{label}，說：「{speech}」', { name: c.name, label: pol.label, speech: x.speech }, 5, [c.name]);
+        }
+        world.dailyNews?.collectEvent?.('politics', this.candidates.filter(c => c.llm).map(c => `${c.name}${t('：')}${t('「')}${c.speech}${t('」')}`).join(' '), 8, this.candidates.map(c => c.name));
     }
 
     _pickPolicy(agent) {
@@ -742,10 +820,36 @@ class ElectionSystem {
         return pickRandom(speeches[policy.id] || speeches.economy);
     }
 
-    _startVoting(world) { this.phase = 'voting'; this.votingDaysLeft = 2; this.votes = {}; world.logMessage('event', `🗳️ ${t('投票開始！居民們正在投下神聖的一票')}`); }
+    _startVoting(world) {
+        this.phase = 'voting'; this.votingDaysLeft = 2; this.votes = {}; this.voteWhy = {}; this._llmPending = {};
+        world.logMessage('event', `🗳️ ${t('投票開始！居民們正在投下神聖的一票')}`);
+        if (world.fullAgentMode && world.conversationEngine?.decideElectionVotes && this.candidates.length >= 2) this._voteLLMAll(world); // v6.42.0
+    }
+    // v6.42.0 完整智能體:全鎮選民分批(每批 8 人)交給 AI;失敗的人留給規則版
+    async _voteLLMAll(world) {
+        const voters = this._residents(world).filter(a => !this.votes[a.agentId]);
+        for (const a of voters) this._llmPending[a.agentId] = true;
+        const batches = []; for (let i = 0; i < voters.length; i += 8) batches.push(voters.slice(i, i + 8));
+        for (const batch of batches) {
+            let r = null;
+            try { r = await world.conversationEngine.decideElectionVotes(world, this.candidates, batch, this.byElection); } catch (e) { console.warn('[Election] llm vote', e); }
+            for (const a of batch) {
+                delete this._llmPending[a.agentId];
+                if (this.phase !== 'voting' || this.votes[a.agentId]) continue;
+                const x = r && r[a.agentId]; const c = x && this.candidates.find(k => k.agentId === x.cand);
+                if (!c) continue; // 留給規則版
+                this.votes[a.agentId] = c.agentId; c.votes++; if (x.why) this.voteWhy[a.agentId] = x.why;
+                a.memory?.addT?.(world.tickCount, world.clock.timeStr, 'election', '我投給了{name}：{why}', { name: c.name, why: x.why || '' }, 6, [c.name]);
+            }
+        }
+    }
+    // v6.42.0 每位候選人支持者說的話(最多 2 句),面板與日報用
+    quotes(world, candId, n = 2) {
+        return Object.entries(this.votes || {}).filter(([aid, cid]) => cid === candId && this.voteWhy?.[aid]).slice(0, n).map(([aid]) => ({ who: world.agents[aid]?.name || '', why: this.voteWhy[aid] }));
+    }
 
     _processVotes(world) {
-        const voters = Object.values(world.agents).filter(a => !a.isPlayer && a.agentId !== 'player' && !this.votes[a.agentId] && !world.events.getTravellingAgents().some(t => t.agentId === a.agentId));
+        const voters = this._residents(world).filter(a => !this.votes[a.agentId] && !this._llmPending?.[a.agentId]); // v6.42.0 正在問 AI 的人先不用規則投
         for (const voter of voters) {
             if (Math.random() > 0.6) continue;
             const chosen = this._calculateVote(voter, world);
@@ -788,7 +892,7 @@ class ElectionSystem {
     }
 
     _announceResults(world) {
-        const remaining = Object.values(world.agents).filter(a => !a.isPlayer && a.agentId !== 'player' && !this.votes[a.agentId] && !world.events.getTravellingAgents().some(t => t.agentId === a.agentId));
+        const remaining = this._residents(world).filter(a => !this.votes[a.agentId]); // v6.42.0 AI 還沒回的人用規則補
         for (const voter of remaining) { const chosen = this._calculateVote(voter, world); if (chosen) { this.votes[voter.agentId] = chosen.agentId; chosen.votes++; } }
         this.candidates.sort((a, b) => b.votes - a.votes);
         const winner = this.candidates[0];
@@ -814,7 +918,8 @@ class ElectionSystem {
         this._applyPolicyEffects(winner.policy, world);
         const day = world.clock.day + (world.clock.year - 1) * 60;
         this.lastElectionDay = day;
-        this.electionHistory.push({ day, year: world.clock.year, season: world.clock.season, winner: { agentId: winner.agentId, name: winner.name, policy: winner.policy, votes: winner.votes }, candidates: this.candidates.map(c => ({ agentId: c.agentId, name: c.name, policy: c.policy, votes: c.votes })), totalVotes });
+        this.electionHistory.push({ day, year: world.clock.year, season: world.clock.season, byElection: !!this.byElection, winner: { agentId: winner.agentId, name: winner.name, policy: winner.policy, votes: winner.votes, speech: winner.speech || '' }, candidates: this.candidates.map(c => ({ agentId: c.agentId, name: c.name, policy: c.policy, votes: c.votes, llm: !!c.llm, quotes: this.quotes(world, c.agentId) })), totalVotes });
+        if (this.acting) { world.logMessageT('council', '🏛️ {acting}的代理鎮長任期結束，由新鎮長{mayor}接手。', { mayor: winner.name, acting: this.acting.name }); this.acting = null; } // v6.42.0
         Object.values(world.agents).forEach(a => {
             if (a.isPlayer) return;
             const votedFor = this.votes[a.agentId];
@@ -855,7 +960,7 @@ class ElectionSystem {
     }
 
     toDict() {
-        return { active: this.active, phase: this.phase, candidates: this.candidates.map(c => ({...c})), votes: {...this.votes}, campaignDaysLeft: this.campaignDaysLeft, votingDaysLeft: this.votingDaysLeft, resultsDaysLeft: this.resultsDaysLeft, lastElectionDay: this.lastElectionDay, electionHistory: this.electionHistory.slice(-10), playerCanvassed: { ...(this.playerCanvassed || {}) } };
+        return { active: this.active, phase: this.phase, candidates: this.candidates.map(c => ({...c})), votes: {...this.votes}, campaignDaysLeft: this.campaignDaysLeft, votingDaysLeft: this.votingDaysLeft, resultsDaysLeft: this.resultsDaysLeft, lastElectionDay: this.lastElectionDay, electionHistory: this.electionHistory.slice(-10), playerCanvassed: { ...(this.playerCanvassed || {}) }, byElection: !!this.byElection, voteWhy: { ...(this.voteWhy || {}) }, acting: this.acting ? { ...this.acting } : null }; // v6.42.0
     }
 
     loadFrom(data) {
@@ -866,5 +971,6 @@ class ElectionSystem {
         this.resultsDaysLeft = data.resultsDaysLeft || 0; this.lastElectionDay = data.lastElectionDay || 0;
         this.electionHistory = (data.electionHistory || []).slice(-10);
         this.playerCanvassed = data.playerCanvassed || {};
+        this.byElection = !!data.byElection; this.voteWhy = data.voteWhy || {}; this.acting = data.acting || null; this._llmPending = {}; // v6.42.0
     }
 }

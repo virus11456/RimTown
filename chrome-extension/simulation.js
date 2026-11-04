@@ -2372,7 +2372,7 @@ function playerTitle(world) {
     return (p && p.job && p.job.key === 'mayor') ? t('鎮長') : t('旅人');
 }
 function mayorNameOf(world) {
-    const m = world && world.agents && Object.values(world.agents).find(a => a && !a.isPlayer && !a.isDead && a.job && a.job.key === 'mayor');
+    const m = world && world.agents && (Object.values(world.agents).find(a => a && !a.isPlayer && !a.isDead && a.job && a.job.key === 'mayor') || world.election?.currentMayor?.(world)); // v6.42.0 代理鎮長
     return m ? m.name : '';
 }
 if (typeof globalThis !== 'undefined') { globalThis.playerTitle = playerTitle; globalThis.mayorNameOf = mayorNameOf; }

@@ -374,3 +374,19 @@
 .rimtown-container .tech-done { opacity: 0.75; }
 .rimtown-container .tech-now { border-color: var(--accent); }
 .rimtown-container .tech-locked { opacity: 0.6; }
+
+/* ---------- v6.42.0 提案分頁的選舉卡 ---------- */
+.rimtown-container .el-acting { font-size: 0.74rem; color: var(--text-secondary); background: rgba(255, 200, 80, 0.08); border: 1px solid rgba(255, 200, 80, 0.25); border-radius: 8px; padding: 6px 9px; margin: 0 0 8px; }
+.rimtown-container .el-card { border: 1px solid var(--border); border-radius: 10px; padding: 8px 9px; margin: 0 0 10px; background: rgba(255, 255, 255, 0.03); }
+.rimtown-container .el-head { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; margin-bottom: 6px; }
+.rimtown-container .el-phase { margin-left: auto; font-size: 0.7rem; color: var(--text-muted); }
+.rimtown-container .el-cand { padding: 6px 0; border-top: 1px dashed var(--border); cursor: pointer; }
+.rimtown-container .el-cand:first-of-type { border-top: 0; }
+.rimtown-container .el-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.78rem; }
+.rimtown-container .el-name { font-weight: 700; color: var(--text-primary); }
+.rimtown-container .el-pol { color: var(--text-secondary); font-size: 0.72rem; }
+.rimtown-container .el-votes { margin-left: auto; font-size: 0.72rem; color: var(--text-secondary); }
+.rimtown-container .el-speech { font-size: 0.74rem; color: var(--text-primary); margin: 3px 0; line-height: 1.45; overflow-wrap: anywhere; }
+.rimtown-container .el-quote { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; overflow-wrap: anywhere; }
+.rimtown-container .el-win .el-name { color: #f5b942; }
+.rimtown-container .el-last { font-size: 0.72rem; color: var(--text-muted); margin: 0 0 8px; }

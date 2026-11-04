@@ -926,9 +926,11 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
             const recent = (npc.memory?.entries || []).slice(-6).filter(e => e.category !== 'event').slice(-2).map(e => e.content).filter(Boolean);
             // v6.41.2 線上實測:沒交代首長是誰,村民會說「去找村長」;這裡告訴它鎮上叫「鎮長」、現任是誰
             const mayor = world.proposals?._mayor?.(world);
+            const acting = mayor && mayor.job?.key !== 'mayor'; // v6.42.0 代理鎮長
             const mayorLine = mayor && mayor.agentId !== npc.agentId
-                ? LLM_LANG.rule(`${t('- 鎮上的首長叫「鎮長」（不是村長），現任鎮長是')}${mayor.name}\n`, `- The town is led by the Mayor (never "village chief"); the current Mayor is ${mayor.name}\n`)
-                : (mayor ? LLM_LANG.rule(`${t('- 你自己就是鎮長')}\n`, '- You are the Mayor yourself\n') : '');
+                ? (acting ? LLM_LANG.rule(`${t('- 鎮上的首長叫「鎮長」（不是村長），鎮長現在不在，由這個人代理：')}${mayor.name}\n`, `- The town is led by the Mayor (never "village chief"); the Mayor is away and ${mayor.name} is acting Mayor\n`)
+                    : LLM_LANG.rule(`${t('- 鎮上的首長叫「鎮長」（不是村長），現任鎮長是')}${mayor.name}\n`, `- The town is led by the Mayor (never "village chief"); the current Mayor is ${mayor.name}\n`))
+                : (mayor ? (acting ? LLM_LANG.rule(`${t('- 鎮長不在，你自己正在代理鎮長')}\n`, '- The Mayor is away and you are acting Mayor\n') : LLM_LANG.rule(`${t('- 你自己就是鎮長')}\n`, '- You are the Mayor yourself\n')) : '');
             const prompt = `${t('你正在扮演「')}${npc.name}${t('」——{town}的居民。鎮上剛剛發生了一件事：').replace('{town}', t(world.townName || '邊境鎮'))}${eventText}
 
 ${t('【你是誰】')}
@@ -1068,6 +1070,57 @@ ${t('依你的身分與處境決定：挑一個最想提的（回序號），或
         const j = await this._askJson(prompt, 180);
         const n = parseInt(j?.choice, 10); if (!j || !Number.isFinite(n)) return null;
         return { choice: n, pitch: String(j.pitch || '').trim().replace(/^[「『"“]+|[」』"”]+$/g, '').slice(0, this._cap(120, 360)) };
+    }
+
+    // v6.42.0 鎮長選舉交給 AI:候選人自己挑施政方針、寫競選演說(一次問全部候選人)
+    async decideCampaign(world, cands, policies, isBy) {
+        if (!this.fullAgentOk(world) || !cands.length) return null;
+        const pol = policies.map(p => `${p.id}${t('＝')}${t(p.label)}`).join(t('、'));
+        const lines = cands.map((a, i) => { const b = this._agentBrief(world, a); return `${i + 1}. ${b.name}${t('（')}${b.age}${t('歲')}${t('，')}${b.job}${t('；')}${t('性格')}${t('：')}${b.traits}${t('；')}${t('在乎')}${t('：')}${b.values}${t('；')}${t('心情')} ${b.mood}/100${t('）')}${b.mem.length ? ` ${t('最近記得')}${t('：')}${b.mem.join('／')}` : ''}`; }).join('\n');
+        const prompt = `${isBy ? t('你是模擬小鎮的選舉引擎。原本的鎮長離開了小鎮，現在要辦補選。') : t('你是模擬小鎮的選舉引擎。一年一度的鎮長選舉開始了。')}${t('下面幾位村民出來參選。請替每位候選人依他的性格、在乎的價值、職業與最近的記憶，從施政方針裡挑一個他最會主張的，並用他自己的口吻寫一段競選演說（第一人稱，60 字內，要講出具體想為鎮上做的事，不要每個人都一樣）。')}
+${t('【鎮況】')}${this._townBrief(world)}
+${t('【施政方針】')}${pol}
+${t('【候選人】')}
+${lines}
+${t('只輸出 JSON 陣列，每個元素 {"n":序號,"policy":"方針代碼","speech":"演說"}，不要其他文字。')}`;
+        this._countNpcLlmUse(world);
+        const j = await this._askJson(prompt, 120 + cands.length * 130);
+        if (!Array.isArray(j)) return null;
+        const ids = new Set(policies.map(p => p.id)); const out = {};
+        for (const row of j) {
+            const i = parseInt(row?.n, 10) - 1; const a = cands[i]; if (!a) continue;
+            const pid = String(row.policy || '').toLowerCase().trim(); const speech = String(row.speech || '').trim().replace(/^[「『"“]+|[」』"”]+$/g, '').slice(0, this._cap(90, 300));
+            if (!ids.has(pid) || !speech) continue;
+            out[a.agentId] = { policy: pid, speech };
+        }
+        return Object.keys(out).length ? out : null;
+    }
+    // v6.42.0 選舉投票:一批村民(最多 8 人)各自決定投給誰,附一句自己口吻的理由
+    async decideElectionVotes(world, candidates, voters, isBy) {
+        if (!this.fullAgentOk(world) || !voters.length || candidates.length < 2) return null;
+        const cl = candidates.map((c, i) => { const a = world.agents[c.agentId]; const nm = a ? this._agentBrief(world, a).name : c.name; return `${i + 1}. ${nm}${t('（')}${t('主張')}${t('：')}${t(c.policyLabel)}${t('）')}${c.speech ? `${t('「')}${c.speech}${t('」')}` : ''}`; }).join('\n');
+        const lines = voters.map((a, i) => {
+            const b = this._agentBrief(world, a);
+            const rel = candidates.map(c => { const r = a.relationships?.relationships?.[c.agentId]; const ca = world.agents[c.agentId]; const nm = ca ? this._agentBrief(world, ca).name : c.name; return `${nm} ${Math.round(r?.affinity || 0)}`; }).join(t('、'));
+            return `${i + 1}. ${b.name}${t('（')}${b.age}${t('歲')}${t('，')}${b.job}${t('；')}${t('性格')}${t('：')}${b.traits}${t('；')}${t('在乎')}${t('：')}${b.values}${t('；')}${t('對候選人的好感')}${t('：')}${rel}${t('）')}${b.mem.length ? ` ${t('最近記得')}${t('：')}${b.mem.join('／')}` : ''}`;
+        }).join('\n');
+        const prompt = `${isBy ? t('你是模擬小鎮的村民決策引擎。鎮長補選正在投票。') : t('你是模擬小鎮的村民決策引擎。鎮長選舉正在投票。')}${t('請替下面每位村民決定投給哪位候選人，並用他自己的口吻給一句理由（25 字內）。要依每個人的性格、在乎的價值、對候選人的好感、對政見與演說的看法、最近的記憶與鎮況判斷，不要全部一致。')}
+${t('【鎮況】')}${this._townBrief(world)}
+${t('【候選人】')}
+${cl}
+${t('【村民】')}
+${lines}
+${t('只輸出 JSON 陣列，每個元素 {"n":村民序號,"vote":候選人序號,"why":"理由"}，不要其他文字。')}`;
+        this._countNpcLlmUse(world);
+        const j = await this._askJson(prompt, 80 + voters.length * 70);
+        if (!Array.isArray(j)) return null;
+        const out = {};
+        for (const row of j) {
+            const a = voters[parseInt(row?.n, 10) - 1]; const c = candidates[parseInt(row?.vote, 10) - 1];
+            if (!a || !c) continue;
+            out[a.agentId] = { cand: c.agentId, why: String(row.why || '').trim().replace(/^[「『"“]+|[」』"”]+$/g, '').slice(0, this._cap(40, 140)) };
+        }
+        return Object.keys(out).length ? out : null;
     }
 
     _buildCharacterProfile(agent) {
