@@ -9,7 +9,9 @@
 const crypto = require('crypto');
 const L = require('./_lib');
 
-const GUEST_DAILY = parseInt(process.env.AI_GUEST_DAILY, 10) || 10;
+// v6.42.1 沒登入的人預設不能用伺服器 AI(遊戲本來就要登入＋推薦碼;以前訪客每天 10 次,任何人都能拿來燒額度)。
+// AI_GUEST_DAILY 設成正數才開放;設 0 也真的是 0(舊寫法 parseInt('0') || 10 會變回 10)
+const GUEST_DAILY = Math.max(0, parseInt(process.env.AI_GUEST_DAILY ?? '0', 10) || 0);
 const USER_DAILY = parseInt(process.env.AI_USER_DAILY, 10) || 300; // v6.41.0 完整智能體模式預設開,登入額度 100 → 300
 
 // 主渠道(付費中繼):相容 Anthropic(CC 類)與 OpenAI 兩種格式
@@ -308,6 +310,7 @@ module.exports = async (req, res) => {
     // 額度身分:登入用帳號,訪客用 IP 雜湊
     const payload = L.authUser(req);
     if (payload && await L.isBanned(payload.u)) return L.err(res, 403, 'banned', '此帳號已被停用'); // v5.63.0
+    if (!payload && GUEST_DAILY <= 0) return L.err(res, 401, 'login_required', '請先登入才能使用小鎮 AI'); // v6.42.1
     const limit = payload ? USER_DAILY : GUEST_DAILY;
     const who = payload
         ? 'u_' + payload.u.toLowerCase()

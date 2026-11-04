@@ -261,7 +261,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.42.0.zip` from Releases
+1. Download `rimtown-v6.42.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -314,6 +314,12 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.42.1 (2026-11-04)
+- 🔐 金鑰安全檢查：前端原始碼、線上網站、伺服器回應與 git 全部歷史都掃過，沒有任何 API 金鑰；.env、伺服器程式、建置腳本在線上都讀不到（404／403）；上游錯誤訊息不會原樣傳回前端
+- 🚪 沒登入的人預設不能用小鎮 AI：以前訪客每天可呼叫 10 次，任何人都能拿來燒你的 Claude 額度（金鑰本身拿不到）。遊戲本來就要登入＋推薦碼，現在訪客一律回「請先登入」；要開放可在 Vercel 設 AI_GUEST_DAILY（設 0 也真的是 0，舊寫法會變回 10）
+- 🧍 村民不再疊在一起站在街上：同一個地點的人以前常被分到同一個站位，地點中心又常是噴泉或建築內部這種不能走的格子，全被推到同一個最近的可走格。現在每個人從中心往外一圈圈找空位，彼此至少隔一格
+- 🧭 出門探險的村民從地圖上消失（沒有模型、沒有名牌），探險回來才重新出現
 
 ### v6.42.0 (2026-11-04)
 - 🗳️ 鎮長選舉交給 AI（完整智能體模式）：候選人依自己的性格、價值觀、職業與記憶挑施政方針、寫競選演說；全鎮村民分批（每批 8 人）由 AI 決定投給誰，各自附一句理由並記在記憶裡。線上用官方 Claude 實測：三位候選人挑了三種不同方針，演說都引用自己記得的事；8 位選民投出 5：2：1，理由各從自己在乎的事出發。AI 失敗的選民照舊用規則投票
