@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.40.1
+ * Version: 6.40.2
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.40.1');
+define('RIMTOWN_VERSION', '6.40.2');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1330,6 +1330,24 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.40.2',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🤖 伺服器 AI 新增官方 OpenAI（GPT）渠道：Vercel 設 OPENAI_API_KEY（可選 OPENAI_MODEL）就加入分流。背景線（行程／反思／日報／完整智能體決策）走 Claude → GPT → Groq，聊天線走 Groq → Claude → GPT；GPT 失敗會累進冷卻（60 秒×次數，最多 5 分鐘；429 照 retry-after），恢復即切回',
+                '⚙️ 新款 GPT 參數自動相容：官方 API 改用 max_completion_tokens；推理模型（gpt-5 系列、o 系列）不送 temperature、思考調到最低並保留足夠額度，避免回空字串；API 回 400 點名不支援的參數就自動拿掉或降級重送；沒指定模型時依序試 gpt-4.1-mini、gpt-5-mini、gpt-4o-mini，遇到模型不存在自動換下一個',
+                '🛡️ GPT 回覆也套用拒絕偵測：自報「我是 ChatGPT／AI 助理」或 API 標記拒絕都判失敗、改走下一條渠道；空回覆只退回這一次、不冷卻',
+                '🔑 自備 AI 選 OpenAI 時同步修正：瀏覽器直連也改用新參數（max_completion_tokens、推理模型不送 temperature），不支援的參數自動拿掉重送，測試連線顯示真正的錯誤原因',
+                '📊 管理員的 AI 用量（7 天）多一欄 GPT 次數；LLM_FORMAT=openai 搭配 LLM_BASE_URL=https://api.openai.com 也走同一套新參數',
+            ),
+            'changes_en' => array(
+                '🤖 Server AI gains an official OpenAI (GPT) lane: set OPENAI_API_KEY (and optionally OPENAI_MODEL) in Vercel and it joins the routing. The background lane (schedules, reflections, newspaper, full-agent decisions) goes Claude → GPT → Groq and the chat lane goes Groq → Claude → GPT; GPT failures cool down progressively (60s × failures, up to 5 minutes; 429 follows retry-after) and switch back on recovery',
+                '⚙️ Newer GPT parameters handled automatically: the official API now gets max_completion_tokens; reasoning models (gpt-5 family, o-series) get no temperature, minimal reasoning and enough token room so replies are not empty; a 400 naming an unsupported parameter is retried without it or with a lower setting; with no model set it tries gpt-4.1-mini, gpt-5-mini, then gpt-4o-mini, moving on when a model does not exist',
+                '🛡️ GPT replies go through the refusal filter too: "I am ChatGPT / an AI assistant" or an API refusal counts as a failure and the next lane is tried; an empty reply falls back once without cooling the lane down',
+                '🔑 Bring-your-own OpenAI fixed as well: browser-direct calls use the new parameters (max_completion_tokens, no temperature for reasoning models), retry without unsupported parameters and show the real error when testing the connection',
+                '📊 The admin AI usage (7 days) panel shows a GPT count; LLM_FORMAT=openai with LLM_BASE_URL=https://api.openai.com uses the same new parameters',
+            ),
+        ),
         array(
             'version' => '6.40.1',
             'date'    => '2026-11-04',

@@ -20,7 +20,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 - **Achievement System**: 50+ achievements across social, romance, economy, survival, faction, exploration, industry categories
 - **NPC Conversation Visualization**: Speech bubbles on map when NPCs talk to each other
 - **Player Interaction**: Choose jobs, vote in elections, flirt, propose, and marry NPCs
-- **Built-in Town AI**: every player talks to villagers through the server-side AI proxy (`/api/chat`); all keys live in Vercel env vars, nothing to configure on the client. Server-side smart routing: player chats and story scenes go to Groq's free tier (`GROQ_API_KEY`) first, schedules/reflections/background talk go to the paid channel (`LLM_*`), either side failing falls back to the other. **Bring your own AI (v6.36.0)**: a player can instead enter their own Claude / OpenAI / Gemini / custom OpenAI-compatible key under Settings → AI; it stays in that device's browser only (never sent to the town server or cloud settings) and the browser calls the provider directly
+- **Built-in Town AI**: every player talks to villagers through the server-side AI proxy (`/api/chat`); all keys live in Vercel env vars, nothing to configure on the client. Server-side smart routing: player chats and story scenes go to Groq's free tier (`GROQ_API_KEY`) first, schedules/reflections/background talk go to the paid channel (`LLM_*`), either side failing falls back to the other. **Official OpenAI lane (v6.40.2)**: set `OPENAI_API_KEY` (optional `OPENAI_MODEL`) and GPT joins the routing — background Claude → GPT → Groq, chat Groq → Claude → GPT. **Bring your own AI (v6.36.0)**: a player can instead enter their own Claude / OpenAI / Gemini / custom OpenAI-compatible key under Settings → AI; it stays in that device's browser only (never sent to the town server or cloud settings) and the browser calls the provider directly
 - **Pixel Art Map**: Animated tilemap with day/night cycle, campfires, particles
 - **Four Industries System**: Lumber, Quarry, Farming, Mining — choose your starting industry and unlock more as your town grows (v3)
 - **Farm & Crop System**: Plant crops, manage plots, seasonal planting, quality system, NPC farmer bonuses (v3)
@@ -261,7 +261,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.40.1.zip` from Releases
+1. Download `rimtown-v6.40.2.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -314,6 +314,13 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.40.2 (2026-11-04)
+- 🤖 伺服器 AI 新增官方 OpenAI（GPT）渠道：Vercel 設 OPENAI_API_KEY（可選 OPENAI_MODEL）就加入分流。背景線（行程／反思／日報／完整智能體決策）走 Claude → GPT → Groq，聊天線走 Groq → Claude → GPT；GPT 失敗會累進冷卻（60 秒×次數，最多 5 分鐘；429 照 retry-after），恢復即切回
+- ⚙️ 新款 GPT 參數自動相容：官方 API 改用 max_completion_tokens；推理模型（gpt-5 系列、o 系列）不送 temperature、思考調到最低並保留足夠額度，避免回空字串；API 回 400 點名不支援的參數就自動拿掉或降級重送；沒指定模型時依序試 gpt-4.1-mini、gpt-5-mini、gpt-4o-mini，遇到模型不存在自動換下一個
+- 🛡️ GPT 回覆也套用拒絕偵測：自報「我是 ChatGPT／AI 助理」或 API 標記拒絕都判失敗、改走下一條渠道；空回覆只退回這一次、不冷卻
+- 🔑 自備 AI 選 OpenAI 時同步修正：瀏覽器直連也改用新參數（max_completion_tokens、推理模型不送 temperature），不支援的參數自動拿掉重送，測試連線顯示真正的錯誤原因
+- 📊 管理員的 AI 用量（7 天）多一欄 GPT 次數；LLM_FORMAT=openai 搭配 LLM_BASE_URL=https://api.openai.com 也走同一套新參數
 
 ### v6.40.1 (2026-11-04)
 - 🛡️ 背景 AI 拒絕扮演不再漏網：上線實測付費中繼 4 次有 3 次回「我是 Claude Code，Anthropic 官方的命令列工具……不能假裝是遊戲引擎」並直接當成村民的行程／反思／日報。伺服器與前端的攔截規則補上中文自報身分（Claude Code、Anthropic、命令列工具、系統指示、隱瞞身分、我是 AI／助理……），一出現就判拒絕、改走 Groq；正常台詞（「有什麼我可以幫忙的嗎？」等）不受影響

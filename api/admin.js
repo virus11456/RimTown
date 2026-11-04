@@ -51,7 +51,7 @@ module.exports = async (req, res) => {
         for (let i = 6; i >= 0; i--) {
             const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
             let u = null; try { u = await L.readJson(`usage/${d}.json`); } catch {}
-            days.push({ day: d, groq: u?.groq || 0, relay: u?.relay || 0, fallbacks: u?.fallbacks || 0, blocked: u?.blocked || 0 });
+            days.push({ day: d, groq: u?.groq || 0, relay: u?.relay || 0, openai: u?.openai || 0, fallbacks: u?.fallbacks || 0, blocked: u?.blocked || 0 });
         }
         return res.status(200).json({ days });
     }

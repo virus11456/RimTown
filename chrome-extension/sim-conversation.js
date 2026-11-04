@@ -2537,15 +2537,34 @@ class LLMClient {
                 // OpenAI-compatible (openai, deepseek, groq, together, custom)
                 const body = { messages:[...sysMsgs, {role:'user',content:prompt}], max_tokens:maxTokens, temperature };
                 if (cfg.model) body.model = cfg.model;
-                const res = await fetch(cfg.url, {
+                // v6.40.2 官方 OpenAI:新參數 max_completion_tokens;推理模型(o 系列、gpt-5)不收 temperature、思考調到最低並留足額度
+                if (provider === 'openai') {
+                    delete body.max_tokens;
+                    if (/^(o\d|gpt-5)(?!.*-chat)/i.test(cfg.model)) {
+                        delete body.temperature;
+                        body.max_completion_tokens = Math.max(1200, maxTokens * 4);
+                        body.reasoning_effort = /^gpt-5\.\d/i.test(cfg.model) ? 'none' : (/^gpt-5/i.test(cfg.model) ? 'minimal' : 'low');
+                    } else body.max_completion_tokens = maxTokens;
+                }
+                const send = () => fetch(cfg.url, {
                     method:'POST',
                     headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
                     body: JSON.stringify(body),
                 });
+                let res = await send(); let recorded = false;
+                // 400 點名某個參數不支援 → 拿掉/降級後重送(最多 2 次)
+                for (let i = 0; i < 2 && res.status === 400 && provider === 'openai'; i++) {
+                    await recordErr(res); recorded = true;
+                    const m = this._lastError || '';
+                    if (/temperature/i.test(m) && body.temperature !== undefined) delete body.temperature;
+                    else if (/reasoning/i.test(m) && body.reasoning_effort) { const nx = { none: 'minimal', minimal: 'low' }[body.reasoning_effort]; if (nx && /value/i.test(m)) body.reasoning_effort = nx; else delete body.reasoning_effort; }
+                    else break;
+                    res = await send(); recorded = false;
+                }
                 if (res.status === 429) return '__RATE_LIMITED__';
                 // v5.33.2 記錄真實錯誤(HTTP 狀態 + API 訊息),測試連線時能顯示原因而非籠統「檢查金鑰」
                 if (!res.ok) {
-                    await recordErr(res);
+                    if (!recorded) await recordErr(res);
                     // v5.33.3 Groq 快取的模型被下架 → 清快取強制重查清單,換一個模型重試一次
                     if (provider === 'groq' && res.status === 404 && !model) {
                         this._groqModelCache = null;
@@ -2556,6 +2575,7 @@ class LLMClient {
                     return '__ERROR__';
                 }
                 const data = await res.json();
+                if (data.choices?.[0]?.message?.refusal) { this._lastError = 'refusal'; return '__ERROR__'; }
                 const content = data.choices?.[0]?.message?.content || '';
                 console.log('[RimTown LLM] Response:', res.status, '| content length:', content.length, '| error:', data.error?.message || 'none');
                 if (data.error) { console.error('[RimTown LLM] API error:', data.error); return '__ERROR__'; }

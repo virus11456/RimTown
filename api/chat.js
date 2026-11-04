@@ -21,6 +21,17 @@ const RELAY_DIRECT = RELAY_FORMAT === 'anthropic' && /(^|\/\/)api\.anthropic\.co
 // 新款 Claude(4.6 以後、5 系列)送非預設 temperature 會 400
 const NO_SAMPLING_RE = /claude-(opus|sonnet|haiku|fable|mythos)-(5|4-[6-9])/i;
 
+// v6.40.2 官方 OpenAI(GPT)渠道:OPENAI_API_KEY 有設就加入分流,排在 Claude 主渠道之後、Groq 之前
+//   OPENAI_MODEL 可指定模型;沒指定就依序試 gpt-4.1-mini → gpt-5-mini → gpt-4o-mini(遇到模型不存在自動換下一個並記住)
+const OPENAI_KEY = process.env.OPENAI_API_KEY || '';
+const OPENAI_BASE = process.env.OPENAI_BASE_URL || 'https://api.openai.com';
+const OPENAI_MODELS = process.env.OPENAI_MODEL ? [process.env.OPENAI_MODEL] : ['gpt-4.1-mini', 'gpt-5-mini', 'gpt-4o-mini'];
+let _openaiModelIdx = 0;
+function openaiModel() { return OPENAI_MODELS[Math.min(_openaiModelIdx, OPENAI_MODELS.length - 1)]; }
+// 推理模型(o 系列、gpt-5 系列,但 gpt-5-chat 除外):不收自訂 temperature、要用 max_completion_tokens、會先花額度思考
+const OPENAI_REASONING_RE = /^(o\d|gpt-5)(?!.*-chat)/i;
+function isOfficialOpenAI(base) { return /(^|\/\/)api\.openai\.com/i.test(String(base || '')); }
+
 // base URL 正規化:去尾端 /,若以 /v1 結尾也去掉,再接對應 endpoint
 function relayUrl(base, format) {
     let b = String(base || '').trim().replace(/\/+$/, '');
@@ -70,12 +81,90 @@ function looksLikeRefusal(text) {
     return ascii / t.length > 0.5 || /Kiro|AI (development|assistant)|roleplay|role-play/i.test(t) || /我是(一個)?(AI|人工智慧|語言模型)/.test(t);
 }
 
+// v6.40.2 OpenAI 格式的請求內容:官方 API 用新寫法(max_completion_tokens、推理模型不送 temperature、思考調到最低),
+// 第三方相容渠道維持舊寫法(max_tokens + temperature)
+function openaiBody(model, prompt, maxTokens, temperature, lang, official) {
+    const body = { model, messages: [{ role: 'system', content: systemPrompt(lang) }, { role: 'user', content: prompt }] };
+    if (!official) { body.max_tokens = maxTokens; body.temperature = temperature; return body; }
+    if (OPENAI_REASONING_RE.test(model)) {
+        // 思考也算在 max_completion_tokens 裡,留足空間才不會回空字串
+        body.max_completion_tokens = Math.max(1200, maxTokens * 4);
+        body.reasoning_effort = /^gpt-5\.\d/i.test(model) ? 'none' : (/^gpt-5/i.test(model) ? 'minimal' : 'low');
+    } else {
+        body.max_completion_tokens = maxTokens;
+        body.temperature = temperature;
+    }
+    return body;
+}
+// 送出 OpenAI 格式請求;400 且錯誤訊息點名某個參數不支援,就調整該參數重送(最多 3 次)
+async function postOpenAI(url, key, body, deadline) {
+    const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` };
+    let r;
+    for (let i = 0; i < 4; i++) {
+        r = await fetchTimeout(url, { method: 'POST', headers, body: JSON.stringify(body) }, budget(deadline, 15000));
+        if (r.status !== 400 || i === 3 || deadline - Date.now() < 3000) return { r };
+        let msg = ''; try { msg = JSON.stringify(await r.json()); } catch (e) {}
+        let changed = false;
+        if (/temperature/i.test(msg) && body.temperature !== undefined) { delete body.temperature; changed = true; }
+        else if (/reasoning_effort|reasoning\.effort/i.test(msg) && body.reasoning_effort) {
+            const next = { none: 'minimal', minimal: 'low' }[body.reasoning_effort];
+            if (next && /value|supported values|does not support/i.test(msg)) body.reasoning_effort = next; else delete body.reasoning_effort;
+            changed = true;
+        } else if (/max_tokens/i.test(msg) && !/max_completion_tokens/i.test(msg.replace(/'max_completion_tokens' instead/i, '')) && body.max_tokens !== undefined) {
+            body.max_completion_tokens = body.max_tokens; delete body.max_tokens; changed = true;
+        } else if (/max_tokens|max_completion_tokens/i.test(msg)) {
+            if (body.max_tokens !== undefined) { body.max_completion_tokens = body.max_tokens; delete body.max_tokens; }
+            else if (body.max_completion_tokens !== undefined) { body.max_tokens = body.max_completion_tokens; delete body.max_completion_tokens; }
+            changed = true;
+        }
+        if (!changed) return { r, msg };
+    }
+    return { r };
+}
+function openaiText(data) {
+    const c = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+    if (typeof c === 'string') return c;
+    if (Array.isArray(c)) return c.map(x => (x && (x.text || '')) || '').join('');
+    return '';
+}
+
+// v6.40.2 官方 OpenAI 渠道
+async function callOpenAI(prompt, maxTokens, temperature, deadline = Date.now() + 15000, lang = 'zh') {
+    const url = relayUrl(OPENAI_BASE, 'openai');
+    const official = isOfficialOpenAI(OPENAI_BASE);
+    for (;;) {
+        const model = openaiModel();
+        const { r, msg } = await postOpenAI(url, OPENAI_KEY, openaiBody(model, prompt, maxTokens, temperature, lang, official), deadline);
+        if (!r.ok) {
+            let m = msg || ''; if (!m) { try { m = JSON.stringify(await r.json()); } catch (e) {} }
+            // 預設模型清單裡的模型不存在/沒權限 → 換下一個(記住,之後都用新的)
+            const modelGone = r.status === 404 || /model_not_found|does not exist|do not have access/i.test(m);
+            if (modelGone && !process.env.OPENAI_MODEL && _openaiModelIdx < OPENAI_MODELS.length - 1 && deadline - Date.now() > 3000) { _openaiModelIdx++; continue; }
+            const e = new Error('openai_http_' + r.status); e.status = r.status;
+            const ra = parseFloat(r.headers && r.headers.get && r.headers.get('retry-after'));
+            if (ra > 0) e.retryAfterMs = ra * 1000;
+            throw e;
+        }
+        const data = await r.json();
+        const text = openaiText(data);
+        if (data.choices?.[0]?.message?.refusal) { const e = new Error('openai_refusal'); e.status = 502; e.refusal = true; throw e; }
+        if (!String(text).trim()) { const e = new Error('openai_empty'); e.status = 502; e.empty = true; throw e; }
+        if (looksLikeRefusal(text)) { const e = new Error('openai_refusal'); e.status = 502; e.refusal = true; throw e; }
+        return text;
+    }
+}
+
 async function callRelay(prompt, maxTokens, temperature, deadline = Date.now() + 15000, lang = 'zh') {
     const url = relayUrl(RELAY_BASE, RELAY_FORMAT);
     let headers, body;
     if (RELAY_FORMAT === 'openai') {
-        headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RELAY_KEY}` };
-        body = { model: RELAY_MODEL, messages: [{ role: 'system', content: systemPrompt(lang) }, { role: 'user', content: prompt }], max_tokens: maxTokens, temperature };
+        // v6.40.2 OpenAI 格式改走共用寫法:LLM_BASE_URL 是官方 api.openai.com 時自動用新參數,第三方相容渠道照舊
+        const { r } = await postOpenAI(url, RELAY_KEY, openaiBody(RELAY_MODEL, prompt, maxTokens, temperature, lang, isOfficialOpenAI(RELAY_BASE)), deadline);
+        if (!r.ok) { const e = new Error('relay_http_' + r.status); e.status = r.status; throw e; }
+        const data = await r.json();
+        const text = openaiText(data);
+        if (data.choices?.[0]?.message?.refusal || looksLikeRefusal(text)) { const e = new Error('relay_refusal'); e.status = 502; e.refusal = true; throw e; }
+        return text;
     } else if (RELAY_DIRECT) {
         // v6.40.1 直連 Anthropic 官方 API(LLM_BASE_URL=https://api.anthropic.com):system 走正式欄位;
         // 新款 Claude(4.6 以後)不收 temperature、預設會先思考 → 不送 temperature、先關思考,模型不收 thinking 欄位(400)就拿掉重送
@@ -96,9 +185,7 @@ async function callRelay(prompt, maxTokens, temperature, deadline = Date.now() +
     if (!r.ok) { const e = new Error('relay_http_' + r.status); e.status = r.status; throw e; }
     const data = await r.json();
     if (data && data.stop_reason === 'refusal') { const e = new Error('relay_refusal'); e.status = 502; e.refusal = true; throw e; }
-    const text = RELAY_FORMAT === 'openai'
-        ? (data.choices?.[0]?.message?.content || '')
-        : ((Array.isArray(data.content) ? data.content.filter(c => c && c.type === 'text').map(c => c.text).join('') : '') || '');
+    const text = (Array.isArray(data.content) ? data.content.filter(c => c && c.type === 'text').map(c => c.text).join('') : '') || '';
     if (looksLikeRefusal(text)) { const e = new Error('relay_refusal'); e.status = 502; e.refusal = true; throw e; }
     return text;
 }
@@ -166,7 +253,7 @@ function toTraditional(text) {
 }
 
 // 分流冷卻狀態(lambda 實例內存)
-const _lane = { groqCooldownUntil: 0, relayCooldownUntil: 0, relayFailCount: 0 };
+const _lane = { groqCooldownUntil: 0, relayCooldownUntil: 0, relayFailCount: 0, openaiCooldownUntil: 0, openaiFailCount: 0 };
 
 // v5.67.0 Groq 免費額度感知(免費層:30 RPM / 1K RPD / 8K TPM / 200K TPD,整個組織共用,不分玩家)
 // 每次 Groq 回應都讀 x-ratelimit-* 標頭記下剩餘額度與重置時間;下一次請求先估算需要的 token,
@@ -200,10 +287,12 @@ function _groqBudgetBlock(prompt, maxTokens) {
     return null;
 }
 
+function modelOf(c) { return c === 'groq' ? _lastGroqModel : c === 'openai' ? openaiModel() : RELAY_MODEL; }
+
 module.exports = async (req, res) => {
     if (req.method !== 'POST') return L.err(res, 405, 'method_not_allowed', 'POST only');
     const groqKey = process.env.GROQ_API_KEY || '';
-    if (!RELAY_KEY && !groqKey) return L.err(res, 503, 'no_server_key', '伺服器 AI 未設定');
+    if (!RELAY_KEY && !groqKey && !OPENAI_KEY) return L.err(res, 503, 'no_server_key', '伺服器 AI 未設定');
 
     const b = req.body || {};
     const prompt = String(b.prompt || '').slice(0, 6000);
@@ -237,15 +326,17 @@ module.exports = async (req, res) => {
     const deadline = now + 26000; // v5.66.5 兩條渠道共用 26 秒(函式上限 30 秒,留 4 秒給額度讀寫與回應)
     const candidates = [];
     const groqBlock = groqKey ? _groqBudgetBlock(prompt, maxTokens) : null; // v5.67.0 免費額度不夠 → 這次不優先用 Groq
-    if (lane === 'chat') {
-        if (groqKey && now >= _lane.groqCooldownUntil && !groqBlock) candidates.push('groq');
-        if (RELAY_KEY) candidates.push('relay');
-        if (groqKey && !candidates.includes('groq')) candidates.push('groq'); // 冷卻中/額度不足仍留作最後備援
-    } else {
-        if (RELAY_KEY && now >= _lane.relayCooldownUntil) candidates.push('relay');
-        if (groqKey) candidates.push('groq');
-        if (RELAY_KEY && !candidates.includes('relay')) candidates.push('relay');
-    }
+    // v6.40.2 三條渠道:relay(LLM_*,建議設官方 Claude)、openai(OPENAI_API_KEY,官方 GPT)、groq(免費額度)
+    //   chat:Groq → Claude → GPT;background:Claude → GPT → Groq。冷卻中/額度不足的渠道排到最後當備援
+    const have = { relay: !!RELAY_KEY, openai: !!OPENAI_KEY, groq: !!groqKey };
+    const ready = {
+        relay: lane === 'chat' || now >= _lane.relayCooldownUntil, // chat 線維持舊規則:付費主渠道不看冷卻
+        openai: now >= _lane.openaiCooldownUntil,
+        groq: lane !== 'chat' || (now >= _lane.groqCooldownUntil && !groqBlock), // background 線舊規則:Groq 是備援,不看冷卻
+    };
+    const order = lane === 'chat' ? ['groq', 'relay', 'openai'] : ['relay', 'openai', 'groq'];
+    for (const c of order) if (have[c] && ready[c]) candidates.push(c);
+    for (const c of order) if (have[c] && !ready[c]) candidates.push(c);
 
     let reply = '';
     let provider = '';
@@ -256,17 +347,25 @@ module.exports = async (req, res) => {
         try {
             reply = c === 'groq'
                 ? await callGroq(groqKey, prompt, maxTokens, temperature, deadline, lang)
-                : await callRelay(prompt, maxTokens, temperature, deadline, lang);
+                : c === 'openai'
+                    ? await callOpenAI(prompt, maxTokens, temperature, deadline, lang)
+                    : await callRelay(prompt, maxTokens, temperature, deadline, lang);
             provider = c;
             if (c === 'relay' && _lane.relayFailCount) { _lane.relayFailCount = 0; _lane.relayCooldownUntil = 0; } // 中繼恢復
+            if (c === 'openai' && _lane.openaiFailCount) { _lane.openaiFailCount = 0; _lane.openaiCooldownUntil = 0; }
             break;
         } catch (e) {
             lastErr = e;
-            failed.push({ provider: c, model: c === 'groq' ? _lastGroqModel : RELAY_MODEL, error: String(e && e.message || e).slice(0, 120) });
-            console.warn('[chat] provider failed:', c, c === 'groq' ? _lastGroqModel : RELAY_MODEL, String(e && e.message || e).slice(0, 200));
+            failed.push({ provider: c, model: modelOf(c), error: String(e && e.message || e).slice(0, 120) });
+            console.warn('[chat] provider failed:', c, modelOf(c), String(e && e.message || e).slice(0, 200));
             if (c === 'groq') {
                 // v5.66.4 空回覆是單次現象,只退回這一次不冷卻;限流/故障(429/5xx/逾時)才冷卻 5 分鐘
                 if (e && e.message !== 'groq_empty' && !e.refusal) _lane.groqCooldownUntil = Date.now() + (e.retryAfterMs ? Math.min(e.retryAfterMs, 6 * 3600000) : 300000); // v5.67.0 429 照 retry-after(上限 6 小時)
+            } else if (c === 'openai') {
+                if (!(e && (e.refusal || e.empty))) {
+                    _lane.openaiFailCount = Math.min(_lane.openaiFailCount + 1, 5);
+                    _lane.openaiCooldownUntil = Date.now() + (e && e.retryAfterMs ? Math.min(e.retryAfterMs, 3600000) : 60000 * _lane.openaiFailCount);
+                }
             } else if (!(e && e.refusal)) { // 拒絕扮演是單次現象,不冷卻中繼
                 _lane.relayFailCount = Math.min(_lane.relayFailCount + 1, 5);
                 _lane.relayCooldownUntil = Date.now() + 60000 * _lane.relayFailCount; // 60s × 次數,最多 5 分鐘
@@ -281,9 +380,9 @@ module.exports = async (req, res) => {
     if (lang !== 'en' && _toTW !== false) reply = toTraditional(reply); // v5.67.5 簡→繁(v5.73.0 英文對話不轉)
     q.count += 1;
     await L.writeJson(quotaPath, q).catch(() => {}); // 額度寫入失敗不阻擋回覆
-    await bump(provider === 'groq' ? 'groq' : 'relay'); if (failed.length) await bump('fallbacks'); // v5.96.0 B8
+    await bump(provider); if (failed.length) await bump('fallbacks'); // v5.96.0 B8
 
-    const out = { reply, remaining: Math.max(0, limit - q.count), provider, lane, lang, model: provider === 'groq' ? _lastGroqModel : RELAY_MODEL };
+    const out = { reply, remaining: Math.max(0, limit - q.count), provider, lane, lang, model: modelOf(provider) };
     if (failed.length) out.fallback_from = failed;
     if (groqBlock) out.groq_skipped = groqBlock;
     if (_groqQuota.at) out.groq_quota = { tokens: _groqQuota.remainingTokens, requests: _groqQuota.remainingRequests };
