@@ -3721,11 +3721,14 @@ body.rimtown-page .wp-block-post-title {
     padding: 4px 8px;
 }
 
-/* PWA standalone mode adjustments */
+/* PWA standalone mode adjustments
+   v6.27.2 修:之前外層容器也加 safe-area padding,跟 .mobile-header 的 padding-top 重複;容器高度又是固定 100vh,
+   多出來的 padding 把底部分頁列推出螢幕(iPhone PWA 看不到 動態／村民／提案／日報 列)。瀏海由 .mobile-header、
+   底部由 #kairo-bar 的 env(safe-area-inset-bottom) 各自處理,外層不再加。 */
 @media (display-mode: standalone) {
     .rimtown-container {
-        padding-top: env(safe-area-inset-top);
-        padding-bottom: env(safe-area-inset-bottom);
+        padding-top: 0;
+        padding-bottom: 0;
     }
 }
 
