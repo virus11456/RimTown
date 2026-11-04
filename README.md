@@ -261,7 +261,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.43.6.zip` from Releases
+1. Download `rimtown-v6.43.7.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -314,6 +314,12 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.43.7 (2026-11-04)
+- ⚡ 修英文版存檔變慢（v6.43.6 帶進來的）：上一版防止 emoji 被切壞的截斷，每次都重新建立分字工具，英文的共同回憶又幾乎每筆都要截，存檔一次多花好幾十毫秒（75 天平均 200 毫秒、最慢 0.6 秒，自動存檔時會頓一下）。現在共用同一個分字工具，截斷點附近沒有 emoji 就直接切：10 天的英文存檔 70 → 15 毫秒，75 天平均 45 毫秒
+- 🔁 存讀檔前後完全一致：村民之間的共同回憶平常也只留 3 筆（跟存檔一樣，提示詞本來就只用 3 筆），讀檔後不會少一筆
+- 📰 報紙一期都不刪，存檔更省：最近 30 期以前的舊報不再存「當天素材清單」（只有最近幾期點開才用得到），正文、日期、記者照樣保留
+- 🌐 英文版三處中文：手機面板的「返回地圖」按鈕、事件分頁的「派遣探險」按鈕、村民心情好時的念頭「邊境鎮 life treats me well」裡的鎮名；報紙封存列表的季節也改成英文
 
 ### v6.43.6 (2026-11-04)
 - 🏛️ 修代理鎮長提示：鎮長只是去探險，提案分頁卻寫「補選進行中」。現在出遠門、去探險、真的沒有鎮長各有各的說法，只有真的在補選才寫補選；鎮長一回到鎮上提示馬上消失（探險隊或旅人回來當下就交還，不等隔天）
