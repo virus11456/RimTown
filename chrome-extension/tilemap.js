@@ -3931,7 +3931,16 @@ class PixelTileMap {
     }
 
     // Check if a pixel position is inside a building zone
+    // v6.33.0 查表版:每幀每位村民都會問好幾次,原本要掃所有小屋與建築;改成以格子為鍵記住答案,每 300 幀清一次(新建的房子最多慢 5 秒才算進去)
     _isInsideBuilding(px, py) {
+        const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
+        let lut = this._insideLUT;
+        if (!lut || lut.grid !== this.grid || (this._insideLUTn = (this._insideLUTn || 0) + 1) > 300 * 30) { lut = this._insideLUT = { grid: this.grid, m: new Map() }; this._insideLUTn = 0; }
+        const k = ty * 4096 + tx; const hit = lut.m.get(k);
+        if (hit !== undefined) return hit;
+        const r = this._isInsideBuildingSlow(px, py); lut.m.set(k, r); return r;
+    }
+    _isInsideBuildingSlow(px, py) {
         // Check sub-zones first (smaller, more precise)
         if (this._houseSubZones) {
             for (const [subId, sub] of Object.entries(this._houseSubZones)) {
@@ -4050,80 +4059,43 @@ class PixelTileMap {
             if (!found) return null;
         }
 
-        // A* with 8-directional movement
-        const key = (x, y) => x + y * this.cols;
-        const open = []; // min-heap by f
-        const gScore = new Map();
-        const parent = new Map();
-        const closed = new Set();
-
-        const h = (x, y) => Math.abs(x - ex) + Math.abs(y - ey); // Manhattan
-        const startKey = key(sxc, syc);
-        gScore.set(startKey, 0);
-        open.push({ x: sxc, y: syc, f: h(sxc, syc) });
-
-        const dirs = [
-            { dx: 0, dy: -1, cost: 1 }, { dx: 0, dy: 1, cost: 1 },
-            { dx: -1, dy: 0, cost: 1 }, { dx: 1, dy: 0, cost: 1 },
-            { dx: -1, dy: -1, cost: 1.41 }, { dx: 1, dy: -1, cost: 1.41 },
-            { dx: -1, dy: 1, cost: 1.41 }, { dx: 1, dy: 1, cost: 1.41 },
-        ];
-
-        let iterations = 0;
-        const MAX_ITER = 2000; // prevent lag on large maps
-
-        while (open.length > 0 && iterations < MAX_ITER) {
+        // v6.33.0 A* 改寫:型別陣列 + 二元堆 + 世代戳記(不再每格配置 Map/Set、open 不再線性掃描);八方向、不切角、octile 啟發
+        // (390px 四倍節流量測:25 人同時換地點的那一幀原本 14 次 × 1.3ms)
+        const W = this.cols, H = this.rows, N = W * H;
+        let A = this._astar;
+        if (!A || A.N !== N) A = this._astar = { N, g: new Float32Array(N), par: new Int32Array(N), stamp: new Uint32Array(N), closed: new Uint32Array(N), gen: 0, hk: new Int32Array(N * 2), hf: new Float32Array(N * 2) };
+        if (++A.gen >= 0xFFFFFFF0) { A.stamp.fill(0); A.closed.fill(0); A.gen = 1; }
+        const gen = A.gen, g = A.g, par = A.par, stamp = A.stamp, closed = A.closed, hk = A.hk, hf = A.hf; let hn = 0;
+        const push = (k, f) => { let i = hn; if (i >= hk.length) return; hn++; hk[i] = k; hf[i] = f; while (i > 0) { const pI = (i - 1) >> 1; if (hf[pI] <= hf[i]) break; const tk = hk[pI], tf = hf[pI]; hk[pI] = hk[i]; hf[pI] = hf[i]; hk[i] = tk; hf[i] = tf; i = pI; } };
+        const pop = () => { const k = hk[0]; hn--; if (hn > 0) { hk[0] = hk[hn]; hf[0] = hf[hn]; let i = 0; for (;;) { const l = i * 2 + 1, r = l + 1; let m = i; if (l < hn && hf[l] < hf[m]) m = l; if (r < hn && hf[r] < hf[m]) m = r; if (m === i) break; const tk = hk[m], tf = hf[m]; hk[m] = hk[i]; hf[m] = hf[i]; hk[i] = tk; hf[i] = tf; i = m; } } return k; };
+        const h = (x, y) => { const dx = Math.abs(x - ex), dy = Math.abs(y - ey); return (Math.max(dx, dy) + 0.41 * Math.min(dx, dy)) * 1.05; };
+        const sk = syc * W + sxc, ek = ey * W + ex;
+        stamp[sk] = gen; g[sk] = 0; par[sk] = -1; push(sk, h(sxc, syc));
+        const DX = [0, 0, -1, 1, -1, 1, -1, 1], DY = [-1, 1, 0, 0, -1, -1, 1, 1], DC = [1, 1, 1, 1, 1.41, 1.41, 1.41, 1.41];
+        let iterations = 0; const MAX_ITER = 2000;
+        while (hn > 0 && iterations < MAX_ITER) {
             iterations++;
-            // Find lowest f in open (simple linear scan — adequate for small grids)
-            let bestIdx = 0;
-            for (let i = 1; i < open.length; i++) {
-                if (open[i].f < open[bestIdx].f) bestIdx = i;
-            }
-            const cur = open[bestIdx];
-            open.splice(bestIdx, 1);
-
-            const ck = key(cur.x, cur.y);
-            if (closed.has(ck)) continue;
-            closed.add(ck);
-
-            // Reached goal
-            if (cur.x === ex && cur.y === ey) {
-                // Reconstruct path as pixel waypoints
-                const path = [];
-                let k = ck;
-                while (k !== undefined) {
-                    const py = Math.floor(k / this.cols);
-                    const px = k - py * this.cols;
-                    path.unshift({ x: (px + 0.5) * TILE, y: (py + 0.5) * TILE });
-                    k = parent.get(k);
-                }
-                // Simplify: remove collinear waypoints
+            const ck = pop();
+            if (closed[ck] === gen) continue;
+            closed[ck] = gen;
+            if (ck === ek) {
+                const path = []; let k = ek;
+                while (k !== -1) { const py = Math.floor(k / W), px = k - py * W; path.push({ x: (px + 0.5) * TILE, y: (py + 0.5) * TILE }); k = par[k]; }
+                path.reverse();
                 return this._simplifyPath(path);
             }
-
-            const curG = gScore.get(ck) || 0;
-
-            for (const d of dirs) {
-                const nx = cur.x + d.dx, ny = cur.y + d.dy;
-                if (nx < 0 || nx >= this.cols || ny < 0 || ny >= this.rows) continue;
-                const nk = key(nx, ny);
-                if (closed.has(nk)) continue;
+            const cx = ck % W, cy = (ck - cx) / W, cg = g[ck];
+            for (let d = 0; d < 8; d++) {
+                const nx = cx + DX[d], ny = cy + DY[d];
+                if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
+                const nk = ny * W + nx;
+                if (closed[nk] === gen) continue;
                 if (!this._isTileWalkable(nx, ny)) continue;
-
-                // For diagonal, both adjacent cardinal tiles must be walkable (no corner cutting)
-                if (d.dx !== 0 && d.dy !== 0) {
-                    if (!this._isTileWalkable(cur.x + d.dx, cur.y) || !this._isTileWalkable(cur.x, cur.y + d.dy)) continue;
-                }
-
-                const ng = curG + d.cost;
-                if (!gScore.has(nk) || ng < gScore.get(nk)) {
-                    gScore.set(nk, ng);
-                    parent.set(nk, ck);
-                    open.push({ x: nx, y: ny, f: ng + h(nx, ny) });
-                }
+                if (d >= 4 && (!this._isTileWalkable(cx + DX[d], cy) || !this._isTileWalkable(cx, cy + DY[d]))) continue; // 不切角
+                const ng = cg + DC[d];
+                if (stamp[nk] !== gen || ng < g[nk]) { stamp[nk] = gen; g[nk] = ng; par[nk] = ck; push(nk, ng + h(nx, ny)); }
             }
         }
-
         return null; // no path found
     }
 
@@ -4250,47 +4222,56 @@ class PixelTileMap {
             if (aid === 'player' && this._playerManual) continue;
             const curLoc = agent.current_location;
             let targetX, targetY;
-
-            // For residential areas, route agents to their specific house
             const homeLocation = agent.home_location || agent.homeLocation;
-            if (curLoc && curLoc.startsWith('residential_') && this._houseSubZones) {
-                const houseId = this.getAgentHouseId(aid, curLoc);
-                if (houseId && this._houseSubZones[houseId]) {
-                    const sub = this._houseSubZones[houseId];
-                    // Place inside their specific house with small offset
-                    const hashOffset = (aid.charCodeAt(0) || 0) % 4;
-                    targetX = sub.interiorX + ((hashOffset % 2) - 0.5) * TILE;
-                    targetY = sub.interiorY + (Math.floor(hashOffset / 2) - 0.5) * TILE;
+            // v6.33.0 目的地快取:之前每幀替每位村民重算目的地(地點中心、同地點重疊計數 O(n²)、可走點環狀搜尋、住家查表),
+            // 390px 四倍節流下一幀 8ms。現在只在地點／住家改變、玩家點地、或位置被外部重設時重算;其餘幀直接用上次的目的地
+            if (!this._tgtCache || this._tgtGrid !== this.grid) { this._tgtCache = {}; this._tgtGrid = this.grid; }
+            const tgtKey = (curLoc || '') + '|' + (homeLocation || '');
+            const tc = this._tgtCache[aid];
+            if (tc && tc.key === tgtKey && this.agentPositions[aid] && !(aid === 'player' && this._playerClickTarget)) { targetX = tc.x; targetY = tc.y; }
+            else {
+
+                // For residential areas, route agents to their specific house
+                if (curLoc && curLoc.startsWith('residential_') && this._houseSubZones) {
+                    const houseId = this.getAgentHouseId(aid, curLoc);
+                    if (houseId && this._houseSubZones[houseId]) {
+                        const sub = this._houseSubZones[houseId];
+                        // Place inside their specific house with small offset
+                        const hashOffset = (aid.charCodeAt(0) || 0) % 4;
+                        targetX = sub.interiorX + ((hashOffset % 2) - 0.5) * TILE;
+                        targetY = sub.interiorY + (Math.floor(hashOffset / 2) - 0.5) * TILE;
+                    } else {
+                        const locCenter = this.getLocationCenter(curLoc);
+                        targetX = locCenter.x;
+                        targetY = locCenter.y;
+                    }
                 } else {
                     const locCenter = this.getLocationCenter(curLoc);
-                    targetX = locCenter.x;
-                    targetY = locCenter.y;
+                    // Add offset within zone so agents don't overlap
+                    const existing = Object.values(this.agentPositions).filter(p => {
+                        const dx = Math.abs(p.targetX - locCenter.x);
+                        const dy = Math.abs(p.targetY - locCenter.y);
+                        return dx < TILE * 3 && dy < TILE * 3;
+                    });
+                    const idx = existing.length;
+                    const spreadX = ((idx % 4) - 1.5) * TILE;
+                    const spreadY = (Math.floor(idx / 4) - 0.5) * TILE;
+                    targetX = locCenter.x + spreadX;
+                    targetY = locCenter.y + spreadY;
                 }
-            } else {
-                const locCenter = this.getLocationCenter(curLoc);
-                // Add offset within zone so agents don't overlap
-                const existing = Object.values(this.agentPositions).filter(p => {
-                    const dx = Math.abs(p.targetX - locCenter.x);
-                    const dy = Math.abs(p.targetY - locCenter.y);
-                    return dx < TILE * 3 && dy < TILE * 3;
-                });
-                const idx = existing.length;
-                const spreadX = ((idx % 4) - 1.5) * TILE;
-                const spreadY = (Math.floor(idx / 4) - 0.5) * TILE;
-                targetX = locCenter.x + spreadX;
-                targetY = locCenter.y + spreadY;
+                // Player click target: override position to exact click location
+                if (aid === 'player' && this._playerClickTarget) {
+                    const ct = this._findWalkableTarget(this._playerClickTarget.x, this._playerClickTarget.y);
+                    targetX = ct.x;
+                    targetY = ct.y;
+                    this._playerClickTarget = null;
+                }
+                // Ensure target is not inside a wall
+                const walkable = this._findWalkableTarget(targetX, targetY);
+                targetX = walkable.x;
+                targetY = walkable.y;
+            this._tgtCache[aid] = { key: tgtKey, x: targetX, y: targetY };
             }
-            // Player click target: override position to exact click location
-            if (aid === 'player' && this._playerClickTarget) {
-                const ct = this._findWalkableTarget(this._playerClickTarget.x, this._playerClickTarget.y);
-                targetX = ct.x;
-                targetY = ct.y;
-                this._playerClickTarget = null;
-            }
-            // Ensure target is not inside a wall
-            const walkable = this._findWalkableTarget(targetX, targetY);
-            targetX = walkable.x;
-            targetY = walkable.y;
 
             // Extract job key string from agent data
             const jobKey = (agent.job && agent.job.key) ? agent.job.key : (typeof agent.job === 'string' ? agent.job : 'default');
@@ -4360,7 +4341,9 @@ class PixelTileMap {
 
                 const pos = this.agentPositions[aid];
                 // Check if NPC is changing to a different location (entering a new building)
-                const prevTarget = { x: pos.targetX, y: pos.targetY };
+                // v6.33.0 修:出門／進門過渡期 pos.targetX 是門口,之前拿它跟最終目的地比,每一幀都判成「換地點」而重跑 A*
+                // (390px 量測 71 幀跑了 1313 次 _findPath,一幀 28ms);改比「最終目的地」就只在真的換地點時重算
+                const prevTarget = (pos.doorPhase && pos.finalTarget) ? { x: pos.finalTarget.x, y: pos.finalTarget.y } : { x: pos.targetX, y: pos.targetY };
                 const locationChanged = Math.abs(targetX - prevTarget.x) > TILE * 2 || Math.abs(targetY - prevTarget.y) > TILE * 2;
 
                 if (locationChanged) {
@@ -4387,7 +4370,7 @@ class PixelTileMap {
                         pos.targetY = destDoor.y;
                     } else {
                         // Nature zone or no door — walk directly
-                        pos.doorPhase = null;
+                        pos.doorPhase = null; pos.finalTarget = null; pos.destDoor = null; pos.doorWaypoint = null;
                         pos.targetX = targetX;
                         pos.targetY = targetY;
                     }

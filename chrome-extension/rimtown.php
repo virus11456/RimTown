@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.32.0
+ * Version: 6.33.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.32.0');
+define('RIMTOWN_VERSION', '6.33.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1328,6 +1328,26 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.33.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '⚡ 修了一個吃掉手機 CPU 的老 bug：村民在「出門→走到目的地門口→進屋」的過渡期間，每一幀都重新跑一次 A* 尋路（390px 四倍節流量測：71 幀跑了 1313 次，一幀 28ms）。現在只在真的換地點時重算，村民更新從每幀 8.4ms 降到 2.2ms',
+                '⚡ 村民目的地快取：地點中心、同地點重疊計數、可走點搜尋、住家查表只在地點或住家改變時算一次；「是否在建築內」改成按格子查表',
+                '⚡ A* 改寫：型別陣列＋二元堆＋世代戳記，不再每格配置 Map/Set、open 不再線性掃描；300 條隨機路徑驗證起終點與每格可走皆正確，單條平均 0.09ms',
+                '📱 手機解析度：「自動」畫質在手機用 1.5 倍（iPhone 原生 3 倍、安卓 2.6 倍的填充率是手機 GPU 最大頭，1.5 倍肉眼幾乎看不出差別、像素少四成）；鎖「高」才用 2 倍；低畫質 3D 只畫 30fps（村民移動不受影響）',
+                '📱 手機側欄：底部抽屜沒打開就不重畫側欄，打開著也最多每秒一次（之前每個 tick 整個 innerHTML 重建 8ms，3 倍速一秒 1.5 次）',
+                '⚡ 靜態場景物件算好世界矩陣後停用自動更新（three.js 每幀會走訪整棵樹重算矩陣；水面、船、篝火、馬車這些會動的保留）',
+            ),
+            'changes_en' => array(
+                '⚡ Fixed an old bug that was eating phone CPU: while a villager was in the leave-building → walk-to-door → enter transition, A* pathfinding re-ran every single frame (measured at 390px with 4x CPU throttling: 1313 plans in 71 frames, 28ms per frame). Plans now happen only on a real location change, and the per-frame villager update drops from 8.4ms to 2.2ms',
+                '⚡ Villager destination cache: location centre, same-spot crowding count, walkable-tile search and house lookup are computed once per location or home change; "inside a building" is now a per-tile lookup table',
+                '⚡ A* rewritten with typed arrays, a binary heap and generation stamps instead of per-node Map/Set and a linear open-list scan; 300 random paths verified for correct endpoints and walkable steps, 0.09ms on average',
+                '📱 Phone resolution: Auto quality renders at 1.5x on phones (fill rate at the native 3x of iPhones or 2.6x of Android is the biggest phone GPU cost; 1.5x is barely visible and uses 40% fewer pixels); only High locks 2x; Low quality renders 3D at 30fps (villager movement unaffected)',
+                '📱 Phone sidebar: not re-rendered while the bottom drawer is closed, and at most once per second while open (previously every tick rebuilt the whole innerHTML, 8ms, 1.5 times a second at 3x speed)',
+                '⚡ Static scene objects freeze their world matrices after build (three.js walks the whole tree every frame otherwise; water, boats, campfire and the coach keep animating)',
+            ),
+        ),
         array(
             'version' => '6.32.0',
             'date'    => '2026-11-04',

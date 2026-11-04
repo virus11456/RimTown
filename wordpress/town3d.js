@@ -99,13 +99,15 @@ class Town3D extends PixelTileMap {
     }
     _setupInteraction() { /* 2D 版互動不掛;改用 _setupInteraction3D */ }
 
+    // v6.33.0 解析度:低畫質 1x;手機「自動」1.5x(iPhone 原生 3x、安卓 2.6x 的填充率是手機 GPU 最大頭,1.5x 肉眼幾乎看不出差別、像素少四成);鎖「高」才用到 2x
+    _targetDpr() { if (this.lowQuality) return 1; const d = window.devicePixelRatio || 1; return Math.min(d, this.isMobile && !this.lockQuality ? 1.5 : 2); }
     _checkResize() {
         const parent = this.glCanvas?.parentElement;
         if (!parent || !this.renderer) return;
         const rect = parent.getBoundingClientRect();
         const w = rect.width, h = rect.height;
         if (w < 1 || h < 1) { this._needsResize = true; return; }
-        const dpr = this.lowQuality ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+        const dpr = this._targetDpr();
         if (!this._needsResize && Math.abs(this._viewW - w) <= 1 && Math.abs(this._viewH - h) <= 1 && dpr === this._dpr) return;
         this._needsResize = false; this._dpr = dpr; this._viewW = w; this._viewH = h;
         this.renderer.setPixelRatio(dpr);
@@ -701,6 +703,9 @@ class Town3D extends PixelTileMap {
         this._buildProps();
         this._buildLamps();
         this._mergeStatic();
+        // v6.33.0 靜態物件算好世界矩陣就停用自動更新(three 每幀會走訪整棵樹重算矩陣;水面／船／篝火／馬車這些會動的再開回來)
+        this._static.updateMatrixWorld(true); this._static.traverse((o) => { o.matrixAutoUpdate = false; });
+        for (const w of this._waterMeshes) w.matrixAutoUpdate = true; if (this._boatMeshes) for (const b of this._boatMeshes) b.g.matrixAutoUpdate = true; if (this._flame) this._flame.matrixAutoUpdate = true; if (this._coach) this._coach.matrixAutoUpdate = true;
         this._dynSig = null;
         this._buildLabelIndex();
         console.log('[Town3D] scene built:', this._static.children.length, 'nodes');
@@ -1299,7 +1304,7 @@ class Town3D extends PixelTileMap {
         if (!this.renderer) return;
         this.renderer.shadowMap.enabled = !on && !this.isMobile;
         this.sun.castShadow = !on && !this.isMobile;
-        this._dpr = on ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+        this._dpr = this._targetDpr();
         this.renderer.setPixelRatio(this._dpr); this._needsResize = true;
         this.scene.traverse((o) => { if (o.material && o.material.needsUpdate !== undefined) o.material.needsUpdate = true; });
         try { localStorage.setItem('rimtown_3d_quality', on ? 'low' : 'high'); } catch (e) {}
@@ -1316,6 +1321,7 @@ class Town3D extends PixelTileMap {
     render(agents, selectedAgent, playerLoc, completedBuildings, extraData) {
         this._checkResize();
         if (!this.renderer || !this.grid || !this._viewW || this._ctxLost) return;
+        if (this.lowQuality && (this._halfTick = !this._halfTick)) return; // v6.33.0 低畫質:3D 只畫 30fps(村民移動由 updateAgents 每幀算,不受影響)
         this.animFrame++;
         if (this._sceneSrc !== this.grid || this._sceneSeason !== (this.season || '')) this._buildScene();
         this._syncDynamic(completedBuildings);

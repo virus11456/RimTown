@@ -957,7 +957,7 @@ Object.assign(RimTownApp.prototype, {
         html += `<div class="setting-group" style="margin-bottom:8px">
             <label style="font-size:0.82rem;color:var(--text-secondary)">${t('3D 畫質')}</label>
             <select id="settings-quality" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem" onchange="try{if(this.value==='auto')localStorage.removeItem('rimtown_3d_quality');else localStorage.setItem('rimtown_3d_quality',this.value)}catch(e){};location.reload()">
-                <option value="auto"${qPref==='auto'?' selected':''}>${t('自動（卡頓就自動降低）')}</option>
+                <option value="auto"${qPref==='auto'?' selected':''}>${t('自動（手機 1.5 倍解析度，卡頓就自動降低）')}</option>
                 <option value="high"${qPref==='high'?' selected':''}>${t('高（陰影、抗鋸齒、原生解析度）')}</option>
                 <option value="low"${qPref==='low'?' selected':''}>${t('低（無陰影、1x 解析度，省電）')}</option>
             </select>
