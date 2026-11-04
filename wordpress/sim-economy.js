@@ -59,6 +59,8 @@ const RAW_MATERIALS = ['wood','stone','metal','cloth','herbs'];
 
 function processDailyProduction(world) {
     const sp = world.stockpile;
+    // v6.40.0 銀行利息:每天照公庫銀幣的比例生一點(上限 20)
+    { const ir = world.buildings?.getEffect?.('interest', 0) || 0; if (ir > 0) { const g = Math.min(20, Math.round(sp.get('silver') * ir)); if (g > 0) sp.add('silver', g, world.tickCount, t('銀行利息'), 'bank'); } }
     // v5.51.0 原料層自動供給,v5.53.0 改為「補滿到安全線」:
     // 固定 +12 補不上木材這種高需求原料(建築+家具線+冬季取暖),紅燈會卡死;直接補到 40
     RAW_MATERIALS.forEach(r => {
@@ -180,6 +182,29 @@ const BUILDING_TEMPLATES = {
     forge_bellows:{name:t('鍛造風箱'),description:t('加速金屬加工'),costs:{metal:10,stone:5},work:10,effects:{smithing_bonus:1.3}},
     clinic_upgrade:{name:t('醫療病房'),description:t('更好的治療效果'),costs:{wood:15,cloth:10,silver:25},work:14,effects:{healing_bonus:1.5}},
     town_walls:{name:t('城牆'),description:t('大幅提升防禦'),costs:{stone:80,wood:30,tools:5},work:40,effects:{defense_bonus:8}},
+    // ---- v6.40.0 科技樹新建築(時代一／二) ----
+    archive:{name:t('文書房'),description:t('把鎮上的事記下來，研究 +15%'),costs:{wood:25,cloth:5,silver:30},work:14,effects:{research_bonus:0.15,culture_bonus:4}},
+    warehouse:{name:t('倉庫'),description:t('更多儲位、少腐壞'),costs:{wood:40,stone:25,silver:40},work:18,effects:{food_capacity:300,food_decay:-0.3,storage_bonus:0.3}},
+    paved_roads:{name:t('石板路'),description:t('雨天不再一腳泥'),costs:{stone:60,silver:30},work:20,effects:{mood_bonus:1,trade_bonus:0.05,beauty_bonus:4}},
+    lecture_hall:{name:t('講堂'),description:t('請人來講學，經驗 +10%'),costs:{wood:30,stone:20,silver:60},work:20,effects:{xp_bonus:1.1,culture_bonus:8}},
+    dye_works:{name:t('染坊'),description:t('布料有了顏色，賣得更好'),costs:{wood:20,cloth:10,silver:40},work:12,effects:{trade_bonus:0.05,beauty_bonus:4}},
+    bathhouse:{name:t('浴場'),description:t('熱水、蒸氣與閒聊'),costs:{stone:40,wood:20,silver:60},work:18,effects:{mood_bonus:2,healing_bonus:1.1}},
+    windmill:{name:t('風車磨坊'),description:t('風替人磨粉'),costs:{wood:45,stone:15,tools:3},work:20,effects:{farm_bonus:1.1,beauty_bonus:3}},
+    armory:{name:t('軍械庫'),description:t('守衛有像樣的裝備'),costs:{wood:20,metal:15,tools:4,silver:40},work:16,effects:{defense_bonus:3}},
+    map_room:{name:t('地圖室'),description:t('把走過的山野畫下來，更常發現新地方'),costs:{wood:20,cloth:5,silver:50},work:14,effects:{discover_bonus:0.04,culture_bonus:3}},
+    // ---- v6.40.0 科技樹新建築(時代三,要用木板／磚／鋼) ----
+    clock_tower:{name:t('鐘樓'),description:t('全鎮聽同一口鐘'),costs:{stone:50,plank:10,steel:4,silver:120},work:32,effects:{mood_bonus:3,culture_bonus:10,beauty_bonus:6}},
+    aqueduct:{name:t('水道'),description:t('山泉引進鎮裡'),costs:{stone:70,brick:12,silver:100},work:34,effects:{drought_resistance:0.8,food_capacity:150,mood_bonus:1}},
+    press:{name:t('印刷坊'),description:t('日報有了印刷機'),costs:{wood:30,plank:10,steel:3,silver:120},work:26,effects:{culture_bonus:15,research_bonus:0.2}},
+    bank:{name:t('銀行'),description:t('公庫每天生一點利息'),costs:{stone:50,brick:10,silver:200},work:30,effects:{trade_bonus:0.15,interest:0.01}},
+    hospital:{name:t('醫院'),description:t('病房、手術與照護'),costs:{wood:40,brick:12,cloth:15,silver:150},work:34,effects:{healing_bonus:2,mood_bonus:2}},
+    council_hall:{name:t('議事廳'),description:t('提案與投票有了正式場所'),costs:{stone:40,plank:12,silver:120},work:28,effects:{culture_bonus:10,mood_bonus:1}},
+    observatory:{name:t('天文台'),description:t('夜裡看星，白天算節氣'),costs:{stone:50,steel:4,silver:160},work:34,effects:{research_bonus:0.3,beauty_bonus:5,culture_bonus:5}},
+    theater:{name:t('劇場'),description:t('村民自己演自己的故事'),costs:{wood:50,plank:12,cloth:10,silver:140},work:30,effects:{culture_bonus:20,mood_bonus:3,recreation_bonus:10}},
+    statue_plaza:{name:t('雕像廣場'),description:t('給鎮上的英雄立像'),costs:{stone:40,brick:8,silver:90},work:20,effects:{beauty_bonus:15,culture_bonus:5}},
+    sewers:{name:t('下水道'),description:t('髒水不再流在街上'),costs:{stone:60,brick:15,tools:4,silver:120},work:36,effects:{mood_bonus:2,healing_bonus:1.2}},
+    barracks:{name:t('兵營'),description:t('常備守軍'),costs:{stone:50,steel:5,wood:30,silver:150},work:36,effects:{defense_bonus:6,raid_chance:-0.08}},
+    caravanserai:{name:t('商隊驛站'),description:t('商隊有地方落腳，來得更勤'),costs:{wood:40,brick:10,silver:140},work:28,effects:{merchant_frequency:1.5,trade_bonus:0.1}},
 };
 
 // --- Building Upgrades ---
@@ -291,7 +316,7 @@ class BuildingManager {
     donationsLeft(world) { const dk=this._dayKey(world); return this.donations?.day===dk ? Math.max(0,BuildingManager.DONATE_PER_DAY-(this.donations.n||0)) : BuildingManager.DONATE_PER_DAY; }
     getAvailable(world) {
         const done=new Set(this.completed.map(p=>p.name)), prog=new Set(this.projects.map(p=>p.name));
-        return Object.entries(BUILDING_TEMPLATES).filter(([,t])=>!done.has(t.name)&&!prog.has(t.name)).map(([key,t])=>({key,...t,can_afford:world.stockpile.canAfford(t.costs)}));
+        return Object.entries(BUILDING_TEMPLATES).filter(([key,t])=>!done.has(t.name)&&!prog.has(t.name)&&(world.research?.isUnlocked?.(key) ?? true)).map(([key,t])=>({key,...t,can_afford:world.stockpile.canAfford(t.costs)})); // v6.40.0 要先研究到
     }
     getUpgradeable(world) {
         const upgrading=new Set(this.projects.filter(p=>p.upgradeKey).map(p=>p.upgradeKey));
@@ -443,28 +468,70 @@ class TradeManager {
 }
 
 // --- Economy: Research ---
+// v6.40.0 科技樹擴成三個時代(拓荒→手工→工坊)28 節點:每個節點解鎖建築或工坊(unlocks 裡 'factory:' 開頭是工坊),
+// 沒被任何節點列在 unlocks 裡的建築(穀倉、深井)一開始就能蓋。effects 會在研究完成時加進 buildings.activeEffects。
+const RESEARCH_ERAS = { 1: { name: '拓荒', icon: '🪓' }, 2: { name: '手工', icon: '🔨' }, 3: { name: '工坊', icon: '⚙️' } };
 const RESEARCH_TREE = {
-    agriculture:{name:t('進階農業'),description:t('更好的農耕（+30%食物）'),cost:50,prerequisites:[],effects:{farm_bonus:1.3},unlocks:['farm_irrigation','garden']},
-    metallurgy:{name:t('冶金術'),description:t('更好的金屬冶煉'),cost:60,prerequisites:[],effects:{smithing_bonus:1.2},unlocks:['forge_bellows']},
-    medicine_research:{name:t('草藥醫學'),description:t('更好的療癒草藥'),cost:55,prerequisites:[],effects:{healing_bonus:1.3},unlocks:['clinic_upgrade','garden']},
-    fortification:{name:t('防禦工事'),description:t('防禦性建築'),cost:70,prerequisites:[],effects:{defense_bonus:2},unlocks:['watchtower','training_ground','town_walls']},
-    commerce:{name:t('商業'),description:t('更好的貿易方式'),cost:45,prerequisites:[],effects:{trade_bonus:0.15},unlocks:['marketplace']},
-    architecture:{name:t('建築學'),description:t('進階建造'),cost:65,prerequisites:['metallurgy'],effects:{build_speed:1.3},unlocks:['school','town_walls']},
-    brewing:{name:t('釀造術'),description:t('發酵的藝術'),cost:35,prerequisites:['agriculture'],effects:{recreation_bonus:5},unlocks:['brewery']},
-    logistics:{name:t('後勤學'),description:t('更好的儲存'),cost:50,prerequisites:['commerce'],effects:{storage_bonus:1.5},unlocks:['granary']},
-    education:{name:t('教育'),description:t('正式教育（+15%經驗）'),cost:80,prerequisites:['architecture'],effects:{xp_bonus:1.15},unlocks:['school']},
-    masonry:{name:t('石匠術'),description:t('進階石工'),cost:55,prerequisites:['fortification'],effects:{stone_efficiency:1.3},unlocks:['town_walls','well_upgrade']},
+    // ---- 第一時代 拓荒 ----
+    agriculture:{era:1,name:t('進階農業'),description:t('更好的農耕（+30%食物）'),cost:50,prerequisites:[],effects:{farm_bonus:1.3},unlocks:['farm_irrigation','garden']},
+    metallurgy:{era:1,name:t('冶金術'),description:t('更好的金屬冶煉'),cost:60,prerequisites:[],effects:{smithing_bonus:1.2},unlocks:['forge_bellows']},
+    medicine_research:{era:1,name:t('草藥醫學'),description:t('更好的療癒草藥'),cost:55,prerequisites:[],effects:{healing_bonus:1.3},unlocks:['clinic_upgrade','garden']},
+    fortification:{era:1,name:t('防禦工事'),description:t('防禦性建築'),cost:70,prerequisites:[],effects:{defense_bonus:2},unlocks:['watchtower','training_ground']},
+    commerce:{era:1,name:t('商業'),description:t('更好的貿易方式'),cost:45,prerequisites:[],effects:{trade_bonus:0.15},unlocks:['marketplace']},
+    carpentry:{era:1,name:t('木工'),description:t('榫接與鋸木，蓋房更快'),cost:40,prerequisites:[],effects:{build_speed:1.1},unlocks:['factory:sawmill','factory:furniture_workshop']},
+    pottery:{era:1,name:t('陶藝'),description:t('窯燒磚瓦與器皿'),cost:40,prerequisites:[],effects:{beauty_bonus:3},unlocks:['factory:brickworks']},
+    writing:{era:1,name:t('文字記錄'),description:t('把經驗寫下來，研究更快'),cost:45,prerequisites:[],effects:{research_bonus:0.1},unlocks:['archive']},
+    // ---- 第二時代 手工 ----
+    architecture:{era:2,name:t('建築學'),description:t('進階建造'),cost:80,prerequisites:['metallurgy','carpentry'],effects:{build_speed:1.3},unlocks:['school']},
+    brewing:{era:2,name:t('釀造術'),description:t('發酵的藝術'),cost:70,prerequisites:['agriculture'],effects:{recreation_bonus:5},unlocks:['brewery','factory:brewery']},
+    logistics:{era:2,name:t('後勤學'),description:t('更好的儲存'),cost:75,prerequisites:['commerce'],effects:{storage_bonus:1.5},unlocks:['warehouse']},
+    masonry:{era:2,name:t('石匠術'),description:t('進階石工'),cost:80,prerequisites:['fortification'],effects:{stone_efficiency:1.3},unlocks:['town_walls','paved_roads']},
+    education:{era:2,name:t('教育'),description:t('正式教育（+15%經驗）'),cost:100,prerequisites:['architecture','writing'],effects:{xp_bonus:1.15},unlocks:['lecture_hall']},
+    textiles:{era:2,name:t('紡織術'),description:t('棉花成布，布成衣'),cost:70,prerequisites:['agriculture'],effects:{trade_bonus:0.05},unlocks:['factory:textile_mill','dye_works']},
+    herbalism:{era:2,name:t('藥劑學'),description:t('把草藥煉成藥品'),cost:80,prerequisites:['medicine_research'],effects:{healing_bonus:1.2},unlocks:['factory:herbal_workshop','bathhouse']},
+    milling:{era:2,name:t('磨坊'),description:t('磨粉、製糖，糧食變商品'),cost:75,prerequisites:['agriculture','carpentry'],effects:{farm_bonus:1.1},unlocks:['factory:bakery','factory:sugar_refinery','windmill']},
+    smithing:{era:2,name:t('鍛造'),description:t('煉鋼與兵器'),cost:90,prerequisites:['metallurgy'],effects:{defense_bonus:1},unlocks:['factory:steelworks','armory']},
+    cartography:{era:2,name:t('製圖'),description:t('把山野畫進地圖'),cost:85,prerequisites:['commerce','writing'],effects:{discover_bonus:0.03},unlocks:['map_room','factory:tea_house']},
+    // ---- 第三時代 工坊 ----
+    engineering:{era:3,name:t('工程學'),description:t('齒輪、水道與鐘樓'),cost:150,prerequisites:['architecture','smithing'],effects:{build_speed:1.2},unlocks:['clock_tower','aqueduct']},
+    printing:{era:3,name:t('印刷術'),description:t('知識不再靠手抄'),cost:140,prerequisites:['education','pottery'],effects:{research_bonus:0.15},unlocks:['press']},
+    banking:{era:3,name:t('銀行業'),description:t('讓錢生錢'),cost:140,prerequisites:['logistics','commerce'],effects:{trade_bonus:0.1},unlocks:['bank']},
+    surgery:{era:3,name:t('外科醫學'),description:t('開刀與住院照護'),cost:150,prerequisites:['herbalism','education'],effects:{healing_bonus:1.5},unlocks:['hospital']},
+    civics:{era:3,name:t('市政'),description:t('議事規則與公共事務'),cost:160,prerequisites:['education','banking'],effects:{culture_bonus:5},unlocks:['council_hall']},
+    astronomy:{era:3,name:t('天文學'),description:t('看星星定節氣'),cost:180,prerequisites:['printing'],effects:{research_bonus:0.2},unlocks:['observatory']},
+    fine_arts:{era:3,name:t('藝術'),description:t('劇場、雕像與壁畫'),cost:170,prerequisites:['printing','pottery'],effects:{beauty_bonus:5},unlocks:['theater','statue_plaza']},
+    sanitation:{era:3,name:t('衛生學'),description:t('下水道與公共衛生'),cost:170,prerequisites:['engineering','surgery'],effects:{healing_bonus:1.2},unlocks:['sewers']},
+    siegecraft:{era:3,name:t('城防工程'),description:t('兵營與長期守備'),cost:180,prerequisites:['engineering','masonry'],effects:{defense_bonus:3},unlocks:['barracks']},
+    trade_routes:{era:3,name:t('商路'),description:t('固定商隊與驛站'),cost:160,prerequisites:['cartography','banking'],effects:{merchant_frequency:0.3},unlocks:['caravanserai']},
 };
+// 建築／工坊 → 解鎖它的研究(任一完成即可)
+const RESEARCH_UNLOCKED_BY = {};
+for (const [k, d] of Object.entries(RESEARCH_TREE)) for (const u of (d.unlocks || [])) (RESEARCH_UNLOCKED_BY[u] = RESEARCH_UNLOCKED_BY[u] || []).push(k);
 
 class ResearchManager {
     constructor() {
         this.projects={}; this.current=null;
         for(const [key,d] of Object.entries(RESEARCH_TREE)) {
-            this.projects[key]={key,name:d.name,description:d.description,cost:d.cost,progress:0,prerequisites:d.prerequisites||[],effects:d.effects||{},unlocks:d.unlocks||[],
+            this.projects[key]={key,era:d.era||1,name:d.name,description:d.description,cost:d.cost,progress:0,prerequisites:d.prerequisites||[],effects:d.effects||{},unlocks:d.unlocks||[],
                 status:d.prerequisites.length===0?'available':'locked'};
         }
     }
     getAvailable() { return Object.values(this.projects).filter(p=>p.status==='available'); }
+    // v6.40.0 解鎖判定:沒被任何節點列為 unlocks 的建築一開始就能蓋;工坊用 'factory:' + key
+    isUnlocked(key) { const by = RESEARCH_UNLOCKED_BY[key]; if (!by || !by.length) return true; return by.some(k => this.projects[k]?.status === 'complete'); }
+    isFactoryUnlocked(key) { return this.isUnlocked('factory:' + key); }
+    unlockedByText(key) { const by = RESEARCH_UNLOCKED_BY[key] || []; return by.map(k => this.projects[k]?.name).filter(Boolean); }
+    // v6.40.0 讀舊檔／樹改過之後重算鎖:前置都完成的開放,前置沒完成的(研究中／已完成除外)鎖回去
+    refreshLocks() {
+        for (const p of Object.values(this.projects)) {
+            if (p.status === 'complete' || p.status === 'researching') continue;
+            const ok = (p.prerequisites || []).every(pre => this.projects[pre]?.status === 'complete');
+            p.status = ok ? 'available' : 'locked';
+        }
+        if (this.current && this.projects[this.current]?.status !== 'researching') this.current = null;
+    }
+    eraProgress() { const out = {}; for (const p of Object.values(this.projects)) { const e = out[p.era] || (out[p.era] = { total: 0, done: 0 }); e.total++; if (p.status === 'complete') e.done++; } return out; }
+    currentEra() { const ep = this.eraProgress(); let era = 1; for (const k of [1, 2, 3]) { if (ep[k] && ep[k].done >= Math.ceil(ep[k].total / 2)) era = Math.min(3, k + 1); else break; } return era; }
     startResearch(key) {
         const p=this.projects[key]; if(!p||p.status!=='available') return false;
         if(this.current&&this.projects[this.current]?.status==='researching') this.projects[this.current].status='available';
@@ -475,7 +542,7 @@ class ResearchManager {
         if(!this.current) { this._idle=(this._idle||0)+1; if(this._idle>=3){ const av=this.getAvailable(); if(av.length){ const pick=av[Math.floor(Math.random()*av.length)]; this.startResearch(pick.key); world.logMessageT?.('research', '🔬 沒人提議要研究什麼，學者們自己選了「{p}」開始研究。', { p: pick.name }); } } return; }
         let pts=0;
         Object.values(world.agents).forEach(a=>{ if(!a.isPlayer&&a.job?.title===t('研究員')){ const sk=a.skills.get('智識'); pts+=3+(sk?sk.level:0)*0.5; } });
-        pts *= 1 + (world.news?world.news.getModifier('research_bonus',0):0);
+        pts *= 1 + (world.news?world.news.getModifier('research_bonus',0):0) + (world.buildings?.getEffect?.('research_bonus',0) || 0); // v6.40.0 文書房／印刷坊／天文台等加速研究
         const rp=world.stockpile.get('research_points'), bonus=Math.min(rp,5);
         if(bonus>0) world.stockpile.consume('research_points',bonus,world.tickCount,'research');
         if(pts+bonus<=0) return;
@@ -491,7 +558,7 @@ class ResearchManager {
             Object.values(world.agents).forEach(a=>{ a.moodModifier=(a.moodModifier||0)+3; });
         }
     }
-    toDict() { return {current_research:this.current,projects:{...this.projects}}; }
+    toDict() { return {current_research:this.current,projects:{...this.projects},eras:this.eraProgress(),era:this.currentEra()}; }
 }
 
 // --- Economy: Work Orders ---

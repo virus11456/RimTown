@@ -654,18 +654,25 @@ class Town3D extends PixelTileMap {
         if (sig === this._dynSig) return;
         this._dynSig = sig;
         this._dyn.clear(); this._dynLabels = [];
-        const PLACE = { watchtower: ['guardpost', -2, -2], granary: ['farm', 8, -1], marketplace: ['town_square', 9, -1], well_upgrade: ['well', 0, -1], training_ground: ['guardpost', 7, 0], brewery: ['tavern', -3, -1], garden: ['clinic', -3, -1], school: ['library', -3, 0], farm_irrigation: ['farm', -2, 5], forge_bellows: ['workshop', -3, -1], clinic_upgrade: ['clinic', 6, -1], town_walls: ['town_square', -5, -3] };
-        const ICON_COL = { watchtower: '#6B6F78', granary: '#D2B23D', marketplace: '#C9533D', well_upgrade: '#4FB0E6', training_ground: '#8C5A3C', brewery: '#A85A3A', garden: '#5DB867', school: '#4F6F93', farm_irrigation: '#4FB0E6', forge_bellows: '#6B6F78', clinic_upgrade: '#E8E8F0', town_walls: '#9AA0A6' };
+        const PLACE = { watchtower: ['guardpost', -2, -2], granary: ['farm', 8, -1], marketplace: ['town_square', 9, -1], well_upgrade: ['well', 0, -1], training_ground: ['guardpost', 7, 0], brewery: ['tavern', -3, -1], garden: ['clinic', -3, -1], school: ['library', -3, 0], farm_irrigation: ['farm', -2, 5], forge_bellows: ['workshop', -3, -1], clinic_upgrade: ['clinic', 6, -1], town_walls: ['town_square', -5, -3],
+            // v6.40.0 科技樹新建築
+            archive: ['library', 6, -1], warehouse: ['general_store', -4, -2], paved_roads: ['town_square', -4, 6], lecture_hall: ['library', -3, 4], dye_works: ['workshop', 6, 3], bathhouse: ['well', 4, 2], windmill: ['farm', -4, -2], armory: ['guardpost', -2, 6], map_room: ['library', 7, 3],
+            clock_tower: ['town_square', 6, 7], aqueduct: ['well', -4, 3], press: ['library', 2, 7], bank: ['general_store', 7, -1], hospital: ['clinic', 7, 4], council_hall: ['town_hall', 8, -1], observatory: ['chapel', 6, -2], theater: ['town_square', 11, 5], statue_plaza: ['town_square', 4, 9], sewers: ['well', 5, -3], barracks: ['guardpost', 7, 5], caravanserai: ['general_store', -4, 5] };
+        const ICON_COL = { watchtower: '#6B6F78', granary: '#D2B23D', marketplace: '#C9533D', well_upgrade: '#4FB0E6', training_ground: '#8C5A3C', brewery: '#A85A3A', garden: '#5DB867', school: '#4F6F93', farm_irrigation: '#4FB0E6', forge_bellows: '#6B6F78', clinic_upgrade: '#E8E8F0', town_walls: '#9AA0A6',
+            archive: '#B88A4A', warehouse: '#8C6A46', paved_roads: '#9AA0A6', lecture_hall: '#4F6F93', dye_works: '#8C4FA0', bathhouse: '#4FB0E6', windmill: '#D2B23D', armory: '#6B6F78', map_room: '#C9A05A', clock_tower: '#C9533D', aqueduct: '#4FB0E6', press: '#3E4A5A', bank: '#D4AF37', hospital: '#E8E8F0', council_hall: '#B04A3A', observatory: '#2F3E6B', theater: '#A03A6B', statue_plaza: '#B8B2A8', sewers: '#5A6B5A', barracks: '#7A3A2A', caravanserai: '#C98A3A' };
         for (const b of cb) {
             const key = b.buildingKey || b.key; let tx, tz, size = 1;
             if (Number.isFinite(b.siteX)) { tx = b.siteX; tz = b.siteY; size = 2; }
-            else { const p = PLACE[key]; if (!p) continue; const z = this.buildingZones[p[0]] || this.natureZones[p[0]]; if (!z) continue; tx = z.x + p[1]; tz = z.y + p[2]; }
+            else { const p = PLACE[key]; if (!p) continue; const z = this.buildingZones[p[0]] || this.natureZones[p[0]] || this.buildingZones.town_square; if (!z) continue; tx = z.x + p[1]; tz = z.y + p[2]; } // v6.40.0 主題地圖沒有該錨點時退到廣場
             const cx = tx + size / 2, cz = tz + size / 2, gy = this.groundY(cx, cz);
             const col = ICON_COL[key] || '#C9A98A';
             const g = new THREE.Group(); g.position.set(cx, gy, cz); this._dyn.add(g);
             this._box(size, 0.15, size, '#B9B3A8', 0, 0.07, 0, g);
             if (key === 'watchtower') { this._box(0.8, 2.6, 0.8, '#A8825A', 0, 1.3, 0, g); this._cone(0.8, 0.5, 4, col, 0, 2.85, 0, g).rotation.y = Math.PI / 4; }
             else if (key === 'town_walls') { this._box(size * 1.4, 1.2, 0.4, col, 0, 0.6, 0, g); }
+            else if (key === 'clock_tower' || key === 'observatory') { this._box(0.9, 3.0, 0.9, WALL_PALETTE[hash32(key) % WALL_PALETTE.length], 0, 1.5, 0, g); this._cone(0.9, 0.7, key === 'observatory' ? 10 : 4, col, 0, 3.3, 0, g); } // v6.40.0 高塔類
+            else if (key === 'windmill') { this._box(0.9, 2.0, 0.9, '#D9CBB0', 0, 1.0, 0, g); this._box(0.15, 2.2, 0.15, '#8B5A2B', 0, 2.0, 0.55, g); this._box(2.2, 0.15, 0.15, '#8B5A2B', 0, 2.0, 0.55, g); }
+            else if (key === 'paved_roads' || key === 'statue_plaza' || key === 'aqueduct' || key === 'sewers') { this._box(size * 0.95, 0.12, size * 0.95, col, 0, 0.16, 0, g); if (key === 'statue_plaza') this._box(0.35, 1.0, 0.35, '#B8B2A8', 0, 0.7, 0, g); if (key === 'aqueduct') for (const ox of [-0.6, 0, 0.6]) this._box(0.25, 1.3, 0.25, '#B8B2A8', ox, 0.8, 0, g); }
             else if (key === 'garden' || key === 'farm_irrigation') { this._box(size * 0.9, 0.2, size * 0.9, col, 0, 0.2, 0, g); }
             else { this._box(size * 0.8, 1.1, size * 0.8, WALL_PALETTE[hash32(key) % WALL_PALETTE.length], 0, 0.65, 0, g); this._cone(size * 0.65, 0.7, 4, col, 0, 1.55, 0, g).rotation.y = Math.PI / 4; }
             this._dynLabels.push({ key: 'cb:' + key + tx + ',' + tz, x: cx, y: gy + (key === 'watchtower' ? 3.3 : 2.2), z: cz, cls: 't3d-label t3d-mini', html: `<span class="t3d-name">${this._esc(t3(b.name || key))}</span>` });

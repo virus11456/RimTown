@@ -1106,6 +1106,7 @@ class ExplorationSystem {
             // Time-based discovery
             if (dayCount > 20) discoverChance += 0.01;
             if (dayCount > 40) discoverChance += 0.02;
+            discoverChance += world.buildings?.getEffect?.('discover_bonus', 0) || 0; // v6.40.0 製圖／地圖室
             // Difficulty check
             discoverChance /= zone.difficulty;
 

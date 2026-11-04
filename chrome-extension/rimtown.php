@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.39.1
+ * Version: 6.40.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.39.1');
+define('RIMTOWN_VERSION', '6.40.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1330,6 +1330,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.40.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🔬 科技樹擴成三個時代 28 節點（原本 10）：拓荒 8（進階農業、冶金、草藥醫學、防禦工事、商業、木工、陶藝、文字記錄）→ 手工 10（建築學、釀造、後勤、石匠、教育、紡織、藥劑、磨坊、鍛造、製圖）→ 工坊 10（工程學、印刷、銀行業、外科、市政、天文、藝術、衛生、城防工程、商路）。時代一研究完一半就進入下一時代；「科技」分頁改成三段式樹狀圖，每個節點看狀態、前置、解鎖什麼',
+                '🏗️ 新建築 21 種（12 → 33）：文書房、倉庫、石板路、講堂、染坊、浴場、風車磨坊、軍械庫、地圖室；時代三的鐘樓、水道、印刷坊、銀行、醫院、議事廳、天文台、劇場、雕像廣場、下水道、兵營、商隊驛站（要用木板／磚／鋼）。新工坊 3 座：鋸木廠（木材→木板／硬木）、磚窯（石材→磚／大理石）、煉鋼坊（金屬→鋼→工具）。3D 地圖有對應位置與造型（高塔、風車、地面類）',
+                '🔒 建築與工坊要先研究到才蓋得了（穀倉、深井除外）：建造清單、工坊清單與村民提案都照解鎖判定；舊存檔讀入時新節點依前置自動開放／上鎖，已蓋的照舊。研究提案低時代優先',
+                '⚙️ 研究效果真的有用了：研究加成（文書房／印刷坊／天文台）加快研究點；常駐心情（浴場／鐘樓／劇場等）進全鎮心情；兵營等降低襲擊機率；銀行每天生利息；地圖室更常發現探索區；文化與美觀維度改用 buildingKey 判斷（舊寫法用 b.key 永遠對不到）並加計新建築與加成',
+            ),
+            'changes_en' => array(
+                '🔬 The tech tree grows to three eras and 28 nodes (from 10): Pioneer 8 (advanced farming, metallurgy, herbal medicine, fortification, commerce, carpentry, pottery, writing) → Craft 10 (architecture, brewing, logistics, masonry, education, textiles, herbalism, milling, smithing, cartography) → Workshop 10 (engineering, printing, banking, surgery, civics, astronomy, fine arts, sanitation, siegecraft, trade routes). Finishing half an era advances to the next; the "Tech" tab is now a three-tier tree showing each node\'s status, prerequisites and unlocks',
+                '🏗️ 21 new buildings (12 → 33): archive, warehouse, paved roads, lecture hall, dye works, bathhouse, windmill, armory, map room; and the era-three clock tower, aqueduct, printing house, bank, hospital, council hall, observatory, theatre, statue plaza, sewers, barracks and caravanserai (which need planks / bricks / steel). Three new workshops: sawmill (wood → planks / hardwood), brickworks (stone → bricks / marble) and steelworks (metal → steel → tools). Each has a spot and shape on the 3D map (towers, windmill, ground works)',
+                '🔒 Buildings and workshops must be researched before they can be built (granary and deep well excepted): the build list, workshop list and villager proposals all follow the unlocks; on loading an old save the new nodes open or lock by their prerequisites and existing buildings stay. Research proposals favour lower eras first',
+                '⚙️ Research effects now do things: research bonuses (archive / printing house / observatory) speed up research points; standing mood (bathhouse / clock tower / theatre…) feeds town mood; barracks and the like lower raid odds; the bank pays daily interest; the map room finds exploration zones more often; the culture and beauty dimensions now match on buildingKey (the old b.key never matched) and count the new buildings and bonuses',
+            ),
+        ),
         array(
             'version' => '6.39.1',
             'date'    => '2026-11-04',

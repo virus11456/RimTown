@@ -253,11 +253,14 @@ Object.assign(RimTownApp.prototype, {
             if (th.length) { html += `<div style="margin-top:6px;font-size:0.72rem;color:var(--text-secondary)">${t('最近成交')}</div>`; th.forEach(h => { const parts = (h.deals || []).map(d => `${d.type === 'sell' ? t('賣') : t('買')} ${this._resName(d.r)}×${d.qty}`).join(t('、')); html += `<div style="font-size:0.72rem;padding:2px 0">${this._escapeHtml(t(h.who || ''))} ↔ ${this._escapeHtml(t(h.merchant || ''))}${t('：')}${this._escapeHtml(parts)}</div>`; }); }
             html += '</div>';
         } else if (this._economySubTab === 'tech') {
-            // v5.52.0 經濟C波:研究移出資源分頁,獨立成「科技」入口(價值層長線投資)
+            // v5.52.0 研究獨立入口;v6.40.0 三個時代的科技樹:每個節點看狀態、前置、解鎖什麼
             const research = this.state.research || {};
-            html += `<div class="econ-section"><h3>🔬 ${t('研究')}<span style="font-weight:normal;font-size:0.72rem;color:var(--text-secondary);margin-left:6px">📚 ${t('研究點')} ${Math.round(res.research_points || 0)}</span></h3>`;
             const projects = research.projects || {};
             const currentKey = research.current_research;
+            const ERAS = (typeof RESEARCH_ERAS !== 'undefined') ? RESEARCH_ERAS : { 1: { name: '拓荒', icon: '🪓' }, 2: { name: '手工', icon: '🔨' }, 3: { name: '工坊', icon: '⚙️' } };
+            const BT = (typeof BUILDING_TEMPLATES !== 'undefined') ? BUILDING_TEMPLATES : {}; const FT = (typeof FACTORIES !== 'undefined') ? FACTORIES : {};
+            const unlockName = (u) => u.startsWith('factory:') ? (FT[u.slice(8)] ? `${FT[u.slice(8)].icon} ${t(FT[u.slice(8)].name)}` : u) : (BT[u] ? `🏗️ ${t(BT[u].name)}` : u);
+            html += `<div class="econ-section"><h3>🔬 ${t('研究')}<span style="font-weight:normal;font-size:0.72rem;color:var(--text-secondary);margin-left:6px">📚 ${t('研究點')} ${Math.round(res.research_points || 0)} · ${t('現在的時代')}${t('：')}${ERAS[research.era || 1]?.icon || ''} ${t(ERAS[research.era || 1]?.name || '')}</span></h3>`;
             if (currentKey && projects[currentKey]) {
                 const cur = projects[currentKey];
                 const pct = Math.round((cur.progress / cur.cost) * 100);
@@ -267,21 +270,26 @@ Object.assign(RimTownApp.prototype, {
             }
             const scholars = Object.values(this.state.agents || {}).filter(a => a.job?.key === 'researcher').map(a => t(a.name));
             html += `<div style="font-size:0.7rem;color:var(--text-muted);margin:4px 0 6px">${scholars.length ? t('研究員：') + scholars.join(t('、')) : t('鎮上還沒有研究員，研究進度只靠研究點。')}${!currentKey ? ' · ' + t('目前沒在研究，等村民提「研究」提案（三天沒人提，學者會自己挑）') : ''}</div>`;
-            const availableResearch = Object.values(projects).filter(p => p.status === 'available');
-            if (availableResearch.length) {
-                html += t('<div class="research-available"><div class="build-label">可研究（等村民提案）：</div>');
-                availableResearch.forEach(p => {
-                    const isCurrent = p.key === currentKey;
-                    html += `<div class="research-option ${isCurrent ? 'active' : ''}">
-                        <div class="build-name">${t(p.name)}</div>
-                        <div class="build-desc">${p.description}${t('（消耗：')}${p.cost}）</div>
-                        </div>`;
-                });
+            html += `<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px">${t('建築與工坊要先研究到才蓋得了（穀倉、深井除外）；哪一項先研究由村民提案、投票、鎮長裁決。')}</div>`;
+            for (const era of [1, 2, 3]) {
+                const list = Object.values(projects).filter(p => (p.era || 1) === era);
+                if (!list.length) continue;
+                const done = list.filter(p => p.status === 'complete').length;
+                html += `<div class="tech-era"><div class="tech-era-head">${ERAS[era]?.icon || ''} ${t('第 {n} 時代').replace('{n}', ['', '一', '二', '三'][era])}${t('・')}${t(ERAS[era]?.name || '')} <span>${done}/${list.length}</span></div>`;
+                for (const p of list) {
+                    const st = p.status === 'complete' ? 'done' : p.key === currentKey || p.status === 'researching' ? 'now' : p.status === 'available' ? 'open' : 'locked';
+                    const icon = { done: '✅', now: '🔬', open: '🟢', locked: '🔒' }[st];
+                    const pct = p.cost ? Math.min(100, Math.round((p.progress || 0) / p.cost * 100)) : 0;
+                    const need = (p.prerequisites || []).filter(k => projects[k]?.status !== 'complete').map(k => t(projects[k]?.name || k));
+                    html += `<div class="tech-node tech-${st}">
+                        <div class="tech-node-head"><span>${icon} <b>${t(p.name)}</b></span><span class="tech-cost">${st === 'done' ? t('已完成') : st === 'now' ? `${pct}%` : `${p.cost} ${t('點')}`}</span></div>
+                        <div class="tech-desc">${this._escapeHtml(p.description || '')}</div>
+                        ${(p.unlocks || []).length ? `<div class="tech-unlocks">${t('解鎖')}${t('：')}${p.unlocks.map(unlockName).join(t('、'))}</div>` : ''}
+                        ${st === 'locked' && need.length ? `<div class="tech-need">${t('需要先研究')}${t('：')}${need.join(t('、'))}</div>` : ''}
+                        ${st === 'now' ? `<div class="progress-bar" style="height:4px;margin-top:4px"><div class="progress-fill research-fill" style="width:${pct}%"></div></div>` : ''}
+                    </div>`;
+                }
                 html += '</div>';
-            }
-            const completedResearch = Object.values(projects).filter(p => p.status === 'complete');
-            if (completedResearch.length) {
-                html += `${t('<div class="completed-buildings">已完成：')}${completedResearch.map(p => p.name).join(t('、'))}</div>`;
             }
             html += '</div>';
         } else if (this._economySubTab === 'shop') {

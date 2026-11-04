@@ -179,6 +179,10 @@ class ProsperityEngine {
         const hasResearcher = Object.values(world.agents || {}).some(a => a.job?.key === 'researcher');
         if (hasResearcher) score += 20;
 
+        // v6.40.0 文化建築(文書房／講堂／印刷坊／劇場／議事廳／天文台／鐘樓／學堂)與研究加成
+        const CUL = ['archive', 'lecture_hall', 'press', 'theater', 'council_hall', 'observatory', 'clock_tower', 'school'];
+        score += Math.min(30, (world.buildings?.completed || []).filter(b => CUL.includes(b.buildingKey || b.key)).length * 8);
+        score += Math.min(25, world.buildings?.getEffect?.('culture_bonus', 0) || 0);
         this.dimensions.culture.value = Math.min(100, score);
     }
 
@@ -195,9 +199,8 @@ class ProsperityEngine {
         }
 
         // 城牆等防禦建築 (0-40)
-        const defenseBuildings = (world.buildings?.completed || []).filter(b =>
-            b.key === 'wall' || b.key === 'watchtower' || b.key === 'barracks'
-        ).length;
+        const DEF = ['town_walls', 'watchtower', 'training_ground', 'armory', 'barracks']; // v6.40.0 用 buildingKey 判(舊寫法 b.key 永遠對不到)
+        const defenseBuildings = (world.buildings?.completed || []).filter(b => DEF.includes(b.buildingKey || b.key)).length;
         score += Math.min(40, defenseBuildings * 13);
 
         this.dimensions.defense.value = Math.min(100, score);
@@ -216,10 +219,10 @@ class ProsperityEngine {
         }
 
         // 裝飾性建築 (0-30)
-        const beautyBuildings = (world.buildings?.completed || []).filter(b =>
-            b.key === 'garden' || b.key === 'fountain' || b.key === 'statue' || b.key === 'park'
-        ).length;
+        const BEAUTY = ['garden', 'statue_plaza', 'theater', 'observatory', 'clock_tower', 'paved_roads', 'dye_works', 'windmill', 'aqueduct']; // v6.40.0
+        const beautyBuildings = (world.buildings?.completed || []).filter(b => BEAUTY.includes(b.buildingKey || b.key)).length;
         score += Math.min(30, beautyBuildings * 10);
+        score += Math.min(25, world.buildings?.getEffect?.('beauty_bonus', 0) || 0); // v6.40.0 研究與建築的美觀加成
 
         // v4.8.0 玩家擺放的裝飾 (0-35)
         const decos = world.decorations || [];

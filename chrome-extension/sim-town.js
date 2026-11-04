@@ -326,7 +326,7 @@ class EventSystem {
         const nm = world.news ? world.news : {getModifier:(k,d)=>d};
         // 聲望事件護盾:高聲望降低負面事件(襲擊/事件鏈)機率
         const eventShield = world.reputationSystem ? world.reputationSystem.getModifier('event_shield') : 0;
-        const raidChance = Math.max(0, Math.min(0.5, (0.10 + nm.getModifier('raid_chance', 0)) * (1 - eventShield) * (world.harborFlags?.watchtower ? 0.7 : 1))); // v5.93.0 守望塔 −30%
+        const raidChance = Math.max(0, Math.min(0.5, (0.10 + nm.getModifier('raid_chance', 0) + (world.buildings?.getEffect?.('raid_chance', 0) || 0)) * (1 - eventShield) * (world.harborFlags?.watchtower ? 0.7 : 1))); // v6.40.0 兵營等建築降低襲擊 // v5.93.0 守望塔 −30%
         const chainChance = Math.max(0, Math.min(0.4, (0.08 + nm.getModifier('chain_chance', 0)) * (1 - eventShield)));
         const festivalBoost = nm.getModifier('festival_chance', 0);
         const departureBoost = nm.getModifier('departure_chance', 0);
