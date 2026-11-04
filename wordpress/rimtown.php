@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.42.0
+ * Version: 6.43.1
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.42.0');
+define('RIMTOWN_VERSION', '6.43.1');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1330,6 +1330,60 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.43.1',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '📱 修手機英文版右上選單被擠出畫面：390px 寬時英文鎮名、日期、人口太長，把 3x 與選單鈕推到畫面外。現在鎮名先縮成「…」，暫停／速度／選單固定留在畫面內',
+                '⏱️ 修 AI 冷卻失效：玩家聊天「最後 30 秒可插隊」原本只該用在 60 秒限流，v6.41.1 改成的 10 秒短暫停整段都落在這 30 秒裡，完整智能體決策失敗後可立刻重試。現在決策與事件反應冷卻中一律不放行，玩家聊天只在真正的限流最後 30 秒才能插隊',
+                '🌾 修進階農業沒效果：研究效果有加進效果表，但農夫產量與田地收成都沒讀；而且研究寫成倍率（1.3）、升級寫成增量（0.3），混在一起相加。現在效果表統一成增量，農夫產量與收成都吃得到（進階農業 +30%、灌溉、風車同理）',
+                '🪚 修木工沒效果：每日施工進度沒讀建造速度。現在木工 +10%、建築學 +30%、工程學 +20% 都會加快施工',
+                '📜 修舊存檔科技規則不同步：讀檔時以前把整筆研究資料蓋回去，舊的成本、前置與效果跟著存檔走。現在只帶回狀態與進度，其餘一律用目前版本；前置沒完成卻在研究中的會鎖回去（進度保留）；效果表讀檔時依完成的建築與研究重算，舊檔累加錯的數值一併校正',
+                '🌐 修英文記憶卡在中文：字典還沒載好時先算出的中文被當成英文快取，之後不會再翻譯。記憶與日誌的快取現在會記住「字典載好了沒」，字典一到就重新翻成英文',
+            ),
+            'changes_en' => array(
+                '📱 Fixed the top-right menu being pushed off screen on mobile in English: at 390px the longer English town name, date and population pushed the 3x and menu buttons off the edge. The town name now shrinks to "…" first and pause, speed and menu always stay on screen',
+                '⏱️ Fixed the AI cooldown not holding: the "player chat may jump the queue in the last 30 seconds" rule was meant for the 60-second rate limit, but the 10-second pause from v6.41.1 falls entirely inside those 30 seconds, so full-agent decisions retried immediately after a failure. Decisions and event reactions now wait out any cooldown, and player chat only jumps the queue in the last 30 seconds of a real rate limit',
+                '🌾 Fixed Advanced Agriculture having no effect: research effects were added to the effect table, but neither farmer output nor field harvests read it, and research used multipliers (1.3) while upgrades used increments (0.3), summed together. The table now stores increments and both farmer output and harvests use it (Advanced Agriculture +30%, irrigation and windmills likewise)',
+                '🪚 Fixed Carpentry having no effect: daily construction never read build speed. Carpentry +10%, Architecture +30% and Engineering +20% now speed up building',
+                '📜 Fixed old saves keeping old tech rules: loading used to copy the whole saved research record back, so old costs, prerequisites and effects travelled with the save. Only status and progress are restored now and everything else comes from the current tree; a node being researched without its new prerequisites is locked again (progress kept); the effect table is rebuilt from finished buildings and research on load, correcting values old saves had summed wrongly',
+                '🌐 Fixed English memories stuck in Chinese: text computed before the dictionary loaded was cached as English and never re-translated. Memory and log caches now remember whether the dictionary was ready and re-translate as soon as it arrives',
+            ),
+        ),
+        array(
+            'version' => '6.43.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🏠 房屋更精緻：石砌地基、人字形雙坡屋頂（兩片屋面＋山牆＋屋脊＋簷口，教堂與崗哨維持尖頂）、窗框與窗台、民宅木骨架、百葉窗與花槽、門框＋石階＋門把、煙囪蓋',
+                '🧑 人物更精緻：耳朵、鼻子、眉毛、嘴巴、衣領、腰帶扣、袖口、鞋底；女性有裙擺、馬尾有髮尾；廚師圍裙、醫生紅十字、鎮長徽章、農夫帽帶、商人背帶、守衛帽頂',
+                '🌳 樹木與道路：闊葉樹改三團樹冠（深淺不同）、松樹三層、灌木兩團；石板路切成一塊塊鋪石並在靠草地那側排路緣石；草地多了零星草叢。森林深處的樹維持簡單造型，看得到的樹才加細節',
+                '⚡ 效能反而更好：靜態場景所有純色物件併成一個頂點色網格一次畫完；每位村民從約 18 個網格併成 6 個。實測繪製呼叫桌機 235 → 約 110、手機 125 → 約 50；手機三角形 5.6 萬 → 6.6 萬、幾何資料 1.7 → 2.7 MB、JS 記憶體 13.7 → 14.3 MB（法向量與顏色改存 8 位元）',
+                '📱 手機與低畫質自動精簡：百葉、花槽、腰樑、側樹冠、草叢不畫；畫質自動降級時場景會跟著重建成精簡版',
+            ),
+            'changes_en' => array(
+                '🏠 More detailed houses: stone foundations, gable roofs (two roof planes, gable wall, ridge and eaves; chapels and guard posts keep their spires), window frames and sills, timber framing, shutters and flower boxes on homes, door frames with stone steps and handles, chimney caps',
+                '🧑 More detailed people: ears, nose, eyebrows, mouth, collar, belt buckle, cuffs and boot soles; skirts for women and a tail for ponytails; a cook\'s apron, the doctor\'s red cross, the mayor\'s badge, a band on the farmer\'s hat, the trader\'s strap and a plume on the guard\'s helmet',
+                '🌳 Trees and roads: broadleaf trees have three canopy clumps in different shades, pines three tiers and bushes two clumps; stone paths are laid as individual paving stones with curb stones along the grass, and the grass has scattered tufts. Trees deep in a forest stay simple, only visible ones get the extra detail',
+                '⚡ Faster despite the detail: every plain-coloured static object is merged into one vertex-coloured mesh drawn at once, and each villager went from about 18 meshes to 6. Measured draw calls fell from 235 to about 110 on desktop and from 125 to about 50 on mobile; mobile triangles went from 56k to 66k, geometry data from 1.7 to 2.7 MB and JS memory from 13.7 to 14.3 MB (normals and colours now stored as 8-bit)',
+                '📱 Phones and low quality trim automatically: no shutters, flower boxes, middle beams, side canopies or grass tufts, and when quality drops automatically the scene is rebuilt in the lighter version',
+            ),
+        ),
+        array(
+            'version' => '6.42.1',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🔐 金鑰安全檢查：前端原始碼、線上網站、伺服器回應與 git 全部歷史都掃過，沒有任何 API 金鑰；.env、伺服器程式、建置腳本在線上都讀不到（404／403）；上游錯誤訊息不會原樣傳回前端',
+                '🚪 沒登入的人預設不能用小鎮 AI：以前訪客每天可呼叫 10 次，任何人都能拿來燒你的 Claude 額度（金鑰本身拿不到）。遊戲本來就要登入＋推薦碼，現在訪客一律回「請先登入」；要開放可在 Vercel 設 AI_GUEST_DAILY（設 0 也真的是 0，舊寫法會變回 10）',
+                '🧍 村民不再疊在一起站在街上：同一個地點的人以前常被分到同一個站位，地點中心又常是噴泉或建築內部這種不能走的格子，全被推到同一個最近的可走格。現在每個人從中心往外一圈圈找空位，彼此至少隔一格',
+                '🧭 出門探險的村民從地圖上消失（沒有模型、沒有名牌），探險回來才重新出現',
+            ),
+            'changes_en' => array(
+                '🔐 Key safety audit: the frontend source, the live site, server responses and the entire git history were scanned and contain no API keys; .env, server code and the build script cannot be fetched on the live site (404/403); upstream error text is never passed back to the browser',
+                '🚪 The town AI is no longer open to people who are not logged in: guests used to get 10 calls a day, so anyone could burn your Claude credit (they could not get the key itself). The game already requires login and an invite code, so guests now get "please log in"; set AI_GUEST_DAILY in Vercel to open it (0 now really means 0; the old code turned it back into 10)',
+                '🧍 Villagers no longer stand stacked on top of each other in the street: people at the same place were often given the same spot, and since the centre is often unwalkable (a fountain, a building interior) they were all pushed onto the same nearest tile. Each villager now searches outward in rings for a free spot at least one tile from the others',
+                '🧭 Villagers out on an expedition disappear from the map (no model, no name tag) and reappear when they come back',
+            ),
+        ),
         array(
             'version' => '6.42.0',
             'date'    => '2026-11-04',

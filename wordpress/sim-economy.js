@@ -110,7 +110,7 @@ function processDailyProduction(world) {
                 world.logMessageT('economy', '銀庫不足，付不出{agent}的加班津貼，今日照常排班。', { agent: agent.name });
             }
         }
-        if (agent.job.key === 'farmer') { eff *= SEASON_FARM_MOD[world.clock.season] || 1; eff *= 1 + (world.news?world.news.getModifier('farm_bonus',0):0) + (world.weather?world.weather.farmModifier:0) + (world.harborFlags?.granary ? 0.2 : 0); } // v5.93.0 大糧倉 +20%
+        if (agent.job.key === 'farmer') { eff *= SEASON_FARM_MOD[world.clock.season] || 1; eff *= 1 + (world.news?world.news.getModifier('farm_bonus',0):0) + (world.weather?world.weather.farmModifier:0) + (world.harborFlags?.granary ? 0.2 : 0) + (world.buildings?.getEffect?.('farm_bonus',0) || 0); } // v6.43.1 進階農業／灌溉／風車等加成 // v5.93.0 大糧倉 +20%
         if (agent.job.key === 'miner') eff *= 1 + (world.news?world.news.getModifier('mining_bonus',0):0);
         eff *= 1 + (agent.mood - 50)/500;
         eff *= 0.9 + Math.random()*0.2;
@@ -373,7 +373,7 @@ class BuildingManager {
             if(p.status!=='building') return;
             Object.values(world.agents).forEach(a => {
                 if(a.isPlayer||!a.job) return;
-                if(['carpenter','miner','blacksmith'].includes(a.job.key)) { const sk=a.skills.get('建造'); p.workDone+=1+Math.floor((sk?sk.level:0)/5); }
+                if(['carpenter','miner','blacksmith'].includes(a.job.key)) { const sk=a.skills.get('建造'); p.workDone+=(1+Math.floor((sk?sk.level:0)/5))*(1+Math.max(-0.5,this.getEffect('build_speed',0))); } // v6.43.1 木工／建築學／工程學加快施工
             });
             if(p.workDone>=p.workRequired) { p.status='complete'; done.push(p); }
         });
@@ -387,7 +387,7 @@ class BuildingManager {
                     existing.name=p.name;
                     existing.description=p.description;
                 }
-                Object.entries(p.effects).forEach(([k,v])=>{ this.activeEffects[k]=(this.activeEffects[k]||0)+(typeof v==='number'?v:0); if(typeof v!=='number') this.activeEffects[k]=v; });
+                this.recomputeEffects(world); // v6.43.1
                 world.logMessageT('building', '升級完成：{p}！', { p: p.name });
                 if (world.dailyNews) world.dailyNews.collectEvent('building', `${p.name}${t('升級完成了！')}`, 7);
                 Object.values(world.agents).forEach(a=>{ a.moodModifier=(a.moodModifier||0)+8; });
@@ -396,7 +396,7 @@ class BuildingManager {
                 p.buildingKey=p.buildingKey||null;
                 p.level=1;
                 this.completed.push(p);
-                Object.entries(p.effects).forEach(([k,v])=>{ this.activeEffects[k]=(this.activeEffects[k]||0)+(typeof v==='number'?v:0); if(typeof v!=='number') this.activeEffects[k]=v; });
+                this.recomputeEffects(world); // v6.43.1
                 world.logMessageT('building', '建造完成：{p}！', { p: p.name });
                 if (world.dailyNews) world.dailyNews.collectEvent('building', `${p.name}${t('建造完成了！')}`, 6);
                 Object.values(world.agents).forEach(a=>{ a.moodModifier=(a.moodModifier||0)+5; });
@@ -408,6 +408,20 @@ class BuildingManager {
         });
     }
     getEffect(key, def=0) { return this.activeEffects[key]??def; }
+    // v6.43.1 效果表一律從來源重算(完成的建築＋升級等級＋完成的研究),不再逐次累加。
+    // farm_bonus／build_speed 在研究與部分建築寫成倍率(1.3＝+30%)、在升級裡寫成增量(0.3＝+30%),這裡統一成增量
+    static normEffect(k, v) { if (typeof v !== 'number') return v; if ((k === 'farm_bonus' || k === 'build_speed') && v >= 1) return v - 1; return v; }
+    recomputeEffects(world) {
+        const eff = {}; const add = (k, v) => { if (typeof v !== 'number') { eff[k] = v; return; } eff[k] = (eff[k] || 0) + BuildingManager.normEffect(k, v); };
+        for (const b of this.completed || []) {
+            for (const [k, v] of Object.entries(b.effects || {})) add(k, v);
+            const ups = (typeof BUILDING_UPGRADES !== 'undefined' && b.buildingKey) ? BUILDING_UPGRADES[b.buildingKey] : null;
+            if (ups) for (let l = 2; l <= (b.level || 1); l++) for (const [k, v] of Object.entries(ups[l]?.effects || {})) add(k, v);
+        }
+        for (const p of Object.values(world?.research?.projects || {})) if (p.status === 'complete') for (const [k, v] of Object.entries(p.effects || {})) add(k, v);
+        this.activeEffects = eff;
+        return eff;
+    }
     toDict(world) { // v6.14.0 帶 world 時附上「今天還能不能捐」,介面不必自己算
         const dk=world?.clock ? this._dayKey(world) : null;
         return {in_progress:this.projects.map(p=>({...p, can_fund_today: !!dk && p.status==='building' && p.fundedDay!==dk})),completed:this.completed,active_effects:{...this.activeEffects},completed_count:this.completed.length,_counter:this._counter,
@@ -532,8 +546,9 @@ class ResearchManager {
     // v6.40.0 讀舊檔／樹改過之後重算鎖:前置都完成的開放,前置沒完成的(研究中／已完成除外)鎖回去
     refreshLocks() {
         for (const p of Object.values(this.projects)) {
-            if (p.status === 'complete' || p.status === 'researching') continue;
+            if (p.status === 'complete') continue;
             const ok = (p.prerequisites || []).every(pre => this.projects[pre]?.status === 'complete');
+            if (p.status === 'researching') { if (!ok) p.status = 'locked'; continue; } // v6.43.1 新版前置沒完成就不能繼續研究(進度保留)
             p.status = ok ? 'available' : 'locked';
         }
         if (this.current && this.projects[this.current]?.status !== 'researching') this.current = null;
@@ -559,7 +574,7 @@ class ResearchManager {
         p.progress+=pts+bonus;
         if(p.progress>=p.cost) {
             p.status='complete'; this.current=null;
-            Object.entries(p.effects).forEach(([k,v])=>{ world.buildings.activeEffects[k]=(world.buildings.activeEffects[k]||0)+(typeof v==='number'?v:0); });
+            world.buildings.recomputeEffects(world); // v6.43.1 研究效果併入效果表(倍率統一成增量)
             for(const op of Object.values(this.projects)) {
                 if(op.status==='locked'&&op.prerequisites.every(pre=>this.projects[pre]?.status==='complete')) op.status='available';
             }

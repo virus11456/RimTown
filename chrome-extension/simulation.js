@@ -79,7 +79,8 @@ class World {
     }
     static logText(m) {
         if (!m || !m.k) return m ? m.content : '';
-        const L = (typeof I18N !== 'undefined' && I18N.getLang) ? I18N.getLang() : 'zh';
+        const L0 = (typeof I18N !== 'undefined' && I18N.getLang) ? I18N.getLang() : 'zh';
+        const L = L0 === 'en' && typeof I18N !== 'undefined' && I18N.dictReady && !I18N.dictReady() ? 'en:nodict' : L0; // v6.43.1 字典到了要重算
         if (m._tl !== L) { m._tx = Memory.render(m.k, m.p); m._tl = L; }
         return m._tx;
     }
@@ -2231,12 +2232,16 @@ class World {
             // Research
             this.research = new ResearchManager();
             if (data.research) {
+                // v6.43.1 舊檔只帶回「狀態與進度」;成本、前置、效果、解鎖一律用目前版本的科技樹(以前整筆覆蓋,舊規則會跟著存檔走)
                 for (const [k,p] of Object.entries(data.research.projects)) {
-                    if (this.research.projects[k]) Object.assign(this.research.projects[k], p);
+                    const cur = this.research.projects[k]; if (!cur || !p) continue;
+                    if (['complete','researching','available','locked'].includes(p.status)) cur.status = p.status;
+                    cur.progress = Math.max(0, Number(p.progress) || 0);
                 }
                 this.research.current = data.research.current;
                 this.research.refreshLocks?.(); // v6.40.0 樹擴充後:舊檔多出的新節點依前置開放／上鎖
             }
+            try { this.buildings?.recomputeEffects?.(this); } catch (e) { console.warn('[Load] recompute effects', e); } // v6.43.1 效果表從建築＋研究重算(舊檔累加的倍率一起校正)
 
             // Work orders
             this.workOrders = new WorkOrderManager();

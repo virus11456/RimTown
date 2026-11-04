@@ -4,6 +4,7 @@ const libPath = path.join(__dirname, '..', 'api', '_lib.js');
 require.cache[libPath] = { id: libPath, filename: libPath, loaded: true, exports: {
   authUser: () => null, isBanned: async () => false, isAdmin: () => false, readJson: async () => null, writeJson: async () => {},
   err: (res, code, c, m) => { res.status(code); res.json({ code: c, message: m }); }, clientIp: () => '1.1.1.1', rateLimit: () => true } };
+process.env.AI_GUEST_DAILY = '50'; // v6.42.1 訪客預設不能用 AI,這支測訪客路徑要先打開
 process.env.LLM_BASE_URL = 'https://relay.example'; process.env.LLM_API_KEY = 'k'; process.env.GROQ_API_KEY = 'gsk';
 let groqText = '你好，我是村民。', relayText = 'Hi there, neighbor.'; let relayBody = null, groqBody = null; let relayRefuse = false; const calls = []; // v6.41.0 兩條車道都先問 Claude:要測 Groq 就讓 Claude 回拒絕(不冷卻)
 global.fetch = async (url, opts) => {

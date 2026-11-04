@@ -390,3 +390,12 @@
 .rimtown-container .el-quote { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; overflow-wrap: anywhere; }
 .rimtown-container .el-win .el-name { color: #f5b942; }
 .rimtown-container .el-last { font-size: 0.72rem; color: var(--text-muted); margin: 0 0 8px; }
+
+/* ---------- v6.43.1 手機標頭:英文鎮名／日期較長時,右上暫停、速度、選單不再被擠出畫面 ---------- */
+@media (max-width: 768px) {
+    .rimtown-container .mobile-header .mobile-header-row { gap: 6px; min-width: 0; }
+    .rimtown-container .mobile-header .mobile-header-actions { flex-shrink: 0; margin-left: auto; }
+    .rimtown-container .mobile-header .mobile-title { flex: 0 3 auto; min-width: 0; max-width: 34vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rimtown-container .mobile-header .mobile-clock { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rimtown-container .mobile-header .mobile-population { flex: 0 2 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}

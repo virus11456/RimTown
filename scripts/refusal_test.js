@@ -4,6 +4,7 @@ const libPath = path.join(__dirname, '..', 'api', '_lib.js');
 require.cache[libPath] = { id: libPath, filename: libPath, loaded: true, exports: {
   authUser: () => null, isBanned: async () => false, isAdmin: () => false, readJson: async () => null, writeJson: async () => {},
   err: (res, code, c, m) => { res.status(code); res.json({ code: c, message: m }); }, clientIp: () => '1.1.1.1', rateLimit: () => true } };
+process.env.AI_GUEST_DAILY = '50'; // v6.42.1 訪客預設不能用 AI,這支測訪客路徑要先打開
 process.env.LLM_BASE_URL = 'https://relay.example'; process.env.LLM_API_KEY = 'k'; process.env.GROQ_API_KEY = 'gsk';
 let relayText = "I can't do this. I'm Kiro, an AI development environment designed to help with software engineering. I'm not designed for roleplay scenarios.";
 let groqText = '（壓低聲音）千真萬確！吳達和楊鋒鬧翻了。'; let relayBody = null, groqBody = null; const calls = [];

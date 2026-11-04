@@ -1941,6 +1941,25 @@ class PixelTileMap {
     }
 
     // Find the nearest walkable position to target, avoiding walls
+    // v6.42.1 在 (cx, cy) 附近找一個可走、而且沒人佔的位置(其他村民的目的地快取當作已佔用)
+    _freeSpot(aid, cx, cy) {
+        const taken = [];
+        for (const [id, c] of Object.entries(this._tgtCache || {})) if (id !== aid && c && Number.isFinite(c.x)) taken.push(c);
+        const free = (x, y) => { for (const c of taken) if (Math.abs(c.x - x) < TILE * 0.9 && Math.abs(c.y - y) < TILE * 0.9) return false; return true; };
+        let h = 0; for (const ch of String(aid)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+        const rot = (h % 360) * Math.PI / 180;
+        let first = null;
+        for (let r = 0; r <= 4; r++) {
+            const n = r === 0 ? 1 : 6 * r;
+            for (let i = 0; i < n; i++) {
+                const ang = rot + (i / n) * Math.PI * 2;
+                const w = this._findWalkableTarget(Math.round(cx + Math.cos(ang) * r * TILE * 1.1), Math.round(cy + Math.sin(ang) * r * TILE * 1.1));
+                if (!first) first = w;
+                if (free(w.x, w.y)) return w;
+            }
+        }
+        return first || { x: cx, y: cy };
+    }
     _findWalkableTarget(targetX, targetY) {
         if (this._isWalkableTile(targetX, targetY)) return { x: targetX, y: targetY };
         // Search in expanding ring for nearest walkable tile
@@ -2165,6 +2184,11 @@ class PixelTileMap {
             // 手動操作中的玩家由 _updateManualPlayer 處理,跳過地點目標制
             if (aid === 'player' && this._playerManual) continue;
             const curLoc = agent.current_location;
+            // v6.42.1 出門探險的人從地圖上消失,回來才重新出現(到時從目的地門口重新登場)
+            if (curLoc === 'exploration' || (agent.current_activity || agent.activity) === 'exploring') {
+                delete this.agentPositions[aid]; if (this._tgtCache) delete this._tgtCache[aid];
+                continue;
+            }
             let targetX, targetY;
             const homeLocation = agent.home_location || agent.homeLocation;
             // v6.33.0 目的地快取:之前每幀替每位村民重算目的地(地點中心、同地點重疊計數 O(n²)、可走點環狀搜尋、住家查表),
@@ -2191,17 +2215,12 @@ class PixelTileMap {
                     }
                 } else {
                     const locCenter = this.getLocationCenter(curLoc);
-                    // Add offset within zone so agents don't overlap
-                    const existing = Object.values(this.agentPositions).filter(p => {
-                        const dx = Math.abs(p.targetX - locCenter.x);
-                        const dy = Math.abs(p.targetY - locCenter.y);
-                        return dx < TILE * 3 && dy < TILE * 3;
-                    });
-                    const idx = existing.length;
-                    const spreadX = ((idx % 4) - 1.5) * TILE;
-                    const spreadY = (Math.floor(idx / 4) - 0.5) * TILE;
-                    targetX = locCenter.x + spreadX;
-                    targetY = locCenter.y + spreadY;
+                    // v6.42.1 同一個地點的人各自找空位:以前用「目前目的地在附近的人數」算偏移,走在門口過渡期的人沒算進去,
+                    // 又因為地點中心常是不能走的格子(噴泉、建築內部),被推到同一個最近的可走格 → 好幾個人疊在街上同一點。
+                    // 現在從中心往外一圈圈找可走、而且離別人的目的地至少約一格的位置
+                    const spot = this._freeSpot(aid, locCenter.x, locCenter.y);
+                    targetX = spot.x;
+                    targetY = spot.y;
                 }
                 // Player click target: override position to exact click location
                 if (aid === 'player' && this._playerClickTarget) {

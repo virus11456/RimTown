@@ -129,7 +129,7 @@ class FarmSystem {
 
         const quality = qualityScore >= 3 ? 'excellent' : qualityScore >= 1 ? 'good' : 'normal';
         const mult = QUALITY_MULT[quality];
-        const amount = Math.round(crop.yield * mult);
+        const amount = Math.round(crop.yield * mult * (1 + Math.max(-0.5, world?.buildings?.getEffect?.('farm_bonus', 0) || 0))); // v6.43.1 研究／建築的農作加成也算進收成
 
         // Add to stockpile based on category
         const resourceMap = {

@@ -920,7 +920,7 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
     // v4.9.0: 建築完工/組合發現時,挑一位相關 NPC 用 AI 對玩家發表評論
     // v6.38.0 事件卡:某位村民對剛發生的事件說一句第一反應(LLM;記憶裡最近兩件事當脈絡)。回傳純文字,失敗回空字串
     async reactToEvent(world, npc, eventText, cat) {
-        if (!npc || !this.llm || !this.llm._canMakeRequest(true)) return '';
+        if (!npc || !this.llm || !this.llm._canMakeRequest(true, true)) return ''; // v6.43.1 冷卻中不插隊
         try {
             const pN = this._buildCharacterProfile(npc);
             const recent = (npc.memory?.entries || []).slice(-6).filter(e => e.category !== 'event').slice(-2).map(e => e.content).filter(Boolean);
@@ -941,7 +941,7 @@ ${LLM_LANG.rule(t('- 繁體中文（台灣用語），1-2 句，像當場脫口�
 ${t('- 從你的職業、性格和處境出發：害怕、生氣、興奮、幸災樂禍、盤算都可以，要有個人立場')}
 ${t('- 可以順口說你打算怎麼做（例如要去提案、要去幫忙、要去找誰算帳）')}
 ${mayorLine}${t('- 不要加任何前綴、名字標籤、引號、旁白')}`;
-            const response = await this.llm.generate(prompt, 120, 0.95, true);
+            const response = await this.llm.generate(prompt, 120, 0.95, true, { strict: true });
             if (!response || response === '__ERROR__' || response === '__RATE_LIMITED__') return '';
             let text = response.trim().replace(/^["「『]|["」』]$/g, '').trim();
             text = text.replace(new RegExp(`^${npc.name}[：:]\\s*`), '').trim();
@@ -1012,10 +1012,10 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
         return `${t('季節')} ${t(world.clock.season)} ${t('第')} ${world.clock.day} ${t('天')}${t('；')}${t('人口')} ${npcs.length}${t('；')}${t('公庫銀幣')} ${Math.round(world.stockpile.get('silver'))}${t('；')}${t('食物')} ${Math.round(world.stockpile.get('food'))}${t('；')}${t('全鎮平均心情')} ${avg}/100${ev.length ? `${t('；')}${t('最近的事')}${t('：')}${ev.join(t('、'))}` : ''}${trial ? `${t('；')}${t('本季考驗')}${t('：')}${trial}` : ''}`;
     }
     // 決策呼叫不吃「NPC 每日 AI 額度」(那是背景閒聊的上限);只受供應商速率限制
-    fullAgentOk(world) { return !!world.fullAgentMode && !!this.llm && this.llm._canMakeRequest(true); } // 決策走 chat 道(額度較高、內建 AI 時 Groq 優先)
+    fullAgentOk(world) { return !!world.fullAgentMode && !!this.llm && this.llm._canMakeRequest(true, true); } // v6.43.1 冷卻中不放行 // 決策走 chat 道(額度較高、內建 AI 時 Groq 優先)
     async _askJson(prompt, maxTokens) {
         const timeout = new Promise(r => setTimeout(() => r(null), 14000));
-        let raw = null; try { raw = await Promise.race([this.llm.generate(prompt, maxTokens, 0.7, true), timeout]); } catch (e) { raw = null; }
+        let raw = null; try { raw = await Promise.race([this.llm.generate(prompt, maxTokens, 0.7, true, { strict: true }), timeout]); } catch (e) { raw = null; }
         if (!raw || raw === '__ERROR__' || raw === '__RATE_LIMITED__') return null;
         const m = String(raw).match(/\[[\s\S]*\]|\{[\s\S]*\}/); if (!m) return null;
         try { return JSON.parse(m[0]); } catch (e) { return null; }
@@ -2335,10 +2335,13 @@ class LLMClient {
         }
     }
 
-    _canMakeRequest(isPlayerChat = false) {
+    // v6.43.1 strict:完整智能體決策用,冷卻期間一律不放行。
+    // 玩家聊天的「最後 30 秒可插隊」只適用真正的 60 秒限流(429);v6.41.1 改成的 10 秒短暫停整段都落在「最後 30 秒」裡,等於沒冷卻
+    _canMakeRequest(isPlayerChat = false, strict = false) {
         const now = Date.now();
         if (now < this._rateLimitedUntil) {
-            if (!isPlayerChat || now < this._rateLimitedUntil - 30000) return false;
+            const longPause = (this._rateLimitedLen || 60000) >= 60000;
+            if (strict || !isPlayerChat || !longPause || now < this._rateLimitedUntil - 30000) return false;
         }
         this._requestTimestamps = this._requestTimestamps.filter(t => now - t < 60000);
         const limit = isPlayerChat ? this._maxRequestsPerMinute : Math.floor(this._maxRequestsPerMinute / 2);
@@ -2348,11 +2351,12 @@ class LLMClient {
     _recordRequest() { this._requestTimestamps.push(Date.now()); }
 
     _handleRateLimit() {
-        this._rateLimitedUntil = Date.now() + 60000;
+        this._rateLimitedUntil = Date.now() + 60000; this._rateLimitedLen = 60000;
         console.warn('[RimTown LLM] 429 received — pausing all requests for 60 seconds');
     }
 
-    async generate(prompt, maxTokens = 500, temperature = 0.9, isPlayerChat = false) {
+    async generate(prompt, maxTokens = 500, temperature = 0.9, isPlayerChat = false, opts = {}) {
+        const strict = !!opts.strict; // v6.43.1 完整智能體決策:冷卻中不插隊
         // v5.39.0 智慧分流:有 Groq 金鑰且主供應商不是 Groq 時,「玩家對話/劇情」優先吃 Groq 免費額度,
         // 把主供應商(gpt-4o-mini 等付費金鑰)留給行程/反思/背景對話;Groq 被限流就退回主供應商,5 分鐘後再試
         if (isPlayerChat && this.fallbackGroqKey && this.provider !== 'groq'
@@ -2371,7 +2375,7 @@ class LLMClient {
             return this._generateWithGroqFallback(prompt, maxTokens, temperature);
         }
 
-        if (!this._canMakeRequest(isPlayerChat)) {
+        if (!this._canMakeRequest(isPlayerChat, strict)) {
             // Rate limited locally — try fallback instead of returning empty
             if (this.fallbackGroqKey && this.provider !== 'groq') {
                 console.log('[RimTown LLM] Local rate limit — using Groq fallback');
@@ -2390,7 +2394,7 @@ class LLMClient {
         if (result === '__RATE_LIMITED__' || result === '__ERROR__') {
             // v6.41.1 小鎮內建 AI 的一般失敗(伺服器已經自己換過渠道、也有自己的冷卻)只暫停 10 秒;
             // 以前一律停 60 秒,完整智能體的投票／裁決剛好撞上就全退回規則版。真的 429 照舊停 60 秒
-            if (this.provider === 'server' && result === '__ERROR__') this._rateLimitedUntil = Math.max(this._rateLimitedUntil, Date.now() + 10000);
+            if (this.provider === 'server' && result === '__ERROR__') { if (Date.now() + 10000 > this._rateLimitedUntil) { this._rateLimitedUntil = Date.now() + 10000; this._rateLimitedLen = 10000; } }
             else this._handleRateLimit();
             if (this.fallbackGroqKey && this.provider !== 'groq') {
                 console.log(`[RimTown LLM] Primary ${this.provider} failed (${result}) — switching to Groq fallback`);
