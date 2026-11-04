@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.43.2
+ * Version: 6.43.3
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.43.2');
+define('RIMTOWN_VERSION', '6.43.3');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1330,6 +1330,24 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.43.3',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '📱 手機卡頓：自動畫質以前一卡就把「低畫質」寫進設定，手機載入時慢個幾秒就永遠鎖在低畫質（30fps、名牌與對話泡泡每秒只動 10 次）。現在自動降級只在這次有效，剛載入的 8 秒與分頁在背景時不算，要連續 6 秒都太慢才降；以前自動降級留下的紀錄一律當成「自動」（玩家在設定裡親手選的低畫質照舊）',
+                '🏷️ 名牌與對話泡泡不再一頓一頓：鏡頭在動（拖曳、縮放、跟拍、閒置環繞）時標籤每幀都跟著畫面更新，以前低畫質每 3 幀才更新一次，轉鏡頭時看起來很卡；鏡頭靜止時照舊省著更新',
+                '🗳️ 修候選人離鎮仍能當選：開票時人不在鎮上（出遠門、探險、搬走、過世）的候選人取消資格，投給他的人改投其他候選人；以前離鎮的人當選後原鎮長被撤職，鎮上當下沒有正式鎮長。候選人全都不在就這次選舉作廢、原鎮長留任',
+                '🧭 修鎮長去探險沒有代理：探險中的鎮長以前仍被當成在鎮上拍板的人。現在鎮長出發探險就指派代理鎮長（提案裁決、事件決策都找代理），不會開補選，回來後交還',
+                '🗳️ 修等 AI 回覆時離鎮的選民仍被計票：AI 投票結果回來時，已經不在鎮上的人不計票、也不記投票理由',
+            ),
+            'changes_en' => array(
+                '📱 Mobile stutter: automatic quality used to save "low" as a setting the moment a frame drop happened, so a phone that was slow for a few seconds while loading stayed stuck in low quality for good (30 fps, name tags and speech bubbles moving only 10 times a second). Automatic downgrades now last only for the current visit, ignore the first 8 seconds after loading and background tabs, and need 6 seconds of slow frames in a row; low settings left behind by the old automatic downgrade count as Auto again (a low setting chosen by hand in Settings still sticks)',
+                '🏷️ Name tags and speech bubbles no longer jerk: while the camera moves (drag, zoom, follow, idle orbit) labels update every frame with the scene; low quality used to update them every third frame, which looked choppy when turning the camera. When the camera is still they still update less often to save effort',
+                '🗳️ Fixed candidates who left town still winning: candidates not in town at the count (travelling, exploring, moved away or dead) lose their place and their voters re-vote for someone else; before, an absent winner got the old mayor removed and left the town without a mayor. If no candidate is in town the election is void and the current mayor stays',
+                '🧭 Fixed no acting mayor while the mayor explores: an exploring mayor was still treated as present to make decisions. An acting mayor is now appointed when the mayor sets off (proposal rulings and event decisions go to them), no by-election is called, and the role is handed back on return',
+                '🗳️ Fixed votes from villagers who left while the AI was answering: when AI vote results arrive, anyone no longer in town is not counted and their reason is not recorded',
+            ),
+        ),
         array(
             'version' => '6.43.2',
             'date'    => '2026-11-04',

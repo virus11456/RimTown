@@ -1228,7 +1228,7 @@ class EventChoiceSystem {
             world.logMessageT('event_choice', '⚡ {event}——鎮民都在等鎮長的決定!', { event: event.name });
             return;
         }
-        const mayor = Object.values(world.agents).find(a => !a.isPlayer && !a.isDead && a.job?.key === 'mayor') || world.election?.currentMayor?.(world); // v6.42.0 代理鎮長
+        const mayor = world.election?.currentMayor?.(world) || Object.values(world.agents).find(a => !a.isPlayer && !a.isDead && a.job?.key === 'mayor'); // v6.42.0 代理鎮長;v6.43.3 鎮長去探險時由代理出面
         const asker = mayor ? mayor.name : t('鎮長');
         // v5.47.0 BUG-04:徵詢開場加入變體池,乾旱/風暴/寒流等事件不再逐字重複
         const framing = pickRandom([
