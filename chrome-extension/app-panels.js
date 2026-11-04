@@ -479,7 +479,7 @@ Object.assign(RimTownApp.prototype, {
             teasers.map(s => `<div class="headline-row" style="cursor:default"><span class="headline-ic">${s.icon}</span><span class="headline-text" style="font-style:italic">${this._escapeHtml(s.text)}</span></div>`).join('') : '';
         const day = this.world.clock;
         return `<div class="town-headlines">
-            <div class="headlines-title"><span>📺 ${t('第')}${(day.year - 1) * 60 + day.day}${t('集')}·${this.world?.townName || t('邊境鎮')}${t('日常')}</span>
+            <div class="headlines-title"><span>📺 ${t('第 {n} 集').replace('{n}', this.world._absDay ? this.world._absDay() : day.day)}·${t('{town}日常').replace('{town}', t(this.world?.townName || '邊境鎮'))}</span>
                 <button class="headlines-more" data-action="goto-tab" data-val="records">${t('更多')} ›</button></div>
             ${html ? `<div style="padding:5px 8px 2px;font-size:0.66rem;color:var(--text-secondary);font-weight:bold">🔥 ${t('本集看點')}</div>${html}` : ''}
             ${slHtml}${tsHtml}
@@ -993,10 +993,10 @@ Object.assign(RimTownApp.prototype, {
             </select>
         </div>`;
         // v6.27.0 3D 畫質:自動(卡頓就降)／高／低;2D 開關已移除(WebGL 不可用時自動退回)
-        let qPref = 'auto'; try { qPref = localStorage.getItem('rimtown_3d_quality') || 'auto'; } catch (e) {}
+        let qPref = 'auto'; try { qPref = localStorage.getItem('rimtown_3d_quality') || 'auto'; if (qPref === 'low' && localStorage.getItem('rimtown_3d_q_by') !== 'user') qPref = 'auto'; } catch (e) {} // v6.43.3 自動降級留下的 low 不算玩家選的
         html += `<div class="setting-group" style="margin-bottom:8px">
             <label style="font-size:0.82rem;color:var(--text-secondary)">${t('3D 畫質')}</label>
-            <select id="settings-quality" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem" onchange="try{if(this.value==='auto')localStorage.removeItem('rimtown_3d_quality');else localStorage.setItem('rimtown_3d_quality',this.value)}catch(e){};location.reload()">
+            <select id="settings-quality" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem" onchange="try{if(this.value==='auto'){localStorage.removeItem('rimtown_3d_quality');localStorage.removeItem('rimtown_3d_q_by')}else{localStorage.setItem('rimtown_3d_quality',this.value);localStorage.setItem('rimtown_3d_q_by','user')}}catch(e){};location.reload()">
                 <option value="auto"${qPref==='auto'?' selected':''}>${t('自動（手機 1.5 倍解析度，卡頓就自動降低）')}</option>
                 <option value="high"${qPref==='high'?' selected':''}>${t('高（陰影、抗鋸齒、原生解析度）')}</option>
                 <option value="low"${qPref==='low'?' selected':''}>${t('低（無陰影、1x 解析度，省電）')}</option>

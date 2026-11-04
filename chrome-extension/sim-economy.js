@@ -562,12 +562,13 @@ class ResearchManager {
     }
     dailyUpdate(world) {
         // v6.37.0 沒在研究時先空 3 天，讓村民有機會提「研究」提案；沒人提才由學者自己挑一個
-        if(!this.current) { this._idle=(this._idle||0)+1; if(this._idle>=3){ const av=this.getAvailable(); if(av.length){ const pick=av[Math.floor(Math.random()*av.length)]; this.startResearch(pick.key); world.logMessageT?.('research', '🔬 沒人提議要研究什麼，學者們自己選了「{p}」開始研究。', { p: pick.name }); } } return; }
+        if(!this.current) { this._idle=(this._idle||0)+1; if(this._idle>=2){ // v6.43.2 空 2 天(以前 3 天,研究常常整段停擺)
+             const av=this.getAvailable(); if(av.length){ const pick=av[Math.floor(Math.random()*av.length)]; this.startResearch(pick.key); world.logMessageT?.('research', '🔬 沒人提議要研究什麼，學者們自己選了「{p}」開始研究。', { p: pick.name }); } } return; }
         let pts=0;
         Object.values(world.agents).forEach(a=>{ if(!a.isPlayer&&a.job?.key==='researcher'){ // v6.40.1 用 job.key 判斷,不靠翻譯後的職稱
              const sk=a.skills.get('智識'); pts+=3+(sk?sk.level:0)*0.5; } });
         pts *= 1 + (world.news?world.news.getModifier('research_bonus',0):0) + (world.buildings?.getEffect?.('research_bonus',0) || 0); // v6.40.0 文書房／印刷坊／天文台等加速研究
-        const rp=world.stockpile.get('research_points'), bonus=Math.min(rp,5);
+        const rp=world.stockpile.get('research_points'), bonus=Math.min(rp,10); // v6.43.2 研究員做出的研究點每天最多用 10(以前 5,用不完一直堆)
         if(bonus>0) world.stockpile.consume('research_points',bonus,world.tickCount,'research');
         if(pts+bonus<=0) return;
         const p=this.projects[this.current]; if(!p||p.status!=='researching') return;

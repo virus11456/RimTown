@@ -654,7 +654,7 @@ class World {
     _processFeuds() {
         const npcs = Object.values(this.agents).filter(a => !a.isPlayer && !a.isDead);
         this._feudCooldown = this._feudCooldown || {};
-        const day = this.clock.day + (this.clock.year - 1) * 60;
+        const day = this._absDay(); // v6.43.2 含季節(以前換季時天數倒退,季末吵過架的兩人整個下一季都被冷卻擋住)
         const seen = new Set();
         for (const a of npcs) {
             for (const [tid, rel] of Object.entries(a.relationships.relationships)) {
@@ -712,10 +712,12 @@ class World {
     // 連續 4 天沒有名場面時,從三種手法挑一種在後台「輕推」,像編劇埋伏筆,而不是硬寫死劇本:
     // a) 暗戀萌芽:合得來的單身村民之間種下心動  b) 舊怨復發:交惡的兩人再往絕交推一步  c) 嫉妒:單戀有主之人者情緒升溫
     _dramaDirector() {
-        const absDay = this.clock.day + (this.clock.year - 1) * 60;
+        const absDay = this._absDay(); // v6.43.2 含季節(以前季末有名場面,下一季整季導演都不出手)
         // 距上一場名場面幾天
         const lastScene = (this.dramaArchive || []).slice(-1)[0];
-        const lastSceneDay = lastScene ? (lastScene.day + ((lastScene.year || 1) - 1) * 60) : (this._townFoundedDay || 0);
+        const sIdx = (s) => Math.max(0, ['春季','夏季','秋季','冬季'].indexOf(s));
+        const lastSceneDay = lastScene ? (((lastScene.year || 1) - 1) * 60 + sIdx(lastScene.season) * 15 + lastScene.day) : (this._townFoundedDay || 0);
+        if (this._directorLastDay > absDay) this._directorLastDay = -99; // 舊檔用舊算法存的
         if (absDay - lastSceneDay < 4) return;
         if (absDay - (this._directorLastDay || -99) < 3) return; // 導演出手後至少醞釀 3 天
         const npcs = Object.values(this.agents).filter(a => !a.isPlayer && !a.isDead);

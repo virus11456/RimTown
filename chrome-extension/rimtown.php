@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.43.1
+ * Version: 6.43.3
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.43.1');
+define('RIMTOWN_VERSION', '6.43.3');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1330,6 +1330,52 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.43.3',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '📱 手機卡頓：自動畫質以前一卡就把「低畫質」寫進設定，手機載入時慢個幾秒就永遠鎖在低畫質（30fps、名牌與對話泡泡每秒只動 10 次）。現在自動降級只在這次有效，剛載入的 8 秒與分頁在背景時不算，要連續 6 秒都太慢才降；以前自動降級留下的紀錄一律當成「自動」（玩家在設定裡親手選的低畫質照舊）',
+                '🏷️ 名牌與對話泡泡不再一頓一頓：鏡頭在動（拖曳、縮放、跟拍、閒置環繞）時標籤每幀都跟著畫面更新，以前低畫質每 3 幀才更新一次，轉鏡頭時看起來很卡；鏡頭靜止時照舊省著更新',
+                '🗳️ 修候選人離鎮仍能當選：開票時人不在鎮上（出遠門、探險、搬走、過世）的候選人取消資格，投給他的人改投其他候選人；以前離鎮的人當選後原鎮長被撤職，鎮上當下沒有正式鎮長。候選人全都不在就這次選舉作廢、原鎮長留任',
+                '🧭 修鎮長去探險沒有代理：探險中的鎮長以前仍被當成在鎮上拍板的人。現在鎮長出發探險就指派代理鎮長（提案裁決、事件決策都找代理），不會開補選，回來後交還',
+                '🗳️ 修等 AI 回覆時離鎮的選民仍被計票：AI 投票結果回來時，已經不在鎮上的人不計票、也不記投票理由',
+            ),
+            'changes_en' => array(
+                '📱 Mobile stutter: automatic quality used to save "low" as a setting the moment a frame drop happened, so a phone that was slow for a few seconds while loading stayed stuck in low quality for good (30 fps, name tags and speech bubbles moving only 10 times a second). Automatic downgrades now last only for the current visit, ignore the first 8 seconds after loading and background tabs, and need 6 seconds of slow frames in a row; low settings left behind by the old automatic downgrade count as Auto again (a low setting chosen by hand in Settings still sticks)',
+                '🏷️ Name tags and speech bubbles no longer jerk: while the camera moves (drag, zoom, follow, idle orbit) labels update every frame with the scene; low quality used to update them every third frame, which looked choppy when turning the camera. When the camera is still they still update less often to save effort',
+                '🗳️ Fixed candidates who left town still winning: candidates not in town at the count (travelling, exploring, moved away or dead) lose their place and their voters re-vote for someone else; before, an absent winner got the old mayor removed and left the town without a mayor. If no candidate is in town the election is void and the current mayor stays',
+                '🧭 Fixed no acting mayor while the mayor explores: an exploring mayor was still treated as present to make decisions. An acting mayor is now appointed when the mayor sets off (proposal rulings and event decisions go to them), no by-election is called, and the role is handed back on return',
+                '🗳️ Fixed votes from villagers who left while the AI was answering: when AI vote results arrive, anyone no longer in town is not counted and their reason is not recorded',
+            ),
+        ),
+        array(
+            'version' => '6.43.2',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '⚡ 修英文版越玩越卡（v6.43.1 帶進來的）：上一版為了讓英文記憶重新翻譯，每顯示一筆記憶或日誌都要問一次「字典載好了沒」，而這個檢查每次都把七千多筆字典數一遍。玩一天後英文版整理一次畫面資料要 1.8 秒，現在 4 毫秒（中文版不受影響）',
+                '🗳️ 修第一年秋季不開選舉：判斷「離上次選舉滿 20 天」時漏算季節，第一年秋季第 1 天被當成第 1 天，新開的鎮第一次選舉永遠不會開。現在用含季節的絕對天數，秋季第 1 天（第 31 天）照常開選',
+                '🤖 選舉 AI 會重試：完整智能體的政見演說與全鎮投票只問一次，剛好遇到 AI 冷卻或額度用完就整場退回規則版。現在競選期間隔天會再問，投票在開票前一天替還沒回覆的選民再問一次，最後一天才交給規則版',
+                '🔬 研究不再常常停擺：沒人提研究時的空檔從 3 天縮成 2 天；研究員做出的研究點每天最多用 10（以前 5，45 天實測堆了一千多點用不掉）',
+                '🏷️ 修村民清單露出程式代碼：準備回家的村民顯示成「heading_home」，現在顯示「準備回家休息」；之後沒對到的活動代碼也不會直接給人看',
+                '📱 手機通知不再蓋住面板：早安卡和提案結果疊在打開的面板抽屜上，把提案列表遮掉一大半。手機上通知改到頂欄下方、地圖那一側，最多同時顯示最新 2 則；英文版通知以前會掉成襯線字，現在跟介面同一套字型',
+                '🔤 設定頁的內建 AI 額度說明還寫「每日 100 則」，改成實際的 300 則',
+                '📜 修提案通過的政令隔天就失效：提案的政令用一套天數記到期日，議會檢查到期時用另一套（多 60 天），議會成立後每條提案政令隔天就被當成過期刪掉。新鎮長的施政效果也一樣，用季內天數記到期，隔天新聞更新就消失。現在全部統一用同一套絕對天數，政令照寫的 15／20 天生效、施政效果 30 天；舊檔多算的到期日讀進來會自動校正',
+                '🎭 修換季後劇情導演與吵架冷卻卡住：用季內天數算「距上次名場面幾天」，換季時天數倒退，季末出了名場面，下一季整季導演都不再輕推劇情；吵架冷卻同理。現在含季節計算',
+                '🌐 英文版兩處中文：日報分頁的集數標題顯示「Ch.4 · Episode·邊境鎮Daily」，改成「Episode 34 · Frontier Town Daily」（集數也改成含季節的天數，以前每季重算）；村民睡前反思的 AI 提示詞夾著「」——、性格等中文，改成完整英文句子',
+            ),
+            'changes_en' => array(
+                '⚡ Fixed English slowing down the longer you play (introduced in v6.43.1): to re-translate English memories, every memory and log line asked whether the dictionary had loaded, and that check counted all 7,000+ dictionary entries each time. After one in-game day, refreshing the screen data took 1.8 seconds in English; it now takes 4 ms (Chinese was not affected)',
+                '🗳️ Fixed no election in the first autumn: the "20 days since the last election" check ignored seasons, so autumn day 1 of year one counted as day 1 and a new town never held its first election. It now uses the absolute day, so the election starts on autumn day 1 (day 31) as intended',
+                '🤖 Election AI now retries: full-agent campaign speeches and town-wide votes were asked once, and if the AI was cooling down or out of quota the whole election fell back to rules. Campaigns now ask again the next day, and voting asks again the day before the count for anyone who has not answered; only the last day falls back to rules',
+                '🔬 Research stalls less: the wait before scholars pick a topic on their own when nobody proposes one is now 2 days instead of 3, and up to 10 research points are spent per day instead of 5 (a 45-day run had piled up over a thousand unused points)',
+                '🏷️ Fixed raw code in the villager list: villagers heading home showed "heading_home"; they now show "Heading home to rest", and any unmatched activity code is no longer shown as-is',
+                '📱 Mobile notifications no longer cover the panel: the morning card and proposal results stacked over the open drawer and hid most of the proposal list. On mobile they now sit under the top bar over the map, showing the newest 2 at most; in English they used to fall back to a serif font and now use the interface font',
+                '🔤 The built-in AI quota note on the settings page still said 100 messages a day; it now says 300 like everywhere else',
+                '📜 Fixed approved proposal decrees expiring the next day: proposal decrees recorded their end day on one day scale while the council checked expiry on another (60 days ahead), so once the council formed every proposal decree was deleted as expired the following day. A new mayor’s policy effect had the same problem, dated by day of season and gone after the next news update. Everything now uses one absolute day, decrees last their 15 or 20 days and policy effects 30 days; inflated end days in old saves are corrected on load',
+                '🎭 Fixed the drama director and feud cooldowns stalling after a season change: "days since the last big scene" used the day of the season, which drops back at each new season, so a scene late in a season kept the director idle for the whole next season; feud cooldowns likewise. Both now count seasons',
+                '🌐 Two Chinese leaks in English: the newspaper tab title read "Ch.4 · Episode·邊境鎮Daily" and now reads "Episode 34 · Frontier Town Daily" (the number now counts seasons instead of restarting each season); the AI prompt for villagers’ bedtime reflections mixed in Chinese punctuation and words and is now a full English sentence',
+            ),
+        ),
         array(
             'version' => '6.43.1',
             'date'    => '2026-11-04',

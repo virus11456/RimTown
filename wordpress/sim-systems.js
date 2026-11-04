@@ -663,7 +663,10 @@ class CouncilSystem {
         }
 
         // Expire old decrees
-        const currentDay = world.clock.year * 60 + (['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15 + world.clock.day;
+        // v6.43.2 統一用 world._absDay()(提案政令也是用它);以前這裡多算 60 天,提案通過的政令隔天就被當成過期刪掉。
+        // 舊檔用舊算法存的到期日會比現在多 60 天,剩超過 60 天的就扣回來(政令最長 20 天)
+        const currentDay = world._absDay ? world._absDay() : world.clock.year * 60 + (['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15 + world.clock.day;
+        for (const d of this.activeDecrees) if (d.expiresDay - currentDay > 60) d.expiresDay -= 60;
         this.activeDecrees = this.activeDecrees.filter(d => d.expiresDay > currentDay);
 
         // Apply active decree effects
@@ -833,7 +836,7 @@ class CouncilSystem {
             }
 
             // Register as active decree (modifier effects last 20 days)
-            const currentDay = world.clock.year * 60 + (['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15 + world.clock.day;
+            const currentDay = world._absDay ? world._absDay() : world.clock.year * 60 + (['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15 + world.clock.day; // v6.43.2
             this.activeDecrees.push({
                 id: p.id, title: p.title, effects: p.effects, expiresDay: currentDay + 20,
             });
@@ -1225,7 +1228,7 @@ class EventChoiceSystem {
             world.logMessageT('event_choice', '⚡ {event}——鎮民都在等鎮長的決定!', { event: event.name });
             return;
         }
-        const mayor = Object.values(world.agents).find(a => !a.isPlayer && !a.isDead && a.job?.key === 'mayor') || world.election?.currentMayor?.(world); // v6.42.0 代理鎮長
+        const mayor = world.election?.currentMayor?.(world) || Object.values(world.agents).find(a => !a.isPlayer && !a.isDead && a.job?.key === 'mayor'); // v6.42.0 代理鎮長;v6.43.3 鎮長去探險時由代理出面
         const asker = mayor ? mayor.name : t('鎮長');
         // v5.47.0 BUG-04:徵詢開場加入變體池,乾旱/風暴/寒流等事件不再逐字重複
         const framing = pickRandom([

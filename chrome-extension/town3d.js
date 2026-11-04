@@ -46,7 +46,9 @@ class Town3D extends PixelTileMap {
         this._viewW = 0; this._viewH = 0; this._needsResize = true;
         this.isMobile = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
         try { this.idleCam = localStorage.getItem('rimtown_idlecam') !== '0'; } catch (e) { this.idleCam = true; } this._lastInputAt = Date.now(); // v6.32.0 閒置 45 秒後慢慢環繞小鎮
-        try { const q = localStorage.getItem('rimtown_3d_quality'); this.lowQuality = q === 'low'; this.lockQuality = q === 'high' || q === 'low'; } catch (e) { this.lowQuality = false; } // v6.27.0 high/low 鎖定,auto 才自動降級
+        // v6.27.0 high/low 鎖定,auto 才自動降級。v6.43.3 只有玩家在設定裡親手選的才鎖(rimtown_3d_q_by=user);
+        // 以前自動降級也寫進 'low',手機載入時卡一下就永遠鎖在低畫質(30fps、標籤每秒只動 10 次),這類舊紀錄一律當 auto
+        try { const q = localStorage.getItem('rimtown_3d_quality'); const byUser = q === 'high' || localStorage.getItem('rimtown_3d_q_by') === 'user'; this.lowQuality = q === 'low' && byUser; this.lockQuality = byUser && (q === 'high' || q === 'low'); } catch (e) { this.lowQuality = false; }
         if (this.lowQuality) this._dpr = 1;
         // 軌道相機:看向 target(地圖座標,1 格 = 1 單位),yaw/pitch/dist
         this.target = new THREE.Vector3(this.cols / 2, 0, this.rows / 2);
@@ -827,6 +829,7 @@ class Town3D extends PixelTileMap {
 
     // ---------- 場景重建(地圖生成或讀檔後) ----------
     _buildScene() {
+        this._sceneBuiltAt = performance.now(); // v6.43.3 剛建好的幾秒不判斷畫質
         if (!this.renderer || !this.grid) return;
         this._sceneSrc = this.grid; this._sceneSeason = this.season || '';
         this._static.traverse((o) => { if (o.isMesh && o.geometry && !Object.values(this._geos).includes(o.geometry)) o.geometry.dispose(); });
@@ -1496,15 +1499,18 @@ class Town3D extends PixelTileMap {
     // 效能自動降級:連續 3 秒平均幀長 > 40ms → 關陰影、降解析度
     _updateQuality(now) {
         if (this.lowQuality || this.lockQuality || !this.renderer) return;
+        // v6.43.3 剛建好場景、分頁在背景時不算(載入與 JIT 那幾秒本來就慢);要連續兩段 3 秒都太慢才降級
+        if (document.hidden || now - (this._sceneBuiltAt || 0) < 8000) { this._qt0 = 0; return; }
         if (!this._qt0) { this._qt0 = now; this._qn = 0; return; }
         this._qn++;
         if (now - this._qt0 >= 3000) {
             const avg = (now - this._qt0) / this._qn;
-            if (avg > 40 && this._qn > 20) this.setLowQuality(true);
+            this._qBad = (avg > 40 && this._qn > 20) ? (this._qBad || 0) + 1 : 0;
+            if (this._qBad >= 2) this.setLowQuality(true, true);
             this._qt0 = now; this._qn = 0;
         }
     }
-    setLowQuality(on) {
+    setLowQuality(on, auto = false) {
         const wasLite = this._lite();
         this.lowQuality = !!on;
         if (!this.renderer) return;
@@ -1514,8 +1520,8 @@ class Town3D extends PixelTileMap {
         this._dpr = this._targetDpr();
         this.renderer.setPixelRatio(this._dpr); this._needsResize = true;
         this.scene.traverse((o) => { if (o.material && o.material.needsUpdate !== undefined) o.material.needsUpdate = true; });
-        try { localStorage.setItem('rimtown_3d_quality', on ? 'low' : 'high'); } catch (e) {}
-        console.log('[Town3D] quality', on ? 'low' : 'high');
+        if (!auto) { try { localStorage.setItem('rimtown_3d_quality', on ? 'low' : 'high'); localStorage.setItem('rimtown_3d_q_by', 'user'); } catch (e) {} } // v6.43.3 自動降級只在這次有效,不寫進設定
+        console.log('[Town3D] quality', on ? 'low' : 'high', auto ? '(auto)' : '');
     }
 
     // ---------- 主渲染 ----------
@@ -1541,7 +1547,10 @@ class Town3D extends PixelTileMap {
         this._updateAgents3D(agents || {}, selectedAgent);
         this.renderer.render(this.scene, this.camera);
         const ovEvery = this.lowQuality ? 3 : this.isMobile ? 2 : 1; // v6.28.0 手機隔幀、低畫質每三幀更新標籤層(DOM 寫入是手機 CPU 大頭)
-        if (this.animFrame % ovEvery === 0) this._updateOverlays(agents || {}, selectedAgent);
+        // v6.43.3 鏡頭在動(拖曳、縮放、跟拍、閒置環繞)時每幀都更新:以前標籤跟不上畫面,一頓一頓的;鏡頭靜止才省著更新
+        const ce = this.camera.matrixWorld.elements; const camSig = ce[12] * 7.1 + ce[13] * 3.3 + ce[14] * 1.7 + ce[0] * 11.3 + ce[2] * 5.9 + ce[8] * 2.3 + (this.camera.zoom || 1);
+        const camMoved = this._ovCamSig === undefined || Math.abs(camSig - this._ovCamSig) > 1e-4;
+        if (camMoved || this.animFrame % ovEvery === 0) { this._ovCamSig = camSig; this._updateOverlays(agents || {}, selectedAgent); }
         this._updateQuality(performance.now());
     }
     // 2D 專用的即時重繪入口在 3D 不需要;保留以免外部呼叫報錯
