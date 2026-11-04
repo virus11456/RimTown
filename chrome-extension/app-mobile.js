@@ -405,6 +405,8 @@ Object.assign(RimTownApp.prototype, {
             ].map(([ic, k, v]) => `<div class="nqc-intent-row"><span class="nqc-intent-k">${ic} ${k}</span><span class="nqc-intent-v">${v}</span></div>`).join('');
             intentHtml = `<div class="nqc-intent" style="border-top:1px solid var(--border);margin-top:4px;padding-top:5px">${rows}</div>`;
         }
+        // v6.30.0 提案戰績(有提過才顯示)
+        try { const rec = this.world?.proposals?.record?.(agentId); if (rec && rec.made) intentHtml += `<div class="nqc-intent-row"><span class="nqc-intent-k">📜 ${t('提案戰績')}</span><span class="nqc-intent-v">${t('提 {m} 件、落實 {d} 件、被否決 {r} 件').replace('{m}', rec.made).replace('{d}', rec.done || 0).replace('{r}', rec.rejected || 0)}</span></div>`; } catch (e) {}
         // v5.31.0 內心第一層:屬性條移到詳情頁,快速卡改放「今日目標 + 最新反思」(這才是這遊戲獨有的)
         let attrHtml = '';
         if (liveA && !liveA.isPlayer && liveA.generateDailyPlan) {

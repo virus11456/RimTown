@@ -701,6 +701,7 @@ class ElectionSystem {
             if (a.personality.traits.includes('charismatic')) score += 8;
             if (a.personality.traits.includes('shy')) score -= 5;
             if (a.job?.key === 'mayor') score += 5;
+            { const rec = world.proposals?.record?.(a.agentId); if (rec) score += Math.min(10, (rec.done || 0) * 2.5) - Math.min(4, (rec.rejected || 0)); } // v6.30.0 提案落實多的人更有資格出來選
             score += Math.random() * 6;
             return { agent: a, score };
         }).sort((a, b) => b.score - a.score);
@@ -767,6 +768,7 @@ class ElectionSystem {
             if (candidate.personality.traits.includes('abrasive')) score -= 6;
             if (candidate.personality.traits.includes('lazy')) score -= 4;
             score += (candidate.skills?.skills?.社交?.level || 0) * 1;
+            { const rec = world.proposals?.record?.(c.agentId); if (rec) score += Math.min(12, (rec.done || 0) * 3) - Math.min(6, (rec.rejected || 0) * 1.5); } // v6.30.0 提案戰績:落實過的案子是政績,被否決的是把柄
             score += (Math.random() - 0.3) * 10;
             if (voter.personality.traits.includes('pessimist') && c.policy === 'defense') score += 3;
             if (voter.personality.traits.includes('optimist') && c.policy === 'welfare') score += 3;

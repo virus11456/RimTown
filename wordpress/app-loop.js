@@ -584,10 +584,10 @@ Object.assign(RimTownApp.prototype, {
     // ===== v6.26.0 村民主動提案 =====
     _onProposalEvent(kind, p) {
         const w = this.world; if (!w || !p) return;
-        const ICON = { new: '📜', approved: '✅', rejected: '❌', shelved: '📥', done: '🏁', failed: '⚠️', expired: '🗑️' };
-        const TITLE = { new: t('{who}提出 {id}'), approved: t('{id} 批准'), rejected: t('{id} 否決'), shelved: t('{id} 擱置'), done: t('{id} 完成'), failed: t('{id} 失敗'), expired: t('{id} 收回') };
+        const ICON = { new: '📜', approved: '✅', rejected: '❌', shelved: '📥', done: '🏁', failed: '⚠️', expired: '🗑️', outcome: '📈' };
+        const TITLE = { new: t('{who}提出 {id}'), approved: t('{id} 批准'), rejected: t('{id} 否決'), shelved: t('{id} 擱置'), done: t('{id} 完成'), failed: t('{id} 失敗'), expired: t('{id} 收回'), outcome: t('{id} 十天後') }; // v6.30.0 outcome
         const title = (TITLE[kind] || '{id}').replace('{who}', t(p.proposerName)).replace('{id}', p.id);
-        const desc = kind === 'new' ? p.title : (p.result || p.title);
+        const desc = kind === 'new' ? p.title : kind === 'outcome' ? (p.outcomeText || p.title) : (p.result || p.title);
         this._showCornerNotice({ icon: ICON[kind] || '📜', title, name: kind === 'new' ? '' : p.title, desc, go: { agentId: p.proposerId } }); // v6.29.0 去看提案人
         if (kind === 'new') { this.bgm?.sfx?.('open'); this._aiProposalPitch(w, p.id); }
         try { this.state = w.getState(); if (this.activeTab === 'proposals') this.renderSidebar(); } catch (e) {}

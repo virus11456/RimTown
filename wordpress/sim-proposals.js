@@ -14,6 +14,21 @@ const PROPOSAL_KINDS = {
     feast:      { icon: '🍲', label: '宴席' },
     relief:     { icon: '🤝', label: '救濟' },
     trial:      { icon: '⚖️', label: '考驗對策' },
+    // v6.30.0 人際類
+    mediate:    { icon: '🕊️', label: '調解' },
+    honor:      { icon: '🏅', label: '表揚' },
+    mentor:     { icon: '🎓', label: '帶徒弟' },
+    // v6.30.0 對外類
+    trade:      { icon: '🧭', label: '外銷' },
+    envoy:      { icon: '🤝', label: '結盟' },
+    recruit:    { icon: '📣', label: '招募' },
+};
+// v6.30.0 投票理由(鍵 → 顯示文字;顯示時才 t())
+const VOTE_WHY = {
+    value: '價值觀相合', wealth: '看重財富', work: '勤勞肯做', lazy: '懶得折騰', fun: '愛熱鬧', glutton: '貪吃', ascetic: '不愛鋪張', stoic: '不愛熱鬧', charm: '愛出風頭',
+    adventure: '愛冒險', family: '顧家', shy: '怕生', care: '重視社群', kind: '心軟', greedy: '捨不得花錢', trial: '考驗當前', moodup: '政令會讓大家開心', mooddown: '政令會讓大家不開心', spend: '政令要花錢',
+    pessimist: '悲觀', optimist: '樂觀', job: '跟自己這行有關', relgood: '跟提案人交情好', relbad: '跟提案人處不來', cost: '公庫不夠', gut: '憑直覺',
+    feud: '想讓兩人和好', grudge: '跟當事人有過節', proud: '為同鄉驕傲', newcomer: '歡迎新面孔', crowded: '覺得鎮上夠擠了',
 };
 // 職業 → 偏好的建築／工廠
 const PROPOSAL_JOB_BUILDINGS = {
@@ -30,6 +45,7 @@ class ProposalSystem {
         this.items = [];           // 全部提案(含歷史),最多保留 60 筆
         this.cooldown = {};        // key → 最後提出的 absDay
         this.proposerCooldown = {}; // agentId → 最後提出的 absDay
+        this.track = {};           // v6.30.0 每位村民的提案戰績 { made, approved, rejected, done }(選舉與名片用)
         this.stats = { made: 0, approved: 0, rejected: 0, shelved: 0, done: 0, failed: 0, auto: 0 };
         this._lastDay = null;
     }
@@ -49,6 +65,29 @@ class ProposalSystem {
     byId(id) { return this.items.find(p => p.id === id) || null; }
     _cost(p) { return p.cost || {}; }
     _affordable(w, p) { const c = this._cost(p); return Object.entries(c).every(([r, n]) => (w.stockpile?.get?.(r) || 0) >= n); }
+    // v6.30.0 戰績
+    _tr(aid) { return this.track[aid] || (this.track[aid] = { made: 0, approved: 0, rejected: 0, done: 0 }); }
+    record(aid) { return this.track[aid] || { made: 0, approved: 0, rejected: 0, done: 0 }; }
+    // v6.30.0 成效快照:執行當下記公庫／食物／平均心情／人口,十天後比
+    _snapshot(w, day) { const n = this._npcs(w); return { day, silver: Math.round(w.stockpile?.get?.('silver') || 0), food: Math.round(w.stockpile?.get?.('food') || 0), mood: Math.round(n.length ? n.reduce((a, x) => a + (x.mood || 0), 0) / n.length : 0), pop: n.length }; }
+    _outcome(w, p, day) {
+        const now = this._snapshot(w, day), s = p.snap;
+        p.outcome = { days: day - s.day, silver: now.silver - s.silver, food: now.food - s.food, mood: now.mood - s.mood, pop: now.pop - s.pop };
+        const text = this.outcomeText(p.outcome);
+        w.logMessageT?.('council', '📈 {id}「{title}」十天後：{text}', { id: p.id, title: this.title(p), text });
+        w.dailyNews?.collectEvent?.('politics', `${p.id}${t('「')}${this.title(p)}${t('」')}${t('十天後')}${t('：')}${text}`, 5, [p.proposerName]);
+        this._notify(w, 'outcome', p);
+    }
+    outcomeText(o) {
+        if (!o) return '';
+        const sg = (n) => (n > 0 ? '+' : '') + n;
+        const parts = [];
+        if (o.mood) parts.push(`${t('心情')} ${sg(o.mood)}`);
+        if (o.silver) parts.push(`${t('公庫')} ${sg(o.silver)}`);
+        if (o.food) parts.push(`${t('食物')} ${sg(o.food)}`);
+        if (o.pop) parts.push(`${t('人口')} ${sg(o.pop)}`);
+        return parts.length ? parts.join(t('、')) : t('鎮上沒什麼變化');
+    }
 
     // ---------- 每日 ----------
     daily(w) {
@@ -72,6 +111,8 @@ class ProposalSystem {
                 this._notify(w, 'expired', p);
             } else if (p.status === 'approved') {
                 this._execute(w, p, day);
+            } else if (p.status === 'done' && p.snap && !p.outcome && day - p.snap.day >= 10) {
+                this._outcome(w, p, day); // v6.30.0 成效追蹤
             }
         }
     }
@@ -84,21 +125,26 @@ class ProposalSystem {
             for (const a of this._npcs(w)) {
                 if (a.agentId === p.proposerId || p.votes[a.agentId]) continue;
                 if (Math.random() > 0.6) continue;
-                let s = 0;
+                let s = 0; const R = []; const add = (k, d) => { s += d; if (d) R.push([k, d]); }; // v6.30.0 記下每一分的理由
                 const vals = PROPOSAL_POLICY_VALUES[p.category] || [];
-                for (const v of vals) if (this._hasValue(a, v)) s += 2;
-                if (p.kind === 'build' || p.kind === 'industry' || p.kind === 'factory') { if (this._hasValue(a, '財富')) s += 1; if (this._hasTrait(a, 'hardworking')) s += 1; if (this._hasTrait(a, 'lazy')) s -= 1; }
-                if (p.kind === 'festival' || p.kind === 'feast') { if (this._hasValue(a, '社群') || this._hasValue(a, '藝術')) s += 2; if (this._hasTrait(a, 'glutton')) s += 2; if (this._hasTrait(a, 'ascetic')) s -= 2; if (this._hasTrait(a, 'stoic')) s -= 1; if (this._hasTrait(a, 'charismatic')) s += 1; }
-                if (p.kind === 'expedition') { if (this._hasValue(a, '冒險')) s += 3; if (this._hasValue(a, '家庭')) s -= 1; if (this._hasTrait(a, 'shy')) s -= 1; }
-                if (p.kind === 'relief') { if (this._hasValue(a, '社群') || this._hasValue(a, '和平')) s += 2; if (this._hasTrait(a, 'kind')) s += 2; if (this._hasValue(a, '財富')) s -= 1; }
-                if (p.kind === 'trial') s += 2;
-                if (p.kind === 'policy' && p.effects) { if ((p.effects.mood_all || 0) < 0) s -= 2; if ((p.effects.mood_all || 0) > 0) s += 2; if ((p.effects.silver || 0) < 0) s -= 1; }
-                if (this._hasTrait(a, 'pessimist')) s -= 1; if (this._hasTrait(a, 'optimist')) s += 1;
-                if (a.job?.key && p.jobBias && p.jobBias.includes(a.job.key)) s += 2;
-                const rel = a.relationships?.relationships?.[p.proposerId]; if (rel) s += (rel.affinity || 0) / 100 * 4;
-                const silverCost = this._cost(p).silver || 0; if (silverCost && silverCost > (w.stockpile?.get?.('silver') || 0)) s -= 2;
+                for (const v of vals) if (this._hasValue(a, v)) add('value', 2);
+                if (p.kind === 'build' || p.kind === 'industry' || p.kind === 'factory' || p.kind === 'trade') { if (this._hasValue(a, '財富')) add('wealth', 1); if (this._hasTrait(a, 'hardworking')) add('work', 1); if (this._hasTrait(a, 'lazy')) add('lazy', -1); }
+                if (p.kind === 'festival' || p.kind === 'feast' || p.kind === 'honor') { if (this._hasValue(a, '社群') || this._hasValue(a, '藝術')) add('fun', 2); if (this._hasTrait(a, 'glutton') && p.kind !== 'honor') add('glutton', 2); if (this._hasTrait(a, 'ascetic')) add('ascetic', -2); if (this._hasTrait(a, 'stoic')) add('stoic', -1); if (this._hasTrait(a, 'charismatic')) add('charm', 1); }
+                if (p.kind === 'expedition' || p.kind === 'envoy') { if (this._hasValue(a, '冒險')) add('adventure', 3); if (this._hasValue(a, '家庭')) add('family', -1); if (this._hasTrait(a, 'shy')) add('shy', -1); }
+                if (p.kind === 'relief' || p.kind === 'mediate' || p.kind === 'mentor') { if (this._hasValue(a, '社群') || this._hasValue(a, '和平')) add('care', 2); if (this._hasTrait(a, 'kind')) add('kind', 2); if (this._hasValue(a, '財富') && p.kind === 'relief') add('greedy', -1); }
+                if (p.kind === 'mediate' && p.pair) { const r0 = a.relationships?.relationships?.[p.pair[0]], r1 = a.relationships?.relationships?.[p.pair[1]]; if ((r0?.affinity || 0) > 20 || (r1?.affinity || 0) > 20) add('feud', 2); if ((r0?.affinity || 0) < -30 || (r1?.affinity || 0) < -30) add('grudge', -2); }
+                if (p.kind === 'honor' && p.refKey) { const r0 = a.relationships?.relationships?.[p.refKey]; if ((r0?.affinity || 0) > 20) add('proud', 2); if ((r0?.affinity || 0) < -20) add('grudge', -3); if (this._hasTrait(a, 'jealous')) add('grudge', -1); }
+                if (p.kind === 'recruit') { if (this._hasValue(a, '社群') || this._hasTrait(a, 'optimist')) add('newcomer', 2); if (this._hasTrait(a, 'shy') || this._hasTrait(a, 'ascetic')) add('crowded', -2); }
+                if (p.kind === 'trial') add('trial', 2);
+                if (p.kind === 'policy' && p.effects) { if ((p.effects.mood_all || 0) < 0) add('mooddown', -2); if ((p.effects.mood_all || 0) > 0) add('moodup', 2); if ((p.effects.silver || 0) < 0) add('spend', -1); }
+                if (this._hasTrait(a, 'pessimist')) add('pessimist', -1); if (this._hasTrait(a, 'optimist')) add('optimist', 1);
+                if (a.job?.key && p.jobBias && p.jobBias.includes(a.job.key)) add('job', 2);
+                const rel = a.relationships?.relationships?.[p.proposerId]; if (rel) { const d = (rel.affinity || 0) / 100 * 4; add(d >= 0 ? 'relgood' : 'relbad', d); }
+                const silverCost = this._cost(p).silver || 0; if (silverCost && silverCost > (w.stockpile?.get?.('silver') || 0)) add('cost', -2);
                 s += (Math.random() - 0.5) * 4;
                 p.votes[a.agentId] = s >= 0 ? 'for' : 'against';
+                const side = s >= 0 ? 1 : -1; let best = null; for (const [k, d] of R) if (Math.sign(d) === side && Math.abs(d) >= 0.5 && (!best || Math.abs(d) > Math.abs(best[1]))) best = [k, d];
+                (p.why || (p.why = {}))[a.agentId] = best ? best[0] : 'gut';
             }
         }
     }
@@ -201,15 +247,61 @@ class ProposalSystem {
             }[tr.type];
             if (M) out.push({ kind: 'trial', key: 'trial:' + tr.type, weight: 3, jobs: M.jobs, make: (a) => ({ kind: 'trial', key: 'trial:' + tr.type, refKey: tr.type, tk: M.tk, tp: {}, dk: M.dk, dp: { who: a.name }, cost: { ...M.cost }, effects: M.effects || null, gain: M.gain || null, category: tr.type === 'bandits' ? 'defense' : 'welfare', jobBias: M.jobs }) });
         }
+        // ---------- v6.30.0 人際類 ----------
+        // 調解:鎮上有一對結了怨的人(好感 ≤ −40),由神父／鎮長／醫生或心軟的人出面
+        {
+            let worst = null;
+            for (const x of npcs) for (const [tid, r] of Object.entries(x.relationships?.relationships || {})) {
+                if ((r.affinity || 0) > -40) continue; const y = w.agents[tid]; if (!y || y.isPlayer || y.isDead || !npcs.includes(y)) continue;
+                const key = [x.agentId, tid].sort().join('|'); if (!this._cool(day, 'mediate:' + key, 20)) continue;
+                if (!worst || r.affinity < worst.aff) worst = { x, y, aff: r.affinity, key };
+            }
+            if (worst) out.push({ kind: 'mediate', key: 'mediate:' + worst.key, weight: 1.5, jobs: ['priest', 'mayor', 'doctor'], pred: (a) => a.agentId !== worst.x.agentId && a.agentId !== worst.y.agentId && (this._hasTrait(a, 'kind') || this._hasValue(a, '和平')),
+                make: (a) => ({ kind: 'mediate', key: 'mediate:' + worst.key, refKey: worst.key, pair: [worst.x.agentId, worst.y.agentId], tk: '替{a}和{b}調解', tp: { a: worst.x.name, b: worst.y.name }, dk: '{a}和{b}結怨很久了，{who}想擺一桌把兩人請來把話說開：花 10 銀幣，成了的話兩人關係回暖、全鎮氣氛也好一點。', dp: { a: worst.x.name, b: worst.y.name, who: a.name }, cost: { silver: 10 }, category: 'welfare', jobBias: ['priest', 'mayor', 'doctor'] }) });
+        }
+        // 表揚:技能最強或提案落實最多的人,鎮長／神父／學者提議公開表揚(士氣低時更想辦)
+        if (this._cool(day, 'honor', 20) && npcs.length >= 4) {
+            const score = (a) => (a.skills?.totalLevel || 0) + (this.record(a.agentId).done || 0) * 4;
+            const star = npcs.slice().sort((x, y) => score(y) - score(x))[0];
+            if (star && score(star) >= 6) out.push({ kind: 'honor', key: 'honor', weight: avgMood < 50 ? 1.4 : 0.7, jobs: ['mayor', 'priest', 'researcher'], pred: (a) => a.agentId !== star.agentId,
+                make: (a) => ({ kind: 'honor', key: 'honor', refKey: star.agentId, tk: '公開表揚{name}', tp: { name: star.name }, dk: '{who}覺得{name}這陣子為鎮上出了最多力（{why}），想在廣場辦個小儀式表揚：花 15 銀幣，當事人心情大好、大家也更敬重他。', dp: { who: a.name, name: star.name, why: (this.record(star.agentId).done || 0) >= 2 ? '提案一件件落實' : '手藝是鎮上最好的' }, cost: { silver: 15 }, category: 'culture', jobBias: ['mayor', 'priest', 'researcher'] }) });
+        }
+        // 帶徒弟:同行裡有師傅(主技能 ≥ 4)與學徒(主技能 ≤ 1)
+        if (this._cool(day, 'mentor', 18)) {
+            const JS = (typeof JOB_SKILL_MAP !== 'undefined') ? JOB_SKILL_MAP : {};
+            let pick = null;
+            for (const m of npcs) {
+                const prim = JS[m.job?.key]?.primary?.[0]; if (!prim) continue; const ml = m.skills?.skills?.[prim]?.level || 0; if (ml < 4) continue;
+                const ap = npcs.find(x => x !== m && x.job?.key === m.job?.key && (x.skills?.skills?.[prim]?.level || 0) <= 1) || npcs.find(x => x !== m && (x.age || 30) < 26 && (x.skills?.skills?.[prim]?.level || 0) <= 1);
+                if (ap && (!pick || ml > pick.ml)) pick = { m, ap, prim, ml };
+            }
+            if (pick) out.push({ kind: 'mentor', key: 'mentor', weight: 0.9, jobs: [pick.m.job?.key].filter(Boolean), pred: (a) => a.agentId === pick.m.agentId || a.job?.key === 'mayor' || a.job?.key === 'researcher',
+                make: (a) => ({ kind: 'mentor', key: 'mentor', refKey: pick.m.agentId, pair: [pick.m.agentId, pick.ap.agentId], tk: '讓{m}收{ap}當徒弟', tp: { m: pick.m.name, ap: pick.ap.name }, dk: '{m}的{skill}是鎮上數一數二的，{who}提議讓{ap}跟著學一陣子：徒弟技能大進、兩人也會變熟。', dp: { m: pick.m.name, ap: pick.ap.name, skill: pick.prim, who: a.name }, cost: {}, skill: pick.prim, category: 'culture', jobBias: [pick.m.job?.key, 'researcher'].filter(Boolean) }) });
+        }
+        // ---------- v6.30.0 對外類 ----------
+        // 外銷商隊:糧食或木材有餘、公庫不豐,商人想載出去賣
+        {
+            const wood = sp?.get?.('wood') || 0;
+            const res = food >= 160 ? 'food' : wood >= 120 ? 'wood' : null;
+            if (res && this._cool(day, 'trade', 12)) out.push({ kind: 'trade', key: 'trade', weight: silver < 300 ? 1.4 : 0.6, jobs: ['trader', 'farmer', 'carpenter'], make: (a) => ({ kind: 'trade', key: 'trade', refKey: res, tk: '派商隊把{res}載去鄰鎮賣', tp: { res: res === 'food' ? '餘糧' : '木材' }, dk: '{who}說倉庫的{res}放著也是放著，載 40 份去鄰鎮大約能換 55 銀幣回來；路上有一點被劫的風險。', dp: { who: a.name, res: res === 'food' ? '餘糧' : '木材' }, cost: { [res]: 40 }, category: 'economy', jobBias: ['trader'] }) });
+        }
+        // 派使者結盟:匪患當前或每隔一陣子,花 25 銀幣送禮換 20 天少被襲擊、也更吸引人搬來
+        if (silver >= 25 && this._cool(day, 'envoy', 30) && !(w.council?.activeDecrees || []).some(d => d.id === 'prop_envoy')) out.push({ kind: 'envoy', key: 'envoy', weight: w.trials?.current?.type === 'bandits' ? 1.8 : 0.5, jobs: ['mayor', 'trader', 'guard'], pred: (a) => this._hasTrait(a, 'charismatic') || this._hasValue(a, '和平'),
+            make: (a) => ({ kind: 'envoy', key: 'envoy', tk: '派使者去鄰鎮結盟', tp: {}, dk: '{who}願意帶著 25 銀幣的禮物走一趟鄰鎮談互保：20 天內襲擊機率下降、鎮上名聲也會傳出去。', dp: { who: a.name }, cost: { silver: 25 }, effects: { raid_chance: -0.08, immigration_chance: 0.05 }, category: 'defense', jobBias: ['mayor', 'guard'] }) });
+        // 招募新居民:人口不多、糧食夠,貼告示請人搬來
+        {
+            const tp = (w.events?.TARGET_POPULATION || 12) + 3; const recentLeft = (w.movedOut || []).filter(m => day - (m.absDay || 0) <= 15).length;
+            if (npcs.length < tp && food >= 80 && silver >= 30 && this._cool(day, 'recruit', 20)) out.push({ kind: 'recruit', key: 'recruit', weight: recentLeft ? 1.8 : 1.0, jobs: ['mayor', 'trader', 'priest'], make: (a) => ({ kind: 'recruit', key: 'recruit', tk: '貼告示招人搬來鎮上', tp: {}, dk: '{who}覺得鎮上人手不夠（現在 {n} 人），想花 30 銀幣到鄰鎮貼告示、備一間屋子，招一戶人家搬來。', dp: { who: a.name, n: npcs.length }, cost: { silver: 30 }, category: 'welfare', jobBias: ['mayor', 'trader'] }) });
+        }
         return out;
     }
     _create(w, day, cand) {
         const a = this._proposer(w, day, cand.jobs || [], cand.pred); if (!a) return null;
         const base = cand.make(a);
         this.counter++;
-        const p = Object.assign({ id: 'L' + String(this.counter).padStart(3, '0'), n: this.counter, status: 'open', proposerId: a.agentId, proposerName: a.name, proposerJob: a.job?.key || '', createdDay: day, votes: {}, decidedBy: null, result: '', pitch: '' }, base);
+        const p = Object.assign({ id: 'L' + String(this.counter).padStart(3, '0'), n: this.counter, status: 'open', proposerId: a.agentId, proposerName: a.name, proposerJob: a.job?.key || '', createdDay: day, votes: {}, why: {}, decidedBy: null, result: '', pitch: '' }, base);
         this.items.push(p);
-        this.cooldown[p.key] = day; this.proposerCooldown[a.agentId] = day; this.stats.made++;
+        this.cooldown[p.key] = day; this.proposerCooldown[a.agentId] = day; this.stats.made++; this._tr(a.agentId).made++;
         a.memory?.addT?.(w.tickCount, w.clock.timeStr, 'social', '我向鎮上提了 {id}「{title}」，看大家怎麼想。', { id: p.id, title: this.title(p) }, 5, [a.name]);
         w.logMessageT?.('council', '📜 {who}提出 {id}：{title}', { who: a.name, id: p.id, title: this.title(p) }, a.name);
         w.dailyNews?.collectEvent?.('politics', `${a.name}${t('提出提案')} ${p.id}${t('：')}${this.title(p)}`, 6, [a.name]);
@@ -236,7 +328,7 @@ class ProposalSystem {
             this._notify(w, 'shelved', p); return;
         }
         if (action === 'approve') {
-            p.status = 'approved'; p.approvedDay = day; this.stats.approved++;
+            p.status = 'approved'; p.approvedDay = day; this.stats.approved++; this._tr(p.proposerId).approved++;
             if (a) { a.moodModifier = (a.moodModifier || 0) + 5; a.memory?.addT?.(w.tickCount, w.clock.timeStr, 'social', '{id}「{title}」{how}批准了！', { id: p.id, title: this.title(p), how: by === 'auto' ? '依票數' : '被鎮上' }, 6, [p.proposerName]); }
             for (const [aid, v] of Object.entries(p.votes)) { const x = w.agents[aid]; if (x && v === 'for') x.moodModifier = (x.moodModifier || 0) + 1; }
             w.logMessageT?.('council', '✅ {id}「{title}」批准（{f} 贊成 / {a} 反對{auto}）', { id: p.id, title: this.title(p), f, a: ag, auto: by === 'auto' ? '，三天沒處理依票數定案' : '' });
@@ -244,7 +336,7 @@ class ProposalSystem {
             this._notify(w, 'approved', p);
             this._execute(w, p, day);
         } else {
-            p.status = 'rejected'; p.resolvedDay = day; this.stats.rejected++; p.result = by === 'auto' ? '三天沒處理，依票數否決' : '被否決';
+            p.status = 'rejected'; p.resolvedDay = day; this.stats.rejected++; this._tr(p.proposerId).rejected++; p.result = by === 'auto' ? '三天沒處理，依票數否決' : '被否決';
             if (a) { a.moodModifier = (a.moodModifier || 0) - 4; a.memory?.addT?.(w.tickCount, w.clock.timeStr, 'social', '{id}「{title}」被否決了，有點失望。', { id: p.id, title: this.title(p) }, 6, [p.proposerName]); }
             for (const [aid, v] of Object.entries(p.votes)) { const x = w.agents[aid]; if (x && v === 'for') x.moodModifier = (x.moodModifier || 0) - 1; }
             w.logMessageT?.('council', '❌ {id}「{title}」否決（{f} 贊成 / {a} 反對{auto}）', { id: p.id, title: this.title(p), f, a: ag, auto: by === 'auto' ? '，三天沒處理依票數定案' : '' });
@@ -291,10 +383,61 @@ class ProposalSystem {
                     if (p.effects) this._addDecree(w, p, 15);
                     ok = true; result = '對策上路，全鎮動起來'; break;
                 }
+                // ---------- v6.30.0 ----------
+                case 'mediate': {
+                    const [xa, ya] = (p.pair || []).map(id => w.agents[id]); if (!xa || !ya) { result = '當事人不在鎮上了'; break; }
+                    w.stockpile.consume('silver', 10, w.tickCount, t('調解飯局'), 'proposal');
+                    const rx = xa.relationships?.getOrCreate?.(ya.agentId, ya.name), ry = ya.relationships?.getOrCreate?.(xa.agentId, xa.name);
+                    const worked = Math.random() < 0.8; const d = worked ? 25 : 8;
+                    rx?.modifyAffinity?.(d); ry?.modifyAffinity?.(d); rx?.modifyTrust?.(worked ? 10 : 2); ry?.modifyTrust?.(worked ? 10 : 2);
+                    xa.moodModifier = (xa.moodModifier || 0) + (worked ? 4 : 1); ya.moodModifier = (ya.moodModifier || 0) + (worked ? 4 : 1);
+                    xa.memory?.addT?.(w.tickCount, w.clock.timeStr, 'social', worked ? '{who}請我和{other}吃了一頓飯，把話說開了。' : '{who}想替我和{other}調解，但話還是沒說開。', { who: p.proposerName, other: ya.name }, 7, [p.proposerName, ya.name]);
+                    ya.memory?.addT?.(w.tickCount, w.clock.timeStr, 'social', worked ? '{who}請我和{other}吃了一頓飯，把話說開了。' : '{who}想替我和{other}調解，但話還是沒說開。', { who: p.proposerName, other: xa.name }, 7, [p.proposerName, xa.name]);
+                    rx?.addSharedMemory?.(t('一起吃了調解飯')); ry?.addSharedMemory?.(t('一起吃了調解飯'));
+                    if (worked) for (const x of this._npcs(w)) x.moodModifier = (x.moodModifier || 0) + 1;
+                    ok = true; result = worked ? '兩人把話說開了，關係回暖' : '飯吃了，但兩人還是有點僵'; break;
+                }
+                case 'honor': {
+                    const x = w.agents[p.refKey]; if (!x) { result = '當事人不在鎮上了'; break; }
+                    w.stockpile.consume('silver', 15, w.tickCount, t('表揚儀式'), 'proposal');
+                    x.moodModifier = (x.moodModifier || 0) + 12; x.memory?.addT?.(w.tickCount, w.clock.timeStr, 'social', '鎮上在廣場公開表揚了我，{who}提的。', { who: p.proposerName }, 8, [p.proposerName]);
+                    for (const o of this._npcs(w)) { if (o === x) continue; const r = o.relationships?.getOrCreate?.(x.agentId, x.name); r?.modifyAffinity?.(this._hasTrait(o, 'jealous') ? -2 : 4); o.memory?.addT?.(w.tickCount, w.clock.timeStr, 'social', '鎮上公開表揚了{name}。', { name: x.name }, 3, [x.name]); }
+                    ok = true; result = `${x.name}${t('受到全鎮表揚，大家更敬重他了')}`; break;
+                }
+                case 'mentor': {
+                    const [m, ap] = (p.pair || []).map(id => w.agents[id]); if (!m || !ap) { result = '師徒有人不在鎮上了'; break; }
+                    const sk = ap.skills?.skills?.[p.skill]; const before = sk?.level || 0;
+                    if (sk) { const need = (typeof xpForLevel === 'function') ? xpForLevel(before + 1) - sk.xp : 120; sk.addXp(Math.max(120, need + 10)); } // 至少升一級(Lv0→1 要 120 xp)
+                    const after = sk?.level || 0;
+                    m.relationships?.getOrCreate?.(ap.agentId, ap.name)?.modifyAffinity?.(10); ap.relationships?.getOrCreate?.(m.agentId, m.name)?.modifyAffinity?.(12); ap.relationships?.getOrCreate?.(m.agentId, m.name)?.modifyTrust?.(10);
+                    ap.memory?.addT?.(w.tickCount, w.clock.timeStr, 'social', '跟著{m}學了一陣子{skill}，進步很多。', { m: m.name, skill: p.skill }, 7, [m.name]); m.memory?.addT?.(w.tickCount, w.clock.timeStr, 'social', '收了{ap}當徒弟，教他{skill}。', { ap: ap.name, skill: p.skill }, 6, [ap.name]);
+                    ok = true; result = `${ap.name}${t('的')}${t(p.skill)} Lv${before} → Lv${after}`; break;
+                }
+                case 'trade': {
+                    const res = p.refKey || 'food'; w.stockpile.consume(res, 40, w.tickCount, t('外銷商隊'), 'proposal');
+                    const raided = Math.random() < 0.15; const earn = raided ? 20 + Math.round(Math.random() * 8) : 50 + Math.round(Math.random() * 12);
+                    w.stockpile.add('silver', earn, w.tickCount, t('外銷商隊'), 'proposal'); if (w.questSystem) w.questSystem.reputation = (w.questSystem.reputation || 0) + 1;
+                    const a = w.agents[p.proposerId]; a?.memory?.addT?.(w.tickCount, w.clock.timeStr, 'work', raided ? '押貨去鄰鎮路上遇了劫，只帶回 {n} 銀幣。' : '押貨去鄰鎮賣，帶回 {n} 銀幣。', { n: earn }, 6, []);
+                    ok = true; result = raided ? `${t('路上遇劫，只帶回')} ${earn} ${t('銀幣')}` : `${t('商隊回來了，賺進')} ${earn} ${t('銀幣')}`; break;
+                }
+                case 'envoy': {
+                    w.stockpile.consume('silver', 25, w.tickCount, t('結盟禮物'), 'proposal');
+                    if (w.council) { w.council.activeDecrees = w.council.activeDecrees || []; w.council.activeDecrees.push({ id: 'prop_envoy', title: this.title(p), effects: { ...(p.effects || {}) }, expiresDay: day + 20 }); }
+                    if (w.questSystem) w.questSystem.reputation = (w.questSystem.reputation || 0) + 4;
+                    w.events?.conversationTopics?.push(`${p.proposerName}${t('去鄰鎮談成了互保')}`);
+                    ok = true; result = '鄰鎮答應互保，20 天內襲擊機率下降'; break;
+                }
+                case 'recruit': {
+                    w.stockpile.consume('silver', 30, w.tickCount, t('招募告示'), 'proposal');
+                    const before = new Set(Object.keys(w.agents)); w.events?._spawnImmigrant?.(w);
+                    const nid = Object.keys(w.agents).find(k => !before.has(k)); const nw = nid ? w.agents[nid] : null;
+                    if (nw) { const a = w.agents[p.proposerId]; if (a) { nw.relationships?.getOrCreate?.(a.agentId, a.name)?.modifyAffinity?.(15); a.relationships?.getOrCreate?.(nw.agentId, nw.name)?.modifyAffinity?.(8); nw.memory?.addT?.(w.tickCount, w.clock.timeStr, 'immigration', '看到{who}貼的告示才搬來的，他幫我安頓了屋子。', { who: a.name }, 7, [a.name]); } }
+                    ok = !!nw; result = nw ? `${nw.name}${t('看到告示搬來了')}` : '告示貼了，暫時沒人來'; break;
+                }
             }
         } catch (e) { console.warn('[Proposals] execute', e); ok = false; result = '執行時出了問題'; }
         p.status = ok ? 'done' : 'failed'; p.resolvedDay = day; p.result = result;
-        if (ok) { this.stats.done++; const a = w.agents[p.proposerId]; if (a) { a.moodModifier = (a.moodModifier || 0) + 3; } if (w.questSystem) w.questSystem.reputation = (w.questSystem.reputation || 0) + 2; }
+        if (ok) { this.stats.done++; this._tr(p.proposerId).done++; p.snap = this._snapshot(w, day); const a = w.agents[p.proposerId]; if (a) { a.moodModifier = (a.moodModifier || 0) + 3; } if (w.questSystem) w.questSystem.reputation = (w.questSystem.reputation || 0) + 2; }
         else this.stats.failed++;
         w.logMessageT?.('council', '{icon} {id}「{title}」{result}', { icon: ok ? '🏁' : '⚠️', id: p.id, title: this.title(p), result });
         w.dailyNews?.collectEvent?.('politics', `${p.id}${t('「')}${this.title(p)}${t('」')}${t(result)}`, ok ? 7 : 5, [p.proposerName]);
@@ -336,7 +479,21 @@ class ProposalSystem {
             cost: this._cost(p), affordable: this._affordable(w, p), decidedBy: p.decidedBy, result: p.result ? t(p.result) : '',
             daysLeft: p.status === 'open' ? Math.max(0, ProposalSystem.DECIDE_DAYS - (day - p.createdDay)) : p.status === 'shelved' ? Math.max(0, ProposalSystem.SHELF_DAYS - (day - (p.shelvedDay || p.createdDay))) : 0,
             waitDays: p.waitDays || 0, createdDay: p.createdDay, resolvedDay: p.resolvedDay || null,
+            forWhy: this._whyTop(p, 'for'), againstWhy: this._whyTop(p, 'against'), // v6.30.0 投票理由(前兩名)
+            outcome: p.outcome || null, outcomeText: p.outcome ? this.outcomeText(p.outcome) : '', // v6.30.0 十天後成效
         };
+    }
+    _whyTop(p, side) {
+        const cnt = {}; for (const [aid, v] of Object.entries(p.votes || {})) { if (v !== side) continue; const k = p.why?.[aid] || 'gut'; cnt[k] = (cnt[k] || 0) + 1; }
+        return Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k, n]) => ({ why: t(VOTE_WHY[k] || VOTE_WHY.gut), n }));
+    }
+    // v6.30.0 這一段期間(absDay 區間)的提案統計,季末回顧用
+    periodStats(w, fromDay, toDay) {
+        const inP = this.items.filter(p => p.createdDay >= fromDay && p.createdDay < toDay);
+        const by = {}; for (const p of inP) by[p.proposerName] = (by[p.proposerName] || 0) + 1;
+        const top = Object.entries(by).sort((a, b) => b[1] - a[1])[0] || null;
+        const resolved = this.items.filter(p => (p.resolvedDay || p.approvedDay || 0) >= fromDay && (p.resolvedDay || p.approvedDay || 0) < toDay);
+        return { made: inP.length, approved: resolved.filter(p => ['approved', 'done', 'failed'].includes(p.status)).length, rejected: resolved.filter(p => p.status === 'rejected').length, done: resolved.filter(p => p.status === 'done').length, top: top ? { name: top[0], n: top[1] } : null };
     }
     toDict(w) {
         const items = this.items.map(p => this.toItem(w, p));
@@ -349,7 +506,7 @@ class ProposalSystem {
             stats: { ...this.stats }, pendingCount: items.filter(x => x.status === 'open').length,
         };
     }
-    serialize() { return { counter: this.counter, items: this.items, cooldown: this.cooldown, proposerCooldown: this.proposerCooldown, stats: this.stats, _lastDay: this._lastDay }; }
-    loadFrom(d) { if (!d) return; this.counter = d.counter || 0; this.items = Array.isArray(d.items) ? d.items : []; this.cooldown = d.cooldown || {}; this.proposerCooldown = d.proposerCooldown || {}; this.stats = Object.assign({ made: 0, approved: 0, rejected: 0, shelved: 0, done: 0, failed: 0, auto: 0 }, d.stats || {}); this._lastDay = d._lastDay ?? null; }
+    serialize() { return { counter: this.counter, items: this.items, cooldown: this.cooldown, proposerCooldown: this.proposerCooldown, stats: this.stats, track: this.track, _lastDay: this._lastDay }; }
+    loadFrom(d) { if (!d) return; this.counter = d.counter || 0; this.items = Array.isArray(d.items) ? d.items : []; this.cooldown = d.cooldown || {}; this.proposerCooldown = d.proposerCooldown || {}; this.track = d.track || {}; this.stats = Object.assign({ made: 0, approved: 0, rejected: 0, shelved: 0, done: 0, failed: 0, auto: 0 }, d.stats || {}); this._lastDay = d._lastDay ?? null; }
 }
-if (typeof window !== 'undefined') { window.ProposalSystem = ProposalSystem; window.PROPOSAL_KINDS = PROPOSAL_KINDS; }
+if (typeof window !== 'undefined') { window.ProposalSystem = ProposalSystem; window.PROPOSAL_KINDS = PROPOSAL_KINDS; window.VOTE_WHY = VOTE_WHY; }

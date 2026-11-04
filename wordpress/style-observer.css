@@ -290,3 +290,7 @@
 /* ---------- v6.29.0 通知上的「去看」鈕 ---------- */
 #achv-toast-host .rt-toast-go, .rimtown-container .rt-toast-go { flex: none; min-height: 32px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--accent, #F28C4A); background: transparent; color: var(--accent, #F28C4A); font-size: 0.72rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
 #achv-toast-host .rt-toast-go:hover, .rimtown-container .rt-toast-go:hover { background: var(--accent, #F28C4A); color: var(--ob-on-accent, #1E1B2A); }
+
+/* ---------- v6.30.0 提案卡:投票理由與十天後成效 ---------- */
+.rimtown-container .pp-why { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 2px 0 4px; font-size: 0.68rem; color: var(--text-muted); }
+.rimtown-container .pp-outcome { margin-top: 4px; padding: 5px 8px; border-radius: 8px; background: var(--bg-primary); font-size: 0.74rem; color: var(--text-secondary); }

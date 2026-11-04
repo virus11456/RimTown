@@ -2745,10 +2745,13 @@ class SeasonTrials {
     target(type, w) {
         const n = Math.max(8, this._npcs(w).length); const f = this._flags(w);
         const pv = w.growth?.has('provident') ? 0.9 : 1; // v5.94.0 天賦:未雨
-        if (type === 'famine') return Math.round(n * 5 * (f.granary ? 0.8 : 1) * pv);
-        if (type === 'plague') return Math.round(n * 1.5 * (f.apothecary ? 0.7 : 1) * pv);
+        // v6.30.0 觀察者模式算的是全鎮進帳(收成、買進、商隊都算),不是玩家親手帶進的量:目標跟著放大,讓健康的小鎮大約 1.5–2 倍過關、衰退的小鎮會過不了
+        // (35 天 soak 實測:糧荒 737 vs 舊目標 125、瘟疫 646 vs 36、壓價 392 vs 262;重調後瘟疫 704/300、壓價 434/246)
+        const ob = w.observerMode ? { famine: 3.5, plague: 10, pricewar: 1 } : { famine: 1, plague: 1, pricewar: 1 };
+        if (type === 'famine') return Math.round(n * 5 * ob.famine * (f.granary ? 0.8 : 1) * pv);
+        if (type === 'plague') return Math.round(n * 1.5 * ob.plague * (f.apothecary ? 0.7 : 1) * pv);
         if (type === 'bandits') return Math.max(4, this.value('bandits', w) + (pv < 1 ? 1 : 2));
-        return Math.round((150 + n * 8) * pv);
+        return Math.round((150 + n * 8) * ob.pricewar * pv);
     }
     value(type, w) {
         const c = this.current; const k = (c && c.type === type && c.contrib) ? c.contrib : { food: 0, herb: 0, silver: 0 };
@@ -2758,8 +2761,9 @@ class SeasonTrials {
         if (type === 'pricewar') return Math.round(k.silver);
         return 0;
     }
-    unit(type) { return { famine: t('帶進的食物'), plague: t('帶進的草藥（藥品算 3）'), bandits: t('防衛值'), pricewar: t('賺進的銀幣') }[type] || ''; }
+    unit(type) { if (this._obsText) return { famine: t('全鎮進帳的食物'), plague: t('全鎮進帳的草藥（藥品算 3）'), bandits: t('防衛值'), pricewar: t('全鎮賺進的銀幣') }[type] || ''; return { famine: t('帶進的食物'), plague: t('帶進的草藥（藥品算 3）'), bandits: t('防衛值'), pricewar: t('賺進的銀幣') }[type] || ''; }
     goalTextT(type, target) { // v6.22.0 模板版(日誌用)
+        if (this._obsText) { const k2 = { famine: '季末前全鎮為公庫帶進 {n} 份食物（收成、買進、商隊都算）', plague: '季末前全鎮帶進 {n} 份草藥（藥品一份算三份；採藥、買進、商隊都算）', bandits: '季末前把防衛值撐到 {n}（守衛每人 2、防禦建築、市集城加強守衛 3）', pricewar: '季末前全鎮賺進 {n} 銀幣（賣貨、商隊、外銷都算）' }[type]; if (k2) return tpl(k2, { n: target }); } // v6.30.0 觀察者措辭:不再是「親手」
         const k = { famine: '季末前親手為鎮上帶進 {n} 份食物（求助、收成、買進、委託報酬都算）', plague: '季末前親手帶進 {n} 份草藥（藥品一份算三份；求助、買進、委託報酬都算）', bandits: '季末前把防衛值撐到 {n}（守衛每人 2、防禦建築、市集城加強守衛 3）', pricewar: '季末前親手賺進 {n} 銀幣（委託報酬、押商隊、賣貨都算）' }[type] || '{n}';
         return tpl(k, { n: target });
     }
@@ -2772,6 +2776,7 @@ class SeasonTrials {
         return pool[0][0];
     }
     daily(world) {
+        this._obsText = !!world.observerMode; // v6.30.0
         const key = this._seasonKey(world); const day = world.clock.day; const last = world.clock.DAYS_PER_SEASON || 15;
         // 跨季還掛著(錯過季末那天):先結算
         if (this.current && this.current.status === 'active' && this.current.seasonKey !== key) this._resolve(world, false);
@@ -2964,6 +2969,7 @@ class SeasonRecap {
             xp: now.xpTotal - s.xpTotal, levelFrom: s.level, levelTo: now.level,
             silverFrom: Math.round(s.silver), silverTo: Math.round(now.silver), popFrom: s.pop, popTo: now.pop, rep: now.rep - s.rep, prosperity: now.prosperity - s.prosperity, questsDone: now.questsDone - s.questsDone,
             gains, left, joined, revived: (now.revivals || 0) > (s.revivals || 0), grade: '', // v6.13.0 這季復興了
+            prop: w.proposals?.periodStats ? w.proposals.periodStats(w, s.absDay, now.absDay) : null, // v6.30.0 本季提案統計
         };
         r.grade = this._grade(r);
         this.last = r; this.history = this.history.concat([r]).slice(-4); this.start = now; this.pendingShow = true;
@@ -2978,6 +2984,7 @@ class SeasonRecap {
         if (!this._obs) { s += Math.min(2, Math.floor(r.reqDone / 10)); if (r.reqFailed > r.reqDone) s -= 1; }
         if (r.silverTo > r.silverFrom) s += 1; if (r.popTo < r.popFrom) s -= 1; if (!this._obs && r.carSilver >= 100) s += 1; if (r.questsDone > 0) s += 1;
         if (this._obs && r.popTo > r.popFrom) s += 1; // v6.25.0 觀察者:人口成長加分
+        if (this._obs && (r.prop?.done || 0) >= 3) s += 1; // v6.30.0 觀察者:這季落實三件以上提案加分
         return s >= 5 ? 'S' : s >= 3 ? 'A' : s >= 0 ? 'B' : 'C';
     }
     _fill(tpl, m) { return Object.entries(m).reduce((acc, [k, v]) => acc.split('{' + k + '}').join(String(v)), tpl); }
@@ -3006,6 +3013,7 @@ class SeasonRecap {
         if (r.gains?.length) out.push({ icon: '💞', text: `${t('好感升最多：')}${r.gains.map(g => `${t(g.name)} +${g.delta}`).join(t('、'))}` });
         if (r.left?.length) out.push({ icon: '🚪', text: `${t('搬走了：')}${r.left.map(n => t(n)).join(t('、'))}` });
         if (r.joined?.length) out.push({ icon: '🏠', text: `${t('新住民：')}${r.joined.map(n => t(n)).join(t('、'))}` });
+        if (r.prop && (r.prop.made || r.prop.done)) out.push({ icon: '📜', text: this._fill(t('提案 {m} 件：批准 {a}、否決 {r}、落實 {d}'), { m: r.prop.made, a: r.prop.approved, r: r.prop.rejected, d: r.prop.done }) + (r.prop.top ? this._fill(t('，最愛提案的是 {name}（{n} 件）'), { name: t(r.prop.top.name), n: r.prop.top.n }) : '') }); // v6.30.0
         return out;
     }
     // v6.4.0 下一季怎麼打:依上一季的弱項挑最多三條具體行動(考驗失敗 → 對症;委託過期多;沒押過商隊;沒人好感上升;人口流失;沒升級)

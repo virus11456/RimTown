@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.29.0
+ * Version: 6.30.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.29.0');
+define('RIMTOWN_VERSION', '6.30.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1328,6 +1328,28 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.30.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '📜 提案深化・人際類：🕊️ 調解（鎮上有結怨的兩人時，神父／鎮長／心軟的人出面擺一桌，八成機率關係回暖）、🏅 表揚（技藝最好或提案落實最多的人，在廣場公開表揚，大家更敬重他）、🎓 帶徒弟（同行師傅收學徒，徒弟技能至少升一級、兩人變熟）',
+                '📜 提案深化・對外類：🧭 外銷商隊（餘糧或木材載去鄰鎮換銀幣，15% 路上遇劫）、🤝 派使者結盟（花 25 銀幣換 20 天襲擊機率下降、更吸引人搬來）、📣 招募新居民（人手不夠時貼告示，真的會有一戶搬來）',
+                '🗳️ 投票理由：每一票都記下最主要的原因（價值觀相合、跟自己這行有關、跟提案人交情好／處不來、公庫不夠、貪吃、怕生…），提案卡上列出贊成與反對各自的前兩個理由',
+                '📈 成效追蹤：批准執行的案子記下當天的公庫、食物、平均心情、人口，十天後比一比，寫進日誌、日報與提案卡（「十天後：心情 +4、公庫 −30」）',
+                '📊 季末回顧多一行提案統計（提出／批准／否決／落實、最愛提案的人），一季落實三件以上評等加分；村民卡多一行「提案戰績」',
+                '🗳️ 選舉連結：提案落實多的村民更容易出來選鎮長、也更容易拿到票；被否決的案子是把柄（戰績隨存檔保留）',
+                '⚖️ 考驗目標重調：觀察者模式算的是全鎮進帳，不是玩家親手帶進的量，舊目標幾乎穩過（糧荒 737/125、瘟疫 646/36）。糧荒目標 ×3.5、瘟疫 ×10、壓價不變，讓健康的小鎮約 1.5–2 倍過關、衰退的小鎮會過不了；考驗說明改成「全鎮為公庫帶進…」，不再寫「親手」',
+            ),
+            'changes_en' => array(
+                '📜 Deeper proposals, interpersonal: 🕊️ Mediate (when two villagers are feuding, a priest, the mayor or a soft-hearted neighbour sets a table; 80% chance the ice breaks), 🏅 Commend (the best craftsperson or most-delivered proposer is honoured in the square and gains everyone\'s respect), 🎓 Apprentice (a master takes a novice in their trade; the apprentice gains at least one skill level and the two grow close)',
+                '📜 Deeper proposals, external: 🧭 Export caravan (surplus grain or wood hauled to the next town for silver, 15% chance of bandits), 🤝 Envoy (25 silver buys 20 days of fewer raids and more settlers), 📣 Recruit (when short-handed, notices go up and a real household moves in)',
+                '🗳️ Vote reasons: every vote records its main reason (shared values, own trade, likes or dislikes the proposer, treasury short, glutton, shy...), and the proposal card lists the top two reasons for and against',
+                '📈 Outcome tracking: an executed proposal snapshots treasury, food, average mood and population on the day, compares ten days later and reports it in the log, the paper and the card ("Ten days on: mood +4, treasury −30")',
+                '📊 Season recap gains a proposal line (proposed / approved / rejected / carried out, most active proposer); three or more delivered in a season lifts the grade; villager cards show a "Proposal record" line',
+                '🗳️ Election link: villagers who deliver proposals are likelier to run for mayor and to win votes; rejected proposals count against them (records persist in saves)',
+                '⚖️ Trial targets retuned: observer mode counts the whole town\'s intake rather than what a player brought in by hand, so the old targets were a near-certain pass (famine 737/125, plague 646/36). Famine target ×3.5, plague ×10, price war unchanged, so a healthy town passes by about 1.5–2x and a declining one fails; trial wording now says "the town brings in..." instead of "by hand"',
+            ),
+        ),
         array(
             'version' => '6.29.0',
             'date'    => '2026-11-04',
