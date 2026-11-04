@@ -510,7 +510,7 @@ Object.assign(RimTownApp.prototype, {
         for (const b of (w.buildings?.completed || [])) { const key = b.buildingKey || b.key; if (PLACE[key] === baseLoc) bits.push(`🏗️ ${esc(t(b.name))}`); }
         for (const p of (w.buildings?.projects || [])) { if (p.status === 'building' && PLACE[p.buildingKey || p.key] === baseLoc) bits.push(`🚧 ${esc(t(p.name))} ${Math.round((p.workDone || 0) / (p.workRequired || 1) * 100)}%`); }
         const props = (w.proposals?.items || []).filter(p => (p.status === 'open' || p.status === 'approved' || p.status === 'shelved') && p.kind === 'build' && PLACE[p.refKey] === baseLoc);
-        for (const p of props) bits.push(`📜 ${p.id} ${esc(w.proposals.title(p))}${p.status === 'open' ? ` · ${t('待你決定')}` : ''}`);
+        for (const p of props) bits.push(`📜 ${p.id} ${esc(w.proposals.title(p))}${p.status === 'open' ? ` · ${t('投票中')}` : ''}`);
         let html = `<button class="nqc-close" data-lqc="close">✕</button>
             <div class="nqc-name">${num ? `<span class="lqc-num">${num}</span>` : ''}${esc(title)}${loc?.category ? ` <span class="nqc-job">${esc(({ social: t('社交'), work: t('工作場所'), residential: t('住宅'), nature: t('自然') })[loc.category] || loc.category)}</span>` : ''}</div>`;
         if (loc?.description) html += `<div class="nqc-rel nqc-dim">${esc(t(loc.description))}</div>`;

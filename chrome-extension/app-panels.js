@@ -892,24 +892,22 @@ Object.assign(RimTownApp.prototype, {
             const whyText = (arr) => (arr || []).map(x => `${esc(x.why)} ×${x.n}`).join(t('、'));
             if ((p.forWhy && p.forWhy.length) || (p.againstWhy && p.againstWhy.length)) html += `<div class="pp-why">${p.forWhy?.length ? `<span>👍 ${whyText(p.forWhy)}</span>` : ''}${p.againstWhy?.length ? `<span>👎 ${whyText(p.againstWhy)}</span>` : ''}</div>`;
             if (mode === 'decide') {
-                html += `<div class="pp-deadline">${p.status === 'open' ? t('還有 {n} 天沒處理就依票數自動定案').replace('{n}', p.daysLeft) : t('擱置中，{n} 天後提案人會收回').replace('{n}', p.daysLeft)}</div>
-                <div class="pp-actions">
-                    <button class="pp-btn approve" data-action="proposal-decide" data-val="${p.id}:approve">${t('✅ 批准')}</button>
-                    <button class="pp-btn reject" data-action="proposal-decide" data-val="${p.id}:reject">${t('❌ 否決')}</button>
-                    ${p.status === 'open' ? `<button class="pp-btn shelve" data-action="proposal-decide" data-val="${p.id}:shelve">${t('📥 擱置')}</button>` : ''}
-                </div>`;
+                // v6.37.0 上帝視角:觀察者只看,投票兩天後由 NPC 鎮長裁決
+                html += `<div class="pp-deadline">${p.status === 'open' ? t('投票中，鎮長 {n} 天內裁決').replace('{n}', Math.max(1, p.daysLeft)) : t('鎮長先擱著，過幾天會重新拍板')}</div>`;
             } else if (p.status === 'approved') {
                 html += `<div class="pp-deadline">${p.affordable ? t('已批准，等待執行') : t('已批准，等公庫湊齊資源（{n}/7 天）').replace('{n}', p.waitDays)}</div>`;
             } else if (p.result) {
                 html += `<div class="pp-result">${esc(p.result)}${p.decidedBy === 'auto' ? ` · ${t('依票數自動定案')}` : ''}</div>`;
+                if (p.mayorName || p.mayorWhy) html += `<div class="pp-mayor">🏛️ ${t('鎮長')}${p.mayorName ? ' ' + esc(t(p.mayorName)) : ''}${t('：')}${esc(p.mayorWhy || '')}</div>`; // v6.37.0
                 if (p.outcomeText) html += `<div class="pp-outcome">📈 ${t('十天後')}${t('：')}${esc(p.outcomeText)}</div>`; // v6.30.0 成效
             }
             return html + '</div>';
         };
         let html = `<div class="proposals-panel">`;
         html += `<div class="pp-summary">${t('提出')} ${d.stats.made} · ${t('已批准')} ${d.stats.approved} · ${t('已否決')} ${d.stats.rejected} · ${t('已完成')} ${d.stats.done}</div>`;
-        html += `<h4 class="pp-h">📬 ${t('待你決定')} <span class="pp-count">${d.open.length}</span></h4>`;
-        if (!d.open.length) html += `<div class="ob-empty" style="margin:10px 4px"><span class="ob-empty-icon">☕</span>${t('現在沒有待決定的提案。村民會依鎮上的情況陸續提出，通常每天一兩件。')}</div>`;
+        html += `<div style="font-size:0.7rem;color:var(--text-muted);margin:0 0 6px">${t('村民自己提案、全鎮投票、鎮長裁決。你只看。')}</div>`; // v6.37.0
+        html += `<h4 class="pp-h">🗳️ ${t('投票中')} <span class="pp-count">${d.open.length}</span></h4>`;
+        if (!d.open.length) html += `<div class="ob-empty" style="margin:10px 4px"><span class="ob-empty-icon">☕</span>${t('現在沒有投票中的提案。村民會依鎮上的情況陸續提出，通常每天一兩件。')}</div>`;
         else d.open.forEach(p => { html += card(p, 'decide'); });
         if (d.shelved.length) { html += `<h4 class="pp-h">📥 ${t('擱置中')} <span class="pp-count">${d.shelved.length}</span></h4>`; d.shelved.forEach(p => { html += card(p, 'decide'); }); }
         if (d.active.length) { html += `<h4 class="pp-h">🔨 ${t('進行中')}</h4>`; d.active.forEach(p => { html += card(p, 'view'); }); }

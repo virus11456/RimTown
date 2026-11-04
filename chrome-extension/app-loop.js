@@ -495,7 +495,7 @@ Object.assign(RimTownApp.prototype, {
         const d = (rb && !w.observerMode) ? rb.toDict(w) : {}; if (d.chain) rows.push(`📖 ${esc(d.chain.title)} ${d.chain.step + 1}/${d.chain.total} · ${esc(d.chain.npcName)}`);
         const tr = w.trials?.current; if (tr && tr.status === 'active' && w.trials.value) { const v = w.trials.value(tr.type, w); const d2 = (typeof TRIAL_TYPES !== 'undefined' && TRIAL_TYPES[tr.type]) || {}; rows.push(`⚖️ ${esc(t(d2.title || tr.type))} ${v}/${tr.target} · ${t('剩')} ${Math.max(0, (tr.dueDay || 15) - w.clock.day)} ${t('天')}`); }
         else if (!tr && w.clock.day < 5) rows.push(`⚖️ ${t('第 5 天公布本季考驗')}`);
-        const pd = w.proposals?.toDict?.(w); if (pd && pd.open.length) rows.push(`📜 ${t('待你決定的提案')} ${pd.open.length} ${t('件')}${pd.open.some(p => p.daysLeft <= 1) ? ` · ${t('有的今天就會自動定案')}` : ''}`); // v6.26.0
+        const pd = w.proposals?.toDict?.(w); if (pd && pd.open.length) rows.push(`📜 ${t('投票中的提案')} ${pd.open.length} ${t('件')}${pd.open.some(p => p.daysLeft <= 1) ? ` · ${t('有的今天鎮長就會裁決')}` : ''}`); // v6.26.0
         const td = w.trials?.toDict ? w.trials.toDict(w) : null; if (td?.declined) rows.push(`🍂 ${t('衰敗中')} · ${t('連續撐過兩季考驗就能復興')}${t('（')}${td.passStreak || 0}/2${t('）')}`); // v6.13.0 與故事分頁同一份資料
         const fs = w.festivals?.sponsorStatus?.(w); if (fs?.open && !fs.sponsored) rows.push(`${fs.icon || '🎪'} ${esc((fs.phase === 'eve' ? t('{fest}明天開始') : t('{fest}進行中')).replace('{fest}', t(fs.name)))} · ${t('可贊助 {n} 銀幣讓它更熱鬧').replace('{n}', fs.cost)}`); // v6.15.0
         const pl = w.observerMode ? 0 : (w.growth?.pendingLevels?.() || 0); if (pl > 0 && w.growth?.pending?.length) rows.push(`⬆️ ${t('升級了！選一個天賦')}${pl > 1 ? `${t('（')}${t('還有 {n} 次').replace('{n}', pl)}${t('）')}` : ''}`); // v6.11.0 天賦還沒選就每天提醒

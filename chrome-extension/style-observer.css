@@ -306,3 +306,6 @@
 .llm-status.connected.byok { color: var(--accent, #e9a23b); border-color: var(--accent, #e9a23b); }
 .byok-box summary::-webkit-details-marker { color: var(--text-muted); }
 .byok-box input:focus-visible, .byok-box select:focus-visible { outline: 2px solid var(--accent, #e9a23b); outline-offset: 1px; }
+
+/* v6.37.0 鎮長裁決列 */
+.rimtown-container .pp-mayor { font-size: 0.72rem; color: var(--accent); margin-top: 3px; }

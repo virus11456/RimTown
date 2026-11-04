@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.36.0
+ * Version: 6.37.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.36.0');
+define('RIMTOWN_VERSION', '6.37.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -875,6 +875,7 @@ function rimtown_enqueue_assets() {
         true
     );
     wp_enqueue_script('rimtown-sim-proposals', RIMTOWN_URL . 'sim-proposals.js', array('rimtown-sim-society'), RIMTOWN_VERSION, true); // v6.26.0 村民提案
+    wp_enqueue_script('rimtown-sim-autonomy', RIMTOWN_URL . 'sim-autonomy.js', array('rimtown-sim-proposals'), RIMTOWN_VERSION, true); // v6.37.0 村民全自主
     wp_enqueue_script(
         'rimtown-simulation',
         RIMTOWN_URL . 'simulation.js',
@@ -1328,6 +1329,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.37.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '👐 村民全自主（上帝視角第一步，新檔 sim-autonomy.js 掛在 world.autonomy）：原本留給玩家按的事全部交給村民每天自己做——農夫翻土／播種（缺糧先種糧、輪作、等級高的優先）／澆水／施肥／收成／清枯苗；工坊先交訂單再把成品入倉或拿去賣；商人（沒有就鎮長或其他人）每天跟來訪行商談，多的賣、缺的買（食物與藥、工具多留一點）；鎮上藥品／食物／工具／布料見底時有人去商店補，啤酒／葡萄酒／傢俱／麵包／衣物堆太多拿去賣。每件事都寫進日誌、當事人記憶與日報',
+                '📜 四種新提案類別：🔬 研究（沒在研究時學者或相關行業提「研究某項」，三天沒人提學者自己挑）、🛒 買賣（原料見底提大宗進貨、倉庫爆了提大宗拋售）、🔨 升級（既有建築升級）、📈 產業升級；研究不再一閒下來就自動挑第一個',
+                '🏛️ 提案改由村民投票＋NPC 鎮長裁決：投票兩天（七成的人投完、過了一天也會提早）後鎮長拍板，附理由（多數贊成／多數反對／公庫付不起／票數接近時看鎮長自己的價值觀、跟提案人的交情、是否小氣悲觀／沒人表態鎮長先做／擱置幾天後重新拍板）；觀察者的批准／否決／擱置鈕移除，提案分頁改「🗳️ 投票中」並顯示鎮長裁決列；鎮上沒鎮長時照票數',
+                '📊 經濟七頁改唯讀儀表板：資源／科技／商店／建築／工廠／產業／農場共 42 顆操作鈕（買賣、研究、蓋樓、升級、設配方、派工、翻土澆水收成、排班、捐建、擺裝飾…）全部拿掉，改顯示「村民自己做的事」日誌、商人成交紀錄、商店買賣帳、研究員名單、可建造／可升級清單標「等村民提案」；鎮公所捐款、贊助節慶、裝飾擺放目錄移除（觀察者不投錢）。舊存檔不動，所有模擬 API 保留',
+            ),
+            'changes_en' => array(
+                '👐 Villagers run everything themselves (first step of the god-view sandbox; new sim-autonomy.js on world.autonomy): everything that used to wait for a player click now happens daily on its own — farmers till / sow (food crops first when food is short, rotation, higher-tier crops preferred) / water / fertilise / harvest / clear withered plots; workshops fulfil orders first, then store or sell their output; the trader (or the mayor, or anyone) haggles with each visiting merchant, selling surplus and buying shortages (food, medicine and tools keep a reserve); someone restocks medicine / food / tools / cloth at the shop when they run out and sells off piles of beer / wine / furniture / bread / clothing. Each act is logged, remembered by the villager and reported in the paper',
+                '📜 Four new proposal kinds: 🔬 Research (when nothing is under research a scholar or related trade proposes a topic; after three days the scholars pick one themselves), 🛒 Trade (bulk buying when raw materials run out, bulk selling when the stores overflow), 🔨 Upgrade (existing buildings) and 📈 Industry upgrade; research no longer auto-picks the first project the moment it goes idle',
+                '🏛️ Proposals are now decided by the villagers\' vote plus the NPC mayor: after two days of voting (earlier once 70% have voted and a day has passed) the mayor rules with a stated reason (majority for / majority against / treasury cannot afford it / on a close vote the mayor\'s own values, relationship with the proposer and temperament / few votes so the mayor goes ahead / revisited after being shelved); the observer\'s approve / reject / shelve buttons are gone, the Proposals tab reads "🗳️ Voting" and shows the mayor\'s ruling line; with no mayor the vote decides',
+                '📊 The seven economy pages are read-only dashboards: all 42 action buttons across Resources / Tech / Shop / Buildings / Factory / Industry / Farm (buy, sell, research, build, upgrade, recipe, assign, till, water, harvest, shifts, fund, decorate…) are removed, replaced by a "what the villagers did" log, merchant deal history, shop ledger, researcher list and buildable / upgradable lists marked "awaiting a villager proposal"; town-hall donations, festival sponsorship and the decoration catalogue are gone (the observer spends nothing). Old saves untouched; every simulation API kept',
+            ),
+        ),
         array(
             'version' => '6.36.0',
             'date'    => '2026-11-04',

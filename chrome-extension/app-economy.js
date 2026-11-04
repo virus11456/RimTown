@@ -62,12 +62,14 @@ Object.assign(RimTownApp.prototype, {
         this.state = w.getState(); try { this.renderSidebar(); } catch (e) {}
     },
     _festivalSponsorHtml() {
+        return ''; // v6.37.0 上帝視角:觀察者不贊助;節慶贊助由村民提案(kind festival)
+        // eslint-disable-next-line no-unreachable
         const st = this.state?.festivals?.sponsor_status; if (!st?.open) return '';
         const silverNow = this.state?.stockpile?.resources?.silver || 0;
         const when = st.phase === 'eve' ? t('明天開始') : t('進行中');
         const desc = st.sponsored ? t('你已贊助這屆節慶，村民都記得你的大方') : (st.phase === 'eve' ? t('贊助：籌備進度 +50、節慶心情 ×1.5、村民更常聊開、聲望 +10、繁榮 +3') : t('贊助：全鎮心情 +8、村民更常聊開、聲望 +10、繁榮 +3'));
         const btn = st.sponsored ? `<button class="trade-btn" disabled style="padding:3px 10px;font-size:0.72rem;white-space:nowrap">🎪 ${t('已贊助')}</button>`
-            : `<button class="trade-btn" data-action="sponsor-festival" ${silverNow >= st.cost ? '' : 'disabled'} style="padding:3px 10px;font-size:0.72rem;white-space:nowrap">🎪 ${t('贊助')} ${st.cost}</button>`;
+            : ``;
         return `<div class="festival-sponsor-row" style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:0.72rem;color:var(--text-secondary)"><span style="flex:1">${st.icon || '🎪'} ${t(st.name)}${t('（')}${when}${t('）')}· ${desc}</span>${btn}</div>`;
     },
     renderEconomy(container) {
@@ -106,7 +108,7 @@ Object.assign(RimTownApp.prototype, {
             // v6.14.0 鎮公所捐款:銀幣的去處之一(繁榮 +1、全鎮心情 +2、聲望 +2,每天三次)
             const bd = this.state.buildings || {}; const left = Number.isFinite(bd.donations_left) ? bd.donations_left : (bd.donate_per_day || 3); const dcost = bd.donate_cost || 100; const silverNow = this.state.stockpile?.resources?.silver || 0;
             html += this._festivalSponsorHtml(); // v6.15.0 節慶前夕到結束之間才出現
-            html += `<div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:0.72rem;color:var(--text-secondary)"><span style="flex:1">${t('捐給鎮公所：繁榮 +1、全鎮今天心情 +2、聲望 +2')}${bd.donations?.total ? ` · ${t('累計')} ${bd.donations.total}` : ''}${(bd.donations?.bonus || 0) >= (bd.donate_prosperity_cap || 10) ? ` · ${t('繁榮加成已滿')}` : ''}</span><button class="trade-btn" data-action="donate-town" ${left > 0 && silverNow >= dcost ? '' : 'disabled'} style="padding:3px 10px;font-size:0.72rem;white-space:nowrap">🏛️ ${t('捐')} ${dcost}${left > 0 ? `${t('（')}${t('今天還可 {n} 次').replace('{n}', left)}${t('）')}` : `${t('（')}${t('明天再來')}${t('）')}`}</button></div>`;
+            // v6.37.0 上帝視角:觀察者不投錢,捐款列移除
             html += `</div>`;
         }
 
@@ -137,6 +139,12 @@ Object.assign(RimTownApp.prototype, {
             bread:t('麵包'),pastry:t('糕點'),beer:t('啤酒'),wine:t('葡萄酒'),perfume:t('香水'),fine_tea:t('精品茶'),herbal_tea:t('草本茶'),sugar:t('砂糖'),jam:t('果醬'),luxury_furniture:t('高級家具')};
 
         if (this._economySubTab === 'resources') {
+            // v6.37.0 上帝視角:村民自己做的事(種收、出貨、談生意、補貨)
+            const alog = (this.state.autonomy?.log || []).slice(-6).reverse();
+            html += `<div class="econ-section"><h3>👐 ${t('村民自己做的事')}</h3>
+                <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:4px">${t('農夫種收、工坊出貨、商人談生意、缺什麼去補——都不用你操心。要蓋什麼、研究什麼、買賣大宗，看「提案」。')}</div>
+                ${alog.length ? alog.map(e => `<div style="font-size:0.74rem;padding:3px 0;border-bottom:1px dashed var(--border)">${this._escapeHtml(e.text || '')}</div>`).join('') : `<div class="muted-text" style="font-size:0.72rem">${t('今天還沒有紀錄，村民通常在換日時動手。')}</div>`}
+            </div>`;
             // v5.50.0 經濟A波:三層資源結構 —— 關鍵資源 / 加工產能(看流量) / 原料倉庫(燈號)
             const npcCount = Math.max(1, Object.keys(this.state.agents || {}).length - 1);
             // ① 關鍵資源:食物+銀幣,唯二要玩家盯的存量
@@ -169,7 +177,7 @@ Object.assign(RimTownApp.prototype, {
             // v5.51.0 經濟B波:每條加工線顯示「誰在做」+ 排班三態(休工/正常/加班)——經濟＝排人,不是囤貨
             const GOOD_JOB = { meals:'cook', tools:'blacksmith', clothing:'tailor', medicine:'doctor', furniture:'carpenter' };
             const workPolicy = this.world?.workPolicy || {};
-            html += `<div class="econ-section"><h3>⚒️ ${t('加工產能')}<span style="font-weight:normal;font-size:0.68rem;color:var(--text-muted);margin-left:6px">${t('今日產出／消耗，點按排班')}</span></h3>`;
+            html += `<div class="econ-section"><h3>⚒️ ${t('加工產能')}<span style="font-weight:normal;font-size:0.68rem;color:var(--text-muted);margin-left:6px">${t('今日產出／消耗（村民自己排班）')}</span></h3>`;
             PROCESSED.forEach(k => {
                 const f = flow[k];
                 const stock = Math.round(res[k] || 0);
@@ -181,7 +189,7 @@ Object.assign(RimTownApp.prototype, {
                 const RECIPE_OUT = { meals: 9, tools: 3, clothing: 2, medicine: 2, furniture: 2 };
                 const est = Math.round(makers.length * (RECIPE_OUT[k] || 0) * (policy === 'off' ? 0 : policy === 'extra' ? 1.5 : 1));
                 const prodHtml = prod > 0 ? `＋${prod}` : `${t('預估日產')} ＋${est}<span style="color:var(--text-muted)">${t('（')}${t('午夜結算')}${t('）')}</span>`;
-                const polBtn = (mode, icon, tip) => `<button data-action="work-policy" data-val="${k},${mode}" title="${tip}" style="width:26px;height:22px;border-radius:5px;border:1px solid var(--border);cursor:pointer;font-size:0.7rem;line-height:1;${policy === mode ? 'background:var(--accent);color:#fff' : 'background:var(--bg-card);color:var(--text-secondary)'}">${icon}</button>`;
+                const polBtn = (mode, icon, tip) => ``;
                 html += `<div style="padding:6px 2px;border-bottom:1px solid var(--border);font-size:0.78rem">
                     <div style="display:flex;align-items:center;gap:6px">
                         <span>${icons[k]}</span><span style="font-weight:bold">${labels[k]}</span>
@@ -232,13 +240,17 @@ Object.assign(RimTownApp.prototype, {
                         <span>${icon} ${resLabel}</span>
                         <span>×${Math.round(offer.amount)}</span>
                         <span>${offer.price}/${t('個')}</span>
-                        <button class="trade-btn" data-action="trade" data-val="${idx},${Math.min(5, offer.amount)}">${action}5</button>
-                        <button class="trade-btn" data-action="trade" data-val="${idx},${offer.amount}${t('">全')}${action}</button></div>`;
+                        
+                        </div>`;
                 });
                 html += '</div></div>';
+                const traderNames = Object.values(this.state.agents || {}).filter(a => a.job?.key === 'trader').map(a => t(a.name));
+                html += `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">${traderNames.length ? t('{who} 每天會去跟商人談，多的賣、缺的買。').replace('{who}', traderNames.join(t('、'))) : t('鎮上沒有商人職業的村民，鎮長或其他人會代為去談。')}</div>`;
             } else {
                 html += t('<p class="muted-text">鎮上沒有商人，可能很快就會來一位。</p>');
             }
+            const th = (this.world?.trade?.tradeHistory || []).slice(-3).reverse();
+            if (th.length) { html += `<div style="margin-top:6px;font-size:0.72rem;color:var(--text-secondary)">${t('最近成交')}</div>`; th.forEach(h => { const parts = (h.deals || []).map(d => `${d.type === 'sell' ? t('賣') : t('買')} ${this._resName(d.r)}×${d.qty}`).join(t('、')); html += `<div style="font-size:0.72rem;padding:2px 0">${this._escapeHtml(t(h.who || ''))} ↔ ${this._escapeHtml(t(h.merchant || ''))}${t('：')}${this._escapeHtml(parts)}</div>`; }); }
             html += '</div>';
         } else if (this._economySubTab === 'tech') {
             // v5.52.0 經濟C波:研究移出資源分頁,獨立成「科技」入口(價值層長線投資)
@@ -253,15 +265,17 @@ Object.assign(RimTownApp.prototype, {
                     <div class="progress-bar"><div class="progress-fill research-fill" style="width:${pct}%"></div></div>
                     <span class="progress-text">${pct}%</span></div>`;
             }
+            const scholars = Object.values(this.state.agents || {}).filter(a => a.job?.key === 'researcher').map(a => t(a.name));
+            html += `<div style="font-size:0.7rem;color:var(--text-muted);margin:4px 0 6px">${scholars.length ? t('研究員：') + scholars.join(t('、')) : t('鎮上還沒有研究員，研究進度只靠研究點。')}${!currentKey ? ' · ' + t('目前沒在研究，等村民提「研究」提案（三天沒人提，學者會自己挑）') : ''}</div>`;
             const availableResearch = Object.values(projects).filter(p => p.status === 'available');
             if (availableResearch.length) {
-                html += t('<div class="research-available"><div class="build-label">可研究：</div>');
+                html += t('<div class="research-available"><div class="build-label">可研究（等村民提案）：</div>');
                 availableResearch.forEach(p => {
                     const isCurrent = p.key === currentKey;
                     html += `<div class="research-option ${isCurrent ? 'active' : ''}">
                         <div class="build-name">${t(p.name)}</div>
                         <div class="build-desc">${p.description}${t('（消耗：')}${p.cost}）</div>
-                        <button class="build-btn" data-action="research" data-val="${p.key}" ${isCurrent?'disabled':''}${t('>研究</button></div>')}`;
+                        </div>`;
                 });
                 html += '</div>';
             }
@@ -274,7 +288,10 @@ Object.assign(RimTownApp.prototype, {
             // v4.0: Shop system — card grid layout
             html += t('<div class="econ-section"><h3>🛒 商店</h3>');
             const silverAmount = Math.round(res['silver'] || 0);
-            html += `<div style="margin-bottom:8px;font-size:0.85rem">${t('💰 你的銀幣：')}<strong>${silverAmount}</strong></div>`;
+            html += `<div style="margin-bottom:8px;font-size:0.85rem">${t('💰 公庫銀幣：')}<strong>${silverAmount}</strong></div>`;
+            const slog = (this.world?.shop?.transactionLog || []).slice(-6).reverse();
+            html += `<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px">${t('物價板。小量補貨與拋售由村民每天自己做，大宗進貨／拋售走「提案」。')}</div>`;
+            if (slog.length) { html += `<div style="margin-bottom:8px"><div style="font-size:0.72rem;color:var(--text-secondary)">${t('最近買賣')}</div>`; slog.forEach(x => { const nm = (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[x.item]) ? SHOP_ITEMS[x.item].name() : x.item; html += `<div style="font-size:0.72rem;padding:2px 0">${x.type === 'buy' ? '🛒 ' + t('買進') : '💰 ' + t('賣出')} ${this._escapeHtml(nm)}×${x.amount} · ${x.type === 'buy' ? x.cost : x.income} ${t('銀幣')}</div>`; }); html += '</div>'; }
             const shopItems = this.world?.shop?.getAvailableItems(this.world) || [];
             const categories = { basic: t('基本物資'), craft: t('工藝品'), processed: t('加工品'), luxury: t('奢侈品') };
             for (const [catKey, catName] of Object.entries(categories)) {
@@ -287,8 +304,9 @@ Object.assign(RimTownApp.prototype, {
                     html += `<div class="shop-card-icon">${item.icon}</div>`;
                     html += `<div class="shop-card-name">${t(item.name)}</div>`;
                     html += `<div class="shop-card-stock">${t('庫存')}:${Math.round(item.stock)}</div>`;
-                    html += `<button class="shop-card-btn shop-buy" data-action="shop-buy" data-val="${item.key},1" ${item.canBuy?'':'disabled'}>${t('買')}${item.buyPrice}💰</button>`;
-                    html += `<button class="shop-card-btn shop-sell" data-action="shop-sell" data-val="${item.key},1" ${item.canSell?'':'disabled'}>${t('賣')}${item.sellPrice}💰</button>`;
+                    html += `<div class="shop-card-stock">${t('買')} ${item.buyPrice}💰 · ${t('賣')} ${item.sellPrice}💰</div>`;
+                    html += ``;
+                    html += ``;
                     html += `</div>`;
                 }
                 html += '</div>';
@@ -307,7 +325,7 @@ Object.assign(RimTownApp.prototype, {
                     html += `<div class="building-item"><span>${t(p.name)}</span>
                         <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
                         <span class="progress-text">${pct}%</span>
-                        <button class="trade-btn" data-action="fund-project" data-val="${p.id}" ${can ? '' : 'disabled'} title="${fundedToday ? t('這個工程今天已經捐過了，明天再來') : t('花銀幣讓工匠加班：進度 +20%，每個工程每天一次')}" style="padding:2px 8px;font-size:0.7rem;margin-left:6px">💰 ${fundedToday ? t('今天捐過') : `${t('捐')} ${fundCost}`}</button></div>`; // v6.14.0 工程捐款
+                        </div>`; // v6.14.0 工程捐款
                 });
                 html += '</div>';
             }
@@ -323,7 +341,7 @@ Object.assign(RimTownApp.prototype, {
             // Upgradeable buildings
             const upgradeable = this.world.buildings.getUpgradeable(this.world);
             if (upgradeable.length) {
-                html += t('<div class="available-buildings"><div class="build-label">🔨 升級：</div>');
+                html += t('<div class="available-buildings"><div class="build-label">🔨 可升級（等村民提案）：</div>');
                 upgradeable.forEach(u => {
                     const costStr = Object.entries(u.costs).map(([r,a]) => `${icons[r]||''}${a}`).join(' ');
                     const effStr = Object.entries(u.effects).map(([k,v]) => `${k}:${v>0?'+':''}${v}`).join(' ');
@@ -332,40 +350,25 @@ Object.assign(RimTownApp.prototype, {
                         <div class="build-desc">${u.description}</div>
                         <div class="build-cost">${costStr}</div>
                         <div class="build-effects" style="font-size:0.75rem;color:var(--accent-gold)">${effStr}</div>
-                        <button class="build-btn" ${u.can_afford ? '' : 'disabled'} data-action="upgrade-building" data-val="${u.buildingKey}">${t('升級')}</button></div>`;
+                        </div>`;
                 });
                 html += '</div>';
             }
             const available = this.world.buildings.getAvailable(this.world);
             if (available.length) {
-                html += t('<div class="available-buildings"><div class="build-label">建造：</div>');
+                html += t('<div class="available-buildings"><div class="build-label">可建造（等村民提案）：</div>');
                 available.forEach(p => {
                     const costStr = Object.entries(p.costs).map(([r,a]) => `${icons[r]||''}${a}`).join(' ');
                     html += `<div class="build-option ${p.can_afford ? '' : 'cant-afford'}">
                         <div class="build-name">${t(p.name)}</div>
                         <div class="build-desc">${p.description}</div>
                         <div class="build-cost">${costStr}</div>
-                        <button class="build-btn" ${p.can_afford ? '' : 'disabled'} data-action="build" data-val="${p.key}">${t('建造')}</button></div>`;
+                        </div>`;
                 });
                 html += '</div>';
             }
             html += '</div>';
-            // v4.8.0 裝飾擺放目錄
-            html += `<div class="econ-section"><h3>🌸 ${t('裝飾小鎮')}</h3>
-                <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:6px">${t('選一樣裝飾,然後點地圖上的空地擺放。裝飾提升小鎮美觀度,路燈晚上會亮!')}</div>`;
-            const decoCount = (this.world?.decorations || []).length;
-            html += `<div style="font-size:0.7rem;color:var(--accent);margin-bottom:6px">${t('已擺放')}:${decoCount} ${t('件')}</div>`;
-            for (const d of this._decorDefs()) {
-                const costStr = Object.entries(d.cost).map(([k, v]) => `${{silver:'💰',wood:'🪵',stone:'🪨',metal:'⚙️'}[k] || k}${v}`).join(' ');
-                const afford = Object.entries(d.cost).every(([k, v]) => (this.world?.stockpile?.get(k) || 0) >= v);
-                html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;margin-bottom:5px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px">
-                    <span style="font-size:0.82rem">${d.icon} ${t(d.name)} <span style="font-size:0.68rem;color:var(--text-secondary)">${t('美觀')}+${d.beauty}</span></span>
-                    <span style="display:flex;gap:8px;align-items:center">
-                        <span style="font-size:0.7rem;color:var(--text-secondary)">${costStr}</span>
-                        <button class="trade-btn" data-action="decor-place" data-val="${d.type}" ${afford ? '' : 'disabled style="opacity:0.4"'}>${t('擺放')}</button>
-                    </span></div>`;
-            }
-            html += `<div style="font-size:0.66rem;color:var(--text-secondary);margin-top:4px">${t('擺放模式中點到已有的裝飾 = 移除(退回一半材料)')}</div></div>`;
+            // v6.37.0 上帝視角:裝飾擺放目錄移除(觀察者不花錢);相鄰組合圖鑑保留為圖鑑
             // v4.9.0 相鄰組合圖鑑(開羅式:未發現的顯示 ???)
             if (typeof COMBO_DEFS !== 'undefined') {
                 const found = new Set(this.world?.combosFound || []);
@@ -394,7 +397,7 @@ Object.assign(RimTownApp.prototype, {
                     html += t('<div style="margin:4px 0"><strong>配方：</strong>');
                     def.recipes.forEach(r => {
                         const active = factory.recipe === r.id ? ' style="background:var(--accent-gold);color:#000"' : '';
-                        html += `<button class="trade-btn" style="margin:2px;font-size:0.7rem"${active} data-action="set-recipe" data-val="${key},${r.id}">${r.label}</button>`;
+                        html += ``;
                     });
                     html += '</div>';
                     html += `${t('<div style="margin:4px 0;font-size:0.8rem"><strong>工人：</strong>')}${factory.workers.length}/${def.workerSlots}${factory.workers.length < def.workerSlots ? ` <span style="color:var(--text-muted);font-size:0.68rem">${t('（村民明早會自動上工）')}</span>` : ''}`;
@@ -409,7 +412,7 @@ Object.assign(RimTownApp.prototype, {
                         if (avail.length > 0) {
                             html += '<br>';
                             avail.slice(0, 5).forEach(([id, a]) => {
-                                html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="assign-worker" data-val="${key},${id}">+${t(a.name)}</button>`;
+                                html += ``;
                             });
                         }
                     }
@@ -426,8 +429,8 @@ Object.assign(RimTownApp.prototype, {
                         html += t('<div style="margin:4px 0;font-size:0.8rem"><strong>倉庫：</strong>');
                         for (const [r, amt] of Object.entries(wh)) {
                             html += `<span style="margin-right:8px">${icons[r] || '📦'}${labels[r] || r}: ${amt}`;
-                            html += ` <button class="trade-btn" style="font-size:0.6rem;padding:1px 4px" data-action="collect-product" data-val="${key},${r},${amt}${t('">收</button>')}`;
-                            html += ` <button class="trade-btn" style="font-size:0.6rem;padding:1px 4px" data-action="sell-product" data-val="${key},${r},${amt}${t('">賣</button></span>')}`;
+                            html += ` ${t('')}`;
+                            html += ` ${t('</span>')}`;
                         }
                         html += '</div>';
                     }
@@ -437,25 +440,25 @@ Object.assign(RimTownApp.prototype, {
             // Available to build
             const availFac = this.world.processing.getAvailableFactories(this.world);
             if (availFac.length > 0) {
-                html += t('<div class="econ-section"><h3>可建造工廠</h3>');
+                html += t('<div class="econ-section"><h3>可建造工廠（等村民提案）</h3>');
                 availFac.forEach(f => {
                     // v5.53.2 工廠成本在地化:接上與全站一致的資源名稱,不再露出英文 key
                     const costStr = Object.entries(f.cost).map(([r,a]) => `${icons[r] || '📦'}${labels[r] || r}×${a}`).join(' ');
                     const canBuild = f.canAfford ? '' : ' disabled';
                     html += `<div class="build-card"><div><strong>${f.icon} ${t(f.name)}</strong>
                         <br><span style="font-size:0.7rem">${costStr}${t(' | 建造天數：')}${f.buildDays}</span></div>
-                        <button class="trade-btn"${canBuild} data-action="build-factory" data-val="${f.key}${t('">建造</button></div>')}`;
+                        </div>`;
                 });
                 html += '</div>';
             }
             // Active orders
             const orders = (proc.orders || []).filter(o => o.status === 'active');
             if (orders.length > 0) {
-                html += t('<div class="econ-section"><h3>📋 訂單</h3>');
+                html += t('<div class="econ-section"><h3>📋 訂單（有貨時村民自己交）</h3>');
                 orders.forEach(o => {
                     html += `<div class="build-card"><div><strong>${o.description}</strong>
                         <br><span style="font-size:0.7rem">${t('獎勵：')}${o.reward}${t('銀幣 | 剩餘')}${o.daysLeft}${t('天')}</span></div>
-                        <button class="trade-btn" data-action="fulfill-order" data-val="${o.id}${t('">完成</button></div>')}`;
+                        </div>`;
                 });
                 html += '</div>';
             }
@@ -556,11 +559,11 @@ Object.assign(RimTownApp.prototype, {
             html += `${t('<div style="font-size:0.8rem;color:var(--text-secondary)">產業上限：')}${ind.maxIndustries || 1}${t(' | 已開啟：')}${Object.keys(ind.industries || {}).length}</div></div>`;
             // Needs initial industry choice
             if (ind.needsIndustryChoice) {
-                html += t('<div class="econ-section"><h3>選擇你的第一個產業</h3>');
+                html += t('<div class="econ-section"><h3>第一個產業（等村民提案）</h3>');
                 const available = this.world.industry.getAvailableIndustries(this.world);
                 available.forEach(i => {
                     html += `<div class="build-card"><div><strong>${i.icon} ${t(i.name)}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
-                        <button class="trade-btn" data-action="choose-industry" data-val="${i.key}${t('">選擇</button></div>')}`;
+                        </div>`;
                 });
                 html += '</div>';
             }
@@ -581,7 +584,7 @@ Object.assign(RimTownApp.prototype, {
                     html += '</div>';
                     if (nextLv) {
                         const costStr = Object.entries(nextLv.cost).map(([r,a]) => `${this._resName(r)}×${a}`).join(' ');
-                        html += `<div><button class="trade-btn" data-action="upgrade-industry" data-val="${key}${t('">升級 Lv')}${nextLv.lv}</button>
+                        html += `<div>
                             <div style="font-size:0.75rem;color:var(--text-secondary)">${costStr}</div></div>`;
                     }
                     html += '</div>';
@@ -590,11 +593,11 @@ Object.assign(RimTownApp.prototype, {
             }
             // Pending unlock
             if (ind._pendingUnlock) {
-                html += t('<div class="econ-section"><h3>可開啟新產業！</h3>');
+                html += t('<div class="econ-section"><h3>可開啟新產業（等村民提案）</h3>');
                 const available = this.world.industry.getAvailableIndustries(this.world);
                 available.forEach(i => {
                     html += `<div class="build-card"><div><strong>${i.icon} ${t(i.name)}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
-                        <button class="trade-btn" data-action="choose-industry" data-val="${i.key}${t('">開啟</button></div>')}`;
+                        </div>`;
                 });
                 html += '</div>';
             }
@@ -626,7 +629,7 @@ Object.assign(RimTownApp.prototype, {
                 }
                 html += '</div><div>';
                 if (plot.state === 'empty') {
-                    html += `<button class="trade-btn" data-action="till-plot" data-val="${plot.id}${t('">翻土</button>')}`;
+                    html += `${t('')}`;
                 } else if (plot.state === 'tilled') {
                     const farmInd = this.world.industry?.industries?.farming;
                     const farmLevel = farmInd?.level || 1;
@@ -635,19 +638,19 @@ Object.assign(RimTownApp.prototype, {
                     if (seasonCrops.length > 0) {
                         html += '<div style="font-size:0.7rem">';
                         seasonCrops.forEach(c => {
-                            html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="plant-crop" data-val="${plot.id},${c.key}">${c.icon}${t(c.name)}</button>`;
+                            html += ``;
                         });
                         html += '</div>';
                     } else {
                         html += t('<span style="font-size:0.7rem;color:var(--text-secondary)">本季無可種作物</span>');
                     }
                 } else if (plot.state === 'growing') {
-                    html += `<button class="trade-btn" style="margin:2px;font-size:0.7rem" data-action="water-plot" data-val="${plot.id}${t('">💧澆水</button>')}`;
-                    if (!plot.fertilized) html += `<button class="trade-btn" style="margin:2px;font-size:0.7rem" data-action="fertilize-plot" data-val="${plot.id}${t('">🧪施肥</button>')}`;
+                    html += `${t('')}`;
+                    if (!plot.fertilized) html += `${t('')}`;
                 } else if (plot.state === 'ready') {
-                    html += `<button class="trade-btn" data-action="harvest-plot" data-val="${plot.id}${t('">🌾收穫</button>')}`;
+                    html += `${t('')}`;
                 } else if (plot.state === 'withered') {
-                    html += `<button class="trade-btn" data-action="clear-withered" data-val="${plot.id}${t('">清除</button>')}`;
+                    html += `${t('')}`;
                 }
                 html += '</div></div>';
             }
@@ -674,11 +677,11 @@ Object.assign(RimTownApp.prototype, {
 
         // Needs initial industry choice
         if (ind.needsIndustryChoice) {
-            html += t('<div class="econ-section"><h3>選擇你的第一個產業</h3>');
+            html += t('<div class="econ-section"><h3>第一個產業（等村民提案）</h3>');
             const available = this.world.industry.getAvailableIndustries(this.world);
             available.forEach(i => {
                 html += `<div class="build-card"><div><strong>${i.icon} ${t(i.name)}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
-                    <button class="trade-btn" data-action="choose-industry" data-val="${i.key}${t('">選擇</button></div>')}`;
+                    </div>`;
             });
             html += '</div>';
         }
@@ -700,7 +703,7 @@ Object.assign(RimTownApp.prototype, {
                 html += '</div>';
                 if (nextLv) {
                     const costStr = Object.entries(nextLv.cost).map(([r,a]) => `${this._resName(r)}×${a}`).join(' ');
-                    html += `<div><button class="trade-btn" data-action="upgrade-industry" data-val="${key}${t('">升級 Lv')}${nextLv.lv}</button>
+                    html += `<div>
                         <div style="font-size:0.75rem;color:var(--text-secondary)">${costStr}</div></div>`;
                 }
                 html += '</div>';
@@ -710,11 +713,11 @@ Object.assign(RimTownApp.prototype, {
 
         // Pending unlock
         if (ind._pendingUnlock) {
-            html += t('<div class="econ-section"><h3>可開啟新產業！</h3>');
+            html += t('<div class="econ-section"><h3>可開啟新產業（等村民提案）</h3>');
             const available = this.world.industry.getAvailableIndustries(this.world);
             available.forEach(i => {
                 html += `<div class="build-card"><div><strong>${i.icon} ${t(i.name)}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
-                    <button class="trade-btn" data-action="choose-industry" data-val="${i.key}${t('">開啟</button></div>')}`;
+                    </div>`;
             });
             html += '</div>';
         }
@@ -775,7 +778,7 @@ Object.assign(RimTownApp.prototype, {
             }
             html += '</div><div>';
             if (plot.state === 'empty') {
-                html += `<button class="trade-btn" data-action="till-plot" data-val="${plot.id}${t('">翻土</button>')}`;
+                html += `${t('')}`;
             } else if (plot.state === 'tilled') {
                 // Show crop selection
                 const farmInd = this.world.industry?.industries?.farming;
@@ -785,19 +788,19 @@ Object.assign(RimTownApp.prototype, {
                 if (seasonCrops.length > 0) {
                     html += '<div style="font-size:0.7rem">';
                     seasonCrops.forEach(c => {
-                        html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="plant-crop" data-val="${plot.id},${c.key}">${c.icon}${t(c.name)}</button>`;
+                        html += ``;
                     });
                     html += '</div>';
                 } else {
                     html += t('<span style="font-size:0.7rem;color:var(--text-secondary)">本季無可種作物</span>');
                 }
             } else if (plot.state === 'growing') {
-                html += `<button class="trade-btn" style="margin:2px;font-size:0.7rem" data-action="water-plot" data-val="${plot.id}${t('">💧澆水</button>')}`;
-                if (!plot.fertilized) html += `<button class="trade-btn" style="margin:2px;font-size:0.7rem" data-action="fertilize-plot" data-val="${plot.id}${t('">🧪施肥</button>')}`;
+                html += `${t('')}`;
+                if (!plot.fertilized) html += `${t('')}`;
             } else if (plot.state === 'ready') {
-                html += `<button class="trade-btn" data-action="harvest-plot" data-val="${plot.id}${t('">🌾收穫</button>')}`;
+                html += `${t('')}`;
             } else if (plot.state === 'withered') {
-                html += `<button class="trade-btn" data-action="clear-withered" data-val="${plot.id}${t('">清除</button>')}`;
+                html += `${t('')}`;
             }
             html += '</div></div>';
         }
@@ -872,7 +875,7 @@ Object.assign(RimTownApp.prototype, {
                 html += t('<div style="margin:4px 0"><strong>配方：</strong>');
                 def.recipes.forEach(r => {
                     const active = factory.recipe === r.id ? ' style="background:var(--accent-gold);color:#000"' : '';
-                    html += `<button class="trade-btn" style="margin:2px;font-size:0.7rem"${active} data-action="set-recipe" data-val="${key},${r.id}">${r.label}</button>`;
+                    html += ``;
                 });
                 html += '</div>';
 
@@ -891,7 +894,7 @@ Object.assign(RimTownApp.prototype, {
                     if (available.length > 0) {
                         html += '<br>';
                         available.slice(0, 5).forEach(([id, a]) => {
-                            html += `<button class="trade-btn" style="margin:2px;font-size:0.75rem" data-action="assign-worker" data-val="${key},${id}">+${t(a.name)}</button>`;
+                            html += ``;
                         });
                     }
                 }
@@ -912,8 +915,8 @@ Object.assign(RimTownApp.prototype, {
                     html += t('<div style="margin:4px 0;font-size:0.8rem"><strong>倉庫：</strong>');
                     for (const [res, amt] of Object.entries(wh)) {
                         html += `<span style="margin-right:8px">${res}: ${amt}`;
-                        html += ` <button class="trade-btn" style="font-size:0.6rem;padding:1px 4px" data-action="collect-product" data-val="${key},${res},${amt}${t('">收</button>')}`;
-                        html += ` <button class="trade-btn" style="font-size:0.6rem;padding:1px 4px" data-action="sell-product" data-val="${key},${res},${amt}${t('">賣</button>')}`;
+                        html += ` ${t('')}`;
+                        html += ` ${t('')}`;
                         html += '</span>';
                     }
                     html += '</div>';
@@ -925,13 +928,13 @@ Object.assign(RimTownApp.prototype, {
         // Available to build
         const available = this.world.processing.getAvailableFactories(this.world);
         if (available.length > 0) {
-            html += t('<div class="econ-section"><h3>可建造工廠</h3>');
+            html += t('<div class="econ-section"><h3>可建造工廠（等村民提案）</h3>');
             available.forEach(f => {
                 const costStr = Object.entries(f.cost).map(([r,a]) => `${this._resName(r)}×${a}`).join(' ');
                 const canBuild = f.canAfford ? '' : ' disabled';
                 html += `<div class="build-card"><div><strong>${f.icon} ${t(f.name)}</strong>
                     <br><span style="font-size:0.7rem">${costStr}${t(' | 建造天數：')}${f.buildDays}</span></div>
-                    <button class="trade-btn"${canBuild} data-action="build-factory" data-val="${f.key}${t('">建造</button></div>')}`;
+                    </div>`;
             });
             html += '</div>';
         }
@@ -939,11 +942,11 @@ Object.assign(RimTownApp.prototype, {
         // Active orders
         const orders = (proc.orders || []).filter(o => o.status === 'active');
         if (orders.length > 0) {
-            html += t('<div class="econ-section"><h3>📋 訂單</h3>');
+            html += t('<div class="econ-section"><h3>📋 訂單（有貨時村民自己交）</h3>');
             orders.forEach(o => {
                 html += `<div class="build-card"><div><strong>${o.description}</strong>
                     <br><span style="font-size:0.7rem">${t('獎勵：')}${o.reward}${t('銀幣 | 剩餘')}${o.daysLeft}${t('天')}</span></div>
-                    <button class="trade-btn" data-action="fulfill-order" data-val="${o.id}${t('">完成</button></div>')}`;
+                    </div>`;
             });
             html += '</div>';
         }
