@@ -1334,12 +1334,14 @@ function rimtown_get_changelog() {
             'version' => '6.43.7',
             'date'    => '2026-11-04',
             'changes' => array(
+                '🗳️ 修提案裁決競態：鎮長用 AI 裁決、隔天還沒回改用規則（例如擱置）後，遲到的舊回覆還會改寫結果，也會清掉新一輪的等待標記，造成重複請求、新回覆被吃掉。現在每次 AI 裁決都有編號，只認目前這一號的回覆，舊的直接作廢',
                 '⚡ 修英文版存檔變慢（v6.43.6 帶進來的）：上一版防止 emoji 被切壞的截斷，每次都重新建立分字工具，英文的共同回憶又幾乎每筆都要截，存檔一次多花好幾十毫秒（75 天平均 200 毫秒、最慢 0.6 秒，自動存檔時會頓一下）。現在共用同一個分字工具，截斷點附近沒有 emoji 就直接切：10 天的英文存檔 70 → 15 毫秒，75 天平均 45 毫秒',
                 '🔁 存讀檔前後完全一致：村民之間的共同回憶平常也只留 3 筆（跟存檔一樣，提示詞本來就只用 3 筆），讀檔後不會少一筆',
                 '📰 報紙一期都不刪，存檔更省：最近 30 期以前的舊報不再存「當天素材清單」（只有最近幾期點開才用得到），正文、日期、記者照樣保留',
                 '🌐 英文版三處中文：手機面板的「返回地圖」按鈕、事件分頁的「派遣探險」按鈕、村民心情好時的念頭「邊境鎮 life treats me well」裡的鎮名；報紙封存列表的季節也改成英文',
             ),
             'changes_en' => array(
+                '🗳️ Fixed a proposal-ruling race: after an AI ruling ran past the day and the rules decided instead (for example shelving it), the late reply could still overwrite the result and clear the waiting flag of the next round, causing duplicate requests and the new reply being lost. Each AI ruling now has a ticket number and only the current ticket\'s reply counts; stale replies are dropped',
                 '⚡ Fixed slower English saves (introduced in v6.43.6): the emoji-safe clipping from the last version built a new text segmenter on every call, and almost every English shared memory needs clipping, so each save took tens of milliseconds longer (200 ms on average over 75 days, up to 0.6 s, a visible hitch on autosave). One segmenter is now reused and text with no emoji near the cut is clipped directly: a 10-day English save went from 70 to 15 ms, 45 ms on average over 75 days',
                 '🔁 Save and load are now exactly identical: villagers keep 3 shared memories per pair in play too (the same as in saves, and prompts only ever used 3), so nothing is lost on reload',
                 '📰 No newspaper is ever deleted, but saves are leaner: issues older than the newest 30 no longer store the day\'s source list (only the newest issues use it when opened); their text, date and reporter are kept',

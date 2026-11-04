@@ -124,7 +124,7 @@ class ProposalSystem {
     _advance(w, day) {
         for (const p of this.items) {
             if (p._ruling && p._rulingDay === day) continue; // v6.39.0 鎮長還在想(LLM 回覆中)
-            if (p._ruling) { p._ruling = false; delete p._rulingDay; p._llmRuledDay = day; } // v6.43.6 隔天還掛著(回覆丟了或讀檔帶進來)就不再等,今天直接照規則裁決(不再重問 AI,免得一直卡在等回覆)
+            if (p._ruling) { p._ruling = false; delete p._rulingDay; p._llmRuledDay = day; p._rulingTicket = (p._rulingTicket || 0) + 1; } // v6.43.7 換號:遲到的舊回覆作廢 // v6.43.6 隔天還掛著(回覆丟了或讀檔帶進來)就不再等,今天直接照規則裁決(不再重問 AI,免得一直卡在等回覆)
             if (p.status === 'open') {
                 // v6.37.0 上帝視角:觀察者不再批准／否決,由村民投票 + NPC 鎮長裁決
                 const voted = Object.keys(p.votes || {}).length, pop = Math.max(1, this._npcs(w).length - 1);
@@ -441,7 +441,7 @@ class ProposalSystem {
     _mayorRule(w, p, day, final) {
         const m = this._mayor(w);
         // v6.39.0 完整智能體:鎮長用 LLM 裁決(非同步);失敗退回下面的規則
-        if (m && w.fullAgentMode && w.conversationEngine?.decideMayor && !p._ruling && p._llmRuledDay !== day) { p._ruling = true; p._rulingDay = day; this._mayorRuleLLM(w, p, day, final, m); return; }
+        if (m && w.fullAgentMode && w.conversationEngine?.decideMayor && !p._ruling && p._llmRuledDay !== day) { p._ruling = true; p._rulingDay = day; const ticket = p._rulingTicket = (p._rulingTicket || 0) + 1; this._mayorRuleLLM(w, p, day, final, m, ticket); return; }
         const f = this._count(p, 'for'), a = this._count(p, 'against'), total = f + a;
         const silver = w.stockpile?.get?.('silver') || 0, cost = this._cost(p).silver || 0;
         let action, why;
@@ -462,12 +462,14 @@ class ProposalSystem {
         this.stats.auto++;
         this._decide(w, p, action, 'mayor');
     }
-    async _mayorRuleLLM(w, p, day, final, m) {
+    async _mayorRuleLLM(w, p, day, final, m, ticket) {
         let r = null;
         try {
             const tally = { f: this._count(p, 'for'), a: this._count(p, 'against'), forWhy: this._whyTop(p, 'for', w).map(x => x.who ? `${x.who}${t('：')}${x.why}` : x.why), againstWhy: this._whyTop(p, 'against', w).map(x => x.who ? `${x.who}${t('：')}${x.why}` : x.why) };
             r = await w.conversationEngine.decideMayor(w, p, m, tally);
         } catch (e) { console.warn('[Proposals] llm mayor', e); }
+        // v6.43.7 只認目前這一號的回覆:跨日已改用規則裁決(或讀檔、又開了新一輪)時,遲到的舊回覆不能改寫結果,也不能清掉新一輪的等待旗標
+        if (ticket !== undefined && p._rulingTicket !== ticket) return;
         p._ruling = false; delete p._rulingDay;
         if (p.status !== 'open' && p.status !== 'shelved') return;
         if (!r) { p._llmRuledDay = day; this._mayorRule(w, p, this._abs(w), final); return; }
@@ -696,7 +698,7 @@ class ProposalSystem {
         };
     }
     serialize() { return { counter: this.counter, items: this.items, cooldown: this.cooldown, proposerCooldown: this.proposerCooldown, stats: this.stats, track: this.track, _lastDay: this._lastDay }; }
-    loadFrom(d) { if (!d) return; this.counter = d.counter || 0; this.items = Array.isArray(d.items) ? d.items : []; for (const p of this.items) if (p && p._ruling) { p._ruling = false; delete p._rulingDay; } // v6.43.6 存檔當下鎮長正在用 AI 裁決:讀檔後那個回覆永遠不會來,以前這件提案就永遠卡住(滿 4 件後全鎮不再提案)
+    loadFrom(d) { if (!d) return; this.counter = d.counter || 0; this.items = Array.isArray(d.items) ? d.items : []; for (const p of this.items) if (p && p._ruling) { p._ruling = false; delete p._rulingDay; p._rulingTicket = (p._rulingTicket || 0) + 1; } // v6.43.6 存檔當下鎮長正在用 AI 裁決:讀檔後那個回覆永遠不會來,以前這件提案就永遠卡住(滿 4 件後全鎮不再提案)
  this.cooldown = d.cooldown || {}; this.proposerCooldown = d.proposerCooldown || {}; this.track = d.track || {}; this.stats = Object.assign({ made: 0, approved: 0, rejected: 0, shelved: 0, done: 0, failed: 0, auto: 0 }, d.stats || {}); this._lastDay = d._lastDay ?? null; for (const p of this.items) { delete p._ruling; } }
 }
 if (typeof window !== 'undefined') { window.ProposalSystem = ProposalSystem; window.PROPOSAL_KINDS = PROPOSAL_KINDS; window.VOTE_WHY = VOTE_WHY; }
