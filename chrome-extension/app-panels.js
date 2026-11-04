@@ -923,10 +923,17 @@ Object.assign(RimTownApp.prototype, {
         const esc = (x) => this._escapeHtml(String(x ?? ''));
         const nm = (n) => esc(t(n || ''));
         let html = '';
-        if (el.acting) {
-            const msg = el.acting.reason === 'travel'
-                ? t('鎮長{mayor}出遠門，由{acting}代理鎮長。').replace('{mayor}', nm(el.acting.mayorName)).replace('{acting}', nm(el.acting.name))
-                : t('鎮上暫時沒有鎮長，由{acting}代理，補選進行中。').replace('{acting}', nm(el.acting.name));
+        // v6.43.6 代理提示看即時狀態(state 可能是舊快照):正式鎮長已經回到鎮上就不顯示;依原因分開寫,只有鎮長真的離開才寫「補選」
+        const live = W.election; const acting = live?.acting; const back = !!live?._realMayor?.(W);
+        if (acting && !back) {
+            const rs = acting.reason;
+            const msg = rs === 'travel'
+                ? t('鎮長{mayor}出遠門，由{acting}代理鎮長。').replace('{mayor}', nm(acting.mayorName)).replace('{acting}', nm(acting.name))
+                : rs === 'explore'
+                ? t('鎮長{mayor}出去探險了，由{acting}代理鎮長，回來後交還。').replace('{mayor}', nm(acting.mayorName)).replace('{acting}', nm(acting.name))
+                : (live.active && live.byElection)
+                ? t('鎮上暫時沒有鎮長，由{acting}代理，補選進行中。').replace('{acting}', nm(acting.name))
+                : t('鎮上暫時沒有鎮長，由{acting}代理，即將補選。').replace('{acting}', nm(acting.name));
             html += `<div class="el-acting">🏛️ ${msg}</div>`;
         }
         if (el.active && el.candidates?.length) {
@@ -1542,7 +1549,7 @@ Object.assign(RimTownApp.prototype, {
                 html += `</div>`;
                 if (!isExpanded && paper.content) {
                     const firstLine = paper.content.split('\n').find(l => l.trim().length > 0) || '';
-                    const preview = firstLine.length > 40 ? firstLine.substring(0, 40) + '…' : firstLine;
+                    const preview = clipText(firstLine, 41); // v6.43.6
                     html += `<div class="news-card-preview">${this._escapeHtml(preview)}</div>`;
                 }
                 if (isExpanded) {

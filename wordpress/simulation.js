@@ -1897,6 +1897,9 @@ class World {
 
     // --- Save / Load ---
     serialize() {
+        // v6.43.6 記憶的時間字串能由 tick 推回來時就不存(每筆約 25～35 字,英文存檔省一成);推不回來的(舊檔、時間跳過)照存
+        const nowMin = this.clock.absMinutes, T = this.tickCount, tsCache = new Map();
+        const tsAt = (tick) => { if (typeof tick !== 'number') return null; let v = tsCache.get(tick); if (v === undefined) { v = GameClock.timeStrAtMinutes(nowMin - (T - tick) * 15); tsCache.set(tick, v); } return v; };
         const serializeAgent = (a) => ({
             id:a.agentId, name:a.name, age:a.age, gender:a.gender, isPlayer:a.isPlayer,
             _isPlayerChild: a._isPlayerChild || false, _parentNames: a._parentNames || null,
@@ -1910,11 +1913,12 @@ class World {
             skills: Object.fromEntries(Object.entries(a.skills.skills).map(([k,s])=>[k,{xp:s.xp,passion:s.passion}])),
             relationships: Object.fromEntries(Object.entries(a.relationships.relationships).map(([k,r])=>[k,{
                 targetId:r.targetId, targetName:r.targetName, affinity:r.affinity, trust:r.trust,
-                romanticInterest:r.romanticInterest, interactionCount:r.interactionCount,
-                lastInteractionTick:r.lastInteractionTick, sharedMemories:r.sharedMemories.slice(-3).map(x => typeof x === 'string' && x.length > 100 ? x.slice(0, 99) + '…' : x), // v6.43.5 存提示詞會用到的最近 3 筆;英文句子長,每筆最多 100 字
-                status:r.status, statusSince:r.statusSince, isCheating:r.isCheating, isFeud:r.isFeud || undefined
+                romanticInterest:r.romanticInterest || undefined, interactionCount:r.interactionCount,
+                lastInteractionTick:r.lastInteractionTick, sharedMemories:r.sharedMemories.slice(-3).map(x => typeof x === 'string' ? clipText(x, 100) : x), // v6.43.6 依字截斷,不切壞 emoji
+                // v6.43.5 存提示詞會用到的最近 3 筆;英文句子長,每筆最多 100 字
+                status:r.status || undefined, statusSince:r.statusSince || undefined, isCheating:r.isCheating || undefined, isFeud:r.isFeud || undefined // v6.43.6 預設值不存(讀檔補回)
             }])),
-            memory: a.memory.entries.slice(-10000).map(m=>({tick:m.tick,timeStr:m.timeStr,category:m.category,importance:m.importance,relatedAgents:m.relatedAgents,...(m.k?{k:m.k,p:m.p}:{content:m.content})})), // v6.17.0 k/p;v6.19.0 有模板就不存 content
+            memory: a.memory.entries.slice(-10000).map(m=>({tick:m.tick,...(m.timeStr === tsAt(m.tick) ? {} : { timeStr:m.timeStr }),category:m.category,importance:m.importance,relatedAgents:m.relatedAgents,...(m.k?{k:m.k,p:m.p}:{content:m.content})})), // v6.17.0 k/p;v6.19.0 有模板就不存 content
             chatHistory: a.isPlayer ? (a.chatHistory||[]).slice(-10000) : undefined,
             _lastInteractionTick: a._lastInteractionTick,
             _locationStayRemaining: a._locationStayRemaining || 0,
@@ -2130,10 +2134,10 @@ class World {
                     for (const [rk,rv] of Object.entries(ad.relationships)) {
                         const rel = agent.relationships.getOrCreate(rv.targetId, rv.targetName);
                         rel.affinity = rv.affinity; rel.trust = rv.trust;
-                        rel.romanticInterest = rv.romanticInterest;
+                        rel.romanticInterest = rv.romanticInterest || 0; // v6.43.6 0 不存
                         rel.interactionCount = rv.interactionCount;
                         rel.lastInteractionTick = rv.lastInteractionTick;
-                        rel.sharedMemories = rv.sharedMemories || [];
+                        rel.sharedMemories = (rv.sharedMemories || []).map(fixBrokenText); // v6.43.6 v6.43.5 存檔可能切壞 emoji,讀檔時清掉半個字
                         rel.status = rv.status || null;
                         rel.statusSince = rv.statusSince || 0;
                         rel.isCheating = rv.isCheating || false;
@@ -2142,7 +2146,8 @@ class World {
                 }
                 // Memory
                 if (ad.memory) {
-                    ad.memory.forEach(m => agent.memory.add(m.tick, m.timeStr, m.category, m.content, m.importance, m.relatedAgents, m.k || null, m.p || null)); // v6.17.0
+                    const nowMin = this.clock.absMinutes, T = this.tickCount; // v6.43.6 沒存時間字串的由 tick 推回
+                    ad.memory.forEach(m => agent.memory.add(m.tick, m.timeStr ?? (typeof m.tick === 'number' ? GameClock.timeStrAtMinutes(nowMin - (T - m.tick) * 15) : ''), m.category, m.content, m.importance, m.relatedAgents, m.k || null, m.p || null)); // v6.17.0
                 }
                 this.agents[id] = agent;
             }

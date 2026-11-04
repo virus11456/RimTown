@@ -188,7 +188,7 @@ Object.assign(RimTownApp.prototype, {
             // Show headline preview when collapsed
             if (!isExpanded && paper.content) {
                 const firstLine = paper.content.split('\n').find(l => l.trim().length > 0) || '';
-                const preview = firstLine.length > 40 ? firstLine.substring(0, 40) + '…' : firstLine;
+                const preview = clipText(firstLine, 41); // v6.43.6
                 html += `<div class="news-card-preview">${this._escapeHtml(preview)}</div>`;
             }
 

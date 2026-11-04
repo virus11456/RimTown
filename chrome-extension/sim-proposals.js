@@ -124,7 +124,7 @@ class ProposalSystem {
     _advance(w, day) {
         for (const p of this.items) {
             if (p._ruling && p._rulingDay === day) continue; // v6.39.0 鎮長還在想(LLM 回覆中)
-            if (p._ruling) { p._ruling = false; delete p._rulingDay; } // v6.43.6 隔天還掛著(回覆丟了或讀檔帶進來)就不再等,照常裁決
+            if (p._ruling) { p._ruling = false; delete p._rulingDay; p._llmRuledDay = day; } // v6.43.6 隔天還掛著(回覆丟了或讀檔帶進來)就不再等,今天直接照規則裁決(不再重問 AI,免得一直卡在等回覆)
             if (p.status === 'open') {
                 // v6.37.0 上帝視角:觀察者不再批准／否決,由村民投票 + NPC 鎮長裁決
                 const voted = Object.keys(p.votes || {}).length, pop = Math.max(1, this._npcs(w).length - 1);

@@ -41,6 +41,14 @@ class GameClock {
     get shortTime() {
         return `${String(this.hour).padStart(2,'0')}:${String(this.minute).padStart(2,'0')}`;
     }
+    // v6.43.6 絕對分鐘數(從第 1 年春季第 1 天 0:00 起);存檔省略可由 tick 推回的記憶時間字串
+    get absMinutes() { return this.totalDays * 1440 + this.hour * 60 + this.minute; }
+    static timeStrAtMinutes(mins) {
+        const c = new GameClock(); mins = Math.max(0, Math.floor(mins));
+        const d = Math.floor(mins / 1440); const r = mins - d * 1440;
+        c.year = Math.floor(d / 60) + 1; const dy = d % 60; c.season = ['春季','夏季','秋季','冬季'][Math.floor(dy / 15)]; c.day = dy % 15 + 1;
+        c.hour = Math.floor(r / 60); c.minute = r % 60; return c.timeStr;
+    }
     // v5.4.0 遊戲累計天數(供人生故事線計時)
     get totalDays() {
         const seasons = ['春季','夏季','秋季','冬季'];

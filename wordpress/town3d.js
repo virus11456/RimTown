@@ -1177,7 +1177,7 @@ class Town3D extends PixelTileMap {
             const pos = this.agentPositions[b.agentId]; const m = this._agentMeshes[b.agentId];
             if (!pos || !m || !m.visible) continue;
             shownBubble.add(b.agentId);
-            const full = String(b.text || ''); const text = full.length > 56 ? full.substring(0, 55) + '…' : full; // v6.36.0 截斷補省略號
+            const full = String(b.text || ''); const text = clipText(full, 56); // v6.36.0 截斷補省略號
             const el = this._ov('bb:' + b.agentId, 't3d-bubble', `<b>${this._esc(t3(b.speaker || ''))}</b>${this._esc(t3(text))}`);
             this._place(el, pos.x / TILE, m.position.y + 2.5, pos.y / TILE);
         }

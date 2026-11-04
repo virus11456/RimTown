@@ -1226,7 +1226,9 @@ class ExplorationSystem {
             });
         }
 
+        const before = this.activeExpeditions.length;
         this.activeExpeditions = this.activeExpeditions.filter(e => world.tickCount < e.returnTick);
+        if (this.activeExpeditions.length !== before) { try { world.election?._checkMayor?.(world); } catch (e) {} } // v6.43.6 鎮長探險回來就交還,不等隔天
     }
 
     toDict() {

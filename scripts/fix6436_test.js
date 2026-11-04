@@ -42,12 +42,64 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
   ok(r.sameDay === 0, '同一天照舊等 AI 回覆', r);
   ok(r.nextDay === 4 && r.ruling === 0, '隔天還沒回就照規則裁決', r);
 
+  console.log('快轉多天、AI 一直沒回(中間不讓出執行緒)');
+  r0 = await setup();
+  r = await page.evaluate((r0) => { const w = window.rimtownApp.world, P = w.proposals; w.conversationEngine.decideMayor = () => new Promise(() => {});
+    for (let i = 1; i <= 3; i++) P._advance(w, r0.day + i);
+    return { decided: P.items.filter(p => p.status !== 'open').length, auto: P.stats.auto }; }, r0);
+  ok(r.decided === 4, '隔天直接照規則裁決,不會每天重問 AI 又卡住', r);
+
   console.log('全鎮不會因此停止提案');
   r = await page.evaluate(() => { const w = window.rimtownApp.world, P = w.proposals; const before = P.items.length;
     w.conversationEngine.decideMayor = async () => null; w.fullAgentMode = false;
     let d = P._abs(w) + 2; for (let i = 0; i < 8; i++) { P._lastDay = -1; P._generate(w, d + i); P._advance(w, d + i); }
     return { before, after: P.items.length, open: P.open().length }; });
   ok(r.after > r.before, '裁決後空出名額,村民繼續提新案', r);
+  console.log('選舉卡代理提示');
+  r = await page.evaluate(() => { const app = window.rimtownApp, w = app.world, el = w.election; el.acting = null; el.active = false; el.phase = 'none';
+    const m = el._realMayor(w); const loc = m.currentLocation;
+    const card = () => { app.state = w.getState(); const d = document.createElement('div'); d.innerHTML = app._electionCardHtml(); return (d.querySelector('.el-acting')?.textContent || '').trim(); };
+    m.currentLocation = 'exploration'; m.activity = 'exploring'; el._checkMayor(w); const exploring = card();
+    m.currentLocation = loc; m.activity = 'idle'; const stale = card(); // 還沒跑每日檢查,state 也是舊的
+    // 探險隊回來的流程會馬上重新檢查
+    w.exploration.activeExpeditions = [{ id: 'exp_t', agentIds: [m.agentId], agentNames: [m.name], returnTick: w.tickCount - 1, zoneId: 'x' }];
+    try { w.exploration.dailyUpdate ? null : null; } catch (e) {}
+    el._checkMayor(w); const back = card();
+    return { exploring, stale, back, acting: el.acting }; });
+  ok(/探險/.test(r.exploring) && !/補選/.test(r.exploring), '鎮長去探險:提示寫探險、不寫補選', r);
+  ok(r.stale === '' && r.back === '' && !r.acting, '鎮長回到鎮上:提示馬上消失', r);
+
+  console.log('共享記憶截斷不切壞 emoji');
+  r = await page.evaluate(() => { const w = window.rimtownApp.world; const a = Object.values(w.agents).find(x => !x.isPlayer); const b = Object.values(w.agents).find(x => !x.isPlayer && x !== a);
+    const rel = a.relationships.getOrCreate(b.agentId, b.name); rel.sharedMemories = [];
+    const long = '一起在泉水噴泉看星星'.repeat(9) + '😀🌟👨‍👩‍👧' + '結尾'; // 剛好在 emoji 上被截
+    const cut = '😀'.repeat(60) + 'x';
+    rel.addSharedMemory(long); rel.addSharedMemory(cut);
+    const blob = JSON.parse(JSON.stringify(w.serialize()));
+    const saved = blob.agents ? (Array.isArray(blob.agents) ? blob.agents : Object.values(blob.agents)).find(x => x.id === a.agentId).relationships[b.agentId].sharedMemories : [];
+    const lone = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+    // 舊版切壞的存檔:讀檔要清掉半個字
+    const savedObj = (Array.isArray(blob.agents) ? blob.agents : Object.values(blob.agents)).find(x => x.id === a.agentId).relationships[b.agentId];
+    savedObj.sharedMemories = ['abc' + '😀'.slice(0, 1), '😀'.slice(1) + 'def'];
+    w.loadSave(blob); const after = w.agents[a.agentId].relationships.relationships[b.agentId].sharedMemories;
+    return { saved, savedBroken: saved.some(x => lone.test(x)), lens: saved.map(x => Array.from(x).length), after, afterBroken: after.some(x => lone.test(x)) }; });
+  ok(!r.savedBroken && r.lens.every(n => n <= 100), '存檔截斷後沒有半個 emoji', { lens: r.lens, broken: r.savedBroken });
+  ok(!r.afterBroken && r.after[0] === 'abc' && r.after[1] === 'def', '舊存檔切壞的 emoji 讀檔時清掉', r.after);
+  console.log('存檔省略可推回的欄位,讀檔後完全一樣');
+  r = await page.evaluate(() => { const w = window.rimtownApp.world; window.rimtownApp._setPaused?.(true);
+    for (let i = 0; i < 300; i++) { w.paused = false; w.tick(); } w.paused = true;
+    const snap = () => Object.values(w.agents).filter(a => !a.isPlayer).map(a => ({ id: a.agentId, mem: a.memory.entries.map(m => `${m.tick}|${m.timeStr}|${m.category}`).join('\n'), rel: JSON.stringify(Object.values(a.relationships.relationships).map(r => [r.targetId, r.affinity, r.trust, r.romanticInterest || 0, r.status || null, r.statusSince || 0, !!r.isCheating, !!r.isFeud])) }));
+    // 一筆時間被「跳過」的記憶(推不回來):要照存
+    const a0 = Object.values(w.agents).find(a => !a.isPlayer); a0.memory.add(w.tickCount, '第 9 年冬季 第 9 天 09:09', 'daily', '時間對不上的記憶', 3, []);
+    const before = snap(); const blob = JSON.parse(JSON.stringify(w.serialize()));
+    const ags = Array.isArray(blob.agents) ? blob.agents : Object.values(blob.agents);
+    const mems = ags.flatMap(a => a.memory || []); const withTs = mems.filter(m => 'timeStr' in m).length;
+    const odd = mems.find(m => m.timeStr === '第 9 年冬季 第 9 天 09:09');
+    w.loadSave(blob); const after = snap();
+    const diff = before.filter((b, i) => b.mem !== after[i]?.mem || b.rel !== after[i]?.rel).map(b => b.id);
+    return { mems: mems.length, withTs, odd: !!odd, diff, kept: mems.filter(m => 'timeStr' in m).slice(0, 4).map(m => m.tick + ' ' + m.timeStr + ' ' + m.category), now: w.tickCount + ' ' + w.clock.timeStr }; });
+  ok(r.withTs <= r.mems * 0.03 && r.odd, '記憶時間字串只存推不回來的那幾筆(開局家族記憶、時間跳過的)', r);
+  ok(r.diff.length === 0, '存讀檔後記憶時間與關係欄位完全一致', r);
   ok(!errs.length, '沒有頁面錯誤', errs.slice(0, 3));
   console.log(`\n${pass} passed, ${fail} failed`); await browser.close(); process.exit(fail ? 1 : 0);
 })();

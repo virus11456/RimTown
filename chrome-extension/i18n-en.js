@@ -7538,6 +7538,8 @@
         // ── v5.48.0 看戲三件組 ──
         '集': ' · Episode',
         '第 {n} 集': 'Episode {n}',
+        '鎮長{mayor}出去探險了，由{acting}代理鎮長，回來後交還。': 'Mayor {mayor} is away exploring; {acting} is acting Mayor until they return.',
+        '鎮上暫時沒有鎮長，由{acting}代理，即將補選。': 'The town has no mayor for now; {acting} is acting Mayor and a by-election is coming.',
         '🗳️ {names}開票時不在鎮上，失去當選資格。': '🗳️ Not in town for the count, so out of the running: {names}.',
         '🗳️ 候選人都不在鎮上，這次選舉沒有結果。': '🗳️ None of the candidates were in town for the count, so this election has no result.',
         '🏛️ 鎮長{mayor}出去探險了，這幾天由{acting}代理鎮長。': '🏛️ Mayor {mayor} is away exploring; {acting} is acting Mayor for now.',

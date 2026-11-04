@@ -528,6 +528,7 @@ class EventSystem {
         Object.values(world.agents).forEach(o => {
             if(o.agentId!==agent.agentId) o.memory.addT(world.tickCount, world.clock.timeStr, 'arrival', '{agent}旅行回來了！', { agent: agent.name }, 4, [agent.name]);
         });
+        try { world.election?._checkMayor?.(world); } catch (e) {} // v6.43.6 鎮長或代理回來就馬上重新檢查(交還／換代理),不等隔天
     }
     _managePopulation(world) {
         const npcCount = Object.values(world.agents).filter(a => !a.isPlayer).length;
