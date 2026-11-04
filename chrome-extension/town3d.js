@@ -806,7 +806,8 @@ class Town3D extends PixelTileMap {
         if (wt === 'storm' && !(this._flash > 0.05) && Math.random() < 0.008) this._flash = 1;
         if (this._flash > 0.01) { if (!L.white) L.white = new THREE.Color('#FFFFFF'); sky.lerp(L.white, this._flash * 0.55); this._flash *= 0.78; } else this._flash = 0;
         this.scene.background.copy(sky); this.scene.fog.color.copy(sky);
-        this.scene.fog.density = (wt === 'fog' ? 0.016 : wt === 'rain' || wt === 'storm' ? 0.009 : 0.006) + night * 0.002;
+        // v6.36.0 天氣不再靠整片霧白表現:霧天／雨天的距離霧跟晴天一樣淡,霧由低而密的灰雲、雨雪由粒子呈現
+        this.scene.fog.density = 0.005 + night * 0.002;
         if (night < 1) {
             this.sun.position.set(cx + Math.cos(sunAng) * 90, Math.max(8, Math.sin(sunAng) * 90), cz + 40);
         } else {
@@ -1028,8 +1029,8 @@ class Town3D extends PixelTileMap {
             return { mesh: m, cap: n, list: [] };
         };
         this._fx = {
-            rain: mk(this.lowQuality ? 500 : 1400, new THREE.LineBasicMaterial({ color: new THREE.Color('#BFD6F2'), transparent: true, opacity: 0.45 }), true),
-            snow: mk(this.lowQuality ? 400 : 1000, new THREE.PointsMaterial({ color: new THREE.Color('#FFFFFF'), size: 0.18, transparent: true, opacity: 0.9, depthWrite: false })),
+            rain: mk(this.lowQuality ? 700 : 2200, new THREE.LineBasicMaterial({ color: new THREE.Color('#9FB8D8'), transparent: true, opacity: 0.7 }), true), // v6.36.0 雨更明顯:更多、更深、更長
+            snow: mk(this.lowQuality ? 500 : 1400, new THREE.PointsMaterial({ color: new THREE.Color('#FFFFFF'), size: 0.28, transparent: true, opacity: 0.95, depthWrite: false })),
             smoke: mk(300, new THREE.PointsMaterial({ color: new THREE.Color('#C9C4BC'), size: 0.5, transparent: true, opacity: 0.35, depthWrite: false })),
             firefly: mk(200, new THREE.PointsMaterial({ color: new THREE.Color('#D9FF7A'), size: 0.22, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending })),
             fest: mk(400, new THREE.PointsMaterial({ color: new THREE.Color('#FFD54F'), size: 0.22, transparent: true, opacity: 0.95, depthWrite: false, vertexColors: false })),
@@ -1089,14 +1090,17 @@ class Town3D extends PixelTileMap {
             const c = this._cloudMat.color.setRGB(1, 1, 1); c.lerp(this._lc?.skyNight || c, night * 0.75); if (bad || wt === 'fog') c.lerp(this._lc?.rain || c, 0.6);
             // v6.34.1 雲本體只在鏡頭明顯高於雲層時顯示(俯瞰看一朵朵小雲帶影子飄過);鏡頭降到 28 以下開始淡、22 以下只剩雲影,不會再有整片霧白
             const camY = this.camera ? this.camera.position.y : 0; const camFade = clamp((camY - 22) / 6, 0, 1);
-            this._cloudMat.opacity = (wt === 'fog' ? 0.3 : bad ? 0.95 : 0.9) * camFade; this._cloudMesh.visible = camFade > 0.02;
+            this._cloudMat.opacity = (wt === 'fog' || bad ? 0.96 : 0.9) * camFade; this._cloudMesh.visible = camFade > 0.02;
+            this._cloudMat.emissiveIntensity = (wt === 'fog' || bad) ? 0.08 : 0.35; // 陰雨霧的雲不發亮,才像灰雲
+            // v6.36.0 霧天／陰雨雪:雲放大 1.4 倍、壓低 2 格,天空被一朵朵灰雲蓋住,地面不再霧白
+            const cs = (wt === 'fog') ? 1.45 : bad ? 1.3 : 1, cy = (wt === 'fog') ? -2 : bad ? -1 : 0;
             const day = 1 - night; this._cloudShadowMat.opacity = 0.14 * day * (bad ? 0.4 : wt === 'fog' ? 0.3 : 1); this._cloudShadow.visible = this._cloudShadowMat.opacity > 0.01;
             const span = this.cols + 30, sp = wt === 'storm' || wt === 'blizzard' ? 3 : 1; let idx = 0;
             for (const g of this._clouds) {
                 g.x += g.v * sp; if (g.x > this.cols + 15) g.x -= span;
                 for (const p of g.parts) {
-                    this._cloudM4.compose(this._cloudP.set(g.x + p.ox, g.y + p.oy, g.z + p.oz), this._cloudQ, this._cloudS.set(p.sx, p.sy, p.sz)); this._cloudMesh.setMatrixAt(idx, this._cloudM4);
-                    this._cloudM4.compose(this._cloudP.set(g.x + p.ox + 3, 0.04, g.z + p.oz + 2), this._cloudQ, this._cloudS.set(p.sx * 0.9, 0.02, p.sz * 0.9)); this._cloudShadow.setMatrixAt(idx, this._cloudM4); // 雲影往太陽反方向偏一點
+                    this._cloudM4.compose(this._cloudP.set(g.x + p.ox * cs, g.y + cy + p.oy * cs, g.z + p.oz * cs), this._cloudQ, this._cloudS.set(p.sx * cs, p.sy * cs, p.sz * cs)); this._cloudMesh.setMatrixAt(idx, this._cloudM4);
+                    this._cloudM4.compose(this._cloudP.set(g.x + p.ox * cs + 3, 0.04, g.z + p.oz * cs + 2), this._cloudQ, this._cloudS.set(p.sx * 0.9 * cs, 0.02, p.sz * 0.9 * cs)); this._cloudShadow.setMatrixAt(idx, this._cloudM4); // 雲影往太陽反方向偏一點
                     idx++;
                 }
             }
@@ -1124,8 +1128,8 @@ class Town3D extends PixelTileMap {
         const wt = this.weatherType || 'clear';
         const heavy = wt === 'storm' || wt === 'blizzard';
         const q = this.lowQuality ? 0.45 : this.isMobile ? 0.6 : 1; // v6.28.0
-        if (wt === 'rain' || wt === 'storm') for (let i = 0; i < Math.round((heavy ? 26 : 14) * q); i++) this._fxSpawn('rain', { x: tx + (Math.random() - 0.5) * R * 2, y: 10 + Math.random() * 8, z: tz + (Math.random() - 0.5) * R * 2, vx: heavy ? 0.12 : 0.03, vy: -0.55 - Math.random() * 0.2, vz: 0, life: 60 });
-        if (wt === 'snow' || wt === 'blizzard') for (let i = 0; i < Math.round((heavy ? 12 : 5) * q); i++) this._fxSpawn('snow', { x: tx + (Math.random() - 0.5) * R * 2, y: 9 + Math.random() * 6, z: tz + (Math.random() - 0.5) * R * 2, vx: heavy ? 0.06 : 0.01, vy: -0.06 - Math.random() * 0.04, vz: 0, life: 400, ph: Math.random() * 6.28 });
+        if (wt === 'rain' || wt === 'storm') for (let i = 0; i < Math.round((heavy ? 40 : 24) * q); i++) this._fxSpawn('rain', { x: tx + (Math.random() - 0.5) * R * 2, y: 10 + Math.random() * 8, z: tz + (Math.random() - 0.5) * R * 2, vx: heavy ? 0.12 : 0.03, vy: -0.55 - Math.random() * 0.2, vz: 0, life: 60 });
+        if (wt === 'snow' || wt === 'blizzard') for (let i = 0; i < Math.round((heavy ? 18 : 9) * q); i++) this._fxSpawn('snow', { x: tx + (Math.random() - 0.5) * R * 2, y: 9 + Math.random() * 6, z: tz + (Math.random() - 0.5) * R * 2, vx: heavy ? 0.06 : 0.01, vy: -0.06 - Math.random() * 0.04, vz: 0, life: 400, ph: Math.random() * 6.28 });
         if (frame % 10 === 0 && this._chimneyTops) for (const c of this._chimneyTops) if (Math.random() < 0.6) this._fxSpawn('smoke', { x: c.x + (Math.random() - 0.5) * 0.2, y: c.y, z: c.z + (Math.random() - 0.5) * 0.2, vx: (Math.random() - 0.5) * 0.01 + 0.012, vy: 0.025 + Math.random() * 0.012, vz: (Math.random() - 0.5) * 0.01, life: 90 + Math.random() * 40, maxLife: 130 });
         if (night > 0.6 && frame % 6 === 0) for (const z of Object.values(this.natureZones)) if (Math.random() < 0.25 * q) this._fxSpawn('firefly', { x: z.x + Math.random() * z.w, y: 0.4 + Math.random() * 1.4, z: z.y + Math.random() * z.h, vx: (Math.random() - 0.5) * 0.02, vy: (Math.random() - 0.5) * 0.01, vz: (Math.random() - 0.5) * 0.02, life: 120 + Math.random() * 100, ph: Math.random() * 6.28 });
         if (this.season === '秋季' && frame % 12 === 0) { const fz = this.natureZones['forest']; if (fz && Math.random() < 0.6) this._fxSpawn('leaf', { x: fz.x + Math.random() * fz.w, y: 2.5 + Math.random(), z: fz.y + Math.random() * fz.h, vx: 0.015 + Math.random() * 0.01, vy: -0.018, vz: 0.01, life: 160, ph: Math.random() * 6.28 }); }
@@ -1140,7 +1144,7 @@ class Town3D extends PixelTileMap {
                 if (type === 'firefly') { p.vx += (Math.random() - 0.5) * 0.004; p.vz += (Math.random() - 0.5) * 0.004; p.vx *= 0.97; p.vz *= 0.97; }
                 if (type === 'fest') { p.x += Math.sin(frame * 0.1 + p.ph) * 0.02; }
                 if (p.life <= 0 || p.y < -0.3 || (type === 'smoke' && p.y > 12)) { fx.list.splice(i, 1); continue; }
-                if (type === 'rain') { arr[n * 6] = p.x; arr[n * 6 + 1] = p.y; arr[n * 6 + 2] = p.z; arr[n * 6 + 3] = p.x - p.vx * 1.2; arr[n * 6 + 4] = p.y - p.vy * 1.2; arr[n * 6 + 5] = p.z; }
+                if (type === 'rain') { arr[n * 6] = p.x; arr[n * 6 + 1] = p.y; arr[n * 6 + 2] = p.z; arr[n * 6 + 3] = p.x - p.vx * 2.2; arr[n * 6 + 4] = p.y - p.vy * 2.2; arr[n * 6 + 5] = p.z; }
                 else { arr[n * 3] = p.x; arr[n * 3 + 1] = p.y; arr[n * 3 + 2] = p.z; }
                 n++;
             }
