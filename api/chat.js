@@ -245,11 +245,15 @@ async function callGroq(apiKey, prompt, maxTokens, temperature, deadline = Date.
 
 // v5.67.5 回覆一律轉成繁體中文(台灣用語):Groq 的 gpt-oss 即使被要求繁體也常回簡體;
 // 用 OpenCC(cn→twp)在伺服器端統一轉,繁體輸入不受影響。轉換器載入失敗時原樣回傳。
-let _toTW = null;
+let _toTW = null, _toTWChars = null;
+// v6.41.1 上線實測:Claude 回的本來就是繁體,但 OpenCC 台灣詞彙模式(twp)會把「支持」改成「支援」(「蘇晴的提案我支援!」)。
+// 改成:先用逐字轉換檢查,已經是繁體就原樣回傳;真的有簡體才做詞彙轉換,而且「支持」先保護起來不讓它被改
 function toTraditional(text) {
     try {
-        if (_toTW === null) { const OpenCC = require('opencc-js/cn2t'); _toTW = OpenCC.Converter({ from: 'cn', to: 'twp' }); }
-        return _toTW(String(text || ''));
+        if (_toTW === null) { const OpenCC = require('opencc-js/cn2t'); _toTW = OpenCC.Converter({ from: 'cn', to: 'twp' }); _toTWChars = OpenCC.Converter({ from: 'cn', to: 'tw' }); }
+        const s = String(text || '');
+        if (_toTWChars(s) === s) return s;
+        return _toTW(s.replace(/支持/g, '\u0000ZC\u0000')).replace(/\u0000ZC\u0000/g, '支持');
     } catch (e) { _toTW = false; return text; }
 }
 

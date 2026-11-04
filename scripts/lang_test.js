@@ -29,5 +29,8 @@ let pass = 0, fail = 0; const ok = (c, m) => { if (c) pass++; else { fail++; con
   r = await ask('chat', 'en'); ok(r.body.reply === '这是简体字的回复', 'en: no simplified→traditional conversion');
   r = await ask('chat', 'zh'); ok(r.body.reply === '這是簡體字的回覆' || r.body.reply !== '这是简体字的回复', 'zh: simplified converted (or converter unavailable)');
   r = await ask('chat', 'fr'); ok(r.body.lang === 'zh', 'unknown lang → zh');
+  // v6.41.1 已經是繁體的回覆原樣保留;簡體轉換時「支持」不被改成「支援」
+  groqText = '蘇晴的提案我支持！我們的軟件很好用。'; r = await ask('chat', 'zh'); ok(r.body.reply === groqText, 'zh: already-Traditional reply untouched (got ' + r.body.reply + ')');
+  groqText = '我支持这个提案'; r = await ask('chat', 'zh'); ok(r.body.reply === '我支持這個提案' || r.body.reply === groqText, 'zh: 支持 stays 支持 (got ' + r.body.reply + ')');
   console.log(`${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
 })();

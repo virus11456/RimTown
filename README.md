@@ -261,7 +261,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.41.0.zip` from Releases
+1. Download `rimtown-v6.41.1.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -314,6 +314,12 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.41.1 (2026-11-04)
+- 🧪 線上實測完整智能體（官方 Claude、中英文各一輪）：選提案、六位村民投票、鎮長裁決、事件反應全部回出可解析的 JSON 與符合性格的台詞，投票有贊成有反對、理由各自從職業與在乎的事出發，每次 1～5 秒
+- 🔤 修「支持」被改成「支援」：伺服器的簡轉繁用台灣詞彙模式，會把 Claude 本來就寫對的「蘇晴的提案我支持！」改成「我支援」。現在回覆已經是繁體就原樣保留，真的有簡體才轉，而且「支持」不再被替換
+- ⏱️ 小鎮內建 AI 偶爾失敗一次，不再讓全部 AI 暫停 60 秒：伺服器本來就會自己換渠道、自己冷卻，前端改成只暫停 10 秒（真的被限流 429 才停 60 秒），完整智能體的投票與裁決不會因為前一個背景呼叫失敗就全退回規則版
+- 🌐 英文模式的投票理由、鎮長裁決、提案說明與事件反應不再被切在半個字：長度上限依對話語言調整（英文約為中文的 3 倍）
 
 ### v6.41.0 (2026-11-04)
 - 🧠 所有 AI 一律先問 Claude：村民對話、劇情名場面、行程、反思、日報，以及完整智能體的投票、提案與鎮長裁決，全部先走官方 Claude；Claude 故障才依序換 GPT、Groq。以前聊天與決策走的那條線會先用 Groq 免費額度，品質跟 Claude 不一致
