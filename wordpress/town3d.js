@@ -696,7 +696,7 @@ class Town3D extends PixelTileMap {
         if (!this.renderer || !this.grid) return;
         this._sceneSrc = this.grid; this._sceneSeason = this.season || '';
         this._static.traverse((o) => { if (o.isMesh && o.geometry && !Object.values(this._geos).includes(o.geometry)) o.geometry.dispose(); });
-        this._static.clear(); this._waterMeshes = []; this._winMats = []; this._glowMats = []; this._boatMeshes = null; this._flame = null; this._chimneyTops = null;
+        this._static.clear(); this._waterMeshes = []; this._winMats = []; this._glowMats = []; this._boatMeshes = null; this._flame = null; this._chimneyTops = null; this._coach = null; this._coachHome = null; this._caravanAnim = null; // v6.34.1 換圖時馬車狀態歸零
         this._buildTerrain();
         this._buildVegetation();
         this._buildBuildings();
@@ -1292,27 +1292,21 @@ class Town3D extends PixelTileMap {
         return out;
     }
     // 商隊進城動畫(showCaravan 由 app 呼叫)
+    // v6.34.1 只有一台馬車:之前另外造一台複製品從站裡開到廣場再消失,站裡那台還停著,動畫期間鎮上有兩台。
+    // 現在讓站裡那台自己動:從靠近馬車站的地圖邊緣開進來、停回站裡原位(帶著「某某的商隊」小標籤)。
     _updateCaravan() {
-        const an = this._caravanAnim;
-        if (!an) { if (this._caravanMesh) this._caravanMesh.visible = false; return; }
+        const an = this._caravanAnim, g = this._coach;
+        if (this._caravanMesh) { this.scene.remove(this._caravanMesh); this._caravanMesh = null; } // 舊的複製品(讀檔／重建殘留)
+        if (!an || !g) { if (g && this._coachHome) { g.position.x = this._coachHome.x; g.position.z = this._coachHome.z; g.rotation.y = 0; this._coachHome = null; } this._caravanLabel = null; if (an && !g) this._caravanAnim = null; return; }
         const DUR = 520, el = this.animFrame - an.t0;
-        if (el > DUR) { this._caravanAnim = null; if (this._caravanMesh) this._caravanMesh.visible = false; return; }
-        if (!this._caravanMesh) {
-            const g = new THREE.Group(); this.scene.add(g); this._caravanMesh = g;
-            this._box(1.6, 1.0, 1.0, '#7A5236', 0, 0.85, 0, g); this._box(1.7, 0.1, 1.1, '#C9A86A', 0, 1.4, 0, g);
-            this._box(0.5, 0.35, 0.5, '#A1887F', -0.3, 1.6, 0, g); this._box(0.5, 0.3, 0.4, '#8D6E63', 0.35, 1.58, 0.1, g);
-            for (const [wx, wz] of [[-0.55, 0.55], [0.55, 0.55], [-0.55, -0.55], [0.55, -0.55]]) { const w = this._cyl(0.28, 0.28, 0.12, 8, '#3A2A1A', wx, 0.28, wz, g); w.rotation.x = Math.PI / 2; }
-            this._box(1.1, 0.6, 0.5, '#8A6A4A', -1.7, 0.75, 0, g); this._box(0.4, 0.5, 0.4, '#8A6A4A', -2.35, 1.0, 0, g);
-            for (const lx of [-1.4, -2.0]) for (const lz of [-0.18, 0.18]) this._box(0.12, 0.5, 0.12, '#6A4A2A', lx, 0.25, lz, g);
-        }
-        const cs = this.coachStation || { x: this.cols - 7 };
-        const startX = cs.x + 2, endX = 41, z = 21.5;
-        const p = Math.min(1, el / (DUR * 0.55)), ease = 1 - Math.pow(1 - p, 2);
-        const x = startX + (endX - startX) * ease;
-        const g = this._caravanMesh; g.visible = el < DUR * 0.9;
-        g.position.set(x, this.groundY(x, z) + (p < 1 ? Math.abs(Math.sin(el / 4)) * 0.05 : 0), z);
-        g.rotation.y = endX < startX ? 0 : Math.PI;
-        this._caravanLabel = an.label && g.visible ? { key: 'carav', x, y: 2.6, z, cls: 't3d-label t3d-mini', html: `<span class="t3d-name">${this._esc(an.label)}</span>` } : null;
+        if (!this._coachHome) this._coachHome = { x: g.position.x, z: g.position.z };
+        const home = this._coachHome;
+        if (el > DUR) { this._caravanAnim = null; g.position.x = home.x; g.position.z = home.z; g.rotation.y = 0; this._coachHome = null; this._caravanLabel = null; return; }
+        const fromRight = home.x > this.cols / 2; const startX = fromRight ? this.cols + 5 : -5;
+        const p = Math.min(1, el / (DUR * 0.6)), ease = 1 - Math.pow(1 - p, 2);
+        const x = startX + (home.x - startX) * ease;
+        g.position.x = x; g.position.z = home.z; g.rotation.y = fromRight ? 0 : Math.PI; // 馬頭朝前進方向(站在右邊就往左開)
+        this._caravanLabel = an.label ? { key: 'carav', x, y: 2.6, z: home.z, cls: 't3d-label t3d-mini', html: `<span class="t3d-name">${this._esc(an.label)}</span>` } : null;
     }
     // 效能自動降級:連續 3 秒平均幀長 > 40ms → 關陰影、降解析度
     _updateQuality(now) {

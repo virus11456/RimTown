@@ -1332,9 +1332,11 @@ function rimtown_get_changelog() {
             'version' => '6.34.1',
             'date'    => '2026-11-04',
             'changes' => array(
+                '🐛 修：鎮上有兩台一模一樣的馬車——馬車站裡固定停一台，「商隊進城／回來」動畫又另外造一台從站裡開到廣場再消失。現在只有一台：商隊來時就是站裡那台從地圖邊緣開進來、停回站裡原位（標籤跟著走）；換圖時馬車狀態歸零',
                 '🐛 修：手機俯瞰整片畫面霧白——v6.32 的雲是幾條大白塊排在高度 19–25，手機預設鏡頭高 47，等於隔著雲看小鎮。雲重做成一朵一朵的棉花雲（一顆大方塊加周圍小方塊、底平頂蓬，每朵 5–7 格、彼此隔開），放在屋頂上方一點，俯瞰時看到一朵朵帶著地面雲影飄過；鏡頭降到雲層附近就淡掉只留雲影，不會再有霧白',
             ),
             'changes_en' => array(
+                '🐛 Fixed two identical coaches in town: one parked at the coach station plus a copy the caravan animation drove from the station to the square before vanishing. Now there is one: on a caravan arrival the station\'s own coach drives in from the map edge and parks back in place (label follows); its state resets on map change',
                 '🐛 Fixed the whole phone view looking washed-out white: the v6.32 clouds were long white slabs at height 19–25 while the default phone camera is at 47, so you were looking at the town through a cloud. Clouds are rebuilt as distinct cotton puffs (one big block with smaller ones around it, flat base and fluffy top, 5–7 tiles each, spaced apart) just above the rooftops; from above you see individual clouds drifting with their shadows on the ground, and when the camera drops to cloud height they fade out leaving only the shadows, so no more white-out',
             ),
         ),
