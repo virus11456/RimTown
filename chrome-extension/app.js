@@ -3478,11 +3478,11 @@ class RimTownApp {
         if (k >= '1' && k <= '4') { const tab = ['economy', 'residents', 'proposals', 'records'][+k - 1]; document.querySelector(`.rt-sidebar-tabs > button[data-tab="${tab}"]`)?.click(); return; }
         if (k === 'Escape') { this._hideNpcCard?.(); this.tileMap?.followAgent?.(null); }
     }
-    // v6.29.0 介面配色:自動(遊戲時間 05–19 日光、其餘夜色)／日光／夜色
+    // v6.29.0 介面配色:日光／夜色
+    // v6.41.1 介面不再跟著遊戲裡的白天晚上換色:預設固定夜色,只有手動選「日光」才用日光色票(舊的「自動」一律當夜色)
     _applyTheme() {
-        let pref = 'auto'; try { pref = localStorage.getItem('rimtown_theme') || 'auto'; } catch (e) {}
-        const h = this.state?.clock?.hour ?? 12;
-        const day = pref === 'day' || (pref === 'auto' && h >= 5 && h < 19);
+        let pref = 'night'; try { pref = localStorage.getItem('rimtown_theme') || 'night'; } catch (e) {}
+        const day = pref === 'day';
         const c = document.querySelector('.rimtown-container'); if (c && c.classList.contains('theme-day') !== day) c.classList.toggle('theme-day', day);
         const th = document.getElementById('achv-toast-host'); if (th) { if (!th.classList.contains('observer')) th.classList.add('observer'); if (th.classList.contains('theme-day') !== day) th.classList.toggle('theme-day', day); } // 通知容器掛在 body 下,色票 class 要同步過去
     }

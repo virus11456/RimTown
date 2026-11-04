@@ -1338,12 +1338,14 @@ function rimtown_get_changelog() {
                 '🤖 完整智能體模式預設開啟：用小鎮內建 AI 的玩家也一進遊戲就是完整智能體（以前只有自備金鑰才預設開）。想省額度可到「設定 → AI」取消勾選，已經手動關掉的人維持關閉',
                 '📈 登入玩家每日 AI 額度從 100 則提高到 300 則（Vercel 的 AI_USER_DAILY 仍可覆寫），用完改用規則版、隔天恢復；訪客維持 10 則',
                 '📝 設定頁與首頁技術細節同步更新：分流說明、車道表（先問 Claude，備援 GPT → Groq）、冷卻規則與額度數字',
+                '🎨 介面配色不再跟著遊戲裡的白天晚上變：面板、通知、名牌固定用夜色色票，想要亮色可到「設定 → 介面配色」選「日光」；原本的「自動」選項拿掉（存著「自動」的一律當夜色）。3D 小鎮本身的日夜光影照舊',
             ),
             'changes_en' => array(
                 '🧠 Every AI call asks Claude first: villager dialogue, drama scenes, schedules, reflections, the newspaper and full-agent votes, proposals and mayor rulings all go to the official Claude first; only if Claude fails do GPT and then Groq step in. Previously the chat lane used for dialogue and decisions tried the Groq free tier first, so quality did not match Claude',
                 '🤖 Full agent mode is on by default: players on the built-in town AI now start in full agent mode too (before, only bring-your-own-key players did). Untick it under Settings → AI to save quota; anyone who already switched it off stays off',
                 '📈 The daily AI quota for logged-in players rises from 100 to 300 (AI_USER_DAILY in Vercel still overrides it); once used up the rule-based version takes over until the next day; guests stay at 10',
                 '📝 Settings and the landing page tech details updated to match: routing notes, the lane table (Claude first, GPT → Groq as backup), cooldown rules and quota numbers',
+                '🎨 The interface no longer changes colour with in-game day and night: panels, notices and name tags stay on the night palette, and Settings → Interface colours can switch to Daylight; the old Auto option is gone (a saved Auto counts as night). The 3D town\'s own day/night lighting is unchanged',
             ),
         ),
         array(

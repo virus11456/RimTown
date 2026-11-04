@@ -962,15 +962,14 @@ Object.assign(RimTownApp.prototype, {
             <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('切換後會重新整理頁面；手機預設不開陰影。')}</div>
         </div>`;
         // v6.29.0 介面配色與自動帶鏡頭
-        let themePref = 'auto'; try { themePref = localStorage.getItem('rimtown_theme') || 'auto'; } catch (e) {}
+        let themePref = 'night'; try { themePref = localStorage.getItem('rimtown_theme') || 'night'; } catch (e) {} // v6.41.1 拿掉「自動」
         let autocam = false; try { autocam = localStorage.getItem('rimtown_autocam') === '1'; } catch (e) {}
         let idlecam = true; try { idlecam = localStorage.getItem('rimtown_idlecam') !== '0'; } catch (e) {} // v6.32.0
         html += `<div class="setting-group" style="margin-bottom:8px">
             <label style="font-size:0.82rem;color:var(--text-secondary)">${t('介面配色')}</label>
             <select id="settings-theme" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem" onchange="try{localStorage.setItem('rimtown_theme',this.value)}catch(e){};window.rimtownApp?._applyTheme?.()">
-                <option value="auto"${themePref==='auto'?' selected':''}>${t('自動（白天日光、晚上夜色）')}</option>
+                <option value="night"${themePref!=='day'?' selected':''}>${t('夜色')}</option>
                 <option value="day"${themePref==='day'?' selected':''}>${t('日光')}</option>
-                <option value="night"${themePref==='night'?' selected':''}>${t('夜色')}</option>
             </select>
         </div>
         <div class="setting-group" style="margin-bottom:8px">
