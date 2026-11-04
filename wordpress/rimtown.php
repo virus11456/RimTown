@@ -1332,10 +1332,10 @@ function rimtown_get_changelog() {
             'version' => '6.34.1',
             'date'    => '2026-11-04',
             'changes' => array(
-                '🐛 修：手機俯瞰整片畫面霧白——v6.32 的低多邊形雲放在高度 19–25，手機預設鏡頭高 47（最遠 93），等於隔著雲看小鎮。雲改放 62–70，鏡頭爬到雲的高度就自動淡掉，永遠不會擋在鏡頭與地面之間',
+                '🐛 修：手機俯瞰整片畫面霧白——v6.32 的雲是幾條大白塊排在高度 19–25，手機預設鏡頭高 47，等於隔著雲看小鎮。雲重做成一朵一朵的棉花雲（一顆大方塊加周圍小方塊、底平頂蓬，每朵 5–7 格、彼此隔開），放在屋頂上方一點，俯瞰時看到一朵朵帶著地面雲影飄過；鏡頭降到雲層附近就淡掉只留雲影，不會再有霧白',
             ),
             'changes_en' => array(
-                '🐛 Fixed the whole phone view looking washed-out white: the v6.32 low-poly clouds sat at height 19–25 while the default phone camera is at 47 (up to 93), so you were looking at the town through a cloud. Clouds now sit at 62–70 and fade out as the camera climbs to their height, so they never come between the camera and the ground',
+                '🐛 Fixed the whole phone view looking washed-out white: the v6.32 clouds were long white slabs at height 19–25 while the default phone camera is at 47, so you were looking at the town through a cloud. Clouds are rebuilt as distinct cotton puffs (one big block with smaller ones around it, flat base and fluffy top, 5–7 tiles each, spaced apart) just above the rooftops; from above you see individual clouds drifting with their shadows on the ground, and when the camera drops to cloud height they fade out leaving only the shadows, so no more white-out',
             ),
         ),
         array(

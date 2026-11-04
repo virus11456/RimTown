@@ -1049,15 +1049,31 @@ class Town3D extends PixelTileMap {
         this._sunDisc = disc('#FFE9A8', 9); this._moonDisc = disc('#F2F4F8', 6);
         // 雲:全部方塊放在一個 InstancedMesh 裡(一次繪製呼叫),每朵雲記自己的位置與速度,每幀重算矩陣
         const n = this.lowQuality ? 4 : this.isMobile ? 6 : 9; this._clouds = []; const parts = [];
-        this._cloudMat = new THREE.MeshLambertMaterial({ color: new THREE.Color('#FFFFFF'), transparent: true, opacity: 0.88 });
+        this._cloudMat = new THREE.MeshLambertMaterial({ color: new THREE.Color('#FFFFFF'), emissive: new THREE.Color('#FFFFFF'), emissiveIntensity: 0.35, transparent: true, opacity: 0.92 }); // 側面不要灰,看起來才蓬
+        // v6.34.1 一朵一朵的棉花雲:一顆大方塊 + 周圍 4–6 顆小方塊 + 頂上 1–2 顆,底部切齊、頂部蓬;每朵約 7–10 格寬、彼此至少隔 14 格
+        // 高度 13–16(屋頂上方一點)、每朵 5–7 格:俯瞰(鏡頭 40–93)看到一朵朵小雲帶著影子飄過;鏡頭降到雲層附近或以下就淡掉只留影子
+        const placed = [];
         for (let i = 0; i < n; i++) {
-            const k = 3 + Math.floor(Math.random() * 3), s = 2 + Math.random() * 3;
-            const g = { x: Math.random() * (this.cols + 30) - 15, y: 62 + Math.random() * 8, /* v6.34.1 雲放到 62–70:手機預設俯瞰鏡頭高 47、最遠 93,之前 19–25 會卡在鏡頭與地面之間、整片畫面被雲蓋白 */ z: Math.random() * this.rows, v: 0.004 + Math.random() * 0.007, parts: [] };
-            for (let j = 0; j < k; j++) { const sj = s * (0.7 + Math.random() * 0.6); g.parts.push({ ox: (j - (k - 1) / 2) * s * 0.9, oy: (Math.random() - 0.5) * 0.5, oz: (Math.random() - 0.5) * 1.6, sx: sj * 1.4, sy: sj * 0.42, sz: sj * 0.9 }); parts.push(g); }
+            let gx = 0, gz = 0;
+            for (let tries = 0; tries < 20; tries++) { gx = Math.random() * (this.cols + 30) - 15; gz = Math.random() * this.rows; if (placed.every(p => Math.hypot(p[0] - gx, p[1] - gz) > 12)) break; }
+            placed.push([gx, gz]);
+            const S = 0.62 + Math.random() * 0.3; // 整朵的尺度(每朵約 5–7 格)
+            const g = { x: gx, y: 13 + Math.random() * 3, z: gz, v: 0.004 + Math.random() * 0.006, parts: [] };
+            const puff = (ox, oz, w, h, d, lift) => g.parts.push({ ox: ox * S, oz: oz * S, oy: (h * S) / 2 + (lift || 0) * S, sx: w * S, sy: h * S, sz: d * S });
+            puff(0, 0, 3.4, 1.7, 2.6, 0);                                   // 主體
+            const k = 4 + Math.floor(Math.random() * 3);
+            for (let j = 0; j < k; j++) { const a = j / k * Math.PI * 2 + Math.random() * 0.6, r = 1.6 + Math.random() * 0.9, w = 1.4 + Math.random() * 1.0; puff(Math.cos(a) * r, Math.sin(a) * r * 0.75, w, 0.8 + Math.random() * 0.5, w * 0.8, 0); }
+            puff((Math.random() - 0.5) * 1.2, (Math.random() - 0.5) * 0.8, 1.9, 1.1, 1.5, 1.1); // 頂上的蓬
+            if (Math.random() < 0.6) puff((Math.random() - 0.5) * 2.4, (Math.random() - 0.5) * 1.2, 1.2, 0.8, 1.0, 1.6);
+            for (const p of g.parts) parts.push(g);
             this._clouds.push(g);
         }
         this._cloudMesh = new THREE.InstancedMesh(this._geo('box', () => new THREE.BoxGeometry(1, 1, 1)), this._cloudMat, parts.length);
         this._cloudMesh.frustumCulled = false; this._cloudMesh.castShadow = false; this._cloudMesh.receiveShadow = false; this.scene.add(this._cloudMesh);
+        // 地面雲影:同樣一個 InstancedMesh,扁平深色方塊貼地,白天才看得到
+        this._cloudShadowMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#1E2A3A'), transparent: true, opacity: 0.12, depthWrite: false });
+        this._cloudShadow = new THREE.InstancedMesh(this._geo('box', () => new THREE.BoxGeometry(1, 1, 1)), this._cloudShadowMat, parts.length);
+        this._cloudShadow.frustumCulled = false; this._cloudShadow.renderOrder = 1; this.scene.add(this._cloudShadow);
         this._cloudM4 = new THREE.Matrix4(); this._cloudQ = new THREE.Quaternion(); this._cloudP = new THREE.Vector3(); this._cloudS = new THREE.Vector3();
         if (!this.lowQuality) {
             const nb = 7; const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(nb * 4 * 3), 3));
@@ -1071,11 +1087,20 @@ class Town3D extends PixelTileMap {
         const bad = wt === 'rain' || wt === 'storm' || wt === 'snow' || wt === 'blizzard';
         if (this._clouds) {
             const c = this._cloudMat.color.setRGB(1, 1, 1); c.lerp(this._lc?.skyNight || c, night * 0.75); if (bad || wt === 'fog') c.lerp(this._lc?.rain || c, 0.6);
-            const camY = this.camera ? this.camera.position.y : 0; const camFade = clamp((56 - camY) / 10, 0, 1); // v6.34.1 鏡頭爬到雲的高度就把雲淡掉,永遠不擋在鏡頭與地面之間
-            this._cloudMat.opacity = (wt === 'fog' ? 0.3 : bad ? 0.95 : 0.88) * camFade; this._cloudMesh.visible = camFade > 0.02;
+            // v6.34.1 雲本體只在鏡頭明顯高於雲層時顯示(俯瞰看一朵朵小雲帶影子飄過);鏡頭降到 28 以下開始淡、22 以下只剩雲影,不會再有整片霧白
+            const camY = this.camera ? this.camera.position.y : 0; const camFade = clamp((camY - 22) / 6, 0, 1);
+            this._cloudMat.opacity = (wt === 'fog' ? 0.3 : bad ? 0.95 : 0.9) * camFade; this._cloudMesh.visible = camFade > 0.02;
+            const day = 1 - night; this._cloudShadowMat.opacity = 0.14 * day * (bad ? 0.4 : wt === 'fog' ? 0.3 : 1); this._cloudShadow.visible = this._cloudShadowMat.opacity > 0.01;
             const span = this.cols + 30, sp = wt === 'storm' || wt === 'blizzard' ? 3 : 1; let idx = 0;
-            for (const g of this._clouds) { g.x += g.v * sp; if (g.x > this.cols + 15) g.x -= span; for (const p of g.parts) { this._cloudM4.compose(this._cloudP.set(g.x + p.ox, g.y + p.oy, g.z + p.oz), this._cloudQ, this._cloudS.set(p.sx, p.sy, p.sz)); this._cloudMesh.setMatrixAt(idx++, this._cloudM4); } }
-            this._cloudMesh.instanceMatrix.needsUpdate = true;
+            for (const g of this._clouds) {
+                g.x += g.v * sp; if (g.x > this.cols + 15) g.x -= span;
+                for (const p of g.parts) {
+                    this._cloudM4.compose(this._cloudP.set(g.x + p.ox, g.y + p.oy, g.z + p.oz), this._cloudQ, this._cloudS.set(p.sx, p.sy, p.sz)); this._cloudMesh.setMatrixAt(idx, this._cloudM4);
+                    this._cloudM4.compose(this._cloudP.set(g.x + p.ox + 3, 0.04, g.z + p.oz + 2), this._cloudQ, this._cloudS.set(p.sx * 0.9, 0.02, p.sz * 0.9)); this._cloudShadow.setMatrixAt(idx, this._cloudM4); // 雲影往太陽反方向偏一點
+                    idx++;
+                }
+            }
+            this._cloudMesh.instanceMatrix.needsUpdate = true; this._cloudShadow.instanceMatrix.needsUpdate = true;
         }
         if (this._birds) {
             const b = this._birds, u = b.userData; const show = night < 0.35 && !bad && wt !== 'fog'; b.visible = show;
