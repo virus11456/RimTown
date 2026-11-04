@@ -4,7 +4,7 @@
 //     新增的字串沒英文就失敗;補齊舊欠帳後用 --update 縮小基準。
 const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '..');
-const i18n = fs.readFileSync(path.join(ROOT, 'chrome-extension/i18n.js'), 'utf8');
+const i18n = fs.readFileSync(path.join(ROOT, 'chrome-extension/i18n.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'chrome-extension/i18n-en.js'), 'utf8'); // v6.28.0 字典在 i18n-en.js
 const unesc = (k) => k.replace(/\\'/g, "'").replace(/\\\\/g, '\\');
 const keyRe = /'((?:[^'\\]|\\.)+)':\s*'/g;
 const counts = {};
@@ -15,7 +15,7 @@ for (const line of i18n.split('\n')) {
 }
 const dups = Object.entries(counts).filter(([, n]) => n > 1).map(([k]) => k);
 const keys = new Set(Object.keys(counts));
-const files = fs.readdirSync(path.join(ROOT, 'chrome-extension')).filter(f => f.endsWith('.js') && !['i18n.js', 'changelog.js', 's2t.js', 'sw.js', 'chiptune.js'].includes(f));
+const files = fs.readdirSync(path.join(ROOT, 'chrome-extension')).filter(f => f.endsWith('.js') && !['i18n.js', 'i18n-en.js', 'changelog.js', 's2t.js', 'sw.js', 'chiptune.js'].includes(f));
 const missing = new Set();
 for (const f of files) {
   const s = fs.readFileSync(path.join(ROOT, 'chrome-extension', f), 'utf8');

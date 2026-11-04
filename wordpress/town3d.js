@@ -55,6 +55,9 @@ class Town3D extends PixelTileMap {
         try {
             this.renderer = new THREE.WebGLRenderer({ canvas: this.glCanvas, antialias: !this.isMobile && !this.lowQuality, alpha: false, powerPreference: 'high-performance' });
         } catch (e) { console.warn('[Town3D] WebGL 初始化失敗', e); this.renderer = null; return; }
+        // v6.28.0 WebGL 失聯(iOS Safari 記憶體吃緊時常見):擋掉預設行為讓 three 能自動復原;復原後重建場景
+        this.glCanvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this._ctxLost = true; console.warn('[Town3D] WebGL context lost'); }, false);
+        this.glCanvas.addEventListener('webglcontextrestored', () => { this._ctxLost = false; this._sceneSrc = null; this._dynSig = null; this._farmSig = this._factSig = this._expSig = null; this._graveN = -1; this._festId = null; this._fx = null; this._stars = null; this._beam = null; this._needsResize = true; console.warn('[Town3D] WebGL context restored'); }, false);
         this.renderer.setPixelRatio(this._dpr);
         this.renderer.outputColorSpace = THREE.SRGBColorSpace;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -134,6 +137,8 @@ class Town3D extends PixelTileMap {
         this._focusTo = { x: pos.x / TILE, z: pos.y / TILE };
     }
     getViewCenter() { return { x: this.target.x * TILE, y: this.target.z * TILE }; }
+    // v6.28.0 給 AI 對話距離判定:拉遠時只算鏡頭中心附近,避免俯瞰全鎮時每對村民都觸發 LLM
+    getLlmRadiusTiles() { return this.dist <= 24 ? 14 : this.dist <= 40 ? 10 : this.dist <= 60 ? 7 : 5; }
     focusMap(px, py, dist) { this._focusTo = { x: px / TILE, z: py / TILE, dist: dist || null }; }
     focusLocation(locId) {
         const z = this.buildingZones[locId] || this.natureZones[locId];
@@ -501,8 +506,8 @@ class Town3D extends PixelTileMap {
             const doorX = z.doorPixelX / TILE - cx;
             this._box(0.8, 1.35, 0.1, '#6B4A2E', doorX, 0.67, d / 2 + 0.02, g);
             // 窗戶(夜間發光)
-            const winMat = new THREE.MeshLambertMaterial({ color: new THREE.Color('#9CC8E8'), emissive: new THREE.Color('#FFD27A'), emissiveIntensity: 0 });
-            this._winMats.push(winMat);
+            if (!this._winMat) { this._winMat = new THREE.MeshLambertMaterial({ color: new THREE.Color('#9CC8E8'), emissive: new THREE.Color('#FFD27A'), emissiveIntensity: 0 }); } // v6.28.0 全鎮共用一個窗材質,合併後一次畫完
+            const winMat = this._winMat; if (!this._winMats.includes(winMat)) this._winMats.push(winMat);
             const winGeo = this._geo('box', () => new THREE.BoxGeometry(1, 1, 1));
             const addWin = (x, y, zz, rot) => { const m = new THREE.Mesh(winGeo, winMat); m.scale.set(0.42, 0.42, 0.08); m.position.set(x, y, zz); m.rotation.y = rot; g.add(m); };
             const wy = wallH * 0.62;
@@ -555,7 +560,7 @@ class Town3D extends PixelTileMap {
             this._box(0.12, 1.6, 0.12, '#7A4E2E', cs.x + 0.6, 0.8, cs.y + 0.8); this._box(0.12, 1.6, 0.12, '#7A4E2E', cs.x + cs.w - 1.8, 0.8, cs.y + 0.8);
             this._box(cs.w - 1.6, 0.1, 1.2, '#8A4A3A', cs.x + cs.w / 2 - 0.6, 1.62, cs.y + 0.8);
             // 馬車:車廂 + 輪 + 馬
-            const g = new THREE.Group(); g.position.set(gx, 0, gz + 0.2); this._static.add(g); this._coach = g;
+            const g = new THREE.Group(); g.position.set(gx, 0, gz + 0.2); g.userData.noMerge = true; this._static.add(g); this._coach = g;
             this._box(1.6, 1.0, 1.0, '#7A5236', 0, 0.85, 0, g); this._box(1.7, 0.1, 1.1, '#C9533D', 0, 1.4, 0, g);
             for (const [wx, wz] of [[-0.55, 0.55], [0.55, 0.55], [-0.55, -0.55], [0.55, -0.55]]) { const w = this._cyl(0.28, 0.28, 0.12, 8, '#3A2A1A', wx, 0.28, wz, g); w.rotation.x = Math.PI / 2; }
             this._box(1.1, 0.6, 0.5, '#8A6A4A', -1.7, 0.75, 0, g); this._box(0.4, 0.5, 0.4, '#8A6A4A', -2.35, 1.0, 0, g);
@@ -572,7 +577,7 @@ class Town3D extends PixelTileMap {
         if (this._boats) {
             this._boatMeshes = [];
             for (const b of this._boats) {
-                const g = new THREE.Group(); g.position.set(b.x + 0.5, -0.15, b.y + 0.5); g.rotation.y = b.phase; this._static.add(g);
+                const g = new THREE.Group(); g.position.set(b.x + 0.5, -0.15, b.y + 0.5); g.rotation.y = b.phase; g.userData.noMerge = true; this._static.add(g);
                 this._box(1.8, 0.4, 0.8, '#8C5A3C', 0, 0.2, 0, g); this._box(1.4, 0.1, 0.6, '#D9C3A5', 0, 0.42, 0, g);
                 if (b.sail) { this._box(0.08, 1.6, 0.08, '#7A4E2E', 0.1, 1.2, 0, g); this._box(0.03, 1.1, 0.8, '#F6EEDC', 0.16, 1.25, 0.2, g); }
                 this._boatMeshes.push({ g, phase: b.phase });
@@ -675,9 +680,48 @@ class Town3D extends PixelTileMap {
         this._buildVegetation();
         this._buildBuildings();
         this._buildProps();
+        this._mergeStatic();
         this._dynSig = null;
         this._buildLabelIndex();
         console.log('[Town3D] scene built:', this._static.children.length, 'nodes');
+    }
+    // v6.28.0 靜態方塊依材質合併:幾百個小 Mesh → 每種顏色一個,繪製呼叫 250 → 數十(手機 GPU 提交成本的大頭)
+    _mergeStatic() {
+        const sharedGeos = new Set(Object.values(this._geos));
+        const skipMat = new Set([...this._glowMats, this._waterMat].filter(Boolean));
+        const groups = new Map(); // material → { pos:[], nor:[], meshes:[] }
+        this._static.updateMatrixWorld(true);
+        const collect = (o, inNoMerge) => {
+            const nm = inNoMerge || !!o.userData?.noMerge;
+            if (o.isMesh && !o.isInstancedMesh && !nm && sharedGeos.has(o.geometry) && !skipMat.has(o.material) && o !== this._flame && o.material.transparent !== true) {
+                let g = groups.get(o.material); if (!g) { g = { pos: [], nor: [], meshes: [] }; groups.set(o.material, g); }
+                g.meshes.push(o);
+            }
+            for (const c of o.children) collect(c, nm);
+        };
+        collect(this._static, false);
+        const nmat = new THREE.Matrix3(); const v = new THREE.Vector3();
+        let merged = 0, removed = 0;
+        for (const [mat, g] of groups) {
+            if (g.meshes.length < 3) continue;
+            let total = 0; for (const m of g.meshes) total += m.geometry.attributes.position.count;
+            const pos = new Float32Array(total * 3), nor = new Float32Array(total * 3); let off = 0;
+            for (const m of g.meshes) {
+                const pa = m.geometry.attributes.position, na = m.geometry.attributes.normal; nmat.getNormalMatrix(m.matrixWorld);
+                for (let i = 0; i < pa.count; i++) {
+                    v.fromBufferAttribute(pa, i).applyMatrix4(m.matrixWorld); pos[off] = v.x; pos[off + 1] = v.y; pos[off + 2] = v.z;
+                    v.fromBufferAttribute(na, i).applyMatrix3(nmat).normalize(); nor[off] = v.x; nor[off + 1] = v.y; nor[off + 2] = v.z; off += 3;
+                }
+                m.parent?.remove(m); removed++;
+            }
+            const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+            const mesh = new THREE.Mesh(geo, mat); mesh.castShadow = true; mesh.receiveShadow = true; mesh.name = 'merged'; mesh.frustumCulled = false;
+            this._static.add(mesh); merged++;
+        }
+        // 清掉只剩空殼的 Group
+        const prune = (o) => { for (const c of [...o.children]) { prune(c); if (c.isGroup && !c.children.length && !c.userData?.noMerge) o.remove(c); } };
+        prune(this._static);
+        console.log('[Town3D] merged', removed, 'meshes into', merged);
     }
     _buildLabelIndex() {
         this._labelIndex = {}; let n = 1;
@@ -699,12 +743,13 @@ class Town3D extends PixelTileMap {
         const sunAng = clamp((h - 6) / 12, -0.1, 1.1) * Math.PI;
         const cx = this.cols / 2, cz = this.rows / 2;
         const dusk = night > 0 && night < 1 ? 1 - Math.abs(night - 0.5) * 2 : 0;
-        const skyDay = new THREE.Color('#BDE3F7'), skyNight = new THREE.Color('#1C2742'), skyDusk = new THREE.Color('#F2B48A');
-        const sky = skyDay.clone().lerp(skyNight, night).lerp(skyDusk, dusk * 0.55);
+        if (!this._lc) this._lc = { skyDay: new THREE.Color('#BDE3F7'), skyNight: new THREE.Color('#1C2742'), skyDusk: new THREE.Color('#F2B48A'), rain: new THREE.Color('#8E99A6'), snow: new THREE.Color('#DDE6EE'), fog: new THREE.Color('#C9CFD6'), sunDay: new THREE.Color('#FFF4DC'), sunDusk: new THREE.Color('#FFB26B'), sunNight: new THREE.Color('#9FB2E6'), hemiDay: new THREE.Color('#CFE9FF'), hemiNight: new THREE.Color('#4A5A8A'), gDay: new THREE.Color('#8C7A5A'), gNight: new THREE.Color('#2A2638'), tmp: new THREE.Color(), tmp2: new THREE.Color() }; // v6.28.0 不每幀 new Color
+        const L = this._lc;
+        const sky = L.tmp.copy(L.skyDay).lerp(L.skyNight, night).lerp(L.skyDusk, dusk * 0.55);
         const wt = this.weatherType || 'clear';
-        if (wt === 'rain' || wt === 'storm') sky.lerp(new THREE.Color('#8E99A6'), 0.55);
-        else if (wt === 'snow') sky.lerp(new THREE.Color('#DDE6EE'), 0.5);
-        else if (wt === 'fog') sky.lerp(new THREE.Color('#C9CFD6'), 0.6);
+        if (wt === 'rain' || wt === 'storm') sky.lerp(L.rain, 0.55);
+        else if (wt === 'snow') sky.lerp(L.snow, 0.5);
+        else if (wt === 'fog') sky.lerp(L.fog, 0.6);
         this.scene.background.copy(sky); this.scene.fog.color.copy(sky);
         this.scene.fog.density = (wt === 'fog' ? 0.016 : wt === 'rain' || wt === 'storm' ? 0.009 : 0.006) + night * 0.002;
         if (night < 1) {
@@ -712,11 +757,10 @@ class Town3D extends PixelTileMap {
         } else {
             this.sun.position.set(cx - 40, 70, cz + 30);
         }
-        const sunCol = new THREE.Color('#FFF4DC').lerp(new THREE.Color('#FFB26B'), dusk * 0.8).lerp(new THREE.Color('#9FB2E6'), night);
-        this.sun.color.copy(sunCol);
+        this.sun.color.copy(L.sunDay).lerp(L.sunDusk, dusk * 0.8).lerp(L.sunNight, night);
         this.sun.intensity = lerp(1.7, 0.75, night) * (wt === 'rain' || wt === 'storm' ? 0.55 : 1);
-        this.hemi.color.copy(new THREE.Color('#CFE9FF').lerp(new THREE.Color('#4A5A8A'), night));
-        this.hemi.groundColor.copy(new THREE.Color('#8C7A5A').lerp(new THREE.Color('#2A2638'), night));
+        this.hemi.color.copy(L.hemiDay).lerp(L.hemiNight, night);
+        this.hemi.groundColor.copy(L.gDay).lerp(L.gNight, night);
         this.hemi.intensity = lerp(0.95, 0.7, night);
         const glow = clamp((night - 0.25) / 0.5, 0, 1);
         for (const m of this._winMats) m.emissiveIntensity = glow * 1.2;
@@ -835,9 +879,9 @@ class Town3D extends PixelTileMap {
         const p = this._project(wx, wy, wz);
         if (!p || p.x < -80 || p.y < -60 || p.x > this._viewW + 80 || p.y > this._viewH + 60) { el.style.display = 'none'; return false; }
         const s = opts?.noScale ? 1 : clamp(1.25 - p.d / 90, 0.55, 1);
-        el.style.display = '';
-        el.style.transform = `translate(-50%,-100%) translate3d(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px,0) scale(${s.toFixed(3)})`;
-        el.style.zIndex = String(Math.round(1000 - p.d));
+        const tr = `translate(-50%,-100%) translate3d(${p.x.toFixed(0)}px,${p.y.toFixed(0)}px,0) scale(${s.toFixed(2)})`;
+        if (el._tr !== tr) { el._tr = tr; el.style.transform = tr; el.style.zIndex = String(Math.round(1000 - p.d)); } // v6.28.0 沒動就不寫 DOM
+        if (el.style.display) el.style.display = '';
         return true;
     }
     _updateOverlays(agents, selectedAgent) {
@@ -935,7 +979,7 @@ class Town3D extends PixelTileMap {
         const tx = this.target.x, tz = this.target.z, R = Math.min(30, this.dist * 0.8);
         const wt = this.weatherType || 'clear';
         const heavy = wt === 'storm' || wt === 'blizzard';
-        const q = this.lowQuality ? 0.45 : 1;
+        const q = this.lowQuality ? 0.45 : this.isMobile ? 0.6 : 1; // v6.28.0
         if (wt === 'rain' || wt === 'storm') for (let i = 0; i < Math.round((heavy ? 26 : 14) * q); i++) this._fxSpawn('rain', { x: tx + (Math.random() - 0.5) * R * 2, y: 10 + Math.random() * 8, z: tz + (Math.random() - 0.5) * R * 2, vx: heavy ? 0.12 : 0.03, vy: -0.55 - Math.random() * 0.2, vz: 0, life: 60 });
         if (wt === 'snow' || wt === 'blizzard') for (let i = 0; i < Math.round((heavy ? 12 : 5) * q); i++) this._fxSpawn('snow', { x: tx + (Math.random() - 0.5) * R * 2, y: 9 + Math.random() * 6, z: tz + (Math.random() - 0.5) * R * 2, vx: heavy ? 0.06 : 0.01, vy: -0.06 - Math.random() * 0.04, vz: 0, life: 400, ph: Math.random() * 6.28 });
         if (frame % 10 === 0 && this._chimneyTops) for (const c of this._chimneyTops) if (Math.random() < 0.6) this._fxSpawn('smoke', { x: c.x + (Math.random() - 0.5) * 0.2, y: c.y, z: c.z + (Math.random() - 0.5) * 0.2, vx: (Math.random() - 0.5) * 0.01 + 0.012, vy: 0.025 + Math.random() * 0.012, vz: (Math.random() - 0.5) * 0.01, life: 90 + Math.random() * 40, maxLife: 130 });
@@ -1157,7 +1201,7 @@ class Town3D extends PixelTileMap {
     }
     render(agents, selectedAgent, playerLoc, completedBuildings, extraData) {
         this._checkResize();
-        if (!this.renderer || !this.grid || !this._viewW) return;
+        if (!this.renderer || !this.grid || !this._viewW || this._ctxLost) return;
         this.animFrame++;
         if (this._sceneSrc !== this.grid || this._sceneSeason !== (this.season || '')) this._buildScene();
         this._syncDynamic(completedBuildings);
@@ -1169,7 +1213,8 @@ class Town3D extends PixelTileMap {
         this._updateCaravan();
         this._updateAgents3D(agents || {}, selectedAgent);
         this.renderer.render(this.scene, this.camera);
-        if (!this.lowQuality || this.animFrame % 2 === 0) this._updateOverlays(agents || {}, selectedAgent); // v6.27.0 低畫質:標籤層隔幀更新
+        const ovEvery = this.lowQuality ? 3 : this.isMobile ? 2 : 1; // v6.28.0 手機隔幀、低畫質每三幀更新標籤層(DOM 寫入是手機 CPU 大頭)
+        if (this.animFrame % ovEvery === 0) this._updateOverlays(agents || {}, selectedAgent);
         this._updateQuality(performance.now());
     }
     // 2D 專用的即時重繪入口在 3D 不需要;保留以免外部呼叫報錯

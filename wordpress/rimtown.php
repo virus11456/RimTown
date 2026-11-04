@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.27.2
+ * Version: 6.28.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.27.2');
+define('RIMTOWN_VERSION', '6.28.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1328,6 +1328,24 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.28.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '⚡ 啟動包瘦身：翻譯字典從 i18n.js 拆成 i18n-en.js（壓縮後 255KB，比 three.js 還大），只在英文介面載入；中文介面啟動少下載約四分之一（1.09MB → 0.84MB）。執行中切到英文會動態載完字典再翻；i18n.js 只剩 t()／setLang 等執行期，壓縮後 6KB',
+                '⚡ 3D 手機效能：靜態方塊依材質合併（幾百個小網格 → 每種顏色一個），繪製呼叫 250 → 77；全鎮窗戶共用一個材質；名牌層手機隔幀、低畫質每三幀更新，位置沒變就不寫 DOM；粒子在手機減量；光照不再每幀配置顏色物件。390px 加 4 倍 CPU 節流量測：每幀 18.6ms → 12.4ms（其中 CPU 端 JS 約 3ms）',
+                '🛡️ WebGL 失聯處理：iOS Safari 記憶體吃緊時 WebGL 會被收回，現在會攔下並在復原後自動重建場景，不再整片黑掉',
+                '🤖 村民 AI 對話觸發範圍隨鏡頭距離縮放（拉近 14 格、俯瞰全鎮 5 格），避免一拉遠就每對村民都打 AI、額度暴衝',
+                '📐 README 鏡像清單與翻譯鍵位置更新；存檔體積量測：35 天約 1.4MB，大頭是村民記憶 576KB 與關係互動紀錄 304KB（已各有上限，下一輪再收）',
+            ),
+            'changes_en' => array(
+                '⚡ Smaller startup bundle: the translation dictionary moves from i18n.js to i18n-en.js (255KB compressed, bigger than three.js) and only loads for the English UI; the Chinese UI downloads about a quarter less at startup (1.09MB → 0.84MB). Switching to English at runtime loads the dictionary first; i18n.js keeps only t()/setLang and friends, 6KB compressed',
+                '⚡ 3D phone performance: static blocks are merged per material (hundreds of small meshes → one per colour), draw calls 250 → 77; all windows share one material; the name-tag layer updates every other frame on phones and every third in Low quality, skipping DOM writes when nothing moved; fewer particles on phones; lighting no longer allocates colour objects every frame. Measured at 390px with 4x CPU throttling: 18.6ms → 12.4ms per frame (about 3ms of it CPU-side JS)',
+                '🛡️ WebGL context loss handling: iOS Safari reclaims WebGL under memory pressure; the renderer now intercepts it and rebuilds the scene on restore instead of going black',
+                '🤖 Villager AI dialogue range scales with camera distance (14 tiles up close, 5 tiles in overview) so zooming out no longer triggers an AI call for every pair of villagers',
+                '📐 README mirror list and translation-key location updated; save size measured: about 1.4MB after 35 days, dominated by villager memories (576KB) and relationship history (304KB), both already capped, to be tightened next round',
+            ),
+        ),
         array(
             'version' => '6.27.2',
             'date'    => '2026-11-04',

@@ -252,7 +252,7 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.27.2.zip` from Releases
+1. Download `rimtown-v6.28.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -272,7 +272,8 @@ English: the separate Godot test build now includes traveler controls, interacti
 
 ```
 node scripts/method-audit.js   # 前端 this._xxx() 呼叫都有定義(v5.66.6 起;v6.0.0 起連同 app-*.js 分檔一起掃)
-# 鏡像:chrome-extension/{app.js,app-*.js,i18n.js,sw.js,tilemap.js,simulation.js,sim-*.js,quest-system.js,prosperity.js,custom-npc.js,index.html,changelog.js,daily-news.js,style.css} → wordpress/;wordpress/rimtown.php → chrome-extension/
+# 鏡像:chrome-extension/{*.js(含 i18n-en.js、town3d.js、sim-proposals.js),index.html,style.css,style-observer.css,vendor/three.min.js} → wordpress/;wordpress/rimtown.php → chrome-extension/
+# 翻譯:新的中文鍵一律加在 chrome-extension/i18n-en.js(v6.28.0 起字典拆出,只在英文介面載入;i18n.js 只剩 t()/setLang 等執行期)
 node scripts/lane_test.js      # /api/chat 分流、冷卻、逾時、額度感知(v5.67.0 起)
 node scripts/refusal_test.js   # /api/chat 拒絕扮演偵測與退回(v5.67.2 起)
 node scripts/scrub_test.js     # 存檔深度清理 AI 助理漏出內容(v5.67.4 起)
@@ -304,6 +305,13 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.28.0 (2026-11-04)
+- ⚡ 啟動包瘦身：翻譯字典從 i18n.js 拆成 i18n-en.js（壓縮後 255KB，比 three.js 還大），只在英文介面載入；中文介面啟動少下載約四分之一（1.09MB → 0.84MB）。執行中切到英文會動態載完字典再翻；i18n.js 只剩 t()／setLang 等執行期，壓縮後 6KB
+- ⚡ 3D 手機效能：靜態方塊依材質合併（幾百個小網格 → 每種顏色一個），繪製呼叫 250 → 77；全鎮窗戶共用一個材質；名牌層手機隔幀、低畫質每三幀更新，位置沒變就不寫 DOM；粒子在手機減量；光照不再每幀配置顏色物件。390px 加 4 倍 CPU 節流量測：每幀 18.6ms → 12.4ms（其中 CPU 端 JS 約 3ms）
+- 🛡️ WebGL 失聯處理：iOS Safari 記憶體吃緊時 WebGL 會被收回，現在會攔下並在復原後自動重建場景，不再整片黑掉
+- 🤖 村民 AI 對話觸發範圍隨鏡頭距離縮放（拉近 14 格、俯瞰全鎮 5 格），避免一拉遠就每對村民都打 AI、額度暴衝
+- 📐 README 鏡像清單與翻譯鍵位置更新；存檔體積量測：35 天約 1.4MB，大頭是村民記憶 576KB 與關係互動紀錄 304KB（已各有上限，下一輪再收）
 
 ### v6.27.2 (2026-11-04)
 - 🐛 iPhone PWA 全螢幕：畫面上方多一塊空白、底部分頁列（動態／村民／提案／日報／聊天／設定）被推出螢幕——外層容器與手機標題列各加了一次瀏海安全區，容器又是固定 100vh；現在只留標題列那一次
