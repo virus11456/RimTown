@@ -153,15 +153,15 @@ class EventCardSystem {
             const npc = npcs[i];
             let text = '';
             try { if (eng?.reactToEvent) text = await eng.reactToEvent(w, npc, eventText, entry.cat); } catch (e) { console.warn('[EventCards] react', e); }
-            if (!text) text = this._fallbackLine(npc, entry.cat);
-            entry.reactions.push({ agentId: npc.agentId, name: npc.name, text });
+            let fb = false; if (!text) { text = this._fallbackLine(npc, entry.cat, entry.reactions.map(r => r.text)); fb = true; } // v6.74.1 預設台詞要標出來,同一張卡不重複
+            entry.reactions.push({ agentId: npc.agentId, name: npc.name, text, fb });
             npc.memory?.addT?.(w.tickCount, w.clock.timeStr, 'event', '關於「{name}」我說：{text}', { name: entry.name, text }, 6, []);
             w.logMessageT?.('event', '💬 {who}：{text}', { who: npc.name, text }, npc.name);
             try { w.onEventCard?.('reaction', this.toEntry(w, entry), npc, text); } catch (e) {}
             await new Promise(r => setTimeout(r, 1200)); // 泡泡錯開
         }
     }
-    _fallbackLine(npc, cat) {
+    _fallbackLine(npc, cat, used = []) {
         const tr = npc.personality?.traits || [];
         const P = {
             disaster: [tr.includes('optimist') ? '撐過去就好了，大家一起扛。' : tr.includes('pessimist') ? '我就知道遲早會出事……' : '先把能救的救回來再說。', '老天爺這是在考驗我們嗎？'],
@@ -169,7 +169,7 @@ class EventCardSystem {
             fortune:  [tr.includes('greedy') ? '好事！這下公庫鬆口氣了。' : tr.includes('shy') ? '真的嗎……那太好了。' : '太好了！今晚該喝一杯。', '好運來了就要抓住。'],
             social:   [tr.includes('shy') ? '這種事……我還是別多嘴。' : tr.includes('charismatic') ? '我去勸勸，話說開就好了。' : '鎮上這麼小，什麼都藏不住。', '唉，人跟人之間的事最難。'],
         };
-        const arr = P[cat] || P.social; return t(arr[Math.floor(Math.random() * arr.length)]);
+        const arr = (P[cat] || P.social).map(x => t(x)); const fresh = arr.filter(x => !used.includes(x)); const pool = fresh.length ? fresh : arr; return pool[Math.floor(Math.random() * pool.length)];
     }
 
     // ---------- 每日：接上後續提案、七天後變化 ----------
@@ -194,7 +194,7 @@ class EventCardSystem {
     toEntry(w, e) {
         const ps = w.proposals;
         return { id: e.id, day: e.day, cat: e.cat, catLabel: t(EVENT_CARD_CATS[e.cat]?.label || ''), icon: e.icon, name: t(e.name), detail: e.detail, affected: e.affected, loc: e.loc,
-            reactions: e.reactions.map(r => ({ agentId: r.agentId, name: t(r.name), text: r.text })),
+            reactions: e.reactions.map(r => ({ agentId: r.agentId, name: t(r.name), text: r.text, fb: !!r.fb })),
             proposals: (e.proposals || []).map(id => { const p = ps?.byId?.(id); return p ? { id, title: ps.title(p), status: p.status, kind: p.kind, proposer: t(p.proposerName) } : { id }; }),
             outcome: e.outcome, outcomeText: e.outcome ? this.outcomeText(e.outcome) : '', daysAgo: this._abs(w) - e.day };
     }

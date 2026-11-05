@@ -390,7 +390,7 @@ module.exports = async (req, res) => {
     await L.writeJson(quotaPath, q).catch(() => {}); // 額度寫入失敗不阻擋回覆
     await bump(provider); if (failed.length) await bump('fallbacks'); // v5.96.0 B8
 
-    const out = { reply, remaining: Math.max(0, limit - q.count), provider, lane, lang, model: modelOf(provider) };
+    const out = { reply, remaining: Math.max(0, limit - q.count), limit, provider, lane, lang, model: modelOf(provider) };
     if (failed.length) out.fallback_from = failed;
     if (groqBlock) out.groq_skipped = groqBlock;
     if (_groqQuota.at) out.groq_quota = { tokens: _groqQuota.remainingTokens, requests: _groqQuota.remainingRequests };

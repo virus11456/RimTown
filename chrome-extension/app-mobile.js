@@ -516,6 +516,8 @@ Object.assign(RimTownApp.prototype, {
     },
     _toastsAvoidCards() {
         const h = document.getElementById('achv-toast-host'); if (h) this._placeToastHost?.(h);
+        // v6.74.1 卡片內容更新後會長高(上緣往上移),原本讓開的通知又會蓋住卡片的 ✕;卡片尺寸一變就重新讓位
+        if (!this._cardRO && window.ResizeObserver) { try { this._cardRO = new ResizeObserver(() => { const hh = document.getElementById('achv-toast-host'); if (hh) this._placeToastHost?.(hh); }); for (const id of ['npc-quick-card', 'loc-quick-card']) { const c = document.getElementById(id); if (c) this._cardRO.observe(c); } } catch (e) {} }
         // v6.53.0 手機:打開村民卡時收起角落通知(之後的先排隊),🃏 也讓開
         if (h && window.innerWidth <= 768 && [...document.querySelectorAll('#npc-quick-card, #loc-quick-card')].some(c => !c.classList.contains('hidden'))) h.querySelectorAll('.rt-toast:not(.morning)').forEach(e => e.remove());
         try { this._ghFab?.(); } catch (e) {}

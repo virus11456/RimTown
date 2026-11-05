@@ -922,6 +922,9 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
     // v4.9.0: 建築完工/組合發現時,挑一位相關 NPC 用 AI 對玩家發表評論
     // v6.38.0 事件卡:某位村民對剛發生的事件說一句第一反應(LLM;記憶裡最近兩件事當脈絡)。回傳純文字,失敗回空字串
     async reactToEvent(world, npc, eventText, cat) {
+        // v6.74.1 事件卡是玩家親手打的:AI 一時忙不過來(每分鐘上限、短暫冷卻)就等,最多一分鐘,不要馬上退回預設台詞
+        const wait = async () => { for (let i = 0; i < 20 && this.llm && !this.llm._canMakeRequest(true, true); i++) await new Promise(r => setTimeout(r, 3000)); };
+        await wait();
         if (!npc || !this.llm || !this.llm._canMakeRequest(true, true)) return ''; // v6.43.1 冷卻中不插隊
         try {
             const pN = this._buildCharacterProfile(npc);
@@ -943,7 +946,8 @@ ${LLM_LANG.rule(t('- 繁體中文（台灣用語），1-2 句，像當場脫口�
 ${t('- 從你的職業、性格和處境出發：害怕、生氣、興奮、幸災樂禍、盤算都可以，要有個人立場')}
 ${t('- 可以順口說你打算怎麼做（例如要去提案、要去幫忙、要去找誰算帳）')}
 ${mayorLine}${t('- 不要加任何前綴、名字標籤、引號、旁白')}`;
-            const response = await this.llm.generate(prompt, 120, 0.95, true, { strict: true });
+            let response = await this.llm.generate(prompt, 120, 0.95, true, { strict: true });
+            if (!response || response === '__RATE_LIMITED__') { await wait(); if (this.llm._canMakeRequest(true, true)) response = await this.llm.generate(prompt, 120, 0.95, true, { strict: true }); } // 剛好撞到上限:等一下再試一次
             if (!response || response === '__ERROR__' || response === '__RATE_LIMITED__') return '';
             let text = response.trim().replace(/^["「『]|["」』]$/g, '').trim();
             text = text.replace(new RegExp(`^${npc.name}[：:]\\s*`), '').trim();
@@ -1015,7 +1019,7 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
         return `${t('季節')} ${t(world.clock.season)} ${t('第 {n} 天').replace('{n}', world.clock.day)}${t('；')}${t('人口')} ${npcs.length}${t('；')}${t('公庫銀幣')} ${Math.round(world.stockpile.get('silver'))}${t('；')}${t('食物')} ${Math.round(world.stockpile.get('food'))}${t('；')}${t('全鎮平均心情')} ${avg}/100${ev.length ? `${t('；')}${t('最近的事')}${t('：')}${ev.join(t('、'))}` : ''}${trial ? `${t('；')}${t('本季考驗')}${t('：')}${trial}` : ''}`;
     }
     // 決策呼叫不吃「NPC 每日 AI 額度」(那是背景閒聊的上限);只受供應商速率限制
-    fullAgentOk(world) { return !!world.fullAgentMode && !!this.llm && this.llm._canMakeRequest(true, true); } // v6.43.1 冷卻中不放行 // 決策走 chat 道(額度較高、內建 AI 時 Groq 優先)
+    fullAgentOk(world) { return !!world.fullAgentMode && !!this.llm && !this.llm._quotaLow?.() && this.llm._canMakeRequest(true, true); } // v6.43.1 冷卻中不放行 // 決策走 chat 道(額度較高、內建 AI 時 Groq 優先)
     async _askJson(prompt, maxTokens) {
         // v6.74.0 等回覆期間換了城鎮或讀了檔:舊回覆作廢,永遠不 resolve,呼叫端後面的邏輯(放款、紓困、記憶、日誌)都不會落到新城鎮
         const W0 = (typeof window !== 'undefined') ? window.rimtownApp?.world : null, g0 = W0?._gen;
@@ -2348,7 +2352,10 @@ class LLMClient {
 
     // v6.43.1 strict:完整智能體決策用,冷卻期間一律不放行。
     // 玩家聊天的「最後 30 秒可插隊」只適用真正的 60 秒限流(429);v6.41.1 改成的 10 秒短暫停整段都落在「最後 30 秒」裡,等於沒冷卻
+    // v6.74.1 今天的伺服器 AI 額度剩不到三成(額度按 UTC 日期重置,換日就不算)
+    _quotaLow() { const q = this._quota; if (!q || !q.limit) return false; if (q.day !== new Date().toISOString().slice(0, 10)) return false; return q.remaining < q.limit * 0.3; }
     _canMakeRequest(isPlayerChat = false, strict = false) {
+        if (!isPlayerChat && this._quotaLow()) return false; // v6.74.1 背景閒聊、行程、反思改用規則,把額度留給玩家
         const now = Date.now();
         if (now < this._rateLimitedUntil) {
             const longPause = (this._rateLimitedLen || 60000) >= 60000;
@@ -2489,9 +2496,11 @@ class LLMClient {
                     // v5.66.0 lane 交給伺服器分流:chat=玩家對話/劇情 → Groq 優先;background=行程/反思 → 付費中繼
                     body: JSON.stringify({ prompt: sendPrompt, max_tokens: maxTokens, temperature, lane, lang }),
                 });
-                if (res.status === 429) return '__RATE_LIMITED__';
+                if (res.status === 429) { try { const e = await res.clone().json(); if (e?.error === 'quota_exceeded' || e?.code === 'quota_exceeded') this._quota = { remaining: 0, limit: this._quota?.limit || 1, day: new Date().toISOString().slice(0, 10) }; } catch (e) {} return '__RATE_LIMITED__'; }
                 if (!res.ok) return '__ERROR__';
                 const data = await res.json();
+                // v6.74.1 記下今天還剩多少 AI 額度(伺服器每次回覆都附上);剩不到三成時背景功能改用規則,額度留給玩家的操作
+                if (Number.isFinite(data.remaining) && Number.isFinite(data.limit) && data.limit > 0) this._quota = { remaining: data.remaining, limit: data.limit, day: new Date().toISOString().slice(0, 10) };
                 // v5.67.4 雙保險:伺服器已擋,萬一漏網也不讓「我是 AI 助理」進到台詞
                 if (World.looksLikeAssistantLeak(data.reply)) { console.warn('[RimTown LLM] assistant leak blocked'); return '__ERROR__'; }
                 // v5.67.5 雙保險:伺服器已轉繁體,萬一漏網前端再轉一次
