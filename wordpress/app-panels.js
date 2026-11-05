@@ -952,6 +952,17 @@ Object.assign(RimTownApp.prototype, {
                 T += `<div class="pp-issue-hint">${t('城鎮以上，要當過下一級的首長，或在本級議會當過一季議員，才能參選首長。')}</div></div>`;
             }
         } catch (e) {}
+        // v6.72.0 託夢與預言
+        try { if (typeof DREAM !== 'undefined' && this.world.dream !== undefined) { const V = DREAM.view(this.world); const E = this.world.election; const plot = this.world.crown?.plot;
+            const canE = E?.active && (E.candidates || []).length >= 2, canC = !!plot;
+            if (V.dreams.length || canE || canC || V.acc.hits + V.acc.misses) {
+                T += `<div class="pp-issues pp-dream"><h4 class="pp-h">🔮 ${t('託夢與預言')}${V.acc.pct !== null ? ` <small>${t('準確率')} ${V.acc.pct}%${t('（')}${V.acc.hits}/${V.acc.hits + V.acc.misses}${t('）')}</small>` : ''}</h4>`;
+                for (const d2 of V.dreams) T += `<div class="pp-tier-line">🌙 ${esc(d2.to)}${t('：')}${t('「')}${esc(d2.text)}${t('」')}${d2.meaning ? ` → ${esc(d2.meaning)}` : ''}${d2.wrong ? ` <small>${t('（誤解了）')}</small>` : ''}</div>`;
+                const open = V.acc.open;
+                if (canE && !open.some(b => b.kind === 'election')) T += `<div class="pp-tier-line">${t('押注誰會當選')}${t('：')}${E.candidates.map(c => `<button class="pp-more" data-action="dream-bet" data-val="election|${c.agentId}">${esc(t(c.name))}</button>`).join(' ')}</div>`;
+                if (canC && !open.some(b => b.kind === 'coup')) T += `<div class="pp-tier-line">${t('政變會成功嗎')}${t('：')}<button class="pp-more" data-action="dream-bet" data-val="coup|success">${t('會')}</button> <button class="pp-more" data-action="dream-bet" data-val="coup|fail">${t('不會')}</button></div>`;
+                for (const b of open) T += `<div class="pp-issue-hint">${t('已押注')}${t('：')}${b.kind === 'election' ? esc(t(this.world.agents[b.pick]?.name || '')) : t(b.pick === 'success' ? '政變成功' : '政變失敗')}</div>`;
+                T += `</div>`; } } } catch (e) {}
         // v6.71.0 文化
         try { if (typeof CULTURE !== 'undefined' && this.world.culture) { const V = CULTURE.view(this.world); if (V.works.length || V.songs.length || V.oracles.length) {
             T += `<div class="pp-issues pp-culture"><h4 class="pp-h">🎭 ${t('文化')}</h4>`;

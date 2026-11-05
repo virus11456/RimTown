@@ -472,6 +472,7 @@ Object.assign(RimTownApp.prototype, {
                 <button class="nqc-chat" data-nqc="chat">💬 ${t('交談')}</button>
                 ${goal && !goal.done && !this.world?.observerMode ? `<button class="nqc-detail" data-nqc="nudge" ${nudged ? 'disabled style="opacity:0.4"' : ''}>✨ ${t('助夢')}</button>` : ''}
                 ${this.tileMap?.followAgent ? `<button class="nqc-detail" data-nqc="cam">${this.tileMap.isFollowing?.(agentId) ? '🎥 ' + t('停止跟拍') : '🎥 ' + t('跟拍')}</button>` : ''}
+                ${this.world?.observerMode && typeof DREAM !== 'undefined' ? `<button class="nqc-detail" data-nqc="dream">🌙 ${t('託夢')}</button>` : ''}
                 <button class="nqc-detail" data-nqc="follow">${this._followSet().has(agentId) ? '🔕 ' + t('追蹤中') : '🔔 ' + t('追蹤')}</button>
                 <button class="nqc-detail" data-nqc="detail">📋 ${t('詳情')}</button>
             </div>`;
@@ -480,6 +481,10 @@ Object.assign(RimTownApp.prototype, {
             if (act === 'close') this._hideNpcCard();
             else if (act === 'chat') { this._hideNpcCard(); this._walkToAndChat(agentId); }
             else if (act === 'nudge') { this._nudgeDream(agentId); }
+            else if (act === 'dream') { // v6.72.0 託夢:你寫一句話,他醒來自己解讀
+                let tx = null; try { tx = window.prompt(t('想在夢裡對他說什麼？（一句話）')); } catch (e2) {}
+                if (tx && tx.trim()) DREAM.send(this.world, agentId, tx).then(r => { if (!r.ok) this._showCornerNotice?.({ icon: '🌙', title: t('託夢'), name: '', desc: r.why === 'cooldown' ? t('今天已經託過夢了，明天再來。') : t('沒辦法託夢。') }); this.state = this.world.getState(); this._showNpcCard(agentId); });
+            }
             else if (act === 'follow') { this._toggleFollow(agentId); this._showNpcCard(agentId); } // v5.48.0 追蹤(重繪按鈕狀態)
             else if (act === 'cam') { const on = this.tileMap?.isFollowing?.(agentId); this.tileMap?.followAgent?.(on ? null : agentId); this.bgm?.sfx?.('click'); this._showNpcCard(agentId); } // v6.29.0 跟拍
             else if (act === 'detail') {
