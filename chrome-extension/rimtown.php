@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.48.0
+ * Version: 6.49.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.48.0');
+define('RIMTOWN_VERSION', '6.49.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1336,6 +1336,24 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.49.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🏠 房子更精緻：屋頂多了三道瓦列、牆腳一圈深色護牆板、民宅門上有小雨遮和托架，桌機上面向街道的窗戶多了十字窗格、大建築山牆有通風窗',
+                '🌳 樹和路更有質感：桌機上樹根往外擴、三成的闊葉樹會隨季節開花（春）或掛果（夏、秋）；石板路每塊鋪石高低差一點點，看起來像真的石頭。全部併進原本的網格，不增加繪製次數；桌機三角形約多 15%，手機幾乎不變',
+                '🐛 修正：存檔空間不足時，重試第一次造訪隨機城鎮會在城鎮列表留下好幾座沒有存檔的同名城鎮（現在存檔成功才寫進列表，舊的空殼也會清掉）',
+                '🐛 修正：合併另一台裝置的城鎮紀錄後，相連的城鎮可能變成 11 座以上（超過的會先降回「只有傳聞」，已經有存檔的城鎮不受影響）',
+                '🐛 修正：帳號選單開著時旋轉螢幕，選單底部會被切掉（現在轉向或縮放視窗時會重新排位置）',
+            ),
+            'changes_en' => array(
+                '🏠 More detailed houses: roofs have three rows of tiles, walls have a darker skirting band, cottages have a small porch roof with brackets over the door, and on desktop street-facing windows have cross bars and large buildings have gable vents',
+                '🌳 Richer trees and roads: on desktop tree roots flare out and about a third of the broadleaf trees blossom in spring or bear fruit in summer and autumn; each paving stone sits slightly higher or lower so paths look like real stone. Everything is merged into the existing meshes, so there are no extra draw calls; desktop triangles rise by about 15% and phones are almost unchanged',
+                '🐛 Fixed: when storage was full, retrying the first visit to a random town left several same-named towns without saves in the town list (towns are now listed only after the save succeeds, and old empty entries are cleaned up)',
+                '🐛 Fixed: merging town records from another device could connect 11 or more towns (the extra ones go back to rumours only; towns that already have saves are not affected)',
+                '🐛 Fixed: rotating the screen with the account menu open cut off the bottom of the menu (it now repositions when the screen rotates or the window resizes)',
+            ),
+        ),
         array(
             'version' => '6.48.0',
             'date'    => '2026-11-04',

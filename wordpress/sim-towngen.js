@@ -259,11 +259,20 @@ const TownGen = (() => {
         if (!o.base && x.base) { o.base = x.base; changed = true; }
         if ((x.n || 0) > (o.n || 0)) { o.n = x.n; changed = true; }
         for (const e of x.list) { const mine = o.list.find(y => y.seed === e.seed); if (!mine) { if (o.list.length < TOWNGEN_MAX_CARDS) { o.list.push({ ...e, st: null }); changed = true; } } else if (!mine.id && e.id) { mine.id = e.id; mine.r = 1; changed = true; } }
+        if (_capLive(o)) changed = true;
         if (changed) _save(o);
     }
+    // v6.48.1 兩台裝置各自開通的路線合併後可能超過 10 座:超過的先降回「只有傳聞」(已經有存檔的鎮不降,後發現的先降)
+    function _capLive(o) {
+        let fixed = 1; try { for (const d of (typeof NEIGHBOR_TOWNS !== 'undefined' ? NEIGHBOR_TOWNS : [])) if (localStorage.getItem(d.key) === '1') fixed++; } catch (e) {}
+        let live = fixed + o.list.filter(e => e.r).length; let changed = false;
+        for (const e of o.list.slice().sort((a, b) => (b.found || 0) - (a.found || 0))) { if (live <= TOWNGEN_MAX_LIVE) break; if (e.r && !e.id) { e.r = 0; live--; changed = true; } }
+        return changed;
+    }
+    function normalize() { const o = _load(); if (_capLive(o)) _save(o); }
     function registerAll() { try { for (const e of _load().list) bySeed(e.seed); } catch (e) {} }
 
-    return { card, bySeed, register, applyToWorld, cultureLine, blurb, tags, displayName, drift, discover, registry, cards, liveCount, update, setState, bump, exportCompact, mergeCompact, registerAll, similar, hash, L, TRAITS, TEMPERS };
+    return { normalize, card, bySeed, register, applyToWorld, cultureLine, blurb, tags, displayName, drift, discover, registry, cards, liveCount, update, setState, bump, exportCompact, mergeCompact, registerAll, similar, hash, L, TRAITS, TEMPERS };
 })();
 if (typeof globalThis !== 'undefined') globalThis.TownGen = TownGen;
-try { TownGen.registerAll(); } catch (e) {}
+try { TownGen.registerAll(); TownGen.normalize(); } catch (e) {}

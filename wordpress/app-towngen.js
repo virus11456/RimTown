@@ -69,17 +69,27 @@ Object.assign(RimTownApp.prototype, {
             nw.townTheme = c.key; nw.townName = c.name; nw.rosterMode = 'random';
             nw.reset();
             const blob = nw.serialize();
+            // v6.48.1 先清掉以前存檔失敗留下的同名空殼(城鎮列表有、卻沒有任何存檔)
+            this._genDropOrphans(c);
             tid = this._generateTownId(c.name);
-            const list = this._getTownList();
             const meta = { season: blob.clock?.season || '春季', year: 1, day: 1, population: Object.keys(blob.agents || {}).length, theme: c.key, origin: 'generated' };
-            if (!list.some(tw => tw.id === tid)) { list.push({ id: tid, name: c.name, savedAt: new Date().toISOString(), ...meta }); this._saveTownList(list); }
             let stored = false; try { localStorage.setItem('rimtown_town_' + tid, JSON.stringify(blob)); stored = true; } catch (e) {}
             if (this.auth?.loggedIn) { try { await this.auth.cloudSave(tid, c.name, blob, meta); stored = true; this._cloudSaves = null; try { this._cloudSaves = await this.auth.listSaves(); } catch (e) {} } catch (e) {} }
             if (!stored) throw new Error(t('存檔空間不足'));
+            // v6.48.1 存檔真的存到了才寫進城鎮列表(以前先寫列表,空間不足時每重試一次就多一座沒有存檔的同名鎮)
+            const list = this._getTownList();
+            if (!list.some(tw => tw.id === tid)) { list.push({ id: tid, name: c.name, savedAt: new Date().toISOString(), ...meta }); try { this._saveTownList(list); } catch (e) {} }
             TownGen.update(c.seed, { id: tid, r: 1 });
             this._otherTownsAt = 0;
         } catch (e) { this._gameAlert?.(t('建立城鎮失敗：') + e.message, '❌'); return; }
         this._coachTravelTo(tid, c.name);
+    },
+    _genDropOrphans(c) {
+        try {
+            const list = this._getTownList(); const cloud = new Set((this._cloudSaves || []).map(s => s.town_id));
+            const keep = list.filter(tw => !(tw.origin === 'generated' && (tw.theme === c.key || tw.name === c.name) && !localStorage.getItem('rimtown_town_' + tw.id) && !cloud.has(tw.id)));
+            if (keep.length !== list.length) this._saveTownList(keep);
+        } catch (e) {}
     },
     // 日報跨鎮專欄:城鎮卡的傳聞(每鎮最新一則)
     _genCrossNews() {

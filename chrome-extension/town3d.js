@@ -372,13 +372,16 @@ class Town3D extends PixelTileMap {
             const c = this._groundColor(this._isWaterLike(tile) ? T.WATER : tile, x, z);
             if (tile === T.STONE_PATH) {
                 // v6.43.0 路面切成 2×2 小格、每格深淺不同:石板路像一塊塊鋪石,泥土路有點斑駁(只多幾個三角形,不用貼圖)
+                // v6.49.0 桌機每塊鋪石高低差一點點,像真的石頭(不多切三角形;手機維持平的)
+                const N = 2, rel = this._lite() ? 0 : 0.022;
                 const Y = (fx, fz) => (y00 * (1 - fx) + y10 * fx) * (1 - fz) + (y01 * (1 - fx) + y11 * fx) * fz;
                 const amp = 0.07;
-                for (let sz = 0; sz < 2; sz++) for (let sx = 0; sx < 2; sx++) {
-                    const fx0 = sx / 2, fx1 = (sx + 1) / 2, fz0 = sz / 2, fz1 = (sz + 1) / 2;
-                    push(pos, x + fx0, Y(fx0, fz0), z + fz0); push(pos, x + fx0, Y(fx0, fz1), z + fz1); push(pos, x + fx1, Y(fx1, fz0), z + fz0);
-                    push(pos, x + fx1, Y(fx1, fz0), z + fz0); push(pos, x + fx0, Y(fx0, fz1), z + fz1); push(pos, x + fx1, Y(fx1, fz1), z + fz1);
-                    const cc = c.clone().offsetHSL(0, 0, (hash2(x * 2 + sx, z * 2 + sz, 7) - 0.5) * 2 * amp);
+                for (let sz = 0; sz < N; sz++) for (let sx = 0; sx < N; sx++) {
+                    const fx0 = sx / N, fx1 = (sx + 1) / N, fz0 = sz / N, fz1 = (sz + 1) / N;
+                    const dy = rel ? (hash2(x * N + sx, z * N + sz, 9) - 0.5) * 2 * rel : 0;
+                    push(pos, x + fx0, Y(fx0, fz0) + dy, z + fz0); push(pos, x + fx0, Y(fx0, fz1) + dy, z + fz1); push(pos, x + fx1, Y(fx1, fz0) + dy, z + fz0);
+                    push(pos, x + fx1, Y(fx1, fz0) + dy, z + fz0); push(pos, x + fx0, Y(fx0, fz1) + dy, z + fz1); push(pos, x + fx1, Y(fx1, fz1) + dy, z + fz1);
+                    const cc = c.clone().offsetHSL(0, 0, (hash2(x * N + sx, z * N + sz, 7) - 0.5) * 2 * amp);
                     for (let i = 0; i < 6; i++) col.push(cc.r, cc.g, cc.b);
                 }
             } else {
@@ -455,9 +458,11 @@ class Town3D extends PixelTileMap {
         const nTree = lists.tree.length + lists.pine.length;
         if (nTree) {
             // v6.43.0 樹幹與松樹層改開口(看不到的頂／底面不畫);森林深處的樹維持一團樹冠,只有看得見的樹才加側冠／第三層
-            const trunks = this._instanced(this._geo('trunkO', () => new THREE.CylinderGeometry(0.12, 0.17, 1, 6, 1, true)), '#7A4E2E', nTree);
+            const rich = !this._lite(); // v6.49.0 桌機:樹根外擴、部分闊葉樹掛果／開花(用同一組 instancing,不增加繪製次數)
+            const trunks = this._instanced(this._geo('trunkO', () => new THREE.CylinderGeometry(0.12, 0.17, 1, 6, 1, true)), '#7A4E2E', nTree * (rich ? 2 : 1));
             const blobs = this._instanced(this._geo('blob', () => new THREE.IcosahedronGeometry(1, 0)), '#ffffff', Math.max(1, lists.tree.length), false, this._canopyMat());
-            const side = this._instanced(this._geo('blobS', () => new THREE.OctahedronGeometry(1, 0)), '#ffffff', Math.max(1, lists.tree.length * 2), false, this._canopyMat());
+            const side = this._instanced(this._geo('blobS', () => new THREE.OctahedronGeometry(1, 0)), '#ffffff', Math.max(1, lists.tree.length * (rich ? 5 : 2)), false, this._canopyMat());
+            const fruitCol = season === '春季' ? ['#F6C3D5', '#FFFFFF'] : season === '秋季' ? ['#E0552E', '#F2B13C'] : season === '夏季' ? ['#D9443A', '#E8732A'] : null;
             const cones = this._instanced(this._geo('cone6o', () => new THREE.ConeGeometry(1, 1, 6, 1, true)), '#ffffff', Math.max(1, lists.pine.length * 3), false, this._canopyMat());
             const isTree = (x, z) => { const t = this.grid[z]?.[x]; return t === T.TREE_TOP || t === T.TREE_TOP2 || t === T.TREE_TRUNK; };
             const dense = (x, z) => { let n = 0; for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if ((dx || dz) && isTree(x + dx, z + dz)) n++; return n >= 7; };
@@ -466,6 +471,7 @@ class Town3D extends PixelTileMap {
                 const gx = t.x + 0.5 + ox, gz = t.z + 0.5 + oz, gy = this.groundY(gx, gz);
                 const s = 0.85 + t.r * 0.5, th = 0.7 * s;
                 this._addInst(trunks, gx, gy + th / 2, gz, 1, th, 1);
+                if (rich) this._addInst(trunks, gx, gy + 0.06, gz, 1.7, 0.14, 1.7, t.r * 6); // v6.49.0 樹根外擴
                 // v6.43.0 闊葉樹三團樹冠(主冠＋兩團側冠,深淺不同),同一個 instancing 網格,不增加繪製次數
                 const cc = canopyCol(t.r, false), ccL = cc.clone().offsetHSL(0, 0, 0.05), ccD = cc.clone().offsetHSL(0, 0, -0.05);
                 this._addInst(blobs, gx, gy + th + 0.55 * s, gz, 0.6 * s, 0.66 * s, 0.6 * s, t.r * 6.28, cc);
@@ -473,6 +479,8 @@ class Town3D extends PixelTileMap {
                     const a1 = t.r * 6.28;
                     this._addInst(side, gx + Math.cos(a1) * 0.34 * s, gy + th + 0.42 * s, gz + Math.sin(a1) * 0.34 * s, 0.42 * s, 0.4 * s, 0.42 * s, a1 * 2, ccD);
                     this._addInst(side, gx - Math.cos(a1 + 0.9) * 0.26 * s, gy + th + 0.86 * s, gz - Math.sin(a1 + 0.9) * 0.26 * s, 0.36 * s, 0.36 * s, 0.36 * s, a1 * 3, ccL);
+                    // v6.49.0 三成的樹掛果(夏秋)或開花(春):樹冠表面幾顆小點
+                    if (rich && fruitCol && hash2(t.x, t.z, 31) < 0.32) for (let k = 0; k < 3; k++) { const a = a1 + k * 2.1, rr = 0.52 * s; this._addInst(side, gx + Math.cos(a) * rr, gy + th + (0.5 + k * 0.12) * s, gz + Math.sin(a) * rr, 0.07, 0.07, 0.07, 0, new THREE.Color(fruitCol[k % 2])); }
                 }
             }
             for (const t of lists.pine) {
@@ -622,6 +630,8 @@ class Town3D extends PixelTileMap {
             // v6.43.0 石砌地基
             const stone = ['#9A9184', '#8C8478', '#A39A8C'][h % 3], wood = '#5A3E2B', roofDk = (() => { const k = new THREE.Color(roof); k.multiplyScalar(0.72); return '#' + k.getHexString(); })();
             this._box(w + 0.14, 0.32, d + 0.14, stone, 0, 0.06, 0, g);
+            // v6.49.0 牆腳一圈深色護牆板(看起來比較有重量)
+            { const k = new THREE.Color(wall); k.multiplyScalar(0.82); this._box(w + 0.04, 0.34, d + 0.04, '#' + k.getHexString(), 0, 0.37, 0, g); }
             // v6.43.0 民宅木骨架:四角柱＋腰樑＋頂樑
             if (tmpl === 'house') {
                 for (const [px, pz] of [[-w / 2, -d / 2], [w / 2, -d / 2], [-w / 2, d / 2], [w / 2, d / 2]]) this._box(0.14, wallH, 0.14, wood, px, wallH / 2, pz, g);
@@ -640,14 +650,19 @@ class Town3D extends PixelTileMap {
                 const rg = new THREE.Group(); rg.rotation.y = along ? 0 : Math.PI / 2; g.add(rg);
                 const eave = 0.32, half = span / 2 + eave, ang = Math.atan2(roofH, half), slab = Math.hypot(half, roofH) + 0.06;
                 const baseY = wallH - roofH * eave / half; // 屋面剛好壓在牆頂邊
+                const roofMid = (() => { const k = new THREE.Color(roof); k.multiplyScalar(0.86); return '#' + k.getHexString(); })();
                 for (const sgn of [-1, 1]) {
                     const sl = this._box(slab, 0.12, len + 0.5, roof, sgn * half / 2, baseY + roofH / 2, 0, rg); sl.rotation.z = -sgn * ang;
                     const fa = this._box(0.06, 0.16, len + 0.52, roofDk, sgn * (half - 0.02), baseY - 0.02, 0, rg); // 簷口
+                    // v6.49.0 瓦片橫紋:沿屋面排三道略深的瓦列(併進同一個網格,不增加繪製次數)
+                    const nx = sgn * Math.sin(ang), ny = Math.cos(ang);
+                    for (const f of [0.22, 0.48, 0.74]) { const st = this._box(0.07, 0.05, len + 0.5, roofMid, sgn * half * (1 - f) + nx * 0.075, baseY + roofH * f + ny * 0.075, 0, rg); st.rotation.z = -sgn * ang; }
                 }
                 this._box(0.2, 0.14, len + 0.56, roofDk, 0, baseY + roofH + 0.02, 0, rg); // 屋脊
                 const gh = roofH * (span / 2) / half;
                 this._prism(span, gh, len, wall, 0, wallH + gh / 2, 0, rg); // 山牆
                 if (tmpl === 'house') this._box(0.08, gh * 0.9, 0.06, wood, 0, wallH + gh * 0.45, len / 2 + 0.01, rg);
+                else if (!this._lite() && gh > 0.6) for (const zs of [1, -1]) this._box(0.34, 0.34, 0.05, '#4A3A30', 0, wallH + gh * 0.42, zs * (len / 2 + 0.02), rg); // v6.49.0 大建築山牆的通風窗
             }
             // 門(在 +z 面,對齊 doorPixelX)+ 門框＋台階＋門把
             const doorX = z.doorPixelX / TILE - cx;
@@ -655,6 +670,8 @@ class Town3D extends PixelTileMap {
             this._box(0.8, 1.35, 0.1, '#6B4A2E', doorX, 0.67, d / 2 + 0.02, g);
             this._box(0.06, 0.06, 0.06, '#D9B85C', doorX + 0.28, 0.7, d / 2 + 0.09, g);
             this._box(1.1, 0.12, 0.36, stone, doorX, 0.06, d / 2 + 0.2, g);
+            // v6.49.0 民宅門上小雨遮＋兩支托架
+            if (tmpl === 'house') { const aw = this._box(1.25, 0.07, 0.5, roofDk, doorX, 1.68, d / 2 + 0.24, g); aw.rotation.x = 0.28; for (const sx of [-0.52, 0.52]) { const br = this._box(0.06, 0.06, 0.34, wood, doorX + sx, 1.56, d / 2 + 0.16, g); br.rotation.x = -0.6; } }
             // 窗戶(夜間發光)
             if (!this._winMat) { this._winMat = new THREE.MeshLambertMaterial({ color: new THREE.Color('#9CC8E8'), emissive: new THREE.Color('#FFD27A'), emissiveIntensity: 0 }); } // v6.28.0 全鎮共用一個窗材質,合併後一次畫完
             const winMat = this._winMat; if (!this._winMats.includes(winMat)) this._winMats.push(winMat);
@@ -665,6 +682,10 @@ class Town3D extends PixelTileMap {
                 // v6.43.0 窗框、窗台;民宅加百葉、偶爾一個花槽
                 const out = rot === 0 ? Math.sign(zz) : 0, outX = rot !== 0 ? Math.sign(x) : 0;
                 const fr = this._box(0.56, 0.56, 0.05, wood, x - outX * 0.01, y, zz - out * 0.01, g); fr.rotation.y = rot;
+                if (!this._lite() && rot === 0 && out > 0) { // v6.49.0 正面窗戶加十字木條(只畫面向街道的一面;手機／低畫質不畫)
+                    const vb = this._box(0.04, 0.44, 0.03, wood, x + outX * 0.05, y, zz + out * 0.05, g); vb.rotation.y = rot;
+                    const hb = this._box(0.44, 0.04, 0.03, wood, x + outX * 0.05, y, zz + out * 0.05, g); hb.rotation.y = rot;
+                }
                 const sill = this._box(0.62, 0.07, 0.16, stone, x + outX * 0.06, y - 0.3, zz + out * 0.06, g); sill.rotation.y = rot;
                 if (tmpl === 'house' && !this._lite()) { // v6.43.0 手機／低畫質不畫百葉與花槽
                     for (const sd of [-1, 1]) { const sh = this._box(0.15, 0.48, 0.04, shutter, x + (rot === 0 ? sd * 0.37 : outX * 0.03), y, zz + (rot === 0 ? out * 0.03 : sd * 0.37), g); sh.rotation.y = rot; }

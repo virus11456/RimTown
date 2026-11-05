@@ -261,7 +261,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.48.0.zip` from Releases
+1. Download `rimtown-v6.49.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -314,6 +314,13 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.49.0 (2026-11-04)
+- 🏠 房子更精緻：屋頂多了三道瓦列、牆腳一圈深色護牆板、民宅門上有小雨遮和托架，桌機上面向街道的窗戶多了十字窗格、大建築山牆有通風窗
+- 🌳 樹和路更有質感：桌機上樹根往外擴、三成的闊葉樹會隨季節開花（春）或掛果（夏、秋）；石板路每塊鋪石高低差一點點，看起來像真的石頭。全部併進原本的網格，不增加繪製次數；桌機三角形約多 15%，手機幾乎不變
+- 🐛 修正：存檔空間不足時，重試第一次造訪隨機城鎮會在城鎮列表留下好幾座沒有存檔的同名城鎮（現在存檔成功才寫進列表，舊的空殼也會清掉）
+- 🐛 修正：合併另一台裝置的城鎮紀錄後，相連的城鎮可能變成 11 座以上（超過的會先降回「只有傳聞」，已經有存檔的城鎮不受影響）
+- 🐛 修正：帳號選單開著時旋轉螢幕，選單底部會被切掉（現在轉向或縮放視窗時會重新排位置）
 
 ### v6.48.0 (2026-11-04)
 - 🃏 事件卡有自己的介面了：事件卡是觀察者唯一能出手的地方，以前埋在「事件」分頁裡。現在地圖右下角有一顆 🃏 按鈕，直接顯示今天還能打幾張；點開是一副手牌——桌機浮在地圖下方（卡牌一列＋右邊詳情），手機是底部抽屜（卡牌橫向滑動＋下方詳情與大按鈕）
