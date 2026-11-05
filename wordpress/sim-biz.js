@@ -106,15 +106,17 @@ if (typeof GOODS !== 'undefined') {
     GOODS.buy = function (w, G, o, who) { if (who && who !== 'town') { const h = BIZ.haggle(w, who, o.price); if (h.saved > 0) { o = Object.assign({}, o, { price: h.price }); try { w.logMessageT?.('trade', '🗣️ {a}跟商人殺價，省下 {n} 銀幣。', { a: who.name, n: h.saved }, who.name); } catch (e) {} } } return _buy.call(this, w, G, o, who); };
 }
 // 銀行家審核;完整智能體模式大筆貸款問 AI
+// v6.74.0 等待旗標改放記憶體(以前放在銀行狀態裡會被存檔,讀回後永遠「等待中」→ 之後的大額貸款都跳過 AI);
+//          回覆回來時確認還是同一個世代、同一家銀行、同一個人才放款(以前換鎮後舊回覆會讓新鎮居民憑空多 80 銀幣)
 if (typeof BANK !== 'undefined') {
-    const _lend = BANK.lend;
+    const _lend = BANK.lend; const asking = new WeakMap(); // 銀行狀態 → 開始等待的世代
     BANK.lend = function (w, B, a, n, why) {
         const v = BIZ.vet(w, B, a);
         if (!v.ok) { try { w.logMessageT?.('trade', '🏦 銀行家拒絕借錢給{a}{r}。', { a: a.name, r: v.why === 'rep' ? '（名聲太差）' : '（兩人處不好）' }, a.name); } catch (e) {} try { a.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', '銀行不肯借我錢。', {}, 6, []); } catch (e) {} return 0; }
         const ce = w.conversationEngine; const banker = w.agents[B.banker];
-        if (n >= 40 && w.fullAgentMode && ce?.fullAgentOk?.(w) && ce._askJson && banker && !B._asking) {
-            B._asking = true;
-            (async () => { try { const b = ce._agentBrief(w, a, null); const prompt = `${t('你是銀行家「')}${banker.name}${t('」。')}${b.name}${t('想借')} ${Math.round(n)} ${t('銀幣')}${t('（')}${t(why || '周轉')}${t('）')}${t('。')}${t('他的狀況')}${t('：')}${(b.mem || []).slice(0, 4).join(' / ')}${t('。')}${t('要借嗎？只輸出 JSON')}${t('：')}{"lend":true,"why":"..."}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 100); if (j && j.lend === false) { w.logMessageT?.('trade', '🏦 銀行家{b}拒絕了{a}的貸款：{x}', { b: banker.name, a: a.name, x: String(j.why || '').slice(0, 50) }, banker.name); } else _lend.call(BANK, w, B, a, n, why); } catch (e) { _lend.call(BANK, w, B, a, n, why); } finally { B._asking = false; } })();
+        if (n >= 40 && w.fullAgentMode && ce?.fullAgentOk?.(w) && ce._askJson && banker && asking.get(B) !== w._gen) {
+            asking.set(B, w._gen); const g0 = w._gen; const live = () => w._gen === g0 && w.bank === B && w.agents[a.agentId] === a && !a.isDead;
+            (async () => { try { const b = ce._agentBrief(w, a, null); const prompt = `${t('你是銀行家「')}${banker.name}${t('」。')}${b.name}${t('想借')} ${Math.round(n)} ${t('銀幣')}${t('（')}${t(why || '周轉')}${t('）')}${t('。')}${t('他的狀況')}${t('：')}${(b.mem || []).slice(0, 4).join(' / ')}${t('。')}${t('要借嗎？只輸出 JSON')}${t('：')}{"lend":true,"why":"..."}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 100); if (!live()) return; if (j && j.lend === false) { w.logMessageT?.('trade', '🏦 銀行家{b}拒絕了{a}的貸款：{x}', { b: banker.name, a: a.name, x: String(j.why || '').slice(0, 50) }, banker.name); } else _lend.call(BANK, w, B, a, n, why); } catch (e) { if (live()) _lend.call(BANK, w, B, a, n, why); } finally { if (asking.get(B) === g0) asking.delete(B); } })();
             return 0;
         }
         return _lend.call(this, w, B, a, n, why);

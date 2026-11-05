@@ -46,7 +46,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const keep = JSON.parse(JSON.stringify(B)); B.reserve += 5000; BANK.startRun(w, B, D); out.run = B.status === 'run' && logHas(/擠|withdraw/i);
       for (let i = 0; i < 4; i++) { D++; fix(0.01, () => { B.lastDay = null; BANK.daily(w); }); } out.survived = B.status === 'ok' && B.open;
       // 擠兌倒閉:準備金不夠
-      for (const a of all.slice(4, 8)) { w.wallet.bal[a.agentId] = 200; BANK.deposit(w, B, a, 100); } B.reserve = 30; BANK.startRun(w, B, D);
+      for (const a of all.slice(4, 8)) { w.wallet.bal[a.agentId] = 200; BANK.deposit(w, B, a, 100); } B.reserve = 30; BANK.startRun(w, B, D); B.run.injected = -1; B.run.bonds = -1; B.run.asked = 'no'; // v6.74.0 沒人救(銀行家、債券、紓困都沒有)
       D++; fix(0.01, () => { B.lastDay = null; BANK.daily(w); }); out.failed = B.status === 'failed' && !B.open && logHas(/倒閉|collapsed/);
       out.angry = (all[5].memory.entries || []).slice(-6).some(m => /銀行倒了|bank failed/.test(m.text ? m.text() : m.content));
       w._absDay = _ad;

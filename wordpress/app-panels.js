@@ -1016,6 +1016,12 @@ Object.assign(RimTownApp.prototype, {
             if (V.open) T += `<div class="pp-tier-line">${t('銀行家')}${t('：')}${esc(V.banker || '')} · ${t('放款利率')} ${V.rate}%${V.why ? ` ${t('（')}${esc(V.why)}${t('）')}` : ''}</div><div class="pp-tier-line">${t('存款')} ${V.dep}${t('（')}${V.savers} ${t('人')}${t('）')} · ${t('放款')} ${V.loan}${t('（')}${V.borrowers} ${t('人')}${t('）')} · ${t('準備金')} ${V.reserve} · ${t('呆帳')} ${V.bad}</div>`;
             else if (V.failed) T += `<div class="pp-tier-line">${t('上次倒閉讓存戶損失 {n} 銀幣').replace('{n}', V.failed.lost)}</div>`;
             else T += `<div class="pp-issue-hint">${t('升格為城鎮後就會有銀行。')}</div>`;
+            // v6.74.0 債券、紓困、鎮公所背債
+            if (V.pending) T += `<div class="pp-issue-hint">⏳ ${t('銀行暫停營業，等鎮長決定要不要紓困')}</div>`;
+            if (V.bonds) T += `<div class="pp-tier-line">📜 ${t('流通中的債券')} ${V.bonds} ${t('銀幣')}${t('（')}${V.bondHolders} ${t('人')} · ${t('利息')} ${V.bondRate}%${t('）')}${V.defaults ? ` · ${t('違約')} ${V.defaults}` : ''}</div>`;
+            if (V.bail) T += `<div class="pp-tier-line">${V.bail.yes ? '🛟' : '🚫'} ${esc((V.bail.yes ? t('{m}決定紓困（{n} 銀幣）') : t('{m}拒絕紓困')).replace('{m}', V.bail.by).replace('{n}', V.bail.n))}${V.bail.why ? ` <small>${t('「')}${esc(V.bail.why)}${t('」')}</small>` : ''}</div>`;
+            if (V.debt) T += `<div class="pp-tier-line">🏛️ ${t('鎮公所紓困債')} ${V.debt.owed} ${t('銀幣')}${t('（')}${t('已還')} ${V.debt.paid}${V.debt.late ? ` · ⚠️ ${t('逾期 {n} 天').replace('{n}', V.debt.late)}` : ''}${t('）')}</div>`;
+            else if (V.debtDone) T += `<div class="pp-issue-hint">🎉 ${t('紓困債已還清（共 {n} 銀幣）').replace('{n}', V.debtDone.paid)}</div>`;
             T += `</div>`; } } catch (e) {}
         // v6.63.0 報社
         try { if (typeof PRESS !== 'undefined' && this.world.press) { const V = PRESS.view(this.world);

@@ -963,6 +963,7 @@ class World {
         };
     }
     reset(seed = null) {
+        this._gen = (this._gen || 0) + 1; // v6.74.0 世代:換鎮後舊的 AI 回覆作廢(見 ConversationEngine._askJson)
         this.clock.reset(); this.events = new EventSystem(); this.election = new ElectionSystem();
         this.agents = {}; this.tickCount = 0; this.paused = false; this.messageLog = [];
         this.gossipNetwork = new GossipNetwork();
@@ -2074,6 +2075,7 @@ class World {
 
     loadSave(data) {
         if (!data || !data.version) return false;
+        this._gen = (this._gen || 0) + 1; // v6.74.0 讀檔後舊的 AI 回覆作廢
         try {
             try {
                 World._s2tCount = 0;
