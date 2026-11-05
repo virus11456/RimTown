@@ -44,8 +44,30 @@ const DARK = (() => {
         cheated:         { mood: -5, opinion: -2, days: 4, label: t('覺得被坑了') },
         debt_unpaid:     { mood: -5, opinion: -2, days: 5, label: t('借出去的錢一直要不回來') },
         neighbor_trouble:{ mood: -3, opinion: -1, days: 3, label: t('被鄰居吵得受不了') },
+        apologized:      { mood: 2, opinion: 1, days: 2, label: t('道了歉，心裡好過一點') },
+        forgiven:        { mood: 6, opinion: 2, days: 3, label: t('被原諒了') },
+        forgave:         { mood: 3, opinion: 1, days: 2, label: t('選擇原諒對方') },
+        unforgiving:     { mood: -3, opinion: -2, days: 4, label: t('還沒辦法原諒對方') },
+        avenged:         { mood: 4, opinion: -2, days: 3, label: t('報了一箭之仇') },
+        punished:        { mood: -10, opinion: 0, days: 6, label: t('被全鎮處罰') },
+        justice:         { mood: 6, opinion: 0, days: 3, label: t('討回了公道') },
     });
-    const S = (w) => { if (!w.dark || !Array.isArray(w.dark.secrets)) w.dark = { secrets: [], mis: [], n: 0, cool: {}, spoke: {}, exposedCount: {} }; return w.dark; };
+    const S = (w) => { if (!w.dark || !Array.isArray(w.dark.secrets)) w.dark = { secrets: [], mis: [], n: 0, cool: {}, spoke: {}, exposedCount: {} }; const D = w.dark; D.rep = D.rep || {}; D.wrongs = D.wrongs || []; D.allies = D.allies || {}; D.cliques = D.cliques || []; D.feuds = D.feuds || {}; return D; };
+    // ---------- 名聲:大家怎麼看這個人(由他做過的事累積) ----------
+    const bump = (w, a, k, n = 1) => { if (!a) return; const D = S(w); const r = D.rep[a.agentId] || (D.rep[a.agentId] = {}); r[k] = (r[k] || 0) + n; };
+    function reputation(w, a) {
+        const r = S(w).rep[a.agentId] || {}; const tags = [];
+        if ((r.exposed || 0) >= 1 || (r.revenge || 0) >= 2) tags.push('scheming');
+        if ((r.badmouth || 0) >= 3) tags.push('gossip');
+        if ((r.helped || 0) >= 2 || (r.forgave || 0) >= 2) tags.push('helpful');
+        if (!(r.lies || 0) && !(r.exposed || 0) && honesty(a) >= 3) tags.push('honest');
+        return tags;
+    }
+    const REP = { scheming: '陰險', gossip: '愛八卦', helpful: '熱心', honest: '老實' };
+    const repLabel = (w, a) => reputation(w, a).map(k => t(REP[k])).join(t('、'));
+    const credibility = (w, a) => { const tg = reputation(w, a); return 1 + (tg.includes('honest') ? 0.5 : 0) - (tg.includes('gossip') ? 0.4 : 0) - (tg.includes('scheming') ? 0.7 : 0); };
+    // ---------- 虧欠:誰對不起誰(之後可能道歉、原諒,或報復) ----------
+    function wrong(w, by, to, weight, kx, p) { if (!by || !to || by === to) return; const D = S(w); D.wrongs.push({ by: by.agentId, to: to.agentId, w: weight, day: day(w), tries: 0, k: kx, p }); if (D.wrongs.length > 30) D.wrongs = D.wrongs.slice(-30); }
 
     // ---------- 恩怨從哪來 ----------
     const RIVAL_JOBS = ['trader', 'cook', 'blacksmith', 'tailor', 'carpenter', 'doctor', 'miner', 'tavern', 'researcher'];
@@ -96,7 +118,105 @@ const DARK = (() => {
         log(w, 'drama', '🔍 真相大白：{x}{by}', { x: truth, by: by ? fill('（被{b}看穿）', { b: by.name }) : '' }, c.name);
         w.dailyNews?.collectEvent?.('drama', `🔍 ${t('真相大白：')}${truth}`, 8, [c.name, v?.name].filter(Boolean));
         const D = S(w); D.exposedCount[c.agentId] = (D.exposedCount[c.agentId] || 0) + (heavy ? 1 : 0);
-        if (D.exposedCount[c.agentId] >= 2 && all.length > 6 && c.job?.key !== 'mayor' && Math.random() < 0.5) w.leaveTown?.(c.agentId, t('陰謀一再被揭穿，在鎮上待不下去了'));
+        bump(w, c, 'exposed');
+        if (v) wrong(w, c, v, heavy ? 3 : 1, s.k, s.p);
+        // v6.52.0 嚴重的事:全鎮提案審判(罰款／公共勞役／逐出小鎮),投票決定
+        if (heavy && v) { try { proposeVerdict(w, s, c, v, by); } catch (e) { console.warn('[Dark] verdict', e); } }
+    }
+    // ---------- 審判提案:陰謀被拆穿後由受害者(或看穿的人)提出 ----------
+    const PEN = { fine: '罰他替公庫做工抵 30 銀幣，並公開道歉', labor: '罰他做一週公共勞役（每天搬木材石頭）', exile: '把他逐出小鎮' };
+    function proposeVerdict(w, s, c, v, by) {
+        const P = w.proposals; if (!P?._createWith) return null;
+        if ((P.items || []).some(p => p.kind === 'verdict' && p.status === 'open' && p.culprit === c.agentId)) return null;
+        const n = S(w).exposedCount[c.agentId] || 1;
+        const pen = n >= 3 ? 'exile' : n >= 2 ? 'labor' : 'fine';
+        const who = (v && !v.isDead && w.agents[v.agentId]) ? v : (by || v);
+        const what = fill(s.k, s.p);
+        const cand = { kind: 'verdict', key: 'verdict:' + s.id, jobs: [], make: () => ({ kind: 'verdict', key: 'verdict:' + s.id, culprit: c.agentId, victim: v.agentId, pen, tk: '處置{a}：{pen}', tp: { a: c.name, pen: t({ fine: '罰款道歉', labor: '公共勞役', exile: '逐出小鎮' }[pen]) }, dk: '{who}提議：因為{what}，{pen}。', dp: { who: who.name, what, pen: t(PEN[pen]) }, cost: {}, category: 'welfare', jobBias: ['guard', 'mayor'] }) };
+        const p = P._createWith(w, day(w), cand, who); if (!p) return null;
+        p.culprit = c.agentId; p.victim = v.agentId; p.pen = pen;
+        log(w, 'council', '⚖️ {who}提議處置{a}：{pen}', { who: who.name, a: c.name, pen: t(PEN[pen]) }, who.name);
+        return p;
+    }
+    // 依個性與交情投票:心軟、跟被告要好、同派系的人傾向從輕(反對);受害者、正直的人、守衛傾向贊成
+    function verdictVote(w, p, a) {
+        const c = w.agents[p.culprit]; if (!c) return null; if (a.agentId === p.culprit) return 'against'; if (a.agentId === p.victim) return 'for';
+        let s = 0.5;
+        if (has(a, 'kind')) s -= p.pen === 'exile' ? 2 : 1; if (honesty(a) >= 3.5) s += 1; if (a.job?.key === 'guard') s += 1;
+        s -= aff(a, c) / 30; s += aff(a, w.agents[p.victim] || a) / 40;
+        const cq = cliqueOf(w, a.agentId); if (cq && cq.members.includes(p.culprit)) s -= 2;
+        if (p.pen === 'exile') s -= 0.8;
+        return s + (Math.random() - 0.5) * 1.5 >= 0 ? 'for' : 'against';
+    }
+    function punish(w, P, p) {
+        const c = w.agents[p.culprit], v = w.agents[p.victim]; if (!c) return fill('{a}已經不在鎮上了', { a: '' });
+        c.addThought?.('punished', w); if (v) { v.addThought?.('justice', w); mem(w, v, '全鎮替我討回了公道。', {}, 6); }
+        mem(w, c, '全鎮投票處置了我：{pen}。', { pen: t(PEN[p.pen]) }, 8);
+        if (p.pen === 'fine') { w.stockpile?.add?.('silver', 30, w.tickCount, t('罰款')); if (v) { rel(v, c)?.modifyAffinity?.(5); mem(w, v, '{a}當眾向我道歉了。', { a: c.name }, 6); } S(w).wrongs = S(w).wrongs.filter(x => !(x.by === c.agentId && x.to === v?.agentId)); }
+        else if (p.pen === 'labor') { const D = S(w); D.labor = (D.labor || []).concat([{ id: c.agentId, until: day(w) + 7 }]); }
+        else if (p.pen === 'exile') { w.leaveTown?.(c.agentId, t('被全鎮投票逐出小鎮')); }
+        log(w, 'council', '⚖️ 判決執行：{a}，{pen}。', { a: c.name, pen: t(PEN[p.pen]) }, c.name);
+        w.dailyNews?.collectEvent?.('politics', fill('⚖️ 判決執行：{a}，{pen}。', { a: c.name, pen: t(PEN[p.pen]) }), 8, [c.name]);
+        return fill('判決執行：{pen}', { pen: t(PEN[p.pen]) });
+    }
+    function laborDaily(w) {
+        const D = S(w); if (!D.labor?.length) return; const today = day(w);
+        D.labor = D.labor.filter(x => { const a = w.agents[x.id]; if (!a || today > x.until) return false; w.stockpile?.add?.('wood', 3, w.tickCount, t('公共勞役')); w.stockpile?.add?.('stone', 2, w.tickCount, t('公共勞役')); if (a.needs) a.needs.rest = Math.max(0, a.needs.rest - 15); return true; });
+    }
+    // ---------- 道歉與原諒 ----------
+    const APOLOGY = ['對不起，之前是我不對。', '那件事我一直很過意不去，真的很抱歉。', '我知道說什麼都晚了，但我還是想跟你道歉。'];
+    function apologies(w) {
+        const D = S(w), today = day(w);
+        for (const x of D.wrongs) {
+            if (x.done || today - x.day < 2 || today - (x.last || 0) < 3) continue;
+            const a = w.agents[x.by], b = w.agents[x.to]; if (!a || !b) { x.done = true; continue; }
+            if (today - x.day > 20) { x.done = true; continue; }
+            const pa = clamp(0.15 + (has(a, 'kind') ? 0.25 : 0) + (honesty(a) - 2) * 0.05 - (has(a, 'abrasive') ? 0.1 : 0) - Math.max(0, malice(a)) * 0.03, 0.02, 0.6);
+            if (Math.random() >= pa) continue;
+            x.last = today; x.tries++; bump(w, a, 'apologized');
+            const line = t(pick(APOLOGY)); a.addThought?.('apologized', w, b.agentId, b.name);
+            mem(w, a, '我去跟{b}道歉了：「{x}」', { b: b.name, x: line }, 6);
+            const pf = clamp((has(b, 'kind') ? 0.7 : has(b, 'optimist') ? 0.6 : has(b, 'stoic') ? 0.5 : (has(b, 'jealous') || has(b, 'abrasive')) ? 0.25 : has(b, 'neurotic') ? 0.35 : 0.45) - x.w * 0.08 + (x.tries - 1) * 0.1, 0.05, 0.9);
+            if (Math.random() < pf) {
+                x.done = true; x.forgiven = true;
+                rel(a, b)?.modifyAffinity?.(6); rel(b, a)?.modifyAffinity?.(10); rel(b, a)?.modifyTrust?.(4);
+                a.addThought?.('forgiven', w, b.agentId, b.name); b.addThought?.('forgave', w, a.agentId, a.name); bump(w, b, 'forgave');
+                mem(w, b, '{a}來跟我道歉，我原諒他了。', { a: a.name }, 6);
+                (b.thoughts || []).forEach(th => { if (th.targetId === a.agentId && ['slandered', 'wrongly_blamed', 'credit_stolen', 'resentful', 'cheated', 'debt_unpaid'].includes(th.kind)) th.days = Math.min(th.days, (w.clock?.totalDays || 0) - th.start + 1); });
+                log(w, 'social', '🙏 {a}向{b}道歉：「{x}」{b}原諒了他。', { a: a.name, b: b.name, x: line }, a.name);
+            } else {
+                rel(b, a)?.modifyAffinity?.(-2); b.addThought?.('unforgiving', w, a.agentId, a.name);
+                mem(w, b, '{a}跑來道歉，可是我還沒辦法原諒他。', { a: a.name }, 6);
+                log(w, 'social', '🙏 {a}向{b}道歉，但{b}還不肯原諒。', { a: a.name, b: b.name }, a.name);
+                if (x.tries >= 2) x.done = true;
+            }
+        }
+        if (D.wrongs.length > 30) D.wrongs = D.wrongs.filter(x => !x.done).concat(D.wrongs.filter(x => x.done).slice(-6)).slice(-30);
+    }
+    // ---------- 報復:沒被原諒/不肯原諒的人,記恨又不老實的可能反擊,恩怨變成連載 ----------
+    function revenge(w) {
+        const D = S(w), today = day(w), all = npcs(w);
+        for (const x of D.wrongs) {
+            if (x.revenged || x.forgiven || today - x.day < 2) continue;
+            const v = w.agents[x.to], c = w.agents[x.by]; if (!v || !c) continue;
+            if (malice(v) < 1 && !has(v, 'abrasive') && !has(v, 'jealous')) continue;
+            if (Math.random() >= 0.06 + x.w * 0.02) continue;
+            x.revenged = true; bump(w, v, 'revenge');
+            const key = [v.agentId, c.agentId].sort().join('|'); const f = D.feuds[key] || (D.feuds[key] = { n: 0, start: today }); f.n++;
+            v.addThought?.('avenged', w, c.agentId, c.name);
+            const ears = rnd(all.filter(o => o !== v && o !== c), 3);
+            if (Math.random() < 0.5) {
+                for (const o of ears) { rel(o, c)?.modifyAffinity?.(-4); mem(w, o, '{v}提醒大家要小心{c}，說他不是什麼好人。', { v: v.name, c: c.name }, 5); }
+                log(w, 'scheme', '⚔️ {v}到處提醒大家小心{c}，報復之前的事。', { v: v.name, c: c.name }, v.name);
+            } else {
+                c.addThought?.('work_ruined', w); mem(w, c, '我的東西被人動了手腳，一定是{v}幹的！', { v: v.name }, 7);
+                log(w, 'scheme', '⚔️ {v}偷偷動了{c}的東西，報一箭之仇。🕵️', { v: v.name, c: c.name }, v.name);
+                secret(w, { kind: 'sabotage', culprit: v.agentId, victim: c.agentId, k: '{v}為了報復，偷偷破壞了{c}的東西', p: { v: v.name, c: c.name } });
+            }
+            wrong(w, v, c, 2, '報復{v}', { v: c.name });
+            if (f.n >= 2) { log(w, 'drama', '📖 恩怨連載：{a}和{b}你來我往，已經第 {n} 回了。', { a: v.name, b: c.name, n: f.n }, v.name); w.dailyNews?.collectEvent?.('drama', fill('📖 恩怨連載：{a}和{b}你來我往，已經第 {n} 回了。', { a: v.name, b: c.name, n: f.n }), 7, [v.name, c.name]); }
+            break;
+        }
     }
     function discover(w) {
         const D = S(w), today = day(w); const all = npcs(w);
@@ -129,18 +249,55 @@ const DARK = (() => {
         const G = w.gossipNetwork;
         if (G?.activeGossip) G.activeGossip.push({ about: foe.name, content: line, contentT: { k: kx, p: { who: foe.name } }, source: speaker.name, spreadCount: 1, tickCreated: w.tickCount, isTrue: !lie, tone: 'diss', juicy: false });
         mem(w, speaker, '我跟{b}抱怨了{c}（{why}）。', { b: listener.name, c: foe.name, why: fill(WHY[f.g.why], { v: foe.name }) }, 4);
+        bump(w, speaker, 'badmouth'); if (lie) bump(w, speaker, 'lies');
         log(w, 'gossip', '🗣️ {a}在背後跟{b}說{c}的壞話：「{x}」{lie}', { a: speaker.name, b: listener.name, c: foe.name, x: line, lie: lie ? t('🎭（其實是編的）') : '' }, speaker.name);
         // 聽的人:跟被講的人很要好又正直 → 幫忙說話,可能直接告訴本人;否則印象變差
         if ((has(listener, 'kind') || honesty(listener) >= 4) && aff(listener, foe) >= 30) {
-            rel(listener, speaker)?.modifyAffinity?.(-3);
+            rel(listener, speaker)?.modifyAffinity?.(-3); bump(w, listener, 'helped');
             mem(w, listener, '{a}在背後說{c}的壞話，我替{c}說了幾句話。', { a: speaker.name, c: foe.name }, 5);
             if (Math.random() < 0.35) confront(w, foe, speaker, line);
         } else {
-            rel(listener, foe)?.modifyAffinity?.(-(2 + (aff(listener, speaker) >= 30 ? 2 : 0)));
-            mem(w, listener, '{a}跟我說{c}的壞話：「{x}」', { a: speaker.name, c: foe.name, x: line }, 4);
+            // v6.52.0 信不信要看說的人名聲:老實的人講的比較有人信,愛八卦、陰險的人講的大家打折聽
+            const cred = credibility(w, speaker);
+            rel(listener, foe)?.modifyAffinity?.(-Math.round((2 + (aff(listener, speaker) >= 30 ? 2 : 0)) * cred));
+            mem(w, listener, cred < 0.8 ? '{a}又在說{c}的壞話了，聽聽就好。' : '{a}跟我說{c}的壞話：「{x}」', { a: speaker.name, c: foe.name, x: line }, 4);
+            if (cred >= 0.8) ally(w, speaker, listener, foe);
         }
         if (lie) secret(w, { kind: 'slander', culprit: speaker.agentId, victim: foe.agentId, k: '{a}編造了{c}的壞話（「{x}」）', p: { a: speaker.name, c: foe.name, x: line } });
         return { foe: foe.agentId, lie };
+    }
+    // ---------- 小團體:常一起說同一個人壞話的人會越走越近,成了一派 ----------
+    function ally(w, a, b, target) {
+        const D = S(w); const key = [a.agentId, b.agentId].sort().join('|');
+        const x = D.allies[key] || (D.allies[key] = { n: 0, targets: [] }); x.n++; if (!x.targets.includes(target.agentId)) x.targets.push(target.agentId);
+        rel(a, b)?.modifyAffinity?.(2); rel(b, a)?.modifyAffinity?.(2);
+        if (x.n < 2) return;
+        let c = D.cliques.find(q => q.members.includes(a.agentId) || q.members.includes(b.agentId));
+        if (!c) {
+            if (D.cliques.length >= 4) return;
+            c = { id: 'C' + (++D.n), leader: a.agentId, members: [a.agentId, b.agentId], against: [target.agentId], day: day(w), last: day(w) }; D.cliques.push(c);
+            log(w, 'social', '🫂 {a}和{b}常常一起說{c}的閒話，成了一個小圈圈。', { a: a.name, b: b.name, c: target.name }, a.name);
+            w.dailyNews?.collectEvent?.('relationship', fill('🫂 {a}和{b}常常一起說{c}的閒話，成了一個小圈圈。', { a: a.name, b: b.name, c: target.name }), 5, [a.name, b.name]);
+        } else {
+            for (const id of [a.agentId, b.agentId]) if (!c.members.includes(id) && c.members.length < 6) { c.members.push(id); log(w, 'social', '🫂 {x}加入了{l}那一派。', { x: w.agents[id]?.name || '', l: w.agents[c.leader]?.name || '' }, w.agents[id]?.name || ''); }
+            if (!c.against.includes(target.agentId)) c.against.push(target.agentId);
+            c.last = day(w);
+        }
+    }
+    const cliqueOf = (w, id) => S(w).cliques.find(c => c.members.includes(id)) || null;
+    const cliqueName = (w, c) => c ? t('{l}那一派').replace('{l}', w.agents[c.leader]?.name || t('某人')) : '';
+    function cliqueDaily(w) {
+        const D = S(w), today = day(w);
+        D.cliques = D.cliques.filter(c => { c.members = c.members.filter(id => w.agents[id] && !w.agents[id].isDead); if (!w.agents[c.leader]) c.leader = c.members[0]; return c.members.length >= 2 && today - c.last < 30; });
+        for (const c of D.cliques) for (const i of c.members) for (const j of c.members) if (i !== j && Math.random() < 0.3) rel(w.agents[i], w.agents[j])?.modifyAffinity?.(1);
+    }
+    // 投票時小團體一起行動:自己人提的支持、對頭提的反對
+    function cliqueVote(w, p, voter) {
+        const D = w.dark; if (!D?.cliques?.length) return 0;
+        const mine = cliqueOf(w, voter.agentId); if (!mine) return 0;
+        if (mine.members.includes(p.proposerId)) return 1;
+        if (mine.against.includes(p.proposerId) || (cliqueOf(w, p.proposerId) && cliqueOf(w, p.proposerId) !== mine && cliqueOf(w, p.proposerId).against.some(id => mine.members.includes(id)))) return -1;
+        return 0;
     }
     function confront(w, subject, source, line) {
         rel(subject, source)?.modifyAffinity?.(-12); rel(source, subject)?.modifyAffinity?.(-6);
@@ -148,6 +305,7 @@ const DARK = (() => {
         mem(w, subject, '聽說{a}在背後說我：「{x}」我去找他問清楚，吵了一架。', { a: source.name, x: line }, 7);
         mem(w, source, '{c}知道我在背後說他的壞話，跑來找我對質。', { c: subject.name }, 6);
         log(w, 'gossip', '💢 {c}知道{a}在背後說自己壞話，當面對質！', { c: subject.name, a: source.name }, subject.name);
+        wrong(w, source, subject, 2, '在背後說{v}壞話', { v: subject.name });
     }
 
     // ---------- 恩怨的情緒:同行搶生意、競選對手 ----------
@@ -181,7 +339,7 @@ const DARK = (() => {
             const l = w.agents[d.l], r = w.agents[d.r]; d.done = true; if (!l || !r) continue;
             if (honesty(r) >= 2.5 || Math.random() < 0.4) { rel(l, r)?.modifyAffinity?.(3); mem(w, l, '{r}準時把借的 {n} 銀幣還我了，這人可靠。', { r: r.name, n: d.n }, 4); }
             else {
-                rel(l, r)?.modifyAffinity?.(-10); l.addThought?.('debt_unpaid', w, r.agentId, r.name);
+                rel(l, r)?.modifyAffinity?.(-10); l.addThought?.('debt_unpaid', w, r.agentId, r.name); wrong(w, r, l, 2, '欠{v}錢不還', { v: l.name });
                 mem(w, l, '{r}跟我借的 {n} 銀幣一直不還，每次問都說下次。', { r: r.name, n: d.n }, 6);
                 mem(w, r, '{l}又來催我還錢了，煩死了。', { l: l.name }, 4);
                 log(w, 'social', '💸 {r}借{l}的 {n} 銀幣一直沒還，{l}很不高興。', { r: r.name, l: l.name, n: d.n }, l.name);
@@ -200,6 +358,7 @@ const DARK = (() => {
             mem(w, b, '今天{k}，以後不想再跟他買了。', { k: fill(k, { s: s.name }) }, 5);
             mem(w, s, '{b}又來找麻煩，說我{k}。', { b: b.name, k: t(k2) }, 4);
             log(w, 'social', '🛒 {b}跟{s}吵起來了：{k}。{c}', { b: b.name, s: s.name, k: fill(k, { s: s.name }), c: cheat ? t('🎭（{s}真的有偷斤減兩）').replace('{s}', s.name) : t('🎭（其實是原料漲價，{s}沒有騙人）').replace('{s}', s.name) }, b.name);
+            if (cheat) { bump(w, s, 'lies'); wrong(w, s, b, 1, '賣東西坑了{v}', { v: b.name }); }
             if (cheat) secret(w, { kind: 'cover', culprit: s.agentId, victim: b.agentId, k: '{s}賣東西真的偷斤減兩，坑了{b}', p: { s: s.name, b: b.name } });
             else D.mis.push({ kind: 'price', a: b.agentId, b: s.agentId, day: today });
         } else if (roll < 0.55) { // 借錢
@@ -275,6 +434,7 @@ const DARK = (() => {
                     const v = f.b; for (const o of rnd(all.filter(x => x !== a && x !== v), 3)) { rel(o, v)?.modifyAffinity?.(-4); mem(w, o, '{a}說是{v}弄的：{what}。', { a: a.name, v: v.name, what }, 5); }
                     v.addThought?.('wrongly_blamed', w); mem(w, v, '大家說{what}是我弄的，可是根本不是我！', { what }, 7);
                     log(w, 'incident', '⚠️ {what}出了狀況，{a}說是{v}弄的。🎭（其實是{a}自己）', { what, a: a.name, v: v.name }, a.name);
+                    bump(w, a, 'lies'); wrong(w, a, v, 2, '把{what}推給{v}', { what, v: v.name });
                     secret(w, { kind: 'cover', culprit: a.agentId, victim: v.agentId, k: '{what}其實是{a}弄的，還推給{v}', p: { what, a: a.name, v: v.name } });
                 } else {
                     log(w, 'incident', '⚠️ {what}出了狀況，沒人承認。🎭（其實是{a}）', { what, a: a.name }, a.name);
@@ -287,6 +447,7 @@ const DARK = (() => {
                     sad.moodModifier = (sad.moodModifier || 0) + 4; sad.addThought?.('comforted', w, a.agentId, a.name);
                     mem(w, sad, '{a}跟我說大家其實都很喜歡我，心裡好受多了。', { a: a.name }, 5);
                     log(w, 'social', '💗 {a}安慰心情低落的{b}：「大家其實都很喜歡你。」🎭（善意的謊言）', { a: a.name, b: sad.name }, a.name);
+                    bump(w, a, 'helped');
                     secret(w, { kind: 'white', culprit: a.agentId, victim: sad.agentId, k: '{a}說「大家都很喜歡{b}」是善意的謊言', p: { a: a.name, b: sad.name } });
                 }
             }
@@ -399,7 +560,7 @@ const DARK = (() => {
                 const why = { cold: '{b}只是害羞，不是看不起人', jealous: '{b}跟別人只是普通朋友', overheard: '{b}說的根本不是自己', price: '{b}漲價是因為原料變貴，不是在坑人' }[m.kind];
                 mem(w, a, '原來是我誤會了：{why}。有點不好意思。', { why: fill(why, { b: b.name }) }, 6);
                 mem(w, b, '跟{a}把話說開了，誤會解開，鬆了一口氣。', { a: a.name }, 6);
-                if (mediator) { mem(w, mediator, '幫{a}和{b}把誤會說開了。', { a: a.name, b: b.name }, 4); rel(a, mediator)?.modifyAffinity?.(3); rel(b, mediator)?.modifyAffinity?.(3); }
+                if (mediator) { bump(w, mediator, 'helped'); mem(w, mediator, '幫{a}和{b}把誤會說開了。', { a: a.name, b: b.name }, 4); rel(a, mediator)?.modifyAffinity?.(3); rel(b, mediator)?.modifyAffinity?.(3); }
                 log(w, 'social', '🤝 誤會解開：{a}知道{why}。{m}', { a: a.name, why: fill(why, { b: b.name }), m: mediator ? fill('（{m}幫忙說開的）', { m: mediator.name }) : '' }, a.name);
             } else if (age > 10) {
                 m.done = true; rel(a, b)?.modifyAffinity?.(-5);
@@ -418,6 +579,10 @@ const DARK = (() => {
         try { schemes(w); } catch (e) { console.warn('[Dark] schemes', e); }
         try { misunderstand(w); } catch (e) { console.warn('[Dark] mis', e); }
         try { discover(w); } catch (e) { console.warn('[Dark] discover', e); }
+        try { apologies(w); } catch (e) { console.warn('[Dark] apologies', e); }
+        try { revenge(w); } catch (e) { console.warn('[Dark] revenge', e); }
+        try { cliqueDaily(w); } catch (e) { console.warn('[Dark] cliques', e); }
+        try { laborDaily(w); } catch (e) { console.warn('[Dark] labor', e); }
     }
     // 給畫面(只有玩家看得到):還沒被拆穿的秘密、還沒解開的誤會
     function view(w) {
@@ -426,15 +591,20 @@ const DARK = (() => {
         return {
             secrets: D.secrets.filter(s => !s.found && s.stage !== 'off').slice(-8).reverse().map(s => ({ id: s.id, kind: s.kind, plan: s.stage === 'plan', text: fill(s.k, s.p), culprit: s.culprit, victim: s.victim })),
             mis: D.mis.filter(m => !m.done).slice(-6).map(m => ({ kind: m.kind, a: nm(m.a), b: nm(m.b) })),
+            cliques: (D.cliques || []).map(c => ({ name: cliqueName(w, c), members: c.members.map(nm).filter(Boolean), against: c.against.map(nm).filter(Boolean) })),
+            feuds: Object.entries(D.feuds || {}).filter(([, f]) => f.n >= 2).map(([k, f]) => ({ names: k.split('|').map(nm), n: f.n })).slice(-4),
         };
     }
     function about(w, a) { // 這個人身上的秘密與恩怨(村民卡、AI 用)
         const D = w.dark; const out = { secrets: [], grudge: null };
         if (D) out.secrets = D.secrets.filter(s => !s.found && s.stage !== 'off' && s.culprit === a.agentId && s.kind !== 'white').map(s => fill(s.k, s.p));
         const f = foeOf(w, a, null); if (f) out.grudge = { name: f.b.name, why: fill(WHY[f.g.why], { v: f.b.name }) };
+        out.rep = D ? repLabel(w, a) : ''; const cq = D ? cliqueOf(w, a.agentId) : null; out.clique = cq ? cliqueName(w, cq) : '';
+        out.owe = D ? (D.wrongs || []).filter(x => !x.done && x.by === a.agentId).map(x => w.agents[x.to]?.name).filter(Boolean).slice(0, 2) : [];
+        out.hurt = D ? (D.wrongs || []).filter(x => !x.done && x.to === a.agentId && !x.forgiven).map(x => w.agents[x.by]?.name).filter(Boolean).slice(0, 2) : [];
         return out;
     }
-    return { daily, badmouth, confront, grudge, foeOf, secret, reveal, view, about, malice, honesty, insight, S };
+    return { daily, badmouth, confront, grudge, foeOf, secret, reveal, view, about, malice, honesty, insight, S, reputation, repLabel, credibility, cliqueVote, cliqueOf, verdictVote, punish, proposeVerdict, wrong, apologies, revenge, bump };
 })();
 
 // ---- 掛勾:聊天時講壞話、每日、存檔、AI ----
@@ -445,7 +615,18 @@ if (typeof GossipNetwork !== 'undefined') {
         return _sg.call(this, speaker, listener, world);
     };
 }
+if (typeof PROPOSAL_KINDS !== 'undefined') PROPOSAL_KINDS.verdict = { icon: '⚖️', label: '審判' };
 if (typeof ProposalSystem !== 'undefined') {
+    const PS = ProposalSystem.prototype;
+    const _rv = PS._ruleVote;
+    PS._ruleVote = function (w, p, a) {
+        if (p.kind === 'verdict') { const v = DARK.verdictVote(w, p, a); if (v) { p.votes[a.agentId] = v; (p.why || (p.why = {}))[a.agentId] = 'gut'; return; } }
+        _rv.call(this, w, p, a);
+        try {
+            const cv = DARK.cliqueVote(w, p, a); if (cv && Math.random() < 0.6) { p.votes[a.agentId] = cv > 0 ? 'for' : 'against'; (p.why || (p.why = {}))[a.agentId] = cv > 0 ? 'relgood' : 'relbad'; }
+            const pr = w.agents[p.proposerId]; if (pr) { const tg = DARK.reputation(w, pr); if (tg.includes('scheming') && p.votes[a.agentId] === 'for' && Math.random() < 0.4) p.votes[a.agentId] = 'against'; else if ((tg.includes('helpful') || tg.includes('honest')) && p.votes[a.agentId] === 'against' && Math.random() < 0.25) p.votes[a.agentId] = 'for'; }
+        } catch (e) {}
+    };
     const _daily = ProposalSystem.prototype.daily;
     ProposalSystem.prototype.daily = function (w) {
         try { const d = this._abs(w); if (w.observerMode && this._darkDay !== d) { this._darkDay = d; DARK.daily(w); } } catch (e) { console.warn('[Dark] daily', e); }
@@ -467,6 +648,10 @@ if (typeof ConversationEngine !== 'undefined') {
             const x = DARK.about(world, a); const add = [];
             if (x.grudge) add.push(t('心裡記恨{v}（{why}）').replace('{v}', x.grudge.name).replace('{why}', x.grudge.why));
             if (x.secrets.length) add.push(t('藏著秘密，怕被發現：') + x.secrets[0]);
+            if (x.rep) add.push(t('大家眼中的我：') + x.rep);
+            if (x.clique) add.push(t('我是{c}的人').replace('{c}', x.clique));
+            if (x.owe.length) add.push(t('覺得對不起{v}，想找機會道歉').replace('{v}', x.owe.join(t('、'))));
+            if (x.hurt.length) add.push(t('還在氣{v}').replace('{v}', x.hurt.join(t('、'))));
             if (add.length) b.mem = [...(b.mem || []).slice(0, 1), ...add, ...(b.mem || []).slice(1)];
         } catch (e) {}
         return b;

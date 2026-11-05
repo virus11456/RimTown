@@ -371,7 +371,9 @@ Object.assign(RimTownApp.prototype, {
         try {
             const ag = this.world?.agents?.[agentId];
             if (ag && typeof PETS !== 'undefined') { const pd = PETS.describe(this.world, ag); if (pd) lines.push(pd); }
-            if (ag && typeof DARK !== 'undefined') { const x = DARK.about(this.world, ag); if (x.grudge) lines.push(`😠 ${t('心裡記恨{v}（{why}）').replace('{v}', t(x.grudge.name)).replace('{why}', x.grudge.why)}`); for (const s of x.secrets.slice(0, 2)) lines.push(`🎭 ${t('只有你知道：')}${s}`); }
+            if (ag && typeof DARK !== 'undefined') { const x = DARK.about(this.world, ag); if (x.grudge) lines.push(`😠 ${t('心裡記恨{v}（{why}）').replace('{v}', t(x.grudge.name)).replace('{why}', x.grudge.why)}`); for (const s of x.secrets.slice(0, 2)) lines.push(`🎭 ${t('只有你知道：')}${s}`);
+                if (x.rep) lines.push(`🏷️ ${t('名聲')}${t('：')}${x.rep}`); if (x.clique) lines.push(`🫂 ${x.clique}`);
+                if (x.owe.length) lines.push(`🙏 ${t('想跟{v}道歉').replace('{v}', x.owe.map(n => t(n)).join(t('、')))}`); if (x.hurt.length) lines.push(`😤 ${t('還在氣{v}').replace('{v}', x.hurt.map(n => t(n)).join(t('、')))}`); }
         } catch (e) {}
         const relHtml = lines.length ? lines.map(l => `<div class="nqc-rel">${l}</div>`).join('') : `<div class="nqc-rel nqc-dim">${t('目前沒有戀愛或仇恨傳聞')}</div>`;
         // v5.4.0 人生夢想進度
