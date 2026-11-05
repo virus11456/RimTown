@@ -92,10 +92,10 @@ const DIPLO = (() => {
                 const b = ce._agentBrief(w, L, null); const list = places(w).map(p => `${p.id}=${t(pname(p))}(${Math.round(D.rel[p.id] || 0)}, ${t(ST[statusOf(D.rel[p.id] || 0, D, p.id)][1])})`).join(t('、'));
                 const prompt = `${t('你正在扮演首長「')}${b.name}${t('」（')}${t('性格')}${t('：')}${b.traits}${t('）')}${t('。')}${t('外交關係')}${t('：')}${list}${t('。')}${t('珍品')} ${(w.goods?.town || []).length}${t('。')}${t('選一個對象與一種做法：envoy（派使節）、gift（送珍品）、wed（跟同盟聯姻）。只輸出 JSON')}${t('：')}{"pid":"...","act":"envoy","why":"..."}`;
                 ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 120);
-                if (j && places(w).some(p => p.id === j.pid) && ['envoy', 'gift', 'wed'].includes(j.act)) { D.why = String(j.why || '').slice(0, 60); return act(w, D, j.act, j.pid); }
+                if (j && places(w).some(p => p.id === j.pid) && ['envoy', 'gift', 'wed'].includes(j.act)) { D.why = String(j.why || '').slice(0, 60); return DIPLO.act(w, D, j.act, j.pid); }
             } catch (e) {}
         }
-        const c = ruleChoice(w, D); return c ? act(w, D, c[0], c[1]) : false;
+        const c = ruleChoice(w, D); return c ? DIPLO.act(w, D, c[0], c[1]) : false; // 走公開的 act,談判等模組才接得到
     }
     function daily(w) {
         const D = S(w), d = day(w); if (D.lastDay === d) return; D.lastDay = d; if (!places(w).length) return;

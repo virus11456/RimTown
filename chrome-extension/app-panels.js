@@ -952,6 +952,14 @@ Object.assign(RimTownApp.prototype, {
                 T += `<div class="pp-issue-hint">${t('城鎮以上，要當過下一級的首長，或在本級議會當過一季議員，才能參選首長。')}</div></div>`;
             }
         } catch (e) {}
+        // v6.69.0 政壇:辯論、議會人情、法庭
+        try { if (typeof POLITICS !== 'undefined' && this.world.politics) { const V = POLITICS.view(this.world); if (V.debates.length || V.trials.length || V.pacts || V.betrayals) {
+            T += `<div class="pp-issues pp-politics"><h4 class="pp-h">🏛️ ${t('政壇')}</h4>`;
+            for (const d of V.debates) { T += `<div class="pp-tier-line">🎤 ${t('最近的辯論')}${t('：')}${t('{a}表現最好').replace('{a}', esc(d.winner))}</div>`; for (const l of d.lines) T += `<div class="pp-tid-item">${esc(l)}</div>`; }
+            if (V.pacts || V.betrayals) T += `<div class="pp-tier-line">🤝 ${t('議會私下的人情')} ${V.pacts} · 🔄 ${t('倒戈')} ${V.betrayals}</div>`;
+            for (const x of V.trials) T += `<div class="pp-tier-line">⚖️ ${t('控方')} ${esc(x.pro)} · ${t('辯方')} ${esc(x.def)} · ${t('法官')} ${esc(x.judge)}</div>`;
+            if (V.appeals) T += `<div class="pp-tier-line">🔍 ${t('翻案')} ${V.appeals}</div>`;
+            T += `</div>`; } } } catch (e) {}
         // v6.68.0 民意
         try { if (typeof MIND !== 'undefined' && this.world.mind) { const V = MIND.poll(this.world);
             T += `<div class="pp-issues pp-mind"><h4 class="pp-h">🗣️ ${t('民意')}</h4>`;
