@@ -698,6 +698,11 @@ Object.assign(RimTownApp.prototype, {
         let right = 14;
         if (window.innerWidth > 768) { const sb = document.getElementById('rimtown-sidebar'); if (sb && sb.offsetParent !== null) { const r = sb.getBoundingClientRect(); if (r.width > 0 && r.width < window.innerWidth * 0.8 && r.left > 300) right = Math.round(window.innerWidth - r.left + 12); } }
         host.style.right = right + 'px';
+        // v6.50.1 村民卡／建築卡開著時(桌機在地圖下方正中),通知往上讓開,不擋住卡片上的按鈕
+        if (window.innerWidth > 768) {
+            const card = [...document.querySelectorAll('#npc-quick-card, #loc-quick-card')].find(c => !c.classList.contains('hidden') && c.getClientRects().length);
+            if (card) { const r = card.getBoundingClientRect(); const hostLeft = window.innerWidth - right - 380; if (r.right > hostLeft) host.style.bottom = Math.max(parseFloat(host.style.bottom) || 14, Math.round(window.innerHeight - r.top + 10)) + 'px'; }
+        }
     },
     // v6.29.0 go:{agentId}|{locId}|{coach:true} → 通知上多一顆「去看」;設定開「自動帶鏡頭」就直接帶過去(6 秒內最多一次)
     _goLook(go) {
