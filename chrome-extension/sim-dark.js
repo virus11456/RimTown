@@ -337,7 +337,10 @@ const DARK = (() => {
         for (const d of D.debts) {
             if (d.done || today < d.due) continue;
             const l = w.agents[d.l], r = w.agents[d.r]; d.done = true; if (!l || !r) continue;
-            if (honesty(r) >= 2.5 || Math.random() < 0.4) { rel(l, r)?.modifyAffinity?.(3); mem(w, l, '{r}準時把借的 {n} 銀幣還我了，這人可靠。', { r: r.name, n: d.n }, 4); }
+            // v6.54.0 真的借了錢(個人錢包):想還但沒錢就再寬限幾天;有錢才真的還
+            const W = d.cash && typeof WALLET !== 'undefined' && w.wallet;
+            if (W && (honesty(r) >= 2.5 || Math.random() < 0.4) && WALLET.get(w, r) < d.n && (d.tries || 0) < 2) { d.done = false; d.tries = (d.tries || 0) + 1; d.due = today + 5; mem(w, r, '欠{l}的錢還湊不出來，只好拜託他再寬限幾天。', { l: l.name }, 4); continue; }
+            if ((honesty(r) >= 2.5 || Math.random() < 0.4) && (!W || WALLET.pay(w, r, l, d.n))) { rel(l, r)?.modifyAffinity?.(3); mem(w, l, '{r}準時把借的 {n} 銀幣還我了，這人可靠。', { r: r.name, n: d.n }, 4); }
             else {
                 rel(l, r)?.modifyAffinity?.(-10); l.addThought?.('debt_unpaid', w, r.agentId, r.name); wrong(w, r, l, 2, '欠{v}錢不還', { v: l.name });
                 mem(w, l, '{r}跟我借的 {n} 銀幣一直不還，每次問都說下次。', { r: r.name, n: d.n }, 6);
@@ -362,6 +365,7 @@ const DARK = (() => {
             if (cheat) secret(w, { kind: 'cover', culprit: s.agentId, victim: b.agentId, k: '{s}賣東西真的偷斤減兩，坑了{b}', p: { s: s.name, b: b.name } });
             else D.mis.push({ kind: 'price', a: b.agentId, b: s.agentId, day: today });
         } else if (roll < 0.55) { // 借錢
+            if (typeof WALLET !== 'undefined' && w.wallet) return; // v6.54.0 有個人錢包後,借錢由錢包系統處理(真的有錢移動)
             const r = pick(all.filter(a => (a.mood ?? 50) < 60) .concat(all)); const l = pick(all.filter(a => a !== r && aff(a, r) >= 0));
             if (!r || !l) return;
             const n = 10 + Math.floor(Math.random() * 4) * 10;
@@ -634,6 +638,9 @@ if (typeof ProposalSystem !== 'undefined') {
     };
 }
 if (typeof World !== 'undefined') {
+    // v6.53.2 新建城鎮(world.reset)不能帶入上一鎮的祕密、恩怨、名聲、小團體
+    const _reset = World.prototype.reset;
+    World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.dark = null; return r; };
     const _ser = World.prototype.serialize;
     World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.dark) d.dark = this.dark; return d; };
     const _load = World.prototype.loadSave;

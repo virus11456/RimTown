@@ -19,12 +19,14 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     const r = await page.evaluate(() => { const p = document.getElementById('account-menu-popup'); if (!p) return null; const b = p.getBoundingClientRect(); return [...p.querySelectorAll('button')].map(e => { e.scrollIntoView({ block: 'nearest' }); const l = e.getBoundingClientRect(); const h = document.elementFromPoint(l.x + l.width / 2, l.y + l.height / 2); return { a: e.dataset.action, top: Math.round(b.top), bottom: Math.round(Math.max(b.bottom, l.bottom)), vh: innerHeight, hit: h === e || e.contains(h) }; }); });
     ok(r && r.every(x => x.bottom <= x.vh && x.top >= 0), '568×320 帳號選單沒有超出畫面', r);
     ok(r && r.every(x => x.hit), '568×320 每個選項(含登出)都點得到', r);
-    await page.tap('[data-action="auth-logout"]').catch(e => errs.push('tap logout ' + e.message));
     // 2) clipText
     const bad = await page.evaluate(() => { const seg = new Intl.Segmenter(undefined, { granularity: 'grapheme' }); const out = [];
       const cases = ['abcdéfgh', 'ééééé', 'क्षत्रियक्षत्रिय', 'नमस्तेनमस्ते', 'তোমারতোমার', 'ไม่ได้ไม่ได้', '한글한글', '각각각각', 'a᪰b᷀c⃐d︠eeee', 'がががが', '👨‍👩‍👧👨‍👩‍👧👨‍👩‍👧', '🇹🇼🇯🇵🇺🇸🇹🇼', '👍🏽👍🏽👍🏽👍🏽', '1️⃣2️⃣3️⃣4️⃣', '中文字串測試一下好了'];
       for (const c of cases) { const g = [...seg.segment(c)].map(x => x.segment); for (let n = 1; n < 14; n++) { const r = clipText(c, n); const body = r.endsWith('…') ? r.slice(0, -1) : r; let acc = '', good = body === c; if (!good) for (const x of ['', ...g]) { acc += x; if (acc === body) { good = true; break; } } if (!good || /[्্]$/.test(body)) out.push([c, n, r]); } } return out; });
     ok(!bad.length, 'clipText 不切開附加符號／印度語系／韓文字母／emoji', bad.slice(0, 5));
+    // 登出會重新載入頁面,放在最後,免得後面的 evaluate 撞上導覽
+    await page.tap('[data-action="auth-logout"]').catch(e => errs.push('tap logout ' + e.message));
+    await page.waitForLoadState('load').catch(() => {});
     ok(!errs.length, lang + ' 沒有頁面錯誤', errs.slice(0, 3));
     await ctx.close();
   }

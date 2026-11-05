@@ -31,7 +31,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       ensure(2); const op = P.items.filter(x => x.status === 'open'); P._decide(w, op[0], 'approve', 'mayor'); P._decide(w, op[1], 'reject', 'mayor');
       app.state = w.getState(); app._ppTab = 'props'; const box = document.createElement('div'); document.body.appendChild(box); app.renderProposals(box);
       const ok = box.querySelector(`.pp-card[data-pid="${op[0].id}"] .pp-stamp-ok`), no = box.querySelector(`.pp-card[data-pid="${op[1].id}"] .pp-stamp-no`), openStamp = box.querySelector('.pp-card.pp-open .pp-stamp');
-      const fresh = !!ok?.classList.contains('pp-stamp-new'); app.renderProposals(box); const again = box.querySelector(`.pp-card[data-pid="${op[0].id}"] .pp-stamp-ok`)?.classList.contains('pp-stamp-new');
+      const fresh = !!ok?.classList.contains('pp-stamp-new'); app.renderProposals(box); const n2 = box.querySelector(`.pp-card[data-pid="${op[0].id}"] .pp-stamp-ok`); const again = n2 !== ok && !!n2?.classList.contains('pp-stamp-new'); /* v6.54.0 沒變就不重畫:同一個元素、動畫不會重播 */
       const txt = [ok?.innerText, no?.innerText]; box.remove(); return { ok: !!ok, no: !!no, openStamp: !!openStamp, fresh, again, txt };
     });
     ok(st.ok && st.no && !st.openStamp, '定案的提案蓋上「核准／否決」章（投票中的不蓋）', st);

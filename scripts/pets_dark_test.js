@@ -28,7 +28,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const tm = app.tileMap; const meshes = Object.keys(tm._petMeshes || {}).length; const visible = PETS.view(w).length; // v6.52.0 走失的寵物不畫
       const near = owned.map(p => { const m = tm._petMeshes?.[p.id]; const op = tm.agentPositions[p.owner]; const om = tm._agentMeshes[p.owner]; if (!m || !op || !om?.visible) return null; return Math.hypot(m.position.x - op.x / TILE, m.position.z - op.y / TILE); }).filter(x => x !== null);
       // 主人離開 → 流浪
-      const p0 = owned[0]; const keep = w.agents[p0.owner]; delete w.agents[p0.owner]; PETS.daily(w); const becameStray = !p0.owner; w.agents[keep.agentId] = keep;
+      const p0 = owned[0]; const keep = w.agents[p0.owner]; delete w.agents[p0.owner]; p0.lost = null; const _rnd = Math.random; Math.random = () => 0.99; try { PETS.daily(w); } finally { Math.random = _rnd; } /* 固定亂數:別讓當天剛好走失/老死 */ const becameStray = !p0.owner; w.agents[keep.agentId] = keep;
       // 存讀檔
       const blob = JSON.parse(JSON.stringify(w.serialize())); const w2 = new World(); w2.loadSave(blob);
       // 村民卡顯示寵物

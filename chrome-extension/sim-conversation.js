@@ -1033,7 +1033,7 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
         const lines = voters.map((a, i) => { const b = this._agentBrief(world, a, proposer); return `${i + 1}. ${b.name}${t('（')}${b.age}${t('歲')}${t('，')}${b.job}${t('；')}${t('性格')}${t('：')}${b.traits}${t('；')}${t('在乎')}${t('：')}${b.values}${t('；')}${t('心情')} ${b.mood}/100${b.rel ? `${t('；')}${b.rel}` : ''}${t('）')}${b.mem.length ? ` ${t('最近記得')}${t('：')}${b.mem.join('／')}` : ''}`; }).join('\n');
         const prompt = `${t('你是模擬小鎮的村民決策引擎。鎮上有人提了一個提案，請替下面每位村民決定投贊成或反對，並用他自己的口吻給一句理由（20 字內）。要依每個人的性格、在乎的價值、跟提案人的交情、最近的記憶與鎮況判斷，不要全部一致。')}
 ${t('【鎮況】')}${this._townBrief(world)}
-${t('【提案】')}${p.id}「${ps.title(p)}」${t('——')}${ps.desc(p)}${t('（')}${t('提案人')}${t('：')}${t(proposer?.name || p.proposerName)}${t('；')}${t('花費')}${t('：')}${this._costText(p.cost)}${t('）')}
+${t('【提案】')}${p.id}「${ps.title(p)}」${t('——')}${ps.desc(p)}${t('（')}${t('提案人')}${t('：')}${t(proposer?.name || p.proposerName)}${t('；')}${t('花費')}${t('：')}${this._costText(p.cost)}${(() => { try { const f = typeof WALLET !== 'undefined' && WALLET.fundText(world, p); return f ? `${t('；')}${t('出錢')}${t('：')}${f}` : ''; } catch (e) { return ''; } })()}${t('）')}
 ${t('【村民】')}
 ${lines}
 ${t('只輸出 JSON 陣列，每個元素 {"n":序號,"vote":"for"或"against","why":"理由"}，不要其他文字。')}`;
@@ -1051,7 +1051,7 @@ ${t('只輸出 JSON 陣列，每個元素 {"n":序號,"vote":"for"或"against","
         const whyFor = (tally.forWhy || []).join('／'), whyAg = (tally.againstWhy || []).join('／');
         const prompt = `${t('你正在扮演鎮長「')}${b.name}${t('」（')}${b.age}${t('歲；性格')}${t('：')}${b.traits}${t('；')}${t('在乎')}${t('：')}${b.values}${t('；')}${t('心情')} ${b.mood}/100${b.rel ? `${t('；')}${b.rel}` : ''}${t('）。全鎮對一個提案投完票了，現在由你裁決。')}
 ${t('【鎮況】')}${this._townBrief(world)}
-${t('【提案】')}${p.id}「${ps.title(p)}」${t('——')}${ps.desc(p)}${t('（')}${t('提案人')}${t('：')}${t(p.proposerName)}${t('；')}${t('花費')}${t('：')}${this._costText(p.cost)}${t('）')}
+${t('【提案】')}${p.id}「${ps.title(p)}」${t('——')}${ps.desc(p)}${t('（')}${t('提案人')}${t('：')}${t(p.proposerName)}${t('；')}${t('花費')}${t('：')}${this._costText(p.cost)}${(() => { try { const f = typeof WALLET !== 'undefined' && WALLET.fundText(world, p); return f ? `${t('；')}${t('出錢')}${t('：')}${f}` : ''; } catch (e) { return ''; } })()}${t('）')}
 ${t('【票數】')}${t('贊成')} ${tally.f}${whyFor ? `${t('（')}${whyFor}${t('）')}` : ''}${t('；')}${t('反對')} ${tally.a}${whyAg ? `${t('（')}${whyAg}${t('）')}` : ''}
 ${b.mem.length ? `${t('【你最近記得的事】')}${b.mem.join('／')}\n` : ''}${t('依你的性格、價值觀、跟提案人的交情、公庫狀況與票數決定：approve（批准）、reject（否決）或 shelve（先擱置幾天）。只輸出 JSON：{"action":"approve|reject|shelve","why":"一句話理由（25 字內，第一人稱）"}')}`;
         this._countNpcLlmUse(world);

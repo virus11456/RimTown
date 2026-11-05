@@ -6,7 +6,10 @@ const L = require('./_lib');
 //     回 200 + stale:true 讓前端不當成錯誤。body.force=true 可強制覆寫(匯入存檔等玩家明確意圖)。
 // (2) 前一版備份:覆寫前把原本的存檔留一份在 saves_prev/(讀取端找不到主檔時退回用)。
 //     僅在 Postgres 後端啟用,Blob 模式不多花 put 額度。
-function tickOf(saveData) {
+function tickOf(saveData, stored) {
+    // v6.55.0 大存檔改成壓縮上傳('gz:' 開頭),內容讀不到 tickCount,改用一起送來／一起存的 tick_count
+    if (Number.isFinite(stored)) return stored;
+    if (String(saveData || '').startsWith('gz:')) return 0;
     const m = /"tickCount"\s*:\s*(\d+)/.exec(String(saveData || '').slice(0, 4000)) || /"tickCount"\s*:\s*(\d+)/.exec(String(saveData || ''));
     return m ? parseInt(m[1], 10) : 0;
 }
@@ -32,6 +35,7 @@ module.exports = async (req, res) => {
         origin: String(b.origin || '').slice(0, 20),         // v6.35.0 'user' 自己建的 / 'neighbor' 道路開通後自動生成的鄰鎮
         updated_at: updatedAt,
     };
+    const tc = parseInt(b.tick_count, 10); if (Number.isFinite(tc) && tc >= 0) meta.tick_count = tc;
     const mainPath = `saves/${uname}/${townId}.json`;
     const prevPath = `saves_prev/${uname}/${townId}.json`;
     const incoming = b.save_data || '';
@@ -39,7 +43,7 @@ module.exports = async (req, res) => {
     let existing = null;
     try { existing = await L.readJson(mainPath); } catch (e) { existing = null; }
     if (existing && !b.force) {
-        const oldTick = tickOf(existing.save_data), newTick = tickOf(incoming);
+        const oldTick = tickOf(existing.save_data, existing.tick_count), newTick = tickOf(incoming, meta.tick_count);
         if (newTick < oldTick) {
             // 較舊的進度想蓋較新的:不覆寫主檔,只更新 meta 的時間戳以外的欄位也不動
             return res.status(200).json({ success: true, stale: true, cloud_tick: oldTick, incoming_tick: newTick });

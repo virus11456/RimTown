@@ -139,6 +139,9 @@ Object.assign(RimTownApp.prototype, {
             bread:t('麵包'),pastry:t('糕點'),beer:t('啤酒'),wine:t('葡萄酒'),perfume:t('香水'),fine_tea:t('精品茶'),herbal_tea:t('草本茶'),sugar:t('砂糖'),jam:t('果醬'),luxury_furniture:t('高級家具')};
 
         if (this._economySubTab === 'resources') {
+            // v6.54.0 公庫 vs 村民荷包
+            try { const ws = typeof WALLET !== 'undefined' && this.world?.wallet ? WALLET.summary(this.world) : null;
+                if (ws) html += `<div class="econ-section"><h3>👛 ${t('村民荷包')}</h3><div style="font-size:0.78rem;line-height:1.6">${t('大家身上合計')} ${ws.total} ${t('銀幣')} · ${t('最有錢')}${t('：')}${this._escapeHtml(t(ws.rich.a.name))} ${Math.round(ws.rich.n)} · ${t('最窮')}${t('：')}${this._escapeHtml(t(ws.poor.a.name))} ${Math.round(ws.poor.n)}${ws.broke ? ` · <span style="color:var(--danger,#E04848)">${t('{n} 人吃不起三餐').replace('{n}', ws.broke)}</span>` : ''}</div><div style="font-size:0.7rem;color:var(--text-muted)">${t('公庫發薪水（先扣 {p}% 稅）；村民自己付三餐、衣服、冬天的柴。提案可以自己出錢、找朋友湊，或請公庫出。').replace('{p}', Math.round(ws.tax * 100))}</div></div>`; } catch (e) {}
             // v6.37.0 上帝視角:村民自己做的事(種收、出貨、談生意、補貨)
             const alog = (this.state.autonomy?.log || []).slice(-6).reverse();
             html += `<div class="econ-section"><h3>👐 ${t('村民自己做的事')}</h3>
