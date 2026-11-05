@@ -490,9 +490,9 @@ Object.assign(RimTownApp.prototype, {
     // v6.51.0 給 3D 的寵物清單(每 2 秒重算一次)
     _petView() {
         const w = this.world; if (!w || typeof PETS === 'undefined') return [];
-        const now = Date.now(); if (this._petViewCache && now - this._petViewAt < 2000 && this._petViewW === w) return this._petViewCache;
+        const now = Date.now(); if (this._petViewCache && now - this._petViewAt < 2000 && this._petViewW === w && this._petViewS === w.pets) return this._petViewCache;
         try { PETS.ensure(w); this._petViewCache = PETS.view(w); } catch (e) { this._petViewCache = []; }
-        this._petViewAt = now; this._petViewW = w; return this._petViewCache;
+        this._petViewAt = now; this._petViewW = w; this._petViewS = w.pets; return this._petViewCache; // v6.53.2 換鎮(w.pets 換新)立刻失效
     },
     _hideNpcCard() {
         document.getElementById('npc-quick-card')?.classList.add('hidden');

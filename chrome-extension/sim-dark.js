@@ -634,6 +634,9 @@ if (typeof ProposalSystem !== 'undefined') {
     };
 }
 if (typeof World !== 'undefined') {
+    // v6.53.2 新建城鎮(world.reset)不能帶入上一鎮的祕密、恩怨、名聲、小團體
+    const _reset = World.prototype.reset;
+    World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.dark = null; return r; };
     const _ser = World.prototype.serialize;
     World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.dark) d.dark = this.dark; return d; };
     const _load = World.prototype.loadSave;

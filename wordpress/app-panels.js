@@ -878,6 +878,9 @@ Object.assign(RimTownApp.prototype, {
         const resLabel = (r) => this._resLabel ? this._resLabel(r) : r;
         const costText = (c) => Object.entries(c || {}).map(([r, n]) => `${resLabel(r)} ${n}`).join(t('、'));
         const avatar = (id) => { const a = this.state.agents?.[id]; if (!a) return ''; let url = ''; try { if (this.tileMap?.renderAvatarDataURL) url = this.tileMap.renderAvatarDataURL(a.job?.key || a.jobKey, a.gender, a.name, this.world?.agents?.[id]?.look || null); } catch (e) {} return `<div class="pp-avatar">${url ? `<img src="${url}" alt="">` : '👤'}</div>`; };
+        // v6.53.2 蓋章動畫只在真的看到時才算「看過」:換鎮(新的提案系統)重算;停在別的子分頁不算
+        if (this._stampSeenSys !== this.world?.proposals) { this._stampSeen = new Set(); this._stampSeenSys = this.world?.proposals; }
+        const stampShown = [];
         const card = (p, mode) => {
             const total = p.forCount + p.againstCount; const pct = total ? Math.round(p.forCount / total * 100) : 0;
             const st = { open: t('待決定'), shelved: t('擱置中'), approved: t('進行中'), done: t('已完成'), failed: t('失敗'), rejected: t('已否決'), expired: t('已收回') }[p.status] || p.status;
@@ -885,7 +888,7 @@ Object.assign(RimTownApp.prototype, {
             const stampKind = ['approved', 'done', 'failed'].includes(p.status) ? 'ok' : p.status === 'rejected' ? 'no' : p.status === 'expired' ? 'off' : '';
             let stamp = '';
             if (stampKind) {
-                const seen = this._stampSeen || (this._stampSeen = new Set()); const fresh = !seen.has(p.id + stampKind); seen.add(p.id + stampKind);
+                const seen = this._stampSeen || (this._stampSeen = new Set()); const fresh = !seen.has(p.id + stampKind); stampShown.push(p.id + stampKind);
                 const en = typeof I18N !== 'undefined' && I18N.getLang?.() === 'en';
                 const word = (en ? { ok: 'APPROVED', no: 'REJECTED', off: 'WITHDRAWN' } : { ok: '核准', no: '否決', off: '收回' })[stampKind];
                 const by = p.mayorName ? `${p.mayorActing ? t('代理鎮長') : t('鎮長')} ${t(p.mayorName)}` : (p.decidedBy === 'auto' ? t('依票數定案') : '');
@@ -967,6 +970,7 @@ Object.assign(RimTownApp.prototype, {
         let html = `<div class="proposals-panel"><div class="pp-tabs" role="tablist">${tabBtn('props', '🗳️', '提案', d.open.length)}${tabBtn('town', '🏘️', '鎮況', nIss, hot)}${tabBtn('truth', '🕵️', '真相', nSec)}</div>`;
         html += `<div class="pp-tabhint">${t({ props: '村民自己提案、全鎮投票、鎮長裁決。你只看。', town: '鎮上正在發生的事：急事、小團體、規矩與統計。', truth: '只有你看得到：誰在說謊、設局，誰誤會了誰。' }[tab])}</div>`;
         html += tab === 'town' ? T : tab === 'truth' ? S : P;
+        if (tab === 'props') for (const k of stampShown) this._stampSeen.add(k);
         html += '</div>';
         container.innerHTML = html;
         container.querySelectorAll('[data-pp-tab]').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); this._ppTab = b.dataset.ppTab; try { localStorage.setItem('rimtown_pp_tab', this._ppTab); } catch (er) {} this.renderProposals(container); container.scrollTop = 0; }));
