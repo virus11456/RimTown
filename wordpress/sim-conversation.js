@@ -1850,7 +1850,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                 const memNpc = npc.memory.retrieve(`${player.name} ${playerMessage}`, [player.name], 5, world.tickCount);
                 const npcThoughts = npc.memory.getThoughts(2);
                 const pN = this._buildCharacterProfile(npc);
-                const prompt = `${t('你正在扮演「')}${npc.name}${t('」——{town}的一位真實居民。有個叫').replace('{town}', t(world.townName || '邊境鎮'))}${player.name}${t('的人正在跟你說話。')}${world.observerMode ? `${t('他是一直看顧著這座小鎮的觀察者：不住在鎮上、不是鎮長，但鎮上的提案都由他批准或否決，大家都認識他、用名字叫他就好。')}${mayorNameOf(world) ? `${t('現任鎮長是')}${mayorNameOf(world)}${t('。')}` : ''}` : playerTitle(world) === t('鎮長') ? t('他是現任鎮長。') : `${t('他是來到鎮上的旅人，不是鎮長，不要叫他鎮長。')}${mayorNameOf(world) ? `${t('現任鎮長是')}${mayorNameOf(world)}${t('。')}` : ''}`}
+                const prompt = `${t('你正在扮演「')}${npc.name}${t('」——{town}的一位真實居民。有個叫').replace('{town}', t(world.townName || '邊境鎮'))}${player.name}${t('的人正在跟你說話。')}${world.observerMode ? `${typeof TRAVELER !== 'undefined' ? TRAVELER.persona(world, npc) : t('他是一直看顧著這座小鎮的觀察者：不住在鎮上、不是鎮長，但鎮上的提案都由他批准或否決，大家都認識他、用名字叫他就好。')}${mayorNameOf(world) ? `${t('現任鎮長是')}${mayorNameOf(world)}${t('。')}` : ''}` : playerTitle(world) === t('鎮長') ? t('他是現任鎮長。') : `${t('他是來到鎮上的旅人，不是鎮長，不要叫他鎮長。')}${mayorNameOf(world) ? `${t('現任鎮長是')}${mayorNameOf(world)}${t('。')}` : ''}`}
 ${t('你要完全入戲，像真人一樣自然地回應。')}
 
 ${t('【你是誰】')}
