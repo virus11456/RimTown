@@ -213,7 +213,7 @@ Object.assign(RimTownApp.prototype, {
         const wrapper = document.createElement('div');
         wrapper.id = 'ending-overlay';
         wrapper.innerHTML = html;
-        document.body.appendChild(wrapper);
+        (document.getElementById('rimtown-app') || document.body).appendChild(wrapper); // v6.58.1 放進事件代理的範圍內,按鈕才點得動
     },
 
     async _startNewGamePlus() {

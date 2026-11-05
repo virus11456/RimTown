@@ -100,7 +100,7 @@ const CLASS = (() => {
     }
     function describe(w, a) {
         if (!a) return ''; const tt = titleOf(w, a);
-        return (en() ? 'Social standing: ' : '社會地位：') + label(w, a) + (tt ? (en() ? ` (${tt})` : `（${tt}）`) : '');
+        return (en() ? 'Social standing: ' : '社會地位' + t('：')) + label(w, a) + (tt ? t('（') + tt + t('）') : '');
     }
     function pyramid(w) { const out = [0, 0, 0, 0, 0, 0]; for (const a of npcs(w)) out[level(w, a)]++; return out; }
     return { NAMES, RANKS, S, compute, level, label, titleOf, canMingle, daily, describe, pyramid, BUY_PRICE };
@@ -130,7 +130,7 @@ if (typeof World !== 'undefined') {
 }
 if (typeof ConversationEngine !== 'undefined') {
     const CE = ConversationEngine.prototype; const _ab = CE._agentBrief;
-    CE._agentBrief = function (world, a, other) { const b = _ab.call(this, world, a, other); try { const s = CLASS.describe(world, a); if (s) b.mem = [s, ...(b.mem || [])]; } catch (e) {} return b; };
+    CE._agentBrief = function (world, a, other) { const b = _ab.call(this, world, a, other); try { const s = CLASS.describe(world, a); if (s) { const m = b.mem || []; b.mem = [...m.slice(0, 1), s, ...m.slice(1)]; /* 第一行留給自己的心情與身體狀況 */ } } catch (e) {} return b; };
     const _cp = CE._buildCharacterProfile;
     CE._buildCharacterProfile = function (agent) { const p = _cp.call(this, agent); try { const w = this._world || (typeof window !== 'undefined' && window.rimtownApp?.world); const s = w && CLASS.describe(w, agent); if (s) p.status = `${p.status}${t('；')}${s}`; } catch (e) {} return p; };
 }

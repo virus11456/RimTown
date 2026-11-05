@@ -6572,6 +6572,7 @@
         '衰敗結局': 'Decline Ending',
         '連續兩季撐不住，人走了一半': 'Two seasons lost; half the town has left',
         '接連兩季的考驗沒有撐過去。糧倉見底、街上冷清，一戶戶人家搬去了別的鎮。留下來的人還在，爐火還沒熄——這座鎮是否能再站起來，要看你接下來怎麼做。': 'Two seasonal trials in a row were lost. The granary is empty, the streets are quiet, and family after family has moved to other towns. Those who stayed are still here and the hearth is not out yet. Whether this town rises again depends on what you do next.',
+        '小鎮衰敗了——連續兩季的考驗都沒撐過去。再撐過兩季考驗，小鎮就能復興。': 'The town has declined: two seasonal trials lost in a row. Pass two trials in a row and it will recover.',
         '小鎮衰敗了——連續兩季的考驗都沒撐過去。還能重建，但得從頭來。': 'The town has declined: two seasonal trials lost in a row. It can be rebuilt, but from the ground up.',
         '糧荒': 'Famine',
         '大糧倉': 'Great Granary',

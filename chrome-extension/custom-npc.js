@@ -270,6 +270,7 @@ class MultiEndingSystem {
     // ============================================================
     checkEnding(world, completedRouteId) {
         if (this.endingTriggered) return; // Already triggered
+        if (world.observerMode) return; // v6.58.1 觀察者沙盒沒有終局,一直玩下去
 
         const endingType = ENDING_TYPES[completedRouteId];
         if (!endingType) return;
@@ -306,6 +307,8 @@ class MultiEndingSystem {
     triggerDecline(world) {
         if (this.endingTriggered) return null;
         this.endingTriggered = 'decline';
+        // v6.58.1 觀察者模式:衰敗只是一段低潮(會走人、士氣低),撐過兩季就復興,不跳結局畫面
+        if (world.observerMode) { this.endingData = null; world.logMessage?.('system', `🍂 ${t('小鎮衰敗了——連續兩季的考驗都沒撐過去。再撐過兩季考驗，小鎮就能復興。')}`); return { decline: true }; }
         this.endingData = { type: ENDING_TYPES.decline, triggeredDay: world.clock.day, triggeredYear: world.clock.year, triggeredSeason: world.clock.season, stats: this._collectStats(world), history: this._buildTownHistory(world) };
         world.logMessage?.('system', `🍂 ${t('小鎮衰敗了——連續兩季的考驗都沒撐過去。還能重建，但得從頭來。')}`);
         return this.endingData;
@@ -451,11 +454,13 @@ class MultiEndingSystem {
         if (world.questSystem) {
             const completedQuests = Object.entries(world.questSystem.quests || {})
                 .filter(([, q]) => q.status === 'completed');
+            const ch = world.questSystem._chain?.() || {}; const defs = [...(ch.main || []), ...(ch.side || []), ...(ch.story || []), ...(ch.daily || [])];
             for (const [qId, q] of completedQuests) {
+                const title = q.title || defs.find(d => d.id === qId)?.title; if (!title) continue; // v6.58.1 找不到任務名稱就不列(以前顯示 undefined)
                 history.push({
                     type: 'quest',
                     time: '',
-                    content: `${t('完成任務')}${t('：')}${q.title}`,
+                    content: `${t('完成任務')}${t('：')}${t(title)}`,
                 });
             }
         }
