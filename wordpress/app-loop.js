@@ -336,6 +336,7 @@ Object.assign(RimTownApp.prototype, {
         const w = this.world; if (!w || !this.currentTownId) return;
         try { this._ghEnsure?.(); } catch (e) {} // v6.48.0 換鎮／換日後更新事件卡按鈕
         try { this._genTownTick?.(); } catch (e) { console.warn('[RimTown] gen town tick', e); } // v6.45.0 種子隨機城鎮
+        try { this._roadsTick?.(); } catch (e) { console.warn('[RimTown] roads tick', e); } // v6.76.0 封路
         // 道路已通(含老玩家補生成):確保海風鎮存在
         for (const def of NEIGHBOR_TOWNS) { if (localStorage.getItem(rimtownWorldKey(def.key)) === '1' && !this._neighborEnsured?.[def.theme]) this._ensureNeighborTown(def.theme); } // v5.76.0
         // 掛鉤(冪等,換鎮/換世界後自動指向新世界)

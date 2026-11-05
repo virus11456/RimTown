@@ -41,11 +41,11 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       for (const k of ['rimtown_harbor_unlocked', 'rimtown_mountain_unlocked', 'rimtown_forest_unlocked', 'rimtown_market_unlocked']) localStorage.setItem(k, '1'); }, { jwt, lang });
     await page.goto(BASE, { waitUntil: 'load' }); await page.waitForFunction(() => window.rimtownApp?.world, null, { timeout: 60000 }); await page.waitForTimeout(2500);
     const d = await page.evaluate(() => { const app = window.rimtownApp; const out = []; for (let i = 0; i < 7; i++) out.push(app._discoverGenTown(i ? 'merchant' : 'expedition', '張豪')); return { reach: out.filter(c => c && c.reachable).length, far: out.filter(c => c && !c.reachable).length, live: TownGen.liveCount() }; });
-    ok(d.reach === 5 && d.far === 2 && d.live === 10, '活著的鎮最多 10 個(含邊境鎮與四鄰鎮),其餘只留城鎮卡', d);
+    ok(d.reach === 7 && d.far === 0, 'v6.76.0 探索到的城鎮全部可以搭馬車去(不再限制 10 座)', d);
     const nw = await page.evaluate(() => { const app = window.rimtownApp; for (let i = 0; i < 30; i++) { app._genDayKey = 'x' + i; app._genTownTick(); } return TownGen.cards().filter(c => c.state && c.state.news.length).length; });
     ok(nw >= 3, '城鎮卡會在背景發展、有傳聞', nw);
     const coach = await page.evaluate(() => { const app = window.rimtownApp; app._showCoachDialog(); const dd = document.getElementById('coach-dialog'); const x = [...dd.querySelectorAll('.coach-go span')].map(s => s.textContent); dd.remove(); return x; });
-    ok(coach.filter(x => /初次造訪|first visit/.test(x)).length === 5, '馬車站列出 5 個可初次造訪的鎮', coach);
+    ok(coach.filter(x => /初次造訪|first visit/.test(x)).length === 7, '馬車站列出全部 7 個可初次造訪的鎮', coach);
     const seed = await page.evaluate(() => TownGen.cards()[0].seed);
     await page.evaluate((s) => window.rimtownApp._visitGenTown(s), seed); await page.waitForTimeout(6500);
     const v = await page.evaluate(() => { const app = window.rimtownApp, w = app.world; const c = TownGen.cards()[0]; return { theme: w.townTheme, key: c.key, name: w.townName, cname: c.name, n: Object.values(w.agents).filter(a => !a.isPlayer).length, pop: c.pop, tid: c.townId, cur: app.currentTownId, culture: !!w.townCulture, base: app.tileMap.themeKey, cbase: c.base, roof: (app.tileMap.roofPalette || []).length, tech: Object.values(w.research.projects).filter(p => p.status === 'complete').length, ctech: c.techDone.length, title: app._townDisplayName(w.townName, w.townTheme), en: c.nameEn }; });
@@ -56,7 +56,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(re.okk && /^g/.test(re.theme) && re.seed && re.reg, '存檔→讀檔還是同一座種子鎮', re);
     await page.evaluate(() => window.rimtownApp.showTownManager()); await page.waitForTimeout(1500);
     const list = await page.evaluate(() => document.getElementById('town-list-content')?.innerText || '');
-    ok(/遠方城鎮|Distant towns/.test(list) && (list.match(/只有傳聞|Rumours only/g) || []).length === 2, '城鎮列表有「遠方城鎮」,2 座只有傳聞', list.slice(-300));
+    ok(/遠方城鎮|Distant towns/.test(list) && (list.match(/只有傳聞|Rumours only/g) || []).length === 0, '城鎮列表有「遠方城鎮」,沒有「只有傳聞」的鎮', list.slice(-300));
     ok(!errs.length, lang + ' 沒有頁面錯誤', errs.slice(0, 3));
     await ctx.close();
   }

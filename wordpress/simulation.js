@@ -441,7 +441,8 @@ class World {
         if (!Array.isArray(this.otherTowns) || !this.otherTowns.length) return;
         const away = (this.events._travellingAgents || []).filter(tr => tr.visitTownId).length;
         if (away >= 2 || Math.random() > 0.25) return;
-        const target = pickRandom(this.otherTowns);
+        const open = this.otherTowns.filter(tw => !tw.closed); if (!open.length) return; // v6.76.0 封路的鎮去不了
+        const target = pickRandom(open);
         const cands = Object.values(this.agents).filter(a => !a.isPlayer && !a.isDead
             && a.job?.key !== 'mayor' && !a.agentId.startsWith('visit_') && (a.mood || 50) > 40);
         if (!cands.length) return;

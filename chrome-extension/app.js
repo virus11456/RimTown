@@ -1,10 +1,12 @@
-// RimTown - Frontend App v6.75.0
-const RIMTOWN_APP_VERSION = '6.75.0';
+// RimTown - Frontend App v6.76.0
+const RIMTOWN_APP_VERSION = '6.76.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
 function rimtownWorldId() { try { return (typeof window !== 'undefined' && window.rimtownApp?.world?.worldId) || 'w0'; } catch (e) { return 'w0'; } }
 function rimtownWorldKey(k) { const w = rimtownWorldId(); return w === 'w0' ? k : `${k}@${w}`; }
+// v6.76.0 鎮名正名(舊存檔的英文預設名換回中文):路況、去重都用它當鍵,不受介面語言影響
+function rimtownCanonTown(name) { let s = String(name || '').trim(); for (const [en, zh] of [['Frontier Town', '邊境鎮'], ['Seabreeze Harbor', '海風鎮'], ['Mine Ridge', '礦山鎮'], ['Greenwood', '林間村'], ['Market City', '市集城']]) if (s.startsWith(en)) { s = zh + s.slice(en.length); break; } return s; }
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
       log: () => t('📯 沿海道路修復完成，往海風鎮的馬車恢復通行！'), title: () => t('道路重通！'),
@@ -1688,6 +1690,8 @@ class RimTownApp {
             towns.forEach((twn, i) => {
                 // v6.44.2 目的地用顯示名(舊存檔的鄰鎮可能存成英文 Seabreeze Harbor,中文介面要顯示海風鎮)
                 const shown = this._townDisplayName ? this._townDisplayName(twn.name, (typeof themeKeyOfTownName === 'function' && themeKeyOfTownName(twn.name)) || this._guessTheme?.(twn.name)) : twn.name;
+                const closed = this._roadInfo?.(twn.name); // v6.76.0 封路中
+                if (closed) { inner += `<button class="trade-btn coach-closed" disabled style="width:100%;margin:3px 0;padding:9px;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:inherit;opacity:0.55;cursor:not-allowed"><span>🚧 ${esc(shown)}</span><small style="font-size:0.72rem">${esc(closed.text)}</small></button>`; return; }
                 inner += `<button class="trade-btn coach-go" data-idx="${i}" style="width:100%;margin:3px 0;padding:9px;display:flex;align-items:center;justify-content:center;gap:7px;font-family:inherit">${this._coachPixelSvg(0.75)}<span>${t('前往').trim()} ${esc(shown)}${twn.firstVisit ? `<small style="opacity:.7;margin-left:4px">${t('（初次造訪）')}</small>` : ''}</span></button>`;
             });
         }
