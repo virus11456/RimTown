@@ -22,6 +22,9 @@ const GROUND_COLORS = {
     [T.WATER]: '#3B7AA6', [T.WATER2]: '#35709A', [T.CHASM]: '#3A3340',
 };
 const WALL_PALETTE = ['#F3E2C3', '#E8D2AE', '#F6EEDC', '#D9C3A5', '#C9A98A', '#EEDDCB', '#D8E0D0', '#E9D6B8'];
+// v6.57.0 依時代的建材:0 木屋(拓荒)、1 木骨石屋(手工,原本的樣子)、2 磚造樓房(工坊)
+const WOOD_WALLS = ['#B08A5E', '#A47D52', '#9C7650', '#B89468'], THATCH_ROOFS = ['#C9A55A', '#BFA055', '#B8964A', '#CBAE68'];
+const BRICK_WALLS = ['#B5654A', '#A85A42', '#C27458', '#9E5643'], SLATE_ROOFS = ['#4F5A66', '#56606B', '#5B4E48', '#4A5560'];
 const ROOF_PALETTE = {
     frontier: ['#C9533D', '#B9473A', '#8C5A3C', '#A85A3A', '#D28A3D', '#7A6F5C'],
     harbor:   ['#5B7F8E', '#3C7E71', '#C9533D', '#4F6F93', '#8C5A3C', '#D28A3D'],
@@ -359,7 +362,7 @@ class Town3D extends PixelTileMap {
     }
     _groundColor(tile, tx, tz) {
         const season = this.season || '';
-        let hex = GROUND_COLORS[tile];
+        let hex = (tile === T.DIRT && (this.tierLv || 0) >= 2) ? '#ADA79C' : GROUND_COLORS[tile]; // v6.57.0 城市以上道路鋪石板
         if (hex === undefined) {
             // 牆/屋頂/家具等落在建築範圍內的格子:當作室內地板;其餘當草地
             hex = (tile >= T.WALL_TOP && tile <= T.DOOR) || (tile >= T.TABLE && tile <= T.ALTAR) || tile === T.WINDOW || tile === T.CAULDRON || tile === T.WEAPON_RACK || tile === T.STALL || tile === T.BARREL || tile === T.CRATE ? '#CDB58F' : '#7CC45A';
@@ -637,9 +640,10 @@ class Town3D extends PixelTileMap {
             const w = z.w, d = z.h; // 範圍含屋頂列,當作完整腳印
             const cx = z.x + w / 2, cz = z.y + d / 2;
             const big = w * d >= 30;
-            const wallH = tmpl === 'house' ? 1.5 + (h % 3) * 0.15 : big ? 2.4 : 2.0;
-            const wall = WALL_PALETTE[h % WALL_PALETTE.length];
-            const roof = roofs[(h >>> 4) % roofs.length];
+            const style = tmpl === 'house' ? (this.houseLevels?.[locId] ?? this.eraStyle ?? 1) : (this.eraStyle ?? 1); // v6.57.0 依時代／翻修程度換建材
+            const wallH = (tmpl === 'house' ? 1.5 + (h % 3) * 0.15 : big ? 2.4 : 2.0) * (style === 2 ? 1.45 : 1);
+            const wall = style === 0 ? WOOD_WALLS[h % WOOD_WALLS.length] : style === 2 ? BRICK_WALLS[h % BRICK_WALLS.length] : WALL_PALETTE[h % WALL_PALETTE.length];
+            const roof = style === 0 ? THATCH_ROOFS[(h >>> 4) % THATCH_ROOFS.length] : style === 2 ? SLATE_ROOFS[(h >>> 4) % SLATE_ROOFS.length] : roofs[(h >>> 4) % roofs.length];
             const g = new THREE.Group(); g.position.set(cx, 0, cz); this._static.add(g);
             this._box(w, wallH + 0.3, d, wall, 0, wallH / 2 - 0.15, 0, g);
             // v6.43.0 石砌地基
@@ -717,13 +721,26 @@ class Town3D extends PixelTileMap {
                     }
                 }
             };
-            const wy = wallH * 0.62;
-            for (let i = 0; i < Math.max(1, Math.floor(w / 2)); i++) {
-                const wx = -w / 2 + 1 + i * 2 + (w % 2 === 0 ? 0 : 0.5);
-                if (Math.abs(wx - doorX) > 0.7) addWin(wx, wy, d / 2 + 0.02, 0);
-                addWin(wx, wy, -d / 2 - 0.02, 0);
+            if (tmpl === 'town_hall' && (this.tierLv || 0) >= 3) { // v6.57.0 王都:市政廳加鐘塔與王旗
+                const tx = w / 2 - 0.9, tz = -d / 2 + 0.9;
+                this._box(1.3, wallH + 2.6, 1.3, wall, tx, (wallH + 2.6) / 2, tz, g);
+                this._box(0.7, 0.7, 0.06, '#F3EBD6', tx, wallH + 1.9, tz + 0.66, g);
+                this._cone(1.0, 1.2, 4, '#7A2E8C', tx, wallH + 3.2, tz, g).rotation.y = Math.PI / 4;
+                this._box(0.05, 1.0, 0.05, '#3F3A44', tx, wallH + 4.2, tz, g); this._box(0.5, 0.3, 0.03, '#C9A13A', tx + 0.27, wallH + 4.5, tz, g);
             }
-            for (let i = 0; i < Math.max(1, Math.floor(d / 2)); i++) { const wz = -d / 2 + 1 + i * 2; addWin(w / 2 + 0.02, wy, wz, Math.PI / 2); addWin(-w / 2 - 0.02, wy, wz, Math.PI / 2); }
+            const rows = style === 2 ? [wallH * 0.36, wallH * 0.76] : [wallH * 0.62]; // v6.57.0 磚造樓房兩層窗
+            for (const wy of rows) {
+                for (let i = 0; i < Math.max(1, Math.floor(w / 2)); i++) {
+                    const wx = -w / 2 + 1 + i * 2 + (w % 2 === 0 ? 0 : 0.5);
+                    if (Math.abs(wx - doorX) > 0.7 || wy > 1.6) addWin(wx, wy, d / 2 + 0.02, 0);
+                    addWin(wx, wy, -d / 2 - 0.02, 0);
+                }
+                for (let i = 0; i < Math.max(1, Math.floor(d / 2)); i++) { const wz = -d / 2 + 1 + i * 2; addWin(w / 2 + 0.02, wy, wz, Math.PI / 2); addWin(-w / 2 - 0.02, wy, wz, Math.PI / 2); }
+            }
+            if (style === 2 && tmpl === 'house' && !this._lite()) { // 二樓小陽台
+                this._box(Math.min(1.6, w * 0.5), 0.08, 0.45, '#6E5446', doorX, wallH * 0.56, d / 2 + 0.24, g);
+                this._box(Math.min(1.6, w * 0.5), 0.3, 0.04, '#3F3A44', doorX, wallH * 0.56 + 0.18, d / 2 + 0.45, g);
+            }
             // 煙囪 / 尖塔 / 招牌等職業特徵
             if (tmpl === 'workshop' || tmpl === 'tavern' || (tmpl === 'house' && h % 3 === 0)) {
                 const ch = this._box(0.4, 0.9, 0.4, '#8A6A5A', -w / 2 + 0.8, wallH + roofH * 0.6, -d / 2 + 0.8, g);
@@ -925,6 +942,7 @@ class Town3D extends PixelTileMap {
             const gy = this.groundY(s.x, s.z);
             this._box(0.1, 1.7, 0.1, '#3F3A44', s.x, gy + 0.85, s.z, this._static);
             const hd = new THREE.Mesh(headGeo, this._lampHead); hd.position.set(s.x, gy + 1.78, s.z); this._static.add(hd);
+            if ((this.tierLv || 0) >= 2) { const col = (this.tierLv >= 3 ? ['#7A2E8C', '#C9A13A'] : ['#2E6E9E', '#C9533D'])[n % 2]; this._box(0.04, 0.5, 0.3, col, s.x + 0.09, gy + 1.35, s.z, this._static); } // v6.57.0 城市以上路燈掛旗幟(王都紫金)
             const idx = circle.getIndex(); for (let i = 0; i < idx.count; i++) { const k = idx.getX(i); pos.push(cp.getX(k) + s.x, cp.getY(k) + gy + 0.03, cp.getZ(k) + s.z); }
             n++;
         }
@@ -1098,6 +1116,34 @@ class Town3D extends PixelTileMap {
         const m = new THREE.Mesh(g, this._agentMat()); m.castShadow = true; m.receiveShadow = true; m.userData.ownGeo = true;
         return m;
     }
+    // v6.55.0 人多時遠處的村民改用「整個人合成一塊」的簡化網格:一人 1 次繪製(原本約 5 次)、不投影
+    _agentLod(m) {
+        if (m.userData.lod) return m.userData.lod;
+        const saved = []; for (const c of m.children) if (c.isGroup && /^(leg|arm)/.test(c.name)) { saved.push([c, c.rotation.x]); c.rotation.x = 0; }
+        const p0 = m.position.clone(), r0 = m.rotation.clone(); m.position.set(0, 0, 0); m.rotation.set(0, 0, 0); m.updateMatrixWorld(true);
+        const parts = []; m.traverse(o => { if (o.isMesh && o.geometry?.attributes?.color && o.parent?.name !== 'tool' && o.visible !== false) parts.push(o); });
+        let n = 0; for (const o of parts) n += o.geometry.attributes.position.count;
+        const pos = new Float32Array(n * 3), nor = new Int8Array(n * 3), col = new Uint8Array(n * 3); const v = new THREE.Vector3(), nm = new THREE.Matrix3(); let off = 0;
+        for (const o of parts) {
+            const g = o.geometry, pa = g.attributes.position, na = g.attributes.normal, ca = g.attributes.color; nm.getNormalMatrix(o.matrixWorld);
+            for (let i = 0; i < pa.count; i++) {
+                v.fromBufferAttribute(pa, i).applyMatrix4(o.matrixWorld); pos[off] = v.x; pos[off + 1] = v.y; pos[off + 2] = v.z;
+                v.fromBufferAttribute(na, i).applyMatrix3(nm).normalize(); nor[off] = Math.round(v.x * 127); nor[off + 1] = Math.round(v.y * 127); nor[off + 2] = Math.round(v.z * 127);
+                col[off] = Math.round(ca.getX(i) * 255); col[off + 1] = Math.round(ca.getY(i) * 255); col[off + 2] = Math.round(ca.getZ(i) * 255); off += 3;
+            }
+        }
+        for (const [c, rx] of saved) c.rotation.x = rx; m.position.copy(p0); m.rotation.copy(r0);
+        const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3, true)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3, true));
+        const lod = new THREE.Mesh(geo, this._agentMat()); lod.userData.ownGeo = true; lod.userData.isLod = true; lod.castShadow = false; lod.visible = false;
+        // 群組有縮放 1.3:合併時已經算進世界座標,這裡要抵銷
+        const s = m.scale.x || 1; lod.scale.setScalar(1 / s); m.add(lod); m.userData.lod = lod; return lod;
+    }
+    _setAgentFar(m, far) {
+        if (m.userData.far === far) return; m.userData.far = far;
+        const lod = far ? this._agentLod(m) : m.userData.lod;
+        for (const c of m.children) { if (c === lod) continue; c.visible = !far; }
+        if (lod) lod.visible = far;
+    }
     _disposeAgent(m) { if (!m) return; m.traverse(o => { if (o.isMesh && o.userData.ownGeo) o.geometry.dispose(); }); }
     _agentMesh(aid, agent, pos) {
         const jobKey = pos.job || agent.job?.key || 'default';
@@ -1165,6 +1211,8 @@ class Town3D extends PixelTileMap {
     }
     _updateAgents3D(agents, selectedAgent) {
         const seen = new Set(); const occ = {}; // v6.54.0 每棟裡面醒著／睡著幾個人(決定窗燈)
+        const crowd = Object.keys(this.agentPositions).length > 40; // v6.55.0 人多才啟用遠處簡化
+        const lodR = Math.max(6, Math.min(16, (this.dist || 30) * 0.35)), lodR2 = lodR * lodR, tx0 = this.target.x, tz0 = this.target.z;
         // v6.32.0 對話中的兩人面對面
         const face = {}; const nowT = Date.now();
         for (const c of (this._activeConvoBubbles || [])) { if (nowT >= c.expiry) continue; const ids = [...new Set((c.bubbles || []).map(b => b.agentId))]; if (ids.length >= 2) { face[ids[0]] = ids[1]; face[ids[1]] = ids[0]; } }
@@ -1179,6 +1227,7 @@ class Town3D extends PixelTileMap {
             m.visible = !hidden; m.userData.hidden = hidden;
             if (inside) { const b = this._winIdx?.[inside]; if (b) { const o = occ[b] || (occ[b] = [0, 0]); if (agent.activity === 'sleeping') o[1]++; else o[0]++; } }
             if (hidden) continue;
+            if (crowd || m.userData.far) { const dx = wx - tx0, dz = wz - tz0; this._setAgentFar(m, crowd && aid !== selectedAgent && dx * dx + dz * dz > lodR2); }
             const gy = this.groundY(wx, wz);
             const walking = pos.walking;
             const ws = walking ? Math.sin((pos.walkStep || 0) * 0.45) : 0;
@@ -1328,15 +1377,18 @@ class Town3D extends PixelTileMap {
         const shownBubble = new Set();
         const convos = (this._activeConvoBubbles || []).filter(c => now < c.expiry);
         this._activeConvoBubbles = convos;
+        const talking = new Set(); for (const c of convos) for (const b of (c.bubbles || [])) talking.add(b.agentId);
         for (const [aid, pos] of Object.entries(this.agentPositions)) {
             const agent = agents[aid]; const m = this._agentMeshes[aid];
             if (!agent || !m || !m.visible) continue;
             const wx = pos.x / TILE, wz = pos.y / TILE, gy = m.position.y;
             const isSel = aid === selectedAgent;
             const emote = this.agentEmotes?.[aid];
+            if (m.userData.far && !isSel && !emote && !talking.has(aid)) continue; // v6.55.0 人多時遠處的人不掛名牌(選取、有表情、在說話的照常)
             const sleeping = agent.activity === 'sleeping' && !this.agentPositions[aid]?.walking; // v6.44.2 還在走回家的路上不冒 zzz(看起來像夢遊)
             const extra = sleeping ? ' <i class="t3d-zzz">z z z</i>' : emote ? ` <i class="t3d-emo">${emote}</i>` : '';
-            const el = this._ov('ag:' + aid, 't3d-tag' + (isSel ? ' is-sel' : '') + (aid === 'player' ? ' is-player' : ''), `${this._esc(t3(agent.name || aid))}${extra}`);
+            let office = ''; try { const W = window.rimtownApp?.world; const bd = W && typeof TIERS !== 'undefined' ? TIERS.badge(W, W.agents[aid]) : null; if (bd && bd.cls !== 'former') office = `<b class="t3d-office t3d-office-${bd.cls}">${bd.icon} ${this._esc(bd.text)}</b>`; } catch (e) {} // v6.56.0 官職標籤
+            const el = this._ov('ag:' + aid, 't3d-tag' + (isSel ? ' is-sel' : '') + (aid === 'player' ? ' is-player' : '') + (office ? ' has-office' : ''), `${office}${this._esc(t3(agent.name || aid))}${extra}`);
             this._place(el, wx, gy + 2.15, wz);
             if (!el._bound) { el._bound = true; el.addEventListener('click', (e) => { e.stopPropagation(); if (this.onAgentClick) this.onAgentClick(aid); }); }
         }
@@ -1748,7 +1800,8 @@ class Town3D extends PixelTileMap {
         if (!this.renderer || !this.grid || !this._viewW || this._ctxLost) return;
         if (this.lowQuality && (this._halfTick = !this._halfTick)) return; // v6.33.0 低畫質:3D 只畫 30fps(村民移動由 updateAgents 每幀算,不受影響)
         this.animFrame++;
-        if (this._sceneSrc !== this.grid || this._sceneSeason !== (this.season || '')) this._buildScene();
+        const styleSig = (this.tierLv || 0) + '|' + (this.eraStyle ?? 1) + '|' + (this.houseVer || 0); // v6.57.0 等級／時代／翻修有變就重建
+        if (this._sceneSrc !== this.grid || this._sceneSeason !== (this.season || '') || this._styleSig !== styleSig) { this._styleSig = styleSig; this._buildScene(); }
         this._syncDynamic(completedBuildings);
         this._syncExtras(extraData);
         this._syncLandmarks(); // v6.47.0 村民提案立的地標

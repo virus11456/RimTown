@@ -1917,10 +1917,10 @@ class World {
             personality: { traits:a.personality.traits, background:a.personality.background, values:a.personality.values },
             needs: { hunger:a.needs.hunger, rest:a.needs.rest, social:a.needs.social, comfort:a.needs.comfort, recreation:a.needs.recreation, beauty:a.needs.beauty },
             skills: Object.fromEntries(Object.entries(a.skills.skills).map(([k,s])=>[k,{xp:s.xp,passion:s.passion}])),
-            relationships: Object.fromEntries(Object.entries(a.relationships.relationships).map(([k,r])=>[k,{
-                targetId:r.targetId, targetName:r.targetName, affinity:r.affinity, trust:r.trust,
-                romanticInterest:r.romanticInterest || undefined, interactionCount:r.interactionCount,
-                lastInteractionTick:r.lastInteractionTick, sharedMemories:r.sharedMemories.slice(-3).map(x => typeof x === 'string' ? clipText(x, 100) : x), // v6.43.6 依字截斷,不切壞 emoji
+            relationships: Object.fromEntries((typeof CROWD !== 'undefined' ? CROWD.keepRels(this, a) : Object.entries(a.relationships.relationships)).map(([k,r])=>[k,{ // v6.55.0 人多時只存有意義的關係(最多 40 段)
+                targetId:r.targetId, targetName:r.targetName, affinity:r.affinity || undefined, trust:r.trust || undefined, // v6.55.0 0 不存
+                romanticInterest:r.romanticInterest || undefined, interactionCount:r.interactionCount || undefined,
+                lastInteractionTick:r.lastInteractionTick || undefined, sharedMemories:r.sharedMemories.slice(-3).map(x => typeof x === 'string' ? clipText(x, 100) : x), // v6.43.6 依字截斷,不切壞 emoji
                 // v6.43.5 存提示詞會用到的最近 3 筆;英文句子長,每筆最多 100 字
                 status:r.status || undefined, statusSince:r.statusSince || undefined, isCheating:r.isCheating || undefined, isFeud:r.isFeud || undefined // v6.43.6 預設值不存(讀檔補回)
             }])),
@@ -2142,10 +2142,10 @@ class World {
                 if (ad.relationships) {
                     for (const [rk,rv] of Object.entries(ad.relationships)) {
                         const rel = agent.relationships.getOrCreate(rv.targetId, rv.targetName);
-                        rel.affinity = rv.affinity; rel.trust = rv.trust;
+                        rel.affinity = rv.affinity || 0; rel.trust = rv.trust || 0; // v6.55.0 0 不存
                         rel.romanticInterest = rv.romanticInterest || 0; // v6.43.6 0 不存
-                        rel.interactionCount = rv.interactionCount;
-                        rel.lastInteractionTick = rv.lastInteractionTick;
+                        rel.interactionCount = rv.interactionCount || 0;
+                        rel.lastInteractionTick = rv.lastInteractionTick || 0;
                         rel.sharedMemories = (rv.sharedMemories || []).map(fixBrokenText); // v6.43.6 v6.43.5 存檔可能切壞 emoji,讀檔時清掉半個字
                         rel.status = rv.status || null;
                         rel.statusSince = rv.statusSince || 0;

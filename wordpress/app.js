@@ -1,5 +1,5 @@
-// RimTown - Frontend App v6.54.0
-const RIMTOWN_APP_VERSION = '6.54.0';
+// RimTown - Frontend App v6.58.0
+const RIMTOWN_APP_VERSION = '6.58.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -265,10 +265,13 @@ class RimTownAuth {
     }
 
     async cloudSave(townId, townName, saveData, meta) {
+        const raw = typeof saveData === 'string' ? saveData : JSON.stringify(saveData);
+        const tick = typeof saveData === 'object' && saveData ? saveData.tickCount : (/"tickCount"\s*:\s*(\d+)/.exec(raw.slice(0, 4000)) || /"tickCount"\s*:\s*(\d+)/.exec(raw) || [])[1];
         const body = {
             town_id: townId,
             town_name: townName,
-            save_data: typeof saveData === 'string' ? saveData : JSON.stringify(saveData),
+            save_data: await RTZip.pack(raw), // v6.55.0 大存檔壓縮
+            tick_count: Number.isFinite(+tick) ? +tick : undefined,
             season: meta.season || '',
             year: meta.year || 1,
             day: meta.day || 1,
@@ -283,7 +286,8 @@ class RimTownAuth {
 
     async cloudLoad(townId) {
         const data = await this._fetch('save/' + townId);
-        return typeof data.save_data === 'string' ? JSON.parse(data.save_data) : data.save_data;
+        const sd = await RTZip.unpack(data.save_data); // v6.55.0 壓縮過的存檔先解開
+        return typeof sd === 'string' ? JSON.parse(sd) : sd;
     }
 
     async cloudDelete(townId) {
@@ -312,6 +316,24 @@ class RimTownAuth {
 }
 
 const RIMTOWN_SPEEDS = [1, 1.5, 2, 3, 5]; // v6.54.0 速度倍率(基本 2 秒/格)
+// v6.55.0 大存檔壓縮:人一多存檔會超過伺服器單次上傳上限(約 4.5MB),超過 300KB 就先 gzip 再上傳('gz:'＋base64);讀檔自動解開,舊存檔照常讀
+const RTZip = {
+    ok: typeof CompressionStream !== 'undefined' && typeof DecompressionStream !== 'undefined',
+    async pack(str) {
+        if (!this.ok || typeof str !== 'string' || str.length < 300000) return str;
+        try {
+            const buf = new Uint8Array(await new Response(new Blob([str]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+            let bin = ''; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+            return 'gz:' + btoa(bin);
+        } catch (e) { return str; }
+    },
+    async unpack(s) {
+        if (typeof s !== 'string' || !s.startsWith('gz:')) return s;
+        const bin = atob(s.slice(3)); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+        return await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+    },
+};
+if (typeof window !== 'undefined') window.RTZip = RTZip;
 class RimTownApp {
     constructor() {
         this.world = new World();
@@ -1836,6 +1858,7 @@ class RimTownApp {
                 this.tileMap.graveyardData = (this.state.lifecycle || {}).graveyard || [];
                 this.tileMap.festivalData = this.state.festivals || {};
                 this.tileMap.landmarks = this.world?.proposals?.landmarks || null; // v6.47.0
+                try { if (this.world && typeof HOUSING !== 'undefined') { const H = HOUSING.S(this.world); this.tileMap.houseLevels = H.lv; this.tileMap.houseVer = H.ver; this.tileMap.eraStyle = HOUSING.maxLv(this.world); } if (this.world && typeof TIERS !== 'undefined') this.tileMap.tierLv = TIERS.level(this.world); } catch (e) {} // v6.57.0 房子樣式與街景
                 this.tileMap.render(agents, this.selectedAgent, player?.current_location, this.world?.buildings?.completed || [], {
                     farm: this.state?.farm, processing: this.state?.processing, industry: this.state?.industry,
                     pets: this._petView(), // v6.51.0
@@ -3119,7 +3142,7 @@ class RimTownApp {
         const residentCount = Math.max(0, agentCount - visitorCount);
         const visitorText = visitorCount > 0 ? `${t('（')}+${visitorCount}${t(' 訪客）')}` : '';
         const popEl = document.getElementById('population-count');
-        if (popEl) popEl.textContent = `${t('人口：')}${residentCount}${visitorText}${travelText}`;
+        if (popEl) popEl.textContent = `${(() => { try { return this.world && typeof TIERS !== 'undefined' ? `${TIERS.info(this.world).icon} ${TIERS.name(this.world)} · ` : ''; } catch (e) { return ''; } })()}${t('人口：')}${residentCount}${visitorText}${travelText}`; // v6.56.0 城鎮等級
 
         // Weather display
         const weatherEl = document.getElementById('weather-display');

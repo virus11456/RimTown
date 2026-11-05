@@ -621,3 +621,18 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .pp-more:hover { background: var(--bg-card); color: var(--text-primary); }
 .rimtown-container .pp-fund { font-size: 0.74rem; color: var(--text-secondary); margin: 2px 0 4px; }
 .rimtown-container .pp-fund-self, .rimtown-container .pp-fund-crowd { color: #2FAE6B; }
+/* v6.56.0 城鎮等級與官職標籤 */
+.rimtown-container .pp-tier .pp-tier-steps { font-style: normal; margin-left: 6px; letter-spacing: 2px; }
+.rimtown-container .pp-tier .pp-tier-steps i { font-style: normal; opacity: .3; }
+.rimtown-container .pp-tier .pp-tier-steps i.on { opacity: 1; }
+.rimtown-container .pp-tier-line { font-size: .78rem; line-height: 1.6; color: var(--text-secondary); }
+.rimtown-container .pp-tier-req { font-variant-numeric: tabular-nums; color: #E08A3C; font-weight: 600; }
+.rimtown-container .pp-tier-req.ok { color: #2FAE6B; }
+.rimtown-container .nqc-chip.nqc-office { font-weight: 700; }
+.rimtown-container .nqc-chip.nqc-office-leader { background: linear-gradient(135deg, #F6D365, #E8A33C); color: #3A2400; border-color: #E8A33C; }
+.rimtown-container .nqc-chip.nqc-office-council { background: #2E6E75; color: #EAF8F9; border-color: #2E6E75; }
+.rimtown-container .nqc-chip.nqc-office-former { background: transparent; color: var(--text-secondary); border-style: dashed; }
+.t3d-tag .t3d-office { display: inline-block; margin-right: 4px; padding: 0 5px; border-radius: 6px; font-size: .92em; font-weight: 700; }
+.t3d-tag .t3d-office-leader { background: linear-gradient(135deg, #F6D365, #E8A33C); color: #3A2400; }
+.t3d-tag .t3d-office-council { background: #2E6E75; color: #EAF8F9; }
+.t3d-tag.has-office { border-color: #E8A33C; }
