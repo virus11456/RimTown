@@ -24,6 +24,18 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       box.remove(); return { tabs, first, hasVote, town, saved, truth, truthBody };
     });
     ok(pp.tabs.join() === 'props,town,truth' && pp.first === 'props' && pp.hasVote, '提案頁分成「提案／鎮況／真相」三個子分頁，預設看提案', pp);
+    // v6.53.1 定案的提案蓋章
+    const st = await page.evaluate(() => {
+      const app = window.rimtownApp, w = app.world, P = w.proposals; const o = P.items.filter(x => x.status === 'open');
+      const ensure = (n) => { while (P.items.filter(x => x.status === 'open').length < n) { const cs = P._candidates(w, P._abs(w)); if (!cs.length) break; const a = Object.values(w.agents).find(x => !x.isPlayer); P._createWith(w, P._abs(w), cs[0], a); } };
+      ensure(2); const op = P.items.filter(x => x.status === 'open'); P._decide(w, op[0], 'approve', 'mayor'); P._decide(w, op[1], 'reject', 'mayor');
+      app.state = w.getState(); app._ppTab = 'props'; const box = document.createElement('div'); document.body.appendChild(box); app.renderProposals(box);
+      const ok = box.querySelector(`.pp-card[data-pid="${op[0].id}"] .pp-stamp-ok`), no = box.querySelector(`.pp-card[data-pid="${op[1].id}"] .pp-stamp-no`), openStamp = box.querySelector('.pp-card.pp-open .pp-stamp');
+      const fresh = !!ok?.classList.contains('pp-stamp-new'); app.renderProposals(box); const again = box.querySelector(`.pp-card[data-pid="${op[0].id}"] .pp-stamp-ok`)?.classList.contains('pp-stamp-new');
+      const txt = [ok?.innerText, no?.innerText]; box.remove(); return { ok: !!ok, no: !!no, openStamp: !!openStamp, fresh, again, txt };
+    });
+    ok(st.ok && st.no && !st.openStamp, '定案的提案蓋上「核准／否決」章（投票中的不蓋）', st);
+    ok(st.fresh && !st.again, '第一次出現時有蓋章動畫，之後重畫不再重播', st);
     ok(pp.town === 'town' && pp.saved === 'town' && pp.truth === 'truth' && pp.truthBody, '點子分頁可以切換，會記住上次看的', pp);
     // 播放／暫停一顆鈕
     if (dev === 'desktop') {

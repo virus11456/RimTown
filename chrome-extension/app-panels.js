@@ -881,7 +881,17 @@ Object.assign(RimTownApp.prototype, {
         const card = (p, mode) => {
             const total = p.forCount + p.againstCount; const pct = total ? Math.round(p.forCount / total * 100) : 0;
             const st = { open: t('待決定'), shelved: t('擱置中'), approved: t('進行中'), done: t('已完成'), failed: t('失敗'), rejected: t('已否決'), expired: t('已收回') }[p.status] || p.status;
-            let html = `<div class="pp-card pp-${p.status}" data-pid="${p.id}">
+            // v6.53.1 定案的提案蓋章:核准(綠)／否決(紅)／收回(灰),署名裁決的鎮長;第一次出現時有蓋下去的動畫
+            const stampKind = ['approved', 'done', 'failed'].includes(p.status) ? 'ok' : p.status === 'rejected' ? 'no' : p.status === 'expired' ? 'off' : '';
+            let stamp = '';
+            if (stampKind) {
+                const seen = this._stampSeen || (this._stampSeen = new Set()); const fresh = !seen.has(p.id + stampKind); seen.add(p.id + stampKind);
+                const en = typeof I18N !== 'undefined' && I18N.getLang?.() === 'en';
+                const word = (en ? { ok: 'APPROVED', no: 'REJECTED', off: 'WITHDRAWN' } : { ok: '核准', no: '否決', off: '收回' })[stampKind];
+                const by = p.mayorName ? `${p.mayorActing ? t('代理鎮長') : t('鎮長')} ${t(p.mayorName)}` : (p.decidedBy === 'auto' ? t('依票數定案') : '');
+                stamp = `<div class="pp-stamp pp-stamp-${stampKind}${fresh ? ' pp-stamp-new' : ''}${en ? ' pp-stamp-en' : ''}" aria-label="${esc(word)}"><b>${esc(word)}</b>${by ? `<small>${esc(by)}</small>` : ''}</div>`;
+            }
+            let html = `<div class="pp-card pp-${p.status}${stampKind ? ' pp-stamped' : ''}" data-pid="${p.id}">${stamp}
                 <div class="pp-head"><span class="pp-id">${esc(p.id)}</span><span class="pp-kind">${p.icon} ${esc(p.kindLabel)}</span>${p.llm ? `<span class="pp-llm" title="${t('這件案子的投票／裁決由 AI 依記憶與性格推理')}">🧠</span>` : ''}<span class="pp-status">${st}</span></div>
                 <div class="pp-title">${esc(p.title)}</div>
                 <div class="pp-by">${avatar(p.proposerId)}<span><b>${esc(t(p.proposerName))}</b> <small>${esc(p.proposerJob)}</small></span></div>
