@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.46.0
+ * Version: 6.49.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.46.0');
+define('RIMTOWN_VERSION', '6.49.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -887,12 +887,14 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-sim-systems',
         RIMTOWN_URL . 'sim-systems.js',
-        RIMTOWN_URL . 'sim-ideas.js',
-        RIMTOWN_URL . 'sim-towngen.js',
         array('rimtown-simulation'),
         RIMTOWN_VERSION,
         true
     );
+    // v6.46.0 觀念傳播／發明、v6.45.0 種子隨機城鎮、v6.47.0 村民自由提案(都在 sim-systems 之後)
+    wp_enqueue_script('rimtown-sim-ideas', RIMTOWN_URL . 'sim-ideas.js', array('rimtown-sim-systems'), RIMTOWN_VERSION, true);
+    wp_enqueue_script('rimtown-sim-towngen', RIMTOWN_URL . 'sim-towngen.js', array('rimtown-sim-ideas'), RIMTOWN_VERSION, true);
+    wp_enqueue_script('rimtown-sim-freeprop', RIMTOWN_URL . 'sim-freeprop.js', array('rimtown-sim-towngen'), RIMTOWN_VERSION, true);
 
     wp_enqueue_script(
         'rimtown-chiptune',
@@ -917,7 +919,7 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-app',
         RIMTOWN_URL . 'app.js',
-        array('rimtown-simulation', 'rimtown-sim-systems', 'rimtown-chiptune', 'rimtown-tilemap', 'rimtown-town3d'),
+        array('rimtown-simulation', 'rimtown-sim-systems', 'rimtown-sim-freeprop', 'rimtown-chiptune', 'rimtown-tilemap', 'rimtown-town3d'),
         RIMTOWN_VERSION,
         true
     );
@@ -939,11 +941,12 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-app-loop',
         RIMTOWN_URL . 'app-loop.js',
-        RIMTOWN_URL . 'app-towngen.js',
         array('rimtown-app'),
         RIMTOWN_VERSION,
         true
     );
+    wp_enqueue_script('rimtown-app-towngen', RIMTOWN_URL . 'app-towngen.js', array('rimtown-app-loop'), RIMTOWN_VERSION, true); // v6.45.0
+    wp_enqueue_script('rimtown-app-godhand', RIMTOWN_URL . 'app-godhand.js', array('rimtown-app-loop'), RIMTOWN_VERSION, true); // v6.48.0 事件卡獨立介面
     wp_enqueue_script(
         'rimtown-app-towns',
         RIMTOWN_URL . 'app-towns.js',
@@ -1333,6 +1336,54 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.49.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🏠 房子更精緻：屋頂多了三道瓦列、牆腳一圈深色護牆板、民宅門上有小雨遮和托架，桌機上面向街道的窗戶多了十字窗格、大建築山牆有通風窗',
+                '🌳 樹和路更有質感：桌機上樹根往外擴、三成的闊葉樹會隨季節開花（春）或掛果（夏、秋）；石板路每塊鋪石高低差一點點，看起來像真的石頭。全部併進原本的網格，不增加繪製次數；桌機三角形約多 15%，手機幾乎不變',
+                '🐛 修正：存檔空間不足時，重試第一次造訪隨機城鎮會在城鎮列表留下好幾座沒有存檔的同名城鎮（現在存檔成功才寫進列表，舊的空殼也會清掉）',
+                '🐛 修正：合併另一台裝置的城鎮紀錄後，相連的城鎮可能變成 11 座以上（超過的會先降回「只有傳聞」，已經有存檔的城鎮不受影響）',
+                '🐛 修正：帳號選單開著時旋轉螢幕，選單底部會被切掉（現在轉向或縮放視窗時會重新排位置）',
+            ),
+            'changes_en' => array(
+                '🏠 More detailed houses: roofs have three rows of tiles, walls have a darker skirting band, cottages have a small porch roof with brackets over the door, and on desktop street-facing windows have cross bars and large buildings have gable vents',
+                '🌳 Richer trees and roads: on desktop tree roots flare out and about a third of the broadleaf trees blossom in spring or bear fruit in summer and autumn; each paving stone sits slightly higher or lower so paths look like real stone. Everything is merged into the existing meshes, so there are no extra draw calls; desktop triangles rise by about 15% and phones are almost unchanged',
+                '🐛 Fixed: when storage was full, retrying the first visit to a random town left several same-named towns without saves in the town list (towns are now listed only after the save succeeds, and old empty entries are cleaned up)',
+                '🐛 Fixed: merging town records from another device could connect 11 or more towns (the extra ones go back to rumours only; towns that already have saves are not affected)',
+                '🐛 Fixed: rotating the screen with the account menu open cut off the bottom of the menu (it now repositions when the screen rotates or the window resizes)',
+            ),
+        ),
+        array(
+            'version' => '6.48.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🃏 事件卡有自己的介面了：事件卡是觀察者唯一能出手的地方，以前埋在「事件」分頁裡。現在地圖右下角有一顆 🃏 按鈕，直接顯示今天還能打幾張；點開是一副手牌——桌機浮在地圖下方（卡牌一列＋右邊詳情），手機是底部抽屜（卡牌橫向滑動＋下方詳情與大按鈕）',
+                '🎴 手牌更好挑：卡牌依天災、人禍、機運、人際上色，冷卻中的卡會變灰並標天數；選卡就看到說明、效果和冷卻，可以按分類篩選，也能「隨機打一張」。打出後抽屜自動收起、鏡頭帶到現場',
+                '📼 反應追蹤獨立成一頁：村民接下來幾天的反應、事後的提案和七天後的變化都在這裡，點名字就跳到那位村民；有新反應時按鈕會亮紅點。桌機可以按 E 開關、Esc 關閉、←→ 換卡、Enter 打出',
+            ),
+            'changes_en' => array(
+                '🃏 Event cards have their own interface: event cards are the only way an observer can act, and they used to be buried in the Events tab. A 🃏 button at the bottom right of the map now shows how many you can still play today and opens your hand of cards: on desktop it floats above the map (a row of cards with details on the right); on phones it is a bottom sheet (swipe through the cards, with details and a large button below)',
+                '🎴 Easier to choose: cards are coloured by category (disaster, mishap, fortune, social), cards on cooldown are greyed out with the days left, selecting a card shows its description, effect and cooldown, you can filter by category or play a random card, and after playing the sheet closes and the camera goes to the scene',
+                '📼 Reactions have their own tab: villagers’ reactions over the next few days, the proposals that follow and the changes seven days later are all there, tapping a name jumps to that villager, and the button shows a red dot when there are new reactions. On desktop press E to open or close, Esc to close, ←→ to switch cards and Enter to play',
+            ),
+        ),
+        array(
+            'version' => '6.47.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '💭 村民會自己發想提案了：以前 AI 只能從系統給的幾個點子裡挑一個；現在（完整智能體模式下，大約六成的提案）村民依自己的個性、記憶和鎮況自由發想，可以很實際，也可以天馬行空，例如替廣場的貓立雕像、每週三全鎮只說真話、讓某個人去學醫',
+                '🌍 點子對世界有真的影響：效果落在十種規則裡——資源增減、連續幾天的產出、心情（全鎮／某職業／某個性／某人）、兩人關係、研究／農作／商人／節慶等加成、動工蓋建築、指定研究、讓某人轉職、立下新傳統、立地標。名字不存在、數值太誇張、好處太划算都會被修正，立地標一定要花錢。投票、鎮長裁決、執行和十天後成效都照原本的流程',
+                '🏮 傳統與地標會留下來：通過的新傳統會寫進 AI 看到的鎮況，之後村民說話、規劃一天、投票都會參考；地標會立在廣場上（3D 地圖看得到石碑和名牌）。提案卡會列出每一項實際效果，提案分頁頂端多了「本鎮的規矩與地標」',
+                '🐛 修正 WordPress 版的外掛載入清單：v6.45／v6.46 新增的檔案寫錯位置，WordPress 鏡像站可能載不到（rimtown.cc 不受影響）',
+            ),
+            'changes_en' => array(
+                '💭 Villagers now come up with their own proposals: the AI used to pick from a few ideas the system offered; now (in full agent mode, about six in ten proposals) villagers invent proposals from their own personality, memories and the state of the town. They can be practical or wildly imaginative, such as a statue for the cat in the square, a day each week when everyone tells the truth, or sending someone to train as a doctor',
+                '🌍 Ideas have real effects on the world: effects use ten kinds of rule (resource changes, output over several days, mood for the whole town, a job, a personality type or one person, a relationship between two people, bonuses to research, farming, merchants, festivals and more, starting a building, choosing research, changing someone’s job, a new tradition, or a landmark). Unknown names, extreme numbers and deals that are too good are corrected, and a landmark always costs something. Voting, the mayor’s ruling, carrying it out and the ten-day follow-up work as before',
+                '🏮 Traditions and landmarks stay: an approved tradition is added to the town summary the AI sees, so villagers take it into account when talking, planning their day and voting; landmarks stand in the square (a stone monument and name on the 3D map). Proposal cards list every real effect, and the proposals tab has a new Town customs and landmarks section',
+                '🐛 Fixed the WordPress plugin’s script list: files added in v6.45 and v6.46 were registered in the wrong place, so the WordPress mirror might not load them (rimtown.cc was not affected)',
+            ),
+        ),
         array(
             'version' => '6.46.0',
             'date'    => '2026-11-04',

@@ -71,6 +71,7 @@ class ProposalSystem {
         this._lastDay = null;
     }
     static MAX_OPEN = 4;
+    static FREE_SHARE = 0.6; // v6.47.0 完整智能體模式下,村民自己發想提案的比例
     static DECIDE_DAYS = 2; // v6.37.0 投票兩天後鎮長裁決(七成的人投完票、過了一天也會提早裁決)
     static SHELF_DAYS = 10;
     static WAIT_DAYS = 7;
@@ -117,6 +118,7 @@ class ProposalSystem {
         if (this._lastDay === day) return;
         this._lastDay = day;
         try { this._advance(w, day); } catch (e) { console.warn('[Proposals] advance', e); }
+        try { if (typeof FREEPROP !== 'undefined') FREEPROP.daily(w, this); } catch (e) { console.warn('[Proposals] free daily', e); } // v6.47.0 自由提案的連續效果
         try { this._vote(w); } catch (e) { console.warn('[Proposals] vote', e); }
         try { this._generate(w, day); } catch (e) { console.warn('[Proposals] generate', e); }
         if (this.items.length > 60) this.items = this.items.filter(p => p.status === 'open' || p.status === 'shelved' || p.status === 'approved').concat(this.items.filter(p => !['open', 'shelved', 'approved'].includes(p.status)).slice(-40));
@@ -212,6 +214,8 @@ class ProposalSystem {
             const fits = (c) => !c.jobs || !c.jobs.length || c.jobs.includes(a.job?.key) || c === pick;
             const alts = [pick, ...cands.filter(c => c !== pick && fits(c)).sort((x, y) => y.weight - x.weight)].slice(0, 5);
             const summaries = alts.map(c => { const base = c.make(a); return { title: this._fill(base.tk, base.tp), desc: this._fill(base.dk, base.dp), cost: base.cost || {} }; });
+            // v6.47.0 一半以上的時候讓村民自己發想(天馬行空也行,效果落在白名單裡);發想失敗就回到從點子裡挑
+            if (typeof FREEPROP !== 'undefined' && eng.inventProposal && this._inventLLM && Math.random() < ProposalSystem.FREE_SHARE) { this._inventLLM(w, day, a, () => this._generateLLM(w, day, a, alts, summaries, pick)); return; }
             this._generateLLM(w, day, a, alts, summaries, pick);
             return;
         }
@@ -531,6 +535,7 @@ class ProposalSystem {
                 case 'build': { const proj = w.buildings?.startProject?.(p.refKey, w, null); ok = !!proj; result = ok ? '動工了，村民正在蓋' : '沒辦法動工（已經有同名建築）'; break; }
                 case 'factory': { const r = w.processing?.buildFactory?.(p.refKey, w); ok = !!r?.ok; result = ok ? '工廠動工' : (r?.error || '沒辦法動工'); break; }
                 case 'policy': { ok = this._applyPolicy(w, p); result = ok ? '政令生效 20 天' : '無法施行'; break; }
+                case 'free': { for (const [r, n] of Object.entries(this._cost(p))) w.stockpile.consume(r, n, w.tickCount, t('提案'), 'proposal'); const out = (typeof FREEPROP !== 'undefined') ? FREEPROP.apply(w, this, p) : []; ok = true; result = out.length ? out.join(t('；')) : '照提案執行'; break; } // v6.47.0 村民自己的點子
                 case 'festival': { const r = w.festivals?.sponsor?.(w, p.proposerName); ok = !!r?.ok; result = ok ? '贊助成功，節慶更熱鬧' : (r?.msg || '贊助失敗'); break; }
                 case 'industry': { const r = w.industry?.chooseIndustry?.(p.refKey, w); ok = !!r?.ok; result = ok ? '產業開張' : (r?.error || '無法開張'); break; }
                 case 'expedition': {

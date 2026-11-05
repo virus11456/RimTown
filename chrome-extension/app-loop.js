@@ -333,6 +333,7 @@ Object.assign(RimTownApp.prototype, {
 
     _visitorMailboxTick() {
         const w = this.world; if (!w || !this.currentTownId) return;
+        try { this._ghEnsure?.(); } catch (e) {} // v6.48.0 換鎮／換日後更新事件卡按鈕
         try { this._genTownTick?.(); } catch (e) { console.warn('[RimTown] gen town tick', e); } // v6.45.0 種子隨機城鎮
         // 道路已通(含老玩家補生成):確保海風鎮存在
         for (const def of NEIGHBOR_TOWNS) { if (localStorage.getItem(def.key) === '1' && !this._neighborEnsured?.[def.theme]) this._ensureNeighborTown(def.theme); } // v5.76.0
@@ -603,6 +604,7 @@ Object.assign(RimTownApp.prototype, {
         if (!r.ok) { const why = r.why === 'cooldown' ? t('冷卻中，還要 {n} 天').replace('{n}', r.days || 0) : r.why === 'daily' ? t('今天的兩張已經打完，明天再來') : t('這張卡現在打不出去'); this._showCornerNotice({ icon: '🃏', title: t('事件卡'), name: '', desc: why }); return; }
         this.bgm?.sfx?.('event');
         try { this.state = w.getState(); this.renderSidebar(); } catch (e) {}
+        try { this._ghFab?.(); } catch (e) {} // v6.48.0
     },
     _onEventCard(kind, e, npc, text) {
         if (kind === 'played') {
@@ -612,6 +614,7 @@ Object.assign(RimTownApp.prototype, {
         } else if (kind === 'reaction' && npc) {
             try { this.tileMap?.addConversationBubble?.(npc.agentId, npc.agentId, npc.name, npc.name, text, ''); } catch (err) {}
             try { this.state = this.world.getState(); if (this.activeTab === 'events') this.renderSidebar(); } catch (err) {}
+            try { this._ghRefresh?.(); } catch (err) {} // v6.48.0 反應追蹤紅點／抽屜內容
         } else if (kind === 'outcome') {
             this._showCornerNotice({ icon: '📈', title: `${e.name} · ${t('七天後')}`, name: '', desc: e.outcomeText });
         }

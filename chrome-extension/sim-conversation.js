@@ -1010,7 +1010,7 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
         const avg = npcs.length ? Math.round(npcs.reduce((s, a) => s + (a.mood || 0), 0) / npcs.length) : 0;
         const ev = [...(world.eventCards?.played || []).slice(-2).map(e => t(e.name)), ...(world.events?.eventLog || []).slice(-2).map(([, e]) => e.name)].slice(-3);
         const trial = (world.trials?.current?.status === 'active' && typeof TRIAL_TYPES !== 'undefined') ? t(TRIAL_TYPES[world.trials.current.type]?.title || '') : '';
-        return `${t('季節')} ${t(world.clock.season)} ${t('第')} ${world.clock.day} ${t('天')}${t('；')}${t('人口')} ${npcs.length}${t('；')}${t('公庫銀幣')} ${Math.round(world.stockpile.get('silver'))}${t('；')}${t('食物')} ${Math.round(world.stockpile.get('food'))}${t('；')}${t('全鎮平均心情')} ${avg}/100${ev.length ? `${t('；')}${t('最近的事')}${t('：')}${ev.join(t('、'))}` : ''}${trial ? `${t('；')}${t('本季考驗')}${t('：')}${trial}` : ''}`;
+        return `${t('季節')} ${t(world.clock.season)} ${t('第 {n} 天').replace('{n}', world.clock.day)}${t('；')}${t('人口')} ${npcs.length}${t('；')}${t('公庫銀幣')} ${Math.round(world.stockpile.get('silver'))}${t('；')}${t('食物')} ${Math.round(world.stockpile.get('food'))}${t('；')}${t('全鎮平均心情')} ${avg}/100${ev.length ? `${t('；')}${t('最近的事')}${t('：')}${ev.join(t('、'))}` : ''}${trial ? `${t('；')}${t('本季考驗')}${t('：')}${trial}` : ''}`;
     }
     // 決策呼叫不吃「NPC 每日 AI 額度」(那是背景閒聊的上限);只受供應商速率限制
     fullAgentOk(world) { return !!world.fullAgentMode && !!this.llm && this.llm._canMakeRequest(true, true); } // v6.43.1 冷卻中不放行 // 決策走 chat 道(額度較高、內建 AI 時 Groq 優先)

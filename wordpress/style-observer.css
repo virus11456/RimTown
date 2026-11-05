@@ -447,3 +447,121 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
     .mobile-menu-dropdown button { min-height: 44px; padding: 0 14px; font-size: 0.85rem; }
     body:has(#mobile-menu-dropdown:not(.hidden)) #achv-toast-host { top: calc(env(safe-area-inset-top, 0px) + 112px) !important; }
 }
+
+/* v6.47.0 村民自由提案:效果標籤、傳統與地標 */
+.rimtown-container .pp-fx { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 2px; }
+.rimtown-container .pp-fx span { font-size: 0.68rem; padding: 2px 8px; border-radius: 999px; background: var(--bg-tertiary, rgba(255,255,255,0.08)); color: var(--text-secondary); border: 1px solid var(--border); }
+.rimtown-container .pp-lore { margin: 4px 0 10px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-card); }
+.rimtown-container .pp-lore .pp-h { margin-top: 0; }
+.rimtown-container .pp-lore-row { font-size: 0.78rem; margin: 3px 0; }
+.rimtown-container .pp-lore-row small { color: var(--text-muted); margin-left: 4px; }
+
+/* ============================================================
+   v6.48.0 事件卡獨立介面「上帝之手」：地圖上的 🃏 按鈕＋手牌抽屜
+   桌機：浮在地圖下方（卡牌一列＋右側詳情）；手機：底部抽屜（卡牌橫滑＋下方詳情）
+   ============================================================ */
+.rimtown-container { --gh-disaster: #E95A5A; --gh-mishap: #C49A5E; --gh-fortune: #5FC48A; --gh-social: #D478BE; }
+.rimtown-container .gh-fab {
+    position: fixed; left: 20px; bottom: 20px; z-index: 9400;
+    display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px 0 12px;
+    border-radius: 999px; border: 1px solid var(--accent); cursor: pointer; font-family: inherit;
+    background: var(--bg-secondary, #26223A); color: var(--text-primary, #F5EFE6);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35); transition: transform .15s ease, box-shadow .15s ease;
+}
+.rimtown-container .gh-fab:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(0, 0, 0, 0.4); }
+.rimtown-container .gh-fab:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.rimtown-container .gh-fab-ic { font-size: 1.35rem; line-height: 1; }
+.rimtown-container .gh-fab-txt { font-weight: 800; font-size: 0.9rem; }
+.rimtown-container .gh-fab-n { font-size: 0.78rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--accent); color: var(--ob-on-accent, #1E1B2A); }
+.rimtown-container .gh-fab.is-empty .gh-fab-n { background: var(--bg-tertiary, rgba(255,255,255,0.12)); color: var(--text-muted); }
+.rimtown-container .gh-fab-dot { position: absolute; top: 4px; right: 6px; width: 10px; height: 10px; border-radius: 50%; background: #E95A5A; box-shadow: 0 0 0 2px var(--bg-secondary, #26223A); }
+.rimtown-container .gh-fab[aria-expanded="true"] { background: var(--accent); color: var(--ob-on-accent, #1E1B2A); }
+
+.rimtown-container .gh-tray {
+    position: fixed; bottom: 84px; z-index: 9650; display: flex; flex-direction: column;
+    max-height: min(440px, 62vh); padding: 10px 14px 14px; border-radius: 18px;
+    background: var(--bg-secondary, #26223A); color: var(--text-primary, #F5EFE6); border: 1px solid var(--border, #3A3550);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45); font-family: inherit;
+    opacity: 0; transform: translateY(14px); transition: opacity .18s ease, transform .2s ease;
+}
+.rimtown-container .gh-tray.open { opacity: 1; transform: none; }
+.rimtown-container .gh-grab { display: none; }
+.rimtown-container .gh-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.rimtown-container .gh-title { font-weight: 800; font-size: 1rem; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.rimtown-container .gh-left { font-size: 0.74rem; font-weight: 600; color: var(--text-secondary); }
+.rimtown-container .gh-left b { color: var(--accent); font-size: 0.9rem; }
+.rimtown-container .gh-left.none b { color: var(--text-muted); }
+.rimtown-container .gh-tabs { display: flex; gap: 4px; margin-left: auto; padding: 3px; border-radius: 999px; background: var(--bg-card, #2E2A44); }
+.rimtown-container .gh-tabs button { position: relative; min-height: 34px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: var(--text-secondary); font: inherit; font-size: 0.8rem; cursor: pointer; }
+.rimtown-container .gh-tabs button.on { background: var(--accent); color: var(--ob-on-accent, #1E1B2A); font-weight: 800; }
+.rimtown-container .gh-badge { margin-left: 5px; font-size: 0.66rem; padding: 1px 6px; border-radius: 999px; background: #E95A5A; color: #fff; }
+.rimtown-container .gh-x { min-width: 40px; min-height: 40px; border-radius: 50%; border: 1px solid var(--border); background: transparent; color: var(--text-secondary); font-size: 1rem; cursor: pointer; }
+.rimtown-container .gh-x:hover, .rimtown-container .gh-x:focus-visible { background: var(--bg-card); color: var(--text-primary); outline: none; }
+.rimtown-container .gh-filters { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 4px; scrollbar-width: none; }
+.rimtown-container .gh-filters::-webkit-scrollbar { display: none; }
+.rimtown-container .gh-filters button { flex: none; min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-secondary); font: inherit; font-size: 0.76rem; cursor: pointer; }
+.rimtown-container .gh-filters button.on { background: var(--text-primary); color: var(--bg-secondary, #26223A); border-color: var(--text-primary); font-weight: 800; }
+.rimtown-container .gh-filters .gh-rand { margin-left: auto; border-style: dashed; color: var(--accent); }
+.rimtown-container .gh-filters .gh-rand:disabled { opacity: 0.4; cursor: not-allowed; }
+.rimtown-container .gh-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; min-height: 0; flex: 1; }
+.rimtown-container .gh-hand { display: flex; gap: 10px; overflow-x: auto; padding: 8px 4px 10px; scroll-snap-type: x proximity; align-items: flex-start; }
+.rimtown-container .gh-card {
+    --c: var(--border); flex: none; scroll-snap-align: center; position: relative; width: 112px; height: 156px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 26px 8px 10px;
+    border-radius: 14px; border: 2px solid var(--c); cursor: pointer; font-family: inherit; color: var(--text-primary);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--c) 22%, var(--bg-card, #2E2A44)) 0%, var(--bg-card, #2E2A44) 70%);
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+.rimtown-container .gh-card:hover { transform: translateY(-4px); }
+.rimtown-container .gh-card:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.rimtown-container .gh-card.sel { transform: translateY(-6px); box-shadow: 0 0 0 3px var(--accent), 0 10px 22px rgba(0,0,0,0.35); }
+.rimtown-container .gh-card.blocked { filter: saturate(0.35); opacity: 0.55; }
+.rimtown-container .gh-band { position: absolute; top: 0; left: 0; right: 0; padding: 4px 6px; font-size: 0.62rem; font-weight: 700; color: #fff; background: var(--c); border-radius: 11px 11px 0 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rimtown-container .gh-ic { font-size: 2.1rem; line-height: 1; }
+.rimtown-container .gh-nm { font-size: 0.8rem; font-weight: 800; text-align: center; line-height: 1.3; }
+.rimtown-container .gh-cd { position: absolute; bottom: 6px; font-size: 0.64rem; padding: 1px 7px; border-radius: 999px; background: rgba(0,0,0,0.45); color: #fff; }
+.rimtown-container .gh-disaster { --c: var(--gh-disaster); } .rimtown-container .gh-mishap { --c: var(--gh-mishap); }
+.rimtown-container .gh-fortune { --c: var(--gh-fortune); } .rimtown-container .gh-social { --c: var(--gh-social); }
+.rimtown-container .gh-detail { --c: var(--border); border-left: 4px solid var(--c); padding: 4px 0 2px 12px; display: flex; flex-direction: column; gap: 6px; min-height: 0; overflow-y: auto; }
+.rimtown-container .gh-d-head { display: flex; align-items: center; gap: 10px; }
+.rimtown-container .gh-d-ic { font-size: 2rem; }
+.rimtown-container .gh-d-nm { font-size: 1.02rem; font-weight: 800; }
+.rimtown-container .gh-d-meta { font-size: 0.72rem; color: var(--text-muted); }
+.rimtown-container .gh-d-desc { font-size: 0.84rem; line-height: 1.55; color: var(--text-secondary); }
+.rimtown-container .gh-d-fx { font-size: 0.8rem; line-height: 1.5; color: var(--accent); }
+.rimtown-container .gh-play { margin-top: auto; min-height: 48px; border: 0; border-radius: 12px; background: var(--accent); color: var(--ob-on-accent, #1E1B2A); font: inherit; font-size: 0.98rem; font-weight: 800; cursor: pointer; transition: filter .15s ease, transform .1s ease; }
+.rimtown-container .gh-play:hover:not(:disabled) { filter: brightness(1.08); }
+.rimtown-container .gh-play:active:not(:disabled) { transform: scale(0.98); }
+.rimtown-container .gh-play:disabled { opacity: 0.4; cursor: not-allowed; }
+.rimtown-container .gh-d-note { font-size: 0.7rem; color: var(--text-muted); line-height: 1.45; }
+.rimtown-container .gh-track { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 2px; }
+.rimtown-container .gh-empty { padding: 18px 8px; text-align: center; font-size: 0.82rem; color: var(--text-muted); line-height: 1.6; }
+.rimtown-container .gh-tr { --c: var(--border); padding: 9px 11px; border-radius: 12px; border-left: 4px solid var(--c); background: var(--bg-card); }
+.rimtown-container .gh-tr-head { display: flex; justify-content: space-between; gap: 8px; font-size: 0.86rem; }
+.rimtown-container .gh-when { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
+.rimtown-container .gh-tr-detail { font-size: 0.76rem; color: var(--text-secondary); margin: 3px 0 6px; }
+.rimtown-container .gh-react { font-size: 0.78rem; line-height: 1.5; margin: 3px 0; }
+.rimtown-container .gh-react.muted { color: var(--text-muted); }
+.rimtown-container .gh-who { border: 0; background: none; padding: 0 4px 0 0; color: var(--accent); font: inherit; font-weight: 800; cursor: pointer; }
+.rimtown-container .gh-props, .rimtown-container .gh-out { font-size: 0.74rem; color: var(--text-secondary); margin-top: 4px; }
+.rimtown-container .gh-entry { display: flex; align-items: center; gap: 10px; margin: 8px 10px 12px; padding: 10px 12px; border-radius: 12px; border: 1px dashed var(--accent); background: var(--bg-card); }
+.rimtown-container .gh-entry > div { flex: 1; display: flex; flex-direction: column; gap: 2px; font-size: 0.82rem; }
+.rimtown-container .gh-entry span { font-size: 0.72rem; color: var(--text-muted); }
+.rimtown-container .gh-entry-btn { min-height: 40px; padding: 0 14px; border-radius: 10px; border: 0; background: var(--accent); color: var(--ob-on-accent, #1E1B2A); font: inherit; font-weight: 800; cursor: pointer; }
+@media (max-width: 768px) {
+    .rimtown-container .gh-fab { left: auto; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 132px); padding: 0 12px 0 10px; }
+    .rimtown-container .gh-fab-txt { display: none; }
+    .rimtown-container .gh-tray { left: 0 !important; right: 0; bottom: 0; width: auto !important; max-height: 84vh; border-radius: 20px 20px 0 0; padding: 6px 14px calc(env(safe-area-inset-bottom, 0px) + 14px); transform: translateY(40px); }
+    .rimtown-container .gh-grab { display: block; width: 44px; height: 5px; border-radius: 3px; background: var(--border); margin: 2px auto 8px; }
+    .rimtown-container .gh-head { flex-wrap: wrap; }
+    .rimtown-container .gh-x { margin-left: auto; }
+    .rimtown-container .gh-tabs { order: 3; width: 100%; margin-left: 0; }
+    .rimtown-container .gh-tabs button { flex: 1; min-height: 40px; }
+    .rimtown-container .gh-body { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+    .rimtown-container .gh-card { width: 108px; height: 148px; }
+    .rimtown-container .gh-detail { overflow: visible; }
+    .rimtown-container .gh-play { min-height: 52px; font-size: 1.02rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .rimtown-container .gh-tray, .rimtown-container .gh-card, .rimtown-container .gh-fab { transition: none; }
+}
