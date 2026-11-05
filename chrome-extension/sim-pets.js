@@ -20,6 +20,10 @@ const PETS = (() => {
     if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, {
         pet_company: { mood: 3, opinion: 0, days: 1, label: t('有寵物陪著') },
         adopted_pet: { mood: 8, opinion: 0, days: 4, label: t('領養了新寵物') },
+        pet_lost:    { mood: -8, opinion: 0, days: 5, label: t('寵物走失了，好擔心') },
+        pet_found:   { mood: 6, opinion: 0, days: 3, label: t('走失的寵物找回來了') },
+        pet_died:    { mood: -15, opinion: 0, days: 10, label: t('心愛的寵物走了') },
+        pet_gift:    { mood: 5, opinion: 1, days: 3, label: t('收到鄰居送的小寵物') },
     });
     const freeName = (w, sp) => { const used = new Set((w.pets?.list || []).map(p => p.name)); const pool = SP[sp].names.filter(n => !used.has(n)); return pool.length ? pick(pool) : pick(SP[sp].names); };
     function make(w, sp, owner, home) {
@@ -40,11 +44,74 @@ const PETS = (() => {
         make(w, 'cat', null, 'town_square'); make(w, 'cat', null, 'town_square');
         return henCheck(w);
     }
+    const today = (w) => w.proposals?._abs?.(w) ?? 0;
+    const friendOf = (w, a, pool) => pool.slice().sort((x, y) => (a.relationships?.relationships?.[y.agentId]?.affinity || 0) - (a.relationships?.relationships?.[x.agentId]?.affinity || 0))[0];
+    // v6.52.0 生小寶寶分送鄰居、走失大家幫忙找、老了或生病離開
+    function lifeEvents(w, S, all) {
+        const d = today(w); const spring = w.clock?.season === '春季';
+        for (const p of S.list.slice()) {
+            if (p.sp === 'chicken') continue;
+            if (p.born === undefined) p.born = d - Math.floor(Math.random() * 120);
+            const o = p.owner && w.agents[p.owner];
+            // 走失 → 大家幫忙找
+            if (p.lost !== undefined && p.lost !== null) {
+                if (!o) { p.lost = null; continue; }
+                const helpers = all.filter(a => a !== o);
+                if (Math.random() < 0.4 && helpers.length) {
+                    const h = friendOf(w, o, helpers) && Math.random() < 0.6 ? friendOf(w, o, helpers) : pick(helpers);
+                    p.lost = null; o.addThought?.('pet_found', w);
+                    o.relationships?.getOrCreate?.(h.agentId, h.name)?.modifyAffinity?.(8); h.relationships?.getOrCreate?.(o.agentId, o.name)?.modifyAffinity?.(3);
+                    mem(w, o, '{h}幫我找回了走失的{pet}，真的太感謝了！', { h: h.name, pet: petName(p) }, 7);
+                    mem(w, h, '在{place}找到了{o}走失的{pet}。', { place: t(pick(['河邊', '樹林裡', '倉庫後面', '酒館門口'])), o: o.name, pet: petName(p) }, 5);
+                    w.logMessageT?.('social', '🔎 {h}找到了{o}走失的{pet}！', { h: h.name, o: o.name, pet: petName(p) }, h.name);
+                    try { DARK?.bump?.(w, h, 'helped'); } catch (e) {}
+                } else if (d - p.lost >= 5) {
+                    S.list = S.list.filter(x => x !== p); o.addThought?.('pet_died', w);
+                    mem(w, o, '找了好多天，{pet}還是沒有回來……', { pet: petName(p) }, 8);
+                    w.logMessageT?.('social', '🕯️ {o}的{pet}走失好幾天，一直沒有找回來。', { o: o.name, pet: petName(p) }, o.name);
+                }
+                continue;
+            }
+            if (o && Math.random() < 0.01) {
+                p.lost = d; o.addThought?.('pet_lost', w);
+                mem(w, o, '{pet}不見了！到處都找不到，好擔心。', { pet: petName(p) }, 7);
+                w.logMessageT?.('social', '🔎 {o}的{pet}走失了，大家幫忙找。', { o: o.name, pet: petName(p) }, o.name);
+                w.dailyNews?.collectEvent?.('social', `🔎 ${o.name}${t('的')}${petName(p)}${t('走失了，大家幫忙找。')}`, 4, [o.name]);
+                continue;
+            }
+            // 老了或生病離開
+            const life = p.sp === 'dog' ? 300 : 360;
+            if (d - p.born > life || Math.random() < 0.0008) {
+                S.list = S.list.filter(x => x !== p);
+                if (o) {
+                    o.addThought?.('pet_died', w); mem(w, o, '{pet}今天安靜地走了。謝謝你陪了我這麼久。', { pet: petName(p) }, 9);
+                    w.logMessageT?.('social', '🕯️ {o}的{pet}走了，{o}很難過。', { o: o.name, pet: petName(p) }, o.name);
+                    w.dailyNews?.collectEvent?.('social', `🕯️ ${o.name}${t('的')}${petName(p)}${t('走了。')}`, 6, [o.name]);
+                    for (const f of all.filter(a => a !== o && (a.relationships?.relationships?.[o.agentId]?.affinity || 0) >= 30).slice(0, 2)) { mem(w, f, '{o}的{pet}走了，我去陪他坐了一會兒。', { o: o.name, pet: petName(p) }, 5); o.relationships?.getOrCreate?.(f.agentId, f.name)?.modifyAffinity?.(4); }
+                } else w.logMessageT?.('social', '🕯️ 廣場的流浪{sp}{pet}好幾天沒出現了。', { sp: spName(p.sp), pet: petName(p) });
+                continue;
+            }
+            // 生小寶寶 → 分送給沒有寵物的鄰居(交情好的優先)
+            const room = MAX - S.list.filter(x => x.sp !== 'chicken').length;
+            if (o && room >= 2 && Math.random() < (spring ? 0.015 : 0.005)) {
+                const want = all.filter(a => a !== o && !owned(w, a)); if (!want.length) continue;
+                const n = Math.min(room, want.length, 1 + Math.floor(Math.random() * 2)); const got = [];
+                for (let i = 0; i < n; i++) { const pool = want.filter(a => !got.includes(a)); const a = friendOf(w, o, pool); if (!a) break; const kid = make(w, p.sp, a); kid.color = Math.random() < 0.6 ? p.color : kid.color; kid.parent = p.id; got.push(a); a.addThought?.('pet_gift', w, o.agentId, o.name); mem(w, a, '{o}家的{pet}生了小{sp}，送了我一隻，我叫牠{kid}。', { o: o.name, pet: petName(p), sp: spName(p.sp), kid: petName(kid) }, 6); a.relationships?.getOrCreate?.(o.agentId, o.name)?.modifyAffinity?.(5); o.relationships?.getOrCreate?.(a.agentId, a.name)?.modifyAffinity?.(3); }
+                if (got.length) {
+                    mem(w, o, '{pet}生了小{sp}，分送給了{list}。', { pet: petName(p), sp: spName(p.sp), list: got.map(a => a.name).join(t('、')) }, 6);
+                    w.logMessageT?.('social', '🐣 {o}家的{pet}生了小{sp}，分送給{list}。', { o: o.name, pet: petName(p), sp: spName(p.sp), list: got.map(a => a.name).join(t('、')) }, o.name);
+                    w.dailyNews?.collectEvent?.('social', fill('🐣 {o}家的{pet}生了小{sp}，分送給{list}。', { o: o.name, pet: petName(p), sp: spName(p.sp), list: got.map(a => a.name).join(t('、')) }), 5, [o.name]);
+                }
+            }
+        }
+    }
+    const fill = (k, p) => { let s = t(k); for (const [x, v] of Object.entries(p || {})) s = s.split('{' + x + '}').join(String(v)); return s; };
     function daily(w) {
         const S = ensure(w); const all = npcs(w); if (!all.length) return;
+        try { lifeEvents(w, S, all); } catch (e) { console.warn('[Pets] life', e); }
         const alive = new Set(all.map(a => a.agentId));
         for (const p of S.list) {
-            if (p.sp === 'chicken') continue;
+            if (p.sp === 'chicken' || (p.lost !== undefined && p.lost !== null)) continue;
             if (p.owner && !alive.has(p.owner)) { // 主人搬走或過世 → 變成流浪的
                 const nm = p.ownerName || '';
                 p.owner = null; p.home = 'town_square'; p.bond = 0;
@@ -87,10 +154,10 @@ const PETS = (() => {
     // 給畫面:每隻的種類、顏色、主人、要待的地方
     function view(w) {
         const S = w.pets; if (!S) return [];
-        return S.list.map(p => ({ id: p.id, sp: p.sp, name: petName(p), color: p.color, owner: p.owner, home: p.owner ? (w.agents[p.owner]?.homeLocation || p.home) : p.home }));
+        return S.list.filter(p => p.lost === undefined || p.lost === null).map(p => ({ id: p.id, sp: p.sp, name: petName(p), color: p.color, owner: p.owner, home: p.owner ? (w.agents[p.owner]?.homeLocation || p.home) : p.home }));
     }
-    const describe = (w, a) => { const p = owned(w, a); return p ? `${SP[p.sp].icon} ${t('養了一隻{sp}「{pet}」').replace('{sp}', spName(p.sp)).replace('{pet}', petName(p))}` : ''; };
-    return { SP, ensure, daily, view, owned, describe, make };
+    const describe = (w, a) => { const p = owned(w, a); return p ? `${SP[p.sp].icon} ${t('養了一隻{sp}「{pet}」').replace('{sp}', spName(p.sp)).replace('{pet}', petName(p))}${(p.lost !== undefined && p.lost !== null) ? t('（走失了，正在找）') : ''}` : ''; };
+    return { SP, ensure, daily, view, owned, describe, make, lifeEvents };
 })();
 
 // ---- 每日、存檔 ----

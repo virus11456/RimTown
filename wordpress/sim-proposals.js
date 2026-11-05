@@ -545,6 +545,7 @@ class ProposalSystem {
                 case 'factory': { const r = w.processing?.buildFactory?.(p.refKey, w); ok = !!r?.ok; result = ok ? '工廠動工' : (r?.error || '沒辦法動工'); break; }
                 case 'policy': { ok = this._applyPolicy(w, p); result = ok ? '政令生效 20 天' : '無法施行'; break; }
                 case 'free': { for (const [r, n] of Object.entries(this._cost(p))) w.stockpile.consume(r, n, w.tickCount, t('提案'), 'proposal'); const out = (typeof FREEPROP !== 'undefined') ? FREEPROP.apply(w, this, p) : []; ok = true; result = out.length ? out.join(t('；')) : '照提案執行'; break; } // v6.47.0 村民自己的點子
+                case 'verdict': { result = (typeof DARK !== 'undefined') ? DARK.punish(w, this, p) : ''; ok = !!result; break; } // v6.52.0 審判
                 case 'festival': { const r = w.festivals?.sponsor?.(w, p.proposerName); ok = !!r?.ok; result = ok ? '贊助成功，節慶更熱鬧' : (r?.msg || '贊助失敗'); break; }
                 case 'industry': { const r = w.industry?.chooseIndustry?.(p.refKey, w); ok = !!r?.ok; result = ok ? '產業開張' : (r?.error || '無法開張'); break; }
                 case 'expedition': {

@@ -919,6 +919,16 @@ Object.assign(RimTownApp.prototype, {
                 html += `<div class="pp-issue-hint">${t('眼力好的人（守衛、鎮長、學者…）比較容易看穿；被拆穿的人會失去大家的信任。')}</div></div>`;
             }
         } catch (e) {}
+        // v6.52.0 小團體與恩怨連載(大家都看得到)
+        try {
+            const dv = (typeof DARK !== 'undefined' && this.world) ? DARK.view(this.world) : null;
+            if (dv && ((dv.cliques || []).length || (dv.feuds || []).length)) {
+                html += `<div class="pp-issues"><h4 class="pp-h">🫂 ${t('小團體與恩怨')}</h4>`;
+                for (const c of dv.cliques) html += `<div class="pp-issue">🫂 <span>${esc(c.name)}${t('：')}${esc(c.members.map(n => t(n)).join(t('、')))}${c.against.length ? `<small>${esc(t('跟{v}不對盤').replace('{v}', c.against.map(n => t(n)).join(t('、'))))}</small>` : ''}</span></div>`;
+                for (const f of dv.feuds) html += `<div class="pp-issue">⚔️ <span>${esc(f.names.map(n => t(n)).join(' vs '))}<small>${esc(t('恩怨連載第 {n} 回').replace('{n}', f.n))}</small></span></div>`;
+                html += `</div>`;
+            }
+        } catch (e) {}
         // v6.50.0 鎮上急事:村民正受影響,拖著沒人管會抱怨、吵架、搬走
         if ((d.issues || []).length) {
             html += `<div class="pp-issues"><h4 class="pp-h">⚠️ ${t('鎮上急事')} <span class="pp-count">${d.issues.length}</span></h4>`;
