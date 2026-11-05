@@ -1,5 +1,5 @@
-// RimTown - Frontend App v6.49.1
-const RIMTOWN_APP_VERSION = '6.49.1';
+// RimTown - Frontend App v6.50.0
+const RIMTOWN_APP_VERSION = '6.50.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1850,12 +1850,11 @@ class RimTownApp {
             const speed = localStorage.getItem('sim_speed');
             if (speed) this.simSpeed = parseInt(speed);
             // v5.65.0 AI 全面內建:所有金鑰由伺服器(Vercel 環境變數)統一保管,玩家端不再有任何
-            // 自備金鑰設定。舊版留在本機/擴充功能儲存區的金鑰一律清除。
+            // 自備金鑰設定。舊版留在本機的金鑰一律清除。
             try {
                 localStorage.removeItem('llm_api_key');
                 localStorage.removeItem('fallback_groq_key');
                 localStorage.removeItem('llm_model');
-                if (typeof chrome !== 'undefined' && chrome.storage) chrome.storage.local.remove(['llm_provider', 'llm_api_key', 'fallback_groq_key']);
             } catch (e) {}
             this._buildLLMClient();
         } catch(e) { console.log('[RimTown] Settings load error:', e); }
@@ -1975,9 +1974,6 @@ class RimTownApp {
         this.restartSimulation();
         this._updateLLMStatus();
         localStorage.setItem('sim_speed', speed);
-        try {
-            if (typeof chrome !== 'undefined' && chrome.storage) await chrome.storage.local.set({ sim_speed: speed });
-        } catch(e) {}
         // v5.33.0 設定推上帳號雲端(額度隨帳號走)
         this._pushCloudSettings();
     }
@@ -2735,12 +2731,7 @@ class RimTownApp {
                 if (this.currentTownId) {
                     this._saveCurrentTown();
                 }
-                const json = JSON.stringify(saveData);
-                if (typeof chrome !== 'undefined' && chrome.storage) {
-                    await chrome.storage.local.set({ rimtown_save: json });
-                } else {
-                    localStorage.setItem('rimtown_save', json);
-                }
+                localStorage.setItem('rimtown_save', JSON.stringify(saveData));
                 this.world.logMessage('system', t('遊戲已儲存。'));
             }
             return true;
@@ -2753,13 +2744,7 @@ class RimTownApp {
 
     async tryLoadGame() {
         try {
-            let json = null;
-            if (typeof chrome !== 'undefined' && chrome.storage) {
-                const data = await chrome.storage.local.get(['rimtown_save']);
-                json = data.rimtown_save;
-            } else {
-                json = localStorage.getItem('rimtown_save');
-            }
+            const json = localStorage.getItem('rimtown_save');
             if (!json) return false;
             const saveData = JSON.parse(json);
             return this.world.loadSave(saveData);
@@ -2768,11 +2753,7 @@ class RimTownApp {
 
     async deleteSave() {
         try {
-            if (typeof chrome !== 'undefined' && chrome.storage) {
-                await chrome.storage.local.remove('rimtown_save');
-            } else {
-                localStorage.removeItem('rimtown_save');
-            }
+            localStorage.removeItem('rimtown_save');
         } catch(e) {}
     }
 
@@ -2834,11 +2815,7 @@ class RimTownApp {
                     if (this.currentTownId) {
                         this._saveCurrentTown();
                     }
-                    if (typeof chrome !== 'undefined' && chrome.storage) {
-                        chrome.storage.local.set({ rimtown_save: json });
-                    } else {
-                        localStorage.setItem('rimtown_save', json);
-                    }
+                    localStorage.setItem('rimtown_save', json);
                 }
             } catch(e) {}
         }

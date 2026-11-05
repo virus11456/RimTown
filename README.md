@@ -82,7 +82,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 - B14 ~~`app.js` 9.8K 行單檔~~ v6.0.0 拆成核心 `app.js`（3.3K 行）＋九個分檔 `app-landing/notify/loop/towns/chat/mobile/panels/economy/records.js`（`Object.assign(RimTownApp.prototype, {…})`，逐字搬移；新增檔案要同步列入 `index.html`、`rimtown.php`、`sw.js`、發版鏡像清單）。v6.1.0 `simulation.js` 也拆成核心（World＋工具，2.3K 行）＋ `sim-agent/conversation/town/economy/society.js`（World 之前載入）與 `sim-systems.js`（World 之後載入），頂層宣告逐字搬移、順序不變。`tilemap.js` 6.2K 行仍為單檔。
 - B15 ~~Playwright 掃描腳本只在工作區~~ v5.81.0 收進 `scripts/smoke_playwright.js`（選跑）與 `scripts/map_ascii.js`（版面快照，必跑）。
 - B16 ~~`t('…')` 英文對照缺口靠手動檢查~~ v5.81.0 `scripts/i18n-audit.js`：新字串缺英文即失敗；歷史欠帳 232 筆在 `scripts/i18n_missing_baseline.json`，補一筆就 `--update` 縮基準。
-- B17 ~~WordPress 版（`rimtown.php` 短碼）沒有 `/api/chat`~~ v6.49.1 WordPress 外掛版移除，只剩 Vercel 站。
+- B17 ~~WordPress 版（`rimtown.php` 短碼）沒有 `/api/chat`~~ v6.50.0 WordPress 外掛版移除，只剩 Vercel 站。
 
 **玩法**
 - B18 ~~跨鎮互訪只在兩鎮之間~~ v5.76–v5.80 已支援五鎮（出訪名單／馬車目的地／親緣網／商隊）。
@@ -262,7 +262,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 ## 部署與執行
 
 - 線上：https://rimtown.cc（Vercel）。`build.sh` 把 `wordpress/` 的前端檔、`vendor/`、`chrome-extension/icons|img` 複製到 `public/`；`api/` 是 Serverless Functions（帳號、雲端存檔、AI 對話代理）。
-- `wordpress/` 只是資料夾名稱沿用（WordPress 外掛版 `rimtown.php` 已在 v6.49.1 移除），內容與 `chrome-extension/` 的前端檔一致。
+- `wordpress/` 與 `chrome-extension/` 只是資料夾名稱沿用（WordPress 外掛版與 Chrome 擴充功能版已在 v6.50.0 移除）：`chrome-extension/` 是開發來源，改完鏡像到 `wordpress/`，`build.sh` 從 `wordpress/` 產出網站。
 - 本機：`cd wordpress && python3 -m http.server 8126`，打開 http://localhost:8126/（沒有 `/api/` 時只能訪客模式、村民走規則式對話）。
 
 ---
@@ -280,8 +280,10 @@ node scripts/refusal_test.js   # /api/chat 拒絕扮演偵測與退回(v5.67.2 �
 node scripts/scrub_test.js     # 存檔深度清理 AI 助理漏出內容(v5.67.4 起)
 node scripts/invite_test.js    # 推薦碼註冊與管理(v5.68.0 起)
 node scripts/lang_test.js      # /api/chat 對話語言:lang=en 英文系統指示/不轉繁體(v5.73.0 起)
+node scripts/issues_test.js    # v6.50.0 鎮上急事:村民真的受影響(餓、冷、做不了工、吵架、搬走)、AI 看得到、提案對應、存讀檔、提案頁(需本機 8126)
+node scripts/fix6491_test.js   # v6.50.0 完整智能體模式提案十成由 AI 發想、鎮況當提示(需本機 8126)
 node scripts/proposal_test.js  # 村民主動提案:生成/投票/批准執行/自動定案/存檔往返(v6.26.0 起;需本機 8126 服務 wordpress/)
-node scripts/gen-changelog.js --add entry.json  # 首頁更新紀錄:chrome-extension/changelog.js 是單一來源(v6.49.1 起;以前從 rimtown.php 產生),加新版本並鏡像到 wordpress/;v5.74.0 起每版必須同時有 changes 與 changes_en,缺英文會失敗
+node scripts/gen-changelog.js --add entry.json  # 首頁更新紀錄:chrome-extension/changelog.js 是單一來源(v6.50.0 起;以前從 rimtown.php 產生),加新版本並鏡像到 wordpress/;v5.74.0 起每版必須同時有 changes 與 changes_en,缺英文會失敗
 node scripts/i18n-audit.js     # i18n 重複鍵=0、新 t('…') 字串必須有英文(v5.81.0 起)
 node scripts/cjk-punct-audit.js # 模板字串裡沒包 t() 的 CJK 標點,基準 10(AI 提示詞與訪客名),新增就失敗;--list 列全部(v6.22.3 起)
 node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改版面才 --update(v5.81.0 起)
@@ -307,9 +309,13 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 
 ## Changelog
 
-### v6.49.1 (2026-11-05)
-- 🧹 移除已停用的 WordPress 外掛版（rimtown.php 與登入相容程式碼），現在只剩 rimtown.cc（Vercel）一個版本；遊戲內容與存檔都不受影響
-- 🛠️ 首頁「更新紀錄」改成直接以 changelog.js 為單一來源，每個版本一行，之後的發版更簡單
+### v6.50.0 (2026-11-05)
+- 🧠 完整智能體模式下，提案改成十成都由村民（AI）自己想；系統看到的鎮況和大家在談的點子當參考提示給 AI，要不要採用由它決定
+- ⚠️ 新增「鎮上急事」：缺糧、衣服不夠、冬天沒柴燒、店裡缺貨、工人缺原料、公庫見底、考驗、有人過不下去、結仇、士氣低落。村民會真的受影響：肚子餓、受凍、做不了工、心情變差、記在心裡；拖著沒人提出辦法，會開始抱怨、在街上吵架，甚至有人搬走，鎮長也會被點名
+- 🫀 AI 更懂村民的感受：讀村民資料時，最前面就是他現在的心情、餓不餓、累不累、寂不寂寞，以及心裡掛著的事（開心、難過、嫉妒…）；提案、投票和鎮長裁決都會看到鎮上的急事，提案可以標明要處理哪一件
+- 📜 提案頁上方列出鎮上急事，標出拖了幾天、哪一件提案正在處理
+- 🃏 事件卡第一次打開會先說明「這是做什麼的」，右上角 ? 可以隨時再看
+- 🧹 移除已停用的 WordPress 外掛版與 Chrome 擴充功能版，現在只剩 rimtown.cc 一個版本；首頁更新紀錄改由 changelog.js 單一來源，遊戲內容與存檔都不受影響
 
 ### v6.49.0 (2026-11-04)
 - 🏠 房子更精緻：屋頂多了三道瓦列、牆腳一圈深色護牆板、民宅門上有小雨遮和托架，桌機上面向街道的窗戶多了十字窗格、大建築山牆有通風窗

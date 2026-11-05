@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 首頁「更新紀錄」的資料:單一來源 = chrome-extension/changelog.js(v6.49.1 起;以前是 wordpress/rimtown.php,WordPress 版已停用)
+// 首頁「更新紀錄」的資料:單一來源 = chrome-extension/changelog.js(v6.50.0 起;以前是 wordpress/rimtown.php,WordPress 版已停用)
 //   node scripts/gen-changelog.js                 檢查並重寫 chrome-extension/changelog.js,鏡像到 wordpress/changelog.js
 //   node scripts/gen-changelog.js --add entry.json 把新版本加到最前面(entry.json = {version, date, changes:[…], changes_en:[…]})
 // 每個版本都要有 changes 與 changes_en(英文更新紀錄),缺一或條數不同就失敗(v5.74.0 起)

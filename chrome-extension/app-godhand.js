@@ -83,8 +83,21 @@ Object.assign(RimTownApp.prototype, {
                     <button role="tab" aria-selected="${this._ghTab === 'hand'}" class="${this._ghTab === 'hand' ? 'on' : ''}" data-gh="tab" data-v="hand">${t('手牌')}</button>
                     <button role="tab" aria-selected="${this._ghTab === 'track'}" class="${this._ghTab === 'track' ? 'on' : ''}" data-gh="tab" data-v="track">${t('反應追蹤')}${newR ? `<span class="gh-badge">${newR}</span>` : ''}</button>
                 </div>
+                <button class="gh-help${this._ghIntroOpen() ? ' on' : ''}" data-gh="help" aria-label="${t('事件卡是什麼？')}" aria-expanded="${this._ghIntroOpen()}" title="${t('事件卡是什麼？')}">?</button>
                 <button class="gh-x" data-gh="close" aria-label="${t('關閉')}">✕</button>
             </div>`;
+        // v6.50.0 第一次打開(或按 ?)先說明事件卡是做什麼的
+        if (this._ghIntroOpen()) html += `<div class="gh-intro" role="note">
+                <div class="gh-intro-t">🃏 ${t('事件卡是什麼？')}</div>
+                <p>${t('你不在鎮上，只在天上看著村民過日子。事件卡是你唯一能「動手」的地方：打出一張，就讓一件事發生在鎮上，然後看村民怎麼反應。')}</p>
+                <ul>
+                    <li>🌪️ ${t('天災、🕳️ 人禍、🍀 機運、💞 人際四類；每張卡下方寫著會發生什麼')}</li>
+                    <li>⏳ ${t('每天最多打 {n} 張，打過的卡要冷卻幾天才能再用').replace('{n}', d.perDay)}</li>
+                    <li>💬 ${t('村民會聊這件事、記在心裡、跟著提出提案；「反應追蹤」會記下他們的反應和七天後的變化')}</li>
+                </ul>
+                <button class="gh-intro-ok" data-gh="help-ok">${t('知道了，看手牌')}</button>
+            </div>`;
+        if (this._ghIntroOpen()) { tray.innerHTML = html; return; } // 說明頁取代手牌,不擠在一起
         if (this._ghTab === 'track') {
             html += `<div class="gh-track">`;
             if (!d.played?.length) html += `<div class="gh-empty">📼 ${t('還沒打過事件卡。打出一張，村民接下來幾天的反應、提案和七天後的變化都會記在這裡。')}</div>`;
@@ -128,11 +141,15 @@ Object.assign(RimTownApp.prototype, {
         html += `</div>`;
         tray.innerHTML = html;
     },
+    _ghIntroOpen() { if (this._ghIntro != null) return this._ghIntro; try { return localStorage.getItem('rimtown_gh_intro') !== '1'; } catch (e) { return true; } },
+    _ghIntroSeen() { try { localStorage.setItem('rimtown_gh_intro', '1'); } catch (e) {} },
     _ghScrollSel() { const el = document.querySelector('#gh-tray .gh-card.sel'); if (el) el.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }); },
     _ghClick(e) {
         const b = e.target.closest('[data-gh]'); if (!b) return; e.stopPropagation();
         const k = b.dataset.gh, v = b.dataset.v;
         if (k === 'close') return this._ghHide();
+        if (k === 'help') { this._ghIntro = !this._ghIntroOpen(); if (!this._ghIntro) this._ghIntroSeen(); this._ghRender(); return; }
+        if (k === 'help-ok') { this._ghIntro = false; this._ghIntroSeen(); this._ghRender(); return; }
         if (k === 'tab') { this._ghTab = v; this._ghRender(); return; }
         if (k === 'filter') { this._ghFilter = v; this._ghRender(); this._ghScrollSel(); return; }
         if (k === 'sel') { this._ghSel = v; this._ghRender(); document.querySelector('#gh-tray .gh-card.sel')?.focus({ preventScroll: true }); this._ghScrollSel(); return; }

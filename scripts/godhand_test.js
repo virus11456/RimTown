@@ -22,6 +22,18 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     await page.tap ? null : null;
     if (dev === 'mobile') await page.tap('#gh-fab'); else await page.click('#gh-fab');
     await page.waitForTimeout(400);
+    // v6.50.0 第一次打開先看到說明頁;「知道了」回到手牌,? 可以再打開
+    const intro = await page.evaluate(() => ({ intro: !!document.querySelector('#gh-tray .gh-intro'), cards: document.querySelectorAll('#gh-tray .gh-card').length }));
+    ok(intro.intro && intro.cards === 0, '第一次打開先看到「事件卡是什麼？」說明', intro);
+    if (dev === 'mobile') await page.tap('#gh-tray .gh-intro-ok'); else await page.click('#gh-tray .gh-intro-ok');
+    await page.waitForTimeout(200);
+    if (dev === 'mobile') await page.tap('#gh-tray .gh-help'); else await page.click('#gh-tray .gh-help');
+    await page.waitForTimeout(150);
+    const intro2 = await page.evaluate(() => !!document.querySelector('#gh-tray .gh-intro'));
+    if (dev === 'mobile') await page.tap('#gh-tray .gh-help'); else await page.click('#gh-tray .gh-help');
+    await page.waitForTimeout(150);
+    const intro3 = await page.evaluate(() => ({ intro: !!document.querySelector('#gh-tray .gh-intro'), seen: localStorage.getItem('rimtown_gh_intro') }));
+    ok(intro2 && !intro3.intro && intro3.seen === '1', '按 ? 可以再看說明,再按一次收起;看過就記住', { intro2, intro3 });
     const tray = await page.evaluate(() => { const t = document.getElementById('gh-tray'); const r = t.getBoundingClientRect(); return { open: !t.hidden && t.classList.contains('open'), top: Math.round(r.top), bottom: Math.round(r.bottom), left: Math.round(r.left), right: Math.round(r.right), vw: innerWidth, vh: innerHeight, cards: t.querySelectorAll('.gh-card').length, sel: t.querySelector('.gh-card.sel')?.dataset.v, play: !!t.querySelector('.gh-play:not([disabled])') }; });
     ok(tray.open && tray.cards >= 20 && tray.sel && tray.play, '抽屜打開:有手牌、預選一張、可以打出', tray);
     ok(tray.top >= 0 && tray.bottom <= tray.vh && tray.left >= 0 && tray.right <= tray.vw, '抽屜沒有超出畫面', tray);
