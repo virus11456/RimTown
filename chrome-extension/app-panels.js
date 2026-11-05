@@ -941,6 +941,14 @@ Object.assign(RimTownApp.prototype, {
                 if (pg) T += `<div class="pp-tier-line">${t('升格為{n}還差').replace('{n}', `${pg.next.icon} ${esc(t(pg.next.zh))}`)}${t('：')}${t('人口')} ${bar(pg.pop[0], pg.pop[1])} · ${t('繁榮')} ${bar(pg.pros[0], pg.pros[1])} · ${t('時代')} ${bar(pg.era[0], pg.era[1])}${pg.streak ? ` · ${t('已連續達標 {n}／{m} 天').replace('{n}', pg.streak).replace('{m}', pg.need)}` : ''}</div>`;
                 else T += `<div class="pp-tier-line">${t('已經是最高等級。')}</div>`;
                 try { if (typeof CLASS !== 'undefined' && this.world.classes) { const py = CLASS.pyramid(this.world); T += `<div class="pp-tier-line">${t('社會階層')}${t('：')}${CLASS.NAMES.map((n, i) => py[i] ? `${n.icon} ${esc(t(n.zh))} ${py[i]}` : '').filter(Boolean).join(' · ')}</div>`; } } catch (e) {} // v6.58.0
+                try { const V = typeof CROWN !== 'undefined' ? CROWN.view(this.world) : null; if (V && (V.king || V.crisis || V.republic)) { // v6.59.0 王室
+                    const DN = (k) => { const D = CROWN.DECREES[k]; return D ? `${D.icon} ${esc(t(D.zh))}` : ''; };
+                    T += `<div class="pp-crown">`;
+                    if (V.republic) T += `<div class="pp-tier-line">🏳️ ${t('王都已推翻王室，改為共和')}</div>`;
+                    else if (V.king) T += `<div class="pp-tier-line">👑 ${t('國王')}${t('：')}<b>${esc(V.king)}</b> · ${esc(V.dynasty)} · ${t('民心')} <span class="pp-legit${V.legit < 35 ? ' low' : ''}">${V.legit}/100</span></div>`;
+                    if (V.crisis) T += `<div class="pp-tier-line">⚔️ ${t('王位空懸，繼承危機中')}${t('：')}${esc(V.crisis.join(t('、')))}</div>`;
+                    if (V.decrees.length) T += `<div class="pp-tier-line">📜 ${t('最近的王令')}${t('：')}${V.decrees.map(x => `${DN(x.key)}${x.text ? ' ' + t('「') + esc(x.text) + t('」') : ''}`).join(' · ')}</div>`;
+                    T += `</div>`; } } catch (e) {}
                 T += `<div class="pp-issue-hint">${t('城鎮以上，要當過下一級的首長，或在本級議會當過一季議員，才能參選首長。')}</div></div>`;
             }
         } catch (e) {}
