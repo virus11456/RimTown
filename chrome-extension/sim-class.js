@@ -28,7 +28,7 @@ const CLASS = (() => {
         if (!a.job && m >= 20) lv = 1;
         if (CRAFT.includes(a.job?.key) && m >= 40) lv = 2;
         if (m >= 200) lv = Math.max(lv, 3);
-        try { const b = typeof TIERS !== 'undefined' ? TIERS.badge(w, a) : null; if (b && b.cls !== 'former') lv = Math.max(lv, 3); if (b && b.cls === 'former') lv = Math.max(lv, 2); } catch (e) {}
+        try { const b = typeof TIERS !== 'undefined' ? TIERS.badge(w, a) : null; if (b && b.cls !== 'former') lv = Math.max(lv, 3); if (b && b.cls === 'former') lv = Math.max(lv, 2); if (b && b.cls === 'clergy' && b.high) lv = Math.max(lv, 4); } catch (e) {} // v6.61.0 城市以上的宗教領袖算貴族
         if ((a.job?.key === 'doctor' || a.job?.key === 'researcher' || a.job?.key === 'priest') && m >= 80) lv = Math.max(lv, 3);
         try { const r = w.dark?.rep?.[a.agentId]; if (r && (r.exposed || 0) >= 2) lv = Math.max(0, lv - 1); } catch (e) {}
         return lv;

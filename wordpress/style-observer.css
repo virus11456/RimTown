@@ -632,6 +632,7 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .nqc-chip.nqc-office-leader { background: linear-gradient(135deg, #F6D365, #E8A33C); color: #3A2400; border-color: #E8A33C; }
 .rimtown-container .nqc-chip.nqc-office-council { background: #2E6E75; color: #EAF8F9; border-color: #2E6E75; }
 .rimtown-container .nqc-chip.nqc-office-king { background: linear-gradient(135deg, #FFE27A, #C9A13A 60%, #8C6A12); color: #2A1A00; border-color: #8C6A12; box-shadow: 0 0 0 1px #FFE27A inset; }
+.rimtown-container .nqc-chip.nqc-office-clergy { background: #5A3E7A; color: #F3EAFB; border-color: #5A3E7A; }
 .rimtown-container .nqc-chip.nqc-office-former { background: transparent; color: var(--text-secondary); border-style: dashed; }
 .t3d-tag .t3d-office { display: inline-block; margin-right: 4px; padding: 0 5px; border-radius: 6px; font-size: .92em; font-weight: 700; }
 .t3d-tag .t3d-office-leader { background: linear-gradient(135deg, #F6D365, #E8A33C); color: #3A2400; }
@@ -642,4 +643,5 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .pp-crown { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border); }
 .rimtown-container .pp-legit { font-weight: 700; color: #2E7D32; }
 .rimtown-container .pp-legit.low { color: #C62828; }
+.t3d-tag .t3d-office-clergy { background: #5A3E7A; color: #F3EAFB; }
 .t3d-tag.has-office { border-color: #E8A33C; }
