@@ -1,45 +1,33 @@
 # RimTown - AI Town Simulation 邊境鎮
 
-A RimWorld-inspired AI town simulation where every resident is an autonomous AI agent with unique personality, background, job, relationships, and daily life. Plays in the browser at https://rimtown.cc (static site + serverless API on Vercel).
+A god's-eye AI town sandbox in the browser: every villager is an autonomous AI agent with a personality, memories, feelings and needs. You watch the town from above; the villagers live, argue, propose laws, vote and elect their own mayor. Play at **https://rimtown.cc** (Traditional Chinese / English).
 
-## Features
+瀏覽器裡的 3D 上帝視角 AI 小鎮沙盒。每位村民都是有個性、記憶、情緒與需求的 AI 智能體；你在天上看著他們過日子、吵架、提案、投票、選鎮長。線上遊玩：**https://rimtown.cc**（繁體中文／英文）。
 
-- **Autonomous AI Agents**: 25+ residents with unique personality, memory, moods, and psychological needs
-- **Social Simulation**: Agents chat, gossip, form friendships, rivalries, and romantic relationships
-- **Job System**: 12 RimWorld-inspired jobs — farming, mining, cooking, crafting, doctoring, research, trading, and more
-- **Dynamic Events**: Random events, seasons, raids, event chains, and merchant caravans
-- **Memory & Relationships**: Agents remember interactions, form opinions, date, marry, cheat, and divorce
-- **Election System**: Mayor elections with campaigns, voting, and policy effects
-- **Economy**: Resources, buildings, research tech tree, trading
-- **Account System**: Register/login, cloud saves, multi-device sync
-- **Faction System**: NPCs form social circles (work buddies, drinking pals, gossip circles) with alliances and rivalries
-- **Seasonal Festivals**: Spring Festival, Midsummer Bonfire, Harvest Festival, Winter Solstice with quests and decorations
-- **NPC Lifecycle**: Aging, death (old age/disease/accidents), birth, graveyard with epitaphs
-- **Legacy / New Game+ System**: Player can have children, start a new generation inheriting resources, buildings, industries, and NPC memories
-- **Exploration**: 6 discoverable zones outside town (forest, ruins, mine, mountain, cave, swamp) with expeditions
-- **Achievement System**: 50+ achievements across social, romance, economy, survival, faction, exploration, industry categories
-- **NPC Conversation Visualization**: Speech bubbles on map when NPCs talk to each other
-- **Player Interaction**: Choose jobs, vote in elections, flirt, propose, and marry NPCs
-- **Built-in Town AI**: every player talks to villagers through the server-side AI proxy (`/api/chat`); all keys live in Vercel env vars, nothing to configure on the client. Server-side routing (v6.41.0): every call (dialogue, schedules, reflections, full-agent decisions) goes to the main channel `LLM_*` (official Claude) first, then the official OpenAI lane (`OPENAI_API_KEY`, optional `OPENAI_MODEL`), then Groq's free tier (`GROQ_API_KEY`); failing lanes cool down and switch back on recovery. Full agent mode is on by default; logged-in players get 300 AI calls a day (`AI_USER_DAILY`). **Bring your own AI (v6.36.0)**: a player can instead enter their own Claude / OpenAI / Gemini / custom OpenAI-compatible key under Settings → AI; it stays in that device's browser only (never sent to the town server or cloud settings) and the browser calls the provider directly
-- **Pixel Art Map**: Animated tilemap with day/night cycle, campfires, particles
-- **Four Industries System**: Lumber, Quarry, Farming, Mining — choose your starting industry and unlock more as your town grows (v3)
-- **Farm & Crop System**: Plant crops, manage plots, seasonal planting, quality system, NPC farmer bonuses (v3)
-- **Factory Processing**: Build factories (bakery, textile mill, brewery, etc.), assign workers, craft goods, fulfill orders (v3)
-- **AI Daily Newspaper**: LLM-generated town newspaper with NPC reporter personality, gossip, and event coverage (v3)
-- **NPC Relationship Events**: Fights, hospitalizations, sabotage, cheating scandals with town-wide consequences (v3)
-- **Town Level System**: 7 town levels from hamlet to city, unlocking industry slots as you grow (v3)
-- **Daily Decision System**: Daily choice cards that let you make meaningful decisions affecting the whole town (v4)
-- **Shop System**: Buy and sell resources at the general store (v4)
-- **Event Choice System**: Choose how to respond to major events (raids, disasters, etc.) (v4)
-- **NPC Help Requests**: NPCs ask for your help with their problems — your choices affect relationships (v4)
-- **Job Action Buttons**: Manually perform your job (farm, forge, heal, etc.) for resources and skill XP (v4)
-- **Interactive Newspaper**: React to daily news with investigate/support/ignore actions (v4)
-- **Improved Mood System**: Gentler nighttime need decay, graduated mood penalties (v4)
-- **Reputation System**: 6 tiers (Nobody → Legend) with real gameplay effects — trade bonuses, NPC trust, shop discounts, event shields, immigration attraction (v4)
-- **Dynamic Weather Engine**: 10 weather types (clear, rain, storm, snow, blizzard, heatwave, drought, fog, wind, cloudy) with season-weighted pools, 3-day forecast, temperature/humidity/wind tracking, and real gameplay effects on farming, mood, NPC activity (v4)
-- **Natural Disasters**: Weather-driven disasters (severe drought, extreme blizzard, floods) with escalation from extreme weather streaks, disaster warnings, building mitigation (deep well reduces drought), and recovery phases (v4)
-- **NPC Council System**: Auto-formed town council (3-5 senior NPCs), 12 proposal types covering economy/welfare/culture/defense/nature, NPC personality-based voting, player participation, 20-day decree duration with modifier effects (v4)
-- **Building Upgrade System**: All 12 buildings support 3-tier upgrades (Lv.1→Lv.2→Lv.3) with escalating costs and stacking effects — watchtower→sentinel tower, granary→cold storage, marketplace→international port, etc. (v4.1)
+## 現在的玩法（v6.50.0）
+
+- **上帝視角觀察者**：你不在鎮上。3D 低多邊形小鎮（three.js），日夜、季節、天氣、節慶都會變；點村民可以跟拍、看他在想什麼。
+- **完整智能體模式（預設開啟）**：提案十成由村民自己發想，投票和鎮長裁決也由 AI 依每個人的性格、記憶和交情推理。提案效果走白名單落地（資源、每日產出、心情、人際、政令加成、建設、研究、轉職、傳統、地標），所以天馬行空的點子也會真的改變小鎮。
+- **鎮上急事（v6.50.0）**：缺糧、衣服不夠、冬天沒柴、店裡缺貨、工人缺原料、公庫見底、考驗、有人過不下去、結仇、士氣低落。村民會真的受影響：變餓、受凍、做不了工、心情變差並記在心裡；拖著沒人提辦法，會抱怨、在街上吵架，甚至有人搬走。AI 每次提案、投票、裁決都看得到這些急事。
+- **像真人的村民**：AI 讀村民資料時，最前面就是他現在的心情、餓不餓、累不累、寂不寂寞，以及心裡掛著的事（開心、難過、嫉妒、失戀、新婚……）。村民會聊天、八卦、交朋友、結仇、戀愛、結婚、離開小鎮。
+- **事件卡**：你唯一能動手的地方。30 張卡分天災、人禍、機運、人際四類，每天最多打 2 張，然後在「反應追蹤」看村民的反應、提案和七天後的變化。
+- **科技與觀念**：三個時代 28 個研究節點；新技術會在村民之間傳開，形成保守派與革新派，影響選舉政見；發明家會留下冠名發明。
+- **鎮長選舉**：每年秋季改選，村民依提案戰績與政見投票；鎮長不在時有代理鎮長。
+- **五座主題城鎮＋隨機城鎮**：邊境鎮、海風鎮、礦山鎮、林間村、市集城各有地形、卡司與經濟；四個鄰鎮都通車後，會用種子隨機生成新城鎮（相連最多 10 座，再遠的只留城鎮卡）。
+- **日報**：AI 記者寫的每日報紙，含跨鎮專欄。
+- **帳號與雲端存檔**：註冊需邀請碼；登入後存檔同步到雲端，多裝置可接著玩。
+
+## 架構
+
+| 位置 | 內容 |
+|---|---|
+| `chrome-extension/` | 前端開發來源（資料夾名稱沿用，Chrome 擴充功能版已在 v6.50.0 移除）：`sim-*.js`／`simulation.js` 模擬、`app*.js` 介面、`town3d.js` 3D、`i18n*.js` 翻譯、`changelog.js` 更新紀錄 |
+| `wordpress/` | 前端的鏡像（資料夾名稱沿用，WordPress 外掛版已在 v6.50.0 移除）；`build.sh` 從這裡產出網站 |
+| `api/` | Vercel Serverless Functions：帳號、雲端存檔、成就、排行榜、AI 對話代理 `/api/chat`（所有金鑰只放在 Vercel 環境變數，前端看不到） |
+| `scripts/` | 檢查與測試腳本（見「發版前必跑」） |
+| `build.sh`、`vercel.json` | Vercel 建置：輸出到 `public/` |
+
+部署：正式分支是 `claude/ai-town-simulation-EOWZ8`（GitHub 預設分支），合併後 Vercel 自動部署到 rimtown.cc；開發在 `claude/llm-dialogue-memory-port-u8lf0x`。
 
 ## 待辦清單與路線圖（2026-10-06 盤點）
 
