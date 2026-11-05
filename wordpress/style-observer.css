@@ -485,6 +485,9 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
     opacity: 0; transform: translateY(14px); transition: opacity .18s ease, transform .2s ease;
 }
 .rimtown-container .gh-tray.open { opacity: 1; transform: none; }
+/* v6.50.1 關掉的抽屜是透明的，但 display:flex 蓋過 hidden，還會擋住底下的按鈕（村民卡的交談／詳情點不到）*/
+.rimtown-container .gh-tray:not(.open) { pointer-events: none; }
+.rimtown-container .gh-tray[hidden], .rimtown-container .gh-fab[hidden], .rimtown-container .gh-fab-dot[hidden] { display: none !important; }
 .rimtown-container .gh-grab { display: none; }
 .rimtown-container .gh-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .rimtown-container .gh-title { font-weight: 800; font-size: 1rem; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }

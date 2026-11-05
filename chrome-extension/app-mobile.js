@@ -349,6 +349,7 @@ Object.assign(RimTownApp.prototype, {
         const card = document.getElementById('npc-quick-card');
         const a = this.state?.agents?.[agentId];
         if (!card || !a) return;
+        document.getElementById('loc-quick-card')?.classList.add('hidden'); // v6.50.1 建築卡還開著會疊在村民卡上,按鈕被它擋住
         // v5.35.6 手機版:快速卡開在地圖層,若浮動面板(故事/日報等)開著會蓋住它 → 先收合面板
         if (this._kairoReady && window.innerWidth <= 768) this._dismissKairoPanels?.();
         const lv = this._heartsFor(agentId);
@@ -465,13 +466,16 @@ Object.assign(RimTownApp.prototype, {
             }
         };
         card.classList.remove('hidden');
+        this._toastsAvoidCards?.(); // v6.50.1 通知別蓋住村民卡的按鈕
         if (agentId !== 'player') this._firstDayMark?.('meet'); // v5.18.0 第一天:認識一位居民
     },
 
     _hideNpcCard() {
         document.getElementById('npc-quick-card')?.classList.add('hidden');
         document.getElementById('loc-quick-card')?.classList.add('hidden');
+        this._toastsAvoidCards?.();
     },
+    _toastsAvoidCards() { const h = document.getElementById('achv-toast-host'); if (h) this._placeToastHost?.(h); },
 
     // v6.29.0 建築資訊卡:點地圖上的建築／名牌 → 誰在裡面、在做什麼、住戶、相關產業與提案
     _showLocationCard(locId) {
@@ -527,7 +531,7 @@ Object.assign(RimTownApp.prototype, {
             else if (act === 'focus') { tm.focusLocation?.(locId); }
             else if (act === 'proposals') { this._hideNpcCard(); this._goTab?.('proposals'); }
         };
-        card.classList.remove('hidden');
+        card.classList.remove('hidden'); this._toastsAvoidCards?.();
     },
 
     // v5.4.0 助夢:替村民加速他的人生夢想,並加好感
