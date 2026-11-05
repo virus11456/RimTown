@@ -596,7 +596,7 @@ const DARK = (() => {
             secrets: D.secrets.filter(s => !s.found && s.stage !== 'off').slice(-8).reverse().map(s => ({ id: s.id, kind: s.kind, plan: s.stage === 'plan', text: fill(s.k, s.p), culprit: s.culprit, victim: s.victim })),
             mis: D.mis.filter(m => !m.done).slice(-6).map(m => ({ kind: m.kind, a: nm(m.a), b: nm(m.b) })),
             cliques: (D.cliques || []).map(c => ({ name: cliqueName(w, c), members: c.members.map(nm).filter(Boolean), against: c.against.map(nm).filter(Boolean) })),
-            feuds: Object.entries(D.feuds || {}).filter(([, f]) => f.n >= 2).map(([k, f]) => ({ names: k.split('|').map(nm), n: f.n })).slice(-4),
+            feuds: Object.entries(D.feuds || {}).filter(([, f]) => f.n >= 2).map(([k, f]) => ({ names: k.split('|').map(nm), n: f.n })).filter(f => f.names.every(Boolean)).slice(-4), // v6.73.1 有人離鎮或過世就不列出(原本會顯示「⚔️ vs 某某」)
         };
     }
     function about(w, a) { // 這個人身上的秘密與恩怨(村民卡、AI 用)
