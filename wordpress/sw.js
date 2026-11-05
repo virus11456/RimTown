@@ -1,5 +1,5 @@
 // RimTown Service Worker - PWA Offline Support
-const CACHE_NAME = 'rimtown-v6.58.2';
+const CACHE_NAME = 'rimtown-v6.73.0';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -42,6 +42,21 @@ const ASSETS_TO_CACHE = [
   './sim-housing.js',
   './sim-class.js',
   './sim-traveler.js',
+  './sim-crown.js',
+  './sim-faith.js',
+  './sim-faith2.js',
+  './sim-tidings.js',
+  './sim-press.js',
+  './sim-bank.js',
+  './sim-goods.js',
+  './sim-diplo.js',
+  './sim-civic.js',
+  './sim-mind.js',
+  './sim-politics.js',
+  './sim-biz.js',
+  './sim-culture.js',
+  './sim-dream.js',
+  './sim-legacy.js',
   './tilemap.js',
   './vendor/three.min.js',
   './town3d.js',

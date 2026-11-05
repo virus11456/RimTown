@@ -941,9 +941,106 @@ Object.assign(RimTownApp.prototype, {
                 if (pg) T += `<div class="pp-tier-line">${t('升格為{n}還差').replace('{n}', `${pg.next.icon} ${esc(t(pg.next.zh))}`)}${t('：')}${t('人口')} ${bar(pg.pop[0], pg.pop[1])} · ${t('繁榮')} ${bar(pg.pros[0], pg.pros[1])} · ${t('時代')} ${bar(pg.era[0], pg.era[1])}${pg.streak ? ` · ${t('已連續達標 {n}／{m} 天').replace('{n}', pg.streak).replace('{m}', pg.need)}` : ''}</div>`;
                 else T += `<div class="pp-tier-line">${t('已經是最高等級。')}</div>`;
                 try { if (typeof CLASS !== 'undefined' && this.world.classes) { const py = CLASS.pyramid(this.world); T += `<div class="pp-tier-line">${t('社會階層')}${t('：')}${CLASS.NAMES.map((n, i) => py[i] ? `${n.icon} ${esc(t(n.zh))} ${py[i]}` : '').filter(Boolean).join(' · ')}</div>`; } } catch (e) {} // v6.58.0
+                try { const V = typeof CROWN !== 'undefined' ? CROWN.view(this.world) : null; if (V && (V.king || V.crisis || V.republic)) { // v6.59.0 王室
+                    const DN = (k) => { const D = CROWN.DECREES[k]; return D ? `${D.icon} ${esc(t(D.zh))}` : ''; };
+                    T += `<div class="pp-crown">`;
+                    if (V.republic) T += `<div class="pp-tier-line">🏳️ ${t('王都已推翻王室，改為共和')}</div>`;
+                    else if (V.king) T += `<div class="pp-tier-line">👑 ${t('國王')}${t('：')}<b>${esc(V.king)}</b> · ${esc(V.dynasty)} · ${t('民心')} <span class="pp-legit${V.legit < 35 ? ' low' : ''}">${V.legit}/100</span></div>`;
+                    if (V.crisis) T += `<div class="pp-tier-line">⚔️ ${t('王位空懸，繼承危機中')}${t('：')}${esc(V.crisis.join(t('、')))}</div>`;
+                    if (V.decrees.length) T += `<div class="pp-tier-line">📜 ${t('最近的王令')}${t('：')}${V.decrees.map(x => `${DN(x.key)}${x.text ? ' ' + t('「') + esc(x.text) + t('」') : ''}`).join(' · ')}</div>`;
+                    T += `</div>`; } } catch (e) {}
                 T += `<div class="pp-issue-hint">${t('城鎮以上，要當過下一級的首長，或在本級議會當過一季議員，才能參選首長。')}</div></div>`;
             }
         } catch (e) {}
+        // v6.73.0 鎮史:史書、傳說、家族、世仇
+        try { if (typeof LEGACY !== 'undefined' && this.world.legacy) { const V = LEGACY.view(this.world); if (V.chapters.length || V.legends.length || V.families.length) {
+            T += `<div class="pp-issues pp-legacy"><h4 class="pp-h">📚 ${t('鎮史')}</h4>`;
+            for (const c of V.chapters) T += `<details class="pp-chap"><summary>📖 ${esc(c.title)} <small>${t('史官')} ${esc(c.by)}</small></summary><div class="pp-tier-line">${esc(c.text)}</div></details>`;
+            if (V.legends.length) T += `<div class="pp-tier-line">🏛️ ${t('傳說人物')}${t('：')}${V.legends.map(l => `${esc(l.name)}${t('（')}${esc(l.role)}${t('）')}${l.statue ? ' 🗽' : ''}`).join(t('、'))}</div>`;
+            if (V.families.length) T += `<div class="pp-tier-line">🏠 ${t('家族')}${t('：')}${V.families.map(f => `${esc(f.name)} ×${f.n} ${t('「')}${esc(f.motto)}${t('」')}`).join(' · ')}</div>`;
+            if (V.feuds.length) T += `<div class="pp-tier-line">⚔️ ${t('世仇')}${t('：')}${V.feuds.map(esc).join(' · ')}</div>`;
+            T += `</div>`; } } } catch (e) {}
+        // v6.72.0 託夢與預言
+        try { if (typeof DREAM !== 'undefined' && this.world.dream !== undefined) { const V = DREAM.view(this.world); const E = this.world.election; const plot = this.world.crown?.plot;
+            const canE = E?.active && (E.candidates || []).length >= 2, canC = !!plot;
+            if (V.dreams.length || canE || canC || V.acc.hits + V.acc.misses) {
+                T += `<div class="pp-issues pp-dream"><h4 class="pp-h">🔮 ${t('託夢與預言')}${V.acc.pct !== null ? ` <small>${t('準確率')} ${V.acc.pct}%${t('（')}${V.acc.hits}/${V.acc.hits + V.acc.misses}${t('）')}</small>` : ''}</h4>`;
+                for (const d2 of V.dreams) T += `<div class="pp-tier-line">🌙 ${esc(d2.to)}${t('：')}${t('「')}${esc(d2.text)}${t('」')}${d2.meaning ? ` → ${esc(d2.meaning)}` : ''}${d2.wrong ? ` <small>${t('（誤解了）')}</small>` : ''}</div>`;
+                const open = V.acc.open;
+                if (canE && !open.some(b => b.kind === 'election')) T += `<div class="pp-tier-line">${t('押注誰會當選')}${t('：')}${E.candidates.map(c => `<button class="pp-more" data-action="dream-bet" data-val="election|${c.agentId}">${esc(t(c.name))}</button>`).join(' ')}</div>`;
+                if (canC && !open.some(b => b.kind === 'coup')) T += `<div class="pp-tier-line">${t('政變會成功嗎')}${t('：')}<button class="pp-more" data-action="dream-bet" data-val="coup|success">${t('會')}</button> <button class="pp-more" data-action="dream-bet" data-val="coup|fail">${t('不會')}</button></div>`;
+                for (const b of open) T += `<div class="pp-issue-hint">${t('已押注')}${t('：')}${b.kind === 'election' ? esc(t(this.world.agents[b.pick]?.name || '')) : t(b.pick === 'success' ? '政變成功' : '政變失敗')}</div>`;
+                T += `</div>`; } } } catch (e) {}
+        // v6.71.0 文化
+        try { if (typeof CULTURE !== 'undefined' && this.world.culture) { const V = CULTURE.view(this.world); if (V.works.length || V.songs.length || V.oracles.length) {
+            T += `<div class="pp-issues pp-culture"><h4 class="pp-h">🎭 ${t('文化')}</h4>`;
+            for (const x of V.works) T += `<div class="pp-tier-line">${x.icon} ${t('〈')}${esc(x.title)}${t('〉')} <small>${esc(x.by)} · ${t('評價')} ${x.q}${x.legend ? ' · 🌟 ' + t('傳世傑作') : ''}</small></div>`;
+            for (const x of V.songs) T += `<div class="pp-tier-line">🎶 ${t('〈')}${esc(x.title)}${t('〉')} <small>${esc(x.by)}${x.lyric ? ' · ' + t('「') + esc(x.lyric) + t('」') : ''}</small></div>`;
+            for (const x of V.oracles) T += `<div class="pp-tier-line">🔮 ${esc(x.by)}${t('：')}${t('「')}${esc(x.text)}${t('」')}</div>`;
+            T += `</div>`; } } } catch (e) {}
+        // v6.69.0 政壇:辯論、議會人情、法庭
+        try { if (typeof POLITICS !== 'undefined' && this.world.politics) { const V = POLITICS.view(this.world); if (V.debates.length || V.trials.length || V.pacts || V.betrayals) {
+            T += `<div class="pp-issues pp-politics"><h4 class="pp-h">🏛️ ${t('政壇')}</h4>`;
+            for (const d of V.debates) { T += `<div class="pp-tier-line">🎤 ${t('最近的辯論')}${t('：')}${t('{a}表現最好').replace('{a}', esc(d.winner))}</div>`; for (const l of d.lines) T += `<div class="pp-tid-item">${esc(l)}</div>`; }
+            if (V.pacts || V.betrayals) T += `<div class="pp-tier-line">🤝 ${t('議會私下的人情')} ${V.pacts} · 🔄 ${t('倒戈')} ${V.betrayals}</div>`;
+            for (const x of V.trials) T += `<div class="pp-tier-line">⚖️ ${t('控方')} ${esc(x.pro)} · ${t('辯方')} ${esc(x.def)} · ${t('法官')} ${esc(x.judge)}</div>`;
+            if (V.appeals) T += `<div class="pp-tier-line">🔍 ${t('翻案')} ${V.appeals}</div>`;
+            T += `</div>`; } } } catch (e) {}
+        // v6.68.0 民意
+        try { if (typeof MIND !== 'undefined' && this.world.mind) { const V = MIND.poll(this.world);
+            T += `<div class="pp-issues pp-mind"><h4 class="pp-h">🗣️ ${t('民意')}</h4>`;
+            for (const x of V) { const pct = Math.round((x.avg + 2) / 4 * 100); T += `<div class="pp-op-row"><span>${esc(x.name)}</span><span class="pp-op-bar"><i style="left:${pct}%"></i></span><small>${t('支持')} ${x.pro} · ${t('反對')} ${x.con}</small></div>`; }
+            T += `</div>`; } } catch (e) {}
+        // v6.67.0 治安與民生
+        try { if (typeof CIVIC !== 'undefined' && this.world.civic) { const V = CIVIC.view(this.world);
+            T += `<div class="pp-issues pp-civic"><h4 class="pp-h">👮 ${t('治安與民生')}${V.slum ? ` <small>🏚️ ${t('貧民區')}</small>` : ''}</h4>`;
+            T += `<div class="pp-tier-line">${t('衛兵')} ${V.guards} · ${t('竊案')} ${V.thefts}${t('（')}${t('破案')} ${V.caught}${t('）')}${V.jailed.length ? ` · ⛓️ ${V.jailed.map(esc).join(t('、'))}` : ''}</div>`;
+            T += `<div class="pp-tier-line">${t('稅率')} ${V.tax}% · ${t('地價')} ${V.land} · ${t('上週房租')} ${V.rent}</div></div>`; } } catch (e) {}
+        // v6.65.0 珍品
+        try { if (typeof GOODS !== 'undefined' && this.world.goods) { const V = GOODS.view(this.world); if (V.town.length || V.offers.length || V.collectors.length) {
+            T += `<div class="pp-issues pp-goods"><h4 class="pp-h">🏺 ${t('珍品')}</h4>`;
+            if (V.town.length) T += `<div class="pp-tier-line">${t('公庫收藏')}${t('：')}${V.town.map(x => `${x.icon} ${esc(x.name)} <small>${esc(x.from)}</small>`).join(' · ')}</div>`;
+            if (V.offers.length) T += `<div class="pp-tier-line">${t('商人帶來的珍品')}${t('：')}${V.offers.map(x => `${x.icon} ${esc(x.name)} ${x.price} <small>${esc(x.from)}</small>`).join(' · ')}</div>`;
+            if (V.collectors.length) T += `<div class="pp-tier-line">${t('收藏家')}${t('：')}${V.collectors.map(x => `${esc(x.name)} ×${x.n}`).join(' · ')}</div>`;
+            T += `</div>`; } } } catch (e) {}
+        // v6.70.0 商店
+        try { if (typeof BIZ !== 'undefined' && this.world.biz) { const V = BIZ.view(this.world); if (V.shops.length || V.closed.length) {
+            T += `<div class="pp-issues pp-biz"><h4 class="pp-h">🏪 ${t('鎮上的店')} <span class="pp-count">${V.shops.length}</span></h4>`;
+            for (const s2 of V.shops) T += `<div class="pp-tier-line">${s2.icon} <b>${esc(s2.name)}</b> <small>${esc(s2.type)} · ${t('老闆')}${t('：')}${esc(s2.owner)}${s2.partner ? ' · ' + t('合夥人') + t('：') + esc(s2.partner) : ''} · ${t('定價')} ${s2.price} · ${t('累計盈虧')} ${s2.profit}</small></div>`;
+            if (V.closed.length) T += `<div class="pp-issue-hint">${t('倒閉的店')}${t('：')}${V.closed.map(c => esc(c.name)).join(t('、'))}</div>`;
+            T += `</div>`; } } } catch (e) {}
+        // v6.64.0 銀行
+        try { if (typeof BANK !== 'undefined' && this.world.bank) { const V = BANK.view(this.world);
+            const st = V.status === 'run' ? `😱 ${t('擠兌中')}` : V.status === 'failed' ? `💥 ${t('已倒閉')}` : V.open ? `✅ ${t('營業中')}` : t('還沒開');
+            T += `<div class="pp-issues pp-bank"><h4 class="pp-h">🏦 ${t('銀行')} <small>${st}</small></h4>`;
+            if (V.open) T += `<div class="pp-tier-line">${t('銀行家')}${t('：')}${esc(V.banker || '')} · ${t('放款利率')} ${V.rate}%${V.why ? ` ${t('（')}${esc(V.why)}${t('）')}` : ''}</div><div class="pp-tier-line">${t('存款')} ${V.dep}${t('（')}${V.savers} ${t('人')}${t('）')} · ${t('放款')} ${V.loan}${t('（')}${V.borrowers} ${t('人')}${t('）')} · ${t('準備金')} ${V.reserve} · ${t('呆帳')} ${V.bad}</div>`;
+            else if (V.failed) T += `<div class="pp-tier-line">${t('上次倒閉讓存戶損失 {n} 銀幣').replace('{n}', V.failed.lost)}</div>`;
+            else T += `<div class="pp-issue-hint">${t('升格為城鎮後就會有銀行。')}</div>`;
+            T += `</div>`; } } catch (e) {}
+        // v6.63.0 報社
+        try { if (typeof PRESS !== 'undefined' && this.world.press) { const V = PRESS.view(this.world);
+            T += `<div class="pp-issues pp-press"><h4 class="pp-h">📰 ${t('報社')} <span class="pp-count">${V.length}</span></h4>`;
+            for (const P of V) T += `<div class="pp-press-row${P.banned && !P.underground ? ' banned' : ''}"><b>${P.icon} ${esc(P.name)}</b> <small>${esc(P.stance)} · ${t('讀者')} ${P.readers} · ${t('可信度')} ${P.cred}${P.journo ? ' · ' + t('記者') + t('：') + esc(P.journo) : ''}${P.banned ? ' · ' + (P.underground ? t('地下報紙') : t('被查禁')) : ''}</small>${P.last ? `<div class="pp-tier-line">${t('「')}${esc(P.last)}${t('」')}</div>` : ''}</div>`;
+            T += `</div>`; } } catch (e) {}
+        // v6.66.0 外交
+        try { if (typeof DIPLO !== 'undefined' && this.world.diplo) { const V = DIPLO.view(this.world); if (V.places.length) {
+            T += `<div class="pp-issues pp-diplo"><h4 class="pp-h">🤝 ${t('外交')}</h4><div class="pp-tid-places">`;
+            for (const p of V.places) T += `<span class="pp-tid-place pp-dip${p.rel >= 40 ? ' good' : p.rel <= -30 ? ' bad' : ''}">${p.icon} ${esc(p.name)} <b>${p.rel > 0 ? '+' : ''}${p.rel}</b> <small>${esc(p.status)}${p.wed ? ' · 💍 ' + esc(p.wed) : ''}</small></span>`;
+            T += `</div>`; for (const x of V.log) T += `<div class="pp-tid-item">${esc(x)}</div>`;
+            if (V.why) T += `<div class="pp-issue-hint">${t('首長的想法')}${t('：')}${esc(V.why)}</div>`;
+            T += `</div>`; } } } catch (e) {}
+        // v6.62.0 外地消息:遠方地點、上次消息幾天前、誰帶回來;最近的消息與可信度
+        try { if (typeof TIDINGS !== 'undefined' && this.world.tidings) { const V = TIDINGS.view(this.world);
+            T += `<div class="pp-issues pp-tidings"><h4 class="pp-h">📨 ${t('外地消息')} <span class="pp-count">${V.places.length}</span></h4>`;
+            T += `<div class="pp-tid-places">${V.places.map(p => `<span class="pp-tid-place" title="${esc(p.lvName)}">${p.icon} ${esc(p.name)} <small>${p.last === null ? t('還沒有消息') : t('{n} 天前').replace('{n}', p.last)}${p.by ? ' · ' + esc(p.by) : ''}</small></span>`).join('')}</div>`;
+            for (const x of V.items) T += `<div class="pp-tid-item${x.rumor ? ' rumor' : ''}">${x.via} ${esc(x.text)} <small>${x.rumor ? t('傳聞') : t('可靠')} · ${t('路上走了 {n} 天').replace('{n}', x.lag)} · ${t('{n} 人知道').replace('{n}', x.knowers)}</small></div>`;
+            if (!V.items.length) T += `<div class="pp-issue-hint">${t('遠方的消息要等商隊、旅人或信差帶進鎮。')}</div>`;
+            T += `</div>`; } } catch (e) {}
+        // v6.60.0 宗教一覽
+        try { if (typeof FAITH !== 'undefined' && this.world.faith) { const V = FAITH.view(this.world); const nb = FAITH.nonBelievers(this.world);
+            T += `<div class="pp-issues pp-faith"><h4 class="pp-h">🛕 ${t('宗教')} <span class="pp-count">${V.length}</span></h4>`;
+            for (const R of V) T += `<div class="pp-faith-row" style="border-left-color:${R.color}"><b>${R.icon} ${esc(R.name)}</b> <small>${esc(R.sk)} · ${t('信徒')} ${R.n} · ${esc(R.place)}${R.head ? ' · ' + esc(R.head) : ''}${R.founder ? ' · ' + t('創立者') + t('：') + esc(R.founder) : ''}</small><div class="pp-tier-line">${t('主神')}${t('：')}${esc(R.deity)} · ${t('經典')}${t('：')}${esc(R.book)} · ${t('節日')}${t('：')}${esc(R.fest)}${t('（')}${esc(R.festWhen)}${t('）')}</div><div class="pp-tier-line">${t('戒律')}${t('：')}${R.pre.map(esc).join(t('；'))} · ${t('奉獻基金')} ${R.fund}</div></div>`;
+            T += `<div class="pp-issue-hint">${t('沒有信仰的人')}${t('：')}${nb}</div></div>`; } } catch (e) {}
         // v6.50.0 鎮上急事:村民正受影響,拖著沒人管會抱怨、吵架、搬走
         if ((d.issues || []).length) {
             T += `<div class="pp-issues"><h4 class="pp-h">⚠️ ${t('鎮上急事')} <span class="pp-count">${d.issues.length}</span></h4>`;

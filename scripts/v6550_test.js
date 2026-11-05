@@ -28,10 +28,10 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
   const big = await page.evaluate(async () => {
     const app = window.rimtownApp, w = app.world; app._setPaused?.(true);
     const npcs = () => Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead);
-    while (npcs().length < 110) { const all = npcs(); w.tickCount++; w.lifecycle._birthChild(w, all[Math.floor(Math.random() * all.length)], all[Math.floor(Math.random() * all.length)]); }
+    while (npcs().length < 113) { /* 多長幾個:兩天模擬裡可能有人離鎮 */ const all = npcs(); w.tickCount++; w.lifecycle._birthChild(w, all[Math.floor(Math.random() * all.length)], all[Math.floor(Math.random() * all.length)]); }
     w.paused = false; for (let k = 0; k < 96 * 2; k++) w.tick(); w.paused = true;
     // 塞一堆空白關係與記憶,看會不會被清掉
-    const a0 = npcs()[5]; for (const b of npcs().slice(0, 100)) if (b !== a0) a0.relationships.getOrCreate(b.agentId, b.name);
+    const N0 = CROWD.notable(w); const a0 = npcs().find(a => !N0.has(a.agentId)) || npcs()[5]; for (const b of npcs().slice(0, 100)) if (b !== a0) a0.relationships.getOrCreate(b.agentId, b.name);
     for (let i = 0; i < 150; i++) a0.memory.add(w.tickCount, '', 'daily', 'm' + i, i % 10 === 0 ? 8 : 3, []);
     const N = CROWD.notable(w); const nonNot = npcs().find(a => !N.has(a.agentId) && a !== a0);
     const before = JSON.stringify(w.serialize()).length;

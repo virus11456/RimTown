@@ -631,8 +631,34 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .nqc-chip.nqc-office { font-weight: 700; }
 .rimtown-container .nqc-chip.nqc-office-leader { background: linear-gradient(135deg, #F6D365, #E8A33C); color: #3A2400; border-color: #E8A33C; }
 .rimtown-container .nqc-chip.nqc-office-council { background: #2E6E75; color: #EAF8F9; border-color: #2E6E75; }
+.rimtown-container .nqc-chip.nqc-office-king { background: linear-gradient(135deg, #FFE27A, #C9A13A 60%, #8C6A12); color: #2A1A00; border-color: #8C6A12; box-shadow: 0 0 0 1px #FFE27A inset; }
+.rimtown-container .nqc-chip.nqc-office-clergy { background: #5A3E7A; color: #F3EAFB; border-color: #5A3E7A; }
 .rimtown-container .nqc-chip.nqc-office-former { background: transparent; color: var(--text-secondary); border-style: dashed; }
 .t3d-tag .t3d-office { display: inline-block; margin-right: 4px; padding: 0 5px; border-radius: 6px; font-size: .92em; font-weight: 700; }
 .t3d-tag .t3d-office-leader { background: linear-gradient(135deg, #F6D365, #E8A33C); color: #3A2400; }
 .t3d-tag .t3d-office-council { background: #2E6E75; color: #EAF8F9; }
+.t3d-tag .t3d-office-king { background: linear-gradient(135deg, #FFE27A, #C9A13A); color: #2A1A00; box-shadow: 0 0 6px #FFD24A; }
+.rimtown-container .pp-faith-row { border-left: 3px solid var(--border); padding: 4px 0 4px 8px; margin: 4px 0; }
+.rimtown-container .pp-faith-row small { color: var(--text-secondary); }
+.rimtown-container .pp-tid-places { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 6px; }
+.rimtown-container .pp-tid-place { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1px 6px; font-size: .9em; }
+.rimtown-container .pp-tid-place small, .rimtown-container .pp-tid-item small { color: var(--text-secondary); }
+.rimtown-container .pp-tid-item { padding: 3px 0; border-bottom: 1px dashed var(--border); }
+.rimtown-container .pp-tid-item.rumor { font-style: italic; }
+.rimtown-container .pp-press-row { padding: 4px 0; border-bottom: 1px dashed var(--border); }
+.rimtown-container .pp-press-row small { color: var(--text-secondary); }
+.rimtown-container .pp-press-row.banned { opacity: .55; }
+.rimtown-container .pp-dip.good b { color: #2E7D32; }
+.rimtown-container .pp-dip.bad b { color: #C62828; }
+.rimtown-container .pp-op-row { display: grid; grid-template-columns: 5.5em 1fr auto; gap: 6px; align-items: center; margin: 3px 0; }
+.rimtown-container .pp-op-bar { height: 7px; background: linear-gradient(90deg, #C62828 0, #9E9E9E 50%, #2E7D32 100%); border-radius: 4px; position: relative; opacity: .35; }
+.rimtown-container .pp-op-bar { opacity: 1; }
+.rimtown-container .pp-op-bar i { position: absolute; top: -3px; width: 3px; height: 13px; background: var(--text-primary, #222); border-radius: 2px; transform: translateX(-1px); }
+.rimtown-container .pp-op-row small { color: var(--text-secondary); }
+.rimtown-container .pp-chap summary { cursor: pointer; padding: 2px 0; }
+.rimtown-container .pp-chap summary small { color: var(--text-secondary); }
+.rimtown-container .pp-crown { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border); }
+.rimtown-container .pp-legit { font-weight: 700; color: #2E7D32; }
+.rimtown-container .pp-legit.low { color: #C62828; }
+.t3d-tag .t3d-office-clergy { background: #5A3E7A; color: #F3EAFB; }
 .t3d-tag.has-office { border-color: #E8A33C; }
