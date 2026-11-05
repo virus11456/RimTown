@@ -1,6 +1,10 @@
-// RimTown - Frontend App v6.74.1
-const RIMTOWN_APP_VERSION = '6.74.1';
+// RimTown - Frontend App v6.75.0
+const RIMTOWN_APP_VERSION = '6.75.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
+// v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
+// 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
+function rimtownWorldId() { try { return (typeof window !== 'undefined' && window.rimtownApp?.world?.worldId) || 'w0'; } catch (e) { return 'w0'; } }
+function rimtownWorldKey(k) { const w = rimtownWorldId(); return w === 'w0' ? k : `${k}@${w}`; }
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
       log: () => t('📯 沿海道路修復完成，往海風鎮的馬車恢復通行！'), title: () => t('道路重通！'),
@@ -278,6 +282,7 @@ class RimTownAuth {
             population: meta.population || 0,
             town_theme: meta.theme || window.rimtownApp?.world?.townTheme || '', // v6.35.0
             origin: meta.origin || window.rimtownApp?._getTownList?.().find(tw => tw.id === townId)?.origin || '',
+            world_id: meta.world || (townId === window.rimtownApp?.currentTownId ? rimtownWorldId() : (window.rimtownApp?._townWorld?.(townId) || rimtownWorldId())), // v6.75.0 屬於哪個世界
         };
         // v5.64.1 玩家明確要用較舊的存檔(匯入)時強制覆寫;其餘情況伺服器會擋掉「舊蓋新」
         if (this.forceNextSave) { body.force = true; this.forceNextSave = false; }

@@ -44,7 +44,7 @@ Object.assign(RimTownApp.prototype, {
     _nextLockedNeighbor() {
         if (typeof NEIGHBOR_TOWNS === 'undefined') return null;
         const theme = this.world?.townTheme || 'frontier';
-        let flag = () => false; try { flag = (k) => localStorage.getItem(k) === '1'; } catch (e) {}
+        let flag = () => false; try { flag = (k) => localStorage.getItem(rimtownWorldKey(k)) === '1'; } catch (e) {}
         return NEIGHBOR_TOWNS.find(d => d.theme !== theme && !flag(d.key)) || null;
     },
     _noNeighborText() {
@@ -308,24 +308,25 @@ Object.assign(RimTownApp.prototype, {
             let exists = false;
             // v5.74.2 雲端清單沒載到(開機雲端讀取失敗)時先重新拉一次,不然會在已經有海風鎮的帳號再生一個
             if (this.auth.loggedIn && !Array.isArray(this._cloudSaves)) { try { this._cloudSaves = await this.auth.listSaves(); } catch (e) {} }
-            if (this.auth.loggedIn && Array.isArray(this._cloudSaves)) exists = this._cloudSaves.some(s => def.match.test(s.town_name || ''));
-            if (!exists) exists = this._getTownList().some(tw => def.match.test(tw.name || ''));
+            const cw = rimtownWorldId(); // v6.75.0 只看同一個世界的鄰鎮
+            if (this.auth.loggedIn && Array.isArray(this._cloudSaves)) exists = this._cloudSaves.some(s => def.match.test(s.town_name || '') && this._townWorld(s.town_id) === cw);
+            if (!exists) exists = this._getTownList().some(tw => def.match.test(tw.name || '') && (tw.world || 'w0') === cw);
             if (exists || (this.world?.townTheme === themeKey)) return;
             const nw = new World();
             nw.townTheme = themeKey;
             nw.townName = townName;
             nw.rosterMode = 'scripted';
-            nw.reset();
+            nw.reset(); nw.worldId = rimtownWorldId();
             const blob = nw.serialize();
             const tid = this._generateTownId(townName);
             const list = this._getTownList();
             if (!list.some(tw => tw.id === tid)) {
-                list.push({ id: tid, name: townName, savedAt: new Date().toISOString(), season: blob.clock?.season || '春季', year: 1, day: 1, population: Object.keys(blob.agents || {}).length, theme: themeKey, origin: 'neighbor' }); // v6.35.0 標成鄰鎮
+                list.push({ id: tid, name: townName, savedAt: new Date().toISOString(), season: blob.clock?.season || '春季', year: 1, day: 1, population: Object.keys(blob.agents || {}).length, theme: themeKey, origin: 'neighbor', world: rimtownWorldId() }); // v6.35.0 標成鄰鎮
                 this._saveTownList(list);
             }
             try { localStorage.setItem('rimtown_town_' + tid, JSON.stringify(blob)); } catch (e) {}
             if (this.auth.loggedIn) {
-                try { await this.auth.cloudSave(tid, townName, blob, { season: blob.clock?.season, year: 1, day: 1, population: Object.keys(blob.agents || {}).length, theme: themeKey, origin: 'neighbor' }); } catch (e) {}
+                try { await this.auth.cloudSave(tid, townName, blob, { season: blob.clock?.season, year: 1, day: 1, population: Object.keys(blob.agents || {}).length, theme: themeKey, origin: 'neighbor', world: rimtownWorldId() }); } catch (e) {}
             }
             this._otherTownsAt = 0; // 立即讓互訪/馬車看見新鄰鎮
         } catch (e) { console.warn('[RimTown] neighbor town gen failed', e); this._neighborEnsured[themeKey] = false; }
@@ -336,7 +337,7 @@ Object.assign(RimTownApp.prototype, {
         try { this._ghEnsure?.(); } catch (e) {} // v6.48.0 換鎮／換日後更新事件卡按鈕
         try { this._genTownTick?.(); } catch (e) { console.warn('[RimTown] gen town tick', e); } // v6.45.0 種子隨機城鎮
         // 道路已通(含老玩家補生成):確保海風鎮存在
-        for (const def of NEIGHBOR_TOWNS) { if (localStorage.getItem(def.key) === '1' && !this._neighborEnsured?.[def.theme]) this._ensureNeighborTown(def.theme); } // v5.76.0
+        for (const def of NEIGHBOR_TOWNS) { if (localStorage.getItem(rimtownWorldKey(def.key)) === '1' && !this._neighborEnsured?.[def.theme]) this._ensureNeighborTown(def.theme); } // v5.76.0
         // 掛鉤(冪等,換鎮/換世界後自動指向新世界)
         w.onSendVisitor = (agentData, town, stayDays) => this._pushMailbox(this._visitorMailboxKey(town.id),
             { agentData, stayDays, fromTownId: this.currentTownId, fromTownName: this._getCurrentTownName() });
@@ -368,8 +369,9 @@ Object.assign(RimTownApp.prototype, {
         if (!this._otherTownsAt || now - this._otherTownsAt > 60000) {
             this._otherTownsAt = now;
             const currentName = this._getCurrentTownName();
-            const seen = new Set();
-            const towns = [];
+            const curWorld = rimtownWorldId();
+            const best = new Map(); // v6.75.0 顯示名 → 進度最多的那一座(同一個世界裡有兩座海風鎮時只列一座)
+            const prog = (id) => { const c = Array.isArray(this._cloudSaves) ? this._cloudSaves.find(s => s.town_id === id) : null; const l = this._getTownList().find(tw => tw.id === id); const x = c || l || {}; if (Number.isFinite(+x.tick_count)) return +x.tick_count; const si = ['春季', '夏季', '秋季', '冬季'].indexOf(x.season); return (((x.year || 1) - 1) * 60 + Math.max(0, si) * 15 + (x.day || 1)) * 96; };
             const push = (id, name) => {
                 if (!id || !name) return;
                 const hasLocal = !!localStorage.getItem('rimtown_town_' + id);
@@ -384,14 +386,16 @@ Object.assign(RimTownApp.prototype, {
                 }
                 // v5.59.5 也用世界鎮名擋自己:meta id 分裂時,同名的「自己」不再混進出訪名單
                 if (id === this.currentTownId || name === currentName || name === w.townName) return;
-                if (seen.has(name)) return;
-                seen.add(name);
-                towns.push({ id, name });
+                if (this._townWorld(id) !== curWorld) return; // v6.75.0 別場遊戲(別的世界)的鎮不是鄰居
+                const key = this._townDisplayName ? this._townDisplayName(name, this._guessTheme?.(name) || '') : name;
+                if (key === this._townDisplayName?.(currentName, this._guessTheme?.(currentName) || '')) return;
+                const p = prog(id), b = best.get(key); if (!b || p > b.p) best.set(key, { id, name, p });
             };
             try {
                 (Array.isArray(this._cloudSaves) ? this._cloudSaves : []).forEach(s => push(s.town_id, s.town_name));
                 this._getTownList().forEach(tw => push(tw.id, tw.name));
             } catch (e) {}
+            const towns = [...best.values()].map(({ id, name }) => ({ id, name }));
             w.otherTowns = towns;
             { const real = this._collectCrossTownNews(towns), gen = this._genCrossNews ? this._genCrossNews() : []; w.crossTownNews = real.slice(0, 2).concat(gen.slice(0, 1), real.slice(2), gen.slice(1)); } // v5.88.0 日報跨鎮專欄素材;v6.45.0 加上遠方城鎮的傳聞
         }

@@ -218,12 +218,13 @@ const TownGen = (() => {
 
     // ---- 登記簿:這個玩家發現過哪些鎮(只存種子＋狀態,卡片內容隨時可由種子重算) ----
     const KEY = 'rimtown_gen_towns';
-    function _load() { try { const o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (o && Array.isArray(o.list)) return o; } catch (e) {} return { v: 1, base: null, list: [], n: 0, since: 0, seenExp: 0 }; }
-    function _save(o) { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} }
+    const WK = (k) => (typeof rimtownWorldKey === 'function' ? rimtownWorldKey(k) : k); // v6.75.0 每個世界各有一本登記簿
+    function _load() { try { const o = JSON.parse(localStorage.getItem(WK(KEY)) || 'null'); if (o && Array.isArray(o.list)) return o; } catch (e) {} return { v: 1, base: null, list: [], n: 0, since: 0, seenExp: 0 }; }
+    function _save(o) { try { localStorage.setItem(WK(KEY), JSON.stringify(o)); } catch (e) {} }
     function registry() { return _load(); }
     function cards() { const o = _load(); return o.list.map(e => { const c = bySeed(e.seed); c.found = e.found; c.via = e.via; c.by = e.by; c.reachable = !!e.r; c.townId = e.id || null; c.state = e.st || null; return c; }); }
     function liveCount(app) {
-        let n = 1; try { for (const d of (typeof NEIGHBOR_TOWNS !== 'undefined' ? NEIGHBOR_TOWNS : [])) if (localStorage.getItem(d.key) === '1') n++; } catch (e) {}
+        let n = 1; try { for (const d of (typeof NEIGHBOR_TOWNS !== 'undefined' ? NEIGHBOR_TOWNS : [])) if (localStorage.getItem(WK(d.key)) === '1') n++; } catch (e) {}
         return n + _load().list.filter(e => e.r).length;
     }
     // 發現一個新鎮:種子由玩家(帳號)＋序號決定,換裝置也算得出同一串;太像既有鎮或撞名就換下一個種子
@@ -264,7 +265,7 @@ const TownGen = (() => {
     }
     // v6.48.1 兩台裝置各自開通的路線合併後可能超過 10 座:超過的先降回「只有傳聞」(已經有存檔的鎮不降,後發現的先降)
     function _capLive(o) {
-        let fixed = 1; try { for (const d of (typeof NEIGHBOR_TOWNS !== 'undefined' ? NEIGHBOR_TOWNS : [])) if (localStorage.getItem(d.key) === '1') fixed++; } catch (e) {}
+        let fixed = 1; try { for (const d of (typeof NEIGHBOR_TOWNS !== 'undefined' ? NEIGHBOR_TOWNS : [])) if (localStorage.getItem(WK(d.key)) === '1') fixed++; } catch (e) {}
         let live = fixed + o.list.filter(e => e.r).length; let changed = false;
         for (const e of o.list.slice().sort((a, b) => (b.found || 0) - (a.found || 0))) { if (live <= TOWNGEN_MAX_LIVE) break; if (e.r && !e.id) { e.r = 0; live--; changed = true; } }
         return changed;

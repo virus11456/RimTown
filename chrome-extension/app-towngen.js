@@ -7,10 +7,11 @@
 Object.assign(RimTownApp.prototype, {
     // 四個鄰鎮都通車了才開始發現新鎮
     _genTownsOpen() {
-        try { return typeof NEIGHBOR_TOWNS !== 'undefined' && NEIGHBOR_TOWNS.every(d => localStorage.getItem(d.key) === '1'); } catch (e) { return false; }
+        try { return typeof NEIGHBOR_TOWNS !== 'undefined' && NEIGHBOR_TOWNS.every(d => localStorage.getItem(rimtownWorldKey(d.key)) === '1'); } catch (e) { return false; }
     },
     _genPlayerKey() {
-        try { if (this.auth?.loggedIn && this.auth.username) return 'u:' + this.auth.username; let k = localStorage.getItem('rimtown_gen_key'); if (!k) { k = 'g:' + Math.random().toString(36).slice(2, 12); localStorage.setItem('rimtown_gen_key', k); } return k; } catch (e) { return 'guest'; }
+        const wsuf = rimtownWorldId() === 'w0' ? '' : '#' + rimtownWorldId(); // v6.75.0 新世界會發現不同的遠方城鎮
+        try { if (this.auth?.loggedIn && this.auth.username) return 'u:' + this.auth.username + wsuf; let k = localStorage.getItem('rimtown_gen_key'); if (!k) { k = 'g:' + Math.random().toString(36).slice(2, 12); localStorage.setItem('rimtown_gen_key', k); } return k; } catch (e) { return 'guest'; }
     },
     // 每個遊戲日跑一次:背景發展＋看看有沒有發現新鎮
     _genTownTick() {
@@ -67,12 +68,12 @@ Object.assign(RimTownApp.prototype, {
             TownGen.register(c);
             const nw = new World();
             nw.townTheme = c.key; nw.townName = c.name; nw.rosterMode = 'random';
-            nw.reset();
+            nw.reset(); nw.worldId = rimtownWorldId(); // v6.75.0 新發現的鎮屬於目前的世界
             const blob = nw.serialize();
             // v6.48.1 先清掉以前存檔失敗留下的同名空殼(城鎮列表有、卻沒有任何存檔)
             this._genDropOrphans(c);
             tid = this._generateTownId(c.name);
-            const meta = { season: blob.clock?.season || '春季', year: 1, day: 1, population: Object.keys(blob.agents || {}).length, theme: c.key, origin: 'generated' };
+            const meta = { season: blob.clock?.season || '春季', year: 1, day: 1, population: Object.keys(blob.agents || {}).length, theme: c.key, origin: 'generated', world: rimtownWorldId() };
             let stored = false; try { localStorage.setItem('rimtown_town_' + tid, JSON.stringify(blob)); stored = true; } catch (e) {}
             if (this.auth?.loggedIn) { try { await this.auth.cloudSave(tid, c.name, blob, meta); stored = true; this._cloudSaves = null; try { this._cloudSaves = await this.auth.listSaves(); } catch (e) {} } catch (e) {} }
             if (!stored) throw new Error(t('存檔空間不足'));

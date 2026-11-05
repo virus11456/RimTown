@@ -314,6 +314,7 @@
 
 /* ---------- v6.35.0 城鎮列表:分區、標籤、疑似重複 ---------- */
 .town-section { margin: 12px 0 6px; font-size: 0.82rem; color: var(--text-secondary, #B7AE9F); display: flex; align-items: center; gap: 6px; }
+.town-world { border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 10px; padding: 4px 6px; margin: 6px 0; } /* v6.75.0 其他遊戲(世界)一組一框 */
 .town-tag { font-size: 0.65rem; color: var(--text-muted, #857C93); font-weight: 400; }
 .town-item.town-dup { border-color: var(--warning, #F2C14E); }
 .town-item.town-dup .town-tag:last-child { color: var(--warning, #F2C14E); }

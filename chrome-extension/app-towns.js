@@ -1,7 +1,21 @@
 // RimTown - app-towns.js：從 app.js 拆出的 城鎮列表與本機／雲端存檔管理：切鎮、建鎮、改名、刪除、瘦身（v6.0.0 B14）。
 // 用 Object.assign 掛到 RimTownApp.prototype；必須在 app.js 之後、DOMContentLoaded 之前載入（index.html／sw.js 都要列）。
 'use strict';
+// v6.75.0 世界 id 存進存檔;舊存檔沒有就是原本的世界 w0。reset() 不動它(換鎮名、新地圖仍在同一個世界)
+if (typeof World !== 'undefined' && !World.prototype._worldIdHooked) {
+    World.prototype._worldIdHooked = true;
+    const _ser = World.prototype.serialize; World.prototype.serialize = function () { const d = _ser.call(this); if (d) d.worldId = this.worldId || 'w0'; return d; };
+    const _load = World.prototype.loadSave; World.prototype.loadSave = function (data) { const r = _load.call(this, data); if (r) this.worldId = (data && typeof data.worldId === 'string' && data.worldId) || 'w0'; return r; };
+}
 Object.assign(RimTownApp.prototype, {
+    // v6.75.0 某個存檔屬於哪個世界:雲端 meta → 本機列表 → 預設 w0
+    _townWorld(id) {
+        if (!id) return 'w0';
+        if (id === this.currentTownId) return rimtownWorldId();
+        const c = Array.isArray(this._cloudSaves) ? this._cloudSaves.find(s => s.town_id === id) : null; if (c?.world_id) return c.world_id;
+        const l = this._getTownList().find(tw => tw.id === id); return l?.world || 'w0';
+    },
+    _newWorldId() { let r = ''; try { r = Array.from(crypto.getRandomValues(new Uint8Array(6)), b => b.toString(16).padStart(2, '0')).join(''); } catch (e) { r = Math.random().toString(36).slice(2, 14); } return 'w_' + r; },
     _getTownList() {
         try { return JSON.parse(localStorage.getItem('rimtown_town_list') || '[]'); } catch(e) { return []; }
     },
@@ -27,7 +41,7 @@ Object.assign(RimTownApp.prototype, {
             };
             const lastTown = localStorage.getItem('rimtown_last_town');
             const byName = {};
-            list.forEach(tw => { (byName[tw.name] = byName[tw.name] || []).push(tw); });
+            list.forEach(tw => { const k = (tw.world || 'w0') + '|' + tw.name; (byName[k] = byName[k] || []).push(tw); }); // v6.75.0 同一個世界裡的同名鎮才算重複
             const keep = new Set();
             const drop = [];
             for (const group of Object.values(byName)) {
@@ -91,6 +105,7 @@ Object.assign(RimTownApp.prototype, {
             population: Object.keys(saveData.agents || {}).length,
             theme: this.world?.townTheme || existing?.theme || '', // v6.35.0 主題鍵
             origin: existing?.origin || 'user',                   // v6.35.0 自己建的;鄰鎮由 _ensureNeighborTown 標 neighbor
+            world: this.world?.worldId || existing?.world || 'w0', // v6.75.0
         };
         if (existing) Object.assign(existing, meta);
         else list.push(meta);
@@ -183,9 +198,9 @@ Object.assign(RimTownApp.prototype, {
             for (const x of saves) { const lm = local.find(tw => tw.id === x.town_id); entries.push({ id: x.town_id, name: x.town_name || '', theme: x.town_theme || lm?.theme || '', origin: x.origin || lm?.origin || '', season: x.season || '', year: x.year || 1, day: x.day || 1, population: x.population || 0, at: x.updated_at || '', source: 'cloud' }); }
             for (const tw of local) if (!cloudIds.has(tw.id) && localStorage.getItem('rimtown_town_' + tw.id)) entries.push({ id: tw.id, name: tw.name || '', theme: tw.theme || '', origin: tw.origin || '', season: tw.season || '', year: tw.year || 1, day: tw.day || 1, population: tw.population || 0, at: tw.savedAt || '', source: 'local', sameNameCloud: saves.some(x => x.town_name === tw.name) });
         } else for (const tw of local) entries.push({ id: tw.id, name: tw.name || '', theme: tw.theme || '', origin: tw.origin || '', season: tw.season || '', year: tw.year || 1, day: tw.day || 1, population: tw.population || 0, at: tw.savedAt || '', source: 'local' });
-        for (const e of entries) { e.theme = e.theme || this._guessTheme(e.name); e.isNeighbor = this._isNeighborTown(e); e.isActive = e.id === this.currentTownId; e.display = this._townDisplayName(e.name, e.theme); }
+        for (const e of entries) { e.world = this._townWorld(e.id); e.theme = e.theme || this._guessTheme(e.name); e.isNeighbor = this._isNeighborTown(e); e.isActive = e.id === this.currentTownId; e.display = this._townDisplayName(e.name, e.theme); }
         const mine = entries.filter(e => !e.isNeighbor);
-        for (const e of mine) e.dup = e.year <= 1 && e.day <= 1 && mine.some(o => o !== e && o.year <= 1 && o.day <= 1 && (o.display === e.display || (o.theme && o.theme === e.theme)));
+        for (const e of mine) e.dup = e.year <= 1 && e.day <= 1 && mine.some(o => o !== e && o.world === e.world && o.year <= 1 && o.day <= 1 && (o.display === e.display || (o.theme && o.theme === e.theme)));
         return entries;
     },
     _townRow(e) {
@@ -207,17 +222,24 @@ Object.assign(RimTownApp.prototype, {
         </div>`;
     },
     _renderTownSections(container, entries) {
+        // v6.75.0 依世界分組:目前這場遊戲的城鎮與鄰鎮在上面,其他遊戲(其他世界)的存檔另外列
+        const cur = rimtownWorldId(); const others = entries.filter(e => e.world !== cur); entries = entries.filter(e => e.world === cur);
         const mine = entries.filter(e => !e.isNeighbor), nb = entries.filter(e => e.isNeighbor);
         let html = '';
-        if (!entries.length) html = t('<p class="muted-text">尚無城鎮存檔。</p>');
+        if (!entries.length && !others.length) html = t('<p class="muted-text">尚無城鎮存檔。</p>');
         else {
             html += `<h4 class="town-section">🏡 ${t('我的城鎮')} <span class="pp-count">${mine.length}</span></h4>` + (mine.length ? mine.map(e => this._townRow(e)).join('') : `<p class="muted-text">${t('還沒有自己建立的城鎮。')}</p>`);
             if (nb.length) html += `<h4 class="town-section">🛤️ ${t('鄰鎮（道路開通後自動生成）')} <span class="pp-count">${nb.length}</span></h4>` + nb.map(e => this._townRow(e)).join('');
+            if (others.length) {
+                const byW = {}; for (const e of others) (byW[e.world] = byW[e.world] || []).push(e);
+                html += `<h4 class="town-section">🌍 ${t('其他遊戲（各自獨立的世界）')} <span class="pp-count">${Object.keys(byW).length}</span></h4><p class="muted-text town-hint">${t('每場遊戲是一個獨立的世界，鄰鎮、道路和馬車只在同一個世界裡；點城鎮就能切過去玩。')}</p>`;
+                for (const list of Object.values(byW)) { const head = list.find(e => !e.isNeighbor) || list[0]; html += `<div class="town-world">` + [head, ...list.filter(e => e !== head)].map(e => this._townRow(e)).join('') + `</div>`; }
+            }
             if (mine.some(e => e.dup)) html += `<p class="muted-text town-hint">${t('⚠️ 標「疑似重複」的是兩座都還在第 1 天的同名或同主題城鎮，多半是以前按「新地圖」或切換語言時多建的；確定不要的那座按 🗑️ 刪掉。不會自動刪除任何存檔。')}</p>`;
         }
         try { html += this._genTownSectionHtml ? this._genTownSectionHtml() : ''; } catch (e) {} // v6.45.0 遠方城鎮
         html += `<div class="town-modal-actions">
-            <button class="town-btn town-btn-primary" data-action="create-town">${t('新建城鎮')}</button>
+            <button class="town-btn town-btn-primary" data-action="create-town">${t('開新遊戲（新世界）')}</button>
             <button class="town-btn town-btn-secondary" data-action="close-town-modal">${t('關閉')}</button>
         </div>`;
         container.innerHTML = html;
@@ -314,7 +336,7 @@ Object.assign(RimTownApp.prototype, {
             ? ((this._cloudSaves?.length || 0) + 1)
             : (this._getTownList().length + 1);
         // v5.58.0 建立新城鎮恢復原行為(邊境鎮);海風鎮不用建立——它本來就存在,搭馬車去即可
-        if (!confirm(t('這會另外開一座新城鎮，目前這座會保留在「城鎮列表」裡，可以隨時切回來。確定要新開嗎？'))) return; // v6.35.0
+        if (!confirm(t('這會開一場全新的遊戲：新的世界、新的鄰鎮與道路，跟目前的存檔完全分開、互不影響。目前這場會保留在「城鎮列表」裡，隨時可以切回來。確定要開新遊戲嗎？'))) return; // v6.75.0 開新遊戲＝新世界
         const name = prompt(t('為新城鎮命名：'), '邊境鎮 ' + defaultSuffix); // v6.34.1 預設名存中文正名,顯示時再翻
         if (!name) return;
         this._showBusyOverlay(`🏗️ ${t('新城鎮建立中，原本的城鎮會先自動儲存…')}`);
@@ -329,6 +351,8 @@ Object.assign(RimTownApp.prototype, {
         this.world.townName = name;
         this.world.rosterMode = (localStorage.getItem('rimtown_roster_mode') === 'random') ? 'random' : 'scripted'; // v5.27.0 肉鴿隨機開局
         this.world.reset();
+        this.world.worldId = this._newWorldId(); // v6.75.0 新的世界:鄰鎮、道路、遠方城鎮從頭開始
+        this._otherTownsAt = 0; this._neighborEnsured = {}; this._blobNameCache = {}; this._genDayKey = null; this._genCrossNewsAt = 0; this.world.otherTowns = []; this.world.crossTownNews = [];
         if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
         this.currentTownId = this._generateTownId(name);
         if (this.auth.loggedIn) {
@@ -347,7 +371,7 @@ Object.assign(RimTownApp.prototype, {
         this._updateHeaderTownName(name);
         this.world.logMessageT('system', '🏘️ 新城鎮「{name}」已建立！', { name });
         this._hideBusyOverlay();
-        this._showCornerNotice({ icon: '🏘️', title: `${name}${t('已建立')}`, name: '', desc: t('原本的城鎮已自動儲存，「城鎮列表」隨時可切換，兩鎮並存') });
+        this._showCornerNotice({ icon: '🏘️', title: `${name}${t('已建立')}`, name: '', desc: t('新的世界開始了！原本那場遊戲已自動儲存，「城鎮列表」隨時可以切回去，兩邊互不影響') });
         this.render();
     },
 

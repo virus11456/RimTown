@@ -1558,7 +1558,7 @@ class SeasonRecap {
         } else if (!r.trial) tips.push({ icon: '⚖️', text: t('每季第 5 天公布考驗，前四天先囤好感和物資，公布後再對症下手'), go: 'tab:quest', goLabel: t('看委託板') });
         if (r.reqFailed > r.reqDone) tips.push({ icon: '📋', text: t('委託先挑一次對話就能完成的（陪伴、送禮），同一天第一件過期扣 3 好感、其餘每件扣 1'), go: 'tab:quest', goLabel: t('看委託板') });
         // v6.11.0 有沒有鄰鎮:先看 app 同步的 otherTowns,沒有就看解鎖旗標(存檔剛載入 otherTowns 可能還沒算)
-        const theme = w?.townTheme || 'frontier'; let flag = () => false; try { flag = (k) => localStorage.getItem(k) === '1'; } catch (e) {}
+        const theme = w?.townTheme || 'frontier'; let flag = () => false; try { flag = (k) => localStorage.getItem(typeof rimtownWorldKey === 'function' ? rimtownWorldKey(k) : k) === '1'; } catch (e) {}
         const NT = (typeof NEIGHBOR_TOWNS !== 'undefined') ? NEIGHBOR_TOWNS : [];
         const hasTowns = !!(w && ((Array.isArray(w.otherTowns) && w.otherTowns.length) || NT.some(d => d.theme !== theme && flag(d.key))));
         const nx = NT.find(d => d.theme !== theme && !flag(d.key)) || null;

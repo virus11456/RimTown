@@ -905,8 +905,8 @@ Object.assign(RimTownApp.prototype, {
         // v5.76.0 鄰鎮解鎖改成表驅動:海風鎮(繁榮 20)、礦山鎮(繁榮 40),之後的林間村/市集城照表加
         const prosNow = this.state?.prosperity?.prosperity || 0;
         for (const def of NEIGHBOR_TOWNS) {
-            if (prosNow < def.prosperity || localStorage.getItem(def.key) === '1') continue;
-            localStorage.setItem(def.key, '1');
+            if (prosNow < def.prosperity || localStorage.getItem(rimtownWorldKey(def.key)) === '1') continue; // v6.75.0 每個世界各自開路
+            localStorage.setItem(rimtownWorldKey(def.key), '1');
             this._ensureNeighborTown(def.theme);
             this.world?.logMessage?.('system', def.log());
             this._showCornerNotice({ icon: def.icon, title: def.title(), name: '', desc: def.desc() });
