@@ -952,6 +952,11 @@ Object.assign(RimTownApp.prototype, {
                 T += `<div class="pp-issue-hint">${t('城鎮以上，要當過下一級的首長，或在本級議會當過一季議員，才能參選首長。')}</div></div>`;
             }
         } catch (e) {}
+        // v6.63.0 報社
+        try { if (typeof PRESS !== 'undefined' && this.world.press) { const V = PRESS.view(this.world);
+            T += `<div class="pp-issues pp-press"><h4 class="pp-h">📰 ${t('報社')} <span class="pp-count">${V.length}</span></h4>`;
+            for (const P of V) T += `<div class="pp-press-row${P.banned && !P.underground ? ' banned' : ''}"><b>${P.icon} ${esc(P.name)}</b> <small>${esc(P.stance)} · ${t('讀者')} ${P.readers} · ${t('可信度')} ${P.cred}${P.journo ? ' · ' + t('記者') + t('：') + esc(P.journo) : ''}${P.banned ? ' · ' + (P.underground ? t('地下報紙') : t('被查禁')) : ''}</small>${P.last ? `<div class="pp-tier-line">${t('「')}${esc(P.last)}${t('」')}</div>` : ''}</div>`;
+            T += `</div>`; } } catch (e) {}
         // v6.62.0 外地消息:遠方地點、上次消息幾天前、誰帶回來;最近的消息與可信度
         try { if (typeof TIDINGS !== 'undefined' && this.world.tidings) { const V = TIDINGS.view(this.world);
             T += `<div class="pp-issues pp-tidings"><h4 class="pp-h">📨 ${t('外地消息')} <span class="pp-count">${V.places.length}</span></h4>`;

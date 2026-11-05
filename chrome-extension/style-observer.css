@@ -645,6 +645,9 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .pp-tid-place small, .rimtown-container .pp-tid-item small { color: var(--text-secondary); }
 .rimtown-container .pp-tid-item { padding: 3px 0; border-bottom: 1px dashed var(--border); }
 .rimtown-container .pp-tid-item.rumor { font-style: italic; }
+.rimtown-container .pp-press-row { padding: 4px 0; border-bottom: 1px dashed var(--border); }
+.rimtown-container .pp-press-row small { color: var(--text-secondary); }
+.rimtown-container .pp-press-row.banned { opacity: .55; }
 .rimtown-container .pp-crown { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border); }
 .rimtown-container .pp-legit { font-weight: 700; color: #2E7D32; }
 .rimtown-container .pp-legit.low { color: #C62828; }
