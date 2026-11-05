@@ -8,9 +8,11 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
 const BASE = process.env.BASE || 'http://localhost:8126/';
 let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('  ✓ ' + m); } else { fail++; console.log('  ✗ ' + m + ' → ' + JSON.stringify(x)); } };
 (async () => {
-  // 伺服器回覆附上每日上限,前端才算得出剩幾成
+  // 伺服器:登入玩家預設不限每日次數;設了 AI_USER_DAILY 才有上限,回覆附上剩餘與上限
   const src = fs.readFileSync(path.join(__dirname, '../api/chat.js'), 'utf8');
-  ok(/remaining: Math\.max\(0, limit - q\.count\), limit,/.test(src) && /parseInt\(process\.env\.AI_USER_DAILY, 10\) \|\| 300/.test(src), '伺服器：每日上限維持 300，回覆附上剩餘與上限', null);
+  const m = src.match(/const USER_DAILY = (.*);/); const ud = (env) => (new Function('process', 'return ' + m[1]))({ env });
+  ok(ud({}) === 0 && /if \(limit > 0 && q\.count >= limit\)/.test(src), '伺服器：登入玩家沒有每日 AI 上限', { USER_DAILY: ud({}) });
+  ok(ud({ AI_USER_DAILY: '500' }) === 500 && /limit: limit > 0 \? limit : null/.test(src), '伺服器：設了 AI_USER_DAILY 才有上限，並回傳剩餘與上限', null);
   const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   for (const lang of ['zh', 'en']) {
     console.log(lang);
@@ -44,6 +46,8 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 伺服器回覆帶 remaining/limit 會被記下來;額度用完的 429 也會記成 0
       const _f = window.fetch; window.fetch = async () => new Response(JSON.stringify({ reply: 'hi', remaining: 50, limit: 300 }), { status: 200, headers: { 'Content-Type': 'application/json' } });
       const L2 = new LLMClient(); try { await L2._callProvider('server', '', null, 'x', 10, 0.5, 'chat'); } catch (e) {} out.tracked = L2._quota?.remaining === 50 && L2._quotaLow();
+      window.fetch = async () => new Response(JSON.stringify({ reply: 'hi', remaining: null, limit: null }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      const L4 = new LLMClient(); await L4._callProvider('server', '', null, 'x', 10, 0.5, 'chat'); out.unlimited = !L4._quota && !L4._quotaLow() && L4._canMakeRequest(false);
       window.fetch = async () => new Response(JSON.stringify({ code: 'quota_exceeded', message: 'x' }), { status: 429, headers: { 'Content-Type': 'application/json' } });
       const L3 = new LLMClient(); L3._quota = { remaining: 200, limit: 300, day: today }; const rr = await L3._callProvider('server', '', null, 'x', 10, 0.5, 'chat'); out.exhausted = rr === '__RATE_LIMITED__' && L3._quota.remaining === 0;
       window.fetch = _f;
@@ -52,7 +56,8 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(r.waited, 'AI 一時被每分鐘上限擋住：事件卡反應會等，回覆仍是 AI 的', r);
     ok(r.fb && r.entryFb, '真的叫不到 AI 才用預設台詞', r);
     ok(r.okHigh && r.bgBlocked && r.playerOk && r.fullAgentRule && r.newDay, '額度剩不到三成：背景與決策改規則，玩家聊天與事件卡照常；換日就恢復', r);
-    ok(r.tracked && r.exhausted, '從伺服器回覆記下剩餘額度；額度用完也會記下', r);
+    ok(r.tracked && r.exhausted, '有上限時：從伺服器回覆記下剩餘額度；額度用完也會記下', r);
+    ok(r.unlimited, '沒有上限時：背景功能照常用 AI，不會被保留機制擋住', r);
     ok(r.noDup, '同一張卡的預設台詞不重複', r);
     ok(!errs.length, lang + ' 沒有頁面錯誤', errs.slice(0, 3));
     await ctx.close();
