@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.46.0
+ * Version: 6.47.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.46.0');
+define('RIMTOWN_VERSION', '6.47.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -887,12 +887,14 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-sim-systems',
         RIMTOWN_URL . 'sim-systems.js',
-        RIMTOWN_URL . 'sim-ideas.js',
-        RIMTOWN_URL . 'sim-towngen.js',
         array('rimtown-simulation'),
         RIMTOWN_VERSION,
         true
     );
+    // v6.46.0 觀念傳播／發明、v6.45.0 種子隨機城鎮、v6.47.0 村民自由提案(都在 sim-systems 之後)
+    wp_enqueue_script('rimtown-sim-ideas', RIMTOWN_URL . 'sim-ideas.js', array('rimtown-sim-systems'), RIMTOWN_VERSION, true);
+    wp_enqueue_script('rimtown-sim-towngen', RIMTOWN_URL . 'sim-towngen.js', array('rimtown-sim-ideas'), RIMTOWN_VERSION, true);
+    wp_enqueue_script('rimtown-sim-freeprop', RIMTOWN_URL . 'sim-freeprop.js', array('rimtown-sim-towngen'), RIMTOWN_VERSION, true);
 
     wp_enqueue_script(
         'rimtown-chiptune',
@@ -917,7 +919,7 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-app',
         RIMTOWN_URL . 'app.js',
-        array('rimtown-simulation', 'rimtown-sim-systems', 'rimtown-chiptune', 'rimtown-tilemap', 'rimtown-town3d'),
+        array('rimtown-simulation', 'rimtown-sim-systems', 'rimtown-sim-freeprop', 'rimtown-chiptune', 'rimtown-tilemap', 'rimtown-town3d'),
         RIMTOWN_VERSION,
         true
     );
@@ -939,11 +941,11 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-app-loop',
         RIMTOWN_URL . 'app-loop.js',
-        RIMTOWN_URL . 'app-towngen.js',
         array('rimtown-app'),
         RIMTOWN_VERSION,
         true
     );
+    wp_enqueue_script('rimtown-app-towngen', RIMTOWN_URL . 'app-towngen.js', array('rimtown-app-loop'), RIMTOWN_VERSION, true); // v6.45.0
     wp_enqueue_script(
         'rimtown-app-towns',
         RIMTOWN_URL . 'app-towns.js',
@@ -1333,6 +1335,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.47.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '💭 村民會自己發想提案了：以前 AI 只能從系統給的幾個點子裡挑一個；現在（完整智能體模式下，大約六成的提案）村民依自己的個性、記憶和鎮況自由發想，可以很實際，也可以天馬行空，例如替廣場的貓立雕像、每週三全鎮只說真話、讓某個人去學醫',
+                '🌍 點子對世界有真的影響：效果落在十種規則裡——資源增減、連續幾天的產出、心情（全鎮／某職業／某個性／某人）、兩人關係、研究／農作／商人／節慶等加成、動工蓋建築、指定研究、讓某人轉職、立下新傳統、立地標。名字不存在、數值太誇張、好處太划算都會被修正，立地標一定要花錢。投票、鎮長裁決、執行和十天後成效都照原本的流程',
+                '🏮 傳統與地標會留下來：通過的新傳統會寫進 AI 看到的鎮況，之後村民說話、規劃一天、投票都會參考；地標會立在廣場上（3D 地圖看得到石碑和名牌）。提案卡會列出每一項實際效果，提案分頁頂端多了「本鎮的規矩與地標」',
+                '🐛 修正 WordPress 版的外掛載入清單：v6.45／v6.46 新增的檔案寫錯位置，WordPress 鏡像站可能載不到（rimtown.cc 不受影響）',
+            ),
+            'changes_en' => array(
+                '💭 Villagers now come up with their own proposals: the AI used to pick from a few ideas the system offered; now (in full agent mode, about six in ten proposals) villagers invent proposals from their own personality, memories and the state of the town. They can be practical or wildly imaginative, such as a statue for the cat in the square, a day each week when everyone tells the truth, or sending someone to train as a doctor',
+                '🌍 Ideas have real effects on the world: effects use ten kinds of rule (resource changes, output over several days, mood for the whole town, a job, a personality type or one person, a relationship between two people, bonuses to research, farming, merchants, festivals and more, starting a building, choosing research, changing someone’s job, a new tradition, or a landmark). Unknown names, extreme numbers and deals that are too good are corrected, and a landmark always costs something. Voting, the mayor’s ruling, carrying it out and the ten-day follow-up work as before',
+                '🏮 Traditions and landmarks stay: an approved tradition is added to the town summary the AI sees, so villagers take it into account when talking, planning their day and voting; landmarks stand in the square (a stone monument and name on the 3D map). Proposal cards list every real effect, and the proposals tab has a new Town customs and landmarks section',
+                '🐛 Fixed the WordPress plugin’s script list: files added in v6.45 and v6.46 were registered in the wrong place, so the WordPress mirror might not load them (rimtown.cc was not affected)',
+            ),
+        ),
         array(
             'version' => '6.46.0',
             'date'    => '2026-11-04',

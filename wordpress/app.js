@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.46.0
-const RIMTOWN_APP_VERSION = '6.46.0';
+// RimTown - Frontend App (WordPress Plugin) v6.47.0
+const RIMTOWN_APP_VERSION = '6.47.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1839,6 +1839,7 @@ class RimTownApp {
                 this.tileMap.explorationData = this.state.exploration || {};
                 this.tileMap.graveyardData = (this.state.lifecycle || {}).graveyard || [];
                 this.tileMap.festivalData = this.state.festivals || {};
+                this.tileMap.landmarks = this.world?.proposals?.landmarks || null; // v6.47.0
                 this.tileMap.render(agents, this.selectedAgent, player?.current_location, this.world?.buildings?.completed || [], {
                     farm: this.state?.farm, processing: this.state?.processing, industry: this.state?.industry,
                 });

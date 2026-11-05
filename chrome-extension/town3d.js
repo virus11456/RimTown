@@ -859,7 +859,7 @@ class Town3D extends PixelTileMap {
         // v6.33.0 靜態物件算好世界矩陣就停用自動更新(three 每幀會走訪整棵樹重算矩陣;水面／船／篝火／馬車這些會動的再開回來)
         this._static.updateMatrixWorld(true); this._static.traverse((o) => { o.matrixAutoUpdate = false; });
         for (const w of this._waterMeshes) w.matrixAutoUpdate = true; if (this._boatMeshes) for (const b of this._boatMeshes) b.g.matrixAutoUpdate = true; if (this._flame) this._flame.matrixAutoUpdate = true; if (this._coach) this._coach.matrixAutoUpdate = true;
-        this._dynSig = null;
+        this._dynSig = null; this._lmSig = null; // v6.47.0 換地圖要重排地標
         this._buildLabelIndex();
         console.log('[Town3D] scene built:', this._static.children.length, 'nodes');
     }
@@ -1169,7 +1169,7 @@ class Town3D extends PixelTileMap {
             if (!el._bound) { el._bound = true; el.addEventListener('click', (e) => { e.stopPropagation(); this._lastTapExact = true; this.focusLocation(locId); if (this.onClick) this.onClick(locId); }); }
             this._place(el, cx, top + 0.3, cz);
         }
-        const extraLabels = [].concat(this._dynLabels || [], this._factLabels || [], this._expLabels || [], this._industryLabels(), this._graveLabel ? [this._graveLabel] : [], this._festLabel ? [this._festLabel] : [], this._caravanLabel ? [this._caravanLabel] : []);
+        const extraLabels = [].concat(this._lmLabels || [], this._dynLabels || [], this._factLabels || [], this._expLabels || [], this._industryLabels(), this._graveLabel ? [this._graveLabel] : [], this._festLabel ? [this._festLabel] : [], this._caravanLabel ? [this._caravanLabel] : []);
         for (const d of extraLabels) { const el = this._ov(d.key, d.cls, d.html); this._place(el, d.x, d.y, d.z); }
         // 村民名牌、表情、睡眠
         const shownBubble = new Set();
@@ -1368,6 +1368,23 @@ class Town3D extends PixelTileMap {
     }
 
     // ---------- v6.24.0 農田、工廠、墓園、探索標記、節慶 ----------
+    // v6.47.0 地標:圍著廣場排一圈石座＋碑,名牌用 overlay(最多 6 座)
+    _syncLandmarks() {
+        const L = Array.isArray(this.landmarks) ? this.landmarks : [];
+        const sig = L.map(x => x.name + x.icon).join('|') + '|' + (this.grid ? 1 : 0);
+        if (sig === this._lmSig) return; this._lmSig = sig;
+        if (!this._lmGroup) { this._lmGroup = new THREE.Group(); this.scene.add(this._lmGroup); }
+        this._lmGroup.clear(); this._lmLabels = [];
+        const sq = this.buildingZones['town_square'] || this.natureZones['town_square']; if (!sq || !L.length) return;
+        const spots = [[0.4, 0.4], [sq.w - 1.4, 0.4], [0.4, sq.h - 1.4], [sq.w - 1.4, sq.h - 1.4], [sq.w / 2 - 0.5, 0.4], [sq.w / 2 - 0.5, sq.h - 1.4]]; // 廣場四角＋兩邊中間(在廣場裡,不會壓到路或房子)
+        L.slice(-6).forEach((x, i) => {
+            const [ox, oz] = spots[i]; const cx = sq.x + ox + 0.5, cz = sq.y + oz + 0.5, gy = this.groundY(cx, cz);
+            this._box(0.9, 0.25, 0.9, '#8C8578', cx, gy + 0.125, cz, this._lmGroup);
+            this._box(0.5, 0.9, 0.5, '#B9AE98', cx, gy + 0.7, cz, this._lmGroup);
+            this._box(0.6, 0.12, 0.6, '#D9C9A3', cx, gy + 1.21, cz, this._lmGroup);
+            this._lmLabels.push({ key: 'lm:' + i, cls: 't3d-label t3d-landmark', html: `<span class="t3d-num">${this._esc(x.icon || '🗿')}</span><span class="t3d-name">${this._esc(typeof t3 === 'function' ? t3(x.name) : x.name)}</span>`, x: cx, y: gy + 1.9, z: cz });
+        });
+    }
     _syncExtras(extraData) {
         const farm = extraData?.farm, proc = extraData?.processing;
         const plots = farm?.plots || [];
@@ -1555,6 +1572,7 @@ class Town3D extends PixelTileMap {
         if (this._sceneSrc !== this.grid || this._sceneSeason !== (this.season || '')) this._buildScene();
         this._syncDynamic(completedBuildings);
         this._syncExtras(extraData);
+        this._syncLandmarks(); // v6.47.0 村民提案立的地標
         this._updateCamera();
         this._updateLighting();
         this._updateWater();

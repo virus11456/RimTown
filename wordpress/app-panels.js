@@ -886,6 +886,7 @@ Object.assign(RimTownApp.prototype, {
                 <div class="pp-title">${esc(p.title)}</div>
                 <div class="pp-by">${avatar(p.proposerId)}<span><b>${esc(t(p.proposerName))}</b> <small>${esc(p.proposerJob)}</small></span></div>
                 <div class="pp-desc">${esc(p.pitch || p.desc)}</div>`;
+            if (p.effectsText && p.effectsText.length) html += `<div class="pp-fx">${p.effectsText.map(x => `<span>${esc(x)}</span>`).join('')}</div>`; // v6.47.0 村民自己的點子:實際效果
             if (p.cost && Object.keys(p.cost).length) html += `<div class="pp-cost ${p.affordable ? '' : 'short'}">💰 ${t('需要')}${t('：')}${esc(costText(p.cost))}${p.affordable ? '' : ` · ${t('公庫目前不夠')}`}</div>`;
             html += `<div class="pp-votes" title="${esc(t('贊成：') + (p.forNames || []).map(n => t(n)).join(t('、')))}&#10;${esc(t('反對：') + (p.againstNames || []).map(n => t(n)).join(t('、')))}"><span class="pp-for">👍 ${p.forCount}</span><i><b style="width:${pct}%"></b></i><span class="pp-against">👎 ${p.againstCount}</span></div>`;
             // v6.30.0 投票理由(各取前兩名)
@@ -907,6 +908,13 @@ Object.assign(RimTownApp.prototype, {
         html += `<div class="pp-summary">${t('提出')} ${d.stats.made} · ${t('已批准')} ${d.stats.approved} · ${t('已否決')} ${d.stats.rejected} · ${t('已完成')} ${d.stats.done}</div>`;
         html += `<div style="font-size:0.7rem;color:var(--text-muted);margin:0 0 6px">${t('村民自己提案、全鎮投票、鎮長裁決。你只看。')}</div>`; // v6.37.0
         html += this._electionCardHtml(); // v6.42.0 鎮長選舉／代理鎮長
+        // v6.47.0 村民提案留下的傳統與地標
+        if ((d.traditions || []).length || (d.landmarks || []).length) {
+            html += `<div class="pp-lore"><h4 class="pp-h">🏮 ${t('本鎮的規矩與地標')}</h4>`;
+            for (const x of (d.traditions || []).slice().reverse()) html += `<div class="pp-lore-row">📜 ${t('「')}${esc(x.text)}${t('」')} <small>${esc(t(x.by || ''))} · ${esc(x.id || '')}</small></div>`;
+            for (const x of (d.landmarks || []).slice().reverse()) html += `<div class="pp-lore-row">${esc(x.icon)} ${esc(x.name)} <small>${esc(t(x.by || ''))} · ${esc(x.id || '')}</small></div>`;
+            html += `</div>`;
+        }
         html += `<h4 class="pp-h">🗳️ ${t('投票中')} <span class="pp-count">${d.open.length}</span></h4>`;
         if (!d.open.length) html += `<div class="ob-empty" style="margin:10px 4px"><span class="ob-empty-icon">☕</span>${t('現在沒有投票中的提案。村民會依鎮上的情況陸續提出，通常每天一兩件。')}</div>`;
         else d.open.forEach(p => { html += card(p, 'decide'); });

@@ -447,3 +447,11 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
     .mobile-menu-dropdown button { min-height: 44px; padding: 0 14px; font-size: 0.85rem; }
     body:has(#mobile-menu-dropdown:not(.hidden)) #achv-toast-host { top: calc(env(safe-area-inset-top, 0px) + 112px) !important; }
 }
+
+/* v6.47.0 村民自由提案:效果標籤、傳統與地標 */
+.rimtown-container .pp-fx { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 2px; }
+.rimtown-container .pp-fx span { font-size: 0.68rem; padding: 2px 8px; border-radius: 999px; background: var(--bg-tertiary, rgba(255,255,255,0.08)); color: var(--text-secondary); border: 1px solid var(--border); }
+.rimtown-container .pp-lore { margin: 4px 0 10px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-card); }
+.rimtown-container .pp-lore .pp-h { margin-top: 0; }
+.rimtown-container .pp-lore-row { font-size: 0.78rem; margin: 3px 0; }
+.rimtown-container .pp-lore-row small { color: var(--text-muted); margin-left: 4px; }
