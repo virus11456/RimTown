@@ -261,7 +261,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.44.1.zip` from Releases
+1. Download `rimtown-v6.44.2.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -314,6 +314,10 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.44.2 (2026-11-04)
+- 💤 晚上不再有頂著 zzz 的村民在廣場上走：以前村民 21 點回到家，下一刻肚子餓又跑去酒館吃飯，22 點該睡了才往回走，路上就已經冒 zzz。現在睡前一小時待在家，餓了就在家吃；半夜餓醒也在家吃。還在走回家的人不再顯示 zzz
+- 🐴 馬車站看得清楚了：標題以前是黑字、按鈕不是遊戲字型，現在跟著夜色面板用淺色字和遊戲字型；目的地改用鎮名的顯示名，舊存檔裡存成英文的鄰鎮（例如 Seabreeze Harbor）在中文介面會顯示「海風鎮」
 
 ### v6.44.1 (2026-11-04)
 - 📱 小手機橫放時帳號選單不再被切掉：568×320 這類矮螢幕上，選單比畫面高、「登出」下緣被切到；現在超出時會往上挪，真的放不下就在選單裡捲動

@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.44.1
-const RIMTOWN_APP_VERSION = '6.44.1';
+// RimTown - Frontend App (WordPress Plugin) v6.44.2
+const RIMTOWN_APP_VERSION = '6.44.2';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1655,21 +1655,23 @@ class RimTownApp {
         ov.id = 'coach-dialog';
         ov.style.cssText = 'position:fixed;inset:0;background:rgba(6,10,24,0.72);z-index:9999;display:flex;align-items:center;justify-content:center';
         const card = document.createElement('div');
-        card.style.cssText = 'background:var(--bg-secondary);border:1px solid var(--border);border-radius:14px;padding:18px;max-width:330px;width:86%';
+        card.style.cssText = 'background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border);border-radius:14px;padding:18px;max-width:330px;width:86%;font-family:inherit'; // v6.44.2 標題以前沒設顏色,掛在 body 下變成預設黑字
         let inner = `<div style="font-weight:bold;font-size:1rem;margin-bottom:6px;display:flex;align-items:center;gap:8px">${this._coachPixelSvg(1)}<span>${t('馬車站')}</span></div>`;
         if (!towns.length) {
             inner += `<div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.6">${t('車伕靠在車轅上打盹：「往海風鎮的沿海道路還封著呢——聽說鎮子發展起來，就會組修路隊把路打通。急的話，先跟商隊買點那邊的魚乾解解饞吧。」')}</div>`;
         } else {
             inner += `<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px">${t('車伕拍拍車板：「要去哪兒？路上得顛個兩天。」')}</div>`;
             towns.forEach((twn, i) => {
-                inner += `<button class="trade-btn coach-go" data-idx="${i}" style="width:100%;margin:3px 0;padding:9px;display:flex;align-items:center;justify-content:center;gap:7px">${this._coachPixelSvg(0.75)}<span>${t('前往')} ${esc(twn.name)}</span></button>`;
+                // v6.44.2 目的地用顯示名(舊存檔的鄰鎮可能存成英文 Seabreeze Harbor,中文介面要顯示海風鎮)
+                const shown = this._townDisplayName ? this._townDisplayName(twn.name, (typeof themeKeyOfTownName === 'function' && themeKeyOfTownName(twn.name)) || this._guessTheme?.(twn.name)) : twn.name;
+                inner += `<button class="trade-btn coach-go" data-idx="${i}" style="width:100%;margin:3px 0;padding:9px;display:flex;align-items:center;justify-content:center;gap:7px;font-family:inherit">${this._coachPixelSvg(0.75)}<span>${t('前往').trim()} ${esc(shown)}</span></button>`;
             });
         }
-        if (towns.length && !this.world?.observerMode) inner += `<button class="trade-btn coach-caravan" style="width:100%;margin-top:8px;padding:9px">🐪 ${t('押商隊')}${this.world?.playerCaravan?.active ? `${t('（')}${t('在路上')}${t('）')}` : ''}</button>`; // v5.92.0
-        inner += `<button class="trade-btn coach-close" style="width:100%;margin-top:8px;padding:8px;opacity:0.8">${t('下次再說')}</button>`;
+        if (towns.length && !this.world?.observerMode) inner += `<button class="trade-btn coach-caravan" style="width:100%;margin-top:8px;padding:9px;font-family:inherit">🐪 ${t('押商隊')}${this.world?.playerCaravan?.active ? `${t('（')}${t('在路上')}${t('）')}` : ''}</button>`; // v5.92.0
+        inner += `<button class="trade-btn coach-close" style="width:100%;margin-top:8px;padding:8px;opacity:0.8;font-family:inherit">${t('下次再說')}</button>`;
         card.innerHTML = inner;
         ov.appendChild(card);
-        document.body.appendChild(ov);
+        (document.getElementById('rimtown-app') || document.body).appendChild(ov); // v6.44.2 掛進遊戲容器,吃得到夜色／日光色票與遊戲字型
         ov.addEventListener('click', (e) => {
             const go = e.target.closest?.('.coach-go');
             if (go) { const twn = towns[parseInt(go.dataset.idx, 10)]; ov.remove(); if (twn) this._coachTravelTo(twn.id, twn.name); return; }

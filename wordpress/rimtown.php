@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.44.1
+ * Version: 6.44.2
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.44.1');
+define('RIMTOWN_VERSION', '6.44.2');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1330,6 +1330,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.44.2',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '💤 晚上不再有頂著 zzz 的村民在廣場上走：以前村民 21 點回到家，下一刻肚子餓又跑去酒館吃飯，22 點該睡了才往回走，路上就已經冒 zzz。現在睡前一小時待在家，餓了就在家吃；半夜餓醒也在家吃。還在走回家的人不再顯示 zzz',
+                '🐴 馬車站看得清楚了：標題以前是黑字、按鈕不是遊戲字型，現在跟著夜色面板用淺色字和遊戲字型；目的地改用鎮名的顯示名，舊存檔裡存成英文的鄰鎮（例如 Seabreeze Harbor）在中文介面會顯示「海風鎮」',
+            ),
+            'changes_en' => array(
+                '💤 No more villagers wandering the plaza with zzz over their heads at night: they used to get home at 21:00, head straight back out to the tavern when hungry, and only start walking home at bedtime, already showing zzz. They now stay home in the hour before bed and eat at home if hungry, including when they wake up hungry at night. Villagers still walking home no longer show zzz',
+                '🐴 The carriage station is readable: the title used to be black and the buttons did not use the game font. It now uses light text and the game font on the night panel, and destinations use the display name, so a neighbour stored in English in an older save (such as Seabreeze Harbor) shows as 海風鎮 in Chinese',
+            ),
+        ),
         array(
             'version' => '6.44.1',
             'date'    => '2026-11-04',

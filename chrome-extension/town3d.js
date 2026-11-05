@@ -1181,7 +1181,7 @@ class Town3D extends PixelTileMap {
             const wx = pos.x / TILE, wz = pos.y / TILE, gy = m.position.y;
             const isSel = aid === selectedAgent;
             const emote = this.agentEmotes?.[aid];
-            const sleeping = agent.activity === 'sleeping';
+            const sleeping = agent.activity === 'sleeping' && !this.agentPositions[aid]?.walking; // v6.44.2 還在走回家的路上不冒 zzz(看起來像夢遊)
             const extra = sleeping ? ' <i class="t3d-zzz">z z z</i>' : emote ? ` <i class="t3d-emo">${emote}</i>` : '';
             const el = this._ov('ag:' + aid, 't3d-tag' + (isSel ? ' is-sel' : '') + (aid === 'player' ? ' is-player' : ''), `${this._esc(t3(agent.name || aid))}${extra}`);
             this._place(el, wx, gy + 2.15, wz);

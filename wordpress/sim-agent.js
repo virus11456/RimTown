@@ -759,7 +759,7 @@ class Agent {
         const sleepEnd = isNightOwl ? 9 : (isEarlyBird ? 5 : 6);
 
         // Critical needs always override
-        if (this.needs.hunger < 15) { this.activity='eating'; return; }
+        if (this.needs.hunger < 15) { this.activity='eating'; this._eatAtHome = !isNightOwl && isNight; return; } // v6.44.2 半夜餓醒在家吃,不再摸黑走去酒館
         if (this.needs.rest < 10) { this.activity='sleeping'; return; }
 
         // Pre-sleep: head home 1 hour before bedtime (walk home while still awake)
@@ -767,10 +767,14 @@ class Agent {
         const inPreSleep = sleepStart > sleepEnd
             ? (hour === preSleepHour)
             : (hour === preSleepHour);
-        if (inPreSleep && this.needs.rest < 90 && this.currentLocation !== this.homeLocation) {
-            this.activity = 'heading_home';
+        // v6.44.2 以前只有「人在外面」才回家;已經到家的人下一刻又被餓肚子拉去酒館吃飯,睡覺時間到了才又往回走,
+        // 於是 22:00 一堆頭上冒 zzz 的人還在廣場上走。現在睡前一小時待在家:餓了就在家吃,否則在家準備睡
+        if (inPreSleep && this.needs.rest < 90) {
+            this.activity = this.needs.hunger < 40 ? 'eating' : 'heading_home';
+            this._eatAtHome = this.activity === 'eating';
             return;
         }
+        this._eatAtHome = false;
 
         // Pre-work: head to workplace 1 hour before work starts
         if (this.job) {
@@ -882,7 +886,8 @@ class Agent {
         else if (this.activity==='sleeping') this.targetLocation = this.homeLocation;
         else if (this.activity==='eating') {
             // During work hours, eat near workplace or at tavern; at night, eat at home or tavern
-            if (isWorkHours && workplace) this.targetLocation = pickRandom([workplace, 'tavern', 'tavern']);
+            if (this._eatAtHome) this.targetLocation = this.homeLocation; // v6.44.2 睡前一小時在家吃
+            else if (isWorkHours && workplace) this.targetLocation = pickRandom([workplace, 'tavern', 'tavern']);
             else if (isNight) this.targetLocation = pickRandom(['tavern', 'tavern', 'home']);
             else this.targetLocation = 'tavern';
         }
