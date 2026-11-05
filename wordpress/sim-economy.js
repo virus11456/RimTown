@@ -580,6 +580,7 @@ class ResearchManager {
                 if(op.status==='locked'&&op.prerequisites.every(pre=>this.projects[pre]?.status==='complete')) op.status='available';
             }
             world.logMessageT('research', '研究完成：{p}！', { p: p.name });
+            try { world.ideaSystem?.onResearchComplete?.(world, p.key); } catch (e) {} // v6.46.0 新觀念從研究員開始傳
             Object.values(world.agents).forEach(a=>{ a.moodModifier=(a.moodModifier||0)+3; });
         }
     }

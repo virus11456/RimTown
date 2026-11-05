@@ -9,7 +9,7 @@ Object.assign(RimTownApp.prototype, {
         const ov = document.createElement('div'); ov.id = 'season-recap';
         ov.style.cssText = 'position:fixed;inset:0;background:rgba(6,10,24,0.72);z-index:9999;display:flex;align-items:center;justify-content:center';
         const card = document.createElement('div');
-        card.style.cssText = 'background:var(--bg-secondary);border:1px solid var(--border);border-radius:14px;padding:18px;max-width:380px;width:90%;max-height:85vh;overflow-y:auto';
+        card.style.cssText = 'background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border);border-radius:14px;padding:18px;max-width:380px;width:90%;max-height:85vh;overflow-y:auto';
         const gradeCol = { S: '#ffd166', A: 'var(--positive, #4ade80)', B: 'var(--accent)', C: 'var(--negative, #f87171)' }[r.grade] || 'var(--accent)';
         let inner = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div style="font-weight:bold;font-size:1rem">📜 ${t('季末回顧')}</div><div style="font-size:1.4rem;font-weight:bold;color:${gradeCol}">${esc(r.grade)}</div></div>`;
         inner += `<div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:10px">${esc(r.title)} · ${esc(r.gradeText)}</div>`;
@@ -18,7 +18,7 @@ Object.assign(RimTownApp.prototype, {
         if (d.history.length > 1) inner += `<div style="font-size:0.7rem;color:var(--text-secondary);margin-top:10px;border-top:1px solid var(--border);padding-top:6px">${t('之前幾季')}${t('：')}${d.history.slice(1).map(h => `${esc(h.title)} ${esc(h.grade)}`).join(' · ')}</div>`;
         inner += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:8px">${this.world?.observerMode ? t('下一季：第 5 天公布新考驗') : t('下一季：第 5 天公布新考驗，委託每天早上更新')}</div>`;
         inner += `<button class="trade-btn" data-action="recap-close" style="width:100%;padding:8px;margin-top:12px">${t('關閉')}</button>`;
-        card.innerHTML = inner; ov.appendChild(card); document.body.appendChild(ov);
+        card.innerHTML = inner; ov.appendChild(card); (document.getElementById('rimtown-app') || document.body).appendChild(ov); // v6.46.0 掛進遊戲容器才吃得到色票與字型(以前標題變黑字)
         ov.addEventListener('click', (e) => { const go = e.target.closest('[data-action="recap-go"]'); if (go) { e.stopPropagation(); this._recapGo(go.dataset.val); return; } if (e.target === ov || e.target.closest('[data-action="recap-close"]')) ov.remove(); }); // 彈窗掛在 body 外,事件委派收不到,這裡自己接
     },
     // v6.6.0 回顧建議的「去做」:直接開押商隊 / 切分頁 / 找該村民聊(有 AI 時順便進入「用你的話說」)
@@ -62,7 +62,7 @@ Object.assign(RimTownApp.prototype, {
         const ov = document.createElement('div'); ov.id = 'caravan-dialog';
         ov.style.cssText = 'position:fixed;inset:0;background:rgba(6,10,24,0.72);z-index:9999;display:flex;align-items:center;justify-content:center';
         const card = document.createElement('div');
-        card.style.cssText = 'background:var(--bg-secondary);border:1px solid var(--border);border-radius:14px;padding:18px;max-width:360px;width:90%;max-height:85vh;overflow-y:auto';
+        card.style.cssText = 'background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border);border-radius:14px;padding:18px;max-width:360px;width:90%;max-height:85vh;overflow-y:auto';
         const a = w.playerCaravan?.active;
         const canBuy = towns.some(tw => (w.purchaseGoods?.(tw.theme) || []).length); // v6.16.0 採買:只要有鄰鎮就能帶銀幣去買對方盛產的貨
         let mode = (resList.length || !canBuy) ? 'sell' : 'buy';
@@ -87,7 +87,7 @@ Object.assign(RimTownApp.prototype, {
             inner += `<button class="trade-btn btn-accent pc-go" style="width:100%;margin-top:8px;padding:9px">🐪 ${t('出發')}</button>`;
         }
         inner += `<button class="trade-btn pc-close" style="width:100%;margin-top:8px;padding:8px;opacity:0.8">${t('關閉')}</button>`;
-        card.innerHTML = inner; ov.appendChild(card); document.body.appendChild(ov);
+        card.innerHTML = inner; ov.appendChild(card); (document.getElementById('rimtown-app') || document.body).appendChild(ov); // v6.46.0 掛進遊戲容器才吃得到色票與字型(以前標題變黑字)
         const read = () => { const ti = parseInt(card.querySelector('#pc-town')?.value || '0', 10); const tw = towns[ti] || towns[0]; return { tw, res: card.querySelector('#pc-res')?.value, amount: parseInt(card.querySelector('#pc-amt')?.value || '20', 10), guardId: card.querySelector('#pc-guard')?.value || '', route: card.querySelector('input[name="pc-route"]:checked')?.value || 'road' }; };
         // v6.16.0 採買模式:貨物選單換成目的鎮盛產的貨,數量不受倉庫限制,報價是花費
         const fillRes = () => {
@@ -333,6 +333,7 @@ Object.assign(RimTownApp.prototype, {
 
     _visitorMailboxTick() {
         const w = this.world; if (!w || !this.currentTownId) return;
+        try { this._genTownTick?.(); } catch (e) { console.warn('[RimTown] gen town tick', e); } // v6.45.0 種子隨機城鎮
         // 道路已通(含老玩家補生成):確保海風鎮存在
         for (const def of NEIGHBOR_TOWNS) { if (localStorage.getItem(def.key) === '1' && !this._neighborEnsured?.[def.theme]) this._ensureNeighborTown(def.theme); } // v5.76.0
         // 掛鉤(冪等,換鎮/換世界後自動指向新世界)
@@ -391,7 +392,7 @@ Object.assign(RimTownApp.prototype, {
                 this._getTownList().forEach(tw => push(tw.id, tw.name));
             } catch (e) {}
             w.otherTowns = towns;
-            w.crossTownNews = this._collectCrossTownNews(towns); // v5.88.0 日報跨鎮專欄素材
+            { const real = this._collectCrossTownNews(towns), gen = this._genCrossNews ? this._genCrossNews() : []; w.crossTownNews = real.slice(0, 2).concat(gen.slice(0, 1), real.slice(2), gen.slice(1)); } // v5.88.0 日報跨鎮專欄素材;v6.45.0 加上遠方城鎮的傳聞
         }
         // 收訪客信箱:對方鎮派來的村民實體化
         try {

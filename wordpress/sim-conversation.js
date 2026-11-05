@@ -270,7 +270,7 @@ ${memos ? `${t('【昨天的約定/待辦】')}\n${memos}` : ''}
 ${topMem ? `${t('【昨天印象最深的事】')}\n${topMem}` : ''}
 ${thought ? `${t('【心裡的體悟】')}- ${thought}` : ''}`;
         }).join('\n\n');
-        const prompt = `${t('你在為模擬小鎮「{town}」的居民規劃真實的一天。像寫小說一樣,讓行程反映每個人的性格、人際與心事。').replace('{town}', t(world.townName || '邊境鎮'))}
+        const prompt = `${t('你在為模擬小鎮「{town}」的居民規劃真實的一天。像寫小說一樣,讓行程反映每個人的性格、人際與心事。').replace('{town}', t(world.townName || '邊境鎮'))}${(typeof TownGen !== 'undefined' && TownGen.cultureLine(world)) || ''}
 ${ctx.length ? `${t('【今日環境】')}${ctx.join(t('；'))}` : ''}
 
 ${sections}
@@ -997,7 +997,8 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
     // ===== v6.39.0 完整智能體模式:投票／提案／鎮長裁決交給 LLM(用記憶＋性格推理);規則版是失敗時的退路 =====
     _agentBrief(world, a, other) {
         const lang = LLM_LANG.get(); const sep = lang === 'en' ? ', ' : '、';
-        const traits = (a.personality?.traits || []).map(x => lang === 'en' ? x : ((typeof TRAIT_POOL !== 'undefined' && TRAIT_POOL[x]?.label) || x)).join(sep);
+        let traits = (a.personality?.traits || []).map(x => lang === 'en' ? x : ((typeof TRAIT_POOL !== 'undefined' && TRAIT_POOL[x]?.label) || x)).join(sep);
+        if (a.techStance === 'progressive') traits += sep + t('革新派（樂於接受新技術）'); else if (a.techStance === 'conservative') traits += sep + t('保守派（對新技術存疑）'); // v6.46.0
         const values = (a.personality?.values || []).map(v => t(v)).join(sep);
         const mem = (a.memory?.entries || []).slice(-10).sort((x, y) => (y.importance || 0) - (x.importance || 0)).slice(0, 3).map(e => e.content).filter(Boolean);
         let rel = '';
@@ -1281,7 +1282,7 @@ ${t('只輸出 JSON 陣列，每個元素 {"n":村民序號,"vote":候選人序�
         }
         const festCtx = fest ? `${t('【今天是')}${fest.name}${t('!】')}${fest.description}${t('鎮上到處都是祭典活動:')}${fest.activities.join(t('、'))}${t('。對話請自然融入祭典氣氛。')}\n` : '';
 
-        const prompt = `${t('你是一位才華橫溢的小說家，正在為奇幻小鎮「{town}」寫角色對話劇本。').replace('{town}', t(world.townName || '邊境鎮'))}
+        const prompt = `${t('你是一位才華橫溢的小說家，正在為奇幻小鎮「{town}」寫角色對話劇本。').replace('{town}', t(world.townName || '邊境鎮'))}${(typeof TownGen !== 'undefined' && TownGen.cultureLine(world)) || ''}
 ${t('這是兩位小鎮居民偶然碰面的場景。請寫出生動、自然、有溫度的對話——就像真實的鄰居閒聊一樣。')}
 
 ${t('【重要規則】')}

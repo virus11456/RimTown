@@ -371,6 +371,12 @@
 .rimtown-container .tech-desc { font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px; }
 .rimtown-container .tech-unlocks { font-size: 0.68rem; color: var(--accent); margin-top: 3px; }
 .rimtown-container .tech-need { font-size: 0.66rem; color: var(--text-muted); margin-top: 2px; }
+/* v6.46.0 觀念傳播條:綠=接受、紅=反對、灰=還沒聽說 */
+.rimtown-container .tech-idea { font-size: 0.68rem; color: var(--text-secondary); margin-top: 4px; }
+.rimtown-container .idea-bar { display: flex; height: 5px; border-radius: 3px; overflow: hidden; background: var(--bg-tertiary, rgba(255,255,255,0.08)); margin: 3px 0 2px; }
+.rimtown-container .idea-a { background: #4CAF7A; }
+.rimtown-container .idea-r { background: #E5736B; }
+.rimtown-container .idea-legend { font-size: 0.62rem; color: var(--text-muted); }
 .rimtown-container .tech-done { opacity: 0.75; }
 .rimtown-container .tech-now { border-color: var(--accent); }
 .rimtown-container .tech-locked { opacity: 0.6; }

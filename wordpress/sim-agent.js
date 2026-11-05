@@ -152,7 +152,7 @@ class Memory {
         const cap = Memory.CATEGORY_CAP[category]; // v6.19.0 B12:對話摘要/觀察這類低重要度、量又大的記憶各自設上限(存檔體積;讀取端只取最近 10–20 筆)
         if (cap) { let n = 0; for (let i = this.entries.length - 1; i >= 0; i--) { if (this.entries[i].category === category && ++n > cap) { this.entries.splice(i, 1); } } }
     }
-    static CATEGORY_CAP = { conversation: 30, observation: 15, departure: 10, social: 30, reflection: 20 }; // v6.20.0 full 模式 35 天存檔 1.5MB 邊緣,再收:介面只看最近 10 筆、AI 只讀最近 10–20 筆
+    static CATEGORY_CAP = { conversation: 30, observation: 15, departure: 10, social: 30, reflection: 20, idea: 8 }; // v6.46.0 觀念傳播的閒聊記憶另外放、只留 8 筆,不擠掉人際記憶 // v6.20.0 full 模式 35 天存檔 1.5MB 邊緣,再收:介面只看最近 10 筆、AI 只讀最近 10–20 筆
     addT(tick, timeStr, category, k, p, importance = 5, relatedAgents = []) { // v6.17.0 模板版:content 用當下語言算一次,k/p 一起存
         this.add(tick, timeStr, category, Memory.render(k, p), importance, relatedAgents, k, p);
     }
@@ -759,7 +759,7 @@ class Agent {
         const sleepEnd = isNightOwl ? 9 : (isEarlyBird ? 5 : 6);
 
         // Critical needs always override
-        if (this.needs.hunger < 15) { this.activity='eating'; return; }
+        if (this.needs.hunger < 15) { this.activity='eating'; this._eatAtHome = !isNightOwl && isNight; return; } // v6.44.2 半夜餓醒在家吃,不再摸黑走去酒館
         if (this.needs.rest < 10) { this.activity='sleeping'; return; }
 
         // Pre-sleep: head home 1 hour before bedtime (walk home while still awake)
@@ -767,10 +767,14 @@ class Agent {
         const inPreSleep = sleepStart > sleepEnd
             ? (hour === preSleepHour)
             : (hour === preSleepHour);
-        if (inPreSleep && this.needs.rest < 90 && this.currentLocation !== this.homeLocation) {
-            this.activity = 'heading_home';
+        // v6.44.2 以前只有「人在外面」才回家;已經到家的人下一刻又被餓肚子拉去酒館吃飯,睡覺時間到了才又往回走,
+        // 於是 22:00 一堆頭上冒 zzz 的人還在廣場上走。現在睡前一小時待在家:餓了就在家吃,否則在家準備睡
+        if (inPreSleep && this.needs.rest < 90) {
+            this.activity = this.needs.hunger < 40 ? 'eating' : 'heading_home';
+            this._eatAtHome = this.activity === 'eating';
             return;
         }
+        this._eatAtHome = false;
 
         // Pre-work: head to workplace 1 hour before work starts
         if (this.job) {
@@ -882,7 +886,8 @@ class Agent {
         else if (this.activity==='sleeping') this.targetLocation = this.homeLocation;
         else if (this.activity==='eating') {
             // During work hours, eat near workplace or at tavern; at night, eat at home or tavern
-            if (isWorkHours && workplace) this.targetLocation = pickRandom([workplace, 'tavern', 'tavern']);
+            if (this._eatAtHome) this.targetLocation = this.homeLocation; // v6.44.2 睡前一小時在家吃
+            else if (isWorkHours && workplace) this.targetLocation = pickRandom([workplace, 'tavern', 'tavern']);
             else if (isNight) this.targetLocation = pickRandom(['tavern', 'tavern', 'home']);
             else this.targetLocation = 'tavern';
         }

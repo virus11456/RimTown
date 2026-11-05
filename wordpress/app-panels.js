@@ -379,7 +379,7 @@ Object.assign(RimTownApp.prototype, {
             if (d) { const s = (this.world?.dramaArchive || [])[parseInt(d.dataset.rtDrama, 10)]; if (s) { ov.remove(); this._showDramaScene(s); } return; }
             if (e.target.closest?.('[data-rt-close]') || e.target === ov) ov.remove();
         });
-        document.body.appendChild(ov);
+        (document.getElementById('rimtown-app') || document.body).appendChild(ov); // v6.46.0
     },
 
     // v5.48.0 追蹤村民:訂閱你在追的 CP/冤家,大事角落通知
@@ -796,7 +796,7 @@ Object.assign(RimTownApp.prototype, {
                 <p style="font-size:0.8rem;color:var(--text-secondary)">${agent.job?.title||(this.selectedAgent==='player'?t('旅人'):t('無業'))} | ${agent.mood_label||agent.mood_description}</p>
                 <p style="font-size:0.75rem;margin-top:6px">${t(personality.background||'')}</p>${chatBtn}</div>
             <div class="detail-section"><h3>${t('性格')}</h3>
-                ${(personality.traits||[]).map(t=>`<span class="trait-tag">${TRAIT_LABELS[t]||t}</span>`).join('')}
+                ${(personality.traits||[]).map(t=>`<span class="trait-tag">${TRAIT_LABELS[t]||t}</span>`).join('')}${(() => { const st = this.world?.agents?.[this.selectedAgent]?.techStance; return st === 'progressive' ? `<span class="trait-tag" title="${t('接受的新觀念比反對的多')}">🚀 ${t('革新派')}</span>` : st === 'conservative' ? `<span class="trait-tag" title="${t('對新技術存疑')}">🏺 ${t('保守派')}</span>` : ''; })()}
                 <div style="margin-top:4px;font-size:0.7rem;color:var(--text-secondary)">${t('價值觀：')}${(personality.values||[]).map(v => t(v)).join(I18N.getLang() === 'en' ? ', ' : '、')}</div>
                 ${agent.attributes && Object.keys(agent.attributes).length ? `<div class="nqc-attr" style="margin-top:6px">${[['charm','✨',t('魅力')],['vigor','💪',t('體魄')],['wit','🧠',t('智慧')],['grit','🔥',t('膽識')]].map(([k,ic,lb]) => { const v = Math.max(1, Math.min(10, agent.attributes[k] || 5)); return `<div class="nqc-attr-cell"><span class="nqc-attr-lb">${ic}${lb}</span><span class="nqc-attr-bar"><span class="nqc-attr-fill" style="width:${v*10}%"></span></span><span class="nqc-attr-val">${v}</span></div>`; }).join('')}</div>` : ''}</div>
             ${personaHtml}

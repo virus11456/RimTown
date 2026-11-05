@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.44.1
+ * Version: 6.46.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.44.1');
+define('RIMTOWN_VERSION', '6.46.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -887,6 +887,8 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-sim-systems',
         RIMTOWN_URL . 'sim-systems.js',
+        RIMTOWN_URL . 'sim-ideas.js',
+        RIMTOWN_URL . 'sim-towngen.js',
         array('rimtown-simulation'),
         RIMTOWN_VERSION,
         true
@@ -937,6 +939,7 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-app-loop',
         RIMTOWN_URL . 'app-loop.js',
+        RIMTOWN_URL . 'app-towngen.js',
         array('rimtown-app'),
         RIMTOWN_VERSION,
         true
@@ -1330,6 +1333,48 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.46.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '💡 研究完成會帶來新觀念：28 項研究各有一句觀念（例如「生病先看醫生，而不是先求神」「機器可以替人做粗活」），從研究員開始靠聊天一個傳一個。接不接受看個性、年紀、職業和鎮上民風：開明的人很快就信，保守的人會懷疑、甚至反過來勸別人別信；被搶飯碗的職業特別抗拒。村民會記得誰說服了自己，AI 對話裡會自然提起；傳到一半、全鎮共識或引起爭論都會上紀錄和日報',
+                '⚖️ 革新派與保守派：接受和反對的觀念累積成立場，村民卡上會標出來。競選時革新派偏好文化、經濟、自由，保守派偏好福利、自然、防禦；AI 投票和寫政見也會參考立場。紡織坊、鋸木場、磨坊、鍛造工坊這類技術上線時，被搶飯碗的匠人心情變差，保守的人會帶頭提案「保障手工匠人」',
+                '✨ 發明家靈光：有創意、勤快的村民工作時偶爾會想出新東西，冠上自己的名字（例如「陳偉式風箱」），直接推進目前的研究；愛嫉妒或刻薄的同行可能說那是他先想到的，兩人關係變差。科技樹面板新增觀念傳播條（接受／反對／還沒聽說）、派系名單和發明名人堂',
+                '🪟 季末回顧、商隊、劇情回顧、參選這幾個彈窗的標題以前是黑字，現在跟著面板配色',
+            ),
+            'changes_en' => array(
+                '💡 Finished research now brings a new idea: each of the 28 research topics has one (such as "See a doctor when you are ill before you pray" or "Machines can do the heavy work for us") that starts with the researchers and spreads as villagers chat. Whether someone accepts it depends on personality, age, job and the town’s temperament: open-minded villagers come round quickly, cautious ones doubt it and may even talk others out of it, and people whose work is threatened resist hardest. Villagers remember who convinced them and bring it up in AI dialogue; reaching half the town, becoming a consensus or sparking an argument is logged and reported in the newspaper',
+                '⚖️ Progressives and conservatives: the ideas villagers accept or reject add up to a stance shown on their card. In elections progressives favour culture, the economy and freedom while conservatives favour welfare, nature and defence, and the AI uses stances when voting and writing platforms. When textile mills, sawmills, mills or steelworks arrive, craftspeople whose work is threatened lose mood and a conservative one may propose protecting craftspeople',
+                '✨ Inventors: creative, hard-working villagers sometimes come up with something on the job, named after them (such as the Chen Wei bellows), which advances current research. A jealous or abrasive colleague may claim it was their idea first, souring the relationship. The tech tree panel now shows each idea’s spread (accept / oppose / not heard yet), the factions and a hall of inventions',
+                '🪟 The season recap, caravan, drama recap and run-for-mayor dialogs used to have black titles; they now follow the panel colours',
+            ),
+        ),
+        array(
+            'version' => '6.45.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🗺️ 新城鎮會不斷出現：四個鄰鎮都通車後，商人、旅人和凱旋的探險隊會帶回遠方城鎮的消息。每座新鎮都由一個「種子」隨機組合：鎮名、地形（海港／礦山／森林／市集／平原）、一到兩個特色（溫泉、古代遺跡、鬧鬼傳說、瘟疫後重建、移民潮、走私客、學者之城⋯⋯共 16 種）、人口 8～30、主要產業與缺的資源、貧富、科技時代與已研究的項目、民風、最在乎的政策、年度祭典、和我們的關係，都不一樣；同一個玩家發現的鎮不會撞名也不會太像',
+                '🐴 相連的城鎮最多 10 座（邊境鎮、四個鄰鎮，加上 5 座隨機鎮）：有名額時馬車路線直接開通，第一次搭車過去才建立存檔；名額滿了的只留一張城鎮卡（約 1KB），列在城鎮列表新的「遠方城鎮」，會在背景慢慢變化（人口、繁榮、時代、祭典、天災、換鎮長），傳聞會上日報的跨鎮專欄',
+                '🏘️ 隨機鎮有自己的樣子：村民依人口隨機生成，個性會帶上當地民風；酒館、廣場、神社用鎮名取名；屋頂配色各不相同；AI 規劃行程和寫對話時也會知道這個鎮的特色與民風。英文介面會顯示英文鎮名',
+            ),
+            'changes_en' => array(
+                '🗺️ New towns keep appearing: once all four neighbouring towns are connected, merchants, travellers and returning expeditions bring word of distant towns. Each new town is built from a random seed, so its name, terrain (harbour, mountain, forest, market or plains), one or two specialties (hot springs, ancient ruins, a ghost story, rebuilt after a plague, a wave of newcomers, smugglers, scholars and 16 in all), population of 8 to 30, main trades and shortages, wealth, tech era and research, temperament, favourite policy, yearly festival and relationship with your town all differ. Towns found by the same player never share a name and are never too alike',
+                '🐴 Up to 10 towns can be connected (Frontier Town, the four neighbours and 5 random towns). While there is room, a carriage route opens straight away and the save is only created on your first trip. Once full, new towns are kept as a town card of about 1KB under the new Distant towns section of the town list; they keep changing in the background (population, prosperity, era, festivals, disasters, new mayors) and their news appears in the cross-town column of the newspaper',
+                '🏘️ Random towns have their own look and feel: villagers are generated to match the population and pick up the local temperament, the tavern, square and shrine are named after the town, roof colours differ, and the AI knows the town’s specialties and temperament when planning days and writing dialogue. The English interface shows English town names',
+            ),
+        ),
+        array(
+            'version' => '6.44.2',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '💤 晚上不再有頂著 zzz 的村民在廣場上走：以前村民 21 點回到家，下一刻肚子餓又跑去酒館吃飯，22 點該睡了才往回走，路上就已經冒 zzz。現在睡前一小時待在家，餓了就在家吃；半夜餓醒也在家吃。還在走回家的人不再顯示 zzz',
+                '🐴 馬車站看得清楚了：標題以前是黑字、按鈕不是遊戲字型，現在跟著夜色面板用淺色字和遊戲字型；目的地改用鎮名的顯示名，舊存檔裡存成英文的鄰鎮（例如 Seabreeze Harbor）在中文介面會顯示「海風鎮」',
+            ),
+            'changes_en' => array(
+                '💤 No more villagers wandering the plaza with zzz over their heads at night: they used to get home at 21:00, head straight back out to the tavern when hungry, and only start walking home at bedtime, already showing zzz. They now stay home in the hour before bed and eat at home if hungry, including when they wake up hungry at night. Villagers still walking home no longer show zzz',
+                '🐴 The carriage station is readable: the title used to be black and the buttons did not use the game font. It now uses light text and the game font on the night panel, and destinations use the display name, so a neighbour stored in English in an older save (such as Seabreeze Harbor) shows as 海風鎮 in Chinese',
+            ),
+        ),
         array(
             'version' => '6.44.1',
             'date'    => '2026-11-04',

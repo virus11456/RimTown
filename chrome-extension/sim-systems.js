@@ -320,7 +320,7 @@ class WeatherSystem {
     _checkDisasterEscalation(world) {
         // Drought escalation: 3+ consecutive hot days in summer
         if (this.streak >= 3 && this._isHot(this.current) && world.clock.season === '夏季' && !this.activeDisaster && this._daysSinceDisaster > 8) {
-            if (world.townTheme === 'forest') { // v5.86.0 林間村:連日高溫→山火
+            if (baseThemeOf(world.townTheme) === 'forest') { // v5.86.0 林間村:連日高溫→山火
                 this.disasterWarning = { type: 'wildfire', severity: 'major', daysUntil: 1 };
                 world.logMessage('weather', `⚠️ ${t('山火警報：連日高溫，伐木場的乾枝一點就著！')}`);
                 this._offerPrepChoice(world, t('山火'));
@@ -338,7 +338,7 @@ class WeatherSystem {
         }
         // Storm escalation chance
         if (this.current === 'storm' && Math.random() < 0.3 && !this.activeDisaster && this._daysSinceDisaster > 6) {
-            if (world.townTheme === 'mountain') { // v5.85.0 礦山鎮:暴雨滲水→坑道塌方
+            if (baseThemeOf(world.townTheme) === 'mountain') { // v5.85.0 礦山鎮:暴雨滲水→坑道塌方
                 this.disasterWarning = { type: 'tunnel_collapse', severity: 'major', daysUntil: 1 };
                 world.logMessage('weather', `⚠️ ${t('塌方警報：暴雨滲進坑道，支架開始吃水！')}`);
                 this._offerPrepChoice(world, t('坑道塌方'));
@@ -349,7 +349,7 @@ class WeatherSystem {
         }
 
         // v5.87.0 市集城:濃霧藏馬賊→商隊劫案
-        if (this.current === 'fog' && world.townTheme === 'market' && Math.random() < 0.2 && !this.activeDisaster && !this.disasterWarning && this._daysSinceDisaster > 8) {
+        if (this.current === 'fog' && baseThemeOf(world.townTheme) === 'market' && Math.random() < 0.2 && !this.activeDisaster && !this.disasterWarning && this._daysSinceDisaster > 8) {
             this.disasterWarning = { type: 'caravan_raid', severity: 'major', daysUntil: 1 };
             world.logMessage('weather', `⚠️ ${t('劫案警報：濃霧裡有馬賊出沒，城外的商隊危險！')}`);
             this._offerPrepChoice(world, t('商隊劫案'));
