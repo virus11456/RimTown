@@ -952,6 +952,11 @@ Object.assign(RimTownApp.prototype, {
                 T += `<div class="pp-issue-hint">${t('城鎮以上，要當過下一級的首長，或在本級議會當過一季議員，才能參選首長。')}</div></div>`;
             }
         } catch (e) {}
+        // v6.67.0 治安與民生
+        try { if (typeof CIVIC !== 'undefined' && this.world.civic) { const V = CIVIC.view(this.world);
+            T += `<div class="pp-issues pp-civic"><h4 class="pp-h">👮 ${t('治安與民生')}${V.slum ? ` <small>🏚️ ${t('貧民區')}</small>` : ''}</h4>`;
+            T += `<div class="pp-tier-line">${t('衛兵')} ${V.guards} · ${t('竊案')} ${V.thefts}${t('（')}${t('破案')} ${V.caught}${t('）')}${V.jailed.length ? ` · ⛓️ ${V.jailed.map(esc).join(t('、'))}` : ''}</div>`;
+            T += `<div class="pp-tier-line">${t('稅率')} ${V.tax}% · ${t('地價')} ${V.land} · ${t('上週房租')} ${V.rent}</div></div>`; } } catch (e) {}
         // v6.65.0 珍品
         try { if (typeof GOODS !== 'undefined' && this.world.goods) { const V = GOODS.view(this.world); if (V.town.length || V.offers.length || V.collectors.length) {
             T += `<div class="pp-issues pp-goods"><h4 class="pp-h">🏺 ${t('珍品')}</h4>`;
