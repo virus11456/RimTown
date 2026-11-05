@@ -367,6 +367,12 @@ Object.assign(RimTownApp.prototype, {
         crushes.forEach(r => lines.push(`💘 ${t('暗戀')} ${r.target_name}`));
         const foes = Object.values(rels).filter(r => r.target_id !== 'player' && (r.affinity || 0) < -60).slice(0, 2);
         foes.forEach(r => lines.push(`💢 ${t('與')} ${r.target_name} ${t('是死對頭')}`));
+        // v6.51.0 寵物、心裡記恨誰、藏著什麼秘密(只有上帝視角看得到)
+        try {
+            const ag = this.world?.agents?.[agentId];
+            if (ag && typeof PETS !== 'undefined') { const pd = PETS.describe(this.world, ag); if (pd) lines.push(pd); }
+            if (ag && typeof DARK !== 'undefined') { const x = DARK.about(this.world, ag); if (x.grudge) lines.push(`😠 ${t('心裡記恨{v}（{why}）').replace('{v}', t(x.grudge.name)).replace('{why}', x.grudge.why)}`); for (const s of x.secrets.slice(0, 2)) lines.push(`🎭 ${t('只有你知道：')}${s}`); }
+        } catch (e) {}
         const relHtml = lines.length ? lines.map(l => `<div class="nqc-rel">${l}</div>`).join('') : `<div class="nqc-rel nqc-dim">${t('目前沒有戀愛或仇恨傳聞')}</div>`;
         // v5.4.0 人生夢想進度
         const goal = this.state?.lifeGoals?.[agentId];
@@ -470,6 +476,13 @@ Object.assign(RimTownApp.prototype, {
         if (agentId !== 'player') this._firstDayMark?.('meet'); // v5.18.0 第一天:認識一位居民
     },
 
+    // v6.51.0 給 3D 的寵物清單(每 2 秒重算一次)
+    _petView() {
+        const w = this.world; if (!w || typeof PETS === 'undefined') return [];
+        const now = Date.now(); if (this._petViewCache && now - this._petViewAt < 2000 && this._petViewW === w) return this._petViewCache;
+        try { PETS.ensure(w); this._petViewCache = PETS.view(w); } catch (e) { this._petViewCache = []; }
+        this._petViewAt = now; this._petViewW = w; return this._petViewCache;
+    },
     _hideNpcCard() {
         document.getElementById('npc-quick-card')?.classList.add('hidden');
         document.getElementById('loc-quick-card')?.classList.add('hidden');

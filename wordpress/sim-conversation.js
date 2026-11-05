@@ -122,6 +122,8 @@ class GossipNetwork {
             const relA = subject.relationships.getOrCreate(source.agentId, source.name);
             const relB = source.relationships.getOrCreate(subject.agentId, subject.name);
             relA.modifyAffinity(-12); relB.modifyAffinity(-8);
+            subject.addThought?.('slandered', world, source.agentId, source.name); // v6.51.0 被說壞話的人真的會難過、記恨
+            subject.memory?.addT?.(world.tickCount, world.clock.timeStr, 'social', '居然是{source}在背後說我壞話...太過分了。', { source: source.name }, 8, [source.name]);
             world.logMessageT('gossip', '💢 {subject}聽到了{source}散布的謠言,當面對質!兩人關係惡化', { subject: subject.name, source: source.name }, subject.name, source.name);
             if (world.dailyNews) world.dailyNews.collectEvent('drama', `${subject.name}${t('為了謠言找')}${source.name}${t('對質!')}`, 7, [subject.name, source.name]);
             // 當事人在鎮民動態發文澄清

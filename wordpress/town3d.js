@@ -1158,6 +1158,72 @@ class Town3D extends PixelTileMap {
         for (const aid of Object.keys(this._agentMeshes)) if (!seen.has(aid)) { this._agentGroup.remove(this._agentMeshes[aid]); this._disposeAgent(this._agentMeshes[aid]); delete this._agentMeshes[aid]; }
     }
 
+    // ---------- v6.51.0 寵物與動物:模型朝 +x;位置在畫面端算(跟著主人、在家門口或廣場附近閒晃) ----------
+    _petMesh(p) {
+        const sig = p.sp + '|' + p.color;
+        let m = this._petMeshes?.[p.id]; if (m && m.userData.sig === sig) return m;
+        if (!this._petMeshes) { this._petMeshes = {}; this._petGroup = new THREE.Group(); this.scene.add(this._petGroup); }
+        if (m) { this._petGroup.remove(m); this._disposeAgent(m); }
+        const c = p.color, dk = (() => { const x = new THREE.Color(c); x.multiplyScalar(0.7); return '#' + x.getHexString(); })();
+        const body = [], tail = [];
+        if (p.sp === 'dog') {
+            body.push([0.5, 0.24, 0.24, c, 0, 0.3, 0], [0.2, 0.2, 0.2, c, 0.3, 0.44, 0], [0.12, 0.09, 0.12, dk, 0.44, 0.4, 0], [0.04, 0.04, 0.04, '#1E1A16', 0.5, 0.42, 0],
+                [0.05, 0.11, 0.08, dk, 0.27, 0.58, 0.08], [0.05, 0.11, 0.08, dk, 0.27, 0.58, -0.08], [0.03, 0.03, 0.03, '#1E1A16', 0.4, 0.48, 0.06], [0.03, 0.03, 0.03, '#1E1A16', 0.4, 0.48, -0.06]);
+            for (const [x, z] of [[0.17, 0.08], [0.17, -0.08], [-0.17, 0.08], [-0.17, -0.08]]) body.push([0.07, 0.2, 0.07, dk, x, 0.1, z]);
+            tail.push([0.2, 0.05, 0.05, c, -0.1, 0.02, 0]);
+        } else if (p.sp === 'cat') {
+            body.push([0.36, 0.17, 0.16, c, 0, 0.2, 0], [0.16, 0.15, 0.15, c, 0.21, 0.31, 0], [0.05, 0.07, 0.04, dk, 0.21, 0.41, 0.05], [0.05, 0.07, 0.04, dk, 0.21, 0.41, -0.05],
+                [0.02, 0.03, 0.03, '#3A5A2A', 0.295, 0.33, 0.04], [0.02, 0.03, 0.03, '#3A5A2A', 0.295, 0.33, -0.04], [0.02, 0.02, 0.03, '#D98C8C', 0.295, 0.29, 0]);
+            for (const [x, z] of [[0.12, 0.05], [0.12, -0.05], [-0.12, 0.05], [-0.12, -0.05]]) body.push([0.05, 0.12, 0.05, c, x, 0.06, z]);
+            tail.push([0.05, 0.28, 0.05, c, -0.02, 0.14, 0]);
+        } else {
+            body.push([0.22, 0.18, 0.18, c, 0, 0.2, 0], [0.06, 0.12, 0.14, dk, -0.12, 0.27, 0], [0.11, 0.12, 0.11, c, 0.1, 0.35, 0], [0.06, 0.03, 0.04, '#E8A23A', 0.18, 0.35, 0],
+                [0.06, 0.05, 0.03, '#C9332D', 0.1, 0.43, 0], [0.025, 0.025, 0.03, '#1E1A16', 0.15, 0.37, 0.05], [0.025, 0.025, 0.03, '#1E1A16', 0.15, 0.37, -0.05],
+                [0.03, 0.12, 0.03, '#E8A23A', 0.02, 0.06, 0.05], [0.03, 0.12, 0.03, '#E8A23A', 0.02, 0.06, -0.05]);
+        }
+        m = new THREE.Group(); m.userData = { sig, x: null, z: null, tx: 0, tz: 0, wait: 0, seed: (p.id.charCodeAt(p.id.length - 1) || 1) };
+        m.add(this._partMesh(body));
+        if (tail.length && !this._lite()) { const tg = new THREE.Group(); tg.name = 'tail'; tg.position.set(p.sp === 'dog' ? -0.25 : -0.18, p.sp === 'dog' ? 0.38 : 0.25, 0); tg.add(this._partMesh(tail)); m.add(tg); }
+        else if (tail.length) { m.children[0].geometry.dispose(); m.remove(m.children[0]); m.add(this._partMesh(body.concat(tail.map(b => [b[0], b[1], b[2], b[3], b[4] + (p.sp === 'dog' ? -0.25 : -0.18), b[5] + (p.sp === 'dog' ? 0.38 : 0.25), b[6]])))); }
+        m.scale.setScalar(1.25);
+        this._petGroup.add(m); this._petMeshes[p.id] = m;
+        return m;
+    }
+    _zoneSpot(locId) {
+        const z = this.buildingZones[locId] || this.natureZones[locId]; if (!z) return null;
+        if (z.doorPixelX !== undefined) return { x: z.doorPixelX / TILE, z: (z.doorPixelY !== undefined ? z.doorPixelY / TILE : z.y + z.h) + 0.6, r: 1.1 };
+        return { x: z.x + z.w / 2, z: z.y + z.h / 2, r: Math.max(1, Math.min(z.w, z.h) / 2 - 0.5), ring: locId === 'town_square' }; // 廣場中間有噴泉,繞著外圈走
+    }
+    _updatePets3D(pets) {
+        if (!pets.length && !this._petMeshes) return;
+        const seen = new Set(); const now = performance.now(); const dt = Math.min(0.1, (now - (this._petT || now)) / 1000); this._petT = now;
+        for (const p of pets) {
+            const m = this._petMesh(p); seen.add(p.id); const u = m.userData;
+            const op = p.owner && this.agentPositions[p.owner]; const om = p.owner && this._agentMeshes[p.owner];
+            const follow = op && om && om.visible && !om.userData.hidden && (p.sp === 'dog' || (u.seed % 3 !== 0)); // 有的貓比較獨立,不跟
+            let speed = p.sp === 'dog' ? 2.6 : p.sp === 'cat' ? 1.8 : 1.0;
+            if (follow) {
+                const ox = op.x / TILE, oz = op.y / TILE; const ang = (u.seed % 8) / 8 * Math.PI * 2;
+                u.tx = ox + Math.cos(ang) * 0.75; u.tz = oz + Math.sin(ang) * 0.75; if (op.walking) speed *= 1.4;
+            } else {
+                const spot = this._zoneSpot(p.home || 'town_square') || this._zoneSpot('town_square'); if (!spot) { m.visible = false; continue; }
+                if (u.x === null) { const a0 = Math.random() * Math.PI * 2, r0 = spot.r * (spot.ring ? 0.7 : 0.4); u.x = spot.x + Math.cos(a0) * r0; u.z = spot.z + Math.sin(a0) * r0; u.tx = u.x; u.tz = u.z; }
+                u.wait -= dt;
+                if (u.wait <= 0 && Math.hypot(u.tx - u.x, u.tz - u.z) < 0.05) { const a = Math.random() * Math.PI * 2, r = spot.ring ? spot.r * (0.55 + Math.random() * 0.45) : Math.random() * spot.r; u.tx = spot.x + Math.cos(a) * r; u.tz = spot.z + Math.sin(a) * r; u.wait = 2 + Math.random() * 5; }
+            }
+            if (u.x === null) { u.x = u.tx; u.z = u.tz; }
+            const dx = u.tx - u.x, dz = u.tz - u.z, d = Math.hypot(dx, dz);
+            const moving = d > (follow ? 0.35 : 0.04);
+            if (moving) { const step = Math.min(d, speed * dt * (follow && d > 3 ? 2 : 1)); u.x += dx / d * step; u.z += dz / d * step; m.rotation.y += ((((Math.atan2(-dz, dx) - m.rotation.y) + Math.PI * 3) % (Math.PI * 2)) - Math.PI) * 0.2; }
+            m.visible = true;
+            const gy = this.groundY(u.x, u.z); const ph = this.animFrame * 0.35 + u.seed;
+            m.position.set(u.x, gy + (moving ? Math.abs(Math.sin(ph)) * 0.05 : 0), u.z);
+            const tg = m.children.find(c => c.name === 'tail'); if (tg) tg.rotation.y = Math.sin(ph * (p.sp === 'dog' ? 1.6 : 0.4)) * (p.sp === 'dog' ? 0.6 : 0.3);
+            if (p.sp === 'chicken' && !moving) m.rotation.z = Math.max(0, Math.sin(ph * 0.5)) * 0.35; else m.rotation.z = 0; // 雞在啄地
+        }
+        for (const id of Object.keys(this._petMeshes || {})) if (!seen.has(id)) { this._petGroup.remove(this._petMeshes[id]); this._disposeAgent(this._petMeshes[id]); delete this._petMeshes[id]; }
+    }
+
     // ---------- HTML 標籤層 ----------
     _ov(key, cls, html) {
         let el = this._ovPool.get(key);
@@ -1600,6 +1666,7 @@ class Town3D extends PixelTileMap {
         this._updateParticles();
         this._updateCaravan();
         this._updateAgents3D(agents || {}, selectedAgent);
+        try { this._updatePets3D(extraData?.pets || []); } catch (e) {} // v6.51.0 寵物與動物
         this.renderer.render(this.scene, this.camera);
         const ovEvery = this.lowQuality ? 3 : this.isMobile ? 2 : 1; // v6.28.0 手機隔幀、低畫質每三幀更新標籤層(DOM 寫入是手機 CPU 大頭)
         // v6.43.3 鏡頭在動(拖曳、縮放、跟拍、閒置環繞)時每幀都更新:以前標籤跟不上畫面,一頓一頓的;鏡頭靜止才省著更新
