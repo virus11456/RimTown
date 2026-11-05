@@ -30,6 +30,7 @@ const CLASS = (() => {
         if (m >= 200) lv = Math.max(lv, 3);
         try { const b = typeof TIERS !== 'undefined' ? TIERS.badge(w, a) : null; if (b && b.cls !== 'former') lv = Math.max(lv, 3); if (b && b.cls === 'former') lv = Math.max(lv, 2); if (b && b.cls === 'clergy' && b.high) lv = Math.max(lv, 4); } catch (e) {} // v6.61.0 城市以上的宗教領袖算貴族
         if ((a.job?.key === 'doctor' || a.job?.key === 'researcher' || a.job?.key === 'priest') && m >= 80) lv = Math.max(lv, 3);
+        try { if (typeof GOODS !== 'undefined' && GOODS.prestige(w, a)) lv = Math.max(lv, 3); } catch (e) {} // v6.65.0 收藏藝術珍品的人算士紳
         try { const r = w.dark?.rep?.[a.agentId]; if (r && (r.exposed || 0) >= 2) lv = Math.max(0, lv - 1); } catch (e) {}
         return lv;
     }

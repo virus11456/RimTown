@@ -52,7 +52,7 @@ const TIDINGS = (() => {
         const NB = typeof NEIGHBOR_TOWNS !== 'undefined' ? NEIGHBOR_TOWNS : [];
         const nbLv = { harbor: 1, mountain: 1, forest: 0, market: 2 }, nbD = { harbor: 2, mountain: 3, forest: 3, market: 4 };
         for (const n of NB) if (n.name !== w.townName) P.push({ id: 'nb:' + n.theme, name: [n.name, ''], lv: nbLv[n.theme] ?? 1, dist: nbD[n.theme] ?? 3, kind: 'town' });
-        try { for (const c of (TownGen.cards() || []).slice(0, 6)) if (c.found && c.name !== w.townName) P.push({ id: 'tg:' + c.seed, name: [c.name, c.nameEn || ''], lv: (c.pop || 15) >= 22 ? 1 : 0, dist: rnd(3, 6), kind: 'town' }); } catch (e) {}
+        try { for (const c of (TownGen.cards() || []).slice(0, 6)) if (c.found && c.name !== w.townName) P.push({ id: 'tg:' + c.seed, name: [c.name, c.nameEn || ''], lv: c.tier ?? ((c.pop || 15) >= 22 ? 1 : 0), dist: rnd(3, 6), kind: 'town' }); } catch (e) {}
         const a = PRE[h % PRE.length], b = SUF[(h >> 3) % SUF.length], c = PRE[(h >> 6) % PRE.length], d = SUF[(h >> 9) % SUF.length];
         P.push({ id: 'capital', name: [`${a[0]}${b[0]}京`, `${a[1]}${b[1]} Royal City`], lv: 3, dist: 6, kind: 'capital' });
         P.push({ id: 'realm', name: [`${c[0]}${d[0]}王國`, `Kingdom of ${c[1]}${d[1]}`], lv: 3, dist: 12, kind: 'realm' });

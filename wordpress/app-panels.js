@@ -952,6 +952,13 @@ Object.assign(RimTownApp.prototype, {
                 T += `<div class="pp-issue-hint">${t('城鎮以上，要當過下一級的首長，或在本級議會當過一季議員，才能參選首長。')}</div></div>`;
             }
         } catch (e) {}
+        // v6.65.0 珍品
+        try { if (typeof GOODS !== 'undefined' && this.world.goods) { const V = GOODS.view(this.world); if (V.town.length || V.offers.length || V.collectors.length) {
+            T += `<div class="pp-issues pp-goods"><h4 class="pp-h">🏺 ${t('珍品')}</h4>`;
+            if (V.town.length) T += `<div class="pp-tier-line">${t('公庫收藏')}${t('：')}${V.town.map(x => `${x.icon} ${esc(x.name)} <small>${esc(x.from)}</small>`).join(' · ')}</div>`;
+            if (V.offers.length) T += `<div class="pp-tier-line">${t('商人帶來的珍品')}${t('：')}${V.offers.map(x => `${x.icon} ${esc(x.name)} ${x.price} <small>${esc(x.from)}</small>`).join(' · ')}</div>`;
+            if (V.collectors.length) T += `<div class="pp-tier-line">${t('收藏家')}${t('：')}${V.collectors.map(x => `${esc(x.name)} ×${x.n}`).join(' · ')}</div>`;
+            T += `</div>`; } } } catch (e) {}
         // v6.64.0 銀行
         try { if (typeof BANK !== 'undefined' && this.world.bank) { const V = BANK.view(this.world);
             const st = V.status === 'run' ? `😱 ${t('擠兌中')}` : V.status === 'failed' ? `💥 ${t('已倒閉')}` : V.open ? `✅ ${t('營業中')}` : t('還沒開');
