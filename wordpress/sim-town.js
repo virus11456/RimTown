@@ -818,6 +818,9 @@ class ElectionSystem {
             let score = 0;
             for (const v of agent.personality.values) { if (policy.values.includes(v)) score += 3; }
             for (const t of agent.personality.traits) { if (policy.traits.includes(t)) score += 2; }
+            // v6.46.0 革新派偏好文化／經濟／自由,保守派偏好福利／自然／防禦
+            if (agent.techStance === 'progressive') score += ({ culture: 2, economy: 1.5, freedom: 1 })[policy.id] || 0;
+            if (agent.techStance === 'conservative') score += ({ welfare: 2, nature: 1.5, defense: 1 })[policy.id] || 0;
             score += Math.random() * 1.5;
             if (score > bestScore) { bestScore = score; best = policy; }
         }

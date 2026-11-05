@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.45.0
+ * Version: 6.46.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.45.0');
+define('RIMTOWN_VERSION', '6.46.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -887,6 +887,7 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-sim-systems',
         RIMTOWN_URL . 'sim-systems.js',
+        RIMTOWN_URL . 'sim-ideas.js',
         RIMTOWN_URL . 'sim-towngen.js',
         array('rimtown-simulation'),
         RIMTOWN_VERSION,
@@ -1332,6 +1333,22 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.46.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '💡 研究完成會帶來新觀念：28 項研究各有一句觀念（例如「生病先看醫生，而不是先求神」「機器可以替人做粗活」），從研究員開始靠聊天一個傳一個。接不接受看個性、年紀、職業和鎮上民風：開明的人很快就信，保守的人會懷疑、甚至反過來勸別人別信；被搶飯碗的職業特別抗拒。村民會記得誰說服了自己，AI 對話裡會自然提起；傳到一半、全鎮共識或引起爭論都會上紀錄和日報',
+                '⚖️ 革新派與保守派：接受和反對的觀念累積成立場，村民卡上會標出來。競選時革新派偏好文化、經濟、自由，保守派偏好福利、自然、防禦；AI 投票和寫政見也會參考立場。紡織坊、鋸木場、磨坊、鍛造工坊這類技術上線時，被搶飯碗的匠人心情變差，保守的人會帶頭提案「保障手工匠人」',
+                '✨ 發明家靈光：有創意、勤快的村民工作時偶爾會想出新東西，冠上自己的名字（例如「陳偉式風箱」），直接推進目前的研究；愛嫉妒或刻薄的同行可能說那是他先想到的，兩人關係變差。科技樹面板新增觀念傳播條（接受／反對／還沒聽說）、派系名單和發明名人堂',
+                '🪟 季末回顧、商隊、劇情回顧、參選這幾個彈窗的標題以前是黑字，現在跟著面板配色',
+            ),
+            'changes_en' => array(
+                '💡 Finished research now brings a new idea: each of the 28 research topics has one (such as "See a doctor when you are ill before you pray" or "Machines can do the heavy work for us") that starts with the researchers and spreads as villagers chat. Whether someone accepts it depends on personality, age, job and the town’s temperament: open-minded villagers come round quickly, cautious ones doubt it and may even talk others out of it, and people whose work is threatened resist hardest. Villagers remember who convinced them and bring it up in AI dialogue; reaching half the town, becoming a consensus or sparking an argument is logged and reported in the newspaper',
+                '⚖️ Progressives and conservatives: the ideas villagers accept or reject add up to a stance shown on their card. In elections progressives favour culture, the economy and freedom while conservatives favour welfare, nature and defence, and the AI uses stances when voting and writing platforms. When textile mills, sawmills, mills or steelworks arrive, craftspeople whose work is threatened lose mood and a conservative one may propose protecting craftspeople',
+                '✨ Inventors: creative, hard-working villagers sometimes come up with something on the job, named after them (such as the Chen Wei bellows), which advances current research. A jealous or abrasive colleague may claim it was their idea first, souring the relationship. The tech tree panel now shows each idea’s spread (accept / oppose / not heard yet), the factions and a hall of inventions',
+                '🪟 The season recap, caravan, drama recap and run-for-mayor dialogs used to have black titles; they now follow the panel colours',
+            ),
+        ),
         array(
             'version' => '6.45.0',
             'date'    => '2026-11-04',

@@ -997,7 +997,8 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
     // ===== v6.39.0 完整智能體模式:投票／提案／鎮長裁決交給 LLM(用記憶＋性格推理);規則版是失敗時的退路 =====
     _agentBrief(world, a, other) {
         const lang = LLM_LANG.get(); const sep = lang === 'en' ? ', ' : '、';
-        const traits = (a.personality?.traits || []).map(x => lang === 'en' ? x : ((typeof TRAIT_POOL !== 'undefined' && TRAIT_POOL[x]?.label) || x)).join(sep);
+        let traits = (a.personality?.traits || []).map(x => lang === 'en' ? x : ((typeof TRAIT_POOL !== 'undefined' && TRAIT_POOL[x]?.label) || x)).join(sep);
+        if (a.techStance === 'progressive') traits += sep + t('革新派（樂於接受新技術）'); else if (a.techStance === 'conservative') traits += sep + t('保守派（對新技術存疑）'); // v6.46.0
         const values = (a.personality?.values || []).map(v => t(v)).join(sep);
         const mem = (a.memory?.entries || []).slice(-10).sort((x, y) => (y.importance || 0) - (x.importance || 0)).slice(0, 3).map(e => e.content).filter(Boolean);
         let rel = '';

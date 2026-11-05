@@ -286,10 +286,23 @@ Object.assign(RimTownApp.prototype, {
                         <div class="tech-desc">${this._escapeHtml(p.description || '')}</div>
                         ${(p.unlocks || []).length ? `<div class="tech-unlocks">${t('解鎖')}${t('：')}${p.unlocks.map(unlockName).join(t('、'))}</div>` : ''}
                         ${st === 'locked' && need.length ? `<div class="tech-need">${t('需要先研究')}${t('：')}${need.join(t('、'))}</div>` : ''}
+                        ${(() => { const sm = st === 'done' && this.world?.ideaSystem?.summary?.(this.world, p.key); if (!sm) return ''; const und = Math.max(0, sm.total - sm.adopt - sm.resist); const pa = sm.total ? Math.round(sm.adopt / sm.total * 100) : 0, pr = sm.total ? Math.round(sm.resist / sm.total * 100) : 0; return `<div class="tech-idea">💡 ${t(sm.idea)}<div class="idea-bar"><span class="idea-a" style="width:${pa}%"></span><span class="idea-r" style="width:${pr}%"></span></div><div class="idea-legend">${t('接受')} ${sm.adopt} · ${t('反對')} ${sm.resist} · ${t('還沒聽說')} ${und}</div></div>`; })()}
                         ${st === 'now' ? `<div class="progress-bar" style="height:4px;margin-top:4px"><div class="progress-fill research-fill" style="width:${pct}%"></div></div>` : ''}
                     </div>`;
                 }
                 html += '</div>';
+            }
+            // v6.46.0 革新派／保守派、發明名人堂
+            const IS = this.world?.ideaSystem;
+            if (IS) {
+                const fx = IS.factions(this.world); const nm = (arr) => arr.map(n => t(n)).join(t('、')) || t('（沒有）');
+                html += `<div class="tech-era"><div class="tech-era-head">⚖️ ${t('新技術的支持與反對')}</div>
+                    <div class="tech-desc">🚀 ${t('革新派')} ${fx.progressive.length}${t('：')}${nm(fx.progressive)}</div>
+                    <div class="tech-desc">🤔 ${t('中間派')} ${fx.moderate.length}</div>
+                    <div class="tech-desc">🏺 ${t('保守派')} ${fx.conservative.length}${t('：')}${nm(fx.conservative)}</div>
+                    <div class="tech-desc" style="color:var(--text-muted)">${t('研究完成會帶來新觀念，靠村民聊天傳開；個性、年紀、職業和鎮上民風決定誰接受、誰反對。立場會影響競選政見，被新工坊搶了飯碗的匠人可能提案抗議。')}</div></div>`;
+                const inv = (IS.inventions || []).slice(-8).reverse();
+                html += `<div class="tech-era"><div class="tech-era-head">✨ ${t('發明名人堂')} <span>${(IS.inventions || []).length}</span></div>` + (inv.length ? inv.map(v => `<div class="tech-desc">${t('「')}${t('{name}式{thing}').replace('{name}', t(v.by)).replace('{thing}', t(v.thing))}${t('」')}${v.tech && projects[v.tech] ? ` · ${t('推進了')}${t(projects[v.tech].name)}` : ''}${v.disputedBy ? ` · 😤 ${t('{who}說是他先想到的').replace('{who}', t(v.disputedBy))}` : ''}</div>`).join('') : `<div class="tech-desc" style="color:var(--text-muted)">${t('還沒有人靈光一閃。有創意、勤快的村民工作時偶爾會想出新東西。')}</div>`) + '</div>';
             }
             html += '</div>';
         } else if (this._economySubTab === 'shop') {

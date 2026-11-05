@@ -152,7 +152,7 @@ class Memory {
         const cap = Memory.CATEGORY_CAP[category]; // v6.19.0 B12:對話摘要/觀察這類低重要度、量又大的記憶各自設上限(存檔體積;讀取端只取最近 10–20 筆)
         if (cap) { let n = 0; for (let i = this.entries.length - 1; i >= 0; i--) { if (this.entries[i].category === category && ++n > cap) { this.entries.splice(i, 1); } } }
     }
-    static CATEGORY_CAP = { conversation: 30, observation: 15, departure: 10, social: 30, reflection: 20 }; // v6.20.0 full 模式 35 天存檔 1.5MB 邊緣,再收:介面只看最近 10 筆、AI 只讀最近 10–20 筆
+    static CATEGORY_CAP = { conversation: 30, observation: 15, departure: 10, social: 30, reflection: 20, idea: 8 }; // v6.46.0 觀念傳播的閒聊記憶另外放、只留 8 筆,不擠掉人際記憶 // v6.20.0 full 模式 35 天存檔 1.5MB 邊緣,再收:介面只看最近 10 筆、AI 只讀最近 10–20 筆
     addT(tick, timeStr, category, k, p, importance = 5, relatedAgents = []) { // v6.17.0 模板版:content 用當下語言算一次,k/p 一起存
         this.add(tick, timeStr, category, Memory.render(k, p), importance, relatedAgents, k, p);
     }
