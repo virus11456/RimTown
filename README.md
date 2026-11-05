@@ -261,7 +261,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.43.8.zip` from Releases
+1. Download `rimtown-v6.43.9.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -314,6 +314,11 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.43.9 (2026-11-04)
+- 📱 修手機 ☰ 選單有時點不到：每日登入獎勵、成就這類通知跟選單疊在同一排，會吃掉「儲存／設定／帳號」的點擊，看起來就像按了沒反應。現在選單打開時通知自動往下讓開；選單按鈕也加高到 44px
+- ☁️ 上傳雲端有回應了：以前只寫進紀錄，手機上看不到，除了第一次的成就以外按了完全沒反應；上傳失敗也不會告訴你。現在成功會跳「已上傳到雲端」（附遊戲日期），失敗會跳提示（本機存檔不受影響），雲端已有較新的進度也會說明這次沒有覆蓋；從雲端載入存檔後也會跳提示
+- 🔤 帳號選單改用遊戲字型；英文「Login streak: 1 days」改成「1 day」
 
 ### v6.43.8 (2026-11-04)
 - 👤 修「帳號」按了沒反應：登入後的帳號選單（上傳／下載雲端存檔、成就、登出）完全沒有樣式，彈出來是排在頁面最下面、被 3D 地圖蓋住，手機和桌機都看不到。現在選單浮在頂欄下方、每個選項都好點，點外面或再按一次帳號就收起

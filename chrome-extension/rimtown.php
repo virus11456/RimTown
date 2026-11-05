@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.43.8
+ * Version: 6.43.9
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.43.8');
+define('RIMTOWN_VERSION', '6.43.9');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1330,6 +1330,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.43.9',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '📱 修手機 ☰ 選單有時點不到：每日登入獎勵、成就這類通知跟選單疊在同一排，會吃掉「儲存／設定／帳號」的點擊，看起來就像按了沒反應。現在選單打開時通知自動往下讓開；選單按鈕也加高到 44px',
+                '☁️ 上傳雲端有回應了：以前只寫進紀錄，手機上看不到，除了第一次的成就以外按了完全沒反應；上傳失敗也不會告訴你。現在成功會跳「已上傳到雲端」（附遊戲日期），失敗會跳提示（本機存檔不受影響），雲端已有較新的進度也會說明這次沒有覆蓋；從雲端載入存檔後也會跳提示',
+                '🔤 帳號選單改用遊戲字型；英文「Login streak: 1 days」改成「1 day」',
+            ),
+            'changes_en' => array(
+                '📱 Fixed the mobile ☰ menu sometimes not responding: notifications such as the daily login reward and achievements sat in the same row as the menu and swallowed taps on Save / Settings / Account. Notifications now move down while the menu is open, and the menu buttons are 44px tall',
+                '☁️ Cloud upload now responds: it only wrote to the log, which is not visible on mobile, so apart from the first-time achievement nothing happened, and failures were silent. Success now shows "Uploaded to the cloud" with the game date, a failure shows a message (your local save is unaffected), a newer cloud save explains that nothing was overwritten, and loading a cloud save shows a confirmation too',
+                '🔤 The account menu uses the game font; "Login streak: 1 days" now reads "1 day"',
+            ),
+        ),
         array(
             'version' => '6.43.8',
             'date'    => '2026-11-04',

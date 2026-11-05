@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.43.8
-const RIMTOWN_APP_VERSION = '6.43.8';
+// RimTown - Frontend App (WordPress Plugin) v6.43.9
+const RIMTOWN_APP_VERSION = '6.43.9';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -709,7 +709,7 @@ class RimTownApp {
             this._showCenterNotification({
                 icon: '🎁',
                 title: t('每日登入獎勵'),
-                name: `${t('連續登入')} ${streak} ${t('天')}`,
+                name: (streak === 1 ? t('連續登入 1 天') : t('連續登入 {n} 天')).replace('{n}', streak), // v6.43.9 英文單複數
                 desc: `+${silver} ${t('銀幣')}${t('、')}+${food} ${t('食物')}${streak < 7 ? t('(連續 7 天獎勵最高!)') : ''}`,
                 autoDismiss: 6000,
             });
@@ -1407,6 +1407,7 @@ class RimTownApp {
                 if (this.tileMap) this.tileMap.agentPositions = {};
                 this.render();
                 this.world.logMessage('system', t('已從雲端載入存檔。'));
+                try { const c = this.world.clock; this._showCornerNotice?.({ icon: '☁️', title: t('已從雲端載入存檔。'), name: '', desc: `${t('第 {y} 年{s}').split('{y}').join(c.year).split('{s}').join(t(c.season))} ${t('第 {d} 天').split('{d}').join(c.day)}` }); } catch (e) {} // v6.43.9 手機看不到紀錄
             }
             document.getElementById('town-modal')?.classList.add('hidden');
             this.world.paused = !!this._pausedBeforeTownModal;

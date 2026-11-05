@@ -7539,6 +7539,13 @@
         // ── v5.48.0 看戲三件組 ──
         '集': ' · Episode',
         '第 {n} 集': 'Episode {n}',
+        '連續登入 1 天': 'Login streak: 1 day',
+        '連續登入 {n} 天': 'Login streak: {n} days',
+        '雲端已有較新的進度，這次沒有覆蓋。': 'The cloud already has newer progress, so it was not overwritten.',
+        '雲端已有較新的進度': 'Cloud has newer progress',
+        '這次沒有覆蓋。要用較新的進度，請按「從雲端下載存檔」。': 'Nothing was overwritten. To use the newer progress, choose "Download Save from Cloud".',
+        '已上傳到雲端': 'Uploaded to the cloud',
+        '上傳到雲端失敗，請稍後再試。本機存檔不受影響。': 'Upload to the cloud failed. Please try again later; your local save is unaffected.',
         '鎮長{mayor}出去探險了，由{acting}代理鎮長，回來後交還。': 'Mayor {mayor} is away exploring; {acting} is acting Mayor until they return.',
         '鎮上暫時沒有鎮長，由{acting}代理，即將補選。': 'The town has no mayor for now; {acting} is acting Mayor and a by-election is coming.',
         '🗳️ {names}開票時不在鎮上，失去當選資格。': '🗳️ Not in town for the count, so out of the running: {names}.',

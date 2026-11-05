@@ -423,7 +423,7 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
     border-bottom: 1px solid var(--border, #3A3550); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .rimtown-container .account-menu-popup button {
-    min-height: 44px; padding: 0 12px; text-align: left; font-size: 0.9rem;
+    min-height: 44px; padding: 0 12px; text-align: left; font-family: inherit; font-size: 0.9rem; /* v6.43.9 按鈕預設不繼承字型 */
     background: transparent; color: inherit; border: none; border-radius: 8px; cursor: pointer;
 }
 .rimtown-container .account-menu-popup button:hover,
@@ -431,4 +431,11 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .account-menu-popup .btn-danger-text { color: var(--negative, #E5736B); }
 @media (max-width: 768px) {
     .rimtown-container .account-menu-popup { top: calc(env(safe-area-inset-top, 0px) + 100px); left: 12px; right: 12px; min-width: 0; }
+}
+
+/* v6.43.9 手機 ☰ 選單:通知(每日登入獎勵、成就…)跟選單疊在同一排,會吃掉「儲存／設定／帳號」的點擊;
+   選單打開時通知往下讓開。選單按鈕也加高到 44px 比較好點 */
+@media (max-width: 768px) {
+    .mobile-menu-dropdown button { min-height: 44px; padding: 0 14px; font-size: 0.85rem; }
+    body:has(#mobile-menu-dropdown:not(.hidden)) #achv-toast-host { top: calc(env(safe-area-inset-top, 0px) + 112px) !important; }
 }
