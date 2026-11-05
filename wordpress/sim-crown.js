@@ -28,7 +28,7 @@ const CROWN = (() => {
         const C = S(w), d = day(w); const old = king(w);
         if (old && old !== a) setRoyal(w, old, false);
         C.king = a.agentId; C.crownedDay = d; C.plot = null; C.crisis = null;
-        if (!C.dynasty || how === 'coup' || how === 'elected') { const i = Math.floor(Math.random() * DYN.length), j = Math.floor(Math.random() * DYN2.length); C.dynasty = { zh: DYN[i] + DYN2[j] + '王朝', en: `House of ${DYN_EN[i]}${DYN2_EN[j]}`, founder: a.name }; }
+        if (!C.dynasty || how === 'coup' || how === 'elected') { const i = Math.floor(Math.random() * DYN.length), j = Math.floor(Math.random() * DYN2.length); C.dynasty = { zh: DYN[i] + DYN2[j] + '王朝', en: `House of ${DYN_EN[i]}${DYN2_EN[j]}`, founder: a.name }; } try { I18N.registerName(C.dynasty.zh, C.dynasty.en); } catch (e) {}
         C.legit = how === 'coup' ? 45 : how === 'heir' ? Math.max(50, C.legit) : 65;
         C.history.push({ id: a.agentId, name: a.name, from: d, how }); if (C.history.length > 20) C.history.shift();
         setRoyal(w, a, true);
@@ -199,7 +199,7 @@ if (typeof World !== 'undefined') {
     const _ser = World.prototype.serialize;
     World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.crown) d.crown = this.crown; return d; };
     const _load = World.prototype.loadSave;
-    World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.crown = (data?.crown && typeof data.crown === 'object') ? data.crown : null; } catch (e) {} return r; };
+    World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.crown = (data?.crown && typeof data.crown === 'object') ? data.crown : null; if (this.crown?.dynasty) I18N.registerName(this.crown.dynasty.zh, this.crown.dynasty.en); } catch (e) {} return r; };
 }
 if (typeof ConversationEngine !== 'undefined') {
     const CE = ConversationEngine.prototype;

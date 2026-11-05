@@ -952,6 +952,11 @@ Object.assign(RimTownApp.prototype, {
                 T += `<div class="pp-issue-hint">${t('城鎮以上，要當過下一級的首長，或在本級議會當過一季議員，才能參選首長。')}</div></div>`;
             }
         } catch (e) {}
+        // v6.60.0 宗教一覽
+        try { if (typeof FAITH !== 'undefined' && this.world.faith) { const V = FAITH.view(this.world); const nb = FAITH.nonBelievers(this.world);
+            T += `<div class="pp-issues pp-faith"><h4 class="pp-h">🛕 ${t('宗教')} <span class="pp-count">${V.length}</span></h4>`;
+            for (const R of V) T += `<div class="pp-faith-row" style="border-left-color:${R.color}"><b>${R.icon} ${esc(R.name)}</b> <small>${esc(R.sk)} · ${t('信徒')} ${R.n} · ${esc(R.place)}</small><div class="pp-tier-line">${t('主神')}${t('：')}${esc(R.deity)} · ${t('經典')}${t('：')}${esc(R.book)} · ${t('節日')}${t('：')}${esc(R.fest)}${t('（')}${esc(R.festWhen)}${t('）')}</div><div class="pp-tier-line">${t('戒律')}${t('：')}${R.pre.map(esc).join(t('；'))} · ${t('奉獻基金')} ${R.fund}</div></div>`;
+            T += `<div class="pp-issue-hint">${t('沒有信仰的人')}${t('：')}${nb}</div></div>`; } } catch (e) {}
         // v6.50.0 鎮上急事:村民正受影響,拖著沒人管會抱怨、吵架、搬走
         if ((d.issues || []).length) {
             T += `<div class="pp-issues"><h4 class="pp-h">⚠️ ${t('鎮上急事')} <span class="pp-count">${d.issues.length}</span></h4>`;
