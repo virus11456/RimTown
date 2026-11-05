@@ -288,10 +288,6 @@ node scripts/i18n-audit.js     # i18n 重複鍵=0、新 t('…') 字串必須有
 node scripts/cjk-punct-audit.js # 模板字串裡沒包 t() 的 CJK 標點,基準 10(AI 提示詞與訪客名),新增就失敗;--list 列全部(v6.22.3 起)
 node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改版面才 --update(v5.81.0 起)
 # 選跑:cd wordpress && python3 -m http.server 8126 & ; node scripts/smoke_playwright.js  # 五鎮世界/英文標籤/鄰鎮/住房/商隊冒煙
-# 選跑:node scripts/quest_chain_test.js   # 四座主題鎮任務鏈端到端(五章/災難/商路/支線/存檔/英文)(v5.88.0 起;改任務鏈或災難必跑)
-# 選跑:node scripts/donate_test.js   # v6.14.0 捐建/捐款(進度 +20%、每日上限、繁榮上限、當天心情、存讀檔、按鈕;有斷言,失敗 exit 1)
-# 選跑:node scripts/sponsor_test.js  # v6.15.0 贊助節慶(窗口、前夕/節慶中效果、只能一次、節慶日 ×1.5、存讀檔、按鈕、早安卡;有斷言,失敗 exit 1)
-# 選跑:node scripts/purchase_test.js # v6.16.0 向鄰鎮採買(報價、拒絕、扣款、存讀檔、運回/遇劫、戰績、彈窗;有斷言,失敗 exit 1)
 # 選跑:node scripts/memory_i18n_test.js # v6.17.0 記憶模板化(中英切換渲染、舊式記憶、存讀檔、舊存檔、效能;有斷言,失敗 exit 1)
 # 選跑:node scripts/trial_pacing_test.js # v6.22.0 B23 考驗失敗節奏(扣分有底、衰敗後搬走放緩、人口下限、撐過補回、復興、存讀檔;有斷言,失敗 exit 1)
 # 選跑:node scripts/growth2_test.js ; node scripts/revival_test.js   # v6.12.0/v6.13.0 旅人後期成長(天賦學完→屬性、最後一個天賦邊界、舊檔遷移)與小鎮復興(衰敗→連撐兩季→中央卡/回顧/存讀檔)
