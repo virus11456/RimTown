@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.43.9
+ * Version: 6.44.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.43.9');
+define('RIMTOWN_VERSION', '6.44.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1330,6 +1330,16 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.44.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🌙 晚上村民的臉不再黑成一片：村民改用專屬材質，入夜（和暴風雨時）依自己的膚色、髮色微微補光，眼睛、嘴巴和衣服顏色都看得清楚；白天完全不變，建築和地面照樣暗下來，夜景氣氛不受影響，也不增加繪製次數',
+            ),
+            'changes_en' => array(
+                '🌙 Villager faces no longer turn pitch black at night: villagers now use their own material that adds a soft glow from their own skin, hair and clothing colours after dark (and during storms), so eyes, mouths and outfits stay readable. Daytime is unchanged, buildings and ground still darken for the night mood, and no extra draw calls are added',
+            ),
+        ),
         array(
             'version' => '6.43.9',
             'date'    => '2026-11-04',

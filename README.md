@@ -261,7 +261,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.43.9.zip` from Releases
+1. Download `rimtown-v6.44.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -314,6 +314,9 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.44.0 (2026-11-04)
+- 🌙 晚上村民的臉不再黑成一片：村民改用專屬材質，入夜（和暴風雨時）依自己的膚色、髮色微微補光，眼睛、嘴巴和衣服顏色都看得清楚；白天完全不變，建築和地面照樣暗下來，夜景氣氛不受影響，也不增加繪製次數
 
 ### v6.43.9 (2026-11-04)
 - 📱 修手機 ☰ 選單有時點不到：每日登入獎勵、成就這類通知跟選單疊在同一排，會吃掉「儲存／設定／帳號」的點擊，看起來就像按了沒反應。現在選單打開時通知自動往下讓開；選單按鈕也加高到 44px
