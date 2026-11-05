@@ -29,7 +29,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     out.log = (w.messageLog || []).slice(-30).some(m => /🔨/.test(m.content || ''));
     // 3D:等級變了會重建、樣式簽章跟著變
     app.state = w.getState(); for (let i = 0; i < 3; i++) { app.render(); await new Promise(r => requestAnimationFrame(r)); }
-    const sig1 = tm._styleSig; w.tierState.lv = 2; app.render(); await new Promise(r => requestAnimationFrame(r)); const sig2 = tm._styleSig;
+    const sig1 = tm._styleSig; w.tierState.lv = 2; for (let i = 0; i < 3; i++) { app.render(); await new Promise(r => requestAnimationFrame(r)); } /* 低畫質每兩格才畫一次 */ const sig2 = tm._styleSig;
     out.sigChanged = sig1 !== sig2; out.tierLv = tm.tierLv; out.calls = tm.renderer.info.render.calls;
     // 存讀檔
     const d = JSON.parse(JSON.stringify(w.serialize())); const w2 = new World(); w2.loadSave(d); out.rt = JSON.stringify(w2.housing.lv) === JSON.stringify(H.lv); w2.reset(); out.reset = !w2.housing;
