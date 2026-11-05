@@ -263,6 +263,21 @@ class Town3D extends PixelTileMap {
     }
     // v6.43.0 頂點色共用材質:靜態場景與村民都用它,幾百種顏色一次畫完
     _vcMat() { if (!this._vcm) this._vcm = new THREE.MeshLambertMaterial({ vertexColors: true }); return this._vcm; }
+    // v6.44.0 村民專用材質:晚上依自己的顏色微微自發光(像被路燈／月光補光),臉和衣服看得清楚但不會變成一片白;
+    // 只改村民,房子、地面照舊用 _vcMat 跟著夜色變暗。同一份材質、只多一個 uniform,不增加繪製呼叫
+    _agentMat() {
+        if (!this._agm) {
+            const m = new THREE.MeshLambertMaterial({ vertexColors: true });
+            this._selfLit = { value: 0 };
+            m.onBeforeCompile = (sh) => {
+                sh.uniforms.uSelfLit = this._selfLit;
+                sh.fragmentShader = 'uniform float uSelfLit;\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n#ifdef USE_COLOR\n\ttotalEmissiveRadiance += vColor.rgb * uSelfLit;\n#endif');
+            };
+            m.customProgramCacheKey = () => 'rt-agent-selflit';
+            this._agm = m;
+        }
+        return this._agm;
+    }
     // v6.43.0 三角柱(山牆):底 1×1、高 1,沿 z 延伸
     _prismGeo() {
         return this._geo('prism', () => {
@@ -974,6 +989,7 @@ class Town3D extends PixelTileMap {
             this._moonDisc.material.opacity = clamp((night - 0.4) / 0.4, 0, 1) * 0.95 * bad;
         }
         const glow = Math.max(clamp((night - 0.25) / 0.5, 0, 1), stormy * 0.55);
+        if (this._selfLit) this._selfLit.value = 0.42 * Math.max(night, stormy * 0.6); // v6.44.0 村民夜間補光(白天 0)
         for (const m of this._winMats) m.emissiveIntensity = glow * 1.2;
         for (const m of this._glowMats) m.emissiveIntensity = 0.3 + glow * 1.4;
         if (this._poolMat) this._poolMat.opacity = glow * 0.2; // v6.32.0 路燈地上的光暈
@@ -1006,7 +1022,7 @@ class Town3D extends PixelTileMap {
         }
         const g = new THREE.BufferGeometry();
         g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3, true)); g.setAttribute('color', new THREE.BufferAttribute(col, 3, true));
-        const m = new THREE.Mesh(g, this._vcMat()); m.castShadow = true; m.receiveShadow = true; m.userData.ownGeo = true;
+        const m = new THREE.Mesh(g, this._agentMat()); m.castShadow = true; m.receiveShadow = true; m.userData.ownGeo = true;
         return m;
     }
     _disposeAgent(m) { if (!m) return; m.traverse(o => { if (o.isMesh && o.userData.ownGeo) o.geometry.dispose(); }); }

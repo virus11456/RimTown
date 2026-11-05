@@ -239,6 +239,11 @@ Object.assign(RimTownApp.prototype, {
             <button data-action="auth-logout" class="btn-danger-text">${t('登出')}</button>
         `;
         document.getElementById('rimtown-app')?.appendChild(popup);
+        // v6.44.1 小手機橫放(568×320)時選單比畫面高,登出被切掉:超出就往上挪,再不夠就限高、選單內捲動
+        try {
+            const vh = window.visualViewport?.height || window.innerHeight, r = popup.getBoundingClientRect(), pad = 8;
+            if (r.bottom > vh - pad) { popup.style.top = Math.max(pad, vh - pad - r.height) + 'px'; popup.style.maxHeight = (vh - pad * 2) + 'px'; }
+        } catch (e) {}
 
         // Auto close on click outside
         setTimeout(() => {
@@ -273,14 +278,22 @@ Object.assign(RimTownApp.prototype, {
         try {
             const saveData = this.world.serialize();
             const clock = saveData.clock || {};
-            await this.auth.cloudSave(this.currentTownId, this._getCurrentTownName(), saveData, {
+            const r = await this.auth.cloudSave(this.currentTownId, this._getCurrentTownName(), saveData, {
                 season: clock.season, year: clock.year, day: clock.day,
                 population: Object.keys(saveData.agents || {}).length,
             });
-            this.world.logMessage('system', t('已同步至雲端。'));
+            // v6.43.9 以前只寫進紀錄,手機上看不到,按了像沒反應;現在一律跳通知
+            if (r && r.stale) {
+                this.world.logMessage('system', t('雲端已有較新的進度，這次沒有覆蓋。'));
+                this._showCornerNotice?.({ icon: '☁️', title: t('雲端已有較新的進度'), name: '', desc: t('這次沒有覆蓋。要用較新的進度，請按「從雲端下載存檔」。') });
+            } else {
+                this.world.logMessage('system', t('已同步至雲端。'));
+                this._showCornerNotice?.({ icon: '☁️', title: t('已上傳到雲端'), name: '', desc: `${t('第 {y} 年{s}').split('{y}').join(clock.year || 1).split('{s}').join(t(clock.season || '春季'))} ${t('第 {d} 天').split('{d}').join(clock.day || 1)}` });
+            }
         } catch (e) {
             console.error('[RimTown] Cloud sync error:', e);
             this.world.logMessage('system', t('雲端同步失敗。'));
+            this._gameAlert?.(t('上傳到雲端失敗，請稍後再試。本機存檔不受影響。'), '☁️');
         }
     },
 

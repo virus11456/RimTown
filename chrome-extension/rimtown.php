@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.43.7
+ * Version: 6.44.1
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.43.7');
+define('RIMTOWN_VERSION', '6.44.1');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1330,6 +1330,54 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.44.1',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '📱 小手機橫放時帳號選單不再被切掉：568×320 這類矮螢幕上，選單比畫面高、「登出」下緣被切到；現在超出時會往上挪，真的放不下就在選單裡捲動',
+                '✂️ 文字截斷更完整：以前只認得 emoji 和少數附加符號，印度語系的母音符號、其他附加符號、分解寫法的韓文字母還是可能被從中間切開；現在這些都整個字保留，中文截斷速度不變',
+            ),
+            'changes_en' => array(
+                '📱 The account menu no longer gets cut off on small phones in landscape: on short screens such as 568×320 the menu was taller than the screen and the bottom of "Log out" was clipped. It now moves up when it would overflow and scrolls inside if it still does not fit',
+                '✂️ Text clipping now keeps whole characters in more scripts: it used to recognise only emoji and a few combining marks, so Indic vowel signs, other combining marks and decomposed Korean letters could still be split. These are now kept whole, and clipping Chinese text is just as fast',
+            ),
+        ),
+        array(
+            'version' => '6.44.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🌙 晚上村民的臉不再黑成一片：村民改用專屬材質，入夜（和暴風雨時）依自己的膚色、髮色微微補光，眼睛、嘴巴和衣服顏色都看得清楚；白天完全不變，建築和地面照樣暗下來，夜景氣氛不受影響，也不增加繪製次數',
+            ),
+            'changes_en' => array(
+                '🌙 Villager faces no longer turn pitch black at night: villagers now use their own material that adds a soft glow from their own skin, hair and clothing colours after dark (and during storms), so eyes, mouths and outfits stay readable. Daytime is unchanged, buildings and ground still darken for the night mood, and no extra draw calls are added',
+            ),
+        ),
+        array(
+            'version' => '6.43.9',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '📱 修手機 ☰ 選單有時點不到：每日登入獎勵、成就這類通知跟選單疊在同一排，會吃掉「儲存／設定／帳號」的點擊，看起來就像按了沒反應。現在選單打開時通知自動往下讓開；選單按鈕也加高到 44px',
+                '☁️ 上傳雲端有回應了：以前只寫進紀錄，手機上看不到，除了第一次的成就以外按了完全沒反應；上傳失敗也不會告訴你。現在成功會跳「已上傳到雲端」（附遊戲日期），失敗會跳提示（本機存檔不受影響），雲端已有較新的進度也會說明這次沒有覆蓋；從雲端載入存檔後也會跳提示',
+                '🔤 帳號選單改用遊戲字型；英文「Login streak: 1 days」改成「1 day」',
+            ),
+            'changes_en' => array(
+                '📱 Fixed the mobile ☰ menu sometimes not responding: notifications such as the daily login reward and achievements sat in the same row as the menu and swallowed taps on Save / Settings / Account. Notifications now move down while the menu is open, and the menu buttons are 44px tall',
+                '☁️ Cloud upload now responds: it only wrote to the log, which is not visible on mobile, so apart from the first-time achievement nothing happened, and failures were silent. Success now shows "Uploaded to the cloud" with the game date, a failure shows a message (your local save is unaffected), a newer cloud save explains that nothing was overwritten, and loading a cloud save shows a confirmation too',
+                '🔤 The account menu uses the game font; "Login streak: 1 days" now reads "1 day"',
+            ),
+        ),
+        array(
+            'version' => '6.43.8',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '👤 修「帳號」按了沒反應：登入後的帳號選單（上傳／下載雲端存檔、成就、登出）完全沒有樣式，彈出來是排在頁面最下面、被 3D 地圖蓋住，手機和桌機都看不到。現在選單浮在頂欄下方、每個選項都好點，點外面或再按一次帳號就收起',
+                '🏆 帳號選單裡的「成就」在手機上也打得開：以前只畫在收起來的側欄裡，看起來沒反應；現在會打開面板抽屜',
+            ),
+            'changes_en' => array(
+                '👤 Fixed the Account button doing nothing: the signed-in account menu (upload / download cloud save, achievements, log out) had no styles at all, so it opened at the bottom of the page behind the 3D map on both mobile and desktop. It now floats under the top bar with easy-to-tap items and closes when you tap outside or press Account again',
+                '🏆 Achievements in the account menu now open on mobile too: they used to render into the collapsed side panel, which looked like nothing happened; the panel drawer now opens',
+            ),
+        ),
         array(
             'version' => '6.43.7',
             'date'    => '2026-11-04',

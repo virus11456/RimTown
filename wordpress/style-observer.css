@@ -408,3 +408,36 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
     #achv-toast-host > * { max-width: none !important; }
     #achv-toast-host > :not(:nth-last-child(-n+2)) { display: none !important; }
 }
+
+/* v6.43.8 帳號選單:以前完全沒有樣式,彈出來是靜態排在頁面裡、被 3D 地圖蓋住,看起來像「按了沒反應」 */
+.rimtown-container .account-menu-popup {
+    position: fixed; top: calc(env(safe-area-inset-top, 0px) + 56px); right: 12px; z-index: 9600;
+    min-width: 200px; max-width: calc(100vw - 24px);
+    display: flex; flex-direction: column; gap: 2px; padding: 6px;
+    background: var(--bg-secondary, #26223A); color: var(--text-primary, #F5EFE6);
+    border: 1px solid var(--border, #3A3550); border-radius: 12px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+    max-height: calc(100dvh - 16px); overflow-y: auto; overscroll-behavior: contain; /* v6.44.1 矮螢幕不切掉下面的選項 */
+}
+.rimtown-container .account-menu-popup > * { flex-shrink: 0; }
+.rimtown-container .account-menu-popup .account-menu-header {
+    padding: 8px 12px 6px; font-weight: 700; color: var(--accent, #F28C4A);
+    border-bottom: 1px solid var(--border, #3A3550); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rimtown-container .account-menu-popup button {
+    min-height: 44px; padding: 0 12px; text-align: left; font-family: inherit; font-size: 0.9rem; /* v6.43.9 按鈕預設不繼承字型 */
+    background: transparent; color: inherit; border: none; border-radius: 8px; cursor: pointer;
+}
+.rimtown-container .account-menu-popup button:hover,
+.rimtown-container .account-menu-popup button:focus-visible { background: var(--bg-tertiary, rgba(255, 255, 255, 0.08)); outline: none; }
+.rimtown-container .account-menu-popup .btn-danger-text { color: var(--negative, #E5736B); }
+@media (max-width: 768px) {
+    .rimtown-container .account-menu-popup { top: calc(env(safe-area-inset-top, 0px) + 100px); left: 12px; right: 12px; min-width: 0; }
+}
+
+/* v6.43.9 手機 ☰ 選單:通知(每日登入獎勵、成就…)跟選單疊在同一排,會吃掉「儲存／設定／帳號」的點擊;
+   選單打開時通知往下讓開。選單按鈕也加高到 44px 比較好點 */
+@media (max-width: 768px) {
+    .mobile-menu-dropdown button { min-height: 44px; padding: 0 14px; font-size: 0.85rem; }
+    body:has(#mobile-menu-dropdown:not(.hidden)) #achv-toast-host { top: calc(env(safe-area-inset-top, 0px) + 112px) !important; }
+}
