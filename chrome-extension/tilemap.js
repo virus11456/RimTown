@@ -1879,7 +1879,7 @@ class PixelTileMap {
     _isInsideBuilding(px, py) {
         const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
         let lut = this._insideLUT;
-        if (!lut || lut.grid !== this.grid || (this._insideLUTn = (this._insideLUTn || 0) + 1) > 300 * 30) { lut = this._insideLUT = { grid: this.grid, m: new Map() }; this._insideLUTn = 0; }
+        if (!lut || lut.grid !== this.grid || lut.sub !== this._houseSubZones || (this._insideLUTn = (this._insideLUTn || 0) + 1) > 300 * 30) { lut = this._insideLUT = { grid: this.grid, sub: this._houseSubZones, m: new Map() }; this._insideLUTn = 0; } // v6.54.0 各戶房子晚一步才建好,不能沿用舊的快取(會把人算成在整個住宅區,窗燈對不上)
         const k = ty * 4096 + tx; const hit = lut.m.get(k);
         if (hit !== undefined) return hit;
         const r = this._isInsideBuildingSlow(px, py); lut.m.set(k, r); return r;
@@ -3052,7 +3052,7 @@ class PixelTileMap {
         const offscreen = document.createElement('canvas');
         offscreen.width = w;
         offscreen.height = h;
-        const ctx = offscreen.getContext('2d');
+        const ctx = offscreen.getContext('2d', { willReadFrequently: true }); // v6.54.0 小畫布走 CPU:轉成圖片時不用等顯示卡回讀(以前每個新頭像會卡一下)
         ctx.imageSmoothingEnabled = false;
 
         // Scale up so pixel art is crisp

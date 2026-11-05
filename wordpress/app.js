@@ -311,6 +311,7 @@ class RimTownAuth {
     }
 }
 
+const RIMTOWN_SPEEDS = [1, 1.5, 2, 3, 5]; // v6.54.0 速度倍率(基本 2 秒/格)
 class RimTownApp {
     constructor() {
         this.world = new World();
@@ -724,7 +725,7 @@ class RimTownApp {
             const elapsedMs = Date.now() - last;
             if (elapsedMs < 10 * 60 * 1000) return; // 離開 10 分鐘內不結算
             // 依正常模擬速度換算,上限 2 遊戲日(192 tick)避免爆炸
-            const ticks = Math.min(192, Math.floor(elapsedMs / (this.simSpeed || 2000)));
+            const ticks = Math.min(192, Math.floor(elapsedMs / 2000));
             if (ticks < 10) return;
             const sp = this.world.stockpile;
             const before = { silver: sp.get('silver'), food: sp.get('food') };
@@ -1848,8 +1849,10 @@ class RimTownApp {
 
     async loadSettings() {
         try {
-            const speed = localStorage.getItem('sim_speed');
-            if (speed) this.simSpeed = parseInt(speed);
+            // v6.54.0 基本速度固定 2 秒/格,快慢只看倍率(舊的「模擬速度」設定作廢)
+            localStorage.removeItem('sim_speed');
+            const mult = parseFloat(localStorage.getItem('rimtown_speed_mult')) || 1;
+            this._speedMultiplier = RIMTOWN_SPEEDS.includes(mult) ? mult : 1; this.baseSimSpeed = 2000; this.simSpeed = Math.round(2000 / this._speedMultiplier);
             // v5.65.0 AI 全面內建:所有金鑰由伺服器(Vercel 環境變數)統一保管,玩家端不再有任何
             // 自備金鑰設定。舊版留在本機的金鑰一律清除。
             try {
@@ -1963,18 +1966,11 @@ class RimTownApp {
     }
 
     // v5.65.0 AI 全面內建:設定只剩模擬速度(AI 由伺服器統一提供,玩家端沒有可填的金鑰)
-    async saveSettings(speed) {
-        this.simSpeed = parseInt(speed);
-        this.baseSimSpeed = this.simSpeed;
-        // Reset speed buttons to 1x
-        document.querySelectorAll('.btn-speed').forEach(b => b.classList.remove('active'));
-        const btn1x = document.querySelector('.btn-speed[data-speed="1"]');
-        if (btn1x) btn1x.classList.add('active');
+    async saveSettings() { // v6.54.0 速度不在設定裡了(上方倍率鈕),這裡只管 AI 與雲端設定
         this._buildLLMClient(); // v6.36.0 依本機設定決定:自備 AI / 小鎮內建 / 模擬
         this.world.conversationEngine = this.llmClient ? this._makeConversationEngine() : new ConversationEngine();
         this.restartSimulation();
         this._updateLLMStatus();
-        localStorage.setItem('sim_speed', speed);
         // v5.33.0 設定推上帳號雲端(額度隨帳號走)
         this._pushCloudSettings();
     }
@@ -2006,7 +2002,7 @@ class RimTownApp {
             const cfg = this._byokReadForm();
             if (cfg.provider === 'server' || cfg.key) this._byokSet(cfg.provider === 'server' ? null : cfg);
         }
-        this.saveSettings(speed);
+        this.saveSettings();
         const langSelect = document.getElementById('lang-select') || document.getElementById('settings-tab-lang');
         if (langSelect) {
             I18N.setLang(langSelect.value);
@@ -2067,6 +2063,18 @@ class RimTownApp {
     restartSimulation() {
         if (this.simInterval) clearInterval(this.simInterval);
         this.startSimulation();
+    }
+    // v6.54.0 唯一的調速入口:基本 2 秒/格 ÷ 倍率;用完整的模擬迴圈(以前倍率鈕會換成少了配樂與結局檢查的精簡迴圈)
+    _setSpeed(v) {
+        const mult = RIMTOWN_SPEEDS.includes(parseFloat(v)) ? parseFloat(v) : 1;
+        this._speedMultiplier = mult; this.baseSimSpeed = 2000; this.simSpeed = Math.round(2000 / mult);
+        try { localStorage.setItem('rimtown_speed_mult', String(mult)); } catch (e) {}
+        this._syncSpeedButtons();
+        if (this.world && this.simInterval) this.startSimulation();
+    }
+    _syncSpeedButtons() {
+        const m = this._speedMultiplier || 1;
+        document.querySelectorAll('.btn-speed[data-speed]').forEach(b => { const on = parseFloat(b.dataset.speed) === m; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on); });
     }
 
     setupTabListeners() {
@@ -2254,20 +2262,6 @@ class RimTownApp {
             document.getElementById('btn-account')?.click();
         });
 
-        // Speed controls in mobile menu
-        menuDropdown?.querySelectorAll('.btn-speed').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const speed = btn.dataset.speed;
-                // Sync with desktop speed buttons
-                document.querySelectorAll('.controls .btn-speed').forEach(b => {
-                    if (b.dataset.speed === speed) b.click();
-                });
-                // Update mobile speed button styles
-                menuDropdown.querySelectorAll('.btn-speed').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-            });
-        });
     }
 
     // Global event delegation - handles all dynamic clicks via data-action attributes
@@ -2473,18 +2467,7 @@ class RimTownApp {
                 case 'admin-unban-user': this._adminDo('unban', val, t('確定要解除封鎖')); break;
                 case 'admin-delete-user': this._adminDo('delete', val, t('⚠️ 確定要刪除帳號？會連同所有雲端存檔一起刪除且無法復原：')); break;
                 case 'settings-toggle-pause': { const wantPaused = this._notifCardOpen ? !this._pausedBeforeNotif : !this.world.paused; this._setPaused(wantPaused); this.world.logMessage('system', wantPaused ? t('遊戲已暫停。') : t('遊戲已繼續。')); this.renderSidebar(); break; }
-                case 'settings-speed-mult': {
-                    const mult = parseFloat(val) || 1;
-                    this._speedMultiplier = mult;
-                    if (!this.baseSimSpeed) this.baseSimSpeed = this.simSpeed;
-                    this.simSpeed = Math.round(this.baseSimSpeed / mult);
-                    if (this.simInterval) clearInterval(this.simInterval);
-                    this.simInterval = setInterval(() => {
-                        this.world.tick(); this.state = this.world.getState(); this.render();
-                    }, this.simSpeed);
-                    this.renderSidebar();
-                    break;
-                }
+                case 'settings-speed-mult': { this._setSpeed(val); this.renderSidebar(); break; } // v6.54.0 舊入口(設定頁已移除)
                 case 'settings-roster': { try { localStorage.setItem('rimtown_roster_mode', val === 'random' ? 'random' : 'scripted'); } catch(e){} this.renderSidebar(); break; }
                 case 'settings-new-map': {
                     const name = prompt(t('為新城鎮命名：'), t('邊境鎮 ') + (this._getTownList().length + 1));
@@ -2558,26 +2541,11 @@ class RimTownApp {
         document.getElementById('btn-resume')?.addEventListener('click', () => {
             this._setPaused(false);
         });
-        // Speed control buttons
-        this.baseSimSpeed = this.simSpeed;
-        const speedBtns = document.querySelectorAll('.btn-speed');
-        console.log('[RimTown] Speed buttons found:', speedBtns.length, '| baseSimSpeed:', this.baseSimSpeed);
-        speedBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const multiplier = parseFloat(btn.dataset.speed);
-                console.log('[RimTown] Speed button clicked:', multiplier, 'x | baseSpeed:', this.baseSimSpeed, '| newSpeed:', Math.round(this.baseSimSpeed / multiplier));
-                document.querySelectorAll('.btn-speed').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                this.simSpeed = Math.round(this.baseSimSpeed / multiplier);
-                if (this.simInterval) clearInterval(this.simInterval);
-                this.simInterval = setInterval(() => {
-                    this.world.tick();
-                    this.state = this.world.getState();
-                    this.render();
-                }, this.simSpeed);
-            });
+        // v6.54.0 速度只剩一組倍率(上方控制列＋手機選單),全部走 _setSpeed:完整模擬迴圈、按鈕同步、記住選擇
+        document.querySelectorAll('.btn-speed[data-speed]').forEach(btn => {
+            btn.addEventListener('click', (e) => { e.stopPropagation(); this._setSpeed(btn.dataset.speed); });
         });
+        this._syncSpeedButtons();
         document.getElementById('btn-new-game')?.addEventListener('click', async () => {
             // v6.34.1 「新城鎮」會另開一座、目前這座保留在城鎮列表(之前叫「新地圖」,常被當成重畫地圖,按幾次就多幾座)
             if (!confirm(t('這會另外開一座新城鎮，目前這座會保留在「城鎮列表」裡，可以隨時切回來。確定要新開嗎？'))) return;
@@ -2619,8 +2587,6 @@ class RimTownApp {
                 return;
             }
             document.getElementById('settings-modal')?.classList.remove('hidden');
-            const speed = localStorage.getItem('sim_speed');
-            if (speed) document.getElementById('sim-speed').value = speed;
             const langSelect = document.getElementById('lang-select');
             if (langSelect) langSelect.value = I18N.getLang();
             const dlSel = document.getElementById('dialog-lang-select'); // v5.73.0
@@ -2632,10 +2598,9 @@ class RimTownApp {
             if (langSelectInit) langSelectInit.value = I18N.getLang();
         }
         document.getElementById('settings-save')?.addEventListener('click', () => {
-            const speed = document.getElementById('sim-speed').value;
             const dlSel = document.getElementById('dialog-lang-select'); // v5.73.0
             if (dlSel) this._setDialogueLang(dlSel.value);
-            this.saveSettings(speed);
+            this.saveSettings();
             const langSelect = document.getElementById('lang-select');
             if (langSelect) {
                 I18N.setLang(langSelect.value);
@@ -3119,6 +3084,9 @@ class RimTownApp {
             const card = document.getElementById('kairo-card');
             if (!card || card.classList.contains('hidden')) return;
             const now = Date.now(); if (this._sidebarAt && now - this._sidebarAt < 1000) return; this._sidebarAt = now;
+        } else {
+            // v6.54.0 桌機也節流:模擬每格都重畫整個側欄,5x 速度一秒兩三次,玩久了內容一多就卡;點按鈕等明確操作仍會立刻重畫
+            const now = Date.now(); if (this._sidebarAt && now - this._sidebarAt < 900) return; this._sidebarAt = now;
         }
         this.renderSidebar();
     }

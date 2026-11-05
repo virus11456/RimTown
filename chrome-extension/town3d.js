@@ -262,6 +262,19 @@ class Town3D extends PixelTileMap {
         return this._mats[key];
     }
     // v6.43.0 頂點色共用材質:靜態場景與村民都用它,幾百種顏色一次畫完
+    // v6.54.0 窗戶材質:合併後每個頂點帶「第幾棟」(aBid),亮度查 uLit[棟];有人醒著才亮、全家睡了就暗
+    _makeWinMat() {
+        const m = new THREE.MeshLambertMaterial({ color: new THREE.Color('#9CC8E8'), emissive: new THREE.Color('#FFD27A'), emissiveIntensity: 0 });
+        if (!this._winLit) this._winLit = new Float32Array(64).fill(1);
+        const lit = { value: this._winLit };
+        m.onBeforeCompile = (sh) => {
+            sh.uniforms.uLit = lit;
+            sh.vertexShader = 'attribute float aBid;\nuniform float uLit[64];\nvarying float vLit;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n\tvLit = uLit[int(aBid + 0.5)];');
+            sh.fragmentShader = 'varying float vLit;\n' + sh.fragmentShader.replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance = emissive * vLit;');
+        };
+        m.customProgramCacheKey = () => 'rt-win-lit';
+        return m;
+    }
     _vcMat() { if (!this._vcm) this._vcm = new THREE.MeshLambertMaterial({ vertexColors: true }); return this._vcm; }
     // v6.44.0 村民專用材質:晚上依自己的顏色微微自發光(像被路燈／月光補光),臉和衣服看得清楚但不會變成一片白;
     // 只改村民,房子、地面照舊用 _vcMat 跟著夜色變暗。同一份材質、只多一個 uniform,不增加繪製呼叫
@@ -615,8 +628,10 @@ class Town3D extends PixelTileMap {
         const theme = this.themeKey || "frontier";
         const roofs = this.roofPalette || ROOF_PALETTE[theme] || ROOF_PALETTE.frontier; // v6.45.0 種子鎮有自己的屋頂配色
         this._buildingTops = {};
+        this._winIdx = {}; this._winPub = {}; this._doorGlow = []; let winN = 0; // v6.54.0 每棟一個窗燈編號(0 = 不分棟、照常亮)
         for (const [locId, z] of Object.entries(this.buildingZones)) {
             if (z.doorPixelX === undefined) continue; // 住宅區父層、農田、礦場、廣場等不是盒子建築
+            const bid = winN < 63 ? ++winN : 0; this._winIdx[locId] = bid;
             const h = hash32(locId);
             const tmpl = LOCATION_BUILDING[locId] || (z.parentLocId ? 'house' : 'house');
             const w = z.w, d = z.h; // 範圍含屋頂列,當作完整腳印
@@ -666,6 +681,13 @@ class Town3D extends PixelTileMap {
             }
             // 門(在 +z 面,對齊 doorPixelX)+ 門框＋台階＋門把
             const doorX = z.doorPixelX / TILE - cx;
+            if (bid && tmpl !== 'house') this._winPub[bid] = tmpl;
+            // v6.54.0 門邊掛一盞小燈籠(共用材質,合併後整鎮一次畫完)＋門前地上一小圈暖光
+            if (!this._lanternMat) this._lanternMat = new THREE.MeshLambertMaterial({ color: new THREE.Color('#FFE2A0'), emissive: new THREE.Color('#FFA640'), emissiveIntensity: 0 });
+            { const lx = doorX + (doorX > 0 ? -0.66 : 0.66); const lg = this._geo('box', () => new THREE.BoxGeometry(1, 1, 1));
+              const ln = new THREE.Mesh(lg, this._lanternMat); ln.scale.set(0.24, 0.3, 0.24); ln.position.set(lx, 1.32, d / 2 + 0.16); g.add(ln);
+              this._box(0.24, 0.05, 0.24, '#2E2A30', lx, 1.47, d / 2 + 0.16, g); this._box(0.04, 0.04, 0.16, '#2E2A30', lx, 1.5, d / 2 + 0.06, g);
+              this._doorGlow.push({ x: cx + lx, z: cz + d / 2 + 0.55 }); }
             this._box(0.98, 1.5, 0.06, wood, doorX, 0.75, d / 2 + 0.01, g);
             this._box(0.8, 1.35, 0.1, '#6B4A2E', doorX, 0.67, d / 2 + 0.02, g);
             this._box(0.06, 0.06, 0.06, '#D9B85C', doorX + 0.28, 0.7, d / 2 + 0.09, g);
@@ -673,12 +695,12 @@ class Town3D extends PixelTileMap {
             // v6.49.0 民宅門上小雨遮＋兩支托架
             if (tmpl === 'house') { const aw = this._box(1.25, 0.07, 0.5, roofDk, doorX, 1.68, d / 2 + 0.24, g); aw.rotation.x = 0.28; for (const sx of [-0.52, 0.52]) { const br = this._box(0.06, 0.06, 0.34, wood, doorX + sx, 1.56, d / 2 + 0.16, g); br.rotation.x = -0.6; } }
             // 窗戶(夜間發光)
-            if (!this._winMat) { this._winMat = new THREE.MeshLambertMaterial({ color: new THREE.Color('#9CC8E8'), emissive: new THREE.Color('#FFD27A'), emissiveIntensity: 0 }); } // v6.28.0 全鎮共用一個窗材質,合併後一次畫完
+            if (!this._winMat) { this._winMat = this._makeWinMat(); } // v6.28.0 全鎮共用一個窗材質,合併後一次畫完
             const winMat = this._winMat; if (!this._winMats.includes(winMat)) this._winMats.push(winMat);
             const winGeo = this._geo('box', () => new THREE.BoxGeometry(1, 1, 1));
             const shutter = ['#3C7E71', '#4F6F93', '#8C5A3C', roof][h % 4];
             const addWin = (x, y, zz, rot) => {
-                const m = new THREE.Mesh(winGeo, winMat); m.scale.set(0.42, 0.42, 0.08); m.position.set(x, y, zz); m.rotation.y = rot; g.add(m);
+                const m = new THREE.Mesh(winGeo, winMat); m.scale.set(0.42, 0.42, 0.08); m.position.set(x, y, zz); m.rotation.y = rot; m.userData.bid = bid; g.add(m);
                 // v6.43.0 窗框、窗台;民宅加百葉、偶爾一個花槽
                 const out = rot === 0 ? Math.sign(zz) : 0, outX = rot !== 0 ? Math.sign(x) : 0;
                 const fr = this._box(0.56, 0.56, 0.05, wood, x - outX * 0.01, y, zz - out * 0.01, g); fr.rotation.y = rot;
@@ -818,7 +840,7 @@ class Town3D extends PixelTileMap {
         const sig = cb.map(b => (b.buildingKey || b.key) + ':' + b.siteX + ',' + b.siteY).join('|') + '#' + cs.map(s => s.siteX + ',' + s.siteY + ':' + Math.round((s.workDone || 0) / (s.workRequired || 1) * 10)).join('|') + '#' + dc.map(d => d.type + d.x + ',' + d.y).join('|');
         if (sig === this._dynSig) return;
         this._dynSig = sig;
-        this._dyn.clear(); this._dynLabels = [];
+        this._clearGroup(this._dyn); this._dynLabels = [];
         const PLACE = { watchtower: ['guardpost', -2, -2], granary: ['farm', 8, -1], marketplace: ['town_square', 9, -1], well_upgrade: ['well', 0, -1], training_ground: ['guardpost', 7, 0], brewery: ['tavern', -3, -1], garden: ['clinic', -3, -1], school: ['library', -3, 0], farm_irrigation: ['farm', -2, 5], forge_bellows: ['workshop', -3, -1], clinic_upgrade: ['clinic', 6, -1], town_walls: ['town_square', -5, -3],
             // v6.40.0 科技樹新建築
             archive: ['library', 6, -1], warehouse: ['general_store', -4, -2], paved_roads: ['town_square', -4, 6], lecture_hall: ['library', -3, 4], dye_works: ['workshop', 6, 3], bathhouse: ['well', 4, 2], windmill: ['farm', -4, -2], armory: ['guardpost', -2, 6], map_room: ['library', 7, 3],
@@ -906,16 +928,39 @@ class Town3D extends PixelTileMap {
             const idx = circle.getIndex(); for (let i = 0; i < idx.count; i++) { const k = idx.getX(i); pos.push(cp.getX(k) + s.x, cp.getY(k) + gy + 0.03, cp.getZ(k) + s.z); }
             n++;
         }
+        // v6.54.0 門口燈籠的小光暈(半徑小一點)
+        for (const dg of (this._doorGlow || [])) {
+            const tile = this.grid[Math.floor(dg.z)]?.[Math.floor(dg.x)]; if (tile === undefined || tile === T.WATER) continue;
+            const gy = this.groundY(dg.x, dg.z); const idx = circle.getIndex();
+            for (let i = 0; i < idx.count; i++) { const k = idx.getX(i); pos.push(cp.getX(k) * 0.62 + dg.x, cp.getY(k) + gy + 0.035, cp.getZ(k) * 0.62 + dg.z); }
+        }
+        // v6.54.0 廣場串燈:四角燈柱之間拉一串小燈泡(暖黃、橘、淡粉輪流;每種顏色一個材質,合併後只多三次繪製)
+        if (sq) {
+            const corners = [[sq.x + 0.5, sq.y + 0.5], [sq.x + sq.w - 0.5, sq.y + 0.5], [sq.x + sq.w - 0.5, sq.y + sq.h - 0.5], [sq.x + 0.5, sq.y + sq.h - 0.5]];
+            if (!this._bulbMats) this._bulbMats = ['#FFE08A', '#FFB061', '#FFC4D6'].map(c => new THREE.MeshLambertMaterial({ color: new THREE.Color(c), emissive: new THREE.Color(c), emissiveIntensity: 0 }));
+            const bg = this._geo('box', () => new THREE.BoxGeometry(1, 1, 1)); let bi = 0;
+            for (let c = 0; c < 4; c++) {
+                const [x0, z0] = corners[c], [x1, z1] = corners[(c + 1) % 4]; const len = Math.hypot(x1 - x0, z1 - z0); const nb = Math.max(4, Math.round(len / 0.9));
+                for (let i = 1; i < nb; i++) {
+                    const f = i / nb, x = x0 + (x1 - x0) * f, z = z0 + (z1 - z0) * f; const sag = Math.sin(f * Math.PI) * 0.45;
+                    const b = new THREE.Mesh(bg, this._bulbMats[bi++ % 3]); b.scale.set(0.12, 0.14, 0.12); b.position.set(x, this.groundY(x, z) + 1.72 - sag, z); this._static.add(b);
+                }
+            }
+        }
         if (pos.length) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); const p = new THREE.Mesh(g, this._poolMat); p.renderOrder = 2; p.frustumCulled = false; this._static.add(p); }
         this._lampCount = n;
     }
     // v6.28.0 靜態方塊依材質合併:幾百個小 Mesh → 每種顏色一個,繪製呼叫 250 → 數十(手機 GPU 提交成本的大頭)
-    _mergeStatic() {
+    _mergeStatic() { this._mergeInto(this._static, true); }
+    // v6.54.0 玩久了會一直長的圖層(新蓋的建築、裝飾、地標、農地、工坊、墓園、探險／節慶標記)重建後也合併:以前每多一棟就多十幾次繪製,越玩越卡
+    _clearGroup(g) { if (!g) return; g.traverse(o => { if (o.isMesh && o.name === 'merged') o.geometry.dispose(); }); g.clear(); g.userData.needMerge = true; }
+    _mergeDynamicGroups() { for (const g of [this._dyn, this._lmGroup, this._farmGroup, this._factGroup, this._graveGroup, this._expGroup, this._festGroup]) if (g && g.userData.needMerge) { g.userData.needMerge = false; if (g.children.length) this._mergeInto(g, false); } }
+    _mergeInto(root, verbose) {
         const sharedGeos = new Set(Object.values(this._geos));
         const skipMat = new Set([...this._glowMats, this._waterMat].filter(Boolean));
         const groups = new Map(); // material(或 VC)→ { meshes:[] }
         const VC = '__vc__'; // v6.43.0 一般純色材質全部併成一個頂點色網格(一次繪製)
-        this._static.updateMatrixWorld(true);
+        root.updateMatrixWorld(true);
         const collect = (o, inNoMerge) => {
             const nm = inNoMerge || !!o.userData?.noMerge;
             if (o.isMesh && !o.isInstancedMesh && !nm && sharedGeos.has(o.geometry) && !skipMat.has(o.material) && o !== this._flame && o.material.transparent !== true) {
@@ -925,7 +970,7 @@ class Town3D extends PixelTileMap {
             }
             for (const c of o.children) collect(c, nm);
         };
-        collect(this._static, false);
+        collect(root, false);
         const nmat = new THREE.Matrix3(); const v = new THREE.Vector3();
         let merged = 0, removed = 0;
         for (const [mat, g] of groups) {
@@ -934,8 +979,10 @@ class Town3D extends PixelTileMap {
             let total = 0; for (const m of g.meshes) total += m.geometry.attributes.position.count;
             // v6.43.0 法向量存 Int8、顏色存 Uint8(正規化),同樣的畫面記憶體約省一半
             const pos = new Float32Array(total * 3), nor = new Int8Array(total * 3), col = vc ? new Uint8Array(total * 3) : null; let off = 0;
+            const bids = mat === this._winMat ? new Float32Array(total) : null; // v6.54.0 窗燈分棟
             for (const m of g.meshes) {
                 const pa = m.geometry.attributes.position, na = m.geometry.attributes.normal; nmat.getNormalMatrix(m.matrixWorld);
+                if (bids) bids.fill(m.userData.bid || 0, off / 3, off / 3 + pa.count);
                 const c = m.material.color;
                 for (let i = 0; i < pa.count; i++) {
                     v.fromBufferAttribute(pa, i).applyMatrix4(m.matrixWorld); pos[off] = v.x; pos[off + 1] = v.y; pos[off + 2] = v.z;
@@ -947,13 +994,14 @@ class Town3D extends PixelTileMap {
             }
             const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3, true));
             if (col) geo.setAttribute('color', new THREE.BufferAttribute(col, 3, true));
+            if (bids) geo.setAttribute('aBid', new THREE.BufferAttribute(bids, 1));
             const mesh = new THREE.Mesh(geo, vc ? this._vcMat() : mat); mesh.castShadow = true; mesh.receiveShadow = true; mesh.name = 'merged'; mesh.frustumCulled = false;
-            this._static.add(mesh); merged++;
+            root.add(mesh); merged++;
         }
         // 清掉只剩空殼的 Group
         const prune = (o) => { for (const c of [...o.children]) { prune(c); if (c.isGroup && !c.children.length && !c.userData?.noMerge) o.remove(c); } };
-        prune(this._static);
-        console.log('[Town3D] merged', removed, 'meshes into', merged);
+        prune(root);
+        if (verbose) console.log('[Town3D] merged', removed, 'meshes into', merged);
     }
     _buildLabelIndex() {
         this._labelIndex = {}; let n = 1;
@@ -975,7 +1023,7 @@ class Town3D extends PixelTileMap {
         const sunAng = clamp((h - 6) / 12, -0.1, 1.1) * Math.PI;
         const cx = this.cols / 2, cz = this.rows / 2;
         const dusk = night > 0 && night < 1 ? 1 - Math.abs(night - 0.5) * 2 : 0;
-        if (!this._lc) this._lc = { skyDay: new THREE.Color('#BDE3F7'), skyNight: new THREE.Color('#1C2742'), skyDusk: new THREE.Color('#F2B48A'), rain: new THREE.Color('#8E99A6'), snow: new THREE.Color('#DDE6EE'), fog: new THREE.Color('#C9CFD6'), sunDay: new THREE.Color('#FFF4DC'), sunDusk: new THREE.Color('#FFB26B'), sunNight: new THREE.Color('#9FB2E6'), hemiDay: new THREE.Color('#CFE9FF'), hemiNight: new THREE.Color('#4A5A8A'), gDay: new THREE.Color('#8C7A5A'), gNight: new THREE.Color('#2A2638'), tmp: new THREE.Color(), tmp2: new THREE.Color() }; // v6.28.0 不每幀 new Color
+        if (!this._lc) this._lc = { skyDay: new THREE.Color('#BDE3F7'), skyNight: new THREE.Color('#22345E'), skyDusk: new THREE.Color('#F2B48A'), rain: new THREE.Color('#8E99A6'), snow: new THREE.Color('#DDE6EE'), fog: new THREE.Color('#C9CFD6'), sunDay: new THREE.Color('#FFF4DC'), sunDusk: new THREE.Color('#FFB26B'), sunNight: new THREE.Color('#AFC0F0'), hemiDay: new THREE.Color('#CFE9FF'), hemiNight: new THREE.Color('#7383C0'), gDay: new THREE.Color('#8C7A5A'), gNight: new THREE.Color('#3B3E5C'), tmp: new THREE.Color(), tmp2: new THREE.Color() }; // v6.28.0 不每幀 new Color
         const L = this._lc;
         const sky = L.tmp.copy(L.skyDay).lerp(L.skyNight, night).lerp(L.skyDusk, dusk * 0.55);
         const wt = this.weatherType || 'clear';
@@ -996,10 +1044,10 @@ class Town3D extends PixelTileMap {
             this.sun.position.set(cx - 40, 70, cz + 30);
         }
         this.sun.color.copy(L.sunDay).lerp(L.sunDusk, dusk * 0.8).lerp(L.sunNight, night);
-        this.sun.intensity = lerp(1.7, 0.75, night) * (wt === 'rain' || wt === 'storm' ? 0.55 : 1) * (stormy ? 0.65 : 1) + (this._flash || 0) * 0.8;
+        this.sun.intensity = lerp(1.7, 0.9, night) * (wt === 'rain' || wt === 'storm' ? 0.55 : 1) * (stormy ? 0.65 : 1) + (this._flash || 0) * 0.8;
         this.hemi.color.copy(L.hemiDay).lerp(L.hemiNight, night);
         this.hemi.groundColor.copy(L.gDay).lerp(L.gNight, night);
-        this.hemi.intensity = lerp(0.95, 0.7, night) + (this._flash || 0) * 1.6;
+        this.hemi.intensity = lerp(0.95, 0.88, night) + (this._flash || 0) * 1.6;
         // v6.32.0 太陽／月亮圓盤(月亮 18 點升、6 點落;壞天氣幾乎看不到)
         if (this._sunDisc) {
             const R = 230, bad = (wt === 'rain' || wt === 'storm' || wt === 'snow' || wt === 'blizzard' || wt === 'fog') ? 0.12 : 1;
@@ -1011,10 +1059,14 @@ class Town3D extends PixelTileMap {
         }
         const glow = Math.max(clamp((night - 0.25) / 0.5, 0, 1), stormy * 0.55);
         if (this._selfLit) this._selfLit.value = 0.42 * Math.max(night, stormy * 0.6); // v6.44.0 村民夜間補光(白天 0)
-        for (const m of this._winMats) m.emissiveIntensity = glow * 1.2;
+        for (const m of this._winMats) m.emissiveIntensity = glow * 1.9;
         for (const m of this._glowMats) m.emissiveIntensity = 0.3 + glow * 1.4;
-        if (this._poolMat) this._poolMat.opacity = glow * 0.2; // v6.32.0 路燈地上的光暈
+        if (this._poolMat) this._poolMat.opacity = glow * ((wt === 'rain' || wt === 'storm' || wt === 'fog') ? 0.4 : 0.32); // v6.32.0 路燈地上的光暈(v6.54.0 加亮;雨霧天光暈更明顯)
         if (this._lampHead) this._lampHead.emissiveIntensity = 0.2 + glow * 1.5;
+        // v6.54.0 夜景:燈籠、串燈(微微閃)、河面月光
+        if (this._lanternMat) this._lanternMat.emissiveIntensity = glow * (1.5 + Math.sin(this.animFrame * 0.21) * 0.08);
+        if (this._bulbMats) this._bulbMats.forEach((m, i) => { m.emissiveIntensity = glow * (1.3 + Math.sin(this.animFrame * 0.06 + i * 2.1) * 0.25); });
+        if (this._waterMat) { if (!this._waterMat.emissive) this._waterMat.emissive = new THREE.Color(); this._waterMat.emissive.setRGB(0.22, 0.3, 0.5).multiplyScalar(Math.max(0, night - 0.3) * (0.55 + Math.sin(this.animFrame * 0.045) * 0.12)); }
         if (this._flame) { this._flame.material.emissiveIntensity = 0.6 + glow * 1.2 + Math.sin(this.animFrame * 0.35) * 0.15; this._flame.scale.y = 0.7 + Math.sin(this.animFrame * 0.5) * 0.08; }
     }
     _updateWater() {
@@ -1112,7 +1164,7 @@ class Town3D extends PixelTileMap {
         return m;
     }
     _updateAgents3D(agents, selectedAgent) {
-        const seen = new Set();
+        const seen = new Set(); const occ = {}; // v6.54.0 每棟裡面醒著／睡著幾個人(決定窗燈)
         // v6.32.0 對話中的兩人面對面
         const face = {}; const nowT = Date.now();
         for (const c of (this._activeConvoBubbles || [])) { if (nowT >= c.expiry) continue; const ids = [...new Set((c.bubbles || []).map(b => b.agentId))]; if (ids.length >= 2) { face[ids[0]] = ids[1]; face[ids[1]] = ids[0]; } }
@@ -1125,6 +1177,7 @@ class Town3D extends PixelTileMap {
             const inside = this._isInsideBuilding(pos.x, pos.y);
             const hidden = !!(inside && this.buildingZones[inside] && this.buildingZones[inside].doorPixelX !== undefined);
             m.visible = !hidden; m.userData.hidden = hidden;
+            if (inside) { const b = this._winIdx?.[inside]; if (b) { const o = occ[b] || (occ[b] = [0, 0]); if (agent.activity === 'sleeping') o[1]++; else o[0]++; } }
             if (hidden) continue;
             const gy = this.groundY(wx, wz);
             const walking = pos.walking;
@@ -1155,7 +1208,20 @@ class Town3D extends PixelTileMap {
             }
         }
         if (this._selRing && (!selectedAgent || !seen.has(selectedAgent) || this._agentMeshes[selectedAgent]?.userData.hidden)) this._selRing.visible = false;
+        this._updateWindowLights(occ);
         for (const aid of Object.keys(this._agentMeshes)) if (!seen.has(aid)) { this._agentGroup.remove(this._agentMeshes[aid]); this._disposeAgent(this._agentMeshes[aid]); delete this._agentMeshes[aid]; }
+    }
+
+    // v6.54.0 窗燈:有人醒著就亮;全家睡了就暗;沒人在家只留一點點;酒館等公共建築 22 點前都亮著。慢慢淡入淡出
+    _updateWindowLights(occ) {
+        const L = this._winLit; if (!L || !this._winIdx) return; L[0] = 1;
+        const h = (this.timeHour ?? 12) + (this.timeMinute ?? 0) / 60; const evening = h >= 16 && h < 22;
+        for (const b of Object.values(this._winIdx)) {
+            if (!b) continue; const o = occ[b];
+            let want = o && o[0] ? 1 : o && o[1] ? 0.04 : 0.14;
+            if (this._winPub?.[b] && evening) want = Math.max(want, this._winPub[b] === 'tavern' ? 1 : 0.6);
+            L[b] += (want - L[b]) * 0.06;
+        }
     }
 
     // ---------- v6.51.0 寵物與動物:模型朝 +x;位置在畫面端算(跟著主人、在家門口或廣場附近閒晃) ----------
@@ -1408,6 +1474,32 @@ class Town3D extends PixelTileMap {
         }
         const sh = this._canopy?.userData.shader; if (sh) { sh.uniforms.uTime.value = frame / 60; sh.uniforms.uWind.value = wt === 'storm' || wt === 'blizzard' ? 2.6 : bad ? 1.5 : 0.7; }
     }
+    // v6.54.0 夏夜螢火蟲:晴朗的夏天晚上,草地樹邊一閃一閃(一個 Points,一次繪製)
+    _updateFireflies() {
+        const night = this._nightAmount(), wt = this.weatherType || 'clear';
+        const on = this.season === '夏季' && night > 0.55 && (wt === 'clear' || wt === 'cloudy');
+        if (!on) { if (this._ff) this._ff.visible = false; return; }
+        if (!this._ff || this._ffSrc !== this.grid) {
+            if (this._ff) { this.scene.remove(this._ff); this._ff.geometry.dispose(); }
+            const n = this._lite() ? 22 : 48, seeds = [];
+            for (let tries = 0; seeds.length < n && tries < n * 30; tries++) {
+                const x = 2 + Math.random() * (this.cols - 4), z = 2 + Math.random() * (this.rows - 4); const tile = this.grid[Math.floor(z)]?.[Math.floor(x)];
+                if (tile === undefined || tile === T.WATER || this._isInsideBuilding?.(x * TILE, z * TILE)) continue;
+                seeds.push({ x, z, y: this.groundY(x, z) + 0.4 + Math.random() * 1.1, p: Math.random() * 6.28, s: 0.4 + Math.random() * 0.6 });
+            }
+            const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(seeds.length * 3), 3)); g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(seeds.length * 3), 3));
+            const m = new THREE.PointsMaterial({ size: 0.22, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true });
+            this._ff = new THREE.Points(g, m); this._ff.frustumCulled = false; this._ff.userData.seeds = seeds; this._ffSrc = this.grid; this.scene.add(this._ff);
+        }
+        this._ff.visible = true;
+        const f = this.animFrame * 0.016, seeds = this._ff.userData.seeds, pa = this._ff.geometry.attributes.position, ca = this._ff.geometry.attributes.color, k = clamp((night - 0.55) / 0.3, 0, 1);
+        for (let i = 0; i < seeds.length; i++) {
+            const q = seeds[i], t = f * q.s + q.p;
+            pa.setXYZ(i, q.x + Math.sin(t * 0.7) * 0.6, q.y + Math.sin(t * 1.3) * 0.18, q.z + Math.cos(t * 0.6) * 0.6);
+            const b = Math.max(0, Math.sin(t * 2.2)) ** 3 * k; ca.setXYZ(i, 0.85 * b, 1.0 * b, 0.45 * b);
+        }
+        pa.needsUpdate = true; ca.needsUpdate = true;
+    }
     _updateParticles() {
         this._fxInit();
         const f = this._fx, frame = this.animFrame, night = this._nightAmount();
@@ -1461,7 +1553,7 @@ class Town3D extends PixelTileMap {
         const sig = L.map(x => x.name + x.icon).join('|') + '|' + (this.grid ? 1 : 0);
         if (sig === this._lmSig) return; this._lmSig = sig;
         if (!this._lmGroup) { this._lmGroup = new THREE.Group(); this.scene.add(this._lmGroup); }
-        this._lmGroup.clear(); this._lmLabels = [];
+        this._clearGroup(this._lmGroup); this._lmLabels = [];
         const sq = this.buildingZones['town_square'] || this.natureZones['town_square']; if (!sq || !L.length) return;
         const spots = [[0.4, 0.4], [sq.w - 1.4, 0.4], [0.4, sq.h - 1.4], [sq.w - 1.4, sq.h - 1.4], [sq.w / 2 - 0.5, 0.4], [sq.w / 2 - 0.5, sq.h - 1.4]]; // 廣場四角＋兩邊中間(在廣場裡,不會壓到路或房子)
         L.slice(-6).forEach((x, i) => {
@@ -1480,7 +1572,7 @@ class Town3D extends PixelTileMap {
         if (fsig !== this._farmSig) {
             this._farmSig = fsig;
             if (!this._farmGroup) { this._farmGroup = new THREE.Group(); this.scene.add(this._farmGroup); }
-            this._farmGroup.clear();
+            this._clearGroup(this._farmGroup);
             if (fz) {
                 const CROP = { wheat: '#E8C840', potato: '#8B7355', rice: '#B8D860', corn: '#C8A830', cotton: '#E0D8D0', flowers: '#F080A0', herbs: '#389830', mushroom: '#C0A878', sugarcane: '#90C870', tea: '#407830', grapes: '#8060A0', golden_wheat: '#FFD700', dragon_fruit: '#E83860' };
                 const sx = fz.x - 3, sz = fz.y + fz.h + 1, ps = 14 / TILE, gap = 2 / TILE;
@@ -1506,7 +1598,7 @@ class Town3D extends PixelTileMap {
         if (psig !== this._factSig) {
             this._factSig = psig; this._factLabels = [];
             if (!this._factGroup) { this._factGroup = new THREE.Group(); this.scene.add(this._factGroup); }
-            this._factGroup.clear();
+            this._clearGroup(this._factGroup);
             const ROOFS = ['#C85040', '#4878B8', '#8858A8', '#3A8A58', '#C88030', '#B84878', '#607890'];
             fplots.forEach((pl, i) => {
                 const cx = pl.x + pl.w / 2, cz = pl.y + pl.h / 2, gy = this.groundY(cx, cz);
@@ -1533,7 +1625,7 @@ class Town3D extends PixelTileMap {
         if ((graves.length || 0) !== this._graveN) {
             this._graveN = graves.length;
             if (!this._graveGroup) { this._graveGroup = new THREE.Group(); this.scene.add(this._graveGroup); }
-            this._graveGroup.clear(); this._graveLabel = null;
+            this._clearGroup(this._graveGroup); this._graveLabel = null;
             if (graves.length) {
                 const ch = this.buildingZones['chapel'] || this.natureZones['chapel'];
                 const bx = ch ? ch.x + ch.w + 1 : this.cols - 8, bz = ch ? ch.y : this.rows - 8;
@@ -1554,7 +1646,7 @@ class Town3D extends PixelTileMap {
         if (esig !== this._expSig) {
             this._expSig = esig; this._expLabels = [];
             if (!this._expGroup) { this._expGroup = new THREE.Group(); this.scene.add(this._expGroup); }
-            this._expGroup.clear();
+            this._clearGroup(this._expGroup);
             const icons = { deep_forest: '🌲', ancient_ruins: '🏛', abandoned_mine: '⛏', mountain_pass: '⛰', riverside_cave: '🕳', cursed_swamp: '🌿' };
             const names = { deep_forest: '幽深森林', ancient_ruins: '古代遺跡', abandoned_mine: '廢棄礦坑', mountain_pass: '山間隘口', riverside_cave: '河畔洞窟', cursed_swamp: '詛咒沼澤' };
             const spots = [[2, 2], [this.cols - 4, 2], [2, this.rows - 3], [this.cols - 4, this.rows - 3], [Math.floor(this.cols / 2), 1], [Math.floor(this.cols / 2), this.rows - 2]];
@@ -1572,7 +1664,7 @@ class Town3D extends PixelTileMap {
         if (fid !== this._festId) {
             this._festId = fid;
             if (!this._festGroup) { this._festGroup = new THREE.Group(); this.scene.add(this._festGroup); }
-            this._festGroup.clear(); this._festLabel = null;
+            this._clearGroup(this._festGroup); this._festLabel = null;
             const sq = this.buildingZones['town_square'] || this.natureZones['town_square'];
             if (fest && sq) {
                 const cols = ['#FFD54F', '#FF69B4', '#00CED1', '#FF6347', '#98FB98'];
@@ -1664,8 +1756,10 @@ class Town3D extends PixelTileMap {
         this._updateLighting();
         this._updateWater();
         this._updateParticles();
+        try { this._updateFireflies(); } catch (e) {} // v6.54.0
         this._updateCaravan();
         this._updateAgents3D(agents || {}, selectedAgent);
+        try { this._mergeDynamicGroups(); } catch (e) { console.warn('[Town3D] merge', e); }
         try { this._updatePets3D(extraData?.pets || []); } catch (e) {} // v6.51.0 寵物與動物
         this.renderer.render(this.scene, this.camera);
         const ovEvery = this.lowQuality ? 3 : this.isMobile ? 2 : 1; // v6.28.0 手機隔幀、低畫質每三幀更新標籤層(DOM 寫入是手機 CPU 大頭)

@@ -36,6 +36,7 @@ const ASSETS_TO_CACHE = [
   './sim-issues.js',
   './sim-pets.js',
   './sim-dark.js',
+  './sim-wallet.js',
   './tilemap.js',
   './vendor/three.min.js',
   './town3d.js',

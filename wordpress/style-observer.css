@@ -616,3 +616,8 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 @media (prefers-reduced-motion: reduce) {
     .rimtown-container .gh-tray, .rimtown-container .gh-card, .rimtown-container .gh-fab { transition: none; }
 }
+/* v6.54.0 已定案只列最近幾件,其餘點開 */
+.rimtown-container .pp-more { display: block; width: 100%; margin: 4px 0 10px; padding: 8px 10px; min-height: 40px; border-radius: 10px; border: 1px dashed var(--border); background: transparent; color: var(--text-secondary); font-size: 0.8rem; cursor: pointer; }
+.rimtown-container .pp-more:hover { background: var(--bg-card); color: var(--text-primary); }
+.rimtown-container .pp-fund { font-size: 0.74rem; color: var(--text-secondary); margin: 2px 0 4px; }
+.rimtown-container .pp-fund-self, .rimtown-container .pp-fund-crowd { color: #2FAE6B; }

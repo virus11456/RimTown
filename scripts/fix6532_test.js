@@ -26,8 +26,8 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       P._decide(w, p, 'reject', 'mayor'); app.state = w.getState();
       app.renderProposals(box); app.renderProposals(box); // 側欄在別的子分頁時照常重畫好幾次
       box.querySelector('[data-pp-tab="props"]').click();
-      const first = !!box.querySelector(`.pp-card[data-pid="${p.id}"] .pp-stamp-no.pp-stamp-new`);
-      app.renderProposals(box); const again = !!box.querySelector(`.pp-card[data-pid="${p.id}"] .pp-stamp-new`);
+      const el1 = box.querySelector(`.pp-card[data-pid="${p.id}"] .pp-stamp-no.pp-stamp-new`); const first = !!el1;
+      app.renderProposals(box); const el2 = box.querySelector(`.pp-card[data-pid="${p.id}"] .pp-stamp-no`); const again = el2 !== el1 && !!el2?.classList.contains('pp-stamp-new'); // 沒變就不重畫,同一個元素不會重播
       box.querySelector('[data-pp-tab="truth"]').click(); box.querySelector('[data-pp-tab="props"]').click();
       const back = !!box.querySelector(`.pp-card[data-pid="${p.id}"] .pp-stamp-new`), stamped = !!box.querySelector(`.pp-card[data-pid="${p.id}"] .pp-stamp-no`);
       box.remove(); return { id: p.id, first, again, back, stamped };

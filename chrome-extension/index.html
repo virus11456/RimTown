@@ -67,15 +67,6 @@
                 <div style="font-size:12px;color:var(--text-secondary)" data-i18n="🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 300 則）">🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 300 則）</div>
             </div>
             <div class="setting-group">
-                <label data-i18n="模擬速度">模擬速度</label>
-                <select id="sim-speed">
-                    <option value="3000" data-i18n="慢速（3秒）">慢速（3秒）</option>
-                    <option value="2000" selected data-i18n="正常（2秒）">正常（2秒）</option>
-                    <option value="1000" data-i18n="快速（1秒）">快速（1秒）</option>
-                    <option value="500" data-i18n="極快（0.5秒）">極快（0.5秒）</option>
-                </select>
-            </div>
-            <div class="setting-group">
                 <label data-i18n="語言">語言</label>
                 <select id="lang-select">
                     <option value="zh">繁體中文</option>
@@ -283,6 +274,7 @@
                     <button class="btn-speed" data-speed="1.5">1.5x</button>
                     <button class="btn-speed" data-speed="2">2x</button>
                     <button class="btn-speed" data-speed="3">3x</button>
+                    <button class="btn-speed" data-speed="5">5x</button>
                 </div>
                 <button id="mobile-btn-menu" class="mobile-ctrl-btn">☰</button>
             </div>
@@ -313,6 +305,7 @@
                     <button class="btn-speed" data-speed="1.5">1.5x</button>
                     <button class="btn-speed" data-speed="2">2x</button>
                     <button class="btn-speed" data-speed="3">3x</button>
+                    <button class="btn-speed" data-speed="5">5x</button>
                 </div>
                 <span id="llm-status" class="llm-status" data-i18n-title="AI 狀態" data-i18n-title="AI 狀態" title="AI 狀態">AI:--</span>
                 <button id="btn-account" class="btn-account" data-i18n="帳號">帳號</button>
@@ -375,6 +368,7 @@
     <script src="sim-issues.js"></script>
     <script src="sim-pets.js"></script>
     <script src="sim-dark.js"></script>
+    <script src="sim-wallet.js"></script>
     <script src="chiptune.js"></script>
     <script src="tilemap.js"></script>
     <script src="vendor/three.min.js"></script>

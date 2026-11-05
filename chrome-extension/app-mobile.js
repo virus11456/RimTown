@@ -373,6 +373,7 @@ Object.assign(RimTownApp.prototype, {
         const chips = [], inner = [];
         try {
             const ag = this.world?.agents?.[agentId];
+            if (ag && typeof WALLET !== 'undefined' && this.world.wallet) { const n = Math.round(WALLET.get(this.world, ag)); chips.push(`👛 ${n} ${t('銀幣')}${t('（')}${t(WALLET.word(n))}${t('）')}`); } // v6.54.0 個人錢包
             if (ag && typeof PETS !== 'undefined') { const pd = PETS.describe(this.world, ag); if (pd) chips.push(pd); }
             if (ag && typeof DARK !== 'undefined') { const x = DARK.about(this.world, ag);
                 if (x.rep) chips.push(`🏷️ ${t('名聲')}${t('：')}${x.rep}`); if (x.clique) chips.push(`🫂 ${x.clique}`);

@@ -46,6 +46,7 @@ const TOWN_ISSUES = (() => {
             for (const [r, ws] of Object.entries(by).sort((x, y) => y[1].length - x[1].length).slice(0, 2))
                 out.push({ key: 'materials:' + r, sev: ws.length >= 2 ? 2 : 1, who: ws.map(a => a.agentId), k: '缺{item}：{list}的工作做不下去', p: { item: SI[r]?.name?.() || t(r), list: ws.slice(0, 3).map(name).join(t('、')) + (ws.length > 3 ? t('等') : '') } });
         }
+        try { if (typeof WALLET !== 'undefined') out.push(...WALLET.issues(w)); } catch (e) {} // v6.54.0 村民窮到吃不起、公庫發不出薪水
         if (g('silver') < 30) out.push({ key: 'treasury', sev: 2, k: '公庫快空了（剩 {n} 銀幣），薪俸和修繕都發不出來', p: { n: Math.round(g('silver')) } });
         const tr = w.trials?.current;
         if (tr && tr.status === 'active' && typeof TRIAL_TYPES !== 'undefined' && TRIAL_TYPES[tr.type]) out.push({ key: 'trial:' + tr.type, sev: 3, k: '「{x}」正在考驗全鎮', p: { x: t(TRIAL_TYPES[tr.type].title) } });
@@ -68,11 +69,11 @@ const TOWN_ISSUES = (() => {
         const out = new Set((p.addresses || []).filter(Boolean));
         const k = String(p.key || '');
         if (k.startsWith('trial:')) out.add(k);
-        if (k.startsWith('relief:')) out.add('misery:' + k.slice(7));
+        if (k.startsWith('relief:')) { out.add('misery:' + k.slice(7)); out.add('poverty'); }
         if (k.startsWith('mediate:')) out.add('feud:' + k.slice(8));
         if (k === 'feast' || k === 'festival' || k === 'honor') out.add('gloom');
         if (k.startsWith('market:buy:')) out.add('materials:' + k.slice(11));
-        if (k.startsWith('market:sell:') || k === 'trade') out.add('treasury');
+        if (k.startsWith('market:sell:') || k === 'trade') { out.add('treasury'); out.add('wages'); }
         if (k.startsWith('market:buy:')) { const r = k.slice(11); if (r === 'food' || r === 'meals') out.add('food'); else if (r === 'clothing' || r === 'cloth') out.add('clothing'); else if (r === 'wood') out.add('heating'); else if (['tools', 'medicine', 'furniture'].includes(r)) out.add('goods'); }
         for (const e of (p.fx || [])) {
             const plus = (e.amount || e.value || 0) > 0;
