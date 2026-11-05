@@ -8103,6 +8103,14 @@
         '只輸出 JSON：{"title":"提案名（15 字內）","pitch":"你向全鎮說明的一兩句話（第一人稱，60 字內）","category":"economy|welfare|defense|culture|nature|freedom","cost":{"silver":數字,…},"effects":[…]}；今天不想提就輸出 {"skip":true}': 'Output only JSON: {"title":"proposal name (under 8 words)","pitch":"one or two sentences to the town (first person, under 40 words)","category":"economy|welfare|defense|culture|nature|freedom","cost":{"silver":number,…},"effects":[…]}; if you do not want to propose anything today output {"skip":true}',
         '）。': ').',
         '第 {n} 天': 'day {n}',
+        // v6.48.0 事件卡獨立介面
+        '事件卡：今天還能打 {n} 張（E）': 'Event cards: {n} left today (E)',
+        '手牌': 'Hand',
+        '還沒打過事件卡。打出一張，村民接下來幾天的反應、提案和七天後的變化都會記在這裡。': 'No event cards played yet. Play one and the villagers’ reactions over the next few days, their proposals and the changes seven days later will be recorded here.',
+        '隨機打一張': 'Play a random card',
+        '打出後鏡頭會帶到現場；村民接下來幾天的反應會出現在「反應追蹤」。': 'Playing it takes the camera to the scene; villagers’ reactions over the next few days appear under Reaction log.',
+        '事件卡搬到地圖右下角的 🃏 按鈕了（桌機按 E）。': 'Event cards have moved to the 🃏 button at the bottom right of the map (press E on desktop).',
+        '打開事件卡': 'Open event cards',
     });
     if (window.I18N && typeof window.I18N._onDictLoaded === 'function') window.I18N._onDictLoaded();
 })();

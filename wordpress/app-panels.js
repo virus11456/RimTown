@@ -1309,7 +1309,8 @@ Object.assign(RimTownApp.prototype, {
     renderEvents(container) {
         if (!this.state) return;
         let html = '';
-        html += this._renderEventCards(); // v6.38.0
+        // v6.48.0 事件卡搬到地圖上的 🃏 按鈕(獨立抽屜);這裡只留入口
+        if (this.state?.eventCards) html += `<div class="gh-entry"><div><b>🃏 ${t('事件卡')}</b><span>${t('事件卡搬到地圖右下角的 🃏 按鈕了（桌機按 E）。')}</span></div><button class="gh-entry-btn" data-action="gh-open">${t('打開事件卡')}</button></div>`;
 
         // --- Election ---
         const election = this.state.election;

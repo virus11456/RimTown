@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.47.0
+ * Version: 6.48.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.47.0');
+define('RIMTOWN_VERSION', '6.48.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -946,6 +946,7 @@ function rimtown_enqueue_assets() {
         true
     );
     wp_enqueue_script('rimtown-app-towngen', RIMTOWN_URL . 'app-towngen.js', array('rimtown-app-loop'), RIMTOWN_VERSION, true); // v6.45.0
+    wp_enqueue_script('rimtown-app-godhand', RIMTOWN_URL . 'app-godhand.js', array('rimtown-app-loop'), RIMTOWN_VERSION, true); // v6.48.0 事件卡獨立介面
     wp_enqueue_script(
         'rimtown-app-towns',
         RIMTOWN_URL . 'app-towns.js',
@@ -1335,6 +1336,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.48.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🃏 事件卡有自己的介面了：事件卡是觀察者唯一能出手的地方，以前埋在「事件」分頁裡。現在地圖右下角有一顆 🃏 按鈕，直接顯示今天還能打幾張；點開是一副手牌——桌機浮在地圖下方（卡牌一列＋右邊詳情），手機是底部抽屜（卡牌橫向滑動＋下方詳情與大按鈕）',
+                '🎴 手牌更好挑：卡牌依天災、人禍、機運、人際上色，冷卻中的卡會變灰並標天數；選卡就看到說明、效果和冷卻，可以按分類篩選，也能「隨機打一張」。打出後抽屜自動收起、鏡頭帶到現場',
+                '📼 反應追蹤獨立成一頁：村民接下來幾天的反應、事後的提案和七天後的變化都在這裡，點名字就跳到那位村民；有新反應時按鈕會亮紅點。桌機可以按 E 開關、Esc 關閉、←→ 換卡、Enter 打出',
+            ),
+            'changes_en' => array(
+                '🃏 Event cards have their own interface: event cards are the only way an observer can act, and they used to be buried in the Events tab. A 🃏 button at the bottom right of the map now shows how many you can still play today and opens your hand of cards: on desktop it floats above the map (a row of cards with details on the right); on phones it is a bottom sheet (swipe through the cards, with details and a large button below)',
+                '🎴 Easier to choose: cards are coloured by category (disaster, mishap, fortune, social), cards on cooldown are greyed out with the days left, selecting a card shows its description, effect and cooldown, you can filter by category or play a random card, and after playing the sheet closes and the camera goes to the scene',
+                '📼 Reactions have their own tab: villagers’ reactions over the next few days, the proposals that follow and the changes seven days later are all there, tapping a name jumps to that villager, and the button shows a red dot when there are new reactions. On desktop press E to open or close, Esc to close, ←→ to switch cards and Enter to play',
+            ),
+        ),
         array(
             'version' => '6.47.0',
             'date'    => '2026-11-04',

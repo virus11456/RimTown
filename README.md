@@ -261,7 +261,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ## WordPress Plugin Install
 
-1. Download `rimtown-v6.47.0.zip` from Releases
+1. Download `rimtown-v6.48.0.zip` from Releases
 2. WordPress Admin → Plugins → Add New → Upload Plugin
 3. Activate the plugin
 4. Create a page with shortcode `[rimtown]`
@@ -314,6 +314,11 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.48.0 (2026-11-04)
+- 🃏 事件卡有自己的介面了：事件卡是觀察者唯一能出手的地方，以前埋在「事件」分頁裡。現在地圖右下角有一顆 🃏 按鈕，直接顯示今天還能打幾張；點開是一副手牌——桌機浮在地圖下方（卡牌一列＋右邊詳情），手機是底部抽屜（卡牌橫向滑動＋下方詳情與大按鈕）
+- 🎴 手牌更好挑：卡牌依天災、人禍、機運、人際上色，冷卻中的卡會變灰並標天數；選卡就看到說明、效果和冷卻，可以按分類篩選，也能「隨機打一張」。打出後抽屜自動收起、鏡頭帶到現場
+- 📼 反應追蹤獨立成一頁：村民接下來幾天的反應、事後的提案和七天後的變化都在這裡，點名字就跳到那位村民；有新反應時按鈕會亮紅點。桌機可以按 E 開關、Esc 關閉、←→ 換卡、Enter 打出
 
 ### v6.47.0 (2026-11-04)
 - 💭 村民會自己發想提案了：以前 AI 只能從系統給的幾個點子裡挑一個；現在（完整智能體模式下，大約六成的提案）村民依自己的個性、記憶和鎮況自由發想，可以很實際，也可以天馬行空，例如替廣場的貓立雕像、每週三全鎮只說真話、讓某個人去學醫
