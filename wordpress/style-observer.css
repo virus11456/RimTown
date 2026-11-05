@@ -88,6 +88,10 @@
 .rimtown-container.observer .header .controls .btn-speed.active { background: var(--accent); color: #1E1B2A; }
 .rimtown-container.observer .header .controls #btn-pause.active,
 .rimtown-container.observer .header .controls #btn-resume.active { background: var(--accent); color: #1E1B2A; }
+/* v6.53.0 播放／暫停合一:隱藏多出來的「播放」;跑馬燈移到上方資訊列下面,不蓋住天氣 */
+.rimtown-container.observer .header .controls #btn-resume { display: none; }
+.rimtown-container.observer .header .controls #btn-pause { min-width: 76px; }
+@media (min-width: 769px) { .rimtown-container.observer .drama-ticker { top: 64px; } }
 .rimtown-container.observer .header .version-display { display: none; }
 
 .rimtown-container.observer .main-layout { position: absolute !important; inset: 0 !important; }
@@ -487,6 +491,7 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .gh-tray.open { opacity: 1; transform: none; }
 /* v6.50.1 關掉的抽屜是透明的，但 display:flex 蓋過 hidden，還會擋住底下的按鈕（村民卡的交談／詳情點不到）*/
 .rimtown-container .gh-tray:not(.open) { pointer-events: none; }
+.rimtown-container .gh-fab.gh-under-sheet { opacity: 0; pointer-events: none; }
 .rimtown-container .gh-tray[hidden], .rimtown-container .gh-fab[hidden], .rimtown-container .gh-fab-dot[hidden] { display: none !important; }
 .rimtown-container .gh-grab { display: none; }
 .rimtown-container .gh-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
@@ -538,6 +543,20 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .gh-play:disabled { opacity: 0.4; cursor: not-allowed; }
 .rimtown-container .gh-d-note { font-size: 0.7rem; color: var(--text-muted); line-height: 1.45; }
 .rimtown-container .gh-track { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 2px; }
+.rimtown-container .pp-tabs { position: sticky; top: 0; z-index: 2; display: flex; gap: 4px; padding: 4px; margin: 0 0 6px; border-radius: 999px; background: var(--bg-card, #2E2A44); }
+.rimtown-container .pp-tab { flex: 1; min-height: 38px; border: 0; border-radius: 999px; background: transparent; color: var(--text-secondary); font: inherit; font-size: 0.84rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.rimtown-container .pp-tab.on { background: var(--accent); color: var(--ob-on-accent, #1E1B2A); }
+.rimtown-container .pp-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rimtown-container .pp-tab-n { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 999px; font-size: 0.68rem; line-height: 18px; background: rgba(127,127,127,.25); }
+.rimtown-container .pp-tab.on .pp-tab-n { background: rgba(0,0,0,.18); }
+.rimtown-container .pp-tab-n.hot { background: #E95A5A; color: #fff; }
+.rimtown-container .pp-tabhint { font-size: 0.72rem; color: var(--text-muted); margin: 0 4px 8px; }
+.rimtown-container .nqc-chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.rimtown-container .nqc-chip { font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; background: var(--bg-card, rgba(255,255,255,.08)); border: 1px solid var(--border); color: var(--text-secondary); }
+.rimtown-container .nqc-more { margin: 4px 0; font-size: 0.78rem; }
+.rimtown-container .nqc-more summary { cursor: pointer; color: var(--accent); list-style: none; padding: 2px 0; }
+.rimtown-container .nqc-more summary::-webkit-details-marker { display: none; }
+.rimtown-container .nqc-more[open] summary { margin-bottom: 2px; }
 .rimtown-container .pp-issues { margin: 6px 0 10px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-card); }
 .rimtown-container .pp-issue { display: flex; gap: 6px; align-items: flex-start; font-size: 0.8rem; line-height: 1.5; padding: 3px 0; color: var(--text-primary); }
 .rimtown-container .pp-issue small { display: block; color: var(--text-muted); font-size: 0.72rem; }

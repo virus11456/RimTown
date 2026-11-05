@@ -712,12 +712,32 @@ Object.assign(RimTownApp.prototype, {
         else if (go.coach && tm.coachStation) { const cs = tm.coachStation; tm.focusMap?.((cs.x + cs.w / 2) * 16, (cs.y + cs.h / 2) * 16, 22); }
     },
     _autoCamEnabled() { try { return localStorage.getItem('rimtown_autocam') === '1'; } catch (e) { return false; } },
-    _showCornerNotice({ icon, title, name, desc, go, open, openLabel }) {
+    // v6.53.0 有大視窗(季末回顧、中央卡)開著時,角落通知先排隊,關掉後再一張張出來
+    _modalOpen() { if (document.getElementById('season-recap')) return true;
+        if (window.innerWidth <= 768 && [...document.querySelectorAll('#npc-quick-card, #loc-quick-card')].some(c => !c.classList.contains('hidden') && c.getClientRects().length)) return true; // 手機:看村民卡時先別冒通知
+        const o = document.getElementById('center-notification-overlay'); return !!(o && !o.classList.contains('hidden') && o.offsetParent !== null); },
+    _flushCornerHold() {
+        if (this._cornerHoldTimer) return;
+        this._cornerHoldTimer = setInterval(() => {
+            if (this._modalOpen()) return;
+            const q = this._cornerHold || []; const n = q.shift(); if (n) this._showCornerNotice(n);
+            if (!q.length) { clearInterval(this._cornerHoldTimer); this._cornerHoldTimer = null; }
+        }, 1200);
+    },
+    _showCornerNotice(opts) {
+        const { icon, title, name, desc, go, open, openLabel } = opts || {};
+        if (this._modalOpen()) { const q = this._cornerHold || (this._cornerHold = []); q.push(opts); if (q.length > 3) q.shift(); this._flushCornerHold(); return; }
         const host = this._toastHost();
         if (go && this._autoCamEnabled() && !this._isPlayerBusy?.() && Date.now() - (this._lastAutoCam || 0) > 6000) { this._lastAutoCam = Date.now(); try { this._goLook(go); } catch (e) {} }
         // v5.34.1 同時最多 3 張,多的擠掉最舊的,避免洗版
-        const cap = window.innerWidth <= 768 ? 2 : 3; // v6.12.0 手機最多兩張,少蓋一點內容
-        while (host.querySelectorAll('.rt-toast:not(.morning)').length >= cap) host.querySelector('.rt-toast:not(.morning)').remove(); // v6.7.0 早安卡不算在三張內
+        const cap = window.innerWidth <= 768 ? 1 : 2; // v6.53.0 桌機兩張、手機一張(以前會疊滿半個地圖);被擠掉的算進「還有 N 則」
+        let pushed = 0; while (host.querySelectorAll('.rt-toast:not(.morning):not(.rt-more)').length >= cap) { host.querySelector('.rt-toast:not(.morning):not(.rt-more)').remove(); pushed++; } // v6.7.0 早安卡不算
+        if (pushed) {
+            let more = host.querySelector('.rt-more'); this._moreCount = (more ? this._moreCount || 0 : 0) + pushed;
+            if (!more) { more = document.createElement('button'); more.type = 'button'; more.className = 'rt-toast rt-more'; more.style.cssText = 'pointer-events:auto;align-self:flex-end;border:1px solid var(--border,rgba(255,255,255,.2));border-radius:999px;padding:4px 12px;background:var(--ob-card-solid,rgba(22,22,32,.95));color:var(--text-secondary,#ccc);font:inherit;font-size:.74rem;cursor:pointer'; more.addEventListener('click', () => { more.remove(); this._moreCount = 0; try { if (window.innerWidth <= 768 && this._goTab) this._goTab('records'); else { this.activeTab = 'records'; this._updateTabHighlight?.('records'); this.renderSidebar(); } } catch (e) {} }); host.prepend(more); }
+            more.textContent = `📬 ${t('還有 {n} 則，到「日報」看').replace('{n}', this._moreCount)}`;
+            clearTimeout(this._moreTimer); this._moreTimer = setTimeout(() => { more.remove(); this._moreCount = 0; }, 12000);
+        }
         const el = document.createElement('div'); el.className = 'rt-toast';
         el.style.cssText = 'display:flex;align-items:center;gap:10px;background:var(--ob-card-solid,rgba(22,22,32,0.95));border:1px solid var(--border,rgba(255,255,255,0.22));border-radius:10px;padding:10px 14px;max-width:min(320px,calc(100vw - 28px));box-shadow:var(--ob-shadow,0 4px 16px rgba(0,0,0,0.4));opacity:0;transform:translateY(8px);transition:opacity 0.3s,transform 0.3s;pointer-events:auto;cursor:pointer'; // v6.29.0 吃色票變數,日光配色才會跟著換
         el.innerHTML = `<span style="font-size:1.5rem">${icon || '🔔'}</span><span style="flex:1;min-width:0"><span style="display:block;color:var(--accent,#e94560);font-size:0.72rem;font-weight:bold">${title || ''}</span>${name ? `<span style="display:block;color:var(--text-primary,#fff);font-size:0.85rem;font-weight:bold">${name}</span>` : ''}${desc ? `<span class="rt-toast-desc" style="color:var(--text-secondary,rgba(255,255,255,0.65));font-size:0.68rem">${desc}</span>` : ''}</span>${go ? `<button class="rt-toast-go" data-go="1">🎥 ${t('去看')}</button>` : ''}`;

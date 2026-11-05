@@ -71,7 +71,11 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     if (process.env.SHOT) { await page.evaluate(() => { const app = window.rimtownApp; const sq = app.tileMap.buildingZones.town_square; app.tileMap.focusLocation?.('town_square'); }); await page.waitForTimeout(1500); await page.screenshot({ path: process.env.SHOT + '/lm_' + lang + '.png' }); }
     await page.evaluate(() => { const app = window.rimtownApp; app.state = app.world.getState(); app._openKairoTab ? app._openKairoTab('proposals') : app._goTab?.('proposals'); app.renderSidebar?.(); });
     await page.waitForTimeout(700);
-    const panel = await page.evaluate(() => ({ fx: document.querySelectorAll('.pp-fx span').length, lore: document.querySelector('.pp-lore')?.innerText || '' }));
+    const fxN = await page.evaluate(() => document.querySelectorAll('.pp-fx span').length);
+    // v6.53.0 規矩與地標搬到「鎮況」子分頁
+    await page.evaluate(() => document.querySelector('[data-pp-tab="town"]')?.click()); await page.waitForTimeout(200);
+    const panel = await page.evaluate((fx) => ({ fx, lore: document.querySelector('.pp-lore')?.innerText || '' }), fxN);
+    await page.evaluate(() => document.querySelector('[data-pp-tab="props"]')?.click());
     ok(panel.fx >= 6 && /每週三|truth|Wednesday/i.test(panel.lore), '提案分頁顯示效果標籤與「規矩與地標」', panel);
     if (process.env.SHOT) { await page.evaluate(() => document.querySelector('.pp-lore')?.scrollIntoView()); await page.screenshot({ path: process.env.SHOT + '/pp_' + lang + '.png' }); await page.evaluate(() => document.querySelector('.pp-fx')?.closest('.pp-card')?.scrollIntoView()); await page.screenshot({ path: process.env.SHOT + '/ppcard_' + lang + '.png' }); }
     ok(!errs.length, lang + ' 沒有頁面錯誤', errs.slice(0, 3));

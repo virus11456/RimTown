@@ -74,7 +74,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       D.wrongs.push({ by: C.agentId, to: ag[10].agentId, w: 1, day: d0, tries: 0 });
       out.brief = w.conversationEngine._agentBrief(w, F).mem.join(' | ');
       app.state = w.getState(); app._showNpcCard(F.agentId); out.card = document.getElementById('npc-quick-card').innerText; app._hideNpcCard();
-      const box = document.createElement('div'); app.renderProposals(box); out.panel = box.innerHTML.includes('🫂');
+      app._ppTab = 'town'; const box = document.createElement('div'); app.renderProposals(box); out.panel = box.innerHTML.includes('🫂');
       // 存讀檔
       const blob = JSON.parse(JSON.stringify(w.serialize())); const w2 = new World(); w2.loadSave(blob);
       out.rt = { cliques: (w2.dark?.cliques || []).length, rep: Object.keys(w2.dark?.rep || {}).length, feuds: Object.keys(w2.dark?.feuds || {}).length };

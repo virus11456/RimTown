@@ -8457,6 +8457,15 @@
         '{pet}生了小{sp}，分送給了{list}。': '{pet} had little ones, and I gave them to {list}.',
         '🐣 {o}家的{pet}生了小{sp}，分送給{list}。': '🐣 {o}\'s {pet} had little ones, given to {list}.',
         '（走失了，正在找）': ' (missing, being searched for)',
+        '還有 {n} 則，到「日報」看': '{n} more in the Newspaper tab',
+        '提案統計': 'Proposal stats',
+        '鎮上目前風平浪靜，沒有急事。': 'All quiet in town; nothing urgent right now.',
+        '目前沒有人在說謊、設局或誤會別人。': 'Nobody is lying, scheming or misunderstanding anyone right now.',
+        '鎮況': 'Town',
+        '真相': 'Truths',
+        '鎮上正在發生的事：急事、小團體、規矩與統計。': 'What is going on in town: urgent problems, cliques, customs and stats.',
+        '只有你看得到：誰在說謊、設局，誰誤會了誰。': 'Only you can see this: who is lying or scheming, and who misunderstands whom.',
+        '心事': 'On their mind',
     });
     if (window.I18N && typeof window.I18N._onDictLoaded === 'function') window.I18N._onDictLoaded();
 })();

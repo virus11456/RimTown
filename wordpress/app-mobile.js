@@ -99,6 +99,7 @@ Object.assign(RimTownApp.prototype, {
             card.classList.add('hidden');
             this._kairoCardOpen = false;
             this.bgm?.sfx?.('close');
+            setTimeout(() => this._ghFab?.(), 50);
         });
     },
 
@@ -112,6 +113,7 @@ Object.assign(RimTownApp.prototype, {
         this.activeTab = tab;
         this._updateTabHighlight(tab);
         this.renderSidebar();
+        setTimeout(() => this._ghFab?.(), 50); // v6.53.0 面板拉開 → 🃏 讓開
     },
 
     // v5.11.0 收起手機版所有浮動面板(聊天抽屜/左側選單/浮動卡片),回到全螢幕地圖
@@ -367,15 +369,22 @@ Object.assign(RimTownApp.prototype, {
         crushes.forEach(r => lines.push(`💘 ${t('暗戀')} ${r.target_name}`));
         const foes = Object.values(rels).filter(r => r.target_id !== 'player' && (r.affinity || 0) < -60).slice(0, 2);
         foes.forEach(r => lines.push(`💢 ${t('與')} ${r.target_name} ${t('是死對頭')}`));
-        // v6.51.0 寵物、心裡記恨誰、藏著什麼秘密(只有上帝視角看得到)
+        // v6.53.0 寵物、名聲、派系做成一排小標籤;恩怨與秘密收在「心事」裡,點開才看(只有上帝視角看得到)
+        const chips = [], inner = [];
         try {
             const ag = this.world?.agents?.[agentId];
-            if (ag && typeof PETS !== 'undefined') { const pd = PETS.describe(this.world, ag); if (pd) lines.push(pd); }
-            if (ag && typeof DARK !== 'undefined') { const x = DARK.about(this.world, ag); if (x.grudge) lines.push(`😠 ${t('心裡記恨{v}（{why}）').replace('{v}', t(x.grudge.name)).replace('{why}', x.grudge.why)}`); for (const s of x.secrets.slice(0, 2)) lines.push(`🎭 ${t('只有你知道：')}${s}`);
-                if (x.rep) lines.push(`🏷️ ${t('名聲')}${t('：')}${x.rep}`); if (x.clique) lines.push(`🫂 ${x.clique}`);
-                if (x.owe.length) lines.push(`🙏 ${t('想跟{v}道歉').replace('{v}', x.owe.map(n => t(n)).join(t('、')))}`); if (x.hurt.length) lines.push(`😤 ${t('還在氣{v}').replace('{v}', x.hurt.map(n => t(n)).join(t('、')))}`); }
+            if (ag && typeof PETS !== 'undefined') { const pd = PETS.describe(this.world, ag); if (pd) chips.push(pd); }
+            if (ag && typeof DARK !== 'undefined') { const x = DARK.about(this.world, ag);
+                if (x.rep) chips.push(`🏷️ ${t('名聲')}${t('：')}${x.rep}`); if (x.clique) chips.push(`🫂 ${x.clique}`);
+                if (x.grudge) inner.push(`😠 ${t('心裡記恨{v}（{why}）').replace('{v}', t(x.grudge.name)).replace('{why}', x.grudge.why)}`);
+                if (x.hurt.length) inner.push(`😤 ${t('還在氣{v}').replace('{v}', x.hurt.map(n => t(n)).join(t('、')))}`);
+                if (x.owe.length) inner.push(`🙏 ${t('想跟{v}道歉').replace('{v}', x.owe.map(n => t(n)).join(t('、')))}`);
+                for (const s of x.secrets.slice(0, 2)) inner.push(`🎭 ${t('只有你知道：')}${s}`); }
         } catch (e) {}
-        const relHtml = lines.length ? lines.map(l => `<div class="nqc-rel">${l}</div>`).join('') : `<div class="nqc-rel nqc-dim">${t('目前沒有戀愛或仇恨傳聞')}</div>`;
+        const esc2 = (x) => this._escapeHtml ? this._escapeHtml(String(x)) : String(x);
+        const relHtml = (lines.length ? lines.map(l => `<div class="nqc-rel">${l}</div>`).join('') : `<div class="nqc-rel nqc-dim">${t('目前沒有戀愛或仇恨傳聞')}</div>`)
+            + (chips.length ? `<div class="nqc-chips">${chips.map(c => `<span class="nqc-chip">${esc2(c)}</span>`).join('')}</div>` : '')
+            + (inner.length ? `<details class="nqc-more"><summary>${inner.some(l => l.startsWith('🎭')) ? '🎭' : '💭'} ${t('心事')} (${inner.length}) ▾</summary>${inner.map(l => `<div class="nqc-rel">${esc2(l)}</div>`).join('')}</details>` : '');
         // v5.4.0 人生夢想進度
         const goal = this.state?.lifeGoals?.[agentId];
         let goalHtml = '';
@@ -490,7 +499,12 @@ Object.assign(RimTownApp.prototype, {
         document.getElementById('loc-quick-card')?.classList.add('hidden');
         this._toastsAvoidCards?.();
     },
-    _toastsAvoidCards() { const h = document.getElementById('achv-toast-host'); if (h) this._placeToastHost?.(h); },
+    _toastsAvoidCards() {
+        const h = document.getElementById('achv-toast-host'); if (h) this._placeToastHost?.(h);
+        // v6.53.0 手機:打開村民卡時收起角落通知(之後的先排隊),🃏 也讓開
+        if (h && window.innerWidth <= 768 && [...document.querySelectorAll('#npc-quick-card, #loc-quick-card')].some(c => !c.classList.contains('hidden'))) h.querySelectorAll('.rt-toast:not(.morning)').forEach(e => e.remove());
+        try { this._ghFab?.(); } catch (e) {}
+    },
 
     // v6.29.0 建築資訊卡:點地圖上的建築／名牌 → 誰在裡面、在做什麼、住戶、相關產業與提案
     _showLocationCard(locId) {

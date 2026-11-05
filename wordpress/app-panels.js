@@ -904,52 +904,62 @@ Object.assign(RimTownApp.prototype, {
             }
             return html + '</div>';
         };
-        let html = `<div class="proposals-panel">`;
-        html += `<div class="pp-summary">${t('提出')} ${d.stats.made} · ${t('已批准')} ${d.stats.approved} · ${t('已否決')} ${d.stats.rejected} · ${t('已完成')} ${d.stats.done}</div>`;
-        html += `<div style="font-size:0.7rem;color:var(--text-muted);margin:0 0 6px">${t('村民自己提案、全鎮投票、鎮長裁決。你只看。')}</div>`; // v6.37.0
-        html += this._electionCardHtml(); // v6.42.0 鎮長選舉／代理鎮長
+        // v6.53.0 分成三個子分頁:提案(投票與進度)、鎮況(急事、派系、規矩與統計)、真相(只有你知道的)
+        let P = '', T = '', S = '';
+        P += this._electionCardHtml(); // v6.42.0 鎮長選舉／代理鎮長
+        P += `<h4 class="pp-h">🗳️ ${t('投票中')} <span class="pp-count">${d.open.length}</span></h4>`;
+        if (!d.open.length) P += `<div class="ob-empty" style="margin:10px 4px"><span class="ob-empty-icon">☕</span>${t('現在沒有投票中的提案。村民會依鎮上的情況陸續提出，通常每天一兩件。')}</div>`;
+        else d.open.forEach(p => { P += card(p, 'decide'); });
+        if (d.shelved.length) { P += `<h4 class="pp-h">📥 ${t('擱置中')} <span class="pp-count">${d.shelved.length}</span></h4>`; d.shelved.forEach(p => { P += card(p, 'decide'); }); }
+        if (d.active.length) { P += `<h4 class="pp-h">🔨 ${t('進行中')}</h4>`; d.active.forEach(p => { P += card(p, 'view'); }); }
+        if (d.history.length) { P += `<h4 class="pp-h">📚 ${t('已定案')}</h4>`; d.history.forEach(p => { P += card(p, 'view'); }); }
+        // v6.50.0 鎮上急事:村民正受影響,拖著沒人管會抱怨、吵架、搬走
+        if ((d.issues || []).length) {
+            T += `<div class="pp-issues"><h4 class="pp-h">⚠️ ${t('鎮上急事')} <span class="pp-count">${d.issues.length}</span></h4>`;
+            for (const x of d.issues) T += `<div class="pp-issue sev${x.sev}${x.by ? ' on' : ''}${!x.by && x.idle >= 3 ? ' late' : ''}">${x.sev >= 3 ? '🔴' : x.sev === 2 ? '🟠' : '🟡'} <span>${esc(x.text)}<small>${esc(x.status || t('（剛發生）'))}</small></span></div>`;
+            T += `<div class="pp-issue-hint">${t('村民會餓、會冷、會抱怨；有人提出對策前，拖越久影響越大。')}</div></div>`;
+        }
+        // v6.52.0 小團體與恩怨連載(大家都看得到)
+        try {
+            const dv = (typeof DARK !== 'undefined' && this.world) ? DARK.view(this.world) : null;
+            if (dv && ((dv.cliques || []).length || (dv.feuds || []).length)) {
+                T += `<div class="pp-issues"><h4 class="pp-h">🫂 ${t('小團體與恩怨')}</h4>`;
+                for (const c of dv.cliques) T += `<div class="pp-issue">🫂 <span>${esc(c.name)}${t('：')}${esc(c.members.map(n => t(n)).join(t('、')))}${c.against.length ? `<small>${esc(t('跟{v}不對盤').replace('{v}', c.against.map(n => t(n)).join(t('、'))))}</small>` : ''}</span></div>`;
+                for (const f of dv.feuds) T += `<div class="pp-issue">⚔️ <span>${esc(f.names.map(n => t(n)).join(' vs '))}<small>${esc(t('恩怨連載第 {n} 回').replace('{n}', f.n))}</small></span></div>`;
+                T += `</div>`;
+            }
+        } catch (e) {}
+        // v6.47.0 村民提案留下的傳統與地標
+        if ((d.traditions || []).length || (d.landmarks || []).length) {
+            T += `<div class="pp-lore"><h4 class="pp-h">🏮 ${t('本鎮的規矩與地標')}</h4>`;
+            for (const x of (d.traditions || []).slice().reverse()) T += `<div class="pp-lore-row">📜 ${t('「')}${esc(x.text)}${t('」')} <small>${esc(t(x.by || ''))} · ${esc(x.id || '')}</small></div>`;
+            for (const x of (d.landmarks || []).slice().reverse()) T += `<div class="pp-lore-row">${esc(x.icon)} ${esc(x.name)} <small>${esc(t(x.by || ''))} · ${esc(x.id || '')}</small></div>`;
+            T += `</div>`;
+        }
+        T += `<h4 class="pp-h">📊 ${t('提案統計')}</h4><div class="pp-summary">${t('提出')} ${d.stats.made} · ${t('已批准')} ${d.stats.approved} · ${t('已否決')} ${d.stats.rejected} · ${t('已完成')} ${d.stats.done}</div>`;
         // v6.51.0 只有你知道的真相:還沒被拆穿的謊言、陰謀,還沒解開的誤會
         try {
             const dv = (typeof DARK !== 'undefined' && this.world) ? DARK.view(this.world) : null;
             if (dv && (dv.secrets.length || dv.mis.length)) {
                 const MIS = { cold: '{a}以為{b}很冷漠（其實只是害羞）', jealous: '{a}以為{b}劈腿（其實只是普通朋友）', overheard: '{a}以為{b}在說自己壞話（其實不是）', price: '{a}以為{b}賣東西坑人（其實是原料漲價）' };
-                html += `<div class="pp-issues pp-secrets"><h4 class="pp-h">🕵️ ${t('只有你知道的真相')} <span class="pp-count">${dv.secrets.length + dv.mis.length}</span></h4>`;
-                for (const s of dv.secrets) html += `<div class="pp-issue">${s.plan ? '🕵️' : s.kind === 'white' ? '💗' : '🎭'} <span>${esc(s.text)}<small>${s.plan ? t('正在籌劃') : t('村民還不知道')}</small></span></div>`;
-                for (const m of dv.mis) html += `<div class="pp-issue">😶 <span>${esc(t(MIS[m.kind] || '').replace('{a}', t(m.a)).replace('{b}', t(m.b)))}<small>${t('誤會還沒解開')}</small></span></div>`;
-                html += `<div class="pp-issue-hint">${t('眼力好的人（守衛、鎮長、學者…）比較容易看穿；被拆穿的人會失去大家的信任。')}</div></div>`;
+                S += `<div class="pp-issues pp-secrets"><h4 class="pp-h">🕵️ ${t('只有你知道的真相')} <span class="pp-count">${dv.secrets.length + dv.mis.length}</span></h4>`;
+                for (const s of dv.secrets) S += `<div class="pp-issue">${s.plan ? '🕵️' : s.kind === 'white' ? '💗' : '🎭'} <span>${esc(s.text)}<small>${s.plan ? t('正在籌劃') : t('村民還不知道')}</small></span></div>`;
+                for (const m of dv.mis) S += `<div class="pp-issue">😶 <span>${esc(t(MIS[m.kind] || '').replace('{a}', t(m.a)).replace('{b}', t(m.b)))}<small>${t('誤會還沒解開')}</small></span></div>`;
+                S += `<div class="pp-issue-hint">${t('眼力好的人（守衛、鎮長、學者…）比較容易看穿；被拆穿的人會失去大家的信任。')}</div></div>`;
             }
         } catch (e) {}
-        // v6.52.0 小團體與恩怨連載(大家都看得到)
-        try {
-            const dv = (typeof DARK !== 'undefined' && this.world) ? DARK.view(this.world) : null;
-            if (dv && ((dv.cliques || []).length || (dv.feuds || []).length)) {
-                html += `<div class="pp-issues"><h4 class="pp-h">🫂 ${t('小團體與恩怨')}</h4>`;
-                for (const c of dv.cliques) html += `<div class="pp-issue">🫂 <span>${esc(c.name)}${t('：')}${esc(c.members.map(n => t(n)).join(t('、')))}${c.against.length ? `<small>${esc(t('跟{v}不對盤').replace('{v}', c.against.map(n => t(n)).join(t('、'))))}</small>` : ''}</span></div>`;
-                for (const f of dv.feuds) html += `<div class="pp-issue">⚔️ <span>${esc(f.names.map(n => t(n)).join(' vs '))}<small>${esc(t('恩怨連載第 {n} 回').replace('{n}', f.n))}</small></span></div>`;
-                html += `</div>`;
-            }
-        } catch (e) {}
-        // v6.50.0 鎮上急事:村民正受影響,拖著沒人管會抱怨、吵架、搬走
-        if ((d.issues || []).length) {
-            html += `<div class="pp-issues"><h4 class="pp-h">⚠️ ${t('鎮上急事')} <span class="pp-count">${d.issues.length}</span></h4>`;
-            for (const x of d.issues) html += `<div class="pp-issue sev${x.sev}${x.by ? ' on' : ''}${!x.by && x.idle >= 3 ? ' late' : ''}">${x.sev >= 3 ? '🔴' : x.sev === 2 ? '🟠' : '🟡'} <span>${esc(x.text)}<small>${esc(x.status || t('（剛發生）'))}</small></span></div>`;
-            html += `<div class="pp-issue-hint">${t('村民會餓、會冷、會抱怨；有人提出對策前，拖越久影響越大。')}</div></div>`;
-        }
-        // v6.47.0 村民提案留下的傳統與地標
-        if ((d.traditions || []).length || (d.landmarks || []).length) {
-            html += `<div class="pp-lore"><h4 class="pp-h">🏮 ${t('本鎮的規矩與地標')}</h4>`;
-            for (const x of (d.traditions || []).slice().reverse()) html += `<div class="pp-lore-row">📜 ${t('「')}${esc(x.text)}${t('」')} <small>${esc(t(x.by || ''))} · ${esc(x.id || '')}</small></div>`;
-            for (const x of (d.landmarks || []).slice().reverse()) html += `<div class="pp-lore-row">${esc(x.icon)} ${esc(x.name)} <small>${esc(t(x.by || ''))} · ${esc(x.id || '')}</small></div>`;
-            html += `</div>`;
-        }
-        html += `<h4 class="pp-h">🗳️ ${t('投票中')} <span class="pp-count">${d.open.length}</span></h4>`;
-        if (!d.open.length) html += `<div class="ob-empty" style="margin:10px 4px"><span class="ob-empty-icon">☕</span>${t('現在沒有投票中的提案。村民會依鎮上的情況陸續提出，通常每天一兩件。')}</div>`;
-        else d.open.forEach(p => { html += card(p, 'decide'); });
-        if (d.shelved.length) { html += `<h4 class="pp-h">📥 ${t('擱置中')} <span class="pp-count">${d.shelved.length}</span></h4>`; d.shelved.forEach(p => { html += card(p, 'decide'); }); }
-        if (d.active.length) { html += `<h4 class="pp-h">🔨 ${t('進行中')}</h4>`; d.active.forEach(p => { html += card(p, 'view'); }); }
-        if (d.history.length) { html += `<h4 class="pp-h">📚 ${t('已定案')}</h4>`; d.history.forEach(p => { html += card(p, 'view'); }); }
+        const nIss = (d.issues || []).length, hot = (d.issues || []).some(x => x.sev >= 3 || (!x.by && x.idle >= 3));
+        let nSec = 0; try { const dv = (typeof DARK !== 'undefined' && this.world) ? DARK.view(this.world) : null; nSec = dv ? dv.secrets.length + dv.mis.length : 0; } catch (e) {}
+        if (!T) T = `<div class="ob-empty" style="margin:10px 4px"><span class="ob-empty-icon">🌤️</span>${t('鎮上目前風平浪靜，沒有急事。')}</div>`;
+        if (!S) S = `<div class="ob-empty" style="margin:10px 4px"><span class="ob-empty-icon">🕊️</span>${t('目前沒有人在說謊、設局或誤會別人。')}</div>`;
+        let tab = this._ppTab; if (!tab) { try { tab = localStorage.getItem('rimtown_pp_tab'); } catch (e) {} } if (!['props', 'town', 'truth'].includes(tab)) tab = 'props';
+        const tabBtn = (k, icon, label, n, dot) => `<button type="button" role="tab" class="pp-tab${tab === k ? ' on' : ''}" aria-selected="${tab === k}" data-pp-tab="${k}">${icon} ${t(label)}${n ? ` <span class="pp-tab-n${dot ? ' hot' : ''}">${n}</span>` : ''}</button>`;
+        let html = `<div class="proposals-panel"><div class="pp-tabs" role="tablist">${tabBtn('props', '🗳️', '提案', d.open.length)}${tabBtn('town', '🏘️', '鎮況', nIss, hot)}${tabBtn('truth', '🕵️', '真相', nSec)}</div>`;
+        html += `<div class="pp-tabhint">${t({ props: '村民自己提案、全鎮投票、鎮長裁決。你只看。', town: '鎮上正在發生的事：急事、小團體、規矩與統計。', truth: '只有你看得到：誰在說謊、設局，誰誤會了誰。' }[tab])}</div>`;
+        html += tab === 'town' ? T : tab === 'truth' ? S : P;
         html += '</div>';
         container.innerHTML = html;
+        container.querySelectorAll('[data-pp-tab]').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); this._ppTab = b.dataset.ppTab; try { localStorage.setItem('rimtown_pp_tab', this._ppTab); } catch (er) {} this.renderProposals(container); container.scrollTop = 0; }));
     },
 
     // v6.42.0 提案分頁頂端的選舉卡:代理鎮長、選舉／補選進度(候選人政見與演說、得票、支持者說的話)、上一屆結果

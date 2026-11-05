@@ -1,5 +1,5 @@
-// RimTown - Frontend App v6.52.0
-const RIMTOWN_APP_VERSION = '6.52.0';
+// RimTown - Frontend App v6.53.0
+const RIMTOWN_APP_VERSION = '6.53.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -2546,12 +2546,14 @@ class RimTownApp {
             this.world.paused = v;
         }
         this._showCornerNotice({ icon: v ? '⏸' : '▶', title: v ? t('遊戲已暫停') : t('遊戲已繼續'), name: '', desc: '' });
+        // v6.53.0 暫停時畫面更新迴圈會停,按鈕文字要在這裡就換掉
+        const pb = document.getElementById('btn-pause'); if (pb) { const pz = !!this.world.paused; pb.textContent = pz ? `▶ ${t('播放')}` : `⏸ ${t('暫停')}`; pb.classList.toggle('active', pz); pb.setAttribute('aria-pressed', String(pz)); }
         this.render();
     }
 
     setupControlListeners() {
         document.getElementById('btn-pause')?.addEventListener('click', () => {
-            this._setPaused(true);
+            this._setPaused(!this.world?.paused); // v6.53.0 播放／暫停合成一顆
         });
         document.getElementById('btn-resume')?.addEventListener('click', () => {
             this._setPaused(false);
@@ -3136,8 +3138,11 @@ class RimTownApp {
         if (clockEl) clockEl.textContent = `${phaseIcon} ${clock.time_str}`;
         const pauseBtn = document.getElementById('btn-pause');
         const resumeBtn = document.getElementById('btn-resume');
-        if (this.state.paused) { pauseBtn?.classList.add('active'); resumeBtn?.classList.remove('active'); }
+        const pausedNow = this.world ? !!this.world.paused : !!this.state.paused; // v6.53.0 用即時狀態(暫停時 state 不會更新)
+        if (pausedNow) { pauseBtn?.classList.add('active'); resumeBtn?.classList.remove('active'); }
         else { pauseBtn?.classList.remove('active'); resumeBtn?.classList.add('active'); }
+        // v6.53.0 一顆按鈕:播放中顯示「⏸ 暫停」,暫停中顯示「▶ 播放」
+        if (pauseBtn) { const lbl = pausedNow ? `▶ ${t('播放')}` : `⏸ ${t('暫停')}`; if (pauseBtn.textContent !== lbl) { pauseBtn.textContent = lbl; pauseBtn.setAttribute('aria-pressed', String(pausedNow)); } }
         const agentCount = Object.keys(this.state.agents).filter(id => id !== 'player').length; // v6.25.0 不算觀察者
         const travelCount = (this.state.travelling_agents || []).length;
         const travelText = travelCount > 0 ? `${t('（')}+${travelCount}${t(' 外出）')}` : '';
@@ -3460,7 +3465,7 @@ class RimTownApp {
     _observerHotkey(e) {
         if (e.metaKey || e.ctrlKey || e.altKey) return;
         const k = e.key;
-        if (k === ' ') { e.preventDefault(); document.getElementById(this.world?.paused ? 'btn-resume' : 'btn-pause')?.click(); return; }
+        if (k === ' ') { e.preventDefault(); this._setPaused(!this.world?.paused); return; }
         if (k === 'f' || k === 'F') { const id = this.selectedAgent || this.chatTarget; if (id && id !== 'player' && this.tileMap?.followAgent) { const on = this.tileMap.isFollowing?.(id); this.tileMap.followAgent(on ? null : id); this._showCornerNotice({ icon: '🎥', title: on ? t('停止跟拍') : t('跟拍'), name: t(this.world?.agents?.[id]?.name || ''), desc: on ? '' : t('拖曳地圖就會取消') }); } return; }
         if (k >= '1' && k <= '4') { const tab = ['economy', 'residents', 'proposals', 'records'][+k - 1]; document.querySelector(`.rt-sidebar-tabs > button[data-tab="${tab}"]`)?.click(); return; }
         if (k === 'Escape') { this._hideNpcCard?.(); this.tileMap?.followAgent?.(null); }

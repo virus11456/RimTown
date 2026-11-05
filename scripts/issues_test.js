@@ -63,7 +63,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 問題解決 → 清掉
       setRes('food', 999); setRes('meals', 50); runDay(); const foodGone = !P.issues.food;
       // 提案頁顯示
-      app.state = w.getState(); const box = document.createElement('div'); app.renderProposals(box); const panel = box.innerHTML;
+      app.state = w.getState(); app._ppTab = 'town'; const box = document.createElement('div'); app.renderProposals(box); const panel = box.innerHTML;
       // 規則模式也有對策(缺衣 → 進貨)
       const cands = P._candidates(w, day).map(c => c.key);
       return { mat: mat?.key, workerTh, keys1, hunger0, hunger1, thoughts1, idle: fd?.idle, memIssue: memIssue.slice(-3), mayorMem: mayorMem.slice(-2), complain: log.filter(x => /抱怨|complain/.test(x)).length,
