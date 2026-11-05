@@ -1,5 +1,5 @@
 // RimTown - app-chat.js：從 app.js 拆出的 玩家聊天：送訊息、對話泡泡、聯絡人、小鎮動態、謠言、聊天封存、意圖與擲骰、自訂村民表單（前半）（v6.0.0 B14）。
-// 用 Object.assign 掛到 RimTownApp.prototype；必須在 app.js 之後、DOMContentLoaded 之前載入（index.html／rimtown.php／sw.js 都要列）。
+// 用 Object.assign 掛到 RimTownApp.prototype；必須在 app.js 之後、DOMContentLoaded 之前載入（index.html／sw.js 都要列）。
 'use strict';
 Object.assign(RimTownApp.prototype, {
     async playerSendMessage(targetId, message, intent, outcome) {

@@ -2,6 +2,8 @@
 
 > 給下一個 Claude 對話視窗：請先完整讀完本文件再開始工作。
 > 上一個 session 結束於 2026-07-15，本文件由該 session 產生。
+>
+> ⚠️ **2026-11 更新**：這份是 v5.14 時期的舊交接，部分內容已過時。WordPress 外掛版（`rimtown.php`）已在 v6.50.0 移除，現在只剩 Vercel 上的 rimtown.cc；`wordpress/` 資料夾名稱沒改，它是 `build.sh` 產出 Vercel 靜態站的來源。發版流程以 README「發版前必跑」為準。
 
 ---
 
@@ -9,11 +11,11 @@
 
 - **RimTown**：RimWorld 風格 AI 小鎮模擬遊戲，純前端 JavaScript（無框架、無建置步驟）
 - 兩種發佈形態，**程式碼完全同步**：
-  - `wordpress/` — WordPress 外掛（`rimtown.php` 提供 shortcode、REST API：登入/註冊/雲端存檔/成就）
+  - `wordpress/` — Vercel 靜態站的來源（`build.sh` 複製到 `public/`；名稱沿用自已移除的 WordPress 外掛版）
   - `chrome-extension/` — Chrome 擴充功能 / 獨立網頁版（`index.html` 直接開啟即可玩）
 - 遊戲引擎核心：`simulation.js`（世界模擬）、`app.js`（UI）、`tilemap.js`（像素地圖）、`chiptune.js`（8-bit BGM）
-- 存檔：未登入/訪客 → localStorage；已登入 → WordPress 雲端（user meta）
-- 線上站點：rimtown.cc（WordPress）
+- 存檔：未登入/訪客 → localStorage；已登入 → `api/` 雲端存檔（Vercel Functions + Postgres）
+- 線上站點：rimtown.cc（Vercel）
 
 ## 2. Git / PR 狀態（2026-07-15 更新）
 
@@ -27,18 +29,16 @@
 
 | 檔案 | 位置 |
 |---|---|
-| `wordpress/rimtown.php` | header `* Version:`、`define('RIMTOWN_VERSION', ...)`、changelog 陣列新增一筆 |
-| `chrome-extension/rimtown.php` | 同上（直接從 wordpress 複製過去即可） |
+| `chrome-extension/changelog.js` | `node scripts/gen-changelog.js --add entry.json` 加一筆（中英對照，會鏡像到 wordpress/） |
+| `chrome-extension/sw.js` | `CACHE_NAME` |
 | `wordpress/app.js` + `chrome-extension/app.js` | 第 1 行註解 + 第 2 行 `RIMTOWN_APP_VERSION` |
-| `chrome-extension/manifest.json` | `"version"` |
-| `README.md` | 下載連結 `rimtown-vX.X.X.zip` + Changelog 新增段落 |
+| `README.md` | Changelog 新增段落 |
 
 ## 4. ⚠️ 雙目錄同步規範
 
-改完 `wordpress/` 的檔案後，一律 `cp` 到 `chrome-extension/`（反之亦然）。兩邊的 js/css/html/php 必須完全一致。`icons/` 只存在於 chrome-extension。
+改完 `wordpress/` 的檔案後，一律 `cp` 到 `chrome-extension/`（反之亦然）。兩邊的 js/css/html 必須完全一致。`icons/` 只存在於 chrome-extension。
 
 其他曾踩過的坑：
-- WordPress 版 HTML 在 `rimtown.php` shortcode 內，`index.html` 是獨立版——**新增 UI 元素兩邊都要加**（曾因 PHP 缺 overlay 元素導致通知全部失效）
 - 避免用 inline style 寫定位，會蓋掉手機版 media query（guest-banner 踩過）
 - 避免 `.header` 這種通用 class 名，會被 WP 主題 CSS 污染
 - `t()` 是全域翻譯函數（i18n.js），小心區域變數遮蔽（`startProject` 踩過）

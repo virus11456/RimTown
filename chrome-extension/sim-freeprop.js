@@ -122,16 +122,17 @@ if (typeof PROPOSAL_KINDS !== 'undefined') PROPOSAL_KINDS.free = { icon: '💭',
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype;
     // AI 自己發想;失敗就回到原本「從幾個點子裡挑」的流程
-    ProposalSystem.prototype._inventLLM = async function (w, day, a, fallback) {
+    ProposalSystem.prototype._inventLLM = async function (w, day, a, fallback, hints) {
         let j = null;
-        try { j = await w.conversationEngine.inventProposal(w, a); } catch (e) { console.warn('[Proposals] invent', e); }
+        try { j = await w.conversationEngine.inventProposal(w, a, hints); } catch (e) { console.warn('[Proposals] invent', e); }
         if (this.open().length >= ProposalSystem.MAX_OPEN) return;
         if (!j || j.skip) { if (j?.skip) { w.logMessageT?.('council', '🤔 {who}想了想，今天沒什麼要跟大家提的。', { who: a.name }, a.name); return; } return fallback(); }
         const fx0 = FREEPROP.sanitize(w, j.effects); if (!fx0.length) return fallback();
         const { fx, cost } = FREEPROP.balance(fx0, FREEPROP.sanitizeCost(j.cost));
         const title = String(j.title || '').trim().replace(/^[「『"“]+|[」』"”]+$/g, ''); if (title.length < 2) return fallback();
         const cat = FREEPROP.CATS.includes(j.category) ? j.category : 'welfare';
-        const cand = { kind: 'free', key: 'free:' + title.slice(0, 12), jobs: [a.job?.key], make: () => ({ kind: 'free', key: 'free:' + title.slice(0, 12), tk: (typeof clipText === 'function' ? clipText(title, 30) : title.slice(0, 30)), tp: {}, dk: String(j.pitch || '').trim().slice(0, 160), dp: {}, cost, fx, category: cat, jobBias: [a.job?.key] }) };
+        const addresses = (Array.isArray(j.addresses) ? j.addresses : []).map(n => (j._issueKeys || [])[Math.round(Number(n)) - 1]).filter(Boolean).slice(0, 3); // v6.50.0 要處理哪幾件急事
+        const cand = { kind: 'free', key: 'free:' + title.slice(0, 12), jobs: [a.job?.key], make: () => ({ addresses, kind: 'free', key: 'free:' + title.slice(0, 12), tk: (typeof clipText === 'function' ? clipText(title, 30) : title.slice(0, 30)), tp: {}, dk: String(j.pitch || '').trim().slice(0, 160), dp: {}, cost, fx, category: cat, jobBias: [a.job?.key] }) };
         const p = this._createWith(w, day, cand, a);
         if (p) { p.llm = true; p.pitch = String(j.pitch || '').trim().slice(0, 160); try { w.onProposalEvent?.('vote', this.toItem(w, p)); } catch (e) {} }
     };
@@ -151,7 +152,7 @@ if (typeof ConversationEngine !== 'undefined') {
     const CE = ConversationEngine.prototype;
     const _tb = CE._townBrief;
     CE._townBrief = function (world) { return _tb.call(this, world) + FREEPROP.briefExtra(world); };
-    ConversationEngine.prototype.inventProposal = async function (world, a) {
+    ConversationEngine.prototype.inventProposal = async function (world, a, hints) {
         if (!this.fullAgentOk(world) || !a) return null;
         const b = this._agentBrief(world, a);
         const names = Object.values(world.agents).filter(x => !x.isPlayer && !x.isDead && x !== a).slice(0, 14).map(x => (LLM_LANG.get() === 'en' && typeof I18N !== 'undefined') ? I18N.localizeNames(x.name, true) : x.name).join(t('、'));
@@ -159,10 +160,14 @@ if (typeof ConversationEngine !== 'undefined') {
         const done = new Set([...(world.buildings?.completed || []), ...(world.buildings?.projects || [])].map(p => p.buildingKey || p.key || p.name));
         const builds = Object.entries(BT).filter(([k, v]) => !done.has(k) && !done.has(v.name) && (!world.research?.isUnlocked || world.research.isUnlocked(k))).slice(0, 8).map(([k, v]) => `${k}${t('＝')}${t(v.name)}`).join(t('、'));
         const res = Object.values(world.research?.projects || {}).filter(p => p.status === 'available').slice(0, 6).map(p => `${p.key}${t('＝')}${t(p.name)}`).join(t('、'));
+        // v6.50.0 系統看到的鎮況(越急越前面);AI 可以照著提、改編,或完全不管
+        const cut = (s, n) => (typeof clipText === 'function' ? clipText(String(s || ''), n) : String(s || '').slice(0, n));
+        const hintTxt = (hints || []).slice(0, 6).map(h => `- ${cut(h.title, 30)}${h.desc ? t('——') + cut(h.desc, 50) : ''}`).join('\n');
+        const iss = (typeof TOWN_ISSUES !== 'undefined') ? TOWN_ISSUES.promptBlock(world.proposals) : { txt: '', keys: [] }; // v6.50.0 鎮上急事(拖越久大家越不滿)
         const prompt = `${t('你正在扮演「')}${b.name}${t('」（')}${b.age}${t('歲，')}${b.job}${t('；')}${t('性格')}${t('：')}${b.traits}${t('；')}${t('在乎')}${t('：')}${b.values}${t('；')}${t('心情')} ${b.mood}/100${t('）。')}
-${t('你想向全鎮提一個你自己想出來的提案。可以很實際，也可以天馬行空、有個人色彩（例如替廣場的貓立雕像、每週一天大家只能說真話、讓鐵匠去學醫），但要符合你的個性、記憶和鎮上現況。')}
+${t('你想向全鎮提一個你自己想出來的提案。可以很實際，也可以天馬行空、有個人色彩（例如替廣場的貓立雕像、每週一天大家只能說真話、讓鐵匠去學醫），但要符合你的個性、記憶和鎮上現況。')}${t('從你現在真正的需要和心情出發：餓了、冷了、缺東西、開心、難過或嫉妒，都會影響你想提什麼。')}
 ${t('【鎮況】')}${this._townBrief(world)}
-${b.mem.length ? `${t('【你最近記得的事】')}${b.mem.join('／')}\n` : ''}${t('【鎮上的人】')}${names}
+${b.mem.length ? `${t('【你最近記得的事】')}${b.mem.join('／')}\n` : ''}${iss.txt ? `${t('【鎮上的急事（大家正受影響，拖越久越不滿；要處理哪一件就在 addresses 填它的編號）】')}\n${iss.txt}\n` : ''}${hintTxt ? `${t('【鎮上眼前的狀況與大家在談的事（越前面越急；可以照著提、改成你的版本，也可以都不管、提你自己的點子）】')}\n${hintTxt}\n` : ''}${t('【鎮上的人】')}${names}
 ${builds ? `${t('【能蓋的建築】')}${builds}\n` : ''}${res ? `${t('【能研究的】')}${res}\n` : ''}${t('提案的效果只能用下面幾種（effects 陣列，最多 4 個；好處要有代價，太划算會被打折）：')}
 {"type":"resource","res":"food|wood|stone|metal|cloth|herbs|silver|tools|medicine","amount":-150~150}
 {"type":"daily","res":"…","amount":-8~8,"days":3~20}
@@ -171,10 +176,11 @@ ${builds ? `${t('【能蓋的建築】')}${builds}\n` : ''}${res ? `${t('【能�
 {"type":"modifier","key":"research_bonus|farm_bonus|merchant_chance|festival_chance|immigration_chance|defense_bonus|sell_bonus|gathering_bonus","value":-0.3~0.3,"days":5~30}
 {"type":"build","key":"${t('建築代碼')}"} {"type":"research","key":"${t('研究代碼')}"} {"type":"job","name":"${t('名字')}","job":"farmer|doctor|…"}
 {"type":"tradition","text":"${t('一句新規矩或傳統')}"} {"type":"landmark","name":"${t('地標名')}","icon":"${t('一個表情符號')}"}
-${t('只輸出 JSON：{"title":"提案名（15 字內）","pitch":"你向全鎮說明的一兩句話（第一人稱，60 字內）","category":"economy|welfare|defense|culture|nature|freedom","cost":{"silver":數字,…},"effects":[…]}；今天不想提就輸出 {"skip":true}')}`;
+${t('只輸出 JSON：{"title":"提案名（15 字內）","pitch":"你向全鎮說明的一兩句話（第一人稱，60 字內）","category":"economy|welfare|defense|culture|nature|freedom","cost":{"silver":數字,…},"effects":[…]}；今天不想提就輸出 {"skip":true}')}${iss.txt ? t('（要處理急事時加上 "addresses":[編號]）') : ''}`;
         this._countNpcLlmUse(world);
         const j = await this._askJson(prompt, 420);
         if (!j || typeof j !== 'object' || Array.isArray(j)) return null;
+        j._issueKeys = iss.keys;
         return j;
     };
 }

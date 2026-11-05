@@ -1,6 +1,6 @@
 // RimTown Serverless API 共用函式庫(Vercel Functions + Neon Postgres)
 // v5.82.0 移除 Vercel Blob 回退:Blob 已停權、資料早已搬進 Postgres,存取層只剩 rimtown_kv 一條路
-// 鏡像 wordpress/rimtown.php 的 REST 合約,前端 RimTownAuth 幾乎零改動即可切換
+// 前端 RimTownAuth 的帳號 REST 合約(最早仿 WordPress 外掛版;WordPress 版已在 v6.50.0 移除,X-WP-Nonce 標頭仍當 token 備援接受)
 const crypto = require('crypto');
 
 const JWT_SECRET = process.env.JWT_SECRET || '';

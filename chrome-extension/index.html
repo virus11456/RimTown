@@ -372,6 +372,7 @@
     <script src="sim-ideas.js"></script>
     <script src="sim-towngen.js"></script>
     <script src="sim-freeprop.js"></script>
+    <script src="sim-issues.js"></script>
     <script src="chiptune.js"></script>
     <script src="tilemap.js"></script>
     <script src="vendor/three.min.js"></script>
@@ -391,8 +392,7 @@
     <script>
     // PWA Service Worker Registration & Install Prompt
     (function() {
-        // Only register SW in web context (not Chrome Extension)
-        if ('serviceWorker' in navigator && (typeof chrome === 'undefined' || !chrome.runtime?.id)) {
+        if ('serviceWorker' in navigator) {
             // v6.39.1 新版 Service Worker 接管後:還在首頁就直接重新整理拿新版;已經在遊戲裡就只提示,不打斷進度
             const hadController = !!navigator.serviceWorker.controller;
             navigator.serviceWorker.addEventListener('controllerchange', () => {

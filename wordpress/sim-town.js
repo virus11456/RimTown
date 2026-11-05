@@ -1,5 +1,5 @@
 // RimTown - sim-town.js：從 simulation.js 拆出的 地點與城鎮主題、跨鎮親緣、TownMap、事件池與 EventSystem、選舉 ElectionSystem（v6.1.0 B14）。
-// 純粹搬移頂層宣告，共用全域詞法範圍；載入順序：sim-agent → sim-conversation → sim-town → sim-economy → sim-society → simulation(World) → sim-systems（index.html／rimtown.php／sw.js 都要列）。
+// 純粹搬移頂層宣告，共用全域詞法範圍；載入順序：sim-agent → sim-conversation → sim-town → sim-economy → sim-society → simulation(World) → sim-systems（index.html／sw.js 都要列）。
 // --- Town Map ---
 const CORE_LOCATIONS = [
     ['town_square',[t('城鎮廣場'),t('中央廣場'),t('市集廣場'),t('村莊綠地')],t('聚落的核心'),'social',[15,25]],

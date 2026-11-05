@@ -71,7 +71,7 @@ class ProposalSystem {
         this._lastDay = null;
     }
     static MAX_OPEN = 4;
-    static FREE_SHARE = 0.6; // v6.47.0 完整智能體模式下,村民自己發想提案的比例
+    static FREE_SHARE = 1; // v6.47.0 完整智能體模式下,村民自己發想提案的比例(v6.50.0 起全部自己想;系統看到的鎮況當參考提示給 AI)
     static DECIDE_DAYS = 2; // v6.37.0 投票兩天後鎮長裁決(七成的人投完票、過了一天也會提早裁決)
     static SHELF_DAYS = 10;
     static WAIT_DAYS = 7;
@@ -204,18 +204,27 @@ class ProposalSystem {
         const open = this.open();
         if (open.length >= ProposalSystem.MAX_OPEN) return;
         const cands = this._candidates(w, day);
-        if (!cands.length) return;
         const pickWeighted = (arr) => { const total = arr.reduce((s, c) => s + c.weight, 0); let r = Math.random() * total; for (const c of arr) { r -= c.weight; if (r <= 0) return c; } return arr[0]; };
         // v6.39.0 完整智能體:今天輪到發言的人自己決定要不要提、提什麼(一天一次 LLM);失敗退回規則
         const eng = w.conversationEngine;
+        const canInvent = typeof FREEPROP !== 'undefined' && !!eng?.inventProposal && !!this._inventLLM;
+        // v6.50.0 系統沒偵測到什麼狀況時,村民還是可以自己想點子
+        if (!cands.length) {
+            if (w.fullAgentMode && canInvent && eng.fullAgentOk?.(w) && Math.random() < 0.5) { const a = this._proposer(w, day, [], null); if (a) this._inventLLM(w, day, a, () => {}, []); }
+            return;
+        }
         if (w.fullAgentMode && eng?.chooseProposal && eng.fullAgentOk?.(w)) {
             const pick = pickWeighted(cands);
             const a = this._proposer(w, day, pick.jobs || [], pick.pred); if (!a) return;
             const fits = (c) => !c.jobs || !c.jobs.length || c.jobs.includes(a.job?.key) || c === pick;
             const alts = [pick, ...cands.filter(c => c !== pick && fits(c)).sort((x, y) => y.weight - x.weight)].slice(0, 5);
             const summaries = alts.map(c => { const base = c.make(a); return { title: this._fill(base.tk, base.tp), desc: this._fill(base.dk, base.dp), cost: base.cost || {} }; });
-            // v6.47.0 一半以上的時候讓村民自己發想(天馬行空也行,效果落在白名單裡);發想失敗就回到從點子裡挑
-            if (typeof FREEPROP !== 'undefined' && eng.inventProposal && this._inventLLM && Math.random() < ProposalSystem.FREE_SHARE) { this._inventLLM(w, day, a, () => this._generateLLM(w, day, a, alts, summaries, pick)); return; }
+            // v6.47.0 讓村民自己發想(天馬行空也行,效果落在白名單裡);發想失敗(AI 沒回、效果全不合格)才回到從點子裡挑
+            // v6.50.0 系統偵測到的鎮況(救濟、調解、審判、新建築、研究……)依急迫度排前面,當參考提示交給 AI,要不要採用由它決定
+            if (canInvent && Math.random() < ProposalSystem.FREE_SHARE) {
+                const hints = cands.slice().sort((x, y) => y.weight - x.weight).slice(0, 6).map(c => { try { const base = c.make(a); return { title: this._fill(base.tk, base.tp), desc: this._fill(base.dk, base.dp) }; } catch (e) { return null; } }).filter(Boolean);
+                this._inventLLM(w, day, a, () => this._generateLLM(w, day, a, alts, summaries, pick), hints); return;
+            }
             this._generateLLM(w, day, a, alts, summaries, pick);
             return;
         }

@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.49.0
-const RIMTOWN_APP_VERSION = '6.49.0';
+// RimTown - Frontend App v6.50.0
+const RIMTOWN_APP_VERSION = '6.50.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -152,17 +152,11 @@ class RimTownAuth {
         this.userId = 0;
         this._restUrl = '';
         this._nonce = '';
-        this._initFromWP();
+        this._initSession();
     }
 
-    _initFromWP() {
-        if (typeof rimtownAuth !== 'undefined') {
-            this._restUrl = rimtownAuth.restUrl;
-            this._nonce = rimtownAuth.nonce;
-            this.loggedIn = !!rimtownAuth.loggedIn;
-            this.username = rimtownAuth.username || '';
-            this.userId = rimtownAuth.userId || 0;
-        } else if (location.protocol.startsWith('http')) {
+    _initSession() {
+        if (location.protocol.startsWith('http')) {
             // Serverless 模式(Vercel 靜態站):帳號 API 在同網域 /api/,JWT 存 localStorage
             this._serverless = true;
             this._restUrl = '/api/';
@@ -1856,12 +1850,11 @@ class RimTownApp {
             const speed = localStorage.getItem('sim_speed');
             if (speed) this.simSpeed = parseInt(speed);
             // v5.65.0 AI 全面內建:所有金鑰由伺服器(Vercel 環境變數)統一保管,玩家端不再有任何
-            // 自備金鑰設定。舊版留在本機/擴充功能儲存區的金鑰一律清除。
+            // 自備金鑰設定。舊版留在本機的金鑰一律清除。
             try {
                 localStorage.removeItem('llm_api_key');
                 localStorage.removeItem('fallback_groq_key');
                 localStorage.removeItem('llm_model');
-                if (typeof chrome !== 'undefined' && chrome.storage) chrome.storage.local.remove(['llm_provider', 'llm_api_key', 'fallback_groq_key']);
             } catch (e) {}
             this._buildLLMClient();
         } catch(e) { console.log('[RimTown] Settings load error:', e); }
@@ -1903,8 +1896,8 @@ class RimTownApp {
             console.log('[RimTown] LLM client: 玩家自備', byok.provider, byok.model || '(default model)');
             return;
         }
-        // 有 /api/chat 的站(rimtown.cc)走內建 AI;WordPress 版沒有代理端點 → 模擬對話
-        const provider = (typeof rimtownAuth === 'undefined' && location.protocol.startsWith('http')) ? 'server' : 'none';
+        // 網站(rimtown.cc)走內建 AI /api/chat;本機開檔(file://)沒有代理端點 → 模擬對話
+        const provider = location.protocol.startsWith('http') ? 'server' : 'none';
         try { localStorage.setItem('llm_provider', provider); } catch (e) {}
         if (provider === 'server') {
             this.llmClient = new LLMClient('server', 'server');
@@ -1981,9 +1974,6 @@ class RimTownApp {
         this.restartSimulation();
         this._updateLLMStatus();
         localStorage.setItem('sim_speed', speed);
-        try {
-            if (typeof chrome !== 'undefined' && chrome.storage) await chrome.storage.local.set({ sim_speed: speed });
-        } catch(e) {}
         // v5.33.0 設定推上帳號雲端(額度隨帳號走)
         this._pushCloudSettings();
     }
@@ -2052,7 +2042,7 @@ class RimTownApp {
     // v6.34.0 任務鏈資料只有非觀察者模式才需要(目前一律觀察者,保留給日後):動態插入 quest-data.js
     _loadQuestData() {
         if (window.RIMTOWN_QUEST_CHAINS || this._questDataLoading) return this._questDataLoading || Promise.resolve();
-        this._questDataLoading = new Promise((res) => { const sc = document.createElement('script'); const base = (document.querySelector('script[src*="quest-system.js"]')?.src || 'quest-system.js').replace(/quest-system\.js.*$/, ''); sc.src = base + 'quest-data.js?v=' + RIMTOWN_APP_VERSION; /* WordPress 外掛路徑也對得到 */ sc.onload = () => { try { this.world?.questSystem?.init?.(); } catch (e) {} res(); }; sc.onerror = () => res(); document.head.appendChild(sc); });
+        this._questDataLoading = new Promise((res) => { const sc = document.createElement('script'); const base = (document.querySelector('script[src*="quest-system.js"]')?.src || 'quest-system.js').replace(/quest-system\.js.*$/, ''); sc.src = base + 'quest-data.js?v=' + RIMTOWN_APP_VERSION; /* 跟著 quest-system.js 的路徑找 */ sc.onload = () => { try { this.world?.questSystem?.init?.(); } catch (e) {} res(); }; sc.onerror = () => res(); document.head.appendChild(sc); });
         return this._questDataLoading;
     }
     startSimulation() {
@@ -2741,12 +2731,7 @@ class RimTownApp {
                 if (this.currentTownId) {
                     this._saveCurrentTown();
                 }
-                const json = JSON.stringify(saveData);
-                if (typeof chrome !== 'undefined' && chrome.storage) {
-                    await chrome.storage.local.set({ rimtown_save: json });
-                } else {
-                    localStorage.setItem('rimtown_save', json);
-                }
+                localStorage.setItem('rimtown_save', JSON.stringify(saveData));
                 this.world.logMessage('system', t('遊戲已儲存。'));
             }
             return true;
@@ -2759,13 +2744,7 @@ class RimTownApp {
 
     async tryLoadGame() {
         try {
-            let json = null;
-            if (typeof chrome !== 'undefined' && chrome.storage) {
-                const data = await chrome.storage.local.get(['rimtown_save']);
-                json = data.rimtown_save;
-            } else {
-                json = localStorage.getItem('rimtown_save');
-            }
+            const json = localStorage.getItem('rimtown_save');
             if (!json) return false;
             const saveData = JSON.parse(json);
             return this.world.loadSave(saveData);
@@ -2774,11 +2753,7 @@ class RimTownApp {
 
     async deleteSave() {
         try {
-            if (typeof chrome !== 'undefined' && chrome.storage) {
-                await chrome.storage.local.remove('rimtown_save');
-            } else {
-                localStorage.removeItem('rimtown_save');
-            }
+            localStorage.removeItem('rimtown_save');
         } catch(e) {}
     }
 
@@ -2840,11 +2815,7 @@ class RimTownApp {
                     if (this.currentTownId) {
                         this._saveCurrentTown();
                     }
-                    if (typeof chrome !== 'undefined' && chrome.storage) {
-                        chrome.storage.local.set({ rimtown_save: json });
-                    } else {
-                        localStorage.setItem('rimtown_save', json);
-                    }
+                    localStorage.setItem('rimtown_save', json);
                 }
             } catch(e) {}
         }
@@ -3523,11 +3494,11 @@ class RimTownApp {
     }
 }
 
-// Initialize — only when the game container exists (WordPress shortcode loaded)
+// Initialize — only when the game container exists
 (function() {
     const init = () => {
         if (!document.getElementById('rimtown-app') && !document.getElementById('town-map-canvas')) return;
-        if (typeof RimTownApp.prototype.renderQuest !== 'function') { console.error('[RimTown] app-*.js 分檔未載入（index.html / rimtown.php / sw.js 的腳本清單要含 app-landing/notify/loop/towns/chat/mobile/panels/economy/records）'); }
+        if (typeof RimTownApp.prototype.renderQuest !== 'function') { console.error('[RimTown] app-*.js 分檔未載入（index.html / sw.js 的腳本清單要含 app-landing/notify/loop/towns/chat/mobile/panels/economy/records）'); }
         const app = new RimTownApp();
         window.rimtownApp = app; // 除錯/測試用全域參照
         window.addEventListener('resize', () => { if (app.state) app.renderMap(); });

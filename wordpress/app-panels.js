@@ -1,5 +1,5 @@
 // RimTown - app-panels.js：從 app.js 拆出的 側欄分頁：技能、自訂村民與外觀編輯、結局、城鎮身分、每日焦點、故事動態、居民列表、村民詳情、設定、日誌、事件（v6.0.0 B14）。
-// 用 Object.assign 掛到 RimTownApp.prototype；必須在 app.js 之後、DOMContentLoaded 之前載入（index.html／rimtown.php／sw.js 都要列）。
+// 用 Object.assign 掛到 RimTownApp.prototype；必須在 app.js 之後、DOMContentLoaded 之前載入（index.html／sw.js 都要列）。
 'use strict';
 Object.assign(RimTownApp.prototype, {
     _renderSkills(skillsData) {
@@ -908,6 +908,12 @@ Object.assign(RimTownApp.prototype, {
         html += `<div class="pp-summary">${t('提出')} ${d.stats.made} · ${t('已批准')} ${d.stats.approved} · ${t('已否決')} ${d.stats.rejected} · ${t('已完成')} ${d.stats.done}</div>`;
         html += `<div style="font-size:0.7rem;color:var(--text-muted);margin:0 0 6px">${t('村民自己提案、全鎮投票、鎮長裁決。你只看。')}</div>`; // v6.37.0
         html += this._electionCardHtml(); // v6.42.0 鎮長選舉／代理鎮長
+        // v6.50.0 鎮上急事:村民正受影響,拖著沒人管會抱怨、吵架、搬走
+        if ((d.issues || []).length) {
+            html += `<div class="pp-issues"><h4 class="pp-h">⚠️ ${t('鎮上急事')} <span class="pp-count">${d.issues.length}</span></h4>`;
+            for (const x of d.issues) html += `<div class="pp-issue sev${x.sev}${x.by ? ' on' : ''}${!x.by && x.idle >= 3 ? ' late' : ''}">${x.sev >= 3 ? '🔴' : x.sev === 2 ? '🟠' : '🟡'} <span>${esc(x.text)}<small>${esc(x.status || t('（剛發生）'))}</small></span></div>`;
+            html += `<div class="pp-issue-hint">${t('村民會餓、會冷、會抱怨；有人提出對策前，拖越久影響越大。')}</div></div>`;
+        }
         // v6.47.0 村民提案留下的傳統與地標
         if ((d.traditions || []).length || (d.landmarks || []).length) {
             html += `<div class="pp-lore"><h4 class="pp-h">🏮 ${t('本鎮的規矩與地標')}</h4>`;

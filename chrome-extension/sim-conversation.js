@@ -1,5 +1,5 @@
 // RimTown - sim-conversation.js：從 simulation.js 拆出的 鎮民動態、八卦網、對話引擎 ConversationEngine、LLM 客戶端（v6.1.0 B14）。
-// 純粹搬移頂層宣告，共用全域詞法範圍；載入順序：sim-agent → sim-conversation → sim-town → sim-economy → sim-society → simulation(World) → sim-systems（index.html／rimtown.php／sw.js 都要列）。
+// 純粹搬移頂層宣告，共用全域詞法範圍；載入順序：sim-agent → sim-conversation → sim-town → sim-economy → sim-society → simulation(World) → sim-systems（index.html／sw.js 都要列）。
 // --- Gossip Network ---
 // --- v5.2.0 鎮民動態(小鎮朋友圈) ---
 class TownFeedSystem {

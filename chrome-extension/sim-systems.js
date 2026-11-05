@@ -1,5 +1,5 @@
 // RimTown - sim-systems.js：從 simulation.js 拆出的 聲望、天氣與災難、議會、每日決策、商店、事件選擇、村民求助（v6.1.0 B14）。
-// 純粹搬移頂層宣告，共用全域詞法範圍；載入順序：sim-agent → sim-conversation → sim-town → sim-economy → sim-society → simulation(World) → sim-systems（index.html／rimtown.php／sw.js 都要列）。
+// 純粹搬移頂層宣告，共用全域詞法範圍；載入順序：sim-agent → sim-conversation → sim-town → sim-economy → sim-society → simulation(World) → sim-systems（index.html／sw.js 都要列）。
 // ============================================================
 // v4.0 - Reputation System (聲望系統)
 // ============================================================
