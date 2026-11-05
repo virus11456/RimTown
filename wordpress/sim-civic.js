@@ -122,6 +122,7 @@ const CIVIC = (() => {
     const chip = (w, a) => (jailed(w, a) ? `⛓️ ${t('坐牢中')}` : '');
     return { S, daily, crime, taxProposal, applyTax, taxVote, rent, grand, migration, landPrice, jailed, view, chip };
 })();
+if (typeof PROPOSAL_KINDS !== 'undefined') PROPOSAL_KINDS.tax = { icon: '💰', label: '稅率' };
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;
     PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { if (w.observerMode) CIVIC.daily(w); } catch (e) { console.warn('[Civic] daily', e); } return r; };

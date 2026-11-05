@@ -102,7 +102,7 @@ if (typeof TIERS !== 'undefined') {
 if (typeof World !== 'undefined') World.prototype.onCrown = function (a, how) { try { if (this.faith) FAITH2.coronation(this, a, how); } catch (e) { console.warn('[Faith2] crown', e); } };
 if (typeof IdeaSystem !== 'undefined') {
     const IP = IdeaSystem.prototype; const _open = IP.openness, _done = IP.onResearchComplete;
-    IP.openness = function (w, a, key) { let o = _open.call(this, w, a, key); try { if (w.faith) { const p = FAITH.pietyOf(w, a); if (p >= 70) o -= 0.6; if (FAITH2.headRel(w, a)) o -= 0.4; } } catch (e) {} return o; };
+    IP.openness = function (w, a, key) { let o = _open.call(this, w, a, key); try { if (w.faith) { const p = FAITH.pietyOf(w, a); if (p >= 70) o -= 0.3; if (FAITH2.headRel(w, a)) o -= 0.3; /* 只是推一把,不是擋死 */ } } catch (e) {} return o; };
     IP.onResearchComplete = function (w, key, ...rest) { const r = _done.call(this, w, key, ...rest); try { if (w.observerMode && w.faith) FAITH2.onResearch(w, key); } catch (e) {} return r; };
 }
 if (typeof FAITH !== 'undefined') {

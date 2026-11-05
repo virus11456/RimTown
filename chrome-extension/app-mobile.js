@@ -377,6 +377,7 @@ Object.assign(RimTownApp.prototype, {
             if (ag && typeof CLASS !== 'undefined' && this.world.classes) { const lv = CLASS.level(this.world, ag), tt = CLASS.titleOf(this.world, ag); chips.push(`${CLASS.NAMES[lv].icon} ${CLASS.label(this.world, ag)}${tt ? ' · ' + tt : ''}`); } // v6.58.0 社會階層與頭銜
             if (ag && typeof WALLET !== 'undefined' && this.world.wallet) { const n = Math.round(WALLET.get(this.world, ag)); chips.push(`👛 ${n} ${t('銀幣')}${t('（')}${t(WALLET.word(n))}${t('）')}`); } // v6.54.0 個人錢包
             if (ag && typeof PETS !== 'undefined') { const pd = PETS.describe(this.world, ag); if (pd) chips.push(pd); }
+            if (ag && typeof MIND !== 'undefined' && this.world.mind) { const A = this.world.mind.amb?.[ag.agentId]; if (A) chips.push(`${t('心願')}${t('：')}${MIND.ambText(this.world, A)}`); const dy = MIND.lastDiary(this.world, ag); if (dy) chips.push(`📔 ${dy.length > 40 ? dy.slice(0, 40) + '…' : dy}`); } // v6.68.0 心願與日記
             if (ag && typeof CIVIC !== 'undefined' && this.world.civic) { const cc = CIVIC.chip(this.world, ag); if (cc) chips.push(cc); } // v6.67.0 坐牢
             if (ag && typeof GOODS !== 'undefined' && this.world.goods) { const gc = GOODS.chip(this.world, ag); if (gc) chips.push(gc); } // v6.65.0 收藏
             if (ag && typeof BANK !== 'undefined' && this.world.bank) { const bc = BANK.chip(this.world, ag); if (bc) chips.push(bc); } // v6.64.0 銀行

@@ -952,6 +952,11 @@ Object.assign(RimTownApp.prototype, {
                 T += `<div class="pp-issue-hint">${t('城鎮以上，要當過下一級的首長，或在本級議會當過一季議員，才能參選首長。')}</div></div>`;
             }
         } catch (e) {}
+        // v6.68.0 民意
+        try { if (typeof MIND !== 'undefined' && this.world.mind) { const V = MIND.poll(this.world);
+            T += `<div class="pp-issues pp-mind"><h4 class="pp-h">🗣️ ${t('民意')}</h4>`;
+            for (const x of V) { const pct = Math.round((x.avg + 2) / 4 * 100); T += `<div class="pp-op-row"><span>${esc(x.name)}</span><span class="pp-op-bar"><i style="left:${pct}%"></i></span><small>${t('支持')} ${x.pro} · ${t('反對')} ${x.con}</small></div>`; }
+            T += `</div>`; } } catch (e) {}
         // v6.67.0 治安與民生
         try { if (typeof CIVIC !== 'undefined' && this.world.civic) { const V = CIVIC.view(this.world);
             T += `<div class="pp-issues pp-civic"><h4 class="pp-h">👮 ${t('治安與民生')}${V.slum ? ` <small>🏚️ ${t('貧民區')}</small>` : ''}</h4>`;
