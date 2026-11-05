@@ -972,6 +972,13 @@ Object.assign(RimTownApp.prototype, {
             T += `<div class="pp-issues pp-press"><h4 class="pp-h">📰 ${t('報社')} <span class="pp-count">${V.length}</span></h4>`;
             for (const P of V) T += `<div class="pp-press-row${P.banned && !P.underground ? ' banned' : ''}"><b>${P.icon} ${esc(P.name)}</b> <small>${esc(P.stance)} · ${t('讀者')} ${P.readers} · ${t('可信度')} ${P.cred}${P.journo ? ' · ' + t('記者') + t('：') + esc(P.journo) : ''}${P.banned ? ' · ' + (P.underground ? t('地下報紙') : t('被查禁')) : ''}</small>${P.last ? `<div class="pp-tier-line">${t('「')}${esc(P.last)}${t('」')}</div>` : ''}</div>`;
             T += `</div>`; } } catch (e) {}
+        // v6.66.0 外交
+        try { if (typeof DIPLO !== 'undefined' && this.world.diplo) { const V = DIPLO.view(this.world); if (V.places.length) {
+            T += `<div class="pp-issues pp-diplo"><h4 class="pp-h">🤝 ${t('外交')}</h4><div class="pp-tid-places">`;
+            for (const p of V.places) T += `<span class="pp-tid-place pp-dip${p.rel >= 40 ? ' good' : p.rel <= -30 ? ' bad' : ''}">${p.icon} ${esc(p.name)} <b>${p.rel > 0 ? '+' : ''}${p.rel}</b> <small>${esc(p.status)}${p.wed ? ' · 💍 ' + esc(p.wed) : ''}</small></span>`;
+            T += `</div>`; for (const x of V.log) T += `<div class="pp-tid-item">${esc(x)}</div>`;
+            if (V.why) T += `<div class="pp-issue-hint">${t('首長的想法')}${t('：')}${esc(V.why)}</div>`;
+            T += `</div>`; } } } catch (e) {}
         // v6.62.0 外地消息:遠方地點、上次消息幾天前、誰帶回來;最近的消息與可信度
         try { if (typeof TIDINGS !== 'undefined' && this.world.tidings) { const V = TIDINGS.view(this.world);
             T += `<div class="pp-issues pp-tidings"><h4 class="pp-h">📨 ${t('外地消息')} <span class="pp-count">${V.places.length}</span></h4>`;

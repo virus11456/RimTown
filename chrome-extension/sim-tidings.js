@@ -110,7 +110,7 @@ const TIDINGS = (() => {
         }
         // 消息到了
         const due = T.inbox.filter(x => x.arrive <= d); T.inbox = T.inbox.filter(x => x.arrive > d);
-        for (const x of due.slice(0, 3)) deliver(w, T, x);
+        for (const x of due.slice(0, 3)) (typeof TIDINGS !== 'undefined' ? TIDINGS.deliver : deliver)(w, T, x); // 走公開的 deliver,外交等模組才接得到
         spread(w, T, d);
     }
     // 口耳相傳:知道的人跟交情好的人說;旅人的版本傳著傳著更誇張
