@@ -952,6 +952,14 @@ Object.assign(RimTownApp.prototype, {
                 T += `<div class="pp-issue-hint">${t('城鎮以上，要當過下一級的首長，或在本級議會當過一季議員，才能參選首長。')}</div></div>`;
             }
         } catch (e) {}
+        // v6.64.0 銀行
+        try { if (typeof BANK !== 'undefined' && this.world.bank) { const V = BANK.view(this.world);
+            const st = V.status === 'run' ? `😱 ${t('擠兌中')}` : V.status === 'failed' ? `💥 ${t('已倒閉')}` : V.open ? `✅ ${t('營業中')}` : t('還沒開');
+            T += `<div class="pp-issues pp-bank"><h4 class="pp-h">🏦 ${t('銀行')} <small>${st}</small></h4>`;
+            if (V.open) T += `<div class="pp-tier-line">${t('銀行家')}${t('：')}${esc(V.banker || '')} · ${t('放款利率')} ${V.rate}%${V.why ? ` ${t('（')}${esc(V.why)}${t('）')}` : ''}</div><div class="pp-tier-line">${t('存款')} ${V.dep}${t('（')}${V.savers} ${t('人')}${t('）')} · ${t('放款')} ${V.loan}${t('（')}${V.borrowers} ${t('人')}${t('）')} · ${t('準備金')} ${V.reserve} · ${t('呆帳')} ${V.bad}</div>`;
+            else if (V.failed) T += `<div class="pp-tier-line">${t('上次倒閉讓存戶損失 {n} 銀幣').replace('{n}', V.failed.lost)}</div>`;
+            else T += `<div class="pp-issue-hint">${t('升格為城鎮後就會有銀行。')}</div>`;
+            T += `</div>`; } } catch (e) {}
         // v6.63.0 報社
         try { if (typeof PRESS !== 'undefined' && this.world.press) { const V = PRESS.view(this.world);
             T += `<div class="pp-issues pp-press"><h4 class="pp-h">📰 ${t('報社')} <span class="pp-count">${V.length}</span></h4>`;
