@@ -1,5 +1,5 @@
 // RimTown - sim-agent.js：從 simulation.js 拆出的 時鐘、需求、記憶、關係、性格、技能、職業、村民 Agent／PlayerAgent（v6.1.0 B14）。
-// 純粹搬移頂層宣告，共用全域詞法範圍；載入順序：sim-agent → sim-conversation → sim-town → sim-economy → sim-society → simulation(World) → sim-systems（index.html／rimtown.php／sw.js 都要列）。
+// 純粹搬移頂層宣告，共用全域詞法範圍；載入順序：sim-agent → sim-conversation → sim-town → sim-economy → sim-society → simulation(World) → sim-systems（index.html／sw.js 都要列）。
 
 // --- GameClock ---
 class GameClock {

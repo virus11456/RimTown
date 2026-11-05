@@ -1,5 +1,5 @@
 // RimTown - sim-society.js：從 simulation.js 拆出的 派系、節慶、人生目標、城鎮身分、生老病死、探險、世代傳承（v6.1.0 B14）。
-// 純粹搬移頂層宣告，共用全域詞法範圍；載入順序：sim-agent → sim-conversation → sim-town → sim-economy → sim-society → simulation(World) → sim-systems（index.html／rimtown.php／sw.js 都要列）。
+// 純粹搬移頂層宣告，共用全域詞法範圍；載入順序：sim-agent → sim-conversation → sim-town → sim-economy → sim-society → simulation(World) → sim-systems（index.html／sw.js 都要列）。
 // --- Faction / Social Circle System ---
 const FACTION_TYPES = {
     work_buddies:  { name:t('工作夥伴'), icon:'🔨', maxSize:5, formCondition:'sameJob' },

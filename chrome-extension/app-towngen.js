@@ -2,7 +2,7 @@
 // 四個手寫鄰鎮都通車後，開始有新的城鎮被發現（商人帶消息、旅人傳聞、探險隊找到聚落）。
 // 活著的鎮（含邊境鎮與四個鄰鎮）最多 10 個：發現時還有名額就開通馬車路線，第一次搭車過去才建立完整存檔；
 // 名額滿了的只留城鎮卡，在背景慢慢變化、上日報跨鎮專欄、列在城鎮列表的「遠方城鎮」。
-// 用 Object.assign 掛到 RimTownApp.prototype；放在 app-loop.js 之後（index.html／rimtown.php／sw.js 都要列）。
+// 用 Object.assign 掛到 RimTownApp.prototype；放在 app-loop.js 之後（index.html／sw.js 都要列）。
 'use strict';
 Object.assign(RimTownApp.prototype, {
     // 四個鄰鎮都通車了才開始發現新鎮

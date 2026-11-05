@@ -1,6 +1,6 @@
 # RimTown - AI Town Simulation 邊境鎮
 
-A RimWorld-inspired AI town simulation where every resident is an autonomous AI agent with unique personality, background, job, relationships, and daily life. Available as a WordPress plugin.
+A RimWorld-inspired AI town simulation where every resident is an autonomous AI agent with unique personality, background, job, relationships, and daily life. Plays in the browser at https://rimtown.cc (static site + serverless API on Vercel).
 
 ## Features
 
@@ -82,7 +82,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 - B14 ~~`app.js` 9.8K 行單檔~~ v6.0.0 拆成核心 `app.js`（3.3K 行）＋九個分檔 `app-landing/notify/loop/towns/chat/mobile/panels/economy/records.js`（`Object.assign(RimTownApp.prototype, {…})`，逐字搬移；新增檔案要同步列入 `index.html`、`rimtown.php`、`sw.js`、發版鏡像清單）。v6.1.0 `simulation.js` 也拆成核心（World＋工具，2.3K 行）＋ `sim-agent/conversation/town/economy/society.js`（World 之前載入）與 `sim-systems.js`（World 之後載入），頂層宣告逐字搬移、順序不變。`tilemap.js` 6.2K 行仍為單檔。
 - B15 ~~Playwright 掃描腳本只在工作區~~ v5.81.0 收進 `scripts/smoke_playwright.js`（選跑）與 `scripts/map_ascii.js`（版面快照，必跑）。
 - B16 ~~`t('…')` 英文對照缺口靠手動檢查~~ v5.81.0 `scripts/i18n-audit.js`：新字串缺英文即失敗；歷史欠帳 232 筆在 `scripts/i18n_missing_baseline.json`，補一筆就 `--update` 縮基準。
-- B17 WordPress 版（`rimtown.php` 短碼）沒有 `/api/chat`，村民只有規則式對話；若要在 WordPress 也用內建 AI，要另寫 PHP 代理。
+- B17 ~~WordPress 版（`rimtown.php` 短碼）沒有 `/api/chat`~~ v6.49.1 WordPress 外掛版移除，只剩 Vercel 站。
 
 **玩法**
 - B18 ~~跨鎮互訪只在兩鎮之間~~ v5.76–v5.80 已支援五鎮（出訪名單／馬車目的地／親緣網／商隊）。
@@ -259,19 +259,11 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 4. 地圖尺寸維持 80×60，還是海岸／山脈主題放大到 96×72？放大畫面更有氣勢，但手機效能要再驗。
 5. 先做 P0（海風鎮的海岸、燈塔、港口）就上線，再逐鎮做，還是等整套一起上？
 
-## WordPress Plugin Install
+## 部署與執行
 
-1. Download `rimtown-v6.49.0.zip` from Releases
-2. WordPress Admin → Plugins → Add New → Upload Plugin
-3. Activate the plugin
-4. Create a page with shortcode `[rimtown]`
-5. (Optional) Enable user registration: Settings → General → "Anyone can register"
-
-## Shortcodes
-
-- `[rimtown]` — Main game (default 100vh height)
-- `[rimtown height="800px"]` — Custom height
-- `[rimtown_landing]` — Landing page with intro animation
+- 線上：https://rimtown.cc（Vercel）。`build.sh` 把 `wordpress/` 的前端檔、`vendor/`、`chrome-extension/icons|img` 複製到 `public/`；`api/` 是 Serverless Functions（帳號、雲端存檔、AI 對話代理）。
+- `wordpress/` 只是資料夾名稱沿用（WordPress 外掛版 `rimtown.php` 已在 v6.49.1 移除），內容與 `chrome-extension/` 的前端檔一致。
+- 本機：`cd wordpress && python3 -m http.server 8126`，打開 http://localhost:8126/（沒有 `/api/` 時只能訪客模式、村民走規則式對話）。
 
 ---
 
@@ -281,7 +273,7 @@ A RimWorld-inspired AI town simulation where every resident is an autonomous AI 
 
 ```
 node scripts/method-audit.js   # 前端 this._xxx() 呼叫都有定義(v5.66.6 起;v6.0.0 起連同 app-*.js 分檔一起掃)
-# 鏡像:chrome-extension/{*.js(含 i18n-en.js、town3d.js、sim-proposals.js),index.html,style.css,style-observer.css,vendor/three.min.js} → wordpress/;wordpress/rimtown.php → chrome-extension/
+# 鏡像:chrome-extension/{*.js(含 i18n-en.js、town3d.js、sim-proposals.js),index.html,style.css,style-observer.css,vendor/three.min.js} → wordpress/
 # 翻譯:新的中文鍵一律加在 chrome-extension/i18n-en.js(v6.28.0 起字典拆出,只在英文介面載入;i18n.js 只剩 t()/setLang 等執行期)
 node scripts/lane_test.js      # /api/chat 分流、冷卻、逾時、額度感知(v5.67.0 起)
 node scripts/refusal_test.js   # /api/chat 拒絕扮演偵測與退回(v5.67.2 起)
@@ -289,7 +281,7 @@ node scripts/scrub_test.js     # 存檔深度清理 AI 助理漏出內容(v5.67.
 node scripts/invite_test.js    # 推薦碼註冊與管理(v5.68.0 起)
 node scripts/lang_test.js      # /api/chat 對話語言:lang=en 英文系統指示/不轉繁體(v5.73.0 起)
 node scripts/proposal_test.js  # 村民主動提案:生成/投票/批准執行/自動定案/存檔往返(v6.26.0 起;需本機 8126 服務 wordpress/)
-node scripts/gen-changelog.js   # 從 rimtown.php 產生首頁更新紀錄 changelog.js(v5.68.0 起改版必跑);v5.74.0 起每版必須同時有 changes 與 changes_en,缺英文會失敗
+node scripts/gen-changelog.js --add entry.json  # 首頁更新紀錄:chrome-extension/changelog.js 是單一來源(v6.49.1 起;以前從 rimtown.php 產生),加新版本並鏡像到 wordpress/;v5.74.0 起每版必須同時有 changes 與 changes_en,缺英文會失敗
 node scripts/i18n-audit.js     # i18n 重複鍵=0、新 t('…') 字串必須有英文(v5.81.0 起)
 node scripts/cjk-punct-audit.js # 模板字串裡沒包 t() 的 CJK 標點,基準 10(AI 提示詞與訪客名),新增就失敗;--list 列全部(v6.22.3 起)
 node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改版面才 --update(v5.81.0 起)
@@ -314,6 +306,10 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.49.1 (2026-11-05)
+- 🧹 移除已停用的 WordPress 外掛版（rimtown.php 與登入相容程式碼），現在只剩 rimtown.cc（Vercel）一個版本；遊戲內容與存檔都不受影響
+- 🛠️ 首頁「更新紀錄」改成直接以 changelog.js 為單一來源，每個版本一行，之後的發版更簡單
 
 ### v6.49.0 (2026-11-04)
 - 🏠 房子更精緻：屋頂多了三道瓦列、牆腳一圈深色護牆板、民宅門上有小雨遮和托架，桌機上面向街道的窗戶多了十字窗格、大建築山牆有通風窗

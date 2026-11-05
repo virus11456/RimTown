@@ -1,5 +1,5 @@
 // RimTown - app-mobile.js：從 app.js 拆出的 手機開羅模式：底部列、浮動選單與卡片、村民浮動卡、虛擬搖桿、地圖覆蓋層（v6.0.0 B14）。
-// 用 Object.assign 掛到 RimTownApp.prototype；必須在 app.js 之後、DOMContentLoaded 之前載入（index.html／rimtown.php／sw.js 都要列）。
+// 用 Object.assign 掛到 RimTownApp.prototype；必須在 app.js 之後、DOMContentLoaded 之前載入（index.html／sw.js 都要列）。
 'use strict';
 Object.assign(RimTownApp.prototype, {
     _setupKairoUI() {

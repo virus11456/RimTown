@@ -1,5 +1,5 @@
 // RimTown - app-notify.js：從 app.js 拆出的 管理員邀請碼、雲端設定同步、成就、通知卡片（里程碑／週報／名場面／心動／決策／事件／議會）、角落通知（v6.0.0 B14）。
-// 用 Object.assign 掛到 RimTownApp.prototype；必須在 app.js 之後、DOMContentLoaded 之前載入（index.html／rimtown.php／sw.js 都要列）。
+// 用 Object.assign 掛到 RimTownApp.prototype；必須在 app.js 之後、DOMContentLoaded 之前載入（index.html／sw.js 都要列）。
 'use strict';
 Object.assign(RimTownApp.prototype, {
     async _adminLoadInvites() {

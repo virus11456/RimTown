@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.49.0
-const RIMTOWN_APP_VERSION = '6.49.0';
+// RimTown - Frontend App v6.49.1
+const RIMTOWN_APP_VERSION = '6.49.1';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -152,17 +152,11 @@ class RimTownAuth {
         this.userId = 0;
         this._restUrl = '';
         this._nonce = '';
-        this._initFromWP();
+        this._initSession();
     }
 
-    _initFromWP() {
-        if (typeof rimtownAuth !== 'undefined') {
-            this._restUrl = rimtownAuth.restUrl;
-            this._nonce = rimtownAuth.nonce;
-            this.loggedIn = !!rimtownAuth.loggedIn;
-            this.username = rimtownAuth.username || '';
-            this.userId = rimtownAuth.userId || 0;
-        } else if (location.protocol.startsWith('http')) {
+    _initSession() {
+        if (location.protocol.startsWith('http')) {
             // Serverless 模式(Vercel 靜態站):帳號 API 在同網域 /api/,JWT 存 localStorage
             this._serverless = true;
             this._restUrl = '/api/';
@@ -1903,8 +1897,8 @@ class RimTownApp {
             console.log('[RimTown] LLM client: 玩家自備', byok.provider, byok.model || '(default model)');
             return;
         }
-        // 有 /api/chat 的站(rimtown.cc)走內建 AI;WordPress 版沒有代理端點 → 模擬對話
-        const provider = (typeof rimtownAuth === 'undefined' && location.protocol.startsWith('http')) ? 'server' : 'none';
+        // 網站(rimtown.cc)走內建 AI /api/chat;本機開檔(file://)沒有代理端點 → 模擬對話
+        const provider = location.protocol.startsWith('http') ? 'server' : 'none';
         try { localStorage.setItem('llm_provider', provider); } catch (e) {}
         if (provider === 'server') {
             this.llmClient = new LLMClient('server', 'server');
@@ -2052,7 +2046,7 @@ class RimTownApp {
     // v6.34.0 任務鏈資料只有非觀察者模式才需要(目前一律觀察者,保留給日後):動態插入 quest-data.js
     _loadQuestData() {
         if (window.RIMTOWN_QUEST_CHAINS || this._questDataLoading) return this._questDataLoading || Promise.resolve();
-        this._questDataLoading = new Promise((res) => { const sc = document.createElement('script'); const base = (document.querySelector('script[src*="quest-system.js"]')?.src || 'quest-system.js').replace(/quest-system\.js.*$/, ''); sc.src = base + 'quest-data.js?v=' + RIMTOWN_APP_VERSION; /* WordPress 外掛路徑也對得到 */ sc.onload = () => { try { this.world?.questSystem?.init?.(); } catch (e) {} res(); }; sc.onerror = () => res(); document.head.appendChild(sc); });
+        this._questDataLoading = new Promise((res) => { const sc = document.createElement('script'); const base = (document.querySelector('script[src*="quest-system.js"]')?.src || 'quest-system.js').replace(/quest-system\.js.*$/, ''); sc.src = base + 'quest-data.js?v=' + RIMTOWN_APP_VERSION; /* 跟著 quest-system.js 的路徑找 */ sc.onload = () => { try { this.world?.questSystem?.init?.(); } catch (e) {} res(); }; sc.onerror = () => res(); document.head.appendChild(sc); });
         return this._questDataLoading;
     }
     startSimulation() {
@@ -3523,11 +3517,11 @@ class RimTownApp {
     }
 }
 
-// Initialize — only when the game container exists (WordPress shortcode loaded)
+// Initialize — only when the game container exists
 (function() {
     const init = () => {
         if (!document.getElementById('rimtown-app') && !document.getElementById('town-map-canvas')) return;
-        if (typeof RimTownApp.prototype.renderQuest !== 'function') { console.error('[RimTown] app-*.js 分檔未載入（index.html / rimtown.php / sw.js 的腳本清單要含 app-landing/notify/loop/towns/chat/mobile/panels/economy/records）'); }
+        if (typeof RimTownApp.prototype.renderQuest !== 'function') { console.error('[RimTown] app-*.js 分檔未載入（index.html / sw.js 的腳本清單要含 app-landing/notify/loop/towns/chat/mobile/panels/economy/records）'); }
         const app = new RimTownApp();
         window.rimtownApp = app; // 除錯/測試用全域參照
         window.addEventListener('resize', () => { if (app.state) app.renderMap(); });

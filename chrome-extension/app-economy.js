@@ -1,5 +1,5 @@
 // RimTown - app-economy.js：從 app.js 拆出的 經濟分頁：倉庫／建築／科技／貿易、產業、農田、工廠（v6.0.0 B14）。
-// 用 Object.assign 掛到 RimTownApp.prototype；必須在 app.js 之後、DOMContentLoaded 之前載入（index.html／rimtown.php／sw.js 都要列）。
+// 用 Object.assign 掛到 RimTownApp.prototype；必須在 app.js 之後、DOMContentLoaded 之前載入（index.html／sw.js 都要列）。
 'use strict';
 Object.assign(RimTownApp.prototype, {
     _getExplorationZone(id) {

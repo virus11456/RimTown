@@ -1,5 +1,5 @@
 // RimTown - app-loop.js：從 app.js 拆出的 核心玩法迴圈介面：季末回顧、押商隊、馬車出訪、管理員用戶、住房同步、跨鎮信箱、委託板／旅人／季度考驗、搬家提案（v6.0.0 B14）。
-// 用 Object.assign 掛到 RimTownApp.prototype；必須在 app.js 之後、DOMContentLoaded 之前載入（index.html／rimtown.php／sw.js 都要列）。
+// 用 Object.assign 掛到 RimTownApp.prototype；必須在 app.js 之後、DOMContentLoaded 之前載入（index.html／sw.js 都要列）。
 'use strict';
 Object.assign(RimTownApp.prototype, {
     _showSeasonRecap() {
