@@ -1,5 +1,5 @@
-// RimTown - Frontend App v6.73.1
-const RIMTOWN_APP_VERSION = '6.73.1';
+// RimTown - Frontend App v6.74.0
+const RIMTOWN_APP_VERSION = '6.74.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',

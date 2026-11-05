@@ -1017,6 +1017,14 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
     // 決策呼叫不吃「NPC 每日 AI 額度」(那是背景閒聊的上限);只受供應商速率限制
     fullAgentOk(world) { return !!world.fullAgentMode && !!this.llm && this.llm._canMakeRequest(true, true); } // v6.43.1 冷卻中不放行 // 決策走 chat 道(額度較高、內建 AI 時 Groq 優先)
     async _askJson(prompt, maxTokens) {
+        // v6.74.0 等回覆期間換了城鎮或讀了檔:舊回覆作廢,永遠不 resolve,呼叫端後面的邏輯(放款、紓困、記憶、日誌)都不會落到新城鎮
+        const W0 = (typeof window !== 'undefined') ? window.rimtownApp?.world : null, g0 = W0?._gen;
+        const r = await this._askJsonRaw(prompt, maxTokens);
+        const W1 = (typeof window !== 'undefined') ? window.rimtownApp?.world : null;
+        if (W0 && (W1 !== W0 || W1._gen !== g0)) return new Promise(() => {});
+        return r;
+    }
+    async _askJsonRaw(prompt, maxTokens) {
         const timeout = new Promise(r => setTimeout(() => r(null), 14000));
         let raw = null; try { raw = await Promise.race([this.llm.generate(prompt, maxTokens, 0.7, true, { strict: true }), timeout]); } catch (e) { raw = null; }
         if (!raw || raw === '__ERROR__' || raw === '__RATE_LIMITED__') return null;
