@@ -142,7 +142,7 @@ class NPCEventSystem {
         if (!world.farm || world.farm.plots.length === 0) return;
 
         const npcs = Object.values(world.agents).filter(a =>
-            !a.isPlayer && a.personality?.traits?.includes('neurotic') && a.mood < -20
+            !a.isPlayer && a.personality?.traits?.includes('neurotic') && !a.personality?.traits?.includes('kind') && a.mood < 25 // v6.51.0 心情是 0~100,以前寫 < -20 永遠不會成立
         );
 
         for (const agent of npcs) {
@@ -155,6 +155,8 @@ class NPCEventSystem {
             target.state = 'withered';
 
             world.logMessage?.('incident', `⚠️ ${t('有人的農田被破壞了！好像是深夜發生的事...')}`);
+            // v6.51.0 上帝視角看得到是誰;村民要等被看穿
+            if (typeof DARK !== 'undefined') DARK.secret(world, { kind: 'sabotage', culprit: agent.agentId, victim: null, k: '{a}心情太差，半夜跑去破壞了農田', p: { a: agent.name } });
 
             // Gossip (anonymous)
             world.gossipNetwork?.activeGossip?.push({

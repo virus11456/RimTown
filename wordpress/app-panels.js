@@ -908,6 +908,17 @@ Object.assign(RimTownApp.prototype, {
         html += `<div class="pp-summary">${t('提出')} ${d.stats.made} · ${t('已批准')} ${d.stats.approved} · ${t('已否決')} ${d.stats.rejected} · ${t('已完成')} ${d.stats.done}</div>`;
         html += `<div style="font-size:0.7rem;color:var(--text-muted);margin:0 0 6px">${t('村民自己提案、全鎮投票、鎮長裁決。你只看。')}</div>`; // v6.37.0
         html += this._electionCardHtml(); // v6.42.0 鎮長選舉／代理鎮長
+        // v6.51.0 只有你知道的真相:還沒被拆穿的謊言、陰謀,還沒解開的誤會
+        try {
+            const dv = (typeof DARK !== 'undefined' && this.world) ? DARK.view(this.world) : null;
+            if (dv && (dv.secrets.length || dv.mis.length)) {
+                const MIS = { cold: '{a}以為{b}很冷漠（其實只是害羞）', jealous: '{a}以為{b}劈腿（其實只是普通朋友）', overheard: '{a}以為{b}在說自己壞話（其實不是）', price: '{a}以為{b}賣東西坑人（其實是原料漲價）' };
+                html += `<div class="pp-issues pp-secrets"><h4 class="pp-h">🕵️ ${t('只有你知道的真相')} <span class="pp-count">${dv.secrets.length + dv.mis.length}</span></h4>`;
+                for (const s of dv.secrets) html += `<div class="pp-issue">${s.plan ? '🕵️' : s.kind === 'white' ? '💗' : '🎭'} <span>${esc(s.text)}<small>${s.plan ? t('正在籌劃') : t('村民還不知道')}</small></span></div>`;
+                for (const m of dv.mis) html += `<div class="pp-issue">😶 <span>${esc(t(MIS[m.kind] || '').replace('{a}', t(m.a)).replace('{b}', t(m.b)))}<small>${t('誤會還沒解開')}</small></span></div>`;
+                html += `<div class="pp-issue-hint">${t('眼力好的人（守衛、鎮長、學者…）比較容易看穿；被拆穿的人會失去大家的信任。')}</div></div>`;
+            }
+        } catch (e) {}
         // v6.50.0 鎮上急事:村民正受影響,拖著沒人管會抱怨、吵架、搬走
         if ((d.issues || []).length) {
             html += `<div class="pp-issues"><h4 class="pp-h">⚠️ ${t('鎮上急事')} <span class="pp-count">${d.issues.length}</span></h4>`;
