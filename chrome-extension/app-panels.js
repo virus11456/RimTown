@@ -952,6 +952,13 @@ Object.assign(RimTownApp.prototype, {
                 T += `<div class="pp-issue-hint">${t('城鎮以上，要當過下一級的首長，或在本級議會當過一季議員，才能參選首長。')}</div></div>`;
             }
         } catch (e) {}
+        // v6.62.0 外地消息:遠方地點、上次消息幾天前、誰帶回來;最近的消息與可信度
+        try { if (typeof TIDINGS !== 'undefined' && this.world.tidings) { const V = TIDINGS.view(this.world);
+            T += `<div class="pp-issues pp-tidings"><h4 class="pp-h">📨 ${t('外地消息')} <span class="pp-count">${V.places.length}</span></h4>`;
+            T += `<div class="pp-tid-places">${V.places.map(p => `<span class="pp-tid-place" title="${esc(p.lvName)}">${p.icon} ${esc(p.name)} <small>${p.last === null ? t('還沒有消息') : t('{n} 天前').replace('{n}', p.last)}${p.by ? ' · ' + esc(p.by) : ''}</small></span>`).join('')}</div>`;
+            for (const x of V.items) T += `<div class="pp-tid-item${x.rumor ? ' rumor' : ''}">${x.via} ${esc(x.text)} <small>${x.rumor ? t('傳聞') : t('可靠')} · ${t('路上走了 {n} 天').replace('{n}', x.lag)} · ${t('{n} 人知道').replace('{n}', x.knowers)}</small></div>`;
+            if (!V.items.length) T += `<div class="pp-issue-hint">${t('遠方的消息要等商隊、旅人或信差帶進鎮。')}</div>`;
+            T += `</div>`; } } catch (e) {}
         // v6.60.0 宗教一覽
         try { if (typeof FAITH !== 'undefined' && this.world.faith) { const V = FAITH.view(this.world); const nb = FAITH.nonBelievers(this.world);
             T += `<div class="pp-issues pp-faith"><h4 class="pp-h">🛕 ${t('宗教')} <span class="pp-count">${V.length}</span></h4>`;
