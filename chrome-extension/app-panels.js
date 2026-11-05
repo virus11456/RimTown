@@ -952,6 +952,14 @@ Object.assign(RimTownApp.prototype, {
                 T += `<div class="pp-issue-hint">${t('城鎮以上，要當過下一級的首長，或在本級議會當過一季議員，才能參選首長。')}</div></div>`;
             }
         } catch (e) {}
+        // v6.73.0 鎮史:史書、傳說、家族、世仇
+        try { if (typeof LEGACY !== 'undefined' && this.world.legacy) { const V = LEGACY.view(this.world); if (V.chapters.length || V.legends.length || V.families.length) {
+            T += `<div class="pp-issues pp-legacy"><h4 class="pp-h">📚 ${t('鎮史')}</h4>`;
+            for (const c of V.chapters) T += `<details class="pp-chap"><summary>📖 ${esc(c.title)} <small>${t('史官')} ${esc(c.by)}</small></summary><div class="pp-tier-line">${esc(c.text)}</div></details>`;
+            if (V.legends.length) T += `<div class="pp-tier-line">🏛️ ${t('傳說人物')}${t('：')}${V.legends.map(l => `${esc(l.name)}${t('（')}${esc(l.role)}${t('）')}${l.statue ? ' 🗽' : ''}`).join(t('、'))}</div>`;
+            if (V.families.length) T += `<div class="pp-tier-line">🏠 ${t('家族')}${t('：')}${V.families.map(f => `${esc(f.name)} ×${f.n} ${t('「')}${esc(f.motto)}${t('」')}`).join(' · ')}</div>`;
+            if (V.feuds.length) T += `<div class="pp-tier-line">⚔️ ${t('世仇')}${t('：')}${V.feuds.map(esc).join(' · ')}</div>`;
+            T += `</div>`; } } } catch (e) {}
         // v6.72.0 託夢與預言
         try { if (typeof DREAM !== 'undefined' && this.world.dream !== undefined) { const V = DREAM.view(this.world); const E = this.world.election; const plot = this.world.crown?.plot;
             const canE = E?.active && (E.candidates || []).length >= 2, canC = !!plot;

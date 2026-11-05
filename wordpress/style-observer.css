@@ -655,6 +655,8 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .pp-op-bar { opacity: 1; }
 .rimtown-container .pp-op-bar i { position: absolute; top: -3px; width: 3px; height: 13px; background: var(--text-primary, #222); border-radius: 2px; transform: translateX(-1px); }
 .rimtown-container .pp-op-row small { color: var(--text-secondary); }
+.rimtown-container .pp-chap summary { cursor: pointer; padding: 2px 0; }
+.rimtown-container .pp-chap summary small { color: var(--text-secondary); }
 .rimtown-container .pp-crown { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border); }
 .rimtown-container .pp-legit { font-weight: 700; color: #2E7D32; }
 .rimtown-container .pp-legit.low { color: #C62828; }
