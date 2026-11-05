@@ -95,7 +95,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 存讀檔
       const blob = JSON.parse(JSON.stringify(w.serialize())); const w2 = new World(); w2.loadSave(blob);
       // 提案頁:只有你知道的真相
-      app.state = w.getState(); const box = document.createElement('div'); app.renderProposals(box);
+      app.state = w.getState(); app._ppTab = 'truth'; const box = document.createElement('div'); app.renderProposals(box);
       return { bm, g: !!g, gTone: g?.tone, bMem, kMem, cTh, plan: !!plan, kind: plan?.kind, acted, vTh, viewN: view.secrets.length, aTh, vTh2, trust, mis: mis?.kind, cleared, shyTh, white, g0: g0.why, dirty, brief, rtSecrets: (w2.dark?.secrets || []).length, panel: box.innerHTML.includes('pp-secrets') };
     });
     ok(dk.bm && dk.g && dk.gTone === 'diss' && /說|told|said/.test(dk.bMem), '講壞話:跟朋友抱怨仇人，壞話會傳出去、聽的人記得', { bm: dk.bm, mem: dk.bMem.slice(0, 120) });

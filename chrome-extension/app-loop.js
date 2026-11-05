@@ -489,6 +489,8 @@ Object.assign(RimTownApp.prototype, {
     },
     // v6.7.0 早安卡:每個遊戲日第一次看到新的一天,把「昨日結算、今日委託、委託鏈進度、本季考驗、日報」合成一張留在角落(不自動消失,點 ✕ 或「看委託板」收起)
     _showMorningCard(rb, openCount) {
+        // v6.53.0 季末回顧開著時先不疊早安卡,關掉後再出來
+        if (document.getElementById('season-recap')) { clearTimeout(this._morningWait); this._morningWait = setTimeout(() => this._showMorningCard(rb, openCount), 1500); return; }
         const w = this.world; if (!w) return;
         const host = this._toastHost(); // v6.10.1 共用容器
         document.getElementById('morning-card')?.remove();
