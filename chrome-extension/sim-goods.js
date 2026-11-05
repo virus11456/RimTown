@@ -84,8 +84,8 @@ const GOODS = (() => {
             const g = CAT[o.key]; let sold = null;
             // 有錢人先(撐場面);公庫有餘裕才買(地標、聖物、工業品)
             const rich = npcs(w).filter(a => cash(w, a) >= o.price * 1.5 && !g.sacred).sort((x, y) => cash(w, y) - cash(w, x))[0];
-            if (rich && Math.random() < 0.35) sold = buy(w, G, o, rich);
-            if (!sold && (w.stockpile?.get?.('silver') || 0) >= o.price * 2 && Math.random() < 0.5) sold = buy(w, G, o, 'town');
+            if (rich && Math.random() < 0.35) sold = GOODS.buy(w, G, o, rich); // 走公開的 buy,殺價等模組才接得到
+            if (!sold && (w.stockpile?.get?.('silver') || 0) >= o.price * 2 && Math.random() < 0.5) sold = GOODS.buy(w, G, o, 'town');
             if (sold) G.offers = G.offers.filter(x => x !== o);
         }
     }

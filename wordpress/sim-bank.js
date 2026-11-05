@@ -49,8 +49,8 @@ const BANK = (() => {
         // 借錢:手頭緊有工作的人周轉;想翻修房子的人
         for (const a of all) {
             if (B.loans[a.agentId]) continue; const c = cash(w, a);
-            if (c < 3 && a.job && Math.random() < 0.15) lend(w, B, a, 25, '周轉');
-            else if (typeof HOUSING !== 'undefined' && w.housing && Math.random() < 0.03) { const h = HOUSING.houseOf(w, a); const lv = w.housing.lv?.[h]; const top = HOUSING.maxLv(w); if (h && lv !== undefined && lv < top) { const cost = HOUSING.COST[lv + 1]; if (c < cost * 1.2 && c + lendable(B) >= cost * 1.2) lend(w, B, a, cost * 1.2 - c + 5, '翻修房子'); } }
+            if (c < 3 && a.job && Math.random() < 0.15) BANK.lend(w, B, a, 25, '周轉');
+            else if (typeof HOUSING !== 'undefined' && w.housing && Math.random() < 0.03) { const h = HOUSING.houseOf(w, a); const lv = w.housing.lv?.[h]; const top = HOUSING.maxLv(w); if (h && lv !== undefined && lv < top) { const cost = HOUSING.COST[lv + 1]; if (c < cost * 1.2 && c + lendable(B) >= cost * 1.2) BANK.lend(w, B, a, cost * 1.2 - c + 5, '翻修房子'); } }
         }
         // 還款:每天從手上的錢還一點;逾期又還不出來就變呆帳
         for (const [id, L] of Object.entries(B.loans)) {

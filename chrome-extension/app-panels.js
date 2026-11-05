@@ -977,6 +977,12 @@ Object.assign(RimTownApp.prototype, {
             if (V.offers.length) T += `<div class="pp-tier-line">${t('商人帶來的珍品')}${t('：')}${V.offers.map(x => `${x.icon} ${esc(x.name)} ${x.price} <small>${esc(x.from)}</small>`).join(' · ')}</div>`;
             if (V.collectors.length) T += `<div class="pp-tier-line">${t('收藏家')}${t('：')}${V.collectors.map(x => `${esc(x.name)} ×${x.n}`).join(' · ')}</div>`;
             T += `</div>`; } } } catch (e) {}
+        // v6.70.0 商店
+        try { if (typeof BIZ !== 'undefined' && this.world.biz) { const V = BIZ.view(this.world); if (V.shops.length || V.closed.length) {
+            T += `<div class="pp-issues pp-biz"><h4 class="pp-h">🏪 ${t('鎮上的店')} <span class="pp-count">${V.shops.length}</span></h4>`;
+            for (const s2 of V.shops) T += `<div class="pp-tier-line">${s2.icon} <b>${esc(s2.name)}</b> <small>${esc(s2.type)} · ${t('老闆')}${t('：')}${esc(s2.owner)}${s2.partner ? ' · ' + t('合夥人') + t('：') + esc(s2.partner) : ''} · ${t('定價')} ${s2.price} · ${t('累計盈虧')} ${s2.profit}</small></div>`;
+            if (V.closed.length) T += `<div class="pp-issue-hint">${t('倒閉的店')}${t('：')}${V.closed.map(c => esc(c.name)).join(t('、'))}</div>`;
+            T += `</div>`; } } } catch (e) {}
         // v6.64.0 銀行
         try { if (typeof BANK !== 'undefined' && this.world.bank) { const V = BANK.view(this.world);
             const st = V.status === 'run' ? `😱 ${t('擠兌中')}` : V.status === 'failed' ? `💥 ${t('已倒閉')}` : V.open ? `✅ ${t('營業中')}` : t('還沒開');
