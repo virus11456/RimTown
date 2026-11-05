@@ -44,7 +44,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       TownGen.mergeCompact(other);
       return { before, after: TownGen.liveCount(), cards: TownGen.cards().length };
     });
-    ok(r2.before <= 10 && r2.after <= 10 && r2.cards >= 10, '合併別台裝置的城鎮紀錄後,相連城鎮仍不超過 10 座', r2);
+    ok(r2.cards >= 10 && r2.after >= r2.before && r2.after >= r2.cards, 'v6.76.0 合併別台裝置的城鎮紀錄後,探索過的城鎮全部保留可達(不再降回只有傳聞)', r2);
     // 3) 帳號選單開著旋轉螢幕
     await page.setViewportSize({ width: 390, height: 844 });
     await page.evaluate(() => window.rimtownApp._showAccountMenu()); await page.waitForTimeout(250);
