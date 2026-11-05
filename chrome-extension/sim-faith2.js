@@ -85,7 +85,7 @@ const FAITH2 = (() => {
     function daily(w) {
         const f = F(w); if (!f) return; const d = day(w); if (f._d2 === d) return; f._d2 = d;
         if (!f.heads || d % 7 === 0) pickHeads(w);
-        schism(w, d);
+        FAITH2.schism(w, d); // 走公開的 schism,教義等模組才接得到
     }
     const headTitle = (w, a) => { const R = headRel(w, a); if (!R) return null; const tt = title(w, R); return { R, zh: tt[0], en: tt[1], high: tierLv(w) >= 2 }; };
     return { TITLE, RITE, pickHeads, headOf, headRel, headTitle, schism, onResearch, coronation, daily };

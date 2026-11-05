@@ -952,6 +952,13 @@ Object.assign(RimTownApp.prototype, {
                 T += `<div class="pp-issue-hint">${t('城鎮以上，要當過下一級的首長，或在本級議會當過一季議員，才能參選首長。')}</div></div>`;
             }
         } catch (e) {}
+        // v6.71.0 文化
+        try { if (typeof CULTURE !== 'undefined' && this.world.culture) { const V = CULTURE.view(this.world); if (V.works.length || V.songs.length || V.oracles.length) {
+            T += `<div class="pp-issues pp-culture"><h4 class="pp-h">🎭 ${t('文化')}</h4>`;
+            for (const x of V.works) T += `<div class="pp-tier-line">${x.icon} ${t('〈')}${esc(x.title)}${t('〉')} <small>${esc(x.by)} · ${t('評價')} ${x.q}${x.legend ? ' · 🌟 ' + t('傳世傑作') : ''}</small></div>`;
+            for (const x of V.songs) T += `<div class="pp-tier-line">🎶 ${t('〈')}${esc(x.title)}${t('〉')} <small>${esc(x.by)}${x.lyric ? ' · ' + t('「') + esc(x.lyric) + t('」') : ''}</small></div>`;
+            for (const x of V.oracles) T += `<div class="pp-tier-line">🔮 ${esc(x.by)}${t('：')}${t('「')}${esc(x.text)}${t('」')}</div>`;
+            T += `</div>`; } } } catch (e) {}
         // v6.69.0 政壇:辯論、議會人情、法庭
         try { if (typeof POLITICS !== 'undefined' && this.world.politics) { const V = POLITICS.view(this.world); if (V.debates.length || V.trials.length || V.pacts || V.betrayals) {
             T += `<div class="pp-issues pp-politics"><h4 class="pp-h">🏛️ ${t('政壇')}</h4>`;

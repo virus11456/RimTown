@@ -67,7 +67,7 @@ const TIDINGS = (() => {
     }
     const placeName = (p) => (en() ? (p.name[1] || t(p.name[0])) : p.name[0]); // 鄰鎮的英文名在字典裡
     const nk = (it) => ({ k: '{x}{s}', p: { x: { k: it.k, p: { p: it.pn } }, s: it.dist ? '（聽說越傳越誇張）' : '' } }); // 巢狀樣板:存檔不帶文字,依當下語言重算
-    function render(it) { try { const n = nk(it); return Memory.render(n.k, n.p); } catch (e) { return it.k; } }
+    function render(it) { if (it?.alt) return it.alt; /* v6.71.0 被 AI 改寫過的謠言 */ try { const n = nk(it); return Memory.render(n.k, n.p); } catch (e) { return it.k; } }
     function carrierFor(w, ch) {
         const C = CHAN[ch]; const all = npcs(w); if (!all.length) return null;
         const byJob = C.job ? all.filter(a => a.job?.key === C.job) : [];
