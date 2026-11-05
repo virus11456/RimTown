@@ -8466,6 +8466,7 @@
         '鎮上正在發生的事：急事、小團體、規矩與統計。': 'What is going on in town: urgent problems, cliques, customs and stats.',
         '只有你看得到：誰在說謊、設局，誰誤會了誰。': 'Only you can see this: who is lying or scheming, and who misunderstands whom.',
         '心事': 'On their mind',
+        '依票數定案': 'Decided by vote',
     });
     if (window.I18N && typeof window.I18N._onDictLoaded === 'function') window.I18N._onDictLoaded();
 })();
