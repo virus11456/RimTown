@@ -1030,10 +1030,13 @@ class World {
         else if (this.townTheme === 'mountain') this._loadMountainResidents(); // v5.76.0
         else if (this.townTheme === 'forest') this._loadForestResidents(); // v5.77.0
         else if (this.townTheme === 'market') this._loadMarketResidents(); // v5.78.0
+        else if (theme.generated) this._loadRandomResidents(theme.pop || 15); // v6.45.0 種子鎮:人口依城鎮卡
         else if (this.rosterMode === 'random') this._loadRandomResidents(15);
         else this._loadDefaultResidents();
         const player = new PlayerAgent();
         this.addAgent(player);
+        if (theme.generated && typeof TownGen !== 'undefined') TownGen.applyToWorld(this, theme.card); // v6.45.0 科技、民風、政治偏好
+        else { this.genSeed = null; this.townCulture = null; }
     }
     startNewGamePlus() {
         // Collect legacy from current world state
@@ -1949,6 +1952,8 @@ class World {
             mediations: JSON.parse(JSON.stringify(this.mediations || {})), // v5.42.0 和解進度
             workPolicy: { ...(this.workPolicy || {}) }, // v5.51.0 勞動力排班
             townTheme: this.townTheme || 'frontier', // v5.55.0 主題城鎮
+            genSeed: this.genSeed || undefined, townCulture: this.townCulture || undefined, // v6.45.0 種子隨機城鎮:只記種子,讀檔時重算整張城鎮卡
+            genRegistry: (typeof TownGen !== 'undefined' && TownGen.registry().list.length) ? TownGen.exportCompact() : undefined, // v6.45.0 發現過的鎮(精簡),換裝置讀雲端存檔時合併
             visitors: JSON.parse(JSON.stringify(this.visitors || {})), // v5.56.0 在鎮訪客名單
             townName: this.townName || '', // v5.58.0 鎮名
             lastCaravanDay: this.lastCaravanDay ?? null, // v5.80.0 跨鎮商隊
@@ -2158,7 +2163,9 @@ class World {
             this._feudCooldown = data.feudCooldown || {}; // v5.42.0
             this.mediations = data.mediations || {}; // v5.42.0
             this.workPolicy = data.workPolicy || {}; // v5.51.0
-            this.townTheme = data.townTheme || 'frontier'; // v5.55.0 主題城鎮
+            if (typeof TownGen !== 'undefined') { try { if (data.genRegistry) TownGen.mergeCompact(data.genRegistry); if (data.genSeed) TownGen.bySeed(data.genSeed); } catch (e) {} } // v6.45.0 先登記主題再用
+            this.genSeed = data.genSeed || null; this.townCulture = data.townCulture || null;
+            this.townTheme = (data.townTheme && TOWN_THEMES[data.townTheme]) ? data.townTheme : (data.townTheme && /^g[0-9a-z]+$/.test(data.townTheme) ? 'frontier' : (data.townTheme || 'frontier')); // v5.55.0 主題城鎮;v6.45.0 種子鎮登記失敗時退回邊境鎮版面
             this.visitors = data.visitors || {}; // v5.56.0 在鎮訪客
             this.lastCaravanDay = data.lastCaravanDay ?? null; // v5.80.0
             this.caravanCount = data.caravanCount || 0; this.harborFlags = data.harborFlags || {}; // v5.84.0

@@ -119,6 +119,8 @@ const TOWN_NAME_THEME = [
     ['harbor', /海風鎮|Seabreeze/i], ['mountain', /礦山鎮|Mine Ridge/i], ['forest', /林間村|Greenwood/i],
     ['market', /市集城|Market City/i], ['frontier', /邊境鎮|Frontier Town/i],
 ];
+// v6.45.0 種子隨機城鎮沿用五種底圖:畫面、天災、地形依底圖判斷
+function baseThemeOf(key) { return (TOWN_THEMES[key] && TOWN_THEMES[key].base) || key || 'frontier'; }
 function themeKeyOfTownName(name) {
     const n = String(name || '');
     const hit = TOWN_NAME_THEME.find(([, re]) => re.test(n));

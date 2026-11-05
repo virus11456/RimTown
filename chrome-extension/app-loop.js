@@ -333,6 +333,7 @@ Object.assign(RimTownApp.prototype, {
 
     _visitorMailboxTick() {
         const w = this.world; if (!w || !this.currentTownId) return;
+        try { this._genTownTick?.(); } catch (e) { console.warn('[RimTown] gen town tick', e); } // v6.45.0 種子隨機城鎮
         // 道路已通(含老玩家補生成):確保海風鎮存在
         for (const def of NEIGHBOR_TOWNS) { if (localStorage.getItem(def.key) === '1' && !this._neighborEnsured?.[def.theme]) this._ensureNeighborTown(def.theme); } // v5.76.0
         // 掛鉤(冪等,換鎮/換世界後自動指向新世界)
@@ -391,7 +392,7 @@ Object.assign(RimTownApp.prototype, {
                 this._getTownList().forEach(tw => push(tw.id, tw.name));
             } catch (e) {}
             w.otherTowns = towns;
-            w.crossTownNews = this._collectCrossTownNews(towns); // v5.88.0 日報跨鎮專欄素材
+            { const real = this._collectCrossTownNews(towns), gen = this._genCrossNews ? this._genCrossNews() : []; w.crossTownNews = real.slice(0, 2).concat(gen.slice(0, 1), real.slice(2), gen.slice(1)); } // v5.88.0 日報跨鎮專欄素材;v6.45.0 加上遠方城鎮的傳聞
         }
         // 收訪客信箱:對方鎮派來的村民實體化
         try {

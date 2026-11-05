@@ -1,5 +1,5 @@
-// RimTown - Frontend App (WordPress Plugin) v6.44.2
-const RIMTOWN_APP_VERSION = '6.44.2';
+// RimTown - Frontend App (WordPress Plugin) v6.45.0
+const RIMTOWN_APP_VERSION = '6.45.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
@@ -1650,6 +1650,8 @@ class RimTownApp {
         if (document.getElementById('coach-dialog')) return;
         // v5.59.5 最後一道防線:自己(同 id 或同名)絕不出現在目的地清單
         const towns = (this.world?.otherTowns || []).filter(tw => tw.id !== this.currentTownId && tw.name !== this.world?.townName);
+        // v6.45.0 已開通、還沒去過的種子鎮也列出來(第一次搭車才建存檔)
+        for (const c of (this._genReachableCards ? this._genReachableCards() : [])) towns.push({ id: 'gen:' + c.seed, name: c.name, genSeed: c.seed, firstVisit: true });
         const esc = s => this._escapeHtml ? this._escapeHtml(String(s)) : String(s);
         const ov = document.createElement('div');
         ov.id = 'coach-dialog';
@@ -1664,7 +1666,7 @@ class RimTownApp {
             towns.forEach((twn, i) => {
                 // v6.44.2 目的地用顯示名(舊存檔的鄰鎮可能存成英文 Seabreeze Harbor,中文介面要顯示海風鎮)
                 const shown = this._townDisplayName ? this._townDisplayName(twn.name, (typeof themeKeyOfTownName === 'function' && themeKeyOfTownName(twn.name)) || this._guessTheme?.(twn.name)) : twn.name;
-                inner += `<button class="trade-btn coach-go" data-idx="${i}" style="width:100%;margin:3px 0;padding:9px;display:flex;align-items:center;justify-content:center;gap:7px;font-family:inherit">${this._coachPixelSvg(0.75)}<span>${t('前往').trim()} ${esc(shown)}</span></button>`;
+                inner += `<button class="trade-btn coach-go" data-idx="${i}" style="width:100%;margin:3px 0;padding:9px;display:flex;align-items:center;justify-content:center;gap:7px;font-family:inherit">${this._coachPixelSvg(0.75)}<span>${t('前往').trim()} ${esc(shown)}${twn.firstVisit ? `<small style="opacity:.7;margin-left:4px">${t('（初次造訪）')}</small>` : ''}</span></button>`;
             });
         }
         if (towns.length && !this.world?.observerMode) inner += `<button class="trade-btn coach-caravan" style="width:100%;margin-top:8px;padding:9px;font-family:inherit">🐪 ${t('押商隊')}${this.world?.playerCaravan?.active ? `${t('（')}${t('在路上')}${t('）')}` : ''}</button>`; // v5.92.0
@@ -1674,7 +1676,7 @@ class RimTownApp {
         (document.getElementById('rimtown-app') || document.body).appendChild(ov); // v6.44.2 掛進遊戲容器,吃得到夜色／日光色票與遊戲字型
         ov.addEventListener('click', (e) => {
             const go = e.target.closest?.('.coach-go');
-            if (go) { const twn = towns[parseInt(go.dataset.idx, 10)]; ov.remove(); if (twn) this._coachTravelTo(twn.id, twn.name); return; }
+            if (go) { const twn = towns[parseInt(go.dataset.idx, 10)]; ov.remove(); if (twn?.genSeed) { this._visitGenTown(twn.genSeed); return; } if (twn) this._coachTravelTo(twn.id, twn.name); return; }
             if (e.target.closest?.('.coach-caravan')) { ov.remove(); this._showCaravanDialog(); return; } // v5.92.0
             if (e.target.closest?.('.coach-close') || e.target === ov) ov.remove();
         });
@@ -1756,7 +1758,10 @@ class RimTownApp {
         console.log('[RimTown] _generateTileMapLayout: locationCount=', Object.keys(locations).length);
         // v5.75.0 依城鎮主題產圖(海風鎮=海岸版面:海面、沙灘、棧橋、燈塔)
         const theme = this.world?.townTheme || this.state?.townTheme || 'frontier';
-        this.tileMap.generateLayout(locations, theme);
+        // v6.45.0 種子鎮用底圖的版面(海港／礦山／森林／市集／平原),屋頂配色用自己的
+        const TT = (typeof TOWN_THEMES !== 'undefined') ? TOWN_THEMES[theme] : null;
+        this.tileMap.roofPalette = (TT && TT.generated && Array.isArray(TT.roof)) ? TT.roof : null;
+        this.tileMap.generateLayout(locations, typeof baseThemeOf === 'function' ? baseThemeOf(theme) : theme);
         this._mapGenerated = true;
     }
 
@@ -2285,6 +2290,7 @@ class RimTownApp {
                 // Town management
                 case 'show-towns': this.showTownManager(); break;
                 case 'switch-town': this.switchTown(val); break;
+                case 'gen-visit': document.getElementById('town-modal')?.classList.add('hidden'); if (this.world) this.world.paused = !!this._pausedBeforeTownModal; this._visitGenTown?.(Number(val)); break; // v6.45.0
                 case 'rename-town': this.renameTownPrompt(val); break;
                 case 'delete-town': this.deleteTownConfirm(val); break;
                 case 'delete-local-town': this.deleteLocalTownConfirm(val); break; // v5.96.0 B13

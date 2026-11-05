@@ -7958,6 +7958,26 @@
         '若有所思,喃喃自語': ' murmurs thoughtfully',
         '耳邊低語...一個念頭在他心裡生根了。': "'s ear... a thought has taken root.",
         '你在': 'You whisper in ',
+        // v6.45.0 種子隨機城鎮
+        '探險隊（{who}）在野外找到一座聚落：{town}': 'The expedition ({who}) found a settlement in the wild: {town}',
+        '路過的商人說起一座城鎮：{town}': 'A passing merchant spoke of a town called {town}',
+        '旅人帶來遠方的消息：{town}': 'A traveller brought news of a distant town: {town}',
+        '馬車路線已經開通，去馬車站就能出發。': 'A carriage route is open; head to the carriage station to go.',
+        '路太遠了，馬車到不了（已有 {n} 座城鎮相連），先記在「遠方城鎮」。': 'It is too far for the carriage ({n} towns are already connected), so it is noted under Distant towns.',
+        '發現新城鎮！': 'New town discovered!',
+        '遠方的傳聞': 'Word from afar',
+        '存檔空間不足': 'not enough storage space',
+        '建立城鎮失敗：': 'Could not create the town: ',
+        '旅人傳聞': 'Travellers’ tales',
+        '探險隊': 'The expedition',
+        '遠方城鎮': 'Distant towns',
+        '還沒有新的消息。小鎮夠繁榮時，商人、旅人和探險隊會帶回遠方城鎮的消息。': 'No news yet. Once your town is prosperous enough, merchants, travellers and expeditions will bring word of distant towns.',
+        '已造訪': 'Visited',
+        '馬車可達・尚未造訪': 'Reachable by carriage · not visited yet',
+        '只有傳聞': 'Rumours only',
+        '搭馬車前往': 'Take the carriage',
+        '相連的城鎮最多 {n} 座（含邊境鎮與四個鄰鎮）；再遠的只留城鎮卡，會在背景慢慢變化。': 'Up to {n} towns can be connected (including Frontier Town and the four neighbours); towns further away are kept as town cards and keep changing in the background.',
+        '（初次造訪）': '(first visit)',
     });
     if (window.I18N && typeof window.I18N._onDictLoaded === 'function') window.I18N._onDictLoaded();
 })();

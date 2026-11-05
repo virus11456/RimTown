@@ -168,7 +168,8 @@ Object.assign(RimTownApp.prototype, {
     },
     // v6.35.0 城鎮列表資料:雲端＋只在本機的,補主題／來源,標鄰鎮與疑似重複
     _isNeighborTown(e) {
-        if (e.origin === 'neighbor') return true; if (e.origin === 'user') return false;
+        if (e.origin === 'neighbor' || e.origin === 'generated') return true; if (e.origin === 'user') return false;
+        if (e.theme && typeof TOWN_THEMES !== 'undefined' && TOWN_THEMES[e.theme]?.generated) return true; // v6.45.0 種子鎮
         return (typeof NEIGHBOR_TOWNS !== 'undefined') && NEIGHBOR_TOWNS.some(d => d.match.test(e.name || '')) && (!e.theme || e.theme !== 'frontier');
     },
     _guessTheme(name) {
@@ -188,7 +189,7 @@ Object.assign(RimTownApp.prototype, {
         return entries;
     },
     _townRow(e) {
-        const icon = ({ frontier: '🏡', harbor: '🌊', mountain: '⛏️', forest: '🌲', market: '🏛️' })[e.theme] || '🏘️';
+        const icon = ({ frontier: '🏡', harbor: '🌊', mountain: '⛏️', forest: '🌲', market: '🏛️' })[e.theme] || (typeof TOWN_THEMES !== 'undefined' && TOWN_THEMES[e.theme]?.generated ? ({ harbor: '🌊', mountain: '⛏️', forest: '🌲', market: '🏛️', frontier: '🌾' })[TOWN_THEMES[e.theme].base] : '') || '🏘️';
         const esc = (x) => this._escapeHtml ? this._escapeHtml(String(x ?? '')) : String(x ?? '');
         const tags = [];
         if (e.source === 'local' && this.auth.loggedIn) tags.push(`📱 ${t('本機')}${e.sameNameCloud ? `${t('（')}${t('與雲端同名')}${t('）')}` : ''}`);
@@ -214,6 +215,7 @@ Object.assign(RimTownApp.prototype, {
             if (nb.length) html += `<h4 class="town-section">🛤️ ${t('鄰鎮（道路開通後自動生成）')} <span class="pp-count">${nb.length}</span></h4>` + nb.map(e => this._townRow(e)).join('');
             if (mine.some(e => e.dup)) html += `<p class="muted-text town-hint">${t('⚠️ 標「疑似重複」的是兩座都還在第 1 天的同名或同主題城鎮，多半是以前按「新地圖」或切換語言時多建的；確定不要的那座按 🗑️ 刪掉。不會自動刪除任何存檔。')}</p>`;
         }
+        try { html += this._genTownSectionHtml ? this._genTownSectionHtml() : ''; } catch (e) {} // v6.45.0 遠方城鎮
         html += `<div class="town-modal-actions">
             <button class="town-btn town-btn-primary" data-action="create-town">${t('新建城鎮')}</button>
             <button class="town-btn town-btn-secondary" data-action="close-town-modal">${t('關閉')}</button>

@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.44.2
+ * Version: 6.45.0
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.44.2');
+define('RIMTOWN_VERSION', '6.45.0');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -887,6 +887,7 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-sim-systems',
         RIMTOWN_URL . 'sim-systems.js',
+        RIMTOWN_URL . 'sim-towngen.js',
         array('rimtown-simulation'),
         RIMTOWN_VERSION,
         true
@@ -937,6 +938,7 @@ function rimtown_enqueue_assets() {
     wp_enqueue_script(
         'rimtown-app-loop',
         RIMTOWN_URL . 'app-loop.js',
+        RIMTOWN_URL . 'app-towngen.js',
         array('rimtown-app'),
         RIMTOWN_VERSION,
         true
@@ -1330,6 +1332,20 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.45.0',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '🗺️ 新城鎮會不斷出現：四個鄰鎮都通車後，商人、旅人和凱旋的探險隊會帶回遠方城鎮的消息。每座新鎮都由一個「種子」隨機組合：鎮名、地形（海港／礦山／森林／市集／平原）、一到兩個特色（溫泉、古代遺跡、鬧鬼傳說、瘟疫後重建、移民潮、走私客、學者之城⋯⋯共 16 種）、人口 8～30、主要產業與缺的資源、貧富、科技時代與已研究的項目、民風、最在乎的政策、年度祭典、和我們的關係，都不一樣；同一個玩家發現的鎮不會撞名也不會太像',
+                '🐴 相連的城鎮最多 10 座（邊境鎮、四個鄰鎮，加上 5 座隨機鎮）：有名額時馬車路線直接開通，第一次搭車過去才建立存檔；名額滿了的只留一張城鎮卡（約 1KB），列在城鎮列表新的「遠方城鎮」，會在背景慢慢變化（人口、繁榮、時代、祭典、天災、換鎮長），傳聞會上日報的跨鎮專欄',
+                '🏘️ 隨機鎮有自己的樣子：村民依人口隨機生成，個性會帶上當地民風；酒館、廣場、神社用鎮名取名；屋頂配色各不相同；AI 規劃行程和寫對話時也會知道這個鎮的特色與民風。英文介面會顯示英文鎮名',
+            ),
+            'changes_en' => array(
+                '🗺️ New towns keep appearing: once all four neighbouring towns are connected, merchants, travellers and returning expeditions bring word of distant towns. Each new town is built from a random seed, so its name, terrain (harbour, mountain, forest, market or plains), one or two specialties (hot springs, ancient ruins, a ghost story, rebuilt after a plague, a wave of newcomers, smugglers, scholars and 16 in all), population of 8 to 30, main trades and shortages, wealth, tech era and research, temperament, favourite policy, yearly festival and relationship with your town all differ. Towns found by the same player never share a name and are never too alike',
+                '🐴 Up to 10 towns can be connected (Frontier Town, the four neighbours and 5 random towns). While there is room, a carriage route opens straight away and the save is only created on your first trip. Once full, new towns are kept as a town card of about 1KB under the new Distant towns section of the town list; they keep changing in the background (population, prosperity, era, festivals, disasters, new mayors) and their news appears in the cross-town column of the newspaper',
+                '🏘️ Random towns have their own look and feel: villagers are generated to match the population and pick up the local temperament, the tavern, square and shrine are named after the town, roof colours differ, and the AI knows the town’s specialties and temperament when planning days and writing dialogue. The English interface shows English town names',
+            ),
+        ),
         array(
             'version' => '6.44.2',
             'date'    => '2026-11-04',

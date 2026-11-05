@@ -605,7 +605,7 @@ class Town3D extends PixelTileMap {
     // ---------- 建築 ----------
     _buildBuildings() {
         const theme = this.themeKey || "frontier";
-        const roofs = ROOF_PALETTE[theme] || ROOF_PALETTE.frontier;
+        const roofs = this.roofPalette || ROOF_PALETTE[theme] || ROOF_PALETTE.frontier; // v6.45.0 種子鎮有自己的屋頂配色
         this._buildingTops = {};
         for (const [locId, z] of Object.entries(this.buildingZones)) {
             if (z.doorPixelX === undefined) continue; // 住宅區父層、農田、礦場、廣場等不是盒子建築

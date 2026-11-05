@@ -270,7 +270,7 @@ ${memos ? `${t('【昨天的約定/待辦】')}\n${memos}` : ''}
 ${topMem ? `${t('【昨天印象最深的事】')}\n${topMem}` : ''}
 ${thought ? `${t('【心裡的體悟】')}- ${thought}` : ''}`;
         }).join('\n\n');
-        const prompt = `${t('你在為模擬小鎮「{town}」的居民規劃真實的一天。像寫小說一樣,讓行程反映每個人的性格、人際與心事。').replace('{town}', t(world.townName || '邊境鎮'))}
+        const prompt = `${t('你在為模擬小鎮「{town}」的居民規劃真實的一天。像寫小說一樣,讓行程反映每個人的性格、人際與心事。').replace('{town}', t(world.townName || '邊境鎮'))}${(typeof TownGen !== 'undefined' && TownGen.cultureLine(world)) || ''}
 ${ctx.length ? `${t('【今日環境】')}${ctx.join(t('；'))}` : ''}
 
 ${sections}
@@ -1281,7 +1281,7 @@ ${t('只輸出 JSON 陣列，每個元素 {"n":村民序號,"vote":候選人序�
         }
         const festCtx = fest ? `${t('【今天是')}${fest.name}${t('!】')}${fest.description}${t('鎮上到處都是祭典活動:')}${fest.activities.join(t('、'))}${t('。對話請自然融入祭典氣氛。')}\n` : '';
 
-        const prompt = `${t('你是一位才華橫溢的小說家，正在為奇幻小鎮「{town}」寫角色對話劇本。').replace('{town}', t(world.townName || '邊境鎮'))}
+        const prompt = `${t('你是一位才華橫溢的小說家，正在為奇幻小鎮「{town}」寫角色對話劇本。').replace('{town}', t(world.townName || '邊境鎮'))}${(typeof TownGen !== 'undefined' && TownGen.cultureLine(world)) || ''}
 ${t('這是兩位小鎮居民偶然碰面的場景。請寫出生動、自然、有溫度的對話——就像真實的鄰居閒聊一樣。')}
 
 ${t('【重要規則】')}
