@@ -36,6 +36,8 @@ A god's-eye AI town sandbox in the browser: every villager is an autonomous AI a
 
 ## 待辦清單與路線圖（2026-10-06 盤點）
 
+> **2026-11-05 新企劃**：王國時代（城鎮四級、房子升級、從政資歷、議會、國王與政變、宗教、媒體與消息、銀行、外交）與 AI 玩法清單，見 [`DESIGN_KINGDOM.md`](DESIGN_KINGDOM.md)（含分批計畫與待確認事項）。
+
 > 這一節是全部「還沒做」與「還可以更好」的總表，每次發版順手更新。分四塊：A 使用者已提出、B 程式裡看到的可優化點、C 路線圖、D 大功能企劃草案（待拍板才動工）。
 
 ### A. 使用者已提出、尚未完成
