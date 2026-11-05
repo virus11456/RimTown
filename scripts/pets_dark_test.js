@@ -25,7 +25,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const prof = w.conversationEngine._buildCharacterProfile(o).status;
       // 3D:每隻都有模型,跟著主人的會靠近主人
       app._petViewAt = 0; await new Promise(r => setTimeout(r, 2500));
-      const tm = app.tileMap; const meshes = Object.keys(tm._petMeshes || {}).length;
+      const tm = app.tileMap; const meshes = Object.keys(tm._petMeshes || {}).length; const visible = PETS.view(w).length; // v6.52.0 走失的寵物不畫
       const near = owned.map(p => { const m = tm._petMeshes?.[p.id]; const op = tm.agentPositions[p.owner]; const om = tm._agentMeshes[p.owner]; if (!m || !op || !om?.visible) return null; return Math.hypot(m.position.x - op.x / TILE, m.position.z - op.y / TILE); }).filter(x => x !== null);
       // 主人離開 → 流浪
       const p0 = owned[0]; const keep = w.agents[p0.owner]; delete w.agents[p0.owner]; PETS.daily(w); const becameStray = !p0.owner; w.agents[keep.agentId] = keep;
@@ -34,12 +34,12 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 村民卡顯示寵物
       const other = owned[1] && owned[1].owner; let card = '';
       if (other) { app.state = w.getState(); app._showNpcCard(other); card = document.getElementById('npc-quick-card').innerText; app._hideNpcCard(); }
-      return { owned: owned.length, strays: strays.length, hens: hens.length, farm: !!w.townMap?.locations?.farm, th, eggs, brief, prof, meshes, total: S.list.length, near, becameStray, rt: (w2.pets?.list || []).length, card, petName: owned[1] ? PETS.view(w).find(x => x.id === owned[1].id)?.name : '' };
+      return { owned: owned.length, strays: strays.length, hens: hens.length, farm: !!w.townMap?.locations?.farm, th, eggs, brief, prof, meshes, total: S.list.length, visible, near, becameStray, rt: (w2.pets?.list || []).length, card, petName: owned[1] ? PETS.view(w).find(x => x.id === owned[1].id)?.name : '' };
     });
     ok(pet.owned >= 2 && pet.strays >= 2 && (!pet.farm || pet.hens >= 4), '一開始就有主人的貓狗、廣場流浪貓、農場的雞', pet);
     ok(pet.th.includes('pet_company') && (!pet.farm || pet.eggs >= pet.hens), '有寵物陪伴的心情；雞每天下蛋', { th: pet.th, eggs: pet.eggs });
     ok(/養了|Has a/.test(pet.brief) && /養了|Has a/.test(pet.prof), 'AI 知道自己養了寵物（提案資料與聊天角色資料）', { b: pet.brief.slice(0, 160), p: pet.prof });
-    ok(pet.meshes === pet.total, '3D 每隻動物都有模型', { meshes: pet.meshes, total: pet.total });
+    ok(pet.meshes === pet.visible, '3D 每隻動物都有模型（走失的不畫）', { meshes: pet.meshes, visible: pet.visible, total: pet.total });
     ok(pet.near.length === 0 || pet.near.some(d => d < 3), '寵物會跟在主人身邊', pet.near);
     ok(pet.becameStray, '主人不在了，寵物變成流浪的', null);
     ok(pet.rt === pet.total, '寵物存讀檔', { rt: pet.rt, total: pet.total });
