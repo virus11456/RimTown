@@ -5,16 +5,21 @@
 // Usage: t('Chinese string') → returns translation based on current language
 
 // v6.43.6 依「看得到的字」截斷(emoji、組合字、國旗不會被切成一半);以前用 .slice 可能把 emoji 的一半留下來變亂碼
+const _clipNeedSeg = /[\uD800-\uDFFF\r\u200C\u200D\u0300-\u0DFF\u0E31-\u109F\u1100-\u11FF\u135D-\u135F\u1700-\u1DFF\u20D0-\u20FF\u2CEF-\u2DFF\u302A-\u302F\u3099\u309A\uA66F-\uABFF\uD7B0-\uD7FF\uFB1E\uFE00-\uFE2F]/; // 代理對(emoji、國旗)、ZWJ／ZWNJ、CRLF、含附加符號的文字區段(涵蓋 BMP 所有 \p{M})、韓文字母;不用 /u 的 \p{M},中文快路徑才不會慢 6 倍
 let _clipSeg = null; // v6.43.7 共用一個 Segmenter(以前每次 new,英文存檔時一次存檔多花 30ms 以上)
 function clipText(s, n, ell = '…') {
     s = String(s ?? ''); if (s.length <= n) return s;
     const keep = Math.max(0, n - (ell ? 1 : 0));
-    // 快路徑:截斷點附近沒有 emoji／組合字元(代理對、ZWJ、變體選擇符、組合附加符號、國旗)就直接切
-    if (!/[\uD800-\uDFFF\u200D\uFE0E\uFE0F\u0300-\u036F\u20E3]/.test(s.slice(0, keep + 2))) return s.slice(0, keep) + ell;
+    // 快路徑:截斷點附近沒有 emoji／組合字元就直接切。v6.44.1 以前只認幾段附加符號,漏了印度語系的母音符號／virama、
+    // 其他附加符號區段、分解的韓文字母(初聲＋中聲＋終聲),會被從中間切開;改用 Unicode「附加符號」類別 \p{M} 一次涵蓋
+    if (!_clipNeedSeg.test(s.slice(0, keep + 2))) return s.slice(0, keep) + ell;
     let parts;
     try { if (!_clipSeg && typeof Intl !== 'undefined' && Intl.Segmenter) _clipSeg = new Intl.Segmenter(undefined, { granularity: 'grapheme' }); parts = _clipSeg ? Array.from(_clipSeg.segment(s), x => x.segment) : Array.from(s); } catch (e) { parts = Array.from(s); }
     if (parts.length <= n) return s;
-    return parts.slice(0, keep).join('') + ell;
+    const out = parts.slice(0, keep);
+    // 較舊的瀏覽器會把「子音＋virama」單獨切成一個字,留下一半的連寫字;結尾是 virama／ZWJ 就再退一格
+    while (out.length && /[\u094D\u09CD\u0A4D\u0ACD\u0B4D\u0BCD\u0C4D\u0CCD\u0D4D\u0DCA\u0E3A\u0F84\u1039\u17D2\u200D]$/.test(out[out.length - 1])) out.pop();
+    return out.join('') + ell;
 }
 // v6.43.6 清掉落單的半個 emoji(舊存檔被切壞的)
 function fixBrokenText(s) { return typeof s === 'string' ? s.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '') : s; }

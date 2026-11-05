@@ -239,6 +239,11 @@ Object.assign(RimTownApp.prototype, {
             <button data-action="auth-logout" class="btn-danger-text">${t('登出')}</button>
         `;
         document.getElementById('rimtown-app')?.appendChild(popup);
+        // v6.44.1 小手機橫放(568×320)時選單比畫面高,登出被切掉:超出就往上挪,再不夠就限高、選單內捲動
+        try {
+            const vh = window.visualViewport?.height || window.innerHeight, r = popup.getBoundingClientRect(), pad = 8;
+            if (r.bottom > vh - pad) { popup.style.top = Math.max(pad, vh - pad - r.height) + 'px'; popup.style.maxHeight = (vh - pad * 2) + 'px'; }
+        } catch (e) {}
 
         // Auto close on click outside
         setTimeout(() => {

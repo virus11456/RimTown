@@ -3,7 +3,7 @@
  * Plugin Name: RimTown - AI Town Simulation
  * Plugin URI: https://github.com/virus11456/RimTown
  * Description: RimWorld 風格的 AI 小鎮模擬遊戲。使用 [rimtown] 短碼嵌入頁面。
- * Version: 6.44.0
+ * Version: 6.44.1
  * Author: RimTown Team
  * License: MIT
  * Text Domain: rimtown
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RIMTOWN_VERSION', '6.44.0');
+define('RIMTOWN_VERSION', '6.44.1');
 define('RIMTOWN_DIR', plugin_dir_path(__FILE__));
 define('RIMTOWN_URL', plugin_dir_url(__FILE__));
 
@@ -1330,6 +1330,18 @@ add_action('admin_menu', 'rimtown_admin_menu');
  */
 function rimtown_get_changelog() {
     return array(
+        array(
+            'version' => '6.44.1',
+            'date'    => '2026-11-04',
+            'changes' => array(
+                '📱 小手機橫放時帳號選單不再被切掉：568×320 這類矮螢幕上，選單比畫面高、「登出」下緣被切到；現在超出時會往上挪，真的放不下就在選單裡捲動',
+                '✂️ 文字截斷更完整：以前只認得 emoji 和少數附加符號，印度語系的母音符號、其他附加符號、分解寫法的韓文字母還是可能被從中間切開；現在這些都整個字保留，中文截斷速度不變',
+            ),
+            'changes_en' => array(
+                '📱 The account menu no longer gets cut off on small phones in landscape: on short screens such as 568×320 the menu was taller than the screen and the bottom of "Log out" was clipped. It now moves up when it would overflow and scrolls inside if it still does not fit',
+                '✂️ Text clipping now keeps whole characters in more scripts: it used to recognise only emoji and a few combining marks, so Indic vowel signs, other combining marks and decomposed Korean letters could still be split. These are now kept whole, and clipping Chinese text is just as fast',
+            ),
+        ),
         array(
             'version' => '6.44.0',
             'date'    => '2026-11-04',
